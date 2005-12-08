@@ -115,6 +115,12 @@ sub new
     return ($self);
 }
 
+sub anno
+  {
+    my $self = shift;
+    return $self->annotation();
+  }
+
 sub feature
   {
     my $self = shift;
