@@ -12,9 +12,9 @@ BEGIN {
     @EXPORT_OK   = qw ();
     %EXPORT_TAGS = ();
     __PACKAGE__->table('feature');
-    __PACKAGE__->columns(All=>qw{feature_id feature_type_id organism_id data_information_id});
+    __PACKAGE__->columns(All=>qw{feature_id feature_type_id data_information_id});
     __PACKAGE__->has_a('data_information_id'=>'CoGe::Genome::DB::Data_information');
-    __PACKAGE__->has_a('organism_id'=>'CoGe::Genome::DB::Organism');
+#    __PACKAGE__->has_a('organism_id'=>'CoGe::Genome::DB::Organism');
     __PACKAGE__->has_a('feature_type_id'=>'CoGe::Genome::DB::Feature_type');
     __PACKAGE__->has_many('feature_names'=>'CoGe::Genome::DB::Feature_name');
     __PACKAGE__->has_many('locations'=>'CoGe::Genome::DB::Location');
@@ -154,23 +154,25 @@ sub info
     return $self->data_information_id();
   }
 
+##legacy table, now stored in data_information
 sub organism
   {
     my $self = shift;
-    return $self->organism_id();
+    return $self->info->organism_id();
   }
 
 sub org
   {
     my $self = shift;
-    return $self->organism_id();
+    return $self->info->organism_id();
   }
 
 sub species
   {
     my $self = shift;
-    return $self->organism_id();
+    return $self->info->organism_id();
   }
+
 
 sub feat_names
   {
@@ -212,6 +214,40 @@ sub id
   {
     my $self = shift;
     return $self->feature_id();
+  }
+
+sub annotation_string
+  {
+    my $self = shift;
+    my $string;
+    foreach my $anno ($self->annos)
+      {
+	my $type = $anno->type();
+	my $group = $type->group();
+	$string .= $group->name." " if ref ($group) =~ /group/i;
+	$string .= $type->name." " if $type->name;
+	$string .= $anno->annotation."\n";
+      }
+  }
+
+sub genbank_location_string
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $recal = $opts{recalibrate};
+    my $string;
+    my $count= 0;
+    my $comp = 0;
+    foreach my $loc (sort {$a->start <=> $b->start}  $self->locs())
+      {
+	$comp = 1 if $loc->strand =~ "-";
+	$string .= "," if $count;
+	$string .= $recal ? ($loc->start-$recal+1)."..".($loc->stop-$recal+1): $loc->start."..".$loc->stop;
+	$count++;
+      }
+    $string = "join(".$string.")" if $count > 1;
+    $string = "complement(".$string.")" if $comp;
+    return $string;
   }
 
 1; #this line is important and will help the module return a true value
