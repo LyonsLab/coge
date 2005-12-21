@@ -1,6 +1,7 @@
 package CoGe::Genome::DB::Feature;
 use strict;
 use base 'CoGe::Genome::DB';
+use CoGe::Genome::Accessory::Annotation;
 
 BEGIN {
     use Exporter ();
@@ -216,18 +217,46 @@ sub id
     return $self->feature_id();
   }
 
-sub annotation_string
+sub annotation_pretty_print
   {
     my $self = shift;
-    my $string;
+    my $anno_obj = new CoGe::Genome::Accessory::Annotation(Type=>"anno");
+    $anno_obj->Val_delimit("\n");
+    $anno_obj->Val_delimit("\n");
+    $anno_obj->Add_type(0);
+    $anno_obj->String_end("\n");
     foreach my $anno ($self->annos)
       {
 	my $type = $anno->type();
 	my $group = $type->group();
-	$string .= $group->name." " if ref ($group) =~ /group/i;
-	$string .= $type->name." " if $type->name;
-	$string .= $anno->annotation."\n";
+	my $anno_type = new CoGe::Genome::Accessory::Annotation(Type=>$type->name);
+	$anno_type->Val_delimit("\n");
+
+	$anno_type->add_Annot($anno->annotation);
+	if (ref ($group) =~ /group/i)
+	  {
+	    my $anno_g = new CoGe::Genome::Accessory::Annotation(Type=>$group->name);
+	    $anno_g->add_Annot($anno_type);
+	    $anno_g->Type_delimit("\n\t");
+	    $anno_g->Val_delimit(" ");
+	    $anno_obj->add_Annot($anno_g);
+	  }
+	else
+	  {
+	    $anno_type->Type_delimit("\n\t");
+	    $anno_obj->add_Annot($anno_type);
+	  }
       }
+    my $anno_type = new CoGe::Genome::Accessory::Annotation(Type=>"Name(s)");
+    $anno_type->Type_delimit("\n\t");
+    $anno_type->Val_delimit("\n\t");
+    foreach my $name ($self->names)
+      {
+	$anno_type->add_Annot($name->name);
+      }
+    
+    $anno_obj->add_Annot($anno_type);
+    return $anno_obj->to_String;
   }
 
 sub genbank_location_string
