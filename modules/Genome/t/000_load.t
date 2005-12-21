@@ -70,15 +70,16 @@ my $ds = $dso->find_or_create({name=>"test",
 			       link=>"www.test.com"
 			      });
 isa_ok($ds, 'CoGe::Genome::DB::Data_source');
+my $org = $so->find_or_create({name=>"test org",
+			       description=>"created by testing script",});
+isa_ok($org, 'CoGe::Genome::DB::Organism');
 my $di = $dio->find_or_create({name=>"test",
 			       description=>"created by testing script",
 			       link=>"www.test.com",
 			       data_source_id=>$ds->id,
+			       organism_id=>$org->id,
 			      });
 isa_ok($di, 'CoGe::Genome::DB::Data_information');
-my $org = $so->find_or_create({name=>"test org",
-			       description=>"created by testing script",});
-isa_ok($org, 'CoGe::Genome::DB::Organism');
 my $ft = $fto->find_or_create({name=>"test feature type",
 			       description=>"created by testing script",});
 isa_ok($ft, 'CoGe::Genome::DB::Feature_type');
@@ -131,10 +132,9 @@ for (my $c=1; $c<=5; $c++)
 
 my $c = 1;
 my $f = $fo->find_or_create({
-			     feature_type_id=>$ft->id,
-			     data_information_id=>$di->id,
-			     organism_id=>$org->id,
-			    });
+                             feature_type_id=>$ft->id,
+                             data_information_id=>$di->id,
+                            });
 my $fn = $fno->find_or_create({feature_id=>$f->id,
 			       name=>"test feature",
 			       description=>"created by testing script",
@@ -164,6 +164,8 @@ for (my $i=1; $i<5; $i++)
 			 annotation_type_id=>$at->id,
 			});
   }
+$f->annotation_string;
+$f->genbank_location_string;
 foreach my $feat ($o->get_feature_by_name("test feature name"))
 {
   isa_ok($feat, 'CoGe::Genome::DB::Feature');
