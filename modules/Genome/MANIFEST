@@ -33,4 +33,6 @@ lib/CoGe/Genome/DB/Sequence_type.pm
 t/012_load.t
 lib/CoGe/Genome/DB/Organism.pm
 t/013_load.t
+lib/CoGe/Genome/Accessory/Annotation.pm
+t/014_load.t
 Makefile.PL
