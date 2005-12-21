@@ -12,8 +12,9 @@ BEGIN {
     @EXPORT_OK   = qw ();
     %EXPORT_TAGS = ();
     __PACKAGE__->table('data_information');
-    __PACKAGE__->columns(All=>qw{data_information_id data_source_id name description link version});
+    __PACKAGE__->columns(All=>qw{data_information_id data_source_id organism_id name description link version});
     __PACKAGE__->has_a(data_source_id=>'CoGe::Genome::DB::Data_source');
+    __PACKAGE__->has_a('organism_id'=>'CoGe::Genome::DB::Organism');
     __PACKAGE__->has_many(features=>'CoGe::Genome::DB::Feature');
     __PACKAGE__->has_many(genomic_sequences=>'CoGe::Genome::DB::Genomic_sequence');
 }
@@ -149,6 +150,24 @@ sub id
   {
     my $self = shift;
     return $self->data_information_id();
+  }
+
+sub organism
+  {
+    my $self = shift;
+    return $self->organism_id();
+  }
+
+sub org
+  {
+    my $self = shift;
+    return $self->organism_id();
+  }
+
+sub species
+  {
+    my $self = shift;
+    return $self->organism_id();
   }
 
 
