@@ -13,7 +13,7 @@ BEGIN {
     %EXPORT_TAGS = ();
     __PACKAGE__->table('organism', 'organism_id');
     __PACKAGE__->columns(All=>qw{organism_id name description});
-    __PACKAGE__->has_many(features=>'CoGe::Genome::DB::Feature');
+    __PACKAGE__->has_many(data_information=>'CoGe::Genome::DB::Data_information');
     __PACKAGE__->has_many(genomic_sequences=>'CoGe::Genome::DB::Genomic_sequence');
 
 }
@@ -109,11 +109,37 @@ sub new
     return ($self);
 }
 
-sub feats
+
+sub data_info
   {
     my $self = shift;
-    return $self->features();
+    return $self->data_information();
   }
+
+sub data_infos
+  {
+    my $self = shift;
+    return $self->data_information();
+  }
+
+sub info
+  {
+    my $self = shift;
+    return $self->data_information();
+  }
+
+sub infos
+  {
+    my $self = shift;
+    return $self->data_information();
+  }
+
+
+#sub feats
+#  {
+#    my $self = shift;
+#    return $self->features();
+#  }
 
 sub genomic_seqs
   {
