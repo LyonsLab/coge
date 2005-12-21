@@ -908,6 +908,8 @@ sub get_prot_seq_by_feat_name
              type => the name of the feature type (e.g. CDS)
              version => (optional) skips any feature whose version (from data_information)
                         does not equal this specified version.  (e.g. 6)
+             infoid  => (optional) skips any feature whose data information id 
+                        does not match
  Throws    : undef, prints error to STDERR
  Comments  : 
 
@@ -925,6 +927,7 @@ sub get_genomic_seq_by_feat_name_and_type_name
     my $name = $opts{name};
     my $version = $opts{version} || $opts{ver};
     my $type = $opts{type};
+    my $info_id = $opts{infoid};
     my %locs;
     foreach my $no ($self->get_feature_name_obj->search(name=>$name) )
       {
@@ -933,6 +936,10 @@ sub get_genomic_seq_by_feat_name_and_type_name
 	    if ($version)
 	      {
 		next unless $feat->data_info->version eq $version;
+	      }
+	    if ($info_id)
+	      {
+		next unless $feat->data_info->id eq $info_id;
 	      }
 	    next unless $feat->feat_type->name =~ /$type/;
 	    push @{$locs{$feat->id}}, $feat->locations;
@@ -948,7 +955,6 @@ sub get_genomic_seq_by_feat_name_and_type_name
 	
 	foreach my $loc (sort {$a->start <=> $b->start} @{$locs{$id}})
 	  {
-	    #	print STDERR Dumper $loc;
 	    $seq .= $gso->get_sequence(start=>$loc->start,
 				       stop =>$loc->stop,
 				       chr  =>$loc->chr,
