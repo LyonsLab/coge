@@ -164,7 +164,7 @@ for (my $i=1; $i<5; $i++)
 			 annotation_type_id=>$at->id,
 			});
   }
-$f->annotation_string;
+$f->annotation_pretty_print;
 $f->genbank_location_string;
 foreach my $feat ($o->get_feature_by_name("test feature name"))
 {
