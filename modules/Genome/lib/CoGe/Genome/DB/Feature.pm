@@ -21,6 +21,15 @@ BEGIN {
     __PACKAGE__->has_many('locations'=>'CoGe::Genome::DB::Location');
     __PACKAGE__->has_many('sequences'=>'CoGe::Genome::DB::Sequence');
     __PACKAGE__->has_many('annotations'=>'CoGe::Genome::DB::Annotation');
+    __PACKAGE__->set_sql ('select_features_in_range' => qq{
+SELECT DISTINCT f.feature_id
+  FROM feature f
+  JOIN location l USING (feature_id)
+ WHERE ? <= l.start
+   AND ? >= l.stop
+   AND chromosome = ?
+   AND f.data_information_id = ?;
+});
 }
 
 
@@ -225,6 +234,7 @@ sub annotation_pretty_print
     $anno_obj->Val_delimit("\n");
     $anno_obj->Add_type(0);
     $anno_obj->String_end("\n");
+    $anno_obj->add_Annot(new CoGe::Genome::Accessory::Annotation(Type=>"Chromosome", Values=>[$self->chr, "".$self->begin_location."-".$self->end_location.""."(".$self->strand.")"], Type_delimit=>": ", Val_delimit=>" "));
     foreach my $anno ($self->annos)
       {
 	my $type = $anno->type();
@@ -279,5 +289,54 @@ sub genbank_location_string
     return $string;
   }
 
+sub begin_location
+  {
+    my $self = shift;
+    my ($val) = sort {$a->begin <=> $b->begin} $self->locs;
+    return $val->begin;
+  }
+
+sub end_location
+  {
+    my $self = shift;
+    my ($val) = sort {$b->end <=> $a->end} $self->locs;
+    return $val->end;
+  }
+
+sub chromosome
+  {
+    my $self = shift;
+    return $self->locs->next->chr();
+  }
+
+sub chr
+  {
+    my $self = shift;
+    return $self->chromosome;
+  }
+
+sub strand
+  {
+    my $self = shift;
+    return $self->locs->next->strand();
+  }
+
+sub get_features_in_region
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $start = $opts{'start'} || $opts{'START'} || $opts{begin} || $opts{BEGIN};
+    my $stop = $opts{'stop'} || $opts{STOP} || $opts{end} || $opts{END};
+    my $chr = $opts{chr} || $opts{CHR} || $opts{chromosome} || $opts{CHROMOSOME};
+    my $info_id = $opts{info_id} || $opts{INFO_ID} || $opts{data_info_id} || $opts{DATA_INFO_ID};
+    my $sth = $self->sql_select_features_in_range();
+    $sth->execute($start, $stop, $chr, $info_id);
+    my @feats;
+    while (my $q = $sth->fetch())
+      {
+	push @feats, $self->search(feature_id=>$q->[0]);
+      }
+    return wantarray ? @feats : \@feats;
+  }
 1; #this line is important and will help the module return a true value
 
