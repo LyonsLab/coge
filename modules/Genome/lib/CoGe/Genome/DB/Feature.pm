@@ -320,6 +320,31 @@ sub strand
     my $self = shift;
     return $self->locs->next->strand();
   }
+################################################ subroutine header begin ##
+
+=head2 get_features_in_region
+
+ Usage     : $object->get_features in region(start   => $start, 
+                                             stop    => $stop, 
+                                             chr     => $chr,
+                                             info_id => $data_info->id());
+
+ Purpose   : gets all the features in a specified genomic region
+ Returns   : an array or an array_ref of feature objects (wantarray)
+ Argument  : start   => genomic start position
+             stop    => genomic stop position
+             chr     => chromosome
+             info_id => data_information id in database (obtained from a
+                        CoGe::Data_information object)
+                        of the dna seq will be returned
+ Throws    : none
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
 
 sub get_features_in_region
   {
