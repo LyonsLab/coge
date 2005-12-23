@@ -25,8 +25,8 @@ BEGIN {
 SELECT DISTINCT f.feature_id
   FROM feature f
   JOIN location l USING (feature_id)
- WHERE ? <= l.start
-   AND ? >= l.stop
+ WHERE ? <= l.stop
+   AND ? >= l.start
    AND chromosome = ?
    AND f.data_information_id = ?;
 });
@@ -268,6 +268,7 @@ sub annotation_pretty_print
     $anno_obj->add_Annot($anno_type);
     return $anno_obj->to_String;
   }
+
 
 sub genbank_location_string
   {
