@@ -898,7 +898,7 @@ sub get_prot_seq_by_feat_name
 
 =head2 get_genomic_seq_by_feat_name_and_type_name
 
- Usage     : my @seqs = $genomic_obj->get_genomic_seq_by_feat_name_and_type_name(name=>$name, 
+ Usage     : my @seqs = $genome_obj->get_genomic_seq_by_feat_name_and_type_name(name=>$name, 
                                                                                 type=>$type, 
                                                                                 version=>$version);
  Purpose   : Gets the genomic sequence of a feature by the name of the feature and 
@@ -971,7 +971,67 @@ sub get_genomic_seq_by_feat_name_and_type_name
     return @seqs;
   }
 
+################################################ subroutine header begin ##
+
+=head2 get_genomic_sequence_for_feature
+
+ Usage     : my $seq = $genome_obj->get_genomic_sequence_for_feature($feature_obj)
+ Purpose   : Gets the genomic sequence of a feature using a feature object
+ Returns   : string (gemomic DNA of feature)
+ Argument  : CoGe::Genome::DB::Feature object
+ Throws    : none
+ Comments  : The sequence is returned in 5'->3' orientation.
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub get_genomic_sequence_for_feature
+  {
+    my $self = shift;
+    my $feat = shift;
+    my $seq;
+    foreach my $loc ($feat->locs)
+      {
+	my $tmp_seq = $self->get_genomic_seq_obj->get_sequence(
+							 start  => $loc->start,
+							 stop   => $loc->stop,
+							 chr    => $loc->chr,
+							 org_id => $feat->data_info->organism->id,
+							 info_id=> $feat->data_info->id,
+							 strand => $loc->strand,
+							 );
+	$tmp_seq = reverse $seq if $loc->strand eq "-1";
+	$seq .= $tmp_seq if $tmp_seq;
+      }
+    return $seq;
+  }
+
+################################################ subroutine header begin ##
+
+=head2 get_genomic_seq_for_feat
+
+ Usage     : my $seq = $genome_obj->get_genomic_seq_for_feat($feature_obj)
+ Purpose   : Alias for get_genomic_sequence_for_feature
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
 
 
+sub get_genomic_seq_for_feat
+  {
+    my $self = shift;
+    my $feat = shift;
+    return $self->get_genomic_sequence_for_feature($feat);
+  }
 
 1; #this line is important and will help the module return a true value
