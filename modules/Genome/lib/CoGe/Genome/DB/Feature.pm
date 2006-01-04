@@ -2,6 +2,7 @@ package CoGe::Genome::DB::Feature;
 use strict;
 use base 'CoGe::Genome::DB';
 use CoGe::Genome::Accessory::Annotation;
+use CoGe::Genome;
 
 BEGIN {
     use Exporter ();
@@ -196,6 +197,12 @@ sub names
     return $self->feature_names();
   }
 
+sub name
+  {
+    my $self = shift;
+    return $self->feature_names();
+  }
+
 sub aliases
   {
     my $self = shift;
@@ -364,5 +371,7 @@ sub get_features_in_region
       }
     return wantarray ? @feats : \@feats;
   }
+
+
 1; #this line is important and will help the module return a true value
 
