@@ -16,7 +16,7 @@ BEGIN {
     @EXPORT      = qw();
     @EXPORT_OK   = qw();
     %EXPORT_TAGS = ();
-    __PACKAGE__->mk_accessors(qw(gdb version name1 name2 prot1 prot2 palign1 palign2 dna1 dna2 gaplessP1 gaplessP2 gaplessD1 gaplessD2 results));
+    __PACKAGE__->mk_accessors(qw(gdb version name1 name2 prot1 prot2 palign1 palign2 dna1 dna2 dalign1 dalign2 gaplessP1 gaplessP2 gaplessD1 gaplessD2 results gapless_prot_pid gapless_DNA_pid prot_pid DNA_pid));
 }
 
 
@@ -43,7 +43,6 @@ CoGe::Algos::KsCalc - CoGe::Algos::KsCalc
   print "Ka = ", $res->{'dN'},"\n";
   print "Ks = ", $res->{'dS'},"\n";
   print "Ka/Ks = ", $res->{'dN/dS'},"\n";
-
 
 
 =head1 DESCRIPTION
@@ -222,9 +221,182 @@ sub palign
     my ($align1, $align2) = $self->global_align();
     $self->palign1($align1);
     $self->palign2($align2);
+    $self->_generate_DNA_alignment();
     $self->_generate_gapless();
+    $self->gapless_DNA_calc_pid();
+    $self->gapless_prot_calc_pid();
+    $self->DNA_calc_pid();
+    $self->prot_calc_pid();
     return 1 if ($self->palign1() && $self->palign2());
     return 0;
+  }
+
+#################### subroutine header begin ####################
+
+=head2 gapless_DNA_calc_pid
+
+ Usage     : my $pid = $ks->gapless_DNA_calc_pid();
+ Purpose   : Calculates the percent identity between the two stored aligned gapless nucleotide aligned sequences
+ Returns   : pid a number between 0 and 100, no cropping of significant figures
+ Argument  : none
+ Throws    : undef + errors to STDOUT if either sequence is not defined
+ Comment   : calls $self->calc_pid
+           : 
+See Also   : calc_pid
+
+=cut
+
+#################### subroutine header end ####################
+
+
+sub gapless_DNA_calc_pid
+  {
+    my $self = shift;
+    my ($seq1, $seq2) = ($self->gaplessD1, $self->gaplessD2);
+    unless ($seq1 && $seq2)
+      {
+	print STDERR 'Missing at least one of the gapless DNA sequences.  Perhaps $self->palign was not run?';
+	return;
+      }
+    $self->gapless_DNA_pid($self->calc_pid($seq1, $seq2));
+    return ($self->gapless_DNA_pid);
+  }
+
+#################### subroutine header begin ####################
+
+=head2 gapless_prot_calc_pid
+
+ Usage     : my $pid = $ks->gapless_prot_calc_pid();
+ Purpose   : Calculates the percent identity between the two stored aligned gapless protein aligned sequences
+ Returns   : pid a number between 0 and 100, no cropping of significant figures
+ Argument  : none
+ Throws    : undef + errors to STDOUT if either sequence is not defined
+ Comment   : calls $self->calc_pid
+           : 
+See Also   : calc_pid
+
+=cut
+
+#################### subroutine header end ####################
+
+
+sub gapless_prot_calc_pid
+  {
+    my $self = shift;
+    my ($seq1, $seq2) = ($self->gaplessP1, $self->gaplessP2);
+    unless ($seq1 && $seq2)
+      {
+	print STDERR 'Missing at least one of the gapless protein sequences.  Perhaps $self->palign was not run?';
+	return;
+      }
+    $self->gapless_prot_pid($self->calc_pid($seq1, $seq2));
+    return ($self->gapless_prot_pid);
+  }
+
+
+#################### subroutine header begin ####################
+
+=head2 DNA_calc_pid -- NOT IMPLEMENTED!
+
+ Usage     : my $pid = $ks->DNA_calc_pid();
+ Purpose   : Calculates the percent identity between the two stored aligned nucleotide aligned sequences
+ Returns   : pid a number between 0 and 100, no cropping of significant figures
+ Argument  : none
+ Throws    : undef + errors to STDOUT if either sequence is not defined
+ Comment   : calls $self->calc_pid
+           : 
+See Also   : calc_pid
+
+=cut
+
+#################### subroutine header end ####################
+
+
+sub DNA_calc_pid
+  {
+    my $self = shift;
+    my ($seq1, $seq2) = ($self->dalign1, $self->dalign2);
+    unless ($seq1 && $seq2)
+      {
+	print STDERR 'Missing at least one of the DNA sequences.  Perhaps $self->palign was not run?';
+	return;
+      }
+    $self->DNA_pid($self->calc_pid($seq1, $seq2));
+    return ($self->DNA_pid);
+  }
+
+#################### subroutine header begin ####################
+
+=head2 prot_calc_pid
+
+ Usage     : my $pid = $ks->prot_calc_pid();
+ Purpose   : Calculates the percent identity between the two stored aligned protein aligned sequences
+ Returns   : pid a number between 0 and 100, no cropping of significant figures
+ Argument  : none
+ Throws    : undef + errors to STDOUT if either sequence is not defined
+ Comment   : calls $self->calc_pid
+           : 
+See Also   : calc_pid
+
+=cut
+
+#################### subroutine header end ####################
+
+
+sub prot_calc_pid
+  {
+    my $self = shift;
+    my ($seq1, $seq2) = ($self->palign1, $self->palign2);
+    unless ($seq1 && $seq2)
+      {
+	print STDERR 'Missing at least one of the protein sequences.  Perhaps $self->palign was not run?';
+	return;
+      }
+    $self->prot_pid($self->calc_pid($seq1, $seq2));
+    return ($self->prot_pid);
+  }
+
+#################### subroutine header begin ####################
+
+=head2 calc_pid
+
+ Usage     : my $pid = $ks->calc_pid($seq1, $seq2);
+ Purpose   : Calculates the percent identity between two sequence
+ Returns   : pid a number between 0 and 100, no cropping of significant figures
+ Argument  : two strings (two sequences)
+ Throws    : undef + errors to STDOUT if either sequence is not defined or
+             if the sequences are not of equal length
+ Comment   : 
+           : 
+See Also   : 
+
+=cut
+
+#################### subroutine header end ####################
+
+
+sub calc_pid
+  {
+    my $self = shift;
+    my ($seq1, $seq2) = @_;
+    unless ($seq1 && $seq2)
+      {
+	carp "Sequences not valid in calc_pid";
+	return;
+      }
+    unless (length ($seq1) == length ($seq2))
+      {
+	print STDERR "sequences are of different lengths.  Percent identity calculation may be incorrect.\n";
+      }
+    my @seq1 = split //, $seq1;
+    my @seq2 = split //, $seq2;
+    my $total = scalar @seq1;
+    my $id = 0;
+    for (my $i = 0; $i < $total; $i++)
+      {
+	$id++ if $seq1[$i] eq $seq2[$i];
+      }
+    return $id/$total*100;
   }
 
 #################### subroutine header begin ####################
@@ -236,9 +408,10 @@ sub palign
              CoGe::Algos::Codeml and saves the results in 
              $self->results
  Returns   : hash ref of results:
-             'dN/dS' =>
-             'dN'    =>
-             'dS'    =>
+             'dN/dS' => non-synonymous over sysnonymous substitution
+             'dN'    => non-synonymous substitution
+             'dS'    => synonymous substitution
+             'pID'   => percent identical
  Argument  : none
  Throws    : 0 if there was a problem running alignment
  Comment   : This is the mama-jama of this module
@@ -458,5 +631,48 @@ sub _generate_gapless
   }
 
 1;
+
+sub _generate_DNA_alignment
+  {
+    my $self = shift;
+    my @prot1 = split //, $self->palign1;
+    my @prot2 = split //, $self->palign2;
+    my ($d1p, $d2p) = (0,0);
+    foreach my $ppos (0..$#prot1)
+      {
+	my $p1 = $prot1[$ppos];
+	my $p2 = $prot2[$ppos];
+	my ($d1, $d2);
+	if ($p1 eq "-")
+	  {
+	    $d1 = "---";
+	  }
+	else
+	  {
+	    $d1 = substr($self->dna1, $d1p, 3);
+	    $d1p +=3;
+	  }
+	if ($p2 eq "-")
+	  {
+	    $d2 = "---";
+	  }
+	else
+	  {
+	    $d2 = substr($self->dna2, $d2p, 3);
+	    $d2p +=3;
+	  }
+	if ($self->dalign1)
+	  {
+	    $self->dalign1($self->dalign1.$d1);
+	    $self->dalign2($self->dalign2.$d2);
+	  }
+	else
+	  {
+	    $self->dalign1($d1);
+	    $self->dalign2($d2);
+	  }
+      }
+    return ($self->dalign1(), $self->dalign2());
+  }
 # The preceding line will help the module return a true value
 
