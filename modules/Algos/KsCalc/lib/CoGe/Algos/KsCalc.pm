@@ -366,8 +366,8 @@ sub prot_calc_pid
  Argument  : two strings (two sequences)
  Throws    : undef + errors to STDOUT if either sequence is not defined or
              if the sequences are not of equal length
- Comment   : 
-           : 
+ Comment   : The calculation of Num_identical_charaters / total_Num_characters
+           : uses all non-gap characters from the $seq1 to calculate total_Num_characters
 See Also   : 
 
 =cut
@@ -390,11 +390,12 @@ sub calc_pid
       }
     my @seq1 = split //, $seq1;
     my @seq2 = split //, $seq2;
-    my $total = scalar @seq1;
+    my $total = 0;
     my $id = 0;
-    for (my $i = 0; $i < $total; $i++)
+    for (my $i = 0; $i < scalar @seq1; $i++)
       {
 	$id++ if $seq1[$i] eq $seq2[$i];
+	$total++ unless $seq1[$i] eq "-";
       }
     return $id/$total*100;
   }
