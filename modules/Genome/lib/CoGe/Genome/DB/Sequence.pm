@@ -32,21 +32,41 @@ DELETE annotation
 
 =head1 NAME
 
-Genome::DB::Sequence - Genome::DB::Sequence
+CoGe::Genome::DB::Sequence
 
 =head1 SYNOPSIS
 
-  use Genome::DB::Sequence
-  blah blah blah
+  use CoGe::Genome::DB::Sequence
+  my $seq = CoGe::Genome::DB::Sequence->search(feature_id=>$feat_id);
+  my $seq_type = $seq->seq_type();
+  my $feat = $seq->feat();
+  my ($feat_name) = $feat->name();
+  print ">" . $feat_name->name . " " . $feat_name->desc . " " . $seq_type->name . "\n";
+  print $seq->seq . "\n";
 
 
 =head1 DESCRIPTION
 
-Stub documentation for this module was created by ExtUtils::ModuleMaker.
-It looks like the author of the extension was negligent enough
-to leave the stub unedited.
+The sequence table in the genomes database stores a sequence associated with a feature.
+Since this database is designed to store genomic sequences and associated information, 
+the sequences stored for a feature in the sequence table are usually translated protein 
+sequences. (The actual DNA genomic sequence is stored in the genomic_sequence table of 
+the database.)  This table is related to the feature and sequence_type tables.
 
-Blah blah blah.
+This object inherits from CoGe::Genome::DB which in turn inherits from Class::DBI.
+Class::DBI provides the basic methods for creating accessor methods for accessing
+table information.  Please see manual pages for Class::DBI for additional information.
+
+The columns for this table are:
+ sequence_id
+ sequence_type_id
+ sequence_data
+ feature_id
+
+Related objects that can be accessed through this object are:
+ CoGe::Genome::DB::Sequence_type
+ CoGe::Genome::DB::Feature
+
 
 
 =head1 USAGE
@@ -64,10 +84,7 @@ Blah blah blah.
 =head1 AUTHOR
 
 	Eric Lyons
-	CPAN ID: AUTHOR
-	XYZ Corp.
 	elyons@nature.berkeley.edu
-	http://a.galaxy.far.far.away/modules
 
 =head1 COPYRIGHT
 
@@ -81,6 +98,12 @@ LICENSE file included with this module.
 
 =head1 SEE ALSO
 
+CoGe::Genome
+CoGe::Genome::DB
+CoGe::Genome::DB::Sequence_type
+CoGe::Genome::DB::Feature
+Class::DBI
+
 perl(1).
 
 =cut
@@ -88,23 +111,24 @@ perl(1).
 ############################################# main pod documentation end ##
 
 
-################################################ subroutine header begin ##
+=head2 Accessor Functions
 
-=head2 sample_function
+sequence_id      =>  database entry id
+id               =>  alias for sequence_id
+sequence_type_id =>  returns the related CoGe::Genome::DB::Sequence_type object
+sequence_type    =>  alias for sequence_type_id
+seq_type         =>  alias for sequence_type_id
+type             =>  alias for sequence_type_id
+featrue_id       =>  returns the related CoGe::Genome::DB::Feature object
+feature          =>  alias for feature_id
+feat             =>  alias for feature_id
+sequence_data    =>  sequence data stored in the object
+seq_data         =>  alias for sequence_data
+seq              =>  alias for sequence_data
+new              =>  creates a new object
 
- Usage     : How to use this function/method
- Purpose   : What it does
- Returns   : What it returns
- Argument  : What it wants to know
- Throws    : Exceptions and other anomolies
- Comments  : This is a sample subroutine header.
-           : It is polite to include more pod and fewer comments.
-
-See Also   : 
 
 =cut
-
-################################################## subroutine header end ##
 
 
 sub new

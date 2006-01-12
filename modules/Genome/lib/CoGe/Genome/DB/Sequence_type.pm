@@ -24,22 +24,44 @@ BEGIN {
 
 =head1 NAME
 
-Genome::DB::Feature_type - Genome::DB::Feature_type
+CoGe::Genome::DB::Feature_type 
 
 =head1 SYNOPSIS
 
-  use Genome::DB::Feature_type
-  blah blah blah
+  use CoGe::Genome::DB::Feature_type;
+  my ($feat_type) = CoGe::Genome::DB::Feature_type->search_like(name=>"protein%");
+  print $feat_type->name,"\n";
+  print $feat_type->description,"\n";
+  print $feat_type->id,"\n";
+  my @seq_objs = $feat_type->sequences();
+  
+  
 
 
 =head1 DESCRIPTION
 
-Stub documentation for this module was created by ExtUtils::ModuleMaker.
-It looks like the author of the extension was negligent enough
-to leave the stub unedited.
+The sequence type table in the genomes database stores the name and description 
+of the type of sequence that is stored in the sequence table.  The sequence table
+in turn stores a specific sequence associated with a "feature" (See the feature
+module for more information on the feature table).  Since this database is designed
+to store genomic sequences and associated information, the sequences stored for
+a feature in the sequence table are usually translated protein sequences.  (The 
+actual DNA genomic sequence is stored in the genomic_sequence table of the database.)
+For that example, there would be an entry in the sequence_type table such that the 
+name would be"protein" and the description would be "translated protein".  
 
-Blah blah blah.
+This object inherits from CoGe::Genome::DB which in turn inherits from Class::DBI.
+Class::DBI provides the basic methods for creating accessor methods for accessing
+table information.  Please see manual pages for Class::DBI for additional information.
 
+
+The columns for this table are:
+ sequence_type_id
+ name
+ description
+
+Related objects that can be accessed through this object are:
+ CoGe::Genome::DB::Sequence
 
 =head1 USAGE
 
@@ -56,10 +78,7 @@ Blah blah blah.
 =head1 AUTHOR
 
 	Eric Lyons
-	CPAN ID: AUTHOR
-	XYZ Corp.
 	elyons@nature.berkeley.edu
-	http://a.galaxy.far.far.away/modules
 
 =head1 COPYRIGHT
 
@@ -73,6 +92,12 @@ LICENSE file included with this module.
 
 =head1 SEE ALSO
 
+CoGe::Genome
+CoGe::Genome::DB
+CoGe::Genome::DB::Sequence
+Class::DBI
+
+
 perl(1).
 
 =cut
@@ -80,24 +105,22 @@ perl(1).
 ############################################# main pod documentation end ##
 
 
-################################################ subroutine header begin ##
+=head2 Accessor Functions
 
-=head2 sample_function
 
- Usage     : How to use this function/method
- Purpose   : What it does
- Returns   : What it returns
- Argument  : What it wants to know
- Throws    : Exceptions and other anomolies
- Comments  : This is a sample subroutine header.
-           : It is polite to include more pod and fewer comments.
+name             =>  name 
+description      =>  description
+desc             =>  alias for description
+sequence_type_id =>  database entry id
+id               =>  alias for sequence_type_id
+sequences        =>  returns an array of CoGe::Genome::DB::Sequence objects or 
+                     a Class::DBI iterator
+seqs             =>  alias for sequences
 
-See Also   : 
+new              =>  creates a new object
+
 
 =cut
-
-################################################## subroutine header end ##
-
 
 sub new
 {
@@ -126,11 +149,23 @@ sub id
     return $self->sequence_type_id();
   }
 
-#sub delete
-#  {
-#    my $self = shift;
-#    
-#  }
+
+################################################ subroutine header begin ##
+
+=head2 
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
 
 1; #this line is important and will help the module return a true value
 
