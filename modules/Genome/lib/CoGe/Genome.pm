@@ -737,6 +737,43 @@ sub get_seq_type_obj
     return $self->get_sequence_type_obj();
   }
 
+
+################################################ subroutine header begin ##
+
+=head2 get_feature_by_name_and_info_id
+
+ Usage     : my @feats = $genome_obj->get_feature_by_name_and_info_id(name=>$name, id=>$id)
+ Purpose   : get feature objects based on a name and a data_information id
+ Returns   : wantarray of CoGe::Genome::Feature objects
+ Argument  : a hash of key/value pairs
+               name=> a string that is the name of a feature to be fetched by $self->get_feature_by_name
+               id=>   an integer that is the database id from the data_information table
+                      the id can be obtained from a data_information object
+ Throws    : none
+ Comments  : 
+
+See Also   : sub get_feature_by_name
+             CoGe::Data_information for information on that object
+
+=cut
+
+################################################## subroutine header end ##
+
+sub get_feature_by_name_and_info_id
+  {
+    my $self = shift;
+    my %opts = @_;
+    my ($name) = $opts{name} || $opts{NAME} || shift;
+    my ($id) = $opts{info_id} || $opts{id} || $opts{ID} || shift;
+    my @feats;
+    foreach my $feat ($self->get_feature_by_name($name))
+      {
+	push @feats, $feat if $feat->data_information->id eq $id;
+      }
+    return wantarray ? @feats : \@feats;
+  }
+
+
 ################################################ subroutine header begin ##
 
 =head2 get_feature_by_name
@@ -760,7 +797,8 @@ sub get_feature_by_name
   {
     my $self = shift;
     my $name = shift;
-    return map {$_->feature} $self->get_feat_name_obj->search(name=>$name)
+    my @feats = map {$_->feature} $self->get_feat_name_obj->search(name=>$name);
+    return wantarray ? @feats : \@feats;
   }
 
 
