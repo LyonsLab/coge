@@ -14,6 +14,11 @@ BEGIN {
     __PACKAGE__->table('feature_name');
     __PACKAGE__->columns(All=>qw{feature_name_id name description feature_id});
     __PACKAGE__->has_a(feature_id=>'CoGe::Genome::DB::Feature');
+    __PACKAGE__->set_seq(search_name=>qq{
+SELECT name
+  FROM feature_name
+ WHERE name like ?
+});
      __PACKAGE__->set_sql(delete_data_information=>qq{
 DELETE feature_name 
   FROM feature_name
@@ -86,23 +91,6 @@ perl(1).
 ############################################# main pod documentation end ##
 
 
-################################################ subroutine header begin ##
-
-=head2 sample_function
-
- Usage     : How to use this function/method
- Purpose   : What it does
- Returns   : What it returns
- Argument  : What it wants to know
- Throws    : Exceptions and other anomolies
- Comments  : This is a sample subroutine header.
-           : It is polite to include more pod and fewer comments.
-
-See Also   : 
-
-=cut
-
-################################################## subroutine header end ##
 
 
 sub new
@@ -138,6 +126,43 @@ sub id
     return $self->feature_name_id();
   }
 
+################################################ subroutine header begin ##
+
+=head2 search_name
+
+ Usage     : my @names = $feat_name_obj->search_name($name);
+ Purpose   : fetches all the feature names using a "like" call to the database
+           : THIS DOES NOT RETURN feature_name objects!
+ Returns   : an a array or arrayref based on wantarray
+ Argument  : a string for a database search using a "like" call
+           : for example, the wild card for a like call is "%" so
+             a search for "at1g01%" will return anything in the databaes
+             that begins with "at1g01".  Likewise, if you wish to search for
+             somethat that contains "1g" you would submit the string "%1g%"
+ Throws    : undef if nothing is passed in.
+ Comments  : This routines searches the database for names and returns
+           : them without creating feature_name objects.  Thus, this routine
+             is much quicker than the usual one supplied by Class::DBI
+             E.g.: $feat_name_obj->search_like(name=>'at1g01%')
+
+See Also   : Class::DBI
+
+=cut
+
+################################################## subroutine header end ##
+
+
+sub search_name
+  {
+    my $self = shift;
+    my $name = shift;
+    return unless $name;
+    my $sth = $self->sql_search_name();
+    $sth->execute($name);
+    my $names = $sth->fetchall_arrayref();
+    return wantarray? @$names : $names;
+  }
+
 sub delete_data_information
   {
     my $self = shift;
@@ -147,6 +172,23 @@ sub delete_data_information
     return $sth->execute($id);
   }
 
+################################################ subroutine header begin ##
+
+=head2 sample_function
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
 
 1; #this line is important and will help the module return a true value
 
