@@ -241,7 +241,7 @@ sub annotation_pretty_print
     $anno_obj->Val_delimit("\n");
     $anno_obj->Add_type(0);
     $anno_obj->String_end("\n");
-    $anno_obj->add_Annot(new CoGe::Genome::Accessory::Annotation(Type=>"Chromosome", Values=>[$self->chr, "".$self->begin_location."-".$self->end_location.""."(".$self->strand.")"], Type_delimit=>": ", Val_delimit=>" "));
+    $anno_obj->add_Annot(new CoGe::Genome::Accessory::Annotation(Type=>"Location", Values=>["Chr ".$self->chr, "".$self->begin_location."-".$self->end_location.""."(".$self->strand.")"], Type_delimit=>"\n\t", Val_delimit=>" "));
     foreach my $anno ($self->annos)
       {
 	my $type = $anno->type();
