@@ -283,21 +283,24 @@ sub annotation_pretty_print_html
     $anno_obj->Val_delimit("\n<BR>\n");
     $anno_obj->Add_type(0);
     $anno_obj->String_end("\n<BR>\n");
-    $anno_obj->add_Annot(new CoGe::Genome::Accessory::Annotation(Type=>"Location", Values=>["Chr ".$self->chr, "".$self->begin_location."-".$self->end_location.""."(".$self->strand.")"], Type_delimit=>"\n<BR><li>", Val_delimit=>" "));
+    $anno_obj->add_Annot(new CoGe::Genome::Accessory::Annotation(Type=>"<font class=\"annotation\">Location</font>", Values=>["Chr ".$self->chr, "".$self->begin_location."-".$self->end_location.""."(".$self->strand.")"], Type_delimit=>"\n<BR><li>", Val_delimit=>" "));
     foreach my $anno ($self->annos)
       {
 	my $type = $anno->type();
 	my $group = $type->group();
-	my $anno_type = new CoGe::Genome::Accessory::Annotation(Type=>$type->name);
-	$anno_type->Val_delimit("\n<li>\n");
+	my $anno_name = $type->name;
+	$anno_name = "<font class=\"annotation\">". $anno_name."</font>" unless ref($group) =~ /group/i;
+	
+	my $anno_type = new CoGe::Genome::Accessory::Annotation(Type=>$anno_name);
+	$anno_type->Val_delimit("\n<li>");
 
 	$anno_type->add_Annot($anno->annotation);
 	if (ref ($group) =~ /group/i)
 	  {
-	    my $anno_g = new CoGe::Genome::Accessory::Annotation(Type=>$group->name);
+	    my $anno_g = new CoGe::Genome::Accessory::Annotation(Type=>"<font class=\"annotation\">".$group->name."</font>");
 	    $anno_g->add_Annot($anno_type);
 	    $anno_g->Type_delimit("\n<li>");
-	    $anno_g->Val_delimit("\n<li>\n");
+	    $anno_g->Val_delimit("\n<li>");
 #	    $anno_g->Val_delimit(" ");
 	    $anno_obj->add_Annot($anno_g);
 	  }
@@ -307,7 +310,7 @@ sub annotation_pretty_print_html
 	    $anno_obj->add_Annot($anno_type);
 	  }
       }
-    my $anno_type = new CoGe::Genome::Accessory::Annotation(Type=>"Name(s)");
+    my $anno_type = new CoGe::Genome::Accessory::Annotation(Type=>"<font class=\"annotation\">"."Name(s)"."</font>");
     $anno_type->Type_delimit("\n<BR><li>");
     $anno_type->Val_delimit("\n<li>");
     foreach my $name ($self->names)
