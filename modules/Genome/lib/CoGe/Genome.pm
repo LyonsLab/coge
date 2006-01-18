@@ -30,7 +30,7 @@ BEGIN {
 
 
 ########################################### main pod documentation begin ##
-# Below is the stub of documentation for your module. You better edit it!
+
 
 
 =head1 NAME
@@ -64,10 +64,7 @@ Genome - Genome
 =head1 AUTHOR
 
 	Eric Lyons
-	CPAN ID: AUTHOR
-	XYZ Corp.
 	elyons@nature.berkeley.edu
-	http://a.galaxy.far.far.away/modules
 
 =head1 COPYRIGHT
 
@@ -770,6 +767,34 @@ sub get_feature_by_name_and_info_id
       {
 	push @feats, $feat if $feat->data_information->id eq $id;
       }
+    return wantarray ? @feats : \@feats;
+  }
+
+
+################################################ subroutine header begin ##
+
+=head2 get_feature_by_name_and_version
+
+ Usage     : my @feats = $genome_obj->get_feature_by_name_and_version(name=>$name, version=>$version)
+ Purpose   : get feature objects based on a name and a data_information version number
+ Returns   : wantarray of CoGe::Genome::Feature objects
+ Argument  : a hash of key/value pairs
+               name=> a string that is the name of a feature to be fetched by $self->get_feature_by_name
+               version=>   an integer.  This is obtained from a data_information object.
+ Throws    : none
+ Comments  : 
+
+See Also   : sub get_feature_by_name
+             CoGe::Data_information for information on that object
+
+=cut
+
+################################################## subroutine header end ##
+
+sub get_feature_by_name_and_version
+  {
+    my $self = shift;
+    my @feats = $self->get_feature_obj->get_features_by_name_and_version(@_);
     return wantarray ? @feats : \@feats;
   }
 
