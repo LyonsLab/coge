@@ -22,6 +22,14 @@ BEGIN {
     __PACKAGE__->has_many('locations'=>'CoGe::Genome::DB::Location');
     __PACKAGE__->has_many('sequences'=>'CoGe::Genome::DB::Sequence');
     __PACKAGE__->has_many('annotations'=>'CoGe::Genome::DB::Annotation');
+    __PACKAGE__->seq_sql('select_features_by_name_and_version' = > qq{
+SELECT f.feature_id
+  FROM feature f
+  JOIN data_information di USING (data_information_id)
+  JOIN feature_name fn USING (feature_id)
+ WHERE fn.name = ?
+   AND di.vresion = ?
+});
     __PACKAGE__->set_sql ('select_features_in_range' => qq{
 SELECT DISTINCT f.feature_id
   FROM feature f
@@ -388,7 +396,7 @@ sub strand
 
 =head2 get_features_in_region
 
- Usage     : $object->get_features in region(start   => $start, 
+ Usage     : $object->get_features_in_region(start   => $start, 
                                              stop    => $stop, 
                                              chr     => $chr,
                                              info_id => $data_info->id());
@@ -428,6 +436,83 @@ sub get_features_in_region
     return wantarray ? @feats : \@feats;
   }
 
+################################################ subroutine header begin ##
+
+=head2 get_features_by_name_and_data_information_version
+
+ Usage     : $object->get_features_by_name_and_data_information_version(name   => $name, 
+                                                                        version=> $ver);
+ Purpose   : gets all the features based on a name and data information version
+ Returns   : an array or an array_ref of feature objects (wantarray)
+ Argument  : name   => genomic start position
+             version=> data_information version (obtained from a
+                        CoGe::Data_information object)
+ Throws    : undef if $name or $ver are undefined
+ Comments  : the name is obtained from a join to the feature_name table
+             the version is obtained from a join to the data_information table
+
+See Also   : CoGe::Genome::DB::Data_information
+
+=cut
+
+################################################## subroutine header end ##
+
+
+sub get_features_by_name_and_data_information_version
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $name = $opts{name} || $opts{NAME};
+    my $ver = $opts{version} || $opts{VERSION} || $opts{ver} || $opts{VER};
+    my $sth = $self->sql_select_features_by_name_and_version();
+    return unless defined $name && defined $ver;
+    $sth->execute($name, $ver);
+    my @feats;
+    while (my $q = $sth->fetch())
+      {
+	push @feats, $self->search(feature_id=>$q->[0]);
+      }
+    return wantarray ? @feats : \@feats;
+  }
+
+
+################################################ subroutine header begin ##
+
+=head2 get_features_by_name_and_data_info_version
+
+ Usage     : $object->get_features_by_name_and_data_info_version(name   => $name, 
+                                                                 version=> $ver);
+ Purpose   : alias for get_features_by_name_and_data_information_version
+
+=cut
+
+################################################## subroutine header end ##
+
+
+sub get_features_by_name_and_data_info_version
+  {
+    my $self = shift;
+    return ($self->get_features_by_name_and_data_information_version(@_));
+  }
+
+################################################ subroutine header begin ##
+
+=head2 get_features_by_name_and_version
+
+ Usage     : $object->get_features_by_name_and_version(name   => $name, 
+                                                       version=> $ver);
+ Purpose   : alias for get_features_by_name_and_data_information_version
+
+=cut
+
+################################################## subroutine header end ##
+
+
+sub get_features_by_name_and_version
+  {
+    my $self = shift;
+    return ($self->get_features_by_name_and_data_information_version(@_));
+  }
 
 1; #this line is important and will help the module return a true value
 
