@@ -791,7 +791,7 @@ See Also   : sub get_feature_by_name
 
 ################################################## subroutine header end ##
 
-sub get_feature_by_name_and_version
+sub get_features_by_name_and_version
   {
     my $self = shift;
     my @feats = $self->get_feature_obj->get_features_by_name_and_version(@_);
