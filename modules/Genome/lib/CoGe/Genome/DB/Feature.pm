@@ -22,13 +22,13 @@ BEGIN {
     __PACKAGE__->has_many('locations'=>'CoGe::Genome::DB::Location');
     __PACKAGE__->has_many('sequences'=>'CoGe::Genome::DB::Sequence');
     __PACKAGE__->has_many('annotations'=>'CoGe::Genome::DB::Annotation');
-    __PACKAGE__->seq_sql('select_features_by_name_and_version' = > qq{
+    __PACKAGE__->set_sql('select_features_by_name_and_version' => qq{
 SELECT f.feature_id
   FROM feature f
   JOIN data_information di USING (data_information_id)
   JOIN feature_name fn USING (feature_id)
  WHERE fn.name = ?
-   AND di.vresion = ?
+   AND di.version = ?
 });
     __PACKAGE__->set_sql ('select_features_in_range' => qq{
 SELECT DISTINCT f.feature_id
