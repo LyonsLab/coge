@@ -24,7 +24,6 @@ DELETE genomic_sequence
 SELECT *
   FROM genomic_sequence
  WHERE data_information_id = ?
-   AND organism_id = ?
    AND chromosome = ?
    AND (
        (start <= ? && stop >= ?)
@@ -33,9 +32,14 @@ SELECT *
    )
  ORDER BY start
 });
-
-  }
-
+    __PACKAGE__->set_sql(last_position=>qq{
+SELECT stop
+  FROM genomic_sequence
+ WHERE data_information_id = ?
+ GROUP BY stop DESC
+ LIMIT 1
+});
+}
 
 ########################################### main pod documentation begin ##
 # Below is the stub of documentation for your module. You better edit it!
@@ -232,7 +236,7 @@ sub delete_data_information
              stop    => genomic stop position
              chr     => chromosome
              org_id  => organism id in database (obtained from a
-                        CoGe::Organism object)
+                        CoGe::Organism object) //OBSOLETE!
              info_id => data_information id in database (obtained from a
                         CoGe::Data_information object)
              strand  => 1 or -1.  Default 1.
@@ -259,7 +263,7 @@ sub get_sequence
     my $info_id = $opts{info_id} || $opts{INFO_ID} || $opts{data_info_id} || $opts{DATA_INFO_ID};
     my $strand = $opts{strand} || $opts{STRAND} || 1;
     my $sth = $self->sql_get_sequence();
-    $sth->execute($info_id, $org_id, $chr, $start, $start, $stop, $stop, $start, $stop);
+    $sth->execute($info_id, $chr, $start, $start, $stop, $stop, $start, $stop);
     my ($seq, $seq_start, $seq_stop); #(4, 1, 2)
     while (my $q = $sth->fetch())
       {
@@ -285,6 +289,19 @@ sub get_sequence
     return $seq;
   }
 
+sub get_data_information_chromosome_sequence
+  {
+    my $self = shift;
+    my $di = shift;
+    my $chr = shift;
+    my $id = ref ($di) =~ /information/i ? $di->id : $di;
+    my $sth = $self->sql_last_position();
+    $sth->execute($id);
+    my $q = $sth->fetch();
+    my $stop = $q->[0];
+    $sth->finish;
+    return $self->get_sequence(start=>1, stop=>$stop, chr=>$chr, info_id=>$id);
+  }
 
 1; #this line is important and will help the module return a true value
 

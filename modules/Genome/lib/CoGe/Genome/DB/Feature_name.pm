@@ -14,7 +14,7 @@ BEGIN {
     __PACKAGE__->table('feature_name');
     __PACKAGE__->columns(All=>qw{feature_name_id name description feature_id});
     __PACKAGE__->has_a(feature_id=>'CoGe::Genome::DB::Feature');
-    __PACKAGE__->set_seq(search_name=>qq{
+    __PACKAGE__->set_sql(search_name=>qq{
 SELECT name
   FROM feature_name
  WHERE name like ?
@@ -159,8 +159,12 @@ sub search_name
     return unless $name;
     my $sth = $self->sql_search_name();
     $sth->execute($name);
-    my $names = $sth->fetchall_arrayref();
-    return wantarray? @$names : $names;
+    my @names;
+    while (my $q = $sth->fetch)
+      {
+	push @names, $q->[0];
+      }
+    return wantarray? @names : \@names;
   }
 
 sub delete_data_information

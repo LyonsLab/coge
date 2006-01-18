@@ -276,6 +276,50 @@ sub annotation_pretty_print
     return $anno_obj->to_String;
   }
 
+sub annotation_pretty_print_html
+  {
+    my $self = shift;
+    my $anno_obj = new CoGe::Genome::Accessory::Annotation(Type=>"anno");
+    $anno_obj->Val_delimit("\n<BR>\n");
+    $anno_obj->Add_type(0);
+    $anno_obj->String_end("\n<BR>\n");
+    $anno_obj->add_Annot(new CoGe::Genome::Accessory::Annotation(Type=>"Location", Values=>["Chr ".$self->chr, "".$self->begin_location."-".$self->end_location.""."(".$self->strand.")"], Type_delimit=>"\n<BR><li>", Val_delimit=>" "));
+    foreach my $anno ($self->annos)
+      {
+	my $type = $anno->type();
+	my $group = $type->group();
+	my $anno_type = new CoGe::Genome::Accessory::Annotation(Type=>$type->name);
+	$anno_type->Val_delimit("\n<li>\n");
+
+	$anno_type->add_Annot($anno->annotation);
+	if (ref ($group) =~ /group/i)
+	  {
+	    my $anno_g = new CoGe::Genome::Accessory::Annotation(Type=>$group->name);
+	    $anno_g->add_Annot($anno_type);
+	    $anno_g->Type_delimit("\n<li>");
+	    $anno_g->Val_delimit("\n<li>\n");
+#	    $anno_g->Val_delimit(" ");
+	    $anno_obj->add_Annot($anno_g);
+	  }
+	else
+	  {
+	    $anno_type->Type_delimit("\n<li>");
+	    $anno_obj->add_Annot($anno_type);
+	  }
+      }
+    my $anno_type = new CoGe::Genome::Accessory::Annotation(Type=>"Name(s)");
+    $anno_type->Type_delimit("\n<BR><li>");
+    $anno_type->Val_delimit("\n<li>");
+    foreach my $name ($self->names)
+      {
+	$anno_type->add_Annot($name->name);
+      }
+    
+    $anno_obj->add_Annot($anno_type);
+    return $anno_obj->to_String;
+  }
+
+
 
 sub genbank_location_string
   {
@@ -300,21 +344,27 @@ sub genbank_location_string
 sub begin_location
   {
     my $self = shift;
-    my ($val) = sort {$a->begin <=> $b->begin} $self->locs;
+    my @locs = $self->locs;
+    return unless @locs;
+    my ($val) = sort {$a->begin <=> $b->begin} @locs;
     return $val->begin;
   }
 
 sub end_location
   {
     my $self = shift;
-    my ($val) = sort {$b->end <=> $a->end} $self->locs;
+    my @locs = $self->locs;
+    return unless @locs;
+    my ($val) = sort {$b->end <=> $a->end} @locs;
     return $val->end;
   }
 
 sub chromosome
   {
     my $self = shift;
-    return $self->locs->next->chr();
+    my $loc = $self->locs->next;
+    return unless $loc;
+    return $loc->chr();
   }
 
 sub chr
@@ -326,8 +376,11 @@ sub chr
 sub strand
   {
     my $self = shift;
-    return $self->locs->next->strand();
+    my $loc = $self->locs->next;
+    return unless $loc;
+    return $loc->strand();
   }
+
 ################################################ subroutine header begin ##
 
 =head2 get_features_in_region
@@ -374,4 +427,5 @@ sub get_features_in_region
 
 
 1; #this line is important and will help the module return a true value
+
 
