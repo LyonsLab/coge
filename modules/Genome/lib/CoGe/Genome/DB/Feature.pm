@@ -39,6 +39,10 @@ SELECT DISTINCT f.feature_id
    AND chromosome = ?
    AND f.data_information_id = ?;
 });
+  __PACKAGE__->set_sql ('select_all_feature_ids' => qq{
+SELECT feature_id 
+  FROM feature
+});
 }
 
 
@@ -512,6 +516,33 @@ sub get_features_by_name_and_version
   {
     my $self = shift;
     return ($self->get_features_by_name_and_data_information_version(@_));
+  }
+
+################################################ subroutine header begin ##
+
+=head2 get_all_feature_ids
+
+ Usage     : my @ids = $object->get_all_feature_ids
+ Purpose   : get all the feature ids from the database
+ Returns   : an array or arrayref based on wantarray
+ Argument  : none
+ Comments  : a simple method to get all the feature ids without creating 
+             CoGe::Genome::DB::Feature objects (which could be potentially
+             dangerous)
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub get_all_feature_ids
+  {
+    my $self = shift;
+    my $sth = $self->sql_select_all_feature_ids;
+    $sth->execute;
+    my @ids = map {$_->[0]} $sth->fetch;
+    return wantarray ? @ids : \@ids;
   }
 
 1; #this line is important and will help the module return a true value
