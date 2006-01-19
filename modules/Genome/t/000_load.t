@@ -109,7 +109,6 @@ for (my $c=1; $c<=5; $c++)
 		      stop=>$stop,
 		      chromosome=>$c,
 		      sequence_data=>$seq,
-		      organism_id=>$org->id,
 		      data_information_id=>$di->id,
 		  });
 	$start = $stop+1;
@@ -117,15 +116,13 @@ for (my $c=1; $c<=5; $c++)
     my $seq = $gso->get_sequence(start=>10,
 				 stop =>20,
 				 chr  => $c,
-				 org_id=> $org->id,
 				 info_id=> $di->id,
 				 strand => 1,
 				 );
     my $seq2 = $gso->get_sequence(start=>10,
 				 stop =>20,
 				 chr  => $c,
-				 org_id=> $org->id,
-				 info_id=> $di->id,
+				  info_id=> $di->id,
 				 strand => -1,
 				 );
 }
