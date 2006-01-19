@@ -12,8 +12,7 @@ BEGIN {
     @EXPORT_OK   = qw ();
     %EXPORT_TAGS = ();
     __PACKAGE__->table('genomic_sequence');
-    __PACKAGE__->columns(All=>qw{genomic_sequence_id start stop chromosome sequence_data organism_id data_information_id});
-    __PACKAGE__->has_a(organism_id=>'CoGe::Genome::DB::Organism');
+    __PACKAGE__->columns(All=>qw{genomic_sequence_id start stop chromosome sequence_data data_information_id});
     __PACKAGE__->has_a(data_information_id=>'CoGe::Genome::DB::Data_information');
     __PACKAGE__->set_sql(delete_data_information=>qq{
 DELETE genomic_sequence 
@@ -131,24 +130,6 @@ sub new
     return ($self);
 }
 
-sub organism
-  {
-    my $self = shift;
-    return $self->organism_id();
-  }
-
-sub org
-  {
-    my $self = shift;
-    return $self->organism_id();
-  }
-
-sub species
-  {
-    my $self = shift;
-    return $self->organism_id();
-  }
-
 sub data_information
   {
     my $self = shift;
@@ -235,8 +216,6 @@ sub delete_data_information
  Argument  : start   => genomic start position
              stop    => genomic stop position
              chr     => chromosome
-             org_id  => organism id in database (obtained from a
-                        CoGe::Organism object) //OBSOLETE!
              info_id => data_information id in database (obtained from a
                         CoGe::Data_information object)
              strand  => 1 or -1.  Default 1.
@@ -259,7 +238,6 @@ sub get_sequence
     $start = 1 if $start < 1;
     my $stop = $opts{'stop'} || $opts{STOP} || $opts{end} || $opts{END};
     my $chr = $opts{chr} || $opts{CHR} || $opts{chromosome} || $opts{CHROMOSOME};
-    my $org_id = $opts{org_id} || $opts{organism_id} || $opts{ORG_ID} || $opts{ORGANISMID};
     my $info_id = $opts{info_id} || $opts{INFO_ID} || $opts{data_info_id} || $opts{DATA_INFO_ID};
     my $strand = $opts{strand} || $opts{STRAND} || 1;
     my $sth = $self->sql_get_sequence();
