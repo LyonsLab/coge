@@ -14,7 +14,6 @@ BEGIN {
     __PACKAGE__->table('organism', 'organism_id');
     __PACKAGE__->columns(All=>qw{organism_id name description});
     __PACKAGE__->has_many(data_information=>'CoGe::Genome::DB::Data_information');
-    __PACKAGE__->has_many(genomic_sequences=>'CoGe::Genome::DB::Genomic_sequence');
 
 }
 
@@ -140,12 +139,6 @@ sub infos
 #    my $self = shift;
 #    return $self->features();
 #  }
-
-sub genomic_seqs
-  {
-    my $self = shift;
-    return $self->genomic_sequences();
-  }
 
 sub desc
   {
