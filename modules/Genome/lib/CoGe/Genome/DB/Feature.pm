@@ -541,7 +541,7 @@ sub get_all_feature_ids
     my $self = shift;
     my $sth = $self->sql_select_all_feature_ids;
     $sth->execute;
-    my @ids = map {$_->[0]} $sth->fetch;
+    my @ids = map {$_->[0]} $sth->fetchall;
     return wantarray ? @ids : \@ids;
   }
 
