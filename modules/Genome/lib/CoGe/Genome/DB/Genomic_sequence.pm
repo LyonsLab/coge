@@ -208,7 +208,6 @@ sub delete_data_information
  Usage     : $object->get_sequence(start   => $start, 
                                    stop    => $stop, 
                                    chr     => $chr,
-                                   org_id  => $org->id(), 
                                    info_id => $data_info->id());
 
  Purpose   : gets the genomic sequence for the specified conditions
@@ -222,7 +221,7 @@ sub delete_data_information
                         if negative strand is requested, the complement
                         of the dna seq will be returned
  Throws    : undef if no sequence is obtained
- Comments  : You must  provide an org_id and info_id
+ Comments  : You must  provide an info_id
 
 See Also   : 
 
