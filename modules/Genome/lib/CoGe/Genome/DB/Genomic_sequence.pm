@@ -266,17 +266,26 @@ sub get_sequence
     return $seq;
   }
 
+sub get_last_position
+  {
+    my $self = shift;
+    my $di = shift || $self->data_info->id;
+    my $id = ref ($di) =~ /information/i ? $di->id : $di;
+    my $sth = $self->sql_last_position();
+    $sth->execute($id);
+    my $q = $sth->fetch();
+    $sth->finish;
+    my $stop = $q->[0];
+    return $stop;
+  }
+
 sub get_data_information_chromosome_sequence
   {
     my $self = shift;
     my $di = shift;
     my $chr = shift;
     my $id = ref ($di) =~ /information/i ? $di->id : $di;
-    my $sth = $self->sql_last_position();
-    $sth->execute($id);
-    my $q = $sth->fetch();
-    my $stop = $q->[0];
-    $sth->finish;
+    my $stop = $self->get_last_position($id);
     return $self->get_sequence(start=>1, stop=>$stop, chr=>$chr, info_id=>$id);
   }
 
