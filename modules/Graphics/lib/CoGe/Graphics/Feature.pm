@@ -6,14 +6,17 @@ use GD;
 
 BEGIN 
   {
-    use vars qw($VERSION $DEFAULT_COLOR);
+    use vars qw($VERSION $DEFAULT_COLOR $FONTTT $FONT);
     $VERSION     = '0.1';
     $DEFAULT_COLOR = [0,0,0];
+    $FONTTT = "/usr/lib/perl5/site_perl/CoGe/fonts/arial.ttf"; #path to true-type font
+    $FONT = GD::Font->MediumBold; #default GD font
     __PACKAGE__->mk_accessors(
 "DEBUG",
 "_gd",
 "image_height", "image_width", #generic image size for scaling later by Chromosome.pm
 "label", #feature label
+"label_location", #location to print label relative to image:  top, bottom, left, right, on.
 "start", #chromosomal start position
 "stop", #chromosomal stop position
 "strand", #top strand ("1") or bottom strand ("-1")
@@ -23,8 +26,16 @@ BEGIN
 "color", #color of feature e.g. [200,255,200]
 "bgcolor", #background color of feature e.g.[255,255,255]
 "order", #ordering number with which to display features (Features with the same order will be displayed at the same "level" or "track" on the image") 
+"description", #feature description
 );
   }
+
+sub desc
+  {
+    my $self = shift;
+    return $self->description(@_);
+  }
+
 sub ih 
   {
     my $self = shift;
@@ -54,8 +65,41 @@ sub get_color
       }
     return $self->get_color($DEFAULT_COLOR) unless (@colors >2 && @colors < 5);
     my $gd = $self->gd;
-    return $gd->colorResolve(@colors)
+    if (@colors == 4)
+      {
+	return $gd->colorAllocateAlpha(@colors);
+      }
+    else
+      {
+	return $gd->colorResolve(@colors)
+      }
   }
+
+sub _gd_string
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $text = $opts{text} || $opts{TEXT};
+    return 0 unless $text;
+    my $x = $opts{x} || $opts{X} || 0;
+    my $y = $opts{'y'} || $opts{Y} || 0;
+    my $color = $opts{color} || $opts{COLOR};
+    my $size = $opts{size} || $opts{SIZE} || $self->padding;
+    my $angle = $opts{angle} || $opts{ANGLE} || 0;
+    $color = $self->get_color($color);
+    my $gd = $self->gd;
+    
+    if (-r $FONTTT)
+      {
+	$gd->stringFT($color, $FONTTT, $size, $angle, $x, $y+$size, $text);
+      }
+    else
+      {
+	$gd->string($FONT, $x, $y, $text, $color);
+      }
+  }
+
+
 
 sub name
   {
@@ -87,7 +131,7 @@ sub gd
 	$gd = new GD::Image($wid, $hei,[1]);
 	$self->_gd($gd);
 	my $white = $self->get_color(255,255,255);
-#	$gd->transparent($white);
+	$gd->transparent($white);
 	$gd->interlaced('true');
 
 	$self->_post_initialize(%opts);
