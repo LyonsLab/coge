@@ -10,7 +10,7 @@ BEGIN {
     $VERSION     = '0.1';
     $DEFAULT_WIDTH = 200;  #default image width pixels
     $PADDING = 10; #default value to pad image height
-    $MAG_STEP_HEIGHT = 20; #the amount to increase the height of the chromosome picture for each magnification
+    $MAG_STEP_HEIGHT = 30; #the amount to increase the height of the chromosome picture for each magnification (features increase half this height)
     $MAX_MAG = 10;     #default number of "units" (e.g. base pairs) to show when maximally zoomed)
     $MAG_SCALE_TYPE = "log"; #default image scaling.  options "log", "linear"
     $DEFAULT_COLOR = [0,0,0];
@@ -21,8 +21,8 @@ BEGIN {
     $SCALE_HEIGHT = 20; #height (in pixels) of the scale
     $FONTTT = "/usr/lib/perl5/site_perl/CoGe/fonts/arial.ttf"; #path to true-type font
     $FONT = GD::Font->MediumBold; #default GD font
-    $FEATURE_HEIGHT = 2;
-    $NUM_MAG = 20; #number of magnification steps;
+    $FEATURE_HEIGHT = 4;
+    $NUM_MAG = 10; #number of magnification steps;
     __PACKAGE__->mk_accessors(
 "DEBUG",
 "chr_length",
@@ -34,10 +34,10 @@ BEGIN {
 "_image_h_used", #storage for the amount of the image height used
 "_gd", #store GD object
 "draw_chromosome", "chr_inner_color", "chr_outer_color", "_chr_brush",
-"_chr_h1", "_chr_h2", #interal storage of chromosome image height positions
+"chr_center", "_chr_h1", "_chr_h2", #interal storage of chromosome image height positions
 "draw_scale", "scale_color", "tick_color", "scale_height",
 "_features",
-"labels", #flag to turn off the printing of labels;
+"labels", "fill_labels", #flag to turn off the printing of labels, fill_lables are specifically for filled features;
 );
 }
 
@@ -72,6 +72,7 @@ sub generate_png
       {
 	print $self->gd->png;
       }
+    $self->_gd(undef);
   }
 
 
@@ -108,17 +109,18 @@ sub set_image_height
     #this sub calculates how much height out picture needs based on options and features to be drawn
     my $self = shift;
     my $feat_height = $self->feature_height || $FEATURE_HEIGHT;
-    $self->feature_height($feat_height*$self->mag);
+    $feat_height = $feat_height*($self->mag);
     my $h = $self->padding; #give use some padding
     $h += $self->scale_height+$self->padding;# if $self->draw_scale; #scale image height
     my $chrh = $self->mag * $self->mag_step_height+$self->mag/2+$self->padding;# if $self->draw_chromosome; #chromosome image height
-    my $feath;
-    my $top_feat = $self->get_feats(last=>1, strand=>1);
-    $feath += $top_feat->order * ($self->feature_height+$self->padding)+$self->padding if $top_feat;
-    my $bot_feat = $self->get_feats(last=>1, strand=>-1);
-    $feath += $bot_feat->order * ($self->feature_height+$self->padding)+$self->padding if $bot_feat;
-    $h += $feath > $chrh ? $feath : $chrh;
-    print STDERR "\nImage Height: $h\n" if $self->DEBUG;
+    my $top_feat = $self->get_feats(last=>1, strand=>1, fill=>0);
+    my $tfh = $top_feat->order * ($feat_height+$self->padding)+2*$self->padding if $top_feat;
+    my $bot_feat = $self->get_feats(last=>1, strand=>-1, fill=>0);
+    my $bfh = $bot_feat->order * ($feat_height+$self->padding)+2*$self->padding if $bot_feat;
+    $h += $tfh > $chrh/2 ? $tfh : $chrh/2;
+    $self->chr_center($h);
+    $h += $bfh > $chrh/2 ? $bfh : $chrh/2;
+    print STDERR "Image Height: $h\n" if $self->DEBUG;
     $self->ih($h);
     $self->_image_h_used($self->padding);
 
@@ -136,7 +138,7 @@ sub generate_region
     $self->_draw_scale;# if $self->draw_scale;
     $self->_draw_chromosome;# if $self->draw_chromosome;
     $self->_draw_features;
-    $self->gd->fill($self->iw/2,$self->_image_h_used +( $self->ih - $self->_image_h_used)/2+1, $self->get_color($self->chr_inner_color));
+#    $self->gd->fill($self->iw/2,$self->_image_h_used +( $self->ih - $self->_image_h_used)/2+1, $self->get_color($self->chr_inner_color));
   }
 
 sub _draw_features
@@ -144,7 +146,7 @@ sub _draw_features
     my $self = shift;
     my $c = $self->_image_h_used+($self->ih - $self->_image_h_used)/2;
     print STDERR "Image used: ".$self->_image_h_used."  Image Height: ".$self->ih."  Center: $c\n" if $self->DEBUG;
-    foreach my $feat ($self->get_features)
+    foreach my $feat (sort {$b->fill <=> $a->fill} $self->get_features)
       {
 	#skip drawing features that are outside (by two times the range being viewed) the view
 	if ($feat->start)
@@ -155,14 +157,23 @@ sub _draw_features
 	  {
 	    next if $feat->stop < $self->_region_start-2*($self->_region_stop - $self->_region_start );
 	  }
-	my $offset = ($feat->order-1)*($self->feature_height+$self->padding);
-	my $y = $feat->strand =~ /-/ ? $c+ $offset+1: $c - $offset-$self->feature_height-1;
+	my $feat_h = $self->feature_height*$self->mag;
+	my $offset = ($feat->order-1)*($feat_h+$self->padding)+$self->padding;
+	$offset = 0 if $feat->fill;
+	$feat_h = abs($self->_chr_h1-$self->_chr_h2)/2 if $feat->fill;
+	my $y = $feat->strand =~ /-/ ? $c+ $offset+1: $c - $offset-$feat_h-1;
+	
 #	print STDERR "Feature offset: $y, Order: ", $feat->order,"\n";
-	$self->_draw_feature(feat=>$feat, 'y'=>$y, ih=>$self->feature_height);
+        my $sy;
+	if ($feat->fill)
+	  {
+	    $sy = $feat->strand =~ /-/ ? $c+1 : $c-11;
+	  }
+	$self->_draw_feature(feat=>$feat, 'y'=>$y, ih=>$feat_h, 'sy'=>$sy);
 	#may need to fill in color with $bgcolor. . .
 	if ($y > $self->_chr_h1 && $y < $self->_chr_h2)
 	  {
-	    $self->gd->fill($self->iw/2,$y-1, $self->get_color($self->chr_inner_color));
+	    #$self->gd->fill($self->iw/2,$y-1, $self->get_color($self->chr_inner_color));
 	  }
       }
   }
@@ -174,6 +185,7 @@ sub _draw_feature
     return 0 unless ref($feat) =~ /Feature/i;
     my $y = $opts{'y'} || $opts{Y};
     my $ih = $opts{'image_height'} || $opts{'ih'} || $opts{'IH'} || $feat->ih;
+    my $sy = $opts{'string_y'} || $opts{'sy'} || $y; #label y axis
     my $rb = $self->_region_start;
     my $re = $self->_region_stop;
     my $range = $re-$rb;
@@ -183,12 +195,15 @@ sub _draw_feature
     my $feat_range = $feat->stop-$feat->start;
 
     my $unit = $w/$range;
-    my $fs = $w* ($feat->start-$rb)/$range;#+($unit/2);
-    my $fe = $w* ($feat->end-$rb)/$range+$unit; 
-    my $fw = $fe - $fs; #calculate the width of the feature;
-    print STDERR "Drawing feature ".$feat->label.": ", $feat->start, "-", $feat->end,"Dimentions:",$fw,"x",$ih, "\n" if $self->DEBUG;
+    my $fs = int($w* ($feat->start-$rb)/$range);#+($unit/2);
+    my $fe = int($w* ($feat->end-$rb)/$range+$unit); 
+    my $fw = int($fe - $fs); #calculate the width of the feature;
+    return if $fw < 1; #skip drawing if less than one pix wide
+    print STDERR "Drawing feature ".$feat->label.": ", $feat->start, "-", $feat->end,"Dimentions:",$fw,"x",$ih, " at position: $fs,$y"."\n" if $self->DEBUG;
     $self->gd->copyResampled($feat->gd, $fs, $y,0,0, $fw, $ih, $feat->iw, $feat->ih);
-    $self->_gd_string(y=>$y+$feat->ih*.9, x=>$fs, text=>$feat->label, size=>10) if ($self->labels && $fw>5); #don't make the string unless the feature is at least 5 pixels wide
+  #  $self->_gd_string(y=>$y+$feat->ih*.9, x=>$fs, text=>$feat->label, size=>10) if ($self->labels && $fw>5); #don't make the string unless the feature is at least 5 pixels wide
+    $self->_gd_string(y=>$y, x=>$fs, text=>$feat->label, size=>10) if ($self->labels && $fw>5); #don't make the string unless the feature is at least 5 pixels wide
+    $self->_gd_string(y=>$sy, x=>$fs, text=>$feat->label, size=>10) if ($self->fill_labels && $feat->fill && $fw>5); #don't make the string unless the feature is at least 5 pixels wide
     return $y+$feat->ih+$self->padding;
   }
 
@@ -202,6 +217,7 @@ sub add_feature
   {
     my $self = shift;
     my @feats;
+    my $sort = 0;
     foreach (@_)
       {
 	push @feats, ref($_) =~ /array/i ? @$_ : $_;
@@ -210,18 +226,26 @@ sub add_feature
       {
 	$feat->strand(1) unless defined $feat->strand;
 	$feat->fill(0) unless $feat->fill;
-	$feat->label_location('bottom') unless $feat->label_location;
+	$feat->stop($feat->start) unless defined $feat->stop;
 	$feat->gd; #initialize feature;
 	if (ref($feat) =~ /Feature/i)
 	  {
 	    unless ($feat->order)
 	      {
-		my $last_feat = $self->get_feats(last=>1, strand=>$feat->strand);
+		my $last_feat = $self->get_feats(last=>1, strand=>$feat->strand, fill=>$feat->fill);
 		my $order = $last_feat ? $last_feat->order()+1 : 1;
 		$feat->order($order);
 	      }
-	    push @{$self->_features},$feat;
-	  }
+	    if ($sort)
+	      {
+	        my @feats = sort {$a->order <=> $b->order} @{$self->_features}, $feat;
+	        $self->_features(\@feats);
+              }
+	    else
+	      {
+	        push @{$self->_features},$feat;
+              }
+ 	  }
 	else
 	  {
 	    warn "Feature ($feat) does not appear to be a feature object.  Skipping. . .\n";
@@ -238,6 +262,8 @@ sub get_features
     my $type = $opts{type} || $opts{TYPE};
     my $last = $opts{last} || $opts{LAST}; #flag to get the highest order feature for a location
     my $strand = $opts{strand} || $opts{STRAND};
+    my $fill = $opts{fill};
+    $fill = $opts{FILL} unless defined $fill; #get filled features?
     return unless $self->_features;
     my @rfeats;
     foreach my $feat (@{$self->_features})
@@ -261,6 +287,10 @@ sub get_features
 	  {
 	    next unless $feat->type eq $type;
 	  }
+	if (defined $fill)
+	 {
+	   next unless $feat->fill eq $fill;
+	 }
 	push @rfeats, $feat
       }
     @rfeats = sort {$a->order <=> $b->order} @rfeats;
@@ -359,7 +389,7 @@ sub _make_ticks
 		      );
 	    my $t = $tick/$key . $end{$key};
 	    my $h = $text =~ /-/ ? $y2-1: $y1-1;
-	    $self->_gd_string(text=>$t,x=>$x+$unit+2, 'y'=>$h, size => ($y2-$y1)/2  );
+	    $self->_gd_string(text=>$t,x=>$x+$unit+2, 'y'=>$h, size => ($y2-$y1)/1.5  );
 	  }
 	$tick+= $div;
       }
@@ -482,9 +512,12 @@ sub mag_scale
 	else #log
 	  {
 	    my $rang = $self->chr_length;
-	    for my $i (1..$self->num_mag)
+	    my $step = 10**(log10($rang)/($self->num_mag));
+	    print STDERR "Log Magnification Step: $step, Num Mags: ", $self->num_mag,"n" if $self->DEBUG;
+	    $scale{1} = $rang;
+	    for my $i (2..$self->num_mag)
 	      {
-		$rang = ceil ($rang)/3;
+		$rang = ceil ($rang)/$step;
 		$rang = $self->max_mag if $rang < $self->max_mag;
 		$scale{$i} = $rang;
 	      }
@@ -689,7 +722,7 @@ sub new
     $self->scale_color($SCALE_COLOR);
     $self->tick_color($TICK_COLOR);
     $self->num_mag($NUM_MAG);
-#    $self->feature_height($FEATURE_HEIGHT);
+    $self->feature_height($FEATURE_HEIGHT);
     $self->mag(5);
     $self->_features([]);
     return $self;
