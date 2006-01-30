@@ -20,7 +20,7 @@ BEGIN
 "start", #chromosomal start position
 "stop", #chromosomal stop position
 "strand", #top strand ("1") or bottom strand ("-1")
-"placement", #will feature be inside or outside the chromosome picture (may default to another place depending on options used and magnification of chromosome) ("in" or "out")
+#"placement", #will feature be inside or outside the chromosome picture (may default to another place depending on options used and magnification of chromosome) ("in" or "out")
 "fill", #should feature fill area (if possible?)
 "type", #type of feature (e.g. gene)
 "color", #color of feature e.g. [200,255,200]
