@@ -1,0 +1,403 @@
+<HTML>
+<HEAD>
+ <TITLE><TMPL_VAR NAME=TITLE></TITLE>
+ <link rel="stylesheet" type="text/css" href="/CoGe/css/styled.css" />
+ <link rel="stylesheet" type="text/css" href="/CoGe/css/sddm.css" />
+ <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+</HEAD>
+<SCRIPT language="JavaScript">
+function submitform() {
+  document.main_form.submit();
+}
+function change( info ) {
+        document.getElementById("info").innerHTML = info;        
+}
+
+function changeColor(id, color) {
+  document.getElementById(id).style.color = color;
+}
+
+</SCRIPT>
+<BODY>
+<TABLE>
+ <TR>
+  <TD><a href="/CoGe" border=0><img src='/CoGe/picts/CoGe-logo.png' border=0></a>
+  <TD id="title"><font class="title"><TMPL_VAR NAME=TITLE></font></td>
+ </TR>
+</TABLE>
+<DIV id="results" ></DIV>
+<table width="100%" border="0" cellspacing="0" cellpadding="0" border=0>
+ <tr> 
+  <td width="6"><img src="/CoGe/picts/table/table_bg_head_tl.png" width="6" height="23"></td>
+  <td width="6"  background="/CoGe/picts/table/table_bg_head_t.png">&nbsp;</td>
+  <td width="100%"  background="/CoGe/picts/table/table_bg_head_t.png"><font class="oblique">Sequence Retrieval</font></td>
+  <td width="6"  background="/CoGe/picts/table/table_bg_head_t.png">&nbsp;</td>
+  <td width="6"><img src="/CoGe/picts/table/table_bg_head_tr.png" width="6" height="23"></td>
+ </tr>
+ <tr> 
+  <td height="9" valign="top" background="/CoGe/picts/table/table_bg_head_l.png"><img src="/CoGe/picts/table/spacer-1x1.png"></td>
+  <td height="9" valign="top"><img src="/CoGe/picts/table/table_bg_body_tl.png" width="6" height="9"></td>
+  <td height="9" valign="top" background="/CoGe/picts/table/table_bg_body_t.png"><img src="/CoGe/picts/table/spacer-1x1.png"></td>
+  <td height="9" valign="top"><img src="/CoGe/picts/table/table_bg_body_tr.png" width="6" height="9"></td>
+  <td height="9" valign="top" width="6" background="/CoGe/picts/table/table_bg_head_r.png"><img src="/CoGe/picts/table/spacer-1x1.png"></td>
+ </tr>
+ <tr>
+  <td background="/CoGe/picts/table/table_bg_head_l.png">&nbsp;</td>
+  <td background="/CoGe/picts/table/table_bg_body_l.png">&nbsp;</td>
+  <td> 
+<!-- ########################################## -->
+<!-- Main body of the central table goes in here-->
+<!-- ########################################## -->
+<DIV>
+
+<form method="post" enctype="multipart/form-data" name="main_form" onSubmit="">
+<TABLE class="basic" width=100%>
+ <TR>
+  <TH>
+    <DIV class = large>
+      Sequence 1
+    </DIV>
+  </TH>
+  <TH>
+    <DIV class = large>
+      Sequence 2
+    </DIV>
+  </TH>
+ </TR>
+ <TR>
+  <TH colspan="2">
+   <DIV class="mainDiv">
+   <DIV id = "dr" class="topItem" onMouseOver="Init(this); changeColor('dr','#000099'); " onMouseOut="changeColor('dr','#009900');">Database Retrieval:</DIV>
+   <DIV class="dropMenu">
+     <DIV class="subMenu" style="display:inline;">
+     <TABLE style="width: 100%;">
+      <TR>
+      <TD>
+      <TABLE>
+       <TR>
+        <TD>Name:
+        <TD><input class="backbox" type="text" name="accn1" id="accn1" tabindex="1"  size="20" onBlur="source_search(['accn1','args__1'],['org1'])" />
+        <DIV id="org1"><input type="hidden" id="infoid1"></DIV>
+       <TR>
+       <TD><DIV class="small">Upstream:</DIV>
+       <TD><input class="backbox" type="text" name="dr1up" id="dr1up" tabindex="1" size="10" value="10000" />
+      <TR>
+       <TD><DIV class="small">Downstream:</DIV>
+       <TD><input class="backbox" type="text" name="dr1down" id="dr1down" tabindex="1" size="10"  value="10000"/>
+      </TABLE>
+      <TD>
+      <TABLE>
+       <TR>
+        <TD>Name:
+        <TD><input class="backbox" type="text" name="accn2" id="accn2" tabindex="1"  size="20" onBlur="source_search(['accn2','args__2'],['org2'])" />
+        <DIV id="org2"><input type="hidden" id="infoid2"></DIV>
+       <TR>
+       <TD><DIV class="small">Upstream:</DIV>
+       <TD><input class="backbox" type="text" name="dr2up" id="dr2up" tabindex="1" size="10" value="10000" />
+      <TR>
+       <TD><DIV class="small">Downstream:</DIV>
+       <TD><input class="backbox" type="text" name="dr2down" id="dr2down" tabindex="1" size="10"  value="10000"/>
+      </TABLE>
+     </table>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     </DIV>
+  </DIV>
+  </DIV>
+ </TR>
+<!--
+ <TR>
+  <TH colspan="2">
+   <DIV class="mainDiv" >
+   <DIV id="usf" class="topItem" onMouseOver="Init(this); changeColor('usf','#000099'); " onMouseOut="changeColor('usf','#009900');">Upload Sequence File(s):</DIV>
+   <DIV class="dropMenu">
+     <DIV class="subMenu" style="display:none;" >
+     <TABLE style="width: 100%;">
+      <TR>
+      <TD>
+      <TABLE>
+       <TR>
+        <TD>File:
+        <TD><input class="backbox" type="file" name="seq_file1" id="seq_file1" tabindex="1"  />
+      <TR>
+	<TD><DIV class="small">Start Position:</DIV>
+      	<TD><input class="backbox" type="text" name="f1start" id="f1start" tabindex="1" size="10" value="1" /></TD>
+      <TR>
+       <TD><DIV class="small">Upstream:</DIV>
+       <TD><input class="backbox" type="text" name="f1up" id="f1up" tabindex="1" size="10" value="0" />
+      <TR>
+       <TD><DIV class="small">Downstream:</DIV>
+       <TD><input class="backbox" type="text" name="f1down" id="f1down" tabindex="1" size="10"  value=""/>
+      </TABLE>
+      <TD>
+      <TABLE>
+       <TR>
+        <TD>File:
+        <TD><input class="backbox" type="file" name="seq_file2" id="seq_file2" tabindex="1"  />
+      <TR>
+	<TD><DIV class="small">Start Position:</DIV>
+      	<TD><input class="backbox" type="text" name="f2start" id="f2start" tabindex="1" size="10" value="1" /></TD>
+      <TR>
+       <TD><DIV class="small">Upstream:</DIV>
+       <TD><input class="backbox" type="text" name="f2up" id="f2up" tabindex="1" size="10" value="0" />
+      <TR>
+       <TD><DIV class="small">Downstream:</DIV>
+       <TD><input class="backbox" type="text" name="f2down" id="f2down" tabindex="1" size="10"  value=""/>
+      </TABLE>
+     </table>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+
+     </DIV>
+  </DIV>
+  </DIV>		
+ </TR>
+-->
+ <TR>
+  <TH colspan="2">
+   <DIV class="mainDiv" >
+   <DIV id="isr" class="topItem" onMouseOver="Init(this);changeColor('isr','#000099'); " onMouseOut="changeColor('isr','#009900');" >Internet Sequence Retrieval:</DIV>
+   <DIV class="dropMenu">
+     <DIV class="subMenu" style="display:none;" >
+     <TABLE style="width: 100%;">
+      <TR>
+      <TD>        
+      <TABLE>
+       <TR>
+        <TD>GenBank Accession:
+	<TD><input class="backbox" type="text" name="gbaccn1" id="gbaccn1" tabindex="1"  size="10" />
+      <TR>
+	<TD><DIV class="small">Start Position:</DIV>
+      	<TD><input class="backbox" type="text" name="gb1start" id="gb1start" tabindex="1" size="10" value="1" /></TD>
+      <TR>
+       <TD><DIV class="small">Upstream:</DIV>
+       <TD><input class="backbox" type="text" name="gb1up" id="gb1up" tabindex="1" size="10" value="0" />
+      <TR>
+       <TD><DIV class="small">Downstream:</DIV>
+       <TD><input class="backbox" type="text" name="gb1down" id="gb1down" tabindex="1" size="10"  value=""/>
+      </TABLE>
+      <TD>
+        <TABLE>
+       <TR>
+        <TD>GenBank Accession:
+	<TD><input class="backbox" type="text" name="gbaccn2" id="gbaccn2" tabindex="1"  size="10" />
+      <TR>
+	<TD><DIV class="small">Start Position:</DIV>
+      	<TD><input class="backbox" type="text" name="gb2start" id="gb2start" tabindex="1" size="10" value="1" /></TD>
+      <TR>
+       <TD><DIV class="small">Upstream:</DIV>
+       <TD><input class="backbox" type="text" name="gb2up" id="gb2up" tabindex="1" size="10" value="0" />
+      <TR>
+       <TD><DIV class="small">Downstream:</DIV>
+       <TD><input class="backbox" type="text" name="gb2down" id="gb2down" tabindex="1" size="10"  value=""/>
+      </TABLE>
+     </table>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     </DIV>
+  </DIV>
+  </DIV>		
+ </TR>
+ <TR>
+  <TH colspan="2">
+   <DIV class="mainDiv" >
+   <DIV id="dss" class="topItem" onMouseOver="Init(this);  changeColor('dss','#000099'); " onMouseOut="changeColor('dss','#009900');" >Direct Sequence Submission:</DIV>
+   <DIV class="dropMenu">
+     <DIV class="subMenu" style="display:none;" >
+     <TABLE style="width: 100%;">
+      <TR>
+      <TD>
+      <DIV>
+     Sequence:<BR> <textarea class="backbox" name="seq1" id="seq1" tabindex="1"  rows="5" cols="30"></textarea><BR>
+     Reverse Complement: <label><input class="backbox" type="radio" name="comp1" id="comp1" tabindex="1" value="1" />On</label><label><input class="backbox" type="radio" name="comp1" id="comp1" tabindex="1" value="0" checked/>Off</label>
+      </DIV>
+      <TD>
+      <DIV>
+     Sequence:<BR> <textarea class="backbox" name="seq2" id="seq2" tabindex="1"  rows="5" cols="30"></textarea><BR>
+     Reverse Complement: <label><input class="backbox" type="radio" name="comp2" id="comp2" tabindex="1" value="1" />On</label><label><input class="backbox" type="radio" name="comp2" id="comp2" tabindex="1" value="0" checked/>Off</label>
+      </DIV>
+     </table>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     </DIV>
+  </DIV>
+  </DIV>		
+ </TR>
+</TABLE>
+
+
+
+ </td>
+  <td  background="/CoGe/picts/table/table_bg_body_r.png">&nbsp;</td>
+  <td  background="/CoGe/picts/table/table_bg_head_r.png">&nbsp;</td>
+ </tr>
+ <tr> 
+  <td height="9" valign="top" background="/CoGe/picts/table/table_bg_head_l.png"><img src="/CoGe/picts/table/spacer-1x1.png"></td>
+  <td height="9" valign="top"><img src="/CoGe/picts/table/table_bg_body_bl.png" width="6" height="9"></td>
+  <td height="9" valign="top" background="/CoGe/picts/table/table_bg_body_b.png"><img src="/CoGe/picts/table/spacer-1x1.png"></td>
+  <td height="9" valign="top"><img src="/CoGe/picts/table/table_bg_body_br.png" width="6" height="9"></td>
+  <td height="9" valign="top" width="6" background="/CoGe/picts/table/table_bg_head_r.png"><img src="/CoGe/picts/table/spacer-1x1.png"></td>
+ </tr>
+ <tr> 
+  <td height="9" valign="bottom"><img src="/CoGe/picts/table/table_bg_head_bl.png" width="6" height="9"></td>
+  <td height="9" valign="bottom"><img src="/CoGe/picts/table/table_bg_head_b.png" width="6" height="9"></td>
+  <td height="9" valign="bottom" background="/CoGe/picts/table/table_bg_head_b.png"><img src="/CoGe/picts/table/spacer-1x1.png"></td>
+  <td height="9" valign="bottom"><img src="/CoGe/picts/table/table_bg_head_b.png" width="6" height="9"></td>
+  <td height="9" valign="bottom"><img src="/CoGe/picts/table/table_bg_head_br.png" width="6" height="9"></td>
+ </tr>
+</table> 
+
+
+<table width="100%" border="0" cellspacing="0" cellpadding="0" border=0>
+ <tr> 
+  <td width="6"><img src="/CoGe/picts/table/table_bg_head_tl.png" width="6" height="23"></td>
+  <td width="6"  background="/CoGe/picts/table/table_bg_head_t.png">&nbsp;</td>
+  <td width="100%"  background="/CoGe/picts/table/table_bg_head_t.png" class = "oblique">Algorithm Options</td>
+  <td width="6"  background="/CoGe/picts/table/table_bg_head_t.png">&nbsp;</td>
+  <td width="6"><img src="/CoGe/picts/table/table_bg_head_tr.png" width="6" height="23"></td>
+ </tr>
+ <tr> 
+  <td height="9" valign="top" background="/CoGe/picts/table/table_bg_head_l.png"><img src="/CoGe/picts/table/spacer-1x1.png"></td>
+  <td height="9" valign="top"><img src="/CoGe/picts/table/table_bg_body_tl.png" width="6" height="9"></td>
+  <td height="9" valign="top" background="/CoGe/picts/table/table_bg_body_t.png"><img src="/CoGe/picts/table/spacer-1x1.png"></td>
+  <td height="9" valign="top"><img src="/CoGe/picts/table/table_bg_body_tr.png" width="6" height="9"></td>
+  <td height="9" valign="top" width="6" background="/CoGe/picts/table/table_bg_head_r.png"><img src="/CoGe/picts/table/spacer-1x1.png"></td>
+ </tr>
+ <tr>
+  <td background="/CoGe/picts/table/table_bg_head_l.png">&nbsp;</td>
+  <td background="/CoGe/picts/table/table_bg_body_l.png">&nbsp;</td>
+  <td> 
+<!-- ########################################## -->
+<!-- Main body of the central table goes in here-->
+<!-- ########################################## -->
+
+<TABLE class="basic" width=100%>
+ <TR>
+  <TH>
+    <DIV>
+      HSP Filter:
+    </DIV>
+  </TH>
+  <TD>
+    <DIV>
+      <label><input class="backbox" type="radio" name="matchfilter" id="matchfilter" tabindex="15" value="1" checked/>On</label><label><input class="backbox" type="radio" name="matchfilter" id="matchfilter" tabindex="15" value="0"/>Off</label>
+      <BR>Only show matches of equal to or greater than:<BR>
+      <label><input class="backbox" type="radio" name="spike" id="spike" value="13" tabindex="16" />13/13</label><label><input class="backbox" type="radio" name="spike" id="spike" value="14" tabindex="17" />14/14</label><label><input class="backbox" type="radio" name="spike" id="spike" value="15" checked="checked" tabindex="18" />15/15</label><label><input class="backbox" type="radio" name="spike" id="spike" value="16" tabindex="19" />16/16</label><label><input class="backbox" type="radio" name="spike" id="spike" value="17" tabindex="20" />17/17</label><label><input class="backbox" type="radio" name="spike" id="spike" value="18" tabindex="21" />18/18</label>
+	
+    </DIV>
+  </TH>
+ </TR>
+ <TR>
+  <TH>
+   Mask Exons:<br><font class="small">(Exons Masked during bl2seq run)</font>
+  <TD>
+   <label><input class="backbox" type="radio" name="mask" id="mask" tabindex="22" value="1" checked/>On</label><label><input class="backbox" type="radio" name="mask" id="mask" tabindex="22" value="0" />Off</label>
+ </TR>
+ <TR>
+  <TH colspan="2">
+  <DIV class="mainDiv">
+   <DIV id="bp" class="topItem" onMouseOver="Init(this);changeColor('bp','#000099'); " onMouseOut="changeColor('bp','#009900');" >Bl2Seq Parameters:</DIV>
+   <DIV class="dropMenu">
+     <DIV class="subMenu" style="display:none;">
+     <TABLE style="width: 100%;">
+      <TR>
+      <TD>
+      <TABLE>
+  <TR>
+  <TD>Word Size (-W): </TD>
+  <TD><input class="backbox" type="text" name="wordsize" id="wordsize" tabindex="1" size="3" value="7" /></TD>
+ </TR>    
+ <TR>
+  <TD>Gap Open Penalty (-G): </TD>
+  <TD><input class="backbox" type="text" name="gapopen" id="gapopen" tabindex="1" size="3" value="5" /></TD>
+ </TR>    
+ <TR>
+  <TD>Gap Extension Penalty (-E): </TD>
+  <TD><input class="backbox" type="text" name="gapextend" id="gapextend" tabindex="1" size="3" value="2" /></TD>
+ </TR>    
+ <TR>
+  <TD>Mismatch Penalty (-q): </TD>
+  <TD><input class="backbox" type="text" name="mismatch" id="mismatch" tabindex="1" size="3" value="-2" /></TD>
+ </TR>    
+ <TR>
+  <TD>Other Blast Parameters: </TD>
+  <TD><input class="backbox" type="text" name="blastparams" id="blastparams" tabindex="1" size="60" /></TD>
+ </TR>         </TABLE>
+     </table>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     </DIV>
+  </DIV>
+  </DIV>
+ </TR>
+	  
+ </TR>
+
+</TABLE>
+
+
+
+
+ </td>
+  <td  background="/CoGe/picts/table/table_bg_body_r.png">&nbsp;</td>
+  <td  background="/CoGe/picts/table/table_bg_head_r.png">&nbsp;</td>
+ </tr>
+ <tr> 
+  <td height="9" valign="top" background="/CoGe/picts/table/table_bg_head_l.png"><img src="/CoGe/picts/table/spacer-1x1.png"></td>
+  <td height="9" valign="top"><img src="/CoGe/picts/table/table_bg_body_bl.png" width="6" height="9"></td>
+  <td height="9" valign="top" background="/CoGe/picts/table/table_bg_body_b.png"><img src="/CoGe/picts/table/spacer-1x1.png"></td>
+  <td height="9" valign="top"><img src="/CoGe/picts/table/table_bg_body_br.png" width="6" height="9"></td>
+  <td height="9" valign="top" width="6" background="/CoGe/picts/table/table_bg_head_r.png"><img src="/CoGe/picts/table/spacer-1x1.png"></td>
+ </tr>
+ <tr> 
+  <td height="9" valign="bottom"><img src="/CoGe/picts/table/table_bg_head_bl.png" width="6" height="9"></td>
+  <td height="9" valign="bottom"><img src="/CoGe/picts/table/table_bg_head_b.png" width="6" height="9"></td>
+  <td height="9" valign="bottom" background="/CoGe/picts/table/table_bg_head_b.png"><img src="/CoGe/picts/table/spacer-1x1.png"></td>
+  <td height="9" valign="bottom"><img src="/CoGe/picts/table/table_bg_head_b.png" width="6" height="9"></td>
+  <td height="9" valign="bottom"><img src="/CoGe/picts/table/table_bg_head_br.png" width="6" height="9"></td>
+ </tr>
+</table> 
+
+
+<!--
+onClick="run(['accn1', 'accn2', 'dr1up', 'dr1down', 'dr2up', 'dr2down', 'infoid1', 'infoid2', 'seq_file1', 'seq_file2', 'f1start', 'f1up', 'f1down', 'f2start', 'f2up', 'f2down', 'gbaccn1', 'gbaccn2', 'gb1start', 'gb1up', 'gb1down', 'gb2start', 'gb2up', 'gb2down', 'seq1', 'seq2', 'comp1', 'comp2', 'matchfilter', 'spike', 'mask', 'wordsize', 'gapopen', 'gapextend', 'mismatch', 'blastparams'],['results'], 'POST');"
+onClick="loading([], ['results']); run(['accn1', 'accn2', 'dr1up', 'dr1down', 'dr2up', 'dr2down', 'infoid1', 'infoid2', 'gbaccn1', 'gbaccn2', 'gb1start', 'gb1up', 'gb1down', 'gb2start', 'gb2up', 'gb2down', 'seq1', 'seq2', 'comp1', 'comp2', 'matchfilter', 'spike', 'mask', 'wordsize', 'gapopen', 'gapextend', 'mismatch', 'blastparams'],['results'], 'POST');"
+
+-->
+<input type="button" value="GO"
+onClick="loading([], ['results']); run(['accn1', 'accn2', 'dr1up', 'dr1down', 'dr2up', 'dr2down', 'infoid1', 'infoid2', 'gbaccn1', 'gbaccn2', 'gb1start', 'gb1up', 'gb1down', 'gb2start', 'gb2up', 'gb2down', 'seq1', 'seq2', 'comp1', 'comp2', 'matchfilter', 'spike', 'mask', 'wordsize', 'gapopen', 'gapextend', 'mismatch', 'blastparams'],['results'], 'POST');"
+>   &nbsp;&nbsp;
+
+
+<input type="button" value="Clear"
+ onClick="rset([],['results'])">
+
+<br>
+<HR>
+<DIV>
+<font class = "small">Currently logged in as: <TMPL_VAR NAME=USER> </font><font class="xsmall"><TMPL_VAR NAME=DATE></font>
+</DIV>
+<script language="JavaScript" type="text/javascript" src="/CoGe/js/menu.js"></script>
+</form>
+</BODY>
+</HTML>

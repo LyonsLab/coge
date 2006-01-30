@@ -1,0 +1,138 @@
+<HTML>
+<HEAD>
+ <TITLE><TMPL_VAR NAME=TITLE></TITLE>
+ <link rel="stylesheet" type="text/css" href="/CoGe/css/styled.css" />
+ <link rel="stylesheet" type="text/css" href="/CoGe/css/sddm.css" />
+ <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+</HEAD>
+
+<SCRIPT language="JavaScript" type="text/javascript" src="http://toxic.berkeley.edu/bpederse/kaj/kaj.stable.js"></SCRIPT>
+<SCRIPT language="JavaScript">
+
+kaj.pollute();
+
+function accn_search_chain(val) {
+ minlen = 4;
+ GS('DS_title','');
+ GS('FT_title','');
+ if ((val == 1) && (GS('accn').length > minlen)){
+   return;
+ } else if (val == 1) {
+   accn_search(['accn', "args__"+val],[source_search_chain]); 
+ } else if  (GS('accn').length > minlen) {
+   accn_search(['accn', "args__"+val],[source_search_chain]); 
+ }
+
+}
+
+function source_search_chain (val) {
+ if (val) {GS('accn_list',val);}
+ source_search(['accn_select'], [get_types_chain]);
+}
+
+function get_types_chain (val1, val2) {
+ if (val1) {GS('Source', val1);}
+ if (val2) {GS('DS_title', "Data Version");}	
+ get_types(['accn_select', 'infoid'],[get_anno_chain]);	
+}
+
+function get_anno_chain (val1, val2) {
+ if (val1) {GS('FeatType', val1)};
+ if (val2) {GS('FT_title', "Type Name");}
+ get_anno(['accn_select', 'infoid', 'Type_name'],['anno']);	
+}
+
+
+</SCRIPT>
+<BODY>
+<TABLE>
+ <TR>
+  <TD><a href="/CoGe" border=0><img src='/CoGe/picts/CoGe-logo.png' border=0></a>
+  <TD id="title"><font class="title"><TMPL_VAR NAME=TITLE></font></td>
+ </TR>
+</TABLE>
+<DIV id="results" ></DIV>
+<table width="100%" border="0" cellspacing="0" cellpadding="0" border=0>
+ <tr> 
+  <td width="6"><img src="/CoGe/picts/table/table_bg_head_tl.png" width="6" height="23"></td>
+  <td width="6"  background="/CoGe/picts/table/table_bg_head_t.png">&nbsp;</td>
+  <td width="100%"  background="/CoGe/picts/table/table_bg_head_t.png"><font class="oblique"><TMPL_VAR NAME=TABLE_NAME1></font></td>
+  <td width="6"  background="/CoGe/picts/table/table_bg_head_t.png">&nbsp;</td>
+  <td width="6"><img src="/CoGe/picts/table/table_bg_head_tr.png" width="6" height="23"></td>
+ </tr>
+ <tr> 
+  <td height="9" valign="top" background="/CoGe/picts/table/table_bg_head_l.png"><img src="/CoGe/picts/table/spacer-1x1.png"></td>
+  <td height="9" valign="top"><img src="/CoGe/picts/table/table_bg_body_tl.png" width="6" height="9"></td>
+  <td height="9" valign="top" background="/CoGe/picts/table/table_bg_body_t.png"><img src="/CoGe/picts/table/spacer-1x1.png"></td>
+  <td height="9" valign="top"><img src="/CoGe/picts/table/table_bg_body_tr.png" width="6" height="9"></td>
+  <td height="9" valign="top" width="6" background="/CoGe/picts/table/table_bg_head_r.png"><img src="/CoGe/picts/table/spacer-1x1.png"></td>
+ </tr>
+ <tr>
+  <td background="/CoGe/picts/table/table_bg_head_l.png">&nbsp;</td>
+  <td background="/CoGe/picts/table/table_bg_body_l.png">&nbsp;</td>
+  <td> 
+<!-- ########################################## -->
+<!-- Main body of the central table goes in here-->
+<!-- ########################################## -->
+<TABLE>
+ <TR>
+  <TD valign=top>
+   <DIV class="">Feature Name:&nbsp&nbsp<input type="text" name="accn" id="accn" tabindex="1"  size="10" onKeyup ="accn_search_chain(0);"  onBlur="accn_search_chain(1);" value="<TMPL_VAR NAME=ACCN>"/></DIV>
+  </TD>
+  <TD valign=top>
+   <DIV id="DS_title"></DIV>
+  <TD valign=top>
+   <DIV id="FT_title"></DIV>
+ <TR valign=top>
+  <TD valign=top>
+   <DIV class="" id="accn_list"><input type="hidden" id="accn_select" ></DIV>
+  </TD>
+  <TD valign=top>
+   <DIV class="" id="Source"></DIV>
+  <TD valign=top>
+    <DIV class="" id="FeatType"></DIV>
+ </TR>
+</TABLE>
+<DIV id="anno"></DIV>
+
+<SCRIPT language="Javascript">
+  if (GS('accn')) {accn_search_chain(0);};
+</SCRIPT>
+
+
+<!-- ########################################## -->
+<!-- ############END MAIN BODY################# -->
+<!-- ########################################## -->
+
+
+
+ </td>
+  <td  background="/CoGe/picts/table/table_bg_body_r.png">&nbsp;</td>
+  <td  background="/CoGe/picts/table/table_bg_head_r.png">&nbsp;</td>
+ </tr>
+ <tr> 
+  <td height="9" valign="top" background="/CoGe/picts/table/table_bg_head_l.png"><img src="/CoGe/picts/table/spacer-1x1.png"></td>
+  <td height="9" valign="top"><img src="/CoGe/picts/table/table_bg_body_bl.png" width="6" height="9"></td>
+  <td height="9" valign="top" background="/CoGe/picts/table/table_bg_body_b.png"><img src="/CoGe/picts/table/spacer-1x1.png"></td>
+  <td height="9" valign="top"><img src="/CoGe/picts/table/table_bg_body_br.png" width="6" height="9"></td>
+  <td height="9" valign="top" width="6" background="/CoGe/picts/table/table_bg_head_r.png"><img src="/CoGe/picts/table/spacer-1x1.png"></td>
+ </tr>
+ <tr> 
+  <td height="9" valign="bottom"><img src="/CoGe/picts/table/table_bg_head_bl.png" width="6" height="9"></td>
+  <td height="9" valign="bottom"><img src="/CoGe/picts/table/table_bg_head_b.png" width="6" height="9"></td>
+  <td height="9" valign="bottom" background="/CoGe/picts/table/table_bg_head_b.png"><img src="/CoGe/picts/table/spacer-1x1.png"></td>
+  <td height="9" valign="bottom"><img src="/CoGe/picts/table/table_bg_head_b.png" width="6" height="9"></td>
+  <td height="9" valign="bottom"><img src="/CoGe/picts/table/table_bg_head_br.png" width="6" height="9"></td>
+ </tr>
+</table> 
+
+
+<br>
+<HR>
+<DIV>
+<font class = "small">Currently logged in as: <TMPL_VAR NAME=USER> </font><font class="xsmall"><TMPL_VAR NAME=DATE></font>
+</DIV>
+<script language="JavaScript" type="text/javascript" src="/CoGe/js/menu.js"></script>
+</form>
+</BODY>
+</HTML>

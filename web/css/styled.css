@@ -1,0 +1,388 @@
+BODY { 
+  font-family: Arial, Geneva, Times, fixed;
+  color: #000099;
+  background: #FFFFFF;
+}
+
+.title {
+  font-size:xx-large;
+  color: #000099;
+  font-style: oblique;
+}
+
+.container{
+  border: 1px solid red;
+  overflow: auto;
+}
+
+.inner{
+  overflow:auto;
+  display:none;
+  color: #cc6600;
+}
+
+.xsmall { 
+  font-family: fixed;
+  font-size: x-small;
+  color: #009900;
+}
+
+.small { 
+  font-family: gixed;
+  font-size: small;
+  color: #000099;
+}
+
+.medium { 
+  font-size: medium;
+  color: #009900;
+}
+
+.large { 
+  font-size: large;
+  color: #009900;
+}
+
+.error { 
+  font-size: large;
+  color: #FF0000;
+}
+
+.ital { 
+  font-style: italic;
+  color: #000099;
+}
+
+.oblique { 
+  font-style: oblique;
+  color: #009900;
+}
+
+.oblique_bold { 
+  font-style: oblique;
+  font-weight: bold;
+  font-size: large;
+  color: #009900;
+}
+
+.annotation { 
+  font-style: oblique;
+  font-weight: bold;
+  font-size: large;
+  color: #009900;
+}
+
+.backbox {
+ color: #000099;
+ background: #efffef; 
+ border:2px solid #CCFFCC;
+}
+
+.species { 
+  font-style: oblique;
+  color: #009900;
+}
+
+.loading {
+  font-style: oblique;
+  color: #990000;
+  font-size: large;
+  text-decoration: blink;
+}
+
+.plain {
+ border-top-width: 0px;
+ border-right-width: 0px;
+ border-bottom-width: 0px;
+ border-left-width: 0px;
+ border-style: hidden; 
+ border-collapse: collapse;
+ border: 0;
+ width: 100%;
+}
+
+.bold {
+  font-weight: bold;
+}
+
+
+.te {
+  float:left;
+  width: 20%;
+}
+
+
+.l {
+  float: left;
+}
+
+.r {
+  float: right;
+}
+
+.tlh {
+  float: left;
+  width: 6px;
+  height: 23px;
+  background-image: url(/CoGe/picts/table/table_bg_head_tl.png);
+}
+
+.th {
+  float: left;
+  width: 6px;
+  height: 23px;
+  background-image: url(/CoGe/picts/table/table_bg_head_t.png);
+}
+
+.tht {
+  float: left;
+  width: 90%;
+  height: 23px;
+  background-image: url(/CoGe/picts/table/table_bg_head_t.png);
+  font-style: oblique;
+  color: #009900;
+}
+
+.trh {
+  float: left;
+  width: 6px;
+  height: 23px;
+  background-image: url(/CoGe/picts/table/table_bg_head_tr.png);
+}
+.tlb {
+  float: left;
+  height: 9px;
+  width: 6px;
+  background-image: url(/CoGe/picts/table/table_bg_body_tl.png);
+}
+
+.tb {
+  float: left;
+  width: 90%;
+  height: 9px;
+  background-image: url(/CoGe/picts/table/table_bg_body_t.png);
+}
+
+.trb {
+  float: left;
+  width: 6px;
+  height: 9px;
+  background-image: url(/CoGe/picts/table/table_bg_body_tr.png);
+}
+
+.lh {
+  float: left;
+  width: 6px;
+  height: 9px;
+  background-image: url(/CoGe/picts/table/table_bg_head_l.png);
+}
+
+.lb {
+  float: left;
+  width: 6px;
+  height: 9px;
+  background-image: url(/CoGe/picts/table/table_bg_body_l.png);
+}
+
+.rh {
+  float: left;
+  width: 6px;
+  height: 9px;
+  background-image: url(/CoGe/picts/table/table_bg_head_r.png);
+}
+
+.rb {
+  float: left;
+  width: 6px;
+  height: auto;
+  background-image: url(/CoGe/picts/table/table_bg_body_r.png);
+}
+
+.blh {
+  float: left;
+  width: 6px;
+  height: 9px;
+  padding: 0;
+  margin: 0px auto;
+  background-image: url(/CoGe/picts/table/table_bg_head_bl.png);
+  text-align: left;
+}
+
+.bht {
+  float: left;
+  width: 90%;
+  height: 9px;
+  padding: 0;
+  margin: 0px auto;
+  background-image: url(/CoGe/picts/table/table_bg_head_b.png);
+  text-align: left;
+}
+
+.bh {
+  float: left;
+  width: 6px;
+  height: 9px;
+  padding: 0;
+  margin: 0px auto;
+  background-image: url(/CoGe/picts/table/table_bg_head_b.png);
+  text-align: left;
+}
+
+.brh {
+  float: left;
+  width: 6px;
+  height: 9px;
+  padding: 0;
+  margin: 0px auto;
+  background-image: url(/CoGe/picts/table/table_bg_head_br.png);
+  text-align: left;
+}
+.blb {
+  float: left;
+  width: 6px;
+  height: 9px;
+  padding: 0;
+  margin: 0px auto;
+  background-image: url(/CoGe/picts/table/table_bg_body_bl.png);
+  text-align: left;
+}
+
+.bb {
+  float: left;
+  width: 90%;
+  height: 9px;
+  padding: 0;
+  margin: 0px auto;
+  background-image: url(/CoGe/picts/table/table_bg_body_b.png);
+  text-align: left;
+}
+
+.brb {
+  float: left;
+  width: 6px;
+  height: 9px;
+  padding: 0;
+  margin: 0px auto;
+  background-image: url(/CoGe/picts/table/table_bg_body_br.png);
+  text-align: left;
+}
+
+.space {
+  float: left;
+  width: 6px;
+  height: 9px;
+  padding: 0;
+  margin: 0px auto;
+  background-image: url(/CoGe/picts/table/spacer-1x1.png);
+  text-align: left;
+}
+
+.row2 {
+ padding: 0;
+ margin: 0px auto;
+}
+
+.cell {
+  float:left;
+  width:90%;
+  padding: 0;
+  margin: 0px auto;
+}
+
+
+.row {
+  clear: both;
+  }
+
+#info {
+  width:800px; 
+  height:200px;
+  border:1px solid black;
+  overflow:scroll;
+}
+
+.page {
+  color: #EEFFEE;
+}
+
+table.basic {
+	border-top-width: 0px;
+	border-right-width: 0px;
+	border-bottom-width: 0px;
+	border-left-width: 0px;
+	border-style: none; 
+	border-color: #000000; /* black */
+	border-collapse: collapse;
+	background-color: #FFFFFF; /* darker gray */
+	font-family: verdana, arial, helvetica, sans-serif;
+	font-size: 16px
+}
+
+
+
+tr.Aodd {
+	border-top-width: 0px;
+	border-right-width: 0px;
+	border-bottom-width: 0px;
+	border-left-width: 0px;
+	border-collapse: collapse;
+	border-color: #000000; /* black */
+	border-style: solid;
+	background-color: #AAAAAA; /* darker gray */
+}
+
+tr.Aeven {
+	border-top-width: 0px;
+	border-right-width: 0px;
+	border-bottom-width: 0px;
+	border-left-width: 0px;
+	border-collapse: collapse;
+	border-color: #000000; /* black */
+	border-style: solid;
+	background-color: #CCCCCC; /* lighter gray */
+}
+
+td.Atopcell {
+	border-top-width: 1px;
+	border-bottom-width: 0px;
+	border-right-width: 0px;
+	border-left-width: 0px;
+	border-style: solid;
+	border-color: #000000; /* black */
+}
+
+td.Abotcell {
+	border-bottom-width: 1px;
+	border-top-width: 0px;
+	border-right-width: 0px;
+	border-left-width: 0px;
+	border-style: solid;
+	border-color: #000000; /* black */
+}
+
+td.Amidcell {
+	border-bottom-width: 1px;
+	border-top-width: 1px;
+	border-right-width: 0px;
+	border-left-width: 0px;
+	border-style: solid;
+	border-color: #000000; /* black */
+}
+
+td.Arightcell {
+	border-top-width: 1px;
+	border-right-width: 1px;
+	border-left-width: 0px;
+	border-bottom-width: 1px;
+	border-style: solid;
+	border-color: #000000; /* black */
+}
+
+td.Aleftcell {
+	border-top-width: 1px;
+	border-bottom-width: 1px;
+	border-left-width: 1px;
+	border-right-width: 0px;
+	border-style: solid;
+	border-color: #000000; /* black */
+}
