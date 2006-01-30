@@ -25,7 +25,7 @@ sub _initialize
     $self->image_height($h);
     $self->bgcolor([255,255,255]) unless $self->bgcolor;
     $self->fill(1);
-    $self->placement("in");
+    $self->order(1);
     if ($self->nt && $self->nt =~ /a|t/i)
       {
 	$self->color($ATC) unless $self->color;
