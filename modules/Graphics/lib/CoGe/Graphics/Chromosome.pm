@@ -5,11 +5,176 @@ use POSIX;
 use Data::Dumper;
 use GD;
 
+#################### main pod documentation begin ###################
+## Below is the stub of documentation for your module. 
+## You better edit it!
+
+
+=head1 NAME
+
+CoGe::Graphics::Chromosome - Object for drawing chromosomes that provides functionality for painting chromosomes with location based features (such as genes), magnification/zooming on particular regions, and printing pictures of chromosomes as pngs.
+
+=head1 SYNOPSIS
+
+  use CoGe::Graphics::Chromosome;
+  use CoGe::Graphics::Feature::Gene;
+  use CoGe::Graphics::Feature::NucTide;
+
+  #create a chromosome object;
+  my $c = CoGe::Graphics::Chromosome->new();
+  #set the size of the chromosome in nucleotides
+  $c->chr_length(250000000);
+  #set the point (in nucleotides) where to center the view on the chromosome
+  $c->set_point(10000)
+
+  #create a gene feature that will be added to the chromosome
+  #this feature object inherits from the base class CoGe::Graphics::Feature which 
+  #provides the basic ties for generating features on the chromosome.  The base class
+  #can be used alone and custom features designed ad hoc.  Addionally, you can create 
+  #a new feature class by inheriting from the base class and designing you own custom
+  #drawing routines.  Please see CoGe::Graphics::Feature for details and refer to 
+  #CoGe::Graphics::Feature::Gene and others for examples.
+
+  my $f = CoGe::Graphics::Feature::Gene->new();
+  #set the strand of the feature
+  $f->strand("-1");
+  #add some segments for the gene (start and end locations are nucleotide positions)
+  $f->add_segment(start=>8000, end=>9000);
+  $f->add_segment(start=>9100, end=>9300);
+  $f->add_segment(start=>9400, end=>9600);
+  $f->add_segment(start=>9700, end=>9800);
+  $f->add_segment(start=>10000, end=>10500);
+  $f->add_segment(start=>11000, end=>12000);
+  #give the feature a label
+  $f->label("My special gene")
+  #set the color of the feature (an array ref of RGB values where each is between 0 and 255)
+  $f->color([255,0,0]); #RED!
+  #set the display order of the feature on the chromosome.  "1" is closest to the center of the chromosome
+  $f->order(1);
+
+  #add the feature to the chromosome
+  $c->add_feature($f);
+
+  #next, let's add some nucleotide sequence data and use the Feature::NucTide object.
+  #Remember, this object inherits from CoGe::Graphics::Feature, but has some special 
+  #attributes and functionality to draw individual nucleotides in the background image
+  #of the chromosome.  Refer to its documentation for more information
+  
+  #First, we'll need to get some DNA sequence covering the region of interest.  This is
+  #NOT a subroutine of this object and is mearly provided to fill in code.
+  my $seq = get_dna_sequence(start=>8000, end=>12000); #returns a string of DNA sequence (ATCGTC...)
+
+  my %trans = (A=>'T',
+               T=>'A',
+       	       C=>'G',
+	       G=>'C');
+
+  my $ i = 0;
+  foreach my $chr (split //, $seq)
+   {
+    $chr=uc($chr);
+    my $rc_chr = $trans{$chr}
+    my $f1 = CoGe::Graphics::Feature::NucTide->new({nt=>$chr, strand=>1, start =>$i+8000});
+    my $f2 = CoGe::Graphics::Feature::NucTide->new({nt=>$rc_chr, strand=>-1, start =>$i+8000});
+    $c->add_feature($f1, $f2);
+    $i++;
+   }
+
+  #don't print labels of genes as the CoGe::Graphics::Feature::Gene object will take care of that
+  $c->labels(0);
+
+  #turn on the flag for printing labels of the nucleotides (which are "fill" type features)
+  $c->fill_labels(1);
+
+  #One of the more powerful (aka "fun") aspects of this object is the idea of zooming in
+  #and out on a chromosomal location.
+  #By default, there are 10 steps of magnification.  1 is the lowest magnification and 10 is
+  #the highest.  
+  #You can set the number of steps with the method: $c->num_mag
+  #You can set the max number of "units" (in this case nucleotides) seen at the highest 
+  #magnification with $c->max_mag($number).  There is a default value if none is specified
+
+  #Let's generate an image for each magnification step and save those to a file.
+  foreach my $i (1..10)
+   { 
+     $c->mag($i);
+     $c->generate_png(file=>"tmp/test$i.png");
+   }
+
+  #you are finished!
+
+
+=head1 DESCRIPTION
+
+The overall goal of this object is to create an easy-to-use thingie (TM) for generating images
+of chromosomes on which enlightening "features" (genes, functional domains, expression data, 
+whatever) are painted with the use of MINIMAL PROGRAMMING and dependencies, yet perserving as
+much flexibility as possible so that the final image was fully customizable for advanced and
+patient programmers.
+
+Simply put, after working with existing genomics visualization tools and libraries written
+in PERL, I felt that something new was needed.  Most of the existing tools were often hard to
+work with, required vast knowledge of many other modules, and were rather inflexible towards
+customization.  I wanted a module that would allow me to navigate a chromsome with as much ease
+as Google Maps(tm) allowed me to navigate my local neighborhood, plop tags at specific
+locales, and zoom in on things of interest. 
+
+To this end, I hope this package helps others create views of genomes with the features 
+and patterns they find interesting.
+
+The specific aims of this package is to:
+
+1. Create an object that represents a chromsome
+
+2. Allow features (also objects) to easily be added to the chromosome
+
+3. Generate a png of the chromosome at some level of magnification.
+
+4. Gives the user power to customize many aspects of the final image if desired.
+
+
+=head1 USAGE
+
+use CoGe::Graphics::Chromsome;
+my $c = CoGe::Graphics::Chromosome->new();
+
+=head1 BUGS
+
+
+
+=head1 SUPPORT
+
+Please contact Eric Lyons with questions, comments, suggestions, and most importantly code 
+improvements.
+
+=head1 AUTHOR
+
+	Eric Lyons
+	elyons@nature.berkeley.edu
+
+=head1 COPYRIGHT
+
+This program is free software licensed under the...
+
+	The Artistic License
+
+The full text of the license can be found in the
+LICENSE file included with this module.
+
+
+=head1 SEE ALSO
+
+perl(1).
+
+=cut
+
+#################### main pod documentation end ###################
+
 BEGIN {
     use vars qw($VERSION $DEFAULT_WIDTH $PADDING $DEFAULT_COLOR $MAX_MAG $MAG_SCALE_TYPE $MAG_STEP_HEIGHT $CHR_INNER_COLOR $CHR_OUTER_COLOR $SCALE_COLOR $TICK_COLOR $SCALE_HEIGHT $FONT $FONTTT $NUM_MAG $FEATURE_HEIGHT);
     $VERSION     = '0.1';
     $DEFAULT_WIDTH = 200;  #default image width pixels
-    $PADDING = 10; #default value to pad image height
+    $PADDING = 15; #default value to pad image height
     $MAG_STEP_HEIGHT = 30; #the amount to increase the height of the chromosome picture for each magnification (features increase half this height)
     $MAX_MAG = 10;     #default number of "units" (e.g. base pairs) to show when maximally zoomed)
     $MAG_SCALE_TYPE = "log"; #default image scaling.  options "log", "linear"
@@ -21,26 +186,99 @@ BEGIN {
     $SCALE_HEIGHT = 20; #height (in pixels) of the scale
     $FONTTT = "/usr/lib/perl5/site_perl/CoGe/fonts/arial.ttf"; #path to true-type font
     $FONT = GD::Font->MediumBold; #default GD font
-    $FEATURE_HEIGHT = 4;
+    $FEATURE_HEIGHT = 4; #the heigth of a feature is determined by this number * $self->magnification.  if the magnification is 5 and the feature_height is set to 4, then the resulting feature will be 20 pixels high.
     $NUM_MAG = 10; #number of magnification steps;
     __PACKAGE__->mk_accessors(
 "DEBUG",
 "chr_length",
-"start", "stop", #user defined start and stop
+"feature_height", #height of a feature
+"draw_scale", #flag for drawing scale
+"scale_color", "tick_color", #color for scale and ticks on scale respectively
+"scale_height", #height of scale
+"mag_scale_type", "max_mag", "mag_step_height", "num_mag",
+"image_width", "image_height", 
+"padding",
+"font",
+"labels", "fill_labels", #flag to turn off the printing of labels, fill_lables are specifically for filled features;
+
 "_region_start", "_region_stop", #image's start and stop (should be equal to or "larger" than the users
-"_magnification", "_mag_scale", "mag_scale_type", "max_mag", "mag_step_height", "num_mag",
-"features", "feature_height",
-"image_width", "image_height", "padding",
+"_magnification", "_mag_scale", 
 "_image_h_used", #storage for the amount of the image height used
 "_gd", #store GD object
-"draw_chromosome", "chr_inner_color", "chr_outer_color", "_chr_brush",
-"chr_center", "_chr_h1", "_chr_h2", #interal storage of chromosome image height positions
-"draw_scale", "scale_color", "tick_color", "scale_height",
-"_features",
-"labels", "fill_labels", #flag to turn off the printing of labels, fill_lables are specifically for filled features;
+"draw_chromosome", "chr_inner_color", "chr_outer_color",
+ "_chr_brush",
+"_chr_center", "_chr_height", "_chr_h1", "_chr_h2", #interal storage of chromosome image height positions
+"_features", #internal storage of features
+
+
+#"start", "stop", #user defined start and stop.  Not sure if this is needed. . .
 );
 }
 
+#################### subroutine header begin ####################
+
+=head2 new
+
+ Usage     : my $c = CoGe::Graphics::Chromosome->new()
+ Purpose   : Creates a Chromsome object and set up the default parameters
+ Returns   : a CoGe::Graphics::Chromosome object
+ Argument  : Currently no paramters can be passed in and used to set the defaults. 
+             However, you can use the objects Accessor functions to override the defaults
+ Throws    : None
+ Comment   : This is the mama-jama new.  If you don't know new, then you need to read up
+           : on object oriented programming
+
+See Also   : 
+
+=cut
+
+#################### subroutine header end ####################
+
+
+sub new
+{
+    my ($class, %parameters) = @_;
+
+    my $self = bless ({}, ref ($class) || $class);
+    $self->mag_scale_type($MAG_SCALE_TYPE);
+    $self->max_mag($MAX_MAG);
+    $self->mag_step_height($MAG_STEP_HEIGHT);
+    $self->image_width($DEFAULT_WIDTH);
+    $self->padding ($PADDING);
+    $self->chr_inner_color($CHR_INNER_COLOR);
+    $self->chr_outer_color($CHR_OUTER_COLOR);
+    $self->draw_chromosome(1);
+    $self->draw_scale(1);
+    $self->scale_height($SCALE_HEIGHT);
+    $self->scale_color($SCALE_COLOR);
+    $self->tick_color($TICK_COLOR);
+    $self->num_mag($NUM_MAG);
+    $self->feature_height($FEATURE_HEIGHT);
+    $self->mag(5);
+    $self->font($FONTTT);
+    $self->_features([]);
+    return $self;
+}
+
+
+#################### subroutine header begin ####################
+
+=head2 accessor methods
+
+These methods are provided by Class::Accessor and are used to get and set a variety of parameters
+used by the Chromosome object.  Each method is listed and described along with the default values
+set during when new is called.  Many of the defaults can be changed easily by looking at the
+BEGIN block of the module and finding the appropriate global variable.
+
+DEBUG            =>    (DEFAULT: 0) When set to 1, this will cause the object to print debugging 
+                        messages
+chr_length       =>    This is used to set the length (usually in nucleotides) of the chromosome.
+                       IMPORTANT:  You must set this, otherwise the object will complain.
+
+
+=cut
+
+#################### subroutine header end ####################
 
 
 sub ih 
@@ -118,7 +356,7 @@ sub set_image_height
     my $bot_feat = $self->get_feats(last=>1, strand=>-1, fill=>0);
     my $bfh = $bot_feat->order * ($feat_height+$self->padding)+2*$self->padding if $bot_feat;
     $h += $tfh > $chrh/2 ? $tfh : $chrh/2;
-    $self->chr_center($h);
+    $self->_chr_center($h);
     $h += $bfh > $chrh/2 ? $bfh : $chrh/2;
     print STDERR "Image Height: $h\n" if $self->DEBUG;
     $self->ih($h);
@@ -160,18 +398,18 @@ sub _draw_features
 	my $feat_h = $self->feature_height*$self->mag;
 	my $offset = ($feat->order-1)*($feat_h+$self->padding)+$self->padding;
 	$offset = 0 if $feat->fill;
-	$feat_h = abs($self->_chr_h1-$self->_chr_h2)/2 if $feat->fill;
+	$feat_h = ($self->_chr_height-$self->mag)/2 if $feat->fill;
 	my $y = $feat->strand =~ /-/ ? $c+ $offset+1: $c - $offset-$feat_h-1;
 	
 #	print STDERR "Feature offset: $y, Order: ", $feat->order,"\n";
         my $sy;
 	if ($feat->fill)
 	  {
-	    $sy = $feat->strand =~ /-/ ? $c+1 : $c-11;
+	    $sy = $feat->strand =~ /-/ ? $c+2 : $c-$self->padding;
 	  }
 	$self->_draw_feature(feat=>$feat, 'y'=>$y, ih=>$feat_h, 'sy'=>$sy);
 	#may need to fill in color with $bgcolor. . .
-	if ($y > $self->_chr_h1 && $y < $self->_chr_h2)
+	if ($y > ($self->_chr_center-$self->_chr_height/2) && $y < ($self->_chr_center+$self->_chr_height/2))
 	  {
 	    #$self->gd->fill($self->iw/2,$y-1, $self->get_color($self->chr_inner_color));
 	  }
@@ -202,8 +440,8 @@ sub _draw_feature
     print STDERR "Drawing feature ".$feat->label.": ", $feat->start, "-", $feat->end,"Dimentions:",$fw,"x",$ih, " at position: $fs,$y"."\n" if $self->DEBUG;
     $self->gd->copyResampled($feat->gd, $fs, $y,0,0, $fw, $ih, $feat->iw, $feat->ih);
   #  $self->_gd_string(y=>$y+$feat->ih*.9, x=>$fs, text=>$feat->label, size=>10) if ($self->labels && $fw>5); #don't make the string unless the feature is at least 5 pixels wide
-    $self->_gd_string(y=>$y, x=>$fs, text=>$feat->label, size=>10) if ($self->labels && $fw>5); #don't make the string unless the feature is at least 5 pixels wide
-    $self->_gd_string(y=>$sy, x=>$fs, text=>$feat->label, size=>10) if ($self->fill_labels && $feat->fill && $fw>5); #don't make the string unless the feature is at least 5 pixels wide
+    $self->_gd_string(y=>$y, x=>$fs, text=>$feat->label, size=>15) if ($self->labels && $fw>5); #don't make the string unless the feature is at least 5 pixels wide
+    $self->_gd_string(y=>$sy, x=>$fs, text=>$feat->label, size=>15) if ($self->fill_labels && $feat->fill && $fw>5); #don't make the string unless the feature is at least 5 pixels wide
     return $y+$feat->ih+$self->padding;
   }
 
@@ -337,17 +575,23 @@ sub _draw_scale
     my $range = $re-$rb; #chromosomal positional range
     my $div = "1"."0"x int log10($range); #determine range scale (10, 100, 1000, etc)
     print STDERR "\nSCALE: Center: $c, Start $xb, Stop: $xe, Ticks: $div, \n" if $self->DEBUG;
-    
-    $self->_make_ticks($div*10, $mtyb, $mtye, $rb, $re,1);
+    $self->_make_ticks(scale=>$div*10, y1=>$mtyb, y2=>$mtye, range_begin=>$rb, range_end=>$re,text_loc=>1);
 #    $div /= 10;
-    $self->_make_ticks($div, $styb, $stye, $rb, $re, -11);
+    $self->_make_ticks(scale=>$div, y1=>$styb, y2=>$stye, range_begin=>$rb, range_end=>$re, text_loc=>-1);
     $self->_image_h_used($self->_image_h_used + $self->scale_height+$self->padding/2);
   }
 
 sub _make_ticks
   {
     my $self = shift;
-    my ($div, $y1, $y2, $rb, $re, $text) = @_;
+    my %opts = @_;
+    my $div = $opts{scale};
+    my $y1 = $opts{y1}; #top of tick
+    my $y2 = $opts{y2}; #bottom of tick
+    my $rb = $opts{range_begin};
+    my $re = $opts{range_end};
+    my $text_loc  = $opts{text_loc}; #location of text -- flag (0 off, 1 above line, -1 below line, default 1)
+    $text_loc = 1 unless defined $text_loc;
     my $tick = $div;
     my $w = $self->iw;
     my $gd = $self->gd;
@@ -360,10 +604,10 @@ sub _make_ticks
       {
 	my $x = $w *($rb - $self->_region_start)/($self->_region_stop - $self->_region_start);
 	$gd->filledRectangle($x, $y1, $x+$unit, $y2, $self->get_color($self->tick_color));
-	if ($text)
+	if ($text_loc)
 	  {
-	    my $h = $text =~ /-/ ? $y2-1: $y1-1;
-	    $self->_gd_string(text=>$rb,x=>$x+$unit+2, 'y'=>$h, size => ($y2-$y1)/2  )
+	    my $h = $text_loc =~ /-/ ? $y2-1: $y1-$self->padding/2;
+	    $self->_gd_string(text=>$rb,x=>$x+$unit+2, 'y'=>$h, size => ($y2-$y1)/1.5);
 	  }
       }
     while ($tick <= $re)
@@ -371,7 +615,7 @@ sub _make_ticks
 	my $x = $w *($tick - $self->_region_start)/($self->_region_stop - $self->_region_start);
 	print STDERR "Generating tick at $tick ($x)\n" if $self->DEBUG;
 	$gd->filledRectangle($x, $y1, $x+$unit, $y2, $self->get_color($self->tick_color));
-	if ($text)
+	if ($text_loc)
 	  {
 	    my ($key) = $tick =~ /(0+)$/;
 	    $key = "1".$key;
@@ -388,8 +632,8 @@ sub _make_ticks
 		       100000000000=>"00G",
 		      );
 	    my $t = $tick/$key . $end{$key};
-	    my $h = $text =~ /-/ ? $y2-1: $y1-1;
-	    $self->_gd_string(text=>$t,x=>$x+$unit+2, 'y'=>$h, size => ($y2-$y1)/1.5  );
+	    my $h = $text_loc =~ /-/ ? $y2-1: $y1-$self->padding/2;
+	    $self->_gd_string(text=>$t,x=>$x+$unit+2, 'y'=>$h, size => ($y2-$y1));#/1.5  );
 	  }
 	$tick+= $div;
       }
@@ -402,17 +646,24 @@ sub _gd_string
     my %opts = @_;
     my $text = $opts{text} || $opts{TEXT};
     return 0 unless $text;
-    my $x = $opts{x} || $opts{X};
-    my $y = $opts{'y'} || $opts{Y};
+    my $x = $opts{x};
+    $x = $opts{X} unless defined $x;
+    my $y = $opts{'y'};
+    $y = $opts{Y} unless defined $y;
+    unless (defined $x && defined $y)
+      {
+	warn ("X: $x or Y: $y is not defined.  Can't generate string without coordinates");
+	return 0;
+      }
     my $color = $opts{color} || $opts{COLOR};
     my $size = $opts{size} || $opts{SIZE} || $self->padding;
     my $angle = $opts{angle} || $opts{ANGLE} || 0;
     $color = $self->get_color($color);
     my $gd = $self->gd;
     
-    if (-r $FONTTT)
+    if (-r $self->font)
       {
-	$gd->stringFT($color, $FONTTT, $size, $angle, $x, $y+$size, $text);
+	$gd->stringFT($color, $self->font, $size, $angle, $x, $y+$size, $text);
       }
     else
       {
@@ -432,8 +683,7 @@ sub _draw_chromosome
     my $xs = $self->_region_start < 1 ? $w*abs($self->_region_start)/($self->_region_stop - $self->_region_start): 0;
     my $xe = $self->_region_stop > $self->chr_length ? $w-$w*($self->_region_stop - $self->chr_length)/($self->_region_stop - $self->_region_start) : $w;
 #    $gd->filledRectangle($xs,$hc-$ch,$xe, $hc+$ch,$self->get_color(@{$self->chr_inner_color}));
-    $self->_chr_h1($hc-$ch+$self->mag/2+1);
-    $self->_chr_h2($hc+$ch-$self->mag/2);
+    $self->_chr_height($ch*2);
     $gd->setBrush($self->chr_brush);
     $gd->line($xs, $hc-$ch, $xe, $hc-$ch, gdBrushed);
     $self->chr_brush->flipVertical();
@@ -511,16 +761,18 @@ sub mag_scale
 	  }
 	else #log
 	  {
-	    my $rang = $self->chr_length;
+	    my $rang = $self->chr_length-$self->max_mag;;
 	    my $step = 10**(log10($rang)/($self->num_mag));
-	    print STDERR "Log Magnification Step: $step, Num Mags: ", $self->num_mag,"n" if $self->DEBUG;
-	    $scale{1} = $rang;
-	    for my $i (2..$self->num_mag)
+	    print STDERR "Log Magnification Step: $step, Num Mags: ", $self->num_mag,"\n" if $self->DEBUG;
+	    $scale{1} = $self->chr_length;
+	    for my $i (2..$self->num_mag-1)
 	      {
 		$rang = ceil ($rang)/$step;
-		$rang = $self->max_mag if $rang < $self->max_mag;
-		$scale{$i} = $rang;
+		#$rang = $self->max_mag if $rang < $self->max_mag;
+		$scale{$i} = $rang+$self->max_mag;
+		$scale{$i} = $self->max_mag if $scale{$i} < $self->max_mag;
 	      }
+	    $scale{$self->num_mag} = $self->max_mag;
 	  }
 	$self->_mag_scale(\%scale);
       }
@@ -535,11 +787,11 @@ sub set_region
     my %opts = @_;
     my $start = $opts{start} || $opts{begin} || $opts{START} || $opts{BEGIN} 
       || $opts{center} || $opts{CENTER} 
-	|| $opts{point} || $opts{POINT} 
-	  ||$self->start || 0;
-    my $end = $opts{stop} || $opts{end} || $opts{STOP} || $opts{END} || $self->stop;
-    $self->start($start);
-    $self->stop($end);
+	|| $opts{point} || $opts{POINT} || 1;
+#	  ||$self->start || 0;
+    my $end = $opts{stop} || $opts{end} || $opts{STOP} || $opts{END};# || $self->stop;
+#    $self->start($start);
+#    $self->stop($end);
     if (defined $start && $end)
       {
 	$self->_set_region_start_stop($start, $end);
@@ -582,7 +834,7 @@ sub _set_region_start_stop
   {
     my $self = shift;
     my ($start, $end) = @_;
-    return 0 unless ($start && $end);
+    return 0 unless (defined $start && defined $end);
     if ($end < $start)
       {
 	my $tmp = $start;
@@ -592,8 +844,8 @@ sub _set_region_start_stop
     my $len = $end - $start;
     my $mag = $self->find_magnification_for_size($len);
     $self->mag($mag);
-    $self->start($start);
-    $self->stop($end) if $end;
+#    $self->start($start);
+#    $self->stop($end) if $end;
     my $size = $self->mag_scale->{$mag};
     my $diff = ceil( ($size-$len)/2);
     my $rstart = $start-$diff;
@@ -620,6 +872,7 @@ sub find_magnification_for_size
       {
 	$mag = $magt if $mag_scale->{$magt} > $len;
       }
+#    return $mag;
     $self->magnification($mag);
     return $self->magnification();
   }
@@ -637,6 +890,8 @@ sub magnification
   {
     my $self = shift;
     my $mag = shift;
+    #are we changing magnification?  if so, we need to set the region start and end points
+
     $mag = $self->num_mag if $mag && $mag > $self->num_mag;
     $self->_magnification($mag) if $mag;
     if ($self->_region_start && $mag)
@@ -645,6 +900,7 @@ sub magnification
 	$point += ceil (($self->_region_stop - $self->_region_start)/2) if $self->_region_stop;
 	$self->set_point($point);
       }
+    
     return $self->_magnification();
   }
 
@@ -687,15 +943,15 @@ sub _region_begin
 
 #################### subroutine header begin ####################
 
-=head2 sample_function
+=head2 
 
- Usage     : How to use this function/method
- Purpose   : What it does
- Returns   : What it returns
- Argument  : What it wants to know
- Throws    : Exceptions and other anomolies
- Comment   : This is a sample subroutine header.
-           : It is polite to include more pod and fewer comments.
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comment   : 
+           : 
 
 See Also   : 
 
@@ -704,92 +960,7 @@ See Also   :
 #################### subroutine header end ####################
 
 
-sub new
-{
-    my ($class, %parameters) = @_;
 
-    my $self = bless ({}, ref ($class) || $class);
-    $self->mag_scale_type($MAG_SCALE_TYPE);
-    $self->max_mag($MAX_MAG);
-    $self->mag_step_height($MAG_STEP_HEIGHT);
-    $self->image_width($DEFAULT_WIDTH);
-    $self->padding ($PADDING);
-    $self->chr_inner_color($CHR_INNER_COLOR);
-    $self->chr_outer_color($CHR_OUTER_COLOR);
-    $self->draw_chromosome(1);
-    $self->draw_scale(1);
-    $self->scale_height($SCALE_HEIGHT);
-    $self->scale_color($SCALE_COLOR);
-    $self->tick_color($TICK_COLOR);
-    $self->num_mag($NUM_MAG);
-    $self->feature_height($FEATURE_HEIGHT);
-    $self->mag(5);
-    $self->_features([]);
-    return $self;
-}
-
-
-#################### main pod documentation begin ###################
-## Below is the stub of documentation for your module. 
-## You better edit it!
-
-
-=head1 NAME
-
-CoGe::Graphics::Chromosome - CoGe::Graphics::Chromosome
-
-=head1 SYNOPSIS
-
-  use CoGe::Graphics::Chromosome;
-  blah blah blah
-
-
-=head1 DESCRIPTION
-
-Stub documentation for this module was created by ExtUtils::ModuleMaker.
-It looks like the author of the extension was negligent enough
-to leave the stub unedited.
-
-Blah blah blah.
-
-
-=head1 USAGE
-
-
-
-=head1 BUGS
-
-
-
-=head1 SUPPORT
-
-
-
-=head1 AUTHOR
-
-	Eric Lyons
-	CPAN ID: MODAUTHOR
-	XYZ Corp.
-	elyons@nature.berkeley.edu
-	http://a.galaxy.far.far.away/modules
-
-=head1 COPYRIGHT
-
-This program is free software licensed under the...
-
-	The Artistic License
-
-The full text of the license can be found in the
-LICENSE file included with this module.
-
-
-=head1 SEE ALSO
-
-perl(1).
-
-=cut
-
-#################### main pod documentation end ###################
 
 
 1;
