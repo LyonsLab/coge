@@ -12,9 +12,8 @@ use Data::Dumper;
 my $form = new CGI;
 my $db = new CoGe::Genome;
 my $c = new CoGe::Graphics::Chromosome;
-
-my $start = $form->param('start') || 1;
-my $stop = $form->param('stop') || 50000;
+my $start = $form->param('start') || 25550;#1;
+my $stop = $form->param('stop') || 27400;#190000;
 $stop = $start unless $stop;
 my $di = $form->param('di') || 8;
 my $chr = $form->param('chr') || 3;
@@ -26,10 +25,18 @@ unless ($start && $stop && $di && $chr)
 
 my $chr_length = $db->get_genomic_sequence_obj->get_last_position($di);
 $c->chr_length($chr_length);
+$c->iw(1600);
+$c->max_mag((80));
+#$c->num_mag(20);
+$c->DEBUG(1);
+$c->labels(0);
+$c->fill_labels(1);
+#print Dumper $c->mag_scale;
+#exit;
 #$stop = $chr_length;
-#$c->set_region(start=>$start, stop=>$stop);
+$c->set_region(start=>25550, stop=>27400);
 #$c->set_point(($stop-$start)/2);
-$c->set_point(25550);
+#$c->set_point(25550);
 print Dumper $c;
 foreach my $feat($db->get_feature_obj->get_features_in_region(start=>$start, end=>$stop, info_id=>$di, chr=>$chr))
   {
@@ -94,10 +101,6 @@ foreach my $chr (@seq)
     $i++;
     print "working on position ",$i+$start,"\n";
   }
-$c->iw(1600);
-$c->DEBUG(1);
-$c->labels(0);
-$c->fill_labels(1);
 foreach my $i (1..10)
  { 
    $c->mag($i);
