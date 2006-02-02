@@ -12,7 +12,7 @@ use GD;
 
 =head1 NAME
 
-CoGe::Graphics::Chromosome - Object for drawing chromosomes that provides functionality for painting chromosomes with location based features (such as genes), magnification/zooming on particular regions, and printing pictures of chromosomes as pngs.
+CoGe::Graphics::Chromosome - Object for drawing chromosomes that provides functionality for painting chromosomes with location based features (such as genes), magnifying/zooming on particular regions, and printing pictures of chromosomes as pngs.
 
 =head1 SYNOPSIS
 
@@ -81,7 +81,7 @@ CoGe::Graphics::Chromosome - Object for drawing chromosomes that provides functi
    }
 
   #don't print labels of genes as the CoGe::Graphics::Feature::Gene object will take care of that
-  $c->labels(0);
+  $c->feature_labels(0);
 
   #turn on the flag for printing labels of the nucleotides (which are "fill" type features)
   $c->fill_labels(1);
@@ -171,19 +171,19 @@ perl(1).
 #################### main pod documentation end ###################
 
 BEGIN {
-    use vars qw($VERSION $DEFAULT_WIDTH $PADDING $DEFAULT_COLOR $MAX_MAG $MAG_SCALE_TYPE $MAG_STEP_HEIGHT $CHR_INNER_COLOR $CHR_OUTER_COLOR $SCALE_COLOR $TICK_COLOR $SCALE_HEIGHT $FONT $FONTTT $NUM_MAG $FEATURE_HEIGHT);
+    use vars qw($VERSION $DEFAULT_WIDTH $PADDING $DEFAULT_COLOR $MAX_MAG $MAG_SCALE_TYPE $CHR_MAG_HEIGHT $CHR_INNER_COLOR $CHR_OUTER_COLOR $RULER_COLOR $TICK_COLOR $RULER_HEIGHT $FONT $FONTTT $NUM_MAG $FEATURE_HEIGHT);
     $VERSION     = '0.1';
     $DEFAULT_WIDTH = 200;  #default image width pixels
     $PADDING = 15; #default value to pad image height
-    $MAG_STEP_HEIGHT = 30; #the amount to increase the height of the chromosome picture for each magnification (features increase half this height)
+    $CHR_MAG_HEIGHT = 30; #the amount to increase the height of the chromosome picture for each magnification (features increase half this height)
     $MAX_MAG = 10;     #default number of "units" (e.g. base pairs) to show when maximally zoomed)
     $MAG_SCALE_TYPE = "log"; #default image scaling.  options "log", "linear"
     $DEFAULT_COLOR = [0,0,0];
     $CHR_INNER_COLOR = [220,255,220]; #inner color for chromosome
     $CHR_OUTER_COLOR = [0,0,0]; #border color for chromosome
-    $SCALE_COLOR = [0,0,255]; #color for measurement scale
-    $TICK_COLOR = [0,0,255]; #color for ticks on measurement scale
-    $SCALE_HEIGHT = 20; #height (in pixels) of the scale
+    $RULER_COLOR = [0,0,255]; #color for measurement ruler
+    $TICK_COLOR = [0,0,255]; #color for ticks on measurement ruler
+    $RULER_HEIGHT = 20; #height (in pixels) of the ruler
     $FONTTT = "/usr/lib/perl5/site_perl/CoGe/fonts/arial.ttf"; #path to true-type font
     $FONT = GD::Font->MediumBold; #default GD font
     $FEATURE_HEIGHT = 4; #the heigth of a feature is determined by this number * $self->magnification.  if the magnification is 5 and the feature_height is set to 4, then the resulting feature will be 20 pixels high.
@@ -192,20 +192,20 @@ BEGIN {
 "DEBUG",
 "chr_length",
 "feature_height", #height of a feature
-"draw_scale", #flag for drawing scale
-"scale_color", "tick_color", #color for scale and ticks on scale respectively
-"scale_height", #height of scale
-"mag_scale_type", "max_mag", "mag_step_height", "num_mag",
+"draw_ruler", #flag for drawing ruler
+"ruler_color", "tick_color", #color for ruler and ticks on ruler respectively
+"ruler_height", #height of ruler
+"mag_scale_type", "max_mag", "chr_mag_height", "num_mag",
 "image_width", "image_height", 
 "padding",
 "font",
-"labels", "fill_labels", #flag to turn off the printing of labels, fill_lables are specifically for filled features;
+"feature_labels", "fill_labels", #flag to turn off the printing of labels, fill_lables are specifically for filled features;
+"draw_chromosome", "chr_inner_color", "chr_outer_color",
 
 "_region_start", "_region_stop", #image's start and stop (should be equal to or "larger" than the users
 "_magnification", "_mag_scale", 
 "_image_h_used", #storage for the amount of the image height used
 "_gd", #store GD object
-"draw_chromosome", "chr_inner_color", "chr_outer_color",
  "_chr_brush",
 "_chr_center", "_chr_height", "_chr_h1", "_chr_h2", #interal storage of chromosome image height positions
 "_features", #internal storage of features
@@ -242,15 +242,15 @@ sub new
     my $self = bless ({}, ref ($class) || $class);
     $self->mag_scale_type($MAG_SCALE_TYPE);
     $self->max_mag($MAX_MAG);
-    $self->mag_step_height($MAG_STEP_HEIGHT);
+    $self->chr_mag_height($CHR_MAG_HEIGHT);
     $self->image_width($DEFAULT_WIDTH);
     $self->padding ($PADDING);
     $self->chr_inner_color($CHR_INNER_COLOR);
     $self->chr_outer_color($CHR_OUTER_COLOR);
     $self->draw_chromosome(1);
-    $self->draw_scale(1);
-    $self->scale_height($SCALE_HEIGHT);
-    $self->scale_color($SCALE_COLOR);
+    $self->draw_ruler(1);
+    $self->ruler_height($RULER_HEIGHT);
+    $self->ruler_color($RULER_COLOR);
     $self->tick_color($TICK_COLOR);
     $self->num_mag($NUM_MAG);
     $self->feature_height($FEATURE_HEIGHT);
@@ -265,197 +265,201 @@ sub new
 
 =head2 accessor methods
 
-These methods are provided by Class::Accessor and are used to get and set a variety of parameters
-used by the Chromosome object.  Each method is listed and described along with the default values
-set during when new is called.  Many of the defaults can be changed easily by looking at the
-BEGIN block of the module and finding the appropriate global variable.
+ These methods are provided by Class::Accessor and are used to get and set a variety of parameters
+ used by the Chromosome object.  Each method is listed and described along with the default values
+ set during when new is called.  Many of the defaults can be changed easily by looking at the
+ BEGIN block of the module and finding the appropriate global variable.
 
-DEBUG            =>    (DEFAULT: 0) When set to 1, this will cause the object to print debugging 
-                        messages
-chr_length       =>    This is used to set the length (usually in nucleotides) of the chromosome.
-                       IMPORTANT:  You must set this, otherwise the object will complain.
-
+ DEBUG            =>    (DEFAULT: 0) When set to 1, this will cause the object to print debugging 
+                         messages
+ chr_length       =>    This is used to set the length (usually in nucleotides) of the chromosome.
+                        IMPORTANT:  You must set this, otherwise the object will complain.
+ draw_chromosome  =>    (DEFAULT: 1) Flag (0 or 1) for whether or not the chromosome is
+                        drawn on the final image
+ draw_ruler       =>    (DEFAULT: 1) Flag (0 or 1) for whether or not the positional ruler
+                        is drawn on the image
+ feature_height   =>    (DEFAULT: 4) This stores the feature's height in terms of how it 
+                        is scaled as the magnification increases.  For example, if this is set
+                        to 4 and the magnification is 5, then the resulting height of the feature
+                        will be 20 pixels (4*5)
+ ruler_color      =>    (DEFAULT: [0,0,255]) Defines the color of the positional ruler.
+                        This is the an array reference of three values
+                        that corresponds to RGB color values.  Each color ranges from 0-255
+ tick_color       =>    (DEFAULT: [0,0,255]) Defines the color of ticks on the  positional ruler.
+                        This is the an array reference of three values
+                        that corresponds to RGB color values.  Each color ranges from 0-255
+ ruler_height     =>    (DEFAULT: 20)  The heigth, in pixels of the positional ruler
+ mag_scale_type   =>    (DEFAULT: log) The scaling that is used for the magnification steps.
+                        The options are log or linear.  Linear scaling means that an equal 
+                        numer of positional units (usually nucleotides) are add/removed for each
+                        scaling level.  Log scaling means that there is a logarithmic (or 
+                        exponential) scaling between magnification steps.  For example, with
+                        a chromosome that is 10,000 nucleotides long, a linear scale of 
+                        magnification for 10 steps could be:
+                        1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 1000
+                        while a log scale of magnification for 4 steps would be:
+                        10, 100, 1000, 10000
+                        Overall, the log scaling has a better "feel" than the linear scaling
+ max_mag          =>    (DEFAULT: 10)  This is the limit of how many positional units (usually
+                         nucleotides) are seen at the highest/most powerful magnification
+ chr_mag_height   =>    (DEFAULT: 30)  This is the number, in pixels, by which the chromosome 
+                        picture increases on the image for each level of magnification.  For 
+                        example, if this is set to 30 and the magnification is 5, then the
+                        chromosome image would be 150 pixels high.
+ num_mag          =>    (DEFAULT: 10) This is the number of magnification steps available.  If
+                        this is set to 10, then there are 10 magnification steps (where the 1, 
+                        the lowest magnification, shows a range equal to the lenght of the 
+                        chromosome and 10, the highest magnification, shows a range equal to the 
+                        value stored in max_mag.
+ image_width      =>    (DEFAULT: 200) The width in pixels of the final image.  This value can be
+                        modified by the user without undue (aka strange) effects
+ image_height     =>    This holds the height of the image and is a value that is calculated
+                        dynamically by the module (sub set_image_height) when the image is 
+                        generated.  IMPORTANT:  THIS VALUE SHOULD NOT BE MODIFIED BY THE USER
+                        DIRECTLY.  One thing to keep in mind is that, the height of the 
+                        chromosomal images are dynamic.  This is due to the factors such as the
+                        number and scaling aspects of features on the chromosome, how the 
+                        scaling of the chromsome image changes with increased magnification, and
+                        other factors such as the heigth of the positional ruler.  You may 
+                        customize the final height of the image by specifying the scaling factors
+                        and heights of the various image parts, but it is not recommended to 
+                        change this value as strange(tm) things may happen.
+ padding         =>     (DEFAULT: 15) This is the padding (in pixels) used between most items 
+                        drawn on the final image.  
+ font            =>     (DEFAULT: "/usr/lib/perl5/site_perl/CoGe/fonts/arial.ttf")
+                        This is the path to a true-type font used for text labels on the image
+ feature_labels  =>     (DEFAULT: 0) Flag used for whether or not to print feature labels.
+                        Usually the feature object has already taken care of how to print a label
+ fill_labels     =>     (DEFAULT: 1) Flag used for whether or not to print "fill" features labels.
+                        A "fill feature" is one that is used to fill in a region on the chromosome
+                        and is distinct from regular features.  An example of this would be 
+                        the CoGe::Graphics::Feature::NucTide object with, by default, is a fill
+                        feature.  This means that when one of these features is drawn, it fills
+                        in the background area of the chromosome over the region is covers.  The
+                        resulting image will then have individual regions of the chromsome colored
+                        according the nucleotide composition and thus generates an easily viewed
+                        image.
+ chr_inner_color =>     DEFAULT: [220,255,220]) Defines the interior color of the chromosome.
+                        This is the an array reference of three values
+                        that corresponds to RGB color values.  Each color ranges from 0-255
+ chr_outer_color =>     DEFAULT: [0,0,0]) Defines the border color of the chromosome.
+                        This is the an array reference of three values
+                        that corresponds to RGB color values.  Each color ranges from 0-255  
 
 =cut
 
 #################### subroutine header end ####################
 
 
-sub ih 
+#################### subroutine header begin ####################
+
+=head2 set_region
+
+ Usage     : $c->set_region(start=>$start, stop=>$stop);
+ Purpose   : This routine sets the magnification to the appropriate level for viewing the
+             selected region as well as the internal accessor functions to track the beginning
+             and end of the viewable region.  
+ Returns   : none
+ Argument  : hash with at least one key-value pair for "start"
+             accepts "start", "begin", "START", "BEGIN" to specify the beginning of the region
+             accepts "stop", "end", "STOP", "END" to specify the end of the region
+             Nominally, the values should be integers the correspond to a chromosomal location.
+ Throws    : None
+ Comment   : Since this object uses the concept of magnification to set the viewable range
+           : on the chromosome, this routine will find the highest magnification that will 
+           : encompase the requested region.  For example, if you request to see region
+           : 300-400, you may actually see the region from 250-450.
+           : 
+           : If you only specify a start, this routine will act like set_point
+See Also   : set_point
+
+=cut
+
+#################### subroutine header end ####################
+
+
+sub set_region
   {
-    my $self = shift;
-    return $self->image_height(@_);
-  }
-
-sub iw
-  {
-    my $self = shift;
-    return $self->image_width(@_);
-  }
-
-sub generate_png
-  {
-    my $self = shift;
-    my %opts = @_;
-    my $file_name = $opts{file_name} || $opts{file} || $opts{filename};
-    $self->generate_region();
-    if ($file_name)
-      {
-	open (OUT, ">$file_name") || die "Can't open $file_name for writing: $!";
-	binmode OUT;
-	print OUT $self->gd->png;
-	close OUT;
-      }
-    else
-      {
-	print $self->gd->png;
-      }
-    $self->_gd(undef);
-  }
-
-
-sub get_color
-  {
-    my $self = shift;
-    my @colors;
-    foreach (@_)
-      {
-	if (ref ($_) =~ /array/i)
-	  {
-	    push @colors, @$_;
-	  }
-	else
-	  {
-	    push @colors, $_;
-	  }
-      }
-    return $self->get_color($DEFAULT_COLOR) unless (@colors >2 && @colors < 5);
-    my $gd = $self->gd;
-    if (@colors == 4)
-      {
-	return $gd->colorAllocateAlpha(@colors);
-      }
-    else
-      {
-	return $gd->colorResolve(@colors)
-      }
-    return $gd->colorResolve(@colors)
-  }
-
-sub set_image_height
-  {
-    #this sub calculates how much height out picture needs based on options and features to be drawn
-    my $self = shift;
-    my $feat_height = $self->feature_height || $FEATURE_HEIGHT;
-    $feat_height = $feat_height*($self->mag);
-    my $h = $self->padding; #give use some padding
-    $h += $self->scale_height+$self->padding;# if $self->draw_scale; #scale image height
-    my $chrh = $self->mag * $self->mag_step_height+$self->mag/2+$self->padding;# if $self->draw_chromosome; #chromosome image height
-    my $top_feat = $self->get_feats(last=>1, strand=>1, fill=>0);
-    my $tfh = $top_feat->order * ($feat_height+$self->padding)+2*$self->padding if $top_feat;
-    my $bot_feat = $self->get_feats(last=>1, strand=>-1, fill=>0);
-    my $bfh = $bot_feat->order * ($feat_height+$self->padding)+2*$self->padding if $bot_feat;
-    $h += $tfh > $chrh/2 ? $tfh : $chrh/2;
-    $self->_chr_center($h);
-    $h += $bfh > $chrh/2 ? $bfh : $chrh/2;
-    print STDERR "Image Height: $h\n" if $self->DEBUG;
-    $self->ih($h);
-    $self->_image_h_used($self->padding);
-
-  }
-
-
-sub generate_region
-  {
+    #user sets either a range with a start and stop, or just a start point.
+    #if only a start point is set, then we assume that will be the center of the view
     my $self = shift;
     my %opts = @_;
-    print STDERR "\n", join "\t", "mag: ".$self->mag, "region start: ".$self->_region_start,"region end: ".$self->_region_stop,"\n" if $self->DEBUG;
-#    print Dumper $self if $self->DEBUG;
-    $self->set_image_height();
-    $self->gd->fill(0,0,$self->get_color([255,255,255]));
-    $self->_draw_scale;# if $self->draw_scale;
-    $self->_draw_chromosome;# if $self->draw_chromosome;
-    $self->_draw_features;
-#    $self->gd->fill($self->iw/2,$self->_image_h_used +( $self->ih - $self->_image_h_used)/2+1, $self->get_color($self->chr_inner_color));
-  }
-
-sub _draw_features
-  {
-    my $self = shift;
-    my $c = $self->_image_h_used+($self->ih - $self->_image_h_used)/2;
-    print STDERR "Image used: ".$self->_image_h_used."  Image Height: ".$self->ih."  Center: $c\n" if $self->DEBUG;
-    foreach my $feat (sort {$b->fill <=> $a->fill} $self->get_features)
+    my $start = $opts{start} || $opts{begin} || $opts{START} || $opts{BEGIN} 
+      || $opts{center} || $opts{CENTER} 
+	|| $opts{point} || $opts{POINT} || 1;
+#	  ||$self->start || 0;
+    my $end = $opts{stop} || $opts{end} || $opts{STOP} || $opts{END};# || $self->stop;
+#    $self->start($start);
+#    $self->stop($end);
+    if (defined $start && $end)
       {
-	#skip drawing features that are outside (by two times the range being viewed) the view
-	if ($feat->start)
-	  {
-	    next if $feat->start > $self->_region_end+2*($self->_region_stop - $self->_region_start );
-	  }
-	if ($feat->stop > 0)
-	  {
-	    next if $feat->stop < $self->_region_start-2*($self->_region_stop - $self->_region_start );
-	  }
-	my $feat_h = $self->feature_height*$self->mag;
-	my $offset = ($feat->order-1)*($feat_h+$self->padding)+$self->padding;
-	$offset = 0 if $feat->fill;
-	$feat_h = ($self->_chr_height-$self->mag)/2 if $feat->fill;
-	my $y = $feat->strand =~ /-/ ? $c+ $offset+1: $c - $offset-$feat_h-1;
-	
-#	print STDERR "Feature offset: $y, Order: ", $feat->order,"\n";
-        my $sy;
-	if ($feat->fill)
-	  {
-	    $sy = $feat->strand =~ /-/ ? $c+2 : $c-$self->padding;
-	  }
-	$self->_draw_feature(feat=>$feat, 'y'=>$y, ih=>$feat_h, 'sy'=>$sy);
-	#may need to fill in color with $bgcolor. . .
-	if ($y > ($self->_chr_center-$self->_chr_height/2) && $y < ($self->_chr_center+$self->_chr_height/2))
-	  {
-	    #$self->gd->fill($self->iw/2,$y-1, $self->get_color($self->chr_inner_color));
-	  }
+	$self->_set_region_start_stop($start, $end);
+      }
+    else 
+      {
+	$self->_set_region_for_point($start);
       }
   }
-sub _draw_feature
+
+#################### subroutine header begin ####################
+
+=head2 set_point
+
+ Usage     : $c->set_point($position)
+ Purpose   : this routine sets the chromosomal location on which to center the viewed region
+ Returns   : 0 in case of error
+ Argument  : integer that corresponds to a chromsomal location (usually in base_pairs)
+ Throws    : Warning if no position is passed in
+ Comment   : This routine along with set_region are the two ways in which to specify where
+           : on the chromosome you wish to center your viewable image.
+
+See Also   : set_region
+
+=cut
+
+#################### subroutine header end ####################
+
+sub set_point
   {
     my $self = shift;
-    my %opts = @_;
-    my $feat = $opts{feat} || $opts{FEAT} || $opts{f};
-    return 0 unless ref($feat) =~ /Feature/i;
-    my $y = $opts{'y'} || $opts{Y};
-    my $ih = $opts{'image_height'} || $opts{'ih'} || $opts{'IH'} || $feat->ih;
-    my $sy = $opts{'string_y'} || $opts{'sy'} || $y; #label y axis
-    my $rb = $self->_region_start;
-    my $re = $self->_region_stop;
-    my $range = $re-$rb;
-    my $w = $self->iw;
-    $feat->gd;
-    $feat->stop($feat->start) unless defined $feat->stop;
-    my $feat_range = $feat->stop-$feat->start;
-
-    my $unit = $w/$range;
-    my $fs = int($w* ($feat->start-$rb)/$range);#+($unit/2);
-    my $fe = int($w* ($feat->end-$rb)/$range+$unit); 
-    my $fw = int($fe - $fs); #calculate the width of the feature;
-    return if $fw < 1; #skip drawing if less than one pix wide
-    print STDERR "Drawing feature ".$feat->label.": ", $feat->start, "-", $feat->end,"Dimentions:",$fw,"x",$ih, " at position: $fs,$y"."\n" if $self->DEBUG;
-    $self->gd->copyResampled($feat->gd, $fs, $y,0,0, $fw, $ih, $feat->iw, $feat->ih);
-  #  $self->_gd_string(y=>$y+$feat->ih*.9, x=>$fs, text=>$feat->label, size=>10) if ($self->labels && $fw>5); #don't make the string unless the feature is at least 5 pixels wide
-    $self->_gd_string(y=>$y, x=>$fs, text=>$feat->label, size=>15) if ($self->labels && $fw>5); #don't make the string unless the feature is at least 5 pixels wide
-    $self->_gd_string(y=>$sy, x=>$fs, text=>$feat->label, size=>15) if ($self->fill_labels && $feat->fill && $fw>5); #don't make the string unless the feature is at least 5 pixels wide
-    return $y+$feat->ih+$self->padding;
+    my $point = shift;
+    unless (defined $point)
+      {
+	warn "You must specify a chromosomal location!";
+	return 0;
+      }
+    $self->set_region(start=>$point);
   }
 
-sub _calc_unit_size
-  {
-    my $self = shift;
-    return (($self->iw/($self->_region_stop-$self->_region_start)));
-  }
+
+
+#################### subroutine header begin ####################
+
+=head2 add_feature
+
+ Usage     : $c->add_feature($feat_obj);
+ Purpose   : This method adds features to the chromosome.
+           : Features represent anything that you want to draw on the chromosome and some
+           : common examples are genes, mRNAs, nucleotides, etc.
+ Returns   : a warning if a feature is not a Feature object (ref($feat) =~ /Feature/)
+ Argument  : an array or array ref of CoGe::Graphics::Feature objects or child-class objects
+ Throws    : warning
+ Comment   : A few defaults will be set in the feature if they haven't been set:
+           : strand will be set to 1 unless defined
+           : fill will be set to 0
+           : stop will be set to start
+           : Also, the feature's GD object will be initialized upon import.
+See Also   : CoGe::Graphics::Feature
+
+=cut
+
+#################### subroutine header end ####################
+
 
 sub add_feature
   {
     my $self = shift;
     my @feats;
-    my $sort = 0;
     foreach (@_)
       {
 	push @feats, ref($_) =~ /array/i ? @$_ : $_;
@@ -474,15 +478,7 @@ sub add_feature
 		my $order = $last_feat ? $last_feat->order()+1 : 1;
 		$feat->order($order);
 	      }
-	    if ($sort)
-	      {
-	        my @feats = sort {$a->order <=> $b->order} @{$self->_features}, $feat;
-	        $self->_features(\@feats);
-              }
-	    else
-	      {
-	        push @{$self->_features},$feat;
-              }
+	    push @{$self->_features},$feat;
  	  }
 	else
 	  {
@@ -491,6 +487,36 @@ sub add_feature
   	
       }
   }
+
+#################### subroutine header begin ####################
+
+=head2 get_features
+
+ Usage     : my @fill_feats = $c->get_features(fill=>1, strand=>1);
+ Purpose   : find features that meet specific criteria such as their strand, type, order and fill
+ Returns   : an array or array ref based on wantarray
+ Argument  : optional hash with the following keys:
+           : order => get features that are on that order.  Order is the order by which features
+                      are drawn on the chromosome.  order=>1 is for features to be drawn closest 
+                      to the center of the chromosome.  order=>2 is for the next layer of 
+                      features, etc.
+             type  => get features whose type match this value
+             strand=> get features from that strand (1, -1, +, -) etc.  
+                      this just searches for matching on "-"
+             fill  => get "fill features".  Fill features are those feature that are drawn to 
+                      "fill in" a region on a chromsome.  An example of this would be a 
+                      nucleotide where you would want to color an entire region of the chromosome
+                      for a specific nucleotide.
+ Throws    : none
+ Comment   : This is mostly used internally, but is provided in case you want to retrieve a 
+           : feature that was previously added
+
+See Also   : CoGe::Graphics::Feature
+
+=cut
+
+#################### subroutine header end ####################
+
 
 sub get_features
   {
@@ -541,12 +567,34 @@ sub get_features
   }
 
 
+#################### subroutine header begin ####################
+
+=head2 get_feature
+
+ Purpose   : alias for get_features
+
+=cut
+
+#################### subroutine header end ####################
+
+
 sub get_feature
   {
     my $self = shift;
     my %opts = @_;
     return $self->get_features(%opts);
   }
+
+#################### subroutine header begin ####################
+
+=head2 get_feats
+
+ Purpose   : alias for get_features
+
+=cut
+
+#################### subroutine header end ####################
+
 
 sub get_feats
   {
@@ -555,31 +603,819 @@ sub get_feats
     return $self->get_features(%opts);
   }
 
-sub _draw_scale
+
+#################### subroutine header begin ####################
+
+=head2 find_magnification_for_size
+
+ Usage     : my $mag = $c->find_magnification_for_size(10000)
+ Purpose   : Find the highest magnification for the size to be viewed
+ Returns   : an integer
+ Argument  : an integer
+ Throws    : Will warn you if the chromosome length has not been specified first.
+           : This is needed in order to calculate the magnification scale
+ Comment   : When this routine is set, the internal magnification is automatically set
+           : with a call to $self->magnification($mag);
+
+See Also   : sub magnification
+
+=cut
+
+#################### subroutine header end ####################
+
+
+sub find_magnification_for_size
+  {
+    my $self = shift;
+    my $len = shift;
+    my $chr_len = $self->chr_length;
+    unless ($chr_len)
+      {
+	warn 'You must set the length of the chromosome before setting the region.\n$self->chr_length($length)';
+	return 0;
+      }
+    my $mag_scale = $self->mag_scale;
+    #we want the highest magnification that contains the entire region
+    my $mag = $self->magnification;
+    foreach my $magt (sort {$a <=> $b} keys %$mag_scale)
+      {
+	$mag = $magt if $mag_scale->{$magt} > $len;
+      }
+#    return $mag;
+    $self->magnification($mag);
+    return $self->magnification();
+  }
+
+#################### subroutine header begin ####################
+
+=head2 find_size_for_magnification
+
+ Usage     : my $size = $c->find_size_for_magnification(5);
+ Purpose   : This find the size of the window in chromosomal units (usually nucleotides)
+           : 
+ Returns   : an integer
+ Argument  : an integer or will call $self->magnification to get the the currently set 
+           : magnification
+ Throws    : none, but will return 0 if the internal magnification scale cannot be defined
+           : This requires that the chromsomal length has been previously set (chr_length)
+ Comment   : 
+           : 
+
+See Also   : 
+
+=cut
+
+#################### subroutine header end ####################
+
+
+sub find_size_for_magnification
+  {
+    my $self = shift;
+    my $mag = shift || $self->mag();
+    my $scale = $self->mag_scale;
+    return 0 unless $scale && $mag;
+    return $scale->{$mag};
+  }
+
+#################### subroutine header begin ####################
+
+=head2 magnification
+
+ Usage     : my $mag = $c->magnification(); ##getting magnification
+           : ## OR ##
+           : $c->magnification(5); #change magnification
+ Purpose   : get, set, and change the magnification of the object
+ Returns   : an integer
+ Argument  : an integer (optional)
+ Throws    : none
+ Comment   : When the magnification is changed, the viewable range on the chromosome is
+           : changed by a call to the method set_point.
+
+See Also   : 
+
+=cut
+
+#################### subroutine header end ####################
+
+
+sub magnification
+  {
+    my $self = shift;
+    my $mag = shift;
+    #are we changing magnification?  if so, we need to set the region start and end points
+
+    $mag = $self->num_mag if $mag && $mag > $self->num_mag;
+    $self->_magnification($mag) if $mag;
+    if ($self->_region_start && $mag)
+      {
+	my $point = $self->_region_start;
+	$point += ceil (($self->_region_stop - $self->_region_start)/2) if $self->_region_stop;
+	$self->set_point($point);
+      }
+    
+    return $self->_magnification();
+  }
+
+#################### subroutine header begin ####################
+
+=head2 mag
+
+ Purpose   : alias for $c->magnification
+
+=cut
+
+#################### subroutine header end ####################
+
+
+sub mag
+  {
+    my $self = shift;
+    return $self->magnification(@_);
+  }
+
+#################### subroutine header begin ####################
+
+=head2 generate_png
+
+ Usage     : $c->generate_png(file=>$file_name); #generates THE png by name $file_name
+             $c->generate_png();  #generates THE png to STDOUT
+ Purpose   : This generates the picture of the chromosome!
+ Returns   : none
+ Argument  : optional hash where:
+             file => is the path for the output png
+ Throws    : none
+ Comment   : This routine calls the method generate_region to render the image in GD
+           : and then calls GD->png to generate the png.  You may wish to generate the 
+           : picture in another format or do additional modifications on the GD object.
+           : If so, you can call generate_region and then access the gd object direcly.
+           : When this routine is finished, the gd object is cleared (set to undef) so
+           : that the same object may be used again to generate another image 
+See Also   : 
+
+=cut
+
+#################### subroutine header end ####################
+
+
+sub generate_png
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $file_name = $opts{file_name} || $opts{file} || $opts{filename};
+    $self->generate_region();
+    if ($file_name)
+      {
+	open (OUT, ">$file_name") || die "Can't open $file_name for writing: $!";
+	binmode OUT;
+	print OUT $self->gd->png;
+	close OUT;
+      }
+    else
+      {
+	print $self->gd->png;
+      }
+    $self->_gd(undef);
+  }
+
+
+#################### subroutine header begin ####################
+
+=head2 generate_region
+
+ Usage     : $c->generate_region
+ Purpose   : Initializes the GD object and creates the image in GD
+ Returns   : none
+ Argument  : none
+ Throws    : none
+ Comment   : This is the necessary method to call to actually initialize the GD object and create
+           : the image.  It calls (in order):
+             set_image_height (to calculate the height of the image)
+             _draw_ruler      (to generate the ruler at the top of the image)
+             _draw_chromosome (to generate the chromosome image)
+             _draw_features   (add features to the image)
+See Also   : 
+
+=cut
+
+#################### subroutine header end ####################
+
+
+sub generate_region
+  {
+    my $self = shift;
+    my %opts = @_;
+    print STDERR "\n", join "\t", "mag: ".$self->mag, "region start: ".$self->_region_start,"region end: ".$self->_region_stop,"\n" if $self->DEBUG;
+#    print Dumper $self if $self->DEBUG;
+    $self->set_image_height();
+    $self->gd->fill(0,0,$self->get_color([255,255,255]));
+    $self->_draw_ruler;
+    $self->_draw_chromosome;
+    $self->_draw_features;
+#    $self->gd->fill($self->iw/2,$self->_image_h_used +( $self->ih - $self->_image_h_used)/2+1, $self->get_color($self->chr_inner_color));
+  }
+
+#################### subroutine header begin ####################
+
+=head2 ih
+
+ Purpose   : alias for Accessor method $self->image_height
+
+=cut
+
+#################### subroutine header end ####################
+
+
+sub ih 
+  {
+    my $self = shift;
+    return $self->image_height(@_);
+  }
+
+#################### subroutine header begin ####################
+
+=head2 iw
+
+ Purpose   : alias for Accessor method $self->image_width
+
+=cut
+
+#################### subroutine header end ####################
+
+
+sub iw
+  {
+    my $self = shift;
+    return $self->image_width(@_);
+  }
+
+
+#################### subroutine header begin ####################
+
+=head2 gd
+
+ Usage     : my $gd = $c->gd;
+ Purpose   : initializes (if needed) and returns the GD object
+ Returns   : GD object
+ Argument  : none
+ Throws    : none
+ Comment   : This checks to see if a gd object has been previously created and stored
+           : in $self->_gd.  If not, it creates the GD object using $self->image_width
+           : and $self->image_height for dimensions.  
+
+See Also   : GD (which is an excellent module to know if you need to generate images)
+
+=cut
+
+#################### subroutine header end ####################
+
+
+sub gd
+  {
+    my ($self) = @_;
+    my $gd = $self->_gd();
+    unless ($gd)
+      {
+	my ($wid, $hei) = ($self->image_width, $self->image_height);
+	$gd = new GD::Image($wid, $hei,[1]);
+	my $white = $gd->colorAllocate(255,255,255);
+#	$gd->transparent($white);
+	$gd->interlaced('true');
+	$self->_gd($gd);
+      }
+    return $gd;
+  }
+
+#################### subroutine header begin ####################
+
+=head2 get_color
+
+ Usage     : my $color_index = $c->get-color([0,0,0]);
+ Purpose   : get's the color index from the GD object for your specified color
+ Returns   : a GD color index (integer?)
+ Argument  : an array or array ref of three to four integers between 0 and 255
+ Throws    : this will return the index of the default color $DEFAULT_COLOR if no color
+           : is specified or it was passed the wrong number of arguments
+ Comment   : If three arguments are passed in, GD->colorResolve is called.
+           : If four arguments are passed in, the forth is assumed to be an alpha channel
+           : and GD->colorAllocateAlpha is called.
+See Also   : GD
+
+=cut
+
+#################### subroutine header end ####################
+
+
+sub get_color
+  {
+    my $self = shift;
+    my @colors;
+    foreach (@_)
+      {
+	if (ref ($_) =~ /array/i)
+	  {
+	    push @colors, @$_;
+	  }
+	else
+	  {
+	    push @colors, $_;
+	  }
+      }
+    return $self->get_color($DEFAULT_COLOR) unless (@colors >2 && @colors < 5);
+    my $gd = $self->gd;
+    if (@colors == 4)
+      {
+	return $gd->colorAllocateAlpha(@colors);
+      }
+    else
+      {
+	return $gd->colorResolve(@colors)
+      }
+    return $gd->colorResolve(@colors)
+  }
+
+#################### subroutine header begin ####################
+
+=head2 set_image_height
+
+ Usage     : $c->set_image_height
+ Purpose   : This routine figures out how tall the final image will be and sets 
+             $self->image_height with that value.  The height of the image depends on
+             a number of factors including magnification level, feature height, the number 
+             type and placement of features, the height of the positional ruler, the padding
+             between picture elements, etc.
+ Returns   : none
+ Argument  : none
+ Throws    : none
+ Comment   : This is called internally when generate_region is called.  This must be called
+           : before the GD object is created internally by $self->gd in order for the correct
+             image height to be passed to the GD object during creation
+
+See Also   : $self->gd
+
+=cut
+
+#################### subroutine header end ####################
+
+
+sub set_image_height
+  {
+    #this sub calculates how much height out picture needs based on options and features to be drawn
+    my $self = shift;
+    my $feat_height = $self->feature_height || $FEATURE_HEIGHT;
+    $feat_height = $feat_height*($self->mag);
+    my $h = $self->padding; #give use some padding
+    $h += $self->ruler_height+$self->padding;
+    my $chrh = $self->mag * $self->chr_mag_height+$self->mag/2+$self->padding;# if $self->draw_chromosome; #chromosome image height
+    my $top_feat = $self->get_feats(last=>1, strand=>1, fill=>0);
+    my $tfh = $top_feat->order * ($feat_height+$self->padding)+2*$self->padding if $top_feat;
+    $tfh = 0 unless $tfh;
+    my $bot_feat = $self->get_feats(last=>1, strand=>-1, fill=>0);
+    my $bfh = $bot_feat->order * ($feat_height+$self->padding)+2*$self->padding if $bot_feat;
+    $bfh = 0 unless $bfh;
+    $h += $tfh > $chrh/2 ? $tfh : $chrh/2;
+    $self->_chr_center($h);
+    $h += $bfh > $chrh/2 ? $bfh : $chrh/2;
+    print STDERR "Image Height: $h\n" if $self->DEBUG;
+    $self->ih($h);
+    $self->_image_h_used($self->padding);
+
+  }
+
+
+#################### subroutine header begin ####################
+
+=head2 chr_brush
+
+ Usage     : my $chr_brush = $c->chr_brush
+ Purpose   : returns a GD object that is used to generate the border of the chromsome
+ Returns   : a GD object
+ Argument  : none, but uses $self->chr_outer_color and $self->chr_inner_color to figure out the
+             colors needed for the GD image
+ Throws    : none
+ Comment   : This routine generates a GD object that is used to paint the border of the 
+           : chromosome.  It makes a smooth blend from the interior color to the exterior color
+           : of the chromosome.  The actual obejct is stored in $self->_chr_brush.  If that
+           : exists, that object is returned, otherwise a GD object is create, the image 
+           : generated, the object store in $self->_chr_brush, and then returned.
+See Also   : Accessor functions $self->chr_outer_color, $self->chr_inner_color
+
+=cut
+
+#################### subroutine header end ####################
+
+
+
+sub chr_brush
+  {
+    my $self = shift;
+    return $self->_chr_brush if $self->_chr_brush;
+    my $mag = $self->mag;
+    my @bc = @{$self->chr_outer_color()};
+    my @ic = @{$self->chr_inner_color()};
+    my $edge_brush = new GD::Image(1,$mag+1);
+    $edge_brush->colorResolve(255,255,255);
+    $edge_brush->line(0,0,0,0,$edge_brush->colorResolve(@bc));
+    $edge_brush->line(0,$mag+1,0,$mag+1,$edge_brush->colorResolve(@ic));
+    for my $i (1..$mag)
+      {
+	my @c;
+	for my $j (0..2)
+	  {
+	    push @c, $bc[$j]+($ic[$j]-$bc[$j])/($mag+1)*$i;
+	  }
+	$edge_brush->line(0,$i,1,$i,$edge_brush->colorResolve(@c));
+      }
+    $self->_chr_brush($edge_brush);
+    return $self->_chr_brush;
+  }
+
+#################### subroutine header begin ####################
+
+=head2 mag_scale
+
+ Usage     : my $mag_scale = $c->mag_scale
+ Purpose   : The magnification of the object is based on several "steps" of magnification
+           : where each step shows a range (or window) of the chromosome.  This routine
+           : generates the magnification scale based on the length of the chromosome, 
+           : the number of step of magnification as defined by $self->num_mag, and the type
+           : of scaling to use (linear or log) as defined by $self->mag_scale_type
+           : for generating the magnification scale.  This magnification scale is stored in
+           : an Accessor function called $self->_mag_scale and is a hash ref of values where
+           : the keys is the magnification step number and the value is the number of 
+           : chromosomal units (usually nucleotides) that are visable at the magnification step.
+ Returns   : a hash ref where the key is the magnification step number and the value is 
+           : the number of chromosomal units (usually nucleotides) that are visable at 
+           : the magnification step
+ Argument  : none
+ Throws    : none
+ Comment   : The formulas for determining the magnification steps are
+           : linear:  $step = ceil(($self->chr_length-$self->max_mag)/($self->num_mag-1));
+           : log   :  $step = 10**(log10($rang)/($self->num_mag));
+                      where $rang = $self->chr_length-$self->max_mag;
+See Also   : 
+
+=cut
+
+#################### subroutine header end ####################
+
+
+sub mag_scale
+  {
+    #returns a hash where each key refers to a magnification and the value is the range of viewing (in base pairs)
+    my $self = shift;
+    my %opts = @_;
+    unless ($self->_mag_scale)
+      {
+	my %scale;
+	if ($self->mag_scale_type =~ /lin/i)
+	  {
+	    my $step = ceil(($self->chr_length-$self->max_mag)/($self->num_mag-1));
+	    for my $i (1..$self->num_mag)
+	      {
+		my $rang = $self->chr_length - $i * $step + $step;
+		$rang = $self->max_mag if $rang < $self->max_mag;
+		$rang = $self->chr_length + $step if $rang >= $self->chr_length;
+		$scale{$i} = $rang;
+	      }
+	  }
+	else #log
+	  {
+	    my $rang = $self->chr_length-$self->max_mag;;
+	    my $step = 10**(log10($rang)/($self->num_mag));
+	    print STDERR "Log Magnification Step: $step, Num Mags: ", $self->num_mag,"\n" if $self->DEBUG;
+	    $scale{1} = $self->chr_length;
+	    for my $i (2..$self->num_mag-1)
+	      {
+		$rang = ceil ($rang)/$step;
+		#$rang = $self->max_mag if $rang < $self->max_mag;
+		$scale{$i} = $rang+$self->max_mag;
+		$scale{$i} = $self->max_mag if $scale{$i} < $self->max_mag;
+	      }
+	    $scale{$self->num_mag} = $self->max_mag;
+	  }
+	$self->_mag_scale(\%scale);
+      }
+    return $self->_mag_scale;
+  }
+
+
+
+#################### subroutine header begin ####################
+
+=head2 draw_chromosome
+
+ Usage     : $c->_draw_chromosome
+ Purpose   : this internal routine draws the chromosome picture if $self->draw_chromosome is true
+ Returns   : none
+ Argument  : none
+ Throws    : none
+ Comment   : This routine will generate the chromsome background picture as well as calculating
+           : the center and height of the chromosome picture.  These latter values are important
+           : for the drawing of features.  This method is called internally by 
+           : $self->generate_region
+See Also   : 
+
+=cut
+
+#################### subroutine header end ####################
+
+
+sub _draw_chromosome
   {
     my $self = shift;
     my $gd = $self->gd;
-    my $c = $self->scale_height/2+$self->_image_h_used; #center of scale
+    my $ch = $self->mag * $self->chr_mag_height/2; #half chromosome image height
+    my $hc = $self->_image_h_used+($self->ih-$self->_image_h_used)/2; #height of center of chromsome image
+    my $w = $self->iw; #width of image
+    print STDERR "\nChromosome image: Height/2: $ch, Height Center: $hc\n" if $self->DEBUG;
+    my $xs = $self->_region_start < 1 ? $w*abs($self->_region_start)/($self->_region_stop - $self->_region_start): 0;
+    my $xe = $self->_region_stop > $self->chr_length ? $w-$w*($self->_region_stop - $self->chr_length)/($self->_region_stop - $self->_region_start) : $w;
+#    $gd->filledRectangle($xs,$hc-$ch,$xe, $hc+$ch,$self->get_color(@{$self->chr_inner_color}));
+    $self->_chr_height($ch*2);
+
+    return unless $self->draw_chromosome; #do we draw the chromsome picture?
+
+    $gd->setBrush($self->chr_brush);
+    $gd->line($xs, $hc-$ch, $xe, $hc-$ch, gdBrushed);
+    $self->chr_brush->flipVertical();
+    $gd->setBrush($self->chr_brush);
+    $gd->line($xs, $hc+$ch, $xe, $hc+$ch, gdBrushed);
+    my $color = $self->get_color($self->chr_outer_color);
+    $gd->setStyle($color, $color, $color, GD::gdTransparent, GD::gdTransparent);
+    $gd->line($xs, $hc, $xe, $hc, gdStyled);
+    $self->_draw_chr_end (x=>$xs, dir=>"left", 'y'=>$hc) if ($xs > 0);
+    $self->_draw_chr_end (x=>$xe, dir=>"right",'y'=> $hc) if ($xe < $w);
+    
+  }
+
+#################### subroutine header begin ####################
+
+=head2 _draw_chr_end
+
+ Usage     : $c->_draw_chr_end (x=>$x_pos, dir=>"left", y=>$y_pos) 
+ Purpose   : this internal method draws a semi-circle end to the chromosome picture (if needed)
+ Returns   : none
+ Argument  : hash of key-value pairs where:
+             x   => is the x coordinate and where the open half of the semi-circle should lie
+             y   => is the y coordinate and the center of the chromosome
+             dir => ('left' or 'right') for which end of the chromosome this will lie
+ Throws    : none
+ Comment   : this is called internall by $self->_draw_chromosome
+           : 
+
+See Also   : 
+
+=cut
+
+#################### subroutine header end ####################
+
+
+sub _draw_chr_end
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $x = $opts{x};
+    my $dir = $opts{dir} || "left";
+    my $y = $opts{'y'}; #$ch/2+$self->_image_h_used+$self->mag/2; #height of center of chromsome image
+    my $gd = $self->gd;
+    my $ch = $self->mag * $self->chr_mag_height; #chromosome image height
+    
+    my @arc1 = $dir =~ /left/i ? (90, 180) : (0, 90);
+    my @arc2 = $dir =~ /left/i ? (180, 270) : (270, 0);
+    my @arc3 = $dir =~ /left/i ? (90, 270) : (270,90);
+    $gd->filledArc($x, $y, $ch, $ch, @arc3, $self->get_color($self->chr_inner_color));
+    $gd->arc($x, $y, $ch, $ch, @arc1, gdBrushed);
+    $self->chr_brush->flipVertical;
+    $gd->setBrush($self->chr_brush);
+    $gd->arc($x, $y, $ch, $ch, @arc2, gdBrushed);
+  }
+
+
+#################### subroutine header begin ####################
+
+=head2 _draw_features
+
+ Usage     : $self->_draw_features
+ Purpose   : this routine parses all the feature objects store internally, determines all the
+           : necessary positional information for where they are to be drawn, and sents the
+           : information to $self->_draw_feature for rendering
+ Returns   : none
+ Argument  : none
+ Throws    : none
+ Comment   : Has an internal method to skip rendering features that are not within the visable
+           : window
+
+See Also   : $self>_draw_feature for individual feature rendering
+           : $self->add_feature for adding features
+           : $self->get_feature for retrieving features
+
+=cut
+
+#################### subroutine header end ####################
+
+
+sub _draw_features
+  {
+    my $self = shift;
+    my $c = $self->_image_h_used+($self->ih - $self->_image_h_used)/2;
+    print STDERR "Image used: ".$self->_image_h_used."  Image Height: ".$self->ih."  Center: $c\n" if $self->DEBUG;
+    foreach my $feat (sort {$b->fill <=> $a->fill} $self->get_features)
+      {
+	#skip drawing features that are outside (by two times the range being viewed) the view
+	if ($feat->start)
+	  {
+	    next if $feat->start > $self->_region_end+2*($self->_region_stop - $self->_region_start );
+	  }
+	if ($feat->stop > 0)
+	  {
+	    next if $feat->stop < $self->_region_start-2*($self->_region_stop - $self->_region_start );
+	  }
+	my $feat_h = $self->feature_height*$self->mag;
+	my $offset = ($feat->order-1)*($feat_h+$self->padding)+$self->padding;
+	$offset = 0 if $feat->fill;
+	$feat_h = ($self->_chr_height-$self->mag)/2 if $feat->fill;
+	my $y = $feat->strand =~ /-/ ? $c+ $offset+1: $c - $offset-$feat_h-1;
+        my $sy;
+	if ($feat->fill)
+	  {
+	    $sy = $feat->strand =~ /-/ ? $c+2 : $c-$self->padding;
+	  }
+	$self->_draw_feature(feat=>$feat, 'y'=>$y, ih=>$feat_h, 'sy'=>$sy);
+	#may need to fill in color with $bgcolor. . .
+	if ($y > ($self->_chr_center-$self->_chr_height/2) && $y < ($self->_chr_center+$self->_chr_height/2))
+	  {
+	    #$self->gd->fill($self->iw/2,$y-1, $self->get_color($self->chr_inner_color));
+	  }
+      }
+  }
+
+#################### subroutine header begin ####################
+
+=head2 _draw_feature
+
+ Usage     : $self->_draw_feature(feat=>$feat, 'y'=>$y, ih=>$feat_h, 'sy'=>$sy);
+ Purpose   : draws a feature at specific y axis position with a particular height
+ Returns   : 0 if a valid feature object was not specified
+ Argument  : hash of key value pairs where the keys are:
+              feat         => (or "FEAT", "f") a CoGe::Graphics::Feature object
+              image_height => (or "ih", "IH", or takes height from feature object) the height
+                              at which the feature will be drawn
+              y            => (or "Y") the y axis position from which the feature will be drawn
+              string_y     => (or "sy") the y axis position from which the feature label will
+                              be drawn if the chromosome object permits the drawing of labels.
+                              (As determined from $self->feature_labels and $self->fill_labels)
+ Throws    : 0 if a valid feature object was not specified
+ Comment   : This uses GD->copyResample to resample the gd image from the feature object onto
+           : the chromosome gd objects.  The feature height is determined by either a specified
+             parameter or by the feature object.  The width of the feature is calculated based 
+             on the chromosomal location of the feature (usually in nucleotides).  Together
+             this easily allows for the generation of a feature image on the chromosome image
+             that scales smoothly at the requested magnification.  This routine is called by
+             $self->_draw_features
+
+See Also   : $self->_draw_features
+
+=cut
+
+#################### subroutine header end ####################
+
+
+sub _draw_feature
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $feat = $opts{feat} || $opts{FEAT} || $opts{f};
+    return 0 unless ref($feat) =~ /Feature/i;
+    my $y = $opts{'y'} || $opts{Y};
+    my $ih = $opts{'image_height'} || $opts{'ih'} || $opts{'IH'} || $feat->ih;
+    my $sy = $opts{'string_y'} || $opts{'sy'} || $y; #label y axis
+    my $rb = $self->_region_start;
+    my $re = $self->_region_stop;
+    my $range = $re-$rb;
+    my $w = $self->iw;
+    $feat->gd;
+    $feat->stop($feat->start) unless defined $feat->stop;
+    my $feat_range = $feat->stop-$feat->start;
+
+    my $unit = $self->_calc_unit_size;
+    my $fs = $unit*($feat->start-$rb);
+#    my $fs = int($w* ($feat->start-$rb)/$range);
+    my $fe = $unit*($feat->end-$rb+1);
+#    my $fe = int($w* ($feat->end-$rb)/$range+$unit); 
+    my $fw = sprintf("%.1f",$fe - $fs)+1; #calculate the width of the feature;
+    return if $fw < 1; #skip drawing if less than one pix wide
+    print STDERR "Drawing feature ".$feat->label.": ", $feat->start, "-", $feat->end," Dimentions:",$fw,"x",$ih, " at position: $fs,$y"."\n" if $self->DEBUG;
+    $self->gd->copyResampled($feat->gd, $fs, $y,0,0, $fw, $ih, $feat->iw, $feat->ih);
+    $self->_gd_string(y=>$sy, x=>$fs, text=>$feat->label, size=>15) if ($self->feature_labels && $fw>5); #don't make the string unless the feature is at least 5 pixels wide
+    if ($self->fill_labels && $feat->fill && $fw>5) #don't make the string unless the feature is at least 5 pixels wide
+      {
+	my $size = $fw >= 15 ? 15 : $fw;
+	$self->_gd_string(y=>$sy, x=>$fs, text=>$feat->label, size=>$size);
+	return $y+$feat->ih+$self->padding;
+      }
+  }
+
+#################### subroutine header begin ####################
+
+=head2 _calc_unit_size
+
+ Usage     : my $unit = $self->_calc_unit_size();
+ Purpose   : returns the width, in pixels, of one chromsomal unit (usually nucleotides)
+ Returns   : an number
+ Argument  : none
+ Throws    : none
+ Comment   : formula is image_width/visable_region_size
+           : 
+
+See Also   : 
+
+=cut
+
+#################### subroutine header end ####################
+
+
+sub _calc_unit_size
+  {
+    my $self = shift;
+    return ($self->iw/($self->_region_stop-$self->_region_start));
+    return sprintf("%.0f",($self->iw/($self->_region_stop-$self->_region_start)));
+  }
+
+#################### subroutine header begin ####################
+
+=head2 _draw_ruler
+
+ Usage     : $self->_draw_ruler;
+ Purpose   : generates the positional ruler at the top of the image
+ Returns   : none
+ Argument  : none
+ Throws    : none
+ Comment   : 
+           : called by $self->generate_region
+
+See Also   : 
+
+=cut
+
+#################### subroutine header end ####################
+
+
+sub _draw_ruler
+  {
+    my $self = shift;
+    my $gd = $self->gd;
+    my $c = $self->ruler_height/2+$self->_image_h_used; #center of ruler
+    $self->_image_h_used($self->_image_h_used + $self->ruler_height+$self->padding/2);
+    return unless $self->draw_ruler;
     my $w = $self->iw; #width of image
     my $xb = $self->_region_start < 1 ? $w*abs($self->_region_start)/($self->_region_stop - $self->_region_start): 0; #x position begin
     my $xe = $self->_region_stop > $self->chr_length ? $w-$w*($self->_region_stop - $self->chr_length)/($self->_region_stop - $self->_region_start) : $w; #x position end
-    $gd->line($xb,$c,$xe,$c,$self->get_color($self->scale_color));
-    my $mtyb = $c-$self->scale_height/2; #major tick y begin
-    my $mtye = $c+$self->scale_height/2; #major tick y end
-    my $styb = $c-$self->scale_height/4; #minor tick y begin
-    my $stye = $c+$self->scale_height/4; #minor tick y end
+    $gd->line($xb,$c,$xe,$c,$self->get_color($self->ruler_color));
+    my $mtyb = $c-$self->ruler_height/2; #major tick y begin
+    my $mtye = $c+$self->ruler_height/2; #major tick y end
+    my $styb = $c-$self->ruler_height/4; #minor tick y begin
+    my $stye = $c+$self->ruler_height/4; #minor tick y end
     my $rb = $self->_region_start;
     $rb = 1 if $rb < 1;
     my $re = $self->_region_end;
     $re = $self->chr_length if $re > $self->chr_length;
     my $range = $re-$rb; #chromosomal positional range
     my $div = "1"."0"x int log10($range); #determine range scale (10, 100, 1000, etc)
-    print STDERR "\nSCALE: Center: $c, Start $xb, Stop: $xe, Ticks: $div, \n" if $self->DEBUG;
+    print STDERR "\nRULER: Center: $c, Start $xb, Stop: $xe, Ticks: $div, \n" if $self->DEBUG;
     $self->_make_ticks(scale=>$div*10, y1=>$mtyb, y2=>$mtye, range_begin=>$rb, range_end=>$re,text_loc=>1);
 #    $div /= 10;
     $self->_make_ticks(scale=>$div, y1=>$styb, y2=>$stye, range_begin=>$rb, range_end=>$re, text_loc=>-1);
-    $self->_image_h_used($self->_image_h_used + $self->scale_height+$self->padding/2);
+
   }
+
+#################### subroutine header begin ####################
+
+=head2 _make_ticks
+
+ Usage     : $self->_make_ticks(scale=>1000, y1=>$y1, y2=>$y2, range_begin=>1, range_end=>10000)
+ Purpose   : generate tick marks of height ($y2-$y1) using the range positions and the scale
+           : to calcualte where the ticks should be.
+ Returns   : none
+ Argument  : hash of key-value pairs where keys are:
+              y1   => starting y axis position of tick
+              y2   => ending y axis position of tick
+              range_begin => number representing the starting point of the ruler
+              range_end   => number representing the ending poitn of the ruler
+              scale       => points along the range at which to generate a tick mark
+ Throws    : 0
+ Comment   : This method will convert numbers drawn at the tick marks to use 
+              "K" if the number ends in 000
+              "M" if the nubmer ends in 000000
+              "G" if the number ends in 000000000
+           : This method also generates ticks that are the size of one chromsomal unit 
+             (usually nucleotides) if the magnification is high enough.
+           : This method is called by $self->_generate_ruler
+See Also   : 
+
+=cut
+
+#################### subroutine header end ####################
+
 
 sub _make_ticks
   {
@@ -640,6 +1476,36 @@ sub _make_ticks
 
   }
 
+#################### subroutine header begin ####################
+
+=head2 _gd_string
+
+ Usage     : $self->_gd_string(text=>$text, x=>$x, y=>$y, $size=>$size);
+ Purpose   : generate a string with gd for some text at some position specified
+           : by x, y coordinates.
+ Returns   : none
+ Argument  : hash of key-value pairs where keys are:
+              text    =>   text to be printed
+              x       =>   x axis coordiate
+              y       =>   y axis coordiate
+              color   =>   (Optional) an array refof three integers between 1-255
+                           This method calls $self->get_color to get the color from GD
+                           and will return the default color if none was specified
+              size    =>   For true type fonts, this will be the size of the font
+              angle   =>   For true type fonts, this will be the angle offset for the font
+ Throws    : 0 and a warning if X and Y are not defined
+ Comment   : This will check to see if the file is readable as specified by $self->font.
+           : If so, it will assume that file to be a true type font and use file in a call to
+             GD->stringTF.  Otherwise, it will fallback on the global variable $FONT for the
+             default GD font to use (GD::Font->MediumBold)
+
+See Also   : GD
+
+=cut
+
+#################### subroutine header end ####################
+
+
 sub _gd_string
   {
     my $self = shift;
@@ -671,147 +1537,25 @@ sub _gd_string
       }
   }
 
-sub _draw_chromosome
-  {
-    my $self = shift;
-    my $gd = $self->gd;
-    my $ch = $self->mag * $self->mag_step_height/2; #half chromosome image height
-    my $hc = $self->_image_h_used+($self->ih-$self->_image_h_used)/2; #height of center of chromsome image
-    my $w = $self->iw; #width of image
-    return unless $self->draw_chromosome;
-    print STDERR "\nChromosome image: Height/2: $ch, Height Center: $hc\n" if $self->DEBUG;
-    my $xs = $self->_region_start < 1 ? $w*abs($self->_region_start)/($self->_region_stop - $self->_region_start): 0;
-    my $xe = $self->_region_stop > $self->chr_length ? $w-$w*($self->_region_stop - $self->chr_length)/($self->_region_stop - $self->_region_start) : $w;
-#    $gd->filledRectangle($xs,$hc-$ch,$xe, $hc+$ch,$self->get_color(@{$self->chr_inner_color}));
-    $self->_chr_height($ch*2);
-    $gd->setBrush($self->chr_brush);
-    $gd->line($xs, $hc-$ch, $xe, $hc-$ch, gdBrushed);
-    $self->chr_brush->flipVertical();
-    $gd->setBrush($self->chr_brush);
-    $gd->line($xs, $hc+$ch, $xe, $hc+$ch, gdBrushed);
-    my $color = $self->get_color($self->chr_outer_color);
-    $gd->setStyle($color, $color, $color, GD::gdTransparent, GD::gdTransparent);
-    $gd->line($xs, $hc, $xe, $hc, gdStyled);
-    $self->draw_chr_end ($xs, "left", $hc) if ($xs > 0);
-    $self->draw_chr_end ($xe, "right", $hc) if ($xe < $w);
-    
-  }
+#################### subroutine header begin ####################
 
-sub chr_brush
-  {
-    my $self = shift;
-    return $self->_chr_brush if $self->_chr_brush;
-    my $mag = $self->mag;
-    my @bc = @{$self->chr_outer_color()};
-    my @ic = @{$self->chr_inner_color()};
-    my $edge_brush = new GD::Image(1,$mag+1);
-    $edge_brush->colorResolve(255,255,255);
-    $edge_brush->line(0,0,0,0,$edge_brush->colorResolve(@bc));
-    $edge_brush->line(0,$mag+1,0,$mag+1,$edge_brush->colorResolve(@ic));
-    for my $i (1..$mag)
-      {
-	my @c;
-	for my $j (0..2)
-	  {
-	    push @c, $bc[$j]+($ic[$j]-$bc[$j])/($mag+1)*$i;
-	  }
-	$edge_brush->line(0,$i,1,$i,$edge_brush->colorResolve(@c));
-      }
-    $self->_chr_brush($edge_brush);
-    return $self->_chr_brush;
-  }
+=head2 _set_region_for_point
 
-sub draw_chr_end
-  {
-    my $self = shift;
-    my $x = shift;
-    my $dir = shift || "left";
-    my $hc = shift; #$ch/2+$self->_image_h_used+$self->mag/2; #height of center of chromsome image
-    my $gd = $self->gd;
-    my $ch = $self->mag * $self->mag_step_height; #chromosome image height
-    
-    my @arc1 = $dir =~ /left/i ? (90, 180) : (0, 90);
-    my @arc2 = $dir =~ /left/i ? (180, 270) : (270, 0);
-    my @arc3 = $dir =~ /left/i ? (90, 270) : (270,90);
-    $gd->filledArc($x, $hc, $ch, $ch, @arc3, $self->get_color($self->chr_inner_color));
-    $gd->arc($x, $hc, $ch, $ch, @arc1, gdBrushed);
-    $self->chr_brush->flipVertical;
-    $gd->setBrush($self->chr_brush);
-    $gd->arc($x, $hc, $ch, $ch, @arc2, gdBrushed);
-  }
+ Usage     : $self->_set_region_for_point($chromosomal_location);
+ Purpose   : internal method to set the ranges of the viewable region of the chromosome
+ Returns   : none
+ Argument  : integer which cooresponds to the chromosomal location on which the view will
+           : will be centered
+ Throws    : 0 and a warning if no point was specified
+ Comment   : called internally by $self->set_region
+           : 
 
-sub mag_scale
-  {
-    #returns a hash where each key refers to a magnification and the value is the range of viewing (in base pairs)
-    my $self = shift;
-    my %opts = @_;
-    unless ($self->_mag_scale)
-      {
-	my %scale;
-	if ($self->mag_scale_type =~ /lin/i)
-	  {
-	    my $step = ceil(($self->chr_length-$self->max_mag)/($self->num_mag-1));
-	    for my $i (1..$self->num_mag)
-	      {
-		my $rang = $self->chr_length - $i * $step + $step;
-		$rang = $self->max_mag if $rang < $self->max_mag;
-		$rang = $self->chr_length + $step if $rang >= $self->chr_length;
-		$scale{$i} = $rang;
-	      }
-	  }
-	else #log
-	  {
-	    my $rang = $self->chr_length-$self->max_mag;;
-	    my $step = 10**(log10($rang)/($self->num_mag));
-	    print STDERR "Log Magnification Step: $step, Num Mags: ", $self->num_mag,"\n" if $self->DEBUG;
-	    $scale{1} = $self->chr_length;
-	    for my $i (2..$self->num_mag-1)
-	      {
-		$rang = ceil ($rang)/$step;
-		#$rang = $self->max_mag if $rang < $self->max_mag;
-		$scale{$i} = $rang+$self->max_mag;
-		$scale{$i} = $self->max_mag if $scale{$i} < $self->max_mag;
-	      }
-	    $scale{$self->num_mag} = $self->max_mag;
-	  }
-	$self->_mag_scale(\%scale);
-      }
-    return $self->_mag_scale;
-  }
+See Also   : 
 
-sub set_region
-  {
-    #user sets either a range with a start and stop, or just a start point.
-    #if only a start point is set, then we assume that will be the center of the view
-    my $self = shift;
-    my %opts = @_;
-    my $start = $opts{start} || $opts{begin} || $opts{START} || $opts{BEGIN} 
-      || $opts{center} || $opts{CENTER} 
-	|| $opts{point} || $opts{POINT} || 1;
-#	  ||$self->start || 0;
-    my $end = $opts{stop} || $opts{end} || $opts{STOP} || $opts{END};# || $self->stop;
-#    $self->start($start);
-#    $self->stop($end);
-    if (defined $start && $end)
-      {
-	$self->_set_region_start_stop($start, $end);
-      }
-    else 
-      {
-	$self->_set_region_for_point($start);
-      }
-  }
-sub set_point
-  {
-    my $self = shift;
-    my $point = shift;
-    unless (defined $point)
-      {
-	warn "You must specify a chromosomal location!";
-	return 0;
-      }
-    $self->set_region(start=>$point);
-  }
+=cut
+
+#################### subroutine header end ####################
+
 
 sub _set_region_for_point
   {
@@ -828,6 +1572,26 @@ sub _set_region_for_point
     my $stop = $point + $range;
     $self->_region_stop($stop);
   }
+
+
+#################### subroutine header begin ####################
+
+=head2 _set_region_start_stop
+
+ Usage     : $self->_set_region_start_stop($start, $end);
+ Purpose   : uses the $start and $end chromosomal positions to determin the highest magnification
+           : that will show the entire specified range
+ Returns   : 0 unless $start and $end are defined
+ Argument  : two integers that correspond to the start and end chomosomal positions to be viewed
+ Throws    : 0 unless $start and $end are defined
+ Comment   : called internally by $self->set_region
+           : 
+
+See Also   : 
+
+=cut
+
+#################### subroutine header end ####################
 
 
 sub _set_region_start_stop
@@ -855,76 +1619,15 @@ sub _set_region_start_stop
   }
 
 
-sub find_magnification_for_size
-  {
-    my $self = shift;
-    my $len = shift;
-    my $chr_len = $self->chr_length;
-    unless ($chr_len)
-      {
-	warn 'You must set the length of the chromosome before setting the region.\n$self->chr_length($length)';
-	return 0;
-      }
-    my $mag_scale = $self->mag_scale;
-    #we want the highest magnification that contains the entire region
-    my $mag = $self->magnification;
-    foreach my $magt (sort {$a <=> $b} keys %$mag_scale)
-      {
-	$mag = $magt if $mag_scale->{$magt} > $len;
-      }
-#    return $mag;
-    $self->magnification($mag);
-    return $self->magnification();
-  }
+#################### subroutine header begin ####################
 
-sub find_size_for_magnification
-  {
-    my $self = shift;
-    my $mag = shift || $self->mag();
-    my $scale = $self->mag_scale;
-    return 0 unless $scale && $mag;
-    return $scale->{$mag};
-  }
+=head2 _region_end
 
-sub magnification
-  {
-    my $self = shift;
-    my $mag = shift;
-    #are we changing magnification?  if so, we need to set the region start and end points
+ Purpose   : alias for accessor function $self->_region_stop
 
-    $mag = $self->num_mag if $mag && $mag > $self->num_mag;
-    $self->_magnification($mag) if $mag;
-    if ($self->_region_start && $mag)
-      {
-	my $point = $self->_region_start;
-	$point += ceil (($self->_region_stop - $self->_region_start)/2) if $self->_region_stop;
-	$self->set_point($point);
-      }
-    
-    return $self->_magnification();
-  }
+=cut
 
-sub mag
-  {
-    my $self = shift;
-    return $self->magnification(@_);
-  }
-
-sub gd
-  {
-    my ($self) = @_;
-    my $gd = $self->_gd();
-    unless ($gd)
-      {
-	my ($wid, $hei) = ($self->image_width, $self->image_height);
-	$gd = new GD::Image($wid, $hei,[1]);
-	my $white = $gd->colorAllocate(255,255,255);
-#	$gd->transparent($white);
-	$gd->interlaced('true');
-	$self->_gd($gd);
-      }
-    return $gd;
-  }
+#################### subroutine header end ####################
 
 
 sub _region_end
@@ -932,6 +1635,17 @@ sub _region_end
     my $self = shift;
     return $self->_region_stop(@_);
   }
+
+#################### subroutine header begin ####################
+
+=head2 _region_begin
+
+ Purpose   : alias for accessor function $self->_region_start
+
+=cut
+
+#################### subroutine header end ####################
+
 
 sub _region_begin
   {
