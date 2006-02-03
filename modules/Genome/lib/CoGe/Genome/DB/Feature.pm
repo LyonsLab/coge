@@ -253,7 +253,13 @@ sub annotation_pretty_print
     $anno_obj->Val_delimit("\n");
     $anno_obj->Add_type(0);
     $anno_obj->String_end("\n");
-    $anno_obj->add_Annot(new CoGe::Genome::Accessory::Annotation(Type=>"Location", Values=>["Chr ".$self->chr, "".$self->begin_location."-".$self->end_location.""."(".$self->strand.")"], Type_delimit=>"\n\t", Val_delimit=>" "));
+    my $start = $self->begin_location;
+    my $stop = $self->end_location;
+    my $chr = $self->chr;
+    my $strand = $self->strand;
+    my $info_id = $self->data_info->id;
+    my $location = "Chr ".$chr. "".$start."-".$stop.""."(".$strand.")";
+    $anno_obj->add_Annot(new CoGe::Genome::Accessory::Annotation(Type=>"Location", Values=>[$location], Type_delimit=>"\n\t", Val_delimit=>" "));
     foreach my $anno ($self->annos)
       {
 	my $type = $anno->type();
@@ -291,11 +297,20 @@ sub annotation_pretty_print
 sub annotation_pretty_print_html
   {
     my $self = shift;
+    my %opts = @_;
+    my $loc_link = $opts{loc_link};
     my $anno_obj = new CoGe::Genome::Accessory::Annotation(Type=>"anno");
     $anno_obj->Val_delimit("\n<BR>\n");
     $anno_obj->Add_type(0);
     $anno_obj->String_end("\n<BR>\n");
-    $anno_obj->add_Annot(new CoGe::Genome::Accessory::Annotation(Type=>"<font class=\"annotation\">Location</font>", Values=>["Chr ".$self->chr, "".$self->begin_location."-".$self->end_location.""."(".$self->strand.")"], Type_delimit=>"\n<BR><li>", Val_delimit=>" "));
+    my $start = $self->begin_location;
+    my $stop = $self->end_location;
+    my $chr = $self->chr;
+    my $strand = $self->strand;
+    my $info_id = $self->data_info->id;
+    my $location = "Chr ".$chr. " ".$start."-".$stop.""."(".$strand.")";
+    $location = qq{<a href="$loc_link?start=$start&stop=$stop&chr=$chr&di=$info_id&strand=$strand">}.$location."</a>\n" if $loc_link;
+    $anno_obj->add_Annot(new CoGe::Genome::Accessory::Annotation(Type=>"<font class=\"annotation\">Location</font>", Values=>[$location], Type_delimit=>"\n<BR><li>", Val_delimit=>" "));
     foreach my $anno ($self->annos)
       {
 	my $type = $anno->type();
