@@ -7,6 +7,10 @@ use GS::LogUser;
 use HTML::Template;
 use Data::Dumper;
 use CoGe::Genome;
+use CoGe::Graphics::Chromosome;
+use CoGe::Graphics::Feature;
+use CoGe::Graphics::Feature::Gene;
+use CoGe::Graphics::Feature::NucTide;
 
 $ENV{PATH} = "/opt/apache2/CoGe/";
 
@@ -31,11 +35,17 @@ my $pj = new CGI::Ajax(
 		       accn_search=>\&accn_search,
 		       clear_div=>\&clear_div,
 		       get_anno=>\&get_anno,
+		       show_location=>\&show_location,
+		       gen_image=>\&gen_image,
 		      );
 $pj->JSDEBUG(0);
 $pj->DEBUG(0);
 print $pj->build_html($FORM, \&gen_html);
 
+sub gen_image
+  {
+    return qq{<font class="loading">Generating chromosomal view image. . .</font>};
+  }
 
 sub clear_div
   {
@@ -57,6 +67,7 @@ sub get_types
     return $blank unless $html =~ /OPTION/;
     return ($html, 1);
   }
+
 
 sub accn_search
   {
@@ -90,9 +101,33 @@ sub get_anno
       }
     my $anno;
     $anno .= "<font class=small>Annotation count: ".scalar @feats."</font>\n<BR>\n" if scalar @feats;
-    $anno .= join "\n<BR><HR><BR>\n", map {$_->annotation_pretty_print_html} @feats;
-    $anno = "<font class=\"annotation\">No annotations for this entry</font>" unless $anno;
-    return $anno;
+    my $i = 0;
+    foreach my $feat (@feats)
+      {
+	$anno .= join "\n<BR><HR><BR>\n", $feat->annotation_pretty_print_html().
+	  qq{<input type="button" value = "Click for chromosomal view" onClick="gen_image([],['loc$i']);show_location(['args__}.$feat->begin_location.qq{', 'args__}.$feat->end_location.qq{', 'args__}.$feat->chr.qq{', 'args__}.$feat->info->id.qq{'],['loc$i']);">}.
+	    qq{<DIV id="loc$i"></DIV>};
+	$anno = "<font class=\"annotation\">No annotations for this entry</font>" unless $anno;
+	$i++;
+      }
+    return ($anno);
+  }
+
+sub show_location
+  {
+    my %opts = @_;
+    my $start = shift;#$opts{start};
+    my $stop = shift; #$opts{stop};
+    my $chr = shift; # $opts{chr};
+    my $info_id = shift; # = $opts{info_id};
+    my $num= int(rand(100000));
+    my $file = "./tmp/pict$num.png";
+#    system("GenomePNG.pl $start $stop $chr $info_id $file");
+#    gen_pict(start=>$start, stop=>$stop, chr=>$chr, info_id=>$info_id,file=>$file);
+#    return "<img src=$file>";
+    my $link = qq{<img src="GenomePNG.pl?start=$start&stop=$stop&chr=$chr&di=$info_id">\n};
+    print STDERR $link;
+    return $link;
   }
 
 sub gen_html
@@ -181,3 +216,83 @@ sub get_data_source_info_for_accn_old
     return ($html);
   }
 
+
+sub gen_pict
+  {
+    my %opts = @_;
+    my $start = $opts{'start'};
+    my $stop = $opts{'stop'};
+    $stop = $start unless $stop;
+    my $di = $opts{'info_id'};
+    my $chr = $opts{'chr'};
+    my $file = $opts{'file'};
+    print STDERR Dumper @_;
+    return unless ($start && $stop && $di);
+    my $c = new CoGe::Graphics::Chromosome;
+    my $chr_length = $DB->get_genomic_sequence_obj->get_last_position($di);
+    $c->chr_length($chr_length);
+    $c->iw(1600);
+    $c->max_mag((80));
+    $c->DEBUG(0);
+    $c->feature_labels(0);
+    $c->fill_labels(1);
+    $c->draw_chromosome(1);
+    $c->draw_ruler(1);
+    $c->set_region(start=>$start, stop=>$stop);
+    $c->mag($c->mag-1);
+    $start = $c->_region_start;
+    $stop = $c->_region_stop;
+
+    foreach	 my $feat ($DB->get_feature_obj->get_features_in_region(start=>$start, end=>$stop, info_id=>$di, chr=>$chr)) 
+      {
+	my $f;
+	if ($feat->type->name =~ /Gene/i) {
+	  $f = CoGe::Graphics::Feature::Gene->new();
+	  $f->color([255,0,0,50]);
+	  foreach	 my $loc ($feat->locs) {
+	    $f->add_segment(start=>$loc->start, stop=>$loc->stop);
+	    $f->strand($loc->strand);
+	  }
+	  $f->order(1);
+	} elsif ($feat->type->name =~ /CDS/i) {
+	  $f = CoGe::Graphics::Feature::Gene->new();
+	  $f->color([0,255,0, 50]);
+	  foreach	 my $loc ($feat->locs) {
+	    $f->add_segment(start=>$loc->start, stop=>$loc->stop);
+	    $f->strand($loc->strand);
+	  }
+	$f->order(3);
+      } elsif ($feat->type->name =~ /rna/i) {
+	$f = CoGe::Graphics::Feature::Gene->new();
+	$f->color([0,0,255, 50]);
+	foreach	 my $loc ($feat->locs) {
+	  $f->add_segment(start=>$loc->start, stop=>$loc->stop);
+	  $f->strand($loc->strand);
+	}
+	$f->order(2);
+      }
+		 my ($name) = map {$_->name} $feat->names;
+      $f->label($name);
+      $f->type($feat->type->name);
+
+      $c->add_feature($f);
+    }
+    my $seq = uc($DB->get_genomic_sequence_obj->get_sequence(start=>$start, end=>$stop, chr=>$chr, info_id=>$di)); 
+    my $seq_len = length $seq;
+    my $chrs = int (($c->_region_stop-$c->_region_start)/$c->iw);
+    my $pos = 0;
+    $start = 1 if $start < 1;
+    while ($pos < $seq_len)
+      {
+	my $subseq = substr ($seq, $pos, $chrs);
+	my $rcseq = $subseq;
+	$rcseq =~ tr/ATCG/TAGC/;
+#	print STDERR $subseq,"\t", $rcseq,"\n";
+	my $f1 = CoGe::Graphics::Feature::NucTide->new({nt=>$subseq, strand=>1, start =>$pos+$start});
+	my $f2 = CoGe::Graphics::Feature::NucTide->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
+	$c->add_feature($f1, $f2);
+	$pos+=$chrs;
+	#    print "working on position ",$i+$start,"\n";
+      }
+    $c->generate_png(file=>"/opt/apache/CoGe/$file");
+  }
