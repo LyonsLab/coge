@@ -8,8 +8,8 @@ BEGIN {
     $VERSION     = '0.1';
     $HEIGHT = 5;
     $WIDTH = 5;
-    $ATC= [200,200,255];
-    $GCC= [200,255,200];
+    $ATC= [150,150,255];
+    $GCC= [150,255,150];
     __PACKAGE__->mk_accessors(
 "nt",
 );
@@ -26,14 +26,33 @@ sub _initialize
     $self->bgcolor([255,255,255]) unless $self->bgcolor;
     $self->fill(1);
     $self->order(1);
-    if ($self->nt && $self->nt =~ /a|t/i)
+    $self->stop($self->start + length $self->nt) unless $self->stop;
+    my $at = 0;
+    my $cg = 0;
+    my $seq = $self->nt;
+    while ($seq=~ /a|t|n/ig)
       {
-	$self->color($ATC) unless $self->color;
+	$at++;
       }
-    else
+    while ($seq =~ /c|g|n/ig)
       {
-	$self->color($GCC) unless $self->color;
+	$cg++;
       }
+    print STDERR "SEQ: $seq\n" unless ($at+$cg) > 0;
+    my @color;
+    for my $i (0..2)
+      {
+	push @color, $ATC->[$i]*$at/($at+$cg)+ $GCC->[$i]*$cg/($at+$cg);
+      }
+    $self->color(\@color);
+#    if ($self->nt && $self->nt =~ /a|t/i)
+#      {
+#	$self->color($ATC) unless $self->color;
+#      }
+#    else
+#      {
+#	$self->color($GCC) unless $self->color;
+#      }
     $self->label($self->nt) if $self->nt;
   }
 
