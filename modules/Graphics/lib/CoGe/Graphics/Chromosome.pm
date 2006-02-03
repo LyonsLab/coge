@@ -772,6 +772,7 @@ sub generate_png
       }
     else
       {
+	binmode STDOUT;
 	print $self->gd->png;
       }
     $self->_gd(undef);
@@ -1233,8 +1234,8 @@ sub _draw_features
 	my $feat_h = $self->feature_height*$self->mag;
 	my $offset = ($feat->order-1)*($feat_h+$self->padding)+$self->padding;
 	$offset = 0 if $feat->fill;
-	$feat_h = ($self->_chr_height-$self->mag)/2 if $feat->fill;
-	my $y = $feat->strand =~ /-/ ? $c+ $offset+1: $c - $offset-$feat_h-1;
+	$feat_h = ($self->_chr_height-$self->mag)/2-1 if $feat->fill;
+	my $y = $feat->strand =~ /-/ ? $c+ $offset+1: $c - $offset-$feat_h;
         my $sy;
 	if ($feat->fill)
 	  {
@@ -1443,7 +1444,7 @@ sub _make_ticks
 	if ($text_loc)
 	  {
 	    my $h = $text_loc =~ /-/ ? $y2-1: $y1-$self->padding/2;
-	    $self->_gd_string(text=>$rb,x=>$x+$unit+2, 'y'=>$h, size => ($y2-$y1)/1.5);
+	    $self->_gd_string(text=>$rb,x=>$x+$unit+2, 'y'=>$h, size => ($y2-$y1)/1.25);
 	  }
       }
     while ($tick <= $re)
@@ -1469,7 +1470,7 @@ sub _make_ticks
 		      );
 	    my $t = $tick/$key . $end{$key};
 	    my $h = $text_loc =~ /-/ ? $y2-1: $y1-$self->padding/2;
-	    $self->_gd_string(text=>$t,x=>$x+$unit+2, 'y'=>$h, size => ($y2-$y1));#/1.5  );
+	    $self->_gd_string(text=>$t,x=>$x+$unit+2, 'y'=>$h, size => ($y2-$y1)/1.25);#/1.5  );
 	  }
 	$tick+= $div;
       }
