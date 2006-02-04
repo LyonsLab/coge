@@ -12,11 +12,11 @@ use Data::Dumper;
 my $form = new CGI;
 my $db = new CoGe::Genome;
 my $c = new CoGe::Graphics::Chromosome;
-my $start = $form->param('start') || $form->param('x') || shift || 5782;#1;
-my $stop = $form->param('stop') || shift || 5945;#190000;
+my $start = $form->param('start') || $form->param('x') || shift || 19666;#1;
+my $stop = $form->param('stop') || shift || 20451;#190000;
 $stop = $start unless $stop;
-my $di = $form->param('di') || shift || 7;
-my $chr = $form->param('chr') || shift || 2;
+my $di = $form->param('di') || shift || 8;
+my $chr = $form->param('chr') || shift || 3;
 my $iw = $form->param('iw') || 1600;
 my $mag = $form->param('m') || $form->param('mag');
 my $file = $form->param('file');# || "./tmp/pict.png";
@@ -27,7 +27,7 @@ unless ($start && $stop && $di && $chr)
 
 my $chr_length = $db->get_genomic_sequence_obj->get_last_position($di);
 $c->chr_length($chr_length);
-$c->iw(1600);
+$c->iw($iw);
 $c->max_mag((80));
 $c->DEBUG(0);
 $c->feature_labels(0);
