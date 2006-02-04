@@ -1306,8 +1306,37 @@ sub _draw_feature
     my $fw = sprintf("%.1f",$fe - $fs)+1; #calculate the width of the feature;
     return if $fw < 1; #skip drawing if less than one pix wide
     print STDERR "Drawing feature ".$feat->label.": ", $feat->start, "-", $feat->end," Dimentions:",$fw,"x",$ih, " at position: $fs,$y"."\n" if $self->DEBUG;
-    $self->gd->copyResampled($feat->gd, $fs, $y,0,0, $fw, $ih, $feat->iw, $feat->ih);
+    if ($feat->fill)
+      {
+	$self->gd->copyResampled($feat->gd, $fs, $y,0,0, $fw, $ih, $feat->iw, $feat->ih);
+      }
+    else
+      {
+	#okay, we are going to need to do some fancy stuff in order to smoothly resize and paste the feature onto the main image
+	#1. create a blank image of the appropriate size
+	my $newgd = GD::Image->new ($fw, $ih,[1]);
+	#2. copy, resize, and resample the feature onto the new image
+	$newgd->copyResampled($feat->gd, 0, 0, 0, 0, $fw, $ih, $feat->iw, $feat->ih);  
+	#3. find any colors that are close to white and set them to white.
+	my $max = 240;
+	for my $x (0..$fw)
+	  {
+	    for my $y (0..$ih)
+	      {
+		my ($r, $g, $b) = $newgd->rgb($newgd->getPixel($x, $y));
+		if ($r > $max && $g > $max && $b > $max)
+		  {
+		    $newgd->setPixel($x, $y, $newgd->colorResolve(255,255,255));
+		  }
+ 	      }
+	  }
+	#4. make white transparent
+	$newgd->transparent($newgd->colorResolve(255,255,255));
+	#5. copy new image into appropriate place on image.
+	$self->gd->copy($newgd, $fs, $y, 0, 0, $fw, $ih);
+      }
     $self->_gd_string(y=>$sy, x=>$fs, text=>$feat->label, size=>15) if ($self->feature_labels && $fw>5); #don't make the string unless the feature is at least 5 pixels wide
+
     if ($self->fill_labels && $feat->fill && $fw>5) #don't make the string unless the feature is at least 5 pixels wide
       {
 	my $size = $fw >= 15 ? 15 : $fw;
