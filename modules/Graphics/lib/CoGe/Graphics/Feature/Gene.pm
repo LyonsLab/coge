@@ -64,7 +64,7 @@ sub _post_initialize
     my %opts = @_;
     my $gd = $self->gd;
     $gd->fill(0,0, $self->get_color($self->bgcolor));
-    $gd->transparent($self->get_color($self->bgcolor));
+#    $gd->transparent($self->get_color($self->bgcolor));
     my $s = $self->start;
     my $black = $self->get_color(0,0,0);
     my $color = $self->get_color($self->color);
