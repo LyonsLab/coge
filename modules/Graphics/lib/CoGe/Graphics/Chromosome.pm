@@ -135,8 +135,8 @@ The specific aims of this package is to:
 
 =head1 USAGE
 
-use CoGe::Graphics::Chromsome;
-my $c = CoGe::Graphics::Chromosome->new();
+ use CoGe::Graphics::Chromsome;
+ my $c = CoGe::Graphics::Chromosome->new();
 
 =head1 BUGS
 
@@ -890,7 +890,7 @@ sub gd
 
 =head2 get_color
 
- Usage     : my $color_index = $c->get-color([0,0,0]);
+ Usage     : my $color_index = $c->get_color([0,0,0]);
  Purpose   : get's the color index from the GD object for your specified color
  Returns   : a GD color index (integer?)
  Argument  : an array or array ref of three to four integers between 0 and 255
@@ -1234,7 +1234,7 @@ sub _draw_features
 	my $feat_h = $self->feature_height*$self->mag;
 	my $offset = ($feat->order-1)*($feat_h+$self->padding)+$self->padding;
 	$offset = 0 if $feat->fill;
-	$feat_h = ($self->_chr_height-$self->mag)/2-1 if $feat->fill;
+	$feat_h = ($self->_chr_height-$self->mag-1)/2 if $feat->fill;
 	my $y = $feat->strand =~ /-/ ? $c+ $offset+1: $c - $offset-$feat_h;
         my $sy;
 	if ($feat->fill)
@@ -1242,11 +1242,6 @@ sub _draw_features
 	    $sy = $feat->strand =~ /-/ ? $c+2 : $c-$self->padding;
 	  }
 	$self->_draw_feature(feat=>$feat, 'y'=>$y, ih=>$feat_h, 'sy'=>$sy);
-	#may need to fill in color with $bgcolor. . .
-	if ($y > ($self->_chr_center-$self->_chr_height/2) && $y < ($self->_chr_center+$self->_chr_height/2))
-	  {
-	    #$self->gd->fill($self->iw/2,$y-1, $self->get_color($self->chr_inner_color));
-	  }
       }
   }
 
@@ -1266,7 +1261,7 @@ sub _draw_features
                               be drawn if the chromosome object permits the drawing of labels.
                               (As determined from $self->feature_labels and $self->fill_labels)
  Throws    : 0 if a valid feature object was not specified
- Comment   : This uses GD->copyResample to resample the gd image from the feature object onto
+ Comment   : This uses GD->copyResampled to resample the gd image from the feature object onto
            : the chromosome gd objects.  The feature height is determined by either a specified
              parameter or by the feature object.  The width of the feature is calculated based 
              on the chromosomal location of the feature (usually in nucleotides).  Together
@@ -1335,14 +1330,18 @@ sub _draw_feature
 	#5. copy new image into appropriate place on image.
 	$self->gd->copy($newgd, $fs, $y, 0, 0, $fw, $ih);
       }
-    $self->_gd_string(y=>$sy, x=>$fs, text=>$feat->label, size=>15) if ($self->feature_labels && $fw>5); #don't make the string unless the feature is at least 5 pixels wide
-
-    if ($self->fill_labels && $feat->fill && $fw>5) #don't make the string unless the feature is at least 5 pixels wide
+    
+    my $size;
+    if ($self->fill_labels && $feat->fill) {$size=$fw >= 15 ? 15 : $fw;}
+    elsif ($self->feature_labels) 
       {
-	my $size = $fw >= 15 ? 15 : $fw;
-	$self->_gd_string(y=>$sy, x=>$fs, text=>$feat->label, size=>$size);
-	return $y+$feat->ih+$self->padding;
+        $size = $ih > 13 ? 13 : $ih; 
+	$size=$size/2 if $fw <$size * length $feat->label;
+	#print STDERR $feat->label,": $fw, $size\n";
+        $sy=$y+$ih/2-$size/2;
+	$fs+=2;
       }
+    $self->_gd_string(y=>$sy, x=>$fs, text=>$feat->label, size=>$size) if ( ($self->feature_labels || $self->fill_labels)&& $fw>5); #don't make the string unless the feature is at least 5 pixels wide
   }
 
 #################### subroutine header begin ####################
