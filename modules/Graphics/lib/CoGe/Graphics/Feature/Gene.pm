@@ -12,6 +12,7 @@ BEGIN {
 "block_height",
 "segments", 
 "print_label", #flag for printing feature label in gene
+"add_type", #flag to set if gene type should be appended to label
 );
 }
 
@@ -55,13 +56,14 @@ sub _initialize
     $self->image_height($h);
     $self->bgcolor([255,255,255]) unless $self->bgcolor;
     $self->block_height($BLOCK_HEIGHT) unless $self->block_height;
-    $self->print_label(1) unless defined $self->print_label();
+    $self->print_label(0) unless defined $self->print_label();
   }
 
 sub _post_initialize
   {
     my $self = shift;
     my %opts = @_;
+    $self->label($self->label." (".$self->type.")") if $self->add_type && $self->type;
     my $gd = $self->gd;
     $gd->fill(0,0, $self->get_color($self->bgcolor));
 #    $gd->transparent($self->get_color($self->bgcolor));
