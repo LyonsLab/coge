@@ -12,14 +12,14 @@ use Data::Dumper;
 my $form = new CGI;
 my $db = new CoGe::Genome;
 my $c = new CoGe::Graphics::Chromosome;
-my $start = $form->param('start') || $form->param('x') || shift || 19666;#1;
-my $stop = $form->param('stop') || shift || 20451;#190000;
+my $start = $form->param('start') || $form->param('x') || shift || 6948851;#1;
+my $stop = $form->param('stop') || shift || 6948934;#190000;
 $stop = $start unless $stop;
-my $di = $form->param('di') || shift || 8;
-my $chr = $form->param('chr') || shift || 3;
+my $di = $form->param('di') || shift || 6;
+my $chr = $form->param('chr') || shift || 1;
 my $iw = $form->param('iw') || 1600;
 my $mag = $form->param('m') || $form->param('mag');
-my $file = $form->param('file');# || "./tmp/pict.png";
+my $file = $form->param('file');#|| "./tmp/pict.png";
 unless ($start && $stop && $di && $chr)
   {
     print STDERR "missing needed parameters: Start: $start, Stop: $stop, Info_id: $di, Chr: $chr\n";
@@ -30,7 +30,7 @@ $c->chr_length($chr_length);
 $c->iw($iw);
 $c->max_mag((80));
 $c->DEBUG(0);
-$c->feature_labels(0);
+$c->feature_labels(1);
 $c->fill_labels(1);
 $c->draw_chromosome(1);
 $c->draw_ruler(1);
@@ -70,7 +70,7 @@ foreach my $feat($db->get_feature_obj->get_features_in_region(start=>$start, end
 	  }
 	$f->order(3);
       }
-    elsif ($feat->type->name =~ /rna/i)
+    elsif ($feat->type->name =~ /mrna/i)
       {
 	$f = CoGe::Graphics::Feature::Gene->new();
 	$f->color([0,0,255, 50]);
@@ -78,6 +78,18 @@ foreach my $feat($db->get_feature_obj->get_features_in_region(start=>$start, end
 	  {
 	    $f->add_segment(start=>$loc->start, stop=>$loc->stop);
 	    $f->strand($loc->strand);
+	  }
+	$f->order(2);
+      }
+    elsif ($feat->type->name =~ /rna/i)
+      {
+	$f = CoGe::Graphics::Feature::Gene->new();
+	$f->color([200,200,200, 50]);
+	foreach my $loc ($feat->locs)
+	  {
+	    $f->add_segment(start=>$loc->start, stop=>$loc->stop);
+	    $f->strand($loc->strand);
+	    $f->add_type(1);
 	  }
 	$f->order(2);
       }
