@@ -209,7 +209,7 @@ BEGIN {
  "_chr_brush",
 "_chr_center", "_chr_height", "_chr_h1", "_chr_h2", #interal storage of chromosome image height positions
 "_features", #internal storage of features
-
+"_fill_features", #internal storeage of fill features
 
 #"start", "stop", #user defined start and stop.  Not sure if this is needed. . .
 );
@@ -257,6 +257,7 @@ sub new
     $self->mag(5);
     $self->font($FONTTT);
     $self->_features([]);
+    $self->_fill_features([]);
     return $self;
 }
 
@@ -449,6 +450,10 @@ sub set_point
            : fill will be set to 0
            : stop will be set to start
            : Also, the feature's GD object will be initialized upon import.
+	   : There is a check for whether the added feature overlaps other features.  
+	   : If so, a counter, $feat->_overlap is incemented in the feature object.
+	   : This is later used by the $self->_draw_feature algorithm to figure
+	   : out how to best draw overlapping features.
 See Also   : CoGe::Graphics::Feature
 
 =cut
@@ -470,15 +475,25 @@ sub add_feature
 	$feat->fill(0) unless $feat->fill;
 	$feat->stop($feat->start) unless defined $feat->stop;
 	$feat->gd; #initialize feature;
+	$feat->_overlap(1) unless $feat->_overlap;#detects overlapping feature on the same track 
+	$feat->_overlap_pos(1) unless $feat->_overlap_pos; #placement for overlapping features
 	if (ref($feat) =~ /Feature/i)
 	  {
 	    unless ($feat->order)
 	      {
-		my $last_feat = $self->get_feats(last=>1, strand=>$feat->strand, fill=>$feat->fill);
+		my $last_feat = $self->get_feats(last_order=>1, strand=>$feat->strand, fill=>$feat->fill);
 		my $order = $last_feat ? $last_feat->order()+1 : 1;
 		$feat->order($order);
 	      }
-	    push @{$self->_features},$feat;
+	    $self->_check_overlap($feat);
+	    if ($feat->fill)
+	      {
+	        push @{$self->_fill_features}, $feat;
+  	      }
+	    else
+	      {
+	        push @{$self->_features},$feat;
+	      }
  	  }
 	else
 	  {
@@ -488,6 +503,53 @@ sub add_feature
       }
   }
 
+
+#################### subroutine header begin ####################
+
+=head2 _check_overlap
+
+ Usage     : $self->_check_overlap($feature);
+ Purpose   : This internal method is called by $self->add_feature in determine if the 
+           : being added overlaps another feature on the same strand, order, and fill
+	   : type.  If so, it increments an internal counter in both features called
+	   : _overlap. A positional counter called _overlap_pos is incremented in the feature 
+	   : being searched.  This counter is later used by $self->_draw_feature to 
+	   : determine the appropriate way to draw the overlapping features
+ Returns   : none
+ Argument  : a CoGe::Graphics::Feature object
+ Throws    : none
+ Comment   : 
+           : 
+
+See Also   : $self->add_feature();
+
+=cut
+
+#################### subroutine header end ####################
+
+sub _check_overlap
+  {
+    my $self = shift;
+    my $feat = shift;
+    return if $feat->skip_overlap_search;
+    my @feats = sort {$a->stop <=> $b->stop} $self->get_feats(strand=>$feat->strand, fill=>$feat->fill, order=>$feat->order);
+    return unless @feats;
+    #since this can take a while, let's see if we can skip the search by checking if the feature to be checked is outside the bounds of existing features
+    return if ($feat->stop < $feats[0]->start || $feat->start > $feats[-1]->stop);
+    foreach my $f (@feats)
+    	{
+#	  if ( ($feat->start >= $f->start && $feat->start <= $f->stop)
+#	  || ($feat->stop <= $f->stop && $feat->stop >= $f->start)
+#	  || ($feat->start < $f->start && $feat->stop > $f->stop) )
+	  unless ( ($feat->start > $f->stop) || ($feat->stop < $f->start) )
+	    {
+	      print STDERR "Overlap: ",$feat->name,"\t",$f->name,"\n" if $self->DEBUG; 
+	      $feat->_overlap($feat->_overlap+1);
+	      $f->_overlap($f->_overlap+1);
+	      $feat->_overlap_pos($feat->_overlap_pos+1);
+	    }
+	}	
+  }
 #################### subroutine header begin ####################
 
 =head2 get_features
@@ -507,6 +569,7 @@ sub add_feature
                       "fill in" a region on a chromsome.  An example of this would be a 
                       nucleotide where you would want to color an entire region of the chromosome
                       for a specific nucleotide.
+	     last_order => flag for retrieving only the feature with the highest order
  Throws    : none
  Comment   : This is mostly used internally, but is provided in case you want to retrieve a 
            : feature that was previously added
@@ -524,14 +587,18 @@ sub get_features
     my %opts = @_;
     my $order = $opts{order} || $opts{ORDER};
     my $type = $opts{type} || $opts{TYPE};
-    my $last = $opts{last} || $opts{LAST}; #flag to get the highest order feature for a location
+    my $last = $opts{last_order} || $opts{LAST_ORDER}; #flag to get the highest order feature for a location
     my $strand = $opts{strand} || $opts{STRAND};
     my $fill = $opts{fill};
     $fill = $opts{FILL} unless defined $fill; #get filled features?
-    return unless $self->_features;
     my @rfeats;
-    foreach my $feat (@{$self->_features})
-      {
+    my @feat_refs;
+    push @feat_refs, $self->_fill_features if $fill || !(defined $fill);
+    push @feat_refs, $self->_features if (defined $fill && $fill == 0) || !(defined $fill);
+    foreach my $ref (@feat_refs)
+     {
+       foreach my $feat (@$ref)
+       {
 	if ($strand)
 	  {
 	    if ($strand =~ /-/)
@@ -551,12 +618,13 @@ sub get_features
 	  {
 	    next unless $feat->type eq $type;
 	  }
-	if (defined $fill)
-	 {
-	   next unless $feat->fill eq $fill;
-	 }
+#	if (defined $fill)
+#	  {
+#	    next unless $feat->fill eq $fill;
+#	  }
 	push @rfeats, $feat
       }
+     }
     @rfeats = sort {$a->order <=> $b->order} @rfeats;
 
     if ($last)
@@ -967,10 +1035,10 @@ sub set_image_height
     my $h = $self->padding; #give use some padding
     $h += $self->ruler_height+$self->padding;
     my $chrh = $self->mag * $self->chr_mag_height+$self->mag/2+$self->padding;# if $self->draw_chromosome; #chromosome image height
-    my $top_feat = $self->get_feats(last=>1, strand=>1, fill=>0);
+    my $top_feat = $self->get_feats(last_order=>1, strand=>1, fill=>0);
     my $tfh = $top_feat->order * ($feat_height+$self->padding)+2*$self->padding if $top_feat;
     $tfh = 0 unless $tfh;
-    my $bot_feat = $self->get_feats(last=>1, strand=>-1, fill=>0);
+    my $bot_feat = $self->get_feats(last_order=>1, strand=>-1, fill=>0);
     my $bfh = $bot_feat->order * ($feat_height+$self->padding)+2*$self->padding if $bot_feat;
     $bfh = 0 unless $bfh;
     $h += $tfh > $chrh/2 ? $tfh : $chrh/2;
@@ -1220,7 +1288,7 @@ sub _draw_features
     my $self = shift;
     my $c = $self->_image_h_used+($self->ih - $self->_image_h_used)/2;
     print STDERR "Image used: ".$self->_image_h_used."  Image Height: ".$self->ih."  Center: $c\n" if $self->DEBUG;
-    foreach my $feat (sort {$b->fill <=> $a->fill} $self->get_features)
+    foreach my $feat ( $self->get_feature(fill=>1), $self->get_features(fill=>0))
       {
 	#skip drawing features that are outside (by two times the range being viewed) the view
 	if ($feat->start)
@@ -1231,11 +1299,11 @@ sub _draw_features
 	  {
 	    next if $feat->stop < $self->_region_start-2*($self->_region_stop - $self->_region_start );
 	  }
-	my $feat_h = $self->feature_height*$self->mag;
-	my $offset = ($feat->order-1)*($feat_h+$self->padding)+$self->padding;
+	my $feat_h = $self->feature_height*$self->mag/$feat->_overlap;
+	my $offset = ($feat->order-1)*($self->feature_height*$self->mag+$self->padding)+$self->padding;
 	$offset = 0 if $feat->fill;
 	$feat_h = ($self->_chr_height-$self->mag-1)/2 if $feat->fill;
-	my $y = $feat->strand =~ /-/ ? $c+ $offset+1: $c - $offset-$feat_h;
+	my $y = $feat->strand =~ /-/ ? $c+ $offset+1+($feat_h)*($feat->_overlap_pos-1): $c - $offset-$feat_h*$feat->_overlap_pos;
         my $sy;
 	if ($feat->fill)
 	  {
@@ -1300,7 +1368,7 @@ sub _draw_feature
 #    my $fe = int($w* ($feat->end-$rb)/$range+$unit); 
     my $fw = sprintf("%.1f",$fe - $fs)+1; #calculate the width of the feature;
     return if $fw < 1; #skip drawing if less than one pix wide
-    print STDERR "Drawing feature ".$feat->label.": ", $feat->start, "-", $feat->end," Dimentions:",$fw,"x",$ih, " at position: $fs,$y"."\n" if $self->DEBUG;
+    print STDERR "Drawing feature ".$feat->label." Order: ".$feat->order." Overlap: ".$feat->_overlap." : ", $feat->start, "-", $feat->end," Dimentions:",$fw,"x",$ih, " at position: $fs,$y"."\n" if $self->DEBUG;
     if ($feat->fill)
       {
 	$self->gd->copyResampled($feat->gd, $fs, $y,0,0, $fw, $ih, $feat->iw, $feat->ih);
@@ -1336,7 +1404,7 @@ sub _draw_feature
     elsif ($self->feature_labels) 
       {
         $size = $ih > 13 ? 13 : $ih; 
-	$size=$size/2 if $fw <$size * length $feat->label;
+	$size=$size/2 if $fw <$size * length $feat->label/1.5;
 	#print STDERR $feat->label,": $fw, $size\n";
         $sy=$y+$ih/2-$size/2;
 	$fs+=2;
