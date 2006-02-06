@@ -199,6 +199,9 @@ BEGIN
 "bgcolor", #background color of feature e.g.[255,255,255]
 "order", #ordering number with which to display features (Features with the same order will be displayed at the same "level" or "track" on the image") 
 "description", #feature description
+"_overlap", #place to store the number of regular features that overlap the same region at the same order
+"_overlap_pos", #position for placement of overlapping region
+"skip_overlap_search", #flag to skip overlap search on some objects (like fill objects)
 );
   }
 
@@ -258,8 +261,21 @@ See Also   : Class::Accessor
                  the background of the chomosome picture at the specified region 
 		 instead of drawn on top of the image at a particular distance from
 		 the center of the chomosome as determined by the value of $self->order
+skip_overlap_search => When set to true, no overlap search is performed by CoGe::Graphics::Chromosome->
+                 add_feature.  This is often useful if there are so many features being searched
+		 that the ordering algorithm slows down the performance of the object to intolerable
+		 levels.  An example would be if you are adding nucleotide objects to your chromosome
+		 and you KNOW that there will never be any overlap between those objects.
  DEBUG        => When true, debugging message will be printed.
  _gd          => Internal place to store the GD object.
+ _overlap     => Internal place to track the number of features that occure at the same position.  
+                 When CoGe::Graphics::Chromosome->add_feature is called, this is set to 1 unless
+		 previously defined.  This value is modified by Chromosome->_check_overlap which
+		 is called by add_feature.
+ _overlap_pos => Internal place to store the relative placement of a feature.  This is initialized
+                 by CoGe::Graphics::Chromosome->add_feature and set to one.  Each time an overlap is 
+		 detected, this value is incremented.  It is later used by Chromosome->_draw_features
+		 to determine the relative placement of the feature in the final image.
 
 =cut
 
