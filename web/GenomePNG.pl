@@ -6,20 +6,21 @@ use CoGe::Graphics::Chromosome;
 use CoGe::Graphics::Feature;
 use CoGe::Graphics::Feature::Gene;
 use CoGe::Graphics::Feature::NucTide;
+use CoGe::Graphics::Feature::AminoAcid;
 use CoGe::Genome;
 use Data::Dumper;
 
 my $form = new CGI;
 my $db = new CoGe::Genome;
 my $c = new CoGe::Graphics::Chromosome;
-my $start = $form->param('start') || $form->param('x') || shift || 6948851;#1;
-my $stop = $form->param('stop') || shift || 6948934;#190000;
+my $start = $form->param('start') || $form->param('x') || shift || 6940000;#6944100;#1;
+my $stop = $form->param('stop') || shift;# || 6948000;#6949600;#190000;
 $stop = $start unless $stop;
 my $di = $form->param('di') || shift || 6;
 my $chr = $form->param('chr') || shift || 1;
-my $iw = $form->param('iw') || 1600;
+my $iw = $form->param('iw') || 30000;
 my $mag = $form->param('m') || $form->param('mag');
-my $file = $form->param('file');#|| "./tmp/pict.png";
+my $file = $form->param('file')|| "./tmp/pict.png";
 unless ($start && $stop && $di && $chr)
   {
     print STDERR "missing needed parameters: Start: $start, Stop: $stop, Info_id: $di, Chr: $chr\n";
@@ -41,7 +42,7 @@ if ($mag)
   }
 else
   {
-    $c->mag($c->mag-1);
+    $c->mag($c->mag-3);
   }
 $start = $c->_region_start;
 $stop= $c->_region_stop;
@@ -93,11 +94,66 @@ foreach my $feat($db->get_feature_obj->get_features_in_region(start=>$start, end
 	  }
 	$f->order(2);
       }
+	#Do we have any protein sequence we can use?
+	foreach my $seq ($feat->sequences)
+	  {
+	    next unless $seq->seq_type->name =~ /prot/i;
+	    my ($pseq) = $seq->sequence_data;
+	    $pseq = reverse $pseq if $f->strand =~ /-/;
+	    my (@segs) = sort {$a->[0] <=> $b->[0]} @{$f->segments};  
+            my $chrs = int (($c->_region_stop-$c->_region_start)/$c->iw);
+	    $chrs = 1 if $chrs < 1;
+	    my $len = length $pseq;
+	    my $pos = 0; #protein sequence position
+	    my $i = 0;   #array index of segments
+	    my ($start, $stop) = @{$segs[$i]};
+	    my $fstart = $start; #feature start
+	    my $sseq; #sub sequence of protein sequence
+	    foreach my $aa (split //, $pseq)
+	      {
+		if ($fstart >= $stop || ($sseq && length ($sseq) >= $chrs) )
+		  {
+		    #print  $start."-".$stop."  ".$pos."  ",$fstart,"  ".$chrs."\n";
+		    my $ao = CoGe::Graphics::Feature::AminoAcid->new({aa=>$sseq, start=>$fstart, strand => $f->strand, order=>4}); #create aminoacid object
+		    #print  Dumper ($ao);
+		    $c->add_feature($ao);
+		    $fstart += (length($sseq))*3;
+		    if ($fstart-1 >= $stop)
+		      {
+		        $i++; #imrement array index of segments
+			#if the segment breaks a codon, we need to figure out how much to back up
+			#the new start of the amino acid object
+			my $sum = 0;
+			for (0 .. ($i-1))
+			  {
+			    $sum += ($stop-$start+1);
+			  }
+			print "$start-$stop"."\t",$stop-$start,": ",($stop-$start)/3,"\n";
+			$fstart = -1*(($sum)%3);
+			$fstart+=3 if $f->strand=~/-/ && $fstart;
+			print $fstart,"\n";
+		        ($start, $stop) = @{$segs[$i]} if $segs[$i]; #assign new segment start and stop positions
+			$fstart += $start;
+			print "$start-$stop"."\t",$stop-$start,": ",($stop-$start)/3,"\n\n";
+		        $pos = 0; #reset the position index
+		      }
+		    $sseq = undef;
+		  }
+	        $pos++; #protein sequence position
+		$sseq .= $aa;
+	      }
+	    if ($sseq)
+	      {
+		my $ao = CoGe::Graphics::Feature::AminoAcid->new({aa=>$sseq, start=>$fstart, strand => $f->strand, order=>4}); #create aminoacid object
+		$c->add_feature($ao);
+	      }
+	  }
     my ($name) = map {$_->name} $feat->names;
     $f->label($name);
     $f->type($feat->type->name);
-
     $c->add_feature($f);
+
+    
   }
 my $seq = uc($db->get_genomic_sequence_obj->get_sequence(start=>$start, end=>$stop, chr=>$chr, info_id=>$di)); 
 my $seq_len = length $seq;
