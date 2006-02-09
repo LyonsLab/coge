@@ -569,7 +569,10 @@ sub _check_overlap
                       "fill in" a region on a chromsome.  An example of this would be a 
                       nucleotide where you would want to color an entire region of the chromosome
                       for a specific nucleotide.
+             start => get features that start at this position
+             stop  => get features that stop at this position
 	     last_order => flag for retrieving only the feature with the highest order
+
  Throws    : none
  Comment   : This is mostly used internally, but is provided in case you want to retrieve a 
            : feature that was previously added
@@ -591,6 +594,9 @@ sub get_features
     my $strand = $opts{strand} || $opts{STRAND};
     my $fill = $opts{fill};
     $fill = $opts{FILL} unless defined $fill; #get filled features?
+    my $start = $opts{start};
+    my $stop  = $opts{stop};
+
     my @rfeats;
     my @feat_refs;
     push @feat_refs, $self->_fill_features if $fill || !(defined $fill);
@@ -618,6 +624,8 @@ sub get_features
 	  {
 	    next unless $feat->type eq $type;
 	  }
+	if ($start) {next unless $feat->start eq $start;}
+	if ($stop) {next unless $feat->stop eq $stop;}
 #	if (defined $fill)
 #	  {
 #	    next unless $feat->fill eq $fill;
@@ -1036,14 +1044,15 @@ sub set_image_height
     $h += $self->ruler_height+$self->padding;
     my $chrh = $self->mag * $self->chr_mag_height+$self->mag/2+$self->padding;# if $self->draw_chromosome; #chromosome image height
     my $top_feat = $self->get_feats(last_order=>1, strand=>1, fill=>0);
-    my $tfh = $top_feat->order * ($feat_height+$self->padding)+2*$self->padding if $top_feat;
+    my $tfh = $top_feat->order * ($feat_height+$self->padding)+4*$self->padding if $top_feat;
     $tfh = 0 unless $tfh;
     my $bot_feat = $self->get_feats(last_order=>1, strand=>-1, fill=>0);
-    my $bfh = $bot_feat->order * ($feat_height+$self->padding)+2*$self->padding if $bot_feat;
+    my $bfh = $bot_feat->order * ($feat_height+$self->padding)+4*$self->padding if $bot_feat;
     $bfh = 0 unless $bfh;
     $h += $tfh > $chrh/2 ? $tfh : $chrh/2;
     $self->_chr_center($h);
     $h += $bfh > $chrh/2 ? $bfh : $chrh/2;
+#    print STDERR join("\t", $tfh, $bfh, $chrh/2),"\n";
     print STDERR "Image Height: $h\n" if $self->DEBUG;
     $self->ih($h);
     $self->_image_h_used($self->padding);
@@ -1300,7 +1309,7 @@ sub _draw_features
 	    next if $feat->stop < $self->_region_start-2*($self->_region_stop - $self->_region_start );
 	  }
 	my $feat_h = $self->feature_height*$self->mag/$feat->_overlap;
-	my $offset = ($feat->order-1)*($self->feature_height*$self->mag+$self->padding)+$self->padding;
+	my $offset = ($feat->order-1)*($self->feature_height*$self->mag+$self->padding/1.5)+$self->padding;
 	$offset = 0 if $feat->fill;
 	$feat_h = ($self->_chr_height-$self->mag-1)/2 if $feat->fill;
 	my $y = $feat->strand =~ /-/ ? $c+ $offset+1+($feat_h)*($feat->_overlap_pos-1): $c - $offset-$feat_h*$feat->_overlap_pos;
@@ -1404,7 +1413,7 @@ sub _draw_feature
     elsif ($self->feature_labels) 
       {
         $size = $ih > 13 ? 13 : $ih; 
-	$size=$size/2 if $fw <$size * length $feat->label/1.5;
+	$size=$size/2 if $fw <$size * (length $feat->label)/1.5;
 	#print STDERR $feat->label,": $fw, $size\n";
         $sy=$y+$ih/2-$size/2;
 	$fs+=2;

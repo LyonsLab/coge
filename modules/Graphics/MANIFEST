@@ -9,5 +9,6 @@ lib/CoGe/Graphics/Chromosome.pm
 lib/CoGe/Graphics/Feature.pm
 lib/CoGe/Graphics/Feature/Gene.pm
 lib/CoGe/Graphics/Feature/NucTide.pm
+lib/CoGe/Graphics/Feature/AminoAcid.pm
 t/001_load.t
 t/002_load.t
