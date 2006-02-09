@@ -18,9 +18,9 @@ my $stop = $form->param('stop') || shift;# || 6948000;#6949600;#190000;
 $stop = $start unless $stop;
 my $di = $form->param('di') || shift || 6;
 my $chr = $form->param('chr') || shift || 1;
-my $iw = $form->param('iw') || 30000;
+my $iw = $form->param('iw') || 20000;
 my $mag = $form->param('m') || $form->param('mag');
-my $file = $form->param('file')|| "./tmp/pict.png";
+my $file = $form->param('file');#|| "./tmp/pict.png";
 unless ($start && $stop && $di && $chr)
   {
     print STDERR "missing needed parameters: Start: $start, Stop: $stop, Info_id: $di, Chr: $chr\n";
@@ -42,10 +42,31 @@ if ($mag)
   }
 else
   {
-    $c->mag($c->mag-3);
+    $c->mag($c->mag-1);
   }
 $start = $c->_region_start;
 $stop= $c->_region_stop;
+#process nucleotides
+my $seq = uc($db->get_genomic_sequence_obj->get_sequence(start=>$start, end=>$stop, chr=>$chr, info_id=>$di)); 
+my $seq_len = length $seq;
+my $chrs = int (($c->_region_stop-$c->_region_start)/$c->iw);
+$chrs = 1 if $chrs < 1;
+my $pos = 0;
+$start = 1 if $start < 1;
+
+while ($pos < $seq_len)
+  {
+    my $subseq = substr ($seq, $pos, $chrs);
+    my $rcseq = $subseq;
+    $rcseq =~ tr/ATCG/TAGC/;
+    next unless $subseq && $rcseq;
+    my $f1 = CoGe::Graphics::Feature::NucTide->new({nt=>$subseq, strand=>1, start =>$pos+$start});
+    my $f2 = CoGe::Graphics::Feature::NucTide->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
+    $c->add_feature($f1, $f2);
+    $pos+=$chrs;
+  }
+
+#process features
 foreach my $feat($db->get_feature_obj->get_features_in_region(start=>$start, end=>$stop, info_id=>$di, chr=>$chr))
   {
     my $f;
@@ -113,9 +134,8 @@ foreach my $feat($db->get_feature_obj->get_features_in_region(start=>$start, end
 	      {
 		if ($fstart >= $stop || ($sseq && length ($sseq) >= $chrs) )
 		  {
-		    #print  $start."-".$stop."  ".$pos."  ",$fstart,"  ".$chrs."\n";
+#		    print  $start."-".$stop."  ".$pos."  ",$fstart,"  ".$chrs." ".$sseq, "\n";
 		    my $ao = CoGe::Graphics::Feature::AminoAcid->new({aa=>$sseq, start=>$fstart, strand => $f->strand, order=>4}); #create aminoacid object
-		    #print  Dumper ($ao);
 		    $c->add_feature($ao);
 		    $fstart += (length($sseq))*3;
 		    if ($fstart-1 >= $stop)
@@ -124,17 +144,15 @@ foreach my $feat($db->get_feature_obj->get_features_in_region(start=>$start, end
 			#if the segment breaks a codon, we need to figure out how much to back up
 			#the new start of the amino acid object
 			my $sum = 0;
-			for (0 .. ($i-1))
+			for my $j (0 .. ($i-1))
 			  {
-			    $sum += ($stop-$start+1);
+			    my $tmp = $segs[$j];
+			    $sum += ($tmp->[1]-$tmp->[0]+1);
 			  }
-			print "$start-$stop"."\t",$stop-$start,": ",($stop-$start)/3,"\n";
-			$fstart = -1*(($sum)%3);
-			$fstart+=3 if $f->strand=~/-/ && $fstart;
-			print $fstart,"\n";
+			$fstart = (($sum)%3);
+			$fstart = 3-$fstart if $fstart;
 		        ($start, $stop) = @{$segs[$i]} if $segs[$i]; #assign new segment start and stop positions
 			$fstart += $start;
-			print "$start-$stop"."\t",$stop-$start,": ",($stop-$start)/3,"\n\n";
 		        $pos = 0; #reset the position index
 		      }
 		    $sseq = undef;
@@ -142,7 +160,7 @@ foreach my $feat($db->get_feature_obj->get_features_in_region(start=>$start, end
 	        $pos++; #protein sequence position
 		$sseq .= $aa;
 	      }
-	    if ($sseq)
+	    if ($sseq) #make sure to create the final protein object if needed
 	      {
 		my $ao = CoGe::Graphics::Feature::AminoAcid->new({aa=>$sseq, start=>$fstart, strand => $f->strand, order=>4}); #create aminoacid object
 		$c->add_feature($ao);
@@ -154,26 +172,6 @@ foreach my $feat($db->get_feature_obj->get_features_in_region(start=>$start, end
     $c->add_feature($f);
 
     
-  }
-my $seq = uc($db->get_genomic_sequence_obj->get_sequence(start=>$start, end=>$stop, chr=>$chr, info_id=>$di)); 
-my $seq_len = length $seq;
-my $chrs = int (($c->_region_stop-$c->_region_start)/$c->iw);
-$chrs = 1 if $chrs < 1;
-my $pos = 0;
-$start = 1 if $start < 1;
-
-while ($pos < $seq_len)
-  {
-    my $subseq = substr ($seq, $pos, $chrs);
-    my $rcseq = $subseq;
-    $rcseq =~ tr/ATCG/TAGC/;
-    next unless $subseq && $rcseq;
-#    print STDERR $subseq,"\n";
-    my $f1 = CoGe::Graphics::Feature::NucTide->new({nt=>$subseq, strand=>1, start =>$pos+$start});
-    my $f2 = CoGe::Graphics::Feature::NucTide->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
-    $c->add_feature($f1, $f2);
-    $pos+=$chrs;
-    #    print "working on position ",$i+$start,"\n";
   }
 if ($file)
   {
