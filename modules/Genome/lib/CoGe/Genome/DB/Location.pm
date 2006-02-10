@@ -111,7 +111,7 @@ LICENSE file included with this module.
 
  CoGe::Genome
  CoGe::Genome::DB
- CoGe::Genome::Feature
+ CoGe::Genome::DB::Feature
  Class::DBI
 
 
