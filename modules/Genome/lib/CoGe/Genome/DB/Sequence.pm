@@ -113,32 +113,25 @@ perl(1).
 
 =head2 Accessor Functions
 
-sequence_id      =>  database entry id
-id               =>  alias for sequence_id
-sequence_type_id =>  returns the related CoGe::Genome::DB::Sequence_type object
-sequence_type    =>  alias for sequence_type_id
-seq_type         =>  alias for sequence_type_id
-type             =>  alias for sequence_type_id
-featrue_id       =>  returns the related CoGe::Genome::DB::Feature object
-feature          =>  alias for feature_id
-feat             =>  alias for feature_id
-sequence_data    =>  sequence data stored in the object
-seq_data         =>  alias for sequence_data
-seq              =>  alias for sequence_data
-new              =>  creates a new object
+ sequence_id      =>  database entry id
+ id               =>  alias for sequence_id
 
+ sequence_type_id =>  returns the related CoGe::Genome::DB::Sequence_type object
+ sequence_type    =>  alias for sequence_type_id
+ seq_type         =>  alias for sequence_type_id
+ type             =>  alias for sequence_type_id
+
+ featrue_id       =>  returns the related CoGe::Genome::DB::Feature object
+ feature          =>  alias for feature_id
+ feat             =>  alias for feature_id
+
+ sequence_data    =>  sequence data stored in the object
+ seq_data         =>  alias for sequence_data
+ seq              =>  alias for sequence_data
+
+ new              =>  creates a new object (inherited from Class::Accessor)
 
 =cut
-
-
-sub new
-{
-    my ($class, %parameters) = @_;
-
-    my $self = bless ({}, ref ($class) || $class);
-
-    return ($self);
-}
 
 
 sub sequence_type
