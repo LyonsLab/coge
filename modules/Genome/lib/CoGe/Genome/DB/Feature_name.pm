@@ -39,17 +39,36 @@ Genome::DB::Feature_name - Genome::DB::Feature_name
 
 =head1 SYNOPSIS
 
-  use Genome::DB::Feature_name
-  blah blah blah
+ #feature name objects are usually obtained through a feature object and contain a single name
+ #and description of that name.  A given feature, such as a gene, may have many names and each name
+ #is stored as a seperate entry in the feature_name table
+ #Note:  In many cases, the description field is empty because a name can say all there is to say.  
 
+ use CoGe::Genome;
+ #create the master genome database object
+ my $db = CoGe::Genome->new;
+ 
+ #using the master database object, let's find some features.  We'll use the method get_feature_obj
+ #to get a Feature object and then use the method get_features_in_region to find all the features 
+ #in a particular region for a given data information source.  Data information ids are database ids.
+ #
+
+ foreach my $feat ($db->get_feature_obj->get_features_in_region(start=>10000, stop=>50000, chromosome=>3, info_id=>7))
+   {
+     #let's print some information about the feature
+     print "Feature Name:  ", join (", ", map {$_->name} $feat->names),"\n";
+     #let's print the location(s) for the feature
+     print "\t", join ("\n\t", map {$_->start."-".$_->stop.": ".$_->chr} $feat->locs),"\n";
+     print "\n";
+   }
 
 =head1 DESCRIPTION
 
-Stub documentation for this module was created by ExtUtils::ModuleMaker.
-It looks like the author of the extension was negligent enough
-to leave the stub unedited.
-
-Blah blah blah.
+ The feature name table in the genomes database stores the name(s) and description of said names(s)
+ for a feature.  A genomic feature is more or less defined as a region on a chromosome that has
+ associated information about it.  Some common genomic features are genes, transcripts, CDS (coding
+ sequences), tRNAs, etc.  Since any feature may have one or more names, there may be one or more
+ names associated with a feature.
 
 
 =head1 USAGE
