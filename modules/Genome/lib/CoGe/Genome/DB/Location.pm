@@ -34,7 +34,10 @@ Genome::DB::Location - Genome::DB::Location
   use CoGe::Genome;
   #create the master genome database object
   my $db = CoGe::Genome->new;
-  foreach my $feat ($db->get_features_by_name("GenePoo")
+
+  #using the master database object, let's find some features of a given name
+
+  foreach my $feat ($db->get_features_by_name("GenePoo"))
    {
      #print out the name(s) of the feature.  Names are stored in a separate table and 
      #and are accessible through the feature object
