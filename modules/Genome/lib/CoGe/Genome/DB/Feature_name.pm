@@ -19,13 +19,6 @@ SELECT name
   FROM feature_name
  WHERE name like ?
 });
-     __PACKAGE__->set_sql(delete_data_information=>qq{
-DELETE feature_name 
-  FROM feature_name
-  JOIN feature using (feature_id)
- WHERE feature.data_information_id = ?
-});
-
 }
 
 
@@ -70,6 +63,19 @@ Genome::DB::Feature_name - Genome::DB::Feature_name
  sequences), tRNAs, etc.  Since any feature may have one or more names, there may be one or more
  names associated with a feature.
 
+This object inherits from CoGe::Genome::DB which in turn inherits from Class::DBI.
+Class::DBI provides the basic methods for creating accessor methods for accessing
+table information.  Please see manual pages for Class::DBI for additional information.
+
+The columns for this table are:
+ feature_name_id
+ name
+ description
+ feature_id
+
+Related objects that be accessed through this object are:
+ CoGe::Genome::DB::Feature
+
 
 =head1 USAGE
 
@@ -86,10 +92,7 @@ Genome::DB::Feature_name - Genome::DB::Feature_name
 =head1 AUTHOR
 
 	Eric Lyons
-	CPAN ID: AUTHOR
-	XYZ Corp.
 	elyons@nature.berkeley.edu
-	http://a.galaxy.far.far.away/modules
 
 =head1 COPYRIGHT
 
@@ -103,6 +106,11 @@ LICENSE file included with this module.
 
 =head1 SEE ALSO
 
+ CoGe::Genome
+ CoGe::Genome::DB
+ CoGe::Genome::Feature
+ Class::DBI
+
 perl(1).
 
 =cut
@@ -110,16 +118,27 @@ perl(1).
 ############################################# main pod documentation end ##
 
 
+=head2 Accessor Functions
 
 
-sub new
-{
-    my ($class, %parameters) = @_;
 
-    my $self = bless ({}, ref ($class) || $class);
+new              =>  creates a new object (inherited from Class::Accessor)
 
-    return ($self);
-}
+feature_name_id  =>  database entry id
+id               =>  alias for location_id
+
+name             =>  name of feature
+
+description      =>  description of feature name
+desc             =>  alias for description
+
+feature_id       =>  returns the related feature object associated with this name
+feature          =>  alias for feature_id
+feat             =>  alias for feature_id
+
+=cut
+
+
 
 sub feature
   {
@@ -184,15 +203,6 @@ sub search_name
 	push @names, $q->[0];
       }
     return wantarray? @names : \@names;
-  }
-
-sub delete_data_information
-  {
-    my $self = shift;
-    my $id = shift;
-    my $sth = $self->sql_delete_data_information;
-    print STDERR $id,"\n";
-    return $sth->execute($id);
   }
 
 ################################################ subroutine header begin ##
