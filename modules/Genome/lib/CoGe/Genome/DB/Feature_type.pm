@@ -27,18 +27,48 @@ Genome::DB::Feature_type - Genome::DB::Feature_type
 
 =head1 SYNOPSIS
 
-  use Genome::DB::Feature_type
-  blah blah blah
+  
+  #feature_types are associated with features and store the what kind of feature 
+  #it is.  Common examples are Gene, mRNA, CDS, etc"
+
+  use CoGe::Genome;
+  #create the master genome database object
+  my $db = CoGe::Genome->new;
+ 
+  #using the master database object, let's find some features
+  foreach my $feat ($db->get_features_by_name("GenePoo"))
+   {
+     #print out the name(s) of the feature.  Names are stored in a separate table and 
+     #and are accessible through the feature object
+     print join (", ", map {$_->name} $feat->names)
+
+     #print out the type of the feature as well.  Each feature is of one and only one type.  
+     #Featuer types are also stored in a separate table and are accessible through the feature object
+     #(Three cheers for Class::DBI!)
+     print " ", $feat->type->name,"\n";
+   }
 
 
 =head1 DESCRIPTION
 
-Stub documentation for this module was created by ExtUtils::ModuleMaker.
-It looks like the author of the extension was negligent enough
-to leave the stub unedited.
+The feature_type table in the genomes database soters the type of a feature.  A
+genomic feature can be defined as a region on a chromosome that has associated 
+information (such as a gene).  There are relatively few types of features
+(when compared to features themselves) and some common examples would be:
+Gene, CDS, mRNA, tRNA, snoRNA, etc.
 
-Blah blah blah.
+This object inherits from CoGe::Genome::DB which in turn inherits from Class::DBI.
+Class::DBI provides the basic methods for creating accessor methods for accessing
+table information.  Please see manual pages for Class::DBI for additional information.
 
+
+The columns for this table are:
+ feature_type_id
+ name
+ description
+
+Related objects that can be accessed through this object are:
+ CoGe::Genome::DB::Feature
 
 =head1 USAGE
 
@@ -55,10 +85,7 @@ Blah blah blah.
 =head1 AUTHOR
 
 	Eric Lyons
-	CPAN ID: AUTHOR
-	XYZ Corp.
 	elyons@nature.berkeley.edu
-	http://a.galaxy.far.far.away/modules
 
 =head1 COPYRIGHT
 
@@ -72,6 +99,11 @@ LICENSE file included with this module.
 
 =head1 SEE ALSO
 
+ CoGe::Genome
+ CoGe::Genome::DB
+ CoGe::Genome::DB::Feature
+ Class::DBI
+
 perl(1).
 
 =cut
@@ -79,33 +111,24 @@ perl(1).
 ############################################# main pod documentation end ##
 
 
-################################################ subroutine header begin ##
+=head2 Accessor Functions
 
-=head2 sample_function
+new              =>  creates a new object (inherited from Class::Accessor)
 
- Usage     : How to use this function/method
- Purpose   : What it does
- Returns   : What it returns
- Argument  : What it wants to know
- Throws    : Exceptions and other anomolies
- Comments  : This is a sample subroutine header.
-           : It is polite to include more pod and fewer comments.
+feature_type_id  =>  database entry id
+id               =>  alias for location_id
 
-See Also   : 
+name             =>  name of feature type
+
+description      =>  description of feature type
+desc             =>  alias for description
+
+features         =>  returns an array of CoGe::Genome::DB::Feature objects or
+                     a Class::DBI interator
+feats            =>  alias for features
 
 =cut
 
-################################################## subroutine header end ##
-
-
-sub new
-{
-    my ($class, %parameters) = @_;
-
-    my $self = bless ({}, ref ($class) || $class);
-
-    return ($self);
-}
 
 sub feats
   {
