@@ -107,29 +107,21 @@ perl(1).
 
 =head2 Accessor Functions
 
+ name             =>  name 
 
-name             =>  name 
-description      =>  description
-desc             =>  alias for description
-sequence_type_id =>  database entry id
-id               =>  alias for sequence_type_id
-sequences        =>  returns an array of CoGe::Genome::DB::Sequence objects or 
-                     a Class::DBI iterator
-seqs             =>  alias for sequences
+ description      =>  description
+ desc             =>  alias for description
 
-new              =>  creates a new object
+ sequence_type_id =>  database entry id
+ id               =>  alias for sequence_type_id
 
+ sequences        =>  returns an array of CoGe::Genome::DB::Sequence objects or 
+                      a Class::DBI iterator
+ seqs             =>  alias for sequences 
+
+ new              =>  creates a new object (inherited from Class::Accessor)
 
 =cut
-
-sub new
-{
-    my ($class, %parameters) = @_;
-
-    my $self = bless ({}, ref ($class) || $class);
-
-    return ($self);
-}
 
 sub seqs
   {
