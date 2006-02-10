@@ -14,13 +14,6 @@ BEGIN {
     __PACKAGE__->table('location');
     __PACKAGE__->columns(All=>qw{location_id start stop strand chromosome feature_id});
     __PACKAGE__->has_a(feature_id=>'CoGe::Genome::DB::Feature');
-    __PACKAGE__->set_sql(delete_data_information=>qq{
-DELETE location 
-  FROM location
-  JOIN feature using (feature_id)
- WHERE feature.data_information_id = ?
-});
-
 }
 
 
@@ -34,17 +27,54 @@ Genome::DB::Location - Genome::DB::Location
 
 =head1 SYNOPSIS
 
-  use Genome::DB::Location
-  blah blah blah
+  #location objects are usually obtained through a feature object and contain the chromosomal 
+  #location information for a feature.  A feature object may be associated with one or more
+  #location objects
+
+  use CoGe::Genome;
+  #create the master genome database object
+  my $db = CoGe::Genome->new;
+  foreach my $feat ($db->get_features_by_name("GenePoo")
+   {
+     #print out the name(s) of the feature.  Names are stored in a separate table and 
+     #and are accessible through the feature object
+     print join (", ", map {$_->name} $feat->names)
+
+     #print out the type of the feature as well.  Each feature is of one and only one type.  
+     #Featuer types are also stored in a separate table and are accessible through the feature object
+     #(Three cheers for Class::DBI!)
+     print " ", $feat->type->name,"\n";
+
+     #get and print locations for the gene
+     foreach my $loc ($feat->locs)
+       {
+         #print out something useful
+         print "\t", $loc->chromosome," ", $loc->start,"-", $loc->stop," ", $loc->strand,"\n";
+       }
+   }
 
 
 =head1 DESCRIPTION
 
-Stub documentation for this module was created by ExtUtils::ModuleMaker.
-It looks like the author of the extension was negligent enough
-to leave the stub unedited.
+The location table in the genomes database stores the location information associated with a feature.
+Since this is a genomic location, the information for a location consists of the start position in
+chromosomal units (usually nucleotides), the stop position, the strand, and the chromosome.  This 
+table is related to the feature table.
 
-Blah blah blah.
+This object inherits from CoGe::Genome::DB which in turn inherits from Class::DBI.
+Class::DBI provides the basic methods for creating accessor methods for accessing
+table information.  Please see manual pages for Class::DBI for additional information.
+
+The columns for this table are:
+ location_id
+ start
+ stop
+ strand
+ chromosome
+ feature_id
+
+Related objects that be accessed through this object are:
+ CoGe::Genome::DB::Feature
 
 
 =head1 USAGE
@@ -62,10 +92,7 @@ Blah blah blah.
 =head1 AUTHOR
 
 	Eric Lyons
-	CPAN ID: AUTHOR
-	XYZ Corp.
 	elyons@nature.berkeley.edu
-	http://a.galaxy.far.far.away/modules
 
 =head1 COPYRIGHT
 
@@ -79,6 +106,12 @@ LICENSE file included with this module.
 
 =head1 SEE ALSO
 
+ CoGe::Genome
+ CoGe::Genome::DB
+ CoGe::Genome::Feature
+ Class::DBI
+
+
 perl(1).
 
 =cut
@@ -86,33 +119,38 @@ perl(1).
 ############################################# main pod documentation end ##
 
 
-################################################ subroutine header begin ##
 
-=head2 sample_function
 
- Usage     : How to use this function/method
- Purpose   : What it does
- Returns   : What it returns
- Argument  : What it wants to know
- Throws    : Exceptions and other anomolies
- Comments  : This is a sample subroutine header.
-           : It is polite to include more pod and fewer comments.
+=head2 Accessor Functions
 
-See Also   : 
+
+
+new              =>  creates a new object (inherited from Class::Accessor)
+
+location_id      =>  database entry id
+id               =>  alias for location_id
+
+start            => returns the start position of the location in chromosomal units (usually nucelotides)
+begin            => alias for start
+
+stop             => returns the stop position of the location in chromosomal units (usually nucelotides)
+end              => alias for stop
+
+strand           => returns the strand of the location Conventions are "+" or "1" for the top strand,
+                    "-" or "-1" for the bottom strand.  Most checks for strandedness in various 
+                    applications that need to know if a location is on the top or bottom usuall check
+                    for the "-" symbol to know if it is on bottom strand.  Thus, a location of "bottom"
+                    may produce some unanticipated results in other parts of the code
+
+chromosome       => returns the chromosome name of the location
+chr              => alias for chromosome
+
+feature_id       => returns the related feature object associated with this location
+feature          => alias for feature_id
+feat             => alias for feature_id
 
 =cut
 
-################################################## subroutine header end ##
-
-
-sub new
-{
-    my ($class, %parameters) = @_;
-
-    my $self = bless ({}, ref ($class) || $class);
-
-    return ($self);
-}
 
 sub begin
   {
@@ -147,15 +185,6 @@ sub id
   {
     my $self = shift;
     return $self->location_id();
-  }
-
-sub delete_data_information
-  {
-    my $self = shift;
-    my $id = shift;
-    my $sth = $self->sql_delete_data_information;
-    print STDERR $id,"\n";
-    return $sth->execute($id);
   }
 
 ################################################ subroutine header begin ##
