@@ -16,12 +16,6 @@ BEGIN {
     __PACKAGE__->columns(Others=>qw{sequence_type_id sequence_data feature_id});
     __PACKAGE__->has_a(sequence_type_id=>'CoGe::Genome::DB::Sequence_type');
     __PACKAGE__->has_a(feature_id=>'CoGe::Genome::DB::Feature');
-    __PACKAGE__->set_sql(delete_data_information=>qq{
-DELETE annotation 
-  FROM annotation
-  JOIN feature using (feature_id)
- WHERE feature.data_information_id = ?
-});
 
 }
 
@@ -181,16 +175,6 @@ sub id
     my $self = shift;
     return $self->sequence_id();
   }
-
-sub delete_data_information
-  {
-    my $self = shift;
-    my $id = shift;
-    my $sth = $self->sql_delete_data_information;
-    print STDERR $id,"\n";
-    return $sth->execute($id);
-  }
-
 
 1; #this line is important and will help the module return a true value
 
