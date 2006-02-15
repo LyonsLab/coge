@@ -40,20 +40,36 @@ sub _initialize
 	$cg++;
       }
     print STDERR "SEQ: $seq\n" unless ($at+$cg) > 0;
+    my $pat = $at/($at+$cg);
+    my $pcg = $cg/($at+$cg);
     my @color;
-    for my $i (0..2)
+    my $red = 155;
+    if ($pat > .5)
       {
-	push @color, $ATC->[$i]*$at/($at+$cg)+ $GCC->[$i]*$cg/($at+$cg);
+	$red += 100 * ($pat-.5)/.5;
       }
+
+    my $blue = 155;
+    if ($pcg > .5)
+      {
+	$blue += 100 * ($pcg-.5)/.5;
+      }
+
+    my $green = 255;
+    if ($pcg > .5)
+      {
+	$green -= 100 * ($pcg-.5)/.5;
+      }
+
+    @color = ($red, $green, $blue);
+#    print STDERR "AT: $pat, GC: $pcg, ($red, $green, $blue)\n";
+#     my $i (0..2)
+#      {
+#	push @color, $ATC->[$i]*$at/($at+$cg)+ $GCC->[$i]*$cg/($at+$cg);
+#      }
+
+
     $self->color(\@color);
-#    if ($self->nt && $self->nt =~ /a|t/i)
-#      {
-#	$self->color($ATC) unless $self->color;
-#      }
-#    else
-#      {
-#	$self->color($GCC) unless $self->color;
-#      }
     $self->label($self->nt) if $self->nt;
   }
 
