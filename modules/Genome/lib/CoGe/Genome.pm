@@ -773,9 +773,9 @@ sub get_feature_by_name_and_info_id
 
 ################################################ subroutine header begin ##
 
-=head2 get_feature_by_name_and_version
+=head2 get_features_by_name_and_version
 
- Usage     : my @feats = $genome_obj->get_feature_by_name_and_version(name=>$name, version=>$version)
+ Usage     : my @feats = $genome_obj->get_features_by_name_and_version(name=>$name, version=>$version)
  Purpose   : get feature objects based on a name and a data_information version number
  Returns   : wantarray of CoGe::Genome::Feature objects
  Argument  : a hash of key/value pairs
