@@ -176,5 +176,50 @@ sub id
     return $self->sequence_id();
   }
 
+################################################ subroutine header begin ##
+
+=head2 get_genomic_position
+
+ Usage     : my $pos = $sequence_obj->get_genomic_position(3);
+ Purpose   : convert the relative position in a sequence to the appropriate genomic location
+ Returns   : an integer that represents a chromosomal position in chromosomal units (usually nucleotides)
+ Argument  : an integer that represents the relative position in the sequence contained in the sequence object
+ Throws    : returns 0 if there are no locations or the relative position was outside the range of the
+           : assoicated feature.
+ Comments  : This can be a tricky operation, especially for protein sequences because
+           : of the need to convert amino acids into nucleotides and account for 
+           : multiple exons.  This routine does check to see if the squence is a
+           : protein through the related sequence_type object in order to figure
+           : this out.
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub get_genomic_position
+  {
+    my $self = shift;
+#    my %opts = @_;
+    my $pos = shift;
+    $pos = 1 unless $pos; #assume they want the start?
+    #need to figure out which location object the position is within.
+    my $npos = $self->type->name =~ /prot/i ? $pos*3-2: $pos; #relative position in nucleotides
+    foreach my $loc (sort {$a->start <=> $b->start} $self->feat->locs())
+      {
+	my $locsize = $loc->stop - $loc->start +1;
+	if ( $locsize > $npos) #we have fount the location object in which the position lies
+	  {
+	    return $loc->start+$npos-1;
+	  }
+	else
+	  {
+	    $npos -= $locsize;
+	  }
+      }
+    return 0;
+  }
+
 1; #this line is important and will help the module return a true value
 
