@@ -18,9 +18,9 @@ my $start = $form->param('start') || $form->param('x') || shift || 6940000;#6944
 my $stop = $form->param('stop') || shift;# || 6948000;#6949600;#190000;
 $stop = $start unless $stop;
 my $di = $form->param('di') || shift || 6;
-my $chr = $form->param('chr') || shift || 1;
-my $iw = $form->param('iw') || 20000;
-my $mag = $form->param('m') || $form->param('mag');
+my $chr = $form->param('chr') ||$form->param('chromosome') ||  shift || 1;
+my $iw = $form->param('iw') || $form->param('width') || 3000;
+my $mag = $form->param('m') || $form->param('mag') || $form->param('magnification');
 my $file = $form->param('file');#|| "./tmp/pict.png";
 unless ($start && $stop && $di && $chr)
   {
@@ -123,7 +123,7 @@ foreach my $feat($db->get_feature_obj->get_features_in_region(start=>$start, end
 	    my ($pseq) = $seq->sequence_data;
 	    $pseq = reverse $pseq if $f->strand =~ /-/;
 	    my (@segs) = sort {$a->[0] <=> $b->[0]} @{$f->segments};  
-            my $chrs = int (($c->_region_stop-$c->_region_start)/$c->iw);
+            my $chrs = int (($c->_region_stop-$c->_region_start)/$c->iw)/3;
 	    $chrs = 1 if $chrs < 1;
 	    my $len = length $pseq;
 	    my $pos = 0; #protein sequence position
