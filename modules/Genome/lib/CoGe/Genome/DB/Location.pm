@@ -158,31 +158,31 @@ feat             => alias for feature_id
 sub begin
   {
     my $self = shift;
-    return $self->start();
+    return $self->start(@_);
   }
 
 sub end
   {
     my $self = shift;
-    return $self->stop();
+    return $self->stop(@_);
   }
 
 sub chr
   {
     my $self = shift;
-    return $self->chromosome();
+    return $self->chromosome(@_);
   }
 
 sub feature
   {
     my $self = shift;
-    return $self->feature_id();
+    return $self->feature_id(@_);
   }
 
 sub feat
   {
     my $self = shift;
-    return $self->feature_id();
+    return $self->feature_id(@_);
   }
 sub id
   {
