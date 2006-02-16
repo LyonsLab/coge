@@ -116,7 +116,7 @@ sub data_info
 sub desc
   {
     my $self = shift;
-    return $self->descriptions(@);
+    return $self->descriptions(@_);
   }
 
 sub id
