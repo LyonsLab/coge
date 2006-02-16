@@ -98,15 +98,6 @@ See Also   :
 ################################################## subroutine header end ##
 
 
-sub new
-{
-    my ($class, %parameters) = @_;
-
-    my $self = bless ({}, ref ($class) || $class);
-
-    return ($self);
-}
-
 sub data_info
   {
     my $self = shift;
