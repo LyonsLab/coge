@@ -176,13 +176,13 @@ sub chr
 sub feature
   {
     my $self = shift;
-    return $self->feature_id(@_);
+    return $self->feature_id();
   }
 
 sub feat
   {
     my $self = shift;
-    return $self->feature_id(@_);
+    return $self->feature_id();
   }
 sub id
   {
