@@ -44,24 +44,26 @@ sub _initialize
     my $pct = $ct/(length ($self->nt) / 2);
     my @color;
     my $red = 255;
-    if ($pga > .5)
-      {
-	$red -= 100 * ($pga-.5)/.5;
-      }
+
+#    if ($pga > .5)
+#      {
+#	$red -= 100 * ($pga-.5)/.5;
+#      }
 
     my $blue = 255;
-    if ($pct > .5)
-      {
-	$blue -= 100 * ($pct-.5)/.5;
-      }
+    $blue -= $pga*100+$pct-100;
+#     if ($pct > .5)
+#       {
+# 	$blue -= 100 * ($pct-.5)/.5;
+#       }
 
     my $green = 255;
-    if ($pct > .5)
-      {
-	$green -= 100 * ($pct-.5)/.5;
-      }
+#     if ($pct > .5)
+#       {
+# 	$green -= 100 * ($pct-.5)/.5;
+#       }
 
-    @color = ($red, $green, $blue);
+    @color = ($red, $blue, $blue);
 
 
     $self->color(\@color);
