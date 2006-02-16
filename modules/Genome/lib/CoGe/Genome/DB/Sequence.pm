@@ -1,6 +1,7 @@
 package CoGe::Genome::DB::Sequence;
 use strict;
 use base 'CoGe::Genome::DB';
+use CoGe::Genome::DB::Location;
 
 BEGIN {
     use Exporter ();
@@ -161,13 +162,13 @@ sub feat
 sub seq
   {
     my $self = shift;
-    return $self->sequence_data();
+    return $self->sequence_data(@_);
   }
 
 sub seq_data
   {
     my $self = shift;
-    return $self->sequence_data();
+    return $self->sequence_data(@_);
   }
 
 sub id
@@ -221,5 +222,82 @@ sub get_genomic_position
     return 0;
   }
 
+################################################ subroutine header begin ##
+
+=head2 get_genomic_locations
+
+ Usage     : my @locs = $sequence_obj->get_genomic_locations(start=>10, stop=>100);
+ Purpose   : This routine is primarily designed to make it easy to go from relative
+           : protein coordinates to genomic coordinates especially when the protein
+           : location may bridge multiple exons.  
+           
+ Returns   : CoGe::Genome::DB::Location objects (either a array ref or ref detected by wantarray)
+ Argument  : start|begin=> relative start position in the sequence object 
+             stop |end  => relative stop position in the sequence object
+ Throws    : returns 0 in case of error
+ Comments  : 
+
+See Also   : CoGe::Genome::DB::Location
+
+=cut
+
+################################################## subroutine header end ##
+
+sub get_genomic_locations
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $start = $opts{start} || $opts{begin} || 1;
+    my $stop = $opts{stop} || $opts{end};
+    unless ($start && $stop)
+      {
+	warn "Need a valid start and stop position\n";
+	return 0;
+      }
+    my @locs;
+    #are we dealing with a protein sequence for locaiton conversion?
+    my $nstart = $self->type->name =~ /prot/i ? $start*3-2: $start; #relative position in nucleotides
+    my $nstop = $self->type->name =~ /prot/i ? $stop*3 : $stop; #relative position in nucleotides
+    my $genome_start;
+    my $genome_stop;
+    #this is currently going to fuck up on the negative strand!
+    foreach my $loc (sort {$a->start <=> $b->start} $self->feat->locs())
+      {
+	#stop
+	my $locsize = $loc->stop - $loc->start +1;
+	#need to detect actual start
+	if ( $locsize > $nstart && !$genome_start) #we have found the location object in which the start lies
+	  {
+	   $genome_start = $loc->start+$nstart-1;
+	  }
+	else #we have a start, but the end has yet to be found.  Assign the start to the start of the current loc object
+	  {
+	    $genome_start = $loc->start;
+	  }
+	#once start is found, need to know if also have the stop in the exon, or if lies in a future exon
+	if ( $locsize > $nstop && $genome_start) #get have the real stop
+	  {
+	    $genome_stop = $loc->start+$nstop-1;
+	  }
+	elsif ( $genome_start) #we have the start, but the end is in another exon
+	  {
+	    $genome_stop = $loc->stop; 
+	  }
+	if ($genome_start && $genome_stop)
+	  {
+	    print STDERR join ("\t", $genome_start, $genome_stop, $loc->strand, $loc->chr),"\n";
+	    my $nloc = CoGe::Genome::DB::Location->new();
+	    $nloc->start($genome_start);
+	    $nloc->stop($genome_stop);
+	    $nloc->strand($loc->strand);
+	    $nloc->chromosome($loc->chr);
+	    push @locs, $nloc;
+	  }
+	$nstart -= $locsize; 
+	$nstop -= $locsize;
+	last if ($nstop < 0); #better stop;
+      }
+    return wantarray ? @locs : \@locs;
+  }
 1; #this line is important and will help the module return a true value
 
