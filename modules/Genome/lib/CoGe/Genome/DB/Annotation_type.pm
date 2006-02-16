@@ -100,15 +100,6 @@ See Also   :
 ################################################## subroutine header end ##
 
 
-sub new
-{
-    my ($class, %parameters) = @_;
-
-    my $self = bless ({}, ref ($class) || $class);
-
-    return ($self);
-}
-
 sub annotation_type_group
   {
     my $self = shift;
@@ -142,7 +133,7 @@ sub annos
 sub desc
   {
     my $self = shift;
-    return $self->description();
+    return $self->description(@_);
   }
 
 sub id
