@@ -127,15 +127,6 @@ See Also   :
 ################################################## subroutine header end ##
 
 
-sub new
-{
-    my ($class, %parameters) = @_;
-
-    my $self = bless ({}, ref ($class) || $class);
-
-    return ($self);
-}
-
 sub feature_type
   {
     my $self = shift;
