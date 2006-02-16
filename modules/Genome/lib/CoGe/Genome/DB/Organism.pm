@@ -123,16 +123,10 @@ sub infos
   }
 
 
-#sub feats
-#  {
-#    my $self = shift;
-#    return $self->features();
-#  }
-
 sub desc
   {
     my $self = shift;
-    return $self->description();
+    return $self->description(@_);
   }
 
 sub id
