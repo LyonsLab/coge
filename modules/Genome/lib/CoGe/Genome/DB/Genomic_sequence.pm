@@ -157,25 +157,25 @@ sub info
 sub begin
   {
     my $self = shift;
-    return $self->start();
+    return $self->start(@_);
   }
 
 sub end
   {
     my $self = shift;
-    return $self->stop();
+    return $self->stop(@_);
   }
 
 sub chr
   {
     my $self = shift;
-    return $self->chromosome();
+    return $self->chromosome(@_);
   }
 
 sub seq
   {
     my $self = shift;
-    return $self->sequence_data();
+    return $self->sequence_data(@_);
   }
 
 sub seq_data
