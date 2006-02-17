@@ -260,44 +260,87 @@ sub get_genomic_locations
     my $nstop = $self->type->name =~ /prot/i ? $stop*3 : $stop; #relative position in nucleotides
     my $genome_start;
     my $genome_stop;
-    #this is currently going to fuck up on the negative strand!
-    foreach my $loc (sort {$a->start <=> $b->start} $self->feat->locs())
+    my $rev = $self->feat->strand =~ /-/; #are we on the bottom strand?
+    my @tlocs = sort {$a->start <=> $b->start} $self->feat->locs();
+    if ($rev)
       {
-	#stop
-	my $locsize = $loc->stop - $loc->start +1;
-	#need to detect actual start
-	if ( $locsize > $nstart && !$genome_start) #we have found the location object in which the start lies
+	@tlocs = reverse @tlocs if $rev;
+	foreach my $loc (@tlocs)
 	  {
-	   $genome_start = $loc->start+$nstart-1;
+	    my $locsize = $loc->stop - $loc->start +1;
+	    #need to detect actual start
+	    if ( $locsize > $nstart && !$genome_stop) #we have found the location object in which the start lies
+	      {
+		$genome_stop = $loc->stop-$nstart+1;
+	      }
+	    elsif ($genome_stop) #we have a start, but the end has yet to be found.  Assign the start to the start of the current loc object
+	      {
+		$genome_stop = $loc->stop;
+	      }
+	    #once start is found, need to know if also have the stop in the exon, or if lies in a future exon
+	    if ( $locsize > $nstop && $genome_stop) #get have the real stop
+	      {
+		$genome_start = $loc->stop-$nstop+1;
+	      }
+	    elsif ( $genome_stop) #we have the start, but the end is in another exon
+	      {
+		$genome_start = $loc->start; 
+	      }
+	    if ($genome_start && $genome_stop)
+	      {
+		my $nloc = CoGe::Genome::DB::Location->new();
+		$nloc->start($genome_start);
+		$nloc->stop($genome_stop);
+		$nloc->strand($loc->strand);
+		$nloc->chromosome($loc->chr);
+		push @locs, $nloc;
+	      }
+	    $nstart -= $locsize; 
+	    $nstop -= $locsize;
+	    last if ($nstop <= 0); #better stop;
 	  }
-	else #we have a start, but the end has yet to be found.  Assign the start to the start of the current loc object
+      }
+
+    else
+      {
+	foreach my $loc (@tlocs)
 	  {
-	    $genome_start = $loc->start;
+	    my $locsize = $loc->stop - $loc->start +1;
+	    #need to detect actual start
+	    if ( $locsize > $nstart && !$genome_start) #we have found the location object in which the start lies
+	      {
+		$genome_start = $loc->start+$nstart-1;
+	      }
+	    elsif ($genome_start) #we have a start, but the end has yet to be found.  Assign the start to the start of the current loc object
+	      {
+		$genome_start = $loc->start;
+	      }
+	    #once start is found, need to know if also have the stop in the exon, or if lies in a future exon
+	    if ( $locsize > $nstop && $genome_start) #get have the real stop
+	      {
+		$genome_stop = $loc->start+$nstop-1;
+	      }
+	    elsif ( $genome_start) #we have the start, but the end is in another exon
+	      {
+		$genome_stop = $loc->stop; 
+	      }
+	    if ($genome_start && $genome_stop)
+	      {
+		my $nloc = CoGe::Genome::DB::Location->new();
+		$nloc->start($genome_start);
+		$nloc->stop($genome_stop);
+		$nloc->strand($loc->strand);
+		$nloc->chromosome($loc->chr);
+		push @locs, $nloc;
+	      }
+	    $nstart -= $locsize; 
+	    $nstop -= $locsize;
+	    last if ($nstop <= 0); #better stop;
 	  }
-	#once start is found, need to know if also have the stop in the exon, or if lies in a future exon
-	if ( $locsize > $nstop && $genome_start) #get have the real stop
-	  {
-	    $genome_stop = $loc->start+$nstop-1;
-	  }
-	elsif ( $genome_start) #we have the start, but the end is in another exon
-	  {
-	    $genome_stop = $loc->stop; 
-	  }
-	if ($genome_start && $genome_stop)
-	  {
-	    print STDERR join ("\t", $genome_start, $genome_stop, $loc->strand, $loc->chr),"\n";
-	    my $nloc = CoGe::Genome::DB::Location->new();
-	    $nloc->start($genome_start);
-	    $nloc->stop($genome_stop);
-	    $nloc->strand($loc->strand);
-	    $nloc->chromosome($loc->chr);
-	    push @locs, $nloc;
-	  }
-	$nstart -= $locsize; 
-	$nstop -= $locsize;
-	last if ($nstop < 0); #better stop;
       }
     return wantarray ? @locs : \@locs;
   }
+
+
 1; #this line is important and will help the module return a true value
 
