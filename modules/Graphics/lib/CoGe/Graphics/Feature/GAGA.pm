@@ -28,42 +28,32 @@ sub _initialize
     $self->skip_overlap_search(1); #make sure to skip searching for overlap for these guys.  Search can be slow
     my $ga = 0;
     my $ct = 0;
+    my $sum = 0;
     my $seq = $self->nt;
-    while ($seq=~ /ga/ig)
+    while ($seq=~ /(g+a+g+)/ig)
       {
+	$sum += length $1;
 	$ga++;
       }
-    while ($seq =~ /ct/ig)
+    while ($seq =~ /(c+t+c+)/ig)
       {
+	$sum += length $1;
 	$ct++;
       }
-    print STDERR "SEQ: $seq\n";# unless ($ga+$ct) > 0;
+
 
     
     my $pga = $ga/(length ($self->nt) / 2);
     my $pct = $ct/(length ($self->nt) / 2);
+    my $p = ($sum)/(length ($self->nt));
     my @color;
     my $red = 255;
-
-#    if ($pga > .5)
-#      {
-#	$red -= 100 * ($pga-.5)/.5;
-#      }
-
+    $red -= ($p*200);
     my $blue = 255;
-    $blue -= $pga*100+$pct-100;
-#     if ($pct > .5)
-#       {
-# 	$blue -= 100 * ($pct-.5)/.5;
-#       }
-
     my $green = 255;
-#     if ($pct > .5)
-#       {
-# 	$green -= 100 * ($pct-.5)/.5;
-#       }
+#    $green -= ($pga*250);
 
-    @color = ($red, $blue, $blue);
+    @color = ($blue, $red, $red);
 
 
     $self->color(\@color);
