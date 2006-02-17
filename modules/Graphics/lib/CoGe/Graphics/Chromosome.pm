@@ -791,7 +791,7 @@ sub magnification
     #are we changing magnification?  if so, we need to set the region start and end points
 
     $mag = $self->num_mag if $mag && $mag > $self->num_mag;
-    $mag = 1 if $mag < 1;
+    $mag = 1 if defined $mag && $mag < 1;
     $self->_magnification($mag) if $mag;
     if ($self->_region_start && $mag)
       {
