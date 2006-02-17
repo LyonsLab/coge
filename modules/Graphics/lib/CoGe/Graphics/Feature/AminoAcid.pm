@@ -52,7 +52,7 @@ sub _initialize
     $self->bgcolor([255,255,255]) unless $self->bgcolor;
     $self->label($self->aa) if $self->aa;
     $self->stop($self->start + length($self->aa)*3-1);
-    $self->skip_overlap_search(0);
+    $self->skip_overlap_search(0) unless $self->skip_overlap_search;
     my ($sum, $fob, $pro, $fil, $bas, $acd, $cys)= (0,0,0,0,0,0,0);
     my @color;
     foreach my $aa (split //, $self->aa)
