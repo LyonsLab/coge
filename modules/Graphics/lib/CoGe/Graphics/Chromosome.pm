@@ -791,6 +791,7 @@ sub magnification
     #are we changing magnification?  if so, we need to set the region start and end points
 
     $mag = $self->num_mag if $mag && $mag > $self->num_mag;
+    $mag = 1 if $mag < 1;
     $self->_magnification($mag) if $mag;
     if ($self->_region_start && $mag)
       {
@@ -1199,6 +1200,7 @@ sub mag_scale
 	      }
 	    $tmp{$i} = $range;
 	    $self->num_mag($i);
+	    $self->mag($i) if $i < $self->mag;
 	    foreach my $key (keys %tmp)
 	      {
 		$scale{$i-$key+1} = $tmp{$key};
