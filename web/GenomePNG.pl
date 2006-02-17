@@ -14,14 +14,14 @@ use Data::Dumper;
 my $form = new CGI;
 my $db = new CoGe::Genome;
 my $c = new CoGe::Graphics::Chromosome;
-my $start = $form->param('start') || $form->param('x') || shift || 6940000;#6944100;#1;
-my $stop = $form->param('stop') || shift;# || 6948000;#6949600;#190000;
+my $start = $form->param('start') || $form->param('x') ||6932550;
+my $stop = $form->param('stop');# || 6948000;#6949600;#190000;
 $stop = $start unless $stop;
-my $di = $form->param('di') || shift || 6;
-my $chr = $form->param('chr') ||$form->param('chromosome') ||  shift || 1;
-my $iw = $form->param('iw') || $form->param('width') || 3000;
-my $mag = $form->param('m') || $form->param('mag') || $form->param('magnification');
-my $file = $form->param('file');#|| "./tmp/pict.png";
+my $di = $form->param('di') || 6;
+my $chr = $form->param('chr') ||$form->param('chromosome') || 1;
+my $iw = $form->param('iw') || $form->param('width') || $form->param('tile size')|| $form->param('tile_size') || 256;
+my $mag = $form->param('m') || $form->param('z') || $form->param('mag') || $form->param('magnification') || 4;
+my $file = $form->param('file');# || "./tmp/pict.png";
 unless ($start && $stop && $di && $chr)
   {
     print STDERR "missing needed parameters: Start: $start, Stop: $stop, Info_id: $di, Chr: $chr\n";
@@ -29,14 +29,16 @@ unless ($start && $stop && $di && $chr)
 
 my $chr_length = $db->get_genomic_sequence_obj->get_last_position($di);
 $c->chr_length($chr_length);
+$c->mag_scale_type("constant_power");
 $c->iw($iw);
-$c->max_mag((80));
+$c->max_mag((10));
 $c->DEBUG(0);
 $c->feature_labels(1);
 $c->fill_labels(1);
 $c->draw_chromosome(1);
 $c->draw_ruler(1);
 $c->set_region(start=>$start, stop=>$stop);
+
 if ($mag)
   {
     $c->mag($mag);
@@ -47,6 +49,17 @@ else
   }
 $start = $c->_region_start;
 $stop= $c->_region_stop;
+#let's add the max top and bottom tracks to the image to keep it constant
+my $f1= CoGe::Graphics::Feature->new({start=>1, order => 4, strand => 1});
+$f1->iw(5);
+$f1->ih(5);
+$f1->gd->fill(2,2,$f1->get_color(255,255,255));
+$c->add_feature($f1);
+my $f2= CoGe::Graphics::Feature->new({start=>1, order => 4, strand => 1});
+$f2->iw(5);
+$f2->ih(5);
+$f2->gd->fill(2,2,$f1->get_color(255,255,255));
+$c->add_feature($f2);
 #process nucleotides
 my $seq = uc($db->get_genomic_sequence_obj->get_sequence(start=>$start, end=>$stop, chr=>$chr, info_id=>$di)); 
 my $seq_len = length $seq;
@@ -92,6 +105,7 @@ foreach my $feat($db->get_feature_obj->get_features_in_region(start=>$start, end
 	    $f->strand($loc->strand);
 	  }
 	$f->order(3);
+	draw_prots(genomic_feat=>$feat, c=>$c, chrom_feat=>$f);
       }
     elsif ($feat->type->name =~ /mrna/i)
       {
@@ -116,57 +130,7 @@ foreach my $feat($db->get_feature_obj->get_features_in_region(start=>$start, end
 	  }
 	$f->order(2);
       }
-	#Do we have any protein sequence we can use?
-	foreach my $seq ($feat->sequences)
-	  {
-	    next unless $seq->seq_type->name =~ /prot/i;
-	    my ($pseq) = $seq->sequence_data;
-	    $pseq = reverse $pseq if $f->strand =~ /-/;
-	    my (@segs) = sort {$a->[0] <=> $b->[0]} @{$f->segments};  
-            my $chrs = int (($c->_region_stop-$c->_region_start)/$c->iw)/3;
-	    $chrs = 1 if $chrs < 1;
-	    my $len = length $pseq;
-	    my $pos = 0; #protein sequence position
-	    my $i = 0;   #array index of segments
-	    my ($start, $stop) = @{$segs[$i]};
-	    my $fstart = $start; #feature start
-	    my $sseq; #sub sequence of protein sequence
-	    foreach my $aa (split //, $pseq)
-	      {
-		if ($fstart >= $stop || ($sseq && length ($sseq) >= $chrs) )
-		  {
-#		    print  $start."-".$stop."  ".$pos."  ",$fstart,"  ".$chrs." ".$sseq, "\n";
-		    my $ao = CoGe::Graphics::Feature::AminoAcid->new({aa=>$sseq, start=>$fstart, strand => $f->strand, order=>4}); #create aminoacid object
-		    $c->add_feature($ao);
-		    $fstart += (length($sseq))*3;
-		    if ($fstart-1 >= $stop)
-		      {
-		        $i++; #imrement array index of segments
-			#if the segment breaks a codon, we need to figure out how much to back up
-			#the new start of the amino acid object
-			my $sum = 0;
-			for my $j (0 .. ($i-1))
-			  {
-			    my $tmp = $segs[$j];
-			    $sum += ($tmp->[1]-$tmp->[0]+1);
-			  }
-			$fstart = (($sum)%3);
-			$fstart = 3-$fstart if $fstart;
-		        ($start, $stop) = @{$segs[$i]} if $segs[$i]; #assign new segment start and stop positions
-			$fstart += $start;
-		        $pos = 0; #reset the position index
-		      }
-		    $sseq = undef;
-		  }
-	        $pos++; #protein sequence position
-		$sseq .= $aa;
-	      }
-	    if ($sseq) #make sure to create the final protein object if needed
-	      {
-		my $ao = CoGe::Graphics::Feature::AminoAcid->new({aa=>$sseq, start=>$fstart, strand => $f->strand, order=>4}); #create aminoacid object
-		$c->add_feature($ao);
-	      }
-	  }
+    next unless $f;
     my ($name) = map {$_->name} $feat->names;
     $f->label($name);
     $f->type($feat->type->name);
@@ -190,3 +154,34 @@ else
 #   $c->mag($i);
 #   $c->generate_png(file=>"tmp/test$i.png");
 # }
+
+sub draw_prots
+  {
+    my %opts = @_;
+    my $feat = $opts{genomic_feat};
+    my $c = $opts{c};
+    my $f = $opts{chrom_feat};
+    #Do we have any protein sequence we can use?
+    foreach my $seq ($feat->sequences)
+      {
+	next unless $seq->seq_type->name =~ /prot/i;
+	my ($pseq) = $seq->sequence_data;
+	my $chrs = int (($c->_region_stop-$c->_region_start)/$c->iw)/3;
+	$chrs = 1 if $chrs < 1;
+	my $pos = 0;
+	while ($pos <= length $pseq)
+	  {
+	    my $aseq = substr($pseq, $pos, $chrs);
+	    foreach my $loc ($seq->get_genomic_locations(start=>$pos+1, stop=>$pos+$chrs))
+	      {
+		my $ao = CoGe::Graphics::Feature::AminoAcid->new({aa=>$aseq, start=>$loc->start, stop=>$loc->stop, strand => $f->strand, order=>4});
+		$ao->skip_overlap_search(1);
+		$c->add_feature($ao);
+		delete $loc->{__Changed}; #silence the warning from Class::DBI
+	      }
+	    
+	    $pos+=$chrs;
+	  }
+      }
+  }
+
