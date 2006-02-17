@@ -291,16 +291,26 @@ sub new
                         that corresponds to RGB color values.  Each color ranges from 0-255
  ruler_height     =>    (DEFAULT: 20)  The heigth, in pixels of the positional ruler
  mag_scale_type   =>    (DEFAULT: log) The scaling that is used for the magnification steps.
-                        The options are log or linear.  Linear scaling means that an equal 
+                        The options are:  linear, log, constant_power
+
+                        Linear scaling means that an equal 
                         numer of positional units (usually nucleotides) are add/removed for each
-                        scaling level.  Log scaling means that there is a logarithmic (or 
-                        exponential) scaling between magnification steps.  For example, with
+                        scaling level.  For example, with
                         a chromosome that is 10,000 nucleotides long, a linear scale of 
                         magnification for 10 steps could be:
                         1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 1000
-                        while a log scale of magnification for 4 steps would be:
+
+                        Log scaling means that there is a logarithmic (or 
+                        exponential) scaling between magnification steps.  
+                        Log scale of magnification for 4 steps would be:
                         10, 100, 1000, 10000
                         Overall, the log scaling has a better "feel" than the linear scaling
+
+                        Constant_power is designed such that for any chromosome of any length,
+                        there is always the name number of chromosomal units at each magnification
+                        level.  However, since the length of each chromosome can be different,
+                        each chromosome object can have a different number of active magnification
+                        levels.
  max_mag          =>    (DEFAULT: 10)  This is the limit of how many positional units (usually
                          nucleotides) are seen at the highest/most powerful magnification
  chr_mag_height   =>    (DEFAULT: 30)  This is the number, in pixels, by which the chromosome 
@@ -1116,11 +1126,14 @@ sub chr_brush
            : where each step shows a range (or window) of the chromosome.  This routine
            : generates the magnification scale based on the length of the chromosome, 
            : the number of step of magnification as defined by $self->num_mag, and the type
-           : of scaling to use (linear or log) as defined by $self->mag_scale_type
+           : of scaling to use (linear, log, or constant_power) as defined by $self->mag_scale_type
            : for generating the magnification scale.  This magnification scale is stored in
            : an Accessor function called $self->_mag_scale and is a hash ref of values where
            : the keys is the magnification step number and the value is the number of 
            : chromosomal units (usually nucleotides) that are visable at the magnification step.
+           :
+           : If constant_power is used to calculate the scaling effects, $self->num_mag is
+           : then set to the number of magnification steps used to cover the full chromsome.
  Returns   : a hash ref where the key is the magnification step number and the value is 
            : the number of chromosomal units (usually nucleotides) that are visable at 
            : the magnification step
@@ -1130,6 +1143,8 @@ sub chr_brush
            : linear:  $step = ceil(($self->chr_length-$self->max_mag)/($self->num_mag-1));
            : log   :  $step = 10**(log10($rang)/($self->num_mag));
                       where $rang = $self->chr_length-$self->max_mag;
+           : constant_power: $range = $self->max_mag * (2**$step)
+                             This is repeated until $range is larger than $eslf->chr_length
 See Also   : 
 
 =cut
@@ -1156,7 +1171,7 @@ sub mag_scale
 		$scale{$i} = $rang;
 	      }
 	  }
-	else #log
+	elsif ($self->mag_scale_type =~ /log/i)
 	  {
 	    my $rang = $self->chr_length-$self->max_mag;;
 	    my $step = 10**(log10($rang)/($self->num_mag));
@@ -1171,6 +1186,25 @@ sub mag_scale
 	      }
 	    $scale{$self->num_mag} = $self->max_mag;
 	  }
+	elsif ($self->mag_scale_type =~ /constant_power/i)
+	  {
+	    my $i = 1;
+	    my $range = $self->max_mag;
+	    my %tmp;
+	    while ($range < $self->chr_length)
+	      {
+		$tmp{$i}=$range;
+		$range = $range*(2**$i);
+		$i++;
+	      }
+	    $tmp{$i} = $range;
+	    $self->num_mag($i);
+	    foreach my $key (keys %tmp)
+	      {
+		$scale{$i-$key+1} = $tmp{$key};
+	      }
+	  }
+	
 	$self->_mag_scale(\%scale);
       }
     return $self->_mag_scale;
@@ -1410,7 +1444,7 @@ sub _draw_feature
     
     my $size;
     if ($self->fill_labels && $feat->fill) {$size=$fw >= 15 ? 15 : $fw;}
-    elsif ($self->feature_labels) 
+    elsif ($self->feature_labels && defined $feat->label) 
       {
         $size = $ih > 13 ? 13 : $ih; 
 	$size=$size/2 if $fw <$size * (length $feat->label)/1.5;
