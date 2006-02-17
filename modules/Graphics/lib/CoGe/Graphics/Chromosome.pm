@@ -1144,7 +1144,7 @@ sub chr_brush
            : log   :  $step = 10**(log10($rang)/($self->num_mag));
                       where $rang = $self->chr_length-$self->max_mag;
            : constant_power: $range = $self->max_mag * (2**$step)
-                             This is repeated until $range is larger than $eslf->chr_length
+           :         This is repeated until $range is larger than $eslf->chr_length
 See Also   : 
 
 =cut
