@@ -483,7 +483,10 @@ sub add_feature
       {
 	$feat->strand(1) unless defined $feat->strand;
 	$feat->fill(0) unless $feat->fill;
+	$feat->merge_percent(100) unless defined $feat->merge_percent;
 	$feat->stop($feat->start) unless defined $feat->stop;
+	$feat->ih(0) unless defined $feat->ih;
+	$feat->iw(0) unless defined $feat->iw;
 	$feat->gd; #initialize feature;
 	$feat->_overlap(1) unless $feat->_overlap;#detects overlapping feature on the same track 
 	$feat->_overlap_pos(1) unless $feat->_overlap_pos; #placement for overlapping features
@@ -1405,12 +1408,9 @@ sub _draw_feature
     $feat->gd;
     $feat->stop($feat->start) unless defined $feat->stop;
     my $feat_range = $feat->stop-$feat->start;
-
     my $unit = $self->_calc_unit_size;
     my $fs = $unit*($feat->start-$rb);
-#    my $fs = int($w* ($feat->start-$rb)/$range);
     my $fe = $unit*($feat->end-$rb+1);
-#    my $fe = int($w* ($feat->end-$rb)/$range+$unit); 
     my $fw = sprintf("%.1f",$fe - $fs)+1; #calculate the width of the feature;
     return if $fw < 1; #skip drawing if less than one pix wide
     print STDERR "Drawing feature ".$feat->label." Order: ".$feat->order." Overlap: ".$feat->_overlap." : ", $feat->start, "-", $feat->end," Dimentions:",$fw,"x",$ih, " at position: $fs,$y"."\n" if $self->DEBUG;
@@ -1441,7 +1441,7 @@ sub _draw_feature
 	#4. make white transparent
 	$newgd->transparent($newgd->colorResolve(255,255,255));
 	#5. copy new image into appropriate place on image.
-	$self->gd->copy($newgd, $fs, $y, 0, 0, $fw, $ih);
+	$self->gd->copyMerge($newgd, $fs, $y, 0, 0, $fw, $ih, $feat->merge_percent);
       }
     
     my $size;
