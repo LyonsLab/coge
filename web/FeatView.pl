@@ -125,7 +125,7 @@ sub show_location
 #    system("GenomePNG.pl $start $stop $chr $info_id $file");
 #    gen_pict(start=>$start, stop=>$stop, chr=>$chr, info_id=>$info_id,file=>$file);
 #    return "<img src=$file>";
-    my $link = qq{<img src="GenomePNG.pl?start=$start&stop=$stop&chr=$chr&di=$info_id">\n};
+    my $link = qq{<img src="GenomePNG.pl?start=$start&stop=$stop&chr=$chr&di=$info_id&iw=2000">\n};
     print STDERR $link;
     return $link;
   }
