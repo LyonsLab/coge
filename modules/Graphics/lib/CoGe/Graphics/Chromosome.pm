@@ -1453,6 +1453,8 @@ sub _draw_feature
         $sy=$y+$ih/2-$size/2;
 	$fs+=2;
       }
+    $size = $size*$feat->font_size if $feat->font_size;
+
     $self->_gd_string(y=>$sy, x=>$fs, text=>$feat->label, size=>$size) if ( ($self->feature_labels || $self->fill_labels)&& $fw>5); #don't make the string unless the feature is at least 5 pixels wide
   }
 
