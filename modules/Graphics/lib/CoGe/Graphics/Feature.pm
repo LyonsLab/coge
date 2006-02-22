@@ -292,6 +292,22 @@ skip_overlap_search => When set to true, no overlap search is performed by CoGe:
 #################### subroutine header end ####################
 #################### subroutine header begin ####################
 
+=head2 transparency
+
+ Purpose   : alias for $self->merge_percent
+
+=cut
+
+#################### subroutine header end ####################
+sub transparency
+  {
+    my $self = shift;
+    return $self->transparency(@_);
+  }
+
+#################### subroutine header begin ####################
+#################### subroutine header begin ####################
+
 =head2 desc
 
  Purpose   : alias for $self->description 
