@@ -22,7 +22,7 @@ $stop = $start unless $stop;
 my $di = $form->param('di') || 6;
 my $chr = $form->param('chr') ||$form->param('chromosome') || 1;
 my $iw = $form->param('iw') || $form->param('width') || $form->param('tile size')|| $form->param('tile_size') || 256;
-my $mag = $form->param('m') || $form->param('mag') || $form->param('magnification') || 5;
+my $mag = $form->param('m') || $form->param('mag') || $form->param('magnification');
 my $z = $form->param('z');
 my $file = $form->param('file');# || "./tmp/pict.png";
 unless ($start && $stop && $di && $chr)
