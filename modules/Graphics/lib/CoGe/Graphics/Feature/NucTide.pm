@@ -43,30 +43,30 @@ sub _initialize
     my $pat = $at/($at+$cg);
     my $pcg = $cg/($at+$cg);
     my @color;
-    my $red = 155;
+    my $red = 55;
     if ($pat > .5)
       {
-	$red += 100 * ($pat-.5)/.5;
+	$red += 200 * ($pat-.5)/.5;
       }
 
-    my $blue = 155;
+    my $blue = 55;
     if ($pcg > .5)
       {
-	$blue += 100 * ($pcg-.5)/.5;
+	$blue += 200 * ($pcg-.5)/.5;
       }
 
     my $green = 255;
     if ($pcg > .5)
       {
-	$green -= 100 * ($pcg-.5)/.5;
+	$green -= 200 * ($pcg-.5)/.5;
       }
 
-    @color = ($red, $green, $blue);
+#    @color = ($red, $green, $blue);
 #    print STDERR "AT: $pat, GC: $pcg, ($red, $green, $blue)\n";
-#     my $i (0..2)
-#      {
-#	push @color, $ATC->[$i]*$at/($at+$cg)+ $GCC->[$i]*$cg/($at+$cg);
-#      }
+     for my $i (0..2)
+      {
+	push @color, $ATC->[$i]*$at/($at+$cg)+ $GCC->[$i]*$cg/($at+$cg);
+      }
 
 
     $self->color(\@color);
