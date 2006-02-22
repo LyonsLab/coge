@@ -203,6 +203,7 @@ BEGIN
 "_overlap_pos", #position for placement of overlapping region
 "skip_overlap_search", #flag to skip overlap search on some objects (like fill objects)
 "merge_percent", #a number between 0-100 for how much to merge the feature onto the chromosome picture.  100 means to completely copy with no merging of colors.
+"font_size", #scaling factor for font size.
 );
   }
 
@@ -273,6 +274,8 @@ skip_overlap_search => When set to true, no overlap search is performed by CoGe:
                  no merging.  0 means that it won't be seen.  50 means that half of the feature
                  will merge with 50 of the background image.  This is useful for highlighing and
                  blending features that will appear at the same place on the final image.
+ font_size    => Scaling factor for font size.  2 will multiple the font size by 2, 
+                 .5 will multiple the font size by .5 (divide it by 2)
 
  _gd          => Internal place to store the GD object.
  _overlap     => Internal place to track the number of features that occure at the same position.  
