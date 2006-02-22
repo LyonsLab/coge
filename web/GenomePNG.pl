@@ -8,19 +8,22 @@ use CoGe::Graphics::Feature::Gene;
 use CoGe::Graphics::Feature::NucTide;
 use CoGe::Graphics::Feature::GAGA;
 use CoGe::Graphics::Feature::AminoAcid;
+use CoGe::Graphics::Feature::Domain;
 use CoGe::Genome;
 use Data::Dumper;
 
 my $form = new CGI;
 my $db = new CoGe::Genome;
 my $c = new CoGe::Graphics::Chromosome;
-my $start = $form->param('start') || $form->param('x') ||6932550;
+my $start = $form->param('start') || $form->param('x') ||0;#28520458;
 my $stop = $form->param('stop');# || 6948000;#6949600;#190000;
+$start = 1 unless $start;
 $stop = $start unless $stop;
 my $di = $form->param('di') || 6;
 my $chr = $form->param('chr') ||$form->param('chromosome') || 1;
 my $iw = $form->param('iw') || $form->param('width') || $form->param('tile size')|| $form->param('tile_size') || 256;
-my $mag = $form->param('m') || $form->param('z') || $form->param('mag') || $form->param('magnification') || 4;
+my $mag = $form->param('m') || $form->param('mag') || $form->param('magnification') || 5;
+my $z = $form->param('z');
 my $file = $form->param('file');# || "./tmp/pict.png";
 unless ($start && $stop && $di && $chr)
   {
@@ -39,6 +42,17 @@ $c->draw_chromosome(1);
 $c->draw_ruler(1);
 $c->set_region(start=>$start, stop=>$stop);
 
+if (defined $z) #the $z val is used by the program for making tiles of genomic views.
+        #by convention, a z value of 0 means maximum magnification which is
+	#opposite the convention used in chromosome.pm.  Thus, we need
+	#to reformat the z value appropriately
+  {
+     my ($max) = sort {$b <=> $a} keys %{$c->mag_scale};
+     $mag = $max-$z;
+     $mag = 1 if $mag < 1;
+     $mag = $max if $mag > $max;
+  }
+
 if ($mag)
   {
     $c->mag($mag);
@@ -51,14 +65,10 @@ $start = $c->_region_start;
 $stop= $c->_region_stop;
 #let's add the max top and bottom tracks to the image to keep it constant
 my $f1= CoGe::Graphics::Feature->new({start=>1, order => 4, strand => 1});
-$f1->iw(5);
-$f1->ih(5);
-$f1->gd->fill(2,2,$f1->get_color(255,255,255));
+$f1->merge_percent(0);
 $c->add_feature($f1);
-my $f2= CoGe::Graphics::Feature->new({start=>1, order => 4, strand => 1});
-$f2->iw(5);
-$f2->ih(5);
-$f2->gd->fill(2,2,$f1->get_color(255,255,255));
+my $f2= CoGe::Graphics::Feature->new({start=>1, order => 4, strand => -1});
+$f2->merge_percent(0);
 $c->add_feature($f2);
 #process nucleotides
 my $seq = uc($db->get_genomic_sequence_obj->get_sequence(start=>$start, end=>$stop, chr=>$chr, info_id=>$di)); 
@@ -129,6 +139,16 @@ foreach my $feat($db->get_feature_obj->get_features_in_region(start=>$start, end
 	    $f->add_type(1);
 	  }
 	$f->order(2);
+      }
+    elsif ($feat->type->name =~ /functional domains/i)
+      {
+	$f = CoGe::Graphics::Feature::Domain->new();
+	foreach my $loc ($feat->locs)
+	  {
+	    $f->add_segment(start=>$loc->start, stop=>$loc->stop);
+	    $f->strand($loc->strand);
+	  }
+	$f->order(4);
       }
     next unless $f;
     my ($name) = map {$_->name} $feat->names;
