@@ -1209,7 +1209,6 @@ sub mag_scale
 		$scale{$i-$key+1} = $tmp{$key};
 	      }
 	  }
-	
 	$self->_mag_scale(\%scale);
       }
     return $self->_mag_scale;
