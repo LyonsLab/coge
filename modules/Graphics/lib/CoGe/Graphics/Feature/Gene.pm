@@ -54,6 +54,7 @@ sub _initialize
     $self->stop($e);
     $self->image_width($w);
     $self->image_height($h);
+    $self->merge_percent(75);
     $self->bgcolor([255,255,255]) unless $self->bgcolor;
     $self->block_height($BLOCK_HEIGHT) unless $self->block_height;
     $self->print_label(0) unless defined $self->print_label();
