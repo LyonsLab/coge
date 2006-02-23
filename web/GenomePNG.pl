@@ -20,6 +20,8 @@ my $stop = $form->param('stop');# || 6948000;#6949600;#190000;
 $start = 1 unless $start;
 #$stop = $start unless $stop;
 my $di = $form->param('di') || 6;
+my $version = $form->param('v') || $form->param('version') ||6;
+my $org_id = $form->param('o') || $form->param('org') ||$form->param('organism') || $form->param('org_id') || $form->param('oid') || 1;
 my $chr = $form->param('chr') ||$form->param('chromosome') || 1;
 my $iw = $form->param('iw') || $form->param('width') || $form->param('tile size')|| $form->param('tile_size') || 256;
 my $mag = $form->param('m') || $form->param('mag') || $form->param('magnification');
@@ -29,12 +31,62 @@ unless ($start && $di && $chr)
   {
     print STDERR "missing needed parameters: Start: $start, Stop: $stop, Info_id: $di, Chr: $chr\n";
   }
-initialize();
-process_nucleotides(start=>$start, stop=>$stop, chr=>$chr, di=>$di);
-process_features(start=>$start, stop=>$stop, chr=>$chr, di=>$di);
-generate_output();	
-sub initialize
+my %dids;
+if ($org_id)
   {
+    foreach my $did ( $db->get_data_info_obj->search({organism_id=>$org_id, version=>$version}))
+    {
+      $dids{$did} = 1;
+    }
+  }
+$dids{$di}=1 if $di;
+($chr) = $db->get_genomic_seq_obj->search({data_information_id=>$di})->next->chr if $di;
+my @dids = keys %dids;
+foreach my $did (@dids)
+  {
+    my ($tstart, $tstop) = initialize_c(di=>$did,
+                 chr=>$chr,
+		 iw=>$iw,
+		 z=>$z,
+		 mag=>$mag,
+		 start=>$start,
+		 stop=>$stop,
+		 db=>$db,
+		 c=>$c,
+		 ) unless $c->chr_length;
+    
+    if ($c->chr_length)
+      {
+        $start = $tstart;
+	$stop = $tstop;
+        process_nucleotides(start=>$start, stop=>$stop, chr=>$chr, di=>$did, db=>$db, c=>$c);
+	last;
+      }
+  }
+unless ($c->chr_length)
+  {
+    warn "error initializing the chromosome object.  Failed for valid chr_length\n";
+    exit(0);
+  }
+foreach my $did (keys %dids)
+  {
+    process_features(start=>$start, stop=>$stop, chr=>$chr, di=>$did, db=>$db, c=>$c);
+  }
+generate_output(file=>$file, c=>$c);	
+sub initialize_c
+  {
+    my %opts = @_;
+    my $di = $opts{di};
+    my $chr = $opts{chr};
+    my $iw = $opts{iw};
+    my $z = $opts{z};
+    my $mag = $opts{mag};
+    my $start = $opts{start};
+    my $stop = $opts{stop};
+    my $db = $opts{db};
+    my $c = $opts{c};
+    my ($gen_seq) = $db->get_genomic_seq_obj->search({data_information_id=>$di});
+    return unless $gen_seq && $gen_seq->chr eq $chr;
     my $chr_length = $db->get_genomic_sequence_obj->get_last_position($di);
     $c->chr_length($chr_length);
     $c->mag_scale_type("constant_power");
@@ -77,7 +129,8 @@ sub initialize
     my $f2= CoGe::Graphics::Feature->new({start=>1, order => 4, strand => -1});
     $f2->merge_percent(0);
     $c->add_feature($f2);
- }
+    return ($start, $stop);
+}
 sub process_nucleotides
   {
     my %opts = @_;
@@ -85,6 +138,8 @@ sub process_nucleotides
     my $stop = $opts{stop};
     my $chr = $opts{chr};
     my $di = $opts{di};
+    my $db = $opts{db};
+    my $c = $opts{c};
     #process nucleotides
     my $seq = uc($db->get_genomic_sequence_obj->get_sequence(start=>$start, end=>$stop, chr=>$chr, info_id=>$di)); 
     my $seq_len = length $seq;
@@ -114,6 +169,8 @@ sub process_features
     my $stop = $opts{stop};
     my $chr = $opts{chr};
     my $di = $opts{di};
+    my $db = $opts{db};
+    my $c = $opts{c};
     foreach my $feat($db->get_feature_obj->get_features_in_region(start=>$start, end=>$stop, info_id=>$di, chr=>$chr))
       {
         my $f;
@@ -183,6 +240,9 @@ sub process_features
 
 sub generate_output
   {
+    my %opts = @_;
+    my $file = $opts{file};
+    my $c = $opts{c};
     if ($file)
       {
         $c->generate_png(file=>$file);
