@@ -18,14 +18,14 @@ my $c = new CoGe::Graphics::Chromosome;
 my $start = $form->param('start') || $form->param('x') ||0;#28520458;
 my $stop = $form->param('stop');# || 6948000;#6949600;#190000;
 $start = 1 unless $start;
-$stop = $start unless $stop;
+#$stop = $start unless $stop;
 my $di = $form->param('di') || 6;
 my $chr = $form->param('chr') ||$form->param('chromosome') || 1;
 my $iw = $form->param('iw') || $form->param('width') || $form->param('tile size')|| $form->param('tile_size') || 256;
 my $mag = $form->param('m') || $form->param('mag') || $form->param('magnification');
 my $z = $form->param('z');
 my $file = $form->param('file');# || "./tmp/pict.png";
-unless ($start && $stop && $di && $chr)
+unless ($start && $di && $chr)
   {
     print STDERR "missing needed parameters: Start: $start, Stop: $stop, Info_id: $di, Chr: $chr\n";
   }
@@ -40,7 +40,7 @@ $c->feature_labels(1);
 $c->fill_labels(1);
 $c->draw_chromosome(1);
 $c->draw_ruler(1);
-$c->set_region(start=>$start, stop=>$stop);
+
 
 if (defined $z) #the $z val is used by the program for making tiles of genomic views.
         #by convention, a z value of 0 means maximum magnification which is
@@ -51,6 +51,7 @@ if (defined $z) #the $z val is used by the program for making tiles of genomic v
      $mag = $max-$z;
      $mag = 1 if $mag < 1;
      $mag = $max if $mag > $max;
+     $c->start_picture('left');
   }
 
 if ($mag)
@@ -61,8 +62,10 @@ else
   {
     $c->mag($c->mag-1);
   }
+$c->set_region(start=>$start, stop=>$stop);
 $start = $c->_region_start;
 $stop= $c->_region_stop;
+print STDERR $start,"-", $start,"\n";
 #let's add the max top and bottom tracks to the image to keep it constant
 my $f1= CoGe::Graphics::Feature->new({start=>1, order => 4, strand => 1});
 $f1->merge_percent(0);
