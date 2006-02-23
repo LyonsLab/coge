@@ -1365,6 +1365,14 @@ sub _draw_features
 	  {
 	    $sy = $feat->strand =~ /-/ ? $c+2 : $c-$self->padding;
 	  }
+	elsif ($feat->label_location && $feat->label_location =~ /bot/)
+	  {
+	    $sy = $y+$self->feature_height*($self->mag)+1;
+	  }
+	elsif ($feat->label_location && $feat->label_location =~ /top/)
+	  {
+	    $sy = $y;#-$self->feature_height*($self->mag);
+	  }
 	$self->_draw_feature(feat=>$feat, 'y'=>$y, ih=>$feat_h, 'sy'=>$sy);
       }
   }
@@ -1408,7 +1416,7 @@ sub _draw_feature
     return 0 unless ref($feat) =~ /Feature/i;
     my $y = $opts{'y'} || $opts{Y};
     my $ih = $opts{'image_height'} || $opts{'ih'} || $opts{'IH'} || $feat->ih;
-    my $sy = $opts{'string_y'} || $opts{'sy'} || $y; #label y axis
+    my $sy = $opts{'string_y'} || $opts{'sy'};#label y axis
     my $rb = $self->_region_start;
     my $re = $self->_region_stop;
     my $range = $re-$rb;
@@ -1459,7 +1467,7 @@ sub _draw_feature
         $size = $ih > 13 ? 13 : $ih; 
 	$size=$size/2 if $fw <$size * (length $feat->label)/1.5;
 	#print STDERR $feat->label,": $fw, $size\n";
-        $sy=$y+$ih/2-$size/2;
+        $sy=$y+$ih/2-$size/2 unless $sy;
 	$fs+=2;
       }
     $size = $size*$feat->font_size if $feat->font_size;
