@@ -201,7 +201,7 @@ BEGIN {
 "font",
 "feature_labels", "fill_labels", #flag to turn off the printing of labels, fill_lables are specifically for filled features;
 "draw_chromosome", "chr_inner_color", "chr_outer_color",
-
+"start_picture", #can be set to left, right or center and dictates at which point to 
 "_region_start", "_region_stop", #image's start and stop (should be equal to or "larger" than the users
 "_magnification", "_mag_scale", 
 "_image_h_used", #storage for the amount of the image height used
@@ -350,12 +350,21 @@ sub new
                         resulting image will then have individual regions of the chromsome colored
                         according the nucleotide composition and thus generates an easily viewed
                         image.
- chr_inner_color =>     DEFAULT: [220,255,220]) Defines the interior color of the chromosome.
+ chr_inner_color =>     (DEFAULT: [220,255,220]) Defines the interior color of the chromosome.
                         This is the an array reference of three values
                         that corresponds to RGB color values.  Each color ranges from 0-255
- chr_outer_color =>     DEFAULT: [0,0,0]) Defines the border color of the chromosome.
+ chr_outer_color =>     (DEFAULT: [0,0,0]) Defines the border color of the chromosome.
                         This is the an array reference of three values
-                        that corresponds to RGB color values.  Each color ranges from 0-255  
+                        that corresponds to RGB color values.  Each color ranges from 0-255
+ start_picture   =>     (Default: Center)  When setting the region on the chromosome for
+                        viewing using $self->set_region($point), the valued contained in
+                        this accessor function determines if that point is at the left
+                        of the image, the right, or the center.  For example, if this is set
+                        to "left" and the $point is equal to 1, the resulting image will
+                        start at chomosomal location "1" and extend to the right however
+                        many chromosomal units (usually nucleotides) it needs to for the
+                        set magnification level.  Valid options for this are "left", "right"
+                        and "center"
 
 =cut
 
@@ -1597,8 +1606,10 @@ sub _make_ticks
 	if ($text_loc)
 	  {
 	    my ($key) = $tick =~ /(0+)$/;
-	    $key = "1".$key;
-	    my %end = (10=>"0",
+	    $key = defined $key ? "1".$key : "1";
+	    my %end = (
+		       1=>"",
+		       10=>"0",
 		       100=>"00",
 		       1000=>"K",
 		       10000=>"0K",
@@ -1686,6 +1697,8 @@ sub _gd_string
 
  Usage     : $self->_set_region_for_point($chromosomal_location);
  Purpose   : internal method to set the ranges of the viewable region of the chromosome
+           : it checks the accessor function $self->start_picture in order to determine
+           : if this point is at the left, right or center of the image.
  Returns   : none
  Argument  : integer which cooresponds to the chromosomal location on which the view will
            : will be centered
@@ -1709,10 +1722,24 @@ sub _set_region_for_point
 	warn 'You must specify a point!\n';
 	return (0);
       }
-    my $range = ceil ($self->find_size_for_magnification()/2);
-    my $start = $point - $range;
+    my ($start, $stop);
+    if ($self->start_picture && $self->start_picture =~ /l/)
+      {
+	$start = $point;
+	$stop = $start + $self->find_size_for_magnification();
+      }
+    elsif ($self->start_picture && $self->start_picture =~ /r/)
+      {
+	$stop = $point;
+	$start = $stop - $self->find_size_for_magnification();
+      }
+    else
+      {
+	my $range = ceil ($self->find_size_for_magnification()/2);
+	$start = $point - $range;
+	$stop = $point + $range;
+      }
     $self->_region_start($start);
-    my $stop = $point + $range;
     $self->_region_stop($stop);
   }
 
@@ -1740,25 +1767,26 @@ See Also   :
 sub _set_region_start_stop
   {
     my $self = shift;
-    my ($start, $end) = @_;
-    return 0 unless (defined $start && defined $end);
-    if ($end < $start)
+    my ($start, $stop) = @_;
+    return 0 unless (defined $start && defined $stop);
+    if ($stop < $start)
       {
 	my $tmp = $start;
-	$start = $end;
-	$end = $tmp;
+	$start = $stop;
+	$stop = $tmp;
       }
-    my $len = $end - $start;
+    $self->_set_region_for_point($start) if $start == $stop;
+    my $len = $stop - $start;
     my $mag = $self->find_magnification_for_size($len);
     $self->mag($mag);
 #    $self->start($start);
-#    $self->stop($end) if $end;
+#    $self->stop($stop) if $stop;
     my $size = $self->mag_scale->{$mag};
     my $diff = ceil( ($size-$len)/2);
     my $rstart = $start-$diff;
-    my $rend = $end + $diff;
+    my $rstop = $stop + $diff;
     $self->_region_start($rstart);
-    $self->_region_stop($rend);
+    $self->_region_stop($rstop);
   }
 
 
