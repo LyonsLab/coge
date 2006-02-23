@@ -1207,7 +1207,7 @@ sub mag_scale
 	    while ($range < $self->chr_length)
 	      {
 		$tmp{$i}=$range;
-		$range = $range*(2**$i);
+		$range = $self->max_mag*(2**$i);
 		$i++;
 	      }
 	    $tmp{$i} = $range;
@@ -1472,7 +1472,7 @@ sub _draw_feature
       }
     $size = $size*$feat->font_size if $feat->font_size;
 
-    $self->_gd_string(y=>$sy, x=>$fs, text=>$feat->label, size=>$size) if ( ($self->feature_labels || $self->fill_labels)&& $fw>5); #don't make the string unless the feature is at least 5 pixels wide
+    $self->_gd_string(y=>$sy, x=>$fs, text=>$feat->label, size=>$size) if ( ($self->feature_labels || $self->fill_labels)&& $fw>10); #don't make the string unless the feature is at least 5 pixels wide
   }
 
 #################### subroutine header begin ####################
