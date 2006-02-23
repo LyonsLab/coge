@@ -347,6 +347,29 @@ sub get_information_obj
 
 ################################################ subroutine header begin ##
 
+=head2 get_data_info_obj
+
+ Usage     : $genome_obj->get_data_info_obj();
+ Purpose   : alias for get_data_information_obj
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub get_data_info_obj
+  {
+    my $self = shift;
+    return $self->get_data_information_obj();
+  }
+
+################################################ subroutine header begin ##
+
 =head2 get_feature_obj
 
  Usage     : $genome_obj->get_feature_obj();
