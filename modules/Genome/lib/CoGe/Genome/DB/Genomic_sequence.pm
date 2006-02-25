@@ -1,4 +1,4 @@
-\package CoGe::Genome::DB::Genomic_sequence;
+package CoGe::Genome::DB::Genomic_sequence;
 use strict;
 use base 'CoGe::Genome::DB';
 
