@@ -11,6 +11,7 @@ use CoGe::Graphics::Chromosome;
 use CoGe::Graphics::Feature;
 use CoGe::Graphics::Feature::Gene;
 use CoGe::Graphics::Feature::NucTide;
+use POSIX;
 
 $ENV{PATH} = "/opt/apache2/CoGe/";
 
@@ -120,12 +121,13 @@ sub show_location
     my $stop = shift; #$opts{stop};
     my $chr = shift; # $opts{chr};
     my $info_id = shift; # = $opts{info_id};
-    my $num= int(rand(100000));
-    my $file = "./tmp/pict$num.png";
+#    my $num= int(rand(100000));
+#    my $file = "./tmp/pict$num.png";
 #    system("GenomePNG.pl $start $stop $chr $info_id $file");
 #    gen_pict(start=>$start, stop=>$stop, chr=>$chr, info_id=>$info_id,file=>$file);
 #    return "<img src=$file>";
-    my $link = qq{<img src="GenomePNG.pl?start=$start&stop=$stop&chr=$chr&di=$info_id&iw=2000">\n};
+    my $z = ceil (log((10000+$stop-$start)/10)/log(2));
+    my $link = qq{<img src="tiler.pl?start=$start&chr=$chr&di=$info_id&iw=2000&z=$z">\n};
     print STDERR $link;
     return $link;
   }
