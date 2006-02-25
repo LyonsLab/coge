@@ -1,4 +1,4 @@
-package CoGe::Genome::DB::Genomic_sequence;
+\package CoGe::Genome::DB::Genomic_sequence;
 use strict;
 use base 'CoGe::Genome::DB';
 
@@ -35,7 +35,7 @@ SELECT *
 SELECT stop
   FROM genomic_sequence
  WHERE data_information_id = ?
- GROUP BY stop DESC
+ ORDER BY stop DESC
  LIMIT 1
 });
 }
