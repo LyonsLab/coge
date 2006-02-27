@@ -155,7 +155,8 @@ sub process_nucleotides
         $rcseq =~ tr/ATCG/TAGC/;
         next unless $subseq && $rcseq;
         my $f1 = CoGe::Graphics::Feature::NucTide->new({nt=>$subseq, strand=>1, start =>$pos+$start});
-        my $f2 = CoGe::Graphics::Feature::GAGA->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
+        #my $f2 = CoGe::Graphics::Feature::GAGA->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
+        my $f2 = CoGe::Graphics::Feature::NucTide->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
         $c->add_feature($f1, $f2);
         $pos+=$chrs;
       }
