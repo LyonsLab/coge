@@ -31,7 +31,15 @@ unless ($start && $di && $chr)
   {
     print STDERR "missing needed parameters: Start: $start, Stop: $stop, Info_id: $di, Chr: $chr\n";
   }
-my %dids;
+
+if ($di) #there can be additional information about a chromosome for a particular version of the organism that is not in the same data_information.  Let's go find the organism_id and version for the specified data information item.
+  {
+    my $dio = $db->get_data_info_obj->search({data_information_id=>$di})->next;
+    $org_id = $dio->org->id unless $org_id;
+    $version = $dio->version unless $version;
+  }
+
+my %dids; #we will store a list of data_information objects that 
 if ($org_id)
   {
     foreach my $did ( $db->get_data_info_obj->search({organism_id=>$org_id, version=>$version}))
@@ -223,7 +231,7 @@ sub process_features
           }
         elsif ($feat->type->name =~ /functional domains/i)
           {
-	        $f = CoGe::Graphics::Feature::Domain->new();
+	    $f = CoGe::Graphics::Feature::Domain->new();
 	    foreach my $loc ($feat->locs)
 	      {
 	        $f->add_segment(start=>$loc->start, stop=>$loc->stop);
