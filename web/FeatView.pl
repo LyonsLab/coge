@@ -3,7 +3,7 @@ use strict;
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
 use CGI::Ajax;
-use GS::LogUser;
+use CoGe::Accessory::LogUser;
 use HTML::Template;
 use Data::Dumper;
 use CoGe::Genome;
@@ -27,7 +27,7 @@ $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 
 $FORM = new CGI;
 $ACCN = $FORM->param('accn');
-$USER = GS::LogUser->get_user();
+$USER = CoGe::Accessory::LogUser->get_user();
 $DB = new CoGe::Genome;
 my $pj = new CGI::Ajax(
 		       db_lookup=>\&db_lookup,
