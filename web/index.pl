@@ -5,9 +5,9 @@ use CGI;
 use CGI::Carp 'fatalsToBrowser';
 use HTML::Template;
 use Data::Dumper;
-use GS::LogUser;
+use CoGe::Accessory::LogUser;
 
-my $email = GS::LogUser->get_user();
+my $email = CoGe::Accessory::LogUser->get_user();
 my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/index.tmpl');
 my $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		 sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
