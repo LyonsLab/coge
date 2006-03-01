@@ -212,7 +212,19 @@ sub aliases
     return $self->feature_names();
   }
 
+sub location
+  {
+    my $self = shift;
+    return $self->locations();
+  }
+
 sub locs
+  {
+    my $self = shift;
+    return $self->locations();
+  }
+
+sub loc
   {
     my $self = shift;
     return $self->locations();
