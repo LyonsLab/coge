@@ -13,6 +13,7 @@ use CoGe::Genome;
 use Data::Dumper;
 
 my $form = new CGI;
+print STDERR $form->self_url(-full=>1);
 my $db = new CoGe::Genome;
 my $c = new CoGe::Graphics::Chromosome;
 my $start = $form->param('start') || $form->param('x') ||0;#28520458;
@@ -48,7 +49,7 @@ if ($org_id)
     }
   }
 $dids{$di}=1 if $di;
-($chr) = $db->get_genomic_seq_obj->search({data_information_id=>$di})->next->chr if $di;
+unless ($chr) {($chr) = $db->get_genomic_seq_obj->search({data_information_id=>$di})->next->chr if $di};
 my @dids = keys %dids;
 foreach my $did (@dids)
   {
