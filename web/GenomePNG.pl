@@ -7,13 +7,14 @@ use CoGe::Graphics::Feature;
 use CoGe::Graphics::Feature::Gene;
 use CoGe::Graphics::Feature::NucTide;
 use CoGe::Graphics::Feature::GAGA;
+use CoGe::Graphics::Feature::Exon_motifs;
 use CoGe::Graphics::Feature::AminoAcid;
 use CoGe::Graphics::Feature::Domain;
 use CoGe::Genome;
 use Data::Dumper;
 
 my $form = new CGI;
-print STDERR $form->self_url(-full=>1);
+print STDERR $form->self_url(-full=>1),"\n";
 my $db = new CoGe::Genome;
 my $c = new CoGe::Graphics::Chromosome;
 my $start = $form->param('start') || $form->param('x') ||0;#28520458;
@@ -160,11 +161,12 @@ sub process_nucleotides
     while ($pos < $seq_len)
       {
         my $subseq = substr ($seq, $pos, $chrs);
-        my $rcseq = $subseq;
+        my $rcseq = substr ($seq, $pos, $chrs);
         $rcseq =~ tr/ATCG/TAGC/;
         next unless $subseq && $rcseq;
         my $f1 = CoGe::Graphics::Feature::NucTide->new({nt=>$subseq, strand=>1, start =>$pos+$start});
         #my $f2 = CoGe::Graphics::Feature::GAGA->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
+	#my $f2 = CoGe::Graphics::Feature::Exon_motifs->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
         my $f2 = CoGe::Graphics::Feature::NucTide->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
         $c->add_feature($f1, $f2);
         $pos+=$chrs;
