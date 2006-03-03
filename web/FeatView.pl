@@ -37,6 +37,7 @@ my $pj = new CGI::Ajax(
 		       clear_div=>\&clear_div,
 		       get_anno=>\&get_anno,
 		       show_location=>\&show_location,
+		       show_express=>\&show_express,
 		       gen_image=>\&gen_image,
 		      );
 $pj->JSDEBUG(0);
@@ -106,8 +107,9 @@ sub get_anno
     foreach my $feat (@feats)
       {
 	$anno .= join "\n<BR><HR><BR>\n", $feat->annotation_pretty_print_html().
-	  qq{<input type="button" value = "Click for chromosomal view" onClick="gen_image([],['loc$i']);show_location(['args__}.$feat->begin_location.qq{', 'args__}.$feat->end_location.qq{', 'args__}.$feat->chr.qq{', 'args__}.$feat->info->id.qq{'],['loc$i']);">}.
-	    qq{<DIV id="loc$i"></DIV>};
+	  qq{<DIV id="loc$i"><input type="button" value = "Click for chromosomal view" onClick="gen_image([],['loc$i']);show_location(['args__}.$feat->begin_location.qq{', 'args__}.$feat->end_location.qq{', 'args__}.$feat->chr.qq{', 'args__}.$feat->info->id.qq{'],['loc$i']);"></DIV>}.
+	  qq{<DIV id="exp$i"><input type="button" value = "Click for expression tree" onClick="gen_image([],['exp$i']);show_express(['args__}.$accn.qq{','args__}.'1'.qq{','args__}.$i.qq{'],['exp$i']);"></DIV>};
+#	    qq{<DIV id="exp$i"></DIV>};
 	$anno = "<font class=\"annotation\">No annotations for this entry</font>" unless $anno;
 	$i++;
       }
@@ -131,6 +133,24 @@ sub show_location
     print STDERR $link;
     return $link;
   }
+
+
+sub show_express
+  {
+    my %opts = @_;
+    my $accn = shift;
+    my $log = shift;
+    my $div = shift;
+    $log = 1 unless defined $log;
+    $accn =~ s/\..*//;
+    my $link = qq{<img src="expressiontree.pl?locus=$accn&label=1&rw=80&rh=10&name=1&legend=1&mean=1&log_trans=$log">\n};
+    $log = $log ? 0 : 1;
+    my $type = $log ? "log transformed" : "normal";
+    print STDERR $link;
+    $link .= qq{<br><input type="button" value = "Click for $type expression tree" onClick="gen_image([],['exp$div']);show_express(['args__}.$accn.qq{','args__}.$log.qq{','args__}.$div.qq{'],['exp$div']);">};
+    return $link;
+  }
+
 
 sub gen_html
   {
