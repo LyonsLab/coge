@@ -25,7 +25,7 @@ delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 use vars qw( $DATE $DEBUG );
 
 # set this to 1 to print verbose messages to logs
-$DEBUG = 1;
+$DEBUG = 0;
 
 $| = 1; # turn off buffering
 my $form = new CGI;
