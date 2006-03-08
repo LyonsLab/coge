@@ -143,7 +143,7 @@ sub show_express
     my $div = shift;
     $log = 1 unless defined $log;
     $accn =~ s/\..*//;
-    my $link = qq{<img src="expressiontree.pl?locus=$accn&label=1&rw=80&rh=10&name=1&legend=1&mean=1&log_trans=$log">\n};
+    my $link = qq{<img src="expressiontree.pl?locus=$accn&label=1&rw=80&rh=8&name=1&legend=1&mean=1&log_trans=$log">\n};
     $log = $log ? 0 : 1;
     my $type = $log ? "log transformed" : "normal";
     print STDERR $link;
