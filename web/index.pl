@@ -22,7 +22,7 @@ my @actions = (
 		DESC => qq{The comparative bl2seq viewer uses the bl2seq algorithm to find regions of similarity between two sequences and displays the results graphically.  This program has several unqiue options to aid in the finding of evolutionary conserved non-coding sequences.},
 	       },
 	       {
-		ACTION=>qq{<a href="./FeatView.pl">Genomic Database Feature Viewer</a>},
+		ACTION=>qq{<a href="./FeatView.pl">Genomic Location Feature Viewer</a>},
 		DESC => qq{Allows users to find and display information about a genomic feature.  A <font class=oblique>feature</font> in terms of sequence or genomic data denotes some genomic region that has something known about it.  For example, if some genomic region is known to be a gene, and that gene makes an mRNA transcript, and that mRNA is translated into a functional protein, and that protein has several functional domains, it will be likely that there will be several genomic features in that region:  One to denote the gene, one or more to denote the mRNA, and one or more to denote the protein, and one or more to denote the functional domains.  },
 	       },
 	      );
