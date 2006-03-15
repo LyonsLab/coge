@@ -155,7 +155,7 @@ sub show_express
 sub gen_html
   {
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/FeatView.tmpl');
-    $template->param(TITLE=>'Genome Feature Viewer');
+    $template->param(TITLE=>'Genome Location Feature Viewer');
     $template->param(USER=>$USER);
     $template->param(DATE=>$DATE);
     $template->param(TABLE_NAME1=>"Feature Selection");
