@@ -1433,6 +1433,38 @@ sub _draw_feature
     if ($feat->fill)
       {
 	$self->gd->copyResampled($feat->gd, $fs, $y,0,0, $fw, $ih, $feat->iw, $feat->ih);
+	if ($feat->external_image && $fw > 10) #if we have an external image and the feature width is greater than 10. . .
+	  {
+	    my $ei = $feat->external_image;
+#	    $ei->transparent($ei->colorResolve(255,255,255));
+	    my $ex_wid = $ei->width;
+	    my $ex_hei = $ei->height;
+	    my $scale = $fw/$ex_wid; #scaling factor for external image
+	    my $hei = $feat->strand =~ /-/ ? $y : $y+$ih-($ex_hei*$scale);
+	    #okay, we are going to need to do some fancy stuff in order to smoothly resize and paste the feature onto the main image
+	    #1. create a blank image of the appropriate size
+	    my $newgd = GD::Image->new ($fw, $ex_hei*$scale,[1]);
+	    #2. copy, resize, and resample the feature onto the new image
+	    $newgd->copyResampled($ei, 0, 0, 0, 0, $newgd->width, $newgd->height, $ex_wid, $ex_hei);  
+	    #3. find any colors that are close to white and set them to white.
+	    my $max = 200;
+	    for my $x (0..$fw)
+	      {
+		for my $y (0..$ih)
+		  {
+		    my ($r, $g, $b) = $newgd->rgb($newgd->getPixel($x, $y));
+		    if ($r > $max && $g > $max && $b > $max)
+		      {
+			$newgd->setPixel($x, $y, $newgd->colorResolve(255,255,255));
+		      }
+		  }
+	      }
+	    #4. make white transparent
+	    $newgd->transparent($newgd->colorResolve(255,255,255));
+	    #5. copy new image into appropriate place on image.
+#	    $self->gd->copyMerge($newgd, $fs, $hei, 0, 0, $fw, $ih, $feat->merge_percent);
+ 	    $self->gd->copy($newgd, $fs, $hei, 0, 0, $newgd->width, $newgd->height);
+	  }
       }
     else
       {
@@ -1472,7 +1504,7 @@ sub _draw_feature
       }
     $size = $size*$feat->font_size if $feat->font_size;
 
-    $self->_gd_string(y=>$sy, x=>$fs, text=>$feat->label, size=>$size) if ( ($self->feature_labels || $self->fill_labels)&& $fw>10); #don't make the string unless the feature is at least 5 pixels wide
+    $self->_gd_string(y=>$sy, x=>$fs, text=>$feat->label, size=>$size) if ( ($self->feature_labels || $self->fill_labels)&& $fw>5); #don't make the string unless the feature is at least 5 pixels wide
   }
 
 #################### subroutine header begin ####################
@@ -1498,7 +1530,7 @@ sub _calc_unit_size
   {
     my $self = shift;
     return ($self->iw/($self->_region_stop-$self->_region_start));
-    return sprintf("%.0f",($self->iw/($self->_region_stop-$self->_region_start)));
+    return sprintf("%.5f",($self->iw/($self->_region_stop-$self->_region_start)));
   }
 
 #################### subroutine header begin ####################
