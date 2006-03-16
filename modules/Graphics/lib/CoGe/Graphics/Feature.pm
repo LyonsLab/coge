@@ -204,6 +204,7 @@ BEGIN
 "skip_overlap_search", #flag to skip overlap search on some objects (like fill objects)
 "merge_percent", #a number between 0-100 for how much to merge the feature onto the chromosome picture.  100 means to completely copy with no merging of colors.
 "font_size", #scaling factor for font size.
+"external_image", #external image for feature
 );
   }
 
@@ -286,6 +287,9 @@ skip_overlap_search => When set to true, no overlap search is performed by CoGe:
                  by CoGe::Graphics::Chromosome->add_feature and set to one.  Each time an overlap is 
 		 detected, this value is incremented.  It is later used by Chromosome->_draw_features
 		 to determine the relative placement of the feature in the final image.
+external_image=> This is a place to store another GD object that is linked to an additional image to be
+                 drawn in the feature.  An example of use in an image of a nucleotide that is drawn
+                 on the background.  For exampe usage, see CoGe::Graphics::Feature::NucTide.pm
 
 =cut
 
