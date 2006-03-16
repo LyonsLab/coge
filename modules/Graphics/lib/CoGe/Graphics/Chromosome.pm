@@ -1500,7 +1500,9 @@ sub _draw_feature
 	$size=$size/2 if $fw <$size * (length $feat->label)/1.5;
 	#print STDERR $feat->label,": $fw, $size\n";
         $sy=$y+$ih/2-$size/2 unless $sy;
-	$fs+=2;
+	my $adjust = 0;
+	$adjust = $fw/10;
+	$fs+=$adjust;
       }
     $size = $size*$feat->font_size if $feat->font_size;
 
@@ -1763,12 +1765,12 @@ sub _set_region_for_point
 	return (0);
       }
     my ($start, $stop);
-    if ($self->start_picture && $self->start_picture =~ /l/)
+    if ($self->start_picture && $self->start_picture =~ /^l/)
       {
 	$start = $point;
 	$stop = $start + $self->find_size_for_magnification();
       }
-    elsif ($self->start_picture && $self->start_picture =~ /r/)
+    elsif ($self->start_picture && $self->start_picture =~ /^r/)
       {
 	$stop = $point;
 	$start = $stop - $self->find_size_for_magnification();
