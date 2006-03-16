@@ -12,13 +12,15 @@
 
 use DBI;
 use strict;
-use GFDB::GBlite;
+use CoGe::Accessory::GBlite;
 use CoGe::Genome;
 use Roman;
 use Data::Dumper;
 
+
+
 my $DEBUG = 1; # set to '1' to get updates on what's going on
-my $GO = 1; #set to 1 to actually make db calls.
+my $GO = 0; #set to 1 to actually make db calls.
 my $ERASE = 0; #set to one to clear the database of entries created for $data_information
 # vars
 my($statement) = "";
@@ -32,7 +34,7 @@ my $genome = new CoGe::Genome();
 foreach my $longfile ( @files ) {
 	
   # open our input data file...
-  my $genbank = new GBlite( $longfile );
+  my $genbank = new CoGe::Accessory::GBlite( $longfile );
   # now remove the path from the file name
   my $file = `basename $longfile`;
   chomp $file;
