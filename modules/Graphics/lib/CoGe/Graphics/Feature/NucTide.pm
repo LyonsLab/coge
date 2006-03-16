@@ -4,12 +4,18 @@ use base qw(CoGe::Graphics::Feature);
 
 
 BEGIN {
-    use vars qw($VERSION $HEIGHT $WIDTH $ATC $GCC);
+    use vars qw($VERSION $HEIGHT $WIDTH $ATC $GCC %EXTERNAL_IMAGES);
     $VERSION     = '0.1';
     $HEIGHT = 5;
     $WIDTH = 5;
     $ATC= [150,150,255];
     $GCC= [150,255,150];
+    %EXTERNAL_IMAGES = (
+			A=>'/opt/apache/CoGe/picts/A.png',
+			T=>'/opt/apache/CoGe/picts/T.png',
+			C=>'/opt/apache/CoGe/picts/C.png',
+			G=>'/opt/apache/CoGe/picts/G.png',
+		       );
     __PACKAGE__->mk_accessors(
 "nt",
 );
@@ -79,6 +85,16 @@ sub _post_initialize
     my %opts = @_;
     my $gd = $self->gd;
     $gd->fill(0,0, $self->get_color($self->color));
+    if (length ($self->label) == 1 && -r $EXTERNAL_IMAGES{uc($self->label)})
+      {
+	my $ei= GD::Image->new($EXTERNAL_IMAGES{uc($self->label)});
+#	print STDERR Dumper ($ei);
+	if ($self->strand =~ /-/ || $self->strand =~ /bot/i)
+	  {
+	    $ei->rotate180();
+	  }
+	$self->external_image($ei);
+      }
   }
 
 #################### subroutine header begin ####################
