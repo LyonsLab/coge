@@ -29,6 +29,7 @@ my $iw = $form->param('iw') || $form->param('width') || $form->param('tile size'
 my $mag = $form->param('m') || $form->param('mag') || $form->param('magnification');
 my $z = $form->param('z');
 my $file = $form->param('file');# || "./tmp/pict.png";
+my $start_pict = $form->param('start_pict');
 unless ($start && $di && $chr)
   {
     print STDERR "missing needed parameters: Start: $start, Stop: $stop, Info_id: $di, Chr: $chr\n";
@@ -55,14 +56,15 @@ my @dids = keys %dids;
 foreach my $did (@dids)
   {
     my ($tstart, $tstop) = initialize_c(di=>$did,
-                 chr=>$chr,
-		 iw=>$iw,
-		 z=>$z,
-		 mag=>$mag,
-		 start=>$start,
-		 stop=>$stop,
-		 db=>$db,
-		 c=>$c,
+					chr=>$chr,
+					iw=>$iw,
+					z=>$z,
+					mag=>$mag,
+					start=>$start,
+					stop=>$stop,
+					db=>$db,
+					c=>$c,
+					start_pict=>$start_pict,
 		 ) unless $c->chr_length;
     
     if ($c->chr_length)
@@ -95,6 +97,7 @@ sub initialize_c
     my $stop = $opts{stop};
     my $db = $opts{db};
     my $c = $opts{c};
+    my $start_pict = $opts{'start_pict'} || 'left';
     my ($gen_seq) = $db->get_genomic_seq_obj->search({data_information_id=>$di});
     return unless $gen_seq && $gen_seq->chr eq $chr;
     my $chr_length = $db->get_genomic_sequence_obj->get_last_position($di);
@@ -118,7 +121,7 @@ sub initialize_c
          $mag = $max-$z;
          $mag = 1 if $mag < 1;
          $mag = $max if $mag > $max;
-         $c->start_picture('left');
+         $c->start_picture($start_pict);
       }
     
     if ($mag)
@@ -165,9 +168,10 @@ sub process_nucleotides
         $rcseq =~ tr/ATCG/TAGC/;
         next unless $subseq && $rcseq;
         my $f1 = CoGe::Graphics::Feature::NucTide->new({nt=>$subseq, strand=>1, start =>$pos+$start});
-        #my $f2 = CoGe::Graphics::Feature::GAGA->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
+	my $f2 = CoGe::Graphics::Feature::NucTide->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
 	#my $f2 = CoGe::Graphics::Feature::Exon_motifs->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
-        my $f2 = CoGe::Graphics::Feature::NucTide->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
+        #my $f2 = CoGe::Graphics::Feature::GAGA->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
+        
         $c->add_feature($f1, $f2);
         $pos+=$chrs;
       }
@@ -186,16 +190,20 @@ sub process_features
     foreach my $feat($db->get_feature_obj->get_features_in_region(start=>$start, end=>$stop, info_id=>$di, chr=>$chr))
       {
         my $f;
+#	print STDERR Dumper $feat;
+#	print STDERR "!",join ("\t", map {$_->name} $feat->names, map {$_->start."-".$_->stop} $feat->locs),"\n";
+	
         if ($feat->type->name =~ /Gene/i)
           {
-        	$f = CoGe::Graphics::Feature::Gene->new();
-        	$f->color([255,0,0,50]);
-        	foreach my $loc ($feat->locs)
-        	  {
-        	    $f->add_segment(start=>$loc->start, stop=>$loc->stop);
-        	    $f->strand($loc->strand);
-        	  }
-        	$f->order(1);
+#	    print STDERR $feat->names->next->name,": ", $feat->id,"\n";
+	    $f = CoGe::Graphics::Feature::Gene->new();
+	    $f->color([255,0,0,50]);
+	    foreach my $loc ($feat->locs)
+	      {
+		$f->add_segment(start=>$loc->start, stop=>$loc->stop);
+		$f->strand($loc->strand);
+	      }
+	    $f->order(1);
           }
         elsif ($feat->type->name =~ /CDS/i)
           {
