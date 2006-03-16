@@ -264,15 +264,11 @@ sub nextEntry {
   }
 	
   # parse the SEQUENCE
-  if ( $self->{FILETYPE} eq "GZIP" ) {
-    $FH->gzreadline($_);
-  } else {
-    <$FH>;			# throw away origin line
-  }
   my @seq;
   if ( $self->{FILETYPE} eq "GZIP" ) {
     while ($FH->gzreadline($_) > 0) {
       last if ( /^\/\// );
+      next if /^ORIGIN/;
       $_ =~ s/\d+//g;
       $_ =~ s/\s+//g;
       push( @seq, $_ );
@@ -280,6 +276,7 @@ sub nextEntry {
   } else {
     while (<$FH>) {
       last if /^\/\//;
+      next if /^ORIGIN/;
       $_ =~ s/\d+//g;
       $_ =~ s/\s+//g;
       push @seq, $_;
