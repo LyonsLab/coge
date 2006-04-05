@@ -951,7 +951,7 @@ See Also   :
 
 
 
-sub get_prot_seq_by_feat_name
+sub get_protein_seq_by_feat_name
   {
     my $self = shift;
     my %opts = @_;
@@ -989,6 +989,24 @@ sub get_prot_seq_by_feat_name
     return wantarray ? @sorted : \@sorted;
   }
 
+]################################################ subroutine header begin ##
+
+=head2 get_prot_seq_by_feat_name
+
+ Usage     : my @protein_seqs = $genome_obj->get_prot_seq_by_feat_name(name=>$name, version=>$version);
+ Purpose   : Alias for get_protein_seq_by_feat_name
+
+See Also   : get_protein_seq_by_feat_name
+
+=cut
+
+################################################## subroutine header end ##
+
+sub get_prot_seq_by_feat_name
+  {
+    my $self = shift;
+    return $self->get_protein_seq_by_feat_name(@_);
+  }
 
 ################################################ subroutine header begin ##
 
