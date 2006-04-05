@@ -940,6 +940,7 @@ sub get_feats_by_name
              hash   => Returns a hash (or hash ref) with keys as name of the feature that
                        matches the submitted name so that version numbers can be used
                        e.g. At3g010110.1=>MAR.. .  
+             search_like => flag for "search like".  adds "%" after the accn name for the search
  Throws    : undef
  Comments  : 
 
@@ -958,23 +959,24 @@ sub get_protein_seq_by_feat_name
     my $name = $opts{name};
     my $version = $opts{version} || $opts{ver};
     my $hash = $opts{hash};
+    my $search_like = $opts{search_like};
     return unless $name;
     my %seqs;
     my @seqs;
-    foreach my $no ($self->get_feature_name_obj->search(name=>$name) )
+    my @no = $search_like ? $self->get_feature_name_obj->search_like(name=>$name."%") : $self->get_feature_name_obj->search(name=>$name);
+    
+    foreach my $no (@no)
       {
-	foreach my $feat ($no->feat)
+	print $no->name,"\n";
+	if ($version)
 	  {
-	    if ($version)
-	      {
-		next unless $feat->data_info->version eq $version;
-	      }
-
-	    foreach my $seq ($no->feat->sequences)
-	      {
-		push @seqs, $seq->sequence_data if $seq->seq_type->name =~ /prot/i;
-		$seqs{$no->name}=$seq->sequence_data;
-	      }
+	    next unless $no->feat->data_info->version eq $version;
+	  }
+	
+	foreach my $seq ($no->feat->sequences)
+	  {
+	    push @seqs, $seq->sequence_data if $seq->seq_type->name =~ /prot/i;
+	    $seqs{$no->name}=$seq->sequence_data if $seq->seq_type->name =~ /prot/i;
 	  }
       }
     if ($hash)
@@ -989,7 +991,7 @@ sub get_protein_seq_by_feat_name
     return wantarray ? @sorted : \@sorted;
   }
 
-]################################################ subroutine header begin ##
+################################################ subroutine header begin ##
 
 =head2 get_prot_seq_by_feat_name
 
