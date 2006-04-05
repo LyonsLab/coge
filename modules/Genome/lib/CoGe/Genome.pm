@@ -937,6 +937,9 @@ sub get_feats_by_name
  Argument  : name => the name you wish to searhc (e.g. At3g010110)
              version => (optional) skips any feature whose version (from data_information)
                         does not equal this specified version.  (e.g. 6)
+             hash   => Returns a hash (or hash ref) with keys as name of the feature that
+                       matches the submitted name so that version numbers can be used
+                       e.g. At3g010110.1=>MAR.. .  
  Throws    : undef
  Comments  : 
 
@@ -954,7 +957,9 @@ sub get_prot_seq_by_feat_name
     my %opts = @_;
     my $name = $opts{name};
     my $version = $opts{version} || $opts{ver};
+    my $hash = $opts{hash};
     return unless $name;
+    my %seqs;
     my @seqs;
     foreach my $no ($self->get_feature_name_obj->search(name=>$name) )
       {
@@ -968,9 +973,14 @@ sub get_prot_seq_by_feat_name
 	    foreach my $seq ($no->feat->sequences)
 	      {
 		push @seqs, $seq->sequence_data if $seq->seq_type->name =~ /prot/i;
+		$seqs{$no->name}=$seq->sequence_data;
 	      }
 	  }
-      }	
+      }
+    if ($hash)
+      {
+	return wantarray ? %seqs : \%seqs;
+      }
     if (@seqs == 1)
       {
 	return $seqs[0];
