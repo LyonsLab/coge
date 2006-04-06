@@ -21,9 +21,9 @@ $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 
 $FORM = new CGI;
 $FID = $FORM->param('fid');
-$DI = $FORM->param('di');
-$CHR = $FORM->param('chr');
-$LOC = $FORM->param('loc');
+$DI = $FORM->param('di');# || 61;
+$CHR = $FORM->param('chr');# || 7;
+$LOC = $FORM->param('loc');# || 6049802;
 $USER = CoGe::Accessory::LogUser->get_user();
 $DB = new CoGe::Genome;
 gen_html(featid=>$FID, loc=>$LOC, chr=>$CHR, di=>$DI);
@@ -36,7 +36,6 @@ sub gen_html
     my $chr = $args{chr};
     my $di = $args{di};
     my @feats;
-    
     push @feats, $DB->get_feat_obj->get_features_in_region(info_id => $di, 
 							   chr => $chr,
 							   start => $loc,
