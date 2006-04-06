@@ -2,7 +2,6 @@
 use strict;
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
-use CGI::Ajax;
 use Data::Dumper;
 use CoGe::Genome;
 use CoGe::Accessory::LogUser;
@@ -23,7 +22,7 @@ $FORM = new CGI;
 $FID = $FORM->param('fid');
 $DI = $FORM->param('di');# || 61;
 $CHR = $FORM->param('chr');# || 7;
-$LOC = $FORM->param('loc');# || 6049802;
+$LOC = $FORM->param('loc') || $form->param('pos') || $form->param('x');# || 6049802;
 $USER = CoGe::Accessory::LogUser->get_user();
 $DB = new CoGe::Genome;
 gen_html(featid=>$FID, loc=>$LOC, chr=>$CHR, di=>$DI);
