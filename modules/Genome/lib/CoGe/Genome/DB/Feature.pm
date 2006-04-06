@@ -311,7 +311,9 @@ sub annotation_pretty_print_html
     my $chr = $self->chr;
     my $strand = $self->strand;
     my $info_id = $self->data_info->id;
-    my $location = "Chr ".$chr. " ".$start."-".$stop.""."(".$strand.")";
+    my $location = "Chr ".$chr;
+    $location .= join (", ", map {$_->start."-".$_->stop} $self->locs);
+    $location .="(".$strand.")";
     $location = qq{<a href="$loc_link?start=$start&stop=$stop&chr=$chr&di=$info_id&strand=$strand">}.$location."</a>\n" if $loc_link;
     $anno_obj->add_Annot(new CoGe::Genome::Accessory::Annotation(Type=>"<font class=\"annotation\">Location</font>", Values=>[$location], Type_delimit=>"\n<BR><li>", Val_delimit=>" "));
     foreach my $anno ($self->annos)
