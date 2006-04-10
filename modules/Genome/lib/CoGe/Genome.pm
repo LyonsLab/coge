@@ -967,7 +967,6 @@ sub get_protein_seq_by_feat_name
     
     foreach my $no (@no)
       {
-	print $no->name,"\n";
 	if ($version)
 	  {
 	    next unless $no->feat->data_info->version eq $version;
@@ -1119,7 +1118,7 @@ sub get_genomic_sequence_for_feature
 							 info_id=> $feat->data_info->id,
 							 strand => $loc->strand,
 							 );
-	$tmp_seq = reverse $seq if $loc->strand eq "-1";
+	$tmp_seq = reverse $tmp_seq if $loc->strand =~ /-/;
 	$seq .= $tmp_seq if $tmp_seq;
       }
     return $seq;
