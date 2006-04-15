@@ -30,6 +30,7 @@ my $mag = $form->param('m') || $form->param('mag') || $form->param('magnificatio
 my $z = $form->param('z');
 my $file = $form->param('file');# || "./tmp/pict.png";
 my $start_pict = $form->param('start_pict');
+my $simple = $form->param('simple');
 unless ($start && $di && $chr)
   {
     print STDERR "missing needed parameters: Start: $start, Stop: $stop, Info_id: $di, Chr: $chr\n";
@@ -71,7 +72,7 @@ foreach my $did (@dids)
       {
         $start = $tstart;
 	$stop = $tstop;
-        process_nucleotides(start=>$start, stop=>$stop, chr=>$chr, di=>$did, db=>$db, c=>$c);
+        process_nucleotides(start=>$start, stop=>$stop, chr=>$chr, di=>$did, db=>$db, c=>$c) unless $simple;
 	last;
       }
   }
@@ -82,7 +83,7 @@ unless ($c->chr_length)
   }
 foreach my $did (keys %dids)
   {
-    process_features(start=>$start, stop=>$stop, chr=>$chr, di=>$did, db=>$db, c=>$c);
+    process_features(start=>$start, stop=>$stop, chr=>$chr, di=>$did, db=>$db, c=>$c) unless $simple;
   }
 generate_output(file=>$file, c=>$c);	
 sub initialize_c
@@ -251,7 +252,7 @@ sub process_features
 	    $f->order(4);
           }
         next unless $f;
-        my ($name) = map {$_->name} $feat->names;
+        my ($name) = sort { length ($b) <=> length ($a) || $a cmp $b} map {$_->name} $feat->names;
         $f->label($name);
         $f->type($feat->type->name);
         $c->add_feature($f);
