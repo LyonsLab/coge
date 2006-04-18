@@ -171,11 +171,12 @@ perl(1).
 #################### main pod documentation end ###################
 
 BEGIN {
-    use vars qw($VERSION $DEFAULT_WIDTH $PADDING $DEFAULT_COLOR $MAX_MAG $MAG_SCALE_TYPE $CHR_MAG_HEIGHT $CHR_INNER_COLOR $CHR_OUTER_COLOR $RULER_COLOR $TICK_COLOR $RULER_HEIGHT $FONT $FONTTT $NUM_MAG $FEATURE_HEIGHT);
+    use vars qw($VERSION $DEFAULT_WIDTH $PADDING $DEFAULT_COLOR $MAX_MAG $MAG_SCALE_TYPE $CHR_MAG_HEIGHT $CHR_START_HEIGHT $CHR_INNER_COLOR $CHR_OUTER_COLOR $RULER_COLOR $TICK_COLOR $RULER_HEIGHT $FONT $FONTTT $NUM_MAG $FEATURE_HEIGHT);
     $VERSION     = '0.1';
     $DEFAULT_WIDTH = 200;  #default image width pixels
     $PADDING = 15; #default value to pad image height
     $CHR_MAG_HEIGHT = 30; #the amount to increase the height of the chromosome picture for each magnification (features increase half this height)
+    $CHR_START_HEIGHT = 30; #initial height of the chromosome image in pixels before magnification is added
     $MAX_MAG = 10;     #default number of "units" (e.g. base pairs) to show when maximally zoomed)
     $MAG_SCALE_TYPE = "log"; #default image scaling.  options "log", "linear"
     $DEFAULT_COLOR = [0,0,0];
@@ -199,6 +200,7 @@ BEGIN {
 "image_width", "image_height", 
 "padding",
 "font",
+"chr_start_height", #the starting height of the chromosome,
 "feature_labels", "fill_labels", #flag to turn off the printing of labels, fill_lables are specifically for filled features;
 "draw_chromosome", "chr_inner_color", "chr_outer_color",
 "start_picture", #can be set to left, right or center and dictates at which point to 
@@ -243,6 +245,7 @@ sub new
     $self->mag_scale_type($MAG_SCALE_TYPE);
     $self->max_mag($MAX_MAG);
     $self->chr_mag_height($CHR_MAG_HEIGHT);
+    $self->chr_start_height($CHR_START_HEIGHT);
     $self->image_width($DEFAULT_WIDTH);
     $self->padding ($PADDING);
     $self->chr_inner_color($CHR_INNER_COLOR);
@@ -317,6 +320,8 @@ sub new
                         picture increases on the image for each level of magnification.  For 
                         example, if this is set to 30 and the magnification is 5, then the
                         chromosome image would be 150 pixels high.
+ chr_start_height =>    (DEFAULT: 30)  This is the number, in pixels, of the starting height of the 
+                        chromosome before magnification is applied
  num_mag          =>    (DEFAULT: 10) This is the number of magnification steps available.  If
                         this is set to 10, then there are 10 magnification steps (where the 1, 
                         the lowest magnification, shows a range equal to the lenght of the 
@@ -990,7 +995,7 @@ sub gd
 =head2 get_color
 
  Usage     : my $color_index = $c->get_color([0,0,0]);
- Purpose   : get's the color index from the GD object for your specified color
+ Purpose   : gets the color index from the GD object for your specified color
  Returns   : a GD color index (integer?)
  Argument  : an array or array ref of three to four integers between 0 and 255
  Throws    : this will return the index of the default color $DEFAULT_COLOR if no color
@@ -1065,7 +1070,7 @@ sub set_image_height
     $feat_height = $feat_height*($self->mag);
     my $h = $self->padding; #give use some padding
     $h += $self->ruler_height+$self->padding;
-    my $chrh = $self->mag * $self->chr_mag_height+$self->mag/2+$self->padding;# if $self->draw_chromosome; #chromosome image height
+    my $chrh = $self->mag * $self->chr_mag_height+$self->mag/2+$self->padding + $self->chr_start_height;# if $self->draw_chromosome; #chromosome image height
     my $top_feat = $self->get_feats(last_order=>1, strand=>1, fill=>0);
     my $tfh = $top_feat->order * ($feat_height+$self->padding)+4*$self->padding if $top_feat;
     $tfh = 0 unless $tfh;
