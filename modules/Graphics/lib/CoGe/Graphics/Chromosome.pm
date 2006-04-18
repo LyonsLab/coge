@@ -194,6 +194,7 @@ BEGIN {
 "chr_length",
 "feature_height", #height of a feature
 "draw_ruler", #flag for drawing ruler
+"draw_chr_end", #flag for drawing "ends" of chromosome"
 "ruler_color", "tick_color", #color for ruler and ticks on ruler respectively
 "ruler_height", #height of ruler
 "mag_scale_type", "max_mag", "chr_mag_height", "num_mag",
@@ -252,6 +253,7 @@ sub new
     $self->chr_outer_color($CHR_OUTER_COLOR);
     $self->draw_chromosome(1);
     $self->draw_ruler(1);
+    $self->draw_chr_end(1);
     $self->ruler_height($RULER_HEIGHT);
     $self->ruler_color($RULER_COLOR);
     $self->tick_color($TICK_COLOR);
@@ -282,6 +284,8 @@ sub new
                         drawn on the final image
  draw_ruler       =>    (DEFAULT: 1) Flag (0 or 1) for whether or not the positional ruler
                         is drawn on the image
+ draw_chr_end     =>    (DEFAULT: 1) Flag (0 or 1) for whether or not the rounded ends of the chromosome
+                        are drawn where appropriate
  feature_height   =>    (DEFAULT: 4) This stores the feature's height in terms of how it 
                         is scaled as the magnification increases.  For example, if this is set
                         to 4 and the magnification is 5, then the resulting height of the feature
@@ -1232,7 +1236,7 @@ sub mag_scale
 
 #################### subroutine header begin ####################
 
-=head2 draw_chromosome
+=head2 _draw_chromosome
 
  Usage     : $c->_draw_chromosome
  Purpose   : this internal routine draws the chromosome picture if $self->draw_chromosome is true
@@ -1254,14 +1258,16 @@ sub _draw_chromosome
   {
     my $self = shift;
     my $gd = $self->gd;
-    my $ch = $self->mag * $self->chr_mag_height/2; #half chromosome image height
+    my $ch = ($self->chr_start_height+$self->mag * $self->chr_mag_height); #chromosome image height
+    $self->_chr_height($ch);
+    $ch = $ch/2; #want half the height for the rest of the calcs
     my $hc = $self->_image_h_used+($self->ih-$self->_image_h_used)/2; #height of center of chromsome image
     my $w = $self->iw; #width of image
     print STDERR "\nChromosome image: Height/2: $ch, Height Center: $hc\n" if $self->DEBUG;
     my $xs = $self->_region_start < 1 ? $w*abs($self->_region_start)/($self->_region_stop - $self->_region_start): 0;
     my $xe = $self->_region_stop > $self->chr_length ? $w-$w*($self->_region_stop - $self->chr_length)/($self->_region_stop - $self->_region_start) : $w;
 #    $gd->filledRectangle($xs,$hc-$ch,$xe, $hc+$ch,$self->get_color(@{$self->chr_inner_color}));
-    $self->_chr_height($ch*2);
+    
 
     return unless $self->draw_chromosome; #do we draw the chromsome picture?
 
@@ -1273,8 +1279,8 @@ sub _draw_chromosome
     my $color = $self->get_color($self->chr_outer_color);
     $gd->setStyle($color, $color, $color, GD::gdTransparent, GD::gdTransparent);
     $gd->line($xs, $hc, $xe, $hc, gdStyled);
-    $self->_draw_chr_end (x=>$xs, dir=>"left", 'y'=>$hc) if ($xs > 0);
-    $self->_draw_chr_end (x=>$xe, dir=>"right",'y'=> $hc) if ($xe < $w);
+    $self->_draw_chr_end (x=>$xs, dir=>"left", 'y'=>$hc) if ($xs > 0) && $self->draw_chr_end;
+    $self->_draw_chr_end (x=>$xe, dir=>"right",'y'=> $hc) if ($xe < $w) && $self->draw_chr_end;
     
   }
 
@@ -1308,7 +1314,7 @@ sub _draw_chr_end
     my $dir = $opts{dir} || "left";
     my $y = $opts{'y'}; #$ch/2+$self->_image_h_used+$self->mag/2; #height of center of chromsome image
     my $gd = $self->gd;
-    my $ch = $self->mag * $self->chr_mag_height; #chromosome image height
+    my $ch = $self->_chr_height;
     
     my @arc1 = $dir =~ /left/i ? (90, 180) : (0, 90);
     my @arc2 = $dir =~ /left/i ? (180, 270) : (270, 0);

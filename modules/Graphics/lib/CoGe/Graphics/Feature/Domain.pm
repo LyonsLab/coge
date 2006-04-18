@@ -61,7 +61,6 @@ sub _initialize
     $self->font_size(.5);
     $self->block_height($BLOCK_HEIGHT) unless $self->block_height;
     $self->print_label(0) unless defined $self->print_label();
-    $self->label_location('bot');
   }
 
 sub _post_initialize
@@ -69,6 +68,9 @@ sub _post_initialize
     my $self = shift;
     my %opts = @_;
     $self->label($self->label." (".$self->type.")") if $self->add_type && $self->type;
+    my $label_loc = $self->strand =~ /-/ ? "bot" : "top";
+    $self->label_location('bot');
+
     my $gd = $self->gd;
     $gd->fill(0,0, $self->get_color($self->bgcolor));
 #    $gd->transparent($self->get_color($self->bgcolor));
