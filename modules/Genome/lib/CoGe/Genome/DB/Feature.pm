@@ -261,7 +261,7 @@ sub annotation_pretty_print
     my $chr = $self->chr;
     my $strand = $self->strand;
     my $info_id = $self->data_info->id;
-        my $location = "Chr ".$chr;
+    my $location = "Chr ".$chr." ";
     $location .= join (", ", map {$_->start."-".$_->stop} $self->locs);
     $location .="(".$strand.")";
     #my $location = "Chr ".$chr. "".$start."-".$stop.""."(".$strand.")";
