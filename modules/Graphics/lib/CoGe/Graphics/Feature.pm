@@ -199,12 +199,14 @@ BEGIN
 "bgcolor", #background color of feature e.g.[255,255,255]
 "order", #ordering number with which to display features (Features with the same order will be displayed at the same "level" or "track" on the image") 
 "description", #feature description
+"link",  #a place to store an URI.
 "_overlap", #place to store the number of regular features that overlap the same region at the same order
 "_overlap_pos", #position for placement of overlapping region
 "skip_overlap_search", #flag to skip overlap search on some objects (like fill objects)
 "merge_percent", #a number between 0-100 for how much to merge the feature onto the chromosome picture.  100 means to completely copy with no merging of colors.
 "font_size", #scaling factor for font size.
 "external_image", #external image for feature
+"force_label", #flag to force the printing of the label
 );
   }
 
@@ -254,7 +256,9 @@ See Also   : Class::Accessor
 		 features have the same order value, they will both be drawn the same 
 		 distance from the center.
  label        => the label of the feature (e.g. "Gene SuperFoo")
+ force_label  => Force the label to be printed (which sometimes is not if the feature is drawn too small)
  description  => the description of the feature
+ link         => a place to store a URI associated with the feature
  type         => the type fo the feature (e.g. "gene")
  color        => a place to store a color of the feature.  This is usually important for
                  child classes
