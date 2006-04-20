@@ -8,8 +8,17 @@ use HTML::Template;
 use GS::MyDB;                  # to hook into local gb db
 use Data::Dumper;
 use File::Basename;
+use File::Temp;
 use GS::MyDB::GBDB::GBObject;
 use CoGe::Genome;
+use CoGe::Graphics::Chromosome;
+use CoGe::Graphics::Feature;
+use CoGe::Graphics::Feature::Gene;
+use CoGe::Graphics::Feature::NucTide;
+use CoGe::Graphics::Feature::GAGA;
+use CoGe::Graphics::Feature::Exon_motifs;
+use CoGe::Graphics::Feature::AminoAcid;
+use CoGe::Graphics::Feature::Domain;
 # for security purposes
 $ENV{PATH} = "/opt/apache2/CoGe/";
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
@@ -260,23 +269,69 @@ sub Show_Summary
       }
     if ( $rc ) 
       {
- 	my($filename,$maphtml,$mapname) =
- 	  $db->{GBSyntenyViewer}->draw_image(
- 					     ACCN_Q_OBJ=>$obj1,
- 					     Q_BEGIN=>$file1_begin, 
- 					     Q_END=>$file1_end,
- 					     ACCN_S_OBJ=>$obj2,
- 					     S_BEGIN=>$file2_begin, 
- 					     S_END=>$file2_end, 
- 					     HSPS=>$data, 
- 					     DIRNAME=>$TEMPDIR,
- 					     BLAST_REPORT=>$blast_report,
- 					     MASKED_EXONS=>$mask_flag,
- 					     SPIKE_LEN=>length($spike_seq),
- 					    );
-	$html .= qq!<IMG SRC="$TEMPURL/$filename" !;
-	$html .= qq!BORDER=1 ismap usemap="#$mapname">\n!;
-	$html .= "$maphtml\n";
+ 	my($filename,$maphtml,$mapname);# =
+# 	  $db->{GBSyntenyViewer}->draw_image(
+# 					     ACCN_Q_OBJ=>$obj1,
+# 					     Q_BEGIN=>$file1_begin, 
+# 					     Q_END=>$file1_end,
+# 					     ACCN_S_OBJ=>$obj2,
+# 					     S_BEGIN=>$file2_begin, 
+# 					     S_END=>$file2_end, 
+# 					     HSPS=>$data, 
+# 					     DIRNAME=>$TEMPDIR,
+# 					     BLAST_REPORT=>$blast_report,
+# 					     MASKED_EXONS=>$mask_flag,
+# 					     SPIKE_LEN=>length($spike_seq),
+# 					    );
+
+	$accn1 = 0 unless $accn1;
+	$accn2 = 0 unless $accn2;
+
+	my ($qfile, $qmap, $qmapname) = generate_image(
+						       gbobj=>$obj1, 
+						       start=>$file1_begin,
+						       stop => $file1_end,
+						       hsps=>[map {{
+							 match=>$_->{hspmatch},
+							 number=>$_->{number},
+							 start=>$_->{qb},
+							 stop=>$_->{qe},
+							 seq=>$_->{qmatchseq},
+							 orientation=>$_->{orientation},
+							 length=>$_->{length},
+							 identity=>$_->{identity},
+							 eval=>$_->{eval},
+							 spike_flag=>$_->{spike_flag},
+						       }} @$data],
+						       spike_len=>length($spike_seq),
+						       report=>$blast_report,
+						       );
+	my ($sfile, $smap, $smapname) = generate_image(
+						       gbobj=>$obj2, 
+						       start=>$file2_begin,
+						       stop => $file2_end,
+						       hsps=>[map {{
+							 hspmatch=>$_->{hspmatch},
+							 number=>$_->{number},
+							 start=>$_->{sb},
+							 stop=>$_->{se},
+							 seq=>$_->{smatchseq},
+							 orientation=>$_->{orientation},
+							 length=>$_->{length},
+							 identity=>$_->{identity},
+							 eval=>$_->{eval},
+							 spike_flag=>$_->{spike_flag},
+						       }} @$data],
+						       spike_len=>length($spike_seq),
+						       report=>$blast_report,
+						       );
+	$html .= qq!<IMG SRC="$TEMPURL/$qfile" !;
+	$html .= qq!BORDER=0 ismap usemap="#$qmapname">\n!;
+	$html .= "$qmap\n";
+	$html .= qq!<br>!;
+	$html .= qq!<IMG SRC="$TEMPURL/$sfile" !;
+	$html .= qq!BORDER=0 ismap usemap="#$smapname">\n!;
+	$html .= "$smap\n";
 	
 	$html .= qq!<br>!;
 	$html .= qq!<FORM NAME=\"info\">\n!;
@@ -301,6 +356,251 @@ sub Show_Summary
     return $template->output;
 
 }
+
+
+sub generate_image
+  {
+    my %opts = @_;
+    my $gbobj = $opts{gbobj};
+    my $start = $opts{start};
+    my $stop = $opts{stop};
+    my $hsps = $opts{hsps};
+    my $masked_exons = $opts{mask};
+    my $spike_len = $opts{spike_len};
+    my $report = $opts{report};
+    my $iw = $opts{iw} || 1600;
+
+#    print STDERR Dumper (\%opts);
+#    print STDERR Dumper $hsps;
+    my $c = new CoGe::Graphics::Chromosome;
+    $c->chr_length(length($gbobj->{SEQUENCE}));
+#    $c->mag_scale_type("constant_power");
+    $c->iw($iw);
+    $c->max_mag(10);
+    $c->feature_labels(1);
+    $c->fill_labels(1);
+    $c->draw_chromosome(1);
+    $c->draw_ruler(1);
+    $c->draw_chr_end(0);
+    $c->chr_start_height(300);
+    $c->feature_height(25);
+    $c->chr_mag_height(5);
+    $c->set_region(start=>$start, stop=>$stop);
+    $c->mag(1);
+#    $c->start_picture('left');
+    my $f1= CoGe::Graphics::Feature->new({start=>1, order => 4, strand => 1});
+    $f1->merge_percent(0);
+    $c->add_feature($f1);
+    my $f2= CoGe::Graphics::Feature->new({start=>1, order => 4, strand => -1});
+    $f2->merge_percent(0);
+    $c->add_feature($f2);
+    my $link = "bl2seq_summary.pl?".join("&", "blast_report=$report", "accnq=", "accns=", "qbegin=", "qend=", "sbegin=","send=","submit=GO");
+    process_nucleotides(c=>$c, seq=>$gbobj->{SEQUENCE});
+    process_features(c=>$c, obj=>$gbobj, start=>$start, stop=>$stop);
+    process_hsps(c=>$c, hsps=>$hsps, link=>$link);
+    my $file = new File::Temp ( TEMPLATE=>'B2V__XXXXX',
+				   DIR=>$TEMPDIR,
+				    SUFFIX=>'.png',
+				    UNLINK=>0);
+    my ($filename) = $file->filename =~ /([^\/]*$)/;;
+    $c->generate_png(file=>$file->filename);
+    close($file);
+    my $mapname = $filename."map";
+    my ($map)=$c->generate_imagemap(name=>$mapname);
+    return ($filename, $map, $mapname);
+  }
+
+sub process_nucleotides
+  {
+    my %opts = @_;
+    my $c = $opts{c};
+    #process nucleotides
+    my $seq = uc($opts{seq});
+    
+    my $seq_len = length $seq;
+    my $chrs = int (($c->_region_stop-$c->_region_start)/$c->iw);
+    $chrs = 1 if $chrs < 1;
+    my $pos = 0;
+    my $start = 1;# if $start < 1;    
+    while ($pos < $seq_len)
+      {
+        my $subseq = substr ($seq, $pos, $chrs);
+        my $rcseq = substr ($seq, $pos, $chrs);
+        $rcseq =~ tr/ATCG/TAGC/;
+        next unless $subseq && $rcseq;
+        my $f1 = CoGe::Graphics::Feature::NucTide->new({nt=>$subseq, strand=>1, start =>$pos+$start});
+	my $f2 = CoGe::Graphics::Feature::NucTide->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
+	#my $f2 = CoGe::Graphics::Feature::Exon_motifs->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
+        #my $f2 = CoGe::Graphics::Feature::GAGA->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});        
+        $c->add_feature($f1, $f2);
+        $pos+=$chrs;
+      }
+  }
+
+sub process_features
+  {
+    #process features
+    my %opts = @_;
+    my $c = $opts{c};
+    my $obj=$opts{obj};
+    my $start=$opts{start};
+    my $stop = $opts{stop};
+    my $accn = $obj->{ACCN};
+    my @opts = ($start, $stop) if $start && $stop;
+    unless (ref $obj)
+      {
+	warn "Possible problem with the object in process_features.  Returning";
+	return 0;
+      }
+    foreach my $feat($obj->get_features(@opts))
+      {
+        my $f;
+	my $type = $feat->{F_KEY};
+        if ($type =~ /Gene/i)
+          {
+	    $f = CoGe::Graphics::Feature::Gene->new();
+	    $f->color([255,0,0,50]);
+	    if ($accn)
+	      {
+		foreach my $name (@{$feat->{QUALIFIERS}{names}})
+		  {
+		    $f->color([255,255,0]) if $name =~ /$accn/i;
+		  }
+	      }
+	    $f->order(2);
+          }
+        elsif ($type =~ /CDS/i)
+          {
+        	$f = CoGe::Graphics::Feature::Gene->new();
+        	$f->color([0,255,0, 50]);
+        	$f->order(4);
+#        	draw_prots(genomic_feat=>$feat, c=>$c, chrom_feat=>$f);
+          }
+        elsif ($type =~ /mrna/i)
+          {
+        	$f = CoGe::Graphics::Feature::Gene->new();
+        	$f->color([0,0,255, 50]);
+        	$f->order(3);
+          }
+        elsif ($type =~ /rna/i)
+          {
+        	$f = CoGe::Graphics::Feature::Gene->new();
+        	$f->color([200,200,200, 50]);
+        	$f->order(3);
+          }
+        next unless $f;
+	my $strand = 1;
+ 	$strand = -1 if $feat->location =~ /complement/;
+	print STDERR $type,"\n" if $DEBUG;
+	foreach my $block (@{$feat->{'blocks'}})
+	  {
+	    $block->[0] =1 unless $block->[0]; #in case $block is set to 0
+	    $f->add_segment(start=>$block->[0], stop=>$block->[1]);
+	    $f->strand($strand);
+	    print STDERR "\t", join ("-", @$block),"\n" if $DEBUG;
+	  }
+
+        my ($name) = sort { length ($b) <=> length ($a) || $a cmp $b} @{$feat->{QUALIFIERS}{names}};
+	print STDERR $name,"\n\n" if $DEBUG;
+        $f->label($name);
+        $f->type($type);
+	$f->description($feat->{QUALIFIERS}{annotation});
+	$f->link("FeatView.pl?accn=$name");
+        $c->add_feature($f);
+    }
+  }
+
+sub process_hsps
+  {
+    my %opts = @_;
+    my $c = $opts{c};
+    my $hsps = $opts{hsps};
+    my $link = $opts{link};
+   
+    print STDERR "HSPS:\n" if $DEBUG;
+    foreach my $hsp (@$hsps)
+      {
+	my $start = $hsp->{start};
+	my $stop = $hsp->{stop};
+	if ($start > $stop)
+	  {
+	    $start = $hsp->{stop};
+	    $stop = $hsp->{start};
+	  }
+	print STDERR "\t",$hsp->{number},": $start-$stop\n" if $DEBUG;
+	my $f = CoGe::Graphics::Feature->new({start=>$start, stop=>$stop});
+	my $color = $hsp->{'orientation'} =~ /-/ ? [100,100,255]: [ 255, 100, 255];
+	my $strand = $hsp->{'orientation'} =~ /-/ ? "-1" : 1;
+	$color = [100,100,100] if $hsp->{'spike_flag'};
+	$f->iw(5);
+	$f->ih(5);
+	$f->gd->fill(0,0,$f->get_color(@$color));
+	$f->color($color);
+	$f->order(1);
+#	$f->add_segment();
+	$f->strand($strand);
+	$f->label($hsp->{'number'});
+	$f->force_label(1);
+	my $desc = join ("<br>", "HSP: ".$hsp->{number}, $hsp->{start}."-".$hsp->{stop}." (".$hsp->{orientation}.")", $hsp->{seq},"Match: ".$hsp->{match},"Length: ".$hsp->{length},"Identity: ".$hsp->{identity},"E_val: ".$hsp->{eval});
+	$f->description($desc);
+	$f->link($link."&"."hsp=".$hsp->{number});
+#	print STDERR Dumper $f;
+	$c->add_feature($f);
+	
+      }
+  }
+
+sub generate_output
+  {
+    my %opts = @_;
+    my $file = $opts{file};
+    my $c = $opts{c};
+    if ($file)
+      {
+        $c->generate_png(file=>$file);
+      }
+    else
+      {
+        print "Content-type: image/png\n\n";
+        $c->generate_png();
+      }
+  } 
+
+#foreach my $i (1..10)
+# { 
+#   $c->mag($i);
+#   $c->generate_png(file=>"tmp/test$i.png");
+# }
+
+sub draw_prots
+  {
+    my %opts = @_;
+    my $feat = $opts{genomic_feat};
+    my $c = $opts{c};
+    my $f = $opts{chrom_feat};
+    #Do we have any protein sequence we can use?
+    foreach my $seq ($feat->sequences)
+      {
+	next unless $seq->seq_type->name =~ /prot/i;
+	my ($pseq) = $seq->sequence_data;
+	my $chrs = int (($c->_region_stop-$c->_region_start)/$c->iw)/3;
+	$chrs = 1 if $chrs < 1;
+	my $pos = 0;
+	while ($pos <= length $pseq)
+	  {
+	    my $aseq = substr($pseq, $pos, $chrs);
+	    foreach my $loc ($seq->get_genomic_locations(start=>$pos+1, stop=>$pos+$chrs))
+	      {
+		my $ao = CoGe::Graphics::Feature::AminoAcid->new({aa=>$aseq, start=>$loc->start, stop=>$loc->stop, strand => $f->strand, order=>4});
+		$ao->skip_overlap_search(1);
+		$c->add_feature($ao);
+		delete $loc->{__Changed}; #silence the warning from Class::DBI
+	      }
+	    
+	    $pos+=$chrs;
+	  }
+      }
+  }
 
 
 
@@ -394,7 +694,7 @@ sub generate_seq_file
     my $sequence = $options{sequence} || $options{seq};
     my $revcomp = $options{revcomp} || $options{comp};
     my $mask = $options{mask} || $options{mask_flag};
-    my $db = new GS::MyDB;
+     my $db = new GS::MyDB;
     my ($file, $file_begin, $file_end, $spike_seq) = $sequence ?
 	      $db->{GBSyntenyViewer}->write_fasta_from_sequence(
 						  sequence=>$sequence,
@@ -413,6 +713,7 @@ sub generate_seq_file
 						  downstream=>$down,
 						  spike=>[$spike_type,$spike_flag], 
 						  path=>$TEMPDIR );
+
     return ($file, $file_begin, $file_end, $spike_seq);
   }
 
@@ -457,12 +758,14 @@ sub get_obj_from_genome_db
 					  VERSION=>$feats[0]->data_information->version(),
 					  SOURCE=>$feats[0]->data_information->data_source->name(),
 					  ORGANISM=>$feats[0]->org->name(),
-					  DEFINITION=>$feats[0]->annotation_pretty_print(),
-					 );
+					  					 );
     $obj->sequence($seq);
     my $fnum = 1;
     my %used_names;
     $used_names{$accn} = 1;
+
+    print STDERR "Region: $chr: $start-$stop\n" if $DEBUG;
+
     foreach my $feat ($db->get_feature_obj->get_features_in_region(start=>$start, stop=>$stop, chr=>$chr, info_id=>$info_id))
       {
 	my $name;
@@ -472,12 +775,17 @@ sub get_obj_from_genome_db
 	    last if ($tmp->name =~ /^$accn.+/i);
 	  }
 	$name = $accn unless $name;
+	print STDERR $name,"\n" if $DEBUG;
+	print STDERR "\t", $feat->genbank_location_string(),"\n" if $DEBUG;
+	print STDERR "\t", $feat->genbank_location_string(recalibrate=>$start),"\n\n" if $DEBUG;
+	my $anno = $feat->annotation_pretty_print;
+	$anno =~ s/\n/<br>/g;
 	$obj->add_feature (
 			   F_NUMBER=>$fnum,
 			   F_KEY=>$feat->type->name,
 			   LOCATION=>$feat->genbank_location_string(recalibrate=>$start),
 			   QUALIFIERS=>[
-                                        [annotation=>$feat->annotation_pretty_print],
+                                        [annotation=>$anno],
                                         [names=> [map {$_->name} sort {$a->name cmp $b->name} $feat->names]],
                                        ],
 			   ACCN=>$name,
