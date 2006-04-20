@@ -1002,8 +1002,11 @@ sub generate_imagemap
 	$y = floor $y;
 	$fs = floor($fs);
 	$html .= qq{
-<area coords="$fs, $y, $x2, $y2" href="$link" onMouseOver="change('$anno')" alt="$alt">
-};
+<area coords="$fs, $y, $x2, $y2"};
+	$html .= qq{ href="$link" } if $link;
+	$html .= qq{ onMouseOver="change('$anno')"} if $anno;
+	$html .= qq{ alt="$alt"} if $alt;
+	$html .= ">\n";
       }
     $html .= "</map>\n";
     return $html;
