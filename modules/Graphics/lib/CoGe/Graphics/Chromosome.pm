@@ -1161,7 +1161,7 @@ sub set_image_height
     my $self = shift;
     my $feat_height = $self->feature_height || $FEATURE_HEIGHT;
     $feat_height = $feat_height*($self->mag);
-    my $h;# = $self->padding; #give use some padding
+    my $h=0;# = $self->padding; #give use some padding
     $h += $self->ruler_height;#+$self->padding;
     my $ch = ($self->chr_start_height+$self->mag * $self->chr_mag_height); #chromosome image height
     $self->_chr_height($ch);
