@@ -925,6 +925,92 @@ sub generate_region
 
 #################### subroutine header begin ####################
 
+=head2 generate_imagemap
+
+ Usage     : $c->generate_imagemap
+ Purpose   : Generates an image for the features on the chromosome
+ Returns   : html image map string
+ Argument  : mapname => name of the image map to use the HTML tag: <map name="mapname">             
+ Throws    : none
+ Comment   : This is also designed to use a javascript function called "change" to display
+           : information stored in the feature object description accessor function 
+             ($feat->description)in a textarea box.  For example:
+           : <script type="text/javascript">
+             function change( info ) {	document.info.info.value = info }
+             </script>
+             <FORM NAME="info"><TEXTAREA NAME="info" cols=50 rows=12></TEXTAREA></FORM>
+             Will cause the textarea to change to the features description as the mouse 
+             is moved over the feature on the image.
+             Also, this usll generate a link in the imagemap using the URI stored in the 
+             feature's link accessor function ($feat->link)
+             The alt field is the label of the feature.
+
+             Example line from the imagemap:
+             <area coords="562,220,663,227" href="annotation_lookup.pl?id=At1g79180.1" onMouseOver="change('Locus: At1g79180.1')"  alt="ID:At1g79180.1">
+
+           : NOTE: Currently skips filled features
+See Also   : CoGe::Graphics::Feature
+
+=cut
+
+#################### subroutine header end ####################
+
+
+sub generate_imagemap
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $name = $opts{name}|| $opts{mapname};
+    my $html = "<map name=\"$name\">\n";
+    my $c = $self->_image_h_used+($self->ih - $self->_image_h_used)/2;
+    foreach my $feat ( $self->get_feature(fill=>1), $self->get_features(fill=>0))
+      {
+	next if $feat->fill;
+	#skip drawing features that are outside (by two times the range being viewed) the view
+	if ($feat->start)
+	  {
+	    next if $feat->start > $self->_region_end+2*($self->_region_stop - $self->_region_start );
+	  }
+	if ($feat->stop > 0)
+	  {
+	    next if $feat->stop < $self->_region_start-2*($self->_region_stop - $self->_region_start );
+	  }
+	my $feat_h = $self->feature_height*$self->mag/$feat->_overlap;
+	my $offset = ($feat->order-1)*($self->feature_height*$self->mag+$self->padding/1.5)+$self->padding;
+	$offset = 0 if $feat->fill;
+	$feat_h = ($self->_chr_height-$self->mag-1)/2 if $feat->fill;
+	my $y = $feat->strand =~ /-/ ? $c+ $offset+1+($feat_h)*($feat->_overlap_pos-1): $c - $offset-$feat_h*$feat->_overlap_pos;
+	my $feat_h = $self->feature_height*$self->mag/$feat->_overlap;
+	my $rb = $self->_region_start;
+	my $re = $self->_region_stop;
+	my $range = $re-$rb;
+	my $w = $self->iw;
+	$feat->gd;
+	$feat->stop($feat->start) unless defined $feat->stop;
+	my $feat_range = $feat->stop-$feat->start;
+	my $unit = $self->_calc_unit_size;
+	my $fs = $unit*($feat->start-$rb);
+	my $fe = $unit*($feat->end-$rb+1);
+	my $fw = sprintf("%.1f",$fe - $fs)+1; #calculate the width of the feature;
+	
+	next if $fw < 1; #skip drawing if less than one pix wide
+	my $link = $feat->link;
+	my $anno = $feat->description;
+	my $alt = $feat->label;
+	my $x2 = ceil($fs+$fw);
+	my $y2 = ceil($y+$feat_h);
+	$y = floor $y;
+	$fs = floor($fs);
+	$html .= qq{
+<area coords="$fs, $y, $x2, $y2" href="$link" onMouseOver="change('$anno')" alt="$alt">
+};
+      }
+    $html .= "</map>\n";
+    return $html;
+  }
+
+#################### subroutine header begin ####################
+
 =head2 ih
 
  Purpose   : alias for Accessor method $self->image_height
@@ -1072,18 +1158,21 @@ sub set_image_height
     my $self = shift;
     my $feat_height = $self->feature_height || $FEATURE_HEIGHT;
     $feat_height = $feat_height*($self->mag);
-    my $h = $self->padding; #give use some padding
-    $h += $self->ruler_height+$self->padding;
-    my $chrh = $self->mag * $self->chr_mag_height+$self->mag/2+$self->padding + $self->chr_start_height;# if $self->draw_chromosome; #chromosome image height
+    my $h;# = $self->padding; #give use some padding
+    $h += $self->ruler_height;#+$self->padding;
+    my $ch = ($self->chr_start_height+$self->mag * $self->chr_mag_height); #chromosome image height
+    $self->_chr_height($ch);
+    my $chrh = $ch+$self->padding;# if $self->draw_chromosome; #chromosome image height
     my $top_feat = $self->get_feats(last_order=>1, strand=>1, fill=>0);
-    my $tfh = $top_feat->order * ($feat_height+$self->padding)+4*$self->padding if $top_feat;
+    my $tfh = $top_feat->order * ($feat_height+$self->padding)if $top_feat;
     $tfh = 0 unless $tfh;
     my $bot_feat = $self->get_feats(last_order=>1, strand=>-1, fill=>0);
-    my $bfh = $bot_feat->order * ($feat_height+$self->padding)+4*$self->padding if $bot_feat;
+    my $bfh = $bot_feat->order * ($feat_height+$self->padding)if $bot_feat;
     $bfh = 0 unless $bfh;
     $h += $tfh > $chrh/2 ? $tfh : $chrh/2;
     $self->_chr_center($h);
     $h += $bfh > $chrh/2 ? $bfh : $chrh/2;
+    $h += $self->padding;
 #    print STDERR join("\t", $tfh, $bfh, $chrh/2),"\n";
     print STDERR "Image Height: $h\n" if $self->DEBUG;
     $self->ih($h);
@@ -1258,8 +1347,7 @@ sub _draw_chromosome
   {
     my $self = shift;
     my $gd = $self->gd;
-    my $ch = ($self->chr_start_height+$self->mag * $self->chr_mag_height); #chromosome image height
-    $self->_chr_height($ch);
+    my $ch = $self->_chr_height;
     $ch = $ch/2; #want half the height for the rest of the calcs
     my $hc = $self->_image_h_used+($self->ih-$self->_image_h_used)/2; #height of center of chromsome image
     my $w = $self->iw; #width of image
@@ -1517,7 +1605,7 @@ sub _draw_feature
       }
     $size = $size*$feat->font_size if $feat->font_size;
 
-    $self->_gd_string(y=>$sy, x=>$fs, text=>$feat->label, size=>$size) if ( ($self->feature_labels || $self->fill_labels)&& $fw>5); #don't make the string unless the feature is at least 5 pixels wide
+    $self->_gd_string(y=>$sy, x=>$fs, text=>$feat->label, size=>$size) if ( ($self->feature_labels || $self->fill_labels)&& ($fw>5 || $feat->force_label)); #don't make the string unless the feature is at least 5 pixels wide
   }
 
 #################### subroutine header begin ####################
