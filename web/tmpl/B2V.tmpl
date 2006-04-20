@@ -238,6 +238,18 @@ function changeColor(id, color) {
 
 <TABLE class="basic" width=100%>
  <TR>
+  <TH colspan="2">
+  <DIV class="mainDiv">
+   <DIV id="ao" class="topItem" onMouseOver="Init(this);changeColor('ao','#000099'); " onMouseOut="changeColor('ao','#009900');" >Algorithm Options:</DIV>
+   <DIV class="dropMenu">
+     <DIV class="subMenu" style="display:inline;">
+     <TABLE style="width: 100%;">
+      <TR>
+      <TD>
+
+
+<TABLE class="basic" width=100%>
+ <TR>
   <TH>
     <DIV>
       HSP Filter:
@@ -258,6 +270,24 @@ function changeColor(id, color) {
   <TD>
    <label><input class="backbox" type="radio" name="mask" id="mask" tabindex="22" value="1" checked/>On</label><label><input class="backbox" type="radio" name="mask" id="mask" tabindex="22" value="0" />Off</label>
  </TR>
+
+        </TABLE>
+     </table>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     </DIV>
+  </DIV>
+  </DIV>
+ </TR>
+	  
+ </TR>
+
+</TABLE>
+
+
+<TABLE class="basic" width=100%>
  <TR>
   <TH colspan="2">
   <DIV class="mainDiv">
@@ -358,6 +388,84 @@ function changeColor(id, color) {
  </TR>
          </TABLE>
      </table>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     </DIV>
+  </DIV>
+  </DIV>
+ </TR>
+	  
+ </TR>
+
+</TABLE>
+
+<TABLE class="basic" width=100%>
+ <TR>
+  <TH colspan="2">
+  <DIV class="mainDiv">
+   <DIV id="infor" class="topItem" onMouseOver="Init(this);changeColor('infor','#000099'); " onMouseOut="changeColor('infor','#009900');" >Information:</DIV>
+   <DIV class="dropMenu">
+     <DIV class="subMenu" style="display:inline;">
+     <TABLE style="width: 100%;">
+      <TR>
+      <TD>
+
+
+<TABLE class="basic">
+ <TR valign="top">
+  <TH>
+    <DIV>
+      General:
+    </DIV>
+  </TD>
+  <TD>
+    <DIV>
+	This program is designed to easily run a bl2seq against any two sequences and visualize the results in an intuative manner in the context of sequence specific features such as genes, coding regions, transcribed RNA, etc.  This program is specifically designed to use genbank format sequence files and our local genomic database in order to extract additional information (aformentioned sequence features).  Fasta format is also supported.
+    </DIV>
+  </TD>
+ </TR>
+ <TR  valign="top">
+  <TH>
+    <DIV>
+      Algorithm Options
+    </DIV>
+  </TD>
+  <TD>
+    <DIV>
+	The algorithm is <a href="http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&db=PubMed&list_uids=2231712&dopt=Abstract">bl2seq</a> with two easy to use additions:
+	<li>HSP Filter: will mask any HSP whose expectation value is above the value obtained when spiking the two query sequences with a sequence of some specified length.  For example, if this option is turned on and a sequence of 15/15 is selected, an additional sequence is added to the ends of both submitted sequences.  This added sequence, or spike sequence, contains a short non-matching/non-identical linker sequence followed by a 15 nucleotide identical sequence.  The HSP containing this exact match is found and any HSP whose e-value is above the spike-sequence containing HSP is automatically removed from the visualized results.
+	<li>Mask Exons: This will mask any specified coding sequence (CDS sequences in a genbank file) by converting them to "N" which effectively removes them from the bl2seq analysis.  Using this option is useful if you are, for example, searching for evolutionarily conserved non-coding sequences.
+    </DIV>
+  </TD>
+ </TR>
+ <TR valign="top">
+  <TH>
+    <DIV>
+      Image Options
+    </DIV>
+  </TD>
+  <TD>
+    <DIV>
+	The output is visualized using our unqiue genomic graphics package: GeLo.  The background image with the blue-green tinting represents the submitted sequence and the coloring represents the GC/AT content:  AT rich regions are blue; GC rich regions are green.  The sequence image is divided in half by a dotted line with the top half representing the top strand and the bottom half representing the bottom strand of hypothesized duplexed DNA.  Features are painted on the background starting with HSPs located closest to the center of sequence image followed by genes, RNAs, and coding sequence.  Genes are colored either red or yellow.  The yellow genes are genes requested from our genomic database.  Messenger RNA transcripts are blue and other RNAs are grey.  Coding sequence is green.  HSPs in the same orientation are blue and those in the opposite orientation are pink.  This genomic graphics package is progammed in perl, relies only on GD for installation, is easy to use from the programming perspective and is fully customizable.  If interested in learning more about this package, please contact Eric Lyons (elyons (@) nature.berkeley.edu) for additional information.
+    </DIV>
+  </TD>
+ </TR>
+         </TABLE>
+     </table>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
      <span class="subItem"></span>
      <span class="subItem"></span>
      <span class="subItem"></span>
