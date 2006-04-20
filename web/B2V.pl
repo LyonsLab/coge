@@ -93,6 +93,9 @@ sub Show_Summary
 	$gapextend,
 	$mismatch,
 	$blastparams,
+	$iw,
+	$ih,
+	$feat_h,
        ) = @_;
     my ($seq_file1, $seq_file2);
     my ($f1start, $f1up, $f1down);
@@ -304,6 +307,9 @@ sub Show_Summary
 						       }} @$data],
 						       spike_len=>length($spike_seq),
 						       report=>$blast_report,
+						       iw=>$iw,
+						       ih=>$ih,
+						       fh=>$feat_h,
 						       );
 	my ($sfile, $smap, $smapname) = generate_image(
 						       gbobj=>$obj2, 
@@ -323,6 +329,9 @@ sub Show_Summary
 						       }} @$data],
 						       spike_len=>length($spike_seq),
 						       report=>$blast_report,
+						       iw=>$iw,
+						       ih=>$ih,
+						       fh=>$feat_h,
 						       );
 	$html .= qq!<IMG SRC="$TEMPURL/$qfile" !;
 	$html .= qq!BORDER=0 ismap usemap="#$qmapname">\n!;
@@ -368,7 +377,8 @@ sub generate_image
     my $spike_len = $opts{spike_len};
     my $report = $opts{report};
     my $iw = $opts{iw} || 1600;
-
+    my $ih = $opts{ih} || 200;
+    my $fh = $opts{fh} || 25;
 #    print STDERR Dumper (\%opts);
 #    print STDERR Dumper $hsps;
     my $c = new CoGe::Graphics::Chromosome;
@@ -381,8 +391,8 @@ sub generate_image
     $c->draw_chromosome(1);
     $c->draw_ruler(1);
     $c->draw_chr_end(0);
-    $c->chr_start_height(300);
-    $c->feature_height(25);
+    $c->chr_start_height($ih);
+    $c->feature_height($fh);
     $c->chr_mag_height(5);
     $c->set_region(start=>$start, stop=>$stop);
     $c->mag(1);
