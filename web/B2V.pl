@@ -286,7 +286,6 @@ sub Show_Summary
 
 	$accn1 = 0 unless $accn1;
 	$accn2 = 0 unless $accn2;
-
 	my ($qfile, $qmap, $qmapname) = generate_image(
 						       gbobj=>$obj1, 
 						       start=>$file1_begin,
@@ -311,7 +310,7 @@ sub Show_Summary
 						       start=>$file2_begin,
 						       stop => $file2_end,
 						       hsps=>[map {{
-							 hspmatch=>$_->{hspmatch},
+							 match=>$_->{hspmatch},
 							 number=>$_->{number},
 							 start=>$_->{sb},
 							 stop=>$_->{se},
