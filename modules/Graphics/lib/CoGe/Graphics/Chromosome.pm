@@ -980,7 +980,6 @@ sub generate_imagemap
 	$offset = 0 if $feat->fill;
 	$feat_h = ($self->_chr_height-$self->mag-1)/2 if $feat->fill;
 	my $y = $feat->strand =~ /-/ ? $c+ $offset+1+($feat_h)*($feat->_overlap_pos-1): $c - $offset-$feat_h*$feat->_overlap_pos;
-	my $feat_h = $self->feature_height*$self->mag/$feat->_overlap;
 	my $rb = $self->_region_start;
 	my $re = $self->_region_stop;
 	my $range = $re-$rb;
