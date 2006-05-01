@@ -134,7 +134,7 @@ sub seqs
 sub desc
   {
     my $self = shift;
-    return $self->descriptions(@_);
+    return $self->description(@_);
   }
 
 sub id
