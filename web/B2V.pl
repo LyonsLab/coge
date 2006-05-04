@@ -46,6 +46,7 @@ my $pj = new CGI::Ajax(
 		      );
 $pj->JSDEBUG(0);
 $pj->DEBUG(0);
+$pj->js_encode_function('escape');
 print $pj->build_html($form, \&gen_html);
 #print gen_html();
 
