@@ -1149,4 +1149,46 @@ sub get_genomic_seq_for_feat
     return $self->get_genomic_sequence_for_feature($feat);
   }
 
+
+################################################ subroutine header begin ##
+=head2 get_features_for_organism_and_version
+
+ Usage     : my @feats = $db->get_features_for_organism_and_version(org=>$org,
+                                                                    version=>6,
+								    );
+ Purpose   : Get all the features for an organism of a particular version
+           : as specified by the data_information table.
+ Returns   : an array or array_ref (wantarray) of CoGe::Genome::DB::Feature objects
+ Argument  : org => either the name of the organism (which will be looked up in the database) --OR--
+                    an CoGe::Genome:DB::Organism object
+             version=> an integer that specifies the data inforation version from which to find features
+ Throws    : Will return undef if no organism object can be found.
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+
+sub get_features_for_organism_and_version
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $org = $opts{org} || $opts{organism};
+    unless (ref ($org) =~ /organism/i)
+      {
+         ($org) = $self->get_org_obj->search_like(name=>"$org%");
+      }
+    return unless ref($org) =~ /organism/i;
+    my $version = $opts{version} || $opts{ver} || $opts{v};
+    my @feats;
+    foreach my $di ($org->data_infos)
+      {
+         next unless $di->version == $version;
+	 push @feats, $di->feats;
+      }
+    return wantarray ? @feats : \@feats;
+  }
+
 1; #this line is important and will help the module return a true value
