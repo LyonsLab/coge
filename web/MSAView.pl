@@ -31,13 +31,16 @@ print $pj->build_html($FORM, \&gen_html);
 
 sub gen_html
   {
-    my $body = gen_body();
+    my ($body, $seq_names, $seqs) = gen_body();
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/MSAView.tmpl');
+
     $template->param(TITLE=>'Multiple Sequence Alignment Viewer');
     $template->param(USER=>$USER);
     $template->param(DATE=>$DATE);
     $template->param(LOGO_PNG=>"MSAView-logo.png");
     $template->param(BODY=>$body);
+    $template->param(SEQ_NAMES=>$seq_names) if $seq_names;
+    $template->param(SEQS=>$seqs) if $seqs;
     my $html;# =  "Content-Type: text/html\n\n";
     $html .= $template->output;
     return $html;
@@ -46,12 +49,13 @@ sub gen_html
 sub gen_body
   {
     my $html;
+    my ($seq_names, $seqs);
     if ($FORM->param('file'))
       {
 	my $fh = $FORM->upload('file');
 	my $content;
 	while (<$fh>) {$content .= $_};
-	$html .= gen_alignment_view($content);
+	($html, $seq_names, $seqs) = gen_alignment_view($content);
       }
     else
       {
@@ -64,7 +68,7 @@ sub gen_body
 </FORM>
 }
       }
-    return $html
+    return ($html, $seq_names, $seqs);
   }
 
 sub gen_alignment_view
@@ -72,30 +76,9 @@ sub gen_alignment_view
     my $content = shift;
     my ($seqs, $order, $stats) = parse_fasta($content);
     my $html;
-
-    $html .= "<table>";
-    $html .= "<tr>";
-    $html .= "<td>";
-    $html .= "<pre>\n";
-    $html .= join "\n", @$order;
-    $html .= "</pre>\n";
-    $html .= "<td>";
-    $html .= "<pre>";
-    foreach my $name (@$order)
-      {
-	$html .= $seqs->{$name}."\n";
-      }
-    chomp $html;
-    $html .= "</pre>";
-    $html .= "</tr>";
-#    $html .= "<TR>\n";
-#    $html .= "<td><hr><td><hr>\n";
-#    $html .= "</TR>\n";
-#    $html .= "<TR>\n";
-#    $html .= "<td><pre>Consensus</pre>";
-#    $html .= "<td><pre>".$seqs->{consensus}."</pre>";
-#    $html .= "</TR>\n";
-    $html .= "</table>";
+    my ($seq_names, $out_seqs);
+    $seq_names = join "\n", @$order;
+    $out_seqs = join "\n", map {$seqs->{$_}} @$order;
     $html .= "<hr>";
     $html .= "Stats:";
     $html .= "<table>";
@@ -121,12 +104,13 @@ sub gen_alignment_view
 	$html .= "Characters with ".$num."% identity";
 	$html .= "</div>";
 	$html .= "<td><div class=small>";
-	my $val = sprintf("%.2f", $stats->{percent}{$num}/$stats->{length})*100;
-	$html .= $stats->{percent}{$num}."(".$val."%)";
+	my $stat = $stats->{percent}{$num} || 0;
+	my $val = sprintf("%.2f", $stat/$stats->{length})*100;
+	$html .= $stat."(".$val."%)";
 	$html .= "</div>";	
       }
     $html .= "</table>";
-    return $html;
+    return ($html, $seq_names, $out_seqs);
   }
 
 sub parse_fasta
