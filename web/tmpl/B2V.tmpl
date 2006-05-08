@@ -17,8 +17,42 @@ function changeColor(id, color) {
   document.getElementById(id).style.color = color;
 }
 
+var txtboxes = ['dr1up','dr1down','dr2up','dr2down'];
+
+function setup(){
+   for(var k in txtboxes){
+       k = txtboxes[k];
+       var el = get(k);
+       el.onkeyup = function(){
+           var v = this.value;
+	   if(get('apply_all').checked){
+		   for(var k in txtboxes){
+		       k = txtboxes[k];
+		       get(k).value = v;
+		   }
+	   }
+	  }
+       }
+}
+
+
+function update_distance (check, val) {
+  return;
+  check = get(check);
+  val = get(val);
+//  alert (check, val);
+  if (check.value == 0) { return; }
+  else {
+    alert(val);
+  }
+}
+
+function get(id){
+    return document.getElementById(id);
+}
+
 </SCRIPT>
-<BODY>
+<BODY onload="setup()" >
 <TABLE>
  <TR>
   <TD><a href="/CoGe" border=0><img src='/CoGe/picts/CoGe-logo.png' border=0></a>
@@ -80,10 +114,12 @@ function changeColor(id, color) {
         <DIV id="org1"><input type="hidden" id="infoid1"></DIV>
        <TR>
        <TD><DIV class="small">Upstream:</DIV>
-       <TD><input class="backbox" type="text" name="dr1up" id="dr1up" tabindex="1" size="10" value="10000" />
+       <TD><DIV  id="up1" ><input class="backbox" type="text" name="dr1up" id="dr1up" tabindex="1" size="10" value="10000" /> </DIV>
       <TR>
        <TD><DIV class="small">Downstream:</DIV>
-       <TD><input class="backbox" type="text" name="dr1down" id="dr1down" tabindex="1" size="10"  value="10000"/>
+       <TD><DIV  id="down1"><input class="backbox" type="text" name="dr1down" id="dr1down" tabindex="1" size="10"  value="10000"/></DIV>
+      <TR>
+        <TD><input type="checkbox" name="apply_all" id="apply_all" value"0"><font class ="small" float>(Apply distance to all?)</font>
       </TABLE>
       <TD>
       <TABLE>
@@ -93,10 +129,10 @@ function changeColor(id, color) {
         <DIV id="org2"><input type="hidden" id="infoid2"></DIV>
        <TR>
        <TD><DIV class="small">Upstream:</DIV>
-       <TD><input class="backbox" type="text" name="dr2up" id="dr2up" tabindex="1" size="10" value="10000" />
+       <TD><DIV  id="up2" ><input class="backbox" type="text" name="dr2up" id="dr2up" tabindex="1" size="10" value="10000" /></DIV>
       <TR>
        <TD><DIV class="small">Downstream:</DIV>
-       <TD><input class="backbox" type="text" name="dr2down" id="dr2down" tabindex="1" size="10"  value="10000"/>
+       <TD><DIV  id="down2" ><input class="backbox" type="text" name="dr2down" id="dr2down" tabindex="1" size="10"  value="10000"/></DIV>
       </TABLE>
      </table>
      <span class="subItem"></span>
