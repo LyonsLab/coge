@@ -40,7 +40,17 @@ kaj.pollute();
 <!-- ########################################## -->
 <!-- Main body of the central table goes in here-->
 <!-- ########################################## -->
-<TMPL_VAR NAME=BODY>
+<TMPL_IF NAME="SEQ_NAMES">
+<TABLE>
+ <TR>
+  <TD>
+   <DIV class=prep><TMPL_VAR NAME=SEQ_NAMES></DIV>
+  <TD> 
+<DIV class=prep><TMPL_VAR NAME=SEQS></DIV>
+</TR>
+</TABLE>
+</TMPL_IF>
+<TMPL_IF NAME="BODY"><TMPL_VAR NAME=BODY></TMPL_IF>
 <!-- ########################################## -->
 <!-- ############END MAIN BODY################# -->
 <!-- ########################################## -->
@@ -67,6 +77,9 @@ kaj.pollute();
  </tr>
 </table> 
 
+<DIV class=prep>
+<TMPL_VAR NAME=SEQS>
+</DIV>
 
 <br>
 <HR>
