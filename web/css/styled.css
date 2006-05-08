@@ -4,6 +4,11 @@ BODY {
   background: #FFFFFF;
 }
 
+.prep {
+  font-family:fixed, monospace;
+  white-space:pre;
+}
+
 .title {
   font-size:xx-large;
   color: #000099;
@@ -28,7 +33,7 @@ BODY {
 }
 
 .small { 
-  font-family: gixed;
+  font-family: fixed;
   font-size: small;
   color: #000099;
 }
