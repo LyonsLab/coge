@@ -207,6 +207,7 @@ BEGIN
 "font_size", #scaling factor for font size.
 "external_image", #external image for feature
 "force_label", #flag to force the printing of the label
+"magnification", #magnification level for increasing/decreasing the size of the feature  
 );
   }
 
@@ -281,6 +282,10 @@ skip_overlap_search => When set to true, no overlap search is performed by CoGe:
                  blending features that will appear at the same place on the final image.
  font_size    => Scaling factor for font size.  2 will multiple the font size by 2, 
                  .5 will multiple the font size by .5 (divide it by 2)
+ magnification=> Scaling factor for the size of the feature when used
+                 by chromosome.pm for drawing the feature.  This
+                 allows for increasing/decreasing the size of some
+                 features relative to others
 
  _gd          => Internal place to store the GD object.
  _overlap     => Internal place to track the number of features that occure at the same position.  
@@ -313,7 +318,22 @@ sub transparency
     return $self->transparency(@_);
   }
 
+
 #################### subroutine header begin ####################
+
+=head2 mag
+
+ Purpose   : alias for $self->magnification 
+
+=cut
+
+#################### subroutine header end ####################
+sub desc
+  {
+    my $self = shift;
+    return $self->magnification(@_);
+  }
+
 #################### subroutine header begin ####################
 
 =head2 desc
