@@ -539,13 +539,15 @@ sub process_hsps
 	  }
 	print STDERR "\t",$hsp->{number},": $start-$stop\n" if $DEBUG;
 	my $f = CoGe::Graphics::Feature->new({start=>$start, stop=>$stop});
-	my $color = $hsp->{'orientation'} =~ /-/ ? [100,100,255]: [ 255, 100, 255];
+	#my $color = $hsp->{'orientation'} =~ /-/ ? [100,100,255]: [ 255, 100, 255];
+	my $color = [ 255, 100, 255];
 	my $strand = $hsp->{'orientation'} =~ /-/ ? "-1" : 1;
 	$color = [100,100,100] if $hsp->{'spike_flag'};
 	$f->iw(5);
 	$f->ih(5);
 	$f->gd->fill(0,0,$f->get_color(@$color));
 	$f->color($color);
+    $f->mag(1.5);
 	$f->order(1);
 #	$f->add_segment();
 	$f->strand($strand);
