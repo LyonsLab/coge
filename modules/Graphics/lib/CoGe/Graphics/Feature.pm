@@ -328,7 +328,7 @@ sub transparency
 =cut
 
 #################### subroutine header end ####################
-sub desc
+sub mag
   {
     my $self = shift;
     return $self->magnification(@_);
