@@ -1457,7 +1457,7 @@ sub _draw_features
 	  {
 	    next if $feat->stop < $self->_region_start-2*($self->_region_stop - $self->_region_start );
 	  }
-	my $feat_h = $self->feature_height*$self->mag/$feat->_overlap;
+	my $feat_h = $self->feature_height*$self->mag/$feat->_overlap*$feat->mag;
 	my $offset = ($feat->order-1)*($self->feature_height*$self->mag+$self->padding/1.5)+$self->padding;
 	$offset = 0 if $feat->fill;
 	$feat_h = ($self->_chr_height-$self->mag-1)/2 if $feat->fill;
