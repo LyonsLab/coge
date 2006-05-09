@@ -506,6 +506,7 @@ sub add_feature
 	$feat->ih(0) unless defined $feat->ih;
 	$feat->iw(0) unless defined $feat->iw;
 	$feat->gd; #initialize feature;
+    $feat->mag(1) unless defined $feat->mag;
 	$feat->_overlap(1) unless $feat->_overlap;#detects overlapping feature on the same track 
 	$feat->_overlap_pos(1) unless $feat->_overlap_pos; #placement for overlapping features
 	if (ref($feat) =~ /Feature/i)
