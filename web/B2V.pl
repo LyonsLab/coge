@@ -89,6 +89,7 @@ sub Show_Summary
 	$match_filter,
 	$spike_flag,
 	$mask_flag,
+	$mask_ncs_flag,
 	$wordsize,
 	$gapopen,
 	$gapextend,
@@ -117,6 +118,7 @@ sub Show_Summary
 	($file1, $file1_begin, $file1_end,$spike_seq) = 
 	  generate_seq_file(obj=>$obj1,
 			    mask=>$mask_flag,
+			    mask_ncs=>$mask_ncs_flag,
 			    spike_type=>"Q",
 			    spike_flag=>$spike_flag,
 			   );
@@ -140,6 +142,7 @@ sub Show_Summary
 	  generate_seq_file (
 			     obj=>$obj1,
 			     mask=>$mask_flag,
+			     mask_ncs=>$mask_ncs_flag,
 #			     revcomp=>$dscomp1,
 			     startpos=>$f1start,
 			     upstream=>$f1up,
@@ -157,6 +160,7 @@ sub Show_Summary
 			     obj=>$obj1,
 			     revcomp=>$dscomp1,
 			     mask=>$mask_flag,
+			     mask_ncs=>$mask_ncs_flag,
 			     spike_type=>"Q",
 			     spike_flag=>$spike_flag, 
 			    );
@@ -169,6 +173,7 @@ sub Show_Summary
 	      generate_seq_file (
 				 obj=>$obj1,
 				 mask=>$mask_flag,
+				 mask_ncs=>$mask_ncs_flag,
 				 startpos=>$gb1start,
 				 upstream=>$gb1up,
 				 downstream=>$gb1down,
@@ -184,6 +189,7 @@ sub Show_Summary
 	($file2, $file2_begin, $file2_end,$spike_seq) =
 	  generate_seq_file(obj=>$obj2,
 			    mask=>$mask_flag,
+			    mask_ncs=>$mask_ncs_flag,
 			    spike_type=>"S",
 			    spike_flag=>$spike_flag,
 			   );
@@ -207,6 +213,7 @@ sub Show_Summary
 	  generate_seq_file (
 			     obj=>$obj2,
 			     mask=>$mask_flag,
+			     mask_ncs=>$mask_ncs_flag,
 #			     revcomp=>$dscomp2,
 			     startpos=>$f2start,
 			     upstream=>$f2up,
@@ -223,6 +230,7 @@ sub Show_Summary
 	  generate_seq_file (
 			     obj=>$obj2,
 			     mask=>$mask_flag,
+			     mask_ncs=>$mask_ncs_flag,
 			     revcomp=>$dscomp2,
 			     spike_type=>"Q",
 			     spike_flag=>$spike_flag, 
@@ -236,6 +244,7 @@ sub Show_Summary
 	  generate_seq_file (
 			     obj=>$obj2,
 			     mask=>$mask_flag,
+			     mask_ncs=>$mask_ncs_flag,
 			     startpos=>$gb2start,
 			     upstream=>$gb2up,
 			     downstream=>$gb2down,
@@ -375,6 +384,7 @@ sub generate_image
     my $stop = $opts{stop};
     my $hsps = $opts{hsps};
     my $masked_exons = $opts{mask};
+    my $masked_ncs = $opts{mask_ncs};
     my $spike_len = $opts{spike_len};
     my $report = $opts{report};
     my $iw = $opts{iw} || 1600;
@@ -706,6 +716,7 @@ sub generate_seq_file
     my $sequence = $options{sequence} || $options{seq};
     my $revcomp = $options{revcomp} || $options{comp};
     my $mask = $options{mask} || $options{mask_flag};
+    my $mask_ncs = $options{mask_ncs},
      my $db = new GS::MyDB;
     my ($file, $file_begin, $file_end, $spike_seq) = $sequence ?
 	      $db->{GBSyntenyViewer}->write_fasta_from_sequence(
@@ -720,6 +731,7 @@ sub generate_seq_file
 						  GBOBJ=>$obj,
 						  accn=>$obj->{ACCN},
 						  mask=>$mask,
+						  mask_ncs=>$mask_ncs,
 						  startpos=>$start,
 						  upstream=>$up,
 						  downstream=>$down,
