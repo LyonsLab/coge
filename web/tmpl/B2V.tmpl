@@ -307,9 +307,17 @@ function get(id){
   <TD>
    <label><input class="backbox" type="radio" name="mask" id="mask" tabindex="22" value="1" />On</label><label><input class="backbox" type="radio" name="mask" id="mask" tabindex="22" value="0" checked/>Off</label>
  </TR>
+ <TR>
+  <TH>
+   Mask Non-coding Sequence:<br><font class="small">(Everything but exons masked during bl2seq run)</font>
+  <TD>
+   <label><input class="backbox" type="radio" name="mask_ncs" id="mask_ncs" tabindex="22" value="1" />On</label><label><input class="backbox" type="radio" name="mask_ncs" id="mask_ncs" tabindex="22" value="0" checked/>Off</label>
+ </TR>
 
         </TABLE>
      </table>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
      <span class="subItem"></span>
      <span class="subItem"></span>
      <span class="subItem"></span>
@@ -541,7 +549,7 @@ function get(id){
 </table> 
 
 <input type="button" value="GO"
-onClick="loading([], ['results']); run(['accn1', 'accn2', 'dr1up', 'dr1down', 'dr2up', 'dr2down', 'infoid1', 'infoid2', 'gbaccn1', 'gbaccn2', 'gb1start', 'gb1up', 'gb1down', 'gb2start', 'gb2up', 'gb2down', 'seq1', 'seq2', 'comp1', 'comp2', 'matchfilter', 'spike', 'mask', 'wordsize', 'gapopen', 'gapextend', 'mismatch', 'blastparams','iw','ih', 'feat_h'],['results'], 'POST');"
+onClick="loading([], ['results']); run(['accn1', 'accn2', 'dr1up', 'dr1down', 'dr2up', 'dr2down', 'infoid1', 'infoid2', 'gbaccn1', 'gbaccn2', 'gb1start', 'gb1up', 'gb1down', 'gb2start', 'gb2up', 'gb2down', 'seq1', 'seq2', 'comp1', 'comp2', 'matchfilter', 'spike', 'mask', 'mask_ncs', 'wordsize', 'gapopen', 'gapextend', 'mismatch', 'blastparams','iw','ih', 'feat_h'],['results'], 'POST');"
 >   &nbsp;&nbsp;
 
 
