@@ -63,9 +63,11 @@ sub loading
 sub gen_html
   {
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/B2V.tmpl');
-    $template->param(TITLE=>'Bl2Seq Viewer');
+    $template->param(TITLE=>'Synteny Viewer');
     $template->param(USER=>$USER);
     $template->param(DATE=>$DATE);
+    $template->param(ACCN1=>$form->param('accn1')) if $form->param('accn1');
+    $template->param(ACCN2=>$form->param('accn2')) if $form->param('accn2');
     my $html;# =  "Content-Type: text/html\n\n";
     $html .= $template->output;
     return $html;
