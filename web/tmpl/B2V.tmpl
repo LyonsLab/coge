@@ -55,7 +55,7 @@ function get(id){
 <BODY onload="setup()" >
 <TABLE>
  <TR>
-  <TD><a href="/CoGe" border=0><img src='/CoGe/picts/CoGe-logo.png' border=0></a>
+  <TD><a href="/CoGe" border=0><img src='/CoGe/picts/SynView-logo.png' border=0></a>
   <TD id="title"><font class="title"><TMPL_VAR NAME=TITLE></font></td>
  </TR>
 </TABLE>
@@ -110,7 +110,7 @@ function get(id){
       <TABLE>
        <TR>
         <TD>Name:
-        <TD><input class="backbox" type="text" name="accn1" id="accn1" tabindex="1"  size="20" onBlur="source_search(['accn1','args__1'],['org1'])" />
+        <TD><input class="backbox" type="text" name="accn1" id="accn1" tabindex="1"  size="20" onBlur="source_search(['accn1','args__1'],['org1'])" value=<TMPL_VAR NAME=ACCN1> />
         <DIV id="org1"><input type="hidden" id="infoid1"></DIV>
        <TR>
        <TD><DIV class="small">Upstream:</DIV>
@@ -125,7 +125,7 @@ function get(id){
       <TABLE>
        <TR>
         <TD>Name:
-        <TD><input class="backbox" type="text" name="accn2" id="accn2" tabindex="1"  size="20" onBlur="source_search(['accn2','args__2'],['org2'])" />
+        <TD><input class="backbox" type="text" name="accn2" id="accn2" tabindex="1"  size="20" onBlur="source_search(['accn2','args__2'],['org2'])" value=<TMPL_VAR NAME=ACCN2> />
         <DIV id="org2"><input type="hidden" id="infoid2"></DIV>
        <TR>
        <TD><DIV class="small">Upstream:</DIV>
@@ -516,6 +516,12 @@ function get(id){
      <span class="subItem"></span>
      <span class="subItem"></span>
      <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
      </DIV>
   </DIV>
   </DIV>
@@ -549,7 +555,7 @@ function get(id){
 </table> 
 
 <input type="button" value="GO"
-onClick="loading([], ['results']); run(['accn1', 'accn2', 'dr1up', 'dr1down', 'dr2up', 'dr2down', 'infoid1', 'infoid2', 'gbaccn1', 'gbaccn2', 'gb1start', 'gb1up', 'gb1down', 'gb2start', 'gb2up', 'gb2down', 'seq1', 'seq2', 'comp1', 'comp2', 'matchfilter', 'spike', 'mask', 'mask_ncs', 'wordsize', 'gapopen', 'gapextend', 'mismatch', 'blastparams','iw','ih', 'feat_h'],['results'], 'POST');"
+onClick="source_search(['accn1','args__1'],['org1']); source_search(['accn2','args__2'],['org2']); loading([], ['results']); run(['accn1', 'accn2', 'dr1up', 'dr1down', 'dr2up', 'dr2down', 'infoid1', 'infoid2', 'gbaccn1', 'gbaccn2', 'gb1start', 'gb1up', 'gb1down', 'gb2start', 'gb2up', 'gb2down', 'seq1', 'seq2', 'comp1', 'comp2', 'matchfilter', 'spike', 'mask', 'mask_ncs', 'wordsize', 'gapopen', 'gapextend', 'mismatch', 'blastparams','iw','ih', 'feat_h'],['results'], 'POST');"
 >   &nbsp;&nbsp;
 
 
