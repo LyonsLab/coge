@@ -62,9 +62,9 @@ sub gen_body
 	$html .= qq{
 <form method="post" enctype="multipart/form-data">
 <DIV>Please select an alignment file in fasta format to upload:  
-<input type = "file" name= "file"
+<input type = "file" name= "file">
 </DIV>
-<input type = "submit" label="GO">
+<input type = "submit" name="GO" value="GO">
 </FORM>
 }
       }
