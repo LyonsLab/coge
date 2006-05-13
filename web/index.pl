@@ -18,8 +18,8 @@ $template->param(DATE=>$DATE);
 
 my @actions = (
 	       {
-		ACTION=>qq{<a href="./B2V.pl">Comparative BL2SEQ Viewer</a>},
-		DESC => qq{The comparative bl2seq viewer uses the bl2seq algorithm to find regions of similarity between two sequences and displays the results graphically.  This program has several unqiue options to aid in the finding of evolutionary conserved non-coding sequences.},
+		ACTION=>qq{<a href="./B2V.pl">Synteny Viewer</a>},
+		DESC => qq{Allows uses to compare two sequences using the bl2seq algorithm to find regions of similarity and displays the results graphically.  This program has several unqiue options to aid in the finding of evolutionary conserved non-coding sequences and large syntenic regions.},
 	       },
 	       {
 
@@ -28,7 +28,11 @@ my @actions = (
 	       },
 	       {
 		ACTION => qq{<a href="./MSAView.pl">Multiple Sequence Alignment Viewer</a>},
-		DESC   => qq{Allows users to submit a multiple sequence alignment in FASTA format (if people would like additional formats, please request via e-mail).  This program also generates a consensus sequence from the alignment and displays some basic statistics about the alignment.},
+		DESC   => qq{Allows users to submit a multiple sequence alignment in FASTA format (if people would like additional formats, please request via e-mail) in order to quickly check the alignment, find conserved regions, etc.  This program also generates a consensus sequence from the alignment and displays some basic statistics about the alignment.},
+		},
+	       {
+		ACTION => qq{<a href="./TreeView.pl">Phylogenetic Tree Viewer</a>},
+		DESC   => qq{Allows users to submit a tree file and get a graphical view of their tree.  There is support for drawing rooted and unrooted trees, zooming and unzooming functions, and coloring and shaping nodes based on user specifications. },
 		},
 	      );
 $template->param(ACTIONS=>[@actions]);
