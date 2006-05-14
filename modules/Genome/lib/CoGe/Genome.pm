@@ -1011,6 +1011,41 @@ sub get_prot_seq_by_feat_name
 
 ################################################ subroutine header begin ##
 
+=head2 get_protein_seq_by_feat
+
+ Usage     : my @protein_seqs = $genome_obj->get_protein_seq_by_feat($feat);
+ Purpose   : Some features have an associated protein sequence which is stored
+             in the sequence table with a sequence type "protein" (e.g. CDS sequences).  
+             This routine finds and returns those sequences.
+ Returns   : array of strings (protein sequence) or array ref (based on wantarray)
+ Argument  : GoGe::Genomes::DB::Feature object
+ Throws    : undef if 
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+
+
+sub get_protein_seq_by_feat
+  {
+    my $self = shift;
+    my $feat = shift;
+    return unless $feat;
+    my @seqs;
+    foreach my $seq ($feat->sequences)
+      {
+	push @seqs, $seq->sequence_data if $seq->seq_type->name =~ /prot/i;
+      }
+    my @sorted = sort {length($b) <=> length ($a)} @seqs;
+    return wantarray ? @sorted : \@sorted;
+  }
+
+################################################ subroutine header begin ##
+
 =head2 get_genomic_seq_by_feat_name_and_type_name
 
  Usage     : my @seqs = $genome_obj->get_genomic_seq_by_feat_name_and_type_name(name=>$name, 
