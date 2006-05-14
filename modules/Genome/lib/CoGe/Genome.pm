@@ -1011,7 +1011,7 @@ sub get_prot_seq_by_feat_name
 
 ################################################ subroutine header begin ##
 
-=head2 get_protein_seq_by_feat
+=head2 get_protein_sequence_for_feat_feature
 
  Usage     : my @protein_seqs = $genome_obj->get_protein_seq_by_feat($feat);
  Purpose   : Some features have an associated protein sequence which is stored
@@ -1019,7 +1019,7 @@ sub get_prot_seq_by_feat_name
              This routine finds and returns those sequences.
  Returns   : array of strings (protein sequence) or array ref (based on wantarray)
  Argument  : GoGe::Genomes::DB::Feature object
- Throws    : undef if 
+ Throws    : undef
  Comments  : 
 
 See Also   : 
@@ -1030,7 +1030,7 @@ See Also   :
 
 
 
-sub get_protein_seq_by_feat
+sub get_protein_sequence_for_feat_feature
   {
     my $self = shift;
     my $feat = shift;
