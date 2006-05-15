@@ -35,10 +35,14 @@ Chlre    shape=hexagon, color=orange4, fillcolor="#FF66005F" style=filled
 <TMPL_ELSE>
 <table>
 <tr>
+<td><div><input type="submit" value="zoom in (x20)" id="zoom-in" onClick="zoom(['zoi', 'tfile', 'mod', 'args__19'],['img', 'im', 'zi', 'zo'])"></DIV> 
+<td><div><input type="submit" value="zoom in (x10)" id="zoom-in" onClick="zoom(['zoi', 'tfile', 'mod', 'args__9'],['img', 'im', 'zi', 'zo'])"></DIV> 
 <td><div><input type="submit" value="zoom in (x5)" id="zoom-in" onClick="zoom(['zoi', 'tfile', 'mod', 'args__4'],['img', 'im', 'zi', 'zo'])"></DIV> 
 <td><div><input type="submit" value="zoom in" id="zoom-in" onClick="zoom(['zoi', 'tfile', 'mod'],['img', 'im', 'zi', 'zo'])"></DIV> 
 <td><div><input type="submit" value="zoom out" id="zoom-out" onClick="zoom(['zoo', 'tfile', 'mod'],['img', 'im', 'zi', 'zo'])"></DIV> 
 <td><div><input type="submit" value="zoom out (x5)" id="zoom-out" onClick="zoom(['zoo', 'tfile', 'mod', 'args__-4'],['img', 'im', 'zi', 'zo'])"></DIV> 
+<td><div><input type="submit" value="zoom out (x10)" id="zoom-out" onClick="zoom(['zoo', 'tfile', 'mod', 'args__-9'],['img', 'im', 'zi', 'zo'])"></DIV> 
+<td><div><input type="submit" value="zoom out (x20)" id="zoom-out" onClick="zoom(['zoo', 'tfile', 'mod', 'args__-19'],['img', 'im', 'zi', 'zo'])"></DIV> 
 </table>
 <div id="zi"><input type="hidden" id="zoi" value=1></div>
 <div id="zo"><input type="hidden" id="zoo" value=-1></div>
