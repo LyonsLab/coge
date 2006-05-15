@@ -412,10 +412,10 @@ sub generate_image
     $c->set_region(start=>$start, stop=>$stop);
     $c->mag(1);
 #    $c->start_picture('left');
-    my $f1= CoGe::Graphics::Feature->new({start=>1, order => 4, strand => 1});
+    my $f1= CoGe::Graphics::Feature->new({start=>1, order => 2, strand => 1});
     $f1->merge_percent(0);
     $c->add_feature($f1);
-    my $f2= CoGe::Graphics::Feature->new({start=>1, order => 4, strand => -1});
+    my $f2= CoGe::Graphics::Feature->new({start=>1, order => 2, strand => -1});
     $f2->merge_percent(0);
     $c->add_feature($f2);
     my $link = "bl2seq_summary.pl?".join("&", "blast_report=$report", "accnq=", "accns=", "qbegin=", "qend=", "sbegin=","send=","submit=GO");
@@ -480,8 +480,10 @@ sub process_features
       {
         my $f;
 	my $type = $feat->{F_KEY};
+	my ($name) = sort { length ($b) <=> length ($a) || $a cmp $b} @{$feat->{QUALIFIERS}{names}};	
         if ($type =~ /Gene/i)
           {
+	    next;
 	    $f = CoGe::Graphics::Feature::Gene->new();
 	    $f->color([255,0,0,50]);
 	    if ($accn)
@@ -492,26 +494,51 @@ sub process_features
 		  }
 	      }
 	    $f->order(2);
+	    $f->overlay(1);
+	    $f->mag(0.5)
           }
         elsif ($type =~ /CDS/i)
           {
         	$f = CoGe::Graphics::Feature::Gene->new();
         	$f->color([0,255,0, 50]);
-        	$f->order(4);
+        	$f->order(2);
+		$f->overlay(3);
+		if ($accn)
+		  {
+		    foreach my $name (@{$feat->{QUALIFIERS}{names}})
+		      {
+			$f->color([255,255,0]) if $name =~ /$accn/i;
+		      }
+		  }
+
+#		$f->label($name);
+		
 #        	draw_prots(genomic_feat=>$feat, c=>$c, chrom_feat=>$f);
           }
         elsif ($type =~ /mrna/i)
           {
         	$f = CoGe::Graphics::Feature::Gene->new();
         	$f->color([0,0,255, 50]);
-        	$f->order(3);
+        	$f->order(2);
+		$f->overlay(2);
+		$f->mag(0.75);
           }
         elsif ($type =~ /rna/i)
           {
         	$f = CoGe::Graphics::Feature::Gene->new();
         	$f->color([200,200,200, 50]);
-        	$f->order(3);
+        	$f->order(2);
+		$f->overlay(2);
+		if ($accn)
+		  {
+		    foreach my $name (@{$feat->{QUALIFIERS}{names}})
+		      {
+			$f->color([255,255,0]) if $name =~ /$accn/i;
+		      }
+		  }
+
           }
+
         next unless $f;
 	my $strand = 1;
  	$strand = -1 if $feat->location =~ /complement/;
@@ -524,9 +551,7 @@ sub process_features
 	    print STDERR "\t", join ("-", @$block),"\n" if $DEBUG;
 	  }
 
-        my ($name) = sort { length ($b) <=> length ($a) || $a cmp $b} @{$feat->{QUALIFIERS}{names}};
 	print STDERR $name,"\n\n" if $DEBUG;
-        $f->label($name);
         $f->type($type);
 	$f->description($feat->{QUALIFIERS}{annotation});
 	$f->link("FeatView.pl?accn=$name");
@@ -561,7 +586,7 @@ sub process_hsps
 	$f->ih(5);
 	$f->gd->fill(0,0,$f->get_color(@$color));
 	$f->color($color);
-    $f->mag(1.5);
+	$f->mag(1.5);
 	$f->order(1);
 #	$f->add_segment();
 	$f->strand($strand);
