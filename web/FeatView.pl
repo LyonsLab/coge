@@ -38,15 +38,37 @@ my $pj = new CGI::Ajax(
 		       get_anno=>\&get_anno,
 		       show_location=>\&show_location,
 		       show_express=>\&show_express,
-		       gen_image=>\&gen_image,
+		       gen_data=>\&gen_data,
+		       get_dna_seq_for_feat => \&get_dna_seq_for_feat,
+		       get_prot_seq_for_feat => \&get_prot_seq_for_feat,
 		      );
 $pj->JSDEBUG(0);
 $pj->DEBUG(0);
 print $pj->build_html($FORM, \&gen_html);
 
-sub gen_image
+
+sub get_prot_seq_for_feat
   {
-    return qq{<font class="loading">Generating chromosomal view image. . .</font>};
+    my $featid = shift;
+    my ($feat) = $DB->get_feat_obj->search(feature_id=>$featid);
+    my ($seq) = $DB->get_protein_sequence_for_feature($feat);
+    $seq = "No sequence available" unless $seq;
+    return $seq;
+  }
+
+sub get_dna_seq_for_feat
+  {
+    my $featid = shift;
+    my ($feat) = $DB->get_feat_obj->search(feature_id=>$featid);
+    my $seq = $DB->get_genomic_sequence_for_feature($feat);
+    $seq = "No sequence available" unless $seq;
+    return $seq;
+  }
+
+sub gen_data
+  {
+    my $message = shift;
+    return qq{<font class="loading">$message. . .</font>};
   }
 
 sub clear_div
@@ -106,9 +128,12 @@ sub get_anno
     my $i = 0;
     foreach my $feat (@feats)
       {
-	$anno .= join "\n<BR><HR><BR>\n", $feat->annotation_pretty_print_html().
-	  qq{<DIV id="loc$i"><input type="button" value = "Click for chromosomal view" onClick="gen_image([],['loc$i']);show_location(['args__}.$feat->begin_location.qq{', 'args__}.$feat->end_location.qq{', 'args__}.$feat->chr.qq{', 'args__}.$feat->info->id.qq{'],['loc$i']);"></DIV>}.
-	  qq{<DIV id="exp$i"><input type="button" value = "Click for expression tree" onClick="gen_image([],['exp$i']);show_express(['args__}.$accn.qq{','args__}.'1'.qq{','args__}.$i.qq{'],['exp$i']);"></DIV>};
+	$anno .= join "\n<BR><HR><BR>\n", $feat->annotation_pretty_print_html();
+	$anno .= qq{<DIV id="loc$i"><input type="button" value = "Click for chromosomal view" onClick="gen_data(['args__Generating chromosomal view image'],['loc$i']);show_location(['args__}.$feat->begin_location.qq{', 'args__}.$feat->end_location.qq{', 'args__}.$feat->chr.qq{', 'args__}.$feat->info->id.qq{'],['loc$i']);"></DIV>};
+	$anno .= qq{<DIV id="exp$i"><input type="button" value = "Click for expression tree" onClick="gen_data(['args__Generating expression view image'],['exp$i']);show_express(['args__}.$accn.qq{','args__}.'1'.qq{','args__}.$i.qq{'],['exp$i']);"></DIV>};
+	$anno .= qq{<DIV id="dnaseq$i"><input type="button" value = "Click for DNA sequence" onClick="gen_data(['args__retrieving sequence'],['dnaseq$i']);get_dna_seq_for_feat(['args__}.$feat->id.qq{'],['dnaseq$i']);"></DIV>};
+	$anno .= qq{<DIV id="protseq$i"><input type="button" value = "Click for protein sequence" onClick="gen_data(['args__retrieving sequence'],['protseq$i']);get_prot_seq_for_feat(['args__}.$feat->id.qq{'],['protseq$i']);"></DIV>};
+
 #	    qq{<DIV id="exp$i"></DIV>};
 	$anno = "<font class=\"annotation\">No annotations for this entry</font>" unless $anno;
 	$i++;
