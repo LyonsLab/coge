@@ -254,12 +254,13 @@ sub process_node
     my $node = shift;
     my $names = shift;
     my $name = $node->id ? $names->{$node->id} : $node->internal_id;
-    my $len =  ($node->branch_length) if $node->branch_length;
+#    my $len =  ($node->branch_length) if $node->branch_length;
     my $content;
     foreach my $cnode ($node->each_Descendent)
       {
 	my $cname = $cnode->id ? $names->{$cnode->id} : $cnode->internal_id;
 	$content .= "\t$name -- $cname ";
+	my $len = $cnode->branch_length if $cnode->branch_length;
 #	print "[label=\"".sprintf("%.2f",$len)."\",len=$len]" if defined $len;
 	$content .= "[label=\"".sprintf("%.2f",$len)."\"]" if defined $len;
 	$content .= ";\n";
