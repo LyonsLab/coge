@@ -62,7 +62,7 @@ sub loading
 
 sub gen_html
   {
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/B2V.tmpl');
+    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SynView.tmpl');
     $template->param(TITLE=>'Synteny Viewer');
     $template->param(USER=>$USER);
     $template->param(DATE=>$DATE);
@@ -371,7 +371,7 @@ sub Show_Summary
     $basereportname = $TEMPURL . "/$basereportname\n";
     $html .= "<font class=xsmall><A HREF=\"$basereportname\">View bl2seq output: $basereportname</A></font>\n";
 
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/B2V_results.tmpl');
+    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SynView_results.tmpl');
 #    print STDERR $html;
     $template->param(HEADING=>"Results");
     $template->param(RESULTS=>$html);
@@ -422,7 +422,7 @@ sub generate_image
     process_nucleotides(c=>$c, seq=>$gbobj->{SEQUENCE});
     process_features(c=>$c, obj=>$gbobj, start=>$start, stop=>$stop);
     process_hsps(c=>$c, hsps=>$hsps, link=>$link);
-    my $file = new File::Temp ( TEMPLATE=>'B2V__XXXXX',
+    my $file = new File::Temp ( TEMPLATE=>'SynView__XXXXX',
 				   DIR=>$TEMPDIR,
 				    SUFFIX=>'.png',
 				    UNLINK=>0);
