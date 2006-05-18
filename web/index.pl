@@ -18,7 +18,7 @@ $template->param(DATE=>$DATE);
 
 my @actions = (
 	       {
-		ACTION=>qq{<a href="./B2V.pl">Synteny Viewer</a>},
+		ACTION=>qq{<a href="./SynView.pl">Synteny Viewer</a>},
 		DESC => qq{Allows uses to compare two sequences using the bl2seq algorithm to find regions of similarity and displays the results graphically.  This program has several unqiue options to aid in the finding of evolutionary conserved non-coding sequences and large syntenic regions.},
 	       },
 	       {
