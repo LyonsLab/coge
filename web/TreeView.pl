@@ -17,8 +17,8 @@ use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $NEATO $DOT);
 $DEBUG = 0;
 $TEMPDIR = "/opt/apache/CoGe/tmp";
 $TEMPURL = "/CoGe/tmp";
-$NEATO = "/opt/apache/CoGe/bin/neato";
-$DOT = "/opt/apache/CoGe/bin/dot";
+$NEATO = "/usr/bin/neato";
+$DOT = "/usr/bin/dot";
 $| = 1; # turn off buffering
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		 sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
