@@ -261,9 +261,9 @@ sub process_node
 	my $cname = $cnode->id ? $names->{$cnode->id} : $cnode->internal_id;
 	$content .= "\t$name -- $cname ";
 	my $len = $cnode->branch_length if $cnode->branch_length;
-#	print "[label=\"".sprintf("%.2f",$len)."\",len=$len]" if defined $len;
-	$content .= "[label=\"".sprintf("%.2f",$len)."\"]" if defined $len;
-	$content .= ";\n";
+	$content .= "[label=\"".sprintf("%.2f",$len)."\"";
+#	$content .= ", len=$len" if defined $len;
+	$content .= "];\n";
 	my $tmp = process_node($cnode, $names);
 	$content .= $tmp if $tmp;
       }
