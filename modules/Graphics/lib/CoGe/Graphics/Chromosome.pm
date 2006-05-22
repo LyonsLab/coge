@@ -171,7 +171,7 @@ perl(1).
 #################### main pod documentation end ###################
 
 BEGIN {
-    use vars qw($VERSION $DEFAULT_WIDTH $PADDING $DEFAULT_COLOR $MAX_MAG $MAG_SCALE_TYPE $CHR_MAG_HEIGHT $CHR_START_HEIGHT $CHR_INNER_COLOR $CHR_OUTER_COLOR $RULER_COLOR $TICK_COLOR $RULER_HEIGHT $FONT $FONTTT $NUM_MAG $FEATURE_HEIGHT);
+    use vars qw($VERSION $DEFAULT_WIDTH $PADDING $DEFAULT_COLOR $MAX_MAG $MAG_SCALE_TYPE $CHR_MAG_HEIGHT $CHR_START_HEIGHT $CHR_INNER_COLOR $CHR_OUTER_COLOR $RULER_COLOR $TICK_COLOR $RULER_HEIGHT $FONT $FONTTT $NUM_MAG $FEATURE_START_HEIGHT $FEATURE_MAG_HEIGHT);
     $VERSION     = '0.1';
     $DEFAULT_WIDTH = 200;  #default image width pixels
     $PADDING = 15; #default value to pad image height
@@ -187,12 +187,14 @@ BEGIN {
     $RULER_HEIGHT = 20; #height (in pixels) of the ruler
     $FONTTT = "/usr/lib/perl5/site_perl/CoGe/fonts/arial.ttf"; #path to true-type font
     $FONT = GD::Font->MediumBold; #default GD font
-    $FEATURE_HEIGHT = 4; #the heigth of a feature is determined by this number * $self->magnification.  if the magnification is 5 and the feature_height is set to 4, then the resulting feature will be 20 pixels high.
+    $FEATURE_START_HEIGHT = 5; #the starting height of a feature
+    $FEATURE_MAG_HEIGHT = 5; #the magnification of height of a feature with zoom
     $NUM_MAG = 10; #number of magnification steps;
     __PACKAGE__->mk_accessors(
 "DEBUG",
 "chr_length",
-"feature_height", #height of a feature
+"feature_start_height", #height of a feature
+"feature_mag_height", #magnification of a feature with zoom
 "draw_ruler", #flag for drawing ruler
 "draw_chr_end", #flag for drawing "ends" of chromosome"
 "ruler_color", "tick_color", #color for ruler and ticks on ruler respectively
@@ -258,7 +260,8 @@ sub new
     $self->ruler_color($RULER_COLOR);
     $self->tick_color($TICK_COLOR);
     $self->num_mag($NUM_MAG);
-    $self->feature_height($FEATURE_HEIGHT);
+    $self->feature_start_height($FEATURE_START_HEIGHT);
+    $self->feature_mag_height($FEATURE_MAG_HEIGHT);
     $self->mag(5);
     $self->font($FONTTT);
     $self->_features([]);
@@ -286,10 +289,13 @@ sub new
                         is drawn on the image
  draw_chr_end     =>    (DEFAULT: 1) Flag (0 or 1) for whether or not the rounded ends of the chromosome
                         are drawn where appropriate
- feature_height   =>    (DEFAULT: 4) This stores the feature's height in terms of how it 
+ feature_start_height=> (DEFAULT: 5) This stores the starting height (in pixels) of a feature without
+                        any increase due to zoom and feature_mag_height.  
+ feature_mag_height=>   (DEFAULT: 5) This stores the feature's height in terms of how it 
                         is scaled as the magnification increases.  For example, if this is set
-                        to 4 and the magnification is 5, then the resulting height of the feature
-                        will be 20 pixels (4*5)
+                        to 5 and the magnification is 5, then the resulting height of the feature
+                        will be 25 pixels (5*5)
+
  ruler_color      =>    (DEFAULT: [0,0,255]) Defines the color of the positional ruler.
                         This is the an array reference of three values
                         that corresponds to RGB color values.  Each color ranges from 0-255
@@ -474,9 +480,12 @@ sub set_point
  Argument  : an array or array ref of CoGe::Graphics::Feature objects or child-class objects
  Throws    : warning
  Comment   : A few defaults will be set in the feature if they haven't been set:
-           : strand will be set to 1 unless defined
-           : fill will be set to 0
-           : stop will be set to start
+           : strand         => 1
+           : fill           => 0
+           : stop           => start
+           : merge_perecent => 100
+           : magnification  => 1
+           : overlay        => 1
            : Also, the feature's GD object will be initialized upon import.
 	   : There is a check for whether the added feature overlaps other features.  
 	   : If so, a counter, $feat->_overlap is incemented in the feature object.
@@ -506,7 +515,8 @@ sub add_feature
 	$feat->ih(0) unless defined $feat->ih;
 	$feat->iw(0) unless defined $feat->iw;
 	$feat->gd; #initialize feature;
-    $feat->mag(1) unless defined $feat->mag;
+	$feat->mag(1) unless defined $feat->mag;
+	$feat->overlay(1) unless defined $feat->overlay();
 	$feat->_overlap(1) unless $feat->_overlap;#detects overlapping feature on the same track 
 	$feat->_overlap_pos(1) unless $feat->_overlap_pos; #placement for overlapping features
 	if (ref($feat) =~ /Feature/i)
@@ -542,7 +552,7 @@ sub add_feature
 
  Usage     : $self->_check_overlap($feature);
  Purpose   : This internal method is called by $self->add_feature in determine if the 
-           : being added overlaps another feature on the same strand, order, and fill
+           : being added overlaps another feature on the same strand, order, overlay level, and fill
 	   : type.  If so, it increments an internal counter in both features called
 	   : _overlap. A positional counter called _overlap_pos is incremented in the feature 
 	   : being searched.  This counter is later used by $self->_draw_feature to 
@@ -570,9 +580,7 @@ sub _check_overlap
     return if ($feat->stop < $feats[0]->start || $feat->start > $feats[-1]->stop);
     foreach my $f (@feats)
     	{
-#	  if ( ($feat->start >= $f->start && $feat->start <= $f->stop)
-#	  || ($feat->stop <= $f->stop && $feat->stop >= $f->start)
-#	  || ($feat->start < $f->start && $feat->stop > $f->stop) )
+	  next unless $feat->overlay() == $f->overlay();  #skip the check if the features are at different overlay levels.
 	  unless ( ($feat->start > $f->stop) || ($feat->stop < $f->start) )
 	    {
 	      print STDERR "Overlap: ",$feat->name,"\t",$f->name,"\n" if $self->DEBUG; 
@@ -604,7 +612,7 @@ sub _check_overlap
              start => get features that start at this position
              stop  => get features that stop at this position
 	     last_order => flag for retrieving only the feature with the highest order
-
+             overlay    => get features at a particular overlay level
  Throws    : none
  Comment   : This is mostly used internally, but is provided in case you want to retrieve a 
            : feature that was previously added
@@ -628,6 +636,7 @@ sub get_features
     $fill = $opts{FILL} unless defined $fill; #get filled features?
     my $start = $opts{start};
     my $stop  = $opts{stop};
+    my $overlay  = $opts{overlay};
 
     my @rfeats;
     my @feat_refs;
@@ -635,7 +644,7 @@ sub get_features
     push @feat_refs, $self->_features if (defined $fill && $fill == 0) || !(defined $fill);
     foreach my $ref (@feat_refs)
      {
-       foreach my $feat (@$ref)
+       foreach my $feat (sort {$a->overlay <=> $b->overlay} @$ref)
        {
 	if ($strand)
 	  {
@@ -658,6 +667,7 @@ sub get_features
 	  }
 	if ($start) {next unless $feat->start eq $start;}
 	if ($stop) {next unless $feat->stop eq $stop;}
+	if ($overlay) {next unless $feat->overlay == $overlay;}
 #	if (defined $fill)
 #	  {
 #	    next unless $feat->fill eq $fill;
@@ -976,8 +986,9 @@ sub generate_imagemap
 	  {
 	    next if $feat->stop < $self->_region_start-2*($self->_region_stop - $self->_region_start );
 	  }
-	my $feat_h = $self->feature_height*$self->mag/$feat->_overlap;
-	my $offset = ($feat->order-1)*($self->feature_height*$self->mag+$self->padding/1.5)+$self->padding;
+	my $feat_height = ($self->feature_start_height+$self->feature_mag_height*$self->mag);
+	my $feat_h = $feat_height/$feat->_overlap;
+	my $offset = ($feat->order-1)*($feat_height+$self->padding/1.5)+$self->padding;
 	$offset = 0 if $feat->fill;
 	$feat_h = ($self->_chr_height-$self->mag-1)/2 if $feat->fill;
 	my $y = $feat->strand =~ /-/ ? $c+ $offset+1+($feat_h)*($feat->_overlap_pos-1): $c - $offset-$feat_h*$feat->_overlap_pos;
@@ -1159,8 +1170,8 @@ sub set_image_height
   {
     #this sub calculates how much height out picture needs based on options and features to be drawn
     my $self = shift;
-    my $feat_height = $self->feature_height || $FEATURE_HEIGHT;
-    $feat_height = $feat_height*($self->mag);
+    my $feat_height = $self->feature_start_height+$self->feature_mag_height*$self->mag;
+#    $feat_height = $feat_height*($self->mag);
     my $h=0;# = $self->padding; #give use some padding
     $h += $self->ruler_height;#+$self->padding;
     my $ch = ($self->chr_start_height+$self->mag * $self->chr_mag_height); #chromosome image height
@@ -1457,11 +1468,16 @@ sub _draw_features
 	  {
 	    next if $feat->stop < $self->_region_start-2*($self->_region_stop - $self->_region_start );
 	  }
-	my $feat_h = $self->feature_height*$self->mag/$feat->_overlap*$feat->mag;
-	my $offset = ($feat->order-1)*($self->feature_height*$self->mag+$self->padding/1.5)+$self->padding;
+	my $feature_height = ($self->feature_start_height+$self->feature_mag_height*$self->mag);
+	my $feat_h = $feature_height/$feat->_overlap;#*$feat->mag;
+	my $offset = ($feat->order-1)*($feature_height+$self->padding/1.5)+$self->padding;
 	$offset = 0 if $feat->fill;
 	$feat_h = ($self->_chr_height-$self->mag-1)/2 if $feat->fill;
-	my $y = $feat->strand =~ /-/ ? $c+ $offset+1+($feat_h)*($feat->_overlap_pos-1): $c - $offset-$feat_h*$feat->_overlap_pos;
+	my $feat_mag_offset = ($feat_h*$feat->mag - $feat_h)/2;
+	my $y = $feat->strand =~ /-/ ? 
+	  $c + $offset + $feat_h  * ($feat->_overlap_pos-1) - $feat_mag_offset+ 1  :
+	  $c - $offset - $feat_h  *  $feat->_overlap_pos    - $feat_mag_offset;
+	$feat_h *= $feat->mag;
         my $sy;
 	if ($feat->fill)
 	  {
@@ -1469,11 +1485,11 @@ sub _draw_features
 	  }
 	elsif ($feat->label_location && $feat->label_location =~ /bot/)
 	  {
-	    $sy = $y+$self->feature_height*($self->mag)+1;
+	    $sy = $y+$feature_height+1;
 	  }
 	elsif ($feat->label_location && $feat->label_location =~ /top/)
 	  {
-	    $sy = $y;#-$self->feature_height*($self->mag);
+	    $sy = $y;
 	  }
 	$self->_draw_feature(feat=>$feat, 'y'=>$y, ih=>$feat_h, 'sy'=>$sy);
       }
