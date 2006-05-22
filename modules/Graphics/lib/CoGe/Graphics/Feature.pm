@@ -208,6 +208,7 @@ BEGIN
 "external_image", #external image for feature
 "force_label", #flag to force the printing of the label
 "magnification", #magnification level for increasing/decreasing the size of the feature  
+"overlay", #level of overlay for features such that one feature is drawn over another.
 );
   }
 
@@ -286,6 +287,12 @@ skip_overlap_search => When set to true, no overlap search is performed by CoGe:
                  by chromosome.pm for drawing the feature.  This
                  allows for increasing/decreasing the size of some
                  features relative to others
+ overlay      => This allows features to be drawn over one another.  For example, if I want
+                 to draw the CDS region of a gene on top of the mRNA region of a gene.  If
+                 two features are drawn at the same order with the same overlay number, 
+                 they will be drawn next to one another.   However, if they have different 
+                 overlay numbers, the one with the lowest overlay number will be drawn first
+                 followed by the others.
 
  _gd          => Internal place to store the GD object.
  _overlap     => Internal place to track the number of features that occure at the same position.  
@@ -303,6 +310,7 @@ external_image=> This is a place to store another GD object that is linked to an
 =cut
 
 #################### subroutine header end ####################
+
 #################### subroutine header begin ####################
 
 =head2 transparency
@@ -312,10 +320,29 @@ external_image=> This is a place to store another GD object that is linked to an
 =cut
 
 #################### subroutine header end ####################
+
 sub transparency
   {
     my $self = shift;
-    return $self->transparency(@_);
+    return $self->merge_percent(@_);
+  }
+
+
+#################### subroutine header begin ####################
+
+=head2 track
+
+ Purpose   : alias for $self->order
+ Comment   : provides logistical compatibility with other genome visualization packages
+
+=cut
+
+#################### subroutine header end ####################
+
+sub transparency
+  {
+    my $self = shift;
+    return $self->merge_percent(@_);
   }
 
 
