@@ -407,7 +407,7 @@ sub generate_image
     $c->draw_ruler(1);
     $c->draw_chr_end(0);
     $c->chr_start_height($ih);
-    $c->feature_height($fh);
+    $c->feature_start_height($fh);
     $c->chr_mag_height(5);
     $c->set_region(start=>$start, stop=>$stop);
     $c->mag(1);
@@ -495,7 +495,7 @@ sub process_features
 	      }
 	    $f->order(2);
 	    $f->overlay(1);
-	    $f->mag(0.5)
+	    $f->mag(0.5);
           }
         elsif ($type =~ /CDS/i)
           {
