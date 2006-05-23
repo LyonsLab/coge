@@ -1011,7 +1011,7 @@ sub get_prot_seq_by_feat_name
 
 ################################################ subroutine header begin ##
 
-=head2 get_protein_sequence_for_feat_feature
+=head2 get_protein_sequence_for_feature
 
  Usage     : my @protein_seqs = $genome_obj->get_protein_seq_by_feat($feat);
  Purpose   : Some features have an associated protein sequence which is stored
@@ -1030,7 +1030,7 @@ See Also   :
 
 
 
-sub get_protein_sequence_for_feat_feature
+sub get_protein_sequence_for_feature
   {
     my $self = shift;
     my $feat = shift;
