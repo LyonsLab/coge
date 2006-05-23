@@ -339,10 +339,10 @@ sub transparency
 
 #################### subroutine header end ####################
 
-sub transparency
+sub track
   {
     my $self = shift;
-    return $self->merge_percent(@_);
+    return $self->order(@_);
   }
 
 
