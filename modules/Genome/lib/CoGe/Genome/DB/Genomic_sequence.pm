@@ -38,8 +38,15 @@ SELECT stop
  ORDER BY stop DESC
  LIMIT 1
 });
-}
 
+
+  __PACKAGE__->set_sql(get_chromosomes=> qq{
+SELECT DISTINCT chromosome
+  FROM genomic_sequence
+  WHERE data_information_id = ?
+});
+
+}
 ########################################### main pod documentation begin ##
 # Below is the stub of documentation for your module. You better edit it!
 
@@ -287,6 +294,19 @@ sub get_data_information_chromosome_sequence
     my $id = ref ($di) =~ /information/i ? $di->id : $di;
     my $stop = $self->get_last_position($id);
     return $self->get_sequence(start=>1, stop=>$stop, chr=>$chr, info_id=>$id);
+  }
+
+sub get_chromosome_for_data_information
+  {
+    my $self = shift;
+    my $di = shift;
+    my $id = ref ($di) =~ /information/i ? $di->id : $di;
+    my $sth = $self->sql_get_chromosomes();
+    $sth->execute($id);
+    my $q = $sth->fetch();
+    $sth->finish;
+    return unless $q;
+    return wantarray ? @$q : $q;
   }
 
 1; #this line is important and will help the module return a true value
