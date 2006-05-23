@@ -28,7 +28,7 @@ SELECT name
 
 =head1 NAME
 
-Genome::DB::Feature_name - Genome::DB::Feature_name
+CoGe::Genome::DB::Feature_name
 
 =head1 SYNOPSIS
 
@@ -108,7 +108,7 @@ LICENSE file included with this module.
 
  CoGe::Genome
  CoGe::Genome::DB
- CoGe::Genome::Feature
+ CoGe::Genome::DB::Feature
  Class::DBI
 
 perl(1).
