@@ -31,6 +31,10 @@ my $z = $form->param('z');
 my $file = $form->param('file');# || "./tmp/pict.png";
 my $start_pict = $form->param('start_pict');
 my $simple = $form->param('simple');
+my $chr_start_height = $form->param('csh') || 200;
+my $chr_mag_height = $form->param('cmh') || 5;
+my $feat_start_height = $form->param('fsh') || 10;
+my $feat_mag_height = $form->param('fmh') || 2;
 unless ($start && $di && $chr)
   {
     print STDERR "missing needed parameters: Start: $start, Stop: $stop, Info_id: $di, Chr: $chr\n";
@@ -66,6 +70,10 @@ foreach my $did (@dids)
 					db=>$db,
 					c=>$c,
 					start_pict=>$start_pict,
+					csh=>$chr_start_height,
+					cmh=>$chr_mag_height,
+					fsh=>$feat_start_height,
+					fmh=>$feat_mag_height,
 		 ) unless $c->chr_length;
     
     if ($c->chr_length)
@@ -98,6 +106,10 @@ sub initialize_c
     my $stop = $opts{stop};
     my $db = $opts{db};
     my $c = $opts{c};
+    my $csh=$opts{csh};
+    my $cmh=$opts{cmh};
+    my $fsh=$opts{fsh};
+    my $fmh=$opts{fmh};
     my $start_pict = $opts{'start_pict'} || 'left';
     my ($gen_seq) = $db->get_genomic_seq_obj->search({data_information_id=>$di});
     return unless $gen_seq && $gen_seq->chr eq $chr;
@@ -111,8 +123,10 @@ sub initialize_c
     $c->fill_labels(1);
     $c->draw_chromosome(1);
     $c->draw_ruler(1);
-
-
+    $c->chr_start_height($csh);
+    $c->chr_mag_height($cmh);
+    $c->feature_start_height($fsh);
+    $c->feature_mag_height($fmh);
     if (defined $z) #the $z val is used by the program for making tiles of genomic views.
                 #by convention, a z value of 0 means maximum magnification which is
         	#opposite the convention used in chromosome.pm.  Thus, we need
@@ -137,10 +151,10 @@ sub initialize_c
     $start = $c->_region_start;
     $stop= $c->_region_stop;
     #let's add the max top and bottom tracks to the image to keep it constant
-    my $f1= CoGe::Graphics::Feature->new({start=>1, order => 4, strand => 1});
+    my $f1= CoGe::Graphics::Feature->new({start=>1, order => 2, strand => 1});
     $f1->merge_percent(0);
     $c->add_feature($f1);
-    my $f2= CoGe::Graphics::Feature->new({start=>1, order => 4, strand => -1});
+    my $f2= CoGe::Graphics::Feature->new({start=>1, order => 2, strand => -1});
     $f2->merge_percent(0);
     $c->add_feature($f2);
     return ($start, $stop);
@@ -188,6 +202,8 @@ sub process_features
     my $di = $opts{di};
     my $db = $opts{db};
     my $c = $opts{c};
+    my $accn = $opts{accn};
+    my $print_names = $opts{print_names};
     foreach my $feat($db->get_feature_obj->get_features_in_region(start=>$start, end=>$stop, info_id=>$di, chr=>$chr))
       {
         my $f;
@@ -196,6 +212,7 @@ sub process_features
 	
         if ($feat->type->name =~ /Gene/i)
           {
+#	    next;
 #	    print STDERR $feat->names->next->name,": ", $feat->id,"\n";
 	    $f = CoGe::Graphics::Feature::Gene->new();
 	    $f->color([255,0,0,50]);
@@ -205,41 +222,46 @@ sub process_features
 		$f->strand($loc->strand);
 	      }
 	    $f->order(1);
+	    $f->overlay(1);
+	    $f->mag(0.5);
           }
         elsif ($feat->type->name =~ /CDS/i)
           {
         	$f = CoGe::Graphics::Feature::Gene->new();
         	$f->color([0,255,0, 50]);
-        	foreach my $loc ($feat->locs)
-        	  {
-        	    $f->add_segment(start=>$loc->start, stop=>$loc->stop);
-        	    $f->strand($loc->strand);
-        	  }
-        	$f->order(3);
-        	draw_prots(genomic_feat=>$feat, c=>$c, chrom_feat=>$f);
+        	$f->order(1);
+		$f->overlay(3);
+		draw_prots(genomic_feat=>$feat, c=>$c, chrom_feat=>$f);
+		if ($accn)
+		  {
+		    foreach my $name (@{$feat->{QUALIFIERS}{names}})
+		      {
+			$f->color([255,255,0]) if $name =~ /$accn/i;
+		      }
+		  }
           }
         elsif ($feat->type->name =~ /mrna/i)
           {
         	$f = CoGe::Graphics::Feature::Gene->new();
         	$f->color([0,0,255, 50]);
-        	foreach my $loc ($feat->locs)
-        	  {
-        	    $f->add_segment(start=>$loc->start, stop=>$loc->stop);
-        	    $f->strand($loc->strand);
-        	  }
-        	$f->order(2);
+        	$f->order(1);
+		$f->overlay(2);
+		$f->mag(0.75);
           }
         elsif ($feat->type->name =~ /rna/i)
           {
         	$f = CoGe::Graphics::Feature::Gene->new();
         	$f->color([200,200,200, 50]);
-        	foreach my $loc ($feat->locs)
-        	  {
-        	    $f->add_segment(start=>$loc->start, stop=>$loc->stop);
-        	    $f->strand($loc->strand);
-        	    $f->add_type(1);
-        	  }
-        	$f->order(2);
+        	$f->order(1);
+		$f->overlay(2);
+		if ($accn)
+		  {
+		    foreach my $name (@{$feat->{QUALIFIERS}{names}})
+		      {
+			$f->color([255,255,0]) if $name =~ /$accn/i;
+		      }
+		  }
+
           }
         elsif ($feat->type->name =~ /functional domains/i)
           {
@@ -249,11 +271,16 @@ sub process_features
 	        $f->add_segment(start=>$loc->start, stop=>$loc->stop);
 	        $f->strand($loc->strand);
 	      }
-	    $f->order(4);
+	    $f->order(2);
           }
         next unless $f;
-        my ($name) = sort { length ($b) <=> length ($a) || $a cmp $b} map {$_->name} $feat->names;
-        $f->label($name);
+        foreach my $loc ($feat->locs)
+	  {
+	    $f->add_segment(start=>$loc->start, stop=>$loc->stop);
+	    $f->strand($loc->strand);
+	  }
+	my ($name) = sort { length ($b) <=> length ($a) || $a cmp $b} map {$_->name} $feat->names;
+	$f->label($name) if $print_names;
         $f->type($feat->type->name);
         $c->add_feature($f);
     }
@@ -300,7 +327,7 @@ sub draw_prots
 	    my $aseq = substr($pseq, $pos, $chrs);
 	    foreach my $loc ($seq->get_genomic_locations(start=>$pos+1, stop=>$pos+$chrs))
 	      {
-		my $ao = CoGe::Graphics::Feature::AminoAcid->new({aa=>$aseq, start=>$loc->start, stop=>$loc->stop, strand => $f->strand, order=>4});
+		my $ao = CoGe::Graphics::Feature::AminoAcid->new({aa=>$aseq, start=>$loc->start, stop=>$loc->stop, strand => $loc->strand, order=>2});
 		$ao->skip_overlap_search(1);
 		$c->add_feature($ao);
 		delete $loc->{__Changed}; #silence the warning from Class::DBI
