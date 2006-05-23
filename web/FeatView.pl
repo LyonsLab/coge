@@ -128,8 +128,13 @@ sub get_anno
     my $i = 0;
     foreach my $feat (@feats)
       {
+	my $chr = $feat->chr;
+	my $di = $feat->info->id;
+	my $x = $feat->begin_location;
+	my $z = 7;
 	$anno .= join "\n<BR><HR><BR>\n", $feat->annotation_pretty_print_html();
-	$anno .= qq{<DIV id="loc$i"><input type="button" value = "Click for chromosomal view" onClick="gen_data(['args__Generating chromosomal view image'],['loc$i']);show_location(['args__}.$feat->begin_location.qq{', 'args__}.$feat->end_location.qq{', 'args__}.$feat->chr.qq{', 'args__}.$feat->info->id.qq{'],['loc$i']);"></DIV>};
+#	$anno .= qq{<DIV id="loc$i"><input type="button" value = "Click for chromosomal view" onClick="show_location(['args__}.$feat->begin_location.qq{', 'args__}.$feat->end_location.qq{', 'args__}.$feat->chr.qq{', 'args__}.$feat->info->id.qq{', 'args__loc}.$i.qq{'],[tiler_setup]);"></DIV>};
+	$anno .= qq{<DIV id="loc$i"><input type="button" value = "Click for chromosomal view" onClick="window.open('GeLo.pl?chr=$chr&di=$di&x=$x&z=$z');"></DIV>};
 	$anno .= qq{<DIV id="exp$i"><input type="button" value = "Click for expression tree" onClick="gen_data(['args__Generating expression view image'],['exp$i']);show_express(['args__}.$accn.qq{','args__}.'1'.qq{','args__}.$i.qq{'],['exp$i']);"></DIV>};
 	$anno .= qq{<DIV id="dnaseq$i"><input type="button" value = "Click for DNA sequence" onClick="gen_data(['args__retrieving sequence'],['dnaseq$i']);get_dna_seq_for_feat(['args__}.$feat->id.qq{'],['dnaseq$i']);"></DIV>};
 	$anno .= qq{<DIV id="protseq$i"><input type="button" value = "Click for protein sequence" onClick="gen_data(['args__retrieving sequence'],['protseq$i']);get_prot_seq_for_feat(['args__}.$feat->id.qq{'],['protseq$i']);"></DIV>};
@@ -143,20 +148,33 @@ sub get_anno
 
 sub show_location
   {
-    my %opts = @_;
+#    my %opts = @_;
     my $start = shift;#$opts{start};
     my $stop = shift; #$opts{stop};
     my $chr = shift; # $opts{chr};
     my $info_id = shift; # = $opts{info_id};
-#    my $num= int(rand(100000));
-#    my $file = "./tmp/pict$num.png";
-#    system("GenomePNG.pl $start $stop $chr $info_id $file");
-#    gen_pict(start=>$start, stop=>$stop, chr=>$chr, info_id=>$info_id,file=>$file);
-#    return "<img src=$file>";
-    my $z = ceil (log((10000+$stop-$start)/10)/log(2));
-    my $link = qq{<img src="tiler.pl?start=$start&chr=$chr&di=$info_id&iw=2000&z=$z">\n};
-    print STDERR $link;
-    return $link;
+    my $loc = shift;
+   
+    my $z = 7;#ceil (log((1000+$stop-$start)/10)/log(2));
+#    my $link = qq{<img src="tiler.pl?start=$start&chr=$chr&di=$info_id&iw=2000&z=$z">\n};
+    my $html  = qq{
+<form action='javascript:;' >
+<input id='iw' type ='hidden' value=256 />
+<input id='chr' type ='hidden' value=$chr />
+<input id='di' type ='hidden' value=$info_id />
+<input id='z' type ='hidden' value='$z' />
+<input id='x' type ='hidden' value='$start' />
+<button id='zi' name='zi' class="tileClass" > Zoom In </button>
+<button name='zo' id='zo' class="tileClass" > Zoom Out </button>
+
+<div id='loc' style="width:800px;height:200px;border:1px solid black" > </div>
+
+<div id='container' class="tileClass" style='position:relative;left:6px;top:10px;width:1000px;height:350px;border:1px solid black' > </div>
+</form>
+};
+
+#    print STDERR $link;
+    return $html, $loc;
   }
 
 
@@ -180,7 +198,8 @@ sub show_express
 sub gen_html
   {
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/FeatView.tmpl');
-    $template->param(TITLE=>'Genome Location Feature Viewer');
+    $template->param(LOGO_PNG=>"FeatView-logo.png");
+    $template->param(TITLE=>'CoGe: Feature Viewer');
     $template->param(USER=>$USER);
     $template->param(DATE=>$DATE);
     $template->param(TABLE_NAME1=>"Feature Selection");
