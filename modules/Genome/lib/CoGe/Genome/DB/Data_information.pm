@@ -17,6 +17,15 @@ BEGIN {
     __PACKAGE__->has_a('organism_id'=>'CoGe::Genome::DB::Organism');
     __PACKAGE__->has_many(features=>'CoGe::Genome::DB::Feature');
     __PACKAGE__->has_many(genomic_sequences=>'CoGe::Genome::DB::Genomic_sequence');
+
+    __PACKAGE__->set_sql(get_chromosomes=>qq{
+SELECT DISTINCT l.chromosome
+ FROM location l
+ JOIN feature f using (feature_id)
+ JOIN data_information di using (data_information_id)
+WHERE di.data_information_id = ?
+
+});
 }
 
 
@@ -84,15 +93,15 @@ perl(1).
 
 ################################################ subroutine header begin ##
 
-=head2 sample_function
+=head2 
 
- Usage     : How to use this function/method
- Purpose   : What it does
- Returns   : What it returns
- Argument  : What it wants to know
- Throws    : Exceptions and other anomolies
- Comments  : This is a sample subroutine header.
-           : It is polite to include more pod and fewer comments.
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
 
 See Also   : 
 
@@ -161,6 +170,87 @@ sub species
     return $self->organism_id();
   }
 
+################################################ subroutine header begin ##
+
+=head2 get_associated_data_infos
+
+ Usage     : my @di = $data_info_obj->get_associated_data_infos()
+ Purpose   : This will find other data information objects that might be important given the current 
+             data information object.  For example, let's say you loaded a genome where each chromosome
+             was loaded separately so each has its own data_information object.  Then you load another
+             set of data for this gene such as annotations from an HMM profile search.  However, this
+             data-set covers the entire genome and not any individual chromosome.  So, if you want to
+             find if a gene on some chromosome also has an HMM domain annotated, you will need to 
+             1. find the gene's data information object
+             2. find any other data information objects that might contain relevant information (using this function)
+             3. assemble that data together
+ Returns   : an array or array ref of CoGe::Genome::DB::Data_information objects depending on value of wantarray.
+             This array will include the Data_information objects used in the search
+ Argument  : accepts one or more data_information objects or uses self if none are specified.
+ Throws    : None
+ Comments  : The mechanism by which this routine works is to:
+             1. find the organism, version, and chromosome(s) for the give data_information objects(s)
+             2. search for other data_information objects with the same organism, version, and chromosome
+           : NOTE: Chromosome search has been disabled due to speed constraints.
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+
+sub get_associated_data_infos
+  {
+    my $self = shift;
+    my $db = new CoGe::Genome;
+    my @dio = @_;
+    push @dio, $self unless @dio;
+    my %ids;
+    foreach my $di (@dio)
+      {
+	$ids{$di->id} = $di;
+#	my (%chr) = map {$_, 1} $di->get_chromosomes;
+	foreach my $tdi ($self->search({organism_id=>$di->org->id, version=>$di->version}))
+	  {
+# 	    my $pass;
+# 	    foreach my $chr ($di->get_chromosomes)
+# 	      {
+# 		if ($chr{$chr})
+# 		  {
+# 		    $pass = 1;
+# 		    last;
+# 		  }
+# 	      }
+# 	    next unless $pass;
+	    $ids{$tdi->id}=$tdi;
+	  }
+      }
+    my @new_dios = values %ids;
+    return wantarray ? @new_dios : \@new_dios;
+  }
+
+sub get_chromosomes
+  {
+    my $self = shift;
+    my @di = @_;
+    push @di, $self unless @di;
+    my %chrs;
+    my $sth = $self->sql_get_chromosomes();
+    foreach my $di (@di)
+      {
+	my $id = ref ($di) =~ /information/i ? $di->id : $di;
+
+	$sth->execute($id);
+	my $q = $sth->fetch();
+	next unless $q;
+	foreach my $i (@$q)
+	  {
+	    $chrs{$i} = 1;
+	  }
+      }
+    $sth->finish;
+    return wantarray ? keys %chrs : [keys %chrs];
+  }
 
 1; #this line is important and will help the module return a true value
 
