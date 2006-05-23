@@ -1,0 +1,48 @@
+<TMPL_IF NAME="FRONT_PAGE">
+<TMPL_ELSE>
+
+
+<form action='javascript:;' >
+<input id='iw' type ='hidden' value=256 />
+<input id='chr' type ='hidden' value='<TMPL_VAR NAME=CHR>' />
+<input id='di' type ='hidden' value='<TMPL_VAR NAME=DI>' />
+<input id='z' type ='hidden' value='<TMPL_VAR NAME=Z>' />
+<input id='x' type ='hidden' value='<TMPL_VAR NAME=X>' />
+<input id='xloc' type ='hidden' value='<TMPL_VAR NAME=XLOC>' />
+<div>Click on the map to view feature information at that position </div>
+<div>Click and drag on the map to move genomic view left and right</div> 
+<button id='zi' name='zi' class="tileClass" > Zoom In </button>
+<button name='zo' id='zo' class="tileClass" > Zoom Out </button> <font class="small">(zoom feature not yet working. . .sorry!)</font>
+
+<div id='container' class="tileClass" style='position:relative;left:6px;top:10px;width:800px;height:350px;border:1px solid black' > </div>
+<div id ='info' style='position:relative;left:6px;top:10px;width:800px;height:200px'><FORM NAME="info"></FORM></div>
+</form>
+
+<script>
+
+var omap = new Tiler('container',[config]);
+
+var zi = G('zi');
+addEvent(zi,'click',function(){omap.zoom(1)});
+addEvent(G('zo'),'click',function(){omap.zoom(-1)});
+
+addEvent(G('container'),'click',query);
+var qurl = 'http://toxic.berkeley.edu/CoGe/FeatAnno.pl?';
+
+function query(e){
+   placeanno('<font class="loading">loading annotations. . .</font>'); 
+   var xy = e.getItemXY(); 
+   xy = this.pix_to_real_world(xy[0],xy[1])[0];
+   var url = qurl + 'chr='+ G('chr').value + '&di='+G('di').value + '&loc='+ xy;
+   jfetch(url,placeanno);
+}
+
+function placeanno(stuff) {
+ //  document.info.info.value = stuff; 
+  kaj.GS('info', stuff);
+}
+
+</script>
+
+
+</TMPL_IF>
