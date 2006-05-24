@@ -109,7 +109,7 @@ print STDERR qq{
 BENCHMARKING GenomePNG.pl
 
 Initialization:         $init_time
-CoGe Database quer ies: $feature_time
+CoGe Database queries:  $feature_time
 Image generation:       $draw_time
 
 
