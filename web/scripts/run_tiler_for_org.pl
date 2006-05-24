@@ -31,7 +31,7 @@ foreach my $di ($org->data_information)
 	$count++;
 	my $cmd = "http://toxic.berkeley.edu/CoGe/tiler.pl?";
 	$cmd .= "&x=$i";
-	$cmd .= "&z=7";
+	$cmd .= "&z=$zoom";
 	$cmd .= "&iw=256";
 	$cmd .= "&di=".$di->id."";
 	$cmd .= "&chr=".$go->chr."";
