@@ -97,7 +97,7 @@ Tiler.prototype = {
       st.overflow = 'hidden';
       st.position = 'relative';
       // bigger buffer. 
-      var SUPER_BUFFER = 0;
+      var SUPER_BUFFER = 1;
       this.nTilesWide = 1 + Math.ceil((this.w + 2 * this._div_buffer)/ this.TILE_WIDTH) + SUPER_BUFFER;
       this.nTilesHigh = !this.ONE_DIM + Math.ceil((this.h + 2 * this._div_buffer) / this.TILE_HEIGHT) + SUPER_BUFFER * !this.ONE_DIM; 
       // create TIC [T]he [I]nner [C]ontainer)
