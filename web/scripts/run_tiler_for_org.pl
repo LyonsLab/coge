@@ -6,6 +6,7 @@ use Getopt::Long;
 use CoGe::Genome;
 use LWP::Simple;
 use POSIX;
+use Benchmark;
 
 my ($org_id, $version, $zoom);
 
@@ -40,6 +41,10 @@ foreach my $di ($org->data_information)
 #	$cmd .= " | /dev/null";
 	print "getting $cmd\n";
 	print "\timage $count / $tot\n";
+	my $t0 = new Benchmark;
 	get("$cmd");
+	my $t1 = new Benchmark;
+	my $time = timestr(timediff($t1, $t0));
+	print "\tImage generation too $time\n";
       }
   }
