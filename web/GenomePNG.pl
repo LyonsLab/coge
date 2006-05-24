@@ -103,13 +103,13 @@ generate_output(file=>$file, c=>$c);
 my $t3 = new Benchmark;
 my $init_time = timestr(timediff($t1, $t0));
 my $feature_time = timestr(timediff($t2, $t1));
-my $draw_time = timestr(timediff($t1, $t2));
+my $draw_time = timestr(timediff($t3, $t2));
 
 print STDERR qq{
 BENCHMARKING GenomePNG.pl
 
 Initialization:         $init_time
-CoGe Database queryies: $feature_time
+CoGe Database quer ies: $feature_time
 Image generation:       $draw_time
 
 
