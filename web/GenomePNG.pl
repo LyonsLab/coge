@@ -12,7 +12,10 @@ use CoGe::Graphics::Feature::AminoAcid;
 use CoGe::Graphics::Feature::Domain;
 use CoGe::Genome;
 use Data::Dumper;
+use Benchmark;
 
+
+my $t0 = new Benchmark;
 my $form = new CGI;
 print STDERR $form->self_url(-full=>1),"\n";
 my $db = new CoGe::Genome;
@@ -35,6 +38,7 @@ my $chr_start_height = $form->param('csh') || 200;
 my $chr_mag_height = $form->param('cmh') || 5;
 my $feat_start_height = $form->param('fsh') || 10;
 my $feat_mag_height = $form->param('fmh') || 2;
+my $BENCHMARK = $form->param('bm') || 1;
 unless ($start && $di && $chr)
   {
     print STDERR "missing needed parameters: Start: $start, Stop: $stop, Info_id: $di, Chr: $chr\n";
@@ -89,11 +93,30 @@ unless ($c->chr_length)
     warn "error initializing the chromosome object.  Failed for valid chr_length\n";
     exit(0);
   }
+my $t1 = new Benchmark;
 foreach my $did (keys %dids)
   {
     process_features(start=>$start, stop=>$stop, chr=>$chr, di=>$did, db=>$db, c=>$c) unless $simple;
   }
+my $t2 = new Benchmark;
 generate_output(file=>$file, c=>$c);	
+my $t3 = new Benchmark;
+my $cgi_time = timestr(timediff($t1, $t0);
+my $g_init_time = timestr(timediff($t2, $t1);
+my $feature_time = timestr(timediff($t3, $t2);
+my $draw_time = timestr(timediff($t4, $t3);
+
+print STDERR qq{
+BENCHMARKING GenomePNG.pl
+
+CGI Initialization:     $cgi_time
+CoGe Image Init:        $g_init_time
+CoGe Database queryies: $feature_time
+Image generation:       $draw_time
+
+
+} if $BENCHMARK;
+
 sub initialize_c
   {
     my %opts = @_;
