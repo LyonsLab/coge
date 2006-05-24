@@ -45,6 +45,6 @@ foreach my $di ($org->data_information)
 	get("$cmd");
 	my $t1 = new Benchmark;
 	my $time = timestr(timediff($t1, $t0));
-	print "\tImage generation too $time\n";
+	print "\tImage generation took$time\n";
       }
   }
