@@ -9,7 +9,7 @@ function Panner(div_id,container,constrainY){
   addEvent(container,'mousedown',this._startPan,this);
   addEvent(container,'mousemove',this._onPan,this);
   addEvent(container,'mouseup',this._endPan,this);
-  addEvent(container,'mouseout',this._endPan,this);
+//  addEvent(container,'mouseout',this._endPan,this);
 
 }
 
