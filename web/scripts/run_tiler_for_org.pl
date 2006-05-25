@@ -18,14 +18,17 @@ GetOptions("oid=s"=>\$org_id,
 
 my $db = new CoGe::Genome;
 my ($org) = $db->get_org_obj->search(organism_id=>$org_id);
-my $chars = 10 * 2^$zoom;
+my $chars = 10 * 2**$zoom;
 foreach my $di ($org->data_information)
   {
     next if $version && $di->version ne $version;
     my $go = $di->genomic_sequences->next;
     my $chr_len = $db->get_genomic_sequence_obj->get_last_position($di);
     my $tot = ceil ($chr_len/$chars);
-#    print "Total number of images to be generated: ", $chr_len/1280,"\n";
+#    print "Total number of bp: $chr_len\n";
+#    print "$chars characters per tile at zoom level $zoom\n";
+#    print "Total number of images to be generated: ", $tot,"\n";
+#    exit;
     my $count = 0;
     foreach (my $i=0; $i<= $chr_len; $i+=$chars)
       {
@@ -45,6 +48,6 @@ foreach my $di ($org->data_information)
 	get("$cmd");
 	my $t1 = new Benchmark;
 	my $time = timestr(timediff($t1, $t0));
-	print "\tImage generation took$time\n";
+	print "\tImage generation took $time\n";
       }
   }
