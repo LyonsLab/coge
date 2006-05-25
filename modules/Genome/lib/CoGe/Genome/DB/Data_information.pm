@@ -26,6 +26,10 @@ SELECT DISTINCT l.chromosome
 WHERE di.data_information_id = ?
 
 });
+    __PACKAGE__->set_sql(get_associated_dids=>qq{
+SELECT DISTINCT 
+
+});
 }
 
 
@@ -78,20 +82,19 @@ different versions of any given genome.  In order to accommodate such variation
 in genomic data sources, this table provides a way to track individual data
 sets from a given data source.  After writing the database, this module, 
 all related modules, many end-user applications, I realize that a better
-name for this object would have been data_set.  However, I'm much too busy
-with important stuff (tm) to go back and recode all of this with the appropriate
-name.  If this is problematic for you, cope.
+name for this object would have been data_set.  Although it would be great
+to update the database, API, and end-user applications to reflect this,
+chances are it will not be done anytime soon.
 
 In terms of functionality, this object is one of the most important for
 figuring out which features or other genomic information is needed.  For 
-example, let's say that the database has two genomes, Arabidopsis (aka 
-Shitty Little Weed, SLW) and Mus musculus (aka mouse) and has two versions 
-of each genome (version 1 and version 2).  Each genome also had an individual 
-data file for each chromosome (that means 5 for each version of Arabidopsis and 
-21 for each version of mouse).  That means that for this example , there are 
-52 data information entries in our database!  Understanding if a user is 
+example, let's say that the database has two genomes, Arabidopsis and Mus musculus
+and has two versions of each genome (version 1 and version 2).  Each genome also 
+has an individual data file for each chromosome (that means 5 for each version of 
+Arabidopsis and 21 for each version of mouse).  That means that for this example, 
+there are 52 data information entries in our database!  Understanding if a user is 
 interested in chromosome 1 of Arabidopsis version 2 can make our database searches
-faster as well as given us ( the programmers ) the power of tracking several
+faster as well as giving us ( the programmers ) the power of tracking several
 versions of any given genome.
 
 
