@@ -2,12 +2,9 @@
 use strict;
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
-use CGI::Ajax;
 use CoGe::Accessory::LogUser;
 use HTML::Template;
 use Data::Dumper;
-use Bio::TreeIO;
-use File::Temp;
 
 $ENV{PATH} = "/opt/apache2/CoGe/";
 
