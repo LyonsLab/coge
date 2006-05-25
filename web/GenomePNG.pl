@@ -38,7 +38,7 @@ my $chr_start_height = $form->param('csh') || 200;
 my $chr_mag_height = $form->param('cmh') || 5;
 my $feat_start_height = $form->param('fsh') || 10;
 my $feat_mag_height = $form->param('fmh') || 2;
-my $BENCHMARK = $form->param('bm') || 1;
+my $BENCHMARK = $form->param('bm') || 0;
 unless ($start && $di && $chr)
   {
     print STDERR "missing needed parameters: Start: $start, Stop: $stop, Info_id: $di, Chr: $chr\n";
@@ -52,18 +52,25 @@ if ($di) #there can be additional information about a chromosome for a particula
   }
 
 my %dids; #we will store a list of data_information objects that 
+my $ta = new Benchmark;
 if ($org_id)
   {
+
     foreach my $did ( $db->get_data_info_obj->search({organism_id=>$org_id, version=>$version}))
-    {
-      $dids{$did} = 1;
-    }
+      {
+	$dids{$did} = 1;
+      }
   }
+my $tb = new Benchmark;
+my $finddid_time = timestr(timediff($tb, $ta));
+
 $dids{$di}=1 if $di;
 unless ($chr) {($chr) = $db->get_genomic_seq_obj->search({data_information_id=>$di})->next->chr if $di};
 my @dids = keys %dids;
+my $tc = new Benchmark;
 foreach my $did (@dids)
   {
+
     my ($tstart, $tstop) = initialize_c(di=>$did,
 					chr=>$chr,
 					iw=>$iw,
@@ -88,6 +95,9 @@ foreach my $did (@dids)
 	last;
       }
   }
+my $td = new Benchmark;
+my $init_c_time = timestr(timediff($td, $tc));
+
 unless ($c->chr_length)
   {
     warn "error initializing the chromosome object.  Failed for valid chr_length\n";
@@ -96,7 +106,11 @@ unless ($c->chr_length)
 my $t1 = new Benchmark;
 foreach my $did (keys %dids)
   {
+    my $taa = new Benchmark;
     process_features(start=>$start, stop=>$stop, chr=>$chr, di=>$did, db=>$db, c=>$c) unless $simple;
+    my $tab = new Benchmark;
+    my $feat_time = timestr(timediff($tab, $taa));
+    print STDERR " processing did $did:   $feat_time\n" if $BENCHMARK;
   }
 my $t2 = new Benchmark;
 generate_output(file=>$file, c=>$c);	
@@ -108,8 +122,10 @@ my $draw_time = timestr(timediff($t3, $t2));
 print STDERR qq{
 BENCHMARKING GenomePNG.pl
 
-Initialization:         $init_time
-CoGe Database queries:  $feature_time
+  Finding DID:          $finddid_time
+  Init chr obj:         $init_c_time
+Total Initialization:   $init_time
+Processing features:    $feature_time
 Image generation:       $draw_time
 
 
