@@ -3,7 +3,7 @@
 use strict;
 use CoGe::Accessory::Tile::Cache;
 use CGI qw/:standard/;
-
+use POSIX;
 
 my $form = new CGI;
 my $x = $form->param('x') || $form->param('start');
@@ -27,8 +27,10 @@ $cache_file .= ".oid";
 $cache_file .= $org_id if $org_id;
 $cache_file .= ".v";
 $cache_file .= $version if $version;
-
-
+my $chra = 10*2**$z;
+my $im = floor($x/($chra*1000));
+$cache_file .= ".im";
+$cache_file .= $im;
 my $cache_object = CoGe::Accessory::Tile::Cache->new( $cache_file);
 
 # any parameters that should not affect the url used to generate the
