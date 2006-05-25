@@ -54,10 +54,10 @@ sub gen_html
 sub gen_body
   {
     my $form = shift;
-    my $chr = $form->param('chr') || 1;
-    my $di = $form->param('di') || 6;
-    my $z = $form->param('z') || 7;
-    my $x = $form->param('x') || 1;
+    my $chr = $form->param('chr');# || 1;
+    my $di = $form->param('di');# || 6;
+    my $z = $form->param('z');# || 7;
+    my $x = $form->param('x');# || 1;
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GeLo.tmpl');
     $template->param(FRONT_PAGE => 1) unless ($chr && $di);
     $template->param(CHR=>$chr);
