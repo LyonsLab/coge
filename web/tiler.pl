@@ -2,6 +2,7 @@
 
 use strict;
 use CoGe::Accessory::Tile::Cache;
+use CoGe::Genome;
 use CGI qw/:standard/;
 use POSIX;
 
@@ -13,6 +14,16 @@ my $di = $form->param('di');
 my $chr = $form->param('chr');
 my $org_id = $form->param('o') || $form->param('org') ||$form->param('organism') || $form->param('org_id') || $form->param('oid');
 my $version = $form->param('v') || $form->param('version');
+
+my $db = new CoGe::Genome;
+my $dio = $db->get_data_info_obj->search({data_information_id=>$di})->next if $di;
+if ($dio)
+  {
+    $org_id = $dio->org->id unless $org_id;
+    $version = $dio->version unless $version;
+  }
+$x = 0 unless defined $x;
+
 my $cache_file        = "/opt/apache/CoGe/cache/tile";
 
 $cache_file .= ".iw";
