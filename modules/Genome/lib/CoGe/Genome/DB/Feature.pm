@@ -39,6 +39,15 @@ SELECT DISTINCT f.feature_id
    AND chromosome = ?
    AND f.data_information_id = ?;
 });
+    __PACKAGE__->set_sql ('count_features_in_range' => qq{
+SELECT COUNT (DISTINCT f.feature_id)
+  FROM feature f
+  JOIN location l USING (feature_id)
+ WHERE ? <= l.stop
+   AND ? >= l.start
+   AND chromosome = ?
+   AND f.data_information_id = ?;
+});
   __PACKAGE__->set_sql ('select_all_feature_ids' => qq{
 SELECT feature_id 
   FROM feature
@@ -436,6 +445,9 @@ sub strand
              info_id => data_information id in database (obtained from a
                         CoGe::Data_information object)
                         of the dna seq will be returned
+             OPTIONAL
+             count   => flag to return only the number of features in a region
+             size    => features must span a genomic distance of at least this value
  Throws    : none
  Comments  : 
 
@@ -453,14 +465,52 @@ sub get_features_in_region
     my $stop = $opts{'stop'} || $opts{STOP} || $opts{end} || $opts{END};
     my $chr = $opts{chr} || $opts{CHR} || $opts{chromosome} || $opts{CHROMOSOME};
     my $info_id = $opts{info_id} || $opts{INFO_ID} || $opts{data_info_id} || $opts{DATA_INFO_ID};
-    my $sth = $self->sql_select_features_in_range();
+    my $count_flag = $opts{count} || $opts{COUNT};
+    my $sth = $count_flag ? $self->sql_count_features_in_range : $self->sql_select_features_in_range();
     $sth->execute($start, $stop, $chr, $info_id);
+    if ($count_flag)
+      {
+	return $sth->fetch->[0];
+      }
     my @feats;
     while (my $q = $sth->fetch())
       {
 	push @feats, $self->search(feature_id=>$q->[0]);
       }
     return wantarray ? @feats : \@feats;
+  }
+
+################################################ subroutine header begin ##
+
+=head2 count_features_in_region
+
+ Usage     : $object->count_features_in_region(start   => $start, 
+                                             stop    => $stop, 
+                                             chr     => $chr,
+                                             info_id => $data_info->id());
+
+ Purpose   : counts the features in a specified genomic region
+ Returns   : an integer
+ Argument  : start   => genomic start position
+             stop    => genomic stop position
+             chr     => chromosome
+             info_id => data_information id in database (obtained from a
+                        CoGe::Data_information object)
+                        of the dna seq will be returned
+ Throws    : none
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub get_features_in_region
+  {
+    my $self = shift;
+    my %opts = @_;
+    return $self->get_features_in_region (%opts, count=>1);
   }
 
 ################################################ subroutine header begin ##
