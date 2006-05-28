@@ -548,6 +548,36 @@ sub add_feature
 
 #################### subroutine header begin ####################
 
+=head2 delete_features
+
+ Usage     : $c->delete_features(fill);
+ Purpose   : Deletes features from the object.  Either of a type (fill or regular), or all of them
+ Returns   : none
+ Argument  : string or none
+               fill => 1 for deleting fill features
+               regular => for deleting regular features
+               all (or blank) => deletes all the features
+ Throws    : 
+ Comment   : 
+
+=cut
+
+#################### subroutine header end ####################
+
+
+sub delete_features
+  {
+    my $self = shift;
+    my $type = shift;
+    my $fill = 1 if !$type || $type =~ /fill/i || $type =~ /all/;
+    my $reg = 1 if !$type || $type =~ /regular/i || $type =~ /all/;
+    $self->_fill_features([]) if $fill;
+    $self->_features([]) if $reg;    
+  }
+
+
+#################### subroutine header begin ####################
+
 =head2 _check_overlap
 
  Usage     : $self->_check_overlap($feature);
