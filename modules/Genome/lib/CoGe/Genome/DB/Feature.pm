@@ -506,7 +506,7 @@ See Also   :
 
 ################################################## subroutine header end ##
 
-sub get_features_in_region
+sub count_features_in_region
   {
     my $self = shift;
     my %opts = @_;
