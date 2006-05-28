@@ -757,7 +757,7 @@ sub find_magnification_for_size
     my $mag = $self->magnification;
     foreach my $magt (sort {$a <=> $b} keys %$mag_scale)
       {
-	$mag = $magt if $mag_scale->{$magt} > $len;
+	$mag = $magt if $mag_scale->{$magt} >= $len;
       }
 #    return $mag;
     $self->magnification($mag);
@@ -1491,7 +1491,7 @@ sub _draw_features
 	  {
 	    $sy = $y;
 	  }
-	$self->_draw_feature(feat=>$feat, 'y'=>$y, ih=>$feat_h, 'sy'=>$sy);
+	$self->_draw_feature_slow(feat=>$feat, 'y'=>$y, ih=>$feat_h, 'sy'=>$sy);
       }
   }
 
@@ -1526,7 +1526,7 @@ See Also   : $self->_draw_features
 #################### subroutine header end ####################
 
 
-sub _draw_feature
+sub _draw_feature_slow
   {
     my $self = shift;
     my %opts = @_;
@@ -1608,6 +1608,107 @@ sub _draw_feature
 	$newgd->transparent($newgd->colorResolve(255,255,255));
 	#5. copy new image into appropriate place on image.
 	$self->gd->copyMerge($newgd, $fs, $y, 0, 0, $fw, $ih, $feat->merge_percent);
+      }
+    
+    my $size;
+    if ($self->fill_labels && $feat->fill) {$size=$fw >= 15 ? 15 : $fw;}
+    elsif ($self->feature_labels && defined $feat->label) 
+      {
+        $size = $ih > 13 ? 13 : $ih; 
+	$size=$size/2 if $fw <$size * (length $feat->label)/1.5;
+	#print STDERR $feat->label,": $fw, $size\n";
+        $sy=$y+$ih/2-$size/2 unless $sy;
+	my $adjust = 0;
+	$adjust = $fw/10;
+	$fs+=$adjust;
+      }
+    $size = $size*$feat->font_size if $size && $feat->font_size;
+
+    $self->_gd_string(y=>$sy, x=>$fs, text=>$feat->label, size=>$size) if ( ($self->feature_labels || $self->fill_labels)&& ($fw>5 || $feat->force_label)); #don't make the string unless the feature is at least 5 pixels wide
+  }
+sub _draw_feature_fast
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $feat = $opts{feat} || $opts{FEAT} || $opts{f};
+    return 0 unless ref($feat) =~ /Feature/i;
+    my $y = $opts{'y'} || $opts{Y};
+    my $ih = $opts{'image_height'} || $opts{'ih'} || $opts{'IH'} || $feat->ih;
+    my $sy = $opts{'string_y'} || $opts{'sy'};#label y axis
+    my $rb = $self->_region_start;
+    my $re = $self->_region_stop;
+    my $range = $re-$rb;
+    my $w = $self->iw;
+    $feat->gd;
+    $feat->stop($feat->start) unless defined $feat->stop;
+    my $feat_range = $feat->stop-$feat->start;
+    my $unit = $self->_calc_unit_size;
+    my $fs = $unit*($feat->start-$rb);
+    my $fe = $unit*($feat->end-$rb+1);
+    my $fw = sprintf("%.1f",$fe - $fs)+1; #calculate the width of the feature;
+    return if $fw < 1; #skip drawing if less than one pix wide
+    print STDERR "Drawing feature ".$feat->label." Order: ".$feat->order." Overlap: ".$feat->_overlap." : ", $feat->start, "-", $feat->end," Dimentions:",$fw,"x",$ih, " at position: $fs,$y"."\n" if $self->DEBUG;
+    if ($feat->fill)
+      {
+	$self->gd->copyResampled($feat->gd, $fs, $y,0,0, $fw, $ih, $feat->iw, $feat->ih);
+	if ($feat->external_image && $fw > 10) #if we have an external image and the feature width is greater than 10. . .
+	  {
+	    my $ei = $feat->external_image;
+#	    $ei->transparent($ei->colorResolve(255,255,255));
+	    my $ex_wid = $ei->width;
+	    my $ex_hei = $ei->height;
+	    my $scale = $fw/$ex_wid; #scaling factor for external image
+	    my $hei = $feat->strand =~ /-/ ? $y : $y+$ih-($ex_hei*$scale);
+	    #okay, we are going to need to do some fancy stuff in order to smoothly resize and paste the feature onto the main image
+	    #1. create a blank image of the appropriate size
+	    my $newgd = GD::Image->new ($fw, $ex_hei*$scale,[1]);
+	    #2. copy, resize, and resample the feature onto the new image
+	    $newgd->copyResampled($ei, 0, 0, 0, 0, $newgd->width, $newgd->height, $ex_wid, $ex_hei);  
+	    #3. find any colors that are close to white and set them to white.
+	    my $max = 200;
+	    for my $x (0..$fw)
+	      {
+		for my $y (0..$ih)
+		  {
+		    my ($r, $g, $b) = $newgd->rgb($newgd->getPixel($x, $y));
+		    if ($r > $max && $g > $max && $b > $max)
+		      {
+			$newgd->setPixel($x, $y, $newgd->colorResolve(255,255,255));
+		      }
+		  }
+	      }
+	    #4. make white transparent
+	    $newgd->transparent($newgd->colorResolve(255,255,255));
+	    #5. copy new image into appropriate place on image.
+#	    $self->gd->copyMerge($newgd, $fs, $hei, 0, 0, $fw, $ih, $feat->merge_percent);
+ 	    $self->gd->copy($newgd, $fs, $hei, 0, 0, $newgd->width, $newgd->height);
+	  }
+      }
+    else
+      {
+# 	#okay, we are going to need to do some fancy stuff in order to smoothly resize and paste the feature onto the main image
+# 	#1. create a blank image of the appropriate size
+ 	my $newgd = GD::Image->new ($fw, $ih,[1]);
+# 	#2. copy, resize, and resample the feature onto the new image
+ 	$newgd->copyResampled($feat->gd, 0, 0, 0, 0, $fw, $ih, $feat->iw, $feat->ih);  
+# 	#3. find any colors that are close to white and set them to white.
+# 	my $max = 240;
+# 	for my $x (0..$fw)
+# 	  {
+# 	    for my $y (0..$ih)
+# 	      {
+# 		my ($r, $g, $b) = $newgd->rgb($newgd->getPixel($x, $y));
+# 		if ($r > $max && $g > $max && $b > $max)
+# 		  {
+# 		    $newgd->setPixel($x, $y, $newgd->colorResolve(255,255,255));
+# 		  }
+#  	      }
+# 	  }
+# 	#4. make white transparent
+ 	$newgd->transparent($newgd->colorResolve(255,255,255));
+# 	#5. copy new image into appropriate place on image.
+ 	$self->gd->copyMerge($newgd, $fs, $y, 0, 0, $fw, $ih, $feat->merge_percent);
+#	$self->gd->copyResized($feat->gd, $fs, $y, 0, 0, $fw, $ih, $feat->iw, $feat->ih);
       }
     
     my $size;
@@ -1936,7 +2037,7 @@ sub _set_region_start_stop
 	$stop = $tmp;
       }
     $self->_set_region_for_point($start) if $start == $stop;
-    my $len = $stop - $start;
+    my $len = $stop - $start+1;
     my $mag = $self->find_magnification_for_size($len);
     $self->mag($mag);
 #    $self->start($start);
@@ -1947,6 +2048,16 @@ sub _set_region_start_stop
     my $rstop = $stop + $diff;
     $self->_region_start($rstart);
     $self->_region_stop($rstop);
+#    print STDERR Dumper $self->mag_scale;
+#     print STDERR qq{
+# IN Chomosome.pm sub _set_region_start_stop
+#    requested ($start - $stop)
+#    mag : $mag
+#    len : $len
+#    size: $size
+#    diff: $diff
+#    set ($rstart - $rstop)
+# };
   }
 
 
