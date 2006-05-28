@@ -30,7 +30,8 @@ foreach my $di ($org->data_information)
     next unless $go;
     my $chr_len = $go->get_last_position($di);
     next unless $chr_len;
-    my $max_zoom = defined $zoom ? $zoom : ceil (log10($chr_len)/(log10(10)*log10(2)));
+    print log10($chr_len/10) ."/(". log10(2).")=".(log10($chr_len/10)/(log10(2)))."\n";
+    my $max_zoom = defined $zoom ? $zoom : ceil (log10($chr_len/10)/(log10(2)));
     my $start_zoom = defined $zoom ? $zoom : 0;
     foreach my $z ($start_zoom..$max_zoom)
       {
