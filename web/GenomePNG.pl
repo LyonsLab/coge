@@ -39,6 +39,13 @@ my $chr_mag_height = $form->param('cmh') || 5;
 my $feat_start_height = $form->param('fsh') || 10;
 my $feat_mag_height = $form->param('fmh') || 2;
 my $BENCHMARK = $form->param('bm') || 0;
+
+##some limits to keep from blowing our stack
+use vars qw($MAX_FEATURES $MAX_NT);
+$MAX_FEATURES = $iw*10; #one feature per pixel
+$MAX_NT       = $iw*100000; #50,000 nt per pixel
+
+
 unless ($start && $di && $chr)
   {
     print STDERR "missing needed parameters: Start: $start, Stop: $stop, Info_id: $di, Chr: $chr\n";
@@ -131,6 +138,7 @@ Image generation:       $draw_time
 
 } if $BENCHMARK;
 
+1;
 sub initialize_c
   {
     my %opts = @_;
@@ -201,6 +209,10 @@ sub process_nucleotides
     my %opts = @_;
     my $start = $opts{start};
     my $stop = $opts{stop};
+    if (abs ($stop-$start) > $MAX_NT)
+      {
+	warn "exceeded nucleotide limit of $MAX_NT (requested: ".abs($stop-$start).")\n";
+      }
     my $chr = $opts{chr};
     my $di = $opts{di};
     my $db = $opts{db};
@@ -241,6 +253,12 @@ sub process_features
     my $c = $opts{c};
     my $accn = $opts{accn};
     my $print_names = $opts{print_names};
+    my $feat_count = $db->get_feature_obj->count_features_in_region(start=>$start, end=>$stop, info_id=>$di, chr=>$chr);
+    if ($feat_count > $MAX_FEATURES)
+      {
+	warn "exceeded maximum number of features $MAX_FEATURES. ($feat_count requested)\nskipping.\n";
+	return;
+      }
     foreach my $feat($db->get_feature_obj->get_features_in_region(start=>$start, end=>$stop, info_id=>$di, chr=>$chr))
       {
         my $f;
