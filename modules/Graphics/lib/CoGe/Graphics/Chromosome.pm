@@ -1378,6 +1378,7 @@ sub _draw_chromosome
     $self->chr_brush->flipVertical();
     $gd->setBrush($self->chr_brush);
     $gd->line($xs, $hc+$ch, $xe, $hc+$ch, gdBrushed);
+    $self->chr_brush->flipVertical();
     my $color = $self->get_color($self->chr_outer_color);
     $gd->setStyle($color, $color, $color, GD::gdTransparent, GD::gdTransparent);
     $gd->line($xs, $hc, $xe, $hc, gdStyled);
