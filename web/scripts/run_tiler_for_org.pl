@@ -8,11 +8,11 @@ use LWP::Simple;
 use POSIX;
 use Benchmark;
 
-my ($org_id, $version, $url);
+my ($org_id, $version, $url, $zoom);
 
 GetOptions("oid=s"=>\$org_id,
 	   "v=s" => \$version,
-#	   "z|zoom=s" => \$zoom,
+	   "z|zoom=s" => \$zoom,
 	   "u|url=s" => \$url
 	   );
 
@@ -30,22 +30,23 @@ foreach my $di ($org->data_information)
     next unless $go;
     my $chr_len = $go->get_last_position($di);
     next unless $chr_len;
-    my $max_zoom = ceil (log10($chr_len)/(log10(10)*log10(2)));
-    foreach my $zoom (0..$max_zoom)
+    my $max_zoom = defined $zoom ? $zoom : ceil (log10($chr_len)/(log10(10)*log10(2)));
+    my $start_zoom = defined $zoom ? $zoom : 0;
+    foreach my $z ($start_zoom..$max_zoom)
       {
-	my $chars = 10 * 2**$zoom;
+	my $chars = 10 * 2**$z;
 	my $tot = ceil ($chr_len/$chars);
 	print "Total number of bp: $chr_len\n";
-	print "$chars characters per tile at zoom level $zoom\n";
+	print "$chars characters per tile at zoom level $z\n";
 	print "Total number of images to be generated: ", $tot,"\n";
-#	next;
+	next;
 	my $count = 0;
 	foreach (my $i=0; $i<= $chr_len; $i+=$chars)
 	  {
 	    $count++;
 	    my $cmd = "$url"."?";
 	    $cmd .= "&x=$i";
-	    $cmd .= "&z=$zoom";
+	    $cmd .= "&z=$z";
 	    $cmd .= "&iw=256";
 	    $cmd .= "&di=".$di->id."";
 	    $cmd .= "&chr=".$go->chr."";
