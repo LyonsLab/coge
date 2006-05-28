@@ -40,7 +40,7 @@ SELECT DISTINCT f.feature_id
    AND f.data_information_id = ?;
 });
     __PACKAGE__->set_sql ('count_features_in_range' => qq{
-SELECT COUNT (DISTINCT f.feature_id)
+SELECT COUNT(DISTINCT f.feature_id)
   FROM feature f
   JOIN location l USING (feature_id)
  WHERE ? <= l.stop
