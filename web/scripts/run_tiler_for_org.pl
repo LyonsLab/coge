@@ -40,7 +40,7 @@ foreach my $di ($org->data_information)
 	print "Total number of bp: $chr_len\n";
 	print "$chars characters per tile at zoom level $z\n";
 	print "Total number of images to be generated: ", $tot,"\n";
-	next;
+#	next;
 	my $count = 0;
 	foreach (my $i=0; $i<= $chr_len; $i+=$chars)
 	  {
