@@ -1902,7 +1902,7 @@ sub _draw_ruler
     my $re = $self->_region_end;
     $re = $self->chr_length if $re > $self->chr_length;
     my $range = $re-$rb; #chromosomal positional range
-#    $rb = $rb-($range/10); #back up a bit
+    $rb = $rb-($range/10); #back up a bit
     my $div = "1"."0"x int log10($range); #determine range scale (10, 100, 1000, etc)
     print STDERR "\nRULER: Center: $c, Start $xb, Stop: $xe, Ticks: $div, \n" if $self->DEBUG;
     $self->_make_ticks(scale=>$div*10, y1=>$mtyb, y2=>$mtye, range_begin=>$rb, range_end=>$re,text_loc=>1);
