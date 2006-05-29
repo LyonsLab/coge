@@ -392,18 +392,30 @@ sub begin_location
   {
     my $self = shift;
     my @locs = $self->locs;
-    return unless @locs;
+    return unless scalar @locs;
     my ($val) = sort {$a->begin <=> $b->begin} @locs;
     return $val->begin;
+  }
+
+sub start_location
+  {
+    my $self = shift;
+    return $self->begin_location;
   }
 
 sub end_location
   {
     my $self = shift;
     my @locs = $self->locs;
-    return unless @locs;
+    return unless scalar @locs;
     my ($val) = sort {$b->end <=> $a->end} @locs;
     return $val->end;
+  }
+
+sub stop_location
+  {
+    my $self = shift;
+    return $self->end_location;
   }
 
 sub chromosome
@@ -447,7 +459,6 @@ sub strand
                         of the dna seq will be returned
              OPTIONAL
              count   => flag to return only the number of features in a region
-             size    => features must span a genomic distance of at least this value
  Throws    : none
  Comments  : 
 
@@ -462,7 +473,9 @@ sub get_features_in_region
     my $self = shift;
     my %opts = @_;
     my $start = $opts{'start'} || $opts{'START'} || $opts{begin} || $opts{BEGIN};
+    $start = 0 unless $start;
     my $stop = $opts{'stop'} || $opts{STOP} || $opts{end} || $opts{END};
+    $stop = $start unless defined $stop;
     my $chr = $opts{chr} || $opts{CHR} || $opts{chromosome} || $opts{CHROMOSOME};
     my $info_id = $opts{info_id} || $opts{INFO_ID} || $opts{data_info_id} || $opts{DATA_INFO_ID};
     my $count_flag = $opts{count} || $opts{COUNT};
@@ -470,13 +483,16 @@ sub get_features_in_region
     $sth->execute($start, $stop, $chr, $info_id);
     if ($count_flag)
       {
-	return $sth->fetch->[0];
+	my $count = $sth->fetch->[0];
+	$sth->finish;
+	return $count;
       }
     my @feats;
     while (my $q = $sth->fetch())
       {
 	push @feats, $self->search(feature_id=>$q->[0]);
       }
+    $sth->finish;
     return wantarray ? @feats : \@feats;
   }
 
@@ -549,6 +565,7 @@ sub get_features_by_name_and_data_information_version
       {
 	push @feats, $self->search(feature_id=>$q->[0]);
       }
+    $sth->finish;
     return wantarray ? @feats : \@feats;
   }
 
@@ -615,6 +632,7 @@ sub get_all_feature_ids
     my $sth = $self->sql_select_all_feature_ids;
     $sth->execute;
     my @ids = map {$_->[0]} $sth->fetchall;
+    $sth->finish;
     return wantarray ? @ids : \@ids;
   }
 
