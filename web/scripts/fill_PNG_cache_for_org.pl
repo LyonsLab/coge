@@ -44,6 +44,7 @@ foreach my $di ($org->data_information)
     next if $version && $di->version ne $version;
     my ($max_zoom, $chr_len, $chr) = find_max_z(di=>$di);
     next unless defined $max_zoom;
+#    $max_zoom=10;
     my $max_chars = 10 * 2**$max_zoom;
     #march through windows on the chromosome of size max_chars
     foreach (my $c_start=0; $c_start <= $chr_len; $c_start+=$max_chars)
@@ -301,7 +302,7 @@ sub process_features
     foreach my $feat ($db->get_feature_obj->get_features_in_region(start=>$start, end=>$stop, info_id=>$di, chr=>$chr))
       {
 	$count++;
-	print "processing feature $count / $feat_count\n";
+	print "processing feature $count / $feat_count.  feature type ",$feat->type->name,"\n";
         my $f;
 #	print STDERR Dumper $feat;
 #	print STDERR "!",join ("\t", map {$_->name} $feat->names, map {$_->start."-".$_->stop} $feat->locs),"\n";
@@ -369,6 +370,10 @@ sub process_features
 	      }
 	    $f->order(2);
           }
+	else
+	  {
+	    print STDERR "Skipping feature of type: ",$feat->type->name,"\n";
+	  }
         next unless $f;
         foreach my $loc ($feat->locs)
 	  {
@@ -415,8 +420,11 @@ sub draw_prots
       {
 	next unless $seq->seq_type->name =~ /prot/i;
 	my ($pseq) = $seq->sequence_data;
-	my $chrs = int (($c->_region_stop-$c->_region_start)/$c->iw)/3;
-	$chrs = 1 if $chrs < 1;
+	print STDERR "\tAdding protein sequence of length: ",length($pseq),"\n";
+
+#	my $chrs = int (($c->_region_stop-$c->_region_start)/$c->iw)/3;
+#	$chrs = 1 if $chrs < 1;
+	my $chrs = 1;
 	my $pos = 0;
 	while ($pos <= length $pseq)
 	  {
