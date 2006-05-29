@@ -36,7 +36,7 @@ my ($org) = $db->get_org_obj->search(organism_id=>$org_id);
 
 ##some limits to keep from blowing our stack
 use vars qw($MAX_FEATURES $MAX_NT);
-$MAX_FEATURES = $iw*5; #one feature per pixel
+$MAX_FEATURES = $iw*3; #one feature per pixel
 $MAX_NT       = $iw*100000; #50,000 nt per pixel
 
 foreach my $di ($org->data_information)
