@@ -21,7 +21,6 @@ isa_ok ($o, 'CoGe::Graphics::Chromosome');
 # $a->gd->fill(0,0,$a->get_color(200,200, 255));
 # $a->label("A");
 # $a->strand("1");
-# $a->placement("in");
 # $a->fill(1);
 
 # my $t = CoGe::Graphics::Feature->new({start=>50000});
@@ -31,7 +30,6 @@ isa_ok ($o, 'CoGe::Graphics::Chromosome');
 # $t->gd->fill(0,0,$t->get_color(200,200, 255));
 # $t->label("T");
 # $t->strand("-1");
-# $t->placement("in");
 # $t->fill(1);
 
 # my $c = CoGe::Graphics::Feature->new({start=>50001});
@@ -41,7 +39,6 @@ isa_ok ($o, 'CoGe::Graphics::Chromosome');
 # $c->gd->fill(0,0,$c->get_color(200,255, 200));
 # $c->label("C");
 # $c->strand("1");
-# $c->placement("in");
 # $c->fill(1);
 
 # my $g = CoGe::Graphics::Feature->new({start=>50001});
@@ -51,7 +48,6 @@ isa_ok ($o, 'CoGe::Graphics::Chromosome');
 # $g->gd->fill(0,0,$g->get_color(200,255, 200));
 # $g->label("G");
 # $g->strand("-1");
-# $g->placement("in");
 # $g->fill(1);
 
 my $ge = CoGe::Graphics::Feature->new({start=>49990, stop=>50010});
@@ -61,7 +57,6 @@ $ge->iw(10);
 $ge->gd->fill(0,0,$ge->get_color(250,20, 200));
 $ge->label("Gene");
 $ge->strand("1");
-$ge->placement("out");
 
 my $ge2 = CoGe::Graphics::Feature->new({start=>49980, stop=>50000});
 isa_ok ($ge2, 'CoGe::Graphics::Feature');
@@ -70,7 +65,6 @@ $ge2->iw(10);
 $ge2->gd->fill(0,0,$ge2->get_color(255,20, 25));
 $ge2->label("Gene");
 $ge2->strand("-1");
-$ge2->placement("out");
 
 my $ge3 = CoGe::Graphics::Feature::Gene->new();
 isa_ok ($ge3, 'CoGe::Graphics::Feature::Gene');
@@ -80,7 +74,6 @@ $ge3->add_segment(start=>49900, end=>50000);
 $ge3->add_segment(start=>50100, end=>50200);
 $ge3->add_segment(start=>50300, end=>50400);
 $ge3->label("multi-part_gene");
-$ge3->placement("in");
 
 my $ge4 = CoGe::Graphics::Feature::Gene->new();
 isa_ok ($ge4, 'CoGe::Graphics::Feature::Gene');
@@ -90,7 +83,6 @@ $ge4->add_segment(start=>49900, end=>50000);
 $ge4->add_segment(start=>50100, end=>50200);
 $ge4->add_segment(start=>50300, end=>50400);
 $ge4->label("multi-part_gene");
-$ge4->placement("in");
 
 my $ge5 = CoGe::Graphics::Feature::Gene->new();
 isa_ok ($ge5, 'CoGe::Graphics::Feature::Gene');
@@ -100,7 +92,6 @@ $ge5->add_segment(start=>48900, end=>50000);
 $ge5->add_segment(start=>50500, end=>51200);
 $ge5->add_segment(start=>52300, end=>54400);
 $ge5->label("multi-part_gene");
-$ge5->placement("out");
 
 my $ge6 = CoGe::Graphics::Feature::Gene->new();
 isa_ok ($ge6, 'CoGe::Graphics::Feature::Gene');
@@ -110,7 +101,6 @@ $ge6->add_segment(start=>48900, end=>50000);
 $ge6->add_segment(start=>50500, end=>51200);
 $ge6->add_segment(start=>52300, end=>54400);
 $ge6->label("multi-part_gene");
-$ge6->placement("in");
 
 my $ge7 = CoGe::Graphics::Feature::Gene->new();
 isa_ok ($ge7, 'CoGe::Graphics::Feature::Gene');
@@ -120,7 +110,6 @@ $ge7->add_segment(start=>48900, end=>50000);
 $ge7->add_segment(start=>50500, end=>51200);
 $ge7->add_segment(start=>52300, end=>54400);
 $ge7->label("multi-part_gene");
-$ge7->placement("out");
 $ge7->order(10);
 
 my $ge8 = CoGe::Graphics::Feature::Gene->new();
@@ -131,7 +120,6 @@ $ge8->add_segment(start=>55000, end=>56000);
 $ge8->add_segment(start=>56500, end=>57200);
 $ge8->add_segment(start=>58300, end=>59400);
 $ge8->label("multi-part_gene");
-$ge8->placement("out");
 $ge8->order(1);
 
 #$o->add_feature($a);

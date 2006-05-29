@@ -601,15 +601,21 @@ See Also   : $self->add_feature();
 
 #################### subroutine header end ####################
 
-sub _check_overlap_old
+sub _check_overlap
   {
     my $self = shift;
     my $feat = shift;
+#    use Benchmark;
+#    my $t0 = new Benchmark;    
     return if $feat->skip_overlap_search;
-    my @feats = sort {$a->stop <=> $b->stop} $self->get_feats(strand=>$feat->strand, fill=>$feat->fill, order=>$feat->order);
+    my @feats = $self->get_feats(strand=>$feat->strand, fill=>$feat->fill, order=>$feat->order);
+#    my $t1 = new Benchmark;    
+    #@feats = sort {$a->stop <=> $b->stop} @feats;
+#    my $t2 = new Benchmark;    
+#    my @feats = sort {$a->stop <=> $b->stop} $self->get_feats(strand=>$feat->strand, fill=>$feat->fill, order=>$feat->order);
     return unless @feats;
     #since this can take a while, let's see if we can skip the search by checking if the feature to be checked is outside the bounds of existing features
-    return if ($feat->stop < $feats[0]->start || $feat->start > $feats[-1]->stop);
+#    return if ($feat->stop < $feats[0]->start || $feat->start > $feats[-1]->stop);
     foreach my $f (@feats)
     	{
 	  next unless $feat->overlay() == $f->overlay();  #skip the check if the features are at different overlay levels.
@@ -621,15 +627,30 @@ sub _check_overlap_old
 	      $feat->_overlap_pos($feat->_overlap_pos+1);
 	    }
 	}	
+#    my $t3 = new Benchmark;
+#    my $get_time = timestr(timediff($t1, $t0));
+#    my $sort_time = timestr(timediff($t2, $t1));
+#    my $find_time = timestr(timediff($t3, $t2));
+
+#     print STDERR qq{
+# get_feats:             $get_time
+# sort_feats:            $sort_time
+# find_time:             $find_time
+# };
   }
 
-sub _check_overlap
+sub _check_overlap_new
   {
     my $self = shift;
     my $feat = shift;
+#    use Benchmark;
+#    my $t0 = new Benchmark;    
     return if $feat->skip_overlap_search;
-    my @feats = sort {$a->stop <=> $b->stop} $self->get_feats(strand=>$feat->strand, fill=>$feat->fill, order=>$feat->order);
+    my @feats = $self->get_feats(strand=>$feat->strand, fill=>$feat->fill, order=>$feat->order);
+#    my $t1 = new Benchmark;
+    @feats = sort {$a->stop <=> $b->stop} @feats;
     return unless @feats;
+#    my $t2 = new Benchmark;
     #since this can take a while, let's see if we can skip the search by checking if the feature to be checked is outside the bounds of existing features
     return if ($feat->stop < $feats[0]->start || $feat->start > $feats[-1]->stop);
     my $start = 0;
@@ -652,6 +673,7 @@ sub _check_overlap
 	    last;
 	  }
       }
+#    my $t3 = new Benchmark;
 #    print STDERR "Overlap search $start - $stop\n";
     foreach my $i ($start..$stop)
     	{
@@ -664,7 +686,18 @@ sub _check_overlap
 	      $f->_overlap($f->_overlap+1);
 	      $feat->_overlap_pos($feat->_overlap_pos+1);
 	    }
-	}	
+	}
+#    my $t4 = new Benchmark;
+#    my $get_time = timestr(timediff($t1, $t0));
+#    my $sort_time = timestr(timediff($t2, $t1));
+#    my $pos_time = timestr(timediff($t3, $t2));
+#    my $find_time = timestr(timediff($t4, $t3));
+#     print STDERR qq{
+# get_feats:             $get_time
+# sort_feats:            $sort_time
+# pos_time:              $pos_time
+# find_time:             $find_time
+# };
   }
 
 #################### subroutine header begin ####################
@@ -721,7 +754,8 @@ sub get_features
     push @feat_refs, $self->_features if (defined $fill && $fill == 0) || !(defined $fill);
     foreach my $ref (@feat_refs)
      {
-       foreach my $feat (sort {$a->overlay <=> $b->overlay} @$ref)
+#       foreach my $feat (sort {$a->overlay <=> $b->overlay} @$ref)
+       foreach my $feat (@$ref)
        {
 	if ($strand)
 	  {
@@ -745,14 +779,10 @@ sub get_features
 	if ($start) {next unless $feat->start eq $start;}
 	if ($stop) {next unless $feat->stop eq $stop;}
 	if ($overlay) {next unless $feat->overlay == $overlay;}
-#	if (defined $fill)
-#	  {
-#	    next unless $feat->fill eq $fill;
-#	  }
 	push @rfeats, $feat
       }
      }
-    @rfeats = sort {$a->order <=> $b->order} @rfeats;
+#    @rfeats = sort {$a->order <=> $b->order} @rfeats;
 
     if ($last)
       {
@@ -1500,6 +1530,7 @@ sub _draw_chr_end
     my @arc2 = $dir =~ /left/i ? (180, 270) : (270, 0);
     my @arc3 = $dir =~ /left/i ? (90, 270) : (270,90);
     $gd->filledArc($x, $y, $ch, $ch, @arc3, $self->get_color($self->chr_inner_color));
+    $self->chr_brush->flipVertical;
     $gd->arc($x, $y, $ch, $ch, @arc1, gdBrushed);
     $self->chr_brush->flipVertical;
     $gd->setBrush($self->chr_brush);
@@ -1871,6 +1902,7 @@ sub _draw_ruler
     my $re = $self->_region_end;
     $re = $self->chr_length if $re > $self->chr_length;
     my $range = $re-$rb; #chromosomal positional range
+#    $rb = $rb-($range/10); #back up a bit
     my $div = "1"."0"x int log10($range); #determine range scale (10, 100, 1000, etc)
     print STDERR "\nRULER: Center: $c, Start $xb, Stop: $xe, Ticks: $div, \n" if $self->DEBUG;
     $self->_make_ticks(scale=>$div*10, y1=>$mtyb, y2=>$mtye, range_begin=>$rb, range_end=>$re,text_loc=>1);
