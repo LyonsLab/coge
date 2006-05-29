@@ -590,8 +590,10 @@ sub delete_features
  Returns   : none
  Argument  : a CoGe::Graphics::Feature object
  Throws    : none
- Comment   : 
-           : 
+ Comment   : this algorithm can get slow with lots of features and doing an overlap search.
+           : The overlap search algorithm is a linear search through all previously entered features 
+             for any that overlap the newly added feature.  This can probably go faster with a different 
+             algo.
 
 See Also   : $self->add_feature();
 
@@ -599,7 +601,7 @@ See Also   : $self->add_feature();
 
 #################### subroutine header end ####################
 
-sub _check_overlap
+sub _check_overlap_old
   {
     my $self = shift;
     my $feat = shift;
@@ -620,6 +622,51 @@ sub _check_overlap
 	    }
 	}	
   }
+
+sub _check_overlap
+  {
+    my $self = shift;
+    my $feat = shift;
+    return if $feat->skip_overlap_search;
+    my @feats = sort {$a->stop <=> $b->stop} $self->get_feats(strand=>$feat->strand, fill=>$feat->fill, order=>$feat->order);
+    return unless @feats;
+    #since this can take a while, let's see if we can skip the search by checking if the feature to be checked is outside the bounds of existing features
+    return if ($feat->stop < $feats[0]->start || $feat->start > $feats[-1]->stop);
+    my $start = 0;
+    my $stop = $#feats;
+    while ($stop-$start > 10)
+      {
+	my $check = int($stop/2+$start);
+	last if ($check == $stop || $check == $start);
+	print STDERR "\tchecking $start - $check - $stop\n";
+	if ($feats[$check]->start > $feat->stop)
+	  {
+	    $stop = $check;
+	  }
+	elsif ($feats[$check]->stop < $feat->start)
+	  {
+	    $start = $check;
+	  }
+	else
+	  {
+	    last;
+	  }
+      }
+    print STDERR "Overlap search $start - $stop\n";
+    foreach my $i ($start..$stop)
+    	{
+	  my $f = $feats[$i];
+	  next unless $feat->overlay() == $f->overlay();  #skip the check if the features are at different overlay levels.
+	  unless ( ($feat->start > $f->stop) || ($feat->stop < $f->start) )
+	    {
+	      print STDERR "Overlap: ",$feat->name,"\t",$f->name,"\n" if $self->DEBUG; 
+	      $feat->_overlap($feat->_overlap+1);
+	      $f->_overlap($f->_overlap+1);
+	      $feat->_overlap_pos($feat->_overlap_pos+1);
+	    }
+	}	
+  }
+
 #################### subroutine header begin ####################
 
 =head2 get_features
