@@ -43,9 +43,12 @@ foreach my $di ($org->data_information)
   {
     next if $version && $di->version ne $version;
     my ($max_zoom, $chr_len, $chr) = find_max_z(di=>$di);
+    next unless defined $max_zoom;
     my $max_chars = 10 * 2**$max_zoom;
-    foreach (my $c_start=1; $c_start <= $chr_len; $c_start+=$max_chars)
+    #march through windows on the chromosome of size max_chars
+    foreach (my $c_start=0; $c_start <= $chr_len; $c_start+=$max_chars)
       {
+	my $seq = uc($db->get_genomic_sequence_obj->get_sequence(start=>$c_start, end=>$c_start+$max_chars, chr=>$chr, info_id=>$di)); 
 	my $c = initialize_c(
 			     di => $di->id,
 			     chr => $chr,
@@ -60,7 +63,8 @@ foreach my $di ($org->data_information)
 #	    next;
 	    process_features(start=>$c_start, stop=>$c_start+$max_chars, chr=>$chr, di=>$di2->id, db=>$db,c=>$c);
 	  }
-	foreach my $z (3..$max_zoom)
+	#go through all the zoom levels for this region
+	foreach (my $z=$max_zoom; $z >= 6; $z--)# (0..$max_zoom..0)
 	  {
 	    my $chars = 10 * 2**$z;
 	    my $tot = ceil ($chr_len/$chars);
@@ -70,11 +74,11 @@ foreach my $di ($org->data_information)
 	    #	next;
 	    my $count = 0;
 
-
-	    foreach (my $i=0; $i<= $chr_len; $i+=$chars)
+	    #go through each window at this zoom level for this chromosomal window
+	    my $seq_pos = 0;
+	    foreach (my $i=$c_start; $i< $c_start+$max_chars; $i+=$chars)
 	      {
 		$count++;
-		
 		my $cache_file        = "/opt/apache/CoGe/cache/tile";
 		$cache_file .= ".iw";
 		$cache_file .= $iw if $iw;
@@ -93,7 +97,6 @@ foreach my $di ($org->data_information)
 		$cache_file .= ".im";
 		$cache_file .= $im;
 		print "Cache file: $cache_file\n";
-
 		my $cache_object = CoGe::Accessory::Tile::Cache->new( $cache_file);
 #		$cache_object->force_retile(1);
 #		$cache_object->DEBUG(1);
@@ -102,13 +105,20 @@ foreach my $di ($org->data_information)
 		#need to 
 		# 1. delete old fill_features from chromosome object
 		# 2. modify process_nucleotides to only go to DB once and to just process a sub seq
-		process_nucleotides(start=>$i, stop=>$i+$chars-1, chr=>$chr, di=>$di->id, db=>$db, c=>$c);
+		my $clen = $i+$chars > $c_start+$max_chars ? ($c_start+$max_chars) % $chars : $chars;
+		print "clen: $clen\n";
+		process_nucleotides(start=>$i, stop=>$i+$chars-1, chr=>$chr, di=>$di->id, db=>$db, c=>$c, seq=>substr($seq, $seq_pos, $clen));
+		$seq_pos+=$clen;
+		my $t1 = new Benchmark;
 		my ($s, $e) = ($c->_region_start, $c->_region_stop);
 		print "Image $count of $tot\n";
 		print "\tRequested start-stop: ".($i)."-".($i+$chars-1)."\n";
-#		print "\tReturned  start-stop: $s-$e\n";
+		#		print "\tReturned  start-stop: $s-$e\n";
+		my $t2 = new Benchmark;
 		$c->_gd(0);
 		$c->generate_region();
+		my $img = $c->gd->png;
+		my $t3 = new Benchmark;
 		$cache_object->get_tile({x=>$i,
 					z=>$z,
 					'tile_size'=>$iw,
@@ -116,12 +126,20 @@ foreach my $di ($org->data_information)
 					di=>$di->id,
 					org_id=>$org_id,
 					v=>$version,
-					img=>$c->gd->png,
-#					img=>"test",
+					img=>$img,
 				       });
-		my $t1 = new Benchmark;
-		my $time = timestr(timediff($t1, $t0));
-		print "\tImage generation and storage took $time\n";
+		my $t4 = new Benchmark;
+		my $nt_time = timestr(timediff($t1, $t0));
+		my $gr_time = timestr(timediff($t2, $t1));
+		my $gi_time = timestr(timediff($t3, $t2));
+		my $si_time = timestr(timediff($t4, $t3));
+		print qq{
+Time to process NT:                $nt_time
+Time to generate region:           $gr_time
+Time to generate image:            $gi_time
+Time to store image:               $si_time
+
+};
 	      }
 	  }
       }
@@ -231,13 +249,13 @@ sub process_nucleotides
     my $di = $opts{di};
     my $db = $opts{db};
     my $c = $opts{c};
+    my $seq = $opts{seq};
     #process nucleotides
     $c->delete_features('fill');
-    my $seq = uc($db->get_genomic_sequence_obj->get_sequence(start=>$start, end=>$stop, chr=>$chr, info_id=>$di)); 
     my $seq_len = length $seq;
     my $chrs = int (($c->_region_stop-$c->_region_start)/$c->iw);
-    print "c start - stop:  ".$c->_region_start." - ".$c->_region_stop."  iw: ".$c->iw."\n";
-    print "\tNT chars: $chrs\n";
+#    print "c start - stop:  ".$c->_region_start." - ".$c->_region_stop."  iw: ".$c->iw."\n";
+#    print "\tNT chars: $chrs\n";
     $chrs = 1 if $chrs < 1;
     my $pos = 0;
     $start = 1 if $start < 1;
@@ -279,8 +297,11 @@ sub process_features
 #	warn "exceeded maximum number of features $MAX_FEATURES. ($feat_count requested)\nskipping.\n";
 #	return;
 #      }
-    foreach my $feat($db->get_feature_obj->get_features_in_region(start=>$start, end=>$stop, info_id=>$di, chr=>$chr))
+    my $count = 0;
+    foreach my $feat ($db->get_feature_obj->get_features_in_region(start=>$start, end=>$stop, info_id=>$di, chr=>$chr))
       {
+	$count++;
+	print "processing feature $count / $feat_count\n";
         my $f;
 #	print STDERR Dumper $feat;
 #	print STDERR "!",join ("\t", map {$_->name} $feat->names, map {$_->start."-".$_->stop} $feat->locs),"\n";
