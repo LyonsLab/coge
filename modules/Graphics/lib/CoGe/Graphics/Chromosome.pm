@@ -638,7 +638,7 @@ sub _check_overlap
       {
 	my $check = int($stop/2+$start);
 	last if ($check == $stop || $check == $start);
-	print STDERR "\tchecking $start - $check - $stop\n";
+#	print STDERR "\tchecking $start - $check - $stop\n";
 	if ($feats[$check]->start > $feat->stop)
 	  {
 	    $stop = $check;
@@ -652,7 +652,7 @@ sub _check_overlap
 	    last;
 	  }
       }
-    print STDERR "Overlap search $start - $stop\n";
+#    print STDERR "Overlap search $start - $stop\n";
     foreach my $i ($start..$stop)
     	{
 	  my $f = $feats[$i];
