@@ -21,10 +21,13 @@ $FID = $FORM->param('fid');
 $DI = $FORM->param('di');# || 61;
 $CHR = $FORM->param('chr');# || 7;
 $LOC = $FORM->param('loc') || $FORM->param('pos') || $FORM->param('x');# || 6049802;
+$LOC = 0 unless $LOC;
 $DB = new CoGe::Genome;
 print "Content-Type: text/html\n\n";
-print gen_html(featid=>$FID, loc=>$LOC, chr=>$CHR, di=>$DI);
-
+my $rhtml = gen_html(featid=>$FID, loc=>$LOC, chr=>$CHR, di=>$DI) if $LOC > 0;
+print "Position $LOC<br>";
+$rhtml = "No annotations" unless $rhtml;
+print $rhtml;
 
 sub gen_html
   {
