@@ -30,9 +30,9 @@ addEvent(G('container'),'click',query);
 var qurl = '/CoGe/FeatAnno.pl?';
 
 function query(e){
-   placeanno('<font class="loading">loading annotations. . .</font>'); 
    var xy = e.getItemXY(); 
    xy = this.pix_to_real_world(xy[0],xy[1])[0];
+   placeanno('<font class="loading">Loading annotations for position '+xy+'. . .</font>'); 
    var url = qurl + 'chr='+ G('chr').value + '&di='+G('di').value + '&loc='+ xy;
    jfetch(url,placeanno);
 }
