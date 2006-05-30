@@ -131,10 +131,10 @@ sub Show_Summary
       {
 	my $sequence = "";
 #	print STDERR Dumper $form;
-	print STDERR Dumper \%ENV;
-	print STDERR $seq_file1,"\n";
+#	print STDERR Dumper \%ENV;
+#	print STDERR $seq_file1,"\n";
 #	$form->read_multipart(undef, $ENV{'CONTENT_TYPE'});
-	print STDERR Dumper $form->uploadInfo('seq_file1');
+#	print STDERR Dumper $form->uploadInfo('seq_file1');
 	my $fh = $form->upload( 'seq_file1' );
 	while ( <$fh> ) {
 	  $sequence .= $_;
@@ -202,10 +202,10 @@ sub Show_Summary
       {
 	my $sequence = "";
 #	print STDERR Dumper $form;
-	print STDERR Dumper \%ENV;
-	print STDERR $seq_file2,"\n";
+#	print STDERR Dumper \%ENV;
+#	print STDERR $seq_file2,"\n";
 	$form->read_multipart(undef, $ENV{'CONTENT_TYPE'});
-	print STDERR Dumper $form->uploadInfo('seq_file2');
+#	print STDERR Dumper $form->uploadInfo('seq_file2');
 	my $fh = $form->upload( 'seq_file2' );
 	while ( <$fh> ) {
 	  $sequence .= $_;
