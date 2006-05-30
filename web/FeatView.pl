@@ -292,7 +292,7 @@ sub gen_pict
     my $di = $opts{'info_id'};
     my $chr = $opts{'chr'};
     my $file = $opts{'file'};
-    print STDERR Dumper @_;
+#    print STDERR Dumper @_;
     return unless ($start && $stop && $di);
     my $c = new CoGe::Graphics::Chromosome;
     my $chr_length = $DB->get_genomic_sequence_obj->get_last_position($di);
