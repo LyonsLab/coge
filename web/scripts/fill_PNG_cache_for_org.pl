@@ -36,12 +36,13 @@ my ($org) = $db->get_org_obj->search(organism_id=>$org_id);
 
 ##some limits to keep from blowing our stack
 use vars qw($MAX_FEATURES $MAX_NT);
-$MAX_FEATURES = $iw*3; #one feature per pixel
+$MAX_FEATURES = $iw*5; #one feature per pixel
 $MAX_NT       = $iw*100000; #50,000 nt per pixel
 
 foreach my $di ($org->data_information)
   {
     next if $version && $di->version ne $version;
+    $version = $di->version unless $version;
     my ($max_zoom, $chr_len, $chr) = find_max_z(di=>$di);
     next unless defined $max_zoom;
 #    $max_zoom=10;
@@ -100,7 +101,7 @@ foreach my $di ($org->data_information)
 		print "Cache file: $cache_file\n";
 		my $cache_object = CoGe::Accessory::Tile::Cache->new( $cache_file);
 #		$cache_object->force_retile(1);
-#		$cache_object->DEBUG(1);
+		$cache_object->DEBUG(1);
 		my $t0 = new Benchmark;
 		$c->set_region(start=>$i, stop=>$i+$chars-1);
 		#need to 
