@@ -26,9 +26,12 @@ SELECT DISTINCT l.chromosome
 WHERE di.data_information_id = ?
 
 });
-    __PACKAGE__->set_sql(get_associated_dids=>qq{
-SELECT DISTINCT 
-
+    __PACKAGE__->set_sql(get_feature_type_count=>qq{
+SELECT count(feature_id), ft.name 
+  FROM feature
+  JOIN feature_type ft using (feature_type_id)
+ WHERE data_information_id = ?
+ GROUP BY ft.name
 });
 }
 
@@ -242,7 +245,7 @@ sub seqs
 sub desc
   {
     my $self = shift;
-    return $self->description(@_);
+    return $self->description();
   }
 
 sub id
@@ -286,6 +289,7 @@ sub ver
     my $self = shift;
     return $self->version();
   }
+
 
 
 ################################################ subroutine header begin ##
@@ -387,6 +391,45 @@ sub get_chromosomes
       }
     $sth->finish;
     return wantarray ? keys %chrs : [keys %chrs];
+  }
+
+################################################ subroutine header begin ##
+
+=head2 get_feature_type_count
+
+ Usage     : my $hash_ref = $di->get_feature_type_count()
+ Purpose   : get a count of all the feature types contained in a data_information object
+             for example, you want to know the number of genes, mRNAs, CDS, etc contained
+             in a particular data_information set
+ Returns   : a hash ref where keys are the names of a feature type and the values are the 
+             counts of that feature type in the data information
+ Argument  : will take a data_information database id but
+             if none are specified, it will use itself
+ Throws    : none
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub get_feature_type_count
+  {
+    my $self = shift;
+    my $di = shift;
+    $di = $self->id unless $di;
+    return unless $di;
+    my %feats;
+    my $sth = $self->sql_get_feature_type_count();
+    $sth->execute($di);
+    while (my $q = $sth->fetchrow_arrayref)
+      {
+	use Data::Dumper;
+	$feats{$q->[1]} = $q->[0];
+      }
+    return \%feats;
   }
 
 1; #this line is important and will help the module return a true value
