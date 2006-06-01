@@ -550,7 +550,7 @@ sub add_feature
 
 =head2 delete_features
 
- Usage     : $c->delete_features(fill);
+ Usage     : $c->delete_features('fill');
  Purpose   : Deletes features from the object.  Either of a type (fill or regular), or all of them
  Returns   : none
  Argument  : string or none
@@ -571,8 +571,20 @@ sub delete_features
     my $type = shift;
     my $fill = 1 if !$type || $type =~ /fill/i || $type =~ /all/;
     my $reg = 1 if !$type || $type =~ /regular/i || $type =~ /all/;
-    $self->_fill_features([]) if $fill;
-    $self->_features([]) if $reg;    
+    if ($fill || $reg)
+      {
+	$self->_fill_features([]) if $fill;
+	$self->_features([]) if $reg;
+      }
+    else
+      {
+	my @feats;
+	foreach my $feat ($self->get_features(fill=>0))
+	  {
+	    push @feats, $feat unless ($feat->type && $feat->type =~ /$type/);
+	  }
+	$self->_features(\@feats);
+      }
   }
 
 
@@ -747,7 +759,7 @@ sub get_features
     my $start = $opts{start};
     my $stop  = $opts{stop};
     my $overlay  = $opts{overlay};
-
+    print Dumper \%opts;
     my @rfeats;
     my @feat_refs;
     push @feat_refs, $self->_fill_features if $fill || !(defined $fill);
@@ -774,7 +786,7 @@ sub get_features
 	  }
 	if ($type)
 	  {
-	    next unless $feat->type eq $type;
+	    next unless $feat->type && $feat->type eq $type;
 	  }
 	if ($start) {next unless $feat->start eq $start;}
 	if ($stop) {next unless $feat->stop eq $stop;}
