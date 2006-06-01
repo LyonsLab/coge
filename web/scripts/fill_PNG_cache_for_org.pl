@@ -51,6 +51,7 @@ foreach my $di ($org->data_information)
     foreach (my $c_start=0; $c_start <= $chr_len; $c_start+=$max_chars)
       {
 	my $seq = uc($db->get_genomic_sequence_obj->get_sequence(start=>$c_start, end=>$c_start+$max_chars, chr=>$chr, info_id=>$di)); 
+	my $seq_len = length $seq;
 	my $c = initialize_c(
 			     di => $di->id,
 			     chr => $chr,
@@ -78,6 +79,7 @@ foreach my $di ($org->data_information)
 
 	    #go through each window at this zoom level for this chromosomal window
 	    my $seq_pos = 0;
+
 	    foreach (my $i=$c_start; $i< $c_start+$max_chars; $i+=$chars)
 	      {
 		$count++;
@@ -107,9 +109,12 @@ foreach my $di ($org->data_information)
 		#need to 
 		# 1. delete old fill_features from chromosome object
 		# 2. modify process_nucleotides to only go to DB once and to just process a sub seq
-		my $clen = $i+$chars > $c_start+$max_chars ? ($c_start+$max_chars) % $chars : $chars;
-		print "clen: $clen\n";
-		process_nucleotides(start=>$i, stop=>$i+$chars-1, chr=>$chr, di=>$di->id, db=>$db, c=>$c, seq=>substr($seq, $seq_pos, $clen));
+		my $clen = $i+$chars > $seq_len ? ($seq_len) % $chars : $chars;
+#		print "\tclen: $clen, chars: $chars, max_chars: $max_chars\n";
+#		print "\tstart: $i($seq_pos), end: ", $i+$clen,", length: ", length $seq,"\n";
+		my $subseq = substr($seq, $seq_pos, $clen);
+#		print "\tlength subseq: ", length $subseq,"\n";
+		process_nucleotides(start=>$i, stop=>$i+$chars-1, chr=>$chr, di=>$di->id, db=>$db, c=>$c, seq=>$subseq);
 		$seq_pos+=$clen;
 		my $t1 = new Benchmark;
 		my ($s, $e) = ($c->_region_start, $c->_region_stop);
