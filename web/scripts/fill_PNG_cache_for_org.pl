@@ -61,13 +61,15 @@ foreach my $di ($org->data_information)
 			     db=>$db,
 			     z=>$max_zoom,
 			    );
+	my @cds_feats;
 	foreach my $di2 ($di->get_associated_data_infos)
 	  {
 #	    next;
-	    process_features(start=>$c_start, stop=>$c_start+$max_chars, chr=>$chr, di=>$di2->id, db=>$db,c=>$c);
+	    my $cds_feats = process_features(start=>$c_start, stop=>$c_start+$max_chars, chr=>$chr, di=>$di2->id, db=>$db,c=>$c);
+	    push @cds_feats, @$cds_feats;
 	  }
 	#go through all the zoom levels for this region
-	foreach (my $z=$max_zoom; $z >= 6; $z--)# (0..$max_zoom..0)
+	foreach (my $z=$max_zoom; $z >= 0; $z--)# (0..$max_zoom..0)
 	  {
 	    my $chars = 10 * 2**$z;
 	    my $tot = ceil ($chr_len/$chars);
@@ -75,6 +77,12 @@ foreach my $di ($org->data_information)
 	    print "$chars characters per tile at zoom level $z\n";
 	    print "Total number of images to be generated: ", $tot,"\n";
 	    #	next;
+	    $c->delete_features('aa');
+	    foreach my $feat (@cds_feats)
+	      {
+		draw_prots(genomic_feat=>$feat, c=>$c);
+	      }
+
 	    my $count = 0;
 
 	    #go through each window at this zoom level for this chromosomal window
@@ -115,6 +123,7 @@ foreach my $di ($org->data_information)
 		my $subseq = substr($seq, $seq_pos, $clen);
 #		print "\tlength subseq: ", length $subseq,"\n";
 		process_nucleotides(start=>$i, stop=>$i+$chars-1, chr=>$chr, di=>$di->id, db=>$db, c=>$c, seq=>$subseq);
+
 		$seq_pos+=$clen;
 		my $t1 = new Benchmark;
 		my ($s, $e) = ($c->_region_start, $c->_region_stop);
@@ -147,6 +156,12 @@ Time to generate image:            $gi_time
 Time to store image:               $si_time
 
 };
+		if (-r $cache_file)
+		  {
+		    #`touch $cache_file`;
+		    `chmod 666 $cache_file`;
+		  }
+
 	      }
 	  }
       }
@@ -299,6 +314,7 @@ sub process_features
     my $accn = $opts{accn};
     my $print_names = $opts{print_names};
     my $feat_count = $db->get_feature_obj->count_features_in_region(start=>$start, end=>$stop, info_id=>$di, chr=>$chr);
+    my @cds_feats;  #place to hold CDS features with protein sequences for later generation of protein sequence images;
 #    if ($MAX_FEATURES && $feat_count > $MAX_FEATURES)
 #      {
 #	warn "exceeded maximum number of features $MAX_FEATURES. ($feat_count requested)\nskipping.\n";
@@ -334,7 +350,8 @@ sub process_features
         	$f->color([0,255,0, 50]);
         	$f->order(1);
 		$f->overlay(3);
-		draw_prots(genomic_feat=>$feat, c=>$c, chrom_feat=>$f);
+#		draw_prots(genomic_feat=>$feat, c=>$c);
+		push @cds_feats, $feat;
 		if ($accn)
 		  {
 		    foreach my $name (@{$feat->{QUALIFIERS}{names}})
@@ -391,6 +408,7 @@ sub process_features
         $f->type($feat->type->name);
         $c->add_feature($f);
     }
+    return \@cds_feats;
   }
 
 sub generate_output
@@ -420,17 +438,16 @@ sub draw_prots
     my %opts = @_;
     my $feat = $opts{genomic_feat};
     my $c = $opts{c};
-    my $f = $opts{chrom_feat};
     #Do we have any protein sequence we can use?
     foreach my $seq ($feat->sequences)
       {
 	next unless $seq->seq_type->name =~ /prot/i;
 	my ($pseq) = $seq->sequence_data;
-	print STDERR "\tAdding protein sequence of length: ",length($pseq),"\n";
+	print "\tAdding protein sequence of length: ",length($pseq),"\n";
 
-#	my $chrs = int (($c->_region_stop-$c->_region_start)/$c->iw)/3;
-#	$chrs = 1 if $chrs < 1;
-	my $chrs = 1;
+	my $chrs = int (($c->_region_stop-$c->_region_start)/$c->iw)/3;
+	$chrs = 1 if $chrs < 1;
+#	my $chrs = 1;
 	my $pos = 0;
 	while ($pos <= length $pseq)
 	  {
@@ -439,6 +456,7 @@ sub draw_prots
 	      {
 		my $ao = CoGe::Graphics::Feature::AminoAcid->new({aa=>$aseq, start=>$loc->start, stop=>$loc->stop, strand => $loc->strand, order=>2});
 		$ao->skip_overlap_search(1);
+		$ao->type('aa');
 		$c->add_feature($ao);
 		delete $loc->{__Changed}; #silence the warning from Class::DBI
 	      }
