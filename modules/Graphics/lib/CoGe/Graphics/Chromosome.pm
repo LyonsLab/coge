@@ -1328,7 +1328,7 @@ See Also   : Accessor functions $self->chr_outer_color, $self->chr_inner_color
 sub chr_brush
   {
     my $self = shift;
-    return $self->_chr_brush if $self->_chr_brush;
+#    return $self->_chr_brush if $self->_chr_brush;
     my $mag = $self->mag;
     my @bc = @{$self->chr_outer_color()};
     my @ic = @{$self->chr_inner_color()};
