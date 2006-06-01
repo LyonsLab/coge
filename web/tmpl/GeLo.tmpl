@@ -6,9 +6,17 @@ function dataset_chain() {
 }
 
 function dataset_info_chain(val) {
- kaj.GS('di_info','<font class="loading">loading. . .</font>')
+ kaj.GS('di_info','<font class="loading">loading. . .</font>');
+ kaj.GS('viewer','<font class="loading"></font>');
  if (val) {kaj.GS('di_list', val);}
- get_data_info_info(['di_id'],['di_info']);
+ get_data_info_info(['di_id'],['di_info', 'viewer']);
+}
+
+function launch_viewer (did, chr) {
+ x = kaj.G('x');
+ z = kaj.G('z');
+ link =  "GeLo.pl?z="+z+"&x="+x+"&di="+did+"&chr="+chr;
+ window.location=link;
 }
 
 </script>
@@ -17,7 +25,7 @@ function dataset_info_chain(val) {
   <TD valign=top>
    <DIV class = "oblique">Organisms</DIV>
    <DIV id="org_list"><TMPL_VAR NAME="ORG_LIST"></DIV>
-
+   <DIV id="viewer"></DIV>
   <TD valign=top>
    <DIV class = "oblique">Datasets</DIV>
    <DIV id="di_list"><TMPL_VAR NAME="DI_LIST"></DIV>
