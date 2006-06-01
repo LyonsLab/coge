@@ -57,7 +57,7 @@ sub gen_html
     $template->param(DATE=>$DATE);
     $template->param(LOGO_PNG=>"GeLo-logo.png");
     $template->param(BODY=>$body);
-    $template->param(HEAD=>'<SCRIPT language="JavaScript" type="text/javascript" src="./js/kaj.stable.js"></SCRIPT>');
+#    $template->param(HEAD=>'<SCRIPT language="JavaScript" type="text/javascript" src="./js/kaj.stable.js"></SCRIPT>');
     my $html;
     $html .= $template->output;
     return $html;
@@ -108,7 +108,7 @@ sub get_data_info
     my @opts = map {"<OPTION value=\"".$_->id."\">".$_->name. " (v".$_->version.")</OPTION>"} sort {$b->version cmp $a->version || $a->name cmp $b->name} $org->data_info;
     my $html;
     $html .= qq{<FONT CLASS ="small">Dataset count: }.scalar @opts.qq{</FONT>\n<BR>\n};
-    $html .= qq{<SELECT id="di_id" SIZE="5" MULTIPLE onChange="gen_data(['args__loading. . .'],['di_info']); get_data_info_info(['di_id'],['di_info'])" >\n};
+    $html .= qq{<SELECT id="di_id" SIZE="5" MULTIPLE onChange="gen_data(['args__loading. . .'],['di_info']); get_data_info_info(['di_id'],['di_info','viewer'])" >\n};
     $html .= join ("\n", @opts);
     $html .= "\n</SELECT>\n";
     $html =~ s/OPTION/OPTION SELECTED/;
@@ -130,6 +130,30 @@ sub get_data_info_info
     $html .= qq{<TR><TD>Data Source:<TD>$ds}."\n";
     $html .= qq{<tr><td>Version:<td>}.$di->version."\n";
     my @chr = $DB->get_genomic_seq_obj->get_chromosome_for_data_information($di);
+    my $viewer;
+
+    if (@chr)
+      {
+#	$viewer .= "<form>";
+	$viewer .= qq{<input type="hidden" id="di" value="$did">};
+	$viewer .= qq{<input type="hidden" id="chr" value="$chr[0]">};
+	$viewer .= qq{<input type="hidden" id="z" value="7">};
+	$viewer .= "<br><br>";
+	$viewer .= "<font class=\"oblique\">GeLo Viewer Launcher</font><br>";
+	$viewer .= "<table>";
+	$viewer .= "<tr><td class = \"ital\">Starting location: ";
+	$viewer .= qq{<td><input type="text" size=10 value="1000" id="x">};
+#	$viewer .= qq{<tr><td class = \"ital\">Zoom level:};
+#	$viewer .= qq{<td><select id="z">};
+#	my @opts = map {"<OPTION>".$_."</OPTION>"} (5..10);
+#	$viewer .= join ("\n", @opts);
+#	$viewer =~ s/OPTION/OPTION SELECTED/;
+#	$viewer .= qq{</select>};
+	$viewer .= "</table>";
+	$viewer .= qq{<input type="submit" value = "Launch!" onClick="launch_viewer($did, $chr[0])">};
+#	$viewer .= "</form>";
+      }
+
     push @chr, "no genomic sequence" unless @chr;
     $html .= qq{<tr><td>Chromosome};
     $html .= "s" if scalar @chr > 1;
@@ -138,11 +162,10 @@ sub get_data_info_info
     my $length = commify( $DB->get_genomic_seq_obj->get_last_position($di) );
     $html .= qq{<tr><td>Nucleotides:<td>$length} if defined $length;
     my $feats = $di->get_feature_type_count;
-    print STDERR Dumper $feats;
     $html .= qq{<tr><td valign=top>Features:<td><table>};
     $html .= join ("\n<tr>",map {"<td>$_<td>".$feats->{$_} } sort {$feats->{$b}<=> $feats->{$a}} keys %$feats);
     $html .= "</table>";
-    return $html;
+    return $html, $viewer;
   }
 
 sub gen_data
