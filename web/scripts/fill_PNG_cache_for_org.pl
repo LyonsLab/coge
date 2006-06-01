@@ -17,9 +17,9 @@ use POSIX;
 use Benchmark;
 
 
-my ($org_id, $version,$iw);
+my (@org_ids, $version,$iw);
 
-GetOptions("oid=s"=>\$org_id,
+GetOptions("oid=s"=>\@org_ids,
 	   "v=s" => \$version,
 	   "iw=s"=>\$iw,
 #	   "z|zoom=s" => \$zoom,
@@ -32,136 +32,146 @@ GetOptions("oid=s"=>\$org_id,
 #$url .= "/CoGe/tiler.pl";
 $iw = 256 unless $iw;
 my $db = new CoGe::Genome;
-my ($org) = $db->get_org_obj->search(organism_id=>$org_id);
 
 ##some limits to keep from blowing our stack
 use vars qw($MAX_FEATURES $MAX_NT);
 $MAX_FEATURES = $iw*5; #one feature per pixel
 $MAX_NT       = $iw*100000; #50,000 nt per pixel
 
-foreach my $di ($org->data_information)
+unless (@org_ids)
   {
-    next if $version && $di->version ne $version;
-    $version = $di->version unless $version;
-    my ($max_zoom, $chr_len, $chr) = find_max_z(di=>$di);
-    next unless defined $max_zoom;
-#    $max_zoom=10;
-    my $max_chars = 10 * 2**$max_zoom;
-    #march through windows on the chromosome of size max_chars
-    foreach (my $c_start=0; $c_start <= $chr_len; $c_start+=$max_chars)
+    @org_ids = $db->get_org_obj->retrieve_all();
+  }
+foreach my $org_id (@org_ids)
+  {
+    my ($org) = ref ($org_id) =~ /org/i ? $org_id :$db->get_org_obj->retrieve($org_id);
+    print $org->name,"\n";
+    next;
+    foreach my $di ($org->data_information)
       {
-	my $seq = uc($db->get_genomic_sequence_obj->get_sequence(start=>$c_start, end=>$c_start+$max_chars, chr=>$chr, info_id=>$di)); 
-	my $seq_len = length $seq;
-	my $c = initialize_c(
-			     di => $di->id,
-			     chr => $chr,
-			     iw => $iw,
-			     start => $c_start,
-			     stop => $c_start+$max_chars,
-			     db=>$db,
-			     z=>$max_zoom,
-			    );
-	my @cds_feats;
-	foreach my $di2 ($di->get_associated_data_infos)
+	next if $version && $di->version ne $version;
+	$version = $di->version unless $version;
+	my ($max_zoom, $chr_len, $chr) = find_max_z(di=>$di);
+	next unless defined $max_zoom;
+	#    $max_zoom=10;
+	my $max_chars = 10 * 2**$max_zoom;
+	#march through windows on the chromosome of size max_chars
+	foreach (my $c_start=0; $c_start <= $chr_len; $c_start+=$max_chars)
 	  {
-#	    next;
-	    my $cds_feats = process_features(start=>$c_start, stop=>$c_start+$max_chars, chr=>$chr, di=>$di2->id, db=>$db,c=>$c);
-	    push @cds_feats, @$cds_feats;
-	  }
-	#go through all the zoom levels for this region
-	foreach (my $z=$max_zoom; $z >= 0; $z--)# (0..$max_zoom..0)
-	  {
-	    my $chars = 10 * 2**$z;
-	    my $tot = ceil ($chr_len/$chars);
-	    print "Total number of bp: $chr_len\n";
-	    print "$chars characters per tile at zoom level $z\n";
-	    print "Total number of images to be generated: ", $tot,"\n";
-	    #	next;
-	    $c->delete_features('aa');
-	    foreach my $feat (@cds_feats)
+	    my $seq = uc($db->get_genomic_sequence_obj->get_sequence(start=>$c_start, end=>$c_start+$max_chars, chr=>$chr, info_id=>$di)); 
+	    my $seq_len = length $seq;
+	    my $c = initialize_c(
+				 di => $di->id,
+				 chr => $chr,
+				 iw => $iw,
+				 start => $c_start,
+				 stop => $c_start+$max_chars,
+				 db=>$db,
+				 z=>$max_zoom,
+				);
+	    my @cds_feats;
+	    foreach my $di2 ($di->get_associated_data_infos)
 	      {
-		draw_prots(genomic_feat=>$feat, c=>$c);
+		#	    next;
+		my $cds_feats = process_features(start=>$c_start, stop=>$c_start+$max_chars, chr=>$chr, di=>$di2->id, db=>$db,c=>$c);
+		push @cds_feats, @$cds_feats;
 	      }
-
-	    my $count = 0;
-
-	    #go through each window at this zoom level for this chromosomal window
-	    my $seq_pos = 0;
-
-	    foreach (my $i=$c_start; $i< $c_start+$max_chars; $i+=$chars)
+	    #go through all the zoom levels for this region
+	    foreach (my $z=$max_zoom; $z >= 0; $z--)# (0..$max_zoom..0)
 	      {
-		$count++;
-		my $cache_file        = "/opt/apache/CoGe/cache/tile";
-		$cache_file .= ".iw";
-		$cache_file .= $iw if $iw;
-		$cache_file .= ".z";
-		$cache_file .= $z if $z;
-		$cache_file .= ".di";
-		$cache_file .= $di->id if $di;
-		$cache_file .= ".chr";
-		$cache_file .= $chr if $chr;
-		$cache_file .= ".oid";
-		$cache_file .= $org_id if $org_id;
-		$cache_file .= ".v";
-		$cache_file .= $version if $version;
-		my $chra = 10*2**$z;
-		my $im = floor($i/($chra*1000));
-		$cache_file .= ".im";
-		$cache_file .= $im;
-		print "Cache file: $cache_file\n";
-		my $cache_object = CoGe::Accessory::Tile::Cache->new( $cache_file);
-#		$cache_object->force_retile(1);
-		$cache_object->DEBUG(1);
-		my $t0 = new Benchmark;
-		$c->set_region(start=>$i, stop=>$i+$chars-1);
-		#need to 
-		# 1. delete old fill_features from chromosome object
-		# 2. modify process_nucleotides to only go to DB once and to just process a sub seq
-		my $clen = $i+$chars > $seq_len ? ($seq_len) % $chars : $chars;
-#		print "\tclen: $clen, chars: $chars, max_chars: $max_chars\n";
-#		print "\tstart: $i($seq_pos), end: ", $i+$clen,", length: ", length $seq,"\n";
-		my $subseq = substr($seq, $seq_pos, $clen);
-#		print "\tlength subseq: ", length $subseq,"\n";
-		process_nucleotides(start=>$i, stop=>$i+$chars-1, chr=>$chr, di=>$di->id, db=>$db, c=>$c, seq=>$subseq);
-
-		$seq_pos+=$clen;
-		my $t1 = new Benchmark;
-		my ($s, $e) = ($c->_region_start, $c->_region_stop);
-		print "Image $count of $tot\n";
-		print "\tRequested start-stop: ".($i)."-".($i+$chars-1)."\n";
-		#		print "\tReturned  start-stop: $s-$e\n";
-		my $t2 = new Benchmark;
-		$c->_gd(0);
-		$c->generate_region();
-		my $img = $c->gd->png;
-		my $t3 = new Benchmark;
-		$cache_object->get_tile({x=>$i,
-					z=>$z,
-					'tile_size'=>$iw,
-					chr=>$chr,
-					di=>$di->id,
-					org_id=>$org_id,
-					v=>$version,
-					img=>$img,
-				       });
-		my $t4 = new Benchmark;
-		my $nt_time = timestr(timediff($t1, $t0));
-		my $gr_time = timestr(timediff($t2, $t1));
-		my $gi_time = timestr(timediff($t3, $t2));
-		my $si_time = timestr(timediff($t4, $t3));
+		my $chars = 10 * 2**$z;
+		my $tot = ceil ($max_chars/$chars);
+		print "Total number of bp: $chr_len\n";
+		print "$chars characters per tile at zoom level $z\n";
+		print "Total number of images to be generated: ", $tot,"\n";
+		#	next;
+		$c->delete_features('aa');
+		my $ta = new Benchmark;
+		foreach my $feat (@cds_feats)
+		  {
+		    draw_prots(genomic_feat=>$feat, c=>$c);
+		  }
+		my $tb = new Benchmark;
+		my $count = 0;
+		
+		my $clen = $c_start+$max_chars > $seq_len ? ($seq_len) % $max_chars : $max_chars;
+		#		print "\tclen: $clen, chars: $chars, max_chars: $max_chars\n";
+		#		print "\tstart: $i($seq_pos), end: ", $i+$clen,", length: ", length $seq,"\n";
+		my $subseq = substr($seq, $c_start, $clen);
+		#		print "\tlength subseq: ", length $subseq,"\n";
+		$c->set_region(start=>0, stop=>$chars);
+		process_nucleotides(start=>$c_start, chr=>$chr, di=>$di->id, db=>$db, c=>$c, seq=>$subseq);
+		my $tc = new Benchmark;
+		my $pr_time = timestr(timediff($tb, $ta));
+		my $nt_time = timestr(timediff($tc, $tb));
 		print qq{
-Time to process NT:                $nt_time
+Time to process proteins           $pr_time
+Time to process nucleotides        $nt_time
+};
+		
+		#go through each window at this zoom level for this chromosomal window
+		foreach (my $i=$c_start; $i< $c_start+$max_chars; $i+=$chars)
+		  {
+		    $count++;
+		    my $cache_file        = "/opt/apache/CoGe/cache/tile";
+		    $cache_file .= ".iw";
+		    $cache_file .= $iw if $iw;
+		    $cache_file .= ".z";
+		    $cache_file .= $z if $z;
+		    $cache_file .= ".di";
+		    $cache_file .= $di->id if $di;
+		    $cache_file .= ".chr";
+		    $cache_file .= $chr if $chr;
+		    $cache_file .= ".oid";
+		    $cache_file .= $org_id if $org_id;
+		    $cache_file .= ".v";
+		    $cache_file .= $version if $version;
+		    my $chra = 10*2**$z;
+		    my $im = floor($i/($chra*1000));
+		    $cache_file .= ".im";
+		    $cache_file .= $im;
+		    print "Cache file: $cache_file\n";
+		    my $cache_object = CoGe::Accessory::Tile::Cache->new( $cache_file);
+		    #		$cache_object->force_retile(1);
+		    $cache_object->DEBUG(1);
+		    #		my $t0 = new Benchmark;
+		    $c->set_region(start=>$i, stop=>$i+$chars-1);
+		    my $t1 = new Benchmark;
+		    my ($s, $e) = ($c->_region_start, $c->_region_stop);
+		    print "Image $count of $tot";
+		    print "\t(range: ".($i)."-".($i+$chars-1).")\n";
+		    #		print "\tReturned  start-stop: $s-$e\n";
+		    $c->_gd(0);
+		    $c->generate_region();
+		    my $t2 = new Benchmark;
+		    my $img = $c->gd->png;
+		    my $t3 = new Benchmark;
+		    $cache_object->get_tile({x=>$i,
+					     z=>$z,
+					     'tile_size'=>$iw,
+					     chr=>$chr,
+					     di=>$di->id,
+					     org_id=>$org_id,
+					     v=>$version,
+					     img=>$img,
+					    });
+		    my $t4 = new Benchmark;
+		    #		my $nt_time = timestr(timediff($t1, $t0));
+		    my $gr_time = timestr(timediff($t2, $t1));
+		    my $gi_time = timestr(timediff($t3, $t2));
+		    my $si_time = timestr(timediff($t4, $t3));
+		    print qq{
 Time to generate region:           $gr_time
 Time to generate image:            $gi_time
 Time to store image:               $si_time
 
 };
-		if (-r $cache_file)
-		  {
-		    #`touch $cache_file`;
-		    `chmod 666 $cache_file`;
+		    if (-r $cache_file)
+		      {
+			#`touch $cache_file`;
+			`chmod 666 $cache_file`;
+		      }
 		  }
-
 	      }
 	  }
       }
@@ -262,11 +272,6 @@ sub process_nucleotides
   {
     my %opts = @_;
     my $start = $opts{start};
-    my $stop = $opts{stop};
-#    if ($MAX_NT && abs ($stop-$start) > $MAX_NT)
-#      {
-#	warn "exceeded nucleotide limit of $MAX_NT (requested: ".abs($stop-$start).")\n";
-#      }
     my $chr = $opts{chr};
     my $di = $opts{di};
     my $db = $opts{db};
