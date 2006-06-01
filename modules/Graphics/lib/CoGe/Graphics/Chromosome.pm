@@ -759,7 +759,6 @@ sub get_features
     my $start = $opts{start};
     my $stop  = $opts{stop};
     my $overlay  = $opts{overlay};
-    print Dumper \%opts;
     my @rfeats;
     my @feat_refs;
     push @feat_refs, $self->_fill_features if $fill || !(defined $fill);
