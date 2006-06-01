@@ -29,11 +29,15 @@ my @actions = (
 	       {
 		ACTION => qq{<a href="./MSAView.pl">Multiple Sequence Alignment Viewer</a>},
 		DESC   => qq{Allows users to submit a multiple sequence alignment in FASTA format (if people would like additional formats, please request via e-mail) in order to quickly check the alignment, find conserved regions, etc.  This program also generates a consensus sequence from the alignment and displays some basic statistics about the alignment.},
-		},
+	       },
 	       {
 		ACTION => qq{<a href="./TreeView.pl">Phylogenetic Tree Viewer</a>},
-		DESC   => qq{Allows users to submit a tree file and get a graphical view of their tree.  There is support for drawing rooted and unrooted trees, zooming and unzooming functions, and coloring and shaping nodes based on user specifications. },
-		},
+		DESC   => qq{Allows users to submit a tree file and get a graphical view of their tree.  There is support for drawing rooted and unrooted trees, zooming and unzooming functions, and coloring and shaping nodes based on user specifications.},
+	       },
+	       {
+		ACTION => qq{<a href="./GeLo.pl">Genome Location Viewer</a>},
+		DESC   => qq{Allows users to get an overview of organisms in genomes database and provides a dynamic, interactive browser of genomic information.},
+	       },
 	      );
 $template->param(ACTIONS=>[@actions]);
 
