@@ -348,7 +348,6 @@ Tiler.prototype = {
      var url = this.tiler;
    //     url = 'http://biocon.berkeley.edu/CoGe/GenomePNG.pl?&simple=1';
      var rwxy = this.pix_to_real_world(left,top);
-
      // other parameters are gather from HTML elements with
      // NON_SPATIAL_PARS_NAME
      var urlpars = this.NON_SPATIAL_PARS_NAME; 
@@ -427,6 +426,7 @@ Tiler.prototype = {
   normalize_xy : function(x,y,z){
      z = z ? z : this.zoomLevel;
      var txy = this.tile_from_xyz(x,y,z);
+
      // txy[2] is units per tile;
      var upt = txy[2];
      var x = txy[0]*upt[0];
