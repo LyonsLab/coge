@@ -7,7 +7,7 @@ use CGI qw/:standard/;
 use POSIX;
 
 my $form = new CGI;
-my $x = $form->param('x') || $form->param('start');
+my $x = $form->param('x') || $form->param('start') || 0;
 my $z = $form->param('z');
 my $iw = $form->param('iw') || $form->param('width') || $form->param('tile size')|| $form->param('tile_size');
 my $di = $form->param('di');
@@ -29,7 +29,7 @@ my $cache_file        = "/opt/apache/CoGe/cache/tile";
 $cache_file .= ".iw";
 $cache_file .= $iw if $iw;
 $cache_file .= ".z";
-$cache_file .= $z if $z;
+$cache_file .= $z if defined $z;
 $cache_file .= ".di";
 $cache_file .= $di if $di;
 $cache_file .= ".chr";
