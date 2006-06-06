@@ -17,15 +17,16 @@ use POSIX;
 use Benchmark;
 
 
-my (@org_ids, $version,$iw);
+my (@org_ids, $version,$iw, $min_zoom);
 
 GetOptions("oid=s"=>\@org_ids,
 	   "v=s" => \$version,
 	   "iw=s"=>\$iw,
+	   "min_zoom|mz=s"=>\$min_zoom,
 #	   "z|zoom=s" => \$zoom,
 #	   "u|url=s" => \$url
 	   );
-
+$min_zoom = 0 unless $min_zoom;
 
 #$url = "synteny.cnr.berkeley.edu" unless $url;
 #$url = "http://" .$url unless $url =~ /http:\/\//;
@@ -45,19 +46,20 @@ unless (@org_ids)
 foreach my $org_id (@org_ids)
   {
     my ($org) = ref ($org_id) =~ /org/i ? $org_id :$db->get_org_obj->retrieve($org_id);
-    print $org->name,"\n";
-    next;
+    print "working on: ".$org->name,"\n";
     foreach my $di ($org->data_information)
       {
 	next if $version && $di->version ne $version;
 	$version = $di->version unless $version;
 	my ($max_zoom, $chr_len, $chr) = find_max_z(di=>$di);
+	print "Total number of bp for chr $chr: $chr_len\n";
 	next unless defined $max_zoom;
 	#    $max_zoom=10;
 	my $max_chars = 10 * 2**$max_zoom;
 	#march through windows on the chromosome of size max_chars
 	foreach (my $c_start=0; $c_start <= $chr_len; $c_start+=$max_chars)
 	  {
+	    print "Working on chromosome chunk $c_start - ", $c_start+$max_chars,"\n";
 	    my $seq = uc($db->get_genomic_sequence_obj->get_sequence(start=>$c_start, end=>$c_start+$max_chars, chr=>$chr, info_id=>$di)); 
 	    my $seq_len = length $seq;
 	    my $c = initialize_c(
@@ -73,15 +75,15 @@ foreach my $org_id (@org_ids)
 	    foreach my $di2 ($di->get_associated_data_infos)
 	      {
 		#	    next;
-		my $cds_feats = process_features(start=>$c_start, stop=>$c_start+$max_chars, chr=>$chr, di=>$di2->id, db=>$db,c=>$c);
+		my $cds_feats = process_features(start=>$c_start, stop=>$c_start+$max_chars-1, chr=>$chr, di=>$di2->id, db=>$db,c=>$c);
 		push @cds_feats, @$cds_feats;
 	      }
 	    #go through all the zoom levels for this region
-	    foreach (my $z=$max_zoom; $z >= 0; $z--)# (0..$max_zoom..0)
+	    foreach (my $z=$max_zoom; $z >= $min_zoom; $z--)# (0..$max_zoom..0)
+#	    foreach (my $z=0; $z >= 0; $z--)# (0..$max_zoom..0)
 	      {
 		my $chars = 10 * 2**$z;
 		my $tot = ceil ($max_chars/$chars);
-		print "Total number of bp: $chr_len\n";
 		print "$chars characters per tile at zoom level $z\n";
 		print "Total number of images to be generated: ", $tot,"\n";
 		#	next;
@@ -92,75 +94,115 @@ foreach my $org_id (@org_ids)
 		    draw_prots(genomic_feat=>$feat, c=>$c);
 		  }
 		my $tb = new Benchmark;
-		my $count = 0;
-		
-		my $clen = $c_start+$max_chars > $seq_len ? ($seq_len) % $max_chars : $max_chars;
-		#		print "\tclen: $clen, chars: $chars, max_chars: $max_chars\n";
-		#		print "\tstart: $i($seq_pos), end: ", $i+$clen,", length: ", length $seq,"\n";
-		my $subseq = substr($seq, $c_start, $clen);
-		#		print "\tlength subseq: ", length $subseq,"\n";
-		$c->set_region(start=>0, stop=>$chars);
-		process_nucleotides(start=>$c_start, chr=>$chr, di=>$di->id, db=>$db, c=>$c, seq=>$subseq);
-		my $tc = new Benchmark;
+		my $count = 0;		
 		my $pr_time = timestr(timediff($tb, $ta));
-		my $nt_time = timestr(timediff($tc, $tb));
 		print qq{
 Time to process proteins           $pr_time
-Time to process nucleotides        $nt_time
 };
-		
+		my $seq_pos = 0;
 		#go through each window at this zoom level for this chromosomal window
-		foreach (my $i=$c_start; $i< $c_start+$max_chars; $i+=$chars)
+		my $stop = $c_start+$max_chars > $chr_len ? $chr_len : $c_start+$max_chars;
+		foreach (my $i=$c_start; $i< $stop; $i+=$chars)
 		  {
 		    $count++;
 		    my $cache_file        = "/opt/apache/CoGe/cache/tile";
 		    $cache_file .= ".iw";
-		    $cache_file .= $iw if $iw;
+		    $cache_file .= $iw if defined $iw;
 		    $cache_file .= ".z";
-		    $cache_file .= $z if $z;
+		    $cache_file .= $z if defined $z;
 		    $cache_file .= ".di";
 		    $cache_file .= $di->id if $di;
 		    $cache_file .= ".chr";
-		    $cache_file .= $chr if $chr;
+		    $cache_file .= $chr if defined $chr;
 		    $cache_file .= ".oid";
-		    $cache_file .= $org_id if $org_id;
+		    $cache_file .= $org_id if defined $org_id;
 		    $cache_file .= ".v";
-		    $cache_file .= $version if $version;
+		    $cache_file .= $version if defined $version;
 		    my $chra = 10*2**$z;
 		    my $im = floor($i/($chra*1000));
 		    $cache_file .= ".im";
 		    $cache_file .= $im;
-		    print "Cache file: $cache_file\n";
 		    my $cache_object = CoGe::Accessory::Tile::Cache->new( $cache_file);
 		    #		$cache_object->force_retile(1);
 		    $cache_object->DEBUG(1);
-		    #		my $t0 = new Benchmark;
+		    if ($cache_object->get_tile_from_db({x=>$i,
+							 z=>$z,
+							 'tile_size'=>$iw,
+							 chr=>$chr,
+							 di=>$di->id,
+							 org_id=>$org_id,
+							 v=>$version,
+							}))
+		      {
+			print "image exists.  Skipping\n";
+			next;
+		      }
+		    
+
+		    my $t0 = new Benchmark;
+		    my $clen = $chars;
+		    if ($i+$chars > $c_start+$max_chars)
+		      {
+			$clen = ($max_chars) % $chars;
+		      }
+		    elsif ($i == 0)
+		      {
+			$clen = $chars-1;
+		      }
+		    else
+		      {
+			$clen = $chars;
+		      }
+		    my $subseq = substr($seq, $seq_pos, $clen);
+		    
+		    print "Cache file: $cache_file\n";
+		    print "\tclen: $clen, chars: $chars, max_chars: $max_chars, seq_len: $seq_len\n";
+		    print "\tstart: ",$i,"($seq_pos), end: ", $i+$clen-1,", length: ", length $subseq,"\n\n";
+		    print "\tlength subseq: ", length $subseq,"\n";
+
+ 		    $seq_pos+=$clen;
+# 		    next;
+
 		    $c->set_region(start=>$i, stop=>$i+$chars-1);
+		    process_nucleotides(start=>$c_start+$i, chr=>$chr, di=>$di->id, db=>$db, c=>$c, seq=>$subseq);
+
 		    my $t1 = new Benchmark;
+
 		    my ($s, $e) = ($c->_region_start, $c->_region_stop);
 		    print "Image $count of $tot";
 		    print "\t(range: ".($i)."-".($i+$chars-1).")\n";
-		    #		print "\tReturned  start-stop: $s-$e\n";
 		    $c->_gd(0);
 		    $c->generate_region();
 		    my $t2 = new Benchmark;
 		    my $img = $c->gd->png;
 		    my $t3 = new Benchmark;
-		    $cache_object->get_tile({x=>$i,
-					     z=>$z,
-					     'tile_size'=>$iw,
-					     chr=>$chr,
-					     di=>$di->id,
-					     org_id=>$org_id,
-					     v=>$version,
-					     img=>$img,
-					    });
+		    while (!$cache_object->get_tile_from_db({x=>$i,
+							     z=>$z,
+							     'tile_size'=>$iw,
+							     chr=>$chr,
+							     di=>$di->id,
+							     org_id=>$org_id,
+							     v=>$version,
+							    }))
+		      {
+			$cache_object->get_tile({x=>$i,
+						 z=>$z,
+						 'tile_size'=>$iw,
+						 chr=>$chr,
+						 di=>$di->id,
+						 org_id=>$org_id,
+						 v=>$version,
+						 img=>$img,
+						});
+		      }
+
 		    my $t4 = new Benchmark;
-		    #		my $nt_time = timestr(timediff($t1, $t0));
+		    my $nt_time = timestr(timediff($t1, $t0));
 		    my $gr_time = timestr(timediff($t2, $t1));
 		    my $gi_time = timestr(timediff($t3, $t2));
 		    my $si_time = timestr(timediff($t4, $t3));
 		    print qq{
+Time to process nuclrotides:       $nt_time
 Time to generate region:           $gr_time
 Time to generate image:            $gi_time
 Time to store image:               $si_time
@@ -280,19 +322,20 @@ sub process_nucleotides
     #process nucleotides
     $c->delete_features('fill');
     my $seq_len = length $seq;
-    my $chrs = int (($c->_region_stop-$c->_region_start)/$c->iw);
+    my $chrs = int (($c->find_size_for_magnification)/$c->iw);
+#    print "\tst:", $c->_region_stop, "-", $c->_region_start,"\n";
 #    print "c start - stop:  ".$c->_region_start." - ".$c->_region_stop."  iw: ".$c->iw."\n";
 #    print "\tNT chars: $chrs\n";
     $chrs = 1 if $chrs < 1;
     my $pos = 0;
     $start = 1 if $start < 1;
-    my $tot = ceil ($seq_len/$chrs);
     my $count = 0;
     while ($pos < $seq_len)
       {
 	$count++;
-#	print "working on genomic sequence feature $count / $tot\n";
         my $subseq = substr ($seq, $pos, $chrs);
+
+#	print "$count: $subseq\tsl: $seq_len\t ssl: ". length $subseq,"\n";
         my $rcseq = substr ($seq, $pos, $chrs);
         $rcseq =~ tr/ATCG/TAGC/;
         next unless $subseq && $rcseq;
@@ -448,7 +491,7 @@ sub draw_prots
       {
 	next unless $seq->seq_type->name =~ /prot/i;
 	my ($pseq) = $seq->sequence_data;
-	print "\tAdding protein sequence of length: ",length($pseq),"\n";
+	print "\tAdding protein sequence of length: ",length($pseq),". . .";
 
 	my $chrs = int (($c->_region_stop-$c->_region_start)/$c->iw)/3;
 	$chrs = 1 if $chrs < 1;
@@ -468,5 +511,6 @@ sub draw_prots
 	    
 	    $pos+=$chrs;
 	  }
+	print "Done!\n";
       }
   }
