@@ -22,7 +22,7 @@ my $db = new CoGe::Genome;
 my $c = new CoGe::Graphics::Chromosome;
 my $start = $form->param('start') || $form->param('x') ||0;#28520458;
 my $stop = $form->param('stop');# || 6948000;#6949600;#190000;
-$start = 1 unless $start;
+$start = 1 unless defined $start;
 #$stop = $start unless $stop;
 my $di = $form->param('di');
 my $version = $form->param('v') || $form->param('version');
@@ -40,13 +40,14 @@ my $feat_start_height = $form->param('fsh') || 10;
 my $feat_mag_height = $form->param('fmh') || 2;
 my $BENCHMARK = $form->param('bm') || 0;
 
+
 ##some limits to keep from blowing our stack
 use vars qw($MAX_FEATURES $MAX_NT);
 $MAX_FEATURES = $iw*10; #one feature per pixel
 $MAX_NT       = $iw*100000; #50,000 nt per pixel
 
 
-unless ($start && $di && $chr)
+unless (defined $start && $di && $chr)
   {
     print STDERR "missing needed parameters: Start: $start, Stop: $stop, Info_id: $di, Chr: $chr\n";
   }
@@ -217,6 +218,7 @@ sub process_nucleotides
     my $di = $opts{di};
     my $db = $opts{db};
     my $c = $opts{c};
+#    print STDERR "IN $0: start: $start, stop: $stop\n";
     #process nucleotides
     my $seq = uc($db->get_genomic_sequence_obj->get_sequence(start=>$start, end=>$stop, chr=>$chr, info_id=>$di)); 
     my $seq_len = length $seq;
