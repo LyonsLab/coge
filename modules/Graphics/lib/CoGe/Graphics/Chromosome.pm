@@ -421,7 +421,7 @@ sub set_region
     my %opts = @_;
     my $start = $opts{start} || $opts{begin} || $opts{START} || $opts{BEGIN} 
       || $opts{center} || $opts{CENTER} 
-	|| $opts{point} || $opts{POINT} || 1;
+	|| $opts{point} || $opts{POINT} || 0;
 #	  ||$self->start || 0;
     my $end = $opts{stop} || $opts{end} || $opts{STOP} || $opts{END};# || $self->stop;
 #    $self->start($start);
@@ -1483,23 +1483,21 @@ sub _draw_chromosome
     $ch = $ch/2; #want half the height for the rest of the calcs
     my $hc = $self->_image_h_used+($self->ih-$self->_image_h_used)/2; #height of center of chromsome image
     my $w = $self->iw; #width of image
-    print STDERR "\nChromosome image: Height/2: $ch, Height Center: $hc\n" if $self->DEBUG;
-    my $xs = $self->_region_start < 1 ? $w*abs($self->_region_start)/($self->_region_stop - $self->_region_start): 0;
-    my $xe = $self->_region_stop > $self->chr_length ? $w-$w*($self->_region_stop - $self->chr_length)/($self->_region_stop - $self->_region_start) : $w;
-#    $gd->filledRectangle($xs,$hc-$ch,$xe, $hc+$ch,$self->get_color(@{$self->chr_inner_color}));
+    my $xs = $self->_region_start < 1 ? $w*abs(1-$self->_region_start)/($self->_region_stop - $self->_region_start): 0;
+    my $xe = $self->_region_stop > $self->chr_length ? $w-$w*($self->_region_stop - $self->chr_length-1)/($self->_region_stop - $self->_region_start) : $w;
+    print STDERR "\nChromosome image: Height/2: $ch, Height Center: $hc, xs: $xs, xe:\n" if $self->DEBUG;
     
-
+    
     return unless $self->draw_chromosome; #do we draw the chromsome picture?
-
-    $gd->setBrush($self->chr_brush);
-    $gd->line($xs, $hc-$ch, $xe, $hc-$ch, gdBrushed);
-    $self->chr_brush->flipVertical();
-    $gd->setBrush($self->chr_brush);
-    $gd->line($xs, $hc+$ch, $xe, $hc+$ch, gdBrushed);
-    $self->chr_brush->flipVertical();
+    my $brush = $self->chr_brush;
+    $gd->setBrush($brush);
+    $gd->line($xs, $hc-$ch, $xe, $hc-$ch, gdBrushed) unless $xe < 0;
+    $brush->flipVertical();
+    $gd->setBrush($brush);
+    $gd->line($xs, $hc+$ch, $xe, $hc+$ch, gdBrushed) unless $xe < 0;
     my $color = $self->get_color($self->chr_outer_color);
     $gd->setStyle($color, $color, $color, GD::gdTransparent, GD::gdTransparent);
-    $gd->line($xs, $hc, $xe, $hc, gdStyled);
+    $gd->line($xs, $hc, $xe, $hc, gdStyled) unless $xe < 0;
     $self->_draw_chr_end (x=>$xs, dir=>"left", 'y'=>$hc) if ($xs > 0) && $self->draw_chr_end;
     $self->_draw_chr_end (x=>$xe, dir=>"right",'y'=> $hc) if ($xe < $w) && $self->draw_chr_end;
     
@@ -1611,7 +1609,7 @@ sub _draw_features
 	  {
 	    $sy = $y;
 	  }
-	$self->_draw_feature_slow(feat=>$feat, 'y'=>$y, ih=>$feat_h, 'sy'=>$sy);
+	$self->_draw_feature_fast(feat=>$feat, 'y'=>$y, ih=>$feat_h, 'sy'=>$sy);
       }
   }
 
@@ -1810,7 +1808,7 @@ sub _draw_feature_fast
 # 	#1. create a blank image of the appropriate size
  	my $newgd = GD::Image->new ($fw, $ih,[1]);
 # 	#2. copy, resize, and resample the feature onto the new image
- 	$newgd->copyResampled($feat->gd, 0, 0, 0, 0, $fw, $ih, $feat->iw, $feat->ih);  
+ 	$newgd->copyResized($feat->gd, 0, 0, 0, 0, $fw, $ih, $feat->iw, $feat->ih);  
 # 	#3. find any colors that are close to white and set them to white.
 # 	my $max = 240;
 # 	for my $x (0..$fw)
@@ -1825,7 +1823,7 @@ sub _draw_feature_fast
 #  	      }
 # 	  }
 # 	#4. make white transparent
- 	$newgd->transparent($newgd->colorResolve(255,255,255));
+ 	$newgd->transparent($newgd->colorResolve(0,0,0));
 # 	#5. copy new image into appropriate place on image.
  	$self->gd->copyMerge($newgd, $fs, $y, 0, 0, $fw, $ih, $feat->merge_percent);
 #	$self->gd->copyResized($feat->gd, $fs, $y, 0, 0, $fw, $ih, $feat->iw, $feat->ih);
@@ -1901,8 +1899,9 @@ sub _draw_ruler
     $self->_image_h_used($self->_image_h_used + $self->ruler_height+$self->padding/2);
     return unless $self->draw_ruler;
     my $w = $self->iw; #width of image
-    my $xb = $self->_region_start < 1 ? $w*abs($self->_region_start)/($self->_region_stop - $self->_region_start): 0; #x position begin
-    my $xe = $self->_region_stop > $self->chr_length ? $w-$w*($self->_region_stop - $self->chr_length)/($self->_region_stop - $self->_region_start) : $w; #x position end
+    my $xb = $self->_region_start < 1 ? $w*abs(1-$self->_region_start)/($self->_region_stop - $self->_region_start): 0; #x position begin
+    my $xe = $self->_region_stop > $self->chr_length ? $w-$w*($self->_region_stop - $self->chr_length-1)/($self->_region_stop - $self->_region_start) : $w; #x position end
+    return unless ($xe>0);
     $gd->line($xb,$c,$xe,$c,$self->get_color($self->ruler_color));
     my $mtyb = $c-$self->ruler_height/2; #major tick y begin
     my $mtye = $c+$self->ruler_height/2; #major tick y end
@@ -1912,9 +1911,9 @@ sub _draw_ruler
     $rb = 1 if $rb < 1;
     my $re = $self->_region_end;
     $re = $self->chr_length if $re > $self->chr_length;
-    my $range = $re-$rb; #chromosomal positional range
+    my $range = $re-$rb+1; #chromosomal positional range
     $rb = $rb-($range/10); #back up a bit
-    my $div = "1"."0"x int log10($range); #determine range scale (10, 100, 1000, etc)
+    my $div = "1"."0"x int log10($self->find_size_for_magnification); #determine range scale (10, 100, 1000, etc)
     print STDERR "\nRULER: Center: $c, Start $xb, Stop: $xe, Ticks: $div, \n" if $self->DEBUG;
     $self->_make_ticks(scale=>$div*10, y1=>$mtyb, y2=>$mtye, range_begin=>$rb, range_end=>$re,text_loc=>1);
 #    $div /= 10;
@@ -1970,14 +1969,14 @@ sub _make_ticks
     #make ticks
     my $unit = $self->_calc_unit_size;
     print STDERR "UNIT Size: $unit\n" if $self->DEBUG;
-    if ($rb == 1)
+    if ($rb <= 1 && $re >= 1)
       {
-	my $x = $w *($rb - $self->_region_start)/($self->_region_stop - $self->_region_start);
+	my $x = $w *(1 - $self->_region_start)/($self->_region_stop - $self->_region_start);
 	$gd->filledRectangle($x, $y1, $x+$unit, $y2, $self->get_color($self->tick_color));
 	if ($text_loc)
 	  {
 	    my $h = $text_loc =~ /-/ ? $y2-1: $y1-$self->padding/2;
-	    $self->_gd_string(text=>$rb,x=>$x+$unit+2, 'y'=>$h, size => ($y2-$y1)/1.25);
+	    $self->_gd_string(text=>'1',x=>$x+$unit+2, 'y'=>$h, size => ($y2-$y1)/1.25);
 	  }
       }
     while ($tick <= $re)
