@@ -61,21 +61,69 @@ SELECT feature_id
 
 =head1 NAME
 
-Genome::DB::Feature - Genome::DB::Feature
+CoGe::Genome::DB::Feature - CoGe::Genome::DB::Feature
 
 =head1 SYNOPSIS
 
-  use Genome::DB::Featur
-  blah blah blah
+
+
+
+  #let's write a program that finds features with the name "Kinase" and print some info about them
+ 
+  use CoGe::Genome;
+  
+  my $db = CoGe::Genome->new;
+
+  foreach my $feat ($db->get_feature_by_name("kinase"))
+   {
+     print "Feature Type: "  , $feat->type->name,"\n";
+     print "Dataset: "       , $feat->data_info->name,"\n";
+     print "Dataset version:", $feat->data_info->version,"\n";
+     print "Organism:"       , $feat->data_info->organism->name,"\n";
+     print "Location:\n";
+     foreach my $loc ($feat->locations)
+      {
+        print "\t", $loc->start,"-", $loc->stop,"\n";
+      }
+     print "Annotations:\n";
+     foreach my $anno ($feat->annotations)
+      {
+        print $anno->type->name,": " if $anno->type;
+        print $anno->annotation,"\n";
+      }
+     print "Genomic Sequence:\n";
+     print $feat->genomic_sequence,"\n";
+     print "\n";
+   }
+
 
 
 =head1 DESCRIPTION
 
-Stub documentation for this module was created by ExtUtils::ModuleMaker.
-It looks like the author of the extension was negligent enough
-to leave the stub unedited.
+  Feature objects are one of the primary objects in the CoGe::Genome system.
+  In a genomic sense, features are any genomic region that have some associated
+  set of information or function.  For example, a gene, mRNA, tRNA, SSR, CNS, CRE,
+  etc. are all genomic features.  This object provides a central access point 
+  for accessing all information for a feature as well as some functions for finding
+  particular features.
 
-Blah blah blah.
+ This object inherits from CoGe::Genome::DB which in turn inherits from Class::DBI.
+ Class::DBI provides the basic methods for creating accessor methods for accessing
+ table information.  Please see manual pages for Class::DBI for additional information.
+
+
+ The columns for this table are:
+  feature_id
+  feature_type_id
+  data_information_id
+
+ Related objects that can be accessed through this object are:
+  CoGe::Genome::DB::Feature_type
+  CoGe::Genome::DB::Feature_name
+  CoGe::Genome::DB::Sequence
+  CoGe::Genome::DB::Location
+  CoGe::Genome::DB::Annotation
+  CoGe::Genome::DB::Data_information
 
 
 =head1 USAGE
@@ -93,10 +141,7 @@ Blah blah blah.
 =head1 AUTHOR
 
 	Eric Lyons
-	CPAN ID: AUTHOR
-	XYZ Corp.
 	elyons@nature.berkeley.edu
-	http://a.galaxy.far.far.away/modules
 
 =head1 COPYRIGHT
 
@@ -110,6 +155,12 @@ LICENSE file included with this module.
 
 =head1 SEE ALSO
 
+ CoGe::Genome
+ CoGe::Genome::DB
+ Class::DBI
+
+
+
 perl(1).
 
 =cut
@@ -117,30 +168,54 @@ perl(1).
 ############################################# main pod documentation end ##
 
 
-################################################ subroutine header begin ##
+=head2 Accessor Functions
 
-=head2 sample_function
+new              =>  creates a new object (inherited from Class::Accessor)
 
- Usage     : How to use this function/method
- Purpose   : What it does
- Returns   : What it returns
- Argument  : What it wants to know
- Throws    : Exceptions and other anomolies
- Comments  : This is a sample subroutine header.
-           : It is polite to include more pod and fewer comments.
+feature_id       =>  database entry id
+id               =>  alias for location_id
 
-See Also   : 
+data_information_id => returns a CoGe::Genome::DB::Data_information object
+data_information
+information
+data_info
+info
+dataset
+
+feature_type_id     => returns a CoGe::Genome::DB::Feature_type object
+feature_type
+feat_type
+type
+
+
+feature_names       => returns a CoGe::Genome::DB::Feature_name object
+feat_names
+feat_name
+names
+name
+aliases
+
+locations           => returns a CoGe::Genome::DB::Location object
+location
+locs
+loc
+
+sequences           => returns a CoGe::Genome::DB::Sequence object
+seqs
+
+annotations         => returns a CoGe::Genome::DB::Annotation object
+annos
 
 =cut
 
-################################################## subroutine header end ##
-
+################################################ subroutine header begin ##
 
 sub feature_type
   {
     my $self = shift;
     return $self->feature_type_id();
   }
+
 sub feat_type
   {
     my $self = shift;
@@ -177,27 +252,40 @@ sub info
     return $self->data_information_id();
   }
 
+sub dataset
+  {
+    my $self = shift;
+    return $self->data_information_id();
+  }
+
 ##legacy table, now stored in data_information
 sub organism
   {
     my $self = shift;
+    warn "THIS METHOD IS OBSOLETE, PLEASE CHANGE CODE TO $self->info->organism_id()!\n";
     return $self->info->organism_id();
   }
 
 sub org
   {
     my $self = shift;
-    return $self->info->organism_id();
+    return $self->organism();
   }
 
 sub species
   {
     my $self = shift;
-    return $self->info->organism_id();
+    return $self->organism();
   }
 
 
 sub feat_names
+  {
+    my $self = shift;
+    return $self->feature_names();
+  }
+
+sub feat_name
   {
     my $self = shift;
     return $self->feature_names();
@@ -257,6 +345,27 @@ sub id
     return $self->feature_id();
   }
 
+
+################################################ subroutine header begin ##
+
+=head2 annotation_pretty_print
+
+ Usage     : my $pretty_annotation = $feat->annotation_pretty_print
+ Purpose   : returns a string with information and annotations about a feature
+             in a nice format with tabs and new-lines and the like.
+ Returns   : returns a string
+ Argument  : none
+ Throws    : 
+ Comments  : uses Coge::Genome::Accessory::Annotation to build the annotations,
+           : specifying delimters, and printing to string.   Pretty cool object.
+
+See Also   : CoGe::Genome::Accessory::Annotation
+
+=cut
+
+################################################## subroutine header end ##
+
+
 sub annotation_pretty_print
   {
     my $self = shift;
@@ -308,6 +417,27 @@ sub annotation_pretty_print
     $anno_obj->add_Annot($anno_type);
     return $anno_obj->to_String;
   }
+
+
+################################################ subroutine header begin ##
+
+=head2 annotation_pretty_print_html
+
+ Usage     : my $pretty_annotation_html = $feat->annotation_pretty_print_html
+ Purpose   : returns a string with information and annotations about a feature
+             in a nice html format with breaks and class tags (called "annotation")
+ Returns   : returns a string
+ Argument  : none
+ Throws    : 
+ Comments  : uses Coge::Genome::Accessory::Annotation to build the annotations,
+           : specifying delimters, and printing to string.   Pretty cool object.
+
+See Also   : CoGe::Genome::Accessory::Annotation
+
+=cut
+
+################################################## subroutine header end ##
+
 
 sub annotation_pretty_print_html
   {
@@ -368,6 +498,28 @@ sub annotation_pretty_print_html
 
 
 
+
+################################################ subroutine header begin ##
+
+=head2 genbank_location_string
+
+ Usage     : my $genbank_loc = $feat->genbank_location_string
+ Purpose   : generates a genbank location string for the feature in genomic coordinates or
+           : based on a recalibration number that is user specified
+           : e.g.: complement(join(10..100,200..400))
+ Returns   : a string
+ Argument  : hash:  recalibrate => number of positions to subtract from genomic location
+ Throws    : none
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+
 sub genbank_location_string
   {
     my $self = shift;
@@ -388,6 +540,27 @@ sub genbank_location_string
     return $string;
   }
 
+
+################################################ subroutine header begin ##
+
+=head2 begin_location
+
+ Usage     : my $feat_start = $feat->begin_location
+ Purpose   : returns the start of the feature (does not take into account the strand on which
+             the feature is located)
+ Returns   : a string, number usually
+ Argument  : none
+ Throws    : 
+ Comments  : this simply calles $feat->locs, sorts them based on their starting position, and
+           : returns the smallest position
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+
 sub begin_location
   {
     my $self = shift;
@@ -397,11 +570,77 @@ sub begin_location
     return $val->begin;
   }
 
+################################################ subroutine header begin ##
+
+=head2 start_location
+
+ Usage     : my $feat_start = $feat->start_location
+ Purpose   : alias for $feat->begin_location
+
+=cut
+
+################################################## subroutine header end ##
+
 sub start_location
   {
     my $self = shift;
     return $self->begin_location;
   }
+
+################################################ subroutine header begin ##
+
+=head2 start
+
+ Usage     : my $feat_start = $feat->start
+ Purpose   : alias for $feat->begin_location
+
+=cut
+
+################################################## subroutine header end ##
+
+sub start
+  {
+    my $self = shift;
+    return $self->begin_location;
+  }
+
+################################################ subroutine header begin ##
+
+=head2 begin
+
+ Usage     : my $feat_start = $feat->begin
+ Purpose   : alias for $feat->begin_location
+
+=cut
+
+################################################## subroutine header end ##
+
+sub begin
+  {
+    my $self = shift;
+    return $self->begin_location;
+  }
+
+
+################################################ subroutine header begin ##
+
+=head2 end_location
+
+ Usage     : my $feat_end = $feat->end_location
+ Purpose   : returns the end of the feature (does not take into account the strand on which
+             the feature is located)
+ Returns   : a string, number usually
+ Argument  : none
+ Throws    : 
+ Comments  : this simply calles $feat->locs, sorts them based on their ending position, and
+           : returns the largest position
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 
 sub end_location
   {
@@ -412,11 +651,76 @@ sub end_location
     return $val->end;
   }
 
+################################################ subroutine header begin ##
+
+=head2 stop_location
+
+ Usage     : my $feat_end = $feat->stop_location
+ Purpose   : alias for $feat->end_location
+
+=cut
+
+################################################## subroutine header end ##
+
 sub stop_location
   {
     my $self = shift;
     return $self->end_location;
   }
+
+################################################ subroutine header begin ##
+
+=head2 stop
+
+ Usage     : my $feat_end = $feat->stop
+ Purpose   : alias for $feat->end_location
+
+=cut
+
+################################################## subroutine header end ##
+
+sub stop
+  {
+    my $self = shift;
+    return $self->end_location;
+  }
+
+################################################ subroutine header begin ##
+
+=head2 end
+
+ Usage     : my $feat_end = $feat->end
+ Purpose   : alias for $feat->end_location
+
+=cut
+
+################################################## subroutine header end ##
+
+sub end
+  {
+    my $self = shift;
+    return $self->end_location;
+  }
+
+
+################################################ subroutine header begin ##
+
+=head2 chromosome
+
+ Usage     : my $chr = $feat->chromosome
+ Purpose   : return the chromosome of the feature
+ Returns   : a string
+ Argument  : none
+ Throws    : none
+ Comments  : returns $self->locs->next->chr
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 
 sub chromosome
   {
@@ -426,11 +730,41 @@ sub chromosome
     return $loc->chr();
   }
 
+################################################ subroutine header begin ##
+
+=head2 chr
+
+ Usage     : my $chr = $feat->chr
+ Purpose   : alias for $feat->chromosome
+
+=cut
+
+################################################## subroutine header end ##
+
 sub chr
   {
     my $self = shift;
     return $self->chromosome;
   }
+
+################################################ subroutine header begin ##
+
+=head2 strand
+
+ Usage     : my $strand = $feat->strand
+ Purpose   : return the chromosome strand of the feature
+ Returns   : a string (usally something like 1, -1, +, -, etc)
+ Argument  : none
+ Throws    : none
+ Comments  : returns $self->locs->next->strand
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 
 sub strand
   {
@@ -635,6 +969,49 @@ sub get_all_feature_ids
     $sth->finish;
     return wantarray ? @ids : \@ids;
   }
+
+################################################ subroutine header begin ##
+
+=head2 genomic_sequence
+
+ Usage     : my $genomic_seq = $feat->genomic_sequence
+ Purpose   : gets the genomic seqence for a feature
+ Returns   : a string
+ Argument  : none
+ Comments  : This method simply creates a CoGe::Genome object and calls:
+             get_genomic_sequence_for_feature($self)
+See Also   : CoGe::Genome
+
+=cut
+
+################################################## subroutine header end ##
+
+
+sub genomic_sequence
+  {
+    my $self = shift;
+    my $db = CoGe::Genome->new;
+    return $db->get_genomic_sequence_for_feature($self);
+  }
+
+################################################ subroutine header begin ##
+
+=head2 
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 
 1; #this line is important and will help the module return a true value
 
