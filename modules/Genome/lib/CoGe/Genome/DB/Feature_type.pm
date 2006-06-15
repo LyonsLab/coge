@@ -23,7 +23,7 @@ BEGIN {
 
 =head1 NAME
 
-Genome::DB::Feature_type - Genome::DB::Feature_type
+CoGe::Genome::DB::Feature_type - CoGe::Genome::DB::Feature_type
 
 =head1 SYNOPSIS
 
