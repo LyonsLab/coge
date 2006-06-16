@@ -297,7 +297,7 @@ sub process_features
 		      }
 		  }
           }
-        elsif ($feat->type->name =~ /mrna/i)
+        elsif ($feat->type->name =~ /mrna/i || $feat->type->name =~ /exon/i)
           {
         	$f = CoGe::Graphics::Feature::Gene->new();
         	$f->color([0,0,255, 50]);
