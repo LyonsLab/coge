@@ -249,8 +249,10 @@ sub get_sequence
     my $self = shift;
     my %opts = @_;
     my $start = $opts{'start'} || $opts{'START'} || $opts{begin} || $opts{BEGIN};
+    $start = 1 unless $start;
     $start = 1 if $start < 1;
     my $stop = $opts{'stop'} || $opts{STOP} || $opts{end} || $opts{END};
+    $stop = $start unless $stop;
     my $chr = $opts{chr} || $opts{CHR} || $opts{chromosome} || $opts{CHROMOSOME};
     my $info_id = $opts{info_id} || $opts{INFO_ID} || $opts{data_info_id} || $opts{DATA_INFO_ID};
     my $strand = $opts{strand} || $opts{STRAND} || 1;
