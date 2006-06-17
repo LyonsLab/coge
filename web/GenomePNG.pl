@@ -157,9 +157,8 @@ sub initialize_c
     my $fsh=$opts{fsh};
     my $fmh=$opts{fmh};
     my $start_pict = $opts{'start_pict'} || 'left';
-    my ($gen_seq) = $db->get_genomic_seq_obj->search({data_information_id=>$di});
-    return unless $gen_seq && $gen_seq->chr eq $chr;
-    my $chr_length = $db->get_genomic_sequence_obj->get_last_position($di);
+    my $chr_length = $db->get_genomic_sequence_obj->get_last_position(di=>$di, chr=>$chr);
+    return unless $chr_length;
     $c->chr_length($chr_length);
     $c->mag_scale_type("constant_power");
     $c->iw($iw);
