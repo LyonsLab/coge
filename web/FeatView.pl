@@ -295,7 +295,7 @@ sub gen_pict
 #    print STDERR Dumper @_;
     return unless ($start && $stop && $di);
     my $c = new CoGe::Graphics::Chromosome;
-    my $chr_length = $DB->get_genomic_sequence_obj->get_last_position($di);
+    my $chr_length = $DB->get_genomic_sequence_obj->get_last_position(di=>$di, chr=>$chr);
     $c->chr_length($chr_length);
     $c->iw(1600);
     $c->max_mag((80));
