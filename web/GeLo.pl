@@ -29,6 +29,7 @@ $DB = new CoGe::Genome;
 my $pj = new CGI::Ajax(
 		       get_data_info => \&get_data_info,
 		       get_data_info_info => \&get_data_info_info,
+		       get_data_info_chr_info => \&get_data_info_chr_info,
 		       gen_data => \&gen_data,
 		      );
 $pj->JSDEBUG(0);
@@ -108,7 +109,7 @@ sub get_data_info
     my @opts = map {"<OPTION value=\"".$_->id."\">".$_->name. " (v".$_->version.")</OPTION>"} sort {$b->version cmp $a->version || $a->name cmp $b->name} $org->data_info;
     my $html;
     $html .= qq{<FONT CLASS ="small">Dataset count: }.scalar @opts.qq{</FONT>\n<BR>\n};
-    $html .= qq{<SELECT id="di_id" SIZE="5" MULTIPLE onChange="gen_data(['args__loading. . .'],['di_info']); get_data_info_info(['di_id'],['di_info','viewer'])" >\n};
+    $html .= qq{<SELECT id="di_id" SIZE="5" MULTIPLE onChange="gen_data(['args__loading. . .'],['di_info']); get_data_info_info(['di_id'],[dataset_info_chr_chain])" >\n};
     $html .= join ("\n", @opts);
     $html .= "\n</SELECT>\n";
     $html =~ s/OPTION/OPTION SELECTED/;
@@ -130,41 +131,65 @@ sub get_data_info_info
     $html .= qq{<TR><TD>Data Source:<TD>$ds}."\n";
     $html .= qq{<tr><td>Version:<td>}.$di->version."\n";
     my @chr = $DB->get_genomic_seq_obj->get_chromosome_for_data_information($di);
-    my $viewer;
-
+    #push @chr, "no genomic sequence" unless @chr;
     if (@chr)
       {
-#	$viewer .= "<form>";
-	$viewer .= qq{<input type="hidden" id="di" value="$did">};
-	$viewer .= qq{<input type="hidden" id="chr" value="$chr[0]">};
-	$viewer .= qq{<input type="hidden" id="z" value="7">};
-	$viewer .= "<br><br>";
-	$viewer .= "<font class=\"oblique\">GeLo Viewer Launcher</font><br>";
-	$viewer .= "<table>";
-	$viewer .= "<tr><td class = \"ital\">Starting location: ";
-	$viewer .= qq{<td><input type="text" size=10 value="1000" id="x">};
-#	$viewer .= qq{<tr><td class = \"ital\">Zoom level:};
-#	$viewer .= qq{<td><select id="z">};
-#	my @opts = map {"<OPTION>".$_."</OPTION>"} (5..10);
-#	$viewer .= join ("\n", @opts);
-#	$viewer =~ s/OPTION/OPTION SELECTED/;
-#	$viewer .= qq{</select>};
-	$viewer .= "</table>";
-	$viewer .= qq{<input type="submit" value = "Launch!" onClick="launch_viewer($did, $chr[0])">};
-#	$viewer .= "</form>";
+	$html .= qq{<tr><td>Chromosome};
+	$html .= "s" if scalar @chr > 1;
+	$html .= ":";
+	$html .= "<td>";
+	$html .= qq{<SELECT id="chr" onChange="gen_data(['args__searching for features. . .'],['chr_info']); gen_data(['args__waiting. . .'],['viewer']); get_data_info_chr_info(['di_id', 'chr'],['chr_info','viewer'])" >\n};
+	$html .= join ("\n", map {"<OPTION value=\"$_\">".$_."</OPTION>"} sort {$a cmp $b} @chr)."\n";
+	$html =~ s/OPTION/OPTION SELECTED/;
+	$html .= "\n</SELECT>\n";
       }
+    else {
+      $html .= qq{<input type="hidden" id="chr" value="">};
+      $html .= "No genomic sequence";
+    }
+#    my $length = commify( $DB->get_genomic_seq_obj->get_last_position($di) );
+#    $html .= qq{<tr><td>Nucleotides:<td>$length} if $length;
+#    my $feats = $di->get_feature_type_count;
+#    $html .= qq{<tr><td valign=top>Features:<td><table>};
+#    $html .= join ("\n<tr>",map {"<td>$_<td>".$feats->{$_} } sort {$feats->{$b}<=> $feats->{$a}} keys %$feats);
+#    $html .= "</table>";
+    return $html;
+  }
 
-    push @chr, "no genomic sequence" unless @chr;
-    $html .= qq{<tr><td>Chromosome};
-    $html .= "s" if scalar @chr > 1;
-    $html .= ":";
-    $html .= "<td>".join (" ", sort {$a cmp $b} @chr)."\n";
-    my $length = commify( $DB->get_genomic_seq_obj->get_last_position($di) );
-    $html .= qq{<tr><td>Nucleotides:<td>$length} if defined $length;
-    my $feats = $di->get_feature_type_count;
-    $html .= qq{<tr><td valign=top>Features:<td><table>};
-    $html .= join ("\n<tr>",map {"<td>$_<td>".$feats->{$_} } sort {$feats->{$b}<=> $feats->{$a}} keys %$feats);
-    $html .= "</table>";
+sub get_data_info_chr_info
+  {
+    my $did = shift;
+    my $chr = shift;
+    return unless $did;    
+    my $di = $DB->get_data_info_obj->retrieve($did);
+    return unless $di;
+    my $html .= "<table>";;
+    my $length = commify( $DB->get_genomic_seq_obj->get_last_position(di=>$di, chr=>$chr) );
+    $html .= qq{<tr><td>Nucleotides:<td>$length} if $length;
+    my $feats = $di->get_feature_type_count(chr=>$chr);
+    $html .= qq{<tr><td valign=top>Features:<td valign=top><table>};
+    my $feat_string = join ("\n<tr>",map {"<td>$_<td>".$feats->{$_} } sort {$feats->{$b}<=> $feats->{$a}} keys %$feats);
+    $feat_string = "None" unless $feat_string;
+    $html .= "$feat_string</table>";
+
+    my $viewer;
+    if ($chr)
+      {
+    $viewer .= "<br><br>";
+    $viewer .= "<font class=\"oblique\">GeLo Viewer Launcher</font><br>";
+    $viewer .= "<table>";
+    $viewer .= "<tr><td class = \"ital\">Starting location: ";
+    $viewer .= qq{<td><input type="text" size=10 value="1000" id="x">};
+    #	$viewer .= qq{<tr><td class = \"ital\">Zoom level:};
+    #	$viewer .= qq{<td><select id="z">};
+    #	my @opts = map {"<OPTION>".$_."</OPTION>"} (5..10);
+    #	$viewer .= join ("\n", @opts);
+    #	$viewer =~ s/OPTION/OPTION SELECTED/;
+    #	$viewer .= qq{</select>};
+    $viewer .= "</table>";
+    $viewer .= qq{<input type="hidden" id="z" value="7">};
+    $viewer .= qq{<input type="submit" value = "Launch!" onClick="launch_viewer($did, '$chr')">};
+  }
     return $html, $viewer;
   }
 
