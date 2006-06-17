@@ -33,6 +33,15 @@ SELECT count(feature_id), ft.name
  WHERE data_information_id = ?
  GROUP BY ft.name
 });
+    __PACKAGE__->set_sql(get_feature_type_count_chr=>qq{
+SELECT count(feature_id), ft.name 
+  FROM feature
+  JOIN feature_type ft using (feature_type_id)
+  JOIN location l USING (feature_id)
+ WHERE data_information_id = ?
+   AND l.chromosome = ?
+ GROUP BY ft.name
+});
 }
 
 
@@ -418,12 +427,14 @@ See Also   :
 sub get_feature_type_count
   {
     my $self = shift;
-    my $di = shift;
+    my %opts = @_;
+    my $di = $opts{di};
+    my $chr = $opts{chr};
     $di = $self->id unless $di;
     return unless $di;
     my %feats;
-    my $sth = $self->sql_get_feature_type_count();
-    $sth->execute($di);
+    my $sth = $chr ? $self->sql_get_feature_type_count_chr() : $self->sql_get_feature_type_count();
+    $chr ? $sth->execute($di, $chr) : $sth->execute($di);
     while (my $q = $sth->fetchrow_arrayref)
       {
 	use Data::Dumper;
