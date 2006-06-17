@@ -38,6 +38,14 @@ SELECT stop
  ORDER BY stop DESC
  LIMIT 1
 });
+    __PACKAGE__->set_sql(last_chromosome_position=>qq{
+SELECT stop
+  FROM genomic_sequence
+ WHERE data_information_id = ?
+   AND chromosome = ?
+ ORDER BY stop DESC
+ LIMIT 1
+});
 
 
   __PACKAGE__->set_sql(get_chromosomes=> qq{
@@ -276,10 +284,12 @@ sub get_sequence
 sub get_last_position
   {
     my $self = shift;
-    my $di = shift || $self->data_info->id;
+    my %opts = @_;
+    my $di = $opts{di} || $self->data_info->id;
+    my $chr = $opts{chr};
     my $id = ref ($di) =~ /information/i ? $di->id : $di;
-    my $sth = $self->sql_last_position();
-    $sth->execute($id);
+    my $sth = $chr ? $self->sql_last_chromosome_position() : $self->sql_last_position();
+    $chr ? $sth->execute($id, $chr) : $sth->execute($id);
     my $q = $sth->fetch();
     $sth->finish;
     my $stop = $q->[0];
@@ -303,10 +313,14 @@ sub get_chromosome_for_data_information
     my $id = ref ($di) =~ /information/i ? $di->id : $di;
     my $sth = $self->sql_get_chromosomes();
     $sth->execute($id);
-    my $q = $sth->fetch();
+    my @chrs;
+    while (my $row = $sth->fetchrow_arrayref())
+      {
+	push @chrs, $row->[0];
+      }
     $sth->finish;
-    return unless $q;
-    return wantarray ? @$q : $q;
+    return unless scalar @chrs;
+    return wantarray ? @chrs : \@chrs;
   }
 
 1; #this line is important and will help the module return a true value
