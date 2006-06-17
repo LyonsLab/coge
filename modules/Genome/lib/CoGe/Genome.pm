@@ -1186,6 +1186,7 @@ sub get_genomic_seq_for_feat
 
 
 ################################################ subroutine header begin ##
+
 =head2 get_features_for_organism_and_version
 
  Usage     : my @feats = $db->get_features_for_organism_and_version(org=>$org,
@@ -1225,5 +1226,7 @@ sub get_features_for_organism_and_version
       }
     return wantarray ? @feats : \@feats;
   }
+
+
 
 1; #this line is important and will help the module return a true value
