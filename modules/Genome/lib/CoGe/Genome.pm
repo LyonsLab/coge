@@ -370,6 +370,29 @@ sub get_data_info_obj
 
 ################################################ subroutine header begin ##
 
+=head2 get_dataset_obj
+
+ Usage     : $genome_obj->get_dataset_obj();
+ Purpose   : alias for get_data_information_obj
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub get_dataset_obj
+  {
+    my $self = shift;
+    return $self->get_data_information_obj();
+  }
+
+################################################ subroutine header begin ##
+
 =head2 get_feature_obj
 
  Usage     : $genome_obj->get_feature_obj();
@@ -1226,6 +1249,7 @@ sub get_features_for_organism_and_version
       }
     return wantarray ? @feats : \@feats;
   }
+
 
 
 
