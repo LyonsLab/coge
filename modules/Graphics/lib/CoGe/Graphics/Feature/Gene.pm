@@ -69,8 +69,17 @@ sub _post_initialize
     $gd->fill(0,0, $self->get_color($self->bgcolor));
 #    $gd->transparent($self->get_color($self->bgcolor));
     my $s = $self->start;
-    my $black = $self->get_color(0,0,0);
+    my @tmp;
+    foreach my $c (@{$self->color})
+      {
+	my $ct = $c;
+	$ct-=100;
+	$ct = 1 if $ct < 1;
+	push @tmp, $ct;
+      }
+    my $border = $self->get_color(@tmp);
     my $color = $self->get_color($self->color);
+    my $black = $self->get_color(1,1,1);
     my $last;
     my $c = $self->ih()/2;
     my $bh = $self->block_height/2;
@@ -82,7 +91,7 @@ sub _post_initialize
 	my $y1 = $c-$bh;
 	my $y2 = $c+$bh;;
 	$gd->filledRectangle($x1,$y1, $x2, $y2, $color);
-	$gd->rectangle($x1,$y1, $x2, $y2, $black);
+	$gd->rectangle($x1,$y1, $x2, $y2, $border);
 	$gd->setStyle($black, $black, $black, GD::gdTransparent, GD::gdTransparent);
 	if ($last)
 	  {
@@ -103,7 +112,7 @@ sub draw_arrow
     my $self = shift;
     my %opts = @_;
     my $seg = $self->strand =~ /-/ ? $self->segments->[0]:$self->segments->[-1];
-
+    my $black = $self->get_color(1,1,1);
     my $gd = $self->gd;
     my $c = $self->ih()/2;
     my $y = $self->ih-1;
@@ -114,6 +123,9 @@ sub draw_arrow
     $arrow_width = $w if $arrow_width > $w;
 #    print STDERR "Arrowhead: X: $x, width: $arrow_width\n";
     my $arrow_end;
+    my $gdb = new GD::Image(1,2);
+    $gdb->fill(0,0,$gdb->colorResolve(1,1,1));
+    $gd->setBrush($gdb);
     if ($self->strand =~ /-/i)
       {
 	$gd->filledRectangle($x,0, $x+($arrow_width), $y, $self->get_color(255,255,255));
@@ -131,7 +143,14 @@ sub draw_arrow
 	$arrow_end=2;
       }
     $gd->filledPolygon($poly, $self->get_color($self->color));
-    $gd->openPolygon($poly, $self->get_color());
+    my @tmp;
+    foreach my $c (@{$self->color})
+      {
+	$c-=100;
+	$c = 1 if $c < 1;
+	push @tmp, $c;
+      }
+    $gd->openPolygon($poly, $self->get_color([@tmp]));
     return $arrow_end;
   }
 
