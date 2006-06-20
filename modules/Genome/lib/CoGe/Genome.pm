@@ -1250,7 +1250,62 @@ sub get_features_for_organism_and_version
     return wantarray ? @feats : \@feats;
   }
 
+################################################ subroutine header begin ##
 
+=head2 find_overlapping_features
 
+ Usage     : my @overlap_feats = $db->find_overlapping_features(feat=>$feat);
+ Purpose   : find overlapping features given a feature
+ Returns   : an array or array ref of CoGe::Genome::DB::Feature objects
+ Argument  : feat=> CoGe::Genome::DB::Feature object
+             searchall => 1
+                          searchs all datasets for the organism to 
+                          which the feature belongs
+ Throws    : 
+ Comments  : If searchall is set, then all datasets for the organism to which the
+             feature belongs are searched for overlapping features.  Otherwise, only 
+             the dataset to which the feature belongs is used.
+
+See Also   : CoGe::Genome::DB::Feature
+
+=cut
+
+################################################## subroutine header end ##
+
+sub find_overlapping_features
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $feat = $opts{feat};
+    return unless ref ($feat) =~ /Feat/i;
+    my @di = $opts{searchall} ? $feat->dataset->organism->datasets : $feat->dataset;
+    my @overlap_feats;
+    foreach my $di (@di)
+      {
+	push @overlap_feats, $feat->get_features_in_region(start=>$feat->start,
+							   stop =>$feat->stop,
+							   chr  =>$feat->chr,
+							   info_id=>$di,
+							  );
+      }
+    return wantarray ? @overlap_feats : \@overlap_feats;
+  }
 
 1; #this line is important and will help the module return a true value
+
+################################################ subroutine header begin ##
+
+=head2 
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+
+See Also   : CoGe::Genome::DB::Feature
+
+=cut
+
+################################################## subroutine header end ##
