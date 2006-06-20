@@ -10,6 +10,7 @@ use CoGe::Graphics::Feature::GAGA;
 use CoGe::Graphics::Feature::Exon_motifs;
 use CoGe::Graphics::Feature::AminoAcid;
 use CoGe::Graphics::Feature::Domain;
+use CoGe::Graphics::Feature::Block;
 use CoGe::Genome;
 use Data::Dumper;
 use Benchmark;
@@ -322,12 +323,14 @@ sub process_features
         elsif ($feat->type->name =~ /functional domains/i)
           {
 	    $f = CoGe::Graphics::Feature::Domain->new();
-	    foreach my $loc ($feat->locs)
-	      {
-	        $f->add_segment(start=>$loc->start, stop=>$loc->stop);
-	        $f->strand($loc->strand);
-	      }
 	    $f->order(2);
+          }
+	elsif ($feat->type->name =~ /CNS/i)
+          {
+	    $f = CoGe::Graphics::Feature::Block->new();
+	    $f->order(1);
+	    my $color = [ 255, 100, 255];
+	    $f->color($color);
           }
         next unless $f;
         foreach my $loc ($feat->locs)
