@@ -54,7 +54,7 @@ sub _initialize
     $self->stop($e);
     $self->image_width($w);
     $self->image_height($h);
-    $self->merge_percent(0);
+    $self->merge_percent(100);
     $self->bgcolor([255,255,255]) unless $self->bgcolor;
     $self->color([255,255,0]);
     $self->skip_overlap_search(1);
