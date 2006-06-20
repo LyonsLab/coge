@@ -23,7 +23,7 @@ use CoGe::Graphics::Feature::Domain;
 $ENV{PATH} = "/opt/apache2/CoGe/";
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 
-use vars qw( $DATE $DEBUG $BL2SEQ $TEMPDIR $TEMPURL $USER);
+use vars qw( $DATE $DEBUG $BL2SEQ $TEMPDIR $TEMPURL $USER $form);
 $BL2SEQ = "/opt/bin/bio/bl2seq ";
 $TEMPDIR = "/opt/apache/CoGe/tmp";
 $TEMPURL = "/CoGe/tmp";
@@ -34,7 +34,7 @@ $| = 1; # turn off buffering
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		 sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
 
-my $form = new CGI;
+$form = new CGI;
 $CGI::POST_MAX= 60 * 1024 * 1024; # 24MB
 $CGI::DISABLE_UPLOADS = 0; 
 $USER = GS::LogUser->get_user();
@@ -810,7 +810,7 @@ sub get_obj_from_genome_db
 					  LOCUS=>$accn,
 					  VERSION=>$feats[0]->data_information->version(),
 					  SOURCE=>$feats[0]->data_information->data_source->name(),
-					  ORGANISM=>$feats[0]->org->name(),
+					  ORGANISM=>$feats[0]->info->org->name(),
 					  					 );
     $obj->sequence($seq);
     my $fnum = 1;
