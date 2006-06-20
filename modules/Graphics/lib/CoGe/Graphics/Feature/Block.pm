@@ -56,9 +56,9 @@ sub _initialize
     $self->image_height($h);
     $self->merge_percent(100);
     $self->bgcolor([255,255,255]) unless $self->bgcolor;
-    $self->color([255,255,0]);
-    $self->skip_overlap_search(1);
-    $self->font_size(.5);
+    $self->color([255,100,255]) unless $self->bgcolor;
+    $self->skip_overlap_search(0);
+    $self->font_size(1);
     $self->block_height($BLOCK_HEIGHT) unless $self->block_height;
     $self->print_label(0) unless defined $self->print_label();
   }
