@@ -122,6 +122,18 @@ sub infos
     return $self->data_information();
   }
 
+sub datasets
+  {
+    my $self = shift;
+    return $self->data_information();
+  }
+
+sub dataset
+  {
+    my $self = shift;
+    return $self->data_information();
+  }
+
 
 sub desc
   {
