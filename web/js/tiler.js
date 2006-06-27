@@ -14,27 +14,25 @@
    TIC: [T]he [I]nner [C]ontainer holds images,
        gets dragged.
 
-   G() is a short cut for document.getElementById()
+   $() is a short cut for document.getElementById()
 
 */
-
 function Tiler (containerId,config_arr) {
-    this.div = G(containerId);
-    this.w = parseInt(Dom.getStyle(this.div,'width'));
-    this.h = parseInt(Dom.getStyle(this.div,'height'));
+    this.div = $(containerId);
+    var tmp = getElementDimensions(this.div);
+    this.w = tmp.w;
+    this.h = tmp.h;
     this.ZOOM_POWER = 2; 
     this.tiler = "tiler.pl?";
-
     this._config(config_arr);
     this._initialize_TIC();
     this._initialize_tiles();
+
+    var nc = this.rw2pix(this.INITIAL_CENTER[0],this.INITIAL_CENTER[1]);
+    this.slide_by( - this.w/2 + nc[0],this.h/2 - nc[1])
     
-    // bind the HTML elements so that the tiler object is always
-    // available as 'this' in anything with class='tileClass';
-    var els = getElementsByClassName('tileClass');
-    for(var i=0;i<els.length;i++){
-        els[i].scope = this;
-     }
+    // TODO: bind the HTML elements with class = Tiler 
+    // so that the tiler object is always 'this'
 }
 
 Tiler.prototype = {
@@ -46,8 +44,9 @@ Tiler.prototype = {
   _config: function(configarr){
       // TODO: make it so you acutally can have multiple
       // layers... 
-      for(var c = 0; c<configarr.length; c++){
-          var config = configarr[c];
+      var queryparams = parseURL();
+      var config;
+      for(var c = 0;config=configarr[c]; c++){
           for(var k in config){
             var j = k;
             // number vars start with 'n'
@@ -55,13 +54,14 @@ Tiler.prototype = {
               j = k.substr(1); 
               config[j] = parseFloat(config[k]);
             }
-            this[j] = config[k];
+            this[j] = queryparams[j] || config[k];
           }
-          this.zoomLevel = G(this.ZOOM_PAR_NAME).value;
-          this.zoomLevel = this.zoomLevel ? this.zoomLevel:  this.INITIAL_ZOOM ;
+          this.zoomLevel = this.MAX_ZOOM;
+          try { this.zoomLevel = $(this.ZOOM_PAR_NAME).value } catch(e){}
+          this.zoomLevel = queryparams[this.ZOOM_PAR_NAME] || this.zoomLevel;
           // the config file overrides the html value;
-          G(this.ZOOM_PAR_NAME).value = this.zoomLevel;
-          
+          try {$(this.ZOOM_PAR_NAME).value = this.zoomLevel;}catch(e){}
+           
           /* This determines which are x,y coordinates
            * because it could be a bbox or just 2 coords.
            */
@@ -72,17 +72,15 @@ Tiler.prototype = {
             ypars = [spars[1],spars[3]]
           }else{
             xpars = spars[0];
-            ypars = spars[1] || 'ONE_DIM';
+            ypars = spars[1] || this.SPATIAL_PARS_SEP ? 'AGGREGATE' : 'ONE_DIM';
           }
-
-          this.SPATIAL_PARS_NAME_X = xpars;
-          this.SPATIAL_PARS_NAME_Y = ypars;
-          var il = (G('x') != undefined )? G('x').value : this.INITIAL_LEFT;
-          var it = this.INITIAL_TOP || 0;
-          var tmp = this.normalize_xy(il,it,this.zoomLevel);
-          this.INITIAL_LEFT = tmp[0];
-          this.INITIAL_TOP = tmp[1];
-          this._2D = (this.ONE_DIM)?0:1;
+          this.SPATIAL_PARS_NAME[0] = xpars;
+          this.SPATIAL_PARS_NAME[1] = ypars;
+          //alert(this.SPATIAL_PARS_NAME);
+          var il = this.INITIAL_CENTER;
+          var tmp = this.normalize_xy(il[0],il[1]);
+          this._left_rw = tmp[0];
+          this._top_rw = tmp[1];
         return true;
       }  
   },
@@ -95,16 +93,22 @@ Tiler.prototype = {
   _initialize_TIC : function(){
       var st = this.div.style;
       st.overflow = 'hidden';
-      st.position = 'relative';
+       //  st.position = 'relative';
       // bigger buffer. 
-      var SUPER_BUFFER = 1;
+      var SUPER_BUFFER = 0;
       this.nTilesWide = 1 + Math.ceil((this.w + 2 * this._div_buffer)/ this.TILE_WIDTH) + SUPER_BUFFER;
-      this.nTilesHigh = !this.ONE_DIM + Math.ceil((this.h + 2 * this._div_buffer) / this.TILE_HEIGHT) + SUPER_BUFFER * !this.ONE_DIM; 
+      this.nTilesHigh = (this.ONE_DIM) ? 1 
+        : 1 + Math.ceil((this.h + 2 * this._div_buffer) 
+          / this.TILE_HEIGHT) + SUPER_BUFFER * !this.ONE_DIM; 
+
       // create TIC [T]he [I]nner [C]ontainer)
-      // TODO: see about leakage with mixing append and
-      // innerHTML
       var tic = document.createElement("div");
       tic.id = 'TIC';
+      tic.oncontextmenu = falsefunc;
+      tic.ondragstart = falsefunc;
+      connect(tic,'onmouseover',falseevent);
+      connect(tic,'onhover',falseevent);
+      connect(tic,'onselectstart',falseevent);
 
       // style stuff
       var t = tic.style;
@@ -112,125 +116,134 @@ Tiler.prototype = {
       t.position = 'absolute';
       t.left = '0px';
       t.top  = '0px';
-      /* could apply this change to each img style.left and .top ...
-      t.left = (this.w - this.nTilesWide * this.TILE_WIDTH)/2;
-      t.top  = (this.h - this.nTilesHigh * this.TILE_Height)/2 * !this.ONE_DIM;
-      */
-
       // add to the div container
       this.div.appendChild(tic);
+
     //  tic.w = this.nTilesWide*this.TILE_WIDTH-this.w
     //  tic.h = this.nTilesHigh*this.TILE_HEIGHT-this.h
       this.TIC = tic;
 
-      this.dragcontrol = new Panner('TIC',this.div,1);
+      this.dragcontrol = new Panner('TIC',this.div,this.ONE_DIM);
       
-      //TODO: subscribe to events
-        addEvent(this.TIC,'EVENT_PAN_START',this.panStart,this);
-        addEvent(this.TIC,'EVENT_PAN',this.pan,this); 
-        addEvent(this.TIC,'EVENT_PAN_END',this.panEnd,this); 
+      connect(this.TIC,'EVENT_PAN_START',this,'panStart');
+      connect(this.TIC,'EVENT_PAN',this,'pan'); 
+      connect(this.TIC,'EVENT_PAN_END',this,'panEnd'); 
   },
+
   get_pixel_offset : function(){
-    return [ parseInt(this.TIC.style.left) - -this.left_shift
-          ,  parseInt(this.TIC.style.top) - -this.top_shift];
+    return [ parseInt(this.TIC.style.left)
+          ,  parseInt(this.TIC.style.top)];
        
   },    
-  left_shift:0,top_shift:0,
 
   get_real_world_offset: function(){
       var pxy = this.get_pixel_offset();
-      return this.pix_to_real_world(pxy[0],pxy[1]);
+      return this.pix2rw(pxy[0],pxy[1]);
+  },
+  slide_by: function(px,py){
+     var n = 1;
+     if(Math.abs(px) > 30   || Math.abs(py) > 30) n = 6;
+     if(Math.abs(px) > 1000 || Math.abs(py) > 1000) n = 20;
+     if(Math.abs(px) > 4000 || Math.abs(py) > 4000) n = 40;
+     var sumx = px; var sumy = py;
+     var dx = Math.round(px/n); var dy = Math.round(py/n);
+     while(n--){
+         sumx -= dx; sumy -= dy; 
+         this.dragcontrol._slideBy(dx,dy); 
+     }
+     log('sumx,sumy: ' + sumx + ',' + sumy);
+     if(Math.abs(sumx) > 3 || Math.abs(sumy) > 3){
+          this.slide_by(sumx,sumy);
+     }
+     log('slide_by: ' + px);
+
+  },
+  setCenter: function(x,y){
+      var old_center_rw = this.pix2rw(this.w/2,this.h/2);
+      var diff_rw = [x - old_center_rw[0], y - old_center_rw[1]];
+      var upt = this.units_per_tile();
+      var diff_tiles = [Math.round(diff_rw[0]/upt[0]),
+                        Math.round(diff_rw[1]/upt[1]) ];
+
+      this._shuffle_tile_N(parseInt(diff_tiles[0]),parseInt(diff_tiles[1]));
+      
+      old_center_rw = this.pix2rw(this.w/2,this.h/2);
+      diff_rw = [x - old_center_rw[0], y - old_center_rw[1]];
+      var slide_px = this.rw_distance_to_px(diff_rw[0]);
+      this.slide_by(slide_px,0);
   },
 
   // zoom in is tiler.zoom(1), zoomout is tiler.zoom(-1);
-  zoom : function(dir){
-      //TODO: see TODO below re xshift et al.
+ zoom : function(dir){
       if(this.zoomLevel-dir < 0){return;}
+      if(this.zoomLevel-dir > this.MAX_ZOOM){return;}
       var old_zoom = this.zoomLevel;
-      var octr = this.pix_to_real_world(this.w/2,this.h/2)[0];
+      var old_center_rw = this.pix2rw(this.w/2,this.h/2);
 
+      this.zoomLevel-= dir;
 
-      var nTIC = this.TIC.innerHTML;
-      DEBUG(this.magic_rw.left.join(",") + "<br/>");
+      try { $(this.ZOOM_PAR_NAME).value = this.zoomLevel } catch(e){}
 
-      var old_center_rw = this.pix_to_real_world(this.w/2,this.h/2);
-      this.zoomLevel-=dir;
+      var upt = this.units_per_tile();
+      var new_center_rw = this.pix2rw(this.w/2,this.h/2);
+      
+      var diff_rw = [ new_center_rw[0]-old_center_rw[0], 
+                      new_center_rw[1]-old_center_rw[1] ];
 
-      var new_center_rw = this.pix_to_real_world(this.w/2,this.h/2);
-
-      var new_center_rw_normalized 
-          = this.normalize_xy(new_center_rw[0]
-          ,                   new_center_rw[1]);
-      var diff_rw = [
-          new_center_rw[0]-old_center_rw[0], 
-          new_center_rw[1]-old_center_rw[1] 
-      ];
-
-
-      var modx = diff_rw[0];
-      var abspx = this.rw_distance_to_px(modx);
-      var modpx = abspx % this.TILE_WIDTH;
-      var xshift = abspx - modpx;
-
-
-      this.left_shift += modpx;
-
-      //TODO: repeat above for Y
-
-     var zre = new RegExp( this.ZOOM_PAR_NAME + '=' + old_zoom,'g' )
-     nTIC = nTIC.replace(zre , this.ZOOM_PAR_NAME + '=' + this.zoomLevel);
-
-
+      var zre = new RegExp(this.ZOOM_PAR_NAME+'='+old_zoom,'ig' )
+      var znew = this.ZOOM_PAR_NAME + '=' + this.zoomLevel;
 
       var rwname = this.SPATIAL_PARS_NAME[0];
-
+      var jstr = this.magic_rw.left.join("|");
+      var RE_left = new RegExp("[?&]" + rwname + '=' + "(" + jstr + ")[&$]",'g');
       var from_src;
-      DEBUG("<br/>old: " + this.magic_rw.left.join(",") + '<br/>');
-      for(var m = 0; from_rw=this.magic_rw.left[m];m++){
-          var from_px = this.magic_px.left[m];
-          var to_px = from_px - -xshift;
-          var to_rw = this.pix_to_real_world(to_px,0,1)[0];
-         
-          var reg_rw = new RegExp(rwname + '='+ from_rw,'g');
-          nTIC = nTIC.replace(reg_rw,rwname + '=' + to_rw);
- 
-          reg_px = new RegExp('left:\\s*' + from_px,'g'); 
-          nTIC = nTIC.replace(reg_px,'left:' + to_px);
-          this.magic_px.left[m]=to_px;
-          this.magic_rw.left[m]=to_rw;
-      } 
-      //TODO: start here, it's the combination of xshift/abssfhit,
-      // this.TIC.style.left,this.left_shift;
-      this.TIC.style.left = parseInt(this.TIC.style.left) 
-         -  -parseInt(xshift) + 'px';
-      
-      this.TIC.innerHTML = nTIC; 
-     while( this.pan() ){}
-      DEBUG("<br/>new: " + this.magic_rw.left.join(",") + '<br/>');
-      DEBUG(
-      'modx:' + modx +  '<br/>' +
-      'abspx:' + abspx +'<br/>' +
-      'modpx:' + modpx +'<br/>' +
-      'xshift:' + xshift 
-      );
+      var sortedNodes = sorted(this.TIC.childNodes,function(a,b){
+          return parseInt(a.style.left)- parseInt(b.style.left);
+      });
 
+      var seenrw = {left:{},top:{}};
+      forEach(sortedNodes,function(node){
+           var ns = node.src;
+           var l = parseInt(node.style.left);
+           //var lnew = l + (tile_shift[0] * this.TILE_WIDTH);
+           var t = parseInt(node.style.top );
+           //var tnew = t + (tile_shift[1] * this.TILE_HEIGHT);
+           //var newrw = this.pix2rw(lnew,tnew,1);
+           var newrw = this.pix2rw(l,t,1);
+           seenrw.left[newrw[0]]++;
+           seenrw.top[ newrw[1]]++;
+           ns = ns.replace(zre,znew);
+           ns.match(RE_left); 
 
-      
-      var nctr = this.pix_to_real_world(this.w/2,this.h/2)[0];
-      DEBUG("<br/>octr: " + octr + '\nnctr: ' + nctr + '<br/>');
-      //TODO: use these to readjust in the
-      // while (this.pan() loop )... hacky, but 
-      // easy...
+           var RE_old = new RegExp(rwname + '=' + RegExp.$1, 'g');
+           ns = ns.replace(RE_old,rwname + '=' + newrw[0]);
+           node.src=ns;
+      },this);
 
+      this.magic_rw = {left:[],top:[]};
+      for(var k in seenrw.left){ this.magic_rw.left.push(k); }
+      for(var k in seenrw.top) { this.magic_rw.top.push(k); }
+      this.magic_rw.left = this.magic_rw.left.sort();
+      this.magic_rw.top  = this.magic_rw.top.sort();
+      log('magic_px.left: ' + this.magic_px.left);
+      this.setCenter(old_center_rw[0],0);
+      new_center_rw = this.pix2rw(this.w/2,this.h/2);
+      var diff_rw = [ new_center_rw[0]-old_center_rw[0], 
+                      new_center_rw[1]-old_center_rw[1] ];
+      var diff_px = this.rw_distance_to_px(diff_rw[0]);  
+      log('diff_px:' + diff_px);
+      this.slide_by(-diff_px,0);
+
+      new_center_rw = this.pix2rw(this.w/2,this.h/2);
+      log("oldcenter: " + old_center_rw[0])
+      log("newcenter: " + new_center_rw[0]);
+      var i=3; while(this.pan() && i){i--;}
       return false;
 
   },
-
   rw_distance_to_px : function(rwdist){
-     var BX = this.BASE_UNITS_PER_PIXEL_X; 
-     return Math.ceil(rwdist/(BX * Math.pow(this.ZOOM_POWER,this.zoomLevel)));
+     return this.rw2pix(rwdist,0,1)[0] - this.rw2pix(0,0,1)[0];
   },
-
 
   /**
    * converts pixel coords to real world 
@@ -240,7 +253,24 @@ Tiler.prototype = {
    * 
    * @return {x,y} in real world coords
    */
-  pix_to_real_world:  function(px,py,ignoreOffset){
+  rw2pix: function(gx,gy,ignoreOffset){
+      var uppx = this.BASE_UNITS_PER_PIXEL_X;
+      uppx *= Math.pow(this.ZOOM_POWER,this.zoomLevel);  
+
+      gx -= parseInt(this._left_rw);
+      gy -= parseInt(this._top_rw);
+      px = gx/ uppx  ;
+      py = gy/ uppx  ;  // TODO: for uppy  
+
+      if(!ignoreOffset){
+          var oxy = this.get_pixel_offset();
+          px += oxy[0];
+          py += oxy[1];
+      }
+      return [Math.round(px),Math.round(py)];
+
+  },
+  pix2rw: function(px,py,ignoreOffset){
       var uppx = this.BASE_UNITS_PER_PIXEL_X;
       //TODO: do for uppy
       uppx *= Math.pow(this.ZOOM_POWER,this.zoomLevel);
@@ -248,88 +278,63 @@ Tiler.prototype = {
       if(!ignoreOffset){
           var oxy = this.get_pixel_offset();
           px -= oxy[0];
-        //  upt[0] -= parseInt(this.TIC.style.left);
           py -= oxy[1];
-         // upt[1] -= parseInt(this.TIC.style.top);
        }
-      return [ parseInt(uppx*px)+this.INITIAL_LEFT
-             , parseInt(uppx*py)+this.INITIAL_TOP
+      return [ parseInt(uppx*px)+this._left_rw
+             , parseInt(uppx*py)+this._top_rw
            ];
   },
   _initialize_tiles: function(){
       var nWide = this.nTilesWide;
       var nHigh = this.nTilesHigh;
       var ymin = (nHigh==1)?0:-1;
+
+      var seenleft = {};
+      var seentop = {};
+
       this.magic_px = {left:[],top:[]};
       this.magic_rw = {left:[],top:[]};
 
+      this.TIC.innerHTML = '';
       for(var tx = -1; tx < nWide; tx++){
           for(var ty = ymin; ty < nHigh; ty++){
-             this._initialize_and_append_tile(tx,ty); 
-
+             var lt = this._initialize_and_append_tile(tx,ty); 
+             seenleft[lt[0]]=1;
+             seentop[lt[1]]=1;
           }
       }
-      var txt = this.TIC.innerHTML;
-      var re;
-      var i = 0;
-      // make sure we start at the beginning
-      RegExp.lastIndex = 0;
-      // to check for dups.
-      var seenhash = {};
-      // initialize the magic_px
-      while(/(left|top):\s*(-*\d+)px?/g.exec(txt) != null) {
-        var key = RegExp.$1 + RegExp.$2;
-        if(! seenhash[key] ){
-            seenhash[key] = 1;
-            this.magic_px[RegExp.$1].push(RegExp.$2); 
-            if(RegExp.$1 == 'left'){
-              this.magic_rw.left.push(this.pix_to_real_world(RegExp.$2,0)[0]);
-            }else{
-              this.magic_rw.top.push(this.pix_to_real_world(0,RegExp.$2)[1]);
-            }
-        }
+      for(var k in seenleft){ 
+          this.magic_px.left.push(k); 
+          this.magic_rw.left.push(this.pix2rw(k,0)[0]);
       }
-  },
-  draw_from_magic_rw: function(new_magic){
-      var TIC = this.TIC.innerHTML;
-      var rwname = this.SPATIAL_PARS_NAME[0];
-      var rwleft;
-      for(var i=0;rwleft=this.magic_rw.left[i];i++){
-          var reg = new RegExp(rwname + '=' + rwleft);
-          TIC = TIC.replace(reg,rwname + '=' + new_magic.left[i]);
-          this.magic_rw.left[i] = new_magic.left[i];
+      for(var k in seentop){ 
+          this.magic_px.top.push(k); 
+          this.magic_rw.top.push(this.pix2rw(0,k)[1]);
       }
-      // TODO: for y;
-      this.TIC.innerHTML = TIC;          
-  },
 
-  magic_rw_replace : function(from,to,TIC,rwname){
-      var rwname = this.SPATIAL_PARS_NAME[0];
-      var reg =  new RegExp(rwname + '=' + from ,'g');
-      return TIC.replace(reg,rwname +'=' + to);
+      connect(this.TIC,'ondragstart',falseevent);
+      connect(this.div,'ondragstart',falseevent);
+      connect(this.div,'onselectstart',falseevent);
+      connect(this.TIC,'onselectstart',falseevent);
   },
 
   _initialize_and_append_tile: function(tilex,tiley){
 
       var left = tilex * this.TILE_WIDTH;
       var top = tiley * this.TILE_HEIGHT;
-
-
-      var img = "<img height="+this.TILE_HEIGHT;
-      img+= ' class="tile"';
-//    img+= " id="+left+'_'+top;
-      img+= ' style=position:absolute;left:'+ left +'px;top:'+top +'px;';
-      img+= ' src=' + this.src_from_pxy(left,top) ;
-
-      var rw = this.debug_passer;
-      img+= " width="+this.TILE_WIDTH + ' alt="loading... "';
-      img += '/>';
-      this.TIC.innerHTML+=img;
-      k=100000
-      while(k--){}
+       
+      var img = IMG({
+         'height': this.TILE_HEIGHT,
+         'width' : this.TILE_WIDTH,
+         'class' : 'tile',
+         'style' :'position:absolute;left:'+left+'px;top:'+top+'px',
+         'alt'   : 'loading...',
+         'src'   : this.src_from_pxy(left,top),
+         'galleryimg' : 'no'
+      });
+      this.TIC.appendChild(img);
+      return [left,top];
   },
-  // horrible hack to pass the rw coords
-  debug_passer:'',
 
 
   /**
@@ -344,44 +349,65 @@ Tiler.prototype = {
    * return the source of the image.
    * @return {string} of img.src
    */
+  src_from_tilexy : function(tl,tt){
+      return this.src_from_pxy(tl*this.TILE_WIDTH,
+                               tt*this.TILE_HEIGHT,1);
+  },
   src_from_pxy : function(left,top){
      var url = this.tiler;
-   //     url = 'http://biocon.berkeley.edu/CoGe/GenomePNG.pl?&simple=1';
-     var rwxy = this.pix_to_real_world(left,top);
+  //   var tmp = this.normalize_xy(left,top);
+//     left = tmp[0]; top = tmp[1];
+     var rwxy = this.pix2rw(left,top);
+     rwxy  = this.normalize_xy(rwxy[0],rwxy[1]);
+
+
      // other parameters are gather from HTML elements with
      // NON_SPATIAL_PARS_NAME
      var urlpars = this.NON_SPATIAL_PARS_NAME; 
-     url += this.serialize(urlpars);
-     url += this.serialize([this.ZOOM_PAR_NAME]);
+     url += this.serialize(urlpars || []);
+
+     url += this.ZOOM_PAR_NAME ? this.serialize([this.ZOOM_PAR_NAME]) : '';
 
      // now add the spatial pars to the url
-     var xpars = this.SPATIAL_PARS_NAME_X;
-     var ypars = this.SPATIAL_PARS_NAME_Y;
+     var xpars = this.SPATIAL_PARS_NAME[0];
+     xpars = (xpars.constructor != Array)?[xpars]:xpars;
+     //TODO test for array for Y
+     var ypars = this.SPATIAL_PARS_NAME[1];
 
-     this.debug_passer = rwxy[0];
      url += '&'+xpars[0]+'='+ rwxy[0];
-     if(xpars.constructor == Array ){     
-        var locxy = this.pix_to_real_world(left+this.TILE_WIDTH,top);
+     if(xpars.length > 1 ){     
+        var locxy = this.pix2rw(left+this.TILE_WIDTH,top);
         url += '&'+xpars[1]+'='+ locxy[0];
      }
-
      // the Y dimension might not be needed...
      if(ypars!='ONE_DIM'){
+        ypars = (ypars.constructor != Array)?[ypars]:ypars;
         url += '&'+ypars[0]+'='+ rwxy[1];
         if(ypars.constructor == Array ){     
             var rwxy =
-              this.pix_to_real_world(left,top+this.TILE_HEIGHT);
-             this.debug_passer = rwxy.join(",");
+              this.pix2rw(left,top+this.TILE_HEIGHT);
             url += '&'+xpars[1]+'='+ rwxy[1];
         }
      } 
-    // alert(url);
-     return url;
+     return url + '&';
   },
+  cgi2url: function(cgi){
+      var url = cgi.replace(/&/g,'/').replace(/=/g,'__').replace(/tiler\.pl\?/,'_cache_') + '.png';
+      //TODO: fix for splitting large numbers;
+      return url;
+  },
+  url2cgi: function(cgi){
+     var cgi = url.replace(/\//g,'&').replace(/=/g,'__').replace(/_cache_/,'tiler.pl?');
+     return cgi;
+  },
+     
   serialize: function(arr){
       var str = '';
       for(var i=0;i<arr.length;i++){
-          str+='&'+arr[i]+'='+G(arr[i]).value;
+          var val;
+          try { val = $(arr[i]).value;     }
+          catch(e){ val = config[arr[i]]   }
+          str+='&'+arr[i]+'='+ val;
       }
       return str;
   },    
@@ -398,11 +424,8 @@ Tiler.prototype = {
   tile_from_xyz: function(x,y,z){
      z = (z) ? z : this.zoomLevel;
 
-     // units_per_pixel
-     //var upp = this.BASE_UNITS_PER_PIXEL_X * Math.pow(this.ZOOM_POWER,z); 
-
      // units_per_tile
-     var upt = this.units_per_tile(); // upp * this.TILE_WIDTH;
+     var upt = this.units_per_tile(); 
 
      var tile_x = Math.floor( x / upt[0] ); 
      var tile_y = Math.floor( y / upt[1] ); 
@@ -414,24 +437,20 @@ Tiler.prototype = {
 
   },
   xy_from_tile : function(tilex,tiley,z){
-     z = (z) ? z : this.zoomLevel;
+      z = (z) ? z : this.zoomLevel;
 
-     // units_per_pixel
-     //var upp = this.BASE_UNITS_PER_PIXEL_X * Math.pow(this.ZOOM_POWER,z); 
-      
      // units_per_tile
-     var upt = this.units_per_tile(); //upp * this.TILE_WIDTH;
-     return [upt[0]*tilex,upt[1]*tiley];
+      var upt = this.units_per_tile();
+      return [upt[0]*tilex,upt[1]*tiley];
   },
   normalize_xy : function(x,y,z){
      z = z ? z : this.zoomLevel;
      var txy = this.tile_from_xyz(x,y,z);
-
      // txy[2] is units per tile;
      var upt = txy[2];
      var x = txy[0]*upt[0];
      var y = txy[1]*upt[1];
-     return [ x, y ];
+     return [x, y];
   },
 
   panStart : function(e){
@@ -444,19 +463,51 @@ Tiler.prototype = {
    *    dont look if you dont like the ternary operator
    *    and/or innerHTML. 
    */
-//TODO: change this to be called as: ('left',-1);
-// then can use                      (pxdir,pn) as:
  //   pn * this.TILE_WIDTH 
- 
-  _shuffle_tile: function(xdir,ydir){ 
-     var dir = (xdir)?xdir:ydir;
+  _shuffle_tile_N: function(ntX,ntY){
+     ntY = 0;
+
+     var upt = this.units_per_tile();
+     this._left_rw -= -ntX * upt[0];
+     this._top_rw -= -ntY * upt[1];
+
+      sortedNodes = sorted(this.TIC.childNodes,function(a,b){
+             return parseInt(a.style.left)- parseInt(b.style.left);
+      });
+      var seenrw = {left:{},top:{}};
+      forEach(sortedNodes,function(node){
+          var ns = node.src;    
+
+          var oldpxl = parseInt(node.style.left);
+          var oldpxt  = parseInt(node.style.top)
+
+          newrw = this.pix2rw(oldpxl,oldpxt,1);
+          var rwname = this.SPATIAL_PARS_NAME[0];
+          //TODO: this aint 2D compatible;
+          var srcmatch = new RegExp('&' + rwname + '=([^&$]+)&', 'ig');
+          ns.match(srcmatch);
+          var oldrw = RegExp.$1;
+          log('oldrw: ' + oldrw);
+          log('newrw:'  + newrw);
+          seenrw.left[newrw[0]]++;
+          node.src = node.src.replace(new RegExp('&'+ rwname +'=' + oldrw + '&','g'),'&' +rwname +'=' + newrw[0] +'&');
+          log(ns + '\n' + node.src);
+      },this);
+
+      this.magic_rw.left = []; 
+      for(var k in seenrw.left) { this.magic_rw.left.push(k); }
+      this.magic_rw.left = this.magic_rw.left.sort(function(a,b){ return a - b });
+
+  },
+  _shuffle_tile: function(xdir,ydir,imgstr){ 
+     imgstr = (imgstr)? imgstr :this.TIC.innerHTML
+     if(xdir > 1 || ydir > 1){ return this._shuffle_tile_N(xdir,ydir) }
+     var dir = parseInt((xdir)?xdir/Math.abs(xdir):ydir/Math.abs(ydir));
      var pxdir = (xdir)?'left':'top';
-     var WorH = (xdir) ? this.TILE_WIDTH: this.TILE_HEIGHT;
-     // to index the [x,y] array returned from pix_to_real_world()
+     var WorH = parseInt((xdir) ? this.TILE_WIDTH: this.TILE_HEIGHT);
+     // to index the [x,y] array returned from pix2rw()
      var len = this.magic_px[pxdir].length;
 
-     var orw = this.magic_rw.left;
-     orw = orw.toString();
      // old pixel value
      var from_px = (dir==-1)?this.magic_px[pxdir].pop():this.magic_px[pxdir].shift();
      var from_src = (dir==-1)?this.magic_rw[pxdir].pop():this.magic_rw[pxdir].shift();
@@ -465,7 +516,7 @@ Tiler.prototype = {
      var to_px =
      (dir==-1)?parseInt(this.magic_px[pxdir][0])-WorH:parseInt(this.magic_px[pxdir][len-2])+WorH;
      var idx = (xdir)?0:1;
-     var to_src = this.pix_to_real_world(to_px,0,true)[idx];
+     var to_src = this.pix2rw(to_px,0,true)[idx];
 
      if(dir==-1){
         this.magic_px[pxdir].unshift(to_px);
@@ -476,59 +527,64 @@ Tiler.prototype = {
      }
 
      var nrw = this.magic_rw.left;
-     // DEBUG('<br/>' + orw + '<br/>' + nrw.toString());
-     imgstr = this.TIC.innerHTML;
 
-//  G('loc').innerHTML += 'from src: ' + from_src +'\nto src: '+ to_src + '<br/>';
-     
+     imgstr = imgstr.replace(/&amp;/g,'&');
+
      var rwname = (xdir) ? this.SPATIAL_PARS_NAME[0] : this.SPATIAL_PARS_NAME[1];
      // the regexp to move images around
-     var reg_px  = new RegExp(pxdir + ':\\s*'+from_px+'px','g');
+     var reg_px  = new RegExp(pxdir + ':\\s*'+from_px+'px','ig');
      // the regexp to change the src 
-     var reg_src = new RegExp(rwname + '='+from_src, 'g');
-
-     imgstr = imgstr.replace(reg_src,rwname + '='+to_src+'')
+     var reg_src = new RegExp('&' + rwname + '='+from_src + '[&$]', 'ig');
+     imgstr = imgstr.replace(reg_src,'&' + rwname + '='+to_src+'&' )
      imgstr = imgstr.replace(reg_px, pxdir + ':' + to_px+'px')
 
-     this.TIC.innerHTML = imgstr;
-//    G('loc').innerHTML += imgstr.escapeHTML().replace(/&amp;/g,'&');
+     return imgstr;
   },
+  brXY : function(){ return this.pix2rw(this.w-this.TILE_WIDTH,this.h-this.TILE_HEIGHT);},
 
-  pan : function(){
+
+  pan: function(){
       // the amout TIC has moved since last shuffle;
-     
-      var tlXY = this.pix_to_real_world(-30,-30);
       var nW = this.nTilesWide -1;
-      var nH = this.nTilesHigh -1;
-      if(tlXY[0] < this.magic_rw.left[0]){
+      var p2rw = this.pix2rw(-30,-30);
+      var brxy = this.brXY();
+      var xchange = 0;
+      if(p2rw[0]<this.magic_rw.left[0]){
           // rotate right-most tile to left;
-          this._shuffle_tile(-1,0);
-          return 'right';
+          --xchange;
+          log('*** right ***');
       }
       // account for the fact that we wand the right edge of tile.
-      var brXY = this.pix_to_real_world(this.w-this.TILE_WIDTH,this.h-this.TILE_HEIGHT);
-      if(brXY[0] > this.magic_rw.left[nW]){
+      
+      if(brxy[0] > this.magic_rw.left[nW]){
           // rotate left-most tile to right; 
-          this._shuffle_tile(1,0);
-          return 'left';
+          log('*** left ***'); 
+          ++xchange;
       } 
+      if(xchange) return this.TIC.innerHTML = this._shuffle_tile(xchange,0);
 
       // dont need to check up down if its
       // not a 2D thingy
       if(this.ONE_DIM){ return false }
-      var yo = 0;
 
-      if(yo < this.tbBuffer - this.TIC.h + dbuff ){
-          // rotate top-most tile to bottom;
-          alert( 'top');
-          return 'bottom';
-      }
 
-      if(yo  > this.tbBuffer - dbuff ){
-          // rotate bottom-most tile to top;
-          alert( 'top');
-          return 'top';
+      var ychange = 0;
+      var nH = this.nTilesHigh -1;
+      if(p2rw[1]<this.magic_rw.top[0]){
+          // rotate right-most tile to left;
+          ++ychange;
+          log('*** up ***');
       }
+      // account for the fact that we want the top edge of tile.
+      
+      if(brxy[1] > this.magic_rw.top[nH]){
+          // rotate left-most tile to right; 
+          log('*** down ***'); 
+          --ychange;
+      } 
+
+
+      if(ychange) return this.TIC.innerHTML = this._shuffle_tile(0,ychange);
       return false;
 
   }, 
@@ -538,20 +594,3 @@ Tiler.prototype = {
   
 
 };
-
-function G(id){return document.getElementById(id);}
-
-String.prototype.escapeHTML = function(){
-    var div = document.createElement('div');
-    var text = document.createTextNode(this);
-    div.appendChild(text);
-    return div.innerHTML;
-};
-var DEBUGLOC = 'loc';
-var NDEBUG=0;
-
-function DEBUG(str){
-//  NDEBUG++;
-//  if(NDEBUG>10){ NDEBUG=0;G(DEBUGLOC).innerHTML='';}
-//  G(DEBUGLOC).innerHTML += str;
-}

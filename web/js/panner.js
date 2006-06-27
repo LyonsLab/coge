@@ -1,45 +1,51 @@
 function Panner(div_id,container,constrainY){
-  this.div = G(div_id);
+  this.div = $(div_id);
   container = (container)?container:div_id;
+  this.container = container;
   this.elXY = [];
   this.moveY = (constrainY)? 0 : 1;
-
-  this.qMouseDown = this.startX = this.startY = this.currentX = this.currentY = this.lastX = this.lastY = 0;
-
-  addEvent(container,'mousedown',this._startPan,this);
-  addEvent(container,'mousemove',this._onPan,this);
-  addEvent(container,'mouseup',this._endPan,this);
-//  addEvent(container,'mouseout',this._endPan,this);
-
+  this.qMouseDown = 0;
+  connect(container,'onmousedown',this,'_startPan',this);
+  connect(container,'onmousemove',this,'_onPan',this);
+  connect(container,'onmouseup',this,'_endPan',this);
+  connect(container,'onmouseout',this,'_endPan',this);
 }
 
 Panner.prototype = {
     _startPan: function(e){
         this.qMouseDown = 1; 
-        this.elXY = Dom.getXY(this.div); 
-        this.startXY = e.getPageXY();
-        fireEvent(this.div,'EVENT_PAN_START');
         e.stop();
+        this.elXY = getElementPosition(this.div,this.container); 
+        this.startXY = e.mouse().client;
+        signal(this.div,'EVENT_PAN_START');
     },
     _onPan : function(e){       
         if(!this.qMouseDown){ return 0; }
-        var pageXY = e.getPageXY();
-        var dX = this.startXY[0] -  pageXY[0];
-        var dY = this.startXY[1] -  pageXY[1];
-        this.x_is_plus = (dX > 0)? 1 : 0;
-        this.y_is_plus = (dY > 0)? 1 : 0;
-        dY *= this.moveY;
-        Dom.setXY(this.div, [this.elXY[0] - dX, this.elXY[1] - dY]);
-        fireEvent(this.div,'EVENT_PAN');
+        var pageXY = e.mouse().client;
         e.stop();
+        var dX = this.startXY.x -  pageXY.x;
+        var dY = this.startXY.y -  pageXY.y;
+        setElementPosition(this.div, {x: this.elXY.x - dX, y: (this.elXY.y - dY) * this.moveY});
+        signal(this.div,'EVENT_PAN');
       
     },
     _endPan: function(e){
         if(!this.qMouseDown){ return; }
+        e.stop();
         this.qMouseDown = 0;
-         fireEvent(this.div,'EVENT_PAN_END');
-         e.stop();
+        signal(this.div,'EVENT_PAN_END');
+    },
+    _slideTo: function(px,py){
+        setElementPosition(this.div,{x:px,y:py});
+        signal(this.div,'EVENT_PAN');
+    },
+    _slideBy: function(px,py){
+        var pos = getElementPosition(this.div,this.container);
+        pos.x -= px;
+        pos.y -= py;
+        pos.y *= 0;
+        setElementPosition(this.div,{x:pos.x,y:pos.y});
+        signal(this.div,'EVENT_PAN');
     }
 
 };
-
