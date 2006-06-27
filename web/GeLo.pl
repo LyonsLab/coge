@@ -46,14 +46,26 @@ sub gen_html
     $template->param(TITLE=>'CoGe: Genome Location Viewer');
     $template->param(HEAD=>qq{
 <link rel="stylesheet" type="text/css" href="css/tiler.css">
-<script src=js/Dom.js> </script>
-<script src=js/common.js> </script>
-<script src=js/extendEvent.js> </script>
-<script src=js/panner.js> </script>
-<script src=js/tiler.js> </script>
+<script src="js/Base.js"> </script>
+<script src="js/Async.js"> </script>
+<script src="js/Iter.js"> </script>
+<script src="js/DOM.js"> </script>
+<script src="js/Logging.js"> </script>
+<script src="js/Signal.js"> </script>
+<script src="js/Style.js"> </script>
+<script src="js/util.js"> </script>
+<script src="js/panner.js"> </script>
+<script src="js/tiler.js"> </script>
 <script src=js/tilerConfig.js> </script>
 <script src=js/kaj.stable.js> </script>
 });
+
+#<script src=js/Dom.js> </script>
+#<script src=js/common.js> </script>
+#<script src=js/extendEvent.js> </script>
+#<script src=js/panner.js> </script>
+#<script src=js/tiler.js> </script>
+
     $template->param(USER=>$USER);
     $template->param(DATE=>$DATE);
     $template->param(LOGO_PNG=>"GeLo-logo.png");
@@ -138,10 +150,13 @@ sub get_data_info_info
 	$html .= "s" if scalar @chr > 1;
 	$html .= ":";
 	$html .= "<td>";
-	$html .= qq{<SELECT id="chr" onChange="gen_data(['args__searching for features. . .'],['chr_info']); gen_data(['args__waiting. . .'],['viewer']); get_data_info_chr_info(['di_id', 'chr'],['chr_info','viewer'])" >\n};
-	$html .= join ("\n", map {"<OPTION value=\"$_\">".$_."</OPTION>"} sort {$a cmp $b} @chr)."\n";
-	$html =~ s/OPTION/OPTION SELECTED/;
-	$html .= "\n</SELECT>\n";
+    my $select;
+	$select .= qq{<SELECT id="chr" onChange="gen_data(['args__searching for features. . .'],['chr_info']); gen_data(['args__waiting. . .'],['viewer']); get_data_info_chr_info(['di_id', 'chr'],['chr_info','viewer'])" >\n};
+	$select .= join ("\n", map {"<OPTION value=\"$_\">".$_."</OPTION>"} sort {$a cmp $b} @chr)."\n";
+	$select =~ s/OPTION/OPTION SELECTED/;
+	$select .= "\n</SELECT>\n";
+    $html .= $select;
+    print STDERR $select;
       }
     else {
       $html .= qq{<input type="hidden" id="chr" value="">};
@@ -180,14 +195,18 @@ sub get_data_info_chr_info
     $viewer .= "<table>";
     $viewer .= "<tr><td class = \"ital\">Starting location: ";
     $viewer .= qq{<td><input type="text" size=10 value="1000" id="x">};
-    #	$viewer .= qq{<tr><td class = \"ital\">Zoom level:};
-    #	$viewer .= qq{<td><select id="z">};
-    #	my @opts = map {"<OPTION>".$_."</OPTION>"} (5..10);
-    #	$viewer .= join ("\n", @opts);
-    #	$viewer =~ s/OPTION/OPTION SELECTED/;
-    #	$viewer .= qq{</select>};
+    my $zoom;
+   	$zoom .= qq{<tr><td class = "ital">Zoom level:};
+   	$zoom .= qq{<td><SELECT name = "z" id="z" size = 1>};
+   	my @opts = map {"<OPTION value=\"$_\">".$_."</OPTION>"} (5..10);
+   	$zoom .= join ("\n", @opts);
+   	$zoom =~ s/OPTION/OPTION SELECTED/;
+   	$zoom .= qq{</SELECT>};
+    $viewer .= qq{<tr><td class = "ital">Zoom level:<td><input type = "text" size=10 value ="7" id = "z">};
+    #$viewer .= $zoom;
+    print STDERR $zoom;
     $viewer .= "</table>";
-    $viewer .= qq{<input type="hidden" id="z" value="7">};
+    #$viewer .= qq{<input type="hidden" id="z" value="7">};
     $viewer .= qq{<input type="submit" value = "Launch!" onClick="launch_viewer($did, '$chr')">};
   }
     return $html, $viewer;
