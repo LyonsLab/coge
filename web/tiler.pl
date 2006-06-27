@@ -1,76 +1,110 @@
 #! /usr/bin/perl -w
 
 use strict;
-use CoGe::Accessory::Tile::Cache;
-use CoGe::Genome;
-use CGI qw/:standard/;
-use POSIX;
+use File::Spec::Functions;
+require LWP::Simple;
 
-my $form = new CGI;
-my $x = $form->param('x') || $form->param('start') || 0;
-my $z = $form->param('z');
-my $iw = $form->param('iw') || $form->param('width') || $form->param('tile size')|| $form->param('tile_size');
-my $di = $form->param('di');
-my $chr = $form->param('chr');
-my $org_id = $form->param('o') || $form->param('org') ||$form->param('organism') || $form->param('org_id') || $form->param('oid');
-my $version = $form->param('v') || $form->param('version');
+my $IMGURL = 'http://toxic/CoGe/GenomePNG.pl?';
+my $ZOOM_PAR = 'z';
+my $SPATIAL_PARS = ['x'];
+my $BUPT = 10;
+print "Content-type: image/png\n\n";
 
-my $db = new CoGe::Genome;
-my $dio = $db->get_data_info_obj->search({data_information_id=>$di})->next if $di;
-if ($dio)
-  {
-    $org_id = $dio->org->id unless $org_id;
-    $version = $dio->version unless $version;
-  }
-$x = 0 unless defined $x;
+my ($basedir,$dir) = get_dir_array();
+my $reldir = catfile(@$dir) . '.png';
+my $basepath = catfile(@$basedir);
 
-my $cache_file        = "/opt/apache/CoGe/cache/tile";
-
-$cache_file .= ".iw";
-$cache_file .= $iw if $iw;
-$cache_file .= ".z";
-$cache_file .= $z if defined $z;
-$cache_file .= ".di";
-$cache_file .= $di if $di;
-$cache_file .= ".chr";
-$cache_file .= $chr if $chr;
-$cache_file .= ".oid";
-$cache_file .= $org_id if $org_id;
-$cache_file .= ".v";
-$cache_file .= $version if $version;
-my $chra = 10*2**$z;
-my $im = floor($x/($chra*1000));
-$cache_file .= ".im";
-$cache_file .= $im;
-my $cache_object = CoGe::Accessory::Tile::Cache->new( $cache_file);
-
-# any parameters that should not affect the url used to generate the
-# image are accessorized. all other parameters should go to the
-# anonymous hash in get_tile()
-$cache_object->DEBUG(1);
+my $fn = catfile($basepath,@$dir) . '.png' ;
+($fn) = $fn =~ /(.*)/;
+my $data;
+if(! -e $fn){
+   make_dir($basepath,$dir);
+   LWP::Simple::getstore($IMGURL . $ENV{QUERY_STRING},$fn);
+}
 
 
-#$cache_object->delete_config();
+# DUMP THE IMAGE
+{
+local( *IMG,$/ ); 
+open( IMG, $fn) or die "cant open $fn\n"; binmode IMG;
+print <IMG>; close(IMG);
+}
 
 
-# to turn on the indexing by tile so &x=20
-# finds the 20th tile
-# see Tile::Cache for other accessors
-$cache_object->normalize(0);
+#############################################
+# Make the directory structure 
+#############################################
+sub make_dir {
+    my ($dirstr,$dir) = @_;
+    pop @$dir;
+    $dirstr = catfile($dirstr,shift @$dir);
+    umask 0;
+    foreach my $subdir (@$dir){
+        ($dirstr) = catdir($dirstr,$subdir) =~ /(.*)/;
+        my $status = mkdir($dirstr,0777) if !-e $dirstr;
+    }
+}
 
-$cache_object->force_retile(param('force') || 0);
+#############################################
+# Find the number of numbers so that there
+# are never too many files in a single dir
+#############################################
+sub get_max {
+    my $z = shift;
+    my $MAX_FILES_PER_DIR = 1000;
+    my $upt = $BUPT * 2 ** $z;
+    return int(log($MAX_FILES_PER_DIR * $upt)/log(10));
+}
 
-# only parameters that are required to generate
-# the image should go here
-my %opts;
-$opts{chr}   = $chr     if $chr;
-$opts{di}    = $di      if $di;
-$opts{org_id}= $org_id  if $org_id;
-$opts{v}     = $version if $version;
-print "Content-type: " . $cache_object->config()->{IMG_TYPE} ."\n\n";
-print $cache_object->get_tile({
-			       'x'         => $x,  # required
-			       'z'         => $z,  # required
-			       'tile_size' => $iw, # required
-			       %opts,
-			      });
+# find see if a value is in an array;
+sub grep_match {
+    my ($needle,$haystack) = @_;
+    return grep { $needle eq $_ } @$haystack;
+}
+
+##################################################
+# Use %ENV to find where in directory structure
+# we are and make an array of directory names  
+##################################################
+sub get_dir_array {
+    my $qstr = $ENV{QUERY_STRING};
+    my $base_dir = "/opt/apache";#$ENV{DOCUMENT_ROOT};
+    my @basedir = split(/[\/\\]/,$base_dir);
+    my @dir = split(/[\/\\]/,$ENV{SCRIPT_NAME});
+    shift @dir;
+    # get rid of file name;
+    $dir[$#dir] = '_cache_';
+
+    # parse the url;
+    # keep order of entries but put the spatial pars last becuase
+    # it just works out best that way.
+    my @keyvals = map { split('=', $_) } split(/&/,$qstr);
+    my %query_pairs = @keyvals;
+    #@keyvals = map { $_ % 2 == 0 && !grep_match($keyvals[$_],$SPATIAL_PARS) ? $keyvals[$_] : '' } 0.. $#keyvals;
+    #@keyvals = sort @keyvals;
+    #push(@keyvals,@$SPATIAL_PARS);
+    @keyvals = qw(di chr iw z x);
+    my $MAX = get_max($query_pairs{$ZOOM_PAR});
+    foreach my $key( @keyvals ){
+        next if !$key;
+        my $val = $query_pairs{$key};
+        my @vals;
+        # 123456 becomes /x__123/456/  if $MAX == 3
+        # 123456 becomes /x__123456/   if $MAX  > 5
+        if(grep_match($key,$SPATIAL_PARS)){
+            if($val !~ /(\D|-)+/){
+                $val =~ s/-/n/g;
+                $val = scalar reverse($val);
+                while($val =~ /(\d{1,$MAX}n?)/g){
+                    unshift(@vals,scalar reverse($1));
+                }
+            }
+            # &layer=fred becomes layer__fred
+        }
+        @vals = ($val) unless @vals;
+        my $first = shift @vals;
+        push(@dir,$key . '__' . $first);
+        map { push(@dir,$_) } @vals;
+    }
+    return (\@basedir,\@dir); 
+}
