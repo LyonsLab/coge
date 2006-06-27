@@ -156,7 +156,6 @@ sub get_data_info_info
 	$select =~ s/OPTION/OPTION SELECTED/;
 	$select .= "\n</SELECT>\n";
     $html .= $select;
-    print STDERR $select;
       }
     else {
       $html .= qq{<input type="hidden" id="chr" value="">};
@@ -204,7 +203,6 @@ sub get_data_info_chr_info
    	$zoom .= qq{</SELECT>};
     $viewer .= qq{<tr><td class = "ital">Zoom level:<td><input type = "text" size=10 value ="7" id = "z">};
     #$viewer .= $zoom;
-    print STDERR $zoom;
     $viewer .= "</table>";
     #$viewer .= qq{<input type="hidden" id="z" value="7">};
     $viewer .= qq{<input type="submit" value = "Launch!" onClick="launch_viewer($did, '$chr')">};
