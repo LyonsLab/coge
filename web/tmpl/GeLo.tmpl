@@ -28,7 +28,7 @@ function dataset_info_chr_chain(val, chr) {
 function launch_viewer (did, chr) {
  x = kaj.G('x');
  z = kaj.G('z');
- link =  "GeLo.pl?z="+z+"&x="+x+"&di="+did+"&chr="+chr;
+ link =  "GeLo.pl?z="+z+"&INITIAL_CENTER="+x+",0&di="+did+"&chr="+chr;
  window.location=link;
 }
 
@@ -52,41 +52,64 @@ function launch_viewer (did, chr) {
 <IMG SRC = "picts/table/spacer-1x1.png" onload="dataset_chain();">
 
 <TMPL_ELSE>
+<style>
 
+#container {
+  width: 600px;
+  height: 345;
+  position:absolute;
+  border: 1px solid #ccc;
+}
 
-<form action='javascript:;' >
-<input id='iw' type ='hidden' value=256 />
-<input id='chr' type ='hidden' value='<TMPL_VAR NAME=CHR>' />
-<input id='di' type ='hidden' value='<TMPL_VAR NAME=DI>' />
-<input id='z' type ='hidden' value='<TMPL_VAR NAME=Z>' />
-<input id='x' type ='hidden' value='<TMPL_VAR NAME=X>' />
-<input id='xloc' type ='hidden' value='<TMPL_VAR NAME=XLOC>' />
-<div>Click on the map to view feature information at that position </div>
-<div>Click and drag on the map to move genomic view left and right</div> 
-<button id='zi' name='zi' class="tileClass" > Zoom In </button>
-<button name='zo' id='zo' class="tileClass" > Zoom Out </button> <font class="small">(zoom feature not yet working. . .sorry!)</font>
-
-<div id='container' class="tileClass" style='position:relative;left:6px;top:10px;width:800px;height:350px;border:1px solid black' > </div>
-<div id ='info' style='position:relative;left:6px;top:10px;width:800px;height:200px'><FORM NAME="info"></FORM></div>
-</form>
+</style>
 
 <script>
 
+connect(window,'onload',myInit);
+var gb;
+function myInit(){
+    gb = new Tiler('container',[config]);
+    connect('zoomin','onclick',function(){gb.zoom(1)})
+    connect('zoomout','onclick',function(){gb.zoom(-1)})
+    connect('container','onmousemove',gb,tmouse);
+    connect('container','onclick',query);
+    connect('go2center','onclick',function(){gb.setCenter($('center').value,0)});
+    // TOOD for anything with class function, connect element with 
+    // id = fred to function fred(){ }
+}
+function rw2pix(e){
+    $('pixloc').value = gb.rw2pix($('bploc').value,0)[0]; 
+}
+function tmouse(e){
+  var mx =  e.mouse().page.x;
+  var ex = getElementPosition(e.src()).x;
+  $('bploc').value = this.pix2rw(mx - ex,0)[0];
+  rw2pix();
+}
+<!--
+/*
 var omap = new Tiler('container',[config]);
+
+
 
 var zi = G('zi');
 addEvent(zi,'click',function(){omap.zoom(1)});
 addEvent(G('zo'),'click',function(){omap.zoom(-1)});
 
 addEvent(G('container'),'click',query);
+*/
+-->
 var qurl = '/CoGe/FeatAnno.pl?';
 
 function query(e){
-   var xy = e.getItemXY(); 
-   xy = this.pix_to_real_world(xy[0],xy[1])[0];
-   placeanno('<font class="loading">Loading annotations for position '+xy+'. . .</font>'); 
-   var url = qurl + 'chr='+ G('chr').value + '&di='+G('di').value + '&loc='+ xy;
-   jfetch(url,placeanno);
+   var mx = e.mouse().page.x;
+   var ex = getElementPosition(e.src()).x;
+   var pixelpos = mx - ex;
+   var bppos = gb.pix2rw(pixelpos,0)[0];
+   placeanno('<font class="loading">Loading annotations for position '+bppos+'. . .</font>'); 
+   var url = qurl + 'chr='+ $('chr').value + '&di='+$('di').value +
+   '&loc='+bppos;
+   jfetch(url, 'info');
 }
 
 function placeanno(stuff) {
@@ -95,6 +118,26 @@ function placeanno(stuff) {
 }
 
 </script>
+
+<form action='javascript:;' >
+<input id='iw' type ='hidden' value=256 />
+<input id='chr' type ='hidden' value='<TMPL_VAR NAME=CHR>' />
+<input id='di' type ='hidden' value='<TMPL_VAR NAME=DI>' />
+<input id='x' type ='hidden' value='<TMPL_VAR NAME=X>' />
+<input id='xloc' type ='hidden' value='<TMPL_VAR NAME=XLOC>' />
+<input id='z' type ='hidden' value='<TMPL_VAR NAME=Z>' />
+<input type='text' id='center' value=100000>
+<input type='button' id='go2center' value='re-center' /> <br>
+Nucleotide: <input type='text' id='bploc' value=''>
+Pixel: <input type='text' id='pixloc' value=''><br/>
+<div>Click on the map to view feature information at that position </div>
+<div>Click and drag on the map to move genomic view left and right</div> 
+<button id='zoomin' name='zoomin' class="tileClass" > Zoom In </button>
+<button name='zoomout' id='zoomout' class="tileClass" > Zoom Out </button>
+
+<div id='container' class="tileClass" style='position:relative;left:6px;top:10px;width:800px;height:350px;border:1px solid black' > </div>
+<div id ='info' style='position:relative;left:6px;top:10px;width:800px;height:200px'><FORM NAME="info"></FORM></div>
+</form>
 
 
 </TMPL_IF>
