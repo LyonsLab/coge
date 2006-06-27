@@ -11,7 +11,8 @@ use CoGe::Graphics::Feature::Exon_motifs;
 use CoGe::Graphics::Feature::AminoAcid;
 use CoGe::Graphics::Feature::Domain;
 use CoGe::Genome;
-use CoGe::Accessory::Tile::Cache;
+use File::Spec::Functions;
+#use CoGe::Accessory::Tile::Cache;
 use Getopt::Long;
 use POSIX;
 use Benchmark;
@@ -105,40 +106,6 @@ Time to process proteins           $pr_time
 		foreach (my $i=$c_start; $i< $stop; $i+=$chars)
 		  {
 		    $count++;
-		    my $cache_file        = "/opt/apache/CoGe/cache/tile";
-		    $cache_file .= ".iw";
-		    $cache_file .= $iw if defined $iw;
-		    $cache_file .= ".z";
-		    $cache_file .= $z if defined $z;
-		    $cache_file .= ".di";
-		    $cache_file .= $di->id if $di;
-		    $cache_file .= ".chr";
-		    $cache_file .= $chr if defined $chr;
-		    $cache_file .= ".oid";
-		    $cache_file .= $org_id if defined $org_id;
-		    $cache_file .= ".v";
-		    $cache_file .= $version if defined $version;
-		    my $chra = 10*2**$z;
-		    my $im = floor($i/($chra*1000));
-		    $cache_file .= ".im";
-		    $cache_file .= $im;
-		    my $cache_object = CoGe::Accessory::Tile::Cache->new( $cache_file);
-		    #		$cache_object->force_retile(1);
-		    $cache_object->DEBUG(1);
-		    if ($cache_object->get_tile_from_db({x=>$i,
-							 z=>$z,
-							 'tile_size'=>$iw,
-							 chr=>$chr,
-							 di=>$di->id,
-							 org_id=>$org_id,
-							 v=>$version,
-							}))
-		      {
-			print "image exists.  Skipping\n";
-			next;
-		      }
-		    
-
 		    my $t0 = new Benchmark;
 		    my $clen = $chars;
 		    if ($i+$chars > $c_start+$max_chars)
@@ -154,14 +121,14 @@ Time to process proteins           $pr_time
 			$clen = $chars;
 		      }
 		    my $subseq = substr($seq, $seq_pos, $clen);
-		    
+		    my $cache_file = get_file_name(chr=>$chr,di=>$di, iw=>$iw, z=>$z, x=>$i);
 		    print "Cache file: $cache_file\n";
 		    print "\tclen: $clen, chars: $chars, max_chars: $max_chars, seq_len: $seq_len\n";
 		    print "\tstart: ",$i,"($seq_pos), end: ", $i+$clen-1,", length: ", length $subseq,"\n\n";
 		    print "\tlength subseq: ", length $subseq,"\n";
 
  		    $seq_pos+=$clen;
-# 		    next;
+ 		    #next;
 
 		    $c->set_region(start=>$i, stop=>$i+$chars-1);
 		    process_nucleotides(start=>$c_start+$i, chr=>$chr, di=>$di->id, db=>$db, c=>$c, seq=>$subseq);
@@ -176,33 +143,19 @@ Time to process proteins           $pr_time
 		    my $t2 = new Benchmark;
 		    my $img = $c->gd->png;
 		    my $t3 = new Benchmark;
-		    while (!$cache_object->get_tile_from_db({x=>$i,
-							     z=>$z,
-							     'tile_size'=>$iw,
-							     chr=>$chr,
-							     di=>$di->id,
-							     org_id=>$org_id,
-							     v=>$version,
-							    }))
-		      {
-			$cache_object->get_tile({x=>$i,
-						 z=>$z,
-						 'tile_size'=>$iw,
-						 chr=>$chr,
-						 di=>$di->id,
-						 org_id=>$org_id,
-						 v=>$version,
-						 img=>$img,
-						});
-		      }
-
+            #local( *IMG,$/ );
+            open( IMG, ">$cache_file") or die "cant open $cache_file: $!\n"; 
+            binmode IMG;
+            print IMG $img; 
+            close(IMG);
+            
 		    my $t4 = new Benchmark;
 		    my $nt_time = timestr(timediff($t1, $t0));
 		    my $gr_time = timestr(timediff($t2, $t1));
 		    my $gi_time = timestr(timediff($t3, $t2));
 		    my $si_time = timestr(timediff($t4, $t3));
 		    print qq{
-Time to process nuclrotides:       $nt_time
+Time to process nucleotides:       $nt_time
 Time to generate region:           $gr_time
 Time to generate image:            $gi_time
 Time to store image:               $si_time
@@ -229,7 +182,7 @@ sub find_max_z
     my $di = $opts{di};
     my $go = $di->genomic_sequences->next;
     return unless $go;
-    my $chr_len = $go->get_last_position($di);
+    my $chr_len = $go->get_last_position(di=>$di);
     return unless $chr_len;
     my $max_zoom = ceil (log10($chr_len/10)/(log10(2)));
 #    print "Max zoom: $max_zoom\t";
@@ -264,7 +217,8 @@ sub initialize_c
 
     my ($gen_seq) = $db->get_genomic_seq_obj->search({data_information_id=>$di});
     return unless $gen_seq && $gen_seq->chr eq $chr;
-    my $chr_length = $db->get_genomic_sequence_obj->get_last_position($di);
+    my $chr_length =
+    $db->get_genomic_sequence_obj->get_last_position(di=>$di);
     $c->chr_length($chr_length);
     $c->mag_scale_type("constant_power");
     $c->iw($iw);
@@ -514,3 +468,84 @@ sub draw_prots
 	print "Done!\n";
       }
   }
+
+sub get_file_name
+    {
+      my %opts = @_;
+      my ($basedir,$dir) = get_dir_array(%opts);
+      my $reldir = catfile(@$dir) . '.png';
+      my $basepath = catfile(@$basedir);
+
+      my $fn = catfile($basepath,@$dir) . '.png' ;
+      ($fn) = $fn =~ /(.*)/;
+      my $data;
+      if(! -e $fn){
+       make_dir($basepath,$dir);
+       }
+    return $fn;
+    }
+
+sub make_dir {
+    my ($dirstr,$dir) = @_;
+     pop @$dir;
+      $dirstr = catfile($dirstr,shift @$dir);
+       umask 0;
+        foreach my $subdir (@$dir){
+         ($dirstr) = catdir($dirstr,$subdir) =~ /(.*)/;
+      my $status = mkdir($dirstr,0777) if !-e $dirstr;
+     }
+    }
+                                       
+sub get_max {
+    my $z = shift;
+    my $MAX_FILES_PER_DIR = 1000;
+    my $upt = 10 * 2 ** $z;
+    return int(log($MAX_FILES_PER_DIR * $upt)/log(10));
+ }
+
+sub grep_match {
+    my ($needle,$haystack) = @_;
+    return grep { $needle eq $_ } @$haystack;
+  }
+
+
+sub get_dir_array {
+#    my $qstr = $ENV{QUERY_STRING};
+    my %query_pairs = @_;
+    my $SPATIAL_PARS = ['x'];
+    my $ZOOM_PARS = 'z';
+    my $base_dir = "/opt/apache/CoGe";#$ENV{DOCUMENT_ROOT};
+    my @basedir = split(/[\/\\]/,$base_dir);
+    my @dir = '_cache_';;# = split(/[\/\\]/,$ENV{SCRIPT_NAME});
+#    shift @dir;
+#    $dir[$#dir] = '_cache_';
+#    my @keyvals = map { split('=', $_) } split(/&/,$qstr);
+#    my %query_pairs = @keyvals;
+#    @keyvals = map { $_ % 2 == 0 && !grep_match($keyvals[$_],$SPATIAL_PARS)? $keyvals[$_] : '' } 0.. $#keyvals;
+#    @keyvals = sort @keyvals;
+    my @keyvals = qw(di chr iw z x);
+#    push(@keyvals,@$SPATIAL_PARS);
+    my $MAX = get_max($query_pairs{$ZOOM_PARS});
+    foreach my $key(@keyvals ){
+         next if  !$key;
+         my $val = $query_pairs{$key};
+         my @vals;
+         # 123456 becomes /x__123/456/  if $MAX == 3
+         # 123456 becomes /x__123456/   if $MAX  > 5
+         if(grep_match($key,$SPATIAL_PARS)){
+             if($val !~ /(\D|-)+/){
+                 $val =~ s/-/n/g;
+                 $val = scalar reverse($val);
+                 while($val =~  /(\d{1,$MAX}n?)/g){
+                     unshift(@vals,scalar reverse($1));
+                 }
+              }
+          }
+          @vals = ($val) unless @vals;
+          my $first = shift @vals;
+          push(@dir,$key . '__' . $first);
+          map { push(@dir,$_) } @vals;
+    }
+    return (\@basedir,\@dir); 
+ }
+                                           
