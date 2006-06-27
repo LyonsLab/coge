@@ -10,6 +10,7 @@ use CoGe::Graphics::Feature::GAGA;
 use CoGe::Graphics::Feature::Exon_motifs;
 use CoGe::Graphics::Feature::AminoAcid;
 use CoGe::Graphics::Feature::Domain;
+use CoGe::Graphics::Feature::Block;
 use CoGe::Genome;
 use File::Spec::Functions;
 #use CoGe::Accessory::Tile::Cache;
@@ -394,6 +395,13 @@ sub process_features
 	        $f->strand($loc->strand);
 	      }
 	    $f->order(2);
+          }
+        elsif ($feat->type->name =~ /CNS/i)
+          {
+            $f = CoGe::Graphics::Feature::Block->new();
+            $f->order(1);
+            my $color = [255, 100, 255];
+            $f->color($color);
           }
 	else
 	  {
