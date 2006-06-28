@@ -388,6 +388,7 @@ sub draw_prots
 	      {
 		my $ao = CoGe::Graphics::Feature::AminoAcid->new({aa=>$aseq, start=>$loc->start, stop=>$loc->stop, strand => $loc->strand, order=>2});
 		$ao->skip_overlap_search(1);
+		$ao->mag(0.75);
 		$c->add_feature($ao);
 		delete $loc->{__Changed}; #silence the warning from Class::DBI
 	      }
