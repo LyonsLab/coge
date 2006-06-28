@@ -19,16 +19,18 @@ use POSIX;
 use Benchmark;
 
 
-my (@org_ids, $version,$iw, $min_zoom);
+my (@org_ids, $version,$iw, $min_zoom, $max_chr_length);
 
 GetOptions("oid=s"=>\@org_ids,
 	   "v=s" => \$version,
 	   "iw=s"=>\$iw,
 	   "min_zoom|mz=s"=>\$min_zoom,
+	   "max_chr_length=s"=>\$max_chr_length
 #	   "z|zoom=s" => \$zoom,
 #	   "u|url=s" => \$url
 	   );
-$min_zoom = 0 unless $min_zoom;
+$min_zoom = 5 unless $min_zoom;
+$max_chr_length = 0 unless $max_chr_length;
 
 #$url = "synteny.cnr.berkeley.edu" unless $url;
 #$url = "http://" .$url unless $url =~ /http:\/\//;
@@ -54,6 +56,7 @@ foreach my $org_id (@org_ids)
 	next if $version && $di->version ne $version;
 	$version = $di->version unless $version;
 	my ($max_zoom, $chr_len, $chr) = find_max_z(di=>$di);
+	next if ($max_chr_length && $chr_len > $max_chr_length);
 	print "Total number of bp for chr $chr: $chr_len\n";
 	next unless defined $max_zoom;
 	#    $max_zoom=10;
