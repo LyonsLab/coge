@@ -132,7 +132,7 @@ nINITIAL_ZOOM:  3,
 // MAX_ZOOM
 // max zoom level: to prevent zooming way out
 // <optional> default to infinity
-nMAX_ZOOM: 13,
+nMAX_ZOOM: 20,
 
 // NON_SPATIAL_PARS_NAME:
 // the parameters that are requred to generate
