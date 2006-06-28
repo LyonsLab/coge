@@ -59,6 +59,7 @@ foreach my $org_id (@org_ids)
 	next if $version && $di->version ne $version;
 	$version = $di->version unless $version;
 	my ($max_zoom, $chr_len, $chr) = find_max_z(di=>$di);
+	next unless $chr_len;
 	next if ($max_chr_length && $chr_len > $max_chr_length);
 	print "Total number of bp for chr $chr: $chr_len\n";
 	next unless defined $max_zoom;
