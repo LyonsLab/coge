@@ -25,8 +25,8 @@ GetOptions("oid=s"=>\@org_ids,
 	   "v=s" => \$version,
 	   "iw=s"=>\$iw,
 	   "min_zoom|mz=s"=>\$min_zoom,
-	   "max_chr_length=s"=>\$max_chr_length
-	   "skip_oid=s"=>\@skip_oids;
+	   "max_chr_length=s"=>\$max_chr_length,
+	   "skip_oid=s"=>\@skip_oids,
 #	   "z|zoom=s" => \$zoom,
 #	   "u|url=s" => \$url
 	   );
