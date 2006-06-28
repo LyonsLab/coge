@@ -28,6 +28,7 @@ function dataset_info_chr_chain(val, chr) {
 function launch_viewer (did, chr) {
  x = kaj.G('x');
  z = kaj.G('z');
+ if (z > 12) {z=12;}
  link =  "GeLo.pl?z="+z+"&INITIAL_CENTER="+x+",0&di="+did+"&chr="+chr;
  window.location=link;
 }
@@ -86,19 +87,6 @@ function tmouse(e){
   $('bploc').value = this.pix2rw(mx - ex,0)[0];
   rw2pix();
 }
-<!--
-/*
-var omap = new Tiler('container',[config]);
-
-
-
-var zi = G('zi');
-addEvent(zi,'click',function(){omap.zoom(1)});
-addEvent(G('zo'),'click',function(){omap.zoom(-1)});
-
-addEvent(G('container'),'click',query);
-*/
--->
 var qurl = '/CoGe/FeatAnno.pl?';
 
 function query(e){
@@ -125,19 +113,18 @@ function placeanno(stuff) {
 <input id='di' type ='hidden' value='<TMPL_VAR NAME=DI>' />
 <input id='x' type ='hidden' value='<TMPL_VAR NAME=X>' />
 <input id='xloc' type ='hidden' value='<TMPL_VAR NAME=XLOC>' />
-<input id='z' type ='hidden' value='<TMPL_VAR NAME=Z>' />
+
 <input type='text' id='center' value=100000>
 <input type='button' id='go2center' value='re-center' /> <br>
-Nucleotide: <input type='text' id='bploc' value=''>
-Pixel: <input type='text' id='pixloc' value=''><br/>
-<div>Click on the map to view feature information at that position </div>
-<div>Click and drag on the map to move genomic view left and right</div> 
+Nucleotide: <input type='text' id='bploc' value='' size=10>
+Pixel: <input type='text' id='pixloc' value='' size =4><br/>
 <button id='zoomin' name='zoomin' class="tileClass" > Zoom In </button>
 <button name='zoomout' id='zoomout' class="tileClass" > Zoom Out </button>
-
+Current Zoom: <input type ='text' id='z' value='<TMPL_VAR NAME=Z>' size = 2>
 <div id='container' class="tileClass" style='position:relative;left:6px;top:10px;width:800px;height:350px;border:1px solid black' > </div>
 <div id ='info' style='position:relative;left:6px;top:10px;width:800px;height:200px'><FORM NAME="info"></FORM></div>
 </form>
-
-
+<br>
+<div>Click on the map to view feature information at that position </div>
+<div>Click and drag the map to move genomic view left and right</div> 
 </TMPL_IF>
