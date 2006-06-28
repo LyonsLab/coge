@@ -19,18 +19,20 @@ use POSIX;
 use Benchmark;
 
 
-my (@org_ids, $version,$iw, $min_zoom, $max_chr_length);
+my (@org_ids, $version,$iw, $min_zoom, $max_chr_length, @skip_oids);
 
 GetOptions("oid=s"=>\@org_ids,
 	   "v=s" => \$version,
 	   "iw=s"=>\$iw,
 	   "min_zoom|mz=s"=>\$min_zoom,
 	   "max_chr_length=s"=>\$max_chr_length
+	   "skip_oid=s"=>\@skip_oids;
 #	   "z|zoom=s" => \$zoom,
 #	   "u|url=s" => \$url
 	   );
 $min_zoom = 5 unless $min_zoom;
 $max_chr_length = 0 unless $max_chr_length;
+my %skip_oids = map {$_,1} @skip_oids;
 
 #$url = "synteny.cnr.berkeley.edu" unless $url;
 #$url = "http://" .$url unless $url =~ /http:\/\//;
@@ -49,6 +51,7 @@ unless (@org_ids)
   }
 foreach my $org_id (@org_ids)
   {
+    next if $skip_oids{$org_id};
     my ($org) = ref ($org_id) =~ /org/i ? $org_id :$db->get_org_obj->retrieve($org_id);
     print "working on: ".$org->name,"\n";
     foreach my $di ($org->data_information)
