@@ -3,11 +3,12 @@
 use strict;
 use File::Spec::Functions;
 require LWP::Simple;
+use vars qw($IMGURL $ZOOM_PAR $SPATIAL_PARS $BUPT);
 
-my $IMGURL = 'http://toxic/CoGe/GenomePNG.pl?';
-my $ZOOM_PAR = 'z';
-my $SPATIAL_PARS = ['x'];
-my $BUPT = 10;
+$IMGURL = 'http://toxic/CoGe/GenomePNG.pl?';
+$ZOOM_PAR = 'z';
+$SPATIAL_PARS = ['x'];
+$BUPT = 10;
 print "Content-type: image/png\n\n";
 
 my ($basedir,$dir) = get_dir_array();
