@@ -19,18 +19,19 @@ use POSIX;
 use Benchmark;
 
 
-my (@org_ids, $version,$iw, $min_zoom, $max_chr_length, @skip_oids);
+my (@org_ids, $version,$iw, $min_zoom, $max_chr_length, @skip_oids, $max_zoom);
 
 GetOptions("oid=s"=>\@org_ids,
 	   "v=s" => \$version,
 	   "iw=s"=>\$iw,
 	   "min_zoom|mz=s"=>\$min_zoom,
+	   "max_zoom|mz=s"=>\$max_zoom,
 	   "max_chr_length=s"=>\$max_chr_length,
 	   "skip_oid=s"=>\@skip_oids,
 #	   "z|zoom=s" => \$zoom,
 #	   "u|url=s" => \$url
 	   );
-$min_zoom = 5 unless $min_zoom;
+$min_zoom = 6 unless $min_zoom;
 $max_chr_length = 0 unless $max_chr_length;
 my %skip_oids = map {$_,1} @skip_oids;
 
@@ -58,7 +59,8 @@ foreach my $org_id (@org_ids)
       {
 	next if $version && $di->version ne $version;
 #	$version = $di->version unless $version;
-	my ($max_zoom, $chr_len, $chr) = find_max_z(di=>$di);
+	my ($max_zoom_tmp, $chr_len, $chr) = find_max_z(di=>$di);
+    $max_zoom = $max_zoom_tmp unless $max_zoom;
 	next unless $chr_len;
 	next if ($max_chr_length && $chr_len > $max_chr_length);
 	print "Total number of bp for chr $chr: $chr_len\n";
