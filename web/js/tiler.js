@@ -23,7 +23,7 @@ function Tiler (containerId,config_arr) {
     this.w = tmp.w;
     this.h = tmp.h;
     this.ZOOM_POWER = 2; 
-    this.tiler = "tiler.pl?";
+    this.tiler = "http://biocon.berkeley.edu/CoGe/tiler.pl?";
     this._config(config_arr);
     this._initialize_TIC();
     this._initialize_tiles();
