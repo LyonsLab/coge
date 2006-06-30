@@ -203,7 +203,7 @@ sub label_nodes
 	    $label =~ s/_/\./;
 	    $label =~ s/_/\\n/g;
 	    my ($accn1) = $label =~ /^([^\\]+)/;
-	    my $url = "B2V.pl?";
+	    my $url = "SynView.pl?";
 	    $url .= "accn1=$accn1&" if $accn1;
 	    foreach my $sister ($node->ancestor->get_all_Descendents)
 	      {
