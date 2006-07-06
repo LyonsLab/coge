@@ -13,6 +13,15 @@ use CoGe::Genome::DB::Location;
 use CoGe::Genome::DB::Organism;
 use CoGe::Genome::DB::Sequence;
 use CoGe::Genome::DB::Sequence_type;
+use CoGe::Genome::DB::User;
+use CoGe::Genome::DB::User_group;
+use CoGe::Genome::DB::User_group_connector;
+use CoGe::Genome::DB::Permission;
+use CoGe::Genome::DB::User_group_feature_list_permission_connector;
+use CoGe::Genome::DB::Feature_list;
+use CoGe::Genome::DB::Feature_list_connector;
+
+
 use Carp qw(cluck);
 use Data::Dumper;
 
@@ -779,6 +788,177 @@ sub get_seq_type_obj
     my $self = shift;
     return $self->get_sequence_type_obj();
   }
+
+
+
+################################################ subroutine header begin ##
+
+=head2 get_user_obj
+
+ Usage     : $genome_obj->get_user_obj();
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+
+See Also   : CoGe::Genome::DB::User
+
+=cut
+
+################################################## subroutine header end ##
+
+sub get_user_obj
+  {
+    my $self = shift;
+    return CoGe::Genome::DB::User->new();
+  }
+
+################################################ subroutine header begin ##
+
+=head2 get_user_group_obj
+
+ Usage     : $genome_obj->get_user_group_obj();
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+
+See Also   : CoGe::Genome::DB::User_group
+
+=cut
+
+################################################## subroutine header end ##
+
+sub get_user_group_obj
+  {
+    my $self = shift;
+    return CoGe::Genome::DB::User_group->new();
+  }
+
+################################################ subroutine header begin ##
+
+=head2 get_user_group_connector_obj
+
+ Usage     : $genome_obj->get_user_group_connector_obj();
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+
+See Also   : CoGe::Genome::DB::User_group_connector
+
+=cut
+
+################################################## subroutine header end ##
+
+sub get_user_group_connector_obj
+  {
+    my $self = shift;
+    return CoGe::Genome::DB::User_group_connector->new();
+  }
+
+################################################ subroutine header begin ##
+
+=head2 get_permission_obj
+
+ Usage     : $genome_obj->get_permission_obj();
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+
+See Also   : CoGe::Genome::DB::Permission
+
+=cut
+
+################################################## subroutine header end ##
+
+sub get_permission_obj
+  {
+    my $self = shift;
+    return CoGe::Genome::DB::Permission->new();
+  }
+
+################################################ subroutine header begin ##
+
+=head2 get_user_group_feature_list_permission_connector_obj
+
+ Usage     : $genome_obj->get_user_group_feature_list_permission_connector_obj();
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+
+See Also   : CoGe::Genome::DB::User_group_feature_list_permission_connector
+
+=cut
+
+################################################## subroutine header end ##
+
+sub get_user_group_feature_list_permission_connector_obj
+  {
+    my $self = shift;
+    return CoGe::Genome::DB::User_group_feature_list_permission_conenctor->new();
+  }
+
+################################################ subroutine header begin ##
+
+=head2 get_feature_list_obj
+
+ Usage     : $genome_obj->get_feature_list_obj();
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+
+See Also   : CoGe::Genome::DB::Feature_list
+
+=cut
+
+################################################## subroutine header end ##
+
+sub get_feature_list_obj
+  {
+    my $self = shift;
+    return CoGe::Genome::DB::Feature_list->new();
+  }
+
+################################################ subroutine header begin ##
+
+=head2 get_feature_list_connector_obj
+
+ Usage     : $genome_obj->get_feature_list_connector_obj();
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+
+See Also   : CoGe::Genome::DB::Feature_list_connector
+
+=cut
+
+################################################## subroutine header end ##
+
+sub get_feature_list_connector_obj
+  {
+    my $self = shift;
+    return CoGe::Genome::DB::Feature_list_connector->new();
+  }
+
+
+
+
+
+
+
+=head1 FUNCTIONAL METHODS
 
 
 ################################################ subroutine header begin ##
