@@ -14,6 +14,7 @@ use CoGe::Genome::DB::Organism;
 use CoGe::Genome::DB::Sequence;
 use CoGe::Genome::DB::Sequence_type;
 use CoGe::Genome::DB::User;
+use CoGe::Genome::DB::User_session;
 use CoGe::Genome::DB::User_group;
 use CoGe::Genome::DB::User_group_connector;
 use CoGe::Genome::DB::Permission;
@@ -950,6 +951,30 @@ sub get_feature_list_connector_obj
   {
     my $self = shift;
     return CoGe::Genome::DB::Feature_list_connector->new();
+  }
+
+
+################################################ subroutine header begin ##
+
+=head2 get_user_session_obj
+
+ Usage     : $genome_obj->get_user_session_obj();
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+
+See Also   : CoGe::Genome::DB::User_session
+
+=cut
+
+################################################## subroutine header end ##
+
+sub get_user_session_obj
+  {
+    my $self = shift;
+    return CoGe::Genome::DB::User_session->new();
   }
 
 
