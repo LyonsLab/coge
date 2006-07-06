@@ -49,4 +49,6 @@ lib/CoGe/Genome/DB/Feature_list.pm
 t/020_load.t
 lib/CoGe/Genome/DB/Feature_list_connector.pm
 t/021_load.t
+lib/CoGe/Genome/DB/User_session.pm
+t/022_load.t
 Makefile.PL
