@@ -50,6 +50,7 @@ sub gen_html
     my $html;
     foreach my $feat (@feats)
       {
+	next if $feat->type->name =~ /^source$/;
 	$html .= $feat->annotation_pretty_print_html();
 	$html .= qq{<font class="annotation">Organism</font>};
 	$html .= qq{<li>};
