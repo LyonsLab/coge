@@ -134,7 +134,7 @@ sub get_anno
 	my $z = 7;
 	$anno .= join "\n<BR><HR><BR>\n", $feat->annotation_pretty_print_html();
 #	$anno .= qq{<DIV id="loc$i"><input type="button" value = "Click for chromosomal view" onClick="show_location(['args__}.$feat->begin_location.qq{', 'args__}.$feat->end_location.qq{', 'args__}.$feat->chr.qq{', 'args__}.$feat->info->id.qq{', 'args__loc}.$i.qq{'],[tiler_setup]);"></DIV>};
-	$anno .= qq{<DIV id="loc$i"><input type="button" value = "Click for chromosomal view" onClick="window.open('GeLo.pl?chr=$chr&di=$di&x=$x&z=$z');"></DIV>};
+	$anno .= qq{<DIV id="loc$i"><input type="button" value = "Click for chromosomal view" onClick="window.open('GeLo.pl?chr=$chr&di=$di&INITIAL_CENTER=$x,0&z=$z');"></DIV>};
 	$anno .= qq{<DIV id="exp$i"><input type="button" value = "Click for expression tree" onClick="gen_data(['args__Generating expression view image'],['exp$i']);show_express(['args__}.$accn.qq{','args__}.'1'.qq{','args__}.$i.qq{'],['exp$i']);"></DIV>};
 	$anno .= qq{<DIV id="dnaseq$i"><input type="button" value = "Click for DNA sequence" onClick="gen_data(['args__retrieving sequence'],['dnaseq$i']);get_dna_seq_for_feat(['args__}.$feat->id.qq{'],['dnaseq$i']);"></DIV>};
 	$anno .= qq{<DIV id="protseq$i"><input type="button" value = "Click for protein sequence" onClick="gen_data(['args__retrieving sequence'],['protseq$i']);get_prot_seq_for_feat(['args__}.$feat->id.qq{'],['protseq$i']);"></DIV>};
