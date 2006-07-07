@@ -51,6 +51,7 @@ BODY {
 .error { 
   font-size: large;
   color: #FF0000;
+  text-decoration: blink;
 }
 
 .ital { 
