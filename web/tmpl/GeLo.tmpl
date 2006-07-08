@@ -74,7 +74,7 @@ function myInit(){
     connect('zoomout','onclick',function(){gb.zoom(-1)})
     connect('container','onmousemove',gb,tmouse);
     connect('container','onclick',query);
-    connect('go2center','onclick',function(){gb.setCenter($('center').value,0)});
+    connect('go2center','onclick',function(){gb.setCenter($('bploc').value,0)});
     // TOOD for anything with class function, connect element with 
     // id = fred to function fred(){ }
 }
@@ -114,13 +114,16 @@ function placeanno(stuff) {
 <input id='x' type ='hidden' value='<TMPL_VAR NAME=X>' />
 <input id='xloc' type ='hidden' value='<TMPL_VAR NAME=XLOC>' />
 
-<input type='text' id='center' value=100000>
+Nucleotide: <input class = "backbox" type='text' id='bploc' value='' size=10>
 <input type='button' id='go2center' value='re-center' /> <br>
-Nucleotide: <input type='text' id='bploc' value='' size=10>
-Pixel: <input type='text' id='pixloc' value='' size =4><br/>
+<!--<input class = "backbox" type='text' size = "10" id='center' value=100000>-->
+<!--Pixel: <input class = "backbox" type='text' id='pixloc' value='' size =4><br/>-->
 <button id='zoomin' name='zoomin' class="tileClass" > Zoom In </button>
 <button name='zoomout' id='zoomout' class="tileClass" > Zoom Out </button>
-Current Zoom: <input type ='text' id='z' value='<TMPL_VAR NAME=Z>' size = 2>
+Current Zoom: <input type ='text' class = "backbox" id='z' value='<TMPL_VAR NAME=Z>' size = 2>
+<br>
+Organism: <font class="species"><TMPL_VAR NAME=ORG></font>
+Dataset: <font class="species"><TMPL_VAR NAME=DS></font>
 <div id='container' class="tileClass" style='position:relative;left:6px;top:10px;width:800px;height:350px;border:1px solid black' > </div>
 <div id ='info' style='position:relative;left:6px;top:10px;width:800px;height:200px'><FORM NAME="info"></FORM></div>
 </form>
