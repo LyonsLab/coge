@@ -85,7 +85,7 @@ function tmouse(e){
   var mx =  e.mouse().page.x;
   var ex = getElementPosition(e.src()).x;
   $('bploc').value = this.pix2rw(mx - ex,0)[0];
-  rw2pix();
+  //rw2pix();
 }
 var qurl = '/CoGe/FeatAnno.pl?';
 
@@ -125,7 +125,7 @@ Current Zoom: <input type ='text' class = "backbox" id='z' value='<TMPL_VAR NAME
 Organism: <font class="species"><TMPL_VAR NAME=ORG></font>
 Dataset: <font class="species"><TMPL_VAR NAME=DS></font>
 <div id='container' class="tileClass" style='position:relative;left:6px;top:10px;width:800px;height:350px;border:1px solid black' > </div>
-<div id ='info' style='position:relative;left:6px;top:10px;width:800px;height:200px'><FORM NAME="info"></FORM></div>
+<div id ='info' style='position:relative;left:6px;top:10px;width:800px;height:400px'><FORM NAME="info"></FORM></div>
 </form>
 <br>
 <div>Click on the map to view feature information at that position </div>
