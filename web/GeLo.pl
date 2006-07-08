@@ -94,7 +94,7 @@ sub gen_body
 sub get_orgs
   {
     my $oid = shift;
-    my @opts = sort map {"<OPTION value=\"$_->id\">".$_->name."</OPTION>"} $DB->get_org_obj->retrieve_all();
+    my @opts = map {"<OPTION value=\"$_->id\">".$_->name."</OPTION>"} sort {$a->name cmp $b->name} $DB->get_org_obj->retrieve_all();
     my $html;
     $html .= qq{<FONT CLASS ="small">Organism count: }.scalar @opts.qq{</FONT>\n<BR>\n};
     $html .= qq{<SELECT id="org_id" SIZE="5" MULTIPLE onChange="dataset_chain()" >\n};
