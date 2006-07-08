@@ -84,7 +84,7 @@ sub get_types
     my %seen;
     my @opts = sort map {"<OPTION>$_</OPTION>"} grep {! $seen{$_}++} map {$_->type->name} $DB->get_features_by_name_and_version(name=>$accn, version=>$info_ver);
     $html .= "<font class=small>Type count: ".scalar @opts."</font>\n<BR>\n";
-    $html .= qq{<SELECT id="Type_name" SIZE="5" MULTIPLE onChange="get_anno(['accn_select','infoid','Type_name'],['anno'])" >\n};
+    $html .= qq{<SELECT id="Type_name" SIZE="5" MULTIPLE onChange="get_anno(['accn_select','version','Type_name'],['anno'])" >\n};
     $html .= join ("\n", @opts);
     $html .= "\n</SELECT>\n";
     $html =~ s/OPTION/OPTION SELECTED/;
@@ -128,20 +128,19 @@ sub get_anno
     my $i = 0;
     foreach my $feat (@feats)
       {
+	$i++;
 	my $chr = $feat->chr;
 	my $di = $feat->info->id;
 	my $x = $feat->begin_location;
 	my $z = 7;
 	$anno .= join "\n<BR><HR><BR>\n", $feat->annotation_pretty_print_html();
-#	$anno .= qq{<DIV id="loc$i"><input type="button" value = "Click for chromosomal view" onClick="show_location(['args__}.$feat->begin_location.qq{', 'args__}.$feat->end_location.qq{', 'args__}.$feat->chr.qq{', 'args__}.$feat->info->id.qq{', 'args__loc}.$i.qq{'],[tiler_setup]);"></DIV>};
+	$anno =~ s/\%/percent/g;
 	$anno .= qq{<DIV id="loc$i"><input type="button" value = "Click for chromosomal view" onClick="window.open('GeLo.pl?chr=$chr&di=$di&INITIAL_CENTER=$x,0&z=$z');"></DIV>};
 	$anno .= qq{<DIV id="exp$i"><input type="button" value = "Click for expression tree" onClick="gen_data(['args__Generating expression view image'],['exp$i']);show_express(['args__}.$accn.qq{','args__}.'1'.qq{','args__}.$i.qq{'],['exp$i']);"></DIV>};
 	$anno .= qq{<DIV id="dnaseq$i"><input type="button" value = "Click for DNA sequence" onClick="gen_data(['args__retrieving sequence'],['dnaseq$i']);get_dna_seq_for_feat(['args__}.$feat->id.qq{'],['dnaseq$i']);"></DIV>};
-	$anno .= qq{<DIV id="protseq$i"><input type="button" value = "Click for protein sequence" onClick="gen_data(['args__retrieving sequence'],['protseq$i']);get_prot_seq_for_feat(['args__}.$feat->id.qq{'],['protseq$i']);"></DIV>};
+	$anno .= qq{<DIV id="protseq$i"><input type="button" value = "Click for protein sequence" onClick="gen_data(['args__retrieving sequence'],['protseq$i']);get_prot_seq_for_feat(['args__}.$feat->id.qq{'],['protseq$i']);"></DIV>\n\n};
 
-#	    qq{<DIV id="exp$i"></DIV>};
 	$anno = "<font class=\"annotation\">No annotations for this entry</font>" unless $anno;
-	$i++;
       }
     return ($anno);
   }
@@ -197,27 +196,30 @@ sub show_express
 
 sub gen_html
   {
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/FeatView.tmpl');
+    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
     $template->param(LOGO_PNG=>"FeatView-logo.png");
     $template->param(TITLE=>'CoGe: Feature Viewer');
     $template->param(USER=>$USER);
     $template->param(DATE=>$DATE);
-    $template->param(TABLE_NAME1=>"Feature Selection");
-    $template->param(ACCN=>$ACCN);	
-#    $template->param(ADDIIONAL_JS=>'accn_search_chain(0);');
-    if ($ACCN)
-      {
-
-      }
-    my $html;# =  "Content-Type: text/html\n\n";
+    $template->param(bOX_NAME=>"Feature Selection");
+    my $body = gen_body();
+    $template->param(BODY=>$body);
+    my $html;
     $html .= $template->output;
     return $html;
+  }
+
+sub gen_body
+  {
+    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/FeatView.tmpl');
+    $template->param(ACCN=>$ACCN);
+    return $template->output;
   }
 
 sub get_data_source_info_for_accn
   {
     my $accn = shift;
-    my $blank = qq{<input type="hidden" id="infoid">};
+    my $blank = qq{<input type="hidden" id="version">};
     return $blank unless $accn;
     my @feats = $DB->get_feats_by_name($accn);
     my %sources;
@@ -234,7 +236,7 @@ sub get_data_source_info_for_accn
       }
     my $html;
     $html .= qq{
-<SELECT name = "infoid" id="infoid" MULTIPLE SIZE="5" onChange="get_types_chain();">
+<SELECT name = "version" id="version" MULTIPLE SIZE="5" onChange="get_types_chain();">
 };
     my $count = 0;
     foreach my $title (reverse sort keys %sources)
@@ -251,7 +253,7 @@ sub get_data_source_info_for_accn
 sub get_data_source_info_for_accn_old
   {
     my $accn = shift;
-    my $blank = qq{<input type="hidden" id="infoid">};
+    my $blank = qq{<input type="hidden" id="version">};
     return $blank unless $accn;
     my @feats = $DB->get_feats_by_name($accn);
     my %sources;
@@ -262,9 +264,9 @@ sub get_data_source_info_for_accn_old
     my $html;
     $html .= "<font class=small>Data count: ".scalar keys (%sources) ."</font>\n<BR>\n";
     $html .= qq{
-<SELECT name = "infoid" id="infoid" MULTIPLE SIZE="5" onChange="get_types_chain();">
+<SELECT name = "version" id="version" MULTIPLE SIZE="5" onChange="get_types_chain();">
 };
-#<SELECT name = "infoid" id="infoid" MULTIPLE SIZE="5" onChange="get_types(['accn_select', 'infoid'],['FeatType']);">
+#<SELECT name = "version" id="version" MULTIPLE SIZE="5" onChange="get_types(['accn_select', 'version'],['FeatType']);">
     my $count = 0;
     foreach my $id (sort {$b <=> $a} keys %sources)
       {
