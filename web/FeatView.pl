@@ -44,6 +44,7 @@ my $pj = new CGI::Ajax(
 		      );
 $pj->JSDEBUG(0);
 $pj->DEBUG(0);
+$pj->js_encode_function('escape');
 print $pj->build_html($FORM, \&gen_html);
 
 
@@ -134,7 +135,6 @@ sub get_anno
 	my $x = $feat->begin_location;
 	my $z = 7;
 	$anno .= join "\n<BR><HR><BR>\n", $feat->annotation_pretty_print_html();
-	$anno =~ s/\%/percent/g;
 	$anno .= qq{<DIV id="loc$i"><input type="button" value = "Click for chromosomal view" onClick="window.open('GeLo.pl?chr=$chr&di=$di&INITIAL_CENTER=$x,0&z=$z');"></DIV>};
 	$anno .= qq{<DIV id="exp$i"><input type="button" value = "Click for expression tree" onClick="gen_data(['args__Generating expression view image'],['exp$i']);show_express(['args__}.$accn.qq{','args__}.'1'.qq{','args__}.$i.qq{'],['exp$i']);"></DIV>};
 	$anno .= qq{<DIV id="dnaseq$i"><input type="button" value = "Click for DNA sequence" onClick="gen_data(['args__retrieving sequence'],['dnaseq$i']);get_dna_seq_for_feat(['args__}.$feat->id.qq{'],['dnaseq$i']);"></DIV>};
