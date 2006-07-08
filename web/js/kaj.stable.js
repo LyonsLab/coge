@@ -56,8 +56,8 @@ var kaj = {
       var l = sel.length;
       var ans = [];
       for (var i=0;i<l;i++) {
-        if (el[i].selected) {
-          ans.push(el[i].value);
+        if (sel[i].selected) {
+          ans.push(sel[i].value);
         }
       }
       return ans;
