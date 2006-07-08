@@ -59,18 +59,10 @@ sub gen_html
 <script src=js/tilerConfig.js> </script>
 <script src=js/kaj.stable.js> </script>
 });
-
-#<script src=js/Dom.js> </script>
-#<script src=js/common.js> </script>
-#<script src=js/extendEvent.js> </script>
-#<script src=js/panner.js> </script>
-#<script src=js/tiler.js> </script>
-
     $template->param(USER=>$USER);
     $template->param(DATE=>$DATE);
     $template->param(LOGO_PNG=>"GeLo-logo.png");
     $template->param(BODY=>$body);
-#    $template->param(HEAD=>'<SCRIPT language="JavaScript" type="text/javascript" src="./js/kaj.stable.js"></SCRIPT>');
     my $html;
     $html .= $template->output;
     return $html;
