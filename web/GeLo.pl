@@ -73,6 +73,7 @@ sub gen_body
     my $form = shift || $FORM;
     my $chr = $form->param('chr');# || 1;
     my $di = $form->param('di');# || 6;
+    my $dio = $DB->get_dataset_obj->retrieve($di);
     my $z = $form->param('z');# || 7;
     my $x = $form->param('x');# || 1;
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GeLo.tmpl');
@@ -82,6 +83,10 @@ sub gen_body
 	$template->param(DI=>$di);
 	$template->param(Z=>$z);
 	$template->param(X=>$x);
+	my $org = $dio->org->name;
+	$template->param(ORG=>$org);
+	my $ds = $dio->name."(v".$dio->version.", id".$dio->id.")";
+	$template->param(DS=>$ds);
       }
     else
       {
@@ -110,7 +115,7 @@ sub get_data_info
     return unless $oid;
     my $org = $DB->get_org_obj->retrieve($oid);
     return unless $org;
-    my @opts = map {"<OPTION value=\"".$_->id."\">".$_->name. " (v".$_->version.")</OPTION>"} sort {$b->version cmp $a->version || $a->name cmp $b->name} $org->data_info;
+    my @opts = map {"<OPTION value=\"".$_->id."\">".$_->name. " (v".$_->version.", id",$_->id,")</OPTION>"} sort {$b->version cmp $a->version || $a->name cmp $b->name} $org->data_info;
     my $html;
     $html .= qq{<FONT CLASS ="small">Dataset count: }.scalar @opts.qq{</FONT>\n<BR>\n};
     $html .= qq{<SELECT id="di_id" SIZE="5" MULTIPLE onChange="gen_data(['args__loading. . .'],['di_info']); get_data_info_info(['di_id'],[dataset_info_chr_chain])" >\n};
@@ -189,12 +194,12 @@ sub get_data_info_chr_info
     my $zoom;
    	$zoom .= qq{<tr><td class = "ital">Zoom level:};
    	$zoom .= qq{<td><SELECT name = "z" id="z" size = 1>};
-   	my @opts = map {"<OPTION value=\"$_\">".$_."</OPTION>"} (5..10);
+   	my @opts = map {"<OPTION value=\"$_\">".$_."</OPTION>"} (5..15);
    	$zoom .= join ("\n", @opts);
-   	$zoom =~ s/OPTION/OPTION SELECTED/;
+   	$zoom =~ s/OPTION value="10"/OPTION SELECTED value="10"/;
    	$zoom .= qq{</SELECT>};
-    $viewer .= qq{<tr><td class = "ital">Zoom level:<td><input type = "text" size=10 value ="7" id = "z">};
-    #$viewer .= $zoom;
+    $viewer .= qq{<tr><td class = "ital">Zoom level:<td><input type = "text" size=10 value ="10" id = "z">};
+#    $viewer .= $zoom;
     $viewer .= "</table>";
     #$viewer .= qq{<input type="hidden" id="z" value="7">};
     $viewer .= qq{<input type="submit" value = "Launch!" onClick="launch_viewer($did, '$chr')">};
