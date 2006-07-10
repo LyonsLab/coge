@@ -255,13 +255,17 @@ sub process_features
     my $c = $opts{c};
     my $accn = $opts{accn};
     my $print_names = $opts{print_names};
-    my $feat_count = $db->get_feature_obj->count_features_in_region(start=>$start, end=>$stop, info_id=>$di, chr=>$chr);
+    my $sstart = $start - ($stop - $start);
+    my $sstop = $stop + ($stop - $start);
+    
+    my $feat_count = $db->get_feature_obj->count_features_in_region(start=>$sstart, end=>$sstop, info_id=>$di, chr=>$chr);
     if ($feat_count > $MAX_FEATURES)
       {
 	warn "exceeded maximum number of features $MAX_FEATURES. ($feat_count requested)\nskipping.\n";
 	return;
       }
-    foreach my $feat($db->get_feature_obj->get_features_in_region(start=>$start, end=>$stop, info_id=>$di, chr=>$chr))
+    
+    foreach my $feat($db->get_feature_obj->get_features_in_region(start=>$sstart, end=>$sstop, info_id=>$di, chr=>$chr))
       {
         my $f;
 #	print STDERR Dumper $feat;
