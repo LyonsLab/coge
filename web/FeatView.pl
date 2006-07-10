@@ -15,7 +15,7 @@ use POSIX;
 
 $ENV{PATH} = "/opt/apache2/CoGe/";
 
-use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $DB $FORM $ACCN);
+use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $DB $FORM $ACCN $FID);
 
 # set this to 1 to print verbose messages to logs
 $DEBUG = 0;
@@ -133,7 +133,7 @@ sub get_anno
 	my $chr = $feat->chr;
 	my $di = $feat->info->id;
 	my $x = $feat->begin_location;
-	my $z = 7;
+	my $z = 10;
 	$anno .= join "\n<BR><HR><BR>\n", $feat->annotation_pretty_print_html();
 	$anno .= qq{<DIV id="loc$i"><input type="button" value = "Click for chromosomal view" onClick="window.open('GeLo.pl?chr=$chr&di=$di&INITIAL_CENTER=$x,0&z=$z');"></DIV>};
 	$anno .= qq{<DIV id="exp$i"><input type="button" value = "Click for expression tree" onClick="gen_data(['args__Generating expression view image'],['exp$i']);show_express(['args__}.$accn.qq{','args__}.'1'.qq{','args__}.$i.qq{'],['exp$i']);"></DIV>};
@@ -250,117 +250,3 @@ sub get_data_source_info_for_accn
     return ("<font class=small>Version count: ".$count ."</font>\n<BR>\n".$html, 1);
   }
 
-sub get_data_source_info_for_accn_old
-  {
-    my $accn = shift;
-    my $blank = qq{<input type="hidden" id="version">};
-    return $blank unless $accn;
-    my @feats = $DB->get_feats_by_name($accn);
-    my %sources;
-    foreach my $feat (@feats)
-      {
-	$sources{$feat->data_info->id} = $feat->data_info;
-      }
-    my $html;
-    $html .= "<font class=small>Data count: ".scalar keys (%sources) ."</font>\n<BR>\n";
-    $html .= qq{
-<SELECT name = "version" id="version" MULTIPLE SIZE="5" onChange="get_types_chain();">
-};
-#<SELECT name = "version" id="version" MULTIPLE SIZE="5" onChange="get_types(['accn_select', 'version'],['FeatType']);">
-    my $count = 0;
-    foreach my $id (sort {$b <=> $a} keys %sources)
-      {
-	my $val = $sources{$id};
-	my $name = $val->name;
-	my $ver = $val->version;
-	my $desc = $val->description;
-	my $sname = $val->data_source->name;
-	my $org = $val->org->name;
-	$html .= qq{  <option value="$id" >$org: $sname, version $ver\n};
-	$html =~ s/option/option selected/ unless $count;
-	$count++;
-      }
-    $html .= qq{</SELECT>\n};
-    return ($html);
-  }
-
-
-sub gen_pict
-  {
-    my %opts = @_;
-    my $start = $opts{'start'};
-    my $stop = $opts{'stop'};
-    $stop = $start unless $stop;
-    my $di = $opts{'info_id'};
-    my $chr = $opts{'chr'};
-    my $file = $opts{'file'};
-#    print STDERR Dumper @_;
-    return unless ($start && $stop && $di);
-    my $c = new CoGe::Graphics::Chromosome;
-    my $chr_length = $DB->get_genomic_sequence_obj->get_last_position(di=>$di, chr=>$chr);
-    $c->chr_length($chr_length);
-    $c->iw(1600);
-    $c->max_mag((80));
-    $c->DEBUG(0);
-    $c->feature_labels(0);
-    $c->fill_labels(1);
-    $c->draw_chromosome(1);
-    $c->draw_ruler(1);
-    $c->set_region(start=>$start, stop=>$stop);
-    $c->mag($c->mag-1);
-    $start = $c->_region_start;
-    $stop = $c->_region_stop;
-
-    foreach	 my $feat ($DB->get_feature_obj->get_features_in_region(start=>$start, end=>$stop, info_id=>$di, chr=>$chr)) 
-      {
-	my $f;
-	if ($feat->type->name =~ /Gene/i) {
-	  $f = CoGe::Graphics::Feature::Gene->new();
-	  $f->color([255,0,0,50]);
-	  foreach	 my $loc ($feat->locs) {
-	    $f->add_segment(start=>$loc->start, stop=>$loc->stop);
-	    $f->strand($loc->strand);
-	  }
-	  $f->order(1);
-	} elsif ($feat->type->name =~ /CDS/i) {
-	  $f = CoGe::Graphics::Feature::Gene->new();
-	  $f->color([0,255,0, 50]);
-	  foreach	 my $loc ($feat->locs) {
-	    $f->add_segment(start=>$loc->start, stop=>$loc->stop);
-	    $f->strand($loc->strand);
-	  }
-	$f->order(3);
-      } elsif ($feat->type->name =~ /rna/i) {
-	$f = CoGe::Graphics::Feature::Gene->new();
-	$f->color([0,0,255, 50]);
-	foreach	 my $loc ($feat->locs) {
-	  $f->add_segment(start=>$loc->start, stop=>$loc->stop);
-	  $f->strand($loc->strand);
-	}
-	$f->order(2);
-      }
-		 my ($name) = map {$_->name} $feat->names;
-      $f->label($name);
-      $f->type($feat->type->name);
-
-      $c->add_feature($f);
-    }
-    my $seq = uc($DB->get_genomic_sequence_obj->get_sequence(start=>$start, end=>$stop, chr=>$chr, info_id=>$di)); 
-    my $seq_len = length $seq;
-    my $chrs = int (($c->_region_stop-$c->_region_start)/$c->iw);
-    my $pos = 0;
-    $start = 1 if $start < 1;
-    while ($pos < $seq_len)
-      {
-	my $subseq = substr ($seq, $pos, $chrs);
-	my $rcseq = $subseq;
-	$rcseq =~ tr/ATCG/TAGC/;
-#	print STDERR $subseq,"\t", $rcseq,"\n";
-	my $f1 = CoGe::Graphics::Feature::NucTide->new({nt=>$subseq, strand=>1, start =>$pos+$start});
-	my $f2 = CoGe::Graphics::Feature::NucTide->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
-	$c->add_feature($f1, $f2);
-	$pos+=$chrs;
-	#    print "working on position ",$i+$start,"\n";
-      }
-    $c->generate_png(file=>"/opt/apache/CoGe/$file");
-  }
