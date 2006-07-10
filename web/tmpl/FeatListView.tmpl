@@ -1,0 +1,99 @@
+<SCRIPT language="javascript">
+
+function edit_list_reload(lid)
+ {
+   edit_list(['args__'+lid],['main']);
+ }
+</SCRIPT>
+
+<TMPL_IF NAME="FRONT_PAGE">
+<DIV id="main">
+<TABLE>
+ <TR align = left>
+  <TD>
+  <TD>
+  <TH>List Name
+  <TH>Description
+  <TH colspan=2>Feature count
+
+<TMPL_LOOP NAME=FEATURE_LIST>
+
+
+ <TR valign=top>
+  <TD><input type="IMAGE" src="picts/edit.png"  onClick="edit_list(['args__<TMPL_VAR NAME=LIST_ID>'],['main']);">
+  <TD><input type="IMAGE" src="picts/delete.png"  onClick=" if (confirm('Are you sure you wish to delete this list?')){ delete_list(['args__<TMPL_VAR NAME=LIST_ID>'], ['tmp']), window.location.reload();}">  
+  <TD class="species"> <TMPL_VAR NAME=LIST_NAME>
+  <TD><TMPL_VAR NAME=LIST_DESC>
+  <TD>
+      <DIV id="FLID<TMPL_VAR NAME=LIST_ID>" class="l">
+      <TMPL_VAR NAME=FEATURE_COUNT>
+      </DIV>
+      <DIV id="showfeat<TMPL_VAR NAME=LIST_ID>" class="l">
+      <input type="IMAGE" src="picts/close.png" onClick="expand_list(['args__<TMPL_VAR NAME=LIST_ID>'],['FLID<TMPL_VAR NAME=LIST_ID>', 'showfeat<TMPL_VAR NAME=LIST_ID>'])">
+
+      </DIV>
+</TMPL_LOOP>
+
+</TABLE>
+</DIV>
+
+<DIV id="tmp"></DIV>
+
+</TMPL_IF>
+
+<TMPL_IF NAME="CREATE_LIST">
+<DIV MAIN>
+
+</DIV>
+</TMPL_IF>
+
+<TMPL_IF NAME="EDIT_LIST">
+
+
+<DIV id="main">
+
+<div class="backbox"><font class="species"><TMPL_VAR LIST_NAME></font>: <TMPL_VAR LIST_DESC></div>
+
+<TABLE>
+ <TR>
+  <TD>
+  <TH>Organism
+  <TH>Dataset
+  <TH>Type
+  <TH>Name(s)
+
+<TMPL_LOOP NAME=FEATURE_INFO>
+ <DIV id="FID<TMPL_VAR NAME=FEAT_ID>">
+ <TR>
+  <TD><input type="IMAGE" src="picts/delete.png"  onClick=" if (confirm('Are you sure you wish to delete this list?')){ delete_feature(['args__<TMPL_VAR NAME=FEAT_ID>', 'args__<TMPL_VAR NAME=LIST_ID>'], [edit_list_reload]) }">  
+  <TD><TMPL_VAR NAME=FEAT_ORG>
+  <TD><TMPL_VAR NAME=FEAT_DATA>
+  <TD><TMPL_VAR NAME=FEAT_TYPE>
+  <TD><TMPL_VAR NAME=FEAT_NAME>
+ </DIV>
+</TMPL_LOOP>
+ 
+</TABLE>
+<input type="text" size="7" class="backbox" id="add_feat"><input type="submit" value="Add Feature" onClick="add_feature(['add_feat','args__<TMPL_VAR NAME=LIST_ID>'],[edit_list_reload]);">
+</div>
+
+</TMPL_IF>
+
+<TMPL_IF NAME="EXPAND_LIST">
+<TABLE>
+ <TR>
+  <TH>Type
+  <TH>Name(s)
+
+<TMPL_LOOP NAME=FEATURE_INFO>
+ <DIV id="FID<TMPL_VAR NAME=FEAT_ID>">
+ <TR>
+  <TD><TMPL_VAR NAME=FEAT_TYPE>
+  <TD><TMPL_VAR NAME=FEAT_NAME>
+ </DIV>
+</TMPL_LOOP>
+ 
+</TABLE>
+
+</TMPL_IF>
+
