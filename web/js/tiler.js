@@ -179,7 +179,6 @@ Tiler.prototype = {
       if(this.zoomLevel-dir > this.MAX_ZOOM){return;}
       var old_zoom = this.zoomLevel;
       var old_center_rw = this.pix2rw(this.w/2,this.h/2);
-
       this.zoomLevel-= dir;
 
       try { $(this.ZOOM_PAR_NAME).value = this.zoomLevel } catch(e){}
@@ -202,22 +201,35 @@ Tiler.prototype = {
       });
 
       var seenrw = {left:{},top:{}};
+      var i =0;
       forEach(sortedNodes,function(node){
            var ns = node.src;
+           var orig_ns = ns;
            var l = parseInt(node.style.left);
-           //var lnew = l + (tile_shift[0] * this.TILE_WIDTH);
+            //var lnew = l + (tile_shift[0] * this.TILE_WIDTH);
            var t = parseInt(node.style.top );
            //var tnew = t + (tile_shift[1] * this.TILE_HEIGHT);
            //var newrw = this.pix2rw(lnew,tnew,1);
-           var newrw = this.pix2rw(l,t,1);
-           seenrw.left[newrw[0]]++;
-           seenrw.top[ newrw[1]]++;
+
            ns = ns.replace(zre,znew);
            ns.match(RE_left); 
+           var old_x = RegExp.$1;
+           var new_x = old_x*Math.pow(2,(this.zoomLevel-old_zoom));
+           var newrw = this.pix2rw(l,t,1);
+           newrw[0] = new_x;
+//           var oldrw =newrw;
+//           newre = this.normalize_xy(newrw[0], newrw[1]);
+//	   if (i==4) alert (newrw[0]+":"+oldrw[0]);
+           seenrw.left[newrw[0]]++;
+           seenrw.top[ newrw[1]]++;
+           
 
            var RE_old = new RegExp(rwname + '=' + RegExp.$1, 'g');
            ns = ns.replace(RE_old,rwname + '=' + newrw[0]);
+//           ns = ns.replace(RE_old,rwname + '=' + new_x);
            node.src=ns;
+//          if (i == 4) alert (old_x+":"+new_x+"\n"+node.style.left+"\n"+orig_ns+"\n"+l+"\n"+RE_old+"\n"+newrw+"\n"+ns);
+           i++;
       },this);
 
       this.magic_rw = {left:[],top:[]};
@@ -280,8 +292,12 @@ Tiler.prototype = {
           px -= oxy[0];
           py -= oxy[1];
        }
-      return [ parseInt(uppx*px)+this._left_rw
+      return [
+
+               parseInt(uppx*px)+this._left_rw
              , parseInt(uppx*py)+this._top_rw
+//Math.rount replacement?               parseInt(uppx*px)+this._left_rw
+//             , parseInt(uppx*py)+this._top_rw
            ];
   },
   _initialize_tiles: function(){
