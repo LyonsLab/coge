@@ -16,7 +16,6 @@ BEGIN {
     __PACKAGE__->table('feature');
     __PACKAGE__->columns(All=>qw{feature_id feature_type_id data_information_id});
     __PACKAGE__->has_a('data_information_id'=>'CoGe::Genome::DB::Data_information');
-#    __PACKAGE__->has_a('organism_id'=>'CoGe::Genome::DB::Organism');
     __PACKAGE__->has_a('feature_type_id'=>'CoGe::Genome::DB::Feature_type');
     __PACKAGE__->has_many('feature_names'=>'CoGe::Genome::DB::Feature_name');
     __PACKAGE__->has_many('locations'=>'CoGe::Genome::DB::Location');
@@ -28,8 +27,7 @@ SELECT f.feature_id
   JOIN data_information di USING (data_information_id)
   JOIN feature_name fn USING (feature_id)
  WHERE fn.name = ?
-   AND di.version = ?
-});
+   AND di.version = ?});
     __PACKAGE__->set_sql ('select_features_in_range' => qq{
 SELECT DISTINCT f.feature_id
   FROM feature f
@@ -262,7 +260,6 @@ sub dataset
 sub organism
   {
     my $self = shift;
-    warn "THIS METHOD IS OBSOLETE, PLEASE CHANGE CODE TO $self->info->organism_id()!\n";
     return $self->info->organism_id();
   }
 
@@ -383,7 +380,16 @@ sub annotation_pretty_print
     $location .= join (", ", map {$_->start."-".$_->stop} $self->locs);
     $location .="(".$strand.")";
     #my $location = "Chr ".$chr. "".$start."-".$stop.""."(".$strand.")";
-    $anno_obj->add_Annot(new CoGe::Genome::Accessory::Annotation(Type=>"Location", Values=>[$location], Type_delimit=>"\n\t", Val_delimit=>" "));
+    $anno_obj->add_Annot(new CoGe::Genome::Accessory::Annotation(Type=>"Location", Values=>[$location], Type_delimit=>": ", Val_delimit=>" "));
+    my $anno_type = new CoGe::Genome::Accessory::Annotation(Type=>"Name(s)");
+    $anno_type->Type_delimit(": ");
+    $anno_type->Val_delimit(", ");
+    foreach my $name ($self->names)
+      {
+	$anno_type->add_Annot($name->name);
+      }
+    
+    $anno_obj->add_Annot($anno_type);
     foreach my $anno (sort {$b->type->name cmp $a->type->name} $self->annos)
       {
 	my $type = $anno->type();
@@ -396,25 +402,16 @@ sub annotation_pretty_print
 	  {
 	    my $anno_g = new CoGe::Genome::Accessory::Annotation(Type=>$group->name);
 	    $anno_g->add_Annot($anno_type);
-	    $anno_g->Type_delimit("\n\t");
-	    $anno_g->Val_delimit(" ");
+	    $anno_g->Type_delimit(": ");
+	    $anno_g->Val_delimit(", ");
 	    $anno_obj->add_Annot($anno_g);
 	  }
 	else
 	  {
-	    $anno_type->Type_delimit("\n\t");
+	    $anno_type->Type_delimit(": ");
 	    $anno_obj->add_Annot($anno_type);
 	  }
       }
-    my $anno_type = new CoGe::Genome::Accessory::Annotation(Type=>"Name(s)");
-    $anno_type->Type_delimit("\n\t");
-    $anno_type->Val_delimit("\n\t");
-    foreach my $name ($self->names)
-      {
-	$anno_type->add_Annot($name->name);
-      }
-    
-    $anno_obj->add_Annot($anno_type);
     return $anno_obj->to_String;
   }
 
