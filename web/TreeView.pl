@@ -83,7 +83,9 @@ sub gen_body
 	my $mod_file = generate_mod_file($FORM->param('nodes')) if $FORM->param('nodes');
 	$mod_file =~ s/$TEMPDIR/$TEMPURL/;
 	$template->param('mod'=>$mod_file) if $mod_file;
-	
+	$template->param('ROOTED'=>$FORM->param('rooted'));# if $FORM->param('rooted');
+	$template->param('OVERLAP'=>$FORM->param('overlap'));# if $FORM->param('overlap');
+	$template->param('LR'=>$FORM->param('LR'));# if $FORM->param('LR');
       }
     return $template->output;
   }
@@ -96,8 +98,14 @@ sub zoom
     my $tfile = shift;
     my $mod = shift;
     my $extra = shift;
+    my $rooted = shift;
+    my $overlap = shift;
+    my $LR = shift;
+    $FORM->param('rooted', $rooted);
+    $FORM->param('overlap', $overlap);
+    $FORM->param('LR', $LR);
+    
     $zoom += $extra if $extra;
-    print STDERR $zoom,"\n";
     $mod =~ s/$TEMPURL/$TEMPDIR/;
     my $mod_content = load_mod($mod);
     $FORM->param('nodes', $mod_content);
@@ -156,17 +164,21 @@ sub generate_dot_file
 	close $tmp_file;
       }
     return unless -r $file;
-    my $node_names = get_names($file);
+    
     my $treeio = new Bio::TreeIO (#-format =>'newick',
 				  -file=>$file,
 				 );
     $treeio->next_tree;
     while (my $tree = $treeio->next_tree())
       {
+	my $node_names = get_names($file, $tree);
 	my $root_node = $tree->get_root_node;
 	next unless $root_node->internal_id;
 	my $dot;
 	$dot .= "graph tree {\n";
+	$dot .= qq{
+     rankdir=LR;
+} if $FORM->param('LR');
 	my $size = 8;
 	$size += $zoom if $zoom;
 	$size = 1 if $size < 1;
@@ -177,6 +189,14 @@ sub generate_dot_file
 	$dot .= "];\n";
 	$dot .= process_node($root_node, $node_names);
 	$dot .= label_nodes($tree, $node_names);
+	if ($FORM->param("rooted"))
+	  {
+	    #let's make sure all named nodes are at the same rank
+	    my $rank = join ("; ", map {"\"".$_."\""} keys %$node_names);
+	    $dot .= qq{
+     { rank = same $rank; }
+};
+	  }
 	$dot .= "}\n";
 	my $dot_file = new File::Temp ( TEMPLATE=>'TV__XXXXX',
 					DIR=>$TEMPDIR,
@@ -198,7 +218,7 @@ sub label_nodes
       {
 	if ($node->id)
 	  {
-	    my $name = $names->{$node->id};
+	    my $name = $names->{$node->id} || $node->id;
 	    my $label = $name;
 	    $label =~ s/_/\./;
 	    $label =~ s/_/\\n/g;
@@ -273,6 +293,7 @@ sub process_node
 sub get_names
   {
     my $file = shift;
+    my $tree = shift;
     open (IN, $file);
     my %names;
     my $flag = 0;
@@ -297,6 +318,14 @@ sub get_names
 	$flag = 1 if /Translate/;
       }
     close IN;
+    #check to see if we got the node names, otherwise, grab the ids from the tree
+    unless (keys %names)
+      {
+	foreach my $node ($tree->get_nodes)
+	  {
+	    $names{$node->id} = $node->id if $node->id;
+	  }
+      }
     return \%names;
   }
 
