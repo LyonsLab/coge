@@ -12,6 +12,9 @@ BEGIN {
     @EXPORT_OK   = qw ();
     %EXPORT_TAGS = ();
     __PACKAGE__->set_up_table('user_group_feature_list_permission_connector');
+    __PACKAGE__->has_a('user_group_id'=>'CoGe::Genome::DB::User_group');
+    __PACKAGE__->has_a('feature_list_id'=>'CoGe::Genome::DB::Feature_list');
+    __PACKAGE__->has_a('permission_id'=>'CoGe::Genome::DB::Permission');
  }
 
 
