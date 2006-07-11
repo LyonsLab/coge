@@ -172,6 +172,24 @@ sub ugflpc
     return $self->user_group_feature_list_permission_connectors();
   }
 
+################################################ subroutine header begin ##
+
+=head2 features
+
+ Usage     : my @features = $feature_list_obj->features();
+ Purpose   : fetches the feature objects assoicated with a feature list
+             by hopping though the feature_list_connector table
+ Returns   : an array or array ref depending on wantarray
+ Argument  : none
+ Throws    : none
+ Comments  : 
+
+See Also   : CoGe::Genome::DB::Feature
+
+=cut
+
+################################################## subroutine header end ##
+
 sub features
   {
     my $self = shift;
