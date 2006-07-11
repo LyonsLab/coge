@@ -12,6 +12,8 @@ BEGIN {
     @EXPORT_OK   = qw ();
     %EXPORT_TAGS = ();
     __PACKAGE__->set_up_table('feature_list_connector');
+    __PACKAGE__->has_a('feature_id'=>'CoGe::Genome::DB::Feature');
+    __PACKAGE__->has_a('feature_list_id'=>'CoGe::Genome::DB::Feature_list');
  }
 
 
@@ -27,7 +29,7 @@ CoGe::Genome::DB::Feature_list_connector
 
 =head1 DESCRIPTION
 
-This object access the table which connects the feature table to the feature_list table.
+This object accesses the table which connects the feature table to the feature_list table.
 This allows multiple features to be in multiple feature lists.
 
 =head1 USAGE
@@ -79,9 +81,12 @@ perl(1).
  ug_id
  ugid               
 
- feature_list_id  =>  database entry id for the feature_list table
+ feature_list_id  =>  get the feature list object
  fl_id
  flid
+ feature_id       =>  get the feature object
+ feature
+ feat
 
  permission_id    =>  database entry id for the permission table
  p_id
@@ -113,10 +118,16 @@ sub fl_id
     return $self->feature_list_id();
   }
 
-sub flid
+sub feature
   {
     my $self = shift;
-    return $self->feature_list_id();
+    return $self->feature_id();
+  }
+
+sub feat
+  {
+    my $self = shift;
+    return $self->feature_id();
   }
 
 sub p_id
