@@ -115,7 +115,6 @@ sub accn_search
 
 sub get_anno
   {
-    print STDERR Dumper \@_;
     my $accn = shift;
     return unless $accn;
     my $type = shift;
