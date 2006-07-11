@@ -42,6 +42,7 @@ my $pj = new CGI::Ajax(
 		       rset=>\&Rset,
 		       run=>\&Show_Summary,
 		       source_search=>\&get_data_source_info_for_accn,
+		       feat_search=>\&get_feats_for_dataset_and_accn,
 		       loading=>\&loading,
 		      );
 $pj->JSDEBUG(0);
@@ -79,6 +80,7 @@ sub Show_Summary
   {
     my (
 	$accn1, $accn2,
+	$featid1, $featid2,
 	$dr1up, $dr1down,
 	$dr2up, $dr2down,
 	$infoid1, $infoid2,
@@ -115,10 +117,10 @@ sub Show_Summary
     my ($file2, $file2_begin, $file2_end);
     my $spike_seq;
     my $db = new GS::MyDB;
-    if ($accn1)
+    if ($featid1)
       {
-	$obj1 = get_obj_from_genome_db( $accn1, $infoid1,$dr1up, $dr1down );
-	return "<font class=error>No entry found for $accn1</font>" unless ($obj1);
+	$obj1 = get_obj_from_genome_db( $accn1, $featid1, $infoid1,$dr1up, $dr1down );
+	return "<font class=error>No entry found for $featid1</font>" unless ($obj1);
 	($file1, $file1_begin, $file1_end,$spike_seq) = 
 	  generate_seq_file(obj=>$obj1,
 			    mask=>$mask_flag,
@@ -186,10 +188,10 @@ sub Show_Summary
 			    );
       }
     #create object 2
-    if ($accn2)
+    if ($featid2)
       {
-	$obj2 = get_obj_from_genome_db( $accn2, $infoid2, $dr2up, $dr2down );
-	return "<font class=error>No entry found for $accn1</font>" unless ($obj1);
+	$obj2 = get_obj_from_genome_db( $accn2, $featid2, $infoid2, $dr2up, $dr2down );
+	return "<font class=error>No entry found for $featid2</font>" unless ($obj1);
 	($file2, $file2_begin, $file2_end,$spike_seq) =
 	  generate_seq_file(obj=>$obj2,
 			    mask=>$mask_flag,
@@ -301,8 +303,6 @@ sub Show_Summary
 # 					     SPIKE_LEN=>length($spike_seq),
 # 					    );
 
-	$accn1 = 0 unless $accn1;
-	$accn2 = 0 unless $accn2;
 	my ($qfile, $qmap, $qmapname) = generate_image(
 						       gbobj=>$obj1, 
 						       start=>$file1_begin,
@@ -411,7 +411,7 @@ sub generate_image
     $c->chr_mag_height(5);
     $c->set_region(start=>$start, stop=>$stop);
     $c->mag(1);
-#    $c->start_picture('left');
+#    $c->start_picture('left');nifb
     my $f1= CoGe::Graphics::Feature->new({start=>1, order => 2, strand => 1});
     $f1->merge_percent(0);
     $c->add_feature($f1);
@@ -554,7 +554,7 @@ sub process_features
 	print STDERR $name,"\n\n" if $DEBUG;
         $f->type($type);
 	$f->description($feat->{QUALIFIERS}{annotation});
-	$f->link("FeatView.pl?accn=$name");
+	$f->link("FeatView.pl?accn=$name\" target=\"_new");
         $c->add_feature($f);
     }
   }
@@ -661,19 +661,24 @@ sub get_data_source_info_for_accn
     return unless $accn;
     my $num = shift;
     my $db = new CoGe::Genome;
-    my @feats = $db->get_feats_by_name($accn);
+    my @feats;
+    foreach my $f ($db->get_feats_by_name($accn))
+      {
+	next if $f->type->name =~ /CDS/i;
+	next if $f->type->name =~ /RNA/i;
+	push @feats, $f;
+      }
+    my $html;
     my %sources;
     foreach my $feat (@feats)
       {
 	$sources{$feat->data_info->id} = $feat->data_info;
       }
-    my $html;
     if (keys %sources)
       {
 	$html .= qq{
-<SELECT name = "infoid$num" id= "infoid$num">
+<SELECT name = "infoid$num" id= "infoid$num" onChange="feat_search(['accn$num','infoid$num', 'args__$num'],['feat$num']);">
 };
-	my $count = 0;
 	foreach my $id (sort {$b <=> $a} keys %sources)
 	  {
 	    my $val = $sources{$id};
@@ -682,17 +687,53 @@ sub get_data_source_info_for_accn
 	    my $desc = $val->description;
 	    my $sname = $val->data_source->name;
 	    my $org = $val->org->name;
-	    $html  .= qq{  <option value="$id">$org: $sname, version $ver\n};
-	    $html =~ s/option/option selected/ unless $count;
-	    $count++;
+	    $html  .= qq{  <option value="$id">$org: $sname (v$ver)\n};
 	  }
 	$html .= qq{</SELECT>\n};
+	my $count = scalar keys %sources;
+	$html .= qq{<font class=small>($count)</font>};
       }
     else
       {
-	$html .= qq{Accession not found <input type="hidden" id="infoid$num">\n};
+	$html .= qq{Accession not found <input type="hidden" id="infoid$num">\n};	
+      }    
+    return ($html, $num);
+  }
+sub get_feats_for_dataset_and_accn
+  {
+    my $accn = shift;
+    my $dsid = shift;
+    my $num = shift;
+    return unless $dsid;
+    my $db = new CoGe::Genome;
+    my @feats;
+    foreach my $f ($db->get_feats_by_name($accn))
+      {
+	next unless $f->dataset->id == $dsid;
+	next if $f->type->name =~ /CDS/i;
+	next if $f->type->name =~ /RNA/i;
+	push @feats, $f;
       }
-    
+    my $html;
+    if (@feats)
+      {
+	$html .= qq{
+<SELECT name = "featid$num" id = "featid$num" >
+  };
+	foreach my $feat (@feats)
+	  {
+	    my $loc = "Chr:".$feat->chr." ".$feat->genbank_location_string;
+	    $loc =~ s/(complement)|(join)//g;
+	    $html .= qq {  <option value="$feat->id">$loc \n};
+	  }
+	$html .= qq{</SELECT>\n};
+	my $count = scalar @feats;
+	$html .= qq{<font class=small>($count)</font>};
+      }
+    else
+      {
+	$html .=  qq{<input type="hidden" id="featid$num">\n}
+      }
     return $html;
   }
 
@@ -773,44 +814,38 @@ sub generate_seq_file
 sub get_obj_from_genome_db
   {
     my $accn = shift;
+    my $featid = shift;
     my $info_id = shift;
     my $up = shift || 0;
     my $down = shift || 0;
     my $db = new CoGe::Genome;
-    my @feats;
+    my $feat = $db->get_feature_obj->retrieve($featid);
     my $start = 0;
     my $stop = 0;
     my $feat_start = 0;
     my $chr;
     my $seq;
-    foreach my $feat ($db->get_feats_by_name($accn))
+    if ($feat)
       {
-	if ($feat->data_information->id() eq $info_id)
-	  {
-	    push @feats, $feat;
-	    if ($feat->type->name eq "gene")
-	      {
-		$start = $feat->begin_location-$up;
-		$start = 1 if $start < 1;
-		$stop = $feat->end_location+$down;
-		$feat_start = $feat->begin_location;
-		$chr = $feat->chr;
-		$seq = $db->get_genomic_seq_obj->get_sequence(
-							      start => $start,
-							      stop => $stop,
-							      chr => $chr,
-							      org_id => $feat->info->org->id,
-							      info_id => $info_id,
-							     );
-	      }
-	  }
+	$start = $feat->begin_location-$up;
+	$start = 1 if $start < 1;
+	$stop = $feat->end_location+$down;
+	$feat_start = $feat->begin_location;
+	$chr = $feat->chr;
+	$seq = $db->get_genomic_seq_obj->get_sequence(
+						      start => $start,
+						      stop => $stop,
+						      chr => $chr,
+						      org_id => $feat->info->org->id,
+						      info_id => $info_id,
+						     );
       }
     my $obj= new GS::MyDB::GBDB::GBObject(
 					  ACCN=>$accn,
 					  LOCUS=>$accn,
-					  VERSION=>$feats[0]->data_information->version(),
-					  SOURCE=>$feats[0]->data_information->data_source->name(),
-					  ORGANISM=>$feats[0]->info->org->name(),
+					  VERSION=>$feat->data_information->version(),
+					  SOURCE=>$feat->data_information->data_source->name(),
+					  ORGANISM=>$feat->info->org->name(),
 					  					 );
     $obj->sequence($seq);
     my $fnum = 1;
@@ -819,27 +854,28 @@ sub get_obj_from_genome_db
 
     print STDERR "Region: $chr: $start-$stop\n" if $DEBUG;
 
-    foreach my $feat ($db->get_feature_obj->get_features_in_region(start=>$start, stop=>$stop, chr=>$chr, info_id=>$info_id))
+    foreach my $f ($db->get_feature_obj->get_features_in_region(start=>$start, stop=>$stop, chr=>$chr, info_id=>$info_id))
       {
 	my $name;
-	foreach my $tmp (sort {$b->name cmp $a->name} $feat->names)
+	foreach my $tmp (sort {$b->name cmp $a->name} $f->names)
 	  {
 	    $name = $tmp->name;
 	    last if ($tmp->name =~ /^$accn.+/i);
 	  }
 	$name = $accn unless $name;
 	print STDERR $name,"\n" if $DEBUG;
-	print STDERR "\t", $feat->genbank_location_string(),"\n" if $DEBUG;
-	print STDERR "\t", $feat->genbank_location_string(recalibrate=>$start),"\n\n" if $DEBUG;
-	my $anno = $feat->annotation_pretty_print;
+	print STDERR "\t", $f->genbank_location_string(),"\n" if $DEBUG;
+	print STDERR "\t", $f->genbank_location_string(recalibrate=>$start),"\n\n" if $DEBUG;
+	my $anno = $f->annotation_pretty_print;
 	$anno =~ s/\n/<br>/g;
+	$anno =~ s/\t/&nbsp;&nbsp;/g;
 	$obj->add_feature (
 			   F_NUMBER=>$fnum,
-			   F_KEY=>$feat->type->name,
-			   LOCATION=>$feat->genbank_location_string(recalibrate=>$start),
+			   F_KEY=>$f->type->name,
+			   LOCATION=>$f->genbank_location_string(recalibrate=>$start),
 			   QUALIFIERS=>[
                                         [annotation=>$anno],
-                                        [names=> [map {$_->name} sort {$a->name cmp $b->name} $feat->names]],
+                                        [names=> [map {$_->name} sort {$a->name cmp $b->name} $f->names]],
                                        ],
 			   ACCN=>$name,
 			   LOCUS=>$name,
