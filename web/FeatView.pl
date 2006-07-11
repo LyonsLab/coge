@@ -79,13 +79,13 @@ sub clear_div
 
 sub get_types
   {
-    my ($accn, $info_ver) = @_;
+    my ($accn, $dsid) = @_;
     my $html;
     my $blank = qq{<input type="hidden" id="Type_name">};
     my %seen;
-    my @opts = sort map {"<OPTION>$_</OPTION>"} grep {! $seen{$_}++} map {$_->type->name} $DB->get_features_by_name_and_version(name=>$accn, version=>$info_ver);
+    my @opts = sort map {"<OPTION>$_</OPTION>"} grep {! $seen{$_}++} map {$_->type->name} $DB->get_features_by_name_and_dataset_id(name=>$accn, id=>$dsid);
     $html .= "<font class=small>Type count: ".scalar @opts."</font>\n<BR>\n";
-    $html .= qq{<SELECT id="Type_name" SIZE="5" MULTIPLE onChange="get_anno(['accn_select','version','Type_name'],['anno'])" >\n};
+    $html .= qq{<SELECT id="Type_name" SIZE="5" MULTIPLE onChange="get_anno(['accn_select','Type_name', 'dsid'],['anno'])" >\n};
     $html .= join ("\n", @opts);
     $html .= "\n</SELECT>\n";
     $html =~ s/OPTION/OPTION SELECTED/;
@@ -115,12 +115,13 @@ sub accn_search
 
 sub get_anno
   {
+    print STDERR Dumper \@_;
     my $accn = shift;
     return unless $accn;
-    my $info_ver = shift;
     my $type = shift;
+    my $dataset_id = shift;
     my @feats;
-    foreach my $feat ($DB->get_features_by_name_and_version(name=>$accn, version=>$info_ver))
+    foreach my $feat ($DB->get_features_by_name_and_dataset_id(name=>$accn, id=>$dataset_id))
       {
 	push @feats, $feat if ($feat->type->name eq $type);
       }
@@ -219,7 +220,7 @@ sub gen_body
 sub get_data_source_info_for_accn
   {
     my $accn = shift;
-    my $blank = qq{<input type="hidden" id="version">};
+    my $blank = qq{<input type="hidden" id="dsid">};
     return $blank unless $accn;
     my @feats = $DB->get_feats_by_name($accn);
     my %sources;
@@ -230,23 +231,24 @@ sub get_data_source_info_for_accn
 	my $ver = $val->version;
 	my $desc = $val->description;
 	my $sname = $val->data_source->name;
+	my $ds_name = $val->name;
 	my $org = $val->org->name;
-	my $title = "$org: $sname, version $ver";
-	$sources{$title} = $ver
+	my $title = "$org: $ds_name ($sname, v$ver)";
+	$sources{$title} = $val->id;
       }
     my $html;
     $html .= qq{
-<SELECT name = "version" id="version" MULTIPLE SIZE="5" onChange="get_types_chain();">
+<SELECT name = "dsid" id="dsid" MULTIPLE SIZE="5" onChange="get_types_chain();">
 };
     my $count = 0;
     foreach my $title (reverse sort keys %sources)
       {
-	my $ver = $sources{$title};
-	$html .= qq{  <option value="$ver" >$title\n};
+	my $id = $sources{$title};
+	$html .= qq{  <option value="$id" >$title\n};
 	$html =~ s/option/option selected/ unless $count;
 	$count++;
       }
     $html .= qq{</SELECT>\n};
-    return ("<font class=small>Version count: ".$count ."</font>\n<BR>\n".$html, 1);
+    return ("<font class=small>Dataset count: ".$count ."</font>\n<BR>\n".$html, 1);
   }
 
