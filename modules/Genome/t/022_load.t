@@ -4,9 +4,9 @@
 
 use Test::More tests => 2;
 
-BEGIN { use_ok( 'CoGe::Genome::DB::User_session' ); }
+BEGIN { use_ok( 'CoGe::Genome::DB::Feature_list_group' ); }
 
-my $object = CoGe::Genome::DB::User_session->new ();
-isa_ok ($object, 'CoGe::Genome::DB::User_session');
+my $object = CoGe::Genome::DB::Feature_list_group->new ();
+isa_ok ($object, 'CoGe::Genome::DB::Feature_list_group');
 
 
