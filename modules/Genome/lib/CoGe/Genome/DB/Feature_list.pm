@@ -12,6 +12,9 @@ BEGIN {
     @EXPORT_OK   = qw ();
     %EXPORT_TAGS = ();
     __PACKAGE__->set_up_table('feature_list');
+    __PACKAGE__->has_many(feature_list_connectors=>'CoGe::Genome::DB::Feature_list_connector');
+    __PACKAGE__->has_many(user_group_feature_list_permission_connectors=>'CoGe::Genome::DB::User_group_feature_list_permission_connector');
+    __PACKAGE__->has_a('featuer_list_group_id' => 'CoGe::Genome::DB::Feature_list_group');
  }
 
 
@@ -82,7 +85,21 @@ perl(1).
  feature_list_id  =>  database entry id
  id               =>  alias for feature_list_id
 
- 
+ feature_list_group_id => returns the CoGe::Genome::DB::Feature_list_group object
+                          associated with the feature_list (if one exists)
+ feature_list_group
+ fl_group
+ flg  
+
+ feature_list_connectors
+ feature_list_connector
+ fl_connector
+ flc
+
+ user_group_feature_list_permission_connectors => 
+ user_group_feature_list_permission_connector  => 
+ ugflp_connector
+ ugflpc
 
  new              =>  creates a new object (inherited from Class::Accessor)
 
@@ -95,12 +112,76 @@ sub desc
     return $self->description(@_);
   }
 
+sub feature_list_group
+  {
+    my $self = shift;
+    return $self->feature_list_group_id();
+  }
+
+sub fl_group
+  {
+    my $self = shift;
+    return $self->feature_list_group_id();
+  }
+
+sub flg
+  {
+    my $self = shift;
+    return $self->feature_list_group_id();
+  }
+
 sub id
   {
     my $self = shift;
     return $self->feature_list_id();
   }
 
+sub feature_list_connector
+  {
+    my $self = shift;
+    return $self->feature_list_connectors();
+  }
+
+sub fl_connector
+  {
+    my $self = shift;
+    return $self->feature_list_connectors();
+  }
+
+sub flc
+  {
+    my $self = shift;
+    return $self->feature_list_connectors();
+  }
+
+sub user_group_feature_list_permission_connector
+  {
+    my $self = shift;
+    return $self->user_group_feature_list_permission_connectors();
+  }
+
+sub ugflp_connector
+  {
+    my $self = shift;
+    return $self->user_group_feature_list_permission_connectors();
+  }
+
+sub ugflpc
+  {
+    my $self = shift;
+    return $self->user_group_feature_list_permission_connectors();
+  }
+
+sub features
+  {
+    my $self = shift;
+    my @features;
+    foreach my $flc ($self->flc)
+      {
+	push @features, $flc->feature;
+      }
+    return wantarray ? @features : \@features
+  }
 
 ################################################ subroutine header begin ##
 
