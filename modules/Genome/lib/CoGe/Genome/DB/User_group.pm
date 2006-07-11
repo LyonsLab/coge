@@ -12,6 +12,8 @@ BEGIN {
     @EXPORT_OK   = qw ();
     %EXPORT_TAGS = ();
     __PACKAGE__->set_up_table('user_group');
+    __PACKAGE__->has_many(user_group_connectors=>'CoGe::Genome::DB::User_group_connector');
+    __PACKAGE__->has_many(user_group_feature_list_permission_connectors=>'CoGe::Genome::DB::User_group_feature_list_permission_connector');
  }
 
 
@@ -79,7 +81,16 @@ perl(1).
  user_group_id          =>  database entry id
  id               =>  alias for sequence_type_id
 
- 
+ user_group_conenctors
+ user_group_connector
+ ug_connector
+ ugc
+
+ user_group_feature_list_permission_connectors => 
+ user_group_feature_list_permission_connector  => 
+ ugflp_connector
+ ugflpc
+
 
  new              =>  creates a new object (inherited from Class::Accessor)
 
@@ -98,6 +109,41 @@ sub id
     return $self->user_group_id();
   }
 
+sub user_group_connector
+  {
+    my $self = shift;
+    return $self->user_group_connectors();
+  }
+
+sub ug_connector
+  {
+    my $self = shift;
+    return $self->user_group_connectors();
+  }
+
+sub ugc
+  {
+    my $self = shift;
+    return $self->user_group_connectors();
+  }
+
+sub user_group_feature_list_permission_connector
+  {
+    my $self = shift;
+    return $self->user_group_feature_list_permission_connectors();
+  }
+
+sub ugflp_connector
+  {
+    my $self = shift;
+    return $self->user_group_feature_list_permission_connectors();
+  }
+
+sub ugflpc
+  {
+    my $self = shift;
+    return $self->user_group_feature_list_permission_connectors();
+  }
 
 ################################################ subroutine header begin ##
 
