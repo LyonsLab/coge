@@ -12,6 +12,7 @@ BEGIN {
     @EXPORT_OK   = qw ();
     %EXPORT_TAGS = ();
     __PACKAGE__->set_up_table('user');
+    __PACKAGE__->has_many(user_group_connectors=>'CoGe::Genome::DB::User_group_connector');
  }
 
 
@@ -94,7 +95,10 @@ perl(1).
  user_id          =>  database entry id
  id               =>  alias for sequence_type_id
 
- 
+ user_group_conenctors
+ user_group_connector
+ ug_connector
+ ugc
 
  new              =>  creates a new object (inherited from Class::Accessor)
 
@@ -171,6 +175,24 @@ sub id
   {
     my $self = shift;
     return $self->user_id();
+  }
+
+sub user_group_connector
+  {
+    my $self = shift;
+    return $self->user_group_connectors();
+  }
+
+sub ug_connector
+  {
+    my $self = shift;
+    return $self->user_group_connectors();
+  }
+
+sub ugc
+  {
+    my $self = shift;
+    return $self->user_group_connectors();
   }
 
 sub generate_passwd
