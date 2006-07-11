@@ -988,9 +988,9 @@ sub get_user_session_obj
 
 ################################################ subroutine header begin ##
 
-=head2 get_feature_by_name_and_info_id
+=head2 get_features_by_name_and_info_id
 
- Usage     : my @feats = $genome_obj->get_feature_by_name_and_info_id(name=>$name, id=>$id)
+ Usage     : my @feats = $genome_obj->get_features_by_name_and_info_id(name=>$name, id=>$id)
  Purpose   : get feature objects based on a name and a data_information id
  Returns   : wantarray of CoGe::Genome::Feature objects
  Argument  : a hash of key/value pairs
@@ -1007,7 +1007,7 @@ See Also   : sub get_feature_by_name
 
 ################################################## subroutine header end ##
 
-sub get_feature_by_name_and_info_id
+sub get_features_by_name_and_info_id
   {
     my $self = shift;
     my %opts = @_;
@@ -1019,6 +1019,61 @@ sub get_feature_by_name_and_info_id
 	push @feats, $feat if $feat->data_information->id eq $id;
       }
     return wantarray ? @feats : \@feats;
+  }
+
+################################################ subroutine header begin ##
+
+=head2 get_feature_by_name_and_info_id
+
+ Usage     : $genome_obj->get_feature_by_name_and_info_id($name);
+ Purpose   : alias for get_features_by_name_and_info_id
+
+=cut
+
+################################################## subroutine header end ##
+
+
+sub get_feature_by_name_and_info_id
+  {
+    my $self = shift;
+    return $self->get_feature_by_name_and_info_id(@_);
+  }
+
+
+################################################ subroutine header begin ##
+
+=head2 get_features_by_name_and_dataset_id
+
+ Usage     : $genome_obj->get_features_by_name_and_dataset_id($name);
+ Purpose   : alias for get_features_by_name_and_info_id
+
+=cut
+
+################################################## subroutine header end ##
+
+
+sub get_features_by_name_and_dataset_id
+  {
+    my $self = shift;
+    return $self->get_feature_by_name_and_info_id(@_);
+  }
+
+################################################ subroutine header begin ##
+
+=head2 get_feature_by_name_and_dataset_id
+
+ Usage     : $genome_obj->get_feature_by_name_and_dataset_id($name);
+ Purpose   : alias for get_features_by_name_and_info_id
+
+=cut
+
+################################################## subroutine header end ##
+
+
+sub get_feature_by_name_and_dataset_id
+  {
+    my $self = shift;
+    return $self->get_feature_by_name_and_info_id(@_);
   }
 
 
