@@ -12,6 +12,8 @@ BEGIN {
     @EXPORT_OK   = qw ();
     %EXPORT_TAGS = ();
     __PACKAGE__->set_up_table('user_group_connector');
+    __PACKAGE__->has_a('user_id'=>'CoGe::Genome::DB::User');
+    __PACKAGE__->has_a('user_id'=>'CoGe::Genome::DB::User_group');
  }
 
 
