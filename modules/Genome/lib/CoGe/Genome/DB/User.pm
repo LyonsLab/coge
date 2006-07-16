@@ -212,6 +212,13 @@ sub check_passwd
     return crypt($pwd, $self->pwd) eq $self->pwd;
   }
 
+sub user_groups
+  {
+    my $self = shift;
+    my @ugs = map {$_->ug} $self->ugc;
+    return wantarray ? @ugs : \@ugs;
+  }
+
 ################################################ subroutine header begin ##
 
 =head2 
