@@ -14,7 +14,7 @@ BEGIN {
     __PACKAGE__->set_up_table('feature_list');
     __PACKAGE__->has_many(feature_list_connectors=>'CoGe::Genome::DB::Feature_list_connector');
     __PACKAGE__->has_many(user_group_feature_list_permission_connectors=>'CoGe::Genome::DB::User_group_feature_list_permission_connector');
-    __PACKAGE__->has_a('featuer_list_group_id' => 'CoGe::Genome::DB::Feature_list_group');
+    __PACKAGE__->has_a('feature_list_group_id' => 'CoGe::Genome::DB::Feature_list_group');
  }
 
 
@@ -89,6 +89,7 @@ perl(1).
                           associated with the feature_list (if one exists)
  feature_list_group
  fl_group
+ group
  flg  
 
  feature_list_connectors
@@ -119,6 +120,12 @@ sub feature_list_group
   }
 
 sub fl_group
+  {
+    my $self = shift;
+    return $self->feature_list_group_id();
+  }
+
+sub group
   {
     my $self = shift;
     return $self->feature_list_group_id();
@@ -199,6 +206,40 @@ sub features
 	push @features, $flc->feature;
       }
     return wantarray ? @features : \@features
+  }
+
+sub readers
+  {
+    my $self = shift;
+    my @readers;
+    foreach my $ugflpc ($self->ugflpc)
+      {
+	foreach my $perm ($ugflpc->permissions)
+	  {
+	    if ($perm->name =~ /feature list read/)
+	      {
+		push @readers, $ugflpc->user_group;
+	      }
+	  }
+      }
+    return wantarray ? @readers : \@readers;
+  }
+
+sub editors
+  {
+    my $self = shift;
+    my @editors;
+    foreach my $ugflpc ($self->ugflpc)
+      {
+	foreach my $perm ($ugflpc->permissions)
+	  {
+	    if ($perm->name =~ /feature list edit/)
+	      {
+		push @editors, $ugflpc->user_group;
+	      }
+	  }
+      }
+    return wantarray ? @editors : \@editors;
   }
 
 ################################################ subroutine header begin ##
