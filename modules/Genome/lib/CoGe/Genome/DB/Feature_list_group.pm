@@ -88,6 +88,7 @@ perl(1).
  feature_list
  lists
  list
+ fl
 
  new              =>  creates a new object (inherited from Class::Accessor)
 
@@ -119,6 +120,12 @@ sub lists
   }
 
 sub list
+  {
+    my $self = shift;
+    return $self->feature_lists();
+  }
+
+sub fl
   {
     my $self = shift;
     return $self->feature_lists();
