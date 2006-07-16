@@ -20,6 +20,7 @@ use CoGe::Genome::DB::User_group_connector;
 use CoGe::Genome::DB::Permission;
 use CoGe::Genome::DB::User_group_feature_list_permission_connector;
 use CoGe::Genome::DB::Feature_list;
+use CoGe::Genome::DB::Feature_list_group;
 use CoGe::Genome::DB::Feature_list_connector;
 
 
@@ -904,7 +905,7 @@ See Also   : CoGe::Genome::DB::User_group_feature_list_permission_connector
 sub get_user_group_feature_list_permission_connector_obj
   {
     my $self = shift;
-    return CoGe::Genome::DB::User_group_feature_list_permission_conenctor->new();
+    return CoGe::Genome::DB::User_group_feature_list_permission_connector->new();
   }
 
 ################################################ subroutine header begin ##
@@ -928,6 +929,29 @@ sub get_feature_list_obj
   {
     my $self = shift;
     return CoGe::Genome::DB::Feature_list->new();
+  }
+
+################################################ subroutine header begin ##
+
+=head2 get_feature_list_group_obj
+
+ Usage     : $genome_obj->get_feature_list_group_obj();
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+
+See Also   : CoGe::Genome::DB::Feature_list_group
+
+=cut
+
+################################################## subroutine header end ##
+
+sub get_feature_list_group_obj
+  {
+    my $self = shift;
+    return CoGe::Genome::DB::Feature_list_group->new();
   }
 
 ################################################ subroutine header begin ##
@@ -1000,7 +1024,7 @@ sub get_user_session_obj
  Throws    : none
  Comments  : 
 
-See Also   : sub get_feature_by_name
+See Also   : $self->get_features_by_name
              CoGe::Data_information for information on that object
 
 =cut
@@ -1011,14 +1035,14 @@ sub get_features_by_name_and_info_id
   {
     my $self = shift;
     my %opts = @_;
-    my ($name) = $opts{name} || $opts{NAME} || shift;
-    my ($id) = $opts{info_id} || $opts{id} || $opts{ID} || shift;
-    my @feats;
-    foreach my $feat ($self->get_feature_by_name($name))
-      {
-	push @feats, $feat if $feat->data_information->id eq $id;
+    my ($name) = $opts{name} || $opts{NAME} ;
+    my ($id) = $opts{info_id} || $opts{id} || $opts{ID};
+    my @f;
+    foreach my $feat ($self->get_features_by_name($name) )
+      {	
+	push @f, $feat if $feat->data_information->id eq $id;
       }
-    return wantarray ? @feats : \@feats;
+    return wantarray ? @f : \@f;
   }
 
 ################################################ subroutine header begin ##
@@ -1036,7 +1060,7 @@ sub get_features_by_name_and_info_id
 sub get_feature_by_name_and_info_id
   {
     my $self = shift;
-    return $self->get_feature_by_name_and_info_id(@_);
+    return $self->get_features_by_name_and_info_id(@_);
   }
 
 
@@ -1055,7 +1079,7 @@ sub get_feature_by_name_and_info_id
 sub get_features_by_name_and_dataset_id
   {
     my $self = shift;
-    return $self->get_feature_by_name_and_info_id(@_);
+    return $self->get_features_by_name_and_info_id(@_);
   }
 
 ################################################ subroutine header begin ##
@@ -1073,7 +1097,7 @@ sub get_features_by_name_and_dataset_id
 sub get_feature_by_name_and_dataset_id
   {
     my $self = shift;
-    return $self->get_feature_by_name_and_info_id(@_);
+    return $self->get_features_by_name_and_info_id(@_);
   }
 
 
