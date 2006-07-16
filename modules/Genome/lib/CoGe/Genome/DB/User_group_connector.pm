@@ -13,7 +13,7 @@ BEGIN {
     %EXPORT_TAGS = ();
     __PACKAGE__->set_up_table('user_group_connector');
     __PACKAGE__->has_a('user_id'=>'CoGe::Genome::DB::User');
-    __PACKAGE__->has_a('user_id'=>'CoGe::Genome::DB::User_group');
+    __PACKAGE__->has_a('user_group_id'=>'CoGe::Genome::DB::User_group');
  }
 
 
@@ -73,12 +73,16 @@ perl(1).
 =head2 Accessor Functions
 
  user_id                 => user table database id
+ suer
  u_id          
  uid
+ u
 
  user_group_id           => user group table database id
+ user_group
  ug_id
  ugid
+ ug
 
  user_group_connector_id =>  database entry id
  id                      =>  alias for user_group_connector_id
@@ -89,6 +93,18 @@ perl(1).
 
 
 sub u_id
+  {
+    my $self = shift;
+    return $self->user_id(@_);
+  }
+
+sub user
+  {
+    my $self = shift;
+    return $self->user_id(@_);
+  }
+
+sub u
   {
     my $self = shift;
     return $self->user_id(@_);
@@ -107,6 +123,18 @@ sub ug_id
   }
 
 sub ugid
+  {
+    my $self = shift;
+    return $self->user_group_id(@_);
+  }
+
+sub user_group
+  {
+    my $self = shift;
+    return $self->user_group_id(@_);
+  }
+
+sub ug
   {
     my $self = shift;
     return $self->user_group_id(@_);
