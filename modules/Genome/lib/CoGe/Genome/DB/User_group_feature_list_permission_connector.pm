@@ -76,14 +76,27 @@ perl(1).
  user_group_id            => user_group table database id
  ug_id
  ugid
+ user_group
+ group
+ ug
 
  feature_list_id          => user_group table database id
  fl_id
  flid
+ feature_list
+ feat_list
+ flist
+ list
+ fl
 
  permission_id            => permission table database id
  p_id
  pid
+ permissions
+ permission
+ perms
+ perm
+ p
 
  user_group_feature_list_permission_connector_id =>  database entry id
  id                       =>  alias for user_group_permission_id
@@ -105,6 +118,24 @@ sub ugid
     return $self->user_group_id(@_);
   }
 
+sub user_group
+  {
+    my $self = shift;
+    return $self->user_group_id(@_);
+  }
+
+sub group
+  {
+    my $self = shift;
+    return $self->user_group_id(@_);
+  }
+
+sub ug
+  {
+    my $self = shift;
+    return $self->user_group_id(@_);
+  }
+
 sub fl_id
   {
     my $self = shift;
@@ -116,6 +147,38 @@ sub flid
     my $self = shift;
     return $self->feature_list_id(@_);
   }
+
+sub feature_list
+  {
+    my $self = shift;
+    return $self->feature_list_id(@_);
+  }
+
+sub feat_list
+  {
+    my $self = shift;
+    return $self->feature_list_id(@_);
+  }
+
+sub flist
+  {
+    my $self = shift;
+    return $self->feature_list_id(@_);
+  }
+
+sub list
+  {
+    my $self = shift;
+    return $self->feature_list_id(@_);
+  }
+
+sub fl
+  {
+    my $self = shift;
+    return $self->feature_list_id(@_);
+  }
+
+
 
 sub p_id
   {
@@ -129,10 +192,40 @@ sub pid
     return $self->permission_id(@_);
   }
 
+sub permissions
+  {
+    my $self = shift;
+    return $self->permission_id(@_);
+  }
+
+sub permission
+  {
+    my $self = shift;
+    return $self->permission_id(@_);
+  }
+
+sub perms
+  {
+    my $self = shift;
+    return $self->permission_id(@_);
+  }
+
+sub perm
+  {
+    my $self = shift;
+    return $self->permission_id(@_);
+  }
+
+sub p
+  {
+    my $self = shift;
+    return $self->permission_id(@_);
+  }
+
 sub id
   {
     my $self = shift;
-    return $self->user_group_connector_id();
+    return $self->user_group_feature_list_permission_connector_id();
   }
 
 
