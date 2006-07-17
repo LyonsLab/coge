@@ -1,6 +1,7 @@
 package CoGe::Genome::DB;
 use strict;
 use base 'Class::DBI::mysql';
+use CoGe::Genome;
 
 BEGIN {
     use Exporter ();
