@@ -6,31 +6,38 @@ function edit_list_reload(lid)
  }
 </SCRIPT>
 
-<TMPL_IF NAME="FRONT_PAGE">
+<TMPL_IF NAME="FEAT_LIST">
 <DIV id="main">
-<TABLE>
+<font class="annotation">Feature Lists:</font>
+<TABLE class="columns">
  <TR align = left>
   <TD>
   <TD>
-  <TH>List Name
+  <TH>Name
   <TH>Description
-  <TH colspan=2>Feature count
+  <TH>Notes
+  <TH>Group
+  <TH>Editors
+  <TH>Readers
+  <TH>Feature count
+<TMPL_LOOP NAME=FEAT_LISTS>
 
-<TMPL_LOOP NAME=FEATURE_LIST>
 
-
- <TR valign=top>
+ <TR valign=top class="<TMPL_VAR NAME=ROW_BG>">
   <TD><input type="IMAGE" src="picts/edit.png"  onClick="edit_list(['args__<TMPL_VAR NAME=LIST_ID>'],['main']);">
-  <TD><input type="IMAGE" src="picts/delete.png"  onClick=" if (confirm('Are you sure you wish to delete this list?')){ delete_list(['args__<TMPL_VAR NAME=LIST_ID>'], ['tmp']), window.location.reload();}">  
+  <TD><input type="IMAGE" src="picts/delete.png"  onClick=" if (confirm('Are you sure you wish to delete this list?')){ delete_list(['args__<TMPL_VAR NAME=LIST_ID>'], []), window.location.reload();}">  
   <TD class="species"> <TMPL_VAR NAME=LIST_NAME>
   <TD><TMPL_VAR NAME=LIST_DESC>
+  <TD><TMPL_VAR NAME=LIST_NOTE>
+  <TD><TMPL_VAR NAME=LIST_GROUP>
+  <TD><TMPL_VAR NAME=LIST_EDITORS>
+  <TD><TMPL_VAR NAME=LIST_READERS>
   <TD>
-      <DIV id="FLID<TMPL_VAR NAME=LIST_ID>" class="l">
-      <TMPL_VAR NAME=FEATURE_COUNT>
-      </DIV>
       <DIV id="showfeat<TMPL_VAR NAME=LIST_ID>" class="l">
       <input type="IMAGE" src="picts/close.png" onClick="expand_list(['args__<TMPL_VAR NAME=LIST_ID>'],['FLID<TMPL_VAR NAME=LIST_ID>', 'showfeat<TMPL_VAR NAME=LIST_ID>'])">
-
+      </DIV>
+      <DIV id="FLID<TMPL_VAR NAME=LIST_ID>" class="l">
+      <TMPL_VAR NAME=FEATURE_COUNT>
       </DIV>
 </TMPL_LOOP>
 
@@ -52,7 +59,7 @@ function edit_list_reload(lid)
 
 <DIV id="main">
 
-<div class="backbox"><font class="species"><TMPL_VAR LIST_NAME></font>: <TMPL_VAR LIST_DESC></div>
+<div><font class="annotation"><TMPL_VAR LIST_NAME></font>: <TMPL_VAR LIST_DESC></div>
 
 <TABLE>
  <TR>
@@ -64,7 +71,7 @@ function edit_list_reload(lid)
 
 <TMPL_LOOP NAME=FEATURE_INFO>
  <DIV id="FID<TMPL_VAR NAME=FEAT_ID>">
- <TR>
+ <TR class="<TMPL_VAR NAME=ROW_BG>">
   <TD><input type="IMAGE" src="picts/delete.png"  onClick=" if (confirm('Are you sure you wish to delete this list?')){ delete_feature(['args__<TMPL_VAR NAME=FEAT_ID>', 'args__<TMPL_VAR NAME=LIST_ID>'], [edit_list_reload]) }">  
   <TD><TMPL_VAR NAME=FEAT_ORG>
   <TD><TMPL_VAR NAME=FEAT_DATA>
@@ -89,7 +96,7 @@ function edit_list_reload(lid)
  <DIV id="FID<TMPL_VAR NAME=FEAT_ID>">
  <TR>
   <TD><TMPL_VAR NAME=FEAT_TYPE>
-  <TD><TMPL_VAR NAME=FEAT_NAME>
+  <TD nowrap><TMPL_VAR NAME=FEAT_NAME>
  </DIV>
 </TMPL_LOOP>
  
@@ -97,3 +104,63 @@ function edit_list_reload(lid)
 
 </TMPL_IF>
 
+<TMPL_IF NAME="LIST_GROUP">
+
+<DIV id="main">
+<font class="annotation">Feature List Groups:</font>
+<TABLE class="columns">
+ <TR align = left>
+  <TD>
+  <TD>
+  <TH>Name
+  <TH>Description
+  <TH>Notes
+  <TH>Feature List count
+<TMPL_LOOP NAME=LIST_GROUPS>
+
+
+ <TR valign=top class="<TMPL_VAR NAME=ROW_BG>">
+  <TD><input type="IMAGE" src="picts/edit.png"  onClick="edit_group(['args__<TMPL_VAR NAME=GROUP_ID>'],['main']);">
+  <TD><input type="IMAGE" src="picts/delete.png"  onClick=" if (confirm('Are you sure you wish to delete this group?')){ delete_group(['args__<TMPL_VAR NAME=GROUP_ID>'], []), window.location.reload();}">  
+  <TD class="species"> <TMPL_VAR NAME=GROUP_NAME>
+  <TD><TMPL_VAR NAME=GROUP_DESC>
+  <TD><TMPL_VAR NAME=GROUP_NOTE>
+  <TD>
+      <DIV id="showlist<TMPL_VAR NAME=GROUP_ID>" class="l">
+      <input type="IMAGE" src="picts/close.png" onClick="expand_group(['args__<TMPL_VAR NAME=GROUP_ID>'],['GID<TMPL_VAR NAME=GROUP_ID>', 'showlist<TMPL_VAR NAME=GROUP_ID>'])">
+      </DIV>
+      <DIV id="GID<TMPL_VAR NAME=GROUP_ID>" class="l">
+      <TMPL_VAR NAME=GROUP_COUNT>
+      </DIV>
+</TMPL_LOOP>
+
+</TABLE>
+</DIV>
+
+</TMPL_IF>
+
+
+<TMPL_IF NAME="EXPAND_GROUP">
+<TABLE>
+ <TR>
+  <TH>Name
+  <TH>Description
+  <TH>Feature count
+
+<TMPL_LOOP NAME=LIST_INFO>
+ <DIV id="LID<TMPL_VAR NAME=LIST_ID>">
+ <TR>
+  <TD><TMPL_VAR NAME=LIST_NAME>
+  <TD><TMPL_VAR NAME=LIST_DESC>
+  <TD><TMPL_VAR NAME=FEAT_COUNT>
+ </DIV>
+</TMPL_LOOP>
+ 
+</TABLE>
+
+</TMPL_IF>
+
+<TMPL_IF NAME=FOOT>
+
+<input type="submit" name="Show Feature Lists" value="Show Feature Lists" onClick="window.location='FeatListView.pl?fl=1'">
+<input type="submit" name="Show List Groups" value="Show  List Groups" onClick="window.location='FeatListView.pl?flg=1'"></TMPL_IF>
