@@ -519,7 +519,7 @@ sub get_current_version_for_organism
              version => which version of data to use (if not specified this
                         routine will find the most current version of the data
                         and use that
-             tyep    => the type of feature to return (e.g. "gene").  If this is
+             type    => the type of feature to return (e.g. "gene").  If this is
                         not specified it will return all features.
  Throws    : none
  Comments  : 
@@ -538,7 +538,7 @@ sub get_features_for_organism
     my $org = $opts{org} || $opts{orgid};
     my $orgid = ref ($org) =~ /organism/i ? $org->id : $org;
     return 0 unless $orgid =~ /^\d+$/;
-    my $version = $opts{version} || $opts{ver} || $self->get_curernt_version_for_organism($orgid);
+    my $version = $opts{version} || $opts{ver} || $self->get_current_version_for_organism(org=>$orgid);
     my $type = $opts{type};
     my $sth = $type ? $self->sql_get_features_for_organism_version_type() : $self->sql_get_features_for_organism_version();
     $type ? $sth->execute($orgid, $version, $type) : $sth->execute($orgid, $version);
