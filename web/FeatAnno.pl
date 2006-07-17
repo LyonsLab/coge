@@ -15,7 +15,7 @@ $DEBUG = 0;
 $TEMPDIR = "/opt/apache/CoGe/tmp";
 $TEMPURL = "/CoGe/tmp";
 $| = 1; # turn off buffering
-
+($USER) = CoGe::Accessory::LogUser->get_user();
 $FORM = new CGI;
 $FID = $FORM->param('fid');
 $DI = $FORM->param('di');# || 61;
