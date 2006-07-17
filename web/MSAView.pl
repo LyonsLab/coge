@@ -20,7 +20,7 @@ $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		 sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
 
 $FORM = new CGI;
-$USER = CoGe::Accessory::LogUser->get_user();
+($USER) = CoGe::Accessory::LogUser->get_user();
 my $pj = new CGI::Ajax(
 		       gen_html=>\&gen_html,
 		      );
