@@ -324,6 +324,17 @@ table.basic {
 	font-size: 16px
 }
 
+table.columns {
+	border-top-width: 0px;
+	border-right-width: 0px;
+	border-bottom-width: 0px;
+	border-left-width: 0px;
+	background-color: #FFFFFF; /* darker gray */
+	border-color: #000000; /* black */
+	font-family: verdana, arial, helvetica, sans-serif;
+	font-size: 16px
+}
+
 
 
 tr.Aodd {
@@ -392,3 +403,14 @@ td.Aleftcell {
 	border-style: solid;
 	border-color: #000000; /* black */
 }
+
+tr.ltgreen {
+	background-color: #CCFFCC;
+        border-top-width: 1px;
+        border-bottom-width: 1px;
+}
+
+tr.ltblue {
+	background-color: #CCFFFF;
+}
+
