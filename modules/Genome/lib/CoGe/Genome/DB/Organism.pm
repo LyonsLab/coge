@@ -147,5 +147,38 @@ sub id
     return $self->organism_id();
   }
 
+################################################ subroutine header begin ##
+
+=head2 get_features
+
+ Usage     : my @features = $org->get_features(version=>$version, type=>"gene");
+ Purpose   : Returns an array or array ref of CoGe::Genome::DB::Feature objects
+             for the organism
+ Returns   : an array or array ref of CoGe::Genome::DB::Feature objects
+ Argument  : a hash of key->value pairs
+             version => which version of data to use (if not specified this
+                        routine will find the most current version of the data
+                        and use that
+             type    => the type of feature to return (e.g. "gene").  If this is
+                        not specified it will return all features.
+ Throws    : none
+ Comments  : 
+           : 
+
+See Also   : CoGe::Genome::DB::Data_information->get_features_for_organism
+
+=cut
+
+################################################## subroutine header end ##
+
+
+sub get_features
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $db = new CoGe::Genome;
+    return $db->get_data_info_obj->get_features_for_organism(org=>$self, %opts);
+  }
+
 1; #this line is important and will help the module return a true value
 
