@@ -27,7 +27,7 @@ $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 
 $FORM = new CGI;
 $ACCN = $FORM->param('accn');
-$USER = CoGe::Accessory::LogUser->get_user();
+($USER) = CoGe::Accessory::LogUser->get_user();
 $DB = new CoGe::Genome;
 my $pj = new CGI::Ajax(
 		       db_lookup=>\&db_lookup,
