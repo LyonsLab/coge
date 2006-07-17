@@ -42,7 +42,40 @@ SELECT count(feature_id), ft.name
    AND l.chromosome = ?
  GROUP BY ft.name
 });
-}
+    __PACKAGE__->set_sql(get_current_version_for_organsim=>qq{
+SELECT DISTINCT(version)
+  FROM data_information
+ WHERE organism_id = ?
+ ORDER BY version DESC
+ LIMIT 1
+});
+  
+   __PACKAGE__->set_sql(get_features_for_organism => qq{
+SELECT feature_id 
+  FROM feature
+  JOIN data_information USING (data_information_id)
+ WHERE organism_id = ?
+});
+  
+   __PACKAGE__->set_sql(get_features_for_organism_version => qq{
+SELECT feature_id 
+  FROM feature
+  JOIN data_information USING (data_information_id)
+ WHERE organism_id = ?
+   AND version = ?
+});
+
+   __PACKAGE__->set_sql(get_features_for_organism_version_type => qq{
+SELECT feature_id 
+  FROM feature
+  JOIN data_information USING (data_information_id)
+  JOIN feature_type USING (feature_type_id)
+ WHERE organism_id = ?
+   AND version = ?
+   AND feature_type.name = ?
+});
+
+  }
 
 
 ########################################### main pod documentation begin ##
@@ -437,10 +470,85 @@ sub get_feature_type_count
     $chr ? $sth->execute($di, $chr) : $sth->execute($di);
     while (my $q = $sth->fetchrow_arrayref)
       {
-	use Data::Dumper;
 	$feats{$q->[1]} = $q->[0];
       }
     return \%feats;
+  }
+
+################################################ subroutine header begin ##
+
+=head2 get_current_version_for_organism
+
+ Usage     : my $version = $di->get_current_version_for_organism(org=>$org_obj);
+ Purpose   : Find the most current version number for an organism
+ Returns   : and integer that is the most current version of data for an organism
+ Argument  : a CoGe::Genome::DB::Organism object of the database id of an organism
+ Throws    : none
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub get_current_version_for_organism
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $org = $opts{org} || $opts{orgid};
+    my $orgid = ref ($org) =~ /organism/i ? $org->id : $org;
+    return 0 unless $orgid =~ /^\d+$/;
+    my $sth = $self->sql_get_current_version_for_organsim();
+    $sth->execute($orgid);
+    my ($version) = $sth->fetchrow_array;
+    return $version;
+  }
+
+################################################ subroutine header begin ##
+
+=head2 get_features_for_organism
+
+ Usage     : my @features = $di->get_features_for_organism(org=>$org_obj);
+ Purpose   : Returns an array or array ref of CoGe::Genome::DB::Feature objects
+             for an organism
+ Returns   : an array or array ref of CoGe::Genome::DB::Feature objects
+ Argument  : a hash of key->value pairs
+             org => CoGe::Genome::DB::Organism object or organism database id
+             version => which version of data to use (if not specified this
+                        routine will find the most current version of the data
+                        and use that
+             tyep    => the type of feature to return (e.g. "gene").  If this is
+                        not specified it will return all features.
+ Throws    : none
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub get_features_for_organism
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $org = $opts{org} || $opts{orgid};
+    my $orgid = ref ($org) =~ /organism/i ? $org->id : $org;
+    return 0 unless $orgid =~ /^\d+$/;
+    my $version = $opts{version} || $opts{ver} || $self->get_curernt_version_for_organism($orgid);
+    my $type = $opts{type};
+    my $sth = $type ? $self->sql_get_features_for_organism_version_type() : $self->sql_get_features_for_organism_version();
+    $type ? $sth->execute($orgid, $version, $type) : $sth->execute($orgid, $version);
+    my $db = new CoGe::Genome;
+    my @feats;
+    while (my $q = $sth->fetchrow_arrayref)
+      {
+	push @feats, $db->get_feature_obj->retrieve($q->[0]);
+      }
+    return wantarray ? @feats : \@feats;
   }
 
 1; #this line is important and will help the module return a true value
