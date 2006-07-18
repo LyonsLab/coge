@@ -31,6 +31,7 @@ my $pj = new CGI::Ajax(
 		       get_data_info_info => \&get_data_info_info,
 		       get_data_info_chr_info => \&get_data_info_chr_info,
 		       gen_data => \&gen_data,
+		       get_genomic_seq => \&get_genomic_seq,
 		      );
 $pj->JSDEBUG(0);
 $pj->DEBUG(0);
@@ -83,7 +84,7 @@ sub gen_body
 	$template->param(DI=>$di);
 	$template->param(Z=>$z);
 	$template->param(X=>$x);
-	my $org = $dio->org->name;
+	my $org = $dio->org->name." (id".$dio->org->id.")";
 	$template->param(ORG=>$org);
 	my $ds = $dio->name."(v".$dio->version.", id".$dio->id.")";
 	$template->param(DS=>$ds);
@@ -186,25 +187,39 @@ sub get_data_info_chr_info
     my $viewer;
     if ($chr)
       {
-    $viewer .= "<br><br>";
-    $viewer .= "<font class=\"oblique\">GeLo Viewer Launcher</font><br>";
-    $viewer .= "<table>";
-    $viewer .= "<tr><td class = \"ital\">Starting location: ";
-    $viewer .= qq{<td><input type="text" size=10 value="1000" id="x">};
-    my $zoom;
+	$viewer .= "<br><br>";
+	$viewer .= "<font class=\"oblique\">GeLo Viewer Launcher</font><br>";
+	$viewer .= "<table>";
+	$viewer .= "<tr><td class = \"ital\">Starting location: ";
+	$viewer .= qq{<td><input type="text" size=10 value="1000" id="x">};
+	my $zoom;
    	$zoom .= qq{<tr><td class = "ital">Zoom level:};
    	$zoom .= qq{<td><SELECT name = "z" id="z" size = 1>};
    	my @opts = map {"<OPTION value=\"$_\">".$_."</OPTION>"} (5..15);
    	$zoom .= join ("\n", @opts);
    	$zoom =~ s/OPTION value="10"/OPTION SELECTED value="10"/;
    	$zoom .= qq{</SELECT>};
-    $viewer .= qq{<tr><td class = "ital">Zoom level:<td><input type = "text" size=10 value ="10" id = "z">};
-#    $viewer .= $zoom;
-    $viewer .= "</table>";
-    #$viewer .= qq{<input type="hidden" id="z" value="7">};
-    $viewer .= qq{<input type="submit" value = "Launch!" onClick="launch_viewer($did, '$chr')">};
-  }
-    return $html, $viewer;
+	$viewer .= qq{<tr><td class = "ital">Zoom level:<td><input type = "text" size=10 value ="10" id = "z">};
+	#    $viewer .= $zoom;
+	$viewer .= "</table>";
+	#$viewer .= qq{<input type="hidden" id="z" value="7">};
+	$viewer .= qq{<input type="submit" value = "Launch GeLo Viewer!" onClick="launch_viewer($did, '$chr')">};
+      }
+    my $seq_grab;
+    if ($chr)
+      {
+	$seq_grab .= "<br><br>";
+	$seq_grab .= qq{<font class="oblique">Genomic Sequence Retrieval</font><br>};
+	$seq_grab .= qq{<table>};
+	$seq_grab .= "<tr><td class = \"ital\">Start position: ";
+	$seq_grab .= qq{<td><input type="text" size=10 value="1000" id="start">};
+	$seq_grab .= "<tr><td class = \"ital\">End position: ";
+	$seq_grab .= qq{<td><input type="text" size=10 value="100000" id="stop">};
+	$seq_grab .= qq{</table>};
+	$seq_grab .= qq{<input type="submit" value = "Get Genomic Sequence!" onClick="get_genomic_seq(['args__$did', 'args__$chr', 'start', 'stop'], ['gseq'])">};
+	$seq_grab .= qq{<div id="gseq"></div>};
+      }
+    return $html, $viewer, $seq_grab;
   }
 
 sub gen_data
@@ -219,4 +234,18 @@ sub commify
       $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
       return scalar reverse $text;
     }
+
+sub get_genomic_seq
+  {
+    my $dsid = shift;
+    my $chr = shift;
+    my $start = shift;
+    my $stop = shift;
+    my $seq;
+    my $ds = $DB->get_dataset_obj->retrieve($dsid);
+    $seq .= ">".$ds->org->name.":".$chr.":".$start."-".$stop."\n";
+    $seq .= $DB->get_genomic_seq_obj->get_sequence(start=>$start, stop => $stop, chr=>$chr, info_id=>$dsid);
+    $seq =~ s/(.{80})/$1\n/g;
+    return "<pre>".$seq."</pre>";
+  }
 1;
