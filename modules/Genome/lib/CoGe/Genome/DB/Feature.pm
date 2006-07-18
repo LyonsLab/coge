@@ -2,7 +2,6 @@ package CoGe::Genome::DB::Feature;
 use strict;
 use base 'CoGe::Genome::DB';
 use CoGe::Genome::Accessory::Annotation;
-use CoGe::Genome;
 
 BEGIN {
     use Exporter ();
@@ -189,9 +188,11 @@ type
 feature_names       => returns a CoGe::Genome::DB::Feature_name object
 feat_names
 feat_name
-names
+names              
 name
-aliases
+
+aliases             => like the above, but returns the actual name(s) instead of
+                       Feature_name_obj
 
 locations           => returns a CoGe::Genome::DB::Location object
 location
@@ -303,7 +304,8 @@ sub name
 sub aliases
   {
     my $self = shift;
-    return $self->feature_names();
+    my @names = map {$_->name} $self->feature_names();
+    return wantarray ? @names : \@names;
   }
 
 sub location
@@ -991,6 +993,34 @@ sub genomic_sequence
     return $db->get_genomic_sequence_for_feature($self);
   }
 
+
+################################################ subroutine header begin ##
+
+=head2 protein_sequence
+
+ Usage     : my @prots = $feat->protein_sequence
+ Purpose   : trys to find protein sequences for this feature
+ Returns   : an array or array ref depending on wantarray
+ Argument  : none
+ Comments  : this routine searches through associated sequence objects for those
+             of type protein
+See Also   : CoGe::Genome::DB::Sequence
+
+=cut
+
+################################################## subroutine header end ##
+
+sub protein_sequence
+  {
+    my $self = shift;
+    my @seqs;
+    foreach my $seq ($self->sequences)
+      {
+	next unless $seq->type->name =~ /protein/;
+	push @seqs, $seq->seq;
+      }
+    return wantarray ? @seqs : \@seqs;
+  }
 ################################################ subroutine header begin ##
 
 =head2 
