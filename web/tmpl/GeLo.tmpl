@@ -22,7 +22,7 @@ function dataset_info_chr_chain(val, chr) {
  kaj.GS('viewer','<font class="loading"></font>');	
  if (val) {kaj.GS('di_info', val); kaj.GS('chr_info','');}
  kaj.GS('chr_info','<font class="loading">searching for features. . .</font>'); 
- get_data_info_chr_info(['di_id', 'chr'],['chr_info', 'viewer']);
+ get_data_info_chr_info(['di_id', 'chr'],['chr_info', 'viewer', 'get_seq']);
 }
 
 function launch_viewer (did, chr) {
@@ -40,6 +40,7 @@ function launch_viewer (did, chr) {
    <DIV class = "oblique">Organisms</DIV>
    <DIV id="org_list"><TMPL_VAR NAME="ORG_LIST"></DIV>
    <DIV id="viewer"></DIV>
+   <DIV id="get_seq"></DIV>
   <TD valign=top>
    <DIV class = "oblique">Datasets</DIV>
    <DIV id="di_list"><TMPL_VAR NAME="DI_LIST"></DIV>
