@@ -181,6 +181,11 @@ Tiler.prototype = {
       var old_center_rw = this.pix2rw(this.w/2,this.h/2);
       this.zoomLevel-= dir;
 
+      var tmp = this.normalize_xy(this._left_rw,this._top_rw);
+      this._left_rw = tmp[0];
+      this._top_rw = tmp[1]; 
+
+
       try { $(this.ZOOM_PAR_NAME).value = this.zoomLevel } catch(e){}
 
       var upt = this.units_per_tile();
@@ -202,35 +207,51 @@ Tiler.prototype = {
 
       var seenrw = {left:{},top:{}};
       var i =0;
-      forEach(sortedNodes,function(node){
-           var ns = node.src;
-           var orig_ns = ns;
-           var l = parseInt(node.style.left);
-            //var lnew = l + (tile_shift[0] * this.TILE_WIDTH);
-           var t = parseInt(node.style.top );
-           //var tnew = t + (tile_shift[1] * this.TILE_HEIGHT);
-           //var newrw = this.pix2rw(lnew,tnew,1);
+//      forEach(sortedNodes,function(node){
+//           var ns = node.src;
+//           var orig_ns = ns;
+//           var l = parseInt(node.style.left);
+//            //var lnew = l + (tile_shift[0] * this.TILE_WIDTH);
+//           var t = parseInt(node.style.top );
+//           //var tnew = t + (tile_shift[1] * this.TILE_HEIGHT);
+//           //var newrw = this.pix2rw(lnew,tnew,1);
 
-           ns = ns.replace(zre,znew);
-           ns.match(RE_left); 
-           var old_x = RegExp.$1;
-           var new_x = old_x*Math.pow(2,(this.zoomLevel-old_zoom));
-           var newrw = this.pix2rw(l,t,1);
-           newrw[0] = new_x;
+//           ns = ns.replace(zre,znew);
+//           ns.match(RE_left); 
+//           var old_x = RegExp.$1;
+//           var new_x = old_x*Math.pow(2,(this.zoomLevel-old_zoom));
+//           var newrw = this.pix2rw(l,t,1);
+//           newrw[0] = new_x;
 //           var oldrw =newrw;
 //           newre = this.normalize_xy(newrw[0], newrw[1]);
 //	   if (i==4) alert (newrw[0]+":"+oldrw[0]);
+//           seenrw.left[newrw[0]]++;
+//           seenrw.top[ newrw[1]]++;           
+//           var RE_old = new RegExp(rwname + '=' + RegExp.$1, 'g');
+//           ns = ns.replace(RE_old,rwname + '=' + newrw[0]);
+////           ns = ns.replace(RE_old,rwname + '=' + new_x);
+//           node.src=ns;
+////          if (i == 4) alert (old_x+":"+new_x+"\n"+node.style.left+"\n"+orig_ns+"\n"+l+"\n"+RE_old+"\n"+newrw+"\n"+ns);
+//           i++;
+//      },this);
+      forEach(sortedNodes,function(node){
+           var ns = node.src;
+           var l = parseInt(node.style.left );
+           //var lnew = l + (tile_shift[0] * this.TILE_WIDTH);
+           var t = parseInt(node.style.top );
+           //var tnew = t + (tile_shift[1] * this.TILE_HEIGHT);
+           //var newrw = this.pix2rw (lnew,tnew,1);
+           var newrw = this.pix2rw(l,t,0);
+           newrw = this.normalize_xy(newrw[0],newrw[1]);
            seenrw.left[newrw[0]]++;
            seenrw.top[ newrw[1]]++;
-           
+           ns = ns.replace (zre,znew);
+           ns.match(RE_left);
 
            var RE_old = new RegExp(rwname + '=' + RegExp.$1, 'g');
            ns = ns.replace(RE_old,rwname + '=' + newrw[0]);
-//           ns = ns.replace(RE_old,rwname + '=' + new_x);
            node.src=ns;
-//          if (i == 4) alert (old_x+":"+new_x+"\n"+node.style.left+"\n"+orig_ns+"\n"+l+"\n"+RE_old+"\n"+newrw+"\n"+ns);
-           i++;
-      },this);
+      },this); 
 
       this.magic_rw = {left:[],top:[]};
       for(var k in seenrw.left){ this.magic_rw.left.push(k); }
