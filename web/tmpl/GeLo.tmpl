@@ -20,6 +20,7 @@ function dataset_info_chain(val) {
 function dataset_info_chr_chain(val, chr) {
  kaj.GS('chr_info','<font class="loading">loading. . .</font>');
  kaj.GS('viewer','<font class="loading"></font>');	
+ kaj.GS('get_seq','');	
  if (val) {kaj.GS('di_info', val); kaj.GS('chr_info','');}
  kaj.GS('chr_info','<font class="loading">searching for features. . .</font>'); 
  get_data_info_chr_info(['di_id', 'chr'],['chr_info', 'viewer', 'get_seq']);
@@ -88,7 +89,7 @@ function tmouse(e){
   $('bploc').value = this.pix2rw(mx - ex,0)[0];
   //rw2pix();
 }
-var qurl = '/CoGe/FeatAnno.pl?';
+var qurl = '/CoGe/FeatAnno.pl?no_org=1&';
 
 function query(e){
    var mx = e.mouse().page.x;
