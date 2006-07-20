@@ -6,7 +6,7 @@ use Data::Dumper;
 use CoGe::Genome;
 use CoGe::Accessory::LogUser;
 
-$ENV{PATH} = "/opt/apache2/CoGe/";
+$ENV{PATH} = "/opt/apache/CoGe/";
 
 use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $DB $FORM $FID $DI $CHR $LOC);
 
@@ -52,10 +52,13 @@ sub gen_html
       {
 	next if $feat->type->name =~ /^source$/;
 	$html .= $feat->annotation_pretty_print_html();
-	$html .= qq{<font class="annotation">Organism</font>};
-	$html .= qq{<li>};
-	$html .= $feat->data_info->org->name."\n";
-	$html .= qq{<br>};
+	unless ($FORM->param('no_org'))
+	  {
+	    $html .= qq{<font class="annotation">Organism</font>};
+	    $html .= qq{<li>};
+	    $html .= $feat->data_info->org->name."\n";
+	    $html .= qq{<br>};
+	  }
 	$html .= qq{<font class="annotation">Type</font>};
 	$html .= qq{<li>};
 	$html .= $feat->feat_type->name."\n";
