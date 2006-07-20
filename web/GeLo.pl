@@ -149,7 +149,7 @@ sub get_data_info_info
 	$html .= ":";
 	$html .= "<td>";
     my $select;
-	$select .= qq{<SELECT id="chr" onChange="gen_data(['args__searching for features. . .'],['chr_info']); gen_data(['args__waiting. . .'],['viewer']); get_data_info_chr_info(['di_id', 'chr'],['chr_info','viewer'])" >\n};
+	$select .= qq{<SELECT id="chr" onChange="gen_data(['args__searching for features. . .'],['chr_info']); gen_data(['args__waiting. . .'],['viewer']); gen_data(['args__'],['get_seq']); get_data_info_chr_info(['di_id', 'chr'],['chr_info','viewer', 'get_seq'])" >\n};
 	$select .= join ("\n", map {"<OPTION value=\"$_\">".$_."</OPTION>"} sort {$a cmp $b} @chr)."\n";
 	$select =~ s/OPTION/OPTION SELECTED/;
 	$select .= "\n</SELECT>\n";
