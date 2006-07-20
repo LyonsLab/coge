@@ -25,7 +25,7 @@ $LOC = 0 unless $LOC;
 $DB = new CoGe::Genome;
 print "Content-Type: text/html\n\n";
 my $rhtml = gen_html(featid=>$FID, loc=>$LOC, chr=>$CHR, di=>$DI) if $LOC > 0;
-print "Position $LOC<br>";
+print "<font class=title3>Position:</font> <font class=data>$LOC</font><br><hr>";
 $rhtml = "No annotations" unless $rhtml;
 print $rhtml;
 
@@ -48,20 +48,18 @@ sub gen_html
       }
     push @feats, $DB->get_feat_obj->search(feature_id=>$featid) if $featid;
     my $html;
-    foreach my $feat (@feats)
+    foreach my $feat (sort {$a->type->name cmp $b->type->name} @feats)
       {
 	next if $feat->type->name =~ /^source$/;
 	$html .= $feat->annotation_pretty_print_html();
 	unless ($FORM->param('no_org'))
 	  {
-	    $html .= qq{<font class="annotation">Organism</font>};
-	    $html .= qq{<li>};
-	    $html .= $feat->data_info->org->name."\n";
+	    $html .= qq{<font class="title4">Organism: </font>};
+	    $html .= qq{<font class="data">}.$feat->data_info->org->name."</font>\n";
 	    $html .= qq{<br>};
 	  }
-	$html .= qq{<font class="annotation">Type</font>};
-	$html .= qq{<li>};
-	$html .= $feat->feat_type->name."\n";
+	$html .= qq{<font class="title4">Type: </font>};
+	$html .= qq{<font class="data">}.$feat->feat_type->name."</font>\n";
 	$html .= qq{<br>};
 	
 
