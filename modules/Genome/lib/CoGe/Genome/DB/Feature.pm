@@ -452,46 +452,47 @@ sub annotation_pretty_print_html
     my $chr = $self->chr;
     my $strand = $self->strand;
     my $info_id = $self->data_info->id;
+    my $anno_type = new CoGe::Genome::Accessory::Annotation(Type=>"<font class=\"title4\">"."Name(s):"."</font>");
+    $anno_type->Type_delimit("\n");
+    $anno_type->Val_delimit("\n, ");
+    foreach my $name ($self->names)
+      {
+	$anno_type->add_Annot("<a class=\"data\" href=FeatView.pl?accn=".$name->name.">".$name->name."</a>");
+      }
+    
+    $anno_obj->add_Annot($anno_type);
     foreach my $anno (sort {$b->type->name cmp $a->type->name} $self->annos)
       {
 	my $type = $anno->type();
 	my $group = $type->group();
 	my $anno_name = $type->name;
-	$anno_name = "<font class=\"annotation\">". $anno_name."</font>" unless ref($group) =~ /group/i;
+	$anno_name = "<font class=\"title4\">". $anno_name."</font>" unless ref($group) =~ /group/i;
 	
 	my $anno_type = new CoGe::Genome::Accessory::Annotation(Type=>$anno_name);
-	$anno_type->Val_delimit("\n<li>");
+	$anno_type->Val_delimit(", ");
 
-	$anno_type->add_Annot($anno->annotation);
+	$anno_type->add_Annot("<font class=\"data\">".$anno->annotation."</font>");
 	if (ref ($group) =~ /group/i)
 	  {
-	    my $anno_g = new CoGe::Genome::Accessory::Annotation(Type=>"<font class=\"annotation\">".$group->name."</font>");
+	    my $anno_g = new CoGe::Genome::Accessory::Annotation(Type=>"<font class=\"title4\">".$group->name."</font>");
 	    $anno_g->add_Annot($anno_type);
-	    $anno_g->Type_delimit("\n<li>");
-	    $anno_g->Val_delimit("\n<li>");
+	    $anno_g->Type_delimit(": ");
+	    $anno_g->Val_delimit(", ");
 #	    $anno_g->Val_delimit(" ");
 	    $anno_obj->add_Annot($anno_g);
 	  }
 	else
 	  {
-	    $anno_type->Type_delimit("\n<li>");
+	    $anno_type->Type_delimit(", ");
 	    $anno_obj->add_Annot($anno_type);
 	  }
       }
-    my $anno_type = new CoGe::Genome::Accessory::Annotation(Type=>"<font class=\"annotation\">"."Name(s)"."</font>");
-    $anno_type->Type_delimit("\n<BR><li>");
-    $anno_type->Val_delimit("\n<li>");
-    foreach my $name ($self->names)
-      {
-	$anno_type->add_Annot($name->name);
-      }
-    
-    $anno_obj->add_Annot($anno_type);
     my $location = "Chr ".$chr." ";
     $location .= join (", ", map {$_->start."-".$_->stop} $self->locs);
     $location .="(".$strand.")";
-    $location = qq{<a href="$loc_link?start=$start&stop=$stop&chr=$chr&di=$info_id&strand=$strand">}.$location."</a>\n" if $loc_link;
-    $anno_obj->add_Annot(new CoGe::Genome::Accessory::Annotation(Type=>"<font class=\"annotation\">Location</font>", Values=>[$location], Type_delimit=>"\n<BR><li>", Val_delimit=>" "));
+    $location = qq{<a href="$loc_link?start=$start&stop=$stop&chr=$chr&di=$info_id&strand=$strand">}.$location."</a\n" if $loc_link;
+    $location = qq{<font class="data">$location</font>};
+    $anno_obj->add_Annot(new CoGe::Genome::Accessory::Annotation(Type=>"<font class=\"title4\">Location</font>", Values=>[$location], Type_delimit=>": ", Val_delimit=>" "));
     return $anno_obj->to_String;
   }
 
