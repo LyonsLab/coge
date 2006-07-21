@@ -131,7 +131,67 @@ sub fl
     return $self->feature_lists();
   }
 
+################################################ subroutine header begin ##
 
+=head2 features
+
+ Usage     : my @features = $feature_list_group_obj->features();
+ Purpose   : fetches the feature objects assoicated with a feature list group
+             by hopping though the feature_list_connector table
+ Returns   : an array or array ref depending on wantarray
+ Argument  : none
+ Throws    : none
+ Comments  : 
+
+See Also   : CoGe::Genome::DB::Feature_list
+             CoGe::Genome::DB::Feature
+
+=cut
+
+################################################## subroutine header end ##
+
+
+
+sub features
+  {
+    my $self = shift;
+    my %feats;
+    foreach my $fl ($self->fl)
+      {
+	foreach my $f ($fl->features)
+	  {
+	    $feats{$f->id} = $f;
+	  }
+      }
+    return wantarray ? values %feats : [values %feats];
+  }
+
+################################################ subroutine header begin ##
+
+=head2 get_preferred_names
+
+ Usage     : my @names = $feature_list_group obj->get_preferred_names();
+ Purpose   : gets the perferred name for the feature list group if they were 
+             specified in the database
+ Returns   : an array or array ref depending on wantarray
+ Argument  : none
+ Throws    : none
+ Comments  : This information is stored in the feature_list_connector table
+
+See Also   : CoGe::Genome::DB::Feature_list_connector
+             CoGe::Genome::DB::Feature_list
+
+=cut
+
+################################################## subroutine header end ##
+
+sub preferred_names
+  {
+    my $self = shift;
+    my %seen;
+    my @names = grep { !$seen{$_} ++} map {$_->get_preferred_names} $self->fl;
+    return wantarray ? @names : \@names;
+  }
 
 ################################################ subroutine header begin ##
 
