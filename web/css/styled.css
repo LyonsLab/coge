@@ -10,6 +10,11 @@ BODY {
 }
 
 .title {
+  color: #000099;
+  font-style: oblique;
+}
+
+.title1 {
   font-size:xx-large;
   color: #000099;
   font-style: oblique;
@@ -32,9 +37,51 @@ BODY {
   font-style: oblique;
 }
 
+.title5 {
+  font-size:small;
+  color: #000099;
+  font-style: oblique;
+}
+
+.title6 {
+  font-size:x-small;	
+  color: #000099;
+  font-style: oblique;
+}
+
 .data {
   color: #009900;
 }
+
+.data1 {
+  font-size:xx-large;		
+  color: #009900;
+}
+
+.data2 {
+  font-size:x-large;		
+  color: #009900;
+}
+
+.data3 {
+  font-size:large;		
+  color: #009900;
+}
+
+.data4 {
+  color: #009900;
+}
+
+.data5 {
+  font-size:small;		
+  color: #009900;
+}
+.data6 {
+  font-size:x-small;		
+  color: #009900;
+}
+
+
 
 .container{
   border: 1px solid red;
