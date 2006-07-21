@@ -483,7 +483,7 @@ sub annotation_pretty_print_html
 	  }
 	else
 	  {
-	    $anno_type->Type_delimit(", ");
+	    $anno_type->Type_delimit(": ");
 	    $anno_obj->add_Annot($anno_type);
 	  }
       }
