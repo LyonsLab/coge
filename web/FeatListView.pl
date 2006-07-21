@@ -7,6 +7,7 @@ use HTML::Template;
 use Data::Dumper;
 use CGI::Ajax;
 use CoGe::Genome;
+use File::Temp
 
 $ENV{PATH} = "/opt/apache2/CoGe/";
 
@@ -37,6 +38,8 @@ my $pj = new CGI::Ajax(
 		       edit_group => \&edit_group,
 		       delete_group => \&delete_group,
 		       create_group => \&create_group,
+		       group_view => \&group_view,
+		       genomic_view => \&genomic_view,
 		      );
 $pj->JSDEBUG(0);
 $pj->DEBUG(0);
@@ -69,9 +72,16 @@ sub gen_body
   {
     my $form = shift || $FORM;
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/FeatListView.tmpl');
+    my $start = $form->param('start') || 1;
+    my $limit = $form->param('ll') || 200;
     if ($form->param('fl'))
       {
-	feat_lists($template);
+	
+	feat_lists(
+		   tmpl=>$template,
+		   start=>$start,
+		   limit => $limit,
+		  );
       }
     elsif($form->param('flg'))
       {
@@ -87,10 +97,26 @@ sub gen_body
 sub feat_lists
   {
     #need to make sure to do a user validation at some point
-    my $tmpl = shift;
+    my %opts = @_;
+    my $tmpl = $opts{'tmpl'};
+    my $start = $opts{start};
+    my $limit = $opts{limit};
     my @lists;
     my $row_color = 'ltgreen';
-    foreach my $fl ($DB->get_feature_list_obj->retrieve_all())
+    my $total = $DB->get_feature_list_obj->count_all();
+    $tmpl->param("LIST_COUNT"=> $total);
+    my $stop = $start + $limit-1;
+    $stop = $total if $stop > $total;
+    $tmpl->param("LIST_START"=> $start, "LIST_STOP"=>$stop);
+    my $pstart = $start - $limit;
+    my $nstart = $start + $limit;
+    my $lstart = $total-$limit+1;
+    $tmpl->param("FIRST"=>qq{<input type="submit" name="<<" value="<<" onClick="window.location='FeatListView.pl?fl=1&start=1'">}) if ($start > 1);
+    $tmpl->param("PREVIOUS"=>qq{<input type="submit" name="<" value="<" onClick="window.location='FeatListView.pl?fl=1&start=$pstart'">}) if ($start > 1);
+    $tmpl->param("NEXT"=>qq{<input type="submit" name=">" value=">" onClick="window.location='FeatListView.pl?fl=1&start=$nstart'">}) if ($stop < $total);
+    $tmpl->param("LAST"=>qq{<input type="submit" name=">>" value=">>" onClick="window.location='FeatListView.pl?fl=1&start=$lstart'">}) if ($stop < $total);
+    foreach my $fl ($DB->get_feature_list_obj->get_lists(start=>$start, limit=>$limit))      
+#    foreach my $fl ($DB->get_feature_list_obj->retrieve_all())
       {
 	my $f_count = scalar $fl->flc;
 	my $readers = join (", ", map {$_->name} $fl->readers);
@@ -110,7 +136,7 @@ sub expand_list
     my @feats;
     foreach my $f ($fl->features)
       {
-	push @feats, {FEAT_TYPE=>$f->type->name, FEAT_NAME => join ", ", sort map {"<a href = FeatView.pl?accn=".$_->name.">".$_->name."</a>"} $f->names};
+	push @feats, {FEAT_TYPE=>$f->type->name, FEAT_ORG=>$f->org->name,FEAT_NAME => join ", ", sort map {"<a href = FeatView.pl?accn=".$_->name.">".$_->name."</a>"} $f->names};
       }
     my $tmpl = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/FeatListView.tmpl');
 #    $tmpl->param(LIST_ID=>$fl->id);
@@ -139,8 +165,15 @@ sub edit_list
     my $row_color = 'ltgreen';
     foreach my $f ($fl->features)
       {
-	print STDERR "here!\n";
-	push @feats, {FEAT_ID=>$f->id, FEAT_ORG=>$f->org->name, FEAT_DATA=>$f->dataset->name."(v".$f->dataset->version.")", FEAT_TYPE=>$f->type->name, LIST_ID=>$lid, ROW_BG=>$row_color, FEAT_NAME => join ", ", sort map {"<a href = FeatView.pl?accn=".$_->name.">".$_->name."</a>"} $f->names};
+	push @feats, {
+		      FEAT_ID=>$f->id, 
+		      FEAT_ORG=>$f->org->name, 
+		      FEAT_DATA=>$f->dataset->name."(v".$f->dataset->version.")", 
+		      FEAT_TYPE=>$f->type->name, LIST_ID=>$lid, 
+		      ROW_BG=>$row_color, 
+		      FEAT_NAME => join (", ", sort map {"<a href = FeatView.pl?accn=".$_->name.">".$_->name."</a>"} $f->names),
+		      FEAT_PNAME => $fl->preferred_name($f),
+		     };
 	$row_color = $row_color eq 'ltgreen' ? 'ltblue' : 'ltgreen';
       }
 
@@ -216,7 +249,7 @@ sub expand_group
     foreach my $fl ($flg->lists)
       {
 	my $count = scalar $fl->flc;
-	push @lists, {LIST_NAME=>"<a ref=\"\" onClick=\"edit_list(['args__".$fl->id."'],['main'])\">".$fl->name."</a>", LIST_DESC=>$fl->desc, FEAT_COUNT=>$count, LIST_ID=>$fl->id};
+	push @lists, {LIST_ID=>$fl->id,LIST_NAME=>$fl->name, LIST_DESC=>$fl->desc, FEAT_COUNT=>$count, LIST_ID=>$fl->id};
       }
     my $tmpl = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/FeatListView.tmpl');
 #    $tmpl->param(LIST_ID=>$fl->id);
@@ -249,4 +282,86 @@ sub delete_group
     my $gid = shift;
     my $flg = $DB->get_feature_list_group_obj->retrieve($gid);
     $flg->delete if $flg
+  }
+
+sub group_view
+  {
+    my $gid = shift;
+    my $tmpl = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/FeatListView.tmpl');
+    $tmpl->param(GROUP_VIEW=>1);
+    my $flg = $DB->get_feature_list_group_obj->retrieve($gid);
+    $tmpl->param(NAME=>$flg->name);
+    $tmpl->param(DESC=>$flg->desc);
+    $tmpl->param(NOTES=>$flg->notes);
+    my @lists;
+    my $row_color = 'ltgreen';
+    foreach my $fl ($flg->lists)
+      {
+	my $count = 0;
+	foreach ($fl->flc) {$count++;}
+	push @lists, {LIST_NAME=>$fl->name."</a>", LIST_DESC=>$fl->desc, LIST_NOTE=>$fl->notes, FEAT_COUNT=>$count, ROW_BG=>$row_color, LIST_ID=>$fl->id};
+	$row_color = $row_color eq 'ltgreen' ? 'ltblue' : 'ltgreen';
+
+      }
+    $tmpl->param(LIST_LOOP=>\@lists);
+    my %seen;
+    grep {! $seen{$_->org->name}{$_->dataset->id}{$_->chr}++ } $flg->features;
+    my @orgs;
+    foreach my $org (keys %seen)
+      {
+	foreach my $dsid (keys %{$seen{$org}})
+	  {
+	    foreach my $chr (keys %{$seen{$org}{$dsid}})
+	      {
+		my $action;
+		$action = qq{<input type="submit" name="Genomic View" value="Genomic View" onClick="genomic_view(['args__flg', 'args__$gid', 'args__$chr', 'args__$dsid'],['genomic_view'])">};
+		push @orgs, {
+			     ORG_NAME=>$org, 
+			     FEAT_COUNT=>$seen{$org}{$dsid}{$chr}, 
+			     CHR=>$chr,
+			     ROW_BG=>$row_color,
+			     ACTIONS=>$action,
+			    };
+		$tmpl->param(ORG_LOOP=>\@orgs);
+		$row_color = $row_color eq 'ltgreen' ? 'ltblue' : 'ltgreen';
+	      }
+	  }
+      }
+    return $tmpl->output;
+  }
+
+
+sub genomic_view
+  {
+    my $type = shift;
+    my $id = shift;
+    return "No feature list or feature list group id provided" unless $id;
+    my $chr = shift;
+    my $dsid = shift;
+    my $list = $type eq "flg" ? $DB->get_feature_list_group_obj->retrieve($id) : $DB->get_feature_list_obj->retrieve($id);
+    my @feats;
+    foreach my $feat ($list->features)
+      {
+	push @feats, $feat if $feat->dataset->id == $dsid && $feat->chr eq $chr;
+      }
+    return generate_image(feats=>\@feats, dsid=>$dsid, chr=>$chr, list=>$list);
+  }
+
+sub generate_image
+  {
+    my %opts = @_;
+    my $feats = $opts{feats};
+    my $dsid = $opts{dsid};
+    my $chr = $opts{chr};
+    my $list = $opts{list};
+    my $iw = $opts{iw} || 1600;
+    my $ih = $opts{ih} || 200;
+    my $fh = $opts{fh} || 25;
+    my ($start) = sort {$a <=> $b} map {$_->start} @$feats;
+    my ($stop) = sort {$b <=> $a} map {$_->stop} @$feats;
+    my $fnames = join "&", map {"fn=".$_} $list->preferred_names;
+    my $fids = join "&", map {"fid=".$_->id} @$feats unless $fnames;
+    my $img_link = qq{<img src="GenomePNG.pl?start=$start&stop=$stop&di=$dsid&chr=$chr&iw=$iw&ih=$ih&$fids&$fnames">};
+    print STDERR $img_link,"\n";
+    return $img_link;
   }
