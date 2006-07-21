@@ -1575,7 +1575,43 @@ sub find_overlapping_features
     return wantarray ? @overlap_feats : \@overlap_feats;
   }
 
-1; #this line is important and will help the module return a true value
+
+################################################ subroutine header begin ##
+
+=head2 get_features_for_organism
+
+ Usage     : my (@feats) = $db->get_features_for_org(org=> "Arabidopsis",
+                                                     type=>"gene",
+                                                     chr=>1,
+                                                     );
+ Purpose   : get a list of feature objects for an organism based on user 
+             defined criteria
+ Returns   : an array or array ref of CoGe::Genome::DB::Feature objects
+ Argument  : a hash of key->value pairs
+             org           => CoGe::Genome::DB::Organism object or organism database 
+                              id or organism name (required!)
+             version | ver => which version of data to use (if not specified this
+                            routine will find the most current version of the data
+                            and use that)
+             type        => the type of feature to return (e.g. "gene").  If this is
+                            not specified it will return all features. (optional)
+             chr | chromosome => chromosome name to limit search to just one 
+                                 chromosome. (optional)
+ Throws    : a warning will be thrown if the organism is invalid
+ Comments  : this calls CoGe::Genome::DB::Data_information->get_features_for_organism
+
+See Also   : CoGe::Genome::DB::Feature
+             CoGe::Genome::DB::Data_information
+=cut
+
+################################################## subroutine header end ##
+
+
+sub get_features_for_organism
+  {
+    my $self = shift;
+    return $self->get_dataset_obj->get_features_for_organism(@_);
+  }
 
 ################################################ subroutine header begin ##
 
@@ -1593,3 +1629,4 @@ See Also   : CoGe::Genome::DB::Feature
 =cut
 
 ################################################## subroutine header end ##
+1; #this line is important and will help the module return a true value
