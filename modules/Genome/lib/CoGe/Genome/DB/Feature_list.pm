@@ -15,6 +15,12 @@ BEGIN {
     __PACKAGE__->has_many(feature_list_connectors=>'CoGe::Genome::DB::Feature_list_connector');
     __PACKAGE__->has_many(user_group_feature_list_permission_connectors=>'CoGe::Genome::DB::User_group_feature_list_permission_connector');
     __PACKAGE__->has_a('feature_list_group_id' => 'CoGe::Genome::DB::Feature_list_group');
+    __PACKAGE__->set_sql('fetch_ordered_lists' => qq{
+SELECT *
+  FROM feature_list fl
+ ORDER BY ? ?
+ LIMIT ?, ?
+});
  }
 
 
@@ -43,7 +49,6 @@ in the feature_list_connector table.
 
 
 =head1 SUPPORT
-
 
 
 =head1 AUTHOR
@@ -244,7 +249,113 @@ sub editors
 
 ################################################ subroutine header begin ##
 
-=head2 
+=head2 get_lists
+
+ Usage     : my @lists = $obj->get_lists(start=>1, limit=>50, sort=>"name", sort_type=>"desc");
+ Purpose   : Get feature lists from the database
+ Returns   : returns an array or arrayref of CoGe::Genome::DB::Feature_list objects
+ Argument  : hash of key-value pairs:
+     start=> where in the list to start (default 1)
+     limit=> number of items to retrieve from the database (default 200)
+     sort => which column in the database on which to sort (default feature_list_id)
+sort_type => ASC or DESC for ascending or descending sorts
+
+ Throws    : 
+ Comments  : If you want all the lists in the database use $obj->retrieve_all()
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+
+
+sub get_lists
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $start = $opts{start} || $opts{begin};
+    my $num = $opts{limit} || $opts{limit};
+    my $sort = $opts{sort} || 'feature_list_id';
+    my $sort_type = $opts{sort_type} || 'desc';
+    $start = 1 unless $start;
+    $start = $start -1 if $start;
+    $num = 200 unless $num;
+#    my $user = $opts{user}; will need this at some point
+#    my $user_group = $opts{user_group};
+    my $sth = $self->sql_fetch_ordered_lists;
+    $sth->execute($sort, $sort_type, $start, $num);
+    my @fls;
+    while (my $q = $sth->fetchrow_arrayref)
+      {
+	push @fls, $self->retrieve($q->[0]);
+      }
+    $sth->finish;
+    return wantarray ? @fls : \@fls;
+  }
+################################################ subroutine header begin ##
+
+=head2 get_preferred_names
+
+ Usage     : my @names = $feature_list_obj->get_preferred_names();
+ Purpose   : gets the perferred name for the feature list if they were 
+             specified in the database
+ Returns   : an array or array ref depending on wantarray
+ Argument  : none
+ Throws    : none
+ Comments  : This information is stored in the feature_list_connector table
+
+See Also   : CoGe::Genome::DB::Feature_list_connector
+
+=cut
+
+################################################## subroutine header end ##
+
+sub get_preferred_names
+  {
+    my $self = shift;
+    my @names ;
+    foreach my $flc ($self->flc)
+      {
+	push @names, $flc->preferred_name if $flc->preferred_name;
+      }
+    return wantarray ? @names : \@names
+ 
+  }
+
+################################################ subroutine header begin ##
+
+=head2 preferred_name
+
+ Usage     : my $name = $feature_list_obj->preferred_name($feat_obj);
+ Purpose   : find the preferred name for a feature as stored in the feature list connector
+ Returns   : a string or undef
+ Argument  : a feature_obj of a feature from the feature list
+ Throws    : none
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+
+sub preferred_name
+  {
+    my $self = shift;
+    my $feat = shift;
+    foreach my $flc ($self->flc)
+      {
+	return $flc->name if $flc->feature_id eq $feat->id;
+      }
+    return;
+  }
+
+################################################ subroutine header begin ##
+
+=head2
 
  Usage     : 
  Purpose   : 
