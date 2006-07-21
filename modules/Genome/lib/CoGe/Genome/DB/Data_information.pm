@@ -75,6 +75,28 @@ SELECT feature_id
    AND feature_type.name = ?
 });
 
+   __PACKAGE__->set_sql(get_features_for_organism_version_chromosome => qq{
+SELECT feature_id 
+  FROM feature
+  JOIN data_information USING (data_information_id)
+  JOIN location USING (feature_id)
+ WHERE organism_id = ?
+   AND version = ?
+   AND location.chromosome = ?
+});
+
+   __PACKAGE__->set_sql(get_features_for_organism_version_type_chromosome => qq{
+SELECT feature_id 
+  FROM feature
+  JOIN data_information USING (data_information_id)
+  JOIN feature_type USING (feature_type_id)
+  JOIN location USING (feature_id)
+ WHERE organism_id = ?
+   AND version = ?
+   AND feature_type.name = ?
+   AND location.chromosome = ?
+});
+
   }
 
 
@@ -497,11 +519,11 @@ sub get_current_version_for_organism
   {
     my $self = shift;
     my %opts = @_;
-    my $org = $opts{org} || $opts{orgid};
-    my $orgid = ref ($org) =~ /organism/i ? $org->id : $org;
-    return 0 unless $orgid =~ /^\d+$/;
+    my  $db = new CoGe::Genome;
+    my $org = $db->get_organism_obj->resolve_organism($opts{org});
+    return 0 unless $org;
     my $sth = $self->sql_get_current_version_for_organsim();
-    $sth->execute($orgid);
+    $sth->execute($org->id);
     my ($version) = $sth->fetchrow_array;
     return $version;
   }
@@ -515,12 +537,15 @@ sub get_current_version_for_organism
              for an organism
  Returns   : an array or array ref of CoGe::Genome::DB::Feature objects
  Argument  : a hash of key->value pairs
-             org => CoGe::Genome::DB::Organism object or organism database id
-             version => which version of data to use (if not specified this
-                        routine will find the most current version of the data
-                        and use that
-             type    => the type of feature to return (e.g. "gene").  If this is
-                        not specified it will return all features.
+             org           => CoGe::Genome::DB::Organism object or organism database 
+                              id or organism name
+             version | ver => which version of data to use (if not specified this
+                            routine will find the most current version of the data
+                            and use that)
+             type        => the type of feature to return (e.g. "gene").  If this is
+                            not specified it will return all features. (optional)
+             chr | chromosome => chromosome name to limit search to just one 
+                                 chromosome (optional)
  Throws    : none
  Comments  : 
            : 
@@ -535,14 +560,34 @@ sub get_features_for_organism
   {
     my $self = shift;
     my %opts = @_;
-    my $org = $opts{org} || $opts{orgid};
-    my $orgid = ref ($org) =~ /organism/i ? $org->id : $org;
-    return 0 unless $orgid =~ /^\d+$/;
-    my $version = $opts{version} || $opts{ver} || $self->get_current_version_for_organism(org=>$orgid);
+   my $db = new CoGe::Genome;
+    my $org = $db->get_organism_obj->resolve_organism($opts{org});
+    return 0 unless $org;
+    my $version = $opts{version} || $opts{ver} || $self->get_current_version_for_organism(org=>$org);
     my $type = $opts{type};
-    my $sth = $type ? $self->sql_get_features_for_organism_version_type() : $self->sql_get_features_for_organism_version();
-    $type ? $sth->execute($orgid, $version, $type) : $sth->execute($orgid, $version);
-    my $db = new CoGe::Genome;
+    my $chr = $opts{chromosome} || $opts{chr};
+    my $sth;
+    my @args;
+    if ($type && $chr)
+      {
+	$sth = $self->sql_get_features_for_organism_version_type_chromosome();
+	push @args, ($type, $chr);
+      }
+    elsif ($type)
+      {
+	$sth = $self->sql_get_features_for_organism_version_type();
+	push @args, $type;
+      }
+    elsif ($chr)
+      {
+	$sth = $self->sql_get_features_for_organism_version_chromosome();
+	push @args, $chr
+      }
+    else
+      {
+	$sth = $self->sql_get_features_for_organism_version();
+      }
+    $sth->execute($org->id, $version, @args);
     my @feats;
     while (my $q = $sth->fetchrow_arrayref)
       {
