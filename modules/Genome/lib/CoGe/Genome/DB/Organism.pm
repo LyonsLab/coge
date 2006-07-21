@@ -180,5 +180,47 @@ sub get_features
     return $db->get_data_info_obj->get_features_for_organism(org=>$self, %opts);
   }
 
+################################################ subroutine header begin ##
+
+=head2 resolve_organism
+
+ Usage     : my $org = resolve_organism($org_thing);
+ Purpose   : given an organism name, an organism database id, or an organism object,
+             this will return the organism for you
+ Returns   : CoGe::Genome::DB::Organism object
+ Argument  : org_thing can be an organism name, an organism database id, 
+             or an organism object
+ Throws    : will throw a warning if a valid organism object was not created
+ Comments  : 
+
+See Also   : CoGe::Genome::DB::Feature
+
+=cut
+
+################################################## subroutine header end ##
+
+sub resolve_organism
+  {
+    use Data::Dumper;
+    my $self = shift;
+    my $orgin = shift;
+    my $orgout;
+    if (ref ($orgin) =~ /Organism/i) #we were passed an organism object
+      {
+	$orgout = $orgin;
+      }
+    elsif ($orgin =~ /^\d+$/) #only numbers, probably a database id
+      {
+	$orgout = $self->retrieve($orgin);
+      }
+    else #probably an organism name. . .
+      {
+	($orgout) = $self->search_like (name=>"%".$orgin."%")
+      }
+    warn "unable to resolve organism for $orgin in Organism->resolve_organism" unless ref ($orgout) =~ /Organism/i;
+    return $orgout;
+      
+  }
+
 1; #this line is important and will help the module return a true value
 
