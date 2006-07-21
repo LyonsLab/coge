@@ -254,7 +254,7 @@ sub get_sequence
     my $stop = $opts{'stop'} || $opts{STOP} || $opts{end} || $opts{END};
     $stop = $start unless $stop;
     my $chr = $opts{chr} || $opts{CHR} || $opts{chromosome} || $opts{CHROMOSOME};
-    my $info_id = $opts{info_id} || $opts{INFO_ID} || $opts{data_info_id} || $opts{DATA_INFO_ID};
+    my $info_id = $opts{info_id} || $opts{INFO_ID} || $opts{data_info_id} || $opts{DATA_INFO_ID} || $opts{dataset_id};
     my $strand = $opts{strand} || $opts{STRAND} || 1;
     my $sth = $self->sql_get_sequence();
     $sth->execute($info_id, $chr, $start, $start, $stop, $stop, $start, $stop);
