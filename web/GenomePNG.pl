@@ -7,6 +7,7 @@ use CoGe::Graphics::Feature;
 use CoGe::Graphics::Feature::Gene;
 use CoGe::Graphics::Feature::NucTide;
 use CoGe::Graphics::Feature::GAGA;
+use CoGe::Graphics::Feature::Sigma54;
 use CoGe::Graphics::Feature::Exon_motifs;
 use CoGe::Graphics::Feature::AminoAcid;
 use CoGe::Graphics::Feature::Domain;
@@ -30,6 +31,7 @@ my $version = $form->param('v') || $form->param('version');
 my $org_id = $form->param('o') || $form->param('org') ||$form->param('organism') || $form->param('org_id') || $form->param('oid');
 my $chr = $form->param('chr') ||$form->param('chromosome');
 my $iw = $form->param('iw') || $form->param('width') || $form->param('tile size')|| $form->param('tile_size') || 256;
+my $ih = $form->param('ih');
 my $mag = $form->param('m') || $form->param('mag') || $form->param('magnification');
 my $z = $form->param('z');
 my $file = $form->param('file');# || "./tmp/pict.png";
@@ -40,6 +42,8 @@ my $chr_mag_height = $form->param('cmh') || 5;
 my $feat_start_height = $form->param('fsh') || 10;
 my $feat_mag_height = $form->param('fmh') || 2;
 my $BENCHMARK = $form->param('bm') || 0;
+my @fids = $form->param('fid'); #used to highlight special features by their database id
+my @fnames = $form->param('fn'); #used to highlight special features by their name
 
 
 ##some limits to keep from blowing our stack
@@ -83,6 +87,7 @@ foreach my $did (@dids)
     my ($tstart, $tstop) = initialize_c(di=>$did,
 					chr=>$chr,
 					iw=>$iw,
+					ih=>$ih,
 					z=>$z,
 					mag=>$mag,
 					start=>$start,
@@ -116,7 +121,7 @@ my $t1 = new Benchmark;
 foreach my $did (keys %dids)
   {
     my $taa = new Benchmark;
-    process_features(start=>$start, stop=>$stop, chr=>$chr, di=>$did, db=>$db, c=>$c) unless $simple;
+    process_features(start=>$start, stop=>$stop, chr=>$chr, di=>$did, db=>$db, c=>$c, fids=>\@fids, fnames=>\@fnames) unless $simple;
     my $tab = new Benchmark;
     my $feat_time = timestr(timediff($tab, $taa));
     print STDERR " processing did $did:   $feat_time\n" if $BENCHMARK;
@@ -147,6 +152,7 @@ sub initialize_c
     my $di = $opts{di};
     my $chr = $opts{chr};
     my $iw = $opts{iw};
+    my $ih = $opts{ih};
     my $z = $opts{z};
     my $mag = $opts{mag};
     my $start = $opts{start};
@@ -163,6 +169,7 @@ sub initialize_c
     $c->chr_length($chr_length);
     $c->mag_scale_type("constant_power");
     $c->iw($iw);
+    $c->ih($ih) if $ih;
     $c->max_mag((10));
     $c->DEBUG(0);
     $c->feature_labels(1);
@@ -237,6 +244,7 @@ sub process_nucleotides
 	my $f2 = CoGe::Graphics::Feature::NucTide->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
 	#my $f2 = CoGe::Graphics::Feature::Exon_motifs->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
         #my $f2 = CoGe::Graphics::Feature::GAGA->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
+#	my $f2 = CoGe::Graphics::Feature::Sigma54->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
         
         $c->add_feature($f1, $f2);
         $pos+=$chrs;
@@ -255,6 +263,8 @@ sub process_features
     my $c = $opts{c};
     my $accn = $opts{accn};
     my $print_names = $opts{print_names};
+    my $fids = $opts{fids};
+    my $fnames = $opts{fnames};
     my $sstart = $start - ($stop - $start);
     my $sstop = $stop + ($stop - $start);
     
@@ -337,6 +347,23 @@ sub process_features
 	    $f->color($color);
           }
         next unless $f;
+
+	foreach my $id (@$fids)
+	  {
+	    print STDERR $id,"\n";
+	    $f->color([255,255,0]) if $feat->id eq $id;
+	  } 
+	foreach my $name (@$fnames)
+	  {
+	    foreach my $n (map {$_->name} $feat->names)
+	      {
+		if ($n =~ /^$name$/i)
+		  {
+		    $f->color([255,255,0]);
+		    $f->label($name);
+		  }
+	      }
+	  } 
         foreach my $loc ($feat->locs)
 	  {
 	    $f->add_segment(start=>$loc->start, stop=>$loc->stop);
