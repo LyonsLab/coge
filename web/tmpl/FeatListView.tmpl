@@ -4,11 +4,12 @@ function edit_list_reload(lid)
  {
    edit_list(['args__'+lid],['main']);
  }
+
 </SCRIPT>
 
 <TMPL_IF NAME="FEAT_LIST">
 <DIV id="main">
-<font class="annotation">Feature Lists:</font>
+<font class="Title3"><TMPL_VAR NAME="LIST_COUNT">Feature Lists:</font>  <font class="data5">(Showing <TMPL_VAR NAME="LIST_START"> - <TMPL_VAR NAME="LIST_STOP">)&nbsp&nbsp&nbsp<TMPL_VAR NAME="FIRST"><TMPL_VAR NAME="PREVIOUS"> <TMPL_VAR NAME="NEXT"><TMPL_VAR NAME="LAST">
 <TABLE class="columns">
  <TR align = left>
   <TD>
@@ -54,7 +55,7 @@ function edit_list_reload(lid)
 </DIV>
 </TMPL_IF>
 
-<TMPL_IF NAME="EDIT_LIST">
+<TMPL_IF NAME="EDIT_LIST">1265057
 
 
 <DIV id="main">
@@ -68,7 +69,7 @@ function edit_list_reload(lid)
   <TH>Dataset
   <TH>Type
   <TH>Name(s)
-
+  <TH>Preferred Name
 <TMPL_LOOP NAME=FEATURE_INFO>
  <DIV id="FID<TMPL_VAR NAME=FEAT_ID>">
  <TR class="<TMPL_VAR NAME=ROW_BG>">
@@ -77,6 +78,7 @@ function edit_list_reload(lid)
   <TD><TMPL_VAR NAME=FEAT_DATA>
   <TD><TMPL_VAR NAME=FEAT_TYPE>
   <TD><TMPL_VAR NAME=FEAT_NAME>
+  <TD><TMPL_VAR NAME=FEAT_PNAME>
  </DIV>
 </TMPL_LOOP>
  
@@ -91,12 +93,13 @@ function edit_list_reload(lid)
  <TR>
   <TH>Type
   <TH>Name(s)
-
+  <TH>Organism
 <TMPL_LOOP NAME=FEATURE_INFO>
  <DIV id="FID<TMPL_VAR NAME=FEAT_ID>">
  <TR>
   <TD><TMPL_VAR NAME=FEAT_TYPE>
   <TD nowrap><TMPL_VAR NAME=FEAT_NAME>
+  <TD nowrap><TMPL_VAR NAME=FEAT_ORG>
  </DIV>
 </TMPL_LOOP>
  
@@ -122,7 +125,7 @@ function edit_list_reload(lid)
  <TR valign=top class="<TMPL_VAR NAME=ROW_BG>">
   <TD><input type="IMAGE" src="picts/edit.png"  onClick="edit_group(['args__<TMPL_VAR NAME=GROUP_ID>'],['main']);">
   <TD><input type="IMAGE" src="picts/delete.png"  onClick=" if (confirm('Are you sure you wish to delete this group?')){ delete_group(['args__<TMPL_VAR NAME=GROUP_ID>'], []), window.location.reload();}">  
-  <TD class="species"> <TMPL_VAR NAME=GROUP_NAME>
+  <TD class="species"> <a onclick="group_view(['args__<TMPL_VAR NAME=GROUP_ID>'],['main'])"><TMPL_VAR NAME=GROUP_NAME></a>
   <TD><TMPL_VAR NAME=GROUP_DESC>
   <TD><TMPL_VAR NAME=GROUP_NOTE>
   <TD>
@@ -150,7 +153,7 @@ function edit_list_reload(lid)
 <TMPL_LOOP NAME=LIST_INFO>
  <DIV id="LID<TMPL_VAR NAME=LIST_ID>">
  <TR>
-  <TD><TMPL_VAR NAME=LIST_NAME>
+  <TD><a onClick="edit_list(['args__<TMPL_VAR NAME=LIST_ID>'],['main'])"><TMPL_VAR NAME=LIST_NAME></a>
   <TD><TMPL_VAR NAME=LIST_DESC>
   <TD><TMPL_VAR NAME=FEAT_COUNT>
  </DIV>
@@ -163,4 +166,48 @@ function edit_list_reload(lid)
 <TMPL_IF NAME=FOOT>
 
 <input type="submit" name="Show Feature Lists" value="Show Feature Lists" onClick="window.location='FeatListView.pl?fl=1'">
-<input type="submit" name="Show List Groups" value="Show  List Groups" onClick="window.location='FeatListView.pl?flg=1'"></TMPL_IF>
+<input type="submit" name="Show List Groups" value="Show  List Groups" onClick="window.location='FeatListView.pl?flg=1'">
+</TMPL_IF>
+
+<TMPL_IF NAME=GROUP_VIEW>
+<DIV id="main">
+<font class="title2">Group view:</font><br>
+<font class="annotation"><TMPL_VAR NAME="NAME"></font> <TMPL_VAR NAME="DESC"><BR>
+<font class="species"><TMPL_VAR NAME="NOTES"></font>
+<table class="columns">
+ <TR align = left>
+  <TH>List Name
+  <TH>Description
+  <TH>Notes
+  <TH>Features
+<TMPL_LOOP NAME="LIST_LOOP">
+ <TR valign="top" class="<TMPL_VAR NAME=ROW_BG>">
+  <TD><a onClick="edit_list(['args__<TMPL_VAR NAME=LIST_ID>'],['main'])"><TMPL_VAR NAME=LIST_NAME>
+  <TD><TMPL_VAR NAME=LIST_DESC>
+  <TD><TMPL_VAR NAME=LIST_NOTE>
+  <TD>
+      <DIV id="showfeat<TMPL_VAR NAME=LIST_ID>" class="l">
+      <input type="IMAGE" src="picts/close.png" onClick="expand_list(['args__<TMPL_VAR NAME=LIST_ID>'],['FLID<TMPL_VAR NAME=LIST_ID>', 'showfeat<TMPL_VAR NAME=LIST_ID>'])">
+      </DIV>
+      <DIV id="FLID<TMPL_VAR NAME=LIST_ID>" class="l">
+      <TMPL_VAR NAME=FEAT_COUNT>
+      </DIV>
+</TMPL_LOOP>
+</TABLE>
+<table class="columns">
+ <tr align="left">
+  <th>Organism:
+  <th>Chromosome:
+  <th>Features:
+  <th>Actions:
+ <TMPL_LOOP NAME=ORG_LOOP>
+ <tr valign="top" class="<TMPL_VAR NAME=ROW_BG>">
+  <td><TMPL_VAR NAME=ORG_NAME>
+  <td><TMPL_VAR NAME=CHR>
+  <td><TMPL_VAR NAME=FEAT_COUNT>
+  <td><TMPL_VAR NAME=ACTIONS>
+ </TMPL_LOOP>
+</TABLE>
+<DIV id="genomic_view"></DIV>
+</DIV>
+</TMPL_IF>
