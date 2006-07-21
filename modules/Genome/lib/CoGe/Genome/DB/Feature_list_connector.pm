@@ -92,6 +92,10 @@ perl(1).
  p_id
  pid
 
+ preferred_name   =>  optional name that is preferred for the feature
+ name             
+
+
  feature_list_connector_id  =>  database entry id
  id                         =>  alias for feature_list_id
 
@@ -140,6 +144,12 @@ sub pid
   {
     my $self = shift;
     return $self->permission_id();
+  }
+
+sub name
+  {
+    my $self = shift;
+    return $self->preferred_name();
   }
 
 sub id
