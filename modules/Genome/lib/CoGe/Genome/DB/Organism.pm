@@ -186,14 +186,14 @@ sub get_features
 
  Usage     : my $org = resolve_organism($org_thing);
  Purpose   : given an organism name, an organism database id, or an organism object,
-             this will return the organism for you
+             this will return the organism object for you
  Returns   : CoGe::Genome::DB::Organism object
  Argument  : org_thing can be an organism name, an organism database id, 
              or an organism object
  Throws    : will throw a warning if a valid organism object was not created
  Comments  : 
 
-See Also   : CoGe::Genome::DB::Feature
+See Also   : 
 
 =cut
 
@@ -201,7 +201,6 @@ See Also   : CoGe::Genome::DB::Feature
 
 sub resolve_organism
   {
-    use Data::Dumper;
     my $self = shift;
     my $orgin = shift;
     my $orgout;
