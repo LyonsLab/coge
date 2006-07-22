@@ -354,6 +354,81 @@ sub ver
     return $self->version();
   }
 
+################################################ subroutine header begin ##
+
+=head2 resolve_data_information
+
+ Usage     : my $ds = resolve_data_information($ds_thing);
+ Purpose   : given a data_information name, a data_information database id, or a data_information object,
+             this will return the data_information object for you
+ Returns   : CoGe::Genome::DB::Data_information object
+ Argument  : ds_thing can be a data information name, a data information database id, 
+             or a data information object
+ Throws    : will throw a warning if a valid object was not created
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub resolve_data_information
+  {
+    my $self = shift;
+    my $diin = shift;
+    my $diout;
+    if (ref ($diin) =~ /Data_information/i) #we were passed an object
+      {
+	$diout = $diin;
+      }
+    elsif ($diin =~ /^\d+$/) #only numbers, probably a database id
+      {
+	$diout = $self->retrieve($diin);
+      }
+    else #probably an dianism name. . .
+      {
+	($diout) = $self->search_like (name=>"%".$diin."%")
+      }
+    warn "unable to resolve data $diin in Data_information->resolve_data_information" unless ref ($diout) =~ /Data_information/i;
+    return $diout;
+  }
+
+################################################ subroutine header begin ##
+
+=head2 resolve_data_info
+
+ Usage     : my $ds = resolve_data_info($ds_thing);
+ Purpose   : aslias for resolve_data_information
+See Also   : resolve_data_information
+
+=cut
+
+################################################## subroutine header end ##
+
+sub resolve_data_info
+  {
+    my $self = shift;
+    return $self->resolve_data_information(@_);
+  }
+
+################################################ subroutine header begin ##
+
+=head2 resolve_dataset
+
+ Usage     : my $ds = resolve_dataset($ds_thing);
+ Purpose   : aslias for resolve_data_information
+See Also   : resolve_data_information
+
+=cut
+
+################################################## subroutine header end ##
+
+sub resolve_dataset
+  {
+    my $self = shift;
+    return $self->resolve_data_information(@_);
+  }
 
 
 ################################################ subroutine header begin ##
