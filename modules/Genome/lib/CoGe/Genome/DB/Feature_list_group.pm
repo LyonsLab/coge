@@ -13,6 +13,7 @@ BEGIN {
     %EXPORT_TAGS = ();
     __PACKAGE__->set_up_table('feature_list_group');
     __PACKAGE__->has_many(feature_lists=>'CoGe::Genome::DB::Feature_list');
+    __PACKAGE__->has_many(feature_list_group_image_connectors=>'CoGe::Genome::DB::Feature_list_group_image_connector');
  }
 
 
@@ -90,6 +91,15 @@ perl(1).
  list
  fl
 
+ feature_list_group_image_connectors => returns Feature_list_group_image_conector
+                                        objects
+ flgi_conenctor
+ flgic
+
+ images => returns Image objects linked through the feature_list_group_image_connector
+           object
+ image
+
  new              =>  creates a new object (inherited from Class::Accessor)
 
 =cut
@@ -131,6 +141,49 @@ sub fl
     return $self->feature_lists();
   }
 
+sub flgi_connector
+  {
+    my $self = shift;
+    return $self->feature_list_group_image_connectors();
+  }
+
+sub flgic
+  {
+    my $self = shift;
+    return $self->feature_list_group_image_connectors();
+  }
+
+sub images
+  {
+    my $self = shift;
+    my @images = map{$_->image} $self->flgic;
+  }
+
+sub image
+  {
+    my $self = shift;
+    return $self->images;
+  }
+
+sub insert_image
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $name = $opts{name};
+    my $desc = $opts{desc};
+    my $img = $opts{img};
+    my $db = new CoGe::Genome;
+    my $io = $db->get_image_obj->insert({
+					 name=>$name,
+					 description=>$desc,
+					 image=>$img,
+					});
+    my $ico = $db->get_feature_list_group_image_connector_obj->insert({
+								   feature_list_group_id=>$self->id, 
+								   image_id=>$io->id,
+								  });
+  }
+
 ################################################ subroutine header begin ##
 
 =head2 features
@@ -168,9 +221,9 @@ sub features
 
 ################################################ subroutine header begin ##
 
-=head2 get_preferred_names
+=head2 preferred_names
 
- Usage     : my @names = $feature_list_group obj->get_preferred_names();
+ Usage     : my @names = $feature_list_group obj->preferred_names();
  Purpose   : gets the perferred name for the feature list group if they were 
              specified in the database
  Returns   : an array or array ref depending on wantarray
