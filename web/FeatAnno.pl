@@ -1,5 +1,6 @@
 #! /usr/bin/perl -w
 use strict;
+
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
 use Data::Dumper;
