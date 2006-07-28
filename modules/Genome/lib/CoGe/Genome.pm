@@ -22,7 +22,8 @@ use CoGe::Genome::DB::User_group_feature_list_permission_connector;
 use CoGe::Genome::DB::Feature_list;
 use CoGe::Genome::DB::Feature_list_group;
 use CoGe::Genome::DB::Feature_list_connector;
-
+use CoGe::Genome::DB::Feature_list_group_image_connector;
+use CoGe::Genome::DB::Image;
 
 use Carp qw(cluck);
 use Data::Dumper;
@@ -1001,7 +1002,17 @@ sub get_user_session_obj
     return CoGe::Genome::DB::User_session->new();
   }
 
+sub get_image_obj
+  {
+    my $self = shift;
+    return CoGe::Genome::DB::Image->new();
+  }
 
+sub get_feature_list_group_image_connector_obj
+  {
+    my $self = shift;
+    return CoGe::Genome::DB::Feature_list_group_image_connector->new();
+  }
 
 
 
