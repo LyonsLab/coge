@@ -7,9 +7,10 @@ use HTML::Template;
 use Data::Dumper;
 use CGI::Ajax;
 use CoGe::Genome;
+use CoGe::Graphics;
 use File::Temp
 
-$ENV{PATH} = "/opt/apache2/CoGe/";
+$ENV{PATH} = "/opt/apache/CoGe/";
 
 use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $DB);
 
@@ -40,14 +41,20 @@ my $pj = new CGI::Ajax(
 		       create_group => \&create_group,
 		       group_view => \&group_view,
 		       genomic_view => \&genomic_view,
+		       add_image_box=> \&add_image_box,
+		       delete_image=>\&delete_image,
+		       edit_image=>\&edit_image,
 		      );
 $pj->JSDEBUG(0);
 $pj->DEBUG(0);
 print $pj->build_html($FORM, \&gen_html);
+#print "Content-Type: text/html\n\n";
 #print gen_html();
 
 sub gen_html
   {
+    if ($FORM->param('add_image')) {add_image();} #need to do this in order to deal with uploading an image file
+
     my ($body, $seq_names, $seqs) = gen_body();
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
 
@@ -70,37 +77,42 @@ sub gen_foot
 
 sub gen_body
   {
-    my $form = shift || $FORM;
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/FeatListView.tmpl');
-    my $start = $form->param('start') || 1;
-    my $limit = $form->param('ll') || 200;
-    if ($form->param('fl'))
+#    my $form = shift || $FORM;
+    my $start = $FORM->param('start') || 1;
+    my $limit = $FORM->param('ll') || 200;
+    my $html;
+    if ($FORM->param('flgid'))
+      {
+	$html = group_view($FORM->param('flgid'));
+      }
+    elsif ($FORM->param('fl'))
       {
 	
-	feat_lists(
-		   tmpl=>$template,
+	$html = feat_lists(
 		   start=>$start,
 		   limit => $limit,
 		  );
       }
-    elsif($form->param('flg'))
+    elsif($FORM->param('flg'))
       {
-	feat_list_groups($template);
+	$html = feat_list_groups();
       }
     else
       {
-	feat_list_groups($template);
+	$html = feat_list_groups();
       }
-    return $template->output;
+#    print $html;
+    return $html;
   }
 
 sub feat_lists
   {
     #need to make sure to do a user validation at some point
     my %opts = @_;
-    my $tmpl = $opts{'tmpl'};
     my $start = $opts{start};
     my $limit = $opts{limit};
+    my $tmpl = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/FeatListView.tmpl');
+
     my @lists;
     my $row_color = 'ltgreen';
     my $total = $DB->get_feature_list_obj->count_all();
@@ -127,6 +139,7 @@ sub feat_lists
       }
     $tmpl->param(FEAT_LIST=>1);
     $tmpl->param(FEAT_LISTS=>\@lists);
+    return $tmpl->output;
   }
 
 sub expand_list
@@ -136,7 +149,14 @@ sub expand_list
     my @feats;
     foreach my $f ($fl->features)
       {
-	push @feats, {FEAT_TYPE=>$f->type->name, FEAT_ORG=>$f->org->name,FEAT_NAME => join ", ", sort map {"<a href = FeatView.pl?accn=".$_->name.">".$_->name."</a>"} $f->names};
+	push @feats, {
+		      FEAT_TYPE=>$f->type->name,
+		      FEAT_ORG=>$f->org->name,
+		      FEAT_NAME => join (", ", sort map {"<a href = FeatView.pl?accn=".$_->name.">".$_->name."</a>"} $f->names),
+		      LOC => gelo_link(feat=>$f),
+		      FEAT_PNAME=>$fl->preferred_name($f),
+		      FEAT_DESC=>$fl->preferred_desc($f),
+		     };
       }
     my $tmpl = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/FeatListView.tmpl');
 #    $tmpl->param(LIST_ID=>$fl->id);
@@ -165,6 +185,7 @@ sub edit_list
     my $row_color = 'ltgreen';
     foreach my $f ($fl->features)
       {
+	
 	push @feats, {
 		      FEAT_ID=>$f->id, 
 		      FEAT_ORG=>$f->org->name, 
@@ -173,10 +194,12 @@ sub edit_list
 		      ROW_BG=>$row_color, 
 		      FEAT_NAME => join (", ", sort map {"<a href = FeatView.pl?accn=".$_->name.">".$_->name."</a>"} $f->names),
 		      FEAT_PNAME => $fl->preferred_name($f),
+		      FEAT_LOC => gelo_link(feat=>$f),
+		      #FEAT_LOC => "Chr: ".$f->chr." (".$f->start." - ".$f->stop.")",
 		     };
 	$row_color = $row_color eq 'ltgreen' ? 'ltblue' : 'ltgreen';
       }
-
+    @feats = sort { $a->{FEAT_PNAME} cmp $b->{FEAT_PNAME} || $a->{FEAT_NAME} cmp $b->{FEAT_NAME} } @feats;
     my $tmpl = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/FeatListView.tmpl');
     $tmpl->param(EDIT_LIST=>1);
     $tmpl->param(LIST_NAME=>$fl->name);
@@ -228,7 +251,7 @@ sub search_feature
 
 sub feat_list_groups
   {
-    my $tmpl = shift;
+    my $tmpl = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/FeatListView.tmpl');
     my @lists;
     my $row_color = 'ltgreen';
     foreach my $flg ($DB->get_feature_list_group_obj->retrieve_all())
@@ -239,7 +262,7 @@ sub feat_list_groups
       }
     $tmpl->param(LIST_GROUP=>1);
     $tmpl->param(LIST_GROUPS=>\@lists);
-
+    return $tmpl->output;
   }
 sub expand_group
   {
@@ -287,6 +310,7 @@ sub delete_group
 sub group_view
   {
     my $gid = shift;
+#    print "\n\n$gid\n\n";
     my $tmpl = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/FeatListView.tmpl');
     $tmpl->param(GROUP_VIEW=>1);
     my $flg = $DB->get_feature_list_group_obj->retrieve($gid);
@@ -305,7 +329,11 @@ sub group_view
       }
     $tmpl->param(LIST_LOOP=>\@lists);
     my %seen;
-    grep {! $seen{$_->org->name}{$_->dataset->id}{$_->chr}++ } $flg->features;
+    foreach my $feat ($flg->features)
+      {
+	$seen{$feat->org->name}{$feat->dataset->id}{$feat->chr}{count}++;
+	push @{$seen{$feat->org->name}{$feat->dataset->id}{$feat->chr}{feats}}, $feat;
+      }
     my @orgs;
     foreach my $org (keys %seen)
       {
@@ -313,12 +341,15 @@ sub group_view
 	  {
 	    foreach my $chr (keys %{$seen{$org}{$dsid}})
 	      {
-		my $action;
-		$action = qq{<input type="submit" name="Genomic View" value="Genomic View" onClick="genomic_view(['args__flg', 'args__$gid', 'args__$chr', 'args__$dsid'],['genomic_view'])">};
+		my ($start) = sort {$a <=> $b} map {$_->start} @{$seen{$org}{$dsid}{$chr}{feats}};
+		my ($stop) = sort {$b <=> $a} map {$_->stop} @{$seen{$org}{$dsid}{$chr}{feats}};
+#		my $loc = "Chr: ".$chr." ($start - $stop)";
+		my $loc = gelo_link (chr=>$chr, start=>$start, stop=>$stop, di=>$dsid);
+		my $action = qq{<input type="submit" name="Genomic View" value="Genomic View" onClick="genomic_view(['args__flg', 'args__$gid', 'args__$chr', 'args__$dsid'],['genomic_view'])">};
 		push @orgs, {
 			     ORG_NAME=>$org, 
-			     FEAT_COUNT=>$seen{$org}{$dsid}{$chr}, 
-			     CHR=>$chr,
+			     FEAT_COUNT=>$seen{$org}{$dsid}{$chr}{count}, 
+			     LOC=>$loc,
 			     ROW_BG=>$row_color,
 			     ACTIONS=>$action,
 			    };
@@ -327,7 +358,45 @@ sub group_view
 	      }
 	  }
       }
-    return $tmpl->output;
+    my @images;
+    foreach my $image($flg->images)
+      {
+	my $img_link = qq{<IMG SRC="image.pl?id=}.$image->id.qq{">};
+	push @images, {
+		       CID=>$image->flgic->next->id,
+		       IMAGE=>$img_link,
+		       NAME=>$image->name,
+		       DESC=>$image->desc,
+		       TYPE=>'flg',
+		       RELOAD=>"FeatListView.pl?flgid=".$flg->id,
+		      };
+      }
+    if (@images)
+      {
+	$tmpl->param(SHOW_IMAGE=>1);
+	$tmpl->param(IMAGE_LOOP=>\@images);
+      }
+    $tmpl->param(ADD_IMAGE=>1);
+    $tmpl->param( TYPE=>'flg');
+    $tmpl->param( ID=>$gid);
+    my $html = $tmpl->output;
+#    print "!!!!!";
+#    print $html;
+#    print "!!!!\n";
+
+    return $html;
+  }
+
+sub add_image_box
+  {
+    my $type = shift;
+    my $id = shift;
+    my $tmpl = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/FeatListView.tmpl');
+    $tmpl->param(ADD_IMG=>1);
+    $tmpl->param(TYPE=>$type);
+    $tmpl->param(ID=>$id);
+    my $html = $tmpl->output;
+    return $html;;
   }
 
 
@@ -347,6 +416,43 @@ sub genomic_view
     return generate_image(feats=>\@feats, dsid=>$dsid, chr=>$chr, list=>$list);
   }
 
+
+sub add_image
+  {
+    my $type = $FORM->param('type');
+    my $id = $FORM->param('id');
+    my $name = $FORM->param('name');
+    my $desc = $FORM->param('desc');
+    my $content;
+    if ($FORM->param('file'))
+      {
+	my $fh = $FORM->upload('file');
+	while (<$fh>) {$content .= $_};
+      }
+    $name = $FORM->param('file') unless $name;
+    if ($type eq "flg")
+      {
+	$FORM->param('flgid'=> $id);
+	$DB->get_feature_list_group_obj->retrieve($id)->insert_image(name=>$name, desc=>$desc, img=>$content);
+      }
+  }
+
+sub delete_image
+  {
+    my $id = shift;
+    my $type = shift;
+#    print STDERR $id,"-",$type,"\n";
+    my $obj;
+    $obj = $DB->get_feature_list_group_image_connector_obj->retrieve($id) if $type eq "flg";
+    my $img = $obj->image;
+    $img->delete;
+    $obj->delete;
+  }
+
+sub edit_image
+  { #should let user change the name and decsription of the image
+  }
+
 sub generate_image
   {
     my %opts = @_;
@@ -359,9 +465,47 @@ sub generate_image
     my $fh = $opts{fh} || 25;
     my ($start) = sort {$a <=> $b} map {$_->start} @$feats;
     my ($stop) = sort {$b <=> $a} map {$_->stop} @$feats;
-    my $fnames = join "&", map {"fn=".$_} $list->preferred_names;
-    my $fids = join "&", map {"fid=".$_->id} @$feats unless $fnames;
-    my $img_link = qq{<img src="GenomePNG.pl?start=$start&stop=$stop&di=$dsid&chr=$chr&iw=$iw&ih=$ih&$fids&$fnames">};
-    print STDERR $img_link,"\n";
+    my $fnames = $list->preferred_names;
+    my $fids = map {"fid=".$_->id} @$feats unless $fnames;
+    my $file = new File::Temp ( TEMPLATE=>'FeatListView__XXXXX',
+				DIR=>$TEMPDIR,
+				SUFFIX=>'.png',
+				UNLINK=>0);
+    my ($filename) = $file->filename =~ /([^\/]*$)/;;
+    my $mapname = $filename."map";
+    my ($map) = CoGe::Graphics->genomic_view(
+					     start=>$start,
+					     stop=>$stop,
+					     di=>$dsid,
+					     chr=>$chr,
+					     iw=>$iw,
+					     ih=>$ih,
+					     fsh=>$fh,
+					     fids=>$fids,
+					     fnames=>$fnames,
+					     img_map=>$mapname,
+					     file=>$file->filename,
+#					     debug=>1,
+					    );
+    my $img_link = qq{<img src="tmp/$filename" border=0 ismap usemap="#$mapname" >}."\n".$map;
+    $img_link.="<br>";
+    $img_link .= qq{<FORM NAME="info"><DIV id="info"></DIV></FORM>};
+#    print STDERR $img_link,"\n";
     return $img_link;
+  }
+
+sub gelo_link
+  {
+    my %opts = @_;;
+    my $feat = $opts{feat};
+    my $chr = $opts{chr};
+    my $start = $opts{start};
+    my $stop = $opts{stop};
+    my $di = $opts{di};
+    $chr = $feat->chr if $feat;
+    $start = $feat->start if $feat;
+    $stop = $feat->stop if $feat;
+    $di = $feat->dataset->id if $feat;
+    my $link = qq{<a href="GeLo.pl?}.join("&", "chr=".$chr,"di=".$di,"z=10", "INITIAL_CENTER=$start,0").qq{" target=_new>}.qq{Chr: $chr ($start - $stop)</a>};
+return $link;
   }
