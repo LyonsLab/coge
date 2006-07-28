@@ -352,6 +352,39 @@ sub preferred_name
       }
     return;
   }
+################################################ subroutine header begin ##
+
+=head2 preferred_description
+
+ Usage     : my $desc = $feature_list_obj->preferred_description($feat_obj);
+ Purpose   : find the description for the preferred name for a feature as stored in the feature list connector
+ Returns   : a string or undef
+ Argument  : a feature_obj of a feature from the feature list
+ Throws    : none
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub preferred_description
+  {
+    my $self = shift;
+    my $feat = shift;
+    foreach my $flc ($self->flc)
+      {
+	return $flc->desc if $flc->feature_id eq $feat->id;
+      }
+    return;
+  }
+
+sub preferred_desc
+  {
+    my $self = shift;
+    return $self->preferred_description(@_);
+  }
 
 ################################################ subroutine header begin ##
 
