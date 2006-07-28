@@ -95,6 +95,9 @@ perl(1).
  preferred_name   =>  optional name that is preferred for the feature
  name             
 
+ description          => user defined description of the feature
+ desc
+
 
  feature_list_connector_id  =>  database entry id
  id                         =>  alias for feature_list_id
@@ -150,6 +153,12 @@ sub name
   {
     my $self = shift;
     return $self->preferred_name();
+  }
+
+sub desc
+  {
+    my $self = shift;
+    return $self->description();
   }
 
 sub id
