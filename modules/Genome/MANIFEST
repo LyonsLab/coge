@@ -53,4 +53,8 @@ lib/CoGe/Genome/DB/Feature_list_connector.pm
 t/022_load.t
 lib/CoGe/Genome/DB/User_session.pm
 t/023_load.t
+lib/CoGe/Genome/DB/Feature_list_group_image_connector.pm
+t/024_load.t
+lib/CoGe/Genome/DB/Image.pm
+t/025_load.t
 Makefile.PL
