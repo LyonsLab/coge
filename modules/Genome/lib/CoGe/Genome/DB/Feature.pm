@@ -1022,6 +1022,117 @@ sub protein_sequence
       }
     return wantarray ? @seqs : \@seqs;
   }
+
+################################################ subroutine header begin ##
+
+=head2 blast_bit_score
+
+ Usage     : my $bit_score = $feature->blast_bit_score();
+ Purpose   : returns the blast bit score for the feature's self-self identical hit
+ Returns   : an int -- the blast bit score
+ Argument  : optional hash
+             match    => the score for a nucleotide match. DEFAULT: 1
+             mismatch => the score for a nucleotide mismatch.  DEFAULT: -3
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub blast_bit_score
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $match = $opts{match} || 1;
+    my $mismatch = $opts{mismatch} || -3;
+    my $lambda = $self->_estimate_lambda(match=>$match, mismatch=>$mismatch);
+    my $seq = $self->genomic_sequence();
+    warn "No genomic sequence could be obtained for this feature object.  Can't calculate a blast bit score.\n" unless $seq;
+    my $bs = sprintf("%.0f", $lambda*length($seq)*$match/log(2));
+    return $bs;
+  }
+
+################################################ subroutine header begin ##
+
+=head2 _estimate_lambda
+
+ Usage     : my $lambda = $feature->_estimate_lambda
+ Purpose   : estimates lambda for calculating blast bit scores.  Lambda is
+             a matrix-specific constant for normalizing raw blast scores 
+ Returns   : a number, lambda
+ Argument  : optional hash
+             match    => the score for a nucleotide match. DEFAULT: 1
+             mismatch => the score for a nucleotide mismatch.  DEFAULT: -3
+             precision=> the different between the high and low estimate 
+                         of lambda before lambda is returned.  
+                         DEFAULT: 0.001
+ Throws    : a warning if there is a problem with the calcualted expected_score
+             or the match score is less than 0;
+ Comments  : Assumes an equal probability for each nucleotide.
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+
+sub _estimate_lambda
+  {
+    #this routine is based on example 4-1 from BLAST: An essential guide to the Basic Local Alignment Search Tool by Korf, Yandell, and Bedell published by O'Reilly press.
+    my $self = shift;
+    my %opts = @_;
+    my $match = $opts{match} || 1;
+    my $mismatch = $opts{mismatch} || -3;
+    my $precision = $opts{precision} || 0.001;
+      
+    use constant Pn => 0.25; #prob of any nucleotide
+    my $expected_score = $match * 0.25 + $mismatch * 0.75; 
+    if ($match <= 0 or $expected_score >= 0)
+      {
+	warn qq{
+Problem with scores.  Match: $match (should be greater than 0).
+             Expected score: $expected_score (should be less than 0).
+};
+	return 0;
+      }
+    # calculate lambda 
+    my ($lambda, $high, $low) = (1, 2, 0); # initial estimates 
+    while ($high - $low > $precision) 
+      {         # precision 
+	# calculate the sum of all normalized scores 
+	my $sum = Pn * Pn * exp($lambda * $match) * 4 
+	  + Pn * Pn * exp($lambda * $mismatch) * 12; 
+	# refine guess at lambda 
+	if ($sum > 1) 
+	  { 
+	    $high = $lambda;
+	    $lambda = ($lambda + $low)/2; 
+	  } 
+	else 
+	  {
+	  $low = $lambda; 
+	  $lambda = ($lambda + $high)/2; 
+	}
+      }
+    # compute target frequency and H 
+    my $targetID = Pn * Pn * exp($lambda * $match) * 4; 
+    my $H = $lambda * $match    *     $targetID 
+      + $lambda * $mismatch * (1 -$targetID); 
+    # output 
+#    print "expscore: $expected_score\n"; 
+#    print "lambda:   $lambda nats (", $lambda/log(2), " bits)\n"; 
+#    print "H:        $H nats (", $H/log(2), " bits)\n"; 
+#    print "%ID:      ", $targetID * 100, "\n"; 
+
+    return $lambda;
+  }
+
+
 ################################################ subroutine header begin ##
 
 =head2 
