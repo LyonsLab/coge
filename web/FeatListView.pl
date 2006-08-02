@@ -8,7 +8,7 @@ use Data::Dumper;
 use CGI::Ajax;
 use CoGe::Genome;
 use CoGe::Graphics;
-use File::Temp
+use File::Temp;
 
 $ENV{PATH} = "/opt/apache/CoGe/";
 
