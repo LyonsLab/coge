@@ -483,16 +483,16 @@ sub process_features
 	my ($name) = sort { length ($b) <=> length ($a) || $a cmp $b} @{$feat->{QUALIFIERS}{names}};	
         if ($type =~ /Gene/i)
           {
-	    next;
+#	    next;
 	    $f = CoGe::Graphics::Feature::Gene->new();
 	    $f->color([255,0,0,50]);
-	    if ($accn)
-	      {
-		foreach my $name (@{$feat->{QUALIFIERS}{names}})
-		  {
-		    $f->color([255,255,0]) if $name =~ /$accn/i;
-		  }
-	      }
+#	    if ($accn)
+#	      {
+#		foreach my $name (@{$feat->{QUALIFIERS}{names}})
+#		  {
+#		    $f->color([255,255,0]) if $name =~ /$accn/i;
+#		  }
+#	      }
 	    $f->order(2);
 	    $f->overlay(1);
 	    $f->mag(0.5);
