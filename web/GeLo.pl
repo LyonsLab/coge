@@ -116,9 +116,9 @@ sub get_data_info
     return unless $oid;
     my $org = $DB->get_org_obj->retrieve($oid);
     return unless $org;
-    my @opts = map {"<OPTION value=\"".$_->id."\">".$_->name. " (v".$_->version.", id",$_->id,")</OPTION>"} sort {$b->version cmp $a->version || $a->name cmp $b->name} $org->data_info;
+    my @opts = map {"<OPTION value=\"".$_->id."\">".$_->name. " (v".$_->version.", id".$_->id.")</OPTION>"} sort {$b->version cmp $a->version || $a->name cmp $b->name} $org->data_info;
     my $html;
-    $html .= qq{<FONT CLASS ="small">Dataset count: }.scalar @opts.qq{</FONT>\n<BR>\n};
+    $html .= qq{<FONT CLASS ="small">Dataset count: }.scalar (@opts).qq{</FONT>\n<BR>\n};
     $html .= qq{<SELECT id="di_id" SIZE="5" MULTIPLE onChange="gen_data(['args__loading. . .'],['di_info']); get_data_info_info(['di_id'],[dataset_info_chr_chain])" >\n};
     $html .= join ("\n", @opts);
     $html .= "\n</SELECT>\n";
