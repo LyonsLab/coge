@@ -19,7 +19,7 @@ use POSIX;
 use Benchmark;
 
 
-my (@org_ids, $version,$iw, $min_zoom, $max_chr_length, @skip_oids, $max_zoom);
+my (@org_ids, $version,$iw, $min_zoom, $max_chr_length, $min_chr_length, @skip_oids, $max_zoom, $help, $overwrite);
 
 GetOptions("oid=s"=>\@org_ids,
 	   "v=s" => \$version,
@@ -27,10 +27,17 @@ GetOptions("oid=s"=>\@org_ids,
 	   "min_zoom|mnz=s"=>\$min_zoom,
 	   "max_zoom|mxz=s"=>\$max_zoom,
 	   "max_chr_length=s"=>\$max_chr_length,
+	   "min_chr_length=s"=>\$min_chr_length,
 	   "skip_oid=s"=>\@skip_oids,
+	   "h|help"=>\$help,
+	   "overwrite|ow=s"=>\$overwrite,
 #	   "z|zoom=s" => \$zoom,
 #	   "u|url=s" => \$url
 	   );
+
+help() if $help;
+
+$overwrite = 1 unless defined $overwrite;
 $min_zoom = 6 unless $min_zoom;
 $max_chr_length = 0 unless $max_chr_length;
 my %skip_oids = map {$_,1} @skip_oids;
@@ -43,7 +50,7 @@ my $db = new CoGe::Genome;
 
 ##some limits to keep from blowing our stack
 use vars qw($MAX_FEATURES $MAX_NT);
-$MAX_FEATURES = $iw*5; #one feature per pixel
+$MAX_FEATURES = $iw*2; #one feature per pixel
 $MAX_NT       = $iw*100000; #50,000 nt per pixel
 
 unless (@org_ids)
@@ -63,6 +70,7 @@ foreach my $org_id (@org_ids)
     $max_zoom = $max_zoom_tmp unless $max_zoom;
 	next unless $chr_len;
 	next if ($max_chr_length && $chr_len > $max_chr_length);
+	next if ($min_chr_length && $chr_len < $min_chr_length);
 	print "Total number of bp for chr $chr: $chr_len\n";
 	next unless defined $max_zoom;
 	#    $max_zoom=10;
@@ -72,6 +80,10 @@ foreach my $org_id (@org_ids)
 	  {
 	    print "Working on chromosome chunk $c_start - ", $c_start+$max_chars,"\n";
 	    my $seq = uc($db->get_genomic_sequence_obj->get_sequence(start=>$c_start, end=>$c_start+$max_chars, chr=>$chr, info_id=>$di)); 
+	    unless ($seq)
+	      {
+		die "no nucleotide sequence for start=>$c_start, end=>$c_start+$max_chars, chr=>$chr, info_id=>$di\n";
+	      }
 	    my $seq_len = length $seq;
 	    my $c = initialize_c(
 				 di => $di->id,
@@ -136,18 +148,23 @@ Time to process proteins           $pr_time
 		    print "\tclen: $clen, chars: $chars, max_chars: $max_chars, seq_len: $seq_len\n";
 		    print "\tstart: ",$i,"($seq_pos), end: ", $i+$clen-1,", length: ", length $subseq,"\n\n";
 		    print "\tlength subseq: ", length $subseq,"\n";
-
+		    print "Image $count of $tot";
+		    print "\t(range: ".($i)."-".($i+$chars-1).")\n";
+		    print "File exists! $overwrite\n" if -r $cache_file;
+		    if (-r $cache_file && $overwrite == 0)
+		      {
+			print " Skipping generating image: file exists and overwrite is turned off.\n";
+			next;
+		      }
  		    $seq_pos+=$clen;
  		    #next;
 
 		    $c->set_region(start=>$i, stop=>$i+$chars-1);
-		    process_nucleotides(start=>$c_start+$i, chr=>$chr, di=>$di->id, db=>$db, c=>$c, seq=>$subseq);
+		    process_nucleotides(start=>$i, chr=>$chr, di=>$di->id, db=>$db, c=>$c, seq=>$subseq);
 
 		    my $t1 = new Benchmark;
 
 		    my ($s, $e) = ($c->_region_start, $c->_region_stop);
-		    print "Image $count of $tot";
-		    print "\t(range: ".($i)."-".($i+$chars-1).")\n";
 		    $c->_gd(0);
 		    $c->generate_region();
 		    my $t2 = new Benchmark;
@@ -336,7 +353,7 @@ sub process_features
     foreach my $feat ($db->get_feature_obj->get_features_in_region(start=>$start, end=>$stop, info_id=>$di, chr=>$chr))
       {
 	$count++;
-	print "processing feature $count / $feat_count.  feature type ",$feat->type->name,"\n";
+#	print "processing feature $count / $feat_count.  feature type ",$feat->type->name,"\n";
         my $f;
 #	print STDERR Dumper $feat;
 #	print STDERR "!",join ("\t", map {$_->name} $feat->names, map {$_->start."-".$_->stop} $feat->locs),"\n";
@@ -462,7 +479,7 @@ sub draw_prots
       {
 	next unless $seq->seq_type->name =~ /prot/i;
 	my ($pseq) = $seq->sequence_data;
-	print "\tAdding protein sequence of length: ",length($pseq),". . .";
+#	print "\tAdding protein sequence of length: ",length($pseq),". . .";
 
 	my $chrs = int (($c->_region_stop-$c->_region_start)/$c->iw)/3;
 	$chrs = 1 if $chrs < 1;
@@ -483,7 +500,7 @@ sub draw_prots
 	    
 	    $pos+=$chrs;
 	  }
-	print "Done!\n";
+#	print "Done!\n";
       }
   }
 
@@ -567,3 +584,36 @@ sub get_dir_array {
     return (\@basedir,\@dir); 
  }
                                            
+sub help
+  {
+    print qq{
+Welcome to $0
+
+The program fills the CoGe system's image cache for chromosome images used by GeLo.pl when viewing chromosomal regions.  
+
+Options:
+
+ oid       =>  organism database ids that will be used for generating images
+               if none are specified, the program will go through all the organisms in the database
+               More than one of these ids may be specified
+
+ v         =>  version of data to use
+
+ iw        => width of the images to generate (default 256)
+
+ min_zoom  => the smallest zoom for which images will be generated (default: 6)
+
+ max_zoom  => the largest zoom for which images will be generated (default is determined by the
+              number of features present at various zoom levels.
+
+ max_chr_length => skip processing genomes whose size is larger than this number (default: no limit)
+
+ min_chr_length => skip processing genomes whose size is smaller than this number (default: no limit)
+
+ skip_oid  => organisms to skip based on their db id.
+
+ overwrite | ow => overwrites existing image (default: 1);
+
+};
+    exit;
+  }
