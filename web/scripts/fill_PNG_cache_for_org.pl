@@ -86,11 +86,9 @@ foreach my $org_id (@org_ids)
 	next if ($min_chr_length && $chr_len < $min_chr_length);
 	print "Total number of bp for chr $chr: $chr_len\n";
 	next unless defined $max_zoomi;
-	print $max_zoomi,"-", $min_zoomi,"\n";
 	for (my $max_zoom =$max_zoomi; $max_zoom > $min_zoomi; $max_zoom = $max_zoom - $zoom_step)
 	  {
 	    my $min_zoom = $max_zoom-$zoom_step;
-	    print $max_zoom,"-", $min_zoom,"\n";
 	    next if $max_zoom < $min_zoomi;
 	      
 	    my $max_chars = 10 * 2**$max_zoom;
@@ -188,7 +186,7 @@ sub generate_image
     my $di = $opts{di};
     my $iw = $opts{iw};
     my $z = $opts{z};
-    my $x = $opts{x} || $opts{start};
+    my $x = $opts{x};# || $opts{start};
     my $db = $opts{db};
     my $stop = $opts{stop};
 
