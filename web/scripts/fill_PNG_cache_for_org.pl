@@ -18,19 +18,23 @@ use Getopt::Long;
 use POSIX;
 use Benchmark;
 
+use vars qw($BASE_DIR);
+$BASE_DIR = "/opt/apache/CoGe/_cache_";
 
-my (@org_ids, $version,$iw, $min_zoom, $max_chr_length, $min_chr_length, @skip_oids, $max_zoom, $help, $overwrite);
+my (@org_ids, $version,$iw, $min_zoomi, $max_chr_length, $min_chr_length, @skip_oids, $max_zoomi, $help, $overwrite, $unprocess_ds, $zoom_step);
 
 GetOptions("oid=s"=>\@org_ids,
 	   "v=s" => \$version,
 	   "iw=s"=>\$iw,
-	   "min_zoom|mnz=s"=>\$min_zoom,
-	   "max_zoom|mxz=s"=>\$max_zoom,
+	   "min_zoom|mnz=s"=>\$min_zoomi,
+	   "max_zoom|mxz=s"=>\$max_zoomi,
 	   "max_chr_length=s"=>\$max_chr_length,
 	   "min_chr_length=s"=>\$min_chr_length,
 	   "skip_oid=s"=>\@skip_oids,
+	   "unprocessed_orgs|uo|unprocessed_datasets|ud"=>\$unprocess_ds,
 	   "h|help"=>\$help,
 	   "overwrite|ow=s"=>\$overwrite,
+	   "zoom_step|zs=s"=>\$zoom_step,
 #	   "z|zoom=s" => \$zoom,
 #	   "u|url=s" => \$url
 	   );
@@ -38,7 +42,8 @@ GetOptions("oid=s"=>\@org_ids,
 help() if $help;
 
 $overwrite = 1 unless defined $overwrite;
-$min_zoom = 6 unless $min_zoom;
+$min_zoomi = 5 unless $min_zoomi;
+$zoom_step = 4 unless $zoom_step;
 $max_chr_length = 0 unless $max_chr_length;
 my %skip_oids = map {$_,1} @skip_oids;
 
@@ -65,133 +70,109 @@ foreach my $org_id (@org_ids)
     foreach my $di ($org->data_information)
       {
 	next if $version && $di->version ne $version;
+	my $diname = $di->name;
+	$diname .= ": ".$di->desc if $di->desc;
+	print "Processing dataset $diname. . .\n";
+	if (-d "$BASE_DIR/di__$di" && $unprocess_ds)
+	  {
+	    print "Skipping dataset because image directory exists and we are only working on unprocessed datasets.\n";
+	    next;
+	  }
 #	$version = $di->version unless $version;
 	my ($max_zoom_tmp, $chr_len, $chr) = find_max_z(di=>$di);
-    $max_zoom = $max_zoom_tmp unless $max_zoom;
+	$max_zoomi = $max_zoom_tmp unless $max_zoomi;
 	next unless $chr_len;
 	next if ($max_chr_length && $chr_len > $max_chr_length);
 	next if ($min_chr_length && $chr_len < $min_chr_length);
 	print "Total number of bp for chr $chr: $chr_len\n";
-	next unless defined $max_zoom;
-	#    $max_zoom=10;
-	my $max_chars = 10 * 2**$max_zoom;
-	#march through windows on the chromosome of size max_chars
-	foreach (my $c_start=0; $c_start <= $chr_len; $c_start+=$max_chars)
+	next unless defined $max_zoomi;
+	print $max_zoomi,"-", $min_zoomi,"\n";
+	for (my $max_zoom =$max_zoomi; $max_zoom > $min_zoomi; $max_zoom = $max_zoom - $zoom_step)
 	  {
-	    print "Working on chromosome chunk $c_start - ", $c_start+$max_chars,"\n";
-	    my $seq = uc($db->get_genomic_sequence_obj->get_sequence(start=>$c_start, end=>$c_start+$max_chars, chr=>$chr, info_id=>$di)); 
-	    unless ($seq)
+	    my $min_zoom = $max_zoom-$zoom_step;
+	    print $max_zoom,"-", $min_zoom,"\n";
+	    next if $max_zoom < $min_zoomi;
+	      
+	    my $max_chars = 10 * 2**$max_zoom;
+	    $max_chars = $chr_len if $max_chars > $chr_len;
+	    #march through windows on the chromosome of size max_chars
+	    foreach (my $c_start=0; $c_start < $chr_len; $c_start+=$max_chars)
 	      {
-		die "no nucleotide sequence for start=>$c_start, end=>$c_start+$max_chars, chr=>$chr, info_id=>$di\n";
-	      }
-	    my $seq_len = length $seq;
-	    my $c = initialize_c(
-				 di => $di->id,
-				 chr => $chr,
-				 iw => $iw,
-				 start => $c_start,
-				 stop => $c_start+$max_chars,
-				 db=>$db,
-				 z=>$max_zoom,
-				);
-	    my @cds_feats;
-	    foreach my $di2 ($di->get_associated_data_infos)
-	      {
-		#	    next;
-		my $cds_feats = process_features(start=>$c_start, stop=>$c_start+$max_chars-1, chr=>$chr, di=>$di2->id, db=>$db,c=>$c);
-		push @cds_feats, @$cds_feats;
-	      }
-	    #go through all the zoom levels for this region
-	    foreach (my $z=$max_zoom; $z >= $min_zoom; $z--)# (0..$max_zoom..0)
-#	    foreach (my $z=0; $z >= 0; $z--)# (0..$max_zoom..0)
-	      {
-		my $chars = 10 * 2**$z;
-		my $tot = ceil ($max_chars/$chars);
-		print "$chars characters per tile at zoom level $z\n";
-		print "Total number of images to be generated: ", $tot,"\n";
-		#	next;
-		$c->delete_features('aa');
-		my $ta = new Benchmark;
-		foreach my $feat (@cds_feats)
+		print "Working on chromosome chunk $c_start - ", $c_start+$max_chars,"\n";
+		my $seq = uc($db->get_genomic_sequence_obj->get_sequence(start=>$c_start, end=>$c_start+$max_chars, chr=>$chr, info_id=>$di)); 
+		unless ($seq)
 		  {
-		    draw_prots(genomic_feat=>$feat, c=>$c);
+		    die "no nucleotide sequence for start=>$c_start, end=>$c_start+$max_chars, chr=>$chr, info_id=>$di\n";
 		  }
-		my $tb = new Benchmark;
-		my $count = 0;		
-		my $pr_time = timestr(timediff($tb, $ta));
-		print qq{
+		my $seq_len = length $seq;
+		my $c = initialize_c(
+				     di => $di->id,
+				     chr => $chr,
+				     iw => $iw,
+				     start => $c_start,
+				     stop => $c_start+$max_chars,
+				     db=>$db,
+				     z=>$max_zoom,
+				    );
+		my @cds_feats;
+		foreach my $di2 ($di->get_associated_data_infos)
+		  {
+		    #	    next;
+		    my $cds_feats = process_features(start=>$c_start, stop=>$c_start+$max_chars-1, chr=>$chr, di=>$di2->id, db=>$db,c=>$c);
+		    push @cds_feats, @$cds_feats;
+		  }
+		#go through all the zoom levels for this region
+		foreach (my $z=$max_zoom; $z >= $min_zoom; $z--)# (0..$max_zoom..0)
+		  #	    foreach (my $z=0; $z >= 0; $z--)# (0..$max_zoom..0)
+		  {
+		    my $chars = 10 * 2**$z;
+		    my $tot = ceil($max_chars/$chars);
+#		    $tot = 1 if $chr_len < $chars;
+		    print "$chars characters per tile at zoom level $z\n";
+		    print "Total number of images to be generated: ", $tot,"\n";
+		    #	next;
+		    $c->delete_features('aa');
+		    my $ta = new Benchmark;
+		    foreach my $feat (@cds_feats)
+		      {
+			draw_prots(genomic_feat=>$feat, c=>$c);
+		      }
+		    my $tb = new Benchmark;
+		    my $count = 0;		
+		    my $pr_time = timestr(timediff($tb, $ta));
+		    print qq{
 Time to process proteins           $pr_time
 };
-		my $seq_pos = 0;
-		#go through each window at this zoom level for this chromosomal window
-		my $stop = $c_start+$max_chars > $chr_len ? $chr_len : $c_start+$max_chars;
-		foreach (my $i=$c_start; $i< $stop; $i+=$chars)
-		  {
-		    $count++;
-		    my $t0 = new Benchmark;
-		    my $clen = $chars;
-		    if ($i+$chars > $c_start+$max_chars)
+		    my $seq_pos = 0;
+		    #go through each window at this zoom level for this chromosomal window
+		    my $stop = $c_start+$max_chars > $chr_len ? $chr_len : $c_start+$max_chars;
+		    foreach (my $i=$c_start; $i< $stop; $i+=$chars)
 		      {
-			$clen = ($max_chars) % $chars;
-		      }
-		    elsif ($i == 0)
-		      {
-			$clen = $chars-1;
-		      }
-		    else
-		      {
-			$clen = $chars;
-		      }
-		    my $subseq = substr($seq, $seq_pos, $clen);
-		    my $cache_file = get_file_name(chr=>$chr,di=>$di, iw=>$iw, z=>$z, x=>$i);
-		    print "Cache file: $cache_file\n";
-		    print "\tclen: $clen, chars: $chars, max_chars: $max_chars, seq_len: $seq_len\n";
-		    print "\tstart: ",$i,"($seq_pos), end: ", $i+$clen-1,", length: ", length $subseq,"\n\n";
-		    print "\tlength subseq: ", length $subseq,"\n";
-		    print "Image $count of $tot";
-		    print "\t(range: ".($i)."-".($i+$chars-1).")\n";
-		    print "File exists! $overwrite\n" if -r $cache_file;
-		    if (-r $cache_file && $overwrite == 0)
-		      {
-			print " Skipping generating image: file exists and overwrite is turned off.\n";
-			next;
-		      }
- 		    $seq_pos+=$clen;
- 		    #next;
+			$count++;    
+			my $clen = $chars;
+			if ($i+$chars > $c_start+$max_chars)
+			  {
+			    $clen = ($max_chars) % $chars;
+			  }
+			elsif ($i == 0)
+			  {
+			    $clen = $chars-1;
+			  }
+			else
+			  {
+			    $clen = $chars;
+			  }
+			my $subseq = substr($seq, $seq_pos, $clen);
 
-		    $c->set_region(start=>$i, stop=>$i+$chars-1);
-		    process_nucleotides(start=>$i, chr=>$chr, di=>$di->id, db=>$db, c=>$c, seq=>$subseq);
+			$seq_pos+=$clen;
 
-		    my $t1 = new Benchmark;
-
-		    my ($s, $e) = ($c->_region_start, $c->_region_stop);
-		    $c->_gd(0);
-		    $c->generate_region();
-		    my $t2 = new Benchmark;
-		    my $img = $c->gd->png;
-		    my $t3 = new Benchmark;
-            #local( *IMG,$/ );
-            open( IMG, ">$cache_file") or die "cant open $cache_file: $!\n"; 
-            binmode IMG;
-            print IMG $img; 
-            close(IMG);
-            
-		    my $t4 = new Benchmark;
-		    my $nt_time = timestr(timediff($t1, $t0));
-		    my $gr_time = timestr(timediff($t2, $t1));
-		    my $gi_time = timestr(timediff($t3, $t2));
-		    my $si_time = timestr(timediff($t4, $t3));
-		    print qq{
-Time to process nucleotides:       $nt_time
-Time to generate region:           $gr_time
-Time to generate image:            $gi_time
-Time to store image:               $si_time
-
-};
-		    if (-r $cache_file)
-		      {
-			#`touch $cache_file`;
-			`chmod 666 $cache_file`;
+			print "$i - $stop\n";
+			print "Image $count of $tot";
+			print "\tclen: $clen, chars: $chars, max_chars: $max_chars, seq_len: $seq_len\n";
+			print "\tstart: ",$i,"($seq_pos), end: ", $i+$clen-1,", length: ", length $subseq,"\n";
+			print "\tlength subseq: ", length $subseq,"\n";
+			print "\t(range: ".($i)."-".($i+$chars-1).")\n\n";
+			generate_image(db=>$db, c=>$c, chr=>$chr, di=>$di, iw=>$iw, z=>$z, x=>$i, stop=>$i+$chars-1, seq=>$subseq);
 		      }
 		  }
 	      }
@@ -199,8 +180,60 @@ Time to store image:               $si_time
       }
   }
 
-sub initialize_db
+sub generate_image
   {
+    my %opts = @_;
+    my $c = $opts{c};
+    my $chr = $opts{chr};
+    my $di = $opts{di};
+    my $iw = $opts{iw};
+    my $z = $opts{z};
+    my $x = $opts{x} || $opts{start};
+    my $db = $opts{db};
+    my $stop = $opts{stop};
+
+    my $seq = $opts{seq};
+    my $cache_file = get_file_name(chr=>$chr,di=>$di, iw=>$iw, z=>$z, x=>$x);    
+    print "Cache file: $cache_file\n";
+    print "File exists! $overwrite\n" if -r $cache_file;
+    if (-r $cache_file && $overwrite == 0)
+			  {
+			    print " Skipping generating image: file exists and overwrite is turned off.\n";
+			    next;
+			  }
+    my $t0 = new Benchmark;
+    $c->set_region(start=>$x, stop=>$stop);
+    process_nucleotides(start=>$x, chr=>$chr, di=>$di->id, db=>$db, c=>$c, seq=>$seq);
+    my $t1 = new Benchmark;
+#    my ($s, $e) = ($c->_region_start, $c->_region_stop);
+    $c->_gd(0);
+    $c->generate_region();
+    my $t2 = new Benchmark;
+    my $img = $c->gd->png;
+    my $t3 = new Benchmark;
+    #local( *IMG,$/ );
+    open( IMG, ">$cache_file") or die "cant open $cache_file: $!\n"; 
+    binmode IMG;
+    print IMG $img; 
+    close(IMG);
+    
+    my $t4 = new Benchmark;
+    my $nt_time = timestr(timediff($t1, $t0));
+    my $gr_time = timestr(timediff($t2, $t1));
+    my $gi_time = timestr(timediff($t3, $t2));
+    my $si_time = timestr(timediff($t4, $t3));
+    print qq{
+Time to process nucleotides:       $nt_time
+Time to generate region:           $gr_time
+Time to generate image:            $gi_time
+Time to store image:               $si_time
+
+};
+    if (-r $cache_file)
+      {
+	#`touch $cache_file`;
+	`chmod 666 $cache_file`;
+      }
   }
 
 sub find_max_z
@@ -431,7 +464,7 @@ sub process_features
           }
 	else
 	  {
-	    print STDERR "Skipping feature of type: ",$feat->type->name,"\n";
+	    print "Skipping feature of type: ",$feat->type->name,"\n";
 	  }
         next unless $f;
         foreach my $loc ($feat->locs)
@@ -522,14 +555,14 @@ sub get_file_name
 
 sub make_dir {
     my ($dirstr,$dir) = @_;
-     pop @$dir;
-      $dirstr = catfile($dirstr,shift @$dir);
-       umask 0;
-        foreach my $subdir (@$dir){
-         ($dirstr) = catdir($dirstr,$subdir) =~ /(.*)/;
+    pop @$dir;
+    $dirstr = catfile($dirstr);
+    umask 0;
+    foreach my $subdir (@$dir){
+      ($dirstr) = catdir($dirstr,$subdir) =~ /(.*)/;
       my $status = mkdir($dirstr,0777) if !-e $dirstr;
-     }
     }
+  }
                                        
 sub get_max {
     my $z = shift;
@@ -545,21 +578,13 @@ sub grep_match {
 
 
 sub get_dir_array {
-#    my $qstr = $ENV{QUERY_STRING};
     my %query_pairs = @_;
     my $SPATIAL_PARS = ['x'];
     my $ZOOM_PARS = 'z';
-    my $base_dir = "/opt/apache/CoGe";#$ENV{DOCUMENT_ROOT};
-    my @basedir = split(/[\/\\]/,$base_dir);
-    my @dir = '_cache_';;# = split(/[\/\\]/,$ENV{SCRIPT_NAME});
-#    shift @dir;
-#    $dir[$#dir] = '_cache_';
-#    my @keyvals = map { split('=', $_) } split(/&/,$qstr);
-#    my %query_pairs = @keyvals;
-#    @keyvals = map { $_ % 2 == 0 && !grep_match($keyvals[$_],$SPATIAL_PARS)? $keyvals[$_] : '' } 0.. $#keyvals;
-#    @keyvals = sort @keyvals;
+    #my $base_dir = "/opt/apache/CoGe";#$ENV{DOCUMENT_ROOT};
+    my @basedir = split(/[\/\\]/,$BASE_DIR);
+    my @dir;# = '_cache_';
     my @keyvals = qw(di chr iw z x);
-#    push(@keyvals,@$SPATIAL_PARS);
     my $MAX = get_max($query_pairs{$ZOOM_PARS});
     foreach my $key(@keyvals ){
          next if  !$key;
@@ -569,18 +594,18 @@ sub get_dir_array {
          # 123456 becomes /x__123456/   if $MAX  > 5
          if(grep_match($key,$SPATIAL_PARS)){
              if($val !~ /(\D|-)+/){
-                 $val =~ s/-/n/g;
-                 $val = scalar reverse($val);
-                 while($val =~  /(\d{1,$MAX}n?)/g){
-                     unshift(@vals,scalar reverse($1));
-                 }
-              }
-          }
-          @vals = ($val) unless @vals;
-          my $first = shift @vals;
-          push(@dir,$key . '__' . $first);
-          map { push(@dir,$_) } @vals;
-    }
+	       $val =~ s/-/n/g;
+	       $val = scalar reverse($val);
+	       while($val =~  /(\d{1,$MAX}n?)/g){
+		 unshift(@vals,scalar reverse($1));
+	       }
+	     }
+	   }
+	 @vals = ($val) unless @vals;
+	 my $first = shift @vals;
+	 push(@dir,$key . '__' . $first);
+	 map { push(@dir,$_) } @vals;
+       }
     return (\@basedir,\@dir); 
  }
                                            
@@ -613,6 +638,12 @@ Options:
  skip_oid  => organisms to skip based on their db id.
 
  overwrite | ow => overwrites existing image (default: 1);
+
+ unprocess_orgs | uo | unprocessed_datasets | ud   =>  skip any dataset that already has associated images.
+
+ zoom_step | zs   => the number of zoom step to process at once.  This will cause the virual chromosome to 
+                     be flushed periodically and free up memory.  This is needed to keep from running out of
+                     memory in some cases.  DEFAULT: 4
 
 };
     exit;
