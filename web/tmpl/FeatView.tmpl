@@ -25,13 +25,10 @@ function accn_search_chain(val) {
  kaj.GS('Source','');	
  kaj.GS('FeatType','');	
  kaj.GS('anno','');	
- if (val == 1) {
+ if (val == 1 || kaj.GS('accn').length > minlen) {
    kaj.GS('DS_title','<font class="loading">Searching. . .</font>');
    accn_search(['accn', "args__"+val],[source_search_chain]); 
- } else if  (kaj.GS('accn').length > minlen) {
-   accn_search(['accn', "args__"+val],[source_search_chain]); 
  }
-
 }
 
 function source_search_chain (val) {
