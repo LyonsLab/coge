@@ -1626,6 +1626,54 @@ sub get_features_for_organism
 
 ################################################ subroutine header begin ##
 
+=head2 all_feature_types
+
+ Usage     : 
+ Purpose   : returns all the feature type objects.  Useful for building search lists
+ Returns   : an array of feature type objects
+ Argument  : none
+ Throws    : 
+ Comments  : calls Feature_type->retrieve_all()
+
+See Also   : CoGe::Genome::DB::Feature_type
+
+=cut
+
+################################################## subroutine header end ##
+
+sub all_feature_types
+  {
+    my $self = shift;
+    return $self->get_feature_type_obj->retrieve_all;
+  }
+
+################################################ subroutine header begin ##
+
+=head2 all_orgs
+
+ Usage     : 
+ Purpose   : returns all the organism objects.  Useful for building search lists
+ Returns   : an array of organism objects
+ Argument  : none
+ Throws    : 
+ Comments  : calls Organism->retrieve_all()
+
+See Also   : CoGe::Genome::DB::Organism
+
+=cut
+
+################################################## subroutine header end ##
+
+sub all_orgs
+  {
+    my $self = shift;
+    return $self->get_organism_obj->retrieve_all;
+  }
+
+
+
+################################################ subroutine header begin ##
+
 =head2 
 
  Usage     : 
@@ -1640,4 +1688,5 @@ See Also   : CoGe::Genome::DB::Feature
 =cut
 
 ################################################## subroutine header end ##
+
 1; #this line is important and will help the module return a true value
