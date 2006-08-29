@@ -341,12 +341,14 @@ sub search_name_type_org
 
 =head2 power_search
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
+ Usage     : my @names = $feat_name_obj->power_search(name=>$name, type=>$type, org=>$org);
+ Purpose   : get names of features that match the name and/or type and/or org
+ Returns   : an array or arrayref of strings
+ Argument  : name =>  string for mysql db mysql search "%" are wild-characters
+             type => the database id of a type or a Feature_type object
+             org  => the database id of an organism or an Organism object
  Throws    : 
- Comments  : 
+ Comments  : This is to quickly get a list of names that match some search criteria.  
            : 
 
 See Also   : 
@@ -362,27 +364,29 @@ sub power_search
     my %opts = @_;
     my $name = $opts{accn} || $opts{name};
     my $type = $opts{type};
+    my $type_id = ref($type) =~ /Feature_type/i ? $type->id : $type;
     my $org = $opts{org};
+    my $org_id = ref($org) =~ /Feature_type/i ? $org->id : $org;
     my @names;
-    if ($name && $type && $org)
+    if ($name && $type_id && $org_id)
       {
-	@names = $self->search_name_type_org($name, $type, $org);
+	@names = $self->search_name_type_org($name, $type_id, $org_id);
       }
-    elsif ($name && $type)
+    elsif ($name && $type_id)
       {
-	@names = $self->search_name_type($name, $type);
+	@names = $self->search_name_type($name, $type_id);
       }
-    elsif ($name && $org)
+    elsif ($name && $org_id)
       {
-	@names = $self->search_name_org($name, $org);
+	@names = $self->search_name_org($name, $org_id);
       }
-    elsif ($type && $org)
+    elsif ($type_id && $org_id)
       {
-	@names = $self->search_type_org($type, $org);
+	@names = $self->search_type_org($type_id, $org_id);
       }
-    elsif ($type)
+    elsif ($type_id)
       {
-	@names = $self->search_type($type);
+	@names = $self->search_type($type_id);
       }
     else
       {
