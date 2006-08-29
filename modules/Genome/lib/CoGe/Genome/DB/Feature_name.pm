@@ -19,6 +19,58 @@ SELECT name
   FROM feature_name
  WHERE name like ?
 });
+    __PACKAGE__->set_sql(search_type=>qq{
+SELECT name
+  FROM feature_name fn
+  JOIN feature f USING (feature_id)
+ WHERE f.feature_type_id = ?
+});
+    
+    __PACKAGE__->set_sql(search_org=>qq{
+SELECT name
+  FROM feature_name fn
+  JOIN feature f USING (feature_id)
+  JOIN data_information di USING (data_information_id)
+ WHERE di.organism_id = ?
+});
+    __PACKAGE__->set_sql(search_name_type=>qq{
+SELECT name
+  FROM feature_name fn
+  JOIN feature f USING (feature_id)
+ WHERE fn.name like ?
+   AND f.feature_type_id = ?
+});
+    
+    __PACKAGE__->set_sql(search_name_org=>qq{
+SELECT name
+  FROM feature_name fn
+  JOIN feature f USING (feature_id)
+  JOIN data_information di USING (data_information_id)
+ WHERE fn.name like ?
+   AND di.organism_id = ?
+});
+    
+    __PACKAGE__->set_sql(search_type_org=>qq{
+SELECT name
+  FROM feature_name fn
+  JOIN feature f USING (feature_id)
+  JOIN data_information di USING (data_information_id)
+ WHERE f.feature_type_id = ?
+   AND di.organism_id = ?
+});
+    
+
+    __PACKAGE__->set_sql(search_name_type_org=>qq{
+SELECT name
+  FROM feature_name fn
+  JOIN feature f USING (feature_id)
+  JOIN data_information di USING (data_information_id)
+ WHERE fn.name like ?
+   AND f.feature_type_id = ?
+   AND di.organism_id = ?
+});
+    
+
 }
 
 
@@ -203,6 +255,140 @@ sub search_name
 	push @names, $q->[0];
       }
     return wantarray? @names : \@names;
+  }
+
+sub search_type
+  {
+    my $self = shift;
+    my $type = shift;
+    return unless $type;
+    my $sth = $self->sql_search_type();
+    $sth->execute($type);
+    my @names;
+    while (my $q = $sth->fetch)
+      {
+	push @names, $q->[0];
+      }
+    return wantarray? @names : \@names;
+  }
+
+sub search_name_type
+  {
+    my $self = shift;
+    my $name = shift;
+    my $type = shift;
+    return unless $name && $type;
+    my $sth = $self->sql_search_name_type();
+    $sth->execute($name, $type);
+    my @names;
+    while (my $q = $sth->fetch)
+      {
+	push @names, $q->[0];
+      }
+    return wantarray? @names : \@names;
+  }
+
+sub search_name_org
+  {
+    my $self = shift;
+    my $name = shift;
+    my $org = shift;
+    return unless $name && $org;
+    my $sth = $self->sql_search_name_org();
+    $sth->execute($name, $org);
+    my @names;
+    while (my $q = $sth->fetch)
+      {
+	push @names, $q->[0];
+      }
+    return wantarray? @names : \@names;
+  }
+
+sub search_type_org
+  {
+    my $self = shift;
+    my $type = shift;
+    my $org = shift;
+    return unless $type && $org;
+    my $sth = $self->sql_search_type_org();
+    $sth->execute($type, $org);
+    my @names;
+    while (my $q = $sth->fetch)
+      {
+	push @names, $q->[0];
+      }
+    return wantarray? @names : \@names;
+  }
+
+sub search_name_type_org
+  {
+    my $self = shift;
+    my $name = shift;
+    my $type = shift;
+    my $org = shift;
+    return unless $type && $org;
+    my $sth = $self->sql_search_name_type_org();
+    $sth->execute($name,$type, $org);
+    my @names;
+    while (my $q = $sth->fetch)
+      {
+	push @names, $q->[0];
+      }
+    return wantarray? @names : \@names;
+  }
+
+################################################ subroutine header begin ##
+
+=head2 power_search
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+
+sub power_search
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $name = $opts{accn} || $opts{name};
+    my $type = $opts{type};
+    my $org = $opts{org};
+    my @names;
+    if ($name && $type && $org)
+      {
+	@names = $self->search_name_type_org($name, $type, $org);
+      }
+    elsif ($name && $type)
+      {
+	@names = $self->search_name_type($name, $type);
+      }
+    elsif ($name && $org)
+      {
+	@names = $self->search_name_org($name, $org);
+      }
+    elsif ($type && $org)
+      {
+	@names = $self->search_type_org($type, $org);
+      }
+    elsif ($type)
+      {
+	@names = $self->search_type($type);
+      }
+    else
+      {
+	@names = $self->search_name($name);
+      }
+    return wantarray ? @names : \@names;
   }
 
 ################################################ subroutine header begin ##
