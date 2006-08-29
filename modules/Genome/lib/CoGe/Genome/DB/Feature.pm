@@ -49,6 +49,14 @@ SELECT COUNT(DISTINCT f.feature_id)
 SELECT feature_id 
   FROM feature
 });
+
+    __PACKAGE__->set_sql ('no_name_features' => qq{
+SELECT feature_id from feature
+  LEFT OUTER JOIN feature_name using (feature_id)
+ WHERE feature_name.name is NULL
+});
+
+
 }
 
 
@@ -1131,6 +1139,18 @@ Problem with scores.  Match: $match (should be greater than 0).
 
     return $lambda;
   }
+
+
+sub get_no_name_features
+  {
+    my $self = shift;
+    my $sth = $self->sql_no_name_features;
+    $sth->execute;
+    my @ids = map {$self->retrieve($_->[0])} $sth->fetchall;
+    $sth->finish;
+    return wantarray ? @ids : \@ids;
+  }
+
 
 
 ################################################ subroutine header begin ##
