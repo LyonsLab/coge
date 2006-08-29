@@ -141,6 +141,9 @@ sub genomic_view
     my $fids = $opts{'fid'} || $opts{'fids'}; #used to highlight special features by their database id
     my $fnames = $opts{'fn'} || $opts{'fns'}|| $opts{'fnames'}; #used to highlight special features by their name
     my $img_map_name = $opts{'img_map'};
+    my $draw_proteins = $opts{'draw_proteins'};
+    $draw_proteins = 1 unless defined $draw_proteins;
+
     $DEBUG = $opts{debug} || $opts{DEBUG} || 0;
 
     print STDERR "Options: ".Dumper \%opts if $DEBUG;
@@ -238,7 +241,7 @@ sub genomic_view
       {
 	my $taa = new Benchmark if $BENCHMARK;
 	print STDERR "processing features\n" if $DEBUG;
-	$self->process_features(start=>$start, stop=>$stop, chr=>$chr, di=>$did, db=>$db, c=>$c, fids=>$fids, fnames=>$fnames) unless $simple;
+	$self->process_features(start=>$start, stop=>$stop, chr=>$chr, di=>$did, db=>$db, c=>$c, fids=>$fids, fnames=>$fnames, draw_proteins=>$draw_proteins) unless $simple;
 	my $tab = new Benchmark if $BENCHMARK;
 	my $feat_time = timestr(timediff($tab, $taa)) if $BENCHMARK;
 	print STDERR " processing did $did:   $feat_time\n" if $BENCHMARK;
@@ -327,10 +330,10 @@ sub initialize_c
     $start = $c->_region_start;
     $stop= $c->_region_stop;
     #let's add the max top and bottom tracks to the image to keep it constant
-    my $f1= CoGe::Graphics::Feature->new({start=>1, order => 2, strand => 1});
+    my $f1= CoGe::Graphics::Feature->new({start=>1, order => 3, strand => 1});
     $f1->merge_percent(0);
     $c->add_feature($f1);
-    my $f2= CoGe::Graphics::Feature->new({start=>1, order => 2, strand => -1});
+    my $f2= CoGe::Graphics::Feature->new({start=>1, order => 3, strand => -1});
     $f2->merge_percent(0);
     $c->add_feature($f2);
     return ($start, $stop);
@@ -392,6 +395,7 @@ sub process_features
     my $print_names = $opts{print_names};
     my $fids = $opts{fids};
     my $fnames = $opts{fnames};
+    my $draw_proteins = $opts{draw_proteins};
     my $sstart = $start - ($stop - $start);
     my $sstop = $stop + ($stop - $start);
     my $feat_count = $db->get_feature_obj->count_features_in_region(start=>$sstart, end=>$sstop, info_id=>$di, chr=>$chr);
@@ -401,12 +405,12 @@ sub process_features
 	return;
       }
     
-    foreach my $feat($db->get_feature_obj->get_features_in_region(start=>$sstart, end=>$sstop, info_id=>$di, chr=>$chr))
+    foreach my $feat (sort {$a->type->name cmp $b->type->name} $db->get_feature_obj->get_features_in_region(start=>$start, end=>$stop, info_id=>$di, chr=>$chr))
       {
         my $f;
 #	print STDERR Dumper $feat;
 #	print STDERR "!",join ("\t", map {$_->name} $feat->names, map {$_->start."-".$_->stop} $feat->locs),"\n";
-	
+	print STDERR $feat->type->name,":",$feat->start,"-",$feat->stop,"\n";
         if ($feat->type->name =~ /Gene/i)
           {
 #	    next;
@@ -428,7 +432,7 @@ sub process_features
         	$f->color([0,255,0, 50]);
         	$f->order(1);
 		$f->overlay(3);
-		$self->draw_prots(genomic_feat=>$feat, c=>$c, chrom_feat=>$f);
+		$self->draw_prots(genomic_feat=>$feat, c=>$c, chrom_feat=>$f) if $draw_proteins;;
 		if ($accn)
 		  {
 		    foreach my $name (@{$feat->{QUALIFIERS}{names}})
@@ -460,7 +464,7 @@ sub process_features
 		  }
 
           }
-        elsif ($feat->type->name =~ /functional domains/i)
+        elsif ($feat->type->name =~ /functional domains/i && $draw_proteins)
           {
 	    $f = CoGe::Graphics::Feature::Domain->new();
 	    $f->order(2);
@@ -472,6 +476,18 @@ sub process_features
 	    my $color = [ 255, 100, 255];
 	    $f->color($color);
           }
+	elsif ($feat->type->name =~ /source/i)
+	  {
+	    next;
+	  }
+	else
+	  {
+	    $f = CoGe::Graphics::Feature::Block->new();
+	    $f->order(3);
+	    my $color = [ 255, 100, 0];
+	    $f->color($color);
+          
+	  }
         next unless $f;
 	foreach my $id (@$fids)
 	  {
@@ -496,8 +512,8 @@ sub process_features
 	    $f->strand($loc->strand);
 	  }
 	my ($name) = sort { length ($b) <=> length ($a) || $a cmp $b} map {$_->name} $feat->names;
-	$f->description($f->annotation_pretty_print);
-	$f->link("GeLo.pl?".join("&", "chr=".$f->chr,"di=".$f->di->id,"z=10", "x=".$f->start));
+	$f->description($feat->annotation_pretty_print);
+	$f->link("GeLo.pl?".join("&", "chr=".$feat->chr,"di=".$feat->dataset->id,"z=10", "INITIAL_CENTER=".$feat->start.",0"));
 	$f->label($name) if $print_names;
         $f->type($feat->type->name);
         $c->add_feature($f);
