@@ -7,6 +7,7 @@ use HTML::Template;
 use Data::Dumper;
 use CGI::Ajax;
 use CoGe::Genome;
+use Benchmark;
 
 $ENV{PATH} = "/opt/apache2/CoGe/";
 
@@ -130,7 +131,6 @@ sub get_data_info_info
   {
     my $did = shift;
     return unless $did;
-    
     my $di = $DB->get_data_info_obj->retrieve($did);
     return unless $di;
     my $html .= "<table>";;
@@ -150,7 +150,7 @@ sub get_data_info_info
 	$html .= "<td>";
     my $select;
 	$select .= qq{<SELECT id="chr" onChange="gen_data(['args__searching for features. . .'],['chr_info']); gen_data(['args__waiting. . .'],['viewer']); gen_data(['args__'],['get_seq']); get_data_info_chr_info(['di_id', 'chr'],['chr_info','viewer', 'get_seq'])" >\n};
-	$select .= join ("\n", map {"<OPTION value=\"$_\">".$_."</OPTION>"} sort {$a cmp $b} @chr)."\n";
+	$select .= join ("\n", map {"<OPTION value=\"$_\">".$_."</OPTION>"} @chr)."\n";
 	$select =~ s/OPTION/OPTION SELECTED/;
 	$select .= "\n</SELECT>\n";
     $html .= $select;
