@@ -33,7 +33,7 @@ my $pj = new CGI::Ajax(
 		       db_lookup=>\&db_lookup,
 		       source_search=>\&get_data_source_info_for_accn,
 		       get_types=>\&get_types,
-		       accn_search=>\&accn_search,
+		       cogesearch=>\&cogesearch,
 		       clear_div=>\&clear_div,
 		       get_anno=>\&get_anno,
 		       show_location=>\&show_location,
@@ -46,6 +46,8 @@ $pj->JSDEBUG(0);
 $pj->DEBUG(0);
 $pj->js_encode_function('escape');
 print $pj->build_html($FORM, \&gen_html);
+#print gen_html();
+
 
 
 sub get_prot_seq_for_feat
@@ -94,22 +96,28 @@ sub get_types
   }
 
 
-sub accn_search
+sub cogesearch
   {
     my $accn = shift;
-
+    my $type = shift;
+    my $org = shift;
     my $blank = qq{<input type="hidden" id="accn_select">};
-    return $blank unless length($accn) > 2;
+#    print STDERR Dumper @_;
+    return $blank unless length($accn) > 2 || $type || $org;
     my $html;
-
+    print STDERR "type: $type\n";
     my %seen;
-    my @opts = sort map {"<OPTION>$_</OPTION>"} grep {! $seen{$_}++} map {uc($_)} $DB->get_feature_name_obj->search_name($accn."%");
+    my @opts = sort map {"<OPTION>$_</OPTION>"} grep {! $seen{$_}++} map {uc($_)} $DB->get_feature_name_obj->power_search(accn=>$accn."%", type=>$type, org=>$org);
+    if (@opts > 5000)
+      {
+	return $blank."Search results over 1000, please refine your search.\n";
+      }
     $html .= "<font class=small>Name count: ".scalar @opts."</font>\n<BR>\n";
     $html .= qq{<SELECT id="accn_select" SIZE="5" MULTIPLE onChange="source_search_chain(); " >\n};
     $html .= join ("\n", @opts);
     $html .= "\n</SELECT>\n";
     $html =~ s/<OPTION/<OPTION SELECTED/;
-    return $blank."Accession not found.\n" unless $html =~ /OPTION/;
+    return $blank."No results found.\n" unless $html =~ /OPTION/;
     return $html;
   }
 
@@ -212,8 +220,13 @@ sub gen_html
 sub gen_body
   {
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/FeatView.tmpl');
+
     $template->param(ACCN=>$ACCN);
-    return $template->output;
+    $template->param(TYPE_LOOP=> [{TYPE=>"<OPTION VALUE=0>All</OPTION>"},map {{TYPE=>"<OPTION value=\"".$_->id."\">".$_->name."</OPTION>"}} sort {$a->name cmp $b->name} $DB->all_feature_types]);
+    $template->param(ORG_LOOP=> [{ORG=>"<OPTION VALUE=0>All</OPTION>"},map {{ORG=>"<OPTION value=\"".$_->id."\">".$_->name."</OPTION>"}} sort {$a->name cmp $b->name} $DB->all_orgs]);
+    my $html = $template->output;
+#    $html =~ s/(>gene<\/OPTION)/ SELECTED$1/; 
+    return $html;
   }
 
 sub get_data_source_info_for_accn
