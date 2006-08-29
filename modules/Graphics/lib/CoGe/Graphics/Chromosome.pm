@@ -1092,7 +1092,7 @@ sub generate_imagemap
     my $name = $opts{name}|| $opts{mapname};
     my $html = "<map name=\"$name\">\n";
     my $c = $self->_image_h_used+($self->ih - $self->_image_h_used)/2;
-    foreach my $feat ( $self->get_feature(fill=>1), $self->get_features(fill=>0))
+    foreach my $feat ( $self->get_features(fill=>0))
       {
 	next if $feat->fill;
 	#skip drawing features that are outside (by two times the range being viewed) the view
@@ -1104,6 +1104,12 @@ sub generate_imagemap
 	  {
 	    next if $feat->stop < $self->_region_start-2*($self->_region_stop - $self->_region_start );
 	  }
+	my $anno = $feat->description;
+	next unless $anno;
+	#clean this for javascript
+	$anno =~ s/\n/<br>/g;
+	$anno =~ s/\t/&nbsp;&nbsp;/g;
+
 	my $feat_height = ($self->feature_start_height+$self->feature_mag_height*$self->mag);
 	my $feat_h = $feat_height/$feat->_overlap;
 	my $offset = ($feat->order-1)*($feat_height+$self->padding/1.5)+$self->padding;
@@ -1120,11 +1126,13 @@ sub generate_imagemap
 	my $unit = $self->_calc_unit_size;
 	my $fs = $unit*($feat->start-$rb);
 	my $fe = $unit*($feat->end-$rb+1);
+	#skip stuff that is outside of the image
+	next if $fe < 1;
+	next if $fs > $self->iw;
 	my $fw = sprintf("%.1f",$fe - $fs)+1; #calculate the width of the feature;
 	
 	next if $fw < 1; #skip drawing if less than one pix wide
 	my $link = $feat->link;
-	my $anno = $feat->description;
 	my $alt = $feat->label;
 	my $x2 = ceil($fs+$fw);
 	my $y2 = ceil($y+$feat_h);
@@ -1132,7 +1140,7 @@ sub generate_imagemap
 	$fs = floor($fs);
 	$html .= qq{
 <area coords="$fs, $y, $x2, $y2"};
-	$html .= qq{ href="$link" } if $link;
+	$html .= qq{ href="$link" target=_new } if $link;
 	$html .= qq{ onMouseOver="change('$anno')"} if $anno;
 	$html .= qq{ alt="$alt"} if $alt;
 	$html .= ">\n";
@@ -1609,7 +1617,7 @@ sub _draw_features
 	  {
 	    $sy = $y;
 	  }
-	$self->_draw_feature_fast(feat=>$feat, 'y'=>$y, ih=>$feat_h, 'sy'=>$sy);
+	$self->_draw_feature_slow(feat=>$feat, 'y'=>$y, ih=>$feat_h, 'sy'=>$sy);
       }
   }
 
