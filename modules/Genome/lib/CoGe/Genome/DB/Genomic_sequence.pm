@@ -52,6 +52,7 @@ SELECT stop
 SELECT DISTINCT chromosome
   FROM genomic_sequence
   WHERE data_information_id = ?
+  ORDER BY  data_information_id asc
 });
 
 }
