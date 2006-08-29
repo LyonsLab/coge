@@ -14,7 +14,7 @@
 
 <!--kaj.pollute();-->
 
-function accn_search_chain(val) {
+function search_chain(val) {
  minlen = 4;
  if ((val == 1) && (kaj.GS('accn').length > minlen)){
    return;
@@ -26,8 +26,8 @@ function accn_search_chain(val) {
  kaj.GS('FeatType','');	
  kaj.GS('anno','');	
  if (val == 1 || kaj.GS('accn').length > minlen) {
-   kaj.GS('DS_title','<font class="loading">Searching. . .</font>');
-   accn_search(['accn', "args__"+val],[source_search_chain]); 
+   kaj.GS('DS_title','<font class="loading">Searching. . .</font>');// for "'+kaj.GS('accn')+'" type '+''+'. . .</font>');
+   cogesearch(['accn', 'type', 'org'],[source_search_chain]); 
  }
 }
 
@@ -85,7 +85,33 @@ function placeanno(stuff) {
 <TABLE>
  <TR>
   <TD valign=top>
-   <DIV class="">Feature Name:&nbsp&nbsp<input type="text" name="accn" id="accn" tabindex="1"  size="10" onKeyup ="accn_search_chain(0);"  onBlur="accn_search_chain(1);" value="<TMPL_VAR NAME=ACCN>"/></DIV>
+   <DIV class="">
+     <TABLE>
+       <TR>
+         <TD nowrap>
+           Feature Name:
+         <tD>
+          <input type="text" name="accn" id="accn" tabindex="1"  size="10" onKeyup ="search_chain(0);"  onBlur="search_chain(1);" value="<TMPL_VAR NAME=ACCN>"/>
+        <TR>
+	 <tD nowrap>
+          Feature Type:
+         <TD>
+          <select  name="type" id="type" onKeyup ="search_chain(0);"  onChange="search_chain(1);" />
+          <TMPL_LOOP NAME="TYPE_LOOP">
+          <TMPL_VAR NAME=TYPE> 
+          </TMPL_LOOP>
+         </SELECT>
+        <TR>
+	 <tD nowrap>
+          Organism:
+         <TD>
+          <select  name="org" id="org" onKeyup ="search_chain(0);"  onChange="search_chain(1);" />
+          <TMPL_LOOP NAME="ORG_LOOP">
+          <TMPL_VAR NAME=ORG> 
+          </TMPL_LOOP>
+         </SELECT>
+     </TABLE>
+   </DIV>
   </TD>
   <TD valign=top>
    <DIV id="DS_title"></DIV>
@@ -103,6 +129,6 @@ function placeanno(stuff) {
 </TABLE>
 <DIV id="anno"></DIV>
 <SCRIPT language="Javascript">
-  if (kaj.GS('accn')) {accn_search_chain(0);};
+  if (kaj.GS('accn')) {search_chain(0);};
 </SCRIPT>
 
