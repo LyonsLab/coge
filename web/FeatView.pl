@@ -253,7 +253,7 @@ sub get_data_source_info_for_accn
 <SELECT name = "dsid" id="dsid" MULTIPLE SIZE="5" onChange="get_types_chain();">
 };
     my $count = 0;
-    foreach my $title (reverse sort keys %sources)
+    foreach my $title (sort keys %sources)
       {
 	my $id = $sources{$title};
 	$html .= qq{  <option value="$id" >$title\n};
