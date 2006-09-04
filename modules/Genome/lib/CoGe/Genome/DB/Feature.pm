@@ -1151,8 +1151,119 @@ sub get_no_name_features
     return wantarray ? @ids : \@ids;
   }
 
+sub alpha_trans
+  {
+    my $self = shift;
+    my $alter = shift; #place to store the symbol used for characters not translated
+    my %code1 = (
+	     "UU"=>"L",
+	     "UA"=>"Y",
+	     "UG"=>"C",
+	     "AU"=>"I",
+	     "AA"=>"K",
+	     "AG"=>"R",
+	     "CU"=>"L",
+	     "CA"=>"Q",
+	     "CG"=>"R",
+	     "GU"=>"V",
+	     "GA"=>"E",
+	    );
+    my %code2 = (
+	     "UU"=>"F",
+	     "UC"=>"S",
+	     "UG"=>"*",
+	     "UA"=>"*",
+	     "AC"=>"T",
+	     "AA"=>"N",
+	     "AG"=>"S",
+	     "CC"=>"P",
+	     "CA"=>"H",
+	     "GC"=>"A",
+	     "GA"=>"D",
+	     "GG"=>"G",
+	     );
+    my $seq = $self->genomic_sequence;
+    my %seqs;
+    $seqs{I1} = $self->_process_seq($seq, 0, \%code1);
+    $seqs{I2} = $self->_process_seq($seq, 1, \%code1);
+    $seqs{I1H} = $self->_process_seq($seq, 0, \%code1, \%code2);
+    $seqs{I2H} = $self->_process_seq($seq, 1, \%code1, \%code2);
+    $seqs{II1} = $self->_process_seq($seq, 0, \%code2);
+    $seqs{II2} = $self->_process_seq($seq, 1, \%code2);
+    $seqs{II1H} = $self->_process_seq($seq, 0, \%code2, \%code1);
+    $seqs{II2H} = $self->_process_seq($seq, 1, \%code2, \%code1);
+    my $rcseq = reverse($seq);
+    $rcseq =~ tr/AUCG/UAGC/;
+    $seqs{"I-1"} = $self->_process_seq($rcseq, 0, \%code1);
+    $seqs{"I-2"} = $self->_process_seq($rcseq, 1, \%code1);
+    $seqs{"I-1H"} = $self->_process_seq($rcseq, 0, \%code1, \%code2);
+    $seqs{"I-2H"} = $self->_process_seq($rcseq, 1, \%code1, \%code2);
+    $seqs{"II-1"} = $self->_process_seq($rcseq, 0, \%code2);
+    $seqs{"II-2"} = $self->_process_seq($rcseq, 1, \%code2);
+    $seqs{"II-1H"} = $self->_process_seq($rcseq, 0, \%code2, \%code1);
+    $seqs{"II-2H"} = $self->_process_seq($rcseq, 1, \%code2, \%code1);
+    return \%seqs;
+  }
 
+sub _process_seq
+  {
+    my $self = shift;
+    my $seq = shift;
+    my $start = shift;
+    my $code1 = shift;
+    my $code2 = shift;
+    my $alter = shift;
+    my $seq_out;
+    for (my $i = $start; $i < length ($seq); $i = $i+2)
+      {
+	my $codon = substr($seq, $i, 2);
+	my $chr = $code1->{$codon} || $code2->{$codon} || $alter;
+	$seq_out .= $chr if $chr;
+      }
+    return $seq_out;
+  }
 
+sub percent_translation_system
+  {
+    my $self = shift;
+    my %code1 = (
+	     "L"=>1,
+	     "Y"=>1,
+	     "C"=>1,
+	     "I"=>1,
+	     "K"=>1,
+	     "R"=>1,
+	     "L"=>1,
+	     "Q"=>1,
+	     "R"=>1,
+	     "V"=>1,
+	     "E"=>1,
+	    );
+    my %code2 = (
+	     "F"=>1,
+	     "S"=>1,
+	     "*"=>1,
+	     "*"=>1,
+	     "T"=>1,
+	     "N"=>1,
+	     "S"=>1,
+	     "P"=>1,
+	     "H"=>1,
+	     "A"=>1,
+	     "D"=>1,
+	     "G"=>1,
+	     );
+    my ($seq) = $self->protein_sequence;
+    return (0,0) unless $seq;
+    my ($code1, $code2, $total) = (0,0,0);
+    foreach (split //, $seq)
+      {
+	$code1++ if $code1{$_};
+	$code2++ if $code2{$_};
+	$total++;
+      }
+    return (map {sprintf("%.4f", $_)} $code1/$total, $code2/$total);
+  }
 ################################################ subroutine header begin ##
 
 =head2 
