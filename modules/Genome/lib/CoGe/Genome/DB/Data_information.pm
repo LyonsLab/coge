@@ -635,7 +635,7 @@ sub get_features_for_organism
   {
     my $self = shift;
     my %opts = @_;
-   my $db = new CoGe::Genome;
+    my $db = new CoGe::Genome;
     my $org = $db->get_organism_obj->resolve_organism($opts{org});
     return 0 unless $org;
     my $version = $opts{version} || $opts{ver} || $self->get_current_version_for_organism(org=>$org);
@@ -646,23 +646,29 @@ sub get_features_for_organism
     if ($type && $chr)
       {
 	$sth = $self->sql_get_features_for_organism_version_type_chromosome();
-	push @args, ($type, $chr);
+
+	push @args, ($version, $type, $chr);
       }
     elsif ($type)
       {
 	$sth = $self->sql_get_features_for_organism_version_type();
-	push @args, $type;
+	push @args, ($version, $type);
       }
     elsif ($chr)
       {
 	$sth = $self->sql_get_features_for_organism_version_chromosome();
-	push @args, $chr
+	push @args, ($version, $chr);
+      }
+    elsif ($version)
+      {
+	$sth = $self->sql_get_features_for_organism_version();
+	push @args, $version;
       }
     else
       {
-	$sth = $self->sql_get_features_for_organism_version();
+	$sth = $self->sql_get_features_for_organism();
       }
-    $sth->execute($org->id, $version, @args);
+    $sth->execute($org->id, @args);
     my @feats;
     while (my $q = $sth->fetchrow_arrayref)
       {
