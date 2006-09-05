@@ -85,6 +85,18 @@ SELECT DISTINCT(feature_id)
    AND location.chromosome = ?
 });
 
+   __PACKAGE__->set_sql(get_features_for_organism_version_type_chromosome => qq{
+SELECT DISTINCT(feature_id) 
+  FROM feature
+  JOIN data_information USING (data_information_id)
+  JOIN feature_type USING (feature_type_id)
+  JOIN location USING (feature_id)
+ WHERE organism_id = ?
+   AND version = ?
+   AND feature_type.name = ?
+   AND location.chromosome = ?
+});
+
    __PACKAGE__->set_sql(get_features_for_organism_type_chromosome => qq{
 SELECT DISTINCT(feature_id) 
   FROM feature
