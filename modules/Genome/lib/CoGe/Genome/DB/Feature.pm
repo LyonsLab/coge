@@ -1154,7 +1154,8 @@ sub get_no_name_features
 sub alpha_trans
   {
     my $self = shift;
-    my $alter = shift; #place to store the symbol used for characters not translated
+    my %opts = @_;
+    my $alter = $opts{alter}; #place to store the symbol used for characters not translated
     my %code1 = (
 	     "UU"=>"L",
 	     "UA"=>"Y",
@@ -1168,6 +1169,7 @@ sub alpha_trans
 	     "GU"=>"V",
 	     "GA"=>"E",
 	    );
+    my $code1 = $opts{code1} || \%code1;
     my %code2 = (
 	     "UU"=>"F",
 	     "UC"=>"S",
@@ -1182,37 +1184,39 @@ sub alpha_trans
 	     "GA"=>"D",
 	     "GG"=>"G",
 	     );
-    my $seq = $self->genomic_sequence;
+    my $code2 = $opts{code2} || \%code2;
+    my $seq = $opts{seq} || $self->genomic_sequence;
     my %seqs;
-    $seqs{I1} = $self->_process_seq($seq, 0, \%code1);
-    $seqs{I2} = $self->_process_seq($seq, 1, \%code1);
-    $seqs{I1H} = $self->_process_seq($seq, 0, \%code1, \%code2);
-    $seqs{I2H} = $self->_process_seq($seq, 1, \%code1, \%code2);
-    $seqs{II1} = $self->_process_seq($seq, 0, \%code2);
-    $seqs{II2} = $self->_process_seq($seq, 1, \%code2);
-    $seqs{II1H} = $self->_process_seq($seq, 0, \%code2, \%code1);
-    $seqs{II2H} = $self->_process_seq($seq, 1, \%code2, \%code1);
+    $seqs{I1} = $self->_process_seq(seq=>$seq, start=>0, code1=>$code1);
+    $seqs{I2} = $self->_process_seq(seq=>$seq, start=>1, code1=>$code1);
+    $seqs{I1H} = $self->_process_seq(seq=>$seq, start=>0, code1=>$code1, code2=>$code2);
+    $seqs{I2H} = $self->_process_seq(seq=>$seq, start=>1, code1=>$code1, code2=>$code2);
+    $seqs{II1} = $self->_process_seq(seq=>$seq, start=>0, code1=>$code2);
+    $seqs{II2} = $self->_process_seq(seq=>$seq, start=>1, code1=>$code2);
+    $seqs{II1H} = $self->_process_seq(seq=>$seq, start=>0, code1=>$code2, code2=>$code1);
+    $seqs{II2H} = $self->_process_seq(seq=>$seq, start=>1, code1=>$code2, code2=>$code1);
     my $rcseq = reverse($seq);
     $rcseq =~ tr/AUCG/UAGC/;
-    $seqs{"I-1"} = $self->_process_seq($rcseq, 0, \%code1);
-    $seqs{"I-2"} = $self->_process_seq($rcseq, 1, \%code1);
-    $seqs{"I-1H"} = $self->_process_seq($rcseq, 0, \%code1, \%code2);
-    $seqs{"I-2H"} = $self->_process_seq($rcseq, 1, \%code1, \%code2);
-    $seqs{"II-1"} = $self->_process_seq($rcseq, 0, \%code2);
-    $seqs{"II-2"} = $self->_process_seq($rcseq, 1, \%code2);
-    $seqs{"II-1H"} = $self->_process_seq($rcseq, 0, \%code2, \%code1);
-    $seqs{"II-2H"} = $self->_process_seq($rcseq, 1, \%code2, \%code1);
+    $seqs{"I-1"} = $self->_process_seq(seq=>$rcseq, start=>0, code1=>$code1);
+    $seqs{"I-2"} = $self->_process_seq(seq=>$rcseq, start=>1, code1=>$code1);
+    $seqs{"I-1H"} = $self->_process_seq(seq=>$rcseq, start=>0, code1=>$code1, code2=>$code2);
+    $seqs{"I-2H"} = $self->_process_seq(seq=>$rcseq, start=>1, code1=>$code1, code2=>$code2);
+    $seqs{"II-1"} = $self->_process_seq(seq=>$rcseq, start=>0, code1=>$code2);
+    $seqs{"II-2"} = $self->_process_seq(seq=>$rcseq, start=>1, code1=>$code2);
+    $seqs{"II-1H"} = $self->_process_seq(seq=>$rcseq, start=>0, code1=>$code2, code=>$code1);
+    $seqs{"II-2H"} = $self->_process_seq(seq=>$rcseq, start=>1, code1=>$code2, code=>$code1);
     return \%seqs;
   }
 
 sub _process_seq
   {
     my $self = shift;
-    my $seq = shift;
-    my $start = shift;
-    my $code1 = shift;
-    my $code2 = shift;
-    my $alter = shift;
+    my %opts = @_;
+    my $seq = $opts{seq};
+    my $start = $opts{start};
+    my $code1 = $opts{code1};
+    my $code2 = $opts{code2};
+    my $alter = $opts{alter};
     my $seq_out;
     for (my $i = $start; $i < length ($seq); $i = $i+2)
       {
