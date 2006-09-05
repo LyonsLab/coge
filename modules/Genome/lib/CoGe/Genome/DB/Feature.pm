@@ -1263,14 +1263,14 @@ sub percent_translation_system
     my $code2 = $opts{code2} || \%code2;
     my ($seq) = $opts{seq} || $self->protein_sequence;
     return (0,0) unless $seq;
-    my ($code1, $code2, $total) = (0,0,0);
+    my ($c1, $c2, $total) = (0,0,0);
     foreach (split //, $seq)
       {
-	$code1++ if $code1{$_};
-	$code2++ if $code2{$_};
+	$c1++ if $code1->{$_};
+	$c2++ if $code2->{$_};
 	$total++;
       }
-    return (map {sprintf("%.4f", $_)} $code1/$total, $code2/$total);
+    return (map {sprintf("%.4f", $_)} $c1/$total, $c2/$total);
   }
 ################################################ subroutine header begin ##
 
