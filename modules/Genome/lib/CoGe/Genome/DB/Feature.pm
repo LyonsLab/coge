@@ -1230,6 +1230,8 @@ sub _process_seq
 sub percent_translation_system
   {
     my $self = shift;
+    my %opts = @_;
+    
     my %code1 = (
 	     "L"=>1,
 	     "Y"=>1,
@@ -1243,6 +1245,7 @@ sub percent_translation_system
 	     "V"=>1,
 	     "E"=>1,
 	    );
+    my $code1 = $opts{code1} || \%code1;
     my %code2 = (
 	     "F"=>1,
 	     "S"=>1,
@@ -1257,7 +1260,8 @@ sub percent_translation_system
 	     "D"=>1,
 	     "G"=>1,
 	     );
-    my ($seq) = $self->protein_sequence;
+    my $code2 = $opts{code2} || \%code2;
+    my ($seq) = $opts{seq} || $self->protein_sequence;
     return (0,0) unless $seq;
     my ($code1, $code2, $total) = (0,0,0);
     foreach (split //, $seq)
