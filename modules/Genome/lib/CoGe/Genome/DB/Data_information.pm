@@ -27,14 +27,14 @@ WHERE di.data_information_id = ?
 
 });
     __PACKAGE__->set_sql(get_feature_type_count=>qq{
-SELECT count(feature_id), ft.name 
+SELECT count(distinct(feature_id)), ft.name 
   FROM feature
   JOIN feature_type ft using (feature_type_id)
  WHERE data_information_id = ?
  GROUP BY ft.name
 });
     __PACKAGE__->set_sql(get_feature_type_count_chr=>qq{
-SELECT count(feature_id), ft.name 
+SELECT count(distinct(feature_id)), ft.name 
   FROM feature
   JOIN feature_type ft using (feature_type_id)
   JOIN location l USING (feature_id)
@@ -43,22 +43,22 @@ SELECT count(feature_id), ft.name
  GROUP BY ft.name
 });
     __PACKAGE__->set_sql(get_current_version_for_organsim=>qq{
-SELECT DISTINCT(version)
+SELECT DISTINCT(version), chromosome
   FROM data_information
+  JOIN genomic_sequence USING (data_information_id)
  WHERE organism_id = ?
  ORDER BY version DESC
- LIMIT 1
 });
   
    __PACKAGE__->set_sql(get_features_for_organism => qq{
-SELECT feature_id 
+SELECT DISTINCT(feature_id) 
   FROM feature
   JOIN data_information USING (data_information_id)
  WHERE organism_id = ?
 });
   
    __PACKAGE__->set_sql(get_features_for_organism_version => qq{
-SELECT feature_id 
+SELECT DISTINCT(feature_id) 
   FROM feature
   JOIN data_information USING (data_information_id)
  WHERE organism_id = ?
@@ -66,7 +66,7 @@ SELECT feature_id
 });
 
    __PACKAGE__->set_sql(get_features_for_organism_version_type => qq{
-SELECT feature_id 
+SELECT DISTINCT(feature_id) 
   FROM feature
   JOIN data_information USING (data_information_id)
   JOIN feature_type USING (feature_type_id)
@@ -76,7 +76,7 @@ SELECT feature_id
 });
 
    __PACKAGE__->set_sql(get_features_for_organism_version_chromosome => qq{
-SELECT feature_id 
+SELECT DISTINCT(feature_id) 
   FROM feature
   JOIN data_information USING (data_information_id)
   JOIN location USING (feature_id)
@@ -85,16 +85,33 @@ SELECT feature_id
    AND location.chromosome = ?
 });
 
-   __PACKAGE__->set_sql(get_features_for_organism_version_type_chromosome => qq{
-SELECT feature_id 
+   __PACKAGE__->set_sql(get_features_for_organism_type_chromosome => qq{
+SELECT DISTINCT(feature_id) 
   FROM feature
   JOIN data_information USING (data_information_id)
   JOIN feature_type USING (feature_type_id)
   JOIN location USING (feature_id)
  WHERE organism_id = ?
-   AND version = ?
    AND feature_type.name = ?
    AND location.chromosome = ?
+});
+
+   __PACKAGE__->set_sql(get_features_for_organism_chromosome => qq{
+SELECT DISTINCT(feature_id) 
+  FROM feature
+  JOIN data_information USING (data_information_id)
+  JOIN location USING (feature_id)
+ WHERE organism_id = ?
+   AND location.chromosome = ?
+});
+
+   __PACKAGE__->set_sql(get_features_for_organism_type => qq{
+SELECT DISTINCT(feature_id) 
+  FROM feature
+  JOIN data_information USING (data_information_id)
+  JOIN feature_type USING (feature_type_id)
+ WHERE organism_id = ?
+   AND feature_type.name = ?
 });
 
   }
@@ -578,11 +595,12 @@ sub get_feature_type_count
 
  Usage     : my $version = $di->get_current_version_for_organism(org=>$org_obj);
  Purpose   : Find the most current version number for an organism
- Returns   : and integer that is the most current version of data for an organism
+ Returns   : an integer that is the most current version of data for an organism
  Argument  : a CoGe::Genome::DB::Organism object of the database id of an organism
  Throws    : none
- Comments  : 
-           : 
+ Comments  : One problem of this method is when an organism has multiple chromosomes
+           : and each chromosome is of a different version.  In this case, this
+           : method will return 0
 
 See Also   : 
 
@@ -599,7 +617,25 @@ sub get_current_version_for_organism
     return 0 unless $org;
     my $sth = $self->sql_get_current_version_for_organsim();
     $sth->execute($org->id);
-    my ($version) = $sth->fetchrow_array;
+    my %data;
+    my $version;
+    while (my $row = $sth->fetchrow_arrayref)
+      {
+	#row[0] version, row[1] chromosome
+	$data{$row->[1]} = $row->[0] unless $data{$row->[1]};
+	if ($data{$row->[1]} < $row->[0])
+	  {
+	    $data{$row->[1]} = $row->[0]; #chromosome, version	    
+	  }
+      }
+    foreach my $v (values %data)
+      {
+	$version = $v unless $version;
+	if ($version != $v)
+	  {
+	    return 0;
+	  }
+      }
     return $version;
   }
 
@@ -643,21 +679,36 @@ sub get_features_for_organism
     my $chr = $opts{chromosome} || $opts{chr};
     my $sth;
     my @args;
-    if ($type && $chr)
+    if ($type && $chr && $version)
       {
 	$sth = $self->sql_get_features_for_organism_version_type_chromosome();
 
 	push @args, ($version, $type, $chr);
       }
-    elsif ($type)
+    elsif ($type && $version)
       {
 	$sth = $self->sql_get_features_for_organism_version_type();
 	push @args, ($version, $type);
       }
-    elsif ($chr)
+    elsif ($chr && $version)
       {
 	$sth = $self->sql_get_features_for_organism_version_chromosome();
 	push @args, ($version, $chr);
+      }
+    elsif ($chr && $type)
+      {
+	$sth = $self->sql_get_features_for_organism_type_chromosome();
+	push @args, ($type, $chr);
+      }
+    elsif ($type)
+      {
+	$sth = $self->sql_get_features_for_organism_type();
+	push @args, ($type);
+      }
+    elsif ($chr)
+      {
+	$sth = $self->sql_get_features_for_organism_chromosome();
+	push @args, ($chr);
       }
     elsif ($version)
       {
