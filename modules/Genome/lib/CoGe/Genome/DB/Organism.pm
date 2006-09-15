@@ -180,6 +180,13 @@ sub get_features
     return $db->get_data_info_obj->get_features_for_organism(org=>$self, %opts);
   }
 
+sub features
+  {
+    my $self = shift;
+    return $self->get_features(@_);
+  }
+
+
 ################################################ subroutine header begin ##
 
 =head2 resolve_organism
@@ -203,8 +210,9 @@ sub resolve_organism
   {
     my $self = shift;
     my $orgin = shift;
+    return unless $orgin;
     my $orgout;
-    if (ref ($orgin) =~ /Organism/i) #we were passed an organism object
+    if (ref ($orgin) && ref ($orgin) =~ /Organism/i) #we were passed an organism object
       {
 	$orgout = $orgin;
       }
