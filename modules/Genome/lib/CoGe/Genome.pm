@@ -1670,7 +1670,28 @@ sub all_orgs
     return $self->get_organism_obj->retrieve_all;
   }
 
+################################################ subroutine header begin ##
 
+=head2 get_organism
+
+ Usage     : my $org = $coge->get_organism("Arabidopsis");
+ Purpose   : gets an organism object for an organism by database id or name
+ Returns   : CoGe::Genome::DB::Organism object
+ Argument  : organism database id or name
+ Throws    : none
+ Comments  : calls Organism->resolve_organism
+
+See Also   : CoGe::Genome::DB::Organism
+
+=cut
+
+################################################## subroutine header end ##
+
+sub get_organism
+  {
+    my $self = shift;
+    return $self->get_organism_obj->resolve_organism(@_);
+  }
 
 ################################################ subroutine header begin ##
 
