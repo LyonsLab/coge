@@ -1150,12 +1150,106 @@ sub get_no_name_features
     $sth->finish;
     return wantarray ? @ids : \@ids;
   }
+sub reverse_complement
+  {
+    my $self = shift;
+    my $seq = shift || $self->genomic_sequence;
+    my $rcseq = reverse($seq);
+    $rcseq =~ tr/ATCG/TAGC/; 
+    return $rcseq;
+  }
+
+sub frame6_trans
+  {
+    my $self = shift;
+    my %opts = @_;
+    my(%code) = (
+		 'TCA' => 'S',# Serine
+		 'TCC' => 'S',# Serine
+		 'TCG' => 'S',# Serine
+		 'TCT' => 'S',# Serine
+		 'TTC' => 'F',# Fenilalanine
+		 'TTT' => 'F',# Fenilalanine
+		 'TTA' => 'L',# Leucine
+		 'TTG' => 'L',# Leucine
+		 'TAC' => 'Y',# Tirosine
+		 'TAT' => 'Y',# Tirosine
+		 'TAA' => '*',# Stop
+		 'TAG' => '*',# Stop
+		 'TGC' => 'C',# Cysteine
+		 'TGT' => 'C',# Cysteine
+		 'TGA' => '*',# Stop
+		 'TGG' => 'W',# Tryptofane
+		 'CTA' => 'L',# Leucine
+		 'CTC' => 'L',# Leucine
+		 'CTG' => 'L',# Leucine
+		 'CTT' => 'L',# Leucine
+		 'CCA' => 'P',# Proline
+		 'CCC' => 'P',# Proline
+		 'CCG' => 'P',# Proline
+		 'CCT' => 'P',# Proline
+		 'CAC' => 'H',# Hystidine
+		 'CAT' => 'H',# Hystidine
+		 'CAA' => 'Q',# Glutamine
+		 'CAG' => 'Q',# Glutamine
+		 'CGA' => 'R',# Arginine
+		 'CGC' => 'R',# Arginine
+		 'CGG' => 'R',# Arginine
+		 'CGT' => 'R',# Arginine
+		 'ATA' => 'I',# IsoLeucine
+		 'ATC' => 'I',# IsoLeucine
+		 'ATT' => 'I',# IsoLeucine
+		 'ATG' => 'M',# Methionina
+		 'ACA' => 'T',# Treonina
+		 'ACC' => 'T',# Treonina
+		 'ACG' => 'T',# Treonina
+		 'ACT' => 'T',# Treonina
+		 'AAC' => 'N',# Asparagina
+		 'AAT' => 'N',# Asparagina
+		 'AAA' => 'K',# Lisina
+		 'AAG' => 'K',# Lisina
+		 'AGC' => 'S',# Serine
+		 'AGT' => 'S',# Serine
+		 'AGA' => 'R',# Arginine
+		 'AGG' => 'R',# Arginine
+		 'GTA' => 'V',# Valine
+		 'GTC' => 'V',# Valine
+		 'GTG' => 'V',# Valine
+		 'GTT' => 'V',# Valine
+		 'GCA' => 'A',# Alanine
+		 'GCC' => 'A',# Alanine
+		 'GCG' => 'A',# Alanine
+		 'GCT' => 'A',# Alanine
+		 'GAC' => 'D',# Aspartic Acid
+		 'GAT' => 'D',# Aspartic Acid
+		 'GAA' => 'E',# Glutamic Acid
+		 'GAG' => 'E',# Glutamic Acid
+		 'GGA' => 'G',# Glicine
+		 'GGC' => 'G',# Glicine
+		 'GGG' => 'G',# Glicine
+		 'GGT' => 'G',# Glicine
+		);
+    my $code = $opts{code} || \%code;
+    my $seq = $opts{seq} || $self->genomic_sequence;
+
+    my %seqs;
+    $seqs{"1"} = $self->_process_seq(seq=>$seq, start=>0, code1=>$code, codonl=>3);
+    $seqs{"2"} = $self->_process_seq(seq=>$seq, start=>1, code1=>$code, codonl=>3);
+    $seqs{"3"} = $self->_process_seq(seq=>$seq, start=>2, code1=>$code, codonl=>3);
+    my $rcseq = $self->reverse_complement;
+    $seqs{"-1"} = $self->_process_seq(seq=>$rcseq, start=>0, code1=>$code, codonl=>3);
+    $seqs{"-2"} = $self->_process_seq(seq=>$rcseq, start=>1, code1=>$code, codonl=>3);
+    $seqs{"-3"} = $self->_process_seq(seq=>$rcseq, start=>2, code1=>$code, codonl=>3);
+    return \%seqs;
+
+  }
 
 sub alpha_trans
   {
     my $self = shift;
     my %opts = @_;
-    my $alter = $opts{alter}; #place to store the symbol used for characters not translated
+    my $alter = $opts{alter} || "X"; #place to store the symbol used for characters not translated
+    my $hyb = $opts{hyb};
     my %code1 = (
 	     "UU"=>"L",
 	     "UA"=>"Y",
@@ -1185,26 +1279,26 @@ sub alpha_trans
 	     "GG"=>"G",
 	     );
     my $code2 = $opts{code2} || \%code2;
+
     my $seq = $opts{seq} || $self->genomic_sequence;
     my %seqs;
-    $seqs{I1} = $self->_process_seq(seq=>$seq, start=>0, code1=>$code1);
-    $seqs{I2} = $self->_process_seq(seq=>$seq, start=>1, code1=>$code1);
-    $seqs{I1H} = $self->_process_seq(seq=>$seq, start=>0, code1=>$code1, code2=>$code2);
-    $seqs{I2H} = $self->_process_seq(seq=>$seq, start=>1, code1=>$code1, code2=>$code2);
-    $seqs{II1} = $self->_process_seq(seq=>$seq, start=>0, code1=>$code2);
-    $seqs{II2} = $self->_process_seq(seq=>$seq, start=>1, code1=>$code2);
-    $seqs{II1H} = $self->_process_seq(seq=>$seq, start=>0, code1=>$code2, code2=>$code1);
-    $seqs{II2H} = $self->_process_seq(seq=>$seq, start=>1, code1=>$code2, code2=>$code1);
-    my $rcseq = reverse($seq);
-    $rcseq =~ tr/AUCG/UAGC/;
-    $seqs{"I-1"} = $self->_process_seq(seq=>$rcseq, start=>0, code1=>$code1);
-    $seqs{"I-2"} = $self->_process_seq(seq=>$rcseq, start=>1, code1=>$code1);
-    $seqs{"I-1H"} = $self->_process_seq(seq=>$rcseq, start=>0, code1=>$code1, code2=>$code2);
-    $seqs{"I-2H"} = $self->_process_seq(seq=>$rcseq, start=>1, code1=>$code1, code2=>$code2);
-    $seqs{"II-1"} = $self->_process_seq(seq=>$rcseq, start=>0, code1=>$code2);
-    $seqs{"II-2"} = $self->_process_seq(seq=>$rcseq, start=>1, code1=>$code2);
-    $seqs{"II-1H"} = $self->_process_seq(seq=>$rcseq, start=>0, code1=>$code2, code=>$code1);
-    $seqs{"II-2H"} = $self->_process_seq(seq=>$rcseq, start=>1, code1=>$code2, code=>$code1);
+    $seqs{I1} = $self->_process_seq(alter=>$alter, seq=>$seq, start=>0, code1=>$code1, codonl=>2);
+    $seqs{I2} = $self->_process_seq(alter=>$alter, seq=>$seq, start=>1, code1=>$code1, codonl=>2);
+    $seqs{I1H} = $self->_process_seq(alter=>$alter, seq=>$seq, start=>0, code1=>$code1, code2=>$code2, codonl=>2) if $hyb;
+    $seqs{I2H} = $self->_process_seq(alter=>$alter, seq=>$seq, start=>1, code1=>$code1, code2=>$code2, codonl=>2) if $hyb;;
+    $seqs{II1} = $self->_process_seq(alter=>$alter, seq=>$seq, start=>0, code1=>$code2, codonl=>2);
+    $seqs{II2} = $self->_process_seq(alter=>$alter, seq=>$seq, start=>1, code1=>$code2, codonl=>2);
+    $seqs{II1H} = $self->_process_seq(alter=>$alter, seq=>$seq, start=>0, code1=>$code2, code2=>$code1, codonl=>2) if $hyb;;
+    $seqs{II2H} = $self->_process_seq(alter=>$alter, seq=>$seq, start=>1, code1=>$code2, code2=>$code1, codonl=>2) if $hyb;;
+    my $rcseq = $self->reverse_complement;
+    $seqs{"I-1"} = $self->_process_seq(alter=>$alter, seq=>$rcseq, start=>0, code1=>$code1, codonl=>2);
+    $seqs{"I-2"} = $self->_process_seq(alter=>$alter, seq=>$rcseq, start=>1, code1=>$code1, codonl=>2);
+    $seqs{"I-1H"} = $self->_process_seq(alter=>$alter, seq=>$rcseq, start=>0, code1=>$code1, code2=>$code2, codonl=>2) if $hyb;;
+    $seqs{"I-2H"} = $self->_process_seq(alter=>$alter, seq=>$rcseq, start=>1, code1=>$code1, code2=>$code2, codonl=>2) if $hyb;;
+    $seqs{"II-1"} = $self->_process_seq(alter=>$alter, seq=>$rcseq, start=>0, code1=>$code2, codonl=>2);
+    $seqs{"II-2"} = $self->_process_seq(alter=>$alter, seq=>$rcseq, start=>1, code1=>$code2, codonl=>2);
+    $seqs{"II-1H"} = $self->_process_seq(alter=>$alter, seq=>$rcseq, start=>0, code1=>$code2, code=>$code1, codonl=>2) if $hyb;;
+    $seqs{"II-2H"} = $self->_process_seq(alter=>$alter, seq=>$rcseq, start=>1, code1=>$code2, code=>$code1, codonl=>2) if $hyb;;
     return \%seqs;
   }
 
@@ -1217,10 +1311,11 @@ sub _process_seq
     my $code1 = $opts{code1};
     my $code2 = $opts{code2};
     my $alter = $opts{alter};
+    my $codonl = $opts{codonl} || 2;
     my $seq_out;
-    for (my $i = $start; $i < length ($seq); $i = $i+2)
+    for (my $i = $start; $i < length ($seq); $i = $i+$codonl)
       {
-	my $codon = substr($seq, $i, 2);
+	my $codon = substr($seq, $i, $codonl);
 	my $chr = $code1->{$codon} || $code2->{$codon} || $alter;
 	$seq_out .= $chr if $chr;
       }
