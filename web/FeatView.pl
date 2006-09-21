@@ -40,6 +40,7 @@ my $pj = new CGI::Ajax(
 		       show_express=>\&show_express,
 		       gen_data=>\&gen_data,
 		       get_dna_seq_for_feat => \&get_dna_seq_for_feat,
+		       get_rcdna_seq_for_feat => \&get_rcdna_seq_for_feat,
 		       get_prot_seq_for_feat => \&get_prot_seq_for_feat,
 		      );
 $pj->JSDEBUG(0);
@@ -53,7 +54,7 @@ print $pj->build_html($FORM, \&gen_html);
 sub get_prot_seq_for_feat
   {
     my $featid = shift;
-    my ($feat) = $DB->get_feat_obj->search(feature_id=>$featid);
+    my ($feat) = $DB->get_feat_obj->retrieve($featid);
     my ($seq) = $DB->get_protein_sequence_for_feature($feat);
     $seq = "No sequence available" unless $seq;
     return $seq;
@@ -62,8 +63,20 @@ sub get_prot_seq_for_feat
 sub get_dna_seq_for_feat
   {
     my $featid = shift;
+#    return $featid;
+    my ($feat) = $DB->get_feat_obj->retrieve($featid);
+#    my $seq = $DB->get_genomic_sequence_for_feature($feat);
+    my $seq = $feat->genomic_sequence;
+#    print STDERR "!$seq!\n";
+    $seq = "No sequence available" unless $seq;
+    return $seq;
+  }
+
+sub get_rcdna_seq_for_feat
+  {
+    my $featid = shift;
     my ($feat) = $DB->get_feat_obj->search(feature_id=>$featid);
-    my $seq = $DB->get_genomic_sequence_for_feature($feat);
+    my $seq = $feat->reverse_complement;
     $seq = "No sequence available" unless $seq;
     return $seq;
   }
@@ -146,6 +159,7 @@ sub get_anno
 	$anno .= qq{<DIV id="loc$i"><input type="button" value = "Click for chromosomal view" onClick="window.open('GeLo.pl?chr=$chr&di=$di&INITIAL_CENTER=$x,0&z=$z');"></DIV>};
 	$anno .= qq{<DIV id="exp$i"><input type="button" value = "Click for expression tree" onClick="gen_data(['args__Generating expression view image'],['exp$i']);show_express(['args__}.$accn.qq{','args__}.'1'.qq{','args__}.$i.qq{'],['exp$i']);"></DIV>};
 	$anno .= qq{<DIV id="dnaseq$i"><input type="button" value = "Click for DNA sequence" onClick="gen_data(['args__retrieving sequence'],['dnaseq$i']);get_dna_seq_for_feat(['args__}.$feat->id.qq{'],['dnaseq$i']);"></DIV>};
+	$anno .= qq{<DIV id="rcdnaseq$i"><input type="button" value = "Click for DNA sequence reverse complement" onClick="gen_data(['args__retrieving sequence'],['rcdnaseq$i']);get_rcdna_seq_for_feat(['args__}.$feat->id.qq{'],['rcdnaseq$i']);"></DIV>};
 	$anno .= qq{<DIV id="protseq$i"><input type="button" value = "Click for protein sequence" onClick="gen_data(['args__retrieving sequence'],['protseq$i']);get_prot_seq_for_feat(['args__}.$feat->id.qq{'],['protseq$i']);"></DIV>\n\n};
 
 	$anno = "<font class=\"annotation\">No annotations for this entry</font>" unless $anno;
