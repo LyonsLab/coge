@@ -85,6 +85,10 @@ sub actions
 		    ACTION => qq{<a href="./GeLo.pl">Genome Location Viewer</a>},
 		    DESC   => qq{Allows users to get an overview of organisms in genomes database and provides a dynamic, interactive browser of genomic information.},
 		   },
+		   {
+		    ACTION => qq{<a href="./CoGe_faq.html">CoGe Faq</a>},
+		    DESC   => qq{What is CoGe?  This document covers some of the basics about what CoGe is, how it has been designed, and other information about the system.},
+		   },
 		  );
     return \@actions;
   }
