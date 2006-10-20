@@ -6,9 +6,7 @@
 # the db
 
 # bct (01/15/06)
-
-# get files as args...
-(@ARGV > 0 ) or die "usage: $! <file name> [file name] [...]\n";
+# updated and modified by ehl (Mar 06)
 
 use DBI;
 use strict;
@@ -16,17 +14,26 @@ use CoGe::Accessory::GBlite;
 use CoGe::Genome;
 use Roman;
 use Data::Dumper;
+use Getopt::Long;
 
 
+my ($HELP, $DEBUG, $GO, $ERASE, @files);
+GetOptions(
+	   'help|h'=>\$HELP,
+	   'debug|d|verbose|v'=>\$DEBUG,
+	   'file|f=s'=>\@files,
+	   'go|g'=>\$GO,
+	   'delete|erase|e'=>\$ERASE,
+	  );
+$HELP = 1 unless @files;
+$GO = 1 if $ERASE; #set to 1 to actually make db calls.
+help() if $HELP;
 
-my $DEBUG = 1; # set to '1' to get updates on what's going on
-my $GO = 0; #set to 1 to actually make db calls.
-my $ERASE = 0; #set to one to clear the database of entries created for $data_information
+
 # vars
 my($statement) = "";
 my $genomic_seq_len = 10000; #length to break up genomic sequence
 
-my @files = @ARGV;
 
 my $genome = new CoGe::Genome();
 
@@ -442,9 +449,9 @@ foreach my $longfile ( @files ) {
 	  }
 	}
       }
-      print "\n";
+      print "\n" if $DEBUG;
     } #end "feature" while
-    print "Processing Genomic Sequence. . .\n";
+    print "Processing Genomic Sequence. . .\n" if $DEBUG;
     load_genomic_sequence(len=> $genomic_seq_len, di=>$data_information, seq=>$entry->sequence, chr=>$chromosome);
     print "\n";
   } #end "entry" while
@@ -478,6 +485,35 @@ sub load_genomic_sequence
                   }) if $GO;
 	$i += $len;
       }
+  }
+
+sub help
+  {
+    print qq{
+Welcome to $0;
+
+This program load genbank files into the CoGe Genomes database.  WARNING: You may 
+need to customize this program for your particular genbank file in order to properly 
+handle  specific annotation types such as Geneontology or functional domains.
+
+Options                (Valid values)
+
+-help | -h             (0|1) Print this message
+
+-file | -f             (String) Path to genebank genome file for loading into the 
+                       CoGe system
+
+-go   | -g             (0|1) You must set this to 1 in order for the data to be loaded 
+                       (NOTE:  this is a failsafe switch to make sure you are ready!)
+
+-delete | -erase | -e  (0|1) Erase the data instead of loading the data.  You will want
+                       to set this to 1 if you had an abortive data-loading run.
+
+-debug   | -d          (0|1) Verbose debugging output
+
+-verbose | -v          (0|1) Verbose debugging output
+};
+    exit;
   }
 
 __END__
