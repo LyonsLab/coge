@@ -22,7 +22,7 @@ BEGIN {
 	   C =>'cys',
 	   E =>'acd',
 	   Q =>'fil',
-	   G =>'fil',
+	   G =>'fob',
 	   H =>'bas',
 	   I =>'fob',
 	   L =>'fob',
