@@ -68,7 +68,7 @@ CoGe::Graphics:Feature
   $hsp->iw(10);
 
   #Fill the GD image with some color
-  $hsp->gd->fill(0,0,$ge->get_color(250,20, 200));
+  $hsp->gd->fill(0,0,$gd->get_color(250,20, 200));
   
   #assign a label to the feature
   $hsp->label("HSP1");
@@ -209,6 +209,7 @@ BEGIN
 "force_label", #flag to force the printing of the label
 "magnification", #magnification level for increasing/decreasing the size of the feature  
 "overlay", #level of overlay for features such that one feature is drawn over another.
+"padding", #pixel padding used when using _gd_string
 );
   }
 
@@ -489,7 +490,7 @@ sub _gd_string
     my $x = $opts{x} || $opts{X} || 0;
     my $y = $opts{'y'} || $opts{Y} || 0;
     my $color = $opts{color} || $opts{COLOR};
-    my $size = $opts{size} || $opts{SIZE} || $self->padding;
+    my $size = $opts{size} || $opts{SIZE} || 10;
     my $angle = $opts{angle} || $opts{ANGLE} || 0;
     $color = $self->get_color($color);
     my $gd = $self->gd;
