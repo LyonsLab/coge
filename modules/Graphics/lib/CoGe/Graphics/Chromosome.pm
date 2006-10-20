@@ -424,9 +424,15 @@ sub set_region
 	|| $opts{point} || $opts{POINT} || 0;
 #	  ||$self->start || 0;
     my $end = $opts{stop} || $opts{end} || $opts{STOP} || $opts{END};# || $self->stop;
+    my $forcefit = $opts{forcefit};
 #    $self->start($start);
 #    $self->stop($end);
-    if (defined $start && $end)
+    if ($forcefit && defined $start && $end)
+      {
+	$self->_region_start($start);
+	$self->_region_stop($end);
+      }
+    elsif (defined $start && $end)
       {
 	$self->_set_region_start_stop($start, $end);
       }
