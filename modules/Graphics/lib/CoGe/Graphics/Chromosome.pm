@@ -1927,11 +1927,11 @@ sub _draw_ruler
     $re = $self->chr_length if $re > $self->chr_length;
     my $range = $re-$rb+1; #chromosomal positional range
     $rb = $rb-($range/10); #back up a bit
-    my $div = "1"."0"x int log10($self->find_size_for_magnification); #determine range scale (10, 100, 1000, etc)
+    my $div = "1"."0"x int (log10($self->_region_stop - $self->_region_start)+.5); #determine range scale (10, 100, 1000, etc)
     print STDERR "\nRULER: Center: $c, Start $xb, Stop: $xe, Ticks: $div, \n" if $self->DEBUG;
-    $self->_make_ticks(scale=>$div*10, y1=>$mtyb, y2=>$mtye, range_begin=>$rb, range_end=>$re,text_loc=>1);
+    $self->_make_ticks(scale=>$div, y1=>$mtyb, y2=>$mtye, range_begin=>$rb, range_end=>$re,text_loc=>1);
 #    $div /= 10;
-    $self->_make_ticks(scale=>$div, y1=>$styb, y2=>$stye, range_begin=>$rb, range_end=>$re, text_loc=>-1);
+    $self->_make_ticks(scale=>$div/10, y1=>$styb, y2=>$stye, range_begin=>$rb, range_end=>$re, text_loc=>-1);
 
   }
 
