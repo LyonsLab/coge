@@ -1695,6 +1695,42 @@ sub get_organism
 
 ################################################ subroutine header begin ##
 
+=head2 get_genomic_sequence
+
+ Usage     : $object->get_sequence(start   => $start, 
+                                   stop    => $stop, 
+                                   chr     => $chr,
+                                   dataset_id => $data_info->id());
+
+ Purpose   : gets the genomic sequence for the specified conditions
+ Returns   : a string (containing the genomic sequence)
+ Argument  : start   => genomic start position
+             stop    => genomic stop position
+             chr     => chromosome
+             dataset_id => data_information id in database (obtained from a
+                        CoGe::Data_information object)
+             strand  => 1 or -1.  Default 1.
+                        if negative strand is requested, the complement
+                        of the dna seq will be returned
+ Throws    : undef if no sequence is obtained
+ Comments  : Genomic_sequence->get_sequence
+
+See Also   : CoGe::Genome::DB::Genomic_sequence
+
+=cut
+
+################################################## subroutine header end ##
+
+sub get_genomic_sequence
+  {
+    my $self = shift;
+    my %args = @_;
+    my $gso =  CoGe::Genome::DB::Genomic_sequence->new();
+    return $gso->get_sequence(%args);
+  }
+
+################################################ subroutine header begin ##
+
 =head2 
 
  Usage     : 
@@ -1709,5 +1745,9 @@ See Also   : CoGe::Genome::DB::Feature
 =cut
 
 ################################################## subroutine header end ##
+
+
+
+  
 
 1; #this line is important and will help the module return a true value
