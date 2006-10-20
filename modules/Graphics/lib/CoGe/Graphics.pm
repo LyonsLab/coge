@@ -140,6 +140,7 @@ sub genomic_view
     my $BENCHMARK = $opts{'bm'} || 0;
     my $fids = $opts{'fid'} || $opts{'fids'}; #used to highlight special features by their database id
     my $fnames = $opts{'fn'} || $opts{'fns'}|| $opts{'fnames'}; #used to highlight special features by their name
+    my $forcefit = $opts{'forcefit'} || 0;
     my $img_map_name = $opts{'img_map'};
     my $draw_proteins = $opts{'draw_proteins'};
     $draw_proteins = 1 unless defined $draw_proteins;
@@ -217,6 +218,7 @@ sub genomic_view
 						   cmh=>$chr_mag_height,
 						   fsh=>$feat_start_height,
 						   fmh=>$feat_mag_height,
+						   forcefit=>$forcefit,
 						  ) unless $c->chr_length;
 	
 	if ($c->chr_length)
@@ -289,6 +291,7 @@ sub initialize_c
     my $cmh=$opts{cmh};
     my $fsh=$opts{fsh};
     my $fmh=$opts{fmh};
+    my $forcefit = $opts{forcefit};
     my $start_pict = $opts{'start_pict'} || 'left';
     my $chr_length = $db->get_genomic_sequence_obj->get_last_position(di=>$di, chr=>$chr);
     return unless $chr_length;
@@ -326,7 +329,7 @@ sub initialize_c
       {
         $c->mag($c->mag-1);
       }
-    $c->set_region(start=>$start, stop=>$stop);
+    $c->set_region(start=>$start, stop=>$stop, forcefit=>$forcefit);
     $start = $c->_region_start;
     $stop= $c->_region_stop;
     #let's add the max top and bottom tracks to the image to keep it constant
