@@ -1450,8 +1450,11 @@ sub get_genomic_seq_by_feat_name_and_type_name
  Argument  : CoGe::Genome::DB::Feature object
  Throws    : none
  Comments  : The sequence is returned in 5'->3' orientation.
+           : Also have check so that for features from datasets without genomic sequence
+           : this will try to find an associated dataset with genomic sequence from which
+           : to draw a genomic sequence for the feature.
 
-See Also   : 
+See Also   : CoGe::Genome::DB::Data_information::get_associated_datasets
 
 =cut
 
