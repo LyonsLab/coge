@@ -1003,6 +1003,13 @@ sub genomic_sequence
   }
 
 
+sub has_genomic_sequence
+  {
+    my $self = shift;
+    return 1 if $self->dataset->has_genomic_sequence;
+    return 0;
+  }
+
 ################################################ subroutine header begin ##
 
 =head2 protein_sequence
@@ -1081,6 +1088,9 @@ sub blast_bit_score
  Throws    : a warning if there is a problem with the calcualted expected_score
              or the match score is less than 0;
  Comments  : Assumes an equal probability for each nucleotide.
+           : this routine is based on example 4-1 from 
+           : BLAST: An essential guide to the Basic Local Alignment Search Tool 
+           : by Korf, Yandell, and Bedell published by O'Reilly press.
 
 See Also   : 
 
@@ -1150,6 +1160,7 @@ sub get_no_name_features
     $sth->finish;
     return wantarray ? @ids : \@ids;
   }
+
 sub reverse_complement
   {
     my $self = shift;
@@ -1248,7 +1259,8 @@ sub alpha_trans
   {
     my $self = shift;
     my %opts = @_;
-    my $alter = $opts{alter} || "X"; #place to store the symbol used for characters not translated
+    my $alter = $opts{alter};
+    $alter = "X" unless defined $alter; #place to store the symbol used for characters not translated
     my $hyb = $opts{hyb};
     my %code1 = (
 	     "UU"=>"L",
@@ -1258,7 +1270,7 @@ sub alpha_trans
 	     "AA"=>"K",
 	     "AG"=>"R",
 	     "CU"=>"L",
-	     "CA"=>"Q",
+#	     "CA"=>"Q",
 	     "CG"=>"R",
 	     "GU"=>"V",
 	     "GA"=>"E",
@@ -1267,13 +1279,13 @@ sub alpha_trans
     my %code2 = (
 	     "UU"=>"F",
 	     "UC"=>"S",
-	     "UG"=>"*",
-	     "UA"=>"*",
+#	     "UG"=>"*",
+#	     "UA"=>"*",
 	     "AC"=>"T",
 	     "AA"=>"N",
 	     "AG"=>"S",
 	     "CC"=>"P",
-	     "CA"=>"H",
+#	     "CA"=>"H",
 	     "GC"=>"A",
 	     "GA"=>"D",
 	     "GG"=>"G",
@@ -1315,8 +1327,12 @@ sub _process_seq
     my $seq_out;
     for (my $i = $start; $i < length ($seq); $i = $i+$codonl)
       {
-	my $codon = substr($seq, $i, $codonl);
-	my $chr = $code1->{$codon} || $code2->{$codon} || $alter;
+	my $codon = uc(substr($seq, $i, $codonl));
+	my $chr = $code1->{$codon} || $code2->{$codon};
+	unless ($chr)
+	  {
+	    $chr= $alter if $alter;
+	  }
 	$seq_out .= $chr if $chr;
       }
     return $seq_out;
