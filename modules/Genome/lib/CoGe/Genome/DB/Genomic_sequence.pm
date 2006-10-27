@@ -278,7 +278,7 @@ sub get_sequence
     $seq = substr($seq, $trim_start);
     if ($strand =~ "-")
       {
-#	$seq = reverse $seq;
+	$seq = reverse $seq;
 	$seq =~ tr/atcgATCG/tagcTAGC/;
       }
     return $seq;
