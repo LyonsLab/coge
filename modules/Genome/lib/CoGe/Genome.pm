@@ -1,5 +1,6 @@
 package CoGe::Genome;
 use strict;
+
 use CoGe::Genome::DB::Annotation;
 use CoGe::Genome::DB::Annotation_type;
 use CoGe::Genome::DB::Annotation_type_group;
@@ -1461,18 +1462,52 @@ sub get_genomic_sequence_for_feature
     my $self = shift;
     my $feat = shift;
     my $seq;
-    foreach my $loc ($feat->locs)
+    if ($feat->has_genomic_sequence())
       {
-	my $tmp_seq = $self->get_genomic_seq_obj->get_sequence(
-							 start  => $loc->start,
-							 stop   => $loc->stop,
-							 chr    => $loc->chr,
-							 org_id => $feat->data_info->organism->id,
-							 info_id=> $feat->data_info->id,
-							 strand => $loc->strand,
-							 );
-	$tmp_seq = reverse $tmp_seq if $loc->strand =~ /-/;
-	$seq .= $tmp_seq if $tmp_seq;
+	foreach my $loc (sort {$a->start <=> $b->start} $feat->locs)
+	  {
+	    my $tmp_seq = $self->get_genomic_seq_obj->get_sequence(
+								   start  => $loc->start,
+								   stop   => $loc->stop,
+								   chr    => $loc->chr,
+								   org_id => $feat->data_info->organism->id,
+								   info_id=> $feat->data_info->id,
+								   strand => $loc->strand,
+								  );
+	    #	if ($loc->strand =~ /-/) {
+	    #	  $tmp_seq = reverse $tmp_seq;
+	    #	}
+	    
+	    $seq .= $tmp_seq if $tmp_seq;
+	  }
+      }
+    else
+      {
+	outer: foreach my $ds ($feat->dataset->get_associated_datasets())
+	  {
+	    if ($ds->has_genomic_sequence)
+	      {
+		foreach my $chr ($ds->chromosomes)
+		  {
+		    if ($chr eq $feat->chr)
+		      {
+			foreach my $loc (sort {$a->start <=> $b->start} $feat->locs)
+			  {
+			    my $tmp_seq = $self->get_genomic_seq_obj->get_sequence(
+										   start  => $loc->start,
+										   stop   => $loc->stop,
+										   chr    => $loc->chr,
+										   org_id => $feat->data_info->organism->id,
+										   info_id=> $ds->id,
+										   strand => $loc->strand,
+										  );
+			    $seq .= $tmp_seq if $tmp_seq;
+			  }
+			last outer;
+		      }
+		  }
+	      }
+	  }
       }
     return $seq;
   }
