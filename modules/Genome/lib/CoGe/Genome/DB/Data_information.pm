@@ -126,6 +126,11 @@ SELECT DISTINCT(feature_id)
    AND feature_type.name = ?
 });
 
+  __PACKAGE__->set_sql(has_genomic_sequence => qq{
+SELECT count(*)
+ FROM genomic_sequence
+ WHERE data_information_id = ?
+});
   }
 
 
@@ -462,9 +467,9 @@ sub resolve_dataset
 
 ################################################ subroutine header begin ##
 
-=head2 get_associated_data_infos
+=head2 get_associated_datasets
 
- Usage     : my @di = $data_info_obj->get_associated_data_infos()
+ Usage     : my @di = $data_info_obj->get_associated_datasets()
  Purpose   : This will find other data information objects that might be important given the current 
              data information object.  For example, let's say you loaded a genome where each chromosome
              was loaded separately so each has its own data_information object.  Then you load another
@@ -489,7 +494,7 @@ See Also   :
 ################################################## subroutine header end ##
 
 
-sub get_associated_data_infos
+sub get_associated_datasets
   {
     my $self = shift;
     my $db = new CoGe::Genome;
@@ -518,6 +523,14 @@ sub get_associated_data_infos
     my @new_dios = values %ids;
     return wantarray ? @new_dios : \@new_dios;
   }
+
+sub get_associated_data_infos
+  {
+    my $self = shift;
+    print STDERR "This method is obsolete, use get_associated_datasets\n";
+    return ($self->get_associated_datasets);
+  }
+
 
 ################################################ subroutine header begin ##
 
@@ -559,6 +572,47 @@ sub get_chromosomes
       }
     $sth->finish;
     return wantarray ? keys %chrs : [keys %chrs];
+  }
+
+################################################ subroutine header begin ##
+
+=head2 chromosomes
+
+ Usage     : $dataset_obj->chromosomes
+ Purpose   : alias for get_chromosomes
+
+See Also   : $self->get_chromosomes
+
+=cut
+
+################################################## subroutine header end ##
+
+
+
+sub chromosomes
+  {
+    my $self = shift;
+    return $self->get_chromosomes(@_);
+  }
+
+################################################ subroutine header begin ##
+
+=head2 chr
+
+ Usage     : $dataset_obj->chr
+ Purpose   : alias for get_chromosomes
+
+See Also   : $self->get_chromosomes
+
+=cut
+
+################################################## subroutine header end ##
+
+
+sub chr
+  {
+    my $self = shift;
+    return $self->get_chromosomes(@_);
   }
 
 ################################################ subroutine header begin ##
@@ -663,7 +717,7 @@ sub get_current_version_for_organism
              org           => CoGe::Genome::DB::Organism object or organism database 
                               id or organism name
              version | ver => which version of data to use (if not specified this
-                            routine will find the most current version of the data
+                            routine will find the current most version of the data
                             and use that)
              type        => the type of feature to return (e.g. "gene").  If this is
                             not specified it will return all features. (optional)
@@ -739,6 +793,51 @@ sub get_features_for_organism
       }
     return wantarray ? @feats : \@feats;
   }
+
+################################################ subroutine header begin ##
+
+=head2 has_genomic_sequence
+
+ Usage     : if ($dataset_obj->has_genomic_sequence) { do stuff . . .}
+ Purpose   : find out if a dataset has associated genomic sequence
+ Returns   : returns the number of entries in the genomic_sequence table for this dataset_id
+ Argument  : none
+ Throws    : none
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+
+sub has_genomic_sequence
+  {
+    my $self = shift;
+    my $sth = $self->sql_has_genomic_sequence();
+    $sth->execute($self->id);
+    my $num = $sth->fetchrow_arrayref->[0];
+    return $num;
+  }
+
+################################################ subroutine header begin ##
+
+=head2 
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+
+See Also   : CoGe::Genome::DB::Feature
+
+=cut
+
+################################################## subroutine header end ##
+
 
 1; #this line is important and will help the module return a true value
 
