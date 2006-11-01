@@ -2,6 +2,7 @@ package CoGe::Genome::DB;
 use strict;
 use base 'Class::DBI::mysql';
 use CoGe::Genome;
+
 BEGIN {
     use Exporter ();
     use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
@@ -101,5 +102,6 @@ sub new
 
     return ($self);
 }
+
 1; #this line is important and will help the module return a true value
 
