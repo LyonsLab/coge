@@ -998,8 +998,11 @@ See Also   : CoGe::Genome
 sub genomic_sequence
   {
     my $self = shift;
+    my %opts = @_;
+    my $upstream = $opts{upstream} || $opts{up} || $opts{us} || 0;
+    my $downstream = $opts{downstream} || $opts{down} || $opts{ds} || 0;
     my $db = CoGe::Genome->new;
-    return $db->get_genomic_sequence_for_feature($self);
+    return $db->get_genomic_sequence_for_feature(feat=>$self, up=>$upstream, down=>$downstream);
   }
 
 
