@@ -76,7 +76,7 @@ perl(1).
 
 =head2 Accessor Functions
 
- name             =>  name of feature list
+ name             =>  name of feature list group
 
  description      =>  description
  desc             =>  alias for description
