@@ -26,6 +26,7 @@ my $chr_start_height = $form->param('csh') || 200;
 my $chr_mag_height = $form->param('cmh') || 5;
 my $feat_start_height = $form->param('fsh') || 10;
 my $feat_mag_height = $form->param('fmh') || 2;
+my $forcefit = $form->param('forcefit') || 0;
 
 my @fids = $form->param('fid'); #used to highlight special features by their database id
 my @fnames = $form->param('fn'); #used to highlight special features by their name
@@ -50,4 +51,5 @@ print CoGe::Graphics->genomic_view(
 				   fmh=>$feat_mag_height,
 				   fids=>\@fids,
 				   fns=>\@fnames,
+				   forcefit=>$forcefit,
 				   );
