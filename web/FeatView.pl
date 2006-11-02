@@ -118,7 +118,6 @@ sub cogesearch
 #    print STDERR Dumper @_;
     return $blank unless length($accn) > 2 || $type || $org;
     my $html;
-    print STDERR "type: $type\n";
     my %seen;
     my @opts = sort map {"<OPTION>$_</OPTION>"} grep {! $seen{$_}++} map {uc($_)} $DB->get_feature_name_obj->power_search(accn=>$accn."%", type=>$type, org=>$org);
     if (@opts > 5000)
