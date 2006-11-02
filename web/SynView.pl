@@ -11,6 +11,7 @@ use File::Basename;
 use File::Temp;
 use GS::MyDB::GBDB::GBObject;
 use CoGe::Genome;
+use CoGe::Accessory::Web;
 use CoGe::Graphics::Chromosome;
 use CoGe::Graphics::Feature;
 use CoGe::Graphics::Feature::Gene;
@@ -23,7 +24,7 @@ use CoGe::Graphics::Feature::Domain;
 $ENV{PATH} = "/opt/apache2/CoGe/";
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 
-use vars qw( $DATE $DEBUG $BL2SEQ $TEMPDIR $TEMPURL $USER $form);
+use vars qw( $DATE $DEBUG $BL2SEQ $TEMPDIR $TEMPURL $USER $FORM $cogeweb);
 $BL2SEQ = "/opt/bin/bio/bl2seq ";
 $TEMPDIR = "/opt/apache/CoGe/tmp";
 $TEMPURL = "/CoGe/tmp";
@@ -34,21 +35,20 @@ $| = 1; # turn off buffering
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		 sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
 
-$form = new CGI;
+$FORM = new CGI;
 $CGI::POST_MAX= 60 * 1024 * 1024; # 24MB
 $CGI::DISABLE_UPLOADS = 0; 
 ($USER) = GS::LogUser->get_user();
 my $pj = new CGI::Ajax(
 		       rset=>\&Rset,
 		       run=>\&Show_Summary,
-		       source_search=>\&get_data_source_info_for_accn,
-		       feat_search=>\&get_feats_for_dataset_and_accn,
+		       CoGe::Accessory::Web::ajax_func(),
 		       loading=>\&loading,
 		      );
 $pj->JSDEBUG(0);
 $pj->DEBUG(0);
 $pj->js_encode_function('escape');
-print $pj->build_html($form, \&gen_html);
+print $pj->build_html($FORM, \&gen_html);
 #print gen_html();
 
 
@@ -63,16 +63,40 @@ sub loading
 
 sub gen_html
   {
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SynView.tmpl');
+    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
+    $template->param(LOGO_PNG=>"SynView-logo.png");
     $template->param(TITLE=>'Synteny Viewer');
     $template->param(USER=>$USER);
     $template->param(DATE=>$DATE);
-    my $accn1 = $form->param('accn1') if $form->param('accn1');
-    my $accn2 = $form->param('accn2') if $form->param('accn2');
-    $template->param(ACCN1=>$accn1);
-    $template->param(ACCN2=>$accn2);
+    $template->param(NO_BOX=>1);
+    $template->param(BODY=>gen_body());
+    my $prebox = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SynView.tmpl');
+    $prebox->param(RESULTS_DIV=>1);
+    $template->param(PREBOX=>$prebox->output);
     my $html;# =  "Content-Type: text/html\n\n";
     $html .= $template->output;
+    return $html;
+  }
+
+sub gen_body
+  {
+    my $form = shift || $FORM;
+    my $accn1 = $form->param('accn1') if $form->param('accn1');
+    my $accn2 = $form->param('accn2') if $form->param('accn2');
+    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SynView.tmpl');
+    my $box = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
+    $template->param(ACCN1=>$accn1);
+    $template->param(ACCN2=>$accn2);
+    my $html;
+    $template->param(SEQ_RETRIEVAL=>1);
+    $box->param(BOX_NAME=>"Sequence Retrieval:");
+    $box->param(BODY=>$template->output);
+    $html .= $box->output;
+    $template->param(SEQ_RETRIEVAL=>0);
+    $template->param(OPTIONS=>1);
+    $box->param(BOX_NAME=>"Options:");
+    $box->param(BODY=>$template->output);
+    $html .= $box->output;
     return $html;
   }
 
@@ -110,7 +134,7 @@ sub Show_Summary
     my ($f2start, $f2up, $f2down);
 
 #    print STDERR"<pre>".Dumper(\@_),"</pre>";
-    my $form = new CGI;
+    my $form = $FORM;
     my $html;
     my ($obj1, $obj2);
     my ($file1, $file1_begin, $file1_end);
@@ -288,21 +312,7 @@ sub Show_Summary
       }
     if ( $rc ) 
       {
- 	my($filename,$maphtml,$mapname);# =
-# 	  $db->{GBSyntenyViewer}->draw_image(
-# 					     ACCN_Q_OBJ=>$obj1,
-# 					     Q_BEGIN=>$file1_begin, 
-# 					     Q_END=>$file1_end,
-# 					     ACCN_S_OBJ=>$obj2,
-# 					     S_BEGIN=>$file2_begin, 
-# 					     S_END=>$file2_end, 
-# 					     HSPS=>$data, 
-# 					     DIRNAME=>$TEMPDIR,
-# 					     BLAST_REPORT=>$blast_report,
-# 					     MASKED_EXONS=>$mask_flag,
-# 					     SPIKE_LEN=>length($spike_seq),
-# 					    );
-
+ 	my($filename,$maphtml,$mapname);
 	my ($qfile, $qmap, $qmapname) = generate_image(
 						       gbobj=>$obj1, 
 						       start=>$file1_begin,
@@ -365,16 +375,16 @@ sub Show_Summary
       } 
     else 
       {
-	$html .= "<P><HR><B>ERROR - NO HITS WERE RETURNED FROM THE BL2SEQ REPORT!</B><P>\n";
+	$html .= "<P><B>ERROR - NO HITS WERE RETURNED FROM THE BL2SEQ REPORT!</B><P>\n";
       }
     my $basereportname = basename( $blast_report );
     $basereportname = $TEMPURL . "/$basereportname\n";
     $html .= "<font class=xsmall><A HREF=\"$basereportname\">View bl2seq output: $basereportname</A></font>\n";
 
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SynView_results.tmpl');
+    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
 #    print STDERR $html;
-    $template->param(HEADING=>"Results");
-    $template->param(RESULTS=>$html);
+    $template->param(BOX_NAME=>"Results:");
+    $template->param(BODY=>$html);
     return $template->output;
 
 }
@@ -617,12 +627,6 @@ sub generate_output
       }
   } 
 
-#foreach my $i (1..10)
-# { 
-#   $c->mag($i);
-#   $c->generate_png(file=>"tmp/test$i.png");
-# }
-
 sub draw_prots
   {
     my %opts = @_;
@@ -653,89 +657,6 @@ sub draw_prots
       }
   }
 
-
-
-sub get_data_source_info_for_accn
-  {
-    my $accn = shift;
-    return unless $accn;
-    my $num = shift;
-    my $db = new CoGe::Genome;
-    my @feats;
-    foreach my $f ($db->get_feats_by_name($accn))
-      {
-	next if $f->type->name =~ /CDS/i;
-	next if $f->type->name =~ /RNA/i;
-	push @feats, $f;
-      }
-    my $html;
-    my %sources;
-    foreach my $feat (@feats)
-      {
-	$sources{$feat->data_info->id} = $feat->data_info;
-      }
-    if (keys %sources)
-      {
-	$html .= qq{
-<SELECT name = "infoid$num" id= "infoid$num" onChange="feat_search(['accn$num','infoid$num', 'args__$num'],['feat$num']);">
-};
-	foreach my $id (sort {$b <=> $a} keys %sources)
-	  {
-	    my $val = $sources{$id};
-	    my $name = $val->name;
-	    my $ver = $val->version;
-	    my $desc = $val->description;
-	    my $sname = $val->data_source->name;
-	    my $org = $val->org->name;
-	    $html  .= qq{  <option value="$id">$org: $sname (v$ver)\n};
-	  }
-	$html .= qq{</SELECT>\n};
-	my $count = scalar keys %sources;
-	$html .= qq{<font class=small>($count)</font>};
-      }
-    else
-      {
-	$html .= qq{Accession not found <input type="hidden" id="infoid$num">\n};	
-      }    
-    return ($html, $num);
-  }
-sub get_feats_for_dataset_and_accn
-  {
-    my $accn = shift;
-    my $dsid = shift;
-    my $num = shift;
-    return unless $dsid;
-    my $db = new CoGe::Genome;
-    my @feats;
-    foreach my $f ($db->get_feats_by_name($accn))
-      {
-	next unless $f->dataset->id == $dsid;
-	next if $f->type->name =~ /CDS/i;
-	next if $f->type->name =~ /RNA/i;
-	push @feats, $f;
-      }
-    my $html;
-    if (@feats)
-      {
-	$html .= qq{
-<SELECT name = "featid$num" id = "featid$num" >
-  };
-	foreach my $feat (@feats)
-	  {
-	    my $loc = "Chr:".$feat->chr." ".$feat->genbank_location_string;
-	    $loc =~ s/(complement)|(join)//g;
-	    $html .= qq {  <option value="$feat->id">$loc \n};
-	  }
-	$html .= qq{</SELECT>\n};
-	my $count = scalar @feats;
-	$html .= qq{<font class=small>($count)</font>};
-      }
-    else
-      {
-	$html .=  qq{<input type="hidden" id="featid$num">\n}
-      }
-    return $html;
-  }
 
 sub generate_obj_from_seq
   {
