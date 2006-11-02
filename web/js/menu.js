@@ -386,3 +386,6 @@ function ChangeStyle()
         this.className = this.className + "Over";
     
 }
+function changeColor(id, color) {
+  document.getElementById(id).style.color = color;
+}
