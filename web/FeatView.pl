@@ -63,11 +63,10 @@ sub get_prot_seq_for_feat
 sub get_dna_seq_for_feat
   {
     my $featid = shift;
-#    return $featid;
+    my $upstream = shift;
+    my $downstream = shift;
     my ($feat) = $DB->get_feat_obj->retrieve($featid);
-#    my $seq = $DB->get_genomic_sequence_for_feature($feat);
-    my $seq = $feat->genomic_sequence;
-#    print STDERR "!$seq!\n";
+    my $seq = $feat->genomic_sequence (up=>$upstream, down=>$downstream);
     $seq = "No sequence available" unless $seq;
     return $seq;
   }
