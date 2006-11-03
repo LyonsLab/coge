@@ -63,7 +63,7 @@ Genome - Genome
 
 
 =head1 USAGE
-
+  
 
 
 =head1 BUGS
@@ -103,13 +103,14 @@ perl(1).
 =head2 new
 
  Usage     : my $genome_obj = CoGe::Genome->new();
- Purpose   : Creates an CoGe::Genome object
+ Purpose   : Creates a CoGe::Genome object
  Returns   : an CoGe::Genome object
  Argument  : none
  Throws    : none
- Comments  : 
+ Comments  : creates a Genome object which CoGe will use to manipulate genome data,
+	     annotations, and features
 
-See Also   : 
+See Also   : CoGe::Genome
 
 =cut
 
@@ -133,9 +134,10 @@ sub new
  Usage     : $genome_obj->get_annotation_obj();
  Purpose   : gets an annotation object
  Returns   : an annotation object
- Argument  : 
+ Argument  : none
  Throws    : 
- Comments  : 
+ Comments  : creates an annotation object which has an annotation_id, an annotation
+ 	     a feature_id, and an annotation_type_id
 
 See Also   : CoGe::Genome::DB::Annotation
 
@@ -160,9 +162,9 @@ sub get_annotation_obj
  Returns   : 
  Argument  : 
  Throws    : 
- Comments  : 
+ Comments  : This is an alias
 
-See Also   : 
+See Also   : get_annotation_obj
 
 =cut
 
@@ -181,9 +183,10 @@ sub get_anno_obj
  Usage     : $genome_obj->get_annotation_type_obj();
  Purpose   : gets an annotation_type object
  Returns   : an annotation_type object
- Argument  : 
+ Argument  : none
  Throws    : 
- Comments  : 
+ Comments  : Creates an annotatio_type object which has an annotation_type_id,
+ 	     a name, a description, and an annotation_type_group_id
 
 See Also   : CoGe::Genome::DB::Annotation_type
 
@@ -206,9 +209,9 @@ sub get_annotation_type_obj
  Returns   : 
  Argument  : 
  Throws    : 
- Comments  : 
+ Comments  : This is an alias
 
-See Also   : 
+See Also   : get_annotation_type_obj
 
 =cut
 
@@ -225,11 +228,12 @@ sub get_anno_type_obj
 =head2 get_annotation_type_group_obj
 
  Usage     : $genome_obj->get_annotation_type_group_obj();
- Purpose   : 
- Returns   : 
- Argument  : 
+ Purpose   : gets new Annotation_type_group object
+ Returns   : an Annotation_type_group object
+ Argument  : none
  Throws    : 
- Comments  : 
+ Comments  : Creates an Annotation_type_group object which has an annotation_type_group_id,
+ 	     a name, and a description
 
 See Also   : CoGe::Genome::DB::Annotation_type_group
 
@@ -248,13 +252,13 @@ sub get_annotation_type_group_obj
 =head2 get_anno_type_obj
 
  Usage     : $genome_obj->get_anno_type_obj();
- Purpose   : alias
+ Purpose   : alias for get_annotation_type_group_obj
  Returns   : 
  Argument  : 
  Throws    : 
- Comments  : 
+ Comments  : This is an alias 
 
-See Also   : 
+See Also   : get annotation_type_group_obj 
 
 =cut
 
@@ -271,8 +275,8 @@ sub get_anno_type_group_obj
 =head2 get_data_source_obj
 
  Usage     : $genome_obj->get_data_source_obj();
- Purpose   : 
- Returns   : 
+ Purpose   : gets a new Data_source object 
+ Returns   : a Data_source object 
  Argument  : 
  Throws    : 
  Comments  : 
@@ -298,9 +302,9 @@ sub get_data_source_obj
  Returns   : 
  Argument  : 
  Throws    : 
- Comments  : 
+ Comments  : This is an alias 
 
-See Also   : 
+See Also   : get_data_source_obj 
 
 =cut
 
@@ -317,9 +321,9 @@ sub get_source_obj
 =head2 get_data_information_obj
 
  Usage     : $genome_obj->get_data_information_obj();
- Purpose   : 
- Returns   : 
- Argument  : 
+ Purpose   : gets a Data_information object 
+ Returns   : a Data_information object
+ Argument  : none 
  Throws    : 
  Comments  : 
 
@@ -344,9 +348,9 @@ sub get_data_information_obj
  Returns   : 
  Argument  : 
  Throws    : 
- Comments  : 
+ Comments  : This is an alias 
 
-See Also   : 
+See Also   : get_data_information_obj
 
 =cut
 
@@ -367,9 +371,9 @@ sub get_information_obj
  Returns   : 
  Argument  : 
  Throws    : 
- Comments  : 
+ Comments  : This is an alias 
 
-See Also   : 
+See Also   : get_data_information_obj
 
 =cut
 
@@ -390,9 +394,9 @@ sub get_data_info_obj
  Returns   : 
  Argument  : 
  Throws    : 
- Comments  : 
+ Comments  : This is an alias 
 
-See Also   : 
+See Also   : get_data_information_obj
 
 =cut
 
@@ -409,9 +413,9 @@ sub get_dataset_obj
 =head2 get_feature_obj
 
  Usage     : $genome_obj->get_feature_obj();
- Purpose   : 
- Returns   : 
- Argument  : 
+ Purpose   : Creates new feature object
+ Returns   : A feature object
+ Argument  : none
  Throws    : 
  Comments  : 
 
@@ -436,9 +440,9 @@ sub get_feature_obj
  Returns   : 
  Argument  : 
  Throws    : 
- Comments  : 
+ Comments  : This is an alias 
 
-See Also   : 
+See Also   : get_feature_obj
 
 =cut
 
@@ -455,9 +459,9 @@ sub get_feat_obj
 =head2 get_feature_name_obj
 
  Usage     : $genome_obj->get_feature_name_obj();
- Purpose   : 
- Returns   : 
- Argument  : 
+ Purpose   : creates a Feature_name object 
+ Returns   : a Feature_name object
+ Argument  : none 
  Throws    : 
  Comments  : 
 
@@ -482,9 +486,9 @@ sub get_feature_name_obj
  Returns   : 
  Argument  : 
  Throws    : 
- Comments  : 
+ Comments  : This is an alias 
 
-See Also   : 
+See Also   : get_feature_name_obj 
 
 =cut
 
@@ -501,9 +505,9 @@ sub get_feat_name_obj
 =head2 get_feature_type_obj
 
  Usage     : $genome_obj->get_feature_type_obj();
- Purpose   : 
- Returns   : 
- Argument  : 
+ Purpose   : Creates a get_feature_type object 
+ Returns   : a get_feature_type object 
+ Argument  : none
  Throws    : 
  Comments  : 
 
@@ -528,9 +532,9 @@ sub get_feature_type_obj
  Returns   : 
  Argument  : 
  Throws    : 
- Comments  : 
+ Comments  : This is an alias 
 
-See Also   : 
+See Also   : get_feature_type_obj
 
 =cut
 
@@ -547,9 +551,9 @@ sub get_feat_type_obj
 =head2 get_genomic_sequence_obj
 
  Usage     : $genome_obj->get_genomic_sequence_obj();
- Purpose   : 
- Returns   : 
- Argument  : 
+ Purpose   : Creates a new Genomic_sequence object 
+ Returns   : a Genomic_sequence object
+ Argument  : none 
  Throws    : 
  Comments  : 
 
@@ -570,13 +574,13 @@ sub get_genomic_sequence_obj
 =head2 get_genomic_seq_obj
 
  Usage     : $genome_obj->get_genomic_seq_obj();
- Purpose   : aslias for get_genomic_sequence_obj
+ Purpose   : alias for get_genomic_sequence_obj
  Returns   : 
  Argument  : 
  Throws    : 
- Comments  : 
+ Comments  : This is an alias 
 
-See Also   : 
+See Also   : get_genomic_sequence_obj
 
 =cut
 
@@ -593,9 +597,9 @@ sub get_genomic_seq_obj
 =head2 get_location_obj
 
  Usage     : $genome_obj->get_location_obj();
- Purpose   : 
- Returns   : 
- Argument  : 
+ Purpose   : Creates a Location object 
+ Returns   : a Location object
+ Argument  : none
  Throws    : 
  Comments  : 
 
@@ -620,9 +624,9 @@ sub get_location_obj
  Returns   : 
  Argument  : 
  Throws    : 
- Comments  : 
+ Comments  : This is an alias 
 
-See Also   : 
+See Also   : get_location_obj
 
 =cut
 
@@ -634,22 +638,22 @@ sub get_loc_obj
     return $self->get_location_obj();
   }
 
-
-
+################################################ subroutine header begin ##
 
 =head2 get_organism_obj
 
- Usage     : get_organism_obj
- Purpose   : gets an organism object
- Returns   : an organism object
+ Usage     : $genome_obj->get_organism_obj();
+ Purpose   : gets an Organism object
+ Returns   : an Organism object
  Argument  : none
  Throws    : none
- Comments  : none
+ Comments  : 
 
 See Also   : CoGe::Genome::DB::Organism
 
 =cut
 
+################################################## subroutine header end ##
 
 sub get_organism_obj
   {
@@ -657,19 +661,22 @@ sub get_organism_obj
     return CoGe::Genome::DB::Organism->new();
   }
 
+################################################ subroutine header begin ##
+
 =head2 get_org_obj
 
- Usage     : get_org_obj
+ Usage     : $genome_obj->get_org_obj();
  Purpose   : alias for get_organism_obj
- Returns   : 
+ Returns   :  
  Argument  : 
  Throws    : 
- Comments  : 
+ Comments  : This is an alias 
 
-See Also   : 
+See Also   : get_organism_obj 
 
 =cut
 
+################################################## subroutine header end ##
 
 sub get_org_obj
   {
@@ -677,20 +684,22 @@ sub get_org_obj
     return CoGe::Genome::DB::Organism->new();
   }
 
+################################################ subroutine header begin ##
+
 =head2 get_species_obj
 
- Usage     : get_species_obj
+ Usage     : $genome_obj->get_species_obj();
  Purpose   : alias for get_organism_obj
  Returns   : 
  Argument  : 
  Throws    : 
- Comments  : 
+ Comments  : This is an alias 
 
-See Also   : 
+See Also   : get_organism_obj
 
 =cut
-
-
+  
+################################################## subroutine header end ##
 
 sub get_species_obj
   {
@@ -703,9 +712,9 @@ sub get_species_obj
 =head2 
 
  Usage     : $genome_obj->sequence();
- Purpose   : 
- Returns   : 
- Argument  : 
+ Purpose   : Creates a Sequence object  
+ Returns   : a Sequence object
+ Argument  : none
  Throws    : 
  Comments  : 
 
@@ -731,9 +740,9 @@ sub get_sequence_obj
  Returns   : 
  Argument  : 
  Throws    : 
- Comments  : 
+ Comments  : This is an alias 
 
-See Also   : 
+See Also   : get_sequence_obj 
 
 =cut
 
@@ -751,9 +760,9 @@ sub get_seq_obj
 =head2 get_sequence_type_obj
 
  Usage     : $genome_obj->get_sequence_type_obj();
- Purpose   : 
- Returns   : 
- Argument  : 
+ Purpose   : Creates a Sequence_type object 
+ Returns   : a Sequence_type object
+ Argument  : none
  Throws    : 
  Comments  : 
 
@@ -779,9 +788,9 @@ sub get_sequence_type_obj
  Returns   : 
  Argument  : 
  Throws    : 
- Comments  : 
+ Comments  : This is an alias 
 
-See Also   : 
+See Also   : get_sequence_type_obj 
 
 =cut
 
@@ -800,9 +809,9 @@ sub get_seq_type_obj
 =head2 get_user_obj
 
  Usage     : $genome_obj->get_user_obj();
- Purpose   : 
- Returns   : 
- Argument  : 
+ Purpose   : Creates a User object 
+ Returns   : a User object
+ Argument  : none
  Throws    : 
  Comments  : 
 
@@ -823,9 +832,9 @@ sub get_user_obj
 =head2 get_user_group_obj
 
  Usage     : $genome_obj->get_user_group_obj();
- Purpose   : 
- Returns   : 
- Argument  : 
+ Purpose   : Creates a User_group object 
+ Returns   : a User_group object
+ Argument  : none 
  Throws    : 
  Comments  : 
 
@@ -846,9 +855,9 @@ sub get_user_group_obj
 =head2 get_user_group_connector_obj
 
  Usage     : $genome_obj->get_user_group_connector_obj();
- Purpose   : 
- Returns   : 
- Argument  : 
+ Purpose   : Creates a User_group_connector object 
+ Returns   : a User_group_connector object
+ Argument  : none
  Throws    : 
  Comments  : 
 
@@ -869,9 +878,9 @@ sub get_user_group_connector_obj
 =head2 get_permission_obj
 
  Usage     : $genome_obj->get_permission_obj();
- Purpose   : 
- Returns   : 
- Argument  : 
+ Purpose   : Creates a Permission object 
+ Returns   : a Permission object
+ Argument  : none
  Throws    : 
  Comments  : 
 
@@ -892,9 +901,9 @@ sub get_permission_obj
 =head2 get_user_group_feature_list_permission_connector_obj
 
  Usage     : $genome_obj->get_user_group_feature_list_permission_connector_obj();
- Purpose   : 
- Returns   : 
- Argument  : 
+ Purpose   : Creates a User_group_feature_list_permission_connector object 
+ Returns   : a User_group_feature_list_permission_connector object
+ Argument  : none
  Throws    : 
  Comments  : 
 
@@ -915,9 +924,9 @@ sub get_user_group_feature_list_permission_connector_obj
 =head2 get_feature_list_obj
 
  Usage     : $genome_obj->get_feature_list_obj();
- Purpose   : 
- Returns   : 
- Argument  : 
+ Purpose   : Creates a Feature_list object 
+ Returns   : a Feature_list object
+ Argument  : none
  Throws    : 
  Comments  : 
 
@@ -938,9 +947,9 @@ sub get_feature_list_obj
 =head2 get_feature_list_group_obj
 
  Usage     : $genome_obj->get_feature_list_group_obj();
- Purpose   : 
- Returns   : 
- Argument  : 
+ Purpose   : Creates a Feature_list_group object 
+ Returns   : a Feature_list_group object
+ Argument  : none
  Throws    : 
  Comments  : 
 
@@ -961,9 +970,9 @@ sub get_feature_list_group_obj
 =head2 get_feature_list_connector_obj
 
  Usage     : $genome_obj->get_feature_list_connector_obj();
- Purpose   : 
- Returns   : 
- Argument  : 
+ Purpose   : Creates a Feature_list_connector object 
+ Returns   : a Feature_list_connector object
+ Argument  : none
  Throws    : 
  Comments  : 
 
@@ -985,9 +994,9 @@ sub get_feature_list_connector_obj
 =head2 get_user_session_obj
 
  Usage     : $genome_obj->get_user_session_obj();
- Purpose   : 
- Returns   : 
- Argument  : 
+ Purpose   : Creates a User_session object 
+ Returns   : a User_session object
+ Argument  : none
  Throws    : 
  Comments  : 
 
@@ -997,17 +1006,54 @@ See Also   : CoGe::Genome::DB::User_session
 
 ################################################## subroutine header end ##
 
+
+
 sub get_user_session_obj
   {
     my $self = shift;
     return CoGe::Genome::DB::User_session->new();
   }
 
+################################################ subroutine header begin ##
+
+=head2 get_image_obj
+
+ Usage     : $genome_obj->get_image_obj();
+ Purpose   : Creates an Image object 
+ Returns   : an Image object
+ Argument  : none
+ Throws	   :
+ Comments  :
+
+See Also   : CoGe::Genome::DB::Image
+
+=cut
+
+################################################## subroutine header end ##
+
 sub get_image_obj
   {
     my $self = shift;
     return CoGe::Genome::DB::Image->new();
   }
+
+
+################################################ subroutine header begin ##
+
+=head2 get_feature_list_group_image_connector_obj
+
+ Usage     : $genome_obj->get_feature_list_group_image_connector_obj();
+ Purpose   : Creates a Feature_list_group_image_connector object
+ Returns   : a Feature_list_group_image_connector object
+ Argument  : none
+ Throws	   :
+ Comments  :
+
+See Also   : CoGe::Genome::DB::Feature_list_group_image_connector
+
+=cut
+
+################################################## subroutine header end ##
 
 sub get_feature_list_group_image_connector_obj
   {
