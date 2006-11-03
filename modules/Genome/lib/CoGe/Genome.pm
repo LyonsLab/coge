@@ -1463,7 +1463,16 @@ See Also   : CoGe::Genome::DB::Data_information::get_associated_datasets
 sub get_genomic_sequence_for_feature
   {
     my $self = shift;
-    my $feat = shift;
+    my $feat;
+    my ($upstream, $downstream) = (0,0);
+    if (scalar @_ == 1) {$feat = shift;} #for legecy code
+    else 
+      {
+	my %opts = @_;
+	$feat = $opts{feature} || $opts{feat};
+	$upstream = $opts{upstream} || $opts{up} || $opts{us} || 0;
+	$downstream = $opts{downstream} || $opts{down} || $opts{ds} || 0;
+      }
     my $seq;
     if ($feat->has_genomic_sequence())
       {
@@ -1477,11 +1486,56 @@ sub get_genomic_sequence_for_feature
 								   info_id=> $feat->data_info->id,
 								   strand => $loc->strand,
 								  );
-	    #	if ($loc->strand =~ /-/) {
-	    #	  $tmp_seq = reverse $tmp_seq;
-	    #	}
-	    
 	    $seq .= $tmp_seq if $tmp_seq;
+	  }
+
+	if ($upstream)
+	  {
+	    my ($start, $stop);
+	    if ($feat->strand =~ /-/)
+	      {
+		$stop = $feat->stop+$upstream;
+		$start = $feat->stop+1;
+	      }
+	    else
+	      {
+		$start = $feat->start-$upstream;
+		$stop = $feat->start-1;
+	      }
+	    my $tmp_seq = $self->get_genomic_seq_obj->get_sequence(
+								   start  => $start,
+								   stop   => $stop,
+								   chr    => $feat->chr,
+								   org_id => $feat->data_info->organism->id,
+								   info_id=> $feat->data_info->id,
+								   strand => $feat->strand,
+								  );
+	    $seq = $tmp_seq . $seq if $tmp_seq;
+
+	  }
+	if ($downstream)
+	  {
+	    my ($start, $stop);
+	    if ($feat->strand =~ /-/)
+	      {
+		$start = $feat->start-$downstream;
+		$stop = $feat->start-1;
+	      }
+	    else
+	      {
+		$stop = $feat->stop+$downstream;
+		$start = $feat->stop+1;
+	      }
+	    my $tmp_seq = $self->get_genomic_seq_obj->get_sequence(
+								   start  => $start,
+								   stop   => $stop,
+								   chr    => $feat->chr,
+								   org_id => $feat->data_info->organism->id,
+								   info_id=> $feat->data_info->id,
+								   strand => $feat->strand,
+								  );
+	    $seq .= $tmp_seq if $tmp_seq;
+
 	  }
       }
     else
@@ -1506,6 +1560,56 @@ sub get_genomic_sequence_for_feature
 										  );
 			    $seq .= $tmp_seq if $tmp_seq;
 			  }
+			if ($upstream)
+			  {
+			    my ($start, $stop);
+			    if ($feat->strand =~ /-/)
+			      {
+				$stop = $feat->stop+$upstream;
+				$start = $feat->stop+1;
+			      }
+			    else
+			      {
+				$start = $feat->start-$upstream;
+				$stop = $feat->start-1;
+			      }
+
+			    my $tmp_seq = $self->get_genomic_seq_obj->get_sequence(
+										   start  => $start,
+										   stop   => $stop,
+										   chr    => $feat->chr,
+										   org_id => $feat->data_info->organism->id,
+										   info_id=> $ds->id,
+										   strand => $feat->strand,
+										  );
+			    $seq = $tmp_seq . $seq if $tmp_seq;
+			    
+			  }
+			if ($downstream)
+			  {
+			    my ($start, $stop);
+			    if ($feat->strand =~ /-/)
+			      {
+				$start = $feat->start-$downstream;
+				$stop = $feat->start-1;
+			      }
+			    else
+			      {
+				$stop = $feat->stop+$downstream;
+				$start = $feat->stop+1;
+			      }
+			    my $tmp_seq = $self->get_genomic_seq_obj->get_sequence(
+										   start  => $start,
+										   stop   => $stop,
+										   chr    => $feat->chr,
+										   org_id => $feat->data_info->organism->id,
+										   info_id=> $ds->id,
+										   strand => $feat->strand,
+										  );
+			    $seq .= $tmp_seq if $tmp_seq;
+			    
+			  }
+  
 			last outer;
 		      }
 		  }
