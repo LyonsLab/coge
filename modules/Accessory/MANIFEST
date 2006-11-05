@@ -7,4 +7,5 @@ Makefile.PL
 lib/CoGe/Accessory/Tile/Cache.pm
 lib/CoGe/Accessory/LogUser.pm
 lib/CoGe/Accessory/GBlite.pm
+lib/CoGe/Accessory/Web.pm
 t/001_load.t
