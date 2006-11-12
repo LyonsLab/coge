@@ -136,7 +136,7 @@ sub new
  Returns   : an annotation object
  Argument  : none
  Throws    : 
- Comments  : creates an annotation object which has an annotation_id, an annotation
+ Comments  : creates an annotation object which has an annotation_id, an annotation,
  	     a feature_id, and an annotation_type_id
 
 See Also   : CoGe::Genome::DB::Annotation
@@ -318,16 +318,43 @@ sub get_source_obj
 
 ################################################ subroutine header begin ##
 
-=head2 get_data_information_obj
+=head2 get_dataset_obj
 
- Usage     : $genome_obj->get_data_information_obj();
- Purpose   : gets a Data_information object 
- Returns   : a Data_information object
+ Usage     : $genome_obj->get_dataset_obj();
+ Purpose   : gets a Dataset object 
+ Returns   : a Dataset object
  Argument  : none 
  Throws    : 
  Comments  : 
 
-See Also   : CoGe::Genome::DB::Data_information
+See Also   : CoGe::Genome::DB::Dataset
+
+=cut
+
+################################################## subroutine header end ##
+
+sub get_dataset_obj
+  {
+    my $self = shift;
+    return CoGe::Genome::DB::Dataset->new();
+  }
+
+
+################################################ subroutine header begin ##
+
+=head2 get_information_obj
+
+ Usage     : $genome_obj->get_information_obj();
+ Purpose   : alias for get_dataset_obj
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : Data_information package changed to Dataset. This subroutine
+ 	     was modified to point to Dataset package, and warn that 
+	     "data_information" is obselete terminology, and any call to it
+	     should be modified to call get_dataset_obj.
+
+See Also   : get_data_information_obj
 
 =cut
 
@@ -336,30 +363,8 @@ See Also   : CoGe::Genome::DB::Data_information
 sub get_data_information_obj
   {
     my $self = shift;
-    return CoGe::Genome::DB::Data_information->new();
-  }
-
-################################################ subroutine header begin ##
-
-=head2 get_information_obj
-
- Usage     : $genome_obj->get_information_obj();
- Purpose   : alias for get_data_information_obj
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : This is an alias 
-
-See Also   : get_data_information_obj
-
-=cut
-
-################################################## subroutine header end ##
-
-sub get_information_obj
-  {
-    my $self = shift;
-    return $self->get_data_information_obj();
+    print STDERR "This method is obselete. Please use get_dataset_obj";
+    return $self->get_dataset_obj();
   }
 
 ################################################ subroutine header begin ##
@@ -1491,7 +1496,8 @@ sub get_genomic_seq_by_feat_name_and_type_name
 =head2 get_genomic_sequence_for_feature
 
  Usage     : my $seq = $genome_obj->get_genomic_sequence_for_feature($feature_obj)
- Purpose   : Gets the genomic sequence of a feature using a feature object
+ Purpose   : Gets the genomic sequence of a feature using a feature object, and of a user
+           : defined sequence length before and after the feature
  Returns   : string (gemomic DNA of feature)
  Argument  : CoGe::Genome::DB::Feature object
  Throws    : none
