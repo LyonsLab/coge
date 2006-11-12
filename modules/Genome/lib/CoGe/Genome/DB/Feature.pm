@@ -13,8 +13,8 @@ BEGIN {
     @EXPORT_OK   = qw ();
     %EXPORT_TAGS = ();
     __PACKAGE__->table('feature');
-    __PACKAGE__->columns(All=>qw{feature_id feature_type_id data_information_id});
-    __PACKAGE__->has_a('data_information_id'=>'CoGe::Genome::DB::Data_information');
+    __PACKAGE__->columns(All=>qw{feature_id feature_type_id dataset_id});
+    __PACKAGE__->has_a('dataset_id'=>'CoGe::Genome::DB::Dataset');
     __PACKAGE__->has_a('feature_type_id'=>'CoGe::Genome::DB::Feature_type');
     __PACKAGE__->has_many('feature_names'=>'CoGe::Genome::DB::Feature_name');
     __PACKAGE__->has_many('locations'=>'CoGe::Genome::DB::Location');
@@ -23,7 +23,7 @@ BEGIN {
     __PACKAGE__->set_sql('select_features_by_name_and_version' => qq{
 SELECT f.feature_id
   FROM feature f
-  JOIN data_information di USING (data_information_id)
+  JOIN dataset ds USING (dataset_id)
   JOIN feature_name fn USING (feature_id)
  WHERE fn.name = ?
    AND di.version = ?});
@@ -34,7 +34,7 @@ SELECT DISTINCT f.feature_id
  WHERE ? <= l.stop
    AND ? >= l.start
    AND chromosome = ?
-   AND f.data_information_id = ?;
+   AND f.dataset_id = ?;
 });
     __PACKAGE__->set_sql ('count_features_in_range' => qq{
 SELECT COUNT(DISTINCT f.feature_id)
@@ -43,7 +43,7 @@ SELECT COUNT(DISTINCT f.feature_id)
  WHERE ? <= l.stop
    AND ? >= l.start
    AND chromosome = ?
-   AND f.data_information_id = ?;
+   AND f.dataset_id = ?;
 });
   __PACKAGE__->set_sql ('select_all_feature_ids' => qq{
 SELECT feature_id 
@@ -82,9 +82,9 @@ CoGe::Genome::DB::Feature - CoGe::Genome::DB::Feature
   foreach my $feat ($db->get_feature_by_name("kinase"))
    {
      print "Feature Type: "  , $feat->type->name,"\n";
-     print "Dataset: "       , $feat->data_info->name,"\n";
-     print "Dataset version:", $feat->data_info->version,"\n";
-     print "Organism:"       , $feat->data_info->organism->name,"\n";
+     print "Dataset: "       , $feat->dataset->name,"\n";
+     print "Dataset version:", $feat->dataset->version,"\n";
+     print "Organism:"       , $feat->dataset->organism->name,"\n";
      print "Location:\n";
      foreach my $loc ($feat->locations)
       {
@@ -120,7 +120,7 @@ CoGe::Genome::DB::Feature - CoGe::Genome::DB::Feature
  The columns for this table are:
   feature_id
   feature_type_id
-  data_information_id
+  dataset_id
 
  Related objects that can be accessed through this object are:
   CoGe::Genome::DB::Feature_type
@@ -128,7 +128,7 @@ CoGe::Genome::DB::Feature - CoGe::Genome::DB::Feature
   CoGe::Genome::DB::Sequence
   CoGe::Genome::DB::Location
   CoGe::Genome::DB::Annotation
-  CoGe::Genome::DB::Data_information
+  CoGe::Genome::DB::Dataset
 
 
 =head1 USAGE
@@ -180,11 +180,13 @@ new              =>  creates a new object (inherited from Class::Accessor)
 feature_id       =>  database entry id
 id               =>  alias for location_id
 
-data_information_id => returns a CoGe::Genome::DB::Data_information object
+data_information_id => obselete - now returns a CoGe::Genome::DB::Dataset object
 data_information
-information
 data_info
 info
+
+
+dataset_id => returns a CoGe::Genome::DB::Dataset object
 dataset
 
 feature_type_id     => returns a CoGe::Genome::DB::Feature_type object
@@ -235,41 +237,36 @@ sub type
     return $self->feature_type_id();
   }
 
-sub data_information
-  {
-    my $self = shift;
-    return $self->data_information_id();
-  }
-
-sub information
-  {
-    my $self = shift;
-    return $self->data_information_id();
-  }
-
-sub data_info
-  {
-    my $self = shift;
-    return $self->data_information_id();
-  }
-
-sub info
-  {
-    my $self = shift;
-    return $self->data_information_id();
-  }
-
 sub dataset
   {
     my $self = shift;
+    return $self->dataset_id();
+  }
+
+sub data_information_id
+  {
+    my $self = shift;
+    print STDERR "data_information_id is obselete. Please use dataset_id";
+    return $self->dataset_id();
+  }
+
+sub data_info 
+  {
+    my $self = shift;
     return $self->data_information_id();
   }
 
-##legacy table, now stored in data_information
+sub info 
+  {
+    my $self = shift;
+    return $self->data_information_id();
+  }
+
+##legacy table, now stored in dataset
 sub organism
   {
     my $self = shift;
-    return $self->info->organism_id();
+    return $self->set->organism_id();
   }
 
 sub org
@@ -385,7 +382,8 @@ sub annotation_pretty_print
     my $stop = $self->end_location;
     my $chr = $self->chr;
     my $strand = $self->strand;
-    my $info_id = $self->data_info->id;
+    #look into changing this to set_id
+    my $info_id = $self->dataset->id;
     my $location = "Chr ".$chr." ";
     $location .= join (", ", map {$_->start."-".$_->stop} $self->locs);
     $location .="(".$strand.")";
@@ -459,7 +457,7 @@ sub annotation_pretty_print_html
     my $stop = $self->end_location;
     my $chr = $self->chr;
     my $strand = $self->strand;
-    my $info_id = $self->data_info->id;
+    my $info_id = $self->dataset->id;
     my $anno_type = new CoGe::Genome::Accessory::Annotation(Type=>"<font class=\"title4\">"."Name(s):"."</font>");
     $anno_type->Type_delimit("\n");
     $anno_type->Val_delimit("\n, ");
@@ -789,15 +787,15 @@ sub strand
  Usage     : $object->get_features_in_region(start   => $start, 
                                              stop    => $stop, 
                                              chr     => $chr,
-                                             info_id => $data_info->id());
+                                             set_id => $dataset->id());
 
  Purpose   : gets all the features in a specified genomic region
  Returns   : an array or an array_ref of feature objects (wantarray)
  Argument  : start   => genomic start position
              stop    => genomic stop position
              chr     => chromosome
-             info_id => data_information id in database (obtained from a
-                        CoGe::Data_information object)
+             set_id => dataset id in database (obtained from a
+                        CoGe::Dataset object)
                         of the dna seq will be returned
              OPTIONAL
              count   => flag to return only the number of features in a region
@@ -819,10 +817,10 @@ sub get_features_in_region
     my $stop = $opts{'stop'} || $opts{STOP} || $opts{end} || $opts{END};
     $stop = $start unless defined $stop;
     my $chr = $opts{chr} || $opts{CHR} || $opts{chromosome} || $opts{CHROMOSOME};
-    my $info_id = $opts{info_id} || $opts{INFO_ID} || $opts{data_info_id} || $opts{DATA_INFO_ID};
+    my $set_id = $opts{info_id} || $opts{INFO_ID} || $opts{data_info_id} || $opts{DATA_INFO_ID} || $opts{dataset_id};
     my $count_flag = $opts{count} || $opts{COUNT};
     my $sth = $count_flag ? $self->sql_count_features_in_range : $self->sql_select_features_in_range();
-    $sth->execute($start, $stop, $chr, $info_id);
+    $sth->execute($start, $stop, $chr, $set_id);
     if ($count_flag)
       {
 	my $count = $sth->fetch->[0];
@@ -845,15 +843,15 @@ sub get_features_in_region
  Usage     : $object->count_features_in_region(start   => $start, 
                                              stop    => $stop, 
                                              chr     => $chr,
-                                             info_id => $data_info->id());
+                                             set_id => $dataset->id());
 
  Purpose   : counts the features in a specified genomic region
  Returns   : an integer
  Argument  : start   => genomic start position
              stop    => genomic stop position
              chr     => chromosome
-             info_id => data_information id in database (obtained from a
-                        CoGe::Data_information object)
+             set_id => dataset id in database (obtained from a
+                        CoGe::Dataset object)
                         of the dna seq will be returned
  Throws    : none
  Comments  : 
@@ -873,27 +871,27 @@ sub count_features_in_region
 
 ################################################ subroutine header begin ##
 
-=head2 get_features_by_name_and_data_information_version
+=head2 get_features_by_name_and_dataset_version
 
- Usage     : $object->get_features_by_name_and_data_information_version(name   => $name, 
+ Usage     : $object->get_features_by_name_and_dataset_version(name   => $name, 
                                                                         version=> $ver);
- Purpose   : gets all the features based on a name and data information version
+ Purpose   : gets all the features based on a name and dataset version
  Returns   : an array or an array_ref of feature objects (wantarray)
  Argument  : name   => genomic start position
-             version=> data_information version (obtained from a
-                        CoGe::Data_information object)
+             version=> dataset version (obtained from a
+                        CoGe::Dataset object)
  Throws    : undef if $name or $ver are undefined
  Comments  : the name is obtained from a join to the feature_name table
-             the version is obtained from a join to the data_information table
+             the version is obtained from a join to the dataset table
 
-See Also   : CoGe::Genome::DB::Data_information
+See Also   : CoGe::Genome::DB::Dataset
 
 =cut
 
 ################################################## subroutine header end ##
 
 
-sub get_features_by_name_and_data_information_version
+sub get_features_by_name_and_dataset_version
   {
     my $self = shift;
     my %opts = @_;
@@ -914,11 +912,35 @@ sub get_features_by_name_and_data_information_version
 
 ################################################ subroutine header begin ##
 
+=head2 get_features_by_name_and_data_information_version
+
+ Usage     : $object->get_features_by_name_and_data_information_version(name   => $name, 
+                                                                        version=> $ver);
+ Purpose   : See get_features_by_name_and_dataset_version
+ Returns   :
+ Argument  :
+ Throws    :
+ Comments  : Obselete method. Please use get_features_by_name_and_dataset_version
+
+=cut
+
+################################################## subroutine header end ##
+
+
+sub get_features_by_name_and_data_information_version
+  {
+    my $self = shift;
+    print STDERR "get_features_by_name_and_data_information_version is obselete. Please use get_features_by_name_and_dataset_version";
+    return ($self->get_features_by_name_and_dataset_version(@_));
+  }
+
+################################################ subroutine header begin ##
+
 =head2 get_features_by_name_and_data_info_version
 
  Usage     : $object->get_features_by_name_and_data_info_version(name   => $name, 
                                                                  version=> $ver);
- Purpose   : alias for get_features_by_name_and_data_information_version
+ Purpose   : alias for get_features_by_name_and_dataset_version
 
 =cut
 
@@ -928,7 +950,8 @@ sub get_features_by_name_and_data_information_version
 sub get_features_by_name_and_data_info_version
   {
     my $self = shift;
-    return ($self->get_features_by_name_and_data_information_version(@_));
+    print STDERR "get_features_by_name_and_data_info_version is obselete. Please use get_features_by_name_and_dataset_version";
+    return ($self->get_features_by_name_and_dataset_version(@_));
   }
 
 ################################################ subroutine header begin ##
@@ -937,7 +960,7 @@ sub get_features_by_name_and_data_info_version
 
  Usage     : $object->get_features_by_name_and_version(name   => $name, 
                                                        version=> $ver);
- Purpose   : alias for get_features_by_name_and_data_information_version
+ Purpose   : alias for get_features_by_name_and_dataset_version
 
 =cut
 
@@ -947,7 +970,7 @@ sub get_features_by_name_and_data_info_version
 sub get_features_by_name_and_version
   {
     my $self = shift;
-    return ($self->get_features_by_name_and_data_information_version(@_));
+    return ($self->get_features_by_name_and_dataset_version(@_));
   }
 
 ################################################ subroutine header begin ##
