@@ -12,17 +12,17 @@ BEGIN {
     @EXPORT_OK   = qw ();
     %EXPORT_TAGS = ();
     __PACKAGE__->table('genomic_sequence');
-    __PACKAGE__->columns(All=>qw{genomic_sequence_id start stop chromosome sequence_data data_information_id});
-    __PACKAGE__->has_a(data_information_id=>'CoGe::Genome::DB::Data_information');
-    __PACKAGE__->set_sql(delete_data_information=>qq{
+    __PACKAGE__->columns(All=>qw{genomic_sequence_id start stop chromosome sequence_data dataset_id});
+    __PACKAGE__->has_a(dataset_id=>'CoGe::Genome::DB::Dataset');
+    __PACKAGE__->set_sql(delete_dataset=>qq{
 DELETE genomic_sequence 
   FROM genomic_sequence
- WHERE data_information_id = ?
+ WHERE dataset_id = ?
 });
     __PACKAGE__->set_sql(get_sequence=>qq{
 SELECT *
   FROM genomic_sequence
- WHERE data_information_id = ?
+ WHERE dataset_id = ?
    AND chromosome = ?
    AND (
        (start <= ? && stop >= ?)
@@ -34,14 +34,14 @@ SELECT *
     __PACKAGE__->set_sql(last_position=>qq{
 SELECT stop
   FROM genomic_sequence
- WHERE data_information_id = ?
+ WHERE dataset_id = ?
  ORDER BY stop DESC
  LIMIT 1
 });
     __PACKAGE__->set_sql(last_chromosome_position=>qq{
 SELECT stop
   FROM genomic_sequence
- WHERE data_information_id = ?
+ WHERE dataset_id = ?
    AND chromosome = ?
  ORDER BY stop DESC
  LIMIT 1
@@ -51,8 +51,8 @@ SELECT stop
   __PACKAGE__->set_sql(get_chromosomes=> qq{
 SELECT DISTINCT chromosome
   FROM genomic_sequence
-  WHERE data_information_id = ?
-  ORDER BY  data_information_id asc
+  WHERE dataset_id = ?
+  ORDER BY  dataset_id asc
 });
 
 }
@@ -146,28 +146,45 @@ sub new
     return ($self);
 }
 
+sub dataset
+  {
+    my $self = shift;
+    return $self->dataset_id();
+  }
+
 sub data_information
   {
     my $self = shift;
-    return $self->data_information_id();
+    print STDERR "data_information subroutine is obselete. Please use dataset";
+    return $self->dataset_id();
   }
 
 sub information
   {
     my $self = shift;
-    return $self->data_information_id();
+    print STDERR "information subroutine is obselete. Please use dataset";
+    return $self->dataset_id();
   }
 
 sub data_info
   {
     my $self = shift;
-    return $self->data_information_id();
+    print STDERR "data_info subroutine is obselete. Please use dataset";
+    return $self->dataset_id();
   }
 
 sub info
   {
     my $self = shift;
-    return $self->data_information_id();
+    print STDERR "info subroutine is obselete. Please use dataset";
+    return $self->dataset_id();
+  }
+
+sub data_information_id
+  {
+    my $self = shift;
+    print STDERR "data_information_id is obselete. Please use dataset_id";
+    return $self->dataset_id();
   }
 
 sub begin
@@ -206,11 +223,11 @@ sub id
     return $self->genomic_sequence_id();
   }
 
-sub delete_data_information
+sub delete_dataset
   {
     my $self = shift;
     my $id = shift;
-    my $sth = $self->sql_delete_data_information;
+    my $sth = $self->sql_delete_dataset;
 #    print STDERR $id,"\n";
     return $sth->execute($id);
 
@@ -224,20 +241,20 @@ sub delete_data_information
  Usage     : $object->get_sequence(start   => $start, 
                                    stop    => $stop, 
                                    chr     => $chr,
-                                   info_id => $data_info->id());
+                                   info_id => $dataset->id());
 
  Purpose   : gets the genomic sequence for the specified conditions
  Returns   : a string (containing the genomic sequence)
  Argument  : start   => genomic start position
              stop    => genomic stop position
              chr     => chromosome
-             info_id => data_information id in database (obtained from a
-                        CoGe::Data_information object)
+             info_id => dataset id in database (obtained from a
+                        CoGe::Dataset object)
              strand  => 1 or -1.  Default 1.
                         if negative strand is requested, the complement
                         of the dna seq will be returned
  Throws    : undef if no sequence is obtained
- Comments  : You must  provide an info_id
+ Comments  : You must provide an info_id
 
 See Also   : 
 
@@ -288,9 +305,9 @@ sub get_last_position
   {
     my $self = shift;
     my %opts = @_;
-    my $di = $opts{di} || $self->data_info->id;
+    my $ds = $opts{ds} || $self->dataset->id;
     my $chr = $opts{chr};
-    my $id = ref ($di) =~ /information/i ? $di->id : $di;
+    my $id = ref ($ds) =~ /dataset/i ? $ds->id : $ds;
     my $sth = $chr ? $self->sql_last_chromosome_position() : $self->sql_last_position();
     $chr ? $sth->execute($id, $chr) : $sth->execute($id);
     my $q = $sth->fetch();
@@ -299,21 +316,21 @@ sub get_last_position
     return $stop;
   }
 
-sub get_data_information_chromosome_sequence
+sub get_dataset_chromosome_sequence
   {
     my $self = shift;
-    my $di = shift;
+    my $ds = shift;
     my $chr = shift;
-    my $id = ref ($di) =~ /information/i ? $di->id : $di;
+    my $id = ref ($ds) =~ /dataset/i ? $ds->id : $ds;
     my $stop = $self->get_last_position($id);
     return $self->get_sequence(start=>1, stop=>$stop, chr=>$chr, info_id=>$id);
   }
 
-sub get_chromosome_for_data_information
+sub get_chromosome_for_dataset
   {
     my $self = shift;
-    my $di = shift;
-    my $id = ref ($di) =~ /information/i ? $di->id : $di;
+    my $ds = shift;
+    my $id = ref ($ds) =~ /dataset/i ? $ds->id : $ds;
     my $sth = $self->sql_get_chromosomes();
     $sth->execute($id);
     my @chrs;
