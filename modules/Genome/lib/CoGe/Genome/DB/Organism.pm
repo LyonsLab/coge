@@ -13,7 +13,7 @@ BEGIN {
     %EXPORT_TAGS = ();
     __PACKAGE__->table('organism', 'organism_id');
     __PACKAGE__->columns(All=>qw{organism_id name description});
-    __PACKAGE__->has_many(data_information=>'CoGe::Genome::DB::Data_information');
+    __PACKAGE__->has_many(dataset=>'CoGe::Genome::DB::Dataset');
 
 }
 
@@ -98,40 +98,38 @@ See Also   :
 
 ################################################## subroutine header end ##
 
+sub dataset
+  {
+    my $self = shift;
+    return $self->dataset();
+  }
+
 sub data_info
   {
     my $self = shift;
-    return $self->data_information();
+    print STDERR "data_info is obselete. Please use dataset";
+    return $self->dataset();
   }
 
 sub data_infos
   {
     my $self = shift;
-    return $self->data_information();
+    print STDERR "data_infos is obselete. Please use dataset";
+    return $self->dataset();
   }
 
 sub info
   {
     my $self = shift;
-    return $self->data_information();
+    print STDERR "info method  is obselete. Please use dataset";
+    return $self->dataset();
   }
 
 sub infos
   {
     my $self = shift;
-    return $self->data_information();
-  }
-
-sub datasets
-  {
-    my $self = shift;
-    return $self->data_information();
-  }
-
-sub dataset
-  {
-    my $self = shift;
-    return $self->data_information();
+    print STDERR "infos method is obselete. Please use dataset";
+    return $self->dataset();
   }
 
 
@@ -165,7 +163,7 @@ sub id
  Comments  : 
            : 
 
-See Also   : CoGe::Genome::DB::Data_information->get_features_for_organism
+See Also   : CoGe::Genome::DB::Dataset->get_features_for_organism
 
 =cut
 
@@ -177,7 +175,7 @@ sub get_features
     my $self = shift;
     my %opts = @_;
     my $db = new CoGe::Genome;
-    return $db->get_data_info_obj->get_features_for_organism(org=>$self, %opts);
+    return $db->get_dataset_obj->get_features_for_organism(org=>$self, %opts);
   }
 
 sub features
