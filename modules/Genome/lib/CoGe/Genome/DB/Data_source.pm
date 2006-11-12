@@ -13,7 +13,7 @@ BEGIN {
     %EXPORT_TAGS = ();
     __PACKAGE__->table('data_source');
     __PACKAGE__->columns(All=>qw{data_source_id name description link});
-    __PACKAGE__->has_many(data_information=>'CoGe::Genome::DB::Data_information');
+    __PACKAGE__->has_many(dataset=>'CoGe::Genome::DB::Dataset');
 }
 
 
@@ -98,10 +98,17 @@ See Also   :
 ################################################## subroutine header end ##
 
 
+sub dataset
+  {
+    my $self = shift;
+    return $self->dataset();
+  }
+
 sub data_info
   {
     my $self = shift;
-    return $self->data_information();
+    print STDERR "data_info is obselete. Please use dataset";
+    return $self->dataset();
   }
 
 sub desc
