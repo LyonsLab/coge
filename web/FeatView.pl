@@ -98,6 +98,7 @@ sub get_types
     my $blank = qq{<input type="hidden" id="Type_name">};
     my %seen;
     my @opts = sort map {"<OPTION>$_</OPTION>"} grep {! $seen{$_}++} map {$_->type->name} $DB->get_features_by_name_and_dataset_id(name=>$accn, id=>$dsid);
+
     $html .= "<font class=small>Type count: ".scalar @opts."</font>\n<BR>\n";
     $html .= qq{<SELECT id="Type_name" SIZE="5" MULTIPLE onChange="get_anno(['accn_select','Type_name', 'dsid'],['anno'])" >\n};
     $html .= join ("\n", @opts);
