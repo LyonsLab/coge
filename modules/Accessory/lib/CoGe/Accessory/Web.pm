@@ -53,7 +53,7 @@ sub dataset_search_for_feat_name
     my %sources;
     foreach my $feat ($coge->get_feats_by_name($accn))
       {
-	my $val = $feat->data_info;
+	my $val = $feat->dataset;
 	my $name = $val->name;
 	my $ver = $val->version;
 	my $desc = $val->description;
@@ -62,7 +62,7 @@ sub dataset_search_for_feat_name
 	my $org = $val->org->name;
 	my $title = "$org: $ds_name ($sname, v$ver)";
 #	$sources{$feat->data_info->id} = $feat->data_info;
-	$sources{$feat->data_info->id} = $title;
+	$sources{$feat->dataset->id} = $title;
       }
     if (keys %sources)
       {
@@ -107,7 +107,8 @@ sub feat_search_for_feat_name
 	  {
 	    my $loc = "Chr:".$feat->chr." ".$feat->genbank_location_string;
 	    $loc =~ s/(complement)|(join)//g;
-	    $html .= qq {  <option value="$feat->id">$loc \n};
+	    my $fid = $feat->id;
+	    $html .= qq {  <option value="$fid">$loc \n};
 	  }
 	$html .= qq{</SELECT>\n};
 	my $count = scalar @feats;
