@@ -21,7 +21,7 @@ use Benchmark;
 use vars qw($BASE_DIR);
 $BASE_DIR = "/opt/apache/CoGe/_cache_";
 
-my (@org_ids, $version,$iw, $min_zoomi, $max_chr_length, $min_chr_length, @skip_oids, $max_zoomi, $help, $overwrite, $unprocess_ds, $zoom_step);
+my (@org_ids, $version,$iw, $min_zoomi, $max_chr_length, $min_chr_length, @skip_oids, $max_zoomi, $help, $overwrite, $unprocess_ds, $zoom_step, $unprocess_zoom);
 
 GetOptions("oid=s"=>\@org_ids,
 	   "v=s" => \$version,
@@ -32,6 +32,7 @@ GetOptions("oid=s"=>\@org_ids,
 	   "min_chr_length=s"=>\$min_chr_length,
 	   "skip_oid=s"=>\@skip_oids,
 	   "unprocessed_orgs|uo|unprocessed_datasets|ud"=>\$unprocess_ds,
+	   "unprocessed_zoom|uz"=>\$unprocess_zoom,
 	   "h|help"=>\$help,
 	   "overwrite|ow=s"=>\$overwrite,
 	   "zoom_step|zs=s"=>\$zoom_step,
@@ -73,7 +74,7 @@ foreach my $org_id (@org_ids)
 	my $diname = $di->name;
 	$diname .= ": ".$di->desc if $di->desc;
 	print "Processing dataset $diname. . .\n";
-	if (-d "$BASE_DIR/di__$di" && $unprocess_ds)
+	if ( $unprocess_ds && -d "$BASE_DIR/di__".$di->id )
 	  {
 	    print "Skipping dataset because image directory exists and we are only working on unprocessed datasets.\n";
 	    next;
@@ -90,7 +91,6 @@ foreach my $org_id (@org_ids)
 	  {
 	    my $min_zoom = $max_zoom-$zoom_step;
 	    next if $max_zoom < $min_zoomi;
-	      
 	    my $max_chars = 10 * 2**$max_zoom;
 	    $max_chars = $chr_len if $max_chars > $chr_len;
 	    #march through windows on the chromosome of size max_chars
@@ -121,8 +121,15 @@ foreach my $org_id (@org_ids)
 		  }
 		#go through all the zoom levels for this region
 		foreach (my $z=$max_zoom; $z >= $min_zoom; $z--)# (0..$max_zoom..0)
-		  #	    foreach (my $z=0; $z >= 0; $z--)# (0..$max_zoom..0)
 		  {
+		  print "$BASE_DIR/di__".$di->id."/iw__$iw/z__".$z."\n";
+
+		    if ($unprocess_zoom && -d "$BASE_DIR/di__".$di->id."/chr__$chr/iw__$iw/z__".$z)
+		      {
+			print "Skipping zoom level $z because image directory exists and unprocessed_zoom flag is set to true.\n";
+			next;
+		      }
+
 		    my $chars = 10 * 2**$z;
 		    my $tot = ceil($max_chars/$chars);
 #		    $tot = 1 if $chr_len < $chars;
@@ -197,7 +204,7 @@ sub generate_image
     if (-r $cache_file && $overwrite == 0)
 			  {
 			    print " Skipping generating image: file exists and overwrite is turned off.\n";
-			    next;
+			    return;
 			  }
     my $t0 = new Benchmark;
     $c->set_region(start=>$x, stop=>$stop);
@@ -375,24 +382,13 @@ sub process_features
     my $print_names = $opts{print_names};
     my $feat_count = $db->get_feature_obj->count_features_in_region(start=>$start, end=>$stop, info_id=>$di, chr=>$chr);
     my @cds_feats;  #place to hold CDS features with protein sequences for later generation of protein sequence images;
-#    if ($MAX_FEATURES && $feat_count > $MAX_FEATURES)
-#      {
-#	warn "exceeded maximum number of features $MAX_FEATURES. ($feat_count requested)\nskipping.\n";
-#	return;
-#      }
     my $count = 0;
     foreach my $feat ($db->get_feature_obj->get_features_in_region(start=>$start, end=>$stop, info_id=>$di, chr=>$chr))
       {
 	$count++;
-#	print "processing feature $count / $feat_count.  feature type ",$feat->type->name,"\n";
         my $f;
-#	print STDERR Dumper $feat;
-#	print STDERR "!",join ("\t", map {$_->name} $feat->names, map {$_->start."-".$_->stop} $feat->locs),"\n";
-	
         if ($feat->type->name =~ /Gene/i)
           {
-#	    next;
-#	    print STDERR $feat->names->next->name,": ", $feat->id,"\n";
 	    $f = CoGe::Graphics::Feature::Gene->new();
 	    $f->color([255,0,0,50]);
 	    foreach my $loc ($feat->locs)
@@ -410,7 +406,6 @@ sub process_features
         	$f->color([0,255,0, 50]);
         	$f->order(1);
 		$f->overlay(3);
-#		draw_prots(genomic_feat=>$feat, c=>$c);
 		push @cds_feats, $feat;
 		if ($accn)
 		  {
@@ -637,7 +632,9 @@ Options:
 
  overwrite | ow => overwrites existing image (default: 1);
 
- unprocess_orgs | uo | unprocessed_datasets | ud   =>  skip any dataset that already has associated images.
+ unprocessed_orgs | uo | unprocessed_datasets | ud   =>  skip any dataset that already has associated images.
+ 
+ unprocessed_zoom | uz    => skip generating images if there are already images for the requested zoom level.
 
  zoom_step | zs   => the number of zoom step to process at once.  This will cause the virual chromosome to 
                      be flushed periodically and free up memory.  This is needed to keep from running out of
