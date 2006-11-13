@@ -2,7 +2,7 @@ package CoGe::Genome::DB::Feature;
 use strict;
 use base 'CoGe::Genome::DB';
 use CoGe::Genome::Accessory::Annotation;
-
+use Carp;
 BEGIN {
     use Exporter ();
     use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
@@ -246,7 +246,7 @@ sub dataset
 sub data_information_id
   {
     my $self = shift;
-    print STDERR "data_information_id is obselete. Please use dataset_id";
+    carp "data_information_id is obselete. Please use dataset_id";
     return $self->dataset_id();
   }
 
@@ -266,7 +266,7 @@ sub info
 sub organism
   {
     my $self = shift;
-    return $self->set->organism_id();
+    return $self->dataset->organism_id();
   }
 
 sub org
@@ -787,14 +787,14 @@ sub strand
  Usage     : $object->get_features_in_region(start   => $start, 
                                              stop    => $stop, 
                                              chr     => $chr,
-                                             set_id => $dataset->id());
+                                             dataset_id => $dataset->id());
 
  Purpose   : gets all the features in a specified genomic region
  Returns   : an array or an array_ref of feature objects (wantarray)
  Argument  : start   => genomic start position
              stop    => genomic stop position
              chr     => chromosome
-             set_id => dataset id in database (obtained from a
+             dataset_id => dataset id in database (obtained from a
                         CoGe::Dataset object)
                         of the dna seq will be returned
              OPTIONAL
@@ -817,10 +817,10 @@ sub get_features_in_region
     my $stop = $opts{'stop'} || $opts{STOP} || $opts{end} || $opts{END};
     $stop = $start unless defined $stop;
     my $chr = $opts{chr} || $opts{CHR} || $opts{chromosome} || $opts{CHROMOSOME};
-    my $set_id = $opts{info_id} || $opts{INFO_ID} || $opts{data_info_id} || $opts{DATA_INFO_ID} || $opts{dataset_id};
+    my $dataset_id = $opts{info_id} || $opts{INFO_ID} || $opts{data_info_id} || $opts{DATA_INFO_ID} || $opts{dataset_id};
     my $count_flag = $opts{count} || $opts{COUNT};
     my $sth = $count_flag ? $self->sql_count_features_in_range : $self->sql_select_features_in_range();
-    $sth->execute($start, $stop, $chr, $set_id);
+    $sth->execute($start, $stop, $chr, $dataset_id);
     if ($count_flag)
       {
 	my $count = $sth->fetch->[0];
