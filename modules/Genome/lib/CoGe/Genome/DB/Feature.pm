@@ -817,7 +817,7 @@ sub get_features_in_region
     my $stop = $opts{'stop'} || $opts{STOP} || $opts{end} || $opts{END};
     $stop = $start unless defined $stop;
     my $chr = $opts{chr} || $opts{CHR} || $opts{chromosome} || $opts{CHROMOSOME};
-    my $dataset_id = $opts{info_id} || $opts{INFO_ID} || $opts{data_info_id} || $opts{DATA_INFO_ID} || $opts{dataset_id};
+    my $dataset_id = $opts{dataset} || $opts{dataset_id} || $opts{info_id} || $opts{INFO_ID} || $opts{data_info_id} || $opts{DATA_INFO_ID} ;
     my $count_flag = $opts{count} || $opts{COUNT};
     my $sth = $count_flag ? $self->sql_count_features_in_range : $self->sql_select_features_in_range();
     $sth->execute($start, $stop, $chr, $dataset_id);
