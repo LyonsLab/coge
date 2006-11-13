@@ -2,6 +2,7 @@ package CoGe::Genome::DB;
 use strict;
 use base 'Class::DBI::mysql';
 use CoGe::Genome;
+use Carp;
 
 BEGIN {
     use Exporter ();
