@@ -98,12 +98,6 @@ See Also   :
 ################################################## subroutine header end ##
 
 
-sub dataset
-  {
-    my $self = shift;
-    return $self->dataset();
-  }
-
 sub data_info
   {
     my $self = shift;
