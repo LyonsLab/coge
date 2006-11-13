@@ -1,7 +1,7 @@
 package CoGe::Genome::DB::Genomic_sequence;
 use strict;
 use base 'CoGe::Genome::DB';
-
+use Carp;
 BEGIN {
     use Exporter ();
     use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
@@ -183,7 +183,7 @@ sub info
 sub data_information_id
   {
     my $self = shift;
-    print STDERR "data_information_id is obselete. Please use dataset_id";
+    carp "!!!data_information_id is obselete. Please use dataset_id";
     return $self->dataset_id();
   }
 
@@ -341,6 +341,13 @@ sub get_chromosome_for_dataset
     $sth->finish;
     return unless scalar @chrs;
     return wantarray ? @chrs : \@chrs;
+  }
+
+sub get_chromosome_for_data_information
+  {
+    my $self = shift;
+    carp "get_chromosome_for_data_information is obselete.  Use get_chromosome_for_dataset\n";
+    return $self->get_chromosome_for_dataset(@_);
   }
 
 1; #this line is important and will help the module return a true value
