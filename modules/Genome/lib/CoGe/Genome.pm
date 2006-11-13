@@ -392,29 +392,6 @@ sub get_data_info_obj
 
 ################################################ subroutine header begin ##
 
-=head2 get_dataset_obj
-
- Usage     : $genome_obj->get_dataset_obj();
- Purpose   : alias for get_data_information_obj
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : This is an alias 
-
-See Also   : get_data_information_obj
-
-=cut
-
-################################################## subroutine header end ##
-
-sub get_dataset_obj
-  {
-    my $self = shift;
-    return $self->get_data_information_obj();
-  }
-
-################################################ subroutine header begin ##
-
 =head2 get_feature_obj
 
  Usage     : $genome_obj->get_feature_obj();
@@ -1075,7 +1052,7 @@ sub get_feature_list_group_image_connector_obj
 
 ################################################ subroutine header begin ##
 
-=head2 get_features_by_name_and_info_id
+=head2 get_features_by_name_and_dataset_id
 
  Usage     : my @feats = $genome_obj->get_features_by_name_and_info_id(name=>$name, id=>$id)
  Purpose   : get feature objects based on a name and a data_information id
@@ -1094,7 +1071,7 @@ See Also   : $self->get_features_by_name
 
 ################################################## subroutine header end ##
 
-sub get_features_by_name_and_info_id
+sub get_features_by_name_and_dataset_id
   {
     my $self = shift;
     my %opts = @_;
@@ -1103,7 +1080,7 @@ sub get_features_by_name_and_info_id
     my @f;
     foreach my $feat ($self->get_features_by_name($name) )
       {	
-	push @f, $feat if $feat->data_information->id eq $id;
+	push @f, $feat if $feat->dataset->id eq $id;
       }
     return wantarray ? @f : \@f;
   }
@@ -1123,44 +1100,21 @@ sub get_features_by_name_and_info_id
 sub get_feature_by_name_and_info_id
   {
     my $self = shift;
-    return $self->get_features_by_name_and_info_id(@_);
+    return $self->get_features_by_name_and_dataset_id(@_);
   }
 
 
-################################################ subroutine header begin ##
-
-=head2 get_features_by_name_and_dataset_id
-
- Usage     : $genome_obj->get_features_by_name_and_dataset_id($name);
- Purpose   : alias for get_features_by_name_and_info_id
-
-=cut
-
-################################################## subroutine header end ##
-
-
-sub get_features_by_name_and_dataset_id
+sub get_feature_by_name_and_data_information_id
   {
     my $self = shift;
-    return $self->get_features_by_name_and_info_id(@_);
+    return $self->get_features_by_name_and_dataset_id(@_);
   }
 
-################################################ subroutine header begin ##
 
-=head2 get_feature_by_name_and_dataset_id
-
- Usage     : $genome_obj->get_feature_by_name_and_dataset_id($name);
- Purpose   : alias for get_features_by_name_and_info_id
-
-=cut
-
-################################################## subroutine header end ##
-
-
-sub get_feature_by_name_and_dataset_id
+sub get_feature_by_name_and_data_info_id
   {
     my $self = shift;
-    return $self->get_features_by_name_and_info_id(@_);
+    return $self->get_features_by_name_and_dataset_id(@_);
   }
 
 
@@ -1534,8 +1488,8 @@ sub get_genomic_sequence_for_feature
 								   start  => $loc->start,
 								   stop   => $loc->stop,
 								   chr    => $loc->chr,
-								   org_id => $feat->data_info->organism->id,
-								   info_id=> $feat->data_info->id,
+								   org_id => $feat->dataset->organism->id,
+								   info_id=> $feat->dataset->id,
 								   strand => $loc->strand,
 								  );
 	    $seq .= $tmp_seq if $tmp_seq;
