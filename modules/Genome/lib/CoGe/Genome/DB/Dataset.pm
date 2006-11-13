@@ -1,6 +1,7 @@
 package CoGe::Genome::DB::Dataset;
 use strict;
 use base 'CoGe::Genome::DB';
+use Carp;
 
 BEGIN {
     use Exporter ();
@@ -23,7 +24,7 @@ SELECT DISTINCT l.chromosome
  FROM location l
  JOIN feature f using (feature_id)
  JOIN dataset ds using (dataset_id)
-WHERE di.dataset_id = ?
+WHERE ds.dataset_id = ?
 
 });
     __PACKAGE__->set_sql(get_feature_type_count=>qq{
@@ -420,7 +421,7 @@ sub resolve_dataset
       {
 	$dsout = $self->retrieve($dsin);
       }
-    else #probably an dsanism name. . .
+    else #probably a name. . .
       {
 	($dsout) = $self->search_like (name=>"%".$dsin."%")
       }
@@ -468,19 +469,8 @@ sub get_associated_datasets
     foreach my $ds (@dso)
       {
 	$ids{$ds->id} = $ds;
-#	my (%chr) = map {$_, 1} $ds->get_chromosomes;
 	foreach my $tds ($self->search({organism_id=>$ds->org->id, version=>$ds->version}))
 	  {
-# 	    my $pass;
-# 	    foreach my $chr ($ds->get_chromosomes)
-# 	      {
-# 		if ($chr{$chr})
-# 		  {
-# 		    $pass = 1;
-# 		    last;
-# 		  }
-# 	      }
-# 	    next unless $pass;
 	    $ids{$tds->id}=$tds;
 	  }
       }
@@ -495,12 +485,26 @@ sub get_associated_data_infos
     return ($self->get_associated_datasets);
   }
 
+sub get_associated_data_information
+  {
+    my $self = shift;
+    print STDERR "This method is obsolete, use get_associated_datasets. Also, bug Josh to replace and delete me\n";
+    return ($self->get_associated_datasets);
+  }
+
+sub get_associated_data_informations
+  {
+    my $self = shift;
+    print STDERR "This method is obsolete, use get_associated_datasets. Also, bug Josh to replace and delete me\n";
+    return ($self->get_associated_datasets);
+  }
+
 
 ################################################ subroutine header begin ##
 
 =head2 get_chromosomes
 
- Usage     : my @chrs = $dataset_obj->get_chromosomes
+ Usage     : my @chrs = $dataset_obj->get_chromosomes($id)
  Purpose   : finds all the chromosome names for one or more dataset objects
  Returns   : an array or array ref of strings (depending on wantarray)
  Argument  : accepts an array of dataset objects or database ids.  
@@ -626,7 +630,7 @@ sub get_feature_type_count
  Purpose   : Find the most current version number for an organism
  Returns   : an integer that is the most current version of data for an organism
  Argument  : a CoGe::Genome::DB::Organism object of the database id of an organism
- Throws    : none
+ Throws    : return undef if
  Comments  : One problem of this method is when an organism has multiple chromosomes
            : and each chromosome is of a different version.  In this case, this
            : method will return 0
@@ -782,6 +786,68 @@ sub has_genomic_sequence
     $sth->execute($self->id);
     my $num = $sth->fetchrow_arrayref->[0];
     return $num;
+  }
+
+################################################ subroutine header begin ##
+
+=head2 get_dataset
+
+ Usage     : my $ds = $dataset_obj->get_dataset(org=>"Arabidopsis", version=>5, chr=>1);
+ Purpose   : gets a dataset object based on user criteria
+ Returns   : CoGe::Genome::DB::Dataset object
+ Argument  : org     => organism name or database id
+             version => version of the organism's data
+             chr     => chromsome
+             dataset => dataset name or database id
+ Throws    : carps if opts are not correctly specified or a dataset can't
+             be found
+ Comments  : This method is used to find a dataset object matching
+             a variety of criteria.  Usually this will involve either
+             an organism name, version, and chromosome OR the name (or
+             database id) of a dataset.  If an organism is provided but
+             the version is not specified, the most recent version of the 
+             organism is used.  If no chromosome is specified, then chr: 1
+             is used.
+
+See Also   : CoGe::Genome::DB::Dataset
+
+=cut
+
+################################################## subroutine header end ##
+
+
+
+sub get_dataset
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $org = $opts{org};
+    my $version = $opts{version};
+    my $chr = $opts{chr} || 1;
+    my $dataset = $opts{dataset};
+    if ($dataset)
+      {
+	return $self->resolve_dataset($dataset);
+      }
+    my  $db = new CoGe::Genome;
+    $org = $db->get_organism_obj->resolve_organism($org);
+    unless ($org) 
+      {
+	carp "No organism or dataset specified.  get_dataset can't proceed.\n";
+	return;
+      }
+    $version = $self->get_current_version_for_organism(org=>$org) unless $version;
+    foreach my $ds ($org->datasets)
+      {
+	next unless $ds->version eq $version; #does version match?
+	foreach my $c ($ds->get_chromosomes)
+	  {
+	    return $ds if $c eq $chr; #does chr match?
+	  }
+      }
+    carp "Unable to find a dataset for org: $org, version: $version, chromsome: $chr\n";
+    return;
+
   }
 
 ################################################ subroutine header begin ##
