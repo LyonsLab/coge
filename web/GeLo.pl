@@ -100,7 +100,6 @@ sub gen_body
 
 sub get_orgs
   {
-    my $oid = shift;
     my @opts = map {"<OPTION value=\"$_->id\">".$_->name."</OPTION>"} sort {$a->name cmp $b->name} $DB->get_org_obj->retrieve_all();
     my $html;
     $html .= qq{<FONT CLASS ="small">Organism count: }.scalar @opts.qq{</FONT>\n<BR>\n};
@@ -117,7 +116,7 @@ sub get_data_info
     return unless $oid;
     my $org = $DB->get_org_obj->retrieve($oid);
     return unless $org;
-    my @opts = map {"<OPTION value=\"".$_->id."\">".$_->name. " (v".$_->version.", id".$_->id.")</OPTION>"} sort {$b->version cmp $a->version || $a->name cmp $b->name} $org->data_info;
+    my @opts = map {"<OPTION value=\"".$_->id."\">".$_->name. " (v".$_->version.", id".$_->id.")</OPTION>"} sort {$b->version cmp $a->version || $a->name cmp $b->name} $org->datasets;
     my $html;
     $html .= qq{<FONT CLASS ="small">Dataset count: }.scalar (@opts).qq{</FONT>\n<BR>\n};
     $html .= qq{<SELECT id="di_id" SIZE="5" MULTIPLE onChange="gen_data(['args__loading. . .'],['di_info']); get_data_info_info(['di_id'],[dataset_info_chr_chain])" >\n};
@@ -131,7 +130,7 @@ sub get_data_info_info
   {
     my $did = shift;
     return unless $did;
-    my $di = $DB->get_data_info_obj->retrieve($did);
+    my $di = $DB->get_dataset_obj->retrieve($did);
     return unless $di;
     my $html .= "<table>";;
     my $ds = $di->data_source->name ." ". $di->data_source->description;
@@ -140,7 +139,7 @@ sub get_data_info_info
     $ds = "<a href =\"".$link."\">".$ds."</a>" if $di->data_source->link;
     $html .= qq{<TR><TD>Data Source:<TD>$ds}."\n";
     $html .= qq{<tr><td>Version:<td>}.$di->version."\n";
-    my @chr = $DB->get_genomic_seq_obj->get_chromosome_for_data_information($di);
+    my @chr = $DB->get_genomic_seq_obj->get_chromosome_for_dataset($di);
     #push @chr, "no genomic sequence" unless @chr;
     if (@chr)
       {
@@ -170,15 +169,15 @@ sub get_data_info_info
 
 sub get_data_info_chr_info
   {
-    my $did = shift;
+    my $dsd = shift;
     my $chr = shift;
-    return unless $did;    
-    my $di = $DB->get_data_info_obj->retrieve($did);
-    return unless $di;
+    return unless $dsd;    
+    my $ds = $DB->get_dataset_obj->retrieve($dsd);
+    return unless $ds;
     my $html .= "<table>";;
-    my $length = commify( $DB->get_genomic_seq_obj->get_last_position(di=>$di, chr=>$chr) );
+    my $length = commify( $DB->get_genomic_seq_obj->get_last_position(ds=>$ds, chr=>$chr) );
     $html .= qq{<tr><td>Nucleotides:<td>$length} if $length;
-    my $feats = $di->get_feature_type_count(chr=>$chr);
+    my $feats = $ds->get_feature_type_count(chr=>$chr);
     $html .= qq{<tr><td valign=top>Features:<td valign=top><table>};
     my $feat_string = join ("\n<tr>",map {"<td>$_<td>".$feats->{$_} } sort {$feats->{$b}<=> $feats->{$a}} keys %$feats);
     $feat_string = "None" unless $feat_string;
@@ -203,7 +202,7 @@ sub get_data_info_chr_info
 	#    $viewer .= $zoom;
 	$viewer .= "</table>";
 	#$viewer .= qq{<input type="hidden" id="z" value="7">};
-	$viewer .= qq{<input type="submit" value = "Launch GeLo Viewer!" onClick="launch_viewer($did, '$chr')">};
+	$viewer .= qq{<input type="submit" value = "Launch GeLo Viewer!" onClick="launch_viewer($dsd, '$chr')">};
       }
     my $seq_grab;
     if ($chr)
@@ -216,7 +215,7 @@ sub get_data_info_chr_info
 	$seq_grab .= "<tr><td class = \"ital\">End position: ";
 	$seq_grab .= qq{<td><input type="text" size=10 value="100000" id="stop">};
 	$seq_grab .= qq{</table>};
-	$seq_grab .= qq{<input type="submit" value = "Get Genomic Sequence!" onClick="get_genomic_seq(['args__$did', 'args__$chr', 'start', 'stop'], ['gseq'])">};
+	$seq_grab .= qq{<input type="submit" value = "Get Genomic Sequence!" onClick="get_genomic_seq(['args__$dsd', 'args__$chr', 'start', 'stop'], ['gseq'])">};
 	$seq_grab .= qq{<div id="gseq"></div>};
       }
     return $html, $viewer, $seq_grab;
