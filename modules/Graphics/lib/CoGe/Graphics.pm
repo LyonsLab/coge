@@ -114,6 +114,47 @@ perl(1).
 #################### main pod documentation end ###################
 
 
+#################### subroutine header begin ####################
+
+=head2 genomic_view
+
+ Usage     : CoGe::Graphics->genomic_view(
+				   start=>$start,
+				   stop=>$stop,
+				   di=>$di,
+				   version=>$version,
+				   org=>$org_id,
+				   chr=>$chr,
+				   iw=>$iw,
+				   ih=>$ih,
+				   mag=>$mag,
+				   z=>$z,
+				   file=>$file,
+				   start_pict=>$start_pict,
+				   simple=>$simple,
+				   csh=>$chr_start_height,
+				   cmh=>$chr_mag_height,
+				   fsh=>$feat_start_height,
+				   fmh=>$feat_mag_height,
+				   fids=>\@fids,
+				   fns=>\@fnames,
+				   forcefit=>$forcefit,
+				   );
+ Purpose   : mama of a function.  Docs to come.
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comment   : 
+           : 
+
+See Also   : 
+
+=cut
+
+#################### subroutine header end ####################
+
+
+
 sub genomic_view
   {
     my $self = shift;
