@@ -13,7 +13,7 @@ BEGIN {
     %EXPORT_TAGS = ();
     __PACKAGE__->table('organism', 'organism_id');
     __PACKAGE__->columns(All=>qw{organism_id name description});
-    __PACKAGE__->has_many(dataset=>'CoGe::Genome::DB::Dataset');
+    __PACKAGE__->has_many(datasets=>'CoGe::Genome::DB::Dataset');
 
 }
 
@@ -97,12 +97,6 @@ See Also   :
 =cut
 
 ################################################## subroutine header end ##
-
-sub dataset
-  {
-    my $self = shift;
-    return $self->dataset();
-  }
 
 sub data_info
   {
