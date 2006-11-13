@@ -11,7 +11,7 @@ print STDERR $form->self_url(-full=>1),"\n";
 my $gfx = new CoGe::Graphics;
 my $start = $form->param('start') || $form->param('x') ||0;#28520458;
 my $stop = $form->param('stop');# || 6948000;#6949600;#190000;
-my $di = $form->param('di');
+my $ds = $form->param('ds') || $form->param('di');
 my $version = $form->param('v') || $form->param('version');
 my $org_id = $form->param('o') || $form->param('org') ||$form->param('organism') || $form->param('org_id') || $form->param('oid');
 my $chr = $form->param('chr') ||$form->param('chromosome');
@@ -34,7 +34,7 @@ my @fnames = $form->param('fn'); #used to highlight special features by their na
 print CoGe::Graphics->genomic_view(
 				   start=>$start,
 				   stop=>$stop,
-				   di=>$di,
+				   ds=>$ds,
 				   version=>$version,
 				   org=>$org_id,
 				   chr=>$chr,
