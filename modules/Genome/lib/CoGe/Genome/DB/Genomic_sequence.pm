@@ -241,15 +241,15 @@ sub delete_dataset
  Usage     : $object->get_sequence(start   => $start, 
                                    stop    => $stop, 
                                    chr     => $chr,
-                                   info_id => $dataset->id());
+                                   dataset => $dataset);
 
  Purpose   : gets the genomic sequence for the specified conditions
  Returns   : a string (containing the genomic sequence)
  Argument  : start   => genomic start position
              stop    => genomic stop position
              chr     => chromosome
-             info_id => dataset id in database (obtained from a
-                        CoGe::Dataset object)
+             dataset => dataset object, or dataset database id, or dataset name
+                        uses CoGe::Genome:DB::Dataset->resolve_dataset
              strand  => 1 or -1.  Default 1.
                         if negative strand is requested, the complement
                         of the dna seq will be returned
@@ -272,10 +272,12 @@ sub get_sequence
     my $stop = $opts{'stop'} || $opts{STOP} || $opts{end} || $opts{END};
     $stop = $start unless $stop;
     my $chr = $opts{chr} || $opts{CHR} || $opts{chromosome} || $opts{CHROMOSOME};
-    my $info_id = $opts{info_id} || $opts{INFO_ID} || $opts{data_info_id} || $opts{DATA_INFO_ID} || $opts{dataset_id};
+    my $ds_id = $opts{dataset} || $opts{dataset_id} || $opts{info_id} || $opts{INFO_ID} || $opts{data_info_id} || $opts{DATA_INFO_ID};
+    my $coge = new CoGe::Genome;
+    my $ds = $coge->get_dataset_obj->resolve_dataset($ds_id);
     my $strand = $opts{strand} || $opts{STRAND} || 1;
     my $sth = $self->sql_get_sequence();
-    $sth->execute($info_id, $chr, $start, $start, $stop, $stop, $start, $stop);
+    $sth->execute($ds->id, $chr, $start, $start, $stop, $stop, $start, $stop);
     my ($seq, $seq_start, $seq_stop); #(4, 1, 2)
     while (my $q = $sth->fetch())
       {
@@ -301,11 +303,35 @@ sub get_sequence
     return $seq;
   }
 
+################################################ subroutine header begin ##
+
+=head2 get_last_position
+
+ Usage     : my $last = $genome_seq_obj->get_last_position(dataset=>$dataset, chr=>$chr);
+ Purpose   : gets the last genomic sequence position for a dataset given a chromosome
+ Returns   : an integer that refers to the last position in the genomic sequence refered
+             to by a dataset given a chromosome
+ Argument  : chr=> chromosome
+             dataset=>dataset object, name, or database id
+                      if no dataset is specified, then it uses itself to find the related
+                      dataset by $self->dataset
+ Throws    : 
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+
 sub get_last_position
   {
     my $self = shift;
     my %opts = @_;
-    my $ds = $opts{ds} || $self->dataset->id;
+    my $ds = $opts{dataset} || $opts{ds} || $self->dataset_id;
+    my $coge = new CoGe::Genome;
+    $ds = $coge->get_dataset_obj->resolve_dataset($ds);
     my $chr = $opts{chr};
     my $id = ref ($ds) =~ /dataset/i ? $ds->id : $ds;
     my $sth = $chr ? $self->sql_last_chromosome_position() : $self->sql_last_position();
@@ -315,6 +341,23 @@ sub get_last_position
     my $stop = $q->[0];
     return $stop;
   }
+################################################ subroutine header begin ##
+
+=head2 get_dataset_chromosome_sequence
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 
 sub get_dataset_chromosome_sequence
   {
@@ -323,8 +366,25 @@ sub get_dataset_chromosome_sequence
     my $chr = shift;
     my $id = ref ($ds) =~ /dataset/i ? $ds->id : $ds;
     my $stop = $self->get_last_position($id);
-    return $self->get_sequence(start=>1, stop=>$stop, chr=>$chr, info_id=>$id);
+    return $self->get_sequence(start=>1, stop=>$stop, chr=>$chr, dataset_id=>$id);
   }
+################################################ subroutine header begin ##
+
+=head2 get_chromosome_for_dataset
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 
 sub get_chromosome_for_dataset
   {
@@ -342,13 +402,30 @@ sub get_chromosome_for_dataset
     return unless scalar @chrs;
     return wantarray ? @chrs : \@chrs;
   }
-
 sub get_chromosome_for_data_information
   {
     my $self = shift;
     carp "get_chromosome_for_data_information is obselete.  Use get_chromosome_for_dataset\n";
     return $self->get_chromosome_for_dataset(@_);
   }
+
+################################################ subroutine header begin ##
+
+=head2 
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 
 1; #this line is important and will help the module return a true value
 
