@@ -9,7 +9,7 @@ BEGIN {
     @ISA         = (@ISA, qw (Exporter));
      #Give a hoot don't pollute, do not export more than needed by default
     @EXPORT      = qw ();
-  n  @EXPORT_OK   = qw ();
+    @EXPORT_OK   = qw ();
     %EXPORT_TAGS = ();
     __PACKAGE__->table('dataset');
     __PACKAGE__->columns(All=>qw{dataset_id data_source_id organism_id name description link version});
