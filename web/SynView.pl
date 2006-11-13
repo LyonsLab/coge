@@ -103,19 +103,51 @@ sub gen_body
 sub Show_Summary 
   {
     my (
-	$accn1, $accn2,
-	$featid1, $featid2,
-	$dr1up, $dr1down,
-	$dr2up, $dr2down,
-	$infoid1, $infoid2,
-#	$seq_file1, $seq_file2,
-#	$f1start, $f1up, $f1down,
-#	$f2start, $f2up, $f2down,
-	$gbaccn1, $gbaccn2,
-	$gb1start, $gb1up, $gb1down,
-	$gb2start, $gb2up, $gb2down,
-	$seq1, $seq2,
-	$dscomp1, $dscomp2,
+	$accn1,
+	$featid1,
+	$dr1up,
+	$dr1down,
+	$infoid1,
+	
+	$accn2,
+	$featid2,
+	$dr2up,
+	$dr2down,
+	$infoid2,
+	
+	$accn3,
+	$featid3,
+	$dr3up,
+	$dr3down,
+	$infoid3,
+	
+	$gbaccn1,
+	$gb1start,
+	$gb1up,
+	$gb1down,
+	
+
+	$gbaccn2,
+	$gb2start,
+	$gb2up,
+	$gb2down,
+	
+
+	$gbaccn3,
+	$gb3start,
+	$gb3up,
+	$gb3down,
+	
+
+	$seq1,
+	$dscomp1,
+
+	$seq2,
+	$dscomp2,
+
+	$seq3,
+	$dscomp3,
+
 	$match_filter,
 	$spike_flag,
 	$mask_flag,
@@ -128,19 +160,30 @@ sub Show_Summary
 	$iw,
 	$ih,
 	$feat_h,
+#	$seq_file1, $seq_file2,
+#	$f1start, $f1up, $f1down,
+#	$f2start, $f2up, $f2down,
+
        ) = @_;
-    my ($seq_file1, $seq_file2);
+    my $form = $FORM;
+
+    my ($seq_file1, $seq_file2, $seq_file3);
     my ($f1start, $f1up, $f1down);
     my ($f2start, $f2up, $f2down);
+    my ($f3start, $f3up, $f3down);
+    my ($obj1, $obj2, $obj3);
 
-#    print STDERR"<pre>".Dumper(\@_),"</pre>";
-    my $form = $FORM;
-    my $html;
-    my ($obj1, $obj2);
+
     my ($file1, $file1_begin, $file1_end);
     my ($file2, $file2_begin, $file2_end);
+    my ($file3, $file3_begin, $file3_end);
+
+
+    my @sets;
+    my $html;
     my $spike_seq;
     my $db = new GS::MyDB;
+
     if ($featid1)
       {
 	$obj1 = get_obj_from_genome_db( $accn1, $featid1, $infoid1,$dr1up, $dr1down );
@@ -211,11 +254,21 @@ sub Show_Summary
 				 spike_flag=>$spike_flag, 
 			    );
       }
+    if ($obj1)
+      {
+	push @sets, {
+		     obj=>$obj1,
+		     file=>$file1,
+		     file_begin=>$file1_begin,
+		     file_end=>$file1_end,
+		     accn=>$obj1->{ACCN},
+		    };
+      }
     #create object 2
     if ($featid2)
       {
 	$obj2 = get_obj_from_genome_db( $accn2, $featid2, $infoid2, $dr2up, $dr2down );
-	return "<font class=error>No entry found for $featid2</font>" unless ($obj1);
+	return "<font class=error>No entry found for $featid2</font>" unless ($obj2);
 	($file2, $file2_begin, $file2_end,$spike_seq) =
 	  generate_seq_file(obj=>$obj2,
 			    mask=>$mask_flag,
@@ -224,35 +277,7 @@ sub Show_Summary
 			    spike_flag=>$spike_flag,
 			   );
       }
-     elsif ($seq_file2)
-      {
-	my $sequence = "";
-#	print STDERR Dumper $form;
-#	print STDERR Dumper \%ENV;
-#	print STDERR $seq_file2,"\n";
-	$form->read_multipart(undef, $ENV{'CONTENT_TYPE'});
-#	print STDERR Dumper $form->uploadInfo('seq_file2');
-	my $fh = $form->upload( 'seq_file2' );
-	while ( <$fh> ) {
-	  $sequence .= $_;
-	}
-	return "<font class=error>Problem uploading file $seq_file2</font>" unless ($sequence);
-	($obj2) = generate_obj_from_seq($sequence);
-
-	($file2, $file2_begin, $file2_end, $spike_seq) = 
-	  generate_seq_file (
-			     obj=>$obj2,
-			     mask=>$mask_flag,
-			     mask_ncs=>$mask_ncs_flag,
-#			     revcomp=>$dscomp2,
-			     startpos=>$f2start,
-			     upstream=>$f2up,
-			     downstream=>$f2down,
-			     spike_type=>"Q",
-			     spike_flag=>$spike_flag, 
-			    );
-      }
-    elsif ($seq2 )
+   elsif ($seq2 )
       {
 	($obj2) = generate_obj_from_seq($seq2);
 	return "<font class=error>Problem with direct sequence submission</font>" unless ($obj2);
@@ -282,12 +307,77 @@ sub Show_Summary
 			     spike_flag=>$spike_flag, 
 			    );
        }
-    unless ((ref ($obj1) =~ /GBObject/ || ref ($obj1) =~ /hash/i)  && (ref ($obj2) =~ /GBObject/) || ref ($obj2) =~ /hash/i)
+    if ($obj2)
+      {
+	push @sets, {
+		     obj=>$obj2,
+		     file=>$file2,
+		     file_begin=>$file2_begin,
+		     file_end=>$file2_end,
+		     accn=>$obj2->{ACCN},
+		    };
+      }
+
+    #create object 3
+    if ($featid3)
+      {
+	$obj3 = get_obj_from_genome_db( $accn3, $featid3, $infoid3, $dr3up, $dr3down );
+	return "<font class=error>No entry found for $featid3</font>" unless ($obj3);
+	($file3, $file3_begin, $file3_end,$spike_seq) =
+	  generate_seq_file(obj=>$obj3,
+			    mask=>$mask_flag,
+			    mask_ncs=>$mask_ncs_flag,
+			    spike_type=>"S",
+			    spike_flag=>$spike_flag,
+			   );
+      }
+   elsif ($seq3 )
+      {
+	($obj3) = generate_obj_from_seq($seq3);
+	return "<font class=error>Problem with direct sequence submission</font>" unless ($obj3);
+	($file3, $file3_begin, $file3_end, $spike_seq) = 
+	  generate_seq_file (
+			     obj=>$obj3,
+			     mask=>$mask_flag,
+			     mask_ncs=>$mask_ncs_flag,
+			     revcomp=>$dscomp3,
+			     spike_type=>"Q",
+			     spike_flag=>$spike_flag, 
+			    );
+      }
+    elsif ($gbaccn3)
+      {
+	$obj3 = $db->{GBSyntenyViewer}->get_genbank_from_nbci($gbaccn3);	
+	return "<font class=error>No entry found for $gbaccn3</font>" unless ($obj3);
+	($file3, $file3_begin, $file3_end,$spike_seq) = 
+	  generate_seq_file (
+			     obj=>$obj3,
+			     mask=>$mask_flag,
+			     mask_ncs=>$mask_ncs_flag,
+			     startpos=>$gb3start,
+			     upstream=>$gb3up,
+			     downstream=>$gb3down,
+			     spike_type=>"Q",
+			     spike_flag=>$spike_flag, 
+			    );
+       }
+
+    if ($obj3)
+      {
+	push @sets, {
+		     obj=>$obj3,
+		     file=>$file3,
+		     file_begin=>$file3_begin,
+		     file_end=>$file3_end,
+		     accn=>$obj3->{ACCN},
+		    };
+      }
+
+    unless ((ref ($obj1) =~ /GBObject/ || ref ($obj1) =~ /hash/i)  && ( ( (ref ($obj2) =~ /GBObject/) || ref ($obj2) =~ /hash/i ) || ( (ref ($obj3) =~ /GBObject/) || ref ($obj3) =~ /hash/i ) ) )
       {
 	return "<h3><font color = red>Problem retrieving information.  Please try again.</font></h3>";
 	#return 0;
       }
-    my $rc = 1;
 #    return "<pre>".Dumper($obj1, $obj2)."</pre>";
     # set up output page
     
@@ -297,89 +387,59 @@ sub Show_Summary
     $bl2seq_params .= " -X " . $form->param('gapextend');
     $bl2seq_params .= " -q " . $form->param('mismatch');
     $bl2seq_params .= join(" ", $form->param('blastparams'));
-    my $blast_report = run_bl2seq( $file1, $file2, $bl2seq_params );
+    my $blast_reports = run_bl2seq( files=>[map {$_->{file}} @sets], accns=>[map {$_->{accn}}@sets], blast_params=>$bl2seq_params, spike_seq=>$spike_seq, match_filter=>$match_filter );
+
+   #sets => array or data for blast
+   #blast_reports => array of arrays (report, accn1, accn2, parsed data)
+
+    my $i = 0;
+    foreach my $item (@sets)
+      {
+	my $accn = $item->{accn};
+	my $obj = $item->{obj};
+	my $file_begin = $item->{file_begin};
+	my $file_end = $item->{file_end};
+	if ($obj)
+	  {
+	    my ($image, $map, $mapname) = generate_image(
+							 gbobj=>$obj, 
+							 start=>$file_begin,
+							 stop => $file_end,
+							 data=>$blast_reports,
+							 spike_len=>length($spike_seq),
+							 iw=>$iw,
+							 ih=>$ih,
+							 fh=>$feat_h,
+							);
+	    $html .= qq!<div>$accn</DIV>\n!;
+	    $html .= qq!<IMG SRC="$TEMPURL/$image" !;
+	    $html .= qq!BORDER=0 ismap usemap="#$mapname">\n!;
+	    $html .= "$map\n";
+	  }
+	$i++;
+      }
     
-    # it doesn't matter which $dbo[12], cuz they both point to this
-    # blastreport
-    my $data = "";
-    if (  $match_filter ) 
-      { 
-	($rc,$data) = $db->{GBSyntenyViewer}->parse_bl2seq( $blast_report, $obj1->{ACCN}, $obj2->{ACCN}, $spike_seq);
-      } 
-    else 
+    $html .= qq!<br>!;
+    $html .= qq!<FORM NAME=\"info\">\n!;
+    $html .= $form->br();
+    $html .= "Information: ";
+    $html .= $form->br();
+    $html .= qq!<DIV id="info"></DIV>!;
+    $html .= "</FORM>\n";
+#    $html .= "<P><B>ERROR - NO HITS WERE RETURNED FROM THE BL2SEQ REPORT!</B><P>\n";
+    if ($blast_reports && @$blast_reports)
       {
-	($rc,$data) = $db->{GBSyntenyViewer}->parse_bl2seq( $blast_report, $obj1->{ACCN}, $obj2->{ACCN});
+	foreach my $item (@$blast_reports)
+	  {
+	    my $report = $item->[0];
+	    my $accn1 = $item->[1];
+	    my $accn2 = $item->[2];
+	    my $basereportname = basename( $report );
+	    $basereportname = $TEMPURL . "/$basereportname\n";
+	    $html .= "<div><font class=xsmall><A HREF=\"$basereportname\">View bl2seq output for $accn1 versus $accn2: $basereportname</A></font></DIV>\n";
+	  }
       }
-    if ( $rc ) 
-      {
- 	my($filename,$maphtml,$mapname);
-	my ($qfile, $qmap, $qmapname) = generate_image(
-						       gbobj=>$obj1, 
-						       start=>$file1_begin,
-						       stop => $file1_end,
-						       hsps=>[map {{
-							 match=>$_->{hspmatch},
-							 number=>$_->{number},
-							 start=>$_->{qb},
-							 stop=>$_->{qe},
-							 seq=>$_->{qmatchseq},
-							 orientation=>$_->{orientation},
-							 length=>$_->{length},
-							 identity=>$_->{identity},
-							 eval=>$_->{eval},
-							 spike_flag=>$_->{spike_flag},
-						       }} @$data],
-						       spike_len=>length($spike_seq),
-						       report=>$blast_report,
-						       iw=>$iw,
-						       ih=>$ih,
-						       fh=>$feat_h,
-						       );
-	my ($sfile, $smap, $smapname) = generate_image(
-						       gbobj=>$obj2, 
-						       start=>$file2_begin,
-						       stop => $file2_end,
-						       hsps=>[map {{
-							 match=>$_->{hspmatch},
-							 number=>$_->{number},
-							 start=>$_->{sb},
-							 stop=>$_->{se},
-							 seq=>$_->{smatchseq},
-							 orientation=>$_->{orientation},
-							 length=>$_->{length},
-							 identity=>$_->{identity},
-							 eval=>$_->{eval},
-							 spike_flag=>$_->{spike_flag},
-						       }} @$data],
-						       spike_len=>length($spike_seq),
-						       report=>$blast_report,
-						       iw=>$iw,
-						       ih=>$ih,
-						       fh=>$feat_h,
-						       );
-	$html .= qq!<IMG SRC="$TEMPURL/$qfile" !;
-	$html .= qq!BORDER=0 ismap usemap="#$qmapname">\n!;
-	$html .= "$qmap\n";
-	$html .= qq!<br>!;
-	$html .= qq!<IMG SRC="$TEMPURL/$sfile" !;
-	$html .= qq!BORDER=0 ismap usemap="#$smapname">\n!;
-	$html .= "$smap\n";
-	
-	$html .= qq!<br>!;
-	$html .= qq!<FORM NAME=\"info\">\n!;
-	$html .= $form->br();
-	$html .= "Information: ";
-	$html .= $form->br();
-	$html .= qq!<DIV id="info"></DIV>!;
-	$html .= "</FORM>\n";
-      } 
-    else 
-      {
-	$html .= "<P><B>ERROR - NO HITS WERE RETURNED FROM THE BL2SEQ REPORT!</B><P>\n";
-      }
-    my $basereportname = basename( $blast_report );
-    $basereportname = $TEMPURL . "/$basereportname\n";
-    $html .= "<font class=xsmall><A HREF=\"$basereportname\">View bl2seq output: $basereportname</A></font>\n";
+
 
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
 #    print STDERR $html;
@@ -396,11 +456,11 @@ sub generate_image
     my $gbobj = $opts{gbobj};
     my $start = $opts{start};
     my $stop = $opts{stop};
-    my $hsps = $opts{hsps};
+    my $data = $opts{data};
     my $masked_exons = $opts{mask};
     my $masked_ncs = $opts{mask_ncs};
     my $spike_len = $opts{spike_len};
-    my $report = $opts{report};
+    my $reports = $opts{reports};
     my $iw = $opts{iw} || 1600;
     my $ih = $opts{ih} || 200;
     my $fh = $opts{fh} || 25;
@@ -428,10 +488,10 @@ sub generate_image
     my $f2= CoGe::Graphics::Feature->new({start=>1, order => 2, strand => -1});
     $f2->merge_percent(0);
     $c->add_feature($f2);
-    my $link = "bl2seq_summary.pl?".join("&", "blast_report=$report", "accnq=", "accns=", "qbegin=", "qend=", "sbegin=","send=","submit=GO");
+#    my $link = "bl2seq_summary.pl?".join("&", "blast_report=$report", "accnq=", "accns=", "qbegin=", "qend=", "sbegin=","send=","submit=GO");
     process_nucleotides(c=>$c, seq=>$gbobj->{SEQUENCE});
     process_features(c=>$c, obj=>$gbobj, start=>$start, stop=>$stop);
-    process_hsps(c=>$c, hsps=>$hsps, link=>$link);
+    process_hsps(c=>$c, data=>$data, reports=>$reports, accn=>$gbobj->{ACCN});
     my $file = new File::Temp ( TEMPLATE=>'SynView__XXXXX',
 				   DIR=>$TEMPDIR,
 				    SUFFIX=>'.png',
@@ -518,6 +578,7 @@ sub process_features
 		    foreach my $name (@{$feat->{QUALIFIERS}{names}})
 		      {
 			$f->color([255,255,0]) if $name =~ /$accn/i;
+			$f->label($name) if $name =~ /$accn/i;
 		      }
 		  }
 
@@ -573,41 +634,72 @@ sub process_hsps
   {
     my %opts = @_;
     my $c = $opts{c};
-    my $hsps = $opts{hsps};
-    my $link = $opts{link};
-   
-    print STDERR "HSPS:\n" if $DEBUG;
-    foreach my $hsp (@$hsps)
+    my $data = $opts{data};
+    my $reports = $opts{reports};
+    my $accn = $opts{accn};
+    my @colors = (
+		  [ 255, 100, 255],
+		  [ 255, 100, 0],
+		  [ 255, 0, 0],
+		 );
+    my $i = 0;
+    foreach my $item (@$data)
       {
-	my $start = $hsp->{start};
-	my $stop = $hsp->{stop};
-	if ($start > $stop)
+#	my $set = $data->{$accn}{$accn2};
+#	next unless ($set->[1] eq $accn || $set->[2] eq $accn);
+	my $report = $item->[0];
+	my $accn1 = $item->[1];
+	my $accn2 = $item->[2];
+	my $set = $item->[3];
+	unless ($accn eq $accn1 || $accn eq $accn2)
 	  {
-	    $start = $hsp->{stop};
-	    $stop = $hsp->{start};
+	    $i++;
+	    next;
 	  }
-	print STDERR "\t",$hsp->{number},": $start-$stop\n" if $DEBUG;
-	my $f = CoGe::Graphics::Feature->new({start=>$start, stop=>$stop});
-	#my $color = $hsp->{'orientation'} =~ /-/ ? [100,100,255]: [ 255, 100, 255];
-	my $color = [ 255, 100, 255];
-	my $strand = $hsp->{'orientation'} =~ /-/ ? "-1" : 1;
-	$color = [100,100,100] if $hsp->{'spike_flag'};
-	$f->iw(5);
-	$f->ih(5);
-	$f->gd->fill(0,0,$f->get_color(@$color));
-	$f->color($color);
-	$f->mag(1.5);
-	$f->order(1);
-#	$f->add_segment();
-	$f->strand($strand);
-	$f->label($hsp->{'number'});
-	$f->force_label(1);
-	my $desc = join ("<br>", "HSP: ".$hsp->{number}, $hsp->{start}."-".$hsp->{stop}." (".$hsp->{orientation}.")", $hsp->{seq},"Match: ".$hsp->{match},"Length: ".$hsp->{length},"Identity: ".$hsp->{identity},"E_val: ".$hsp->{eval});
-	$f->description($desc);
-	$f->link($link."&"."hsp=".$hsp->{number});
-#	print STDERR Dumper $f;
-	$c->add_feature($f);
-	
+
+	foreach my $item (@$set)
+	  {
+	    my $color = $colors[$i];
+
+	    my ($start, $stop, $seq);
+	    if ($accn1 eq $accn)
+	      {
+		$start = $item->{qb};
+		$stop = $item->{qe};
+		$seq = $item->{qmatchseq};
+	      }
+	    elsif ($accn2 eq $accn)
+	      {
+		$start = $item->{sb};
+		$stop = $item->{se};
+		$seq = $item->{smatchseq};
+	      }
+	    if ($stop < $start)
+	      {
+		my $tmp = $start;
+		$start = $stop;
+		$stop = $tmp;
+	      }
+	    print STDERR "\t",$item->{number},": $start-$stop\n" if $DEBUG;
+	    my $f = CoGe::Graphics::Feature->new({start=>$start, stop=>$stop});
+	    my $strand = $item->{'orientation'} =~ /-/ ? "-1" : 1;
+	    $color = [100,100,100] if $item->{'spike_flag'};
+	    $f->iw(5);
+	    $f->ih(5);
+	    $f->gd->fill(0,0,$f->get_color(@$color));
+	    $f->color($color);
+	    $f->mag(1.5);
+	    $f->order(1);
+	    $f->strand($strand);
+	    $f->label($item->{'number'});
+	    $f->force_label(1);
+	    my $desc = join ("<br>", "HSP: ".$item->{number}, $start."-".$stop." (".$item->{orientation}.")", $seq,"Match: ".$item->{hspmatch},"Length: ".$item->{length},"Identity: ".$item->{identity},"E_val: ".$item->{eval});
+	    $f->description($desc);
+	    my $link = "bl2seq_summary.pl?".join("&", "blast_report=".$report, "accnq=", "accns=", "qbegin=", "qend=", "sbegin=","send=","submit=GO");
+	    $f->link($link."&"."hsp=".$item->{number});
+	    $c->add_feature($f);
+	  }
+	$i++;
       }
   }
 
@@ -736,7 +828,7 @@ sub get_obj_from_genome_db
   {
     my $accn = shift;
     my $featid = shift;
-    my $info_id = shift;
+    my $ds_id = shift;
     my $up = shift || 0;
     my $down = shift || 0;
     my $db = new CoGe::Genome;
@@ -757,16 +849,16 @@ sub get_obj_from_genome_db
 						      start => $start,
 						      stop => $stop,
 						      chr => $chr,
-						      org_id => $feat->info->org->id,
-						      info_id => $info_id,
+						      org_id => $feat->org->id,
+						      dataset_id => $ds_id,
 						     );
       }
     my $obj= new GS::MyDB::GBDB::GBObject(
 					  ACCN=>$accn,
 					  LOCUS=>$accn,
-					  VERSION=>$feat->data_information->version(),
-					  SOURCE=>$feat->data_information->data_source->name(),
-					  ORGANISM=>$feat->info->org->name(),
+					  VERSION=>$feat->dataset->version(),
+					  SOURCE=>$feat->dataset->data_source->name(),
+					  ORGANISM=>$feat->org->name(),
 					  					 );
     $obj->sequence($seq);
     my $fnum = 1;
@@ -775,7 +867,7 @@ sub get_obj_from_genome_db
 
     print STDERR "Region: $chr: $start-$stop\n" if $DEBUG;
 
-    foreach my $f ($db->get_feature_obj->get_features_in_region(start=>$start, stop=>$stop, chr=>$chr, info_id=>$info_id))
+    foreach my $f ($db->get_feature_obj->get_features_in_region(start=>$start, stop=>$stop, chr=>$chr, dataset_id=>$ds_id))
       {
 	my $name;
 	foreach my $tmp (sort {$b->name cmp $a->name} $f->names)
@@ -821,35 +913,76 @@ sub check_taint {
 
 
 sub run_bl2seq {
-	my $seqfile1 = shift;
-	my $seqfile2 = shift;
-	my(@param) = @_;
-	my $command = $BL2SEQ;
-	my $program = "blastn";
-
+  my %opts = @_;
+  my $files = $opts{files};
+  my $accns = $opts{accns};
+  my $blast_params = $opts{blast_params};
+  my $match_filter = $opts{match_filter};
+  my $spike_seq = $opts{spike_seq};
+  my $db = new GS::MyDB;
+  my @files;
+  foreach my $item (@$files)
+    {
+      next unless $item;
+      if (-r $item)
+	{
+	  push @files, $item
+	}
+    }
+  my @reports;
+  for (my $i=0; $i<scalar @files; $i++)
+    {
+      for (my $j=0; $j<scalar @files; $j++)
+	{
+	  next unless $j > $i;
+	  my $seqfile1 = $files[$i];
+	  my $seqfile2 = $files[$j];
+	  my ($accn1, $accn2) = ($accns->[$i], $accns->[$j]);
+	  my $command = $BL2SEQ;
+	  my $program = "blastn";
+	  
 	# need to create a temp filename here
-	my $tmp_file = new File::Temp ( TEMPLATE=>'CNS__XXXXX',
-					DIR=>$TEMPDIR,
-					SUFFIX=>'.blast',
-					UNLINK=>0);
-	my ($tempfile) = $tmp_file->filename;# =~ /([^\/]*$)/;
+	  my $tmp_file = new File::Temp ( TEMPLATE=>'CNS__XXXXX',
+					  DIR=>$TEMPDIR,
+					  SUFFIX=>'.blast',
+					  UNLINK=>0);
+	  my ($tempfile) = $tmp_file->filename;# =~ /([^\/]*$)/;
+	  
+	  # format the bl2seq command
+	  $command .= "-p $program -o $tempfile ";
+	  $command .= "-i $seqfile1 -j $seqfile2";
+	  $command .= " " . $blast_params;
+	  my $x = "";
+	  ($x,$command) = check_taint( $command );
+	  if ( $DEBUG ) {
+	    print STDERR "About to execute...\n $command\n";
+	  }
+	  # execute the command
+	  `$command`;
+	  #$reports{$accns->[$i]}{$accns->[$j]} = $tempfile;
+	  my $rc;
+	  my $data;
 
-	# format the bl2seq command
-	$command .= "-p $program -o $tempfile ";
-	$command .= "-i $seqfile1 -j $seqfile2";
-
-	if ( @param > 0 ) {
-		$command .= " " . join( " ", @param );
+	  if (  $match_filter ) 
+	    { 
+	      ($rc,$data) = $db->{GBSyntenyViewer}->parse_bl2seq( $tempfile, $accn1, $accn2, $spike_seq);
+	    } 
+	  else 
+	    {
+	      ($rc,$data) = $db->{GBSyntenyViewer}->parse_bl2seq( $tempfile, $accn1, $accn2);
+	    }
+	  my @tmp = ($tempfile, $accn1, $accn2);
+	  if ($rc)
+	    {
+	      push @tmp, $data
+	    }
+	  else
+	    {
+	      push @tmp, "no results form blasting $accn1 and $accn2";
+	    }
+	  push @reports, \@tmp;
 	}
-
-	my $x = "";
-	($x,$command) = check_taint( $command );
-	if ( $DEBUG ) {
-		print STDERR "About to execute...\n $command\n";
-	}
-	# execute the command
-	`$command`;
-
-	return( $tempfile );
+    }
+  return( \@reports );
 }
 
