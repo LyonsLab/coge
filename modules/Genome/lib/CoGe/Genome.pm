@@ -1843,20 +1843,58 @@ sub get_organism
 
 ################################################ subroutine header begin ##
 
+=head2 get_dataset
+
+ Usage     : my $ds = $coge->get_dataset(org=>"Arabidopsis", version=>5, chr=>1);
+ Purpose   : gets a dataset object based on user criteria
+ Returns   : CoGe::Genome::DB::Dataset object
+ Argument  : org     => organism name or database id
+             version => version of the organism's data
+             chr     => chromsome
+             dataset => dataset name or database id
+ Throws    : carps if opts are not correctly specified or a dataset can't
+             be found
+ 
+ Comments  : This method is used to find a dataset object matching
+             a variety of criteria.  Usually this will involve either
+             an organism name, version, and chromosome OR the name (or
+             database id) of a dataset.  If an organism is provided but
+             the version is not specified, the most recent version of the 
+             organism is used.  If no chromosome is specified, then chr: 1
+             is used.
+
+             This method calls CoGe::Genome::DB::Dataset->get_dataset
+
+See Also   : CoGe::Genome::DB::Dataset
+
+=cut
+
+################################################## subroutine header end ##
+
+
+
+sub get_dataset
+  {
+    my $self = shift;
+    return $self->get_dataset_obj->get_dataset(@_);
+  }
+
+################################################ subroutine header begin ##
+
 =head2 get_genomic_sequence
 
  Usage     : $object->get_sequence(start   => $start, 
                                    stop    => $stop, 
                                    chr     => $chr,
-                                   dataset_id => $data_info->id());
+                                   dataset => $dataset);
 
  Purpose   : gets the genomic sequence for the specified conditions
  Returns   : a string (containing the genomic sequence)
  Argument  : start   => genomic start position
              stop    => genomic stop position
              chr     => chromosome
-             dataset_id => data_information id in database (obtained from a
-                        CoGe::Data_information object)
+             dataset => dataset object, or dataset database id, or dataset name
+                        uses CoGe::Genome:DB::Dataset->resolve_dataset
              strand  => 1 or -1.  Default 1.
                         if negative strand is requested, the complement
                         of the dna seq will be returned
@@ -1888,7 +1926,7 @@ sub get_genomic_sequence
  Throws    : 
  Comments  : 
 
-See Also   : CoGe::Genome::DB::Feature
+See Also   :  
 
 =cut
 
