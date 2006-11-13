@@ -20,7 +20,7 @@ function changeColor(id, color) {
   document.getElementById(id).style.color = color;
 }
 
-var txtboxes = ['dr1up','dr1down','dr2up','dr2down'];
+var txtboxes = ['dr1up','dr1down','dr2up','dr2down','dr3up','dr3down'];
 
 function setup(){
    for(var k in txtboxes){
@@ -66,9 +66,64 @@ function feat_search_chain(val, num) {
 <BODY onload="setup()" >
 
 <input type="button" value="GO"
-onClick="loading([], ['results']); run(['accn1', 'accn2', 'featid1', 'featid2', 'dr1up', 'dr1down', 'dr2up', 'dr2down', 'dsid1', 'dsid2', 'gbaccn1', 'gbaccn2', 'gb1start', 'gb1up', 'gb1down', 'gb2start', 'gb2up', 'gb2down', 'seq1', 'seq2', 'comp1', 'comp2', 'matchfilter', 'spike', 'mask', 'mask_ncs', 'wordsize', 'gapopen', 'gapextend', 'mismatch', 'blastparams','iw','ih', 'feat_h'],['results'], 'POST');"
->   &nbsp;&nbsp;
+onClick="loading([], ['results']); run([
+	'accn1',
+	'featid1', 
+	'dr1up', 
+	'dr1down', 
+	'dsid1', 
 
+	'accn2', 
+	'featid2', 
+	'dr2up', 
+	'dr2down', 
+	'dsid2',
+
+	'accn3', 
+	'featid3', 
+	'dr3up', 
+	'dr3down', 
+	'dsid3',
+
+	'gbaccn1', 
+	'gb1start', 
+	'gb1up', 
+	'gb1down', 
+
+	'gbaccn2', 
+	'gb2start', 
+	'gb2up', 
+	'gb2down', 
+
+	'gbaccn3', 
+	'gb3start', 
+	'gb3up', 
+	'gb3down', 
+
+	'seq1', 
+	'comp1', 
+
+	'seq2', 
+	'comp2', 
+
+	'seq3', 
+	'comp3', 
+
+	'matchfilter', 
+	'spike', 
+	'mask', 
+	'mask_ncs', 
+	'wordsize', 
+	'gapopen', 
+	'gapextend', 
+	'mismatch', 
+	'blastparams',
+	'iw',
+	'ih', 
+	'feat_h'
+],
+['results'], 'POST');"
+>   &nbsp;&nbsp;
 
 <input type="button" value="Clear"
  onClick="rset([],['results'])">
@@ -84,10 +139,14 @@ onClick="loading([], ['results']); run(['accn1', 'accn2', 'featid1', 'featid2', 
     <DIV class = large>
       Sequence 2
     </DIV>
+  </TH>  <TH>
+    <DIV class = large>
+      Sequence 3
+    </DIV>
   </TH>
  </TR>
  <TR>
-  <TH colspan="2">
+  <TH colspan="3">
    <DIV class="mainDiv">
    <DIV id = "dr" class="topItem" onMouseOver="Init(this); changeColor('dr','#000099'); " onMouseOut="changeColor('dr','#009900');">Database Retrieval:</DIV>
    <DIV class="dropMenu">
@@ -99,7 +158,7 @@ onClick="loading([], ['results']); run(['accn1', 'accn2', 'featid1', 'featid2', 
        <TR valign="top">
         <TD>Name:
         <TD><input class="backbox" type="text" name="accn1" id="accn1" tabindex="1"  size="20" onBlur="dataset_search(['accn1','args__1'],[feat_search_chain])" value="<TMPL_VAR NAME=ACCN1>" />
-        <DIV id="source1"><input type="hidden" id="dsid1"></DIV>
+        <DIV id="source1" nowrap><input type="hidden" id="dsid1"></DIV>
         <DIV id="feat1"><input type="hidden" id="featid1"></DIV>
        <TR>
        <TD><DIV class="small">Upstream:</DIV>
@@ -115,7 +174,7 @@ onClick="loading([], ['results']); run(['accn1', 'accn2', 'featid1', 'featid2', 
        <TR valign="top">
         <TD>Name:
         <TD><input class="backbox" type="text" name="accn2" id="accn2" tabindex="1"  size="20" onBlur="dataset_search(['accn2','args__2'],[feat_search_chain])" value="<TMPL_VAR NAME=ACCN2>" />
-        <DIV id="source2"><input type="hidden" id="dsid2"></DIV>
+        <DIV id="source2" nowrap><input type="hidden" id="dsid2"></DIV>
         <DIV id="feat2"><input type="hidden" id="featid2"></DIV>
        <TR>
        <TD><DIV class="small">Upstream:</DIV>
@@ -123,6 +182,20 @@ onClick="loading([], ['results']); run(['accn1', 'accn2', 'featid1', 'featid2', 
       <TR>
        <TD><DIV class="small">Downstream:</DIV>
        <TD><DIV  id="down2" ><input class="backbox" type="text" name="dr2down" id="dr2down" tabindex="1" size="10"  value="10000"/></DIV>
+      </TABLE>
+      <TD>
+      <TABLE>
+       <TR valign="top">
+        <TD>Name:
+        <TD><input class="backbox" type="text" name="accn3" id="accn3" tabindex="1"  size="20" onBlur="dataset_search(['accn3','args__3'],[feat_search_chain])" value="<TMPL_VAR NAME=ACCN3>" />
+        <DIV id="source3" nowrap><input type="hidden" id="dsid3"></DIV>
+        <DIV id="feat3"><input type="hidden" id="featid3"></DIV>
+       <TR>
+       <TD><DIV class="small">Upstream:</DIV>
+       <TD><DIV  id="up3" ><input class="backbox" type="text" name="dr3up" id="dr3up" tabindex="1" size="10" value="10000" /></DIV>
+      <TR>
+       <TD><DIV class="small">Downstream:</DIV>
+       <TD><DIV  id="down3" ><input class="backbox" type="text" name="dr3down" id="dr3down" tabindex="1" size="10"  value="10000"/></DIV>
       </TABLE>
      </table>
      <span class="subItem"></span>
@@ -137,7 +210,7 @@ onClick="loading([], ['results']); run(['accn1', 'accn2', 'featid1', 'featid2', 
  </TR>
 
  <TR>
-  <TH colspan="2">
+  <TH colspan="3">
    <DIV class="mainDiv" >
    <DIV id="isr" class="topItem" onMouseOver="Init(this);changeColor('isr','#000099'); " onMouseOut="changeColor('isr','#009900');" >Internet Sequence Retrieval:</DIV>
    <DIV class="dropMenu">
@@ -160,7 +233,7 @@ onClick="loading([], ['results']); run(['accn1', 'accn2', 'featid1', 'featid2', 
        <TD><input class="backbox" type="text" name="gb1down" id="gb1down" tabindex="1" size="10"  value=""/>
       </TABLE>
       <TD>
-        <TABLE>
+      <TABLE>
        <TR>
         <TD>GenBank Accession:
 	<TD><input class="backbox" type="text" name="gbaccn2" id="gbaccn2" tabindex="1"  size="10" />
@@ -174,6 +247,21 @@ onClick="loading([], ['results']); run(['accn1', 'accn2', 'featid1', 'featid2', 
        <TD><DIV class="small">Downstream:</DIV>
        <TD><input class="backbox" type="text" name="gb2down" id="gb2down" tabindex="1" size="10"  value=""/>
       </TABLE>
+      <TD>
+      <TABLE>
+       <TR>
+        <TD>GenBank Accession:
+	<TD><input class="backbox" type="text" name="gbaccn3" id="gbaccn3" tabindex="1"  size="10" />
+      <TR>
+	<TD><DIV class="small">Start Position:</DIV>
+      	<TD><input class="backbox" type="text" name="gb3start" id="gb3start" tabindex="1" size="10" value="1" /></TD>
+      <TR>
+       <TD><DIV class="small">Upstream:</DIV>
+       <TD><input class="backbox" type="text" name="gb3up" id="gb3up" tabindex="1" size="10" value="0" />
+      <TR>
+       <TD><DIV class="small">Downstream:</DIV>
+       <TD><input class="backbox" type="text" name="gb3down" id="gb3down" tabindex="1" size="10"  value=""/>
+      </TABLE>
      </table>
      <span class="subItem"></span>
      <span class="subItem"></span>
@@ -186,7 +274,7 @@ onClick="loading([], ['results']); run(['accn1', 'accn2', 'featid1', 'featid2', 
   </DIV>		
  </TR>
  <TR>
-  <TH colspan="2">
+  <TH colspan="3">
    <DIV class="mainDiv" >
    <DIV id="dss" class="topItem" onMouseOver="Init(this);  changeColor('dss','#000099'); " onMouseOut="changeColor('dss','#009900');" >Direct Sequence Submission:</DIV>
    <DIV class="dropMenu">
@@ -202,6 +290,11 @@ onClick="loading([], ['results']); run(['accn1', 'accn2', 'featid1', 'featid2', 
       <DIV>
      Sequence:<BR> <textarea class="backbox" name="seq2" id="seq2" tabindex="1"  rows="5" cols="30"></textarea><BR>
      Reverse Complement: <label><input class="backbox" type="radio" name="comp2" id="comp2" tabindex="1" value="1" />On</label><label><input class="backbox" type="radio" name="comp2" id="comp2" tabindex="1" value="0" checked/>Off</label>
+      </DIV>
+      <TD>
+      <DIV>
+     Sequence:<BR> <textarea class="backbox" name="seq3" id="seq3" tabindex="1"  rows="5" cols="30"></textarea><BR>
+     Reverse Complement: <label><input class="backbox" type="radio" name="comp3" id="comp3" tabindex="1" value="1" />On</label><label><input class="backbox" type="radio" name="comp3" id="comp3" tabindex="1" value="0" checked/>Off</label>
       </DIV>
      </table>
      <span class="subItem"></span>
@@ -481,20 +574,65 @@ onClick="loading([], ['results']); run(['accn1', 'accn2', 'featid1', 'featid2', 
 
 
 
-
 <input type="button" value="GO"
-onClick="
-//source_search(['accn1','args__1'],['org1']);
-//source_search(['accn2','args__2'],['org2']); 
-loading([], ['results']);
-run(['accn1', 'accn2', 'featid1', 'featid2', 'dr1up', 'dr1down', 'dr2up', 'dr2down',
-'dsid1', 'dsid2', 'gbaccn1', 'gbaccn2', 'gb1start', 'gb1up',
-'gb1down', 'gb2start', 'gb2up', 'gb2down', 'seq1', 'seq2', 'comp1',
-'comp2', 'matchfilter', 'spike', 'mask', 'mask_ncs', 'wordsize',
-'gapopen', 'gapextend', 'mismatch', 'blastparams','iw','ih',
-'feat_h'],['results'], 'POST'); window.scroll(0,0);"
->   &nbsp;&nbsp;
+onClick="loading([], ['results']); run([
+	'accn1',
+	'featid1', 
+	'dr1up', 
+	'dr1down', 
+	'dsid1', 
 
+	'accn2', 
+	'featid2', 
+	'dr2up', 
+	'dr2down', 
+	'dsid2',
+
+	'accn3', 
+	'featid3', 
+	'dr3up', 
+	'dr3down', 
+	'dsid3',
+
+	'gbaccn1', 
+	'gb1start', 
+	'gb1up', 
+	'gb1down', 
+
+	'gbaccn2', 
+	'gb2start', 
+	'gb2up', 
+	'gb2down', 
+
+	'gbaccn3', 
+	'gb3start', 
+	'gb3up', 
+	'gb3down', 
+
+	'seq1', 
+	'comp1', 
+
+	'seq2', 
+	'comp2', 
+
+	'seq3', 
+	'comp3', 
+
+	'matchfilter', 
+	'spike', 
+	'mask', 
+	'mask_ncs', 
+	'wordsize', 
+	'gapopen', 
+	'gapextend', 
+	'mismatch', 
+	'blastparams',
+	'iw',
+	'ih', 
+	'feat_h'
+],
+['results'], 'POST');"
+>   &nbsp;&nbsp;
 
 <input type="button" value="Clear"
  onClick="rset([],['results'])">
