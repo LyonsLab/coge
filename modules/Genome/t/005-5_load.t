@@ -4,9 +4,10 @@
 
 use Test::More tests => 2;
 
-BEGIN { use_ok( 'CoGe::Genome::DB::Data_information' ); }
+BEGIN { use_ok( 'CoGe::Genome::DB::Dataset' ); }
 
-my $object = CoGe::Genome::DB::Data_information->new ();
-isa_ok ($object, 'CoGe::Genome::DB::Data_information');
+my $object = CoGe::Genome::DB::Dataset->new ();
+
+isa_ok ($object, 'CoGe::Genome::DB::Dataset');
 
 
