@@ -15,7 +15,7 @@ lib/CoGe/Genome/DB/Annotation_type_group.pm
 t/004_load.t
 lib/CoGe/Genome/DB/Data_source.pm
 t/005_load.t
-lib/CoGe/Genome/DB/Data_information.pm
+lib/CoGe/Genome/DB/Dataset.pm
 t/005-5_load.t
 lib/CoGe/Genome/DB/Feature.pm
 t/006_load.t
