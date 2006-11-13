@@ -163,7 +163,7 @@ sub genomic_view
     my $stop = $opts{'stop'};# || 6948000;#6949600;#190000;
     $start = 1 unless defined $start;
     #$stop = $start unless $stop;
-    my $di = $opts{'di'};
+    my $ds = $opts{'ds'} || $opts{'di'};
     my $version = $opts{'v'} || $opts{'version'};
     my $org = $opts{'o'} || $opts{'org'} ||$opts{'organism'} || $opts{'org_id'} || $opts{'oid'};
     my $chr = $opts{'chr'} ||$opts{'chromosome'};
@@ -202,35 +202,35 @@ sub genomic_view
     my $c = new CoGe::Graphics::Chromosome;
 
     $org = $db->get_organism_obj->resolve_organism($org) if $org;
-    $di = $db->get_dataset_obj->resolve_dataset($di) if $di;
+    $ds = $db->get_dataset_obj->resolve_dataset($ds) if $ds;
 
-    if ($di) #there can be additional information about a chromosome for a particular version of the organism that is not in the same data_information.  Let's go find the organism_id and version for the specified data information item.
+    if ($ds) #there can be additional information about a chromosome for a particular version of the organism that is not in the same data_information.  Let's go find the organism_id and version for the specified data information item.
       {
-	$org = $di->org unless $org;
-	$version = $di->version unless $version;
-	($chr) = $di->get_chromosomes() unless $chr;
+	$org = $ds->org unless $org;
+	$version = $ds->version unless $version;
+	($chr) = $ds->get_chromosomes() unless $chr;
       }
 
-    if ($org && !$di)
+    if ($org && !$ds)
       {
 	$version = $db->get_dataset_obj->get_current_version_for_organism($org) unless $version;
-	($di) = $db->get_dataset_obj->search({version=>$version, organism_id=>$org->id});
-	($chr) = $di->get_chromosomes() unless $chr;
+	($ds) = $db->get_dataset_obj->search({version=>$version, organism_id=>$org->id});
+	($chr) = $ds->get_chromosomes() unless $chr;
       }
 
 
-    unless (defined $start && $di && $chr)
+    unless (defined $start && $ds && $chr)
       {
-	print STDERR "missing needed parameters: Start: $start, Info_id: ".$di->id.", Chr: $chr\n";
+	print STDERR "missing needed parameters: Start: $start, Info_id: ".$ds->id.", Chr: $chr\n";
 	return 0;
       }
-    print STDERR "generating image for di: ".$di->name ." (".$di->id.")\n" if $DEBUG;
+    print STDERR "generating image for ds: ".$ds->name ." (".$ds->id.")\n" if $DEBUG;
     
     my %dids; #we will store a list of data_information objects that are related to the current dataset
     my $ta = new Benchmark if $BENCHMARK;
     if ($org)
       {	
-	foreach my $did ( $db->get_data_info_obj->search({organism_id=>$org->id, version=>$version}))
+	foreach my $did ( $db->get_dataset_obj->search({organism_id=>$org->id, version=>$version}))
 	  {
 	    $dids{$did} = 1;
 	  }
@@ -238,13 +238,13 @@ sub genomic_view
     my $tb = new Benchmark if $BENCHMARK;
     my $finddid_time = timestr(timediff($tb, $ta))  if $BENCHMARK;
     
-    $dids{$di}=1 if $di;
+    $dids{$ds}=1 if $ds;
 
     my @dids = keys %dids;
     my $tc = new Benchmark if $BENCHMARK;
     foreach my $did (@dids)
       {
-	my ($tstart, $tstop) = $self->initialize_c(di=>$did,
+	my ($tstart, $tstop) = $self->initialize_c(ds=>$did,
 						   chr=>$chr,
 						   iw=>$iw,
 						   ih=>$ih,
@@ -267,7 +267,7 @@ sub genomic_view
 	    $start = $tstart;
 	    $stop = $tstop;
 	    print STDERR "processing nucleotides\n" if $DEBUG;
-	    $self->process_nucleotides(start=>$start, stop=>$stop, chr=>$chr, di=>$did, db=>$db, c=>$c) unless $simple;
+	    $self->process_nucleotides(start=>$start, stop=>$stop, chr=>$chr, ds=>$did, db=>$db, c=>$c) unless $simple;
 	    last;
 	  }
       }
@@ -284,7 +284,7 @@ sub genomic_view
       {
 	my $taa = new Benchmark if $BENCHMARK;
 	print STDERR "processing features\n" if $DEBUG;
-	$self->process_features(start=>$start, stop=>$stop, chr=>$chr, di=>$did, db=>$db, c=>$c, fids=>$fids, fnames=>$fnames, draw_proteins=>$draw_proteins) unless $simple;
+	$self->process_features(start=>$start, stop=>$stop, chr=>$chr, ds=>$did, db=>$db, c=>$c, fids=>$fids, fnames=>$fnames, draw_proteins=>$draw_proteins) unless $simple;
 	my $tab = new Benchmark if $BENCHMARK;
 	my $feat_time = timestr(timediff($tab, $taa)) if $BENCHMARK;
 	print STDERR " processing did $did:   $feat_time\n" if $BENCHMARK;
@@ -318,7 +318,7 @@ sub initialize_c
   {
     my $self = shift;
     my %opts = @_;
-    my $di = $opts{di};
+    my $ds = $opts{ds};
     my $chr = $opts{chr};
     my $iw = $opts{iw};
     my $ih = $opts{ih};
@@ -334,7 +334,7 @@ sub initialize_c
     my $fmh=$opts{fmh};
     my $forcefit = $opts{forcefit};
     my $start_pict = $opts{'start_pict'} || 'left';
-    my $chr_length = $db->get_genomic_sequence_obj->get_last_position(di=>$di, chr=>$chr);
+    my $chr_length = $db->get_genomic_sequence_obj->get_last_position(ds=>$ds, chr=>$chr);
     return unless $chr_length;
     $c->chr_length($chr_length);
     $c->mag_scale_type("constant_power");
@@ -395,12 +395,12 @@ sub process_nucleotides
 	return;
       }
     my $chr = $opts{chr};
-    my $di = $opts{di};
+    my $ds = $opts{ds};
     my $db = $opts{db};
     my $c = $opts{c};
 #    print STDERR "IN $0: start: $start, stop: $stop\n";
     #process nucleotides
-    my $seq = uc($db->get_genomic_sequence_obj->get_sequence(start=>$start, end=>$stop, chr=>$chr, info_id=>$di)); 
+    my $seq = uc($db->get_genomic_sequence_obj->get_sequence(start=>$start, end=>$stop, chr=>$chr, dataset=>$ds)); 
     my $seq_len = length $seq;
     my $chrs = int (($c->_region_stop-$c->_region_start)/$c->iw);
     $chrs = 1 if $chrs < 1;
@@ -432,7 +432,7 @@ sub process_features
     my $start = $opts{start};
     my $stop = $opts{stop};
     my $chr = $opts{chr};
-    my $di = $opts{di};
+    my $ds = $opts{ds};
     my $db = $opts{db};
     my $c = $opts{c};
     my $accn = $opts{accn};
@@ -442,23 +442,19 @@ sub process_features
     my $draw_proteins = $opts{draw_proteins};
     my $sstart = $start - ($stop - $start);
     my $sstop = $stop + ($stop - $start);
-    my $feat_count = $db->get_feature_obj->count_features_in_region(start=>$sstart, end=>$sstop, info_id=>$di, chr=>$chr);
+    my $feat_count = $db->get_feature_obj->count_features_in_region(start=>$sstart, end=>$sstop, dataset=>$ds, chr=>$chr);
     if ($feat_count > $MAX_FEATURES)
       {
 	warn "exceeded maximum number of features $MAX_FEATURES. ($feat_count requested)\nskipping.\n";
 	return;
       }
     
-    foreach my $feat (sort {$a->type->name cmp $b->type->name} $db->get_feature_obj->get_features_in_region(start=>$start, end=>$stop, info_id=>$di, chr=>$chr))
+    foreach my $feat (sort {$a->type->name cmp $b->type->name} $db->get_feature_obj->get_features_in_region(start=>$start, end=>$stop, dataset=>$ds, chr=>$chr))
       {
         my $f;
-#	print STDERR Dumper $feat;
-#	print STDERR "!",join ("\t", map {$_->name} $feat->names, map {$_->start."-".$_->stop} $feat->locs),"\n";
-	print STDERR $feat->type->name,":",$feat->start,"-",$feat->stop,"\n";
+	print STDERR $feat->type->name,":",$feat->start,"-",$feat->stop,"\n" if $DEBUG;
         if ($feat->type->name =~ /Gene/i)
           {
-#	    next;
-#	    print STDERR $feat->names->next->name,": ", $feat->id,"\n";
 	    $f = CoGe::Graphics::Feature::Gene->new();
 	    $f->color([255,0,0,50]);
 	    foreach my $loc ($feat->locs)
@@ -557,7 +553,7 @@ sub process_features
 	  }
 	my ($name) = sort { length ($b) <=> length ($a) || $a cmp $b} map {$_->name} $feat->names;
 	$f->description($feat->annotation_pretty_print);
-	$f->link("GeLo.pl?".join("&", "chr=".$feat->chr,"di=".$feat->dataset->id,"z=10", "INITIAL_CENTER=".$feat->start.",0"));
+	$f->link("GeLo.pl?".join("&", "chr=".$feat->chr,"ds=".$feat->dataset->id,"z=10", "INITIAL_CENTER=".$feat->start.",0"));
 	$f->label($name) if $print_names;
         $f->type($feat->type->name);
         $c->add_feature($f);
