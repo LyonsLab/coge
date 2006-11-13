@@ -37,17 +37,17 @@ sub gen_html
     my $loc = $args{loc};
     my $chr = $args{chr};
     my $di = $args{di};
-    my ($dio) = $DB->get_data_info_obj->search({data_information_id=>$di});
+    my ($dio) = $DB->get_dataset_obj->retrieve($di);
     my @feats;
-    foreach my $tdio ($dio->get_associated_data_infos)
+    foreach my $tdio ($dio->get_associated_datasets)
       {
-	push @feats, $DB->get_feat_obj->get_features_in_region(info_id => $tdio->id, 
+	push @feats, $DB->get_feat_obj->get_features_in_region(dataset => $tdio->id, 
 							       chr => $chr,
 							       start => $loc,
 							       stop => $loc,
 							      ) if ($chr && $loc);
       }
-    push @feats, $DB->get_feat_obj->search(feature_id=>$featid) if $featid;
+    push @feats, $DB->get_feat_obj->retrieve($featid) if $featid;
     my $html;
     foreach my $feat (sort {$a->type->name cmp $b->type->name} @feats)
       {
