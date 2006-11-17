@@ -480,7 +480,9 @@ sub generate_image
     $c->feature_start_height($fh);
     $c->chr_mag_height(5);
     $c->set_region(start=>$start, stop=>$stop);
-    $c->mag(1);
+    $c->mag(0);
+    $c->mag_off(1);
+    
 #    $c->start_picture('left');nifb
     my $f1= CoGe::Graphics::Feature->new({start=>1, order => 2, strand => 1});
     $f1->merge_percent(0);
@@ -489,7 +491,7 @@ sub generate_image
     $f2->merge_percent(0);
     $c->add_feature($f2);
 #    my $link = "bl2seq_summary.pl?".join("&", "blast_report=$report", "accnq=", "accns=", "qbegin=", "qend=", "sbegin=","send=","submit=GO");
-    process_nucleotides(c=>$c, seq=>$gbobj->{SEQUENCE});
+#    process_nucleotides(c=>$c, seq=>$gbobj->{SEQUENCE});
     process_features(c=>$c, obj=>$gbobj, start=>$start, stop=>$stop);
     process_hsps(c=>$c, data=>$data, reports=>$reports, accn=>$gbobj->{ACCN});
     my $file = new File::Temp ( TEMPLATE=>'SynView__XXXXX',
@@ -540,6 +542,7 @@ sub process_features
     my $start=$opts{start};
     my $stop = $opts{stop};
     my $accn = $obj->{ACCN};
+    my $track = 1;
     my @opts = ($start, $stop) if $start && $stop;
     unless (ref $obj)
       {
@@ -563,7 +566,7 @@ sub process_features
 #		    $f->color([255,255,0]) if $name =~ /$accn/i;
 #		  }
 #	      }
-	    $f->order(2);
+	    $f->order($track);
 	    $f->overlay(1);
 	    $f->mag(0.5);
           }
@@ -571,7 +574,7 @@ sub process_features
           {
         	$f = CoGe::Graphics::Feature::Gene->new();
         	$f->color([0,255,0, 50]);
-        	$f->order(2);
+        	$f->order($track);
 		$f->overlay(3);
 		if ($accn)
 		  {
@@ -590,7 +593,7 @@ sub process_features
           {
         	$f = CoGe::Graphics::Feature::Gene->new();
         	$f->color([0,0,255, 50]);
-        	$f->order(2);
+        	$f->order($track);
 		$f->overlay(2);
 		$f->mag(0.75);
           }
@@ -598,7 +601,7 @@ sub process_features
           {
         	$f = CoGe::Graphics::Feature::Gene->new();
         	$f->color([200,200,200, 50]);
-        	$f->order(2);
+        	$f->order($track);
 		$f->overlay(2);
 		if ($accn)
 		  {
@@ -638,11 +641,12 @@ sub process_hsps
     my $reports = $opts{reports};
     my $accn = $opts{accn};
     my @colors = (
-		  [ 255, 100, 255],
-		  [ 255, 100, 0],
+		  [ 100, 100, 255],
+		  [ 0, 255, 0],
 		  [ 255, 0, 0],
 		 );
     my $i = 0;
+    my $track = 2;
     foreach my $item (@$data)
       {
 #	my $set = $data->{$accn}{$accn2};
@@ -688,8 +692,8 @@ sub process_hsps
 	    $f->ih(5);
 	    $f->gd->fill(0,0,$f->get_color(@$color));
 	    $f->color($color);
-	    $f->mag(1.5);
-	    $f->order(1);
+	    $f->mag(1);
+	    $f->order($track);
 	    $f->strand($strand);
 	    $f->label($item->{'number'});
 	    $f->force_label(1);
@@ -698,8 +702,10 @@ sub process_hsps
 	    my $link = "bl2seq_summary.pl?".join("&", "blast_report=".$report, "accnq=", "accns=", "qbegin=", "qend=", "sbegin=","send=","submit=GO");
 	    $f->link($link."&"."hsp=".$item->{number});
 	    $c->add_feature($f);
+	    print STDERR $item->{number},"-", $item->{orientation}, $track,":", $strand,"\n";
 	  }
 	$i++;
+	$track++;
       }
   }
 
