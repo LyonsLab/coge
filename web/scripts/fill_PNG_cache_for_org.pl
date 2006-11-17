@@ -68,7 +68,7 @@ foreach my $org_id (@org_ids)
     next if $skip_oids{$org_id};
     my ($org) = ref ($org_id) =~ /org/i ? $org_id :$db->get_org_obj->retrieve($org_id);
     print "working on: ".$org->name,"\n";
-    foreach my $di ($org->data_information)
+    foreach my $di ($org->datasets)
       {
 	next if $version && $di->version ne $version;
 	my $diname = $di->name;
@@ -97,7 +97,7 @@ foreach my $org_id (@org_ids)
 	    foreach (my $c_start=0; $c_start < $chr_len; $c_start+=$max_chars)
 	      {
 		print "Working on chromosome chunk $c_start - ", $c_start+$max_chars,"\n";
-		my $seq = uc($db->get_genomic_sequence_obj->get_sequence(start=>$c_start, end=>$c_start+$max_chars, chr=>$chr, info_id=>$di)); 
+		my $seq = uc($db->get_genomic_sequence(start=>$c_start, end=>$c_start+$max_chars, chr=>$chr, dataset=>$di)); 
 		unless ($seq)
 		  {
 		    die "no nucleotide sequence for start=>$c_start, end=>$c_start+$max_chars, chr=>$chr, info_id=>$di\n";
@@ -113,7 +113,7 @@ foreach my $org_id (@org_ids)
 				     z=>$max_zoom,
 				    );
 		my @cds_feats;
-		foreach my $di2 ($di->get_associated_data_infos)
+		foreach my $di2 ($di->get_associated_datasets)
 		  {
 		    #	    next;
 		    my $cds_feats = process_features(start=>$c_start, stop=>$c_start+$max_chars-1, chr=>$chr, di=>$di2->id, db=>$db,c=>$c);
@@ -279,11 +279,10 @@ sub initialize_c
     my $fmh=$opts{fmh} || 2;
     my $start_pict = $opts{'start_pict'} || 'left';
     my $c = new CoGe::Graphics::Chromosome;
-
-    my ($gen_seq) = $db->get_genomic_seq_obj->search({data_information_id=>$di});
+    my ($gen_seq) = $db->get_genomic_seq_obj->search({dataset_id=>$di});
     return unless $gen_seq && $gen_seq->chr eq $chr;
-    my $chr_length =
-    $db->get_genomic_sequence_obj->get_last_position(di=>$di);
+    my $chr_length = $db->get_genomic_sequence_obj->get_last_position(ds=>$di);
+
     $c->chr_length($chr_length);
     $c->mag_scale_type("constant_power");
     $c->iw($iw);
