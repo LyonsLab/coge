@@ -150,14 +150,17 @@ sub get_anno
     foreach my $feat (@feats)
       {
 	$i++;
+	my $featid = $feat->id;
 	my $chr = $feat->chr;
-	my $di = $feat->info->id;
+	my $rc = 0;
+	my $ds = $feat->dataset->id;
 	my $x = $feat->begin_location;
 	my $z = 10;
 	$anno .= join "\n<BR><HR><BR>\n", $feat->annotation_pretty_print_html();
-	$anno .= qq{<DIV id="loc$i"><input type="button" value = "Click for chromosomal view" onClick="window.open('GeLo.pl?chr=$chr&di=$di&INITIAL_CENTER=$x,0&z=$z');"></DIV>};
+	$anno .= qq{<DIV id="loc$i"><input type="button" value = "Click for chromosomal view" onClick="window.open('GeLo.pl?chr=$chr&ds=$ds&INITIAL_CENTER=$x,0&z=$z');"></DIV>};
 	$anno .= qq{<DIV id="exp$i"><input type="button" value = "Click for expression tree" onClick="gen_data(['args__Generating expression view image'],['exp$i']);show_express(['args__}.$accn.qq{','args__}.'1'.qq{','args__}.$i.qq{'],['exp$i']);"></DIV>};
-	$anno .= qq{<DIV id="dnaseq$i"><input type="button" value = "Click for DNA sequence" onClick="gen_data(['args__retrieving sequence'],['dnaseq$i']);get_dna_seq_for_feat(['args__}.$feat->id.qq{'],['dnaseq$i']);"></DIV>};
+	$anno .= qq{<DIV id="dnaseq$i"><input type="button" value = "Click for DNA sequence" onClick="window.open('SeqView.pl?featid=$featid&dsid=$ds&chr=$chr&name=$accn&rc=$rc','Window','location=no, left=20, top=20, width=683, height=510,toolbar=no');"></DIV>};
+	#"gen_data(['args__retrieving sequence'],['dnaseq$i']);get_dna_seq_for_feat(['args__}.$feat->id.qq{'],['dnaseq$i']);"></DIV>};
 	$anno .= qq{<DIV id="rcdnaseq$i"><input type="button" value = "Click for DNA sequence reverse complement" onClick="gen_data(['args__retrieving sequence'],['rcdnaseq$i']);get_rcdna_seq_for_feat(['args__}.$feat->id.qq{'],['rcdnaseq$i']);"></DIV>};
 	$anno .= qq{<DIV id="protseq$i"><input type="button" value = "Click for protein sequence" onClick="gen_data(['args__retrieving sequence'],['protseq$i']);get_prot_seq_for_feat(['args__}.$feat->id.qq{'],['protseq$i']);"></DIV>\n\n};
 
@@ -172,16 +175,15 @@ sub show_location
     my $start = shift;#$opts{start};
     my $stop = shift; #$opts{stop};
     my $chr = shift; # $opts{chr};
-    my $info_id = shift; # = $opts{info_id};
+    my $dataset_id = shift; # = $opts{info_id};
     my $loc = shift;
    
     my $z = 7;#ceil (log((1000+$stop-$start)/10)/log(2));
-#    my $link = qq{<img src="tiler.pl?start=$start&chr=$chr&di=$info_id&iw=2000&z=$z">\n};
     my $html  = qq{
 <form action='javascript:;' >
 <input id='iw' type ='hidden' value=256 />
 <input id='chr' type ='hidden' value=$chr />
-<input id='di' type ='hidden' value=$info_id />
+<input id='ds' type ='hidden' value=$dataset_id />
 <input id='z' type ='hidden' value='$z' />
 <input id='x' type ='hidden' value='$start' />
 <button id='zi' name='zi' class="tileClass" > Zoom In </button>
@@ -251,7 +253,7 @@ sub get_data_source_info_for_accn
     my %sources;
     foreach my $feat (@feats)
       {
-	my $val = $feat->data_info;
+	my $val = $feat->dataset;
 	my $name = $val->name;
 	my $ver = $val->version;
 	my $desc = $val->description;
