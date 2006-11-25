@@ -28,9 +28,9 @@ $FORM = new CGI;
 $DB = new CoGe::Genome;
 
 my $pj = new CGI::Ajax(
-		       get_data_info => \&get_data_info,
-		       get_data_info_info => \&get_data_info_info,
-		       get_data_info_chr_info => \&get_data_info_chr_info,
+		       get_dataset => \&get_dataset,
+		       get_dataset_info => \&get_dataset_info,
+		       get_dataset_chr_info => \&get_dataset_chr_info,
 		       gen_data => \&gen_data,
 		       get_genomic_seq => \&get_genomic_seq,
 		      );
@@ -45,6 +45,11 @@ sub gen_html
     my ($body, $seq_names, $seqs) = gen_body();
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
 
+
+  if ($FORM->param("ds"))
+  {
+    $template->param(HEADER_LINK=>'/CoGe/GeLo.pl');
+  }
     $template->param(TITLE=>'CoGe: Genome Location Viewer');
     $template->param(HEAD=>qq{
 <link rel="stylesheet" type="text/css" href="css/tiler.css">
@@ -74,21 +79,21 @@ sub gen_body
   {
     my $form = shift || $FORM;
     my $chr = $form->param('chr');# || 1;
-    my $di = $form->param('di');# || 6;
-    my $dio = $DB->get_dataset_obj->retrieve($di);
+    my $ds = $form->param('ds');# || 6;
+    my $dso = $DB->get_dataset_obj->retrieve($ds);
     my $z = $form->param('z');# || 7;
     my $x = $form->param('x');# || 1;
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GeLo.tmpl');
-    if ($chr && $di)
+    if ($chr && $ds)
       {
 	$template->param(CHR=>$chr);
-	$template->param(DI=>$di);
+	$template->param(DS=>$ds);
 	$template->param(Z=>$z);
 	$template->param(X=>$x);
-	my $org = $dio->org->name." (id".$dio->org->id.")";
+	my $org = $dso->org->name." (id".$dso->org->id.")";
 	$template->param(ORG=>$org);
-	my $ds = $dio->name."(v".$dio->version.", id".$dio->id.")";
-	$template->param(DS=>$ds);
+	my $ds_name = $dso->name."(v".$dso->version.", id".$dso->id.")";
+	$template->param(DS_NAME=>$ds_name);
       }
     else
       {
@@ -110,37 +115,58 @@ sub get_orgs
     return $html;
   }
 
-sub get_data_info
+sub get_dataset
   {
     my $oid = shift;
-    return unless $oid;
+    my $html = "";
+    return $html unless $oid;
     my $org = $DB->get_org_obj->retrieve($oid);
-    return unless $org;
+
+#    print $org." ";
+    return $html unless $org;
     my @opts = map {"<OPTION value=\"".$_->id."\">".$_->name. " (v".$_->version.", id".$_->id.")</OPTION>"} sort {$b->version cmp $a->version || $a->name cmp $b->name} $org->datasets;
-    my $html;
-    $html .= qq{<FONT CLASS ="small">Dataset count: }.scalar (@opts).qq{</FONT>\n<BR>\n};
-    $html .= qq{<SELECT id="di_id" SIZE="5" MULTIPLE onChange="gen_data(['args__loading. . .'],['di_info']); get_data_info_info(['di_id'],[dataset_info_chr_chain])" >\n};
+    $html = qq{<FONT CLASS ="small">Dataset count: }.scalar (@opts).qq{</FONT>\n<BR>\n};
+    $html .= qq{<SELECT id="ds_id" SIZE="5" MULTIPLE onChange="gen_data(['args__loading. . .'],['ds_info']); get_dataset_info(['ds_id'],[dataset_info_chr_chain])" >\n};
     $html .= join ("\n", @opts);
     $html .= "\n</SELECT>\n";
     $html =~ s/OPTION/OPTION SELECTED/;
+
+    if (scalar (@opts) == 0)
+    {
+		my $opt = "<OPTION value=\"-77\">"."</OPTION>";  # set error flag for empty dataset to avoid ajax stalling
+		$html = qq{<FONT CLASS ="small">Dataset count: 0}.qq{</FONT>\n<BR>\n};
+		$html .= qq{<SELECT id="ds_id" SIZE="5" MULTIPLE onChange="gen_data(['args__loading. . .'],['ds_info']); get_dataset_info(['ds_id'],[dataset_info_chr_chain])" >\n};
+		$html .= $opt;
+		$html .= "\n</SELECT>\n";
+		$html =~ s/OPTION/OPTION SELECTED/;
+    }
     return $html;
   }
 
-sub get_data_info_info
+sub get_dataset_info
   {
-    my $did = shift;
-    return unless $did;
-    my $di = $DB->get_dataset_obj->retrieve($did);
-    return unless $di;
-    my $html .= "<table>";;
-    my $ds = $di->data_source->name ." ". $di->data_source->description;
-    my $link = $di->data_source->link;
+    my $dsd = shift;
+    my $html = "";
+    if ($dsd == -77) # error flag for empty dataset
+    {
+    	$html .= qq{<input type="hidden" id="chr" value="">};
+    	$html .= "No genomic sequence";
+    	return $html;
+    }
+
+    my $ds = $DB->get_dataset_obj->retrieve($dsd);
+
+    return $html unless $ds;
+    $html = "<table>";
+    my $ds_name = $ds->data_source->name ." ". $ds->data_source->description;
+    my $link = $ds->data_source->link;
+
     $link = "http://".$link if ($link && $link !~ /http/);
-    $ds = "<a href =\"".$link."\">".$ds."</a>" if $di->data_source->link;
-    $html .= qq{<TR><TD>Data Source:<TD>$ds}."\n";
-    $html .= qq{<tr><td>Version:<td>}.$di->version."\n";
-    my @chr = $DB->get_genomic_seq_obj->get_chromosome_for_dataset($di);
-    #push @chr, "no genomic sequence" unless @chr;
+    $ds_name = "<a href =\"".$link."\">".$ds_name."</a>" if $ds->data_source->link;
+    $html .= qq{<TR><TD>Data Source:<TD>$ds_name}."\n";
+    $html .= qq{<tr><td>Version:<td>}.$ds->version."\n";
+    my @chr = $DB->get_genomic_seq_obj->get_chromosome_for_dataset($ds);
+
     if (@chr)
       {
 	$html .= qq{<tr><td>Chromosome};
@@ -148,7 +174,7 @@ sub get_data_info_info
 	$html .= ":";
 	$html .= "<td>";
     my $select;
-	$select .= qq{<SELECT id="chr" onChange="gen_data(['args__searching for features. . .'],['chr_info']); gen_data(['args__waiting. . .'],['viewer']); gen_data(['args__'],['get_seq']); get_data_info_chr_info(['di_id', 'chr'],['chr_info','viewer', 'get_seq'])" >\n};
+	$select .= qq{<SELECT id="chr" onChange="gen_data(['args__searching for features. . .'],['chr_info']); gen_data(['args__waiting. . .'],['viewer']); gen_data(['args__'],['get_seq']); get_dataset_chr_info(['ds_id', 'chr'],['chr_info','viewer', 'get_seq'])" >\n};
 	$select .= join ("\n", map {"<OPTION value=\"$_\">".$_."</OPTION>"} @chr)."\n";
 	$select =~ s/OPTION/OPTION SELECTED/;
 	$select .= "\n</SELECT>\n";
@@ -158,23 +184,21 @@ sub get_data_info_info
       $html .= qq{<input type="hidden" id="chr" value="">};
       $html .= "No genomic sequence";
     }
-#    my $length = commify( $DB->get_genomic_seq_obj->get_last_position($di) );
-#    $html .= qq{<tr><td>Nucleotides:<td>$length} if $length;
-#    my $feats = $di->get_feature_type_count;
-#    $html .= qq{<tr><td valign=top>Features:<td><table>};
-#    $html .= join ("\n<tr>",map {"<td>$_<td>".$feats->{$_} } sort {$feats->{$b}<=> $feats->{$a}} keys %$feats);
-#    $html .= "</table>";
     return $html;
   }
 
-sub get_data_info_chr_info
+sub get_dataset_chr_info
   {
     my $dsd = shift;
     my $chr = shift;
-    return unless $dsd;    
+	if ($dsd == -77) # error flag for empty dataset
+	{
+		return "", "", "";
+	}
+    my $html .= "<table>";
+    return $html unless $dsd;
     my $ds = $DB->get_dataset_obj->retrieve($dsd);
-    return unless $ds;
-    my $html .= "<table>";;
+    return $html unless $ds;
     my $length = commify( $DB->get_genomic_seq_obj->get_last_position(ds=>$ds, chr=>$chr) );
     $html .= qq{<tr><td>Nucleotides:<td>$length} if $length;
     my $feats = $ds->get_feature_type_count(chr=>$chr);
@@ -185,7 +209,7 @@ sub get_data_info_chr_info
 
     my $viewer;
     if ($chr)
-      {
+     {
 	$viewer .= "<br><br>";
 	$viewer .= "<font class=\"oblique\">GeLo Viewer Launcher</font><br>";
 	$viewer .= "<table>";
@@ -227,7 +251,7 @@ sub gen_data
     return qq{<font class="loading">$message. . .</font>};
   }
 
-sub commify 
+sub commify
     {
       my $text = reverse $_[0];
       $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
