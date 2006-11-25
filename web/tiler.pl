@@ -5,10 +5,20 @@ use File::Spec::Functions;
 require LWP::Simple;
 use vars qw($IMGURL $ZOOM_PAR $SPATIAL_PARS $BUPT);
 
-$IMGURL = 'http://toxic/CoGe/GenomePNG.pl?';
+$IMGURL = 'http://biocon.berkeley.edu/CoGe/GenomePNG.pl?';
 $ZOOM_PAR = 'z';
 $SPATIAL_PARS = ['x'];
 $BUPT = 10;
+
+###DEBUGGING testing to make sure that 'x' extrapolates to 0 based on
+#zoom and $BUPT
+my %param = map { split('=', $_) } split(/&/,$ENV{QUERY_STRING});
+if ($param{x}%($BUPT*(2**$param{z})))
+  {
+   my $mod = $param{x}%($BUPT*(2**$param{z}));
+    print STDERR "x location error in tiler.pl: x=".$param{x}."\tz=".$param{z}."\tmod=$mod\n ";
+  }
+
 print "Content-type: image/png\n\n";
 
 my ($basedir,$dir) = get_dir_array();
@@ -84,7 +94,7 @@ sub get_dir_array {
     #@keyvals = map { $_ % 2 == 0 && !grep_match($keyvals[$_],$SPATIAL_PARS) ? $keyvals[$_] : '' } 0.. $#keyvals;
     #@keyvals = sort @keyvals;
     #push(@keyvals,@$SPATIAL_PARS);
-    @keyvals = qw(di chr iw z x);
+    @keyvals = qw(ds chr iw z x);
     my $MAX = get_max($query_pairs{$ZOOM_PAR});
     foreach my $key( @keyvals ){
         next if !$key;
