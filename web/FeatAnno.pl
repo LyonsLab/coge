@@ -9,7 +9,7 @@ use CoGe::Accessory::LogUser;
 
 $ENV{PATH} = "/opt/apache/CoGe/";
 
-use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $DB $FORM $FID $DI $CHR $LOC);
+use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $DB $FORM $FID $DS $CHR $LOC);
 
 # set this to 1 to print verbose messages to logs
 $DEBUG = 0;
@@ -19,13 +19,13 @@ $| = 1; # turn off buffering
 ($USER) = CoGe::Accessory::LogUser->get_user();
 $FORM = new CGI;
 $FID = $FORM->param('fid');
-$DI = $FORM->param('di');# || 61;
+$DS = $FORM->param('ds');# || 61;
 $CHR = $FORM->param('chr');# || 7;
 $LOC = $FORM->param('loc') || $FORM->param('pos') || $FORM->param('x');# || 6049802;
 $LOC = 0 unless $LOC;
 $DB = new CoGe::Genome;
 print "Content-Type: text/html\n\n";
-my $rhtml = gen_html(featid=>$FID, loc=>$LOC, chr=>$CHR, di=>$DI) if $LOC > 0;
+my $rhtml = gen_html(featid=>$FID, loc=>$LOC, chr=>$CHR, ds=>$DS) if $LOC > 0;
 print "<font class=title3>Position:</font> <font class=data>$LOC</font><br><hr>";
 $rhtml = "No annotations" unless $rhtml;
 print $rhtml;
@@ -36,12 +36,12 @@ sub gen_html
     my $featid = $args{featid};
     my $loc = $args{loc};
     my $chr = $args{chr};
-    my $di = $args{di};
-    my ($dio) = $DB->get_dataset_obj->retrieve($di);
+    my $ds = $args{ds};
+    my ($dso) = $DB->get_dataset_obj->retrieve($ds);
     my @feats;
-    foreach my $tdio ($dio->get_associated_datasets)
+    foreach my $tdso ($dso->get_associated_datasets)
       {
-	push @feats, $DB->get_feat_obj->get_features_in_region(dataset => $tdio->id, 
+	push @feats, $DB->get_feat_obj->get_features_in_region(dataset => $tdso->id, 
 							       chr => $chr,
 							       start => $loc,
 							       stop => $loc,
