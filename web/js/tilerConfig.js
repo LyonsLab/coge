@@ -138,10 +138,10 @@ nMAX_ZOOM: 20,
 // the parameters that are requred to generate
 // the image that are non-spatial
 // <requred>
-NON_SPATIAL_PARS_NAME: ["chr","di","iw"],
+NON_SPATIAL_PARS_NAME: ["chr","ds","iw"],
 
 chr: 2,
-di: 6,
+ds: 6,
 iw: 256,
 
 // INITIAL_CENTER
