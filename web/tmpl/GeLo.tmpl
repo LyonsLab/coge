@@ -3,35 +3,35 @@
 <script language="javascript">
 
 function dataset_chain() {
- kaj.GS('di_list','<font class="loading"></font>');
- kaj.GS('di_info','<font class="loading"></font>');	
- kaj.GS('chr_info','<font class="loading"></font>');	
- get_data_info(['org_id'],[dataset_info_chain]);
+ kaj.GS('ds_list','<font class="loading"></font>');
+ kaj.GS('ds_info','<font class="loading"></font>');
+ kaj.GS('chr_info','<font class="loading"></font>');
+ get_dataset(['org_id'],[dataset_info_chain]);
 }
 
 function dataset_info_chain(val) {
- kaj.GS('chr_info','<font class="loading"></font>');	
- kaj.GS('di_info','<font class="loading">loading. . .</font>');
+ kaj.GS('chr_info','<font class="loading"></font>');
+ kaj.GS('ds_info','<font class="loading">loading. . .</font>');
  kaj.GS('viewer','<font class="loading"></font>');
- kaj.GS('get_seq','');	
- if (val) {kaj.GS('di_list', val);}
- get_data_info_info(['di_id'],[dataset_info_chr_chain]);
+ kaj.GS('get_seq','');
+ if (val) {kaj.GS('ds_list', val);}
+ get_dataset_info(['ds_id'],[dataset_info_chr_chain]);
 }
 
 function dataset_info_chr_chain(val, chr) {
  kaj.GS('chr_info','<font class="loading">loading. . .</font>');
- kaj.GS('viewer','<font class="loading"></font>');	
- kaj.GS('get_seq','');	
- if (val) {kaj.GS('di_info', val); kaj.GS('chr_info','');}
- kaj.GS('chr_info','<font class="loading">searching for features. . .</font>'); 
- get_data_info_chr_info(['di_id', 'chr'],['chr_info', 'viewer', 'get_seq']);
+ kaj.GS('viewer','<font class="loading"></font>');
+ kaj.GS('get_seq','');
+ if (val) {kaj.GS('ds_info', val); kaj.GS('chr_info','');}
+ kaj.GS('chr_info','<font class="loading">searching for features. . .</font>');
+ get_dataset_chr_info(['ds_id', 'chr'],['chr_info', 'viewer', 'get_seq']);
 }
 
-function launch_viewer (did, chr) {
+function launch_viewer (dsd, chr) {
  x = kaj.G('x');
  z = kaj.G('z');
  if (z > 12) {z=12;}
- link =  "GeLo.pl?z="+z+"&INITIAL_CENTER="+x+",0&di="+did+"&chr="+chr;
+ link =  "GeLo.pl?z="+z+"&INITIAL_CENTER="+x+",0&ds="+dsd+"&chr="+chr;
  window.location=link;
 }
 
@@ -45,11 +45,11 @@ function launch_viewer (did, chr) {
    <DIV id="get_seq"></DIV>
   <TD valign=top>
    <DIV class = "oblique">Datasets</DIV>
-   <DIV id="di_list"><TMPL_VAR NAME="DI_LIST"></DIV>
+   <DIV id="ds_list"><TMPL_VAR NAME="DI_LIST"></DIV>
 
   <TD valign=top>
    <DIV class = "oblique">Dataset information</DIV>
-   <DIV id="di_info"><TMPL_VAR NAME="DI_INFO"></DIV>
+   <DIV id="ds_info"><TMPL_VAR NAME="DS_INFO"></DIV>
    <DIV id="chr_info"><TMPL_VAR NAME="CHR_INFO"></DIV>
 
 </TABLE>
@@ -78,11 +78,11 @@ function myInit(){
     connect('container','onmousemove',gb,tmouse);
     connect('container','onclick',query);
     connect('go2center','onclick',function(){gb.setCenter($('bploc').value,0)});
-    // TOOD for anything with class function, connect element with 
+    // TOOD for anything with class function, connect element with
     // id = fred to function fred(){ }
 }
 function rw2pix(e){
-    $('pixloc').value = gb.rw2pix($('bploc').value,0)[0]; 
+    $('pixloc').value = gb.rw2pix($('bploc').value,0)[0];
 }
 function tmouse(e){
   var mx =  e.mouse().page.x;
@@ -97,14 +97,14 @@ function query(e){
    var ex = getElementPosition(e.src()).x;
    var pixelpos = mx - ex;
    var bppos = gb.pix2rw(pixelpos,0)[0];
-   placeanno('<font class="loading">Loading annotations for position '+bppos+'. . .</font>'); 
-   var url = qurl + 'chr='+ $('chr').value + '&di='+$('di').value +
+   placeanno('<font class="loading">Loading annotations for position '+bppos+'. . .</font>');
+   var url = qurl + 'chr='+ $('chr').value + '&ds='+$('ds').value +
    '&loc='+bppos;
    jfetch(url, 'info');
 }
 
 function placeanno(stuff) {
- //  document.info.info.value = stuff; 
+ //  document.info.info.value = stuff;
   kaj.GS('info', stuff);
 }
 
@@ -113,7 +113,7 @@ function placeanno(stuff) {
 <form action='javascript:;' >
 <input id='iw' type ='hidden' value=256 />
 <input id='chr' type ='hidden' value='<TMPL_VAR NAME=CHR>' />
-<input id='di' type ='hidden' value='<TMPL_VAR NAME=DI>' />
+<input id='ds' type ='hidden' value='<TMPL_VAR NAME=DS>' />
 <input id='x' type ='hidden' value='<TMPL_VAR NAME=X>' />
 <input id='xloc' type ='hidden' value='<TMPL_VAR NAME=XLOC>' />
 
@@ -126,11 +126,11 @@ Nucleotide: <input class = "backbox" type='text' id='bploc' value='' size=10>
 Current Zoom: <input type ='text' class = "backbox" id='z' value='<TMPL_VAR NAME=Z>' size = 2>
 <br>
 Organism: <font class="species"><TMPL_VAR NAME=ORG></font>
-Dataset: <font class="species"><TMPL_VAR NAME=DS></font>
+Dataset: <font class="species"><TMPL_VAR NAME=DS_NAME></font>
 <div id='container' class="tileClass" style='position:relative;left:6px;top:10px;width:1200px;height:350px;border:1px solid black' > </div>
 <div id ='info' style='position:relative;left:6px;top:10px;width:1200px;height:400px'><FORM NAME="info"></FORM></div>
 </form>
 <br>
 <div class = "small">Click on the map to view feature information at that position </div>
-<div class = "small">Click and drag the map to move genomic view left and right</div> 
+<div class = "small">Click and drag the map to move genomic view left and right</div>
 </TMPL_IF>
