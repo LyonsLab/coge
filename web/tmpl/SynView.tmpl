@@ -101,13 +101,19 @@ onClick="loading([], ['results']); run([
 	'gb3down', 
 
 	'seq1', 
-	'comp1', 
+	'comp1',
+	'start1',
+	'stop1',
 
 	'seq2', 
 	'comp2', 
+	'start2',
+	'stop2',
 
 	'seq3', 
 	'comp3', 
+	'start3',
+	'stop3',
 
 	'matchfilter', 
 	'spike', 
@@ -165,7 +171,7 @@ onClick="loading([], ['results']); run([
        <TD><DIV  id="up1" ><input class="backbox" type="text" name="dr1up" id="dr1up" tabindex="1" size="10" value="10000" /> </DIV>
       <TR>
        <TD><DIV class="small">Downstream:</DIV>
-       <TD><DIV  id="down1"><input class="backbox" type="text" name="dr1down" id="dr1down" tabindex="1" size="10"  value="10000"/></DIV>
+       <TD><DIV  id="down1"><input class="backbox" type="text" name="dr1down" id="dr1down" tabindex="1" size="10"  value="10000" /></DIV>
       <TR>
         <TD><input type="checkbox" name="apply_all" id="apply_all" value"0"><font class ="small" float>(Apply distance to all?)</font>
       </TABLE>
@@ -181,7 +187,7 @@ onClick="loading([], ['results']); run([
        <TD><DIV  id="up2" ><input class="backbox" type="text" name="dr2up" id="dr2up" tabindex="1" size="10" value="10000" /></DIV>
       <TR>
        <TD><DIV class="small">Downstream:</DIV>
-       <TD><DIV  id="down2" ><input class="backbox" type="text" name="dr2down" id="dr2down" tabindex="1" size="10"  value="10000"/></DIV>
+       <TD><DIV  id="down2" ><input class="backbox" type="text" name="dr2down" id="dr2down" tabindex="1" size="10"  value="10000" /></DIV>
       </TABLE>
       <TD>
       <TABLE>
@@ -195,7 +201,7 @@ onClick="loading([], ['results']); run([
        <TD><DIV  id="up3" ><input class="backbox" type="text" name="dr3up" id="dr3up" tabindex="1" size="10" value="10000" /></DIV>
       <TR>
        <TD><DIV class="small">Downstream:</DIV>
-       <TD><DIV  id="down3" ><input class="backbox" type="text" name="dr3down" id="dr3down" tabindex="1" size="10"  value="10000"/></DIV>
+       <TD><DIV  id="down3" ><input class="backbox" type="text" name="dr3down" id="dr3down" tabindex="1" size="10"  value="10000" /></DIV>
       </TABLE>
      </table>
      <span class="subItem"></span>
@@ -284,19 +290,26 @@ onClick="loading([], ['results']); run([
       <TD>
       <DIV>
      Sequence:<BR> <textarea class="backbox" name="seq1" id="seq1" tabindex="1"  rows="5" cols="30"></textarea><BR>
-     Reverse Complement: <label><input class="backbox" type="radio" name="comp1" id="comp1" tabindex="1" value="1" />On</label><label><input class="backbox" type="radio" name="comp1" id="comp1" tabindex="1" value="0" checked/>Off</label>
+     Reverse Complement: <label><input class="backbox" type="radio" name="comp1" id="comp1" tabindex="1" value="1" />On</label><label><input class="backbox" type="radio" name="comp1" id="comp1" tabindex="1" value="0" checked />Off</label><BR>
+     Start: <input class="backbox" type="text" name="start1" id="start1" tabindex="1"  size="5" value="1" />
+     Stop: <input class="backbox" type="text" name="stop1" id="stop1" tabindex="1"  size="5" value=""  />
       </DIV>
       <TD>
       <DIV>
      Sequence:<BR> <textarea class="backbox" name="seq2" id="seq2" tabindex="1"  rows="5" cols="30"></textarea><BR>
-     Reverse Complement: <label><input class="backbox" type="radio" name="comp2" id="comp2" tabindex="1" value="1" />On</label><label><input class="backbox" type="radio" name="comp2" id="comp2" tabindex="1" value="0" checked/>Off</label>
+     Reverse Complement: <label><input class="backbox" type="radio" name="comp2" id="comp2" tabindex="1" value="1" />On</label><label><input class="backbox" type="radio" name="comp2" id="comp2" tabindex="1" value="0" checked />Off</label><BR>
+     Start: <input class="backbox" type="text" name="start2" id="start2" tabindex="1"  size="5" value="1" />
+     Stop: <input class="backbox" type="text" name="stop2" id="stop2" tabindex="1"  size="5" value=""  />
       </DIV>
       <TD>
       <DIV>
      Sequence:<BR> <textarea class="backbox" name="seq3" id="seq3" tabindex="1"  rows="5" cols="30"></textarea><BR>
-     Reverse Complement: <label><input class="backbox" type="radio" name="comp3" id="comp3" tabindex="1" value="1" />On</label><label><input class="backbox" type="radio" name="comp3" id="comp3" tabindex="1" value="0" checked/>Off</label>
+     Reverse Complement: <label><input class="backbox" type="radio" name="comp3" id="comp3" tabindex="1" value="1" />On</label><label><input class="backbox" type="radio" name="comp3" id="comp3" tabindex="1" value="0" checked />Off</label><BR>
+     Start: <input class="backbox" type="text" name="start3" id="start3" tabindex="1"  size="5" value="1" />
+     Stop: <input class="backbox" type="text" name="stop3" id="stop3" tabindex="1"  size="5" value=""  />
       </DIV>
      </table>
+     <span class="subItem"></span>
      <span class="subItem"></span>
      <span class="subItem"></span>
      <span class="subItem"></span>
@@ -335,7 +348,7 @@ onClick="loading([], ['results']); run([
   </TH>
   <TD>
     <DIV>
-      <label><input class="backbox" type="radio" name="matchfilter" id="matchfilter" tabindex="15" value="1" checked/>On</label><label><input class="backbox" type="radio" name="matchfilter" id="matchfilter" tabindex="15" value="0"/>Off</label>
+      <label><input class="backbox" type="radio" name="matchfilter" id="matchfilter" tabindex="15" value="1" checked />On</label><label><input class="backbox" type="radio" name="matchfilter" id="matchfilter" tabindex="15" value="0" />Off</label>
       <BR>Only show matches of equal to or greater than:<BR>
       <label><input class="backbox" type="radio" name="spike" id="spike" value="13" tabindex="16" />13/13</label><label><input class="backbox" type="radio" name="spike" id="spike" value="14" tabindex="17" />14/14</label><label><input class="backbox" type="radio" name="spike" id="spike" value="15" checked="checked" tabindex="18" />15/15</label><label><input class="backbox" type="radio" name="spike" id="spike" value="16" tabindex="19" />16/16</label><label><input class="backbox" type="radio" name="spike" id="spike" value="17" tabindex="20" />17/17</label><label><input class="backbox" type="radio" name="spike" id="spike" value="18" tabindex="21" />18/18</label>
 	
@@ -346,13 +359,13 @@ onClick="loading([], ['results']); run([
   <TH>
    Mask Exons:<br><font class="small">(Exons Masked during bl2seq run)</font>
   <TD>
-   <label><input class="backbox" type="radio" name="mask" id="mask" tabindex="22" value="1" />On</label><label><input class="backbox" type="radio" name="mask" id="mask" tabindex="22" value="0" checked/>Off</label>
+   <label><input class="backbox" type="radio" name="mask" id="mask" tabindex="22" value="1" />On</label><label><input class="backbox" type="radio" name="mask" id="mask" tabindex="22" value="0" checked />Off</label>
  </TR>
  <TR>
   <TH>
    Mask Non-coding Sequence:<br><font class="small">(Everything but exons masked during bl2seq run)</font>
   <TD>
-   <label><input class="backbox" type="radio" name="mask_ncs" id="mask_ncs" tabindex="22" value="1" />On</label><label><input class="backbox" type="radio" name="mask_ncs" id="mask_ncs" tabindex="22" value="0" checked/>Off</label>
+   <label><input class="backbox" type="radio" name="mask_ncs" id="mask_ncs" tabindex="22" value="1" />On</label><label><input class="backbox" type="radio" name="mask_ncs" id="mask_ncs" tabindex="22" value="0" checked />Off</label>
  </TR>
 
         </TABLE>
@@ -611,12 +624,18 @@ onClick="loading([], ['results']); run([
 
 	'seq1', 
 	'comp1', 
+	'start1',
+	'stop1',
 
 	'seq2', 
 	'comp2', 
+	'start2',
+	'stop2',
 
 	'seq3', 
 	'comp3', 
+	'start3',
+	'stop3',
 
 	'matchfilter', 
 	'spike', 
