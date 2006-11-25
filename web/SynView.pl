@@ -141,12 +141,18 @@ sub Show_Summary
 
 	$seq1,
 	$dscomp1,
+	$dsstart1,
+	$dsstop1,
 
 	$seq2,
 	$dscomp2,
+	$dsstart2,
+	$dsstop2,
 
 	$seq3,
 	$dscomp3,
+	$dsstart3,
+	$dsstop3,
 
 	$match_filter,
 	$spike_flag,
@@ -209,7 +215,7 @@ sub Show_Summary
 	  $sequence .= $_;
 	}
 	return "<font class=error>Problem uploading file $seq_file1</font>" unless ($sequence);
-	($obj1) = generate_obj_from_seq($sequence);
+	($obj1) = generate_obj_from_seq($sequence, 1);
 	
 	($file1, $file1_begin, $file1_end, $spike_seq) = 
 	  generate_seq_file (
@@ -226,7 +232,8 @@ sub Show_Summary
       }
     elsif ($seq1 )
       {
-	($obj1) = generate_obj_from_seq($seq1);
+	$seq1 = get_substr(seq=>$seq1, start=>$dsstart1, stop=>$dsstop1);
+	($obj1) = generate_obj_from_seq($seq1, 1);
 	return "<font class=error>Problem with direct sequence submission</font>" unless ($obj1);
 	($file1, $file1_begin, $file1_end, $spike_seq) = 
 	  generate_seq_file (
@@ -279,7 +286,8 @@ sub Show_Summary
       }
    elsif ($seq2 )
       {
-	($obj2) = generate_obj_from_seq($seq2);
+	$seq2 = get_substr(seq=>$seq2, start=>$dsstart2, stop=>$dsstop2);
+	($obj2) = generate_obj_from_seq($seq2, 2);
 	return "<font class=error>Problem with direct sequence submission</font>" unless ($obj2);
 	($file2, $file2_begin, $file2_end, $spike_seq) = 
 	  generate_seq_file (
@@ -333,7 +341,8 @@ sub Show_Summary
       }
    elsif ($seq3 )
       {
-	($obj3) = generate_obj_from_seq($seq3);
+	$seq3 = get_substr(seq=>$seq3, start=>$dsstart3, stop=>$dsstop3);
+	($obj3) = generate_obj_from_seq($seq3, 3);
 	return "<font class=error>Problem with direct sequence submission</font>" unless ($obj3);
 	($file3, $file3_begin, $file3_end, $spike_seq) = 
 	  generate_seq_file (
@@ -372,7 +381,7 @@ sub Show_Summary
 		     accn=>$obj3->{ACCN},
 		    };
       }
-
+#    print STDERR "\n";
     unless ((ref ($obj1) =~ /GBObject/ || ref ($obj1) =~ /hash/i)  && ( ( (ref ($obj2) =~ /GBObject/) || ref ($obj2) =~ /hash/i ) || ( (ref ($obj3) =~ /GBObject/) || ref ($obj3) =~ /hash/i ) ) )
       {
 	return "<h3><font color = red>Problem retrieving information.  Please try again.</font></h3>";
@@ -386,7 +395,7 @@ sub Show_Summary
     $bl2seq_params .= " -G " . $form->param('gapopen');
     $bl2seq_params .= " -X " . $form->param('gapextend');
     $bl2seq_params .= " -q " . $form->param('mismatch');
-    $bl2seq_params .= join(" ", $form->param('blastparams'));
+    $bl2seq_params .= " ".join(" ", $form->param('blastparams'));
     my $blast_reports = run_bl2seq( files=>[map {$_->{file}} @sets], accns=>[map {$_->{accn}}@sets], blast_params=>$bl2seq_params, spike_seq=>$spike_seq, match_filter=>$match_filter );
 
    #sets => array or data for blast
@@ -619,6 +628,7 @@ sub process_features
 	print STDERR $type,"\n" if $DEBUG;
 	foreach my $block (@{$feat->{'blocks'}})
 	  {
+#	    print STDERR $feat->{QUALIFIERS}{names}[0],", ",  $feat->{F_KEY},": ", $block->[0],"-", $block->[1],"\n";;
 	    $block->[0] =1 unless $block->[0]; #in case $block is set to 0
 	    $f->add_segment(start=>$block->[0], stop=>$block->[1]);
 	    $f->strand($strand);
@@ -702,7 +712,7 @@ sub process_hsps
 	    my $link = "bl2seq_summary.pl?".join("&", "blast_report=".$report, "accnq=", "accns=", "qbegin=", "qend=", "sbegin=","send=","submit=GO");
 	    $f->link($link."&"."hsp=".$item->{number});
 	    $c->add_feature($f);
-	    print STDERR $item->{number},"-", $item->{orientation}, $track,":", $strand,"\n";
+	    print STDERR $item->{number},"-", $item->{orientation}, $track,":", $strand,"\n" if $DEBUG;
 	  }
 	$i++;
 	$track++;
@@ -759,6 +769,7 @@ sub draw_prots
 sub generate_obj_from_seq
   {
     my $sequence = shift;
+    my $num = shift;
     my ($obj, $file, $file_begin, $file_end, $spike_seq);
     if ($sequence =~ /^LOCUS/)
       {
@@ -784,8 +795,8 @@ sub generate_obj_from_seq
       {
 	#just the sequence
 	$obj = new GS::MyDB::GBDB::GBObject(
-					     ACCN=>"RAW_SEQUENCE_SUBMISSION",
-					     LOCUS=>"RAW_SEQUENCE_SUBMISSION",
+					     ACCN=>"RAW_SEQUENCE_SUBMISSION $num",
+					     LOCUS=>"RAW_SEQUENCE_SUBMISSION $num",
 					    );
 	$sequence =~ s/\n|\r//g;
 	$obj->sequence($sequence);
@@ -849,6 +860,7 @@ sub get_obj_from_genome_db
 	$start = $feat->begin_location-$up;
 	$start = 1 if $start < 1;
 	$stop = $feat->end_location+$down;
+#	print STDERR "$start-$stop getting genomic sequence\n";
 	$feat_start = $feat->begin_location;
 	$chr = $feat->chr;
 	$seq = $db->get_genomic_seq_obj->get_sequence(
@@ -872,6 +884,7 @@ sub get_obj_from_genome_db
     $used_names{$accn} = 1;
 
     print STDERR "Region: $chr: $start-$stop\n" if $DEBUG;
+#    print STDERR "Region: $chr: ",$start-$start+1,"-",$stop-$start,"\n";
 
     foreach my $f ($db->get_feature_obj->get_features_in_region(start=>$start, stop=>$stop, chr=>$chr, dataset_id=>$ds_id))
       {
@@ -888,10 +901,13 @@ sub get_obj_from_genome_db
 	my $anno = $f->annotation_pretty_print;
 	$anno =~ s/\n/<br>/g;
 	$anno =~ s/\t/&nbsp;&nbsp;/g;
+	my $location = $f->genbank_location_string(recalibrate=>$start);
+#	print STDERR $location,"\n";
+
 	$obj->add_feature (
 			   F_NUMBER=>$fnum,
 			   F_KEY=>$f->type->name,
-			   LOCATION=>$f->genbank_location_string(recalibrate=>$start),
+			   LOCATION=> $location,
 			   QUALIFIERS=>[
                                         [annotation=>$anno],
                                         [names=> [map {$_->name} sort {$a->name cmp $b->name} $f->names]],
@@ -960,6 +976,7 @@ sub run_bl2seq {
 	  $command .= " " . $blast_params;
 	  my $x = "";
 	  ($x,$command) = check_taint( $command );
+	  print STDERR $command,"\n" if $STDERR;
 	  if ( $DEBUG ) {
 	    print STDERR "About to execute...\n $command\n";
 	  }
@@ -992,3 +1009,22 @@ sub run_bl2seq {
   return( \@reports );
 }
 
+sub get_substr
+  {
+    my %opts = @_;
+    my $seq = $opts{seq};
+    my $start = $opts{start};
+    $start =~ s/,|\.//g;
+    $start = 1 if !$start || $start < 1;
+    my $stop = $opts{stop};
+    return $seq if ($start == 1 && !$stop);
+    my $seqlength = length $seq;
+    $stop = $seqlength unless $stop;
+    $stop =~ s/,|\.//g;
+    my $newlength = $stop-$start;
+    if ($start < $seqlength && $newlength)
+      {
+	$seq = substr($seq, $start-1, $newlength);
+      }
+    return $seq;
+  }
