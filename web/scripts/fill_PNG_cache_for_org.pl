@@ -12,6 +12,7 @@ use CoGe::Graphics::Feature::AminoAcid;
 use CoGe::Graphics::Feature::Domain;
 use CoGe::Graphics::Feature::Block;
 use CoGe::Genome;
+use CoGe::Graphics;
 use File::Spec::Functions;
 #use CoGe::Accessory::Tile::Cache;
 use Getopt::Long;
@@ -21,13 +22,15 @@ use Benchmark;
 use vars qw($BASE_DIR);
 $BASE_DIR = "/opt/apache/CoGe/_cache_";
 
-my (@org_ids, $version,$iw, $min_zoomi, $max_chr_length, $min_chr_length, @skip_oids, $max_zoomi, $help, $overwrite, $unprocess_ds, $zoom_step, $unprocess_zoom);
+my (@orgs, $version,$iw, $min_zoomi, $max_chr_length, $min_chr_length, @skip_oids, $max_zoomi, $help, $overwrite, $unprocess_ds, $zoom_step, $unprocess_zoom, @datasets, $start_pos, $stop_pos);
 
-GetOptions("oid=s"=>\@org_ids,
+GetOptions(
+	   "org|oid|o=s"=>\@orgs,
+	   "dataset|ds=s"=>\@datasets,
 	   "v=s" => \$version,
 	   "iw=s"=>\$iw,
-	   "min_zoom|mnz=s"=>\$min_zoomi,
-	   "max_zoom|mxz=s"=>\$max_zoomi,
+	   "min_zoom|minz=s"=>\$min_zoomi,
+	   "max_zoom|maxz=s"=>\$max_zoomi,
 	   "max_chr_length=s"=>\$max_chr_length,
 	   "min_chr_length=s"=>\$min_chr_length,
 	   "skip_oid=s"=>\@skip_oids,
@@ -36,72 +39,153 @@ GetOptions("oid=s"=>\@org_ids,
 	   "h|help"=>\$help,
 	   "overwrite|ow=s"=>\$overwrite,
 	   "zoom_step|zs=s"=>\$zoom_step,
-#	   "z|zoom=s" => \$zoom,
-#	   "u|url=s" => \$url
+	   "start_pos=i"=>\$start_pos,
+	   "stop_pos=i"=>\$stop_pos,
 	   );
 
 help() if $help;
 
+$start_pos = 0 unless defined $start_pos;
 $overwrite = 1 unless defined $overwrite;
 $min_zoomi = 5 unless $min_zoomi;
-$zoom_step = 4 unless $zoom_step;
+$zoom_step = 4 unless defined $zoom_step;
 $max_chr_length = 0 unless $max_chr_length;
 my %skip_oids = map {$_,1} @skip_oids;
 
-#$url = "synteny.cnr.berkeley.edu" unless $url;
-#$url = "http://" .$url unless $url =~ /http:\/\//;
-#$url .= "/CoGe/tiler.pl";
 $iw = 256 unless $iw;
 my $db = new CoGe::Genome;
+my $graphic = new CoGe::Graphics;
 
 ##some limits to keep from blowing our stack
 use vars qw($MAX_FEATURES $MAX_NT);
 $MAX_FEATURES = $iw*2; #one feature per pixel
 $MAX_NT       = $iw*100000; #50,000 nt per pixel
 
-unless (@org_ids)
+$graphic->MAX_FEATURES($iw*2);
+$graphic->MAX_NT($iw*100000);
+my $orgs = get_orgs(orgs=>\@orgs, datasets=>\@datasets);
+
+foreach my $org (@$orgs)
   {
-    @org_ids = $db->get_org_obj->retrieve_all();
+    next if $skip_oids{$org};
+    print "working on: ".$org->name,"\n";
+    foreach my $ds ($org->dataset)
+      {
+	process_dataset(ds=>$ds);
+      }
   }
-foreach my $org_id (@org_ids)
+
+foreach my $ds (@datasets)
   {
+<<<<<<< .mine
+    process_dataset(ds=>$ds);
+  }
+
+sub process_dataset
+  {
+    my %opts = @_;
+    my $ds = $db->get_dataset_obj->resolve_dataset($opts{ds});
+    
+    next if $version && $ds->version ne $version;
+    my $dsname = $ds->name;
+    $dsname .= ": ".$ds->desc if $ds->desc;
+    print "Processing dataset $dsname. . .\n";
+    if ( $unprocess_ds && -d "$BASE_DIR/ds__".$ds->id )
+=======
     next if $skip_oids{$org_id};
     my ($org) = ref ($org_id) =~ /org/i ? $org_id :$db->get_org_obj->retrieve($org_id);
     print "working on: ".$org->name,"\n";
     foreach my $di ($org->datasets)
+>>>>>>> .r289
       {
-	next if $version && $di->version ne $version;
-	my $diname = $di->name;
-	$diname .= ": ".$di->desc if $di->desc;
-	print "Processing dataset $diname. . .\n";
-	if ( $unprocess_ds && -d "$BASE_DIR/di__".$di->id )
+	print "Skipping dataset because image directory exists and we are only working on unprocessed datasets.\n";
+	next;
+      }
+    my ($max_zoom_tmp, $chr_len, $chr) = find_max_z(ds=>$ds);
+    $max_zoomi = $max_zoom_tmp unless $max_zoomi;
+    next unless $chr_len;
+    $stop_pos = $chr_len unless defined $stop_pos;
+
+    next if ($max_chr_length && $chr_len > $max_chr_length);
+    next if ($min_chr_length && $chr_len < $min_chr_length);
+    print "Total number of bp for chr $chr: $chr_len\n";
+    next unless defined $max_zoomi;
+    for (my $max_zoom =$max_zoomi; $max_zoom >= $min_zoomi; $max_zoom = $max_zoom - $zoom_step)
+      {
+	my $min_zoom = $max_zoom-$zoom_step+1;
+	next if $max_zoom < $min_zoomi;
+	my $max_chars = 10 * 2**$max_zoom;
+	$max_chars = $chr_len if $max_chars > $chr_len;
+	#march through windows on the chromosome of size max_chars
+	foreach (my $c_start=$start_pos; $c_start < $stop_pos; $c_start+=$max_chars)
 	  {
-	    print "Skipping dataset because image directory exists and we are only working on unprocessed datasets.\n";
-	    next;
-	  }
-#	$version = $di->version unless $version;
-	my ($max_zoom_tmp, $chr_len, $chr) = find_max_z(di=>$di);
-	$max_zoomi = $max_zoom_tmp unless $max_zoomi;
-	next unless $chr_len;
-	next if ($max_chr_length && $chr_len > $max_chr_length);
-	next if ($min_chr_length && $chr_len < $min_chr_length);
-	print "Total number of bp for chr $chr: $chr_len\n";
-	next unless defined $max_zoomi;
-	for (my $max_zoom =$max_zoomi; $max_zoom > $min_zoomi; $max_zoom = $max_zoom - $zoom_step)
-	  {
-	    my $min_zoom = $max_zoom-$zoom_step;
-	    next if $max_zoom < $min_zoomi;
-	    my $max_chars = 10 * 2**$max_zoom;
-	    $max_chars = $chr_len if $max_chars > $chr_len;
-	    #march through windows on the chromosome of size max_chars
-	    foreach (my $c_start=0; $c_start < $chr_len; $c_start+=$max_chars)
+	    print "Working on chromosome chunk $c_start - ", $c_start+$max_chars,"\n";
+	    my $seq = uc($db->get_genomic_sequence_obj->get_sequence(start=>$c_start, end=>$c_start+$max_chars, chr=>$chr, dataset=>$ds)); 
+	    unless ($seq)
 	      {
+<<<<<<< .mine
+		die "no nucleotide sequence for start=>$c_start, end=>$c_start+$max_chars, chr=>$chr, dataset=>$ds\n";
+	      }
+	    my $seq_len = length $seq;
+	    my $c = new CoGe::Graphics::Chromosome;
+#	    $c->DEBUG(1);
+	    $c->overlap_adjustment(0);
+	    $graphic->initialize_c(
+				   ds => $ds->id,
+				   chr => $chr,
+				   iw => $iw,
+				   start => $c_start,
+				   stop => $c_start+$max_chars,
+				   db=>$db,
+				   z=>$max_zoom, 
+				   c=>$c,
+				   csh=>200,
+				   cmh=>5,
+				   fsh=>10,
+				   fmh=>2,
+				  );
+# 	    my $c = initialize_c(
+# 				 ds => $ds->id,
+# 				 chr => $chr,
+# 				 iw => $iw,
+# 				 start => $c_start,
+# 				 stop => $c_start+$max_chars,
+# 				 db=>$db,
+# 				 z=>$max_zoom,
+# 				);
+	    my @cds_feats;
+	    foreach my $ds2 ($ds->get_associated_datasets)
+	      {
+		#	    next;
+#		my $cds_feats = process_features(start=>$c_start, stop=>$c_start+$max_chars-1, chr=>$chr, ds=>$ds2->id, db=>$db,c=>$c);
+		my $cds_feats = $graphic->process_features(start=>$c_start, stop=>$c_start+$max_chars-1, chr=>$chr, ds=>$ds2->id, db=>$db,c=>$c);
+		push @cds_feats, @$cds_feats;
+	      }
+	    #go through all the zoom levels for this region
+	    foreach (my $z=$max_zoom; $z >= $min_zoom; $z--)# (0..$max_zoom..0)
+	      {
+		print "BASE_DIR: $BASE_DIR/ds__".$ds->id."/iw__$iw/z__".$z."\n";
+		
+		if ($unprocess_zoom && -d "$BASE_DIR/ds__".$ds->id."/chr__$chr/iw__$iw/z__".$z)
+=======
 		print "Working on chromosome chunk $c_start - ", $c_start+$max_chars,"\n";
 		my $seq = uc($db->get_genomic_sequence(start=>$c_start, end=>$c_start+$max_chars, chr=>$chr, dataset=>$di)); 
 		unless ($seq)
+>>>>>>> .r289
 		  {
-		    die "no nucleotide sequence for start=>$c_start, end=>$c_start+$max_chars, chr=>$chr, info_id=>$di\n";
+		    print "Skipping zoom level $z because image directory exists and unprocessed_zoom flag is set to true.\n";
+		    next;
 		  }
+<<<<<<< .mine
+
+		my $chars = 10 * 2**$z;
+		my $tot = ceil($max_chars/$chars);
+		print "$chars characters per tile at zoom level $z\n";
+		print "Total number of images to be generated: ", $tot,"\n";
+		$c->delete_features('aa');
+		my $ta = new Benchmark;
+		foreach my $feat (@cds_feats)
+=======
 		my $seq_len = length $seq;
 		my $c = initialize_c(
 				     di => $di->id,
@@ -114,71 +198,46 @@ foreach my $org_id (@org_ids)
 				    );
 		my @cds_feats;
 		foreach my $di2 ($di->get_associated_datasets)
+>>>>>>> .r289
 		  {
-		    #	    next;
-		    my $cds_feats = process_features(start=>$c_start, stop=>$c_start+$max_chars-1, chr=>$chr, di=>$di2->id, db=>$db,c=>$c);
-		    push @cds_feats, @$cds_feats;
+		    $graphic->draw_prots(genomic_feat=>$feat, c=>$c);
 		  }
-		#go through all the zoom levels for this region
-		foreach (my $z=$max_zoom; $z >= $min_zoom; $z--)# (0..$max_zoom..0)
-		  {
-		  print "$BASE_DIR/di__".$di->id."/iw__$iw/z__".$z."\n";
-
-		    if ($unprocess_zoom && -d "$BASE_DIR/di__".$di->id."/chr__$chr/iw__$iw/z__".$z)
-		      {
-			print "Skipping zoom level $z because image directory exists and unprocessed_zoom flag is set to true.\n";
-			next;
-		      }
-
-		    my $chars = 10 * 2**$z;
-		    my $tot = ceil($max_chars/$chars);
-#		    $tot = 1 if $chr_len < $chars;
-		    print "$chars characters per tile at zoom level $z\n";
-		    print "Total number of images to be generated: ", $tot,"\n";
-		    #	next;
-		    $c->delete_features('aa');
-		    my $ta = new Benchmark;
-		    foreach my $feat (@cds_feats)
-		      {
-			draw_prots(genomic_feat=>$feat, c=>$c);
-		      }
-		    my $tb = new Benchmark;
-		    my $count = 0;		
-		    my $pr_time = timestr(timediff($tb, $ta));
-		    print qq{
+		my $tb = new Benchmark;
+		my $count = 0;		
+		my $pr_time = timestr(timediff($tb, $ta));
+		print qq{
 Time to process proteins           $pr_time
 };
-		    my $seq_pos = 0;
-		    #go through each window at this zoom level for this chromosomal window
-		    my $stop = $c_start+$max_chars > $chr_len ? $chr_len : $c_start+$max_chars;
-		    foreach (my $i=$c_start; $i< $stop; $i+=$chars)
+		my $seq_pos = 0;
+		#go through each window at this zoom level for this chromosomal window
+		my $stop = $c_start+$max_chars > $chr_len ? $chr_len : $c_start+$max_chars;
+		foreach (my $i=$c_start; $i< $stop; $i+=$chars)
+		  {
+		    $count++;    
+		    my $clen = $chars;
+		    if ($i+$chars > $c_start+$max_chars)
 		      {
-			$count++;    
-			my $clen = $chars;
-			if ($i+$chars > $c_start+$max_chars)
-			  {
-			    $clen = ($max_chars) % $chars;
-			  }
-			elsif ($i == 0)
-			  {
-			    $clen = $chars-1;
-			  }
-			else
-			  {
-			    $clen = $chars;
-			  }
-			my $subseq = substr($seq, $seq_pos, $clen);
-
-			$seq_pos+=$clen;
-
-			print "$i - $stop\n";
-			print "Image $count of $tot";
-			print "\tclen: $clen, chars: $chars, max_chars: $max_chars, seq_len: $seq_len\n";
-			print "\tstart: ",$i,"($seq_pos), end: ", $i+$clen-1,", length: ", length $subseq,"\n";
-			print "\tlength subseq: ", length $subseq,"\n";
-			print "\t(range: ".($i)."-".($i+$chars-1).")\n\n";
-			generate_image(db=>$db, c=>$c, chr=>$chr, di=>$di, iw=>$iw, z=>$z, x=>$i, stop=>$i+$chars-1, seq=>$subseq);
+			$clen = ($max_chars) % $chars;
 		      }
+		    elsif ($i == 0)
+		      {
+			$clen = $chars-1;
+		      }
+		    else
+		      {
+			$clen = $chars;
+		      }
+		    my $subseq = substr($seq, $seq_pos, $clen);
+		    
+		    $seq_pos+=$clen;
+		    
+#		    print "$i - $stop\n";
+		    print "Image $count of $tot";
+		    print "\tclen: $clen, chars: $chars, max_chars: $max_chars, seq_len: $seq_len\n";
+		    print "\tstart: ",$i,"($seq_pos), end: ", $i+$clen-1,", length: ", length $subseq,"\n";
+		    print "\tlength subseq: ", length $subseq,"\n";
+		    print "\t(range: ".($i)."-".($i+$chars-1).")\n\n";
+		    generate_image(db=>$db, c=>$c, chr=>$chr, ds=>$ds, iw=>$iw, z=>$z, x=>$i, stop=>$i+$chars-1, seq=>$subseq);
 		  }
 	      }
 	  }
@@ -190,7 +249,7 @@ sub generate_image
     my %opts = @_;
     my $c = $opts{c};
     my $chr = $opts{chr};
-    my $di = $opts{di};
+    my $ds = $opts{ds};
     my $iw = $opts{iw};
     my $z = $opts{z};
     my $x = $opts{x};# || $opts{start};
@@ -198,9 +257,9 @@ sub generate_image
     my $stop = $opts{stop};
 
     my $seq = $opts{seq};
-    my $cache_file = get_file_name(chr=>$chr,di=>$di, iw=>$iw, z=>$z, x=>$x);    
+    my $cache_file = get_file_name(chr=>$chr,ds=>$ds, iw=>$iw, z=>$z, x=>$x);    
     print "Cache file: $cache_file\n";
-    print "File exists! $overwrite\n" if -r $cache_file;
+    print "File exists! Overwrite flag set to $overwrite\n" if -r $cache_file;
     if (-r $cache_file && $overwrite == 0)
 			  {
 			    print " Skipping generating image: file exists and overwrite is turned off.\n";
@@ -208,7 +267,7 @@ sub generate_image
 			  }
     my $t0 = new Benchmark;
     $c->set_region(start=>$x, stop=>$stop);
-    process_nucleotides(start=>$x, chr=>$chr, di=>$di->id, db=>$db, c=>$c, seq=>$seq);
+    $graphic->process_nucleotides(start=>$x, stop=>$stop, chr=>$chr, ds=>$ds->id, db=>$db, c=>$c, seq=>$seq);
     my $t1 = new Benchmark;
 #    my ($s, $e) = ($c->_region_start, $c->_region_stop);
     $c->_gd(0);
@@ -233,6 +292,8 @@ Time to generate region:           $gr_time
 Time to generate image:            $gi_time
 Time to store image:               $si_time
 
+ ----================================------
+
 };
     if (-r $cache_file)
       {
@@ -244,14 +305,14 @@ Time to store image:               $si_time
 sub find_max_z
   {
     my %opts = @_;
-    my $di = $opts{di};
-    my $go = $di->genomic_sequences->next;
+    my $ds = $opts{ds};
+    my $go = $ds->genomic_sequences->next;
     return unless $go;
-    my $chr_len = $go->get_last_position(di=>$di);
+    my $chr_len = $go->get_last_position(ds=>$ds);
     return unless $chr_len;
     my $max_zoom = ceil (log10($chr_len/10)/(log10(2)));
 #    print "Max zoom: $max_zoom\t";
-    my $feat_count = $db->get_feature_obj->count_features_in_region(start=>1, stop=>$chr_len, info_id=>$di->id, chr=>$go->chr);
+    my $feat_count = $db->get_feature_obj->count_features_in_region(start=>1, stop=>$chr_len, dataset=>$ds->id, chr=>$go->chr);
     #assume features are evenly spread across chromosome (I know this is not correct, but. . .)
     while ($feat_count > $MAX_FEATURES)
       {
@@ -265,7 +326,7 @@ sub find_max_z
 sub initialize_c
   {
     my %opts = @_;
-    my $di = $opts{di};
+    my $ds = $opts{ds};
     my $chr = $opts{chr};
     my $iw = $opts{iw};
     my $z = $opts{z};
@@ -279,10 +340,20 @@ sub initialize_c
     my $fmh=$opts{fmh} || 2;
     my $start_pict = $opts{'start_pict'} || 'left';
     my $c = new CoGe::Graphics::Chromosome;
+<<<<<<< .mine
+
+    my ($gen_seq) = $db->get_genomic_seq_obj->search({dataset_id=>$ds});
+=======
     my ($gen_seq) = $db->get_genomic_seq_obj->search({dataset_id=>$di});
+>>>>>>> .r289
     return unless $gen_seq && $gen_seq->chr eq $chr;
+<<<<<<< .mine
+    my $chr_length =
+    $db->get_genomic_sequence_obj->get_last_position(ds=>$ds);
+=======
     my $chr_length = $db->get_genomic_sequence_obj->get_last_position(ds=>$di);
 
+>>>>>>> .r289
     $c->chr_length($chr_length);
     $c->mag_scale_type("constant_power");
     $c->iw($iw);
@@ -333,7 +404,7 @@ sub process_nucleotides
     my %opts = @_;
     my $start = $opts{start};
     my $chr = $opts{chr};
-    my $di = $opts{di};
+    my $ds = $opts{ds};
     my $db = $opts{db};
     my $c = $opts{c};
     my $seq = $opts{seq};
@@ -374,16 +445,18 @@ sub process_features
     my $start = $opts{start};
     my $stop = $opts{stop};
     my $chr = $opts{chr};
-    my $di = $opts{di};
+    my $ds = $opts{ds};
     my $db = $opts{db};
     my $c = $opts{c};
     my $accn = $opts{accn};
     my $print_names = $opts{print_names};
-    my $feat_count = $db->get_feature_obj->count_features_in_region(start=>$start, end=>$stop, info_id=>$di, chr=>$chr);
+    my $size = $stop-$start;
+    my $feat_count = $db->get_feature_obj->count_features_in_region(start=>$start, end=>$stop, dataset=>$ds, chr=>$chr);
     my @cds_feats;  #place to hold CDS features with protein sequences for later generation of protein sequence images;
     my $count = 0;
-    foreach my $feat ($db->get_feature_obj->get_features_in_region(start=>$start, end=>$stop, info_id=>$di, chr=>$chr))
+    foreach my $feat ($db->get_feature_obj->get_features_in_region(start=>$start-$size, end=>$stop+$size, dataset=>$ds, chr=>$chr))
       {
+#	print $feat->genbank_location_string,"\n";
 	$count++;
         my $f;
         if ($feat->type->name =~ /Gene/i)
@@ -576,7 +649,7 @@ sub get_dir_array {
     #my $base_dir = "/opt/apache/CoGe";#$ENV{DOCUMENT_ROOT};
     my @basedir = split(/[\/\\]/,$BASE_DIR);
     my @dir;# = '_cache_';
-    my @keyvals = qw(di chr iw z x);
+    my @keyvals = qw(ds chr iw z x);
     my $MAX = get_max($query_pairs{$ZOOM_PARS});
     foreach my $key(@keyvals ){
          next if  !$key;
@@ -600,7 +673,26 @@ sub get_dir_array {
        }
     return (\@basedir,\@dir); 
  }
-                                           
+
+sub get_orgs
+  {
+    my %opts = @_;
+    my $orgs = $opts{orgs};
+    my $ds = $opts{datasets};
+    my @out_orgs;
+    foreach my $org (@orgs)
+      {
+	my $o = $db->get_org_obj->resolve_organism($org);
+	push @out_orgs, $o if $o;
+      }
+    unless (@out_orgs || $ds)
+      {
+	@out_orgs = $db->get_org_obj->retrieve_all();
+      }
+    return \@out_orgs;
+
+  }
+
 sub help
   {
     print qq{
@@ -610,11 +702,14 @@ The program fills the CoGe system's image cache for chromosome images used by Ge
 
 Options:
 
- oid       =>  organism database ids that will be used for generating images
+ org       =>  organism name or database ids that will be used for generating images
                if none are specified, the program will go through all the organisms in the database
-               More than one of these ids may be specified
+               More than one of these may be specified
 
- v         =>  version of data to use
+ dataset   =>  dataset name or database id that will be used for generating images.  This can be
+               used as an alternative to specifying an organism
+
+ v         =>  version of organism/dataset to use.  If not is specified, then all will be used.
 
  iw        => width of the images to generate (default 256)
 
@@ -622,6 +717,10 @@ Options:
 
  max_zoom  => the largest zoom for which images will be generated (default is determined by the
               number of features present at various zoom levels.
+
+ start_pos => the starting position from which to begin generating images (default: 0)
+
+ stop_pos  => the stopping position from which to end generating images (default: end position of dataset)
 
  max_chr_length => skip processing genomes whose size is larger than this number (default: no limit)
 
@@ -638,6 +737,7 @@ Options:
  zoom_step | zs   => the number of zoom step to process at once.  This will cause the virual chromosome to 
                      be flushed periodically and free up memory.  This is needed to keep from running out of
                      memory in some cases.  DEFAULT: 4
+
 
 };
     exit;
