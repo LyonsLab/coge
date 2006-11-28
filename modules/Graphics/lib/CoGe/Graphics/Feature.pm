@@ -209,7 +209,6 @@ BEGIN
 "force_label", #flag to force the printing of the label
 "magnification", #magnification level for increasing/decreasing the size of the feature  
 "overlay", #level of overlay for features such that one feature is drawn over another.
-"padding", #pixel padding used when using _gd_string
 );
   }
 
