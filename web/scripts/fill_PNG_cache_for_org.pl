@@ -77,7 +77,6 @@ foreach my $org (@$orgs)
 
 foreach my $ds (@datasets)
   {
-<<<<<<< .mine
     process_dataset(ds=>$ds);
   }
 
@@ -91,12 +90,6 @@ sub process_dataset
     $dsname .= ": ".$ds->desc if $ds->desc;
     print "Processing dataset $dsname. . .\n";
     if ( $unprocess_ds && -d "$BASE_DIR/ds__".$ds->id )
-=======
-    next if $skip_oids{$org_id};
-    my ($org) = ref ($org_id) =~ /org/i ? $org_id :$db->get_org_obj->retrieve($org_id);
-    print "working on: ".$org->name,"\n";
-    foreach my $di ($org->datasets)
->>>>>>> .r289
       {
 	print "Skipping dataset because image directory exists and we are only working on unprocessed datasets.\n";
 	next;
@@ -123,7 +116,6 @@ sub process_dataset
 	    my $seq = uc($db->get_genomic_sequence_obj->get_sequence(start=>$c_start, end=>$c_start+$max_chars, chr=>$chr, dataset=>$ds)); 
 	    unless ($seq)
 	      {
-<<<<<<< .mine
 		die "no nucleotide sequence for start=>$c_start, end=>$c_start+$max_chars, chr=>$chr, dataset=>$ds\n";
 	      }
 	    my $seq_len = length $seq;
@@ -167,16 +159,10 @@ sub process_dataset
 		print "BASE_DIR: $BASE_DIR/ds__".$ds->id."/iw__$iw/z__".$z."\n";
 		
 		if ($unprocess_zoom && -d "$BASE_DIR/ds__".$ds->id."/chr__$chr/iw__$iw/z__".$z)
-=======
-		print "Working on chromosome chunk $c_start - ", $c_start+$max_chars,"\n";
-		my $seq = uc($db->get_genomic_sequence(start=>$c_start, end=>$c_start+$max_chars, chr=>$chr, dataset=>$di)); 
-		unless ($seq)
->>>>>>> .r289
 		  {
 		    print "Skipping zoom level $z because image directory exists and unprocessed_zoom flag is set to true.\n";
 		    next;
 		  }
-<<<<<<< .mine
 
 		my $chars = 10 * 2**$z;
 		my $tot = ceil($max_chars/$chars);
@@ -185,20 +171,6 @@ sub process_dataset
 		$c->delete_features('aa');
 		my $ta = new Benchmark;
 		foreach my $feat (@cds_feats)
-=======
-		my $seq_len = length $seq;
-		my $c = initialize_c(
-				     di => $di->id,
-				     chr => $chr,
-				     iw => $iw,
-				     start => $c_start,
-				     stop => $c_start+$max_chars,
-				     db=>$db,
-				     z=>$max_zoom,
-				    );
-		my @cds_feats;
-		foreach my $di2 ($di->get_associated_datasets)
->>>>>>> .r289
 		  {
 		    $graphic->draw_prots(genomic_feat=>$feat, c=>$c);
 		  }
@@ -340,20 +312,11 @@ sub initialize_c
     my $fmh=$opts{fmh} || 2;
     my $start_pict = $opts{'start_pict'} || 'left';
     my $c = new CoGe::Graphics::Chromosome;
-<<<<<<< .mine
 
     my ($gen_seq) = $db->get_genomic_seq_obj->search({dataset_id=>$ds});
-=======
-    my ($gen_seq) = $db->get_genomic_seq_obj->search({dataset_id=>$di});
->>>>>>> .r289
     return unless $gen_seq && $gen_seq->chr eq $chr;
-<<<<<<< .mine
     my $chr_length =
     $db->get_genomic_sequence_obj->get_last_position(ds=>$ds);
-=======
-    my $chr_length = $db->get_genomic_sequence_obj->get_last_position(ds=>$di);
-
->>>>>>> .r289
     $c->chr_length($chr_length);
     $c->mag_scale_type("constant_power");
     $c->iw($iw);
