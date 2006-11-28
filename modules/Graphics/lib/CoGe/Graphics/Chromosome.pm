@@ -180,7 +180,7 @@ BEGIN {
     $MAX_MAG = 10;     #default number of "units" (e.g. base pairs) to show when maximally zoomed)
     $MAG_SCALE_TYPE = "log"; #default image scaling.  options "log", "linear"
     $DEFAULT_COLOR = [0,0,0];
-    $CHR_INNER_COLOR = [220,255,220]; #inner color for chromosome
+    $CHR_INNER_COLOR = [255,255,255]; #inner color for chromosome
     $CHR_OUTER_COLOR = [0,0,0]; #border color for chromosome
     $RULER_COLOR = [0,0,255]; #color for measurement ruler
     $TICK_COLOR = [0,0,255]; #color for ticks on measurement ruler
@@ -199,7 +199,7 @@ BEGIN {
 "draw_chr_end", #flag for drawing "ends" of chromosome"
 "ruler_color", "tick_color", #color for ruler and ticks on ruler respectively
 "ruler_height", #height of ruler
-"mag_scale_type", "max_mag", "chr_mag_height", "num_mag",
+"mag_scale_type", "max_mag", "chr_mag_height", "num_mag", "mag_off",
 "image_width", "image_height", 
 "padding",
 "font",
@@ -207,6 +207,7 @@ BEGIN {
 "feature_labels", "fill_labels", #flag to turn off the printing of labels, fill_lables are specifically for filled features;
 "draw_chromosome", "chr_inner_color", "chr_outer_color",
 "start_picture", #can be set to left, right or center and dictates at which point to 
+"overlap_adjustment", #flag to turn on/off the overlap adjustment for overlapping features
 "_region_start", "_region_stop", #image's start and stop (should be equal to or "larger" than the users
 "_magnification", "_mag_scale", 
 "_image_h_used", #storage for the amount of the image height used
@@ -215,7 +216,7 @@ BEGIN {
 "_chr_center", "_chr_height", "_chr_h1", "_chr_h2", #interal storage of chromosome image height positions
 "_features", #internal storage of features
 "_fill_features", #internal storeage of fill features
-
+"_max_track", #place to store the maximum number of tracks on which to draw genomic features
 #"start", "stop", #user defined start and stop.  Not sure if this is needed. . .
 );
 }
@@ -262,7 +263,8 @@ sub new
     $self->num_mag($NUM_MAG);
     $self->feature_start_height($FEATURE_START_HEIGHT);
     $self->feature_mag_height($FEATURE_MAG_HEIGHT);
-    $self->mag(5);
+    $self->overlap_adjustment(1);
+    $self->mag(1);
     $self->font($FONTTT);
     $self->_features([]);
     $self->_fill_features([]);
@@ -381,6 +383,9 @@ sub new
                         set magnification level.  Valid options for this are "left", "right"
                         and "center"
 
+ overlap_adjustment =>  flag for whether overlapping features are rescaled and position such that
+                        they don't overlap when the image is generated.  Default: 1
+
 =cut
 
 #################### subroutine header end ####################
@@ -496,7 +501,8 @@ sub set_point
 	   : There is a check for whether the added feature overlaps other features.  
 	   : If so, a counter, $feat->_overlap is incemented in the feature object.
 	   : This is later used by the $self->_draw_feature algorithm to figure
-	   : out how to best draw overlapping features.
+	   : out how to best draw overlapping features.  The overlap check is skipped
+           : unless $self->overlap_adjectment is true.
 See Also   : CoGe::Graphics::Feature
 
 =cut
@@ -533,7 +539,7 @@ sub add_feature
 		my $order = $last_feat ? $last_feat->order()+1 : 1;
 		$feat->order($order);
 	      }
-	    $self->_check_overlap($feat);
+	    $self->_check_overlap($feat) if $self->overlap_adjustment;
 	    if ($feat->fill)
 	      {
 	        push @{$self->_fill_features}, $feat;
@@ -1302,23 +1308,44 @@ sub set_image_height
   {
     #this sub calculates how much height out picture needs based on options and features to be drawn
     my $self = shift;
+    my $ruler_h = $self->ruler_height + $self->padding;
+
     my $feat_height = $self->feature_start_height+$self->feature_mag_height*$self->mag;
 #    $feat_height = $feat_height*($self->mag);
-    my $h=0;# = $self->padding; #give use some padding
-    $h += $self->ruler_height;#+$self->padding;
-    my $ch = ($self->chr_start_height+$self->mag * $self->chr_mag_height); #chromosome image height
-    $self->_chr_height($ch);
-    my $chrh = $ch+$self->padding;# if $self->draw_chromosome; #chromosome image height
+    my $h=$ruler_h;# = $self->padding; #give use some padding
+
     my $top_feat = $self->get_feats(last_order=>1, strand=>1, fill=>0);
-    my $tfh = $top_feat->order * ($feat_height+$self->padding)if $top_feat;
-    $tfh = 0 unless $tfh;
     my $bot_feat = $self->get_feats(last_order=>1, strand=>-1, fill=>0);
+
+    my $tfh = $top_feat->order * ($feat_height+$self->padding)if $top_feat;
     my $bfh = $bot_feat->order * ($feat_height+$self->padding)if $bot_feat;
+    #is there an override set for the number of genomic feature tracks?
+    $tfh = $self->_max_track * ($feat_height+$self->padding)if $self->_max_track;
+    $bfh = $self->_max_track * ($feat_height+$self->padding)if $self->_max_track;
+
+    $tfh = 0 unless $tfh;
     $bfh = 0 unless $bfh;
-    $h += $tfh > $chrh/2 ? $tfh : $chrh/2;
-    $self->_chr_center($h);
-    $h += $bfh > $chrh/2 ? $bfh : $chrh/2;
+#    print STDERR Dumper $bot_feat;
+
+    my $feat_space = $tfh > $bfh ? $tfh : $bfh;
+    my $ch = $feat_space*2 > $self->chr_start_height ? $feat_space*2 : $self->chr_start_height;#+$self->mag * $self->chr_mag_height); #chromosome image height
+
+    $self->_chr_height($ch);
     $h += $self->padding;
+    $h+=$ch;
+#    $self->_chr_center($h+$ruler_h+$self->padding);
+    $self->_chr_center($h-$ch/2);
+#    my $ch += $ch+$self->padding;# if $self->draw_chromosome; #chromosome image height
+
+#    print  "\n!!!!!\nstart_ch: ",$self->chr_start_height,", ch: $ch, tfh: $tfh,bfh: $bfh, ruler_h: $ruler_h, mag: ",$self->mag,", chrcenter: ", $h-$ch/2,"\n!!!\n";
+#    print  "\n!!!!!\nstart_ch: ",$self->chr_start_height,", ch: $ch, tfh: $tfh, tfh_order: ",$top_feat->order,",bfh: $bfh, bfh_order: ",$bot_feat->order,",ruler_h: $ruler_h, mag: ",$self->mag,", chrcenter: ", $h-$ch/2,"\n!!!\n";
+
+#    $h += $tfh > $chrh/2 ? $tfh : $chrh/2;
+
+#    $h += $ruler_h+$self->padding;
+
+#    $h += $bfh > $chrh/2 ? $bfh : $chrh/2;
+#    $h += $self->padding;
 #    print STDERR join("\t", $tfh, $bfh, $chrh/2),"\n";
     print STDERR "Image Height: $h\n" if $self->DEBUG;
     $self->ih($h);
@@ -2173,7 +2200,7 @@ sub _set_region_start_stop
     $self->_set_region_for_point($start) if $start == $stop;
     my $len = $stop - $start+1;
     my $mag = $self->find_magnification_for_size($len);
-    $self->mag($mag);
+    $self->mag($mag) unless $self->mag_off;
 #    $self->start($start);
 #    $self->stop($stop) if $stop;
     my $size = $self->mag_scale->{$mag};
