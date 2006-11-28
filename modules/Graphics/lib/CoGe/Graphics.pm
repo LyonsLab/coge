@@ -18,10 +18,10 @@ use Benchmark;
 BEGIN {
     use vars qw($VERSION $MAX_FEATURES $MAX_NT $DEBUG);
     $VERSION     = '0.1';
-#    __PACKAGE__->mk_accessors(
-#"MAX_FEATURES",
-#"MAX_NT",
-#);
+    __PACKAGE__->mk_accessors(
+"MAX_FEATURES",
+"MAX_NT",
+);
 }
 
 
@@ -139,6 +139,7 @@ perl(1).
 				   fids=>\@fids,
 				   fns=>\@fnames,
 				   forcefit=>$forcefit,
+                                   atgc_background=>0,
 				   );
  Purpose   : mama of a function.  Docs to come.
  Returns   : 
@@ -158,6 +159,7 @@ See Also   :
 sub genomic_view
   {
     my $self = shift;
+    $self = new("CoGe::Graphics") unless ref($self) =~ /Graphics/;;
     my %opts = @_;
     my $start = $opts{'start'} || $opts{'x'} ||0;#28520458;
     my $stop = $opts{'stop'};# || 6948000;#6949600;#190000;
@@ -184,6 +186,8 @@ sub genomic_view
     my $forcefit = $opts{'forcefit'} || 0;
     my $img_map_name = $opts{'img_map'};
     my $draw_proteins = $opts{'draw_proteins'};
+    my $atcg_bkg = $opts{atcg_background} || 0; 
+
     $draw_proteins = 1 unless defined $draw_proteins;
 
     $DEBUG = $opts{debug} || $opts{DEBUG} || 0;
@@ -193,8 +197,8 @@ sub genomic_view
     $fids = [$fids] unless ref ($fids) =~ /array/i;
     $fnames = [$fnames] unless ref ($fnames) =~ /array/i;
     ##some limits to keep from blowing our stack
-    $MAX_FEATURES=($iw*10); #10 features per pixel
-    $MAX_NT=($iw*100000); #100,000 nts per pixel
+    $self->MAX_FEATURES($iw*10); #10 features per pixel
+    $self->MAX_NT($iw*100000); #100,000 nts per pixel
     my $t0 = new Benchmark if $BENCHMARK;
 
     #CoGe objects that we will need
@@ -267,7 +271,7 @@ sub genomic_view
 	    $start = $tstart;
 	    $stop = $tstop;
 	    print STDERR "processing nucleotides\n" if $DEBUG;
-	    $self->process_nucleotides(start=>$start, stop=>$stop, chr=>$chr, ds=>$did, db=>$db, c=>$c) unless $simple;
+	    $self->process_nucleotides(start=>$start, stop=>$stop, chr=>$chr, ds=>$did, db=>$db, c=>$c) if $atcg_bkg;
 	    last;
 	  }
       }
@@ -317,6 +321,7 @@ Image generation:       $draw_time
 sub initialize_c
   {
     my $self = shift;
+#    unless ref($self) =~ /Graphics/ unshift @_, $self;
     my %opts = @_;
     my $ds = $opts{ds};
     my $chr = $opts{chr};
@@ -334,6 +339,8 @@ sub initialize_c
     my $fmh=$opts{fmh};
     my $forcefit = $opts{forcefit};
     my $start_pict = $opts{'start_pict'} || 'left';
+    my $debug = $opts{debug} || 0;
+    $debug = 1 if $c->DEBUG;
     my $chr_length = $db->get_genomic_sequence_obj->get_last_position(ds=>$ds, chr=>$chr);
     return unless $chr_length;
     $c->chr_length($chr_length);
@@ -341,7 +348,7 @@ sub initialize_c
     $c->iw($iw);
     $c->ih($ih) if $ih;
     $c->max_mag((10));
-    $c->DEBUG(0);
+    $c->DEBUG($debug);
     $c->feature_labels(1);
     $c->fill_labels(1);
     $c->draw_chromosome(1);
@@ -373,13 +380,14 @@ sub initialize_c
     $c->set_region(start=>$start, stop=>$stop, forcefit=>$forcefit);
     $start = $c->_region_start;
     $stop= $c->_region_stop;
-    #let's add the max top and bottom tracks to the image to keep it constant
-    my $f1= CoGe::Graphics::Feature->new({start=>1, order => 3, strand => 1});
-    $f1->merge_percent(0);
-    $c->add_feature($f1);
-    my $f2= CoGe::Graphics::Feature->new({start=>1, order => 3, strand => -1});
-    $f2->merge_percent(0);
-    $c->add_feature($f2);
+    #let's add the max top and bottom tracks to the image to keep its size constant
+    $c->_max_track(3);
+#    my $f1= CoGe::Graphics::Feature->new({start=>1, order => 3, strand => 1});
+#    $f1->merge_percent(0);
+#    $c->add_feature($f1);
+#    my $f2= CoGe::Graphics::Feature->new({start=>1, order => 3, strand => -1});
+#    $f2->merge_percent(0);
+#    $c->add_feature($f2);
     return ($start, $stop);
 }
 
@@ -389,18 +397,19 @@ sub process_nucleotides
     my %opts = @_;
     my $start = $opts{start};
     my $stop = $opts{stop};
-    if (abs ($stop-$start) > $MAX_NT)
+    if (abs ($stop-$start) > $self->MAX_NT())
       {
-	warn "exceeded nucleotide limit of $MAX_NT (requested: ".abs($stop-$start).")\n";
+	warn "exceeded nucleotide limit of ",$self->MAX_NT()," (requested: ".abs($stop-$start).")\n";
 	return;
       }
     my $chr = $opts{chr};
     my $ds = $opts{ds};
     my $db = $opts{db};
     my $c = $opts{c};
+    my $seq = $opts{seqs};
 #    print STDERR "IN $0: start: $start, stop: $stop\n";
     #process nucleotides
-    my $seq = uc($db->get_genomic_sequence_obj->get_sequence(start=>$start, end=>$stop, chr=>$chr, dataset=>$ds)); 
+    $seq = uc($db->get_genomic_sequence_obj->get_sequence(start=>$start, end=>$stop, chr=>$chr, dataset=>$ds)) unless $seq; 
     my $seq_len = length $seq;
     my $chrs = int (($c->_region_stop-$c->_region_start)/$c->iw);
     $chrs = 1 if $chrs < 1;
@@ -443,13 +452,19 @@ sub process_features
     my $sstart = $start - ($stop - $start);
     my $sstop = $stop + ($stop - $start);
     my $feat_count = $db->get_feature_obj->count_features_in_region(start=>$sstart, end=>$sstop, dataset=>$ds, chr=>$chr);
-    if ($feat_count > $MAX_FEATURES)
+    my @cds_feats;
+    
+    if ($feat_count > $self->MAX_FEATURES)
       {
-	warn "exceeded maximum number of features $MAX_FEATURES. ($feat_count requested)\nskipping.\n";
+	warn "exceeded maximum number of features ",$self->MAX_FEATURES(),". ($feat_count requested)\nskipping.\n";
 	return;
       }
-    
-    foreach my $feat (sort {$a->type->name cmp $b->type->name} $db->get_feature_obj->get_features_in_region(start=>$start, end=>$stop, dataset=>$ds, chr=>$chr))
+    my $size = $stop - $start;
+    $size = 0 unless $c->overlap_adjustment;
+    $size = 0 if $feat_count > 100;
+    $size *=2 if $feat_count < 20;
+
+    foreach my $feat ($db->get_feature_obj->get_features_in_region(start=>$start-$size, end=>$stop+$size, dataset=>$ds, chr=>$chr))
       {
         my $f;
 	print STDERR $feat->type->name,":",$feat->start,"-",$feat->stop,"\n" if $DEBUG;
@@ -472,6 +487,7 @@ sub process_features
         	$f->color([0,255,0, 50]);
         	$f->order(1);
 		$f->overlay(3);
+		push @cds_feats, $feat;
 		$self->draw_prots(genomic_feat=>$feat, c=>$c, chrom_feat=>$f) if $draw_proteins;;
 		if ($accn)
 		  {
@@ -558,6 +574,7 @@ sub process_features
         $f->type($feat->type->name);
         $c->add_feature($f);
     }
+    return \@cds_feats;
   }
 
 sub generate_output
