@@ -254,7 +254,7 @@ sub delete_dataset
                         if negative strand is requested, the complement
                         of the dna seq will be returned
  Throws    : undef if no sequence is obtained
- Comments  : You must provide an info_id
+ Comments  : You must provide an dataset!
 
 See Also   : 
 
@@ -271,6 +271,12 @@ sub get_sequence
     $start = 1 if $start < 1;
     my $stop = $opts{'stop'} || $opts{STOP} || $opts{end} || $opts{END};
     $stop = $start unless $stop;
+    if ($stop < $start)
+      {
+	my $tmp = $start;
+	$start = $stop;
+	$stop = $tmp;
+      }
     my $chr = $opts{chr} || $opts{CHR} || $opts{chromosome} || $opts{CHROMOSOME};
     my $ds_id = $opts{dataset} || $opts{dataset_id} || $opts{info_id} || $opts{INFO_ID} || $opts{data_info_id} || $opts{DATA_INFO_ID};
     my $coge = new CoGe::Genome;
@@ -329,7 +335,7 @@ sub get_last_position
   {
     my $self = shift;
     my %opts = @_;
-    my $ds = $opts{dataset} || $opts{ds} || $self->dataset_id;
+    my $ds = $opts{dataset} || $opts{ds} || $opts{di} || $self->dataset_id;
     my $coge = new CoGe::Genome;
     $ds = $coge->get_dataset_obj->resolve_dataset($ds);
     my $chr = $opts{chr};
