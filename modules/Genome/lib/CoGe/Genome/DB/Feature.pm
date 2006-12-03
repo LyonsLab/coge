@@ -26,7 +26,7 @@ SELECT f.feature_id
   JOIN dataset ds USING (dataset_id)
   JOIN feature_name fn USING (feature_id)
  WHERE fn.name = ?
-   AND di.version = ?});
+   AND ds.version = ?});
     __PACKAGE__->set_sql ('select_features_in_range' => qq{
 SELECT DISTINCT f.feature_id
   FROM feature f
@@ -780,6 +780,32 @@ sub strand
     return $loc->strand();
   }
 
+
+################################################ subroutine header begin ##
+
+=head2 version
+
+ Usage     : my $version = $feat->version
+ Purpose   : return the dataset version of the feature
+ Returns   : an integer
+ Argument  : none
+ Throws    : none
+ Comments  : returns $self->dataset->version
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+
+sub version
+  {
+    my $self = shift;
+    return $self->dataset->version();
+  }
+
 ################################################ subroutine header begin ##
 
 =head2 get_features_in_region
@@ -843,14 +869,14 @@ sub get_features_in_region
  Usage     : $object->count_features_in_region(start   => $start, 
                                              stop    => $stop, 
                                              chr     => $chr,
-                                             set_id => $dataset->id());
+                                             dataset_id => $dataset->id());
 
  Purpose   : counts the features in a specified genomic region
  Returns   : an integer
  Argument  : start   => genomic start position
              stop    => genomic stop position
              chr     => chromosome
-             set_id => dataset id in database (obtained from a
+             dataset_id => dataset id in database (obtained from a
                         CoGe::Dataset object)
                         of the dna seq will be returned
  Throws    : none
