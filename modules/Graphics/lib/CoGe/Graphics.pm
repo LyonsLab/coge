@@ -21,6 +21,7 @@ BEGIN {
     __PACKAGE__->mk_accessors(
 "MAX_FEATURES",
 "MAX_NT",
+"DEBUG",
 );
 }
 
@@ -191,8 +192,8 @@ sub genomic_view
     $draw_proteins = 1 unless defined $draw_proteins;
 
     $DEBUG = $opts{debug} || $opts{DEBUG} || 0;
-
-    print STDERR "Options: ".Dumper \%opts if $DEBUG;
+    $self->DEBUG($DEBUG);
+    print STDERR "Options: ".Dumper \%opts if $self->DEBUG;
 
     $fids = [$fids] unless ref ($fids) =~ /array/i;
     $fnames = [$fnames] unless ref ($fnames) =~ /array/i;
@@ -228,7 +229,7 @@ sub genomic_view
 	print STDERR "missing needed parameters: Start: $start, Info_id: ".$ds->id.", Chr: $chr\n";
 	return 0;
       }
-    print STDERR "generating image for ds: ".$ds->name ." (".$ds->id.")\n" if $DEBUG;
+    print STDERR "generating image for ds: ".$ds->name ." (".$ds->id.")\n" if $self->DEBUG;
     
     my %dids; #we will store a list of data_information objects that are related to the current dataset
     my $ta = new Benchmark if $BENCHMARK;
@@ -270,8 +271,8 @@ sub genomic_view
 	  {
 	    $start = $tstart;
 	    $stop = $tstop;
-	    print STDERR "processing nucleotides\n" if $DEBUG;
-	    $self->process_nucleotides(start=>$start, stop=>$stop, chr=>$chr, ds=>$did, db=>$db, c=>$c) if $atcg_bkg;
+	    print STDERR "processing nucleotides\n" if $self->DEBUG;
+	    $self->process_nucleotides(start=>$start, stop=>$stop, chr=>$chr, ds=>$did, db=>$db, c=>$c);
 	    last;
 	  }
       }
@@ -287,16 +288,16 @@ sub genomic_view
     foreach my $did (keys %dids)
       {
 	my $taa = new Benchmark if $BENCHMARK;
-	print STDERR "processing features\n" if $DEBUG;
+	print STDERR "processing features\n" if $self->DEBUG;
 	$self->process_features(start=>$start, stop=>$stop, chr=>$chr, ds=>$did, db=>$db, c=>$c, fids=>$fids, fnames=>$fnames, draw_proteins=>$draw_proteins) unless $simple;
 	my $tab = new Benchmark if $BENCHMARK;
 	my $feat_time = timestr(timediff($tab, $taa)) if $BENCHMARK;
 	print STDERR " processing did $did:   $feat_time\n" if $BENCHMARK;
       }
     my $t2 = new Benchmark if $BENCHMARK;
-    print STDERR "generating image: $file\n" if $DEBUG;
+    print STDERR "generating image: $file\n" if $self->DEBUG;
     $self->generate_output(file=>$file, c=>$c);	
-    print STDERR "generating image map : $img_map_name\n" if $DEBUG && $img_map_name;
+    print STDERR "generating image map : $img_map_name\n" if $self->DEBUG && $img_map_name;
     my $img_map = $c->generate_imagemap(name=>$img_map_name) if $img_map_name;
     my $t3 = new Benchmark if $BENCHMARK;
     my $init_time = timestr(timediff($t1, $t0)) if $BENCHMARK;
@@ -422,12 +423,13 @@ sub process_nucleotides
         my $rcseq = substr ($seq, $pos, $chrs);
         $rcseq =~ tr/ATCG/TAGC/;
         next unless $subseq && $rcseq;
-        my $f1 = CoGe::Graphics::Feature::NucTide->new({nt=>$subseq, strand=>1, start =>$pos+$start});
-	my $f2 = CoGe::Graphics::Feature::NucTide->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
+        my $f1 = CoGe::Graphics::Feature::NucTide->new({nt=>$subseq, strand=>1, start =>$pos+$start, use_external_image=>0});
+	my $f2 = CoGe::Graphics::Feature::NucTide->new({nt=>$rcseq, strand=>-1, start =>$pos+$start, use_external_image=>0});
 	#my $f2 = CoGe::Graphics::Feature::Exon_motifs->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
         #my $f2 = CoGe::Graphics::Feature::GAGA->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
 #	my $f2 = CoGe::Graphics::Feature::Sigma54->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
-        
+        $f1->transparency(25);
+        $f2->transparency(25);
         $c->add_feature($f1, $f2);
         $pos+=$chrs;
       }
@@ -453,7 +455,6 @@ sub process_features
     my $sstop = $stop + ($stop - $start);
     my $feat_count = $db->get_feature_obj->count_features_in_region(start=>$sstart, end=>$sstop, dataset=>$ds, chr=>$chr);
     my @cds_feats;
-    
     if ($feat_count > $self->MAX_FEATURES)
       {
 	warn "exceeded maximum number of features ",$self->MAX_FEATURES(),". ($feat_count requested)\nskipping.\n";
@@ -463,11 +464,11 @@ sub process_features
     $size = 0 unless $c->overlap_adjustment;
     $size = 0 if $feat_count > 100;
     $size *=2 if $feat_count < 20;
-
+    $size = $start if $start-$size < 0;
     foreach my $feat ($db->get_feature_obj->get_features_in_region(start=>$start-$size, end=>$stop+$size, dataset=>$ds, chr=>$chr))
       {
         my $f;
-	print STDERR $feat->type->name,":",$feat->start,"-",$feat->stop,"\n" if $DEBUG;
+	print STDERR "Feat info: Name: ",$feat->type->name,", Type: ",$feat->type->name, ", Loc: ", $feat->start,"-",$feat->stop,"\n" if $self->DEBUG;
         if ($feat->type->name =~ /Gene/i)
           {
 	    $f = CoGe::Graphics::Feature::Gene->new();
@@ -520,10 +521,11 @@ sub process_features
 		  }
 
           }
-        elsif ($feat->type->name =~ /functional domains/i && $draw_proteins)
+        elsif ($feat->type->name =~ /functional domains/i)
           {
 	    $f = CoGe::Graphics::Feature::Domain->new();
 	    $f->order(2);
+	    $f->overlay(1);
           }
 	elsif ($feat->type->name =~ /CNS/i)
           {
@@ -564,8 +566,10 @@ sub process_features
 	  }
         foreach my $loc ($feat->locs)
 	  {
+	    print STDERR "\tadding feature location: ",$loc->start,"-", $loc->stop,". . ." if $self->DEBUG;
 	    $f->add_segment(start=>$loc->start, stop=>$loc->stop);
 	    $f->strand($loc->strand);
+	    print "done!\n" if $self->DEBUG;
 	  }
 	my ($name) = sort { length ($b) <=> length ($a) || $a cmp $b} map {$_->name} $feat->names;
 	$f->description($feat->annotation_pretty_print);
@@ -573,6 +577,7 @@ sub process_features
 	$f->label($name) if $print_names;
         $f->type($feat->type->name);
         $c->add_feature($f);
+	print STDERR "\tfinished process feature.\n" if $self->DEBUG;
     }
     return \@cds_feats;
   }
@@ -617,6 +622,7 @@ sub draw_prots
 		my $ao = CoGe::Graphics::Feature::AminoAcid->new({aa=>$aseq, start=>$loc->start, stop=>$loc->stop, strand => $loc->strand, order=>2});
 		$ao->skip_overlap_search(1);
 		$ao->mag(0.75);
+		$ao->overlay(2);
 		$c->add_feature($ao);
 		delete $loc->{__Changed}; #silence the warning from Class::DBI
 	      }
