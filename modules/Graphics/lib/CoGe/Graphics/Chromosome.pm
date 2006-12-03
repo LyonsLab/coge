@@ -520,6 +520,11 @@ sub add_feature
       }
     foreach my $feat (@feats)
       {
+	unless (ref ($feat) =~ /Feature/i)
+	  {	
+	    warn "Feature ($feat) does not appear to be a feature object.  Skipping. . .\n";
+	    next;
+	  }
 	$feat->strand(1) unless defined $feat->strand;
 	$feat->fill(0) unless $feat->fill;
 	$feat->merge_percent(100) unless defined $feat->merge_percent;
@@ -531,29 +536,21 @@ sub add_feature
 	$feat->overlay(1) unless defined $feat->overlay();
 	$feat->_overlap(1) unless $feat->_overlap;#detects overlapping feature on the same track 
 	$feat->_overlap_pos(1) unless $feat->_overlap_pos; #placement for overlapping features
-	if (ref($feat) =~ /Feature/i)
+	unless ($feat->order)
 	  {
-	    unless ($feat->order)
-	      {
-		my $last_feat = $self->get_feats(last_order=>1, strand=>$feat->strand, fill=>$feat->fill);
-		my $order = $last_feat ? $last_feat->order()+1 : 1;
-		$feat->order($order);
-	      }
-	    $self->_check_overlap($feat) if $self->overlap_adjustment;
-	    if ($feat->fill)
-	      {
-	        push @{$self->_fill_features}, $feat;
-  	      }
-	    else
-	      {
-	        push @{$self->_features},$feat;
-	      }
- 	  }
+	    my $last_feat = $self->get_feats(last_order=>1, strand=>$feat->strand, fill=>$feat->fill);
+	    my $order = $last_feat ? $last_feat->order()+1 : 1;
+	    $feat->order($order);
+	  }
+	$self->_check_overlap($feat) if $self->overlap_adjustment;
+	if ($feat->fill)
+	  {
+	    push @{$self->_fill_features}, $feat;
+	  }
 	else
 	  {
-	    warn "Feature ($feat) does not appear to be a feature object.  Skipping. . .\n";
+	    push @{$self->_features},$feat;
 	  }
-  	
       }
   }
 
@@ -958,7 +955,7 @@ sub magnification
     if ($self->_region_start && $mag)
       {
 	my $point = $self->_region_start;
-	$point += ceil (($self->_region_stop - $self->_region_start)/2) if $self->_region_stop;
+	$point += ceil (($self->_region_length)/2) if $self->_region_stop;
 	$self->set_point($point);
       }
     
@@ -1110,11 +1107,11 @@ sub generate_imagemap
 	#skip drawing features that are outside (by two times the range being viewed) the view
 	if ($feat->start)
 	  {
-	    next if $feat->start > $self->_region_end+2*($self->_region_stop - $self->_region_start );
+	    next if $feat->start > $self->_region_end+2*($self->_region_length );
 	  }
 	if ($feat->stop > 0)
 	  {
-	    next if $feat->stop < $self->_region_start-2*($self->_region_stop - $self->_region_start );
+	    next if $feat->stop < $self->_region_start-2*($self->_region_length );
 	  }
 	my $anno = $feat->description;
 	next unless $anno;
@@ -1524,8 +1521,8 @@ sub _draw_chromosome
     $ch = $ch/2; #want half the height for the rest of the calcs
     my $hc = $self->_image_h_used+($self->ih-$self->_image_h_used)/2; #height of center of chromsome image
     my $w = $self->iw; #width of image
-    my $xs = $self->_region_start < 1 ? $w*abs(1-$self->_region_start)/($self->_region_stop - $self->_region_start): 0;
-    my $xe = $self->_region_stop > $self->chr_length ? $w-$w*($self->_region_stop - $self->chr_length-1)/($self->_region_stop - $self->_region_start) : $w;
+    my $xs = $self->_region_start < 1 ? $w*abs(1-$self->_region_start)/($self->_region_length): 0;
+    my $xe = $self->_region_stop > $self->chr_length ? $w-$w*($self->_region_stop - $self->chr_length-1)/($self->_region_length) : $w;
     print STDERR "\nChromosome image: Height/2: $ch, Height Center: $hc, xs: $xs, xe:\n" if $self->DEBUG;
     
     
@@ -1621,11 +1618,11 @@ sub _draw_features
 	#skip drawing features that are outside (by two times the range being viewed) the view
 	if ($feat->start)
 	  {
-	    next if $feat->start > $self->_region_end+2*($self->_region_stop - $self->_region_start );
+	    next if $feat->start > $self->_region_end+2*($self->_region_length);
 	  }
 	if ($feat->stop > 0)
 	  {
-	    next if $feat->stop < $self->_region_start-2*($self->_region_stop - $self->_region_start );
+	    next if $feat->stop < $self->_region_start-2*($self->_region_length);
 	  }
 	my $feature_height = ($self->feature_start_height+$self->feature_mag_height*$self->mag);
 	my $feat_h = $feature_height/$feat->_overlap;#*$feat->mag;
@@ -1702,15 +1699,30 @@ sub _draw_feature_slow
     $feat->stop($feat->start) unless defined $feat->stop;
     my $feat_range = $feat->stop-$feat->start;
     my $unit = $self->_calc_unit_size;
-    my $fs = $unit*($feat->start-$rb);
-    my $fe = $unit*($feat->end-$rb+1);
-    my $fw = sprintf("%.1f",$fe - $fs)+1; #calculate the width of the feature;
+    my $fs = $self->round($unit*($feat->start-$rb));
+    my $fe = $self->round($unit*($feat->end-$rb+1));
+    $fe--;
+    return if $fs > $self->iw;
+    return if $fe < -($self->iw/4);
+#    if (ref($feat) =~ /nuc/i)
+#      {
+#	print "Feat pos: ", $feat->start, "-", $feat->end,"\n";
+#	print "Unit size: $unit",": ",$fs,"-", $fe,"\n";
+#      }
+#    my $fw = sprintf("%.1f",$fe - $fs)+1; #calculate the width of the feature;
+    my $fw = ($fe - $fs)+1; #calculate the width of the feature;
     return if $fw < 1; #skip drawing if less than one pix wide
     print STDERR "Drawing feature ".$feat->label." Order: ".$feat->order." Overlap: ".$feat->_overlap." : ", $feat->start, "-", $feat->end," Dimentions:",$fw,"x",$ih, " at position: $fs,$y"."\n" if $self->DEBUG;
     if ($feat->fill)
       {
-	$self->gd->copyResampled($feat->gd, $fs, $y,0,0, $fw, $ih, $feat->iw, $feat->ih);
-	if ($feat->external_image && $fw > 10) #if we have an external image and the feature width is greater than 10. . .
+#	print $fs,"-", $fe,":", $self->iw,"\n";
+
+#	$self->gd->copyResampled($feat->gd, $fs, $y,0,0, $fw, $ih, $feat->iw, $feat->ih);
+	my $newgd = GD::Image->new ($fw, $ih,[1]);
+	$newgd->copyResampled($feat->gd,0,0,0,0, $fw, $ih, $feat->iw, $feat->ih);
+	$self->gd->copyMerge($newgd, $fs, $y, 0, 0, $newgd->width, $newgd->height, $feat->merge_percent);
+#	print $feat->label,"\n";
+	if ($feat->external_image && $fw > 10 && $feat->use_external_image) #if we have an external image and the feature width is greater than 10. . .
 	  {
 	    my $ei = $feat->external_image;
 #	    $ei->transparent($ei->colorResolve(255,255,255));
@@ -1739,8 +1751,9 @@ sub _draw_feature_slow
 	    #4. make white transparent
 	    $newgd->transparent($newgd->colorResolve(255,255,255));
 	    #5. copy new image into appropriate place on image.
-#	    $self->gd->copyMerge($newgd, $fs, $hei, 0, 0, $fw, $ih, $feat->merge_percent);
- 	    $self->gd->copy($newgd, $fs, $hei, 0, 0, $newgd->width, $newgd->height);
+	    
+	    $self->gd->copyMerge($newgd, $fs, $hei, 0, 0, $newgd->width, $newgd->height, $feat->merge_percent);
+# 	    $self->gd->copy($newgd, $fs, $hei, 0, 0, $newgd->width, $newgd->height);
 	  }
       }
     else
@@ -1839,7 +1852,8 @@ sub _draw_feature_fast
 	    #4. make white transparent
 	    $newgd->transparent($newgd->colorResolve(255,255,255));
 	    #5. copy new image into appropriate place on image.
-#	    $self->gd->copyMerge($newgd, $fs, $hei, 0, 0, $fw, $ih, $feat->merge_percent);
+
+#	    $self->gd->copyMerge($newgd, $fs, $hei, 0, 0, $newgd->width, $newgd->height, $feat->merge_percent);
  	    $self->gd->copy($newgd, $fs, $hei, 0, 0, $newgd->width, $newgd->height);
 	  }
       }
@@ -1909,8 +1923,8 @@ See Also   :
 sub _calc_unit_size
   {
     my $self = shift;
-    return ($self->iw/($self->_region_stop-$self->_region_start));
-    return sprintf("%.5f",($self->iw/($self->_region_stop-$self->_region_start)));
+    return ($self->iw/($self->_region_stop-$self->_region_start+1));
+#    return sprintf("%.5f",($self->iw/($self->_region_stop-$self->_region_start)));
   }
 
 #################### subroutine header begin ####################
@@ -1940,21 +1954,22 @@ sub _draw_ruler
     $self->_image_h_used($self->_image_h_used + $self->ruler_height+$self->padding/2);
     return unless $self->draw_ruler;
     my $w = $self->iw; #width of image
-    my $xb = $self->_region_start < 1 ? $w*abs(1-$self->_region_start)/($self->_region_stop - $self->_region_start): 0; #x position begin
-    my $xe = $self->_region_stop > $self->chr_length ? $w-$w*($self->_region_stop - $self->chr_length-1)/($self->_region_stop - $self->_region_start) : $w; #x position end
+    my $xb = $self->_region_start < 1 ? $w*abs(1-$self->_region_start)/($self->_region_length): 0; #x position begin
+    my $xe = $self->_region_stop > $self->chr_length ? $w-$w*($self->_region_stop - $self->chr_length-1)/($self->_region_length) : $w; #x position end
     return unless ($xe>0);
     $gd->line($xb,$c,$xe,$c,$self->get_color($self->ruler_color));
     my $mtyb = $c-$self->ruler_height/2; #major tick y begin
     my $mtye = $c+$self->ruler_height/2; #major tick y end
     my $styb = $c-$self->ruler_height/4; #minor tick y begin
     my $stye = $c+$self->ruler_height/4; #minor tick y end
-    my $rb = $self->_region_start;
+    my $region_width = $self->_region_length;
+    my $rb = $self->_region_start-$region_width/4;
     $rb = 1 if $rb < 1;
     my $re = $self->_region_end;
     $re = $self->chr_length if $re > $self->chr_length;
     my $range = $re-$rb+1; #chromosomal positional range
     $rb = $rb-($range/10); #back up a bit
-    my $div = "1"."0"x int (log10($self->_region_stop - $self->_region_start)+.5); #determine range scale (10, 100, 1000, etc)
+    my $div = "1"."0"x int (log10($self->_region_length)+.5); #determine range scale (10, 100, 1000, etc)
     print STDERR "\nRULER: Center: $c, Start $xb, Stop: $xe, Ticks: $div, \n" if $self->DEBUG;
     $self->_make_ticks(scale=>$div, y1=>$mtyb, y2=>$mtye, range_begin=>$rb, range_end=>$re,text_loc=>1);
 #    $div /= 10;
@@ -2012,7 +2027,7 @@ sub _make_ticks
     print STDERR "UNIT Size: $unit\n" if $self->DEBUG;
     if ($rb <= 1 && $re >= 1)
       {
-	my $x = $w *(1 - $self->_region_start)/($self->_region_stop - $self->_region_start);
+	my $x = $w *(1 - $self->_region_start)/($self->_region_length);
 	$gd->filledRectangle($x, $y1, $x+$unit, $y2, $self->get_color($self->tick_color));
 	if ($text_loc)
 	  {
@@ -2022,7 +2037,7 @@ sub _make_ticks
       }
     while ($tick <= $re)
       {
-	my $x = $w *($tick - $self->_region_start)/($self->_region_stop - $self->_region_start);
+	my $x = $w *($tick - $self->_region_start)/($self->_region_length);
 	print STDERR "Generating tick at $tick ($x)\n" if $self->DEBUG;
 	$gd->filledRectangle($x, $y1, $x+$unit, $y2, $self->get_color($self->tick_color));
 	if ($text_loc)
@@ -2256,7 +2271,37 @@ sub _region_begin
     return $self->_region_start(@_);
   }
 
+#################### subroutine header begin ####################
 
+=head2 _region_length
+
+ Usage     : my $length = $self->_region_length()
+ Purpose   : returns the length of the chromosomal region
+ Returns   : int
+ Argument  : none
+ Throws    : none
+ Comment   : return the value of $self->_region_stop - $self->region_start + 1;
+           : 
+
+See Also   : 
+
+=cut
+
+#################### subroutine header end ####################
+
+sub _region_length
+  {
+    my $self = shift;
+    return ($self->_region_end - $self->_region_start+1)
+  }
+
+sub round
+  {
+    my $self = shift;
+    my $num = shift;
+    return $num unless $num;
+    return floor($num+0.5);
+  }
 
 #################### subroutine header begin ####################
 
