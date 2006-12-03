@@ -209,6 +209,7 @@ BEGIN
 "force_label", #flag to force the printing of the label
 "magnification", #magnification level for increasing/decreasing the size of the feature  
 "overlay", #level of overlay for features such that one feature is drawn over another.
+"use_external_image", #flag for using an external image when available
 );
   }
 
@@ -293,6 +294,11 @@ skip_overlap_search => When set to true, no overlap search is performed by CoGe:
                  they will be drawn next to one another.   However, if they have different 
                  overlay numbers, the one with the lowest overlay number will be drawn first
                  followed by the others.
+ external_image=> This is a place to store another GD object that is linked to an additional image to be
+                 drawn in the feature.  An example of use in an image of a nucleotide that is drawn
+                 on the background.  For exampe usage, see CoGe::Graphics::Feature::NucTide.pm
+
+ use_external_image=> This flag determines whether or not an external image is used if one is available.
 
  _gd          => Internal place to store the GD object.
  _overlap     => Internal place to track the number of features that occure at the same position.  
@@ -303,10 +309,6 @@ skip_overlap_search => When set to true, no overlap search is performed by CoGe:
                  by CoGe::Graphics::Chromosome->add_feature and set to one.  Each time an overlap is 
 		 detected, this value is incremented.  It is later used by Chromosome->_draw_features
 		 to determine the relative placement of the feature in the final image.
-external_image=> This is a place to store another GD object that is linked to an additional image to be
-                 drawn in the feature.  An example of use in an image of a nucleotide that is drawn
-                 on the background.  For exampe usage, see CoGe::Graphics::Feature::NucTide.pm
-
 =cut
 
 #################### subroutine header end ####################
@@ -325,6 +327,25 @@ sub transparency
   {
     my $self = shift;
     return $self->merge_percent(@_);
+  }
+
+
+#################### subroutine header begin ####################
+
+#################### subroutine header begin ####################
+
+=head2 layer
+
+ Purpose   : alias for $self->overlay
+
+=cut
+
+#################### subroutine header end ####################
+
+sub layer
+  {
+    my $self = shift;
+    return $self->overlay(@_);
   }
 
 
@@ -585,7 +606,6 @@ sub gd
 	my $white = $self->get_color(255,255,255);
 	$gd->transparent($white);
 	$gd->interlaced('true');
-
 	$self->_post_initialize(%opts);
       }
     return $gd;
@@ -613,6 +633,7 @@ sub _initialize
   {
     my $self = shift;
     my %opts = @_;
+    
   }
 
 #################### subroutine header begin ####################
