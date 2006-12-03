@@ -50,6 +50,7 @@ sub _initialize
 	$e = $seg->[1] if $seg->[1] > $e;
       }
     my $w = $e-$s;
+    $w =1 unless $w;
     $self->start($s);
     $self->stop($e);
     $self->image_width($w);
@@ -70,7 +71,6 @@ sub _post_initialize
     $self->label($self->label." (".$self->type.")") if $self->add_type && $self->type;
     my $label_loc = $self->strand =~ /-/ ? "bot" : "top";
     $self->label_location('bot');
-
     my $gd = $self->gd;
     $gd->fill(0,0, $self->get_color($self->bgcolor));
 #    $gd->transparent($self->get_color($self->bgcolor));
@@ -85,6 +85,7 @@ sub _post_initialize
       {
 	my $x1 = $seg->[0] - $s;
 	my $x2 = $seg->[1] - $s;
+	$x2 = $x1+1 if $x1 == $x2;
 	my $y1 = $c-$bh;
 	my $y2 = $c+$bh;
 	$gd->filledRectangle($x1,$y1, $x2, $y2, $color);
@@ -92,9 +93,10 @@ sub _post_initialize
 	$gd->setStyle($black, $black, $black, GD::gdTransparent, GD::gdTransparent);
 	if ($last)
 	  {
+	    my $liney = $y1+($y2-$y1)/2;
 	    my $mid = ($x1-$last)/2+$last;
-	    $gd->line($last, $y1, $mid, 0, GD::gdStyled);
-	    $gd->line($mid, 0, $x1, $y1, GD::gdStyled);
+	    $gd->line($last, $liney, $mid, 0, GD::gdStyled);
+	    $gd->line($mid, 0, $x1, $liney, GD::gdStyled);
 	  }
 	$last = $x2;
       }
