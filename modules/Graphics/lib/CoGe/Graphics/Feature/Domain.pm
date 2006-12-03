@@ -88,13 +88,14 @@ sub _post_initialize
 	my $y1 = $c-$bh;
 	my $y2 = $c+$bh;
 	$gd->filledRectangle($x1,$y1, $x2, $y2, $color);
-	$gd->rectangle($x1,$y1, $x2, $y2, $black);
+#	$gd->rectangle($x1,$y1, $x2, $y2, $black);
 	$gd->setStyle($black, $black, $black, GD::gdTransparent, GD::gdTransparent);
 	if ($last)
 	  {
+	    my $liney = $y1+($y2-$y1)/2;
 	    my $mid = ($x1-$last)/2+$last;
-	    $gd->line($last, $y1, $mid, 0, GD::gdStyled);
-	    $gd->line($mid, 0, $x1, $y1, GD::gdStyled);
+	    $gd->line($last, $liney, $mid, 2, GD::gdStyled);
+	    $gd->line($mid, 2, $x1, $liney, GD::gdStyled);
 	  }
 	$last = $x2;
       }
