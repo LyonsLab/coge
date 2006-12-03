@@ -8,14 +8,15 @@ BEGIN {
     $VERSION     = '0.1';
     $HEIGHT = 5;
     $WIDTH = 5;
-    $ATC= [175,175,255];
-    $GCC= [175,255,175];
-#    %EXTERNAL_IMAGES = (
-#			A=>'/opt/apache/CoGe/picts/A.png',
-#			T=>'/opt/apache/CoGe/picts/T.png',
-#			C=>'/opt/apache/CoGe/picts/C.png',
-#			G=>'/opt/apache/CoGe/picts/G.png',
-#		       );
+    $ATC= [255,255,255];
+    $GCC= [100,255,100];
+#    $GCC= [175,255,175];
+    %EXTERNAL_IMAGES = (
+			A=>'/opt/apache/CoGe/picts/A.png',
+			T=>'/opt/apache/CoGe/picts/T.png',
+			C=>'/opt/apache/CoGe/picts/C.png',
+			G=>'/opt/apache/CoGe/picts/G.png',
+		       );
     __PACKAGE__->mk_accessors(
 "nt",
 );
@@ -50,23 +51,23 @@ sub _initialize
     my $pat = $at/($at+$cg) if $at+$cg > 0;
     my $pcg = $cg/($at+$cg) if $at+$cg > 0;
     my @color;
-    my $red = 55;
-    if ($pat > .5)
-      {
-	$red += 200 * ($pat-.5)/.5;
-      }
+#     my $red = 55;
+#     if ($pat > .5)
+#       {
+# 	$red += 200 * ($pat-.5)/.5;
+#       }
 
-    my $blue = 55;
-    if ($pcg > .5)
-      {
-	$blue += 200 * ($pcg-.5)/.5;
-      }
+#     my $blue = 55;
+#     if ($pcg > .5)
+#       {
+# 	$blue += 200 * ($pcg-.5)/.5;
+#       }
 
-    my $green = 255;
-    if ($pcg > .5)
-      {
-	$green -= 200 * ($pcg-.5)/.5;
-      }
+#     my $green = 255;
+#     if ($pcg > .5)
+#       {
+# 	$green -= 200 * ($pcg-.5)/.5;
+#       }
 
 #    @color = ($red, $green, $blue);
 #    print STDERR "AT: $pat, GC: $pcg, ($red, $green, $blue)\n";
@@ -94,7 +95,7 @@ sub _post_initialize
 	  {
 	    $ei->rotate180();
 	  }
-	$self->external_image($ei);
+	$self->external_image($ei) if $self->use_external_image;
       }
   }
 
