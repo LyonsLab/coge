@@ -98,6 +98,19 @@ See Also   :
 
 ################################################## subroutine header end ##
 
+sub dataset
+  {
+    my $self = shift;
+    return $self->datasets();
+  }
+
+sub data_information
+  {
+    my $self = shift;
+    print STDERR "data_info is obselete. Please use dataset";
+    return $self->dataset();
+  }
+
 sub data_info
   {
     my $self = shift;
@@ -214,7 +227,12 @@ sub resolve_organism
       }
     else #probably an organism name. . .
       {
-	($orgout) = $self->search_like (name=>"%".$orgin."%")
+	my @orgs = $self->search_like (name=>"%".$orgin."%");
+	$orgout = $orgs[0];
+	if (@orgs)
+	  {
+	    warn "multiple organisms matched search of $orgin.  Returning ".$orgout->name."\nBut the following also matched: ", join (" ", map {$_->name} @orgs),"\n";
+	  }
       }
     warn "unable to resolve organism for $orgin in Organism->resolve_organism" unless ref ($orgout) =~ /Organism/i;
     return $orgout;
