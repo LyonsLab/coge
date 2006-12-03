@@ -28,6 +28,8 @@ sub add_segment
 	$start = $stop;
 	$stop = $tmp;
       }
+    $start = 1 if $start < 1;
+    return unless $start && $stop;
     my @segs;
     push @segs,  @{$self->segments} if $self->segments;
     push @segs, [$start, $stop];
@@ -49,7 +51,7 @@ sub _initialize
 	$s = $seg->[0] if $seg->[0] < $s;
 	$e = $seg->[1] if $seg->[1] > $e;
       }
-    my $w = $e-$s;
+    my $w = $e || $s ? $e-$s : 1;
     $self->start($s);
     $self->stop($e);
     $self->image_width($w);
