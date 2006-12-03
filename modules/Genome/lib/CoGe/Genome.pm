@@ -1409,11 +1409,11 @@ sub get_genomic_seq_by_feat_name_and_type_name
 	  {
 	    if ($version)
 	      {
-		next unless $feat->data_info->version eq $version;
+		next unless $feat->dataset->version eq $version;
 	      }
 	    if ($info_id)
 	      {
-		next unless $feat->data_info->id eq $info_id;
+		next unless $feat->dataset->id eq $info_id;
 	      }
 	    next unless $feat->feat_type->name =~ /$type/;
 	    push @{$locs{$feat->id}}, $feat->locations;
@@ -1434,7 +1434,7 @@ sub get_genomic_seq_by_feat_name_and_type_name
 				       chr  =>$loc->chr,
 				       strand=>$loc->strand,
 				       org_id=>$loc->feat->org->id(),
-				       data_info_id=>$loc->feat->data_info->id(),
+				       data_info_id=>$loc->feat->dataset->id(),
 				      );
 	    $rev_seq_flag = 1 if $loc->strand =~ "-";
 	  }
@@ -1482,7 +1482,9 @@ sub get_genomic_sequence_for_feature
     my $seq;
     if ($feat->has_genomic_sequence())
       {
-	foreach my $loc (sort {$a->start <=> $b->start} $feat->locs)
+	my @locs = sort {$a->start <=> $b->start} $feat->locs;
+	@locs = reverse @locs if $feat->strand =~ /-/i;
+	foreach my $loc (@locs)
 	  {
 	    my $tmp_seq = $self->get_genomic_seq_obj->get_sequence(
 								   start  => $loc->start,
@@ -1512,8 +1514,8 @@ sub get_genomic_sequence_for_feature
 								   start  => $start,
 								   stop   => $stop,
 								   chr    => $feat->chr,
-								   org_id => $feat->data_info->organism->id,
-								   info_id=> $feat->data_info->id,
+								   org_id => $feat->dataset->organism->id,
+								   info_id=> $feat->dataset->id,
 								   strand => $feat->strand,
 								  );
 	    $seq = $tmp_seq . $seq if $tmp_seq;
@@ -1536,8 +1538,8 @@ sub get_genomic_sequence_for_feature
 								   start  => $start,
 								   stop   => $stop,
 								   chr    => $feat->chr,
-								   org_id => $feat->data_info->organism->id,
-								   info_id=> $feat->data_info->id,
+								   org_id => $feat->dataset->organism->id,
+								   info_id=> $feat->dataset->id,
 								   strand => $feat->strand,
 								  );
 	    $seq .= $tmp_seq if $tmp_seq;
@@ -1554,14 +1556,16 @@ sub get_genomic_sequence_for_feature
 		  {
 		    if ($chr eq $feat->chr)
 		      {
-			foreach my $loc (sort {$a->start <=> $b->start} $feat->locs)
+			my @locs = sort {$a->start <=> $b->start} $feat->locs;
+			@locs = reverse @locs if $feat->strand =~ /-/i;
+			foreach my $loc (@locs)
 			  {
 			    my $tmp_seq = $self->get_genomic_seq_obj->get_sequence(
 										   start  => $loc->start,
 										   stop   => $loc->stop,
 										   chr    => $loc->chr,
-										   org_id => $feat->data_info->organism->id,
-										   info_id=> $ds->id,
+										   org_id => $feat->dataset->organism->id,
+										   dataset=> $ds->id,
 										   strand => $loc->strand,
 										  );
 			    $seq .= $tmp_seq if $tmp_seq;
@@ -1585,7 +1589,7 @@ sub get_genomic_sequence_for_feature
 										   stop   => $stop,
 										   chr    => $feat->chr,
 										   org_id => $feat->data_info->organism->id,
-										   info_id=> $ds->id,
+										   dataset_id=> $ds->id,
 										   strand => $feat->strand,
 										  );
 			    $seq = $tmp_seq . $seq if $tmp_seq;
@@ -1609,7 +1613,7 @@ sub get_genomic_sequence_for_feature
 										   stop   => $stop,
 										   chr    => $feat->chr,
 										   org_id => $feat->data_info->organism->id,
-										   info_id=> $ds->id,
+										   dataset_id=> $ds->id,
 										   strand => $feat->strand,
 										  );
 			    $seq .= $tmp_seq if $tmp_seq;
@@ -1704,6 +1708,7 @@ sub get_features_for_organism_and_version
              searchall => 1
                           searchs all datasets for the organism to 
                           which the feature belongs
+             version   => specify a specific dataset version
  Throws    : 
  Comments  : If searchall is set, then all datasets for the organism to which the
              feature belongs are searched for overlapping features.  Otherwise, only 
@@ -1720,15 +1725,21 @@ sub find_overlapping_features
     my $self = shift;
     my %opts = @_;
     my $feat = $opts{feat};
+    my $version = $opts{version};
+    my $overlap_length = $opts{overlap_length}; #option to implement to find features that overlap by a minimum length  NEEDS TO BE DONE
+
+
     return unless ref ($feat) =~ /Feat/i;
-    my @di = $opts{searchall} ? $feat->dataset->organism->datasets : $feat->dataset;
+    my @ds = $opts{searchall} ? $feat->dataset->organism->datasets : $feat->dataset;
+
     my @overlap_feats;
-    foreach my $di (@di)
+    foreach my $ds (@ds)
       {
+	next if $version && $ds->version ne $version;
 	push @overlap_feats, $feat->get_features_in_region(start=>$feat->start,
 							   stop =>$feat->stop,
 							   chr  =>$feat->chr,
-							   info_id=>$di,
+							   dataset=>$ds,
 							  );
       }
     return wantarray ? @overlap_feats : \@overlap_feats;
