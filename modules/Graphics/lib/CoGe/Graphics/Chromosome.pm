@@ -268,7 +268,7 @@ sub new
     $self->skip_duplicate_features(0);
     $self->mag(1);
     $self->font($FONTTT);
-    $self->_features([]);
+    $self->_features({});
     $self->_fill_features([]);
     return $self;
 }
@@ -538,8 +538,10 @@ sub add_feature
 	$feat->gd; #initialize feature;
 	$feat->mag(1) unless defined $feat->mag;
 	$feat->overlay(1) unless defined $feat->overlay();
-	$feat->_overlap(1) unless $feat->_overlap;#detects overlapping feature on the same track 
+	$feat->_overlap(1) unless defined $feat->_overlap;#detects overlapping feature on the same track 
 	$feat->_overlap_pos(1) unless $feat->_overlap_pos; #placement for overlapping features
+	$feat->layer(1) unless $feat->layer;
+	$feat->type("unknown") unless $feat->type;
 	unless ($feat->order)
 	  {
 	    my $last_feat = $self->get_feats(last_order=>1, strand=>$feat->strand, fill=>$feat->fill);
@@ -551,14 +553,24 @@ sub add_feature
 	  {
 	    next if $self->_check_duplicate($feat);   #should implement this
 	  }
-	if ($feat->fill)
-	  {
-	    push @{$self->_fill_features}, $feat;
-	  }
-	else
-	  {
-	    push @{$self->_features},$feat;
-	  }
+	my $feats = $self->_features;
+	my $fill = $feat->fill ? "fill" : "nofill";
+	my $strand = $feat->strand =~ /-/ ? "-1" : "1";
+	push @{$feats->{$feat->type}{$strand}{$feat->order}{$feat->layer}{$fill}{$feat->start}}, $feat;
+	push @{$feats->{$feat->type}{$strand}{$feat->order}{$feat->layer}{$fill}{all_feats}}, $feat;
+	push @{$feats->{$feat->type}{$strand}{$feat->order}{$feat->layer}{all_feats}}, $feat;
+	push @{$feats->{$feat->type}{$strand}{$feat->order}{all_feats}}, $feat;
+	push @{$feats->{$feat->type}{$strand}{all_feats}}, $feat;
+	push @{$feats->{$feat->type}{all_feats}}, $feat;
+	push @{$feats->{all_feats}}, $feat;
+	#	if ($feat->fill)
+#	  {
+#	    push @{$self->_fill_features}, $feat;
+#	  }
+#	else
+#	  {
+#	    push @{$self->_features},$feat;
+#	  }
       }
   }
 
@@ -568,12 +580,13 @@ sub add_feature
 =head2 delete_features
 
  Usage     : $c->delete_features('fill');
- Purpose   : Deletes features from the object.  Either of a type (fill or regular), or all of them
+ Purpose   : Deletes features from the object.  Either of a fill type (fill or regular), a feature type ('gene', 'nt', 'mRNA'), or all of them
  Returns   : none
  Argument  : string or none
                fill => 1 for deleting fill features
                regular => for deleting regular features
                all (or blank) => deletes all the features
+               <name of feature type> => e.g. "gene", "tRNA", "aa", "nt", etc.  depends on what feature derivatives used
  Throws    : 
  Comment   : 
 
@@ -588,19 +601,24 @@ sub delete_features
     my $type = shift;
     my $fill = 1 if !$type || $type =~ /fill/i || $type =~ /all/;
     my $reg = 1 if !$type || $type =~ /regular/i || $type =~ /all/;
+    my $feats = $self->_features;
     if ($fill || $reg)
       {
-	$self->_fill_features([]) if $fill;
-	$self->_features([]) if $reg;
+#	$self->_fill_features([]) if $fill;
+#	$self->_features([]) if $reg;
+	delete $feats->{fill} if $fill;
+	delete $feats->{nofill} if $reg;
       }
     else
       {
-	my @feats;
-	foreach my $feat ($self->get_features(fill=>0))
-	  {
-	    push @feats, $feat unless ($feat->type && $feat->type =~ /$type/);
-	  }
-	$self->_features(\@feats);
+	delete $feats->{fill}{$type};
+	delete $feats->{nofill}{$type};
+#	my @feats;
+#	foreach my $feat ($self->get_features(fill=>0))
+#	  {
+#	    push @feats, $feat unless ($feat->type && $feat->type =~ /$type/);
+#	  }
+#	$self->_features(\@feats);
       }
   }
 
@@ -701,6 +719,131 @@ See Also   : CoGe::Graphics::Feature
 
 
 sub get_features
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $order = $opts{order} || $opts{ORDER} || $opts{track};
+    my $type = $opts{type} || $opts{TYPE};
+    my $last = $opts{last_order} || $opts{LAST_ORDER}; #flag to get the highest order feature for a location
+    my $strand = $opts{strand} || $opts{STRAND};
+    if ($strand)
+      {
+	$strand = $strand =~ /-/ ? "-1" : "1"; #make this consistent with add_feature
+      }
+    my $fill = $opts{fill};
+    $fill = $opts{FILL} unless defined $fill; #get filled features?
+    my $start = $opts{start};
+    my $stop  = $opts{stop};
+    my $layer  = $opts{overlay} || $opts{layer};
+
+    my $feats = $self->_features;
+    my @return_feats;
+    my $possible_feats = {};
+    if ($type)
+      {
+	$possible_feats = $feats->{$type};
+      }
+    else
+      {
+	foreach my $feat (@{$feats->{all_feats}})
+	  {
+	    my $fill_state = $feat->fill ? "fill" : "nofill";
+	    my $strand_tmp = $feat->strand =~ /-/ ? "-1" : "1";
+	    push @{$possible_feats->{$strand_tmp}{$feat->order}{$feat->layer}{$fill_state}{$feat->start}}, $feat;
+	    push @{$possible_feats->{all_feats}}, $feat;
+	  }
+      }
+    if ($strand)
+      {
+	$possible_feats = $possible_feats->{$strand};
+	$possible_feats->{all_feats} = [] unless $possible_feats->{all_feats};
+      }
+    else
+      {
+	my $tmp = {};
+	foreach my $feat (@{$possible_feats->{all_feats}})
+	  {
+	    my $fill_state = $feat->fill ? "fill" : "nofill";
+	    push @{$tmp->{$feat->order}{$feat->layer}{$fill_state}{$feat->start}}, $feat;
+	    push @{$tmp->{all_feats}}, $feat;
+	  }
+	$possible_feats = $tmp;
+      }
+    if ($order)
+      {
+	$possible_feats = $possible_feats->{$order};
+	$possible_feats->{all_feats} = [] unless $possible_feats->{all_feats};
+      }
+    else
+      {
+	my $tmp = {};
+	foreach my $feat (@{$possible_feats->{all_feats}})
+	  {
+	    my $fill_state = $feat->fill ? "fill" : "nofill";
+	    push @{$tmp->{$feat->layer}{$fill_state}{$feat->start}}, $feat;
+	    push @{$tmp->{all_feats}}, $feat;
+	  }
+	$possible_feats = $tmp;
+      }
+    if ($layer)
+      {
+	$possible_feats = $possible_feats->{$layer};
+	$possible_feats->{all_feats} = [] unless $possible_feats->{all_feats};
+      }
+    else
+      {
+	my $tmp = {};
+	foreach my $feat (@{$possible_feats->{all_feats}})
+	  {
+	    my $fill_state = $feat->fill ? "fill" : "nofill";
+	    push @{$tmp->{$fill_state}{$feat->start}}, $feat;
+	    push @{$tmp->{all_feats}}, $feat;
+	  }
+	$possible_feats = $tmp;
+      }
+    if ($fill)
+      {
+	$possible_feats = $possible_feats->{$fill};
+	$possible_feats->{all_feats} = [] unless $possible_feats->{all_feats};
+      }
+    else
+      {
+	my $tmp = {};
+	foreach my $feat (@{$possible_feats->{all_feats}})
+	  {
+	    push @{$tmp->{$feat->start}}, $feat;
+	    push @{$tmp->{all_feats}}, $feat;
+	  }
+	$possible_feats = $tmp;
+      }
+    if (defined $start && defined $stop)
+      {
+	if ($start > $stop)
+	  {
+	    my $tmp = $stop;
+	    $stop = $start;
+	    $start = $tmp;
+	  }
+	foreach my $start_pos (keys %$possible_feats)
+	  {
+	    push @return_feats, @{$possible_feats->{$start_pos}} if $start_pos >= $start && $start_pos <= $stop;
+	  }
+      }
+    else
+      {
+	@return_feats = @{$possible_feats->{all_feats}};
+      }
+    if ($last)
+      {
+	my @return_feats = sort {$b->order <=> $a->order} @return_feats;
+	return $return_feats[0];
+      }
+    return wantarray ? @return_feats : \@return_feats;
+  }
+
+
+
+sub get_features_old
   {
     my $self = shift;
     my %opts = @_;
@@ -1256,15 +1399,21 @@ sub set_image_height
 #    $feat_height = $feat_height*($self->mag);
     my $h=$ruler_h;# = $self->padding; #give use some padding
 
-    my $top_feat = $self->get_feats(last_order=>1, strand=>1, fill=>0);
-    my $bot_feat = $self->get_feats(last_order=>1, strand=>-1, fill=>0);
+    my ($tfh, $bfh);
+    if ($self->_max_track)
+      {
+	#is there an override set for the number of genomic feature tracks?
+	$tfh = $self->_max_track * ($feat_height+$self->padding);
+	$bfh = $self->_max_track * ($feat_height+$self->padding);
+      }
+    else
+      {
+	my $top_feat = $self->get_feats(last_order=>1, strand=>1, fill=>0);
+	my $bot_feat = $self->get_feats(last_order=>1, strand=>-1, fill=>0);
 
-    my $tfh = $top_feat->order * ($feat_height+$self->padding)if $top_feat;
-    my $bfh = $bot_feat->order * ($feat_height+$self->padding)if $bot_feat;
-    #is there an override set for the number of genomic feature tracks?
-    $tfh = $self->_max_track * ($feat_height+$self->padding)if $self->_max_track;
-    $bfh = $self->_max_track * ($feat_height+$self->padding)if $self->_max_track;
-
+	$tfh = $top_feat->order * ($feat_height+$self->padding)if $top_feat;
+	$bfh = $bot_feat->order * ($feat_height+$self->padding)if $bot_feat;
+      }
     $tfh = 0 unless $tfh;
     $bfh = 0 unless $bfh;
 #    print STDERR Dumper $bot_feat;
@@ -1918,7 +2067,7 @@ sub _draw_ruler
     print STDERR "\nRULER: Center: $c, Start $xb, Stop: $xe, Ticks: $div, \n" if $self->DEBUG;
     $self->_make_ticks(scale=>$div, y1=>$mtyb, y2=>$mtye, range_begin=>$rb, range_end=>$re,text_loc=>1);
 #    $div /= 10;
-    $self->_make_ticks(scale=>$div/10, y1=>$styb, y2=>$stye, range_begin=>$rb, range_end=>$re, text_loc=>-1);
+    $self->_make_ticks(scale=>$div/10, y1=>$styb, y2=>$stye, range_begin=>$rb, range_end=>$re, text_loc=>0);
 
   }
 
@@ -1960,6 +2109,7 @@ sub _make_ticks
     my $y2 = $opts{y2}; #bottom of tick
     my $rb = $opts{range_begin};
     my $re = $opts{range_end};
+    my $label = $opts{label}; #write labels on ticks?
     my $text_loc  = $opts{text_loc}; #location of text -- flag (0 off, 1 above line, -1 below line, default 1)
     $text_loc = 1 unless defined $text_loc;
     my $tick = $div;
@@ -2270,6 +2420,6 @@ See Also   :
 
 
 
-1;
+    1;
 # The preceding line will help the module return a true value
 
