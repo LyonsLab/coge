@@ -33,6 +33,7 @@ sub _initialize
     $self->bgcolor([255,255,255]) unless $self->bgcolor;
     $self->fill(1);
     $self->order(1);
+    $self->type('nt');
     $self->stop($self->start + length $self->nt-1) unless $self->stop;
     $self->skip_overlap_search(1); #make sure to skip searching for overlap for these guys.  Search can be slow
     my $at = 0;
