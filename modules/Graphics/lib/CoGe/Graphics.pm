@@ -627,13 +627,13 @@ sub draw_prots
 		
 #		next if $loc->stop < $c->_region_begin;
 #		next if $loc->start > $c->_region_end;
-		print STDERR "Adding protein feature: $aseq at position ", $loc->start,"-", $loc->stop,"\n";
+		print STDERR "Adding protein feature: $aseq at position ", $loc->start,"-", $loc->stop,"\n" if $self->DEBUG;
 		my $ao = CoGe::Graphics::Feature::AminoAcid->new({aa=>$aseq, start=>$loc->start, stop=>$loc->stop, strand => $loc->strand, order=>2});
 		$ao->skip_overlap_search(1);
 		$ao->mag(0.75);
 		$ao->overlay(2);
 		$c->add_feature($ao);
-		
+		delete $loc->{__Changed}; #silence the warning from Class::DBI when location is destroyed
 	      }
 	    
 	    $pos+=$chrs;
