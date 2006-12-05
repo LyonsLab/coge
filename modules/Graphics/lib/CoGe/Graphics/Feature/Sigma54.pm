@@ -58,6 +58,7 @@ sub _initialize
 
     $self->color(\@color);
     $self->label($self->nt) if $self->nt;
+    $self->type("sigma54");
   }
 
 sub _post_initialize
