@@ -16,15 +16,13 @@ isa_ok ($s, 'CoGeX');
 
 my $rs = $s->resultset('Feature')->search(
                     { 
-                    'organism.name' => { 'like' => 'Nostoc%' }
+                      'organism.name' => { 'like' => 'Nostoc%' }
                     },
                     {
-                    join => { dataset => 'organism' },
-                    #prefetch => ["dataset"]
+                      join => { dataset => 'organism' },
                     },
 
                 );
-
 
 my @features = $rs->all();
 is( scalar(@features), 10863 );
