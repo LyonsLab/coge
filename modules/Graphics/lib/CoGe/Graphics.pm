@@ -489,7 +489,7 @@ sub process_features
         	$f->order(1);
 		$f->overlay(3);
 		push @cds_feats, $feat;
-		$self->draw_prots(genomic_feat=>$feat, c=>$c, chrom_feat=>$f) if $draw_proteins;;
+		$self->process_proteins(genomic_feat=>$feat, c=>$c, chrom_feat=>$f) if $draw_proteins;;
 		if ($accn)
 		  {
 		    foreach my $name (@{$feat->{QUALIFIERS}{names}})
@@ -599,19 +599,24 @@ sub generate_output
       }
   } 
 
+sub process_proteins
+  {
+    my $self = shift;
+    return $self->draw_prots(@_);
+  }
+
 sub draw_prots
   {
     my $self = shift;
     my %opts = @_;
     my $feat = $opts{genomic_feat};
     my $c = $opts{c};
-    my $f = $opts{chrom_feat};
     #Do we have any protein sequence we can use?
     foreach my $seq ($feat->sequences)
       {
 	next unless $seq->seq_type->name =~ /prot/i;
 	my ($pseq) = $seq->sequence_data;
-	my $chrs = int (($c->_region_stop-$c->_region_start)/$c->iw)/3;
+	my $chrs = int ((($c->_region_length)/$c->iw)/3+.5); 
 	$chrs = 1 if $chrs < 1;
 	my $pos = 0;
 	while ($pos <= length $pseq)
@@ -619,12 +624,16 @@ sub draw_prots
 	    my $aseq = substr($pseq, $pos, $chrs);
 	    foreach my $loc ($seq->get_genomic_locations(start=>$pos+1, stop=>$pos+$chrs))
 	      {
+		
+		next if $loc->stop < $c->_region_begin;
+		next if $loc->start > $c->_region_end;
+		print STDERR "Adding protein feature: $aseq at position ", $loc->start,"-", $loc->stop,"\n" if $self->DEBUG;
 		my $ao = CoGe::Graphics::Feature::AminoAcid->new({aa=>$aseq, start=>$loc->start, stop=>$loc->stop, strand => $loc->strand, order=>2});
 		$ao->skip_overlap_search(1);
 		$ao->mag(0.75);
 		$ao->overlay(2);
 		$c->add_feature($ao);
-		delete $loc->{__Changed}; #silence the warning from Class::DBI
+		
 	      }
 	    
 	    $pos+=$chrs;
