@@ -99,7 +99,7 @@ sub _initialize
 	push @color, $FOB->[$i]*$fob/$sum+ $FIL->[$i]*$fil/$sum+$PRO->[$i]*$pro/$sum+$BAS->[$i]*$bas/$sum
 	             +$ACD->[$i]*$acd/$sum+$CYS->[$i]*$cys/$sum+$STOP->[$i]*$stop/$sum;
       }
-    print join (":", $self->aa, @color),"\n";# if $self->aa =~ /\*/;
+    print "Amino acid color for ",join (":", $self->aa, @color),"\n" if $self->DEBUG;# if $self->aa =~ /\*/;
     @color = (255,255,255) if ($color[0] == 0 && $color[1] == 0 && $color[2] == 0);
     $self->color(\@color);
   }
