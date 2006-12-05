@@ -203,6 +203,7 @@ BEGIN
 "_overlap", #place to store the number of regular features that overlap the same region at the same order
 "_overlap_pos", #position for placement of overlapping region
 "skip_overlap_search", #flag to skip overlap search on some objects (like fill objects)
+"skip_duplicate_search", #flag to skip duplicate check on some objects
 "merge_percent", #a number between 0-100 for how much to merge the feature onto the chromosome picture.  100 means to completely copy with no merging of colors.
 "font_size", #scaling factor for font size.
 "external_image", #external image for feature
@@ -298,7 +299,13 @@ skip_overlap_search => When set to true, no overlap search is performed by CoGe:
                  drawn in the feature.  An example of use in an image of a nucleotide that is drawn
                  on the background.  For exampe usage, see CoGe::Graphics::Feature::NucTide.pm
 
- use_external_image=> This flag determines whether or not an external image is used if one is available.
+ use_external_image    => This flag determines whether or not an external image is used if one is available.
+
+ skip_overlap_search   => This flag will ensure that this feature is not checked for overlap with other 
+                          features
+
+ skip_duplicate_search => this flag will ensure that this feature is not checked for duplication with 
+                          other features
 
  _gd          => Internal place to store the GD object.
  _overlap     => Internal place to track the number of features that occure at the same position.  

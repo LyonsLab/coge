@@ -625,9 +625,9 @@ sub draw_prots
 	    foreach my $loc ($seq->get_genomic_locations(start=>$pos+1, stop=>$pos+$chrs))
 	      {
 		
-		next if $loc->stop < $c->_region_begin;
-		next if $loc->start > $c->_region_end;
-		print STDERR "Adding protein feature: $aseq at position ", $loc->start,"-", $loc->stop,"\n" if $self->DEBUG;
+#		next if $loc->stop < $c->_region_begin;
+#		next if $loc->start > $c->_region_end;
+		print STDERR "Adding protein feature: $aseq at position ", $loc->start,"-", $loc->stop,"\n";
 		my $ao = CoGe::Graphics::Feature::AminoAcid->new({aa=>$aseq, start=>$loc->start, stop=>$loc->stop, strand => $loc->strand, order=>2});
 		$ao->skip_overlap_search(1);
 		$ao->mag(0.75);
