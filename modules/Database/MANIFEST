@@ -57,3 +57,6 @@ t/023_load.t
 t/024_load.t
 t/025_load.t
 t/026_load.t
+t/027_feature_by_id.t
+t/028_organism_by_name.t
+t/029_feature_by_organism.t
