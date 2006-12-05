@@ -820,6 +820,7 @@ sub _initialize
 
     $self->color(\@color);
     $self->label($self->nt) if $self->nt;
+    $self->type('exon_motif');
   }
 
 sub _post_initialize
