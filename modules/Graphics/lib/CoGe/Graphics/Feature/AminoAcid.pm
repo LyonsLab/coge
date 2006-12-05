@@ -52,6 +52,7 @@ sub _initialize
     $self->bgcolor([255,255,255]) unless $self->bgcolor;
     $self->label($self->aa) if $self->aa;
     $self->stop($self->start + length($self->aa)*3-1);
+    $self->type('aa');
     $self->skip_overlap_search(0) unless $self->skip_overlap_search;
     my ($sum, $fob, $pro, $fil, $bas, $acd, $cys)= (0,0,0,0,0,0,0);
     my @color;
@@ -91,6 +92,7 @@ sub _initialize
 	push @color, $FOB->[$i]*$fob/$sum+ $FIL->[$i]*$fil/$sum+$PRO->[$i]*$pro/$sum+$BAS->[$i]*$bas/$sum
 	             +$ACD->[$i]*$acd/$sum+$CYS->[$i]*$cys/$sum;
       }
+    @color= (255,255,255) if ($color[0] == 0 && $color[1] == 0 && $color[2] == 0);
     $self->color(\@color);
   }
 
