@@ -62,6 +62,7 @@ sub _initialize
     $self->font_size(1);
     $self->block_height($BLOCK_HEIGHT) unless $self->block_height;
     $self->print_label(0) unless defined $self->print_label();
+    $self->type('block');
   }
 
 sub _post_initialize
