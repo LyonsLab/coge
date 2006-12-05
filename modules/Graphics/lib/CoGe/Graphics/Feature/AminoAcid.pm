@@ -4,7 +4,7 @@ use base qw(CoGe::Graphics::Feature);
 
 
 BEGIN {
-    use vars qw($VERSION $HEIGHT $WIDTH $FOB $PRO $FIL $BAS $ACD $CYS %AA);
+    use vars qw($VERSION $HEIGHT $WIDTH $FOB $PRO $FIL $BAS $ACD $CYS %AA $STOP);
     $VERSION     = '0.1';
     $HEIGHT = 25;
     $WIDTH = 25;
@@ -14,6 +14,7 @@ BEGIN {
     $BAS = [255, 100, 100];
     $ACD = [100, 100, 255]; #pink
     $CYS = [255, 255, 100]; #yellow
+    $STOP= [255, 255, 255];
     %AA = (
     	   A =>'fob',
 	   R =>'bas',
@@ -35,6 +36,7 @@ BEGIN {
 	   W =>'fob',
 	   Y =>'fob',
 	   V =>'fob',
+	   '*' =>'stop',
           );	
     __PACKAGE__->mk_accessors(
 "aa",
@@ -51,10 +53,11 @@ sub _initialize
     $self->image_height($h);
     $self->bgcolor([255,255,255]) unless $self->bgcolor;
     $self->label($self->aa) if $self->aa;
+    $self->label(reverse($self->label)) if $self->strand =~ /-/;
     $self->stop($self->start + length($self->aa)*3-1);
     $self->type('aa');
     $self->skip_overlap_search(0) unless $self->skip_overlap_search;
-    my ($sum, $fob, $pro, $fil, $bas, $acd, $cys)= (0,0,0,0,0,0,0);
+    my ($sum, $fob, $pro, $fil, $bas, $acd, $cys, $stop)= (0,0,0,0,0,0,0,0);
     my @color;
     foreach my $aa (split //, $self->aa)
       {
@@ -84,15 +87,20 @@ sub _initialize
 	  {
 	    $cys++;
 	  }
+	elsif ($AA{$aa} eq'stop')
+	  {
+	    $stop++;
+	  }
         $sum++;
       }
     return 0 unless $sum;
     for my $i (0..2)
       {
 	push @color, $FOB->[$i]*$fob/$sum+ $FIL->[$i]*$fil/$sum+$PRO->[$i]*$pro/$sum+$BAS->[$i]*$bas/$sum
-	             +$ACD->[$i]*$acd/$sum+$CYS->[$i]*$cys/$sum;
+	             +$ACD->[$i]*$acd/$sum+$CYS->[$i]*$cys/$sum+$STOP->[$i]*$stop/$sum;
       }
-    @color= (255,255,255) if ($color[0] == 0 && $color[1] == 0 && $color[2] == 0);
+    print join (":", $self->aa, @color),"\n";# if $self->aa =~ /\*/;
+    @color = (255,255,255) if ($color[0] == 0 && $color[1] == 0 && $color[2] == 0);
     $self->color(\@color);
   }
 
