@@ -31,6 +31,8 @@ lib/CoGeX/FeatureListGroupImageConnector.pm
 lib/CoGeX/UserSession.pm
 lib/CoGeX/FeatureName.pm
 scripts/test_cogex1.pl
+scripts/test_cogex1.pl
+scripts/feature_by_name_and_type.pl
 t/001_load.t
 t/002_feature_by_id.t
 t/003_organism_by_name.t
