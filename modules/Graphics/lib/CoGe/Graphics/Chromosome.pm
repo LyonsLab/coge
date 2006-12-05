@@ -208,6 +208,7 @@ BEGIN {
 "draw_chromosome", "chr_inner_color", "chr_outer_color",
 "start_picture", #can be set to left, right or center and dictates at which point to 
 "overlap_adjustment", #flag to turn on/off the overlap adjustment for overlapping features
+"skip_duplicate_features", #flag to turn on/off skipping duplicate features
 "_region_start", "_region_stop", #image's start and stop (should be equal to or "larger" than the users
 "_magnification", "_mag_scale", 
 "_image_h_used", #storage for the amount of the image height used
@@ -264,6 +265,7 @@ sub new
     $self->feature_start_height($FEATURE_START_HEIGHT);
     $self->feature_mag_height($FEATURE_MAG_HEIGHT);
     $self->overlap_adjustment(1);
+    $self->skip_duplicate_features(1);
     $self->mag(1);
     $self->font($FONTTT);
     $self->_features([]);
@@ -385,6 +387,8 @@ sub new
 
  overlap_adjustment =>  flag for whether overlapping features are rescaled and position such that
                         they don't overlap when the image is generated.  Default: 1
+
+ skip_duplicate_features => flag for whether to skip two featrues if they are identical.  Default: 1
 
 =cut
 
@@ -543,7 +547,7 @@ sub add_feature
 	    $feat->order($order);
 	  }
 	$self->_check_overlap($feat) if $self->overlap_adjustment;
-#	$self->_check_duplication($feat) if $self->skip_duplicate_features;  #should implement this
+	$self->_check_duplication($feat) if $self->skip_duplicate_features;  #should implement this
 	if ($feat->fill)
 	  {
 	    push @{$self->_fill_features}, $feat;
@@ -641,6 +645,21 @@ sub _check_overlap
 	      $feat->_overlap_pos($feat->_overlap_pos+1);
 	    }
 	}	
+  }
+
+sub _check_duplicate
+  {
+    my $self = shift;
+    my $feat = shift;
+    return if $feat->skip_duplicate_search;
+    my @feats = $self->get_feats(strand=>$feat->strand, fill=>$feat->fill, order=>$feat->order, type=>$feat->type);
+    return unless @feats;
+    foreach my $f (@feats)
+      {
+	return if $f->start == $feat->start && $f->stop == $feat->stop && $f->layer == $feat->layer && $f->label == $feat->label;
+      }
+    return 1;
+
   }
 
 #################### subroutine header begin ####################
