@@ -1,6 +1,6 @@
 # -*- perl -*-
 
-# t/028_organsim_by_name.t - get an organism object by name
+# t/003_organsim_by_name.t - get an organism object by name
 
 use Test::More tests => 4;
 

@@ -1,6 +1,6 @@
 # -*- perl -*-
 
-# t/027_feature_by_id.t - check feature object creation works by using
+# t/002_feature_by_id.t - check feature object creation works by using
 # a feature_id query
 
 use Test::More tests => 4;
