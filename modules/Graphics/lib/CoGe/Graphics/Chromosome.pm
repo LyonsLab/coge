@@ -3,6 +3,7 @@ use strict;
 use base qw(Class::Accessor);
 use POSIX;
 use Data::Dumper;
+use Benchmark;
 use GD;
 
 #################### main pod documentation begin ###################
@@ -218,6 +219,7 @@ BEGIN {
 "_features", #internal storage of features
 "_fill_features", #internal storeage of fill features
 "_max_track", #place to store the maximum number of tracks on which to draw genomic features
+"benchmark", #stores a flag for printing benchmark information for image generation
 #"start", "stop", #user defined start and stop.  Not sure if this is needed. . .
 );
 }
@@ -742,6 +744,7 @@ sub get_features
     if ($type)
       {
 	$possible_feats = $feats->{$type};
+	$possible_feats->{all_feats} = [] unless $possible_feats->{all_feats};
       }
     else
       {
@@ -768,6 +771,7 @@ sub get_features
 	    push @{$tmp->{all_feats}}, $feat;
 	  }
 	$possible_feats = $tmp;
+	$possible_feats->{all_feats} = [] unless $possible_feats->{all_feats};
       }
     if ($order)
       {
@@ -784,6 +788,7 @@ sub get_features
 	    push @{$tmp->{all_feats}}, $feat;
 	  }
 	$possible_feats = $tmp;
+	$possible_feats->{all_feats} = [] unless $possible_feats->{all_feats};
       }
     if ($layer)
       {
@@ -800,6 +805,7 @@ sub get_features
 	    push @{$tmp->{all_feats}}, $feat;
 	  }
 	$possible_feats = $tmp;
+	$possible_feats->{all_feats} = [] unless $possible_feats->{all_feats};
       }
     if ($fill)
       {
@@ -815,6 +821,7 @@ sub get_features
 	    push @{$tmp->{all_feats}}, $feat;
 	  }
 	$possible_feats = $tmp;
+	$possible_feats->{all_feats} = [] unless $possible_feats->{all_feats};
       }
     if (defined $start && defined $stop)
       {
@@ -1141,11 +1148,30 @@ sub generate_region
     my %opts = @_;
     print STDERR "\n", join "\t", "mag: ".$self->mag, "region start: ".$self->_region_start,"region end: ".$self->_region_stop,"\n" if $self->DEBUG;
 #    print Dumper $self if $self->DEBUG;
+    my $t0 = new Benchmark;
     $self->set_image_height();
+    my $t1 = new Benchmark;
     $self->gd->fill(0,0,$self->get_color([255,255,255]));
+    my $t2 = new Benchmark;
     $self->_draw_ruler;
+    my $t3 = new Benchmark;
     $self->_draw_chromosome;
+    my $t4 = new Benchmark;
     $self->_draw_features;
+    my $t5 = new Benchmark;
+    my $ih_time = timestr(timediff($t1, $t0));
+    my $fl_time = timestr(timediff($t2, $t1));
+    my $rl_time = timestr(timediff($t3, $t2));
+    my $ch_time = timestr(timediff($t4, $t3));
+    my $ft_time = timestr(timediff($t5, $t4));
+    print qq {
+         ---------------------------------------
+         Time to set image height:   $ih_time
+         Time to full region bg:     $fl_time
+         Time to draw ruler:         $rl_time
+         Time to draw chromosome:    $ch_time
+         Time to draw features:      $ft_time
+} if $self->benchmark;
 #    $self->gd->fill($self->iw/2,$self->_image_h_used +( $self->ih - $self->_image_h_used)/2+1, $self->get_color($self->chr_inner_color));
   }
 
