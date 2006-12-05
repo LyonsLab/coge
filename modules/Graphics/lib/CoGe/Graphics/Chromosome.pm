@@ -643,67 +643,6 @@ sub _check_overlap
 	}	
   }
 
-sub _check_overlap_new
-  {
-    my $self = shift;
-    my $feat = shift;
-#    use Benchmark;
-#    my $t0 = new Benchmark;    
-    return if $feat->skip_overlap_search;
-    my @feats = $self->get_feats(strand=>$feat->strand, fill=>$feat->fill, order=>$feat->order);
-#    my $t1 = new Benchmark;
-    @feats = sort {$a->stop <=> $b->stop} @feats;
-    return unless @feats;
-#    my $t2 = new Benchmark;
-    #since this can take a while, let's see if we can skip the search by checking if the feature to be checked is outside the bounds of existing features
-    return if ($feat->stop < $feats[0]->start || $feat->start > $feats[-1]->stop);
-    my $start = 0;
-    my $stop = $#feats;
-    while ($stop-$start > 10)
-      {
-	my $check = int($stop/2+$start);
-	last if ($check == $stop || $check == $start);
-#	print STDERR "\tchecking $start - $check - $stop\n";
-	if ($feats[$check]->start > $feat->stop)
-	  {
-	    $stop = $check;
-	  }
-	elsif ($feats[$check]->stop < $feat->start)
-	  {
-	    $start = $check;
-	  }
-	else
-	  {
-	    last;
-	  }
-      }
-#    my $t3 = new Benchmark;
-#    print STDERR "Overlap search $start - $stop\n";
-    foreach my $i ($start..$stop)
-    	{
-	  my $f = $feats[$i];
-	  next unless $feat->overlay() == $f->overlay();  #skip the check if the features are at different overlay levels.
-	  unless ( ($feat->start > $f->stop) || ($feat->stop < $f->start) )
-	    {
-	      print STDERR "Overlap: ",$feat->name,"\t",$f->name,"\n" if $self->DEBUG; 
-	      $feat->_overlap($feat->_overlap+1);
-	      $f->_overlap($f->_overlap+1);
-	      $feat->_overlap_pos($feat->_overlap_pos+1);
-	    }
-	}
-#    my $t4 = new Benchmark;
-#    my $get_time = timestr(timediff($t1, $t0));
-#    my $sort_time = timestr(timediff($t2, $t1));
-#    my $pos_time = timestr(timediff($t3, $t2));
-#    my $find_time = timestr(timediff($t4, $t3));
-#     print STDERR qq{
-# get_feats:             $get_time
-# sort_feats:            $sort_time
-# pos_time:              $pos_time
-# find_time:             $find_time
-# };
-  }
-
 #################### subroutine header begin ####################
 
 =head2 get_features
