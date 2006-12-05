@@ -58,6 +58,7 @@ sub _initialize
 
     $self->color(\@color);
     $self->label($self->nt) if $self->nt;
+    $self->type('gaga');
   }
 
 sub _post_initialize
