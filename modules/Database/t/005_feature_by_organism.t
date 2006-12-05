@@ -3,7 +3,7 @@
 # t/005_feature_by_organsim - get the feature objects for an organism,
 # given by name, "Nostoc%"
 
-use Test::More tests => 4;
+use Test::More tests => 2;
 
 BEGIN { use_ok( 'CoGeX' ); }
 
@@ -19,10 +19,9 @@ my $rs = $s->resultset('Feature')->search(
                                         'organism.name' => { 'like' => 'Nostoc%' }
                                       },
                                       {
-                                        join => { organism => 'dataset' },
-                                        prefetch => [ qw/dataset/ ] 
+                                        prefetch => { dataset => 'organism' },
                                       }
                                     );
 
-my $f = $rs->next();
-print STDERR "\n", $f->feature_id(), "\n";
+my @features = $rs->all();
+is( scalar(@features), 10863 );
