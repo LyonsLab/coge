@@ -265,7 +265,7 @@ sub new
     $self->feature_start_height($FEATURE_START_HEIGHT);
     $self->feature_mag_height($FEATURE_MAG_HEIGHT);
     $self->overlap_adjustment(1);
-    $self->skip_duplicate_features(1);
+    $self->skip_duplicate_features(0);
     $self->mag(1);
     $self->font($FONTTT);
     $self->_features([]);
@@ -388,7 +388,7 @@ sub new
  overlap_adjustment =>  flag for whether overlapping features are rescaled and position such that
                         they don't overlap when the image is generated.  Default: 1
 
- skip_duplicate_features => flag for whether to skip two featrues if they are identical.  Default: 1
+ skip_duplicate_features => flag for whether to skip two featrues if they are identical.  Default: 0
 
 =cut
 
@@ -659,7 +659,7 @@ sub _check_duplicate
     return 0 unless @feats;
     foreach my $f (@feats)
       {
-	my $check = 1 if $f->start eq $feat->start && $f->stop eq $feat->stop && $f->layer eq $feat->layer;
+	my $check = 1 if $f->start eq $feat->start && $f->stop eq $feat->stop && $f->layer eq $feat->layer && $f->order eq feat->order;
 	$check = 0 if $f->label && $feat->label && $f->label ne $feat->label; #just in case, I guess
       }
     return 0;
