@@ -543,6 +543,7 @@ sub add_feature
 	    $feat->order($order);
 	  }
 	$self->_check_overlap($feat) if $self->overlap_adjustment;
+#	$self->_check_duplication($feat) if $self->skip_duplicate_features;  #should implement this
 	if ($feat->fill)
 	  {
 	    push @{$self->_fill_features}, $feat;
@@ -626,17 +627,9 @@ sub _check_overlap
   {
     my $self = shift;
     my $feat = shift;
-#    use Benchmark;
-#    my $t0 = new Benchmark;    
     return if $feat->skip_overlap_search;
     my @feats = $self->get_feats(strand=>$feat->strand, fill=>$feat->fill, order=>$feat->order);
-#    my $t1 = new Benchmark;    
-    #@feats = sort {$a->stop <=> $b->stop} @feats;
-#    my $t2 = new Benchmark;    
-#    my @feats = sort {$a->stop <=> $b->stop} $self->get_feats(strand=>$feat->strand, fill=>$feat->fill, order=>$feat->order);
     return unless @feats;
-    #since this can take a while, let's see if we can skip the search by checking if the feature to be checked is outside the bounds of existing features
-#    return if ($feat->stop < $feats[0]->start || $feat->start > $feats[-1]->stop);
     foreach my $f (@feats)
     	{
 	  next unless $feat->overlay() == $f->overlay();  #skip the check if the features are at different overlay levels.
@@ -648,16 +641,6 @@ sub _check_overlap
 	      $feat->_overlap_pos($feat->_overlap_pos+1);
 	    }
 	}	
-#    my $t3 = new Benchmark;
-#    my $get_time = timestr(timediff($t1, $t0));
-#    my $sort_time = timestr(timediff($t2, $t1));
-#    my $find_time = timestr(timediff($t3, $t2));
-
-#     print STDERR qq{
-# get_feats:             $get_time
-# sort_feats:            $sort_time
-# find_time:             $find_time
-# };
   }
 
 sub _check_overlap_new
