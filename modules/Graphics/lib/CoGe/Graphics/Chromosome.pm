@@ -480,7 +480,7 @@ sub set_point
       }
     $self->set_region(start=>$point);
   }
-
+ 
 
 
 #################### subroutine header begin ####################
@@ -547,7 +547,7 @@ sub add_feature
 	    $feat->order($order);
 	  }
 	$self->_check_overlap($feat) if $self->overlap_adjustment;
-	$self->_check_duplication($feat) if $self->skip_duplicate_features;  #should implement this
+	$self->_check_duplicate($feat) if $self->skip_duplicate_features;  #should implement this
 	if ($feat->fill)
 	  {
 	    push @{$self->_fill_features}, $feat;
