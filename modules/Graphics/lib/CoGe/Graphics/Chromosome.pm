@@ -547,7 +547,10 @@ sub add_feature
 	    $feat->order($order);
 	  }
 	$self->_check_overlap($feat) if $self->overlap_adjustment;
-	$self->_check_duplicate($feat) if $self->skip_duplicate_features;  #should implement this
+	if ($self->skip_duplicate_features)
+	  {
+	    next if $self->_check_duplicate($feat);   #should implement this
+	  }
 	if ($feat->fill)
 	  {
 	    push @{$self->_fill_features}, $feat;
@@ -651,14 +654,15 @@ sub _check_duplicate
   {
     my $self = shift;
     my $feat = shift;
-    return if $feat->skip_duplicate_search;
+    return 0 if $feat->skip_duplicate_search;
     my @feats = $self->get_feats(strand=>$feat->strand, fill=>$feat->fill, order=>$feat->order, type=>$feat->type);
-    return unless @feats;
+    return 0 unless @feats;
     foreach my $f (@feats)
       {
-	return if $f->start == $feat->start && $f->stop == $feat->stop && $f->layer == $feat->layer && $f->label == $feat->label;
+	my $check = 1 if $f->start eq $feat->start && $f->stop eq $feat->stop && $f->layer eq $feat->layer;
+	$check = 0 if $f->label && $feat->label && $f->label ne $feat->label; #just in case, I guess
       }
-    return 1;
+    return 0;
 
   }
 
