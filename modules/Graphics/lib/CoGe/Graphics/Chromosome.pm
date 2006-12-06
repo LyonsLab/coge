@@ -556,23 +556,8 @@ sub add_feature
 	    next if $self->_check_duplicate($feat);   #should implement this
 	  }
 	my $feats = $self->_features;
-	my $fill = $feat->fill ? "fill" : "nofill";
 	my $strand = $feat->strand =~ /-/ ? "-1" : "1";
-	push @{$feats->{$feat->type}{$strand}{$feat->order}{$feat->layer}{$fill}{$feat->start}}, $feat;
-	push @{$feats->{$feat->type}{$strand}{$feat->order}{$feat->layer}{$fill}{all_feats}}, $feat;
-	push @{$feats->{$feat->type}{$strand}{$feat->order}{$feat->layer}{all_feats}}, $feat;
-	push @{$feats->{$feat->type}{$strand}{$feat->order}{all_feats}}, $feat;
-	push @{$feats->{$feat->type}{$strand}{all_feats}}, $feat;
-	push @{$feats->{$feat->type}{all_feats}}, $feat;
-	push @{$feats->{all_feats}}, $feat;
-	#	if ($feat->fill)
-#	  {
-#	    push @{$self->_fill_features}, $feat;
-#	  }
-#	else
-#	  {
-#	    push @{$self->_features},$feat;
-#	  }
+	$feats->{$feat->type}{$strand}{$feat->order}{$feat->layer}{$feat->fill}{$feat->start}{$feat}=$feat;
       }
   }
 
@@ -581,12 +566,10 @@ sub add_feature
 
 =head2 delete_features
 
- Usage     : $c->delete_features('fill');
- Purpose   : Deletes features from the object.  Either of a fill type (fill or regular), a feature type ('gene', 'nt', 'mRNA'), or all of them
+ Usage     : $c->delete_features('nt');
+ Purpose   : Deletes features from the object by the type of feature
  Returns   : none
  Argument  : string or none
-               fill => 1 for deleting fill features
-               regular => for deleting regular features
                all (or blank) => deletes all the features
                <name of feature type> => e.g. "gene", "tRNA", "aa", "nt", etc.  depends on what feature derivatives used
  Throws    : 
@@ -601,90 +584,15 @@ sub delete_features
   {
     my $self = shift;
     my $type = shift;
-    my $fill = 1 if !$type || $type =~ /fill/i || $type =~ /all/;
-    my $reg = 1 if !$type || $type =~ /regular/i || $type =~ /all/;
+    if ($type eq "all" || !defined $type)
+      {
+	$self->_features({});
+	return;
+      }
     my $feats = $self->_features;
-    if ($fill || $reg)
-      {
-#	$self->_fill_features([]) if $fill;
-#	$self->_features([]) if $reg;
-	delete $feats->{fill} if $fill;
-	delete $feats->{nofill} if $reg;
-      }
-    else
-      {
-	delete $feats->{fill}{$type};
-	delete $feats->{nofill}{$type};
-#	my @feats;
-#	foreach my $feat ($self->get_features(fill=>0))
-#	  {
-#	    push @feats, $feat unless ($feat->type && $feat->type =~ /$type/);
-#	  }
-#	$self->_features(\@feats);
-      }
+    delete $feats->{$type};
   }
 
-
-#################### subroutine header begin ####################
-
-=head2 _check_overlap
-
- Usage     : $self->_check_overlap($feature);
- Purpose   : This internal method is called by $self->add_feature in determine if the 
-           : being added overlaps another feature on the same strand, order, overlay level, and fill
-	   : type.  If so, it increments an internal counter in both features called
-	   : _overlap. A positional counter called _overlap_pos is incremented in the feature 
-	   : being searched.  This counter is later used by $self->_draw_feature to 
-	   : determine the appropriate way to draw the overlapping features
- Returns   : none
- Argument  : a CoGe::Graphics::Feature object
- Throws    : none
- Comment   : this algorithm can get slow with lots of features and doing an overlap search.
-           : The overlap search algorithm is a linear search through all previously entered features 
-             for any that overlap the newly added feature.  This can probably go faster with a different 
-             algo.
-
-See Also   : $self->add_feature();
-
-=cut
-
-#################### subroutine header end ####################
-
-sub _check_overlap
-  {
-    my $self = shift;
-    my $feat = shift;
-    return if $feat->skip_overlap_search;
-    my @feats = $self->get_feats(strand=>$feat->strand, fill=>$feat->fill, order=>$feat->order);
-    return unless @feats;
-    foreach my $f (@feats)
-    	{
-	  next unless $feat->overlay() == $f->overlay();  #skip the check if the features are at different overlay levels.
-	  unless ( ($feat->start > $f->stop) || ($feat->stop < $f->start) )
-	    {
-	      print STDERR "Overlap: ",$feat->name,"\t",$f->name,"\n" if $self->DEBUG; 
-	      $feat->_overlap($feat->_overlap+1);
-	      $f->_overlap($f->_overlap+1);
-	      $feat->_overlap_pos($feat->_overlap_pos+1);
-	    }
-	}	
-  }
-
-sub _check_duplicate
-  {
-    my $self = shift;
-    my $feat = shift;
-    return 0 if $feat->skip_duplicate_search;
-    my @feats = $self->get_feats(strand=>$feat->strand, fill=>$feat->fill, order=>$feat->order, type=>$feat->type);
-    return 0 unless @feats;
-    foreach my $f (@feats)
-      {
-	my $check = 1 if $f->start eq $feat->start && $f->stop eq $feat->stop && $f->layer eq $feat->layer && $f->order eq feat->order;
-	$check = 0 if $f->label && $feat->label && $f->label ne $feat->label; #just in case, I guess
-      }
-    return 0;
-
-  }
 
 #################### subroutine header begin ####################
 
@@ -740,111 +648,64 @@ sub get_features
 
     my $feats = $self->_features;
     my @return_feats;
-    my $possible_feats = {};
-    if ($type)
+
+    foreach my $t (keys %$feats)
       {
-	$possible_feats = $feats->{$type};
-	$possible_feats->{all_feats} = [] unless $possible_feats->{all_feats};
-      }
-    else
-      {
-	foreach my $feat (@{$feats->{all_feats}})
+	if ($type)
 	  {
-	    my $fill_state = $feat->fill ? "fill" : "nofill";
-	    my $strand_tmp = $feat->strand =~ /-/ ? "-1" : "1";
-	    push @{$possible_feats->{$strand_tmp}{$feat->order}{$feat->layer}{$fill_state}{$feat->start}}, $feat;
-	    push @{$possible_feats->{all_feats}}, $feat;
+	    next unless $t eq $type;
 	  }
-      }
-    if ($strand)
-      {
-	$possible_feats = $possible_feats->{$strand};
-	$possible_feats->{all_feats} = [] unless $possible_feats->{all_feats};
-      }
-    else
-      {
-	my $tmp = {};
-	foreach my $feat (@{$possible_feats->{all_feats}})
+	foreach my $s (keys %{$feats->{$t}})
 	  {
-	    my $fill_state = $feat->fill ? "fill" : "nofill";
-	    push @{$tmp->{$feat->order}{$feat->layer}{$fill_state}{$feat->start}}, $feat;
-	    push @{$tmp->{all_feats}}, $feat;
+	    if ($strand)
+	      {
+		next unless $strand eq $s;
+	      }
+	    foreach my $o (keys %{$feats->{$t}{$s}})
+	      {
+		if ($order)
+		  {
+		    next unless $o eq $order;
+		  }
+		foreach my $l (keys %{$feats->{$t}{$s}{$o}})
+		  {
+		    if ($layer)
+		      {
+			next unless $l eq $layer;
+		      }
+		    foreach my $f (keys %{$feats->{$t}{$s}{$o}{$l}})
+		      {
+			if ($fill)
+			  {
+			    next unless $f eq $fill;
+			  }
+			foreach my $sp (keys %{$feats->{$t}{$s}{$o}{$l}{$f}})
+			  {
+			    if ($start)
+			      {
+				$stop = $start unless $stop;
+				if ($start > $stop)
+				  {
+				    my $tmp = $stop;
+				    $stop = $start;
+				    $start = $tmp;
+				  }
+				next unless $sp >= $start && $sp <=$stop;
+			      }
+			    push @return_feats, values %{$feats->{$t}{$s}{$o}{$l}{$f}{$sp}};
+			  }
+		      }
+		  }
+	      }
 	  }
-	$possible_feats = $tmp;
-	$possible_feats->{all_feats} = [] unless $possible_feats->{all_feats};
-      }
-    if ($order)
-      {
-	$possible_feats = $possible_feats->{$order};
-	$possible_feats->{all_feats} = [] unless $possible_feats->{all_feats};
-      }
-    else
-      {
-	my $tmp = {};
-	foreach my $feat (@{$possible_feats->{all_feats}})
-	  {
-	    my $fill_state = $feat->fill ? "fill" : "nofill";
-	    push @{$tmp->{$feat->layer}{$fill_state}{$feat->start}}, $feat;
-	    push @{$tmp->{all_feats}}, $feat;
-	  }
-	$possible_feats = $tmp;
-	$possible_feats->{all_feats} = [] unless $possible_feats->{all_feats};
-      }
-    if ($layer)
-      {
-	$possible_feats = $possible_feats->{$layer};
-	$possible_feats->{all_feats} = [] unless $possible_feats->{all_feats};
-      }
-    else
-      {
-	my $tmp = {};
-	foreach my $feat (@{$possible_feats->{all_feats}})
-	  {
-	    my $fill_state = $feat->fill ? "fill" : "nofill";
-	    push @{$tmp->{$fill_state}{$feat->start}}, $feat;
-	    push @{$tmp->{all_feats}}, $feat;
-	  }
-	$possible_feats = $tmp;
-	$possible_feats->{all_feats} = [] unless $possible_feats->{all_feats};
-      }
-    if ($fill)
-      {
-	$possible_feats = $possible_feats->{$fill};
-	$possible_feats->{all_feats} = [] unless $possible_feats->{all_feats};
-      }
-    else
-      {
-	my $tmp = {};
-	foreach my $feat (@{$possible_feats->{all_feats}})
-	  {
-	    push @{$tmp->{$feat->start}}, $feat;
-	    push @{$tmp->{all_feats}}, $feat;
-	  }
-	$possible_feats = $tmp;
-	$possible_feats->{all_feats} = [] unless $possible_feats->{all_feats};
-      }
-    if (defined $start && defined $stop)
-      {
-	if ($start > $stop)
-	  {
-	    my $tmp = $stop;
-	    $stop = $start;
-	    $start = $tmp;
-	  }
-	foreach my $start_pos (keys %$possible_feats)
-	  {
-	    push @return_feats, @{$possible_feats->{$start_pos}} if $start_pos >= $start && $start_pos <= $stop;
-	  }
-      }
-    else
-      {
-	@return_feats = @{$possible_feats->{all_feats}};
       }
     if ($last)
       {
 	my @return_feats = sort {$b->order <=> $a->order} @return_feats;
 	return $return_feats[0];
       }
+#    print "Found feats: ", scalar @return_feats,"\n";
+#    print Dumper \@return_feats;
     return wantarray ? @return_feats : \@return_feats;
   }
 
@@ -943,6 +804,66 @@ sub get_feats
     return $self->get_features(%opts);
   }
 
+
+#################### subroutine header begin ####################
+
+=head2 _check_overlap
+
+ Usage     : $self->_check_overlap($feature);
+ Purpose   : This internal method is called by $self->add_feature in determine if the 
+           : being added overlaps another feature on the same strand, order, overlay level, and fill
+	   : type.  If so, it increments an internal counter in both features called
+	   : _overlap. A positional counter called _overlap_pos is incremented in the feature 
+	   : being searched.  This counter is later used by $self->_draw_feature to 
+	   : determine the appropriate way to draw the overlapping features
+ Returns   : none
+ Argument  : a CoGe::Graphics::Feature object
+ Throws    : none
+ Comment   : this algorithm can get slow with lots of features and doing an overlap search.
+           : The overlap search algorithm is a linear search through all previously entered features 
+             for any that overlap the newly added feature.  This can probably go faster with a different 
+             algo.
+
+See Also   : $self->add_feature();
+
+=cut
+
+#################### subroutine header end ####################
+
+sub _check_overlap
+  {
+    my $self = shift;
+    my $feat = shift;
+    return if $feat->skip_overlap_search;
+    my @feats = $self->get_feats(strand=>$feat->strand, fill=>$feat->fill, order=>$feat->order);
+    return unless @feats;
+    foreach my $f (@feats)
+    	{
+	  next unless $feat->overlay() == $f->overlay();  #skip the check if the features are at different overlay levels.
+	  unless ( ($feat->start > $f->stop) || ($feat->stop < $f->start) )
+	    {
+	      print STDERR "Overlap: ",$feat->name,"\t",$f->name,"\n" if $self->DEBUG; 
+	      $feat->_overlap($feat->_overlap+1);
+	      $f->_overlap($f->_overlap+1);
+	      $feat->_overlap_pos($feat->_overlap_pos+1);
+	    }
+	}	
+  }
+
+sub _check_duplicate
+  {
+    my $self = shift;
+    my $feat = shift;
+    return 0 if $feat->skip_duplicate_search;
+    my @feats = $self->get_feats(strand=>$feat->strand, fill=>$feat->fill, order=>$feat->order, type=>$feat->type, start=>$feat->start);
+    return 0 unless @feats;
+    my $check = 0;
+    foreach my $f (@feats)
+      {
+	$check = 1 if $f->stop eq $feat->stop && $f->layer eq $feat->layer && $f->order eq $feat->order;
+      }
+    return $check;
+  }
 
 #################### subroutine header begin ####################
 
@@ -1734,7 +1655,9 @@ sub _draw_features
     my $c = $self->_image_h_used+($self->ih - $self->_image_h_used)/2;
     print STDERR "Image used: ".$self->_image_h_used."  Image Height: ".$self->ih."  Center: $c\n" if $self->DEBUG;
     foreach my $feat ( $self->get_feature(fill=>1), sort {$a->overlay <=> $b->overlay} $self->get_features(fill=>0))
+#    foreach my $feat ( sort {$a->fill<=>$b->fill || $a->overlay <=> $b->overlay} $self->get_features())
       {
+#	print $feat->type,":", $feat->fill, "\n";
 	#skip drawing features that are outside (by two times the range being viewed) the view
 	if ($feat->start)
 	  {
