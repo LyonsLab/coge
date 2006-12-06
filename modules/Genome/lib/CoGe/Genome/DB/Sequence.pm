@@ -293,6 +293,7 @@ sub get_genomic_locations
 		$nloc->stop($genome_stop);
 		$nloc->strand($loc->strand);
 		$nloc->chromosome($loc->chr);
+		delete $nloc->{__Changed}; #silence the warning from Class::DBI when location is destroyed
 		push @locs, $nloc;
 	      }
 	    $nstart -= $locsize; 
