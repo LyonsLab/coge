@@ -60,6 +60,7 @@ sub _initialize
     $self->bgcolor([255,255,255]) unless $self->bgcolor;
     $self->block_height($BLOCK_HEIGHT) unless $self->block_height;
     $self->print_label(0) unless defined $self->print_label();
+    $self->skip_duplicate_search(1);
   }
 
 sub _post_initialize
