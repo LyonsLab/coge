@@ -664,6 +664,14 @@ sub _post_initialize
     my $self = shift;
     my %opts = @_;
   }
+
+
+sub feature_info
+  {
+    my $self = shift;
+    return join ("\n", map {$_.": ".$self->{$_}} sort keys %$self);
+  }
+
   
 #################### subroutine header begin ####################
 
