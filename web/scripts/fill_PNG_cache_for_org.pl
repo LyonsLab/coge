@@ -22,7 +22,7 @@ use Benchmark;
 use vars qw($BASE_DIR);
 $BASE_DIR = "/opt/apache/CoGe/_cache_";
 
-my (@orgs, $version,$iw, $min_zoomi, $max_chr_length, $min_chr_length, @skip_oids, $max_zoomi, $help, $overwrite, $unprocess_ds, $zoom_step, $unprocess_zoom, @datasets, $start_pos, $stop_pos);
+my (@orgs, $version,$iw, $min_zoomi, $max_chr_length, $min_chr_length, @skip_oids, $max_zoomi, $help, $overwrite, $unprocess_ds, $zoom_step, $unprocess_zoom, @datasets, $start_pos, $stop_pos, $base_dir);
 
 GetOptions(
 	   "org|oid|o=s"=>\@orgs,
@@ -41,10 +41,12 @@ GetOptions(
 	   "zoom_step|zs=s"=>\$zoom_step,
 	   "start_pos=i"=>\$start_pos,
 	   "stop_pos=i"=>\$stop_pos,
+	   "base_dir" =>\$base_dir,
 	   );
 
 help() if $help;
 
+$BASE_DIR = $base_dir if $base_dir;
 $start_pos = 0 unless defined $start_pos;
 $overwrite = 1 unless defined $overwrite;
 $min_zoomi = 5 unless defined $min_zoomi;
@@ -476,6 +478,8 @@ Options:
  zoom_step | zs   => the number of zoom step to process at once.  This will cause the virual chromosome to 
                      be flushed periodically and free up memory.  This is needed to keep from running out of
                      memory in some cases.  DEFAULT: 4
+
+ base_dir   => the directory in which the images will be deposited.
 
 
 };
