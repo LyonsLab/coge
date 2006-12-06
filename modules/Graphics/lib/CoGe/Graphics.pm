@@ -21,7 +21,7 @@ BEGIN {
     __PACKAGE__->mk_accessors(
 "MAX_FEATURES",
 "MAX_NT",
-"DEBUG",
+"DEBUG", 
 );
 }
 
