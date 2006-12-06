@@ -423,8 +423,8 @@ sub process_nucleotides
         my $rcseq = substr ($seq, $pos, $chrs);
         $rcseq =~ tr/ATCG/TAGC/;
         next unless $subseq && $rcseq;
-        my $f1 = CoGe::Graphics::Feature::NucTide->new({nt=>$subseq, strand=>1, start =>$pos+$start, use_external_image=>0});
-	my $f2 = CoGe::Graphics::Feature::NucTide->new({nt=>$rcseq, strand=>-1, start =>$pos+$start, use_external_image=>0});
+        my $f1 = CoGe::Graphics::Feature::NucTide->new({nt=>$subseq, strand=>1, start =>$pos+$start, use_external_image=>1});
+	my $f2 = CoGe::Graphics::Feature::NucTide->new({nt=>$rcseq, strand=>-1, start =>$pos+$start, use_external_image=>1});
 	#my $f2 = CoGe::Graphics::Feature::Exon_motifs->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
         #my $f2 = CoGe::Graphics::Feature::GAGA->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
 #	my $f2 = CoGe::Graphics::Feature::Sigma54->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
@@ -433,6 +433,7 @@ sub process_nucleotides
         $c->add_feature($f1, $f2);
         $pos+=$chrs;
       }
+    return $chrs;
   }
 
 sub process_features
@@ -612,11 +613,12 @@ sub draw_prots
     my $feat = $opts{genomic_feat};
     my $c = $opts{c};
     #Do we have any protein sequence we can use?
+    my $chrs;
     foreach my $seq ($feat->sequences)
       {
 	next unless $seq->seq_type->name =~ /prot/i;
 	my ($pseq) = $seq->sequence_data;
-	my $chrs = int ((($c->_region_length)/$c->iw)/3+.5); 
+	$chrs = int ((($c->_region_length)/$c->iw)/3+.5); 
 	$chrs = 1 if $chrs < 1;
 	my $pos = 0;
 	while ($pos <= length $pseq)
@@ -639,6 +641,7 @@ sub draw_prots
 	    $pos+=$chrs;
 	  }
       }
+    return $chrs;
   }
 
 
