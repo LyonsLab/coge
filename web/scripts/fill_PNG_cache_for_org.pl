@@ -41,7 +41,7 @@ GetOptions(
 	   "zoom_step|zs=s"=>\$zoom_step,
 	   "start_pos=i"=>\$start_pos,
 	   "stop_pos=i"=>\$stop_pos,
-	   "base_dir" =>\$base_dir,
+	   "base_dir=s" =>\$base_dir,
 	   );
 
 help() if $help;
