@@ -4,7 +4,7 @@ use strict;
 use CoGeX;
 
 #time
-#real    0m59.935s
+#real    0m54.935s
 
 
 
@@ -18,7 +18,7 @@ my $rs = $s->resultset('Feature')->search(
             'feature_type.name' =>   'CDS' 
         },
         {
-            join => ['feature_names','feature_type',"sequences"],
+            join => ['feature_names','feature_type'],
             prefetch => ['feature_names','feature_type']
         }
 
