@@ -1744,27 +1744,18 @@ sub _draw_feature_slow
     my $unit = $self->_calc_unit_size;
     my $fs = $self->round($unit*($feat->start-$rb));
     my $fe = $self->round($unit*($feat->end-$rb+1));
-    $fe--;
+    $fe-- unless $fs == $fe;
     return if $fs > $self->iw;
     return if $fe < -($self->iw/4);
-#    if (ref($feat) =~ /nuc/i)
-#      {
-#	print "Feat pos: ", $feat->start, "-", $feat->end,"\n";
-#	print "Unit size: $unit",": ",$fs,"-", $fe,"\n";
-#      }
-#    my $fw = sprintf("%.1f",$fe - $fs)+1; #calculate the width of the feature;
     my $fw = ($fe - $fs)+1; #calculate the width of the feature;
     return if $fw < 1; #skip drawing if less than one pix wide
     print STDERR "Drawing feature ".$feat->label." Order: ".$feat->order." Overlap: ".$feat->_overlap." : ", $feat->start, "-", $feat->end," Dimentions:",$fw,"x",$ih, " at position: $fs,$y"."\n" if $self->DEBUG;
     if ($feat->fill)
       {
-#	print $fs,"-", $fe,":", $self->iw,"\n";
-
 #	$self->gd->copyResampled($feat->gd, $fs, $y,0,0, $fw, $ih, $feat->iw, $feat->ih);
 	my $newgd = GD::Image->new ($fw, $ih,[1]);
 	$newgd->copyResampled($feat->gd,0,0,0,0, $fw, $ih, $feat->iw, $feat->ih);
 	$self->gd->copyMerge($newgd, $fs, $y, 0, 0, $newgd->width, $newgd->height, $feat->merge_percent);
-#	print $feat->label,"\n";
 	if ($feat->external_image && $fw > 10 && $feat->use_external_image) #if we have an external image and the feature width is greater than 10. . .
 	  {
 	    my $ei = $feat->external_image;
