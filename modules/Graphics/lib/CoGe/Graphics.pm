@@ -454,7 +454,11 @@ sub process_features
     my $draw_proteins = $opts{draw_proteins};
     my $sstart = $start - ($stop - $start);
     my $sstop = $stop + ($stop - $start);
+    $sstart = 0 if $sstart < 0;
+    my $chr_length = $db->get_genomic_sequence_obj->get_last_position(ds=>$ds);
+    $sstop = $chr_length if $sstop > $chr_length;
     my $feat_count = $db->get_feature_obj->count_features_in_region(start=>$sstart, end=>$sstop, dataset=>$ds, chr=>$chr);
+#    print "$sstart - $sstop: feats: $feat_count\n";
     my @cds_feats;
     if ($feat_count > $self->MAX_FEATURES)
       {
@@ -466,6 +470,7 @@ sub process_features
     $size = 0 if $feat_count > 100;
     $size *=2 if $feat_count < 20;
     $size = $start if $start-$size < 0;
+#    print "Getting features: $start - $stop : adjust: $size\n";
     foreach my $feat ($db->get_feature_obj->get_features_in_region(start=>$start-$size, end=>$stop+$size, dataset=>$ds, chr=>$chr))
       {
         my $f;
