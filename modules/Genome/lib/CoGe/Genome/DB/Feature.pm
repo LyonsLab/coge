@@ -1218,7 +1218,7 @@ sub reverse_complement
     my $self = shift;
     my $seq = shift || $self->genomic_sequence;
     my $rcseq = reverse($seq);
-    $rcseq =~ tr/ATCG/TAGC/; 
+    $rcseq =~ tr/ATCGatcg/TAGCtagc/; 
     return $rcseq;
   }
 
