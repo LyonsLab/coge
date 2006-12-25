@@ -211,6 +211,7 @@ BEGIN
 "magnification", #magnification level for increasing/decreasing the size of the feature  
 "overlay", #level of overlay for features such that one feature is drawn over another.
 "use_external_image", #flag for using an external image when available
+"options", #place to store additional options
 );
   }
 
