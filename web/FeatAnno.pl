@@ -9,7 +9,7 @@ use CoGe::Accessory::LogUser;
 
 $ENV{PATH} = "/opt/apache/CoGe/";
 
-use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $DB $FORM $FID $DS $CHR $LOC);
+use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $DB $FORM $FID $DS $CHR $LOC $ORG $VERSION);
 
 # set this to 1 to print verbose messages to logs
 $DEBUG = 0;
@@ -23,9 +23,12 @@ $DS = $FORM->param('ds');# || 61;
 $CHR = $FORM->param('chr');# || 7;
 $LOC = $FORM->param('loc') || $FORM->param('pos') || $FORM->param('x');# || 6049802;
 $LOC = 0 unless $LOC;
+$ORG = $FORM->param('org') || $FORM->param('organism');
+$VERSION = $FORM->param('version') || $FORM->param('ver');
+
 $DB = new CoGe::Genome;
 print "Content-Type: text/html\n\n";
-my $rhtml = gen_html(featid=>$FID, loc=>$LOC, chr=>$CHR, ds=>$DS) if $LOC > 0;
+my $rhtml = gen_html(featid=>$FID, loc=>$LOC, chr=>$CHR, ds=>$DS, org=>$ORG, version=>$VERSION) if $LOC > 0;
 print "<font class=title3>Position:</font> <font class=data>$LOC</font><br><hr>";
 $rhtml = "No annotations" unless $rhtml;
 print $rhtml;
@@ -37,7 +40,27 @@ sub gen_html
     my $loc = $args{loc};
     my $chr = $args{chr};
     my $ds = $args{ds};
-    my ($dso) = $DB->get_dataset_obj->retrieve($ds);
+    my $org = $args{org};
+    my $version = $args{version};
+##working here, taken frmo Graphics.pm
+    $org = $DB->get_organism_obj->resolve_organism($org) if $org;
+    $ds = $DB->get_dataset_obj->resolve_dataset($ds) if $ds;
+    if ($ds) #there can be additional information about a chromosome for a particular version of the organism that is not in the same data_information.  Let's go find the organism_id and version for the specified data information item.
+      {
+	$org = $ds->org unless $org;
+	$version = $ds->version unless $version;
+	($chr) = $ds->get_chromosomes() unless $chr;
+      }
+
+    if ($org && !$ds)
+      {
+	$version =
+    $DB->get_dataset_obj->get_current_version_for_organism(org=>$org) unless $version;
+	($ds) = $DB->get_dataset_obj->search({version=>$version, organism_id=>$org->id});
+	($chr) = $ds->get_chromosomes() unless $chr;
+      }
+###end working section
+    my ($dso) = $ds;#$DB->get_dataset_obj->retrieve($ds);
     my @feats;
     foreach my $tdso ($dso->get_associated_datasets)
       {
@@ -52,18 +75,37 @@ sub gen_html
     foreach my $feat (sort {$a->type->name cmp $b->type->name} @feats)
       {
 	next if $feat->type->name =~ /^source$/;
-	$html .= $feat->annotation_pretty_print_html();
+	my $color;
+	if ($feat->type->name eq "CDS")
+	  {
+	    $color = "#DDFFDD"
+	  }
+	elsif ($feat->type->name eq "mRNA")
+	  {
+	    $color = "#DDDDFF";
+	  }
+	elsif ($feat->type->name =~ "rna")
+	  {
+	    $color = "#DDDDDD";
+	  }
+	elsif ($feat->type->name =~ "gene")
+	  {
+	    $color = "#FFDDDD";
+	  }
+	else
+	  {
+	    $color = "#FFDDBB";
+	  }
+	$html .= "<table bgcolor=$color width=100%><tr><td>".$feat->annotation_pretty_print_html();
 	unless ($FORM->param('no_org'))
 	  {
 	    $html .= qq{<font class="title4">Organism: </font>};
-	    $html .= qq{<font class="data">}.$feat->data_info->org->name."</font>\n";
+	    $html .= qq{<font class="data">}.$feat->dataset->org->name."</font>\n";
 	    $html .= qq{<br>};
 	  }
 	$html .= qq{<font class="title4">Type: </font>};
 	$html .= qq{<font class="data">}.$feat->feat_type->name."</font>\n";
-	$html .= qq{<br>};
-	
-
+	$html .= qq{</table>};
 	$html .= qq{<HR>};
       }
     return $html;
