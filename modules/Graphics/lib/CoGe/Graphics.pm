@@ -14,6 +14,7 @@ use CoGe::Graphics::Feature::Block;
 use CoGe::Genome;
 use Data::Dumper;
 use Benchmark;
+use Carp;
 
 BEGIN {
     use vars qw($VERSION $MAX_FEATURES $MAX_NT $DEBUG);
@@ -140,7 +141,7 @@ perl(1).
 				   fids=>\@fids,
 				   fns=>\@fnames,
 				   forcefit=>$forcefit,
-                                   atgc_background=>0,
+                                   layers=>\@layers,
 				   );
  Purpose   : mama of a function.  Docs to come.
  Returns   : 
@@ -186,10 +187,8 @@ sub genomic_view
     my $fnames = $opts{'fn'} || $opts{'fns'}|| $opts{'fnames'}; #used to highlight special features by their name
     my $forcefit = $opts{'forcefit'} || 0;
     my $img_map_name = $opts{'img_map'};
-    my $draw_proteins = $opts{'draw_proteins'};
-    my $atcg_bkg = $opts{atcg_background} || 0; 
-
-    $draw_proteins = 1 unless defined $draw_proteins;
+    my $layers = process_layers($opts{layers});
+    
 
     $DEBUG = $opts{debug} || $opts{DEBUG} || 0;
     $self->DEBUG($DEBUG);
@@ -218,7 +217,7 @@ sub genomic_view
 
     if ($org && !$ds)
       {
-	$version = $db->get_dataset_obj->get_current_version_for_organism($org) unless $version;
+	$version = $db->get_dataset_obj->get_current_version_for_organism(org=>$org) unless $version;
 	($ds) = $db->get_dataset_obj->search({version=>$version, organism_id=>$org->id});
 	($chr) = $ds->get_chromosomes() unless $chr;
       }
@@ -226,7 +225,8 @@ sub genomic_view
 
     unless (defined $start && $ds && $chr)
       {
-	print STDERR "missing needed parameters: Start: $start, Info_id: ".$ds->id.", Chr: $chr\n";
+	my $dsid = $ds ? $ds->id : "none";
+	carp "missing needed parameters: Start: $start, Info_id: ".$dsid.", Chr: $chr\n";
 	return 0;
       }
     print STDERR "generating image for ds: ".$ds->name ." (".$ds->id.")\n" if $self->DEBUG;
@@ -272,7 +272,7 @@ sub genomic_view
 	    $start = $tstart;
 	    $stop = $tstop;
 	    print STDERR "processing nucleotides\n" if $self->DEBUG;
-	    $self->process_nucleotides(start=>$start, stop=>$stop, chr=>$chr, ds=>$did, db=>$db, c=>$c);
+	    $self->process_nucleotides(start=>$start, stop=>$stop, chr=>$chr, ds=>$did, db=>$db, c=>$c, layers=>$layers);
 	    last;
 	  }
       }
@@ -289,11 +289,23 @@ sub genomic_view
       {
 	my $taa = new Benchmark if $BENCHMARK;
 	print STDERR "processing features\n" if $self->DEBUG;
-	$self->process_features(start=>$start, stop=>$stop, chr=>$chr, ds=>$did, db=>$db, c=>$c, fids=>$fids, fnames=>$fnames, draw_proteins=>$draw_proteins) unless $simple;
+	$self->process_features(start=>$start, stop=>$stop, chr=>$chr, ds=>$did, db=>$db, c=>$c, fids=>$fids, fnames=>$fnames, layers=>$layers) unless $simple;
 	my $tab = new Benchmark if $BENCHMARK;
 	my $feat_time = timestr(timediff($tab, $taa)) if $BENCHMARK;
 	print STDERR " processing did $did:   $feat_time\n" if $BENCHMARK;
       }
+
+    unless ($layers->{ruler} || $layers->{all})
+      {
+	$c->draw_ruler(0);
+      }
+    unless ($layers->{chromosome} || $layers->{all})
+      {
+	$c->draw_chromosome(0);
+      }
+    
+
+
     my $t2 = new Benchmark if $BENCHMARK;
     print STDERR "generating image: $file\n" if $self->DEBUG;
     $self->generate_output(file=>$file, c=>$c);	
@@ -342,6 +354,9 @@ sub initialize_c
     my $start_pict = $opts{'start_pict'} || 'left';
     my $debug = $opts{debug} || 0;
     $debug = 1 if $c->DEBUG;
+    my $draw_ruler = $opts{draw_ruler};
+    $draw_ruler = 1 unless defined $opts{draw_ruler};
+
     my $chr_length = $db->get_genomic_sequence_obj->get_last_position(ds=>$ds, chr=>$chr);
     return unless $chr_length;
     $c->chr_length($chr_length);
@@ -353,7 +368,7 @@ sub initialize_c
     $c->feature_labels(1);
     $c->fill_labels(1);
     $c->draw_chromosome(1);
-    $c->draw_ruler(1);
+    $c->draw_ruler($draw_ruler);
     $c->chr_start_height($csh);
     $c->chr_mag_height($cmh);
     $c->feature_start_height($fsh);
@@ -408,6 +423,8 @@ sub process_nucleotides
     my $db = $opts{db};
     my $c = $opts{c};
     my $seq = $opts{seqs};
+    $seq = uc($db->get_genomic_sequence_obj->get_sequence(start=>$start, stop=>$stop, chr=>$chr, ds=>$ds)) unless $seq;
+    my $layers = $opts{layers};
 #    print STDERR "IN $0: start: $start, stop: $stop\n";
     #process nucleotides
     $seq = uc($db->get_genomic_sequence_obj->get_sequence(start=>$start, end=>$stop, chr=>$chr, dataset=>$ds)) unless $seq; 
@@ -423,14 +440,23 @@ sub process_nucleotides
         my $rcseq = substr ($seq, $pos, $chrs);
         $rcseq =~ tr/ATCG/TAGC/;
         next unless $subseq && $rcseq;
-        my $f1 = CoGe::Graphics::Feature::NucTide->new({nt=>$subseq, strand=>1, start =>$pos+$start, use_external_image=>1});
-	my $f2 = CoGe::Graphics::Feature::NucTide->new({nt=>$rcseq, strand=>-1, start =>$pos+$start, use_external_image=>1});
+	my $gc = $layers->{gc} ? "gc" : 0;
+        my $f1 = CoGe::Graphics::Feature::NucTide->new({nt=>$subseq, strand=>1, start =>$pos+$start, options=>$gc}) if $layers->{gc} || $layers->{nt} || $layers->{all};
+	my $f2 = CoGe::Graphics::Feature::NucTide->new({nt=>$rcseq, strand=>-1, start =>$pos+$start, options=>$gc}) if $layers->{gc} || $layers->{nt} || $layers->{all};
+	if ($layers->{nt} || $layers->{all})
+	  {
+	    $f1->show_label(1); 
+	    $f2->show_label(1);
+	    $f1->use_external_image(1);
+	    $f2->use_external_image(1);
+	  }
 	#my $f2 = CoGe::Graphics::Feature::Exon_motifs->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
         #my $f2 = CoGe::Graphics::Feature::GAGA->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
 #	my $f2 = CoGe::Graphics::Feature::Sigma54->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
-        $f1->transparency(25);
-        $f2->transparency(25);
-        $c->add_feature($f1, $f2);
+        $f1->transparency(25) if $f1;
+        $f2->transparency(25) if $f2;
+        $c->add_feature($f1) if $f1;
+	$c->add_feature($f2) if $f2;
         $pos+=$chrs;
       }
     return $chrs;
@@ -451,7 +477,8 @@ sub process_features
     my $print_names = $opts{print_names};
     my $fids = $opts{fids};
     my $fnames = $opts{fnames};
-    my $draw_proteins = $opts{draw_proteins};
+    my $layers = $opts{layers};
+    return unless $layers->{all} || $layers->{features};
     my $sstart = $start - ($stop - $start);
     my $sstop = $stop + ($stop - $start);
     $sstart = 0 if $sstart < 0;
@@ -475,7 +502,7 @@ sub process_features
       {
         my $f;
 	print STDERR "Feat info: Name: ",$feat->type->name,", Type: ",$feat->type->name, ", Loc: ", $feat->start,"-",$feat->stop,"\n" if $self->DEBUG;
-        if ($feat->type->name =~ /Gene/i)
+        if (($layers->{features}{gene} || $layers->{all}) && $feat->type->name =~ /Gene/i)
           {
 	    $f = CoGe::Graphics::Feature::Gene->new();
 	    $f->color([255,0,0,50]);
@@ -488,14 +515,13 @@ sub process_features
 	    $f->overlay(1);
 	    $f->mag(0.5);
           }
-        elsif ($feat->type->name =~ /CDS/i)
+        elsif (($layers->{features}{cds} || $layers->{all}) && $feat->type->name =~ /CDS/i)
           {
         	$f = CoGe::Graphics::Feature::Gene->new();
         	$f->color([0,255,0, 50]);
         	$f->order(1);
 		$f->overlay(3);
 		push @cds_feats, $feat;
-		$self->process_proteins(genomic_feat=>$feat, c=>$c, chrom_feat=>$f) if $draw_proteins;;
 		if ($accn)
 		  {
 		    foreach my $name (@{$feat->{QUALIFIERS}{names}})
@@ -504,7 +530,7 @@ sub process_features
 		      }
 		  }
           }
-        elsif ($feat->type->name =~ /mrna/i || $feat->type->name =~ /exon/i)
+        elsif (($layers->{features}{rna} || $layers->{all}) && $feat->type->name =~ /mrna/i || $feat->type->name =~ /exon/i)
           {
         	$f = CoGe::Graphics::Feature::Gene->new();
         	$f->color([0,0,255, 50]);
@@ -512,7 +538,7 @@ sub process_features
 		$f->overlay(2);
 		$f->mag(0.75);
           }
-        elsif ($feat->type->name =~ /rna/i)
+        elsif (($layers->{features}{rna} || $layers->{all}) && $feat->type->name =~ /rna/i)
           {
         	$f = CoGe::Graphics::Feature::Gene->new();
         	$f->color([200,200,200, 50]);
@@ -527,13 +553,13 @@ sub process_features
 		  }
 
           }
-        elsif ($feat->type->name =~ /functional domains/i)
+        elsif (($layers->{features}{domain} || $layers->{all}) && $feat->type->name =~ /functional domains/i)
           {
 	    $f = CoGe::Graphics::Feature::Domain->new();
 	    $f->order(2);
 	    $f->overlay(1);
           }
-	elsif ($feat->type->name =~ /CNS/i)
+	elsif (($layers->{features}{cns} || $layers->{all}) && $feat->type->name =~ /CNS/i)
           {
 	    $f = CoGe::Graphics::Feature::Block->new();
 	    $f->order(1);
@@ -544,14 +570,20 @@ sub process_features
 	  {
 	    next;
 	  }
-	else
+	elsif ($layers->{features}{other} || $layers->{all})
 	  {
 	    $f = CoGe::Graphics::Feature::Block->new();
 	    $f->order(3);
 	    my $color = [ 255, 100, 0];
 	    $f->color($color);
-          
 	  }
+	if (($layers->{features}{protein} || $layers->{all}) && $feat->type->name =~ /CDS/i)
+	  {
+
+	    $self->process_proteins(genomic_feat=>$feat, c=>$c);
+			
+	  }
+
         next unless $f;
 	foreach my $id (@$fids)
 	  {
@@ -582,6 +614,7 @@ sub process_features
 	$f->link("GeLo.pl?".join("&", "chr=".$feat->chr,"ds=".$feat->dataset->id,"z=10", "INITIAL_CENTER=".$feat->start.",0"));
 	$f->label($name) if $print_names;
         $f->type($feat->type->name);
+#	print STDERR Dumper $f;
         $c->add_feature($f);
 	print STDERR "\tfinished process feature.\n" if $self->DEBUG;
     }
@@ -649,6 +682,65 @@ sub draw_prots
     return $chrs;
   }
 
+sub process_layers
+  {
+    my $layers = shift;
+    my %valid_layers = 
+      (
+       ruler=>"ruler",
+       chromosome=>"chromosome",
+       chr=>"chromosome",
+       cds=>"cds",
+       coding=>"cds",
+       exons=>"cds",
+       exon=>"cds",
+       rna=>"rna",
+       gene=>"gene",
+       proteins=>"protein",
+       protein=>"protein",
+       pro=>"protein",
+       funcitonal_domains=>"domain",
+       domains=>"domain",
+       domain=>"domain",
+       other=>"other",
+       cns=>"cns",
+       nt=>"nt",
+       nucleotides=>"nt",
+       nucleotide=>"nt",
+       nuc=>"nt",
+       gc=>"gc",
+       background=>"background",
+       all=>"all",
+      );
+    my %features = 
+      (
+       cds=>1,
+       mrna=>1,
+       protein=>1,
+       gene=>1,
+       domain=>1,
+       other=>1,
+       cns=>1,
+      );
+    my %layers;
+    foreach my $layer (@$layers)
+      {
+#	my $strand;
+	next unless $valid_layers{$layer};
+	$layer = lc($layer);
+	$layer = "rna" if $layer =~ /rna/;
+	if ($features{$valid_layers{$layer}})
+	  {
+	    $layers{features}{$valid_layers{$layer}}=1;
+	  }
+	else
+	  {
+	    $layers{$valid_layers{$layer}}=1;
+	  }
+      }
+    $layers{all}=1 unless keys %layers;
+    return \%layers;
+  }
 
 1;
 # The preceding line will help the module return a true value
