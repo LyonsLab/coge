@@ -19,6 +19,8 @@ BEGIN {
 		       );
     __PACKAGE__->mk_accessors(
 "nt",
+"gc",
+"show_label",
 );
 }
 
@@ -39,27 +41,30 @@ sub _initialize
     my $at = 0;
     my $cg = 0;
     my $seq = $self->nt;
-    while ($seq=~ /a|t|n|r|y|w|m|k|h|b|v|d|\?/ig)
+    $self->color(255,255,255);
+    if ($self->options eq "gc")
       {
-	$at++;
+	while ($seq=~ /a|t|n|r|y|w|m|k|h|b|v|d|\?/ig)
+	  {
+	    $at++;
+	  }
+	while ($seq =~/c|g|n|r|y|s|m|k|h|b|v|d|\?/ig)
+	  {
+	    $cg++;
+	  }
+	print STDERR "SEQ: $seq\n" unless ($at+$cg) > 0;
+	
+	my $pat = $at/($at+$cg) if $at+$cg > 0;
+	my $pcg = $cg/($at+$cg) if $at+$cg > 0;
+	my @color;
+	for my $i (0..2)
+	  {
+	    push @color, $ATC->[$i]*$at/($at+$cg)+ $GCC->[$i]*$cg/($at+$cg);
+	  }
+      	#    print join (":", @color),"  ", $at, ":", $cg,"\n";
+	$self->color(\@color)
       }
-    while ($seq =~/c|g|n|r|y|s|m|k|h|b|v|d|\?/ig)
-      {
-	$cg++;
-      }
-    print STDERR "SEQ: $seq\n" unless ($at+$cg) > 0;
-    
-    my $pat = $at/($at+$cg) if $at+$cg > 0;
-    my $pcg = $cg/($at+$cg) if $at+$cg > 0;
-    my @color;
-     for my $i (0..2)
-      {
-	push @color, $ATC->[$i]*$at/($at+$cg)+ $GCC->[$i]*$cg/($at+$cg);
-      }
-#    print join (":", @color),"  ", $at, ":", $cg,"\n";
-
-    $self->color(\@color);
-    $self->label($self->nt) if $self->nt;
+    $self->label($self->nt) if $self->nt && $self->show_label;
   }
 
 sub _post_initialize
