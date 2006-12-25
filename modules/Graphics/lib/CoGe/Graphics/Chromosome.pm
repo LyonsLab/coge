@@ -172,7 +172,7 @@ perl(1).
 #################### main pod documentation end ###################
 
 BEGIN {
-    use vars qw($VERSION $DEFAULT_WIDTH $PADDING $DEFAULT_COLOR $MAX_MAG $MAG_SCALE_TYPE $CHR_MAG_HEIGHT $CHR_START_HEIGHT $CHR_INNER_COLOR $CHR_OUTER_COLOR $RULER_COLOR $TICK_COLOR $RULER_HEIGHT $FONT $FONTTT $NUM_MAG $FEATURE_START_HEIGHT $FEATURE_MAG_HEIGHT);
+    use vars qw($VERSION $DEFAULT_WIDTH $PADDING $DEFAULT_COLOR $MAX_MAG $MAG_SCALE_TYPE $CHR_MAG_HEIGHT $CHR_START_HEIGHT $CHR_INNER_COLOR $CHR_OUTER_COLOR $RULER_COLOR $TICK_COLOR $RULER_HEIGHT $FONT $FONTTT $NUM_MAG $FEATURE_START_HEIGHT $FEATURE_MAG_HEIGHT $FEATURE_HEIGHT $AUTO_ZOOM);
     $VERSION     = '0.1';
     $DEFAULT_WIDTH = 200;  #default image width pixels
     $PADDING = 15; #default value to pad image height
@@ -190,12 +190,15 @@ BEGIN {
     $FONT = GD::Font->MediumBold; #default GD font
     $FEATURE_START_HEIGHT = 5; #the starting height of a feature
     $FEATURE_MAG_HEIGHT = 5; #the magnification of height of a feature with zoom
+    $FEATURE_HEIGHT = 20; #the height of a feature in pixels
     $NUM_MAG = 10; #number of magnification steps;
+    $AUTO_ZOOM = 1; #do we use the automatic zooming
     __PACKAGE__->mk_accessors(
 "DEBUG",
 "chr_length",
 "feature_start_height", #height of a feature
 "feature_mag_height", #magnification of a feature with zoom
+"feature_height", #height of a feature in pixels
 "draw_ruler", #flag for drawing ruler
 "draw_chr_end", #flag for drawing "ends" of chromosome"
 "ruler_color", "tick_color", #color for ruler and ticks on ruler respectively
@@ -209,7 +212,8 @@ BEGIN {
 "draw_chromosome", "chr_inner_color", "chr_outer_color",
 "start_picture", #can be set to left, right or center and dictates at which point to 
 "overlap_adjustment", #flag to turn on/off the overlap adjustment for overlapping features
-"skip_duplicate_features", #flag to turn on/off skipping duplicate features
+"skip_duplicate_features", #flag to turn on/off skipping duplicate feature
+"auto_zoom",    #flag for using automatic zooming
 "_region_start", "_region_stop", #image's start and stop (should be equal to or "larger" than the users
 "_magnification", "_mag_scale", 
 "_image_h_used", #storage for the amount of the image height used
@@ -266,12 +270,15 @@ sub new
     $self->num_mag($NUM_MAG);
     $self->feature_start_height($FEATURE_START_HEIGHT);
     $self->feature_mag_height($FEATURE_MAG_HEIGHT);
+    $self->feature_height($FEATURE_HEIGHT);
     $self->overlap_adjustment(1);
     $self->skip_duplicate_features(0);
     $self->mag(1);
+    $self->auto_zoom($AUTO_ZOOM);
     $self->font($FONTTT);
     $self->_features({});
     $self->_fill_features([]);
+    $self->_image_h_used(0);
     return $self;
 }
 
@@ -297,10 +304,12 @@ sub new
                         are drawn where appropriate
  feature_start_height=> (DEFAULT: 5) This stores the starting height (in pixels) of a feature without
                         any increase due to zoom and feature_mag_height.  
- feature_mag_height=>   (DEFAULT: 5) This stores the feature's height in terms of how it 
+ feature_mag_height  => (DEFAULT: 5) This stores the feature's height in terms of how it 
                         is scaled as the magnification increases.  For example, if this is set
                         to 5 and the magnification is 5, then the resulting height of the feature
                         will be 25 pixels (5*5)
+ feature_height   =>    Height of a feature in pixels.  (Default: 20).  This is used if automatic zoom
+                        is not used
 
  ruler_color      =>    (DEFAULT: [0,0,255]) Defines the color of the positional ruler.
                         This is the an array reference of three values
@@ -669,19 +678,19 @@ sub get_features
 		  }
 		foreach my $l (keys %{$feats->{$t}{$s}{$o}})
 		  {
-		    if ($layer)
+		    if (defined $layer)
 		      {
 			next unless $l eq $layer;
 		      }
 		    foreach my $f (keys %{$feats->{$t}{$s}{$o}{$l}})
 		      {
-			if ($fill)
+			if (defined $fill)
 			  {
 			    next unless $f eq $fill;
 			  }
 			foreach my $sp (keys %{$feats->{$t}{$s}{$o}{$l}{$f}})
 			  {
-			    if ($start)
+			    if (defined $start)
 			      {
 				$stop = $start unless $stop;
 				if ($start > $stop)
@@ -1154,7 +1163,7 @@ sub generate_imagemap
 	$anno =~ s/\n/<br>/g;
 	$anno =~ s/\t/&nbsp;&nbsp;/g;
 
-	my $feat_height = ($self->feature_start_height+$self->feature_mag_height*$self->mag);
+	my $feat_height = $self->feature_height;#($self->feature_start_height+$self->feature_mag_height*$self->mag);
 	my $feat_h = $feat_height/$feat->_overlap;
 	my $offset = ($feat->order-1)*($feat_height+$self->padding/1.5)+$self->padding;
 	$offset = 0 if $feat->fill;
@@ -1340,54 +1349,46 @@ sub set_image_height
   {
     #this sub calculates how much height out picture needs based on options and features to be drawn
     my $self = shift;
-    my $ruler_h = $self->ruler_height + $self->padding;
 
-    my $feat_height = $self->feature_start_height+$self->feature_mag_height*$self->mag;
-#    $feat_height = $feat_height*($self->mag);
-    my $h=$ruler_h;# = $self->padding; #give use some padding
 
-    my ($tfh, $bfh);
-    if ($self->_max_track)
+    if ($self->auto_zoom)
       {
-	#is there an override set for the number of genomic feature tracks?
-	$tfh = $self->_max_track * ($feat_height+$self->padding);
-	$bfh = $self->_max_track * ($feat_height+$self->padding);
+	$self->feature_height($self->feature_start_height+$self->feature_mag_height*$self->mag);
       }
-    else
+
+
+    unless ($self->_max_track)
       {
 	my $top_feat = $self->get_feats(last_order=>1, strand=>1, fill=>0);
 	my $bot_feat = $self->get_feats(last_order=>1, strand=>-1, fill=>0);
-
-	$tfh = $top_feat->order * ($feat_height+$self->padding)if $top_feat;
-	$bfh = $bot_feat->order * ($feat_height+$self->padding)if $bot_feat;
+	my $max = $top_feat->order if $top_feat;
+	$max = $bot_feat->order if $bot_feat && $bot_feat->order > $max;
+	$max = 1 unless $max;
+	$self->_max_track($max);
       }
-    $tfh = 0 unless $tfh;
-    $bfh = 0 unless $bfh;
-#    print STDERR Dumper $bot_feat;
+    my $feat_space = $self->_max_track * ($self->feature_height+$self->padding);
+    my $ch = $feat_space*2 > $self->chr_start_height ? $feat_space*2 : $self->chr_start_height; #chromosome height
 
-    my $feat_space = $tfh > $bfh ? $tfh : $bfh;
-    my $ch = $feat_space*2 > $self->chr_start_height ? $feat_space*2 : $self->chr_start_height;#+$self->mag * $self->chr_mag_height); #chromosome image height
-
-    $self->_chr_height($ch);
-    $h += $self->padding;
-    $h+=$ch;
-#    $self->_chr_center($h+$ruler_h+$self->padding);
-    $self->_chr_center($h-$ch/2);
-#    my $ch += $ch+$self->padding;# if $self->draw_chromosome; #chromosome image height
-
-#    print  "\n!!!!!\nstart_ch: ",$self->chr_start_height,", ch: $ch, tfh: $tfh,bfh: $bfh, ruler_h: $ruler_h, mag: ",$self->mag,", chrcenter: ", $h-$ch/2,"\n!!!\n";
-#    print  "\n!!!!!\nstart_ch: ",$self->chr_start_height,", ch: $ch, tfh: $tfh, tfh_order: ",$top_feat->order,",bfh: $bfh, bfh_order: ",$bot_feat->order,",ruler_h: $ruler_h, mag: ",$self->mag,", chrcenter: ", $h-$ch/2,"\n!!!\n";
-
-#    $h += $tfh > $chrh/2 ? $tfh : $chrh/2;
-
-#    $h += $ruler_h+$self->padding;
-
-#    $h += $bfh > $chrh/2 ? $bfh : $chrh/2;
+    my $ruler_h = $self->ruler_height + $self->padding;
+    my $h=$ruler_h;# = $self->padding; #give use some padding
 #    $h += $self->padding;
-#    print STDERR join("\t", $tfh, $bfh, $chrh/2),"\n";
+    $h+=$ch;
     print STDERR "Image Height: $h\n" if $self->DEBUG;
-    $self->ih($h);
-    $self->_image_h_used($self->padding);
+    if ($self->ih)
+      {
+	my $scale = $self->ih/$h;
+	$self->padding($self->padding*$scale);
+	$self->feature_height($self->feature_height*$scale);
+	$self->_chr_height($ch*$scale);
+	$self->_chr_center(($h-$ch/2)*$scale);
+      }
+    else
+      {
+	$self->ih($h);
+	$self->_chr_height($ch);
+	$self->_chr_center($h-$ch/2);
+      }
+#    $self->_image_h_used(0);
 
   }
 
@@ -1422,16 +1423,17 @@ sub chr_brush
     my $mag = $self->mag;
     my @bc = @{$self->chr_outer_color()};
     my @ic = @{$self->chr_inner_color()};
-    my $edge_brush = new GD::Image(1,$mag+1);
+    my $size = 5;
+    my $edge_brush = new GD::Image(1,$mag+$size);
     $edge_brush->colorResolve(255,255,255);
     $edge_brush->line(0,0,0,0,$edge_brush->colorResolve(@bc));
-    $edge_brush->line(0,$mag+1,0,$mag+1,$edge_brush->colorResolve(@ic));
-    for my $i (1..$mag)
+    $edge_brush->line(0,$mag+$size,0,$mag+$size,$edge_brush->colorResolve(@ic));
+    for my $i (1..$mag+$size-1)
       {
 	my @c;
 	for my $j (0..2)
 	  {
-	    push @c, $bc[$j]+($ic[$j]-$bc[$j])/($mag+1)*$i;
+	    push @c, $bc[$j]+($ic[$j]-$bc[$j])/($mag+$size)*$i;
 	  }
 	$edge_brush->line(0,$i,1,$i,$edge_brush->colorResolve(@c));
       }
@@ -1657,7 +1659,6 @@ sub _draw_features
     foreach my $feat ( $self->get_feature(fill=>1), sort {$a->overlay <=> $b->overlay} $self->get_features(fill=>0))
 #    foreach my $feat ( sort {$a->fill<=>$b->fill || $a->overlay <=> $b->overlay} $self->get_features())
       {
-#	print $feat->type,":", $feat->fill, "\n";
 	#skip drawing features that are outside (by two times the range being viewed) the view
 	if ($feat->start)
 	  {
@@ -1667,7 +1668,7 @@ sub _draw_features
 	  {
 	    next if $feat->stop < $self->_region_start-2*($self->_region_length);
 	  }
-	my $feature_height = ($self->feature_start_height+$self->feature_mag_height*$self->mag);
+	my $feature_height = $self->feature_height;#($self->feature_start_height+$self->feature_mag_height*$self->mag);
 	my $feat_h = $feature_height/$feat->_overlap;#*$feat->mag;
 	my $offset = ($feat->order-1)*($feature_height+$self->padding/1.5)+$self->padding;
 	$offset = 0 if $feat->fill;
@@ -2005,10 +2006,8 @@ sub _draw_ruler
     $rb = $rb-($range/10); #back up a bit
     my $div = "1"."0"x int (log10($self->_region_length)+.5); #determine range scale (10, 100, 1000, etc)
     print STDERR "\nRULER: Center: $c, Start $xb, Stop: $xe, Ticks: $div, \n" if $self->DEBUG;
-    $self->_make_ticks(scale=>$div, y1=>$mtyb, y2=>$mtye, range_begin=>$rb, range_end=>$re,text_loc=>1);
-#    $div /= 10;
+    $self->_make_ticks(scale=>$div, y1=>$mtyb, y2=>$mtye, range_begin=>$rb, range_end=>$re,text_loc=>-1);
     $self->_make_ticks(scale=>$div/10, y1=>$styb, y2=>$stye, range_begin=>$rb, range_end=>$re, text_loc=>0);
-
   }
 
 #################### subroutine header begin ####################
@@ -2060,46 +2059,43 @@ sub _make_ticks
     #make ticks
     my $unit = $self->_calc_unit_size;
     print STDERR "UNIT Size: $unit\n" if $self->DEBUG;
+    my @text;
     if ($rb <= 1 && $re >= 1)
       {
 	my $x = $w *(1 - $self->_region_start)/($self->_region_length);
-	$gd->filledRectangle($x, $y1, $x+$unit, $y2, $self->get_color($self->tick_color));
-	if ($text_loc)
-	  {
-	    my $h = $text_loc =~ /-/ ? $y2-1: $y1-$self->padding/2;
-	    $self->_gd_string(text=>'1',x=>$x+$unit+2, 'y'=>$h, size => ($y2-$y1)/1.25);
-	  }
+	$gd->filledRectangle($x, $y1, $x+1, $y2, $self->get_color($self->tick_color));
+	my $h = $text_loc =~ /-/ ? $y2-1: $y1;#$y1-$self->padding/2;
+	push @text, {text=>'1',x=>$x+2, 'y'=>$h, size => ($y2-$y1)/2};
+	$self->_gd_string(text=>'1',x=>$x+1, 'y'=>$h, size => ($y2-$y1)/2.5) if $text_loc;
       }
     while ($tick <= $re)
       {
 	my $x = $w *($tick - $self->_region_start)/($self->_region_length);
 	print STDERR "Generating tick at $tick ($x)\n" if $self->DEBUG;
-	$gd->filledRectangle($x, $y1, $x+$unit, $y2, $self->get_color($self->tick_color));
-	if ($text_loc)
-	  {
-	    my ($key) = $tick =~ /(0+)$/;
-	    $key = defined $key ? "1".$key : "1";
-	    my %end = (
-		       1=>"",
-		       10=>"0",
-		       100=>"00",
-		       1000=>"K",
-		       10000=>"0K",
-		       100000=>"00K",
-		       1000000=>"M",
-		       10000000=>"0M",
-		       100000000=>"00M",
-		       1000000000=>"G",
-		       10000000000=>"0G",
-		       100000000000=>"00G",
-		      );
-	    my $t = $tick/$key . $end{$key};
-	    my $h = $text_loc =~ /-/ ? $y2-1: $y1-$self->padding/2;
-	    $self->_gd_string(text=>$t,x=>$x+$unit+2, 'y'=>$h, size => ($y2-$y1)/1.25);#/1.5  );
-	  }
+	$gd->filledRectangle($x, $y1, $x+1, $y2, $self->get_color($self->tick_color));
+	my ($key) = $tick =~ /(0+)$/;
+	$key = defined $key ? "1".$key : "1";
+	my %end = (
+		   1=>"",
+		   10=>"0",
+		   100=>"00",
+		   1000=>"K",
+		   10000=>"0K",
+		   100000=>"00K",
+		   1000000=>"M",
+		   10000000=>"0M",
+		   100000000=>"00M",
+		   1000000000=>"G",
+		   10000000000=>"0G",
+		   100000000000=>"00G",
+		  );
+	my $t = $tick/$key . $end{$key};
+	my $h = $text_loc =~ /-/ ? $y2-1: $y1;#-$self->padding/2;
+	push @text, {text=>$t,x=>$x+2, 'y'=>$h, size => ($y2-$y1)/2};
+	$self->_gd_string(text=>$t,x=>$x+1, 'y'=>$h, size => ($y2-$y1)/2.5) if ($text_loc);
 	$tick+= $div;
       }
-
+    return \@text;
   }
 
 #################### subroutine header begin ####################
