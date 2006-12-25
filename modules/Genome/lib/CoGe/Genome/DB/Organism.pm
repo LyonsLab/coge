@@ -229,7 +229,7 @@ sub resolve_organism
       {
 	my @orgs = $self->search_like (name=>"%".$orgin."%");
 	$orgout = $orgs[0];
-	if (@orgs)
+	if (@orgs > 1)
 	  {
 	    warn "multiple organisms matched search of $orgin.  Returning ".$orgout->name."\nBut the following also matched: ", join (" ", map {$_->name} @orgs),"\n";
 	  }
