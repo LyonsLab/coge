@@ -35,7 +35,8 @@ CoGe::Genome::DB::Feature_type
   print $feat_type->id,"\n";
   my @seq_objs = $feat_type->sequences();
   
-  
+  #Another example that goes through all the features of an organism.
+  #to do, write example
 
 
 =head1 DESCRIPTION
