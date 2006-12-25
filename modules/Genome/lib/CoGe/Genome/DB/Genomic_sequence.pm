@@ -278,7 +278,7 @@ sub get_sequence
 	$stop = $tmp;
       }
     my $chr = $opts{chr} || $opts{CHR} || $opts{chromosome} || $opts{CHROMOSOME};
-    my $ds_id = $opts{dataset} || $opts{dataset_id} || $opts{info_id} || $opts{INFO_ID} || $opts{data_info_id} || $opts{DATA_INFO_ID};
+    my $ds_id = $opts{dataset} || $opts{ds} || $opts{dataset_id} || $opts{info_id} || $opts{INFO_ID} || $opts{data_info_id} || $opts{DATA_INFO_ID};
     my $coge = new CoGe::Genome;
     my $ds = $coge->get_dataset_obj->resolve_dataset($ds_id);
     my $strand = $opts{strand} || $opts{STRAND} || 1;
