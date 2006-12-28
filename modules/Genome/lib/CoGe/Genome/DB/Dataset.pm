@@ -530,15 +530,17 @@ sub get_chromosomes
       {
 	my $id = ref ($ds) =~ /dataset/i ? $ds->id : $ds;
 	$sth->execute($id);
-	my $q = $sth->fetch();
-	next unless $q;
-	foreach my $i (@$q)
+       	while (my $q = $sth->fetch())
 	  {
-	    $chrs{$i} = 1;
+	    next unless $q;
+	    foreach my $i (@$q)
+	      {
+		$chrs{$i} = 1;
+	      }
 	  }
       }
     $sth->finish;
-    return wantarray ? keys %chrs : [keys %chrs];
+    return wantarray ? sort keys %chrs : [sort keys %chrs];
   }
 
 ################################################ subroutine header begin ##
@@ -579,7 +581,8 @@ See Also   : $self->get_chromosomes
 sub chr
   {
     my $self = shift;
-    return $self->get_chromosomes(@_);
+    my @chr = sort $self->get_chromosomes(@_);
+    return $chr[0];
   }
 
 ################################################ subroutine header begin ##
