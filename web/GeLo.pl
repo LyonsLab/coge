@@ -166,8 +166,10 @@ sub get_dataset_info
     $ds_name = "<a href =\"".$link."\">".$ds_name."</a>" if $ds->data_source->link;
     $html .= qq{<TR><TD>Data Source:<TD>$ds_name}."\n";
     $html .= qq{<tr><td>Version:<td>}.$ds->version."\n";
-    my @chr = $DB->get_genomic_seq_obj->get_chromosome_for_dataset($ds);
 
+    my %chr;
+    map{$chr{$_}++} ($ds->chromosomes, $DB->get_genomic_seq_obj->get_chromosome_for_dataset($ds));
+    my @chr = sort keys %chr;
     if (@chr)
       {
 	$html .= qq{<tr><td>Chromosome};
@@ -183,7 +185,7 @@ sub get_dataset_info
       }
     else {
       $html .= qq{<input type="hidden" id="chr" value="">};
-      $html .= "No genomic sequence2";
+      $html .= "<tr><td>No genomic sequence";
     }
     return $html;
   }
@@ -204,7 +206,7 @@ sub get_dataset_chr_info
     $html .= qq{<tr><td>Nucleotides:<td>$length} if $length;
     my $feats = $ds->get_feature_type_count(chr=>$chr);
     $html .= qq{<tr><td valign=top>Features:<td valign=top><table>};
-    my $feat_string = join ("\n<tr>",map {"<td>$_<td>".$feats->{$_} } sort {$feats->{$b}<=> $feats->{$a}} keys %$feats);
+    my $feat_string = join ("\n<tr valing=top>",map {"<td valign=top>$_<tdvalign=top>".$feats->{$_} } sort {$feats->{$b}<=> $feats->{$a}} keys %$feats);
     $feat_string = "None" unless $feat_string;
     $html .= "$feat_string</table>";
 
