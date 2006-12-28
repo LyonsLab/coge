@@ -4,6 +4,26 @@ BODY {
   background: #FFFFFF;
 }
 
+.seq { 
+  overflow: auto;
+  border: none;
+  width: 628px;
+  height: 300px;
+  background: #FFFFFF; 
+}
+
+.up {
+  color: #660000;
+}
+
+.down {
+  color: #003300;
+}
+
+.main {
+  color: #000099;
+}
+
 .prep {
   font-family:fixed, monospace;
   white-space:pre;
