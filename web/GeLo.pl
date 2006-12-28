@@ -33,6 +33,7 @@ my $pj = new CGI::Ajax(
 		       get_dataset_chr_info => \&get_dataset_chr_info,
 		       gen_data => \&gen_data,
 		       get_genomic_seq => \&get_genomic_seq,
+		       get_orgs => \&get_orgs,
 		      );
 $pj->JSDEBUG(0);
 $pj->DEBUG(0);
@@ -105,9 +106,17 @@ sub gen_body
 
 sub get_orgs
   {
-    my @opts = map {"<OPTION value=\"$_->id\">".$_->name."</OPTION>"} sort {$a->name cmp $b->name} $DB->get_org_obj->retrieve_all();
+    my $name = shift;
+    my @db = $name ? $DB->get_org_obj->search_like({name=>"%".$name."%"}) :$DB->get_org_obj->retrieve_all();
+    my @opts = map {"<OPTION value=\"".$_->id."\">".$_->name."</OPTION>"} sort {$a->name cmp $b->name} @db;
     my $html;
     $html .= qq{<FONT CLASS ="small">Organism count: }.scalar @opts.qq{</FONT>\n<BR>\n};
+    unless (@opts) 
+      {
+	$html .=  qq{<input type = hidden name="org_id" id="org_id">};
+	return $html;
+      }
+
     $html .= qq{<SELECT id="org_id" SIZE="5" MULTIPLE onChange="dataset_chain()" >\n};
     $html .= join ("\n", @opts);
     $html .= "\n</SELECT>\n";
@@ -119,27 +128,19 @@ sub get_dataset
   {
     my $oid = shift;
     my $html = "";
-    return $html unless $oid;
     my $org = $DB->get_org_obj->retrieve($oid);
-
-#    print $org." ";
-    return $html unless $org;
-    my @opts = map {"<OPTION value=\"".$_->id."\">".$_->name. " (v".$_->version.", id".$_->id.")</OPTION>"} sort {$b->version cmp $a->version || $a->name cmp $b->name} $org->datasets;
+    my @opts = map {"<OPTION value=\"".$_->id."\">".$_->name. " (v".$_->version.", id".$_->id.")</OPTION>"} sort {$b->version cmp $a->version || $a->name cmp $b->name} $org->datasets if $org;
     $html = qq{<FONT CLASS ="small">Dataset count: }.scalar (@opts).qq{</FONT>\n<BR>\n};
+    unless (@opts) 
+      {
+	$html .=  qq{<input type = hidden name="ds_id" id="ds_id">};
+	return $html;
+      }
+
     $html .= qq{<SELECT id="ds_id" SIZE="5" MULTIPLE onChange="gen_data(['args__loading. . .'],['ds_info']); get_dataset_info(['ds_id'],[dataset_info_chr_chain])" >\n};
     $html .= join ("\n", @opts);
     $html .= "\n</SELECT>\n";
     $html =~ s/OPTION/OPTION SELECTED/;
-
-    if (scalar (@opts) == 0)
-    {
-		my $opt = "<OPTION value=\"-77\">"."</OPTION>";  # set error flag for empty dataset to avoid ajax stalling
-		$html = qq{<FONT CLASS ="small">Dataset count: 0}.qq{</FONT>\n<BR>\n};
-		$html .= qq{<SELECT id="ds_id" SIZE="5" MULTIPLE onChange="gen_data(['args__loading. . .'],['ds_info']); get_dataset_info(['ds_id'],[dataset_info_chr_chain])" >\n};
-		$html .= $opt;
-		$html .= "\n</SELECT>\n";
-		$html =~ s/OPTION/OPTION SELECTED/;
-    }
     return $html;
   }
 
@@ -147,7 +148,7 @@ sub get_dataset_info
   {
     my $dsd = shift;
     my $html = "";
-    if ($dsd == -77) # error flag for empty dataset
+    unless ($dsd) # error flag for empty dataset
     {
     	$html .= qq{<input type="hidden" id="chr" value="">};
     	$html .= "No genomic sequence";
@@ -170,7 +171,7 @@ sub get_dataset_info
     if (@chr)
       {
 	$html .= qq{<tr><td>Chromosome};
-	$html .= "s" if scalar @chr > 1;
+	$html .= "s". " (".scalar @chr.")" if scalar @chr > 1;
 	$html .= ":";
 	$html .= "<td>";
     my $select;
@@ -182,7 +183,7 @@ sub get_dataset_info
       }
     else {
       $html .= qq{<input type="hidden" id="chr" value="">};
-      $html .= "No genomic sequence";
+      $html .= "No genomic sequence2";
     }
     return $html;
   }
@@ -191,7 +192,7 @@ sub get_dataset_chr_info
   {
     my $dsd = shift;
     my $chr = shift;
-	if ($dsd == -77) # error flag for empty dataset
+	unless ($dsd) # error flag for empty dataset
 	{
 		return "", "", "";
 	}
@@ -271,4 +272,16 @@ sub get_genomic_seq
     $seq =~ s/(.{80})/$1\n/g;
     return "<pre>".$seq."</pre>";
   }
+
+  sub get_organism_name
+  {
+  	my $blah = $_[0];
+    print $blah;
+
+	my $html .= "<table>";
+	$html .= "</tr></table>";
+#alert(this.value)
+    return $html;
+  }
+
 1;
