@@ -47,6 +47,7 @@ sub gen_html
     $template->param(TITLE=>'CoGe: Sequence Viewer');
     $template->param(USER=>$USER);
     $template->param(DATE=>$DATE);
+    $template->param (LOGO_PNG=>"SeqView-logo.png");
     $template->param(BOX_NAME=>"$title");
     $template->param(BODY=>$body);
     $template->param(POSTBOX=>gen_foot());
@@ -81,7 +82,11 @@ sub gen_body
 		      strand=>$strand, 
 		      upstream=>$upstream, 
 		      downstream=>$downstream,
-		      ); 
+		      );
+    #my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SeqView.tmpl');
+    #$template->param(TEXT=>1);
+    #$template->param(SEQ=>$seq);
+    $seq = qq{<TABLE style="width: 628px; height: 300px; overflow: auto;"><TR><TD align=left valign="top">$seq</TD></TR></TABLE>};
     return qq{<DIV id="seq">$seq</div>};
   }
  
@@ -118,7 +123,8 @@ sub get_seq
     my $strand = $opts{'strand'};
     my ($feat) = $DB->get_feat_obj->retrieve($feat_id);
     my $ds = $DB->get_dataset_obj->retrieve($dsid);
-    my $seq = ">".$ds->org->name."(v.".$feat->version."), Type: ".$feat->type->name.", Location: ".$feat->genbank_location_string.", Chromosome: ".$chr.", Strand: ".$strand.", Name: ".$feat_name."\n";
+    my $seq;
+    my $fasta = ">".$ds->org->name."(v.".$feat->version."), Type: ".$feat->type->name.", Location: ".$feat->genbank_location_string.", Chromosome: ".$chr.", Strand: ".$strand.", Name: ".$feat_name."\n";
     unless ($pro)
     {
       $seq .= get_dna_seq_for_feat (featid=>$feat_id, rc=>$rc, upstream=>$upstream, downstream=>$downstream);
@@ -127,7 +133,12 @@ sub get_seq
     {
       $seq .= get_prot_seq_for_feat($feat_id);
     }
-    return qq{<textarea readonly class="seq">$seq</textarea>};
+    my $up = upstream_color(seq=>$seq, upstream=>$upstream);
+    my $down = downstream_color(seq=>$seq, downstream=>$downstream);
+    my $main = main_color(seq=>$seq, upstream=>$upstream, downstream=>$downstream);
+    $seq = join("", $up, $main, $down);
+    $seq = join("", $fasta, $seq); 
+    return $seq;
   }
   
 sub gen_foot
@@ -188,6 +199,12 @@ sub get_extend_box
        <TD>UPSTREAM:<td><INPUT type="text" id="upstream" value="0">
        <TD>DOWNSTREAM:<td><INPUT type="text" id="downstream" value="0">
        </table>
+       <table>
+       <TR>
+       <TD>
+          <input type="button" value="Add to Sequence" onClick="get_seq(['args__featid', 'args__<TMPL_VAR NAME=FEATID>', 'args__pro', 'args__<TMPL_VAR NAME=PRO>', 'args__rc', 'args__<TMPL_VAR NAME=RC>', 'args__chr', 'args__<TMPL_VAR NAME=CHR>', 'args__dsid', 'args__<TMPL_VAR NAME=DSID>', 'args__featname', 'args__<TMPL_VAR NAME=FEATNAME>', 'args__strand', 'args__<TMPL_VAR NAME=STRAND>', 'args__upstream', 'upstream', 'args__downstream', 'downstream'],['seq'])"> 
+       </TR>
+       </TABLE> 
       };
   }
     
@@ -231,3 +248,31 @@ sub reverse_complement
     $rcseq =~ tr/ATCG/TAGC/; 
     return $rcseq;
   }
+  
+sub upstream_color
+    {
+      my %opts = @_;
+      my $seq = $opts{seq};
+      my $upstream = $opts{upstream};
+      my $up = substr($seq, 0, $upstream);
+      return qq{<FONT class="up">$up</FONT>};
+    }
+
+sub downstream_color
+    {
+      my %opts = @_;
+      my $seq = $opts{seq};
+      my $downstream = $opts{downstream};
+      my $down = substr($seq, ((length $seq)-($downstream)), length $seq);
+      return qq{<FONT class="down">$down</FONT>};
+     }
+     
+sub main_color
+    {
+      my %opts = @_;
+      my $seq = $opts{seq};
+      my $upstream = $opts{upstream};
+      my $downstream = $opts{downstream};
+      my $main = substr($seq, $upstream, ((length $seq) - ($downstream)));
+      return qq{<FONT class="main">$main</FONT>};
+    }
