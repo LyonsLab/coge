@@ -9,9 +9,19 @@
 </HEAD>
 
 <BODY <TMPL_VAR NAME=BODY_TAG>>
-<TABLE>
+<TABLE width = 100%>
  <TR>
-  <TD><TMPL_IF NAME=LOGO_PNG><a href="<TMPL_IF NAME=HEADER_LINK><TMPL_VAR NAME=HEADER_LINK><TMPL_ELSE>/CoGe</TMPL_IF>" border=0><img src='/CoGe/picts/<TMPL_VAR NAME=LOGO_PNG>' border=0></a></TMPL_IF>
-  <TD id="title"><font class="title1"><TMPL_VAR NAME=TITLE></font></td>
+  <TD>
+   <TABLE>
+    <TR>
+     <TD>
+      <TMPL_IF NAME=LOGO_PNG><a href="<TMPL_IF NAME=HEADER_LINK><TMPL_VAR NAME=HEADER_LINK><TMPL_ELSE>/CoGe</TMPL_IF>" border=0><img src='/CoGe/picts/<TMPL_VAR NAME=LOGO_PNG>' border=0></a></TMPL_IF>
+     </TD>
+     <TD>
+      <font class="title1"><TMPL_VAR NAME=TITLE></font>
+     </TD>
+    </TR>
+   </TABLE>
+  <TD align=right><TMPL_IF NAME="CLOSE"><INPUT type = 'button' value= 'Close Window' onClick='window.close()'></TMPL_IF>
  </TR>
 </TABLE>
