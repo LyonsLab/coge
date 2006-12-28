@@ -108,7 +108,7 @@ sub get_orgs
   {
     my $name = shift;
     my @db = $name ? $DB->get_org_obj->search_like({name=>"%".$name."%"}) :$DB->get_org_obj->retrieve_all();
-    my @opts = map {"<OPTION value=\"".$_->id."\">".$_->name."</OPTION>"} sort {$a->name cmp $b->name} @db;
+    my @opts = map {"<OPTION value=\"".$_->id."\">".$_->name."</OPTION>"} sort {uc($a->name) cmp uc($b->name)} @db;
     my $html;
     $html .= qq{<FONT CLASS ="small">Organism count: }.scalar @opts.qq{</FONT>\n<BR>\n};
     unless (@opts) 
