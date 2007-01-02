@@ -99,6 +99,7 @@ sub login
     my $db = new CoGe::Genome;
     my ($u) = $db->get_user_obj->search(user_name=>$name);
     my $pwdc = $u->check_passwd(pwd=>$pwd) if $u;
+    print STDERR "In login. . .$name\n";
     if ($pwdc)
       {
 	my $sid = $db->get_user_session_obj->log_user(user=>$u);
