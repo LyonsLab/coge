@@ -445,7 +445,7 @@ sub Show_Summary
 	    my $accn2 = $item->[2];
 	    my $basereportname = basename( $report );
 	    $basereportname = $TEMPURL . "/$basereportname\n";
-	    $html .= "<div><font class=xsmall><A HREF=\"$basereportname\">View bl2seq output for $accn1 versus $accn2: $basereportname</A></font></DIV>\n";
+	    $html .= "<div><font class=xsmall><A HREF=\"$basereportname\">View bl2seq output for $accn1 versus $accn2</A></font></DIV>\n";
 	  }
       }
 
