@@ -224,6 +224,7 @@ BEGIN {
 "_fill_features", #internal storeage of fill features
 "_max_track", #place to store the maximum number of tracks on which to draw genomic features
 "benchmark", #stores a flag for printing benchmark information for image generation
+"invert_chromosome", #flag to draw the image in reverse so that the chromosome has been "flipped" 180 degrees
 #"start", "stop", #user defined start and stop.  Not sure if this is needed. . .
 );
 }
@@ -396,10 +397,13 @@ sub new
                         set magnification level.  Valid options for this are "left", "right"
                         and "center"
 
+ invert_chromosome  =>  Draw the chromosome such that it has been inverted
+
  overlap_adjustment =>  flag for whether overlapping features are rescaled and position such that
                         they don't overlap when the image is generated.  Default: 1
 
  skip_duplicate_features => flag for whether to skip two featrues if they are identical.  Default: 0
+
 
 =cut
 
@@ -812,6 +816,24 @@ sub get_feats
     my %opts = @_;
     return $self->get_features(%opts);
   }
+
+
+sub _invert_chromosome
+  {
+    my $self = shift;
+    #make up->down, down->up, left->right and right->left . . . up, up, down, down, left, right, left, right, B, A start! 
+    foreach my $feat ($self->get_features())
+      {
+	my $strand = $feat->strand =~ /-/ ? 1 : "-1";
+	my $start = $self->_region_stop - $feat->stop;
+	my $stop = $self->_region_stop - $feat->start;
+	$feat->strand($strand);
+	$feat->start($start);
+	$feat->stop($stop);
+	$feat->gd->flipHorizontal();
+      }
+  }
+
 
 
 #################### subroutine header begin ####################
@@ -1654,6 +1676,7 @@ See Also   : $self>_draw_feature for individual feature rendering
 sub _draw_features
   {
     my $self = shift;
+    $self->_invert_chromosome if $self->invert_chromosome;
     my $c = $self->_image_h_used+($self->ih - $self->_image_h_used)/2;
     print STDERR "Image used: ".$self->_image_h_used."  Image Height: ".$self->ih."  Center: $c\n" if $self->DEBUG;
     foreach my $feat ( $self->get_feature(fill=>1), sort {$a->overlay <=> $b->overlay} $self->get_features(fill=>0))
