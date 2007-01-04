@@ -71,19 +71,22 @@ onClick="loading([], ['results']); run([
 	'featid1', 
 	'dr1up', 
 	'dr1down', 
-	'dsid1', 
+	'dsid1',
+	'rev_region1', 
 
 	'accn2', 
 	'featid2', 
 	'dr2up', 
 	'dr2down', 
 	'dsid2',
+	'rev_region2', 
 
 	'accn3', 
 	'featid3', 
 	'dr3up', 
 	'dr3down', 
 	'dsid3',
+	'rev_region3', 
 
 	'gbaccn1', 
 	'gb1start', 
@@ -126,7 +129,9 @@ onClick="loading([], ['results']); run([
 	'blastparams',
 	'iw',
 	'ih', 
-	'feat_h'
+	'feat_h',
+        'show_gc',
+  
 ],
 ['results'], 'POST');"
 >   &nbsp;&nbsp;
@@ -166,14 +171,17 @@ onClick="loading([], ['results']); run([
         <TD><input class="backbox" type="text" name="accn1" id="accn1" tabindex="1"  size="20" onBlur="dataset_search(['accn1','args__1'],[feat_search_chain])" value="<TMPL_VAR NAME=ACCN1>" />
         <DIV id="source1" nowrap><input type="hidden" id="dsid1"></DIV>
         <DIV id="feat1"><input type="hidden" id="featid1"></DIV>
-       <TR>
+      <TR>
+	<TD colspan =2>
+	<font class="small">Reverse region display: <label><input class="backbox" type="radio" name="rev_region1" id="rev_region1" tabindex="1" value="1" />Yes</label><label><input class="backbox" type="radio" name="rev_region1" id="rev_region1" tabindex="1" value="0" checked />No</label></font>
+      <TR>
        <TD><DIV class="small">Upstream:</DIV>
        <TD><DIV  id="up1" ><input class="backbox" type="text" name="dr1up" id="dr1up" tabindex="1" size="10" value="10000" /> </DIV>
       <TR>
        <TD><DIV class="small">Downstream:</DIV>
        <TD><DIV  id="down1"><input class="backbox" type="text" name="dr1down" id="dr1down" tabindex="1" size="10"  value="10000" /></DIV>
       <TR>
-        <TD><input type="checkbox" name="apply_all" id="apply_all" value"0"><font class ="small" float>(Apply distance to all?)</font>
+        <TD><input type="checkbox" name="apply_all" id="apply_all" value="0" /><font class ="small" float>(Apply distance to all?)</font>
       </TABLE>
       <TD>
       <TABLE>
@@ -182,6 +190,9 @@ onClick="loading([], ['results']); run([
         <TD><input class="backbox" type="text" name="accn2" id="accn2" tabindex="1"  size="20" onBlur="dataset_search(['accn2','args__2'],[feat_search_chain])" value="<TMPL_VAR NAME=ACCN2>" />
         <DIV id="source2" nowrap><input type="hidden" id="dsid2"></DIV>
         <DIV id="feat2"><input type="hidden" id="featid2"></DIV>
+      <TR>
+	<TD colspan =2>
+	<font class="small">Reverse region display: <label><input class="backbox" type="radio" name="rev_region2" id="rev_region2" tabindex="1" value="1" />Yes</label><label><input class="backbox" type="radio" name="rev_region2" id="rev_region2" tabindex="1" value="0" checked />No</label></font>
        <TR>
        <TD><DIV class="small">Upstream:</DIV>
        <TD><DIV  id="up2" ><input class="backbox" type="text" name="dr2up" id="dr2up" tabindex="1" size="10" value="10000" /></DIV>
@@ -196,6 +207,9 @@ onClick="loading([], ['results']); run([
         <TD><input class="backbox" type="text" name="accn3" id="accn3" tabindex="1"  size="20" onBlur="dataset_search(['accn3','args__3'],[feat_search_chain])" value="<TMPL_VAR NAME=ACCN3>" />
         <DIV id="source3" nowrap><input type="hidden" id="dsid3"></DIV>
         <DIV id="feat3"><input type="hidden" id="featid3"></DIV>
+      <TR>
+	<TD colspan =2>
+	<font class="small">Reverse region display: <label><input class="backbox" type="radio" name="rev_region3" id="rev_region3" tabindex="1" value="1" />Yes</label><label><input class="backbox" type="radio" name="rev_region3" id="rev_region3" tabindex="1" value="0" checked />No</label></font>
        <TR>
        <TD><DIV class="small">Upstream:</DIV>
        <TD><DIV  id="up3" ><input class="backbox" type="text" name="dr3up" id="dr3up" tabindex="1" size="10" value="10000" /></DIV>
@@ -204,6 +218,10 @@ onClick="loading([], ['results']); run([
        <TD><DIV  id="down3" ><input class="backbox" type="text" name="dr3down" id="dr3down" tabindex="1" size="10"  value="10000" /></DIV>
       </TABLE>
      </table>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
      <span class="subItem"></span>
      <span class="subItem"></span>
      <span class="subItem"></span>
@@ -486,8 +504,16 @@ onClick="loading([], ['results']); run([
   </TD>
 
  </TR>
+ <TR>
+  <Td>
+<font class="small">Color GC content? <label><input class="backbox" type="radio" name="show_gc" id="show_gc" tabindex="1" value="1" />Yes</label><label><input class="backbox" type="radio" name="show_gc" id="show_gc" tabindex="1" value="0" checked />No</label></font>
+    </DIV>
+  </TD>
+
+ </TR>
          </TABLE>
      </table>
+     <span class="subItem"></span>
      <span class="subItem"></span>
      <span class="subItem"></span>
      <span class="subItem"></span>
@@ -588,24 +614,27 @@ onClick="loading([], ['results']); run([
 
 
 <input type="button" value="GO"
-onClick="loading([], ['results']); run([
+onClick="loading([], ['results']);run([
 	'accn1',
 	'featid1', 
 	'dr1up', 
 	'dr1down', 
 	'dsid1', 
+	'rev_region1', 
 
 	'accn2', 
 	'featid2', 
 	'dr2up', 
 	'dr2down', 
 	'dsid2',
+	'rev_region2', 
 
 	'accn3', 
 	'featid3', 
 	'dr3up', 
 	'dr3down', 
 	'dsid3',
+	'rev_region3', 
 
 	'gbaccn1', 
 	'gb1start', 
@@ -648,7 +677,8 @@ onClick="loading([], ['results']); run([
 	'blastparams',
 	'iw',
 	'ih', 
-	'feat_h'
+	'feat_h',
+	'show_gc',
 ],
 ['results'], 'POST');"
 >   &nbsp;&nbsp;
