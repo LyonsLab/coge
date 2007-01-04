@@ -342,22 +342,29 @@ sub initialize_c
     my $ih = $opts{ih};
     my $z = $opts{z};
     my $mag = $opts{mag};
+    my $mag_off = $opts{mag_off};
     my $start = $opts{start};
     my $stop = $opts{stop};
+    my $chr_length = $opts{chr_length};
     my $db = $opts{db};
     my $c = $opts{c};
-    my $csh=$opts{csh};
-    my $cmh=$opts{cmh};
-    my $fsh=$opts{fsh};
-    my $fmh=$opts{fmh};
+    my $csh=$opts{csh} || $opts{chr_start_height};
+    my $cmh=$opts{cmh} || $opts{chr_mag_height};
+    my $fsh=$opts{fsh} || $opts{feature_start_height};
+    my $fmh=$opts{fmh} || $opts {feature_mag_height};
+    my $draw_chr = $opts{draw_chr};
+    my $draw_ruler = $opts{draw_ruler};
+    my $draw_chr_end = $opts{draw_chr_end};
     my $forcefit = $opts{forcefit};
     my $start_pict = $opts{'start_pict'} || 'left';
+    my $feature_labels = $opts{feature_labels};
+    my $fill_labels = $opts{fill_labels};
     my $debug = $opts{debug} || 0;
+    my $invert_chromosome = $opts{invert_chromosome};
     $debug = 1 if $c->DEBUG;
-    my $draw_ruler = $opts{draw_ruler};
     $draw_ruler = 1 unless defined $opts{draw_ruler};
 
-    my $chr_length = $db->get_genomic_sequence_obj->get_last_position(ds=>$ds, chr=>$chr);
+    $chr_length = $db->get_genomic_sequence_obj->get_last_position(ds=>$ds, chr=>$chr) if $ds && !$chr_length;
     return unless $chr_length;
     $c->chr_length($chr_length);
     $c->mag_scale_type("constant_power");
@@ -365,14 +372,17 @@ sub initialize_c
     $c->ih($ih) if $ih;
     $c->max_mag((10));
     $c->DEBUG($debug);
-    $c->feature_labels(1);
-    $c->fill_labels(1);
-    $c->draw_chromosome(1);
-    $c->draw_ruler($draw_ruler);
-    $c->chr_start_height($csh);
-    $c->chr_mag_height($cmh);
-    $c->feature_start_height($fsh);
-    $c->feature_mag_height($fmh);
+    $c->feature_labels($feature_labels) if defined $feature_labels;
+    $c->fill_labels($fill_labels) if defined $fill_labels ;
+    $c->draw_chromosome($draw_chr) if defined $draw_chr;
+    $c->draw_ruler($draw_ruler) if defined $draw_ruler;
+    $c->draw_chr_end($draw_chr_end) if defined $draw_chr_end;
+    $c->chr_start_height($csh) if defined $csh;
+    $c->chr_mag_height($cmh) if defined $cmh;;
+    $c->feature_start_height($fsh) if defined $fsh;
+    $c->feature_mag_height($fmh) if defined $fmh;
+    $c->mag_off($mag_off);
+    $c->invert_chromosome($invert_chromosome);
     if (defined $z) #the $z val is used by the program for making tiles of genomic views.
                 #by convention, a z value of 0 means maximum magnification which is
         	#opposite the convention used in chromosome.pm.  Thus, we need
@@ -384,8 +394,7 @@ sub initialize_c
          $mag = $max if $mag > $max;
          $c->start_picture($start_pict);
       }
-    
-    if ($mag)
+    if (defined $mag)
       {
         $c->mag($mag);
       }
@@ -413,7 +422,10 @@ sub process_nucleotides
     my %opts = @_;
     my $start = $opts{start};
     my $stop = $opts{stop};
-    if (abs ($stop-$start) > $self->MAX_NT())
+    my $seq = $opts{seq};
+    $start = 1 unless $start;
+    $stop = length $seq if $seq && !$stop;
+    if ($self->MAX_NT && abs ($stop-$start) > $self->MAX_NT())
       {
 	warn "exceeded nucleotide limit of ",$self->MAX_NT()," (requested: ".abs($stop-$start).")\n";
 	return;
@@ -422,8 +434,7 @@ sub process_nucleotides
     my $ds = $opts{ds};
     my $db = $opts{db};
     my $c = $opts{c};
-    my $seq = $opts{seqs};
-    $seq = uc($db->get_genomic_sequence_obj->get_sequence(start=>$start, stop=>$stop, chr=>$chr, ds=>$ds)) unless $seq;
+#    $seq = uc($db->get_genomic_sequence_obj->get_sequence(start=>$start, stop=>$stop, chr=>$chr, ds=>$ds)) unless $seq;
     my $layers = $opts{layers};
 #    print STDERR "IN $0: start: $start, stop: $stop\n";
     #process nucleotides
@@ -453,8 +464,8 @@ sub process_nucleotides
 	#my $f2 = CoGe::Graphics::Feature::Exon_motifs->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
         #my $f2 = CoGe::Graphics::Feature::GAGA->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
 #	my $f2 = CoGe::Graphics::Feature::Sigma54->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
-        $f1->transparency(25) if $f1;
-        $f2->transparency(25) if $f2;
+        $f1->transparency(50) if $f1;
+        $f2->transparency(50) if $f2;
         $c->add_feature($f1) if $f1;
 	$c->add_feature($f2) if $f2;
         $pos+=$chrs;
