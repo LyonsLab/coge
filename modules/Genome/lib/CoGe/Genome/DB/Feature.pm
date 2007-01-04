@@ -571,7 +571,7 @@ sub begin_location
   {
     my $self = shift;
     my @locs = $self->locs;
-    return unless scalar @locs;
+    return unless scalar (@locs);
     my ($val) = sort {$a->begin <=> $b->begin} @locs;
     return $val->begin;
   }
