@@ -42,7 +42,7 @@ sub _initialize
     my $cg = 0;
     my $seq = $self->nt;
     $self->color(255,255,255);
-    if ($self->options eq "gc")
+    if ($self->options && $self->options eq "gc")
       {
 	while ($seq=~ /a|t|n|r|y|w|m|k|h|b|v|d|\?/ig)
 	  {
@@ -73,7 +73,7 @@ sub _post_initialize
     my %opts = @_;
     my $gd = $self->gd;
     $gd->fill(0,0, $self->get_color($self->color));
-    if (length ($self->label) == 1 && $EXTERNAL_IMAGES{uc($self->label)} && -r $EXTERNAL_IMAGES{uc($self->label)})
+    if ($self->label && length ($self->label) == 1 && $EXTERNAL_IMAGES{uc($self->label)} && -r $EXTERNAL_IMAGES{uc($self->label)})
       {
 	my $ei= GD::Image->new($EXTERNAL_IMAGES{uc($self->label)});
 #	print STDERR Dumper ($ei);
