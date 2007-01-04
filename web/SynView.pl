@@ -12,6 +12,7 @@ use File::Temp;
 use GS::MyDB::GBDB::GBObject;
 use CoGe::Genome;
 use CoGe::Accessory::Web;
+use CoGe::Graphics;
 use CoGe::Graphics::Chromosome;
 use CoGe::Graphics::Feature;
 use CoGe::Graphics::Feature::Gene;
@@ -51,6 +52,7 @@ $pj->js_encode_function('escape');
 print $pj->build_html($FORM, \&gen_html);
 #print gen_html();
 
+#print Show_Summary('contig_16224','2665176','10000','10000','502','At1g07300','124379','10000','10000','6','At2g29640','134498','10000','10000','7','','1','0','','','1','0','','','1','0','','','0','1','','','0','1','','','0','1','','1','15','0','0','7','5','2','-2','','1000','150','20');
 
 sub Rset
   {
@@ -108,18 +110,21 @@ sub Show_Summary
 	$dr1up,
 	$dr1down,
 	$infoid1,
+	$rev1,
 	
 	$accn2,
 	$featid2,
 	$dr2up,
 	$dr2down,
 	$infoid2,
+	$rev2,
 	
 	$accn3,
 	$featid3,
 	$dr3up,
 	$dr3down,
 	$infoid3,
+	$rev3,
 	
 	$gbaccn1,
 	$gb1start,
@@ -166,11 +171,19 @@ sub Show_Summary
 	$iw,
 	$ih,
 	$feat_h,
+	$show_gc,
 #	$seq_file1, $seq_file2,
 #	$f1start, $f1up, $f1down,
 #	$f2start, $f2up, $f2down,
 
        ) = @_;
+#    print STDERR join "\n",$accn1,$featid1,$dr1up,$dr1down,$infoid1,$rev1,"\n";
+	
+
+#    print STDERR Dumper \@_;
+
+
+    my @reverse_image = ($rev1, $rev2, $rev3);
     my $form = $FORM;
 
     my ($seq_file1, $seq_file2, $seq_file3);
@@ -192,7 +205,7 @@ sub Show_Summary
 
     if ($featid1)
       {
-	$obj1 = get_obj_from_genome_db( $accn1, $featid1, $infoid1,$dr1up, $dr1down );
+	$obj1 = get_obj_from_genome_db( $accn1, $featid1, $infoid1, $rev1, $dr1up, $dr1down );
 	return "<font class=error>No entry found for $featid1</font>" unless ($obj1);
 	($file1, $file1_begin, $file1_end,$spike_seq) = 
 	  generate_seq_file(obj=>$obj1,
@@ -274,7 +287,7 @@ sub Show_Summary
     #create object 2
     if ($featid2)
       {
-	$obj2 = get_obj_from_genome_db( $accn2, $featid2, $infoid2, $dr2up, $dr2down );
+	$obj2 = get_obj_from_genome_db( $accn2, $featid2, $infoid2, $rev2, $dr2up, $dr2down);
 	return "<font class=error>No entry found for $featid2</font>" unless ($obj2);
 	($file2, $file2_begin, $file2_end,$spike_seq) =
 	  generate_seq_file(obj=>$obj2,
@@ -329,7 +342,7 @@ sub Show_Summary
     #create object 3
     if ($featid3)
       {
-	$obj3 = get_obj_from_genome_db( $accn3, $featid3, $infoid3, $dr3up, $dr3down );
+	$obj3 = get_obj_from_genome_db( $accn3, $featid3, $infoid3, $rev3, $dr3up, $dr3down );
 	return "<font class=error>No entry found for $featid3</font>" unless ($obj3);
 	($file3, $file3_begin, $file3_end,$spike_seq) =
 	  generate_seq_file(obj=>$obj3,
@@ -419,6 +432,8 @@ sub Show_Summary
 							 iw=>$iw,
 							 ih=>$ih,
 							 fh=>$feat_h,
+							 show_gc=>$show_gc,
+							 reverse_image => $reverse_image[$i],
 							);
 	    $html .= qq!<div>$accn</DIV>\n!;
 	    $html .= qq!<IMG SRC="$TEMPURL/$image" !;
@@ -473,73 +488,50 @@ sub generate_image
     my $iw = $opts{iw} || 1600;
     my $ih = $opts{ih} || 200;
     my $fh = $opts{fh} || 25;
-#    print STDERR Dumper (\%opts);
-#    print STDERR Dumper $hsps;
-    my $c = new CoGe::Graphics::Chromosome;
-    $c->chr_length(length($gbobj->{SEQUENCE}));
-#    $c->mag_scale_type("constant_power");
-    $c->iw($iw);
-    $c->max_mag(10);
-    $c->feature_labels(1);
-    $c->fill_labels(1);
-    $c->draw_chromosome(1);
-    $c->draw_ruler(1);
-    $c->draw_chr_end(0);
-    $c->chr_start_height($ih);
-    $c->feature_start_height($fh);
-    $c->chr_mag_height(5);
-    $c->set_region(start=>$start, stop=>$stop);
-    $c->mag(0);
-    $c->mag_off(1);
-    
-#    $c->start_picture('left');nifb
+    my $show_gc = $opts{show_gc};
+    my $reverse_image = $opts{reverse_image};
+    my $graphic = new CoGe::Graphics;
+    my $gfx = new CoGe::Graphics::Chromosome;
+    $gfx->overlap_adjustment(0);
+    $gfx->skip_duplicate_features(1);
+    $graphic->initialize_c (
+			    c=>$gfx,
+			    iw=>$iw,
+			    start=> $start,
+			    stop => $stop,
+			    draw_chr=>1,
+			    draw_ruler=>1,
+			    draw_chr_end=>0,
+			    chr_start_height=>$ih,
+			    chr_mag_height=>5,
+			    feature_start_height=>$fh,
+			    mag=>0,
+			    mag_off=>1,
+			    chr_length => length($gbobj->{SEQUENCE}),
+			    feature_labels=>1,
+			    fill_labels=>1,
+			    forcefit=>1,
+			    invert_chromosome=>$reverse_image,
+			   );
     my $f1= CoGe::Graphics::Feature->new({start=>1, order => 2, strand => 1});
     $f1->merge_percent(0);
-    $c->add_feature($f1);
+    $gfx->add_feature($f1);
     my $f2= CoGe::Graphics::Feature->new({start=>1, order => 2, strand => -1});
     $f2->merge_percent(0);
-    $c->add_feature($f2);
-#    my $link = "bl2seq_summary.pl?".join("&", "blast_report=$report", "accnq=", "accns=", "qbegin=", "qend=", "sbegin=","send=","submit=GO");
-#    process_nucleotides(c=>$c, seq=>$gbobj->{SEQUENCE});
-    process_features(c=>$c, obj=>$gbobj, start=>$start, stop=>$stop);
-    process_hsps(c=>$c, data=>$data, reports=>$reports, accn=>$gbobj->{ACCN});
+    $gfx->add_feature($f2);
+    $graphic->process_nucleotides(c=>$gfx, seq=>$gbobj->{SEQUENCE}, layers=>{gc=>$show_gc});
+    process_features(c=>$gfx, obj=>$gbobj, start=>$start, stop=>$stop);
+    process_hsps(c=>$gfx, data=>$data, reports=>$reports, accn=>$gbobj->{ACCN}, rev=>$reverse_image, seq_length=> length($gbobj->{SEQUENCE}));
     my $file = new File::Temp ( TEMPLATE=>'SynView__XXXXX',
 				   DIR=>$TEMPDIR,
 				    SUFFIX=>'.png',
 				    UNLINK=>0);
     my ($filename) = $file->filename =~ /([^\/]*$)/;;
-    $c->generate_png(file=>$file->filename);
+    $gfx->generate_png(file=>$file->filename);
     close($file);
     my $mapname = $filename."map";
-    my ($map)=$c->generate_imagemap(name=>$mapname);
+    my ($map)=$gfx->generate_imagemap(name=>$mapname);
     return ($filename, $map, $mapname);
-  }
-
-sub process_nucleotides
-  {
-    my %opts = @_;
-    my $c = $opts{c};
-    #process nucleotides
-    my $seq = uc($opts{seq});
-    
-    my $seq_len = length $seq;
-    my $chrs = int (($c->_region_stop-$c->_region_start)/$c->iw);
-    $chrs = 1 if $chrs < 1;
-    my $pos = 0;
-    my $start = 1;# if $start < 1;    
-    while ($pos < $seq_len)
-      {
-        my $subseq = substr ($seq, $pos, $chrs);
-        my $rcseq = substr ($seq, $pos, $chrs);
-        $rcseq =~ tr/ATCG/TAGC/;
-        next unless $subseq && $rcseq;
-        my $f1 = CoGe::Graphics::Feature::NucTide->new({nt=>$subseq, strand=>1, start =>$pos+$start});
-	my $f2 = CoGe::Graphics::Feature::NucTide->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
-	#my $f2 = CoGe::Graphics::Feature::Exon_motifs->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
-        #my $f2 = CoGe::Graphics::Feature::GAGA->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});        
-        $c->add_feature($f1, $f2);
-        $pos+=$chrs;
-      }
   }
 
 sub process_features
@@ -568,13 +560,6 @@ sub process_features
 #	    next;
 	    $f = CoGe::Graphics::Feature::Gene->new();
 	    $f->color([255,0,0,50]);
-#	    if ($accn)
-#	      {
-#		foreach my $name (@{$feat->{QUALIFIERS}{names}})
-#		  {
-#		    $f->color([255,255,0]) if $name =~ /$accn/i;
-#		  }
-#	      }
 	    $f->order($track);
 	    $f->overlay(1);
 	    $f->mag(0.5);
@@ -594,9 +579,7 @@ sub process_features
 		      }
 		  }
 
-#		$f->label($name);
 		
-#        	draw_prots(genomic_feat=>$feat, c=>$c, chrom_feat=>$f);
           }
         elsif ($type =~ /mrna/i)
           {
@@ -650,6 +633,9 @@ sub process_hsps
     my $data = $opts{data};
     my $reports = $opts{reports};
     my $accn = $opts{accn};
+    my $reverse = $opts{rev};
+    my $seq_len = $opts{seq_length};
+    #to reverse hsps when using genomic sequences from CoGe, they need to be drawn on the opposite strand than where blast reports them.  This is because CoGe::Graphics has the option of reverse drawing a region.  However, the sequence fed into blast has already been reverse complemented so that the HSPs are in the correct orientation for the image.  Thus, if the image is reverse, they are drawn on the wrong strand.  This corrects for that problem.   Sorry for the convoluted logic, but it was the simplest way to substantiate this option
     my @colors = (
 		  [ 100, 100, 255],
 		  [ 0, 255, 0],
@@ -695,8 +681,15 @@ sub process_hsps
 		$stop = $tmp;
 	      }
 	    print STDERR "\t",$item->{number},": $start-$stop\n" if $DEBUG;
-	    my $f = CoGe::Graphics::Feature->new({start=>$start, stop=>$stop});
 	    my $strand = $item->{'orientation'} =~ /-/ ? "-1" : 1;
+	    if ($reverse)
+	      {
+		$strand = $strand =~ /-/ ? "1" : "-1";
+		my $tmp = $seq_len - $start+1;
+		$start = $seq_len - $stop+1;
+		$stop = $tmp;
+	      }
+	    my $f = CoGe::Graphics::Feature->new({start=>$start, stop=>$stop});
 	    $color = [100,100,100] if $item->{'spike_flag'};
 	    $f->iw(5);
 	    $f->ih(5);
@@ -734,37 +727,6 @@ sub generate_output
         $c->generate_png();
       }
   } 
-
-sub draw_prots
-  {
-    my %opts = @_;
-    my $feat = $opts{genomic_feat};
-    my $c = $opts{c};
-    my $f = $opts{chrom_feat};
-    #Do we have any protein sequence we can use?
-    foreach my $seq ($feat->sequences)
-      {
-	next unless $seq->seq_type->name =~ /prot/i;
-	my ($pseq) = $seq->sequence_data;
-	my $chrs = int (($c->_region_stop-$c->_region_start)/$c->iw)/3;
-	$chrs = 1 if $chrs < 1;
-	my $pos = 0;
-	while ($pos <= length $pseq)
-	  {
-	    my $aseq = substr($pseq, $pos, $chrs);
-	    foreach my $loc ($seq->get_genomic_locations(start=>$pos+1, stop=>$pos+$chrs))
-	      {
-		my $ao = CoGe::Graphics::Feature::AminoAcid->new({aa=>$aseq, start=>$loc->start, stop=>$loc->stop, strand => $f->strand, order=>4});
-		$ao->skip_overlap_search(1);
-		$c->add_feature($ao);
-		delete $loc->{__Changed}; #silence the warning from Class::DBI
-	      }
-	    
-	    $pos+=$chrs;
-	  }
-      }
-  }
-
 
 sub generate_obj_from_seq
   {
@@ -846,6 +808,7 @@ sub get_obj_from_genome_db
     my $accn = shift;
     my $featid = shift;
     my $ds_id = shift;
+    my $rev = shift;
     my $up = shift || 0;
     my $down = shift || 0;
     my $db = new CoGe::Genome;
@@ -870,6 +833,8 @@ sub get_obj_from_genome_db
 						      org_id => $feat->org->id,
 						      dataset_id => $ds_id,
 						     );
+	$seq = $db->get_feature_obj->reverse_complement($seq) if $rev;
+	
       }
     my $obj= new GS::MyDB::GBDB::GBObject(
 					  ACCN=>$accn,
