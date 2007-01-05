@@ -435,7 +435,7 @@ sub Show_Summary
 							 show_gc=>$show_gc,
 							 reverse_image => $reverse_image[$i],
 							);
-	    $html .= qq!<div>$accn</DIV>\n!;
+	    $html .= qq!<div>$accn (<font class=species>!.$obj->{ORGANISM}.qq!)</font></DIV>\n!;
 	    $html .= qq!<IMG SRC="$TEMPURL/$image" !;
 	    $html .= qq!BORDER=0 ismap usemap="#$mapname">\n!;
 	    $html .= "$map\n";
