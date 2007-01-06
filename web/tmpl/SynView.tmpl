@@ -131,6 +131,7 @@ onClick="loading([], ['results']); run([
 	'ih', 
 	'feat_h',
         'show_gc',
+	'stagger_hsp_labels',
   
 ],
 ['results'], 'POST');"
@@ -510,9 +511,17 @@ onClick="loading([], ['results']); run([
     </DIV>
   </TD>
 
+ <TR>
+  <Td>
+<font class="small">Stagger HSP Labels? <label><input class="backbox" type="radio" name="stagger_hsp_labels" id="stagger_hsp_labels" tabindex="1" value="1" />Yes</label><label><input class="backbox" type="radio" name="stagger_hsp_labels" id="stagger_hsp_labels" tabindex="1" value="0" checked />No</label></font>
+    </DIV>
+  </TD>
+
  </TR>
          </TABLE>
      </table>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
      <span class="subItem"></span>
      <span class="subItem"></span>
      <span class="subItem"></span>
@@ -679,6 +688,7 @@ onClick="loading([], ['results']);run([
 	'ih', 
 	'feat_h',
 	'show_gc',
+	'stagger_hsp_labels',
 ],
 ['results'], 'POST');"
 >   &nbsp;&nbsp;
