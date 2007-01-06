@@ -646,6 +646,7 @@ sub process_hsps
 		 );
     my $i = 0;
     my $track = 2;
+    my @feats;
     foreach my $item (@$data)
       {
 #	my $set = $data->{$accn}{$accn2};
@@ -659,7 +660,6 @@ sub process_hsps
 	    $i++;
 	    next;
 	  }
-
 	foreach my $item (@$set)
 	  {
 	    my $color = $colors[$i];
@@ -707,11 +707,40 @@ sub process_hsps
 	    $f->description($desc);
 	    my $link = "bl2seq_summary.pl?".join("&", "blast_report=".$report, "accnq=", "accns=", "qbegin=", "qend=", "sbegin=","send=","submit=GO");
 	    $f->link($link."&"."hsp=".$item->{number});
-	    $c->add_feature($f);
+	    push @feats, $f;
 	    print STDERR $item->{number},"-", $item->{orientation}, $track,":", $strand,"\n" if $DEBUG;
+	    $f->font_size(10);
 	  }
 	$i++;
 	$track++;
+      }
+    my $label_location = "top";
+    my $order;
+    @feats = sort{$a->strand cmp $b->strand || $a->track <=> $b->track || $a->start <=> $b->start} @feats;
+    @feats = reverse @feats if $reverse;
+    foreach my $f (@feats)
+      {
+	$order = $f->track unless $order;
+	if ($order ne $f->track)
+	  {
+	    $order = $f->track;
+	    $label_location = "top";
+	  }
+	$f->label_location($label_location);
+	$c->add_feature($f);
+	if (!$label_location)
+	  {
+	    $label_location = "bot";
+	  }
+	elsif ($label_location eq "top")
+	  {
+	    $label_location = "";
+	  }
+	else
+	  {
+	    $label_location = "top";
+	  }
+	#	    $label_location = $label_location eq "top" ? "bot" : "top";
       }
   }
 
@@ -802,7 +831,16 @@ sub generate_seq_file
 						  downstream=>$down,
 						  spike=>[$spike_type,$spike_flag], 
 						  path=>$TEMPDIR );
+    my %tmp = (
+	       start=>$start,
+	       upstream=>$up,
+	       downstream=>$down,
+	       seq_len=>length($obj->{SEQUENCE}),
+	       file_begin=>$file_begin,
+	       file_end=>$file_end,
+	       );
 
+	
     return ($file, $file_begin, $file_end, $spike_seq);
   }
 
@@ -836,6 +874,7 @@ sub get_obj_from_genome_db
 						      org_id => $feat->org->id,
 						      dataset_id => $ds_id,
 						     );
+#	print STDERR "seq_len: ", length($seq), ", start: $start, stop: $stop, chr: $chr, org_id: ".$feat->org->id.", dataset_id: $ds_id\n";
 	$seq = $db->get_feature_obj->reverse_complement($seq) if $rev;
 	
       }
