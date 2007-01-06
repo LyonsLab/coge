@@ -214,6 +214,8 @@ BEGIN {
 "overlap_adjustment", #flag to turn on/off the overlap adjustment for overlapping features
 "skip_duplicate_features", #flag to turn on/off skipping duplicate feature
 "auto_zoom",    #flag for using automatic zooming
+"major_tick_labels", #whether to and where to draw major tick lables (1 above, -1 below, 0 none)
+"minor_tick_labels", #whether to and where to draw minor tick lables (1 above, -1 below, 0 none)
 "_region_start", "_region_stop", #image's start and stop (should be equal to or "larger" than the users
 "_magnification", "_mag_scale", 
 "_image_h_used", #storage for the amount of the image height used
@@ -277,6 +279,8 @@ sub new
     $self->mag(1);
     $self->auto_zoom($AUTO_ZOOM);
     $self->font($FONTTT);
+    $self->major_tick_labels(-1);
+    $self->minor_tick_labels(0);
     $self->_features({});
     $self->_fill_features([]);
     $self->_image_h_used(0);
@@ -319,6 +323,13 @@ sub new
                         This is the an array reference of three values
                         that corresponds to RGB color values.  Each color ranges from 0-255
  ruler_height     =>    (DEFAULT: 20)  The heigth, in pixels of the positional ruler
+
+ major_tick_lables=>    Options for drawing major tick lables.  1 draws them above the tick, -1 draws them below the tick,
+                        0 for not drawing tick labels.  (DEFAULT: -1)
+
+ minor_tick_lables=>    Options for drawing minor tick lables.  1 draws them above the tick, -1 draws them below the tick,
+                        0 for not drawing tick labels.  (DEFAULT: 0)
+
  mag_scale_type   =>    (DEFAULT: log) The scaling that is used for the magnification steps.
                         The options are:  linear, log, constant_power
 
@@ -2007,6 +2018,12 @@ See Also   :
 sub _draw_ruler
   {
     my $self = shift;
+    my %opts = @_;
+    my $major_tick_labels = $opts{major_tick_lables};
+    $major_tick_labels = $self->major_tick_labels unless defined $major_tick_labels;
+    my $minor_tick_labels = $opts{minor_tick_labels};
+    $minor_tick_labels = $self->minor_tick_labels unless defined $minor_tick_labels;
+    print STDERR "Major: $major_tick_labels, Minor: $minor_tick_labels\n";
     my $gd = $self->gd;
     my $c = $self->ruler_height/2+$self->_image_h_used; #center of ruler
     $self->_image_h_used($self->_image_h_used + $self->ruler_height+$self->padding/2);
@@ -2029,8 +2046,8 @@ sub _draw_ruler
     $rb = $rb-($range/10); #back up a bit
     my $div = "1"."0"x int (log10($self->_region_length)+.5); #determine range scale (10, 100, 1000, etc)
     print STDERR "\nRULER: Center: $c, Start $xb, Stop: $xe, Ticks: $div, \n" if $self->DEBUG;
-    $self->_make_ticks(scale=>$div, y1=>$mtyb, y2=>$mtye, range_begin=>$rb, range_end=>$re,text_loc=>-1);
-    $self->_make_ticks(scale=>$div/10, y1=>$styb, y2=>$stye, range_begin=>$rb, range_end=>$re, text_loc=>0);
+    $self->_make_ticks(scale=>$div, y1=>$mtyb, y2=>$mtye, range_begin=>$rb, range_end=>$re,text_loc=>$major_tick_labels);
+    $self->_make_ticks(scale=>$div/10, y1=>$styb, y2=>$stye, range_begin=>$rb, range_end=>$re, text_loc=>$minor_tick_labels);
   }
 
 #################### subroutine header begin ####################
