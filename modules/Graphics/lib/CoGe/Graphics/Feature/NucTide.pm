@@ -4,13 +4,13 @@ use base qw(CoGe::Graphics::Feature);
 
 
 BEGIN {
-    use vars qw($VERSION $HEIGHT $WIDTH $ATC $GCC %EXTERNAL_IMAGES);
+    use vars qw($VERSION $HEIGHT $WIDTH $ATC $GCC $NC %EXTERNAL_IMAGES);
     $VERSION     = '0.1';
     $HEIGHT = 5;
     $WIDTH = 5;
-    $ATC= [255,255,255];
-    $GCC= [100,255,100];
-#    $GCC= [175,255,175];
+    $ATC= [255,255,255]; #ATs are white
+    $GCC= [100,255,100]; #GCs are green
+    $NC= [255,200,125]; #Ns are orange
     %EXTERNAL_IMAGES = (
 			A=>'/opt/apache/CoGe/picts/A.png',
 			T=>'/opt/apache/CoGe/picts/T.png',
@@ -40,26 +40,33 @@ sub _initialize
     $self->skip_overlap_search(1); #make sure to skip searching for overlap for these guys.  Search can be slow
     my $at = 0;
     my $cg = 0;
+    my $n = 0;
     my $seq = $self->nt;
     $self->color(255,255,255);
     if ($self->options && $self->options eq "gc")
       {
-	while ($seq=~ /a|t|n|r|y|w|m|k|h|b|v|d|\?/ig)
+	while ($seq=~ /a|t|r|y|w|m|k|h|b|v|d/ig)
 	  {
 	    $at++;
 	  }
-	while ($seq =~/c|g|n|r|y|s|m|k|h|b|v|d|\?/ig)
+	while ($seq =~/c|g|r|y|s|m|k|h|b|v|d/ig)
 	  {
 	    $cg++;
 	  }
-	print STDERR "SEQ: $seq\n" unless ($at+$cg) > 0;
+	while ($seq =~/n|\?/ig)
+	  {
+	    $n++;
+	  }
 	
-	my $pat = $at/($at+$cg) if $at+$cg > 0;
-	my $pcg = $cg/($at+$cg) if $at+$cg > 0;
+	print STDERR "SEQ: $seq\n" unless ($at+$cg+$n) > 0;
+	
+	my $pat = $at/($at+$cg+$n) if $at+$cg+$n > 0;
+	my $pcg = $cg/($at+$cg+$n) if $at+$cg+$n > 0;
+	my $pn = $n/($at+$cg+$n) if $at+$cg+$n > 0;
 	my @color;
 	for my $i (0..2)
 	  {
-	    push @color, $ATC->[$i]*$at/($at+$cg)+ $GCC->[$i]*$cg/($at+$cg);
+	    push @color, $ATC->[$i]*$at/($at+$cg+$n)+ $GCC->[$i]*$cg/($at+$cg+$n)+ $NC->[$i]*$n/($at+$cg+$n);
 	  }
       	#    print join (":", @color),"  ", $at, ":", $cg,"\n";
 	$self->color(\@color)
