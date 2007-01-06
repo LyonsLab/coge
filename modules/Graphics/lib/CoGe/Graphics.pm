@@ -361,6 +361,9 @@ sub initialize_c
     my $fill_labels = $opts{fill_labels};
     my $debug = $opts{debug} || 0;
     my $invert_chromosome = $opts{invert_chromosome};
+    my $major_tick_labels = $opts{major_tick_labels};
+    my $minor_tick_labels = $opts{minor_tick_labels};
+
     $debug = 1 if $c->DEBUG;
     $draw_ruler = 1 unless defined $opts{draw_ruler};
 
@@ -381,6 +384,8 @@ sub initialize_c
     $c->chr_mag_height($cmh) if defined $cmh;;
     $c->feature_start_height($fsh) if defined $fsh;
     $c->feature_mag_height($fmh) if defined $fmh;
+    $c->major_tick_labels($major_tick_labels) if defined $major_tick_labels;
+    $c->minor_tick_labels($minor_tick_labels) if defined $minor_tick_labels;
     $c->mag_off($mag_off);
     $c->invert_chromosome($invert_chromosome);
     if (defined $z) #the $z val is used by the program for making tiles of genomic views.
