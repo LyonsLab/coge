@@ -514,6 +514,7 @@ sub generate_image
 			    fill_labels=>1,
 			    forcefit=>1,
 			    invert_chromosome=>$reverse_image,
+			    minor_tick_labels=>-1,
 			   );
     my $f1= CoGe::Graphics::Feature->new({start=>1, order => 2, strand => 1});
     $f1->merge_percent(0);
