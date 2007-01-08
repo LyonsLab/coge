@@ -1690,7 +1690,7 @@ sub _draw_features
     $self->_invert_chromosome if $self->invert_chromosome;
     my $c = $self->_image_h_used+($self->ih - $self->_image_h_used)/2;
     print STDERR "Image used: ".$self->_image_h_used."  Image Height: ".$self->ih."  Center: $c\n" if $self->DEBUG;
-    foreach my $feat ( $self->get_feature(fill=>1), sort {$a->overlay <=> $b->overlay} $self->get_features(fill=>0))
+    foreach my $feat ( $self->get_feature(fill=>1), sort {$a->overlay <=> $b->overlay || $b->start <=> $a->start} $self->get_features(fill=>0))
 #    foreach my $feat ( sort {$a->fill<=>$b->fill || $a->overlay <=> $b->overlay} $self->get_features())
       {
 	#skip drawing features that are outside (by two times the range being viewed) the view
@@ -1719,11 +1719,11 @@ sub _draw_features
 	  }
 	elsif ($feat->label_location && $feat->label_location =~ /bot/)
 	  {
-	    $sy = $y+$feature_height+1;
+	    $sy = $y+$feature_height*.75;
 	  }
 	elsif ($feat->label_location && $feat->label_location =~ /top/)
 	  {
-	    $sy = $y;
+	    $sy = $y-$feature_height*.25;
 	  }
 	$self->_draw_feature_slow(feat=>$feat, 'y'=>$y, ih=>$feat_h, 'sy'=>$sy);
       }
@@ -1856,15 +1856,15 @@ sub _draw_feature_slow
     elsif ($self->feature_labels && defined $feat->label) 
       {
         $size = $ih > 13 ? 13 : $ih; 
-	$size=$size/2 if $fw <$size * (length $feat->label)/1.5;
+	$size=$size/1.3 if $fw <$size * (length $feat->label)/1.5;
 	#print STDERR $feat->label,": $fw, $size\n";
         $sy=$y+$ih/2-$size/2 unless $sy;
 	my $adjust = 0;
 	$adjust = $fw/10;
 	$fs+=$adjust;
       }
-    $size = $size*$feat->font_size if $size && $feat->font_size;
-
+#    $size = $size*$feat->font_size if $size && $feat->font_size;
+    $size = $feat->font_size if $feat->font_size;
     $self->_gd_string(y=>$sy, x=>$fs, text=>$feat->label, size=>$size) if ( ($self->feature_labels || $self->fill_labels)&& ($fw>5 || $feat->force_label)); #don't make the string unless the feature is at least 5 pixels wide
   }
 sub _draw_feature_fast
@@ -2023,7 +2023,6 @@ sub _draw_ruler
     $major_tick_labels = $self->major_tick_labels unless defined $major_tick_labels;
     my $minor_tick_labels = $opts{minor_tick_labels};
     $minor_tick_labels = $self->minor_tick_labels unless defined $minor_tick_labels;
-    print STDERR "Major: $major_tick_labels, Minor: $minor_tick_labels\n";
     my $gd = $self->gd;
     my $c = $self->ruler_height/2+$self->_image_h_used; #center of ruler
     $self->_image_h_used($self->_image_h_used + $self->ruler_height+$self->padding/2);
@@ -2047,7 +2046,7 @@ sub _draw_ruler
     my $div = "1"."0"x int (log10($self->_region_length)+.5); #determine range scale (10, 100, 1000, etc)
     print STDERR "\nRULER: Center: $c, Start $xb, Stop: $xe, Ticks: $div, \n" if $self->DEBUG;
     $self->_make_ticks(scale=>$div, y1=>$mtyb, y2=>$mtye, range_begin=>$rb, range_end=>$re,text_loc=>$major_tick_labels);
-    $self->_make_ticks(scale=>$div/10, y1=>$styb, y2=>$stye, range_begin=>$rb, range_end=>$re, text_loc=>$minor_tick_labels);
+    $self->_make_ticks(scale=>$div/10, y1=>$styb, y2=>$stye, range_begin=>$rb, range_end=>$re, text_loc=>$minor_tick_labels, label_size=>($mtye-$mtyb)/2.5);
   }
 
 #################### subroutine header begin ####################
@@ -2089,6 +2088,8 @@ sub _make_ticks
     my $rb = $opts{range_begin};
     my $re = $opts{range_end};
     my $label = $opts{label}; #write labels on ticks?
+    my $label_size = $opts{label_size};
+    $label_size = ($y2-$y1)/2.5 unless defined $label_size;
     my $text_loc  = $opts{text_loc}; #location of text -- flag (0 off, 1 above line, -1 below line, default 1)
     $text_loc = 1 unless defined $text_loc;
     my $tick = $div;
@@ -2105,8 +2106,8 @@ sub _make_ticks
 	my $x = $w *(1 - $self->_region_start)/($self->_region_length);
 	$gd->filledRectangle($x, $y1, $x+1, $y2, $self->get_color($self->tick_color));
 	my $h = $text_loc =~ /-/ ? $y2-1: $y1;#$y1-$self->padding/2;
-	push @text, {text=>'1',x=>$x+2, 'y'=>$h, size => ($y2-$y1)/2};
-	$self->_gd_string(text=>'1',x=>$x+1, 'y'=>$h, size => ($y2-$y1)/2.5) if $text_loc;
+	push @text, {text=>'1',x=>$x+2, 'y'=>$h, size => $label_size};
+	$self->_gd_string(text=>'1',x=>$x+1, 'y'=>$h, size => $label_size) if $text_loc;
       }
     while ($tick <= $re)
       {
@@ -2131,8 +2132,8 @@ sub _make_ticks
 		  );
 	my $t = $tick/$key . $end{$key};
 	my $h = $text_loc =~ /-/ ? $y2-1: $y1;#-$self->padding/2;
-	push @text, {text=>$t,x=>$x+2, 'y'=>$h, size => ($y2-$y1)/2};
-	$self->_gd_string(text=>$t,x=>$x+1, 'y'=>$h, size => ($y2-$y1)/2.5) if ($text_loc);
+	push @text, {text=>$t,x=>$x+2, 'y'=>$h, size => $label_size};
+	$self->_gd_string(text=>$t,x=>$x+1, 'y'=>$h, size => $label_size) if ($text_loc);
 	$tick+= $div;
       }
     return \@text;
