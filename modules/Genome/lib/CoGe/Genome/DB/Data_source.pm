@@ -79,23 +79,7 @@ perl(1).
 ############################################# main pod documentation end ##
 
 
-################################################ subroutine header begin ##
 
-=head2 sample_function
-
- Usage     : How to use this function/method
- Purpose   : What it does
- Returns   : What it returns
- Argument  : What it wants to know
- Throws    : Exceptions and other anomolies
- Comments  : This is a sample subroutine header.
-           : It is polite to include more pod and fewer comments.
-
-See Also   : 
-
-=cut
-
-################################################## subroutine header end ##
 
 
 sub data_info
@@ -117,6 +101,81 @@ sub id
     return $self->data_source_id();
   }
 
+################################################ subroutine header begin ##
+
+=head2 resolve_data_source
+
+ Usage     : my $ds = resolve_data_source($data_source_thing);
+ Purpose   : given a data source name, a data source database id, or a data source object,
+             this will return the data source object for you
+ Returns   : CoGe::Genome::DB::Data_source object
+ Argument  : data_source_thing can be a data source name, database id, 
+             or object
+ Throws    : will throw a warning if a valid object was not created
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub resolve_data_source
+  {
+    my $self = shift;
+    my $dsin = shift;
+    my $dsout;
+    if (ref ($dsin) =~ /Data_source/i) #we were passed an object
+      {
+	$dsout = $dsin;
+      }
+    elsif ($dsin =~ /^\d+$/) #only numbers, probably a database id
+      {
+	$dsout = $self->retrieve($dsin);
+      }
+    else #probably a name. . .
+      {
+	($dsout) = $self->search_like (name=>"%".$dsin."%")
+      }
+    warn "unable to resolve data $dsin in Data_source->resolve_data_source" unless ref ($dsout) =~ /Data_source/i;
+    return $dsout;
+  }
+
+################################################ subroutine header begin ##
+
+=head2 resolve
+
+ Usage     : alias for $self->resolve_data_source
+ Purpose   : alias for $self->resolve_data_source
+See Also   : resolve_data_source
+
+=cut
+
+################################################## subroutine header end ##
+
+sub resolve
+  {
+    my $self = shift;
+    return $self->resolve_data_source(@_);
+  }
+
 
 1; #this line is important and will help the module return a true value
 
+################################################ subroutine header begin ##
+
+=head2 sample_function
+
+ Usage     : How to use this function/method
+ Purpose   : What it does
+ Returns   : What it returns
+ Argument  : What it wants to know
+ Throws    : Exceptions and other anomolies
+ Comments  : This is a sample subroutine header.
+           : It is polite to include more pod and fewer comments.
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
