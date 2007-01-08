@@ -429,6 +429,23 @@ sub resolve_dataset
     return $dsout;
   }
 
+################################################ subroutine header begin ##
+
+=head2 resolve
+
+ Usage     : alias for $self->resolve_dataset
+ Purpose   : alias for $self->resolve_dataset
+See Also   : resolve_dataset
+
+=cut
+
+################################################## subroutine header end ##
+
+sub resolve
+  {
+    my $self = shift;
+    return $self->resolve_dataset(@_);
+  }
 
 ################################################ subroutine header begin ##
 
