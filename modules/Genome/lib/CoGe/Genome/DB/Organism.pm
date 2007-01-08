@@ -239,5 +239,24 @@ sub resolve_organism
       
   }
 
+################################################ subroutine header begin ##
+
+=head2 resolve
+
+ Usage     : alias for $self->resolve_organism
+ Purpose   : alias for $self->resolve_organism
+See Also   : resolve_organism
+
+=cut
+
+################################################## subroutine header end ##
+
+sub resolve
+  {
+    my $self = shift;
+    return $self->resolve_organism(@_);
+  }
+
+
 1; #this line is important and will help the module return a true value
 
