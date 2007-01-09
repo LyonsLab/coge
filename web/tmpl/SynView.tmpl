@@ -133,6 +133,8 @@ onClick="loading([], ['results']); run([
         'show_gc',
 	'hsp_labels',
 	'overlap_adjustment',
+	'hsp_limit',
+	'hsp_limit_num',
   
 ],
 ['results'], 'POST');"
@@ -519,7 +521,12 @@ onClick="loading([], ['results']); run([
   </TD>
  <TR>
   <Td>
-<font class="small">Auto adjust overlapping features? <label><input class="backbox" type="radio" name="overlap_adjustment" id="overlap_adjustment" tabindex="1" value="1" />Yes</label><label><input class="backbox" type="radio" name="overlap_adjustment" id="overlap_adjustment" tabindex="1" value="0" checked />No</label></font>
+<font class="small">Limit HSP labels? <label><input class="backbox" type="radio" name="hsp_limit" id="hsp_limit" tabindex="1" value="0" checked />No</label><label><input class="backbox" type="radio" name="hsp_limit" id="hsp_limit" tabindex="1" value="1" />Yes</label> Top: <input class=backbox type=textbox size=3 id="hsp_limit_num" value="20"/></font>
+    </DIV>
+  </TD>
+ <TR>
+  <Td>
+<font class="small">Auto adjust overlapping features? <label><input class="backbox" type="radio" name="overlap_adjustment" id="overlap_adjustment" tabindex="1" value="1" checked />Yes</label><label><input class="backbox" type="radio" name="overlap_adjustment" id="overlap_adjustment" tabindex="1" value="0" />No</label></font>
     </DIV>
   </TD>
 
@@ -527,6 +534,8 @@ onClick="loading([], ['results']); run([
  </TR>
          </TABLE>
      </table>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
      <span class="subItem"></span>
      <span class="subItem"></span>
      <span class="subItem"></span>
@@ -697,6 +706,9 @@ onClick="loading([], ['results']);run([
 	'show_gc',
 	'hsp_labels',
 	'overlap_adjustment',
+	'hsp_limit',
+	'hsp_limit_num',
+
 ],
 ['results'], 'POST');"
 >   &nbsp;&nbsp;
