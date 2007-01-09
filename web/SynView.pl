@@ -748,6 +748,7 @@ sub process_hsps
     @feats = reverse @feats if $reverse;
     foreach my $f (@feats)
       {
+	next unless $f->label;
 	$order = $f->track unless $order;
 	if ($order ne $f->track)
 	  {
