@@ -131,7 +131,8 @@ onClick="loading([], ['results']); run([
 	'ih', 
 	'feat_h',
         'show_gc',
-	'stagger_hsp_labels',
+	'hsp_labels',
+	'overlap_adjustment',
   
 ],
 ['results'], 'POST');"
@@ -513,9 +514,15 @@ onClick="loading([], ['results']); run([
 
  <TR>
   <Td>
-<font class="small">Stagger HSP Labels? <label><input class="backbox" type="radio" name="stagger_hsp_labels" id="stagger_hsp_labels" tabindex="1" value="1" />Yes</label><label><input class="backbox" type="radio" name="stagger_hsp_labels" id="stagger_hsp_labels" tabindex="1" value="0" checked />No</label></font>
+<font class="small">HSP Label options: <label><input class="backbox" type="radio" name="hsp_labels" id="hsp_labels" tabindex="1" value="0" />Don't draw</label><label><input class="backbox" type="radio" name="hsp_labels" id="hsp_labels" tabindex="1" value="staggered" />Draw Staggered</label><label><input class="backbox" type="radio" name="hsp_labels" id="hsp_labels" tabindex="1" value="linear" checked/>Draw Linear</label></font>
     </DIV>
   </TD>
+ <TR>
+  <Td>
+<font class="small">Auto adjust overlapping features? <label><input class="backbox" type="radio" name="overlap_adjustment" id="overlap_adjustment" tabindex="1" value="1" />Yes</label><label><input class="backbox" type="radio" name="overlap_adjustment" id="overlap_adjustment" tabindex="1" value="0" checked />No</label></font>
+    </DIV>
+  </TD>
+
 
  </TR>
          </TABLE>
@@ -688,7 +695,8 @@ onClick="loading([], ['results']);run([
 	'ih', 
 	'feat_h',
 	'show_gc',
-	'stagger_hsp_labels',
+	'hsp_labels',
+	'overlap_adjustment',
 ],
 ['results'], 'POST');"
 >   &nbsp;&nbsp;
