@@ -172,8 +172,9 @@ sub Show_Summary
 	$ih,
 	$feat_h,
 	$show_gc,
-	$stagger_label,
-#	$seq_file1, $seq_file2,
+	$hsp_label,
+	$overlap_adjustment,
+	#	$seq_file1, $seq_file2,
 #	$f1start, $f1up, $f1down,
 #	$f2start, $f2up, $f2down,
 
@@ -183,7 +184,8 @@ sub Show_Summary
 
 #    print STDERR Dumper \@_;
 
-
+    my $stagger_label = $hsp_label =~ /staggered/i ? 1 : 0;
+    my $feature_labels = $hsp_label == 0 ? 0 : 1;
     my @reverse_image = ($rev1, $rev2, $rev3);
     my $form = $FORM;
 
@@ -436,6 +438,8 @@ sub Show_Summary
 							 show_gc=>$show_gc,
 							 reverse_image => $reverse_image[$i],
 							 stagger_label=>$stagger_label,
+							 overlap_adjustment=>$overlap_adjustment,
+							 feature_labels=>$feature_labels,
 							);
 	    $html .= qq!<div>$accn (<font class=species>!.$obj->{ORGANISM}.qq!)</font>!;
 	    $html .= qq!<font class=small> Image Inverted</font>! if $reverse_image[$i];
@@ -495,6 +499,8 @@ sub generate_image
     my $show_gc = $opts{show_gc};
     my $reverse_image = $opts{reverse_image};
     my $stagger_label = $opts{stagger_label};
+    my $overlap_adjustment = $opts{overlap_adjustment};
+    my $feature_labels = $opts{feature_labels};
     my $graphic = new CoGe::Graphics;
     my $gfx = new CoGe::Graphics::Chromosome;
     $gfx->overlap_adjustment(0);
@@ -518,6 +524,8 @@ sub generate_image
 			    forcefit=>1,
 			    invert_chromosome=>$reverse_image,
 			    minor_tick_labels=>-1,
+			    overlap_adjustment=>$overlap_adjustment,
+			    feature_labels=>$feature_labels,
 			   );
     my $f1= CoGe::Graphics::Feature->new({start=>1, order => 2, strand => 1});
     $f1->merge_percent(0);
@@ -614,7 +622,7 @@ sub process_features
         next unless $f;
 	my $strand = 1;
  	$strand = -1 if $feat->location =~ /complement/;
-	print STDERR $type,"\n" if $DEBUG;
+#	print STDERR $type,"\n";
 	foreach my $block (@{$feat->{'blocks'}})
 	  {
 #	    print STDERR $feat->{QUALIFIERS}{names}[0],", ",  $feat->{F_KEY},": ", $block->[0],"-", $block->[1],"\n";;
@@ -629,6 +637,7 @@ sub process_features
 	$f->description($feat->{QUALIFIERS}{annotation});
 	$f->link("FeatView.pl?accn=$name\" target=\"_new");
         $c->add_feature($f);
+#	print STDERR Dumper ($f) if $f->{description} =~ /at2g29570/i;#unless ($f->start && $f->stop);
     }
   }
 
@@ -912,8 +921,8 @@ sub get_obj_from_genome_db
 	$anno =~ s/\n/<br>/g;
 	$anno =~ s/\t/&nbsp;&nbsp;/g;
 	my $location = $f->genbank_location_string(recalibrate=>$start);
-#	print STDERR $location,"\n";
-
+	print STDERR $f->type->name ,"\t",$location,"\n" if $DEBUG;
+	
 	$obj->add_feature (
 			   F_NUMBER=>$fnum,
 			   F_KEY=>$f->type->name,
