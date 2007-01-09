@@ -174,6 +174,8 @@ sub Show_Summary
 	$show_gc,
 	$hsp_label,
 	$overlap_adjustment,
+	$hsp_limit,
+	$hsp_limit_num,
 	#	$seq_file1, $seq_file2,
 #	$f1start, $f1up, $f1down,
 #	$f2start, $f2up, $f2down,
@@ -185,7 +187,7 @@ sub Show_Summary
 #    print STDERR Dumper \@_;
 
     my $stagger_label = $hsp_label =~ /staggered/i ? 1 : 0;
-    my $feature_labels = $hsp_label == 0 ? 0 : 1;
+    my $feature_labels = $hsp_label eq "0" ? 0 : 1;
     my @reverse_image = ($rev1, $rev2, $rev3);
     my $form = $FORM;
 
@@ -440,6 +442,8 @@ sub Show_Summary
 							 stagger_label=>$stagger_label,
 							 overlap_adjustment=>$overlap_adjustment,
 							 feature_labels=>$feature_labels,
+							 hsp_limit=>$hsp_limit,
+							 hsp_limit_num=>$hsp_limit_num,
 							);
 	    $html .= qq!<div>$accn (<font class=species>!.$obj->{ORGANISM}.qq!)</font>!;
 	    $html .= qq!<font class=small> Image Inverted</font>! if $reverse_image[$i];
@@ -501,6 +505,8 @@ sub generate_image
     my $stagger_label = $opts{stagger_label};
     my $overlap_adjustment = $opts{overlap_adjustment};
     my $feature_labels = $opts{feature_labels};
+    my $hsp_limit = $opts{hsp_limit};
+    my $hsp_limit_num = $opts{hsp_limit_num};
     my $graphic = new CoGe::Graphics;
     my $gfx = new CoGe::Graphics::Chromosome;
     $gfx->overlap_adjustment(0);
@@ -535,7 +541,7 @@ sub generate_image
     $gfx->add_feature($f2);
     $graphic->process_nucleotides(c=>$gfx, seq=>$gbobj->{SEQUENCE}, layers=>{gc=>$show_gc});
     process_features(c=>$gfx, obj=>$gbobj, start=>$start, stop=>$stop);
-    process_hsps(c=>$gfx, data=>$data, reports=>$reports, accn=>$gbobj->{ACCN}, rev=>$reverse_image, seq_length=> length($gbobj->{SEQUENCE}), stagger_label=>$stagger_label);
+    process_hsps(c=>$gfx, data=>$data, reports=>$reports, accn=>$gbobj->{ACCN}, rev=>$reverse_image, seq_length=> length($gbobj->{SEQUENCE}), stagger_label=>$stagger_label, hsp_limit=>$hsp_limit, hsp_limit_num=>$hsp_limit_num);
     my $file = new File::Temp ( TEMPLATE=>'SynView__XXXXX',
 				   DIR=>$TEMPDIR,
 				    SUFFIX=>'.png',
@@ -651,6 +657,8 @@ sub process_hsps
     my $reverse = $opts{rev};
     my $seq_len = $opts{seq_length};
     my $stagger_label = $opts{stagger_label};
+    my $hsp_limit = $opts{hsp_limit};
+    my $hsp_limit_num = $opts{hsp_limit_num};
     #to reverse hsps when using genomic sequences from CoGe, they need to be drawn on the opposite strand than where blast reports them.  This is because CoGe::Graphics has the option of reverse drawing a region.  However, the sequence fed into blast has already been reverse complemented so that the HSPs are in the correct orientation for the image.  Thus, if the image is reverse, they are drawn on the wrong strand.  This corrects for that problem.   Sorry for the convoluted logic, but it was the simplest way to substantiate this option
     my @colors = (
 		  [ 100, 100, 255],
@@ -714,7 +722,14 @@ sub process_hsps
 	    $f->mag(1);
 	    $f->order($track);
 	    $f->strand($strand);
-	    $f->label($item->{'number'});
+	    if ($hsp_limit)
+	      {
+		$f->label($item->{'number'}) if $item->{'number'} <= $hsp_limit_num;
+	      }
+	    else
+	      {
+		$f->label($item->{'number'});
+	      }
 	    $f->force_label(1);
 	    my $desc = join ("<br>", "HSP: ".$item->{number}, $start."-".$stop." (".$item->{orientation}.")", $seq,"Match: ".$item->{hspmatch},"Length: ".$item->{length},"Identity: ".$item->{identity},"E_val: ".$item->{eval});
 	    $f->description($desc);
