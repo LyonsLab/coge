@@ -21,6 +21,7 @@ BEGIN {
 "nt",
 "gc",
 "show_label",
+"motif",
 );
 }
 
@@ -64,11 +65,12 @@ sub _initialize
 	my $pcg = $cg/($at+$cg+$n) if $at+$cg+$n > 0;
 	my $pn = $n/($at+$cg+$n) if $at+$cg+$n > 0;
 	my @color;
+	
 	for my $i (0..2)
 	  {
 	    push @color, $ATC->[$i]*$at/($at+$cg+$n)+ $GCC->[$i]*$cg/($at+$cg+$n)+ $NC->[$i]*$n/($at+$cg+$n);
 	  }
-      	#    print join (":", @color),"  ", $at, ":", $cg,"\n";
+#	print STDERR $pat,"%, ", $pcg,"%, ", $pn,'%: ', join (":", @color),"\n" if $n;
 	$self->color(\@color)
       }
     $self->label($self->nt) if $self->nt && $self->show_label;
