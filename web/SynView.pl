@@ -176,6 +176,7 @@ sub Show_Summary
 	$overlap_adjustment,
 	$hsp_limit,
 	$hsp_limit_num,
+	$blast_program,
 	#	$seq_file1, $seq_file2,
 #	$f1start, $f1up, $f1down,
 #	$f2start, $f2up, $f2down,
@@ -409,12 +410,14 @@ sub Show_Summary
     # set up output page
     
     # run bl2seq
-    my $bl2seq_params = " -W " . $form->param('wordsize');
+    my $wordsize = $form->param('wordsize');
+    $wordsize = 5 if ($blast_program eq "tblastx" && $wordsize > 5);
+    my $bl2seq_params = " -W " . $wordsize;
     $bl2seq_params .= " -G " . $form->param('gapopen');
     $bl2seq_params .= " -X " . $form->param('gapextend');
     $bl2seq_params .= " -q " . $form->param('mismatch');
     $bl2seq_params .= " ".join(" ", $form->param('blastparams'));
-    my $blast_reports = run_bl2seq( files=>[map {$_->{file}} @sets], accns=>[map {$_->{accn}}@sets], blast_params=>$bl2seq_params, spike_seq=>$spike_seq, match_filter=>$match_filter );
+    my $blast_reports = run_bl2seq( files=>[map {$_->{file}} @sets], accns=>[map {$_->{accn}}@sets], blast_params=>$bl2seq_params, spike_seq=>$spike_seq, match_filter=>$match_filter, blast_program=>$blast_program );
 
    #sets => array or data for blast
    #blast_reports => array of arrays (report, accn1, accn2, parsed data)
@@ -704,7 +707,7 @@ sub process_hsps
 		$start = $stop;
 		$stop = $tmp;
 	      }
-	    print STDERR "\t",$item->{number},": $start-$stop\n" if $DEBUG;
+	    print STDERR "\t",$item->{number},": $start-$stop\n"  if $DEBUG;
 	    my $strand = $item->{'orientation'} =~ /-/ ? "-1" : 1;
 	    if ($reverse)
 	      {
@@ -717,6 +720,7 @@ sub process_hsps
 	    $color = [100,100,100] if $item->{'spike_flag'};
 	    $f->iw(5);
 	    $f->ih(5);
+	    $f->skip_duplicate_search(1);
 	    $f->gd->fill(0,0,$f->get_color(@$color));
 	    $f->color($color);
 	    $f->mag(1);
@@ -757,6 +761,7 @@ sub process_hsps
 	  }
 	$f->label_location($label_location) if $stagger_label;
 	$c->add_feature($f);
+
 	if (!$label_location)
 	  {
 	    $label_location = "bot";
@@ -770,6 +775,7 @@ sub process_hsps
 	    $label_location = "top";
 	  }
       }
+
   }
 
 sub generate_output
@@ -976,6 +982,8 @@ sub run_bl2seq {
   my $blast_params = $opts{blast_params};
   my $match_filter = $opts{match_filter};
   my $spike_seq = $opts{spike_seq};
+  my $program = $opts{blast_program};
+  $program = "blastn" unless $program;
   my $db = new GS::MyDB;
   my @files;
   foreach my $item (@$files)
@@ -996,7 +1004,7 @@ sub run_bl2seq {
 	  my $seqfile2 = $files[$j];
 	  my ($accn1, $accn2) = ($accns->[$i], $accns->[$j]);
 	  my $command = $BL2SEQ;
-	  my $program = "blastn";
+	  
 	  
 	# need to create a temp filename here
 	  my $tmp_file = new File::Temp ( TEMPLATE=>'CNS__XXXXX',
