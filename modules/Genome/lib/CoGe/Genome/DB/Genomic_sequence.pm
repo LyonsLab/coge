@@ -345,6 +345,7 @@ sub get_last_position
     my $q = $sth->fetch();
     $sth->finish;
     my $stop = $q->[0];
+    $stop = 0 unless defined $stop;
     return $stop;
   }
 ################################################ subroutine header begin ##
