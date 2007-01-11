@@ -188,7 +188,7 @@ sub genomic_view
     my $forcefit = $opts{'forcefit'} || 0;
     my $img_map_name = $opts{'img_map'};
     my $layers = process_layers($opts{layers});
-    
+#    print STDERR Dumper $opts{layers}, $layers;
 
     $DEBUG = $opts{debug} || $opts{DEBUG} || 0;
     $self->DEBUG($DEBUG);
@@ -443,6 +443,7 @@ sub process_nucleotides
     my $c = $opts{c};
 #    $seq = uc($db->get_genomic_sequence_obj->get_sequence(start=>$start, stop=>$stop, chr=>$chr, ds=>$ds)) unless $seq;
     my $layers = $opts{layers};
+#    print STDERR Dumper $layers;
 #    print STDERR "IN $0: start: $start, stop: $stop\n";
     #process nucleotides
     $seq = uc($db->get_genomic_sequence_obj->get_sequence(start=>$start, end=>$stop, chr=>$chr, dataset=>$ds)) unless $seq; 
@@ -501,6 +502,7 @@ sub process_features
     my $sstop = $stop + ($stop - $start);
     $sstart = 0 if $sstart < 0;
     my $chr_length = $db->get_genomic_sequence_obj->get_last_position(ds=>$ds);
+    $sstop = $chr_length unless defined $sstop;
     $sstop = $chr_length if $sstop > $chr_length;
     my $feat_count = $db->get_feature_obj->count_features_in_region(start=>$sstart, end=>$sstop, dataset=>$ds, chr=>$chr);
 #    print "$sstart - $sstop: feats: $feat_count\n";
