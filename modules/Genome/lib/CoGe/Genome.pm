@@ -1145,6 +1145,24 @@ sub get_features_by_name_and_version
     return wantarray ? @feats : \@feats;
   }
 
+sub get_feature_by_name_and_version
+  {
+    my $self = shift;
+    return $self->get_features_by_name_and_version(@_);
+  }
+
+sub get_feats_by_name_and_version
+  {
+    my $self = shift;
+    return $self->get_features_by_name_and_version(@_);
+  }
+
+sub get_feat_by_name_and_version
+  {
+    my $self = shift;
+    return $self->get_features_by_name_and_version(@_);
+  }
+
 
 ################################################ subroutine header begin ##
 
