@@ -889,6 +889,11 @@ sub _check_overlap
 	      $f->_overlap($f->_overlap+1);
 	      $feat->_overlap_pos($feat->_overlap_pos+1);
 	    }
+# 	  if ( ($feat->start == $f->start) && ($feat->stop == $f->stop) ) #two features are on top of one another
+# 	    {
+# 	      $feat->_overlap($feat->_overlap+1);
+# 	      $feat->_overlap_pos($feat->_overlap_pos+1);
+# 	    }
 	}	
   }
 
@@ -1719,11 +1724,11 @@ sub _draw_features
 	  }
 	elsif ($feat->label_location && $feat->label_location =~ /bot/)
 	  {
-	    $sy = $y+$feature_height*.75;
+	    $sy = $y+$feat_h*.75;
 	  }
 	elsif ($feat->label_location && $feat->label_location =~ /top/)
 	  {
-	    $sy = $y-$feature_height*.25;
+	    $sy = $y-$feat_h*.25;
 	  }
 	$self->_draw_feature_slow(feat=>$feat, 'y'=>$y, ih=>$feat_h, 'sy'=>$sy);
       }
