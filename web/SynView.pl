@@ -190,6 +190,9 @@ sub Show_Summary
     my $stagger_label = $hsp_label =~ /staggered/i ? 1 : 0;
     my $feature_labels = $hsp_label eq "0" ? 0 : 1;
     my @reverse_image = ($rev1, $rev2, $rev3);
+    my @locs = ([$dr1up,$dr1down],
+		[$dr2up,$dr2down],
+		[$dr3up,$dr3down],);
     my $form = $FORM;
 
     my ($seq_file1, $seq_file2, $seq_file3);
@@ -411,7 +414,7 @@ sub Show_Summary
     
     # run bl2seq
     my $wordsize = $form->param('wordsize');
-    $wordsize = 5 if ($blast_program eq "tblastx" && $wordsize > 5);
+    $wordsize = 3 if ($blast_program eq "tblastx" && $wordsize > 3);
     my $bl2seq_params = " -W " . $wordsize;
     $bl2seq_params .= " -G " . $form->param('gapopen');
     $bl2seq_params .= " -X " . $form->param('gapextend');
@@ -449,6 +452,7 @@ sub Show_Summary
 							 hsp_limit_num=>$hsp_limit_num,
 							);
 	    $html .= qq!<div>$accn (<font class=species>!.$obj->{ORGANISM}.qq!)</font>!;
+	    $html .= qq!($locs[$i][0]::$locs[$i][1])! if defined $locs[$i][0];
 	    $html .= qq!<font class=small> Image Inverted</font>! if $reverse_image[$i];
 	    $html .= qq!</DIV>\n!;
 	    $html .= qq!<IMG SRC="$TEMPURL/$image" !;
