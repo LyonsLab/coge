@@ -135,6 +135,7 @@ onClick="loading([], ['results']); run([
 	'overlap_adjustment',
 	'hsp_limit',
 	'hsp_limit_num',
+	'blast_program',
   
 ],
 ['results'], 'POST');"
@@ -421,7 +422,15 @@ onClick="loading([], ['results']); run([
       <TD>
       <TABLE>
   <TR>
-  <TD>Word Size (-W): </TD>
+  <TD>Blast Program: </TD>
+  <TD><select class="backbox" id="blast_program" size="1">
+       <option selected>blastn</option>
+       <option>tblastx</option>
+      </select>
+   </TD>
+ </TR>    
+  <TR>
+  <TD>Word Size (-W):<Br><font class="small">(limited to 3 if using tblastx)</font> </TD>
   <TD><input class="backbox" type="text" name="wordsize" id="wordsize" tabindex="1" size="3" value="7" /></TD>
  </TR>    
  <TR>
@@ -441,6 +450,7 @@ onClick="loading([], ['results']); run([
   <TD><input class="backbox" type="text" name="blastparams" id="blastparams" tabindex="1" size="60" /></TD>
  </TR>         </TABLE>
      </table>
+     <span class="subItem"></span>
      <span class="subItem"></span>
      <span class="subItem"></span>
      <span class="subItem"></span>
@@ -708,7 +718,7 @@ onClick="loading([], ['results']);run([
 	'overlap_adjustment',
 	'hsp_limit',
 	'hsp_limit_num',
-
+	'blast_program',
 ],
 ['results'], 'POST');"
 >   &nbsp;&nbsp;
