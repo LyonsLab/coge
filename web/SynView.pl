@@ -713,6 +713,8 @@ sub process_hsps
 	      }
 	    print STDERR "\t",$item->{number},": $start-$stop\n"  if $DEBUG;
 	    my $strand = $item->{'orientation'} =~ /-/ ? "-1" : 1;
+#	    print STDERR $item->{'orientation'},"\n";
+#	    print STDERR Dumper 
 	    if ($reverse)
 	      {
 		$strand = $strand =~ /-/ ? "1" : "-1";
