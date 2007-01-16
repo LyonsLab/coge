@@ -30,28 +30,23 @@ print $pj->build_html($FORM, \&gen_html);
 #print gen_html();
 sub gen_html
   {
+    print "DNA Sequence Button Doesn't Work. Doesn't change Box title when button clicked. Need to Hide buttons relating to upstream/downstream changes. Need to make extend button disappear text boxes when clicked again. Deal with textarea/copy text issue; CoGe title.";
     my ($body) = gen_body();
+    my $rc;
+    my $pro; 
+    my ($title) = gen_title(protein=>$pro, rc=>$rc);
     my $form = $FORM;
-    my $rc = $form->param('rc');
-    my $protein = $form->param('pro');
-    my $title;
-    unless ($protein)
-    {
-      $title = $rc ? "Reverse Complement" : "DNA Sequence";
-    }
-    else
-    {
-      $title = "Protein Sequence";
-    }
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
-    $template->param(TITLE=>'CoGe: Sequence Viewer');
+    #$template->param(TITLE=>'CoGe: Sequence Viewer');
     $template->param(USER=>$USER);
     $template->param(DATE=>$DATE);
-    $template->param (LOGO_PNG=>"SeqView-logo.png");
+    $template->param(LOGO_PNG=>"SeqView-logo.png");
     $template->param(BOX_NAME=>"$title");
     $template->param(BODY=>$body);
     $template->param(POSTBOX=>gen_foot());
+    $template->param(SELECT=>1);
     $template->param(CLOSE=>1);
+    $template->param(TEXTAREA=>$body);
     $template->param(HEAD=>qq{<script src="js/kaj.stable.js"></script>});
     #print STDERR gen_foot()."\n";
     my $html;
@@ -83,11 +78,11 @@ sub gen_body
 		      upstream=>$upstream, 
 		      downstream=>$downstream,
 		      );
-    #my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SeqView.tmpl');
-    #$template->param(TEXT=>1);
-    #$template->param(SEQ=>$seq);
-    $seq = qq{<TABLE style="width: 628px; height: 300px; overflow: auto;"><TR><TD align=left valign="top">$seq</TD></TR></TABLE>};
-    return qq{<DIV id="seq">$seq</div>};
+    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SeqView.tmpl');
+    $template->param(TEXT=>1);
+    $template->param(SEQ=>$seq);
+    #$seq = qq{<TABLE style="width: 628px; height: 300px; overflow: auto;"><TR><TD align=left valign="top">$seq</TD></TR></TABLE>};
+    return qq{<DIV id="seq" style="width: 623px; height: 300px; overflow: auto;">$seq</div>};
   }
  
 sub check_strand
@@ -125,6 +120,9 @@ sub get_seq
     my $ds = $DB->get_dataset_obj->retrieve($dsid);
     my $seq;
     my $fasta = ">".$ds->org->name."(v.".$feat->version."), Type: ".$feat->type->name.", Location: ".$feat->genbank_location_string.", Chromosome: ".$chr.", Strand: ".$strand.", Name: ".$feat_name."\n";
+    $fasta = qq{<FONT class="main"><i>$fasta</i></FONT>};
+    $columns = 80;
+    $fasta = join ("\n", wrap('','',$fasta));
     unless ($pro)
     {
       $seq .= get_dna_seq_for_feat (featid=>$feat_id, rc=>$rc, upstream=>$upstream, downstream=>$downstream);
@@ -133,11 +131,13 @@ sub get_seq
     {
       $seq .= get_prot_seq_for_feat($feat_id);
     }
+    #print length($seq);
     my $up = upstream_color(seq=>$seq, upstream=>$upstream);
     my $down = downstream_color(seq=>$seq, downstream=>$downstream);
     my $main = main_color(seq=>$seq, upstream=>$upstream, downstream=>$downstream);
     $seq = join("", $up, $main, $down);
-    $seq = join("", $fasta, $seq); 
+    $seq = join("", $fasta, $seq);
+    #print $seq;
     return $seq;
   }
   
@@ -159,23 +159,53 @@ sub gen_foot
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SeqView.tmpl');
     
 #   my $button = qq{<input type="submit" value="$name">};
-    my $url = $form->url(-full=>1, -query=>1);
+    #my $url = $form->url(-full=>1, -query=>1);
     
-    $url =~ s/rc=.//g;
-    $url =~ s/pro=.//g;
-    my $url2 = $url;
-    my $url3 = $url;
-    $url .= "&rc=0";
-    $url2 .="&rc=1";
-    $url3 .= "&pro=1";
-    
+    #$url =~ s/rc=.//g;
+    #$url =~ s/pro=.//g;
+    #my $url2 = $url;
+    #my $url3 = $url;
+    #$url .= "&rc=0";
+    #$url2 .="&rc=1";
+    #$url3 .= "&pro=1";
+
     $template->param(BOTTOM_BUTTONS=>1);
     $template->param(BUTTON_LOOP=>[
-                                   {BUTTON_NUM=>1, BUTTON_NAME=>'DNA Sequence', BUTTON_URL=>"window.location='$url'"},
-                                   {BUTTON_NUM=>2, BUTTON_NAME=>'Reverse Complement', BUTTON_URL=>"window.location='$url2'"},
-                                   {BUTTON_NUM=>3, BUTTON_NAME=>'Protein Sequence', BUTTON_URL=>"window.location='$url3'"},
-				   {BUTTON_NUM=>4, BUTTON_NAME=>'Extend Sequence', BUTTON_URL=>"get_extend_box([],['extend'])"},
+                            	   {BUTTON_NUM=>1, 
+                                    BUTTON_NAME=>'DNA Sequence', 
+                                    FEATID=>$feat_id,
+    			            PRO=>0,
+    				    RC=>0,
+    			     	    CHR=>$chr,
+    				    FEATNAME=>$feat_name,
+   				    STRAND=>$strand,
+   				    RC=>0,
+    				    PRO=>0},
+                           	   {BUTTON_NUM=>2, 
+                            	    BUTTON_NAME=>'Reverse Complement', 
+                            	    FEATID=>$feat_id,
+   				    PRO=>0,
+    				    RC=>1,
+    			     	    CHR=>$chr,
+    				    DSID=>$dsid,	
+    				    FEATNAME=>$feat_name,
+   				    STRAND=>$strand,
+   				    RC=>1,
+   				    PRO=>0},
+                                  {BUTTON_NUM=>3, 
+                                    BUTTON_NAME=>'Protein Sequence',
+                                    FEATID=>$feat_id,
+   				    PRO=>1,
+    			    	    CHR=>$chr,
+    				    DSID=>$dsid,	
+    				    FEATNAME=>$feat_name,
+   				    STRAND=>$strand,
+   				    RC=>0,
+   				    PRO=>1},
     				  ]);
+    				  
+    $template->param(BUTTON_NAME=>'Extend Sequence');
+    $template->param(BUTTON_URL=>"get_extend_box([],['extend'])");
     $template->param(FEATID=>$feat_id);
     $template->param(PRO=>$pro);
     $template->param(RC=>$rc);
@@ -195,16 +225,8 @@ sub get_extend_box
   {
     return qq
       {
-       <table><tr>
-       <TD>UPSTREAM:<td><INPUT type="text" id="upstream" value="0">
-       <TD>DOWNSTREAM:<td><INPUT type="text" id="downstream" value="0">
-       </table>
-       <table>
-       <TR>
-       <TD>
-          <input type="button" value="Add to Sequence" onClick="get_seq(['args__featid', 'args__<TMPL_VAR NAME=FEATID>', 'args__pro', 'args__<TMPL_VAR NAME=PRO>', 'args__rc', 'args__<TMPL_VAR NAME=RC>', 'args__chr', 'args__<TMPL_VAR NAME=CHR>', 'args__dsid', 'args__<TMPL_VAR NAME=DSID>', 'args__featname', 'args__<TMPL_VAR NAME=FEATNAME>', 'args__strand', 'args__<TMPL_VAR NAME=STRAND>', 'args__upstream', 'upstream', 'args__downstream', 'downstream'],['seq'])"> 
-       </TR>
-       </TABLE> 
+         UPSTREAM: <INPUT type="text" id="upstream" value= "0">
+         DOWNSTREAM: <INPUT type="text" id="downstream" value= "0">
       };
   }
     
@@ -225,7 +247,7 @@ sub get_dna_seq_for_feat
     {
       $seq = reverse_complement($seq);
     }
-    $columns = 76;
+    $columns = 60;
     $seq = join ("\n", wrap('','',$seq));
     return $seq;
   }
@@ -236,7 +258,7 @@ sub get_prot_seq_for_feat
     my ($feat) = $DB->get_feat_obj->retrieve($featid);
     my ($seq) = $DB->get_protein_sequence_for_feature($feat);
     $seq = "No sequence available" unless $seq;
-    $columns = 76;
+    $columns = 60;
     $seq = join ("\n", wrap('','',$seq));
     return $seq;
   }
@@ -275,4 +297,21 @@ sub main_color
       my $downstream = $opts{downstream};
       my $main = substr($seq, $upstream, ((length $seq) - ($downstream)));
       return qq{<FONT class="main">$main</FONT>};
+    }
+    
+sub gen_title
+    {
+      my %opts = @_;
+      my $rc = $opts{rc};
+      my $pro = $opts{pro};
+      my $title;
+      unless ($pro)
+      {
+       $title = $rc ? "Reverse Complement" : "DNA Sequence";
+      }
+      else
+      {
+       $title = "Protein Sequence";
+      }
+      return $title;
     }
