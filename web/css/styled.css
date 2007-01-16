@@ -4,23 +4,18 @@ BODY {
   background: #FFFFFF;
 }
 
-.seq { 
-  overflow: auto;
-  border: none;
-  width: 628px;
-  height: 300px;
-  background: #FFFFFF; 
-}
-
 .up {
+  font-family: fixed, monospace;
   color: #660000;
 }
 
 .down {
+  font-family:fixed, monospace;
   color: #003300;
 }
 
 .main {
+  font-family:fixed, monospace;
   color: #000099;
 }
 
@@ -422,8 +417,6 @@ table.columns {
 	font-family: verdana, arial, helvetica, sans-serif;
 	font-size: 16px
 }
-
-
 
 tr.Aodd {
 	border-top-width: 0px;
