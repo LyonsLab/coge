@@ -96,7 +96,7 @@ sub gen_html
 	  {
 	    $color = "#FFDDBB";
 	  }
-	$html .= "<table bgcolor=$color width=100%><tr><td>".$feat->annotation_pretty_print_html();
+	$html .= "<table bgcolor=$color width=100%><tr><td>".$feat->annotation_pretty_print_html(loc_link=>"SeqView.pl");
 	unless ($FORM->param('no_org'))
 	  {
 	    $html .= qq{<font class="title4">Organism: </font>};
