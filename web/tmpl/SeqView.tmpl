@@ -1,0 +1,44 @@
+<TMPL_IF NAME=BOTTOM_BUTTONS>
+
+<TABLE>
+  <TR>
+   <TMPL_LOOP NAME="BUTTON_LOOP">
+    <TD align=right valign="top">
+     <DIV id="button<TMPL_VAR NAME=BUTTON_NUM>"><input type=button value ="<TMPL_VAR NAME=BUTTON_NAME>" onClick="get_seq(['args__featid', 'args__<TMPL_VAR NAME=FEATID>', 'args__pro', 'args__<TMPL_VAR NAME=PRO>', 'args__rc', 'args__<TMPL_VAR NAME=RC>', 'args__chr', 'args__<TMPL_VAR NAME=CHR>', 'args__dsid', 'args__<TMPL_VAR NAME=DSID>', 'args__featname', 'args__<TMPL_VAR NAME=FEATNAME>', 'args__strand', 'args__<TMPL_VAR NAME=STRAND>','args__upstream', 'upstream', 'args__downstream', 'downstream'],['seq'])"> </DIV>
+    </TD>
+   </TMPL_LOOP>
+    <TD align=right valign="top">
+      <input type=button value ="<TMPL_VAR NAME=BUTTON_NAME>"  onClick="<TMPL_VAR NAME="BUTTON_URL">"> 
+   </TR>
+<TR>
+<TABLE>
+<TR>
+<TD align = right valign = "middle">
+<DIV id="extend">
+ <input type = hidden id="upstream" value="0">
+ <input type = hidden id="downstream" value="0">
+ </div>
+</TD>
+<TD align = right valign = "middle">
+<input type=button value ="Reset" onClick="get_seq(['args__featid', 'args__<TMPL_VAR NAME=FEATID>', 'args__pro', 'args__<TMPL_VAR NAME=PRO>', 'args__rc', 'args__<TMPL_VAR NAME=RC>', 'args__chr', 'args__<TMPL_VAR NAME=CHR>', 'args__dsid', 'args__<TMPL_VAR NAME=DSID>', 'args__featname', 'args__<TMPL_VAR NAME=FEATNAME>', 'args__strand', 'args__<TMPL_VAR NAME=STRAND>','args__upstream', 'args__<TMPL_VAR NAME=RESET>', 'args__downstream', 'args__<TMPL_VAR NAME=RESET>'],['seq']);get_extend_box([],['extend'])">
+</TR>
+</TABLE>
+<TR>
+<TD>
+
+<input type= button value ="Add to Sequence" onClick="get_seq(['args__featid', 'args__<TMPL_VAR NAME=FEATID>', 'args__pro', 'args__<TMPL_VAR NAME=PRO>', 'args__rc', 'args__<TMPL_VAR NAME=RC>', 'args__chr', 'args__<TMPL_VAR NAME=CHR>', 'args__dsid', 'args__<TMPL_VAR NAME=DSID>', 'args__featname', 'args__<TMPL_VAR NAME=FEATNAME>', 'args__strand', 'args__<TMPL_VAR NAME=STRAND>', 'args__upstream', 'upstream', 'args__downstream', 'downstream'],['seq'])"> 
+</TR>
+</TABLE>
+</TMPL_IF>
+
+<TMPL_IF NAME=TEXT>
+<TABLE>
+ <TR>
+  <TD align=right valign="top">
+    <DIV class="" id="seq">
+	<TMPL_VAR NAME=SEQ>
+    </DIV>
+  </TD>
+ </TR>
+</TABLE>
+</TMPL_IF>
