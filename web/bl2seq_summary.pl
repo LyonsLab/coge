@@ -16,6 +16,7 @@ use CGI;
 #use CGI::Carp 'fatalsToBrowser';
 #use CNS::MyDB;
 use GS::bl2seqReport;
+use CoGe::Genome;
 use Data::Dumper;
 
 # for security purposes
@@ -74,6 +75,15 @@ sub Show_Summary {
 						);
 						#$form->param("other"));
 				print "$html\n";
+				print hsp_seq(
+					      qds=>$form->param('qds'),
+					      qstart=>$form->param("qbegin"),
+					      qstop=>$form->param("qend"),
+					      qchr=>$form->param("qchr"),
+#					      sds=>$form->param('sds'),
+#					      sstart=>$form->param("sbegin"),
+#					      sstop=>$form->param("send"),
+					     );
 			} else {
 				&Signal_Error($form, "NOHSP");
 			}
@@ -81,6 +91,54 @@ sub Show_Summary {
 	}
 	print $form->end_html();
 }
+
+sub hsp_seq
+  {
+    my %opts = @_;
+    my $qds = $opts{qds} || $opts{qdatasource};
+    my $sds = $opts{sds} || $opts{sdatasource};
+    return unless ($qds || $sds);
+    my $qstart = $opts{qstart};
+    my $qstop = $opts{qstop};
+    my $qchr = $opts{qchr};
+    my $sstart = $opts{sstart};
+    my $sstop = $opts{sstop};
+    my $schr = $opts{schr};
+    print STDERR Dumper \%opts;
+    my $coge = new CoGe::Genome;
+    $qds = $coge->get_dataset_obj->resolve($qds);
+    $sds = $coge->get_dataset_obj->resolve($sds);
+    my $html = qq!<TABLE width="70%" border="0" cellspacing="0" cellpadding="2">\n!;
+    my @items;
+    push @items, ["Query", $qds, $qstart, $qstop, $qchr] if $qds;
+#    push @items, ["Subject", $sds, $sstart, $sstop, $schr] if $sds;
+    foreach my $length (0, 20, 50,100, 500, 1000)
+      {
+	foreach my $item (@items)
+	  {
+	    my ($type, $ds, $start, $stop, $chr) = @$item;
+	    my $seq = $coge->get_genomic_sequence(start=>$start-$length,
+						  stop=>$stop+$length,
+						  ds=>$ds,
+						  strand=>1,
+						  chr=>$chr
+						  );
+	    $html .= qq!<tr>\n!;
+	    $html .= qq!<td width="30%" bgcolor="#999999">$type +/- $length</td>!;
+	    $html .= qq!<td bgcolor="#999999"><PRE>!;
+	    $html .= uc(seqwrap($seq));
+	    $html .= qq!</PRE></td>\n!;
+	    $html .= qq!<td width="30%" bgcolor="#999999">$type +/- $length (reverse complement)</td>!;
+	    $html .= qq!<td bgcolor="#999999"><PRE>!;
+	    $html .= uc(seqwrap($coge->get_feature_obj->reverse_complement($seq)));
+	    $html .= qq!</PRE></td>\n!;
+
+	    $html .= qq!</tr>\n!;
+	  }
+      }
+    $html .= "</table>";
+    return $html;
+  }
 
 sub build_table_hsp {
 	my $blast_report = shift;
@@ -120,16 +178,19 @@ sub build_table_hsp {
 	$html .= $hsp->{qe};
 	$html .= qq!</td>\n!;
 	$html .= qq!</tr>\n!;
-	$html .= qq!<tr>\n!;
-	$html .= qq!<td width="30%" bgcolor="#999999">GENOME BEGIN Query</td>!;
-	$html .= qq!<td bgcolor="#999999">!;
-	$html .= $qbegin;
-	$html .= qq!</td>\n!;
-	$html .= qq!<td width="30%" bgcolor="#999999">GENOME END Query</td>!;
-	$html .= qq!<td bgcolor="#999999">!;
-	$html .= $qend;
-	$html .= qq!</td>\n!;
-	$html .= qq!</tr>\n!;
+	if ($qbegin || $qend)
+	  {
+	    $html .= qq!<tr>\n!;
+	    $html .= qq!<td width="30%" bgcolor="#999999">GENOME BEGIN Query</td>!;
+	    $html .= qq!<td bgcolor="#999999">!;
+	    $html .= $qbegin;
+	    $html .= qq!</td>\n!;
+	    $html .= qq!<td width="30%" bgcolor="#999999">GENOME END Query</td>!;
+	    $html .= qq!<td bgcolor="#999999">!;
+	    $html .= $qend;
+	    $html .= qq!</td>\n!;
+	    $html .= qq!</tr>\n!;
+	  }
 
 
 	$html .= qq!<tr>\n!;
@@ -152,17 +213,20 @@ sub build_table_hsp {
 	$html .= $hsp->{se};
 	$html .= qq!</td>\n!;
 	$html .= qq!</tr>\n!;
-	$html .= qq!<tr>\n!;
-	$html .= qq!<td width="30%" bgcolor="#999988">GENOME BEGIN Sbjct</td>!;
-	$html .= qq!<td bgcolor="#999988">!;
-	$html .= $sbegin;
-	$html .= qq!</td>\n!;
-	$html .= qq!<td width="30%" bgcolor="#999988">GENOME END Sbjct</td>!;
-	$html .= qq!<td bgcolor="#999988">!;
-	$html .= $send;
-	$html .= qq!</td>\n!;
-	$html .= qq!</tr>\n!;
-	
+	if ($sbegin || $send)
+	  {
+	    $html .= qq!<tr>\n!;
+	    $html .= qq!<td width="30%" bgcolor="#999988">GENOME BEGIN Sbjct</td>!;
+	    $html .= qq!<td bgcolor="#999988">!;
+	    $html .= $sbegin;
+	    $html .= qq!</td>\n!;
+	    $html .= qq!<td width="30%" bgcolor="#999988">GENOME END Sbjct</td>!;
+	    $html .= qq!<td bgcolor="#999988">!;
+	    $html .= $send;
+	    $html .= qq!</td>\n!;
+	    $html .= qq!</tr>\n!;
+	  }
+
 	$html .= qq!<tr>\n!;
 	$html .= qq!<td colspan=4 width="30%" bgcolor="#998888">HSP INFORMATION</td>!;
 	$html .= qq!</tr>\n!;
