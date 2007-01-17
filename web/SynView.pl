@@ -548,7 +548,7 @@ sub generate_image
     $gfx->add_feature($f2);
     $graphic->process_nucleotides(c=>$gfx, seq=>$gbobj->{SEQUENCE}, layers=>{gc=>$show_gc});
     process_features(c=>$gfx, obj=>$gbobj, start=>$start, stop=>$stop);
-    process_hsps(c=>$gfx, data=>$data, reports=>$reports, accn=>$gbobj->{ACCN}, rev=>$reverse_image, seq_length=> length($gbobj->{SEQUENCE}), stagger_label=>$stagger_label, hsp_limit=>$hsp_limit, hsp_limit_num=>$hsp_limit_num);
+    process_hsps(c=>$gfx, data=>$data, reports=>$reports, accn=>$gbobj->{ACCN}, rev=>$reverse_image, seq_length=> length($gbobj->{SEQUENCE}), stagger_label=>$stagger_label, hsp_limit=>$hsp_limit, hsp_limit_num=>$hsp_limit_num, gbobj=>$gbobj);
     my $file = new File::Temp ( TEMPLATE=>'SynView__XXXXX',
 				   DIR=>$TEMPDIR,
 				    SUFFIX=>'.png',
@@ -666,6 +666,7 @@ sub process_hsps
     my $stagger_label = $opts{stagger_label};
     my $hsp_limit = $opts{hsp_limit};
     my $hsp_limit_num = $opts{hsp_limit_num};
+    my $gbobj = $opts{gbobj};
     #to reverse hsps when using genomic sequences from CoGe, they need to be drawn on the opposite strand than where blast reports them.  This is because CoGe::Graphics has the option of reverse drawing a region.  However, the sequence fed into blast has already been reverse complemented so that the HSPs are in the correct orientation for the image.  Thus, if the image is reverse, they are drawn on the wrong strand.  This corrects for that problem.   Sorry for the convoluted logic, but it was the simplest way to substantiate this option
     my @colors = (
 		  [ 100, 100, 255],
@@ -743,7 +744,7 @@ sub process_hsps
 	    $f->force_label(1);
 	    my $desc = join ("<br>", "HSP: ".$item->{number}, $start."-".$stop." (".$item->{orientation}.")", $seq,"Match: ".$item->{hspmatch},"Length: ".$item->{length},"Identity: ".$item->{identity},"E_val: ".$item->{eval});
 	    $f->description($desc);
-	    my $link = "bl2seq_summary.pl?".join("&", "blast_report=".$report, "accnq=", "accns=", "qbegin=", "qend=", "sbegin=","send=","submit=GO");
+	    my $link = "bl2seq_summary.pl?".join("&", "blast_report=".$report, "accnq=$accn1", "accns=$accn2", "qbegin=".($gbobj->{start}+$start-1), "qend=".($gbobj->{start}+$stop-1),"qchr=".$gbobj->{chr}, "qds=". $gbobj->{ds}, "sbegin=","send=","submit=GO");
 	    $f->link($link."&"."hsp=".$item->{number});
 	    push @feats, $f;
 	    print STDERR $item->{number},"-", $item->{orientation}, $track,":", $strand,"\n" if $DEBUG;
@@ -925,7 +926,12 @@ sub get_obj_from_genome_db
 					  SOURCE=>$feat->dataset->data_source->name(),
 					  ORGANISM=>$feat->org->name(),
 					  					 );
+
     $obj->sequence($seq);
+    $obj->{start} = $start;
+    $obj->{stop} = $stop;
+    $obj->{chr} = $chr;
+    $obj->{ds} = $ds_id;
     my $fnum = 1;
     my %used_names;
     $used_names{$accn} = 1;
