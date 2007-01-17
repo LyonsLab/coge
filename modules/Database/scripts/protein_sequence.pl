@@ -4,18 +4,23 @@ use strict;
 use CoGeX;
 
 #time
-#real    0m54.935s
+#mysql before update: real    0m54.935s
+#mysql after  update: real    0m44.592s
+#postgresql         : real    0m30.214s
 
 
+#my $connstr = 'dbi:mysql:genomes:biocon:3306';
+#my $s = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 
-my $connstr = 'dbi:mysql:genomes:biocon:3306';
-my $s = CoGeX->connect($connstr, 'cnssys', 'CnS' );
-#$s->storage->debug(1);
+my $connstr = 'dbi:Pg:dbname=genomes;host=biocon;port=5432';
+my $s = CoGeX->connect($connstr, 'bpederse', 'wsa47r' );
+
+$s->storage->debug(1);
 
 my $rs = $s->resultset('Feature')->search(
         { 
-            'feature_names.name' => {like => 'At1%','-not_like' => "%.%" },
-            'feature_type.name' =>   'CDS' 
+            'feature_type.name' =>   'CDS' ,
+            'feature_names.name' => {like => 'At1g%','-not_like' => "%.%" }
         },
         {
             join => ['feature_names','feature_type'],

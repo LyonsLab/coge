@@ -24,8 +24,7 @@ __PACKAGE__->add_columns(
 );
 __PACKAGE__->set_primary_key("annotation_type_group_id");
 
-__PACKAGE__->has_many("annotation_types" => "CoGeX::AnnotationType",
-                      'annotation_type_group_id');
+__PACKAGE__->has_many("annotation_types" => "CoGeX::AnnotationType", 'annotation_type_group_id');
 
 1;
 

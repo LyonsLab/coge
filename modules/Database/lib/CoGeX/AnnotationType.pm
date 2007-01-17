@@ -29,4 +29,6 @@ __PACKAGE__->set_primary_key("annotation_type_id");
 __PACKAGE__->has_many("annotations" => "CoGeX::Annotation",
                       'annotation_type_id');
 
+__PACKAGE__->belongs_to("annotation_type_group" => "CoGeX::AnnotationTypeGroup", 'annotation_type_group_id');
+
 1;
