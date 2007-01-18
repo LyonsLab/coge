@@ -7,6 +7,7 @@ use CoGe::Accessory::LogUser;
 use HTML::Template;
 use CoGe::Genome;
 use Text::Wrap qw($columns &wrap);
+use Data::Dumper;
 
 $ENV{PATH} = "/opt/apache2/CoGe/";
 
@@ -24,13 +25,14 @@ my $pj = new CGI::Ajax(
 		       gen_html=>\&gen_html,
 		       get_seq=>\&get_seq,
 		       get_extend_box=>\&get_extend_box,
+		       gen_title=>\&gen_title,
 			);
 print $pj->build_html($FORM, \&gen_html);
 #print $FORM->header;
 #print gen_html();
 sub gen_html
   {
-    print "DNA Sequence Button Doesn't Work. Doesn't change Box title when button clicked. Need to Hide buttons relating to upstream/downstream changes. Need to make extend button disappear text boxes when clicked again. Deal with textarea/copy text issue; CoGe title.";
+    #print "DNA Sequence Button Doesn't Work. Doesn't change Box title when button clicked. Need to Hide buttons relating to upstream/downstream changes. Need to make extend button disappear text boxes when clicked again. Deal with textarea/copy text issue; CoGe title.";
     my ($body) = gen_body();
     my $rc;
     my $pro; 
@@ -41,12 +43,10 @@ sub gen_html
     $template->param(USER=>$USER);
     $template->param(DATE=>$DATE);
     $template->param(LOGO_PNG=>"SeqView-logo.png");
-    $template->param(BOX_NAME=>"$title");
+    $template->param(BOX_NAME=>qq{<DIV id="box_name">$title</DIV>});
     $template->param(BODY=>$body);
     $template->param(POSTBOX=>gen_foot());
-    $template->param(SELECT=>1);
     $template->param(CLOSE=>1);
-    $template->param(TEXTAREA=>$body);
     $template->param(HEAD=>qq{<script src="js/kaj.stable.js"></script>});
     #print STDERR gen_foot()."\n";
     my $html;
@@ -65,10 +65,30 @@ sub gen_body
     my $pro = $form->param('pro');   
     my $upstream = $form->param('upstream');
     my $downstream = $form->param('downstream');
+    my $start = $form->param('start');
+    my $stop = $form->param('stop');
+    my $seq;
+    unless ($feat_id)
+    {
+      my $strand = $form->param('strand');
+      $strand = check_strand(strand=>$strand, rc=>$rc);
+      $seq = get_seq(pro=>$pro,
+		      rc=>$rc,
+		      chr=>$chr,
+		      dsid=>$dsid,
+		      strand=>$strand, 
+		      upstream=>$upstream, 
+		      downstream=>$downstream,
+		      start=>$start,
+		      stop=>$stop,
+		      );
+    }
+    else
+    {
     my ($feat) = $DB->get_feat_obj->retrieve($feat_id);
     my $strand = $feat->strand;
     $strand = check_strand(strand=>$strand, rc=>$rc);
-    my $seq = get_seq(featid=>$feat_id, 
+    $seq = get_seq(featid=>$feat_id, 
 		      pro=>$pro,
 		      rc=>$rc,
 		      chr=>$chr,
@@ -78,6 +98,7 @@ sub gen_body
 		      upstream=>$upstream, 
 		      downstream=>$downstream,
 		      );
+    }
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SeqView.tmpl');
     $template->param(TEXT=>1);
     $template->param(SEQ=>$seq);
@@ -116,16 +137,37 @@ sub get_seq
     my $upstream = $opts{'upstream'};
     my $downstream = $opts{'downstream'};
     my $strand = $opts{'strand'};
-    my ($feat) = $DB->get_feat_obj->retrieve($feat_id);
+    my $start = $opts{'start'};
+    my $stop = $opts{'stop'};
     my $ds = $DB->get_dataset_obj->retrieve($dsid);
     my $seq;
-    my $fasta = ">".$ds->org->name."(v.".$feat->version."), Type: ".$feat->type->name.", Location: ".$feat->genbank_location_string.", Chromosome: ".$chr.", Strand: ".$strand.", Name: ".$feat_name."\n";
+    my $fasta;
+    unless ($feat_id)
+    {
+      $fasta = ">".$ds->org->name.", Location: ".$start.": ".$stop.", Chromosome: ".$chr.", Strand: ".$strand."\n";
+      $fasta = qq{<FONT class="main"><i>$fasta</i></FONT>};
+      $columns = 80;
+      $fasta = join ("\n", wrap('','',$fasta));
+    }
+    else
+    {
+    #print Dumper \%opts;
+    my ($feat) = $DB->get_feat_obj->retrieve($feat_id);
+    $fasta = ">".$ds->org->name."(v.".$feat->version."), Type: ".$feat->type->name.", Location: ".$feat->genbank_location_string.", Chromosome: ".$chr.", Strand: ".$strand.", Name: ".$feat_name."\n";
     $fasta = qq{<FONT class="main"><i>$fasta</i></FONT>};
     $columns = 80;
     $fasta = join ("\n", wrap('','',$fasta));
+    }
     unless ($pro)
     {
-      $seq .= get_dna_seq_for_feat (featid=>$feat_id, rc=>$rc, upstream=>$upstream, downstream=>$downstream);
+      $seq .= get_dna_seq_for_feat (featid=>$feat_id,
+      				    dsid=>$dsid, 
+      				    rc=>$rc, 
+      				    upstream=>$upstream,
+      				    downstream=>$downstream, 
+      				    start=>$start,
+      				    stop=>$stop,
+      				    chr=>$chr);
     }
     else
     {
@@ -137,7 +179,6 @@ sub get_seq
     my $main = main_color(seq=>$seq, upstream=>$upstream, downstream=>$downstream);
     $seq = join("", $up, $main, $down);
     $seq = join("", $fasta, $seq);
-    #print $seq;
     return $seq;
   }
   
@@ -153,9 +194,12 @@ sub gen_foot
     my $upstream = $form->param('upstream');
     my $downstream = $form->param('downstream');
     my ($feat) = $DB->get_feat_obj->retrieve($feat_id);
-    my $strand = $feat->strand;
+    my $strand;
+    unless ($feat_id)
+    {$strand = $form->param('strand');}
+    else
+    {$strand = $feat->strand;}
     $strand = check_strand(strand=>$strand, rc=>$rc);
-   
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SeqView.tmpl');
     
 #   my $button = qq{<input type="submit" value="$name">};
@@ -177,6 +221,7 @@ sub gen_foot
     			            PRO=>0,
     				    RC=>0,
     			     	    CHR=>$chr,
+    				    DSID=>$dsid,
     				    FEATNAME=>$feat_name,
    				    STRAND=>$strand,
    				    RC=>0,
@@ -203,9 +248,6 @@ sub gen_foot
    				    RC=>0,
    				    PRO=>1},
     				  ]);
-    				  
-    $template->param(BUTTON_NAME=>'Extend Sequence');
-    $template->param(BUTTON_URL=>"get_extend_box([],['extend'])");
     $template->param(FEATID=>$feat_id);
     $template->param(PRO=>$pro);
     $template->param(RC=>$rc);
@@ -220,32 +262,38 @@ sub gen_foot
    return $template->output;
 
   }
-
-sub get_extend_box
-  {
-    return qq
-      {
-         UPSTREAM: <INPUT type="text" id="upstream" value= "0">
-         DOWNSTREAM: <INPUT type="text" id="downstream" value= "0">
-      };
-  }
     
 sub get_dna_seq_for_feat
   {
     my %opts = @_;
     my $featid = $opts{featid};
+    my $dsid = $opts{dsid};
     my $rc = $opts{rc};
-    my $upstream = $opts{upstream} || 0;
-    my $downstream = $opts{downstream} || 0;
+    my $upstream = $opts{upstream};
+    my $downstream = $opts{downstream};
+    my $start = $opts{start};
+    my $stop = $opts{stop};
+    my $chr = $opts{chr};
+    my $seq;
+    unless ($featid)
+    {
+    $seq = $DB->get_genomic_sequence(start=>$start,
+    					stop=>$stop,
+    					chr=>$chr,
+    					dsid=>$dsid);
+    }
+    else
+    {
     my ($feat) = $DB->get_feat_obj->retrieve($featid);
     unless (ref($feat) =~ /Feature/i)
       {
         return "Unable to retrieve Feature object for id: $featid";
       }
-    my $seq = $feat->genomic_sequence(upstream=>$upstream, downstream=>$downstream);
+    $seq = $feat->genomic_sequence(upstream=>$upstream, downstream=>$downstream);
     if ($rc)
     {
       $seq = reverse_complement($seq);
+    }
     }
     $columns = 60;
     $seq = join ("\n", wrap('','',$seq));
