@@ -160,7 +160,7 @@ sub get_anno
 	$anno .= join "\n<BR><HR><BR>\n", $feat->annotation_pretty_print_html();
 	$anno .= qq{<DIV id="loc$i"><input type="button" value = "Click for chromosomal view" onClick="window.open('GeLo.pl?chr=$chr&ds=$ds&INITIAL_CENTER=$x,0&z=$z');"></DIV>};
 	$anno .= qq{<DIV id="exp$i"><input type="button" value = "Click for expression tree" onClick="gen_data(['args__Generating expression view image'],['exp$i']);show_express(['args__}.$accn.qq{','args__}.'1'.qq{','args__}.$i.qq{'],['exp$i']);"></DIV>};
-	$anno .= qq{<DIV id="dnaseq$i"><input type="button" value = "Click for DNA sequence" onClick="window.open('SeqView.pl?featid=$featid&dsid=$ds&chr=$chr&name=$accn&rc=$rc&pro=$pro','Window','location=no, left=20, top=20, width=683, height=570,toolbar=no');"></DIV>};
+	$anno .= qq{<DIV id="dnaseq$i"><input type="button" value = "Click for DNA sequence" onClick="window.open('SeqView.pl?featid=$featid&dsid=$ds&chr=$chr&name=$accn&rc=$rc&pro=$pro','Window','left=20, top=20, width=661, height=583,toolbar=no');"></DIV>};
 	#"gen_data(['args__retrieving sequence'],['dnaseq$i']);get_dna_seq_for_feat(['args__}.$feat->id.qq{'],['dnaseq$i']);"></DIV>};
 	#$anno .= qq{<DIV id="rcdnaseq$i"><input type="button" value = "Click for DNA sequence reverse complement" onClick="gen_data(['args__retrieving sequence'],['rcdnaseq$i']);get_rcdna_seq_for_feat(['args__}.$feat->id.qq{'],['rcdnaseq$i']);"></DIV>};
 	#$anno .= qq{<DIV id="protseq$i"><input type="button" value = "Click for protein sequence" onClick="gen_data(['args__retrieving sequence'],['protseq$i']);get_prot_seq_for_feat(['args__}.$feat->id.qq{'],['protseq$i']);"></DIV>\n\n};
