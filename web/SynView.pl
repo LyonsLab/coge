@@ -413,7 +413,7 @@ sub Show_Summary
     # set up output page
     
     # run bl2seq
-    my $wordsize = $form->param('wordsize');
+    $wordsize = $form->param('wordsize');
     $wordsize = 3 if ($blast_program eq "tblastx" && $wordsize > 3);
     my $bl2seq_params = " -W " . $wordsize;
     $bl2seq_params .= " -G " . $form->param('gapopen');
@@ -692,7 +692,8 @@ sub process_hsps
 	foreach my $item (@$set)
 	  {
 	    my $color = $colors[$i];
-
+	    next if $item->{qmatchseq} =~ /\*/;
+	    next if $item->{smatchseq} =~ /\*/;
 	    my ($start, $stop, $seq);
 	    if ($accn1 eq $accn)
 	      {
