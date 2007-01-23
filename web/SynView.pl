@@ -12,6 +12,7 @@ use File::Temp;
 use GS::MyDB::GBDB::GBObject;
 use CoGe::Genome;
 use CoGe::Accessory::Web;
+use CoGe::Accessory::bl2seqReport;
 use CoGe::Graphics;
 use CoGe::Graphics::Chromosome;
 use CoGe::Graphics::Feature;
@@ -21,6 +22,7 @@ use CoGe::Graphics::Feature::GAGA;
 use CoGe::Graphics::Feature::Exon_motifs;
 use CoGe::Graphics::Feature::AminoAcid;
 use CoGe::Graphics::Feature::Domain;
+use CoGe::Graphics::Feature::HSP;
 # for security purposes
 $ENV{PATH} = "/opt/apache2/CoGe/";
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
@@ -53,6 +55,7 @@ print $pj->build_html($FORM, \&gen_html);
 #print gen_html();
 
 #print Show_Summary('contig_16224','2665176','10000','10000','502','At1g07300','124379','10000','10000','6','At2g29640','134498','10000','10000','7','','1','0','','','1','0','','','1','0','','','0','1','','','0','1','','','0','1','','1','15','0','0','7','5','2','-2','','1000','150','20');
+#print Show_Summary('supercontig_226','3686634','-126900','-232900','513','0','At1g07370','122228','10','10','6','1','At2g29570','142412','10','10','7','0','','1','0','','','1','0','','','1','0','','','0','1','','','0','1','','','0','1','','1','15','0','0','7','5','2','-2','','1000','100','20','1','linear','1','0','20','blastn');
 
 sub Rset
   {
@@ -183,7 +186,7 @@ sub Show_Summary
 
        ) = @_;
 #    print STDERR join "\n",$accn1,$featid1,$dr1up,$dr1down,$infoid1,$rev1,"\n";
-	
+    
 
 #    print STDERR Dumper \@_;
 
@@ -421,7 +424,7 @@ sub Show_Summary
     $bl2seq_params .= " -q " . $form->param('mismatch');
     $bl2seq_params .= " ".join(" ", $form->param('blastparams'));
     my $blast_reports = run_bl2seq( files=>[map {$_->{file}} @sets], accns=>[map {$_->{accn}}@sets], blast_params=>$bl2seq_params, spike_seq=>$spike_seq, match_filter=>$match_filter, blast_program=>$blast_program );
-
+#    print Dumper $blast_reports;
    #sets => array or data for blast
    #blast_reports => array of arrays (report, accn1, accn2, parsed data)
 
@@ -684,6 +687,7 @@ sub process_hsps
 	my $accn1 = $item->[1];
 	my $accn2 = $item->[2];
 	my $set = $item->[3];
+	next unless ref($set) =~ /array/i;
 	unless ($accn eq $accn1 || $accn eq $accn2)
 	  {
 	    $i++;
@@ -692,8 +696,18 @@ sub process_hsps
 	foreach my $item (@$set)
 	  {
 	    my $color = $colors[$i];
-	    next if $item->{qmatchseq} =~ /\*/;
-	    next if $item->{smatchseq} =~ /\*/;
+	    my $skip = 0;
+#	    print STDERR Dumper $item;
+	    if ($item->{qmatchseq} =~ /\*/ || $item->{smatchseq} =~ /\*/)
+	      {
+		for my $i (0..(length ($item->{smatchseq})-1))
+		  {
+		    my $chr1 = substr($item->{qmatchseq}, $i, 1);
+		    my $chr2 = substr($item->{smatchseq}, $i, 1);
+		    next unless $chr1 eq "*" || $chr2 eq "*"; 
+		    $skip = 1 unless ($chr1 eq "-" && $chr2 eq "*") || ($chr2 eq "-" && $chr1 eq "*");
+		  }
+	      }
 	    my ($start, $stop, $seq);
 	    if ($accn1 eq $accn)
 	      {
@@ -724,14 +738,9 @@ sub process_hsps
 		$start = $seq_len - $stop+1;
 		$stop = $tmp;
 	      }
-	    my $f = CoGe::Graphics::Feature->new({start=>$start, stop=>$stop});
+	    my $f = CoGe::Graphics::Feature::HSP->new({start=>$start, stop=>$stop});
 	    $color = [100,100,100] if $item->{'spike_flag'};
-	    $f->iw(5);
-	    $f->ih(5);
-	    $f->skip_duplicate_search(1);
-	    $f->gd->fill(0,0,$f->get_color(@$color));
 	    $f->color($color);
-	    $f->mag(1);
 	    $f->order($track);
 	    $f->strand($strand);
 	    if ($hsp_limit)
@@ -742,14 +751,13 @@ sub process_hsps
 	      {
 		$f->label($item->{'number'});
 	      }
-	    $f->force_label(1);
 	    my $desc = join ("<br>", "HSP: ".$item->{number}, $start."-".$stop." (".$item->{orientation}.")", $seq,"Match: ".$item->{hspmatch},"Length: ".$item->{length},"Identity: ".$item->{identity},"E_val: ".$item->{eval});
 	    $f->description($desc);
 	    my $link = "bl2seq_summary.pl?".join("&", "blast_report=".$report, "accnq=$accn1", "accns=$accn2", "qbegin=".($gbobj->{start}+$start-1), "qend=".($gbobj->{start}+$stop-1),"qchr=".$gbobj->{chr}, "qds=". $gbobj->{ds}, "sbegin=","send=","submit=GO");
 	    $f->link($link."&"."hsp=".$item->{number});
 	    push @feats, $f;
 	    print STDERR $item->{number},"-", $item->{orientation}, $track,":", $strand,"\n" if $DEBUG;
-	    $f->font_size(10);
+
 	  }
 	$i++;
 	$track++;
