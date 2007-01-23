@@ -8,4 +8,5 @@ lib/CoGe/Accessory/Tile/Cache.pm
 lib/CoGe/Accessory/LogUser.pm
 lib/CoGe/Accessory/GBlite.pm
 lib/CoGe/Accessory/Web.pm
+lib/Coge/Accessory/bl2seqReport.pm
 t/001_load.t
