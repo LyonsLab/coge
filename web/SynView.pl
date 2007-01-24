@@ -12,7 +12,7 @@ use File::Temp;
 use GS::MyDB::GBDB::GBObject;
 use CoGe::Genome;
 use CoGe::Accessory::Web;
-use CoGe::Accessory::bl2seqReport;
+use CoGe::Accessory::bl2seq_report;
 use CoGe::Graphics;
 use CoGe::Graphics::Chromosome;
 use CoGe::Graphics::Feature;
@@ -52,10 +52,11 @@ $pj->JSDEBUG(0);
 $pj->DEBUG(0);
 $pj->js_encode_function('escape');
 print $pj->build_html($FORM, \&gen_html);
+
 #print gen_html();
 
 #print Show_Summary('contig_16224','2665176','10000','10000','502','At1g07300','124379','10000','10000','6','At2g29640','134498','10000','10000','7','','1','0','','','1','0','','','1','0','','','0','1','','','0','1','','','0','1','','1','15','0','0','7','5','2','-2','','1000','150','20');
-#print Show_Summary('supercontig_226','3686634','-126900','-232900','513','0','At1g07370','122228','10','10','6','1','At2g29570','142412','10','10','7','0','','1','0','','','1','0','','','1','0','','','0','1','','','0','1','','','0','1','','1','15','0','0','7','5','2','-2','','1000','100','20','1','linear','1','0','20','blastn');
+#Show_Summary('supercontig_226','3686634','-126900','-232900','513','0','At1g07370','122228','10','10','6','1','At2g29570','142412','10','10','7','0','','1','0','','','1','0','','','1','0','','','0','1','','','0','1','','','0','1','','1','15','0','0','7','5','2','-2','10','','1000','100','20','1','linear','1','0','20','blastn');
 
 sub Rset
   {
@@ -163,13 +164,14 @@ sub Show_Summary
 	$dsstop3,
 
 	$match_filter,
-	$spike_flag,
+	$spike_len,
 	$mask_flag,
 	$mask_ncs_flag,
 	$wordsize,
 	$gapopen,
 	$gapextend,
 	$mismatch,
+	$eval,
 	$blastparams,
 	$iw,
 	$ih,
@@ -180,15 +182,12 @@ sub Show_Summary
 	$hsp_limit,
 	$hsp_limit_num,
 	$blast_program,
-	#	$seq_file1, $seq_file2,
-#	$f1start, $f1up, $f1down,
-#	$f2start, $f2up, $f2down,
 
        ) = @_;
-#    print STDERR join "\n",$accn1,$featid1,$dr1up,$dr1down,$infoid1,$rev1,"\n";
+    $spike_len = 0 unless $match_filter;
     
 
-#    print STDERR Dumper \@_;
+#    print Dumper \@_;
 
     my $stagger_label = $hsp_label =~ /staggered/i ? 1 : 0;
     my $feature_labels = $hsp_label eq "0" ? 0 : 1;
@@ -224,50 +223,21 @@ sub Show_Summary
 			    mask=>$mask_flag,
 			    mask_ncs=>$mask_ncs_flag,
 			    spike_type=>"Q",
-			    spike_flag=>$spike_flag,
+			    spike_len=>$spike_len,
 			   );
-      }
-    elsif ($seq_file1)
-      {
-	my $sequence = "";
-#	print STDERR Dumper $form;
-#	print STDERR Dumper \%ENV;
-#	print STDERR $seq_file1,"\n";
-#	$form->read_multipart(undef, $ENV{'CONTENT_TYPE'});
-#	print STDERR Dumper $form->uploadInfo('seq_file1');
-	my $fh = $form->upload( 'seq_file1' );
-	while ( <$fh> ) {
-	  $sequence .= $_;
-	}
-	return "<font class=error>Problem uploading file $seq_file1</font>" unless ($sequence);
-	($obj1) = generate_obj_from_seq($sequence, 1);
-	
-	($file1, $file1_begin, $file1_end, $spike_seq) = 
-	  generate_seq_file (
-			     obj=>$obj1,
-			     mask=>$mask_flag,
-			     mask_ncs=>$mask_ncs_flag,
-#			     revcomp=>$dscomp1,
-			     startpos=>$f1start,
-			     upstream=>$f1up,
-			     downstream=>$f1down,
-			     spike_type=>"Q",
-			     spike_flag=>$spike_flag, 
-			    );
       }
     elsif ($seq1 )
       {
 	$seq1 = get_substr(seq=>$seq1, start=>$dsstart1, stop=>$dsstop1);
-	($obj1) = generate_obj_from_seq($seq1, 1);
+	($obj1) = generate_obj_from_seq($seq1, 1, $dscomp1);
 	return "<font class=error>Problem with direct sequence submission</font>" unless ($obj1);
 	($file1, $file1_begin, $file1_end, $spike_seq) = 
 	  generate_seq_file (
 			     obj=>$obj1,
-			     revcomp=>$dscomp1,
 			     mask=>$mask_flag,
 			     mask_ncs=>$mask_ncs_flag,
 			     spike_type=>"Q",
-			     spike_flag=>$spike_flag, 
+			     spike_len=>$spike_len, 
 			    );
       }
     elsif ($gbaccn1 )
@@ -283,7 +253,7 @@ sub Show_Summary
 				 upstream=>$gb1up,
 				 downstream=>$gb1down,
 				 spike_type=>"Q",
-				 spike_flag=>$spike_flag, 
+				 spike_len=>$spike_len, 
 			    );
       }
     if ($obj1)
@@ -306,22 +276,21 @@ sub Show_Summary
 			    mask=>$mask_flag,
 			    mask_ncs=>$mask_ncs_flag,
 			    spike_type=>"S",
-			    spike_flag=>$spike_flag,
+			    spike_len=>$spike_len,
 			   );
       }
    elsif ($seq2 )
       {
 	$seq2 = get_substr(seq=>$seq2, start=>$dsstart2, stop=>$dsstop2);
-	($obj2) = generate_obj_from_seq($seq2, 2);
+	($obj2) = generate_obj_from_seq($seq2, 2, $dscomp2);
 	return "<font class=error>Problem with direct sequence submission</font>" unless ($obj2);
 	($file2, $file2_begin, $file2_end, $spike_seq) = 
 	  generate_seq_file (
 			     obj=>$obj2,
 			     mask=>$mask_flag,
 			     mask_ncs=>$mask_ncs_flag,
-			     revcomp=>$dscomp2,
 			     spike_type=>"Q",
-			     spike_flag=>$spike_flag, 
+			     spike_len=>$spike_len, 
 			    );
       }
     elsif ($gbaccn2)
@@ -337,7 +306,7 @@ sub Show_Summary
 			     upstream=>$gb2up,
 			     downstream=>$gb2down,
 			     spike_type=>"Q",
-			     spike_flag=>$spike_flag, 
+			     spike_len=>$spike_len, 
 			    );
        }
     if ($obj2)
@@ -361,22 +330,21 @@ sub Show_Summary
 			    mask=>$mask_flag,
 			    mask_ncs=>$mask_ncs_flag,
 			    spike_type=>"S",
-			    spike_flag=>$spike_flag,
+			    spike_len=>$spike_len,
 			   );
       }
    elsif ($seq3 )
       {
 	$seq3 = get_substr(seq=>$seq3, start=>$dsstart3, stop=>$dsstop3);
-	($obj3) = generate_obj_from_seq($seq3, 3);
+	($obj3) = generate_obj_from_seq($seq3, 3, $dscomp3);
 	return "<font class=error>Problem with direct sequence submission</font>" unless ($obj3);
 	($file3, $file3_begin, $file3_end, $spike_seq) = 
 	  generate_seq_file (
 			     obj=>$obj3,
 			     mask=>$mask_flag,
 			     mask_ncs=>$mask_ncs_flag,
-			     revcomp=>$dscomp3,
 			     spike_type=>"Q",
-			     spike_flag=>$spike_flag, 
+			     spike_len=>$spike_len, 
 			    );
       }
     elsif ($gbaccn3)
@@ -392,7 +360,7 @@ sub Show_Summary
 			     upstream=>$gb3up,
 			     downstream=>$gb3down,
 			     spike_type=>"Q",
-			     spike_flag=>$spike_flag, 
+			     spike_len=>$spike_len, 
 			    );
        }
 
@@ -416,14 +384,14 @@ sub Show_Summary
     # set up output page
     
     # run bl2seq
-    $wordsize = $form->param('wordsize');
     $wordsize = 3 if ($blast_program eq "tblastx" && $wordsize > 3);
-    my $bl2seq_params = " -W " . $wordsize;
-    $bl2seq_params .= " -G " . $form->param('gapopen');
-    $bl2seq_params .= " -X " . $form->param('gapextend');
-    $bl2seq_params .= " -q " . $form->param('mismatch');
-    $bl2seq_params .= " ".join(" ", $form->param('blastparams'));
-    my $blast_reports = run_bl2seq( files=>[map {$_->{file}} @sets], accns=>[map {$_->{accn}}@sets], blast_params=>$bl2seq_params, spike_seq=>$spike_seq, match_filter=>$match_filter, blast_program=>$blast_program );
+    my $bl2seq_params = " -W " . $wordsize if defined $wordsize;
+    $bl2seq_params .= " -G " . $gapopen if defined $gapopen;
+    $bl2seq_params .= " -X " . $gapextend if defined $gapextend;
+    $bl2seq_params .= " -q " . $mismatch if defined $mismatch;
+    $bl2seq_params .= " -e " . $eval if defined $eval;
+    $bl2seq_params .= " "    . $blastparams if defined $blastparams;
+    my $blast_reports = run_bl2seq( files=>[map {$_->{file}} @sets], accns=>[map {$_->{accn}}@sets], blast_params=>$bl2seq_params, blast_program=>$blast_program );
 #    print Dumper $blast_reports;
    #sets => array or data for blast
    #blast_reports => array of arrays (report, accn1, accn2, parsed data)
@@ -442,7 +410,6 @@ sub Show_Summary
 							 start=>$file_begin,
 							 stop => $file_end,
 							 data=>$blast_reports,
-							 spike_len=>length($spike_seq),
 							 iw=>$iw,
 							 ih=>$ih,
 							 fh=>$feat_h,
@@ -453,8 +420,10 @@ sub Show_Summary
 							 feature_labels=>$feature_labels,
 							 hsp_limit=>$hsp_limit,
 							 hsp_limit_num=>$hsp_limit_num,
+							 spike_sequence=>$spike_seq,
 							);
-	    $html .= qq!<div>$accn (<font class=species>!.$obj->{ORGANISM}.qq!)</font>!;
+	    $html .= qq!<div>$accn!;
+	    $html .= qq!(<font class=species>!.$obj->{ORGANISM}.qq!</font>)! if $obj->{ORGANISM};
 	    $html .= qq!($locs[$i][0]::$locs[$i][1])! if defined $locs[$i][0];
 	    $html .= qq!<font class=small> Image Inverted</font>! if $reverse_image[$i];
 	    $html .= qq!</DIV>\n!;
@@ -505,7 +474,7 @@ sub generate_image
     my $data = $opts{data};
     my $masked_exons = $opts{mask};
     my $masked_ncs = $opts{mask_ncs};
-    my $spike_len = $opts{spike_len};
+    my $spike_seq = $opts{spike_sequence};
     my $reports = $opts{reports};
     my $iw = $opts{iw} || 1600;
     my $ih = $opts{ih} || 200;
@@ -517,6 +486,7 @@ sub generate_image
     my $feature_labels = $opts{feature_labels};
     my $hsp_limit = $opts{hsp_limit};
     my $hsp_limit_num = $opts{hsp_limit_num};
+    my $eval_cutoff = $opts{eval_cutoff};
     my $graphic = new CoGe::Graphics;
     my $gfx = new CoGe::Graphics::Chromosome;
     $gfx->overlap_adjustment(0);
@@ -551,7 +521,7 @@ sub generate_image
     $gfx->add_feature($f2);
     $graphic->process_nucleotides(c=>$gfx, seq=>$gbobj->{SEQUENCE}, layers=>{gc=>$show_gc});
     process_features(c=>$gfx, obj=>$gbobj, start=>$start, stop=>$stop);
-    process_hsps(c=>$gfx, data=>$data, reports=>$reports, accn=>$gbobj->{ACCN}, rev=>$reverse_image, seq_length=> length($gbobj->{SEQUENCE}), stagger_label=>$stagger_label, hsp_limit=>$hsp_limit, hsp_limit_num=>$hsp_limit_num, gbobj=>$gbobj);
+    process_hsps(c=>$gfx, data=>$data, reports=>$reports, accn=>$gbobj->{ACCN}, rev=>$reverse_image, seq_length=> length($gbobj->{SEQUENCE}), stagger_label=>$stagger_label, hsp_limit=>$hsp_limit, hsp_limit_num=>$hsp_limit_num, gbobj=>$gbobj, spike_seq=>$spike_seq, eval_cutoff=>$eval_cutoff);
     my $file = new File::Temp ( TEMPLATE=>'SynView__XXXXX',
 				   DIR=>$TEMPDIR,
 				    SUFFIX=>'.png',
@@ -669,7 +639,9 @@ sub process_hsps
     my $stagger_label = $opts{stagger_label};
     my $hsp_limit = $opts{hsp_limit};
     my $hsp_limit_num = $opts{hsp_limit_num};
+    my $spike_seq = $opts{spike_seq};
     my $gbobj = $opts{gbobj};
+    my $eval_cutoff = $opts{eval_cutoff};
     #to reverse hsps when using genomic sequences from CoGe, they need to be drawn on the opposite strand than where blast reports them.  This is because CoGe::Graphics has the option of reverse drawing a region.  However, the sequence fed into blast has already been reverse complemented so that the HSPs are in the correct orientation for the image.  Thus, if the image is reverse, they are drawn on the wrong strand.  This corrects for that problem.   Sorry for the convoluted logic, but it was the simplest way to substantiate this option
     my @colors = (
 		  [ 100, 100, 255],
@@ -686,24 +658,40 @@ sub process_hsps
 	my $report = $item->[0];
 	my $accn1 = $item->[1];
 	my $accn2 = $item->[2];
-	my $set = $item->[3];
-	next unless ref($set) =~ /array/i;
+	my $blast = $item->[3];
+	next unless ref($blast) =~ /bl2seq/i;
 	unless ($accn eq $accn1 || $accn eq $accn2)
 	  {
 	    $i++;
 	    next;
 	  }
-	foreach my $item (@$set)
+#	print "here!\n";
+#	print Dumper $blast;
+	if ($spike_seq)
 	  {
+	    foreach my $hsp (@{$blast->hsps})
+	      {
+		if ($hsp->qalign =~ /$spike_seq$/i)
+		  {
+		    $eval_cutoff = $hsp->eval;
+		    last;
+		  }
+	      }
+	  }
+	print STDERR $blast->query," ", $blast->subject,"\n" if $DEBUG;
+	foreach my $hsp (@{$blast->hsps})
+	  #	while (my $hsp = $blast->nextHSP)
+	  {
+	    next if defined $eval_cutoff && $hsp->eval > $eval_cutoff;
 	    my $color = $colors[$i];
 	    my $skip = 0;
-#	    print STDERR Dumper $item;
-	    if ($item->{qmatchseq} =~ /\*/ || $item->{smatchseq} =~ /\*/)
+#	    print STDERR Dumper $hsp;
+	    if ($hsp->qalign =~ /\*/ || $hsp->salign =~ /\*/)
 	      {
-		for my $i (0..(length ($item->{smatchseq})-1))
+		for my $i (0..(length ($hsp->qalign)-1))
 		  {
-		    my $chr1 = substr($item->{qmatchseq}, $i, 1);
-		    my $chr2 = substr($item->{smatchseq}, $i, 1);
+		    my $chr1 = substr($hsp->qalign, $i, 1);
+		    my $chr2 = substr($hsp->salign, $i, 1);
 		    next unless $chr1 eq "*" || $chr2 eq "*"; 
 		    $skip = 1 unless ($chr1 eq "-" && $chr2 eq "*") || ($chr2 eq "-" && $chr1 eq "*");
 		  }
@@ -711,15 +699,15 @@ sub process_hsps
 	    my ($start, $stop, $seq);
 	    if ($accn1 eq $accn)
 	      {
-		$start = $item->{qb};
-		$stop = $item->{qe};
-		$seq = $item->{qmatchseq};
+		$start = $hsp->qb;
+		$stop = $hsp->qe;
+		$seq = $hsp->qalign;
 	      }
 	    elsif ($accn2 eq $accn)
 	      {
-		$start = $item->{sb};
-		$stop = $item->{se};
-		$seq = $item->{smatchseq};
+		$start = $hsp->sb;
+		$stop = $hsp->se;
+		$seq = $hsp->salign;
 	      }
 	    if ($stop < $start)
 	      {
@@ -727,9 +715,9 @@ sub process_hsps
 		$start = $stop;
 		$stop = $tmp;
 	      }
-	    print STDERR "\t",$item->{number},": $start-$stop\n"  if $DEBUG;
-	    my $strand = $item->{'orientation'} =~ /-/ ? "-1" : 1;
-#	    print STDERR $item->{'orientation'},"\n";
+	    print STDERR "\t",$hsp->number,": $start-$stop\n" if $DEBUG;
+	    my $strand = $hsp->strand =~ /-/ ? "-1" : 1;
+#	    print STDERR $hsp->{'orientation'},"\n";
 #	    print STDERR Dumper 
 	    if ($reverse)
 	      {
@@ -739,24 +727,26 @@ sub process_hsps
 		$stop = $tmp;
 	      }
 	    my $f = CoGe::Graphics::Feature::HSP->new({start=>$start, stop=>$stop});
-	    $color = [100,100,100] if $item->{'spike_flag'};
+	    $color = [100,100,100] if $spike_seq && $hsp->qalign =~ /$spike_seq$/i;
 	    $f->color($color);
 	    $f->order($track);
 	    $f->strand($strand);
 	    if ($hsp_limit)
 	      {
-		$f->label($item->{'number'}) if $item->{'number'} <= $hsp_limit_num;
+		$f->label($hsp->number) if $hsp->number <= $hsp_limit_num;
 	      }
 	    else
 	      {
-		$f->label($item->{'number'});
+		$f->label($hsp->number);
 	      }
-	    my $desc = join ("<br>", "HSP: ".$item->{number}, $start."-".$stop." (".$item->{orientation}.")", $seq,"Match: ".$item->{hspmatch},"Length: ".$item->{length},"Identity: ".$item->{identity},"E_val: ".$item->{eval});
+	    my $desc = join ("<br>", "HSP: ".$hsp->number, $start."-".$stop." (".$hsp->strand.")", $seq,"Match: ".$hsp->match,"Length: ".$hsp->length,"Identity: ".$hsp->percent_id,"E_val: ".$hsp->pval);
 	    $f->description($desc);
-	    my $link = "bl2seq_summary.pl?".join("&", "blast_report=".$report, "accnq=$accn1", "accns=$accn2", "qbegin=".($gbobj->{start}+$start-1), "qend=".($gbobj->{start}+$stop-1),"qchr=".$gbobj->{chr}, "qds=". $gbobj->{ds}, "sbegin=","send=","submit=GO");
-	    $f->link($link."&"."hsp=".$item->{number});
+#	    my $link = "bl2seq_summary.pl?".join("&", "blast_report=".$report, "accnq=$accn1", "accns=$accn2", "qbegin=".($gbobj->{start}+$start-1), "qend=".($gbobj->{start}+$stop-1),"qchr=".$gbobj->{chr}, "qds=". $gbobj->{ds}, "sbegin=","send=","submit=GO") if $gbobj->{ds};
+	    my $link = "HSPView.pl?blast_report=$report&hsp_num=".$hsp->number;
+	    $f->link($link."&"."hsp=".$hsp->number) if $link;
+	    $f->alignment($hsp->alignment);
 	    push @feats, $f;
-	    print STDERR $item->{number},"-", $item->{orientation}, $track,":", $strand,"\n" if $DEBUG;
+	    print STDERR $hsp->number,"-", $hsp->strand, $track,":", $strand,"\n" if $DEBUG;
 
 	  }
 	$i++;
@@ -814,6 +804,8 @@ sub generate_obj_from_seq
   {
     my $sequence = shift;
     my $num = shift;
+    my $rc = shift;
+    
     my ($obj, $file, $file_begin, $file_end, $spike_seq);
     if ($sequence =~ /^LOCUS/)
       {
@@ -845,6 +837,12 @@ sub generate_obj_from_seq
 	$sequence =~ s/\n|\r//g;
 	$obj->sequence($sequence);
       }
+    if ($rc)
+      {
+	my $db = new CoGe::Genome;
+
+	$obj->sequence($db->get_feature_obj->reverse_complement($obj->sequence));
+      }
     return $obj
   }
 
@@ -855,32 +853,24 @@ sub generate_seq_file
     my $start = $options{start} || $options{startpos} || 1;
     my $up = $options{up} || $options{upstream} || 0;
     my $down = $options{down} || $options{downstream} || 0;
-    my $spike_flag = $options{spike_flag} || 0;
+    my $spike_len = $options{spike_len} || 0;
     my $spike_type = $options{spike_type};
-    my $sequence = $options{sequence} || $options{seq};
-    my $revcomp = $options{revcomp} || $options{comp};
     my $mask = $options{mask} || $options{mask_flag};
-    my $mask_ncs = $options{mask_ncs},
-     my $db = new GS::MyDB;
-    my ($file, $file_begin, $file_end, $spike_seq) = $sequence ?
-	      $db->{GBSyntenyViewer}->write_fasta_from_sequence(
-						  sequence=>$sequence,
-						  revcomp=>$revcomp,
-						  startpos=>$start,
-						  upstream=>$up,
-						  downstream=>$down,
-						  spike=>[$spike_type,$spike_flag], 
-						  path=>$TEMPDIR ) :
-	      $db->{GBSyntenyViewer}->write_fasta(
-						  GBOBJ=>$obj,
-						  accn=>$obj->{ACCN},
-						  mask=>$mask,
-						  mask_ncs=>$mask_ncs,
-						  startpos=>$start,
-						  upstream=>$up,
-						  downstream=>$down,
-						  spike=>[$spike_type,$spike_flag], 
-						  path=>$TEMPDIR );
+    my $mask_ncs = $options{mask_ncs};
+    my $db = new GS::MyDB;
+    my ($file, $file_begin, $file_end, $spike_seq) = 
+      write_fasta(
+		  GBOBJ=>$obj,
+		  accn=>$obj->{ACCN},
+		  mask=>$mask,
+		  mask_ncs=>$mask_ncs,
+		  startpos=>$start,
+		  upstream=>$up,
+		  downstream=>$down,
+		  spike=>[$spike_type,$spike_len],
+		  path=>$TEMPDIR,
+		  
+		 );
     my %tmp = (
 	       start=>$start,
 	       upstream=>$up,
@@ -982,6 +972,17 @@ sub get_obj_from_genome_db
     return $obj;
   }
 
+sub check_filename_taint {
+	my $v = shift;
+#	print STDERR "check_taint received $v\n";
+	if ($v =~ /^([A-Za-z0-9\-\.=\/_]*)$/) {
+		$v = $1;
+#		print STDERR "check_taint turned $v into $1\n";
+		return(1,$v);
+	} else {
+		return(0,0);
+	}
+}
 
 sub check_taint {
 	my $v = shift;
@@ -1001,9 +1002,8 @@ sub run_bl2seq {
   my $files = $opts{files};
   my $accns = $opts{accns};
   my $blast_params = $opts{blast_params};
-  my $match_filter = $opts{match_filter};
-  my $spike_seq = $opts{spike_seq};
   my $program = $opts{blast_program};
+  my $eval_cutoff = $opts{eval_cutoff};
   $program = "blastn" unless $program;
   my $db = new GS::MyDB;
   my @files;
@@ -1049,23 +1049,16 @@ sub run_bl2seq {
 	  #$reports{$accns->[$i]}{$accns->[$j]} = $tempfile;
 	  my $rc;
 	  my $data;
-
-	  if (  $match_filter ) 
-	    { 
-	      ($rc,$data) = $db->{GBSyntenyViewer}->parse_bl2seq( $tempfile, $accn1, $accn2, $spike_seq);
-	    } 
-	  else 
-	    {
-	      ($rc,$data) = $db->{GBSyntenyViewer}->parse_bl2seq( $tempfile, $accn1, $accn2);
-	    }
+	  my $blastreport = new CoGe::Accessory::bl2seq_report($tempfile);
 	  my @tmp = ($tempfile, $accn1, $accn2);
-	  if ($rc)
+	  if ($blastreport)
 	    {
-	      push @tmp, $data
+	      $blastreport->eval_cutoff($eval_cutoff);
+	      push @tmp, $blastreport
 	    }
 	  else
 	    {
-	      push @tmp, "no results form blasting $accn1 and $accn2";
+	      push @tmp, "no results from blasting $accn1 and $accn2";
 	    }
 	  push @reports, \@tmp;
 	}
@@ -1092,3 +1085,132 @@ sub get_substr
       }
     return $seq;
   }
+
+sub write_fasta {
+	my $options =  {};
+	# main input is ACCN, startpos, upstream, downstream, mask and path
+	# return value for this function is the sequence and the start/end
+	# position of the sequence.
+	# (10/10/03):  Now check if the spike_flag is true.  If so,
+	# construct and attach an appropriately sized spike sequence at the
+	# end of each sequence.  the options parameter spike is set to the
+	# size of the spike, or 0 if not set on the original form.
+
+	# vars
+	my($seq,$startpos,$seq_begin,$seq_end,$db_begin,$db_end,$chr);
+	my($gene_end,$gene_begin);
+	if ( @_ ) {
+		while ( @_ ) {
+			my($key,$value) = splice(@_,0,2);;
+			$options->{$key} = $value;
+		}
+	} else {
+		return( 0 );
+	}
+
+	my $gbobj = $options->{GBOBJ};
+
+	if ( not defined $options->{path} ) {
+		$options->{path} = "";
+	} else {
+		# does the path end in a "/"?  add if no
+		if ( $options->{path} !~ /(.*)\/$/ ) {
+			$options->{path} .= "/";
+		}
+		# other checks here?
+	}
+
+	my $tmp_file = new File::Temp ( TEMPLATE=>'SEQ__XXXXX',
+					DIR=>$options->{path},
+					SUFFIX=>'.fa',
+					UNLINK=>0);
+	my $fullname = $tmp_file->filename;
+
+	my $hdr = $gbobj->get_headerfasta( $options->{accn} );
+#	print STDERR "HEADER=$hdr\n";
+	$seq_begin = $options->{startpos} - $options->{upstream};
+	if ( $seq_begin < 1 ) {
+		$seq_begin = 1;
+	}
+	($seq) = $gbobj->sequence();
+
+	if ($options->{downstream})
+	{
+	    $seq_end = $options->{startpos} + $options->{downstream};
+	} else {
+	  $seq_end = length($seq);
+	}
+	if ( $seq_end > length( $seq )) {
+		$seq_end = length($seq);
+	}
+	
+#	print STDERR "SEQ_BEGIN = $seq_begin\n";
+#	print STDERR "SEQ_END = $seq_end\n";
+#	print STDERR "SEQLEN = ", length( $seq ), "\n";
+#	print STDERR "SEQ = $seq\n";
+
+	# mask out exons if required
+	if ( defined $options->{mask} and $options->{mask} == 1 ) {
+		$seq = $gbobj->mask_exons( $seq );
+	}
+	# mask out non coding sequences if required
+	if ( defined $options->{mask_ncs} and $options->{mask_ncs} == 1 ) {
+		$seq = $gbobj->mask_ncs( $seq );
+	}
+	($seq) = $gbobj->subsequence( $seq_begin, $seq_end, $seq );
+#	print STDERR Dumper $seq;
+#	print STDERR "SUBSEQLEN = ", length( $seq ), "\n";
+#	print STDERR "SUBSEQ = $seq\n";
+
+	my $spike_seq = "";
+	my($pair,$spikesize);
+	if ( defined $options->{spike} ) {
+		($pair,$spikesize) = @{ $options->{spike} };
+		if ( $spikesize > 0 ) {
+			($seq,$spike_seq) = spike( $seq, $spikesize, $pair );
+		}
+	}
+
+	my $error = 0;
+	($error,$fullname) = check_filename_taint( $fullname );
+	if ( $error ) {
+		open(OUT, ">$fullname") or die "Couldn't open $fullname!\n";
+		print OUT "$hdr\n";
+		print OUT "$seq\n";
+		close(OUT);
+		return($fullname,$seq_begin,$seq_end,$spike_seq);
+	} else {
+		return(0,0,0,"");
+	}
+}
+
+sub spike { 
+	my $seq = shift;
+	my $spikesize = shift;
+	return ($seq) unless $spikesize;
+	$spikesize -= 12; # to account for the "CCCAAAGGGTTT" tag
+	my $pair = shift;
+	my $spike_seq = "CCCAAAGGGTTT";
+	my @chars = split( //, $seq );
+
+	if ( $pair eq "Q" ) {
+		if ( $chars[-1] eq "A" ) {
+			$seq .= "T";
+		} else {
+			$seq .= "ANNNNNNNNNNN";
+		}
+	} else {
+		if ( $chars[-1] eq "G" ) {
+			$seq .= "C";
+		} else {
+			$seq .= "G";
+		}
+	}
+
+	for ( my $n = 0; $n < $spikesize; $n++ ) {
+		$spike_seq .= "C";
+	}
+	$seq .= $spike_seq;
+	return($seq,$spike_seq);
+}
+
