@@ -144,7 +144,7 @@ sub get_seq
     my $fasta;
     unless ($feat_id)
     {
-      $fasta = ">".$ds->org->name.", Location: ".$start.": ".$stop.", Chromosome: ".$chr.", Strand: ".$strand."\n";
+      $fasta = ">".$ds->org->name.", Location: ".$start."-".$stop.", Chromosome: ".$chr.", Strand: ".$strand."\n";
       $fasta = qq{<FONT class="main"><i>$fasta</i></FONT>};
       $columns = 80;
       $fasta = join ("\n", wrap('','',$fasta));
@@ -248,7 +248,16 @@ sub gen_foot
    				    RC=>0,
    				    PRO=>1},
     				  ]);
-    $template->param(FEATID=>$feat_id);
+    unless($feat_id)
+    {
+      $template->param(UPSTREAM=>"START: ");
+      $template->param(DOWNSTREAM=>"STOP: ");
+    }
+    else {
+      $template->param(FEATID=>$feat_id);
+      $template->param(UPSTREAM=>"UPSTREAM: ");
+      $template->param(DOWNSTREAM=>"DOWNSTREAM: ");
+    }
     $template->param(PRO=>$pro);
     $template->param(RC=>$rc);
     $template->param(CHR=>$chr);
