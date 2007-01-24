@@ -9,7 +9,7 @@ use CoGe::Accessory::LogUser;
 
 $ENV{PATH} = "/opt/apache/CoGe/";
 
-use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $DB $FORM $FID $DS $CHR $LOC $ORG $VERSION);
+use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $DB $FORM $FID $DS $CHR $LOC $ORG $VERSION $START $STOP);
 
 # set this to 1 to print verbose messages to logs
 $DEBUG = 0;
@@ -23,13 +23,17 @@ $DS = $FORM->param('ds');# || 61;
 $CHR = $FORM->param('chr');# || 7;
 $LOC = $FORM->param('loc') || $FORM->param('pos') || $FORM->param('x');# || 6049802;
 $LOC = 0 unless $LOC;
+$START = $FORM->param('start');
+$START = $LOC unless defined $START;
+$STOP = $FORM->param('stop');
+$STOP = $START unless defined $STOP;
 $ORG = $FORM->param('org') || $FORM->param('organism');
 $VERSION = $FORM->param('version') || $FORM->param('ver');
 
 $DB = new CoGe::Genome;
 print "Content-Type: text/html\n\n";
-my $rhtml = gen_html(featid=>$FID, loc=>$LOC, chr=>$CHR, ds=>$DS, org=>$ORG, version=>$VERSION) if $LOC > 0;
-print "<font class=title3>Position:</font> <font class=data>$LOC</font><br><hr>";
+my $rhtml = gen_html(featid=>$FID, start=>$START, stop=>$STOP, chr=>$CHR, ds=>$DS, org=>$ORG, version=>$VERSION) if $START > 0;
+print "<font class=title3>Position:</font> <font class=data>$START-$STOP</font><br><hr>";
 $rhtml = "No annotations" unless $rhtml;
 print $rhtml;
 
@@ -37,7 +41,9 @@ sub gen_html
   {
     my %args = @_;
     my $featid = $args{featid};
-    my $loc = $args{loc};
+    my $start = $args{start};
+    my $stop = $args{stop};
+    $stop = $start unless $stop;
     my $chr = $args{chr};
     my $ds = $args{ds};
     my $org = $args{org};
@@ -66,9 +72,9 @@ sub gen_html
       {
 	push @feats, $DB->get_feat_obj->get_features_in_region(dataset => $tdso->id, 
 							       chr => $chr,
-							       start => $loc,
-							       stop => $loc,
-							      ) if ($chr && $loc);
+							       start => $start,
+							       stop => $stop,
+							      ) if ($chr && $start && $stop);
       }
     push @feats, $DB->get_feat_obj->retrieve($featid) if $featid;
     my $html;
