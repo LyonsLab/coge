@@ -1,7 +1,19 @@
-package CoGe::Accessory::bl2seqReport;
+package CoGe::Accessory::bl2seq_report;
+
 use strict;
 use warnings;
+use CoGe::Accessory::bl2seq_report::HSP;
+use base qw(Class::Accessor);
+
 use Data::Dumper;
+
+
+BEGIN
+  {
+    use vars qw($VERSION);
+    $VERSION = "0.01";
+    __PACKAGE__->mk_accessors qw(hsps hsp_count eval_cutoff);
+  }
 
 
 ###############################################################################
@@ -10,8 +22,8 @@ use Data::Dumper;
 sub new {
 	my $proto = shift;
 	my $class = ref($proto) || $proto;
-	my $this  = {};
-	bless ($this, $class);
+	my $self  = {};
+	bless ($self, $class);
 	my $file = "";
 	if ( @_ ) {
 		($file) = shift;
@@ -19,36 +31,43 @@ sub new {
 		die "bl2seqReport error: new needs a file name!\n";
 	}
 	
-	$this->{FILE} = undef;
-	$this->{FH} = undef;
-	$this->{LASTLINE} = undef;
-	$this->{REPORT_DONE} = undef;
-
+	$self->{FILE} = undef;
+	$self->{FH} = undef;
+	$self->{LASTLINE} = undef;
+	$self->{REPORT_DONE} = undef;
+	$self->hsp_count(0);
 	# init
-	$this->{FILE} = $file;
+	$self->{FILE} = $file;
 	open( FH, "< $file" ) or
 		die "bl2seqReport error: $file wouldn't open!\n";
-	$this->{FH} = \*FH;
-	if ( $this->_parseHeader() ) {
-		$this->{REPORT_DONE} = 0;
+	$self->{FH} = \*FH;
+	if ( $self->_parseHeader() ) {
+		$self->{REPORT_DONE} = 0;
 	} else {
-		$this->{REPORT_DONE} = 1;
+		$self->{REPORT_DONE} = 1;
 	}
-	return $this;
+	my @hsps;
+	while (my $hsp = $self->nextHSP)
+	  {
+	    push @hsps, $hsp;
+	  }
+	close( $self->{FH} );
+	$self->hsps(\@hsps);
+	return $self;
 }
 
-sub DESTROY {
+#sub DESTROY {
 	# this object, until it's rewritten, misbehaves without this DESTROY
 	# subroutine
-	my $this = shift;
+#	my $self = shift;
 #	print STDERR "bl2seqReport DESTROY\n";
-	close( $this->{FH} );
-	foreach my $key ( keys %$this ) {
-		$this->{$key} = undef;
-	}
-#	print STDERR Dumper( $this );
-	$this = undef;
-}
+	#close( $self->{FH} );
+#	foreach my $key ( keys %$self ) {
+#		$self->{$key} = undef;
+#	}
+#	print STDERR Dumper( $self );
+#	$self = undef;
+#}
 
 
 
@@ -62,21 +81,22 @@ sub slength    {shift->{SLENGTH}}
 sub file    {shift->{FILE}}
 
 sub _parseHeader {
-	my ($this) = shift;
-	my $FH = $this->{FH};
-	while(<$FH>) {
-		if ($_ =~ /^Query=\s+(.+)/)    { # get the query info
-			my $query = $1;
-			while(<$FH>) {
-				last if $_ !~ /\S/;
-				$query .= $_;
-			}
-			$query =~ s/\s+/ /g;
+	my ($self) = shift;
+	my $FH = $self->{FH};
+	while(<$FH>) 
+	  {
+	    if ($_ =~ /^Query=\s+(.+)/)    { # get the query info
+	      my $query = $1;
+	      while(<$FH>) {
+		last if $_ !~ /\S/;
+		$query .= $_;
+	      }
+	      $query =~ s/\s+/ /g;
 			$query =~ /(.*)\s+\((.*)\s+letters\)/;
-			$this->{QUERY} = $1;
+			$self->{QUERY} = $1;
 			my $qlength = $2;
 			$qlength =~ s/,//g; #drop ",", if present
-			$this->{QLENGTH} = $qlength;
+			$self->{QLENGTH} = $qlength;
 		} elsif ( $_ =~ /^Query=/ ) {
 			# this happens when the original fasta sequence
 			# used in the bl2seq program contained a single
@@ -89,10 +109,10 @@ sub _parseHeader {
 			}
 			$query =~ s/\s+/ /g;
 			$query =~ /(.*)\s+\((.*)\s+letters\)/;
-			$this->{QUERY} = $1;
+			$self->{QUERY} = $1;
 			my $qlength = $2;
 			$qlength =~ s/,//g; #drop ",", if present
-			$this->{QLENGTH} = $qlength;
+			$self->{QLENGTH} = $qlength;
 		} elsif ($_ =~ /^>(.*)/) { # get the subject info
 	
 			my $sbjctdef = $1;
@@ -102,33 +122,33 @@ sub _parseHeader {
 			}
 			$sbjctdef =~ s/\s+/ /g;
 			$sbjctdef =~ /(.*)\s+Length =\s+(.*)\s*/;
-			$this->{SBJCT} = $1;
+			$self->{SBJCT} = $1;
 			my $slength = $2;
 			$slength =~ s/(.*)\s+/$1/;
-			$this->{SLENGTH} = $slength;
+			$self->{SLENGTH} = $slength;
 		} elsif ($_ =~ / Score/) {
-			$this->{LASTLINE} = $_;
+			$self->{LASTLINE} = $_;
 			return 1;
 		} elsif ($_ =~ /^Lambda/) {
-			$this->{LASTLINE} = $_;
+			$self->{LASTLINE} = $_;
 			return 0; # there's nothing in the report
 		}
 	}
 }
 
 sub _fastForward {
-	my ($this) = shift;
-	return 0 if $this->{REPORT_DONE};
-	return 1 if $this->{LASTLINE} =~ / Score/;
-	if ($this->{LASTLINE} =~ /^Lambda/) {
-		$this->{REPORT_DONE} = 1;
+	my ($self) = shift;
+	return 0 if $self->{REPORT_DONE};
+	return 1 if $self->{LASTLINE} =~ / Score/;
+	if ($self->{LASTLINE} =~ /^Lambda/) {
+		$self->{REPORT_DONE} = 1;
 		return 1;
 	}
-	my $FH = $this->{FH};
+	my $FH = $self->{FH};
 	while(<$FH>) {
 		if ($_ =~ /^Lambda/) {
-			$this->{LASTLINE} = $_;
-			$this->{REPORT_DONE} = 1;
+			$self->{LASTLINE} = $_;
+			$self->{REPORT_DONE} = 1;
 			return 1;
 		}
 	}
@@ -136,16 +156,15 @@ sub _fastForward {
 }
 
 sub nextHSP {
-	my $this = shift;
-	$this->_fastForward() or return 0;
-	return 0 if $this->{REPORT_DONE};
-
+	my $self = shift;
+	$self->_fastForward() or return 0;
+	return 0 if $self->{REPORT_DONE};
 	
 	############################
 	# get and parse scorelines #
 	############################
-	my $scoreline = $this->{LASTLINE};
-	my $FH = $this->{FH};
+	my $scoreline = $self->{LASTLINE};
+	my $FH = $self->{FH};
 	my ($bits, $score,$p) = $scoreline =~
 		/Score =\s+(\S+) bits \((\d+)\), Expect.* = (\S+)/;
 	$p =~ s/,//g;
@@ -179,10 +198,10 @@ sub nextHSP {
 	my(@hspline) = ();;
 	while(<$FH>) {
 		if ($_ !~ /\S/) {next;} # blank line, skip
-		elsif ($_ =~ /^\s*Score/)     {$this->{LASTLINE} = $_; last}
+		elsif ($_ =~ /^\s*Score/)     {$self->{LASTLINE} = $_; last}
 		elsif ($_ =~ /^>|^Lambda/)   {
-			$this->{LASTLINE} = $_;
-			$this->{REPORT_DONE} = 1;
+			$self->{LASTLINE} = $_;
+			$self->{REPORT_DONE} = 1;
 			last;
 		}
 		else {
@@ -226,80 +245,35 @@ sub nextHSP {
 	$ql = join("", @QL);
 	$sl = join("", @SL);
 	$as = join("", @AS);
+	my $hsp_count = $self->hsp_count();
+	$hsp_count++;
+	$self->hsp_count($hsp_count);
 	my $qgaps = $ql =~ tr/-/-/;
 	my $sgaps = $sl =~ tr/-/-/;
-	my $hsp = bl2seqReport::HSP::new( $score, $bits, $match, $positive,
-	$length, $p, $qb, $qe, $sb, $se, $ql, $sl, $as, $qgaps, $sgaps,
-	$strand);
+	my $hsp = new CoGe::Accessory::bl2seq_report::HSP
+	  ({
+	    score=>$score,
+	    bits=>$bits,
+	    match=>$match,
+	    positive=>$positive,
+	    length=>$length,
+	    pval=>$p,
+	    query_start=>$qb,
+	    query_stop=>$qe,
+	    subject_start=>$sb,
+	    subject_stop=>$se,
+	    query_alignment=>$ql,
+	    subject_alignment=>$sl,
+	    alignment=>$as,
+	    query_gaps=>$qgaps,
+	    subject_gaps=>$sgaps,
+	    strand=>$strand,
+	    number=>$hsp_count,
+	   });
+	return 0 if defined $self->eval_cutoff && $hsp->eval > $self->eval_cutoff;
 	return $hsp;
 }
-
-###############################################################################
-# bl2seqReport::HSP
-###############################################################################
-package bl2seqReport::HSP;
-use Data::Dumper;
-sub new {
-	my $hsp = bless {};
-	($hsp->{SCORE}, $hsp->{BITS},
-		$hsp->{MATCH}, $hsp->{POSITIVE}, $hsp->{LENGTH},$hsp->{P},
-		$hsp->{QB}, $hsp->{QE}, $hsp->{SB}, $hsp->{SE},
-		$hsp->{QL}, $hsp->{SL}, $hsp->{AS}, $hsp->{QG}, $hsp->{SG}, 
-		$hsp->{STRAND} ) = @_;
-	$hsp->{PERCENT} = int(1000 * $hsp->{MATCH}/$hsp->{LENGTH})/10;
-	if ( $hsp->{P} =~ /^e/ ) {
-		$hsp->{P} = "1" . $hsp->{P};
-	}
-	return $hsp;
-}
-sub score           {shift->{SCORE}}
-sub bits            {shift->{BITS}}
-sub percent         {shift->{PERCENT}}
-sub match           {shift->{MATCH}}
-sub positive        {shift->{POSITIVE}}
-sub length          {shift->{LENGTH}}
-sub P               {shift->{P}}
-sub p               {shift->{P}}
-sub P_val               {shift->{P}}
-sub p_val               {shift->{P}}
-sub pval               {shift->{P}}
-sub eval               {shift->{P}}
-sub queryBegin      {shift->{QB}}
-sub queryEnd        {shift->{QE}}
-sub sbjctBegin      {shift->{SB}}
-sub sbjctEnd        {shift->{SE}}
-sub queryAlignment  {shift->{QL}}
-sub sbjctAlignment  {shift->{SL}}
-sub alignmentString {shift->{AS}}
-sub queryGaps       {shift->{QG}}
-sub sbjctGaps       {shift->{SG}}
-sub qbegin      {shift->{QB}}
-sub qend        {shift->{QE}}
-sub sbegin      {shift->{SB}}
-sub send        {shift->{SE}}
-sub qalign  {shift->{QL}}
-sub salign  {shift->{SL}}
-sub alignment_string {shift->{AS}}
-sub qgaps       {shift->{QG}}
-sub sgaps       {shift->{SG}}
-sub qb              {shift->{QB}}
-sub qe              {shift->{QE}}
-sub sb              {shift->{SB}}
-sub se              {shift->{SE}}
-sub qa              {shift->{QL}}
-sub sa              {shift->{SL}}
-sub as              {shift->{AS}}
-sub qg              {shift->{QG}}
-sub sg              {shift->{SG}}
-sub strand          {shift->{STRAND}}
-
-sub DESTROY {
-	my $this = shift;
-	foreach my $key ( keys %$this ) {
-		$this->{$key} = undef;
-	}
-}
-
 
 1;
+
 __END__
