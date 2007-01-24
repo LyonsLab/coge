@@ -48,7 +48,7 @@ sub dataset_search_for_feat_name
   {
     my ($self, $accn, $num) = self_or_default(@_);
     $num = 1 unless $num;
-    return unless $accn;
+    return ( qq{<input type="hidden" id="dsid$num">\n<input type="hidden" id="featid$num">}, $num )unless $accn;
     my $html;
     my %sources;
     foreach my $feat ($coge->get_feats_by_name($accn))
