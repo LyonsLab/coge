@@ -59,6 +59,11 @@ function feat_search_chain(val, num) {
   kaj.GS('source'+num, val);
   feat_search(['accn'+num,'dsid'+num, 'args__'+num],['feat'+num]);
  }
+// else {
+ //  alert(num);
+ //  kaj.GS('source'+num,'<input type="hidden" id="dsid'+num+'">');
+ //  kaj.GS('feat'+num,'<input type="hidden" id="featid'+num+'">');
+// }
 }
 
 </SCRIPT>
@@ -125,7 +130,8 @@ onClick="loading([], ['results']); run([
 	'wordsize', 
 	'gapopen', 
 	'gapextend', 
-	'mismatch', 
+	'mismatch',
+	'eval', 
 	'blastparams',
 	'iw',
 	'ih', 
@@ -444,10 +450,16 @@ onClick="loading([], ['results']); run([
   <TD><input class="backbox" type="text" name="mismatch" id="mismatch" tabindex="1" size="3" value="-2" /></TD>
  </TR>    
  <TR>
+  <TD>Expectation value (E) (-e): </TD>
+  <TD><input class="backbox" type="text" name="eval" id="eval" tabindex="1" size="3" value="10" /></TD>
+ </TR>    
+ <TR>
   <TD>Other Blast Parameters: </TD>
   <TD><input class="backbox" type="text" name="blastparams" id="blastparams" tabindex="1" size="60" /></TD>
  </TR>         </TABLE>
      </table>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
      <span class="subItem"></span>
      <span class="subItem"></span>
      <span class="subItem"></span>
@@ -529,7 +541,7 @@ onClick="loading([], ['results']); run([
   </TD>
  <TR>
   <Td>
-<font class="small">Limit HSP labels? <label><input class="backbox" type="radio" name="hsp_limit" id="hsp_limit" tabindex="1" value="0" checked />No</label><label><input class="backbox" type="radio" name="hsp_limit" id="hsp_limit" tabindex="1" value="1" />Yes</label> Top: <input class=backbox type=textbox size=3 id="hsp_limit_num" value="20"/></font>
+<font class="small">Limit HSP labels? <label><input class="backbox" type="radio" name="hsp_limit" id="hsp_limit" tabindex="1" value="1" />Yes</label> <label><input class="backbox" type="radio" name="hsp_limit" id="hsp_limit" tabindex="1" value="0" checked />No</label> Show Top: <input class=backbox type=textbox size=3 id="hsp_limit_num" value="20"/></font>
     </DIV>
   </TD>
  <TR>
@@ -706,7 +718,8 @@ onClick="loading([], ['results']);run([
 	'wordsize', 
 	'gapopen', 
 	'gapextend', 
-	'mismatch', 
+	'mismatch',
+	'eval', 
 	'blastparams',
 	'iw',
 	'ih', 
