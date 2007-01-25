@@ -1,0 +1,66 @@
+<HTML>
+<HEAD>
+ <TITLE><TMPL_VAR NAME=TITLE></TITLE>
+ <link rel="stylesheet" type="text/css" href="/CoGe/css/styled.css" />
+ <link rel="stylesheet" type="text/css" href="/CoGe/css/sddm.css" />
+ <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+</HEAD>
+
+<BODY>
+<TABLE>
+ <tr>
+  <td>
+  <td class=title>Query
+  <td class=title>Subject
+ <tr>
+  <td class=title>Name
+  <td class=data><TMPL_VAR NAME=Query>
+  <td class=data><TMPL_VAR NAME=Subject>
+ <tr>
+  <td class=title>Percent Identity
+  <td class=data><TMPL_VAR NAME=QIdent>
+  <td class=data><TMPL_VAR NAME=SIdent>
+ <tr>
+  <td class=title>Percent Similarity
+  <td class=data><TMPL_VAR NAME=QSim>
+  <td class=data><TMPL_VAR NAME=SSim>
+ <tr>
+  <td class=title>Length
+  <td class=data><TMPL_VAR NAME=QLen>
+  <td class=data><TMPL_VAR NAME=SLen>
+ <tr>
+  <td class=title>Match
+  <td class=data><TMPL_VAR NAME=Match>
+  <td class=data><TMPL_VAR NAME=Match>
+ <tr>
+  <td class=title>Similar
+  <td class=data><TMPL_VAR NAME=Sim>
+  <td class=data><TMPL_VAR NAME=Sim>
+ <tr>
+  <td class=title>Gap
+  <td class=data><TMPL_VAR NAME=QGap>
+  <td class=data><TMPL_VAR NAME=SGap>
+ <tr>
+  <td class=title>Mismatch
+  <td class=data><TMPL_VAR NAME=QMis>
+  <td class=data><TMPL_VAR NAME=SMis>
+ <tr>
+  <td class=title>Orientation
+  <td class=data><TMPL_VAR NAME=strand>
+  <td class=data>
+ <tr>
+  <td class=title>E-Value
+  <td class=data><TMPL_VAR NAME=eval>
+  <td class=data>
+ <tr>
+  <td class=title>Sequence
+  <td class=data><TMPL_VAR NAME=qseq>
+  <td class=data><TMPL_VAR NAME=sseq>
+ <tr>
+  <td class=title>Alignment
+  <td colspan = 2 class=data><TMPL_VAR NAME=align>
+</table>
+	
+  
+</BODY>
+</HTML>
