@@ -137,6 +137,7 @@ onClick="loading([], ['results']); run([
 	'ih', 
 	'feat_h',
         'show_gc',
+	'color_hsp',
 	'hsp_labels',
 	'overlap_adjustment',
 	'hsp_limit',
@@ -533,6 +534,11 @@ onClick="loading([], ['results']); run([
 <font class="small">Color GC content? (green=GC, orange=N) <label><input class="backbox" type="radio" name="show_gc" id="show_gc" tabindex="1" value="1" />Yes</label><label><input class="backbox" type="radio" name="show_gc" id="show_gc" tabindex="1" value="0" checked />No</label></font>
     </DIV>
   </TD>
+ <TR>
+  <Td>
+<font class="small">Color Matches in HSPs?<label><input class="backbox" type="radio" name="color_hsp" id="color_hsp" tabindex="1" value="1" />Yes</label><label><input class="backbox" type="radio" name="color_hsp" id="color_hsp" tabindex="1" value="0" checked />No</label></font>
+    </DIV>
+  </TD>
 
  <TR>
   <Td>
@@ -725,6 +731,7 @@ onClick="loading([], ['results']);run([
 	'ih', 
 	'feat_h',
 	'show_gc',
+	'color_hsp',
 	'hsp_labels',
 	'overlap_adjustment',
 	'hsp_limit',
