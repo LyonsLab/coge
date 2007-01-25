@@ -70,6 +70,8 @@ sub align {shift->alignment(@_)}
 
 sub qgaps       {shift->query_gaps(@_)}
 sub sgaps       {shift->subject_gaps(@_)}
+sub qgap       {shift->query_gaps(@_)}
+sub sgap       {shift->subject_gaps(@_)}
 sub qg       {shift->query_gaps(@_)}
 sub sg       {shift->subject_gaps(@_)}
 
