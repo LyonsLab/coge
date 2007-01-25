@@ -177,6 +177,7 @@ sub Show_Summary
 	$ih,
 	$feat_h,
 	$show_gc,
+	$color_hsp,
 	$hsp_label,
 	$overlap_adjustment,
 	$hsp_limit,
@@ -420,6 +421,7 @@ sub Show_Summary
 							 feature_labels=>$feature_labels,
 							 hsp_limit=>$hsp_limit,
 							 hsp_limit_num=>$hsp_limit_num,
+							 color_hsp=>$color_hsp,
 							 spike_sequence=>$spike_seq,
 							);
 	    $html .= qq!<div>$accn!;
@@ -485,6 +487,7 @@ sub generate_image
     my $overlap_adjustment = $opts{overlap_adjustment};
     my $feature_labels = $opts{feature_labels};
     my $hsp_limit = $opts{hsp_limit};
+    my $color_hsp = $opts{color_hsp};
     my $hsp_limit_num = $opts{hsp_limit_num};
     my $eval_cutoff = $opts{eval_cutoff};
     my $graphic = new CoGe::Graphics;
@@ -521,7 +524,7 @@ sub generate_image
     $gfx->add_feature($f2);
     $graphic->process_nucleotides(c=>$gfx, seq=>$gbobj->{SEQUENCE}, layers=>{gc=>$show_gc});
     process_features(c=>$gfx, obj=>$gbobj, start=>$start, stop=>$stop);
-    process_hsps(c=>$gfx, data=>$data, reports=>$reports, accn=>$gbobj->{ACCN}, rev=>$reverse_image, seq_length=> length($gbobj->{SEQUENCE}), stagger_label=>$stagger_label, hsp_limit=>$hsp_limit, hsp_limit_num=>$hsp_limit_num, gbobj=>$gbobj, spike_seq=>$spike_seq, eval_cutoff=>$eval_cutoff);
+    process_hsps(c=>$gfx, data=>$data, reports=>$reports, accn=>$gbobj->{ACCN}, rev=>$reverse_image, seq_length=> length($gbobj->{SEQUENCE}), stagger_label=>$stagger_label, hsp_limit=>$hsp_limit, hsp_limit_num=>$hsp_limit_num, gbobj=>$gbobj, spike_seq=>$spike_seq, eval_cutoff=>$eval_cutoff, color_hsp=>$color_hsp);
     my $file = new File::Temp ( TEMPLATE=>'SynView__XXXXX',
 				   DIR=>$TEMPDIR,
 				    SUFFIX=>'.png',
@@ -642,6 +645,7 @@ sub process_hsps
     my $spike_seq = $opts{spike_seq};
     my $gbobj = $opts{gbobj};
     my $eval_cutoff = $opts{eval_cutoff};
+    my $color_hsp = $opts{color_hsp};
     #to reverse hsps when using genomic sequences from CoGe, they need to be drawn on the opposite strand than where blast reports them.  This is because CoGe::Graphics has the option of reverse drawing a region.  However, the sequence fed into blast has already been reverse complemented so that the HSPs are in the correct orientation for the image.  Thus, if the image is reverse, they are drawn on the wrong strand.  This corrects for that problem.   Sorry for the convoluted logic, but it was the simplest way to substantiate this option
     my @colors = (
 		  [ 100, 100, 255],
@@ -696,6 +700,7 @@ sub process_hsps
 		    $skip = 1 unless ($chr1 eq "-" && $chr2 eq "*") || ($chr2 eq "-" && $chr1 eq "*");
 		  }
 	      }
+	    next if $skip;
 	    my ($start, $stop, $seq);
 	    if ($accn1 eq $accn)
 	      {
@@ -731,6 +736,7 @@ sub process_hsps
 	    $f->color($color);
 	    $f->order($track);
 	    $f->strand($strand);
+	    $f->color_matches($color_hsp);
 	    if ($hsp_limit)
 	      {
 		$f->label($hsp->number) if $hsp->number <= $hsp_limit_num;
