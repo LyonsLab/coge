@@ -15,6 +15,7 @@ use strict;
 use CGI;
 #use CGI::Carp 'fatalsToBrowser';
 #use CNS::MyDB;
+use CoGe::Accessory::bl2seq_report;
 use GS::bl2seqReport;
 use CoGe::Genome;
 use Data::Dumper;
