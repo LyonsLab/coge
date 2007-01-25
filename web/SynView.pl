@@ -749,7 +749,8 @@ sub process_hsps
 	    $f->description($desc);
 #	    my $link = "bl2seq_summary.pl?".join("&", "blast_report=".$report, "accnq=$accn1", "accns=$accn2", "qbegin=".($gbobj->{start}+$start-1), "qend=".($gbobj->{start}+$stop-1),"qchr=".$gbobj->{chr}, "qds=". $gbobj->{ds}, "sbegin=","send=","submit=GO") if $gbobj->{ds};
 	    my $link = "HSPView.pl?blast_report=$report&hsp_num=".$hsp->number;
-	    $f->link($link."&"."hsp=".$hsp->number) if $link;
+	    $link .= join ("&","&qstart=".($gbobj->{start}+$start-1), "qstop=".($gbobj->{start}+$stop-1),"qchr=".$gbobj->{chr}, "qds=". $gbobj->{ds},"qstrand=".$strand) if $gbobj->{ds};
+	    $f->link($link) if $link;
 	    $f->alignment($hsp->alignment);
 	    push @feats, $f;
 	    print STDERR $hsp->number,"-", $hsp->strand, $track,":", $strand,"\n" if $DEBUG;
