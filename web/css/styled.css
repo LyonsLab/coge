@@ -167,6 +167,12 @@ BODY {
  border:2px solid #CCFFCC;
 }
 
+.seqbackbox
+{
+ width: 100%;
+ background: #cbfecb; 
+ border:1px solid #00FF36;
+}
 .species { 
   font-style: oblique;
   color: #009900;
