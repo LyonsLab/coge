@@ -10,6 +10,7 @@ BEGIN {
     $BLOCK_HEIGHT = 20;
     __PACKAGE__->mk_accessors(
 "alignment",
+"color_matches", #flag for whether to just fill the hsp with a color, or color each match individually
 );
 }
 
@@ -30,6 +31,7 @@ sub _initialize
     $self->type('HSP');
     $self->mag(1);
     $self->font_size(10);
+    $self->color_matches(1) unless defined $self->color_matches();
   }
 
 sub _post_initialize
@@ -37,8 +39,30 @@ sub _post_initialize
     my $self = shift;
     my %opts = @_;
     my $gd = $self->gd;
-    $gd->fill(0,0, $self->get_color($self->color));
+#    unless ($self->
+    unless ($self->color_matches)
+      {
+	$gd->fill(0,0, $self->get_color($self->color));
+	return;
+      }
     my $alignment = $self->alignment;
+    my $count = 0;
+    #make a colored box around the hsp
+    $gd->fill(0,0, $self->get_color([255,255,255]));
+
+    foreach my $chr (split //, $alignment)
+      {
+	if ($chr eq "|")
+	  {
+	    $gd->line($count, 0,  $count, $self->ih, $self->get_color($self->color));
+	  }
+	elsif ($chr ne " ") #probably an amino acid match
+	  {
+	    $gd->filledRectangle($count*3, 0,  $count*3+2, $self->ih, $self->get_color($self->color));
+	  }  
+	$count++;
+      }
+    $gd->rectangle(0,0,$self->iw-1, $self->ih-1, $self->get_color($self->color));
   }
 
 #################### subroutine header begin ####################
