@@ -170,8 +170,9 @@ sub nextHSP {
 	$p =~ s/,//g;
 	my $identityline = <$FH>;
 	return undef if not defined $identityline;
+	
 	my ($match, $length) = $identityline =~ /Identities = (\d+)\/(\d+)/;
-	my ($positive) = $scoreline =~ /Positives = (\d+)/;
+	my ($positive) = $identityline =~ /Positives = (\d+)/;
 	$positive = $match if not defined $positive;
 	my $strandline = <$FH>;
 	return undef if not defined $strandline;
