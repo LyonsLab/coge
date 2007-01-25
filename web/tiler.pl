@@ -5,7 +5,7 @@ use File::Spec::Functions;
 require LWP::Simple;
 use vars qw($IMGURL $ZOOM_PAR $SPATIAL_PARS $BUPT);
 
-$IMGURL = 'http://biocon.berkeley.edu/CoGe/GenomePNG.pl?';
+$IMGURL = 'http://biocon.berkeley.edu/CoGe/GenomePNG.pl?layers=all,gc&';
 $ZOOM_PAR = 'z';
 $SPATIAL_PARS = ['x'];
 $BUPT = 10;
