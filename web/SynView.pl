@@ -745,7 +745,7 @@ sub process_hsps
 	      {
 		$f->label($hsp->number);
 	      }
-	    my $desc = join ("<br>", "HSP: ".$hsp->number, $start."-".$stop." (".$hsp->strand.")", $seq,"Match: ".$hsp->match,"Length: ".$hsp->length,"Identity: ".$hsp->percent_id,"E_val: ".$hsp->pval);
+	    my $desc = join ("<br>", "HSP: ".$hsp->number. "  <font class=small>(".$blast->query."-". $blast->subject.")</font>", $start."-".$stop." (".$hsp->strand.")", $seq,"Match: ".$hsp->match,"Length: ".$hsp->length,"Identity: ".$hsp->percent_id,"E_val: ".$hsp->pval);
 	    $f->description($desc);
 #	    my $link = "bl2seq_summary.pl?".join("&", "blast_report=".$report, "accnq=$accn1", "accns=$accn2", "qbegin=".($gbobj->{start}+$start-1), "qend=".($gbobj->{start}+$stop-1),"qchr=".$gbobj->{chr}, "qds=". $gbobj->{ds}, "sbegin=","send=","submit=GO") if $gbobj->{ds};
 	    my $link = "HSPView.pl?blast_report=$report&hsp_num=".$hsp->number;
@@ -1133,7 +1133,8 @@ sub write_fasta {
 					UNLINK=>0);
 	my $fullname = $tmp_file->filename;
 
-	my $hdr = $gbobj->get_headerfasta( $options->{accn} );
+	my $hdr = $gbobj->get_headerfasta( );
+	
 #	print STDERR "HEADER=$hdr\n";
 	$seq_begin = $options->{startpos} - $options->{upstream};
 	if ( $seq_begin < 1 ) {
