@@ -32,8 +32,9 @@ function place_cookie(valid, cookie, url)
   <TD>Password:
   <TD><input class="backbox" type="password" name="pwd" id="pwd" size="10">
 </TABLE>
-<input type="submit" value="Log on" id="Login" onClick="login(['uname', 'pwd'],[place_cookie])">
-<input type="submit" value="Use Public Login" id="Login" onClick="login(['args__public', 'args__none'],[place_cookie])">
+<input type="hidden" id="url" value="<TMPL_VAR NAME="url">">
+<input type="submit" value="Log on" id="Login" onClick="login(['uname', 'pwd','url'],[place_cookie])">
+<input type="submit" value="Use Public Login" id="Login" onClick="login(['args__public', 'args__none','url'],[place_cookie])">
 
 
 <TMPL_ELSE>
