@@ -4,17 +4,19 @@ use strict;
 use CoGe::Genome;
 use Data::Dumper;
 use base 'Class::Accessor';
+use CGI::Carp('fatalsToBrowser');
 
 BEGIN {
     use Exporter ();
-    use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $coge $Q);
+    use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $coge $Q $FORM);
     $VERSION     = 0.1;
     @ISA         = (@ISA, qw (Exporter));
     #Give a hoot don't pollute, do not export more than needed by default
-    @EXPORT      = qw ();
+    @EXPORT      = qw (login);
     @EXPORT_OK   = qw ();
     %EXPORT_TAGS = ();
     $coge = new CoGe::Genome;
+    $FORM = new CGI;
  }
 
 
@@ -252,6 +254,27 @@ sub self_or_default { #from CGI.pm
     return wantarray ? @_ : $Q;
 }
 
+sub login
+  {
+    my $url = "index.pl?url=".$FORM->url(-relative=>1, -query=>1);
+    my $html1 = qq{
+<SCRIPT language="JavaScript">
+window.location=$url;
+</SCRIPT>
+};
+    my $html = qq{
+<html>
+<head>
+<title>Your Page Title</title>
+<meta http-equiv="REFRESH" content="1;url=$url"></HEAD>
+<BODY>
+You are not logged in.  You will be redirected to <a href = $url>here</a> in one second.
+</BODY>
+</HTML>
+};
+    return $html;
+  }
+
 sub ajax_func
   {
     return 
@@ -260,6 +283,7 @@ sub ajax_func
        feat_search=>\&feat_search_for_feat_name,
        feat_name_search=>\&feat_name_search,
        type_search=> \&type_search_for_feat_name,
+       login=>\&login,
       );
   }
 
