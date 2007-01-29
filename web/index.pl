@@ -57,6 +57,8 @@ sub gen_body
     else
       {
 	$tmpl->param(LOGIN=>1);
+	my $url = $FORM->param('url') if $FORM->param('url');
+	$tmpl->param(url=>$url);
       }
     return $tmpl->output;
   }
@@ -95,10 +97,12 @@ sub actions
 
 sub login
   {
-    my ($name, $pwd) = @_;
+    my ($name, $pwd, $url) = @_;
     my $db = new CoGe::Genome;
     my ($u) = $db->get_user_obj->search(user_name=>$name);
     my $pwdc = $u->check_passwd(pwd=>$pwd) if $u;
+    $url = $FORM->param('url') unless $url;
+    $url = $FORM->url() unless $url;
     if ($pwdc)
       {
 	my $sid = $db->get_user_session_obj->log_user(user=>$u);
@@ -108,11 +112,11 @@ sub login
     elsif ($name =~ /^public$/i)
       {
 	my $c = CoGe::Accessory::LogUser->gen_cookie(user_name=>$name);
-	return (1, $c, $FORM->url() );
+	return (1, $c,  $url);
       }
     else
       {
-	return (0,undef, $FORM->url);
+	return (0,undef, $url);
       }
   }
 
