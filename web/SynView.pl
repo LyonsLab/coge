@@ -3,7 +3,6 @@ use strict;
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
 use CGI::Ajax;
-use GS::LogUser;
 use HTML::Template;
 use GS::MyDB;                  # to hook into local gb db
 use Data::Dumper;
@@ -11,6 +10,7 @@ use File::Basename;
 use File::Temp;
 use GS::MyDB::GBDB::GBObject;
 use CoGe::Genome;
+use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::bl2seq_report;
 use CoGe::Graphics;
@@ -41,7 +41,11 @@ $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 $FORM = new CGI;
 $CGI::POST_MAX= 60 * 1024 * 1024; # 24MB
 $CGI::DISABLE_UPLOADS = 0; 
-($USER) = GS::LogUser->get_user();
+($USER) = CoGe::Accessory::LogUser->get_user();
+
+#print STDERR Dumper $USER;
+
+
 my $pj = new CGI::Ajax(
 		       rset=>\&Rset,
 		       run=>\&Show_Summary,
@@ -69,18 +73,26 @@ sub loading
 
 sub gen_html
   {
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
-    $template->param(LOGO_PNG=>"SynView-logo.png");
-    $template->param(TITLE=>'Synteny Viewer');
-    $template->param(USER=>$USER);
-    $template->param(DATE=>$DATE);
-    $template->param(NO_BOX=>1);
-    $template->param(BODY=>gen_body());
-    my $prebox = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SynView.tmpl');
-    $prebox->param(RESULTS_DIV=>1);
-    $template->param(PREBOX=>$prebox->output);
     my $html;# =  "Content-Type: text/html\n\n";
-    $html .= $template->output;
+    unless ($USER)
+      {
+	$html = login();
+      }
+    else
+      {
+	my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
+	$template->param(LOGO_PNG=>"SynView-logo.png");
+	$template->param(TITLE=>'Synteny Viewer');
+	$template->param(USER=>$USER);
+	$template->param(DATE=>$DATE);
+	$template->param(NO_BOX=>1);
+	$template->param(BODY=>gen_body());
+	my $prebox = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SynView.tmpl');
+	$prebox->param(RESULTS_DIV=>1);
+	$template->param(PREBOX=>$prebox->output);
+	
+	$html .= $template->output;
+      }
     return $html;
   }
 
@@ -864,7 +876,6 @@ sub generate_seq_file
     my $spike_type = $options{spike_type};
     my $mask = $options{mask} || $options{mask_flag};
     my $mask_ncs = $options{mask_ncs};
-    my $db = new GS::MyDB;
     my ($file, $file_begin, $file_end, $spike_seq) = 
       write_fasta(
 		  GBOBJ=>$obj,
@@ -1012,7 +1023,6 @@ sub run_bl2seq {
   my $program = $opts{blast_program};
   my $eval_cutoff = $opts{eval_cutoff};
   $program = "blastn" unless $program;
-  my $db = new GS::MyDB;
   my @files;
   foreach my $item (@$files)
     {
