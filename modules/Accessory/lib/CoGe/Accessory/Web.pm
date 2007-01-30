@@ -8,7 +8,7 @@ use CGI::Carp('fatalsToBrowser');
 
 BEGIN {
     use Exporter ();
-    use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $coge $Q $FORM);
+    use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $coge $Q $FORM );
     $VERSION     = 0.1;
     @ISA         = (@ISA, qw (Exporter));
     #Give a hoot don't pollute, do not export more than needed by default
@@ -17,6 +17,7 @@ BEGIN {
     %EXPORT_TAGS = ();
     $coge = new CoGe::Genome;
     $FORM = new CGI;
+    __PACKAGE__->mk_accessors qw(restricted_orgs);
  }
 
 
@@ -48,11 +49,12 @@ sub feat_name_search
 
 sub dataset_search_for_feat_name
   {
-    my ($self, $accn, $num) = self_or_default(@_);
+    my ($self, $accn, $num, $user) = self_or_default(@_);
     $num = 1 unless $num;
     return ( qq{<input type="hidden" id="dsid$num">\n<input type="hidden" id="featid$num">}, $num )unless $accn;
     my $html;
     my %sources;
+    my %restricted_orgs = %{$self->restricted_orgs} if $self->restricted_orgs;
     foreach my $feat ($coge->get_feats_by_name($accn))
       {
 	my $val = $feat->dataset;
@@ -64,6 +66,7 @@ sub dataset_search_for_feat_name
 	my $org = $val->org->name;
 	my $title = "$org: $ds_name ($sname, v$ver)";
 #	$sources{$feat->data_info->id} = $feat->data_info;
+	next if $restricted_orgs{$org};
 	$sources{$feat->dataset->id} = $title;
       }
     if (keys %sources)
