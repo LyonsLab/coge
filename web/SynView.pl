@@ -27,7 +27,7 @@ use CoGe::Graphics::Feature::HSP;
 $ENV{PATH} = "/opt/apache2/CoGe/";
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 
-use vars qw( $DATE $DEBUG $BL2SEQ $TEMPDIR $TEMPURL $USER $FORM $cogeweb);
+use vars qw( $DATE $DEBUG $BL2SEQ $TEMPDIR $TEMPURL $USER $FORM);
 $BL2SEQ = "/opt/bin/bio/bl2seq ";
 $TEMPDIR = "/opt/apache/CoGe/tmp";
 $TEMPURL = "/CoGe/tmp";
@@ -45,12 +45,14 @@ $CGI::DISABLE_UPLOADS = 0;
 
 #print STDERR Dumper $USER;
 
-
+my %ajax = CoGe::Accessory::Web::ajax_func();
+$ajax{dataset_search} = \&dataset_search_for_feat_name; #override this method from Accessory::Web
 my $pj = new CGI::Ajax(
 		       rset=>\&Rset,
 		       run=>\&Show_Summary,
-		       CoGe::Accessory::Web::ajax_func(),
+		       
 		       loading=>\&loading,
+		       %ajax,
 		      );
 $pj->JSDEBUG(0);
 $pj->DEBUG(0);
@@ -474,7 +476,13 @@ sub Show_Summary
 #    print STDERR $html;
     $template->param(BOX_NAME=>"Results:");
     $template->param(BODY=>$html);
-    return $template->output;
+    my $outhtml = $template->output;
+    open (OUT, ">$TEMPDIR/results.html");
+    print STDERR $outhtml;
+    print OUT $outhtml;
+    close OUT;
+      
+    return $outhtml;;
 
 }
 
@@ -1232,3 +1240,50 @@ sub spike {
 	return($seq,$spike_seq);
 }
 
+sub dataset_search_for_feat_name
+  {
+    my ($accn, $num, $user) = (@_);
+    $num = 1 unless $num;
+    return ( qq{<input type="hidden" id="dsid$num">\n<input type="hidden" id="featid$num">}, $num )unless $accn;
+    my $html;
+    my %sources;
+    my $coge = new CoGe::Genome;
+    my %restricted;
+    if (!$USER || $USER =~ /public/i)
+      {
+	$restricted{papaya} = 1;
+      }
+    foreach my $feat ($coge->get_feats_by_name($accn))
+      {
+	my $val = $feat->dataset;
+	my $name = $val->name;
+	my $ver = $val->version;
+	my $desc = $val->description;
+	my $sname = $val->data_source->name;
+	my $ds_name = $val->name;
+	my $org = $val->org->name;
+	my $title = "$org: $ds_name ($sname, v$ver)";
+#	$sources{$feat->data_info->id} = $feat->data_info;
+	next if $restricted{papaya};
+	$sources{$feat->dataset->id} = $title;
+      }
+    if (keys %sources)
+      {
+	$html .= qq{
+<SELECT name = "dsid$num" id= "dsid$num" onChange="feat_search(['accn$num','dsid$num', 'args__$num'],['feat$num']);">
+};
+	foreach my $id (sort {$b <=> $a} keys %sources)
+	  {
+	    my $val = $sources{$id};
+	    $html  .= qq{  <option value="$id">$val\n};
+	  }
+	$html .= qq{</SELECT>\n};
+	my $count = scalar keys %sources;
+	$html .= qq{<font class=small>($count)</font>};
+      }
+    else
+      {
+	$html .= qq{Accession not found <input type="hidden" id="dsid$num">\n<input type="hidden" id="featid$num">\n};	
+      }    
+    return ($html,$num);
+  }
