@@ -28,9 +28,9 @@ sub gen_cookie
     my $self = shift;
     my %opts = @_;
     my $user_name = $opts{user_name};
-    my $uid = $opts{uid};
+    my $uid = $opts{uid} || 0;
     my $expires = $opts{exp} || "+24h";
-    my $session = $opts{session};
+    my $session = $opts{session} || 0;
     $expires = "+".$expires unless $expires =~ /^\+/;
     
     my $c = new CGI::Cookie(-name=>$cookie_name,
