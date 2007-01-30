@@ -457,7 +457,7 @@ sub annotation_pretty_print_html
     my $stop = $self->end_location;
     my $chr = $self->chr;
     my $strand = $self->strand;
-    my $info_id = $self->dataset->id;
+    my $dataset_id = $self->dataset->id;
     my $anno_type = new CoGe::Genome::Accessory::Annotation(Type=>"<font class=\"title4\">"."Name(s):"."</font>");
     $anno_type->Type_delimit("\n");
     $anno_type->Val_delimit("\n, ");
@@ -496,7 +496,8 @@ sub annotation_pretty_print_html
     my $location = "Chr ".$chr." ";
     $location .= join (", ", map {$_->start."-".$_->stop} $self->locs);
     $location .="(".$strand.")";
-    $location = qq{<a href="$loc_link?start=$start&stop=$stop&chr=$chr&di=$info_id&strand=$strand">}.$location."</a\n" if $loc_link;
+    my $featid = $self->id;
+    $location = qq{<a href="$loc_link?featid=$featid&start=$start&stop=$stop&chr=$chr&dsid=$dataset_id&strand=$strand" target=_new>}.$location."</a\n" if $loc_link;
     $location = qq{<font class="data">$location</font>};
     $anno_obj->add_Annot(new CoGe::Genome::Accessory::Annotation(Type=>"<font class=\"title4\">Location</font>", Values=>[$location], Type_delimit=>": ", Val_delimit=>" "));
     return $anno_obj->to_String;
@@ -1299,7 +1300,7 @@ sub frame6_trans
     $seqs{"1"} = $self->_process_seq(seq=>$seq, start=>0, code1=>$code, codonl=>3);
     $seqs{"2"} = $self->_process_seq(seq=>$seq, start=>1, code1=>$code, codonl=>3);
     $seqs{"3"} = $self->_process_seq(seq=>$seq, start=>2, code1=>$code, codonl=>3);
-    my $rcseq = $self->reverse_complement;
+    my $rcseq = $self->reverse_complement($seq);
     $seqs{"-1"} = $self->_process_seq(seq=>$rcseq, start=>0, code1=>$code, codonl=>3);
     $seqs{"-2"} = $self->_process_seq(seq=>$rcseq, start=>1, code1=>$code, codonl=>3);
     $seqs{"-3"} = $self->_process_seq(seq=>$rcseq, start=>2, code1=>$code, codonl=>3);
@@ -1354,7 +1355,7 @@ sub alpha_trans
     $seqs{II2} = $self->_process_seq(alter=>$alter, seq=>$seq, start=>1, code1=>$code2, codonl=>2);
     $seqs{II1H} = $self->_process_seq(alter=>$alter, seq=>$seq, start=>0, code1=>$code2, code2=>$code1, codonl=>2) if $hyb;;
     $seqs{II2H} = $self->_process_seq(alter=>$alter, seq=>$seq, start=>1, code1=>$code2, code2=>$code1, codonl=>2) if $hyb;;
-    my $rcseq = $self->reverse_complement;
+    my $rcseq = $self->reverse_complement($seq);
     $seqs{"I-1"} = $self->_process_seq(alter=>$alter, seq=>$rcseq, start=>0, code1=>$code1, codonl=>2);
     $seqs{"I-2"} = $self->_process_seq(alter=>$alter, seq=>$rcseq, start=>1, code1=>$code1, codonl=>2);
     $seqs{"I-1H"} = $self->_process_seq(alter=>$alter, seq=>$rcseq, start=>0, code1=>$code1, code2=>$code2, codonl=>2) if $hyb;;
