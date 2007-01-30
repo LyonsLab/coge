@@ -413,6 +413,11 @@ sub resolve_dataset
     my $self = shift;
     my $dsin = shift;
     my $dsout;
+    unless (defined $dsin)
+      {
+	carp "Arg!  Nothing passed into resolve_dataset.  Probably a bad error.";
+	return;
+      }
     if (ref ($dsin) =~ /Dataset/i) #we were passed an object
       {
 	$dsout = $dsin;
