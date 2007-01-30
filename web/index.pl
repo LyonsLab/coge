@@ -20,6 +20,7 @@ $FORM = new CGI;
 #    
 #  }
 ($USER, $UID, $LAST_LOGIN) = CoGe::Accessory::LogUser->get_user();
+
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		 sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
 my $pj = new CGI::Ajax(
@@ -36,7 +37,14 @@ sub gen_html
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
     $template->param(TITLE=>'Comparative Genomics Homepage');
     $template->param(HEAD=>'<SCRIPT language="JavaScript" type="text/javascript" src="./js/kaj.stable.js"></SCRIPT>');
-    $template->param(USER=>$USER);
+    if ($FORM->param('logout') || !$USER)
+      {
+	$template->param(USER=>"Not logged in");
+      }
+    else
+      {
+	$template->param(USER=>$USER);
+      }
     $template->param(DATE=>$DATE);
     $template->param(BOX_NAME=>"Welcome!");
     $template->param(LOGO_PNG=>"CoGe-logo.png");
@@ -50,7 +58,8 @@ sub gen_html
 sub gen_body
   {
     my $tmpl = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/index.tmpl');
-    if ($USER)
+    my $html;
+    if ($USER && !$FORM->param('logout'))
       {
 	$tmpl->param(ACTIONS=>actions());
       }
@@ -60,7 +69,13 @@ sub gen_body
 	my $url = $FORM->param('url') if $FORM->param('url');
 	$tmpl->param(url=>$url);
       }
-    return $tmpl->output;
+    $html .= $tmpl->output;
+    if ($FORM->param('logout'))
+      {
+	my $c = CoGe::Accessory::LogUser->gen_cookie(user_name=>$USER, uid=>$UID, session=>$LAST_LOGIN, exp=>"Thu, 01-Jan-1970 00:00:01 GMT");
+	$html .= "<script language = 'javascript'>window.onload=delete_cookie('$c');</script>";
+      }
+    return $html;
   }
 
 sub actions
