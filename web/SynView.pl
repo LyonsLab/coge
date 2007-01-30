@@ -1264,7 +1264,7 @@ sub dataset_search_for_feat_name
 	my $org = $val->org->name;
 	my $title = "$org: $ds_name ($sname, v$ver)";
 #	$sources{$feat->data_info->id} = $feat->data_info;
-	next if $restricted{papaya};
+	next if $restricted{$org};
 	$sources{$feat->dataset->id} = $title;
       }
     if (keys %sources)
