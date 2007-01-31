@@ -27,7 +27,7 @@ use CoGe::Graphics::Feature::HSP;
 $ENV{PATH} = "/opt/apache2/CoGe/";
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 
-use vars qw( $DATE $DEBUG $BL2SEQ $TEMPDIR $TEMPURL $USER $FORM);
+use vars qw( $DATE $DEBUG $BL2SEQ $TEMPDIR $TEMPURL $USER $FORM $cogeweb);
 $BL2SEQ = "/opt/bin/bio/bl2seq ";
 $TEMPDIR = "/opt/apache/CoGe/tmp";
 $TEMPURL = "/CoGe/tmp";
@@ -477,10 +477,10 @@ sub Show_Summary
     $template->param(BOX_NAME=>"Results:");
     $template->param(BODY=>$html);
     my $outhtml = $template->output;
-    open (OUT, ">$TEMPDIR/results.html");
-    print STDERR $outhtml;
-    print OUT $outhtml;
-    close OUT;
+#    open (OUT, ">$TEMPDIR/results.html");
+#    print STDERR $outhtml;
+#    print OUT $outhtml;
+#    close OUT;
       
     return $outhtml;;
 
