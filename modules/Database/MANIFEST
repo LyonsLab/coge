@@ -38,3 +38,4 @@ t/002_feature_by_id.t
 t/003_organism_by_name.t
 t/004_features_from_dataset.t
 t/005_feature_by_organism.t
+t/006_genome_sequence_datasetid.t
