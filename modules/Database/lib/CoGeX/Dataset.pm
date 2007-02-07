@@ -62,7 +62,7 @@ sub get_genome_sequence {
   my $self = shift;
   my $str = "";
 
-  if ( @_ ) {
+  if ( @_ > 1 ) {
     my($chromosome, $from, $to) = @_;
 
     # make sure two numbers were sent in
@@ -102,7 +102,16 @@ sub get_genome_sequence {
     }
     $str = $self->trim_sequence( $str, $g1->start, $g2->stop, $from, $to );
 
+  } elsif ( @_ == 1 ) {    # get a whole chromosome
+    my $chromosome = shift;
+    my $g = $self->genome_sequences(
+                      {
+                        'chromosome' => $chromosome
+                      })->first();
+    $str = $g->sequence_data;
   } else {                 # entire sequence
+    my $g = $self->genome_sequences();
+    $str = $g->sequence_data;
   }
   return $str;
 }
