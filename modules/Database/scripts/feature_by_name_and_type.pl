@@ -20,11 +20,13 @@ my $rs = $s->resultset('Feature')->search(
                 );
 
 
+my %seen;
 while (my $feat =$rs->next()){
     my $fn = $feat->feature_names;
     my $type = $feat->feature_type->name;
-    print map { print STDERR $_->name . "->". $type . "\t" } $fn->next();
-    print STDERR "\n";
+    my @names = grep { ! $seen{$_->name} } $fn->next();
+    map { $seen{$_->name}=1 }  $feat->feature_names->next(); 
+    map { print $_->name  . "\n" } @names;
 }
    
 

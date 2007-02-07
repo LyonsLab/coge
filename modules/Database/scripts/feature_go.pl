@@ -9,17 +9,17 @@ my $connstr = 'dbi:Pg:dbname=genomes;host=biocon;port=5432';
 my $s = CoGeX->connect($connstr, 'bpederse', 'wsa47r' );
 
 
-$connstr = 'dbi:mysql:genomes:biocon:3306';
-$s = CoGeX->connect($connstr, 'cnssys', 'CnS' );
+#$connstr = 'dbi:mysql:genomes:biocon:3306';
+#$s = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 
 $s->storage->debug(1);
 
 
 my $rs = $s->resultset('Feature')->search( { 
-                    'feature_type.name' =>   'CDS' ,
+                    'feature_type.name' =>   'gene' ,
                     'dataset.version'    => 6,
                     'feature_names.name' => ['-and' , 
-                            { '-like' => 'At%'} ,
+                            { '-ilike' => 'At%'} ,
                             { '-not_like' => ['%.%'] }
                         ]
                     }, {
@@ -27,7 +27,7 @@ my $rs = $s->resultset('Feature')->search( {
                         prefetch => [ 'feature_type','dataset'] , 
                     }, );
 
-print "got resultset\n";
+#print "got resultset\n";
 
 my %seen;
 $s->storage->debug(0);
@@ -38,6 +38,7 @@ while (my $feat = $rs->next()){
 
     my $annos = $feat->annotations;
     my @names = grep { $_->name =~ /^At\dg\d{5}$/i } $fn->next();
+    print join("|",@names),"\n";
     next unless @names;
     #print join("|", sort map { $_->name } @names) . "\n";
     my @gos = ();
@@ -46,12 +47,12 @@ while (my $feat = $rs->next()){
         next unless $a->annotation_type->annotation_type_group;
         next unless $a->annotation_type->annotation_type_group->name =~/^[Gg][Oo]/;
         #print $a->annotation_type->annotation_type_group->name  . "\n";
-        push(@{$annotations{$names[0]->name}}, $a->annotation);
+        push(@{$annotations{$names[0]->name}}, 'G' . $a->annotation_type->name);
     }
     #map { print $_->annotation .  "\n" }  @gos;
 }
 foreach my $accn (keys %annotations){
-    print $accn . "|" . join("|", @{$annotations{$accn}} ) . "\n";
+    print $accn . "\t" . join(";", @{$annotations{$accn}} ) . "\n";
 }
-   
+#TODO: fix me   
 
