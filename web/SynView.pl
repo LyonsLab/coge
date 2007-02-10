@@ -85,6 +85,7 @@ sub gen_html
 	my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
 	$template->param(LOGO_PNG=>"SynView-logo.png");
 	$template->param(TITLE=>'Synteny Viewer');
+	$template->param(HELP=>'SynView');
 	$template->param(USER=>$USER);
 	$template->param(DATE=>$DATE);
 	$template->param(NO_BOX=>1);
