@@ -34,6 +34,7 @@ my $pj = new CGI::Ajax(
 		       gen_data => \&gen_data,
 		       get_genomic_seq => \&get_genomic_seq,
 		       get_orgs => \&get_orgs,
+		       get_start_stop=>\&get_start_stop,
 		      );
 $pj->JSDEBUG(0);
 $pj->DEBUG(0);
@@ -198,6 +199,8 @@ sub get_dataset_chr_info
 	{
 		return "", "", "";
 	}
+    my $start = "'start'";
+    my $stop = "'stop'";	
     my $html .= "<table>";
     return $html unless $dsd;
     my $ds = $DB->get_dataset_obj->retrieve($dsd);
@@ -242,7 +245,7 @@ sub get_dataset_chr_info
 	$seq_grab .= "<tr><td class = \"ital\">End position: ";
 	$seq_grab .= qq{<td><input type="text" size=10 value="100000" id="stop">};
 	$seq_grab .= qq{</table>};
-	$seq_grab .= qq{<input type="submit" value = "Get Genomic Sequence!" onClick="get_genomic_seq(['args__$dsd', 'args__$chr', 'start', 'stop'], ['gseq'])">};
+	$seq_grab .= qq{<input type="submit" value = "Get Genomic Sequence!" onClick="launch_seqview($dsd, $chr)">};
 	$seq_grab .= qq{<div id="gseq"></div>};
       }
     return $html, $viewer, $seq_grab;
@@ -274,6 +277,7 @@ sub get_genomic_seq
     $seq =~ s/(.{80})/$1\n/g;
     return "<pre>".$seq."</pre>";
   }
+
 
   sub get_organism_name
   {
