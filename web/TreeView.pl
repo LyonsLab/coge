@@ -308,6 +308,10 @@ sub get_names
 	    $name =~ s/\|/_/g if $name;
 	    $name =~ s/jgi_//g if $name;
 	    $name =~ s/(Chlre3.\d+)_.*/$1/ if $name;
+	    $name =~ s/'//g;
+	    $name =~ s/-/_/g;
+	    $name =~ s/\./_/g;
+#	    $name =~ s/_/\./g;
 #	    $name =~ s/_/\\n/ if $name;
 	    last if $_ =~ ";";
 	    next unless ($num =~ /^\d+$/);
