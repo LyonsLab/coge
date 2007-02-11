@@ -104,14 +104,15 @@ sub get_genome_sequence {
 
   } elsif ( @_ == 1 ) {    # get a whole chromosome
     my $chromosome = shift;
-    my $g = $self->genome_sequences(
-                      {
-                        'chromosome' => $chromosome
-                      })->first();
-    $str = $g->sequence_data;
+    my $allseqs = $self->genome_sequences( { 'chromosome' => $chromosome } );
+    while ( my $g = $allseqs->next ) {
+      $str .= $g->sequence_data;
+    }
   } else {                 # entire sequence
-    my $g = $self->genome_sequences();
-    $str = $g->sequence_data;
+    my $allseqs = $self->genome_sequences();
+    while ( my $g = $allseqs->next ) {
+      $str .= $g->sequence_data;
+    }
   }
   return $str;
 }
