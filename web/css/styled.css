@@ -19,12 +19,6 @@ BODY {
   color: #000099;
 }
 
-.feattable {
-  height: 300px;
-  overflow: auto;
-  border: 1px;
-}
-
 .prep {
   font-family:fixed, monospace;
   white-space:pre;
