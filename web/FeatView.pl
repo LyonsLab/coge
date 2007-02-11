@@ -15,7 +15,7 @@ use POSIX;
 
 $ENV{PATH} = "/opt/apache2/CoGe/";
 
-use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $DB $FORM $ACCN $FID);
+use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $DB $FORM $ACCN $FID %restricted_orgs);
 
 # set this to 1 to print verbose messages to logs
 $DEBUG = 0;
@@ -28,6 +28,10 @@ $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 $FORM = new CGI;
 $ACCN = $FORM->param('accn');
 ($USER) = CoGe::Accessory::LogUser->get_user();
+if (!$USER || $USER =~ /public/i)
+  {
+    $restricted_orgs{papaya} = 1;
+  }
 $DB = new CoGe::Genome;
 my $pj = new CGI::Ajax(
 		       db_lookup=>\&db_lookup,
@@ -238,8 +242,13 @@ sub gen_body
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/FeatView.tmpl');
 
     $template->param(ACCN=>$ACCN);
-    $template->param(TYPE_LOOP=> [{TYPE=>"<OPTION VALUE=0>All</OPTION>"},map {{TYPE=>"<OPTION value=\"".$_->id."\">".$_->name."</OPTION>"}} sort {$a->name cmp $b->name} $DB->all_feature_types]);
-    $template->param(ORG_LOOP=> [{ORG=>"<OPTION VALUE=0>All</OPTION>"},map {{ORG=>"<OPTION value=\"".$_->id."\">".$_->name."</OPTION>"}} sort {$a->name cmp $b->name} $DB->all_orgs]);
+    $template->param(TYPE_LOOP=> [{TYPE=>"<OPTION VALUE=0>All</OPTION>"},map {{TYPE=>"<OPTION value=\"".$_->id."\">".$_->name."</OPTION>"}} sort {uc($a->name) cmp uc($b->name)} $DB->all_feature_types]);
+    my @orgs;
+    foreach my $org ($DB->all_orgs)
+      {
+	push @orgs, $org unless $restricted_orgs{$org->name};
+      }
+    $template->param(ORG_LOOP=> [{ORG=>"<OPTION VALUE=0>All</OPTION>"},map {{ORG=>"<OPTION value=\"".$_->id."\">".$_->name."</OPTION>"}} sort {uc($a->name) cmp uc($b->name)} @orgs]);
     my $html = $template->output;
 #    $html =~ s/(>gene<\/OPTION)/ SELECTED$1/; 
     return $html;
@@ -262,6 +271,7 @@ sub get_data_source_info_for_accn
 	my $ds_name = $val->name;
 	my $org = $val->org->name;
 	my $title = "$org: $ds_name ($sname, v$ver)";
+	next if $restricted_orgs{$org};
 	$sources{$title} = $val->id;
       }
     my $html;
