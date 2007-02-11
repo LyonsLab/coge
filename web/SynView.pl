@@ -907,7 +907,6 @@ sub generate_seq_file
 	       file_end=>$file_end,
 	       );
 
-	
     return ($file, $file_begin, $file_end, $spike_seq);
   }
 
