@@ -65,7 +65,7 @@ sub genome_sequence {
                                              $loc->chromosome(),
                                              $loc->start,
                                              $loc->stop );
-    if ( $loc->strand eq "" or $loc->strand eq "-1" ) {
+    if ( $loc->strand eq "-" or $loc->strand eq "-1" ) {
       push @sequences, $self->revcomp($fseq);
     } else {
       push @sequences, $fseq;
