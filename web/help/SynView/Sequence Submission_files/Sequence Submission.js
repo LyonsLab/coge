@@ -524,6 +524,12 @@ function onPageLoad()
     adjustFontSizeIfTooBig("id22");
     adjustLineHeightIfTooBig("id23");
     adjustFontSizeIfTooBig("id23");
+    adjustLineHeightIfTooBig("id24");
+    adjustFontSizeIfTooBig("id24");
+    adjustLineHeightIfTooBig("id25");
+    adjustFontSizeIfTooBig("id25");
+    adjustLineHeightIfTooBig("id26");
+    adjustFontSizeIfTooBig("id26");
     fixupAllIEPNGBGs();
     fixupIEPNG("id5", "Sequence Submission_files/transparent.gif");
     fixupIEPNG("id6", "Sequence Submission_files/transparent.gif");
