@@ -1080,7 +1080,7 @@ sub get_features_by_name_and_dataset_id
     my @f;
     foreach my $feat ($self->get_features_by_name($name) )
       {	
-	push @f, $feat if $feat->dataset->id eq $id;
+	push @f, $feat if $id && $feat->dataset->id eq $id;
       }
     return wantarray ? @f : \@f;
   }
