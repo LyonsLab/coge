@@ -13,7 +13,7 @@ BEGIN
   {
     use vars qw($VERSION);
     $VERSION = "0.01";
-    __PACKAGE__->mk_accessors qw(score bits percent_id match positive length pval query_start query_stop subject_start subject_stop query_alignment subject_alignment alignment query_gaps subject_gaps strand number);
+    __PACKAGE__->mk_accessors qw(score bits percent_id percent_sim match positive length pval query_start query_stop subject_start subject_stop query_alignment subject_alignment alignment query_gaps subject_gaps strand number);
   }
 
 #ripped from class::Accessor
@@ -26,6 +26,7 @@ sub new {
     # make a copy of $fields.
     my $hsp = bless {%$fields}, $class;
     $hsp->percent_id(int(1000 * $hsp->match/$hsp->length)/10) if $hsp->match && $hsp->length;
+    $hsp->percent_sim(int(1000 * $hsp->positive/$hsp->length)/10) if $hsp->positive && $hsp->length;
     $hsp->pval("1".$hsp->pval) if $hsp->pval && $hsp->pval =~ /^e/;
     return $hsp;
 
