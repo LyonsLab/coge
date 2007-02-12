@@ -104,10 +104,12 @@ sub gen_body
     my $form = shift || $FORM;
     my $accn1 = $form->param('accn1') if $form->param('accn1');
     my $accn2 = $form->param('accn2') if $form->param('accn2');
+    my $accn3 = $form->param('accn3') if $form->param('accn3');
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SynView.tmpl');
     my $box = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
     $template->param(ACCN1=>$accn1);
     $template->param(ACCN2=>$accn2);
+    $template->param(ACCN3=>$accn3);
     my $html;
     $template->param(SEQ_RETRIEVAL=>1);
     $box->param(BOX_NAME=>"Sequence Retrieval:");
