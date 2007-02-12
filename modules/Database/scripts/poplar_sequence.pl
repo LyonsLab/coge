@@ -45,7 +45,11 @@ foreach my $i (1..19){
 
 
 while( my $feature = $rs->next()){
-    my $name = (grep { $_->name =~ /P\d+CDS/ } $feature->feature_names)[0]->name;
+    my $name;
+    #my $name = (grep { $_->name =~ /P\d+CDS/ } $feature->feature_names)[0]->name;
+    map { print $_->name . "\t" } $feature->feature_names ;
+    print "\n";
+    next;
     print $name . "\n";
     my $chr = substr($name,1,2);
     my $fh = $FH{$chr};
