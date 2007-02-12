@@ -260,6 +260,7 @@ sub self_or_default { #from CGI.pm
 sub login
   {
     my $url = "index.pl?url=".$FORM->url(-relative=>1, -query=>1);
+    $url =~ s/&|;/:::/g;
     my $html1 = qq{
 <SCRIPT language="JavaScript">
 window.location=$url;
