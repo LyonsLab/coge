@@ -118,7 +118,7 @@ sub login
     my ($u) = $db->get_user_obj->search(user_name=>$name);
     my $pwdc = $u->check_passwd(pwd=>$pwd) if $u;
     $url = $FORM->param('url') unless $url;
-    $url = $FORM->url(-query=>1) unless $url;
+    $url = $FORM->url() unless $url;
     if ($pwdc)
       {
 	my $sid = $db->get_user_session_obj->log_user(user=>$u);
