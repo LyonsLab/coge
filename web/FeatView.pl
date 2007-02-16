@@ -226,7 +226,7 @@ sub gen_html
   {
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
     $template->param(LOGO_PNG=>"FeatView-logo.png");
-    $template->param(TITLE=>'CoGe: Feature Viewer');
+    $template->param(TITLE=>'Feature Viewer');
     $template->param(USER=>$USER);
     $template->param(DATE=>$DATE);
     $template->param(bOX_NAME=>"Feature Selection");
