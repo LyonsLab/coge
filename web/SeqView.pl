@@ -43,15 +43,18 @@ sub gen_html
     my $foot = gen_foot();
     my ($title) = gen_title(protein=>$pro, rc=>$rc);
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
-    unless ($feat_id) 
-     {$template->param(TITLE=>'CoGe: Sequence Viewer');}
+#    unless ($feat_id) 
+#     {
+    $template->param(TITLE=>'Sequence Viewer');
+    #}
+    $template->param(HELP=>'SeqView');
     $template->param(USER=>$USER);
     $template->param(DATE=>$DATE);
     $template->param(LOGO_PNG=>"SeqView-logo.png");
     $template->param(BOX_NAME=>qq{<DIV id="box_name">$title</DIV>});
     $template->param(BODY=>$body);
     $template->param(POSTBOX=>qq{<DIV id = buttons>$foot</DIV});
-    $template->param(CLOSE=>1);
+#    $template->param(CLOSE=>1);
     $template->param(HEAD=>qq{<script src="js/kaj.stable.js"></script>});
     #print STDERR gen_foot()."\n";
     my $html;
@@ -118,6 +121,7 @@ sub check_strand
     my %opts = @_;
     my $strand = $opts{'strand'};
     my $rc = $opts{'rc'};
+    my $pro = $opts{'pro'};
     my $switch = $opts{'changestrand'};
     #print STDERR Dumper \%opts;
     if ($rc==1)
@@ -131,7 +135,7 @@ sub check_strand
             $strand = "-1";
           }
       }
-     elsif ($switch)
+     elsif ($switch && $rc != 2 && $pro != 1)
       {$strand *= -1;}
     return $strand;
 }
@@ -158,7 +162,7 @@ sub get_seq
     }
     my $ds = $DB->get_dataset_obj->retrieve($dsid);
     #print $rc;
-    $strand = check_strand(strand=>$strand, rc=>$rc, changestrand=>$change_strand);
+    $strand = check_strand(strand=>$strand, rc=>$rc, changestrand=>$change_strand, pro=>$pro);
     my $seq;
     my $fasta;
     my $fasta_no_html;
@@ -174,7 +178,7 @@ sub get_seq
     else
     {
     my ($feat) = $DB->get_feat_obj->retrieve($feat_id);
-    $fasta = ">".$ds->org->name."(v.".$feat->version."), Type: ".$feat->type->name.", Location: ".$feat->genbank_location_string.", Chromosome: ".$chr.", Strand: ".$strand.", Name: ".$feat_name."\n";
+    $fasta = ">".$ds->org->name."(v.".$feat->version.") ".", Name: ".$feat_name.", Type: ".$feat->type->name.", Location: ".$feat->genbank_location_string.", Chromosome: ".$chr.", Strand: ".$strand."\n";
     $fasta = qq{<FONT class="main"><i>$fasta</i></FONT>};
 #    $columns = 80;
 #    $fasta = join ("\n", wrap('','',$fasta));
@@ -227,7 +231,6 @@ sub get_seq
   }
   
 sub gen_foot
-
   {
     my $form = $FORM;
     my $feat_id = $form->param('featid');
@@ -320,6 +323,7 @@ sub get_prot_seq_for_feat
     my ($feat) = $DB->get_feat_obj->retrieve($featid);
     my ($seq) = $DB->get_protein_sequence_for_feature($feat);
     $seq = "No sequence available" unless $seq;
+    #print $seq;
     $columns = 60;
     $seq = join ("\n", wrap('','',$seq));
     return $seq;
@@ -400,7 +404,7 @@ sub sixframe
 	  my $sixframe;
      	  my $sequence = $DB->get_feat_obj->frame6_trans(seq=>$seq);
           #print STDERR Dumper ($sequence);
-          foreach $key (sort keys %$sequence)
+          foreach $key (sort {abs($a) <=> abs($b)} keys %$sequence)
            {
       	     $seq = join ("\n", wrap('','',$sequence->{$key}));
       	     $sixframe = join("\n",$sixframe, qq/$fasta Frame $key\n$seq/);
@@ -430,7 +434,7 @@ sub new_foot
     my $PROButton;
     my @button_loop;
     
-    $strand = check_strand(strand=>$strand, rc=>$rc, changestrand=>$change_strand);
+    $strand = check_strand(strand=>$strand, rc=>$rc, changestrand=>$change_strand, pro=>$pro);
     #print STDERR Dumper \%opts;
     unless($feat_id){
                       $title = "RANGE";
