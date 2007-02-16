@@ -68,7 +68,7 @@ sub gen_body
     my $feat_id = $form->param('featid') || 0;
     my $chr = $form->param('chr');
     my $dsid = $form->param('dsid');
-    my $feat_name = $form->param('name');
+    my $feat_name = $form->param('featname');
     my $rc = $form->param('rc');
     my $pro = $form->param('pro');   
     my $upstream = $form->param('upstream');
@@ -93,8 +93,7 @@ sub gen_body
     }
     else
     {
-    my ($feat) = $DB->get_feat_obj->retrieve($feat_id);
-    my $strand = $feat->strand;
+    my $strand = get_strand($feat_id);
     $strand = check_strand(strand=>$strand, rc=>$rc);
     $seq = get_seq(featid=>$feat_id, 
 		      pro=>$pro,
@@ -121,8 +120,6 @@ sub check_strand
     my %opts = @_;
     my $strand = $opts{'strand'};
     my $rc = $opts{'rc'};
-    my $pro = $opts{'pro'};
-    my $switch = $opts{'changestrand'};
     #print STDERR Dumper \%opts;
     if ($rc==1)
       {
@@ -135,8 +132,6 @@ sub check_strand
             $strand = "-1";
           }
       }
-     elsif ($switch && $rc != 2 && $pro != 1)
-      {$strand *= -1;}
     return $strand;
 }
 
@@ -152,7 +147,6 @@ sub get_seq
     my $feat_name = $opts{'featname'};
     my $upstream = $opts{'upstream'};
     my $downstream = $opts{'downstream'};
-    my $strand = $opts{'strand'};
     my $start = $opts{'start'};
     my $stop = $opts{'stop'};
     my $change_strand = $opts{'changestrand'} || 0;
@@ -162,13 +156,14 @@ sub get_seq
     }
     my $ds = $DB->get_dataset_obj->retrieve($dsid);
     #print $rc;
-    $strand = check_strand(strand=>$strand, rc=>$rc, changestrand=>$change_strand, pro=>$pro);
+    my $strand;
     my $seq;
     my $fasta;
     my $fasta_no_html;
    # print STDERR Dumper \%opts;
     unless ($feat_id)
     {
+      $strand = $opts{'strand'};
       $fasta = ">".$ds->org->name.", Location: ".$start."-".$stop.", Chromosome: ".$chr.", Strand: ".$strand."\n";
       $fasta_no_html = ">".$ds->org->name.", Location: ".$start."-".$stop.", Chromosome: ".$chr;
       $fasta = qq{<FONT class="main"><i>$fasta</i></FONT>};
@@ -177,6 +172,8 @@ sub get_seq
     }
     else
     {
+    $strand = get_strand($feat_id);
+    $strand = check_strand(strand=>$strand, rc=>$rc);
     my ($feat) = $DB->get_feat_obj->retrieve($feat_id);
     $fasta = ">".$ds->org->name."(v.".$feat->version.") ".", Name: ".$feat_name.", Type: ".$feat->type->name.", Location: ".$feat->genbank_location_string.", Chromosome: ".$chr.", Strand: ".$strand."\n";
     $fasta = qq{<FONT class="main"><i>$fasta</i></FONT>};
@@ -236,7 +233,7 @@ sub gen_foot
     my $feat_id = $form->param('featid');
     my $chr = $form->param('chr');
     my $dsid = $form->param('dsid');
-    my $feat_name = $form->param('name');
+    my $feat_name = $form->param('featname');
     my $rc = $form->param('rc');
     my $pro = $form->param('pro');
     my $upstream = $form->param('upstream');
@@ -261,7 +258,7 @@ sub gen_foot
     my $output = new_foot(featid=>$feat_id,
 			  chr=>$chr,
 			  dsid=>$dsid,
-			  name=>$feat_name,
+			  featname=>$feat_name,
 			  rc=>$rc,
 			  pro=>$pro,
 			  upstream=>$upstream,
@@ -418,7 +415,7 @@ sub new_foot
     my $feat_id = $opts{'featid'};
     my $chr = $opts{'chr'};
     my $dsid = $opts{'dsid'};
-    my $feat_name = $opts{'name'};
+    my $feat_name = $opts{'featname'};
     my $rc = $opts{'rc'};
     my $pro = $opts{'pro'};
     my $upstream = $opts{'upstream'} || 0;
@@ -446,10 +443,10 @@ sub new_foot
     			     	    CHR=>$chr,
     				    DSID=>$dsid,
     				    STOP=>$stop,
-   				    STRAND=>$strand,
+   				    STRAND=>1,
    				    RC=>0,
     				    PRO=>0,
-   				    CHANGESTRAND=>1};
+   				    };
                        $RCButton = {BUTTON_NUM=>2, 
                             	    BUTTON_NAME=>'Reverse Complement', 
                             	    START=>$start,
@@ -458,7 +455,7 @@ sub new_foot
     			     	    CHR=>$chr,
     				    DSID=>$dsid,	
     				    STOP=>$stop,
-   				    STRAND=>$strand,
+   				    STRAND=>-1,
    				    RC=>1,
    				    PRO=>0};
 		      $PROButton = {BUTTON_NUM=>3, 
@@ -469,7 +466,6 @@ sub new_foot
     			     	    CHR=>$chr,
     				    DSID=>$dsid,	
     				    STOP=>$stop,
-   				    STRAND=>0,
    				    RC=>2,
    				    PRO=>0};
     }
@@ -483,10 +479,8 @@ sub new_foot
     			CHR=>$chr,
     			DSID=>$dsid,
     			FEATNAME=>$feat_name,
-   			STRAND=>$strand,
    			RC=>0,
-    			PRO=>0,
-   			CHANGESTRAND=>1};
+    			PRO=>0};
      $RCButton = {BUTTON_NUM=>2, 
                        BUTTON_NAME=>'Reverse Complement', 
                        FEATID=>$feat_id,
@@ -495,7 +489,6 @@ sub new_foot
     			CHR=>$chr,
     			DSID=>$dsid,	
     			FEATNAME=>$feat_name,
-   			STRAND=>$strand,
    			RC=>1,
    			PRO=>0};
      $PROButton = {BUTTON_NUM=>3, 
@@ -505,7 +498,6 @@ sub new_foot
     			CHR=>$chr,
     			DSID=>$dsid,	
     			FEATNAME=>$feat_name,
-   			STRAND=>$strand,
    			RC=>0,
    			PRO=>1};
       }
@@ -586,3 +578,11 @@ sub find_feats
 # 	#print $pretty;
 # 	return $feat;
 }
+
+sub get_strand
+  {
+    my $feat_id = shift;
+    my ($feat) = $DB->get_feat_obj->retrieve($feat_id);
+    my $strand = $feat->strand;
+    return $strand;
+  }
