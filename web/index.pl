@@ -36,6 +36,7 @@ sub gen_html
   {
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
     $template->param(TITLE=>'Comparative Genomics Homepage');
+    $template->param(HELP=>'CoGe');
     $template->param(HEAD=>'<SCRIPT language="JavaScript" type="text/javascript" src="./js/kaj.stable.js"></SCRIPT>');
     if ($FORM->param('logout') || !$USER)
       {
