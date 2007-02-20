@@ -79,7 +79,7 @@ sub gen_body
     #$seq = find_feats(dsid=>$dsid, chr=>$chr, start=>$start, stop=>$stop);
     unless ($feat_id)
     {
-      my $strand = $form->param('strand') || 1;
+      my $strand = 1;
       $seq = get_seq(pro=>$pro,
 		      rc=>$rc,
 		      chr=>$chr,
@@ -132,6 +132,14 @@ sub check_strand
             $strand = "-1";
           }
       }
+     elsif ($strand == "+")
+     {
+       $strand =~ s/^+$/1/;
+     }
+     elsif ($strand == "-")
+     {
+       $strand =~ s/^-$/-1/;
+     }
     return $strand;
 }
 
