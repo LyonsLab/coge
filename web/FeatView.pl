@@ -43,9 +43,6 @@ my $pj = new CGI::Ajax(
 		       show_location=>\&show_location,
 		       show_express=>\&show_express,
 		       gen_data=>\&gen_data,
-		       get_dna_seq_for_feat => \&get_dna_seq_for_feat,
-		       get_rcdna_seq_for_feat => \&get_rcdna_seq_for_feat,
-		       get_prot_seq_for_feat => \&get_prot_seq_for_feat,
 		      );
 $pj->JSDEBUG(0);
 $pj->DEBUG(0);
@@ -54,35 +51,6 @@ print $pj->build_html($FORM, \&gen_html);
 #print gen_html();
 
 
-
-sub get_prot_seq_for_feat
-  {
-    my $featid = shift;
-    my ($feat) = $DB->get_feat_obj->retrieve($featid);
-    my ($seq) = $DB->get_protein_sequence_for_feature($feat);
-    $seq = "No sequence available" unless $seq;
-    return $seq;
-  }
-
-sub get_dna_seq_for_feat
-  {
-    my $featid = shift;
-    my $upstream = shift;
-    my $downstream = shift;
-    my ($feat) = $DB->get_feat_obj->retrieve($featid);
-    my $seq = $feat->genomic_sequence (up=>$upstream, down=>$downstream);
-    $seq = "No sequence available" unless $seq;
-    return $seq;
-  }
-
-sub get_rcdna_seq_for_feat
-  {
-    my $featid = shift;
-    my ($feat) = $DB->get_feat_obj->search(feature_id=>$featid);
-    my $seq = $feat->reverse_complement;
-    $seq = "No sequence available" unless $seq;
-    return $seq;
-  }
 
 sub gen_data
   {
