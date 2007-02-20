@@ -1,0 +1,42 @@
+.graphic_generic_title_textbox_style_default {
+    background: transparent;
+    float: none;
+    margin: 0px;
+    opacity: 1.00;
+}
+.graphic_navigationbar_style_default {
+    background: transparent;
+    border: 1px #000000 none;
+    float: none;
+    margin: 0px;
+    opacity: 1.00;
+}
+a {
+    color: #453c3c;
+    text-decoration: underline;
+}
+a:visited {
+    color: #666666;
+    text-decoration: underline;
+}
+a:hover {
+    color: #000000;
+    text-decoration: underline;
+}
+.CounterDivClass {
+    left: 0px;
+    position: absolute;
+    top: 8px;
+    z-index: 1;
+}
+div {
+    overflow: visible;
+}
+img {
+    border: none;
+}
+.InlineBlock {display: inline; }
+.InlineBlock {display: inline-block; }
+.tinyText {
+    font-size: 1px;
+}
