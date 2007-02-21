@@ -12,13 +12,6 @@ use CoGe::Genome;
 use vars qw($USER $UID $LAST_LOGIN $FORM $DATE);
 
 $FORM = new CGI;
-#if ($FORM->param())
-#  {
-#    my $user = $FORM->param('u');
-#    my $pwd = $FORM->param('p');
-#    my ($valid_user, $cookie) = login(user_name=>$user, pwd=>$pwd);
-#    
-#  }
 ($USER, $UID, $LAST_LOGIN) = CoGe::Accessory::LogUser->get_user();
 
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
