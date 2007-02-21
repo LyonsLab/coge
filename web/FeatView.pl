@@ -40,7 +40,6 @@ my $pj = new CGI::Ajax(
 		       cogesearch=>\&cogesearch,
 		       clear_div=>\&clear_div,
 		       get_anno=>\&get_anno,
-		       show_location=>\&show_location,
 		       show_express=>\&show_express,
 		       gen_data=>\&gen_data,
 		      );
@@ -141,37 +140,6 @@ sub get_anno
       }
     return ($anno);
   }
-
-sub show_location
-  {
-#    my %opts = @_;
-    my $start = shift;#$opts{start};
-    my $stop = shift; #$opts{stop};
-    my $chr = shift; # $opts{chr};
-    my $dataset_id = shift; # = $opts{info_id};
-    my $loc = shift;
-   
-    my $z = 7;#ceil (log((1000+$stop-$start)/10)/log(2));
-    my $html  = qq{
-<form action='javascript:;' >
-<input id='iw' type ='hidden' value=256 />
-<input id='chr' type ='hidden' value=$chr />
-<input id='ds' type ='hidden' value=$dataset_id />
-<input id='z' type ='hidden' value='$z' />
-<input id='x' type ='hidden' value='$start' />
-<button id='zi' name='zi' class="tileClass" > Zoom In </button>
-<button name='zo' id='zo' class="tileClass" > Zoom Out </button>
-
-<div id='loc' style="width:800px;height:200px;border:1px solid black" > </div>
-
-<div id='container' class="tileClass" style='position:relative;left:6px;top:10px;width:1000px;height:350px;border:1px solid black' > </div>
-</form>
-};
-
-#    print STDERR $link;
-    return $html, $loc;
-  }
-
 
 sub show_express
   {
