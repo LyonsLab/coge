@@ -555,6 +555,7 @@ sub generate_image
     my ($filename) = $file->filename =~ /([^\/]*$)/;;
     $gfx->generate_png(file=>$file->filename);
     close($file);
+    system "chmod +rw ".$file->filename;
     my $mapname = $filename."map";
     my ($map)=$gfx->generate_imagemap(name=>$mapname);
     return ($filename, $map, $mapname);
@@ -1055,9 +1056,9 @@ sub run_bl2seq {
 	  
 	  
 	# need to create a temp filename here
-	  my $tmp_file = new File::Temp ( TEMPLATE=>'CNS__XXXXX',
+	  my $tmp_file = new File::Temp ( TEMPLATE=>'Bl2Seq__XXXXX',
 					  DIR=>$TEMPDIR,
-					  SUFFIX=>'.blast',
+					  SUFFIX=>'.txt',
 					  UNLINK=>0);
 	  my ($tempfile) = $tmp_file->filename;# =~ /([^\/]*$)/;
 	  
@@ -1073,6 +1074,7 @@ sub run_bl2seq {
 	  }
 	  # execute the command
 	  `$command`;
+	  system "chmod +rw $tempfile";
 	  #$reports{$accns->[$i]}{$accns->[$j]} = $tempfile;
 	  my $rc;
 	  my $data;
@@ -1206,6 +1208,7 @@ sub write_fasta {
 		print OUT "$hdr\n";
 		print OUT "$seq\n";
 		close(OUT);
+		system "chmod +rw $fullname";
 		return($fullname,$seq_begin,$seq_end,$spike_seq);
 	} else {
 		return(0,0,0,"");
