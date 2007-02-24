@@ -3,6 +3,7 @@ use strict;
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
 use CoGe::Accessory::LogUser;
+use CoGe::Accessory::Web;
 use HTML::Template;
 use Data::Dumper;
 use CGI::Ajax;
@@ -44,16 +45,23 @@ print $pj->build_html($FORM, \&gen_html);
 
 sub gen_html
   {
-    my ($body, $seq_names, $seqs) = gen_body();
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
-
-
-  if ($FORM->param("ds"))
-  {
-    $template->param(HEADER_LINK=>'/CoGe/GeLo.pl');
-  }
-    $template->param(TITLE=>'CoGe: Genome Location Viewer');
-    $template->param(HEAD=>qq{
+    my $html;
+    unless ($USER)
+      {
+	$html = login();
+      }
+    else
+      {
+	my ($body, $seq_names, $seqs) = gen_body();
+	my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
+	
+	
+	if ($FORM->param("ds"))
+	  {
+	    $template->param(HEADER_LINK=>'/CoGe/GeLo.pl');
+	  }
+	$template->param(TITLE=>'CoGe: Genome Location Viewer');
+	$template->param(HEAD=>qq{
 <link rel="stylesheet" type="text/css" href="css/tiler.css">
 <script src="js/Base.js"> </script>
 <script src="js/Async.js"> </script>
@@ -68,12 +76,12 @@ sub gen_html
 <script src=js/tilerConfig.js> </script>
 <script src=js/kaj.stable.js> </script>
 });
-    $template->param(USER=>$USER);
-    $template->param(DATE=>$DATE);
-    $template->param(LOGO_PNG=>"GeLo-logo.png");
-    $template->param(BODY=>$body);
-    my $html;
-    $html .= $template->output;
+	$template->param(USER=>$USER);
+	$template->param(DATE=>$DATE);
+	$template->param(LOGO_PNG=>"GeLo-logo.png");
+	$template->param(BODY=>$body);
+	$html .= $template->output;
+      }
     return $html;
   }
 
