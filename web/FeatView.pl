@@ -4,6 +4,7 @@ use CGI;
 use CGI::Carp 'fatalsToBrowser';
 use CGI::Ajax;
 use CoGe::Accessory::LogUser;
+use CoGe::Accessory::Web;
 use HTML::Template;
 use Data::Dumper;
 use CoGe::Genome;
@@ -160,16 +161,24 @@ sub show_express
 
 sub gen_html
   {
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
-    $template->param(LOGO_PNG=>"FeatView-logo.png");
-    $template->param(TITLE=>'Feature Viewer');
-    $template->param(USER=>$USER);
-    $template->param(DATE=>$DATE);
-    $template->param(bOX_NAME=>"Feature Selection");
-    my $body = gen_body();
-    $template->param(BODY=>$body);
     my $html;
-    $html .= $template->output;
+    unless ($USER)
+      {
+	$html = login();
+      }
+    else
+      {
+	my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
+	$template->param(LOGO_PNG=>"FeatView-logo.png");
+	$template->param(TITLE=>'Feature Viewer');
+	$template->param(USER=>$USER);
+	$template->param(DATE=>$DATE);
+	$template->param(bOX_NAME=>"Feature Selection");
+	my $body = gen_body();
+	$template->param(BODY=>$body);
+	
+	$html .= $template->output;
+      }
     return $html;
   }
 
