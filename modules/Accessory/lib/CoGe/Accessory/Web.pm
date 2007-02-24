@@ -5,10 +5,11 @@ use CoGe::Genome;
 use Data::Dumper;
 use base 'Class::Accessor';
 use CGI::Carp('fatalsToBrowser');
+use CGI;
 
 BEGIN {
     use Exporter ();
-    use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $coge $Q $FORM );
+    use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $coge $Q);
     $VERSION     = 0.1;
     @ISA         = (@ISA, qw (Exporter));
     #Give a hoot don't pollute, do not export more than needed by default
@@ -16,7 +17,6 @@ BEGIN {
     @EXPORT_OK   = qw ();
     %EXPORT_TAGS = ();
     $coge = new CoGe::Genome;
-    $FORM = new CGI;
     __PACKAGE__->mk_accessors qw(restricted_orgs);
  }
 
@@ -259,7 +259,9 @@ sub self_or_default { #from CGI.pm
 
 sub login
   {
-    my $url = "index.pl?url=".$FORM->url(-relative=>1, -query=>1);
+    my $form = new CGI;
+    my $url = "index.pl?url=".$form->url(-relative=>1, -query=>1);
+    print STDERR $url;
     $url =~ s/&|;/:::/g;
     my $html1 = qq{
 <SCRIPT language="JavaScript">
