@@ -188,13 +188,13 @@ onClick="loading([], ['results']); run([
         <DIV id="feat1"><input type="hidden" id="featid1"></DIV>
       <TR>
 	<TD colspan =2>
-	<font class="small">Reverse region display: <label><input class="backbox" type="radio" name="rev_region1" id="rev_region1" tabindex="1" value="1" />Yes</label><label><input class="backbox" type="radio" name="rev_region1" id="rev_region1" tabindex="1" value="0" checked />No</label></font>
+	<font class="small">Reverse region display: <label><input class="backbox" type="radio" name="rev_region1" id="rev_region1" tabindex="1" value="1" <TMPL_VAR NAME=REV1_YES> />Yes</label><label><input class="backbox" type="radio" name="rev_region1" id="rev_region1" tabindex="1" value="0" <TMPL_VAR NAME=REV1_NO> />No</label></font>
       <TR>
        <TD><DIV class="small">Left sequence:</DIV>
-       <TD><DIV  id="up1" ><input class="backbox" type="text" name="dr1up" id="dr1up" tabindex="1" size="10" value="10000" /> </DIV>
+       <TD><DIV  id="up1" ><input class="backbox" type="text" name="dr1up" id="dr1up" tabindex="1" size="10" value="<TMPL_VAR NAME=DR1UP>" /> </DIV>
       <TR>
        <TD><DIV class="small">Right sequence:</DIV>
-       <TD><DIV  id="down1"><input class="backbox" type="text" name="dr1down" id="dr1down" tabindex="1" size="10"  value="10000" /></DIV>
+       <TD><DIV  id="down1"><input class="backbox" type="text" name="dr1down" id="dr1down" tabindex="1" size="10"  value="<TMPL_VAR NAME=DR1DOWN>" /></DIV>
       <TR>
         <TD colspan =2><input type="checkbox" name="apply_all" id="apply_all" value="0" /><font class ="small" float>(Apply distance to all?)</font>
       </TABLE>
@@ -207,13 +207,13 @@ onClick="loading([], ['results']); run([
         <DIV id="feat2"><input type="hidden" id="featid2"></DIV>
       <TR>
 	<TD colspan =2>
-	<font class="small">Reverse region display: <label><input class="backbox" type="radio" name="rev_region2" id="rev_region2" tabindex="1" value="1" />Yes</label><label><input class="backbox" type="radio" name="rev_region2" id="rev_region2" tabindex="1" value="0" checked />No</label></font>
+	<font class="small">Reverse region display: <label><input class="backbox" type="radio" name="rev_region2" id="rev_region2" tabindex="1" value="1" <TMPL_VAR NAME=REV2_YES> />Yes</label><label><input class="backbox" type="radio" name="rev_region2" id="rev_region2" tabindex="1" value="0" <TMPL_VAR NAME=REV2_NO> />No</label></font>
        <TR>
        <TD><DIV class="small">Left sequence:</DIV>
-       <TD><DIV  id="up2" ><input class="backbox" type="text" name="dr2up" id="dr2up" tabindex="1" size="10" value="10000" /></DIV>
+       <TD><DIV  id="up2" ><input class="backbox" type="text" name="dr2up" id="dr2up" tabindex="1" size="10" value="<TMPL_VAR NAME=DR2UP>" /></DIV>
       <TR>
        <TD><DIV class="small">Right sequence:</DIV>
-       <TD><DIV  id="down2" ><input class="backbox" type="text" name="dr2down" id="dr2down" tabindex="1" size="10"  value="10000" /></DIV>
+       <TD><DIV  id="down2" ><input class="backbox" type="text" name="dr2down" id="dr2down" tabindex="1" size="10"  value="<TMPL_VAR NAME=DR2DOWN>" /></DIV>
       </TABLE>
       <TD>
       <TABLE>
@@ -224,13 +224,13 @@ onClick="loading([], ['results']); run([
         <DIV id="feat3"><input type="hidden" id="featid3"></DIV>
       <TR>
 	<TD colspan =2>
-	<font class="small">Reverse region display: <label><input class="backbox" type="radio" name="rev_region3" id="rev_region3" tabindex="1" value="1" />Yes</label><label><input class="backbox" type="radio" name="rev_region3" id="rev_region3" tabindex="1" value="0" checked />No</label></font>
+	<font class="small">Reverse region display: <label><input class="backbox" type="radio" name="rev_region3" id="rev_region3" tabindex="1" value="1" <TMPL_VAR NAME=REV3_YES> />Yes</label><label><input class="backbox" type="radio" name="rev_region3" id="rev_region3" tabindex="1" value="0" <TMPL_VAR NAME=REV3_NO> />No</label></font>
        <TR>
        <TD><DIV class="small">Left sequence:</DIV>
-       <TD><DIV  id="up3" ><input class="backbox" type="text" name="dr3up" id="dr3up" tabindex="1" size="10" value="10000" /></DIV>
+       <TD><DIV  id="up3" ><input class="backbox" type="text" name="dr3up" id="dr3up" tabindex="1" size="10" value="<TMPL_VAR NAME=DR3UP>" /></DIV>
       <TR>
        <TD><DIV class="small">Right sequence:</DIV>
-       <TD><DIV  id="down3" ><input class="backbox" type="text" name="dr3down" id="dr3down" tabindex="1" size="10"  value="10000" /></DIV>
+       <TD><DIV  id="down3" ><input class="backbox" type="text" name="dr3down" id="dr3down" tabindex="1" size="10"  value="<TMPL_VAR NAME=DR3DOWN>" /></DIV>
       </TABLE>
      </table>
      <span class="subItem"></span>
@@ -381,8 +381,8 @@ onClick="loading([], ['results']); run([
     <DIV>
       <label><input class="backbox" type="radio" name="matchfilter" id="matchfilter" tabindex="15" value="1" checked />On</label><label><input class="backbox" type="radio" name="matchfilter" id="matchfilter" tabindex="15" value="0" />Off</label>
       <BR>Only show matches with e-values equal to or less than the e-value obtained from an exact match of:<BR>
-      <label><input class="backbox" type="radio" name="spike" id="spike" value="13" tabindex="16" />13/13</label><label><input class="backbox" type="radio" name="spike" id="spike" value="14" tabindex="17" />14/14</label><label><input class="backbox" type="radio" name="spike" id="spike" value="15" checked="checked" tabindex="18" />15/15</label><label><input class="backbox" type="radio" name="spike" id="spike" value="16" tabindex="19" />16/16</label><label><input class="backbox" type="radio" name="spike" id="spike" value="17" tabindex="20" />17/17</label><label><input class="backbox" type="radio" name="spike" id="spike" value="18" tabindex="21" />18/18</label> nucleotides
-	
+      <!-- <label><input class="backbox" type="radio" name="spike" id="spike" value="13" tabindex="16" />13/13</label><label><input class="backbox" type="radio" name="spike" id="spike" value="14" tabindex="17" />14/14</label><label><input class="backbox" type="radio" name="spike" id="spike" value="15" checked tabindex="18" />15/15</label><label><input class="backbox" type="radio" name="spike" id="spike" value="16" tabindex="19" />16/16</label><label><input class="backbox" type="radio" name="spike" id="spike" value="17" tabindex="20" />17/17</label><label><input class="backbox" type="radio" name="spike" id="spike" value="18" tabindex="21" />18/18</label> nucleotides -->
+      <TMPL_VAR NAME=SPIKE_LEN>
     </DIV>
   </TH>
  </TR>
