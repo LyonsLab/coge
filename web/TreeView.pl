@@ -4,6 +4,7 @@ use CGI;
 use CGI::Carp 'fatalsToBrowser';
 use CGI::Ajax;
 use CoGe::Accessory::LogUser;
+use CoGe::Accessory::Web;
 use HTML::Template;
 use Data::Dumper;
 use Bio::TreeIO;
@@ -38,16 +39,24 @@ print $pj->build_html($FORM, \&gen_html);
 
 sub gen_html
   {
-    my ($body, $seq_names, $seqs) = gen_body();
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
-
-    $template->param(TITLE=>'CoGe: Phylogenetic Tree Viewer');
-    $template->param(USER=>$USER);
-    $template->param(DATE=>$DATE);
-    $template->param(LOGO_PNG=>"TreeView-logo.png");
-    $template->param(BODY=>$body);
-    my $html;# =  "Content-Type: text/html\n\n";
-    $html .= $template->output;
+    my $html;
+    unless ($USER)
+      {
+	$html = login();
+      }
+    else
+      {
+	my ($body, $seq_names, $seqs) = gen_body();
+	my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
+	
+	$template->param(TITLE=>'CoGe: Phylogenetic Tree Viewer');
+	$template->param(USER=>$USER);
+	$template->param(DATE=>$DATE);
+	$template->param(LOGO_PNG=>"TreeView-logo.png");
+	$template->param(BODY=>$body);
+	
+	$html .= $template->output;
+      }
     return $html;
   }
 
