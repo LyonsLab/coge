@@ -27,8 +27,9 @@ use CoGe::Graphics::Feature::HSP;
 $ENV{PATH} = "/opt/apache2/CoGe/";
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 
-use vars qw( $DATE $DEBUG $BL2SEQ $TEMPDIR $TEMPURL $USER $FORM $cogeweb);
+use vars qw( $DATE $DEBUG $BL2SEQ $BLASTZ $TEMPDIR $TEMPURL $USER $FORM $cogeweb);
 $BL2SEQ = "/opt/bin/bio/bl2seq ";
+$BLASTZ = "/opt/apache/CoGe/bin/blastz ";
 $TEMPDIR = "/opt/apache/CoGe/tmp";
 $TEMPURL = "/CoGe/tmp";
 # set this to 1 to print verbose messages to logs
@@ -59,7 +60,7 @@ $pj->DEBUG(0);
 $pj->js_encode_function('escape');
 print $pj->build_html($FORM, \&gen_html);
 
-#print gen_html();
+#$USER=1;print gen_html();
 
 #print Show_Summary('contig_16224','2665176','10000','10000','502','At1g07300','124379','10000','10000','6','At2g29640','134498','10000','10000','7','','1','0','','','1','0','','','1','0','','','0','1','','','0','1','','','0','1','','1','15','0','0','7','5','2','-2','','1000','150','20');
 #Show_Summary('supercontig_226','3686634','-126900','-232900','513','0','At1g07370','122228','10','10','6','1','At2g29570','142412','10','10','7','0','','1','0','','','1','0','','','1','0','','','0','1','','','0','1','','','0','1','','1','15','0','0','7','5','2','-2','10','','1000','100','20','1','linear','1','0','20','blastn');
@@ -105,12 +106,47 @@ sub gen_body
     my $accn1 = $form->param('accn1') if $form->param('accn1');
     my $accn2 = $form->param('accn2') if $form->param('accn2');
     my $accn3 = $form->param('accn3') if $form->param('accn3');
+    my $dr1up = $form->param('dr1up') if $form->param('dr1up');
+    my $dr1down = $form->param('dr1down') if $form->param('dr1down');
+    my $dr2up = $form->param('dr2up') if $form->param('dr2up');
+    my $dr2down = $form->param('dr2down') if $form->param('dr2down');
+    my $dr3up = $form->param('dr3up') if $form->param('dr3up');
+    my $dr3down = $form->param('dr3down') if $form->param('dr3down');
+    $dr1up = 10000 unless defined $dr1up;
+    $dr1down = 10000 unless defined $dr1down;
+    $dr2up = 10000 unless defined $dr2up;
+    $dr2down = 10000 unless defined $dr2down;
+    $dr3up = 10000 unless defined $dr3up;
+    $dr3down = 10000 unless defined $dr3down;
+    my $rev1y = "checked" if $form->param('rev1');
+    my $rev1n = "checked" unless $rev1y;
+    my $rev2y = "checked" if $form->param('rev2');
+    my $rev2n = "checked" unless $rev2y;
+    my $rev3y = "checked" if $form->param('rev3');
+    my $rev3n = "checked" unless $rev3y;
+
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SynView.tmpl');
     my $box = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
     $template->param(ACCN1=>$accn1);
     $template->param(ACCN2=>$accn2);
     $template->param(ACCN3=>$accn3);
+    $template->param(DR1UP=>$dr1up);
+    $template->param(DR1DOWN=>$dr1down);
+    $template->param(DR2UP=>$dr2up);
+    $template->param(DR2DOWN=>$dr2down);
+    $template->param(DR3UP=>$dr3up);
+    $template->param(DR3DOWN=>$dr3down);
+    $template->param(REV1_YES=>$rev1y);
+    $template->param(REV1_NO=>$rev1n);
+    $template->param(REV2_YES=>$rev2y);
+    $template->param(REV2_NO=>$rev2n);
+    $template->param(REV3_YES=>$rev3y);
+    $template->param(REV3_NO=>$rev3n);
+
     my $html;
+    my $spike_len = match_filter_select();
+    print STDERR $spike_len;
+    $template->param(SPIKE_LEN=>$spike_len);
     $template->param(SEQ_RETRIEVAL=>1);
     $box->param(BOX_NAME=>"Sequence Retrieval:");
     $box->param(BODY=>$template->output);
@@ -1244,6 +1280,24 @@ sub spike {
 	$seq .= $spike_seq;
 	return($seq,$spike_seq);
 }
+
+sub match_filter_select
+  {
+    my $match = shift;
+    my $form = shift || $FORM;
+    $match = $form->param('spike_len') if $form->param('spike_len');
+    $match = 15 unless $match;
+    my $html;
+    for (my $i = 13; $i<=18; $i++)
+      {
+	my $item = qq{<label><input class="backbox" type="radio" name="spike" id="spike" value="$i"};
+	$item .= " checked=\"checked\"" if $match && $match == $i;
+	$item .= qq{ />$i/$i</label>};
+	$html .= $item;
+      }
+    $html .= " nucleotides";
+    return $html;
+  }
 
 sub dataset_search_for_feat_name
   {
