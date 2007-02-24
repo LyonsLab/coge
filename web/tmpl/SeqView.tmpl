@@ -1,4 +1,6 @@
 
+
+<TMPL_IF NAME=SEQVIEW_JAVA>
 <SCRIPT language="JavaScript">
 
 
@@ -7,38 +9,43 @@ function reset_updown() {
   kaj.GS('downstream',0);
 }
 
+function dynamic_button() {
+  kaj.GS('button1','');
+  kaj.GS('button2','');
+  kaj.GS('button3','');
+  kaj.GS('annotation_button','');
+}
+
 function waiting() {
-  kaj.GS('annotation','<font class="loading">Loading. . .</font>');
+  kaj.GS('annotation','<font class="loading">Loading Features . . .</font>');
+}
+
+function make_focus() {
+  document.nt_stream.upstream.focus();
 }
 
 </SCRIPT>
+</TMPL_IF>
 
 <TMPL_IF NAME=BOTTOM_BUTTONS>
-
-<TABLE>
-  <TR>
-       <TMPL_IF NAME="FEATURE">
-       <TMPL_LOOP NAME="BUTTON_LOOP">
+  <TABLE>
+   <TR>
+      <TMPL_LOOP NAME="BUTTON_LOOP">
+      <TD align=right valign="top">
+      <DIV id="button<TMPL_VAR NAME=BUTTON_NUM>"><input type=button value ="<TMPL_VAR NAME=BUTTON_NAME>" onClick="get_seq_and_button(['args__featid', 'args__<TMPL_VAR NAME=FEATID>', 'args__pro', 'args__<TMPL_VAR NAME=PRO>', 'args__rc', 'args__<TMPL_VAR NAME=RC>', 'args__chr', 'args__<TMPL_VAR NAME=CHR>', 'args__dsid', 'args__<TMPL_VAR NAME=DSID>', 'args__featname', 'args__<TMPL_VAR NAME=FEATNAME>', 'args__upstream', 'upstream', 'args__downstream', 'downstream', 'args__start', 'args__<TMPL_VAR NAME=START>','args__stop', 'args__<TMPL_VAR NAME=STOP>', 'args__strand', 'args__<TMPL_VAR NAME=STRAND>', 'args__add', 'args__<TMPL_VAR NAME=ADD>'],['seq', 'buttons']);gen_title(['args__rc', 'args__<TMPL_VAR NAME=RC>', 'args__pro', 'args__<TMPL_VAR NAME=PRO>'],['box_name']);make_focus();"></DIV>
+      </TD>
+      </TMPL_LOOP>
+     <TMPL_IF NAME=FIND_FEATS>
      <TD align=right valign="top">
-     <DIV id="button><TMPL_VAR NAME=BUTTON_NUM>"><input type=button value ="<TMPL_VAR NAME=BUTTON_NAME>" onClick="get_seq(['args__featid', 'args__<TMPL_VAR NAME=FEATID>', 'args__pro', 'args__<TMPL_VAR NAME=PRO>', 'args__rc', 'args__<TMPL_VAR NAME=RC>', 'args__chr', 'args__<TMPL_VAR NAME=CHR>', 'args__dsid', 'args__<TMPL_VAR NAME=DSID>', 'args__featname', 'args__<TMPL_VAR NAME=FEATNAME>', 'args__upstream', 'upstream', 'args__downstream', 'downstream', 'args__changestrand', 'args__<TMPL_VAR NAME=CHANGESTRAND>'],['seq']);gen_title(['args__rc', 'args__<TMPL_VAR NAME=RC>', 'args__pro', 'args__<TMPL_VAR NAME=PRO>'],['box_name']);new_foot(['args__featid', 'args__<TMPL_VAR NAME=FEATID>', 'args__pro', 'args__<TMPL_VAR NAME=PRO>', 'args__rc', 'args__<TMPL_VAR NAME=RC>', 'args__chr', 'args__<TMPL_VAR NAME=CHR>', 'args__dsid', 'args__<TMPL_VAR NAME=DSID>', 'args__featname', 'args__<TMPL_VAR NAME=FEATNAME>', 'args__upstream', 'upstream', 'args__downstream', 'downstream', 'args__changestrand', 'args__<TMPL_VAR NAME=CHANGESTRAND>'],['buttons'])"></DIV>
-   </TD>
-   </TMPL_LOOP>
-   </TMPL_IF>
-    <TMPL_IF NAME="RANGE">
-    <TMPL_LOOP NAME="BUTTON_LOOP">
-    <TD align=right valign="top">
-     <DIV id="button><TMPL_VAR NAME=BUTTON_NUM>"><input type=button value ="<TMPL_VAR NAME=BUTTON_NAME>" onClick="get_seq(['args__start', 'args__<TMPL_VAR NAME=START>', 'args__pro', 'args__<TMPL_VAR NAME=PRO>', 'args__rc', 'args__<TMPL_VAR NAME=RC>', 'args__chr', 'args__<TMPL_VAR NAME=CHR>', 'args__dsid', 'args__<TMPL_VAR NAME=DSID>', 'args__stop', 'args__<TMPL_VAR NAME=STOP>', 'args__strand', 'args__<TMPL_VAR NAME=STRAND>','args__upstream', 'upstream', 'args__downstream', 'downstream', 'args__add', 'args__1'],['seq']);gen_title(['args__rc', 'args__<TMPL_VAR NAME=RC>', 'args__pro', 'args__<TMPL_VAR NAME=PRO>'],['box_name']);new_foot(['args__start', 'args__<TMPL_VAR NAME=START>', 'args__pro', 'args__<TMPL_VAR NAME=PRO>', 'args__rc', 'args__<TMPL_VAR NAME=RC>', 'args__chr', 'args__<TMPL_VAR NAME=CHR>', 'args__dsid', 'args__<TMPL_VAR NAME=DSID>', 'args__stop', 'args__<TMPL_VAR NAME=STOP>', 'args__strand', 'args__<TMPL_VAR NAME=STRAND>','args__upstream', 'upstream', 'args__downstream', 'downstream', 'args__add', 'args__1'],['buttons'])"></DIV>
-   </TMPL_LOOP>
-   <TD align=right valign="top">
-     <DIV id="annotation_button"> <input type=button value="Find Features in Sequence" onClick="waiting();find_feats(['args__start', 'args__<TMPL_VAR NAME=START>', 'args__stop', 'args__<TMPL_VAR NAME=STOP>', 'args__chr', 'args__<TMPL_VAR NAME=CHR>', 'args__dsid', 'args__<TMPL_VAR NAME=DSID>'],['annotation'])">
-     </DIV>
-   </TD>
-   </TMPL_IF>
+     <DIV id="annotation_button"> <input type=button value="Find Features in Sequence" onClick="waiting();find_feats(['args__start', 'args__<TMPL_VAR NAME=START>', 'args__stop', 'args__<TMPL_VAR NAME=STOP>', 'args__chr', 'args__<TMPL_VAR NAME=CHR>', 'args__dsid', 'args__<TMPL_VAR NAME=DSID>'],['annotation'])"></DIV>
+     </TMPL_IF>
+     </TD>
     </TD>
    </TR>
-   <TR>
+  </TABLE>
+</TMPL_IF>
 
-
+<TMPL_IF NAME="ADDITION">
 <TABLE>
  <TR>
   <TD>
@@ -50,38 +57,29 @@ function waiting() {
  </TR>
  <TR> 
   <TD align = left valign = "middle">
+   <form id="nt_stream" name="nt_stream">
    <TMPL_VAR NAME = "UPSTREAM"> <INPUT type="text" id="upstream" style ="background-color: #F5F5DC" value= "<TMPL_VAR NAME="UPVALUE">">
    <TMPL_VAR NAME="DOWNSTREAM"><INPUT type="text" id="downstream" style ="background-color: #F5F5DC" value= "<TMPL_VAR NAME="DOWNVALUE">">
+   </form>
   </TD>
-  
+  </TR>
+
    <TMPL_IF NAME="FEATURE">
+
   <TR>
    <TD align = left valign = "middle">
    <input type = button value = "Reset" id="reset" onClick="reset_updown();get_seq(['args__featid', 'args__<TMPL_VAR NAME=FEATID>', 'args__pro', 'args__<TMPL_VAR NAME=PRO>', 'args__rc', 'args__<TMPL_VAR NAME=RC>', 'args__chr', 'args__<TMPL_VAR NAME=CHR>', 'args__dsid', 'args__<TMPL_VAR NAME=DSID>', 'args__featname', 'args__<TMPL_VAR NAME=FEATNAME>', 'args__upstream', 'upstream', 'args__downstream', 'downstream'],['seq'])">
-      <input type= button value ="Add to Sequence" id = "add_to" onClick="get_seq(['args__featid', 'args__<TMPL_VAR NAME=FEATID>', 'args__pro', 'args__<TMPL_VAR NAME=PRO>', 'args__rc', 'args__<TMPL_VAR NAME=RC>', 'args__chr', 'args__<TMPL_VAR NAME=CHR>', 'args__dsid', 'args__<TMPL_VAR NAME=DSID>', 'args__featname', 'args__<TMPL_VAR NAME=FEATNAME>', 'args__upstream', 'upstream', 'args__downstream', 'downstream'],['seq']);new_foot(['args__featid', 'args__<TMPL_VAR NAME=FEATID>', 'args__pro', 'args__<TMPL_VAR NAME=PRO>', 'args__rc', 'args__<TMPL_VAR NAME=RC>', 'args__chr', 'args__<TMPL_VAR NAME=CHR>', 'args__dsid', 'args__<TMPL_VAR NAME=DSID>', 'args__featname', 'args__<TMPL_VAR NAME=FEATNAME>', 'args__upstream', 'upstream', 'args__downstream', 'downstream'],[])"> 
+      <input type= button value ="Add to Sequence" id = "add_to" onClick="get_seq(['args__featid', 'args__<TMPL_VAR NAME=FEATID>', 'args__pro', 'args__<TMPL_VAR NAME=PRO>', 'args__rc', 'args__<TMPL_VAR NAME=RC>', 'args__chr', 'args__<TMPL_VAR NAME=CHR>', 'args__dsid', 'args__<TMPL_VAR NAME=DSID>', 'args__featname', 'args__<TMPL_VAR NAME=FEATNAME>', 'args__upstream', 'upstream', 'args__downstream', 'downstream'],['seq'])"> 
    </TMPL_IF>
   </TR>
    <TMPL_IF NAME="RANGE">
-    
+
     <TR>
      <TD>
-      <input type= button value ="Redefine Sequence" id = "add_to" onClick="get_seq(['args__pro', 'args__<TMPL_VAR NAME=PRO>', 'args__rc', 'args__<TMPL_VAR NAME=RC>', 'args__chr', 'args__<TMPL_VAR NAME=CHR>', 'args__dsid', 'args__<TMPL_VAR NAME=DSID>', 'args__strand', 'args__<TMPL_VAR NAME=STRAND>', 'args__start', 'upstream', 'args__stop', 'downstream'],['seq']);new_foot(['args__start', 'upstream', 'args__pro', 'args__<TMPL_VAR NAME=PRO>', 'args__rc', 'args__<TMPL_VAR NAME=RC>', 'args__chr', 'args__<TMPL_VAR NAME=CHR>', 'args__dsid', 'args__<TMPL_VAR NAME=DSID>', 'args__stop', 'downstream', 'args__strand', 'args__<TMPL_VAR NAME=STRAND>', 'args__add', 'args__1'],['buttons'])"> 
+      <input type= button value ="Redefine Sequence" id = "add_to" onClick="get_seq(['args__pro', 'args__<TMPL_VAR NAME=PRO>', 'args__rc', 'args__<TMPL_VAR NAME=RC>', 'args__chr', 'args__<TMPL_VAR NAME=CHR>', 'args__dsid', 'args__<TMPL_VAR NAME=DSID>', 'args__strand', 'args__<TMPL_VAR NAME=STRAND>', 'args__start', 'upstream', 'args__stop', 'downstream', 'args__add', 'args__1'],['seq','buttons'])"> 
    </TMPL_IF>
    </TR>
  </TABLE>
-</TABLE>
- </TMPL_IF>
-
-<TMPL_IF NAME=TEXT>
-<TABLE>
- <TR>
-  <TD align=right valign="top">
-    <DIV class="" id="seq">
-	<TMPL_VAR NAME=SEQ>
-    </DIV>
-  </TD>
- </TR>
-</TABLE>
 </TMPL_IF>
 
 <TMPL_IF NAME="FEATUREBOX">
