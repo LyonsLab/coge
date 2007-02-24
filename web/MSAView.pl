@@ -4,6 +4,7 @@ use CGI;
 use CGI::Carp 'fatalsToBrowser';
 use CGI::Ajax;
 use CoGe::Accessory::LogUser;
+use CoGe::Accessory::Web;
 use HTML::Template;
 use Data::Dumper;
 
@@ -31,18 +32,25 @@ print $pj->build_html($FORM, \&gen_html);
 
 sub gen_html
   {
-    my ($body, $seq_names, $seqs) = gen_body();
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/MSAView.tmpl');
-
-    $template->param(TITLE=>'Multiple Sequence Alignment Viewer');
-    $template->param(USER=>$USER);
-    $template->param(DATE=>$DATE);
-    $template->param(LOGO_PNG=>"MSAView-logo.png");
-    $template->param(BODY=>$body);
-    $template->param(SEQ_NAMES=>$seq_names) if $seq_names;
-    $template->param(SEQS=>$seqs) if $seqs;
     my $html;# =  "Content-Type: text/html\n\n";
-    $html .= $template->output;
+    unless ($USER)
+      {
+	$html = login();
+      }
+    else
+      {
+	my ($body, $seq_names, $seqs) = gen_body();
+	my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/MSAView.tmpl');
+	
+	$template->param(TITLE=>'Multiple Sequence Alignment Viewer');
+	$template->param(USER=>$USER);
+	$template->param(DATE=>$DATE);
+	$template->param(LOGO_PNG=>"MSAView-logo.png");
+	$template->param(BODY=>$body);
+	$template->param(SEQ_NAMES=>$seq_names) if $seq_names;
+	$template->param(SEQS=>$seqs) if $seqs;
+	$html .= $template->output;
+      }
     return $html;
   }
 
