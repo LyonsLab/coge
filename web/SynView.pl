@@ -145,7 +145,6 @@ sub gen_body
 
     my $html;
     my $spike_len = match_filter_select();
-    print STDERR $spike_len;
     $template->param(SPIKE_LEN=>$spike_len);
     $template->param(SEQ_RETRIEVAL=>1);
     $box->param(BOX_NAME=>"Sequence Retrieval:");
