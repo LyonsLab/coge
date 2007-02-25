@@ -163,8 +163,8 @@ sub get_seq
     my $stop = $opts{'stop'};
     #my $change_strand = $opts{'changestrand'} || 0;
     if($add_to_seq){
-      $start = $upstream;
-      $stop = $downstream;
+      $start = $upstream if $upstream;
+      $stop = $downstream if $downstream;
     }
     my $ds = $DB->get_dataset_obj->retrieve($dsid);
     #print $rc;
@@ -178,8 +178,6 @@ sub get_seq
       $strand = $opts{'strand'};
       $fasta = ">".$ds->org->name.", Location: ".$start."-".$stop.", Chromosome: ".$chr.", Strand: ".$strand."\n";
       $fasta_no_html = ">".$ds->org->name.", Location: ".$start."-".$stop.", Chromosome: ".$chr;
-#      $columns = 80;
-#      $fasta = join ("\n", wrap('','',$fasta));
     }
     else
     {
@@ -324,22 +322,22 @@ sub get_dna_seq_for_feat
     #print STDERR Dumper \%opts;
 #    print STDERR "dsid;$dsid\n";
     unless ($featid)
-    {
-    $seq = $DB->get_genomic_sequence(start=>$start,
-    					stop=>$stop,
-    					chr=>$chr,
-    					dataset_id=>$dsid);
-    }
-    else
-    {
-    my ($feat) = $DB->get_feat_obj->retrieve($featid);
-    unless (ref($feat) =~ /Feature/i)
       {
-        return "Unable to retrieve Feature object for id: $featid";
+	$seq = $DB->get_genomic_sequence(start=>$start,
+					 stop=>$stop,
+					 chr=>$chr,
+					 dataset_id=>$dsid);
       }
-    $seq = $feat->genomic_sequence(upstream=>$upstream, downstream=>$downstream);
-    }
-#    print STDERR "Done\n";
+    else
+      {
+	my ($feat) = $DB->get_feat_obj->retrieve($featid);
+	unless (ref($feat) =~ /Feature/i)
+	  {
+	    return "Unable to retrieve Feature object for id: $featid";
+	  }
+	$seq = $feat->genomic_sequence(upstream=>$upstream, downstream=>$downstream);
+      }
+    #    print STDERR "Done\n";
     if ($rc==1)
       {$seq = reverse_complement($seq);}
     elsif ($rc==2)
@@ -349,6 +347,14 @@ sub get_dna_seq_for_feat
     return $seq;
   }
   
+sub reverse_complement
+  {
+    my $seq = shift;
+    $seq = reverse $seq;
+    $seq =~ tr/ATCG/TAGC/;
+    return $seq;
+  }
+
 sub get_prot_seq_for_feat
   {
     my $featid = shift;
@@ -437,10 +443,10 @@ sub sixframe
 	  my $sixframe;
      	  my $sequence = $DB->get_feat_obj->frame6_trans(seq=>$seq);
           #print STDERR Dumper ($sequence);
-          foreach $key (sort {abs($a) <=> abs($b)} keys %$sequence)
+          foreach $key (sort {abs($a) <=> abs($b) || $b <=> $a} keys %$sequence)
            {
       	     $seq = join ("\n", wrap('','',$sequence->{$key}));
-      	     $sixframe = join("\n",$sixframe, qq/$fasta Frame $key\n$seq/);
+      	     $sixframe .= qq/$fasta Frame $key\n$seq\n/;
            }
           return "<pre>".$sixframe."</pre>";
         }
