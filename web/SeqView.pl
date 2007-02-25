@@ -8,6 +8,7 @@ use HTML::Template;
 use CoGe::Genome;
 use Text::Wrap qw($columns &wrap);
 use Data::Dumper;
+use POSIX;
 
 $ENV{PATH} = "/opt/apache/CoGe/";
 
@@ -208,18 +209,22 @@ sub get_seq
       $seq .= get_prot_seq_for_feat($feat_id);
     }
     #print length($seq);
+     $columns = 80;
      $seq = join ("\n", wrap('','',$seq));
      #print $seq;
      my $up;
      my $down;
      my $main;
+     my $newline = $seq;
+     $newline =~ s/\n/\\n/g;
+     #print STDERR $newline;
      unless($pro)
      {
       if($feat_id)
       {
        unless ($rc)
        {
-        #$seq = color(seq=>$seq, upstream=>$upstream, downstream=>$downstream);
+        $seq = color(seq=>$seq, upstream=>$upstream, downstream=>$downstream);
        }
        else
        {
@@ -339,7 +344,7 @@ sub get_dna_seq_for_feat
       {$seq = reverse_complement($seq);}
     elsif ($rc==2)
       {$seq = sixframe(seq=>$seq, fasta=>$fasta);}
-    $columns = 80;
+    #$columns = 80;
     #$seq = join ("\n", wrap('','',$seq));
     return $seq;
   }
@@ -367,15 +372,35 @@ sub color
       my $up;
       my $down;
       my $main;
-      my $nl1 = 0;
-      while ($up =~ /\n/g){$nl1++};
-      $up = substr($seq, 0, $upstream+$nl1);
-      my $nl2;
-      while ($down =~ /\n/g){$nl2++};
-      $down = substr($seq, ((length $seq)-($downstream-$nl2)), length $seq);
+      my $nl1;
+      #print STDERR $upstream."<--upstream\n";
+      $nl1 = 0;
+      $up = substr($seq, 0, $upstream);
+      while ($up=~/\n/g){$nl1++;}
+      #print STDERR $nl1."<--#n's\n";
+      my $check = substr($seq, $upstream, $nl1);
+      #$check =~ s/^\n+//;
+      #$check =~ s/\n+$//;
+      #print STDERR (length $check)."<--check results\n";
+      if ($check =~ /\n/)
+       {$nl1++; }#print STDERR "True\n!$check!\n";}
+      $upstream += $nl1;
+      #print STDERR $upstream."<--UP+#n's\n";
+      $up = substr($seq, 0, $upstream);
+      my $nl2 = 0;
+      #print STDERR $downstream."<--downstream\n";
+      $down = substr($seq, ((length $seq)-($downstream)), length $seq);
+      while ($down=~/\n/g){$nl2++;}
+      #print STDERR $nl2."<--#n's\n";
+      $check = substr($seq, ((length $seq)-($downstream+$nl2)), $nl2);
+      if ($check =~ /\n/)
+       {$nl2++;}
+      $downstream += $nl2;
+      $down = substr($seq, ((length $seq)-($downstream)), $downstream);
       $down = qq{<FONT class="down">$down</FONT>};
       $up = qq{<FONT class="up">$up</FONT>};
-      $main = substr($seq, $upstream+$nl1, ((length $seq) - ($downstream-$nl2)));
+      $main = substr($seq, $upstream, (((length $seq)) - ($downstream+$upstream)));
+      $main = qq{<FONT class="main">$main</FONT>};
       $seq = join("", $up, $main, $down);
       return $seq;
       #return qq{<FONT class="main">$main</FONT>};
