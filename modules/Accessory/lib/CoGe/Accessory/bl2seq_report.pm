@@ -146,6 +146,7 @@ sub _fastForward {
 	}
 	my $FH = $self->{FH};
 	while(<$FH>) {
+#	  print STDERR $_;
 		if ($_ =~ /^Lambda/) {
 			$self->{LASTLINE} = $_;
 			$self->{REPORT_DONE} = 1;
@@ -165,8 +166,9 @@ sub nextHSP {
 	############################
 	my $scoreline = $self->{LASTLINE};
 	my $FH = $self->{FH};
-	my ($bits, $score,$p) = $scoreline =~
-		/Score =\s+(\S+) bits \((\d+)\), Expect.* = (\S+)/;
+	my ($score, $bits,$p) = $scoreline =~
+		/Score =\s+(\S+) bits \((\d+)\), Expect.* += +(\S+)/;
+	print STDERR $scoreline unless $p;
 	$p =~ s/,//g;
 	my $identityline = <$FH>;
 	return undef if not defined $identityline;
