@@ -81,7 +81,7 @@ var slideDelay = 5;
 var divHeight = 22; 
 var moveSlidePix = 5;
 var isLocked = false;
-var doFading = true;
+var doFading = false;
 
 
 InitAll();
@@ -227,8 +227,8 @@ function Init(objDiv)
             menuObjArray[6][i] = false;
             if(doFading)
 			{
-				if (menuObjArray[0][i].filters)
-					menuObjArray[0][i].filters.alpha.opacity = 0;
+				if (menuObjArray[0][i].filters) {
+					menuObjArray[0][i].filters.alpha.opacity = 0;}
 				else
 					menuObjArray[0][i].style.opacity = .0;
 			}
