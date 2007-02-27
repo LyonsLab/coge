@@ -8,8 +8,19 @@
  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
 </HEAD>
 
-<BODY <TMPL_VAR NAME=BODY_TAG>>
+<BODY onLoad="getBrowser(); <TMPL_VAR NAME=BODY_ONLOAD>">
 <TMPL_VAR NAME=JAVASCRIPT>
+<SCRIPT language="JavaScript">
+
+function getBrowser()
+{
+  if (navigator.appName == 'Microsoft Internet Explorer')
+  {
+    alert('You are using Internet Explorer.  Unfortunately, CoGe does not support this browser and may not function appropriately.  Please download Firefox from http://www.mozilla.com/en-US/firefox/');
+  }
+}
+</SCRIPT>
+
 <TABLE width = 100%>
  <TR>
   <TD>
