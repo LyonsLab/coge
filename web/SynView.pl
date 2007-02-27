@@ -91,6 +91,7 @@ sub gen_html
 	$template->param(DATE=>$DATE);
 	$template->param(NO_BOX=>1);
 	$template->param(BODY=>gen_body());
+	$template->param(BODY_ONLOAD=>"setup();");
 	my $prebox = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SynView.tmpl');
 	$prebox->param(RESULTS_DIV=>1);
 	$template->param(PREBOX=>$prebox->output);
