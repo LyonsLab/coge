@@ -114,7 +114,7 @@ sub gen_body
     #$template->param(SEQ=>$seq);
     #$seq = qq{<TABLE style="width: 628px; height: 300px; overflow: auto;"><TR><TD align=left valign="top">$seq</TD></TR></TABLE>};
 #    return qq{<DIV id="seq" style="width: 623px; height: 300px; overflow: auto;">$seq</div>};
-    return qq{<DIV id="seq" style="height: 300px; overflow: auto;">$seq</div>};
+    return qq{<DIV id="seq" style="height: 300px; overflow: auto;"><DIV id="seqtext">$seq</DIV></div>};
 #    return qq{<DIV id="seq">$seq</div>};
   }
  
@@ -135,14 +135,14 @@ sub check_strand
             $strand = "-1";
           }
       }
-#      elsif ($strand == "+")
-#      {
-#        $strand =~ s/^+$/1/;
-#      }
-#      elsif ($strand == "-")
-#      {
-#        $strand =~ s/^-$/-1/;
-#      }
+     elsif ($strand == "+")
+     {
+       $strand =~ s/^\+$/1/;
+     }
+     elsif ($strand == "-")
+     {
+       $strand =~ s/^\-$/-1/;
+     }
     return $strand;
 }
 
@@ -226,7 +226,7 @@ sub get_seq
        }
        else
        {
-        #$seq = color(seq=>$seq, upstream=>$downstream, downstream=>$upstream);
+        $seq = color(seq=>$seq, upstream=>$downstream, downstream=>$upstream, rc=>$rc);
        }
        
       }
@@ -403,8 +403,16 @@ sub color
        {$nl2++;}
       $downstream += $nl2;
       $down = substr($seq, ((length $seq)-($downstream)), $downstream);
+      unless ($rc)
+      {
       $down = qq{<FONT class="down">$down</FONT>};
       $up = qq{<FONT class="up">$up</FONT>};
+      }
+      else
+      {
+      $down = qq{<FONT class="up">$down</FONT>};
+      $up = qq{<FONT class="down">$up</FONT>};
+      }
       $main = substr($seq, $upstream, (((length $seq)) - ($downstream+$upstream)));
       $main = qq{<FONT class="main">$main</FONT>};
       $seq = join("", $up, $main, $down);
