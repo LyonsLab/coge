@@ -429,12 +429,16 @@ sub Show_Summary
 		    };
       }
 #    print STDERR "\n";
-    unless ((ref ($obj1) =~ /GBObject/ || ref ($obj1) =~ /hash/i)  && ( ( (ref ($obj2) =~ /GBObject/) || ref ($obj2) =~ /hash/i ) || ( (ref ($obj3) =~ /GBObject/) || ref ($obj3) =~ /hash/i ) ) )
+    my $obj_count = 0;
+    foreach ($obj1, $obj2, $obj3)
+      {
+	$obj_count++ if ref($_) =~ /GBObject/ || ref($_) =~ /hash/i;
+      }
+    unless ($obj_count >1)
       {
 	return "<h3><font color = red>Problem retrieving information.  Please try again.</font></h3>";
-	#return 0;
       }
-#    return "<pre>".Dumper($obj1, $obj2)."</pre>";
+
     # set up output page
     
     # run bl2seq
