@@ -145,6 +145,16 @@ onClick="loading([], ['results']); run([
 	'hsp_limit',
 	'hsp_limit_num',
 	'blast_program',
+        'hsp1r',
+        'hsp1g',
+        'hsp1b',
+        'hsp2r',
+        'hsp2g',
+        'hsp2b',
+        'hsp3r',
+        'hsp3g',
+        'hsp3b',
+
   
 ],
 ['results'], 'POST');"
@@ -486,12 +496,13 @@ onClick="loading([], ['results']); run([
   <DIV class="mainDiv">
    <DIV id="ip" class="topItem" onMouseOver="Init(this);changeColor('ip','#000099'); " onMouseOut="changeColor('ip','#009900');" >Image Parameters:</DIV>
    <DIV class="dropMenu">
-     <DIV class="subMenu" style="display:none;">
+     <DIV class="subMenu" style="display:inline;">
      <TABLE style="width: 100%;">
       <TR>
       <TD>
 
-
+<table valign>
+<td valign=top>
 <TABLE class="basic">
  <TR>
   <TD>
@@ -560,8 +571,40 @@ onClick="loading([], ['results']); run([
 
 
  </TR>
-         </TABLE>
-     </table>
+</TABLE>
+<td width="3" bgcolor="#99FF99">
+<td valign =top>
+ <table>
+  <tr>
+   <td class="small">
+     HSP 1 color:
+   <TD class="small">
+     R:<input class="backbox" type="text" name="hsp1r" id="hsp1r" tabindex="1"  size="3" value="100" />
+   <TD class="small">
+     G:<input class="backbox" type="text" name="hsp1g" id="hsp1g" tabindex="1"  size="3" value="100" />
+   <TD class="small">
+     B:<input class="backbox" type="text" name="hsp1b" id="hsp1b" tabindex="1"  size="3" value="255" />
+  <tr>
+   <td class="small">
+     HSP 2 color:
+   <TD class="small">
+     R:<input class="backbox" type="text" name="hsp2r" id="hsp2r" tabindex="1"  size="3" value="0" />
+   <TD class="small">
+     G:<input class="backbox" type="text" name="hsp2g" id="hsp2g" tabindex="1"  size="3" value="255" />
+   <TD class="small">
+     B:<input class="backbox" type="text" name="hsp2b" id="hsp2b" tabindex="1"  size="3" value="0" />
+  <tr>
+   <td class="small">
+     HSP 3 color:
+   <TD class="small">
+     R:<input class="backbox" type="text" name="hsp3r" id="hsp3r" tabindex="1"  size="3" value="255" />
+   <TD class="small">
+     G:<input class="backbox" type="text" name="hsp3g" id="hsp3g" tabindex="1"  size="3" value="0" />
+   <TD class="small">
+     B:<input class="backbox" type="text" name="hsp3b" id="hsp3b" tabindex="1"  size="3" value="0" />
+  </table>
+ </table>
+</table>
      <span class="subItem"></span>
      <span class="subItem"></span>
      <span class="subItem"></span>
@@ -695,6 +738,16 @@ onClick="loading([], ['results']);run([
 	'hsp_limit',
 	'hsp_limit_num',
 	'blast_program',
+        'hsp1r',
+        'hsp1g',
+        'hsp1b',
+        'hsp2r',
+        'hsp2g',
+        'hsp2b',
+        'hsp3r',
+        'hsp3g',
+        'hsp3b',
+
 ],
 ['results'], 'POST');"
 >   &nbsp;&nbsp;
