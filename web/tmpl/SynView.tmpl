@@ -42,6 +42,47 @@ function setup(){
 }
 
 
+function set_hsp_colors (type)
+ {
+  if (type == "rasta")
+   {
+    kaj.GS('hsp1r',255)
+    kaj.GS('hsp1g',0)
+    kaj.GS('hsp1b',0)
+    kaj.GS('hsp2r',255)
+    kaj.GS('hsp2g',255)
+    kaj.GS('hsp2b',0)
+    kaj.GS('hsp3r',51)
+    kaj.GS('hsp3g',102)
+    kaj.GS('hsp3b',51)
+   }
+  else if (type == "cblind")
+   {
+    kaj.GS('hsp1r',50)
+    kaj.GS('hsp1g',50)
+    kaj.GS('hsp1b',50)
+    kaj.GS('hsp2r',120)
+    kaj.GS('hsp2g',120)
+    kaj.GS('hsp2b',120)
+    kaj.GS('hsp3r',200)
+    kaj.GS('hsp3g',200)
+    kaj.GS('hsp3b',200)
+   }
+  else 
+   {
+    kaj.GS('hsp1r',100)
+    kaj.GS('hsp1g',100)
+    kaj.GS('hsp1b',255)
+    kaj.GS('hsp2r',0)
+    kaj.GS('hsp2g',255)
+    kaj.GS('hsp2b',0)
+    kaj.GS('hsp3r',255)
+    kaj.GS('hsp3g',0)
+    kaj.GS('hsp3b',0)
+   }
+  
+ }
+
 function update_distance (check, val) {
   return;
   check = get(check);
@@ -602,6 +643,8 @@ onClick="loading([], ['results']); run([
      G:<input class="backbox" type="text" name="hsp3g" id="hsp3g" tabindex="1"  size="3" value="0" />
    <TD class="small">
      B:<input class="backbox" type="text" name="hsp3b" id="hsp3b" tabindex="1"  size="3" value="0" />
+  <tr>
+   <TD> <font class="small">Preset colors: <label><input class="backbox" type="radio" name="hspcolor" onClick="set_hsp_colors('default');"/>Default</label><label><input class="backbox" type="radio" name="hspcolor" onClick="set_hsp_colors('cblind');"/>Color blind</label><label><input class="backbox" type="radio" name="hspcolor" onClick="set_hsp_colors('rasta');"/>Rasta</label></font>
   </table>
  </table>
 </table>
