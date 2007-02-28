@@ -237,9 +237,32 @@ sub Show_Summary
 	$hsp_limit_num,
 	$blast_program,
 
+        $hsp1r,
+        $hsp1g,
+        $hsp1b,
+        $hsp2r,
+        $hsp2g,
+        $hsp2b,
+        $hsp3r,
+        $hsp3g,
+        $hsp3b,
+
        ) = @_;
     $spike_len = 0 unless $match_filter;
-    
+    my @hsp_colors;
+    foreach my $set ([$hsp1r,$hsp1g,$hsp1b],[$hsp2r,$hsp2g,$hsp2b],[$hsp3r,$hsp3g,$hsp3b])
+      {
+	my @tmp;
+	foreach my $color (@$set)
+	  {
+	    $color = 0 unless $color =~ /^\d+$/;
+	    $color = 0 if $color < 0;
+	    $color = 255 if $color > 255;
+	    push @tmp, $color;
+	  }
+	push @hsp_colors,\@tmp;
+      }
+
 
 #    print Dumper \@_;
 
@@ -479,6 +502,7 @@ sub Show_Summary
 							 hsp_limit=>$hsp_limit,
 							 hsp_limit_num=>$hsp_limit_num,
 							 color_hsp=>$color_hsp,
+							 hsp_colors=>\@hsp_colors,
 							 spike_sequence=>$spike_seq,
 							);
 	    $html .= qq!<div>$accn!;
@@ -553,6 +577,7 @@ sub generate_image
     my $color_hsp = $opts{color_hsp};
     my $hsp_limit_num = $opts{hsp_limit_num};
     my $eval_cutoff = $opts{eval_cutoff};
+    my $hsp_colors = $opts{hsp_colors};
     my $graphic = new CoGe::Graphics;
     my $gfx = new CoGe::Graphics::Chromosome;
     $gfx->overlap_adjustment(0);
@@ -587,7 +612,7 @@ sub generate_image
     $gfx->add_feature($f2);
     $graphic->process_nucleotides(c=>$gfx, seq=>$gbobj->{SEQUENCE}, layers=>{gc=>$show_gc});
     process_features(c=>$gfx, obj=>$gbobj, start=>$start, stop=>$stop);
-    process_hsps(c=>$gfx, data=>$data, reports=>$reports, accn=>$gbobj->{ACCN}, rev=>$reverse_image, seq_length=> length($gbobj->{SEQUENCE}), stagger_label=>$stagger_label, hsp_limit=>$hsp_limit, hsp_limit_num=>$hsp_limit_num, gbobj=>$gbobj, spike_seq=>$spike_seq, eval_cutoff=>$eval_cutoff, color_hsp=>$color_hsp);
+    process_hsps(c=>$gfx, data=>$data, reports=>$reports, accn=>$gbobj->{ACCN}, rev=>$reverse_image, seq_length=> length($gbobj->{SEQUENCE}), stagger_label=>$stagger_label, hsp_limit=>$hsp_limit, hsp_limit_num=>$hsp_limit_num, gbobj=>$gbobj, spike_seq=>$spike_seq, eval_cutoff=>$eval_cutoff, color_hsp=>$color_hsp, colors=>$hsp_colors);
     my $file = new File::Temp ( TEMPLATE=>'SynView__XXXXX',
 				   DIR=>$TEMPDIR,
 				    SUFFIX=>'.png',
@@ -710,12 +735,8 @@ sub process_hsps
     my $gbobj = $opts{gbobj};
     my $eval_cutoff = $opts{eval_cutoff};
     my $color_hsp = $opts{color_hsp};
+    my $colors = $opts{colors};
     #to reverse hsps when using genomic sequences from CoGe, they need to be drawn on the opposite strand than where blast reports them.  This is because CoGe::Graphics has the option of reverse drawing a region.  However, the sequence fed into blast has already been reverse complemented so that the HSPs are in the correct orientation for the image.  Thus, if the image is reverse, they are drawn on the wrong strand.  This corrects for that problem.   Sorry for the convoluted logic, but it was the simplest way to substantiate this option
-    my @colors = (
-		  [ 100, 100, 255],
-		  [ 0, 255, 0],
-		  [ 255, 0, 0],
-		 );
     my $i = 0;
     my $track = 2;
     my @feats;
@@ -751,7 +772,7 @@ sub process_hsps
 	  #	while (my $hsp = $blast->nextHSP)
 	  {
 	    next if defined $eval_cutoff && $hsp->eval > $eval_cutoff;
-	    my $color = $colors[$i];
+	    my $color = $colors->[$i];
 	    my $skip = 0;
 #	    print STDERR Dumper $hsp;
 	    if ($hsp->qalign =~ /\*/ || $hsp->salign =~ /\*/)
