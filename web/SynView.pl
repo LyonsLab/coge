@@ -524,9 +524,10 @@ sub Show_Summary
     $html .= $form->br();
     $html .= qq!<DIV id="info"></DIV>!;
     $html .= "</FORM>\n";
-#    $html .= "<P><B>ERROR - NO HITS WERE RETURNED FROM THE BL2SEQ REPORT!</B><P>\n";
+    $html .= qq{<table>};
     if ($blast_reports && @$blast_reports)
       {
+	$html .= qq{<tr><td class = small>Blast reports};
 	foreach my $item (@$blast_reports)
 	  {
 	    my $report = $item->[0];
@@ -536,8 +537,15 @@ sub Show_Summary
 	    $basereportname = $TEMPURL . "/$basereportname\n";
 	    $html .= "<div><font class=xsmall><A HREF=\"$basereportname\">View bl2seq output for $accn1 versus $accn2</A></font></DIV>\n";
 	  }
+	$html .= qq{<td class = small>Fasta files};
+	foreach my $item (@sets)
+	  {
+	    my $basename = $TEMPURL."/".basename ($item->{file});
+	    my $accn = $item->{accn};
+	    $html .= "<div><font class=xsmall><A HREF=\"$basename\">Fasta file for $accn</A></font></DIV>\n";
+	  }
       }
-
+    $html .= qq{</table>};
 
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
 #    print STDERR $html;
