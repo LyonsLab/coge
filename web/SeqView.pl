@@ -273,10 +273,10 @@ sub gen_foot
 				   strand=>$strand);
     $dynamic_buttons = "<div id=\"buttons\">$dynamic_buttons</div>";
    $template->param(ADDITION=>1);
-   unless($feat_id)
-    {$template->param(RANGE=>1);}
-   else
-    {$template->param(FEATURE=>1);}
+#    unless($feat_id)
+#     {$template->param(RANGE=>1);}
+#    else
+#     {$template->param(FEATURE=>1);}
 
    unless($feat_id)
     {
@@ -294,15 +294,17 @@ sub gen_foot
       $template->param(DOWNSTREAM=>"DOWNSTREAM: ");
       $template->param(DOWNVALUE=>$downstream);
     }
-    $template->param(PRO=>$pro);
-    $template->param(RC=>$rc);
-    $template->param(CHR=>$chr);
-    $template->param(DSID=>$dsid);
-    $template->param(FEATNAME=>$feat_name);
-    $template->param(STRAND=>$strand);
+    my $add_more = update_other_buttons(chr=>$chr,
+			  	      dsid=>$dsid,
+			  	      featid=>$feat_id,
+			  	      featname=>$feat_name,
+				      rc=>$rc,
+				      pro=>$pro,
+				      strand=>$strand);
+    $add_more = "<div id=\"add_more\">$add_more</div>";
     #print STDERR $template->output."\n";
     my $html = $template->output;
-    $html = join("\n", qq{$dynamic_buttons}, $html);
+    $html = join("\n", qq{$dynamic_buttons}, $html, qq{$add_more});
    return $html;
   }
     
@@ -586,8 +588,9 @@ sub find_feats
 	$html = substr($html, (44), length($html));
         $template->param(FEATUREBOX=>1);
         $template->param(LISTFEATURES=>$html);
+        #$template->param(FEATTABLE=>qq{style = "overflow: auto; height: 300px;"});
         $html = $template->output;
-        return qq{<DIV id = "" style = "overflow: auto; height: 300px;">$html</DIV>};
+        return $html;
 
 }
 
@@ -656,5 +659,42 @@ sub get_seq_and_button
 				  start=>$start,
 				  stop=>$stop,
 				  strand=>$strand);
-    return $seq, $dynamic_buttons;
+    my $update = update_other_buttons(chr=>$chr,
+			  	      featid=>$feat_id,
+			  	      dsid=>$dsid,
+			  	      featname=>$feat_name,
+				      rc=>$rc,
+				      pro=>$pro,
+				      strand=>$strand);
+    return $seq, $dynamic_buttons, $update;
   }
+
+sub update_other_buttons
+{
+    my %opts = @_;
+    my $featid = $opts{'featid'};
+    my $chr = $opts{'chr'};
+    my $dsid = $opts{'dsid'};
+    my $feat_name = $opts{'featname'};
+    my $rc = $opts{'rc'};
+    my $pro = $opts{'pro'};
+    my $strand = $opts{'strand'};
+    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SeqView.tmpl');
+    if ($featid)
+    {
+    $template->param(FEATURE=>1);
+    $template->param(FEATID=>$featid);
+    $template->param(FEATNAME=>$feat_name);
+    }
+    else
+    {
+    $template->param(RANGE=>1);
+    $template->param(STRAND=>$strand);
+    }
+    $template->param(PRO=>$pro);
+    $template->param(RC=>$rc);
+    $template->param(CHR=>$chr);
+    $template->param(DSID=>$dsid);
+    #print STDERR "I'm being called\n";
+    return $template->output;
+}
