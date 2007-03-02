@@ -265,6 +265,7 @@ sub genomic_view
 						   fsh=>$feat_start_height,
 						   fmh=>$feat_mag_height,
 						   forcefit=>$forcefit,
+						   feature_labels=>1,
 						  ) unless $c->chr_length;
 	
 	if ($c->chr_length)
