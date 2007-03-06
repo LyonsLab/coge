@@ -24,6 +24,8 @@ use CoGe::Graphics::Feature::Exon_motifs;
 use CoGe::Graphics::Feature::AminoAcid;
 use CoGe::Graphics::Feature::Domain;
 use CoGe::Graphics::Feature::HSP;
+use Text::Wrap qw($columns &wrap);
+
 # for security purposes
 $ENV{PATH} = "/opt/apache2/CoGe/";
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
@@ -269,10 +271,6 @@ sub Show_Summary
 
     my $stagger_label = $hsp_label =~ /staggered/i ? 1 : 0;
     my $feature_labels = $hsp_label eq "0" ? 0 : 1;
-    my @reverse_image = ($rev1, $rev2, $rev3);
-    my @locs = ([$dr1up,$dr1down],
-		[$dr2up,$dr2down],
-		[$dr3up,$dr3down],);
     my $form = $FORM;
 
     my ($seq_file1, $seq_file2, $seq_file3);
@@ -397,7 +395,6 @@ sub Show_Summary
 		     accn=>$obj2->{ACCN},
 		    };
       }
-
     #create object 3
     if ($featid3)
       {
@@ -453,6 +450,16 @@ sub Show_Summary
 		    };
       }
 #    print STDERR "\n";
+
+    my @reverse_image;
+    push @reverse_image, $rev1 if $obj1;
+    push @reverse_image, $rev2 if $obj2;
+    push @reverse_image, $rev3 if $obj3;
+    my @locs;
+    push @locs, [$dr1up,$dr1down] if $obj1;
+    push @locs, [$dr2up,$dr2down] if $obj2;
+    push @locs, [$dr3up,$dr3down] if $obj3;
+
     my $obj_count = 0;
     foreach ($obj1, $obj2, $obj3)
       {
@@ -544,7 +551,7 @@ sub Show_Summary
 	    my $accn2 = $item->[2];
 	    my $basereportname = basename( $report );
 	    $basereportname = $TEMPURL . "/$basereportname\n";
-	    $html .= "<div><font class=xsmall><A HREF=\"$basereportname\">View bl2seq output for $accn1 versus $accn2</A></font></DIV>\n";
+	    $html .= "<div><font class=xsmall><A HREF=\"$basereportname\">View blast output for $accn1 versus $accn2</A></font></DIV>\n";
 	  }
 	$html .= qq{<td class = small>Fasta files};
 	foreach my $item (@sets)
@@ -552,6 +559,13 @@ sub Show_Summary
 	    my $basename = $TEMPURL."/".basename ($item->{file});
 	    my $accn = $item->{accn};
 	    $html .= "<div><font class=xsmall><A HREF=\"$basename\">Fasta file for $accn</A></font></DIV>\n";
+	  }
+	$html .= qq{<td class = small>Annotation files};
+	foreach my $item (@sets)
+	  {
+	    my $basename = $TEMPURL."/".basename (generate_annotation(%$item));
+	    my $accn = $item->{accn};
+	    $html .= "<div><font class=xsmall><A HREF=\"$basename\">Annotation file for $accn</A></font></DIV>\n";
 	  }
       }
     $html .= qq{</table>};
@@ -1343,16 +1357,20 @@ sub write_fasta {
 
 	my $error = 0;
 	($error,$fullname) = check_filename_taint( $fullname );
-	if ( $error ) {
-		open(OUT, ">$fullname") or die "Couldn't open $fullname!\n";
-		print OUT "$hdr\n";
-		print OUT "$seq\n";
-		close(OUT);
-		system "chmod +rw $fullname";
-		return($fullname,$seq_begin,$seq_end,$spike_seq);
-	} else {
-		return(0,0,0,"");
-	}
+	if ( $error ) 
+	  {
+	    $seq = join ("\n", wrap('','',$seq));
+	    open(OUT, ">$fullname") or die "Couldn't open $fullname!\n";
+	    print OUT "$hdr\n";
+	    print OUT "$seq\n";
+	    close(OUT);
+	    system "chmod +rw $fullname";
+	    return($fullname,$seq_begin,$seq_end,$spike_seq);
+	  } 
+	else 
+	  {
+	    return(0,0,0,"");
+	  }
 }
 
 sub spike { 
@@ -1449,4 +1467,49 @@ sub dataset_search_for_feat_name
 	$html .= qq{Accession not found <input type="hidden" id="dsid$num">\n<input type="hidden" id="featid$num">\n};	
       }    
     return ($html,$num);
+  }
+
+sub generate_annotation
+  {
+    my %opts = @_;
+    my $obj = $opts{obj};
+    my $start = $opts{file_begin};
+    my $stop = $opts{file_end};
+    my @opts = ($start, $stop);# if $start && $stop;
+    my $tmp_file = new File::Temp ( TEMPLATE=>'Anno__XXXXX',
+				    DIR=>$TEMPDIR,
+				    SUFFIX=>'.txt',
+				    UNLINK=>0);
+    my $fullname = $tmp_file->filename;
+    my %data;
+    foreach my $feat($obj->get_features(@opts))
+      {
+	my $type = $feat->{F_KEY};
+	my ($name) = sort { length ($b) <=> length ($a) || $a cmp $b} @{$feat->{QUALIFIERS}{names}};
+	my $dir = $feat->location =~ /complement/ ? "<" : ">";
+	foreach my $block (@{$feat->{'blocks'}})
+	  {
+	    $block->[0] =1 unless $block->[0];
+	    push @{$data{$name}{$type}},[$block->[0], $block->[1], $dir];
+	  }
+      }
+    open (OUT, ">$fullname") || die "Can't open $fullname for writing! $!\n";
+    foreach my $name (keys %data)
+      {
+	my $gene = $data{$name}{gene};
+	if ($gene)
+	  {
+	    delete $data{$name}{gene};
+	    print OUT join (" ", $gene->[0][2], $gene->[0][0], $gene->[0][1], $name),"\n";
+	    foreach my $type (keys %{$data{$name}})
+	      {
+		foreach my $item (@{$data{$name}{$type}})
+		  {
+		    print OUT join (" ", $item->[0], $item->[1],$type),"\n";
+		  }
+	      }
+	  }
+      }
+    close OUT;
+    return $fullname;
   }
