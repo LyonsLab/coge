@@ -19,6 +19,23 @@ BEGIN
 ###############################################################################
 # bl2seqReport
 ###############################################################################
+#################### subroutine header begin ####################
+
+=head2 
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comment   : 
+           : 
+
+See Also   : 
+
+=cut
+
+#################### subroutine header end ####################
 sub new {
 	my $proto = shift;
 	my $class = ref($proto) || $proto;
