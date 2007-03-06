@@ -8,6 +8,7 @@ use HTML::Template;
 use Data::Dumper;
 use CoGe::Genome;
 use CoGe::Accessory::bl2seq_report;
+use CoGe::Accessory::blastz_report;
 
 # for security purposes
 $ENV{PATH} = "/opt/apache2/CoGe/";
@@ -66,7 +67,9 @@ sub gen_body
   {
     my $blast_file = shift;
     my $hsp_num = shift;
-    my $blast = new CoGe::Accessory::bl2seq_report($blast_file);
+    my $blast;
+    $blast= new CoGe::Accessory::bl2seq_report($blast_file) if $blast_file =~ /bl2seq/i;
+    $blast= new CoGe::Accessory::blastz_report($blast_file) if $blast_file =~ /blastz/i;
     my $hsp;
     foreach my $item (@{$blast->hsps})
       {
@@ -81,6 +84,8 @@ sub gen_body
     $qseq =~ s/-//g;
     my $sseq = $hsp->sseq;
     $sseq =~ s/-//g;
+    $template->param(QLoc=>$hsp->qstart."-".$hsp->qstop);
+    $template->param(SLoc=>$hsp->sstart."-".$hsp->sstop);
     $template->param(QIdent=>sprintf("%.1f",$hsp->match/length($qseq)*100)."%");
     $template->param(SIdent=>sprintf("%.1f",$hsp->match/length($sseq)*100)."%");
     $template->param(QSim=>sprintf("%.1f",$hsp->positive/length($qseq)*100)."%");
