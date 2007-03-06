@@ -13,6 +13,7 @@ use CoGe::Genome;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::bl2seq_report;
+use CoGe::Accessory::blastz_report;
 use CoGe::Graphics;
 use CoGe::Graphics::Chromosome;
 use CoGe::Graphics::Feature;
@@ -29,7 +30,7 @@ delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 
 use vars qw( $DATE $DEBUG $BL2SEQ $BLASTZ $TEMPDIR $TEMPURL $USER $FORM $cogeweb);
 $BL2SEQ = "/opt/bin/bio/bl2seq ";
-$BLASTZ = "/opt/apache/CoGe/bin/blastz ";
+$BLASTZ = "/usr/bin/blastz ";
 $TEMPDIR = "/opt/apache/CoGe/tmp";
 $TEMPURL = "/CoGe/tmp";
 # set this to 1 to print verbose messages to logs
@@ -472,7 +473,15 @@ sub Show_Summary
     $bl2seq_params .= " -q " . $mismatch if defined $mismatch;
     $bl2seq_params .= " -e " . $eval if defined $eval;
     $bl2seq_params .= " "    . $blastparams if defined $blastparams;
-    my $blast_reports = run_bl2seq( files=>[map {$_->{file}} @sets], accns=>[map {$_->{accn}}@sets], blast_params=>$bl2seq_params, blast_program=>$blast_program );
+    my $blast_reports;
+    if ($blast_program eq "blastz")
+      {
+	$blast_reports = run_blastz( files=>[map {$_->{file}} @sets], accns=>[map {$_->{accn}}@sets], params=>undef);
+      }
+    else
+      {
+	$blast_reports = run_bl2seq( files=>[map {$_->{file}} @sets], accns=>[map {$_->{accn}}@sets], blast_params=>$bl2seq_params, blast_program=>$blast_program );
+      }
 #    print Dumper $blast_reports;
    #sets => array or data for blast
    #blast_reports => array of arrays (report, accn1, accn2, parsed data)
@@ -549,7 +558,7 @@ sub Show_Summary
 
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
 #    print STDERR $html;
-    $template->param(BOX_NAME=>"Results:");
+    $template->param(BOX_NAME=>"Results: $blast_program");
     $template->param(BODY=>$html);
     my $outhtml = $template->output;
 #    open (OUT, ">$TEMPDIR/results.html");
@@ -572,7 +581,6 @@ sub generate_image
     my $masked_exons = $opts{mask};
     my $masked_ncs = $opts{mask_ncs};
     my $spike_seq = $opts{spike_sequence};
-    my $reports = $opts{reports};
     my $iw = $opts{iw} || 1600;
     my $ih = $opts{ih} || 200;
     my $fh = $opts{fh} || 25;
@@ -620,7 +628,7 @@ sub generate_image
     $gfx->add_feature($f2);
     $graphic->process_nucleotides(c=>$gfx, seq=>$gbobj->{SEQUENCE}, layers=>{gc=>$show_gc});
     process_features(c=>$gfx, obj=>$gbobj, start=>$start, stop=>$stop);
-    process_hsps(c=>$gfx, data=>$data, reports=>$reports, accn=>$gbobj->{ACCN}, rev=>$reverse_image, seq_length=> length($gbobj->{SEQUENCE}), stagger_label=>$stagger_label, hsp_limit=>$hsp_limit, hsp_limit_num=>$hsp_limit_num, gbobj=>$gbobj, spike_seq=>$spike_seq, eval_cutoff=>$eval_cutoff, color_hsp=>$color_hsp, colors=>$hsp_colors);
+    process_hsps(c=>$gfx, data=>$data, accn=>$gbobj->{ACCN}, rev=>$reverse_image, seq_length=> length($gbobj->{SEQUENCE}), stagger_label=>$stagger_label, hsp_limit=>$hsp_limit, hsp_limit_num=>$hsp_limit_num, gbobj=>$gbobj, spike_seq=>$spike_seq, eval_cutoff=>$eval_cutoff, color_hsp=>$color_hsp, colors=>$hsp_colors);
     my $file = new File::Temp ( TEMPLATE=>'SynView__XXXXX',
 				   DIR=>$TEMPDIR,
 				    SUFFIX=>'.png',
@@ -732,7 +740,6 @@ sub process_hsps
     my %opts = @_;
     my $c = $opts{c};
     my $data = $opts{data};
-    my $reports = $opts{reports};
     my $accn = $opts{accn};
     my $reverse = $opts{rev};
     my $seq_len = $opts{seq_length};
@@ -756,13 +763,13 @@ sub process_hsps
 	my $accn1 = $item->[1];
 	my $accn2 = $item->[2];
 	my $blast = $item->[3];
-	next unless ref($blast) =~ /bl2seq/i;
+#	print STDERR "!",join ("!\t!", $accn1, $accn2, $accn),"!\n";
+	next unless ref($blast) =~ /bl2seq/i || ref($blast) =~ /blastz/i;
 	unless ($accn eq $accn1 || $accn eq $accn2)
 	  {
 	    $i++;
 	    next;
 	  }
-#	print "here!\n";
 #	print Dumper $blast;
 	if ($spike_seq)
 	  {
@@ -779,6 +786,7 @@ sub process_hsps
 	foreach my $hsp (@{$blast->hsps})
 	  #	while (my $hsp = $blast->nextHSP)
 	  {
+#	    print STDERR $hsp->qalign,"\n";
 	    next if defined $eval_cutoff && $hsp->eval > $eval_cutoff;
 	    my $color = $colors->[$i];
 	    my $skip = 0;
@@ -1090,6 +1098,7 @@ sub check_taint {
 			return(1,$v);
 	} else {
 	# data should be thrown out
+	  carp "$v failed taint check\n";
 			return(0);
 	}
 }
@@ -1137,17 +1146,18 @@ sub run_bl2seq {
 	  $command .= " " . $blast_params;
 	  my $x = "";
 	  ($x,$command) = check_taint( $command );
-	  print STDERR $command,"\n" if $STDERR;
 	  if ( $DEBUG ) {
 	    print STDERR "About to execute...\n $command\n";
 	  }
+	  unless ($x)
+	    {
+	      next;
+	    }
 	  # execute the command
 	  `$command`;
 	  system "chmod +rw $tempfile";
 	  #$reports{$accns->[$i]}{$accns->[$j]} = $tempfile;
-	  my $rc;
-	  my $data;
-	  my $blastreport = new CoGe::Accessory::bl2seq_report($tempfile);
+	  my $blastreport = new CoGe::Accessory::bl2seq_report($tempfile) if -r $tempfile;
 	  my @tmp = ($tempfile, $accn1, $accn2);
 	  if ($blastreport)
 	    {
@@ -1163,6 +1173,67 @@ sub run_bl2seq {
     }
   return( \@reports );
 }
+
+sub run_blastz
+  {
+    my %opts = @_;
+    my $files = $opts{files};
+    my $params = $opts{params};
+    my $accns = $opts{accns};
+     my @files;
+  foreach my $item (@$files)
+    {
+      next unless $item;
+      if (-r $item)
+	{
+	  push @files, $item
+	}
+    }
+    my @reports;
+    for (my $i=0; $i<scalar @files; $i++)
+      {
+	for (my $j=0; $j<scalar @files; $j++)
+	  {
+	    next unless $j > $i;
+	    my $seqfile1 = $files[$i];
+	    my $seqfile2 = $files[$j];
+	    my ($accn1, $accn2) = ($accns->[$i], $accns->[$j]);
+	    my $tmp_file = new File::Temp ( TEMPLATE=>'blastz__XXXXX',
+					  DIR=>$TEMPDIR,
+					  SUFFIX=>'.txt',
+					  UNLINK=>0);
+	    my ($tempfile) = $tmp_file->filename;# =~ /([^\/]*$)/;
+	    my $command = $BLASTZ;
+	    $command .= " $seqfile1 $seqfile2";
+	    $command .= " ".$params if $params;
+	    my $x = "";
+	    ($x,$command) = check_taint( $command );
+	    if ( $DEBUG ) {
+	      print STDERR "About to execute...\n $command\n";
+	    }
+	    unless ($x)
+	      {
+		next;
+	      }
+	    $command .= " > ".$tempfile;
+	    	  # execute the command
+	    `$command`;
+	    system "chmod +rw $tempfile";
+	    my $blastreport = new CoGe::Accessory::blastz_report($tempfile) if -r $tempfile;
+	    my @tmp = ($tempfile, $accn1, $accn2);
+	    if ($blastreport)
+	    {
+	      push @tmp, $blastreport
+	    }
+	  else
+	    {
+	      push @tmp, "no results from blasting $accn1 and $accn2";
+	    }
+	  push @reports, \@tmp;
+	  }
+      }
+    return \@reports;
+  }
 
 sub get_substr
   {
@@ -1231,7 +1302,7 @@ sub write_fasta {
 	if ( $seq_begin < 1 ) {
 		$seq_begin = 1;
 	}
-	($seq) = $gbobj->sequence();
+	($seq) = uc($gbobj->sequence());
 
 	if ($options->{downstream})
 	{
