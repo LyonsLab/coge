@@ -496,9 +496,12 @@ onClick="loading([], ['results']); run([
   <TD><select class="backbox" id="blast_program" size="1">
        <option selected>blastn</option>
        <option>tblastx</option>
+       <option>blastz</option>
       </select>
    </TD>
  </TR>    
+  <TR>
+   <td colspan =2 class=small>Note: parameters won't work with blastz
   <TR>
   <TD>Word Size (-W):<Br><font class="small">(limited to 3 if using tblastx)</font> </TD>
   <TD><input class="backbox" type="text" name="wordsize" id="wordsize" tabindex="1" size="3" value="7" /></TD>
