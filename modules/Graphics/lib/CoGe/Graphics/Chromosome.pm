@@ -254,7 +254,7 @@ See Also   :
 sub new
 {
     my ($class, %parameters) = @_;
-
+    #print STDERR "CHR IS BEING CALLED\n";
     my $self = bless ({}, ref ($class) || $class);
     $self->mag_scale_type($MAG_SCALE_TYPE);
     $self->max_mag($MAX_MAG);
