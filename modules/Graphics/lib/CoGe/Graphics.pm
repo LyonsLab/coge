@@ -677,19 +677,23 @@ sub draw_prots
       {
 	next unless $seq->seq_type->name =~ /prot/i;
 	my ($pseq) = $seq->sequence_data;
+	my $lastaa = 0;
 	$chrs = int ((($c->_region_length)/$c->iw)/3+.5); 
 	$chrs = 1 if $chrs < 1;
 	my $pos = 0;
-	while ($pos <= length $pseq)
+	while ($pos < length $pseq)
 	  {
 	    my $aseq = substr($pseq, $pos, $chrs);
+	    #print STDERR "length: ", (length $pseq), ", pos: ", $pos, ", chrs: ", $chrs, ", aseq: ", $aseq,"\n";
+	    if($pos+$chrs == (length $pseq))
+		{$lastaa = 1;}
 	    foreach my $loc ($seq->get_genomic_locations(start=>$pos+1, stop=>$pos+$chrs))
 	      {
 		
 #		next if $loc->stop < $c->_region_begin;
 #		next if $loc->start > $c->_region_end;
 		print STDERR "Adding protein feature: $aseq at position ", $loc->start,"-", $loc->stop,"\n" if $self->DEBUG;
-		my $ao = CoGe::Graphics::Feature::AminoAcid->new({aa=>$aseq, start=>$loc->start, stop=>$loc->stop, strand => $loc->strand, order=>2});
+		my $ao = CoGe::Graphics::Feature::AminoAcid->new({aa=>$aseq, start=>$loc->start, stop=>$loc->stop, strand => $loc->strand, order=>2, lastaa=>$lastaa});
 		$ao->skip_overlap_search(1);
 		$ao->mag(0.75);
 		$ao->overlay(2);
