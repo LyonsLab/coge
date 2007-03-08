@@ -1200,7 +1200,9 @@ sub generate_imagemap
 	#clean this for javascript
 	$anno =~ s/\n/<br>/g;
 	$anno =~ s/\t/&nbsp;&nbsp;/g;
-
+	$anno =~ s/"//g;
+	$anno =~ s/'//g;
+	print STDERR "!!",$anno,"\n" if $anno =~ /0004803/;
 	my $feat_height = $self->feature_height;#($self->feature_start_height+$self->feature_mag_height*$self->mag);
 	my $feat_h = $feat_height/$feat->_overlap;
 	my $offset = ($feat->order-1)*($feat_height+$self->padding/1.5)+$self->padding;
