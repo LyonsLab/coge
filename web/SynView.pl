@@ -25,18 +25,20 @@ use CoGe::Graphics::Feature::AminoAcid;
 use CoGe::Graphics::Feature::Domain;
 use CoGe::Graphics::Feature::HSP;
 use Text::Wrap qw($columns &wrap);
+use Benchmark qw(:all);
 
 # for security purposes
 $ENV{PATH} = "/opt/apache2/CoGe/";
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 
-use vars qw( $DATE $DEBUG $BL2SEQ $BLASTZ $TEMPDIR $TEMPURL $USER $FORM $cogeweb);
+use vars qw( $DATE $DEBUG $BL2SEQ $BLASTZ $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK);
 $BL2SEQ = "/opt/bin/bio/bl2seq ";
 $BLASTZ = "/usr/bin/blastz ";
 $TEMPDIR = "/opt/apache/CoGe/tmp";
 $TEMPURL = "/CoGe/tmp";
 # set this to 1 to print verbose messages to logs
 $DEBUG = 0;
+$BENCHMARK = 1;
 
 $| = 1; # turn off buffering
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
@@ -289,7 +291,7 @@ sub Show_Summary
     my $html;
     my $spike_seq;
     my $db = new GS::MyDB;
-
+    my $t1 = new Benchmark;
     if ($featid1)
       {
 	$obj1 = get_obj_from_genome_db( $accn1, $featid1, $infoid1, $rev1, $dr1up, $dr1down );
@@ -469,7 +471,7 @@ sub Show_Summary
       {
 	return "<h3><font color = red>Problem retrieving information.  Please try again.</font></h3>";
       }
-
+    my $t2 = new Benchmark;
     # set up output page
     
     # run bl2seq
@@ -494,6 +496,7 @@ sub Show_Summary
    #blast_reports => array of arrays (report, accn1, accn2, parsed data)
 
     my $i = 0;
+    my $t3 = new Benchmark;
     foreach my $item (@sets)
       {
 	my $accn = $item->{accn};
@@ -521,6 +524,7 @@ sub Show_Summary
 							 hsp_colors=>\@hsp_colors,
 							 spike_sequence=>$spike_seq,
 							);
+#	    print STDERR $map;
 	    $html .= qq!<div>$accn!;
 	    $html .= qq!(<font class=species>!.$obj->{ORGANISM}.qq!</font>)! if $obj->{ORGANISM};
 	    $html .= qq!($locs[$i][0]::$locs[$i][1])! if defined $locs[$i][0];
@@ -532,7 +536,7 @@ sub Show_Summary
 	  }
 	$i++;
       }
-    
+    my $t4 = new Benchmark;
     $html .= qq!<br>!;
     $html .= qq!<FORM NAME=\"info\">\n!;
     $html .= $form->br();
@@ -579,7 +583,19 @@ sub Show_Summary
 #    print STDERR $outhtml;
 #    print OUT $outhtml;
 #    close OUT;
-      
+    my $t5 = new Benchmark;
+    my $db_time = timestr(timediff($t2,$t1));
+    my $blast_time = timestr(timediff($t3,$t2));
+    my $image_time = timestr(timediff($t4,$t3));
+    my $html_time = timestr(timediff($t5,$t4));
+    print STDERR qq{
+SynView Benchmark:
+Time to get DB info             : $db_time
+Time to run blast               : $blast_time
+Time to generate images and maps: $image_time
+Time to process html            : $html_time
+} if $BENCHMARK;
+
     return $outhtml;;
 
 }
