@@ -589,7 +589,7 @@ sub Show_Summary
     my $image_time = timestr(timediff($t4,$t3));
     my $html_time = timestr(timediff($t5,$t4));
     print STDERR qq{
-SynView Benchmark:
+SynView Benchmark: $DATE
 Time to get DB info             : $db_time
 Time to run blast               : $blast_time
 Time to generate images and maps: $image_time
