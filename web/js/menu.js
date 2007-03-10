@@ -77,9 +77,9 @@ menuObjArray[7] = new Array();
 
 var timerSlide = null;
 var numMenuItem = 0;
-var slideDelay = 5;
+var slideDelay = 0;
 var divHeight = 22; 
-var moveSlidePix = 5;
+var moveSlidePix = 20;
 var isLocked = false;
 var doFading = false;
 
