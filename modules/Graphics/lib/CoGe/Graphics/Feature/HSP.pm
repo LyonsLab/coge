@@ -39,10 +39,19 @@ sub _post_initialize
     my $self = shift;
     my %opts = @_;
     my $gd = $self->gd;
+    my $w = $self->image_width;
+    my $h = $self->image_height;
 #    unless ($self->
     unless ($self->color_matches)
       {
 	$gd->fill(0,0, $self->get_color($self->color));
+        unless ($w < 10)
+          {
+            $self->_rounded_edges(x1=>0, y1=>0);
+            $self->_rounded_edges(x1=>$w, y1=>0, negx=>-1);
+            $self->_rounded_edges(x1=>$w, y1=>$h, negx=>-1, negy=>-1);
+            $self->_rounded_edges(x1=>0, y1=>$h, negy=>-1);
+          }
 	return;
       }
     my $alignment = $self->alignment;
@@ -64,6 +73,32 @@ sub _post_initialize
       }
     $gd->rectangle(0,0,$self->iw-1, $self->ih-1, $self->get_color($self->color));
   }
+
+sub _rounded_edges
+{
+	my $self = shift;
+	my %opts = @_;
+	my $x1 = $opts{x1};
+	my $y1 = $opts{y1};
+	my $neg_x = $opts{negx} || 1;
+	my $neg_y = $opts{negy} || 1;
+	my $gd = $self->gd;
+	my $poly1 = GD::Polygon->new;
+        my $poly2 = GD::Polygon->new;
+        my $poly3 = GD::Polygon->new;
+        $poly1->addPt($x1,$y1);
+        $poly1->addPt($x1+($neg_x*3),$y1);
+        $poly1->addPt($x1,$y1+($neg_y*1)); 
+        $poly2->addPt($x1,$y1);
+        $poly2->addPt($x1+($neg_x*2),$y1);
+        $poly2->addPt($x1,$y1+($neg_y*2)); 
+        $poly3->addPt($x1,$y1);
+        $poly3->addPt($x1+($neg_x*1),$y1);
+        $poly3->addPt($x1,$y1+($neg_y*3));
+        $gd->filledPolygon($poly1, $self->get_color(255,255,255));
+        $gd->filledPolygon($poly2, $self->get_color(255,255,255));
+        $gd->filledPolygon($poly3, $self->get_color(255,255,255));
+}
 
 #################### subroutine header begin ####################
 
