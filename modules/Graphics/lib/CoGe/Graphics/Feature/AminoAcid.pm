@@ -61,7 +61,7 @@ sub _initialize
     my $w = $WIDTH;
     $self->image_width($w);
     $self->image_height($h);
-    $self->merge_percent(72);
+    $self->merge_percent(73);
     $self->bgcolor([255,255,255]) unless $self->bgcolor;
     $self->label($self->aa) if $self->aa;
     $self->label(reverse($self->label)) if $self->strand =~ /-/;
@@ -144,8 +144,9 @@ sub _post_initialize
     my $self = shift;
     my %opts = @_;
     my $gd = $self->gd;
+    my ($x1, $x2, $y1, $y2) = (0,16,5,19);
     #print STDERR "la check ", $self->lastaa, "\n";
-    my $gray_lvl = 5 || $opts{gray_lvl};;
+    my $gray_lvl = 21 || $opts{gray_lvl};
     $self->get_color(255,255,255);
     $self->gd->fill(12,12,$self->get_color(255,255,255));
     unless ($self->lastaa)
@@ -154,10 +155,20 @@ sub _post_initialize
      {
        my @colors = $gd->rgb($self->get_color($self->color));
        my ($r, $g, $b) = ($colors[0],$colors[1],$colors[2]);
-       $self->_make_3d(r=>$r, g=>$g, b=>$b, x1=>0, x2=>16, y1=>5, y2=>19, gray_lvl=>$gray_lvl);
+       if ($r + 80 <= 255)
+	     {$r += 80;}
+       if ($g + 80 <= 255)
+	     {$g += 80;}
+       if ($b + 80 <= 255)
+	     {$b += 80;}
+       $self->_make_3d(r=>$r, g=>$g, b=>$b, x1=>$x1, x2=>$x2, y1=>$y1, y2=>$y2, gray_lvl=>$gray_lvl);
      }
     else {
-     $gd->filledRectangle(0,5,16,19,$self->get_color($self->color));}
+    $gd->filledRectangle($x1,$y1,$x2,$y2,$self->get_color($self->color));}
+    $self->_rounded_edges(x1=>$x1, y1=>$y1);
+    $self->_rounded_edges(x1=>$x2, y1=>$y1, negx=>-1);
+    $self->_rounded_edges(x1=>$x2, y1=>$y2, negx=>-1, negy=>-1);
+    $self->_rounded_edges(x1=>$x1, y1=>$y2, negy=>-1);
 
     #$gd->rectangle(3,14,19,30,$self->get_color(60,60,60));
     #$gd->rectangle(12,12,25,25,$self->get_color(0,0,0));
@@ -174,13 +185,13 @@ sub _make_3d
     my $b = $opts{b};
     my ($x1, $x2, $y1, $y2, $gray_lvl) = ($opts{x1},$opts{x2},$opts{y1},$opts{y2},$opts{gray_lvl} || 15);
     my $draw_lines = $y1;
+   # my ($tmp1, $tmp2, $tmp3, $tmp4) = (0,0,0,0);
     my $color;
-    while ($draw_lines <= $y2)
+     while ($draw_lines <= $y2)
 	{
-	  #print STDERR "r: ", $r, ", g: ", $g, ", b: ", $b, "\n";
 	  $color = $self->get_color($r,$g,$b);
-	  $gd->line($x1, $draw_lines, $x2, $draw_lines, $color);
-	  if ($draw_lines / ($y2 - $y1) < 0.42) {
+          $gd->line($x1, $draw_lines, $x2, $draw_lines, $color);
+	  if ($draw_lines / ($y2 - $y1) < 0.38) {
 	    if ($r + $gray_lvl <=255)
 	     {$r += $gray_lvl;}
 	    if ($g + $gray_lvl <=255)
@@ -196,10 +207,35 @@ sub _make_3d
 	    if ($b - $gray_lvl >=0)
 	     {$b -= $gray_lvl;}
 	    }
-	  $draw_lines++;
+ 	  $draw_lines++;
 	}
 }
 
+sub _rounded_edges
+{
+	my $self = shift;
+	my %opts = @_;
+	my $x1 = $opts{x1};
+	my $y1 = $opts{y1};
+	my $neg_x = $opts{negx} || 1;
+	my $neg_y = $opts{negy} || 1;
+	my $gd = $self->gd;
+	my $poly1 = GD::Polygon->new;
+        my $poly2 = GD::Polygon->new;
+        my $poly3 = GD::Polygon->new;
+        $poly1->addPt($x1,$y1);
+        $poly1->addPt($x1+($neg_x*3),$y1);
+        $poly1->addPt($x1,$y1+($neg_y*1)); 
+        $poly2->addPt($x1,$y1);
+        $poly2->addPt($x1+($neg_x*2),$y1);
+        $poly2->addPt($x1,$y1+($neg_y*2)); 
+        $poly3->addPt($x1,$y1);
+        $poly3->addPt($x1+($neg_x*1),$y1);
+        $poly3->addPt($x1,$y1+($neg_y*3));
+        $gd->filledPolygon($poly1, $self->get_color(255,255,255));
+        $gd->filledPolygon($poly2, $self->get_color(255,255,255));
+        $gd->filledPolygon($poly3, $self->get_color(255,255,255));
+}
 									    
 #################### subroutine header begin ####################
 
