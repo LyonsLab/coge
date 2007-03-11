@@ -35,24 +35,15 @@ my $rs = $s->resultset('Feature')->search(
 
 print "result count: " . $rs->count() . "\n";
 
-
-my %FH;
-foreach my $i (1..19){
-    my $chr = $i < 10 ? "0". $i : $i;
-    print $chr . "\n";
-    open($FH{$chr},">/tmp/poplar/poplarchr$chr" . ".fasta");
-}
-
-
 while( my $feature = $rs->next()){
     my $name;
     #my $name = (grep { $_->name =~ /P\d+CDS/ } $feature->feature_names)[0]->name;
     map { print $_->name . "\t" } $feature->feature_names ;
     print "\n";
     next;
-    print $name . "\n";
-    my $chr = substr($name,1,2);
-    my $fh = $FH{$chr};
-    print $fh  ">" . $name . "\n";
-    print $fh $feature->genome_sequence . "\n\n";
+#    print $name . "\n";
+#    my $chr = substr($name,1,2);
+#    my $fh = $FH{$chr};
+#    print $fh  ">" . $name . "\n";
+#    print $fh $feature->genome_sequence . "\n\n";
 }
