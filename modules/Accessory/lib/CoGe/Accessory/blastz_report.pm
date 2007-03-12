@@ -14,8 +14,8 @@ BEGIN
   {
     use vars qw($VERSION);
     $VERSION = "0.01";
-    __PACKAGE__->mk_accessors qw(hsps hsp_count file _params seq_info file_base query subject match);
   }
+__PACKAGE__->mk_accessors qw(hsps hsp_count file _params seq_info file_base query subject match);
 
 
 ###############################################################################
