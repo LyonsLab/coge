@@ -39,10 +39,17 @@ __PACKAGE__->belongs_to("dataset" => "CoGeX::Dataset", 'dataset_id');
 
 sub esearch : ResultSet {
     my $self = shift;
-    $_[1]{'join'} = ['feature_type','feature_names','annotations','locations'],
-    $_[1]{'prefetch'} = ['feature_type','feature_names'],
+    my $join = $_[1]{'join'};
+    map { push(@$join, $_ ) } 
+        ('feature_type','feature_names','annotations','locations');
+    my $prefetch = $_[1]{'prefetch'};
+    map { push(@$prefetch, $_ ) } 
+        ('feature_type','feature_names');
+
+    $_[1]{'join'} = $join;
+    $_[1]{'prefetch'} = $prefetch;
     return $self->search(
-         @_ 
+         @_
     );
 
 }
