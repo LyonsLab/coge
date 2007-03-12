@@ -27,7 +27,8 @@ while (my $feat = $rs->next()){
     foreach my $name ($fn->next()){
         print $name->name . "\t";
     }
-    print "\n" . $feat->dataset->organism->name . "\n";
-    print "\n";
+    print "\nprefetched: " . $feat->dataset->organism->name . "\n";
+    print "\nnot prefetched: ";
+    map { print $_->annotation . "\t" } $feat->annotations;
 }
 
