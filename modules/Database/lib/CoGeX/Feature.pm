@@ -5,7 +5,7 @@ use warnings;
 
 use base 'DBIx::Class';
 
-__PACKAGE__->load_components("PK::Auto", "Core");
+__PACKAGE__->load_components("PK::Auto", "ResultSetManager", "Core");
 __PACKAGE__->table("feature");
 __PACKAGE__->add_columns(
   "feature_id",
@@ -36,6 +36,16 @@ __PACKAGE__->belongs_to("feature_type" => "CoGeX::FeatureType", 'feature_type_id
 
 # dataset has many features
 __PACKAGE__->belongs_to("dataset" => "CoGeX::Dataset", 'dataset_id');
+
+sub esearch : Resultset {
+    my $self = shift;
+    $_[1]{'join'} = ['feature_type','feature_names','annotations','locations'],
+    $_[1]{'prefetch'} = ['feature_type','feature_names','annotations','locations'],
+    return $self->search(
+         @_ 
+    );
+
+}
 
 sub protein_sequence {
   my $self = shift;
