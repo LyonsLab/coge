@@ -5,6 +5,7 @@ Todo
 Changes
 Makefile.PL
 lib/CoGeX.pm
+lib/DBIxProfiler.pm
 lib/CoGeX/Annotation.pm
 lib/CoGeX/FeatureType.pm
 lib/CoGeX/AnnotationType.pm
@@ -35,6 +36,10 @@ scripts/test_cogex1.pl
 scripts/feature_by_name_and_type.pl
 scripts/feature_go.pl
 scripts/protein_sequence.pl
+scripts/eager.pl
+scripts/FeatViewX.pl
+scripts/poplar_order.pl
+scripts/poplar_sequence.pl
 t/001_load.t
 t/002_feature_by_id.t
 t/003_organism_by_name.t
@@ -43,3 +48,4 @@ t/005_feature_by_organism.t
 t/006_genome_sequence_datasetid.t
 t/007_protein_sequence_from_feature.t
 t/008_genomic_sequence_from_feature.t
+t/009_feature_from_dataset_repeated.t

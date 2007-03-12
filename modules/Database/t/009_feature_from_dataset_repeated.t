@@ -1,9 +1,8 @@
 # -*- perl -*-
 
-# t/005_feature_by_organsim - get the feature objects for an organism,
-# given by name, "Nostoc%"
+# t/009_feature_from_dataset_repeated - get the feature objects
 
-use Test::More tests => 4;
+use Test::More tests => 5;
 
 BEGIN {
   use_ok( 'CoGeX' );
@@ -24,9 +23,23 @@ my $rs = $s->resultset('Feature')->search(
                     },
                     {
                       join => { dataset => 'organism' },
-                      prefetch => qw/dataset/,
+                      prefetch => { dataset => 'organism' },
                     }
                 );
 
 my @features = $rs->all();
 is( scalar(@features), 10863 );
+
+$rs = $s->resultset('Feature')->search(
+                    { 
+                      'organism.name' => { 'like' => 'Drosophila%' },
+                      'me.feature_id' => 1367613
+                    },
+                    {
+                      join => { dataset => 'organism' },
+                      prefetch => qw/locations/
+                    }
+                );
+
+my @features2 = $rs->all();
+is( scalar(@features2), 1 );
