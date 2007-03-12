@@ -2,6 +2,17 @@
 
 use strict;
 use CoGeX;
+use Data::Dumper;
+
+my @chrs = qw/I II III IV V VI VII VIII IX X XI XII XIII XIV XV XVI XVII XVIII XIX/;
+my %cmap;
+my $i = 1;
+map { $cmap{$chrs[$_ -1 ]} = ($_ < 10) ? '0' . $_ : $_  } 1..19;
+
+my %FH;
+foreach my $chr (values %cmap){
+    open($FH{$chr},">","/tmp/poplar/poplarchr" .$chr . ".fasta");
+}
 
 
 # 9min 9 sec
@@ -19,21 +30,45 @@ my $org = $s->resultset('Dataset')->search(
 );
 my $did = $org->next()->dataset_id;
 
-
 my $rs = $s->resultset('Feature')->search(
         { 
             'dataset_id' => $did,
-#            'feature_names.name' =>  {like => 'P%%CDS'}, 
+            'feature_names.name' =>  {like => '%proteinId%'}, 
         },
         {
-            join => ['feature_names','feature_type','sequences'],
-            prefetch => ['feature_names','feature_type'],
+            join => ['feature_names','locations'],
+            prefetch => ['feature_names'],
             order_by => ['me.feature_id'],
 
         }
 );
 
-print "result count: " . $rs->count() . "\n";
+my $currentpid = '';
+my $sequence = "";
+my $currentgene = 1;
+
+
+while( my $feat = $rs->next()){
+    my $name = ($feat->feature_names())[0];
+    $name = $name->name;
+    my ($pid) = $name =~ /(proteinId\s\d+)/;
+    $currentpid ||=$pid;
+    if ($pid eq $currentpid){
+        $sequence .= $feat->genome_sequence();
+        next;
+    }else{
+        my $genenum = "0" x (6 - length($currentgene)) . $currentgene;
+        my $chrnum = $cmap{(($feat->locations())[0])->chromosome};
+        my $fh = $FH{$chrnum};
+        my $gname = "P" . $chrnum . "G" .  $genenum;
+        print $fh ">",$gname , "\n";
+        print $fh $sequence, "\n\n";
+        $sequence = $feat->genome_sequence();
+        $currentpid = $pid;
+        ++$currentgene;
+    }
+
+}
 
 while( my $feature = $rs->next()){
     my $name;

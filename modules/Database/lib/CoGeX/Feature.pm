@@ -37,10 +37,10 @@ __PACKAGE__->belongs_to("feature_type" => "CoGeX::FeatureType", 'feature_type_id
 # dataset has many features
 __PACKAGE__->belongs_to("dataset" => "CoGeX::Dataset", 'dataset_id');
 
-sub esearch : Resultset {
+sub esearch : ResultSet {
     my $self = shift;
     $_[1]{'join'} = ['feature_type','feature_names','annotations','locations'],
-    $_[1]{'prefetch'} = ['feature_type','feature_names','annotations','locations'],
+    $_[1]{'prefetch'} = ['feature_type','feature_names'],
     return $self->search(
          @_ 
     );
