@@ -22,7 +22,7 @@ sub esearch {
     my $rs = $s->resultset('Feature')->esearch( { 
                         'feature_type.name' =>   'gene' ,
                         'feature_names.name' => ['-and' , 
-                                { '-like' => 'At2g26%'} ,
+                                { '-like' => 'At2g2%'} ,
                                 { '-not_like' => ['%.%'] }
                             ]
                         } 
@@ -45,7 +45,7 @@ sub search {
     my $rs = $s->resultset('Feature')->search( { 
                         'feature_type.name' =>   'gene' ,
                         'feature_names.name' => ['-and' , 
-                                { '-like' => 'At2g26%'} ,
+                                { '-like' => 'At2g2%'} ,
                                 { '-not_like' => ['%.%'] }
                             ]
                         }, { 'join' 
