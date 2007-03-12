@@ -24,7 +24,10 @@ my $rs = $s->resultset('Feature')->esearch( {
 #print "got resultset\n";
 while (my $feat = $rs->next()){
     my $fn = $feat->feature_names;
-    my $type = $feat->feature_type->name;
-    print $type . "\n";
+    foreach my $name ($fn->next()){
+        print $name->name . "\t";
+    }
+    print "\n" . $feat->dataset->organism->name . "\n";
+    print "\n";
 }
 

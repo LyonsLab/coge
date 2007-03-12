@@ -26,6 +26,5 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key("location_id");
 
 __PACKAGE__->belongs_to("feature" => "CoGeX::Feature", 'feature_id');
-__PACKAGE__->belongs_to("location" => "CoGeX::Location", 'location_id');
 1;
 
