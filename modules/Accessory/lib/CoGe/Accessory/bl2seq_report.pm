@@ -12,30 +12,13 @@ BEGIN
   {
     use vars qw($VERSION);
     $VERSION = "0.01";
-    __PACKAGE__->mk_accessors qw(hsps hsp_count eval_cutoff);
   }
+__PACKAGE__->mk_accessors qw(hsps hsp_count eval_cutoff);
 
 
 ###############################################################################
 # bl2seqReport
 ###############################################################################
-#################### subroutine header begin ####################
-
-=head2 
-
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comment   : 
-           : 
-
-See Also   : 
-
-=cut
-
-#################### subroutine header end ####################
 sub new {
 	my $proto = shift;
 	my $class = ref($proto) || $proto;
