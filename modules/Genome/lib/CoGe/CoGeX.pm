@@ -1,36 +1,37 @@
-package CoGeX;
+package CoGe::CoGeX;
 
 
 use strict;
 use Data::Dumper;
 use warnings;
 
-use CoGeX::Feature;
-use CoGeX::Annotation;
-use CoGeX::FeatureList;
-use CoGeX::Image;
-use CoGeX::UserGroup;
-use CoGeX::AnnotationType;
-use CoGeX::FeatureListConnector;
-use CoGeX::Location;
-use CoGeX::UserGroupConnector;
-use CoGeX::AnnotationTypeGroup;
-use CoGeX::FeatureListGroup;
-use CoGeX::Organism;
-use CoGeX::UserGroupFeatureListPermissionConnector;
-use CoGeX::DataInformation;
-use CoGeX::FeatureListGroupImageConnector;
-use CoGeX::Permission;
-use CoGeX::UserSession;
-use CoGeX::DataSource;
-use CoGeX::FeatureName;
-use CoGeX::Sequence;
-use CoGeX::Dataset;
-use CoGeX::FeatureType;
-use CoGeX::SequenceType;
+use base 'CoGeX';
 
-use CoGeX::GenomicSequence;
-use CoGeX::User;
+use CoGe::CoGeX::Feature;
+use CoGe::CoGeX::Annotation;
+use CoGe::CoGeX::FeatureList;
+use CoGe::CoGeX::Image;
+use CoGe::CoGeX::UserGroup;
+use CoGe::CoGeX::AnnotationType;
+use CoGe::CoGeX::FeatureListConnector;
+use CoGe::CoGeX::Location;
+use CoGe::CoGeX::UserGroupConnector;
+use CoGe::CoGeX::AnnotationTypeGroup;
+use CoGe::CoGeX::FeatureListGroup;
+use CoGe::CoGeX::Organism;
+use CoGe::CoGeX::UserGroupFeatureListPermissionConnector;
+use CoGe::CoGeX::FeatureListGroupImageConnector;
+use CoGe::CoGeX::Permission;
+use CoGe::CoGeX::UserSession;
+use CoGe::CoGeX::DataSource;
+use CoGe::CoGeX::FeatureName;
+use CoGe::CoGeX::Sequence;
+use CoGe::CoGeX::Dataset;
+use CoGe::CoGeX::FeatureType;
+use CoGe::CoGeX::SequenceType;
+
+use CoGe::CoGeX::GenomicSequence;
+use CoGe::CoGeX::User;
 
 use vars qw( $VERSION );
 
@@ -111,102 +112,102 @@ perl(1).
 
   sub annotation
     {
-      return new CoGeX::Annotation;
+      return new CoGe::CoGeX::Annotation;
     }
 
   sub featureList
     {
-      return new CoGeX::FeatureList;
+      return new CoGe::CoGeX::FeatureList;
     }
 
   sub image
     {
-      return new CoGeX::Image;
+      return new CoGe::CoGeX::Image;
     }
 
   sub userGroup
     {
-      return new CoGeX::UserGroup;
+      return new CoGe::CoGeX::UserGroup;
     }
   sub annotationType
     {
-      return new CoGeX::AnnotationType;
+      return new CoGe::CoGeX::AnnotationType;
     }
   sub featureListConnector
     {
-      return new CoGeX::FeatureListConnector;
+      return new CoGe::CoGeX::FeatureListConnector;
     }
   sub location
     {
-      return new CoGeX::Location;
+      return new CoGe::CoGeX::Location;
     }
   sub userGroupConnector
     {
-      return new CoGeX::UserGroupConnector;
+      return new CoGe::CoGeX::UserGroupConnector;
     }
   sub anntationTypeGroup
     {
-      return new CoGeX::AnnotationTypeGroup;
+      return new CoGe::CoGeX::AnnotationTypeGroup;
     }
   sub featureListGroup
     {
-      return new CoGeX::FeatureListGroup;
+      return new CoGe::CoGeX::FeatureListGroup;
     }
   sub organisn
     {
-      return new CoGeX::Organism;
+      return new CoGe::CoGeX::Organism;
     }
   sub userGroupFeatureListPermisionConnector
     {
-      return new CoGeX::UserGroupFeatureListPermissionConnector;
+      return new CoGe::CoGeX::UserGroupFeatureListPermissionConnector;
     }
   sub featureListGroupImageConnector
     {
-      return new CoGeX::FeatureListGroupImageConnector;
+      return new CoGe::CoGeX::FeatureListGroupImageConnector;
     }
   sub permission
     {
-      return new CoGeX::Permission;
+      return new CoGe::CoGeX::Permission;
     }
   sub userSession
     {
-      return new CoGeX::UserSession;
+      return new CoGe::CoGeX::UserSession;
     }
   sub dataSource
     {
-      return new CoGeX::DataSource;
+      return new CoGe::CoGeX::DataSource;
     }
   sub featureName
     {
-      return new CoGeX::FeatureName;
+      return new CoGe::CoGeX::FeatureName;
     }
   sub sequence
     {
-      return new CoGeX::Sequence;
+      return new CoGe::CoGeX::Sequence;
     }
   sub dataset
     {
-      return new CoGeX::Dataset;
+      return new CoGe::CoGeX::Dataset;
     }
   sub featureType
     {
-      return new CoGeX::FeatureType;
+      return new CoGe::CoGeX::FeatureType;
     }
   sub sequenceType
     {
-      return new CoGeX::SequenceType;
+      return new CoGe::CoGeX::SequenceType;
     }
   sub feature
     {
-      return new CoGeX::Feature;
+      return new CoGe::CoGeX::Feature;
     }
   sub genomicSequence
     {
-      return new CoGeX::GenomicSequence;
+      return new CoGe::CoGeX::GenomicSequence;
     }
   sub user
     {
-      return new CoGeX::User;
+      return new CoGe::CoGeX::User;
     }
 
  sub reverse_complement
