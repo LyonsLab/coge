@@ -88,13 +88,13 @@ sub get_genomic_sequence {
     # make sure two numbers were sent in
     return undef unless ($from =~ /\A\d+\z/ and  $to =~ /\A\d+\z/);
     return undef unless $to > $from;
-    my $g1 = $self->genome_sequences(
+    my $g1 = $self->genomic_sequences(
                       {
                         'chromosome' => $chromosome,
                         'start'      => { '<=' => $from },
                         'stop'       => { '>=' => $from }
                       })->first();
-    my $g2 = $self->genome_sequences(
+    my $g2 = $self->genomic_sequences(
                       {
                         'chromosome' => $chromosome ,
                         'start'      => { '<=' => $to },
@@ -107,7 +107,7 @@ sub get_genomic_sequence {
       $str = $g1->sequence_data . $g2->sequence_data;
     } elsif ( $g2->start >= $g1->stop + ($g1->stop - $g1->start) ) {
       $str = $g1->sequence_data();            # start with first row
-      my $inneriter = $self->genome_sequences(
+      my $inneriter = $self->genomic_sequences(
                                   {
                                     'chromosome' => $chromosome ,
                                     'start' => { '>=' => $g1->stop + 1 },
@@ -124,12 +124,12 @@ sub get_genomic_sequence {
 
   } elsif ( @_ == 1 ) {    # get a whole chromosome
     my $chromosome = shift;
-    my $allseqs = $self->genome_sequences( { 'chromosome' => $chromosome } );
+    my $allseqs = $self->genomic_sequences( { 'chromosome' => $chromosome } );
     while ( my $g = $allseqs->next ) {
       $str .= $g->sequence_data;
     }
   } else {                 # entire sequence
-    my $allseqs = $self->genome_sequences();
+    my $allseqs = $self->genomic_sequences();
     while ( my $g = $allseqs->next ) {
       $str .= $g->sequence_data;
     }
