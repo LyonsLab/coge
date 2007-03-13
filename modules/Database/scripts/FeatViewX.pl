@@ -3,15 +3,9 @@ use strict;
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
 use CGI::Ajax;
-use CoGe::Accessory::LogUser;
-use CoGe::Accessory::Web;
 use HTML::Template;
 use Data::Dumper;
 use CoGeX;
-use CoGe::Graphics::Chromosome;
-use CoGe::Graphics::Feature;
-use CoGe::Graphics::Feature::Gene;
-use CoGe::Graphics::Feature::NucTide;
 use POSIX;
 
 $ENV{PATH} = "/opt/apache2/bpederse/cogex";
@@ -37,7 +31,7 @@ if (!$USER || $USER =~ /public/i)
 
 my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
 my $DB = CoGeX->connect($connstr, 'cnssys', 'CnS' );
-$DB->storage->debug(1);
+#$DB->storage->debug(1);
 
 my $pj = new CGI::Ajax(
 		       db_lookup=>\&db_lookup,
@@ -68,24 +62,18 @@ sub get_types
     my ($accn, $dsid) = @_;
     my $blank = qq{<input type="hidden" id="Type_name">};
     my %seen;
-    #my @opts = sort map {"<OPTION>$_</OPTION>"} 
-    #    grep {! $seen{$_}++} 
-    #    map {$_->type->name} $DB->get_features_by_name_and_dataset_id(name=>$accn, id=>$dsid);
     $DB->storage->debug(1);
-    my $rs = $DB->resultset('Feature')->search({
+    my $rs = $DB->resultset('Feature')->esearch({
             'feature_names.name' => { 'like' => '%' . $accn . '%' }
             ,'dataset.dataset_id' => $dsid
             }, {
-                'join'      => ['feature_names','dataset','feature_type']
-                ,'prefetch' => ['dataset','feature_type']
-                ,'order_by'  => ['feature_type.name']
+                'order_by'  => ['feature_type.name']
                }
 
             );
     my @opts;
     while (my $feat = $rs->next()){
         my $ftype = $feat->feature_type->name;
-        #print STDERR "looping through feature->feature_type->names\n";
         next if $seen{$ftype};
         $seen{$ftype}++;
         push(@opts,"<option>$ftype<option");
@@ -102,16 +90,6 @@ sub get_types
     return ($html, 1);
   }
 
-=begin        
-    $html .= "<font class=small>Type count: ".scalar @opts."</font>\n<BR>\n";
-    $html .= qq{<SELECT id="Type_name" SIZE="5" MULTIPLE onChange="get_anno(['accn_select','Type_name', 'dsid'],['anno'])" >\n};
-    $html .= join ("\n", @opts);
-    $html .= "\n</SELECT>\n";
-    $html =~ s/OPTION/OPTION SELECTED/;
-    return $blank unless $html =~ /OPTION/;
-    return ($html, 1);
-  }
-=cut
 
 sub cogesearch
   {
@@ -119,34 +97,23 @@ sub cogesearch
     my $type = shift;
     my $org = shift;
     my $blank = qq{<input type="hidden" id="accn_select">};
-#    print STDERR Dumper @_;
     return $blank unless (length($accn) > 2 || $type || $org);
     my %seen;
-    #my @opts = sort map {"<OPTION>$_</OPTION>"} 
-    #           grep {! $seen{$_}++} 
-    #           map {uc($_)} $DB->get_feature_name_obj->power_search(accn=>$accn."%", type=>$type, org=>$org);
-    #print STDERR "accn: $accn\n";
-    #print STDERR "type: $type\n";
-    my $rs = $DB->resultset('Feature')->search({
+    my $rs = $DB->resultset('Feature')->esearch({
             'feature_names.name' => { 'like' =>  $accn . '%' }
             ,'feature_type.feature_type_id' => $type
           #  ,'organism.name'     => {'like' => "%$org%" }
             }, {
-                'join'      => ['feature_names','feature_type','dataset']
-                ,'prefetch' => ['feature_type','dataset','feature_names']
-                ,'order_by'  => ['feature_type.name']
+                'order_by'  => ['feature_type.name']
                 , 'limit'   => 1000
                }
 
             );
     my @opts;
-    #print STDERR "count: " . $rs->count . "\n";
-    #print STDERR "org: " . $org . "\n";
     while( my $feat= $rs->next()){
         next if $org and $feat->dataset->organism->organism_id != $org;
         my $fnames = $feat->feature_names();
         while (my $fname = $fnames->next()){
-            #print STDERR "looping through names\n";
             my $name = $fname->name;
             next if $seen{$name};
             $seen{$name}=1;
@@ -186,27 +153,23 @@ sub get_anno
             );
     #TODO: move this after
     my $i = 0;
-    print STDERR "anno-count:" . $rs->count . "\n";
     my $anno = '';
     while( my $feat= $rs->next()){
-        my @locations = sort { $a->start - $b->start } $feat->locations;
 
         push(@feats,$feat->feature_type->name);
         $i++;
         my $featid = $feat->feature_id;
-        my $chr = $locations[0]->chromosome;
+        my $chr = $feat->chromosome;
         my $rc = 0;
         my $pro = 0;
         my $ds = $feat->dataset->dataset_id;
-        my $x = $locations[0]->start;
+        my $x = $feat->start;
         my $z = 10;
-        $anno .= join "\n<BR><HR><BR>\n", "<H1>TODO</H1>";
         $anno .= qq{<DIV id="loc$i"><input type="button" value = "Click for chromosomal view" onClick="window.open('GeLo.pl?chr=$chr&ds=$ds&INITIAL_CENTER=$x,0&z=$z');"></DIV>};
         $anno .= qq{<DIV id="exp$i"><input type="button" value = "Click for expression tree" onClick="gen_data(['args__Generating expression view image'],['exp$i']);show_express(['args__}.$accn.qq{','args__}.'1'.qq{','args__}.$i.qq{'],['exp$i']);"></DIV>};
         $anno .= qq{<DIV id="dnaseq$i"><input type="button" value = "Click for DNA sequence" onClick="window.open('SeqView.pl?featid=$featid&dsid=$ds&chr=$chr&featname=$accn&rc=$rc&pro=$pro','window', 'menubar=1, resizable=1, scrollbars=1, location=1,left=20, top=20, width=700, height=610');"></DIV>};
         #"gen_data(['args__retrieving sequence'],['dnaseq$i']);get_dna_seq_for_feat(['args__}.$feat->id.qq{'],['dnaseq$i']);"></DIV>};
         #$anno .= qq{<DIV id="rcdnaseq$i"><input type="button" value = "Click for DNA sequence reverse complement" onClick="gen_data(['args__retrieving sequence'],['rcdnaseq$i']);get_rcdna_seq_for_feat(['args__}.$feat->id.qq{'],['rcdnaseq$i']);"></DIV>};
-        #$anno .= qq{<DIV id="protseq$i"><input type="button" value = "Click for protein sequence" onClick="gen_data(['args__retrieving sequence'],['protseq$i']);get_prot_seq_for_feat(['args__}.$feat->id.qq{'],['protseq$i']);"></DIV>\n\n};
 
     $anno .= "<font class=small>Annotation count: ". scalar @feats .  "</font>\n<BR>\n" if scalar @feats;
 	$anno = "<font class=\"annotation\">No annotations for this entry</font>" unless $anno;
@@ -215,6 +178,7 @@ sub get_anno
     return ($anno);
   }
 
+#'
 sub show_express
   {
     my %opts = @_;
@@ -304,7 +268,7 @@ sub get_data_source_info_for_accn
         my $name = $val->name;
         my $ver = $val->version;
         my $desc = $val->description;
-        my $sname = "TODO"; #$val->data_source->name;
+        my $sname = $val->data_source->name;
         my $ds_name = $val->name;
         my $org = $val->organism->name;
         my $title = "$org: $ds_name ($sname, v$ver)";

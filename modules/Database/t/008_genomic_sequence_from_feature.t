@@ -15,13 +15,13 @@ my $s = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 #2
 isa_ok ($s, 'CoGeX');
 my $feature = $s->resultset('Feature')->find(1);
-my $genomeseq = substr($feature->genome_sequence(), 0, 10);
+my $genomeseq = substr($feature->genomic_sequence(), 0, 10);
 
 #3
 is( $genomeseq, "AGACAGAATC");
 
 #4
 $feature = $s->resultset('Feature')->find(2);
-my @seqs = $feature->genome_sequence();
+my @seqs = $feature->genomic_sequence();
 
 is( scalar @seqs, 9);

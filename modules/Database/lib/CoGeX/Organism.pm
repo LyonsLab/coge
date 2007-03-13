@@ -7,7 +7,7 @@ use warnings;
 
 use base 'DBIx::Class';
 
-__PACKAGE__->load_components("PK::Auto", "Core");
+__PACKAGE__->load_components("PK::Auto", "ResultSetManager", "Core");
 __PACKAGE__->table("organism");
 __PACKAGE__->add_columns(
   "organism_id",
@@ -26,4 +26,14 @@ __PACKAGE__->set_primary_key("organism_id");
 
 __PACKAGE__->has_many("data_information" => "CoGeX::Dataset", 'organism_id');
 
+sub resolve_organism : ResultSet {
+    my $self = shift;
+    my $info = shift;
+    return $self->search({
+               '-or', { 'name' => { '-like' => '%' . $info . '%'} 
+                     , { 'organism_id' => $info }
+                   }
+               }
+               ,{});
+}
 1;
