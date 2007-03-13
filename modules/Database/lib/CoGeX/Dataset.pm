@@ -60,11 +60,31 @@ __PACKAGE__->belongs_to("organism" => "CoGeX::Organism", 'organism_id');
 
 sub get_genome_sequence {
   my $self = shift;
+  my %opts = @_;
+  my $start = $opts{start} || $opts{begin};
+  my $stop = $opts{stop} || $opts{end};
+  my $chr = $opts{chr} || $opts{chromosome};
+  
   my $str = "";
 
-  if ( @_ > 1 ) {
-    my($chromosome, $from, $to) = @_;
-
+  if ( @_ > 1 ) {     
+    my($chromosome, $from, $to);
+    if (defined $start && defined $stop && defined $chr)
+      {
+ 	$chromosome = $chr;
+ 	$from = $start;
+ 	$to = $stop;
+      }
+    else
+      {
+ 	($chromosome, $from, $to) = @_;
+      }
+        
+    $chromosome = "1" unless defined $chromosome;
+    my $last = $self->last_chromosome_position($chromosome);
+    $from = 1 if $from < 1;
+    $to = $last if $to > $last;
+    
     # make sure two numbers were sent in
     return undef unless ($from =~ /\A\d+\z/ and  $to =~ /\A\d+\z/);
     return undef unless $to > $from;
@@ -130,5 +150,43 @@ sub trim_sequence {
   $seq = substr($seq, $newstart - $seqstart, - ($seqend - $newend) );
   return($seq);
 }
+
+
+################################################## subroutine header start ##
+
+=head2 last_chromsome_position
+
+ Usage     : my $last = $genome_seq_obj->last_chromosome_position($chr);
+ Purpose   : gets the last genomic sequence position for a dataset given a chromosome
+ Returns   : an integer that refers to the last position in the genomic sequence refered
+             to by a dataset given a chromosome
+ Argument  : string => chromsome for which the last position is sought
+ Throws    : 
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+
+ sub last_chromosome_position
+   {
+     my $self = shift;
+     my $chr = shift;
+     my ($gs) =  $self->genomic_sequences(
+					{
+					 dataset_id=>$self->dataset_id,
+					 chromosome=>$chr,
+					},
+					{
+					 order_by=>'stop DESC',
+					 limit => 1,
+					}
+				       );
+     $gs->stop;
+   }
+
 
 1;
