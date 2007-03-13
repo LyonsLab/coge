@@ -29,6 +29,7 @@ __PACKAGE__->has_many("data_information" => "CoGeX::Dataset", 'organism_id');
 sub resolve_organism : ResultSet {
     my $self = shift;
     my $info = shift;
+    return $info if ref($info) =~ /Organism/;
     return $self->search({
                '-or', { 'name' => { '-like' => '%' . $info . '%'} 
                      , { 'organism_id' => $info }
