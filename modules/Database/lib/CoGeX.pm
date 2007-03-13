@@ -47,25 +47,6 @@ Primary object for interacting with CoGe database system.
 
 =head1 AUTHOR
 
-    Brian C. Thomas
-    CPAN ID: BCT
-    UC - Berkeley
-    bcthomas@nature.berkeley.edu
-    http://toxic.berkeley.edu
-
-    Brent Pedersen
-    CPAN ID: BPEDERSE
-    UC - Berkeley
-    bpederse@nature.berkeley.edu
-    http://toxic.berkeley.edu
-
-
-    Eric Lyons
-    CPAN ID:
-    UC - Berkeley
-    elyons@nature.berkeley.edu
-    http://toxic.berkeley.edu
-
 =head1 COPYRIGHT
 
 This program is free software; you can redistribute
