@@ -51,6 +51,19 @@ __PACKAGE__->belongs_to("datasource" => "CoGeX::DataSource", 'data_source_id');
 
 __PACKAGE__->belongs_to("organism" => "CoGeX::Organism", 'organism_id');
 
+
+sub chromosomes : ResultSet {
+    my $self = shift;
+    my $r1 = $self->search(undef,{
+        prefetch =>['genomic_sequences']
+    });
+    return $r1 if $r1->count;
+    return $self->search(undef,{
+        prefetch =>[{'features' => 'locations' }]
+    });
+
+}
+
 # get_sequence:
 # $rs->get_genome_sequence( [chromosome, from, to] )
 # $rs->get_genome_sequence() - returns the entire genome sequence *woot*
