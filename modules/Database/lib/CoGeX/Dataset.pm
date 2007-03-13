@@ -45,7 +45,7 @@ __PACKAGE__->set_primary_key("dataset_id");
 
 __PACKAGE__->has_many("features" => "CoGeX::Feature", 'dataset_id');
 
-__PACKAGE__->has_many("genome_sequences" => "CoGeX::GenomicSequence", 'dataset_id');
+__PACKAGE__->has_many("genomic_sequences" => "CoGeX::GenomicSequence", 'dataset_id');
 
 __PACKAGE__->belongs_to("datasource" => "CoGeX::DataSource", 'data_source_id');
 
@@ -58,7 +58,7 @@ __PACKAGE__->belongs_to("organism" => "CoGeX::Organism", 'organism_id');
 #                                        from position 42 up to and
 #                                        including position 101
 
-sub get_genome_sequence {
+sub get_genomic_sequence {
   my $self = shift;
   my %opts = @_;
   my $start = $opts{start} || $opts{begin};
@@ -137,6 +137,10 @@ sub get_genome_sequence {
   return $str;
 }
 
+sub get_genome_sequence
+  {
+    return shift->get_genomic_sequence(@_);
+  }
 #         .         .         .         .
 #1234567890123456789012345678901234567890
 #                                       CCACAACCAGCTGACTAGGTA
@@ -176,15 +180,15 @@ See Also   :
      my $self = shift;
      my $chr = shift;
      my ($gs) =  $self->genomic_sequences(
-					{
-					 dataset_id=>$self->dataset_id,
-					 chromosome=>$chr,
-					},
-					{
-					 order_by=>'stop DESC',
-					 limit => 1,
-					}
-				       );
+					  {
+					   dataset_id=>$self->dataset_id,
+					   chromosome=>$chr,
+					  },
+					  {
+					   order_by=>'stop DESC',
+					   limit => 1,
+					  }
+					 );
      $gs->stop;
    }
 
