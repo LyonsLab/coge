@@ -178,8 +178,8 @@ sub annotation_pretty_print
     $anno_obj->Val_delimit("\n");
     $anno_obj->Add_type(0);
     $anno_obj->String_end("\n");
-    my $start = $self->begin_location;
-    my $stop = $self->end_location;
+    my $start = $self->start;
+    my $stop = $self->stop;
     my $chr = $self->chr;
     my $strand = $self->strand;
     #look into changing this to set_id
@@ -522,7 +522,7 @@ See Also   : CoGe::Genome
 
 ################################################## subroutine header end ##
 
-sub genome_sequence {
+sub genomic_sequence {
   my $self = shift;
   my $dataset = $self->dataset();
   my @sequences;
@@ -541,7 +541,7 @@ sub genome_sequence {
   return wantarray ? @sequences : join( "", @sequences );
 }
 
-sub genomic_sequence
+sub genome_sequence
   {
    shift->genome_sequence(@_);
   }
@@ -670,6 +670,14 @@ sub reverse_complement
   {
     my $self = shift;
     my $seq = shift;# || $self->genomic_sequence;
+    if (ref($seq) =~ /Feature/)
+      {
+	$seq = $self->genomic_sequence unless $seq; #self seq unless we have a seq
+      }
+    else #we were passed a sequence without invoking self
+      {
+	$seq = $self;
+      }
     my $rcseq = reverse($seq);
     $rcseq =~ tr/ATCGatcg/TAGCtagc/; 
     return $rcseq;
