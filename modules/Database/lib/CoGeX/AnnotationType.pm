@@ -31,4 +31,10 @@ __PACKAGE__->has_many("annotations" => "CoGeX::Annotation",
 
 __PACKAGE__->belongs_to("annotation_type_group" => "CoGeX::AnnotationTypeGroup", 'annotation_type_group_id');
 
+
+sub group
+  {
+    shift->annotation_type_group(@_);
+  }
+
 1;
