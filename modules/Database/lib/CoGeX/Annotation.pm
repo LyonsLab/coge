@@ -7,7 +7,7 @@ use warnings;
 
 use base 'DBIx::Class';
 
-__PACKAGE__->load_components("PK::Auto", "Core");
+__PACKAGE__->load_components("PK::Auto", "ResultSetManager", "Core");
 __PACKAGE__->table("annotation");
 __PACKAGE__->add_columns(
   "annotation_id",
@@ -23,6 +23,29 @@ __PACKAGE__->set_primary_key("annotation_id");
 
 __PACKAGE__->belongs_to( annotation_type => 'CoGeX::AnnotationType', 'annotation_type_id');
 __PACKAGE__->belongs_to( feature => 'CoGeX::Feature', 'feature_id');
+
+sub esearch : ResultSet 
+  {
+    my $self = shift;
+    my $join = $_[1]{'join'};
+    map { push(@$join, $_ ) } 
+        ('annotation_type');
+
+
+    my $prefetch = $_[1]{'prefetch'};
+    map { push(@$prefetch, $_ ) } 
+        ('annotation_type', 
+            { 'annotation_type' => 'annotation_type_group' }
+        );
+
+    $_[1]{'join'} = $join;
+    $_[1]{'prefetch'} = $prefetch;
+    my $rs = $self->search(
+         @_
+    );
+    return $rs;
+
+  }
 
 sub type
   {
