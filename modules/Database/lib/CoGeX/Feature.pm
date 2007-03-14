@@ -676,7 +676,7 @@ sub reverse_complement
       }
     else #we were passed a sequence without invoking self
       {
-	$seq = $self;
+	$seq = $self unless $seq;
       }
     my $rcseq = reverse($seq);
     $rcseq =~ tr/ATCGatcg/TAGCtagc/; 
