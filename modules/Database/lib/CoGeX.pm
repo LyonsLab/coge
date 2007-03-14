@@ -122,7 +122,9 @@ sub get_features_in_region
 						    },
 						    {
 						     join => ["locations"],
-						     distinct=>['feature_id'],						    }
+						     distinct=>['feature_id'],
+						     prefetch=>["locations"],
+						    }
 						   );
     return wantarray ? @feats : \@feats;
   }
