@@ -46,7 +46,7 @@ sub esearch : ResultSet {
 
     my $prefetch = $_[1]{'prefetch'};
     map { push(@$prefetch, $_ ) } 
-        ('feature_type','feature_names', 
+        ('feature_type','locations', 
             { 'dataset' => 'organism' }
         );
 
