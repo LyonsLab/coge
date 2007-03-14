@@ -41,7 +41,7 @@ sub esearch : ResultSet {
     my $self = shift;
     my $join = $_[1]{'join'};
     map { push(@$join, $_ ) } 
-        ('feature_type','dataset','location','annotations', 'sequences');
+        ('feature_type','dataset','locations','annotations', 'sequences');
 
 
     my $prefetch = $_[1]{'prefetch'};
