@@ -4,6 +4,7 @@ package CoGeX::Dataset;
 
 use strict;
 use warnings;
+use Data::Dumper;
 
 use base 'DBIx::Class';
 
@@ -97,7 +98,6 @@ sub get_genomic_sequence {
     my $last = $self->last_chromosome_position($chromosome);
     $from = 1 if $from < 1;
     $to = $last if $to > $last;
-    
     # make sure two numbers were sent in
     return undef unless ($from =~ /\A\d+\z/ and  $to =~ /\A\d+\z/);
     return undef unless $to > $from;
@@ -113,7 +113,6 @@ sub get_genomic_sequence {
                         'start'      => { '<=' => $to },
                         'stop'       => { '>=' => $to }
                       })->first();
-
     if ( $g2->start == $g1->start )         { # hit is within one row
       $str = $g1->sequence_data;
     } elsif ( $g2->start == $g1->stop + 1 ) { # consecutive rows
@@ -162,9 +161,9 @@ sub get_genome_sequence
 sub trim_sequence {
   my $self = shift;
   my( $seq, $seqstart, $seqend, $newstart, $newend ) = @_;
-  # substr( string, offset, length ) will leave off "length"
-  # many characters from the end of the string if length is negative
-  $seq = substr($seq, $newstart - $seqstart, - ($seqend - $newend) );
+  my $start = $newstart-$seqstart;
+  my $stop = length($seq)-($seqend-$newend);
+  $seq = substr($seq, $start, $stop);
   return($seq);
 }
 
