@@ -2,7 +2,6 @@ package CoGe::Graphics::Feature::HSP;
 use strict;
 use base qw(CoGe::Graphics::Feature);
 
-
 BEGIN {
     use vars qw($VERSION $HEIGHT $BLOCK_HEIGHT);
     $VERSION     = '0.1';
@@ -41,16 +40,15 @@ sub _post_initialize
     my $gd = $self->gd;
     my $w = $self->image_width;
     my $h = $self->image_height;
-#    unless ($self->
     unless ($self->color_matches)
       {
 	$gd->fill(0,0, $self->get_color($self->color));
         unless ($w < 10)
           {
             $self->_rounded_edges(x1=>0, y1=>0);
-            $self->_rounded_edges(x1=>$w, y1=>0, negx=>-1);
-            $self->_rounded_edges(x1=>$w, y1=>$h, negx=>-1, negy=>-1);
-            $self->_rounded_edges(x1=>0, y1=>$h, negy=>-1);
+            $self->_rounded_edges(x1=>$w-1, y1=>0, negx=>-1);
+            $self->_rounded_edges(x1=>$w-1, y1=>$h-1, negx=>-1, negy=>-1);
+            $self->_rounded_edges(x1=>0, y1=>$h-1, negy=>-1);
           }
 	return;
       }
@@ -80,24 +78,18 @@ sub _rounded_edges
 	my %opts = @_;
 	my $x1 = $opts{x1};
 	my $y1 = $opts{y1};
-	my $neg_x = $opts{negx} || 1;
-	my $neg_y = $opts{negy} || 1;
+	my $dist = $opts{dist} || 6;
+	my $negx = $opts{negx} || 1;
+	my $negy = $opts{negy} || 1;
 	my $gd = $self->gd;
-	my $poly1 = GD::Polygon->new;
-        my $poly2 = GD::Polygon->new;
-        my $poly3 = GD::Polygon->new;
-        $poly1->addPt($x1,$y1);
-        $poly1->addPt($x1+($neg_x*3),$y1);
-        $poly1->addPt($x1,$y1+($neg_y*1)); 
-        $poly2->addPt($x1,$y1);
-        $poly2->addPt($x1+($neg_x*2),$y1);
-        $poly2->addPt($x1,$y1+($neg_y*2)); 
-        $poly3->addPt($x1,$y1);
-        $poly3->addPt($x1+($neg_x*1),$y1);
-        $poly3->addPt($x1,$y1+($neg_y*3));
-        $gd->filledPolygon($poly1, $self->get_color(255,255,255));
-        $gd->filledPolygon($poly2, $self->get_color(255,255,255));
-        $gd->filledPolygon($poly3, $self->get_color(255,255,255));
+	foreach my $i (0..$dist-1)
+	  {
+	    my $poly = GD::Polygon->new;
+	    $poly->addPt($x1,$y1);
+	    $poly->addPt($x1+($negx*($dist-$i)),$y1);
+	    $poly->addPt($x1,$y1+($negy*($i+1))); 
+	    $gd->filledPolygon($poly, $self->get_color(255,255,255));
+	  }
 }
 
 #################### subroutine header begin ####################
