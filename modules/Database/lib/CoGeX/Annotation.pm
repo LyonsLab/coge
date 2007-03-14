@@ -23,5 +23,10 @@ __PACKAGE__->set_primary_key("annotation_id");
 
 __PACKAGE__->belongs_to( annotation_type => 'CoGeX::AnnotationType', 'annotation_type_id');
 __PACKAGE__->belongs_to( feature => 'CoGeX::Feature', 'feature_id');
-1;
 
+sub type
+  {
+    shift->annotation_type(@_);
+  }
+
+1;
