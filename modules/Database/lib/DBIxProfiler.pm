@@ -23,7 +23,8 @@ sub query_end {
   my $sql = shift();
   my @params = @_;
 
-  printf STDERR "Execution took %0.4f seconds.\n", time() - $start;
+  printf STDERR "Execution took %0.4f seconds.", time() - $start;
+  print STDERR " QCOUNT: $QCOUNT\n";
   $QCOUNT += 1;
   $start = undef;
 }
