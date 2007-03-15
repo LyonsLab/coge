@@ -14,7 +14,7 @@ sub query_start {
   my $sql = shift();
   my @params = @_;
 
-  print "Executing $sql: ".join(', ', @params)."\n";
+  print STDERR "Executing $sql: ".join(', ', @params)."\n";
   $start = time();
 }
 
