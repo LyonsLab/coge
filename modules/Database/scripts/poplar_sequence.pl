@@ -23,24 +23,25 @@ my $s = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 
 $s->storage->debug(0);
 
-my $org = $s->resultset('Dataset')->search(
-    { 'organism.name' => {like => "%Poplar%" },
-      'version'       => '1.1' 
-    },
-    { prefetch => 'organism' }
-);
+#my $org = $s->resultset('Dataset')->search(
+#    { 'organism.name' => {like => "%Poplar%" },
+#      'version'       => '1.1' 
+#    },
+#    { prefetch => 'organism' }
+#);
+#
+#my $did = $org->next()->dataset_id;
 
-my $did = $org->next()->dataset_id;
-
-my $rs = $s->resultset('Feature')->search(
+print "\n";
+my $rs = $s->resultset('Feature')->esearch(
         { 
-            'dataset.dataset_id' => $did,
-            'feature_names.name' =>  {like => '%proteinId%'}, 
+            'me.dataset_id' => 505,
+            'feature_names.name' =>  {like => '%proteinId%'},
+            'feature_type.name' => 'CDS'
         },
         {
-            'order_by' => 'me.feature_id', 
-            'join' => 'dataset',
-            'prefetch' => ['feature_names']
+            #-group_by => ['feature_names.name'], 
+            join => 'feature_names'
         });
 
 
@@ -50,17 +51,20 @@ my $currentgene = 0;
 my $pid = 1;
 
 while( my $feat = $rs->next()){
+    my $chrnum = $cmap{$feat->chromosome};
     my $name = ($feat->names())[0];
     $sequence = $feat->genome_sequence();
 
     my $genenum = "0" x (6 - length($currentgene)) . $currentgene;
-    my $chrnum = $cmap{$feat->chromosome};
 
-    my $fh = $FH{$chrnum};
+    my $fh = *STDOUT; # $FH{$chrnum};
 
     my $gname = "P" . $chrnum . "G" .  $genenum;
+
+    #$feat->feature_na
     print $fh ">",$gname , "\n";
-    print $fh $sequence, "\n\n";
+    print $feat->feature_type->name . "\n";
+    print $fh length($sequence), "\n\n";
     ++$currentgene;
 
 }

@@ -39,7 +39,6 @@ __PACKAGE__->belongs_to("dataset" => "CoGeX::Dataset", 'dataset_id');
 
 #__PACKAGE__->mk_group_accessors(['start', 'stop', 'chromosome', 'strand']);
 
-
 sub esearch : ResultSet {
     my $self = shift;
     my $join = $_[1]{'join'};
@@ -500,6 +499,7 @@ sub genomic_sequence {
   while ( my $loc = $lociter->next() ) {
     my $fseq = $dataset->get_genome_sequence(
                                              chromosome=>$loc->chromosome(),
+                                             skip_length_check=>1,
                                              start=>$loc->start,
                                              stop=>$loc->stop );
     if ( $loc->strand == -1 ) {

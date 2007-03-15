@@ -80,6 +80,7 @@ sub get_genomic_sequence {
   my $start = $opts{start} || $opts{begin};
   my $stop = $opts{stop} || $opts{end};
   my $chr = $opts{chr} || $opts{chromosome};
+  my $skip_length_check = $opts{skip_length_check} || 0;
   my $str = "";
 
   if ( @_ > 1 ) {     
@@ -96,9 +97,13 @@ sub get_genomic_sequence {
       }
         
     $chromosome = "1" unless defined $chromosome;
-    my $last = $self->last_chromosome_position($chromosome);
     $from = 1 if $from < 1;
-    $to = $last if $to > $last;
+
+    if (! $skip_length_check){
+        my $last = $self->last_chromosome_position($chromosome);
+        $to = $last if $to > $last;
+    }
+
     # make sure two numbers were sent in
     return undef unless ($from =~ /\A\d+\z/ and  $to =~ /\A\d+\z/);
     return undef unless $to > $from;
