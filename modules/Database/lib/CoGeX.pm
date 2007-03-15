@@ -116,14 +116,14 @@ sub get_features_in_region
       }
     my @feats = $self->resultset('Feature')->search({
 						     "locations.chromosome"=>$chr,
-						     "dataset_id"=>$dataset_id,
+						     "me.dataset_id"=>$dataset_id,
 						     "locations.stop"=>  {"<=" => $stop},
 						     "locations.start"=> {">=" => $start},
 						    },
 						    {
 						     join => ["locations"],
 						     distinct=>['feature_id'],
-						     prefetch=>["locations"],
+						     prefetch=>["locations", "dataset", "feature_type"],
 						    }
 						   );
     return wantarray ? @feats : \@feats;
