@@ -24,17 +24,17 @@ __PACKAGE__->set_primary_key("annotation_id");
 __PACKAGE__->belongs_to( annotation_type => 'CoGeX::AnnotationType', 'annotation_type_id');
 __PACKAGE__->belongs_to( feature => 'CoGeX::Feature', 'feature_id');
 
-sub esearch : ResultSet 
+sub esearch : ResultSet
   {
     my $self = shift;
     my $join = $_[1]{'join'};
-    map { push(@$join, $_ ) } 
+    map { push(@$join, $_ ) }
         ('annotation_type');
 
 
     my $prefetch = $_[1]{'prefetch'};
-    map { push(@$prefetch, $_ ) } 
-        ('annotation_type', 
+    map { push(@$prefetch, $_ ) }
+        ('annotation_type',
             { 'annotation_type' => 'annotation_type_group' }
         );
 
