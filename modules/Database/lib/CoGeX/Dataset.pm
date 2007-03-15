@@ -59,6 +59,8 @@ sub chromosomes : ResultSet {
         prefetch =>['genomic_sequences']
     });
     return $r1 if $r1->count;
+    # TODO: should probably just return an array here instead of 
+    # full objects...
     return $self->search(undef,{
         prefetch =>[{'features' => 'locations' }]
     });

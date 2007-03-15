@@ -40,10 +40,7 @@ sub esearch : ResultSet
 
     $_[1]{'join'} = $join;
     $_[1]{'prefetch'} = $prefetch;
-    my $rs = $self->search(
-         @_
-    );
-    return $rs;
+    return $self->search( @_ );
 
   }
 

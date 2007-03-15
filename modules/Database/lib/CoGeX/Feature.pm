@@ -532,7 +532,7 @@ sub genomic_sequence {
                                              $loc->chromosome(),
                                              $loc->start,
                                              $loc->stop );
-    if ( $loc->strand =~ /-/ ) {
+    if ( $loc->strand == -1 ) {
       push @sequences, $self->reverse_complement($fseq);
     } else {
       push @sequences, $fseq;
