@@ -80,6 +80,72 @@ sub get_genomic_sequence {
   my $start = $opts{start} || $opts{begin};
   my $stop = $opts{stop} || $opts{end};
   my $chr = $opts{chr} || $opts{chromosome};
+  my $str = "";
+
+  if ( @_ > 1 ) {     
+    my($chromosome, $from, $to);
+    if (defined $start && defined $stop && defined $chr)
+      {
+ 	$chromosome = $chr;
+ 	$from = $start;
+ 	$to = $stop;
+      }
+    else
+      {
+ 	($chromosome, $from, $to) = @_;
+      }
+        
+    $chromosome = "1" unless defined $chromosome;
+    my $last = $self->last_chromosome_position($chromosome);
+    $from = 1 if $from < 1;
+    $to = $last if $to > $last;
+    # make sure two numbers were sent in
+    return undef unless ($from =~ /\A\d+\z/ and  $to =~ /\A\d+\z/);
+    return undef unless $to > $from;
+    my @seqs = $self->genomic_sequences(
+					      {chromosome=>$chromosome,
+					       -and=>[
+						      -or=>[
+							    -and=>[
+								   start => {'<='=>$to},
+								   stop  => {'>='=>$to},
+								  ],
+							     -and=>[
+								    start => {'<='=>$from},
+								    stop  => {'>='=>$from},
+								   ],
+							    -and=>[
+								   start => {'>'=>$from},
+								   stop  => {'<'=>$to},
+								  ],
+							   ],
+						     ],
+					      },
+					      {-order_by=>"start"}
+					     )->all;
+    $str = join ("", map{$_->sequence_data} @seqs);  
+    $str = $self->trim_sequence( $str, $seqs[0]->start, $seqs[-1]->stop, $from, $to );
+    
+  } elsif ( @_ == 1 ) {    # get a whole chromosome
+    my $chromosome = shift;
+    my $allseqs = $self->genomic_sequences( { 'chromosome' => $chromosome } );
+    while ( my $g = $allseqs->next ) {
+      $str .= $g->sequence_data;
+    }
+  } else {                 # entire sequence
+    my $allseqs = $self->genomic_sequences();
+    while ( my $g = $allseqs->next ) {
+      $str .= $g->sequence_data;
+    }
+  }
+  return $str;
+}
+sub get_genomic_sequence_old {
+  my $self = shift;
+  my %opts = @_;
+  my $start = $opts{start} || $opts{begin};
+  my $stop = $opts{stop} || $opts{end};
+  my $chr = $opts{chr} || $opts{chromosome};
   
   my $str = "";
 
@@ -135,7 +201,6 @@ sub get_genomic_sequence {
       $str .= $g2->sequence_data(); # get last row
     }
     $str = $self->trim_sequence( $str, $g1->start, $g2->stop, $from, $to );
-
   } elsif ( @_ == 1 ) {    # get a whole chromosome
     my $chromosome = shift;
     my $allseqs = $self->genomic_sequences( { 'chromosome' => $chromosome } );
@@ -164,7 +229,7 @@ sub trim_sequence {
   my $self = shift;
   my( $seq, $seqstart, $seqend, $newstart, $newend ) = @_;
   my $start = $newstart-$seqstart;
-  my $stop = length($seq)-($seqend-$newend);
+  my $stop = length($seq)-($seqend-$newend)-1;
   $seq = substr($seq, $start, $stop);
   return($seq);
 }
