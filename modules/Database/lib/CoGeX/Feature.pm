@@ -2,7 +2,6 @@ package CoGeX::Feature;
 
 use strict;
 use warnings;
-
 use base 'DBIx::Class';
 
 __PACKAGE__->load_components("PK::Auto", "ResultSetManager", "Core");
@@ -37,11 +36,15 @@ __PACKAGE__->belongs_to("feature_type" => "CoGeX::FeatureType", 'feature_type_id
 # dataset has many features
 __PACKAGE__->belongs_to("dataset" => "CoGeX::Dataset", 'dataset_id');
 
+
+#__PACKAGE__->mk_group_accessors(['start', 'stop', 'chromosome', 'strand']);
+
+
 sub esearch : ResultSet {
     my $self = shift;
     my $join = $_[1]{'join'};
     map { push(@$join, $_ ) } 
-        ('feature_type','dataset','locations','annotations', 'sequences');
+        ();
 
 
     my $prefetch = $_[1]{'prefetch'};
@@ -52,18 +55,10 @@ sub esearch : ResultSet {
 
     $_[1]{'join'} = $join;
     $_[1]{'prefetch'} = $prefetch;
-    my $rs = $self->search(
-         @_
-    );
+    my $rs = $self->search(@_);
     return $rs;
 
 }
-sub feat_type
-  {
-    my $self = shift;
-    return $self->feature_type();
-  }
-
 sub type
   {
     my $self = shift;
@@ -82,57 +77,19 @@ sub org
     return $self->organism();
   }
 
-sub species
-  {
-    my $self = shift;
-    return $self->organism();
-  }
-
-
-sub feat_names
-  {
-    my $self = shift;
-    return $self->feature_names();
-  }
-
-sub feat_name
-  {
-    my $self = shift;
-    return $self->feature_names();
-  }
-
 sub names
   {
     my $self = shift;
-    return $self->feature_names();
-  }
-
-sub name
-  {
-    my $self = shift;
-    return $self->feature_names();
-  }
-
-sub aliases
-  {
-    my $self = shift;
-    my @names = map {$_->name} $self->feature_names();
+    if ($self->{_names})
+      {
+	return wantarray ? @{$self->{_names}} : $self->{_names};
+      }
+    my @names =  $self->feature_names()->get_column('name')->all;
+    $self->{_names}=\@names;
     return wantarray ? @names : \@names;
   }
 
-sub location
-  {
-    my $self = shift;
-    return $self->locations();
-  }
-
 sub locs
-  {
-    my $self = shift;
-    return $self->locations();
-  }
-
-sub loc
   {
     my $self = shift;
     return $self->locations();
@@ -144,10 +101,15 @@ sub seqs
     return $self->sequences();
   }
 
-sub annos
+sub eannotations
   {
     my $self = shift;
-    return $self->annotations();
+    return $self->annotations(undef,{prefetch=>[{annotation_type=>'annotation_type_group'}]});
+  }
+
+sub annos
+  {
+    shift->eannotations(@_);
   }
 
 ################################################ subroutine header begin ##
@@ -194,7 +156,7 @@ sub annotation_pretty_print
     $anno_type->Val_delimit(", ");
     foreach my $name ($self->names)
       {
-	$anno_type->add_Annot($name->name);
+	$anno_type->add_Annot($name);
       }
     
     $anno_obj->add_Annot($anno_type);
@@ -263,7 +225,7 @@ sub annotation_pretty_print_html
     $anno_type->Val_delimit("\n, ");
     foreach my $name ($self->names)
       {
-	$anno_type->add_Annot("<a class=\"data\" href=FeatView.pl?accn=".$name->name.">".$name->name."</a>");
+	$anno_type->add_Annot("<a class=\"data\" href=FeatView.pl?accn=".$name.">".$name."</a>");
       }
     
     $anno_obj->add_Annot($anno_type);
@@ -371,12 +333,16 @@ See Also   :
 sub start
   {
     my $self = shift;
-    my ($loc) =  $self->locations({},
-				  {
-				   order_by=>'start asc',
-				   limit=>1,
-				  });
-    return $loc->start;
+    return $self->{_start} if $self->{_start};
+    my @loc =  $self->locations({},
+				 {
+				  order_by=>'start asc',
+				 });
+    $self->{_start}=($loc[0]->start);
+    $self->{_stop}=($loc[-1]->stop);
+    $self->{_strand}=($loc[0]->strand);
+    $self->{_chromosome}=($loc[0]->chromosome);
+    return $self->{_start};
   }
 
 ################################################ subroutine header begin ##
@@ -402,12 +368,16 @@ See Also   :
 sub stop
   {
     my $self = shift;
-    my ($loc) =  $self->locations({},
-				  {
-				   order_by=>'stop desc',
-				   limit=>1,
-				  });
-    return $loc->stop;
+    return $self->{_stop} if $self->{_stop};
+    my @loc =  $self->locations({},
+				 {
+				  order_by=>'stop desc',
+				 });
+    $self->{_start}=($loc[-1]->start);
+    $self->{_stop}=($loc[0]->stop);
+    $self->{_strand}=($loc[0]->strand);
+    $self->{_chromosome}=($loc[0]->chromsome);
+    return $self->{_stop};
   }
 ################################################ subroutine header begin ##
 
@@ -431,9 +401,9 @@ See Also   :
 sub chromosome
   {
     my $self = shift;
-    my ($loc) = $self->locations({},{limit=>1});
-    return unless $loc;
-    return $loc->chromosome;
+    return $self->{_chromosome} if $self->{_chromosome};
+    $self->start;
+    return $self->{_chromosome};
   }
 
 ################################################ subroutine header begin ##
@@ -474,10 +444,10 @@ See Also   :
 
 sub strand
   {
-    my $self = shift;
-    my ($loc) = $self->locations({},{limit=>1});
-    return unless $loc;
-    return $loc->strand;
+    my $self = shift;    
+    return $self->{_strand} if $self->{_strand};
+    $self->start;
+    return $self->{_strand};
   }
 
 
@@ -529,9 +499,9 @@ sub genomic_sequence {
   my $lociter = $self->locations();
   while ( my $loc = $lociter->next() ) {
     my $fseq = $dataset->get_genome_sequence(
-                                             $loc->chromosome(),
-                                             $loc->start,
-                                             $loc->stop );
+                                             chromosome=>$loc->chromosome(),
+                                             start=>$loc->start,
+                                             stop=>$loc->stop );
     if ( $loc->strand == -1 ) {
       push @sequences, $self->reverse_complement($fseq);
     } else {
@@ -543,7 +513,7 @@ sub genomic_sequence {
 
 sub genome_sequence
   {
-   shift->genome_sequence(@_);
+   shift->genomic_sequence(@_);
   }
 
 sub has_genomic_sequence
