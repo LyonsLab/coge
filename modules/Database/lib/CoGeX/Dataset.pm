@@ -235,7 +235,7 @@ sub trim_sequence {
   my( $seq, $seqstart, $seqend, $newstart, $newend ) = @_;
   my $start = $newstart-$seqstart;
   my $stop = length($seq)-($seqend-$newend)-1;
-  $seq = substr($seq, $start, $stop);
+  $seq = substr($seq, $start, $stop-$start);
   return($seq);
 }
 
