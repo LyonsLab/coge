@@ -9,7 +9,6 @@ use Data::Dumper;
 use File::Basename;
 use File::Temp;
 use GS::MyDB::GBDB::GBObject;
-use CoGe::Genome;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::bl2seq_report;
@@ -24,6 +23,9 @@ use CoGe::Graphics::Feature::Exon_motifs;
 use CoGe::Graphics::Feature::AminoAcid;
 use CoGe::Graphics::Feature::Domain;
 use CoGe::Graphics::Feature::HSP;
+use CoGeX;
+use CoGeX::Feature;
+use DBIxProfiler;
 use Text::Wrap qw($columns &wrap);
 use Benchmark qw(:all);
 
@@ -31,7 +33,7 @@ use Benchmark qw(:all);
 $ENV{PATH} = "/opt/apache2/CoGe/";
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 
-use vars qw( $DATE $DEBUG $BL2SEQ $BLASTZ $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK);
+use vars qw( $DATE $DEBUG $BL2SEQ $BLASTZ $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge);
 $BL2SEQ = "/opt/bin/bio/bl2seq ";
 $BLASTZ = "/usr/bin/blastz ";
 $TEMPDIR = "/opt/apache/CoGe/tmp";
@@ -40,7 +42,7 @@ $TEMPURL = "/CoGe/tmp";
 $DEBUG = 0;
 $BENCHMARK = 1;
 
-$| = 1; # turn off buffering
+$| = 1; # turn off buffering 
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		 sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
 
@@ -48,11 +50,14 @@ $FORM = new CGI;
 $CGI::POST_MAX= 60 * 1024 * 1024; # 24MB
 $CGI::DISABLE_UPLOADS = 0; 
 ($USER) = CoGe::Accessory::LogUser->get_user();
-
+my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
+$coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
+#$coge->storage->debugobj(new DBIxProfiler());
+#$coge->storage->debug(1);
 #print STDERR Dumper $USER;
 
 my %ajax = CoGe::Accessory::Web::ajax_func();
-$ajax{dataset_search} = \&dataset_search_for_feat_name; #override this method from Accessory::Web
+#$ajax{dataset_search} = \&dataset_search_for_feat_name; #override this method from Accessory::Web
 my $pj = new CGI::Ajax(
 		       rset=>\&Rset,
 		       run=>\&Show_Summary,
@@ -977,9 +982,8 @@ sub generate_obj_from_seq
       }
     if ($rc)
       {
-	my $db = new CoGe::Genome;
 
-	$obj->sequence($db->get_feature_obj->reverse_complement($obj->sequence));
+	$obj->sequence(CoGeX::Feature->reverse_complement($obj->sequence));
       }
     return $obj
   }
@@ -1028,37 +1032,45 @@ sub get_obj_from_genome_db
     my $rev = shift;
     my $up = shift || 0;
     my $down = shift || 0;
-    my $db = new CoGe::Genome;
-    my $feat = $db->get_feature_obj->retrieve($featid);
+    my $t1 = new Benchmark;
+    my ($feat) = $coge->resultset('Feature')->esearch({"me.feature_id"=>$featid})->next;
+#    my ($feat) = $coge->resultset('Feature')->search({"feature_id"=>$featid})->next;
+    my $t2 = new Benchmark;
     my $start = 0;
     my $stop = 0;
-    my $feat_start = 0;
     my $chr;
     my $seq;
     if ($feat)
       {
-	$start = $feat->begin_location-$up;
-	$start = 1 if $start < 1;
-	$stop = $feat->end_location+$down;
-#	print STDERR "$start-$stop getting genomic sequence\n";
-	$feat_start = $feat->begin_location;
-	$chr = $feat->chr;
-	$seq = $db->get_genomic_seq_obj->get_sequence(
-						      start => $start,
-						      stop => $stop,
-						      chr => $chr,
-						      org_id => $feat->org->id,
-						      dataset_id => $ds_id,
-						     );
-#	print STDERR "seq_len: ", length($seq), ", start: $start, stop: $stop, chr: $chr, org_id: ".$feat->org->id.", dataset_id: $ds_id\n";
-	$seq = $db->get_feature_obj->reverse_complement($seq) if $rev;
 	
+	if ($rev)
+	  {
+	    $start = $feat->start-$down;
+	    $stop = $feat->stop+$up;
+	  }
+	else
+	  {
+	    $start = $feat->start-$up;
+	    $stop = $feat->stop+$down;
+	  }
+	$start = 1 if $start < 1;
+	$chr = $feat->chr;
+#	print STDERR join ("\t", $accn, $chr, $start, $stop, $feat->start, $feat->stop, $up, $down),"\n";
+
+	$seq = $coge->resultset('Dataset')->find($ds_id)->get_genome_sequence(
+									      start => $start,
+									      stop => $stop,
+									      chr => $chr,
+									     );
+	$seq = CoGeX::Feature->reverse_complement($seq) if $rev;
       }
+    my $t3 = new Benchmark;
+
     my $obj= new GS::MyDB::GBDB::GBObject(
 					  ACCN=>$accn,
 					  LOCUS=>$accn,
 					  VERSION=>$feat->dataset->version(),
-					  SOURCE=>$feat->dataset->data_source->name(),
+					  SOURCE=>$feat->dataset->datasource->name(),
 					  ORGANISM=>$feat->org->name(),
 					  					 );
 
@@ -1070,17 +1082,20 @@ sub get_obj_from_genome_db
     my $fnum = 1;
     my %used_names;
     $used_names{$accn} = 1;
+    my $t4 = new Benchmark;
 
     print STDERR "Region: $chr: $start-$stop\n" if $DEBUG;
 #    print STDERR "Region: $chr: ",$start-$start+1,"-",$stop-$start,"\n";
-
-    foreach my $f ($db->get_feature_obj->get_features_in_region(start=>$start, stop=>$stop, chr=>$chr, dataset_id=>$ds_id))
+    my @feats = $coge->get_features_in_region(start=>$start, stop=>$stop, chr=>$chr, dataset_id=>$ds_id);
+    my $t5 = new Benchmark;
+    foreach my $f (@feats)
       {
 	my $name;
-	foreach my $tmp (sort {$b->name cmp $a->name} $f->names)
+	my @names = $f->names;
+	foreach my $tmp (@names)
 	  {
-	    $name = $tmp->name;
-	    last if ($tmp->name =~ /^$accn.+/i);
+	    $name = $tmp;
+	    last if ($tmp =~ /^$accn.+/i);
 	  }
 	$name = $accn unless $name;
 	print STDERR $name,"\n" if $DEBUG;
@@ -1090,7 +1105,7 @@ sub get_obj_from_genome_db
 	$anno =~ s/\n/<br>/g;
 	$anno =~ s/\t/&nbsp;&nbsp;/g;
 	my $location = $f->genbank_location_string(recalibrate=>$start);
-	print STDERR $f->type->name ,"\t",$location,"\n" if $DEBUG;
+	print STDERR $name, "\t",$f->type->name ,"\t",$location,"\n" if $DEBUG;
 	
 	$obj->add_feature (
 			   F_NUMBER=>$fnum,
@@ -1098,13 +1113,27 @@ sub get_obj_from_genome_db
 			   LOCATION=> $location,
 			   QUALIFIERS=>[
                                         [annotation=>$anno],
-                                        [names=> [map {$_->name} sort {$a->name cmp $b->name} $f->names]],
+                                        [names=> [@names]],
                                        ],
 			   ACCN=>$name,
 			   LOCUS=>$name,
 			  );
 	$fnum++;
       }
+    my $t6 = new Benchmark;
+    my $db_time = timestr(timediff($t2,$t1));
+    my $seq_time = timestr(timediff($t3,$t2));
+    my $int_obj_time = timestr(timediff($t4,$t3));
+    my $feat_region_time = timestr(timediff($t5,$t4));
+    my $pop_obj_time = timestr(timediff($t6,$t5));
+    print STDERR qq{
+Getting feature from DB took:                         $db_time
+Getting sequence for region took:                     $seq_time
+Initialize obj took:                                  $int_obj_time
+Getting feats in region took:                         $feat_region_time
+Populating object too:                                $pop_obj_time
+Region:         ds_id: $ds_id $start-$stop($chr)
+};
     return $obj;
   }
 
@@ -1435,54 +1464,6 @@ sub match_filter_select
       }
     $html .= " nucleotides";
     return $html;
-  }
-
-sub dataset_search_for_feat_name
-  {
-    my ($accn, $num, $user) = (@_);
-    $num = 1 unless $num;
-    return ( qq{<input type="hidden" id="dsid$num">\n<input type="hidden" id="featid$num">}, $num )unless $accn;
-    my $html;
-    my %sources;
-    my $coge = new CoGe::Genome;
-    my %restricted;
-    if (!$USER || $USER =~ /public/i)
-      {
-	$restricted{papaya} = 1;
-      }
-    foreach my $feat ($coge->get_feats_by_name($accn))
-      {
-	my $val = $feat->dataset;
-	my $name = $val->name;
-	my $ver = $val->version;
-	my $desc = $val->description;
-	my $sname = $val->data_source->name;
-	my $ds_name = $val->name;
-	my $org = $val->org->name;
-	my $title = "$org: $ds_name ($sname, v$ver)";
-#	$sources{$feat->data_info->id} = $feat->data_info;
-	next if $restricted{$org};
-	$sources{$feat->dataset->id} = $title;
-      }
-    if (keys %sources)
-      {
-	$html .= qq{
-<SELECT name = "dsid$num" id= "dsid$num" onChange="feat_search(['accn$num','dsid$num', 'args__$num'],['feat$num']);">
-};
-	foreach my $id (sort {$b <=> $a} keys %sources)
-	  {
-	    my $val = $sources{$id};
-	    $html  .= qq{  <option value="$id">$val\n};
-	  }
-	$html .= qq{</SELECT>\n};
-	my $count = scalar keys %sources;
-	$html .= qq{<font class=small>($count)</font>};
-      }
-    else
-      {
-	$html .= qq{Accession not found <input type="hidden" id="dsid$num">\n<input type="hidden" id="featid$num">\n};	
-      }    
-    return ($html,$num);
   }
 
 sub generate_annotation
