@@ -105,8 +105,18 @@ sub get_features_in_region
 	return $self->resultset('Feature')->count({
 						   "locations.chromosome"=>$chr,
 						   "dataset_id"=>$dataset_id,
-						   "locations.stop"=>  {"<=" => $stop},
-						   "locations.start"=> {">=" => $start},
+						   -and=>[
+							  -or=>[
+								-and=>[
+								       "locations.stop"=>  {"<=" => $stop},
+								       "locations.stop"=> {">=" => $start},
+								      ],
+								-and=>[
+								       "locations.start"=>  {"<=" => $stop},
+								       "locations.start"=> {">=" => $start},
+								      ],
+							       ],
+							 ],
 						  },
 						  {
 						   join => ["locations"],
@@ -117,9 +127,19 @@ sub get_features_in_region
     my @feats = $self->resultset('Feature')->search({
 						     "locations.chromosome"=>$chr,
 						     "me.dataset_id"=>$dataset_id,
-						     "locations.stop"=>  {"<=" => $stop},
-						     "locations.start"=> {">=" => $start},
-						    },
+						     -and=>[
+							    -or=>[
+								  -and=>[
+									 "locations.stop"=>  {"<=" => $stop},
+									 "locations.stop"=> {">=" => $start},
+									],
+								  -and=>[
+									 "locations.start"=>  {"<=" => $stop},
+									 "locations.start"=> {">=" => $start},
+									],
+								 ],
+							    ],
+						     },
 						    {
 						     join => ["locations"],
 						     distinct=>['feature_id'],
