@@ -58,15 +58,15 @@ function set_hsp_colors (type)
    }
   else if (type == "cblind")
    {
-    kaj.GS('hsp1r',50)
-    kaj.GS('hsp1g',50)
-    kaj.GS('hsp1b',50)
-    kaj.GS('hsp2r',120)
-    kaj.GS('hsp2g',120)
-    kaj.GS('hsp2b',120)
-    kaj.GS('hsp3r',200)
-    kaj.GS('hsp3g',200)
-    kaj.GS('hsp3b',200)
+    kaj.GS('hsp1r',110)
+    kaj.GS('hsp1g',110)
+    kaj.GS('hsp1b',110)
+    kaj.GS('hsp2r',200)
+    kaj.GS('hsp2g',200)
+    kaj.GS('hsp2b',150)
+    kaj.GS('hsp3r',220)
+    kaj.GS('hsp3g',220)
+    kaj.GS('hsp3b',220)
    }
   else if (type == "fire")
    {
@@ -82,15 +82,15 @@ function set_hsp_colors (type)
    }
   else 
    {
-    kaj.GS('hsp1r',100)
-    kaj.GS('hsp1g',100)
+    kaj.GS('hsp1r',150)
+    kaj.GS('hsp1g',150)
     kaj.GS('hsp1b',255)
-    kaj.GS('hsp2r',0)
+    kaj.GS('hsp2r',100)
     kaj.GS('hsp2g',255)
-    kaj.GS('hsp2b',0)
+    kaj.GS('hsp2b',100)
     kaj.GS('hsp3r',255)
-    kaj.GS('hsp3g',0)
-    kaj.GS('hsp3b',0)
+    kaj.GS('hsp3g',100)
+    kaj.GS('hsp3b',100)
    }
   
  }
@@ -122,6 +122,13 @@ function feat_search_chain(val, num) {
 // }
 }
 
+//this func switching the "left" and "right" sequence values when reverse region display is selected
+function rev_locs (val) {
+  up = kaj.GS('dr'+val+'up');
+  down = kaj.GS('dr'+val+'down');
+  kaj.GS('dr'+val+'up', down);
+  kaj.GS('dr'+val+'down', up);
+}
 </SCRIPT>
 
 
@@ -250,7 +257,7 @@ onClick="loading([], ['results']); run([
         <DIV id="feat1"><input type="hidden" id="featid1"></DIV>
       <TR>
 	<TD colspan =2>
-	<font class="small">Reverse region display: <label><input class="backbox" type="radio" name="rev_region1" id="rev_region1" tabindex="1" value="1" <TMPL_VAR NAME=REV1_YES> />Yes</label><label><input class="backbox" type="radio" name="rev_region1" id="rev_region1" tabindex="1" value="0" <TMPL_VAR NAME=REV1_NO> />No</label></font>
+	<font class="small">Reverse region display: <label><input class="backbox" type="radio" name="rev_region1" id="rev_region1" tabindex="1" value="1" <TMPL_VAR NAME=REV1_YES> onclick='rev_locs("1")' />Yes</label><label><input class="backbox" type="radio" name="rev_region1" id="rev_region1" tabindex="1" value="0" <TMPL_VAR NAME=REV1_NO> onclick='rev_locs("1")' />No</label></font>
       <TR>
        <TD><DIV class="small">Left sequence:</DIV>
        <TD><DIV  id="up1" ><input class="backbox" type="text" name="dr1up" id="dr1up" tabindex="1" size="10" value="<TMPL_VAR NAME=DR1UP>" /> </DIV>
@@ -269,7 +276,7 @@ onClick="loading([], ['results']); run([
         <DIV id="feat2"><input type="hidden" id="featid2"></DIV>
       <TR>
 	<TD colspan =2>
-	<font class="small">Reverse region display: <label><input class="backbox" type="radio" name="rev_region2" id="rev_region2" tabindex="1" value="1" <TMPL_VAR NAME=REV2_YES> />Yes</label><label><input class="backbox" type="radio" name="rev_region2" id="rev_region2" tabindex="1" value="0" <TMPL_VAR NAME=REV2_NO> />No</label></font>
+	<font class="small">Reverse region display: <label><input class="backbox" type="radio" name="rev_region2" id="rev_region2" tabindex="1" value="1" <TMPL_VAR NAME=REV2_YES> onclick='rev_locs("2")' />Yes</label><label><input class="backbox" type="radio" name="rev_region2" id="rev_region2" tabindex="1" value="0" <TMPL_VAR NAME=REV2_NO> onclick='rev_locs("2")'/>No</label></font>
        <TR>
        <TD><DIV class="small">Left sequence:</DIV>
        <TD><DIV  id="up2" ><input class="backbox" type="text" name="dr2up" id="dr2up" tabindex="1" size="10" value="<TMPL_VAR NAME=DR2UP>" /></DIV>
@@ -286,7 +293,7 @@ onClick="loading([], ['results']); run([
         <DIV id="feat3"><input type="hidden" id="featid3"></DIV>
       <TR>
 	<TD colspan =2>
-	<font class="small">Reverse region display: <label><input class="backbox" type="radio" name="rev_region3" id="rev_region3" tabindex="1" value="1" <TMPL_VAR NAME=REV3_YES> />Yes</label><label><input class="backbox" type="radio" name="rev_region3" id="rev_region3" tabindex="1" value="0" <TMPL_VAR NAME=REV3_NO> />No</label></font>
+	<font class="small">Reverse region display: <label><input class="backbox" type="radio" name="rev_region3" id="rev_region3" tabindex="1" value="1" <TMPL_VAR NAME=REV3_YES> onclick='rev_locs("3")'/>Yes</label><label><input class="backbox" type="radio" name="rev_region3" id="rev_region3" tabindex="1" value="0" <TMPL_VAR NAME=REV3_NO> onclick='rev_locs("3")'/>No</label></font>
        <TR>
        <TD><DIV class="small">Left sequence:</DIV>
        <TD><DIV  id="up3" ><input class="backbox" type="text" name="dr3up" id="dr3up" tabindex="1" size="10" value="<TMPL_VAR NAME=DR3UP>" /></DIV>
@@ -484,7 +491,7 @@ onClick="loading([], ['results']); run([
  <TR>
   <TH colspan="2">
   <DIV class="mainDiv">
-   <DIV id="bp" class="topItem" onMouseOver="Init(this);changeColor('bp','#000099'); " onMouseOut="changeColor('bp','#009900');" >Bl2Seq Parameters:</DIV>
+   <DIV id="bp" class="topItem" onMouseOver="Init(this);changeColor('bp','#000099'); " onMouseOut="changeColor('bp','#009900');" >Blast Parameters:</DIV>
    <DIV class="dropMenu">
      <DIV class="subMenu" style="display:none;">
      <TABLE style="width: 100%;">
@@ -635,29 +642,29 @@ onClick="loading([], ['results']); run([
    <td class="small">
      HSP 1 color:
    <TD class="small">
-     R:<input class="backbox" type="text" name="hsp1r" id="hsp1r" tabindex="1"  size="3" value="100" />
+     R:<input class="backbox" type="text" name="hsp1r" id="hsp1r" tabindex="1"  size="3" value="150" />
    <TD class="small">
-     G:<input class="backbox" type="text" name="hsp1g" id="hsp1g" tabindex="1"  size="3" value="100" />
+     G:<input class="backbox" type="text" name="hsp1g" id="hsp1g" tabindex="1"  size="3" value="150" />
    <TD class="small">
      B:<input class="backbox" type="text" name="hsp1b" id="hsp1b" tabindex="1"  size="3" value="255" />
   <tr>
    <td class="small">
      HSP 2 color:
    <TD class="small">
-     R:<input class="backbox" type="text" name="hsp2r" id="hsp2r" tabindex="1"  size="3" value="0" />
+     R:<input class="backbox" type="text" name="hsp2r" id="hsp2r" tabindex="1"  size="3" value="100" />
    <TD class="small">
      G:<input class="backbox" type="text" name="hsp2g" id="hsp2g" tabindex="1"  size="3" value="255" />
    <TD class="small">
-     B:<input class="backbox" type="text" name="hsp2b" id="hsp2b" tabindex="1"  size="3" value="0" />
+     B:<input class="backbox" type="text" name="hsp2b" id="hsp2b" tabindex="1"  size="3" value="100" />
   <tr>
    <td class="small">
      HSP 3 color:
    <TD class="small">
      R:<input class="backbox" type="text" name="hsp3r" id="hsp3r" tabindex="1"  size="3" value="255" />
    <TD class="small">
-     G:<input class="backbox" type="text" name="hsp3g" id="hsp3g" tabindex="1"  size="3" value="0" />
+     G:<input class="backbox" type="text" name="hsp3g" id="hsp3g" tabindex="1"  size="3" value="100" />
    <TD class="small">
-     B:<input class="backbox" type="text" name="hsp3b" id="hsp3b" tabindex="1"  size="3" value="0" />
+     B:<input class="backbox" type="text" name="hsp3b" id="hsp3b" tabindex="1"  size="3" value="100" />
   <tr>
    <TD> <font class="small">Preset colors: <label><input class="backbox" type="radio" name="hspcolor" onClick="set_hsp_colors('default');"/>Default</label><label><input class="backbox" type="radio" name="hspcolor" onClick="set_hsp_colors('cblind');"/>Color blind</label><label><input class="backbox" type="radio" name="hspcolor" onClick="set_hsp_colors('fire');"/>Fire</label><label><input class="backbox" type="radio" name="hspcolor" onClick="set_hsp_colors('rasta');"/>Rasta</label></font>
   </table>
