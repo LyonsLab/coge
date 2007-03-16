@@ -2,6 +2,7 @@ package CoGe::Accessory::Web;
 
 use strict;
 use CoGe::Genome;
+use CoGeX;
 use Data::Dumper;
 use base 'Class::Accessor';
 use CGI::Carp('fatalsToBrowser');
@@ -9,7 +10,7 @@ use CGI;
 
 BEGIN {
     use Exporter ();
-    use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $coge $Q);
+    use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $coge $Q $cogex);
     $VERSION     = 0.1;
     @ISA         = (@ISA, qw (Exporter));
     #Give a hoot don't pollute, do not export more than needed by default
@@ -17,6 +18,9 @@ BEGIN {
     @EXPORT_OK   = qw ();
     %EXPORT_TAGS = ();
     $coge = new CoGe::Genome;
+    my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
+    $cogex = CoGeX->connect($connstr, 'cnssys', 'CnS' );
+
     __PACKAGE__->mk_accessors qw(restricted_orgs);
  }
 
@@ -48,6 +52,62 @@ sub feat_name_search
   }
 
 sub dataset_search_for_feat_name
+  {
+    my ($self, $accn, $num, $user) = self_or_default(@_);
+    $num = 1 unless $num;
+    return ( qq{<input type="hidden" id="dsid$num">\n<input type="hidden" id="featid$num">}, $num )unless $accn;
+    my $html;
+    my %sources;
+    my %restricted_orgs = %{$self->restricted_orgs} if $self->restricted_orgs;
+    my $rs = $cogex->resultset('Dataset')->search(
+						  {
+						   'feature_names.name'=> {'like'=> $accn.'%'},
+						  },
+						  {
+						   'join'=>{
+							    'features' => 'feature_names',
+							   },
+							    
+						   'prefetch'=>['datasource', 'organism'],
+						  }
+						 );
+    while (my $ds = $rs->next())
+      {
+	my $name = $ds->name;
+	my $ver = $ds->version;
+	my $desc = $ds->description;
+	my $sname = $ds->datasource->name;
+	my $ds_name = $ds->name;
+	my $org = $ds->organism->name;
+	my $title = "$org: $ds_name ($sname, v$ver)";
+	next if $restricted_orgs{$org};
+	$sources{$ds->id} = {
+			     title=>$title,
+			     version=>$ver,
+			    };
+      }
+     if (keys %sources)
+       {
+ 	$html .= qq{
+ <SELECT name = "dsid$num" id= "dsid$num" onChange="feat_search(['accn$num','dsid$num', 'args__$num'],['feat$num']);">
+ };
+ 	foreach my $id (sort {$sources{$b}{version} <=> $sources{$a}{version}} keys %sources)
+ 	  {
+ 	    my $val = $sources{$id}{title};
+ 	    $html  .= qq{  <option value="$id">$val\n};
+ 	  }
+ 	$html .= qq{</SELECT>\n};
+ 	my $count = scalar keys %sources;
+ 	$html .= qq{<font class=small>($count)</font>};
+       }
+     else
+       {
+ 	$html .= qq{Accession not found <input type="hidden" id="dsid$num">\n<input type="hidden" id="featid$num">\n};	
+       }    
+    return ($html,$num);
+  }
+
+sub dataset_search_for_feat_name_old
   {
     my ($self, $accn, $num, $user) = self_or_default(@_);
     $num = 1 unless $num;
@@ -91,6 +151,53 @@ sub dataset_search_for_feat_name
   }
 
 sub feat_search_for_feat_name
+  {
+    my ($self, $accn, $dsid, $num) = self_or_default(@_);
+    return qq{<input type="hidden" id="featid$num">\n} unless $dsid;
+    my @feats;
+    my $rs = $cogex->resultset('Feature')->search(
+						  {
+						   'feature_names.name'=> {'like'=> $accn.'%'},
+						   'dataset.dataset_id' => "$dsid",
+						  },
+						  {
+						   'join'=>['feature_type','dataset', 'feature_names'],
+						   'prefetch'=>['feature_type', 'dataset'],
+						  }
+						 );
+    foreach my $f ($rs->next())
+      {
+	next unless $f->dataset->id == $dsid;
+	next if $f->feature_type->name =~ /CDS/i;
+	next if $f->feature_type->name =~ /RNA/i;
+	push @feats, $f;
+      }
+    my $html;
+    if (@feats)
+      {
+	$html .= qq{
+<SELECT name = "featid$num" id = "featid$num" >
+  };
+	foreach my $feat (@feats)
+	  {
+	    my $loc = "Chr:".$feat->locations->next->chromosome." ".$feat->genbank_location_string;
+	    #working here, need to implement genbank_location_string before I can progress.  Need 
+	    $loc =~ s/(complement)|(join)//g;
+	    my $fid = $feat->id;
+	    $html .= qq {  <option value="$fid">$loc \n};
+	  }
+	$html .= qq{</SELECT>\n};
+	my $count = scalar @feats;
+	$html .= qq{<font class=small>($count)</font>};
+      }
+    else
+      {
+	$html .=  qq{<input type="hidden" id="featid$num">\n}
+      }
+    return $html;
+  }
+
+sub feat_search_for_feat_name_old
   {
     my ($self, $accn, $dsid, $num) = self_or_default(@_);
     return unless $dsid;
