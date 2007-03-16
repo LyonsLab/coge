@@ -57,7 +57,7 @@ sub new
     $self->file($file);
     $self->hsp_count(0);
     $self->hsps([]);
-    $self->process_file;
+    $self->process_file($file);
     unless ($self->file_base())
       {
 	my ($base) = $file =~ /^(.*?)[^\/]*$/;
@@ -71,7 +71,7 @@ sub new
 sub process_file
   {
     my $self = shift;
-    my $file = $self->file;
+    my $file = shift || $self->file;
     unless (-r $file)
       {
 	warn "can't read $file in blastz_report.pm.  nothing to process\n";
