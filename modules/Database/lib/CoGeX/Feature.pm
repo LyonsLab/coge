@@ -375,7 +375,7 @@ sub stop
     $self->{_start}=($loc[-1]->start);
     $self->{_stop}=($loc[0]->stop);
     $self->{_strand}=($loc[0]->strand);
-    $self->{_chromosome}=($loc[0]->chromsome);
+    $self->{_chromosome}=($loc[0]->chromosome);
     return $self->{_stop};
   }
 ################################################ subroutine header begin ##
