@@ -13,8 +13,11 @@ BEGIN
     use vars qw($VERSION);
     $VERSION = "0.01";
   }
-__PACKAGE__->mk_accessors qw(hsps hsp_count eval_cutoff);
+__PACKAGE__->mk_accessors qw(file lastline report_done hsps hsp_count eval_cutoff query subject qlength slength);
 
+sub qname    {shift->query(@_)}
+sub sbjct    {shift->subject(@_)}
+sub sname    {shift->subject(@_)}
 
 ###############################################################################
 # bl2seqReport
@@ -31,30 +34,43 @@ sub new {
 		die "bl2seqReport error: new needs a file name!\n";
 	}
 	
-	$self->{FILE} = undef;
-	$self->{FH} = undef;
-	$self->{LASTLINE} = undef;
-	$self->{REPORT_DONE} = undef;
 	$self->hsp_count(0);
 	# init
-	$self->{FILE} = $file;
-	open( FH, "< $file" ) or
-		die "bl2seqReport error: $file wouldn't open!\n";
-	$self->{FH} = \*FH;
-	if ( $self->_parseHeader() ) {
-		$self->{REPORT_DONE} = 0;
-	} else {
-		$self->{REPORT_DONE} = 1;
-	}
-	my @hsps;
-	while (my $hsp = $self->nextHSP)
-	  {
-	    push @hsps, $hsp;
-	  }
-	close( $self->{FH} );
-	$self->hsps(\@hsps);
+	$self->file($file);
+#	open( FH, "< $file" ) or
+#		die "bl2seqReport error: $file wouldn't open!\n";
+#	$self->{FH} = \*FH;
+	$self->process_file($file);
 	return $self;
-}
+      }
+
+sub process_file
+  {
+    my $self = shift;
+    my $file = shift || $self->file;
+    my @hsps;
+    
+    open (IN, $file) || die "can;t open $file for reading: $!";
+    my $data = join ("", <IN>);
+    close IN;
+    my $header;
+    my $hsps;
+    ($header, $data) = $data =~ /^(.*?Length.*?\d+)\s+(Score.*$)/sx;
+    $self->_parseHeader($header);
+    foreach my $hsp_data (split /Score/, $data)
+      {
+	next unless $hsp_data;
+#	print $hsp_data;
+#	next if $hsp_data =~ /Query=/;
+       my $hsp = $self->_processHSP("Score".$hsp_data);
+       push @hsps, $hsp if $hsp;
+      }
+
+    
+    #	close( $self->{FH} );
+    $self->hsps(\@hsps);
+    return $self;
+  }
 
 #sub DESTROY {
 	# this object, until it's rewritten, misbehaves without this DESTROY
@@ -71,69 +87,54 @@ sub new {
 
 
 
-sub query    {shift->{QUERY}}
-sub qname    {shift->{QUERY}}
-sub sbjct    {shift->{SBJCT}}
-sub subject    {shift->{SBJCT}}
-sub sname    {shift->{SBJCT}}
-sub qlength    {shift->{QLENGTH}}
-sub slength    {shift->{SLENGTH}}
-sub file    {shift->{FILE}}
 
-sub _parseHeader {
-	my ($self) = shift;
-	my $FH = $self->{FH};
-	while(<$FH>) 
-	  {
-	    if ($_ =~ /^Query=\s+(.+)/)    { # get the query info
-	      my $query = $1;
-	      while(<$FH>) {
-		last if $_ !~ /\S/;
-		$query .= $_;
-	      }
-	      $query =~ s/\s+/ /g;
-			$query =~ /(.*)\s+\((.*)\s+letters\)/;
-			$self->{QUERY} = $1;
-			my $qlength = $2;
-			$qlength =~ s/,//g; #drop ",", if present
-			$self->{QLENGTH} = $qlength;
-		} elsif ( $_ =~ /^Query=/ ) {
-			# this happens when the original fasta sequence
-			# used in the bl2seq program contained a single
-			# word on the header line and only happens to
-			# the Query, not the Subject!
-			my $query = "UNK-ACCN ";
-			while(<$FH>) {
-				last if $_ !~ /\S/;
-				$query .= " " . $_;
-			}
-			$query =~ s/\s+/ /g;
-			$query =~ /(.*)\s+\((.*)\s+letters\)/;
-			$self->{QUERY} = $1;
-			my $qlength = $2;
-			$qlength =~ s/,//g; #drop ",", if present
-			$self->{QLENGTH} = $qlength;
-		} elsif ($_ =~ /^>(.*)/) { # get the subject info
-	
-			my $sbjctdef = $1;
-			while(<$FH>) {
-				last if $_ !~ /\S/;
-				$sbjctdef .= $_;
-			}
-			$sbjctdef =~ s/\s+/ /g;
-			$sbjctdef =~ /(.*)\s+Length =\s+(.*)\s*/;
-			$self->{SBJCT} = $1;
-			my $slength = $2;
-			$slength =~ s/(.*)\s+/$1/;
-			$self->{SLENGTH} = $slength;
-		} elsif ($_ =~ / Score/) {
-			$self->{LASTLINE} = $_;
-			return 1;
-		} elsif ($_ =~ /^Lambda/) {
-			$self->{LASTLINE} = $_;
-			return 0; # there's nothing in the report
-		}
-	}
+sub _parseHeader 
+  {
+    my ($self) = shift;
+    my $header = shift;
+    return unless $header;
+    my ($query, $subject) = $header =~ /^(.*letters\))\s+(.*)$/s;
+    if ($query =~ /Query=\s+(.+)/)
+      { 
+	my $qname = $1;
+	$self->query($qname);
+      }
+    else
+      {
+	warn "problem parsing bl2seq report query name from $query\n";
+	$self->query("UNKNOWN");
+      }
+    if ($query =~ /\((.*)\s+letters\)/)
+      {
+	my $qlength = $1;
+	$self->qlength($qlength);
+      }
+    else
+      {
+	warn "problem parsing bl2seq report query length from $query\n";
+	$self->qlength("ERROR");
+      }
+    if ($subject =~ />(.*)/)
+      {
+	my $sname = $1;
+	$self->subject($sname);
+      }
+    else
+      {
+	warn "problem parsing bl2seq report subject name from $subject\n";
+	$self->subject("UNKNOWN");
+      }
+    if ($subject =~ /Length =\s+(\d+)/i)
+      {
+	my $slength = $1;
+	$self->slength($slength);
+      }
+    else
+      {
+	warn "problem parsing bl2seq report subject length from $subject\n";
+	$self->slength("ERROR");
+      }
+    return;
 }
 
 sub _fastForward {
@@ -156,68 +157,51 @@ sub _fastForward {
 	warn "Possible parse error in _fastForward in bl2seqReport\n";
 }
 
-sub nextHSP {
+sub _processHSP {
 	my $self = shift;
-	$self->_fastForward() or return 0;
-	return 0 if $self->{REPORT_DONE};
-	
+	my $data = shift;
+	my $info;
+	($info,$data) = split /Query:/, $data,2;
+	$data = "Query:".$data;
 	############################
 	# get and parse scorelines #
 	############################
-	my $scoreline = $self->{LASTLINE};
-	my $FH = $self->{FH};
-	my ($score, $bits,$p) = $scoreline =~
+	my ($score, $bits,$p) = $info =~
 		/Score =\s+(\S+) bits \((\d+)\), Expect.* += +(\S+)/;
-	print STDERR $scoreline unless $p;
 	$p =~ s/,//g;
-	my $identityline = <$FH>;
-	return undef if not defined $identityline;
-	
-	my ($match, $length) = $identityline =~ /Identities = (\d+)\/(\d+)/;
-	my ($positive) = $identityline =~ /Positives = (\d+)/;
+	my ($match, $length) = $info =~ /Identities = (\d+)\/(\d+)/;
+	my ($positive) = $info =~ /Positives = (\d+)/;
 	$positive = $match if not defined $positive;
-	my $strandline = <$FH>;
-	return undef if not defined $strandline;
 	my $strand = "";
-	if ($strandline =~ /Strand/)
+	if ($info =~ /Strand = (\S+) \/ (\S+)/)
 	  {
-	    my ($strandtop, $strandbot) = $strandline =~ /Strand = (\S+) \/ (\S+)/;
-	
-
+	    my ($strandtop, $strandbot) = ($1, $2);
 	    if ( defined $strandtop and $strandtop eq "Plus" ) { $strand = "+" }
 	    else { $strand = "-" }
 	    if ( defined $strandbot and $strandbot eq "Plus" ) { $strand .= "+" }
 	    else { $strand .= "-" }
 	  }
-	elsif ($strandline =~ /Frame = (\S+)/)
+	elsif ($info =~ /Frame = (\S+)/)
 	  {
 	    $strand = $1;
 	  }
-	die "parse error\n" if not defined $score;
 
+#	print join ("\t", $score, $bits, $p, $match, $length, $positive, $strand),"\n";
 	#######################
 	# get alignment lines #
 	#######################
 	my(@hspline) = ();;
-	while(<$FH>) {
-		if ($_ !~ /\S/) {next;} # blank line, skip
-		elsif ($_ =~ /^\s*Score/)     {$self->{LASTLINE} = $_; last}
-		elsif ($_ =~ /^>|^Lambda/)   {
-			$self->{LASTLINE} = $_;
-			$self->{REPORT_DONE} = 1;
-			last;
-		}
-		else {
-			push @hspline, $_;           # store the query line
-			my $l1 = <$FH>;              # either alignment line or sbjct line
-			if ($l1 =~ /^Sbjct/) {
-				push @hspline, "";  # dummy line, this is a -noseq option
-				push @hspline, $l1; # so store a fake alignment and real sbjct
-				next;
-			}
-			push @hspline, $l1;                 # grab/store the alignment line
-			my $l2 = <$FH>; push @hspline, $l2; # grab/store the sbjct line
-		}
+	foreach (split /\n/, $data)
+	  {
+	  if ($_ !~ /\S/) 
+	    {next;} # blank line, skip
+	  elsif ($_ =~ /^>|^Lambda/)
+	    {
+	      last;
+	    }
+	  else {
+	    push @hspline, $_;           # store the query line
+	  }
 	}
 	
 	#########################
@@ -275,7 +259,7 @@ sub nextHSP {
 	   });
 	return 0 if defined $self->eval_cutoff && $hsp->eval > $self->eval_cutoff;
 	return $hsp;
-}
+      }
 
 1;
 
