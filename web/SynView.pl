@@ -26,7 +26,8 @@ use CoGe::Graphics::Feature::HSP;
 use CoGeX;
 use CoGeX::Feature;
 use DBIxProfiler;
-use Text::Wrap qw($columns &wrap);
+use POSIX;
+#use Text::Wrap qw($columns &wrap);
 use Benchmark qw(:all);
 
 # for security purposes
@@ -243,6 +244,7 @@ sub Show_Summary
 	$color_hsp,
 	$hsp_label,
 	$overlap_adjustment,
+	$hiqual,
 	$hsp_limit,
 	$hsp_limit_num,
 	$blast_program,
@@ -530,6 +532,7 @@ sub Show_Summary
 							 hsp_colors=>\@hsp_colors,
 							 spike_sequence=>$spike_seq,
 							 show_hsps_with_stop_codon => $show_hsps_with_stop_codon,
+							 hiqual=>$hiqual,
 							);
 #	    print STDERR $map;
 	    $html .= qq!<div>$accn!;
@@ -632,6 +635,7 @@ sub generate_image
     my $eval_cutoff = $opts{eval_cutoff};
     my $hsp_colors = $opts{hsp_colors};
     my $show_hsps_with_stop_codon = $opts{show_hsps_with_stop_codon};
+    my $hiqual = $opts{hiqual};
     my $graphic = new CoGe::Graphics;
     my $gfx = new CoGe::Graphics::Chromosome;
     $gfx->overlap_adjustment(0);
@@ -657,6 +661,7 @@ sub generate_image
 			    minor_tick_labels=>-1,
 			    overlap_adjustment=>$overlap_adjustment,
 			    feature_labels=>$feature_labels,
+			    draw_hi_qual=>$hiqual,
 			   );
     my $f1= CoGe::Graphics::Feature->new({start=>1, order => 2, strand => 1});
     $f1->merge_percent(0);
@@ -1027,7 +1032,7 @@ sub generate_seq_file
 	       );
     my $t2 = new Benchmark;
     my $time = timestr(timediff($t2,$t1));
-    print STDERR "Time to generate Sequence file:   $time\n";
+    print STDERR "Time to generate Sequence file:   $time\n" if $BENCHMARK;
     return ($file, $file_begin, $file_end, $spike_seq);
   }
 
@@ -1354,7 +1359,6 @@ sub write_fasta {
 		}
 		# other checks here?
 	}
-	my $t1 = new Benchmark;
 	my $tmp_file = new File::Temp ( TEMPLATE=>'SEQ__XXXXX',
 					DIR=>$options->{path},
 					SUFFIX=>'.fa',
@@ -1363,7 +1367,6 @@ sub write_fasta {
 
 	my $hdr = $gbobj->get_headerfasta( );
 	
-#	print STDERR "HEADER=$hdr\n";
 	$seq_begin = $options->{startpos} - $options->{upstream};
 	if ( $seq_begin < 1 ) {
 		$seq_begin = 1;
@@ -1379,12 +1382,6 @@ sub write_fasta {
 	if ( $seq_end > length( $seq )) {
 		$seq_end = length($seq);
 	}
-	my $t2 = new Benchmark;
-#	print STDERR "SEQ_BEGIN = $seq_begin\n";
-#	print STDERR "SEQ_END = $seq_end\n";
-#	print STDERR "SEQLEN = ", length( $seq ), "\n";
-#	print STDERR "SEQ = $seq\n";
-
 	# mask out exons if required
 	if ( defined $options->{mask} and $options->{mask} == 1 ) {
 		$seq = $gbobj->mask_exons( $seq );
@@ -1394,11 +1391,6 @@ sub write_fasta {
 		$seq = $gbobj->mask_ncs( $seq );
 	}
 	($seq) = $gbobj->subsequence( $seq_begin, $seq_end, $seq );
-	my $t3 = new Benchmark;
-#	print STDERR Dumper $seq;
-#	print STDERR "SUBSEQLEN = ", length( $seq ), "\n";
-#	print STDERR "SUBSEQ = $seq\n";
-
 	my $spike_seq = "";
 	my($pair,$spikesize);
 	if ( defined $options->{spike} ) {
@@ -1407,28 +1399,25 @@ sub write_fasta {
 			($seq,$spike_seq) = spike( $seq, $spikesize, $pair );
 		}
 	}
-	my $t4 = new Benchmark;
 	my $error = 0;
 	($error,$fullname) = check_filename_taint( $fullname );
 	if ( $error ) 
 	  {
-#	    $seq = join ("\n", wrap('','',$seq));
+	    my $length = length($seq);
 	    open(OUT, ">$fullname") or die "Couldn't open $fullname!\n";
 	    print OUT "$hdr\n";
-	    print OUT "$seq\n";
+#	    my $max = ceil ($length/10000);
+	    my $max = 100;# if $max < 100;
+	    my $i = 0;
+	    while ($i < $length && length($seq) > $max)
+	      {
+		print OUT substr ($seq, 0, $max),"\n";;
+		substr ($seq, 0, $max) = "";
+		$i+=$max;
+	      }
+	    print OUT $seq,"\n" if $seq;
 	    close(OUT);
 	    system "chmod +rw $fullname";
-	    my $t5 = new Benchmark;
-	    my $time1 = timestr(timediff($t2,$t1));
-	    my $time2 = timestr(timediff($t3,$t2));
-	    my $time3 = timestr(timediff($t4,$t3));
-	    my $time4 = timestr(timediff($t5,$t4));
-	    print STDERR qq{
-Time1: $time1
-Time2: $time2
-Time3: $time3
-Time4: $time4
-};
 	    return($fullname,$seq_begin,$seq_end,$spike_seq);
 	  } 
 	else 
