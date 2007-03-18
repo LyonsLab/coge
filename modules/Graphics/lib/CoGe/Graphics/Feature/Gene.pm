@@ -14,6 +14,7 @@ BEGIN {
 "print_label", #flag for printing feature label in gene
 "add_type", #flag to set if gene type should be appended to label
 "no_three_D", #switch between flat images and "3D" images, if given value, use flat images
+"arrow_width", #width of arrow in pixels
 );
 }
 
@@ -98,31 +99,31 @@ sub _post_initialize
 	my $y1 = $c-$bh;
 	my $y2 = $c+$bh;
 	my $gray_lvl = 15 || $opts{gray_lvl};
-	unless ($self->no_three_D)
-	{
-	  my @colors = $gd->rgb($color);
-	  my ($r, $g, $b) = ($colors[0],$colors[1],$colors[2]);
-	  if ($r -75 >= 0)
-	     {$r -= 75;}
-	  if ($g - 75 >= 0)
-	     {$g -= 75;}
-	  if ($b -75 >= 0)
-	     {$b -= 75;}
-	  $self->_make_3d(r=>$r, g=>$g, b=>$b, x1=>$x1, x2=>$x2, y1=>$y1, y2=>$y2, gray_lvl=>$gray_lvl);
-	}
-	else {
-	 $gd->filledRectangle($x1,$y1, $x2, $y2, $color);}
-	#$gd->filledRectangle($x1,$y1, $x2, $y2, $black);
-	$gd->rectangle($x1,$y1, $x2, $y2, $border);
-	#$gd->rectangle($x1,$y1, $x2, $y2, $black);
-	$gd->setStyle($black, $black, $black, GD::gdTransparent, GD::gdTransparent);
-	if ($last)
+	if (!$self->no_three_D)
 	  {
-	    my $mid = ($x1-$last)/2+$last;
-	    $gd->line($last, $y1, $mid, 0, GD::gdStyled);
-	    $gd->line($mid, 0, $x1, $y1, GD::gdStyled);
+	    my @colors = $gd->rgb($color);
+	    my ($r, $g, $b) = ($colors[0],$colors[1],$colors[2]);
+	    if ($r -75 >= 0)
+	      {$r -= 75;}
+	    if ($g - 75 >= 0)
+	      {$g -= 75;}
+	    if ($b -75 >= 0)
+	      {$b -= 75;}
+	    $self->_make_3d(r=>$r, g=>$g, b=>$b, x1=>$x1, x2=>$x2, y1=>$y1, y2=>$y2, gray_lvl=>$gray_lvl);
 	  }
-	$last = $x2;
+	else 
+	  {
+	    $gd->filledRectangle($x1,$y1, $x2, $y2, $color);
+	  }
+	$gd->rectangle($x1,$y1, $x2, $y2, $border);
+	#$gd->setStyle($black, $black, $black, GD::gdTransparent, GD::gdTransparent);
+	#if ($last)
+	#  {
+	#    my $mid = ($x1-$last)/2+$last;
+	#    $gd->line($last, $y1, $mid, 0, GD::gdStyled);
+	#    $gd->line($mid, 0, $x1, $y1, GD::gdStyled);
+	#xs  }
+	#$last = $x2;
       }
 
     my $x = $self->draw_arrow;
@@ -147,7 +148,9 @@ sub draw_arrow
     
     
     my $gray_lvl = 15;
-    my $arrow_width = $self->ih*4;
+    my $arrow_width = $self->arrow_width;
+    $arrow_width = ($self->stop-$self->start)/10 if (!$arrow_width && $self->start && $self->stop);
+    $arrow_width = $self->ih*6 unless $arrow_width;
     $arrow_width = $w if $arrow_width > $w;
 #    print STDERR "Arrowhead: X: $x, width: $arrow_width\n";
     my $arrow_end;
