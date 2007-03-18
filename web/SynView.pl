@@ -246,6 +246,7 @@ sub Show_Summary
 	$hsp_limit,
 	$hsp_limit_num,
 	$blast_program,
+        $show_hsps_with_stop_codon,
 
         $hsp1r,
         $hsp1g,
@@ -528,6 +529,7 @@ sub Show_Summary
 							 color_hsp=>$color_hsp,
 							 hsp_colors=>\@hsp_colors,
 							 spike_sequence=>$spike_seq,
+							 show_hsps_with_stop_codon => $show_hsps_with_stop_codon,
 							);
 #	    print STDERR $map;
 	    $html .= qq!<div>$accn!;
@@ -629,6 +631,7 @@ sub generate_image
     my $hsp_limit_num = $opts{hsp_limit_num};
     my $eval_cutoff = $opts{eval_cutoff};
     my $hsp_colors = $opts{hsp_colors};
+    my $show_hsps_with_stop_codon = $opts{show_hsps_with_stop_codon};
     my $graphic = new CoGe::Graphics;
     my $gfx = new CoGe::Graphics::Chromosome;
     $gfx->overlap_adjustment(0);
@@ -663,7 +666,7 @@ sub generate_image
     $gfx->add_feature($f2);
     $graphic->process_nucleotides(c=>$gfx, seq=>$gbobj->{SEQUENCE}, layers=>{gc=>$show_gc});
     process_features(c=>$gfx, obj=>$gbobj, start=>$start, stop=>$stop);
-    process_hsps(c=>$gfx, data=>$data, accn=>$gbobj->{ACCN}, rev=>$reverse_image, seq_length=> length($gbobj->{SEQUENCE}), stagger_label=>$stagger_label, hsp_limit=>$hsp_limit, hsp_limit_num=>$hsp_limit_num, gbobj=>$gbobj, spike_seq=>$spike_seq, eval_cutoff=>$eval_cutoff, color_hsp=>$color_hsp, colors=>$hsp_colors);
+    process_hsps(c=>$gfx, data=>$data, accn=>$gbobj->{ACCN}, rev=>$reverse_image, seq_length=> length($gbobj->{SEQUENCE}), stagger_label=>$stagger_label, hsp_limit=>$hsp_limit, hsp_limit_num=>$hsp_limit_num, gbobj=>$gbobj, spike_seq=>$spike_seq, eval_cutoff=>$eval_cutoff, color_hsp=>$color_hsp, colors=>$hsp_colors, show_hsps_with_stop_codon=>$show_hsps_with_stop_codon);
     my $file = new File::Temp ( TEMPLATE=>'SynView__XXXXX',
 				   DIR=>$TEMPDIR,
 				    SUFFIX=>'.png',
@@ -786,6 +789,7 @@ sub process_hsps
     my $eval_cutoff = $opts{eval_cutoff};
     my $color_hsp = $opts{color_hsp};
     my $colors = $opts{colors};
+    my $show_hsps_with_stop_codon = $opts{show_hsps_with_stop_codon};
     #to reverse hsps when using genomic sequences from CoGe, they need to be drawn on the opposite strand than where blast reports them.  This is because CoGe::Graphics has the option of reverse drawing a region.  However, the sequence fed into blast has already been reverse complemented so that the HSPs are in the correct orientation for the image.  Thus, if the image is reverse, they are drawn on the wrong strand.  This corrects for that problem.   Sorry for the convoluted logic, but it was the simplest way to substantiate this option
     my $i = 0;
     my $track = 2;
@@ -826,7 +830,7 @@ sub process_hsps
 	    my $color = $colors->[$i];
 	    my $skip = 0;
 #	    print STDERR Dumper $hsp;
-	    if ($hsp->qalign =~ /\*/ || $hsp->salign =~ /\*/)
+	    if (!$show_hsps_with_stop_codon && ($hsp->qalign =~ /\*/ || $hsp->salign =~ /\*/))
 	      {
 		for my $i (0..(length ($hsp->qalign)-1))
 		  {
@@ -999,6 +1003,7 @@ sub generate_seq_file
     my $spike_type = $options{spike_type};
     my $mask = $options{mask} || $options{mask_flag};
     my $mask_ncs = $options{mask_ncs};
+    my $t1 = new Benchmark;
     my ($file, $file_begin, $file_end, $spike_seq) = 
       write_fasta(
 		  GBOBJ=>$obj,
@@ -1020,7 +1025,9 @@ sub generate_seq_file
 	       file_begin=>$file_begin,
 	       file_end=>$file_end,
 	       );
-
+    my $t2 = new Benchmark;
+    my $time = timestr(timediff($t2,$t1));
+    print STDERR "Time to generate Sequence file:   $time\n";
     return ($file, $file_begin, $file_end, $spike_seq);
   }
 
@@ -1347,7 +1354,7 @@ sub write_fasta {
 		}
 		# other checks here?
 	}
-
+	my $t1 = new Benchmark;
 	my $tmp_file = new File::Temp ( TEMPLATE=>'SEQ__XXXXX',
 					DIR=>$options->{path},
 					SUFFIX=>'.fa',
@@ -1372,7 +1379,7 @@ sub write_fasta {
 	if ( $seq_end > length( $seq )) {
 		$seq_end = length($seq);
 	}
-	
+	my $t2 = new Benchmark;
 #	print STDERR "SEQ_BEGIN = $seq_begin\n";
 #	print STDERR "SEQ_END = $seq_end\n";
 #	print STDERR "SEQLEN = ", length( $seq ), "\n";
@@ -1387,6 +1394,7 @@ sub write_fasta {
 		$seq = $gbobj->mask_ncs( $seq );
 	}
 	($seq) = $gbobj->subsequence( $seq_begin, $seq_end, $seq );
+	my $t3 = new Benchmark;
 #	print STDERR Dumper $seq;
 #	print STDERR "SUBSEQLEN = ", length( $seq ), "\n";
 #	print STDERR "SUBSEQ = $seq\n";
@@ -1399,17 +1407,28 @@ sub write_fasta {
 			($seq,$spike_seq) = spike( $seq, $spikesize, $pair );
 		}
 	}
-
+	my $t4 = new Benchmark;
 	my $error = 0;
 	($error,$fullname) = check_filename_taint( $fullname );
 	if ( $error ) 
 	  {
-	    $seq = join ("\n", wrap('','',$seq));
+#	    $seq = join ("\n", wrap('','',$seq));
 	    open(OUT, ">$fullname") or die "Couldn't open $fullname!\n";
 	    print OUT "$hdr\n";
 	    print OUT "$seq\n";
 	    close(OUT);
 	    system "chmod +rw $fullname";
+	    my $t5 = new Benchmark;
+	    my $time1 = timestr(timediff($t2,$t1));
+	    my $time2 = timestr(timediff($t3,$t2));
+	    my $time3 = timestr(timediff($t4,$t3));
+	    my $time4 = timestr(timediff($t5,$t4));
+	    print STDERR qq{
+Time1: $time1
+Time2: $time2
+Time3: $time3
+Time4: $time4
+};
 	    return($fullname,$seq_begin,$seq_end,$spike_seq);
 	  } 
 	else 
