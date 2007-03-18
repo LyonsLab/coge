@@ -26,7 +26,6 @@ use CoGe::Graphics::Feature::HSP;
 use CoGeX;
 use CoGeX::Feature;
 use DBIxProfiler;
-use POSIX;
 #use Text::Wrap qw($columns &wrap);
 use Benchmark qw(:all);
 
