@@ -826,15 +826,17 @@ sub process_hsps
 		  }
 	      }
 	  }
+#	print STDERR Dumper $blast;
 	print STDERR $blast->query," ", $blast->subject,"\n" if $DEBUG;
 	foreach my $hsp (@{$blast->hsps})
 	  #	while (my $hsp = $blast->nextHSP)
 	  {
+#	    print STDERR Dumper $hsp;
 #	    print STDERR $hsp->qalign,"\n";
 	    next if defined $eval_cutoff && $hsp->eval > $eval_cutoff;
 	    my $color = $colors->[$i];
 	    my $skip = 0;
-#	    print STDERR Dumper $hsp;
+
 	    if (!$show_hsps_with_stop_codon && ($hsp->qalign =~ /\*/ || $hsp->salign =~ /\*/))
 	      {
 		for my $i (0..(length ($hsp->qalign)-1))
