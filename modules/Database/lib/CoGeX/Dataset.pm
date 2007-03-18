@@ -126,7 +126,7 @@ sub get_genomic_sequence {
 							   ],
 						     ],
 					      },
-					      {-order_by=>"start"}
+					      {order_by=>"start asc"}
 					     )->all;
     $str = join ("", map{$_->sequence_data} @seqs);  
     $str = $self->trim_sequence( $str, $seqs[0]->start, $seqs[-1]->stop, $from, $to );
