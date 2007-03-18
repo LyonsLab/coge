@@ -4,8 +4,37 @@ package CoGe::CoGeX;
 use strict;
 use Data::Dumper;
 use warnings;
+use base 'DBIx::Class::Schema';
 
-use base 'CoGeX';
+__PACKAGE__->load_classes qw(
+Feature
+Annotation
+FeatureList
+Image
+UserGroup
+AnnotationType
+FeatureListConnector
+Location
+UserGroupConnector
+AnnotationTypeGroup
+FeatureListGroup
+Organism
+UserGroupFeatureListPermissionConnector
+FeatureListGroupImageConnector
+Permission
+UserSession
+DataSource
+FeatureName
+Sequence
+Dataset
+FeatureType
+SequenceType
+GenomicSequence
+User
+);
+
+
+#use base 'CoGeX';
 
 use CoGe::CoGeX::Feature;
 use CoGe::CoGeX::Annotation;
@@ -36,9 +65,6 @@ use CoGe::CoGeX::User;
 use vars qw( $VERSION );
 
 $VERSION = 0.01;
-
-use base 'DBIx::Class::Schema';
-__PACKAGE__->load_classes;
 
 =head1 NAME
 
