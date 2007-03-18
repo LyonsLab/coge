@@ -233,9 +233,10 @@ sub get_genome_sequence
 sub trim_sequence {
   my $self = shift;
   my( $seq, $seqstart, $seqend, $newstart, $newend ) = @_;
+  
   my $start = $newstart-$seqstart;
-  my $stop = length($seq)-($seqend-$newend)-1;
-  $seq = substr($seq, $start, $stop-$start);
+  my $stop = length($seq)-($seqend-$newend);  
+  $seq = substr($seq, $start, $stop-$start+1);
   return($seq);
 }
 
