@@ -121,8 +121,8 @@ sub gen_body
 sub check_strand
 {
     my %opts = @_;
-    my $strand = $opts{'strand'};
-    my $rc = $opts{'rc'};
+    my $strand = $opts{'strand'} || 1;
+    my $rc = $opts{'rc'} || 0;
     #print STDERR Dumper \%opts;
     if ($rc==1)
       {
@@ -135,13 +135,13 @@ sub check_strand
             $strand = "-1";
           }
       }
-     elsif ($strand == "+")
-     {
-       $strand =~ s/^\+$/1/;
-     }
-     elsif ($strand == "-")
+     elsif ($strand =~ /-/)
      {
        $strand =~ s/^\-$/-1/;
+     }
+     else 
+     {
+       $strand =~ s/^\+$/1/;
      }
     return $strand;
 }
@@ -153,7 +153,7 @@ sub get_seq
     my $feat_id = $opts{'featid'} || 0;
     my $pro = $opts{'pro'};
     #my $pro = 1;
-    my $rc = $opts{'rc'};
+    my $rc = $opts{'rc'} || 0;
     my $chr = $opts{'chr'};
     my $dsid = $opts{'dsid'};
     my $feat_name = $opts{'featname'};
@@ -313,7 +313,7 @@ sub get_dna_seq_for_feat
     my %opts = @_;
     my $featid = $opts{featid};
     my $dsid = $opts{dsid};
-    my $rc = $opts{rc};
+    my $rc = $opts{rc} || 0;
     my $upstream = $opts{upstream};
     my $downstream = $opts{downstream};
     my $start = $opts{start};
@@ -425,7 +425,7 @@ sub color
 sub gen_title
     {
       my %opts = @_;
-      my $rc = $opts{'rc'};
+      my $rc = $opts{'rc'} || 0;
       my $pro = $opts{'pro'};
       my $title;
       unless ($pro)
@@ -468,7 +468,7 @@ sub new_foot
     my $chr = $opts{'chr'};
     my $dsid = $opts{'dsid'};
     my $feat_name = $opts{'featname'};
-    my $rc = $opts{'rc'};
+    my $rc = $opts{'rc'} || 0;
     my $pro = $opts{'pro'};
     my $upstream = $opts{'upstream'} || 0;
     my $downstream = $opts{'downstream'} || 0;
