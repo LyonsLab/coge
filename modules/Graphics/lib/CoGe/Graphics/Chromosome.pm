@@ -227,6 +227,7 @@ BEGIN {
 "_max_track", #place to store the maximum number of tracks on which to draw genomic features
 "benchmark", #stores a flag for printing benchmark information for image generation
 "invert_chromosome", #flag to draw the image in reverse so that the chromosome has been "flipped" 180 degrees
+"draw_hi_qual", #flag to draw high quality features on chromosome (but slower)
 #"start", "stop", #user defined start and stop.  Not sure if this is needed. . .
 );
 }
@@ -284,6 +285,7 @@ sub new
     $self->_features({});
     $self->_fill_features([]);
     $self->_image_h_used(0);
+    $self->draw_hi_qual(1);
     return $self;
 }
 
@@ -415,6 +417,9 @@ sub new
 
  skip_duplicate_features => flag for whether to skip two featrues if they are identical.  Default: 0
 
+ draw_hi_qual       =>  This flag determines if the high quality mapping function for drawing features
+                        on the chromosome is used or the low quality mapping.  The cost, of course, is 
+                        speed (roughly twice as long for high quality).  Default: 1
 
 =cut
 
@@ -1732,7 +1737,14 @@ sub _draw_features
 	  {
 	    $sy = $y-$feat_h*.25;
 	  }
-	$self->_draw_feature_slow(feat=>$feat, 'y'=>$y, ih=>$feat_h, 'sy'=>$sy);
+	if ($self->draw_hi_qual)
+	  {
+	    $self->_draw_feature_slow(feat=>$feat, 'y'=>$y, ih=>$feat_h, 'sy'=>$sy);
+	  }
+	else
+	  {
+	    $self->_draw_feature_fast(feat=>$feat, 'y'=>$y, ih=>$feat_h, 'sy'=>$sy);
+	  }
       }
   }
 
@@ -1972,8 +1984,8 @@ sub _draw_feature_fast
 	$adjust = $fw/10;
 	$fs+=$adjust;
       }
-    $size = $size*$feat->font_size if $size && $feat->font_size;
-
+#    $size = $size*$feat->font_size if $size && $feat->font_size;
+    $size = $feat->font_size if $feat->font_size;
     $self->_gd_string(y=>$sy, x=>$fs, text=>$feat->label, size=>$size) if ( ($self->feature_labels || $self->fill_labels)&& ($fw>5 || $feat->force_label)); #don't make the string unless the feature is at least 5 pixels wide
   }
 
