@@ -175,7 +175,7 @@ BEGIN {
     use vars qw($VERSION $DEFAULT_WIDTH $PADDING $DEFAULT_COLOR $MAX_MAG $MAG_SCALE_TYPE $CHR_MAG_HEIGHT $CHR_START_HEIGHT $CHR_INNER_COLOR $CHR_OUTER_COLOR $RULER_COLOR $TICK_COLOR $RULER_HEIGHT $FONT $FONTTT $NUM_MAG $FEATURE_START_HEIGHT $FEATURE_MAG_HEIGHT $FEATURE_HEIGHT $AUTO_ZOOM);
     $VERSION     = '0.1';
     $DEFAULT_WIDTH = 200;  #default image width pixels
-    $PADDING = 15; #default value to pad image height
+    $PADDING = 10; #default value to pad image height
     $CHR_MAG_HEIGHT = 30; #the amount to increase the height of the chromosome picture for each magnification (features increase half this height)
     $CHR_START_HEIGHT = 30; #initial height of the chromosome image in pixels before magnification is added
     $MAX_MAG = 10;     #default number of "units" (e.g. base pairs) to show when maximally zoomed)
@@ -1205,7 +1205,7 @@ sub generate_imagemap
 	print STDERR "!!",$anno,"\n" if $anno =~ /0004803/;
 	my $feat_height = $self->feature_height;#($self->feature_start_height+$self->feature_mag_height*$self->mag);
 	my $feat_h = $feat_height/$feat->_overlap;
-	my $offset = ($feat->order-1)*($feat_height+$self->padding/1.5)+$self->padding;
+	my $offset = ($feat->order-1)*($feat_height+$self->padding/1.5)+$self->padding/2;
 	$offset = 0 if $feat->fill;
 	$feat_h = ($self->_chr_height-$self->mag-1)/2 if $feat->fill;
 	my $y = $feat->strand =~ /-/ ? $c+ $offset+1+($feat_h)*($feat->_overlap_pos-1): $c - $offset-$feat_h*$feat->_overlap_pos;
@@ -1711,7 +1711,7 @@ sub _draw_features
 	  }
 	my $feature_height = $self->feature_height;#($self->feature_start_height+$self->feature_mag_height*$self->mag);
 	my $feat_h = $feature_height/$feat->_overlap;#*$feat->mag;
-	my $offset = ($feat->order-1)*($feature_height+$self->padding/1.5)+$self->padding;
+	my $offset = ($feat->order-1)*($feature_height+$self->padding/1.5)+$self->padding/2;
 	$offset = 0 if $feat->fill;
 	$feat_h = ($self->_chr_height-$self->mag-1)/2 if $feat->fill;
 	my $feat_mag_offset = ($feat_h*$feat->mag - $feat_h)/2;
