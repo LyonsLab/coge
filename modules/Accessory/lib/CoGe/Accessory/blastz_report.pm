@@ -450,20 +450,20 @@ sub parse_alignment
 	    my $qstop = $data[2];
 	    my $sstart = $data[1];
 	    my $sstop = $data[3];
-	    if ($self->seq1_info->strand =~ /-/)
-	      {
-		my $len = $self->seq1_info->length;
-		my $tmp = $qstart;
-		$qstart = ($len-$qstop+1);
-		$qstop  = ($len-$tmp+1);
-	      }
-	    elsif ($self->seq2_info->strand =~ /-/)
-	      {
-		my $len = $self->seq2_info->length;
-		my $tmp = $sstart;
-		$sstart = ($len-$sstop+1);
-		$sstop  = ($len-$tmp+1);
-	      }
+ 	    if ($self->seq1_info->strand =~ /-/)
+ 	      {
+ 		my $len = $self->seq1_info->length;
+ 		my $tmp = $qstart;
+ 		$qstart = ($len-$qstop+1);
+ 		$qstop  = ($len-$tmp+1);
+ 	      }
+ 	    elsif ($self->seq2_info->strand =~ /-/)
+ 	      {
+ 		my $len = $self->seq2_info->length;
+ 		my $tmp = $sstart;
+ 		$sstart = ($len-$sstop+1);
+ 		$sstop  = ($len-$tmp+1);
+ 	      }
 	    my $seg = new CoGe::Accessory::blastz_report::segment({number=>$seg_count++, 
 								   query_start=>$qstart,
 								   query_stop=>$qstop,
@@ -488,7 +488,7 @@ sub parse_alignment
     elsif ($self->seq2_info->strand =~ /-/)
       {
 	$strand = "+-";
-	my $len = $self->seq2_info->length;#$hsp->subject_stop-$hsp->subject_start+1;
+	my $len = $self->seq2_info->length;
 	my $tmp = $hsp->subject_start;
 	$hsp->subject_start($len-$hsp->subject_stop+1);
 	$hsp->subject_stop($len-$tmp+1);
@@ -530,45 +530,48 @@ sub parse_sequences
 	my $len = $#{$hsp->segments};
 	foreach my $seg (sort {$a->qstart <=> $b->qstart} @{$hsp->segments})
 	  {
+
 	    my $length = $seg->query_stop-$seg->query_start+1;
 	    $seg->length($length);
 	    my $seg1 = substr($seq1, $seg->query_start-1, $length);
 	    $seg->query_alignment($seg1);
 	    my $seg2 = substr($seq2, $seg->subject_start-1, $length);
 	    $seg->subject_alignment($seg2);
-	    
-	    if ($hsp->strand =~ /-/ && $seg2)
-	      {
-		$seg2 = reverse($seg2);
-		$seg2 =~ tr/ATCG/TAGC/;
-		if ($seq_2)
-		  {
-		    $seq_2 = $seg2.$seq_2;
-		  }
-		else
-		  {
-		    $seq_2 = $seg2;
-		  }
-	      }
-	    else
-	      {
+#	    print STDERR $seg->query_start,"-", $seg->query_end,"(",$seg->query_end- $seg->query_start,")\t";
+#	    print STDERR $seg->subject_start,"-", $seg->subject_end,"(",$seg->subject_end- $seg->subject_start,")\n";
+ 	    if ($hsp->strand =~ /-/ && $seg2)
+ 	      {
+# 		$seg2 = reverse($seg2);
+# 		$seg2 =~ tr/ATCG/TAGC/;
+ 		if ($seq_2)
+ 		  {
+ 		    $seq_2 = $seg2.$seq_2;
+ 		  }
+ 		else
+ 		  {
+ 		    $seq_2 = $seg2;
+ 		  }
+ 	      }
+ 	    else
+ 	      {
 		$seq_2 .= $seg2;
 	      }
 	    $send = $seg->subject_stop;
 	    $seq_1 .= $seg1;
 	    $qend = $seg->query_stop;
-	    $i++;
-	    my $sindex = $hsp->strand=~ /-/ ? $#{$hsp->segments} : 0;
-	    my $gap1 = $hsp->segments->[$i+1]->query_start-$hsp->segments->[$i]->query_end-1 if $hsp->segments->[$i+1];
-#	    print STDERR "qgap: ", $hsp->segments->[$i+1]->query_start,"-",$hsp->segments->[$i]->query_end,"::",$gap1,"\n" unless $i+1>$len;
 	    my $qi = $i;
 	    my $qi1 = $i+1;
 	    if ($hsp->strand =~ /-/)
 	      {
 		$qi = $len-$i;
-		$qi1 = $qi-1;
+		$qi1 = $qi-1;		
 	      }
-	    my $gap2 = $hsp->segments->[$qi1]->subject_start-$hsp->segments->[$qi]->subject_end-1 if $hsp->segments->[$qi1];
+#	    print STDERR "i: $i, qi: $qi, qi1: $qi1\n";
+	    my $gap1 = $hsp->segments->[$i+1]->query_start-$hsp->segments->[$i]->query_end-1 if $hsp->segments->[$i+1];
+	    my $gap2 = $hsp->segments->[$qi1]->subject_start-$hsp->segments->[$qi]->subject_end-1 if $hsp->segments->[$qi1] && $qi1 >= 0;
+#	    print STDERR "\tqgap: ", $hsp->segments->[$i+1]->query_start,"-",$hsp->segments->[$i]->query_end,"::",$gap1,"\n" unless $i+1>$len;
+#	    print STDERR "\tsgap: ", $hsp->segments->[$qi1]->subject_start,"-",$hsp->segments->[$qi]->subject_end,"::",$gap2,"\n" if $hsp->segments->[$qi1] && $qi1 >=0;
+
 	    my ($qadd, $sadd);
 	    if($gap1 && $i <= $len)
 	      {
@@ -576,30 +579,42 @@ sub parse_sequences
 		$sadd = "-"x$gap1;
 		$sgap += $gap1;
 	      }
-	    elsif ($gap2 && $qi)
+	    if ($gap2 && $qi1 >=0 )
 	      {
 		$sadd = substr($seq2, $hsp->segments->[$qi]->subject_stop, $hsp->segments->[$qi1]->subject_start-$hsp->segments->[$qi]->subject_end-1);
 		$qadd = "-"x$gap2;
 		$qgap += $gap2;
 	      }
-#	    print STDERR "sgap: ", $hsp->segments->[$qi1]->subject_start,"-",$hsp->segments->[$qi]->subject_end,"::",$gap2,"\n" if $hsp->segments->[$qi1];
+
 	    $seq_1 .= $qadd if $qadd;
-	    if ($hsp->strand =~ /-/ && $sadd)
-	      {
+ 	    if ($hsp->strand =~ /-/ && $sadd)
+ 	      {
 		
-		$sadd = reverse($sadd);
-		$sadd =~ tr/ATCG/TAGC/;
-		$seq_2 = $sadd.$seq_2;
-	      }
-	    else
-	      {
-		$seq_2 .= $sadd if $sadd;
-	      }
+# 		$sadd = reverse($sadd);
+# 		$sadd =~ tr/ATCG/TAGC/;
+ 		$seq_2 = $sadd.$seq_2;
+ 	      }
+ 	    else
+ 	      {
+ 		$seq_2 .= $sadd if $sadd;
+ 	      }
+#	    print STDERR ($seq_1),"\n";
+#	    print STDERR ( $seq_2),"\n";
+	    $i++;
 	  }
+ 	if ($hsp->strand =~ /-/)
+ 	  {
+ 	    $seq_2 = reverse($seq_2);
+ 	    $seq_2 =~ tr/ATCG/TAGC/;
+
+ 	  }
 	my $length = length($seq_1) > length($seq_2) ? length($seq_1) : length($seq_2);
 	foreach my $i (0..$length-1)
 	  {
-	    my $aln = (substr($seq_1, $i, 1) eq substr ($seq_2, $i, 1)) ? "|" : " ";
+	    my $chr1 = substr($seq_1, $i, 1);
+	    my $chr2 = substr ($seq_2, $i, 1);
+	    exit unless ($chr1 && $chr2);
+	    my $aln = ( $chr1 eq $chr2 ) ? "|" : " ";
 	    $align .= $aln;
 	  }
 	    #$seg->alignment($aln);
