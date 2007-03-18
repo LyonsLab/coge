@@ -7,6 +7,7 @@
  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
 </HEAD>
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/kaj.stable.js"></SCRIPT>
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.js"></SCRIPT>
 <script language="JavaScript" type="text/javascript" src="/CoGe/js/menu.js"></script>
 <SCRIPT language="JavaScript">
 function submitform() {
@@ -129,6 +130,13 @@ function rev_locs (val) {
   kaj.GS('dr'+val+'up', down);
   kaj.GS('dr'+val+'down', up);
 }
+
+function check_blast_program (){
+var s = document.getElementById('blast_program')
+var selectedOption = s[s.selectedIndex]
+var sval = selectedOption.value
+ }
+
 </SCRIPT>
 
 
@@ -205,6 +213,7 @@ onClick="loading([], ['results']); run([
 	'hsp_limit',
 	'hsp_limit_num',
 	'blast_program',
+	'show_hsps_with_stop_codon',
         'hsp1r',
         'hsp1g',
         'hsp1b',
@@ -500,7 +509,7 @@ onClick="loading([], ['results']); run([
       <TABLE>
   <TR>
   <TD>Blast Program: </TD>
-  <TD><select class="backbox" id="blast_program" size="1">
+  <TD><select class="backbox" id="blast_program" size="1" onchange='check_blast_program()'>
        <option selected>blastn</option>
        <option>tblastx</option>
        <option>blastz</option>
@@ -532,7 +541,9 @@ onClick="loading([], ['results']); run([
  <TR>
   <TD>Other Blast Parameters: </TD>
   <TD><input class="backbox" type="text" name="blastparams" id="blastparams" tabindex="1" size="60" /></TD>
- </TR>         </TABLE>
+ </TR>         
+ <TR><TD><DIV id="show_hsps"><input type="hidden" id="show_hsps_with_stop_codon" value=0></DIV>
+</TABLE>
      </table>
      <span class="subItem"></span>
      <span class="subItem"></span>
@@ -803,6 +814,7 @@ onClick="loading([], ['results']);run([
 	'hsp_limit',
 	'hsp_limit_num',
 	'blast_program',
+	'show_hsps_with_stop_codon',
         'hsp1r',
         'hsp1g',
         'hsp1b',
