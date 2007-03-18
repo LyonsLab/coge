@@ -2,14 +2,13 @@ package CoGe::CoGeX::Feature;
 
 use strict;
 use warnings;
-
 use base 'CoGeX::Feature';
 
 sub feat_type
   {
     my $self = shift;
     return $self->feature_type();
-}
+  }
 
 sub type
   {
@@ -17,7 +16,6 @@ sub type
     return $self->feature_type();
   }
 
-##legacy table, now stored in dataset
 sub organism
   {
     my $self = shift;
@@ -319,10 +317,16 @@ See Also   :
 sub begin_location
   {
     my $self = shift;
-    my @locs = $self->locs;
-    return unless scalar (@locs);
-    my ($val) = sort {$a->begin <=> $b->begin} @locs;
-    return $val->begin;
+    my ($loc) =  $self->locations({},
+				  {
+				   order_by=>'start asc',
+				   limit=>1,
+				  });
+    return $loc->start;
+#    my @locs = $self->locs;
+#    return unless scalar (@locs);
+#    my ($val) = sort {$a->begin <=> $b->begin} @locs;
+#    return $val->begin;
   }
 
 ################################################ subroutine header begin ##
@@ -630,8 +634,6 @@ sub has_genomic_sequence
   }
 
 
-}
-
 ################################################ subroutine header begin ##
 
 =head2 protein_sequence
@@ -827,9 +829,6 @@ See Also   :
 =cut
 
 ################################################## subroutine header end ##
-
-
-1; #this line is important and will help the module return a true value
 
 
 
