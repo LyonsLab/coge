@@ -50,8 +50,8 @@ function get_types_chain (val1, val2) {
  get_types(['accn_select', 'dsid'],[get_anno_chain]);	
 }
 
-function get_anno_chain (val1, val2) {
- kaj.GS('anno','<font class="loading">Loading. . .</font>');	
+function get_anno_chain (val1, val2) {	
+kaj.GS('anno','<font class="loading">Loading. . .</font>');
  if (val1) {kaj.GS('FeatType', val1)};
 // if (val2) {kaj.GS('FT_title', "Type Name");}
  as = kaj.G('accn_select');
