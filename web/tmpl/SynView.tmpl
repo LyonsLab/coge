@@ -210,6 +210,7 @@ onClick="loading([], ['results']); run([
 	'color_hsp',
 	'hsp_labels',
 	'overlap_adjustment',
+	'hiqual',
 	'hsp_limit',
 	'hsp_limit_num',
 	'blast_program',
@@ -598,7 +599,7 @@ onClick="loading([], ['results']); run([
   </Td>
   <TD>
     <DIV class="small">
-	<input class="backbox" type="text" name="ih" id="ih" tabindex="1"  size="10" value="150" />
+	<input class="backbox" type="text" name="ih" id="ih" tabindex="1"  size="10" value="100" />
     </DIV>
   </TD>
 
@@ -611,30 +612,14 @@ onClick="loading([], ['results']); run([
   </Td>
   <TD>
     <DIV class="small">
-	<input class="backbox" type="text" name="feat_h" id="feat_h" tabindex="1"  size="10" value="20" />
+	<input class="backbox" type="text" name="feat_h" id="feat_h" tabindex="1"  size="10" value="15" />
     </DIV>
   </TD>
 
  </TR>
  <TR>
   <Td>
-<font class="small">Color GC content? (green=GC, orange=N) <label><input class="backbox" type="radio" name="show_gc" id="show_gc" tabindex="1" value="1" />Yes</label><label><input class="backbox" type="radio" name="show_gc" id="show_gc" tabindex="1" value="0" checked />No</label></font>
-    </DIV>
-  </TD>
- <TR>
-  <Td>
-<font class="small">Color Matches in HSPs?<label><input class="backbox" type="radio" name="color_hsp" id="color_hsp" tabindex="1" value="1" />Yes</label><label><input class="backbox" type="radio" name="color_hsp" id="color_hsp" tabindex="1" value="0" checked />No</label></font>
-    </DIV>
-  </TD>
-
- <TR>
-  <Td>
-<font class="small">HSP Label options: <label><input class="backbox" type="radio" name="hsp_labels" id="hsp_labels" tabindex="1" value="0" />Don't draw</label><label><input class="backbox" type="radio" name="hsp_labels" id="hsp_labels" tabindex="1" value="staggered" checked />Draw Staggered</label><label><input class="backbox" type="radio" name="hsp_labels" id="hsp_labels" tabindex="1" value="linear" />Draw Linear</label></font>
-    </DIV>
-  </TD>
- <TR>
-  <Td>
-<font class="small">Limit HSP labels? <label><input class="backbox" type="radio" name="hsp_limit" id="hsp_limit" tabindex="1" value="1" />Yes</label> <label><input class="backbox" type="radio" name="hsp_limit" id="hsp_limit" tabindex="1" value="0" checked />No</label> Show Top: <input class=backbox type=textbox size=3 id="hsp_limit_num" value="20"/></font>
+<font class="small">Color GC content: green=GC, orange=N? (SLOW) <label><input class="backbox" type="radio" name="show_gc" id="show_gc" tabindex="1" value="1" />Yes</label><label><input class="backbox" type="radio" name="show_gc" id="show_gc" tabindex="1" value="0" checked />No</label></font>
     </DIV>
   </TD>
  <TR>
@@ -642,14 +627,32 @@ onClick="loading([], ['results']); run([
 <font class="small">Auto adjust overlapping features? <label><input class="backbox" type="radio" name="overlap_adjustment" id="overlap_adjustment" tabindex="1" value="1" checked />Yes</label><label><input class="backbox" type="radio" name="overlap_adjustment" id="overlap_adjustment" tabindex="1" value="0" />No</label></font>
     </DIV>
   </TD>
-
-
+ <TR>
+  <TD>
+  <font class="small">Draw high-quality images? (few seconds slower) <label><input class="backbox" type="radio" name="hiqual" id="hiqual" tabindex="1" value="1" />Yes</label><label><input class="backbox" type="radio" name="hiqual" id="hiqual" tabindex="1" value="0" checked />No</label></font>
  </TR>
 </TABLE>
 <td width="3" bgcolor="#99FF99">
 <td valign =top>
  <table>
+ <TR>
+  <Td>
+<font class="small">Color Matches in HSPs?<label><input class="backbox" type="radio" name="color_hsp" id="color_hsp" tabindex="1" value="1" />Yes</label><label><input class="backbox" type="radio" name="color_hsp" id="color_hsp" tabindex="1" value="0" checked />No</label></font>
+  </TD>
+
+ <TR>
+  <Td>
+<font class="small">HSP Label options: <label><input class="backbox" type="radio" name="hsp_labels" id="hsp_labels" tabindex="1" value="0" />Don't draw</label><label><input class="backbox" type="radio" name="hsp_labels" id="hsp_labels" tabindex="1" value="staggered" checked />Draw Staggered</label><label><input class="backbox" type="radio" name="hsp_labels" id="hsp_labels" tabindex="1" value="linear" />Draw Linear</label></font>
+  </TD>
+ <TR>
+  <Td>
+<font class="small">Limit HSP labels? <label><input class="backbox" type="radio" name="hsp_limit" id="hsp_limit" tabindex="1" value="1" />Yes</label> <label><input class="backbox" type="radio" name="hsp_limit" id="hsp_limit" tabindex="1" value="0" checked />No</label> Show Top: <input class=backbox type=textbox size=3 id="hsp_limit_num" value="20"/></font>
+  </TD>
+ <TR>
   <tr>
+   <td class="small">
+    <table>
+     <tr>
    <td class="small">
      HSP 1 color:
    <TD class="small">
@@ -676,6 +679,7 @@ onClick="loading([], ['results']); run([
      G:<input class="backbox" type="text" name="hsp3g" id="hsp3g" tabindex="1"  size="3" value="100" />
    <TD class="small">
      B:<input class="backbox" type="text" name="hsp3b" id="hsp3b" tabindex="1"  size="3" value="100" />
+   </table>
   <tr>
    <TD> <font class="small">Preset colors: <label><input class="backbox" type="radio" name="hspcolor" onClick="set_hsp_colors('default');"/>Default</label><label><input class="backbox" type="radio" name="hspcolor" onClick="set_hsp_colors('cblind');"/>Color blind</label><label><input class="backbox" type="radio" name="hspcolor" onClick="set_hsp_colors('fire');"/>Fire</label><label><input class="backbox" type="radio" name="hspcolor" onClick="set_hsp_colors('rasta');"/>Rasta</label></font>
   </table>
@@ -811,6 +815,7 @@ onClick="loading([], ['results']);run([
 	'color_hsp',
 	'hsp_labels',
 	'overlap_adjustment',
+        'hiqual',
 	'hsp_limit',
 	'hsp_limit_num',
 	'blast_program',
