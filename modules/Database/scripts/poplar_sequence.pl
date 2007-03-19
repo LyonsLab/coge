@@ -32,39 +32,45 @@ $s->storage->debug(0);
 #
 #my $did = $org->next()->dataset_id;
 
-print "\n";
-my $rs = $s->resultset('Feature')->esearch(
+my $rs = $s->resultset('Feature')->search(
         { 
             'me.dataset_id' => 505,
-            'feature_names.name' =>  {like => '%proteinId%'},
-            'feature_type.name' => 'CDS'
+            'feature_names.description' =>  'poplar_gene_name',
         },
         {
-            #-group_by => ['feature_names.name'], 
-            join => 'feature_names'
+            prefetch => ['feature_names','dataset'],
+            order_by => 'me.feature_id'
         });
-
 
 my $currentpid = '';
 my $sequence = "";
 my $currentgene = 0;
 my $pid = 1;
 
+my %seen;
 while( my $feat = $rs->next()){
     my $chrnum = $cmap{$feat->chromosome};
-    my $name = ($feat->names())[0];
-    $sequence = $feat->genome_sequence();
+    my ($name) = map { $_->name }
+        grep { $_->description eq 'poplar_gene_name' } $feat->feature_names();
+    next if $seen{$name};
+    $seen{$name} = 1;
+    #print $name . "\t" . $chrnum . "\n";
+    my $featset = $s->resultset('Feature')->esearch({
+            'me.dataset_id' => 505,
+            'feature_names.name' => $name
+        },{ join => 'feature_names' });
+    my @thisfeats;
+    while (my $f = $featset->next()){
+        push(@thisfeats,$f);
+    }
+    @thisfeats = sort { $a->start <=> $b->start } @thisfeats;
+    my $sequence = '';
+    map { $sequence .= $_->genomic_sequence() } @thisfeats;
+    my $fh = $FH{$chrnum};
 
-    my $genenum = "0" x (6 - length($currentgene)) . $currentgene;
 
-    my $fh = *STDOUT; # $FH{$chrnum};
-
-    my $gname = "P" . $chrnum . "G" .  $genenum;
-
-    #$feat->feature_na
-    print $fh ">",$gname , "\n";
-    print $feat->feature_type->name . "\n";
-    print $fh length($sequence), "\n\n";
-    ++$currentgene;
+    print $fh ">",$name , "\n";
+    #print $feat->feature_type->name . "\n";
+    print $fh $sequence, "\n\n";
 
 }
