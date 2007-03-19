@@ -82,7 +82,6 @@ sub get_genomic_sequence {
   my $chr = $opts{chr} || $opts{chromosome};
   my $skip_length_check = $opts{skip_length_check} || 0;
   my $str = "";
-
   if ( @_ > 1 ) {     
     my($chromosome, $from, $to);
     if (defined $start && defined $stop && defined $chr)
@@ -106,7 +105,7 @@ sub get_genomic_sequence {
 
     # make sure two numbers were sent in
     return undef unless ($from =~ /\A\d+\z/ and  $to =~ /\A\d+\z/);
-    return undef unless $to > $from;
+    return undef unless $to >= $from;
     my @seqs = $self->genomic_sequences(
 					      {chromosome=>$chromosome,
 					       -and=>[
@@ -166,14 +165,14 @@ sub get_genomic_sequence_old {
       {
  	($chromosome, $from, $to) = @_;
       }
-        
+
     $chromosome = "1" unless defined $chromosome;
     my $last = $self->last_chromosome_position($chromosome);
     $from = 1 if $from < 1;
     $to = $last if $to > $last;
     # make sure two numbers were sent in
     return undef unless ($from =~ /\A\d+\z/ and  $to =~ /\A\d+\z/);
-    return undef unless $to > $from;
+    return undef unless $to >= $from;
     my $g1 = $self->genomic_sequences(
                       {
                         'chromosome' => $chromosome,
@@ -235,7 +234,9 @@ sub trim_sequence {
   my( $seq, $seqstart, $seqend, $newstart, $newend ) = @_;
   
   my $start = $newstart-$seqstart;
-  my $stop = length($seq)-($seqend-$newend);  
+  my $stop = length($seq)-($seqend-$newend)-1;  
+#  print STDERR join ("\t", $seqstart, $seqend, $newstart, $newend),"\n";
+#  print STDERR join ("\t", length ($seq), $start, $stop, $stop-$start+1),"\n";
   $seq = substr($seq, $start, $stop-$start+1);
   return($seq);
 }
