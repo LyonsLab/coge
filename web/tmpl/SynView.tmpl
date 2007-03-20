@@ -96,17 +96,6 @@ function set_hsp_colors (type)
   
  }
 
-function update_distance (check, val) {
-  return;
-  check = get(check);
-  val = get(val);
-//  alert (check, val);
-  if (check.value == 0) { return; }
-  else {
-    alert(val);
-  }
-}
-
 function get(id){
     return document.getElementById(id);
 }
@@ -132,7 +121,9 @@ function rev_locs (val) {
 }
 
 function check_blast_program (){
-alert($("blast_program"));
+
+var blast = $("#blast_program").get;
+alert(blast);
 var s = document.getElementById('blast_program')
 var selectedOption = s[s.selectedIndex]
 var sval = selectedOption.value
