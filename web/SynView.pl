@@ -221,7 +221,7 @@ sub Show_Summary
     my $dsstart2 = $opts{dsstart2};
     my $dsstop2 = $opts{dsstop2};
     
-    my $seq3 = $opts{seq13};
+    my $seq3 = $opts{seq3};
     my $dscomp3 = $opts{dscomp3};
     my $dsstart3 = $opts{dsstart3};
     my $dsstop3 = $opts{dsstop3};
@@ -229,7 +229,7 @@ sub Show_Summary
     my $match_filter = $opts{matchfilter};
     my $spike_len = $opts{spike};
     my $mask_flag = $opts{mask};
-    my $mask_ncs_flag = $opts{maskncs};
+    my $mask_ncs_flag = $opts{maskcns};
     my $wordsize = $opts{word};
     my $gapopen = $opts{gapo};
     my $gapextend = $opts{gape};
@@ -246,7 +246,7 @@ sub Show_Summary
     my $hiqual = $opts{hiqual};
     my $hsp_limit = $opts{hsplim};
     my $hsp_limit_num = $opts{hsplimnum};
-    my $blast_program = $opts{blast};
+    my $blast_program = $opts{prog};
     my $show_hsps_with_stop_codon = $opts{showallhsps};
     
     my $hsp1r = $opts{h1r};
@@ -662,6 +662,7 @@ sub generate_image
 			    feature_labels=>$feature_labels,
 			    draw_hi_qual=>$hiqual,
 			   );
+    $gfx->major_tick_labels(0);
     my $f1= CoGe::Graphics::Feature->new({start=>1, order => 2, strand => 1});
     $f1->merge_percent(0);
     $gfx->add_feature($f1);
