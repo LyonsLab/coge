@@ -171,95 +171,95 @@ sub gen_body
 
 sub Show_Summary 
   {
-    my (
-	$accn1,
-	$featid1,
-	$dr1up,
-	$dr1down,
-	$infoid1,
-	$rev1,
-	
-	$accn2,
-	$featid2,
-	$dr2up,
-	$dr2down,
-	$infoid2,
-	$rev2,
-	
-	$accn3,
-	$featid3,
-	$dr3up,
-	$dr3down,
-	$infoid3,
-	$rev3,
-	
-	$gbaccn1,
-	$gb1start,
-	$gb1up,
-	$gb1down,
-	
+    my %opts = @_;
+    my $accn1 = $opts{accn1};
+    my $featid1 = $opts{featid1};
+    my $dr1up = $opts{up1};
+    my $dr1down = $opts{down1};
+    my $infoid1 = $opts{dsid1};
+    my $rev1 = $opts{rev1};
+    
+    my $accn2 = $opts{accn2};
+    my $featid2 = $opts{featid2};
+    my $dr2up = $opts{up2};
+    my $dr2down = $opts{down2};
+    my $infoid2 = $opts{dsid2};
+    my $rev2 = $opts{rev2};
+    
+    my $accn3 = $opts{accn3};
+    my $featid3 = $opts{featid3};
+    my $dr3up = $opts{up3};
+    my $dr3down = $opts{down3};
+    my $infoid3 = $opts{dsid3};
+    my $rev3 = $opts{rev13};
+    
+    my $gbaccn1 = $opts{gbaccn1};
+    my $gb1start = $opts{gb1start};
+    my $gb1up = $opts{gb1up};
+    my $gb1down = $opts{gb1down};
+    
+    
+    my $gbaccn2 = $opts{gbaccn2};
+    my $gb2start = $opts{gb2start};
+    my $gb2up = $opts{gb2up};
+    my $gb2down = $opts{gb2down};
+    
+    
+    my $gbaccn3 = $opts{gbaccn3};
+    my $gb3start = $opts{gb3start};
+    my $gb3up = $opts{gb3up};
+    my $gb3down = $opts{gb3down};
+    
+    
+    my $seq1 = $opts{seq1};
+    my $dscomp1 = $opts{dscomp1};
+    my $dsstart1 = $opts{dsstart1};
+    my $dsstop1 = $opts{dsstop1};
+    
+    my $seq2 = $opts{seq2};
+    my $dscomp2 = $opts{dscomp2};
+    my $dsstart2 = $opts{dsstart2};
+    my $dsstop2 = $opts{dsstop2};
+    
+    my $seq3 = $opts{seq13};
+    my $dscomp3 = $opts{dscomp3};
+    my $dsstart3 = $opts{dsstart3};
+    my $dsstop3 = $opts{dsstop3};
+    
+    my $match_filter = $opts{matchfilter};
+    my $spike_len = $opts{spike};
+    my $mask_flag = $opts{mask};
+    my $mask_ncs_flag = $opts{maskncs};
+    my $wordsize = $opts{word};
+    my $gapopen = $opts{gapo};
+    my $gapextend = $opts{gape};
+    my $mismatch = $opts{mmatch};
+    my $eval = $opts{eval};
+    my $blastparams = $opts{bp};
+    my $iw = $opts{iw};
+    my $ih = $opts{ih};
+    my $feat_h = $opts{fh};
+    my $show_gc = $opts{gc};
+    my $color_hsp = $opts{colorhsp};
+    my $hsp_label = $opts{hsplabel};
+    my $overlap_adjustment = $opts{overlap};
+    my $hiqual = $opts{hiqual};
+    my $hsp_limit = $opts{hsplim};
+    my $hsp_limit_num = $opts{hsplimnum};
+    my $blast_program = $opts{blast};
+    my $show_hsps_with_stop_codon = $opts{showallhsps};
+    
+    my $hsp1r = $opts{h1r};
+    my $hsp1g = $opts{h1g};
+    my $hsp1b = $opts{h1b};
+    my $hsp2r = $opts{h2r};
+    my $hsp2g = $opts{h2g};
+    my $hsp2b = $opts{h2b};
+    my $hsp3r = $opts{h3r};
+    my $hsp3g = $opts{h3g};
+    my $hsp3b = $opts{h3b};
 
-	$gbaccn2,
-	$gb2start,
-	$gb2up,
-	$gb2down,
-	
 
-	$gbaccn3,
-	$gb3start,
-	$gb3up,
-	$gb3down,
-	
-
-	$seq1,
-	$dscomp1,
-	$dsstart1,
-	$dsstop1,
-
-	$seq2,
-	$dscomp2,
-	$dsstart2,
-	$dsstop2,
-
-	$seq3,
-	$dscomp3,
-	$dsstart3,
-	$dsstop3,
-
-	$match_filter,
-	$spike_len,
-	$mask_flag,
-	$mask_ncs_flag,
-	$wordsize,
-	$gapopen,
-	$gapextend,
-	$mismatch,
-	$eval,
-	$blastparams,
-	$iw,
-	$ih,
-	$feat_h,
-	$show_gc,
-	$color_hsp,
-	$hsp_label,
-	$overlap_adjustment,
-	$hiqual,
-	$hsp_limit,
-	$hsp_limit_num,
-	$blast_program,
-        $show_hsps_with_stop_codon,
-
-        $hsp1r,
-        $hsp1g,
-        $hsp1b,
-        $hsp2r,
-        $hsp2g,
-        $hsp2b,
-        $hsp3r,
-        $hsp3g,
-        $hsp3b,
-
-       ) = @_;
     $spike_len = 0 unless $match_filter;
     my @hsp_colors;
     foreach my $set ([$hsp1r,$hsp1g,$hsp1b],[$hsp2r,$hsp2g,$hsp2b],[$hsp3r,$hsp3g,$hsp3b])
