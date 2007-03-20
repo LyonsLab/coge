@@ -1077,6 +1077,7 @@ sub generate_png
     my %opts = @_;
     my $file_name = $opts{file_name} || $opts{file} || $opts{filename};
     $self->generate_region();
+#    $self->gd->transparent();
     if ($file_name)
       {
 	open (OUT, ">$file_name") || die "Can't open $file_name for writing: $!";
@@ -1310,7 +1311,7 @@ sub gd
 	my ($wid, $hei) = ($self->image_width, $self->image_height);
 	$gd = new GD::Image($wid, $hei,[1]);
 	my $white = $gd->colorAllocate(255,255,255);
-#	$gd->transparent($white);
+	$gd->transparent($white);
 	$gd->interlaced('true');
 	$self->_gd($gd);
       }
