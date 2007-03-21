@@ -203,4 +203,15 @@ See Also   :
    }
 
 
+sub resolve_dataset : ResultSet {
+    my $self = shift;
+    my $info = shift;
+    return $info if ref($info) =~ /Dataset/i;
+    return $self->search({
+               '-or', { 'name' => { '-like' => '%' . $info . '%'} 
+                     , { 'dataset_id' => $info }
+                   }
+               }
+               ,{});
+}
 1;
