@@ -24,18 +24,19 @@ __PACKAGE__->add_columns(
 );
 __PACKAGE__->set_primary_key("organism_id");
 
-__PACKAGE__->has_many("data_information" => "CoGeX::Dataset", 'organism_id');
+__PACKAGE__->has_many("datasets" => "CoGeX::Dataset", 'organism_id');
 
-sub resolve_organism : ResultSet {
+sub resolve : ResultSet {
     my $self = shift;
     my $info = shift;
     return $info if ref($info) =~ /Organism/;
     return $self->search({
-               '-or', { 'name' => { '-like' => '%' . $info . '%'} 
-                     , { 'organism_id' => $info }
-                   }
-               }
-               ,{});
+			  '-or'=>[
+				  { 'name' => { '-like' => '%' . $info . '%'}}, 
+				  { 'organism_id' => $info }
+				 ],
+			 }
+			 ,{});
 }
 
 
