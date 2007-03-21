@@ -37,9 +37,6 @@ sub resolve_organism : ResultSet {
                }
                ,{});
 }
-sub resolve
-  {
-    shift->resolve_organism(@_);
-  }
+
 
 1;
