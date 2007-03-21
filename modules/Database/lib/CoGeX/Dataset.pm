@@ -215,8 +215,4 @@ sub resolve_dataset : ResultSet {
                ,{});
 }
 
-sub resolve
-  {
-    shift->resolve_dataset(@_);
-  }
 1;
