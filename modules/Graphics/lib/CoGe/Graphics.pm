@@ -12,19 +12,18 @@ use CoGe::Graphics::Feature::AminoAcid;
 use CoGe::Graphics::Feature::Domain;
 use CoGe::Graphics::Feature::Block;
 use CoGe::Genome;
+use CoGeX;
 use Data::Dumper;
 use Benchmark;
 use Carp;
 
-BEGIN {
-    use vars qw($VERSION $MAX_FEATURES $MAX_NT $DEBUG);
-    $VERSION     = '0.1';
-    __PACKAGE__->mk_accessors(
+use vars qw($VERSION $MAX_FEATURES $MAX_NT $DEBUG $BENCHMARK);
+$VERSION     = '0.1';
+__PACKAGE__->mk_accessors(
 "MAX_FEATURES",
 "MAX_NT",
 "DEBUG", 
 );
-}
 
 
 #################### subroutine header begin ####################
@@ -182,7 +181,7 @@ sub genomic_view
     my $chr_mag_height = $opts{'cmh'} || 5;
     my $feat_start_height = $opts{'fsh'} || 10;
     my $feat_mag_height = $opts{'fmh'} || 2;
-    my $BENCHMARK = $opts{'bm'} || 0;
+    $BENCHMARK = $opts{'bm'} || 0;
     my $fids = $opts{'fid'} || $opts{'fids'}; #used to highlight special features by their database id
     my $fnames = $opts{'fn'} || $opts{'fns'}|| $opts{'fnames'}; #used to highlight special features by their name
     my $forcefit = $opts{'forcefit'} || 0;
@@ -202,6 +201,10 @@ sub genomic_view
     my $t0 = new Benchmark if $BENCHMARK;
 
     #CoGe objects that we will need
+    my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
+    my $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
+    #$coge->storage->debugobj(new DBIxProfiler());
+    $coge->storage->debug(1);
     my $db = new CoGe::Genome;
     my $c = new CoGe::Graphics::Chromosome;
 
@@ -267,7 +270,6 @@ sub genomic_view
 						   forcefit=>$forcefit,
 						   feature_labels=>1,
 						  ) unless $c->chr_length;
-	
 	if ($c->chr_length)
 	  {
 	    $start = $tstart;
@@ -368,7 +370,6 @@ sub initialize_c
     my $draw_hi_qual = $opts{draw_hi_qual};
     $debug = 1 if $c->DEBUG;
     $draw_ruler = 1 unless defined $opts{draw_ruler};
-
     $chr_length = $db->get_genomic_sequence_obj->get_last_position(ds=>$ds, chr=>$chr) if $ds && !$chr_length;
     return unless $chr_length;
     $c->chr_length($chr_length);
@@ -445,10 +446,13 @@ sub process_nucleotides
     my $c = $opts{c};
 #    $seq = uc($db->get_genomic_sequence_obj->get_sequence(start=>$start, stop=>$stop, chr=>$chr, ds=>$ds)) unless $seq;
     my $layers = $opts{layers};
+    return unless $layers->{gc} || $layers->{nt} || $layers->{all};
 #    print STDERR Dumper $layers;
 #    print STDERR "IN $0: start: $start, stop: $stop\n";
     #process nucleotides
+    my $t7 = new Benchmark if $BENCHMARK;
     $seq = uc($db->get_genomic_sequence_obj->get_sequence(start=>$start, end=>$stop, chr=>$chr, dataset=>$ds)) unless $seq; 
+    my $t8 = new Benchmark if $BENCHMARK;
     my $seq_len = length $seq;
     my $chrs = int (($c->_region_stop-$c->_region_start)/$c->iw);
     $chrs = 1 if $chrs < 1;
@@ -480,6 +484,14 @@ sub process_nucleotides
 	$c->add_feature($f2) if $f2;
         $pos+=$chrs;
       }
+    my $t9 = new Benchmark if $BENCHMARK;
+    my $time1 = timestr(timediff($t8, $t7));
+    my $time2 = timestr(timediff($t9, $t8));
+    print STDERR qq{
+ Time to get nt seq              :  $time1
+ Time to process nt for graphics :  $time2
+} if $BENCHMARK;
+
     return $chrs;
   }
 
