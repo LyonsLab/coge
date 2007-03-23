@@ -6,7 +6,6 @@
  <link rel="stylesheet" type="text/css" href="/CoGe/css/sddm.css" />
  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
 </HEAD>
-<SCRIPT language="JavaScript" type="text/javascript" src="./js/kaj.stable.js"></SCRIPT>
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.js"></SCRIPT>
 <script language="JavaScript" type="text/javascript" src="/CoGe/js/menu.js"></script>
 <SCRIPT language="JavaScript">
@@ -21,25 +20,19 @@ function changeColor(id, color) {
   document.getElementById(id).style.color = color;
 }
 
-var txtboxes = ['dr1up','dr1down','dr2up','dr2down','dr3up','dr3down'];
-
 function setup(){
-   for(var k in txtboxes){
-       k = txtboxes[k];
-       var el = get(k);
-       el.onkeyup = function(){
-           var v = this.value;
-	   if(get('apply_all').checked){
-		   for(var k in txtboxes){
-		       k = txtboxes[k];
-		       get(k).value = v;
-		   }
-	   }
-	  }
-       }
-  if (kaj.GS('accn1')) {dataset_search(['accn1','args__1'],[feat_search_chain]);}
-  if (kaj.GS('accn2')) {dataset_search(['accn2','args__2'],[feat_search_chain]);}
-  if (kaj.GS('accn3')) {dataset_search(['accn3','args__3'],[feat_search_chain]);}
+
+$(".location").keyup(function(){
+     if($('#apply_all')[0].checked){
+        var self = this;
+        $('.location').val(self.value)
+     }
+});
+
+
+  if ($('#accn1').val()) {dataset_search(['accn1','args__1'],[feat_search_chain]);}
+  if ($('#accn2').val()) {dataset_search(['accn2','args__2'],[feat_search_chain]);}
+  if ($('#accn3').val()) {dataset_search(['accn3','args__3'],[feat_search_chain]);}
 }
 
 
@@ -47,88 +40,117 @@ function set_hsp_colors (type)
  {
   if (type == "rasta")
    {
-    kaj.GS('hsp1r',255)
-    kaj.GS('hsp1g',0)
-    kaj.GS('hsp1b',0)
-    kaj.GS('hsp2r',255)
-    kaj.GS('hsp2g',255)
-    kaj.GS('hsp2b',0)
-    kaj.GS('hsp3r',51)
-    kaj.GS('hsp3g',102)
-    kaj.GS('hsp3b',51)
+    $('#hsp1r').val(255)
+    $('#hsp1g').val(0)
+    $('#hsp1b').val(0)
+    $('#hsp2r').val(255)
+    $('#hsp2g').val(255)
+    $('#hsp2b').val(0)
+    $('#hsp3r').val(51)
+    $('#hsp3g').val(102)
+    $('#hsp3b').val(51)
    }
   else if (type == "cblind")
    {
-    kaj.GS('hsp1r',110)
-    kaj.GS('hsp1g',110)
-    kaj.GS('hsp1b',110)
-    kaj.GS('hsp2r',200)
-    kaj.GS('hsp2g',200)
-    kaj.GS('hsp2b',150)
-    kaj.GS('hsp3r',220)
-    kaj.GS('hsp3g',220)
-    kaj.GS('hsp3b',220)
+    $('#hsp1r').val(110)
+    $('#hsp1g').val(110)
+    $('#hsp1b').val(110)
+    $('#hsp2r').val(200)
+    $('#hsp2g').val(200)
+    $('#hsp2b').val(150)
+    $('#hsp3r').val(220)
+    $('#hsp3g').val(220)
+    $('#hsp3b').val(220)
    }
   else if (type == "fire")
    {
-    kaj.GS('hsp1r',255)
-    kaj.GS('hsp1g',0)
-    kaj.GS('hsp1b',0)
-    kaj.GS('hsp2r',255)
-    kaj.GS('hsp2g',125)
-    kaj.GS('hsp2b',0)
-    kaj.GS('hsp3r',255)
-    kaj.GS('hsp3g',255)
-    kaj.GS('hsp3b',0)
+    $('#hsp1r').val(255)
+    $('#hsp1g').val(0)
+    $('#hsp1b').val(0)
+    $('#hsp2r').val(255)
+    $('#hsp2g').val(125)
+    $('#hsp2b').val(0)
+    $('#hsp3r').val(255)
+    $('#hsp3g').val(255)
+    $('#hsp3b').val(0)
    }
   else 
    {
-    kaj.GS('hsp1r',150)
-    kaj.GS('hsp1g',150)
-    kaj.GS('hsp1b',255)
-    kaj.GS('hsp2r',100)
-    kaj.GS('hsp2g',255)
-    kaj.GS('hsp2b',100)
-    kaj.GS('hsp3r',255)
-    kaj.GS('hsp3g',100)
-    kaj.GS('hsp3b',100)
+    $('#hsp1r').val(150)
+    $('#hsp1g').val(150)
+    $('#hsp1b').val(255)
+    $('#hsp2r').val(100)
+    $('#hsp2g').val(255)
+    $('#hsp2b').val(100)
+    $('#hsp3r').val(255)
+    $('#hsp3g').val(100)
+    $('#hsp3b').val(100)
    }
   
  }
 
-function get(id){
-    return document.getElementById(id);
-}
-
-function feat_search_chain(val, num) {
- if (val) {
-  kaj.GS('source'+num, val);
+function feat_search_chain(stuff, num) {
+ if (stuff) {
+  $("#source"+num).html(stuff);
   feat_search(['accn'+num,'dsid'+num, 'args__'+num],['feat'+num]);
  }
-// else {
- //  alert(num);
- //  kaj.GS('source'+num,'<input type="hidden" id="dsid'+num+'">');
- //  kaj.GS('feat'+num,'<input type="hidden" id="featid'+num+'">');
-// }
 }
 
 //this func switching the "left" and "right" sequence values when reverse region display is selected
 function rev_locs (val) {
-  up = kaj.GS('dr'+val+'up');
-  down = kaj.GS('dr'+val+'down');
-  kaj.GS('dr'+val+'up', down);
-  kaj.GS('dr'+val+'down', up);
+  up = $('#'+'dr'+val+'up').val();
+  down = $('#'+'dr'+val+'down').val();
+  $('#'+'dr'+val+'up').val(down);
+  $('#'+'dr'+val+'down').val(up);
+
 }
 
 function check_blast_program (){
 
-var blast = $("#blast_program").get;
-alert(blast);
-var s = document.getElementById('blast_program')
-var selectedOption = s[s.selectedIndex]
-var sval = selectedOption.value
+var blast = $("#blast_program").val();
+if (blast == "blastz")
+ {
+  
+  $("#blast_options").hide();
+  $("#blastzinfo").show();
+ }
+else
+ {
+  $("#blast_options").show();
+  $("#blastzinfo").hide();	
+
+ }
+if (blast == "tblastx")
+ {
+  $("#wordsize").val(3);
+  $("#gapopen").val(11);
+  $("#gapextend").val(1);
+  $("#eval").val(10);
+  $("#mismatch").hide();
+  $("#tblastninfo").show();		
+ }
+else
+ {
+  $("#tblastninfo").hide();		
+ }
+if (blast == "blastn")
+ {
+  $("#wordsize").val(7);
+  $("#gapopen").val(5);
+  $("#gapextend").val(2);
+  $("#eval").val(100);
+  $("#mismatch").show();
+ }
  }
 
+
+$(document).ready(function(){
+
+check_blast_program();
+setup();
+// $("#blast_program").change(function(){alert("hi");});
+
+ });
 </SCRIPT>
 
 
@@ -138,21 +160,18 @@ onClick="loading([], ['results']); run([
 	'args__featid1', 'featid1', 
 	'args__up1', 'dr1up', 
 	'args__down1', 'dr1down', 
-	'args__dsid1', 'dsid1',
 	'args__rev1', 'rev_region1', 
 
 	'args__accn2', 'accn2', 
 	'args__featid2', 'featid2', 
 	'args__up2', 'dr2up', 
 	'args__down2', 'dr2down', 
-	'args__dsid2', 'dsid2',
 	'args__rev2', 'rev_region2', 
 
 	'args__accn3', 'accn3', 
 	'args__featid3', 'featid3', 
 	'args__up3', 'dr3up', 
 	'args__down3', 'dr3down', 
-	'args__dsid3', 'dsid3',
 	'args__rev3', 'rev_region3', 
 
 	'args__gbaccn1', 'gbaccn1', 
@@ -262,12 +281,12 @@ onClick="loading([], ['results']); run([
 	<font class="small">Reverse region display: <label><input class="backbox" type="radio" name="rev_region1" id="rev_region1" tabindex="1" value="1" <TMPL_VAR NAME=REV1_YES> onclick='rev_locs("1")' />Yes</label><label><input class="backbox" type="radio" name="rev_region1" id="rev_region1" tabindex="1" value="0" <TMPL_VAR NAME=REV1_NO> onclick='rev_locs("1")' />No</label></font>
       <TR>
        <TD><DIV class="small">Left sequence:</DIV>
-       <TD><DIV  id="up1" ><input class="backbox" type="text" name="dr1up" id="dr1up" tabindex="1" size="10" value="<TMPL_VAR NAME=DR1UP>" /> </DIV>
+       <TD><DIV  id="up1" ><input class="location" type="text" name="dr1up" id="dr1up" tabindex="1" size="10" value="<TMPL_VAR NAME=DR1UP>" /> </DIV>
       <TR>
        <TD><DIV class="small">Right sequence:</DIV>
-       <TD><DIV  id="down1"><input class="backbox" type="text" name="dr1down" id="dr1down" tabindex="1" size="10"  value="<TMPL_VAR NAME=DR1DOWN>" /></DIV>
+       <TD><DIV  id="down1"><input class="location" type="text" name="dr1down" id="dr1down" tabindex="1" size="10"  value="<TMPL_VAR NAME=DR1DOWN>" /></DIV>
       <TR>
-        <TD colspan =2><input type="checkbox" name="apply_all" id="apply_all" value="0" /><font class ="small" float>(Apply distance to all?)</font>
+        <TD colspan =2><input type="checkbox" name="apply_all" id="apply_all" value="0" /><font class ="small" float>Apply distance to all?</font>
       </TABLE>
       <TD>
       <TABLE>
@@ -281,10 +300,10 @@ onClick="loading([], ['results']); run([
 	<font class="small">Reverse region display: <label><input class="backbox" type="radio" name="rev_region2" id="rev_region2" tabindex="1" value="1" <TMPL_VAR NAME=REV2_YES> onclick='rev_locs("2")' />Yes</label><label><input class="backbox" type="radio" name="rev_region2" id="rev_region2" tabindex="1" value="0" <TMPL_VAR NAME=REV2_NO> onclick='rev_locs("2")'/>No</label></font>
        <TR>
        <TD><DIV class="small">Left sequence:</DIV>
-       <TD><DIV  id="up2" ><input class="backbox" type="text" name="dr2up" id="dr2up" tabindex="1" size="10" value="<TMPL_VAR NAME=DR2UP>" /></DIV>
+       <TD><DIV  id="up2" ><input class="location" type="text" name="dr2up" id="dr2up" tabindex="1" size="10" value="<TMPL_VAR NAME=DR2UP>" /></DIV>
       <TR>
        <TD><DIV class="small">Right sequence:</DIV>
-       <TD><DIV  id="down2" ><input class="backbox" type="text" name="dr2down" id="dr2down" tabindex="1" size="10"  value="<TMPL_VAR NAME=DR2DOWN>" /></DIV>
+       <TD><DIV  id="down2" ><input class="location" type="text" name="dr2down" id="dr2down" tabindex="1" size="10"  value="<TMPL_VAR NAME=DR2DOWN>" /></DIV>
       </TABLE>
       <TD>
       <TABLE>
@@ -298,10 +317,10 @@ onClick="loading([], ['results']); run([
 	<font class="small">Reverse region display: <label><input class="backbox" type="radio" name="rev_region3" id="rev_region3" tabindex="1" value="1" <TMPL_VAR NAME=REV3_YES> onclick='rev_locs("3")'/>Yes</label><label><input class="backbox" type="radio" name="rev_region3" id="rev_region3" tabindex="1" value="0" <TMPL_VAR NAME=REV3_NO> onclick='rev_locs("3")'/>No</label></font>
        <TR>
        <TD><DIV class="small">Left sequence:</DIV>
-       <TD><DIV  id="up3" ><input class="backbox" type="text" name="dr3up" id="dr3up" tabindex="1" size="10" value="<TMPL_VAR NAME=DR3UP>" /></DIV>
+       <TD><DIV  id="up3" ><input class="location" type="text" name="dr3up" id="dr3up" tabindex="1" size="10" value="<TMPL_VAR NAME=DR3UP>" /></DIV>
       <TR>
        <TD><DIV class="small">Right sequence:</DIV>
-       <TD><DIV  id="down3" ><input class="backbox" type="text" name="dr3down" id="dr3down" tabindex="1" size="10"  value="<TMPL_VAR NAME=DR3DOWN>" /></DIV>
+       <TD><DIV  id="down3" ><input class="location" type="text" name="dr3down" id="dr3down" tabindex="1" size="10"  value="<TMPL_VAR NAME=DR3DOWN>" /></DIV>
       </TABLE>
      </table>
      <span class="subItem"></span>
@@ -513,9 +532,7 @@ onClick="loading([], ['results']); run([
  <DIV id = "blast_options">
    <Table class=small>    
   <TR>
-   <td colspan =2 class=small>Note: parameters won't work with blastz
-  <TR>
-  <TD>Word Size (-W):<Br><font class="small">(limited to 3 if using tblastx)</font> </TD>
+  <TD>Word Size (-W):</TD>
   <TD><input class="backbox" type="text" name="wordsize" id="wordsize" tabindex="1" size="3" value="7" /></TD>
  </TR>    
  <TR>
@@ -538,10 +555,21 @@ onClick="loading([], ['results']); run([
   <TD>Other Blast Parameters: </TD>
   <TD><input class="backbox" type="text" name="blastparams" id="blastparams" tabindex="1" size="60" /></TD>
  </TR>         
- <TR><TD><DIV id="show_hsps"><input type="hidden" id="show_hsps_with_stop_codon" value=0></DIV>
+
 </TABLE>
 </DIV>
+ <DIV id="blastzinfo" class="small">
+Note: parameter options haven't been implemented for blastz (yet)
+</DIV>
+
+ <DIV id="tblastninfo" class="small">
+ <font class="small">Hide HSPs with stop codons in a coding sequence?<label><input class="backbox" type="radio" name="show_hsps_with_stop_codon" id="show_hsps_with_stop_codon" tabindex="1" value="1" />Yes</label><label><input class="backbox" type="radio" name="show_hsps_with_stop_codon" id="show_hsps_with_stop_codon" tabindex="1" value="0" checked />No</label></font>
+<br>Note: Word size limited to 3 for tblastx
+</DIV> 
+
      </table>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
      <span class="subItem"></span>
      <span class="subItem"></span>
      <span class="subItem"></span>
@@ -747,21 +775,18 @@ onClick="loading([], ['results']); run([
 	'args__featid1', 'featid1', 
 	'args__up1', 'dr1up', 
 	'args__down1', 'dr1down', 
-	'args__dsid1', 'dsid1',
 	'args__rev1', 'rev_region1', 
 
 	'args__accn2', 'accn2', 
 	'args__featid2', 'featid2', 
 	'args__up2', 'dr2up', 
 	'args__down2', 'dr2down', 
-	'args__dsid2', 'dsid2',
 	'args__rev2', 'rev_region2', 
 
 	'args__accn3', 'accn3', 
 	'args__featid3', 'featid3', 
 	'args__up3', 'dr3up', 
 	'args__down3', 'dr3down', 
-	'args__dsid3', 'dsid3',
 	'args__rev3', 'rev_region3', 
 
 	'args__gbaccn1', 'gbaccn1', 
