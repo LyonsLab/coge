@@ -40,7 +40,7 @@ $TEMPDIR = "/opt/apache/CoGe/tmp";
 $TEMPURL = "/CoGe/tmp";
 # set this to 1 to print verbose messages to logs
 $DEBUG = 0;
-$BENCHMARK = 1;
+$BENCHMARK = 0;
 
 $| = 1; # turn off buffering 
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
@@ -101,7 +101,7 @@ sub gen_html
 	$template->param(DATE=>$DATE);
 	$template->param(NO_BOX=>1);
 	$template->param(BODY=>gen_body());
-	$template->param(BODY_ONLOAD=>"setup();");
+#	$template->param(BODY_ONLOAD=>"setup();");
 	my $prebox = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SynView.tmpl');
 	$prebox->param(RESULTS_DIV=>1);
 	$template->param(PREBOX=>$prebox->output);
@@ -176,21 +176,18 @@ sub Show_Summary
     my $featid1 = $opts{featid1};
     my $dr1up = $opts{up1};
     my $dr1down = $opts{down1};
-    my $infoid1 = $opts{dsid1};
     my $rev1 = $opts{rev1};
     
     my $accn2 = $opts{accn2};
     my $featid2 = $opts{featid2};
     my $dr2up = $opts{up2};
     my $dr2down = $opts{down2};
-    my $infoid2 = $opts{dsid2};
     my $rev2 = $opts{rev2};
     
     my $accn3 = $opts{accn3};
     my $featid3 = $opts{featid3};
     my $dr3up = $opts{up3};
     my $dr3down = $opts{down3};
-    my $infoid3 = $opts{dsid3};
     my $rev3 = $opts{rev13};
     
     my $gbaccn1 = $opts{gbaccn1};
@@ -248,7 +245,6 @@ sub Show_Summary
     my $hsp_limit_num = $opts{hsplimnum};
     my $blast_program = $opts{prog};
     my $show_hsps_with_stop_codon = $opts{showallhsps};
-    
     my $hsp1r = $opts{h1r};
     my $hsp1g = $opts{h1g};
     my $hsp1b = $opts{h1b};
@@ -301,7 +297,7 @@ sub Show_Summary
     my $t1 = new Benchmark;
     if ($featid1)
       {
-	$obj1 = get_obj_from_genome_db( $accn1, $featid1, $infoid1, $rev1, $dr1up, $dr1down );
+	$obj1 = get_obj_from_genome_db( $accn1, $featid1, $rev1, $dr1up, $dr1down );
 	return "<font class=error>No entry found for $featid1</font>" unless ($obj1);
 	($file1, $file1_begin, $file1_end,$spike_seq) = 
 	  generate_seq_file(obj=>$obj1,
@@ -354,7 +350,7 @@ sub Show_Summary
     #create object 2
     if ($featid2)
       {
-	$obj2 = get_obj_from_genome_db( $accn2, $featid2, $infoid2, $rev2, $dr2up, $dr2down);
+	$obj2 = get_obj_from_genome_db( $accn2, $featid2, $rev2, $dr2up, $dr2down);
 	return "<font class=error>No entry found for $featid2</font>" unless ($obj2);
 	($file2, $file2_begin, $file2_end,$spike_seq) =
 	  generate_seq_file(obj=>$obj2,
@@ -407,7 +403,7 @@ sub Show_Summary
     #create object 3
     if ($featid3)
       {
-	$obj3 = get_obj_from_genome_db( $accn3, $featid3, $infoid3, $rev3, $dr3up, $dr3down );
+	$obj3 = get_obj_from_genome_db( $accn3, $featid3, $rev3, $dr3up, $dr3down );
 	return "<font class=error>No entry found for $featid3</font>" unless ($obj3);
 	($file3, $file3_begin, $file3_end,$spike_seq) =
 	  generate_seq_file(obj=>$obj3,
@@ -1042,18 +1038,17 @@ sub get_obj_from_genome_db
   {
     my $accn = shift;
     my $featid = shift;
-    my $ds_id = shift;
     my $rev = shift;
     my $up = shift || 0;
     my $down = shift || 0;
     my $t1 = new Benchmark;
     my ($feat) = $coge->resultset('Feature')->esearch({"me.feature_id"=>$featid})->next;
-#    my ($feat) = $coge->resultset('Feature')->search({"feature_id"=>$featid})->next;
     my $t2 = new Benchmark;
     my $start = 0;
     my $stop = 0;
     my $chr;
     my $seq;
+    my $ds_id = $feat->dataset->id;
     if ($feat)
       {
 	
@@ -1147,7 +1142,7 @@ Initialize obj took:                                  $int_obj_time
 Getting feats in region took:                         $feat_region_time
 Populating object too:                                $pop_obj_time
 Region:         ds_id: $ds_id $start-$stop($chr)
-};
+} if $BENCHMARK;
     return $obj;
   }
 
