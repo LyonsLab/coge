@@ -163,17 +163,17 @@ sub get_features_in_region2
     my $dataset_id = $opts{dataset} || $opts{dataset_id} || $opts{info_id} || $opts{INFO_ID} || $opts{data_info_id} || $opts{DATA_INFO_ID} ;
 
     my @feats = $self->resultset('Feature')->search({
-                 "fchromosome" => $chr,
+                 "chromosome" => $chr,
                  "me.dataset_id" => $dataset_id,
 						     -and=>[
                    -or=>[
                      -and=>[
-                       "me.fstop"=>  {"<=" => $stop},
-                       "me.fstop"=> {">=" => $start},
+                       "me.stop"=>  {"<=" => $stop},
+                       "me.stop"=> {">=" => $start},
                      ],
                      -and=>[
-                       "me.fstart"=>  {"<=" => $stop},
-                       "me.fstart"=> {">=" => $start},
+                       "me.start"=>  {"<=" => $stop},
+                       "me.start"=> {">=" => $start},
                      ],
                    ],
                  ],
