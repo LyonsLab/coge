@@ -38,8 +38,18 @@ scripts/feature_go.pl
 scripts/protein_sequence.pl
 scripts/eager.pl
 scripts/FeatViewX.pl
-scripts/poplar_order.pl
-scripts/poplar_sequence.pl
+scripts/annotation.pl
+scripts/dump_feature_locations_bm.pl
+scripts/eFeatName.pl
+scripts/FeatAnnoX.pl
+scripts/org.pl
+scripts/poplar/fix_poplar.pl
+scripts/poplar/new_names_to_old.pl
+scripts/poplar/poplar_order.pl
+scripts/poplar/poplar_sequence.pl
+scripts/test_get_genomic_sequence.pl
+scripts/update_feature_table.pl
+scripts/update_feature_table_bm.pl
 t/001_load.t
 t/002_feature_by_id.t
 t/003_organism_by_name.t
@@ -49,3 +59,5 @@ t/006_genome_sequence_datasetid.t
 t/007_protein_sequence_from_feature.t
 t/008_genomic_sequence_from_feature.t
 t/009_feature_from_dataset_repeated.t
+t/010_features_in_region.t
+

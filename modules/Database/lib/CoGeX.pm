@@ -128,23 +128,62 @@ sub get_features_in_region
 						     "locations.chromosome"=>$chr,
 						     "me.dataset_id"=>$dataset_id,
 						     -and=>[
-							    -or=>[
-								  -and=>[
-									 "locations.stop"=>  {"<=" => $stop},
-									 "locations.stop"=> {">=" => $start},
-									],
-								  -and=>[
-									 "locations.start"=>  {"<=" => $stop},
-									 "locations.start"=> {">=" => $start},
-									],
-								 ],
-							    ],
+                   -or=>[
+                     -and=>[
+                       "locations.stop"=>  {"<=" => $stop},
+                       "locations.stop"=> {">=" => $start},
+                     ],
+                     -and=>[
+                       "locations.start"=>  {"<=" => $stop},
+                       "locations.start"=> {">=" => $start},
+                     ],
+                   ],
+                 ],
 						     },
-						    {
-						     join => ["locations"],
-						     distinct=>['feature_id'],
-						     prefetch=>["locations", "dataset", "feature_type"],
-						    }
+                  {
+                     join => ["locations"],
+                     distinct=>['feature_id'],
+                     prefetch=>["locations", "dataset", "feature_type"],
+                  }
+						   );
+    return wantarray ? @feats : \@feats;
+  }
+
+
+
+sub get_features_in_region2
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $start = $opts{'start'} || $opts{'START'} || $opts{begin} || $opts{BEGIN};
+    $start = 0 unless $start;
+    my $stop = $opts{'stop'} || $opts{STOP} || $opts{end} || $opts{END};
+    $stop = $start unless defined $stop;
+    my $chr = $opts{chr} || $opts{CHR} || $opts{chromosome} || $opts{CHROMOSOME};
+    my $dataset_id = $opts{dataset} || $opts{dataset_id} || $opts{info_id} || $opts{INFO_ID} || $opts{data_info_id} || $opts{DATA_INFO_ID} ;
+
+    my @feats = $self->resultset('Feature')->search({
+                 "fchromosome" => $chr,
+                 "me.dataset_id" => $dataset_id,
+						     -and=>[
+                   -or=>[
+                     -and=>[
+                       "me.fstop"=>  {"<=" => $stop},
+                       "me.fstop"=> {">=" => $start},
+                     ],
+                     -and=>[
+                       "me.fstart"=>  {"<=" => $stop},
+                       "me.fstart"=> {">=" => $start},
+                     ],
+                   ],
+                 ],
+						     },
+                  {
+                    prefetch=>["locations", "dataset", "feature_type"],
+                    #prefetch=>["locations"],
+                    #prefetch=>["dataset"],
+                    #prefetch=>["feature_type"],
+                  }
 						   );
     return wantarray ? @feats : \@feats;
   }

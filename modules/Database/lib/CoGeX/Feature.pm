@@ -13,6 +13,14 @@ __PACKAGE__->add_columns(
   { data_type => "INT", default_value => 0, is_nullable => 0, size => 10 },
   "dataset_id",
   { data_type => "INT", default_value => 0, is_nullable => 0, size => 10 },
+  "fstart",
+  { data_type => "INT", default_value => 0, is_nullable => 1, size => 10 },
+  "fstop",
+  { data_type => "INT", default_value => 0, is_nullable => 1, size => 10 },
+  "fchromosome",
+  { data_type => "VARCHAR", default_value => 0, is_nullable => 1, size => 50 },
+  "fstrand",
+  { data_type => "VARCHAR", default_value => 0, is_nullable => 1, size => 2 },
 );
 
 __PACKAGE__->set_primary_key("feature_id");
@@ -298,7 +306,9 @@ sub genbank_location_string
     my $comp = 0;
     foreach my $loc (sort {$a->start <=> $b->start}  $self->locs())
       {
-	$comp = 1 if $loc->strand =~ "-";
+  #?
+	# $comp = 1 if $loc->strand =~ "-";
+	$comp = 1 if $loc->strand == "-1";
 	$string .= "," if $count;
 	$string .= $recal ? ($loc->start-$recal+1)."..".($loc->stop-$recal+1): $loc->start."..".$loc->stop;
 	$count++;
@@ -329,20 +339,20 @@ See Also   :
 ################################################## subroutine header end ##
 
 
-sub start
-  {
-    my $self = shift;
-    return $self->{_start} if $self->{_start};
-    my @loc =  $self->locations({},
-				 {
-				  order_by=>'start asc',
-				 });
-    $self->{_start}=($loc[0]->start);
-    $self->{_stop}=($loc[-1]->stop);
-    $self->{_strand}=($loc[0]->strand);
-    $self->{_chromosome}=($loc[0]->chromosome);
-    return $self->{_start};
-  }
+#sub start
+#  {
+#    my $self = shift;
+#    return $self->{_start} if $self->{_start};
+#    my @loc =  $self->locations({},
+#				 {
+#				  order_by=>'start asc',
+#				 });
+#    $self->{_start}=($loc[0]->start);
+#    $self->{_stop}=($loc[-1]->stop);
+#    $self->{_strand}=($loc[0]->strand);
+#    $self->{_chromosome}=($loc[0]->chromosome);
+#    return $self->{_start};
+#  }
 
 ################################################ subroutine header begin ##
 
@@ -364,20 +374,20 @@ See Also   :
 ################################################## subroutine header end ##
 
 
-sub stop
-  {
-    my $self = shift;
-    return $self->{_stop} if $self->{_stop};
-    my @loc =  $self->locations({},
-				 {
-				  order_by=>'stop desc',
-				 });
-    $self->{_start}=($loc[-1]->start);
-    $self->{_stop}=($loc[0]->stop);
-    $self->{_strand}=($loc[0]->strand);
-    $self->{_chromosome}=($loc[0]->chromosome);
-    return $self->{_stop};
-  }
+#sub stop
+#  {
+#    my $self = shift;
+#    return $self->{_stop} if $self->{_stop};
+#    my @loc =  $self->locations({},
+#				 {
+#				  order_by=>'stop desc',
+#				 });
+#    $self->{_start}=($loc[-1]->start);
+#    $self->{_stop}=($loc[0]->stop);
+#    $self->{_strand}=($loc[0]->strand);
+#    $self->{_chromosome}=($loc[0]->chromosome);
+#    return $self->{_stop};
+#  }
 ################################################ subroutine header begin ##
 
 =head2 chromosome
@@ -397,15 +407,15 @@ See Also   :
 ################################################## subroutine header end ##
 
 
-sub chromosome
-  {
-    my $self = shift;
-    return $self->{_chromosome} if $self->{_chromosome};
-    $self->start;
-    return $self->{_chromosome};
-  }
-
-################################################ subroutine header begin ##
+#sub chromosome
+#  {
+#    my $self = shift;
+#    return $self->{_chromosome} if $self->{_chromosome};
+#    $self->start;
+#    return $self->{_chromosome};
+#  }
+#
+################################################# subroutine header begin ##
 
 =head2 chr
 
@@ -441,13 +451,13 @@ See Also   :
 ################################################## subroutine header end ##
 
 
-sub strand
-  {
-    my $self = shift;    
-    return $self->{_strand} if $self->{_strand};
-    $self->start;
-    return $self->{_strand};
-  }
+#sub strand
+#  {
+#    my $self = shift;    
+#    return $self->{_strand} if $self->{_strand};
+#    $self->start;
+#    return $self->{_strand};
+#  }
 
 
 ################################################ subroutine header begin ##
