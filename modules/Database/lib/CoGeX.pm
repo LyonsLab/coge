@@ -89,7 +89,7 @@ See Also   :
 
 ################################################## subroutine header end ##
 
-sub get_features_in_region
+sub get_features_in_region_old
   {
     my $self = shift;
     my %opts = @_;
@@ -151,7 +151,7 @@ sub get_features_in_region
 
 
 
-sub get_features_in_region2
+sub get_features_in_region
   {
     my $self = shift;
     my %opts = @_;
@@ -161,7 +161,31 @@ sub get_features_in_region2
     $stop = $start unless defined $stop;
     my $chr = $opts{chr} || $opts{CHR} || $opts{chromosome} || $opts{CHROMOSOME};
     my $dataset_id = $opts{dataset} || $opts{dataset_id} || $opts{info_id} || $opts{INFO_ID} || $opts{data_info_id} || $opts{DATA_INFO_ID} ;
-
+    my $count_flag = $opts{count} || $opts{COUNT};
+    if ($count_flag)
+      {
+	return $self->resultset('Feature')->count(
+						  {
+						   "me.chromosome" => $chr,
+						   "me.dataset_id" => $dataset_id,
+						   -and=>[
+							  -or=>[
+								-and=>[
+								       "me.stop"=>  {"<=" => $stop},
+								       "me.stop"=> {">=" => $start},
+								      ],
+								-and=>[
+								       "me.start"=>  {"<=" => $stop},
+								       "me.start"=> {">=" => $start},
+								      ],
+							       ],
+							 ],
+						  },
+						  {
+#						   prefetch=>["locations", "feature_type"],
+						  }
+						 );
+      }
     my @feats = $self->resultset('Feature')->search({
                  "me.chromosome" => $chr,
                  "me.dataset_id" => $dataset_id,
