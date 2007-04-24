@@ -9,8 +9,8 @@ BEGIN {
     $HEIGHT = 5;
     $WIDTH = 5;
     $ATC= [255,255,255]; #ATs are white
-    $GCC= [100,255,100]; #GCs are green
-    $NC= [255,200,125]; #Ns are orange
+    $GCC= [150,255,150]; #GCs are green
+    $NC= [255,225,150]; #Ns are orange
     %EXTERNAL_IMAGES = (
 			A=>'/opt/apache/CoGe/picts/A.png',
 			T=>'/opt/apache/CoGe/picts/T.png',
@@ -43,17 +43,18 @@ sub _initialize
     my $cg = 0;
     my $n = 0;
     my $seq = $self->nt;
+    my $seq_len = length($seq);
     $self->color(255,255,255);
-    if ($self->options && $self->options eq "gc")
+    if ($self->options)
       {
-	while ($seq=~ /a|t|r|y|w|m|k|h|b|v|d/ig)
-	  {
-	    $at++;
-	  }
-	while ($seq =~/c|g|r|y|s|m|k|h|b|v|d/ig)
-	  {
-	    $cg++;
-	  }
+ 	while ($seq=~ /a|t|r|y|w|m|k|h|b|v|d/ig)
+ 	  {
+ 	    $at++;
+ 	  }
+ 	while ($seq =~/c|g|r|y|s|m|k|h|b|v|d/ig)
+ 	  {
+ 	    $cg++;
+ 	  }
 	while ($seq =~/n|\?/ig)
 	  {
 	    $n++;
@@ -61,15 +62,20 @@ sub _initialize
 	
 	print STDERR "SEQ: $seq\n" unless ($at+$cg+$n) > 0;
 	
-	my $pat = $at/($at+$cg+$n) if $at+$cg+$n > 0;
-	my $pcg = $cg/($at+$cg+$n) if $at+$cg+$n > 0;
-	my $pn = $n/($at+$cg+$n) if $at+$cg+$n > 0;
 	my @color;
 	
 	for my $i (0..2)
 	  {
-	    push @color, $ATC->[$i]*$at/($at+$cg+$n)+ $GCC->[$i]*$cg/($at+$cg+$n)+ $NC->[$i]*$n/($at+$cg+$n);
+	    my $color = 0;
+	    $color += $ATC->[$i]*$at/($seq_len)+ $GCC->[$i]*$cg/($seq_len) if $self->options eq "gc";
+	    $color += $NC->[$i]*$n/($seq_len);
+#	    push @color, $ATC->[$i]*$at/($at+$cg+$n)+ $GCC->[$i]*$cg/($at+$cg+$n)+ $NC->[$i]*$n/($at+$cg+$n);
+
+	    push @color, $color;
 	  }
+#	my $pat = $at/($seq_len) if $seq_len > 0;
+#	my $pcg = $cg/($seq_len) if $seq_len > 0;
+#	my $pn = $n/($seq_len) if $seq_len > 0;
 #	print STDERR $pat,"%, ", $pcg,"%, ", $pn,'%: ', join (":", @color),"\n" if $n;
 	$self->color(\@color)
       }
