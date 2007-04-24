@@ -60,4 +60,4 @@ t/007_protein_sequence_from_feature.t
 t/008_genomic_sequence_from_feature.t
 t/009_feature_from_dataset_repeated.t
 t/010_features_in_region.t
-
+t/011_features_in_region_split.t

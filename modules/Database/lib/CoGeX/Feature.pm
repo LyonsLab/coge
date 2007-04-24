@@ -13,13 +13,13 @@ __PACKAGE__->add_columns(
   { data_type => "INT", default_value => 0, is_nullable => 0, size => 10 },
   "dataset_id",
   { data_type => "INT", default_value => 0, is_nullable => 0, size => 10 },
-  "fstart",
+  "start",
   { data_type => "INT", default_value => 0, is_nullable => 1, size => 10 },
-  "fstop",
+  "stop",
   { data_type => "INT", default_value => 0, is_nullable => 1, size => 10 },
-  "fchromosome",
+  "chromosome",
   { data_type => "VARCHAR", default_value => 0, is_nullable => 1, size => 50 },
-  "fstrand",
+  "strand",
   { data_type => "VARCHAR", default_value => 0, is_nullable => 1, size => 2 },
 );
 

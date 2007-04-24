@@ -163,7 +163,7 @@ sub get_features_in_region2
     my $dataset_id = $opts{dataset} || $opts{dataset_id} || $opts{info_id} || $opts{INFO_ID} || $opts{data_info_id} || $opts{DATA_INFO_ID} ;
 
     my @feats = $self->resultset('Feature')->search({
-                 "chromosome" => $chr,
+                 "me.chromosome" => $chr,
                  "me.dataset_id" => $dataset_id,
 						     -and=>[
                    -or=>[
@@ -179,7 +179,8 @@ sub get_features_in_region2
                  ],
 						     },
                   {
-                    prefetch=>["locations", "dataset", "feature_type"],
+                    prefetch=>["locations", "feature_type"],
+                    #prefetch=>["locations", "dataset", "feature_type"],
                     #prefetch=>["locations"],
                     #prefetch=>["dataset"],
                     #prefetch=>["feature_type"],
@@ -188,6 +189,61 @@ sub get_features_in_region2
     return wantarray ? @feats : \@feats;
   }
 
+sub get_features_in_region_split
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $start = $opts{'start'} || $opts{'START'} || $opts{begin} || $opts{BEGIN};
+    $start = 0 unless $start;
+    my $stop = $opts{'stop'} || $opts{STOP} || $opts{end} || $opts{END};
+    $stop = $start unless defined $stop;
+    my $chr = $opts{chr} || $opts{CHR} || $opts{chromosome} || $opts{CHROMOSOME};
+    my $dataset_id = $opts{dataset} || $opts{dataset_id} || $opts{info_id} || $opts{INFO_ID} || $opts{data_info_id} || $opts{DATA_INFO_ID} ;
+
+    my @startfeats = $self->resultset('Feature')->search({
+                 "me.chromosome" => $chr,
+                 "me.dataset_id" => $dataset_id,
+                 -and => [
+                   "me.stop"=> {">=" => $start},
+                   "me.stop"=>  {"<=" => $stop},
+                 ],
+						     },
+                 {
+                   prefetch=>["locations", "feature_type"],
+                 }
+						   );
+    my @stopfeats = $self->resultset('Feature')->search({
+                 "me.chromosome" => $chr,
+                 "me.dataset_id" => $dataset_id,
+                 -and => [
+                   "me.start"=>  {">=" => $start},
+                   "me.start"=> {"<=" => $stop},
+                 ],
+						     },
+                 {
+                   prefetch=>["locations", "feature_type"],
+                 }
+						   );
+
+    my %seen;
+    my @feats;
+
+    foreach my $f ( @startfeats ) {
+      if ( not exists $seen{ $f->id() } ) {
+        $seen{$f->id()}+=1;
+        push( @feats, $f );
+      }
+    }
+
+    foreach my $f ( @stopfeats ) {
+      if ( not exists $seen{ $f->id() } ) {
+        $seen{$f->id()}+=1;
+        push( @feats, $f );
+      }
+    }
+
+    return wantarray ? @feats : \@feats;
+  }
 
 ################################################ subroutine header begin ##
 
