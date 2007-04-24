@@ -15,22 +15,22 @@ BEGIN {
 my $connstr = 'dbi:mysql:genomes:biocon:3306';
 my $s = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 
-#$s->storage->debugobj(new DBIxProfiler());
-#$s->storage->debug(1);
+$s->storage->debugobj(new DBIxProfiler());
+$s->storage->debug(1);
 
 isa_ok ($s, 'CoGeX');
 
 my $data = {};
-my $start = 10800000;
-my $stop = 10850000;
+my $start = 1000000;
+my $stop = 1050000;
 my $t0 = new Benchmark;
 
-while ( $stop < 12000000 ) {
+while ( $stop <= 2000000 ) {
   my @f = $s->get_features_in_region2(
                                         start => $start,
                                         end => $stop,
-                                        chromosome => 2,
-                                        dataset_id => 4
+                                        chromosome => 1,
+                                        dataset_id => 497
                                       );
   $data->{ $stop - $start } = { 'time' => new Benchmark, 'features' => scalar @f };
   $stop += 50000;

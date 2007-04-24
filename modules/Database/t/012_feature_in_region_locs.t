@@ -32,6 +32,11 @@ while ( $stop < 12000000 ) {
                                         chromosome => 2,
                                         dataset_id => 4
                                       );
+  foreach my $feat ( @f ) {
+    foreach my $loc ( $feat->locations() ) {
+    }
+    $feat->feature_type();
+  }
   $data->{ $stop - $start } = { 'time' => new Benchmark, 'features' => scalar @f };
   $stop += 50000;
 }
