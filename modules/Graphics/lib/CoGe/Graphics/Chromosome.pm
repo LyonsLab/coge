@@ -326,10 +326,10 @@ sub new
                         that corresponds to RGB color values.  Each color ranges from 0-255
  ruler_height     =>    (DEFAULT: 20)  The heigth, in pixels of the positional ruler
 
- major_tick_lables=>    Options for drawing major tick lables.  1 draws them above the tick, -1 draws them below the tick,
+ major_tick_labels=>    Options for drawing major tick lables.  1 draws them above the tick, -1 draws them below the tick,
                         0 for not drawing tick labels.  (DEFAULT: -1)
 
- minor_tick_lables=>    Options for drawing minor tick lables.  1 draws them above the tick, -1 draws them below the tick,
+ minor_tick_labels=>    Options for drawing minor tick lables.  1 draws them above the tick, -1 draws them below the tick,
                         0 for not drawing tick labels.  (DEFAULT: 0)
 
  mag_scale_type   =>    (DEFAULT: log) The scaling that is used for the magnification steps.
@@ -2038,7 +2038,7 @@ sub _draw_ruler
   {
     my $self = shift;
     my %opts = @_;
-    my $major_tick_labels = $opts{major_tick_lables};
+    my $major_tick_labels = $opts{major_tick_labels};
     $major_tick_labels = $self->major_tick_labels unless defined $major_tick_labels;
     my $minor_tick_labels = $opts{minor_tick_labels};
     $minor_tick_labels = $self->minor_tick_labels unless defined $minor_tick_labels;

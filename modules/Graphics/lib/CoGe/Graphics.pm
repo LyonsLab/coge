@@ -187,6 +187,8 @@ sub genomic_view
     my $forcefit = $opts{'forcefit'} || 0;
     my $img_map_name = $opts{'img_map'};
     my $layers = process_layers($opts{layers});
+    my $major_tick_labels = $opts{major_tick_labels} || 1;
+    my $minor_tick_labels = $opts{minor_tick_labels} || -1;
 #    print STDERR Dumper $opts{layers}, $layers;
 
     $DEBUG = $opts{debug} || $opts{DEBUG} || 0;
@@ -269,6 +271,9 @@ sub genomic_view
 						   fmh=>$feat_mag_height,
 						   forcefit=>$forcefit,
 						   feature_labels=>1,
+						   major_tick_labels=>$major_tick_labels,
+						   minor_tick_labels=>$minor_tick_labels,
+						   mag_off=>1,
 						  ) unless $c->chr_length;
 	if ($c->chr_length)
 	  {
@@ -297,17 +302,12 @@ sub genomic_view
 	my $feat_time = timestr(timediff($tab, $taa)) if $BENCHMARK;
 	print STDERR " processing did $did:   $feat_time\n" if $BENCHMARK;
       }
-
-    unless ($layers->{ruler} || $layers->{all})
+    unless ($layers->{ruler} || $layers->{chromosome} || $layers->{all})
       {
 	$c->draw_ruler(0);
-      }
-    unless ($layers->{chromosome} || $layers->{all})
-      {
 	$c->draw_chromosome(0);
       }
     
-
 
     my $t2 = new Benchmark if $BENCHMARK;
     print STDERR "generating image: $file\n" if $self->DEBUG;
@@ -318,7 +318,8 @@ sub genomic_view
     my $init_time = timestr(timediff($t1, $t0)) if $BENCHMARK;
     my $feature_time = timestr(timediff($t2, $t1)) if $BENCHMARK;
     my $draw_time = timestr(timediff($t3, $t2)) if $BENCHMARK;
-    
+    print STDERR "Image height: ", $c->ih,"\n";
+
     print STDERR qq{
 BENCHMARKING GenomePNG.pl
 
@@ -446,7 +447,6 @@ sub process_nucleotides
     my $c = $opts{c};
 #    $seq = uc($db->get_genomic_sequence_obj->get_sequence(start=>$start, stop=>$stop, chr=>$chr, ds=>$ds)) unless $seq;
     my $layers = $opts{layers};
-    return unless $layers->{gc} || $layers->{nt} || $layers->{all};
 #    print STDERR Dumper $layers;
 #    print STDERR "IN $0: start: $start, stop: $stop\n";
     #process nucleotides
@@ -458,35 +458,37 @@ sub process_nucleotides
     $chrs = 1 if $chrs < 1;
     my $pos = 0;
     $start = 1 if $start < 1;
-    
-    while ($pos < $seq_len)
+    if ($layers->{gc} || $layers->{nt} || $layers->{all})
       {
-        my $subseq = substr ($seq, $pos, $chrs);
-        my $rcseq = substr ($seq, $pos, $chrs);
-        $rcseq =~ tr/ATCG/TAGC/;
-        next unless $subseq && $rcseq;
-	my $gc = $layers->{gc} ? "gc" : 0;
-        my $f1 = CoGe::Graphics::Feature::NucTide->new({nt=>$subseq, strand=>1, start =>$pos+$start, options=>$gc}) if $layers->{gc} || $layers->{nt} || $layers->{all};
-	my $f2 = CoGe::Graphics::Feature::NucTide->new({nt=>$rcseq, strand=>-1, start =>$pos+$start, options=>$gc}) if $layers->{gc} || $layers->{nt} || $layers->{all};
-	if ($layers->{nt} || $layers->{all})
+	while ($pos < $seq_len)
 	  {
-	    $f1->show_label(1); 
-	    $f2->show_label(1);
-	    $f1->use_external_image(1);
-	    $f2->use_external_image(1);
+	    my $subseq = substr ($seq, $pos, $chrs);
+	    my $rcseq = substr ($seq, $pos, $chrs);
+	    $rcseq =~ tr/ATCG/TAGC/;
+	    next unless $subseq && $rcseq;
+	    my $options = $layers->{gc} ? "gc" : "nt";
+	    my $f1 = CoGe::Graphics::Feature::NucTide->new({nt=>$subseq, strand=>1, start =>$pos+$start, options=>$options}) if $layers->{gc} || $layers->{nt} || $layers->{all};
+	    my $f2 = CoGe::Graphics::Feature::NucTide->new({nt=>$rcseq, strand=>-1, start =>$pos+$start, options=>$options}) if $layers->{gc} || $layers->{nt} || $layers->{all};
+	    if ($layers->{nt} || $layers->{all})
+	      {
+		$f1->show_label(1); 
+		$f2->show_label(1);
+		$f1->use_external_image(1);
+		$f2->use_external_image(1);
+	      }
+	    #my $f2 = CoGe::Graphics::Feature::Exon_motifs->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
+	    #my $f2 = CoGe::Graphics::Feature::GAGA->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
+	    #	my $f2 = CoGe::Graphics::Feature::Sigma54->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
+#	    $f1->transparency(50) if $f1;
+#	    $f2->transparency(50) if $f2;
+	    $c->add_feature($f1) if $f1;
+	    $c->add_feature($f2) if $f2;
+	    $pos+=$chrs;
 	  }
-	#my $f2 = CoGe::Graphics::Feature::Exon_motifs->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
-        #my $f2 = CoGe::Graphics::Feature::GAGA->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
-#	my $f2 = CoGe::Graphics::Feature::Sigma54->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
-        $f1->transparency(50) if $f1;
-        $f2->transparency(50) if $f2;
-        $c->add_feature($f1) if $f1;
-	$c->add_feature($f2) if $f2;
-        $pos+=$chrs;
       }
     my $t9 = new Benchmark if $BENCHMARK;
-    my $time1 = timestr(timediff($t8, $t7));
-    my $time2 = timestr(timediff($t9, $t8));
+    my $time1 = timestr(timediff($t8, $t7)) if $BENCHMARK;
+    my $time2 = timestr(timediff($t9, $t8)) if $BENCHMARK;
     print STDERR qq{
  Time to get nt seq              :  $time1
  Time to process nt for graphics :  $time2
@@ -564,7 +566,7 @@ sub process_features
 		      }
 		  }
           }
-        elsif (($layers->{features}{rna} || $layers->{all}) && $feat->type->name =~ /mrna/i || $feat->type->name =~ /exon/i)
+        elsif (($layers->{features}{mrna} || $layers->{all}) && $feat->type->name =~ /mrna/i || $feat->type->name =~ /exon/i)
           {
         	$f = CoGe::Graphics::Feature::Gene->new();
         	$f->color([0,0,255, 50]);
@@ -572,7 +574,7 @@ sub process_features
 		$f->overlay(2);
 		$f->mag(0.75);
           }
-        elsif (($layers->{features}{rna} || $layers->{all}) && $feat->type->name =~ /rna/i)
+        elsif (($layers->{features}{rna} || $layers->{all}) && $feat->type->name =~ /[^m]rna/i)
           {
         	$f = CoGe::Graphics::Feature::Gene->new();
         	$f->color([200,200,200, 50]);
@@ -733,6 +735,7 @@ sub process_layers
        exons=>"cds",
        exon=>"cds",
        rna=>"rna",
+       mrna=>"mrna",
        gene=>"gene",
        proteins=>"protein",
        protein=>"protein",
@@ -759,14 +762,16 @@ sub process_layers
        domain=>1,
        other=>1,
        cns=>1,
+       rna=>1,
       );
     my %layers;
     foreach my $layer (@$layers)
       {
 #	my $strand;
-	next unless $valid_layers{$layer};
 	$layer = lc($layer);
-	$layer = "rna" if $layer =~ /rna/;
+
+	next unless $valid_layers{$layer};
+#	$layer = "rna" if $layer =~ /rna/;
 	if ($features{$valid_layers{$layer}})
 	  {
 	    $layers{features}{$valid_layers{$layer}}=1;
