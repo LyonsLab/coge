@@ -40,7 +40,7 @@ $TEMPDIR = "/opt/apache/CoGe/tmp";
 $TEMPURL = "/CoGe/tmp";
 # set this to 1 to print verbose messages to logs
 $DEBUG = 0;
-$BENCHMARK = 0;
+$BENCHMARK = 1;
 
 $| = 1; # turn off buffering 
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
@@ -59,7 +59,7 @@ $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 my %ajax = CoGe::Accessory::Web::ajax_func();
 #$ajax{dataset_search} = \&dataset_search_for_feat_name; #override this method from Accessory::Web
 my $pj = new CGI::Ajax(
-		       rset=>\&Rset,
+#		       rset=>\&Rset,
 		       run=>\&Show_Summary,
 		       
 		       loading=>\&loading,
@@ -633,7 +633,7 @@ sub generate_image
     my $hiqual = $opts{hiqual};
     my $graphic = new CoGe::Graphics;
     my $gfx = new CoGe::Graphics::Chromosome;
-    $gfx->overlap_adjustment(0);
+    $gfx->overlap_adjustment(1);
     $gfx->skip_duplicate_features(1);
     $graphic->initialize_c (
 			    c=>$gfx,
@@ -654,7 +654,7 @@ sub generate_image
 			    forcefit=>1,
 			    invert_chromosome=>$reverse_image,
 			    minor_tick_labels=>-1,
-			    overlap_adjustment=>$overlap_adjustment,
+#			    overlap_adjustment=>$overlap_adjustment,
 			    feature_labels=>$feature_labels,
 			    draw_hi_qual=>$hiqual,
 			   );
@@ -666,7 +666,7 @@ sub generate_image
     $f2->merge_percent(0);
     $gfx->add_feature($f2);
     $graphic->process_nucleotides(c=>$gfx, seq=>$gbobj->{SEQUENCE}, layers=>{gc=>$show_gc});
-    process_features(c=>$gfx, obj=>$gbobj, start=>$start, stop=>$stop);
+    process_features(c=>$gfx, obj=>$gbobj, start=>$start, stop=>$stop, overlap_adjustment=>$overlap_adjustment);
     process_hsps(c=>$gfx, data=>$data, accn=>$gbobj->{ACCN}, rev=>$reverse_image, seq_length=> length($gbobj->{SEQUENCE}), stagger_label=>$stagger_label, hsp_limit=>$hsp_limit, hsp_limit_num=>$hsp_limit_num, gbobj=>$gbobj, spike_seq=>$spike_seq, eval_cutoff=>$eval_cutoff, color_hsp=>$color_hsp, colors=>$hsp_colors, show_hsps_with_stop_codon=>$show_hsps_with_stop_codon);
     my $file = new File::Temp ( TEMPLATE=>'SynView__XXXXX',
 				   DIR=>$TEMPDIR,
@@ -689,6 +689,7 @@ sub process_features
     my $obj=$opts{obj};
     my $start=$opts{start};
     my $stop = $opts{stop};
+    my $overlap = $opts{overlap_adjustment};
     my $accn = $obj->{ACCN};
     my $track = 1;
     my @opts = ($start, $stop) if $start && $stop;
@@ -769,6 +770,7 @@ sub process_features
         $f->type($type);
 	$f->description($feat->{QUALIFIERS}{annotation});
 	$f->link("FeatView.pl?accn=$name\" target=\"_new");
+	$f->skip_overlap_search($overlap);
         $c->add_feature($f);
 #	print STDERR Dumper ($f) if $f->{description} =~ /at2g29570/i;#unless ($f->start && $f->stop);
     }
@@ -1140,7 +1142,7 @@ Getting feature from DB took:                         $db_time
 Getting sequence for region took:                     $seq_time
 Initialize obj took:                                  $int_obj_time
 Getting feats in region took:                         $feat_region_time
-Populating object too:                                $pop_obj_time
+Populating object took:                                $pop_obj_time
 Region:         ds_id: $ds_id $start-$stop($chr)
 } if $BENCHMARK;
     return $obj;
