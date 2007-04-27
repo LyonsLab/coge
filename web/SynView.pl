@@ -59,9 +59,7 @@ $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 my %ajax = CoGe::Accessory::Web::ajax_func();
 #$ajax{dataset_search} = \&dataset_search_for_feat_name; #override this method from Accessory::Web
 my $pj = new CGI::Ajax(
-#		       rset=>\&Rset,
 		       run=>\&Show_Summary,
-		       
 		       loading=>\&loading,
 		       %ajax,
 		      );
@@ -75,10 +73,6 @@ print $pj->build_html($FORM, \&gen_html);
 #print Show_Summary('contig_16224','2665176','10000','10000','502','At1g07300','124379','10000','10000','6','At2g29640','134498','10000','10000','7','','1','0','','','1','0','','','1','0','','','0','1','','','0','1','','','0','1','','1','15','0','0','7','5','2','-2','','1000','150','20');
 #Show_Summary('supercontig_226','3686634','-126900','-232900','513','0','At1g07370','122228','10','10','6','1','At2g29570','142412','10','10','7','0','','1','0','','','1','0','','','1','0','','','0','1','','','0','1','','','0','1','','1','15','0','0','7','5','2','-2','10','','1000','100','20','1','linear','1','0','20','blastn');
 
-sub Rset
-  {
-    return " ";
-  }
 sub loading
   {
     return qq{<font class="loading">Generating results. . .</font>};
