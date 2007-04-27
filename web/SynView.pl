@@ -166,6 +166,7 @@ sub gen_body
 sub Show_Summary 
   {
     my %opts = @_;
+
     my $accn1 = $opts{accn1};
     my $featid1 = $opts{featid1};
     my $dr1up = $opts{up1};
@@ -696,7 +697,7 @@ sub process_features
       {
         my $f;
 	my $type = $feat->{F_KEY};
-	my ($name) = sort { length ($b) <=> length ($a) || $a cmp $b} @{$feat->{QUALIFIERS}{names}};	
+	my ($name) = sort { length ($b) <=> length ($a) || $a cmp $b} @{$feat->{QUALIFIERS}{names}};
         if ($type =~ /Gene/i)
           {
 #	    next;
