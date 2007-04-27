@@ -35,6 +35,17 @@ $(".location").keyup(function(){
   if ($('#accn3').val()) {dataset_search(['accn3','args__3'],[feat_search_chain]);}
 }
 
+function rset () {
+$("#results").html(" ");
+$('#accn1').val("");
+dataset_search(['accn1','args__1'],[feat_search_chain]);
+$('#accn2').val("");
+dataset_search(['accn2','args__2'],[feat_search_chain]);
+$('#accn3').val("");
+dataset_search(['accn3','args__3'],[feat_search_chain]);
+
+}
+
 
 function set_hsp_colors (type)
  {
@@ -151,6 +162,7 @@ setup();
 // $("#blast_program").change(function(){alert("hi");});
 
  });
+
 </SCRIPT>
 
 
@@ -648,7 +660,7 @@ Note: parameter options haven't been implemented for blastz (yet)
   </TD>
  <TR>
   <Td>
-<font class="small">Auto adjust overlapping features? <label><input class="backbox" type="radio" name="overlap_adjustment" id="overlap_adjustment" tabindex="1" value="1" checked />Yes</label><label><input class="backbox" type="radio" name="overlap_adjustment" id="overlap_adjustment" tabindex="1" value="0" />No</label></font>
+<font class="small">Auto adjust overlapping features? <label><input class="backbox" type="radio" name="overlap_adjustment" id="overlap_adjustment" tabindex="1" value="0" checked />Yes</label><label><input class="backbox" type="radio" name="overlap_adjustment" id="overlap_adjustment" tabindex="1" value="1" />No</label></font>
     </DIV>
   </TD>
  <TR>
