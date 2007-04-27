@@ -7,6 +7,7 @@ use Data::Dumper;
 use base 'Class::Accessor';
 use CGI::Carp('fatalsToBrowser');
 use CGI;
+use DBIxProfiler;
 
 BEGIN {
     use Exporter ();
@@ -20,7 +21,8 @@ BEGIN {
     $coge = new CoGe::Genome;
     my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
     $cogex = CoGeX->connect($connstr, 'cnssys', 'CnS' );
-
+#    $cogex->storage->debugobj(new DBIxProfiler());
+#    $cogex->storage->debug(1);
     __PACKAGE__->mk_accessors qw(restricted_orgs);
  }
 
@@ -165,7 +167,7 @@ sub feat_search_for_feat_name
 						   'prefetch'=>['feature_type', 'dataset'],
 						  }
 						 );
-    foreach my $f ($rs->next())
+    while( my $f =$rs->next())
       {
 	next unless $f->dataset->id == $dsid;
 	next if $f->feature_type->name =~ /CDS/i;
