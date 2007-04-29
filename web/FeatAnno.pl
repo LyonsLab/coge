@@ -6,7 +6,7 @@ use CGI::Carp 'fatalsToBrowser';
 use Data::Dumper;
 use CoGe::Genome;
 use CoGe::Accessory::LogUser;
-
+#use CoGeX;
 $ENV{PATH} = "/opt/apache/CoGe/";
 
 use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $DB $FORM $FID $DS $CHR $LOC $ORG $VERSION $START $STOP);
@@ -31,6 +31,10 @@ $ORG = $FORM->param('org') || $FORM->param('organism');
 $VERSION = $FORM->param('version') || $FORM->param('ver');
 
 $DB = new CoGe::Genome;
+#my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
+#my $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
+#$coge->storage->debugobj(new DBIxProfiler());
+#$coge->storage->debug(1);
 print "Content-Type: text/html\n\n";
 my $rhtml = gen_html(featid=>$FID, start=>$START, stop=>$STOP, chr=>$CHR, ds=>$DS, org=>$ORG, version=>$VERSION) if $START > 0;
 print "<font class=title3>Position:</font> <font class=data>$START-$STOP</font><br><hr>";
