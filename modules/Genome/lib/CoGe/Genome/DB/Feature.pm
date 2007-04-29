@@ -13,7 +13,7 @@ BEGIN {
     @EXPORT_OK   = qw ();
     %EXPORT_TAGS = ();
     __PACKAGE__->table('feature');
-    __PACKAGE__->columns(All=>qw{feature_id feature_type_id dataset_id});
+    __PACKAGE__->columns(All=>qw{feature_id feature_type_id dataset_id start stop strand chromosome});
     __PACKAGE__->has_a('dataset_id'=>'CoGe::Genome::DB::Dataset');
     __PACKAGE__->has_a('feature_type_id'=>'CoGe::Genome::DB::Feature_type');
     __PACKAGE__->has_many('feature_names'=>'CoGe::Genome::DB::Feature_name');
@@ -30,20 +30,18 @@ SELECT f.feature_id
     __PACKAGE__->set_sql ('select_features_in_range' => qq{
 SELECT DISTINCT f.feature_id
   FROM feature f
-  JOIN location l USING (feature_id)
- WHERE ? <= l.stop
-   AND ? >= l.start
+ WHERE ? <= stop
+   AND ? >= start
    AND chromosome = ?
-   AND f.dataset_id = ?;
+   AND dataset_id = ?;
 });
     __PACKAGE__->set_sql ('count_features_in_range' => qq{
 SELECT COUNT(DISTINCT f.feature_id)
   FROM feature f
-  JOIN location l USING (feature_id)
- WHERE ? <= l.stop
-   AND ? >= l.start
+ WHERE ? <= stop
+   AND ? >= start
    AND chromosome = ?
-   AND f.dataset_id = ?;
+   AND dataset_id = ?;
 });
   __PACKAGE__->set_sql ('select_all_feature_ids' => qq{
 SELECT feature_id 
@@ -571,10 +569,11 @@ See Also   :
 sub begin_location
   {
     my $self = shift;
-    my @locs = $self->locs;
-    return unless scalar (@locs);
-    my ($val) = sort {$a->begin <=> $b->begin} @locs;
-    return $val->begin;
+    return $self->start;
+    # my @locs = $self->locs;
+#     return unless scalar (@locs);
+#     my ($val) = sort {$a->begin <=> $b->begin} @locs;
+    #return $val->begin;
   }
 
 ################################################ subroutine header begin ##
@@ -605,11 +604,11 @@ sub start_location
 
 ################################################## subroutine header end ##
 
-sub start
-  {
-    my $self = shift;
-    return $self->begin_location;
-  }
+# sub start
+#   {
+#     my $self = shift;
+#     return $self->begin_location;
+#   }
 
 ################################################ subroutine header begin ##
 
@@ -652,10 +651,11 @@ See Also   :
 sub end_location
   {
     my $self = shift;
-    my @locs = $self->locs;
-    return unless scalar @locs;
-    my ($val) = sort {$b->end <=> $a->end} @locs;
-    return $val->end;
+    return $self->stop;
+#    my @locs = $self->locs;
+#    return unless scalar @locs;
+#    my ($val) = sort {$b->end <=> $a->end} @locs;
+#    return $val->end;
   }
 
 ################################################ subroutine header begin ##
@@ -686,11 +686,11 @@ sub stop_location
 
 ################################################## subroutine header end ##
 
-sub stop
-  {
-    my $self = shift;
-    return $self->end_location;
-  }
+# sub stop
+#   {
+#     my $self = shift;
+#     return $self->end_location;
+#   }
 
 ################################################ subroutine header begin ##
 
@@ -729,13 +729,13 @@ See Also   :
 ################################################## subroutine header end ##
 
 
-sub chromosome
-  {
-    my $self = shift;
-    my $loc = $self->locs->next;
-    return unless $loc;
-    return $loc->chr();
-  }
+# sub chromosome
+#   {
+#     my $self = shift;
+#     my $loc = $self->locs->next;
+#     return unless $loc;
+#     return $loc->chr();
+#   }
 
 ################################################ subroutine header begin ##
 
@@ -773,13 +773,13 @@ See Also   :
 ################################################## subroutine header end ##
 
 
-sub strand
-  {
-    my $self = shift;
-    my $loc = $self->locs->next;
-    return unless $loc;
-    return $loc->strand();
-  }
+# sub strand
+#   {
+#     my $self = shift;
+#     my $loc = $self->locs->next;
+#     return unless $loc;
+#     return $loc->strand();
+#   }
 
 
 ################################################ subroutine header begin ##
