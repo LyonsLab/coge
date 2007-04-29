@@ -132,7 +132,8 @@ sub get_anno
 	$anno .= join "\n<BR><HR><BR>\n", $feat->annotation_pretty_print_html();
 	$anno .= qq{<DIV id="loc$i"><input type="button" value = "Click for chromosomal view" onClick="window.open('GeLo.pl?chr=$chr&ds=$ds&INITIAL_CENTER=$x,0&z=$z');"></DIV>};
 	$anno .= qq{<DIV id="exp$i"><input type="button" value = "Click for expression tree" onClick="gen_data(['args__Generating expression view image'],['exp$i']);show_express(['args__}.$accn.qq{','args__}.'1'.qq{','args__}.$i.qq{'],['exp$i']);"></DIV>};
-	$anno .= qq{<DIV id="dnaseq$i"><input type="button" value = "Click for DNA sequence" onClick="window.open('SeqView.pl?featid=$featid&dsid=$ds&chr=$chr&featname=$accn&rc=$rc&pro=$pro','window', 'menubar=1, resizable=1, scrollbars=1, location=1,left=20, top=20, width=700, height=610');"></DIV>};
+	$anno .= qq{<DIV id="dnaseq$i"><input type="button" value = "Click for Sequence" onClick="window.open('SeqView.pl?featid=$featid&dsid=$ds&chr=$chr&featname=$accn&rc=$rc&pro=$pro');"></DIV>};
+	#,'window', 'menubar=1, resizable=1, scrollbars=1, location=1,left=20, top=20, width=700, height=610'
 	#"gen_data(['args__retrieving sequence'],['dnaseq$i']);get_dna_seq_for_feat(['args__}.$feat->id.qq{'],['dnaseq$i']);"></DIV>};
 	#$anno .= qq{<DIV id="rcdnaseq$i"><input type="button" value = "Click for DNA sequence reverse complement" onClick="gen_data(['args__retrieving sequence'],['rcdnaseq$i']);get_rcdna_seq_for_feat(['args__}.$feat->id.qq{'],['rcdnaseq$i']);"></DIV>};
 	#$anno .= qq{<DIV id="protseq$i"><input type="button" value = "Click for protein sequence" onClick="gen_data(['args__retrieving sequence'],['protseq$i']);get_prot_seq_for_feat(['args__}.$feat->id.qq{'],['protseq$i']);"></DIV>\n\n};
@@ -209,12 +210,17 @@ sub get_data_source_info_for_accn
     foreach my $feat (@feats)
       {
 	my $val = $feat->dataset;
+	unless ($val)
+	  {
+	    warn "error with feature: ".$feat->id ." for name $accn\n";
+	    next;
+	  }
 	my $name = $val->name;
 	my $ver = $val->version;
 	my $desc = $val->description;
-	my $sname = $val->data_source->name;
+	my $sname = $val->data_source->name if $val->data_source;
 	my $ds_name = $val->name;
-	my $org = $val->org->name;
+	my $org = $val->org->name if $val->org;
 	my $title = "$org: $ds_name ($sname, v$ver)";
 	next if $restricted_orgs{$org};
 	$sources{$title} = $val->id;
