@@ -1502,10 +1502,13 @@ sub generate_annotation
 	    print OUT join (" ", $gene->[0][2], $gene->[0][0], $gene->[0][1], $name),"\n";
 	    foreach my $type (keys %{$data{$name}})
 	      {
-		$type = "utr" if $type =~ /rna/i;
+		my $outtype;
+		$outtype = "utr" if $type =~ /rna/i;
+		$outtype = "exon" if $type =~ /cds/i;
+		next unless $outtype;
 		foreach my $item (@{$data{$name}{$type}})
 		  {
-		    print OUT join (" ", $item->[0], $item->[1],$type),"\n";
+		    print OUT join (" ", $item->[0], $item->[1],$outtype),"\n";
 		  }
 	      }
 	  }
