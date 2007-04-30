@@ -565,11 +565,13 @@ sub Show_Summary
 	    $html .= "<div><font class=xsmall><A HREF=\"$basename\">Fasta file for $accn</A></font></DIV>\n";
 	  }
 	$html .= qq{<td class = small>Annotation files};
+	my $i = 0;
 	foreach my $item (@sets)
 	  {
-	    my $basename = $TEMPURL."/".basename (generate_annotation(%$item));
+	    my $basename = $TEMPURL."/".basename (generate_annotation(%$item, rev=>$reverse_image[1]));
 	    my $accn = $item->{accn};
 	    $html .= "<div><font class=xsmall><A HREF=\"$basename\">Annotation file for $accn</A></font></DIV>\n";
+	    $i++;
 	  }
       }
     $html .= qq{</table>};
@@ -1103,6 +1105,10 @@ sub get_obj_from_genome_db
 	    $name = $tmp;
 	    last if ($tmp =~ /^$accn.+/i);
 	  }
+	unless (@names)
+	  {
+	    print STDERR "No Name: ",$f->id,"\n";;
+	  }
 	$name = $accn unless $name;
 	print STDERR $name,"\n" if $DEBUG;
 	print STDERR "\t", $f->genbank_location_string(),"\n" if $DEBUG;
@@ -1474,6 +1480,7 @@ sub generate_annotation
     my $obj = $opts{obj};
     my $start = $opts{file_begin};
     my $stop = $opts{file_end};
+    my $rev = $opts{rev} || $opts{reverse};
     my @opts = ($start, $stop);# if $start && $stop;
     my $tmp_file = new File::Temp ( TEMPLATE=>'Anno__XXXXX',
 				    DIR=>$TEMPDIR,
@@ -1481,6 +1488,7 @@ sub generate_annotation
 				    UNLINK=>0);
     my $fullname = $tmp_file->filename;
     my %data;
+    my $length = $obj->{stop} - $obj->{start}+1;
     foreach my $feat($obj->get_features(@opts))
       {
 	my $type = $feat->{F_KEY};
@@ -1489,7 +1497,14 @@ sub generate_annotation
 	foreach my $block (@{$feat->{'blocks'}})
 	  {
 	    $block->[0] =1 unless $block->[0];
-	    push @{$data{$name}{$type}},[$block->[0], $block->[1], $dir];
+	    my $start = $block->[0];
+	    my $stop = $block->[1];
+	    if ($rev)
+	      {
+		$start = $length - $block->[1];
+		$stop = $length - $block->[0];
+	      }
+	    push @{$data{$name}{$type}},[$start, $stop, $dir];
 	  }
       }
     open (OUT, ">$fullname") || die "Can't open $fullname for writing! $!\n";
