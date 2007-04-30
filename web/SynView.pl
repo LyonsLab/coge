@@ -832,7 +832,7 @@ sub process_hsps
 	    my $color = $colors->[$i];
 	    my $skip = 0;
 
-	    if (!$show_hsps_with_stop_codon && ($hsp->qalign =~ /\*/ || $hsp->salign =~ /\*/))
+	    if ($show_hsps_with_stop_codon && ($hsp->qalign =~ /\*/ || $hsp->salign =~ /\*/))
 	      {
 		for my $i (0..(length ($hsp->qalign)-1))
 		  {
