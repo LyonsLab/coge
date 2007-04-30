@@ -1506,6 +1506,7 @@ sub generate_annotation
 		$outtype = "utr" if $type =~ /rna/i;
 		$outtype = "exon" if $type =~ /cds/i;
 		next unless $outtype;
+		next if $item->[0] == $item->[1];
 		foreach my $item (@{$data{$name}{$type}})
 		  {
 		    print OUT join (" ", $item->[0], $item->[1],$outtype),"\n";
