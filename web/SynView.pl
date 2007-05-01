@@ -88,15 +88,15 @@ sub gen_html
     else
       {
 	my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
-	$template->param(LOGO_PNG=>"SynView-logo.png");
-	$template->param(TITLE=>'Synteny Viewer');
-	$template->param(HELP=>'SynView');
+	$template->param(LOGO_PNG=>"GEvo-logo.png");
+	$template->param(TITLE=>'Genome Evolution Analysis');
+	$template->param(HELP=>'GEvo');
 	$template->param(USER=>$USER);
 	$template->param(DATE=>$DATE);
 	$template->param(NO_BOX=>1);
 	$template->param(BODY=>gen_body());
 #	$template->param(BODY_ONLOAD=>"setup();");
-	my $prebox = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SynView.tmpl');
+	my $prebox = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GEvo.tmpl');
 	$prebox->param(RESULTS_DIV=>1);
 	$template->param(PREBOX=>$prebox->output);
 	
@@ -130,7 +130,7 @@ sub gen_body
     my $rev3y = "checked" if $form->param('rev3');
     my $rev3n = "checked" unless $rev3y;
 
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SynView.tmpl');
+    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GEvo.tmpl');
     my $box = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
     $template->param(ACCN1=>$accn1);
     $template->param(ACCN2=>$accn2);
@@ -591,7 +591,7 @@ sub Show_Summary
     my $image_time = timestr(timediff($t4,$t3));
     my $html_time = timestr(timediff($t5,$t4));
     print STDERR qq{
-SynView Benchmark: $DATE
+GEvo Benchmark: $DATE
 Time to get DB info             : $db_time
 Time to run blast               : $blast_time
 Time to generate images and maps: $image_time
@@ -665,7 +665,7 @@ sub generate_image
     $graphic->process_nucleotides(c=>$gfx, seq=>$gbobj->{SEQUENCE}, layers=>{gc=>$show_gc});
     process_features(c=>$gfx, obj=>$gbobj, start=>$start, stop=>$stop, overlap_adjustment=>$overlap_adjustment);
     process_hsps(c=>$gfx, data=>$data, accn=>$gbobj->{ACCN}, rev=>$reverse_image, seq_length=> length($gbobj->{SEQUENCE}), stagger_label=>$stagger_label, hsp_limit=>$hsp_limit, hsp_limit_num=>$hsp_limit_num, gbobj=>$gbobj, spike_seq=>$spike_seq, eval_cutoff=>$eval_cutoff, color_hsp=>$color_hsp, colors=>$hsp_colors, show_hsps_with_stop_codon=>$show_hsps_with_stop_codon);
-    my $file = new File::Temp ( TEMPLATE=>'SynView__XXXXX',
+    my $file = new File::Temp ( TEMPLATE=>'GEvo__XXXXX',
 				   DIR=>$TEMPDIR,
 				    SUFFIX=>'.png',
 				    UNLINK=>0);
