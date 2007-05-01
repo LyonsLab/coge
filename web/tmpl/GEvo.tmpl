@@ -1,0 +1,887 @@
+<TMPL_IF NAME=SEQ_RETRIEVAL>
+<HTML>
+<HEAD>
+ <TITLE><TMPL_VAR NAME=TITLE></TITLE>
+ <link rel="stylesheet" type="text/css" href="/CoGe/css/styled.css" />
+ <link rel="stylesheet" type="text/css" href="/CoGe/css/sddm.css" />
+ <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+</HEAD>
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.js"></SCRIPT>
+<script language="JavaScript" type="text/javascript" src="/CoGe/js/menu.js"></script>
+<SCRIPT language="JavaScript">
+function submitform() {
+  document.main_form.submit();
+}
+function change( info ) {
+        document.getElementById("info").innerHTML = info;        
+}
+
+function changeColor(id, color) {
+  document.getElementById(id).style.color = color;
+}
+
+function setup(){
+
+$(".location").keyup(function(){
+     if($('#apply_all')[0].checked){
+        var self = this;
+        $('.location').val(self.value)
+     }
+});
+
+
+  if ($('#accn1').val()) {dataset_search(['accn1','args__1'],[feat_search_chain]);}
+  if ($('#accn2').val()) {dataset_search(['accn2','args__2'],[feat_search_chain]);}
+  if ($('#accn3').val()) {dataset_search(['accn3','args__3'],[feat_search_chain]);}
+}
+
+function rset () {
+$("#results").html(" ");
+$('#accn1').val("");
+dataset_search(['accn1','args__1'],[feat_search_chain]);
+$('#accn2').val("");
+dataset_search(['accn2','args__2'],[feat_search_chain]);
+$('#accn3').val("");
+dataset_search(['accn3','args__3'],[feat_search_chain]);
+$('#gbaccn1').val("");
+$('#gbaccn2').val("");
+$('#gbaccn3').val("");
+$('#seq1').val("");
+$('#seq2').val("");
+$('#seq3').val("");
+}
+
+
+function set_hsp_colors (type)
+ {
+  if (type == "rasta")
+   {
+    $('#hsp1r').val(255)
+    $('#hsp1g').val(0)
+    $('#hsp1b').val(0)
+    $('#hsp2r').val(255)
+    $('#hsp2g').val(255)
+    $('#hsp2b').val(0)
+    $('#hsp3r').val(51)
+    $('#hsp3g').val(102)
+    $('#hsp3b').val(51)
+   }
+  else if (type == "cblind")
+   {
+    $('#hsp1r').val(110)
+    $('#hsp1g').val(110)
+    $('#hsp1b').val(110)
+    $('#hsp2r').val(200)
+    $('#hsp2g').val(200)
+    $('#hsp2b').val(150)
+    $('#hsp3r').val(220)
+    $('#hsp3g').val(220)
+    $('#hsp3b').val(220)
+   }
+  else if (type == "fire")
+   {
+    $('#hsp1r').val(255)
+    $('#hsp1g').val(0)
+    $('#hsp1b').val(0)
+    $('#hsp2r').val(255)
+    $('#hsp2g').val(125)
+    $('#hsp2b').val(0)
+    $('#hsp3r').val(255)
+    $('#hsp3g').val(255)
+    $('#hsp3b').val(0)
+   }
+  else 
+   {
+    $('#hsp1r').val(150)
+    $('#hsp1g').val(150)
+    $('#hsp1b').val(255)
+    $('#hsp2r').val(100)
+    $('#hsp2g').val(255)
+    $('#hsp2b').val(100)
+    $('#hsp3r').val(255)
+    $('#hsp3g').val(100)
+    $('#hsp3b').val(100)
+   }
+  
+ }
+
+function feat_search_chain(stuff, num) {
+ if (stuff) {
+  $("#source"+num).html(stuff);
+  feat_search(['accn'+num,'dsid'+num, 'args__'+num],['feat'+num]);
+ }
+}
+
+//this func switching the "left" and "right" sequence values when reverse region display is selected
+function rev_locs (val) {
+  up = $('#'+'dr'+val+'up').val();
+  down = $('#'+'dr'+val+'down').val();
+  $('#'+'dr'+val+'up').val(down);
+  $('#'+'dr'+val+'down').val(up);
+
+}
+
+function check_blast_program (){
+
+var blast = $("#blast_program").val();
+if (blast == "blastz")
+ {
+  
+  $("#blast_options").hide();
+  $("#blastzinfo").show();
+ }
+else
+ {
+  $("#blast_options").show();
+  $("#blastzinfo").hide();	
+
+ }
+if (blast == "tblastx")
+ {
+  $("#wordsize").val(3);
+  $("#gapopen").val(11);
+  $("#gapextend").val(1);
+  $("#eval").val(10);
+  $("#mismatch").hide();
+  $("#tblastninfo").show();		
+ }
+else
+ {
+  $("#tblastninfo").hide();		
+ }
+if (blast == "blastn")
+ {
+  $("#wordsize").val(7);
+  $("#gapopen").val(5);
+  $("#gapextend").val(2);
+  $("#eval").val(100);
+  $("#mismatch").show();
+ }
+ }
+
+
+$(document).ready(function(){
+
+check_blast_program();
+setup();
+// $("#blast_program").change(function(){alert("hi");});
+
+ });
+
+</SCRIPT>
+
+
+<input type="button" value="GO"
+onClick="loading([], ['results']); run([
+	'args__accn1','accn1',
+	'args__featid1', 'featid1', 
+	'args__up1', 'dr1up', 
+	'args__down1', 'dr1down', 
+	'args__rev1', 'rev_region1', 
+
+	'args__accn2', 'accn2', 
+	'args__featid2', 'featid2', 
+	'args__up2', 'dr2up', 
+	'args__down2', 'dr2down', 
+	'args__rev2', 'rev_region2', 
+
+	'args__accn3', 'accn3', 
+	'args__featid3', 'featid3', 
+	'args__up3', 'dr3up', 
+	'args__down3', 'dr3down', 
+	'args__rev3', 'rev_region3', 
+
+	'args__gbaccn1', 'gbaccn1', 
+	'args__gb1start', 'gb1start', 
+	'args__gb1up', 'gb1up', 
+	'args__gb1down', 'gb1down', 
+
+	'args__gbaccn2', 'gbaccn2', 
+	'args__gb2start', 'gb2start', 
+	'args__gb2up', 'gb2up', 
+	'args__gb2down', 'gb2down', 
+
+	'args__gbaccn3', 'gbaccn3', 
+	'args__gb3start', 'gb3start', 
+	'args__gb3up', 'gb3up', 
+	'args__gb3down', 'gb3down', 
+
+	'args__seq1', 'seq1', 
+	'args__dscomp1', 'comp1',
+	'args__dsstart1', 'start1',
+	'args__dsstop1', 'stop1',
+
+	'args__seq2', 'seq2', 
+	'args__dscomp2', 'comp2', 
+	'args__dsstart2', 'start2',
+	'args__dsstop2', 'stop2',
+
+	'args__seq3', 'seq3', 
+	'args__dscomp3', 'comp3', 
+	'args__dsstart3', 'start3',
+	'args__dsstop3', 'stop3',
+
+	'args__matchfilter', 'matchfilter', 
+	'args__spike', 'spike', 
+	'args__mask', 'mask', 
+	'args__maskcns', 'mask_ncs', 
+	'args__word', 'wordsize', 
+	'args__gapo', 'gapopen', 
+	'args__gape', 'gapextend', 
+	'args__mmatch', 'mismatch',
+	'args__eval', 'eval', 
+	'args__bp', 'blastparams',
+	'args__iw', 'iw',
+	'args__ih', 'ih', 
+	'args__fh', 'feat_h',
+        'args__gc', 'show_gc',
+	'args__colorhsp', 'color_hsp',
+	'args__hsplabel', 'hsp_labels',
+	'args__overlap', 'overlap_adjustment',
+	'args__hiqual', 'hiqual',
+	'args__hsplim', 'hsp_limit',
+	'args__hsplimnum', 'hsp_limit_num',
+	'args__prog', 'blast_program',
+	'args__showallhsps', 'show_hsps_with_stop_codon',
+        'args__h1r', 'hsp1r',
+        'args__h1g', 'hsp1g',
+        'args__h1b', 'hsp1b',
+        'args__h2r', 'hsp2r',
+        'args__h2g', 'hsp2g',
+        'args__h2b', 'hsp2b',
+        'args__h3r', 'hsp3r',
+        'args__h3g', 'hsp3g',
+        'args__h3b', 'hsp3b',
+
+  
+],
+['results'], 'POST');"
+>   &nbsp;&nbsp;
+
+<input type="button" value="Clear"
+ onClick="rset([],['results'])">
+<form method="post" enctype="multipart/form-data" name="main_form" onSubmit="">
+<TABLE class="basic" width=100%>
+ <TR>
+  <TH>
+    <DIV class = large>
+      Sequence 1
+    </DIV>
+  </TH>
+  <TH>
+    <DIV class = large>
+      Sequence 2
+    </DIV>
+  </TH>  <TH>
+    <DIV class = large>
+      Sequence 3
+    </DIV>
+  </TH>
+ </TR>
+ <TR>
+  <TH colspan="3">
+   <DIV class="mainDiv">
+   <DIV id = "dr" class="topItem" onMouseOver="Init(this); changeColor('dr','#000099'); " onMouseOut="changeColor('dr','#009900');">CoGe Database Retrieval:</DIV>
+   <DIV class="dropMenu">
+     <DIV class="subMenu" style="display:inline;">
+     <TABLE style="width: 100%;">
+      <TR valign="top">
+      <TD>
+      <TABLE>
+       <TR valign="top">
+        <TD>Name:
+        <TD><input class="backbox" type="text" name="accn1" id="accn1" tabindex="1"  size="20" onBlur="dataset_search(['accn1','args__1'],[feat_search_chain])" value="<TMPL_VAR NAME=ACCN1>" />
+        <DIV id="source1" nowrap><input type="hidden" id="dsid1"></DIV>
+        <DIV id="feat1"><input type="hidden" id="featid1"></DIV>
+      <TR>
+	<TD colspan =2>
+	<font class="small">Reverse region display: <label><input class="backbox" type="radio" name="rev_region1" id="rev_region1" tabindex="1" value="1" <TMPL_VAR NAME=REV1_YES> onclick='rev_locs("1")' />Yes</label><label><input class="backbox" type="radio" name="rev_region1" id="rev_region1" tabindex="1" value="0" <TMPL_VAR NAME=REV1_NO> onclick='rev_locs("1")' />No</label></font>
+      <TR>
+       <TD><DIV class="small">Left sequence:</DIV>
+       <TD><DIV  id="up1" ><input class="location" type="text" name="dr1up" id="dr1up" tabindex="1" size="10" value="<TMPL_VAR NAME=DR1UP>" /> </DIV>
+      <TR>
+       <TD><DIV class="small">Right sequence:</DIV>
+       <TD><DIV  id="down1"><input class="location" type="text" name="dr1down" id="dr1down" tabindex="1" size="10"  value="<TMPL_VAR NAME=DR1DOWN>" /></DIV>
+      <TR>
+        <TD colspan =2><input type="checkbox" name="apply_all" id="apply_all" value="0" /><font class ="small" float>Apply distance to all?</font>
+      </TABLE>
+      <TD>
+      <TABLE>
+       <TR valign="top">
+        <TD>Name:
+        <TD><input class="backbox" type="text" name="accn2" id="accn2" tabindex="1"  size="20" onBlur="dataset_search(['accn2','args__2'],[feat_search_chain])" value="<TMPL_VAR NAME=ACCN2>" />
+        <DIV id="source2" nowrap><input type="hidden" id="dsid2"></DIV>
+        <DIV id="feat2"><input type="hidden" id="featid2"></DIV>
+      <TR>
+	<TD colspan =2>
+	<font class="small">Reverse region display: <label><input class="backbox" type="radio" name="rev_region2" id="rev_region2" tabindex="1" value="1" <TMPL_VAR NAME=REV2_YES> onclick='rev_locs("2")' />Yes</label><label><input class="backbox" type="radio" name="rev_region2" id="rev_region2" tabindex="1" value="0" <TMPL_VAR NAME=REV2_NO> onclick='rev_locs("2")'/>No</label></font>
+       <TR>
+       <TD><DIV class="small">Left sequence:</DIV>
+       <TD><DIV  id="up2" ><input class="location" type="text" name="dr2up" id="dr2up" tabindex="1" size="10" value="<TMPL_VAR NAME=DR2UP>" /></DIV>
+      <TR>
+       <TD><DIV class="small">Right sequence:</DIV>
+       <TD><DIV  id="down2" ><input class="location" type="text" name="dr2down" id="dr2down" tabindex="1" size="10"  value="<TMPL_VAR NAME=DR2DOWN>" /></DIV>
+      </TABLE>
+      <TD>
+      <TABLE>
+       <TR valign="top">
+        <TD>Name:
+        <TD><input class="backbox" type="text" name="accn3" id="accn3" tabindex="1"  size="20" onBlur="dataset_search(['accn3','args__3'],[feat_search_chain])" value="<TMPL_VAR NAME=ACCN3>" />
+        <DIV id="source3" nowrap><input type="hidden" id="dsid3"></DIV>
+        <DIV id="feat3"><input type="hidden" id="featid3"></DIV>
+      <TR>
+	<TD colspan =2>
+	<font class="small">Reverse region display: <label><input class="backbox" type="radio" name="rev_region3" id="rev_region3" tabindex="1" value="1" <TMPL_VAR NAME=REV3_YES> onclick='rev_locs("3")'/>Yes</label><label><input class="backbox" type="radio" name="rev_region3" id="rev_region3" tabindex="1" value="0" <TMPL_VAR NAME=REV3_NO> onclick='rev_locs("3")'/>No</label></font>
+       <TR>
+       <TD><DIV class="small">Left sequence:</DIV>
+       <TD><DIV  id="up3" ><input class="location" type="text" name="dr3up" id="dr3up" tabindex="1" size="10" value="<TMPL_VAR NAME=DR3UP>" /></DIV>
+      <TR>
+       <TD><DIV class="small">Right sequence:</DIV>
+       <TD><DIV  id="down3" ><input class="location" type="text" name="dr3down" id="dr3down" tabindex="1" size="10"  value="<TMPL_VAR NAME=DR3DOWN>" /></DIV>
+      </TABLE>
+     </table>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     </DIV>
+  </DIV>
+  </DIV>
+ </TR>
+
+ <TR>
+  <TH colspan="3">
+   <DIV class="mainDiv" >
+   <DIV id="isr" class="topItem" onMouseOver="Init(this);changeColor('isr','#000099'); " onMouseOut="changeColor('isr','#009900');" >Internet Sequence Retrieval:</DIV>
+   <DIV class="dropMenu">
+     <DIV class="subMenu" style="display:none;" >
+     <TABLE style="width: 100%;">
+      <TR>
+      <TD>        
+      <TABLE>
+       <TR>
+        <TD>GenBank Accession:
+	<TD><input class="backbox" type="text" name="gbaccn1" id="gbaccn1" tabindex="1"  size="10" />
+      <TR>
+	<TD><DIV class="small">Start Position:</DIV>
+      	<TD><input class="backbox" type="text" name="gb1start" id="gb1start" tabindex="1" size="10" value="1" /></TD>
+      <TR>
+       <TD><DIV class="small">Left:</DIV>
+       <TD><input class="backbox" type="text" name="gb1up" id="gb1up" tabindex="1" size="10" value="0" />
+      <TR>
+       <TD><DIV class="small">Right:</DIV>
+       <TD><input class="backbox" type="text" name="gb1down" id="gb1down" tabindex="1" size="10"  value=""/>
+      </TABLE>
+      <TD>
+      <TABLE>
+       <TR>
+        <TD>GenBank Accession:
+	<TD><input class="backbox" type="text" name="gbaccn2" id="gbaccn2" tabindex="1"  size="10" />
+      <TR>
+	<TD><DIV class="small">Start Position:</DIV>
+      	<TD><input class="backbox" type="text" name="gb2start" id="gb2start" tabindex="1" size="10" value="1" /></TD>
+      <TR>
+       <TD><DIV class="small">Left:</DIV>
+       <TD><input class="backbox" type="text" name="gb2up" id="gb2up" tabindex="1" size="10" value="0" />
+      <TR>
+       <TD><DIV class="small">Right:</DIV>
+       <TD><input class="backbox" type="text" name="gb2down" id="gb2down" tabindex="1" size="10"  value=""/>
+      </TABLE>
+      <TD>
+      <TABLE>
+       <TR>
+        <TD>GenBank Accession:
+	<TD><input class="backbox" type="text" name="gbaccn3" id="gbaccn3" tabindex="1"  size="10" />
+      <TR>
+	<TD><DIV class="small">Start Position:</DIV>
+      	<TD><input class="backbox" type="text" name="gb3start" id="gb3start" tabindex="1" size="10" value="1" /></TD>
+      <TR>
+       <TD><DIV class="small">Left:</DIV>
+       <TD><input class="backbox" type="text" name="gb3up" id="gb3up" tabindex="1" size="10" value="0" />
+      <TR>
+       <TD><DIV class="small">Right:</DIV>
+       <TD><input class="backbox" type="text" name="gb3down" id="gb3down" tabindex="1" size="10"  value=""/>
+      </TABLE>
+     </table>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     </DIV>
+  </DIV>
+  </DIV>		
+ </TR>
+ <TR>
+  <TH colspan="3">
+   <DIV class="mainDiv" >
+   <DIV id="dss" class="topItem" onMouseOver="Init(this);  changeColor('dss','#000099'); " onMouseOut="changeColor('dss','#009900');" >Direct Sequence Submission:</DIV>
+   <DIV class="dropMenu">
+     <DIV class="subMenu" style="display:none;" >
+     <TABLE style="width: 100%;">
+      <TR>
+      <TD>
+      <DIV>
+     Sequence:<BR> <textarea class="backbox" name="seq1" id="seq1" tabindex="1"  rows="5" cols="30"></textarea><BR>
+     Reverse Complement: <label><input class="backbox" type="radio" name="comp1" id="comp1" tabindex="1" value="1" />On</label><label><input class="backbox" type="radio" name="comp1" id="comp1" tabindex="1" value="0" checked />Off</label><BR>
+     Start: <input class="backbox" type="text" name="start1" id="start1" tabindex="1"  size="5" value="1" />
+     Stop: <input class="backbox" type="text" name="stop1" id="stop1" tabindex="1"  size="5" value=""  />
+      </DIV>
+      <TD>
+      <DIV>
+     Sequence:<BR> <textarea class="backbox" name="seq2" id="seq2" tabindex="1"  rows="5" cols="30"></textarea><BR>
+     Reverse Complement: <label><input class="backbox" type="radio" name="comp2" id="comp2" tabindex="1" value="1" />On</label><label><input class="backbox" type="radio" name="comp2" id="comp2" tabindex="1" value="0" checked />Off</label><BR>
+     Start: <input class="backbox" type="text" name="start2" id="start2" tabindex="1"  size="5" value="1" />
+     Stop: <input class="backbox" type="text" name="stop2" id="stop2" tabindex="1"  size="5" value=""  />
+      </DIV>
+      <TD>
+      <DIV>
+     Sequence:<BR> <textarea class="backbox" name="seq3" id="seq3" tabindex="1"  rows="5" cols="30"></textarea><BR>
+     Reverse Complement: <label><input class="backbox" type="radio" name="comp3" id="comp3" tabindex="1" value="1" />On</label><label><input class="backbox" type="radio" name="comp3" id="comp3" tabindex="1" value="0" checked />Off</label><BR>
+     Start: <input class="backbox" type="text" name="start3" id="start3" tabindex="1"  size="5" value="1" />
+     Stop: <input class="backbox" type="text" name="stop3" id="stop3" tabindex="1"  size="5" value=""  />
+      </DIV>
+     </table>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     </DIV>
+  </DIV>
+  </DIV>		
+ </TR>
+</TABLE>
+</TMPL_IF>
+
+<TMPL_IF NAME=OPTIONS>
+<TABLE class="basic" width=100%>
+ <TR>
+  <TH colspan="2">
+  <DIV class="mainDiv">
+   <DIV id="ao" class="topItem" onMouseOver="Init(this);changeColor('ao','#000099'); " onMouseOut="changeColor('ao','#009900');" >Algorithm Options:</DIV>
+   <DIV class="dropMenu">
+     <DIV class="subMenu" style="display:none;">
+     <TABLE style="width: 100%;">
+      <TR>
+      <TD>
+
+
+<TABLE class="basic" width=100%>
+ <TR>
+  <TH>
+    <DIV>
+      HSP Filter:
+    </DIV>
+  </TH>
+  <TD>
+    <DIV>
+      <label><input class="backbox" type="radio" name="matchfilter" id="matchfilter" tabindex="15" value="1" checked />On</label><label><input class="backbox" type="radio" name="matchfilter" id="matchfilter" tabindex="15" value="0" />Off</label>
+      <BR>Only show matches with e-values equal to or less than the e-value obtained from an exact match of:<BR>
+      <!-- <label><input class="backbox" type="radio" name="spike" id="spike" value="13" tabindex="16" />13/13</label><label><input class="backbox" type="radio" name="spike" id="spike" value="14" tabindex="17" />14/14</label><label><input class="backbox" type="radio" name="spike" id="spike" value="15" checked tabindex="18" />15/15</label><label><input class="backbox" type="radio" name="spike" id="spike" value="16" tabindex="19" />16/16</label><label><input class="backbox" type="radio" name="spike" id="spike" value="17" tabindex="20" />17/17</label><label><input class="backbox" type="radio" name="spike" id="spike" value="18" tabindex="21" />18/18</label> nucleotides -->
+      <TMPL_VAR NAME=SPIKE_LEN>
+    </DIV>
+  </TH>
+ </TR>
+ <TR>
+  <TH>
+   Mask Exons:<br><font class="small">(Exons Masked during bl2seq run)</font>
+  <TD>
+   <label><input class="backbox" type="radio" name="mask" id="mask" tabindex="22" value="1" />On</label><label><input class="backbox" type="radio" name="mask" id="mask" tabindex="22" value="0" checked />Off</label>
+ </TR>
+ <TR>
+  <TH>
+   Mask Non-coding Sequence:<br><font class="small">(Everything but exons masked during bl2seq run)</font>
+  <TD>
+   <label><input class="backbox" type="radio" name="mask_ncs" id="mask_ncs" tabindex="22" value="1" />On</label><label><input class="backbox" type="radio" name="mask_ncs" id="mask_ncs" tabindex="22" value="0" checked />Off</label>
+ </TR>
+
+        </TABLE>
+     </table>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     </DIV>
+  </DIV>
+  </DIV>
+ </TR>
+	  
+ </TR>
+
+</TABLE>
+
+
+<TABLE class="basic" width=100%>
+ <TR>
+  <TH colspan="2">
+  <DIV class="mainDiv">
+   <DIV id="bp" class="topItem" onMouseOver="Init(this);changeColor('bp','#000099'); " onMouseOut="changeColor('bp','#009900');" >Blast Parameters:</DIV>
+   <DIV class="dropMenu">
+     <DIV class="subMenu" style="display:none;">
+     <TABLE style="width: 100%;">
+      <TR>
+      <TD>
+      <TABLE>
+  <TR>
+  <TD>Blast Program: </TD>
+  <TD><select class="backbox" id="blast_program" size="1" onchange='check_blast_program()'>
+       <option selected>blastn</option>
+       <option>tblastx</option>
+       <option>blastz</option>
+      </select>
+   </TD>
+ </TR>
+   </Table>    
+ <DIV id = "blast_options">
+   <Table class=small>    
+  <TR>
+  <TD>Word Size (-W):</TD>
+  <TD><input class="backbox" type="text" name="wordsize" id="wordsize" tabindex="1" size="3" value="7" /></TD>
+ </TR>    
+ <TR>
+  <TD>Gap Open Penalty (-G): </TD>
+  <TD><input class="backbox" type="text" name="gapopen" id="gapopen" tabindex="1" size="3" value="5" /></TD>
+ </TR>    
+ <TR>
+  <TD>Gap Extension Penalty (-E): </TD>
+  <TD><input class="backbox" type="text" name="gapextend" id="gapextend" tabindex="1" size="3" value="2" /></TD>
+ </TR>    
+ <TR>
+  <TD>Mismatch Penalty (-q): </TD>
+  <TD><input class="backbox" type="text" name="mismatch" id="mismatch" tabindex="1" size="3" value="-2" /></TD>
+ </TR>    
+ <TR>
+  <TD>Expectation value (E) (-e): </TD>
+  <TD><input class="backbox" type="text" name="eval" id="eval" tabindex="1" size="3" value="100" /></TD>
+ </TR>    
+ <TR>
+  <TD>Other Blast Parameters: </TD>
+  <TD><input class="backbox" type="text" name="blastparams" id="blastparams" tabindex="1" size="60" /></TD>
+ </TR>         
+
+</TABLE>
+</DIV>
+ <DIV id="blastzinfo" class="small">
+Note: parameter options haven't been implemented for blastz (yet)
+</DIV>
+
+ <DIV id="tblastninfo" class="small">
+ <font class="small">Hide HSPs with stop codons in a coding sequence?<label><input class="backbox" type="radio" name="show_hsps_with_stop_codon" id="show_hsps_with_stop_codon" tabindex="1" value="1" />Yes</label><label><input class="backbox" type="radio" name="show_hsps_with_stop_codon" id="show_hsps_with_stop_codon" tabindex="1" value="0" checked />No</label></font>
+<br>Note: Word size limited to 3 for tblastx
+</DIV> 
+
+     </table>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     </DIV>
+  </DIV>
+  </DIV>
+ </TR>
+	  
+ </TR>
+
+</TABLE>
+
+<TABLE class="basic" width=100%>
+ <TR>
+  <TH colspan="2">
+  <DIV class="mainDiv">
+   <DIV id="ip" class="topItem" onMouseOver="Init(this);changeColor('ip','#000099'); " onMouseOut="changeColor('ip','#009900');" >Image Parameters:</DIV>
+   <DIV class="dropMenu">
+     <DIV class="subMenu" style="display:none;">
+     <TABLE style="width: 100%;">
+      <TR>
+      <TD>
+
+<table valign>
+<td valign=top>
+<TABLE class="basic">
+ <TR>
+  <TD>
+    <DIV class="small">
+      Image Width (Pixels):
+    </DIV>
+  </TD>
+  <TD>
+    <DIV class="small">
+	<input class="backbox" type="text" name="iw" id="iw" tabindex="1"  size="10" value="1000" />
+    </DIV>
+  </TD>
+ </TR>
+ <TR>
+  <Td>
+    <DIV class="small">
+      Image Height (Pixels):
+    </DIV>
+  </Td>
+  <TD>
+    <DIV class="small">
+	<input class="backbox" type="text" name="ih" id="ih" tabindex="1"  size="10" value="100" />
+    </DIV>
+  </TD>
+
+ </TR>
+ <TR>
+  <Td>
+    <DIV class="small">
+      Feature Height (Pixels):
+    </DIV>
+  </Td>
+  <TD>
+    <DIV class="small">
+	<input class="backbox" type="text" name="feat_h" id="feat_h" tabindex="1"  size="10" value="15" />
+    </DIV>
+  </TD>
+
+ </TR>
+ <TR>
+  <Td>
+<font class="small">Color GC content: green=GC, orange=N? (SLOW) <label><input class="backbox" type="radio" name="show_gc" id="show_gc" tabindex="1" value="1" />Yes</label><label><input class="backbox" type="radio" name="show_gc" id="show_gc" tabindex="1" value="0" checked />No</label></font>
+    </DIV>
+  </TD>
+ <TR>
+  <Td>
+<font class="small">Auto adjust overlapping features? <label><input class="backbox" type="radio" name="overlap_adjustment" id="overlap_adjustment" tabindex="1" value="0" />Yes</label><label><input class="backbox" type="radio" name="overlap_adjustment" id="overlap_adjustment" tabindex="1" value="1"  checked />No</label></font>
+    </DIV>
+  </TD>
+ <TR>
+  <TD>
+  <font class="small">Draw high-quality images? (~50% slower algorithm) <label><input class="backbox" type="radio" name="hiqual" id="hiqual" tabindex="1" value="1" />Yes</label><label><input class="backbox" type="radio" name="hiqual" id="hiqual" tabindex="1" value="0" checked />No</label></font>
+ </TR>
+</TABLE>
+<td width="3" bgcolor="#99FF99">
+<td valign =top>
+ <table>
+ <TR>
+  <Td>
+<font class="small">Color Matches in HSPs?<label><input class="backbox" type="radio" name="color_hsp" id="color_hsp" tabindex="1" value="1" />Yes</label><label><input class="backbox" type="radio" name="color_hsp" id="color_hsp" tabindex="1" value="0" checked />No</label></font>
+  </TD>
+
+ <TR>
+  <Td>
+<font class="small">HSP Label options: <label><input class="backbox" type="radio" name="hsp_labels" id="hsp_labels" tabindex="1" value="0" />Don't draw</label><label><input class="backbox" type="radio" name="hsp_labels" id="hsp_labels" tabindex="1" value="staggered" checked />Draw Staggered</label><label><input class="backbox" type="radio" name="hsp_labels" id="hsp_labels" tabindex="1" value="linear" />Draw Linear</label></font>
+  </TD>
+ <TR>
+  <Td>
+<font class="small">Limit HSP labels? <label><input class="backbox" type="radio" name="hsp_limit" id="hsp_limit" tabindex="1" value="1" />Yes</label> <label><input class="backbox" type="radio" name="hsp_limit" id="hsp_limit" tabindex="1" value="0" checked />No</label> Show Top: <input class=backbox type=textbox size=3 id="hsp_limit_num" value="20"/></font>
+  </TD>
+ <TR>
+  <tr>
+   <td class="small">
+    <table>
+     <tr>
+   <td class="small">
+     HSP 1 color:
+   <TD class="small">
+     R:<input class="backbox" type="text" name="hsp1r" id="hsp1r" tabindex="1"  size="3" value="150" />
+   <TD class="small">
+     G:<input class="backbox" type="text" name="hsp1g" id="hsp1g" tabindex="1"  size="3" value="150" />
+   <TD class="small">
+     B:<input class="backbox" type="text" name="hsp1b" id="hsp1b" tabindex="1"  size="3" value="255" />
+  <tr>
+   <td class="small">
+     HSP 2 color:
+   <TD class="small">
+     R:<input class="backbox" type="text" name="hsp2r" id="hsp2r" tabindex="1"  size="3" value="100" />
+   <TD class="small">
+     G:<input class="backbox" type="text" name="hsp2g" id="hsp2g" tabindex="1"  size="3" value="255" />
+   <TD class="small">
+     B:<input class="backbox" type="text" name="hsp2b" id="hsp2b" tabindex="1"  size="3" value="100" />
+  <tr>
+   <td class="small">
+     HSP 3 color:
+   <TD class="small">
+     R:<input class="backbox" type="text" name="hsp3r" id="hsp3r" tabindex="1"  size="3" value="255" />
+   <TD class="small">
+     G:<input class="backbox" type="text" name="hsp3g" id="hsp3g" tabindex="1"  size="3" value="100" />
+   <TD class="small">
+     B:<input class="backbox" type="text" name="hsp3b" id="hsp3b" tabindex="1"  size="3" value="100" />
+   </table>
+  <tr>
+   <TD> <font class="small">Preset colors: <label><input class="backbox" type="radio" name="hspcolor" onClick="set_hsp_colors('default');"/>Default</label><label><input class="backbox" type="radio" name="hspcolor" onClick="set_hsp_colors('cblind');"/>Color blind</label><label><input class="backbox" type="radio" name="hspcolor" onClick="set_hsp_colors('fire');"/>Fire</label><label><input class="backbox" type="radio" name="hspcolor" onClick="set_hsp_colors('rasta');"/>Rasta</label></font>
+  </table>
+ </table>
+</table>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     </DIV>
+  </DIV>
+  </DIV>
+ </TR>
+	  
+ </TR>
+
+</TABLE>
+
+<TABLE class="basic" width=100%>
+ <TR>
+  <TH colspan="2">
+  <DIV class="mainDiv">
+   <DIV id="infor" class="topItem" onMouseOver="Init(this);changeColor('infor','#000099'); " onMouseOut="changeColor('infor','#009900');" >Information:</DIV>
+   <DIV class="dropMenu">
+     <DIV class="subMenu" style="display:none;">
+     <TABLE style="width: 100%;">
+      <TR>
+      <TD>
+
+
+<TABLE class="basic">
+ <TR valign="top">
+  <TH>
+    <DIV>
+	New:
+    </DIV>
+  </TD>
+  <TD>
+    <DIV>
+	Looking for help?  Check out the <a href ="help/GEvo">GEvo help page</a>!
+    </DIV>
+  </TD>
+ </TR>
+        </TABLE>
+     </table>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     </DIV>
+  </DIV>
+  </DIV>
+ </TR>
+	  
+ </TR>
+
+</TABLE>
+
+
+
+<input type="button" value="GO"
+onClick="loading([], ['results']); run([
+	'args__accn1','accn1',
+	'args__featid1', 'featid1', 
+	'args__up1', 'dr1up', 
+	'args__down1', 'dr1down', 
+	'args__rev1', 'rev_region1', 
+
+	'args__accn2', 'accn2', 
+	'args__featid2', 'featid2', 
+	'args__up2', 'dr2up', 
+	'args__down2', 'dr2down', 
+	'args__rev2', 'rev_region2', 
+
+	'args__accn3', 'accn3', 
+	'args__featid3', 'featid3', 
+	'args__up3', 'dr3up', 
+	'args__down3', 'dr3down', 
+	'args__rev3', 'rev_region3', 
+
+	'args__gbaccn1', 'gbaccn1', 
+	'args__gb1start', 'gb1start', 
+	'args__gb1up', 'gb1up', 
+	'args__gb1down', 'gb1down', 
+
+	'args__gbaccn2', 'gbaccn2', 
+	'args__gb2start', 'gb2start', 
+	'args__gb2up', 'gb2up', 
+	'args__gb2down', 'gb2down', 
+
+	'args__gbaccn3', 'gbaccn3', 
+	'args__gb3start', 'gb3start', 
+	'args__gb3up', 'gb3up', 
+	'args__gb3down', 'gb3down', 
+
+	'args__seq1', 'seq1', 
+	'args__dscomp1', 'comp1',
+	'args__dsstart1', 'start1',
+	'args__dsstop1', 'stop1',
+
+	'args__seq2', 'seq2', 
+	'args__dscomp2', 'comp2', 
+	'args__dsstart2', 'start2',
+	'args__dsstop2', 'stop2',
+
+	'args__seq3', 'seq3', 
+	'args__dscomp3', 'comp3', 
+	'args__dsstart3', 'start3',
+	'args__dsstop3', 'stop3',
+
+	'args__matchfilter', 'matchfilter', 
+	'args__spike', 'spike', 
+	'args__mask', 'mask', 
+	'args__maskcns', 'mask_ncs', 
+	'args__word', 'wordsize', 
+	'args__gapo', 'gapopen', 
+	'args__gape', 'gapextend', 
+	'args__mmatch', 'mismatch',
+	'args__eval', 'eval', 
+	'args__bp', 'blastparams',
+	'args__iw', 'iw',
+	'args__ih', 'ih', 
+	'args__fh', 'feat_h',
+        'args__gc', 'show_gc',
+	'args__colorhsp', 'color_hsp',
+	'args__hsplabel', 'hsp_labels',
+	'args__overlap', 'overlap_adjustment',
+	'args__hiqual', 'hiqual',
+	'args__hsplim', 'hsp_limit',
+	'args__hsplimnum', 'hsp_limit_num',
+	'args__prog', 'blast_program',
+	'args__showallhsps', 'show_hsps_with_stop_codon',
+        'args__h1r', 'hsp1r',
+        'args__h1g', 'hsp1g',
+        'args__h1b', 'hsp1b',
+        'args__h2r', 'hsp2r',
+        'args__h2g', 'hsp2g',
+        'args__h2b', 'hsp2b',
+        'args__h3r', 'hsp3r',
+        'args__h3g', 'hsp3g',
+        'args__h3b', 'hsp3b',
+
+  
+],
+['results'], 'POST');"
+>   &nbsp;&nbsp;
+
+<input type="button" value="Clear"
+ onClick="rset([],['results'])">
+<font class="small">(Results appear at the top of this page)</font>
+<br>
+</form>
+</BODY>
+</HTML>
+</TMPL_IF>
+
+<TMPL_IF NAME="RESULTS_DIV">
+<DIV id="results" ></DIV>
+</TMPL_IF>
