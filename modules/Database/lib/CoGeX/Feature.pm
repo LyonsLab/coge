@@ -111,7 +111,7 @@ sub seqs
 sub eannotations
   {
     my $self = shift;
-    return $self->annotations(undef,{prefetch=>[{annotation_type=>'annotation_type_group'}]});
+    return $self->annotations(undef,{prefetch=>['annotation_type']});
   }
 
 sub annos
