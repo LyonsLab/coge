@@ -1503,6 +1503,7 @@ sub generate_annotation
 	      {
 		$start = $length - $block->[1];
 		$stop = $length - $block->[0];
+		$dir = $dir eq ">" ? "<" : ">";
 	      }
 	    push @{$data{$name}{$type}},[$start, $stop, $dir];
 	  }
