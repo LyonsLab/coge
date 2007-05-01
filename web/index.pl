@@ -77,8 +77,8 @@ sub actions
   {
     my @actions = (
 		   {
-		    ACTION=>qq{<a href="./SynView.pl">SynView: Synteny Viewer</a>},
-		    DESC => qq{Allows uses to compare two sequences using the bl2seq algorithm to find regions of similarity and displays the results graphically.  This program has several unqiue options to aid in the finding of evolutionary conserved non-coding sequences and large syntenic regions.},
+		    ACTION=>qq{<a href="./GEvo.pl">GEvo: Genome Evolution Analysis</a>},
+		    DESC => qq{Allows uses to compare sequences using a variety of sequence comparison algorithms to find regions of similarity and displays the results graphically.  This program has several unqiue options to aid in the finding of evolutionary conserved non-coding sequences and large syntenic regions.},
 		   },
 		   {
 		    
