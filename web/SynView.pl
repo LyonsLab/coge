@@ -564,7 +564,7 @@ sub Show_Summary
 	    my $accn = $item->{accn};
 	    $html .= "<div><font class=xsmall><A HREF=\"$basename\">Fasta file for $accn</A></font></DIV>\n";
 	  }
-	$html .= qq{<td class = small>Annotation files};
+	$html .= qq{<td class = small><a href = "http://baboon.math.berkeley.edu/mavid/gaf.html">GAF</a> annotation files};
 	my $i = 0;
 	foreach my $item (@sets)
 	  {
@@ -700,7 +700,16 @@ sub process_features
         my $f;
 	my $type = $feat->{F_KEY};
 	my ($name) = sort { length ($b) <=> length ($a) || $a cmp $b} @{$feat->{QUALIFIERS}{names}};
-        if ($type =~ /Gene/i)
+        if ($type =~ /pseudogene/i)
+          {
+#	    next;
+	    $f = CoGe::Graphics::Feature::Gene->new();
+	    $f->color([255,33,0,50]);
+	    $f->order($track);
+	    $f->overlay(1);
+	    $f->mag(0.5);
+          }
+        elsif ($type =~ /Gene/i)
           {
 #	    next;
 	    $f = CoGe::Graphics::Feature::Gene->new();
@@ -1113,9 +1122,12 @@ sub get_obj_from_genome_db
 	print STDERR $name,"\n" if $DEBUG;
 	print STDERR "\t", $f->genbank_location_string(),"\n" if $DEBUG;
 	print STDERR "\t", $f->genbank_location_string(recalibrate=>$start),"\n\n" if $DEBUG;
-	my $anno = $f->annotation_pretty_print;
-	$anno =~ s/\n/<br>/g;
-	$anno =~ s/\t/&nbsp;&nbsp;/g;
+	my $anno = $f->annotation_pretty_print_html;
+	
+#	$anno =~ s/\n/<br>/ig;
+	$anno =~ s/\n//ig;
+#	$anno =~ s/\t/&nbsp;&nbsp;/ig;
+	print STDERR $anno if $name =~ /at2g29610/i;;
 	my $location = $f->genbank_location_string(recalibrate=>$start);
 	print STDERR $name, "\t",$f->type->name ,"\t",$location,"\n" if $DEBUG;
 	
