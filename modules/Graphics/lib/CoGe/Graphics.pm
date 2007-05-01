@@ -24,7 +24,7 @@ __PACKAGE__->mk_accessors(
 "MAX_NT",
 "DEBUG", 
 );
-
+$BENCHMARK = 1;
 
 #################### subroutine header begin ####################
 
@@ -481,7 +481,7 @@ sub process_nucleotides
 	    #	my $f2 = CoGe::Graphics::Feature::Sigma54->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
 #	    $f1->transparency(50) if $f1;
 #	    $f2->transparency(50) if $f2;
-	    $c->add_feature($f1) if $f1;
+	    $c->add_feature($f1) if $f1;# && $f1->color->[0] ne 255;
 	    $c->add_feature($f2) if $f2;
 	    $pos+=$chrs;
 	  }
