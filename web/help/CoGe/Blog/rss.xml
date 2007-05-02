@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+<channel>
+<title>CoGe Blog</title>
+<link>file://localhost/Users/elyons/Documents/CoGe/help/CoGe/Blog/Blog.html</link>
+<description>Welcome to the CoGe Blog!  Send us a comment, make a suggestion, send a smoke signal and we'll get back to you here.&#13;&#13;Thanks,&#13;-eric</description>
+<generator>iWeb 1.1.2</generator>
+<image>
+<url>file://localhost/Users/elyons/Documents/CoGe/help/CoGe/Blog/Blog_files/model.jpg</url>
+<title>CoGe Blog</title>
+<link>file://localhost/Users/elyons/Documents/CoGe/help/CoGe/Blog/Blog.html</link>
+</image>
+<item>
+<title>SynView renamed to GEvo</title>
+<link>file://localhost/Users/elyons/Documents/CoGe/help/CoGe/Blog/9AD4C81D-EDFE-43B4-9C20-84C69256B1C6.html</link>
+<guid>file://localhost/Users/elyons/Documents/CoGe/help/CoGe/Blog/9AD4C81D-EDFE-43B4-9C20-84C69256B1C6.html</guid>
+<pubDate>Tue, 1 May 2007 12:55:39 -0700</pubDate>
+<description>Due to the discovery that the name SynView is already in use, we needed to come up with a new name for this tool.  As the tools is used for comparing genomic sequences to discover new patterns of geno</description>
+</item>
+<item>
+<title>CoGeX</title>
+<link>file://localhost/Users/elyons/Documents/CoGe/help/CoGe/Blog/C8157C2A-9966-40A6-A41C-77330DEB40AB.html</link>
+<guid>file://localhost/Users/elyons/Documents/CoGe/help/CoGe/Blog/C8157C2A-9966-40A6-A41C-77330DEB40AB.html</guid>
+<pubDate>Thu, 15 Mar 2007 19:26:02 -0700</pubDate>
+<description>Recently, much work has been done to migrate CoGe's database API from using Class::DBI to DBIx::Class for the base class.  This switch offers major advantages for customizing and prefetching DB querie</description>
+</item>
+<item>
+<title>New Gene Models</title>
+<link>file://localhost/Users/elyons/Documents/CoGe/help/CoGe/Blog/E5170446-706A-4996-A674-AFA8123BCEB9.html</link>
+<guid>file://localhost/Users/elyons/Documents/CoGe/help/CoGe/Blog/E5170446-706A-4996-A674-AFA8123BCEB9.html</guid>
+<pubDate>Thu, 15 Mar 2007 19:22:35 -0700</pubDate>
+<description>&lt;a href="file://localhost/Users/elyons/Documents/CoGe/help/CoGe/Blog/E5170446-706A-4996-A674-AFA8123BCEB9_files/model_1.jpg"&gt;&lt;img src="file://localhost/Users/elyons/Documents/CoGe/help/CoGe/Blog/Images/model.jpg" style="float:left; padding-right:10px; padding-bottom:10px; width:174px; height:151px;"/&gt;&lt;/a&gt;Thanks to Josh Kane for improving the look of GeLo's gene models.</description>
+<enclosure url="file://localhost/Users/elyons/Documents/CoGe/help/CoGe/Blog/E5170446-706A-4996-A674-AFA8123BCEB9_files/model_1.jpg" length="12327" type="image/jpg"/>
+</item>
+<item>
+<title>Blastz implemented for SynView</title>
+<link>file://localhost/Users/elyons/Documents/CoGe/help/CoGe/Blog/BFDBC7C8-0289-454F-B1C5-BF1D693ED734.html</link>
+<guid>file://localhost/Users/elyons/Documents/CoGe/help/CoGe/Blog/BFDBC7C8-0289-454F-B1C5-BF1D693ED734.html</guid>
+<pubDate>Tue, 6 Mar 2007 16:10:40 -0800</pubDate>
+<description>&lt;a href="file://localhost/Users/elyons/Documents/CoGe/help/CoGe/Blog/BFDBC7C8-0289-454F-B1C5-BF1D693ED734_files/synview_1.jpg"&gt;&lt;img src="file://localhost/Users/elyons/Documents/CoGe/help/CoGe/Blog/Images/synview.jpg" style="float:left; padding-right:10px; padding-bottom:10px; width:174px; height:125px;"/&gt;&lt;/a&gt;&lt;a href="http://www.bx.psu.edu/miller_lab/"&gt;Blastz&lt;/a&gt; has been added as a Blast program option under the currently inaptly named menu "Bl2Seq Parameters".  Blastz is a variant of blast that has been optimized for whole genome alignments.  It does </description>
+<enclosure url="file://localhost/Users/elyons/Documents/CoGe/help/CoGe/Blog/BFDBC7C8-0289-454F-B1C5-BF1D693ED734_files/synview_1.jpg" length="46736" type="image/jpg"/>
+</item>
+<item>
+<title>SynView now has option for downloading fasta sequence files and blast reports</title>
+<link>file://localhost/Users/elyons/Documents/CoGe/help/CoGe/Blog/12F95D72-D00F-40DC-B8B1-AB1443737EB3.html</link>
+<guid>file://localhost/Users/elyons/Documents/CoGe/help/CoGe/Blog/12F95D72-D00F-40DC-B8B1-AB1443737EB3.html</guid>
+<pubDate>Thu, 1 Mar 2007 09:16:17 -0800</pubDate>
+<description>&lt;a href="file://localhost/Users/elyons/Documents/CoGe/help/CoGe/Blog/12F95D72-D00F-40DC-B8B1-AB1443737EB3_files/synview_1.jpg"&gt;&lt;img src="file://localhost/Users/elyons/Documents/CoGe/help/CoGe/Blog/Images/synview_1.jpg" style="float:left; padding-right:10px; padding-bottom:10px; width:174px; height:122px;"/&gt;&lt;/a&gt;We've added a section to the results page that allows users to download the fasta sequence files used in the blast analysis as well as the raw blast reports.  This section is displayed below the "Info</description>
+<enclosure url="file://localhost/Users/elyons/Documents/CoGe/help/CoGe/Blog/12F95D72-D00F-40DC-B8B1-AB1443737EB3_files/synview_1.jpg" length="58983" type="image/jpg"/>
+</item>
+<item>
+<title>New option added to Synview for adjusting HSP colors</title>
+<link>file://localhost/Users/elyons/Documents/CoGe/help/CoGe/Blog/6FE816B1-EAAF-4E41-A6F8-7AA652C41D6D.html</link>
+<guid>file://localhost/Users/elyons/Documents/CoGe/help/CoGe/Blog/6FE816B1-EAAF-4E41-A6F8-7AA652C41D6D.html</guid>
+<pubDate>Wed, 28 Feb 2007 14:18:19 -0800</pubDate>
+<description>You now can adjust the colors of HSPs in SynView using options located in the "Image Parameters" menu.  Besides from setting the red, green, blue color channels for each HSP (valid range: 0-255, 0 bei</description>
+</item>
+<item>
+<title>SeqView Help Pages</title>
+<link>file://localhost/Users/elyons/Documents/CoGe/help/CoGe/Blog/E2D4912D-4C5E-4BC2-8EEE-DA724E8674CA.html</link>
+<guid>file://localhost/Users/elyons/Documents/CoGe/help/CoGe/Blog/E2D4912D-4C5E-4BC2-8EEE-DA724E8674CA.html</guid>
+<pubDate>Fri, 16 Feb 2007 10:39:54 -0800</pubDate>
+<description>&lt;a href="file://localhost/Users/elyons/Documents/CoGe/help/CoGe/Blog/E2D4912D-4C5E-4BC2-8EEE-DA724E8674CA_files/SeqView-feature_1.jpg"&gt;&lt;img src="file://localhost/Users/elyons/Documents/CoGe/help/CoGe/Blog/Images/SeqView-feature.jpg" style="float:left; padding-right:10px; padding-bottom:10px; width:174px; height:148px;"/&gt;&lt;/a&gt;We have added &lt;a href="../../SeqView/Welcome.html"&gt;help pages&lt;/a&gt; for SeqView, CoGe's application for retrieving genomic sequence from CoGe's genome database.  This tool is accessed through various other applications in CoGe.</description>
+<enclosure url="file://localhost/Users/elyons/Documents/CoGe/help/CoGe/Blog/E2D4912D-4C5E-4BC2-8EEE-DA724E8674CA_files/SeqView-feature_1.jpg" length="232793" type="image/jpg"/>
+</item>
+<item>
+<title>Papaya genome in SynView</title>
+<link>file://localhost/Users/elyons/Documents/CoGe/help/CoGe/Blog/429373C0-45E5-40CD-B0E1-FCFE89BF8760.html</link>
+<guid>file://localhost/Users/elyons/Documents/CoGe/help/CoGe/Blog/429373C0-45E5-40CD-B0E1-FCFE89BF8760.html</guid>
+<pubDate>Tue, 13 Feb 2007 10:45:17 -0800</pubDate>
+<description>&lt;a href="file://localhost/Users/elyons/Documents/CoGe/help/CoGe/Blog/429373C0-45E5-40CD-B0E1-FCFE89BF8760_files/Evolution%20of%20syntenic%20gene%20pairs%20in%20At2.010-004.png"&gt;&lt;img src="file://localhost/Users/elyons/Documents/CoGe/help/CoGe/Blog/Images/Evolution%20of%20syntenic%20gene%20pairs%20in%20At2.010-004.png" style="float:left; padding-right:10px; padding-bottom:10px; width:174px; height:131px;"/&gt;&lt;/a&gt;A &lt;a href="../../GEvo%20Papaya/Welcome.html"&gt;new section&lt;/a&gt; was added explaining the use of the papaya genome in understanding the post-tetraploid evolution of the Arabidopsis genome.  This also provides an overview of how SynView's three way com</description>
+<enclosure url="file://localhost/Users/elyons/Documents/CoGe/help/CoGe/Blog/429373C0-45E5-40CD-B0E1-FCFE89BF8760_files/Evolution%20of%20syntenic%20gene%20pairs%20in%20At2.010-004.png" length="430535" type="image/png"/>
+</item>
+<item>
+<title>SynView Help pages</title>
+<link>file://localhost/Users/elyons/Documents/CoGe/help/CoGe/Blog/9D5D3915-BD29-4232-B083-E7FCA305CF1F.html</link>
+<guid>file://localhost/Users/elyons/Documents/CoGe/help/CoGe/Blog/9D5D3915-BD29-4232-B083-E7FCA305CF1F.html</guid>
+<pubDate>Tue, 13 Feb 2007 10:38:58 -0800</pubDate>
+<description>&lt;a href="file://localhost/Users/elyons/Documents/CoGe/help/CoGe/Blog/9D5D3915-BD29-4232-B083-E7FCA305CF1F_files/SynView-2way.003-009.jpg"&gt;&lt;img src="file://localhost/Users/elyons/Documents/CoGe/help/CoGe/Blog/Images/SynView-2way.003-009.jpg" style="float:left; padding-right:10px; padding-bottom:10px; width:174px; height:131px;"/&gt;&lt;/a&gt;We've added documentation on how to use &lt;a href="../../GEvo/Overview.html"&gt;SynView&lt;/a&gt; -- one of our comparative genomics tools for easily comparing two or three genomic regions.  This tool helps in the identification of synteny, conserved</description>
+<enclosure url="file://localhost/Users/elyons/Documents/CoGe/help/CoGe/Blog/9D5D3915-BD29-4232-B083-E7FCA305CF1F_files/SynView-2way.003-009.jpg" length="252575" type="image/jpg"/>
+</item>
+</channel>
+</rss>
