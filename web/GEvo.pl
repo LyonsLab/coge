@@ -568,7 +568,7 @@ sub Show_Summary
 	my $i = 0;
 	foreach my $item (@sets)
 	  {
-	    my $basename = $TEMPURL."/".basename (generate_annotation(%$item, rev=>$reverse_image[1]));
+	    my $basename = $TEMPURL."/".basename (generate_annotation(%$item, rev=>$reverse_image[$i]));
 	    my $accn = $item->{accn};
 	    $html .= "<div><font class=xsmall><A HREF=\"$basename\">Annotation file for $accn</A></font></DIV>\n";
 	    $i++;
