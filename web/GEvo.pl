@@ -547,7 +547,7 @@ sub Show_Summary
     $html .= qq{<table>};
     if ($blast_reports && @$blast_reports)
       {
-	$html .= qq{<tr><td class = small>Blast reports};
+	$html .= qq{<tr><td class = small>Alignment reports};
 	foreach my $item (@$blast_reports)
 	  {
 	    my $report = $item->[0];
@@ -555,7 +555,7 @@ sub Show_Summary
 	    my $accn2 = $item->[2];
 	    my $basereportname = basename( $report );
 	    $basereportname = $TEMPURL . "/$basereportname\n";
-	    $html .= "<div><font class=xsmall><A HREF=\"$basereportname\">View blast output for $accn1 versus $accn2</A></font></DIV>\n";
+	    $html .= "<div><font class=xsmall><A HREF=\"$basereportname\">View alignment output for $accn1 versus $accn2</A></font></DIV>\n";
 	  }
 	$html .= qq{<td class = small>Fasta files};
 	foreach my $item (@sets)
