@@ -1,3 +1,4 @@
+
 package CoGe::Graphics::Feature::HSP;
 use strict;
 use base qw(CoGe::Graphics::Feature);
@@ -45,18 +46,19 @@ sub _post_initialize
 	$gd->fill(0,0, $self->get_color($self->color));
         unless ($w < 10)
           {
-            $self->_rounded_edges(x1=>0, y1=>0);
-            $self->_rounded_edges(x1=>$w-1, y1=>0, negx=>-1);
-            $self->_rounded_edges(x1=>$w-1, y1=>$h-1, negx=>-1, negy=>-1);
-            $self->_rounded_edges(x1=>0, y1=>$h-1, negy=>-1);
+#            $self->_rounded_edges(x1=>0, y1=>0);
+#            $self->_rounded_edges(x1=>$w-1, y1=>0, negx=>-1);
+#            $self->_rounded_edges(x1=>$w-1, y1=>$h-1, negx=>-1, negy=>-1);
+#            $self->_rounded_edges(x1=>0, y1=>$h-1, negy=>-1);
           }
 	return;
       }
     my $alignment = $self->alignment;
     my $count = 0;
     #make a colored box around the hsp
-    $gd->fill(0,0, $self->get_color([255,255,255]));
+    $gd->fill(1,1, $self->get_color([255,255,255]));
 
+    print STDERR $self->label,"\t",$alignment,"\n";
     foreach my $chr (split //, $alignment)
       {
 	if ($chr eq "|")
@@ -69,7 +71,7 @@ sub _post_initialize
 	  }  
 	$count++;
       }
-    $gd->rectangle(0,0,$self->iw-1, $self->ih-1, $self->get_color($self->color));
+    $gd->rectangle(1,1,$self->iw-1, $self->ih-1, $self->get_color($self->color));
   }
 
 sub _rounded_edges
@@ -88,6 +90,9 @@ sub _rounded_edges
 	    $poly->addPt($x1,$y1);
 	    $poly->addPt($x1+($negx*($dist-$i)),$y1);
 	    $poly->addPt($x1,$y1+($negy*($i+1))); 
+	    print STDERR "($x1,$y1)\n";
+	    print STDERR "(",$x1+($negx*($dist-$i)),",$y1)\n";
+	    print STDERR "($x1,",$y1+($negy*($i+1)),")\n\n"; 
 	    $gd->filledPolygon($poly, $self->get_color(255,255,255));
 	  }
 }
