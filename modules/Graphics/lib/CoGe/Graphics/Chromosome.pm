@@ -1401,7 +1401,6 @@ sub set_image_height
 	$self->feature_height($self->feature_start_height+$self->feature_mag_height*$self->mag);
       }
 
-
     unless ($self->_max_track)
       {
 	my $top_feat = $self->get_feats(last_order=>1, strand=>1, fill=>0);
@@ -2150,9 +2149,9 @@ sub _make_ticks
 		   100000000000=>"00G",
 		  );
 	my $t = $tick/$key . $end{$key};
-	my $h = $text_loc =~ /-/ ? $y2-1: $y1;#-$self->padding/2;
+	my $h = $text_loc =~ /-/ ? ($y2-$y1+1): $y1;#-$self->padding/2;
 	push @text, {text=>$t,x=>$x+2, 'y'=>$h, size => $label_size};
-	$self->_gd_string(text=>$t,x=>$x+1, 'y'=>$h, size => $label_size) if ($text_loc);
+	$self->_gd_string(text=>$t,x=>$x+2, 'y'=>$h, size => $label_size) if ($text_loc);
 	$tick+= $div;
       }
     return \@text;
