@@ -183,7 +183,7 @@ BEGIN {
     $DEFAULT_COLOR = [0,0,0];
     $CHR_INNER_COLOR = [255,255,255]; #inner color for chromosome
     $CHR_OUTER_COLOR = [0,0,0]; #border color for chromosome
-    $RULER_COLOR = [0,0,255]; #color for measurement ruler
+    $RULER_COLOR = [200,200,255]; #color for measurement ruler
     $TICK_COLOR = [0,0,255]; #color for ticks on measurement ruler
     $RULER_HEIGHT = 20; #height (in pixels) of the ruler
     $FONTTT = "/usr/lib/perl5/site_perl/CoGe/fonts/arial.ttf"; #path to true-type font
