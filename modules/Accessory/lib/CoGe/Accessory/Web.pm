@@ -167,12 +167,14 @@ sub feat_search_for_feat_name
 						   'prefetch'=>['feature_type', 'dataset'],
 						  }
 						 );
+    my %seen;
     while( my $f =$rs->next())
       {
 	next unless $f->dataset->id == $dsid;
 #	next if $f->feature_type->name =~ /CDS/i;
 #	next if $f->feature_type->name =~ /RNA/i;
-	push @feats, $f;
+	push @feats, $f unless $seen{$f->id};
+	$seen{$f->id}=1;
       }
     my $html;
     if (@feats)
