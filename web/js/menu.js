@@ -79,7 +79,7 @@ var timerSlide = null;
 var numMenuItem = 0;
 var slideDelay = 0;
 var divHeight = 22; 
-var moveSlidePix = 20;
+var moveSlidePix = 60;
 var isLocked = false;
 var doFading = false;
 
