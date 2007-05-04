@@ -249,6 +249,7 @@ sub Show_Summary
     my $hsp3r = $opts{h3r};
     my $hsp3g = $opts{h3g};
     my $hsp3b = $opts{h3b};
+    my $padding = $opts{padding};
 
 
     $spike_len = 0 unless $match_filter;
@@ -523,6 +524,7 @@ sub Show_Summary
 							 spike_sequence=>$spike_seq,
 							 show_hsps_with_stop_codon => $show_hsps_with_stop_codon,
 							 hiqual=>$hiqual,
+							 padding=>$padding,
 							);
 #	    print STDERR $map;
 	    $html .= qq!<div>$accn!;
@@ -628,6 +630,7 @@ sub generate_image
     my $hsp_colors = $opts{hsp_colors};
     my $show_hsps_with_stop_codon = $opts{show_hsps_with_stop_codon};
     my $hiqual = $opts{hiqual};
+    my $padding = $opts{padding} || 5;
     my $graphic = new CoGe::Graphics;
     my $gfx = new CoGe::Graphics::Chromosome;
     $gfx->overlap_adjustment(1);
@@ -650,10 +653,11 @@ sub generate_image
 			    fill_labels=>1,
 			    forcefit=>1,
 			    invert_chromosome=>$reverse_image,
-			    minor_tick_labels=>-1,
+			    minor_tick_labels=>1,
 #			    overlap_adjustment=>$overlap_adjustment,
 			    feature_labels=>$feature_labels,
 			    draw_hi_qual=>$hiqual,
+			    padding=>$padding,
 			   );
     $gfx->major_tick_labels(0);
     my $f1= CoGe::Graphics::Feature->new({start=>1, order => 2, strand => 1});
