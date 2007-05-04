@@ -170,8 +170,8 @@ sub feat_search_for_feat_name
     while( my $f =$rs->next())
       {
 	next unless $f->dataset->id == $dsid;
-	next if $f->feature_type->name =~ /CDS/i;
-	next if $f->feature_type->name =~ /RNA/i;
+#	next if $f->feature_type->name =~ /CDS/i;
+#	next if $f->feature_type->name =~ /RNA/i;
 	push @feats, $f;
       }
     my $html;
@@ -182,7 +182,7 @@ sub feat_search_for_feat_name
   };
 	foreach my $feat (@feats)
 	  {
-	    my $loc = "Chr:".$feat->locations->next->chromosome." ".$feat->genbank_location_string;
+	    my $loc = "(".$feat->type->name.") Chr:".$feat->locations->next->chromosome." ".$feat->start."-".$feat->stop;
 	    #working here, need to implement genbank_location_string before I can progress.  Need 
 	    $loc =~ s/(complement)|(join)//g;
 	    my $fid = $feat->id;
