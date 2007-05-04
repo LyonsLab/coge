@@ -538,7 +538,20 @@ sub process_features
       {
         my $f;
 	print STDERR "Feat info: Name: ",$feat->type->name,", Type: ",$feat->type->name, ", Loc: ", $feat->start,"-",$feat->stop,"\n" if $self->DEBUG;
-        if (($layers->{features}{gene} || $layers->{all}) && $feat->type->name =~ /Gene/i)
+        if (($layers->{features}{pseudogene} || $layers->{all}) && $feat->type->name =~ /pseudogene/i)
+          {
+	    $f = CoGe::Graphics::Feature::Gene->new();
+	    $f->color([255,33,0,50]);
+	    foreach my $loc ($feat->locs)
+	      {
+		$f->add_segment(start=>$loc->start, stop=>$loc->stop);
+		$f->strand($loc->strand);
+	      }
+	    $f->order(1);
+	    $f->overlay(1);
+	    $f->mag(0.5);
+          }
+        elsif (($layers->{features}{gene} || $layers->{all}) && $feat->type->name =~ /Gene/i)
           {
 	    $f = CoGe::Graphics::Feature::Gene->new();
 	    $f->color([255,0,0,50]);
@@ -752,6 +765,7 @@ sub process_layers
        gc=>"gc",
        background=>"background",
        all=>"all",
+       pseudogene=>"pseudogene",
       );
     my %features = 
       (
@@ -759,6 +773,7 @@ sub process_layers
        mrna=>1,
        protein=>1,
        gene=>1,
+       pseudogene=>1,
        domain=>1,
        other=>1,
        cns=>1,
