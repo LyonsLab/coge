@@ -369,6 +369,8 @@ sub initialize_c
     my $minor_tick_labels = $opts{minor_tick_labels};
     my $overlap_adjustment = $opts{overlap_adjustment};
     my $draw_hi_qual = $opts{draw_hi_qual};
+    my $padding = $opts{padding};
+    my $max_track = $opts{max_track};
     $debug = 1 if $c->DEBUG;
     $draw_ruler = 1 unless defined $opts{draw_ruler};
     $chr_length = $db->get_genomic_sequence_obj->get_last_position(ds=>$ds, chr=>$chr) if $ds && !$chr_length;
@@ -394,6 +396,8 @@ sub initialize_c
     $c->mag_off($mag_off) if defined $mag_off;
     $c->invert_chromosome($invert_chromosome) if defined $invert_chromosome;
     $c->draw_hi_qual($draw_hi_qual) if defined $draw_hi_qual;
+    $c->padding($padding) if defined $padding;
+    $c->_max_track($max_track) if $max_track;
     if (defined $z) #the $z val is used by the program for making tiles of genomic views.
                 #by convention, a z value of 0 means maximum magnification which is
         	#opposite the convention used in chromosome.pm.  Thus, we need
@@ -417,7 +421,6 @@ sub initialize_c
     $start = $c->_region_start;
     $stop= $c->_region_stop;
     #let's add the max top and bottom tracks to the image to keep its size constant
-    $c->_max_track(3);
 #    my $f1= CoGe::Graphics::Feature->new({start=>1, order => 3, strand => 1});
 #    $f1->merge_percent(0);
 #    $c->add_feature($f1);
