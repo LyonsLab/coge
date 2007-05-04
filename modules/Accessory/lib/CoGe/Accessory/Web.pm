@@ -63,7 +63,7 @@ sub dataset_search_for_feat_name
     my %restricted_orgs = %{$self->restricted_orgs} if $self->restricted_orgs;
     my $rs = $cogex->resultset('Dataset')->search(
 						  {
-						   'feature_names.name'=> {'like'=> $accn.'%'},
+						   'feature_names.name'=> $accn,
 						  },
 						  {
 						   'join'=>{
@@ -159,7 +159,7 @@ sub feat_search_for_feat_name
     my @feats;
     my $rs = $cogex->resultset('Feature')->search(
 						  {
-						   'feature_names.name'=> {'like'=> $accn.'%'},
+						   'feature_names.name'=> $accn,
 						   'dataset.dataset_id' => "$dsid",
 						  },
 						  {
