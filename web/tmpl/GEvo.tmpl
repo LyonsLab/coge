@@ -252,6 +252,7 @@ onClick="loading([], ['results']); run([
         'args__h3r', 'hsp3r',
         'args__h3g', 'hsp3g',
         'args__h3b', 'hsp3b',
+        'args__padding', 'padding',
 
   
 ],
@@ -660,6 +661,19 @@ Note: parameter options haven't been implemented for blastz (yet)
  </TR>
  <TR>
   <Td>
+    <DIV class="small">
+      Padding between tracks (Pixels):
+    </DIV>
+  </Td>
+  <TD>
+    <DIV class="small">
+	<input class="backbox" type="text" name="padding" id="padding" tabindex="1"  size="10" value="5" />
+    </DIV>
+  </TD>
+
+ </TR>
+ <TR>
+  <Td>
 <font class="small">Color GC content: green=GC, orange=N? (SLOW) <label><input class="backbox" type="radio" name="show_gc" id="show_gc" tabindex="1" value="1" />Yes</label><label><input class="backbox" type="radio" name="show_gc" id="show_gc" tabindex="1" value="0" checked />No</label></font>
     </DIV>
   </TD>
@@ -867,7 +881,7 @@ onClick="loading([], ['results']); run([
         'args__h3r', 'hsp3r',
         'args__h3g', 'hsp3g',
         'args__h3b', 'hsp3b',
-
+        'args__padding', 'padding',
   
 ],
 ['results'], 'POST');"
