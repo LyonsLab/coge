@@ -58,7 +58,7 @@ sub _post_initialize
     #make a colored box around the hsp
     $gd->fill(1,1, $self->get_color([255,255,255]));
 
-    print STDERR $self->label,"\t",$alignment,"\n";
+#    print STDERR $self->label,"\t",$alignment,"\n";
     foreach my $chr (split //, $alignment)
       {
 	if ($chr eq "|")
