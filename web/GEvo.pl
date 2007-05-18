@@ -118,6 +118,7 @@ sub gen_body
     my $dr3up = $form->param('dr3up') if $form->param('dr3up');
     my $dr3down = $form->param('dr3down') if $form->param('dr3down');
     my $prog = lc($form->param('prog')) if $form->param('prog');
+    my $exon_mask = $form->param('exon_mask');# if defined $form->param('exon_mask');
     $dr1up = 10000 unless defined $dr1up;
     $dr1down = 10000 unless defined $dr1down;
     $dr2up = 10000 unless defined $dr2up;
@@ -148,7 +149,7 @@ sub gen_body
     $template->param(REV2_NO=>$rev2n);
     $template->param(REV3_YES=>$rev3y);
     $template->param(REV3_NO=>$rev3n);
-
+    
     my $html;
     my $spike_len = match_filter_select();
     $template->param(SPIKE_LEN=>$spike_len);
@@ -158,6 +159,15 @@ sub gen_body
     $html .= $box->output;
     $template->param(SEQ_RETRIEVAL=>0);
     $template->param(OPTIONS=>1);
+    if ($exon_mask)
+      {
+	$template->param(EXON_MASK_ON=>"checked");
+      }
+    else
+      {
+	$template->param(EXON_MASK_OFF=>"checked");
+      }
+
     $box->param(BOX_NAME=>"Options:");
     $box->param(BODY=>$template->output);
     $html .= $box->output;
