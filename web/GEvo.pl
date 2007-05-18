@@ -117,6 +117,7 @@ sub gen_body
     my $dr2down = $form->param('dr2down') if $form->param('dr2down');
     my $dr3up = $form->param('dr3up') if $form->param('dr3up');
     my $dr3down = $form->param('dr3down') if $form->param('dr3down');
+    my $prog = lc($form->param('prog')) if $form->param('prog');
     $dr1up = 10000 unless defined $dr1up;
     $dr1down = 10000 unless defined $dr1down;
     $dr2up = 10000 unless defined $dr2up;
@@ -160,6 +161,7 @@ sub gen_body
     $box->param(BOX_NAME=>"Options:");
     $box->param(BODY=>$template->output);
     $html .= $box->output;
+    $html =~ s/<option>$prog<\/option>/<option selected>$prog<\/option>/ if $prog;
     return $html;
   }
 
@@ -575,9 +577,8 @@ sub Show_Summary
 	    $html .= "<div><font class=xsmall><A HREF=\"$basename\">Annotation file for $accn</A></font></DIV>\n";
 	    $i++;
 	  }
-      }
+      }    
     $html .= qq{</table>};
-
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
 #    print STDERR $html;
     $template->param(BOX_NAME=>"Results: $blast_program");
@@ -841,7 +842,7 @@ sub process_hsps
 	  {
 #	    print STDERR Dumper $hsp;
 #	    print STDERR $hsp->qalign,"\n";
-	    next if defined $eval_cutoff && $hsp->eval > $eval_cutoff;
+	    next if defined $eval_cutoff && $hsp->eval >= $eval_cutoff;
 	    my $color = $colors->[$i];
 	    my $skip = 0;
 
