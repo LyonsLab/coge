@@ -498,7 +498,7 @@ onClick="loading([], ['results']); run([
   <TH>
    Mask Exons:<br><font class="small">(Exons Masked during bl2seq run)</font>
   <TD>
-   <label><input class="backbox" type="radio" name="mask" id="mask" tabindex="22" value="1" />On</label><label><input class="backbox" type="radio" name="mask" id="mask" tabindex="22" value="0" checked />Off</label>
+   <label><input class="backbox" type="radio" name="mask" id="mask" tabindex="22" value="1" <TMPL_VAR NAME=EXON_MASK_ON>/>On</label><label><input class="backbox" type="radio" name="mask" id="mask" tabindex="22" value="0" <TMPL_VAR NAME=EXON_MASK_OFF> />Off</label>
  </TR>
  <TR>
   <TH>
