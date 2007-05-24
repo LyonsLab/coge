@@ -24,7 +24,7 @@ __PACKAGE__->mk_accessors(
 "MAX_NT",
 "DEBUG", 
 );
-$BENCHMARK = 1;
+$BENCHMARK = 0;
 
 #################### subroutine header begin ####################
 
