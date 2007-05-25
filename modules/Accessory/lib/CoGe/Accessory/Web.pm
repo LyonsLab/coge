@@ -182,7 +182,7 @@ sub feat_search_for_feat_name
 	$html .= qq{
 <SELECT name = "featid$num" id = "featid$num" >
   };
-	foreach my $feat (@feats)
+	foreach my $feat (sort {$a->type->name cmp $b->type->name} @feats)
 	  {
 	    my $loc = "(".$feat->type->name.") Chr:".$feat->locations->next->chromosome." ".$feat->start."-".$feat->stop;
 	    #working here, need to implement genbank_location_string before I can progress.  Need 
