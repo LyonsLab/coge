@@ -4,11 +4,10 @@ use CGI;
 use CGI::Carp 'fatalsToBrowser';
 use CGI::Ajax;
 use HTML::Template;
-use GS::MyDB;                  # to hook into local gb db
 use Data::Dumper;
 use File::Basename;
 use File::Temp;
-use GS::MyDB::GBDB::GBObject;
+use CoGe::Accessory::GenBank;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::bl2seq_report;
@@ -33,7 +32,7 @@ use Benchmark qw(:all);
 $ENV{PATH} = "/opt/apache2/CoGe/";
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 
-use vars qw( $DATE $DEBUG $BL2SEQ $BLASTZ $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge);
+use vars qw( $DATE $DEBUG $BL2SEQ $BLASTZ $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge $NUM_SEQS $MAX_SEQS);
 $BL2SEQ = "/opt/bin/bio/bl2seq ";
 $BLASTZ = "/usr/bin/blastz ";
 $TEMPDIR = "/opt/apache/CoGe/tmp";
@@ -41,7 +40,8 @@ $TEMPURL = "/CoGe/tmp";
 # set this to 1 to print verbose messages to logs
 $DEBUG = 0;
 $BENCHMARK = 1;
-
+$NUM_SEQS = 3;
+$MAX_SEQS = 6;
 $| = 1; # turn off buffering 
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		 sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
@@ -80,6 +80,7 @@ sub loading
 
 sub gen_html
   {
+#    my $form = shift || $FORM;
     my $html;# =  "Content-Type: text/html\n\n";
     unless ($USER)
       {
@@ -87,6 +88,7 @@ sub gen_html
       }
     else
       {
+	my $num_seqs = $FORM->param("num_seqs") || $NUM_SEQS;
 	my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
 	$template->param(LOGO_PNG=>"GEvo-logo.png");
 	$template->param(TITLE=>'Genome Evolution Analysis');
@@ -94,9 +96,9 @@ sub gen_html
 	$template->param(USER=>$USER);
 	$template->param(DATE=>$DATE);
 	$template->param(NO_BOX=>1);
-	$template->param(BODY=>gen_body());
+	$template->param(BODY=>gen_body($num_seqs));
 #	$template->param(BODY_ONLOAD=>"setup();");
-	my $prebox = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GEvo.tmpl');
+	my $prebox = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GEvo2.tmpl');
 	$prebox->param(RESULTS_DIV=>1);
 	$template->param(PREBOX=>$prebox->output);
 	
@@ -107,55 +109,116 @@ sub gen_html
 
 sub gen_body
   {
-    my $form = shift || $FORM;
-    my $accn1 = $form->param('accn1') if $form->param('accn1');
-    my $accn2 = $form->param('accn2') if $form->param('accn2');
-    my $accn3 = $form->param('accn3') if $form->param('accn3');
-    my $dr1up = $form->param('dr1up') if $form->param('dr1up');
-    my $dr1down = $form->param('dr1down') if $form->param('dr1down');
-    my $dr2up = $form->param('dr2up') if $form->param('dr2up');
-    my $dr2down = $form->param('dr2down') if $form->param('dr2down');
-    my $dr3up = $form->param('dr3up') if $form->param('dr3up');
-    my $dr3down = $form->param('dr3down') if $form->param('dr3down');
-    my $prog = lc($form->param('prog')) if $form->param('prog');
-    my $exon_mask = $form->param('exon_mask');# if defined $form->param('exon_mask');
-    $dr1up = 10000 unless defined $dr1up;
-    $dr1down = 10000 unless defined $dr1down;
-    $dr2up = 10000 unless defined $dr2up;
-    $dr2down = 10000 unless defined $dr2down;
-    $dr3up = 10000 unless defined $dr3up;
-    $dr3down = 10000 unless defined $dr3down;
-    my $rev1y = "checked" if $form->param('rev1');
-    my $rev1n = "checked" unless $rev1y;
-    my $rev2y = "checked" if $form->param('rev2');
-    my $rev2n = "checked" unless $rev2y;
-    my $rev3y = "checked" if $form->param('rev3');
-    my $rev3n = "checked" unless $rev3y;
+    my $num_seqs = shift;;
+    my $form = $FORM;
+    my $message;
+    if (! ($num_seqs =~ /^\d+$/) )
+      {
+	$message = "Problem with requested number of sequences: '$num_seqs'.  Defaulting to $NUM_SEQS input sequences.";
+	$num_seqs = $NUM_SEQS;
+      }
+    elsif ($num_seqs < 2)
+      {
+	$message = "Minimum number of sequences to compare is two.";
+	$num_seqs = 2;
+      }
+    elsif ($num_seqs > $MAX_SEQS)
+      {
+	$message = "Maximum number of sequence is $MAX_SEQS.";
+	$num_seqs = $MAX_SEQS;
+      }
+    my @coge_seqs;
+    my @ncbi_seqs;
+    my @direct_seqs;
+    my @seq_nums;
+    for (my $i = 1; $i <= $num_seqs; $i++)
+      {
+	my $draccn = $form->param("accn".$i) if $form->param("accn".$i);
+	my $drup = $form->param('dr'.$i.'up') if $form->param('dr'.$i.'up');
+	my $drdown = $form->param('dr'.$i.'down') if $form->param('dr'.$i.'down');
+	$drup = 10000 unless defined $drup;
+	$drdown = 10000 unless defined $drdown;
+	my $revy = "checked" if $form->param('rev'.$i);
+	my $revn = "checked" unless $revy;
+	push @coge_seqs, {
+		     SEQ_NUM=>$i,
+		     REV_YES=>$revy,
+		     REV_NO=>$revn,
+		     DRUP=>$drup,
+		     DRDOWN=>$drdown,
+		     DRACCN=>$draccn,
+		    };
+	push @ncbi_seqs, {
+			  SEQ_NUM=>$i,
+			 };
+	push @direct_seqs, {
+			  SEQ_NUM=>$i,
+			 };
+	push @seq_nums, {
+			  SEQ_NUM=>$i,
+			 };
+      }
 
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GEvo.tmpl');
-    my $box = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
-    $template->param(ACCN1=>$accn1);
-    $template->param(ACCN2=>$accn2);
-    $template->param(ACCN3=>$accn3);
-    $template->param(DR1UP=>$dr1up);
-    $template->param(DR1DOWN=>$dr1down);
-    $template->param(DR2UP=>$dr2up);
-    $template->param(DR2DOWN=>$dr2down);
-    $template->param(DR3UP=>$dr3up);
-    $template->param(DR3DOWN=>$dr3down);
-    $template->param(REV1_YES=>$rev1y);
-    $template->param(REV1_NO=>$rev1n);
-    $template->param(REV2_YES=>$rev2y);
-    $template->param(REV2_NO=>$rev2n);
-    $template->param(REV3_YES=>$rev3y);
-    $template->param(REV3_NO=>$rev3n);
     
+    my $prog = lc($form->param('prog')) if $form->param('prog');
+    my $exon_mask = $form->param('exon_mask');
+
+    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GEvo2.tmpl');
+    my $box = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
+    #generate the coge sequence selector
+    $template->param(COGE_SEQ_SELECT=>1);
+    $template->param(COGE_SEQ_SELECT_LOOP=>\@coge_seqs);
+    my $coge_seqs = $template->output;
+    $template->param(COGE_SEQ_SELECT=>0);
+    #generate the NCBI sequence selector
+    $template->param(NCBI_SEQ_SELECT=>1);
+    $template->param(NCBI_SEQ_SELECT_LOOP=>\@ncbi_seqs);
+    my $ncbi_seqs = $template->output;
+    $template->param(NCBI_SEQ_SELECT=>0);
+    #generate the direct sequence selector
+    $template->param(DIRECT_SEQ_SELECT=>1);
+    $template->param(DIRECT_SEQ_SELECT_LOOP=>\@direct_seqs);
+    my $direct_seqs = $template->output;
+    $template->param(DIRECT_SEQ_SELECT=>0);
+
+    #generate the hsp color option
+    my @colors = color_pallet(num_seqs=>$num_seqs);
+    $template->param(HSP_COLOR_FORM=>1);
+    $template->param(HSP_COLOR_LOOP=>\@colors);
+    my $hsp_colors; $template->output;
+    my $count = -2;
+    foreach my $line (split /\n/, $template->output)
+      {
+	next unless $line;
+	$count ++ if $line =~/<table>/i;
+
+	if ($count == 6)
+	  {
+	    $line =~ s/(<table>)/<td>$1/i;
+	    $count = 0;
+	  }
+
+	$hsp_colors .= $line."\n";
+      }
+    
+    $template->param(HSP_COLOR_FORM=>0);
+    
+
     my $html;
-    my $spike_len = match_filter_select();
+    my $spike_len = spike_filter_select();
     $template->param(SPIKE_LEN=>$spike_len);
     $template->param(SEQ_RETRIEVAL=>1);
+    $template->param(NUM_SEQS=>$num_seqs);
+    $message .= "<BR>" if $message;
+    $template->param(MESSAGE=>$message);
+    $template->param(COGE_SEQS=>$coge_seqs);
+    $template->param(NCBI_SEQS=>$ncbi_seqs);
+    $template->param(DIRECT_SEQS=>$direct_seqs);
+    $template->param(HSP_COLOR=>$hsp_colors);
+    $template->param(GO_BUTTON=>gen_go_button($num_seqs));
     $box->param(BOX_NAME=>"Sequence Retrieval:");
     $box->param(BODY=>$template->output);
+    
     $html .= $box->output;
     $template->param(SEQ_RETRIEVAL=>0);
     $template->param(OPTIONS=>1);
@@ -167,7 +230,7 @@ sub gen_body
       {
 	$template->param(EXON_MASK_OFF=>"checked");
       }
-
+    $template->param(REF_SEQ=>\@seq_nums);
     $box->param(BOX_NAME=>"Options:");
     $box->param(BODY=>$template->output);
     $html .= $box->output;
@@ -178,58 +241,7 @@ sub gen_body
 sub Show_Summary 
   {
     my %opts = @_;
-
-    my $accn1 = $opts{accn1};
-    my $featid1 = $opts{featid1};
-    my $dr1up = $opts{up1};
-    my $dr1down = $opts{down1};
-    my $rev1 = $opts{rev1};
-    
-    my $accn2 = $opts{accn2};
-    my $featid2 = $opts{featid2};
-    my $dr2up = $opts{up2};
-    my $dr2down = $opts{down2};
-    my $rev2 = $opts{rev2};
-    
-    my $accn3 = $opts{accn3};
-    my $featid3 = $opts{featid3};
-    my $dr3up = $opts{up3};
-    my $dr3down = $opts{down3};
-    my $rev3 = $opts{rev13};
-    
-    my $gbaccn1 = $opts{gbaccn1};
-    my $gb1start = $opts{gb1start};
-    my $gb1up = $opts{gb1up};
-    my $gb1down = $opts{gb1down};
-    
-    
-    my $gbaccn2 = $opts{gbaccn2};
-    my $gb2start = $opts{gb2start};
-    my $gb2up = $opts{gb2up};
-    my $gb2down = $opts{gb2down};
-    
-    
-    my $gbaccn3 = $opts{gbaccn3};
-    my $gb3start = $opts{gb3start};
-    my $gb3up = $opts{gb3up};
-    my $gb3down = $opts{gb3down};
-    
-    
-    my $seq1 = $opts{seq1};
-    my $dscomp1 = $opts{dscomp1};
-    my $dsstart1 = $opts{dsstart1};
-    my $dsstop1 = $opts{dsstop1};
-    
-    my $seq2 = $opts{seq2};
-    my $dscomp2 = $opts{dscomp2};
-    my $dsstart2 = $opts{dsstart2};
-    my $dsstop2 = $opts{dsstop2};
-    
-    my $seq3 = $opts{seq3};
-    my $dscomp3 = $opts{dscomp3};
-    my $dsstart3 = $opts{dsstart3};
-    my $dsstop3 = $opts{dsstop3};
-    
+    my $num_seqs = $opts{num_seqs} || $NUM_SEQS;
     my $match_filter = $opts{matchfilter};
     my $spike_len = $opts{spike};
     my $mask_flag = $opts{mask};
@@ -252,24 +264,18 @@ sub Show_Summary
     my $hsp_limit_num = $opts{hsplimnum};
     my $blast_program = $opts{prog};
     my $show_hsps_with_stop_codon = $opts{showallhsps};
-    my $hsp1r = $opts{h1r};
-    my $hsp1g = $opts{h1g};
-    my $hsp1b = $opts{h1b};
-    my $hsp2r = $opts{h2r};
-    my $hsp2g = $opts{h2g};
-    my $hsp2b = $opts{h2b};
-    my $hsp3r = $opts{h3r};
-    my $hsp3g = $opts{h3g};
-    my $hsp3b = $opts{h3b};
     my $padding = $opts{padding};
 
-
     $spike_len = 0 unless $match_filter;
+
     my @hsp_colors;
-    foreach my $set ([$hsp1r,$hsp1g,$hsp1b],[$hsp2r,$hsp2g,$hsp2b],[$hsp3r,$hsp3g,$hsp3b])
+    for (my $i = 1; $i <= num_colors($num_seqs); $i++)
       {
+	my $r = $opts{"r$i"};
+	my $g = $opts{"g$i"};
+	my $b = $opts{"b$i"};
 	my @tmp;
-	foreach my $color (@$set)
+	foreach my $color ($r, $g, $b)
 	  {
 	    $color = 0 unless $color =~ /^\d+$/;
 	    $color = 0 if $color < 0;
@@ -286,199 +292,94 @@ sub Show_Summary
     my $feature_labels = $hsp_label eq "0" ? 0 : 1;
     my $form = $FORM;
 
-    my ($seq_file1, $seq_file2, $seq_file3);
-    my ($f1start, $f1up, $f1down);
-    my ($f2start, $f2up, $f2down);
-    my ($f3start, $f3up, $f3down);
-    my ($obj1, $obj2, $obj3);
-
-
-    my ($file1, $file1_begin, $file1_end);
-    my ($file2, $file2_begin, $file2_end);
-    my ($file3, $file3_begin, $file3_end);
-
-
     my @sets;
     my $html;
-    my $spike_seq;
-    my $db = new GS::MyDB;
     my $t1 = new Benchmark;
-    if ($featid1)
-      {
-	$obj1 = get_obj_from_genome_db( $accn1, $featid1, $rev1, $dr1up, $dr1down );
-	return "<font class=error>No entry found for $featid1</font>" unless ($obj1);
-	($file1, $file1_begin, $file1_end,$spike_seq) = 
-	  generate_seq_file(obj=>$obj1,
-			    mask=>$mask_flag,
-			    mask_ncs=>$mask_ncs_flag,
-			    spike_type=>"Q",
-			    spike_len=>$spike_len,
-			   );
-      }
-    elsif ($seq1 )
-      {
-	$seq1 = get_substr(seq=>$seq1, start=>$dsstart1, stop=>$dsstop1);
-	($obj1) = generate_obj_from_seq($seq1, 1, $dscomp1);
-	return "<font class=error>Problem with direct sequence submission</font>" unless ($obj1);
-	($file1, $file1_begin, $file1_end, $spike_seq) = 
-	  generate_seq_file (
-			     obj=>$obj1,
-			     mask=>$mask_flag,
-			     mask_ncs=>$mask_ncs_flag,
-			     spike_type=>"Q",
-			     spike_len=>$spike_len, 
-			    );
-      }
-    elsif ($gbaccn1 )
-      {
-	$obj1 = $db->{GBSyntenyViewer}->get_genbank_from_nbci($gbaccn1);
-	return "<font class=error>No entry found for $gbaccn1</font>" unless ($obj1);
-	($file1, $file1_begin, $file1_end,$spike_seq) = 
-	      generate_seq_file (
-				 obj=>$obj1,
-				 mask=>$mask_flag,
-				 mask_ncs=>$mask_ncs_flag,
-				 startpos=>$gb1start,
-				 upstream=>$gb1up,
-				 downstream=>$gb1down,
-				 spike_type=>"Q",
-				 spike_len=>$spike_len, 
-			    );
-      }
-    if ($obj1)
-      {
-	push @sets, {
-		     obj=>$obj1,
-		     file=>$file1,
-		     file_begin=>$file1_begin,
-		     file_end=>$file1_end,
-		     accn=>$obj1->{ACCN},
-		    };
-      }
-    #create object 2
-    if ($featid2)
-      {
-	$obj2 = get_obj_from_genome_db( $accn2, $featid2, $rev2, $dr2up, $dr2down);
-	return "<font class=error>No entry found for $featid2</font>" unless ($obj2);
-	($file2, $file2_begin, $file2_end,$spike_seq) =
-	  generate_seq_file(obj=>$obj2,
-			    mask=>$mask_flag,
-			    mask_ncs=>$mask_ncs_flag,
-			    spike_type=>"S",
-			    spike_len=>$spike_len,
-			   );
-      }
-   elsif ($seq2 )
-      {
-	$seq2 = get_substr(seq=>$seq2, start=>$dsstart2, stop=>$dsstop2);
-	($obj2) = generate_obj_from_seq($seq2, 2, $dscomp2);
-	return "<font class=error>Problem with direct sequence submission</font>" unless ($obj2);
-	($file2, $file2_begin, $file2_end, $spike_seq) = 
-	  generate_seq_file (
-			     obj=>$obj2,
-			     mask=>$mask_flag,
-			     mask_ncs=>$mask_ncs_flag,
-			     spike_type=>"Q",
-			     spike_len=>$spike_len, 
-			    );
-      }
-    elsif ($gbaccn2)
-      {
-	$obj2 = $db->{GBSyntenyViewer}->get_genbank_from_nbci($gbaccn2);	
-	return "<font class=error>No entry found for $gbaccn2</font>" unless ($obj2);
-	($file2, $file2_begin, $file2_end,$spike_seq) = 
-	  generate_seq_file (
-			     obj=>$obj2,
-			     mask=>$mask_flag,
-			     mask_ncs=>$mask_ncs_flag,
-			     startpos=>$gb2start,
-			     upstream=>$gb2up,
-			     downstream=>$gb2down,
-			     spike_type=>"Q",
-			     spike_len=>$spike_len, 
-			    );
-       }
-    if ($obj2)
-      {
-	push @sets, {
-		     obj=>$obj2,
-		     file=>$file2,
-		     file_begin=>$file2_begin,
-		     file_end=>$file2_end,
-		     accn=>$obj2->{ACCN},
-		    };
-      }
-    #create object 3
-    if ($featid3)
-      {
-	$obj3 = get_obj_from_genome_db( $accn3, $featid3, $rev3, $dr3up, $dr3down );
-	return "<font class=error>No entry found for $featid3</font>" unless ($obj3);
-	($file3, $file3_begin, $file3_end,$spike_seq) =
-	  generate_seq_file(obj=>$obj3,
-			    mask=>$mask_flag,
-			    mask_ncs=>$mask_ncs_flag,
-			    spike_type=>"S",
-			    spike_len=>$spike_len,
-			   );
-      }
-   elsif ($seq3 )
-      {
-	$seq3 = get_substr(seq=>$seq3, start=>$dsstart3, stop=>$dsstop3);
-	($obj3) = generate_obj_from_seq($seq3, 3, $dscomp3);
-	return "<font class=error>Problem with direct sequence submission</font>" unless ($obj3);
-	($file3, $file3_begin, $file3_end, $spike_seq) = 
-	  generate_seq_file (
-			     obj=>$obj3,
-			     mask=>$mask_flag,
-			     mask_ncs=>$mask_ncs_flag,
-			     spike_type=>"Q",
-			     spike_len=>$spike_len, 
-			    );
-      }
-    elsif ($gbaccn3)
-      {
-	$obj3 = $db->{GBSyntenyViewer}->get_genbank_from_nbci($gbaccn3);	
-	return "<font class=error>No entry found for $gbaccn3</font>" unless ($obj3);
-	($file3, $file3_begin, $file3_end,$spike_seq) = 
-	  generate_seq_file (
-			     obj=>$obj3,
-			     mask=>$mask_flag,
-			     mask_ncs=>$mask_ncs_flag,
-			     startpos=>$gb3start,
-			     upstream=>$gb3up,
-			     downstream=>$gb3down,
-			     spike_type=>"Q",
-			     spike_len=>$spike_len, 
-			    );
-       }
 
-    if ($obj3)
+    for (my $i = 1; $i <= $num_seqs; $i++)
       {
-	push @sets, {
-		     obj=>$obj3,
-		     file=>$file3,
-		     file_begin=>$file3_begin,
-		     file_end=>$file3_end,
-		     accn=>$obj3->{ACCN},
-		    };
-      }
-#    print STDERR "\n";
+	my $accn = $opts{"draccn$i"};
+	my $featid = $opts{"featid$i"};
+	my $drup = $opts{"drup$i"};
+	my $drdown = $opts{"drdown$i"};
+	my $drrev = $opts{"drrev$i"};
 
-    my @reverse_image;
-    push @reverse_image, $rev1 if $obj1;
-    push @reverse_image, $rev2 if $obj2;
-    push @reverse_image, $rev3 if $obj3;
-    my @locs;
-    push @locs, [$dr1up,$dr1down] if $obj1;
-    push @locs, [$dr2up,$dr2down] if $obj2;
-    push @locs, [$dr3up,$dr3down] if $obj3;
+	my $gbaccn = $opts{"gbaccn$i"};
+	my $gbstart = $opts{"gbstart$i"};
+	my $gbup = $opts{"gbup$i"};
+	my $gbdown = $opts{"gbdown$i"};
+	my $gbrev = $opts{"gbrev$i"};
 
-    my $obj_count = 0;
-    foreach ($obj1, $obj2, $obj3)
-      {
-	$obj_count++ if ref($_) =~ /GBObject/ || ref($_) =~ /hash/i;
+	my $dirseq = $opts{"dirseq$i"};
+	my $dirrev = $opts{"dirrev$i"};
+	my $dirstart = $opts{"dirstart$i"};
+	my $dirstop = $opts{"dirstop$i"};
+	my $rev = 0;
+	my ($file, $file_begin, $file_end,$spike_seq, $obj);
+	my $reference_seq =$opts{"ref_seq$i"};
+	
+	if ($featid)
+	  {
+	    $obj = get_obj_from_genome_db( $accn, $featid, $drrev, $drup, $drdown );
+	    return "<font class=error>No entry found for $featid</font>" unless ($obj);
+	    ($file, $file_begin, $file_end,$spike_seq) = 
+	      generate_seq_file(obj=>$obj,
+				mask=>$mask_flag,
+				mask_ncs=>$mask_ncs_flag,
+				spike_len=>$spike_len,
+			       );
+	    $rev = 1 if $drrev;
+	  }
+ 	elsif ($dirseq )
+ 	  {
+ 	    my $seq = get_substr(seq=>$dirseq, start=>$dirstart, stop=>$dirstop);
+ 	    ($obj) = generate_obj_from_seq($seq, $i, $dirrev);
+ 	    return "<font class=error>Problem with direct sequence submission</font>" unless ($obj);
+ 	    ($file, $file_begin, $file_end, $spike_seq) = 
+ 	      generate_seq_file (
+ 				 obj=>$obj,
+ 				 mask=>$mask_flag,
+ 				 mask_ncs=>$mask_ncs_flag,
+ 				 spike_len=>$spike_len, 
+ 				);
+	    $rev = 1 if $dirrev;
+ 	  }
+ 	elsif ($gbaccn )
+ 	  {
+	    $obj = new CoGe::Accessory::GenBank;
+ 	    $obj->get_genbank_from_nbci($gbaccn);
+	    $obj->sequence(CoGeX::Feature->reverse_complement($obj->sequence)) if $gbrev;
+ 	    return "<font class=error>No entry found for $gbaccn</font>" unless ($obj);
+ 	    ($file, $file_begin, $file_end,$spike_seq) = 
+ 	      generate_seq_file (
+ 				 obj=>$obj,
+ 				 mask=>$mask_flag,
+ 				 mask_ncs=>$mask_ncs_flag,
+ 				 startpos=>$gbstart,
+ 				 upstream=>$gbup,
+ 				 downstream=>$gbdown,
+ 				 spike_len=>$spike_len, 
+ 				);
+	    $rev = 1 if $gbrev;
+ 	  }
+	if ($obj)
+	  {
+	    push @sets, {
+			 obj=>$obj,
+			 file=>$file,
+			 file_begin=>$file_begin,
+			 file_end=>$file_end,
+			 accn=>$obj->accn,
+			 rev=>$rev,
+			 up=>$drup,
+			 down=>$drdown,
+			 spike_seq=>$spike_seq,
+			 reference_seq=>$reference_seq,
+			};
+	  }
       }
-    unless ($obj_count >1)
+
+    unless (@sets >1)
       {
 	return "<h3><font color = red>Problem retrieving information.  Please try again.</font></h3>";
       }
@@ -496,24 +397,29 @@ sub Show_Summary
     my $blast_reports;
     if ($blast_program eq "blastz")
       {
-	$blast_reports = run_blastz( files=>[map {$_->{file}} @sets], accns=>[map {$_->{accn}}@sets], params=>undef);
+	$blast_reports = run_blastz( sets=>\@sets, params=>undef);
       }
     else
       {
-	$blast_reports = run_bl2seq( files=>[map {$_->{file}} @sets], accns=>[map {$_->{accn}}@sets], blast_params=>$bl2seq_params, blast_program=>$blast_program );
+	$blast_reports = run_bl2seq( sets=>\@sets, blast_params=>$bl2seq_params, blast_program=>$blast_program );
       }
 #    print Dumper $blast_reports;
    #sets => array or data for blast
    #blast_reports => array of arrays (report, accn1, accn2, parsed data)
 
-    my $i = 0;
     my $t3 = new Benchmark;
     foreach my $item (@sets)
       {
 	my $accn = $item->{accn};
 	my $obj = $item->{obj};
+	my $file = $item->{file};
 	my $file_begin = $item->{file_begin};
 	my $file_end = $item->{file_end};
+	my $rev = $item->{rev};
+	my $up = $item->{up};
+	my $down = $item->{down};
+	my $spike_seq = $item->{spike_seq};
+	
 	if ($obj)
 	  {
 	    my ($image, $map, $mapname) = generate_image(
@@ -525,7 +431,7 @@ sub Show_Summary
 							 ih=>$ih,
 							 fh=>$feat_h,
 							 show_gc=>$show_gc,
-							 reverse_image => $reverse_image[$i],
+							 reverse_image => $rev,
 							 stagger_label=>$stagger_label,
 							 overlap_adjustment=>$overlap_adjustment,
 							 feature_labels=>$feature_labels,
@@ -540,15 +446,14 @@ sub Show_Summary
 							);
 #	    print STDERR $map;
 	    $html .= qq!<div>$accn!;
-	    $html .= qq!(<font class=species>!.$obj->{ORGANISM}.qq!</font>)! if $obj->{ORGANISM};
-	    $html .= qq!($locs[$i][0]::$locs[$i][1])! if defined $locs[$i][0];
-	    $html .= qq!<font class=small> Image Inverted</font>! if $reverse_image[$i];
+	    $html .= qq!(<font class=species>!.$obj->organism.qq!</font>)! if $obj->organism;
+	    $html .= "(".$up."::".$down.")" if defined $up;
+	    $html .= qq!<font class=small> Image Inverted</font>! if $rev;
 	    $html .= qq!</DIV>\n!;
 	    $html .= qq!<IMG SRC="$TEMPURL/$image" !;
 	    $html .= qq!BORDER=0 ismap usemap="#$mapname">\n!;
 	    $html .= "$map\n";
 	  }
-	$i++;
       }
     my $t4 = new Benchmark;
     $html .= qq!<br>!;
@@ -582,13 +487,14 @@ sub Show_Summary
 	my $i = 0;
 	foreach my $item (@sets)
 	  {
-	    my $basename = $TEMPURL."/".basename (generate_annotation(%$item, rev=>$reverse_image[$i]));
+	    my $basename = $TEMPURL."/".basename (generate_annotation(%$item));
 	    my $accn = $item->{accn};
 	    $html .= "<div><font class=xsmall><A HREF=\"$basename\">Annotation file for $accn</A></font></DIV>\n";
 	    $i++;
 	  }
-      }    
+      }
     $html .= qq{</table>};
+
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
 #    print STDERR $html;
     $template->param(BOX_NAME=>"Results: $blast_program");
@@ -659,7 +565,7 @@ sub generate_image
 			    feature_start_height=>$fh,
 			    mag=>0,
 			    mag_off=>1,
-			    chr_length => length($gbobj->{SEQUENCE}),
+			    chr_length => length($gbobj->sequence),
 			    feature_labels=>1,
 			    fill_labels=>1,
 			    forcefit=>1,
@@ -677,9 +583,24 @@ sub generate_image
     my $f2= CoGe::Graphics::Feature->new({start=>1, order => 2, strand => -1});
     $f2->merge_percent(0);
     $gfx->add_feature($f2);
-    $graphic->process_nucleotides(c=>$gfx, seq=>$gbobj->{SEQUENCE}, layers=>{gc=>$show_gc});
+    $graphic->process_nucleotides(c=>$gfx, seq=>$gbobj->sequence, layers=>{gc=>$show_gc});
     process_features(c=>$gfx, obj=>$gbobj, start=>$start, stop=>$stop, overlap_adjustment=>$overlap_adjustment);
-    process_hsps(c=>$gfx, data=>$data, accn=>$gbobj->{ACCN}, rev=>$reverse_image, seq_length=> length($gbobj->{SEQUENCE}), stagger_label=>$stagger_label, hsp_limit=>$hsp_limit, hsp_limit_num=>$hsp_limit_num, gbobj=>$gbobj, spike_seq=>$spike_seq, eval_cutoff=>$eval_cutoff, color_hsp=>$color_hsp, colors=>$hsp_colors, show_hsps_with_stop_codon=>$show_hsps_with_stop_codon);
+    process_hsps(
+		 c=>$gfx, 
+		 data=>$data, 
+		 accn=>$gbobj->accn, 
+		 rev=>$reverse_image, 
+		 seq_length=> length($gbobj->sequence), 
+		 stagger_label=>$stagger_label, 
+		 hsp_limit=>$hsp_limit,
+		 hsp_limit_num=>$hsp_limit_num,
+		 gbobj=>$gbobj,
+		 spike_seq=>$spike_seq,
+		 eval_cutoff=>$eval_cutoff,
+		 color_hsp=>$color_hsp,
+		 colors=>$hsp_colors,
+		 show_hsps_with_stop_codon=>$show_hsps_with_stop_codon,
+		);
     my $file = new File::Temp ( TEMPLATE=>'GEvo__XXXXX',
 				   DIR=>$TEMPDIR,
 				    SUFFIX=>'.png',
@@ -702,7 +623,7 @@ sub process_features
     my $start=$opts{start};
     my $stop = $opts{stop};
     my $overlap = $opts{overlap_adjustment};
-    my $accn = $obj->{ACCN};
+    my $accn = $obj->accn;
     my $track = 1;
     my @opts = ($start, $stop) if $start && $stop;
     unless (ref $obj)
@@ -712,9 +633,10 @@ sub process_features
       }
     foreach my $feat($obj->get_features(@opts))
       {
+
         my $f;
-	my $type = $feat->{F_KEY};
-	my ($name) = sort { length ($b) <=> length ($a) || $a cmp $b} @{$feat->{QUALIFIERS}{names}};
+	my $type = $feat->type;
+	my ($name) = sort { length ($b) <=> length ($a) || $a cmp $b} @{$feat->qualifiers->{names}};
         if ($type =~ /pseudogene/i)
           {
 #	    next;
@@ -741,7 +663,7 @@ sub process_features
 		$f->overlay(3);
 		if ($accn)
 		  {
-		    foreach my $name (@{$feat->{QUALIFIERS}{names}})
+		    foreach my $name (@{$feat->qualifiers->{names}})
 		      {
 			$f->color([255,255,0]) if $name =~ /$accn/i;
 			$f->label($name) if $name =~ /$accn/i;
@@ -766,7 +688,7 @@ sub process_features
 		$f->overlay(2);
 		if ($accn)
 		  {
-		    foreach my $name (@{$feat->{QUALIFIERS}{names}})
+		    foreach my $name (@{$feat->qualifiers->{names}})
 		      {
 			$f->color([255,255,0]) if $name =~ /$accn/i;
 		      }
@@ -777,10 +699,8 @@ sub process_features
         next unless $f;
 	my $strand = 1;
  	$strand = -1 if $feat->location =~ /complement/;
-#	print STDERR $type,"\n";
-	foreach my $block (@{$feat->{'blocks'}})
+	foreach my $block (@{$feat->blocks})
 	  {
-#	    print STDERR $feat->{QUALIFIERS}{names}[0],", ",  $feat->{F_KEY},": ", $block->[0],"-", $block->[1],"\n";;
 	    $block->[0] =1 unless $block->[0]; #in case $block is set to 0
 	    $f->add_segment(start=>$block->[0], stop=>$block->[1]);
 	    $f->strand($strand);
@@ -789,11 +709,10 @@ sub process_features
 
 	print STDERR $name,"\n\n" if $DEBUG;
         $f->type($type);
-	$f->description($feat->{QUALIFIERS}{annotation});
+	$f->description($feat->annotation);
 	$f->link("FeatView.pl?accn=$name\" target=\"_new");
 	$f->skip_overlap_search($overlap);
         $c->add_feature($f);
-#	print STDERR Dumper ($f) if $f->{description} =~ /at2g29570/i;#unless ($f->start && $f->stop);
     }
   }
 
@@ -826,6 +745,7 @@ sub process_hsps
 	my $accn1 = $item->[1];
 	my $accn2 = $item->[2];
 	my $blast = $item->[3];
+#	print STDERR "$i:  $accn1 - $accn2\n";
 #	print STDERR "!",join ("!\t!", $accn1, $accn2, $accn),"!\n";
 	next unless ref($blast) =~ /bl2seq/i || ref($blast) =~ /blastz/i;
 	unless ($accn eq $accn1 || $accn eq $accn2)
@@ -846,7 +766,7 @@ sub process_hsps
 	      }
 	  }
 #	print STDERR Dumper $blast;
-	print STDERR $blast->query," ", $blast->subject,"\n" if $DEBUG;
+	print STDERR "\t",$blast->query," ", $blast->subject,"\n" if $DEBUG;
 	foreach my $hsp (@{$blast->hsps})
 	  #	while (my $hsp = $blast->nextHSP)
 	  {
@@ -913,7 +833,6 @@ sub process_hsps
 	      }
 	    my $desc = join ("<br>", "HSP: ".$hsp->number. "  <font class=small>(".$blast->query."-". $blast->subject.")</font>", $start."-".$stop." (".$hsp->strand.")", $seq,"Match: ".$hsp->match,"Length: ".$hsp->length,"Identity: ".$hsp->percent_id,"E_val: ".$hsp->pval);
 	    $f->description($desc);
-#	    my $link = "bl2seq_summary.pl?".join("&", "blast_report=".$report, "accnq=$accn1", "accns=$accn2", "qbegin=".($gbobj->{start}+$start-1), "qend=".($gbobj->{start}+$stop-1),"qchr=".$gbobj->{chr}, "qds=". $gbobj->{ds}, "sbegin=","send=","submit=GO") if $gbobj->{ds};
 	    my $link = "HSPView.pl?blast_report=$report&hsp_num=".$hsp->number;
 	    $link .= join ("&","&qstart=".($gbobj->{start}+$start-1), "qstop=".($gbobj->{start}+$stop-1),"qchr=".$gbobj->{chr}, "qds=". $gbobj->{ds},"qstrand=".$strand) if $gbobj->{ds};
 	    $f->link($link) if $link;
@@ -980,11 +899,11 @@ sub generate_obj_from_seq
     my $rc = shift;
     
     my ($obj, $file, $file_begin, $file_end, $spike_seq);
+    $obj = new CoGe::Accessory::GenBank;
     if ($sequence =~ /^LOCUS/)
       {
 	#genbank sequence
-	my $db = new GS::MyDB;
-	$obj = $db->{GBSyntenyViewer}->parse_genbank($sequence);
+	$obj->parse_genbank($sequence);
       }
    elsif ($sequence =~ /^>/)
       {
@@ -992,27 +911,22 @@ sub generate_obj_from_seq
 	my ($header, $seq) = split /\n/, $sequence, 2;
 	my ($accn) = $header=~/>(\S*)/;
 	$accn =~ s/\|/_/g;
-	$obj = new GS::MyDB::GBDB::GBObject(
-					    ACCN=>$accn,
-					    LOCUS=>$accn,
-					    DEFINITION=>$header,
-					    );
+	$obj->accn($accn);
+	$obj->locus($accn);
+	$obj->definition($header);
 	$seq =~ s/\n|\r//g;
 	$obj->sequence($seq);
       }
     else
       {
 	#just the sequence
-	$obj = new GS::MyDB::GBDB::GBObject(
-					     ACCN=>"RAW_SEQUENCE_SUBMISSION $num",
-					     LOCUS=>"RAW_SEQUENCE_SUBMISSION $num",
-					    );
+	$obj->accn("RAW_SEQUENCE_SUBMISSION $num");
+	$obj->locus("RAW_SEQUENCE_SUBMISSION $num");
 	$sequence =~ s/\n|\r//g;
 	$obj->sequence($sequence);
       }
     if ($rc)
       {
-
 	$obj->sequence(CoGeX::Feature->reverse_complement($obj->sequence));
       }
     return $obj
@@ -1026,31 +940,21 @@ sub generate_seq_file
     my $up = $options{up} || $options{upstream} || 0;
     my $down = $options{down} || $options{downstream} || 0;
     my $spike_len = $options{spike_len} || 0;
-    my $spike_type = $options{spike_type};
     my $mask = $options{mask} || $options{mask_flag};
     my $mask_ncs = $options{mask_ncs};
     my $t1 = new Benchmark;
     my ($file, $file_begin, $file_end, $spike_seq) = 
       write_fasta(
 		  GBOBJ=>$obj,
-		  accn=>$obj->{ACCN},
+		  accn=>$obj->accn,
 		  mask=>$mask,
 		  mask_ncs=>$mask_ncs,
 		  startpos=>$start,
 		  upstream=>$up,
 		  downstream=>$down,
-		  spike=>[$spike_type,$spike_len],
+		  spike=>$spike_len,
 		  path=>$TEMPDIR,
-		  
 		 );
-    my %tmp = (
-	       start=>$start,
-	       upstream=>$up,
-	       downstream=>$down,
-	       seq_len=>length($obj->{SEQUENCE}),
-	       file_begin=>$file_begin,
-	       file_end=>$file_end,
-	       );
     my $t2 = new Benchmark;
     my $time = timestr(timediff($t2,$t1));
     print STDERR "Time to generate Sequence file:   $time\n" if $BENCHMARK;
@@ -1098,13 +1002,13 @@ sub get_obj_from_genome_db
       }
     my $t3 = new Benchmark;
 
-    my $obj= new GS::MyDB::GBDB::GBObject(
-					  ACCN=>$accn,
-					  LOCUS=>$accn,
-					  VERSION=>$feat->dataset->version(),
-					  SOURCE=>$feat->dataset->datasource->name(),
-					  ORGANISM=>$feat->org->name(),
-					  					 );
+    my $obj= new CoGe::Accessory::GenBank({
+					  accn=>$accn,
+					  locus=>$accn,
+					  version=>$feat->dataset->version(),
+					  source=>$feat->dataset->datasource->name(),
+					  organism=>$feat->org->name(),
+					 });
 
     $obj->sequence($seq);
     $obj->{start} = $start;
@@ -1145,17 +1049,14 @@ sub get_obj_from_genome_db
 	print STDERR $anno if $name =~ /at2g29610/i;;
 	my $location = $f->genbank_location_string(recalibrate=>$start);
 	print STDERR $name, "\t",$f->type->name ,"\t",$location,"\n" if $DEBUG;
-	
 	$obj->add_feature (
-			   F_NUMBER=>$fnum,
-			   F_KEY=>$f->type->name,
-			   LOCATION=> $location,
-			   QUALIFIERS=>[
-                                        [annotation=>$anno],
-                                        [names=> [@names]],
-                                       ],
-			   ACCN=>$name,
-			   LOCUS=>$name,
+			   number=>$fnum,
+			   type=>$f->type->name,
+			   location=> $location,
+			   qualifiers=>{
+                                        names=> [@names],
+                                       },
+			   annotation=>$anno,
 			  );
 	$fnum++;
       }
@@ -1204,30 +1105,24 @@ sub check_taint {
 
 sub run_bl2seq {
   my %opts = @_;
-  my $files = $opts{files};
-  my $accns = $opts{accns};
+  my $sets = $opts{sets};
   my $blast_params = $opts{blast_params};
   my $program = $opts{blast_program};
   my $eval_cutoff = $opts{eval_cutoff};
   $program = "blastn" unless $program;
-  my @files;
-  foreach my $item (@$files)
-    {
-      next unless $item;
-      if (-r $item)
-	{
-	  push @files, $item
-	}
-    }
   my @reports;
-  for (my $i=0; $i<scalar @files; $i++)
+  for (my $i=0; $i<scalar @$sets; $i++)
     {
-      for (my $j=0; $j<scalar @files; $j++)
+      for (my $j=0; $j<scalar @$sets; $j++)
 	{
 	  next unless $j > $i;
-	  my $seqfile1 = $files[$i];
-	  my $seqfile2 = $files[$j];
-	  my ($accn1, $accn2) = ($accns->[$i], $accns->[$j]);
+	  #
+	  my $seqfile1 = $sets->[$i]->{file};
+	  my $seqfile2 = $sets->[$j]->{file};
+	  next unless -r $seqfile1 && -r $seqfile2; #make sure these files exist
+	  
+	  next unless $sets->[$i]{reference_seq} || $sets->[$j]{reference_seq};
+	  my ($accn1, $accn2) = ($sets->[$i]{accn}, $sets->[$j]{accn});
 	  my $command = $BL2SEQ;
 	  
 	  
@@ -1275,27 +1170,20 @@ sub run_bl2seq {
 sub run_blastz
   {
     my %opts = @_;
-    my $files = $opts{files};
-    my $params = $opts{params};
-    my $accns = $opts{accns};
+    my $sets = $opts{sets};
+    my $params= $opts{params};
      my @files;
-  foreach my $item (@$files)
-    {
-      next unless $item;
-      if (-r $item)
-	{
-	  push @files, $item
-	}
-    }
     my @reports;
-    for (my $i=0; $i<scalar @files; $i++)
+    for (my $i=0; $i<scalar @$sets; $i++)
       {
-	for (my $j=0; $j<scalar @files; $j++)
+	for (my $j=0; $j<scalar @$sets; $j++)
 	  {
 	    next unless $j > $i;
-	    my $seqfile1 = $files[$i];
-	    my $seqfile2 = $files[$j];
-	    my ($accn1, $accn2) = ($accns->[$i], $accns->[$j]);
+	    my $seqfile1 = $sets->[$i]->{file};
+	    my $seqfile2 = $sets->[$j]->{file};
+	    next unless -r $seqfile1 && -r $seqfile2; #make sure these files exist
+	    next unless $sets->[$i]{reference_seq} || $sets->[$j]{reference_seq};
+	    my ($accn1, $accn2) = ($sets->[$i]{accn}, $sets->[$j]{accn});
 	    my $tmp_file = new File::Temp ( TEMPLATE=>'blastz__XXXXX',
 					  DIR=>$TEMPDIR,
 					  SUFFIX=>'.txt',
@@ -1368,7 +1256,7 @@ sub write_fasta {
 	my($gene_end,$gene_begin);
 	if ( @_ ) {
 		while ( @_ ) {
-			my($key,$value) = splice(@_,0,2);;
+			my($key,$value) = splice(@_,0,2);
 			$options->{$key} = $value;
 		}
 	} else {
@@ -1418,14 +1306,10 @@ sub write_fasta {
 		$seq = $gbobj->mask_ncs( $seq );
 	}
 	($seq) = $gbobj->subsequence( $seq_begin, $seq_end, $seq );
+
 	my $spike_seq = "";
-	my($pair,$spikesize);
-	if ( defined $options->{spike} ) {
-		($pair,$spikesize) = @{ $options->{spike} };
-		if ( $spikesize > 0 ) {
-			($seq,$spike_seq) = spike( $seq, $spikesize, $pair );
-		}
-	}
+	($seq, $spike_seq) = spike( $seq, $options->{spike}) if $options->{spike};
+
 	my $error = 0;
 	($error,$fullname) = check_filename_taint( $fullname );
 	if ( $error ) 
@@ -1458,24 +1342,7 @@ sub spike {
 	my $spikesize = shift;
 	return ($seq) unless $spikesize;
 	$spikesize -= 12; # to account for the "CCCAAAGGGTTT" tag
-	my $pair = shift;
 	my $spike_seq = "CCCAAAGGGTTT";
-	my @chars = split( //, $seq );
-
-	if ( $pair eq "Q" ) {
-		if ( $chars[-1] eq "A" ) {
-			$seq .= "T";
-		} else {
-			$seq .= "ANNNNNNNNNNN";
-		}
-	} else {
-		if ( $chars[-1] eq "G" ) {
-			$seq .= "C";
-		} else {
-			$seq .= "G";
-		}
-	}
-
 	for ( my $n = 0; $n < $spikesize; $n++ ) {
 		$spike_seq .= "C";
 	}
@@ -1483,19 +1350,18 @@ sub spike {
 	return($seq,$spike_seq);
 }
 
-sub match_filter_select
+sub spike_filter_select
   {
     my $match = shift;
     my $form = shift || $FORM;
     $match = $form->param('spike_len') if $form->param('spike_len');
     $match = 15 unless $match;
-    my $html;
+    my $html = qq{<select class="backbox" id="spike">};
     for (my $i = 13; $i<=18; $i++)
       {
-	my $item = qq{<label><input class="backbox" type="radio" name="spike" id="spike" value="$i"};
-	$item .= " checked=\"checked\"" if $match && $match == $i;
-	$item .= qq{ />$i/$i</label>};
-	$html .= $item;
+	$html .= ($match && $match == $i) ? qq{<option>} : qq{<option selected>};
+	$html .= $i;
+	$html .= qq{</option>};
       }
     $html .= " nucleotides";
     return $html;
@@ -1507,7 +1373,7 @@ sub generate_annotation
     my $obj = $opts{obj};
     my $start = $opts{file_begin};
     my $stop = $opts{file_end};
-    my $rev = $opts{rev} || $opts{reverse};
+    my $rev = $opts{rev};
     my @opts = ($start, $stop);# if $start && $stop;
     my $tmp_file = new File::Temp ( TEMPLATE=>'Anno__XXXXX',
 				    DIR=>$TEMPDIR,
@@ -1518,10 +1384,10 @@ sub generate_annotation
     my $length = $obj->{stop} - $obj->{start}+1;
     foreach my $feat($obj->get_features(@opts))
       {
-	my $type = $feat->{F_KEY};
-	my ($name) = sort { length ($b) <=> length ($a) || $a cmp $b} @{$feat->{QUALIFIERS}{names}};
+	my $type = $feat->type;
+	my ($name) = sort { length ($b) <=> length ($a) || $a cmp $b} @{$feat->qualifiers->{names}};
 	my $dir = $feat->location =~ /complement/ ? "<" : ">";
-	foreach my $block (@{$feat->{'blocks'}})
+	foreach my $block (@{$feat->blocks})
 	  {
 	    $block->[0] =1 unless $block->[0];
 	    my $start = $block->[0];
@@ -1559,4 +1425,111 @@ sub generate_annotation
       }
     close OUT;
     return $fullname;
+  }
+
+sub gen_go_button
+  {
+    my $num_seqs = shift || $NUM_SEQS;
+    my $params;
+    for (my $i = 1; $i <=$num_seqs; $i++)
+      {
+	$params .= qq{'args__draccn$i', 'draccn$i',};
+	$params .= qq{'args__featid$i', 'featid$i',};
+	$params .= qq{'args__drup$i', 'drup$i',};
+	$params .= qq{'args__drdown$i', 'drdown$i',};
+	$params .= qq{'args__drrev$i', 'drrev$i',};
+	$params .= qq{'args__gbaccn$i', 'gbaccn$i',};
+	$params .= qq{'args__gbstart$i', 'gbstart$i',};
+	$params .= qq{'args__gbup$i', 'gbup$i',};
+	$params .= qq{'args__gbdown$i', 'gbdown$i',};
+	$params .= qq{'args__gbrev$i', 'gbrev$i',};
+	$params .= qq{'args__dirseq$i', 'dirseq$i',};
+	$params .= qq{'args__dirrev$i', 'dirrev$i',};
+	$params .= qq{'args__dirstart$i', 'dirstart$i',};
+	$params .= qq{'args__dirstop$i', 'dirstop$i',};
+	$params .= qq{'args__ref_seq$i', 'ref_seq$i',};
+      }
+    for (my $i = 1; $i <=num_colors($num_seqs); $i++)
+      {
+	$params .= qq{'args__r$i', 'r$i',};
+	$params .= qq{'args__g$i', 'g$i',};
+	$params .= qq{'args__b$i', 'b$i',};
+      }
+
+    $params .= qq{
+	'args__matchfilter', 'matchfilter', 
+	'args__spike', 'spike', 
+	'args__mask', 'mask', 
+	'args__maskcns', 'mask_ncs', 
+	'args__word', 'wordsize', 
+	'args__gapo', 'gapopen', 
+	'args__gape', 'gapextend', 
+	'args__mmatch', 'mismatch',
+	'args__eval', 'eval', 
+	'args__bp', 'blastparams',
+	'args__iw', 'iw',
+	'args__ih', 'ih', 
+	'args__fh', 'feat_h',
+        'args__gc', 'show_gc',
+	'args__colorhsp', 'color_hsp',
+	'args__hsplabel', 'hsp_labels',
+	'args__overlap', 'overlap_adjustment',
+	'args__hiqual', 'hiqual',
+	'args__hsplim', 'hsp_limit',
+	'args__hsplimnum', 'hsp_limit_num',
+	'args__prog', 'blast_program',
+	'args__showallhsps', 'show_hsps_with_stop_codon',
+        'args__padding', 'padding',
+        'args__num_seqs','args__$num_seqs',
+};
+	  return qq{<input type="button" value="GO" onClick="loading([], ['results']); run([$params],['results'], 'POST');">};   
+  }
+
+sub color_pallet
+  {
+    my %opts = @_;
+    my $start = $opts{start} || [255,100,100];
+    my $offset = $opts{offset} || 50;
+    my $num_seqs = $opts{num_seqs} || $NUM_SEQS;
+    my @colors;
+    push @colors, {
+		   HSP_NUM=>1,
+		   RED=>$start->[0],
+		   GREEN=>$start->[1],
+		   BLUE=>$start->[2],
+		  };
+    for (my $i = 2; $i <= num_colors($num_seqs); $i++)
+      {
+	my @color;
+	unless ($i%5)
+	  {
+	    $start = [$start->[1], $start->[2], $start->[0]];
+	  }
+
+	foreach my $color (@$start)
+	  {
+	    $color -= $offset;
+	    $color += 255 if $color < 0;
+	    push @color, $color;
+	  }
+	
+	push @colors, {
+		       HSP_NUM=>$i,
+		       RED=>$color[0],
+		       GREEN=>$color[1],
+		       BLUE=>$color[2],
+		      };
+      }
+    return wantarray ? @colors : \@colors;
+  }
+
+sub num_colors
+  {
+    my $num_seqs = shift || $NUM_SEQS;
+    my $num_colors = 1;
+    for (my $i = $num_seqs-1; $i > 1; $i--)
+      {
+	$num_colors += $i;
+      }
+    return $num_colors
   }
