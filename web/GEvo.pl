@@ -70,9 +70,6 @@ print $pj->build_html($FORM, \&gen_html);
 
 #$USER=1;print gen_html();
 
-#print Show_Summary('contig_16224','2665176','10000','10000','502','At1g07300','124379','10000','10000','6','At2g29640','134498','10000','10000','7','','1','0','','','1','0','','','1','0','','','0','1','','','0','1','','','0','1','','1','15','0','0','7','5','2','-2','','1000','150','20');
-#Show_Summary('supercontig_226','3686634','-126900','-232900','513','0','At1g07370','122228','10','10','6','1','At2g29570','142412','10','10','7','0','','1','0','','','1','0','','','1','0','','','0','1','','','0','1','','','0','1','','1','15','0','0','7','5','2','-2','10','','1000','100','20','1','linear','1','0','20','blastn');
-
 sub loading
   {
     return qq{<font class="loading">Generating results. . .</font>};
@@ -80,7 +77,6 @@ sub loading
 
 sub gen_html
   {
-#    my $form = shift || $FORM;
     my $html;# =  "Content-Type: text/html\n\n";
     unless ($USER)
       {
@@ -97,7 +93,6 @@ sub gen_html
 	$template->param(DATE=>$DATE);
 	$template->param(NO_BOX=>1);
 	$template->param(BODY=>gen_body($num_seqs));
-#	$template->param(BODY_ONLOAD=>"setup();");
 	my $prebox = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GEvo2.tmpl');
 	$prebox->param(RESULTS_DIV=>1);
 	$template->param(PREBOX=>$prebox->output);
@@ -403,7 +398,6 @@ sub Show_Summary
       {
 	$blast_reports = run_bl2seq( sets=>\@sets, blast_params=>$bl2seq_params, blast_program=>$blast_program );
       }
-#    print Dumper $blast_reports;
    #sets => array or data for blast
    #blast_reports => array of arrays (report, accn1, accn2, parsed data)
 
@@ -496,14 +490,9 @@ sub Show_Summary
     $html .= qq{</table>};
 
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
-#    print STDERR $html;
     $template->param(BOX_NAME=>"Results: $blast_program");
     $template->param(BODY=>$html);
     my $outhtml = $template->output;
-#    open (OUT, ">$TEMPDIR/results.html");
-#    print STDERR $outhtml;
-#    print OUT $outhtml;
-#    close OUT;
     my $t5 = new Benchmark;
     my $db_time = timestr(timediff($t2,$t1));
     my $blast_time = timestr(timediff($t3,$t2));
@@ -739,21 +728,16 @@ sub process_hsps
     my @feats;
     foreach my $item (@$data)
       {
-#	my $set = $data->{$accn}{$accn2};
-#	next unless ($set->[1] eq $accn || $set->[2] eq $accn);
 	my $report = $item->[0];
 	my $accn1 = $item->[1];
 	my $accn2 = $item->[2];
 	my $blast = $item->[3];
-#	print STDERR "$i:  $accn1 - $accn2\n";
-#	print STDERR "!",join ("!\t!", $accn1, $accn2, $accn),"!\n";
 	next unless ref($blast) =~ /bl2seq/i || ref($blast) =~ /blastz/i;
 	unless ($accn eq $accn1 || $accn eq $accn2)
 	  {
 	    $i++;
 	    next;
 	  }
-#	print Dumper $blast;
 	if ($spike_seq)
 	  {
 	    foreach my $hsp (@{$blast->hsps})
@@ -765,13 +749,9 @@ sub process_hsps
 		  }
 	      }
 	  }
-#	print STDERR Dumper $blast;
 	print STDERR "\t",$blast->query," ", $blast->subject,"\n" if $DEBUG;
 	foreach my $hsp (@{$blast->hsps})
-	  #	while (my $hsp = $blast->nextHSP)
 	  {
-#	    print STDERR Dumper $hsp;
-#	    print STDERR $hsp->qalign,"\n";
 	    next if defined $eval_cutoff && $hsp->eval >= $eval_cutoff;
 	    my $color = $colors->[$i];
 	    my $skip = 0;
@@ -808,8 +788,6 @@ sub process_hsps
 	      }
 	    print STDERR "\t",$hsp->number,": $start-$stop\n" if $DEBUG;
 	    my $strand = $hsp->strand =~ /-/ ? "-1" : 1;
-#	    print STDERR $hsp->{'orientation'},"\n";
-#	    print STDERR Dumper 
 	    if ($reverse)
 	      {
 		$strand = $strand =~ /-/ ? "1" : "-1";
@@ -991,7 +969,6 @@ sub get_obj_from_genome_db
 	  }
 	$start = 1 if $start < 1;
 	$chr = $feat->chr;
-#	print STDERR join ("\t", $accn, $chr, $start, $stop, $feat->start, $feat->stop, $up, $down),"\n";
 
 	$seq = $coge->resultset('Dataset')->find($ds_id)->get_genome_sequence(
 									      start => $start,
@@ -1042,10 +1019,7 @@ sub get_obj_from_genome_db
 	print STDERR "\t", $f->genbank_location_string(),"\n" if $DEBUG;
 	print STDERR "\t", $f->genbank_location_string(recalibrate=>$start),"\n\n" if $DEBUG;
 	my $anno = $f->annotation_pretty_print_html;
-	
-#	$anno =~ s/\n/<br>/ig;
 	$anno =~ s/\n//ig;
-#	$anno =~ s/\t/&nbsp;&nbsp;/ig;
 	print STDERR $anno if $name =~ /at2g29610/i;;
 	my $location = $f->genbank_location_string(recalibrate=>$start);
 	print STDERR $name, "\t",$f->type->name ,"\t",$location,"\n" if $DEBUG;
@@ -1079,10 +1053,8 @@ Region:         ds_id: $ds_id $start-$stop($chr)
 
 sub check_filename_taint {
 	my $v = shift;
-#	print STDERR "check_taint received $v\n";
 	if ($v =~ /^([A-Za-z0-9\-\.=\/_]*)$/) {
 		$v = $1;
-#		print STDERR "check_taint turned $v into $1\n";
 		return(1,$v);
 	} else {
 		return(0,0);
@@ -1131,7 +1103,7 @@ sub run_bl2seq {
 					  DIR=>$TEMPDIR,
 					  SUFFIX=>'.txt',
 					  UNLINK=>0);
-	  my ($tempfile) = $tmp_file->filename;# =~ /([^\/]*$)/;
+	  my ($tempfile) = $tmp_file->filename;
 	  
 	  # format the bl2seq command
 	  $command .= "-p $program -o $tempfile ";
@@ -1149,7 +1121,6 @@ sub run_bl2seq {
 	  # execute the command
 	  `$command`;
 	  system "chmod +rw $tempfile";
-	  #$reports{$accns->[$i]}{$accns->[$j]} = $tempfile;
 	  my $blastreport = new CoGe::Accessory::bl2seq_report($tempfile) if -r $tempfile;
 	  my @tmp = ($tempfile, $accn1, $accn2);
 	  if ($blastreport)
@@ -1374,7 +1345,7 @@ sub generate_annotation
     my $start = $opts{file_begin};
     my $stop = $opts{file_end};
     my $rev = $opts{rev};
-    my @opts = ($start, $stop);# if $start && $stop;
+    my @opts = ($start, $stop);
     my $tmp_file = new File::Temp ( TEMPLATE=>'Anno__XXXXX',
 				    DIR=>$TEMPDIR,
 				    SUFFIX=>'.txt',
