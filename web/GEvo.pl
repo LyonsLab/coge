@@ -93,7 +93,7 @@ sub gen_html
 	$template->param(DATE=>$DATE);
 	$template->param(NO_BOX=>1);
 	$template->param(BODY=>gen_body($num_seqs));
-	my $prebox = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GEvo2.tmpl');
+	my $prebox = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GEvo.tmpl');
 	$prebox->param(RESULTS_DIV=>1);
 	$template->param(PREBOX=>$prebox->output);
 	
@@ -158,7 +158,7 @@ sub gen_body
     my $prog = lc($form->param('prog')) if $form->param('prog');
     my $exon_mask = $form->param('exon_mask');
 
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GEvo2.tmpl');
+    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GEvo.tmpl');
     my $box = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
     #generate the coge sequence selector
     $template->param(COGE_SEQ_SELECT=>1);
