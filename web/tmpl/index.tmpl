@@ -38,7 +38,8 @@ function delete_cookie(cookie)
 </TABLE>
 <input type="hidden" id="url" value="<TMPL_VAR NAME="url">">
 <input type="submit" value="Log on" id="Login" onClick="login(['uname', 'pwd','url'],[place_cookie])">
-<input type="submit" value="Use Public Login" id="Login" onClick="login(['args__public', 'args__none','url'],[place_cookie])">
+<input type="submit" value="Use Public Login" id="Login" onClick="login(['args__public', 'args__none','url'],[place_cookie])"><br>
+<div class=small>Use "public login" if you don't have a registered CoGe account.</div>
 
 
 <TMPL_ELSE>
