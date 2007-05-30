@@ -62,18 +62,6 @@ sub gen_html
 	  }
 	$template->param(TITLE=>'CoGe: Genome Location Viewer');
 	$template->param(HEAD=>qq{
-<link rel="stylesheet" type="text/css" href="css/tiler.css">
-<script src="js/Base.js"> </script>
-<script src="js/Async.js"> </script>
-<script src="js/Iter.js"> </script>
-<script src="js/DOM.js"> </script>
-<script src="js/Logging.js"> </script>
-<script src="js/Signal.js"> </script>
-<script src="js/Style.js"> </script>
-<script src="js/util.js"> </script>
-<script src="js/panner.js"> </script>
-<script src="js/tiler.js"> </script>
-<script src=js/tilerConfig.js> </script>
 <script src=js/kaj.stable.js> </script>
 });
 	$template->param(USER=>$USER);
@@ -88,28 +76,8 @@ sub gen_html
 sub gen_body
   {
     my $form = shift || $FORM;
-    my $chr = $form->param('chr');# || 1;
-    my $ds = $form->param('ds');# || 6;
-    my $dso = $DB->get_dataset_obj->retrieve($ds);
-    my $z = $form->param('z');# || 7;
-    my $x = $form->param('x');# || 1;
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GeLo.tmpl');
-    if ($chr && $ds)
-      {
-	$template->param(CHR=>$chr);
-	$template->param(DS=>$ds);
-	$template->param(Z=>$z);
-	$template->param(X=>$x);
-	my $org = $dso->org->name." (id".$dso->org->id.")";
-	$template->param(ORG=>$org);
-	my $ds_name = $dso->name."(v".$dso->version.", id".$dso->id.")";
-	$template->param(DS_NAME=>$ds_name);
-      }
-    else
-      {
-	$template->param(FRONT_PAGE => 1);
-	$template->param(ORG_LIST=>get_orgs());
-      }
+    $template->param(ORG_LIST=>get_orgs());
     return $template->output;
   }
 
@@ -244,7 +212,7 @@ sub get_dataset_chr_info
    	$zoom .= qq{<td><SELECT name = "z" id="z" size = 1>};
    	my @opts = map {"<OPTION value=\"$_\">".$_."</OPTION>"} (5..15);
    	$zoom .= join ("\n", @opts);
-   	$zoom =~ s/OPTION value="10"/OPTION SELECTED value="10"/;
+   	$zoom =~ s/OPTION value="7"/OPTION SELECTED value="7"/;
    	$zoom .= qq{</SELECT>};
 	$viewer .= qq{<tr><td class = "ital">Zoom level:<td><input type = "text" size=10 value ="10" id = "z">};
 	#    $viewer .= $zoom;
