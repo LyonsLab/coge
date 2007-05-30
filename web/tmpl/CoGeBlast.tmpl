@@ -1,0 +1,449 @@
+<TMPL_IF NAME="JAVASCRIPT">
+<script language="JavaScript" type="text/javascript" src="/CoGe/js/menu.js"></script>
+<SCRIPT language="JavaScript" type="text/javascript" src="/CoGe/js/kaj.stable.js"></SCRIPT>
+
+<SCRIPT language="JavaScript">
+
+function get_seq(url) {
+ seq = kaj.GS('seq_box');
+ if (url==1) {
+   alert('No blast selected! Please select a blast to run.');}
+ else {
+ window.open(url+seq);
+ }
+}
+
+function set_seq() {
+alert('No blast selected! Please select a blast to run.');
+seq = kaj.GS('display_seq');
+kaj.GS('seq_box',seq);
+}
+
+function radio_lock(unlock) {
+  var1 = document.getElementById('select_n');
+  var2 = document.getElementById('select_p');
+  if (unlock == 2) {
+  var1.style.display = "none";
+  var2.style.display = "block";
+  }
+  else {
+  var1.style.display = "block";
+  var2.style.display = "none";
+  }
+}
+
+function select_blast(radio) {
+  get_url([radio],[get_seq]);
+}
+
+function changeColor(id, color) {
+  document.getElementById(id).style.color = color;
+}
+
+function check_seq_for_blast() {
+ accn = kaj.GS('accn_select') || 0;
+ dsid = kaj.GS('dsid') || 0;
+// radio2 = kaj.GS('bn');
+// alert('bn');
+ type_name = kaj.GS('Type_name') || 0; 
+ if (accn && dsid && type_name) {
+// alert('Im being called!'+accn+dsid+type_name);
+ check_seq(['bn','accn_select','dsid','Type_name'],['seq_box']);
+}
+}
+ 
+function search_chain(val) {
+ minlen = 4;
+ if ((val == 1) && (kaj.GS('accn').length > minlen)){
+   return;
+ } 
+ kaj.GS('DS_title','');
+ kaj.GS('FT_title','');
+ kaj.GS('accn_list','<input type="hidden" id="accn_select">');	
+ kaj.GS('Source','<input type="hidden" id="dsid">');	
+ kaj.GS('FeatType','<input type="hidden" id="Type_name">');	;	
+ if (val == 1 || kaj.GS('accn').length > minlen) {
+//   kaj.GS('DS_title','<font class="loading">Searching. . .</font>');// for "'+kaj.GS('accn')+'" type '+''+'. . .</font>');
+   cogesearch(['accn','type', 'org'],[source_search_chain]); 
+ }
+}
+
+function source_search_chain (val) {
+ kaj.GS('DS_title','');
+ kaj.GS('FT_title','');
+ kaj.GS('Source','<input type="hidden" id="dsid"><font class="loading">Loading. . .</font>');	
+ kaj.GS('FeatType','<input type="hidden" id="Type_name">');		
+ if (val) {kaj.GS('accn_list',val);}
+ source_search(['accn_select'], [get_types_chain]);
+}
+
+function get_types_chain (val1, val2) {
+ kaj.GS('FT_title','');
+ kaj.GS('FeatType','<input type="hidden" id="Type_name"><font class="loading">Loading. . .</font>');	
+ if (val1) {kaj.GS('Source', val1);}
+// if (val2) {kaj.GS('DS_title', "Dataset");}
+ get_types(['accn_select', 'dsid'],[get_anno_chain]);	
+}
+
+function get_anno_chain (val1, val2) {
+ if (val1) {kaj.GS('FeatType', val1)};
+// if (val2) {kaj.GS('FT_title', "Type Name");}
+ as = kaj.G('accn_select');
+// v = kaj.G('version');
+ tn = kaj.G('Type_name');
+ kaj.GS('anno_title', "Feature Annotations");
+ get_sequence(['accn_select', 'Type_name', 'dsid'],['seq_box']);
+ get_pretty_print(['accn_select','Type_name', 'dsid'],['pretty_print_anno']);
+}
+
+function blast_params() {
+ blast_param(['bn'],['pro_or_nu_param']);
+}
+
+function fill_param_on_start() {
+  blast_param([],['pro_or_nu_param'])
+};
+
+fill_param_on_start();
+
+</SCRIPT>
+</TMPL_IF>
+
+<TMPL_IF NAME="BLAST_FRONT_PAGE">
+<TABLE width=100%>
+ <TR>
+  <TD>
+   <TH colspan="3">
+   <DIV class="mainDiv">
+   <DIV id = "dr" class="topItem" onMouseOver="Init(this); changeColor('dr','#000099'); " onMouseOut="changeColor('dr','#009900');">Query Sequence(s):</DIV>
+   <DIV class="dropMenu">
+   <DIV class="subMenu" style="display:inline;">
+   <TABLE> 
+    <TR align=left valign=top>
+     <TH>Sequences (fasta format)
+      <TD><textarea class="backbox" type="textarea" name="seq_box" id ="seq_box" cols=80 rows=15><TMPL_VAR NAME="SEQUENCE"></textarea>
+      </TD>
+      <TD valign="top"> Select a BLAST to run: <br>
+       <TABLE>
+       <TR>
+        <TD valign="top">
+         <label><input id=bn type=radio name=blast value="blast_type_n" checked="" onClick="radio_lock(1);check_seq_for_blast();blast_params();">Nucleotide Sequence</label>
+         <br>
+          <div id=select_n style="display: block;">
+           <select name=blasttype id=blast_type_n>
+            <option value = ''> --- Select BLAST type ---
+            <option value = "megablast"> megablast
+            <option value = "blastn"> blastn
+            <option value = "blastx"> blastx
+            <option value = "tblastx"> tblastx
+           </select>
+           <br>
+          </div>
+         <br>
+         <label><input id=bn type=radio name=blast value="blast_type_p" onClick="radio_lock(2);check_seq_for_blast();blast_params()">Protein Sequence</label>
+         <br>
+          <div id=select_p style="display: none">
+           <select name=blasttype id=blast_type_p>
+            <option value = ''> --- Select BLAST type ---
+            <option value = "blastp"> blastp
+            <option value = "psiblast"> PSI- and PHI-BLAST
+            <option value = "tblastn"> tblastn
+           </select>
+           <br>
+          </div>
+         <br>
+         <input type=submit value="NCBI BLAST" onClick="find_radio(['args__bn','bn'],[select_blast])">
+         </TR>
+         </TABLE>
+      </TD>
+   </TR>
+   <TR align=left valign=top>
+     <TH> <DIV id=anno_title></DIV>
+    <TD>
+     <DIV id=pretty_print_anno></DIV>
+    </TD>
+    <span class="subItem"></span>
+    <span class="subItem"></span>
+    <span class="subItem"></span>
+    <span class="subItem"></span>
+    <span class="subItem"></span>
+    <span class="subItem"></span>
+    <span class="subItem"></span>
+    <span class="subItem"></span>
+    <span class="subItem"></span>
+    <span class="subItem"></span>
+    <span class="subItem"></span>
+    <span class="subItem"></span>
+    <span class="subItem"></span>
+    <span class="subItem"></span>
+    <span class="subItem"></span>
+    <span class="subItem"></span>
+    <span class="subItem"></span>
+    <span class="subItem"></span>
+   </TR>
+  </table>
+   </DIV>
+   </DIV>
+   </DIV>
+ </TR>
+ <TR>
+  <TD>
+   <TH colspan="3">
+    <DIV class="mainDiv">
+    <DIV id = "dr2" class="topItem" onMouseOver="Init(this); changeColor('dr2','#000099'); " onMouseOut="changeColor('dr2','#009900');">Select Feature to Blast:</DIV>
+    <DIV class="dropMenu">
+    <DIV class="subMenu" style="display:none;">
+    <TABLE>
+     <TR align=left valign=top>
+      <TH>Database Search
+       <TD>
+        <input type="text" name="accn" id="accn" tabindex="1"  size="10" onKeyup ="search_chain(0);"  onBlur="search_chain(1);"/>
+       </TD>
+     </TR>
+     <TR align=left valign=top>
+      <TH>Feature Type: 
+       <TD>
+        <select  name="type" id="type" onKeyup ="search_chain(0);"  onChange="search_chain(1);" />
+         <TMPL_LOOP NAME="TYPE_LOOP">
+          <TMPL_VAR NAME=TYPE> 
+         </TMPL_LOOP>
+        </SELECT>
+      </TR>
+      <TR align=left valign=top>
+       <TH>Organism:
+        <TD>
+         <select  name="org" id="org" onKeyup ="search_chain(0);"  onChange="search_chain(1);" />
+          <TMPL_LOOP NAME="ORG_LOOP">
+            <TMPL_VAR NAME=ORG> 
+          </TMPL_LOOP>
+         </SELECT>
+        </TD>
+        <TD valign=top>
+         <DIV id="DS_title"></DIV>
+        </TD>
+        <TD valign=top>
+         <DIV id="FT_title"></DIV>
+      </TR>
+      <TR valign=top>
+       <TD valign=top>
+        <DIV class="" id="accn_list"><input type="hidden" id="accn_select" ></DIV>
+       </TD>
+       <TD valign=top>
+        <DIV class="" id="Source"><input type=hidden id=dsid></DIV>
+       </TD>
+       <TD valign=top>
+        <DIV class="" id="FeatType"><input type=hidden id=Type_name></DIV>
+      </TR>
+<SCRIPT language="Javascript">
+  if (kaj.GS('accn')) {search_chain(0);};
+</SCRIPT>
+   <TR>
+  <span class="subItem"></span>
+  <span class="subItem"></span>
+  <span class="subItem"></span>
+  <span class="subItem"></span>
+  <span class="subItem"></span>
+  <span class="subItem"></span>
+  <span class="subItem"></span>
+  <span class="subItem"></span>
+  <span class="subItem"></span>
+  <span class="subItem"></span>
+  <span class="subItem"></span>
+   </TR>	
+  </TABLE>
+ </DIV>
+ </DIV>
+ </DIV>
+ </TR>
+ <TR>
+  <TD>
+  <TH colspan="3">
+   <DIV class="mainDiv">
+   <DIV id = "dr3" class="topItem" onMouseOver="Init(this); changeColor('dr3','#000099');" onMouseOut="changeColor('dr3','#009900');">Additional BLAST Options:</DIV>
+   <DIV class="dropMenu">
+   <DIV class="subMenu" style="display:inline;">
+   <TABLE width=100%>
+    <TR>
+     <TD valign="top">
+      <TH align=left valign="top"><u>BLAST Parameters</u><br>
+      <TABLE>
+       <TR>
+	<TD>
+	 Job Title
+	</TD>
+	<TD> 
+	 <input id=job_title type=text value="<TMPL_VAR NAME=USER_NAME>'s BLAST">
+	</TD>
+       </TR>
+       <TR>
+        <TD>
+	  Database
+	</TD>
+	<TD>
+          <select name=blast_db id=blast_db>
+	  <optgroup label="Genomic plus Transcript">
+           <option value = "Test/gpipe/9606/allcontig_and_rna"> Human genomic plus transcript
+           <option value = "Test/gpipe/10090/allcontig_and_rna"> Mouse genomic plus transcript
+	  </optgroup>
+	  <optgroup label="Other Databases">
+           <option value = "nr" selected> Nucleotide collection (nr/nt)
+           <option value = "refseq_rna"> Reference mRNA sequences (refseq_rna)
+           <option value = "refseq_genomic"> Reference genomic sequences (refseq_genomic)
+           <option value = "est"> Expressed sequence tags (est)
+           <option value = "est_others"> Non-human, non-mouse ESTs (est_others)
+           <option value = "gss"> Genomic survey sequences (gss)
+           <option value = "htgs"> High throughput genomic sequences (HTGS)
+           <option value = "pat"> Patent sequences (pat)
+           <option value = "pdb"> Protein Data Bank (pdb)
+           <option value = "alu"> Human ALU repeat elements (alu_repeat)
+           <option value = "dbsts"> Sequence tagged sites (dbsts)
+           <option value = "wgs"> Whole-genome shotgun reads (wgs)
+           <option value = "env_nt"> Environmental samples (env_nt)
+	  </optgroup>
+          </select>
+       </TR>
+       <TR>
+	<TD>
+	  Filter
+ 	</TD>
+	<TD>
+	     <select name=complexity id=complexity>
+              <option value = "0"> Off
+	      <option value = "L"> Low Complexity
+              <option value = "R"> Human Repeats
+              <option value = "m"> Mask for Lookup
+             </select>
+       </TR>
+      </TABLE>
+     </TD>
+     <TD valign="top">
+      <TH align=left valign="top"> <u>BLAST Scoring</u><br>
+      <TABLE>
+       <TR>
+	<TD>
+	  E-Value
+	</TD>
+	<TD>
+	    <select name=e_value id=e_value>
+             <option value = ".000001"> 1e-6
+	     <option value = ".00001"> 1e-5
+	     <option value = ".0001"> 0.0001
+             <option value = ".001"> 0.001
+             <option value = ".01" selected> 0.01
+             <option value = ".1"> 0.1
+	     <option value = "1"> 1
+	     <option value = "10"> 10
+             <option value = "100"> 100
+            </select>
+       </TR>
+       <TR>
+	<TD>
+	   Word size
+	</TD>
+	<TD>
+	 <input type=text id=word_size value="28" size="7">
+       </TR>
+       <TR>
+	<TD>
+	  Gap Costs:
+       </TR>
+       <TR>
+	<TD align=right>
+	  <DIV class="small">Existence Penalty</DIV>
+	</TD>
+	<TD>
+	  <input type=text id=gap_exist value=5 size="7">
+       </TR>
+       <TR>
+        <TD align=right>
+	 <DIV class="small">Extension Penalty</DIV>
+	</TD>
+	<TD>
+	 <input type=text id=gap_ext value=2 size="7">
+       </TR>	  
+      </TABLE>
+     </TD>
+     <TD valign="top">
+    <DIV id=pro_or_nu_param></DIV>
+    </TMPL_IF>
+    <TMPL_IF NAME="REST">
+     </TR>
+    </TABLE>
+   <span class="subItem"></span>
+   <span class="subItem"></span>
+   <span class="subItem"></span>
+   <span class="subItem"></span>
+   <span class="subItem"></span>
+   <span class="subItem"></span>
+   <span class="subItem"></span>
+   <span class="subItem"></span>
+   <span class="subItem"></span>
+   <span class="subItem"></span>
+   <span class="subItem"></span>
+   <span class="subItem"></span>
+</DIV>
+</DIV>
+</DIV>
+ </TR>
+ </TABLE>
+</TMPL_IF>
+
+
+    <TMPL_IF NAME="BLAST_NU">
+     <TH align=left valign="top"><u> Nucleotide Specific Parameters</u><br>
+      <TABLE>
+       <TR>
+	<TD valign="top">
+	 Nucleotide Match/Mismatch Scores:
+       </TR>
+       <TR>
+	<TD align=right>
+	 <TABLE>
+	  <TR>
+	   <TD align=right>
+	    <DIV class="small"> Match Score</DIV>
+	   </TD>
+	   <TD>
+	    <input type=text id=match_score value=5 size="7">
+          </TR>
+          <TR>
+           <TD align=right>
+	    <DIV class="small">Mismatch Score</DIV>
+  	   </TD>
+	   <TD>
+	    <input type=text id=mismatch_score value=2 size="7">
+          </TR>
+	 </TABLE>
+       </TR>
+      </TABLE>
+    </TMPL_IF>
+    <TMPL_IF NAME="BLAST_PRO">
+     <TH align=left valign="top"><u>Protein Specific Parameters</u><br>
+      <TABLE>
+       <TR>
+        <TD valign="top">
+	 Matrix
+        </TD>
+        <TD>
+	     <select name=matrix id=matrix>
+              <option value = "PAM30"> PAM30
+	      <option value = "PAM70"> PAM70
+              <option value = "BLOSUM80"> BLOSUM80
+              <option value = "BLOSUM62" selected> BLOSUM62
+              <option value = "BLOSUM45"> BLOSUM45
+             </select>
+       </TR>
+       <TR>
+        <TD>
+	 Compositional adjustments
+	</TD>
+	<TD>
+	     <select name=comp_adj id=comp_adj>
+              <option value = "0"> No adjustment
+	      <option value = "1" selected> Composition-based statistics
+              <option value = "2"> Conditional compositional score matrix adjustment
+              <option value = "3"> Universal compositional score matrix adjustment
+             </select>
+       </TR>
+      </TABLE>
+    </TMPL_IF>
