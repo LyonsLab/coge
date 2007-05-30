@@ -1,108 +1,83 @@
-#! /usr/bin/perl -w
+#!/usr/bin/perl -wT
 
 use strict;
 use File::Spec::Functions;
-require LWP::Simple;
-use vars qw($IMGURL $ZOOM_PAR $SPATIAL_PARS $BUPT);
+use File::Path;
+use LWP::Simple;
+use Data::Dumper;
+$ENV{'PATH'} = '';
+use vars qw($IMGURL $BASEDIR);
 
-$IMGURL = 'http://biocon.berkeley.edu/CoGe/GenomePNG.pl?layers=all,gc&';
-$ZOOM_PAR = 'z';
-$SPATIAL_PARS = ['x'];
-$BUPT = 10;
+$IMGURL = 'http://toxic.berkeley.edu/CoGe/GenomePNG.pl?';
+# where to start the caching
+$BASEDIR = "/opt/apache/CoGe/_cache_/";
 
-###DEBUGGING testing to make sure that 'x' extrapolates to 0 based on
-#zoom and $BUPT
-my %param = map { split('=', $_) } split(/&/,$ENV{QUERY_STRING});
-if ($param{x}%($BUPT*(2**$param{z})))
-  {
-   my $mod = $param{x}%($BUPT*(2**$param{z}));
-    print STDERR "x location error in tiler.pl: x=".$param{x}."\tz=".$param{z}."\tmod=$mod\n ";
-  }
+while (! -e $BASEDIR){ mkdir($BASEDIR);  }
+print "Content-type: image/png; mode=24bit\n\n";
 
-print "Content-type: image/png\n\n";
+my $basedir = [split(/[\\\/]/,$BASEDIR)];
+my ($dir) = get_dir_array();
 
-my ($basedir,$dir) = get_dir_array();
 my $reldir = catfile(@$dir) . '.png';
 my $basepath = catfile(@$basedir);
 
+
 my $fn = catfile($basepath,@$dir) . '.png' ;
-($fn) = $fn =~ /(.*)/;
 my $data;
-if(! -e $fn){
-   make_dir($basepath,$dir);
+
+if(!-e $fn){
+   pop @$dir; # get rid of the file name
+   mkpath($basepath . '/' . join("/",@$dir));
    LWP::Simple::getstore($IMGURL . $ENV{QUERY_STRING},$fn);
+   chmod (0777, $fn);
+   print STDERR $IMGURL.$ENV{QUERY_STRING},"\n";
 }
 
 
 # DUMP THE IMAGE
 {
 local( *IMG,$/ ); 
-open( IMG, $fn) or die "cant open $fn\n"; binmode IMG;
+my $mesg = "cant open $fn\nmake sure _cache_ dir is web writeable\n";
+open( IMG,"<", $fn) or warn "cant open $mesg\n"; binmode IMG;
 print <IMG>; close(IMG);
 }
 
-
-#############################################
-# Make the directory structure 
-#############################################
-sub make_dir {
-    my ($dirstr,$dir) = @_;
-    pop @$dir;
-    $dirstr = catfile($dirstr,shift @$dir);
-    umask 0;
-    foreach my $subdir (@$dir){
-        ($dirstr) = catdir($dirstr,$subdir) =~ /(.*)/;
-        my $status = mkdir($dirstr,0777) if !-e $dirstr;
-    }
-}
-
-#############################################
-# Find the number of numbers so that there
-# are never too many files in a single dir
-#############################################
-sub get_max {
-    my $z = shift;
-    my $MAX_FILES_PER_DIR = 1000;
-    my $upt = $BUPT * 2 ** $z;
-    return int(log($MAX_FILES_PER_DIR * $upt)/log(10));
-}
-
-# find see if a value is in an array;
-sub grep_match {
-    my ($needle,$haystack) = @_;
-    return grep { $needle eq $_ } @$haystack;
-}
+system 'chmod -R 777 /opt/apache/CoGe/_cache_/*';
 
 ##################################################
 # Use %ENV to find where in directory structure
 # we are and make an array of directory names  
 ##################################################
 sub get_dir_array {
-    my $qstr = $ENV{QUERY_STRING};
-    my $base_dir = "/opt/apache";#$ENV{DOCUMENT_ROOT};
-    my @basedir = split(/[\/\\]/,$base_dir);
-    my @dir = split(/[\/\\]/,$ENV{SCRIPT_NAME});
-    shift @dir;
-    # get rid of file name;
-    $dir[$#dir] = '_cache_';
+    my ($qstr) = $ENV{QUERY_STRING} =~ /(.*)/;
+    $qstr =~ s/[\s-]//;
+    my @dir = ();
 
     # parse the url;
+    my %query_pairs = map { split('=', $_) } split(/&/,$qstr);
+
     # keep order of entries but put the spatial pars last becuase
     # it just works out best that way.
-    my @keyvals = map { split('=', $_) } split(/&/,$qstr);
-    my %query_pairs = @keyvals;
-    #@keyvals = map { $_ % 2 == 0 && !grep_match($keyvals[$_],$SPATIAL_PARS) ? $keyvals[$_] : '' } 0.. $#keyvals;
-    #@keyvals = sort @keyvals;
-    #push(@keyvals,@$SPATIAL_PARS);
-    @keyvals = qw(ds chr iw z x);
-    my $MAX = get_max($query_pairs{$ZOOM_PAR});
+    my $xmin = delete $query_pairs{xmin};
+    my $xmax = delete $query_pairs{xmax};
+    my $ds = delete $query_pairs{ds};
+    my $tilew = $query_pairs{width};
+    my $MAX = int(log(1000*abs($xmax - $xmin)/$tilew)/log(10));
+    my @keyvals = ('ds',sort keys %query_pairs);
+    $query_pairs{xmin} = $xmin;
+    $query_pairs{xmax} = $xmax;
+    $query_pairs{ds} = $ds;
+    push(@keyvals,"xmin");
+    push(@keyvals,"xmax");
+    
+    # &layer=fred becomes layer__fred
     foreach my $key( @keyvals ){
-        next if !$key;
+        next unless $key;
         my $val = $query_pairs{$key};
         my @vals;
         # 123456 becomes /x__123/456/  if $MAX == 3
         # 123456 becomes /x__123456/   if $MAX  > 5
-        if(grep_match($key,$SPATIAL_PARS)){
+        if($key eq "xmin" || $key eq "xmax"){
             if($val !~ /(\D|-)+/){
                 $val =~ s/-/n/g;
                 $val = scalar reverse($val);
@@ -110,12 +85,11 @@ sub get_dir_array {
                     unshift(@vals,scalar reverse($1));
                 }
             }
-            # &layer=fred becomes layer__fred
         }
         @vals = ($val) unless @vals;
         my $first = shift @vals;
         push(@dir,$key . '__' . $first);
         map { push(@dir,$_) } @vals;
     }
-    return (\@basedir,\@dir); 
+    return \@dir; 
 }
