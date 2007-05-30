@@ -23,9 +23,9 @@ my $file = $form->param('file');# || "./tmp/pict.png";
 my $start_pict = $form->param('start_pict');
 my $simple = $form->param('simple');
 my $chr_start_height = $form->param('csh') || 200;
-my $chr_mag_height = $form->param('cmh') || 5;
-my $feat_start_height = $form->param('fsh') || 10;
-my $feat_mag_height = $form->param('fmh') || 2;
+my $chr_mag_height = $form->param('cmh') || 0;
+my $feat_start_height = $form->param('fsh') || 30;
+my $feat_mag_height = $form->param('fmh') || 0;
 my $forcefit = $form->param('forcefit') || 0;
 my $request = $form->param('request') || "get_image";
 $forcefit = 1 if defined $start && defined $stop;
@@ -76,5 +76,10 @@ else
 				 fns=>\@fnames,
 				 forcefit=>$forcefit,
 				 layers=>\@layers,
+				 DEBUG=>0,
+				 major_tick_labels=>1,
+				 minor_tick_labels=>-1,
+#				 bm=>1,
+#				 file=>"/tmp/test.png",
 				);
   }
