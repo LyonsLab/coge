@@ -1,0 +1,156 @@
+    <style type="text/css">
+        #map {
+            width: 900px;
+            height: 282;
+            border: 1px solid black;
+        }
+        #zoomLevel {
+           bottom: 10px;
+           left: 0px;
+        }
+        #gene {
+            background-color: red;
+            color:white;
+        }
+        #pseudogene {
+            background-color: orange;
+            color:white;
+        }
+        #mrna {
+            background-color: blue;
+            color:white;
+        }
+        #cds {
+            background-color: green;
+            color:white;
+        }
+        #gc {
+             color:green;
+        }
+    </style>
+    <script src="http://openlayers.org/api/2.3/OpenLayers.js"></script>
+    <script src="js/Grid1D.js"></script>
+    <script src="js/Genomic.js"></script>
+    <script src="js/opengenes.js"></script>
+
+    <script type="text/javascript">
+    /* ruler, chromosome, cds, rna, gene, protein,
+       domain, other, cns, nt, gc, background, */
+
+        if(! window.console){ console={}; console.log = console.debug = function(){}}
+
+        var map, layers;
+        var chr = '<TMPL_VAR NAME=CHR>';
+        var version = '<TMPL_VAR NAME=VER>';
+        var bp;
+        var size= 285;
+        var server = 'tiler.pl?'
+        var org = '<TMPL_VAR NAME=ORG>';
+        var ds = '<TMPL_VAR NAME=DS>';
+        var loc = '<TMPL_VAR NAME=LOC>';
+        var zoom = '<TMPL_VAR NAME=ZOOM>';
+        function init(){
+            map = new OpenLayers.GenomeBrowser( $('map') , 
+            {   
+                 maxExtent: new OpenLayers.Bounds(-50000,0,1000000000,1),
+                 units     :'bp',
+                 tileSize: new OpenLayers.Size(512, size),
+                 resolutions:[1024,512,256,128,64,32,16,8,4,2,1, 0.5, 0.25, 0.125, 0.0625, 0.032125, 0.015625],
+                 //resolutions:[128,64,32,16,8],
+                 controls: [new OpenLayers.Control.MouseDefaults()]
+            });
+            layers = [
+            new OpenLayers.Layer.Genomic( "Ruler" , server
+                 ,{'ds':ds, 'chr':chr,layers:"background,ruler",'version':version,'organism':org}
+                 ,{isBaseLayer:true} 
+             ),
+            new OpenLayers.Layer.Genomic( "<span id='gene'>Genes</span>" , server
+                 ,{'ds':ds,'chr':chr,layers:"gene",'version':version,'organism':org,}
+                 ,{isBaseLayer:false}
+             ),
+            new OpenLayers.Layer.Genomic( "<span id='pseudogene'>Pseudogenes</span>" , server
+                 ,{'ds':ds,'chr':chr,layers:"pseudogene",'version':version,'organism':org}
+                 ,{isBaseLayer:false}
+             ),
+            new OpenLayers.Layer.Genomic( "<span id='mrna'>mRNAs</span>" , server
+                 ,{'ds':ds,'chr':chr,'version':version,layers:"mRNA",'organism':org}
+                 ,{isBaseLayer:false}
+             ),
+            new OpenLayers.Layer.Genomic( "<span id='cds'>CDSs</span>" , server
+                 ,{'ds':ds,'chr':chr,'version':version,layers:"CDS",'organism':org}
+                 ,{isBaseLayer:false}
+             ),
+            new OpenLayers.Layer.Genomic( "other RNAs" , server
+                 ,{'ds':ds,'chr':chr,'version':version,layers:"rna",'organism':org}
+                 ,{isBaseLayer:false}
+             ),
+            new OpenLayers.Layer.Genomic( "proteins" , server
+                 ,{'ds':ds,'chr':chr,'version':version,layers:"protein",'organism':org}
+                 ,{isBaseLayer:false}
+             ),
+            ]
+            fd = new OpenLayers.Layer.Genomic( "functional domains" , server
+                 ,{'ds':ds,'chr':chr,'organism':org,'ds':ds,'version':version,layers:"domain"}
+                 ,{isBaseLayer:false}
+             )
+            gc = new OpenLayers.Layer.Genomic( "<span id='gc'>GC content</span>" , server
+                 ,{'ds':ds,'chr':chr,'version':version,layers:"gc",'organism':org}
+                 ,{isBaseLayer:false}
+             )
+            map.addControl(new OpenLayers.Control.LayerSwitcher())
+
+            gc.setVisibility(false);
+            map.addLayer(gc)
+            map.addLayers(layers);
+            fd.setVisibility(false);
+            map.addLayer(fd)
+            /*                                          zoomLevel */
+            map.setCenter(new OpenLayers.BasePair(loc), zoom);
+            bp = new OpenLayers.Control.MousePosition() 
+            map.addControl(bp );
+            map.addControl(new OpenLayers.Control.PanZoomBar());
+
+
+            map.events.register('zoomend',map,updateZoom);
+            map.events.triggerEvent('zoomend');
+
+            map.events.register('mousedown',map,mapMouseDown);
+            map.events.register('mouseup',map,mapMouseUp);
+
+
+        }
+
+        function mapMouseDown(e){
+            map.lastMouseX = e.xy.x;
+            map.lastMouseY = e.xy.y;
+        }
+        function mapMouseUp(e){
+            var tx = e.xy.x;
+            var ty = e.xy.y;
+            var tot = Math.abs(map.lastMouseX - tx) 
+                + Math.abs(map.lastMouseY - ty);
+            if(4 > tot){
+                // dont need to figure out basepairs from pixels
+                // just use the ones in the window already.
+                query(parseInt(bp.element.innerHTML));
+            }
+        }
+
+        function updateZoom(){
+            $('resolution').innerHTML = map.getResolution() + 'bp/pixel';
+
+        }
+        function query(x){
+           var url = 'FeatAnno.pl?chr='
+           + chr + '&version='+version+'&org='+org+'&loc='
+           + x+'&ds='+ds; 
+           jfetch(url,'query');
+         }
+
+    </script>
+    <div id="map">
+    </div>
+    <div id='resolution'></div>
+    <div id='query'></div>
+
+
