@@ -131,8 +131,14 @@ sub gen_body
 	my $draccn = $form->param("accn".$i) if $form->param("accn".$i);
 	my $drup = $form->param('dr'.$i.'up') if $form->param('dr'.$i.'up');
 	my $drdown = $form->param('dr'.$i.'down') if $form->param('dr'.$i.'down');
+	$drup = $form->param('drup'.$i) if $form->param('drup'.$i);
+	$drdown = $form->param('drdown'.$i) if $form->param('drdown'.$i);
 	$drup = 10000 unless defined $drup;
 	$drdown = 10000 unless defined $drdown;
+	my $gbaccn = $form->param("gbaccn".$i) if $form->param("gbaccn".$i);
+	my $gbstart = $form->param("gbstart".$i) if $form->param("gbstart".$i);
+	$gbstart = 1 unless defined $gbstart;
+	my $gblength = $form->param("gblen".$i) if $form->param("gblen".$i);
 	my $revy = "checked" if $form->param('rev'.$i);
 	my $revn = "checked" unless $revy;
 	push @coge_seqs, {
@@ -145,6 +151,11 @@ sub gen_body
 		    };
 	push @ncbi_seqs, {
 			  SEQ_NUM=>$i,
+			  GBACCN=>$gbaccn,
+			  GBSTART=>$gbstart,
+			  GBLENGTH=>$gblength,
+			  REV_YES=>$revy,
+			  REV_NO=>$revn,
 			 };
 	push @direct_seqs, {
 			  SEQ_NUM=>$i,
@@ -301,8 +312,7 @@ sub Show_Summary
 
 	my $gbaccn = $opts{"gbaccn$i"};
 	my $gbstart = $opts{"gbstart$i"};
-	my $gbup = $opts{"gbup$i"};
-	my $gbdown = $opts{"gbdown$i"};
+	my $gblength = $opts{"gblength$i"};
 	my $gbrev = $opts{"gbrev$i"};
 
 	my $dirseq = $opts{"dirseq$i"};
@@ -310,6 +320,7 @@ sub Show_Summary
 	my $dirstart = $opts{"dirstart$i"};
 	my $dirstop = $opts{"dirstop$i"};
 	my $rev = 0;
+	my ($up, $down);
 	my ($file, $file_begin, $file_end,$spike_seq, $obj);
 	my $reference_seq =$opts{"ref_seq$i"};
 	
@@ -323,6 +334,8 @@ sub Show_Summary
 				mask_ncs=>$mask_ncs_flag,
 				spike_len=>$spike_len,
 			       );
+	    $up = $drup;
+	    $down = $drdown;
 	    $rev = 1 if $drrev;
 	  }
  	elsif ($dirseq )
@@ -337,25 +350,38 @@ sub Show_Summary
  				 mask_ncs=>$mask_ncs_flag,
  				 spike_len=>$spike_len, 
  				);
+	    $up = $dirstart;
+	    $down = $dirstop;
 	    $rev = 1 if $dirrev;
  	  }
  	elsif ($gbaccn )
  	  {
 	    $obj = new CoGe::Accessory::GenBank;
+	    $obj->add_gene_models(1); #may want to make a user selectable option
  	    $obj->get_genbank_from_nbci($gbaccn);
+	    return "<font class=error>No entry found for $gbaccn</font>" unless ($obj);
 	    $obj->sequence(CoGeX::Feature->reverse_complement($obj->sequence)) if $gbrev;
- 	    return "<font class=error>No entry found for $gbaccn</font>" unless ($obj);
- 	    ($file, $file_begin, $file_end,$spike_seq) = 
+	    my $seq;
+ 	    ($file, $file_begin, $file_end,$spike_seq, $seq) = 
  	      generate_seq_file (
  				 obj=>$obj,
  				 mask=>$mask_flag,
  				 mask_ncs=>$mask_ncs_flag,
  				 startpos=>$gbstart,
- 				 upstream=>$gbup,
- 				 downstream=>$gbdown,
+ 				 downstream=>$gblength,
  				 spike_len=>$spike_len, 
  				);
-	    $rev = 1 if $gbrev;
+	    $obj->sequence($seq);
+	    if ($gbrev)
+	      {
+		my $tmp = $file_begin;
+		$file_begin = $obj->length-$file_end;
+		$file_end = $obj->length-$tmp;
+		$rev = 1;
+	      }
+	    $up = $gbstart;
+	    $down = $gblength;
+
  	  }
 	if ($obj)
 	  {
@@ -366,8 +392,8 @@ sub Show_Summary
 			 file_end=>$file_end,
 			 accn=>$obj->accn,
 			 rev=>$rev,
-			 up=>$drup,
-			 down=>$drdown,
+			 up=>$up,
+			 down=>$down,
 			 spike_seq=>$spike_seq,
 			 reference_seq=>$reference_seq,
 			};
@@ -442,7 +468,7 @@ sub Show_Summary
 	    $html .= qq!<div>$accn!;
 	    $html .= qq!(<font class=species>!.$obj->organism.qq!</font>)! if $obj->organism;
 	    $html .= "(".$up."::".$down.")" if defined $up;
-	    $html .= qq!<font class=small> Image Inverted</font>! if $rev;
+	    $html .= qq!<font class=small> Reverse Complement</font>! if $rev;
 	    $html .= qq!</DIV>\n!;
 	    $html .= qq!<IMG SRC="$TEMPURL/$image" !;
 	    $html .= qq!BORDER=0 ismap usemap="#$mapname">\n!;
@@ -541,11 +567,13 @@ sub generate_image
     my $gfx = new CoGe::Graphics::Chromosome;
     $gfx->overlap_adjustment(1);
     $gfx->skip_duplicate_features(1);
+    $gfx->DEBUG(0);
+#    print STDERR "$start"."::"."$stop"." -- ".length($gbobj->sequence)."\n";
     $graphic->initialize_c (
 			    c=>$gfx,
 			    iw=>$iw,
-			    start=> $start,
-			    stop => $stop,
+			    start=> 1,
+			    stop => length($gbobj->sequence),
 			    draw_chr=>1,
 			    draw_ruler=>1,
 			    draw_chr_end=>0,
@@ -573,6 +601,7 @@ sub generate_image
     $f2->merge_percent(0);
     $gfx->add_feature($f2);
     $graphic->process_nucleotides(c=>$gfx, seq=>$gbobj->sequence, layers=>{gc=>$show_gc});
+#    print STDERR join ("\t", $gbobj->accn, $start, $stop),"\n";
     process_features(c=>$gfx, obj=>$gbobj, start=>$start, stop=>$stop, overlap_adjustment=>$overlap_adjustment);
     process_hsps(
 		 c=>$gfx, 
@@ -625,7 +654,7 @@ sub process_features
 
         my $f;
 	my $type = $feat->type;
-	my ($name) = sort { length ($b) <=> length ($a) || $a cmp $b} @{$feat->qualifiers->{names}};
+	my ($name) = sort { length ($b) <=> length ($a) || $a cmp $b} @{$feat->qualifiers->{names}} if ref ($feat->qualifiers) =~ /hash/i ;
         if ($type =~ /pseudogene/i)
           {
 #	    next;
@@ -699,7 +728,7 @@ sub process_features
 	print STDERR $name,"\n\n" if $DEBUG;
         $f->type($type);
 	$f->description($feat->annotation);
-	$f->link("FeatView.pl?accn=$name\" target=\"_new");
+	$f->link("FeatView.pl?accn=$name\" target=\"_new") if $name;
 	$f->skip_overlap_search($overlap);
         $c->add_feature($f);
     }
@@ -921,7 +950,7 @@ sub generate_seq_file
     my $mask = $options{mask} || $options{mask_flag};
     my $mask_ncs = $options{mask_ncs};
     my $t1 = new Benchmark;
-    my ($file, $file_begin, $file_end, $spike_seq) = 
+    my ($file, $file_begin, $file_end, $spike_seq, $seq) = 
       write_fasta(
 		  GBOBJ=>$obj,
 		  accn=>$obj->accn,
@@ -936,7 +965,7 @@ sub generate_seq_file
     my $t2 = new Benchmark;
     my $time = timestr(timediff($t2,$t1));
     print STDERR "Time to generate Sequence file:   $time\n" if $BENCHMARK;
-    return ($file, $file_begin, $file_end, $spike_seq);
+    return ($file, $file_begin, $file_end, $spike_seq, $seq);
   }
 
 sub get_obj_from_genome_db
@@ -988,10 +1017,6 @@ sub get_obj_from_genome_db
 					 });
 
     $obj->sequence($seq);
-    $obj->{start} = $start;
-    $obj->{stop} = $stop;
-    $obj->{chr} = $chr;
-    $obj->{ds} = $ds_id;
     my $fnum = 1;
     my %used_names;
     $used_names{$accn} = 1;
@@ -1277,7 +1302,7 @@ sub write_fasta {
 		$seq = $gbobj->mask_ncs( $seq );
 	}
 	($seq) = $gbobj->subsequence( $seq_begin, $seq_end, $seq );
-
+	my $full_seq = $seq;
 	my $spike_seq = "";
 	($seq, $spike_seq) = spike( $seq, $options->{spike}) if $options->{spike};
 
@@ -1300,7 +1325,7 @@ sub write_fasta {
 	    print OUT $seq,"\n" if $seq;
 	    close(OUT);
 	    system "chmod +rw $fullname";
-	    return($fullname,$seq_begin,$seq_end,$spike_seq);
+	    return($fullname,$seq_begin,$seq_end,$spike_seq, $full_seq);
 	  } 
 	else 
 	  {
@@ -1330,7 +1355,7 @@ sub spike_filter_select
     my $html = qq{<select class="backbox" id="spike">};
     for (my $i = 13; $i<=18; $i++)
       {
-	$html .= ($match && $match == $i) ? qq{<option>} : qq{<option selected>};
+	$html .= ($match && $match == $i) ? qq{<option selected>} : qq{<option>} ;
 	$html .= $i;
 	$html .= qq{</option>};
       }
@@ -1352,11 +1377,11 @@ sub generate_annotation
 				    UNLINK=>0);
     my $fullname = $tmp_file->filename;
     my %data;
-    my $length = $obj->{stop} - $obj->{start}+1;
+    my $length = length($obj->sequence());
     foreach my $feat($obj->get_features(@opts))
       {
 	my $type = $feat->type;
-	my ($name) = sort { length ($b) <=> length ($a) || $a cmp $b} @{$feat->qualifiers->{names}};
+	my ($name) = sort { length ($b) <=> length ($a) || $a cmp $b} @{$feat->qualifiers->{names}} if ref($feat->qualifiers) =~ /hash/i;
 	my $dir = $feat->location =~ /complement/ ? "<" : ">";
 	foreach my $block (@{$feat->blocks})
 	  {
@@ -1411,8 +1436,7 @@ sub gen_go_button
 	$params .= qq{'args__drrev$i', 'drrev$i',};
 	$params .= qq{'args__gbaccn$i', 'gbaccn$i',};
 	$params .= qq{'args__gbstart$i', 'gbstart$i',};
-	$params .= qq{'args__gbup$i', 'gbup$i',};
-	$params .= qq{'args__gbdown$i', 'gbdown$i',};
+	$params .= qq{'args__gblength$i', 'gblength$i',};
 	$params .= qq{'args__gbrev$i', 'gbrev$i',};
 	$params .= qq{'args__dirseq$i', 'dirseq$i',};
 	$params .= qq{'args__dirrev$i', 'dirrev$i',};
