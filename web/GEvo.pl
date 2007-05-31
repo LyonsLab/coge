@@ -1338,8 +1338,8 @@ sub spike {
 	my $seq = shift;
 	my $spikesize = shift;
 	return ($seq) unless $spikesize;
-	$spikesize -= 12; # to account for the "CCCAAAGGGTTT" tag
-	my $spike_seq = "CCCAAAGGGTTT";
+	$spikesize -= 10; # to account for the "CCCAAAGGGTTT" tag
+	my $spike_seq = "CCCAAAGGGT";
 	for ( my $n = 0; $n < $spikesize; $n++ ) {
 		$spike_seq .= "C";
 	}
@@ -1354,7 +1354,7 @@ sub spike_filter_select
     $match = $form->param('spike_len') if $form->param('spike_len');
     $match = 15 unless $match;
     my $html = qq{<select class="backbox" id="spike">};
-    for (my $i = 13; $i<=18; $i++)
+    for (my $i = 10; $i<=20; $i++)
       {
 	$html .= ($match && $match == $i) ? qq{<option selected>} : qq{<option>} ;
 	$html .= $i;
