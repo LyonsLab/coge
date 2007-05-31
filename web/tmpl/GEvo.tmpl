@@ -613,16 +613,13 @@ Note: parameter options haven't been implemented for blastz (yet)
         <TD><input class="backbox" type="text" name="gbaccn<TMPL_VAR NAME="SEQ_NUM">" id="gbaccn<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="10" value="<TMPL_VAR NAME=GBACCN>" />
       <TR>
 	<TD><DIV class="small">Start Position:</DIV>
-      	<TD><input class="backbox" type="text" name="gbstart<TMPL_VAR NAME="SEQ_NUM">" id="gbstart<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10" value="1" /></TD>
+      	<TD><input class="backbox" type="text" name="gbstart<TMPL_VAR NAME="SEQ_NUM">" id="gbstart<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10" value="<TMPL_VAR NAME=GBSTART>" /></TD>
       <TR>
-       <TD><DIV class="small">Left:</DIV>
-       <TD><input class="backbox" type="text" name="gbup<TMPL_VAR NAME="SEQ_NUM">" id="gbup<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10" value="0" />
-      <TR>
-       <TD><DIV class="small">Right:</DIV>
-       <TD><input class="backbox" type="text" name="gbdown<TMPL_VAR NAME="SEQ_NUM">" id="gbdown<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10"  value=""/>
+       <TD><DIV class="small">Sequence Length:</DIV>
+       <TD><input class="backbox" type="text" name="gblength<TMPL_VAR NAME="SEQ_NUM">" id="gblength<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10"  value="<TMPL_VAR NAME=GBLENGTH>"/>
       <TR>
        <TD colspan=2>
-       <font class="small">Reverse Complement: <label><input class="backbox" type="radio" name="gbrev<TMPL_VAR NAME="SEQ_NUM">" id="gbrev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="1" />Yes</label><label><input class="backbox" type="radio" name="gbrev<TMPL_VAR NAME="SEQ_NUM">" id="gbrev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="0" checked />No</label><BR></font>
+       <font class="small">Reverse Complement: <label><input class="backbox" type="radio" name="gbrev<TMPL_VAR NAME="SEQ_NUM">" id="gbrev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="1" <TMPL_VAR NAME=REV_YES> />Yes</label><label><input class="backbox" type="radio" name="gbrev<TMPL_VAR NAME="SEQ_NUM">" id="gbrev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="0" <TMPL_VAR NAME=REV_NO> />No</label><BR></font>
       </TABLE>
 
       </TMPL_LOOP>
