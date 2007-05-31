@@ -212,6 +212,7 @@ BEGIN
 "overlay", #level of overlay for features such that one feature is drawn over another.
 "use_external_image", #flag for using an external image when available
 "options", #place to store additional options
+"alt", #used for the alt tag in image maps
 );
   }
 
