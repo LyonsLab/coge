@@ -838,6 +838,7 @@ sub process_hsps
 	      {
 		$f->label($hsp->number);
 	      }
+	    $f->alt(join ("-",$hsp->number,$accn1,$accn2));
 	    my $desc = join ("<br>", "HSP: ".$hsp->number. "  <font class=small>(".$blast->query."-". $blast->subject.")</font>", $start."-".$stop." (".$hsp->strand.")", $seq,"Match: ".$hsp->match,"Length: ".$hsp->length,"Identity: ".$hsp->percent_id,"E_val: ".$hsp->pval);
 	    $f->description($desc);
 	    my $link = "HSPView.pl?blast_report=$report&hsp_num=".$hsp->number;
