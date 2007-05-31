@@ -7,7 +7,7 @@ use base qw(Class::Accessor);
 use CoGe::Accessory::GenBank::Feature;
 
 
-__PACKAGE__->mk_accessors qw(id locus accn length moltype division date definition verison keywords source organism sequence srcfile dir anntoation features start stop add_gene_models);
+__PACKAGE__->mk_accessors qw(id locus accn seq_length moltype division date definition verison keywords source organism sequence srcfile dir anntoation features start stop add_gene_models);
 
 sub new
   {
@@ -170,7 +170,7 @@ sub parse_genbank
 	elsif ( $line =~ /^\/\// ) {
 	  # last line of buffer
 	  $self->locus($locus);
-	  $self->length($length);
+	  $self->seq_length($length);
 	  $self->moltype($moltype);
 	  $self->division($division);
 	  $self->verison($version);
