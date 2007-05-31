@@ -1231,7 +1231,7 @@ sub generate_imagemap
 	
 	next if $fw < 1; #skip drawing if less than one pix wide
 	my $link = $feat->link;
-	my $alt = $feat->label;
+	my $alt = $feat->alt || $feat->label;
 	my $x2 = ceil($fs+$fw);
 	my $y2 = ceil($y+$feat_h);
 	$y = floor $y;
@@ -1610,7 +1610,7 @@ sub _draw_chromosome
     my $w = $self->iw; #width of image
     my $xs = $self->_region_start < 1 ? $w*abs(1-$self->_region_start)/($self->_region_length): 0;
     my $xe = $self->_region_stop > $self->chr_length ? $w-$w*($self->_region_stop - $self->chr_length-1)/($self->_region_length) : $w;
-    print STDERR "\nChromosome image: Height/2: $ch, Height Center: $hc, xs: $xs, xe:\n" if $self->DEBUG;
+    print STDERR "\nChromosome image: Height/2: $ch, Height Center: $hc, xs: $xs, xe: $xe  draw_chromsome: ".$self->draw_chromosome."\n" if $self->DEBUG;
     
     
     return unless $self->draw_chromosome; #do we draw the chromsome picture?
