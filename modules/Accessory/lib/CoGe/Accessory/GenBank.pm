@@ -7,7 +7,7 @@ use base qw(Class::Accessor);
 use CoGe::Accessory::GenBank::Feature;
 
 
-__PACKAGE__->mk_accessors qw(id locus accn length moltype division date definition verison keywords source organism sequence srcfile dir anntoation features start stop);
+__PACKAGE__->mk_accessors qw(id locus accn length moltype division date definition verison keywords source organism sequence srcfile dir anntoation features start stop add_gene_models);
 
 sub new
   {
@@ -206,7 +206,7 @@ sub parse_genbank
 				);
 	      $fcount++;
 	    }
-	  $self->_check_for_gene_models;
+	  $self->_check_for_gene_models if $self->add_gene_models;
 	  return $self;
 	}
 	$pos++; # incr position counter
@@ -225,8 +225,8 @@ sub _check_for_gene_models
 	$fcount = $feat->number if $feat->number > $fcount;
 	next unless $feat->type =~ /cds/i || $feat->type =~ /rna/i;
 	push @{$data{$feat->strand}{lc($feat->type)}}, [$feat->start,$feat->stop];
-	print STDERR $feat->type,"\t",$feat->location,"\n";
-	print STDERR $feat->start,"-",$feat->stop,"\n";
+#	print STDERR $feat->type,"\t",$feat->location,"\n";
+#	print STDERR $feat->start,"-",$feat->stop,"\n";
       }
     foreach my $strand (keys %data)
       {
@@ -236,11 +236,11 @@ sub _check_for_gene_models
 	    foreach my $item (@{$data{$strand}{$type}})
 	      {
 		my ($start, $stop) = @$item;
-		my $found = 0;
-		foreach my $item2(@{$data{$strand}{"gene"}})
-		  {
-		    $found = 1 if $item2->[0] <= $start && $item2->[1] >= $stop;
-		  }
+#		my $found = 0;
+#		foreach my $item2(@{$data{$strand}{"gene"}})
+#		  {
+#		    $found = 1 if $item2->[0] <= $start && $item2->[1] >= $stop;
+#		  }
 #		unless ($found)
 		  {
 		    $fcount++;
