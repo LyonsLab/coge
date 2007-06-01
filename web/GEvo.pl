@@ -126,9 +126,11 @@ sub gen_body
     my @ncbi_seqs;
     my @direct_seqs;
     my @seq_nums;
+    my ($drseq, $gbseq, $dirseq) = (0,0,0); #flags for whether we were submitted sequences
     for (my $i = 1; $i <= $num_seqs; $i++)
       {
 	my $draccn = $form->param("accn".$i) if $form->param("accn".$i);
+	$drseq = 1 if $draccn;
 	my $drup = $form->param('dr'.$i.'up') if $form->param('dr'.$i.'up');
 	my $drdown = $form->param('dr'.$i.'down') if $form->param('dr'.$i.'down');
 	$drup = $form->param('drup'.$i) if $form->param('drup'.$i);
@@ -136,6 +138,7 @@ sub gen_body
 	$drup = 10000 unless defined $drup;
 	$drdown = 10000 unless defined $drdown;
 	my $gbaccn = $form->param("gbaccn".$i) if $form->param("gbaccn".$i);
+	$gbseq = 1 if $gbaccn;
 	my $gbstart = $form->param("gbstart".$i) if $form->param("gbstart".$i);
 	$gbstart = 1 unless defined $gbstart;
 	my $gblength = $form->param("gblen".$i) if $form->param("gblen".$i);
@@ -222,6 +225,11 @@ sub gen_body
     $template->param(DIRECT_SEQS=>$direct_seqs);
     $template->param(HSP_COLOR=>$hsp_colors);
     $template->param(GO_BUTTON=>gen_go_button($num_seqs));
+    $drseq ? $template->param(DRMENU=>'inline') : $template->param(DRMENU=>'none');
+    $dirseq ? $template->param(DIRMENU=>'inline') : $template->param(DIRMENU=>'none');
+    $gbseq = 1 unless ($drseq || $dirseq); #default
+    $gbseq ? $template->param(GBMENU=>'inline') : $template->param(GBMENU=>'none');
+    
     $box->param(BOX_NAME=>"Sequence Retrieval:");
     $box->param(BODY=>$template->output);
     
@@ -375,8 +383,8 @@ sub Show_Summary
 	    if ($gbrev)
 	      {
 		my $tmp = $file_begin;
-		$file_begin = $obj->length-$file_end;
-		$file_end = $obj->length-$tmp;
+		$file_begin = $obj->seq_length-$file_end;
+		$file_end = $obj->seq_length-$tmp;
 		$rev = 1;
 	      }
 	    $up = $gbstart;
