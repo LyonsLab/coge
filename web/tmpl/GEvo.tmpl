@@ -190,7 +190,7 @@ Number of sequences:
    <DIV class="mainDiv">
    <DIV id = "dr" class="topItem" onMouseOver="Init(this); changeColor('dr','#000099'); " onMouseOut="changeColor('dr','#009900');">CoGe Database Retrieval:</DIV>
    <DIV class="dropMenu">
-     <DIV class="subMenu" style="display:inline;">
+     <DIV class="subMenu" style="display:<TMPL_VAR NAME=DRMENU>;">
      <TMPL_VAR NAME="COGE_SEQS">
      <Div class ="small" align = "left">Apply distance to all?<input type="checkbox" name="apply_all" id="apply_all" value="0" /></div>
 
@@ -214,7 +214,7 @@ Number of sequences:
    <DIV class="mainDiv" >
    <DIV id="isr" class="topItem" onMouseOver="Init(this);changeColor('isr','#000099'); " onMouseOut="changeColor('isr','#009900');" >NCBI Sequence Retrieval:</DIV>
    <DIV class="dropMenu">
-     <DIV class="subMenu" style="display:none;" >
+     <DIV class="subMenu" style="display:<TMPL_VAR NAME=GBMENU>;" >
      <TMPL_VAR NAME="NCBI_SEQS">	
      <span class="subItem"></span>
      <span class="subItem"></span>
@@ -233,7 +233,7 @@ Number of sequences:
    <DIV class="mainDiv" >
    <DIV id="dss" class="topItem" onMouseOver="Init(this);  changeColor('dss','#000099'); " onMouseOut="changeColor('dss','#009900');" >Direct Sequence Submission:</DIV>
    <DIV class="dropMenu">
-     <DIV class="subMenu" style="display:none;" >
+     <DIV class="subMenu" style="display:<TMPL_VAR NAME=DIRMENU>;" >
      <TMPL_VAR NAME="DIRECT_SEQS">		
      <span class="subItem"></span>
      <span class="subItem"></span>
