@@ -348,8 +348,9 @@ sub Show_Summary
 	  }
  	elsif ($dirseq )
  	  {
+	    $dirseq = CoGeX::Feature->reverse_complement($dirseq) if $dirrev;
  	    my $seq = get_substr(seq=>$dirseq, start=>$dirstart, stop=>$dirstop);
- 	    ($obj) = generate_obj_from_seq($seq, $i, $dirrev);
+ 	    ($obj) = generate_obj_from_seq($seq, $i);
  	    return "<font class=error>Problem with direct sequence submission</font>" unless ($obj);
  	    ($file, $file_begin, $file_end, $spike_seq) = 
  	      generate_seq_file (
