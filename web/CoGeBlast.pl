@@ -58,6 +58,7 @@ sub gen_html
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
     $template->param(TITLE=>'CoGe: BLAST');
     $template->param(HELP=>'BLAST');
+   # print STDERR "user is: ",$USER,"\n";
     $template->param(USER=>$USER);
     $template->param(DATE=>$DATE);
     $template->param(LOGO_PNG=>"CoGeBlast-logo.png");
@@ -77,6 +78,7 @@ sub gen_body
     my $downstream = $form->param('downstream') || 0;
     my $dsid = $form->param('dsid') || 0;
     my $feat_name = $form->param('featname');
+    my $rc = $form->param('rc');
     $template->param(JAVASCRIPT=>1);
     $template->param(BLAST_FRONT_PAGE=>1);
     $template->param(TYPE_LOOP=> [{TYPE=>"<OPTION VALUE=0>All</OPTION>"},map {{TYPE=>"<OPTION value=\"".$_->id."\">".$_->name."</OPTION>"}} sort {uc($a->name) cmp uc($b->name)} $DB->all_feature_types]);
@@ -90,13 +92,15 @@ sub gen_body
     #print STDERR $param;
     if ($featid)
     {
+    	$template->param(DISPLAY_FEAT=>1);
     	$template->param(FEATID=>$featid);
     	$template->param(UPSTREAM=>$upstream);
     	$template->param(DOWNSTREAM=>$downstream);
     	$template->param(DSID=>$dsid);
     	$template->param(FEATNAME=>$feat_name);
     	$template->param(SEQVIEW=>1);
-    	my $seq = get_sequence($feat_name,$featid, $dsid, 0, 1, $upstream, $downstream);
+    	$template->param(RC=>$rc);
+    	my $seq = get_sequence($feat_name,$featid, $dsid, 0, 1, $upstream, $downstream,$rc);
         $template->param(SEQUENCE=>$seq);
     }
     if ($chr)
@@ -109,8 +113,6 @@ sub gen_body
     	my $seq = get_sequence(0,$chr, $dsid, 0, 2, $upstream, $downstream);
     	$template->param(SEQUENCE=>$seq);
     }
-    
-    
     $template->param(USER_NAME=>$USER);
     #$template->param(DEFAULT_PARAM=>$param);
     $template->param(REST=>1);
@@ -204,6 +206,7 @@ sub get_sequence
     my $seqview = shift || 0;
     my $upstream = shift || 0;
     my $downstream = shift || 0;
+    my $rc = shift || 0;
     my $seq;
     my $featid;
     #print STDERR "type: ", $type, ", dsid: ", $dsid, ", accn: ", $accn, ", blast_type: ", $blast_type, "\n";
@@ -214,9 +217,23 @@ sub get_sequence
 					 stop=>$downstream,
 					 chr=>$type,
 					 dataset_id=>$dsid);
-	$fasta = generate_fasta_without_featid(chr=>$type, dsid=>$dsid, start=>$upstream, stop=>$downstream);
+       $fasta = generate_fasta_without_featid(chr=>$type, dsid=>$dsid, start=>$upstream, stop=>$downstream);
+       if ($blast_type eq  "blast_type_p") {
+       my $key;
+       my $sixframe;
+       my $sequence = $DB->get_feat_obj->frame6_trans(seq=>$seq);
+          #print STDERR Dumper ($sequence);
+       foreach $key (sort {abs($a) <=> abs($b) || $b <=> $a} keys %$sequence)
+           {
+      	     $seq = join ("\n", wrap('','',$sequence->{$key}));
+      	     $sixframe .= qq/$fasta Frame $key\n$seq\n/;
+           }
+         $seq = $sixframe;
+        }
+        else {
 	$seq = join ("\n", wrap('','',$seq));
 	$seq = ($fasta. $seq);
+	}
 	return $seq;
     }
     unless ($seqview)
@@ -235,7 +252,7 @@ sub get_sequence
      {$featid = $type;}
     #print STDERR "dsid: ", $dsid, "\n";
     #print STDERR "\nfeatid: ", $featid, ", up: ", $upstream, ", down: ", $downstream, "\n";
-     $fasta = generate_fasta_with_featid(featid=>$featid, dsid=>$dsid, feat_name=>$accn);
+    $fasta = generate_fasta_with_featid(featid=>$featid, dsid=>$dsid, feat_name=>$accn, rc=>$rc, blast_type=>$blast_type);
     
 #     if ($seqview)
 #      {
@@ -253,7 +270,6 @@ sub get_sequence
 #     }
 #     else
 #      {
-
     my ($feat) = $DB->get_feat_obj->retrieve($featid);
     unless (ref($feat) =~ /Feature/i)
     {
@@ -266,7 +282,10 @@ sub get_sequence
        $seq = "No sequence available" unless $seq;
       }
       else {
-       $seq = $feat->genomic_sequence(upstream=>$upstream, downstream=>$downstream);}
+      $seq = $feat->genomic_sequence(upstream=>$upstream, downstream=>$downstream);
+      if ($rc)
+      	{$seq = reverse_complement($seq);}
+      }
       $seq = join ("\n", wrap('','',$seq));
       $seq = ($fasta. $seq);
     }
@@ -318,19 +337,21 @@ sub get_url
     my $url = shift;
     my $expect = shift;
     my $db = shift;
+    my $radio = shift;
     #print STDERR "expect: ", $expect, "\n";
     if ($url eq "blastn") {
-      return "http://www.ncbi.nlm.nih.gov/blast/Blast.cgi?PAGE=Nucleotides&PROGRAM=blastn&MEGABLAST=on&BLAST_PROGRAMS=megaBlast&PAGE_TYPE=BlastSearch&EXPECT=$expect&DATABASE=$db";}
+      $url = "http://www.ncbi.nlm.nih.gov/blast/Blast.cgi?PAGE=Nucleotides&PROGRAM=blastn&MEGABLAST=on&BLAST_PROGRAMS=megaBlast&PAGE_TYPE=BlastSearch&EXPECT=$expect&DATABASE=$db";}
     elsif ($url eq "blastp") {
-      return "http://www.ncbi.nlm.nih.gov/BLAST/Blast.cgi?PAGE=Proteins&PROGRAM=blastp&BLAST_PROGRAMS=blastp&PAGE_TYPE=BlastSearch&EXPECT=$expect&DATABASE=$db";}
+      $url = "http://www.ncbi.nlm.nih.gov/BLAST/Blast.cgi?PAGE=Proteins&PROGRAM=blastp&BLAST_PROGRAMS=blastp&PAGE_TYPE=BlastSearch&EXPECT=$expect&DATABASE=$db";}
       elsif ($url eq "blastx") {
-        return "http://www.ncbi.nlm.nih.gov/BLAST/Blast.cgi?PAGE=Translations&PROGRAM=blastx&BLAST_PROGRAMS=blastx&PAGE_TYPE=BlastSearch&EXPECT=$expect&DATABASE=$db";}
+        $url = "http://www.ncbi.nlm.nih.gov/BLAST/Blast.cgi?PAGE=Translations&PROGRAM=blastx&BLAST_PROGRAMS=blastx&PAGE_TYPE=BlastSearch&EXPECT=$expect&DATABASE=$db";}
     elsif ($url eq "tblastn") {
-      return "http://www.ncbi.nlm.nih.gov/BLAST/Blast.cgi?PAGE=Translations&PROGRAM=tblastn&BLAST_PROGRAMS=tblastn&PAGE_TYPE=BlastSearch&EXPECT=$expect&DATABASE=$db";}
+      $url = "http://www.ncbi.nlm.nih.gov/BLAST/Blast.cgi?PAGE=Translations&PROGRAM=tblastn&BLAST_PROGRAMS=tblastn&PAGE_TYPE=BlastSearch&EXPECT=$expect&DATABASE=$db";}
     elsif ($url eq "tblastx") {
-      return "http://www.ncbi.nlm.nih.gov/BLAST/Blast.cgi?PAGE=Translations&PROGRAM=tblastx&BLAST_PROGRAMS=tblastx&PAGE_TYPE=BlastSearch&EXPECT=$expect&DATABASE=$db";}
+      $url = "http://www.ncbi.nlm.nih.gov/BLAST/Blast.cgi?PAGE=Translations&PROGRAM=tblastx&BLAST_PROGRAMS=tblastx&PAGE_TYPE=BlastSearch&EXPECT=$expect&DATABASE=$db";}
     else {
-      return 1;}
+      $url = 1;}
+    return $url,$radio;
   }
 #   
 # sub aa_or_nu_seq 
@@ -356,9 +377,14 @@ sub generate_fasta_with_featid
     my $featid = $opts{featid};
     my $dsid = $opts{dsid};
     my $feat_name = $opts{feat_name};
+    my $rc = $opts{rc};
+    my $blast_type = $opts{blast_type};
     my $ds = $DB->get_dataset_obj->retrieve($dsid);
     my ($feat) = $DB->get_feat_obj->retrieve($featid);
-    my $fasta = ">".$ds->org->name."(v.".$feat->version.") ".", Name: ".$feat_name.", Type: ".$feat->type->name.", Location: ".$feat->genbank_location_string.", Chromosome: ".$feat->chr.", Strand: ".$feat->strand."\n";
+    my $strand = $feat->strand;
+    if ($rc)
+    	{$strand *= -1 unless ($blast_type eq "blast_type_p");}
+    my $fasta = ">".$ds->org->name."(v.".$feat->version.") ".", Name: ".$feat_name.", Type: ".$feat->type->name.", Location: ".$feat->genbank_location_string.", Chromosome: ".$feat->chr.", Strand: ".$strand."\n";
     return $fasta;
   }
   
@@ -387,8 +413,8 @@ sub find_radio
   {
     my %opts = @_;
     my $radio = $opts{'bn'};
-    my $expect = $opts{'expect'};
-    my $db = $opts{'db'};
+    #my $expect = $opts{'expect'};
+   # my $db = $opts{'db'};
     #print STDERR "radio: ",$radio,", expect: ",$expect, ", db: ",$db,"\n";
     return $radio;
   }
@@ -396,22 +422,12 @@ sub find_radio
 sub get_pretty_print
 {
     my $accn = shift;
-    my $type = shift;
+    my $featid = shift;
     my $dsid = shift;
-    my $featid;
-    my @feats;
-    foreach my $feat ($DB->get_features_by_name_and_dataset_id(name=>$accn, id=>$dsid))
-      {
-	push @feats, $feat if ($feat->type->name eq $type);
-      }
-     foreach my $feat (@feats) 
-     {
-      $featid = $feat->id;
-     }
     my ($feat) = $DB->get_feat_obj->retrieve($featid);
     unless (ref($feat) =~ /Feature/i)
     {
-      return "Unable to retrieve Feature object for id: $accn $type";
+      return "Unable to retrieve Feature object for id: $accn $featid";
     }
     my $html = $feat->annotation_pretty_print_html();
     return $html;
@@ -420,11 +436,23 @@ sub get_pretty_print
 sub blast_param
 {
     my $seq_type = shift || "blast_type_n";
+    my $pro = shift;
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CoGeBlast.tmpl');
     if ($seq_type eq "blast_type_n") {
         $template->param(BLAST_NU=>1);}
     else {
-	$template->param(BLAST_PRO=>1);}
+	$template->param(BLAST_PRO=>1);
+	unless ($pro)
+	 {$template->param(BLAST_PRO_COMP=>1);}
+	 }
     my $html = $template->output;
     return $html;
 }
+
+sub reverse_complement
+  {
+    my $seq = shift;
+    $seq = reverse $seq;
+    $seq =~ tr/ATCG/TAGC/;
+    return $seq;
+  }
