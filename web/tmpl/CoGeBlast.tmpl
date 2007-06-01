@@ -1,29 +1,35 @@
 <TMPL_IF NAME="JAVASCRIPT">
 <script language="JavaScript" type="text/javascript" src="/CoGe/js/menu.js"></script>
-<SCRIPT language="JavaScript" type="text/javascript" src="/CoGe/js/kaj.stable.js"></SCRIPT>
+<!--<SCRIPT language="JavaScript" type="text/javascript" src="/CoGe/js/kaj.stable.js"></SCRIPT>-->
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.js"></SCRIPT>
 
 <SCRIPT language="JavaScript">
 
-function get_seq(url) {
+function get_seq(url,radio) {
  if (url == 1)
-  {alert('You have not selected a BLAST program. Please select a program with which to BLAST your sequence.');}
- seq = kaj.GS('seq_box');
- word_size = kaj.GS('word_size');
- expect = kaj.GS('e_value');
- exist = kaj.GS('gap_exist');
- extent = kaj.GS('gap_ext');
+  {alert('You have not selected a BLAST program! Please select a program to run.');}
+ else {
+ seq = $('#seq_box').val();
+ word_size = $('#word_size').val();
+ expect = $('#e_value').val();
+ exist = $('#gap_exist').val();
+ extent = $('#gap_ext').val();
  gapcost = exist+' '+extent;
- job_title = kaj.GS('job_title');
- url = url+'&QUERY='+seq+'&JOB_TITLE='+job_title+'&EXPECT='+expect+'&WORD_SIZE='+word_size;
+ job_title = $('#job_title').val();
+ url = url+'&QUERY='+seq+'&JOB_TITLE='+job_title+'&WORD_SIZE='+word_size;
  //+'&DATABASE='+db;
-//  if (type1 == 'blast_type_n') {
-//  nuc_reward = kaj.GS('match_score');
-//  nuc_penalty = kaj.GS('mismatch_score');
-//  match_score = nuc_reward+','+nuc_penalty;
-//  window.open(url+'MATCH_SCORES'+match_score);
-//  }
-//  else {
- window.open(url);
+ //alert(''+radio);
+ if (radio == 'blast_type_n') {
+ nuc_reward = $('#match_score').val();
+ nuc_penalty = $('mismatch_score').val();
+ match_score = nuc_reward+','+nuc_penalty;
+ //alert('I ran!');
+ window.open(url+'&MATCH_SCORES='+match_score);
+ }
+//alert(''+url);
+else {
+ window.open(url);}
+ }
 }
 
 // function set_seq() {
@@ -45,7 +51,7 @@ function radio_lock(unlock) {
 }
 
 function select_blast(radio) {
-  get_url([radio,'e_value','blast_db'],[get_seq]);
+  get_url([radio,'e_value','blast_db','bn'],[get_seq]);
 }
 
 function changeColor(id, color) {
@@ -53,16 +59,20 @@ function changeColor(id, color) {
 }
 
 function check_seq_for_blast() {
- accn = kaj.GS('accn_select') || 0;
- dsid = kaj.GS('dsid') || 0;
- featid = kaj.GS('featid') || 0;
+ accn = $('#accn_select').val() || 0;
+ dsid = $('#dsid').val() || 0;
+ featid = $('#featid').val() || 0;
+ chr = $('#chr').val() || 0;
 // radio2 = kaj.GS('bn');
 // alert('bn');
- type_name = kaj.GS('Type_name') || kaj.GS('featid') || 0; 
- if (accn && dsid && type_name) {
+ type_name = $('#Type_name').val() || $('#featid').val() || 0; 
+ if ((accn && dsid && type_name) || (chr && dsid)) {
   if (featid) {
-   get_sequence(['accn_select','featid','dsid','bn', 'seqview', 'upstream','downstream'],['seq_box']);
+   get_sequence(['accn_select','featid','dsid','bn', 'seqview', 'upstream','downstream','rc'],['seq_box']);
   }
+  else if (chr) {
+   get_sequence(['accn_select','chr','dsid','bn', 'seqview', 'upstream','downstream'],['seq_box']);
+   }
   else {
 // alert('Im being called!'+accn+dsid+type_name);
  get_sequence(['accn_select','Type_name','dsid','bn'],['seq_box']);}
@@ -71,50 +81,72 @@ function check_seq_for_blast() {
  
 function search_chain(val) {
  minlen = 4;
- if ((val == 1) && (kaj.GS('accn').length > minlen)){
+ if ((val == 1) && ($('#accn').val().length > minlen)){
    return;
  } 
- kaj.GS('DS_title','');
- kaj.GS('FT_title','');
- kaj.GS('accn_list','<input type="hidden" id="accn_select">');	
- kaj.GS('Source','<input type="hidden" id="dsid">');	
- kaj.GS('FeatType','<input type="hidden" id="Type_name">');	;	
- if (val == 1 || kaj.GS('accn').length > minlen) {
+ $('#DS_title').val('');
+ $('#FT_title').val('');
+ $('#accn_list').val('<input type="hidden" id="accn_select">');	
+ $('#Source').val('<input type="hidden" id="dsid">');	
+ $('#FeatType').val('<input type="hidden" id="Type_name">');	
+ if (val == 1 || $('#accn').val().length > minlen) {
 //   kaj.GS('DS_title','<font class="loading">Searching. . .</font>');// for "'+kaj.GS('accn')+'" type '+''+'. . .</font>');
    cogesearch(['accn','type', 'org'],[source_search_chain]); 
  }
 }
 
-function source_search_chain (val) {
- kaj.GS('DS_title','');
- kaj.GS('FT_title','');
- kaj.GS('Source','<input type="hidden" id="dsid"><font class="loading">Loading. . .</font>');	
- kaj.GS('FeatType','<input type="hidden" id="Type_name">');		
- if (val) {kaj.GS('accn_list',val);}
+function source_search_chain (val1) {
+ $('#DS_title').val('');
+ $('#FT_title').val('');
+ $('#Source').val('<input type="hidden" id="dsid"><font class="loading">Loading. . .</font>');	
+ $('#FeatType').val('<input type="hidden" id="Type_name">');		
+ if (val1) {$('#accn_list').val(val1);}
  source_search(['accn_select'], [get_types_chain]);
 }
 
 function get_types_chain (val1, val2) {
- kaj.GS('FT_title','');
- kaj.GS('FeatType','<input type="hidden" id="Type_name"><font class="loading">Loading. . .</font>');	
- if (val1) {kaj.GS('Source', val1);}
+ $('#FT_title').val('');
+ $('#FeatType').val('<input type="hidden" id="Type_name"><font class="loading">Loading. . .</font>');	
+ if (val1) {$('#Source').val(val1);}
 // if (val2) {kaj.GS('DS_title', "Dataset");}
  get_types(['accn_select', 'dsid'],[get_anno_chain]);	
 }
 
 function get_anno_chain (val1, val2) {
- if (val1) {kaj.GS('FeatType', val1)};
+ if (val1) {$('#FeatType').val(val1)};
 // if (val2) {kaj.GS('FT_title', "Type Name");}
- as = kaj.G('accn_select');
+ as = $('#accn_select').val();
 // v = kaj.G('version');
- tn = kaj.G('Type_name');
- kaj.GS('anno_title', "Feature Annotations");
+ tn = $('#Type_name').val();
+ $('#anno_title').val("Feature Annotations");
  get_sequence(['accn_select', 'Type_name', 'dsid'],['seq_box']);
  get_pretty_print(['accn_select','Type_name', 'dsid'],['pretty_print_anno']);
 }
 
 function blast_params() {
  blast_param(['bn'],['pro_or_nu_param']);
+}
+
+function blast_param_on_select(radio) {
+ program = $('#'+radio).val();
+ //alert(''+program);
+ if ((program == 'blastx') || (program == 'tblastx')) {
+ //alert('Program is true!');
+  $('#program_type').val("blast_type_p");
+  blast_param(['program_type','program_type'],['pro_or_nu_param']);
+  }
+  else {
+   blast_param([],['pro_or_nu_param']);}
+}
+
+function displayFeature() {
+if(document.check_feat.feature_display.checked == true) {
+// alert('program being called');
+get_pretty_print(['accn_select','featid', 'dsid'],['pretty_print_anno']);
+}
+else {
+ //alert('else being called');
+ $('#pretty_print_anno').html('');}
 }
 
 function fill_param_on_start() {
@@ -147,7 +179,7 @@ fill_param_on_start();
          <label><input id=bn type=radio name=blast value="blast_type_n" checked="" onClick="radio_lock(1);check_seq_for_blast();blast_params();">Nucleotide Sequence</label>
          <br>
           <div id=select_n style="display: block;">
-           <select name=blasttype id=blast_type_n>
+           <select name=blasttype id=blast_type_n onChange="blast_param_on_select('blast_type_n')">
             <option value = ''> --- Select BLAST type ---
             <option value = "blastn"> blastn
             <option value = "blastx"> blastx
@@ -167,17 +199,41 @@ fill_param_on_start();
            <br>
           </div>
          <br>
-         <input type=submit value="NCBI BLAST" onClick="find_radio(['args__bn','bn','args__db','blast_db','args__expect','e_value'],[select_blast])">
+         <input type=submit value="NCBI BLAST" onClick="find_radio(['args__bn','bn'],[select_blast])">
          </TR>
          </TABLE>
       </TD>
    </TR>
    <TR align=left valign=top>
-     <TH> <DIV id=anno_title></DIV>
+   <TMPL_IF NAME=DISPLAY_FEAT>
+   <TD>
+    <TABLE>
+        <TR>
+         <TD><form name=check_feat>
+          <input type="checkbox" name="feature_display" onChange="displayFeature()"></form>
+         </TD>
+         <TD valign="top">
+          Click to show feature information
+        </TR>
+       </TABLE>
+    </TD>
     <TD>
      <DIV id=pretty_print_anno></DIV>
     </TD>
-    <span class="subItem"></span>
+    </TMPL_IF>    
+    <TD>
+    	<input type="hidden" id="accn_select" value="<TMPL_VAR NAME=FEATNAME>">
+    	<input type=hidden id=dsid value="<TMPL_VAR NAME=DSID>">
+    	<input type=hidden id=Type_name>
+       	<input type=hidden id=featid value="<TMPL_VAR NAME=FEATID>">
+       	<input type=hidden id=upstream value="<TMPL_VAR NAME=UPSTREAM>">
+       	<input type=hidden id=downstream value="<TMPL_VAR NAME=DOWNSTREAM>">
+       	<input type=hidden id=chr value="<TMPL_VAR NAME=CHR>">
+       	<input type=hidden id=seqview value="<TMPL_VAR NAME=SEQVIEW>">
+       	<input type=hidden id=rc value="<TMPL_VAR NAME=RC>">
+       	<input type=hidden id=program_type>
+    </TR>
+    <TR>
     <span class="subItem"></span>
     <span class="subItem"></span>
     <span class="subItem"></span>
@@ -201,8 +257,8 @@ fill_param_on_start();
    </DIV>
    </DIV>
  </TR>
- <TR>
-  <TD>
+<!-- <TR>-->
+<!--  <TD>
    <TH colspan="3">
     <DIV class="mainDiv">
     <DIV id = "dr2" class="topItem" onMouseOver="Init(this); changeColor('dr2','#000099'); " onMouseOut="changeColor('dr2','#009900');">Select Feature to Blast:</DIV>
@@ -248,16 +304,9 @@ fill_param_on_start();
        </TD>
        <TD valign=top>
         <DIV class="" id="FeatType"><input type=hidden id=Type_name></DIV>
-       </TD>
-       <TD>
-       	<input type=hidden id=featid value="<TMPL_VAR NAME=FEATID>">
-       	<input type=hidden id=upstream value="<TMPL_VAR NAME=UPSTREAM>">
-       	<input type=hidden id=downstream value="<TMPL_VAR NAME=DOWNSTREAM>">
-       	<input type=hidden id=chr value="<TMPL_VAR NAME=CHR>">
-       	<input type=hidden id=seqview value="<TMPL_VAR NAME=SEQVIEW>">
-      </TR>
-<SCRIPT language="Javascript">
-  if (kaj.GS('accn')) {search_chain(0);};
+       </TD>-->
+<!--<SCRIPT language="Javascript">
+  if ($('#accn').val()) {search_chain(0);};
 </SCRIPT>
    <TR>
   <span class="subItem"></span>
@@ -276,7 +325,7 @@ fill_param_on_start();
  </DIV>
  </DIV>
  </DIV>
- </TR>
+ </TR>-->
  <TR>
   <TD>
   <TH colspan="3">
@@ -391,18 +440,15 @@ fill_param_on_start();
     <TMPL_IF NAME="REST">
      </TR>
     </TABLE>
-   <span class="subItem"></span>
-   <span class="subItem"></span>
-   <span class="subItem"></span>
-   <span class="subItem"></span>
-   <span class="subItem"></span>
-   <span class="subItem"></span>
-   <span class="subItem"></span>
-   <span class="subItem"></span>
-   <span class="subItem"></span>
-   <span class="subItem"></span>
-   <span class="subItem"></span>
-   <span class="subItem"></span>
+    <span class="subItem"></span>
+    <span class="subItem"></span>
+    <span class="subItem"></span>
+    <span class="subItem"></span>
+    <span class="subItem"></span>
+    <span class="subItem"></span>
+    <span class="subItem"></span>
+    <span class="subItem"></span>
+    <span class="subItem"></span>
 </DIV>
 </DIV>
 </DIV>
@@ -455,6 +501,7 @@ fill_param_on_start();
               <option value = "BLOSUM45"> BLOSUM45
              </select>
        </TR>
+       <TMPL_IF NAME=BLAST_PRO_COMP>
        <TR>
         <TD>
 	 Compositional adjustments
@@ -467,6 +514,7 @@ fill_param_on_start();
               <option value = "3"> Universal compositional score matrix adjustment
              </select>
        </TR>
+       </TMPL_IF>
       </TABLE>
     </TMPL_IF>
 
