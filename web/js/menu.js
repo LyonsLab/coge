@@ -84,7 +84,6 @@ var isLocked = false;
 var doFading = false;
 
 
-InitAll();
 
 function InitAll()
 {
@@ -116,9 +115,9 @@ function InitAll()
 				
 			if(menuStateAry != 0 )
 			{
-				if( parseInt(menuStateAry[aryNum]) == 0)
-					itemContainerDiv.style.display = 'none';
-				else
+				if( parseInt(menuStateAry[aryNum]) != 0)
+					//itemContainerDiv.style.display = 'none';
+//				else
 					itemContainerDiv.style.display = 'inline';
 			}
 
