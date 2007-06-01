@@ -17,14 +17,15 @@ function blastSeq() {
  chr = kaj.GS('chr_blast') || 0;
  up = kaj.GS('upstream') || 0;
  down = kaj.GS('downstream') || 0;
+ rc = kaj.GS('rc_blast');
  featid = kaj.GS('blast'); 
  dsid = kaj.GS('dsid_blast');
  featname = kaj.GS('featname_blast');
- if (chr) {
+ if (featid) {
+ window.open('CoGeBlast.pl?featid='+featid+'&upstream='+up+'&downstream='+down+'&dsid='+dsid+'&featname='+featname+'&rc='+rc,'window');}
+ else {
  window.open('CoGeBlast.pl?chr='+chr+'&upstream='+up+'&downstream='+down+'&dsid='+dsid,'window');
  }
- else {
- window.open('CoGeBlast.pl?featid='+featid+'&upstream='+up+'&downstream='+down+'&dsid='+dsid+'&featname='+featname,'window');}
 }
 
 function waiting() {
@@ -57,6 +58,7 @@ function make_focus() {
     <input type="hidden" id="dsid_blast" value="<TMPL_VAR NAME="DSID_BLAST">">
     <input type="hidden" id="featname_blast" value="<TMPL_VAR NAME="FEATNAME_BLAST">">
     <input type="hidden" id="chr_blast" value="<TMPL_VAR NAME="CHR_BLAST">">
+    <input type="hidden" id="rc_blast" value="<TMPL_VAR NAME="RC_BLAST">">
     </TD>
    </TR>
   </TABLE>
