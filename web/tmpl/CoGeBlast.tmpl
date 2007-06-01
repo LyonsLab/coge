@@ -5,19 +5,31 @@
 <SCRIPT language="JavaScript">
 
 function get_seq(url) {
+ if (url == 1)
+  {alert('You have not selected a BLAST program. Please select a program with which to BLAST your sequence.');}
  seq = kaj.GS('seq_box');
- if (url==1) {
-   alert('No blast selected! Please select a blast to run.');}
- else {
- window.open(url+seq);
- }
+ word_size = kaj.GS('word_size');
+ expect = kaj.GS('e_value');
+ exist = kaj.GS('gap_exist');
+ extent = kaj.GS('gap_ext');
+ gapcost = exist+' '+extent;
+ job_title = kaj.GS('job_title');
+ url = url+'&QUERY='+seq+'&JOB_TITLE='+job_title+'&EXPECT='+expect+'&WORD_SIZE='+word_size;
+ //+'&DATABASE='+db;
+//  if (type1 == 'blast_type_n') {
+//  nuc_reward = kaj.GS('match_score');
+//  nuc_penalty = kaj.GS('mismatch_score');
+//  match_score = nuc_reward+','+nuc_penalty;
+//  window.open(url+'MATCH_SCORES'+match_score);
+//  }
+//  else {
+ window.open(url);
 }
 
-function set_seq() {
-alert('No blast selected! Please select a blast to run.');
-seq = kaj.GS('display_seq');
-kaj.GS('seq_box',seq);
-}
+// function set_seq() {
+// seq = kaj.GS('display_seq');
+// kaj.GS('seq_box',seq);
+// }
 
 function radio_lock(unlock) {
   var1 = document.getElementById('select_n');
@@ -33,7 +45,7 @@ function radio_lock(unlock) {
 }
 
 function select_blast(radio) {
-  get_url([radio],[get_seq]);
+  get_url([radio,'e_value','blast_db'],[get_seq]);
 }
 
 function changeColor(id, color) {
@@ -43,12 +55,17 @@ function changeColor(id, color) {
 function check_seq_for_blast() {
  accn = kaj.GS('accn_select') || 0;
  dsid = kaj.GS('dsid') || 0;
+ featid = kaj.GS('featid') || 0;
 // radio2 = kaj.GS('bn');
 // alert('bn');
- type_name = kaj.GS('Type_name') || 0; 
+ type_name = kaj.GS('Type_name') || kaj.GS('featid') || 0; 
  if (accn && dsid && type_name) {
+  if (featid) {
+   get_sequence(['accn_select','featid','dsid','bn', 'seqview', 'upstream','downstream'],['seq_box']);
+  }
+  else {
 // alert('Im being called!'+accn+dsid+type_name);
- check_seq(['bn','accn_select','dsid','Type_name'],['seq_box']);
+ get_sequence(['accn_select','Type_name','dsid','bn'],['seq_box']);}
 }
 }
  
@@ -132,7 +149,6 @@ fill_param_on_start();
           <div id=select_n style="display: block;">
            <select name=blasttype id=blast_type_n>
             <option value = ''> --- Select BLAST type ---
-            <option value = "megablast"> megablast
             <option value = "blastn"> blastn
             <option value = "blastx"> blastx
             <option value = "tblastx"> tblastx
@@ -146,13 +162,12 @@ fill_param_on_start();
            <select name=blasttype id=blast_type_p>
             <option value = ''> --- Select BLAST type ---
             <option value = "blastp"> blastp
-            <option value = "psiblast"> PSI- and PHI-BLAST
             <option value = "tblastn"> tblastn
            </select>
            <br>
           </div>
          <br>
-         <input type=submit value="NCBI BLAST" onClick="find_radio(['args__bn','bn'],[select_blast])">
+         <input type=submit value="NCBI BLAST" onClick="find_radio(['args__bn','bn','args__db','blast_db','args__expect','e_value'],[select_blast])">
          </TR>
          </TABLE>
       </TD>
@@ -226,13 +241,20 @@ fill_param_on_start();
       </TR>
       <TR valign=top>
        <TD valign=top>
-        <DIV class="" id="accn_list"><input type="hidden" id="accn_select" ></DIV>
+        <DIV class="" id="accn_list"><input type="hidden" id="accn_select" value="<TMPL_VAR NAME=FEATNAME>"></DIV>
        </TD>
        <TD valign=top>
-        <DIV class="" id="Source"><input type=hidden id=dsid></DIV>
+        <DIV class="" id="Source"><input type=hidden id=dsid value="<TMPL_VAR NAME=DSID>"></DIV>
        </TD>
        <TD valign=top>
         <DIV class="" id="FeatType"><input type=hidden id=Type_name></DIV>
+       </TD>
+       <TD>
+       	<input type=hidden id=featid value="<TMPL_VAR NAME=FEATID>">
+       	<input type=hidden id=upstream value="<TMPL_VAR NAME=UPSTREAM>">
+       	<input type=hidden id=downstream value="<TMPL_VAR NAME=DOWNSTREAM>">
+       	<input type=hidden id=chr value="<TMPL_VAR NAME=CHR>">
+       	<input type=hidden id=seqview value="<TMPL_VAR NAME=SEQVIEW>">
       </TR>
 <SCRIPT language="Javascript">
   if (kaj.GS('accn')) {search_chain(0);};
@@ -262,7 +284,7 @@ fill_param_on_start();
    <DIV id = "dr3" class="topItem" onMouseOver="Init(this); changeColor('dr3','#000099');" onMouseOut="changeColor('dr3','#009900');">Additional BLAST Options:</DIV>
    <DIV class="dropMenu">
    <DIV class="subMenu" style="display:inline;">
-   <TABLE width=100%>
+   <TABLE>
     <TR>
      <TD valign="top">
       <TH align=left valign="top"><u>BLAST Parameters</u><br>
@@ -411,7 +433,7 @@ fill_param_on_start();
 	    <DIV class="small">Mismatch Score</DIV>
   	   </TD>
 	   <TD>
-	    <input type=text id=mismatch_score value=2 size="7">
+	    <input type=text id=mismatch_score value=-2 size="7">
           </TR>
 	 </TABLE>
        </TR>
@@ -447,3 +469,4 @@ fill_param_on_start();
        </TR>
       </TABLE>
     </TMPL_IF>
+
