@@ -790,7 +790,7 @@ sub process_hsps
 	print STDERR "\t",$blast->query," ", $blast->subject,"\n" if $DEBUG;
 	foreach my $hsp (@{$blast->hsps})
 	  {
-	    next if defined $eval_cutoff && $hsp->eval >= $eval_cutoff;
+	    next if defined $eval_cutoff && $hsp->eval > $eval_cutoff;
 	    my $color = $colors->[$i];
 	    my $skip = 0;
 
