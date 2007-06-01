@@ -46,8 +46,7 @@ sub gen_html
     my $seqview_java = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SeqView.tmpl');
     $seqview_java->param(SEQVIEW_JAVA=>1);
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
-    unless($feat_id)
-     {$template->param(TITLE=>'Sequence Viewer');}
+    $template->param(TITLE=>'Sequence Viewer');
     $template->param(JAVASCRIPT=>$seqview_java->output);
     $template->param(HELP=>'SeqView');
     $template->param(USER=>$USER);
@@ -56,8 +55,8 @@ sub gen_html
     $template->param(BOX_NAME=>qq{<DIV id="box_name">$title</DIV>});
     $template->param(BODY=>$body);
     $template->param(POSTBOX=>$foot);
-    if($feat_id)
-     {$template->param(CLOSE=>1);}
+    #if($feat_id)
+     #{$template->param(CLOSE=>1);}
     $template->param(HEAD=>qq{<script src="js/kaj.stable.js"></script>});
     #print STDERR gen_foot()."\n";
     my $html;
@@ -213,8 +212,8 @@ sub get_seq
      my $up;
      my $down;
      my $main;
-     my $newline = $seq;
-     $newline =~ s/\n/\\n/g;
+     #my $newline = $seq;
+     #$newline =~ s/\n/\\n/g;
      #print STDERR $newline;
      unless($pro)
      {
@@ -272,6 +271,7 @@ sub gen_foot
 				   stop=>$stop,
 				   strand=>$strand);
     $dynamic_buttons = "<div id=\"buttons\">$dynamic_buttons</div>";
+   $template->param(BLAST=>$feat_id);
    $template->param(ADDITION=>1);
 #    unless($feat_id)
 #     {$template->param(RANGE=>1);}
@@ -287,6 +287,7 @@ sub gen_foot
       $template->param(DOWNVALUE=>$stop);
     }
     else {
+      $template->param(BLAST=>$feat_id);
       $template->param(FEATID=>$feat_id);
       $template->param(EXTEND=>"Extend Sequence");
       $template->param(UPSTREAM=>"UPSTREAM: ");
@@ -360,6 +361,7 @@ sub reverse_complement
 sub get_prot_seq_for_feat
   {
     my $featid = shift;
+    print STDERR "featid: ", $featid, "\n";
     my ($feat) = $DB->get_feat_obj->retrieve($featid);
     my ($seq) = $DB->get_protein_sequence_for_feature($feat);
     $seq = "No sequence available" unless $seq;
@@ -573,6 +575,10 @@ sub new_foot
        $template->param(CHR=>$chr);
        $template->param(DSID=>$dsid);
      }
+     $template->param(BLAST=>$feat_id);
+     $template->param(DSID_BLAST=>$dsid);
+     $template->param(FEATNAME_BLAST=>$feat_name);
+     $template->param(CHR_BLAST=>$chr);
     return $template->output;
 }
 sub find_feats
