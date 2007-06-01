@@ -4,9 +4,9 @@
 {
   background: #cbfecb;
   background-image: url(/CoGe/picts/close.png);
-  background-position:right center;
+  background-position:left center;
   background-repeat:no-repeat;
-  padding-left:3px;
+  padding-left:25px;
   height:22px;
   cursor:pointer;
   text-decoration: none;
@@ -18,10 +18,10 @@
 
 .topItemOver
 {
-  padding-left:3px;
+  padding-left:25px;
   background: #cbfecb;
   background-image: url(/CoGe/picts/open.png);
-  background-position:right center;
+  background-position:left center;
   background-repeat:no-repeat;
   height:22px;
   cursor:pointer;
