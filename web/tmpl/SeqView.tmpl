@@ -13,7 +13,18 @@ function makeTable() {
   kaj.GS('maketable', '<div id ="annotation" style = "overflow: auto; height: 300px; width: auto;"></DIV>');
 }
 
-function onEnter() {
+function blastSeq() {
+ chr = kaj.GS('chr_blast') || 0;
+ up = kaj.GS('upstream') || 0;
+ down = kaj.GS('downstream') || 0;
+ featid = kaj.GS('blast'); 
+ dsid = kaj.GS('dsid_blast');
+ featname = kaj.GS('featname_blast');
+ if (chr) {
+ window.open('CoGeBlast.pl?chr='+chr+'&upstream='+up+'&downstream='+down+'&dsid='+dsid,'window');
+ }
+ else {
+ window.open('CoGeBlast.pl?featid='+featid+'&upstream='+up+'&downstream='+down+'&dsid='+dsid+'&featname='+featname,'window');}
 }
 
 function waiting() {
@@ -40,6 +51,12 @@ function make_focus() {
      <DIV id="annotation_button"> <input type=button value="Find Features in Sequence" onClick="makeTable();waiting();find_feats(['args__start', 'args__<TMPL_VAR NAME=START>', 'args__stop', 'args__<TMPL_VAR NAME=STOP>', 'args__chr', 'args__<TMPL_VAR NAME=CHR>', 'args__dsid', 'args__<TMPL_VAR NAME=DSID>'],['annotation'])"></DIV>
      </TMPL_IF>
      </TD>
+     <TD align=right valign="top">
+     <DIV id="blast_button"><input type=button value="Blast Sequence" onClick="blastSeq()"></DIV>
+    <input type="hidden" id="blast" value="<TMPL_VAR NAME="BLAST">">
+    <input type="hidden" id="dsid_blast" value="<TMPL_VAR NAME="DSID_BLAST">">
+    <input type="hidden" id="featname_blast" value="<TMPL_VAR NAME="FEATNAME_BLAST">">
+    <input type="hidden" id="chr_blast" value="<TMPL_VAR NAME="CHR_BLAST">">
     </TD>
    </TR>
   </TABLE>
