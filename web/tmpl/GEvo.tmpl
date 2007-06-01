@@ -186,7 +186,7 @@ Number of sequences:
 <form method="post" enctype="multipart/form-data" name="main_form" onSubmit="">
 <TABLE class="basic" width=100%>
  <TR>
-  <TH colspan="<TMPL_VAR NAME="NUM_SEQS">">
+  <TH colspan="<TMPL_VAR NAME="NUM_SEQS">" align=left>
    <DIV class="mainDiv">
    <DIV id = "dr" class="topItem" onMouseOver="Init(this); changeColor('dr','#000099'); " onMouseOut="changeColor('dr','#009900');">CoGe Database Retrieval:</DIV>
    <DIV class="dropMenu">
@@ -210,7 +210,7 @@ Number of sequences:
  </TR>
 
  <TR>
-  <TH colspan="<TMPL_VAR NAME="NUM_SEQS">">
+  <TH colspan="<TMPL_VAR NAME="NUM_SEQS">" align=left>
    <DIV class="mainDiv" >
    <DIV id="isr" class="topItem" onMouseOver="Init(this);changeColor('isr','#000099'); " onMouseOut="changeColor('isr','#009900');" >NCBI Sequence Retrieval:</DIV>
    <DIV class="dropMenu">
@@ -229,7 +229,7 @@ Number of sequences:
   </DIV>		
  </TR>
  <TR>
-  <TH colspan="<TMPL_VAR NAME="NUM_SEQS">">
+  <TH colspan="<TMPL_VAR NAME="NUM_SEQS">" align=left>
    <DIV class="mainDiv" >
    <DIV id="dss" class="topItem" onMouseOver="Init(this);  changeColor('dss','#000099'); " onMouseOut="changeColor('dss','#009900');" >Direct Sequence Submission:</DIV>
    <DIV class="dropMenu">
@@ -253,7 +253,7 @@ Number of sequences:
 <TMPL_IF NAME=OPTIONS>
 <TABLE class="basic" width=100%>
  <TR>
-  <TH colspan="2">
+  <TH colspan="2" align=left>
   <DIV class="mainDiv">
    <DIV id="bp" class="topItem" onMouseOver="Init(this);changeColor('bp','#000099'); " onMouseOut="changeColor('bp','#009900');" >Comparison Parameters and Options:</DIV>
    <DIV class="dropMenu">
@@ -370,7 +370,7 @@ Note: parameter options haven't been implemented for blastz (yet)
 
 <TABLE class="basic" width=100%>
  <TR>
-  <TH colspan="2">
+  <TH colspan="2" align=left>
   <DIV class="mainDiv">
    <DIV id="ip" class="topItem" onMouseOver="Init(this);changeColor('ip','#000099'); " onMouseOut="changeColor('ip','#009900');" >Image Parameters:</DIV>
    <DIV class="dropMenu">
@@ -518,7 +518,7 @@ Note: parameter options haven't been implemented for blastz (yet)
 
 <TABLE class="basic" width=100%>
  <TR>
-  <TH colspan="2">
+  <TH colspan="2" align=left>
   <DIV class="mainDiv">
    <DIV id="infor" class="topItem" onMouseOver="Init(this);changeColor('infor','#000099'); " onMouseOut="changeColor('infor','#009900');" >Information:</DIV>
    <DIV class="dropMenu">
@@ -555,7 +555,7 @@ Note: parameter options haven't been implemented for blastz (yet)
  </TR>
 
 </TABLE>
-
+<SCRIPT language="JavaScript"> InitAll();</script>
 
 
 
