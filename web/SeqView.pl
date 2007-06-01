@@ -579,6 +579,7 @@ sub new_foot
      $template->param(DSID_BLAST=>$dsid);
      $template->param(FEATNAME_BLAST=>$feat_name);
      $template->param(CHR_BLAST=>$chr);
+     $template->param(RC_BLAST=>$rc);
     return $template->output;
 }
 sub find_feats
