@@ -31,7 +31,7 @@ $(".location").keyup(function(){
 
   for (var i = 1; i <= <TMPL_VAR NAME="NUM_SEQS">; i++)
    {
-     if ($('#draccn'+i).val()) {dataset_search(['draccn'+i,'args__'+i],[feat_search_chain]);}
+     if ($('#accn'+i).val()) {dataset_search(['accn'+i,'args__'+i],[feat_search_chain]);}
    }
 }
 
@@ -41,8 +41,8 @@ $("#results").html(" ");
 for (var i =1; i<= num_seqs; i++)
   {
     
-    $('#draccn'+i).val("");
-    dataset_search(['draccn'+i,'args__'+i],[feat_search_chain]);
+    $('#accn'+i).val("");
+    dataset_search(['accn'+i,'args__'+i],[feat_search_chain]);
     $('#gbaccn'+i).val("");
     $('#dirseq'+i).val("");
     
@@ -107,7 +107,7 @@ function set_hsp_colors (type)
 function feat_search_chain(stuff, num) {
  if (stuff) {
   $("#source"+num).html(stuff);
-  feat_search(['draccn'+num,'dsid'+num, 'args__'+num],['feat'+num]);
+  feat_search(['accn'+num,'dsid'+num, 'args__'+num],['feat'+num]);
  }
 }
 
@@ -580,7 +580,7 @@ Note: parameter options haven't been implemented for blastz (yet)
       <TABLE>
        <TR valign="top">
         <TD>Name <TMPL_VAR NAME="SEQ_NUM">:
-        <TD><input class="backbox" type="text" name="draccn<TMPL_VAR NAME="SEQ_NUM">" id="draccn<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="20" onBlur="dataset_search(['draccn<TMPL_VAR NAME="SEQ_NUM">','args__<TMPL_VAR NAME="SEQ_NUM">'],[feat_search_chain])" value="<TMPL_VAR NAME=DRACCN>" />
+        <TD><input class="backbox" type="text" name="accn<TMPL_VAR NAME="SEQ_NUM">" id="accn<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="20" onBlur="dataset_search(['accn<TMPL_VAR NAME="SEQ_NUM">','args__<TMPL_VAR NAME="SEQ_NUM">'],[feat_search_chain])" value="<TMPL_VAR NAME=DRACCN>" />
         <DIV id="source<TMPL_VAR NAME="SEQ_NUM">" nowrap><input type="hidden" id="dsid<TMPL_VAR NAME="SEQ_NUM">"></DIV>
         <DIV id="feat<TMPL_VAR NAME="SEQ_NUM">"><input type="hidden" id="featid<TMPL_VAR NAME="SEQ_NUM">"></DIV>
       <TR>
