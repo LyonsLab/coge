@@ -55,7 +55,7 @@ sub feat_name_search
 
 sub dataset_search_for_feat_name
   {
-    my ($self, $accn, $num, $user) = self_or_default(@_);
+    my ($self, $accn, $num, $dsid) = self_or_default(@_);
     $num = 1 unless $num;
     return ( qq{<input type="hidden" id="dsid$num">\n<input type="hidden" id="featid$num">}, $num )unless $accn;
     my $html;
@@ -96,7 +96,9 @@ sub dataset_search_for_feat_name
  	foreach my $id (sort {$sources{$b}{version} <=> $sources{$a}{version}} keys %sources)
  	  {
  	    my $val = $sources{$id}{title};
- 	    $html  .= qq{  <option value="$id">$val\n};
+ 	    $html  .= qq{  <option value="$id"};
+	    $html .= qq{ selected } if $dsid && $id == $dsid;
+	    $html .= qq{>$val\n};
  	  }
  	$html .= qq{</SELECT>\n};
  	my $count = scalar keys %sources;
