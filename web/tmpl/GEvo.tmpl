@@ -28,11 +28,7 @@ $(".location").keyup(function(){
         $('.location').val(self.value)
      }
 });
-
-  for (var i = 1; i <= <TMPL_VAR NAME="NUM_SEQS">; i++)
-   {
-     if ($('#accn'+i).val()) {dataset_search(['accn'+i,'args__'+i],[feat_search_chain]);}
-   }
+<TMPL_VAR NAME="AUTOSEARCH">
 }
 
 function rset (num_seqs) {
@@ -580,7 +576,7 @@ Note: parameter options haven't been implemented for blastz (yet)
       <TABLE>
        <TR valign="top">
         <TD>Name <TMPL_VAR NAME="SEQ_NUM">:
-        <TD><input class="backbox" type="text" name="accn<TMPL_VAR NAME="SEQ_NUM">" id="accn<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="20" onBlur="dataset_search(['accn<TMPL_VAR NAME="SEQ_NUM">','args__<TMPL_VAR NAME="SEQ_NUM">'],[feat_search_chain])" value="<TMPL_VAR NAME=DRACCN>" />
+        <TD><input class="backbox" type="text" name="accn<TMPL_VAR NAME="SEQ_NUM">" id="accn<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="20" onBlur="dataset_search(['accn<TMPL_VAR NAME="SEQ_NUM">','args__<TMPL_VAR NAME="SEQ_NUM">', 'args__<TMPL_VAR NAME="DSID">'],[feat_search_chain])" value="<TMPL_VAR NAME=DRACCN>" />
         <DIV id="source<TMPL_VAR NAME="SEQ_NUM">" nowrap><input type="hidden" id="dsid<TMPL_VAR NAME="SEQ_NUM">"></DIV>
         <DIV id="feat<TMPL_VAR NAME="SEQ_NUM">"><input type="hidden" id="featid<TMPL_VAR NAME="SEQ_NUM">"></DIV>
       <TR>
