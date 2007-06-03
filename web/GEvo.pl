@@ -127,6 +127,7 @@ sub gen_body
     my @direct_seqs;
     my @seq_nums;
     my ($drseq, $gbseq, $dirseq) = (0,0,0); #flags for whether we were submitted sequences
+    my $autosearch_string;
     for (my $i = 1; $i <= $num_seqs; $i++)
       {
 	my $draccn = $form->param("accn".$i) if $form->param("accn".$i);
@@ -137,6 +138,7 @@ sub gen_body
 	$drdown = $form->param('drdown'.$i) if $form->param('drdown'.$i);
 	$drup = 10000 unless defined $drup;
 	$drdown = 10000 unless defined $drdown;
+	my $dsid = $form->param('dsid'.$i) if $form->param('dsid'.$i);
 	my $gbaccn = $form->param("gbaccn".$i) if $form->param("gbaccn".$i);
 	$gbseq = 1 if $gbaccn;
 	my $gbstart = $form->param("gbstart".$i) if $form->param("gbstart".$i);
@@ -144,13 +146,16 @@ sub gen_body
 	my $gblength = $form->param("gblen".$i) if $form->param("gblen".$i);
 	my $revy = "checked" if $form->param('rev'.$i);
 	my $revn = "checked" unless $revy;
+	$autosearch_string .= 'if ($'.qq{('#accn$i').val()) {dataset_search(['accn$i','args__$i', 'args__$dsid'],[feat_search_chain]);}
+};
 	push @coge_seqs, {
-		     SEQ_NUM=>$i,
-		     REV_YES=>$revy,
-		     REV_NO=>$revn,
-		     DRUP=>$drup,
-		     DRDOWN=>$drdown,
-		     DRACCN=>$draccn,
+			  SEQ_NUM=>$i,
+			  REV_YES=>$revy,
+			  REV_NO=>$revn,
+			  DRUP=>$drup,
+			  DRDOWN=>$drdown,
+			  DRACCN=>$draccn,
+			  DSID=>$dsid,
 		    };
 	push @ncbi_seqs, {
 			  SEQ_NUM=>$i,
@@ -229,7 +234,7 @@ sub gen_body
     $dirseq ? $template->param(DIRMENU=>'inline') : $template->param(DIRMENU=>'none');
     $gbseq = 1 unless ($drseq || $dirseq); #default
     $gbseq ? $template->param(GBMENU=>'inline') : $template->param(GBMENU=>'none');
-    
+    $template->param(AUTOSEARCH=>$autosearch_string);
     $box->param(BOX_NAME=>"Sequence Retrieval:");
     $box->param(BODY=>$template->output);
     
@@ -1538,3 +1543,4 @@ sub num_colors
       }
     return $num_colors
   }
+
