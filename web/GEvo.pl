@@ -1439,7 +1439,7 @@ sub gen_go_button
     my $params;
     for (my $i = 1; $i <=$num_seqs; $i++)
       {
-	$params .= qq{'args__draccn$i', 'draccn$i',};
+	$params .= qq{'args__draccn$i', 'accn$i',};
 	$params .= qq{'args__featid$i', 'featid$i',};
 	$params .= qq{'args__drup$i', 'drup$i',};
 	$params .= qq{'args__drdown$i', 'drdown$i',};
