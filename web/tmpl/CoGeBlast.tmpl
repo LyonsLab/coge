@@ -10,26 +10,40 @@ function get_seq(url,radio) {
   {alert('You have not selected a BLAST program! Please select a program to run.');}
  else {
  seq = $('#seq_box').val();
+ seq = seq.replace(/\n/,'%0D');
+ //alert('seq: '+seq);
  word_size = $('#word_size').val();
  expect = $('#e_value').val();
+ //alert(radio);
+ db = $('#blast_db').val();
  exist = $('#gap_exist').val();
  extent = $('#gap_ext').val();
  gapcost = exist+' '+extent;
  job_title = $('#job_title').val();
- url = url+'&QUERY='+seq+'&JOB_TITLE='+job_title+'&WORD_SIZE='+word_size;
+ url = url+'&DATABASE='+db+'&EXPECT='+expect+'&QUERY='+seq+'&JOB_TITLE='+job_title+'&WORD_SIZE='+word_size;
+ //alert(url);
  //+'&DATABASE='+db;
  //alert(''+radio);
- if (radio == 'blast_type_n') {
+ program = $('#'+radio).val();
+ //alert(program);
+ if (program == 'blastn') {
  nuc_reward = $('#match_score').val();
- nuc_penalty = $('mismatch_score').val();
+ nuc_penalty = $('#mismatch_score').val();
  match_score = nuc_reward+','+nuc_penalty;
  //alert('I ran!');
  window.open(url+'&MATCH_SCORES='+match_score);
  }
 //alert(''+url);
 else {
- window.open(url);}
+ matrix = $('#matrix').val();
+ comp = $('#comp_adj').val();
+ //alert(comp);
+ if (comp) {
+  window.open(url+'&MATRIX_NAME='+matrix+'&COMPOSITION_BASED_STATISTICS='+comp);}
+ else {
+ window.open(url+'&MATRIX_NAME='+matrix);}
  }
+}
 }
 
 // function set_seq() {
@@ -51,7 +65,8 @@ function radio_lock(unlock) {
 }
 
 function select_blast(radio) {
-  get_url([radio,'e_value','blast_db','bn'],[get_seq]);
+  //(radio);
+  get_url([radio,'bn'],[get_seq]);
 }
 
 function changeColor(id, color) {
@@ -123,18 +138,18 @@ function get_anno_chain (val1, val2) {
  get_pretty_print(['accn_select','Type_name', 'dsid'],['pretty_print_anno']);
 }
 
-function blast_params() {
- blast_param(['bn'],['pro_or_nu_param']);
-}
-
 function blast_param_on_select(radio) {
  program = $('#'+radio).val();
  //alert(''+program);
+ database_param([radio],['database']);
  if ((program == 'blastx') || (program == 'tblastx')) {
  //alert('Program is true!');
   $('#program_type').val("blast_type_p");
   blast_param(['program_type','program_type'],['pro_or_nu_param']);
   }
+  else if ((program == 'blastp') || (program == 'tblastn')) {
+  $('#program_type').val("blast_type_p");
+  blast_param(['program_type'],['pro_or_nu_param']);}
   else {
    blast_param([],['pro_or_nu_param']);}
 }
@@ -153,7 +168,12 @@ function fill_param_on_start() {
   blast_param([],['pro_or_nu_param'])
 };
 
+function fill_db_param_on_start() {
+  database_param([],['database']);
+}
+
 fill_param_on_start();
+fill_db_param_on_start();
 
 </SCRIPT>
 </TMPL_IF>
@@ -170,36 +190,38 @@ fill_param_on_start();
    <TABLE> 
     <TR align=left valign=top>
      <TH>Sequences (fasta format)
-      <TD><textarea class="backbox" type="textarea" name="seq_box" id ="seq_box" cols=80 rows=15><TMPL_VAR NAME="SEQUENCE"></textarea>
+      <TD><textarea class="backbox" type="textarea" name="seq_box" id ="seq_box" wrap=off cols=80 rows=15><TMPL_VAR NAME="SEQUENCE"></textarea>
       </TD>
       <TD valign="top"> Select a BLAST to run: <br>
        <TABLE>
        <TR>
         <TD valign="top">
-         <label><input id=bn type=radio name=blast value="blast_type_n" checked="" onClick="radio_lock(1);check_seq_for_blast();blast_params();">Nucleotide Sequence</label>
+         <label><input id=bn type=radio name=blast value="blast_type_n" checked="" onClick="radio_lock(1);check_seq_for_blast();blast_param_on_select('blast_type_n');">Nucleotide Sequence</label>
          <br>
           <div id=select_n style="display: block;">
            <select name=blasttype id=blast_type_n onChange="blast_param_on_select('blast_type_n')">
-            <option value = ''> --- Select BLAST type ---
+            <optgroup label="--- Select BLAST Type ---">
             <option value = "blastn"> blastn
             <option value = "blastx"> blastx
             <option value = "tblastx"> tblastx
+           </optgroup>
            </select>
            <br>
           </div>
          <br>
-         <label><input id=bn type=radio name=blast value="blast_type_p" onClick="radio_lock(2);check_seq_for_blast();blast_params()">Protein Sequence</label>
+         <label><input id=bn type=radio name=blast value="blast_type_p" onClick="radio_lock(2);check_seq_for_blast();blast_param_on_select('blast_type_p')">Protein Sequence</label>
          <br>
           <div id=select_p style="display: none">
            <select name=blasttype id=blast_type_p>
-            <option value = ''> --- Select BLAST type ---
+            <optgroup label="--- Select BLAST Type ---">
             <option value = "blastp"> blastp
             <option value = "tblastn"> tblastn
+            </optgroup>
            </select>
            <br>
           </div>
          <br>
-         <input type=submit value="NCBI BLAST" onClick="find_radio(['args__bn','bn'],[select_blast])">
+         <input type=submit value="NCBI BLAST" onClick="get_radio(['args__bn','bn'],[select_blast])">
          </TR>
          </TABLE>
       </TD>
@@ -351,27 +373,7 @@ fill_param_on_start();
 	  Database
 	</TD>
 	<TD>
-          <select name=blast_db id=blast_db>
-	  <optgroup label="Genomic plus Transcript">
-           <option value = "Test/gpipe/9606/allcontig_and_rna"> Human genomic plus transcript
-           <option value = "Test/gpipe/10090/allcontig_and_rna"> Mouse genomic plus transcript
-	  </optgroup>
-	  <optgroup label="Other Databases">
-           <option value = "nr" selected> Nucleotide collection (nr/nt)
-           <option value = "refseq_rna"> Reference mRNA sequences (refseq_rna)
-           <option value = "refseq_genomic"> Reference genomic sequences (refseq_genomic)
-           <option value = "est"> Expressed sequence tags (est)
-           <option value = "est_others"> Non-human, non-mouse ESTs (est_others)
-           <option value = "gss"> Genomic survey sequences (gss)
-           <option value = "htgs"> High throughput genomic sequences (HTGS)
-           <option value = "pat"> Patent sequences (pat)
-           <option value = "pdb"> Protein Data Bank (pdb)
-           <option value = "alu"> Human ALU repeat elements (alu_repeat)
-           <option value = "dbsts"> Sequence tagged sites (dbsts)
-           <option value = "wgs"> Whole-genome shotgun reads (wgs)
-           <option value = "env_nt"> Environmental samples (env_nt)
-	  </optgroup>
-          </select>
+	<DIV id=database></DIV>
        </TR>
        <TR>
 	<TD>
@@ -517,4 +519,54 @@ fill_param_on_start();
        </TMPL_IF>
       </TABLE>
     </TMPL_IF>
+    
+    <TMPL_IF NAME=NU_DB>
+    <select name=blast_db id=blast_db>
+	  <optgroup label="Genomic plus Transcript">
+           <option value = "Test/gpipe/9606/allcontig_and_rna"> Human genomic plus transcript
+           <option value = "Test/gpipe/10090/allcontig_and_rna"> Mouse genomic plus transcript
+	  </optgroup>
+	  <optgroup label="Other Databases">
+           <option value = "nr" selected> Nucleotide collection (nr/nt)
+           <option value = "refseq_rna"> Reference mRNA sequences (refseq_rna)
+           <option value = "refseq_genomic"> Reference genomic sequences (refseq_genomic)
+           <option value = "est"> Expressed sequence tags (est)
+           <option value = "est_others"> Non-human, non-mouse ESTs (est_others)
+           <option value = "gss"> Genomic survey sequences (gss)
+           <option value = "htgs"> High throughput genomic sequences (HTGS)
+           <option value = "pat"> Patent sequences (pat)
+           <option value = "pdb"> Protein Data Bank (pdb)
+           <option value = "alu"> Human ALU repeat elements (alu_repeat)
+           <option value = "dbsts"> Sequence tagged sites (dbsts)
+           <option value = "wgs"> Whole-genome shotgun reads (wgs)
+           <option value = "env_nt"> Environmental samples (env_nt)
+	  </optgroup>
+          </select>
+    </TMPL_IF>
+   
+    <TMPL_IF NAME=PRO_DB>
+    <select name=blast_db id=blast_db>
+	<option value="nr" selected>Non-redundant protein sequences (nr)</option>
+	<option value="refseq_protein">Reference proteins (refseq_protein)</option>	
+	<option value="swissprot">Swissprot protein sequences(swissprot)</option>
+	<option value="pat">Patented protein sequences(pat)</option>
+	<option value="pdb">Protein Data Bank proteins(pdb)</option>
+	<option value="env_nr">Environmental samples(env_nr)</option>
+    </TMPL_IF>
 
+    <TMPL_IF NAME=T_DB>
+    <select name=blast_db id=blast_db>
+        <option value="nr" selected>Nucleotide collection (nr/nt)</option>
+	<option value="refseq_rna">Reference mRNA sequences (refseq_rna)</option>
+	<option value="refseq_genomic">Reference genomic sequences (refseq_genomic)</option>
+	<option value="est">Expressed sequence tags (est)</option>
+	<option value="est_others">Non-human, non-mouse ESTs (est_others)</option>
+	<option value="gss">Genomic survey sequences (gss)</option>
+	<option value="htgs">High throughput genomic sequences (HTGS)</option>	
+	<option value="pat">Patent sequences(pat)</option>
+	<option value="pdb">Protein Data Bank (pdb)</option>
+	<option value="alu">Human ALU repeat elements (alu_repeats)</option>
+	<option value="dbsts">Sequence tagged sites (dbsts)</option>
+	<option value="wgs">Whole-genome shotgun reads (wgs)</option>
+	<option value="env_nt">Environmental samples (env_nt)</option>
+   </TMPL_IF>
