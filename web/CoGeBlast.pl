@@ -41,9 +41,10 @@ my $pj = new CGI::Ajax(
 		       get_url=>\&get_url,
 		       check_seq=>\&check_seq,
 		       set_seq=>\&set_seq,
-		       find_radio=>\&find_radio,
 		       get_pretty_print=>\&get_pretty_print,
 		       blast_param=>\&blast_param,
+		       database_param=>\&database_param,
+		       get_radio=>\&get_radio,
 		       #%ajax,
 			);
 $pj->js_encode_function('escape');
@@ -88,15 +89,13 @@ sub gen_body
 	push @orgs, $org unless $restricted_orgs{$org->name};
       }
     $template->param(ORG_LOOP=> [{ORG=>"<OPTION VALUE=0>All</OPTION>"},map {{ORG=>"<OPTION value=\"".$_->id."\">".$_->name."</OPTION>"}} sort {uc($a->name) cmp uc($b->name)} @orgs]);
-    #my $param = blast_param('blast_type_n');
-    #print STDERR $param;
+    $template->param(UPSTREAM=>$upstream);
+    $template->param(DOWNSTREAM=>$downstream);
+    $template->param(DSID=>$dsid);
     if ($featid)
     {
     	$template->param(DISPLAY_FEAT=>1);
     	$template->param(FEATID=>$featid);
-    	$template->param(UPSTREAM=>$upstream);
-    	$template->param(DOWNSTREAM=>$downstream);
-    	$template->param(DSID=>$dsid);
     	$template->param(FEATNAME=>$feat_name);
     	$template->param(SEQVIEW=>1);
     	$template->param(RC=>$rc);
@@ -106,9 +105,6 @@ sub gen_body
     if ($chr)
     {
     	$template->param(CHR=>$chr);
-    	$template->param(UPSTREAM=>$upstream);
-    	$template->param(DOWNSTREAM=>$downstream);
-    	$template->param(DSID=>$dsid);
     	$template->param(SEQVIEW=>2);
     	my $seq = get_sequence(0,$chr, $dsid, 0, 2, $upstream, $downstream);
     	$template->param(SEQUENCE=>$seq);
@@ -335,20 +331,18 @@ sub get_sequence
 sub get_url
   {
     my $url = shift;
-    my $expect = shift;
-    my $db = shift;
     my $radio = shift;
     #print STDERR "expect: ", $expect, "\n";
     if ($url eq "blastn") {
-      $url = "http://www.ncbi.nlm.nih.gov/blast/Blast.cgi?PAGE=Nucleotides&PROGRAM=blastn&MEGABLAST=on&BLAST_PROGRAMS=megaBlast&PAGE_TYPE=BlastSearch&EXPECT=$expect&DATABASE=$db";}
+      $url = "http://www.ncbi.nlm.nih.gov/blast/Blast.cgi?PAGE=Nucleotides&PROGRAM=blastn&MEGABLAST=on&BLAST_PROGRAMS=megaBlast&PAGE_TYPE=BlastSearch&SHOW_DEFAULTS=on";}
     elsif ($url eq "blastp") {
-      $url = "http://www.ncbi.nlm.nih.gov/BLAST/Blast.cgi?PAGE=Proteins&PROGRAM=blastp&BLAST_PROGRAMS=blastp&PAGE_TYPE=BlastSearch&EXPECT=$expect&DATABASE=$db";}
+      $url = "http://www.ncbi.nlm.nih.gov/BLAST/Blast.cgi?PAGE=Proteins&PROGRAM=blastp&BLAST_PROGRAMS=blastp&PAGE_TYPE=BlastSearch&SHOW_DEFAULTS=on";}
       elsif ($url eq "blastx") {
-        $url = "http://www.ncbi.nlm.nih.gov/BLAST/Blast.cgi?PAGE=Translations&PROGRAM=blastx&BLAST_PROGRAMS=blastx&PAGE_TYPE=BlastSearch&EXPECT=$expect&DATABASE=$db";}
+        $url = "http://www.ncbi.nlm.nih.gov/BLAST/Blast.cgi?PAGE=Translations&PROGRAM=blastx&BLAST_PROGRAMS=blastx&PAGE_TYPE=BlastSearch&SHOW_DEFAULTS=on";}
     elsif ($url eq "tblastn") {
-      $url = "http://www.ncbi.nlm.nih.gov/BLAST/Blast.cgi?PAGE=Translations&PROGRAM=tblastn&BLAST_PROGRAMS=tblastn&PAGE_TYPE=BlastSearch&EXPECT=$expect&DATABASE=$db";}
+      $url = "http://www.ncbi.nlm.nih.gov/BLAST/Blast.cgi?PAGE=Translations&PROGRAM=tblastn&BLAST_PROGRAMS=tblastn&PAGE_TYPE=BlastSearch&SHOW_DEFAULTS=on";}
     elsif ($url eq "tblastx") {
-      $url = "http://www.ncbi.nlm.nih.gov/BLAST/Blast.cgi?PAGE=Translations&PROGRAM=tblastx&BLAST_PROGRAMS=tblastx&PAGE_TYPE=BlastSearch&EXPECT=$expect&DATABASE=$db";}
+      $url = "http://www.ncbi.nlm.nih.gov/BLAST/Blast.cgi?PAGE=Translations&PROGRAM=tblastx&BLAST_PROGRAMS=tblastx&PAGE_TYPE=BlastSearch&SHOW_DEFAULTS=on";}
     else {
       $url = 1;}
     return $url,$radio;
@@ -409,15 +403,6 @@ sub generate_fasta_without_featid
 #     #print STDERR "html: ", $html, "\n";
 #   }
 
-sub find_radio
-  {
-    my %opts = @_;
-    my $radio = $opts{'bn'};
-    #my $expect = $opts{'expect'};
-   # my $db = $opts{'db'};
-    #print STDERR "radio: ",$radio,", expect: ",$expect, ", db: ",$db,"\n";
-    return $radio;
-  }
 
 sub get_pretty_print
 {
@@ -455,4 +440,25 @@ sub reverse_complement
     $seq = reverse $seq;
     $seq =~ tr/ATCG/TAGC/;
     return $seq;
+  }
+  
+sub database_param
+  {
+    my $program = shift || "blastn";
+    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CoGeBlast.tmpl');
+    if ($program eq "blastn")
+      {$template->param(NU_DB=>1);}
+    elsif (($program eq "blastp") || ($program eq "blastx"))
+      {$template->param(PRO_DB=>1);}
+    else
+      {$template->param(T_DB=>1);}
+    my $html = $template->output;
+    return $html;
+  }
+  
+sub get_radio
+  {
+    my %opts = @_;
+    my $radio = $opts{bn};
+    return $radio
   }
