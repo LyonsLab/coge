@@ -697,8 +697,8 @@ sub process_features
 		  {
 		    foreach my $name (@{$feat->qualifiers->{names}})
 		      {
-			$f->color([255,255,0]) if $name =~ /$accn/i;
-			$f->label($name) if $name =~ /$accn/i;
+			$f->color([255,255,0]) if $name =~ /^$accn/i;
+			$f->label($name) if $name =~ /^$accn/i;
 		      }
 		  }
 
