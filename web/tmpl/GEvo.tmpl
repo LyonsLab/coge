@@ -119,10 +119,10 @@ function rev_locs (val) {
 
 
 
-function check_blast_program (){
+function check_alignment_program (){
 
-var blast = $("#blast_program").val();
-if (blast == "blastz")
+var alignment = $("#alignment_program").val();
+if (alignment == "blastz")
  {
   
   $("#blast_options").hide();
@@ -134,7 +134,7 @@ else
   $("#blastzinfo").hide();	
 
  }
-if (blast == "tblastx")
+if (alignment == "tblastx")
  {
   $("#wordsize").val(3);
   $("#gapopen").val(11);
@@ -147,7 +147,7 @@ else
  {
   $("#tblastninfo").hide();		
  }
-if (blast == "blastn")
+if (alignment == "blastn")
  {
   $("#wordsize").val(7);
   $("#gapopen").val(5);
@@ -160,7 +160,7 @@ if (blast == "blastn")
 
 $(document).ready(function(){
 
-check_blast_program();
+check_alignment_program();
 setup();
 
  });
@@ -260,10 +260,9 @@ Number of sequences:
       <TABLE>
   <TR>
   <TD>Sequence and Algorithm Options: </TD>
-  <TD><select class="backbox" id="blast_program" size="1" onchange='check_blast_program()'>
-       <option>blastn</option>
-       <option>tblastx</option>
-       <option>blastz</option>
+  <TD>
+  <select class="backbox" id="alignment_program" size="1" onchange='check_alignment_program()'>
+       <TMPL_VAR NAME=ALIGNMENT_PROGRAMS>
       </select>
    </TD>
  </TR>
