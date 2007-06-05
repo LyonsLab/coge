@@ -41,7 +41,7 @@ $TEMPURL = "/CoGe/tmp";
 $DEBUG = 0;
 $BENCHMARK = 1;
 $NUM_SEQS = 3;
-$MAX_SEQS = 6;
+$MAX_SEQS = 10;
 $| = 1; # turn off buffering 
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		 sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
@@ -199,6 +199,7 @@ sub gen_body
     my @colors = color_pallet(num_seqs=>$num_seqs);
     $template->param(HSP_COLOR_FORM=>1);
     $template->param(HSP_COLOR_LOOP=>\@colors);
+    
     my $hsp_colors; $template->output;
     my $count = -2;
     foreach my $line (split /\n/, $template->output)
@@ -250,10 +251,11 @@ sub gen_body
 	$template->param(EXON_MASK_OFF=>"checked");
       }
     $template->param(REF_SEQ=>\@seq_nums);
+    $template->param(ALIGNMENT_PROGRAMS=>algorithm_list($prog));
     $box->param(BOX_NAME=>"Options:");
     $box->param(BODY=>$template->output);
     $html .= $box->output;
-    $html =~ s/<option>$prog<\/option>/<option selected>$prog<\/option>/ if $prog;
+#    $html =~ s/<option>$prog<\/option>/<option selected>$prog<\/option>/ if $prog;
     return $html;
   }
 
@@ -1487,7 +1489,7 @@ sub gen_go_button
 	'args__hiqual', 'hiqual',
 	'args__hsplim', 'hsp_limit',
 	'args__hsplimnum', 'hsp_limit_num',
-	'args__prog', 'blast_program',
+	'args__prog', 'alignment_program',
 	'args__showallhsps', 'show_hsps_with_stop_codon',
         'args__padding', 'padding',
         'args__num_seqs','args__$num_seqs',
@@ -1544,3 +1546,16 @@ sub num_colors
     return $num_colors
   }
 
+sub algorithm_list
+  {
+    my $program = shift;
+    my @programs = qw(blastn tblastx blastz);
+    my $html;
+    foreach my $prog (@programs)
+      {
+	$html .= "<option";
+	$html .= $program eq $prog ? " selected>" : ">";
+	$html .= $prog."</option>\n";
+      }
+    return $html;
+  }
