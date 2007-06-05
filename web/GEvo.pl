@@ -41,7 +41,7 @@ $TEMPURL = "/CoGe/tmp";
 $DEBUG = 0;
 $BENCHMARK = 1;
 $NUM_SEQS = 3;
-$MAX_SEQS = 10;
+$MAX_SEQS = 6;
 $| = 1; # turn off buffering 
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		 sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
@@ -277,6 +277,7 @@ sub Show_Summary
     my $ih = $opts{ih};
     my $feat_h = $opts{fh};
     my $show_gc = $opts{gc};
+    my $show_nt = $opts{nt};
     my $color_hsp = $opts{colorhsp};
     my $hsp_label = $opts{hsplabel};
     my $overlap_adjustment = $opts{overlap};
@@ -467,6 +468,7 @@ sub Show_Summary
 							 ih=>$ih,
 							 fh=>$feat_h,
 							 show_gc=>$show_gc,
+							 show_nt=>$show_nt,
 							 reverse_image => $rev,
 							 stagger_label=>$stagger_label,
 							 overlap_adjustment=>$overlap_adjustment,
@@ -567,6 +569,7 @@ sub generate_image
     my $ih = $opts{ih} || 200;
     my $fh = $opts{fh} || 25;
     my $show_gc = $opts{show_gc};
+    my $show_nt = $opts{show_nt};
     my $reverse_image = $opts{reverse_image};
     my $stagger_label = $opts{stagger_label};
     my $overlap_adjustment = $opts{overlap_adjustment};
@@ -616,7 +619,7 @@ sub generate_image
     my $f2= CoGe::Graphics::Feature->new({start=>1, order => 2, strand => -1});
     $f2->merge_percent(0);
     $gfx->add_feature($f2);
-    $graphic->process_nucleotides(c=>$gfx, seq=>$gbobj->sequence, layers=>{gc=>$show_gc});
+    $graphic->process_nucleotides(c=>$gfx, seq=>$gbobj->sequence, layers=>{gc=>$show_gc, nt=>$show_nt});
 #    print STDERR join ("\t", $gbobj->accn, $start, $stop),"\n";
     process_features(c=>$gfx, obj=>$gbobj, start=>$start, stop=>$stop, overlap_adjustment=>$overlap_adjustment);
     process_hsps(
@@ -1030,7 +1033,7 @@ sub get_obj_from_genome_db
 					  locus=>$accn,
 					  version=>$feat->dataset->version(),
 					  source=>$feat->dataset->datasource->name(),
-					  organism=>$feat->org->name(),
+					  organism=>$feat->org->name()."(v".$feat->dataset->version.")",
 					 });
 
     $obj->sequence($seq);
@@ -1483,6 +1486,7 @@ sub gen_go_button
 	'args__ih', 'ih', 
 	'args__fh', 'feat_h',
         'args__gc', 'show_gc',
+        'args__nt', 'show_nt',
 	'args__colorhsp', 'color_hsp',
 	'args__hsplabel', 'hsp_labels',
 	'args__overlap', 'overlap_adjustment',
