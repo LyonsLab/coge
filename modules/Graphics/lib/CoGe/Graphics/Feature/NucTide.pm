@@ -67,17 +67,21 @@ sub _initialize
 	for my $i (0..2)
 	  {
 	    my $color = 0;
-	    $color += $ATC->[$i]*$at/($seq_len)+ $GCC->[$i]*$cg/($seq_len) if $self->options eq "gc";
+	    $color += $self->options eq "gc" ? $ATC->[$i]*$at/($seq_len)+ $GCC->[$i]*$cg/($seq_len) : $ATC->[$i]*($at+$cg) /($seq_len)  ;
 	    $color += $NC->[$i]*$n/($seq_len);
 #	    push @color, $ATC->[$i]*$at/($at+$cg+$n)+ $GCC->[$i]*$cg/($at+$cg+$n)+ $NC->[$i]*$n/($at+$cg+$n);
 
 	    push @color, $color;
 	  }
-#	my $pat = $at/($seq_len) if $seq_len > 0;
-#	my $pcg = $cg/($seq_len) if $seq_len > 0;
-#	my $pn = $n/($seq_len) if $seq_len > 0;
-#	print STDERR $pat,"%, ", $pcg,"%, ", $pn,'%: ', join (":", @color),"\n" if $n;
-	$self->color(\@color)
+#	unless ($self->options eq "gc")
+#	  {
+#	    if ($color[2])
+#	      {
+#		$color[0] = 255;
+#		$color[1] = 200;
+#	      }
+#	  }
+	$self->color(\@color) if ($color[0] || $color[1] || $color[2]);
       }
     $self->label($self->nt) if $self->nt && $self->show_label;
   }
