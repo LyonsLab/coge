@@ -1,4 +1,4 @@
-#! /usr/bin/perl -w
+#!/usr/bin/perl -w
 use strict;
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
@@ -106,6 +106,7 @@ sub gen_body
   {
     my $num_seqs = shift;;
     my $form = $FORM;
+    $MAX_SEQS = 10 if $form->param('override');
     my $message;
     if (! ($num_seqs =~ /^\d+$/) )
       {
@@ -375,8 +376,8 @@ sub Show_Summary
  	  {
 	    $obj = new CoGe::Accessory::GenBank;
 	    $obj->add_gene_models(1); #may want to make a user selectable option
- 	    $obj->get_genbank_from_nbci($gbaccn);
-	    return "<font class=error>No entry found for $gbaccn</font>" unless ($obj);
+ 	    my $res = $obj->get_genbank_from_nbci($gbaccn, $gbrev);	    
+	    return "<font class=error>No GenBank entry found for $gbaccn</font>" unless ($res);
 	    $obj->sequence(CoGeX::Feature->reverse_complement($obj->sequence)) if $gbrev;
 	    my $seq;
  	    ($file, $file_begin, $file_end,$spike_seq, $seq) = 
@@ -389,13 +390,7 @@ sub Show_Summary
  				 spike_len=>$spike_len, 
  				);
 	    $obj->sequence($seq);
-	    if ($gbrev)
-	      {
-		my $tmp = $file_begin;
-		$file_begin = $obj->seq_length-$file_end;
-		$file_end = $obj->seq_length-$tmp;
-		$rev = 1;
-	      }
+	    $rev = 1 if ($gbrev);
 	    $up = $gbstart;
 	    $down = $gblength;
 
@@ -469,7 +464,7 @@ sub Show_Summary
 							 fh=>$feat_h,
 							 show_gc=>$show_gc,
 							 show_nt=>$show_nt,
-							 reverse_image => $rev,
+							# reverse_image => $rev,
 							 stagger_label=>$stagger_label,
 							 overlap_adjustment=>$overlap_adjustment,
 							 feature_labels=>$feature_labels,
@@ -969,14 +964,15 @@ sub generate_seq_file
     my $spike_len = $options{spike_len} || 0;
     my $mask = $options{mask} || $options{mask_flag};
     my $mask_ncs = $options{mask_ncs};
+
     my $t1 = new Benchmark;
     my ($file, $file_begin, $file_end, $spike_seq, $seq) = 
       write_fasta(
-		  GBOBJ=>$obj,
+		  obj=>$obj,
 		  accn=>$obj->accn,
 		  mask=>$mask,
 		  mask_ncs=>$mask_ncs,
-		  startpos=>$start,
+		  start=>$start,
 		  upstream=>$up,
 		  downstream=>$down,
 		  spike=>$spike_len,
@@ -1067,6 +1063,7 @@ sub get_obj_from_genome_db
 	$anno =~ s/\n//ig;
 	print STDERR $anno if $name =~ /at2g29610/i;;
 	my $location = $f->genbank_location_string(recalibrate=>$start);
+	$location = $obj->reverse_genbank_location(loc=>$location, ) if $rev;
 	print STDERR $name, "\t",$f->type->name ,"\t",$location,"\n" if $DEBUG;
 	$obj->add_feature (
 			   number=>$fnum,
@@ -1257,101 +1254,73 @@ sub get_substr
     return $seq;
   }
 
-sub write_fasta {
-	my $options =  {};
-	# main input is ACCN, startpos, upstream, downstream, mask and path
-	# return value for this function is the sequence and the start/end
-	# position of the sequence.
-	# (10/10/03):  Now check if the spike_flag is true.  If so,
-	# construct and attach an appropriately sized spike sequence at the
-	# end of each sequence.  the options parameter spike is set to the
-	# size of the spike, or 0 if not set on the original form.
+sub write_fasta 
+  {
+    my %opts = @_;
+    my $gbobj = $opts{obj};
+    my $start = $opts{start};
+    my $mask = $opts{mask};
+    my $mask_ncs = $opts{mask_ncs};
+    my $downstream = $opts{downstream};
+    my $upstream = $opts{upstream};
+    my $spike = $opts{spike};
+    my $path = $opts{path};
+    # vars
+    my($seq,$seq_begin,$seq_end,$db_begin,$db_end,$chr);
+    my($gene_end,$gene_begin);
+    $path .= "/" if ( $path !~ /(.*)\/$/ );
+    my $tmp_file = new File::Temp ( TEMPLATE=>'SEQ__XXXXX',
+				    DIR=>$path,
+				    SUFFIX=>'.fa',
+				    UNLINK=>0);
+    my $fullname = $tmp_file->filename;
+    my $hdr = $gbobj->get_headerfasta( );
+    $seq_begin = $start - $upstream;
+    if ( $seq_begin < 1 ) {
+      $seq_begin = 1;
+    }
+    ($seq) = uc($gbobj->sequence());
 
-	# vars
-	my($seq,$startpos,$seq_begin,$seq_end,$db_begin,$db_end,$chr);
-	my($gene_end,$gene_begin);
-	if ( @_ ) {
-		while ( @_ ) {
-			my($key,$value) = splice(@_,0,2);
-			$options->{$key} = $value;
-		}
-	} else {
-		return( 0 );
-	}
-
-	my $gbobj = $options->{GBOBJ};
-
-	if ( not defined $options->{path} ) {
-		$options->{path} = "";
-	} else {
-		# does the path end in a "/"?  add if no
-		if ( $options->{path} !~ /(.*)\/$/ ) {
-			$options->{path} .= "/";
-		}
-		# other checks here?
-	}
-	my $tmp_file = new File::Temp ( TEMPLATE=>'SEQ__XXXXX',
-					DIR=>$options->{path},
-					SUFFIX=>'.fa',
-					UNLINK=>0);
-	my $fullname = $tmp_file->filename;
-
-	my $hdr = $gbobj->get_headerfasta( );
-	
-	$seq_begin = $options->{startpos} - $options->{upstream};
-	if ( $seq_begin < 1 ) {
-		$seq_begin = 1;
-	}
-	($seq) = uc($gbobj->sequence());
-
-	if ($options->{downstream})
-	{
-	    $seq_end = $options->{startpos} + $options->{downstream};
-	} else {
-	  $seq_end = length($seq);
-	}
-	if ( $seq_end > length( $seq )) {
-		$seq_end = length($seq);
-	}
-	# mask out exons if required
-	if ( defined $options->{mask} and $options->{mask} == 1 ) {
-		$seq = $gbobj->mask_exons( $seq );
-	}
-	# mask out non coding sequences if required
-	if ( defined $options->{mask_ncs} and $options->{mask_ncs} == 1 ) {
-		$seq = $gbobj->mask_ncs( $seq );
-	}
-	($seq) = $gbobj->subsequence( $seq_begin, $seq_end, $seq );
-	my $full_seq = $seq;
-	my $spike_seq = "";
-	($seq, $spike_seq) = spike( $seq, $options->{spike}) if $options->{spike};
-
-	my $error = 0;
-	($error,$fullname) = check_filename_taint( $fullname );
-	if ( $error ) 
+    if ($downstream)
+      {
+	$seq_end = $start + $downstream;
+      } else {
+	$seq_end = length($seq);
+      }
+    $seq_end = length($seq) if ( $seq_end > length( $seq ));
+    # mask out exons if required
+    $seq = $gbobj->mask_exons( $seq ) if ( $mask );
+    # mask out non coding sequences if required
+    $seq = $gbobj->mask_ncs( $seq ) if ( $mask_ncs );
+    ($seq) = $gbobj->subsequence( $seq_begin, $seq_end, $seq );
+    my $full_seq = $seq;
+    my $spike_seq = "";
+    ($seq, $spike_seq) = spike( $seq, $spike) if $spike;
+    my $error = 0;
+    ($error,$fullname) = check_filename_taint( $fullname );
+    if ( $error ) 
+      {
+	my $length = length($seq);
+	open(OUT, ">$fullname") or die "Couldn't open $fullname!\n";
+	print OUT "$hdr\n";
+	my $max = 100;
+	my $i = 0;
+	while ($i < $length && length($seq) > $max)
 	  {
-	    my $length = length($seq);
-	    open(OUT, ">$fullname") or die "Couldn't open $fullname!\n";
-	    print OUT "$hdr\n";
-#	    my $max = ceil ($length/10000);
-	    my $max = 100;# if $max < 100;
-	    my $i = 0;
-	    while ($i < $length && length($seq) > $max)
-	      {
-		print OUT substr ($seq, 0, $max),"\n";;
-		substr ($seq, 0, $max) = "";
-		$i+=$max;
-	      }
-	    print OUT $seq,"\n" if $seq;
-	    close(OUT);
-	    system "chmod +rw $fullname";
-	    return($fullname,$seq_begin,$seq_end,$spike_seq, $full_seq);
-	  } 
-	else 
-	  {
-	    return(0,0,0,"");
+	    print OUT substr ($seq, 0, $max),"\n";;
+	    substr ($seq, 0, $max) = "";
+	    $i+=$max;
 	  }
-}
+	print OUT $seq,"\n" if $seq;
+	close(OUT);
+	system "chmod +rw $fullname";
+	return($fullname,$seq_begin,$seq_end,$spike_seq, $full_seq);
+      } 
+    else 
+      {
+	return(0,0,0,"");
+      }
+  }
 
 sub spike { 
 	my $seq = shift;
