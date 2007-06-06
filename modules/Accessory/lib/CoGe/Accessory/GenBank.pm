@@ -21,10 +21,11 @@ sub get_genbank_from_nbci
   {
     my $self = shift;
     my $id = shift;
+    my $rev = shift;
     my $ua = new LWP::UserAgent;
     my $url = "http://www.ncbi.nlm.nih.gov/entrez/viewer.fcgi?db=nucleotide&qty=1&c_start=1&list_uids=$id&dopt=gb&send=Send&sendto=t&from=begin&to=end&extrafeatpresent=1&ef_MGC=16";
     my $search = $ua->get($url);
-    return $self->parse_genbank($search->content);
+    return $self->parse_genbank($search->content, $rev);
     
 
   }
@@ -33,6 +34,7 @@ sub parse_genbank
   {
     my $self = shift;
     my $gb = shift;
+    my $rev = shift;
     my @gb = split /\n/, $gb;
     my %moltype_list = ( 'mRNA' => '1', 'RNA' => '1', 'tRNA' => '1',
 			 'rRNA' => '1', 'DNA' => '1', 'scRNA' => '1',
@@ -198,6 +200,7 @@ sub parse_genbank
 		  push @names, $val if $qual =~ /gene/;
 		}
 	      $quals{names} = \@names;
+	      $feat->{location} = $self->reverse_genbank_location(loc=>$feat->{location}) if $rev;
 	      $self->add_feature(number=>$fcount,
 				 type=>$feat->{type},
 				 location=>$feat->{location},
@@ -623,5 +626,30 @@ sub subsequence {
 	return( $newseq	);
 }
 
+sub reverse_genbank_location
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $loc = $opts{location} || $opts{loc};
+    my $length = $opts{length} || length($self->sequence);
+    my $complement = $loc=~/complement/ ? 0 : 1; #get the opposite
+    $loc =~ s/complement//;
+    $loc =~ s/join//;
+    $loc =~ s/\(|\)|<|>//g;
+
+    my $new_loc;
+    my $count = 0;
+    
+    foreach my $set (split /,/, $loc)
+      {
+	my ($start, $stop) = split /\.\./, $set;
+	$new_loc .= "," if $new_loc;
+	$new_loc .= ($length-$stop)."..".($length-$start);
+	$count++;
+      }
+    $new_loc = "join($new_loc)" if $count > 1;
+    $new_loc = "complement($new_loc)" if $complement;
+    return $new_loc;
+  }
 
 1;
