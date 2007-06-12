@@ -11,6 +11,7 @@ use CoGe::Genome;
 
 use vars qw($USER $UID $LAST_LOGIN $FORM $DATE);
 
+$ENV{PATH} = "/opt/apache/CoGe";
 $FORM = new CGI;
 ($USER, $UID, $LAST_LOGIN) = CoGe::Accessory::LogUser->get_user();
 
@@ -22,6 +23,7 @@ my $pj = new CGI::Ajax(
 		      );
 print $pj->build_html($FORM, \&gen_html);
 
+#print gen_html();
 
 
 
@@ -63,6 +65,9 @@ sub gen_body
 	my $url = $FORM->param('url') if $FORM->param('url');
 	$url =~ s/:::/;/g if $url;
 	$tmpl->param(url=>$url);
+	print STDERR "Clearning old tmp files. . .\n";
+	system "/usr/bin/find /opt/apache/CoGe/tmp -depth -mindepth 1 -ctime +1 -delete";
+
       }
     $html .= $tmpl->output;
     if ($FORM->param('logout'))
