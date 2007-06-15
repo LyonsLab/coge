@@ -271,7 +271,7 @@ sub gen_foot
 				   stop=>$stop,
 				   strand=>$strand);
     $dynamic_buttons = "<div id=\"buttons\">$dynamic_buttons</div>";
-   $template->param(BLAST=>$feat_id);
+   
    $template->param(ADDITION=>1);
 #    unless($feat_id)
 #     {$template->param(RANGE=>1);}
@@ -287,7 +287,7 @@ sub gen_foot
       $template->param(DOWNVALUE=>$stop);
     }
     else {
-      $template->param(BLAST=>$feat_id);
+      #$template->param(BLAST=>$feat_id);
       $template->param(FEATID=>$feat_id);
       $template->param(EXTEND=>"Extend Sequence");
       $template->param(UPSTREAM=>"UPSTREAM: ");
@@ -575,11 +575,11 @@ sub new_foot
        $template->param(CHR=>$chr);
        $template->param(DSID=>$dsid);
      }
-     $template->param(BLAST=>$feat_id);
-     $template->param(DSID_BLAST=>$dsid);
-     $template->param(FEATNAME_BLAST=>$feat_name);
-     $template->param(CHR_BLAST=>$chr);
-     $template->param(RC_BLAST=>$rc);
+     #$template->param(BLAST=>$feat_id);
+    # $template->param(DSID_BLAST=>$dsid);
+     #$template->param(FEATNAME_BLAST=>$feat_name);
+     #$template->param(CHR_BLAST=>$chr);
+     #$template->param(RC_BLAST=>$rc);
     return $template->output;
 }
 sub find_feats
