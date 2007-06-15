@@ -25,14 +25,15 @@ use CoGe::Graphics::Feature::HSP;
 use CoGeX;
 use CoGeX::Feature;
 use DBIxProfiler;
+use DBI;
 #use Text::Wrap qw($columns &wrap);
 use Benchmark qw(:all);
 
 # for security purposes
-$ENV{PATH} = "/opt/apache2/CoGe/";
+$ENV{PATH} = "/opt/apache/CoGe/";
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 
-use vars qw( $DATE $DEBUG $BL2SEQ $BLASTZ $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge $NUM_SEQS $MAX_SEQS);
+use vars qw( $DATE $DEBUG $BL2SEQ $BLASTZ $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge $NUM_SEQS $MAX_SEQS $BASEFILE $BASEFILENAME);
 $BL2SEQ = "/opt/bin/bio/bl2seq ";
 $BLASTZ = "/usr/bin/blastz ";
 $TEMPDIR = "/opt/apache/CoGe/tmp";
@@ -232,9 +233,10 @@ sub gen_body
     $template->param(DIRECT_SEQS=>$direct_seqs);
     $template->param(HSP_COLOR=>$hsp_colors);
     $template->param(GO_BUTTON=>gen_go_button($num_seqs));
+    $drseq = 1 unless ($dirseq || $gbseq);
     $drseq ? $template->param(DRMENU=>'inline') : $template->param(DRMENU=>'none');
     $dirseq ? $template->param(DIRMENU=>'inline') : $template->param(DIRMENU=>'none');
-    $gbseq = 1 unless ($drseq || $dirseq); #default
+#    $gbseq = 1 unless ($drseq || $dirseq); #default
     $gbseq ? $template->param(GBMENU=>'inline') : $template->param(GBMENU=>'none');
     $template->param(AUTOSEARCH=>$autosearch_string);
     $box->param(BOX_NAME=>"Sequence Retrieval:");
@@ -285,9 +287,11 @@ sub Show_Summary
     my $hiqual = $opts{hiqual};
     my $hsp_limit = $opts{hsplim};
     my $hsp_limit_num = $opts{hsplimnum};
-    my $blast_program = $opts{prog};
+    my $analysis_program = $opts{prog};
     my $show_hsps_with_stop_codon = $opts{showallhsps};
     my $padding = $opts{padding};
+
+    initialize_basefile();
 
     $spike_len = 0 unless $match_filter;
 
@@ -350,6 +354,7 @@ sub Show_Summary
 				mask=>$mask_flag,
 				mask_ncs=>$mask_ncs_flag,
 				spike_len=>$spike_len,
+				seq_num=>$i,
 			       );
 	    $up = $drup;
 	    $down = $drdown;
@@ -367,6 +372,7 @@ sub Show_Summary
  				 mask=>$mask_flag,
  				 mask_ncs=>$mask_ncs_flag,
  				 spike_len=>$spike_len, 
+				 seq_num=>$i,
  				);
 	    $up = $dirstart;
 	    $down = $dirstop;
@@ -387,7 +393,8 @@ sub Show_Summary
  				 mask_ncs=>$mask_ncs_flag,
  				 startpos=>$gbstart,
  				 downstream=>$gblength,
- 				 spike_len=>$spike_len, 
+ 				 spike_len=>$spike_len,
+				 seq_num=>$i,
  				);
 	    $obj->sequence($seq);
 	    $rev = 1 if ($gbrev);
@@ -408,6 +415,7 @@ sub Show_Summary
 			 down=>$down,
 			 spike_seq=>$spike_seq,
 			 reference_seq=>$reference_seq,
+			 seq_num=>$i,
 			};
 	  }
       }
@@ -420,26 +428,27 @@ sub Show_Summary
     # set up output page
     
     # run bl2seq
-    $wordsize = 3 if ($blast_program eq "tblastx" && $wordsize > 3);
+    $wordsize = 3 if ($analysis_program eq "tblastx" && $wordsize > 3);
     my $bl2seq_params = " -W " . $wordsize if defined $wordsize;
     $bl2seq_params .= " -G " . $gapopen if defined $gapopen;
     $bl2seq_params .= " -X " . $gapextend if defined $gapextend;
     $bl2seq_params .= " -q " . $mismatch if defined $mismatch;
     $bl2seq_params .= " -e " . $eval if defined $eval;
     $bl2seq_params .= " "    . $blastparams if defined $blastparams;
-    my $blast_reports;
-    if ($blast_program eq "blastz")
+    my $analysis_reports;
+    if ($analysis_program eq "blastz")
       {
-	$blast_reports = run_blastz( sets=>\@sets, params=>undef);
+	$analysis_reports = run_blastz( sets=>\@sets, params=>undef);
       }
     else
       {
-	$blast_reports = run_bl2seq( sets=>\@sets, blast_params=>$bl2seq_params, blast_program=>$blast_program );
+	$analysis_reports = run_bl2seq( sets=>\@sets, blast_params=>$bl2seq_params, blast_program=>$analysis_program );
       }
    #sets => array or data for blast
    #blast_reports => array of arrays (report, accn1, accn2, parsed data)
 
     my $t3 = new Benchmark;
+    my $count = 1;
     foreach my $item (@sets)
       {
 	my $accn = $item->{accn};
@@ -451,14 +460,13 @@ sub Show_Summary
 	my $up = $item->{up};
 	my $down = $item->{down};
 	my $spike_seq = $item->{spike_seq};
-	
 	if ($obj)
 	  {
-	    my ($image, $map, $mapname) = generate_image(
+	    my ($image, $map, $mapname, $gfx) = generate_image(
 							 gbobj=>$obj, 
 							 start=>$file_begin,
 							 stop => $file_end,
-							 data=>$blast_reports,
+							 data=>$analysis_reports,
 							 iw=>$iw,
 							 ih=>$ih,
 							 fh=>$feat_h,
@@ -476,7 +484,8 @@ sub Show_Summary
 							 show_hsps_with_stop_codon => $show_hsps_with_stop_codon,
 							 hiqual=>$hiqual,
 							 padding=>$padding,
-							);
+								   seq_num=>$count,
+								  );
 #	    print STDERR $map;
 	    $html .= qq!<div>$accn!;
 	    $html .= qq!(<font class=species>!.$obj->organism.qq!</font>)! if $obj->organism;
@@ -486,7 +495,10 @@ sub Show_Summary
 	    $html .= qq!<IMG SRC="$TEMPURL/$image" !;
 	    $html .= qq!BORDER=0 ismap usemap="#$mapname">\n!;
 	    $html .= "$map\n";
+	    $item->{image} = $image;
+	    $item->{gfx} = $gfx;
 	  }
+	$count++;
       }
     my $t4 = new Benchmark;
     $html .= qq!<br>!;
@@ -497,10 +509,10 @@ sub Show_Summary
     $html .= qq!<DIV id="info"></DIV>!;
     $html .= "</FORM>\n";
     $html .= qq{<table>};
-    if ($blast_reports && @$blast_reports)
+    if ($analysis_reports && @$analysis_reports)
       {
-	$html .= qq{<tr><td class = small>Alignment reports};
-	foreach my $item (@$blast_reports)
+	$html .= qq{<tr valign=top><td class = small>Alignment reports};
+	foreach my $item (@$analysis_reports)
 	  {
 	    my $report = $item->[0];
 	    my $accn1 = $item->[1];
@@ -517,19 +529,28 @@ sub Show_Summary
 	    $html .= "<div><font class=xsmall><A HREF=\"$basename\">Fasta file for $accn</A></font></DIV>\n";
 	  }
 	$html .= qq{<td class = small><a href = "http://baboon.math.berkeley.edu/mavid/gaf.html">GAF</a> annotation files};
-	my $i = 0;
 	foreach my $item (@sets)
 	  {
 	    my $basename = $TEMPURL."/".basename (generate_annotation(%$item));
 	    my $accn = $item->{accn};
 	    $html .= "<div><font class=xsmall><A HREF=\"$basename\">Annotation file for $accn</A></font></DIV>\n";
-	    $i++;
 	  }
+	$html .= qq{<td class = small>SQLite db};
+	my $dbname = generate_imagemap_db(\@sets, $analysis_reports);
+	$html .= "<div class=xsmall><A HREF=\"$dbname\">SQLite DB file</A></DIV>\n";
+#	my $i = 0;
+#	foreach my $item (@sets)
+#	  {
+#	    my $basename = $TEMPURL."/".basename ($item->{db_file});
+#	    my $accn = $item->{accn};
+#	    $html .= "<div><font class=xsmall><A HREF=\"$basename\">SQLite DB file $accn</A></font></DIV>\n";
+#	    $i++;
+#	  }
       }
     $html .= qq{</table>};
 
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
-    $template->param(BOX_NAME=>"Results: $blast_program");
+    $template->param(BOX_NAME=>"Results: $analysis_program");
     $template->param(BODY=>$html);
     my $outhtml = $template->output;
     my $t5 = new Benchmark;
@@ -577,6 +598,7 @@ sub generate_image
     my $show_hsps_with_stop_codon = $opts{show_hsps_with_stop_codon};
     my $hiqual = $opts{hiqual};
     my $padding = $opts{padding} || 5;
+    my $seq_num = $opts{seq_num};
     my $graphic = new CoGe::Graphics;
     my $gfx = new CoGe::Graphics::Chromosome;
     $gfx->overlap_adjustment(1);
@@ -633,18 +655,118 @@ sub generate_image
 		 colors=>$hsp_colors,
 		 show_hsps_with_stop_codon=>$show_hsps_with_stop_codon,
 		);
-    my $file = new File::Temp ( TEMPLATE=>'GEvo__XXXXX',
-				   DIR=>$TEMPDIR,
-				    SUFFIX=>'.png',
-				    UNLINK=>0);
-    my ($filename) = $file->filename =~ /([^\/]*$)/;;
-    $gfx->generate_png(file=>$file->filename);
-    close($file);
-    system "chmod +rw ".$file->filename;
-    my $mapname = $filename."map";
+    my $filename = $BASEFILE."_".$seq_num.".png";
+    $filename = check_filename_taint($filename);
+    $gfx->generate_png(file=>$filename);
+    my $mapname = "map_".$seq_num;
     my ($map)=$gfx->generate_imagemap(name=>$mapname);
-    return ($filename, $map, $mapname);
+    return (basename($filename), $map, $mapname, $gfx);
   }
+
+sub generate_imagemap_db
+  {
+    my ($sets, $reports) = @_;
+    my $tempfile = $BASEFILE.".sqlite";
+    $tempfile = $TEMPDIR."/".$tempfile unless $tempfile =~ /$TEMPDIR/;
+    my $dbh = DBI->connect("dbi:SQLite:dbname=$tempfile","","");
+    my $create = qq{
+CREATE TABLE image_data
+(
+id integer(10) PRIMARY KEY,
+name varchar(50),
+xmin integer(10),
+xmax integer(10),
+ymin integer(10),
+ymax integer(10),
+image varchar(50),
+pair_id integer(10),
+annotation blob
+)
+};
+    $dbh->do($create);
+     my $index = qq{
+ CREATE INDEX name ON image_data (name)
+ };
+     $dbh->do($index);
+     $index = qq{
+ CREATE INDEX image ON image_data (image)
+ };
+     $dbh->do($index);
+     $index = qq{
+ CREATE INDEX xmin ON image_data (xmin)
+ };
+     $dbh->do($index);
+     $index = qq{
+ CREATE INDEX xmax ON image_data (xmax)
+ };
+     $dbh->do($index);
+     $index = qq{
+ CREATE INDEX ymin ON image_data (ymin)
+ };
+     $dbh->do($index);
+     $index = qq{
+ CREATE INDEX ymax ON image_data (ymax)
+ };
+     $dbh->do($index);
+     $index = qq{
+ CREATE INDEX pair_id ON image_data (pair_id)
+ };
+     $dbh->do($index);
+    my $i = 1;
+#    my $sth = $dbh->prepare(qq{
+#INSERT INTO image_data (id, name, xmin, xmax, ymin, ymax, image, pair_id, annotation) VALUES (?,?,?,?,?,?,?,?,?);
+#});
+    my %accn2image = map {$_->{obj}->accn,$_->{image}} @$sets;
+    foreach my $item (@$sets)
+      {
+	my $image = $item->{image};
+	my $gfx = $item->{gfx};
+	my $accn = $item->{obj}->accn;
+	foreach my $feat ($gfx->get_feats)
+	  {
+	    my $pair_id = "NULL";
+	    my $coords = $feat->image_coordinates;
+	    $coords =~ s/\s//g;
+	    next unless $feat->type =~ /HSP/i;
+	    my $name = $feat->type =~ /HSP/i ? $feat->alt : $feat->label;
+	    my $query = qq{select id from image_data where name = "$name"};
+	    my $sth = $dbh->prepare($query);
+	    $sth->execute;
+	    my $res = $sth->fetchrow_array();
+	    if ($res)
+	      {
+		$pair_id = $res;
+		my $statement = "update image_data set pair_id = $i where id = $res";
+		$dbh->do($statement);
+	      }
+
+
+	    my ($hsp_num, $accn1, $accn2) = split/-/, $name;
+	    my $accn_check = $accn1 eq $accn ? $accn2 : $accn1;
+	    my $image2 = $accn2image{$accn_check};
+	    
+
+	    my ($xmin, $ymin, $xmax, $ymax) = split /,/, $coords;
+	    my $anno = $feat->description;
+	    print STDERR join ("\t", $name),"\n";#, $xmin, $xmax, $ymin, $ymax, $image, $feat->description),"\n";
+	    my $statement = qq{
+INSERT INTO image_data (id, name, xmin, xmax, ymin, ymax, image, pair_id, annotation) values ($i, "$name", $xmin, $xmax, $ymin, $ymax, "$image", $pair_id, "$anno")
+};
+	    $dbh->do($statement);
+#	    $sth->execute($i,$name, $xmin, $xmax, $ymin, $ymax, $image, 1, $feat->description);
+	    $i++;
+	  }
+      }
+    my $sth = $dbh->prepare("SELECT * from image_data");
+    $sth->execute();
+    while(my $item = $sth->fetchrow_arrayref)
+      {
+	print STDERR Dumper $item;
+      }
+    system "chmod +rw $tempfile";
+    return $tempfile;
+  }
+
 
 sub process_features
   {
@@ -964,6 +1086,7 @@ sub generate_seq_file
     my $spike_len = $options{spike_len} || 0;
     my $mask = $options{mask} || $options{mask_flag};
     my $mask_ncs = $options{mask_ncs};
+    my $seq_num = $options{seq_num};
 
     my $t1 = new Benchmark;
     my ($file, $file_begin, $file_end, $spike_seq, $seq) = 
@@ -976,7 +1099,7 @@ sub generate_seq_file
 		  upstream=>$up,
 		  downstream=>$down,
 		  spike=>$spike_len,
-		  path=>$TEMPDIR,
+		  seq_num=>$seq_num,
 		 );
     my $t2 = new Benchmark;
     my $time = timestr(timediff($t2,$t1));
@@ -1096,10 +1219,10 @@ Region:         ds_id: $ds_id $start-$stop($chr)
 sub check_filename_taint {
 	my $v = shift;
 	if ($v =~ /^([A-Za-z0-9\-\.=\/_]*)$/) {
-		$v = $1;
-		return(1,$v);
+		my $v1 = $1;
+		return($v1);
 	} else {
-		return(0,0);
+		return(0);
 	}
 }
 
@@ -1141,11 +1264,7 @@ sub run_bl2seq {
 	  
 	  
 	# need to create a temp filename here
-	  my $tmp_file = new File::Temp ( TEMPLATE=>'Bl2Seq__XXXXX',
-					  DIR=>$TEMPDIR,
-					  SUFFIX=>'.txt',
-					  UNLINK=>0);
-	  my ($tempfile) = $tmp_file->filename;
+	  my ($tempfile) = $BASEFILE."_".($i+1)."-".($j+1).".bl2seq";;
 	  
 	  # format the bl2seq command
 	  $command .= "-p $program -o $tempfile ";
@@ -1197,11 +1316,7 @@ sub run_blastz
 	    next unless -r $seqfile1 && -r $seqfile2; #make sure these files exist
 	    next unless $sets->[$i]{reference_seq} || $sets->[$j]{reference_seq};
 	    my ($accn1, $accn2) = ($sets->[$i]{accn}, $sets->[$j]{accn});
-	    my $tmp_file = new File::Temp ( TEMPLATE=>'blastz__XXXXX',
-					  DIR=>$TEMPDIR,
-					  SUFFIX=>'.txt',
-					  UNLINK=>0);
-	    my ($tempfile) = $tmp_file->filename;# =~ /([^\/]*$)/;
+	    my ($tempfile) = $BASEFILE."_".($i+1)."-".($j+1).".blastz";
 	    my $command = $BLASTZ;
 	    $command .= " $seqfile1 $seqfile2";
 	    $command .= " ".$params if $params;
@@ -1264,16 +1379,11 @@ sub write_fasta
     my $downstream = $opts{downstream};
     my $upstream = $opts{upstream};
     my $spike = $opts{spike};
-    my $path = $opts{path};
+    my $seq_num = $opts{seq_num};
     # vars
     my($seq,$seq_begin,$seq_end,$db_begin,$db_end,$chr);
     my($gene_end,$gene_begin);
-    $path .= "/" if ( $path !~ /(.*)\/$/ );
-    my $tmp_file = new File::Temp ( TEMPLATE=>'SEQ__XXXXX',
-				    DIR=>$path,
-				    SUFFIX=>'.fa',
-				    UNLINK=>0);
-    my $fullname = $tmp_file->filename;
+    my $fullname = $BASEFILE."_".$seq_num.".fa";
     my $hdr = $gbobj->get_headerfasta( );
     $seq_begin = $start - $upstream;
     if ( $seq_begin < 1 ) {
@@ -1296,30 +1406,22 @@ sub write_fasta
     my $full_seq = $seq;
     my $spike_seq = "";
     ($seq, $spike_seq) = spike( $seq, $spike) if $spike;
-    my $error = 0;
-    ($error,$fullname) = check_filename_taint( $fullname );
-    if ( $error ) 
+    ($fullname) = check_filename_taint( $fullname );
+    my $length = length($seq);
+    open(OUT, ">$fullname") or die "Couldn't open $fullname!\n";
+    print OUT "$hdr\n";
+    my $max = 100;
+    my $i = 0;
+    while ($i < $length && length($seq) > $max)
       {
-	my $length = length($seq);
-	open(OUT, ">$fullname") or die "Couldn't open $fullname!\n";
-	print OUT "$hdr\n";
-	my $max = 100;
-	my $i = 0;
-	while ($i < $length && length($seq) > $max)
-	  {
-	    print OUT substr ($seq, 0, $max),"\n";;
-	    substr ($seq, 0, $max) = "";
-	    $i+=$max;
-	  }
-	print OUT $seq,"\n" if $seq;
-	close(OUT);
-	system "chmod +rw $fullname";
-	return($fullname,$seq_begin,$seq_end,$spike_seq, $full_seq);
-      } 
-    else 
-      {
-	return(0,0,0,"");
+	print OUT substr ($seq, 0, $max),"\n";;
+	substr ($seq, 0, $max) = "";
+	$i+=$max;
       }
+    print OUT $seq,"\n" if $seq;
+    close(OUT);
+    system "chmod +rw $fullname";
+    return($fullname,$seq_begin,$seq_end,$spike_seq, $full_seq);
   }
 
 sub spike { 
@@ -1359,12 +1461,9 @@ sub generate_annotation
     my $start = $opts{file_begin};
     my $stop = $opts{file_end};
     my $rev = $opts{rev};
+    my $seq_num = $opts{seq_num};
     my @opts = ($start, $stop);
-    my $tmp_file = new File::Temp ( TEMPLATE=>'Anno__XXXXX',
-				    DIR=>$TEMPDIR,
-				    SUFFIX=>'.txt',
-				    UNLINK=>0);
-    my $fullname = $tmp_file->filename;
+    my $fullname = $BASEFILE."_".$seq_num.".anno";
     my %data;
     my $length = length($obj->sequence());
     foreach my $feat($obj->get_features(@opts))
@@ -1531,4 +1630,15 @@ sub algorithm_list
 	$html .= $prog."</option>\n";
       }
     return $html;
+  }
+
+sub initialize_basefile
+  {
+    my $file = new File::Temp ( TEMPLATE=>'GEvo_XXXXXXXX',
+				   DIR=>$TEMPDIR,
+				    #SUFFIX=>'.png',
+				    UNLINK=>1);
+    ($BASEFILE)= $file->filename;
+    
+    ($BASEFILENAME) = $file->filename =~ /([^\/]*\.png$)/;
   }
