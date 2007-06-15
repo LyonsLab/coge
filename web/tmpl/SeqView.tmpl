@@ -1,16 +1,16 @@
 
 
 <TMPL_IF NAME=SEQVIEW_JAVA>
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.js"></SCRIPT>
 <SCRIPT language="JavaScript">
 
-
 function reset_updown() {
-  kaj.GS('upstream',0);
-  kaj.GS('downstream',0);
+  $('#upstream').val(0);
+  $('#downstream').val(0);
 }
 
 function makeTable() {
-  kaj.GS('maketable', '<div id ="annotation" style = "overflow: auto; height: 300px; width: auto;"></DIV>');
+  $('#maketable').html('<div id ="annotation" style = "overflow: auto; height: 300px; width: auto;"></DIV>');
 }
 
 function blastSeq() {
@@ -29,7 +29,7 @@ function blastSeq() {
 }
 
 function waiting() {
-  kaj.GS('annotation','<font class="loading">Loading Features . . .</font>');
+  $('#annotation').html('<font class="loading">Loading Features . . .</font>');
 }
 
 function make_focus() {
@@ -54,15 +54,16 @@ function make_focus() {
      </TD>
      <TD align=right valign="top">
      <DIV id="blast_button"><input type=button value="Blast Sequence" onClick="blastSeq()"></DIV>
-    <input type="hidden" id="blast" value="<TMPL_VAR NAME="BLAST">">
-    <input type="hidden" id="dsid_blast" value="<TMPL_VAR NAME="DSID_BLAST">">
-    <input type="hidden" id="featname_blast" value="<TMPL_VAR NAME="FEATNAME_BLAST">">
-    <input type="hidden" id="chr_blast" value="<TMPL_VAR NAME="CHR_BLAST">">
-    <input type="hidden" id="rc_blast" value="<TMPL_VAR NAME="RC_BLAST">">
     </TD>
    </TR>
   </TABLE>
 </TMPL_IF>
+
+    <input type="hidden" id="blast" value="<TMPL_VAR NAME="FEATID">">
+    <input type="hidden" id="dsid_blast" value="<TMPL_VAR NAME="DSID">">
+    <input type="hidden" id="featname_blast" value="<TMPL_VAR NAME="FEATNAME">">
+    <input type="hidden" id="chr_blast" value="<TMPL_VAR NAME="CHR">">
+    <input type="hidden" id="rc_blast" value="<TMPL_VAR NAME="RC">">
 
 <TMPL_IF NAME="ADDITION">
 <TABLE>
@@ -112,3 +113,4 @@ function make_focus() {
    </TR>
  </TABLE>
 </TMPL_IF>
+
