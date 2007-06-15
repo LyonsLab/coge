@@ -166,16 +166,24 @@ setup();
  });
 
 </SCRIPT>
-<TMPL_VAR NAME="MESSAGE">
+<div id="message"><TMPL_VAR NAME="MESSAGE"></div>
 <TMPL_VAR NAME="GO_BUTTON">
 
 &nbsp;&nbsp;
 
 <input type="button" value="Clear" onClick="rset(<TMPL_VAR NAME="NUM_SEQS">)">
 <form>
+<table>
+ <tr>
+  <td>
 Number of sequences: 
+  <td>
 <input class="backbox" name=num_seqs id=num_seqs type="textbox" size=2 value=<TMPL_VAR NAME ="NUM_SEQS">>
+  <td>
 <input type="submit" value="reload">
+  <td>
+<DIV id ="add_button"> <input type="button" value="add" onclick="add_seq(['num_seqs'],['message','new_drseq', 'new_gbseq', 'new_dirseq', 'num_seqs', 'add_button'])"><DIV>
+ </table>
 </form>
 
 
@@ -598,7 +606,7 @@ Note: parameter options haven't been implemented for blastz (yet)
       </TABLE>
 
       </TMPL_LOOP>
-
+      <TD><DIV id="new_drseq"></DIV>
      </table>
 
 </TMPL_IF>
@@ -626,7 +634,7 @@ Note: parameter options haven't been implemented for blastz (yet)
       </TABLE>
 
       </TMPL_LOOP>
-
+      <TD><DIV id="new_gbseq"></DIV>
      </table>
 
 </TMPL_IF>
@@ -646,7 +654,7 @@ Note: parameter options haven't been implemented for blastz (yet)
       </DIV>
       
       </TMPL_LOOP>
-
+      <TD><DIV id="new_dirseq"></DIV>
      </table>
 
 </TMPL_IF>
