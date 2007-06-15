@@ -506,6 +506,6 @@ sub gelo_link
     $start = $feat->start if $feat;
     $stop = $feat->stop if $feat;
     $di = $feat->dataset->id if $feat;
-    my $link = qq{<a href="GeLo.pl?}.join("&", "chr=".$chr,"di=".$di,"z=10", "INITIAL_CENTER=$start,0").qq{" target=_new>}.qq{Chr: $chr ($start - $stop)</a>};
+    my $link = qq{<a href="GenomeView.pl?}.join("&", "chr=".$chr,"ds=".$di,"z=10", "x=$start").qq{" target=_new>}.qq{Chr: $chr ($start - $stop)</a>};
 return $link;
   }
