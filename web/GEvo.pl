@@ -62,6 +62,7 @@ my %ajax = CoGe::Accessory::Web::ajax_func();
 my $pj = new CGI::Ajax(
 		       run=>\&Show_Summary,
 		       loading=>\&loading,
+		       add_seq=>\&add_seq,
 		       %ajax,
 		      );
 $pj->JSDEBUG(0);
@@ -680,6 +681,7 @@ ymin integer(10),
 ymax integer(10),
 image varchar(50),
 pair_id integer(10),
+link varchar(50),
 annotation blob
 )
 };
@@ -727,6 +729,7 @@ annotation blob
 	    my $coords = $feat->image_coordinates;
 	    $coords =~ s/\s//g;
 	    #next unless $feat->type =~ /HSP/i;
+	    next if $feat->type eq "unknown";
 	    my $name = $feat->type =~ /HSP/i ? $feat->alt : $feat->label;
 	    $name = $feat->type unless $name;
 	    my $query = qq{select id from image_data where name = "$name"};
@@ -739,13 +742,14 @@ annotation blob
 		my $statement = "update image_data set pair_id = $i where id = $res";
 		$dbh->do($statement);
 	      }
-
-	    
+	    #generate link
+	    my $link = $feat->link;
 	    my ($xmin, $ymin, $xmax, $ymax) = split /,/, $coords;
 	    my $anno = $feat->description;
 #	    print STDERR join ("\t", $name),"\n";#, $xmin, $xmax, $ymin, $ymax, $image, $feat->description),"\n";
+
 	    my $statement = qq{
-INSERT INTO image_data (id, name, xmin, xmax, ymin, ymax, image, pair_id, annotation) values ($i, "$name", $xmin, $xmax, $ymin, $ymax, "$image", $pair_id, '$anno')
+INSERT INTO image_data (id, name, xmin, xmax, ymin, ymax, image, pair_id, link, annotation) values ($i, "$name", $xmin, $xmax, $ymin, $ymax, "$image", $pair_id, '$link', '$anno')
 };
 	    $dbh->do($statement);
 #	    $sth->execute($i,$name, $xmin, $xmax, $ymin, $ymax, $image, 1, $feat->description);
@@ -972,7 +976,7 @@ sub process_hsps
 	    $f->alt(join ("-",$hsp->number,$accn1,$accn2));
 	    my $desc = join ("<br>", "HSP: ".$hsp->number. "  <font class=small>(".$blast->query."-". $blast->subject.")</font>", $start."-".$stop." (".$hsp->strand.")", $seq,"Match: ".$hsp->match,"Length: ".$hsp->length,"Identity: ".$hsp->percent_id,"E_val: ".$hsp->pval);
 	    $f->description($desc);
-	    my $link = "HSPView.pl?blast_report=$report&hsp_num=".$hsp->number;
+	    my $link = "HSPView.pl?report=$report&num=".$hsp->number;
 	    $link .= join ("&","&qstart=".($gbobj->{start}+$start-1), "qstop=".($gbobj->{start}+$stop-1),"qchr=".$gbobj->{chr}, "qds=". $gbobj->{ds},"qstrand=".$strand) if $gbobj->{ds};
 	    $f->link($link) if $link;
 	    $f->alignment($hsp->alignment);
@@ -1636,4 +1640,33 @@ sub initialize_basefile
     ($BASEFILE)= $file->filename;
     
     ($BASEFILENAME) = $file->filename =~ /([^\/]*\.png$)/;
+  }
+
+sub add_seq
+  {
+    my $num_seq = shift;
+    $num_seq ++;
+    if ($num_seq > $MAX_SEQS)
+      {
+	return qq{<div class=error>Exceeded max number of sequences ($MAX_SEQS)</div>},'','','',$MAX_SEQS,'';
+      }
+	  my @seqs = {
+		      SEQ_NUM=>$num_seq,
+		     };
+    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GEvo.tmpl');
+    $template->param(COGE_SEQ_SELECT=>1);
+    $template->param(COGE_SEQ_SELECT_LOOP=>\@seqs);
+    my $coge_seqs = $template->output;
+    $template->param(COGE_SEQ_SELECT=>0);
+    #generate the NCBI sequence selector
+    $template->param(NCBI_SEQ_SELECT=>1);
+    $template->param(NCBI_SEQ_SELECT_LOOP=>\@seqs);
+    my $ncbi_seqs = $template->output;
+    $template->param(NCBI_SEQ_SELECT=>0);
+    #generate the direct sequence selector
+    $template->param(DIRECT_SEQ_SELECT=>1);
+    $template->param(DIRECT_SEQ_SELECT_LOOP=>\@seqs);	
+    my $direct_seqs = $template->output;
+    my $add_button = qq{<input type="button" value="add" onclick="add_seq(['num_seqs'],['message','new_drseq', 'new_gbseq', 'new_dirseq', 'num_seqs', 'add_button'])">};
+    return '', $coge_seqs, $ncbi_seqs, $direct_seqs, $num_seq, $add_button;
   }
