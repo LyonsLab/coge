@@ -716,7 +716,6 @@ annotation blob
 #    my $sth = $dbh->prepare(qq{
 #INSERT INTO image_data (id, name, xmin, xmax, ymin, ymax, image, pair_id, annotation) VALUES (?,?,?,?,?,?,?,?,?);
 #});
-    my %accn2image = map {$_->{obj}->accn,$_->{image}} @$sets;
     foreach my $item (@$sets)
       {
 	my $image = $item->{image};
@@ -727,30 +726,26 @@ annotation blob
 	    my $pair_id = "NULL";
 	    my $coords = $feat->image_coordinates;
 	    $coords =~ s/\s//g;
-	    next unless $feat->type =~ /HSP/i;
+	    #next unless $feat->type =~ /HSP/i;
 	    my $name = $feat->type =~ /HSP/i ? $feat->alt : $feat->label;
+	    $name = $feat->type unless $name;
 	    my $query = qq{select id from image_data where name = "$name"};
 	    my $sth = $dbh->prepare($query);
 	    $sth->execute;
 	    my $res = $sth->fetchrow_array();
-	    if ($res)
+	    if ($res && $feat->type =~ /HSP/)
 	      {
 		$pair_id = $res;
 		my $statement = "update image_data set pair_id = $i where id = $res";
 		$dbh->do($statement);
 	      }
 
-
-	    my ($hsp_num, $accn1, $accn2) = split/-/, $name;
-	    my $accn_check = $accn1 eq $accn ? $accn2 : $accn1;
-	    my $image2 = $accn2image{$accn_check};
 	    
-
 	    my ($xmin, $ymin, $xmax, $ymax) = split /,/, $coords;
 	    my $anno = $feat->description;
-	    print STDERR join ("\t", $name),"\n";#, $xmin, $xmax, $ymin, $ymax, $image, $feat->description),"\n";
+#	    print STDERR join ("\t", $name),"\n";#, $xmin, $xmax, $ymin, $ymax, $image, $feat->description),"\n";
 	    my $statement = qq{
-INSERT INTO image_data (id, name, xmin, xmax, ymin, ymax, image, pair_id, annotation) values ($i, "$name", $xmin, $xmax, $ymin, $ymax, "$image", $pair_id, "$anno")
+INSERT INTO image_data (id, name, xmin, xmax, ymin, ymax, image, pair_id, annotation) values ($i, "$name", $xmin, $xmax, $ymin, $ymax, "$image", $pair_id, '$anno')
 };
 	    $dbh->do($statement);
 #	    $sth->execute($i,$name, $xmin, $xmax, $ymin, $ymax, $image, 1, $feat->description);
@@ -759,10 +754,10 @@ INSERT INTO image_data (id, name, xmin, xmax, ymin, ymax, image, pair_id, annota
       }
     my $sth = $dbh->prepare("SELECT * from image_data");
     $sth->execute();
-    while(my $item = $sth->fetchrow_arrayref)
-      {
-	print STDERR Dumper $item;
-      }
+#    while(my $item = $sth->fetchrow_arrayref)
+#      {
+#	print STDERR Dumper $item;
+#      }
     system "chmod +rw $tempfile";
     return $tempfile;
   }
