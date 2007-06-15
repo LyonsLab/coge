@@ -46,10 +46,10 @@ sub gen_html
     $template->param(TITLE=>'Blast HSP Viewer');
     $template->param(USER=>$USER);
     $template->param(DATE=>$DATE);
-    my $bfile = $form->param('blast_report');
+    my $bfile = $form->param('blast_report') || $form->param('report');
     if ($bfile && -r $bfile)
       {
-	my $hsp_num = $form->param('hsp_num');
+	my $hsp_num = $form->param('hsp_num') || $form->param('num');
 	$bfile =~ /([^\/]*$)/;
         $template->param(BOX_NAME=>qq{<a href=/CoGe/tmp/$1>$1</a>}. " HSP: $hsp_num") if $1;
         $template->param(BODY=>gen_body($bfile, $hsp_num));
