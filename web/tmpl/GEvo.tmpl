@@ -167,11 +167,13 @@ setup();
 
 </SCRIPT>
 <div id="message"><TMPL_VAR NAME="MESSAGE"></div>
-<TMPL_VAR NAME="GO_BUTTON">
-
-&nbsp;&nbsp;
-
+<table>
+<tr>
+<td>
+<div id="go_button"><TMPL_VAR NAME="GO_BUTTON"></div>
+<td>
 <input type="button" value="Clear" onClick="rset(<TMPL_VAR NAME="NUM_SEQS">)">
+</table>
 <form>
 <table>
  <tr>
@@ -182,7 +184,7 @@ Number of sequences:
   <td>
 <input type="submit" value="reload">
   <td>
-<DIV id ="add_button"> <input type="button" value="add" onclick="add_seq(['num_seqs'],['message','new_drseq', 'new_gbseq', 'new_dirseq', 'num_seqs', 'add_button'])"><DIV>
+<DIV id ="add_button"> <TMPL_VAR NAME="ADD_BUTTON"><DIV>
  </table>
 </form>
 
@@ -314,11 +316,7 @@ Note: parameter options haven't been implemented for blastz (yet)
 </DIV> 
 <td width="3" bgcolor="#99FF99">
 <td> Select reference sequence(s) to which all other sequences will be compared:<br>
-<TMPL_LOOP NAME="REF_SEQ">
-<font class ="small">Sequence <TMPL_VAR NAME=SEQ_NUM>: 
-<label><input class="backbox" type="radio" name="ref_seq<TMPL_VAR NAME=SEQ_NUM>" id="ref_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="1" checked />On</label>
-<label><input class="backbox" type="radio" name="ref_seq<TMPL_VAR NAME=SEQ_NUM>" id="ref_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="0" />Off</label><br>
-</TMPL_LOOP>
+<TMPL_VAR NAME=REFERENCE_SEQUENCES>
 <td width="3" bgcolor="#99FF99">
 <td>
 <TABLE >
@@ -504,7 +502,7 @@ Note: parameter options haven't been implemented for blastz (yet)
 <td width="3" bgcolor="#99FF99">
   <td class = "small">
 
-   <TMPL_VAR NAME="HSP_COLOR">
+   <DIV id="hsp_colors"><TMPL_VAR NAME="HSP_COLOR"></DIV>
 
   </table>
  </table>
@@ -659,6 +657,7 @@ Note: parameter options haven't been implemented for blastz (yet)
 
 </TMPL_IF>
 
+
 <TMPL_IF NAME=HSP_COLOR_FORM>
  <table>
   <tr valign = top>
@@ -678,4 +677,18 @@ Note: parameter options haven't been implemented for blastz (yet)
   </table>
  </TMPL_LOOP>
  </table>
+</TMPL_IF>
+
+<TMPL_IF NAME=GEN_REFERENCE_SEQUENCES>
+<TMPL_LOOP NAME="REF_SEQ">
+<font class ="small">Sequence <TMPL_VAR NAME=SEQ_NUM>: 
+<label><input class="backbox" type="radio" name="ref_seq<TMPL_VAR NAME=SEQ_NUM>" id="ref_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="1" checked />On</label>
+<label><input class="backbox" type="radio" name="ref_seq<TMPL_VAR NAME=SEQ_NUM>" id="ref_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="0" />Off</label><br>
+</TMPL_LOOP>
+<div id="new_refseq"></div>
+
+</TMPL_IF>
+
+<TMPL_IF GEN_ADD_BUTTON>
+<input type="button" value="add" onclick="add_seq(['num_seqs'],['message','new_drseq', 'new_gbseq', 'new_dirseq', 'num_seqs', 'add_button', 'go_button','new_refseq', 'hsp_colors'])">
 </TMPL_IF>
