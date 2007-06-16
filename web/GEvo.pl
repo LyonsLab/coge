@@ -2,6 +2,7 @@
 use strict;
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
+use CGI::Cookie;
 use CGI::Ajax;
 use HTML::Template;
 use Data::Dumper;
@@ -202,8 +203,8 @@ sub gen_body
     my @colors = color_pallet(num_seqs=>$num_seqs);
     $template->param(HSP_COLOR_FORM=>1);
     $template->param(HSP_COLOR_LOOP=>\@colors);
-    
-    my $hsp_colors; $template->output;
+
+    my $hsp_colors;
     my $count = -2;
     foreach my $line (split /\n/, $template->output)
       {
@@ -218,15 +219,17 @@ sub gen_body
 
 	$hsp_colors .= $line."\n";
       }
-    
     $template->param(HSP_COLOR_FORM=>0);
-    
 
     my $html;
     my $spike_len = spike_filter_select();
+    $template->param(GEN_ADD_BUTTON=>1);
+    my $add_button = $template->output;
+    $template->param(GEN_ADD_BUTTON=>0);
     $template->param(SPIKE_LEN=>$spike_len);
     $template->param(SEQ_RETRIEVAL=>1);
     $template->param(NUM_SEQS=>$num_seqs);
+    $template->param(ADD_BUTTON=>$add_button);
     $message .= "<BR>" if $message;
     $template->param(MESSAGE=>$message);
     $template->param(COGE_SEQS=>$coge_seqs);
@@ -245,6 +248,10 @@ sub gen_body
     
     $html .= $box->output;
     $template->param(SEQ_RETRIEVAL=>0);
+    $template->param(GEN_REFERENCE_SEQUENCES=>1);
+    $template->param(REF_SEQ=>\@seq_nums);
+    my $ref_seqs = $template->output;
+    $template->param(GEN_REFERENCE_SEQUENCES=>0);
     $template->param(OPTIONS=>1);
     if ($exon_mask)
       {
@@ -254,7 +261,7 @@ sub gen_body
       {
 	$template->param(EXON_MASK_OFF=>"checked");
       }
-    $template->param(REF_SEQ=>\@seq_nums);
+    $template->param(REFERENCE_SEQUENCES=>$ref_seqs);
     $template->param(ALIGNMENT_PROGRAMS=>algorithm_list($prog));
     $box->param(BOX_NAME=>"Options:");
     $box->param(BODY=>$template->output);
@@ -837,8 +844,7 @@ sub process_features
           {
         	$f = CoGe::Graphics::Feature::Gene->new();
         	$f->color([200,200,200, 50]);
-        	$f->order($track);
-		$f->overlay(2);
+        	$f->order($track);		$f->overlay(2);
 		if ($accn)
 		  {
 		    foreach my $name (@{$feat->qualifiers->{names}})
@@ -1625,7 +1631,7 @@ sub algorithm_list
     foreach my $prog (@programs)
       {
 	$html .= "<option";
-	$html .= $program eq $prog ? " selected>" : ">";
+	$html .= $program && $program eq $prog ? " selected>" : ">";
 	$html .= $prog."</option>\n";
       }
     return $html;
@@ -1646,27 +1652,90 @@ sub add_seq
   {
     my $num_seq = shift;
     $num_seq ++;
+    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GEvo.tmpl');
+    my $hsp_colors;
     if ($num_seq > $MAX_SEQS)
       {
-	return qq{<div class=error>Exceeded max number of sequences ($MAX_SEQS)</div>},'','','',$MAX_SEQS,'';
+	my $go_button = gen_go_button($MAX_SEQS);
+	my @colors = color_pallet(num_seqs=>$MAX_SEQS);
+	$template->param(HSP_COLOR_FORM=>1);
+	$template->param(HSP_COLOR_LOOP=>\@colors);
+	my $count = -2;
+	foreach my $line (split /\n/, $template->output)
+	  {
+	    next unless $line;
+	    $count ++ if $line =~/<table>/i;
+	    
+	    if ($count == 6)
+	      {
+		$line =~ s/(<table>)/<td>$1/i;
+		$count = 0;
+	      }
+	    
+	    $hsp_colors .= $line."\n";
+	  }
+	$template->param(HSP_COLOR_FORM=>0);
+	return (qq{<div class=error>Exceeded max number of sequences ($MAX_SEQS)</div>},'','','',$MAX_SEQS,'', $go_button, '', $hsp_colors);
       }
 	  my @seqs = {
 		      SEQ_NUM=>$num_seq,
+		      REV_NO=>"checked",
+		      DRUP=>10000,
+		      DRDOWN=>10000,
 		     };
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GEvo.tmpl');
     $template->param(COGE_SEQ_SELECT=>1);
     $template->param(COGE_SEQ_SELECT_LOOP=>\@seqs);
     my $coge_seqs = $template->output;
     $template->param(COGE_SEQ_SELECT=>0);
     #generate the NCBI sequence selector
     $template->param(NCBI_SEQ_SELECT=>1);
-    $template->param(NCBI_SEQ_SELECT_LOOP=>\@seqs);
+    $template->param(NCBI_SEQ_SELECT_LOOP=>[{SEQ_NUM=>$num_seq,REV_NO=>"checked",}]);
     my $ncbi_seqs = $template->output;
     $template->param(NCBI_SEQ_SELECT=>0);
     #generate the direct sequence selector
     $template->param(DIRECT_SEQ_SELECT=>1);
-    $template->param(DIRECT_SEQ_SELECT_LOOP=>\@seqs);	
+    $template->param(DIRECT_SEQ_SELECT_LOOP=>[{SEQ_NUM=>$num_seq}]);	
     my $direct_seqs = $template->output;
-    my $add_button = qq{<input type="button" value="add" onclick="add_seq(['num_seqs'],['message','new_drseq', 'new_gbseq', 'new_dirseq', 'num_seqs', 'add_button'])">};
-    return '', $coge_seqs, $ncbi_seqs, $direct_seqs, $num_seq, $add_button;
+    $template->param(DIRECT_SEQ_SELECT=>0);
+    $template->param(GEN_REFERENCE_SEQUENCES=>1);
+    $template->param(REF_SEQ=>[{SEQ_NUM=>$num_seq}]);	
+    my $ref_seqs = $template->output;
+    $template->param(GEN_REFERENCE_SEQUENCES=>0);
+    $template->param(GEN_ADD_BUTTON=>1);
+    my $add_button = $template->output;
+    $template->param(GEN_ADD_BUTTON=>0);
+    my $go_button = gen_go_button($num_seq);
+
+    my @colors = color_pallet(num_seqs=>$num_seq);
+    $template->param(HSP_COLOR_FORM=>1);
+    $template->param(HSP_COLOR_LOOP=>\@colors);
+    my $count = -2;
+    foreach my $line (split /\n/, $template->output)
+      {
+	next unless $line;
+	$count ++ if $line =~/<table>/i;
+
+	if ($count == 6)
+	  {
+	    $line =~ s/(<table>)/<td>$1/i;
+	    $count = 0;
+	  }
+
+	$hsp_colors .= $line."\n";
+      }
+    $template->param(HSP_COLOR_FORM=>0);
+
+    return ('', $coge_seqs, $ncbi_seqs, $direct_seqs, $num_seq, $add_button, $go_button, $ref_seqs, $hsp_colors);
+  }
+
+sub hsp_color_cookie
+  {
+    my $cname = "GEVO_HSP_COLORS";
+    my %cookies = fetch CGI::Cookie;
+    if (ref $cookies{$cname})
+      {
+      }
+    else
+      {
+      }
   }
