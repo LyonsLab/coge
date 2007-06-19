@@ -1,0 +1,236 @@
+package CoGe::Accessory::lagan_report;
+
+use strict;
+use warnings;
+use CoGe::Accessory::lagan_report::HSP;
+use base qw(Class::Accessor);
+
+use Data::Dumper;
+
+
+BEGIN
+  {
+    use vars qw($VERSION);
+    $VERSION = "0.01";
+  }
+__PACKAGE__->mk_accessors qw(file hsps hsp_count max_gap query subject qlength slength length_cutoff qpercent_cutoff spercent_cutoff);
+
+###############################################################################
+# bl2seqReport
+###############################################################################
+sub new {
+	my $proto = shift;
+	my $class = ref($proto) || $proto;
+	my $self  = {};
+	bless ($self, $class);
+	my $file = "";
+	if ( @_ ) {
+		($file) = shift;
+	} else {
+		die "laganReport error: new needs a file name!\n";
+	}
+	
+	$self->hsp_count(1);
+	$self->max_gap(4);
+	# init
+	$self->file($file);
+#	open( FH, "< $file" ) or
+#		die "bl2seqReport error: $file wouldn't open!\n";
+#	$self->{FH} = \*FH;
+	$self->process_file($file);
+	return $self;
+      }
+
+sub process_file
+  {
+    my $self = shift;
+    my $file = shift || $self->file;
+    my %sequences;
+    my @names;
+    $/ = "\n>";
+    open (IN, $file) || die "can't open $file for reading: $!";
+    while (<IN>)
+    {
+     $_ =~ s/\>//g;
+     #print STDERR "\$_ is $_\n";
+     my ($n, $seq) = split /\n/, $_, 2;
+     #print STDERR "\$name is $n\n";
+     $seq =~ s/\n//g;
+     $sequences{$n}=$seq;
+     push @names,$n;
+    }
+    close IN;
+    $/ = "\n";
+   # print STDERR "subject is $names[1]";
+    $self->query($names[0]);
+    $self->subject($names[1]);
+    my $ql = ($sequences{$self->query})=~tr/ATGC/ATGC/;
+    my $sl = ($sequences{$self->subject})=~tr/ATGC/ATGC/;
+    $self->qlength($ql);
+    $self->slength($sl);
+    $self->_parseReport($sequences{$self->query},$sequences{$self->subject});
+    return $self;
+}
+
+
+sub _parseReport {
+	my $self = shift;
+	my $sq1 = shift;
+	my $sq2 = shift;
+	my @seq1 = make_array($sq1);
+	my @seq2 = make_array($sq2);
+	my @matches = make_align(\@seq1,\@seq2);
+	my @hsps;
+	my $hsp_count = $self->hsp_count();
+	my $check=0;
+	my ($gap1,$gap2) = (0,0);
+	my ($stop1,$stop2)=(1,1);
+	my ($align1,$align2,$align);
+	my ($st1,$st2,$tmp1,$tmp2,$break,$gap_length)=(0,0,0,0,0,0);
+	for (my $i=0;$i<scalar (@seq1);$i++)
+	{
+  	 $align1 .= $seq1[$i];
+ 	 $align2 .= $seq2[$i];
+ 	 $align .= $matches[$i];
+  	 if ($seq1[$i] =~/-/)
+   	  {$gap1++;$stop1--;$tmp2++;}
+ 	 if ($seq2[$i] =~/-/)
+   	  {$gap2++;$stop2--;$tmp1++;}
+   #print "$stop1\n";
+  	 if ($gap1 && $seq1[$i] !~/-/)
+  	  {$check = 1;}
+  	 if ($gap2 && $seq2[$i] !~/-/)
+  	  {$check = 2;}
+   #print "check: $check\n";
+  	 if ($check)
+  	 {
+   	  if ($check == 1)
+    	  {
+     	   if ($gap1 > $self->max_gap)
+      	    {$gap_length = $gap1+1;}
+      	   else 
+       	   {
+            $gap1 = 0;
+            $tmp2 = 0;
+            $break = 1;
+       	   }
+          }
+    	 else 
+     	 {
+      	  if ($gap2 > $self->max_gap)
+       	   {$gap_length = $gap2+1;}
+       	  else 
+       	  {
+           $gap2 = 0;
+           $tmp2 = 0;
+           $break = 1;
+       	  }
+     	 }
+     	unless ($break)
+        {
+    	 $align1 = substr($align1,0,(length $align1) - $gap_length);
+     	 $align2 = substr($align2,0,(length $align2) - $gap_length);
+   	 $align = substr($align,0,(length $align) - $gap_length);
+    	 if ($align =~/\|+/)
+    	 {
+    	  while ($align !~ /^\|/)
+    	   {$align1 =~s/^.//;$align2 =~s/^.//;$align =~s/^.//;}
+    	  while ($align !~ /\|$/)
+       	   {$align1 =~s/.$//;$align2 =~s/.$//;$align =~s/.$//;}
+          #if (($length >$min_align_length)&&($ident1 >=$min_ident)&&($ident2 >= $min_ident)) 
+           my $hsp = $self->_processHSP($align1,$align2,$align,$tmp1,$stop1,$tmp2,$stop2);
+           if ($hsp)
+            {push @hsps, $hsp; $hsp_count++;$self->hsp_count($hsp_count);}
+          }
+          ($gap1,$gap2) = (0,0);
+         $align1 = $seq1[$i];
+         $align2 = $seq2[$i];
+         $align = $matches[$i];
+        }
+        ($break,$check,$tmp1,$tmp2) = (0,0,0,0);
+       }
+     $stop1++;$stop2++;
+    }
+    $self->hsps(\@hsps);
+    return $self;
+}
+	
+
+
+sub _processHSP {
+	my $self = shift;
+	my $align1 = shift;
+	my $align2 = shift;
+	my $align = shift;
+	my $tmp1 = shift;
+	my $stop1 = shift;
+	my $tmp2 = shift;
+	my $stop2 = shift;
+	my $align_length = length $align;
+      	my ($ident1,$qm,$length1,$gaps1) = check_num_of_aligns($align1,$align);
+      	my ($ident2,$sm,$length2,$gaps2) = check_num_of_aligns($align2,$align);	
+	$stop1=(($stop1-1)-$tmp1);my $start1 = (($stop1-$length1)+1);
+	$stop2=(($stop2-1)-$tmp2);my $start2 = (($stop2-$length2)+1);
+	my $hsp_count = $self->hsp_count();
+	my $hsp = new CoGe::Accessory::lagan_report::HSP
+           ({
+    	     qpercent_id=>$ident1,
+    	     spercent_id=>$ident2,
+    	     match=>$qm,
+    	     length=>$align_length,
+    	     query_start=>$start1,
+    	     query_stop=>$stop1,
+    	     subject_start=>$start2,
+    	     subject_stop=>$stop2,
+    	     query_alignment=>$align1,
+    	     subject_alignment=>$align2,
+    	     alignment=>$align,
+    	     query_gaps=>$gaps1,
+    	     subject_gaps=>$gaps2,
+    	     number=>$hsp_count,
+            });
+        #return 0 if defined $self->length_cutoff && $hsp->qpercent_cutoff > $self->spercent_cutoff;
+	return $hsp;
+}
+
+sub make_array
+{
+ my $str = shift;
+ my @seq;
+ foreach (split //,$str)
+  {
+   push @seq,$_;
+  }
+  return @seq;
+} my ($gap1,$gap2) = (0,0);
+ 
+ sub make_align
+{
+  my ($ref1,$ref2) = @_;
+  my $tmp;
+  my @align;
+  for (my $i=0;$i<scalar(@$ref1);$i++)
+  {
+    $tmp = (($ref1->[$i] eq $ref2->[$i])&&($ref1->[$i] !~/-/)) ? "|" : " ";
+    push @align,$tmp;
+   }
+  return @align;
+}
+
+sub check_num_of_aligns
+{
+  my $seq = shift;
+  my $align = shift;
+  my ($count1,$count2,$gaps) = (0,0,0);
+  $count1 = $seq =~tr/ATGC/ATGC/;
+  #print "\$count1 is $count1\n";
+  $gaps = (length $seq) - $count1;
+  $count2 = $align =~tr/\|/\|/;
+  my $percent = sprintf("%.4f", ($count2/$count1)) * 100;
+  #$gaps = 0 unless $gaps;
+  return $percent,$count2,$count1,$gaps;
+}
+
+1;
+
+__END__
