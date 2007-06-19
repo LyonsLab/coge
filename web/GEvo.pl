@@ -13,6 +13,7 @@ use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::bl2seq_report;
 use CoGe::Accessory::blastz_report;
+use CoGe::Accessory::lagan_report;
 use CoGe::Graphics;
 use CoGe::Graphics::Chromosome;
 use CoGe::Graphics::Feature;
@@ -34,11 +35,13 @@ use Benchmark qw(:all);
 $ENV{PATH} = "/opt/apache/CoGe/";
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 
-use vars qw( $DATE $DEBUG $BL2SEQ $BLASTZ $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge $NUM_SEQS $MAX_SEQS $BASEFILE $BASEFILENAME);
+use vars qw( $DATE $DEBUG $BL2SEQ $BLASTZ $LAGAN $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge $NUM_SEQS $MAX_SEQS $BASEFILE $BASEFILENAME);
 $BL2SEQ = "/opt/bin/bio/bl2seq ";
 $BLASTZ = "/usr/bin/blastz ";
+$LAGAN = "/opt/apache/CoGe/bin/lagan/lagan.pl";
 $TEMPDIR = "/opt/apache/CoGe/tmp";
 $TEMPURL = "/CoGe/tmp";
+
 # set this to 1 to print verbose messages to logs
 $DEBUG = 0;
 $BENCHMARK = 1;
@@ -444,9 +447,14 @@ sub Show_Summary
     $bl2seq_params .= " -e " . $eval if defined $eval;
     $bl2seq_params .= " "    . $blastparams if defined $blastparams;
     my $analysis_reports;
+
     if ($analysis_program eq "blastz")
       {
 	$analysis_reports = run_blastz( sets=>\@sets, params=>undef);
+      }
+    elsif ($analysis_program eq "lagan")
+      {
+	$analysis_reports = run_lagan (sets=>\@sets, params=>undef);
       }
     else
       {
@@ -454,7 +462,7 @@ sub Show_Summary
       }
    #sets => array or data for blast
    #blast_reports => array of arrays (report, accn1, accn2, parsed data)
-
+#    print STDERR Dumper $analysis_reports;
     my $t3 = new Benchmark;
     my $count = 1;
     foreach my $item (@sets)
@@ -569,7 +577,7 @@ sub Show_Summary
     print STDERR qq{
 GEvo Benchmark: $DATE
 Time to get DB info             : $db_time
-Time to run blast               : $blast_time
+Time to run $analysis_program   : $blast_time
 Time to generate images and maps: $image_time
 Time to process html            : $html_time
 } if $BENCHMARK;
@@ -902,7 +910,7 @@ sub process_hsps
 	my $accn1 = $item->[1];
 	my $accn2 = $item->[2];
 	my $blast = $item->[3];
-	next unless ref($blast) =~ /bl2seq/i || ref($blast) =~ /blastz/i;
+#	next unless ref($blast) =~ /bl2seq/i || ref($blast) =~ /blastz/i;
 	unless ($accn eq $accn1 || $accn eq $accn2)
 	  {
 	    $i++;
@@ -1189,7 +1197,6 @@ sub get_obj_from_genome_db
 	print STDERR "\t", $f->genbank_location_string(recalibrate=>$start),"\n\n" if $DEBUG;
 	my $anno = $f->annotation_pretty_print_html;
 	$anno =~ s/\n//ig;
-	print STDERR $anno if $name =~ /at2g29610/i;;
 	my $location = $f->genbank_location_string(recalibrate=>$start);
 	$location = $obj->reverse_genbank_location(loc=>$location, ) if $rev;
 	print STDERR $name, "\t",$f->type->name ,"\t",$location,"\n" if $DEBUG;
@@ -1347,6 +1354,60 @@ sub run_blastz
 	  else
 	    {
 	      push @tmp, "no results from blasting $accn1 and $accn2";
+	    }
+	  push @reports, \@tmp;
+	  }
+      }
+    return \@reports;
+  }
+
+sub run_lagan
+  {
+    my %opts = @_;
+    my $sets = $opts{sets};
+    my $params= $opts{params};
+    my @files;
+    my @reports;
+    for (my $i=0; $i<scalar @$sets; $i++)
+      {
+	for (my $j=0; $j<scalar @$sets; $j++)
+	  {
+	    next unless $j > $i;
+	    my $seqfile1 = $sets->[$i]->{file};
+	    my $seqfile2 = $sets->[$j]->{file};
+	    next unless -r $seqfile1 && -r $seqfile2; #make sure these files exist
+	    next unless $sets->[$i]{reference_seq} || $sets->[$j]{reference_seq};
+	    my ($accn1, $accn2) = ($sets->[$i]{accn}, $sets->[$j]{accn});
+	    my ($tempfile) = $BASEFILE."_".($i+1)."-".($j+1).".lagan";
+	    my $command = $LAGAN;
+	    $command .= " $seqfile1 $seqfile2";
+	    $command .= " -mfa";
+	    $command .= " ".$params if $params;
+	    my $x = "";
+	    ($x,$command) = check_taint( $command );
+	    if ( $DEBUG ) {
+	      print STDERR "About to execute...\n $command\n";
+	    }
+	    unless ($x)
+	      {
+		next;
+	      }
+	    $command .= " > ".$tempfile;
+#	    $command .= "2>&1";
+	    	  # execute the command
+#	    print STDERR $command,"\n";
+	    `$command`;
+	    system "chmod +rw $tempfile";
+	    my $report = new CoGe::Accessory::lagan_report($tempfile) if -r $tempfile;
+#	    print STDERR Dumper $report;
+	    my @tmp = ($tempfile, $accn1, $accn2);
+	    if ($report)
+	    {
+	      push @tmp, $report
+	    }
+	  else
+	    {
+	      push @tmp, "no results from comparing $accn1 and $accn2 with lagan";
 	    }
 	  push @reports, \@tmp;
 	  }
@@ -1578,7 +1639,7 @@ sub color_pallet
   {
     my %opts = @_;
     my $start = $opts{start} || [255,100,100];
-    my $offset = $opts{offset} || 50;
+    my $offset = $opts{offset} || 75;
     my $num_seqs = $opts{num_seqs} || $NUM_SEQS;
     my @colors;
     push @colors, {
@@ -1626,7 +1687,7 @@ sub num_colors
 sub algorithm_list
   {
     my $program = shift;
-    my @programs = qw(blastn tblastx blastz);
+    my @programs = qw(blastn tblastx blastz lagan);
     my $html;
     foreach my $prog (@programs)
       {
