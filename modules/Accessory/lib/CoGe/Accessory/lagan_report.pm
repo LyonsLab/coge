@@ -13,16 +13,21 @@ BEGIN
     use vars qw($VERSION);
     $VERSION = "0.01";
   }
-__PACKAGE__->mk_accessors qw(file hsps hsp_count max_gap query subject qlength slength length_cutoff qpercent_cutoff spercent_cutoff);
+__PACKAGE__->mk_accessors qw(file hsps hsp_count max_gap query subject qlength slength length_cutoff percent_cutoff );
 
 ###############################################################################
-# bl2seqReport
+# lagan_report -- Josh Kane  UC Berkeley
 ###############################################################################
 sub new {
 	my $proto = shift;
 	my $class = ref($proto) || $proto;
 	my $self  = {};
 	bless ($self, $class);
+	$self->hsp_count(0);
+	$self->length_cutoff(0);
+	$self->percent_cutoff(0);
+	$self->max_gap(0);
+
 	my $file = "";
 	if ( @_ ) {
 		($file) = shift;
@@ -30,13 +35,8 @@ sub new {
 		die "laganReport error: new needs a file name!\n";
 	}
 	
-	$self->hsp_count(1);
-	$self->max_gap(4);
 	# init
 	$self->file($file);
-#	open( FH, "< $file" ) or
-#		die "bl2seqReport error: $file wouldn't open!\n";
-#	$self->{FH} = \*FH;
 	$self->process_file($file);
 	return $self;
       }
@@ -139,9 +139,14 @@ sub _parseReport {
        	   {$align1 =~s/.$//;$align2 =~s/.$//;$align =~s/.$//;}
           #if (($length >$min_align_length)&&($ident1 >=$min_ident)&&($ident2 >= $min_ident)) 
            my $hsp = $self->_processHSP($align1,$align2,$align,$tmp1,$stop1,$tmp2,$stop2);
+
            if ($hsp)
-            {push @hsps, $hsp; $hsp_count++;$self->hsp_count($hsp_count);}
-          }
+            {
+	      $hsp_count++;
+	      push @hsps, $hsp;
+	      $self->hsp_count($hsp_count);
+	    }
+	}
           ($gap1,$gap2) = (0,0);
          $align1 = $seq1[$i];
          $align2 = $seq2[$i];
@@ -189,7 +194,7 @@ sub _processHSP {
     	     subject_gaps=>$gaps2,
     	     number=>$hsp_count,
             });
-        #return 0 if defined $self->length_cutoff && $hsp->qpercent_cutoff > $self->spercent_cutoff;
+        return 0 if $align_length < $self->length_cutoff || $self->percent_cutoff > $ident1 || $self->percent_cutoff > $ident2;
 	return $hsp;
 }
 
