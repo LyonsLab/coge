@@ -126,13 +126,20 @@ if (alignment == "blastz")
  {
   
   $("#blast_options").hide();
+  $("#lagan_options").hide();
   $("#blastzinfo").show();
+ }
+else if (alignment == "lagan")
+ {
+  $("#blast_options").hide();
+  $("#lagan_options").show();
+  $("#blastzinfo").hide();
  }
 else
  {
   $("#blast_options").show();
   $("#blastzinfo").hide();	
-
+  $("#lagan_options").hide();
  }
 if (alignment == "tblastx")
  {
@@ -314,25 +321,20 @@ Note: parameter options haven't been implemented for blastz (yet)
  <font class="small">Hide HSPs with stop codons in a coding sequence?<label><input class="backbox" type="radio" name="show_hsps_with_stop_codon" id="show_hsps_with_stop_codon" tabindex="1" value="1" />Yes</label><label><input class="backbox" type="radio" name="show_hsps_with_stop_codon" id="show_hsps_with_stop_codon" tabindex="1" value="0" checked />No</label></font>
 <br>Note: Word size limited to 3 for tblastx
 </DIV> 
+
+ <DIV id="lagan_options" class="small">
+Under developement.  This algorithm may not work.  Check back soon.  Thank you.
+</DIV>
+
+
 <td width="3" bgcolor="#99FF99">
+
+
 <td> Select reference sequence(s) to which all other sequences will be compared:<br>
 <TMPL_VAR NAME=REFERENCE_SEQUENCES>
 <td width="3" bgcolor="#99FF99">
 <td>
 <TABLE >
- <TR align=left>
-  <TH>
-    <DIV class=small>
-      Spike Sequence HSP Filter:
-    </DIV>
-  </TD>
-  <TD>
-      <label class=small><input class="backbox" type="radio" name="matchfilter" id="matchfilter" tabindex="15" value="1" checked />On</label>
-      <label class=small><input class="backbox" type="radio" name="matchfilter" id="matchfilter" tabindex="15" value="0" />Off</label>
-  <tr align=left>
-  <th class=small>Spike sequence length:
-  <td><TMPL_VAR NAME=SPIKE_LEN>
- </TR>
  <TR align=left>
   <TH class=small>
    Mask Exons:
@@ -346,6 +348,19 @@ Note: parameter options haven't been implemented for blastz (yet)
   <TD class = small>
    <label><input class="backbox" type="radio" name="mask_ncs" id="mask_ncs" tabindex="22" value="1" />On</label>
    <label><input class="backbox" type="radio" name="mask_ncs" id="mask_ncs" tabindex="22" value="0" checked />Off</label>
+ </TR>
+ <TR align=left>
+  <TH>
+    <DIV class=small>
+      Spike Sequence HSP Filter:
+    </DIV>
+  </TD>
+  <TD>
+      <label class=small><input class="backbox" type="radio" name="matchfilter" id="matchfilter" tabindex="15" value="1" checked />On</label>
+      <label class=small><input class="backbox" type="radio" name="matchfilter" id="matchfilter" tabindex="15" value="0" />Off</label>
+  <tr align=left>
+  <th class=small>Spike sequence length:
+  <td><TMPL_VAR NAME=SPIKE_LEN>
  </TR>
 
         </TABLE>
