@@ -10,6 +10,8 @@ lib/CoGe/Accessory/GBlite.pm
 lib/CoGe/Accessory/Web.pm
 lib/Coge/Accessory/bl2seq_report.pm
 lib/Coge/Accessory/bl2seq_report/HSP.pm
+lib/Coge/Accessory/lagan_report.pm
+lib/Coge/Accessory/lagan_report/HSP.pm
 lib/Coge/Accessory/blastz_report.pm
 lib/Coge/Accessory/blastz_report/HSP.pm
 lib/Coge/Accessory/blastz_report/seq.mp
