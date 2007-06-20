@@ -177,6 +177,7 @@ sub _processHSP {
 	$stop1=(($stop1-1)-$tmp1);my $start1 = (($stop1-$length1)+1);
 	$stop2=(($stop2-1)-$tmp2);my $start2 = (($stop2-$length2)+1);
 	my $hsp_count = $self->hsp_count();
+	$hsp_count++;
 	my $hsp = new CoGe::Accessory::lagan_report::HSP
            ({
     	     qpercent_id=>$ident1,
