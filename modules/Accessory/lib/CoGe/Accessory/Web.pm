@@ -384,7 +384,7 @@ window.location=$url;
     my $html = qq{
 <html>
 <head>
-<title>Your Page Title</title>
+<title>CoGe:  the best program of its kind, ever.</title>
 <meta http-equiv="REFRESH" content="1;url=$url"></HEAD>
 <BODY>
 You are not logged in.  You will be redirected to <a href = $url>here</a> in one second.
