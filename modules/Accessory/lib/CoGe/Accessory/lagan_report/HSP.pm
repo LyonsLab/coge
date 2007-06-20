@@ -67,6 +67,7 @@ sub sa  {shift->subject_alignment(@_)}
 
 sub qpercent   {shift->qpercent_id(@_)}
 sub spercent   {shift->spercent_id(@_)}
+sub percent_id {shift->percent_id(@_)}
 
 sub alignmentString {shift->alignment(@_)}
 sub alignment_string {shift->alignment(@_)}
@@ -78,6 +79,9 @@ sub qgap       {shift->query_gaps(@_)}
 sub sgap       {shift->subject_gaps(@_)}
 sub qg       {shift->query_gaps(@_)}
 sub sg       {shift->subject_gaps(@_)}
+
+sub nga	     {shift->nga(@_)}
+sub ngb	     {shift->ngb(@_)}
 
 
 
