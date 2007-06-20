@@ -47,7 +47,7 @@ sub parse_genbank
 
     unless ($gb[0] =~ /^LOCUS/)
       {
-	warn "Doesn't appear to be a genbank file.  Returning. . .\n";
+	warn "Doesn't appear to be a genbank file.  Returning. . .$gb[0]\n";
 	return 0;
       }
     foreach my $line ( @gb ) 
