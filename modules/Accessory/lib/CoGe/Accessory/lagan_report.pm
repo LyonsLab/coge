@@ -20,25 +20,17 @@ __PACKAGE__->mk_accessors qw(file hsps hsp_count max_gap query subject qlength s
 ###############################################################################
 sub new {
 	my $proto = shift;
-	my $class = ref($proto) || $proto;
-	my $self  = {};
-	bless ($self, $class);
-	$self->hsp_count(0);
-	$self->length_cutoff(0);
-	$self->percent_cutoff(0);
-	$self->max_gap(0);
 	my $opts = shift;
-	my $file = $opts->{file};
-	my $max_gap = $opts->{max_gap};
-	my $length_cutoff = $opts->{length_cutoff};
-	my $percent_cutoff = $opts->{percent_cutoff};
-	print Dumper $opts;
-	$self->length_cutoff($length_cutoff) if defined $length_cutoff;
-	$self->percent_cutoff($percent_cutoff) if defined $percent_cutoff;
-	$self->max_gap($max_gap) if defined $max_gap;
+	$opts = {} unless $opts;
+	my $class = ref($proto) || $proto;
+	my $self = bless ({%$opts}, $class);
+	$self->hsp_count(0) unless $self->hsp_count;
+	$self->length_cutoff(0) unless $self->length_cutoff;
+	$self->percent_cutoff(0) unless $self->percent_cutoff;
+	$self->max_gap(0) unless $self->max_gap;
+	
 	# init
-	$self->file($file);
-	$self->process_file($file);
+	$self->process_file();
 	return $self;
       }
 
