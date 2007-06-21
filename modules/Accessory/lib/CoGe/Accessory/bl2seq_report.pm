@@ -2,7 +2,7 @@ package CoGe::Accessory::bl2seq_report;
 
 use strict;
 use warnings;
-use CoGe::Accessory::bl2seq_report::HSP;
+use CoGe::Accessory::parse_report::HSP;
 use base qw(Class::Accessor);
 
 use Data::Dumper;
@@ -237,7 +237,7 @@ sub _processHSP {
 	$self->hsp_count($hsp_count);
 	my $qgaps = $ql =~ tr/-/-/;
 	my $sgaps = $sl =~ tr/-/-/;
-	my $hsp = new CoGe::Accessory::bl2seq_report::HSP
+	my $hsp = new CoGe::Accessory::parse_report::HSP
 	  ({
 	    score=>$score,
 	    bits=>$bits,
