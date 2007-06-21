@@ -13,7 +13,7 @@ BEGIN
   {
     use vars qw($VERSION);
     $VERSION = "0.01";
-    __PACKAGE__->mk_accessors qw(score bits percent_id percent_sim match positive length pval query_start query_stop subject_start subject_stop query_alignment subject_alignment alignment query_gaps subject_gaps strand number qpercent_id spercent_id nga ngb);
+    __PACKAGE__->mk_accessors qw(score bits percent_id percent_sim match positive length pval query_start query_stop subject_start subject_stop query_alignment subject_alignment alignment query_gaps subject_gaps strand number qpercent_id spercent_id nga ngb segments);
   }
 
 #ripped from class::Accessor
@@ -30,6 +30,7 @@ sub new {
     unless ($hsp->percent_sim())
      {$hsp->percent_sim(int(1000 * $hsp->positive/$hsp->length)/10) if $hsp->positive && $hsp->length;}
     $hsp->pval("1".$hsp->pval) if $hsp->pval && $hsp->pval =~ /^e/;
+    $hsp->segments([]) unless $hsp->segments;
     return $hsp;
 
   }
@@ -69,7 +70,6 @@ sub sa  {shift->subject_alignment(@_)}
 
 sub qpercent   {shift->qpercent_id(@_)}
 sub spercent   {shift->spercent_id(@_)}
-sub percent_id {shift->percent_id(@_)}
 
 sub alignmentString {shift->alignment(@_)}
 sub alignment_string {shift->alignment(@_)}
@@ -81,11 +81,5 @@ sub qgap       {shift->query_gaps(@_)}
 sub sgap       {shift->subject_gaps(@_)}
 sub qg       {shift->query_gaps(@_)}
 sub sg       {shift->subject_gaps(@_)}
-
-sub nga	     {shift->nga(@_)}
-sub ngb	     {shift->ngb(@_)}
-
-
-
 
 1;
