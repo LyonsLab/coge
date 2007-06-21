@@ -2,7 +2,7 @@ package CoGe::Accessory::lagan_report;
 
 use strict;
 use warnings;
-use CoGe::Accessory::lagan_report::HSP;
+use CoGe::Accessory::parse_report::HSP;
 use base qw(Class::Accessor);
 
 use Data::Dumper;
@@ -171,7 +171,7 @@ sub _processHSP {
 	$stop2=(($stop2-1)-$tmp2);my $start2 = (($stop2-$length2)+1);
 	my $hsp_count = $self->hsp_count();
 	$hsp_count++;
-	my $hsp = new CoGe::Accessory::lagan_report::HSP
+	my $hsp = new CoGe::Accessory::parse_report::HSP
            ({
     	     qpercent_id=>$ident1,
     	     spercent_id=>$ident2,
