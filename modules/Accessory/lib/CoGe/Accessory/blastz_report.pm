@@ -4,7 +4,7 @@ use strict;
 use POSIX;
 use CoGe::Accessory::blastz_report::seq;
 use CoGe::Accessory::blastz_report::segment;
-use CoGe::Accessory::blastz_report::HSP;
+use CoGe::Accessory::parse_report::HSP;
 use base qw(Class::Accessor);
 use Carp;
 use Data::Dumper;
@@ -419,7 +419,7 @@ sub parse_alignment
     my $seg_count = 1;
     my $hsp_count =$self->hsp_count;
     $hsp_count++;
-    my $hsp = new CoGe::Accessory::blastz_report::HSP({number=>$hsp_count});
+    my $hsp = new CoGe::Accessory::parse_report::HSP({number=>$hsp_count});
     my @id;
 
     foreach my $line (split /\n/, $data)
@@ -505,8 +505,7 @@ sub parse_alignment
 	$total += $item->[0];
       }
     $hsp->match(ceil($pid/100));
-    $hsp->identity(sprintf("%.2f",$pid/$total));
-    $hsp->percent_id($hsp->identity);
+    $hsp->percent_id(sprintf("%.2f",$pid/$total));
     $hsp->positive(ceil($pid/100));
     push @{$self->hsps},$hsp;
     $self->hsp_count($hsp_count);
