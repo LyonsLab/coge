@@ -42,25 +42,16 @@ See Also   :
 sub new 
   {
     my $proto = shift;
-    my $class = ref($proto) || $proto;
-    my $file = "";
-    if ( @_ ) {
-      ($file) = shift;
-    } 
-    unless (-r $file)
-      {
-	croak " error: new needs a file name!\n";
-      }
     my $opts = shift;
-    $opts = {} unless defined $opts;
-    my $self = bless ($opts, $class);
-    $self->file($file);
+    $opts = {} unless $opts;
+    my $class = ref($proto) || $proto;
+    my $self = bless ({%$opts}, $class);
     $self->hsp_count(0);
     $self->hsps([]);
-    $self->process_file($file);
+    $self->process_file();
     unless ($self->file_base())
       {
-	my ($base) = $file =~ /^(.*?)[^\/]*$/;
+	my ($base) = $self->file =~ /^(.*?)[^\/]*$/;
 	$base = "./".$base unless $base =~ /^\//;
 	$self->file_base($base);
       }
