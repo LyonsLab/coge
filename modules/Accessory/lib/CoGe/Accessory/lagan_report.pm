@@ -27,14 +27,15 @@ sub new {
 	$self->length_cutoff(0);
 	$self->percent_cutoff(0);
 	$self->max_gap(0);
-
-	my $file = "";
-	if ( @_ ) {
-		($file) = shift;
-	} else {
-		die "laganReport error: new needs a file name!\n";
-	}
-	
+	my $opts = shift;
+	my $file = $opts->{file};
+	my $max_gap = $opts->{max_gap};
+	my $length_cutoff = $opts->{length_cutoff};
+	my $percent_cutoff = $opts->{percent_cutoff};
+	print Dumper $opts;
+	$self->length_cutoff($length_cutoff) if defined $length_cutoff;
+	$self->percent_cutoff($percent_cutoff) if defined $percent_cutoff;
+	$self->max_gap($max_gap) if defined $max_gap;
 	# init
 	$self->file($file);
 	$self->process_file($file);
@@ -183,6 +184,7 @@ sub _processHSP {
     	     qpercent_id=>$ident1,
     	     spercent_id=>$ident2,
     	     match=>$qm,
+	     percent_id=>$ident1,
     	     length=>$align_length,
     	     query_start=>$start1,
     	     query_stop=>$stop1,
@@ -194,6 +196,8 @@ sub _processHSP {
     	     query_gaps=>$gaps1,
     	     subject_gaps=>$gaps2,
     	     number=>$hsp_count,
+	     pval=>"N/A",
+	     strand=>1,
             });
         return 0 if $align_length < $self->length_cutoff || $self->percent_cutoff > $ident1 || $self->percent_cutoff > $ident2;
 	return $hsp;
