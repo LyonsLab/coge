@@ -25,22 +25,13 @@ sub sname    {shift->subject(@_)}
 sub new {
 	my $proto = shift;
 	my $class = ref($proto) || $proto;
-	my $self  = {};
-	bless ($self, $class);
-	my $file = "";
-	if ( @_ ) {
-		($file) = shift;
-	} else {
-		die "bl2seqReport error: new needs a file name!\n";
-	}
-	
+	my $opts = shift;
+	$opts = {} unless $opts;
+	my $class = ref($proto) || $proto;
+	my $self = bless ({%$opts}, $class);
 	$self->hsp_count(0);
 	# init
-	$self->file($file);
-#	open( FH, "< $file" ) or
-#		die "bl2seqReport error: $file wouldn't open!\n";
-#	$self->{FH} = \*FH;
-	$self->process_file($file);
+	$self->process_file();
 	return $self;
       }
 
