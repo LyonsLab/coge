@@ -11,6 +11,7 @@ lib/CoGe/Accessory/Web.pm
 lib/Coge/Accessory/parse_report/HSP.pm
 lib/Coge/Accessory/bl2seq_report.pm
 lib/Coge/Accessory/lagan_report.pm
+lib/Coge/Accessory/chaos_report.pm
 lib/Coge/Accessory/blastz_report.pm
 lib/Coge/Accessory/blastz_report/seq.pm
 lib/Coge/Accessory/blastz_report/segment.pm
