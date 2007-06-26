@@ -213,6 +213,7 @@ BEGIN
 "use_external_image", #flag for using an external image when available
 "options", #place to store additional options
 "alt", #used for the alt tag in image maps
+"image_coordinates", #used to store the coordinates (xmin, ymin, xmax, ymax) of the feature on the resulting image
 );
   }
 
