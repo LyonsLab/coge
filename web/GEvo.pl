@@ -153,8 +153,9 @@ sub gen_body
 	my $gblength = $form->param("gblen".$i) if $form->param("gblen".$i);
 	my $revy = "checked" if $form->param('rev'.$i);
 	my $revn = "checked" unless $revy;
-	$autosearch_string .= 'if ($'.qq{('#accn$i').val()) {dataset_search(['accn$i','args__$i', 'args__$dsid'],[feat_search_chain]);}
-};
+	$autosearch_string .= 'if ($'.qq!('#accn$i').val()) {dataset_search(['accn$i','args__$i', 'args__!;
+	$autosearch_string .= $dsid if $dsid;
+	$autosearch_string .=qq!'],[feat_search_chain]);}!;
 	push @coge_seqs, {
 			  SEQ_NUM=>$i,
 			  REV_YES=>$revy,
@@ -279,14 +280,9 @@ sub Show_Summary
     my $num_seqs = $opts{num_seqs} || $NUM_SEQS;
     my $match_filter = $opts{matchfilter};
     my $spike_len = $opts{spike};
-    my $mask_flag = $opts{mask};
-    my $mask_ncs_flag = $opts{maskcns};
-    my $wordsize = $opts{word};
-    my $gapopen = $opts{gapo};
-    my $gapextend = $opts{gape};
-    my $mismatch = $opts{mmatch};
-    my $eval = $opts{eval};
-    my $blastparams = $opts{bp};
+    $spike_len = 0 unless $match_filter;
+    my $mask_cds_flag = $opts{maskcds};
+    my $mask_ncs_flag = $opts{maskncs};
     my $iw = $opts{iw};
     my $ih = $opts{ih};
     my $feat_h = $opts{fh};
@@ -298,13 +294,12 @@ sub Show_Summary
     my $hiqual = $opts{hiqual};
     my $hsp_limit = $opts{hsplim};
     my $hsp_limit_num = $opts{hsplimnum};
-    my $analysis_program = $opts{prog};
     my $show_hsps_with_stop_codon = $opts{showallhsps};
     my $padding = $opts{padding};
 
-    initialize_basefile();
+    my ($analysis_program, $param_string, $parser_opts) = get_algorithm_options(%opts);
 
-    $spike_len = 0 unless $match_filter;
+    initialize_basefile();
 
     my @hsp_colors;
     for (my $i = 1; $i <= num_colors($num_seqs); $i++)
@@ -362,7 +357,7 @@ sub Show_Summary
 	    return "<font class=error>No entry found for $featid</font>" unless ($obj);
 	    ($file, $file_begin, $file_end,$spike_seq) = 
 	      generate_seq_file(obj=>$obj,
-				mask=>$mask_flag,
+				mask_cds=>$mask_cds_flag,
 				mask_ncs=>$mask_ncs_flag,
 				spike_len=>$spike_len,
 				seq_num=>$i,
@@ -380,7 +375,7 @@ sub Show_Summary
  	    ($file, $file_begin, $file_end, $spike_seq) = 
  	      generate_seq_file (
  				 obj=>$obj,
- 				 mask=>$mask_flag,
+ 				 mask_cds=>$mask_cds_flag,
  				 mask_ncs=>$mask_ncs_flag,
  				 spike_len=>$spike_len, 
 				 seq_num=>$i,
@@ -400,7 +395,7 @@ sub Show_Summary
  	    ($file, $file_begin, $file_end,$spike_seq, $seq) = 
  	      generate_seq_file (
  				 obj=>$obj,
- 				 mask=>$mask_flag,
+ 				 mask_cds=>$mask_cds_flag,
  				 mask_ncs=>$mask_ncs_flag,
  				 startpos=>$gbstart,
  				 downstream=>$gblength,
@@ -439,32 +434,28 @@ sub Show_Summary
     # set up output page
     
     # run bl2seq
-    $wordsize = 3 if ($analysis_program eq "tblastx" && $wordsize > 3);
-    my $bl2seq_params = " -W " . $wordsize if defined $wordsize;
-    $bl2seq_params .= " -G " . $gapopen if defined $gapopen;
-    $bl2seq_params .= " -X " . $gapextend if defined $gapextend;
-    $bl2seq_params .= " -q " . $mismatch if defined $mismatch;
-    $bl2seq_params .= " -e " . $eval if defined $eval;
-    $bl2seq_params .= " "    . $blastparams if defined $blastparams;
+    
     my $analysis_reports;
 
     if ($analysis_program eq "blastz")
       {
-	$analysis_reports = run_blastz( sets=>\@sets, params=>undef);
+	$analysis_reports = run_blastz(sets=>\@sets, params=>$param_string, parser_opts=>$parser_opts);
       }
     elsif ($analysis_program eq "lagan")
       {
-	$analysis_reports = run_lagan (sets=>\@sets, params=>undef);
+	$analysis_reports = run_lagan (sets=>\@sets, params=>$param_string, parser_opts=>$parser_opts);
       }
     else
       {
-	$analysis_reports = run_bl2seq( sets=>\@sets, blast_params=>$bl2seq_params, blast_program=>$analysis_program );
+	$analysis_reports = run_bl2seq(sets=>\@sets, params=>$param_string, parser_opts=>$parser_opts, blast_program=>$analysis_program);
       }
    #sets => array or data for blast
    #blast_reports => array of arrays (report, accn1, accn2, parsed data)
 #    print STDERR Dumper $analysis_reports;
     my $t3 = new Benchmark;
     my $count = 1;
+    my $iframe;
+    my $frame_height;
     foreach my $item (@sets)
       {
 	my $accn = $item->{accn};
@@ -502,6 +493,7 @@ sub Show_Summary
 							 padding=>$padding,
 								   seq_num=>$count,
 								  );
+	    $frame_height += $gfx->ih + $gfx->ih*.1;
 #	    print STDERR $map;
 	    $html .= qq!<div>$accn!;
 	    $html .= qq!(<font class=species>!.$obj->organism.qq!</font>)! if $obj->organism;
@@ -509,6 +501,8 @@ sub Show_Summary
 	    $html .= qq!<font class=small> Reverse Complement</font>! if $rev;
 	    $html .= qq!</DIV>\n!;
 	    $html .= qq!<IMG SRC="$TEMPURL/$image" !;
+	    my $tmp_count = $count -1;
+#	    $iframe .= qq{&img$tmp_count=$image};
 	    $html .= qq!BORDER=0 ismap usemap="#$mapname">\n!;
 	    $html .= "$map\n";
 	    $item->{image} = $image;
@@ -516,6 +510,8 @@ sub Show_Summary
 	  }
 	$count++;
       }
+    $iframe = qq{<iframe width="100%" height="$frame_height}."px".qq{" src="/bpederse/hsparrows/?img=$BASEFILENAME&n=}.($count-1);
+    $iframe .= qq{"></iframe>};
     my $t4 = new Benchmark;
     $html .= qq!<br>!;
     $html .= qq!<FORM NAME=\"info\">\n!;
@@ -524,6 +520,7 @@ sub Show_Summary
     $html .= $form->br();
     $html .= qq!<DIV id="info"></DIV>!;
     $html .= "</FORM>\n";
+    $html .= qq{<div id=iframe>$iframe</div>};
     $html .= qq{<table>};
     if ($analysis_reports && @$analysis_reports)
       {
@@ -697,7 +694,8 @@ ymax integer(10),
 image varchar(50),
 pair_id integer(10),
 link varchar(50),
-annotation blob
+annotation blob,
+color varchar(10)
 )
 };
     $dbh->do($create);
@@ -730,9 +728,7 @@ annotation blob
  };
      $dbh->do($index);
     my $i = 1;
-#    my $sth = $dbh->prepare(qq{
-#INSERT INTO image_data (id, name, xmin, xmax, ymin, ymax, image, pair_id, annotation) VALUES (?,?,?,?,?,?,?,?,?);
-#});
+#    my $sth_insert = $dbh->prepare("INSERT INTO image_data VALUES(?,?,?,?,?,?,?,?,?,?)");
     foreach my $item (@$sets)
       {
 	my $image = $item->{image};
@@ -751,23 +747,31 @@ annotation blob
 	    my $sth = $dbh->prepare($query);
 	    $sth->execute;
 	    my $res = $sth->fetchrow_array();
+	    my $color = "NULL";
 	    if ($res && $feat->type =~ /HSP/)
 	      {
+		$color ="#";
 		$pair_id = $res;
 		my $statement = "update image_data set pair_id = $i where id = $res";
 		$dbh->do($statement);
+		foreach my $c (@{$feat->color})
+		  {
+		    $color .= sprintf("%X",$c);
+		  }
 	      }
 	    #generate link
 	    my $link = $feat->link;
+#	    print STDERR $link if $link =~ /FeatView/;
+	    $link =~ s/'//g;
 	    my ($xmin, $ymin, $xmax, $ymax) = split /,/, $coords;
 	    my $anno = $feat->description;
 #	    print STDERR join ("\t", $name),"\n";#, $xmin, $xmax, $ymin, $ymax, $image, $feat->description),"\n";
-
+	    $anno =~ s/'//g;
 	    my $statement = qq{
-INSERT INTO image_data (id, name, xmin, xmax, ymin, ymax, image, pair_id, link, annotation) values ($i, "$name", $xmin, $xmax, $ymin, $ymax, "$image", $pair_id, '$link', '$anno')
+INSERT INTO image_data (id, name, xmin, xmax, ymin, ymax, image, pair_id, link, annotation, color) values ($i, "$name", $xmin, $xmax, $ymin, $ymax, "$image", $pair_id, '$link', '$anno', '$color')
 };
-	    $dbh->do($statement);
-#	    $sth->execute($i,$name, $xmin, $xmax, $ymin, $ymax, $image, 1, $feat->description);
+	    print STDERR $statement unless $dbh->do($statement);
+#	    $sth_insert->execute($i,$name, $xmin, $xmax, $ymin, $ymax, $image, $pair_id, $link, $anno);
 	    $i++;
 	  }
       }
@@ -877,7 +881,7 @@ sub process_features
 	print STDERR $name,"\n\n" if $DEBUG;
         $f->type($type);
 	$f->description($feat->annotation);
-	$f->link("FeatView.pl?accn=$name\" target=\"_new") if $name;
+	$f->link("FeatView.pl?accn=$name") if $name;
 	$f->skip_overlap_search($overlap);
         $c->add_feature($f);
     }
@@ -1097,7 +1101,7 @@ sub generate_seq_file
     my $up = $options{up} || $options{upstream} || 0;
     my $down = $options{down} || $options{downstream} || 0;
     my $spike_len = $options{spike_len} || 0;
-    my $mask = $options{mask} || $options{mask_flag};
+    my $mask = $options{mask_cds};
     my $mask_ncs = $options{mask_ncs};
     my $seq_num = $options{seq_num};
 
@@ -1255,8 +1259,9 @@ sub check_taint {
 sub run_bl2seq {
   my %opts = @_;
   my $sets = $opts{sets};
-  my $blast_params = $opts{blast_params};
+  my $blast_params = $opts{params};
   my $program = $opts{blast_program};
+  my $parser_opts = $opts{parser_opts};
   my $eval_cutoff = $opts{eval_cutoff};
   $program = "blastn" unless $program;
   my @reports;
@@ -1294,7 +1299,7 @@ sub run_bl2seq {
 	  # execute the command
 	  `$command`;
 	  system "chmod +rw $tempfile";
-	  my $blastreport = new CoGe::Accessory::bl2seq_report($tempfile) if -r $tempfile;
+	  my $blastreport = new CoGe::Accessory::bl2seq_report({file=>$tempfile}) if -r $tempfile;
 	  my @tmp = ($tempfile, $accn1, $accn2);
 	  if ($blastreport)
 	    {
@@ -1316,7 +1321,8 @@ sub run_blastz
     my %opts = @_;
     my $sets = $opts{sets};
     my $params= $opts{params};
-     my @files;
+    my $parser_opts = $opts{parser_opts};
+    my @files;
     my @reports;
     for (my $i=0; $i<scalar @$sets; $i++)
       {
@@ -1345,7 +1351,7 @@ sub run_blastz
 	    	  # execute the command
 	    `$command`;
 	    system "chmod +rw $tempfile";
-	    my $blastreport = new CoGe::Accessory::blastz_report($tempfile) if -r $tempfile;
+	    my $blastreport = new CoGe::Accessory::blastz_report({file=>$tempfile}) if -r $tempfile;
 	    my @tmp = ($tempfile, $accn1, $accn2);
 	    if ($blastreport)
 	    {
@@ -1366,6 +1372,7 @@ sub run_lagan
     my %opts = @_;
     my $sets = $opts{sets};
     my $params= $opts{params};
+    my $parser_opts = $opts{parser_opts};
     my @files;
     my @reports;
     for (my $i=0; $i<scalar @$sets; $i++)
@@ -1393,13 +1400,10 @@ sub run_lagan
 		next;
 	      }
 	    $command .= " > ".$tempfile;
-#	    $command .= "2>&1";
-	    	  # execute the command
-#	    print STDERR $command,"\n";
+	    #time for execution
 	    `$command`;
 	    system "chmod +rw $tempfile";
-	    my $report = new CoGe::Accessory::lagan_report($tempfile) if -r $tempfile;
-#	    print STDERR Dumper $report;
+	    my $report = new CoGe::Accessory::lagan_report({file=>$tempfile, %$parser_opts}) if -r $tempfile;
 	    my @tmp = ($tempfile, $accn1, $accn2);
 	    if ($report)
 	    {
@@ -1608,14 +1612,19 @@ sub gen_go_button
     $params .= qq{
 	'args__matchfilter', 'matchfilter', 
 	'args__spike', 'spike', 
-	'args__mask', 'mask', 
-	'args__maskcns', 'mask_ncs', 
+	'args__maskcds', 'mask_cds', 
+	'args__maskncs', 'mask_ncs', 
 	'args__word', 'wordsize', 
 	'args__gapo', 'gapopen', 
 	'args__gape', 'gapextend', 
 	'args__mmatch', 'mismatch',
 	'args__eval', 'eval', 
 	'args__bp', 'blastparams',
+        'args__lagan_min_length','lagan_min_length',
+        'args__lagan_max_gap','lagan_max_gap',
+        'args__lagan_percent_id','lagan_percent_id',
+        'args__lagan_params','lagan_params',
+
 	'args__iw', 'iw',
 	'args__ih', 'ih', 
 	'args__fh', 'feat_h',
@@ -1687,7 +1696,7 @@ sub num_colors
 sub algorithm_list
   {
     my $program = shift;
-    my @programs = qw(blastn tblastx blastz lagan);
+    my @programs = sort qw(blastn tblastx blastz lagan chaos);
     my $html;
     foreach my $prog (@programs)
       {
@@ -1706,7 +1715,7 @@ sub initialize_basefile
 				    UNLINK=>1);
     ($BASEFILE)= $file->filename;
     
-    ($BASEFILENAME) = $file->filename =~ /([^\/]*\.png$)/;
+    ($BASEFILENAME) = $file->filename =~ /([^\/]*$)/;
   }
 
 sub add_seq
@@ -1799,4 +1808,48 @@ sub hsp_color_cookie
     else
       {
       }
+  }
+
+sub get_algorithm_options
+  {
+    my %opts = @_;
+    my $analysis_program = $opts{prog};
+    #blast stuff
+    my $blast_wordsize = $opts{word};
+    my $blast_gapopen = $opts{gapo};
+    my $blast_gapextend = $opts{gape};
+    my $blast_mismatch = $opts{mmatch};
+    my $blast_eval = $opts{eval};
+    my $blast_params = $opts{bp};
+
+    #lagan_stuff
+    my $lagan_params = $opts{lagan_params};
+    my $lagan_min_length = $opts{lagan_min_length};
+    my $lagan_max_gap = $opts{lagan_max_gap};
+    my $lagan_percent_id = $opts{lagan_percent_id};
+
+    #stuff to be returned
+    my $param_string;  #param string to be passed to command line for program execution
+    my %parser_options; #params used to set the parser object -- key is accessor method, value is value
+    if ($analysis_program eq "blastz")
+      {
+      }
+    elsif ($analysis_program =~ /blast/) #match blastn and tblastx
+      {
+	$blast_wordsize = 3 if ($analysis_program eq "tblastx" && $blast_wordsize > 3);
+	$param_string = " -W " . $blast_wordsize if defined $blast_wordsize;
+	$param_string .= " -G " . $blast_gapopen if defined $blast_gapopen;
+	$param_string .= " -X " . $blast_gapextend if defined $blast_gapextend;
+	$param_string .= " -q " . $blast_mismatch if defined $blast_mismatch;
+	$param_string .= " -e " . $blast_eval if defined $blast_eval;
+	$param_string .= " "    . $blast_params if defined $blast_params;
+      }
+    elsif ($analysis_program eq "lagan")
+      {
+	$param_string = $lagan_params;
+	$parser_options{max_gap} = $lagan_max_gap;
+	$parser_options{length_cutoff} = $lagan_min_length;
+	$parser_options{percent_cutoff} = $lagan_percent_id;
+      }
+    return ($analysis_program, $param_string, \%parser_options);
   }
