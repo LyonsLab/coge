@@ -46,60 +46,6 @@ for (var i =1; i<= num_seqs; i++)
 
 }
 
-
-function set_hsp_colors (type)
- {
-  if (type == "rasta")
-   {
-    $('#hsp1r').val(255)
-    $('#hsp1g').val(0)
-    $('#hsp1b').val(0)
-    $('#hsp2r').val(255)
-    $('#hsp2g').val(255)
-    $('#hsp2b').val(0)
-    $('#hsp3r').val(51)
-    $('#hsp3g').val(102)
-    $('#hsp3b').val(51)
-   }
-  else if (type == "cblind")
-   {
-    $('#hsp1r').val(110)
-    $('#hsp1g').val(110)
-    $('#hsp1b').val(110)
-    $('#hsp2r').val(200)
-    $('#hsp2g').val(200)
-    $('#hsp2b').val(150)
-    $('#hsp3r').val(220)
-    $('#hsp3g').val(220)
-    $('#hsp3b').val(220)
-   }
-  else if (type == "fire")
-   {
-    $('#hsp1r').val(255)
-    $('#hsp1g').val(0)
-    $('#hsp1b').val(0)
-    $('#hsp2r').val(255)
-    $('#hsp2g').val(125)
-    $('#hsp2b').val(0)
-    $('#hsp3r').val(255)
-    $('#hsp3g').val(255)
-    $('#hsp3b').val(0)
-   }
-  else 
-   {
-    $('#hsp1r').val(150)
-    $('#hsp1g').val(150)
-    $('#hsp1b').val(255)
-    $('#hsp2r').val(100)
-    $('#hsp2g').val(255)
-    $('#hsp2b').val(100)
-    $('#hsp3r').val(255)
-    $('#hsp3g').val(100)
-    $('#hsp3b').val(100)
-   }
-  
- }
-
 function feat_search_chain(stuff, num) {
  if (stuff) {
   $("#source"+num).html(stuff);
@@ -122,25 +68,35 @@ function rev_locs (val) {
 function check_alignment_program (){
 
 var alignment = $("#alignment_program").val();
-if (alignment == "blastz")
- {
-  
   $("#blast_options").hide();
   $("#lagan_options").hide();
-  $("#blastzinfo").show();
+  $("#blastz_options").hide();
+  $("#blast_options").hide();
+  $("#chaos_options").hide();
+//  $("#spike_sequence").hide();
+  $("#tblastx_options").hide();
+  $("#test").hide();
+
+if (alignment == "blastz")
+ {
+  $("#blastz_options").show();	
+  $("#matchfilter").val(0);
  }
 else if (alignment == "lagan")
  {
-  $("#blast_options").hide();
   $("#lagan_options").show();
-  $("#blastzinfo").hide();
+ }
+else if (alignment == "chaos")
+ {
+  $("#chaos_options").show();
  }
 else
  {
   $("#blast_options").show();
-  $("#blastzinfo").hide();	
-  $("#lagan_options").hide();
+  $("#spike_sequence").show();	
+  ('input:radio[@name=matchfilter]')[0].checked = true
  }
+
 if (alignment == "tblastx")
  {
   $("#wordsize").val(3);
@@ -148,13 +104,9 @@ if (alignment == "tblastx")
   $("#gapextend").val(1);
   $("#eval").val(10);
   $("#mismatch").hide();
-  $("#tblastninfo").show();		
+  $("#tblastx_options").show();		
  }
-else
- {
-  $("#tblastninfo").hide();		
- }
-if (alignment == "blastn")
+else if (alignment == "blastn")
  {
   $("#wordsize").val(7);
   $("#gapopen").val(5);
@@ -284,6 +236,7 @@ Number of sequences:
    </TD>
  </TR>
    </Table>    
+
  <DIV id = "blast_options">
    <Table class=small>    
   <TR>
@@ -313,17 +266,40 @@ Number of sequences:
 
 </TABLE>
 </DIV>
- <DIV id="blastzinfo" class="small">
+
+ <DIV id="chaos_options" class="small">
+Note: parameter options haven't been implemented for chaos (yet)
+</DIV>
+
+ <DIV id="blastz_options" class="small">
 Note: parameter options haven't been implemented for blastz (yet)
 </DIV>
 
- <DIV id="tblastninfo" class="small">
+ <DIV id="tblastx_options" class="small">
  <font class="small">Hide HSPs with stop codons in a coding sequence?<label><input class="backbox" type="radio" name="show_hsps_with_stop_codon" id="show_hsps_with_stop_codon" tabindex="1" value="1" />Yes</label><label><input class="backbox" type="radio" name="show_hsps_with_stop_codon" id="show_hsps_with_stop_codon" tabindex="1" value="0" checked />No</label></font>
 <br>Note: Word size limited to 3 for tblastx
 </DIV> 
 
  <DIV id="lagan_options" class="small">
-Under developement.  This algorithm may not work.  Check back soon.  Thank you.
+   <Table class=small>    
+  <TR>
+  <TD>Min HSP Length: </TD>
+  <TD><input class="backbox" type="text" name="lagan_min_length" id="lagan_min_length" tabindex="1" size="3" value="10" /></TD>
+ </TR>    
+ <TR>
+  <TD>Max Contiguous Gaps in HSPs: </TD>
+  <TD><input class="backbox" type="text" name="lagan_max_gap" id="lagan_max_gap" tabindex="1" size="3" value="4" /></TD>
+ </TR>    
+ <TR>
+  <TD>Min Percent Identity: </TD>
+  <TD><input class="backbox" type="text" name="lagan_percent_id" id="lagan_percent_id" tabindex="1" size="3" value="70" /></TD>
+ </TR>    
+ <TR>
+  <TD>Other Lagan Parameters: </TD>
+  <TD><input class="backbox" type="text" name="lagan_params" id="lagan_params" tabindex="1" size="10" /></TD>
+ </TR>         
+
+</TABLE>
 </DIV>
 
 
@@ -339,8 +315,8 @@ Under developement.  This algorithm may not work.  Check back soon.  Thank you.
   <TH class=small>
    Mask Exons:
   <TD class = small>
-   <label><input class="backbox" type="radio" name="mask" id="mask" tabindex="22" value="1" <TMPL_VAR NAME=EXON_MASK_ON> />On</label>
-    <label><input class="backbox" type="radio" name="mask" id="mask" tabindex="22" value="0" <TMPL_VAR NAME=EXON_MASK_OFF> />Off</label>
+   <label><input class="backbox" type="radio" name="mask" id="mask_cds" tabindex="22" value="1" <TMPL_VAR NAME=EXON_MASK_ON> />On</label>
+    <label><input class="backbox" type="radio" name="mask" id="mask_cds" tabindex="22" value="0" <TMPL_VAR NAME=EXON_MASK_OFF> />Off</label>
  </TR>
  <TR align=left>
   <TH class = small>
@@ -349,22 +325,22 @@ Under developement.  This algorithm may not work.  Check back soon.  Thank you.
    <label><input class="backbox" type="radio" name="mask_ncs" id="mask_ncs" tabindex="22" value="1" />On</label>
    <label><input class="backbox" type="radio" name="mask_ncs" id="mask_ncs" tabindex="22" value="0" checked />Off</label>
  </TR>
+ </TABLE>
+ <DIV id="spike_sequence">
+ <table>
  <TR align=left>
-  <TH>
-    <DIV class=small>
+  <TH class = small>
       Spike Sequence HSP Filter:
-    </DIV>
   </TD>
   <TD>
-      <label class=small><input class="backbox" type="radio" name="matchfilter" id="matchfilter" tabindex="15" value="1" checked />On</label>
-      <label class=small><input class="backbox" type="radio" name="matchfilter" id="matchfilter" tabindex="15" value="0" />Off</label>
+      <label class=small><input class="backbox" type="radio" name="matchfilter" id="matchfilter" tabindex="15" value="1" />On</label>
+      <label class=small><input class="backbox" type="radio" name="matchfilter" id="matchfilter" tabindex="15" value="0" checked />Off</label>
   <tr align=left>
   <th class=small>Spike sequence length:
   <td><TMPL_VAR NAME=SPIKE_LEN>
  </TR>
-
-        </TABLE>
-
+ </TABLE>
+ </DIV>
      </table>
      <span class="subItem"></span>
      <span class="subItem"></span>
