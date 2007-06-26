@@ -65,8 +65,8 @@ sub gen_body
 	my $url = $FORM->param('url') if $FORM->param('url');
 	$url =~ s/:::/;/g if $url;
 	$tmpl->param(url=>$url);
-	print STDERR "Clearning old tmp files. . .\n";
-	system "/usr/bin/find /opt/apache/CoGe/tmp -depth -mindepth 1 -ctime +1 -delete";
+#	print STDERR "Clearing old tmp files. . .\n";
+#	`/usr/bin/find /opt/apache/CoGe/tmp -depth -mindepth 1 -ctime +1 -delete`;
 
       }
     $html .= $tmpl->output;
