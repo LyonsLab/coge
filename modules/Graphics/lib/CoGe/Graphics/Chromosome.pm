@@ -1802,6 +1802,9 @@ sub _draw_feature_slow
     return if $fe < -($self->iw/4);
     my $fw = ($fe - $fs)+1; #calculate the width of the feature;
     return if $fw < 1; #skip drawing if less than one pix wide
+
+    my ($xmin, $xmax, $ymin , $ymax);
+
     print STDERR "Drawing feature ".$feat->label." Order: ".$feat->order." Overlap: ".$feat->_overlap." : ", $feat->start, "-", $feat->end," Dimentions:",$fw,"x",$ih, " at position: $fs,$y"."\n" if $self->DEBUG;
     if ($feat->fill)
       {
@@ -1867,6 +1870,10 @@ sub _draw_feature_slow
 	$newgd->transparent($newgd->colorResolve(255,255,255));
 	#5. copy new image into appropriate place on image.
 	$self->gd->copyMerge($newgd, $fs, $y, 0, 0, $fw, $ih, $feat->merge_percent);
+	$xmin = $fs;
+	$ymin = $y;
+	$xmax = $fs+$fw;
+	$ymax = $y+$ih;
       }
     
     my $size;
@@ -1884,6 +1891,7 @@ sub _draw_feature_slow
 #    $size = $size*$feat->font_size if $size && $feat->font_size;
     $size = $feat->font_size if $feat->font_size;
     $self->_gd_string(y=>$sy, x=>$fs, text=>$feat->label, size=>$size) if ( ($self->feature_labels || $self->fill_labels)&& ($fw>5 || $feat->force_label)); #don't make the string unless the feature is at least 5 pixels wide
+    $feat->image_coordinates("$xmin, $ymin, $xmax, $ymax");
   }
 sub _draw_feature_fast
   {
@@ -1906,6 +1914,9 @@ sub _draw_feature_fast
     my $fe = $unit*($feat->end-$rb+1);
     my $fw = sprintf("%.1f",$fe - $fs)+1; #calculate the width of the feature;
     return if $fw < 1; #skip drawing if less than one pix wide
+
+    my ($xmin, $xmax, $ymin , $ymax);
+
     print STDERR "Drawing feature ".$feat->label." Order: ".$feat->order." Overlap: ".$feat->_overlap." : ", $feat->start, "-", $feat->end," Dimentions:",$fw,"x",$ih, " at position: $fs,$y"."\n" if $self->DEBUG;
     if ($feat->fill)
       {
@@ -1968,6 +1979,11 @@ sub _draw_feature_fast
  	$newgd->transparent($newgd->colorResolve(0,0,0));
 # 	#5. copy new image into appropriate place on image.
  	$self->gd->copyMerge($newgd, $fs, $y, 0, 0, $fw, $ih, $feat->merge_percent);
+	$xmin = $fs;
+	$ymin = $y;
+	$xmax = $fs+$fw;
+	$ymax = $y+$ih;
+  
 #	$self->gd->copyResized($feat->gd, $fs, $y, 0, 0, $fw, $ih, $feat->iw, $feat->ih);
       }
     
@@ -1986,6 +2002,7 @@ sub _draw_feature_fast
 #    $size = $size*$feat->font_size if $size && $feat->font_size;
     $size = $feat->font_size if $feat->font_size;
     $self->_gd_string(y=>$sy, x=>$fs, text=>$feat->label, size=>$size) if ( ($self->feature_labels || $self->fill_labels)&& ($fw>5 || $feat->force_label)); #don't make the string unless the feature is at least 5 pixels wide
+    $feat->image_coordinates("$xmin, $ymin, $xmax, $ymax");
   }
 
 #################### subroutine header begin ####################
