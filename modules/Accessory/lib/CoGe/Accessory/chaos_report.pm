@@ -34,6 +34,7 @@ sub process_file
     my $self = shift;
     my $file = shift || $self->file;
     my $tmp;
+    my @data;
     open (IN, $file) || die "can't open $file for reading: $!";
     while (<IN>)
     {
@@ -82,7 +83,7 @@ sub _parseReport {
         	{$sq1 =~s/^.//;$sq2 =~s/^.//;$align =~s/^.//;}
   	while ($align !~ /\|$/)
        		{$sq1 =~s/.$//;$sq2 =~s/.$//;$align =~s/.$//;}
-  	if ($locs =~/^(\w+)\s(\d+)\s(\d+).\s(\w+)\s(\d+)\s(\d+).+(\d+\.\d+)/)
+  	if ($locs =~/^(\w+\.?\d*)\s(\d+)\s(\d+).\s(\w+\.?\d*)\s(\d+)\s(\d+).+(\d+\.\d+)/)
     	{
     		($name1,$start1,$stop1,$name2,$start2,$stop2,$score_plus) = ($1,$2,$3,$4,$5,$6,$7);
    	}
