@@ -91,7 +91,7 @@ sub parse_seq
   for (my $i=0;$i<scalar(@$start2);$i++)
   {
     my $hsp = $self->_getHSP($start1->[$i],$stop1->[$i],$align1->[$i],$start2->[$i],$stop2->[$i],$align2->[$i],$values->[$i]);
-    push @hsps,$hsps if $hsps;
+    push @hsps,$hsp if $hsp;
   }
   $self->hsps(\@hsps);
   return $self;
@@ -101,7 +101,7 @@ sub _getHSP
 {
   my $self = shift;
   my ($start1,$stop1,$sq1,$start2,$stop2,$sq2,$values) = @_;
-  my $align = $self->get_pipes($seq1,$seq2);
+  my $align = $self->get_pipes($sq1,$sq2);
   my $match = $align =~ tr/|/|/;
   while ($align !~ /^\|/)
         {$sq1 =~s/^.//;$sq2 =~s/^.//;$align =~s/^.//;}
@@ -152,7 +152,7 @@ sub get_align
          push @starts,$start;
          push @stops,$stop;
          push @aligns,$align;
-         ($start,$stop,$align = (0,0,"");
+         ($start,$stop,$align) = (0,0,"");
         }
        }
    }
