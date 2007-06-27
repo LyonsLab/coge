@@ -34,7 +34,7 @@ sub process_file
     my $self = shift;
     my $file = shift || $self->file;
     my $tmp;
-    my @data;
+    my (@data,@hsps);
     open (IN, $file) || die "can't open $file for reading: $!";
     while (<IN>)
     {
@@ -45,8 +45,8 @@ sub process_file
     close IN;
     foreach my $alignments (@data)
     {
-      my $hsp = $self->get_hsp($alignments);
-      push @hsps,$hsps if $hsps;
+      my $hsp = $self->_parseReport($alignments);
+      push @hsps,$hsp if $hsp;
     }
     $self->hsps(\@hsps);
     return $self;
@@ -58,11 +58,11 @@ sub _parseReport {
 	my $data = shift;
 	my $hsp_count = $self->hsp_count();
 	$hsp_count++;
-	$self->hsp_count($hsp_count);
 	my ($locs,$scores) = ("","");
 	my ($sq1,$align,$sq2) = ("","","");
 	my ($score,$nmatches,$nga,$ngb,$nletters,$perc) = (0,0,0,0,0,0);
         my ($name1,$start1,$stop1,$name2,$start2,$stop2,$score_plus,$strand) = (0,0,0,0,0,0,0,0);
+        my @aligns;
 	foreach my $things (split /\n/,$data)
 	{ 
          next unless $things;
@@ -70,18 +70,18 @@ sub _parseReport {
       	 $scores = $things if $things =~/,/;
          push @aligns,$things if $things =~/([ATGC]|:)/;
 	}
-	for (my $i=0;$i<scalar(@$ref);$i+=3)
+	for (my $i=0;$i<scalar(@aligns);$i+=3)
 	{
-   	  $sq1 .= $ref->[$i];
-   	  $align .= $ref->[$i+1];
-   	  $sq2 .= $ref->[$i+2];
+   	  $sq1 .= $aligns[$i];
+   	  $align .= $aligns[$i+1];
+   	  $sq2 .= $aligns[$i+2];
    	  }
    	$align =~s/:/|/g;
 	while ($align !~ /^\|/)
         	{$sq1 =~s/^.//;$sq2 =~s/^.//;$align =~s/^.//;}
   	while ($align !~ /\|$/)
        		{$sq1 =~s/.$//;$sq2 =~s/.$//;$align =~s/.$//;}
-  	if ($locs =~/^(\w+\.?\d*)\s(\d+)\s(\d+).\s(\w+\.?\d*)\s(\d+)\s(\d+).+(\d+\.\d+)\s.(.)/)
+  	if ($locs =~/^(\w+\.?\d*)\s+(\d+)\s(\d+).\s(\w+\.?\d*)\s+(\d+)\s(\d+)\D+(\d+\.\d+)\s.(.)/)
     	{
     		($name1,$start1,$stop1,$name2,$start2,$stop2,$score_plus,$strand) = ($1,$2,$3,$4,$5,$6,$7,$8);
    	}
@@ -89,11 +89,14 @@ sub _parseReport {
     	{
       		($score,$nmatches,$nga,$ngb,$nletters,$perc) = ($1,$2,$3,$4,$5,$6);
     	}
+  	$strand = $strand =~/-/ ? "-1" : "1";
+  	($start1,$stop1) = ($stop1,$start1) if $start1 > $stop1;
+  	($start2,$stop2) = ($stop2,$start2) if $start2 > $stop2;
   	$self->_getNames($name1,$name2) unless $self->gotname();
-  	$perc *=100;
+  	$perc = sprintf("%.4f", $perc) * 100;
    	my $hsp = new CoGe::Accessory::parse_report::HSP
         ({
-   	  score=>$score,
+   	  score=>$score_plus,
     	  match=>$nmatches,
     	  length=>$nletters,
     	  query_start=>$start1,
@@ -103,11 +106,13 @@ sub _parseReport {
     	  query_alignment=>$sq1,
     	  subject_alignment=>$sq2,
     	  alignment=>$align,
+    	  strand=>$strand,
     	  query_gaps=>$nga,
     	  subject_gaps=>$ngb,
     	  percent_id=>$perc,
-    	  number=>$count,
+    	  number=>$hsp_count,
         });
+    $self->hsp_count($hsp_count) if $hsp;
     return $hsp;
  }
  
