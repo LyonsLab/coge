@@ -83,8 +83,10 @@ sub parse_seq
     $nums .= $holder[$i+2];
   }
   $nums =~ s/\s//g;
-  $sq1 =~ s/$self->query//g;
-  $sq2 =~ s/$self->subject//g;
+  my $nm1 = $self->query;
+  my $nm2 = $self->subject;
+  $sq1 =~ s/$nm1//g;
+  $sq2 =~ s/$nm2//g;
   my ($start1,$stop1,$align1) = $self->get_align($sq1);
   my ($start2,$stop2,$align2) = $self->get_align($sq2);
   my ($values) = $self->get_values($nums);
@@ -102,11 +104,11 @@ sub _getHSP
   my $self = shift;
   my ($start1,$stop1,$sq1,$start2,$stop2,$sq2,$values) = @_;
   my $align = $self->get_pipes($sq1,$sq2);
-  my $match = $align =~ tr/|/|/;
-  while ($align !~ /^\|/)
-        {$sq1 =~s/^.//;$sq2 =~s/^.//;$align =~s/^.//;}
-  while ($align !~ /\|$/)
-       	{$sq1 =~s/.$//;$sq2 =~s/.$//;$align =~s/.$//;}
+  my $match = $align =~ tr/\|/\|/;
+  while ($align && $align !~ /^\|/)
+       {$sq1 =~s/^.//;$sq2 =~s/^.//;$align =~s/^.//;}
+  while ($align && $align !~ /\|$/)
+       {$sq1 =~s/.$//;$sq2 =~s/.$//;$align =~s/.$//;}
   my $hsp_count = $self->hsp_count;
   $hsp_count++;
   my $length = length $sq1;
@@ -133,28 +135,29 @@ sub get_align
 {
   my $self = shift;
   my $str = shift;
-  my ($hit,$align,$start,$stop) = (0,"",0,0);
+  my ($count,$hit,$align,$start,$stop) = (0,0,"",0,0);
   my (@seq,@aligns,@starts,@stops);
   foreach my $char (split //,$str)
   {
-   push @seq,$char if $char =~ /[ATGC]/i;
+   push @seq,$char if $char =~ /[ATGC-]/i;
   }
   for(my $i=0;$i<scalar(@seq);$i++)
   {
+      $count++ if $seq[$i] !~ /-/;
       if ($seq[$i] =~/[ATGC]/)
       {
         $align .= $seq[$i];
         $hit++;
         if ($seq[$i+1] !~ /[ATGC]/)
         {
-         $stop = $i+1;
-         $start = $stop - $hit;
+         $stop = $count;
+         $start = ($stop - $hit)+1;
          push @starts,$start;
          push @stops,$stop;
          push @aligns,$align;
-         ($start,$stop,$align) = (0,0,"");
+         ($start,$stop,$align,$hit) = (0,0,"",0);
         }
-       }
+      }
    }
    return (\@starts,\@stops,\@aligns);
 }
@@ -164,9 +167,10 @@ sub get_pipes
   my $self = shift;
   my ($seq1,$seq2) = @_;
   my $align;
-  for (my $i=0;$i<(length $seq1);$i++)
+  my $length = length $seq1;
+  for (my $i=0;$i<($length);$i++)
   {
-    $align .= $seq1=~/^./ eq $seq2=~/^./ ? "|" : " ";
+    $align .= substr($seq1,0,1) eq substr($seq2,0,1) ? "|" : " ";
     $seq1 =~ s/^.//;
     $seq2 =~ s/^.//;
   }
