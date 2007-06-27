@@ -62,7 +62,7 @@ sub _parseReport {
 	my ($locs,$scores) = ("","");
 	my ($sq1,$align,$sq2) = ("","","");
 	my ($score,$nmatches,$nga,$ngb,$nletters,$perc) = (0,0,0,0,0,0);
-        my ($name1,$start1,$stop1,$name2,$start2,$stop2,$score_plus) = (0,0,0,0,0,0,0);
+        my ($name1,$start1,$stop1,$name2,$start2,$stop2,$score_plus,$strand) = (0,0,0,0,0,0,0,0);
 	foreach my $things (split /\n/,$data)
 	{ 
          next unless $things;
@@ -76,16 +76,14 @@ sub _parseReport {
    	  $align .= $ref->[$i+1];
    	  $sq2 .= $ref->[$i+2];
    	  }
-   	my $gaps1 = $sq1 =~tr/-/-/;
-   	my $gaps2 = $sq2 =~tr/-/-/;
    	$align =~s/:/|/g;
 	while ($align !~ /^\|/)
         	{$sq1 =~s/^.//;$sq2 =~s/^.//;$align =~s/^.//;}
   	while ($align !~ /\|$/)
        		{$sq1 =~s/.$//;$sq2 =~s/.$//;$align =~s/.$//;}
-  	if ($locs =~/^(\w+\.?\d*)\s(\d+)\s(\d+).\s(\w+\.?\d*)\s(\d+)\s(\d+).+(\d+\.\d+)/)
+  	if ($locs =~/^(\w+\.?\d*)\s(\d+)\s(\d+).\s(\w+\.?\d*)\s(\d+)\s(\d+).+(\d+\.\d+)\s.(.)/)
     	{
-    		($name1,$start1,$stop1,$name2,$start2,$stop2,$score_plus) = ($1,$2,$3,$4,$5,$6,$7);
+    		($name1,$start1,$stop1,$name2,$start2,$stop2,$score_plus,$strand) = ($1,$2,$3,$4,$5,$6,$7,$8);
    	}
 	if ($scores =~/^\D+(\d+)\D+(\d+)\D+(\d+)\D+(\d+)\D+(\d+).+(0?\.\d+)/)
     	{
@@ -99,16 +97,14 @@ sub _parseReport {
     	  match=>$nmatches,
     	  length=>$nletters,
     	  query_start=>$start1,
-    	  query_stop=>$stop2,
+    	  query_stop=>$stop1,
     	  subject_start=>$start2,
     	  subject_stop=>$stop2,
     	  query_alignment=>$sq1,
     	  subject_alignment=>$sq2,
     	  alignment=>$align,
-    	  query_gaps=>$gaps1,
-    	  subject_gaps=>$gaps2,
-    	  nga=>$nga,
-    	  ngb=>$ngb,
+    	  query_gaps=>$nga,
+    	  subject_gaps=>$ngb,
     	  percent_id=>$perc,
     	  number=>$count,
         });
