@@ -39,7 +39,7 @@ sub process_file
     while (<IN>)
     {
      $tmp .= $_;
-     if (/perc/)
+     if (/perc/) 
      {push @data,$tmp;$tmp="";}
     }
     close IN;
@@ -66,9 +66,18 @@ sub _parseReport {
 	foreach my $things (split /\n/,$data)
 	{ 
          next unless $things;
-         $locs = $things if $things =~/;/;
-      	 $scores = $things if $things =~/,/;
-         push @aligns,$things if $things =~/([ATGC]|:)/;
+	 if ($things =~/;/)
+	   {
+	     $locs = $things;
+	   }
+	 elsif ($things =~ /,/)
+	   {
+	     $scores = $things;
+	   }
+	 else
+	   {
+	     push @aligns,$things;
+	   }
 	}
 	for (my $i=0;$i<scalar(@aligns);$i+=3)
 	{
