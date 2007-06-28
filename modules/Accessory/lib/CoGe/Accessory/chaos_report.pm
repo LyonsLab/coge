@@ -77,9 +77,9 @@ sub _parseReport {
    	  $sq2 .= $aligns[$i+2];
    	  }
    	$align =~s/:/|/g;
-	while ($align !~ /^\|/)
+	while ($align && $align !~ /^\|/)
         	{$sq1 =~s/^.//;$sq2 =~s/^.//;$align =~s/^.//;}
-  	while ($align !~ /\|$/)
+  	while ($align && $align !~ /\|$/)
        		{$sq1 =~s/.$//;$sq2 =~s/.$//;$align =~s/.$//;}
   	if ($locs =~/^(\w+\.?\d*)\s+(\d+)\s(\d+).\s(\w+\.?\d*)\s+(\d+)\s(\d+)\D+(\d+\.\d+)\s.(.)/)
     	{
