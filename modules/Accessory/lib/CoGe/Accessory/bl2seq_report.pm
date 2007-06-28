@@ -27,7 +27,6 @@ sub new {
 	my $class = ref($proto) || $proto;
 	my $opts = shift;
 	$opts = {} unless $opts;
-	my $class = ref($proto) || $proto;
 	my $self = bless ({%$opts}, $class);
 	$self->hsp_count(0);
 	# init
