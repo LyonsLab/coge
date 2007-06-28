@@ -120,7 +120,7 @@ sub _parseReport {
     	  subject_gaps=>$ngb,
     	  percent_id=>$perc,
     	  number=>$hsp_count,
-	  eval=>"N/A",
+	  pval=>"N/A",
         });
     $self->hsp_count($hsp_count) if $hsp;
     return $hsp;
