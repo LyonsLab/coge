@@ -86,10 +86,6 @@ sub _parseReport {
    	  $sq2 .= $aligns[$i+2];
    	  }
    	$align =~s/:/|/g;
-	while ($align && $align !~ /^\|/)
-        	{$sq1 =~s/^.//;$sq2 =~s/^.//;$align =~s/^.//;}
-  	while ($align && $align !~ /\|$/)
-       		{$sq1 =~s/.$//;$sq2 =~s/.$//;$align =~s/.$//;}
   	if ($locs =~/^(\w+\.?\d*)\s+(\d+)\s(\d+).\s(\w+\.?\d*)\s+(\d+)\s(\d+)\D+(\d+\.\d+)\s.(.)/)
     	{
     		($name1,$start1,$stop1,$name2,$start2,$stop2,$score_plus,$strand) = ($1,$2,$3,$4,$5,$6,$7,$8);
@@ -98,6 +94,10 @@ sub _parseReport {
     	{
       		($score,$nmatches,$nga,$ngb,$nletters,$perc) = ($1,$2,$3,$4,$5,$6);
     	}
+    	while ($align && $align !~ /^\|/)
+        	{$sq1 =~s/^.//;$sq2 =~s/^.//;$align =~s/^.//;$start1++;$start2++;}
+  	while ($align && $align !~ /\|$/)
+       		{$sq1 =~s/.$//;$sq2 =~s/.$//;$align =~s/.$//;$stop1--;$stop2--;}
   	$strand = $strand =~/-/ ? "-1" : "1";
   	($start1,$stop1) = ($stop1,$start1) if $start1 > $stop1;
   	($start2,$stop2) = ($stop2,$start2) if $start2 > $stop2;
