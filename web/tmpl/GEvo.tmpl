@@ -8,6 +8,7 @@
 </HEAD>
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.js"></SCRIPT>
 <script language="JavaScript" type="text/javascript" src="/CoGe/js/menu.js"></script>
+<script src="/bpederse/gobe/jscss/swfobject.js" ></script>
 <SCRIPT language="JavaScript">
 function submitform() {
   document.main_form.submit();
@@ -123,6 +124,18 @@ check_alignment_program();
 setup();
 
  });
+
+var swfcallback = function(w,h,img_base,n_images){
+       var so = new SWFObject("/bpederse/gobe/src/gobe.swf", "gobe", w, h, "9", "#FFFFFF");
+       so.useExpressInstall('/bpederse/gobe/src/expressinstall.swf');
+       so.addVariable('n', n_images);
+       so.addVariable('imgdir', '/CoGe/tmp/');
+       so.addVariable('img', base );
+       so.write("flashdiv");
+}
+
+
+
 
 </SCRIPT>
 <div id="message"><TMPL_VAR NAME="MESSAGE"></div>
@@ -268,13 +281,87 @@ Number of sequences:
 </DIV>
 
  <DIV id="chaos_options" class="small">
-Note: parameter options haven't been implemented for chaos (yet)
+<table class = small>
+   <TR>
+  <TD>Word size: </TD>
+  <TD><input class="backbox" type="text" name="chaos_word_length" id="chaos_word_length" tabindex="1" size="3" value="8" /></TD>
+ </TR>    
+ <TR>
+  <TD>Score cutoff: </TD>
+  <TD><input class="backbox" type="text" name="chaos_score_cutoff" id="chaos_score_cutoff" tabindex="1" size="3" value="25" /></TD>
+ </TR>    
+ <TR>
+  <TD>Rescore cutoff: </TD>
+  <TD><input class="backbox" type="text" name="chaos_rescore_cutoff" id="chaos_rescore_cutoff" tabindex="1" size="3" value="0" /></TD>
+ </TR>    
+ <TR>
+  <TD>Lookback distance:<br><font class=small>(length between seed alignments for chaining)</font></TD>
+  <TD><input class="backbox" type="text" name="chaos_lookback" id="chaos_lookback" tabindex="1" size="3" value="20" /></TD>
+ </TR>    
+ <TR>
+  <TD>Maximum gap length between seeds for chaining: </TD>
+  <TD><input class="backbox" type="text" name="chaos_gap_length" id="chaos_gap_length" tabindex="1" size="3" value="5" /></TD>
+ </TR>    
+ <TR>
+  <TD>Gap start penality: </TD>
+  <TD><input class="backbox" type="text" name="chaos_gap_start" id="chaos_gap_start" tabindex="1" size="3" value="0" /></TD>
+ </TR>    
+ <TR>
+  <TD>Gap extend penality: </TD>
+  <TD><input class="backbox" type="text" name="chaos_gap_extension" id="chaos_gap_extension" tabindex="1" size="3" value="-1" /></TD>
+ </TR>    
+  <TR>
+  <TD>Other Chaos parameters: </TD>
+  <TD><input class="backbox" type="text" name="chaos_params" id="chaos_params" tabindex="1" size="10" /></TD>
+ </TR>         
+
+</table>
+
 </DIV>
 
  <DIV id="blastz_options" class="small">
 Note: parameter options haven't been implemented for blastz (yet)
-</DIV>
+<table class = small>
+   <TR>
+  <TD>Word size: </TD>
+  <TD><input class="backbox" type="text" name="blastz_wordsize" id="blastz_wordsize" tabindex="1" size="4" value="8" /></TD>
+ </TR>    
+<TR>
+  <TD>Gap start penality: </TD>
+  <TD><input class="backbox" type="text" name="blastz_gap_start" id="blastz_gap_start" tabindex="1" size="4" value="400" /></TD>
+ </TR>    
+ <TR>
+  <TD>Gap extend penality: </TD>
+  <TD><input class="backbox" type="text" name="blastz_gap_extension" id="blastz_gap_extension" tabindex="1" size="4" value="30" /></TD>
+ </TR>    
+ <TR>
+  <TD>Chaining: </TD>
+  <TD><select class="backbox" id="blastz_chaining" tabindex="1" />
+      <option value=0>no chaining</option>
+      <option value=1>just output chain</option>
+      <option value=2>chain and extend</option>
+      <option value=3>just output HSPs</option>
+      </select></TD>
+ </TR>    
+ <TR>
+  <TD>Score threshold: </TD>
+  <TD><input class="backbox" type="text" name="blastz_threshold" id="blastz_threshold" tabindex="1" size="4" value="3000" /></TD>
+ </TR>    
+ <TR>
+  <TD>Mask threshold: </TD>
+  <TD><input class="backbox" type="text" name="blastz_mask" id="blastz_mask" tabindex="1" size="4" value="0" /></TD>
+ </TR>    
 
+
+  <TR>
+  <TD>Other Blastz parameters: </TD>
+  <TD><input class="backbox" type="text" name="blastz_params" id="blastz_params" tabindex="1" size="10" /></TD>
+ </TR>         
+
+</table>
+
+
+</DIV>
  <DIV id="tblastx_options" class="small">
  <font class="small">Hide HSPs with stop codons in a coding sequence?<label><input class="backbox" type="radio" name="show_hsps_with_stop_codon" id="show_hsps_with_stop_codon" tabindex="1" value="1" />Yes</label><label><input class="backbox" type="radio" name="show_hsps_with_stop_codon" id="show_hsps_with_stop_codon" tabindex="1" value="0" checked />No</label></font>
 <br>Note: Word size limited to 3 for tblastx
@@ -342,6 +429,9 @@ Note: parameter options haven't been implemented for blastz (yet)
  </TABLE>
  </DIV>
      </table>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
+     <span class="subItem"></span>
      <span class="subItem"></span>
      <span class="subItem"></span>
      <span class="subItem"></span>
