@@ -9,6 +9,9 @@ use Data::Dumper;
 use CoGe::Genome;
 use CoGe::Accessory::bl2seq_report;
 use CoGe::Accessory::blastz_report;
+use CoGe::Accessory::chaos_report;
+use CoGe::Accessory::lagan_report;
+use CoGe::Accessory::dialign_report;
 
 # for security purposes
 $ENV{PATH} = "/opt/apache2/CoGe/";
@@ -70,6 +73,9 @@ sub gen_body
     my $blast;
     $blast= new CoGe::Accessory::bl2seq_report($blast_file) if $blast_file =~ /bl2seq/i;
     $blast= new CoGe::Accessory::blastz_report($blast_file) if $blast_file =~ /blastz/i;
+    $blast= new CoGe::Accessory::blastz_report($blast_file) if $blast_file =~ /lagan/i;
+    $blast= new CoGe::Accessory::blastz_report($blast_file) if $blast_file =~ /chaos/i;
+    $blast= new CoGe::Accessory::blastz_report($blast_file) if $blast_file =~ /dialign/i;
     my $hsp;
     foreach my $item (@{$blast->hsps})
       {
