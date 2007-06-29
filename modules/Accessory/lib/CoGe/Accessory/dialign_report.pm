@@ -13,7 +13,7 @@ BEGIN
     use vars qw($VERSION);
     $VERSION = "0.01";
   }
-__PACKAGE__->mk_accessors qw(file hsps hsp_count query subject qlength slength);
+__PACKAGE__->mk_accessors qw(file hsps hsp_count query subject qlength slength min_score max_gap split_score);
 
 ###############################################################################
 # dialign_report -- Josh Kane  UC Berkeley
@@ -24,7 +24,10 @@ sub new {
 	$opts = {} unless $opts;
 	my $class = ref($proto) || $proto;
 	my $self = bless ({%$opts}, $class);
-	$self->hsp_count(0) unless $self->hsp_count;;
+	$self->split_score(0) unless $self->split_score;
+	$self->hsp_count(0) unless $self->hsp_count;
+	$self->min_score(1) unless $self->min_score;
+	$self->max_gap(2) unless $self->max_gap;
 	$self->process_file();
 	return $self;
       }
@@ -82,17 +85,21 @@ sub parse_seq
     $sq2 .= $holder[$i+1];
     $nums .= $holder[$i+2];
   }
-  $nums =~ s/\s//g;
+  $nums =~ s/\D//g;
   my $nm1 = $self->query;
   my $nm2 = $self->subject;
   $sq1 =~ s/$nm1//g;
+  $sq1 =~ s/(\s|\d)//g;
   $sq2 =~ s/$nm2//g;
-  my ($start1,$stop1,$align1) = $self->get_align($sq1);
-  my ($start2,$stop2,$align2) = $self->get_align($sq2);
-  my ($values) = $self->get_values($nums);
-  for (my $i=0;$i<scalar(@$start2);$i++)
+  $sq2 =~ s/(\s|\d)//g;
+  my ($scores) = $self->get_score_aligns($nums);
+  #print Dumper @$scores;
+  my ($seq1,$seq2) = $self->get_align($scores,$sq1,$sq2);
+  #print Dumper @$seq1;
+  #print Dumper @$seq2;
+  for (my $i=0;$i<scalar(@$seq1);$i++)
   {
-    my $hsp = $self->_getHSP($start1->[$i],$stop1->[$i],$align1->[$i],$start2->[$i],$stop2->[$i],$align2->[$i],$values->[$i]);
+    my $hsp = $self->_getHSP(%{$seq1->[$i]},%{$seq2->[$i]},%{$scores->[$i]});
     push @hsps,$hsp if $hsp;
   }
   $self->hsps(\@hsps);
@@ -102,19 +109,31 @@ sub parse_seq
 sub _getHSP
 {
   my $self = shift;
-  my ($start1,$stop1,$sq1,$start2,$stop2,$sq2,$values) = @_;
-  my $align = $self->get_pipes($sq1,$sq2);
+  my %opts = @_;
+  #print Dumper %opts;
+  my $sq1 = $opts{align1};
+  my $sq2 = $opts{align2};
+  my $start1 = $opts{start1};
+  my $start2 = $opts{start2};
+  my $stop1 = $opts{stop1};
+  my $stop2 = $opts{stop2};
+  my $scores = $opts{score};
+  #print "scores are $scores\n";
+  #my $stop = $opts{stop};
+  #my $start = $opts{start};
+  my $align = $self->get_pipes($sq1,$sq2,$scores);
+  #my $align = "|||";
   my $match = $align =~ tr/\|/\|/;
   while ($align && $align !~ /^\|/)
-       {$sq1 =~s/^.//;$sq2 =~s/^.//;$align =~s/^.//;}
+       {$sq1 =~s/^.//;$sq2 =~s/^.//;$align =~s/^.//;$start1++;$start2++;}
   while ($align && $align !~ /\|$/)
-       {$sq1 =~s/.$//;$sq2 =~s/.$//;$align =~s/.$//;}
+       {$sq1 =~s/.$//;$sq2 =~s/.$//;$align =~s/.$//;$stop1--;$stop2--;}
   my $hsp_count = $self->hsp_count;
   $hsp_count++;
   my $length = length $sq1;
   my $hsp = new CoGe::Accessory::parse_report::HSP
         ({
-   	  score=>$values,
+   	  score=>$scores,
     	  match=>$match,
     	  length=>$length,
     	  query_start=>$start1,
@@ -130,63 +149,192 @@ sub _getHSP
     return $hsp;
 }
   
-
 sub get_align
 {
-  my $self = shift;
-  my $str = shift;
-  my ($count,$hit,$align,$start,$stop) = (0,0,"",0,0);
-  my (@seq,@aligns,@starts,@stops);
-  foreach my $char (split //,$str)
-  {
-   push @seq,$char if $char =~ /[ATGC-]/i;
-  }
-  for(my $i=0;$i<scalar(@seq);$i++)
-  {
-      $count++ if $seq[$i] !~ /-/;
-      if ($seq[$i] =~/[ATGC]/)
-      {
-        $align .= $seq[$i];
-        $hit++;
-        if ($seq[$i+1] !~ /[ATGC]/)
-        {
-         $stop = $count;
-         $start = ($stop - $hit)+1;
-         push @starts,$start;
-         push @stops,$stop;
-         push @aligns,$align;
-         ($start,$stop,$align,$hit) = (0,0,"",0);
-        }
-      }
-   }
-   return (\@starts,\@stops,\@aligns);
+ my $self = shift;
+ my ($vals) = shift;
+ my $sq1 = shift;
+ my $sq2 = shift;
+ #print Dumper @$vals;
+ my ($start,$stop,$score,$length);
+ my ($start1,$stop1,$start2,$stop2);
+ my ($tmp1,$tmp2);
+ my $seq1 = [];
+ my $seq2 = [];
+ for (my $i=0;$i < scalar(@$vals);$i++)
+ {
+   $start = $vals->[$i]{start};
+   #print "start is $start\n";
+   $stop = $vals->[$i]{stop};
+   #print "stop is $stop\n";
+   $score = $vals->[$i]{score};
+   $length = (length $score) - 1;
+   $tmp1 = substr($sq1,$start,$length);
+   #print "tmp1 is $tmp1\n";
+   $tmp2 = substr($sq2,$start,$length);
+   #print "tmp2 is $tmp2\n";
+   ($start1,$stop1) = $self->counting(substr($sq1,0,$stop),$tmp1);
+   ($start2,$stop2) = $self->counting(substr($sq2,0,$stop),$tmp2);
+   push @$seq1,{start1=>$start1,stop1=>$stop1,align1=>$tmp1};
+   push @$seq2,{start2=>$start2,stop2=>$stop2,align2=>$tmp2};
+ }
+ return $seq1,$seq2;
 }
+   
+   
+# sub get_align
+# {
+#   my $self = shift;
+#   my $str = shift;
+#   my ($count,$hit,$align,$start,$stop) = (0,0,"",0,0);
+#   my (@seq,@aligns,@starts,@stops);
+#   foreach my $char (split //,$str)
+#   {
+#    push @seq,$char if $char =~ /[ATGC-]/i;
+#   }
+#   for(my $i=0;$i<scalar(@seq);$i++)
+#   {
+#       $count++ if $seq[$i] !~ /-/;
+#       if ($seq[$i] =~/[ATGC]/)
+#       {
+#         $align .= $seq[$i];
+#         $hit++;
+#         if ($seq[$i+1] !~ /[ATGC]/)
+#         {
+#          $stop = $count;
+#          $start = ($stop - $hit)+1;
+#          push @starts,$start;
+#          push @stops,$stop;
+#          push @aligns,$align;
+#          ($start,$stop,$align,$hit) = (0,0,"",0);
+#         }
+#       }
+#    }
+#    
+#    
+#    return (\@starts,\@stops,\@aligns);
+#}
 
 sub get_pipes
 {
   my $self = shift;
-  my ($seq1,$seq2) = @_;
+  my ($seq1,$seq2,$scores) = @_;
+  #print "($seq1,$seq2,$scores)\n";
   my $align;
   my $length = length $seq1;
-  for (my $i=0;$i<($length);$i++)
+  while ($seq1)
   {
-    $align .= substr($seq1,0,1) eq substr($seq2,0,1) ? "|" : " ";
+    $align .= ((substr($seq1,0,1) eq substr($seq2,0,1)) && substr($scores,0,1)) ? "|" : " ";
     $seq1 =~ s/^.//;
     $seq2 =~ s/^.//;
+    $scores =~ s/^.//;
   }
   return $align;
 }
  
-sub get_values
+sub get_score_aligns
 {
   my $self = shift;
   my $num = shift;
-  my @nums;
-  foreach my $digits (split /0+/,$num)
+  my $info = [];
+  my $min_score = $self->min_score;
+  my $max_gap = $self->max_gap;
+  my $split_scores = $self->split_score;
+  my $count = 0;
+  my $check;
+  my $start = 0;
+  my $stop = 0;
+  my $loc = 0;
+  my $hits = 0;
+  my $tmp = "";
+  foreach my $digits (split //,$num)
   {
-   push @nums,$digits if $digits;
+   next unless $digits =~ /\d/;
+   #print $digits;
+   $count++;
+   unless ($tmp)
+    {next if $digits == 0;}
+   if ($split_scores)
+   {
+     $check = $1 if $tmp=~/(\d$)/;
+     if ($tmp && ($check != $digits))
+     {
+       #print "regex if statement worked! $check is not $digits\n";
+       #print "tmp is $tmp\n";
+       $stop = $count - 1;
+       $start = $stop - (length $tmp);
+       #print "stop: $stop\n";
+	#print "start: $start\n";
+       push @$info,{start=>$start,stop=>$stop,score=>$tmp};
+       $tmp = $digits unless $digits == 0;
+       $tmp = "" if $digits == 0;
+     }
+     else
+      {$tmp .= $digits;}
+    }
+    else
+    {
+   #print "$count\n";
+	if ($digits < $min_score)
+	{
+	$hits++;
+	#print "hits: $hits\n";
+	if ($hits > $max_gap)
+	{
+	$hits--;
+	#print "score before edit: $tmp\n";
+	$tmp = substr($tmp,0,((length $tmp) - $hits));
+	#print "score after edit: $tmp\n";
+	$stop = $count - $hits;
+	#print "stop: $stop\n";
+	#print "length of tmp is",length $tmp,"\n";
+	$start = $stop - (length $tmp);
+	# print "start: $start\n";
+	push @$info,{start=>$start,stop=>$stop,score=>$tmp};
+	($tmp,$start,$hits) = ("",0,0);
+	}
+	else
+	{$tmp .= $digits;}
+	}
+	else
+	{
+	$hits = 0 if $hits;
+	$tmp .= $digits;
+	}
+    }
   }
-  return \@nums;
+  if ($tmp)
+  {
+    while ($tmp=~/(\d)$/)
+    {
+      if ($1 < $min_score)
+      {
+       $tmp=~s/.$//;
+       $count--;
+      }
+      else
+       {last;}
+     }
+    $start = ($count - (length $tmp));
+    push @$info,{start=>$start,stop=>$count,score=>$tmp};
+    }
+  return $info;
+}
+
+sub counting
+{
+  my $self = shift;
+  my $seq = shift;
+  my $align = shift;
+  $align =~ s/-//g;
+  my $length = length $align;
+  my $count = 0;
+  foreach my $char (split //,$seq)
+  {
+    $count++ if $char =~ /[atgc]/i;
+  }
+  my $start = ($count - $length)+1;
+  return $start,$count;
 }
 
 1;
