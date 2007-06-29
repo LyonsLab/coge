@@ -14,6 +14,7 @@ use CoGe::Accessory::Web;
 use CoGe::Accessory::bl2seq_report;
 use CoGe::Accessory::blastz_report;
 use CoGe::Accessory::lagan_report;
+use CoGe::Accessory::chaos_report;
 use CoGe::Graphics;
 use CoGe::Graphics::Chromosome;
 use CoGe::Graphics::Feature;
@@ -32,13 +33,16 @@ use DBI;
 use Benchmark qw(:all);
 
 # for security purposes
+
 $ENV{PATH} = "/opt/apache/CoGe/";
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
-
-use vars qw( $DATE $DEBUG $BL2SEQ $BLASTZ $LAGAN $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge $NUM_SEQS $MAX_SEQS $BASEFILE $BASEFILENAME);
+#for chaos
+$ENV{'LAGAN_DIR'} = '/opt/apache/CoGe/bin/lagan/';
+use vars qw( $DATE $DEBUG $BL2SEQ $BLASTZ $LAGAN $CHAOS $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge $NUM_SEQS $MAX_SEQS $BASEFILE $BASEFILENAME);
 $BL2SEQ = "/opt/bin/bio/bl2seq ";
 $BLASTZ = "/usr/bin/blastz ";
 $LAGAN = "/opt/apache/CoGe/bin/lagan/lagan.pl";
+$CHAOS = "/opt/apache/CoGe/bin/lagan/chaos_coge";
 $TEMPDIR = "/opt/apache/CoGe/tmp";
 $TEMPURL = "/CoGe/tmp";
 
@@ -445,6 +449,10 @@ sub Show_Summary
       {
 	$analysis_reports = run_lagan (sets=>\@sets, params=>$param_string, parser_opts=>$parser_opts);
       }
+    elsif ($analysis_program eq "chaos")
+      {
+	$analysis_reports = run_chaos (sets=>\@sets, params=>$param_string, parser_opts=>$parser_opts);
+      }
     else
       {
 	$analysis_reports = run_bl2seq(sets=>\@sets, params=>$param_string, parser_opts=>$parser_opts, blast_program=>$analysis_program);
@@ -454,7 +462,6 @@ sub Show_Summary
 #    print STDERR Dumper $analysis_reports;
     my $t3 = new Benchmark;
     my $count = 1;
-    my $iframe;
     my $frame_height;
     foreach my $item (@sets)
       {
@@ -494,7 +501,6 @@ sub Show_Summary
 								   seq_num=>$count,
 								  );
 	    $frame_height += $gfx->ih + $gfx->ih*.1;
-#	    print STDERR $map;
 	    $html .= qq!<div>$accn!;
 	    $html .= qq!(<font class=species>!.$obj->organism.qq!</font>)! if $obj->organism;
 	    $html .= "(".$up."::".$down.")" if defined $up;
@@ -502,7 +508,6 @@ sub Show_Summary
 	    $html .= qq!</DIV>\n!;
 	    $html .= qq!<IMG SRC="$TEMPURL/$image" !;
 	    my $tmp_count = $count -1;
-#	    $iframe .= qq{&img$tmp_count=$image};
 	    $html .= qq!BORDER=0 ismap usemap="#$mapname">\n!;
 	    $html .= "$map\n";
 	    $item->{image} = $image;
@@ -510,8 +515,9 @@ sub Show_Summary
 	  }
 	$count++;
       }
-    $iframe = qq{<iframe width="100%" height="$frame_height}."px".qq{" src="/bpederse/hsparrows/?img=$BASEFILENAME&n=}.($count-1);
-    $iframe .= qq{"></iframe>};
+
+
+    my $str = qq{/bpederse/gobe?imgdir=/CoGe/tmp/&img=$BASEFILENAME&n=}.($count-1);
     my $t4 = new Benchmark;
     $html .= qq!<br>!;
     $html .= qq!<FORM NAME=\"info\">\n!;
@@ -520,7 +526,11 @@ sub Show_Summary
     $html .= $form->br();
     $html .= qq!<DIV id="info"></DIV>!;
     $html .= "</FORM>\n";
-    $html .= qq{<div id=iframe>$iframe</div>};
+    $html .= qq{<embed type="application/x-shockwave-flash" src="/bpederse/gobe/src/gobe.swf?img=$BASEFILENAME&n=}.($count-1).qq{&imgdir=/CoGe/tmp/"width="100%" height="$frame_height" /> };
+#    my $iframe = qq{<iframe width="100%" height="$frame_height}."px".qq{" src="/bpederse/hsparrows/?img=$BASEFILENAME&n=}.($count-1).qq{"></iframe>};
+#    my $iframe = qq{<iframe width="100%" height="$frame_height}."px".qq{" src = /bpederse/gobe?imgdir=/CoGe/tmp/&img=$BASEFILENAME&n=}.($count-1).qq{"></iframe>};;
+#    $html .= qq{<div id=iframe>$iframe</div>};
+#    $html .= "<div id='flashdiv'> FLASH GOES HERE: $str </div>";
     $html .= qq{<table>};
     if ($analysis_reports && @$analysis_reports)
       {
@@ -692,6 +702,7 @@ xmax integer(10),
 ymin integer(10),
 ymax integer(10),
 image varchar(50),
+image_track varchar(10),
 pair_id integer(10),
 link varchar(50),
 annotation blob,
@@ -724,16 +735,42 @@ color varchar(10)
  };
      $dbh->do($index);
      $index = qq{
+ CREATE INDEX image_track ON image_data (image_track)
+ };
+     $dbh->do($index);
+     $index = qq{
  CREATE INDEX pair_id ON image_data (pair_id)
  };
      $dbh->do($index);
+    $create = qq{
+CREATE TABLE image_info
+(
+id integer(10) PRIMARY KEY,
+iname varchar(50),
+title varchar(1024)
+)
+};
+    $dbh->do($create);
+     $index = qq{
+ CREATE INDEX iname ON image_info (iname)
+ };
+     $dbh->do($index);
     my $i = 1;
+    my $j = 1;
 #    my $sth_insert = $dbh->prepare("INSERT INTO image_data VALUES(?,?,?,?,?,?,?,?,?,?)");
     foreach my $item (@$sets)
       {
 	my $image = $item->{image};
 	my $gfx = $item->{gfx};
 	my $accn = $item->{obj}->accn;
+	my $title = qq!(<span class=species>!.$item->{obj}->organism.qq!</font>)! if $item->{obj}->organism;
+	$title .= "(".$item->{up}."::".$item->{down}.")" if defined $item->{up};
+	$title .= qq!<span class=small> Reverse Complement</font>! if $item->{rev};
+	my $statement = qq{
+INSERT INTO image_info (id, iname, title) values ($j, "$image", "$title")
+};
+	print STDERR $statement unless $dbh->do($statement);
+	$j++;
 	foreach my $feat ($gfx->get_feats)
 	  {
 	    my $pair_id = "NULL";
@@ -761,26 +798,28 @@ color varchar(10)
 	      }
 	    #generate link
 	    my $link = $feat->link;
-#	    print STDERR $link if $link =~ /FeatView/;
 	    $link =~ s/'//g;
+	    #generate image track
+	    my $image_track = $feat->track;
+	    $image_track = "-".$image_track if $feat->strand =~ /-/;
+
 	    my ($xmin, $ymin, $xmax, $ymax) = split /,/, $coords;
 	    my $anno = $feat->description;
-#	    print STDERR join ("\t", $name),"\n";#, $xmin, $xmax, $ymin, $ymax, $image, $feat->description),"\n";
 	    $anno =~ s/'//g;
-	    my $statement = qq{
-INSERT INTO image_data (id, name, xmin, xmax, ymin, ymax, image, pair_id, link, annotation, color) values ($i, "$name", $xmin, $xmax, $ymin, $ymax, "$image", $pair_id, '$link', '$anno', '$color')
+	    $statement = qq{
+INSERT INTO image_data (id, name, xmin, xmax, ymin, ymax, image, image_track,pair_id, link, annotation, color) values ($i, "$name", $xmin, $xmax, $ymin, $ymax, "$image", "$image_track",$pair_id, '$link', '$anno', '$color')
 };
 	    print STDERR $statement unless $dbh->do($statement);
 #	    $sth_insert->execute($i,$name, $xmin, $xmax, $ymin, $ymax, $image, $pair_id, $link, $anno);
 	    $i++;
 	  }
       }
-    my $sth = $dbh->prepare("SELECT * from image_data");
-    $sth->execute();
-#    while(my $item = $sth->fetchrow_arrayref)
-#      {
-#	print STDERR Dumper $item;
-#      }
+#     my $sth = $dbh->prepare("SELECT * from image_data");
+#     $sth->execute();
+#     while(my $item = $sth->fetchrow_arrayref)
+#       {
+# 	print STDERR Dumper $item;
+#       }
     system "chmod +rw $tempfile";
     return $tempfile;
   }
@@ -1201,6 +1240,7 @@ sub get_obj_from_genome_db
 	print STDERR "\t", $f->genbank_location_string(recalibrate=>$start),"\n\n" if $DEBUG;
 	my $anno = $f->annotation_pretty_print_html;
 	$anno =~ s/\n//ig;
+	$anno =~ s/'//g;
 	my $location = $f->genbank_location_string(recalibrate=>$start);
 	$location = $obj->reverse_genbank_location(loc=>$location, ) if $rev;
 	print STDERR $name, "\t",$f->type->name ,"\t",$location,"\n" if $DEBUG;
@@ -1349,6 +1389,7 @@ sub run_blastz
 	      }
 	    $command .= " > ".$tempfile;
 	    	  # execute the command
+	    print STDERR $command,"\n";
 	    `$command`;
 	    system "chmod +rw $tempfile";
 	    my $blastreport = new CoGe::Accessory::blastz_report({file=>$tempfile}) if -r $tempfile;
@@ -1404,6 +1445,61 @@ sub run_lagan
 	    `$command`;
 	    system "chmod +rw $tempfile";
 	    my $report = new CoGe::Accessory::lagan_report({file=>$tempfile, %$parser_opts}) if -r $tempfile;
+	    my @tmp = ($tempfile, $accn1, $accn2);
+	    if ($report)
+	    {
+	      push @tmp, $report
+	    }
+	  else
+	    {
+	      push @tmp, "no results from comparing $accn1 and $accn2 with lagan";
+	    }
+	  push @reports, \@tmp;
+	  }
+      }
+    return \@reports;
+  }
+
+sub run_chaos
+  {
+    my %opts = @_;
+    my $sets = $opts{sets};
+    my $params= $opts{params};
+    my $parser_opts = $opts{parser_opts};
+
+    
+    my @files;
+    my @reports;
+    for (my $i=0; $i<scalar @$sets; $i++)
+      {
+	for (my $j=0; $j<scalar @$sets; $j++)
+	  {
+	    next unless $j > $i;
+	    my $seqfile1 = $sets->[$i]->{file};
+	    my $seqfile2 = $sets->[$j]->{file};
+	    next unless -r $seqfile1 && -r $seqfile2; #make sure these files exist
+	    next unless $sets->[$i]{reference_seq} || $sets->[$j]{reference_seq};
+	    my ($accn1, $accn2) = ($sets->[$i]{accn}, $sets->[$j]{accn});
+	    my ($tempfile) = $BASEFILE."_".($i+1)."-".($j+1).".chaos";
+	    my $command = $CHAOS;
+	    $command .= " $seqfile1 $seqfile2";
+	    
+	    $command .= " ".$params if $params;
+	    my $x = "";
+	    ($x,$command) = check_taint( $command );
+	    if ( $DEBUG ) {
+	      print STDERR "About to execute...\n $command\n";
+	    }
+	    unless ($x)
+	      {
+		next;
+	      }
+	    $command .= " > ".$tempfile;
+	    print STDERR $command,"\n";
+	    #time for execution
+	    `$command`;
+	    system "chmod +rw $tempfile";
+	    my $report = new CoGe::Accessory::chaos_report({file=>$tempfile, %$parser_opts}) if -r $tempfile;
 	    my @tmp = ($tempfile, $accn1, $accn2);
 	    if ($report)
 	    {
@@ -1614,16 +1710,35 @@ sub gen_go_button
 	'args__spike', 'spike', 
 	'args__maskcds', 'mask_cds', 
 	'args__maskncs', 'mask_ncs', 
+
 	'args__word', 'wordsize', 
 	'args__gapo', 'gapopen', 
 	'args__gape', 'gapextend', 
 	'args__mmatch', 'mismatch',
 	'args__eval', 'eval', 
 	'args__bp', 'blastparams',
+
         'args__lagan_min_length','lagan_min_length',
         'args__lagan_max_gap','lagan_max_gap',
         'args__lagan_percent_id','lagan_percent_id',
         'args__lagan_params','lagan_params',
+        'args__chaos_word_length','chaos_word_length',
+        'args__chaos_score_cutoff','chaos_score_cutoff',
+        'args__chaos_rescore_cutoff','chaos_rescore_cutoff',
+        'args__chaos_lookback','chaos_lookback',
+        'args__chaos_gap_length','chaos_gap_length',
+        'args__chaos_gap_start','chaos_gap_start',
+        'args__chaos_gap_extension','chaos_gap_extension',
+        'args__chaos_params','chaos_params',
+
+        'args__blastz_wordsize','blastz_wordsize',
+        'args__blastz_chaining','blastz_chaining',
+        'args__blastz_threshold','blastz_threshold',
+        'args__blastz_mask','blastz_mask',
+        'args__blastz_gap_start','blastz_gap_start',
+        'args__blastz_gap_extension','blastz_gap_extension',
+        'args__blastz_params','blastz_params',
+
 
 	'args__iw', 'iw',
 	'args__ih', 'ih', 
@@ -1642,6 +1757,8 @@ sub gen_go_button
         'args__num_seqs','args__$num_seqs',
 };
 	  return qq{<input type="button" value="GO" onClick="loading([], ['results']); run([$params],['results'], 'POST');">};   
+
+
   }
 
 sub color_pallet
@@ -1813,6 +1930,7 @@ sub hsp_color_cookie
 sub get_algorithm_options
   {
     my %opts = @_;
+#    print STDERR Dumper [map {"$_ => $opts{$_}" } sort keys %opts];
     my $analysis_program = $opts{prog};
     #blast stuff
     my $blast_wordsize = $opts{word};
@@ -1822,17 +1940,45 @@ sub get_algorithm_options
     my $blast_eval = $opts{eval};
     my $blast_params = $opts{bp};
 
+    #blastz stuff
+    my $blastz_wordsize = $opts{blastz_wordsize};
+    my $blastz_chaining = $opts{blastz_chaining};
+    my $blastz_threshold = $opts{blastz_threshold};
+    my $blastz_mask = $opts{blastz_mask};
+    my $blastz_gap_start = $opts{blastz_gap_start};
+    my $blastz_gap_extension = $opts{blastz_gap_extension};
+    my $blastz_params = $opts{blastz_params};
+
     #lagan_stuff
     my $lagan_params = $opts{lagan_params};
     my $lagan_min_length = $opts{lagan_min_length};
     my $lagan_max_gap = $opts{lagan_max_gap};
     my $lagan_percent_id = $opts{lagan_percent_id};
 
+    #chaos stuff
+    my $chaos_word_length = $opts{chaos_word_length};
+    my $chaos_score_cutoff = $opts{chaos_score_cutoff};
+    my $chaos_rescore_cutoff = $opts{chaos_rescore_cutoff};
+    my $chaos_lookback = $opts{chaos_lookback};
+    my $chaos_gap_length = $opts{chaos_gap_length};
+    my $chaos_gap_start = $opts{chaos_gap_start};
+    my $chaos_gap_extension = $opts{chaos_gap_extension};
+    my $chaos_params = $opts{chaos_params};
+
+
+
     #stuff to be returned
     my $param_string;  #param string to be passed to command line for program execution
     my %parser_options; #params used to set the parser object -- key is accessor method, value is value
     if ($analysis_program eq "blastz")
       {
+	$param_string = " W=" .$blastz_wordsize if $blastz_wordsize;
+	$param_string .= " C=" .$blastz_chaining if $blastz_chaining;
+	$param_string .= " K=" .$blastz_threshold if $blastz_threshold;
+	$param_string .= " M=" .$blastz_mask if $blastz_mask;
+	$param_string .= " O=" .$blastz_gap_start if $blastz_gap_start;
+	$param_string .= " E=" .$blastz_gap_extension if $blastz_gap_extension;
+	$param_string .= " " .$blastz_params if $blastz_params;
       }
     elsif ($analysis_program =~ /blast/) #match blastn and tblastx
       {
@@ -1851,5 +1997,24 @@ sub get_algorithm_options
 	$parser_options{length_cutoff} = $lagan_min_length;
 	$parser_options{percent_cutoff} = $lagan_percent_id;
       }
-    return ($analysis_program, $param_string, \%parser_options);
+    elsif ($analysis_program eq "chaos")
+      {
+	$param_string .= " -v"; #need verbose mode for the parser
+	$param_string .= " -b"; #search both strands
+	$param_string .= " -wl $chaos_word_length" if defined $chaos_word_length;
+	$param_string .= " -co $chaos_score_cutoff" if defined $chaos_score_cutoff;
+	$param_string .= " -rsc $chaos_rescore_cutoff" if defined $chaos_rescore_cutoff;
+	
+	$param_string .= " -lb $chaos_lookback" if defined $chaos_lookback;
+	$param_string .= " -gl $chaos_gap_length" if defined $chaos_gap_length;
+	$param_string .= " -gs $chaos_gap_start" if defined $chaos_gap_start;
+	$param_string .= " -gc $chaos_gap_extension" if defined $chaos_gap_extension;
+	$param_string .= " $chaos_params" if defined $chaos_params;
+      }
+    my ($x, $clean_param_string) = check_taint($param_string);
+    unless ($x)
+      {
+	print STDERR "user $USER's param_string: $param_string was tainted!\n";
+      }
+    return ($analysis_program, $clean_param_string, \%parser_options);
   }
