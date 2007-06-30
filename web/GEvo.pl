@@ -282,10 +282,7 @@ sub Show_Summary
   {
     my %opts = @_;
     my $num_seqs = $opts{num_seqs} || $NUM_SEQS;
-    my $match_filter = $opts{matchfilter};
-    print STDERR "spike filter: ",$match_filter,"\n";
     my $spike_len = $opts{spike};
-#    $spike_len = 0 unless $match_filter;
     my $mask_cds_flag = $opts{maskcds};
     my $mask_ncs_flag = $opts{maskncs};
     my $iw = $opts{iw};
@@ -333,7 +330,7 @@ sub Show_Summary
     my @sets;
     my $html;
     my $t1 = new Benchmark;
-
+    my $spike_seq;
     for (my $i = 1; $i <= $num_seqs; $i++)
       {
 	my $accn = $opts{"draccn$i"};
@@ -353,7 +350,7 @@ sub Show_Summary
 	my $dirstop = $opts{"dirstop$i"};
 	my $rev = 0;
 	my ($up, $down);
-	my ($file, $file_begin, $file_end,$spike_seq, $obj);
+	my ($file, $file_begin, $file_end, $obj);
 	my $reference_seq =$opts{"ref_seq$i"};
 	
 	if ($featid)
@@ -453,11 +450,10 @@ sub Show_Summary
     elsif ($analysis_program eq "chaos")
       {
 	$analysis_reports = run_chaos (sets=>\@sets, params=>$param_string, parser_opts=>$parser_opts);
-	print STDERR Dumper $analysis_reports;
       }
     else
       {
-	$analysis_reports = run_bl2seq(sets=>\@sets, params=>$param_string, parser_opts=>$parser_opts, blast_program=>$analysis_program);
+	$analysis_reports = run_bl2seq(sets=>\@sets, params=>$param_string, parser_opts=>$parser_opts, blast_program=>$analysis_program, spike_seq=>$spike_seq);
       }
    #sets => array or data for blast
    #blast_reports => array of arrays (report, accn1, accn2, parsed data)
@@ -475,38 +471,39 @@ sub Show_Summary
 	my $rev = $item->{rev};
 	my $up = $item->{up};
 	my $down = $item->{down};
+	$down = $obj->seq_length unless $down;
 	my $spike_seq = $item->{spike_seq};
 	if ($obj)
 	  {
-	    my ($image, $map, $mapname, $gfx) = generate_image(
-							 gbobj=>$obj, 
-							 start=>$file_begin,
-							 stop => $file_end,
-							 data=>$analysis_reports,
-							 iw=>$iw,
-							 ih=>$ih,
-							 fh=>$feat_h,
-							 show_gc=>$show_gc,
-							 show_nt=>$show_nt,
-							# reverse_image => $rev,
-							 stagger_label=>$stagger_label,
-							 overlap_adjustment=>$overlap_adjustment,
-							 feature_labels=>$feature_labels,
-							 hsp_limit=>$hsp_limit,
-							 hsp_limit_num=>$hsp_limit_num,
-							 color_hsp=>$color_hsp,
-							 hsp_colors=>\@hsp_colors,
-							 spike_sequence=>$spike_seq,
-							 show_hsps_with_stop_codon => $show_hsps_with_stop_codon,
-							 hiqual=>$hiqual,
-							 padding=>$padding,
-								   seq_num=>$count,
-								  );
+	    my ($image, $map, $mapname, $gfx, $eval_cutoff) = generate_image(
+									     gbobj=>$obj, 
+									     start=>$file_begin,
+									     stop => $file_end,
+									     data=>$analysis_reports,
+									     iw=>$iw,
+									     ih=>$ih,
+									     fh=>$feat_h,
+									     show_gc=>$show_gc,
+									     show_nt=>$show_nt,
+									     stagger_label=>$stagger_label,
+									     overlap_adjustment=>$overlap_adjustment,
+									     feature_labels=>$feature_labels,
+									     hsp_limit=>$hsp_limit,
+									     hsp_limit_num=>$hsp_limit_num,
+									     color_hsp=>$color_hsp,
+									     hsp_colors=>\@hsp_colors,
+									     spike_sequence=>$spike_seq,
+									     show_hsps_with_stop_codon => $show_hsps_with_stop_codon,
+									     hiqual=>$hiqual,
+									     padding=>$padding,
+									     seq_num=>$count,
+									    );
 	    $frame_height += $gfx->ih + $gfx->ih*.1;
 	    $html .= qq!<div>$accn!;
 	    $html .= qq!(<font class=species>!.$obj->organism.qq!</font>)! if $obj->organism;
 	    $html .= "(".$up."::".$down.")" if defined $up;
 	    $html .= qq!<font class=small> Reverse Complement</font>! if $rev;
+#	    $html .= qq!<font class=small> (eval cutoff: $eval_cutoff)</font>! if defined $eval_cutoff;
 	    $html .= qq!</DIV>\n!;
 	    $html .= qq!<IMG SRC="$TEMPURL/$image" !;
 	    my $tmp_count = $count -1;
@@ -658,28 +655,28 @@ sub generate_image
     $graphic->process_nucleotides(c=>$gfx, seq=>$gbobj->sequence, layers=>{gc=>$show_gc, nt=>$show_nt});
 #    print STDERR join ("\t", $gbobj->accn, $start, $stop),"\n";
     process_features(c=>$gfx, obj=>$gbobj, start=>$start, stop=>$stop, overlap_adjustment=>$overlap_adjustment);
-    process_hsps(
-		 c=>$gfx, 
-		 data=>$data, 
-		 accn=>$gbobj->accn, 
-		 rev=>$reverse_image, 
-		 seq_length=> length($gbobj->sequence), 
-		 stagger_label=>$stagger_label, 
-		 hsp_limit=>$hsp_limit,
-		 hsp_limit_num=>$hsp_limit_num,
-		 gbobj=>$gbobj,
-		 spike_seq=>$spike_seq,
-		 eval_cutoff=>$eval_cutoff,
-		 color_hsp=>$color_hsp,
-		 colors=>$hsp_colors,
-		 show_hsps_with_stop_codon=>$show_hsps_with_stop_codon,
-		);
+    $eval_cutoff = process_hsps(
+				c=>$gfx, 
+				data=>$data, 
+				accn=>$gbobj->accn, 
+				rev=>$reverse_image, 
+				seq_length=> length($gbobj->sequence), 
+				stagger_label=>$stagger_label, 
+				hsp_limit=>$hsp_limit,
+				hsp_limit_num=>$hsp_limit_num,
+				gbobj=>$gbobj,
+				spike_seq=>$spike_seq,
+				eval_cutoff=>$eval_cutoff,
+				color_hsp=>$color_hsp,
+				colors=>$hsp_colors,
+				show_hsps_with_stop_codon=>$show_hsps_with_stop_codon,
+			       );
     my $filename = $BASEFILE."_".$seq_num.".png";
     $filename = check_filename_taint($filename);
     $gfx->generate_png(file=>$filename);
     my $mapname = "map_".$seq_num;
     my ($map)=$gfx->generate_imagemap(name=>$mapname);
-    return (basename($filename), $map, $mapname, $gfx);
+    return (basename($filename), $map, $mapname, $gfx, $eval_cutoff);
   }
 
 sub generate_imagemap_db
@@ -959,8 +956,10 @@ sub process_hsps
 	  {
 	    foreach my $hsp (@{$blast->hsps})
 	      {
-		if ($hsp->qalign =~ /$spike_seq$/i)
+		if ($hsp->qalign =~ /^$spike_seq$/i)
 		  {
+		    print STDERR $spike_seq,"\n";
+		    print STDERR $hsp->qalign,"\n";
 		    $eval_cutoff = $hsp->eval;
 		    last;
 		  }
@@ -1027,7 +1026,8 @@ sub process_hsps
 		$f->label($hsp->number);
 	      }
 	    $f->alt(join ("-",$hsp->number,$accn1,$accn2));
-	    my $desc = join ("<br>", "HSP: ".$hsp->number. "  <font class=small>(".$blast->query."-". $blast->subject.")</font>", $start."-".$stop." (".$hsp->strand.")", $seq,"Match: ".$hsp->match,"Length: ".$hsp->length,"Identity: ".$hsp->percent_id,"E_val: ".$hsp->pval);
+	    my $desc = join ("<br>", "HSP: ".$hsp->number. "  <span class=small>(".$blast->query."-". $blast->subject.")</span>", $start."-".$stop." (".$hsp->strand.")", $seq,"Match: ".$hsp->match,"Length: ".$hsp->length,"Identity: ".$hsp->percent_id,"E_val: ".$hsp->pval);
+	    $desc .= "<span class=small> (cutoff: $eval_cutoff</span>)" if defined $eval_cutoff;
 	    $f->description($desc);
 	    my $link = "HSPView.pl?report=$report&num=".$hsp->number;
 	    $link .= join ("&","&qstart=".($gbobj->{start}+$start-1), "qstop=".($gbobj->{start}+$stop-1),"qchr=".$gbobj->{chr}, "qds=". $gbobj->{ds},"qstrand=".$strand) if $gbobj->{ds};
@@ -1069,7 +1069,7 @@ sub process_hsps
 	    $label_location = "top";
 	  }
       }
-
+    return $eval_cutoff;
   }
 
 sub generate_output
@@ -1200,14 +1200,15 @@ sub get_obj_from_genome_db
     my $t3 = new Benchmark;
 
     my $obj= new CoGe::Accessory::GenBank({
-					  accn=>$accn,
-					  locus=>$accn,
-					  version=>$feat->dataset->version(),
-					  source=>$feat->dataset->datasource->name(),
-					  organism=>$feat->org->name()."(v".$feat->dataset->version.")",
+					   accn=>$accn,
+					   locus=>$accn,
+					   version=>$feat->dataset->version(),
+					   source=>$feat->dataset->datasource->name(),
+					   organism=>$feat->org->name()."(v".$feat->dataset->version.")",
+					   seq_length=>length($seq),
+					   sequence=>$seq,
 					 });
 
-    $obj->sequence($seq);
     my $fnum = 1;
     my %used_names;
     $used_names{$accn} = 1;
@@ -1299,6 +1300,8 @@ sub run_bl2seq {
   my $program = $opts{blast_program};
   my $parser_opts = $opts{parser_opts};
   my $eval_cutoff = $opts{eval_cutoff};
+  my $spike_seq = $opts{spike_seq};
+  
   $program = "blastn" unless $program;
   my @reports;
   for (my $i=0; $i<scalar @$sets; $i++)
@@ -1309,6 +1312,7 @@ sub run_bl2seq {
 	  #
 	  my $seqfile1 = $sets->[$i]->{file};
 	  my $seqfile2 = $sets->[$j]->{file};
+	  check_sequence_files_spike($spike_seq, $seqfile1, $seqfile2) if ($spike_seq);
 	  next unless -r $seqfile1 && -r $seqfile2; #make sure these files exist
 	  
 	  next unless $sets->[$i]{reference_seq} || $sets->[$j]{reference_seq};
@@ -1567,7 +1571,11 @@ sub write_fasta
     ($seq) = $gbobj->subsequence( $seq_begin, $seq_end, $seq );
     my $full_seq = $seq;
     my $spike_seq = "";
-    ($seq, $spike_seq) = spike( $seq, $spike) if $spike;
+    if ($spike)
+      {
+	($spike_seq) = generate_spike_seq($spike);
+	$seq .= $spike_seq;
+      }
     ($fullname) = check_filename_taint( $fullname );
     my $length = length($seq);
     open(OUT, ">$fullname") or die "Couldn't open $fullname!\n";
@@ -1586,17 +1594,20 @@ sub write_fasta
     return($fullname,$seq_begin,$seq_end,$spike_seq, $full_seq);
   }
 
-sub spike { 
-	my $seq = shift;
+sub generate_spike_seq { 
 	my $spikesize = shift;
-	return ($seq) unless $spikesize;
-	$spikesize -= 10; # to account for the "CCCAAAGGGTTT" tag
-	my $spike_seq = "CCCAAAGGGT";
-	for ( my $n = 0; $n < $spikesize; $n++ ) {
-		$spike_seq .= "C";
-	}
-	$seq .= $spike_seq;
-	return($seq,$spike_seq);
+	return unless $spikesize;
+	my %nt = (1=>'A', 2=>'T', 3=>'C', 4=>'G');
+	my $spike_seq;
+	my $idx = 1;
+	for (my $i =1; $i<=$spikesize; $i+=3)
+	  {
+	    $spike_seq .= $nt{$idx}x3;
+	    $idx++;
+	    $idx = 1 if $idx == 5;
+	  }
+	$spike_seq = substr($spike_seq, 0, $spikesize);
+	return($spike_seq);
 }
 
 sub spike_filter_select
@@ -2008,4 +2019,46 @@ sub get_algorithm_options
 	print STDERR "user $USER's param_string: $param_string was tainted!\n";
       }
     return ($analysis_program, $clean_param_string, \%parser_options);
+  }
+
+sub check_sequence_files_spike
+  {
+    my $spike = shift;
+    return unless $spike;
+    print STDERR $spike,"\n";
+    my $start = length($spike) * -1;
+    my @files = @_;
+    my $check_nt;
+    foreach my $file (@files)
+      {
+	$/ = "\n>";
+	open (IN, $file);
+	my ($name, $seq);
+	while (<IN>)
+	  {
+	    ($name, $seq) = split /\n/, $_,2;
+	  }
+	close IN;
+	$/ = "\n";
+	$seq =~ s/>//g;
+	$name =~ s/>//g;
+	$seq =~ s/\n//g;
+	my $nt = substr($seq, $start-1,1),"\n";
+	print STDERR substr ($seq, $start-10),"\n";
+	unless ($check_nt)
+	  {
+	    $check_nt = $nt;
+	    next;
+	  }
+	if ($nt =~ /$check_nt/i)
+	  {
+	    $nt =~ tr/ATCGatcg/TAGCtagc/;
+	    substr($seq, $start, 0) = $nt x length($spike);
+	    print STDERR substr ($seq, $start-20),"\n";
+	    open (OUT, ">$file");
+	    print OUT ">$name\n";
+	    print OUT $seq,"\n";
+	    close OUT;
+	  }
+      }
   }
