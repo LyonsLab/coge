@@ -283,8 +283,9 @@ sub Show_Summary
     my %opts = @_;
     my $num_seqs = $opts{num_seqs} || $NUM_SEQS;
     my $match_filter = $opts{matchfilter};
+    print STDERR "spike filter: ",$match_filter,"\n";
     my $spike_len = $opts{spike};
-    $spike_len = 0 unless $match_filter;
+#    $spike_len = 0 unless $match_filter;
     my $mask_cds_flag = $opts{maskcds};
     my $mask_ncs_flag = $opts{maskncs};
     my $iw = $opts{iw};
@@ -452,6 +453,7 @@ sub Show_Summary
     elsif ($analysis_program eq "chaos")
       {
 	$analysis_reports = run_chaos (sets=>\@sets, params=>$param_string, parser_opts=>$parser_opts);
+	print STDERR Dumper $analysis_reports;
       }
     else
       {
@@ -561,19 +563,13 @@ sub Show_Summary
 	$html .= qq{<td class = small>SQLite db};
 	my $dbname = generate_imagemap_db(\@sets, $analysis_reports);
 	$html .= "<div class=xsmall><A HREF=\"$dbname\">SQLite DB file</A></DIV>\n";
-#	my $i = 0;
-#	foreach my $item (@sets)
-#	  {
-#	    my $basename = $TEMPURL."/".basename ($item->{db_file});
-#	    my $accn = $item->{accn};
-#	    $html .= "<div><font class=xsmall><A HREF=\"$basename\">SQLite DB file $accn</A></font></DIV>\n";
-#	    $i++;
-#	  }
       }
     $html .= qq{</table>};
 
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
-    $template->param(BOX_NAME=>"Results: $analysis_program");
+    my $results_name = "Results: $analysis_program";
+    $results_name .= " <span class=small>(spike sequence filter length: $spike_len)</span>" if $spike_len;
+    $template->param(BOX_NAME=>$results_name);
     $template->param(BODY=>$html);
     my $outhtml = $template->output;
     my $t5 = new Benchmark;
@@ -1606,18 +1602,11 @@ sub spike {
 sub spike_filter_select
   {
     my $match = shift;
+    my $prog;
     my $form = shift || $FORM;
-    $match = $form->param('spike_len') if $form->param('spike_len');
-    $match = 15 unless $match;
-    my $html = qq{<select class="backbox" id="spike">};
-    for (my $i = 10; $i<=20; $i++)
-      {
-	$html .= ($match && $match == $i) ? qq{<option selected>} : qq{<option>} ;
-	$html .= $i;
-	$html .= qq{</option>};
-      }
-    $html .= " nucleotides";
-    return $html;
+    $match = $form->param('spike_len') ? $form->param('spike_len') : 0; ;
+    $match = 15 if $prog eq "blastn" &! $match;
+    return $match;
   }
 
 sub generate_annotation
@@ -1705,8 +1694,10 @@ sub gen_go_button
 	$params .= qq{'args__b$i', 'b$i',};
       }
 
+# old params
+#	'args__matchfilter', 'matchfilter', 
+
     $params .= qq{
-	'args__matchfilter', 'matchfilter', 
 	'args__spike', 'spike', 
 	'args__maskcds', 'mask_cds', 
 	'args__maskncs', 'mask_ncs', 
