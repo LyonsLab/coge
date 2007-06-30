@@ -103,6 +103,10 @@ sub _parseReport {
   	($start2,$stop2) = ($stop2,$start2) if $start2 > $stop2;
   	$self->_getNames($name1,$name2) unless $self->gotname();
   	$perc = sprintf("%.4f", $perc) * 100;
+	#explicitly count gaps -- output from chaos is screwy
+	$nga = $sq1 =~ tr/-/-/;
+	$ngb = $sq2 =~ tr/-/-/;
+
    	my $hsp = new CoGe::Accessory::parse_report::HSP
         ({
    	  score=>$score_plus,
