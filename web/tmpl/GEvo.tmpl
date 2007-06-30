@@ -72,16 +72,16 @@ var alignment = $("#alignment_program").val();
   $("#blast_options").hide();
   $("#lagan_options").hide();
   $("#blastz_options").hide();
-  $("#blast_options").hide();
   $("#chaos_options").hide();
-//  $("#spike_sequence").hide();
+  $("#spike_sequence").hide();
   $("#tblastx_options").hide();
-  $("#test").hide();
+
+  var spike = $("#spike").val();
+  $("#spike").val(0);
 
 if (alignment == "blastz")
  {
   $("#blastz_options").show();	
-  $("#matchfilter").val(0);
  }
 else if (alignment == "lagan")
  {
@@ -91,30 +91,29 @@ else if (alignment == "chaos")
  {
   $("#chaos_options").show();
  }
-else
+else if (alignment == "tblastx")
  {
   $("#blast_options").show();
-  $("#spike_sequence").show();	
-  ('input:radio[@name=matchfilter]')[0].checked = true
- }
-
-if (alignment == "tblastx")
- {
   $("#wordsize").val(3);
   $("#gapopen").val(11);
   $("#gapextend").val(1);
   $("#eval").val(10);
   $("#mismatch").hide();
-  $("#tblastx_options").show();		
- }
-else if (alignment == "blastn")
+  $("#tblastx_options").show();	
+ }	
+else if (alignment == 'blastn')
  {
+  $("#blast_options").show();
+  $("#spike_sequence").show();
   $("#wordsize").val(7);
   $("#gapopen").val(5);
   $("#gapextend").val(2);
   $("#eval").val(100);
-  $("#mismatch").show();
+  $("#mismatch").show();    
+  if (spike == "undefined" || spike == 0) {spike = 15;} 	
+  $("#spike").val(spike);		
  }
+
  }
 
 
@@ -239,9 +238,9 @@ Number of sequences:
      <TABLE style="width: 100%;">
       <TR valign=top>
       <TD>
-      <TABLE>
+      <TABLE class=small>
   <TR>
-  <TD>Sequence and Algorithm Options: </TD>
+  <Th>Sequence and Algorithm Options: </TD>
   <TD>
   <select class="backbox" id="alignment_program" size="1" onchange='check_alignment_program()'>
        <TMPL_VAR NAME=ALIGNMENT_PROGRAMS>
@@ -271,14 +270,25 @@ Number of sequences:
  <TR>
   <TD>Expectation value (E) (-e): </TD>
   <TD><input class="backbox" type="text" name="eval" id="eval" tabindex="1" size="3" value="100" /></TD>
- </TR>    
+ </TR>
+    
  <TR>
   <TD>Other Blast Parameters: </TD>
   <TD><input class="backbox" type="text" name="blastparams" id="blastparams" tabindex="1" size="10" /></TD>
  </TR>         
-
 </TABLE>
 </DIV>
+ <DIV id="spike_sequence">
+  <table class=small>
+  <tr colspan>
+  <th> HSP filter by spike sequence
+  <td>(set to 0 to turn off):
+  <tr align=left class=small>
+  <td><li>Spike sequence length:
+  <td><input type="text" size="3" class="backbox" id="spike" value=<TMPL_VAR NAME=SPIKE_LEN>> nucleotides
+   </TR>
+  </table>
+ </DIV>
 
  <DIV id="chaos_options" class="small">
 <table class = small>
@@ -320,7 +330,6 @@ Number of sequences:
 </DIV>
 
  <DIV id="blastz_options" class="small">
-Note: parameter options haven't been implemented for blastz (yet)
 <table class = small>
    <TR>
   <TD>Word size: </TD>
@@ -393,41 +402,25 @@ Note: parameter options haven't been implemented for blastz (yet)
 <td width="3" bgcolor="#99FF99">
 
 
-<td> Select reference sequence(s) to which all other sequences will be compared:<br>
+<td class=small> Select reference sequence(s) to which all other sequences will be compared:<br>
 <TMPL_VAR NAME=REFERENCE_SEQUENCES>
-<td width="3" bgcolor="#99FF99">
-<td>
-<TABLE >
+
+<TABLE class=small>
  <TR align=left>
-  <TH class=small>
-   Mask Exons:
-  <TD class = small>
+  <TH >
+   <li>Mask Exons:
+  <TD >
    <label><input class="backbox" type="radio" name="mask" id="mask_cds" tabindex="22" value="1" <TMPL_VAR NAME=EXON_MASK_ON> />On</label>
     <label><input class="backbox" type="radio" name="mask" id="mask_cds" tabindex="22" value="0" <TMPL_VAR NAME=EXON_MASK_OFF> />Off</label>
  </TR>
  <TR align=left>
-  <TH class = small>
-   Mask Non-coding Sequence:
-  <TD class = small>
+  <TH>
+   <li>Mask Non-coding Sequence:
+  <TD >
    <label><input class="backbox" type="radio" name="mask_ncs" id="mask_ncs" tabindex="22" value="1" />On</label>
    <label><input class="backbox" type="radio" name="mask_ncs" id="mask_ncs" tabindex="22" value="0" checked />Off</label>
  </TR>
  </TABLE>
- <DIV id="spike_sequence">
- <table>
- <TR align=left>
-  <TH class = small>
-      Spike Sequence HSP Filter:
-  </TD>
-  <TD>
-      <label class=small><input class="backbox" type="radio" name="matchfilter" id="matchfilter" tabindex="15" value="1" />On</label>
-      <label class=small><input class="backbox" type="radio" name="matchfilter" id="matchfilter" tabindex="15" value="0" checked />Off</label>
-  <tr align=left>
-  <th class=small>Spike sequence length:
-  <td><TMPL_VAR NAME=SPIKE_LEN>
- </TR>
- </TABLE>
- </DIV>
      </table>
      <span class="subItem"></span>
      <span class="subItem"></span>
