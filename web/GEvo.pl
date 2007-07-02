@@ -514,7 +514,7 @@ sub Show_Summary
 	  }
 	$count++;
       }
-
+    $count--;
 
     my $str = qq{/bpederse/gobe?imgdir=/CoGe/tmp/&img=$BASEFILENAME&n=}.($count-1);
     my $t4 = new Benchmark;
@@ -525,7 +525,8 @@ sub Show_Summary
     $html .= $form->br();
     $html .= qq!<DIV id="info"></DIV>!;
     $html .= "</FORM>\n";
-    $html .= qq{<embed type="application/x-shockwave-flash" src="/bpederse/gobe/src/gobe.swf?img=$BASEFILENAME&n=}.($count-1).qq{&imgdir=/CoGe/tmp/"width="100%" height="$frame_height" /> };
+    $html .= qq{<DIV id=flashdiv></DIV>};
+#    my $flash = qq{<embed type="application/x-shockwave-flash" src="/bpederse/gobe/src/gobe.swf?img=$BASEFILENAME&n=}.($count-1).qq{&imgdir=/CoGe/tmp/"width="100%" height="$frame_height" /> };
 #    my $iframe = qq{<iframe width="100%" height="$frame_height}."px".qq{" src="/bpederse/hsparrows/?img=$BASEFILENAME&n=}.($count-1).qq{"></iframe>};
 #    my $iframe = qq{<iframe width="100%" height="$frame_height}."px".qq{" src = /bpederse/gobe?imgdir=/CoGe/tmp/&img=$BASEFILENAME&n=}.($count-1).qq{"></iframe>};;
 #    $html .= qq{<div id=iframe>$iframe</div>};
@@ -582,7 +583,7 @@ Time to generate images and maps: $image_time
 Time to process html            : $html_time
 } if $BENCHMARK;
 
-    return $outhtml;;
+    return $outhtml, $iw, $frame_height, $BASEFILENAME,$count;
 
 }
 
@@ -958,8 +959,6 @@ sub process_hsps
 	      {
 		if ($hsp->qalign =~ /^$spike_seq$/i)
 		  {
-		    print STDERR $spike_seq,"\n";
-		    print STDERR $hsp->qalign,"\n";
 		    $eval_cutoff = $hsp->eval;
 		    last;
 		  }
@@ -1758,7 +1757,7 @@ sub gen_go_button
         'args__padding', 'padding',
         'args__num_seqs','args__$num_seqs',
 };
-	  return qq{<input type="button" value="GO" onClick="loading([], ['results']); run([$params],['results'], 'POST');">};   
+	  return qq{<input type="button" value="GO" onClick="loading([], ['results']); run([$params],[handle_results], 'POST');">};   
 
 
   }
@@ -2043,8 +2042,7 @@ sub check_sequence_files_spike
 	$seq =~ s/>//g;
 	$name =~ s/>//g;
 	$seq =~ s/\n//g;
-	my $nt = substr($seq, $start-1,1),"\n";
-	print STDERR substr ($seq, $start-10),"\n";
+	my $nt = substr($seq, $start-1,1);
 	unless ($check_nt)
 	  {
 	    $check_nt = $nt;
@@ -2054,7 +2052,6 @@ sub check_sequence_files_spike
 	  {
 	    $nt =~ tr/ATCGatcg/TAGCtagc/;
 	    substr($seq, $start, 0) = $nt x length($spike);
-	    print STDERR substr ($seq, $start-20),"\n";
 	    open (OUT, ">$file");
 	    print OUT ">$name\n";
 	    print OUT $seq,"\n";
