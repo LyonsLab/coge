@@ -71,18 +71,19 @@ sub gen_body
     my $blast_file = shift;
     my $hsp_num = shift;
     my $blast;
-    $blast= new CoGe::Accessory::bl2seq_report($blast_file) if $blast_file =~ /bl2seq/i;
-    $blast= new CoGe::Accessory::blastz_report($blast_file) if $blast_file =~ /blastz/i;
-    $blast= new CoGe::Accessory::blastz_report($blast_file) if $blast_file =~ /lagan/i;
-    $blast= new CoGe::Accessory::blastz_report($blast_file) if $blast_file =~ /chaos/i;
-    $blast= new CoGe::Accessory::blastz_report($blast_file) if $blast_file =~ /dialign/i;
+    $blast= new CoGe::Accessory::bl2seq_report({file=>$blast_file}) if $blast_file =~ /bl2seq/i;
+    $blast= new CoGe::Accessory::blastz_report({file=>$blast_file}) if $blast_file =~ /blastz/i;
+    $blast= new CoGe::Accessory::lagan_report({file=>$blast_file}) if $blast_file =~ /lagan/i;
+    $blast= new CoGe::Accessory::chaos_report({file=>$blast_file}) if $blast_file =~ /chaos/i;
+    $blast= new CoGe::Accessory::dialgn_report({file=>$blast_file}) if $blast_file =~ /dialign/i;
+#    print STDERR Dumper $blast;
     my $hsp;
     foreach my $item (@{$blast->hsps})
       {
 	$hsp = $item if $item->number eq $hsp_num;
       }
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/HSPView.tmpl');
-       $template->param(Query=>$blast->query);
+    $template->param(Query=>$blast->query);
     $template->param(Subject=>$blast->subject);
     $template->param(QGap=>$hsp->qgap);
     $template->param(SGap=>$hsp->sgap);
