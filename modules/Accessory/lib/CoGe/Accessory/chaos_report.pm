@@ -24,7 +24,7 @@ sub new {
 	$opts = {} unless $opts;
 	my $class = ref($proto) || $proto;
 	my $self = bless ({%$opts}, $class);
-	$self->hsp_count(0) unless $self->hsp_count;;
+	$self->hsp_count(0) unless $self->hsp_count;
 	$self->process_file();
 	return $self;
       }
@@ -86,9 +86,10 @@ sub _parseReport {
    	  $sq2 .= $aligns[$i+2];
    	  }
    	$align =~s/:/|/g;
-  	if ($locs =~/^(\w+\.?\d*)\s+(\d+)\s(\d+).\s(\w+\.?\d*)\s+(\d+)\s(\d+)\D+(\d+\.\d+)\s.(.)/)
+  	if ($locs =~/^(.*?)\s+(\d+)\s(\d+).\s(.*?)\s+(\d+)\s(\d+)\D+(\d+\.\d+)\s.(.)/)
     	{
     		($name1,$start1,$stop1,$name2,$start2,$stop2,$score_plus,$strand) = ($1,$2,$3,$4,$5,$6,$7,$8);
+    		print STDERR "($name1,$start1,$stop1,$name2,$start2,$stop2,$score_plus,$strand)\n";
    	}
 	if ($scores =~/^\D+(\d+)\D+(\d+)\D+(\d+)\D+(\d+)\D+(\d+).+(0?\.\d+)/)
     	{
