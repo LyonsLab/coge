@@ -82,7 +82,7 @@ print $pj->build_html($FORM, \&gen_html);
 
 sub loading
   {
-    return qq{<font class="loading">Generating results. . .farfallina</font>};
+    return qq{<font class="loading">Generating results. . .</font>};
   }
 
 sub gen_html
@@ -584,7 +584,7 @@ Time to generate images and maps: $image_time
 Time to process html            : $html_time
 } if $BENCHMARK;
 
-    return $outhtml, $iw, $frame_height, $BASEFILENAME,$count;
+    return $outhtml, $iw+400, $frame_height, $BASEFILENAME,$count;
 
 }
 
@@ -757,7 +757,7 @@ title varchar(1024)
 	my $image = $item->{image};
 	my $gfx = $item->{gfx};
 	my $accn = $item->{obj}->accn;
-	my $title = qq!(<span class=species>!.$item->{obj}->organism.qq!</font>)! if $item->{obj}->organism;
+	my $title = $item->{obj}->organism if $item->{obj}->organism;
 	$title .= "(".$item->{up}."::".$item->{down}.")" if defined $item->{up};
 	$title .= qq!<span class=small> Reverse Complement</font>! if $item->{rev};
 	my $statement = qq{
@@ -799,7 +799,8 @@ INSERT INTO image_info (id, iname, title) values ($j, "$image", "$title")
 
 	    my ($xmin, $ymin, $xmax, $ymax) = split /,/, $coords;
 	    my $anno = $feat->description;
-	    $anno =~ s/'//g;
+	    $anno =~ s/'|"//g;
+	    print STDERR $anno,"\n" if $anno =~ /01020/;
 	    $statement = qq{
 INSERT INTO image_data (id, name, xmin, xmax, ymin, ymax, image, image_track,pair_id, link, annotation, color) values ($i, "$name", $xmin, $xmax, $ymin, $ymax, "$image", "$image_track",$pair_id, '$link', '$anno', '$color')
 };
@@ -1239,9 +1240,8 @@ sub get_obj_from_genome_db
 	print STDERR $name,"\n" if $DEBUG;
 	print STDERR "\t", $f->genbank_location_string(),"\n" if $DEBUG;
 	print STDERR "\t", $f->genbank_location_string(recalibrate=>$start),"\n\n" if $DEBUG;
-	my $anno = $f->annotation_pretty_print_html;
-	$anno =~ s/\n//ig;
-	$anno =~ s/'//g;
+	my $anno = $f->annotation_pretty_print;
+	$anno =~ s/\n/<br>/ig;
 	my $location = $f->genbank_location_string(recalibrate=>$start);
 	$location = $obj->reverse_genbank_location(loc=>$location, ) if $rev;
 	print STDERR $name, "\t",$f->type->name ,"\t",$location,"\n" if $DEBUG;
@@ -1393,7 +1393,7 @@ sub run_blastz
 	      }
 	    $command .= " > ".$tempfile;
 	    	  # execute the command
-	    print STDERR $command,"\n";
+#	    print STDERR $command,"\n";
 	    `$command`;
 	    system "chmod +rw $tempfile";
 	    my $blastreport = new CoGe::Accessory::blastz_report({file=>$tempfile}) if -r $tempfile;
