@@ -179,7 +179,7 @@ sub parse_genbank
 	  $self->date($date);
 	  $self->accn($accn);
 	  $self->keywords($keywords);
-	  $self->source($source);
+	  $self->data_source($source);
 	  $self->organism($organism);
 	  $self->definition($definition);
 	  $self->sequence( $sequence );
