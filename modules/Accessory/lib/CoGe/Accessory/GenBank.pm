@@ -7,7 +7,7 @@ use base qw(Class::Accessor);
 use CoGe::Accessory::GenBank::Feature;
 
 
-__PACKAGE__->mk_accessors qw(id locus accn seq_length moltype division date definition verison keywords data_source organism sequence srcfile dir anntoation features start stop add_gene_models);
+__PACKAGE__->mk_accessors qw(id locus accn seq_length moltype division date definition verison keywords data_source dataset organism sequence srcfile dir anntoation features start stop add_gene_models);
 
 sub new
   {
