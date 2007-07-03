@@ -8,7 +8,7 @@
 </HEAD>
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.js"></SCRIPT>
 <script language="JavaScript" type="text/javascript" src="/CoGe/js/menu.js"></script>
-<!--<script src="/CoGe/gobe/js/swfobject.js" ></script>-->
+<script src="/CoGe/gobe/static/swfobject.js" ></script>
 <SCRIPT language="JavaScript">
 function submitform() {
   document.main_form.submit();
@@ -128,12 +128,12 @@ setup();
 function handle_results (html,w, h, img_base, n_images) {
 
  $('#results').html(html);
-// var so = new SWFObject("/bpederse/gobe/src/gobe.swf", "gobe", w, h, "9", "#FFFFFF");
-// so.useExpressInstall('/CoGe/flash/expressinstall.swf');
-// so.addVariable('n', n_images);
-// so.addVariable('imgdir', '/CoGe/tmp/');
-// so.addVariable('img', img_base );
-// so.write("flashdiv");
+ var so = new SWFObject("/CoGe/gobe/flash/gobe.swf", "gobe", w, h, "9", "#FFFFFF");
+ so.useExpressInstall('/CoGe/gobe/flash/expressinstall.swf');
+ so.addVariable('n', n_images);
+ so.addVariable('base_url', '/CoGe/tmp/');
+ so.addVariable('img', img_base );
+ so.write("flashdiv");
  
 
 }
@@ -403,7 +403,7 @@ Number of sequences:
 </DIV>
 
 
-<td width="3" bgcolor="#99FF99">
+<td width="2" bgcolor="#99FF99">
 
 
 <td class=small> Select reference sequence(s) to which all other sequences will be compared:<br>
