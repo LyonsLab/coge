@@ -27,7 +27,7 @@ sub new {
 	my $class = ref($proto) || $proto;
 	my $self = bless ({%$opts}, $class);
 	$self->run_anchor("/opt/apache/CoGe/bin/lagan/chaos_coge") unless $self->run_anchor;
-	$self->run_dialign("/home/jkane/src/dialign_package/src/dialign2-2") unless $self->run_dialign;
+	$self->run_dialign("/opt/apache/CoGe/bin/dialign2_dir/dialign2-2_coge") unless $self->run_dialign;
 	$self->output_dir("/opt/apache/CoGe/tmp") unless $self->output_dir;
 	$self->run_anchor_opts("-v") unless $self->run_anchor_opts;
 	$self->run_dialign_opts("-anc -fn") unless $self->run_dialign_opts;
