@@ -454,7 +454,11 @@ sub process_nucleotides
 #    print STDERR "IN $0: start: $start, stop: $stop\n";
     #process nucleotides
     my $t7 = new Benchmark if $BENCHMARK;
-    $seq = uc($db->get_genomic_sequence_obj->get_sequence(start=>$start, end=>$stop, chr=>$chr, dataset=>$ds)) unless $seq; 
+    unless ($seq)
+      {
+	return unless $db;
+	$seq = uc($db->get_genomic_sequence_obj->get_sequence(start=>$start, end=>$stop, chr=>$chr, dataset=>$ds));
+      }
     my $t8 = new Benchmark if $BENCHMARK;
     my $seq_len = length $seq;
     my $chrs = int (($c->_region_stop-$c->_region_start)/$c->iw);
