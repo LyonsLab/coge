@@ -126,10 +126,6 @@ sub _parseReport {
    	 $align = substr($align,0,(length $align) - $gap_length);
     	 if ($align =~/\|+/)
     	 {
-    	  while ($align !~ /^\|/)
-    	   {$align1 =~s/^.//;$align2 =~s/^.//;$align =~s/^.//;}
-    	  while ($align !~ /\|$/)
-       	   {$align1 =~s/.$//;$align2 =~s/.$//;$align =~s/.$//;}
           #if (($length >$min_align_length)&&($ident1 >=$min_ident)&&($ident2 >= $min_ident)) 
            my $hsp = $self->_processHSP($align1,$align2,$align,$tmp1,$stop1,$tmp2,$stop2);
 
@@ -169,8 +165,14 @@ sub _processHSP {
       	my ($ident2,$sm,$length2,$gaps2) = check_num_of_aligns($align2,$align);	
 	$stop1=(($stop1-1)-$tmp1);my $start1 = (($stop1-$length1)+1);
 	$stop2=(($stop2-1)-$tmp2);my $start2 = (($stop2-$length2)+1);
+	while ($align !~ /^\|/)
+    	   {$align1 =~s/^.//;$align2 =~s/^.//;$align =~s/^.//;$start1++;$start2++;}
+    	while ($align !~ /\|$/)
+       	   {$align1 =~s/.$//;$align2 =~s/.$//;$align =~s/.$//;$stop1--;$stop2--;}
 	my $hsp_count = $self->hsp_count();
 	$hsp_count++;
+	
+	
 	my $hsp = new CoGe::Accessory::parse_report::HSP
            ({
     	     qpercent_id=>$ident1,
