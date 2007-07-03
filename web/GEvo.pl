@@ -82,7 +82,7 @@ print $pj->build_html($FORM, \&gen_html);
 
 sub loading
   {
-    return qq{<font class="loading">Generating results. . .</font>};
+    return qq{<font class="loading">Generating results. . .farfallina</font>};
   }
 
 sub gen_html
@@ -497,6 +497,7 @@ sub Show_Summary
 									     hiqual=>$hiqual,
 									     padding=>$padding,
 									     seq_num=>$count,
+									     reverse_image=>$rev,
 									    );
 	    $frame_height += $gfx->ih + $gfx->ih*.1;
 	    $html .= qq!<div>$accn!;
@@ -639,7 +640,6 @@ sub generate_image
 			    feature_labels=>1,
 			    fill_labels=>1,
 			    forcefit=>1,
-			    invert_chromosome=>$reverse_image,
 			    minor_tick_labels=>1,
 #			    overlap_adjustment=>$overlap_adjustment,
 			    feature_labels=>$feature_labels,
@@ -1003,13 +1003,6 @@ sub process_hsps
 	      }
 	    print STDERR "\t",$hsp->number,": $start-$stop\n" if $DEBUG;
 	    my $strand = $hsp->strand =~ /-/ ? "-1" : 1;
-	    if ($reverse)
-	      {
-		$strand = $strand =~ /-/ ? "1" : "-1";
-		my $tmp = $seq_len - $start+1;
-		$start = $seq_len - $stop+1;
-		$stop = $tmp;
-	      }
 	    my $f = CoGe::Graphics::Feature::HSP->new({start=>$start, stop=>$stop});
 	    $color = [100,100,100] if $spike_seq && $hsp->qalign =~ /$spike_seq$/i;
 	    $f->color($color);
@@ -1026,10 +1019,18 @@ sub process_hsps
 	      }
 	    $f->alt(join ("-",$hsp->number,$accn1,$accn2));
 	    my $desc = join ("<br>", "HSP: ".$hsp->number. "  <span class=small>(".$blast->query."-". $blast->subject.")</span>", $start."-".$stop." (".$hsp->strand.")", $seq,"Match: ".$hsp->match,"Length: ".$hsp->length,"Identity: ".$hsp->percent_id,"E_val: ".$hsp->pval);
-	    $desc .= "<span class=small> (cutoff: $eval_cutoff</span>)" if defined $eval_cutoff;
+	    $desc .= "<span class=small> (cutoff: $eval_cutoff)</span>" if defined $eval_cutoff;
 	    $f->description($desc);
-	    my $link = "HSPView.pl?report=$report&num=".$hsp->number;
-	    $link .= join ("&","&qstart=".($gbobj->{start}+$start-1), "qstop=".($gbobj->{start}+$stop-1),"qchr=".$gbobj->{chr}, "qds=". $gbobj->{ds},"qstrand=".$strand) if $gbobj->{ds};
+	    if ($reverse)
+	      {
+		$strand = $strand =~ /-/ ? "1" : "-1";
+		my $tmp = $seq_len - $start+1;
+		$start = $seq_len - $stop+1;
+		$stop = $tmp;
+	      }
+
+	    my $link = "HSPView.pl?report=$report&num=".$hsp->number."&db=".$BASEFILENAME.".sqlite";
+	    $link .= join ("&","&qstart=".($gbobj->start+$start-1), "qstop=".($gbobj->start+$stop-1),"qchr=".$gbobj->chromosome, "qds=". $gbobj->dataset,"qstrand=".$strand) if $gbobj->dataset;
 	    $f->link($link) if $link;
 	    $f->alignment($hsp->alignment);
 	    push @feats, $f;
@@ -1042,7 +1043,7 @@ sub process_hsps
     my $label_location = "top";
     my $order;
     @feats = sort{$a->strand cmp $b->strand || $a->track <=> $b->track || $a->start <=> $b->start} @feats;
-    @feats = reverse @feats if $reverse;
+#    @feats = reverse @feats if $reverse;
     foreach my $f (@feats)
       {
 	next unless $f->label;
@@ -1202,7 +1203,11 @@ sub get_obj_from_genome_db
 					   accn=>$accn,
 					   locus=>$accn,
 					   version=>$feat->dataset->version(),
-					   source=>$feat->dataset->datasource->name(),
+					   data_source=>$feat->dataset->datasource->name(),
+					   dataset=>$ds_id,
+					   chromosome=>$chr,
+					   start=>$start,
+					   stop=>$stop,
 					   organism=>$feat->org->name()."(v".$feat->dataset->version.")",
 					   seq_length=>length($seq),
 					   sequence=>$seq,
