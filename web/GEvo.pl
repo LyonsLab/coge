@@ -2026,7 +2026,6 @@ sub check_sequence_files_spike
   {
     my $spike = shift;
     return unless $spike;
-    print STDERR $spike,"\n";
     my $start = length($spike) * -1;
     my @files = @_;
     my $check_nt;
