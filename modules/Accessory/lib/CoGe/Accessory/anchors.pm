@@ -25,7 +25,7 @@ sub new {
 	$opts = {} unless $opts;
 	my $class = ref($proto) || $proto;
 	my $self = bless ({%$opts}, $class);
-	$self->run_chaos("/opt/apache/CoGe/bin/lagan/chaos") unless $self->run_chaos;
+	$self->run_chaos("/opt/apache/CoGe/bin/lagan/chaos_coge") unless $self->run_chaos;
 	$self->run_dialign("/home/jkane/src/dialign_package/src/dialign2-2") unless $self->run_dialign;
 	$self->output_dir("/opt/apache/CoGe/tmp") unless $self->output_dir;
 	$self->run_chaos_opts("-v") unless $self->run_chaos_opts;
@@ -59,18 +59,19 @@ sub generate_anchors
 	
 	print "file1 is $file1, file2 is $file2\n";
 	
+	print "call to chaos: $run_chaos $file1 $file2 $chaos_opts > $output_dir/$base_name.chaos\n";
 	`$run_chaos $file1 $file2 $chaos_opts > $output_dir/$base_name.chaos`;
 	
-	open(IN,"< $output_dir/$base_name.chaos");
+	open(IN,"< $output_dir/$base_name.chaos") || die "can't open $base_name.chaos for reading: $!";
 	my $data = join ("", <IN>);
 	close IN;
-	print "data is $data\n";
+	#print "data is $data\n";
 	$self->chaos_file($data);
 	
 	`cat $file1 > $output_dir/$base_name.fasta`;
 	`cat $file2 >> $output_dir/$base_name.fasta`;
 	
-	open(IN,"< $output_dir/$base_name.fasta");
+	open(IN,"< $output_dir/$base_name.fasta") || die "can't open $base_name.fasta for reading: $!";
 	$data = join ("", <IN>);
 	close IN;
 	$self->fasta_file($data);
@@ -101,17 +102,18 @@ sub run_dialign_with_anchors
 	my $base_name = $self->base_name;
 	my $output_dir = $self->output_dir;
 	
+	print "call to dialign: $run_dialign $dialign_opts $output_dir/$base_name.dialign $output_dir/$base_name.fasta\n";
 	`$run_dialign $dialign_opts $output_dir/$base_name.dialign $output_dir/$base_name.fasta`;
 	#`mv $basename.ali $output_dir/$basename.ali`;
 	#some move command to output_dir directory
 	
-	open(IN,"< $output_dir/$base_name.dialign");
+	open(IN,"< $output_dir/$base_name.dialign") || die "can't open $base_name.dialign for reading: $!";
 	my $data = join ("", <IN>);
 	close IN;
 	$self->dialign_file($data);
 	
 	
-	my $dialign_report = new CoGe::Accessory::dialign_report({file=>"$output_dir/$base_name.ali", %$parser_opts});
+	my $dialign_report = new CoGe::Accessory::dialign_report({file=>"$output_dir/$base_name.dialign", %$parser_opts});
 	
 	$self->dialign_report($dialign_report);
 	return $self;
