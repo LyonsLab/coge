@@ -30,7 +30,7 @@ sub new {
 	$self->run_dialign("/opt/apache/CoGe/bin/dialign2_dir/dialign2-2_coge") unless $self->run_dialign;
 	$self->output_dir("/opt/apache/CoGe/tmp") unless $self->output_dir;
 	$self->run_anchor_opts("-v") unless $self->run_anchor_opts;
-	$self->run_dialign_opts("-anc -fn") unless $self->run_dialign_opts;
+	$self->run_dialign_opts("-n -anc -fn") unless $self->run_dialign_opts;
 	$self->extension("chaos") unless $self->extension;
 	$self->run_program();
 	return $self;
