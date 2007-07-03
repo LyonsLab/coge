@@ -131,7 +131,7 @@ function handle_results (html,w, h, img_base, n_images) {
  var so = new SWFObject("/CoGe/gobe/flash/gobe.swf", "gobe", w, h, "9", "#FFFFFF");
  so.useExpressInstall('/CoGe/gobe/flash/expressinstall.swf');
  so.addVariable('n', n_images);
- so.addVariable('base_url', '/CoGe/');
+ so.addVariable('base_url', '/CoGe/gobe/');
  so.addVariable('tmp_dir', 'tmp/');
  so.addVariable('img', img_base );
  so.write("flashdiv");
@@ -707,7 +707,7 @@ Number of sequences:
        <TD><input class="backbox" type="text" name="gblength<TMPL_VAR NAME="SEQ_NUM">" id="gblength<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10"  value="<TMPL_VAR NAME=GBLENGTH>"/>
       <TR>
        <TD colspan=2>
-       <font class="small">Reverse Complement: <label><input class="backbox" type="radio" name="gbrev<TMPL_VAR NAME="SEQ_NUM">" id="gbrev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="1" <TMPL_VAR NAME=REV_YES> onclick="$('#gbstart<TMPL_VAR NAME="SEQ_NUM">').val(1)"/>Yes</label><label><input class="backbox" type="radio" name="gbrev<TMPL_VAR NAME="SEQ_NUM">" id="gbrev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="0" <TMPL_VAR NAME=REV_NO> />No</label><BR></font>
+       <font class="small">Reverse Complement: <label><input class="backbox" type="radio" name="gbrev<TMPL_VAR NAME="SEQ_NUM">" id="gbrev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="1" <TMPL_VAR NAME=REV_YES> onclick="$('#gbstart<TMPL_VAR NAME="SEQ_NUM">').val(1);$('#gblength<TMPL_VAR NAME="SEQ_NUM">').val(''); " />Yes</label><label><input class="backbox" type="radio" name="gbrev<TMPL_VAR NAME="SEQ_NUM">" id="gbrev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="0" <TMPL_VAR NAME=REV_NO> onclick="$('#gbstart<TMPL_VAR NAME="SEQ_NUM">').val(1);$('#gblength<TMPL_VAR NAME="SEQ_NUM">').val(''); " />No</label><BR></font>
       </TABLE>
 
       </TMPL_LOOP>
