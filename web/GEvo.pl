@@ -1616,11 +1616,8 @@ sub generate_spike_seq {
 
 sub spike_filter_select
   {
-    my $match = shift;
-    my $prog;
     my $form = shift || $FORM;
-    $match = $form->param('spike_len') ? $form->param('spike_len') : 0; ;
-    $match = 15 if $prog eq "blastn" &! $match;
+    my $match = $form->param('spike_len') ? $form->param('spike_len') : 0; ;
     return $match;
   }
 
