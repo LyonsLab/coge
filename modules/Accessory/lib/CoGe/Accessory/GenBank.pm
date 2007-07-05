@@ -25,8 +25,12 @@ sub get_genbank_from_nbci
     my $ua = new LWP::UserAgent;
     my $url = "http://www.ncbi.nlm.nih.gov/entrez/viewer.fcgi?db=nucleotide&qty=1&c_start=1&list_uids=$id&dopt=gb&send=Send&sendto=t&from=begin&to=end&extrafeatpresent=1&ef_MGC=16";
     my $search = $ua->get($url);
-    return $self->parse_genbank($search->content, $rev);
-    
+    unless ($search->is_success)
+      {
+	print STDERR "Trouble retrieving $id: ", $search->status_link,"\n";
+      }
+
+    return $self->parse_genbank($search->content, $rev);    
 
   }
 
