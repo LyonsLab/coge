@@ -36,32 +36,28 @@ sub new {
 
 sub process_file
   {
+
     my $self = shift;
     my $file = shift || $self->file;
-    my %sequences;
     my @names;
     $/ = "\n>";
     open (IN, $file) || die "can't open $file for reading: $!";
     while (<IN>)
     {
      $_ =~ s/\>//g;
-     #print STDERR "\$_ is $_\n";
      my ($n, $seq) = split /\n/, $_, 2;
-     #print STDERR "\$name is $n\n";
      $seq =~ s/\n//g;
-     $sequences{$n}=$seq;
-     push @names,$n;
+     push @names,{name=>$n, seq=>$seq};
     }
     close IN;
     $/ = "\n";
-   # print STDERR "subject is $names[1]";
-    $self->query($names[0]);
-    $self->subject($names[1]);
-    my $ql = ($sequences{$self->query})=~tr/ATGC/ATGC/;
-    my $sl = ($sequences{$self->subject})=~tr/ATGC/ATGC/;
+    $self->query($names[0]{name});
+    $self->subject($names[1]{name});
+    my $ql = $names[0]{seq} =~ tr/ATGC/ATGC/;
+    my $sl = $names[1]{seq} =~ tr/ATGC/ATGC/;
     $self->qlength($ql);
     $self->slength($sl);
-    $self->_parseReport($sequences{$self->query},$sequences{$self->subject});
+    $self->_parseReport($names[0]{seq},$names[1]{seq});
     return $self;
 }
 
@@ -119,6 +115,7 @@ sub _parseReport {
            $break = 1;
        	  }
      	 }
+	  
      	unless ($break)
         {
     	 $align1 = substr($align1,0,(length $align1) - $gap_length);
@@ -145,7 +142,23 @@ sub _parseReport {
        }
      $stop1++;$stop2++;
     }
-    $self->hsps(\@hsps);
+	$align1 = substr($align1,0,(length $align1) - $gap_length);
+	$align2 = substr($align2,0,(length $align2) - $gap_length);
+	$align = substr($align,0,(length $align) - $gap_length);
+	if ($align =~/\|+/)
+	  {
+	    #if (($length >$min_align_length)&&($ident1 >=$min_ident)&&($ident2 >= $min_ident)) 
+	    my $hsp = $self->_processHSP($align1,$align2,$align,$tmp1,$stop1,$tmp2,$stop2);
+	    
+	    if ($hsp)
+	      {
+		$hsp_count++;
+		push @hsps, $hsp;
+		$self->hsp_count($hsp_count);
+	      }
+	  }
+  
+	$self->hsps(\@hsps);
     return $self;
 }
 	
