@@ -76,7 +76,6 @@ my $pj = new CGI::Ajax(
 		       loading=>\&loading,
 		       add_seq=>\&add_seq,
 		       get_file=>\&get_file,
-		       anchor_placement=>\&anchor_placement,
 		       %ajax,
 		      );
 $pj->JSDEBUG(0);
@@ -2200,11 +2199,3 @@ sub check_sequence_files_spike
 	  }
       }
   }
-  
-sub anchor_placement
-{
-  my $opts = shift;
-  $opts = "butterflies!";
-  return $opts;
-}
-  
