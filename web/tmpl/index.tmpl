@@ -1,4 +1,4 @@
-
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.js"></SCRIPT>
 <SCRIPT language="JavaScript">
 
 function place_cookie(valid, cookie, url)
@@ -23,8 +23,18 @@ function delete_cookie(cookie)
   {
     document.cookie=cookie;
   }
+
+$(document).ready(function(){
+
+$('#main').hide();
+$('#main').show("slow");
+
+ });
+
 </SCRIPT>
 
+
+<div id=main>
 <TMPL_IF NAME="LOGIN">
 <DIV id="message"><TMPL_VAR NAME="MESSAGE"></DIV>
 <DIV class=large>Please log on: <font class="small">(You will need make sure your browser is set to accept <a href="http://en.wikipedia.org/wiki/HTTP_cookie">cookies</a>)</font></div>
@@ -77,4 +87,4 @@ function delete_cookie(cookie)
 </TMPL_LOOP>
 </TABLE>
 </TMPL_IF>
-
+</div>
