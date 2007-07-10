@@ -72,7 +72,7 @@ sub get_types
     my @opts = sort map {"<OPTION>$_</OPTION>"} grep {! $seen{$_}++} map {$_->type->name} $DB->get_features_by_name_and_dataset_id(name=>$accn, id=>$dsid);
 
     $html .= "<font class=small>Type count: ".scalar @opts."</font>\n<BR>\n";
-    $html .= qq{<SELECT id="Type_name" SIZE="5" MULTIPLE onChange="get_anno(['accn_select','Type_name', 'dsid'],['anno'])" >\n};
+    $html .= qq{<SELECT id="Type_name" SIZE="5" MULTIPLE onChange="get_anno(['accn_select','Type_name', 'dsid'],[show_anno])" >\n};
     $html .= join ("\n", @opts);
     $html .= "\n</SELECT>\n";
     $html =~ s/OPTION/OPTION SELECTED/;
@@ -133,11 +133,6 @@ sub get_anno
 	$anno .= qq{<DIV id="loc$i"><input type="button" value = "Click for Genome view" onClick="window.open('GenomeView.pl?chr=$chr&ds=$ds&x=$x&z=$z');"></DIV>};
 	$anno .= qq{<DIV id="exp$i"><input type="button" value = "Click for expression tree" onClick="gen_data(['args__Generating expression view image'],['exp$i']);show_express(['args__}.$accn.qq{','args__}.'1'.qq{','args__}.$i.qq{'],['exp$i']);"></DIV>};
 	$anno .= qq{<DIV id="dnaseq$i"><input type="button" value = "Click for Sequence" onClick="window.open('SeqView.pl?featid=$featid&dsid=$ds&chr=$chr&featname=$accn&rc=$rc&pro=$pro');"></DIV>};
-	#,'window', 'menubar=1, resizable=1, scrollbars=1, location=1,left=20, top=20, width=700, height=610'
-	#"gen_data(['args__retrieving sequence'],['dnaseq$i']);get_dna_seq_for_feat(['args__}.$feat->id.qq{'],['dnaseq$i']);"></DIV>};
-	#$anno .= qq{<DIV id="rcdnaseq$i"><input type="button" value = "Click for DNA sequence reverse complement" onClick="gen_data(['args__retrieving sequence'],['rcdnaseq$i']);get_rcdna_seq_for_feat(['args__}.$feat->id.qq{'],['rcdnaseq$i']);"></DIV>};
-	#$anno .= qq{<DIV id="protseq$i"><input type="button" value = "Click for protein sequence" onClick="gen_data(['args__retrieving sequence'],['protseq$i']);get_prot_seq_for_feat(['args__}.$feat->id.qq{'],['protseq$i']);"></DIV>\n\n};
-
 	$anno = "<font class=\"annotation\">No annotations for this entry</font>" unless $anno;
       }
     return ($anno);
