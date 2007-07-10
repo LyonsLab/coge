@@ -90,11 +90,11 @@ function check_alignment_program (){
 
 var alignment = $("#alignment_program").val();
   $("#blast_options").hide();
+  $("#tblastx_options").hide();
   $("#lagan_options").hide();
   $("#blastz_options").hide();
   $("#chaos_options").hide();
   $("#spike_sequence").hide();
-  $("#tblastx_options").hide();
   $("#dialign_options").hide();
   $("#dialign_motif_options").hide();
   $("#dialign_parameters").hide();
@@ -124,22 +124,25 @@ else if (alignment == "dialign")
 else if (alignment == "tblastx")
  {
   $("#blast_options").show();
-  $("#wordsize").val(3);
-  $("#gapopen").val(11);
-  $("#gapextend").val(1);
-  $("#eval").val(10);
-  $("#mismatch").hide();
+  $("#blastn_options").hide();
+  $("#blast_wordsize").val(3);
+  $("#blast_gapopen").val(11);
+  $("#blast_gapextend").val(1);
+  $("#blast_eval").val(10);
+  $("#blast_mismatch").hide();
+  $("#blast_match").hide();
   $("#tblastx_options").show();	
  }	
 else if (alignment == 'blastn')
  {
   $("#blast_options").show();
+  $("#blastn_options").show();
   $("#spike_sequence").show();
-  $("#wordsize").val(7);
-  $("#gapopen").val(5);
-  $("#gapextend").val(2);
-  $("#eval").val(100);
-  $("#mismatch").show();    
+  $("#blast_wordsize").val(7);
+  $("#blast_gapopen").val(5);
+  $("#blast_gapextend").val(2);
+  $("#blast_eval").val(100);
+  $("#blast_mismatch").show();    
   if (spike == "undefined" || spike == 0) {spike = 15;} 	
   $("#spike").val(spike);		
  }
@@ -284,12 +287,12 @@ Number of sequences:
  </TR>
    </Table>    
 
+
+
+
  <DIV id = "blast_options">
-   <Table class=small>    
-  <TR>
-  <TD>Word Size (-W):</TD>
-  <TD><input class="backbox" type="text" name="blast_wordsize" id="blast_wordsize" tabindex="1" size="3" value="7" /></TD>
- </TR>    
+ <Table class=small>    
+
  <TR>
   <TD>Match Score (-r): </TD>
   <TD><input class="backbox" type="text" name="blast_match" id="blast_match" tabindex="1" size="3" value="1" /></TD>
@@ -297,7 +300,7 @@ Number of sequences:
  <TR>
   <TD>Mismatch Penalty (-q): </TD>
   <TD><input class="backbox" type="text" name="blast_mismatch" id="blast_mismatch" tabindex="1" size="3" value="-2" /></TD>
- </TR>    
+ </TR> 
  <TR>
   <TD>Gap Open Penalty (-G): </TD>
   <TD><input class="backbox" type="text" name="blast_gapopen" id="blast_gapopen" tabindex="1" size="3" value="5" /></TD>
@@ -306,6 +309,10 @@ Number of sequences:
   <TD>Gap Extension Penalty (-E): </TD>
   <TD><input class="backbox" type="text" name="blast_gapextend" id="blast_gapextend" tabindex="1" size="3" value="2" /></TD>
  </TR>    
+  <TR>
+  <TD>Word Size (-W):</TD>
+  <TD><input class="backbox" type="text" name="blast_wordsize" id="blast_wordsize" tabindex="1" size="3" value="7" /></TD>
+ </TR>
  <TR>
   <TD>Filter query sequence (DUST/SEG) (-F): </TD>
   <TD>
@@ -319,13 +326,20 @@ Number of sequences:
   <TD>Expectation value (E) (-e): </TD>
   <TD><input class="backbox" type="text" name="blast_eval" id="blast_eval" tabindex="1" size="3" value="100" /></TD>
  </TR>
-    
  <TR>
   <TD>Other Blast Parameters: </TD>
   <TD><input class="backbox" type="text" name="blastparams" id="blastparams" tabindex="1" size="10"/></TD>
- </TR>         
+ </TR>
 </TABLE>
 </DIV>
+
+
+ <DIV id="tblastx_options" class="small">
+ <font class="small">Hide HSPs with stop codons in a coding sequence?<label><input class="backbox" type="radio" name="show_hsps_with_stop_codon" id="show_hsps_with_stop_codon" tabindex="1" value="1" />Yes</label><label><input class="backbox" type="radio" name="show_hsps_with_stop_codon" id="show_hsps_with_stop_codon" tabindex="1" value="0" checked />No</label></font>
+<br>Note: Word size limited to 3 for tblastx
+</DIV> 
+
+
  <DIV id="spike_sequence">
   <table class=small>
   <tr colspan>
@@ -419,10 +433,6 @@ Number of sequences:
 
 
 </DIV>
- <DIV id="tblastx_options" class="small">
- <font class="small">Hide HSPs with stop codons in a coding sequence?<label><input class="backbox" type="radio" name="show_hsps_with_stop_codon" id="show_hsps_with_stop_codon" tabindex="1" value="1" />Yes</label><label><input class="backbox" type="radio" name="show_hsps_with_stop_codon" id="show_hsps_with_stop_codon" tabindex="1" value="0" checked />No</label></font>
-<br>Note: Word size limited to 3 for tblastx
-</DIV> 
 
  <DIV id="lagan_options" class="small">
    <Table class=small>    
