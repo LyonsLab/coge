@@ -64,26 +64,16 @@ function rev_locs (val) {
 
 }
 
-function displayAnchor(){
-var checkbox = $('#use_anchor')[0].checked;
-var anchor_program = $('#anchor_program').val();
-if (checkbox)
-{
- $('#anchor_menu').show();
- $('#anchor_options').show();
- anchor_placement([anchor_program],[anchor_options]);
-}
-else{
- $('#anchor_menu').hide();
- $('#anchor_options').hide();
- }
-}
-
 function check_anchor_program (){
+if (! $('#use_anchor')[0].checked) {return;}
 var anchor_program = $('#anchor_program').val();
-anchor_placement([anchor_program],[anchor_options]);
+var html = $('#'+anchor_program).html();
+$('#anchor_options').hide();
+$('#anchor_options').html(html);
+$('#anchor_options').show("slow");
 }
   
+
 function check_alignment_program (){
 
  var speed = $("#animation_speed").val();
@@ -426,7 +416,7 @@ Number of sequences:
    <Table class=small>    
   <TR>
    <TD>Use Anchored Alignment
-   <TD><input type="checkbox" value="0" id="use_anchor" name="use_anchor" onChange="displayAnchor()"></TD>
+   <TD><input type="checkbox" value="0" id="use_anchor" name="use_anchor" onClick='$(".anchor").toggle("slow"); check_anchor_program();' ></TD>
   </TR>
   <TR>
   <TD>Min Alignment Score: </TD>
@@ -481,19 +471,21 @@ Number of sequences:
 </DIV>
 
 <TD>
-<DIV id="anchor_menu" class="small">
+
+<DIV id="anchor_menu" class="anchor small">
 <TABLE class=small>
  <TR>
-  <TD>Select Anchor Program </TD>
+  <TH>Select Anchor Program </TH>
   <TD><select class="backbox" id="anchor_program" size="1" onchange='check_anchor_program()'>
-       <option value="lagan_options">bl2seq</option>
+       <option value="blast_options">bl2seq</option>
        <option value="chaos_options" selected>chaos</option>
       </select>
   </TD>
  </TR>
 </TABLE>
 </DIV>
-<DIV id="anchor_options" class="small">Hello!</DIV>
+
+<DIV id="anchor_options" class="anchor small"></DIV>
 </TD>
 <td width="2" bgcolor="#99FF99">
 
