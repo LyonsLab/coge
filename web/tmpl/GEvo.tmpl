@@ -65,7 +65,12 @@ function rev_locs (val) {
 }
 
 function check_anchor_program (){
-if (! $('#use_anchor')[0].checked) {return;}
+
+if (! $('#use_anchor')[0].checked) {
+$(".anchor").hide("slow"); 
+return;
+}
+$("#anchor_menu").show("slow"); 
 var anchor_program = $('#anchor_program').val();
 var html = $('#'+anchor_program).html();
 $('#anchor_options').hide();
@@ -96,8 +101,7 @@ function check_alignment_program (){
   $("#dialign_options").hide(speed);
   $("#dialign_motif_options").hide(speed);
   $("#dialign_parameters").hide(speed);
-  $('#anchor_menu').hide(speed);
-  $('#anchor_options').hide(speed);
+  $('.anchor').hide(speed);
 
   var spike = $("#spike").val();
   $("#spike").val(0);
@@ -163,6 +167,7 @@ $(document).ready(function(){
  if (show_dir_seq){$("#dir_seqs").show("fast");}
 // setTimeout('check_alignment_program()',1000);
  check_alignment_program();
+ check_anchor_program();
  });
 
 function handle_results (html,w, h, img_base, n_images) {
@@ -428,8 +433,8 @@ Number of sequences:
 <DIV id="dialign_options" class="small">
    <Table class=small>    
   <TR>
-   <TD>Use Anchored Alignment
-   <TD><input type="checkbox" value="0" id="use_anchor" name="use_anchor" onClick='$(".anchor").toggle("slow"); check_anchor_program();' ></TD>
+   <TD>Use Anchored Alignment: </TD>
+   <TD><input type="checkbox" value="0" id="use_anchor" name="use_anchor" onClick='check_anchor_program();' ></TD>
   </TR>
   <TR>
   <TD>Min Alignment Score: </TD>
@@ -440,15 +445,20 @@ Number of sequences:
   <TD><input class="backbox" type="text" name="dialign_max_gap" id="dialign_max_gap" tabindex="1" size="3" value="4" /></TD>
  </TR> 
  <TR>
-  <TD>Split HSPs on Different Alignment Scores</TD>
+  <TD>Split HSPs on Different Alignment Scores: </TD>
   <TD><input class="backbox" type="radio" name="dialign_split_score" id="dialign_split_score" tabindex="1" value="1" />Yes</label><label><input class="backbox" type="radio" name="dialign_split_score" id="dialign_split_score" tabindex="1" value="0" checked />No</label></TD>
  </TR>
  <TR>
-  <TD>Use Translations in Alignment</TD>
-  <TD><input class="backbox" type="radio" name="dialign_use_translation" id="dialign_use_translation" tabindex="1" value="1" onClick="$('#dialign_params').val('-nt -cs -ma')" />Yes</label><label><input class="backbox" type="radio" name="dialign_use_translation" id="dialign_use_translation" tabindex="1" value="0" onClick="$('#dialign_params').val('-n')" checked />No</label></TD>
- </TR>
+  <TD>Aligment Method: </TD>
+  <TD><select class="backbox" id="dialign_method" size="1" onchange="$('#dialign_params').val($('#dialign_method').val())">
+       <option value="-n ">Short Sequence Alignment, No Translation</option>
+       <option value="-nt -cs -ma ">Short Sequence Alignment with Translation</option>
+       <option value="-ds -n -thr 2 -lmax 30 ">Long Sequence Alignment</option>
+      </select> 
+   </TD>
+  </TR>
   <TR>
-  <TD>Use Motif in Alignment</TD>
+  <TD>Use Motif in Alignment: </TD>
   <TD><input class="backbox" type="radio" name="dialign_motif" id="dialign_motif" tabindex="1" value="1" onClick="$('#dialign_motif_options').show();" />Yes</label><label><input class="backbox" type="radio" name="dialign_motif" id="dialign_motif" tabindex="1" value="0" onClick="$('#dialign_motif_options').hide()" checked />No</label></TD>
  </TR>
  </TABLE>
@@ -456,25 +466,21 @@ Number of sequences:
  <DIV id="dialign_motif_options" class="small">
  <Table class=small>  
  <TR>
- <TD> Motif </TD>
+ <TD align=right> Motif:  </TD>
   <TD><input class="backbox" type="text" name="dialign_motif_motif" id="dialign_motif_motif" tabindex="1" size="5" /></TD>
  </TR>
  <TR>
- <TD> Weighting Factor (Assigns bonus) </TD>
+ <TD align=right> Weighting Factor: </TD>
   <TD><input class="backbox" type="text" name="dialign_motif_weight" id="dialign_motif_weight" tabindex="1" size="5" /></TD>
  </TR>
  <TR>
- <TD> Distance Penalty </TD>
+ <TD align=right> Distance Penalty:  </TD>
   <TD><input class="backbox" type="text" name="dialign_motif_penalty" id="dialign_motif_penalty" tabindex="1" size="5" /></TD>
  </TR>
  </TABLE>
  </DIV>
  <DIV id="dialign_parameters"  class="small">
  <Table class=small>
- <TR>
-  <TD>Long Sequence Alignment</TD>
-  <TD><input class="backbox" type="radio" name="dialign_lsa" id="dialign_lsa" tabindex="1" value="1" onClick="$('#dialign_params').val('-ds -n -thr 2 -lmax 30')" />Yes</label><label><input class="backbox" type="radio" name="dialign_lsa" id="dialign_lsa" tabindex="1" value="0" onClick="$('#dialign_params').val('-n')" checked />No</label></TD>
- </TR>
  <TR>
   <TD>Other Dialign Parameters: </TD>
   <TD><input class="backbox" type="text" name="dialign_params" id="dialign_params" tabindex="1" size="20"  value="-n"/></TD>
