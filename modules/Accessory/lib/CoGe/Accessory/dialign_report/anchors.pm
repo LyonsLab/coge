@@ -1,4 +1,4 @@
-package CoGe::Accessory::anchors;
+package CoGe::Accessory::dialign_report::anchors;
 
 use strict;
 use warnings;
@@ -14,9 +14,8 @@ BEGIN
 	{
 		use vars qw($VERSION $DEBUG);
 		$VERSION = "0.01";
-		$DEBUG = 1;
 	}
-__PACKAGE__->mk_accessors qw(file1 file2 run_anchor run_dialign base_name extension output_dir anchor_file anchor_file fasta_file dialign_file run_anchor_opts run_dialign_opts anchor_report_opts dialign_report_opts anchor_report dialign_report);
+__PACKAGE__->mk_accessors qw(file1 file2 run_anchor run_dialign base_name extension output_dir anchor_file anchor_file fasta_file dialign_file run_anchor_opts run_dialign_opts anchor_report_opts dialign_report_opts anchor_report dialign_report DEBUG);
 
 ###############################################################################
 # anchors -- Josh Kane  UC Berkeley
@@ -62,9 +61,9 @@ sub generate_anchors
 	my $anchor_file = "";
 	my $anchor_report = [];
 	
-	print "file1 is $file1, file2 is $file2\n" if $DEBUG;
+	print "file1 is $file1, file2 is $file2\n" if $self->DEBUG;
 	
-	print "call to $extension: $run_anchor $file1 $file2 $anchor_opts > $output_dir/$base_name.$extension\n" if $DEBUG;
+	print "call to $extension: $run_anchor $file1 $file2 $anchor_opts > $output_dir/$base_name.$extension\n" if $self->DEBUG;
 	`$run_anchor $file1 $file2 $anchor_opts > $output_dir/$base_name.$extension` if $extension=~/chaos/i;
 	`$run_anchor -i $file1 -j $file2 $anchor_opts > $output_dir/$base_name.$extension` if $extension=~/bl2/i;
 	
@@ -116,7 +115,7 @@ sub run_dialign_with_anchors
 	my $base_name = $self->base_name;
 	my $output_dir = $self->output_dir;
 	
-	print "call to dialign: $run_dialign $dialign_opts $output_dir/$base_name.dialign $output_dir/$base_name.fasta\n" if $DEBUG;
+	print "call to dialign: $run_dialign $dialign_opts $output_dir/$base_name.dialign $output_dir/$base_name.fasta\n" if $self->DEBUG;
 	`$run_dialign $dialign_opts -fn $output_dir/$base_name.dialign $output_dir/$base_name.fasta`;
 	#`mv $basename.ali $output_dir/$basename.ali`;
 	#some move command to output_dir directory
