@@ -12,11 +12,11 @@ lib/Coge/Accessory/parse_report/HSP.pm
 lib/Coge/Accessory/bl2seq_report.pm
 lib/Coge/Accessory/lagan_report.pm
 lib/Coge/Accessory/dialign_report.pm
+lib/Coge/Accessory/dialign_report/anchors.pm
 lib/Coge/Accessory/chaos_report.pm
 lib/Coge/Accessory/blastz_report.pm
 lib/Coge/Accessory/blastz_report/seq.pm
 lib/Coge/Accessory/blastz_report/segment.pm
 lib/Coge/Accessory/GenBank.pm
-lib/Coge/Accessory/anchors.pm
 lib/Coge/Accessory/GenBank/Feature.pm
 t/001_load.t
