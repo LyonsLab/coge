@@ -158,6 +158,8 @@ $(document).ready(function(){
 
 function handle_results (html,w, h, img_base, n_images) {
  //clearInterval(interval);
+
+// $('#results').hide();
  $('#results').html(html);
  var so = new SWFObject("/CoGe/gobe/flash/gobe.swf", "gobe", w, h, "9", "#FFFFFF");
  so.useExpressInstall('/CoGe/gobe/flash/expressinstall.swf');
@@ -166,6 +168,7 @@ function handle_results (html,w, h, img_base, n_images) {
  so.addVariable('tmp_dir', 'tmp/');
  so.addVariable('img', img_base );
  so.write("flashdiv");
+// $('#results').show("slow");
  
 
 }
@@ -210,14 +213,14 @@ Number of sequences:
 
  <TR>
   <TH colspan="<TMPL_VAR NAME="NUM_SEQS">" align=left>
-   <DIV id="isr" class="topItem" changeColor('isr','#000099'); " onMouseOut="changeColor('isr','#009900');" onClick='$("#genbank_seqs").toggle("slow")' >NCBI Sequence Retrieval:</DIV>
+   <DIV id="isr" class="topItem" onMouseOver="changeColor('isr','#000099'); " onMouseOut="changeColor('isr','#009900');" onClick='$("#genbank_seqs").toggle("slow")' >NCBI Sequence Retrieval:</DIV>
    <DIV class="dropMenu" id = "genbank_seqs">
      <TMPL_VAR NAME="NCBI_SEQS">	
   </DIV>
  </TR>
  <TR>
   <TH colspan="<TMPL_VAR NAME="NUM_SEQS">" align=left>
-   <DIV id="dss" class="topItem"  changeColor('dss','#000099'); " onMouseOut="changeColor('dss','#009900');" onClick='$("#dir_seqs").toggle("slow")' >Direct Sequence Submission:</DIV>
+   <DIV id="dss" class="topItem"  onMouseOver="changeColor('dss','#000099'); " onMouseOut="changeColor('dss','#009900');" onClick='$("#dir_seqs").toggle("slow")' >Direct Sequence Submission:</DIV>
    <DIV class="dropMenu" id="dir_seqs">
      <TMPL_VAR NAME="DIRECT_SEQS">		
   </DIV>
@@ -617,7 +620,7 @@ Number of sequences:
  <table>
  <Tr valign = top>
  <td>
- <table>
+ <table class="small">
  <TR>
   <Td>
 <font class="small">Color Matches in HSPs?</font>
@@ -628,9 +631,11 @@ Number of sequences:
   <Td>
 <font class="small">HSP Label options: </font>
  <td>
-<label class=small><input class="backbox" type="radio" name="hsp_labels" id="hsp_labels" tabindex="1" value="0" />Don't draw</label><br>
-<label class=small><input class="backbox" type="radio" name="hsp_labels" id="hsp_labels" tabindex="1" value="staggered" checked />Draw Staggered</label><br>
-<label class=small><input class="backbox" type="radio" name="hsp_labels" id="hsp_labels" tabindex="1" value="linear" />Draw Linear</label>
+<select id="hsp_lables">
+<option value="0">Don't draw</option>
+<option value="staggered" selected>Draw Staggered</option>
+<option value="linear">Draw Linear</option>
+</select>
   </TD>
  <TR>
   <Td>
