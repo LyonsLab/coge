@@ -3,11 +3,9 @@
 <HEAD>
  <TITLE><TMPL_VAR NAME=TITLE></TITLE>
  <link rel="stylesheet" type="text/css" href="/CoGe/css/styled.css" />
- <link rel="stylesheet" type="text/css" href="/CoGe/css/sddm.css" />
  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
 </HEAD>
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.js"></SCRIPT>
-<script language="JavaScript" type="text/javascript" src="/CoGe/js/menu.js"></script>
 <script src="/CoGe/gobe/static/swfobject.js" ></script>
 <SCRIPT language="JavaScript">
 
@@ -88,61 +86,62 @@ anchor_placement([anchor_program],[anchor_options]);
   
 function check_alignment_program (){
 
-var alignment = $("#alignment_program").val();
-  $("#blast_options").hide();
-  $("#tblastx_options").hide();
-  $("#lagan_options").hide();
-  $("#blastz_options").hide();
-  $("#chaos_options").hide();
-  $("#spike_sequence").hide();
-  $("#dialign_options").hide();
-  $("#dialign_motif_options").hide();
-  $("#dialign_parameters").hide();
-  $('#anchor_menu').hide();
-  $('#anchor_options').hide();
+ var speed = $("#animation_speed").val();
+ var alignment = $("#alignment_program").val();
+  $("#blast_options").hide(speed);
+  $("#tblastx_options").hide(speed);
+  $("#lagan_options").hide(speed);
+  $("#blastz_options").hide(speed);
+  $("#chaos_options").hide(speed);
+  $("#spike_sequence").hide(speed);
+  $("#dialign_options").hide(speed);
+  $("#dialign_motif_options").hide(speed);
+  $("#dialign_parameters").hide(speed);
+  $('#anchor_menu').hide(speed);
+  $('#anchor_options').hide(speed);
 
   var spike = $("#spike").val();
   $("#spike").val(0);
-
+  
 if (alignment == "blastz")
  {
-  $("#blastz_options").show();	
+  $("#blastz_options").show("slow");	
  }
 else if (alignment == "lagan")
  {
-  $("#lagan_options").show();
+  $("#lagan_options").show("slow");
  }
 else if (alignment == "chaos")
  {
-  $("#chaos_options").show();
+  $("#chaos_options").show("slow");
  }
 else if (alignment == "dialign")
  {
-  $("#dialign_options").show();
-  $("#dialign_parameters").show();
+  $("#dialign_options").show("slow");
+  $("#dialign_parameters").show("slow");
  } 
 else if (alignment == "tblastx")
  {
-  $("#blast_options").show();
-  $("#blastn_options").hide();
+  $("#blast_options").show("slow");
+  $("#blastn_options").hide("slow");
   $("#blast_wordsize").val(3);
   $("#blast_gapopen").val(11);
   $("#blast_gapextend").val(1);
   $("#blast_eval").val(10);
-  $("#blast_mismatch").hide();
-  $("#blast_match").hide();
-  $("#tblastx_options").show();	
+  $("#blast_mismatch").hide("slow");
+  $("#blast_match").hide("slow");
+  $("#tblastx_options").show("slow");	
  }	
 else if (alignment == 'blastn')
  {
-  $("#blast_options").show();
-  $("#blastn_options").show();
-  $("#spike_sequence").show();
+  $("#blast_options").show("slow");
+  $("#blastn_options").show("slow");
+  $("#spike_sequence").show("slow");
   $("#blast_wordsize").val(7);
   $("#blast_gapopen").val(5);
   $("#blast_gapextend").val(2);
   $("#blast_eval").val(100);
-  $("#blast_mismatch").show();    
+  $("#blast_mismatch").show("slow");    
   if (spike == "undefined" || spike == 0) {spike = 15;} 	
   $("#spike").val(spike);		
  }
@@ -152,11 +151,20 @@ else if (alignment == 'blastn')
 
 $(document).ready(function(){
 
-check_alignment_program();
-setup();
-
+ var show_coge_seq = <TMPL_VAR NAME=SHOW_COGE_SEQ>;
+ var show_genbank_seq = <TMPL_VAR NAME=SHOW_GENBANK_SEQ>;
+ var show_dir_seq = <TMPL_VAR NAME=SHOW_DIR_SEQ>;
+ setup();
+ $("#coge_seqs").hide();
+ $("#genbank_seqs").hide();
+ $("#dir_seqs").hide();
+ $("#image_parameters").hide();
+ if (show_coge_seq){$("#coge_seqs").show("fast");}
+ if (show_genbank_seq) {$("#genbank_seqs").show("fast");}
+ if (show_dir_seq){$("#dir_seqs").show("fast");}
+// setTimeout('check_alignment_program()',1000);
+ check_alignment_program();
  });
-
 
 function handle_results (html,w, h, img_base, n_images) {
  //clearInterval(interval);
@@ -202,65 +210,27 @@ Number of sequences:
 <TABLE class="basic" width=100%>
  <TR>
   <TH colspan="<TMPL_VAR NAME="NUM_SEQS">" align=left>
-   <DIV class="mainDiv">
-   <DIV id = "dr" class="topItem" onMouseOver="Init(this); changeColor('dr','#000099'); " onMouseOut="changeColor('dr','#009900');">CoGe Database Retrieval:</DIV>
-   <DIV class="dropMenu">
-     <DIV class="subMenu" style="display:<TMPL_VAR NAME=DRMENU>;">
+   <DIV id = "dr" class="topItem" onMouseOver="changeColor('dr','#000099'); " onMouseOut="changeColor('dr','#009900');" onClick='$("#coge_seqs").toggle("slow")' >CoGe Database Retrieval:</DIV>
+
+   <DIV class="dropMenu" id = "coge_seqs">
      <TMPL_VAR NAME="COGE_SEQS">
      <Div class ="small" align = "left">Apply distance to all?<input type="checkbox" name="apply_all" id="apply_all" value="0" /></div>
-
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
      </DIV>
-  </DIV>
-  </DIV>
  </TR>
 
  <TR>
   <TH colspan="<TMPL_VAR NAME="NUM_SEQS">" align=left>
-   <DIV class="mainDiv" >
-   <DIV id="isr" class="topItem" onMouseOver="Init(this);changeColor('isr','#000099'); " onMouseOut="changeColor('isr','#009900');" >NCBI Sequence Retrieval:</DIV>
-   <DIV class="dropMenu">
-     <DIV class="subMenu" style="display:<TMPL_VAR NAME=GBMENU>;" >
+   <DIV id="isr" class="topItem" changeColor('isr','#000099'); " onMouseOut="changeColor('isr','#009900');" onClick='$("#genbank_seqs").toggle("slow")' >NCBI Sequence Retrieval:</DIV>
+   <DIV class="dropMenu" id = "genbank_seqs">
      <TMPL_VAR NAME="NCBI_SEQS">	
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     </DIV>
   </DIV>
-  </DIV>		
  </TR>
  <TR>
   <TH colspan="<TMPL_VAR NAME="NUM_SEQS">" align=left>
-   <DIV class="mainDiv" >
-   <DIV id="dss" class="topItem" onMouseOver="Init(this);  changeColor('dss','#000099'); " onMouseOut="changeColor('dss','#009900');" >Direct Sequence Submission:</DIV>
-   <DIV class="dropMenu">
-     <DIV class="subMenu" style="display:<TMPL_VAR NAME=DIRMENU>;" >
+   <DIV id="dss" class="topItem"  changeColor('dss','#000099'); " onMouseOut="changeColor('dss','#009900');" onClick='$("#dir_seqs").toggle("slow")' >Direct Sequence Submission:</DIV>
+   <DIV class="dropMenu" id="dir_seqs">
      <TMPL_VAR NAME="DIRECT_SEQS">		
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     </DIV>
   </DIV>
-  </DIV>		
  </TR>
 </TABLE>
 </TMPL_IF>
@@ -269,11 +239,9 @@ Number of sequences:
 <TABLE class="basic" width=100%>
  <TR>
   <TH colspan="2" align=left>
-  <DIV class="mainDiv">
-   <DIV id="bp" class="topItem" onMouseOver="Init(this);changeColor('bp','#000099'); " onMouseOut="changeColor('bp','#009900');" >Comparison Parameters and Options:</DIV>
-   <DIV class="dropMenu">
-     <DIV class="subMenu" style="display:none;">
-     <TABLE style="width: 100%;">
+   <DIV id="bp" class="topItem" onMouseOver="changeColor('bp','#000099'); " onMouseOut="changeColor('bp','#009900');" onClick='$("#algo_options").toggle("slow")'>Comparison Parameters and Options:</DIV>
+   <DIV id = "algo_options">
+     <TABLE style="width: 100%;" class="dropMenu" >
       <TR valign=top>
       <TD>
       <TABLE class=small>
@@ -286,8 +254,6 @@ Number of sequences:
    </TD>
  </TR>
    </Table>    
-
-
 
 
  <DIV id = "blast_options">
@@ -551,43 +517,26 @@ Number of sequences:
    <label><input class="backbox" type="radio" name="mask_ncs" id="mask_ncs" tabindex="22" value="0" checked />Off</label>
  </TR>
  </TABLE>
-     </table>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     </DIV>
-  </DIV>
-  </DIV>
- </TR>
-	  
+
+ </table>
+ </div>
  </TR>
 </TABLE>
+
+
 
 <TABLE class="basic" width=100%>
  <TR>
   <TH colspan="2" align=left>
-  <DIV class="mainDiv">
-   <DIV id="ip" class="topItem" onMouseOver="Init(this);changeColor('ip','#000099'); " onMouseOut="changeColor('ip','#009900');" >Image Parameters:</DIV>
-   <DIV class="dropMenu">
-     <DIV class="subMenu" style="display:none;">
-     <TABLE style="width: 100%;">
-      <TR>
-      <TD>
+  <DIV  id="ip" class="topItem" onMouseOver="changeColor('ip','#000099')" onMouseOut="changeColor('ip','#009900');"  onClick='$("#image_parameters").toggle("slow")' >Image Parameters:</DIV>
 
-<table valign>
+<div class="menu" id="image_parameters">
+
+<table valign class="dropmenu" width="100%">
+<TR valign=top>
 <td valign=top>
 <TABLE class="basic">
- <TR>
+ <TR valign=top>
   <TD>
     <DIV class="small">
       Image Width (Pixels):
@@ -710,65 +659,9 @@ Number of sequences:
 
   </table>
  </table>
-</table>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     </DIV>
-  </DIV>
-  </DIV>
- </TR>
-	  
- </TR>
-
+</div>
 </TABLE>
 
-<TABLE class="basic" width=100%>
- <TR>
-  <TH colspan="2" align=left>
-  <DIV class="mainDiv">
-   <DIV id="infor" class="topItem" onMouseOver="Init(this);changeColor('infor','#000099'); " onMouseOut="changeColor('infor','#009900');" >Information:</DIV>
-   <DIV class="dropMenu">
-     <DIV class="subMenu" style="display:none;">
-     <TABLE style="width: 100%;">
-      <TR>
-      <TD>
-
-
-<TABLE class="basic">
- <TR valign="top">
-  <TH>
-    <DIV>
-	New:
-    </DIV>
-  </TD>
-  <TD>
-    <DIV>
-	Looking for help?  Check out the <a href ="help/GEvo">GEvo help page</a>!
-    </DIV>
-  </TD>
- </TR>
-        </TABLE>
-     </table>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     <span class="subItem"></span>
-     </DIV>
-  </DIV>
-  </DIV>
- </TR>
-	  
- </TR>
-
-</TABLE>
-<SCRIPT language="JavaScript"> InitAll();</script>
 
 
 
