@@ -15,6 +15,7 @@ use CoGe::Accessory::bl2seq_report;
 use CoGe::Accessory::blastz_report;
 use CoGe::Accessory::lagan_report;
 use CoGe::Accessory::chaos_report;
+use CoGe::Accessory::dialign_report;
 use CoGe::Graphics;
 use CoGe::Graphics::Chromosome;
 use CoGe::Graphics::Feature;
@@ -38,11 +39,14 @@ $ENV{PATH} = "/opt/apache/CoGe/";
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 #for chaos
 $ENV{'LAGAN_DIR'} = '/opt/apache/CoGe/bin/lagan/';
-use vars qw( $DATE $DEBUG $BL2SEQ $BLASTZ $LAGAN $CHAOS $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge $NUM_SEQS $MAX_SEQS $BASEFILE $BASEFILENAME);
+#for dialign
+$ENV{'DIALIGN2_DIR'} = '/opt/apache/CoGe/bin/dialign2_dir/';
+use vars qw( $DATE $DEBUG $BL2SEQ $BLASTZ $LAGAN $CHAOS $DIALIGN $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge $NUM_SEQS $MAX_SEQS $BASEFILE $BASEFILENAME);
 $BL2SEQ = "/opt/bin/bio/bl2seq ";
 $BLASTZ = "/usr/bin/blastz ";
 $LAGAN = "/opt/apache/CoGe/bin/lagan/lagan.pl";
 $CHAOS = "/opt/apache/CoGe/bin/lagan/chaos_coge";
+$DIALIGN = "/opt/apache/CoGe/bin/dialign2_dir/dialign2-2_coge";
 $TEMPDIR = "/opt/apache/CoGe/tmp";
 $TEMPURL = "/CoGe/tmp";
 
@@ -71,6 +75,8 @@ my $pj = new CGI::Ajax(
 		       run=>\&Show_Summary,
 		       loading=>\&loading,
 		       add_seq=>\&add_seq,
+		       get_file=>\&get_file,
+		       anchor_placement=>\&anchor_placement,
 		       %ajax,
 		      );
 $pj->JSDEBUG(0);
@@ -82,7 +88,7 @@ print $pj->build_html($FORM, \&gen_html);
 
 sub loading
   {
-    return qq{<font class="loading">Generating results. . .</font>};
+    return qq{<font class="loading">Generating results. . .</font>}; 
   }
 
 sub gen_html
@@ -238,7 +244,7 @@ sub gen_body
     $template->param(SEQ_RETRIEVAL=>1);
     $template->param(NUM_SEQS=>$num_seqs);
     $template->param(ADD_BUTTON=>$add_button);
-    $message .= "<BR>" if $message;
+    $message .= "<BR/>" if $message;
     $template->param(MESSAGE=>$message);
     $template->param(COGE_SEQS=>$coge_seqs);
     $template->param(NCBI_SEQS=>$ncbi_seqs);
@@ -451,6 +457,10 @@ sub Show_Summary
       {
 	$analysis_reports = run_chaos (sets=>\@sets, params=>$param_string, parser_opts=>$parser_opts);
       }
+    elsif ($analysis_program eq "dialign")
+      {
+	$analysis_reports = run_dialign (sets=>\@sets, params=>$param_string, parser_opts=>$parser_opts);
+      }
     else
       {
 	$analysis_reports = run_bl2seq(sets=>\@sets, params=>$param_string, parser_opts=>$parser_opts, blast_program=>$analysis_program, spike_seq=>$spike_seq);
@@ -519,7 +529,7 @@ sub Show_Summary
 
     my $str = qq{/bpederse/gobe?imgdir=/CoGe/tmp/&img=$BASEFILENAME&n=}.($count-1);
     my $t4 = new Benchmark;
-    $html .= qq!<br>!;
+    $html .= qq!<br/>!;
     $html .= qq!<FORM NAME=\"info\">\n!;
     $html .= $form->br();
     $html .= "Information: ";
@@ -533,9 +543,9 @@ sub Show_Summary
 #    $html .= qq{<div id=iframe>$iframe</div>};
 #    $html .= "<div id='flashdiv'> FLASH GOES HERE: $str </div>";
     $html .= qq{<table>};
+    $html .= qq{<tr valign=top><td class = small>Alignment reports};
     if ($analysis_reports && @$analysis_reports)
       {
-	$html .= qq{<tr valign=top><td class = small>Alignment reports};
 	foreach my $item (@$analysis_reports)
 	  {
 	    my $report = $item->[0];
@@ -545,29 +555,33 @@ sub Show_Summary
 	    $basereportname = $TEMPURL . "/$basereportname\n";
 	    $html .= "<div><font class=xsmall><A HREF=\"$basereportname\">View alignment output for $accn1 versus $accn2</A></font></DIV>\n";
 	  }
-	$html .= qq{<td class = small>Fasta files};
+      }
+    else
+      {
+	$html .= "<div class=xsmall>No alignment reports were generated</DIV>\n";
+      }
+    $html .= qq{<td class = small>Fasta files};
 	foreach my $item (@sets)
 	  {
 	    my $basename = $TEMPURL."/".basename ($item->{file});
 	    my $accn = $item->{accn};
 	    $html .= "<div><font class=xsmall><A HREF=\"$basename\">Fasta file for $accn</A></font></DIV>\n";
 	  }
-	$html .= qq{<td class = small><a href = "http://baboon.math.berkeley.edu/mavid/gaf.html">GAF</a> annotation files};
-	foreach my $item (@sets)
-	  {
-	    my $basename = $TEMPURL."/".basename (generate_annotation(%$item));
-	    my $accn = $item->{accn};
-	    $html .= "<div><font class=xsmall><A HREF=\"$basename\">Annotation file for $accn</A></font></DIV>\n";
-	  }
-	$html .= qq{<td class = small>SQLite db};
-	my $dbname = generate_imagemap_db(\@sets, $analysis_reports);
-	$html .= "<div class=xsmall><A HREF=\"$dbname\">SQLite DB file</A></DIV>\n";
+    $html .= qq{<td class = small><a href = "http://baboon.math.berkeley.edu/mavid/gaf.html">GAF</a> annotation files};
+    foreach my $item (@sets)
+      {
+	my $basename = $TEMPURL."/".basename (generate_annotation(%$item));
+	my $accn = $item->{accn};
+	$html .= "<div><font class=xsmall><A HREF=\"$basename\">Annotation file for $accn</A></font></DIV>\n";
       }
+    $html .= qq{<td class = small>SQLite db};
+    my $dbname = generate_imagemap_db(\@sets);
+    $html .= "<div class=xsmall><A HREF=\"$dbname\">SQLite DB file</A></DIV>\n";
     $html .= qq{</table>};
 
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
     my $results_name = "Results: $analysis_program";
-    $results_name .= " <span class=small>(spike sequence filter length: $spike_len)</span>" if $spike_len;
+    $results_name .= qq{ <span class="small">(spike sequence filter length: $spike_len)</span>} if $spike_len;
     $template->param(BOX_NAME=>$results_name);
     $template->param(BODY=>$html);
     my $outhtml = $template->output;
@@ -682,7 +696,7 @@ sub generate_image
 
 sub generate_imagemap_db
   {
-    my ($sets, $reports) = @_;
+    my ($sets) = @_;
     my $tempfile = $BASEFILE.".sqlite";
     $tempfile = $TEMPDIR."/".$tempfile unless $tempfile =~ /$TEMPDIR/;
     my $dbh = DBI->connect("dbi:SQLite:dbname=$tempfile","","");
@@ -759,7 +773,7 @@ title varchar(1024)
 	my $accn = $item->{obj}->accn;
 	my $title = $item->{obj}->organism if $item->{obj}->organism;
 	$title .= "(".$item->{up}."::".$item->{down}.")" if defined $item->{up};
-	$title .= qq!<span class=small> Reverse Complement</font>! if $item->{rev};
+	$title .= qq! Reverse Complement! if $item->{rev};
 	my $statement = qq{
 INSERT INTO image_info (id, iname, title) values ($j, "$image", "$title")
 };
@@ -799,8 +813,8 @@ INSERT INTO image_info (id, iname, title) values ($j, "$image", "$title")
 
 	    my ($xmin, $ymin, $xmax, $ymax) = split /,/, $coords;
 	    my $anno = $feat->description;
-	    $anno =~ s/'|"//g;
-	    print STDERR $anno,"\n" if $anno =~ /01020/;
+#	    $anno =~ s/'|"//g;
+#	    print STDERR $anno,"\n" if $anno =~ /01020/;
 	    $statement = qq{
 INSERT INTO image_data (id, name, xmin, xmax, ymin, ymax, image, image_track,pair_id, link, annotation, color) values ($i, "$name", $xmin, $xmax, $ymin, $ymax, "$image", "$image_track",$pair_id, '$link', '$anno', '$color')
 };
@@ -1019,8 +1033,10 @@ sub process_hsps
 		$f->label($hsp->number);
 	      }
 	    $f->alt(join ("-",$hsp->number,$accn1,$accn2));
-	    my $desc = join ("<br>", "HSP: ".$hsp->number. "  <span class=small>(".$blast->query."-". $blast->subject.")</span>", $start."-".$stop." (".$hsp->strand.")", $seq,"Match: ".$hsp->match,"Length: ".$hsp->length,"Identity: ".$hsp->percent_id,"E_val: ".$hsp->pval);
-	    $desc .= "<span class=small> (cutoff: $eval_cutoff)</span>" if defined $eval_cutoff;
+	    my $desc = join ("<br/>", "HSP: ".$hsp->number. qq{  <span class="small">(}.$blast->query."-". $blast->subject.")</span>", $start."-".$stop." (".$hsp->strand.")", $seq,"Match: ".$hsp->match,"Length: ".$hsp->length,"Identity: ".$hsp->percent_id);
+	    $desc .= "<br/>E_val: ".$hsp->pval if $hsp->pval;
+	    $desc .= "<br/>Score: ".$hsp->score if $hsp->score;
+	    $desc .= qq{<span class="small"> (cutoff: $eval_cutoff)</span>} if defined $eval_cutoff;
 	    $f->description($desc);
 	    if ($reverse)
 	      {
@@ -1241,7 +1257,7 @@ sub get_obj_from_genome_db
 	print STDERR "\t", $f->genbank_location_string(),"\n" if $DEBUG;
 	print STDERR "\t", $f->genbank_location_string(recalibrate=>$start),"\n\n" if $DEBUG;
 	my $anno = $f->annotation_pretty_print;
-	$anno =~ s/\n/<br>/ig;
+	$anno =~ s/\n/<br\/>/ig;
 	my $location = $f->genbank_location_string(recalibrate=>$start);
 	$location = $obj->reverse_genbank_location(loc=>$location, ) if $rev;
 	print STDERR $name, "\t",$f->type->name ,"\t",$location,"\n" if $DEBUG;
@@ -1341,6 +1357,7 @@ sub run_bl2seq {
 	      next;
 	    }
 	  # execute the command
+	  print STDERR $command,"\n";
 	  `$command`;
 	  system "chmod +rw $tempfile";
 	  my $blastreport = new CoGe::Accessory::bl2seq_report({file=>$tempfile}) if -r $tempfile;
@@ -1519,6 +1536,90 @@ sub run_chaos
     return \@reports;
   }
 
+sub run_dialign
+  {
+    my %opts = @_;
+    my $sets = $opts{sets};
+    my $params= $opts{params};
+    my $parser_opts = $opts{parser_opts};
+    my $max_length = $opts{max_length} || 10000;
+    my $kill_length = 2 * $max_length;
+    #my $algo_limits = $opts{algo_limits};
+    my @files;
+    my @reports;
+    for (my $i=0; $i<scalar @$sets; $i++)
+      {
+	for (my $j=0; $j<scalar @$sets; $j++)
+	  {
+	    next unless $j > $i;
+	    my $obj1 = $sets->[$i]->{obj};
+	    my $obj2 = $sets->[$j]->{obj};
+	    my $seq_length1 = $obj1->seq_length;
+	    my $seq_length2 = $obj2->seq_length;
+	    if (($seq_length1 > $max_length) || ($seq_length2 > $max_length))
+	    {
+	      if (($seq_length1 > $kill_length) || ($seq_length2 > $kill_length))
+	      {
+	       print "We ain't gonna waste our time running this. Be more pragmatic next time and choose a smaller sequence to align.\n";
+	       return;
+	      }
+	      else
+	      {
+	       $params=~s/((\s?-cs)|(\s?-nt)|(\s?-ma))//g;
+	       $params .= " -n" unless $params =~ /(-n)/;
+	       $params .= " -ds" unless $params =~ /(-ds)/;
+	       $params .= " -thr 2" unless $params =~ /(-thr)/;
+	       $params .= " -lmax 30" unless $params =~ /(-lmax)/;
+	       print "Your search parameters were altered due to the length of the sequences you requested for alignment. Your alignment was done with the \"Large Sequence Search\" option enabled, and if you chose to run the translation option, it was disabled.\n";
+	      }
+	     }
+	    #print STDERR "length of seq1 is ",,"\n";
+#	    if ($seq_length > $max_length)
+	    my $seqfile1 = $sets->[$i]->{file};
+	    my $seqfile2 = $sets->[$j]->{file};
+	    my $seqfile = $TEMPDIR."/".$BASEFILENAME."_".($i+1)."-".($j+1).".fasta";
+	    next unless -r $seqfile1 && -r $seqfile2; #make sure these files exist
+	    #put two fasta files into one for dialign
+	    `cat $seqfile1 > $seqfile`;
+	    `cat $seqfile2 >> $seqfile`;
+#	    print STDERR "Seqfile:  $seqfile\n";
+	    next unless $sets->[$i]{reference_seq} || $sets->[$j]{reference_seq};
+	    my ($accn1, $accn2) = ($sets->[$i]{accn}, $sets->[$j]{accn});
+	    my ($tempfile) = $BASEFILE."_".($i+1)."-".($j+1).".dialign";
+	    my $command = $DIALIGN;
+	    $command .= " ".$params if $params;
+	    $command .= " -fn ".$tempfile;
+	    $command .= " $seqfile";
+	    my $x = "";
+	    ($x,$command) = check_taint( $command );
+	    if ( $DEBUG ) {
+	      print STDERR "About to execute...\n $command\n";
+	    }
+	    unless ($x)
+	      {
+		next;
+	      }
+	    #$command .= " > ".$tempfile;
+	    print STDERR $command,"\n";
+	    #time for execution
+	    `$command`;
+	    system "chmod +rw $tempfile";
+	    my $report = new CoGe::Accessory::dialign_report({file=>$tempfile, %$parser_opts}) if -r $tempfile;
+	    my @tmp = ($tempfile, $accn1, $accn2);
+	    if ($report)
+	      {
+		push @tmp, $report
+	      }
+	    else
+	      {
+		push @tmp, "no results from comparing $accn1 and $accn2 with lagan";
+	      }
+	  push @reports, \@tmp;
+	  }
+      }
+    return \@reports;
+  }
+  
 sub get_substr
   {
     my %opts = @_;
@@ -1714,17 +1815,20 @@ sub gen_go_button
 	'args__maskcds', 'mask_cds', 
 	'args__maskncs', 'mask_ncs', 
 
-	'args__word', 'wordsize', 
-	'args__gapo', 'gapopen', 
-	'args__gape', 'gapextend', 
-	'args__mmatch', 'mismatch',
-	'args__eval', 'eval', 
-	'args__bp', 'blastparams',
+	'args__blast_word', 'blast_wordsize', 
+	'args__blast_gapo', 'blast_gapopen', 
+	'args__blast_gape', 'blast_gapextend', 
+	'args__blast_mmatch', 'blast_mismatch',
+	'args__blast_match', 'blast_match',
+	'args__blast_eval', 'blast_eval', 
+	'args__blast_params', 'blastparams',
+        'args__blast_filter','blast_filter',
 
         'args__lagan_min_length','lagan_min_length',
         'args__lagan_max_gap','lagan_max_gap',
         'args__lagan_percent_id','lagan_percent_id',
         'args__lagan_params','lagan_params',
+
         'args__chaos_word_length','chaos_word_length',
         'args__chaos_score_cutoff','chaos_score_cutoff',
         'args__chaos_rescore_cutoff','chaos_rescore_cutoff',
@@ -1733,6 +1837,14 @@ sub gen_go_button
         'args__chaos_gap_start','chaos_gap_start',
         'args__chaos_gap_extension','chaos_gap_extension',
         'args__chaos_params','chaos_params',
+
+        'args__dialign_min_score','dialign_min_score',
+        'args__dialign_max_gap','dialign_max_gap',
+        'args__dialign_split_score','dialign_split_score',
+        'args__dialign_params','dialign_params',
+        'args__dialign_motif_motif','dialign_motif_motif',
+        'args__dialign_motif_weight','dialign_motif_weight',
+        'args__dialign_motif_penalty','dialign_motif_penalty',
 
         'args__blastz_wordsize','blastz_wordsize',
         'args__blastz_chaining','blastz_chaining',
@@ -1759,8 +1871,7 @@ sub gen_go_button
         'args__padding', 'padding',
         'args__num_seqs','args__$num_seqs',
 };
-	  return qq{<input type="button" value="GO" onClick="loading([], ['results']); run([$params],[handle_results], 'POST');">};   
-
+	  return qq{<input type="button" value="GO" onClick="loading([],['results']);run([$params],[handle_results], 'POST');">};   
 
   }
 
@@ -1816,7 +1927,7 @@ sub num_colors
 sub algorithm_list
   {
     my $program = shift;
-    my @programs = sort qw(blastn tblastx blastz lagan chaos);
+    my @programs = sort qw(blastn blastz chaos dialign lagan tblastx);
     my $html;
     foreach my $prog (@programs)
       {
@@ -1936,12 +2047,14 @@ sub get_algorithm_options
 #    print STDERR Dumper [map {"$_ => $opts{$_}" } sort keys %opts];
     my $analysis_program = $opts{prog};
     #blast stuff
-    my $blast_wordsize = $opts{word};
-    my $blast_gapopen = $opts{gapo};
-    my $blast_gapextend = $opts{gape};
-    my $blast_mismatch = $opts{mmatch};
-    my $blast_eval = $opts{eval};
-    my $blast_params = $opts{bp};
+    my $blast_wordsize = $opts{blast_word};
+    my $blast_gapopen = $opts{blast_gapo};
+    my $blast_gapextend = $opts{blast_gape};
+    my $blast_mismatch = $opts{blast_mmatch};
+    my $blast_match = $opts{blast_match};
+    my $blast_eval = $opts{blast_eval};
+    my $blast_params = $opts{blast_params};
+    my $blast_filter = $opts{blast_filter};
 
     #blastz stuff
     my $blastz_wordsize = $opts{blastz_wordsize};
@@ -1957,6 +2070,15 @@ sub get_algorithm_options
     my $lagan_min_length = $opts{lagan_min_length};
     my $lagan_max_gap = $opts{lagan_max_gap};
     my $lagan_percent_id = $opts{lagan_percent_id};
+    
+    #dialign_stuff
+    my $dialign_params = $opts{dialign_params};
+    my $dialign_motif_motif = uc($opts{dialign_motif_motif});
+    my $dialign_motif_weight = $opts{dialign_motif_weight};
+    my $dialign_motif_penalty = $opts{dialign_motif_penalty};
+    my $dialign_min_score = $opts{dialign_min_score};
+    my $dialign_max_gap = $opts{dialign_max_gap};
+    my $dialign_split_score = $opts{dialign_split_score};
 
     #chaos stuff
     my $chaos_word_length = $opts{chaos_word_length};
@@ -1988,9 +2110,12 @@ sub get_algorithm_options
 	$blast_wordsize = 3 if ($analysis_program eq "tblastx" && $blast_wordsize > 3);
 	$param_string = " -W " . $blast_wordsize if defined $blast_wordsize;
 	$param_string .= " -G " . $blast_gapopen if defined $blast_gapopen;
-	$param_string .= " -X " . $blast_gapextend if defined $blast_gapextend;
+	$param_string .= " -E " . $blast_gapextend if defined $blast_gapextend;
 	$param_string .= " -q " . $blast_mismatch if defined $blast_mismatch;
+	$param_string .= " -r " . $blast_match if defined $blast_match;
 	$param_string .= " -e " . $blast_eval if defined $blast_eval;
+	$param_string .= " -F " . $blast_filter if defined $blast_filter;
+	
 	$param_string .= " "    . $blast_params if defined $blast_params;
       }
     elsif ($analysis_program eq "lagan")
@@ -1999,6 +2124,17 @@ sub get_algorithm_options
 	$parser_options{max_gap} = $lagan_max_gap;
 	$parser_options{length_cutoff} = $lagan_min_length;
 	$parser_options{percent_cutoff} = $lagan_percent_id;
+      }
+    elsif ($analysis_program eq "dialign")
+      {
+	print STDERR $dialign_motif_motif,"\n";
+	$dialign_motif_motif =~ s/[^ATCG\[\]]//g if $dialign_motif_motif;
+	print STDERR $dialign_motif_motif,"\n";
+        $param_string .= "-mot $dialign_motif_motif $dialign_motif_weight $dialign_motif_penalty" if $dialign_motif_motif =~/^[ATGC\[\]]+$/;
+        $param_string .= " ".$dialign_params;
+        $parser_options{min_score} = $dialign_min_score;
+        $parser_options{max_gap} = $dialign_max_gap;
+        $parser_options{split_score} = $dialign_split_score;
       }
     elsif ($analysis_program eq "chaos")
       {
@@ -2060,3 +2196,11 @@ sub check_sequence_files_spike
 	  }
       }
   }
+  
+sub anchor_placement
+{
+  my $opts = shift;
+  $opts = "butterflies!";
+  return $opts;
+}
+  
