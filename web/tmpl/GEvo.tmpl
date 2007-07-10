@@ -73,6 +73,15 @@ $('#anchor_options').html(html);
 $('#anchor_options').show("slow");
 }
   
+function checkViewer () {
+var viewer = $('#viewer').val();
+$('#html_viewer').hide();
+$('#flash_viewer').hide();
+if (viewer == "flash")
+ {$('#flash_viewer').show();}
+else {$('#html_viewer').show("slow");}
+
+}
 
 function check_alignment_program (){
 
@@ -161,13 +170,14 @@ function handle_results (html,w, h, img_base, n_images) {
 
 // $('#results').hide();
  $('#results').html(html);
+ checkViewer();
  var so = new SWFObject("/CoGe/gobe/flash/gobe.swf", "gobe", w, h, "9", "#FFFFFF");
  so.useExpressInstall('/CoGe/gobe/flash/expressinstall.swf');
  so.addVariable('n', n_images);
  so.addVariable('base_url', '/CoGe/gobe/');
  so.addVariable('tmp_dir', 'tmp/');
  so.addVariable('img', img_base );
- so.write("flashdiv");
+ so.write("flash_viewer");
 // $('#results').show("slow");
  
 
@@ -534,6 +544,20 @@ Number of sequences:
  <TR valign=top>
   <TD>
     <DIV class="small">
+      Viewer Interface:
+    </DIV>
+  </TD>
+  <TD>
+    <DIV class="small">
+     <select id="viewer" onChange="checkViewer()">
+     <option selected value="flash">Flash Viewer</option>
+     <option value = "html">HTML</option> 
+    </DIV>
+  </TD>
+ </TR>
+ <TR valign=top>
+  <TD>
+    <DIV class="small">
       Image Width (Pixels):
     </DIV>
   </TD>
@@ -631,7 +655,7 @@ Number of sequences:
   <Td>
 <font class="small">HSP Label options: </font>
  <td>
-<select id="hsp_lables">
+<select id="hsp_labels">
 <option value="0">Don't draw</option>
 <option value="staggered" selected>Draw Staggered</option>
 <option value="linear">Draw Linear</option>
