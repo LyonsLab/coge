@@ -100,10 +100,10 @@ sub gen_body
     $sseq =~ s/-//g;
     $template->param(QLoc=>$hsps->[0]{start}."-".$hsps->[0]{stop});
     $template->param(SLoc=>$hsps->[1]{start}."-".$hsps->[1]{stop});
-    $template->param(QIdent=>sprintf("%.1f",$hsps->[0]{match}/length($qseq)*100)."%");
-    $template->param(SIdent=>sprintf("%.1f",$hsps->[1]{match}/length($sseq)*100)."%");
-    $template->param(QSim=>sprintf("%.1f",$hsps->[0]{match}/length($qseq)*100)."%");
-    $template->param(SSim=>sprintf("%.1f",$hsps->[1]{match}/length($sseq)*100)."%");
+    $template->param(QIdent=>sprintf("%.1f",$hsps->[0]{match}/length($qseq)*100)."%") if $qseq;
+    $template->param(SIdent=>sprintf("%.1f",$hsps->[1]{match}/length($sseq)*100)."%") if $sseq;
+    $template->param(QSim=>sprintf("%.1f",$hsps->[0]{match}/length($qseq)*100)."%") if $qseq;
+    $template->param(SSim=>sprintf("%.1f",$hsps->[1]{match}/length($sseq)*100)."%") if $sseq;
 #    $template->param(QSim=>sprintf("%.1f",$hsp->positive/length($qseq)*100)."%");
 #    $template->param(SSim=>sprintf("%.1f",$hsp->positive/length($sseq)*100)."%");
     $template->param(QLen=>length($qseq));
@@ -192,7 +192,13 @@ sub get_info_from_db
     my @hsps;
     while(my $item = $sth->fetchrow_arrayref)
       {
-	my ($hsp, $location, $alignment, $match, $length, $identity, $eval) = split /<br>/, $item->[0];
+	print STDERR $item->[0];
+	my ($hsp, $location, $alignment, $match, $length, $identity, $eval);
+	($hsp, $location, $alignment, $match, $length, $identity, $eval) = split /<br>/i, $item->[0] if $item->[0] =~ /<br>/i;
+	($hsp, $location, $alignment, $match, $length, $identity, $eval) = split /\n/i, $item->[0] if $item->[0] =~ /\n/i;
+	($hsp, $location, $alignment, $match, $length, $identity, $eval) = split /\\n/i, $item->[0] if $item->[0] =~ /\\n/i;
+	($hsp, $location, $alignment, $match, $length, $identity, $eval) = split /<br\/>/i, $item->[0] if $item->[0] =~ /<br\/>/i;
+	print STDERR Dumper ($hsp, $location, $alignment, $match, $length, $identity, $eval);
 	my ($start, $stop, $orientation) = $location =~ /(\d+)-(\d+)\s+\((.*?)\)/;
 	$match =~ s/match:\s+//i;
 	$length =~ s/length:\s+//i;
