@@ -252,10 +252,12 @@ sub gen_body
     $template->param(HSP_COLOR=>$hsp_colors);
     $template->param(GO_BUTTON=>gen_go_button($num_seqs));
     $drseq = 1 unless ($dirseq || $gbseq);
-    $drseq ? $template->param(DRMENU=>'inline') : $template->param(DRMENU=>'none');
-    $dirseq ? $template->param(DIRMENU=>'inline') : $template->param(DIRMENU=>'none');
+    $drseq ? $template->param(SHOW_COGE_SEQ=>1) : $template->param(SHOW_COGE_SEQ=>0);
+    $gbseq ? $template->param(SHOW_GENBANK_SEQ=>1) : $template->param(SHOW_GENBANK_SEQ=>0);
+    $dirseq ? $template->param(SHOW_DIR_SEQ=>1) : $template->param(SHOW_DIR_SEQ=>0);
+#    $dirseq ? $template->param(DIRMENU=>'inline') : $template->param(DIRMENU=>'none');
 #    $gbseq = 1 unless ($drseq || $dirseq); #default
-    $gbseq ? $template->param(GBMENU=>'inline') : $template->param(GBMENU=>'none');
+#    $gbseq ? $template->param(GBMENU=>'inline') : $template->param(GBMENU=>'none');
     $template->param(AUTOSEARCH=>$autosearch_string);
     $box->param(BOX_NAME=>"Sequence Retrieval:");
     $box->param(BODY=>$template->output);
@@ -714,7 +716,8 @@ image_track varchar(10),
 pair_id integer(10),
 link varchar(50),
 annotation blob,
-color varchar(10)
+color varchar(10),
+
 )
 };
     $dbh->do($create);
@@ -814,6 +817,7 @@ INSERT INTO image_info (id, iname, title) values ($j, "$image", "$title")
 	    my ($xmin, $ymin, $xmax, $ymax) = split /,/, $coords;
 	    my $anno = $feat->description;
 #	    $anno =~ s/'|"//g;
+	    $anno =~ s/<br\/>/\n/g;
 #	    print STDERR $anno,"\n" if $anno =~ /01020/;
 	    $statement = qq{
 INSERT INTO image_data (id, name, xmin, xmax, ymin, ymax, image, image_track,pair_id, link, annotation, color) values ($i, "$name", $xmin, $xmax, $ymin, $ymax, "$image", "$image_track",$pair_id, '$link', '$anno', '$color')
