@@ -134,6 +134,7 @@ sub _getHSP
   my $hsp = new CoGe::Accessory::parse_report::HSP
         ({
    	  score=>$scores,
+   	  strand=>1,
     	  match=>$match,
     	  length=>$length,
     	  query_start=>$start1,
