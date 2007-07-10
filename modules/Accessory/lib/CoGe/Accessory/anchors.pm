@@ -14,6 +14,7 @@ BEGIN
 	{
 		use vars qw($VERSION $DEBUG);
 		$VERSION = "0.01";
+		$DEBUG = 1;
 	}
 __PACKAGE__->mk_accessors qw(file1 file2 run_anchor run_dialign base_name extension output_dir anchor_file anchor_file fasta_file dialign_file run_anchor_opts run_dialign_opts anchor_report_opts dialign_report_opts anchor_report dialign_report);
 
@@ -30,7 +31,7 @@ sub new {
 	$self->run_dialign("/opt/apache/CoGe/bin/dialign2_dir/dialign2-2_coge") unless $self->run_dialign;
 	$self->output_dir("/opt/apache/CoGe/tmp") unless $self->output_dir;
 	$self->run_anchor_opts("-v") unless $self->run_anchor_opts;
-	$self->run_dialign_opts("-n -anc -fn") unless $self->run_dialign_opts;
+	$self->run_dialign_opts("-n -anc") unless $self->run_dialign_opts;
 	$self->extension("chaos") unless $self->extension;
 	$self->run_program();
 	return $self;
@@ -63,7 +64,7 @@ sub generate_anchors
 	
 	print "file1 is $file1, file2 is $file2\n" if $DEBUG;
 	
-	#print "call to $extension: $run_anchor $file1 $file2 $chaos_opts > $output_dir/$base_name.chaos\n" if $DEBUG;
+	print "call to $extension: $run_anchor $file1 $file2 $anchor_opts > $output_dir/$base_name.$extension\n" if $DEBUG;
 	`$run_anchor $file1 $file2 $anchor_opts > $output_dir/$base_name.$extension` if $extension=~/chaos/i;
 	`$run_anchor -i $file1 -j $file2 $anchor_opts > $output_dir/$base_name.$extension` if $extension=~/bl2/i;
 	
@@ -116,7 +117,7 @@ sub run_dialign_with_anchors
 	my $output_dir = $self->output_dir;
 	
 	print "call to dialign: $run_dialign $dialign_opts $output_dir/$base_name.dialign $output_dir/$base_name.fasta\n" if $DEBUG;
-	`$run_dialign $dialign_opts $output_dir/$base_name.dialign $output_dir/$base_name.fasta`;
+	`$run_dialign $dialign_opts -fn $output_dir/$base_name.dialign $output_dir/$base_name.fasta`;
 	#`mv $basename.ali $output_dir/$basename.ali`;
 	#some move command to output_dir directory
 	
