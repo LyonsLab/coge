@@ -142,14 +142,13 @@ sub _parseReport {
        }
      $stop1++;$stop2++;
     }
-	$align1 = substr($align1,0,(length $align1) - $gap_length);
-	$align2 = substr($align2,0,(length $align2) - $gap_length);
-	$align = substr($align,0,(length $align) - $gap_length);
+	$align1 = substr($align1,0,length $align1);
+	$align2 = substr($align2,0,length $align2);
+	$align = substr($align,0,length $align);
 	if ($align =~/\|+/)
 	  {
 	    #if (($length >$min_align_length)&&($ident1 >=$min_ident)&&($ident2 >= $min_ident)) 
 	    my $hsp = $self->_processHSP($align1,$align2,$align,$tmp1,$stop1,$tmp2,$stop2);
-	    
 	    if ($hsp)
 	      {
 		$hsp_count++;
@@ -157,8 +156,7 @@ sub _parseReport {
 		$self->hsp_count($hsp_count);
 	      }
 	  }
-  
-	$self->hsps(\@hsps);
+    $self->hsps(\@hsps);
     return $self;
 }
 	
