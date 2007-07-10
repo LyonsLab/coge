@@ -72,7 +72,7 @@ $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 my %ajax = CoGe::Accessory::Web::ajax_func();
 #$ajax{dataset_search} = \&dataset_search_for_feat_name; #override this method from Accessory::Web
 my $pj = new CGI::Ajax(
-		       run=>\&Show_Summary,
+		       run=>\&run,
 		       loading=>\&loading,
 		       add_seq=>\&add_seq,
 		       get_file=>\&get_file,
@@ -285,7 +285,7 @@ sub gen_body
     return $html;
   }
 
-sub Show_Summary 
+sub run
   {
     my %opts = @_;
     my $num_seqs = $opts{num_seqs} || $NUM_SEQS;
@@ -305,7 +305,7 @@ sub Show_Summary
     my $hsp_limit_num = $opts{hsplimnum};
     my $show_hsps_with_stop_codon = $opts{showallhsps};
     my $padding = $opts{padding};
-
+    my $viewer = $opts{viewer};
     my ($analysis_program, $param_string, $parser_opts) = get_algorithm_options(%opts);
 
     initialize_basefile();
@@ -472,6 +472,7 @@ sub Show_Summary
     my $t3 = new Benchmark;
     my $count = 1;
     my $frame_height;
+    my $html_viewer;
     foreach my $item (@sets)
       {
 	my $accn = $item->{accn};
@@ -511,16 +512,16 @@ sub Show_Summary
 									     reverse_image=>$rev,
 									    );
 	    $frame_height += $gfx->ih + $gfx->ih*.1;
-	    $html .= qq!<div>$accn!;
-	    $html .= qq!(<font class=species>!.$obj->organism.qq!</font>)! if $obj->organism;
-	    $html .= "(".$up."::".$down.")" if defined $up;
-	    $html .= qq!<font class=small> Reverse Complement</font>! if $rev;
-#	    $html .= qq!<font class=small> (eval cutoff: $eval_cutoff)</font>! if defined $eval_cutoff;
-	    $html .= qq!</DIV>\n!;
-	    $html .= qq!<IMG SRC="$TEMPURL/$image" !;
+	    $html_viewer .= qq!<div>$accn!;
+	    $html_viewer .= qq!(<font class=species>!.$obj->organism.qq!</font>)! if $obj->organism;
+	    $html_viewer .= "(".$up."::".$down.")" if defined $up;
+	    $html_viewer .= qq!<font class=small> Reverse Complement</font>! if $rev;
+#	    $html_viewer .= qq!<font class=small> (eval cutoff: $eval_cutoff)</font>! if defined $eval_cutoff;
+	    $html_viewer .= qq!</DIV>\n!;
+	    $html_viewer .= qq!<IMG SRC="$TEMPURL/$image" !;
 	    my $tmp_count = $count -1;
-	    $html .= qq!BORDER=0 ismap usemap="#$mapname">\n!;
-	    $html .= "$map\n";
+	    $html_viewer .= qq!BORDER=0 ismap usemap="#$mapname">\n!;
+	    $html_viewer .= "$map\n";
 	    $item->{image} = $image;
 	    $item->{gfx} = $gfx;
 	  }
@@ -530,19 +531,17 @@ sub Show_Summary
 
     my $str = qq{/bpederse/gobe?imgdir=/CoGe/tmp/&img=$BASEFILENAME&n=}.($count-1);
     my $t4 = new Benchmark;
-    $html .= qq!<br/>!;
-    $html .= qq!<FORM NAME=\"info\">\n!;
-    $html .= $form->br();
-    $html .= "Information: ";
-    $html .= $form->br();
-    $html .= qq!<DIV id="info"></DIV>!;
-    $html .= "</FORM>\n";
-    $html .= qq{<DIV id=flashdiv></DIV>};
-#    my $flash = qq{<embed type="application/x-shockwave-flash" src="/bpederse/gobe/src/gobe.swf?img=$BASEFILENAME&n=}.($count-1).qq{&imgdir=/CoGe/tmp/"width="100%" height="$frame_height" /> };
-#    my $iframe = qq{<iframe width="100%" height="$frame_height}."px".qq{" src="/bpederse/hsparrows/?img=$BASEFILENAME&n=}.($count-1).qq{"></iframe>};
-#    my $iframe = qq{<iframe width="100%" height="$frame_height}."px".qq{" src = /bpederse/gobe?imgdir=/CoGe/tmp/&img=$BASEFILENAME&n=}.($count-1).qq{"></iframe>};;
-#    $html .= qq{<div id=iframe>$iframe</div>};
-#    $html .= "<div id='flashdiv'> FLASH GOES HERE: $str </div>";
+    $html_viewer .= qq!<br/>!;
+    $html_viewer .= qq!<FORM NAME=\"info\">\n!;
+    $html_viewer .= $form->br();
+    $html_viewer .= "Information: ";
+    $html_viewer .= $form->br();
+    $html_viewer .= qq!<DIV id="info"></DIV>!;
+    $html_viewer .= "</FORM>\n";
+    my $flash_viewer = qq{<DIV id=flash_viewer></DIV>};
+#    $html .= $viewer eq "flash" ? $flash_viewer : $html_viewer;
+    $html .= qq{<div id=html_viewer>$html_viewer</div>};
+    $html .= $flash_viewer;
     $html .= qq{<table>};
     $html .= qq{<tr valign=top><td class = small>Alignment reports};
     if ($analysis_reports && @$analysis_reports)
@@ -715,8 +714,7 @@ image_track varchar(10),
 pair_id integer(10),
 link varchar(50),
 annotation blob,
-color varchar(10),
-
+color varchar(10)
 )
 };
     $dbh->do($create);
@@ -816,7 +814,7 @@ INSERT INTO image_info (id, iname, title) values ($j, "$image", "$title")
 	    my ($xmin, $ymin, $xmax, $ymax) = split /,/, $coords;
 	    my $anno = $feat->description;
 #	    $anno =~ s/'|"//g;
-	    $anno =~ s/<br\/>/\n/g;
+	    $anno =~ s/<br\/>/\\n/g;
 #	    print STDERR $anno,"\n" if $anno =~ /01020/;
 	    $statement = qq{
 INSERT INTO image_data (id, name, xmin, xmax, ymin, ymax, image, image_track,pair_id, link, annotation, color) values ($i, "$name", $xmin, $xmax, $ymin, $ymax, "$image", "$image_track",$pair_id, '$link', '$anno', '$color')
@@ -1857,7 +1855,7 @@ sub gen_go_button
         'args__blastz_gap_extension','blastz_gap_extension',
         'args__blastz_params','blastz_params',
 
-
+        'args__viewer', 'viewer',
 	'args__iw', 'iw',
 	'args__ih', 'ih', 
 	'args__fh', 'feat_h',
