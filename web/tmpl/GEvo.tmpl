@@ -10,6 +10,8 @@
 <script language="JavaScript" type="text/javascript" src="/CoGe/js/menu.js"></script>
 <script src="/CoGe/gobe/static/swfobject.js" ></script>
 <SCRIPT language="JavaScript">
+
+
 function submitform() {
   document.main_form.submit();
 }
@@ -64,9 +66,26 @@ function rev_locs (val) {
 
 }
 
+function displayAnchor(){
+var checkbox = $('#use_anchor')[0].checked;
+var anchor_program = $('#anchor_program').val();
+if (checkbox)
+{
+ $('#anchor_menu').show();
+ $('#anchor_options').show();
+ anchor_placement([anchor_program],[anchor_options]);
+}
+else{
+ $('#anchor_menu').hide();
+ $('#anchor_options').hide();
+ }
+}
 
-
-
+function check_anchor_program (){
+var anchor_program = $('#anchor_program').val();
+anchor_placement([anchor_program],[anchor_options]);
+}
+  
 function check_alignment_program (){
 
 var alignment = $("#alignment_program").val();
@@ -76,6 +95,11 @@ var alignment = $("#alignment_program").val();
   $("#chaos_options").hide();
   $("#spike_sequence").hide();
   $("#tblastx_options").hide();
+  $("#dialign_options").hide();
+  $("#dialign_motif_options").hide();
+  $("#dialign_parameters").hide();
+  $('#anchor_menu').hide();
+  $('#anchor_options').hide();
 
   var spike = $("#spike").val();
   $("#spike").val(0);
@@ -92,6 +116,11 @@ else if (alignment == "chaos")
  {
   $("#chaos_options").show();
  }
+else if (alignment == "dialign")
+ {
+  $("#dialign_options").show();
+  $("#dialign_parameters").show();
+ } 
 else if (alignment == "tblastx")
  {
   $("#blast_options").show();
@@ -127,6 +156,7 @@ setup();
 
 
 function handle_results (html,w, h, img_base, n_images) {
+ //clearInterval(interval);
  $('#results').html(html);
  var so = new SWFObject("/CoGe/gobe/flash/gobe.swf", "gobe", w, h, "9", "#FFFFFF");
  so.useExpressInstall('/CoGe/gobe/flash/expressinstall.swf');
@@ -258,28 +288,41 @@ Number of sequences:
    <Table class=small>    
   <TR>
   <TD>Word Size (-W):</TD>
-  <TD><input class="backbox" type="text" name="wordsize" id="wordsize" tabindex="1" size="3" value="7" /></TD>
+  <TD><input class="backbox" type="text" name="blast_wordsize" id="blast_wordsize" tabindex="1" size="3" value="7" /></TD>
  </TR>    
  <TR>
-  <TD>Gap Open Penalty (-G): </TD>
-  <TD><input class="backbox" type="text" name="gapopen" id="gapopen" tabindex="1" size="3" value="5" /></TD>
- </TR>    
- <TR>
-  <TD>Gap Extension Penalty (-E): </TD>
-  <TD><input class="backbox" type="text" name="gapextend" id="gapextend" tabindex="1" size="3" value="2" /></TD>
+  <TD>Match Score (-r): </TD>
+  <TD><input class="backbox" type="text" name="blast_match" id="blast_match" tabindex="1" size="3" value="1" /></TD>
  </TR>    
  <TR>
   <TD>Mismatch Penalty (-q): </TD>
-  <TD><input class="backbox" type="text" name="mismatch" id="mismatch" tabindex="1" size="3" value="-2" /></TD>
+  <TD><input class="backbox" type="text" name="blast_mismatch" id="blast_mismatch" tabindex="1" size="3" value="-2" /></TD>
+ </TR>    
+ <TR>
+  <TD>Gap Open Penalty (-G): </TD>
+  <TD><input class="backbox" type="text" name="blast_gapopen" id="blast_gapopen" tabindex="1" size="3" value="5" /></TD>
+ </TR>    
+ <TR>
+  <TD>Gap Extension Penalty (-E): </TD>
+  <TD><input class="backbox" type="text" name="blast_gapextend" id="blast_gapextend" tabindex="1" size="3" value="2" /></TD>
+ </TR>    
+ <TR>
+  <TD>Filter query sequence (DUST/SEG) (-F): </TD>
+  <TD>
+    <select class="backbox" name="blast_filter" id="blast_filter" tabindex="1" >
+     <option value="T">Yes</option>
+     <option value="F" selected>No</option>
+    </select>
+  </TD>
  </TR>    
  <TR>
   <TD>Expectation value (E) (-e): </TD>
-  <TD><input class="backbox" type="text" name="eval" id="eval" tabindex="1" size="3" value="100" /></TD>
+  <TD><input class="backbox" type="text" name="blast_eval" id="blast_eval" tabindex="1" size="3" value="100" /></TD>
  </TR>
     
  <TR>
   <TD>Other Blast Parameters: </TD>
-  <TD><input class="backbox" type="text" name="blastparams" id="blastparams" tabindex="1" size="10" /></TD>
+  <TD><input class="backbox" type="text" name="blastparams" id="blastparams" tabindex="1" size="10"/></TD>
  </TR>         
 </TABLE>
 </DIV>
@@ -403,7 +446,79 @@ Number of sequences:
 </TABLE>
 </DIV>
 
+<DIV id="dialign_options" class="small">
+   <Table class=small>    
+  <TR>
+   <TD>Use Anchored Alignment
+   <TD><input type="checkbox" value="0" id="use_anchor" name="use_anchor" onChange="displayAnchor()"></TD>
+  </TR>
+  <TR>
+  <TD>Min Alignment Score: </TD>
+  <TD><input class="backbox" type="text" name="dialign_min_score" id="dialign_min_score" tabindex="1" size="3" value="1" /></TD>
+ </TR>    
+ <TR>
+  <TD>Max Contiguous Low Score Alignments in HSPs: </TD>
+  <TD><input class="backbox" type="text" name="dialign_max_gap" id="dialign_max_gap" tabindex="1" size="3" value="4" /></TD>
+ </TR> 
+ <TR>
+  <TD>Split HSPs on Different Alignment Scores</TD>
+  <TD><input class="backbox" type="radio" name="dialign_split_score" id="dialign_split_score" tabindex="1" value="1" />Yes</label><label><input class="backbox" type="radio" name="dialign_split_score" id="dialign_split_score" tabindex="1" value="0" checked />No</label></TD>
+ </TR>
+ <TR>
+  <TD>Use Translations in Alignment</TD>
+  <TD><input class="backbox" type="radio" name="dialign_use_translation" id="dialign_use_translation" tabindex="1" value="1" onClick="$('#dialign_params').val('-nt -cs -ma')" />Yes</label><label><input class="backbox" type="radio" name="dialign_use_translation" id="dialign_use_translation" tabindex="1" value="0" onClick="$('#dialign_params').val('-n')" checked />No</label></TD>
+ </TR>
+  <TR>
+  <TD>Use Motif in Alignment</TD>
+  <TD><input class="backbox" type="radio" name="dialign_motif" id="dialign_motif" tabindex="1" value="1" onClick="$('#dialign_motif_options').show();" />Yes</label><label><input class="backbox" type="radio" name="dialign_motif" id="dialign_motif" tabindex="1" value="0" onClick="$('#dialign_motif_options').hide()" checked />No</label></TD>
+ </TR>
+ </TABLE>
+  </DIV>
+ <DIV id="dialign_motif_options" class="small">
+ <Table class=small>  
+ <TR>
+ <TD> Motif </TD>
+  <TD><input class="backbox" type="text" name="dialign_motif_motif" id="dialign_motif_motif" tabindex="1" size="5" /></TD>
+ </TR>
+ <TR>
+ <TD> Weighting Factor (Assigns bonus) </TD>
+  <TD><input class="backbox" type="text" name="dialign_motif_weight" id="dialign_motif_weight" tabindex="1" size="5" /></TD>
+ </TR>
+ <TR>
+ <TD> Distance Penalty </TD>
+  <TD><input class="backbox" type="text" name="dialign_motif_penalty" id="dialign_motif_penalty" tabindex="1" size="5" /></TD>
+ </TR>
+ </TABLE>
+ </DIV>
+ <DIV id="dialign_parameters"  class="small">
+ <Table class=small>
+ <TR>
+  <TD>Long Sequence Alignment</TD>
+  <TD><input class="backbox" type="radio" name="dialign_lsa" id="dialign_lsa" tabindex="1" value="1" onClick="$('#dialign_params').val('-ds -n -thr 2 -lmax 30')" />Yes</label><label><input class="backbox" type="radio" name="dialign_lsa" id="dialign_lsa" tabindex="1" value="0" onClick="$('#dialign_params').val('-n')" checked />No</label></TD>
+ </TR>
+ <TR>
+  <TD>Other Dialign Parameters: </TD>
+  <TD><input class="backbox" type="text" name="dialign_params" id="dialign_params" tabindex="1" size="20"  value="-n"/></TD>
+ </TR>         
+</TABLE>
+<b>Note</b>: Using Translation Increases CDS Alignment Accuracy at Cost of Speed - Not Recommended for Sequences > 10 kb
+</DIV>
 
+<TD>
+<DIV id="anchor_menu" class="small">
+<TABLE class=small>
+ <TR>
+  <TD>Select Anchor Program </TD>
+  <TD><select class="backbox" id="anchor_program" size="1" onchange='check_anchor_program()'>
+       <option value="lagan_options">bl2seq</option>
+       <option value="chaos_options" selected>chaos</option>
+      </select>
+  </TD>
+ </TR>
+</TABLE>
+</DIV>
+<DIV id="anchor_options" class="small">Hello!</DIV>
+</TD>
 <td width="2" bgcolor="#99FF99">
 
 
