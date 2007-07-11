@@ -13,7 +13,7 @@ BEGIN
     use vars qw($VERSION);
     $VERSION = "0.01";
   }
-__PACKAGE__->mk_accessors qw(file hsps hsp_count query subject qlength slength gotname);
+__PACKAGE__->mk_accessors qw(file hsps hsp_count query subject qlength slength gotname DEBUG);
 
 ###############################################################################
 # chaos_report -- Josh Kane  UC Berkeley
@@ -89,7 +89,7 @@ sub _parseReport {
   	if ($locs =~/^(.*?)\s+(\d+)\s(\d+).\s(.*?)\s+(\d+)\s(\d+)\D+(\d+\.\d+)\s.(.)/)
     	{
     		($name1,$start1,$stop1,$name2,$start2,$stop2,$score_plus,$strand) = ($1,$2,$3,$4,$5,$6,$7,$8);
-    		print STDERR "($name1,$start1,$stop1,$name2,$start2,$stop2,$score_plus,$strand)\n";
+    		print STDERR "($name1,$start1,$stop1,$name2,$start2,$stop2,$score_plus,$strand)\n" if $self->DEBUG;
    	}
 	if ($scores =~/^\D+(\d+)\D+(\d+)\D+(\d+)\D+(\d+)\D+(\d+).+(0?\.\d+)/)
     	{
