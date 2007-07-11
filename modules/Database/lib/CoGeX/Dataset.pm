@@ -216,4 +216,35 @@ sub resolve : ResultSet {
 			 ,{});
   }
 
+sub get_chromosomes
+  {
+    my $self = shift;
+    my @data = map {$_->chromosome} $self->genomic_sequences(
+					{},
+					{
+					 select =>["chromosome"],
+					 distinct=>["chromosme"],
+					},
+				       );
+#     unless (@data)
+#       {
+# 	foreach my $item ($self->features(
+# 					    {
+					     
+# 					    },
+# 					    {
+# 					     select=>"locations.chromosome",
+# 					     join=>"locations",
+# 					     prefetch=>"locations",
+# 					     distinct=>["locations.chromosome"],
+# 					     prefetch=>["locations"],
+# 					    },
+# 					    ))
+# 	  {
+# 	    print $item->chromosome,"\n";
+# 	  }
+#       }
+    return wantarray ? @data : \@data;
+  }
+
 1;
