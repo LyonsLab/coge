@@ -15,7 +15,7 @@ BEGIN
 		use vars qw($VERSION $DEBUG);
 		$VERSION = "0.01";
 	}
-__PACKAGE__->mk_accessors qw(file1 file2 run_anchor run_dialign base_name extension output_dir  anchor_file fasta_file dialign_file run_anchor_opts run_dialign_opts anchor_report_opts dialign_report_opts anchor_report dialign_report DEBUG);
+__PACKAGE__->mk_accessors qw(file1 file2 run_anchor run_dialign base_name extension output_dir anchor_output anchor_file fasta_file dialign_file run_anchor_opts run_dialign_opts anchor_report_opts dialign_report_opts anchor_report dialign_report DEBUG);
 
 ###############################################################################
 # anchors -- Josh Kane  UC Berkeley
@@ -69,19 +69,13 @@ sub generate_anchors
 	print STDERR  "call to $extension: $command\n" if $self->DEBUG;
 	`$command`;
 	
-	open(IN,"< $output_dir/$base_name.$extension") || die "can't open $base_name.$extension for reading: $!";
-	my $data = join ("", <IN>);
-	close IN;
-	
-	$self->anchor_file($data);
+	$self->anchor_output("$output_dir/$base_name.$extension");
+	print STDERR "Anchor output: ",$self->anchor_output,"\n" if $self->DEBUG;
 	
 	`cat $file1 > $output_dir/$base_name.fasta`;
 	`cat $file2 >> $output_dir/$base_name.fasta`;
 	
-	open(IN,"< $output_dir/$base_name.fasta") || die "can't open $base_name.fasta for reading: $!";
-	$data = join ("", <IN>);
-	close IN;
-	$self->fasta_file($data);
+	$self->fasta_file("$output_dir/$base_name.fasta");
 	
 	$anchor_report = new CoGe::Accessory::chaos_report({file=>"$output_dir/$base_name.$extension", %$parser_opts}) if $extension=~/chaos/i;
 	
@@ -90,6 +84,7 @@ sub generate_anchors
 	
 	foreach my $hsp (@{$anchor_report->hsps})
 	{
+	  next if $hsp->strand =~ /-/;
 	  $query_start = $hsp->query_start;
 	  $query_stop = $hsp->query_stop;
 	  $subject_start = $hsp->subject_start;
@@ -97,12 +92,15 @@ sub generate_anchors
 	  $length = ($query_stop - $query_start) + 1;
 	  $anchor_file .= "1 2 $query_start $subject_start $length $score\n";
 	}
-	$self->anchor_file($anchor_file);
+	
+	print STDERR "Anchor file is: \n",$anchor_file,"\n" if $self->DEBUG;
 	
 	open(NEW,"> $output_dir/$base_name.anc");
 	print  NEW $anchor_file;
 	close NEW;
 	
+	$self->anchor_file("$output_dir/$base_name.anc");
+	print STDERR "Anchor file: ",$self->anchor_file,"\n" if $self->DEBUG;
 	return $self;
 }
 	
