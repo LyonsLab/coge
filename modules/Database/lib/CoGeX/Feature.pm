@@ -227,12 +227,12 @@ sub annotation_pretty_print_html
     my $chr = $self->chr;
     my $strand = $self->strand;
     my $dataset_id = $self->dataset->id;
-    my $anno_type = new CoGe::Genome::Accessory::Annotation(Type=>"<font class=\"title4\">"."Name(s):"."</font>");
+    my $anno_type = new CoGe::Genome::Accessory::Annotation(Type=>"<span class=\"title4\">"."Name(s):"."</span>");
     $anno_type->Type_delimit("\n");
     $anno_type->Val_delimit("\n, ");
     foreach my $name ($self->names)
       {
-	$anno_type->add_Annot("<a class=\"data\" href=FeatView.pl?accn=".$name.">".$name."</a>");
+	$anno_type->add_Annot("<a class=\"data\" href=\"FeatView.pl?accn=".$name."\">".$name."</a>");
       }
     
     $anno_obj->add_Annot($anno_type);
@@ -241,15 +241,15 @@ sub annotation_pretty_print_html
 	my $type = $anno->type();
 	my $group = $type->group();
 	my $anno_name = $type->name;
-	$anno_name = "<font class=\"title4\">". $anno_name."</font>" unless ref($group) =~ /group/i;
+	$anno_name = "<span class=\"title4\">". $anno_name."</span>" unless ref($group) =~ /group/i;
 	
 	my $anno_type = new CoGe::Genome::Accessory::Annotation(Type=>$anno_name);
 	$anno_type->Val_delimit(", ");
 
-	$anno_type->add_Annot("<font class=\"data\">".$anno->annotation."</font>");
+	$anno_type->add_Annot("<span class=\"data\">".$anno->annotation."</span>");
 	if (ref ($group) =~ /group/i)
 	  {
-	    my $anno_g = new CoGe::Genome::Accessory::Annotation(Type=>"<font class=\"title4\">".$group->name."</font>");
+	    my $anno_g = new CoGe::Genome::Accessory::Annotation(Type=>"<span class=\"title4\">".$group->name."</span>");
 	    $anno_g->add_Annot($anno_type);
 	    $anno_g->Type_delimit(": ");
 	    $anno_g->Val_delimit(", ");
@@ -267,8 +267,8 @@ sub annotation_pretty_print_html
     $location .="(".$strand.")";
     my $featid = $self->id;
     $location = qq{<a href="$loc_link?featid=$featid&start=$start&stop=$stop&chr=$chr&dsid=$dataset_id&strand=$strand" target=_new>}.$location."</a\n" if $loc_link;
-    $location = qq{<font class="data">$location</font>};
-    $anno_obj->add_Annot(new CoGe::Genome::Accessory::Annotation(Type=>"<font class=\"title4\">Location</font>", Values=>[$location], Type_delimit=>": ", Val_delimit=>" "));
+    $location = qq{<span class="data">$location</span>};
+    $anno_obj->add_Annot(new CoGe::Genome::Accessory::Annotation(Type=>"<span class=\"title4\">Location</span>", Values=>[$location], Type_delimit=>": ", Val_delimit=>" "));
     return $anno_obj->to_String;
   }
 
