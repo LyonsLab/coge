@@ -15,7 +15,7 @@ BEGIN
 		use vars qw($VERSION $DEBUG);
 		$VERSION = "0.01";
 	}
-__PACKAGE__->mk_accessors qw(file1 file2 run_anchor run_dialign base_name extension output_dir anchor_file anchor_file fasta_file dialign_file run_anchor_opts run_dialign_opts anchor_report_opts dialign_report_opts anchor_report dialign_report DEBUG);
+__PACKAGE__->mk_accessors qw(file1 file2 run_anchor run_dialign base_name extension output_dir  anchor_file fasta_file dialign_file run_anchor_opts run_dialign_opts anchor_report_opts dialign_report_opts anchor_report dialign_report DEBUG);
 
 ###############################################################################
 # anchors -- Josh Kane  UC Berkeley
@@ -30,7 +30,7 @@ sub new {
 	$self->run_dialign("/opt/apache/CoGe/bin/dialign2_dir/dialign2-2_coge") unless $self->run_dialign;
 	$self->output_dir("/opt/apache/CoGe/tmp") unless $self->output_dir;
 	$self->run_anchor_opts("-v") unless $self->run_anchor_opts;
-	$self->run_dialign_opts("-n -anc") unless $self->run_dialign_opts;
+	$self->run_dialign_opts("-n") unless $self->run_dialign_opts;
 	$self->extension("chaos") unless $self->extension;
 	$self->run_program();
 	return $self;
@@ -61,11 +61,13 @@ sub generate_anchors
 	my $anchor_file = "";
 	my $anchor_report = [];
 	
-	print "file1 is $file1, file2 is $file2\n" if $self->DEBUG;
-	
-	print "call to $extension: $run_anchor $file1 $file2 $anchor_opts > $output_dir/$base_name.$extension\n" if $self->DEBUG;
-	`$run_anchor $file1 $file2 $anchor_opts > $output_dir/$base_name.$extension` if $extension=~/chaos/i;
-	`$run_anchor -i $file1 -j $file2 $anchor_opts > $output_dir/$base_name.$extension` if $extension=~/bl2/i;
+	print STDERR  "file1 is $file1, file2 is $file2\n" if $self->DEBUG;
+	my $command;
+	$command = "$run_anchor $file1 $file2 $anchor_opts > $output_dir/$base_name.$extension" if $extension=~/chaos/i;
+	$command = "$run_anchor -p blastn -i $file1 -j $file2 $anchor_opts > $output_dir/$base_name.$extension" if $extension=~/bl2/i;
+
+	print STDERR  "call to $extension: $command\n" if $self->DEBUG;
+	`$command`;
 	
 	open(IN,"< $output_dir/$base_name.$extension") || die "can't open $base_name.$extension for reading: $!";
 	my $data = join ("", <IN>);
@@ -81,10 +83,9 @@ sub generate_anchors
 	close IN;
 	$self->fasta_file($data);
 	
-	$anchor_report = new CoGe::Accessory::chaos_report({file=>"$output_dir/$base_name.chaos", %$parser_opts}) if $extension=~/chaos/i;
+	$anchor_report = new CoGe::Accessory::chaos_report({file=>"$output_dir/$base_name.$extension", %$parser_opts}) if $extension=~/chaos/i;
 	
-	$anchor_report = new CoGe::Accessory::bl2seq_report({file=>"$output_dir/$base_name.chaos", %$parser_opts}) if $extension=~/bl2/i;
-	
+	$anchor_report = new CoGe::Accessory::bl2seq_report({file=>"$output_dir/$base_name.$extension", %$parser_opts}) if $extension=~/bl2/i;
 	$self->anchor_report($anchor_report);
 	
 	foreach my $hsp (@{$anchor_report->hsps})
@@ -99,7 +100,7 @@ sub generate_anchors
 	$self->anchor_file($anchor_file);
 	
 	open(NEW,"> $output_dir/$base_name.anc");
-	print NEW $anchor_file;
+	print  NEW $anchor_file;
 	close NEW;
 	
 	return $self;
@@ -114,16 +115,13 @@ sub run_dialign_with_anchors
 	$parser_opts = {} unless ref($parser_opts) =~ /hash/i;
 	my $base_name = $self->base_name;
 	my $output_dir = $self->output_dir;
-	
-	print "call to dialign: $run_dialign $dialign_opts $output_dir/$base_name.dialign $output_dir/$base_name.fasta\n" if $self->DEBUG;
-	`$run_dialign $dialign_opts -fn $output_dir/$base_name.dialign $output_dir/$base_name.fasta`;
+	my $command = "$run_dialign $dialign_opts -anc -fn $output_dir/$base_name.dialign $output_dir/$base_name.fasta";	
+	print STDERR  "call to dialign: $command\n" if $self->DEBUG;
+	`$command`;
 	#`mv $basename.ali $output_dir/$basename.ali`;
 	#some move command to output_dir directory
 	
-	open(IN,"< $output_dir/$base_name.dialign") || die "can't open $base_name.dialign for reading: $!";
-	my $data = join ("", <IN>);
-	close IN;
-	$self->dialign_file($data);
+	$self->dialign_file("$output_dir/$base_name.dialign");
 	
 	
 	my $dialign_report = new CoGe::Accessory::dialign_report({file=>"$output_dir/$base_name.dialign", %$parser_opts});
