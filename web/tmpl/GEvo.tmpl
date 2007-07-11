@@ -64,15 +64,16 @@ function rev_locs (val) {
 
 }
 
-function check_anchor_program (){
+function check_dialign_anchor_program (){
 
-if (! $('#use_anchor')[0].checked) {
+if ($('#dialign_use_anchor').val() == 0) {
 $(".anchor").hide("slow"); 
 return;
 }
 $("#anchor_menu").show("slow"); 
-var anchor_program = $('#anchor_program').val();
-var html = $('#'+anchor_program).html();
+var dialign_anchor_program = $('#dialign_anchor_program').val();
+var html = $('#'+dialign_anchor_program).html();
+//$('#'+dialign_anchor_program).show("show");
 $('#anchor_options').hide();
 $('#anchor_options').html(html);
 $('#anchor_options').show("slow");
@@ -122,6 +123,7 @@ else if (alignment == "dialign")
  {
   $("#dialign_options").show("slow");
   $("#dialign_parameters").show("slow");
+  check_dialign_anchor_program();
  } 
 else if (alignment == "tblastx")
  {
@@ -167,7 +169,7 @@ $(document).ready(function(){
  if (show_dir_seq){$("#dir_seqs").show("fast");}
 // setTimeout('check_alignment_program()',1000);
  check_alignment_program();
- check_anchor_program();
+ check_dialign_anchor_program();
  });
 
 function handle_results (html,w, h, img_base, n_images) {
@@ -364,7 +366,6 @@ Number of sequences:
 </table>
 
 </DIV>
-
  <DIV id="blastz_options" class="small">
 <table class = small>
    <TR>
@@ -434,7 +435,11 @@ Number of sequences:
    <Table class=small>    
   <TR>
    <TD>Use Anchored Alignment: </TD>
-   <TD><input type="checkbox" value="0" id="use_anchor" name="use_anchor" onClick='check_anchor_program();' ></TD>
+   <TD><select class="backbox" id="dialign_use_anchor" size="1" onchange="check_dialign_anchor_program();">
+       <option value="1">Use Anchored Search</option>
+       <option value="0" selected>Do NOT use Anchored Search</option>
+      </select> 
+   </TD>
   </TR>
   <TR>
   <TD>Min Alignment Score: </TD>
@@ -495,7 +500,7 @@ Number of sequences:
 <TABLE class=small>
  <TR>
   <TH>Select Anchor Program </TH>
-  <TD><select class="backbox" id="anchor_program" size="1" onchange='check_anchor_program()'>
+  <TD><select class="backbox" id="dialign_anchor_program" size="1" onchange='check_dialign_anchor_program()'>
        <option value="blast_options">bl2seq</option>
        <option value="chaos_options" selected>chaos</option>
       </select>
