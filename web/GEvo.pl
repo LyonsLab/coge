@@ -16,6 +16,7 @@ use CoGe::Accessory::blastz_report;
 use CoGe::Accessory::lagan_report;
 use CoGe::Accessory::chaos_report;
 use CoGe::Accessory::dialign_report;
+use CoGe::Accessory::dialign_report::anchors;
 use CoGe::Graphics;
 use CoGe::Graphics::Chromosome;
 use CoGe::Graphics::Feature;
@@ -1574,38 +1575,67 @@ sub run_dialign
 	       print "Your search parameters were altered due to the length of the sequences you requested for alignment. Your alignment was done with the \"Large Sequence Search\" option enabled, and if you chose to run the translation option, it was disabled.\n";
 	      }
 	     }
-	    #print STDERR "length of seq1 is ",,"\n";
-#	    if ($seq_length > $max_length)
 	    my $seqfile1 = $sets->[$i]->{file};
 	    my $seqfile2 = $sets->[$j]->{file};
-	    my $seqfile = $TEMPDIR."/".$BASEFILENAME."_".($i+1)."-".($j+1).".fasta";
-	    next unless -r $seqfile1 && -r $seqfile2; #make sure these files exist
-	    #put two fasta files into one for dialign
-	    `cat $seqfile1 > $seqfile`;
-	    `cat $seqfile2 >> $seqfile`;
-#	    print STDERR "Seqfile:  $seqfile\n";
-	    next unless $sets->[$i]{reference_seq} || $sets->[$j]{reference_seq};
 	    my ($accn1, $accn2) = ($sets->[$i]{accn}, $sets->[$j]{accn});
-	    my ($tempfile) = $BASEFILE."_".($i+1)."-".($j+1).".dialign";
-	    my $command = $DIALIGN;
-	    $command .= " ".$params if $params;
-	    $command .= " -fn ".$tempfile;
-	    $command .= " $seqfile";
-	    my $x = "";
-	    ($x,$command) = check_taint( $command );
-	    if ( $DEBUG ) {
-	      print STDERR "About to execute...\n $command\n";
-	    }
-	    unless ($x)
+	    my $report; #place to hold report
+	    my $tempfile;
+	    if ($parser_opts->{anchor_params})
 	      {
-		next;
+		my $anchor_prog = $parser_opts->{anchor_params}{prog} =~ /chaos/ ? $CHAOS : $BL2SEQ;
+		my ($x,$dialign_opts) = check_taint( $params);
+		unless ($x)
+		  {
+		    next;
+		  }
+		my ($y,$anchor_opts) = check_taint($parser_opts->{anchor_params}{param_string});
+		unless ($y)
+		  {
+		    next;
+		  }
+		my $obj = new CoGe::Accessory::dialign_report::anchors({
+									file1=>$seqfile1,
+									file2=>$seqfile2,
+									base_name=>$BASEFILENAME,
+									extension=>$parser_opts->{anchor_params}{prog},
+									run_anchor=>$anchor_prog,
+									run_dialign_opts=>$dialign_opts,
+									run_anchor_opts=>$anchor_opts,
+									dialign_report_opts=>$parser_opts,
+									anchor_report_opts=>$parser_opts->{anchor_params}{parser_opts},
+									DEBUG=>1,
+								       });
+		$tempfile = $obj->dialign_file;
+		$report = $obj->dialign_report;
 	      }
-	    #$command .= " > ".$tempfile;
-	    print STDERR $command,"\n";
-	    #time for execution
-	    `$command`;
-	    system "chmod +rw $tempfile";
-	    my $report = new CoGe::Accessory::dialign_report({file=>$tempfile, %$parser_opts}) if -r $tempfile;
+	    else
+	      {
+		my $seqfile = $TEMPDIR."/".$BASEFILENAME."_".($i+1)."-".($j+1).".fasta";
+		next unless -r $seqfile1 && -r $seqfile2; #make sure these files exist
+		#put two fasta files into one for dialign
+		`cat $seqfile1 > $seqfile`;
+		`cat $seqfile2 >> $seqfile`;
+		next unless $sets->[$i]{reference_seq} || $sets->[$j]{reference_seq};
+		($tempfile) = $BASEFILE."_".($i+1)."-".($j+1).".dialign";
+		my $command = $DIALIGN;
+		$command .= " ".$params if $params;
+		$command .= " -fn ".$tempfile;
+		$command .= " $seqfile";
+		my $x = "";
+		($x,$command) = check_taint( $command );
+		if ( $DEBUG ) {
+		  print STDERR "About to execute...\n $command\n";
+		}
+		unless ($x)
+		  {
+		    next;
+		  }
+		print STDERR $command,"\n";
+		#time for execution
+		`$command`;
+		system "chmod +rw $tempfile";
+		$report = new CoGe::Accessory::dialign_report({file=>$tempfile, %$parser_opts}) if -r $tempfile;
+	      }
 	    my @tmp = ($tempfile, $accn1, $accn2);
 	    if ($report)
 	      {
@@ -1615,7 +1645,7 @@ sub run_dialign
 	      {
 		push @tmp, "no results from comparing $accn1 and $accn2 with lagan";
 	      }
-	  push @reports, \@tmp;
+	    push @reports, \@tmp;
 	  }
       }
     return \@reports;
@@ -1846,6 +1876,9 @@ sub gen_go_button
         'args__dialign_motif_motif','dialign_motif_motif',
         'args__dialign_motif_weight','dialign_motif_weight',
         'args__dialign_motif_penalty','dialign_motif_penalty',
+        'args__dialign_use_anchor','dialign_use_anchor',
+        'args__dialign_anchor_program','dialign_anchor_program',
+
 
         'args__blastz_wordsize','blastz_wordsize',
         'args__blastz_chaining','blastz_chaining',
@@ -2080,7 +2113,9 @@ sub get_algorithm_options
     my $dialign_min_score = $opts{dialign_min_score};
     my $dialign_max_gap = $opts{dialign_max_gap};
     my $dialign_split_score = $opts{dialign_split_score};
-
+    my $dialign_use_anchor = $opts{dialign_use_anchor};
+    my $dialign_anchor_program = $opts{dialign_anchor_program};
+    
     #chaos stuff
     my $chaos_word_length = $opts{chaos_word_length};
     my $chaos_score_cutoff = $opts{chaos_score_cutoff};
@@ -2091,65 +2126,79 @@ sub get_algorithm_options
     my $chaos_gap_extension = $opts{chaos_gap_extension};
     my $chaos_params = $opts{chaos_params};
 
+    my ($blastz_string, $blast_string, $lagan_string, $dialign_string, $chaos_string);
+    #build blastz param string
+    $blastz_string = " W=" .$blastz_wordsize if $blastz_wordsize;
+    $blastz_string .= " C=" .$blastz_chaining if $blastz_chaining;
+    $blastz_string .= " K=" .$blastz_threshold if $blastz_threshold;
+    $blastz_string .= " M=" .$blastz_mask if $blastz_mask;
+    $blastz_string .= " O=" .$blastz_gap_start if $blastz_gap_start;
+    $blastz_string .= " E=" .$blastz_gap_extension if $blastz_gap_extension;
+    $blastz_string .= " " .$blastz_params if $blastz_params;
+    #build blast param string
+    $blast_wordsize = 3 if ($analysis_program eq "tblastx" && $blast_wordsize > 3);
+    $blast_string = " -W " . $blast_wordsize if defined $blast_wordsize;
+    $blast_string .= " -G " . $blast_gapopen if defined $blast_gapopen;
+    $blast_string .= " -E " . $blast_gapextend if defined $blast_gapextend;
+    $blast_string .= " -q " . $blast_mismatch if defined $blast_mismatch;
+    $blast_string .= " -r " . $blast_match if defined $blast_match;
+    $blast_string .= " -e " . $blast_eval if defined $blast_eval;
+    $blast_string .= " -F " . $blast_filter if defined $blast_filter;
+    $blast_string .= " "    . $blast_params if defined $blast_params;
+    #build lagan param string
+    $lagan_string = $lagan_params;
+    #build dialign param string
+    $dialign_motif_motif =~ s/[^ATCG\[\]]//g if $dialign_motif_motif;
+    $dialign_string .= "-mot $dialign_motif_motif $dialign_motif_weight $dialign_motif_penalty" if $dialign_motif_motif =~/^[ATGC\[\]]+$/;
+    $dialign_string .= " ".$dialign_params;
+    #build chaos param string
+    $chaos_string .= " -v"; #need verbose mode for the parser
+    $chaos_string .= " -b"; #search both strands
+    $chaos_string .= " -wl $chaos_word_length" if defined $chaos_word_length;
+    $chaos_string .= " -co $chaos_score_cutoff" if defined $chaos_score_cutoff;
+    $chaos_string .= " -rsc $chaos_rescore_cutoff" if defined $chaos_rescore_cutoff;
+    $chaos_string .= " -lb $chaos_lookback" if defined $chaos_lookback;
+    $chaos_string .= " -gl $chaos_gap_length" if defined $chaos_gap_length;
+    $chaos_string .= " -gs $chaos_gap_start" if defined $chaos_gap_start;
+    $chaos_string .= " -gc $chaos_gap_extension" if defined $chaos_gap_extension;
+    $chaos_string .= " $chaos_params" if defined $chaos_params;
 
 
     #stuff to be returned
     my $param_string;  #param string to be passed to command line for program execution
     my %parser_options; #params used to set the parser object -- key is accessor method, value is value
+
     if ($analysis_program eq "blastz")
       {
-	$param_string = " W=" .$blastz_wordsize if $blastz_wordsize;
-	$param_string .= " C=" .$blastz_chaining if $blastz_chaining;
-	$param_string .= " K=" .$blastz_threshold if $blastz_threshold;
-	$param_string .= " M=" .$blastz_mask if $blastz_mask;
-	$param_string .= " O=" .$blastz_gap_start if $blastz_gap_start;
-	$param_string .= " E=" .$blastz_gap_extension if $blastz_gap_extension;
-	$param_string .= " " .$blastz_params if $blastz_params;
+	$param_string = $blastz_string;
       }
     elsif ($analysis_program =~ /blast/) #match blastn and tblastx
       {
-	$blast_wordsize = 3 if ($analysis_program eq "tblastx" && $blast_wordsize > 3);
-	$param_string = " -W " . $blast_wordsize if defined $blast_wordsize;
-	$param_string .= " -G " . $blast_gapopen if defined $blast_gapopen;
-	$param_string .= " -E " . $blast_gapextend if defined $blast_gapextend;
-	$param_string .= " -q " . $blast_mismatch if defined $blast_mismatch;
-	$param_string .= " -r " . $blast_match if defined $blast_match;
-	$param_string .= " -e " . $blast_eval if defined $blast_eval;
-	$param_string .= " -F " . $blast_filter if defined $blast_filter;
-	
-	$param_string .= " "    . $blast_params if defined $blast_params;
+	$param_string = $blast_string;
       }
     elsif ($analysis_program eq "lagan")
       {
-	$param_string = $lagan_params;
+	$param_string = $lagan_string;
 	$parser_options{max_gap} = $lagan_max_gap;
 	$parser_options{length_cutoff} = $lagan_min_length;
 	$parser_options{percent_cutoff} = $lagan_percent_id;
       }
     elsif ($analysis_program eq "dialign")
       {
-	print STDERR $dialign_motif_motif,"\n";
-	$dialign_motif_motif =~ s/[^ATCG\[\]]//g if $dialign_motif_motif;
-	print STDERR $dialign_motif_motif,"\n";
-        $param_string .= "-mot $dialign_motif_motif $dialign_motif_weight $dialign_motif_penalty" if $dialign_motif_motif =~/^[ATGC\[\]]+$/;
-        $param_string .= " ".$dialign_params;
+	$param_string = $dialign_string;
         $parser_options{min_score} = $dialign_min_score;
         $parser_options{max_gap} = $dialign_max_gap;
         $parser_options{split_score} = $dialign_split_score;
+#	print STDERR "use anchors: $dialign_use_anchor\n";
+	my ($anchor_program, $anchor_param_string) = $dialign_anchor_program =~ "chaos" ? ("chaos", $chaos_string) : ("bl2seq", $blast_string);
+	$parser_options{anchor_params} = {
+					  prog=>$anchor_program,
+					  param_string=>$anchor_param_string,
+					 } if $dialign_use_anchor;
       }
     elsif ($analysis_program eq "chaos")
       {
-	$param_string .= " -v"; #need verbose mode for the parser
-	$param_string .= " -b"; #search both strands
-	$param_string .= " -wl $chaos_word_length" if defined $chaos_word_length;
-	$param_string .= " -co $chaos_score_cutoff" if defined $chaos_score_cutoff;
-	$param_string .= " -rsc $chaos_rescore_cutoff" if defined $chaos_rescore_cutoff;
-	
-	$param_string .= " -lb $chaos_lookback" if defined $chaos_lookback;
-	$param_string .= " -gl $chaos_gap_length" if defined $chaos_gap_length;
-	$param_string .= " -gs $chaos_gap_start" if defined $chaos_gap_start;
-	$param_string .= " -gc $chaos_gap_extension" if defined $chaos_gap_extension;
-	$param_string .= " $chaos_params" if defined $chaos_params;
+	$param_string = $chaos_string;
       }
     my ($x, $clean_param_string) = check_taint($param_string);
     unless ($x)
