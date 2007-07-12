@@ -198,6 +198,7 @@ sub get_info_from_db
 	($hsp, $location, $alignment, $match, $length, $identity, $eval) = split /\n/i, $item->[0] if $item->[0] =~ /\n/i;
 	($hsp, $location, $alignment, $match, $length, $identity, $eval) = split /\\n/i, $item->[0] if $item->[0] =~ /\\n/i;
 	($hsp, $location, $alignment, $match, $length, $identity, $eval) = split /<br\/>/i, $item->[0] if $item->[0] =~ /<br\/>/i;
+	($hsp, $location, $alignment, $match, $length, $identity, $eval) = split /&#10;/i, $item->[0] if $item->[0] =~ /&#10;/i;
 	print STDERR Dumper ($hsp, $location, $alignment, $match, $length, $identity, $eval);
 	my ($start, $stop, $orientation) = $location =~ /(\d+)-(\d+)\s+\((.*?)\)/;
 	$match =~ s/match:\s+//i;
