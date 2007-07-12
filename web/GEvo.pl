@@ -451,17 +451,17 @@ sub run
       {
 	$analysis_reports = run_blastz(sets=>\@sets, params=>$param_string, parser_opts=>$parser_opts);
       }
-    elsif ($analysis_program eq "lagan")
+    elsif ($analysis_program eq "LAGAN")
       {
 	$analysis_reports = run_lagan (sets=>\@sets, params=>$param_string, parser_opts=>$parser_opts);
       }
-    elsif ($analysis_program eq "chaos")
+    elsif ($analysis_program eq "CHAOS")
       {
 	$analysis_reports = run_chaos (sets=>\@sets, params=>$param_string, parser_opts=>$parser_opts);
       }
-    elsif ($analysis_program eq "dialign")
+    elsif ($analysis_program eq "DIALIGN")
       {
-	$analysis_reports = run_dialign (sets=>\@sets, params=>$param_string, parser_opts=>$parser_opts);
+	($analysis_reports, $analysis_program) = run_dialign (sets=>\@sets, params=>$param_string, parser_opts=>$parser_opts);
       }
     else
       {
@@ -815,7 +815,9 @@ INSERT INTO image_info (id, iname, title) values ($j, "$image", "$title")
 	    my ($xmin, $ymin, $xmax, $ymax) = split /,/, $coords;
 	    my $anno = $feat->description;
 #	    $anno =~ s/'|"//g;
-	    $anno =~ s/<br\/>/\\n/g;
+	    $anno =~ s/<br\/?>/&#10;/ig;
+	    $anno =~ s/\n/&#10;/g;
+	    print STDERR $anno if $anno =~ /Location/;
 #	    print STDERR $anno,"\n" if $anno =~ /01020/;
 	    $statement = qq{
 INSERT INTO image_data (id, name, xmin, xmax, ymin, ymax, image, image_track,pair_id, link, annotation, color) values ($i, "$name", $xmin, $xmax, $ymin, $ymax, "$image", "$image_track",$pair_id, '$link', '$anno', '$color')
@@ -1258,7 +1260,7 @@ sub get_obj_from_genome_db
 	print STDERR $name,"\n" if $DEBUG;
 	print STDERR "\t", $f->genbank_location_string(),"\n" if $DEBUG;
 	print STDERR "\t", $f->genbank_location_string(recalibrate=>$start),"\n\n" if $DEBUG;
-	my $anno = $f->annotation_pretty_print;
+	my $anno = $f->annotation_pretty_print_html;
 	$anno =~ s/\n/<br\/>/ig;
 	my $location = $f->genbank_location_string(recalibrate=>$start);
 	$location = $obj->reverse_genbank_location(loc=>$location, ) if $rev;
@@ -1475,7 +1477,7 @@ sub run_lagan
 	    }
 	  else
 	    {
-	      push @tmp, "no results from comparing $accn1 and $accn2 with lagan";
+	      push @tmp, "no results from comparing $accn1 and $accn2 with LAGAN";
 	    }
 	  push @reports, \@tmp;
 	  }
@@ -1530,7 +1532,7 @@ sub run_chaos
 	    }
 	  else
 	    {
-	      push @tmp, "no results from comparing $accn1 and $accn2 with lagan";
+	      push @tmp, "no results from comparing $accn1 and $accn2 with LAGAN";
 	    }
 	  push @reports, \@tmp;
 	  }
@@ -1546,6 +1548,7 @@ sub run_dialign
     my $parser_opts = $opts{parser_opts};
     my $max_length = $opts{max_length} || 10000;
     my $kill_length = 2 * $max_length;
+    my $program_ran = "DIALIGN";
     #my $algo_limits = $opts{algo_limits};
     my @files;
     my @reports;
@@ -1558,21 +1561,25 @@ sub run_dialign
 	    my $obj2 = $sets->[$j]->{obj};
 	    my $seq_length1 = $obj1->seq_length;
 	    my $seq_length2 = $obj2->seq_length;
+	    my $max_seq = $seq_length1 > $seq_length2 ? $seq_length1 : $seq_length2;
+	    my $error_message;
 	    if (($seq_length1 > $max_length) || ($seq_length2 > $max_length))
 	    {
 	      if (($seq_length1 > $kill_length) || ($seq_length2 > $kill_length))
 	      {
-	       print "We ain't gonna waste our time running this. Be more pragmatic next time and choose a smaller sequence to align.\n";
+	       print "The sequence you have chosen DIALIGN to align is too long (your longest sequence is $max_seq kb long). To complete the alignment would take a significant amount of time, and use up considerable system resources that others need to run their alignments. Please limit your sequences to no more than 20 kb long. Thank you.\n";
 	       return;
 	      }
 	      else
 	      {
-	       $params=~s/((\s?-cs)|(\s?-nt)|(\s?-ma))//g;
+	       my $changed = $params=~s/((\s?-cs)|(\s?-nt)|(\s?-ma))//g;
 	       $params .= " -n" unless $params =~ /(-n)/;
 	       $params .= " -ds" unless $params =~ /(-ds)/;
 	       $params .= " -thr 2" unless $params =~ /(-thr)/;
 	       $params .= " -lmax 30" unless $params =~ /(-lmax)/;
-	       print "Your search parameters were altered due to the length of the sequences you requested for alignment. Your alignment was done with the \"Large Sequence Search\" option enabled, and if you chose to run the translation option, it was disabled.\n";
+	       $error_message = "Your search parameters were altered due to the length of the sequences you requested for alignment. Your alignment was done with the \"Large Sequence Alignment\" option enabled";
+	       $error_message .= $changed ? ", and with \"Short Sequence Alignment with Translation\" disabled.\n" : ".\n";
+	       print $error_message;
 	      }
 	     }
 	    my $seqfile1 = $sets->[$i]->{file};
@@ -1582,8 +1589,9 @@ sub run_dialign
 	    my $tempfile;
 	    if ($parser_opts->{anchor_params})
 	      {
-		my $anchor_prog = $parser_opts->{anchor_params}{prog} =~ /chaos/ ? $CHAOS : $BL2SEQ;
+		my $anchor_prog = $parser_opts->{anchor_params}{prog} =~ /chaos/i ? $CHAOS : $BL2SEQ;
 		my ($x,$dialign_opts) = check_taint( $params);
+		$program_ran .= " using anchors from ".$parser_opts->{anchor_params}{prog};
 		unless ($x)
 		  {
 		    next;
@@ -1603,7 +1611,7 @@ sub run_dialign
 									run_anchor_opts=>$anchor_opts,
 									dialign_report_opts=>$parser_opts,
 									anchor_report_opts=>$parser_opts->{anchor_params}{parser_opts},
-									DEBUG=>1,
+									#DEBUG=>1,
 								       });
 		$tempfile = $obj->dialign_file;
 		$report = $obj->dialign_report;
@@ -1643,12 +1651,12 @@ sub run_dialign
 	      }
 	    else
 	      {
-		push @tmp, "no results from comparing $accn1 and $accn2 with lagan";
+		push @tmp, "no results from comparing $accn1 and $accn2 with LAGAN";
 	      }
 	    push @reports, \@tmp;
 	  }
       }
-    return \@reports;
+    return (\@reports,$program_ran);
   }
   
 sub get_substr
@@ -1961,12 +1969,12 @@ sub num_colors
 sub algorithm_list
   {
     my $program = shift;
-    my @programs = sort qw(blastn blastz chaos dialign lagan tblastx);
+    my @programs = sort {lc $a cmp lc $b} qw(blastn blastz CHAOS DIALIGN LAGAN tblastx);
     my $html;
     foreach my $prog (@programs)
       {
 	$html .= "<option";
-	$html .= $program && $program eq $prog ? " selected>" : ">";
+	$html .= $program && $program =~ /$prog/i ? " selected>" : ">";
 	$html .= $prog."</option>\n";
       }
     return $html;
@@ -2136,7 +2144,7 @@ sub get_algorithm_options
     $blastz_string .= " E=" .$blastz_gap_extension if $blastz_gap_extension;
     $blastz_string .= " " .$blastz_params if $blastz_params;
     #build blast param string
-    $blast_wordsize = 3 if ($analysis_program eq "tblastx" && $blast_wordsize > 3);
+    $blast_wordsize = 3 if ($analysis_program eq "tlastx" && $blast_wordsize > 3);
     $blast_string = " -W " . $blast_wordsize if defined $blast_wordsize;
     $blast_string .= " -G " . $blast_gapopen if defined $blast_gapopen;
     $blast_string .= " -E " . $blast_gapextend if defined $blast_gapextend;
@@ -2172,31 +2180,31 @@ sub get_algorithm_options
       {
 	$param_string = $blastz_string;
       }
-    elsif ($analysis_program =~ /blast/) #match blastn and tblastx
+    elsif ($analysis_program =~ /blast/i) #match blastn and tblastx
       {
 	$param_string = $blast_string;
       }
-    elsif ($analysis_program eq "lagan")
+    elsif ($analysis_program eq "LAGAN")
       {
 	$param_string = $lagan_string;
 	$parser_options{max_gap} = $lagan_max_gap;
 	$parser_options{length_cutoff} = $lagan_min_length;
 	$parser_options{percent_cutoff} = $lagan_percent_id;
       }
-    elsif ($analysis_program eq "dialign")
+    elsif ($analysis_program eq "DIALIGN")
       {
 	$param_string = $dialign_string;
         $parser_options{min_score} = $dialign_min_score;
         $parser_options{max_gap} = $dialign_max_gap;
         $parser_options{split_score} = $dialign_split_score;
 #	print STDERR "use anchors: $dialign_use_anchor\n";
-	my ($anchor_program, $anchor_param_string) = $dialign_anchor_program =~ "chaos" ? ("chaos", $chaos_string) : ("bl2seq", $blast_string);
+	my ($anchor_program, $anchor_param_string) = $dialign_anchor_program =~ "CHAOS" ? ("CHAOS", $chaos_string) : ("bl2seq", $blast_string);
 	$parser_options{anchor_params} = {
 					  prog=>$anchor_program,
 					  param_string=>$anchor_param_string,
 					 } if $dialign_use_anchor;
       }
-    elsif ($analysis_program eq "chaos")
+    elsif ($analysis_program eq "CHAOS")
       {
 	$param_string = $chaos_string;
       }
