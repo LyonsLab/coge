@@ -108,7 +108,7 @@ function check_alignment_program (){
   $("#dialign_motif_options").hide(speed);
   $("#dialign_parameters").hide(speed);
   $('.anchor').hide(speed);
-  if ((alignment == "blastz")||(alignment == "blastn")||(alignment == "tblastx")){
+  if ((alignment == "blastn")||(alignment == "tblastx")){
     var help_path = "\"http://www.ncbi.nlm.nih.gov/BLAST/Blast.cgi?CMD=Web&PAGE_TYPE=BlastDocs\"";}
   else{
     var help_path = "\"/CoGe/docs/alignment_help_files/README."+alignment+"\"";}
@@ -514,7 +514,7 @@ Number of sequences:
  <TR>
   <TH>Select Anchor Program </TH>
   <TD><select class="backbox" id="dialign_anchor_program" size="1" onchange='check_dialign_anchor_program()'>
-       <option value="blast">bl2seq</option>
+       <option value="blastn">bl2seq</option>
        <option value="CHAOS" selected>CHAOS</option>
       </select>
   </TD>
