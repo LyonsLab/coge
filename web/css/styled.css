@@ -519,3 +519,13 @@ tr.ltblue {
   border:1px solid #00FF36;
 
 }
+
+.blue {
+    color:blue;
+    size:13px;
+}
+
+.big {
+    color:gray;
+    size: 20px;
+}
