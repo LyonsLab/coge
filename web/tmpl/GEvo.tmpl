@@ -72,7 +72,11 @@ return;
 }
 $("#anchor_menu").show("slow"); 
 var dialign_anchor_program = $('#dialign_anchor_program').val();
-var html = $('#'+dialign_anchor_program).html();
+if (dialign_anchor_program == 'CHAOS'){
+  var info = "Word size = "+$('#chaos_word_length').val()+"&#10;Score cutoff = "+$('#chaos_score_cutoff').val()+"&#10;Rescore cutoff = "+$('#chaos_rescore_cutoff').val()+"&#10;Lookback distance = "+$('#chaos_lookback').val()+"&#10;Maximum gap = "+$('#chaos_gap_length').val()+"&#10;Gap start penalty = "+$('#chaos_gap_start').val()+"&#10;Gap extend penalty = "+$('#chaos_gap_extension').val()+"&#10;Other Chaos parameters = "+$('#chaos_params').val();}
+else{
+  var info = "Match Score = "+$('#blast_match').val()+"&#10;Mismatch Penalty = "+$('#blast_mismatch').val()+"&#10;Gap Open Penalty = "+$('#blast_gapopen').val()+"&#10;Gap Extension Penalty = "+$('#blast_gapextend').val()+"&#10;Word Size = "+$('#blast_wordsize').val()+"&#10;Filter query sequence = "+$('#blast_filter').val()+"&#10;Expect value = "+$('#blast_eval').val()+"&#10;Other Blast Parameters = "+$('#blastparams').val();}
+var html = '<TABLE class=small><TR><TD valign="top">You are running '+dialign_anchor_program+' with the following options:</TD><TD><textarea readonly rows=8 cols=24 class="backbox" name="anchor_info" id="anchor_info" tabindex="1">'+info+'</textarea></TD></TR></TABLE><TABLE class=small><TR><TD> <i>If you wish to alter these options, please do so by selecting '+dialign_anchor_program+' from the drop-down menu to the left, and changing these options.</i> </TD></TR></TABLE>';
 //$('#'+dialign_anchor_program).show("show");
 $('#anchor_options').hide();
 $('#anchor_options').html(html);
@@ -92,6 +96,7 @@ else {$('#html_viewer').show("slow");}
 function check_alignment_program (){
 
  var speed = $("#animation_speed").val();
+
  var alignment = $("#alignment_program").val();
   $("#blast_options").hide(speed);
   $("#tblastx_options").hide(speed);
@@ -103,7 +108,12 @@ function check_alignment_program (){
   $("#dialign_motif_options").hide(speed);
   $("#dialign_parameters").hide(speed);
   $('.anchor').hide(speed);
-
+  if ((alignment == "blastz")||(alignment == "blastn")||(alignment == "tblastx")){
+    var help_path = "\"http://www.ncbi.nlm.nih.gov/BLAST/Blast.cgi?CMD=Web&PAGE_TYPE=BlastDocs\"";}
+  else{
+    var help_path = "\"/CoGe/docs/alignment_help_files/README."+alignment+"\"";}
+  var help = '<a href='+help_path+' target="_new">Help File for '+alignment+'</a>';
+  $('.help').html(help);
   var spike = $("#spike").val();
   $("#spike").val(0);
   
@@ -111,15 +121,15 @@ if (alignment == "blastz")
  {
   $("#blastz_options").show("slow");	
  }
-else if (alignment == "lagan")
+else if (alignment == "LAGAN")
  {
   $("#lagan_options").show("slow");
  }
-else if (alignment == "chaos")
+else if (alignment == "CHAOS")
  {
   $("#chaos_options").show("slow");
  }
-else if (alignment == "dialign")
+else if (alignment == "DIALIGN")
  {
   $("#dialign_options").show("slow");
   $("#dialign_parameters").show("slow");
@@ -261,6 +271,9 @@ Number of sequences:
   <select class="backbox" id="alignment_program" size="1" onchange='check_alignment_program()'>
        <TMPL_VAR NAME=ALIGNMENT_PROGRAMS>
       </select>
+   </TD>
+   <TD>
+   <font class="xsmall help"></font>
    </TD>
  </TR>
    </Table>    
@@ -501,8 +514,8 @@ Number of sequences:
  <TR>
   <TH>Select Anchor Program </TH>
   <TD><select class="backbox" id="dialign_anchor_program" size="1" onchange='check_dialign_anchor_program()'>
-       <option value="blast_options">bl2seq</option>
-       <option value="chaos_options" selected>chaos</option>
+       <option value="blast">bl2seq</option>
+       <option value="CHAOS" selected>CHAOS</option>
       </select>
   </TD>
  </TR>
