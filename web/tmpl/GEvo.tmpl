@@ -1,3 +1,4 @@
+
 <TMPL_IF NAME=SEQ_RETRIEVAL>
 <HTML>
 <HEAD>
@@ -9,10 +10,27 @@
 <script src="/CoGe/gobe/static/swfobject.js" ></script>
 <SCRIPT language="JavaScript">
 
+$(document).ready(function(){
 
-function submitform() {
-  document.main_form.submit();
-}
+ var show_coge_seq = <TMPL_VAR NAME=SHOW_COGE_SEQ>;
+ var show_genbank_seq = <TMPL_VAR NAME=SHOW_GENBANK_SEQ>;
+ var show_dir_seq = <TMPL_VAR NAME=SHOW_DIR_SEQ>;
+ setup();
+ $("#coge_seqs").hide();
+ $("#genbank_seqs").hide();
+ $("#dir_seqs").hide();
+ $("#image_parameters").hide();
+ $(".algo_options").hide();
+ $(".anchor").hide();
+ if (show_coge_seq){$("#coge_seqs").slideToggle("fast");}
+ if (show_genbank_seq) {$("#genbank_seqs").slideToggle("fast");}
+ if (show_dir_seq){$("#dir_seqs").slideToggle("fast");}
+ check_alignment_program();
+ check_dialign_anchor_program();
+ });
+
+
+
 function change( info ) {
         document.getElementById("info").innerHTML = info;        
 }
@@ -48,6 +66,17 @@ for (var i =1; i<= num_seqs; i++)
 
 }
 
+function final_dataset_search () {
+var num_seqs = $("#num_seqs").val();
+for (var i =1; i<= num_seqs; i++)
+  {
+    dataset_search(['accn'+i,'args__'+i],[feat_search_chain]);
+  }
+
+
+
+}
+
 function feat_search_chain(stuff, num) {
  if (stuff) {
   $("#source"+num).html(stuff);
@@ -67,20 +96,18 @@ function rev_locs (val) {
 function check_dialign_anchor_program (){
 
 if ($('#dialign_use_anchor').val() == 0) {
-$(".anchor").hide("slow"); 
+animate_section(".anchor", "fadeOut");
 return;
 }
-$("#anchor_menu").show("slow"); 
 var dialign_anchor_program = $('#dialign_anchor_program').val();
 if (dialign_anchor_program == 'CHAOS'){
   var info = "Word size = "+$('#chaos_word_length').val()+"&#10;Score cutoff = "+$('#chaos_score_cutoff').val()+"&#10;Rescore cutoff = "+$('#chaos_rescore_cutoff').val()+"&#10;Lookback distance = "+$('#chaos_lookback').val()+"&#10;Maximum gap = "+$('#chaos_gap_length').val()+"&#10;Gap start penalty = "+$('#chaos_gap_start').val()+"&#10;Gap extend penalty = "+$('#chaos_gap_extension').val()+"&#10;Other Chaos parameters = "+$('#chaos_params').val();}
 else{
   var info = "Match Score = "+$('#blast_match').val()+"&#10;Mismatch Penalty = "+$('#blast_mismatch').val()+"&#10;Gap Open Penalty = "+$('#blast_gapopen').val()+"&#10;Gap Extension Penalty = "+$('#blast_gapextend').val()+"&#10;Word Size = "+$('#blast_wordsize').val()+"&#10;Filter query sequence = "+$('#blast_filter').val()+"&#10;Expect value = "+$('#blast_eval').val()+"&#10;Other Blast Parameters = "+$('#blastparams').val();}
-var html = '<TABLE class=small><TR><TD valign="top">You are running '+dialign_anchor_program+' with the following options:</TD><TD><textarea readonly rows=8 cols=24 class="backbox" name="anchor_info" id="anchor_info" tabindex="1">'+info+'</textarea></TD></TR></TABLE><TABLE class=small><TR><TD> <i>If you wish to alter these options, please do so by selecting '+dialign_anchor_program+' from the drop-down menu to the left, and changing these options.</i> </TD></TR></TABLE>';
-//$('#'+dialign_anchor_program).show("show");
-$('#anchor_options').hide();
+var html = 'You are running '+dialign_anchor_program+' with the following options:<br/><textarea readonly rows=8 cols=24 class="backbox" name="anchor_info" id="anchor_info" tabindex="1">'+info+'</textarea><br/><i>If you wish to alter these options, please do so by selecting '+dialign_anchor_program+' from the drop-down menu to the left, and changing these options.</i>';
 $('#anchor_options').html(html);
-$('#anchor_options').show("slow");
+animate_section(".anchor", "fadeIn");
+
 }
   
 function checkViewer () {
@@ -89,25 +116,43 @@ $('#html_viewer').hide();
 $('#flash_viewer').hide();
 if (viewer == "flash")
  {$('#flash_viewer').show();}
-else {$('#html_viewer').show("slow");}
+else {animate_section('#html_viewer', 'show');}
 
 }
 
+function speed () {
+ var speedy = $("#animation_speed").val();
+ if (!speedy) speedy = 0;
+ speedy = speedy*1; // make sure speedy is a number according to javascript
+ return speedy;
+}
+
+function animate_section(name, style, speedy) {
+  if (speedy == undefined) speedy = speed();
+  if (!style) style = "toggle";
+  if (!speedy) {
+    if ((style == "show") || style == "slideDown" || style == "fadeIn") {$(name).show();}
+    else if ((style == "hide") || style == "slideUp" || style == "fadeOut") {$(name).hide();}
+    else {$(name).toggle();}
+   }
+  else if (style == "toggle") {$(name).toggle(speedy);}
+  else if (style == "hide") {$(name).hide(speedy);}
+  else if (style == "show") {$(name).show(speedy);}
+  else if (style == "slideToggle") {$(name).slideToggle(speedy);}
+  else if (style == "slideUp") {$(name).slideUp(speedy);}
+  else if (style == "slideDown") {$(name).slideDown(speedy);}
+  else if (style == "fadeIn") {$(name).fadeIn(speedy);}
+  else if (style == "fadeOut") {$(name).fadeOut(speedy);}
+  return speedy;
+ }
+
+
 function check_alignment_program (){
 
- var speed = $("#animation_speed").val();
-
  var alignment = $("#alignment_program").val();
-  $("#blast_options").hide(speed);
-  $("#tblastx_options").hide(speed);
-  $("#lagan_options").hide(speed);
-  $("#blastz_options").hide(speed);
-  $("#chaos_options").hide(speed);
-  $("#spike_sequence").hide(speed);
-  $("#dialign_options").hide(speed);
-  $("#dialign_motif_options").hide(speed);
-  $("#dialign_parameters").hide(speed);
-  $('.anchor').hide(speed);
+
+ animate_section('.algo_options', 'hide',0);
+
   if ((alignment == "blastn")||(alignment == "tblastx")){
     var help_path = "\"http://www.ncbi.nlm.nih.gov/BLAST/Blast.cgi?CMD=Web&PAGE_TYPE=BlastDocs\"";}
   else{
@@ -119,73 +164,49 @@ function check_alignment_program (){
   
 if (alignment == "blastz")
  {
-  $("#blastz_options").show("slow");	
+  
+  animate_section("#blastz_options", "slideToggle");
  }
 else if (alignment == "LAGAN")
  {
-  $("#lagan_options").show("slow");
+  animate_section("#lagan_options", "slideToggle");	
  }
 else if (alignment == "CHAOS")
  {
-  $("#chaos_options").show("slow");
+  animate_section("#chaos_options", "slideToggle");	
  }
 else if (alignment == "DIALIGN")
  {
-  $("#dialign_options").show("slow");
-  $("#dialign_parameters").show("slow");
+  animate_section("#dialign_options", "slideToggle");	
+  animate_section("#dialign_parameters", "slideToggle");	
   check_dialign_anchor_program();
  } 
 else if (alignment == "tblastx")
  {
-  $("#blast_options").show("slow");
-  $("#blastn_options").hide("slow");
   $("#blast_wordsize").val(3);
   $("#blast_gapopen").val(11);
   $("#blast_gapextend").val(1);
   $("#blast_eval").val(10);
-  $("#blast_mismatch").hide("slow");
-  $("#blast_match").hide("slow");
-  $("#tblastx_options").show("slow");	
+  animate_section(".blastn_options", "hide",0);
+  animate_section("#blast_options", "slideDown");
+  animate_section("#tblastx_options", "slideDown");
  }	
 else if (alignment == 'blastn')
  {
-  $("#blast_options").show("slow");
-  $("#blastn_options").show("slow");
-  $("#spike_sequence").show("slow");
   $("#blast_wordsize").val(7);
   $("#blast_gapopen").val(5);
   $("#blast_gapextend").val(2);
   $("#blast_eval").val(100);
-  $("#blast_mismatch").show("slow");    
   if (spike == "undefined" || spike == 0) {spike = 15;} 	
   $("#spike").val(spike);		
+  animate_section("#blast_options", "slideDown");
+  animate_section(".blastn_options", "slideDown");
  }
 
  }
 
-
-$(document).ready(function(){
-
- var show_coge_seq = <TMPL_VAR NAME=SHOW_COGE_SEQ>;
- var show_genbank_seq = <TMPL_VAR NAME=SHOW_GENBANK_SEQ>;
- var show_dir_seq = <TMPL_VAR NAME=SHOW_DIR_SEQ>;
- setup();
- $("#coge_seqs").hide();
- $("#genbank_seqs").hide();
- $("#dir_seqs").hide();
- $("#image_parameters").hide();
- if (show_coge_seq){$("#coge_seqs").show("fast");}
- if (show_genbank_seq) {$("#genbank_seqs").show("fast");}
- if (show_dir_seq){$("#dir_seqs").show("fast");}
-// setTimeout('check_alignment_program()',1000);
- check_alignment_program();
- check_dialign_anchor_program();
- });
 
 function handle_results (html,w, h, img_base, n_images) {
- //clearInterval(interval);
-
-// $('#results').hide();
  $('#results').html(html);
  checkViewer();
  var so = new SWFObject("/CoGe/gobe/flash/gobe.swf", "gobe", w, h, "9", "#FFFFFF");
@@ -195,42 +216,49 @@ function handle_results (html,w, h, img_base, n_images) {
  so.addVariable('tmp_dir', 'tmp/');
  so.addVariable('img', img_base );
  so.write("flash_viewer");
-// $('#results').show("slow");
- 
+}
+
+function remove_seq () {
+var num_seqs = $('#num_seqs').val();
+$('#drseq_set'+num_seqs).html("");
+$('#gbseq_set'+num_seqs).html("");
+$('#dirseq_set'+num_seqs).html("");
+$('#refseq'+num_seqs).html("");
+num_seqs--;
+$('#num_seqs').val(num_seqs);
+gen_go_button(['num_seqs'],['go_button']);
 
 }
 
-
+function add_new_refseq(val)
+{
+ alert('here');
+ $('#refseqs').append(val);
+}
 
 </SCRIPT>
+
 <div id="message"><TMPL_VAR NAME="MESSAGE"></div>
-<table>
+<table width=100%>
 <tr>
 <td>
-<div id="go_button"><TMPL_VAR NAME="GO_BUTTON"></div>
-<td>
+<div id="go_button" class="l"><TMPL_VAR NAME="GO_BUTTON"></div>
 <input type="button" value="Clear" onClick="rset()">
+<td nowrap>
 </table>
-<form>
 <table>
- <tr>
-  <td>
-Number of sequences: 
-  <td>
-<input class="backbox" name=num_seqs id=num_seqs type="textbox" size=2 value=<TMPL_VAR NAME ="NUM_SEQS">>
-  <td>
-<input type="submit" value="reload">
-  <td>
-<DIV id ="add_button"> <TMPL_VAR NAME="ADD_BUTTON"><DIV>
- </table>
-</form>
+<tr>
+<td>Number of sequences: <input class="backbox" name=num_seqs id=num_seqs type="textbox" size=2 readonly value=<TMPL_VAR NAME ="NUM_SEQS">>
+<td><input type="button" value="add" onclick="add_seq(['num_seqs'],['message','new_drseq', 'new_gbseq', 'new_dirseq', 'num_seqs', 'go_button','new_refseq', 'hsp_colors']); $('#new_drseq').remove;">
+<td><input type="button" value="remove" onclick="remove_seq()">
+</table>
 
 
 <form method="post" enctype="multipart/form-data" name="main_form" onSubmit="">
 <TABLE class="basic" width=100%>
  <TR>
   <TH colspan="<TMPL_VAR NAME="NUM_SEQS">" align=left>
-   <DIV id = "dr" class="topItem" onMouseOver="changeColor('dr','#000099'); " onMouseOut="changeColor('dr','#009900');" onClick='$("#coge_seqs").toggle("slow")' >CoGe Database Retrieval:</DIV>
+   <DIV id = "dr" class="topItem" onMouseOver="changeColor('dr','#000099'); " onMouseOut="changeColor('dr','#009900');" onClick='animate_section("#coge_seqs", "slideToggle")' >CoGe Database Retrieval:</DIV>
 
    <DIV class="dropMenu" id = "coge_seqs">
      <TMPL_VAR NAME="COGE_SEQS">
@@ -240,14 +268,14 @@ Number of sequences:
 
  <TR>
   <TH colspan="<TMPL_VAR NAME="NUM_SEQS">" align=left>
-   <DIV id="isr" class="topItem" onMouseOver="changeColor('isr','#000099'); " onMouseOut="changeColor('isr','#009900');" onClick='$("#genbank_seqs").toggle("slow")' >NCBI Sequence Retrieval:</DIV>
+   <DIV id="isr" class="topItem" onMouseOver="changeColor('isr','#000099'); " onMouseOut="changeColor('isr','#009900');" onClick='animate_section("#genbank_seqs","slideToggle")' >NCBI Sequence Retrieval:</DIV>
    <DIV class="dropMenu" id = "genbank_seqs">
      <TMPL_VAR NAME="NCBI_SEQS">	
   </DIV>
  </TR>
  <TR>
   <TH colspan="<TMPL_VAR NAME="NUM_SEQS">" align=left>
-   <DIV id="dss" class="topItem"  onMouseOver="changeColor('dss','#000099'); " onMouseOut="changeColor('dss','#009900');" onClick='$("#dir_seqs").toggle("slow")' >Direct Sequence Submission:</DIV>
+   <DIV id="dss" class="topItem"  onMouseOver="changeColor('dss','#000099'); " onMouseOut="changeColor('dss','#009900');" onClick='animate_section("#dir_seqs","slideToggle")' >Direct Sequence Submission:</DIV>
    <DIV class="dropMenu" id="dir_seqs">
      <TMPL_VAR NAME="DIRECT_SEQS">		
   </DIV>
@@ -259,12 +287,12 @@ Number of sequences:
 <TABLE class="basic" width=100%>
  <TR>
   <TH colspan="2" align=left>
-   <DIV id="bp" class="topItem" onMouseOver="changeColor('bp','#000099'); " onMouseOut="changeColor('bp','#009900');" onClick='$("#algo_options").toggle("slow")'>Comparison Parameters and Options:</DIV>
+   <DIV id="bp" class="topItem" onMouseOver="changeColor('bp','#000099'); " onMouseOut="changeColor('bp','#009900');" onClick='animate_section("#algo_options","slideToggle")'>Comparison Parameters and Options:</DIV>
    <DIV id = "algo_options">
      <TABLE style="width: 100%;" class="dropMenu" >
-      <TR valign=top>
+      <TR valign=top align=left>
       <TD>
-      <TABLE class=small>
+  <TABLE class=small>
   <TR>
   <Th>Sequence and Algorithm Options: </TD>
   <TD>
@@ -279,14 +307,14 @@ Number of sequences:
    </Table>    
 
 
- <DIV id = "blast_options">
+ <DIV id = "blast_options" class="algo_options">
  <Table class=small>    
 
- <TR>
+ <TR class="blastn_options">
   <TD>Match Score (-r): </TD>
   <TD><input class="backbox" type="text" name="blast_match" id="blast_match" tabindex="1" size="3" value="1" /></TD>
  </TR>    
- <TR>
+ <TR class="blastn_options">
   <TD>Mismatch Penalty (-q): </TD>
   <TD><input class="backbox" type="text" name="blast_mismatch" id="blast_mismatch" tabindex="1" size="3" value="-2" /></TD>
  </TR> 
@@ -323,13 +351,13 @@ Number of sequences:
 </DIV>
 
 
- <DIV id="tblastx_options" class="small">
+ <DIV id="tblastx_options" class="small algo_options">
  <font class="small">Hide HSPs with stop codons in a coding sequence?<label><input class="backbox" type="radio" name="show_hsps_with_stop_codon" id="show_hsps_with_stop_codon" tabindex="1" value="1" />Yes</label><label><input class="backbox" type="radio" name="show_hsps_with_stop_codon" id="show_hsps_with_stop_codon" tabindex="1" value="0" checked />No</label></font>
 <br>Note: Word size limited to 3 for tblastx
 </DIV> 
 
 
- <DIV id="spike_sequence">
+ <DIV id="spike_sequence" class ="algo_options blastn_options">
   <table class=small>
   <tr colspan>
   <th> HSP filter by spike sequence
@@ -341,7 +369,7 @@ Number of sequences:
   </table>
  </DIV>
 
- <DIV id="chaos_options" class="small">
+ <DIV id="chaos_options" class="small  algo_options">
 <table class = small>
    <TR>
   <TD>Word size: </TD>
@@ -379,7 +407,7 @@ Number of sequences:
 </table>
 
 </DIV>
- <DIV id="blastz_options" class="small">
+ <DIV id="blastz_options" class="small algo_options">
 <table class = small>
    <TR>
   <TD>Word size: </TD>
@@ -422,7 +450,7 @@ Number of sequences:
 
 </DIV>
 
- <DIV id="lagan_options" class="small">
+ <DIV id="lagan_options" class="small algo_options">
    <Table class=small>    
   <TR>
   <TD>Min HSP Length: </TD>
@@ -444,7 +472,7 @@ Number of sequences:
 </TABLE>
 </DIV>
 
-<DIV id="dialign_options" class="small">
+<DIV id="dialign_options" class="small algo_options">
    <Table class=small>    
   <TR>
    <TD>Use Anchored Alignment: </TD>
@@ -481,7 +509,7 @@ Number of sequences:
  </TR>
  </TABLE>
   </DIV>
- <DIV id="dialign_motif_options" class="small">
+ <DIV id="dialign_motif_options" class="small  algo_options">
  <Table class=small>  
  <TR>
  <TD align=right> Motif:  </TD>
@@ -497,7 +525,7 @@ Number of sequences:
  </TR>
  </TABLE>
  </DIV>
- <DIV id="dialign_parameters"  class="small">
+ <DIV id="dialign_parameters"  class="small algo_options">
  <Table class=small>
  <TR>
   <TD>Other Dialign Parameters: </TD>
@@ -508,27 +536,26 @@ Number of sequences:
 </DIV>
 
 <TD>
-
-<DIV id="anchor_menu" class="anchor small">
-<TABLE class=small>
- <TR>
-  <TH>Select Anchor Program </TH>
-  <TD><select class="backbox" id="dialign_anchor_program" size="1" onchange='check_dialign_anchor_program()'>
+<TABLE class="small anchor algo_options">
+ <TR align=left>
+  <TH>Select Anchor Program: 
+  <select class="backbox" id="dialign_anchor_program" size="1" onchange='check_dialign_anchor_program()'>
        <option value="blastn">bl2seq</option>
        <option value="CHAOS" selected>CHAOS</option>
       </select>
-  </TD>
+  </TH>
  </TR>
-</TABLE>
-</DIV>
+ <tr>
+  <td colspan=2>
+   <DIV id="anchor_options" class="anchor small algo_options"></DIV>
+ </TABLE>
 
-<DIV id="anchor_options" class="anchor small"></DIV>
 </TD>
 <td width="2" bgcolor="#99FF99">
 
 
 <td class=small> Select reference sequence(s) to which all other sequences will be compared:<br>
-<TMPL_VAR NAME=REFERENCE_SEQUENCES>
+<div id="refseqs"><TMPL_VAR NAME=REFERENCE_SEQUENCES></div>
 
 <TABLE class=small>
  <TR align=left>
@@ -557,7 +584,7 @@ Number of sequences:
 <TABLE class="basic" width=100%>
  <TR>
   <TH colspan="2" align=left>
-  <DIV  id="ip" class="topItem" onMouseOver="changeColor('ip','#000099')" onMouseOut="changeColor('ip','#009900');"  onClick='$("#image_parameters").toggle("slow")' >Image Parameters:</DIV>
+  <DIV  id="ip" class="topItem" onMouseOver="changeColor('ip','#000099')" onMouseOut="changeColor('ip','#009900');"  onClick='animate_section("#image_parameters","slideToggle")' >Image and Interface Parameters:</DIV>
 
 <div class="menu" id="image_parameters">
 
@@ -568,7 +595,7 @@ Number of sequences:
  <TR valign=top>
   <TD>
     <DIV class="small">
-      Viewer Interface:
+      Results Interface:
     </DIV>
   </TD>
   <TD>
@@ -576,6 +603,21 @@ Number of sequences:
      <select id="viewer" onChange="checkViewer()">
      <option selected value="flash">GeLo Flash Viewer</option>
      <option value = "html">GeLo HTML Viewer</option> 
+    </DIV>
+  </TD>
+ <TR valign=top>
+  <TD>
+    <DIV class="small">
+      Page Animations:
+    </DIV>
+  </TD>
+  <TD>
+    <DIV class="small">
+     <select id="animation_speed">
+     <option value=0>Off</option> 	
+     <option value=600>Slow</option>
+     <option selected value=400>Medium</option> 
+     <option value=200>Fast</option> 
     </DIV>
   </TD>
  </TR>
@@ -727,7 +769,8 @@ Number of sequences:
 
       <TMPL_LOOP NAME="COGE_SEQ_SELECT_LOOP">
 
-      <TD>       
+      <TD>
+      <DIV id="drseq_set<TMPL_VAR NAME="SEQ_NUM">">
       <TABLE>
        <TR valign="top">
         <TD>Name <TMPL_VAR NAME="SEQ_NUM">:
@@ -744,7 +787,7 @@ Number of sequences:
 	<TD colspan =2>
 	<font class="small">Reverse complement: <label><input class="backbox" type="radio" name="drrev<TMPL_VAR NAME="SEQ_NUM">" id="drrev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="1" <TMPL_VAR NAME=REV_YES> onclick='rev_locs("<TMPL_VAR NAME="SEQ_NUM">")' />Yes</label><label><input class="backbox" type="radio" name="drrev<TMPL_VAR NAME="SEQ_NUM">" id="drrev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="0" <TMPL_VAR NAME=REV_NO> onclick='rev_locs("<TMPL_VAR NAME="SEQ_NUM">")' />No</label></font>
       </TABLE>
-
+      </DIV>      
       </TMPL_LOOP>
       <TD><DIV id="new_drseq"></DIV>
      </table>
@@ -757,7 +800,8 @@ Number of sequences:
 
       <TMPL_LOOP NAME="NCBI_SEQ_SELECT_LOOP">
 
-      <TD>       
+      <TD>
+      <DIV id="gbseq_set<TMPL_VAR NAME="SEQ_NUM">">       
       <TABLE>
        <TR valign="top">
         <TD>Accession <TMPL_VAR NAME="SEQ_NUM">:
@@ -772,7 +816,7 @@ Number of sequences:
        <TD colspan=2>
        <font class="small">Reverse Complement: <label><input class="backbox" type="radio" name="gbrev<TMPL_VAR NAME="SEQ_NUM">" id="gbrev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="1" <TMPL_VAR NAME=REV_YES> onclick="$('#gbstart<TMPL_VAR NAME="SEQ_NUM">').val(1);$('#gblength<TMPL_VAR NAME="SEQ_NUM">').val(''); " />Yes</label><label><input class="backbox" type="radio" name="gbrev<TMPL_VAR NAME="SEQ_NUM">" id="gbrev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="0" <TMPL_VAR NAME=REV_NO> onclick="$('#gbstart<TMPL_VAR NAME="SEQ_NUM">').val(1);$('#gblength<TMPL_VAR NAME="SEQ_NUM">').val(''); " />No</label><BR></font>
       </TABLE>
-
+      </DIV>
       </TMPL_LOOP>
       <TD><DIV id="new_gbseq"></DIV>
      </table>
@@ -785,7 +829,7 @@ Number of sequences:
       <TMPL_LOOP NAME="DIRECT_SEQ_SELECT_LOOP">
 
       <TD>       
-      <DIV>
+      <DIV id="dirseq_set<TMPL_VAR NAME="SEQ_NUM">">
      Sequence <TMPL_VAR NAME="SEQ_NUM">:<BR> <textarea class="backbox" name="dirseq<TMPL_VAR NAME="SEQ_NUM">" id="dirseq<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  rows="5" cols="30"></textarea><BR>
      <font class="small">Start: <input class="backbox" type="text" name="dirstart<TMPL_VAR NAME="SEQ_NUM">" id="dirstart<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="5" value="1" /></font>
      <font class="small">Stop: <input class="backbox" type="text" name="dirstop<TMPL_VAR NAME="SEQ_NUM">" id="dirstop<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="5" value=""  /></font><br>
@@ -823,14 +867,13 @@ Number of sequences:
 
 <TMPL_IF NAME=GEN_REFERENCE_SEQUENCES>
 <TMPL_LOOP NAME="REF_SEQ">
+<div id="refseq<TMPL_VAR NAME=SEQ_NUM>">
 <font class ="small">Sequence <TMPL_VAR NAME=SEQ_NUM>: 
 <label><input class="backbox" type="radio" name="ref_seq<TMPL_VAR NAME=SEQ_NUM>" id="ref_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="1" checked />On</label>
 <label><input class="backbox" type="radio" name="ref_seq<TMPL_VAR NAME=SEQ_NUM>" id="ref_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="0" />Off</label><br>
+</div>
 </TMPL_LOOP>
 <div id="new_refseq"></div>
-
 </TMPL_IF>
 
-<TMPL_IF GEN_ADD_BUTTON>
-<input type="button" value="add" onclick="add_seq(['num_seqs'],['message','new_drseq', 'new_gbseq', 'new_dirseq', 'num_seqs', 'add_button', 'go_button','new_refseq', 'hsp_colors'])">
-</TMPL_IF>
+
