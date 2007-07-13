@@ -11,7 +11,24 @@
 <SCRIPT language="JavaScript">
 
 $(document).ready(function(){
-
+ //prefetch button images
+ if (document.images) {
+  go_inactive = new Image(); go_inactive.src = "/CoGe/picts/buttons/GEvo/go/inactive.png";
+  go_active = new Image(); go_active.src = "/CoGe/picts/buttons/GEvo/go/active.png";
+  go_pressed = new Image(); go_pressed.src = "/CoGe/picts/buttons/GEvo/go/pressed.png";
+  
+  clear_inactive = new Image(); clear_inactive.src = "/CoGe/picts/buttons/GEvo/clear/inactive.png";
+  clear_active = new Image(); clear_active.src = "/CoGe/picts/buttons/GEvo/clear/active.png";
+  clear_pressed = new Image(); clear_pressed.src = "/CoGe/picts/buttons/GEvo/clear/pressed.png";
+  
+  add_inactive = new Image(); add_inactive.src = "/CoGe/picts/buttons/GEvo/add/inactive.png";
+  add_active = new Image(); add_active.src = "/CoGe/picts/buttons/GEvo/add/active.png";
+  add_pressed = new Image(); add_pressed.src = "/CoGe/picts/buttons/GEvo/add/pressed.png";
+  
+  remove_inactive = new Image(); remove_inactive.src = "/CoGe/picts/buttons/GEvo/remove/inactive.png";
+  remove_active = new Image(); remove_active.src = "/CoGe/picts/buttons/GEvo/remove/active.png";
+  remove_pressed = new Image(); remove_pressed.src = "/CoGe/picts/buttons/GEvo/remove/pressed.png";
+  }
  var show_coge_seq = <TMPL_VAR NAME=SHOW_COGE_SEQ>;
  var show_genbank_seq = <TMPL_VAR NAME=SHOW_GENBANK_SEQ>;
  var show_dir_seq = <TMPL_VAR NAME=SHOW_DIR_SEQ>;
@@ -37,6 +54,18 @@ function change( info ) {
 
 function changeColor(id, color) {
   document.getElementById(id).style.color = color;
+}
+
+function activeButton (button_name){
+  document.images[button_name].src = eval(button_name+"_active.src");
+}
+
+function inactiveButton (button_name){
+  document.images[button_name].src = eval(button_name+"_inactive.src");
+}
+
+function pressedButton (button_name){
+ document.images[button_name].src = eval(button_name+"_pressed.src");
 }
 
 function setup(){
@@ -72,9 +101,6 @@ for (var i =1; i<= num_seqs; i++)
   {
     dataset_search(['accn'+i,'args__'+i],[feat_search_chain]);
   }
-
-
-
 }
 
 function feat_search_chain(stuff, num) {
@@ -101,9 +127,11 @@ return;
 }
 var dialign_anchor_program = $('#dialign_anchor_program').val();
 if (dialign_anchor_program == 'CHAOS'){
-  var info = "Word size = "+$('#chaos_word_length').val()+"&#10;Score cutoff = "+$('#chaos_score_cutoff').val()+"&#10;Rescore cutoff = "+$('#chaos_rescore_cutoff').val()+"&#10;Lookback distance = "+$('#chaos_lookback').val()+"&#10;Maximum gap = "+$('#chaos_gap_length').val()+"&#10;Gap start penalty = "+$('#chaos_gap_start').val()+"&#10;Gap extend penalty = "+$('#chaos_gap_extension').val()+"&#10;Other Chaos parameters = "+$('#chaos_params').val();}
-else{
+  var info = "Word size = "+$('#chaos_word_length').val()+"&#10;Score cutoff = "+$('#chaos_score_cutoff').val()+"&#10;Rescore cutoff = "+$('#chaos_rescore_cutoff').val()+"&#10;Lookback distance = "+$('#chaos_lookback').val()+"&#10;Maximum gap = "+$('#chaos_gap_length').val()+"&#10;Gap start penalty = "+$('#chaos_gap_start').val()+"&#10;Gap extend penalty = "+$('#chaos_gap_extension').val()+"&#10;Other CHAOS parameters = "+$('#chaos_params').val();}
+else if (dialign_anchor_program == 'blastn'){
   var info = "Match Score = "+$('#blast_match').val()+"&#10;Mismatch Penalty = "+$('#blast_mismatch').val()+"&#10;Gap Open Penalty = "+$('#blast_gapopen').val()+"&#10;Gap Extension Penalty = "+$('#blast_gapextend').val()+"&#10;Word Size = "+$('#blast_wordsize').val()+"&#10;Filter query sequence = "+$('#blast_filter').val()+"&#10;Expect value = "+$('#blast_eval').val()+"&#10;Other Blast Parameters = "+$('#blastparams').val();}
+else{
+  var info = "Word size = "+$('#blastz_word_length').val()+"&#10;Gap start penalty = "+$('#blastz_gap_start').val()+"&#10;Gap extend penalty = "+$('#blastz_gap_extension').val()+"&#10;Chaining = "+$('#blastz_chaining').val()+"&#10;Score threshold = "+$('#blastz_threshold').val()+"&#10;Mask threshold = "+$('#blastz_mask').val()+"&#10;Other blastz parameters = "+$('#blastz_params').val();}
 var html = 'You are running '+dialign_anchor_program+' with the following options:<br/><textarea readonly rows=8 cols=24 class="backbox" name="anchor_info" id="anchor_info" tabindex="1">'+info+'</textarea><br/><i>If you wish to alter these options, please do so by selecting '+dialign_anchor_program+' from the drop-down menu to the left, and changing these options.</i>';
 $('#anchor_options').html(html);
 animate_section(".anchor", "fadeIn");
@@ -220,6 +248,10 @@ function handle_results (html,w, h, img_base, n_images) {
 
 function remove_seq () {
 var num_seqs = $('#num_seqs').val();
+if (num_seqs < 3){
+ alert("You must have at least two sequences to perform an alignment. You cannot remove another sequence. Please click \"Clear\" to remove information from sequence entries.");
+ return;
+}
 $('#drseq_set'+num_seqs).html("");
 $('#gbseq_set'+num_seqs).html("");
 $('#dirseq_set'+num_seqs).html("");
@@ -259,14 +291,25 @@ function process_add_seq (dr, gb, dir, num_seqs, go, refseq, colors, message)
 <tr>
 <td>
 <div id="go_button" class="l"><TMPL_VAR NAME="GO_BUTTON"></div>
-<input type="button" value="Clear" onClick="rset()">
+<a href="#" onMouseOver="activeButton('clear')" onMouseOut="inactiveButton('clear')" onMouseDown="pressedButton('clear')" onMouseUp="inactiveButton('clear')" onClick="rset()">
+         <img name="clear" src="/CoGe/picts/buttons/GEvo/clear/inactive.png" width="56" height="27" border="0" alt="javascript button">
+         </a>
+<!--<input type="button" value="Clear" onClick="rset()">-->
 <td nowrap>
 </table>
 <table>
 <tr>
 <td>Number of sequences: <input class="backbox" name=num_seqs id=num_seqs type="textbox" size=2 readonly value=<TMPL_VAR NAME ="NUM_SEQS">>
-<td><input type="button" value="add" onclick="add_seq(['num_seqs'],[process_add_seq]); $('#new_drseq').remove;">
-<td><input type="button" value="remove" onclick="remove_seq()">
+<td>
+<a href="#" onMouseOver="activeButton('add')" onMouseOut="inactiveButton('add')" onMouseDown="pressedButton('add')" onMouseUp="inactiveButton('add')" onclick="add_seq(['num_seqs'],[process_add_seq]); $('#new_drseq').remove;">
+         <img name="add" src="/CoGe/picts/buttons/GEvo/add/inactive.png" width="43" height="27" border="0" alt="javascript button">
+         </a>
+<!--<input type="button" value="add" onclick="add_seq(['num_seqs'],[process_add_seq]); $('#new_drseq').remove;">-->
+<td>
+<a href="#" onMouseOver="activeButton('remove')" onMouseOut="inactiveButton('remove')" onMouseDown="pressedButton('remove')" onMouseUp="inactiveButton('remove')" onclick="remove_seq()">
+         <img name="remove" src="/CoGe/picts/buttons/GEvo/remove/inactive.png" width="55" height="27" border="0" alt="javascript button">
+         </a>
+<!--<input type="button" value="remove" onclick="remove_seq()">-->
 </table>
 
 
@@ -556,6 +599,7 @@ function process_add_seq (dr, gb, dir, num_seqs, go, refseq, colors, message)
  <TR align=left>
   <TH>Select Anchor Program: 
   <select class="backbox" id="dialign_anchor_program" size="1" onchange='check_dialign_anchor_program()'>
+       <option value="blastz">blastz</option>
        <option value="blastn">bl2seq</option>
        <option value="CHAOS" selected>CHAOS</option>
       </select>
@@ -795,10 +839,10 @@ function process_add_seq (dr, gb, dir, num_seqs, go, refseq, colors, message)
         <DIV id="feat<TMPL_VAR NAME="SEQ_NUM">"><input type="hidden" id="featid<TMPL_VAR NAME="SEQ_NUM">"></DIV>
       <TR>
        <TD><DIV class="small">Left sequence:</DIV>
-       <TD><DIV  id="up<TMPL_VAR NAME="SEQ_NUM">" ><input class="location" type="text" name="drup<TMPL_VAR NAME="SEQ_NUM">" id="drup<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10" value="<TMPL_VAR NAME=DRUP>" /> </DIV>
+       <TD><DIV  id="up<TMPL_VAR NAME="SEQ_NUM">" ><input class="location backbox" type="text" name="drup<TMPL_VAR NAME="SEQ_NUM">" id="drup<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10" value="<TMPL_VAR NAME=DRUP>" /> </DIV>
       <TR>
        <TD><DIV class="small">Right sequence:</DIV>
-       <TD><DIV  id="down<TMPL_VAR NAME="SEQ_NUM">"><input class="location" type="text" name="drdown<TMPL_VAR NAME="SEQ_NUM">" id="drdown<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10"  value="<TMPL_VAR NAME=DRDOWN>" /></DIV>
+       <TD><DIV  id="down<TMPL_VAR NAME="SEQ_NUM">"><input class="location backbox" type="text" name="drdown<TMPL_VAR NAME="SEQ_NUM">" id="drdown<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10"  value="<TMPL_VAR NAME=DRDOWN>" /></DIV>
       <TR>
 	<TD colspan =2>
 	<font class="small">Reverse complement: <label><input class="backbox" type="radio" name="drrev<TMPL_VAR NAME="SEQ_NUM">" id="drrev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="1" <TMPL_VAR NAME=REV_YES> onclick='rev_locs("<TMPL_VAR NAME="SEQ_NUM">")' />Yes</label><label><input class="backbox" type="radio" name="drrev<TMPL_VAR NAME="SEQ_NUM">" id="drrev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="0" <TMPL_VAR NAME=REV_NO> onclick='rev_locs("<TMPL_VAR NAME="SEQ_NUM">")' />No</label></font>
