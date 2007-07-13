@@ -4,34 +4,76 @@
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.js"></SCRIPT>
 <SCRIPT language="JavaScript">
 
+$(document).ready(function(){
+if (document.images) {
+//Preload Button Images
+
+}
+$('#hide_annotation_button').hide();
+$('.button1').hide(0);
+$('#maketable').html('<div id ="annotation" style = "overflow: auto; height: 300px; width: auto;"></DIV>');
+$('#feat_annos').toggle(0);
+});
+
+
 function reset_updown() {
   $('#upstream').val(0);
   $('#downstream').val(0);
 }
 
-function makeTable() {
-  $('#maketable').html('<div id ="annotation" style = "overflow: auto; height: 300px; width: auto;"></DIV>');
+function dynamic_buttons(button){
+ //alert(button);
+ $('.seqview_button').hide(0);
+ if (button == "button1"){
+   $('.button2').show(0);
+   $('.button3').show(0);}
+ else if (button == "button2"){
+   $('.button1').show(0);
+   $('.button3').show(0);}
+ else{
+  $('.button1').show(0);
+  $('.button2').show(0);
+  }
 }
 
-function blastSeq() {
- chr = $('#chr_blast').val() || 0;
+function get_sequence(html){
+  $('#seq').hide(0);
+  $('#seq').html(html);
+  $('#seq').show();
+}
+
+function get_blast_info(){
+  var url = location.href;
+  parse_url(['args__url','args__'+url],[blastSeq]);
+}
+
+function blastSeq(dsid,chr,rc,featid,featname) {
  up = $('#upstream').val() || 0;
  down = $('#downstream').val() || 0;
- rc = $('#rc_blast').val();
- featid = $('#blast').val(); 
- dsid = $('#dsid_blast').val();
- featname = $('#featname_blast').val();
+ rc = 0;
+ if ($('.button2').is(':hidden')==true){
+   rc = 1;}
  if (featid) {
  //alert('CoGeBlast.pl?featid='+featid+'&upstream='+up+'&downstream='+down+'&dsid='+dsid+'&featname='+featname+'&rc='+rc,'window');
  window.open('CoGeBlast.pl?featid='+featid+'&upstream='+up+'&downstream='+down+'&dsid='+dsid+'&featname='+featname+'&rc='+rc,'window');}
  else {
  //alert('CoGeBlast.pl?chr='+chr+'&upstream='+up+'&downstream='+down+'&dsid='+dsid,'window');
- window.open('CoGeBlast.pl?chr='+chr+'&upstream='+up+'&downstream='+down+'&dsid='+dsid,'window');
+ window.open('CoGeBlast.pl?chr='+chr+'&upstream='+up+'&downstream='+down+'&dsid='+dsid+'&rc='+rc,'window');
  }
 }
 
 function waiting() {
   $('#annotation').html('<font class="loading">Loading Features . . .</font>');
+}
+
+function get_feats(){
+$('#feat_annos').toggle(0);
+$('#hide_annotation_button').toggle(0);
+$('#annotation_button').toggle(0);
+var hidden = $('#feat_annos').is(':hidden');
+if (hidden == true){
+ return;}
+waiting();
 }
 
 function make_focus() {
@@ -41,37 +83,39 @@ function make_focus() {
 </SCRIPT>
 </TMPL_IF>
 <TMPL_IF NAME=BOTTOM_BUTTONS>
+  <DIV id="dynamic_button">
   <TABLE>
    <TR>
       <TMPL_LOOP NAME="BUTTON_LOOP">
+      
       <TD align=right valign="top">
-      <DIV id="button<TMPL_VAR NAME=BUTTON_NUM>"><input type=button value ="<TMPL_VAR NAME=BUTTON_NAME>" onClick="get_seq_and_button(['args__featid', 'args__<TMPL_VAR NAME=FEATID>', 'args__pro', 'args__<TMPL_VAR NAME=PRO>', 'args__rc', 'args__<TMPL_VAR NAME=RC>', 'args__chr', 'args__<TMPL_VAR NAME=CHR>', 'args__dsid', 'args__<TMPL_VAR NAME=DSID>', 'args__featname', 'args__<TMPL_VAR NAME=FEATNAME>', 'args__upstream', 'upstream', 'args__downstream', 'downstream', 'args__start', 'args__<TMPL_VAR NAME=START>','args__stop', 'args__<TMPL_VAR NAME=STOP>', 'args__strand', 'args__<TMPL_VAR NAME=STRAND>', 'args__add', 'args__<TMPL_VAR NAME=ADD>'],['seq', 'buttons','add_more']);gen_title(['args__rc', 'args__<TMPL_VAR NAME=RC>', 'args__pro', 'args__<TMPL_VAR NAME=PRO>'],['box_name']);make_focus();"></DIV>
+      <DIV class="seqview_button button<TMPL_VAR NAME=BUTTON_NUM_CLASS>" id="button<TMPL_VAR NAME=BUTTON_NUM_ID>"><input type=button value ="<TMPL_VAR NAME=BUTTON_NAME>" onClick="dynamic_buttons('button<TMPL_VAR NAME=BUTTON_NUM>');get_seq(['args__featid', 'args__<TMPL_VAR NAME=FEATID>', 'args__pro', 'args__<TMPL_VAR NAME=PRO>', 'args__rc', 'args__<TMPL_VAR NAME=RC>', 'args__chr', 'args__<TMPL_VAR NAME=CHR>', 'args__dsid', 'args__<TMPL_VAR NAME=DSID>', 'args__featname', 'args__<TMPL_VAR NAME=FEATNAME>', 'args__upstream', 'upstream', 'args__downstream', 'downstream', 'args__start', 'args__<TMPL_VAR NAME=START>','args__stop', 'args__<TMPL_VAR NAME=STOP>', 'args__strand', 'args__<TMPL_VAR NAME=STRAND>', 'args__add', 'args__<TMPL_VAR NAME=ADD>'],[get_sequence]);gen_title(['args__rc', 'args__<TMPL_VAR NAME=TITLE_RC>', 'args__pro', 'args__<TMPL_VAR NAME=TITLE_PRO>'],['box_name']);make_focus();"></DIV>
       </TD>
+      <!--get_seq(['args__featid', 'args__<TMPL_VAR NAME=FEATID>', 'args__pro', 'args__<TMPL_VAR NAME=PRO>', 'args__rc', 'args__<TMPL_VAR NAME=RC>', 'args__chr', 'args__<TMPL_VAR NAME=CHR>', 'args__dsid', 'args__<TMPL_VAR NAME=DSID>', 'args__featname', 'args__<TMPL_VAR NAME=FEATNAME>', 'args__upstream', 'upstream', 'args__downstream', 'downstream', 'args__start', 'args__<TMPL_VAR NAME=START>','args__stop', 'args__<TMPL_VAR NAME=STOP>', 'args__strand', 'args__<TMPL_VAR NAME=STRAND>', 'args__add', 'args__<TMPL_VAR NAME=ADD>'],[get_sequence]);gen_title(['args__rc', 'args__<TMPL_VAR NAME=TITLE_RC>', 'args__pro', 'args__<TMPL_VAR NAME=PRO>'],['box_name']);-->
       </TMPL_LOOP>
      <TMPL_IF NAME=FIND_FEATS>
      <TD align=right valign="top">
-     <DIV id="annotation_button"> <input type=button value="Find Features in Sequence" onClick="makeTable();waiting();find_feats(['args__start', 'args__<TMPL_VAR NAME=START>', 'args__stop', 'args__<TMPL_VAR NAME=STOP>', 'args__chr', 'args__<TMPL_VAR NAME=CHR>', 'args__dsid', 'args__<TMPL_VAR NAME=DSID>'],['annotation'])"></DIV>
+     <DIV id="annotation_button"> <input type=button value="Find Features in Sequence" onClick="get_feats();find_feats(['args__start', 'args__<TMPL_VAR NAME=FEAT_START>', 'args__stop', 'args__<TMPL_VAR NAME=FEAT_STOP>', 'args__chr', 'args__<TMPL_VAR NAME=FEAT_CHR>', 'args__dsid', 'args__<TMPL_VAR NAME=FEAT_DSID>'],['annotation']);"></DIV>
+     <DIV id="hide_annotation_button"> <input type=button value="Hide Features" onClick="get_feats();"></DIV>
      </TMPL_IF>
      </TD>
      <TD align=right valign="top">
-     <DIV id="blast_button"><input type=button value="Blast Sequence" onClick="blastSeq()"></DIV>
+     <DIV id="blast_button"><input type=button value="Blast Sequence" onClick="get_blast_info()"></DIV>
     </TD>
    </TR>
   </TABLE>
-     <input type="hidden" id="blast" value="<TMPL_VAR NAME="BLAST">">
-    <input type="hidden" id="dsid_blast" value="<TMPL_VAR NAME="DSID_BLAST">">
-    <input type="hidden" id="featname_blast" value="<TMPL_VAR NAME="FEATNAME_BLAST">">
-    <input type="hidden" id="chr_blast" value="<TMPL_VAR NAME="CHR_BLAST">">
-    <input type="hidden" id="rc_blast" value="<TMPL_VAR NAME="RC_BLAST">">
+  </DIV>
 
 </TMPL_IF>
 
 <TMPL_IF NAME="ADDITION">
+<DIV id="feat_annos">
 <TABLE>
  <TR>
   <TD>
   <div id = "maketable"></div>
 </Table>
+</DIV>
 <Table>
  <TR>
   <TD align = left valign = "middle" class="seqbackbox">
@@ -81,8 +125,8 @@ function make_focus() {
  <TR> 
   <TD align = left valign = "middle">
    <form id="nt_stream" name="nt_stream">
-   <TMPL_VAR NAME = "UPSTREAM"> <INPUT type="text" id="upstream"  style ="background-color: #F5F5DC" value= "<TMPL_VAR NAME="UPVALUE">">
-   <TMPL_VAR NAME="DOWNSTREAM"><INPUT type="text" id="downstream" style ="background-color: #F5F5DC" value= "<TMPL_VAR NAME="DOWNVALUE">">
+   <TMPL_VAR NAME = "UPSTREAM"> <INPUT type="text" id="upstream"  class="backbox" value= "<TMPL_VAR NAME="UPVALUE">">
+   <TMPL_VAR NAME="DOWNSTREAM"><INPUT type="text" id="downstream" class="backbox" value= "<TMPL_VAR NAME="DOWNVALUE">">
    </form>
   </TD>
   </TR>
@@ -91,9 +135,9 @@ function make_focus() {
 
   <TR>
    <TD align = left valign = "middle">
-   <input type = button value = "Reset" id="reset" onClick="reset_updown();get_seq(['args__featid', 'args__<TMPL_VAR NAME=FEATID>', 'args__pro', 'args__<TMPL_VAR NAME=PRO>', 'args__rc', 'args__<TMPL_VAR NAME=RC>', 'args__chr', 'args__<TMPL_VAR NAME=CHR>', 'args__dsid', 'args__<TMPL_VAR NAME=DSID>', 'args__featname', 'args__<TMPL_VAR NAME=FEATNAME>', 'args__upstream', 'upstream', 'args__downstream', 'downstream'],['seq'])">
+   <input type = button value = "Reset" id="reset" onClick="reset_updown();get_seq(['args__featid', 'args__<TMPL_VAR NAME=RESET_FEATID>', 'args__pro', 'args__<TMPL_VAR NAME=PRO>', 'args__rc', 'args__<TMPL_VAR NAME=RC>', 'args__chr', 'args__<TMPL_VAR NAME=CHR>', 'args__dsid', 'args__<TMPL_VAR NAME=DSID>', 'args__featname', 'args__<TMPL_VAR NAME=FEATNAME>', 'args__upstream', 'upstream', 'args__downstream', 'downstream'],['seq'])">
    <!--<input type=button value="Select Sequence" id="select" onClick="selectText()">-->
-      <input type= button value ="Add to Sequence" id = "add_to" onClick="get_seq(['args__featid', 'args__<TMPL_VAR NAME=FEATID>', 'args__pro', 'args__<TMPL_VAR NAME=PRO>', 'args__rc', 'args__<TMPL_VAR NAME=RC>', 'args__chr', 'args__<TMPL_VAR NAME=CHR>', 'args__dsid', 'args__<TMPL_VAR NAME=DSID>', 'args__featname', 'args__<TMPL_VAR NAME=FEATNAME>', 'args__upstream', 'upstream', 'args__downstream', 'downstream'],['seq'])"> 
+      <input type= button value ="Add to Sequence" id = "add_to" onClick="get_seq(['args__featid', 'args__<TMPL_VAR NAME=ADD_FEATID>', 'args__pro', 'args__<TMPL_VAR NAME=PRO>', 'args__rc', 'args__<TMPL_VAR NAME=RC>', 'args__chr', 'args__<TMPL_VAR NAME=CHR>', 'args__dsid', 'args__<TMPL_VAR NAME=DSID>', 'args__featname', 'args__<TMPL_VAR NAME=FEATNAME>', 'args__upstream', 'upstream', 'args__downstream', 'downstream'],['seq'])"> 
    </TMPL_IF>
   </TR>
    <TMPL_IF NAME="RANGE">
