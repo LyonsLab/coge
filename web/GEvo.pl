@@ -1999,7 +1999,7 @@ sub add_seq
       {
 	$hsp_colors = gen_hsp_colors($MAX_SEQS);
 	my $go_button = gen_go_button($MAX_SEQS);
-	return (qq{<div class=error>Exceeded max number of sequences ($MAX_SEQS)</div>},'','','',$MAX_SEQS, $go_button, '', $hsp_colors);
+	return ('','','',$MAX_SEQS, $go_button, '', $hsp_colors,qq{Exceeded max number of sequences ($MAX_SEQS)});
       }
 	  my @seqs = {
 		      SEQ_NUM=>$num_seq,
@@ -2027,7 +2027,7 @@ sub add_seq
     $template->param(GEN_REFERENCE_SEQUENCES=>0);
     my $go_button = gen_go_button($num_seq);
     $hsp_colors = gen_hsp_colors($num_seq);
-    return (' ', $coge_seqs, $ncbi_seqs, $direct_seqs, $num_seq, $go_button, $ref_seqs, $hsp_colors);
+    return ($coge_seqs, $ncbi_seqs, $direct_seqs, $num_seq, $go_button, $ref_seqs, $hsp_colors);
   }
 
 sub hsp_color_cookie
