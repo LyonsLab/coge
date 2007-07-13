@@ -44,7 +44,6 @@ my $pj = new CGI::Ajax(
 		       get_pretty_print=>\&get_pretty_print,
 		       blast_param=>\&blast_param,
 		       database_param=>\&database_param,
-		       get_radio=>\&get_radio,
 		       #%ajax,
 			);
 $pj->js_encode_function('escape');
@@ -106,7 +105,8 @@ sub gen_body
     {
     	$template->param(CHR=>$chr);
     	$template->param(SEQVIEW=>2);
-    	my $seq = get_sequence(0,$chr, $dsid, 0, 2, $upstream, $downstream);
+    	$template->param(RC=>$rc);
+    	my $seq = get_sequence(0,$chr, $dsid, 0, 2, $upstream, $downstream,$rc);
     	$template->param(SEQUENCE=>$seq);
     }
     $template->param(USER_NAME=>$USER);
@@ -212,7 +212,9 @@ sub get_sequence
     	$seq = $DB->get_genomic_sequence(start=>$upstream,
 					 stop=>$downstream,
 					 chr=>$type,
-					 dataset_id=>$dsid);
+					 dataset_id=>$dsid,
+					 );
+       $seq = reverse_complement($seq) if $rc;
        $fasta = generate_fasta_without_featid(chr=>$type, dsid=>$dsid, start=>$upstream, stop=>$downstream);
        if ($blast_type eq  "blast_type_p") {
        my $key;
@@ -279,16 +281,14 @@ sub get_sequence
       }
       else {
       $seq = $feat->genomic_sequence(upstream=>$upstream, downstream=>$downstream);
-      if ($rc)
-      	{$seq = reverse_complement($seq);}
-      }
+      $seq = reverse_complement($seq) if $rc;
       $seq = join ("\n", wrap('','',$seq));
       $seq = ($fasta. $seq);
     }
     return $seq;
     #print STDERR "accn select: ",$featid, ", type name: ",$type, ", dsid: ", $dsid, "\n";
   }
-  
+}
 # sub check_seq
 #   {
 #     my $blast_type = shift;
@@ -454,11 +454,4 @@ sub database_param
       {$template->param(T_DB=>1);}
     my $html = $template->output;
     return $html;
-  }
-  
-sub get_radio
-  {
-    my %opts = @_;
-    my $radio = $opts{bn};
-    return $radio
   }
