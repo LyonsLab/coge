@@ -5,6 +5,22 @@
 
 <SCRIPT language="JavaScript">
 
+$(document).ready(function(){
+if (document.images) {
+//Preload Button Images
+ncbi_blast_inactive = new Image(); ncbi_blast_inactive.src = "/CoGe/picts/buttons/CoGeBlast/ncbi_blast/inactive.png";
+ncbi_blast_active = new Image(); ncbi_blast_active.src = "/CoGe/picts/buttons/CoGeBlast/ncbi_blast/active.png";
+ncbi_blast_pressed = new Image(); ncbi_blast_pressed.src = "/CoGe/picts/buttons/CoGeBlast/ncbi_blast/pressed.png";
+}
+  radio_lock($('#bn')[0].checked);
+  blast_param_on_select($('#bn')[0].checked);
+  //alert($('#bn')[0].checked);
+  get_displayFeature();
+  blast_param([],[animate_params]);
+  database_param([],['database']);
+});
+
+
 function get_seq(url,radio) {
  if (url == 1)
   {alert('You have not selected a BLAST program! Please select a program to run.');}
@@ -46,31 +62,67 @@ else {
 }
 }
 
-// function set_seq() {
-// seq = kaj.GS('display_seq');
-// kaj.GS('seq_box',seq);
-// }
+function speed () {
+ var speedy = $("#animation_speed").val();
+ if (!speedy) speedy = 0;
+ speedy = speedy*1; // make sure speedy is a number according to javascript
+ return speedy;
+}
 
-function radio_lock(unlock) {
-  var1 = document.getElementById('select_n');
-  var2 = document.getElementById('select_p');
-  if (unlock == 2) {
-  var1.style.display = "none";
-  var2.style.display = "block";
+function animate_section(name, style, speedy) {
+  if (speedy == undefined) speedy = speed();
+  if (!style) style = "toggle";
+  if (!speedy) {
+    if ((style == "show") || style == "slideDown" || style == "fadeIn") {$(name).show();}
+    else if ((style == "hide") || style == "slideUp" || style == "fadeOut") {$(name).hide();}
+    else {$(name).toggle();}
+   }
+  else if (style == "toggle") {$(name).toggle(speedy);}
+  else if (style == "hide") {$(name).hide(speedy);}
+  else if (style == "show") {$(name).show(speedy);}
+  else if (style == "slideToggle") {$(name).slideToggle(speedy);}
+  else if (style == "slideUp") {$(name).slideUp(speedy);}
+  else if (style == "slideDown") {$(name).slideDown(speedy);}
+  else if (style == "fadeIn") {$(name).fadeIn(speedy);}
+  else if (style == "fadeOut") {$(name).fadeOut(speedy);}
+  return speedy;
+ }
+
+function radio_lock(display) {
+  if (display == false) {
+  animate_section("#select_n", "hide",0);
+  animate_section("#select_p", "slideDown");
   }
   else {
-  var1.style.display = "block";
-  var2.style.display = "none";
+  animate_section("#select_p", "hide",0);
+  animate_section("#select_n", "slideDown");
   }
 }
 
-function select_blast(radio) {
-  //(radio);
-  get_url([radio,'bn'],[get_seq]);
+function select_blast() {
+  radio = $('#bn')[0].checked;
+  if (radio == true){
+   radio = "blast_type_n";}
+  else{
+   radio = "blast_type_p";}
+  alert(radio);
+  //get_url([radio,'bn'],[get_seq]);
 }
 
 function changeColor(id, color) {
   document.getElementById(id).style.color = color;
+}
+
+function activeButton (button_name){
+  document.images[button_name].src = eval(button_name+"_active.src");
+}
+
+function inactiveButton (button_name){
+  document.images[button_name].src = eval(button_name+"_inactive.src");
+}
+
+function pressedButton (button_name){
+ document.images[button_name].src = eval(button_name+"_pressed.src");
 }
 
 function check_seq_for_blast() {
@@ -94,76 +146,103 @@ function check_seq_for_blast() {
 }
 }
  
-function search_chain(val) {
- minlen = 4;
- if ((val == 1) && ($('#accn').val().length > minlen)){
-   return;
- } 
- $('#DS_title').val('');
- $('#FT_title').val('');
- $('#accn_list').val('<input type="hidden" id="accn_select">');	
- $('#Source').val('<input type="hidden" id="dsid">');	
- $('#FeatType').val('<input type="hidden" id="Type_name">');	
- if (val == 1 || $('#accn').val().length > minlen) {
-//   kaj.GS('DS_title','<font class="loading">Searching. . .</font>');// for "'+kaj.GS('accn')+'" type '+''+'. . .</font>');
-   cogesearch(['accn','type', 'org'],[source_search_chain]); 
- }
-}
+// function search_chain(val) {
+//  minlen = 4;
+//  if ((val == 1) && ($('#accn').val().length > minlen)){
+//    return;
+//  } 
+//  $('#DS_title').val('');
+//  $('#FT_title').val('');
+//  $('#accn_list').val('<input type="hidden" id="accn_select">');	
+//  $('#Source').val('<input type="hidden" id="dsid">');	
+//  $('#FeatType').val('<input type="hidden" id="Type_name">');	
+//  if (val == 1 || $('#accn').val().length > minlen) {
+// //   kaj.GS('DS_title','<font class="loading">Searching. . .</font>');// for "'+kaj.GS('accn')+'" type '+''+'. . .</font>');
+//    cogesearch(['accn','type', 'org'],[source_search_chain]); 
+//  }
+// }
+// 
+// function source_search_chain (val1) {
+//  $('#DS_title').val('');
+//  $('#FT_title').val('');
+//  $('#Source').val('<input type="hidden" id="dsid"><font class="loading">Loading. . .</font>');	
+//  $('#FeatType').val('<input type="hidden" id="Type_name">');		
+//  if (val1) {$('#accn_list').val(val1);}
+//  source_search(['accn_select'], [get_types_chain]);
+// }
+// 
+// function get_types_chain (val1, val2) {
+//  $('#FT_title').val('');
+//  $('#FeatType').val('<input type="hidden" id="Type_name"><font class="loading">Loading. . .</font>');	
+//  if (val1) {$('#Source').val(val1);}
+// // if (val2) {kaj.GS('DS_title', "Dataset");}
+//  get_types(['accn_select', 'dsid'],[get_anno_chain]);	
+// }
+// 
+// function get_anno_chain (val1, val2) {
+//  if (val1) {$('#FeatType').val(val1)};
+// // if (val2) {kaj.GS('FT_title', "Type Name");}
+//  as = $('#accn_select').val();
+// // v = kaj.G('version');
+//  tn = $('#Type_name').val();
+//  $('#anno_title').val("Feature Annotations");
+//  get_sequence(['accn_select', 'Type_name', 'dsid'],['seq_box']);
+//  get_pretty_print(['accn_select','Type_name', 'dsid'],['pretty_print_anno']);
+// }
 
-function source_search_chain (val1) {
- $('#DS_title').val('');
- $('#FT_title').val('');
- $('#Source').val('<input type="hidden" id="dsid"><font class="loading">Loading. . .</font>');	
- $('#FeatType').val('<input type="hidden" id="Type_name">');		
- if (val1) {$('#accn_list').val(val1);}
- source_search(['accn_select'], [get_types_chain]);
-}
-
-function get_types_chain (val1, val2) {
- $('#FT_title').val('');
- $('#FeatType').val('<input type="hidden" id="Type_name"><font class="loading">Loading. . .</font>');	
- if (val1) {$('#Source').val(val1);}
-// if (val2) {kaj.GS('DS_title', "Dataset");}
- get_types(['accn_select', 'dsid'],[get_anno_chain]);	
-}
-
-function get_anno_chain (val1, val2) {
- if (val1) {$('#FeatType').val(val1)};
-// if (val2) {kaj.GS('FT_title', "Type Name");}
- as = $('#accn_select').val();
-// v = kaj.G('version');
- tn = $('#Type_name').val();
- $('#anno_title').val("Feature Annotations");
- get_sequence(['accn_select', 'Type_name', 'dsid'],['seq_box']);
- get_pretty_print(['accn_select','Type_name', 'dsid'],['pretty_print_anno']);
-}
-
-function blast_param_on_select(radio) {
+function blast_param_on_select(boolean) {
+ if (boolean == true){
+  var radio = "blast_type_n";}
+ else{
+   var radio = "blast_type_p";}
  program = $('#'+radio).val();
  //alert(''+program);
  database_param([radio],['database']);
  if ((program == 'blastx') || (program == 'tblastx')) {
  //alert('Program is true!');
   $('#program_type').val("blast_type_p");
-  blast_param(['program_type','program_type'],['pro_or_nu_param']);
+  blast_param(['program_type','program_type'],[animate_params]);
   }
   else if ((program == 'blastp') || (program == 'tblastn')) {
   $('#program_type').val("blast_type_p");
-  blast_param(['program_type'],['pro_or_nu_param']);}
+  blast_param(['program_type'],[animate_params]);}
   else {
-   blast_param([],['pro_or_nu_param']);}
+   blast_param([],[animate_params]);}
 }
 
-function displayFeature() {
-if(document.check_feat.feature_display.checked == true) {
-// alert('program being called');
-get_pretty_print(['accn_select','featid', 'dsid'],['pretty_print_anno']);
+function animate_params (html){
+  animate_section("#pro_or_nu_param", "hide",0);
+  $('#pro_or_nu_param').html(html);
+  animate_section("#pro_or_nu_param", "slideDown");
 }
+
+function get_displayFeature(){
+var stuff = $('#pretty_print_anno').html();
+var check = 0;
+if ($('#feature_display')[0].checked) {
+  check = 1;}
+if (stuff){
+ toggleFeature("",check);}
+else if (check){
+get_pretty_print(['accn_select','featid', 'dsid'],[toggleFeature]);}
+
+}
+
+function toggleFeature(html,check) {
+ if (html)
+ {
+   $('#pretty_print_anno').html(html);
+   animate_section("#pretty_print_anno", "show");
+ }
+ else if (check)
+ {
+   animate_section("#pretty_print_anno", "show");
+ }
 else {
- //alert('else being called');
- $('#pretty_print_anno').html('');}
+animate_section("#pretty_print_anno", "hide");
 }
-
+}
+/*
 function fill_param_on_start() {
   blast_param([],['pro_or_nu_param'])
 };
@@ -173,7 +252,7 @@ function fill_db_param_on_start() {
 }
 
 fill_param_on_start();
-fill_db_param_on_start();
+fill_db_param_on_start();*/
 
 </SCRIPT>
 </TMPL_IF>
@@ -184,8 +263,8 @@ fill_db_param_on_start();
   <TD>
    <TH colspan="3">
    <DIV class="mainDiv">
-   <DIV id = "dr" class="topItem" onMouseOver="Init(this); changeColor('dr','#000099'); " onMouseOut="changeColor('dr','#009900');">Query Sequence(s):</DIV>
-   <DIV class="dropMenu">
+   <DIV id = "dr" class="topItem" onMouseOver="changeColor('dr','#000099'); " onMouseOut="changeColor('dr','#009900');" onClick='animate_section("#query_seqs", "slideToggle")'>Query Sequence(s):</DIV>
+   <DIV class="dropMenu" id="query_seqs">
    <DIV class="subMenu" style="display:inline;">
    <TABLE> 
     <TR align=left valign=top>
@@ -196,10 +275,10 @@ fill_db_param_on_start();
        <TABLE>
        <TR>
         <TD valign="top">
-         <label><input id=bn type=radio name=blast value="blast_type_n" checked="" onClick="radio_lock(1);check_seq_for_blast();blast_param_on_select('blast_type_n');">Nucleotide Sequence</label>
+         <label><input id=bn type=radio name=blast value="blast_type_n" checked="" onClick="radio_lock($('#bn')[0].checked);check_seq_for_blast();blast_param_on_select($('#bn')[0].checked);">Nucleotide Sequence</label>
          <br>
-          <div id=select_n style="display: block;">
-           <select name=blasttype id=blast_type_n onChange="blast_param_on_select('blast_type_n')">
+          <div id=select_n>
+           <select name=blasttype id=blast_type_n onChange="blast_param_on_select($('#bn')[0].checked)">
             <optgroup label="--- Select BLAST Type ---">
             <option value = "blastn"> blastn
             <option value = "blastx"> blastx
@@ -209,9 +288,9 @@ fill_db_param_on_start();
            <br>
           </div>
          <br>
-         <label><input id=bn type=radio name=blast value="blast_type_p" onClick="radio_lock(2);check_seq_for_blast();blast_param_on_select('blast_type_p')">Protein Sequence</label>
+         <label><input id=bn type=radio name=blast value="blast_type_p" onClick="radio_lock($('#bn')[0].checked);check_seq_for_blast();blast_param_on_select($('#bn')[0].checked)">Protein Sequence</label>
          <br>
-          <div id=select_p style="display: none">
+          <div id=select_p>
            <select name=blasttype id=blast_type_p>
             <optgroup label="--- Select BLAST Type ---">
             <option value = "blastp"> blastp
@@ -221,10 +300,34 @@ fill_db_param_on_start();
            <br>
           </div>
          <br>
-         <input type=submit value="NCBI BLAST" onClick="get_radio(['args__bn','bn'],[select_blast])">
+         <a href="#" onMouseOver="activeButton('ncbi_blast')" onMouseOut="inactiveButton('ncbi_blast')" onMouseDown="pressedButton('ncbi_blast')" onMouseUp="inactiveButton('ncbi_blast')" onClick="select_blast()">
+         <img name="ncbi_blast" src="/CoGe/picts/buttons/CoGeBlast/ncbi_blast/inactive.png" width="87" height="27" border="0" alt="javascript button">
+         </a>
+         <!--<input type=image name= onClick="get_radio(['args__bn','bn'],[select_blast])">-->
          </TR>
          </TABLE>
       </TD>
+      <TD>
+       <TABLE>
+        <TR>
+         <TD>
+          <DIV class="small">
+           Page Animations:
+          </DIV>
+         </TD>
+         <TD>
+          <DIV class="small">
+           <select id="animation_speed">
+            <option value=0>Off</option> 	
+            <option value=600>Slow</option>
+            <option selected value=400>Medium</option> 
+            <option value=200>Fast</option> 
+           </select>
+        </DIV>
+       </TD>
+      </TR>
+     </TABLE>
+    </TD>
    </TR>
    <TR align=left valign=top>
    <TMPL_IF NAME=DISPLAY_FEAT>
@@ -232,7 +335,7 @@ fill_db_param_on_start();
     <TABLE>
         <TR>
          <TD><form name=check_feat>
-          <input type="checkbox" name="feature_display" onChange="displayFeature()"></form>
+          <input type="checkbox" name="feature_display" id="feature_display" onClick="get_displayFeature();"></form>
          </TD>
          <TD valign="top">
           Click to show feature information
@@ -255,25 +358,6 @@ fill_db_param_on_start();
        	<input type=hidden id=rc value="<TMPL_VAR NAME=RC>">
        	<input type=hidden id=program_type>
     </TR>
-    <TR>
-    <span class="subItem"></span>
-    <span class="subItem"></span>
-    <span class="subItem"></span>
-    <span class="subItem"></span>
-    <span class="subItem"></span>
-    <span class="subItem"></span>
-    <span class="subItem"></span>
-    <span class="subItem"></span>
-    <span class="subItem"></span>
-    <span class="subItem"></span>
-    <span class="subItem"></span>
-    <span class="subItem"></span>
-    <span class="subItem"></span>
-    <span class="subItem"></span>
-    <span class="subItem"></span>
-    <span class="subItem"></span>
-    <span class="subItem"></span>
-   </TR>
   </table>
    </DIV>
    </DIV>
@@ -352,8 +436,8 @@ fill_db_param_on_start();
   <TD>
   <TH colspan="3">
    <DIV class="mainDiv">
-   <DIV id = "dr3" class="topItem" onMouseOver="Init(this); changeColor('dr3','#000099');" onMouseOut="changeColor('dr3','#009900');">Additional BLAST Options:</DIV>
-   <DIV class="dropMenu">
+   <DIV id = "dr3" class="topItem" onMouseOver="changeColor('dr3','#000099');" onMouseOut="changeColor('dr3','#009900');" onClick='animate_section("#blast_params", "slideToggle")'>Additional BLAST Options:</DIV>
+   <DIV class="dropMenu" id="blast_params">
    <DIV class="subMenu" style="display:inline;">
    <TABLE>
     <TR>
@@ -442,15 +526,6 @@ fill_db_param_on_start();
     <TMPL_IF NAME="REST">
      </TR>
     </TABLE>
-    <span class="subItem"></span>
-    <span class="subItem"></span>
-    <span class="subItem"></span>
-    <span class="subItem"></span>
-    <span class="subItem"></span>
-    <span class="subItem"></span>
-    <span class="subItem"></span>
-    <span class="subItem"></span>
-    <span class="subItem"></span>
 </DIV>
 </DIV>
 </DIV>
@@ -562,7 +637,8 @@ fill_db_param_on_start();
 	<option value="est">Expressed sequence tags (est)</option>
 	<option value="est_others">Non-human, non-mouse ESTs (est_others)</option>
 	<option value="gss">Genomic survey sequences (gss)</option>
-	<option value="htgs">High throughput genomic sequences (HTGS)</option>	
+	<option value="htgs">High throughput genomic sequences (HTGS)</option>
+	
 	<option value="pat">Patent sequences(pat)</option>
 	<option value="pdb">Protein Data Bank (pdb)</option>
 	<option value="alu">Human ALU repeat elements (alu_repeats)</option>
