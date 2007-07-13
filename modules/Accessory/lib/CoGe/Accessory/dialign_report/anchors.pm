@@ -5,6 +5,7 @@ use warnings;
 #use File::Temp;
 use CoGe::Accessory::bl2seq_report;
 use CoGe::Accessory::chaos_report;
+use CoGe::Accessory::blastz_report;
 use CoGe::Accessory::dialign_report;
 use base qw(Class::Accessor);
 
@@ -63,8 +64,10 @@ sub generate_anchors
 	
 	print STDERR  "file1 is $file1, file2 is $file2\n" if $self->DEBUG;
 	my $command;
-	$command = "$run_anchor $file1 $file2 $anchor_opts > $output_dir/$base_name.$extension" if $extension=~/chaos/i;
-	$command = "$run_anchor -p blastn -i $file1 -j $file2 $anchor_opts > $output_dir/$base_name.$extension" if $extension=~/bl2/i;
+	if ($extension=~/bl2/i)
+	  {$command = "$run_anchor -p blastn -i $file1 -j $file2 $anchor_opts > $output_dir/$base_name.$extension";}
+	else{
+	$command = "$run_anchor $file1 $file2 $anchor_opts > $output_dir/$base_name.$extension";}
 
 	print STDERR  "call to $extension: $command\n" if $self->DEBUG;
 	`$command`;
@@ -80,6 +83,9 @@ sub generate_anchors
 	$anchor_report = new CoGe::Accessory::chaos_report({file=>"$output_dir/$base_name.$extension", %$parser_opts}) if $extension=~/chaos/i;
 	
 	$anchor_report = new CoGe::Accessory::bl2seq_report({file=>"$output_dir/$base_name.$extension", %$parser_opts}) if $extension=~/bl2/i;
+	
+	$anchor_report = new CoGe::Accessory::blastz_report({file=>"$output_dir/$base_name.$extension", %$parser_opts}) if $extension=~/blastz/i;
+	
 	$self->anchor_report($anchor_report);
 	
 	foreach my $hsp (@{$anchor_report->hsps})
