@@ -77,6 +77,7 @@ my $pj = new CGI::Ajax(
 		       loading=>\&loading,
 		       add_seq=>\&add_seq,
 		       get_file=>\&get_file,
+		       gen_go_button=>\&gen_go_button,
 		       %ajax,
 		      );
 $pj->JSDEBUG(0);
@@ -237,13 +238,9 @@ sub gen_body
 
     my $html;
     my $spike_len = spike_filter_select();
-    $template->param(GEN_ADD_BUTTON=>1);
-    my $add_button = $template->output;
-    $template->param(GEN_ADD_BUTTON=>0);
     $template->param(SPIKE_LEN=>$spike_len);
     $template->param(SEQ_RETRIEVAL=>1);
     $template->param(NUM_SEQS=>$num_seqs);
-    $template->param(ADD_BUTTON=>$add_button);
     $message .= "<BR/>" if $message;
     $template->param(MESSAGE=>$message);
     $template->param(COGE_SEQS=>$coge_seqs);
@@ -817,7 +814,7 @@ INSERT INTO image_info (id, iname, title) values ($j, "$image", "$title")
 #	    $anno =~ s/'|"//g;
 	    $anno =~ s/<br\/?>/&#10;/ig;
 	    $anno =~ s/\n/&#10;/g;
-	    print STDERR $anno if $anno =~ /Location/;
+#	    print STDERR $anno if $anno =~ /Location/;
 #	    print STDERR $anno,"\n" if $anno =~ /01020/;
 	    $statement = qq{
 INSERT INTO image_data (id, name, xmin, xmax, ymin, ymax, image, image_track,pair_id, link, annotation, color) values ($i, "$name", $xmin, $xmax, $ymin, $ymax, "$image", "$image_track",$pair_id, '$link', '$anno', '$color')
@@ -1913,8 +1910,7 @@ sub gen_go_button
         'args__padding', 'padding',
         'args__num_seqs','args__$num_seqs',
 };
-	  return qq{<input type="button" value="GO" onClick="loading([],['results']);run([$params],[handle_results], 'POST');">};   
-
+    return qq{<input type="button" value="GO" onClick="loading([],['results']);final_dataset_search();setTimeout('',100);run([$params],[handle_results], 'POST');">};
   }
 
 sub color_pallet
@@ -2018,7 +2014,7 @@ sub add_seq
 	    $hsp_colors .= $line."\n";
 	  }
 	$template->param(HSP_COLOR_FORM=>0);
-	return (qq{<div class=error>Exceeded max number of sequences ($MAX_SEQS)</div>},'','','',$MAX_SEQS,'', $go_button, '', $hsp_colors);
+	return (qq{<div class=error>Exceeded max number of sequences ($MAX_SEQS)</div>},'','','',$MAX_SEQS, $go_button, '', $hsp_colors);
       }
 	  my @seqs = {
 		      SEQ_NUM=>$num_seq,
@@ -2044,9 +2040,6 @@ sub add_seq
     $template->param(REF_SEQ=>[{SEQ_NUM=>$num_seq}]);	
     my $ref_seqs = $template->output;
     $template->param(GEN_REFERENCE_SEQUENCES=>0);
-    $template->param(GEN_ADD_BUTTON=>1);
-    my $add_button = $template->output;
-    $template->param(GEN_ADD_BUTTON=>0);
     my $go_button = gen_go_button($num_seq);
 
     my @colors = color_pallet(num_seqs=>$num_seq);
@@ -2068,7 +2061,37 @@ sub add_seq
       }
     $template->param(HSP_COLOR_FORM=>0);
 
-    return ('', $coge_seqs, $ncbi_seqs, $direct_seqs, $num_seq, $add_button, $go_button, $ref_seqs, $hsp_colors);
+    return (' ', $coge_seqs, $ncbi_seqs, $direct_seqs, $num_seq, $go_button, $ref_seqs, $hsp_colors);
+  }
+
+sub remove_seq
+  {
+    my $num_seq = shift;
+    $num_seq --;
+    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GEvo.tmpl');
+    my $hsp_colors;
+    my $go_button = gen_go_button($num_seq);
+
+    my @colors = color_pallet(num_seqs=>$num_seq);
+    $template->param(HSP_COLOR_FORM=>1);
+    $template->param(HSP_COLOR_LOOP=>\@colors);
+    my $count = -2;
+    foreach my $line (split /\n/, $template->output)
+      {
+	next unless $line;
+	$count ++ if $line =~/<table>/i;
+
+	if ($count == 6)
+	  {
+	    $line =~ s/(<table>)/<td>$1/i;
+	    $count = 0;
+	  }
+
+	$hsp_colors .= $line."\n";
+      }
+    $template->param(HSP_COLOR_FORM=>0);
+
+#    return ('', $coge_seqs, $ncbi_seqs, $direct_seqs, $num_seq, $add_button, $go_button, $ref_seqs, $hsp_colors);
   }
 
 sub hsp_color_cookie
