@@ -354,6 +354,7 @@ sub run
  	  {
 	    $dirseq = CoGeX::Feature->reverse_complement($dirseq) if $dirrev;
  	    my $seq = get_substr(seq=>$dirseq, start=>$dirstart, stop=>$dirstop);
+	    $dirstop = length($seq) unless $dirstop;
  	    ($obj) = generate_obj_from_seq($seq, $i);
  	    return "<font class=error>Problem with direct sequence submission</font>" unless ($obj);
  	    ($file, $file_begin, $file_end, $spike_seq) = 
@@ -745,8 +746,10 @@ title varchar(1024)
       {
 	my $image = $item->{image};
 	my $gfx = $item->{gfx};
-	my $accn = $item->{obj}->accn;
-	my $title = $item->{obj}->organism if $item->{obj}->organism;
+	my $accn = $item->{accn};
+	my $title;
+	$title = $item->{obj}->organism() if $item->{obj}->organism();
+	$title = $accn if !$title && $accn;
 	$title .= "(".$item->{up}."::".$item->{down}.")" if defined $item->{up};
 	$title .= qq! Reverse Complement! if $item->{rev};
 	my $statement = qq{
@@ -1100,10 +1103,14 @@ sub generate_obj_from_seq
       {
 	#fasta sequence
 	my ($header, $seq) = split /\n/, $sequence, 2;
-	my ($accn) = $header=~/>(\S*)/;
-	$accn =~ s/\|/_/g;
+
+	$header =~ s/>//g;
+	$header =~ s/\|/_/g;
+	$header =~ s/^\s+//;
+	$header =~ s/\s+$//;
+	my ($accn) = $header=~/^(\S*)/;
 	$obj->accn($accn);
-	$obj->locus($accn);
+	$obj->locus($header);
 	$obj->definition($header);
 	$seq =~ s/\n|\r//g;
 	$obj->sequence($seq);
