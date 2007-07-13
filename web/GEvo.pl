@@ -1536,12 +1536,14 @@ sub run_dialign
 	    my $seq_length1 = $obj1->seq_length;
 	    my $seq_length2 = $obj2->seq_length;
 	    my $max_seq = $seq_length1 > $seq_length2 ? $seq_length1 : $seq_length2;
+	    my $kb_max_seq = $max_seq / 1000;
+	    $kb_max_seq =~s/(\.\d+)$//;
 	    my $error_message;
-	    if (($seq_length1 > $max_length) || ($seq_length2 > $max_length))
+	    if ($max_seq > $max_length)
 	    {
-	      if (($seq_length1 > $kill_length) || ($seq_length2 > $kill_length))
+	      if ($max_seq > $kill_length)
 	      {
-	       print "The sequence you have chosen DIALIGN to align is too long (your longest sequence is $max_seq kb long). To complete the alignment would take a significant amount of time, and use up considerable system resources that others need to run their alignments. Please limit your sequences to no more than 20 kb long. Thank you.\n";
+	       print "The sequence you have chosen DIALIGN to align is too long (your longest sequence is $kb_max_seq kb long). To complete the alignment would take a significant amount of time, and use up considerable system resources that others need to run their alignments. Please limit your sequences to no more than ",($kill_length/1000)," kb long. Thank you.\n";
 	       return;
 	      }
 	      else
@@ -1552,7 +1554,8 @@ sub run_dialign
 	       $params .= " -thr 2" unless $params =~ /(-thr)/;
 	       $params .= " -lmax 30" unless $params =~ /(-lmax)/;
 	       $error_message = "Your search parameters were altered due to the length of the sequences you requested for alignment. Your alignment was done with the \"Large Sequence Alignment\" option enabled";
-	       $error_message .= $changed ? ", and with \"Short Sequence Alignment with Translation\" disabled.\n" : ".\n";
+	       $error_message .= $changed ? ", and with \"Short Sequence Alignment with Translation\" disabled." : ".";
+	       $error_message.= " This is done automatically with sequences over ".($max_length/1000)." kb long.\n";
 	       print $error_message;
 	      }
 	     }
@@ -1887,7 +1890,8 @@ sub gen_go_button
         'args__padding', 'padding',
         'args__num_seqs','args__$num_seqs',
 };
-    return qq{<input type="button" value="GO" onClick="loading([],['results']);final_dataset_search();setTimeout('',100);run([$params],[handle_results], 'POST');">};
+    return qq{<a href="#" onMouseOver="activeButton('go')" onMouseOut="inactiveButton('go')" onMouseDown="pressedButton('go')" onMouseUp="inactiveButton('go')" onClick="loading([],['results']);final_dataset_search();setTimeout('',100);run([$params],[handle_results], 'POST');"><img name="go" src="/CoGe/picts/buttons/GEvo/go/inactive.png" width="47" height="27" border="0" alt="javascript button"></a>};
+    #<input type="button" value="GO" onClick="loading([],['results']);final_dataset_search();setTimeout('',100);run([$params],[handle_results], 'POST');">
   }
 
 sub gen_hsp_colors
