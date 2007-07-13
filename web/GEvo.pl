@@ -78,6 +78,7 @@ my $pj = new CGI::Ajax(
 		       add_seq=>\&add_seq,
 		       get_file=>\&get_file,
 		       gen_go_button=>\&gen_go_button,
+		       gen_hsp_colors =>\&gen_hsp_colors,
 		       %ajax,
 		      );
 $pj->JSDEBUG(0);
@@ -215,27 +216,7 @@ sub gen_body
     $template->param(DIRECT_SEQ_SELECT=>0);
 
     #generate the hsp color option
-    my @colors = color_pallet(num_seqs=>$num_seqs);
-    $template->param(HSP_COLOR_FORM=>1);
-    $template->param(HSP_COLOR_LOOP=>\@colors);
-
-    my $hsp_colors;
-    my $count = -2;
-    foreach my $line (split /\n/, $template->output)
-      {
-	next unless $line;
-	$count ++ if $line =~/<table>/i;
-
-	if ($count == 6)
-	  {
-	    $line =~ s/(<table>)/<td>$1/i;
-	    $count = 0;
-	  }
-
-	$hsp_colors .= $line."\n";
-      }
-    $template->param(HSP_COLOR_FORM=>0);
-
+    my $hsp_colors = gen_hsp_colors($num_seqs);
     my $html;
     my $spike_len = spike_filter_select();
     $template->param(SPIKE_LEN=>$spike_len);
@@ -252,9 +233,6 @@ sub gen_body
     $drseq ? $template->param(SHOW_COGE_SEQ=>1) : $template->param(SHOW_COGE_SEQ=>0);
     $gbseq ? $template->param(SHOW_GENBANK_SEQ=>1) : $template->param(SHOW_GENBANK_SEQ=>0);
     $dirseq ? $template->param(SHOW_DIR_SEQ=>1) : $template->param(SHOW_DIR_SEQ=>0);
-#    $dirseq ? $template->param(DIRMENU=>'inline') : $template->param(DIRMENU=>'none');
-#    $gbseq = 1 unless ($drseq || $dirseq); #default
-#    $gbseq ? $template->param(GBMENU=>'inline') : $template->param(GBMENU=>'none');
     $template->param(AUTOSEARCH=>$autosearch_string);
     $box->param(BOX_NAME=>"Sequence Retrieval:");
     $box->param(BODY=>$template->output);
@@ -279,7 +257,6 @@ sub gen_body
     $box->param(BOX_NAME=>"Options:");
     $box->param(BODY=>$template->output);
     $html .= $box->output;
-#    $html =~ s/<option>$prog<\/option>/<option selected>$prog<\/option>/ if $prog;
     return $html;
   }
 
@@ -1034,7 +1011,7 @@ sub process_hsps
 		$f->label($hsp->number);
 	      }
 	    $f->alt(join ("-",$hsp->number,$accn1,$accn2));
-	    my $desc = join ("<br/>", "HSP: ".$hsp->number. qq{  <span class="small">(}.$blast->query."-". $blast->subject.")</span>", $start."-".$stop." (".$hsp->strand.")", $seq,"Match: ".$hsp->match,"Length: ".$hsp->length,"Identity: ".$hsp->percent_id);
+	    my $desc = join ("<br/>", "HSP: ".$hsp->number. qq{  <span class="small">(}.$blast->query."-". $blast->subject.")</span>", "Location: ".$start."-".$stop." (".$hsp->strand.")", "Sequence: ".$seq,"Match: ".$hsp->match,"Length: ".$hsp->length,"Identity: ".$hsp->percent_id);
 	    $desc .= "<br/>E_val: ".$hsp->pval if $hsp->pval;
 	    $desc .= "<br/>Score: ".$hsp->score if $hsp->score;
 	    $desc .= qq{<span class="small"> (cutoff: $eval_cutoff)</span>} if defined $eval_cutoff;
@@ -1913,6 +1890,31 @@ sub gen_go_button
     return qq{<input type="button" value="GO" onClick="loading([],['results']);final_dataset_search();setTimeout('',100);run([$params],[handle_results], 'POST');">};
   }
 
+sub gen_hsp_colors
+  {
+    my $num_seqs = shift || $NUM_SEQS;
+    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GEvo.tmpl');
+    my $hsp_colors;
+    my @colors = color_pallet(num_seqs=>$num_seqs);
+    $template->param(HSP_COLOR_FORM=>1);
+    $template->param(HSP_COLOR_LOOP=>\@colors);
+    my $count = -2;
+    foreach my $line (split /\n/, $template->output)
+      {
+	next unless $line;
+	$count ++ if $line =~/<table>/i;
+	
+	if ($count == 6)
+	  {
+	    $line =~ s/(<table>)/<td>$1/i;
+	    $count = 0;
+	  }
+	
+	$hsp_colors .= $line."\n";
+      }
+    return $hsp_colors;
+  }
+
 sub color_pallet
   {
     my %opts = @_;
@@ -1995,25 +1997,8 @@ sub add_seq
     my $hsp_colors;
     if ($num_seq > $MAX_SEQS)
       {
+	$hsp_colors = gen_hsp_colors($MAX_SEQS);
 	my $go_button = gen_go_button($MAX_SEQS);
-	my @colors = color_pallet(num_seqs=>$MAX_SEQS);
-	$template->param(HSP_COLOR_FORM=>1);
-	$template->param(HSP_COLOR_LOOP=>\@colors);
-	my $count = -2;
-	foreach my $line (split /\n/, $template->output)
-	  {
-	    next unless $line;
-	    $count ++ if $line =~/<table>/i;
-	    
-	    if ($count == 6)
-	      {
-		$line =~ s/(<table>)/<td>$1/i;
-		$count = 0;
-	      }
-	    
-	    $hsp_colors .= $line."\n";
-	  }
-	$template->param(HSP_COLOR_FORM=>0);
 	return (qq{<div class=error>Exceeded max number of sequences ($MAX_SEQS)</div>},'','','',$MAX_SEQS, $go_button, '', $hsp_colors);
       }
 	  my @seqs = {
@@ -2041,57 +2026,8 @@ sub add_seq
     my $ref_seqs = $template->output;
     $template->param(GEN_REFERENCE_SEQUENCES=>0);
     my $go_button = gen_go_button($num_seq);
-
-    my @colors = color_pallet(num_seqs=>$num_seq);
-    $template->param(HSP_COLOR_FORM=>1);
-    $template->param(HSP_COLOR_LOOP=>\@colors);
-    my $count = -2;
-    foreach my $line (split /\n/, $template->output)
-      {
-	next unless $line;
-	$count ++ if $line =~/<table>/i;
-
-	if ($count == 6)
-	  {
-	    $line =~ s/(<table>)/<td>$1/i;
-	    $count = 0;
-	  }
-
-	$hsp_colors .= $line."\n";
-      }
-    $template->param(HSP_COLOR_FORM=>0);
-
+    $hsp_colors = gen_hsp_colors($num_seq);
     return (' ', $coge_seqs, $ncbi_seqs, $direct_seqs, $num_seq, $go_button, $ref_seqs, $hsp_colors);
-  }
-
-sub remove_seq
-  {
-    my $num_seq = shift;
-    $num_seq --;
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GEvo.tmpl');
-    my $hsp_colors;
-    my $go_button = gen_go_button($num_seq);
-
-    my @colors = color_pallet(num_seqs=>$num_seq);
-    $template->param(HSP_COLOR_FORM=>1);
-    $template->param(HSP_COLOR_LOOP=>\@colors);
-    my $count = -2;
-    foreach my $line (split /\n/, $template->output)
-      {
-	next unless $line;
-	$count ++ if $line =~/<table>/i;
-
-	if ($count == 6)
-	  {
-	    $line =~ s/(<table>)/<td>$1/i;
-	    $count = 0;
-	  }
-
-	$hsp_colors .= $line."\n";
-      }
-    $template->param(HSP_COLOR_FORM=>0);
-
-#    return ('', $coge_seqs, $ncbi_seqs, $direct_seqs, $num_seq, $add_button, $go_button, $ref_seqs, $hsp_colors);
   }
 
 sub hsp_color_cookie
