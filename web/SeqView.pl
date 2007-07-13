@@ -25,9 +25,9 @@ $FORM = new CGI;
 my $pj = new CGI::Ajax(
 		       gen_html=>\&gen_html,
 		       get_seq=>\&get_seq,
-		       get_seq_and_button=>\&get_seq_and_button,
 		       gen_title=>\&gen_title,
 		       find_feats=>\&find_feats,
+		       parse_url=>\&parse_url,
 			);
 $pj->js_encode_function('escape');
 print $pj->build_html($FORM, \&gen_html);
@@ -254,58 +254,131 @@ sub gen_foot
     my $stop = $form->param('stop');
     my ($feat) = $DB->get_feat_obj->retrieve($feat_id);
     my $strand;
+    my $DNAButton;
+    my $RCButton;
+    my $PROButton;
+    my @button_loop;
     unless ($feat_id)
     {$strand = $form->param('strand');}
     else
     {$strand = $feat->strand;}
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SeqView.tmpl');
-    my $dynamic_buttons = new_foot(featid=>$feat_id,
-				   chr=>$chr,
-				   dsid=>$dsid,
-				   featname=>$feat_name,
-				   rc=>$rc,
-				   pro=>$pro,
-				   upstream=>$upstream,
-				   downstream=>$downstream,
-				   start=>$start,
-				   stop=>$stop,
-				   strand=>$strand);
-    $dynamic_buttons = "<div id=\"buttons\">$dynamic_buttons</div>";
-   
-   $template->param(ADDITION=>1);
-#    unless($feat_id)
-#     {$template->param(RANGE=>1);}
-#    else
-#     {$template->param(FEATURE=>1);}
-
-   unless($feat_id)
-    {
+    print STDERR $feat_id if $feat_id;
+    print STDERR "nuthin" unless $feat_id;
+    unless($feat_id){
+                      $DNAButton = {BUTTON_NUM_CLASS=>1,
+                      		    BUTTON_NUM_ID=>1,
+                      		    BUTTON_NUM=>1, 
+                                    BUTTON_NAME=>'DNA Sequence', 
+                                    START=>$start,
+    			            PRO=>0,
+    				    RC=>0,
+    			     	    CHR=>$chr,
+    				    DSID=>$dsid,
+    				    STOP=>$stop,
+   				    STRAND=>1,
+   				    ADD=>1,
+   				    TITLE_RC=>0,
+    				    TITLE_PRO=>0,
+   				    };
+                       $RCButton = {BUTTON_NUM_CLASS=>2,
+                       		    BUTTON_NUM_ID=>2,
+                       		    BUTTON_NUM=>2, 
+                            	    BUTTON_NAME=>'Reverse Complement', 
+                            	    START=>$start,
+   				    PRO=>0,
+    				    RC=>1,
+    			     	    CHR=>$chr,
+    				    DSID=>$dsid,	
+    				    STOP=>$stop,
+    				    ADD=>1,
+   				    STRAND=>-1,
+   				    TITLE_RC=>1,
+   				    TITLE_PRO=>0};
+		      $PROButton = {BUTTON_NUM_CLASS=>3,
+		      		    BUTTON_NUM_ID=>3,
+		      		    BUTTON_NUM=>3, 
+                            	    BUTTON_NAME=>'Six Frame Translation', 
+                            	    START=>$start,
+   				    PRO=>0,
+    				    RC=>2,
+    			     	    CHR=>$chr,
+    				    DSID=>$dsid,	
+    				    STOP=>$stop,
+   				    TITLE_RC=>2,
+   				    TITLE_PRO=>0};
+      $template->param(FIND_FEATS=>1);
+      $template->param(FEAT_START=>$start);
+      $template->param(FEAT_STOP=>$stop);
+      $template->param(FEAT_CHR=>$chr);
+      $template->param(FEAT_DSID=>$dsid);
       $template->param(EXTEND=>"Sequence Range");
       $template->param(UPSTREAM=>"START: ");
       $template->param(UPVALUE=>$start);
       $template->param(DOWNSTREAM=>"STOP: ");
       $template->param(DOWNVALUE=>$stop);
+      $template->param(RANGE=>1);
+      $template->param(STRAND=>$strand);
     }
-    else {
-      #$template->param(BLAST=>$feat_id);
-      $template->param(FEATID=>$feat_id);
+    else{
+    $DNAButton = {BUTTON_NUM_CLASS=>1,
+    			BUTTON_NUM_ID=>1,
+    			BUTTON_NUM=>1, 
+                        BUTTON_NAME=>'DNA Sequence', 
+                        FEATID=>$feat_id,
+    			PRO=>0,
+    			RC=>0,
+    			CHR=>$chr,
+    			DSID=>$dsid,
+    			FEATNAME=>$feat_name,
+   			TITLE_RC=>0,
+    			TITLE_PRO=>0};
+     $RCButton = {BUTTON_NUM_CLASS=>2,
+     			BUTTON_NUM_ID=>2,
+     			BUTTON_NUM=>2, 
+                        BUTTON_NAME=>'Reverse Complement', 
+                        FEATID=>$feat_id,
+   			PRO=>0,
+    			RC=>1,
+    			CHR=>$chr,
+    			DSID=>$dsid,	
+    			FEATNAME=>$feat_name,
+   			TITLE_RC=>1,
+   			TITLE_PRO=>0};
+     $PROButton = {BUTTON_NUM_CLASS=>3,
+     			BUTTON_NUM_ID=>3,
+     			BUTTON_NUM=>3, 
+                        BUTTON_NAME=>'Protein Sequence',
+                        FEATID=>$feat_id,
+   			PRO=>1,
+   			RC=>0,
+    			CHR=>$chr,
+    			DSID=>$dsid,	
+    			FEATNAME=>$feat_name,
+   			TITLE_RC=>0,
+   			TITLE_PRO=>1};
+    
+      $template->param(RESET_FEATID=>$feat_id);
       $template->param(EXTEND=>"Extend Sequence");
       $template->param(UPSTREAM=>"UPSTREAM: ");
       $template->param(UPVALUE=>$upstream);
       $template->param(DOWNSTREAM=>"DOWNSTREAM: ");
       $template->param(DOWNVALUE=>$downstream);
-    }
-    my $add_more = update_other_buttons(chr=>$chr,
-			  	      dsid=>$dsid,
-			  	      featid=>$feat_id,
-			  	      featname=>$feat_name,
-				      rc=>$rc,
-				      pro=>$pro,
-				      strand=>$strand);
-    $add_more = "<div id=\"add_more\">$add_more</div>";
-    #print STDERR $template->output."\n";
-    my $html = $template->output;
-    $html = join("\n", qq{$dynamic_buttons}, $html, qq{$add_more});
+      $template->param(FEATURE=>1);
+      $template->param(ADD_FEATID=>$feat_id);
+      $template->param(FEATNAME=>$feat_name);
+      }
+      
+   push (@button_loop, ($DNAButton, $RCButton, $PROButton));
+   $template->param(ADDITION=>1);
+   $template->param(BUTTON_LOOP=>\@button_loop);
+   $template->param(BOTTOM_BUTTONS=>1);
+   $template->param(PRO=>$pro);
+   $template->param(RC=>$rc);
+   $template->param(CHR=>$chr);
+   $template->param(DSID=>$dsid);
+   #print STDERR $template->output."\n";
+   my $html = $template->output;
    return $html;
   }
     
@@ -463,125 +536,125 @@ sub sixframe
           return "<pre>".$sixframe."</pre>";
         }
 	
-sub new_foot
-{
-    my %opts = @_;
-    my $feat_id = $opts{'featid'};
-    my $chr = $opts{'chr'};
-    my $dsid = $opts{'dsid'};
-    my $feat_name = $opts{'featname'};
-    my $rc = $opts{'rc'} || 0;
-    my $pro = $opts{'pro'};
-    my $upstream = $opts{'upstream'} || 0;
-    my $downstream = $opts{'downstream'} || 0;
-    my $start = $opts{'start'};
-    my $stop = $opts{'stop'};
-    my $strand = $opts{'strand'};
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SeqView.tmpl');
-    my $DNAButton;
-    my $RCButton;
-    my $PROButton;
-    my @button_loop;
-    $strand = check_strand(strand=>$strand, rc=>$rc);
-    #print STDERR Dumper \%opts;
-    unless($feat_id){
-                      $DNAButton = {BUTTON_NUM=>1, 
-                                    BUTTON_NAME=>'DNA Sequence', 
-                                    START=>$start,
-    			            PRO=>0,
-    				    RC=>0,
-    			     	    CHR=>$chr,
-    				    DSID=>$dsid,
-    				    STOP=>$stop,
-   				    STRAND=>1,
-   				    ADD=>1,
-   				    RC=>0,
-    				    PRO=>0,
-   				    };
-                       $RCButton = {BUTTON_NUM=>2, 
-                            	    BUTTON_NAME=>'Reverse Complement', 
-                            	    START=>$start,
-   				    PRO=>0,
-    				    RC=>1,
-    			     	    CHR=>$chr,
-    				    DSID=>$dsid,	
-    				    STOP=>$stop,
-    				    ADD=>1,
-   				    STRAND=>-1,
-   				    RC=>1,
-   				    PRO=>0};
-		      $PROButton = {BUTTON_NUM=>3, 
-                            	    BUTTON_NAME=>'Six Frame Translation', 
-                            	    START=>$start,
-   				    PRO=>0,
-    				    RC=>2,
-    			     	    CHR=>$chr,
-    				    DSID=>$dsid,	
-    				    STOP=>$stop,
-   				    RC=>2,
-   				    PRO=>0};
-    }
-    else{
-    $DNAButton = {BUTTON_NUM=>1, 
-                        BUTTON_NAME=>'DNA Sequence', 
-                        FEATID=>$feat_id,
-    			PRO=>0,
-    			RC=>0,
-    			CHR=>$chr,
-    			DSID=>$dsid,
-    			FEATNAME=>$feat_name,
-   			RC=>0,
-    			PRO=>0};
-     $RCButton = {BUTTON_NUM=>2, 
-                       BUTTON_NAME=>'Reverse Complement', 
-                       FEATID=>$feat_id,
-   			PRO=>0,
-    			RC=>1,
-    			CHR=>$chr,
-    			DSID=>$dsid,	
-    			FEATNAME=>$feat_name,
-   			RC=>1,
-   			PRO=>0};
-     $PROButton = {BUTTON_NUM=>3, 
-                        BUTTON_NAME=>'Protein Sequence',
-                        FEATID=>$feat_id,
-   			PRO=>1,
-   			RC=>0,
-    			CHR=>$chr,
-    			DSID=>$dsid,	
-    			FEATNAME=>$feat_name,
-   			RC=>0,
-   			PRO=>1};
-      }
-    $template->param(BOTTOM_BUTTONS=>1);
-    if ($rc == 1)
-      {
-	push (@button_loop, ($DNAButton, $PROButton));
-      }
-    elsif ($pro || $rc == 2)
-      {
-	push (@button_loop, ($DNAButton, $RCButton));
-      }
-    else{
-      push (@button_loop, ($RCButton, $PROButton));
-    }			 
-    $template->param(BUTTON_LOOP=>\@button_loop);
-    $template->param(BOTTOM_BUTTONS=>1);
-    unless($feat_id)
-     {
-       $template->param(FIND_FEATS=>1);
-       $template->param(START=>$start);
-       $template->param(STOP=>$stop);
-       $template->param(CHR=>$chr);
-       $template->param(DSID=>$dsid);
-     }
-     $template->param(BLAST=>$feat_id);
-     $template->param(DSID_BLAST=>$dsid);
-     $template->param(FEATNAME_BLAST=>$feat_name);
-     $template->param(CHR_BLAST=>$chr);
-     $template->param(RC_BLAST=>$rc);
-    return $template->output;
-}
+# sub new_foot
+# {
+#     my %opts = @_;
+#     my $feat_id = $opts{'featid'};
+#     my $chr = $opts{'chr'};
+#     my $dsid = $opts{'dsid'};
+#     my $feat_name = $opts{'featname'};
+#     my $rc = $opts{'rc'} || 0;
+#     my $pro = $opts{'pro'};
+#     my $upstream = $opts{'upstream'} || 0;
+#     my $downstream = $opts{'downstream'} || 0;
+#     my $start = $opts{'start'};
+#     my $stop = $opts{'stop'};
+#     my $strand = $opts{'strand'};
+#     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SeqView.tmpl');
+#     my $DNAButton;
+#     my $RCButton;
+#     my $PROButton;
+#     my @button_loop;
+#     $strand = check_strand(strand=>$strand, rc=>$rc);
+#     #print STDERR Dumper \%opts;
+#     unless($feat_id){
+#                       $DNAButton = {BUTTON_NUM=>1, 
+#                                     BUTTON_NAME=>'DNA Sequence', 
+#                                     START=>$start,
+#     			            PRO=>0,
+#     				    RC=>0,
+#     			     	    CHR=>$chr,
+#     				    DSID=>$dsid,
+#     				    STOP=>$stop,
+#    				    STRAND=>1,
+#    				    ADD=>1,
+#    				    RC=>0,
+#     				    PRO=>0,
+#    				    };
+#                        $RCButton = {BUTTON_NUM=>2, 
+#                             	    BUTTON_NAME=>'Reverse Complement', 
+#                             	    START=>$start,
+#    				    PRO=>0,
+#     				    RC=>1,
+#     			     	    CHR=>$chr,
+#     				    DSID=>$dsid,	
+#     				    STOP=>$stop,
+#     				    ADD=>1,
+#    				    STRAND=>-1,
+#    				    RC=>1,
+#    				    PRO=>0};
+# 		      $PROButton = {BUTTON_NUM=>3, 
+#                             	    BUTTON_NAME=>'Six Frame Translation', 
+#                             	    START=>$start,
+#    				    PRO=>0,
+#     				    RC=>2,
+#     			     	    CHR=>$chr,
+#     				    DSID=>$dsid,	
+#     				    STOP=>$stop,
+#    				    RC=>2,
+#    				    PRO=>0};
+#     }
+#     else{
+#     $DNAButton = {BUTTON_NUM=>1, 
+#                         BUTTON_NAME=>'DNA Sequence', 
+#                         FEATID=>$feat_id,
+#     			PRO=>0,
+#     			RC=>0,
+#     			CHR=>$chr,
+#     			DSID=>$dsid,
+#     			FEATNAME=>$feat_name,
+#    			RC=>0,
+#     			PRO=>0};
+#      $RCButton = {BUTTON_NUM=>2, 
+#                        BUTTON_NAME=>'Reverse Complement', 
+#                        FEATID=>$feat_id,
+#    			PRO=>0,
+#     			RC=>1,
+#     			CHR=>$chr,
+#     			DSID=>$dsid,	
+#     			FEATNAME=>$feat_name,
+#    			RC=>1,
+#    			PRO=>0};
+#      $PROButton = {BUTTON_NUM=>3, 
+#                         BUTTON_NAME=>'Protein Sequence',
+#                         FEATID=>$feat_id,
+#    			PRO=>1,
+#    			RC=>0,
+#     			CHR=>$chr,
+#     			DSID=>$dsid,	
+#     			FEATNAME=>$feat_name,
+#    			RC=>0,
+#    			PRO=>1};
+#       }
+#     $template->param(BOTTOM_BUTTONS=>1);
+#     if ($rc == 1)
+#       {
+# 	push (@button_loop, ($DNAButton, $PROButton));
+#       }
+#     elsif ($pro || $rc == 2)
+#       {
+# 	push (@button_loop, ($DNAButton, $RCButton));
+#       }
+#     else{
+#       push (@button_loop, ($RCButton, $PROButton));
+#     }			 
+#     $template->param(BUTTON_LOOP=>\@button_loop);
+#     $template->param(BOTTOM_BUTTONS=>1);
+#     unless($feat_id)
+#      {
+#        $template->param(FIND_FEATS=>1);
+#        $template->param(START=>$start);
+#        $template->param(STOP=>$stop);
+#        $template->param(CHR=>$chr);
+#        $template->param(DSID=>$dsid);
+#      }
+#      $template->param(BLAST=>$feat_id);
+#      $template->param(DSID_BLAST=>$dsid);
+#      $template->param(FEATNAME_BLAST=>$feat_name);
+#      $template->param(CHR_BLAST=>$chr);
+#      $template->param(RC_BLAST=>$rc);
+#     return $template->output;
+# }
 sub find_feats
 {
 	#print STDERR "Here";
@@ -609,99 +682,112 @@ sub get_strand
     return $strand;
   }
   
-sub get_seq_and_button
+sub parse_url
   {
     my %opts = @_;
-    my $feat_id = $opts{'featid'};
-    my $chr = $opts{'chr'};
-    my $dsid = $opts{'dsid'};
-    my $feat_name = $opts{'featname'};
-    my $rc = $opts{'rc'};
-    my $pro = $opts{'pro'};
-    my $upstream = $opts{'upstream'} || 0;
-    my $downstream = $opts{'downstream'} || 0;
-    my $start = $opts{'start'};
-    my $stop = $opts{'stop'};
-    my $add_to_seq = $opts{'add'};
-    my $seq;
-    my $strand;
-    unless ($feat_id)
-    {
-      $strand = 1;
-      $seq = get_seq(pro=>$pro,
-		      rc=>$rc,
-		      chr=>$chr,
-		      dsid=>$dsid,
-		      strand=>$strand, 
-		      upstream=>$upstream, 
-		      downstream=>$downstream,
-		      start=>$start,
-		      stop=>$stop,
-		      add=>$add_to_seq,
-		      );
-    }
-    else
-    {
-    $strand = get_strand($feat_id);
-    $strand = check_strand(strand=>$strand, rc=>$rc);
-    $seq = get_seq(featid=>$feat_id, 
-		      pro=>$pro,
-		      rc=>$rc,
-		      chr=>$chr,
-		      dsid=>$dsid,
-		      featname=>$feat_name,
-		      strand=>$strand, 
-		      upstream=>$upstream, 
-		      downstream=>$downstream,
-		      );
-    }
-    my $dynamic_buttons = new_foot(featid=>$feat_id,
-				  chr=>$chr,
-			  	  dsid=>$dsid,
-			  	  featname=>$feat_name,
-				  rc=>$rc,
-				  pro=>$pro,
-				  upstream=>$upstream,
-				  downstream=>$downstream,
-				  start=>$start,
-				  stop=>$stop,
-				  strand=>$strand);
-    my $update = update_other_buttons(chr=>$chr,
-			  	      featid=>$feat_id,
-			  	      dsid=>$dsid,
-			  	      featname=>$feat_name,
-				      rc=>$rc,
-				      pro=>$pro,
-				      strand=>$strand);
-    return $seq, $dynamic_buttons, $update;
-  }
-
-sub update_other_buttons
-{
-    my %opts = @_;
-    my $featid = $opts{'featid'};
-    my $chr = $opts{'chr'};
-    my $dsid = $opts{'dsid'};
-    my $feat_name = $opts{'featname'};
-    my $rc = $opts{'rc'};
-    my $pro = $opts{'pro'};
-    my $strand = $opts{'strand'};
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SeqView.tmpl');
-    if ($featid)
-    {
-    $template->param(FEATURE=>1);
-    $template->param(FEATID=>$featid);
-    $template->param(FEATNAME=>$feat_name);
-    }
-    else
-    {
-    $template->param(RANGE=>1);
-    $template->param(STRAND=>$strand);
-    }
-    $template->param(PRO=>$pro);
-    $template->param(RC=>$rc);
-    $template->param(CHR=>$chr);
-    $template->param(DSID=>$dsid);
-    #print STDERR "I'm being called\n";
-    return $template->output;
-}
+    my $url = $opts{url};
+    print STDERR $url;
+    print "I am not getting anything\n" unless $url;
+    my $featid = $1 if $url =~ /featid=(\d+)/;
+    my $dsid = $1 if $url =~/dsid=(\d+)/;
+    my $chr = $1 if $url =~ /chr=(\d+)/;
+    my $featname = $1 if $url =~ /featname=(\w+)/;
+    my $rc = $1 if $url =~ /rc=(\d)/;
+    return $dsid,$chr,$rc,$featid,$featname;
+   }
+# sub get_seq_and_button
+#   {
+#     my %opts = @_;
+#     my $feat_id = $opts{'featid'};
+#     my $chr = $opts{'chr'};
+#     my $dsid = $opts{'dsid'};
+#     my $feat_name = $opts{'featname'};
+#     my $rc = $opts{'rc'};
+#     my $pro = $opts{'pro'};
+#     my $upstream = $opts{'upstream'} || 0;
+#     my $downstream = $opts{'downstream'} || 0;
+#     my $start = $opts{'start'};
+#     my $stop = $opts{'stop'};
+#     my $add_to_seq = $opts{'add'};
+#     my $seq;
+#     my $strand;
+#     unless ($feat_id)
+#     {
+#       $strand = 1;
+#       $seq = get_seq(pro=>$pro,
+# 		      rc=>$rc,
+# 		      chr=>$chr,
+# 		      dsid=>$dsid,
+# 		      strand=>$strand, 
+# 		      upstream=>$upstream, 
+# 		      downstream=>$downstream,
+# 		      start=>$start,
+# 		      stop=>$stop,
+# 		      add=>$add_to_seq,
+# 		      );
+#     }
+#     else
+#     {
+#     $strand = get_strand($feat_id);
+#     $strand = check_strand(strand=>$strand, rc=>$rc);
+#     $seq = get_seq(featid=>$feat_id, 
+# 		      pro=>$pro,
+# 		      rc=>$rc,
+# 		      chr=>$chr,
+# 		      dsid=>$dsid,
+# 		      featname=>$feat_name,
+# 		      strand=>$strand, 
+# 		      upstream=>$upstream, 
+# 		      downstream=>$downstream,
+# 		      );
+#     }
+#     my $dynamic_buttons = new_foot(featid=>$feat_id,
+# 				  chr=>$chr,
+# 			  	  dsid=>$dsid,
+# 			  	  featname=>$feat_name,
+# 				  rc=>$rc,
+# 				  pro=>$pro,
+# 				  upstream=>$upstream,
+# 				  downstream=>$downstream,
+# 				  start=>$start,
+# 				  stop=>$stop,
+# 				  strand=>$strand);
+#     my $update = update_other_buttons(chr=>$chr,
+# 			  	      featid=>$feat_id,
+# 			  	      dsid=>$dsid,
+# 			  	      featname=>$feat_name,
+# 				      rc=>$rc,
+# 				      pro=>$pro,
+# 				      strand=>$strand);
+#     return $seq, $dynamic_buttons, $update;
+#   }
+# 
+# sub update_other_buttons
+# {
+#     my %opts = @_;
+#     my $featid = $opts{'featid'};
+#     my $chr = $opts{'chr'};
+#     my $dsid = $opts{'dsid'};
+#     my $feat_name = $opts{'featname'};
+#     my $rc = $opts{'rc'};
+#     my $pro = $opts{'pro'};
+#     my $strand = $opts{'strand'};
+#     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SeqView.tmpl');
+#     if ($featid)
+#     {
+#     $template->param(FEATURE=>1);
+#     $template->param(FEATID=>$featid);
+#     $template->param(FEATNAME=>$feat_name);
+#     }
+#     else
+#     {
+#     $template->param(RANGE=>1);
+#     $template->param(STRAND=>$strand);
+#     }
+#     $template->param(PRO=>$pro);
+#     $template->param(RC=>$rc);
+#     $template->param(CHR=>$chr);
+#     $template->param(DSID=>$dsid);
+#     #print STDERR "I'm being called\n";
+#     return $template->output;
+# }
