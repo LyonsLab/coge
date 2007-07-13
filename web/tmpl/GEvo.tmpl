@@ -230,10 +230,26 @@ gen_go_button(['num_seqs'],['go_button']);
 gen_hsp_colors(['num_seqs'],['hsp_colors']);
 }
 
+function alert_message (message) {
+if (message) alert(message);
+} 
+
 function add_new_refseq(val)
 {
  alert('here');
  $('#refseqs').append(val);
+}
+
+function process_add_seq (dr, gb, dir, num_seqs, go, refseq, colors, message)
+{
+ $('#new_drseq').html(dr);
+ $('#new_gbseq').html(gb);
+ $('#new_dirseq').html(dir);
+ $('#num_seqs').val(num_seqs);
+ $('#go_button').html(go);
+ $('#new_refseq').html(refseq);
+ $('#hsp_colors').html(colors);
+ alert_message(message);
 }
 
 </SCRIPT>
@@ -249,7 +265,7 @@ function add_new_refseq(val)
 <table>
 <tr>
 <td>Number of sequences: <input class="backbox" name=num_seqs id=num_seqs type="textbox" size=2 readonly value=<TMPL_VAR NAME ="NUM_SEQS">>
-<td><input type="button" value="add" onclick="add_seq(['num_seqs'],['message','new_drseq', 'new_gbseq', 'new_dirseq', 'num_seqs', 'go_button','new_refseq', 'hsp_colors']); $('#new_drseq').remove;">
+<td><input type="button" value="add" onclick="add_seq(['num_seqs'],[process_add_seq]); $('#new_drseq').remove;">
 <td><input type="button" value="remove" onclick="remove_seq()">
 </table>
 
