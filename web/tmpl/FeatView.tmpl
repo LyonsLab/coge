@@ -14,9 +14,9 @@ function search_chain(val) {
  if ((val == 1) && ($('#accn').val().length > minlen)){
    return;
  } 
- $('#accn_list').html('<input type="hidden" id="accn_select">');	
- $('#Source').html('<input type="hidden" id="dsid">');	
- $('#FeatType').html('<input type="hidden" id="Type_name">');	
+ //$('#accn_list').html('<input type="hidden" id="accn_select">');	
+ //$('#Source').html('<input type="hidden" id="dsid">');	
+ //$('#FeatType').html('<input type="hidden" id="Type_name">');	
  $('#anno').hide();	
  if (val == 1 || $('#accn').val().length > minlen) {
    cogesearch(['accn', 'type', 'org'],[source_search_chain]); 
@@ -51,7 +51,7 @@ function show_anno (anno)
  {
  $('#anno').hide(); 
  $('#anno').html(anno);
- $('#anno').show("slow"); 
+ $('#anno').slideDown("slow"); 
  }
 
 </SCRIPT>
