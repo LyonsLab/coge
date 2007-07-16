@@ -39,7 +39,6 @@ my $pj = new CGI::Ajax(
 		       source_search=>\&get_data_source_info_for_accn,
 		       get_types=>\&get_types,
 		       cogesearch=>\&cogesearch,
-		       clear_div=>\&clear_div,
 		       get_anno=>\&get_anno,
 		       show_express=>\&show_express,
 		       gen_data=>\&gen_data,
@@ -56,11 +55,6 @@ sub gen_data
   {
     my $message = shift;
     return qq{<font class="loading">$message. . .</font>};
-  }
-
-sub clear_div
-  {
-    return;
   }
 
 sub get_types
