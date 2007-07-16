@@ -11,7 +11,7 @@
 
 function search_chain(val) {
  minlen = 4;
- if ((val == 1) && ($('#accn').val().length > minlen)){
+ if ((val == 1) && ($('#accn').val().length < minlen)){
    return;
  } 
  //$('#accn_list').html('<input type="hidden" id="accn_select">');	
@@ -19,7 +19,8 @@ function search_chain(val) {
  //$('#FeatType').html('<input type="hidden" id="Type_name">');	
  $('#anno').hide();	
  if (val == 1 || $('#accn').val().length > minlen) {
-   cogesearch(['accn', 'type', 'org'],[source_search_chain]); 
+   cogesearch(['accn', 'type', 'org'],[source_search_chain]);
+
  }
 }
 
@@ -44,7 +45,6 @@ function get_anno_chain (val1, val2) {
  as = $('#accn_select').val();
  tn = $('#Type_name').val();
  get_anno(['accn_select', 'Type_name', 'dsid'],[show_anno]);
- 
 }
 
 function show_anno (anno)
@@ -69,7 +69,7 @@ function show_anno (anno)
 	 <tD nowrap>
           Feature Type:
          <TD>
-          <select  name="type" id="type" onKeyup ="search_chain(0);"  onChange="search_chain(1);" />
+          <select  name="type" id="type" onchange="search_chain(1);"/>
           <TMPL_LOOP NAME="TYPE_LOOP">
           <TMPL_VAR NAME=TYPE> 
           </TMPL_LOOP>
@@ -78,7 +78,7 @@ function show_anno (anno)
 	 <tD nowrap>
           Organism:
          <TD>
-          <select  name="org" id="org" onKeyup ="search_chain(0);"  onChange="search_chain(1);" />
+          <select  name="org" id="org" onchange="search_chain(1);"/>
           <TMPL_LOOP NAME="ORG_LOOP">
           <TMPL_VAR NAME=ORG> 
           </TMPL_LOOP>
