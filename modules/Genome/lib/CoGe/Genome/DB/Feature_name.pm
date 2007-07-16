@@ -20,21 +20,21 @@ SELECT name
  WHERE name like ?
 });
     __PACKAGE__->set_sql(search_type=>qq{
-SELECT name
+SELECT fn.name
   FROM feature_name fn
   JOIN feature f USING (feature_id)
  WHERE f.feature_type_id = ?
 });
     
     __PACKAGE__->set_sql(search_org=>qq{
-SELECT name
+SELECT fn.name
   FROM feature_name fn
   JOIN feature f USING (feature_id)
-  JOIN data_information di USING (data_information_id)
- WHERE di.organism_id = ?
+  JOIN dataset ds USING (dataset_id)
+ WHERE ds.organism_id = ?
 });
     __PACKAGE__->set_sql(search_name_type=>qq{
-SELECT name
+SELECT fn.name
   FROM feature_name fn
   JOIN feature f USING (feature_id)
  WHERE fn.name like ?
@@ -42,32 +42,32 @@ SELECT name
 });
     
     __PACKAGE__->set_sql(search_name_org=>qq{
-SELECT name
+SELECT fn.name
   FROM feature_name fn
   JOIN feature f USING (feature_id)
-  JOIN data_information di USING (data_information_id)
+  JOIN dataset ds USING (dataset_id)
  WHERE fn.name like ?
-   AND di.organism_id = ?
+   AND ds.organism_id = ?
 });
     
     __PACKAGE__->set_sql(search_type_org=>qq{
-SELECT name
+SELECT fn.name
   FROM feature_name fn
   JOIN feature f USING (feature_id)
-  JOIN data_information di USING (data_information_id)
+  JOIN dataset ds USING (dataset_id)
  WHERE f.feature_type_id = ?
-   AND di.organism_id = ?
+   AND ds.organism_id = ?
 });
     
 
     __PACKAGE__->set_sql(search_name_type_org=>qq{
-SELECT name
+SELECT fn.name
   FROM feature_name fn
   JOIN feature f USING (feature_id)
-  JOIN data_information di USING (data_information_id)
+  JOIN dataset ds USING (dataset_id)
  WHERE fn.name like ?
    AND f.feature_type_id = ?
-   AND di.organism_id = ?
+   AND ds.organism_id = ?
 });
     
 
