@@ -662,6 +662,8 @@ sub generate_image
 				colors=>$hsp_colors,
 				show_hsps_with_stop_codon=>$show_hsps_with_stop_codon,
 			       );
+#    $gfx->DEBUG(1);
+#    print STDERR Dumper $gfx;
     my $filename = $BASEFILE."_".$seq_num.".png";
     $filename = check_filename_taint($filename);
     $gfx->generate_png(file=>$filename);
@@ -748,8 +750,8 @@ title varchar(1024)
 	my $gfx = $item->{gfx};
 	my $accn = $item->{accn};
 	my $title;
-	$title = $item->{obj}->organism() if $item->{obj}->organism();
-	$title = $accn if !$title && $accn;
+	$title = $accn;
+	$title .= " ".$item->{obj}->organism() if $item->{obj}->organism();
 	$title .= "(".$item->{up}."::".$item->{down}.")" if defined $item->{up};
 	$title .= qq! Reverse Complement! if $item->{rev};
 	my $statement = qq{
@@ -1226,6 +1228,7 @@ sub get_obj_from_genome_db
     my $t5 = new Benchmark;
     foreach my $f (@feats)
       {
+
 	my $name;
 	my @names = $f->names;
 	foreach my $tmp (@names)
@@ -1573,7 +1576,19 @@ sub run_dialign
 	    my $tempfile;
 	    if ($parser_opts->{anchor_params})
 	      {
-		my $anchor_prog = $parser_opts->{anchor_params}{prog} =~ /chaos/i ? $CHAOS : $BL2SEQ;
+		my $anchor_prog;
+		if ($parser_opts->{anchor_params}{prog} =~ /chaos/i)
+		{
+		   $anchor_prog = $CHAOS;
+		}
+		elsif ($parser_opts->{anchor_params}{prog} =~ /bl2/i)
+		{
+		   $anchor_prog = $BL2SEQ;
+		}
+		else
+		{
+		   $anchor_prog = $BLASTZ;
+		}
 		my ($x,$dialign_opts) = check_taint( $params);
 		$program_ran .= " using anchors from ".$parser_opts->{anchor_params}{prog};
 		unless ($x)
@@ -1595,7 +1610,7 @@ sub run_dialign
 									run_anchor_opts=>$anchor_opts,
 									dialign_report_opts=>$parser_opts,
 									anchor_report_opts=>$parser_opts->{anchor_params}{parser_opts},
-									#DEBUG=>1,
+#									DEBUG=>1,
 								       });
 		$tempfile = $obj->dialign_file;
 		$report = $obj->dialign_report;
@@ -1622,7 +1637,7 @@ sub run_dialign
 		  {
 		    next;
 		  }
-		print STDERR $command,"\n";
+#		print STDERR $command,"\n";
 		#time for execution
 		`$command`;
 		system "chmod +rw $tempfile";
@@ -1897,7 +1912,7 @@ sub gen_go_button
         'args__padding', 'padding',
         'args__num_seqs','args__$num_seqs',
 };
-    return qq{<a href="#" onMouseOver="activeButton('go')" onMouseOut="inactiveButton('go')" onMouseDown="pressedButton('go')" onMouseUp="inactiveButton('go')" onClick="loading([],['results']);final_dataset_search();setTimeout('',100);run([$params],[handle_results], 'POST');"><img name="go" src="/CoGe/picts/buttons/GEvo/go/inactive.png" width="47" height="27" border="0" alt="javascript button"></a>};
+    return qq{<a href="#" onMouseOver="activeButton('go')" onMouseOut="inactiveButton('go')" onMouseDown="pressedButton('go')" onMouseUp="inactiveButton('go')" onClick="loading([],['results']);setTimeout('',200);run([$params],[handle_results], 'POST');"><img name="go" src="/CoGe/picts/buttons/GEvo/go/inactive.png" width="47" height="27" border="0" alt="javascript button"></a>};
     #<input type="button" value="GO" onClick="loading([],['results']);final_dataset_search();setTimeout('',100);run([$params],[handle_results], 'POST');">
   }
 
@@ -2168,7 +2183,19 @@ sub get_algorithm_options
         $parser_options{max_gap} = $dialign_max_gap;
         $parser_options{split_score} = $dialign_split_score;
 #	print STDERR "use anchors: $dialign_use_anchor\n";
-	my ($anchor_program, $anchor_param_string) = $dialign_anchor_program =~ "CHAOS" ? ("CHAOS", $chaos_string) : ("bl2seq", $blast_string);
+        my ($anchor_program, $anchor_param_string);
+        if ($dialign_anchor_program =~ /chaos/i)
+		{
+		   ($anchor_program, $anchor_param_string) = ("CHAOS", $chaos_string);
+		}
+	elsif ($dialign_anchor_program =~ /bl2/i)
+		{
+		   ($anchor_program, $anchor_param_string) = ("bl2seq", $blast_string);
+		}
+	else
+		{
+		   ($anchor_program, $anchor_param_string) = ("blastz", $blastz_string);
+		}
 	$parser_options{anchor_params} = {
 					  prog=>$anchor_program,
 					  param_string=>$anchor_param_string,
