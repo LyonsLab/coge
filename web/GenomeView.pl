@@ -34,6 +34,7 @@ sub gen_html
         $template->param(HELP=>'');
         $template->param(USER=>$USER);
         $template->param(DATE=>$DATE);
+        $template->param(BOX_NAME=>generate_box_name());
 	$template->param(BODY_ONLOAD=>'init();');
         $template->param(BODY=>gen_body());
         $html .= $template->output;
@@ -67,3 +68,15 @@ sub gen_body
     my $html = $template->output;
     return $html;
   }
+
+sub generate_box_name
+{
+  my $form = shift || $FORM;
+  my $ds = $form->param('ds');
+  my $chr = $form->param('chr');
+  my $dso = $coge->resultset('Dataset')->find($ds);
+  my $org = $dso->organism->name;
+  my $ver = $dso->version;
+  my $title = "$org (v $ver), Chromosome: $chr, Dataset ID No. $ds";
+  return $title;
+}
