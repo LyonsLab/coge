@@ -145,6 +145,7 @@ sub gen_body
     my @ncbi_seqs;
     my @direct_seqs;
     my @seq_nums;
+    my @seq_sub;
     my ($drseq, $gbseq, $dirseq) = (0,0,0); #flags for whether we were submitted sequences
     my $autosearch_string;
     for (my $i = 1; $i <= $num_seqs; $i++)
@@ -191,6 +192,18 @@ sub gen_body
 	push @seq_nums, {
 			  SEQ_NUM=>$i,
 			 };
+	push @seq_sub, {
+			SEQ_NUM=>$i,
+			REV_YES=>$revy,
+			REV_NO=>$revn,
+			DRUP=>$drup,
+			DRDOWN=>$drdown,
+			DRACCN=>$draccn,
+			DSID=>$dsid,
+			GBACCN=>$gbaccn,
+			GBSTART=>$gbstart,
+			GBLENGTH=>$gblength,
+		       }
       }
 
     
@@ -214,6 +227,11 @@ sub gen_body
     $template->param(DIRECT_SEQ_SELECT_LOOP=>\@direct_seqs);
     my $direct_seqs = $template->output;
     $template->param(DIRECT_SEQ_SELECT=>0);
+    #generate sequence submission selector
+    $template->param(SEQ_SELECT=>1);
+    $template->param(SEQ_SELECT_LOOP=>\@seq_sub);
+    my $seq_submission = $template->output;
+    $template->param(SEQ_SELECT=>0);
 
     #generate the hsp color option
     my $hsp_colors = gen_hsp_colors($num_seqs);
@@ -227,6 +245,7 @@ sub gen_body
     $template->param(COGE_SEQS=>$coge_seqs);
     $template->param(NCBI_SEQS=>$ncbi_seqs);
     $template->param(DIRECT_SEQS=>$direct_seqs);
+    $template->param(SEQ_SUB=>$seq_submission);
     $template->param(HSP_COLOR=>$hsp_colors);
     $template->param(GO_BUTTON=>gen_go_button($num_seqs));
     $drseq = 1 unless ($dirseq || $gbseq);
