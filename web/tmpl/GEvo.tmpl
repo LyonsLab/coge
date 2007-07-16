@@ -1,4 +1,3 @@
-
 <TMPL_IF NAME=SEQ_RETRIEVAL>
 <HTML>
 <HEAD>
@@ -127,11 +126,11 @@ return;
 }
 var dialign_anchor_program = $('#dialign_anchor_program').val();
 if (dialign_anchor_program == 'CHAOS'){
-  var info = "Word size = "+$('#chaos_word_length').val()+"&#10;Score cutoff = "+$('#chaos_score_cutoff').val()+"&#10;Rescore cutoff = "+$('#chaos_rescore_cutoff').val()+"&#10;Lookback distance = "+$('#chaos_lookback').val()+"&#10;Maximum gap = "+$('#chaos_gap_length').val()+"&#10;Gap start penalty = "+$('#chaos_gap_start').val()+"&#10;Gap extend penalty = "+$('#chaos_gap_extension').val()+"&#10;Other CHAOS parameters = "+$('#chaos_params').val();}
+  var info = "Word size = "+$('#chaos_wordsize').val()+"&#10;Score cutoff = "+$('#chaos_score_cutoff').val()+"&#10;Rescore cutoff = "+$('#chaos_rescore_cutoff').val()+"&#10;Lookback distance = "+$('#chaos_lookback').val()+"&#10;Maximum gap = "+$('#chaos_gap_length').val()+"&#10;Gap start penalty = "+$('#chaos_gap_start').val()+"&#10;Gap extend penalty = "+$('#chaos_gap_extension').val()+"&#10;Other CHAOS parameters = "+$('#chaos_params').val();}
 else if (dialign_anchor_program == 'blastn'){
   var info = "Match Score = "+$('#blast_match').val()+"&#10;Mismatch Penalty = "+$('#blast_mismatch').val()+"&#10;Gap Open Penalty = "+$('#blast_gapopen').val()+"&#10;Gap Extension Penalty = "+$('#blast_gapextend').val()+"&#10;Word Size = "+$('#blast_wordsize').val()+"&#10;Filter query sequence = "+$('#blast_filter').val()+"&#10;Expect value = "+$('#blast_eval').val()+"&#10;Other Blast Parameters = "+$('#blastparams').val();}
 else{
-  var info = "Word size = "+$('#blastz_word_length').val()+"&#10;Gap start penalty = "+$('#blastz_gap_start').val()+"&#10;Gap extend penalty = "+$('#blastz_gap_extension').val()+"&#10;Chaining = "+$('#blastz_chaining').val()+"&#10;Score threshold = "+$('#blastz_threshold').val()+"&#10;Mask threshold = "+$('#blastz_mask').val()+"&#10;Other blastz parameters = "+$('#blastz_params').val();}
+  var info = "Word size = "+$('#blastz_wordsize').val()+"&#10;Gap start penalty = "+$('#blastz_gap_start').val()+"&#10;Gap extend penalty = "+$('#blastz_gap_extension').val()+"&#10;Chaining = "+$('#blastz_chaining').val()+"&#10;Score threshold = "+$('#blastz_threshold').val()+"&#10;Mask threshold = "+$('#blastz_mask').val()+"&#10;Other blastz parameters = "+$('#blastz_params').val();}
 var html = 'You are running '+dialign_anchor_program+' with the following options:<br/><textarea readonly rows=8 cols=24 class="backbox" name="anchor_info" id="anchor_info" tabindex="1">'+info+'</textarea><br/><i>If you wish to alter these options, please do so by selecting '+dialign_anchor_program+' from the drop-down menu to the left, and changing these options.</i>';
 $('#anchor_options').html(html);
 animate_section(".anchor", "fadeIn");
@@ -339,6 +338,13 @@ function process_add_seq (dr, gb, dir, num_seqs, go, refseq, colors, message)
      <TMPL_VAR NAME="DIRECT_SEQS">		
   </DIV>
  </TR>
+ <TR>
+  <TH colspan="<TMPL_VAR NAME="NUM_SEQS">" align=left>
+   <DIV id="seq_submission" class="topItem"  onMouseOver="changeColor('dss','#000099'); " onMouseOut="changeColor('dss','#009900');" onClick='animate_section("#seq_submission_menu","slideToggle")' >Sequence Submission:</DIV>
+   <DIV class="dropMenu" id="seq_submission_menu">
+     <TMPL_VAR NAME="DIRECT_SEQS">		
+  </DIV>
+ </TR>
 </TABLE>
 </TMPL_IF>
 
@@ -459,7 +465,7 @@ function process_add_seq (dr, gb, dir, num_seqs, go, refseq, colors, message)
   <TD><input class="backbox" type="text" name="chaos_gap_extension" id="chaos_gap_extension" tabindex="1" size="3" value="-1" /></TD>
  </TR>    
   <TR>
-  <TD>Other Chaos parameters: </TD>
+  <TD>Other CHAOS parameters: </TD>
   <TD><input class="backbox" type="text" name="chaos_params" id="chaos_params" tabindex="1" size="10" /></TD>
  </TR>         
 
@@ -524,7 +530,7 @@ function process_add_seq (dr, gb, dir, num_seqs, go, refseq, colors, message)
   <TD><input class="backbox" type="text" name="lagan_percent_id" id="lagan_percent_id" tabindex="1" size="3" value="70" /></TD>
  </TR>    
  <TR>
-  <TD>Other Lagan Parameters: </TD>
+  <TD>Other LAGAN Parameters: </TD>
   <TD><input class="backbox" type="text" name="lagan_params" id="lagan_params" tabindex="1" size="10" /></TD>
  </TR>         
 
@@ -587,7 +593,7 @@ function process_add_seq (dr, gb, dir, num_seqs, go, refseq, colors, message)
  <DIV id="dialign_parameters"  class="small algo_options">
  <Table class=small>
  <TR>
-  <TD>Other Dialign Parameters: </TD>
+  <TD>Other DIALIGN Parameters: </TD>
   <TD><input class="backbox" type="text" name="dialign_params" id="dialign_params" tabindex="1" size="20"  value="-n"/></TD>
  </TR>         
 </TABLE>
