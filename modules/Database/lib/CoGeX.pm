@@ -302,5 +302,37 @@ sub count_features_in_region
     return $self->get_features_in_region (%opts, count=>1);
   }
 
+sub get_current_datasets_for_org
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $org = $opts{org} || $opts{organism};
+    $org = shift unless $org;
+    return unless $org;
+    my $rs = $self->resultset('Dataset')->search(
+						 {
+						  'organism.name'=> {'like'=>'%'.$org.'%'},
+						 },
+						 {
+						  distinct=>'version',
+						  join => ['organism', 'genomic_sequences'],
+						  
+						  prefextch=>['organism'],
+						  order_by=>'version desc',
+						 }
+						);
+    my %data;
+    while (my $ds = $rs->next())
+      {
+	foreach my $chr($ds->get_chromosomes)
+	  {	
+	    $data{$chr} = $ds unless $data{$chr};
+	    $data{$chr} = $ds if $ds->version > $data{$chr}->version;
+	  }
+      }
+    %data = map {$_->id,$_} values %data;
+    return wantarray ? values %data : [values %data];
+  }
+
 
 1;
