@@ -254,7 +254,7 @@ sub run
     my $padding = $opts{padding};
     my $viewer = $opts{viewer};
     my ($analysis_program, $param_string, $parser_opts) = get_algorithm_options(%opts);
-
+    my $message;
     initialize_basefile();
 
     my @hsp_colors;
@@ -408,12 +408,13 @@ sub run
       }
     elsif ($analysis_program eq "DIALIGN")
       {
-	($analysis_reports, $analysis_program) = run_dialign (sets=>\@sets, params=>$param_string, parser_opts=>$parser_opts);
+	($analysis_reports, $analysis_program,$message) = run_dialign (sets=>\@sets, params=>$param_string, parser_opts=>$parser_opts);
       }
     else
       {
 	$analysis_reports = run_bl2seq(sets=>\@sets, params=>$param_string, parser_opts=>$parser_opts, blast_program=>$analysis_program, spike_seq=>$spike_seq);
       }
+    $analysis_reports = [] unless ref($analysis_reports) =~ /ARRAY/i;
    #sets => array or data for blast
    #blast_reports => array of arrays (report, accn1, accn2, parsed data)
 #    print STDERR Dumper $analysis_reports;
@@ -546,7 +547,7 @@ Time to generate images and maps: $image_time
 Time to process html            : $html_time
 } if $BENCHMARK;
 
-    return $outhtml, $iw+400, $frame_height, $BASEFILENAME,$count;
+    return $outhtml, $iw+400, $frame_height, $BASEFILENAME,$count,$message;
 
 }
 
@@ -1505,6 +1506,7 @@ sub run_dialign
     my $max_length = $opts{max_length} || 10000;
     my $kill_length = 2 * $max_length;
     my $program_ran = "DIALIGN";
+    my $error_message;
     #my $algo_limits = $opts{algo_limits};
     my @files;
     my @reports;
@@ -1520,13 +1522,12 @@ sub run_dialign
 	    my $max_seq = $seq_length1 > $seq_length2 ? $seq_length1 : $seq_length2;
 	    my $kb_max_seq = $max_seq / 1000;
 	    $kb_max_seq =~s/(\.\d+)$//;
-	    my $error_message;
 	    if ($max_seq > $max_length)
 	    {
 	      if ($max_seq > $kill_length)
 	      {
-	       print "The sequence you have chosen DIALIGN to align is too long (your longest sequence is $kb_max_seq kb long). To complete the alignment would take a significant amount of time, and use up considerable system resources that others need to run their alignments. Please limit your sequences to no more than ",($kill_length/1000)," kb long. Thank you.\n";
-	       return;
+	        $error_message = "The sequence you have chosen DIALIGN to align is too long (your longest sequence is $kb_max_seq kb long). To complete the alignment would take a significant amount of time, and use up considerable system resources that others need to run their alignments. Please limit your sequences to no more than ",($kill_length/1000)," kb long. Thank you.";
+	       return ('','',$error_message);
 	      }
 	      else
 	      {
@@ -1538,7 +1539,7 @@ sub run_dialign
 	       $error_message = "Your search parameters were altered due to the length of the sequences you requested for alignment. Your alignment was done with the \"Large Sequence Alignment\" option enabled";
 	       $error_message .= $changed ? ", and with \"Short Sequence Alignment with Translation\" disabled." : ".";
 	       $error_message.= " This is done automatically with sequences over ".($max_length/1000)." kb long.\n";
-	       print $error_message;
+	       #print $error_message;
 	      }
 	     }
 	    my $seqfile1 = $sets->[$i]->{file};
@@ -1627,7 +1628,7 @@ sub run_dialign
 	    push @reports, \@tmp;
 	  }
       }
-    return (\@reports,$program_ran);
+    return (\@reports,$program_ran,$error_message);
   }
   
 sub get_substr
