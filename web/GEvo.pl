@@ -141,17 +141,12 @@ sub gen_body
 	$message = "Maximum number of sequence is $MAX_SEQS.";
 	$num_seqs = $MAX_SEQS;
       }
-    my @coge_seqs;
-    my @ncbi_seqs;
-    my @direct_seqs;
     my @seq_nums;
     my @seq_sub;
-    my ($drseq, $gbseq, $dirseq) = (0,0,0); #flags for whether we were submitted sequences
     my $autosearch_string;
     for (my $i = 1; $i <= $num_seqs; $i++)
       {
 	my $draccn = $form->param("accn".$i) if $form->param("accn".$i);
-	$drseq = 1 if $draccn;
 	my $drup = $form->param('dr'.$i.'up') if $form->param('dr'.$i.'up');
 	my $drdown = $form->param('dr'.$i.'down') if $form->param('dr'.$i.'down');
 	$drup = $form->param('drup'.$i) if $form->param('drup'.$i);
@@ -160,7 +155,6 @@ sub gen_body
 	$drdown = 10000 unless defined $drdown;
 	my $dsid = $form->param('dsid'.$i) if $form->param('dsid'.$i);
 	my $gbaccn = $form->param("gbaccn".$i) if $form->param("gbaccn".$i);
-	$gbseq = 1 if $gbaccn;
 	my $gbstart = $form->param("gbstart".$i) if $form->param("gbstart".$i);
 	$gbstart = 1 unless defined $gbstart;
 	my $gblength = $form->param("gblen".$i) if $form->param("gblen".$i);
@@ -169,26 +163,6 @@ sub gen_body
 	$autosearch_string .= 'if ($'.qq!('#accn$i').val()) {dataset_search(['accn$i','args__$i', 'args__!;
 	$autosearch_string .= $dsid if $dsid;
 	$autosearch_string .=qq!'],[feat_search_chain]);}!;
-	push @coge_seqs, {
-			  SEQ_NUM=>$i,
-			  REV_YES=>$revy,
-			  REV_NO=>$revn,
-			  DRUP=>$drup,
-			  DRDOWN=>$drdown,
-			  DRACCN=>$draccn,
-			  DSID=>$dsid,
-		    };
-	push @ncbi_seqs, {
-			  SEQ_NUM=>$i,
-			  GBACCN=>$gbaccn,
-			  GBSTART=>$gbstart,
-			  GBLENGTH=>$gblength,
-			  REV_YES=>$revy,
-			  REV_NO=>$revn,
-			 };
-	push @direct_seqs, {
-			  SEQ_NUM=>$i,
-			 };
 	push @seq_nums, {
 			  SEQ_NUM=>$i,
 			 };
@@ -212,21 +186,6 @@ sub gen_body
 
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GEvo.tmpl');
     my $box = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
-    #generate the coge sequence selector
-    $template->param(COGE_SEQ_SELECT=>1);
-    $template->param(COGE_SEQ_SELECT_LOOP=>\@coge_seqs);
-    my $coge_seqs = $template->output;
-    $template->param(COGE_SEQ_SELECT=>0);
-    #generate the NCBI sequence selector
-    $template->param(NCBI_SEQ_SELECT=>1);
-    $template->param(NCBI_SEQ_SELECT_LOOP=>\@ncbi_seqs);
-    my $ncbi_seqs = $template->output;
-    $template->param(NCBI_SEQ_SELECT=>0);
-    #generate the direct sequence selector
-    $template->param(DIRECT_SEQ_SELECT=>1);
-    $template->param(DIRECT_SEQ_SELECT_LOOP=>\@direct_seqs);
-    my $direct_seqs = $template->output;
-    $template->param(DIRECT_SEQ_SELECT=>0);
     #generate sequence submission selector
     $template->param(SEQ_SELECT=>1);
     $template->param(SEQ_SELECT_LOOP=>\@seq_sub);
@@ -237,31 +196,26 @@ sub gen_body
     my $hsp_colors = gen_hsp_colors($num_seqs);
     my $html;
     my $spike_len = spike_filter_select();
+    $template->param(GEN_REFERENCE_SEQUENCES=>1);
+    $template->param(REF_SEQ=>\@seq_nums);
+    my $ref_seqs = $template->output;
+    $template->param(GEN_REFERENCE_SEQUENCES=>0);
+
     $template->param(SPIKE_LEN=>$spike_len);
     $template->param(SEQ_RETRIEVAL=>1);
     $template->param(NUM_SEQS=>$num_seqs);
     $message .= "<BR/>" if $message;
     $template->param(MESSAGE=>$message);
-    $template->param(COGE_SEQS=>$coge_seqs);
-    $template->param(NCBI_SEQS=>$ncbi_seqs);
-    $template->param(DIRECT_SEQS=>$direct_seqs);
     $template->param(SEQ_SUB=>$seq_submission);
     $template->param(HSP_COLOR=>$hsp_colors);
     $template->param(GO_BUTTON=>gen_go_button($num_seqs));
-    $drseq = 1 unless ($dirseq || $gbseq);
-    $drseq ? $template->param(SHOW_COGE_SEQ=>1) : $template->param(SHOW_COGE_SEQ=>0);
-    $gbseq ? $template->param(SHOW_GENBANK_SEQ=>1) : $template->param(SHOW_GENBANK_SEQ=>0);
-    $dirseq ? $template->param(SHOW_DIR_SEQ=>1) : $template->param(SHOW_DIR_SEQ=>0);
     $template->param(AUTOSEARCH=>$autosearch_string);
-    $box->param(BOX_NAME=>"Sequence Retrieval:");
-    $box->param(BODY=>$template->output);
+    $box->param(BOX_NAME=>"Options:");
+#    $box->param(BOX_NAME=>"Sequence Retrieval:");
+#    $box->param(BODY=>$template->output);
     
-    $html .= $box->output;
-    $template->param(SEQ_RETRIEVAL=>0);
-    $template->param(GEN_REFERENCE_SEQUENCES=>1);
-    $template->param(REF_SEQ=>\@seq_nums);
-    my $ref_seqs = $template->output;
-    $template->param(GEN_REFERENCE_SEQUENCES=>0);
+#    $html .= $box->output;
+#    $template->param(SEQ_RETRIEVAL=>0);
     $template->param(OPTIONS=>1);
     if ($exon_mask)
       {
@@ -273,7 +227,6 @@ sub gen_body
       }
     $template->param(REFERENCE_SEQUENCES=>$ref_seqs);
     $template->param(ALIGNMENT_PROGRAMS=>algorithm_list($prog));
-    $box->param(BOX_NAME=>"Options:");
     $box->param(BODY=>$template->output);
     $html .= $box->output;
     return $html;
@@ -2044,35 +1997,27 @@ sub add_seq
       {
 	$hsp_colors = gen_hsp_colors($MAX_SEQS);
 	my $go_button = gen_go_button($MAX_SEQS);
-	return ('','','',$MAX_SEQS, $go_button, '', $hsp_colors,qq{Exceeded max number of sequences ($MAX_SEQS)});
+	return ('',$MAX_SEQS, $go_button, '', $hsp_colors,qq{Exceeded max number of sequences ($MAX_SEQS)});
       }
-	  my @seqs = {
-		      SEQ_NUM=>$num_seq,
-		      REV_NO=>"checked",
-		      DRUP=>10000,
-		      DRDOWN=>10000,
-		     };
-    $template->param(COGE_SEQ_SELECT=>1);
-    $template->param(COGE_SEQ_SELECT_LOOP=>\@seqs);
-    my $coge_seqs = $template->output;
-    $template->param(COGE_SEQ_SELECT=>0);
-    #generate the NCBI sequence selector
-    $template->param(NCBI_SEQ_SELECT=>1);
-    $template->param(NCBI_SEQ_SELECT_LOOP=>[{SEQ_NUM=>$num_seq,REV_NO=>"checked",}]);
-    my $ncbi_seqs = $template->output;
-    $template->param(NCBI_SEQ_SELECT=>0);
-    #generate the direct sequence selector
-    $template->param(DIRECT_SEQ_SELECT=>1);
-    $template->param(DIRECT_SEQ_SELECT_LOOP=>[{SEQ_NUM=>$num_seq}]);	
-    my $direct_seqs = $template->output;
-    $template->param(DIRECT_SEQ_SELECT=>0);
+    my @seqs = {
+		SEQ_NUM=>$num_seq,
+		REV_NO=>"checked",
+		DRUP=>10000,
+		DRDOWN=>10000,
+	       };
+
+    $template->param(SEQ_SELECT=>1);
+    $template->param(SEQ_SELECT_LOOP=>\@seqs);
+    my $seq_submission = $template->output;
+    $template->param(SEQ_SELECT=>0);
+
     $template->param(GEN_REFERENCE_SEQUENCES=>1);
     $template->param(REF_SEQ=>[{SEQ_NUM=>$num_seq}]);	
     my $ref_seqs = $template->output;
     $template->param(GEN_REFERENCE_SEQUENCES=>0);
     my $go_button = gen_go_button($num_seq);
     $hsp_colors = gen_hsp_colors($num_seq);
-    return ($coge_seqs, $ncbi_seqs, $direct_seqs, $num_seq, $go_button, $ref_seqs, $hsp_colors);
+    return ($seq_submission, $num_seq, $go_button, $ref_seqs, $hsp_colors);
   }
 
 sub hsp_color_cookie
