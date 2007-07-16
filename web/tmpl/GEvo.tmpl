@@ -32,21 +32,10 @@ $(document).ready(function(){
  animate_section(".seq_submission_type","hide"); 
  check_seq_submit();
 
- var show_coge_seq = <TMPL_VAR NAME=SHOW_COGE_SEQ>;
- var show_genbank_seq = <TMPL_VAR NAME=SHOW_GENBANK_SEQ>;
- var show_dir_seq = <TMPL_VAR NAME=SHOW_DIR_SEQ>;
  setup();
- $("#coge_seqs").hide();
- $("#genbank_seqs").hide();
- $("#dir_seqs").hide();
  $("#image_parameters").hide();
  $(".algo_options").hide();
  $(".anchor").hide();
- if (show_coge_seq){$("#coge_seqs").slideToggle("fast");}
- if (show_genbank_seq) {$("#genbank_seqs").slideToggle("fast");}
- if (show_dir_seq){$("#dir_seqs").slideToggle("fast");}
-
-
 
  check_alignment_program();
  check_dialign_anchor_program();
@@ -258,10 +247,10 @@ if (num_seqs < 3){
  alert("You must have at least two sequences to perform an alignment. You cannot remove another sequence. Please click \"Clear\" to remove information from sequence entries.");
  return;
 }
-$('#drseq_set'+num_seqs).html("");
-$('#gbseq_set'+num_seqs).html("");
-$('#dirseq_set'+num_seqs).html("");
-$('#refseq'+num_seqs).html("");
+//$('#new_seq_submission').remove();
+$('#refseq'+num_seqs).remove();
+$('#seq_set'+num_seqs).remove();
+$('#new_seq_submission').html('');
 num_seqs--;
 $('#num_seqs').val(num_seqs);
 gen_go_button(['num_seqs'],['go_button']);
@@ -271,12 +260,6 @@ gen_hsp_colors(['num_seqs'],['hsp_colors']);
 function alert_message (message) {
 if (message) alert(message);
 } 
-
-function add_new_refseq(val)
-{
- alert('here');
- $('#refseqs').append(val);
-}
 
 function check_seq_submit () {
 var num_seqs = $("#num_seqs").val();
@@ -298,11 +281,10 @@ function seq_submit_change (seq_num) {
  animate_section("#"+seq_set, "fadeIn");
 }
 
-function process_add_seq (dr, gb, dir, num_seqs, go, refseq, colors, message)
+function process_add_seq (newseq, num_seqs, go, refseq, colors, message)
 {
- $('#new_drseq').html(dr);
- $('#new_gbseq').html(gb);
- $('#new_dirseq').html(dir);
+ $('#new_seq_submission').html(newseq);
+ seq_submit_change(num_seqs);
  $('#num_seqs').val(num_seqs);
  $('#go_button').html(go);
  $('#new_refseq').html(refseq);
@@ -313,29 +295,23 @@ function process_add_seq (dr, gb, dir, num_seqs, go, refseq, colors, message)
 </SCRIPT>
 
 <div id="message"><TMPL_VAR NAME="MESSAGE"></div>
-<table width=100%>
-<tr>
+<table>
+<tr align left>
 <td>
 <div id="go_button" class="l"><TMPL_VAR NAME="GO_BUTTON"></div>
 <a href="#" onMouseOver="activeButton('clear')" onMouseOut="inactiveButton('clear')" onMouseDown="pressedButton('clear')" onMouseUp="inactiveButton('clear')" onClick="rset()">
          <img name="clear" src="/CoGe/picts/buttons/GEvo/clear/inactive.png" width="56" height="27" border="0" alt="javascript button">
          </a>
-<!--<input type="button" value="Clear" onClick="rset()">-->
 <td nowrap>
-</table>
-<table>
-<tr>
 <td>Number of sequences: <input class="backbox" name=num_seqs id=num_seqs type="textbox" size=2 readonly value=<TMPL_VAR NAME ="NUM_SEQS">>
 <td>
 <a href="#" onMouseOver="activeButton('add')" onMouseOut="inactiveButton('add')" onMouseDown="pressedButton('add')" onMouseUp="inactiveButton('add')" onclick="add_seq(['num_seqs'],[process_add_seq]); $('#new_drseq').remove;">
          <img name="add" src="/CoGe/picts/buttons/GEvo/add/inactive.png" width="43" height="27" border="0" alt="javascript button">
          </a>
-<!--<input type="button" value="add" onclick="add_seq(['num_seqs'],[process_add_seq]); $('#new_drseq').remove;">-->
 <td>
 <a href="#" onMouseOver="activeButton('remove')" onMouseOut="inactiveButton('remove')" onMouseDown="pressedButton('remove')" onMouseUp="inactiveButton('remove')" onclick="remove_seq()">
          <img name="remove" src="/CoGe/picts/buttons/GEvo/remove/inactive.png" width="55" height="27" border="0" alt="javascript button">
          </a>
-<!--<input type="button" value="remove" onclick="remove_seq()">-->
 </table>
 
 
@@ -343,35 +319,11 @@ function process_add_seq (dr, gb, dir, num_seqs, go, refseq, colors, message)
 <TABLE class="basic" width=100%>
  <TR>
   <TH colspan="<TMPL_VAR NAME="NUM_SEQS">" align=left>
-   <DIV id = "dr" class="topItem" onMouseOver="changeColor('dr','#000099'); " onMouseOut="changeColor('dr','#009900');" onClick='animate_section("#coge_seqs", "slideToggle")' >CoGe Database Retrieval:</DIV>
-
-   <DIV class="dropMenu" id = "coge_seqs">
-     <TMPL_VAR NAME="COGE_SEQS">
-     <Div class ="small" align = "left">Apply distance to all?<input type="checkbox" name="apply_all" id="apply_all" value="0" /></div>
-     </DIV>
- </TR>
-
- <TR>
-  <TH colspan="<TMPL_VAR NAME="NUM_SEQS">" align=left>
-   <DIV id="isr" class="topItem" onMouseOver="changeColor('isr','#000099'); " onMouseOut="changeColor('isr','#009900');" onClick='animate_section("#genbank_seqs","slideToggle")' >NCBI Sequence Retrieval:</DIV>
-   <DIV class="dropMenu" id = "genbank_seqs">
-     <TMPL_VAR NAME="NCBI_SEQS">	
-  </DIV>
- </TR>
- <TR>
-  <TH colspan="<TMPL_VAR NAME="NUM_SEQS">" align=left>
-   <DIV id="dss" class="topItem"  onMouseOver="changeColor('dss','#000099'); " onMouseOut="changeColor('dss','#009900');" onClick='animate_section("#dir_seqs","slideToggle")' >Direct Sequence Submission:</DIV>
-   <DIV class="dropMenu" id="dir_seqs">
-     <TMPL_VAR NAME="DIRECT_SEQS">		
-  </DIV>
- </TR>
- <TR>
-  <TH colspan="<TMPL_VAR NAME="NUM_SEQS">" align=left>
    <DIV id="seq_submission" class="topItem"  onMouseOver="changeColor('seq_submission','#000099'); " onMouseOut="changeColor('seq_submission','#009900');" onClick='animate_section("#seq_submission_menu","slideToggle")' >Sequence Submission:</DIV>
    <DIV class="dropMenu" id="seq_submission_menu">
      <TMPL_VAR NAME="SEQ_SUB">		
-  </DIV>
   <Div class ="small" align = "left">Apply distance to all CoGe submissions?<input type="checkbox" name="apply_all" id="apply_all" value="0" /></div>
+  </DIV>
  </TR>
 </TABLE>
 </TMPL_IF>
@@ -857,103 +809,23 @@ function process_add_seq (dr, gb, dir, num_seqs, go, refseq, colors, message)
 </TMPL_IF>
 
 
-<TMPL_IF NAME="COGE_SEQ_SELECT">
-<TABLE style="width: 100%;">
-      <TR valign="top">
-
-      <TMPL_LOOP NAME="COGE_SEQ_SELECT_LOOP">
-
-      <TD>
-      <DIV id="drseq_set<TMPL_VAR NAME="SEQ_NUM">">
-      <TABLE>
-       <TR valign="top">
-        <TD>Name <TMPL_VAR NAME="SEQ_NUM">:
-        <TD><input class="backbox" type="text" name="accn<TMPL_VAR NAME="SEQ_NUM">" id="accn<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="20" onBlur="dataset_search(['accn<TMPL_VAR NAME="SEQ_NUM">','args__<TMPL_VAR NAME="SEQ_NUM">', 'args__<TMPL_VAR NAME="DSID">'],[feat_search_chain])" value="<TMPL_VAR NAME=DRACCN>" />
-        <DIV id="source<TMPL_VAR NAME="SEQ_NUM">" nowrap><input type="hidden" id="dsid<TMPL_VAR NAME="SEQ_NUM">"></DIV>
-        <DIV id="feat<TMPL_VAR NAME="SEQ_NUM">"><input type="hidden" id="featid<TMPL_VAR NAME="SEQ_NUM">"></DIV>
-      <TR>
-       <TD><DIV class="small">Left sequence:</DIV>
-       <TD><DIV  id="up<TMPL_VAR NAME="SEQ_NUM">" ><input class="location backbox" type="text" name="drup<TMPL_VAR NAME="SEQ_NUM">" id="drup<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10" value="<TMPL_VAR NAME=DRUP>" /> </DIV>
-      <TR>
-       <TD><DIV class="small">Right sequence:</DIV>
-       <TD><DIV  id="down<TMPL_VAR NAME="SEQ_NUM">"><input class="location backbox" type="text" name="drdown<TMPL_VAR NAME="SEQ_NUM">" id="drdown<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10"  value="<TMPL_VAR NAME=DRDOWN>" /></DIV>
-      <TR>
-	<TD colspan =2>
-	<font class="small">Reverse complement: <label><input class="backbox" type="radio" name="drrev<TMPL_VAR NAME="SEQ_NUM">" id="drrev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="1" <TMPL_VAR NAME=REV_YES> onclick='rev_locs("<TMPL_VAR NAME="SEQ_NUM">")' />Yes</label><label><input class="backbox" type="radio" name="drrev<TMPL_VAR NAME="SEQ_NUM">" id="drrev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="0" <TMPL_VAR NAME=REV_NO> onclick='rev_locs("<TMPL_VAR NAME="SEQ_NUM">")' />No</label></font>
-      </TABLE>
-      </DIV>      
-      </TMPL_LOOP>
-      <TD><DIV id="new_drseq"></DIV>
-     </table>
-
-</TMPL_IF>
-
-<TMPL_IF NAME="NCBI_SEQ_SELECT">
-<TABLE style="width: 100%;">
-      <TR valign="top">
-
-      <TMPL_LOOP NAME="NCBI_SEQ_SELECT_LOOP">
-
-      <TD>
-      <DIV id="gbseq_set<TMPL_VAR NAME="SEQ_NUM">">       
-      <TABLE>
-       <TR valign="top">
-        <TD>Accession <TMPL_VAR NAME="SEQ_NUM">:
-        <TD><input class="backbox" type="text" name="gbaccn<TMPL_VAR NAME="SEQ_NUM">" id="gbaccn<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="10" value="<TMPL_VAR NAME=GBACCN>" />
-      <TR>
-	<TD><DIV class="small">Start Position:</DIV>
-      	<TD><input class="backbox" type="text" name="gbstart<TMPL_VAR NAME="SEQ_NUM">" id="gbstart<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10" value="<TMPL_VAR NAME=GBSTART>" /></TD>
-      <TR>
-       <TD><DIV class="small">Sequence Length:</DIV>
-       <TD><input class="backbox" type="text" name="gblength<TMPL_VAR NAME="SEQ_NUM">" id="gblength<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10"  value="<TMPL_VAR NAME=GBLENGTH>"/>
-      <TR>
-       <TD colspan=2>
-       <font class="small">Reverse Complement: <label><input class="backbox" type="radio" name="gbrev<TMPL_VAR NAME="SEQ_NUM">" id="gbrev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="1" <TMPL_VAR NAME=REV_YES> onclick="$('#gbstart<TMPL_VAR NAME="SEQ_NUM">').val(1);$('#gblength<TMPL_VAR NAME="SEQ_NUM">').val(''); " />Yes</label><label><input class="backbox" type="radio" name="gbrev<TMPL_VAR NAME="SEQ_NUM">" id="gbrev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="0" <TMPL_VAR NAME=REV_NO> onclick="$('#gbstart<TMPL_VAR NAME="SEQ_NUM">').val(1);$('#gblength<TMPL_VAR NAME="SEQ_NUM">').val(''); " />No</label><BR></font>
-      </TABLE>
-      </DIV>
-      </TMPL_LOOP>
-      <TD><DIV id="new_gbseq"></DIV>
-     </table>
-
-</TMPL_IF>
-<TMPL_IF NAME="DIRECT_SEQ_SELECT">
-<TABLE style="width: 100%;">
-      <TR valign="top">
-
-      <TMPL_LOOP NAME="DIRECT_SEQ_SELECT_LOOP">
-
-      <TD>       
-      <DIV id="dirseq_set<TMPL_VAR NAME="SEQ_NUM">">
-     Sequence <TMPL_VAR NAME="SEQ_NUM">:<BR> <textarea class="backbox" name="dirseq<TMPL_VAR NAME="SEQ_NUM">" id="dirseq<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  rows="5" cols="30"></textarea><BR>
-     <font class="small">Start: <input class="backbox" type="text" name="dirstart<TMPL_VAR NAME="SEQ_NUM">" id="dirstart<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="5" value="1" /></font>
-     <font class="small">Stop: <input class="backbox" type="text" name="dirstop<TMPL_VAR NAME="SEQ_NUM">" id="dirstop<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="5" value=""  /></font><br>
-     <font class="small">Reverse Complement: <label><input class="backbox" type="radio" name="dirrev<TMPL_VAR NAME="SEQ_NUM">" id="dirrev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="1" />Yes</label><label><input class="backbox" type="radio" name="dirrev<TMPL_VAR NAME="SEQ_NUM">" id="dirrev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="0" checked />No</label><BR></font><br>
-
-      </DIV>
-      
-      </TMPL_LOOP>
-      <TD><DIV id="new_dirseq"></DIV>
-     </table>
-
-</TMPL_IF>
-
-
-
 <TMPL_IF NAME="SEQ_SELECT">
 <TABLE style="width: 100%;">
 <tr valign="top">
 <TMPL_LOOP NAME="SEQ_SELECT_LOOP">
-<td>Sequence <TMPL_VAR NAME="SEQ_NUM">: 
+<td id ="seq_set<TMPL_VAR NAME="SEQ_NUM">">Sequence <TMPL_VAR NAME="SEQ_NUM">: 
 <select class="backbox" id="seq_submit<TMPL_VAR NAME="SEQ_NUM">" size="1" onchange='seq_submit_change(<TMPL_VAR NAME="SEQ_NUM">)'>
 <option value="db<TMPL_VAR NAME="SEQ_NUM">">CoGe Database</option>
 <option value="gb<TMPL_VAR NAME="SEQ_NUM">">NCBI GenBank</option>
 <option value="dir<TMPL_VAR NAME="SEQ_NUM">">Direct Submission</option>
 </select>       
 <DIV id="db<TMPL_VAR NAME="SEQ_NUM">" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">
-<TABLE style="width: 100%;">
+<TABLE style="width: 100%;" class="small">
        <TR valign="top">
-        <TD>Name <TMPL_VAR NAME="SEQ_NUM">:
+        <TD>Name:
         <TD><input class="backbox" type="text" name="accn<TMPL_VAR NAME="SEQ_NUM">" id="accn<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="20" onBlur="dataset_search(['accn<TMPL_VAR NAME="SEQ_NUM">','args__<TMPL_VAR NAME="SEQ_NUM">', 'args__<TMPL_VAR NAME="DSID">'],[feat_search_chain])" value="<TMPL_VAR NAME=DRACCN>" />
+      <tr>
+       <td colspan=2>     
         <DIV id="source<TMPL_VAR NAME="SEQ_NUM">" nowrap><input type="hidden" id="dsid<TMPL_VAR NAME="SEQ_NUM">"></DIV>
         <DIV id="feat<TMPL_VAR NAME="SEQ_NUM">"><input type="hidden" id="featid<TMPL_VAR NAME="SEQ_NUM">"></DIV>
       <TR>
@@ -971,9 +843,9 @@ function process_add_seq (dr, gb, dir, num_seqs, go, refseq, colors, message)
 
 
 <DIV id="gb<TMPL_VAR NAME="SEQ_NUM">" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">       
-<TABLE style="width: 100%;">
+<TABLE style="width: 100%;" class="small">
        <TR valign="top">
-        <TD>Accession <TMPL_VAR NAME="SEQ_NUM">:
+        <TD>Accession:
         <TD><input class="backbox" type="text" name="gbaccn<TMPL_VAR NAME="SEQ_NUM">" id="gbaccn<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="10" value="<TMPL_VAR NAME=GBACCN>" />
       <TR>
 	<TD><DIV class="small">Start Position:</DIV>
@@ -988,16 +860,17 @@ function process_add_seq (dr, gb, dir, num_seqs, go, refseq, colors, message)
    </DIV>
 
 <DIV id="dir<TMPL_VAR NAME="SEQ_NUM">" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">	
-<TABLE style="width: 100%;">
+<TABLE style="width: 100%;" class="small">
       <TR valign="top">
       <TD>       
-     Sequence <TMPL_VAR NAME="SEQ_NUM">:<BR> <textarea class="backbox" name="dirseq<TMPL_VAR NAME="SEQ_NUM">" id="dirseq<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  rows="5" cols="30"></textarea><BR>
+     Paste fasta or genbank format sequence below:<BR> <textarea class="backbox" name="dirseq<TMPL_VAR NAME="SEQ_NUM">" id="dirseq<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  rows="5" cols="30"></textarea><BR>
      <font class="small">Start: <input class="backbox" type="text" name="dirstart<TMPL_VAR NAME="SEQ_NUM">" id="dirstart<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="5" value="1" /></font>
      <font class="small">Stop: <input class="backbox" type="text" name="dirstop<TMPL_VAR NAME="SEQ_NUM">" id="dirstop<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="5" value=""  /></font><br>
      <font class="small">Reverse Complement: <label><input class="backbox" type="radio" name="dirrev<TMPL_VAR NAME="SEQ_NUM">" id="dirrev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="1" />Yes</label><label><input class="backbox" type="radio" name="dirrev<TMPL_VAR NAME="SEQ_NUM">" id="dirrev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="0" checked />No</label><BR></font><br>
 </table>
 </DIV>
 </TMPL_LOOP>
+</div>
 <td>
 <DIV id="new_seq_submission"></DIV>
 </table>
