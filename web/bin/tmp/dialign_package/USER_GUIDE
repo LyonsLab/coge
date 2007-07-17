@@ -1,0 +1,537 @@
+
+
+                           DIALIGN 2.2.2 
+
+                            User Guide
+
+                     Program code written by 
+
+               Burkhard Morgenstern, Said Abdeddaim
+
+at University of Bielefeld (FSPM and International Graduate School in 
+Bioinformatics and Genome Research), GSF (ISG, IBB, MIPS/IBI), 
+North Carolina State University, Universite de Rouen, MPI fuer 
+Biochemie (Martinsried), University of Goettingen, Institute of
+Microbiology and Genetics.
+
+
+E-mail contact: dialign@gobics.de
+
+               
+                            Reference: 
+
+     B. Morgenstern (1999). 
+     DIALIGN 2: improvement of the segment-to-segment approach to
+     multiple sequence alignment.
+     Bioinformatics 15, 211 - 218.
+
+Public research assisted by DIALIGN should cite this article. For more 
+information, updated references etc. please visit the DIALIGN home page at
+
+  http://dialign.gobics.de/
+
+
+Program usage: 
+
+  dialign2-2 [ options ] <seq_file>
+
+
+<seq_file> is the name of the input sequence file; this must be a multiple
+FASTA file (all sequences in one file), a description of the format is  
+given below. The following options are available (a more detailed description
+of these options is given below):
+
+ -afc            Creates additional output file "*.afc" containing data of 
+                 all fragments considered for alignment
+                 WARNING: this file can be HUGE ! 
+ 
+ -afc_v          like "-afc" but verbose: fragments are explicitly printed 
+                 WARNING: this file can be EVEN BIGGER ! 
+
+ -anc            Anchored alignment. Requires a file <seq_file>.anc 
+                 containing anchor points.   
+
+ -cs             if segments are translated, not only the `Watson strand'
+                 but also the `Crick strand' is looked at.
+
+ -cw             additional output file in CLUSTAL W format.
+
+ -ds             `dna alignment speed up' - non-translated nucleic acid
+                 fragments are taken into account only if they start with
+                 at least two matches. Speeds up DNA alignment at the expense
+                 of sensitivity.
+
+ -fa             additional output file in FASTA format.
+
+ -ff             Creates file *.frg containing information about all 
+                 fragments that are part of the respective optimal pairwise 
+                 alignmnets plus information about consistency in the multiple 
+                 alignment 
+ 
+ -fn <out_file>  output files are named <out_file>.<extension> .
+
+
+ -fop            Creates file *.fop containing coordinates of all fragments 
+                 that are part of the respective pairwise alignments. 
+
+ -fsm            Creates file *.fsm containing coordinates of all fragments 
+                 that are part of the final alignment 
+ 
+ -iw             overlap weights switched off (by default, overlap weights are
+                 used if up to 35 sequences are aligned). This option
+                 speeds up the alignment but may lead to reduced alignment
+                 quality.
+
+ -lgs            `long genomic sequences' - combines the following options:
+                 -ma, -thr 2, -lmax 30, -smin 8, -nta, -ff,
+                 -fop, -ff, -cs, -ds, -pst 
+
+ -lgs_t          Like "-lgs" but with all segment pairs assessed at the 
+                 peptide level (rather than 'mixed alignments' as with the
+                 "-lgs" option). Therefore faster than -lgs but not very 
+                 sensitive for non-coding regions.         
+
+ -lmax <x>       maximum fragment length = x  (default: x = 40 or x = 120
+                 for `translated' fragments). Shorter x speeds up the program
+                 but may affect alignment quality. 
+
+ -lo             (Long Output) Additional file *.log with information abut
+                 fragments selected for pairwise alignment and about 
+                 consistency in multi-alignment proceedure 
+
+ -ma             `mixed alignments' consisting of P-fragments and N-fragments
+                 if nucleic acid sequences are aligned.
+
+ -mask           residues not belonging to selected fragments are replaced
+                 by `*' characters in output alignment (rather than being
+                 printed in lower-case characters)
+
+ -mat            Creates file *mat with substitution counts derived from the
+                 fragments that have been selected for alignment 
+
+ -mat_thr <t>    Like "-mat" but only fragments with weight score > t 
+                 are considered         
+
+ -max_link       "maximum linkage" clustering used to construct sequence tree
+                 (instead of UPGMA).
+
+ -min_link       "minimum linkage" clustering used.
+
+ -mot            "motif" option. 
+
+ -msf            separate output file in MSF format.
+
+ -n              input sequences are nucleic acid sequences. No translation
+                 of fragments.
+
+ -nt             input sequences are nucleic acid sequences and `nucleic acid
+                 segments' are translated to `peptide segments'.
+
+ -nta            `no textual alignment' - textual alignment suppressed. This
+                 option makes sense if other output files are of intrest -- 
+                 e.g. the fragment files created with -ff, -fop, -fsm or -lo   
+ 
+ -o              fast version, resulting alignments may be slightly different.
+
+ -ow             overlap weights enforced (By default, overlap weights are
+                 used only if up to 35 sequences are aligned since calculating
+                 overlap weights is time consuming). Warning: overlap weights
+                 generally improve alignment quality but the running time
+                 increases in the order O(n^4) with the number of sequences.
+                 This is why, by default, overlap weights are used only for 
+                 sequence sets with < 35 sequences.  
+
+ -pst            "print status". Creates and updates a file *.sta with
+                 information about the current status of the program run.
+                 This option is recommended if large data sets are aligned
+                 since it allows the user to estimate the remaining running
+                 time.
+
+ -smin <x>       minimum similarity value for first residue pair (or codon
+                 pair) in fragments. Speeds up protein alignment or alignment
+                 of translated DNA fragments at the expense of sensitivity.
+
+ -stars <x>      maximum number of `*' characters indicating degree of 
+                 local similarity among sequences. By default, no stars 
+                 are used but numbers between 0 and 9, instead.  
+
+ -stdo           Results written to standard output.
+
+ -ta             standard textual alignment printed (overrides suppression
+                 of textual alignments in special options, e.g. -lgs)     
+
+ -thr <x>        Threshold T = x.
+
+ -xfr            "exclude fragments" - list of fragments can be specified
+                 that are NOT considered for pairwise alignment 
+
+
+General remark: If contradictory options are used, subsequent options 
+override previous ones, e.g.:  
+
+  dialign2-2 -nt -n <seq_file> 
+
+runs the program with the "-n" option (no translation!), while 
+
+  dialign2-2 -n -nt <seq_file>
+
+runs it with the "-nt" option (translation!). 
+ 
+
+
+                            Input File:
+
+Sequences to be aligned must be contained in a single file in FASTA
+format. Example:
+
+
+        >HTL2  
+        LDTAPCLFSDGSPQKAAYVLWDQTILQQDITPLPSHETHSAQKGELLALICGLRAAKPWP
+        SLNIFLDSKY
+        >MMLV   
+        GKKLNVYTDSRYAFATAHIHGEIYRRRGLLTSEGKEIKNKDEILALLKALFLPKRLSIIH
+        CPGHQKGHSAEARGNRMADQAARKAAITETPDTSTLL
+        >HEPB 
+        RPGLCQVFADATPTGWGLVMGHQRMRGTFSAPLPIHTAELLAACFARSRSGANIIGTDNS
+        GRTSLYADSPSVPSHLPDRVH
+
+
+The first line for each sequence starts with ">" and contains the name of 
+the sequence. Please make sure, that the first line in the input file is
+not empty and that the first character in the first line is not blank.
+
+Some details about avaliable options:
+
+     (1) Sequence Type: 
+
+     The user can decide if nucleic acid or protein sequences are to be 
+     aligned. 
+
+     (2) Threshold T: 
+
+     As described in our papers, the program DIALIGN constructs alignments 
+     from gapfree pairs of similar segments of the sequences. Such segment 
+     pairs are referred to as `(alignment) fragments' (previously, we called
+     them `diagonals'). 
+
+     Every possible fragment is given a so-called weight reflecting the 
+     degree of similarity among the two segments involved. The overall 
+     score of an alignment is then defined as the sum of weights of the 
+     fragments it consists of and the program tries to find an alignment with
+     maximum score -- in other words: the program tries to find a consistent
+     collection of fragments with maximum sum of weights. This novel scoring
+     scheme for alignments is the basic difference between DIALIGN and other
+     global or local alignment methods. Note that DIALIGN does not employ any 
+     kind of gap penalty. 
+
+     It is possible to use a threshold T for the quality of the fragments. 
+     In this case, a fragment is considered for alignment only if its 
+     `weight' exceeds this threshold. Regions of lower similarity are ignored. 
+
+     In the first version of the program (DIALIGN 1), this threshold was in 
+     many situations absolutely necessary to obtain meaningful alignments. 
+     By contrast, DIALIGN 2 should produce reasonable alignments without a 
+     threshold, i.e. with T = 0. This is the most important difference between
+     DIALIGN 2 and the first version of the program. Nevertheless, it is still
+     possible to use a positive threshold T to filter out regions of lower 
+     significance and to include only high scoring fragments into the 
+     alignment.
+
+     (3) Different levels of sequence similarity:  
+
+     If (possibly) coding nucleic acid sequences are to be aligned, DIALIGN 
+     optionally translates the compared `nucleic acid segments' to `peptide 
+     segments' according to the genetic code -- without presupposing any of 
+     the three possible reading frames, so all combinations of reading frames 
+     get checked for significant similarity. If this option is used, the 
+     similarity among segments will be assessed on the `peptide level' rather 
+     than on the `nucleotide level'. 
+
+     We strongly recommend to use the `translation' option if nucleic acid 
+     sequences are expected to contain protein coding regions, as it will 
+     significantly increase the sensitivity of the alignment procedure in 
+     such cases. 
+
+     For the levels of sequence similarity, release 2.2 of DIALIGN has 
+     two additional options:
+
+     (a) it can measure the similarity among segment pairs at both levels
+     of similarity (nucleotide-level and peptide-level similarity). The 
+     score of a fragment is based on whatever similarity is stronger. As a
+     result, the program can now produce `mixed alignments' that contain 
+     both types of fragments. Fragments with stronger similarity at the
+     `nucleotide level' referred to as N-fragments whereas fragments with
+     stronger similarity a the peptide level are called P-fragments.
+
+     (b) if the `translation' or `mixed alignment' option is used, it is
+     possible to consider the `reverse complements' of segments, too. In 
+     this case, both the original segments and their reverse complements 
+     are translated and both pairs of implied `peptide segments' are 
+     compared. This option is useful if DNA sequences contain coding regions 
+     not only on the `Watson strand' but also on the `Crick strand'.   
+
+     (4) The score that DIALIGN assigns to a fragment is based on the 
+     probability to find a fragment of the same respective length and number
+     of matches (or BLOSUM values, if the translation option is used) in
+     random sequences of the same length as the input sequences. If long
+     genomic sequences are aligned, an iterative procedure can be applied
+     where the program first looks for fragments with strong similarity.
+     In subsequent steps, regions between these fragments are realigned.
+     Here, the score of a fragment is based on random occurrence in these
+     regions between the previously aligned segment pairs. 
+
+     (5) With the -ff (or -lgs) option, a file with all fragments contained 
+     in the output alignment can be returned. This file contains additional 
+     information about the identified fragments such as 
+
+       - start coordinates in the respective sequences 
+       - length 
+       - fragment weight,
+       - iteration step (if the iterative option is used) 
+       - whether the similarity among the segments is strongest at the 
+         nucleotide level (N-frg) or at the peptide level (P-frg) if the 
+         `mixed alignment' option is used 
+       - whether the similarity is stronger on the `Watson strand' (" + " ) 
+         or on the `Crick strand' (" - " ) - if a fragment is translated
+         and the respective option is used    
+
+     All this information can be used to further post-process the DIALIGN 
+     output, for example by customized visualisation tools. 
+
+     The file containing this information looks like this: 
+
+
+      #  program call: ./dialign2-2 -lgs seq_file  
+
+       seq_len:   552   527 
+       sequences:   seq1   seq2 
+
+         1) seq: 1 2  beg: 161  351 len: 27 wgt: 7.60 it: 1   cons  P-frg +
+         2) seq: 1 2  beg: 300  507 len: 17 wgt: 4.40 it: 1   cons  N-frg
+         3) seq: 1 2  beg: 111  170 len: 12 wgt: 4.34 it: 1   cons  N-frg
+
+
+     (6) Degree of local sequence similarity: 
+
+     Numbers between 0 and 9 are printed below the alignment to indicate
+     the degree of local sequence similarity (in previous verions of the
+     program, "*" characters were used instead of numbers). These numbers
+     are normalized such that the region of highest similarity gets a
+     score of 9. With the -stars option, "*" characters can be used as 
+     previously.  
+
+     (7) `overlap weights':
+
+     This option improves the sensitivity of the program if multiple sequences
+     are aligned but it also increases the running time, especially if large
+     numbers of sequences are aligned. By default, `overlap weights' are used
+     if up to 35 sequences are aligned but switched off for larger data sets. 
+     In the command-line version, `overlap weights' can be switched on or off 
+     for data sets of any size, see below.
+
+     (8) `anchored alignment':
+   
+     Forces the program to align user-specified anchor points to speed-up
+     the alignment procedure for long sequences. Anchor points are given in
+     a file <seq_file>.anc where <seq_file> is the name of the sequence file 
+     (without extension .fa or .seq). Note that anchoring is possible for 
+     pairwise as well as for multiple alignment. The format of the .anc file 
+     is as follows (each line represents one anchor point): 
+    
+
+       2 5 13724 7646 23  23.45345   
+       1 3  6596  517  5  12.34555 
+       3 5 33511 9438 34  27.45459  
+ 
+     The first two columns are the sequences to be anchored, columns 3 
+     and 4 contain the beginning positions of the anchored segments in 
+     the specified sequences, and column 5 contains a score of the
+     anchor that specifies its priority compared to other anchoring 
+     regions in case there is a conflict between inconsistent anchor
+     points (see below).  
+
+     In the above example, three anchored segment pairs are specified.  
+     Here, 13724 is the beginning position of the first anchor in sequence 2, 
+     7646 is the beginning position of the first anchor in sequence 5 and
+     23 is the length of the first anchor. In other words, the program is
+     forced to align positions 13724 - 13746 in sequence 2 with positions
+     7646 - 7668 in sequence 5. Similarly, a segment of sequence 1 starting
+     at position  6596 is anchored with a segment of sequence 3 starting
+     at position 517 etc.   
+
+     The program can use only consistent sets of anchor points. This means,
+     that all anchored regions must fit into one single multiple alignment 
+     (see our papers for our notion of "consistency"). The anchor points 
+     in the specified file are sorted according to their scores (as given
+     in the last column of the anchor file) and then accepted one-by-one 
+     -- provided they are consistent with the already accepted anchor points.   
+
+     This is exactly the way, dialign includes fragments (segment pairs
+     or "diagonals") into a resulting multiple alignment, see the dialign
+     papers for more details. 
+
+     Anchor points can be created by any suitable software program, 
+     for example by CHAOS developed by Mike Brudno, Stanford:
+      
+           http://www.stanford.edu/~brudno/chaos/    
+
+
+    (9) `Motif' option:
+
+    A motif can be specified by a simple regular expression such as "TY[ILV]A".
+    Gaps are not allowed in motifs; all residues within brackets are allowed 
+    at the respective position. For example, "TYIA", "TYLA" and "TYVA" would 
+    match the above motif. Alignments where instances of the motif are aligned 
+    to each other, are preferred. They receive a bonus which can be specified 
+    by the user. There are two paramters to determine the bonus for matched 
+    motifs: a first weighting factor (fct1) assigns a bonus for aligned 
+    instances of the motif occurring at the same relative position in the 
+    input sequences. The bonus decreases with the distance between the 
+    matched motif in the sequences. A second parameter (fct2) controls how fast 
+    the bonus decreases.  
+
+    With the two user-defined parameters fct1 and fct2, the bonus for each 
+    matched motif is calculated as follows: If a matched motif occurs at
+    positions i and j in two of the input sequences, |i-j| is the `offset'
+    of the motif. The bonus is then 
+
+       fct1 * exp - ( |i-j|^2 / (fct2^2 * 10 ) )  
+
+    I.e. a high value of fct2 means that even matches of the motif that are
+    far apart within the sequences reveive a high bonus. 
+
+    With the motif-search option, the program call is:
+
+      ./dialign2-2 [para] -mot <regex> <fct1> <fct2> [para] <seq>
+
+    where
+      <regex>  is a regular expression, e.g. "AT[CG]XT",
+      <fct1>    is the first parameter 
+      <fct2>    is the second parameter  
+      <seq>    is the input sequence file and
+      [para]   are (optional) additional program parameters
+
+
+Similarity Matrix:
+
+DIALIGN 2 uses the BLOSUM62 amino acid substitution matrix. In the current 
+version, it is NOT possible to replace BLOSUM62 by other similarity matrices,
+since the probability values contained in the files n_prob and p_prob refer 
+to the BLOSUM62 matrix. 
+
+
+
+                             Program Output: 
+
+By default, DIALIGN creates a single file containing
+
+    - An alignment of the input sequences in DIALIGN format. 
+    - The same alignment in FASTA format. 
+    - A sequence tree in PHYLIP format. This tree is constructed by applying 
+      the UPGMA clustering method to the DIALIGN similarity scores. It roughly 
+      reflects the different degrees of similarity among sequences. For 
+      detailed phylogenetic analysis, we recommend the usual methods for 
+      phylogenetic reconstruction. 
+
+
+This is the DIALIGN alignment format: 
+
+
+
+SMb21199_AA-       1   mtemkdsila vrglkvdfyt pd-GTVE-AV KGIDLDVRSG ETLAVVGESG
+SMb21206_AA-       1   mpapatepgt apfVRLTGVT KRFGTARpAL DAVAGEIFGG RVTGLVGPDG
+SMb21592_AA-       1   mtlq------ ---IELNGVN KFYGSYH-AL KDIDLAIEEG TFVALVGPSG
+SMb21605_AA-       1   msg------- ---IKLTGVS KSFGAVK-VI HGVDIEIGQG EFAVFVGPSG
+
+                       0000000000 0000000000 0002222022 2222233356 6666666666
+
+
+SMb21199_AA-      49   SGKSQTMMGI MGLLakngtv tgsaryrgqe lvgLAPKALN KVRGS-KITM
+SMb21206_AA-      51   AGKTTLIRLM TGLMLPDAGT IE-------- ---VLGydtr rdpasiQAAI
+SMb21592_AA-      41   CGKSTLLRSL AGLEKISAGE MK-------- ---IAGARMN DVPPR-KRDV
+SMb21605_AA-      40   CGKSTLLRMI AGLEETTGGE IR-------- ---Idaedvt hkePS-KRGV
+
+                       6666666666 6664333333 3300000000 0003110000 0001102222
+
+
+SMb21199_AA-      98   IFQEPMTSLD PLYTIGRQIA EPIvhhRGGS FKEA---RRR VLELLELVGI
+SMb21206_AA-      90   GYMPQRFGLY EDLSVQENLD LYADL-RGLP KTER---SRT FGELLDFTDL
+SMb21592_AA-      79   AMVFQSYALY PHMTVEENLT YSLRI-RGVK KAEA---LKA AAEVATTTGL
+SMb21605_AA-      78   AMVFQSYALY PHLSVFDNMA FSLSI-ARRP KAEieqkVKA AAEIlrlsdy
+
+                       2222222222 2222222222 2222202222 2220000000 0000000000
+
+
+
+     Names of aligned sequences are shown on the left hand side of the 
+     alignment. 
+     
+     Numbers on the left hand side of the alignment denote the position 
+     of the first residue in a line within the respective sequence. 
+     
+     Capital letters denote aligned residues, i.e. residues involved in 
+     at least one of the fragments the alignment consists of. Lower-case
+     letters denote residues not belonging to any of these selected 
+     fragments. They are not considered to be aligned by DIALIGN. Thus, 
+     if a lower-case letter is standing in the same column with other letters,
+     this is pure chance; these residues are not considered to be homologous. 
+
+     Numbers below the alignment reflects the degree of local similarity 
+     among sequences. More precisely: They represent the sum of `weights' 
+     of fragments connecting residues at the respective position.
+
+     These numbers are normalized such that regions of maximum similarity 
+     always get a score of 9 - no matter how strong this maximum simliarity 
+     is. 
+
+
+
+This is FASTA alignment format: 
+
+
+>HTL2
+ldtapcLFSDGS------PQKAAYVLWDQTIL---QQDITPLPSHethSA
+QKGELLALICGLRAAKPWPSLNIFLDSKYLIKYLHslaigaflgtsah--
+-------QT---LQAALPPLLQGKTIYLHHVRSHT------NLPDPISTF
+NEYTDSLILApl--------------------------------------
+----------
+>MMLV
+pdadhtwYTDGSSLLQEGQRKAGAAVTTETeviwaKALDAG---T---SA
+QRAELIALTQALKMAEgkk-LNVYTDSRYAFATAHIHGEIYRRRGLLTSE
+GKEIKNKDE---ILALLKALFLPKRLSIIHCPGHQ------KGHSAEARG
+NRMADQAARKAAITETPDTStll---------------------------
+----------
+>HEPB
+rpglcQVFADAT------PTGWGLVMGHQRMR---GTFSAPLPIHt----
+--AELLAACFArsrsgan---IIGTDN-----------------------
+-------------SVVLSR--------------KYTSFPWLLGCAANWI-
+LRGTSFVYVPSALNPADDPSrgrlglsrpllrlpfrpttgrtslyadsps
+vpshlpdrvh
+
+
+
+This is PHYLIP tree format: 
+
+ 
+((HTL2:0.111024,
+(MMLV:0.078471,
+ECOL:0.078471):0.032554):0.121218,
+HEPB:0.232242);
+
+
+
+Trees can be visualized using the treetool program that is part of 
+Joe Felsenstein's PHYLIP software package:
+
+   http://evolution.genetics.washington.edu/phylip.html
+
+
+---------------------------------------------------------------------
+
+Last update by Burkhard Morgenstern, Goettingen, February 2005  
+
+
+
+
+
+

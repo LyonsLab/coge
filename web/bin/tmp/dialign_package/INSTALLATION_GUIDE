@@ -1,0 +1,52 @@
+
+
+                    installation guide for  
+ 
+                          DIALIGN2 
+                          ========
+    
+                   program code written by  
+
+           Burkhard Morgenstern and Said Abdeddaim
+ 
+               e-mail contact: dialign@gobics.de
+
+
+(1) cd to the directory `src' that contains the dialign source code 
+
+(2) type `make' to compile the program. This should create an executable
+    binary file called `dialign2-2'.
+
+(3) you may remove all object files (type `rm *.o')
+
+(4) to run DIALIGN2, you must create an environment variable 
+    `DIALIGN2_DIR' pointing to the directory `dialign2_dir' 
+
+    (type `setenv DIALIGN2_DIR /your_path/dialign2_dir/' where 
+    `your_path' is the directory where you de-tarred the file with the
+    sources)  
+
+    The program needs the files 
+
+       tp400_dna
+       tp400_prot
+       tp400_trans
+       BLOSUM 
+ 
+    that are contained in the directory `dialign2_dir'. You may move 
+    these files to any other directory and set DIALIGN2_DIR accordingly.
+
+
+
+Please note that, unlike in the first version of DIALIGN, it is NOT 
+POSSIBLE to replace the BLOSUM matrix by other similarity matrices !!
+
+DIALIGN comes with a detailed user guide. For additional information, please 
+consult the DIALIGN home page at
+
+  http://bibiserv.techfak.uni-bielefeld.de/dialign/
+ 
+----------------------------------------------------------------------------
+BM, Goettingen, February 2003 
+
+
