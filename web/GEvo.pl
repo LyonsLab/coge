@@ -734,6 +734,8 @@ INSERT INTO image_info (id, iname, title) values ($j, "$image", "$title")
 	$j++;
 	foreach my $feat ($gfx->get_feats)
 	  {
+	    next if $feat->fill; #skip backgroup images;
+	    next unless $feat->image_coordinates;
 	    my $pair_id = "NULL";
 	    my $coords = $feat->image_coordinates;
 	    $coords =~ s/\s//g;
