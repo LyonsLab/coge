@@ -266,7 +266,7 @@ sub run
 	my @tmp;
 	foreach my $color ($r, $g, $b)
 	  {
-	    $color = 0 unless $color =~ /^\d+$/;
+	    $color = 0 unless $color && $color =~ /^\d+$/;
 	    $color = 0 if $color < 0;
 	    $color = 255 if $color > 255;
 	    push @tmp, $color;
@@ -277,8 +277,8 @@ sub run
 
 #    print Dumper \@_;
 
-    my $stagger_label = $hsp_label =~ /staggered/i ? 1 : 0;
-    my $feature_labels = $hsp_label eq "0" ? 0 : 1;
+    my $stagger_label = $hsp_label && $hsp_label =~ /staggered/i ? 1 : 0;
+    my $feature_labels = $hsp_label && $hsp_label eq "0" ? 0 : 1;
     my $form = $FORM;
 
     my @sets;
