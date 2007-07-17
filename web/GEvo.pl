@@ -306,7 +306,6 @@ sub run
 	my ($up, $down);
 	my ($file, $file_begin, $file_end, $obj);
 	my $reference_seq =$opts{"ref_seq$i"};
-	
 	if ($featid)
 	  {
 	    $obj = get_obj_from_genome_db( $accn, $featid, $drrev, $drup, $drdown );
@@ -360,7 +359,7 @@ sub run
 	    $obj = new CoGe::Accessory::GenBank;
 	    $obj->add_gene_models(1); #may want to make a user selectable option
  	    my $res = $obj->get_genbank_from_nbci($gbaccn, $gbrev);	    
-	    if ($obj)
+	    if ($obj->accn)
 	      {
 		$obj->sequence(CoGeX::Feature->reverse_complement($obj->sequence)) if $gbrev;
 		my $seq;
@@ -384,7 +383,7 @@ sub run
 		$message .= "No GenBank entry found for $gbaccn\n";
 	      }
  	  }
-	if ($obj)
+	if ($obj && $obj->sequence)
 	  {
 	    push @sets, {
 			 obj=>$obj,
@@ -401,7 +400,7 @@ sub run
 			};
 	  }
       }
-
+#    print STDERR Dumper \@sets;
     unless (@sets >1)
       {
 	$message .= "Problem retrieving information.  Please check submissions.\n";
@@ -446,6 +445,7 @@ sub run
       {
 	my $accn = $item->{accn};
 	my $obj = $item->{obj};
+	next unless $obj->sequence;
 	my $file = $item->{file};
 	my $file_begin = $item->{file_begin};
 	my $file_end = $item->{file_end};
@@ -532,6 +532,7 @@ sub run
     $html .= qq{<td class = small>Fasta files};
 	foreach my $item (@sets)
 	  {
+	    next unless $item->{file};
 	    my $basename = $TEMPURL."/".basename ($item->{file});
 	    my $accn = $item->{accn};
 	    $html .= "<div><font class=xsmall><A HREF=\"$basename\">Fasta file for $accn</A></font></DIV>\n";
@@ -539,7 +540,9 @@ sub run
     $html .= qq{<td class = small><a href = "http://baboon.math.berkeley.edu/mavid/gaf.html">GAF</a> annotation files};
     foreach my $item (@sets)
       {
-	my $basename = $TEMPURL."/".basename (generate_annotation(%$item));
+	my $anno_file = generate_annotation(%$item);
+	next unless $anno_file;
+	my $basename = $TEMPURL."/".basename ($anno_file);
 	my $accn = $item->{accn};
 	$html .= "<div><font class=xsmall><A HREF=\"$basename\">Annotation file for $accn</A></font></DIV>\n";
       }
@@ -741,6 +744,7 @@ title varchar(1024)
       {
 	my $image = $item->{image};
 	my $gfx = $item->{gfx};
+	next unless $gfx;
 	my $accn = $item->{accn};
 	my $title;
 	$title = $accn;
@@ -1316,7 +1320,7 @@ sub run_bl2seq {
 	  my $seqfile1 = $sets->[$i]->{file};
 	  my $seqfile2 = $sets->[$j]->{file};
 	  check_sequence_files_spike($spike_seq, $seqfile1, $seqfile2) if ($spike_seq);
-	  next unless -r $seqfile1 && -r $seqfile2; #make sure these files exist
+	  next unless $seqfile1 && -r $seqfile1 && $seqfile2 && -r $seqfile2; #make sure these files exist
 	  
 	  next unless $sets->[$i]{reference_seq} || $sets->[$j]{reference_seq};
 	  my ($accn1, $accn2) = ($sets->[$i]{accn}, $sets->[$j]{accn});
@@ -1759,6 +1763,7 @@ sub generate_annotation
   {
     my %opts = @_;
     my $obj = $opts{obj};
+    return unless $obj;
     my $start = $opts{file_begin};
     my $stop = $opts{file_end};
     my $rev = $opts{rev};
@@ -1786,6 +1791,7 @@ sub generate_annotation
 	    push @{$data{$name}{$type}},[$start, $stop, $dir];
 	  }
       }
+    return unless keys %data;
     open (OUT, ">$fullname") || die "Can't open $fullname for writing! $!\n";
     foreach my $name (keys %data)
       {
@@ -2214,6 +2220,7 @@ sub check_sequence_files_spike
     my $check_nt;
     foreach my $file (@files)
       {
+	next unless $file && -r $file;
 	$/ = "\n>";
 	open (IN, $file);
 	my ($name, $seq);
