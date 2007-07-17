@@ -686,6 +686,115 @@ sub protein_sequence {
 }
 
 
+sub frame6_trans
+  {
+    my $self = shift;
+    my %opts = @_;
+    my(%code) = (
+		 'TCA' => 'S',# Serine
+		 'TCC' => 'S',# Serine
+		 'TCG' => 'S',# Serine
+		 'TCT' => 'S',# Serine
+		 'TTC' => 'F',# Fenilalanine
+		 'TTT' => 'F',# Fenilalanine
+		 'TTA' => 'L',# Leucine
+		 'TTG' => 'L',# Leucine
+		 'TAC' => 'Y',# Tirosine
+		 'TAT' => 'Y',# Tirosine
+		 'TAA' => '*',# Stop
+		 'TAG' => '*',# Stop
+		 'TGC' => 'C',# Cysteine
+		 'TGT' => 'C',# Cysteine
+		 'TGA' => '*',# Stop
+		 'TGG' => 'W',# Tryptofane
+		 'CTA' => 'L',# Leucine
+		 'CTC' => 'L',# Leucine
+		 'CTG' => 'L',# Leucine
+		 'CTT' => 'L',# Leucine
+		 'CCA' => 'P',# Proline
+		 'CCC' => 'P',# Proline
+		 'CCG' => 'P',# Proline
+		 'CCT' => 'P',# Proline
+		 'CAC' => 'H',# Hystidine
+		 'CAT' => 'H',# Hystidine
+		 'CAA' => 'Q',# Glutamine
+		 'CAG' => 'Q',# Glutamine
+		 'CGA' => 'R',# Arginine
+		 'CGC' => 'R',# Arginine
+		 'CGG' => 'R',# Arginine
+		 'CGT' => 'R',# Arginine
+		 'ATA' => 'I',# IsoLeucine
+		 'ATC' => 'I',# IsoLeucine
+		 'ATT' => 'I',# IsoLeucine
+		 'ATG' => 'M',# Methionina
+		 'ACA' => 'T',# Treonina
+		 'ACC' => 'T',# Treonina
+		 'ACG' => 'T',# Treonina
+		 'ACT' => 'T',# Treonina
+		 'AAC' => 'N',# Asparagina
+		 'AAT' => 'N',# Asparagina
+		 'AAA' => 'K',# Lisina
+		 'AAG' => 'K',# Lisina
+		 'AGC' => 'S',# Serine
+		 'AGT' => 'S',# Serine
+		 'AGA' => 'R',# Arginine
+		 'AGG' => 'R',# Arginine
+		 'GTA' => 'V',# Valine
+		 'GTC' => 'V',# Valine
+		 'GTG' => 'V',# Valine
+		 'GTT' => 'V',# Valine
+		 'GCA' => 'A',# Alanine
+		 'GCC' => 'A',# Alanine
+		 'GCG' => 'A',# Alanine
+		 'GCT' => 'A',# Alanine
+		 'GAC' => 'D',# Aspartic Acid
+		 'GAT' => 'D',# Aspartic Acid
+		 'GAA' => 'E',# Glutamic Acid
+		 'GAG' => 'E',# Glutamic Acid
+		 'GGA' => 'G',# Glicine
+		 'GGC' => 'G',# Glicine
+		 'GGG' => 'G',# Glicine
+		 'GGT' => 'G',# Glicine
+		);
+    my $code = $opts{code} || \%code;
+    my $seq = $opts{seq} || $self->genomic_sequence;
+
+    my %seqs;
+    $seqs{"1"} = $self->_process_seq(seq=>$seq, start=>0, code1=>$code, codonl=>3);
+    $seqs{"2"} = $self->_process_seq(seq=>$seq, start=>1, code1=>$code, codonl=>3);
+    $seqs{"3"} = $self->_process_seq(seq=>$seq, start=>2, code1=>$code, codonl=>3);
+    my $rcseq = $self->reverse_complement($seq);
+    $seqs{"-1"} = $self->_process_seq(seq=>$rcseq, start=>0, code1=>$code, codonl=>3);
+    $seqs{"-2"} = $self->_process_seq(seq=>$rcseq, start=>1, code1=>$code, codonl=>3);
+    $seqs{"-3"} = $self->_process_seq(seq=>$rcseq, start=>2, code1=>$code, codonl=>3);
+    return \%seqs;
+
+  }
+
+sub _process_seq
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $seq = $opts{seq};
+    my $start = $opts{start};
+    my $code1 = $opts{code1};
+    my $code2 = $opts{code2};
+    my $alter = $opts{alter};
+    my $codonl = $opts{codonl} || 2;
+    my $seq_out;
+    for (my $i = $start; $i < length ($seq); $i = $i+$codonl)
+      {
+	my $codon = uc(substr($seq, $i, $codonl));
+	my $chr = $code1->{$codon} || $code2->{$codon};
+	unless ($chr)
+	  {
+	    $chr= $alter if $alter;
+	  }
+	$seq_out .= $chr if $chr;
+      }
+    return $seq_out;
+  }
+
 
 1;
 
