@@ -243,7 +243,10 @@ function handle_results (html,w, h, img_base, n_images,message) {
     so.addVariable('img', img_base );
     so.write("flash_viewer");
    }
+  else
+  {
     $('#results').html('');
+  }
 }
 
 function remove_seq () {
