@@ -231,15 +231,19 @@ else if (alignment == 'blastn')
 
 function handle_results (html,w, h, img_base, n_images,message) {
  alert_message(message);
- $('#results').html(html);
- checkViewer();
- var so = new SWFObject("/CoGe/gobe/flash/gobe.swf", "gobe", w, h, "9", "#FFFFFF");
- so.useExpressInstall('/CoGe/gobe/flash/expressinstall.swf');
- so.addVariable('n', n_images);
- so.addVariable('base_url', '/CoGe/gobe/');
- so.addVariable('tmp_dir', 'tmp/');
- so.addVariable('img', img_base );
- so.write("flash_viewer");
+ if (n_images >1)
+   {
+    $('#results').html(html);
+    checkViewer();
+    var so = new SWFObject("/CoGe/gobe/flash/gobe.swf", "gobe", w, h, "9", "#FFFFFF");
+    so.useExpressInstall('/CoGe/gobe/flash/expressinstall.swf');
+    so.addVariable('n', n_images);
+    so.addVariable('base_url', '/CoGe/gobe/');
+    so.addVariable('tmp_dir', 'tmp/');
+    so.addVariable('img', img_base );
+    so.write("flash_viewer");
+   }
+    $('#results').html('');
 }
 
 function remove_seq () {
@@ -254,8 +258,13 @@ $('#seq_set'+num_seqs).remove();
 //$('#new_seq_submission').html('');
 num_seqs--;
 $('#num_seqs').val(num_seqs);
-gen_go_button(['num_seqs'],['go_button']);
+gen_go_run(['num_seqs'],update_go_run);
+
 gen_hsp_colors(['num_seqs'],['hsp_colors']);
+}
+
+function update_go_run (val){
+if (val) $('#go_run').html(val);
 }
 
 function alert_message (message) {
@@ -282,24 +291,27 @@ function seq_submit_change (seq_num) {
  animate_section("#"+seq_set, "fadeIn");
 }
 
-function process_add_seq (newseq, num_seqs, go, refseq, colors, message)
+function process_add_seq (newseq, num_seqs, go_run, refseq, colors, message)
 {
  $('#new_seq_submission').append(newseq);
  seq_submit_change(num_seqs);
  $('#num_seqs').val(num_seqs);
- $('#go_button').html(go);
+ $('#go_run').html(go_run);
  $('#new_refseq').html(refseq);
  $('#hsp_colors').html(colors);
  alert_message(message);
 }
 
+
+
 </SCRIPT>
+<div id="go_run"><TMPL_VAR NAME="GO_RUN"></div>
 
 <div id="message"><TMPL_VAR NAME="MESSAGE"></div>
 <table>
 <tr align left>
 <td>
-<div id="go_button" class="l"><TMPL_VAR NAME="GO_BUTTON"></div>
+<div id="go_button" class="l"><a href="#" onMouseOver="activeButton('go')" onMouseOut="inactiveButton('go')" onMouseDown="pressedButton('go')" onMouseUp="inactiveButton('go')" onClick="loading([],['results']); setTimeout('go_run()', 1000);"><img name="go" src="/CoGe/picts/buttons/GEvo/go/inactive.png" width="47" height="27" border="0" alt="javascript button"></a></div>
 <a href="#" onMouseOver="activeButton('clear')" onMouseOut="inactiveButton('clear')" onMouseDown="pressedButton('clear')" onMouseUp="inactiveButton('clear')" onClick="rset()">
          <img name="clear" src="/CoGe/picts/buttons/GEvo/clear/inactive.png" width="56" height="27" border="0" alt="javascript button">
          </a>
@@ -653,7 +665,7 @@ function process_add_seq (newseq, num_seqs, go, refseq, colors, message)
   <TD>
     <DIV class="small">
      <select id="viewer" onChange="checkViewer()">
-     <option selected value="flash">GeLo Flash Viewer</option>
+     <option selected value="flash">Gobe Flash Viewer</option>
      <option value = "html">GeLo HTML Viewer</option> 
     </DIV>
   </TD>
