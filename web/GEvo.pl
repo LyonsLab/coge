@@ -77,7 +77,7 @@ my $pj = new CGI::Ajax(
 		       loading=>\&loading,
 		       add_seq=>\&add_seq,
 		       get_file=>\&get_file,
-		       gen_go_button=>\&gen_go_button,
+		       gen_go_run=>\&gen_go_run,
 		       gen_hsp_colors =>\&gen_hsp_colors,
 		       %ajax,
 		      );
@@ -128,17 +128,17 @@ sub gen_body
     my $message;
     if (! ($num_seqs =~ /^\d+$/) )
       {
-	$message = "Problem with requested number of sequences: '$num_seqs'.  Defaulting to $NUM_SEQS input sequences.";
+	$message .= "Problem with requested number of sequences: '$num_seqs'.  Defaulting to $NUM_SEQS input sequences.";
 	$num_seqs = $NUM_SEQS;
       }
     elsif ($num_seqs < 2)
       {
-	$message = "Minimum number of sequences to compare is two.";
+	$message .= "Minimum number of sequences to compare is two.";
 	$num_seqs = 2;
       }
     elsif ($num_seqs > $MAX_SEQS)
       {
-	$message = "Maximum number of sequence is $MAX_SEQS.";
+	$message .= "Maximum number of sequence is $MAX_SEQS.";
 	$num_seqs = $MAX_SEQS;
       }
     my @seq_nums;
@@ -208,7 +208,7 @@ sub gen_body
     $template->param(MESSAGE=>$message);
     $template->param(SEQ_SUB=>$seq_submission);
     $template->param(HSP_COLOR=>$hsp_colors);
-    $template->param(GO_BUTTON=>gen_go_button($num_seqs));
+    $template->param(GO_RUN=>gen_go_run($num_seqs));
     $template->param(AUTOSEARCH=>$autosearch_string);
     $box->param(BOX_NAME=>"Options:");
 #    $box->param(BOX_NAME=>"Sequence Retrieval:");
@@ -310,17 +310,24 @@ sub run
 	if ($featid)
 	  {
 	    $obj = get_obj_from_genome_db( $accn, $featid, $drrev, $drup, $drdown );
-	    return "<font class=error>No entry found for $featid</font>" unless ($obj);
-	    ($file, $file_begin, $file_end,$spike_seq) = 
-	      generate_seq_file(obj=>$obj,
-				mask_cds=>$mask_cds_flag,
-				mask_ncs=>$mask_ncs_flag,
-				spike_len=>$spike_len,
-				seq_num=>$i,
-			       );
-	    $up = $drup;
-	    $down = $drdown;
-	    $rev = 1 if $drrev;
+	    if ($obj)
+	      {
+		($file, $file_begin, $file_end,$spike_seq) = 
+		  generate_seq_file(obj=>$obj,
+				    mask_cds=>$mask_cds_flag,
+				    mask_ncs=>$mask_ncs_flag,
+				    spike_len=>$spike_len,
+				    seq_num=>$i,
+				   );
+		$up = $drup;
+		$down = $drdown;
+		$rev = 1 if $drrev;
+	      }
+	    else
+	      {
+		$message .=  "No entry found for $featid.\n";
+	      }
+
 	  }
  	elsif ($dirseq )
  	  {
@@ -328,42 +335,54 @@ sub run
  	    my $seq = get_substr(seq=>$dirseq, start=>$dirstart, stop=>$dirstop);
 	    $dirstop = length($seq) unless $dirstop;
  	    ($obj) = generate_obj_from_seq($seq, $i);
- 	    return "<font class=error>Problem with direct sequence submission</font>" unless ($obj);
- 	    ($file, $file_begin, $file_end, $spike_seq) = 
- 	      generate_seq_file (
- 				 obj=>$obj,
- 				 mask_cds=>$mask_cds_flag,
- 				 mask_ncs=>$mask_ncs_flag,
- 				 spike_len=>$spike_len, 
-				 seq_num=>$i,
- 				);
-	    $up = $dirstart;
-	    $down = $dirstop;
-	    $rev = 1 if $dirrev;
- 	  }
- 	elsif ($gbaccn )
- 	  {
+ 	    
+ 	    if ($obj)
+	      {
+		($file, $file_begin, $file_end, $spike_seq) = 
+		  generate_seq_file (
+				     obj=>$obj,
+				     mask_cds=>$mask_cds_flag,
+				     mask_ncs=>$mask_ncs_flag,
+				     spike_len=>$spike_len, 
+				     seq_num=>$i,
+				    );
+		$up = $dirstart;
+		$down = $dirstop;
+		$rev = 1 if $dirrev;
+	      }
+	    else
+	      {
+		$message .= "Problem with direct sequence submission\n";
+	      }
+	  }
+	elsif ($gbaccn )
+	  {
 	    $obj = new CoGe::Accessory::GenBank;
 	    $obj->add_gene_models(1); #may want to make a user selectable option
  	    my $res = $obj->get_genbank_from_nbci($gbaccn, $gbrev);	    
-	    return "<font class=error>No GenBank entry found for $gbaccn</font>" unless ($res);
-	    $obj->sequence(CoGeX::Feature->reverse_complement($obj->sequence)) if $gbrev;
-	    my $seq;
- 	    ($file, $file_begin, $file_end,$spike_seq, $seq) = 
- 	      generate_seq_file (
- 				 obj=>$obj,
- 				 mask_cds=>$mask_cds_flag,
- 				 mask_ncs=>$mask_ncs_flag,
- 				 startpos=>$gbstart,
- 				 downstream=>$gblength,
- 				 spike_len=>$spike_len,
-				 seq_num=>$i,
- 				);
-	    $obj->sequence($seq);
-	    $rev = 1 if ($gbrev);
-	    $up = $gbstart;
-	    $down = $gblength;
-
+	    if ($obj)
+	      {
+		$obj->sequence(CoGeX::Feature->reverse_complement($obj->sequence)) if $gbrev;
+		my $seq;
+		($file, $file_begin, $file_end,$spike_seq, $seq) = 
+		  generate_seq_file (
+				     obj=>$obj,
+				     mask_cds=>$mask_cds_flag,
+				     mask_ncs=>$mask_ncs_flag,
+				     startpos=>$gbstart,
+				     downstream=>$gblength,
+				     spike_len=>$spike_len,
+				     seq_num=>$i,
+				    );
+		$obj->sequence($seq);
+		$rev = 1 if ($gbrev);
+		$up = $gbstart;
+		$down = $gblength;
+	      }
+	    else
+	      {
+		$message .= "No GenBank entry found for $gbaccn\n";
+	      }
  	  }
 	if ($obj)
 	  {
@@ -385,7 +404,8 @@ sub run
 
     unless (@sets >1)
       {
-	return "<h3><font color = red>Problem retrieving information.  Please try again.</font></h3>";
+	$message .= "Problem retrieving information.  Please check submissions.\n";
+	return '', '', '', '',0,$message;
       }
     my $t2 = new Benchmark;
     # set up output page
@@ -1792,7 +1812,7 @@ sub generate_annotation
     return $fullname;
   }
 
-sub gen_go_button
+sub gen_go_run
   {
     my $num_seqs = shift || $NUM_SEQS;
     my $params;
@@ -1887,8 +1907,13 @@ sub gen_go_button
         'args__padding', 'padding',
         'args__num_seqs','args__$num_seqs',
 };
-    return qq{<a href="#" onMouseOver="activeButton('go')" onMouseOut="inactiveButton('go')" onMouseDown="pressedButton('go')" onMouseUp="inactiveButton('go')" onClick="loading([],['results']);setTimeout('',200);run([$params],[handle_results], 'POST');"><img name="go" src="/CoGe/picts/buttons/GEvo/go/inactive.png" width="47" height="27" border="0" alt="javascript button"></a>};
-    #<input type="button" value="GO" onClick="loading([],['results']);final_dataset_search();setTimeout('',100);run([$params],[handle_results], 'POST');">
+    $params =~ s/\n//g;
+    $params =~ s/\s+/ /g;
+#    my $run = "<SCRIPT language=\"JavaScript\">alert('hi');</script>";
+    my $run = qq!<SCRIPT language=\"JavaScript\">function go_run (){ setTimeout("run([$params],[handle_results], 'POST')",500)}</script>!;
+#
+#    my $button = qq{<a href="#" onMouseOver="activeButton('go')" onMouseOut="inactiveButton('go')" onMouseDown="pressedButton('go')" onMouseUp="inactiveButton('go')" onClick="loading([],['results']); setTimeout('go_run()', 1000);"><img name="go" src="/CoGe/picts/buttons/GEvo/go/inactive.png" width="47" height="27" border="0" alt="javascript button"></a>};
+    return $run;
   }
 
 sub gen_hsp_colors
@@ -1999,8 +2024,8 @@ sub add_seq
     if ($num_seq > $MAX_SEQS)
       {
 	$hsp_colors = gen_hsp_colors($MAX_SEQS);
-	my $go_button = gen_go_button($MAX_SEQS);
-	return ('',$MAX_SEQS, $go_button, '', $hsp_colors,qq{Exceeded max number of sequences ($MAX_SEQS)});
+	my $go_run = gen_go_run($MAX_SEQS);
+	return ('',$MAX_SEQS, $go_run, '', $hsp_colors,qq{Exceeded max number of sequences ($MAX_SEQS)});
       }
     my @seqs = {
 		SEQ_NUM=>$num_seq,
@@ -2018,9 +2043,9 @@ sub add_seq
     $template->param(REF_SEQ=>[{SEQ_NUM=>$num_seq}]);	
     my $ref_seqs = $template->output;
     $template->param(GEN_REFERENCE_SEQUENCES=>0);
-    my $go_button = gen_go_button($num_seq);
+    my $go_run = gen_go_run($num_seq);
     $hsp_colors = gen_hsp_colors($num_seq);
-    return ($seq_submission, $num_seq, $go_button, $ref_seqs, $hsp_colors);
+    return ($seq_submission, $num_seq, $go_run, $ref_seqs, $hsp_colors);
   }
 
 sub hsp_color_cookie
