@@ -1528,7 +1528,7 @@ sub run_dialign
 	    {
 	      if ($max_seq > $kill_length)
 	      {
-	        $error_message = "The sequence you have chosen DIALIGN to align is too long (your longest sequence is $kb_max_seq kb long). To complete the alignment would take a significant amount of time, and use up considerable system resources that others need to run their alignments. Please limit your sequences to no more than ",($kill_length/1000)," kb long. Thank you.";
+	        $error_message = "The sequence you have chosen DIALIGN to align is too long (your longest sequence is $kb_max_seq kb long). To complete the alignment would take a significant amount of time, and use up considerable system resources that others need to run their alignments. Please limit your sequences to no more than ".($kill_length/1000)." kb long. Thank you.";
 	       return ('','',$error_message);
 	      }
 	      else
