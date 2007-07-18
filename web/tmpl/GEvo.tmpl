@@ -305,16 +305,15 @@ function process_add_seq (newseq, num_seqs, go_run, refseq, colors, message)
  alert_message(message);
 }
 
-
-
 </SCRIPT>
+
 <div id="go_run"><TMPL_VAR NAME="GO_RUN"></div>
 
 <div id="message"><TMPL_VAR NAME="MESSAGE"></div>
 <table>
 <tr align left>
 <td>
-<div id="go_button" class="l"><a href="#" onMouseOver="activeButton('go')" onMouseOut="inactiveButton('go')" onMouseDown="pressedButton('go')" onMouseUp="inactiveButton('go')" onClick="loading([],['results']); setTimeout('go_run()', 1000);"><img name="go" src="/CoGe/picts/buttons/GEvo/go/inactive.png" width="47" height="27" border="0" alt="javascript button"></a></div>
+<div id="go_button" class="l"><a href="#" onMouseOver="activeButton('go')" onMouseOut="inactiveButton('go')" onMouseDown="pressedButton('go')" onMouseUp="inactiveButton('go')" onClick="loading([],['results']); go_run();"><img name="go" src="/CoGe/picts/buttons/GEvo/go/inactive.png" width="47" height="27" border="0" alt="javascript button"></a></div>
 <a href="#" onMouseOver="activeButton('clear')" onMouseOut="inactiveButton('clear')" onMouseDown="pressedButton('clear')" onMouseUp="inactiveButton('clear')" onClick="rset()">
          <img name="clear" src="/CoGe/picts/buttons/GEvo/clear/inactive.png" width="56" height="27" border="0" alt="javascript button">
          </a>
