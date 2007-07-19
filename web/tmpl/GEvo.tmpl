@@ -39,9 +39,15 @@ $(document).ready(function(){
 
  check_alignment_program();
  check_dialign_anchor_program();
+ 
+ pageobj = new Object();
+
  });
 
-
+function populate_page_obj(basefile)
+ {
+  pageobj.basefile = basefile;
+ }
 
 function change( info ) {
         document.getElementById("info").innerHTML = info;        
@@ -303,6 +309,49 @@ function process_add_seq (newseq, num_seqs, go_run, refseq, colors, message)
  $('#new_refseq').html(refseq);
  $('#hsp_colors').html(colors);
  alert_message(message);
+}
+
+function monitor_log(log)
+{
+  var finished = 0;
+  var sequence = 0;
+  var algo = 0;
+  var image = 0;
+  var database = 0;
+  if (log && log.match(/Finished!/))
+    {
+     database = database+"done!\n";
+     finished=1;
+    }
+
+  if (log && log.match(/sequence/)) {
+     sequence = "Generating sequence files. . .";
+   }
+  if (log && log.match(/running/)) {
+     sequence = sequence +"done!<br/>";
+     algo = "Running aligment algorithms. . .";
+   }
+  if (log && log.match(/image/)) {
+     algo = algo+"done!<br/>";
+     image = "Generating image visualization. . .";
+   }
+  if (log && log.match(/database/)) {
+     image = image+"done!<br/>";
+     database = "Generating annotation database. . .";
+   }
+  var message;
+  if (sequence) message = sequence;
+  if (algo) message += algo;
+  if (image) message += image;
+  if (database) message += database;
+  
+  if (!finished)
+  {
+    
+    setTimeout("read_log(['args__'+pageobj.basefile], [monitor_log])", 2000);
+    if (message) $('#loading').html(message);
+  }
+
 }
 
 </SCRIPT>
