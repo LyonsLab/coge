@@ -606,7 +606,7 @@ function process_add_seq (newseq, num_seqs, go_run, refseq, colors, message)
   <TH>Select Anchor Program: 
   <select class="backbox" id="dialign_anchor_program" size="1" onchange='check_dialign_anchor_program()'>
        <option value="blastz">blastz</option>
-       <option value="blastn">bl2seq</option>
+       <option value="bl2seq">bl2seq</option>
        <option value="CHAOS" selected>CHAOS</option>
       </select>
   </TH>
@@ -825,7 +825,9 @@ function process_add_seq (newseq, num_seqs, go_run, refseq, colors, message)
 </TMPL_IF>
 
 <TMPL_IF NAME="RESULTS_DIV">
-<DIV id="results" ></DIV>
+<table><tr><td>
+<DIV id="results" ></DIV><br>
+</table>
 </TMPL_IF>
 
 
