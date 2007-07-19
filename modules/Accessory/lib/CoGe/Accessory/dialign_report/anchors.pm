@@ -101,7 +101,7 @@ sub generate_anchors
 	}
 	
 	print STDERR "Anchor file is: \n",$anchor_file,"\n" if $self->DEBUG;
-	
+	$self->write_log("creating dialign anchor file");
 	open(NEW,"> $output_dir/$base_name.anc");
 	print  NEW $anchor_file;
 	close NEW;
