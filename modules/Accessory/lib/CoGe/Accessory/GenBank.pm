@@ -49,10 +49,11 @@ sub parse_genbank
     my($keywords,$sequence) = "";
     my(@features) = ();
 
-    unless ($gb[0] =~ /^LOCUS/)
+    unless ($gb[0] && $gb[0] =~ /^LOCUS/)
       {
-	warn "Doesn't appear to be a genbank file.  Returning. . .$gb[0]\n";
-	return 0;
+	my $error =  "Doesn't appear to be a genbank file.  Returning. . .$gb\n";
+	print STDERR $error;
+	return (0,$error);
       }
     foreach my $line ( @gb ) 
       {
