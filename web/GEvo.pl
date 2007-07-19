@@ -79,6 +79,8 @@ my $pj = new CGI::Ajax(
 		       get_file=>\&get_file,
 		       gen_go_run=>\&gen_go_run,
 		       gen_hsp_colors =>\&gen_hsp_colors,
+		       initialize_basefile=>\&initialize_basefile,
+		       read_log => \&read_log,
 		       %ajax,
 		      );
 $pj->JSDEBUG(0);
@@ -90,7 +92,8 @@ print $pj->build_html($FORM, \&gen_html);
 
 sub loading
   {
-    return qq{<font class="loading dna">Generating results. . .</font>}; 
+    my $message = shift || "Generating results. . .";
+    return qq{<div class="dna"><div id="loading">$message</div></div>}; 
   }
 
 sub gen_html
@@ -254,8 +257,9 @@ sub run
     my $padding = $opts{padding};
     my $viewer = $opts{viewer};
     my ($analysis_program, $param_string, $parser_opts) = get_algorithm_options(%opts);
+    my $basefilename = $opts{basefile};
     my $message;
-    initialize_basefile();
+    initialize_basefile($basefilename);
 
     my @hsp_colors;
     for (my $i = 1; $i <= num_colors($num_seqs); $i++)
@@ -358,7 +362,8 @@ sub run
 	  {
 	    $obj = new CoGe::Accessory::GenBank;
 	    $obj->add_gene_models(1); #may want to make a user selectable option
- 	    my $res = $obj->get_genbank_from_nbci($gbaccn, $gbrev);	    
+ 	    my ($res, $error) = $obj->get_genbank_from_nbci($gbaccn, $gbrev);
+	    $message .= $error."\n" unless $res;
 	    if ($obj->accn)
 	      {
 		$obj->sequence(CoGeX::Feature->reverse_complement($obj->sequence)) if $gbrev;
@@ -584,6 +589,8 @@ Time to process html            : $html_time
 };
     print STDERR $bench if $BENCHMARK;
     write_log($bench);
+    write_log("Finished!");
+
     return $outhtml, $iw+400, $frame_height, $BASEFILENAME,$count,$message;
 
 }
@@ -1185,6 +1192,22 @@ sub write_log
     open (OUT, ">>$LOGFILE") || return;
     print OUT $message,"\n";
     close OUT;
+  }
+
+sub read_log
+  {
+    my $logfile = shift || $LOGFILE;
+    $logfile .= ".log" unless $logfile =~ /log$/;
+    $logfile = $TEMPDIR."/".$logfile unless $logfile =~ /^$TEMPDIR/;
+    return unless -r $logfile;
+    my $str;
+    open (IN, $logfile);
+    while (<IN>)
+      {
+	$str .= $_;
+      }
+    close IN;
+    return $str;
   }
 
 sub get_obj_from_genome_db
@@ -1941,11 +1964,19 @@ sub gen_go_run
 	'args__showallhsps', 'show_hsps_with_stop_codon',
         'args__padding', 'padding',
         'args__num_seqs','args__$num_seqs',
+        'args__basefile','args__'+pageobj.basefile
 };
     $params =~ s/\n//g;
     $params =~ s/\s+/ /g;
 #    my $run = "<SCRIPT language=\"JavaScript\">alert('hi');</script>";
-    my $run = qq!<SCRIPT language=\"JavaScript\">function go_run (){ setTimeout("run([$params],[handle_results], 'POST')",500)}</script>!;
+    my $run = qq!
+<SCRIPT language="JavaScript">
+function go_run (){ 
+ initialize_basefile([],[populate_page_obj]);
+ setTimeout("run([$params],[handle_results], 'POST')",500); 
+ setTimeout(" monitor_log()", 1000);
+}
+</script>!;
 #
 #    my $button = qq{<a href="#" onMouseOver="activeButton('go')" onMouseOut="inactiveButton('go')" onMouseDown="pressedButton('go')" onMouseUp="inactiveButton('go')" onClick="loading([],['results']); setTimeout('go_run()', 1000);"><img name="go" src="/CoGe/picts/buttons/GEvo/go/inactive.png" width="47" height="27" border="0" alt="javascript button"></a>};
     return $run;
@@ -2041,13 +2072,25 @@ sub algorithm_list
 
 sub initialize_basefile
   {
-    my $file = new File::Temp ( TEMPLATE=>'GEvo_XXXXXXXX',
-				   DIR=>$TEMPDIR,
+    my $basename = shift;
+    if ($basename)
+      {
+	my ($x, $cleanname) = check_taint($basename);
+	$BASEFILENAME = $cleanname;
+	$BASEFILE = $TEMPDIR."/".$cleanname;
+	$LOGFILE = $BASEFILE.".log";
+      }
+    else
+      {
+	my $file = new File::Temp ( TEMPLATE=>'GEvo_XXXXXXXX',
+				    DIR=>$TEMPDIR,
 				    #SUFFIX=>'.png',
 				    UNLINK=>1);
-    ($BASEFILE)= $file->filename;
-    $LOGFILE = $BASEFILE.".log";
-    ($BASEFILENAME) = $file->filename =~ /([^\/]*$)/;
+	($BASEFILE)= $file->filename;
+	$LOGFILE = $BASEFILE.".log";
+	($BASEFILENAME) = $file->filename =~ /([^\/]*$)/;
+      }
+    return $BASEFILENAME;
   }
 
 sub add_seq
