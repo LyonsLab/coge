@@ -627,6 +627,8 @@ sub subsequence {
 		$seq = $self->sequence();
 	}
 	my $newseq = substr( $seq, $begin, ( $end - $begin+1) );
+	$self->sequence($newseq);
+	$self->seq_length(length($newseq));
 	return( $newseq	);
 }
 
