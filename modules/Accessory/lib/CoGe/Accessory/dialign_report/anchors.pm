@@ -16,7 +16,7 @@ BEGIN
 		use vars qw($VERSION $DEBUG);
 		$VERSION = "0.01";
 	}
-__PACKAGE__->mk_accessors qw(file1 file2 run_anchor run_dialign base_name extension output_dir anchor_output anchor_file fasta_file dialign_file run_anchor_opts run_dialign_opts anchor_report_opts dialign_report_opts anchor_report dialign_report DEBUG);
+__PACKAGE__->mk_accessors qw(file1 file2 run_anchor run_dialign base_name extension output_dir anchor_output anchor_file fasta_file dialign_file run_anchor_opts run_dialign_opts anchor_report_opts dialign_report_opts anchor_report dialign_report log_file DEBUG);
 
 ###############################################################################
 # anchors -- Josh Kane  UC Berkeley
@@ -70,6 +70,7 @@ sub generate_anchors
 	$command = "$run_anchor $file1 $file2 $anchor_opts > $output_dir/$base_name.$extension";}
 
 	print STDERR  "call to $extension: $command\n" if $self->DEBUG;
+	$self->write_log("running $command");
 	`$command`;
 	
 	$self->anchor_output("$output_dir/$base_name.$extension");
@@ -121,6 +122,7 @@ sub run_dialign_with_anchors
 	my $output_dir = $self->output_dir;
 	my $command = "$run_dialign $dialign_opts -anc -fn $output_dir/$base_name.dialign $output_dir/$base_name.fasta";	
 	print STDERR  "call to dialign: $command\n" if $self->DEBUG;
+	$self->write_log("running $command");
 	`$command`;
 	#`mv $basename.ali $output_dir/$basename.ali`;
 	#some move command to output_dir directory
@@ -133,7 +135,19 @@ sub run_dialign_with_anchors
 	$self->dialign_report($dialign_report);
 	return $self;
 }
-	
+
+
+sub write_log
+  {
+    my $self = shift;
+    my $message = shift;
+    return unless $self->log_file;
+    open (OUT, ">>".$self->log_file) || return;
+    print OUT $message,"\n";
+    close OUT;
+  }
+
+
 1;
 
 __END__
