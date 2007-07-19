@@ -305,7 +305,7 @@ sub run
 	my $dirseq = $opts{"dirseq$i"};
 	my $dirrev = $opts{"dirrev$i"};
 	my $dirstart = $opts{"dirstart$i"};
-	my $dirstop = $opts{"dirstop$i"};
+	my $dirlength = $opts{"dirlength$i"};
 	my $rev = 0;
 	my ($up, $down);
 	my ($file, $file_begin, $file_end, $obj);
@@ -335,8 +335,8 @@ sub run
  	elsif ($dirseq )
  	  {
 	    $dirseq = CoGeX::Feature->reverse_complement($dirseq) if $dirrev;
- 	    my $seq = get_substr(seq=>$dirseq, start=>$dirstart, stop=>$dirstop);
-	    $dirstop = length($seq) unless $dirstop;
+ 	    my $seq = get_substr(seq=>$dirseq, start=>$dirstart, stop=>($dirstart+$dirlength) );
+	    $dirlength = length($seq)-$dirstart unless $dirlength;
  	    ($obj) = generate_obj_from_seq($seq, $i);
  	    
  	    if ($obj)
@@ -350,7 +350,7 @@ sub run
 				     seq_num=>$i,
 				    );
 		$up = $dirstart;
-		$down = $dirstop;
+		$down = $dirlength;
 		$rev = 1 if $dirrev;
 	      }
 	    else
@@ -1888,7 +1888,7 @@ sub gen_go_run
 	$params .= qq{'args__dirseq$i', 'dirseq$i',};
 	$params .= qq{'args__dirrev$i', 'dirrev$i',};
 	$params .= qq{'args__dirstart$i', 'dirstart$i',};
-	$params .= qq{'args__dirstop$i', 'dirstop$i',};
+	$params .= qq{'args__dirlength$i', 'dirlength$i',};
 	$params .= qq{'args__ref_seq$i', 'ref_seq$i',};
       }
     for (my $i = 1; $i <=num_colors($num_seqs); $i++)
