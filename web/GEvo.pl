@@ -385,12 +385,21 @@ sub run
  	  }
 	if ($obj && $obj->sequence)
 	  {
+	    #need to check for duplicate accession names -- sometimes happens and major pain in the ass for other parts of the code
+	    my $accn = $obj->accn;
+	    my $count = 0;
+	    foreach my $accn2 (map {$_->{obj}->accn()} @sets)
+	      {
+		$count++ if $accn eq $accn2;
+	      }
+	    $accn .= "(".($count+1).")" if $count;
+	    $obj->accn($accn);
 	    push @sets, {
 			 obj=>$obj,
 			 file=>$file,
 			 file_begin=>$file_begin,
 			 file_end=>$file_end,
-			 accn=>$obj->accn,
+			 accn=>$accn,
 			 rev=>$rev,
 			 up=>$up,
 			 down=>$down,
@@ -640,7 +649,6 @@ sub generate_image
     $f2->merge_percent(0);
     $gfx->add_feature($f2);
     $graphic->process_nucleotides(c=>$gfx, seq=>$gbobj->sequence, layers=>{gc=>$show_gc, nt=>$show_nt});
-#    print STDERR join ("\t", $gbobj->accn, $start, $stop),"\n";
     process_features(c=>$gfx, obj=>$gbobj, start=>$start, stop=>$stop, overlap_adjustment=>$overlap_adjustment);
     $eval_cutoff = process_hsps(
 				c=>$gfx, 
@@ -795,6 +803,7 @@ INSERT INTO image_info (id, iname, title) values ($j, "$image", "$title")
 #	    $anno =~ s/'|"//g;
 	    $anno =~ s/<br\/?>/&#10;/ig;
 	    $anno =~ s/\n/&#10;/g;
+	    $anno =~ s/[\[\]\(\)]//g;
 #	    print STDERR $anno if $anno =~ /Location/;
 #	    print STDERR $anno,"\n" if $anno =~ /01020/;
 	    $statement = qq{
@@ -867,8 +876,8 @@ sub process_features
 		  {
 		    foreach my $name (@{$feat->qualifiers->{names}})
 		      {
-			$f->color([255,255,0]) if $name =~ /^$accn/i;
-			$f->label($name) if $name =~ /^$accn/i;
+			$f->color([255,255,0]) if $name =~ /^$accn$/i;
+			$f->label($name) if $name =~ /^$accn$/i;
 		      }
 		  }
 
