@@ -150,7 +150,7 @@ sub parse_genbank
 		  {
 		    my $line = $gb[$x];
 		    $line =~ s/\s+//g;
-		    $feature{$iso} .= $line;
+		    $feature{$iso} .= $line if $iso;
 		  }
 	        $x++;
 	      }
