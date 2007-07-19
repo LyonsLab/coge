@@ -562,7 +562,8 @@ sub run
 	$html .= "<div><font class=xsmall><A HREF=\"$basename\">Annotation file for $accn</A></font></DIV>\n";
       }
     $html .= qq{<td class = small>SQLite db};
-    my $dbname = generate_imagemap_db(\@sets);
+    my $dbname = $TEMPURL."/".basename(generate_imagemap_db(\@sets));
+    
     $html .= "<div class=xsmall><A HREF=\"$dbname\">SQLite DB file</A></DIV>\n";
     $html .= qq{<td class = small>Log File};
     my $logfile = $TEMPURL."/".basename($LOGFILE);
@@ -673,7 +674,7 @@ sub generate_image
 				hsp_limit_num=>$hsp_limit_num,
 				gbobj=>$gbobj,
 				spike_seq=>$spike_seq,
-				eval_cutoff=>$eval_cutoff,
+#				eval_cutoff=>$eval_cutoff,
 				color_hsp=>$color_hsp,
 				colors=>$hsp_colors,
 				show_hsps_with_stop_codon=>$show_hsps_with_stop_codon,
@@ -781,6 +782,7 @@ INSERT INTO image_info (id, iname, title) values ($j, "$image", "$title")
 	  {
 	    next if $feat->fill; #skip backgroup images;
 	    next unless $feat->image_coordinates;
+	    next if $feat->desc =~ /spike sequence/;
 	    my $pair_id = "NULL";
 	    my $coords = $feat->image_coordinates;
 	    $coords =~ s/\s//g;
@@ -977,9 +979,11 @@ sub process_hsps
 	  {
 	    foreach my $hsp (@{$blast->hsps})
 	      {
-		if ($hsp->qalign =~ /^$spike_seq$/i)
+		if ($hsp->qalign =~ /^$spike_seq$/i  || $hsp->salign =~ /^$spike_seq$/i)
 		  {
+		    $hsp->contains_spike(1);
 		    $eval_cutoff = $hsp->eval;
+		    write_log("Found spike sequence for $accn1 and $accn2: eval cutoff set to $eval_cutoff");
 		    last;
 		  }
 	      }
@@ -1024,7 +1028,7 @@ sub process_hsps
 	    print STDERR "\t",$hsp->number,": $start-$stop\n" if $DEBUG;
 	    my $strand = $hsp->strand =~ /-/ ? "-1" : 1;
 	    my $f = CoGe::Graphics::Feature::HSP->new({start=>$start, stop=>$stop});
-	    $color = [100,100,100] if $spike_seq && $hsp->qalign =~ /$spike_seq$/i;
+	    $color = [100,100,100] if $spike_seq && $hsp->qalign =~ /^$spike_seq$/i;
 	    $f->color($color);
 	    $f->order($track);
 	    $f->strand($strand);
@@ -1042,6 +1046,7 @@ sub process_hsps
 	    $desc .= "<br/>E_val: ".$hsp->pval if $hsp->pval;
 	    $desc .= "<br/>Score: ".$hsp->score if $hsp->score;
 	    $desc .= qq{<span class="small"> (cutoff: $eval_cutoff)</span>} if defined $eval_cutoff;
+	    $desc .= qq{ (contains spike sequence) } if $hsp->contains_spike;
 	    $f->description($desc);
 	    if ($reverse)
 	      {
@@ -1367,7 +1372,7 @@ sub run_bl2seq {
 	  #
 	  my $seqfile1 = $sets->[$i]->{file};
 	  my $seqfile2 = $sets->[$j]->{file};
-	  check_sequence_files_spike($spike_seq, $seqfile1, $seqfile2) if ($spike_seq);
+	  #check_sequence_files_spike($spike_seq, $seqfile1, $seqfile2) if ($spike_seq);
 	  next unless $seqfile1 && -r $seqfile1 && $seqfile2 && -r $seqfile2; #make sure these files exist
 	  
 	  next unless $sets->[$i]{reference_seq} || $sets->[$j]{reference_seq};
@@ -1767,7 +1772,7 @@ sub write_fasta
     if ($spike)
       {
 	($spike_seq) = generate_spike_seq($spike);
-	$seq .= $spike_seq;
+	$seq .= "N" x length($spike_seq) . $spike_seq;
       }
     ($fullname) = check_filename_taint( $fullname );
     my $length = length($seq);
@@ -2313,8 +2318,10 @@ sub check_sequence_files_spike
 	  }
 	if ($nt =~ /$check_nt/i)
 	  {
-	    $nt =~ tr/ATCGatcg/TAGCtagc/;
-	    substr($seq, $start, 0) = $nt x length($spike);
+	    write_log(join ("-", @files)." had similar ends.  Additional sequence added between before spike sequence: "."N" x length($spike));
+	    print STDERR substr($seq, $start-10),"\n";
+	    substr($seq, $start, 0) = "N" x length($spike);
+	    print STDERR substr($seq, $start-10-length($spike)),"\n";
 	    open (OUT, ">$file");
 	    print OUT ">$name\n";
 	    print OUT $seq,"\n";
