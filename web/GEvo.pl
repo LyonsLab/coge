@@ -42,7 +42,7 @@ delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 $ENV{'LAGAN_DIR'} = '/opt/apache/CoGe/bin/lagan/';
 #for dialign
 $ENV{'DIALIGN2_DIR'} = '/opt/apache/CoGe/bin/dialign2_dir/';
-use vars qw( $DATE $DEBUG $BL2SEQ $BLASTZ $LAGAN $CHAOS $DIALIGN $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge $NUM_SEQS $MAX_SEQS $BASEFILE $BASEFILENAME);
+use vars qw( $DATE $DEBUG $BL2SEQ $BLASTZ $LAGAN $CHAOS $DIALIGN $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge $NUM_SEQS $MAX_SEQS $BASEFILE $BASEFILENAME $LOGFILE);
 $BL2SEQ = "/opt/bin/bio/bl2seq ";
 $BLASTZ = "/usr/bin/blastz ";
 $LAGAN = "/opt/apache/CoGe/bin/lagan/lagan.pl";
@@ -90,7 +90,7 @@ print $pj->build_html($FORM, \&gen_html);
 
 sub loading
   {
-    return qq{<font class="loading">Generating results. . .</font>}; 
+    return qq{<font class="loading dna">Generating results. . .</font>}; 
   }
 
 sub gen_html
@@ -443,6 +443,7 @@ sub run
 	$analysis_reports = run_bl2seq(sets=>\@sets, params=>$param_string, parser_opts=>$parser_opts, blast_program=>$analysis_program, spike_seq=>$spike_seq);
       }
     $analysis_reports = [] unless ref($analysis_reports) =~ /ARRAY/i;
+    write_log($message) if $message;
    #sets => array or data for blast
    #blast_reports => array of arrays (report, accn1, accn2, parsed data)
 #    print STDERR Dumper $analysis_reports;
@@ -558,6 +559,9 @@ sub run
     $html .= qq{<td class = small>SQLite db};
     my $dbname = generate_imagemap_db(\@sets);
     $html .= "<div class=xsmall><A HREF=\"$dbname\">SQLite DB file</A></DIV>\n";
+    $html .= qq{<td class = small>Log File};
+    my $logfile = $TEMPURL."/".basename($LOGFILE);
+    $html .= "<div class=xsmall><A HREF=\"$logfile\">Log</A></DIV>\n";
     $html .= qq{</table>};
 
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
@@ -571,14 +575,15 @@ sub run
     my $blast_time = timestr(timediff($t3,$t2));
     my $image_time = timestr(timediff($t4,$t3));
     my $html_time = timestr(timediff($t5,$t4));
-    print STDERR qq{
+    my $bench =  qq{
 GEvo Benchmark: $DATE
 Time to get DB info             : $db_time
 Time to run $analysis_program   : $blast_time
 Time to generate images and maps: $image_time
 Time to process html            : $html_time
-} if $BENCHMARK;
-
+};
+    print STDERR $bench if $BENCHMARK;
+    write_log($bench);
     return $outhtml, $iw+400, $frame_height, $BASEFILENAME,$count,$message;
 
 }
@@ -670,6 +675,7 @@ sub generate_image
 #    print STDERR Dumper $gfx;
     my $filename = $BASEFILE."_".$seq_num.".png";
     $filename = check_filename_taint($filename);
+    write_log("generating image for ".$gbobj->accn);
     $gfx->generate_png(file=>$filename);
     my $mapname = "map_".$seq_num;
     my ($map)=$gfx->generate_imagemap(name=>$mapname);
@@ -820,6 +826,7 @@ INSERT INTO image_data (id, name, xmin, xmax, ymin, ymax, image, image_track,pai
 #       {
 # 	print STDERR Dumper $item;
 #       }
+    write_log("generating SQLite database");
     system "chmod +rw $tempfile";
     return $tempfile;
   }
@@ -1168,7 +1175,16 @@ sub generate_seq_file
     my $t2 = new Benchmark;
     my $time = timestr(timediff($t2,$t1));
     print STDERR "Time to generate Sequence file:   $time\n" if $BENCHMARK;
+    
     return ($file, $file_begin, $file_end, $spike_seq, $seq);
+  }
+
+sub write_log
+  {
+    my $message = shift;
+    open (OUT, ">>$LOGFILE") || return;
+    print OUT $message,"\n";
+    close OUT;
   }
 
 sub get_obj_from_genome_db
@@ -1353,7 +1369,7 @@ sub run_bl2seq {
 	      next;
 	    }
 	  # execute the command
-	  print STDERR $command,"\n";
+	  write_log("running ".$command);
 	  `$command`;
 	  system "chmod +rw $tempfile";
 	  my $blastreport = new CoGe::Accessory::bl2seq_report({file=>$tempfile}) if -r $tempfile;
@@ -1406,6 +1422,7 @@ sub run_blastz
 	      }
 	    $command .= " > ".$tempfile;
 	    	  # execute the command
+	    write_log("running ".$command);
 #	    print STDERR $command,"\n";
 	    `$command`;
 	    system "chmod +rw $tempfile";
@@ -1458,6 +1475,7 @@ sub run_lagan
 		next;
 	      }
 	    $command .= " > ".$tempfile;
+	    write_log("running ".$command);
 	    #time for execution
 	    `$command`;
 	    system "chmod +rw $tempfile";
@@ -1512,7 +1530,7 @@ sub run_chaos
 		next;
 	      }
 	    $command .= " > ".$tempfile;
-	    print STDERR $command,"\n";
+	    write_log("running ".$command);
 	    #time for execution
 	    `$command`;
 	    system "chmod +rw $tempfile";
@@ -1618,6 +1636,7 @@ sub run_dialign
 									run_anchor_opts=>$anchor_opts,
 									dialign_report_opts=>$parser_opts,
 									anchor_report_opts=>$parser_opts->{anchor_params}{parser_opts},
+									log_file=>$LOGFILE,
 #									DEBUG=>1,
 								       });
 		$tempfile = $obj->dialign_file;
@@ -1647,6 +1666,7 @@ sub run_dialign
 		  }
 #		print STDERR $command,"\n";
 		#time for execution
+		write_log("running ".$command);
 		`$command`;
 		system "chmod +rw $tempfile";
 		$report = new CoGe::Accessory::dialign_report({file=>$tempfile, %$parser_opts}) if -r $tempfile;
@@ -1707,7 +1727,6 @@ sub write_fasta
       $seq_begin = 1;
     }
     ($seq) = uc($gbobj->sequence());
-
     if ($downstream)
       {
 	$seq_end = $start + $downstream;
@@ -1742,6 +1761,7 @@ sub write_fasta
     print OUT $seq,"\n" if $seq;
     close(OUT);
     system "chmod +rw $fullname";
+    write_log("Created sequence file for $hdr.  Length ". $length);
     return($fullname,$seq_begin,$seq_end,$spike_seq, $full_seq);
   }
 
@@ -2026,7 +2046,7 @@ sub initialize_basefile
 				    #SUFFIX=>'.png',
 				    UNLINK=>1);
     ($BASEFILE)= $file->filename;
-    
+    $LOGFILE = $BASEFILE.".log";
     ($BASEFILENAME) = $file->filename =~ /([^\/]*$)/;
   }
 
