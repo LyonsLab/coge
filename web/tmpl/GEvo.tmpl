@@ -88,9 +88,15 @@ for (var i =1; i<= num_seqs; i++)
   {
     
     $('#accn'+i).val("");
+    $('#drup'+i).val("1000");
+    $('#drdown'+i).val("1000");
     dataset_search(['accn'+i,'args__'+i],[feat_search_chain]);
     $('#gbaccn'+i).val("");
+    $('#gbstart'+i).val("1");
+    $('#gblength'+i).val("");
     $('#dirseq'+i).val("");
+    $('#dirstart'+i).val("1");
+    $('#dirlength'+i).val("");
     
   }
 
@@ -329,7 +335,7 @@ function monitor_log(log)
    }
   if (log && log.match(/running/)) {
      sequence = sequence +"done!<br/>";
-     algo = "Running aligment algorithms. . .";
+     algo = "Running alignment algorithms. . .";
    }
   if (log && log.match(/image/)) {
      algo = algo+"done!<br/>";
@@ -936,7 +942,7 @@ function monitor_log(log)
       <TD>       
      Paste fasta or genbank format sequence below:<BR> <textarea class="backbox" name="dirseq<TMPL_VAR NAME="SEQ_NUM">" id="dirseq<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  rows="5" cols="30"></textarea><BR>
      <font class="small">Start: <input class="backbox" type="text" name="dirstart<TMPL_VAR NAME="SEQ_NUM">" id="dirstart<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="5" value="1" /></font>
-     <font class="small">Stop: <input class="backbox" type="text" name="dirstop<TMPL_VAR NAME="SEQ_NUM">" id="dirstop<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="5" value=""  /></font><br>
+     <font class="small">Length: <input class="backbox" type="text" name="dirlength<TMPL_VAR NAME="SEQ_NUM">" id="dirlength<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="5" value=""  /></font><br>
      <font class="small">Reverse Complement: <label><input class="backbox" type="radio" name="dirrev<TMPL_VAR NAME="SEQ_NUM">" id="dirrev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="1" />Yes</label><label><input class="backbox" type="radio" name="dirrev<TMPL_VAR NAME="SEQ_NUM">" id="dirrev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="0" checked />No</label><BR></font><br>
 </table>
 </DIV>
