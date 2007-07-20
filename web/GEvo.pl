@@ -166,6 +166,15 @@ sub gen_body
 	$autosearch_string .= 'if ($'.qq!('#accn$i').val()) {dataset_search(['accn$i','args__$i', 'args__!;
 	$autosearch_string .= $dsid if $dsid;
 	$autosearch_string .=qq!'],[feat_search_chain]);}!;
+#    if ($exon_mask)
+#      {
+#	$template->param(EXON_MASK_ON=>"checked");
+#      }
+#    else
+#      {
+#	$template->param(EXON_MASK_OFF=>"checked");
+#      }
+
 	push @seq_nums, {
 			  SEQ_NUM=>$i,
 			 };
@@ -185,7 +194,7 @@ sub gen_body
 
     
     my $prog = lc($form->param('prog')) if $form->param('prog');
-    my $exon_mask = $form->param('exon_mask');
+#    my $exon_mask = $form->param('exon_mask');
 
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GEvo.tmpl');
     my $box = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
@@ -199,10 +208,6 @@ sub gen_body
     my $hsp_colors = gen_hsp_colors($num_seqs);
     my $html;
     my $spike_len = spike_filter_select();
-    $template->param(GEN_REFERENCE_SEQUENCES=>1);
-    $template->param(REF_SEQ=>\@seq_nums);
-    my $ref_seqs = $template->output;
-    $template->param(GEN_REFERENCE_SEQUENCES=>0);
 
     $template->param(SPIKE_LEN=>$spike_len);
     $template->param(SEQ_RETRIEVAL=>1);
@@ -214,21 +219,7 @@ sub gen_body
     $template->param(GO_RUN=>gen_go_run($num_seqs));
     $template->param(AUTOSEARCH=>$autosearch_string);
     $box->param(BOX_NAME=>"Options:");
-#    $box->param(BOX_NAME=>"Sequence Retrieval:");
-#    $box->param(BODY=>$template->output);
-    
-#    $html .= $box->output;
-#    $template->param(SEQ_RETRIEVAL=>0);
     $template->param(OPTIONS=>1);
-    if ($exon_mask)
-      {
-	$template->param(EXON_MASK_ON=>"checked");
-      }
-    else
-      {
-	$template->param(EXON_MASK_OFF=>"checked");
-      }
-    $template->param(REFERENCE_SEQUENCES=>$ref_seqs);
     $template->param(ALIGNMENT_PROGRAMS=>algorithm_list($prog));
     $box->param(BODY=>$template->output);
     $html .= $box->output;
@@ -582,7 +573,7 @@ sub run
     my $html_time = timestr(timediff($t6,$t5));
     my $bench =  qq{
 GEvo Benchmark: $DATE
-Time to get DB info             : $db_time
+Time to get sequence            : $db_time
 Time to run $analysis_program   : $blast_time
 Time to generate images and maps: $image_time
 Time to generate sqlite database: $sqlite_time
@@ -1893,6 +1884,9 @@ sub gen_go_run
 	$params .= qq{'args__dirlength$i', 'dirlength$i',};
 	$params .= qq{'args__ref_seq$i', 'ref_seq$i',};
 	$params .= qq{'args__rev$i', 'rev$i',};
+	$params .= qq{'args__maskcds$i', 'mask_cds$i',};
+	$params .= qq{'args__maskncs$i', 'mask_ncs$i',};
+
       }
     for (my $i = 1; $i <=num_colors($num_seqs); $i++)
       {
@@ -1906,8 +1900,6 @@ sub gen_go_run
 
     $params .= qq{
 	'args__spike', 'spike', 
-	'args__maskcds', 'mask_cds', 
-	'args__maskncs', 'mask_ncs', 
 
 	'args__blast_word', 'blast_wordsize', 
 	'args__blast_gapo', 'blast_gapopen', 
