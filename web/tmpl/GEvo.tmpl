@@ -2,7 +2,6 @@
 <HTML>
 <HEAD>
  <TITLE><TMPL_VAR NAME=TITLE></TITLE>
- <link rel="stylesheet" type="text/css" href="/CoGe/css/styled.css" />
  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
 </HEAD>
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.js"></SCRIPT>
@@ -88,8 +87,8 @@ for (var i =1; i<= num_seqs; i++)
   {
     
     $('#accn'+i).val("");
-    $('#drup'+i).val("1000");
-    $('#drdown'+i).val("1000");
+    $('#drup'+i).val("10000");
+    $('#drdown'+i).val("10000");
     dataset_search(['accn'+i,'args__'+i],[feat_search_chain]);
     $('#gbaccn'+i).val("");
     $('#gbstart'+i).val("1");
@@ -354,7 +353,7 @@ function monitor_log(log)
   if (!finished)
   {
     
-    setTimeout("read_log(['args__'+pageobj.basefile], [monitor_log])", 2000);
+    setTimeout("read_log(['args__'+pageobj.basefile], [monitor_log])", 4000);
     if (message) $('#loading').html(message);
   }
 
@@ -896,7 +895,7 @@ function monitor_log(log)
 <option value="dir<TMPL_VAR NAME="SEQ_NUM">">Direct Submission</option>
 </select>
 
-<DIV style="float: left" id="db<TMPL_VAR NAME="SEQ_NUM">" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">
+<DIV style="" id="db<TMPL_VAR NAME="SEQ_NUM">" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">
 <TABLE style="width: 100%;" class="small">
        <TR valign="top">
         <TD>Name:
@@ -911,9 +910,6 @@ function monitor_log(log)
       <TR>
        <TD><DIV class="small">Right sequence:</DIV>
        <TD><DIV  id="down<TMPL_VAR NAME="SEQ_NUM">"><input class="location backbox" type="text" name="drdown<TMPL_VAR NAME="SEQ_NUM">" id="drdown<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10"  value="<TMPL_VAR NAME=DRDOWN>" /></DIV>
-      <TR>
-	<TD colspan =2>
-	<font class="small">Reverse complement: <label><input class="backbox" type="radio" name="drrev<TMPL_VAR NAME="SEQ_NUM">" id="drrev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="1" <TMPL_VAR NAME=REV_YES> onclick='rev_locs("<TMPL_VAR NAME="SEQ_NUM">")' />Yes</label><label><input class="backbox" type="radio" name="drrev<TMPL_VAR NAME="SEQ_NUM">" id="drrev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="0" <TMPL_VAR NAME=REV_NO> onclick='rev_locs("<TMPL_VAR NAME="SEQ_NUM">")' />No</label></font>
       </TABLE>
       </DIV>      
 
@@ -930,9 +926,6 @@ function monitor_log(log)
       <TR>
        <TD><DIV class="small">Sequence Length:</DIV>
        <TD><input class="backbox" type="text" name="gblength<TMPL_VAR NAME="SEQ_NUM">" id="gblength<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10"  value="<TMPL_VAR NAME=GBLENGTH>"/>
-      <TR>
-       <TD colspan=2>
-       <font class="small">Reverse Complement: <label><input class="backbox" type="radio" name="gbrev<TMPL_VAR NAME="SEQ_NUM">" id="gbrev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="1" <TMPL_VAR NAME=REV_YES> onclick="$('#gbstart<TMPL_VAR NAME="SEQ_NUM">').val(1);$('#gblength<TMPL_VAR NAME="SEQ_NUM">').val(''); " />Yes</label><label><input class="backbox" type="radio" name="gbrev<TMPL_VAR NAME="SEQ_NUM">" id="gbrev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="0" <TMPL_VAR NAME=REV_NO> onclick="$('#gbstart<TMPL_VAR NAME="SEQ_NUM">').val(1);$('#gblength<TMPL_VAR NAME="SEQ_NUM">').val(''); " />No</label><BR></font>
       </TABLE>
    </DIV>
 
@@ -943,11 +936,16 @@ function monitor_log(log)
      Paste fasta or genbank format sequence below:<BR> <textarea class="backbox" name="dirseq<TMPL_VAR NAME="SEQ_NUM">" id="dirseq<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  rows="5" cols="30"></textarea><BR>
      <font class="small">Start: <input class="backbox" type="text" name="dirstart<TMPL_VAR NAME="SEQ_NUM">" id="dirstart<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="5" value="1" /></font>
      <font class="small">Length: <input class="backbox" type="text" name="dirlength<TMPL_VAR NAME="SEQ_NUM">" id="dirlength<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="5" value=""  /></font><br>
-     <font class="small">Reverse Complement: <label><input class="backbox" type="radio" name="dirrev<TMPL_VAR NAME="SEQ_NUM">" id="dirrev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="1" />Yes</label><label><input class="backbox" type="radio" name="dirrev<TMPL_VAR NAME="SEQ_NUM">" id="dirrev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="0" checked />No</label><BR></font><br>
 </table>
 </DIV>
-</th>
 
+ <br/>
+   <Table>
+      <TR>
+	<TD>
+	<font class="small">Reverse complement: <label><input class="backbox" type="radio" name="rev<TMPL_VAR NAME="SEQ_NUM">" id="rev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="1" <TMPL_VAR NAME=REV_YES> onclick='rev_locs("<TMPL_VAR NAME="SEQ_NUM">")' />Yes</label><label><input class="backbox" type="radio" name="rev<TMPL_VAR NAME="SEQ_NUM">" id="rev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="0" <TMPL_VAR NAME=REV_NO> onclick='rev_locs("<TMPL_VAR NAME="SEQ_NUM">")' />No</label></font>
+   </table>
+</th>
 </TMPL_LOOP>
 </TMPL_IF>
 
