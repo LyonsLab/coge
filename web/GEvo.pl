@@ -240,8 +240,6 @@ sub run
     my %opts = @_;
     my $num_seqs = $opts{num_seqs} || $NUM_SEQS;
     my $spike_len = $opts{spike};
-    my $mask_cds_flag = $opts{maskcds};
-    my $mask_ncs_flag = $opts{maskncs};
     my $iw = $opts{iw};
     my $ih = $opts{ih};
     my $feat_h = $opts{fh};
@@ -282,7 +280,7 @@ sub run
 #    print Dumper \@_;
 
     my $stagger_label = $hsp_label && $hsp_label =~ /staggered/i ? 1 : 0;
-    my $feature_labels = $hsp_label && $hsp_label eq "0" ? 0 : 1;
+    my $feature_labels = !$hsp_label ? 0 : 1;
     my $form = $FORM;
 
     my @sets;
@@ -295,24 +293,24 @@ sub run
 	my $featid = $opts{"featid$i"};
 	my $drup = $opts{"drup$i"};
 	my $drdown = $opts{"drdown$i"};
-	my $drrev = $opts{"drrev$i"};
 
 	my $gbaccn = $opts{"gbaccn$i"};
 	my $gbstart = $opts{"gbstart$i"};
 	my $gblength = $opts{"gblength$i"};
-	my $gbrev = $opts{"gbrev$i"};
 
 	my $dirseq = $opts{"dirseq$i"};
-	my $dirrev = $opts{"dirrev$i"};
 	my $dirstart = $opts{"dirstart$i"};
 	my $dirlength = $opts{"dirlength$i"};
-	my $rev = 0;
+
+	my $rev = $opts{"rev$i"};
+	my $mask_cds_flag = $opts{"maskcds$i"};
+	my $mask_ncs_flag = $opts{"maskncs$i"};
 	my ($up, $down);
 	my ($file, $file_begin, $file_end, $obj);
 	my $reference_seq =$opts{"ref_seq$i"};
 	if ($featid)
 	  {
-	    $obj = get_obj_from_genome_db( $accn, $featid, $drrev, $drup, $drdown );
+	    $obj = get_obj_from_genome_db( $accn, $featid, $rev, $drup, $drdown );
 	    if ($obj)
 	      {
 		($file, $file_begin, $file_end,$spike_seq) = 
@@ -324,7 +322,6 @@ sub run
 				   );
 		$up = $drup;
 		$down = $drdown;
-		$rev = 1 if $drrev;
 	      }
 	    else
 	      {
@@ -334,24 +331,26 @@ sub run
 	  }
  	elsif ($dirseq )
  	  {
-	    $dirseq = CoGeX::Feature->reverse_complement($dirseq) if $dirrev;
- 	    my $seq = get_substr(seq=>$dirseq, start=>$dirstart, stop=>($dirstart+$dirlength) );
-	    $dirlength = length($seq)-$dirstart unless $dirlength;
- 	    ($obj) = generate_obj_from_seq($seq, $i);
+ 	    ($obj) = generate_obj_from_seq($dirseq, $i, $rev);
+	    $dirlength = length($dirseq)-$dirstart unless $dirlength;
+ 	    #my $seq = get_substr(seq=>$dirseq, start=>$dirstart, stop=>($dirstart+$dirlength) );
  	    
  	    if ($obj)
 	      {
-		($file, $file_begin, $file_end, $spike_seq) = 
+		my $seq;
+		($file, $file_begin, $file_end, $spike_seq, $seq) = 
 		  generate_seq_file (
 				     obj=>$obj,
 				     mask_cds=>$mask_cds_flag,
 				     mask_ncs=>$mask_ncs_flag,
+				     startpos=>$dirstart,
+				     downstream=>$dirlength,
 				     spike_len=>$spike_len, 
 				     seq_num=>$i,
 				    );
+		$obj->sequence($seq);
 		$up = $dirstart;
 		$down = $dirlength;
-		$rev = 1 if $dirrev;
 	      }
 	    else
 	      {
@@ -362,11 +361,10 @@ sub run
 	  {
 	    $obj = new CoGe::Accessory::GenBank;
 	    $obj->add_gene_models(1); #may want to make a user selectable option
- 	    my ($res, $error) = $obj->get_genbank_from_nbci($gbaccn, $gbrev);
+ 	    my ($res, $error) = $obj->get_genbank_from_ncbi($gbaccn, $rev);
 	    $message .= $error."\n" unless $res;
 	    if ($obj->accn)
 	      {
-		$obj->sequence(CoGeX::Feature->reverse_complement($obj->sequence)) if $gbrev;
 		my $seq;
 		($file, $file_begin, $file_end,$spike_seq, $seq) = 
 		  generate_seq_file (
@@ -379,7 +377,6 @@ sub run
 				     seq_num=>$i,
 				    );
 		$obj->sequence($seq);
-		$rev = 1 if ($gbrev);
 		$up = $gbstart;
 		$down = $gblength;
 	      }
@@ -562,6 +559,7 @@ sub run
 	$html .= "<div><font class=xsmall><A HREF=\"$basename\">Annotation file for $accn</A></font></DIV>\n";
       }
     $html .= qq{<td class = small>SQLite db};
+    my $t5 = new Benchmark;
     my $dbname = $TEMPURL."/".basename(generate_imagemap_db(\@sets));
     
     $html .= "<div class=xsmall><A HREF=\"$dbname\">SQLite DB file</A></DIV>\n";
@@ -576,16 +574,18 @@ sub run
     $template->param(BOX_NAME=>$results_name);
     $template->param(BODY=>$html);
     my $outhtml = $template->output;
-    my $t5 = new Benchmark;
+    my $t6 = new Benchmark;
     my $db_time = timestr(timediff($t2,$t1));
     my $blast_time = timestr(timediff($t3,$t2));
     my $image_time = timestr(timediff($t4,$t3));
-    my $html_time = timestr(timediff($t5,$t4));
+    my $sqlite_time = timestr(timediff($t5,$t4));
+    my $html_time = timestr(timediff($t6,$t5));
     my $bench =  qq{
 GEvo Benchmark: $DATE
 Time to get DB info             : $db_time
 Time to run $analysis_program   : $blast_time
 Time to generate images and maps: $image_time
+Time to generate sqlite database: $sqlite_time
 Time to process html            : $html_time
 };
     print STDERR $bench if $BENCHMARK;
@@ -616,6 +616,7 @@ sub generate_image
     my $stagger_label = $opts{stagger_label};
     my $overlap_adjustment = $opts{overlap_adjustment};
     my $feature_labels = $opts{feature_labels};
+    print STDERR "fl: $feature_labels\n";
     my $hsp_limit = $opts{hsp_limit};
     my $color_hsp = $opts{color_hsp};
     my $hsp_limit_num = $opts{hsp_limit_num};
@@ -627,6 +628,7 @@ sub generate_image
     my $seq_num = $opts{seq_num};
     my $graphic = new CoGe::Graphics;
     my $gfx = new CoGe::Graphics::Chromosome;
+    write_log("generating image for ".$gbobj->accn);
     $gfx->overlap_adjustment(1);
     $gfx->skip_duplicate_features(1);
     $gfx->DEBUG(0);
@@ -645,7 +647,6 @@ sub generate_image
 			    mag=>0,
 			    mag_off=>1,
 			    chr_length => length($gbobj->sequence),
-			    feature_labels=>1,
 			    fill_labels=>1,
 			    forcefit=>1,
 			    minor_tick_labels=>1,
@@ -683,7 +684,6 @@ sub generate_image
 #    print STDERR Dumper $gfx;
     my $filename = $BASEFILE."_".$seq_num.".png";
     $filename = check_filename_taint($filename);
-    write_log("generating image for ".$gbobj->accn);
     $gfx->generate_png(file=>$filename);
     my $mapname = "map_".$seq_num;
     my ($map)=$gfx->generate_imagemap(name=>$mapname);
@@ -693,6 +693,7 @@ sub generate_image
 sub generate_imagemap_db
   {
     my ($sets) = @_;
+    write_log("generating SQLite database");
     my $tempfile = $BASEFILE.".sqlite";
     $tempfile = $TEMPDIR."/".$tempfile unless $tempfile =~ /$TEMPDIR/;
     my $dbh = DBI->connect("dbi:SQLite:dbname=$tempfile","","");
@@ -835,7 +836,6 @@ INSERT INTO image_data (id, name, xmin, xmax, ymin, ymax, image, image_track,pai
 #       {
 # 	print STDERR Dumper $item;
 #       }
-    write_log("generating SQLite database");
     system "chmod +rw $tempfile";
     return $tempfile;
   }
@@ -1126,7 +1126,7 @@ sub generate_obj_from_seq
     if ($sequence =~ /^LOCUS/)
       {
 	#genbank sequence
-	$obj->parse_genbank($sequence);
+	$obj->parse_genbank($sequence, $rc);
       }
    elsif ($sequence =~ /^>/)
       {
@@ -1885,16 +1885,14 @@ sub gen_go_run
 	$params .= qq{'args__featid$i', 'featid$i',};
 	$params .= qq{'args__drup$i', 'drup$i',};
 	$params .= qq{'args__drdown$i', 'drdown$i',};
-	$params .= qq{'args__drrev$i', 'drrev$i',};
 	$params .= qq{'args__gbaccn$i', 'gbaccn$i',};
 	$params .= qq{'args__gbstart$i', 'gbstart$i',};
 	$params .= qq{'args__gblength$i', 'gblength$i',};
-	$params .= qq{'args__gbrev$i', 'gbrev$i',};
 	$params .= qq{'args__dirseq$i', 'dirseq$i',};
-	$params .= qq{'args__dirrev$i', 'dirrev$i',};
 	$params .= qq{'args__dirstart$i', 'dirstart$i',};
 	$params .= qq{'args__dirlength$i', 'dirlength$i',};
 	$params .= qq{'args__ref_seq$i', 'ref_seq$i',};
+	$params .= qq{'args__rev$i', 'rev$i',};
       }
     for (my $i = 1; $i <=num_colors($num_seqs); $i++)
       {
