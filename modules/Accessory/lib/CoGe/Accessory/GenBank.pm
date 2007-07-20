@@ -18,7 +18,7 @@ sub new
     return $self;
   }
 
-sub get_genbank_from_nbci
+sub get_genbank_from_ncbi
   {
     my $self = shift;
     my $id = shift;
