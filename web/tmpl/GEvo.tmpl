@@ -674,25 +674,6 @@ function monitor_log(log)
 <td width="2" bgcolor="#99FF99">
 
 
-<td class=small> Select reference sequence(s) to which all other sequences will be compared:<br>
-<div id="refseqs"><TMPL_VAR NAME=REFERENCE_SEQUENCES></div>
-
-<TABLE class=small>
- <TR align=left>
-  <TH >
-   <li>Mask Exons:
-  <TD >
-   <label><input class="backbox" type="radio" name="mask" id="mask_cds" tabindex="22" value="1" <TMPL_VAR NAME=EXON_MASK_ON> />On</label>
-    <label><input class="backbox" type="radio" name="mask" id="mask_cds" tabindex="22" value="0" <TMPL_VAR NAME=EXON_MASK_OFF> />Off</label>
- </TR>
- <TR align=left>
-  <TH>
-   <li>Mask Non-coding Sequence:
-  <TD >
-   <label><input class="backbox" type="radio" name="mask_ncs" id="mask_ncs" tabindex="22" value="1" />On</label>
-   <label><input class="backbox" type="radio" name="mask_ncs" id="mask_ncs" tabindex="22" value="0" checked />Off</label>
- </TR>
- </TABLE>
 
  </table>
  </div>
@@ -818,7 +799,7 @@ function monitor_log(log)
   </TD>
  <TR>
   <TD>
-  <font class="small">Draw high-quality images? (~50% slower algorithm) </font>
+  <font class="small">Draw high-quality images? (SLOW) </font>
   <td>
   <label class="small"><input class="backbox" type="radio" name="hiqual" id="hiqual" tabindex="1" value="1" />Yes</label>
   <label class="small"><input class="backbox" type="radio" name="hiqual" id="hiqual" tabindex="1" value="0" checked />No</label>
@@ -940,10 +921,31 @@ function monitor_log(log)
 </DIV>
 
  <br/>
-   <Table>
+   <Table class="small">
       <TR>
-	<TD>
-	<font class="small">Reverse complement: <label><input class="backbox" type="radio" name="rev<TMPL_VAR NAME="SEQ_NUM">" id="rev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="1" <TMPL_VAR NAME=REV_YES> onclick='rev_locs("<TMPL_VAR NAME="SEQ_NUM">")' />Yes</label><label><input class="backbox" type="radio" name="rev<TMPL_VAR NAME="SEQ_NUM">" id="rev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="0" <TMPL_VAR NAME=REV_NO> onclick='rev_locs("<TMPL_VAR NAME="SEQ_NUM">")' />No</label></font>
+	<TD>Reverse complement: 
+	<td><label><input class="backbox" type="radio" name="rev<TMPL_VAR NAME="SEQ_NUM">" id="rev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="1" <TMPL_VAR NAME=REV_YES> onclick='rev_locs("<TMPL_VAR NAME="SEQ_NUM">")' />Yes</label>
+	    <label><input class="backbox" type="radio" name="rev<TMPL_VAR NAME="SEQ_NUM">" id="rev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="0" <TMPL_VAR NAME=REV_NO> onclick='rev_locs("<TMPL_VAR NAME="SEQ_NUM">")' />No</label>
+ <TR align=left>
+  <Td>
+   Mask Exons:
+  <TD>
+   <label><input class="backbox" type="radio" name="mask_cds<TMPL_VAR NAME="SEQ_NUM">" id="mask_cds<TMPL_VAR NAME="SEQ_NUM">" tabindex="22" value="1" <TMPL_VAR NAME=EXON_MASK_ON> />Yes</label>
+    <label><input class="backbox" type="radio" name="mask_cds<TMPL_VAR NAME="SEQ_NUM">" id="mask_cds<TMPL_VAR NAME="SEQ_NUM">" tabindex="22" value="0" checked <TMPL_VAR NAME=EXON_MASK_OFF> />No</label>
+ </TR>
+ <TR align=left>
+  <Td>
+   Mask Non-coding Sequence:
+  <TD>
+   <label><input class="backbox" type="radio" name="mask_ncs<TMPL_VAR NAME="SEQ_NUM">" id="mask_ncs<TMPL_VAR NAME="SEQ_NUM">" tabindex="22" value="1" />Yes</label>
+   <label><input class="backbox" type="radio" name="mask_ncs<TMPL_VAR NAME="SEQ_NUM">" id="mask_ncs<TMPL_VAR NAME="SEQ_NUM">" tabindex="22" value="0" checked />No</label>
+ </TR>
+ <TR align=left>
+  <Td>
+   Reference Sequence:
+  <TD>
+	<label><input class="backbox" type="radio" name="ref_seq<TMPL_VAR NAME=SEQ_NUM>" id="ref_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="1" checked />On</label>
+	<label><input class="backbox" type="radio" name="ref_seq<TMPL_VAR NAME=SEQ_NUM>" id="ref_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="0" />Off</label><br>
    </table>
 </th>
 </TMPL_LOOP>
