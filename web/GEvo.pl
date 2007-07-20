@@ -42,7 +42,7 @@ delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 $ENV{'LAGAN_DIR'} = '/opt/apache/CoGe/bin/lagan/';
 #for dialign
 $ENV{'DIALIGN2_DIR'} = '/opt/apache/CoGe/bin/dialign2_dir/';
-use vars qw( $DATE $DEBUG $BL2SEQ $BLASTZ $LAGAN $CHAOS $DIALIGN $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge $NUM_SEQS $MAX_SEQS $BASEFILE $BASEFILENAME $LOGFILE);
+use vars qw( $DATE $DEBUG $BL2SEQ $BLASTZ $LAGAN $CHAOS $DIALIGN $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge $NUM_SEQS $MAX_SEQS $BASEFILE $BASEFILENAME $LOGFILE $SQLITEFILE);
 $BL2SEQ = "/opt/bin/bio/bl2seq ";
 $BLASTZ = "/usr/bin/blastz ";
 $LAGAN = "/opt/apache/CoGe/bin/lagan/lagan.pl";
@@ -444,6 +444,8 @@ sub run
     my $count = 1;
     my $frame_height;
     my $html_viewer;
+    initialize_sqlite();
+
     foreach my $item (@sets)
       {
 	my $accn = $item->{accn};
@@ -459,6 +461,7 @@ sub run
 	my $spike_seq = $item->{spike_seq};
 	if ($obj)
 	  {
+	    write_log("generating image ($count/".scalar @sets.")for ".$obj->accn);	
 	    my ($image, $map, $mapname, $gfx, $eval_cutoff) = generate_image(
 									     gbobj=>$obj, 
 									     start=>$file_begin,
@@ -495,7 +498,8 @@ sub run
 	    $html_viewer .= qq!BORDER=0 ismap usemap="#$mapname">\n!;
 	    $html_viewer .= "$map\n";
 	    $item->{image} = $image;
-	    $item->{gfx} = $gfx;
+	    generate_imagemap_db(set=>$item, gfx=>$gfx);
+#	    $item->{gfx} = $gfx;
 	  }
 	$count++;
       }
@@ -525,7 +529,7 @@ sub run
 	    my $accn2 = $item->[2];
 	    my $basereportname = basename( $report );
 	    $basereportname = $TEMPURL . "/$basereportname\n";
-	    $html .= "<div><font class=xsmall><A HREF=\"$basereportname\">View alignment output for $accn1 versus $accn2</A></font></DIV>\n";
+	    $html .= "<div><font class=xsmall><A HREF=\"$basereportname\" target=_new>View alignment output for $accn1 versus $accn2</A></font></DIV>\n";
 	  }
       }
     else
@@ -538,7 +542,7 @@ sub run
 	    next unless $item->{file};
 	    my $basename = $TEMPURL."/".basename ($item->{file});
 	    my $accn = $item->{accn};
-	    $html .= "<div><font class=xsmall><A HREF=\"$basename\">Fasta file for $accn</A></font></DIV>\n";
+	    $html .= "<div><font class=xsmall><A HREF=\"$basename\" target=_new>Fasta file for $accn</A></font></DIV>\n";
 	  }
     $html .= qq{<td class = small><a href = "http://baboon.math.berkeley.edu/mavid/gaf.html">GAF</a> annotation files};
     foreach my $item (@sets)
@@ -547,16 +551,15 @@ sub run
 	next unless $anno_file;
 	my $basename = $TEMPURL."/".basename ($anno_file);
 	my $accn = $item->{accn};
-	$html .= "<div><font class=xsmall><A HREF=\"$basename\">Annotation file for $accn</A></font></DIV>\n";
+	$html .= "<div><font class=xsmall><A HREF=\"$basename\" target=_new>Annotation file for $accn</A></font></DIV>\n";
       }
     $html .= qq{<td class = small>SQLite db};
-    my $t5 = new Benchmark;
-    my $dbname = $TEMPURL."/".basename(generate_imagemap_db(\@sets));
+    my $dbname = $TEMPURL."/".basename($SQLITEFILE);
     
-    $html .= "<div class=xsmall><A HREF=\"$dbname\">SQLite DB file</A></DIV>\n";
+    $html .= "<div class=xsmall><A HREF=\"$dbname\" target=_new>SQLite DB file</A></DIV>\n";
     $html .= qq{<td class = small>Log File};
     my $logfile = $TEMPURL."/".basename($LOGFILE);
-    $html .= "<div class=xsmall><A HREF=\"$logfile\">Log</A></DIV>\n";
+    $html .= "<div class=xsmall><A HREF=\"$logfile\" target=_new>Log</A></DIV>\n";
     $html .= qq{</table>};
 
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
@@ -565,19 +568,17 @@ sub run
     $template->param(BOX_NAME=>$results_name);
     $template->param(BODY=>$html);
     my $outhtml = $template->output;
-    my $t6 = new Benchmark;
+    my $t5 = new Benchmark;
     my $db_time = timestr(timediff($t2,$t1));
     my $blast_time = timestr(timediff($t3,$t2));
     my $image_time = timestr(timediff($t4,$t3));
-    my $sqlite_time = timestr(timediff($t5,$t4));
-    my $html_time = timestr(timediff($t6,$t5));
+    my $html_time = timestr(timediff($t5,$t4));
     my $bench =  qq{
 GEvo Benchmark: $DATE
-Time to get sequence            : $db_time
-Time to run $analysis_program   : $blast_time
-Time to generate images and maps: $image_time
-Time to generate sqlite database: $sqlite_time
-Time to process html            : $html_time
+Time to get sequence                              : $db_time
+Time to run $analysis_program                     : $blast_time
+Time to generate images, maps, and sqlite database: $image_time
+Time to process html                              : $html_time
 };
     print STDERR $bench if $BENCHMARK;
     write_log($bench);
@@ -607,7 +608,6 @@ sub generate_image
     my $stagger_label = $opts{stagger_label};
     my $overlap_adjustment = $opts{overlap_adjustment};
     my $feature_labels = $opts{feature_labels};
-    print STDERR "fl: $feature_labels\n";
     my $hsp_limit = $opts{hsp_limit};
     my $color_hsp = $opts{color_hsp};
     my $hsp_limit_num = $opts{hsp_limit_num};
@@ -619,7 +619,6 @@ sub generate_image
     my $seq_num = $opts{seq_num};
     my $graphic = new CoGe::Graphics;
     my $gfx = new CoGe::Graphics::Chromosome;
-    write_log("generating image for ".$gbobj->accn);
     $gfx->overlap_adjustment(1);
     $gfx->skip_duplicate_features(1);
     $gfx->DEBUG(0);
@@ -681,17 +680,16 @@ sub generate_image
     return (basename($filename), $map, $mapname, $gfx, $eval_cutoff);
   }
 
-sub generate_imagemap_db
+sub initialize_sqlite
   {
-    my ($sets) = @_;
-    write_log("generating SQLite database");
     my $tempfile = $BASEFILE.".sqlite";
     $tempfile = $TEMPDIR."/".$tempfile unless $tempfile =~ /$TEMPDIR/;
-    my $dbh = DBI->connect("dbi:SQLite:dbname=$tempfile","","");
+    $SQLITEFILE = $tempfile;
+    my $dbh = DBI->connect("dbi:SQLite:dbname=$SQLITEFILE","","");
     my $create = qq{
 CREATE TABLE image_data
 (
-id integer(10) PRIMARY KEY,
+id INTEGER PRIMARY KEY AUTOINCREMENT,
 name varchar(50),
 xmin integer(10),
 xmax integer(10),
@@ -707,6 +705,10 @@ color varchar(10)
 };
     $dbh->do($create);
      my $index = qq{
+  ALTER TABLE 'image_data' ADD AUTO_INCREMENT 'id';
+ };
+#     $dbh->do($index);
+     $index = qq{
  CREATE INDEX name ON image_data (name)
  };
      $dbh->do($index);
@@ -741,7 +743,7 @@ color varchar(10)
     $create = qq{
 CREATE TABLE image_info
 (
-id integer(10) PRIMARY KEY,
+id INTEGER PRIMARY KEY AUTOINCREMENT,
 iname varchar(50),
 title varchar(1024)
 )
@@ -751,84 +753,96 @@ title varchar(1024)
  CREATE INDEX iname ON image_info (iname)
  };
      $dbh->do($index);
-    my $i = 1;
-    my $j = 1;
-#    my $sth_insert = $dbh->prepare("INSERT INTO image_data VALUES(?,?,?,?,?,?,?,?,?,?)");
-    foreach my $item (@$sets)
+    system "chmod +rw $SQLITEFILE";
+  }
+
+sub generate_imagemap_db
+  {
+    my %args = @_;
+    my $gfx = $args{gfx};
+    my $set = $args{set};
+    next unless $gfx;
+    write_log("generating SQLite database");
+    my $dbh = DBI->connect("dbi:SQLite:dbname=$SQLITEFILE","","");
+    my $image = $set->{image};
+#	my $gfx = $item->{gfx};
+    my $accn = $set->{accn};
+    my $title;
+    $title = $accn;
+    $title .= " ".$set->{obj}->organism() if $set->{obj}->organism();
+    $title .= "(".$set->{up}."::".$set->{down}.")" if defined $set->{up};
+    $title .= qq! Reverse Complement! if $set->{rev};
+    my $statement = qq{
+INSERT INTO image_info (iname, title) values ("$image", "$title")
+};
+    print STDERR $statement unless $dbh->do($statement);
+    foreach my $feat ($gfx->get_feats)
       {
-	my $image = $item->{image};
-	my $gfx = $item->{gfx};
-	next unless $gfx;
-	my $accn = $item->{accn};
-	my $title;
-	$title = $accn;
-	$title .= " ".$item->{obj}->organism() if $item->{obj}->organism();
-	$title .= "(".$item->{up}."::".$item->{down}.")" if defined $item->{up};
-	$title .= qq! Reverse Complement! if $item->{rev};
-	my $statement = qq{
-INSERT INTO image_info (id, iname, title) values ($j, "$image", "$title")
+	next if $feat->fill; #skip backgroup images;
+	next unless $feat->image_coordinates;
+	next if $feat->desc =~ /spike sequence/;
+	my $pair_id = "NULL";
+	my $coords = $feat->image_coordinates;
+	$coords =~ s/\s//g;
+	#next unless $feat->type =~ /HSP/i;
+	next if $feat->type eq "unknown";
+	my $name = $feat->type =~ /HSP/i ? $feat->alt : $feat->label;
+	$name = $feat->type unless $name;
+	my $color = "NULL";
+	if ($feat->type =~ /HSP/)
+	  {
+	    $color ="#";
+	    foreach my $c (@{$feat->color})
+	      {
+		$color .= sprintf("%X",$c);
+	      }
+	  }
+	#generate link
+	my $link = $feat->link;
+	$link =~ s/'//g;
+	#generate image track
+	my $image_track = $feat->track;
+	$image_track = "-".$image_track if $feat->strand =~ /-/;
+	
+	my ($xmin, $ymin, $xmax, $ymax) = split /,/, $coords;
+	my $anno = $feat->description;
+	#	    $anno =~ s/'|"//g;
+	$anno =~ s/'//g;
+	$anno =~ s/<br\/?>/&#10;/ig;
+	$anno =~ s/\n/&#10;/g;
+	$anno =~ s/[\[\]\(\)]//g;
+	#	    print STDERR $anno if $anno =~ /Location/;
+	#	    print STDERR $anno,"\n" if $anno =~ /01020/;
+	$statement = qq{
+INSERT INTO image_data (name, xmin, xmax, ymin, ymax, image, image_track,pair_id, link, annotation, color) values ("$name", $xmin, $xmax, $ymin, $ymax, "$image", "$image_track",$pair_id, '$link', '$anno', '$color')
 };
 	print STDERR $statement unless $dbh->do($statement);
-	$j++;
-	foreach my $feat ($gfx->get_feats)
+	#create pair id
+	if ($feat->type =~ /HSP/)
 	  {
-	    next if $feat->fill; #skip backgroup images;
-	    next unless $feat->image_coordinates;
-	    next if $feat->desc =~ /spike sequence/;
-	    my $pair_id = "NULL";
-	    my $coords = $feat->image_coordinates;
-	    $coords =~ s/\s//g;
-	    #next unless $feat->type =~ /HSP/i;
-	    next if $feat->type eq "unknown";
-	    my $name = $feat->type =~ /HSP/i ? $feat->alt : $feat->label;
-	    $name = $feat->type unless $name;
 	    my $query = qq{select id from image_data where name = "$name"};
 	    my $sth = $dbh->prepare($query);
 	    $sth->execute;
-	    my $res = $sth->fetchrow_array();
-	    my $color = "NULL";
-	    if ($res && $feat->type =~ /HSP/)
+	    my @items;
+	    while (my $res = $sth->fetchrow_array())
 	      {
-		$color ="#";
-		$pair_id = $res;
-		my $statement = "update image_data set pair_id = $i where id = $res";
-		$dbh->do($statement);
-		foreach my $c (@{$feat->color})
-		  {
-		    $color .= sprintf("%X",$c);
-		  }
+		push @items, $res;
 	      }
-	    #generate link
-	    my $link = $feat->link;
-	    $link =~ s/'//g;
-	    #generate image track
-	    my $image_track = $feat->track;
-	    $image_track = "-".$image_track if $feat->strand =~ /-/;
-
-	    my ($xmin, $ymin, $xmax, $ymax) = split /,/, $coords;
-	    my $anno = $feat->description;
-#	    $anno =~ s/'|"//g;
-	    $anno =~ s/<br\/?>/&#10;/ig;
-	    $anno =~ s/\n/&#10;/g;
-	    $anno =~ s/[\[\]\(\)]//g;
-#	    print STDERR $anno if $anno =~ /Location/;
-#	    print STDERR $anno,"\n" if $anno =~ /01020/;
-	    $statement = qq{
-INSERT INTO image_data (id, name, xmin, xmax, ymin, ymax, image, image_track,pair_id, link, annotation, color) values ($i, "$name", $xmin, $xmax, $ymin, $ymax, "$image", "$image_track",$pair_id, '$link', '$anno', '$color')
-};
-	    print STDERR $statement unless $dbh->do($statement);
-#	    $sth_insert->execute($i,$name, $xmin, $xmax, $ymin, $ymax, $image, $pair_id, $link, $anno);
-	    $i++;
+	    next unless @items == 2;
+	    my $statement = "update image_data set pair_id = $items[0] where id = $items[1]";
+	    $dbh->do($statement);
+	    $statement = "update image_data set pair_id = $items[1] where id = $items[0]";
+	    $dbh->do($statement);
 	  }
       }
-#     my $sth = $dbh->prepare("SELECT * from image_data");
+    #     my $sth = $dbh->prepare("SELECT * from image_data");
 #     $sth->execute();
 #     while(my $item = $sth->fetchrow_arrayref)
 #       {
 # 	print STDERR Dumper $item;
 #       }
-    system "chmod +rw $tempfile";
-    return $tempfile;
+#    system "chmod +rw $tempfile";
+#    return $tempfile;
   }
 
 
@@ -2054,6 +2068,7 @@ sub num_colors
 sub algorithm_list
   {
     my $program = shift;
+    $program = "blastz" unless $program;
     my @programs = sort {lc $a cmp lc $b} qw(blastn blastz CHAOS DIALIGN LAGAN tblastx);
     my $html;
     foreach my $prog (@programs)
