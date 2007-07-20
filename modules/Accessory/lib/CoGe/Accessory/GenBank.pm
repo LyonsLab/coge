@@ -5,6 +5,7 @@ use Data::Dumper;
 use LWP::UserAgent;
 use base qw(Class::Accessor);
 use CoGe::Accessory::GenBank::Feature;
+use CoGeX::Feature;
 
 
 __PACKAGE__->mk_accessors qw(id locus accn seq_length moltype division date definition verison keywords data_source dataset organism sequence srcfile dir anntoation features start stop chromosome add_gene_models);
@@ -176,6 +177,7 @@ sub parse_genbank
 	}
 	elsif ( $line =~ /^\/\// ) {
 	  # last line of buffer
+	  $accn = $locus unless $accn;
 	  $self->locus($locus);
 	  $self->seq_length($length);
 	  $self->moltype($moltype);
@@ -187,6 +189,7 @@ sub parse_genbank
 	  $self->data_source($source);
 	  $self->organism($organism);
 	  $self->definition($definition);
+	  $sequence = CoGeX::Feature->reverse_complement($sequence) if $rev;
 	  $self->sequence( $sequence );
 	  my $fcount = 1;
 	  foreach my $feat (@features)
