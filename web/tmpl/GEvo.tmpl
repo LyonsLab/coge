@@ -31,7 +31,7 @@ $(document).ready(function(){
  animate_section(".seq_submission_type","hide"); 
  check_seq_submit();
 
- setup();
+ autodistance_setup();
  $("#image_parameters").hide();
  $(".algo_options").hide();
  $(".anchor").hide();
@@ -68,7 +68,7 @@ function pressedButton (button_name){
  document.images[button_name].src = eval(button_name+"_pressed.src");
 }
 
-function setup(){
+function autodistance_setup(){
 
 $(".location").keyup(function(){
      if($('#apply_all')[0].checked){
@@ -313,6 +313,7 @@ function process_add_seq (newseq, num_seqs, go_run, refseq, colors, message)
  $('#go_run').html(go_run);
  $('#new_refseq').html(refseq);
  $('#hsp_colors').html(colors);
+ autodistance_setup();
  alert_message(message);
 }
 
@@ -323,27 +324,40 @@ function monitor_log(log)
   var algo = 0;
   var image = 0;
   var database = 0;
-  if (log && log.match(/Finished!/))
+  var match;
+  if (log) {
+   if (log.match(/Finished!/))
     {
      database = database+"done!\n";
      finished=1;
     }
 
-  if (log && log.match(/sequence/)) {
+   if (log.match(/sequence/)) {
      sequence = "Generating sequence files. . .";
    }
-  if (log && log.match(/running/)) {
+   match=log.match(/running\s+(\(.*?\))/g);
+   if (match && match[0]) {
+//   if (log.match(/running/)) {
      sequence = sequence +"done!<br/>";
-     algo = "Running alignment algorithms. . .";
+     match.reverse();
+     val = match[0];
+     if (!val) val = "";
+     algo = "Alignment algorithm "+val+". . .";
    }
-  if (log && log.match(/image/)) {
+  
+   match=log.match(/image\s+(\(.*?\))/g);
+   if (match && match[0]) {
      algo = algo+"done!<br/>";
-     image = "Generating image visualization. . .";
+     match.reverse();
+     val = match[0];
+     if (!val) val = "";
+     image = "Generating visualization "+val+". . .";
    }
-  if (log && log.match(/database/)) {
+   if (log.match(/database/)) {
      image = image+"done!<br/>";
      database = "Generating annotation database. . .";
    }
+  }
   var message;
   if (sequence) message = sequence;
   if (algo) message += algo;
@@ -944,8 +958,8 @@ function monitor_log(log)
   <Td>
    Reference Sequence:
   <TD>
-	<label><input class="backbox" type="radio" name="ref_seq<TMPL_VAR NAME=SEQ_NUM>" id="ref_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="1" checked />On</label>
-	<label><input class="backbox" type="radio" name="ref_seq<TMPL_VAR NAME=SEQ_NUM>" id="ref_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="0" />Off</label><br>
+	<label><input class="backbox" type="radio" name="ref_seq<TMPL_VAR NAME=SEQ_NUM>" id="ref_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="1" checked />Yes</label>
+	<label><input class="backbox" type="radio" name="ref_seq<TMPL_VAR NAME=SEQ_NUM>" id="ref_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="0" />No</label><br>
    </table>
 </th>
 </TMPL_LOOP>
