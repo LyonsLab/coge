@@ -762,7 +762,7 @@ sub generate_imagemap_db
     my $gfx = $args{gfx};
     my $set = $args{set};
     next unless $gfx;
-    write_log("generating SQLite database");
+#    write_log("generating SQLite database");
     my $dbh = DBI->connect("dbi:SQLite:dbname=$SQLITEFILE","","");
     my $image = $set->{image};
 #	my $gfx = $item->{gfx};
@@ -1369,6 +1369,8 @@ sub run_bl2seq {
   
   $program = "blastn" unless $program;
   my @reports;
+  my $total_runs = number_of_runs($sets);
+  my $count = 1;
   for (my $i=0; $i<scalar @$sets; $i++)
     {
       for (my $j=0; $j<scalar @$sets; $j++)
@@ -1402,7 +1404,7 @@ sub run_bl2seq {
 	      next;
 	    }
 	  # execute the command
-	  write_log("running ".$command);
+	  write_log("running ($count/$total_runs) ".$command);
 	  `$command`;
 	  system "chmod +rw $tempfile";
 	  my $blastreport = new CoGe::Accessory::bl2seq_report({file=>$tempfile}) if -r $tempfile;
@@ -1417,6 +1419,7 @@ sub run_bl2seq {
 	      push @tmp, "no results from blasting $accn1 and $accn2";
 	    }
 	  push @reports, \@tmp;
+	  $count++;
 	}
     }
   return( \@reports );
@@ -1430,6 +1433,8 @@ sub run_blastz
     my $parser_opts = $opts{parser_opts};
     my @files;
     my @reports;
+    my $total_runs = number_of_runs($sets);
+    my $count = 1;
     for (my $i=0; $i<scalar @$sets; $i++)
       {
 	for (my $j=0; $j<scalar @$sets; $j++)
@@ -1455,7 +1460,7 @@ sub run_blastz
 	      }
 	    $command .= " > ".$tempfile;
 	    	  # execute the command
-	    write_log("running ".$command);
+	    write_log("running ($count/$total_runs) ".$command);
 #	    print STDERR $command,"\n";
 	    `$command`;
 	    system "chmod +rw $tempfile";
@@ -1465,11 +1470,12 @@ sub run_blastz
 	    {
 	      push @tmp, $blastreport
 	    }
-	  else
-	    {
-	      push @tmp, "no results from blasting $accn1 and $accn2";
-	    }
-	  push @reports, \@tmp;
+	    else
+	      {
+		push @tmp, "no results from blasting $accn1 and $accn2";
+	      }
+	    push @reports, \@tmp;
+	    $count++;
 	  }
       }
     return \@reports;
@@ -1483,6 +1489,8 @@ sub run_lagan
     my $parser_opts = $opts{parser_opts};
     my @files;
     my @reports;
+    my $total_runs = number_of_runs($sets);
+    my $count = 1;
     for (my $i=0; $i<scalar @$sets; $i++)
       {
 	for (my $j=0; $j<scalar @$sets; $j++)
@@ -1508,7 +1516,7 @@ sub run_lagan
 		next;
 	      }
 	    $command .= " > ".$tempfile;
-	    write_log("running ".$command);
+	    write_log("running ($count/$total_runs) ".$command);
 	    #time for execution
 	    `$command`;
 	    system "chmod +rw $tempfile";
@@ -1518,11 +1526,12 @@ sub run_lagan
 	    {
 	      push @tmp, $report
 	    }
-	  else
-	    {
-	      push @tmp, "no results from comparing $accn1 and $accn2 with LAGAN";
-	    }
-	  push @reports, \@tmp;
+	    else
+	      {
+		push @tmp, "no results from comparing $accn1 and $accn2 with LAGAN";
+	      }
+	    push @reports, \@tmp;
+	    $count++;
 	  }
       }
     return \@reports;
@@ -1538,6 +1547,8 @@ sub run_chaos
     
     my @files;
     my @reports;
+    my $total_runs = number_of_runs($sets);
+    my $count = 1;
     for (my $i=0; $i<scalar @$sets; $i++)
       {
 	for (my $j=0; $j<scalar @$sets; $j++)
@@ -1563,7 +1574,7 @@ sub run_chaos
 		next;
 	      }
 	    $command .= " > ".$tempfile;
-	    write_log("running ".$command);
+	    write_log("running ($count/$total_runs) ".$command);
 	    #time for execution
 	    `$command`;
 	    system "chmod +rw $tempfile";
@@ -1573,11 +1584,12 @@ sub run_chaos
 	    {
 	      push @tmp, $report
 	    }
-	  else
-	    {
-	      push @tmp, "no results from comparing $accn1 and $accn2 with LAGAN";
-	    }
-	  push @reports, \@tmp;
+	    else
+	      {
+		push @tmp, "no results from comparing $accn1 and $accn2 with LAGAN";
+	      }
+	    push @reports, \@tmp;
+	    $count++;
 	  }
       }
     return \@reports;
@@ -1596,6 +1608,8 @@ sub run_dialign
     #my $algo_limits = $opts{algo_limits};
     my @files;
     my @reports;
+    my $total_runs = number_of_runs($sets);
+    my $count = 1;
     for (my $i=0; $i<scalar @$sets; $i++)
       {
 	for (my $j=0; $j<scalar @$sets; $j++)
@@ -1699,7 +1713,7 @@ sub run_dialign
 		  }
 #		print STDERR $command,"\n";
 		#time for execution
-		write_log("running ".$command);
+		write_log("running ($count/$total_runs) ".$command);
 		`$command`;
 		system "chmod +rw $tempfile";
 		$report = new CoGe::Accessory::dialign_report({file=>$tempfile, %$parser_opts}) if -r $tempfile;
@@ -1714,6 +1728,7 @@ sub run_dialign
 		push @tmp, "no results from comparing $accn1 and $accn2 with LAGAN";
 	      }
 	    push @reports, \@tmp;
+	    $count++;
 	  }
       }
     return (\@reports,$program_ran,$error_message);
@@ -2333,4 +2348,24 @@ sub check_sequence_files_spike
 	    close OUT;
 	  }
       }
+  }
+
+sub number_of_runs
+  {
+    my $sets = shift;
+    return unless $sets;
+    my $refs = 0;
+    my $num = @$sets;
+    $num--;
+    foreach my $item (map {$_->{reference_seq}} @$sets)
+      {
+	$refs++ if $item;
+      }
+    my $total =0;
+    for (1..$refs)
+      {
+	$total+=$num;
+	$num--;
+      }
+    return $total;
   }
