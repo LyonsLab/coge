@@ -529,3 +529,10 @@ tr.ltblue {
     color:gray;
     size: 20px;
 }
+
+.dna {
+  float: left;
+  width: 300px;
+  height: 182px;
+  background-image: url(/CoGe/picts/animations/DNA_orbit_animated_small-side.gif);
+}
