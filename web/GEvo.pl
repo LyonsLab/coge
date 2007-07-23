@@ -42,12 +42,13 @@ delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 $ENV{'LAGAN_DIR'} = '/opt/apache/CoGe/bin/lagan/';
 #for dialign
 $ENV{'DIALIGN2_DIR'} = '/opt/apache/CoGe/bin/dialign2_dir/';
-use vars qw( $DATE $DEBUG $BL2SEQ $BLASTZ $LAGAN $CHAOS $DIALIGN $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge $NUM_SEQS $MAX_SEQS $BASEFILE $BASEFILENAME $LOGFILE $SQLITEFILE);
+use vars qw( $DATE $DEBUG $BL2SEQ $BLASTZ $LAGAN $CHAOS $DIALIGN $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge $NUM_SEQS $MAX_SEQS $BASEFILE $BASEFILENAME $LOGFILE $SQLITEFILE $REPEATMASKER);
 $BL2SEQ = "/opt/bin/bio/bl2seq ";
 $BLASTZ = "/usr/bin/blastz ";
 $LAGAN = "/opt/apache/CoGe/bin/lagan/lagan.pl";
 $CHAOS = "/opt/apache/CoGe/bin/lagan/chaos_coge";
 $DIALIGN = "/opt/apache/CoGe/bin/dialign2_dir/dialign2-2_coge";
+$REPEATMASKER = "/opt/apache/CoGe/bin/RepeatMasker/RepeatMasker";
 $TEMPDIR = "/opt/apache/CoGe/tmp";
 $TEMPURL = "/CoGe/tmp";
 
@@ -299,6 +300,7 @@ sub run
 	my ($up, $down);
 	my ($file, $file_begin, $file_end, $obj);
 	my $reference_seq =$opts{"ref_seq$i"};
+	my $repeat_mask =$opts{"repmask$i"};
 	if ($featid)
 	  {
 	    $obj = get_obj_from_genome_db( $accn, $featid, $rev, $drup, $drdown );
@@ -310,6 +312,7 @@ sub run
 				    mask_ncs=>$mask_ncs_flag,
 				    spike_len=>$spike_len,
 				    seq_num=>$i,
+				    repeat_mask=>$repeat_mask,
 				   );
 		$up = $drup;
 		$down = $drdown;
@@ -338,6 +341,7 @@ sub run
 				     downstream=>$dirlength,
 				     spike_len=>$spike_len, 
 				     seq_num=>$i,
+				     repeat_mask=>$repeat_mask,
 				    );
 		$obj->sequence($seq);
 		$up = $dirstart;
@@ -366,6 +370,7 @@ sub run
 				     downstream=>$gblength,
 				     spike_len=>$spike_len,
 				     seq_num=>$i,
+				     repeat_mask=>$repeat_mask,
 				    );
 		$obj->sequence($seq);
 		$up = $gbstart;
@@ -1175,7 +1180,8 @@ sub generate_seq_file
     my $mask = $options{mask_cds};
     my $mask_ncs = $options{mask_ncs};
     my $seq_num = $options{seq_num};
-
+    my $repeat_mask = $options{repeat_mask};
+    
     my $t1 = new Benchmark;
     my ($file, $file_begin, $file_end, $spike_seq, $seq) = 
       write_fasta(
@@ -1189,9 +1195,15 @@ sub generate_seq_file
 		  spike=>$spike_len,
 		  seq_num=>$seq_num,
 		 );
+    if ($repeat_mask)
+      {
+	write_log("repeat masking $file");
+	`$REPEATMASKER $file`;
+	`mv $file.masked $file`;
+      }
     my $t2 = new Benchmark;
     my $time = timestr(timediff($t2,$t1));
-    print STDERR "Time to generate Sequence file:   $time\n" if $BENCHMARK;
+    print STDERR "Time to generate Sequence file:   $time\n" if $BENCHMARK && $DEBUG;
     
     return ($file, $file_begin, $file_end, $spike_seq, $seq);
   }
@@ -1330,7 +1342,7 @@ Initialize obj took:                                  $int_obj_time
 Getting feats in region took:                         $feat_region_time
 Populating object took:                                $pop_obj_time
 Region:         ds_id: $ds_id $start-$stop($chr)
-} if $BENCHMARK;
+} if $BENCHMARK && $DEBUG;
     return $obj;
   }
 
@@ -1912,6 +1924,7 @@ sub gen_go_run
 	$params .= qq{'args__dirstart$i', 'dirstart$i',};
 	$params .= qq{'args__dirlength$i', 'dirlength$i',};
 	$params .= qq{'args__ref_seq$i', 'ref_seq$i',};
+	$params .= qq{'args__repmask$i', 'repmask$i',};
 	$params .= qq{'args__rev$i', 'rev$i',};
 	$params .= qq{'args__maskcds$i', 'mask_cds$i',};
 	$params .= qq{'args__maskncs$i', 'mask_ncs$i',};
