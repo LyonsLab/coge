@@ -153,33 +153,6 @@ else {animate_section('#html_viewer', 'show');}
 
 }
 
-function speed () {
- var speedy = $("#animation_speed").val();
- if (!speedy) speedy = 0;
- speedy = speedy*1; // make sure speedy is a number according to javascript
- return speedy;
-}
-
-function animate_section(name, style, speedy) {
-  if (speedy == undefined) speedy = speed();
-  if (!style) style = "toggle";
-  if (!speedy) {
-    if ((style == "show") || style == "slideDown" || style == "fadeIn") {$(name).show();}
-    else if ((style == "hide") || style == "slideUp" || style == "fadeOut") {$(name).hide();}
-    else {$(name).toggle();}
-   }
-  else if (style == "toggle") {$(name).toggle(speedy);}
-  else if (style == "hide") {$(name).hide(speedy);}
-  else if (style == "show") {$(name).show(speedy);}
-  else if (style == "slideToggle") {$(name).slideToggle(speedy);}
-  else if (style == "slideUp") {$(name).slideUp(speedy);}
-  else if (style == "slideDown") {$(name).slideDown(speedy);}
-  else if (style == "fadeIn") {$(name).fadeIn(speedy);}
-  else if (style == "fadeOut") {$(name).fadeOut(speedy);}
-  return speedy;
- }
-
-
 function check_alignment_program (){
 
  var alignment = $("#alignment_program").val();
@@ -719,22 +692,6 @@ function monitor_log(log)
      <option value = "html">GeLo HTML Viewer</option> 
     </DIV>
   </TD>
- <TR valign=top>
-  <TD>
-    <DIV class="small">
-      Page Animations:
-    </DIV>
-  </TD>
-  <TD>
-    <DIV class="small">
-     <select id="animation_speed">
-     <option value=0>Off</option> 	
-     <option value=600>Slow</option>
-     <option selected value=400>Medium</option> 
-     <option value=200>Fast</option> 
-    </DIV>
-  </TD>
- </TR>
  <TR valign=top>
   <TD>
     <DIV class="small">
