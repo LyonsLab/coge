@@ -2217,7 +2217,7 @@ sub _gd_string
     $y = $opts{Y} unless defined $y;
     unless (defined $x && defined $y)
       {
-	warn ("X: $x or Y: $y is not defined.  Can't generate string without coordinates");
+#	warn ("X: $x or Y: $y is not defined.  Can't generate string without coordinates");
 	return 0;
       }
     my $color = $opts{color} || $opts{COLOR};
