@@ -1,3 +1,5 @@
+
+
     <style type="text/css">
         #map {
             width: 900px;
@@ -28,7 +30,7 @@
              color:green;
         }
     </style>
-    <script src="http://openlayers.org/api/2.3/OpenLayers.js"></script>
+    <script src="http://openlayers.org/api/2.4/OpenLayers.js"></script>
     <script src="js/Grid1D.js"></script>
     <script src="js/Genomic.js"></script>
     <script src="js/opengenes.js"></script>
@@ -50,7 +52,7 @@
         var loc = '<TMPL_VAR NAME=LOC>';
         var zoom = '<TMPL_VAR NAME=ZOOM>';
         function init(){
-            map = new OpenLayers.GenomeBrowser( $('map') , 
+            map = new OpenLayers.GenomeBrowser( $('#map')[0] , 
             {   
                  maxExtent: new OpenLayers.Bounds(-50000,0,1000000000,1),
                  units     :'bp',
@@ -137,7 +139,7 @@
         }
 
         function updateZoom(){
-            $('resolution').innerHTML = map.getResolution() + 'bp/pixel';
+            $('#resolution').innerHTML = map.getResolution() + 'bp/pixel';
 
         }
         function query(x){
@@ -146,6 +148,10 @@
            + x+'&ds='+ds; 
            jfetch(url,'query');
          }
+
+$(document).ready(function(){
+init();
+});
 
     </script>
     <div id="map">
