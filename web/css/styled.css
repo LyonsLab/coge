@@ -503,7 +503,7 @@ tr.ltblue {
 
 .topItem
 {
-  background: #cbfecb;
+  background: url(/CoGe/picts/menus/coge_gradient.png) repeat-x;
   padding-left:25px;
   height:22px;
   cursor:pointer;
@@ -511,6 +511,38 @@ tr.ltblue {
   color: #009900; 
   border: 1px solid #00FF36;
   font-size: small;
+}
+
+.topItemSelected
+{
+  background: url(/CoGe/picts/menus/coge_gradient-alt.png) repeat-x;
+  padding-left:25px;
+  height:22px;
+  cursor:pointer;
+  text-decoration: none;
+  color: #009900; 
+  border: 1px solid #00FF36;
+  font-size: small;
+}
+
+.boxarttop
+{
+  background: url(/CoGe/picts/table/coge_table_bkgd_top.png) repeat-x;
+}
+
+.boxartbottom
+{
+  background: url(/CoGe/picts/table/coge_table_bkgd_bottom.png) repeat-x;
+}
+
+.boxartleft
+{
+  background: url(/CoGe/picts/table/coge_table_bkgd_left.png) repeat-y;
+}
+
+.boxartright
+{
+  background: url(/CoGe/picts/table/coge_table_bkgd_right.png) repeat-y;
 }
 
 .topItemPlain
