@@ -61,9 +61,7 @@ sub gen_html
 	    $template->param(HEADER_LINK=>'/CoGe/GeLo.pl');
 	  }
 	$template->param(TITLE=>'CoGe: Genome Location Viewer');
-	$template->param(HEAD=>qq{
-<script src=js/kaj.stable.js> </script>
-});
+	$template->param(HEAD=>qq{});
 	$template->param(USER=>$USER);
 	$template->param(DATE=>$DATE);
 	$template->param(LOGO_PNG=>"GeLo-logo.png");
