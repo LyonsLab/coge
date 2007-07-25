@@ -690,6 +690,7 @@ sub initialize_sqlite
     my $tempfile = $BASEFILE.".sqlite";
     $tempfile = $TEMPDIR."/".$tempfile unless $tempfile =~ /$TEMPDIR/;
     $SQLITEFILE = $tempfile;
+    return if -r $SQLITEFILE;
     my $dbh = DBI->connect("dbi:SQLite:dbname=$SQLITEFILE","","");
     my $create = qq{
 CREATE TABLE image_data
@@ -1199,7 +1200,7 @@ sub generate_seq_file
       {
 	write_log("repeat masking $file");
 	`$REPEATMASKER $file`;
-	`mv $file.masked $file`;
+	`mv $file.masked $file` if -r "$file.masked";
       }
     my $t2 = new Benchmark;
     my $time = timestr(timediff($t2,$t1));
@@ -1263,7 +1264,7 @@ sub get_obj_from_genome_db
 	$start = 1 if $start < 1;
 	$chr = $feat->chr;
 
-	$seq = $coge->resultset('Dataset')->find($ds_id)->get_genome_sequence(
+	$seq = $coge->resultset('Dataset')->find($ds_id)->get_genomic_sequence(
 									      start => $start,
 									      stop => $stop,
 									      chr => $chr,
@@ -2352,9 +2353,7 @@ sub check_sequence_files_spike
 	if ($nt =~ /$check_nt/i)
 	  {
 	    write_log(join ("-", @files)." had similar ends.  Additional sequence added between before spike sequence: "."N" x length($spike));
-	    print STDERR substr($seq, $start-10),"\n";
 	    substr($seq, $start, 0) = "N" x length($spike);
-	    print STDERR substr($seq, $start-10-length($spike)),"\n";
 	    open (OUT, ">$file");
 	    print OUT ">$name\n";
 	    print OUT $seq,"\n";
