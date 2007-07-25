@@ -27,24 +27,22 @@ $(document).ready(function(){
   remove_pressed = new Image(); remove_pressed.src = "/CoGe/picts/buttons/GEvo/remove/pressed.png";
   }
 
- animate_section(".seq_submission_type","hide"); 
+ //animate_section(".seq_submission_type","hide"); 
  check_seq_submit();
 
  autodistance_setup();
- $("#image_parameters").hide();
- $(".algo_options").hide();
- $(".anchor").hide();
+ //$("#image_parameters").hide();
+ //$(".algo_options").hide();
+ //$(".anchor").hide();
 
  check_alignment_program();
  check_dialign_anchor_program();
- 
- pageobj = new Object();
 
  });
 
 function populate_page_obj(basefile)
  {
-  pageobj.basefile = basefile;
+  pageObj.basefile = basefile;
  }
 
 function change( info ) {
@@ -339,7 +337,7 @@ function monitor_log(log)
   if (!finished)
   {
     
-    setTimeout("read_log(['args__'+pageobj.basefile], [monitor_log])", 4000);
+    setTimeout("read_log(['args__'+pageObj.basefile], [monitor_log])", 4000);
     if (message) $('#loading').html(message);
   }
 
@@ -393,7 +391,7 @@ function monitor_log(log)
  <TR>
   <TH colspan="2" align=left>
    <DIV id="bp" class="topItem" onMouseOver="changeColor('bp','#000099'); " onMouseOut="changeColor('bp','#009900');" onClick='animate_section("#algo_options","slideToggle")'>Comparison Parameters and Options:</DIV>
-   <DIV id = "algo_options">
+   <DIV id = "algo_options" >
      <TABLE style="width: 100%;" class="dropMenu" >
       <TR valign=top align=left>
       <TD>
@@ -456,13 +454,13 @@ function monitor_log(log)
 </DIV>
 
 
- <DIV id="tblastx_options" class="small algo_options">
+ <DIV id="tblastx_options" class="small algo_options" style="display: none">
  <font class="small">Hide HSPs with stop codons in a coding sequence?<label><input class="backbox" type="radio" name="show_hsps_with_stop_codon" id="show_hsps_with_stop_codon" tabindex="1" value="1" />Yes</label><label><input class="backbox" type="radio" name="show_hsps_with_stop_codon" id="show_hsps_with_stop_codon" tabindex="1" value="0" checked />No</label></font>
 <br>Note: Word size limited to 3 for tblastx
 </DIV> 
 
 
- <DIV id="spike_sequence" class ="algo_options blastn_options">
+ <DIV id="spike_sequence" class ="algo_options blastn_options" style="display: none">
   <table class=small>
   <tr colspan>
   <th> HSP filter by spike sequence
@@ -474,7 +472,7 @@ function monitor_log(log)
   </table>
  </DIV>
 
- <DIV id="chaos_options" class="small  algo_options">
+ <DIV id="chaos_options" class="small  algo_options" style="display: none">
 <table class = small>
    <TR>
   <TD>Word size: </TD>
@@ -512,7 +510,7 @@ function monitor_log(log)
 </table>
 
 </DIV>
- <DIV id="blastz_options" class="small algo_options">
+ <DIV id="blastz_options" class="small algo_options" style="display: none">
 <table class = small>
    <TR>
   <TD>Word size: </TD>
@@ -555,7 +553,7 @@ function monitor_log(log)
 
 </DIV>
 
- <DIV id="lagan_options" class="small algo_options">
+ <DIV id="lagan_options" class="small algo_options" style="display: none">
    <Table class=small>    
   <TR>
   <TD>Min HSP Length: </TD>
@@ -577,7 +575,7 @@ function monitor_log(log)
 </TABLE>
 </DIV>
 
-<DIV id="dialign_options" class="small algo_options">
+<DIV id="dialign_options" class="small algo_options" style="display: none">
    <Table class=small>    
   <TR>
    <TD>Use Anchored Alignment: </TD>
@@ -614,7 +612,7 @@ function monitor_log(log)
  </TR>
  </TABLE>
   </DIV>
- <DIV id="dialign_motif_options" class="small  algo_options">
+ <DIV id="dialign_motif_options" class="small  algo_options" style="display: none">
  <Table class=small>  
  <TR>
  <TD align=right> Motif:  </TD>
@@ -630,7 +628,7 @@ function monitor_log(log)
  </TR>
  </TABLE>
  </DIV>
- <DIV id="dialign_parameters"  class="small algo_options">
+ <DIV id="dialign_parameters"  class="small algo_options" style="display: none">
  <Table class=small>
  <TR>
   <TD>Other DIALIGN Parameters: </TD>
@@ -641,7 +639,7 @@ function monitor_log(log)
 </DIV>
 
 <TD>
-<TABLE class="small anchor algo_options">
+<TABLE class="small anchor algo_options" style="display: none">
  <TR align=left>
   <TH>Select Anchor Program: 
   <select class="backbox" id="dialign_anchor_program" size="1" onchange='check_dialign_anchor_program()'>
@@ -673,12 +671,12 @@ function monitor_log(log)
   <TH colspan="2" align=left>
   <DIV  id="ip" class="topItem" onMouseOver="changeColor('ip','#000099')" onMouseOut="changeColor('ip','#009900');"  onClick='animate_section("#image_parameters","slideToggle")' >Image and Interface Parameters:</DIV>
 
-<div class="menu" id="image_parameters">
+<div class="menu" id="image_parameters" style="display: none">
 
 <table valign class="dropmenu" width="100%">
 <TR valign=top>
 <td valign=top>
-<TABLE class="basic">
+<TABLE>
  <TR valign=top>
   <TD>
     <DIV class="small">
@@ -846,7 +844,7 @@ function monitor_log(log)
 <option value="dir<TMPL_VAR NAME="SEQ_NUM">">Direct Submission</option>
 </select>
 
-<DIV style="" id="db<TMPL_VAR NAME="SEQ_NUM">" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">
+<DIV style="" id="db<TMPL_VAR NAME="SEQ_NUM">" style="display: none" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">
 <TABLE style="width: 100%;" class="small">
        <TR valign="top">
         <TD>Name:
@@ -866,7 +864,7 @@ function monitor_log(log)
 
 
 
-<DIV id="gb<TMPL_VAR NAME="SEQ_NUM">" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">       
+<DIV id="gb<TMPL_VAR NAME="SEQ_NUM">" style="display: none" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">       
 <TABLE style="width: 100%;" class="small">
        <TR valign="top">
         <TD>Accession:
@@ -879,8 +877,7 @@ function monitor_log(log)
        <TD><input class="backbox" type="text" name="gblength<TMPL_VAR NAME="SEQ_NUM">" id="gblength<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10"  value="<TMPL_VAR NAME=GBLENGTH>"/>
       </TABLE>
    </DIV>
-
-<DIV id="dir<TMPL_VAR NAME="SEQ_NUM">" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">	
+<DIV id="dir<TMPL_VAR NAME="SEQ_NUM">" style="display: none" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">	
 <TABLE style="width: 100%;" class="small">
       <TR valign="top">
       <TD>       
@@ -890,8 +887,11 @@ function monitor_log(log)
 </table>
 </DIV>
 
- <br/>
-   <Table class="small">
+<table>
+<tr><td>
+
+   <DIV id="seqopts<TMPL_VAR NAME="SEQ_NUM">" class="topItemPlain small" onMouseOver="changeColor('seqopts<TMPL_VAR NAME="SEQ_NUM">','#000099'); " onMouseOut="changeColor('seqopts<TMPL_VAR NAME="SEQ_NUM">','#009900');" onClick='animate_section(".sequence_options<TMPL_VAR NAME="SEQ_NUM">","slideToggle")'>Sequence <TMPL_VAR NAME="SEQ_NUM"> Options (click to open):</DIV>
+   <Table class="small sequence_options<TMPL_VAR NAME="SEQ_NUM"> dropMenuPlain" style="display: none">
       <TR>
 	<TD>Reverse complement: 
 	<td><label><input class="backbox" type="radio" name="rev<TMPL_VAR NAME="SEQ_NUM">" id="rev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="1" <TMPL_VAR NAME=REV_YES> onclick='rev_locs("<TMPL_VAR NAME="SEQ_NUM">")' />Yes</label>
@@ -923,6 +923,7 @@ function monitor_log(log)
 	<label><input class="backbox" type="radio" name="ref_seq<TMPL_VAR NAME=SEQ_NUM>" id="ref_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="1" checked />Yes</label>
 	<label><input class="backbox" type="radio" name="ref_seq<TMPL_VAR NAME=SEQ_NUM>" id="ref_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="0" />No</label><br>
    </table>
+</table>
 </th>
 </TMPL_LOOP>
 </TMPL_IF>
