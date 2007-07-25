@@ -29,6 +29,7 @@ sub gen_html
     else
       {
         my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
+#	$template->param(NO_JQUERY=>1);
         $template->param(LOGO_PNG=>"GeLo-logo.png");
         $template->param(TITLE=>'Genome Viewer');
         $template->param(HELP=>'');
@@ -80,3 +81,4 @@ sub generate_box_name
   my $title = "$org (v $ver), Chromosome: $chr, Dataset ID No. $ds";
   return $title;
 }
+
