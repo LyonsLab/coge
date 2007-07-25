@@ -513,10 +513,28 @@ tr.ltblue {
   font-size: small;
 }
 
+.topItemPlain
+{
+  padding-left:5px;
+  cursor:pointer;
+  text-decoration: none;
+  color: #009900; 
+  font-size: small;
+  border-bottom: 1px solid #00FF35;
+}
+
 .dropMenu
 {
   background:#edffed;
   border:1px solid #00FF36;
+}
+
+.dropMenuPlain
+{
+  background:#edffed;
+  border-bottom: 1px solid #00FF35;
+  border-left: 1px solid #00FF35;
+  border-right: 1px solid #00FF35;
 
 }
 
@@ -535,4 +553,22 @@ tr.ltblue {
   width: 300px;
   height: 182px;
   background-image: url(/CoGe/picts/animations/DNA_orbit_animated_small-side.gif);
+}
+
+#carousel
+{
+	width: 1100px;
+	height: 225px;
+	/*position: absolute;*/
+	background-image: url(/CoGe/picts/animations/DNA_orbit_animated_small-side.gif);
+    background-repeat: no-repeat;
+    background-position: 50% 50%;
+	/*top: 200px;
+	left: 100px;*/
+}
+
+#carousel a
+{
+	position: absolute;
+	width: 227px;
 }
