@@ -1,21 +1,29 @@
-<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.js"></SCRIPT>
+<!--<SCRIPT language="JavaScript" type="text/javascript" src="./js/interface_carousel.js"></SCRIPT>-->
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/iutil.js"></SCRIPT>
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/carousel.js"></SCRIPT>
 <SCRIPT language="JavaScript">
 
 function place_cookie(valid, cookie, url)
   {
-    if (valid) 
+    if (valid == 'true') 
      {
-       
        document.cookie = cookie;
+       if ($('#disable_animations')[0].checked) $.cookie('anim_speed',0);
        if (url)
         {
+         if ((url.match(/index/)) && ($('#disable_animations')[0].checked)) url += "?disable=1";
          window.location = url;
         }
-       else {window.location.reload;}
+       else {
+        if ($('#disable_animations')[0].checked){
+          window.location = "index.pl?disable=1";}
+        else{
+          window.location.reload;}
+        }
      }
     else
      {
-	kaj.GS('message','<font class="error">Invalid login</font>');       
+	$('#message').html('<font class="error">Invalid login</font>');       
      }
   }
 
@@ -25,16 +33,49 @@ function delete_cookie(cookie)
   }
 
 $(document).ready(function(){
+//$('#main').hide();
+//$('.page_info').hide();
+$('#main').show(pageObj.speed);
+});
 
-$('#main').hide();
-$('#main').show("slow");
+$(document).ready(
+	function() {
+$('#carousel').Carousel(
+		{
+			itemWidth: 227,
+			itemHeight: 75,
+			itemMinWidth: 40,
+			items: 'a',
+			reflections: 0,
+			rotationSpeed: 0.7,
+			slowOnHover: true,
+//			reflections: 1,
 
- });
+		}
+	);	
+}
+);
+function timing(num,stop){
+  //alert(num);
+  //alert("show_info(['args__'+num],[display_info]),800");
+  num = "\""+num+"\"";
+  if (stop == 1){
+   clearTimeout(pageObj.time);}
+  else{
+   pageObj.time = setTimeout("show_data("+num+")",600);
+    }
+  //$('#'+id).mouseout(clearTimeout(time));
+}
+
+function show_data(num){
+  $('.page_info').hide();
+  $('#page_info'+num).slideDown(pageObj.speed);
+}
 
 </SCRIPT>
 
 
-<div id=main>
+<div id=main style="display: none">
 <TMPL_IF NAME="LOGIN">
 <DIV id="message"><TMPL_VAR NAME="MESSAGE"></DIV>
 <DIV class=large>Please log on: <font class="small">(You will need make sure your browser is set to accept <a href="http://en.wikipedia.org/wiki/HTTP_cookie">cookies</a>)</font></div>
@@ -48,11 +89,61 @@ $('#main').show("slow");
 </TABLE>
 <input type="hidden" id="url" value="<TMPL_VAR NAME="url">">
 <input type="submit" value="Log on" id="Login" onClick="login(['uname', 'pwd','url'],[place_cookie])">
-<input type="submit" value="Use Public Login" id="Login" onClick="login(['args__public', 'args__none','url'],[place_cookie])"><br>
+<input type="submit" value="Use Public Login" id="Login" onClick="login(['args__public', 'args__none','url'],[place_cookie])">
+<input type="checkbox" id="disable_animations" value=1><font class=small>Check to Disable CoGe Animations (Recommended for Older Computers)</font><br>
 <div class=small>Use "public login" if you don't have a registered CoGe account.</div>
+</TMPL_IF>
 
+<TMPL_IF NAME=ANIMATE>
+<TABLE width=100%>
+  <TR>
+    <TD align=center>
+    	<div id="carousel">
+		<a href="/CoGe/GEvo.pl" onmouseover="timing(1)" onmouseout="timing(1,1)" title="GEvo"><img src="/CoGe/picts/carousel/GEvo-logo.png" width="100%" border=0/></a>
+		<a href="/CoGe/FeatView.pl" onmouseover="timing(2)" onmouseout="timing(2,1)" title="FeatView"><img src="/CoGe/picts/carousel/FeatView-logo.png" width="100%" border=0/></a>
+		<a href="/CoGe/MSAView.pl" onmouseover="timing(3)" onmouseout="timing(3,1)" title="MSAView"><img src="/CoGe/picts/carousel/MSAView-logo.png" width="100%" border=0/></a>
+		<a href="/CoGe/TreeView.pl" onmouseover="timing(4)" onmouseout="timing(4,1)" title="TreeView"><img src="/CoGe/picts/carousel/TreeView-logo.png" width="100%" border=0/></a>
+		<a href="/CoGe/GeLo.pl" onmouseover="timing(5)" onmouseout="timing(5,1)" title="GeLoView"><img src="/CoGe/picts/carousel/GeLo-logo.png" width="100%" border=0/></a>
+		<a href="/CoGe/CoGeBlast.pl" onmouseover="timing(6)" onmouseout="timing(6,1)" title="CoGeBlast"><img src="/CoGe/picts/carousel/CoGeBlast-logo.png" width="100%" border=0/></a>
+		<a href="/CoGe/help/CoGe" onmouseover="timing(7)" onmouseout="timing(7,1)" title="CoGe FAQ"><img src="/CoGe/picts/carousel/FAQ-logo.png" width="100%" border=0/></a>
 
-<TMPL_ELSE>
+	</div>
+    </TD>
+  </TR>
+  <TR>
+    <TD>
+      <TMPL_LOOP NAME=ACTIONS>
+      <DIV id="page_info<TMPL_VAR NAME=ID>" class="page_info dropMenu" style="display: none">
+    <TABLE width=100%>
+    <TR>
+    <TD valign="top">
+    <TABLE>
+      <TR>
+        <TD align=left>
+          <TMPL_VAR NAME=LOGO>
+        </TD>
+        <TD>
+          <TMPL_VAR NAME=ACTION>
+        </TD>
+      </TR>
+    </TABLE>
+    <TABLE>
+      <TR>
+        <TD>
+          <TMPL_VAR NAME=DESC>
+        </TD>
+      </TR>
+    </TABLE>
+    </TD>
+    <TD><TMPL_VAR NAME=SCREENSHOT></TD>
+    <TD valign="top" align=right><a href="#" onClick="$('#page_info<TMPL_VAR NAME=ID>').slideToggle()"><img src="/CoGe/picts/exit.png" width="17" height="16" border="0"></a></TD>
+    </TR>
+    </TABLE></DIV></TMPL_LOOP>
+    </TD>
+  </TR>
+</TABLE>
+</TMPL_IF>
+<TMPL_IF NAME=DISABLE>
 <TABLE class="basic" width=100%>
  <TR>
   <TH>
