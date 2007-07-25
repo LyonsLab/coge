@@ -305,19 +305,16 @@ sub count_features_in_region
 sub get_current_datasets_for_org
   {
     my $self = shift;
-    my %opts = @_;
-    my $org = $opts{org} || $opts{organism};
-    $org = shift unless $org;
-    return unless $org;
+    my %opts = @_ if @_ >1;
+    my $orgid = $opts{org} || $opts{orgid} || $opts{organism};
+    $orgid = shift unless $orgid;
+    return unless $orgid;
     my $rs = $self->resultset('Dataset')->search(
 						 {
-						  'organism.name'=> {'like'=>'%'.$org.'%'},
+						  'organism_id'=> $orgid,
 						 },
 						 {
 						  distinct=>'version',
-						  join => ['organism', 'genomic_sequences'],
-						  
-						  prefextch=>['organism'],
 						  order_by=>'version desc',
 						 }
 						);
