@@ -6,6 +6,7 @@ Changes
 Makefile.PL
 lib/CoGe/Graphics.pm
 lib/CoGe/Graphics/Chromosome.pm
+lib/CoGe/Graphics/GenomeView.pm
 lib/CoGe/Graphics/Feature.pm
 lib/CoGe/Graphics/Feature/Gene.pm
 lib/CoGe/Graphics/Feature/NucTide.pm
