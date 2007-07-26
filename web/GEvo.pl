@@ -81,7 +81,6 @@ my $pj = new CGI::Ajax(
 		       gen_go_run=>\&gen_go_run,
 		       gen_hsp_colors =>\&gen_hsp_colors,
 		       initialize_basefile=>\&initialize_basefile,
-		       read_log => \&read_log,
 		       %ajax,
 		      );
 $pj->JSDEBUG(0);
@@ -441,7 +440,7 @@ sub run
 	$analysis_reports = run_bl2seq(sets=>\@sets, params=>$param_string, parser_opts=>$parser_opts, blast_program=>$analysis_program, spike_seq=>$spike_seq);
       }
     $analysis_reports = [] unless ref($analysis_reports) =~ /ARRAY/i;
-    write_log($message) if $message;
+    write_log($message, $LOGFILE) if $message;
    #sets => array or data for blast
    #blast_reports => array of arrays (report, accn1, accn2, parsed data)
 #    print STDERR Dumper $analysis_reports;
@@ -466,7 +465,7 @@ sub run
 	my $spike_seq = $item->{spike_seq};
 	if ($obj)
 	  {
-	    write_log("generating image ($count/".scalar @sets.")for ".$obj->accn);	
+	    write_log("generating image ($count/".scalar @sets.")for ".$obj->accn, $LOGFILE);	
 	    my ($image, $map, $mapname, $gfx, $eval_cutoff) = generate_image(
 									     gbobj=>$obj, 
 									     start=>$file_begin,
@@ -586,8 +585,8 @@ Time to generate images, maps, and sqlite database: $image_time
 Time to process html                              : $html_time
 };
     print STDERR $bench if $BENCHMARK;
-    write_log($bench);
-    write_log("Finished!");
+    write_log($bench, $LOGFILE);
+    write_log("Finished!", $LOGFILE);
 
     return $outhtml, $iw+400, $frame_height, $BASEFILENAME,$count,$message;
 
@@ -994,7 +993,7 @@ sub process_hsps
 		  {
 		    $hsp->contains_spike(1);
 		    $eval_cutoff = $hsp->eval;
-		    write_log("Found spike sequence for $accn1 and $accn2: eval cutoff set to $eval_cutoff");
+		    write_log("Found spike sequence for $accn1 and $accn2: eval cutoff set to $eval_cutoff", $LOGFILE);
 		    last;
 		  }
 	      }
@@ -1198,7 +1197,7 @@ sub generate_seq_file
 		 );
     if ($repeat_mask)
       {
-	write_log("repeat masking $file");
+	write_log("repeat masking $file", $LOGFILE);
 	`$REPEATMASKER $file`;
 	`mv $file.masked $file` if -r "$file.masked";
       }
@@ -1207,30 +1206,6 @@ sub generate_seq_file
     print STDERR "Time to generate Sequence file:   $time\n" if $BENCHMARK && $DEBUG;
     
     return ($file, $file_begin, $file_end, $spike_seq, $seq);
-  }
-
-sub write_log
-  {
-    my $message = shift;
-    open (OUT, ">>$LOGFILE") || return;
-    print OUT $message,"\n";
-    close OUT;
-  }
-
-sub read_log
-  {
-    my $logfile = shift || $LOGFILE;
-    $logfile .= ".log" unless $logfile =~ /log$/;
-    $logfile = $TEMPDIR."/".$logfile unless $logfile =~ /^$TEMPDIR/;
-    return unless -r $logfile;
-    my $str;
-    open (IN, $logfile);
-    while (<IN>)
-      {
-	$str .= $_;
-      }
-    close IN;
-    return $str;
   }
 
 sub get_obj_from_genome_db
@@ -1347,30 +1322,6 @@ Region:         ds_id: $ds_id $start-$stop($chr)
     return $obj;
   }
 
-sub check_filename_taint {
-	my $v = shift;
-	if ($v =~ /^([A-Za-z0-9\-\.=\/_]*)$/) {
-		my $v1 = $1;
-		return($v1);
-	} else {
-		return(0);
-	}
-}
-
-sub check_taint {
-	my $v = shift;
-	if ($v =~ /^([-\w._=\s+\/]+)$/) {
-			$v = $1;
-			# $v now untainted
-			return(1,$v);
-	} else {
-	# data should be thrown out
-	  carp "$v failed taint check\n";
-			return(0);
-	}
-}
-
-
 sub run_bl2seq {
   my %opts = @_;
   my $sets = $opts{sets};
@@ -1417,7 +1368,7 @@ sub run_bl2seq {
 	      next;
 	    }
 	  # execute the command
-	  write_log("running ($count/$total_runs) ".$command);
+	  write_log("running ($count/$total_runs) ".$command, $LOGFILE);
 	  `$command`;
 	  system "chmod +rw $tempfile";
 	  my $blastreport = new CoGe::Accessory::bl2seq_report({file=>$tempfile}) if -r $tempfile;
@@ -1473,7 +1424,7 @@ sub run_blastz
 	      }
 	    $command .= " > ".$tempfile;
 	    	  # execute the command
-	    write_log("running ($count/$total_runs) ".$command);
+	    write_log("running ($count/$total_runs) ".$command, $LOGFILE);
 #	    print STDERR $command,"\n";
 	    `$command`;
 	    system "chmod +rw $tempfile";
@@ -1529,7 +1480,7 @@ sub run_lagan
 		next;
 	      }
 	    $command .= " > ".$tempfile;
-	    write_log("running ($count/$total_runs) ".$command);
+	    write_log("running ($count/$total_runs) ".$command, $LOGFILE);
 	    #time for execution
 	    `$command`;
 	    system "chmod +rw $tempfile";
@@ -1587,7 +1538,7 @@ sub run_chaos
 		next;
 	      }
 	    $command .= " > ".$tempfile;
-	    write_log("running ($count/$total_runs) ".$command);
+	    write_log("running ($count/$total_runs) ".$command, $LOGFILE);
 	    #time for execution
 	    `$command`;
 	    system "chmod +rw $tempfile";
@@ -1726,7 +1677,7 @@ sub run_dialign
 		  }
 #		print STDERR $command,"\n";
 		#time for execution
-		write_log("running ($count/$total_runs) ".$command);
+		write_log("running ($count/$total_runs) ".$command, $LOGFILE);
 		`$command`;
 		system "chmod +rw $tempfile";
 		$report = new CoGe::Accessory::dialign_report({file=>$tempfile, %$parser_opts}) if -r $tempfile;
@@ -1822,7 +1773,7 @@ sub write_fasta
     print OUT $seq,"\n" if $seq;
     close(OUT);
     system "chmod +rw $fullname";
-    write_log("Created sequence file for $hdr.  Length ". $length);
+    write_log("Created sequence file for $hdr.  Length ". $length, $LOGFILE);
     return($fullname,$seq_begin,$seq_end,$spike_seq, $full_seq);
   }
 
@@ -2002,7 +1953,7 @@ sub gen_go_run
 	'args__showallhsps', 'show_hsps_with_stop_codon',
         'args__padding', 'padding',
         'args__num_seqs','args__$num_seqs',
-        'args__basefile','args__'+pageobj.basefile
+        'args__basefile','args__'+pageObj.basefile
 };
     $params =~ s/\n//g;
     $params =~ s/\s+/ /g;
@@ -2012,7 +1963,7 @@ sub gen_go_run
 function go_run (){ 
  initialize_basefile([],[populate_page_obj]);
  setTimeout("run([$params],[handle_results], 'POST')",500); 
- setTimeout(" monitor_log()", 1000);
+ setTimeout(" monitor_log()", 5000);
 }
 </script>!;
 #
@@ -2352,7 +2303,7 @@ sub check_sequence_files_spike
 	  }
 	if ($nt =~ /$check_nt/i)
 	  {
-	    write_log(join ("-", @files)." had similar ends.  Additional sequence added between before spike sequence: "."N" x length($spike));
+	    write_log(join ("-", @files)." had similar ends.  Additional sequence added between before spike sequence: "."N" x length($spike), $LOGFILE);
 	    substr($seq, $start, 0) = "N" x length($spike);
 	    open (OUT, ">$file");
 	    print OUT ">$name\n";
