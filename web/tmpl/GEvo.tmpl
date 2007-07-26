@@ -43,6 +43,7 @@ $(document).ready(function(){
 function populate_page_obj(basefile)
  {
   pageObj.basefile = basefile;
+  pageObj.nolog = 0;
  }
 
 function change( info ) {
@@ -333,10 +334,9 @@ function monitor_log(log)
   if (algo) message += algo;
   if (image) message += image;
   if (database) message += database;
-  
-  if (!finished)
+  else {pageObj.nolog += 1;}
+  if (!finished && pageObj.nolog<4)
   {
-    
     setTimeout("read_log(['args__'+pageObj.basefile], [monitor_log])", 4000);
     if (message) $('#loading').html(message);
   }
