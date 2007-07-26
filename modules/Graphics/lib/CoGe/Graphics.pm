@@ -318,7 +318,7 @@ sub genomic_view
     my $init_time = timestr(timediff($t1, $t0)) if $BENCHMARK;
     my $feature_time = timestr(timediff($t2, $t1)) if $BENCHMARK;
     my $draw_time = timestr(timediff($t3, $t2)) if $BENCHMARK;
-    print STDERR "Image height: ", $c->ih,"\n";
+    print STDERR "Image height: ", $c->ih,"\n" if $self->DEBUG;
 
     print STDERR qq{
 BENCHMARKING GenomePNG.pl
