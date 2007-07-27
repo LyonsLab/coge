@@ -44,9 +44,11 @@ sub process_file
     my $data = join ("", <IN>);
     close IN;
     my $header;
-    my $hsps;
+    my $hsps = [];
+    return $self if $data =~ /no hits found/i;
     ($header, $data) = $data =~ /^(.*?Length.*?\d+)\s+(Score.*$)/sx;
     $self->_parseHeader($header);
+    return $self unless $data;  #no data?
     foreach my $hsp_data (split /Score/, $data)
       {
 	next unless $hsp_data;
@@ -185,8 +187,9 @@ sub _processHSP {
 	  {
 	  if ($_ !~ /\S/) 
 	    {next;} # blank line, skip
-	  elsif ($_ =~ /^>|^Lambda/)
+	  elsif ($_ =~ /(^>)|(^Lambda)|(^\s+Database:)/)
 	    {
+	      print STDERR Dumper [@hspline[-5..-1]];
 	      last;
 	    }
 	  else {
