@@ -547,7 +547,7 @@ tr.ltblue {
 
 .topItemPlain
 {
-  padding-left:5px;
+  padding-left:20px;
   cursor:pointer;
   text-decoration: none;
   color: #009900; 
@@ -576,7 +576,7 @@ tr.ltblue {
   border-left: 1px solid #00FF35;
   border-right: 1px solid #00FF35;
   border-top: 1px solid #00FF35;
-
+  background: #F7FFF7; 
 }
 
 .blue {
@@ -594,6 +594,18 @@ tr.ltblue {
   width: 300px;
   height: 182px;
   background-image: url(/CoGe/picts/animations/DNA_orbit_animated_small-side.gif);
+}
+
+.plus {
+  background-image: url(/CoGe/picts/buttons/plus.png);
+  background-repeat: no-repeat;
+  background-position: left;
+}
+
+.minus {
+  background-image: url(/CoGe/picts/buttons/minus.png);
+  background-repeat: no-repeat;
+  background-position: left;
 }
 
 #carousel
