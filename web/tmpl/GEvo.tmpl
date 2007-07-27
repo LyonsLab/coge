@@ -66,9 +66,9 @@ function pressedButton (button_name){
  document.images[button_name].src = eval(button_name+"_pressed.src");
 }
 
-function switchPlusButton (num){
-  if ($('.sequence_options'+num).is(':hidden')) {$('#seqopts'+num).removeClass('plus').addClass('minus');}
-  else {$('#seqopts'+num).removeClass('minus').addClass('plus');}
+function switchPlusButton (check, change){
+  if ($(check).is(':hidden')) {$(change).removeClass('plus').addClass('minus');}
+  else {$(change).removeClass('minus').addClass('plus');}
 }
 
 
@@ -899,7 +899,7 @@ function monitor_log(log)
 <table>
 <tr><td>
 
-   <DIV id="seqopts<TMPL_VAR NAME="SEQ_NUM">" class="topItemPlain small plus" onMouseOver="changeColor('seqopts<TMPL_VAR NAME="SEQ_NUM">','#000099'); " onMouseOut="changeColor('seqopts<TMPL_VAR NAME="SEQ_NUM">','#009900');" onClick='switchPlusButton(<TMPL_VAR NAME="SEQ_NUM">);animate_section(".sequence_options<TMPL_VAR NAME="SEQ_NUM">","slideToggle"); ' >Sequence <TMPL_VAR NAME="SEQ_NUM"> Options:</DIV>
+   <DIV id="seqopts<TMPL_VAR NAME="SEQ_NUM">" class="topItemPlain small plus" onMouseOver="changeColor('seqopts<TMPL_VAR NAME="SEQ_NUM">','#000099'); " onMouseOut="changeColor('seqopts<TMPL_VAR NAME="SEQ_NUM">','#009900');" onClick='switchPlusButton(".sequence_options"+<TMPL_VAR NAME="SEQ_NUM">, "#seqopts"+<TMPL_VAR NAME="SEQ_NUM">);animate_section(".sequence_options<TMPL_VAR NAME="SEQ_NUM">","slideToggle"); ' >Sequence <TMPL_VAR NAME="SEQ_NUM"> Options:</DIV>
    <Table class="small sequence_options<TMPL_VAR NAME="SEQ_NUM"> dropMenuPlain" style="display: none">
       <TR>
 	<TD>Reverse complement: 
