@@ -11,11 +11,12 @@ use DBIxProfiler;
 
 BEGIN {
     use Exporter ();
-    use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $coge $Q $cogex);
+    use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $coge $Q $cogex $TEMPDIR);
     $VERSION     = 0.1;
+    $TEMPDIR = "/opt/apache/CoGe/tmp";
     @ISA         = (@ISA, qw (Exporter));
     #Give a hoot don't pollute, do not export more than needed by default
-    @EXPORT      = qw (login);
+    @EXPORT      = qw (login write_log read_log check_taint check_filename_taint);
     @EXPORT_OK   = qw ();
     %EXPORT_TAGS = ();
     $coge = new CoGe::Genome;
@@ -403,7 +404,62 @@ sub ajax_func
        feat_name_search=>\&feat_name_search,
        type_search=> \&type_search_for_feat_name,
        login=>\&login,
+       read_log=>\&read_log,
       );
   }
+
+sub write_log
+  {
+    $| = 1;
+    my $message = shift;
+    my $file = shift;
+    return unless $file;
+    open (OUT, ">>$file") || return;
+    print OUT $message,"\n";
+    close OUT;
+  }
+
+sub read_log
+  {
+    my $logfile = shift;
+    return unless $logfile;
+    $logfile .= ".log" unless $logfile =~ /log$/;
+    $logfile = $TEMPDIR."/$logfile" unless $logfile =~ /^$TEMPDIR/;
+    return unless -r $logfile;
+    my $str;
+    open (IN, $logfile);
+    while (<IN>)
+      {
+	$str .= $_;
+      }
+    close IN;
+    return $str;
+  }
+
+sub check_filename_taint {
+	my $v = shift;
+	if ($v =~ /^([A-Za-z0-9\-\.=\/_]*)$/) {
+		my $v1 = $1;
+		return($v1);
+	} else {
+		return(0);
+	}
+}
+
+sub check_taint {
+	my $v = shift;
+	if ($v =~ /^([-\w._=\s+\/]+)$/) {
+			$v = $1;
+			# $v now untainted
+			return(1,$v);
+	} else {
+	# data should be thrown out
+	  carp "$v failed taint check\n";
+			return(0);
+	}
+}
+
+
+
 
 1;
