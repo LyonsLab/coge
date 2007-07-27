@@ -189,7 +189,6 @@ sub _processHSP {
 	    {next;} # blank line, skip
 	  elsif ($_ =~ /(^>)|(^Lambda)|(^\s+Database:)/)
 	    {
-	      print STDERR Dumper [@hspline[-5..-1]];
 	      last;
 	    }
 	  else {
