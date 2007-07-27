@@ -92,7 +92,7 @@ sub actions
 		    LOGO=>qq{<a href="./GEvo.pl"><img src="/CoGe/picts/carousel/GEvo-logo.png" width="227" height="75" border="0"></a>},
 		    ACTION=>qq{<a href="./GEvo.pl">GEvo: Genome Evolution Analysis</a>},
 		    DESC => qq{Allows uses to compare sequences using a variety of sequence comparison algorithms to find regions of similarity and displays the results graphically.  This program has several unqiue options to aid in the finding of evolutionary conserved non-coding sequences and large syntenic regions. <a href="/CoGe/docs/help/GEvo/Overview.html">Learn more...</a>},
-		    SCREENSHOT=>qq{<a href="./GEvo.pl"><img src="/CoGe/picts/preview/GEvo.png" width="400" height="241" border="0"></a>},
+		    SCREENSHOT=>qq{<a href="./GEvo.pl"><img src="/CoGe/picts/preview/GEvo.png"border="0"></a>},
 		   },
 		   {
 		    ID=>2,
@@ -106,21 +106,21 @@ sub actions
 		    LOGO=>qq{<a href="./MSAView.pl"><img src="/CoGe/picts/carousel/MSAView-logo.png" width="227" height="75" border="0"></a>},
 		    ACTION => qq{<a href="./MSAView.pl">MSAView: Multiple Sequence Alignment Viewer</a>},
 		    DESC   => qq{Allows users to submit a multiple sequence alignment in FASTA format (if people would like additional formats, please request via e-mail) in order to quickly check the alignment, find conserved regions, etc.  This program also generates a consensus sequence from the alignment and displays some basic statistics about the alignment.},
-		    SCREENSHOT=>qq{<a href="./FeatView.pl"><img src="/CoGe/picts/preview/FeatView.png" width="400" height="241" border="0"></a>},
+		    SCREENSHOT=>qq{<a href="./MSAView.pl"><img src="/CoGe/picts/preview/MSAView.png"border="0"></a>},
 		   },
 		   {
 		    ID=>4,
 		    LOGO=>qq{<a href="./TreeView.pl"><img src="/CoGe/picts/carousel/TreeView-logo.png" width="227" height="75" border="0"></a>},
 		    ACTION => qq{<a href="./TreeView.pl">TreeView: Phylogenetic Tree Viewer</a>},
 		    DESC   => qq{Allows users to submit a tree file and get a graphical view of their tree.  There is support for drawing rooted and unrooted trees, zooming and unzooming functions, and coloring and shaping nodes based on user specifications.},
-		    SCREENSHOT=>qq{<a href="./FeatView.pl"><img src="/CoGe/picts/preview/FeatView.png" width="400" height="241" border="0"></a>},
+		    SCREENSHOT=>qq{<a href="./FeatView.pl"><img src="/CoGe/picts/preview/TreeView.png"border="0"></a>},
 		   },
 		   {
 		    ID=>5,
 		    LOGO => qq{<a href="./GeLo.pl"><img src="/CoGe/picts/carousel/GeLo-logo.png" width="227" height="75" border="0"></a>},
 		    ACTION => qq{<a href="./GeLo.pl">GeLo: Genome Location Viewer</a>},
 		    DESC   => qq{Allows users to get an overview of organisms in CoGe's genomes database and provides a dynamic, interactive browser of genomic information.},
-		    SCREENSHOT => qq{<a href="./GeLo.pl"><img src="/CoGe/picts/preview/GeLo.png" width="400" height="241" border="0"></a>},
+		    SCREENSHOT => qq{<a href="./GeLo.pl"><img src="/CoGe/picts/preview/GeLo.png" width="400" height="241" border="0"><br /><img src="/CoGe/picts/preview/GenomeView.png" border="0"></a>},
 		   },
 		   {
 		    ID => 6,
