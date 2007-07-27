@@ -30,7 +30,7 @@ if(!-e $fn){
    mkpath($basepath . '/' . join("/",@$dir));
    LWP::Simple::getstore($IMGURL . $ENV{QUERY_STRING},$fn);
    chmod (0777, $fn);
-   print STDERR $IMGURL.$ENV{QUERY_STRING},"\n";
+#   print STDERR $IMGURL.$ENV{QUERY_STRING},"\n";
 }
 
 
