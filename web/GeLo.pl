@@ -212,7 +212,7 @@ sub get_dataset_chr_info
    	$zoom .= join ("\n", @opts);
    	$zoom =~ s/OPTION value="7"/OPTION SELECTED value="7"/;
    	$zoom .= qq{</SELECT>};
-	$viewer .= qq{<tr><td class = "ital">Zoom level:<td><input type = "text" size=10 value ="10" id = "z">};
+	$viewer .= qq{<tr><td class = "ital">Zoom level:<td><input type = "text" size=10 value ="8" id = "z">};
 	#    $viewer .= $zoom;
 	$viewer .= "</table>";
 	#$viewer .= qq{<input type="hidden" id="z" value="7">};
