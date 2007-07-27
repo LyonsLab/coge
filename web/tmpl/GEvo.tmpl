@@ -66,6 +66,13 @@ function pressedButton (button_name){
  document.images[button_name].src = eval(button_name+"_pressed.src");
 }
 
+function switchPlusButton (num){
+  if ($('.sequence_options'+num).is(':hidden')) {$('#seqopts'+num).removeClass('plus').addClass('minus');}
+  else {$('#seqopts'+num).removeClass('minus').addClass('plus');}
+}
+
+
+
 function autodistance_setup(){
 
 $(".location").keyup(function(){
@@ -132,7 +139,7 @@ return;
 var dialign_anchor_program = $('#dialign_anchor_program').val();
 if (dialign_anchor_program == 'CHAOS'){
   var info = "Word size = "+$('#chaos_word_length').val()+"&#10;Score cutoff = "+$('#chaos_score_cutoff').val()+"&#10;Rescore cutoff = "+$('#chaos_rescore_cutoff').val()+"&#10;Lookback distance = "+$('#chaos_lookback').val()+"&#10;Maximum gap = "+$('#chaos_gap_length').val()+"&#10;Gap start penalty = "+$('#chaos_gap_start').val()+"&#10;Gap extend penalty = "+$('#chaos_gap_extension').val()+"&#10;Other CHAOS parameters = "+$('#chaos_params').val();}
-else if (dialign_anchor_program == 'blastn'){
+else if (dialign_anchor_program == 'bl2seq'){
   var info = "Match Score = "+$('#blast_match').val()+"&#10;Mismatch Penalty = "+$('#blast_mismatch').val()+"&#10;Gap Open Penalty = "+$('#blast_gapopen').val()+"&#10;Gap Extension Penalty = "+$('#blast_gapextend').val()+"&#10;Word Size = "+$('#blast_wordsize').val()+"&#10;Filter query sequence = "+$('#blast_filter').val()+"&#10;Expect value = "+$('#blast_eval').val()+"&#10;Other Blast Parameters = "+$('#blastparams').val();}
 else{
   var info = "Word size = "+$('#blastz_wordsize').val()+"&#10;Gap start penalty = "+$('#blastz_gap_start').val()+"&#10;Gap extend penalty = "+$('#blastz_gap_extension').val()+"&#10;Chaining = "+$('#blastz_chaining').val()+"&#10;Score threshold = "+$('#blastz_threshold').val()+"&#10;Mask threshold = "+$('#blastz_mask').val()+"&#10;Other blastz parameters = "+$('#blastz_params').val();}
@@ -342,6 +349,8 @@ function monitor_log(log)
   }
 
 }
+
+
 
 </SCRIPT>
 
@@ -890,7 +899,7 @@ function monitor_log(log)
 <table>
 <tr><td>
 
-   <DIV id="seqopts<TMPL_VAR NAME="SEQ_NUM">" class="topItemPlain small" onMouseOver="changeColor('seqopts<TMPL_VAR NAME="SEQ_NUM">','#000099'); " onMouseOut="changeColor('seqopts<TMPL_VAR NAME="SEQ_NUM">','#009900');" onClick='animate_section(".sequence_options<TMPL_VAR NAME="SEQ_NUM">","slideToggle")'>Sequence <TMPL_VAR NAME="SEQ_NUM"> Options (click to open):</DIV>
+   <DIV id="seqopts<TMPL_VAR NAME="SEQ_NUM">" class="topItemPlain small plus" onMouseOver="changeColor('seqopts<TMPL_VAR NAME="SEQ_NUM">','#000099'); " onMouseOut="changeColor('seqopts<TMPL_VAR NAME="SEQ_NUM">','#009900');" onClick='switchPlusButton(<TMPL_VAR NAME="SEQ_NUM">);animate_section(".sequence_options<TMPL_VAR NAME="SEQ_NUM">","slideToggle"); ' >Sequence <TMPL_VAR NAME="SEQ_NUM"> Options:</DIV>
    <Table class="small sequence_options<TMPL_VAR NAME="SEQ_NUM"> dropMenuPlain" style="display: none">
       <TR>
 	<TD>Reverse complement: 
