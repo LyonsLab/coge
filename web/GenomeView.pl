@@ -52,7 +52,6 @@ sub gen_body
     my $loc = $form->param('x');
     my $ver = $form->param('ver');
     my $org = $form->param('org');
-
     if ($ds)
       {
 	my $dso = $coge->resultset('Dataset')->find($ds);
