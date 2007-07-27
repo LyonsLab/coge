@@ -7,7 +7,7 @@ use Data::Dumper;
 
 $ENV{PATH} = "";
 my $form = new CGI;
-print STDERR $form->self_url(-full=>1),"\n";
+#print STDERR $form->self_url(-full=>1),"\n";
 my $gfx = new CoGe::Graphics;
 my $start = $form->param('start') || $form->param('x') || $form->param('xmin') || 0;#28520458;
 my $stop = $form->param('stop') || $form->param('xmax');# || 6948000;#6949600;#190000;
