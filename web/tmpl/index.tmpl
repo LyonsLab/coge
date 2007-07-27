@@ -1,6 +1,6 @@
-<!--<SCRIPT language="JavaScript" type="text/javascript" src="./js/interface_carousel.js"></SCRIPT>-->
-<SCRIPT language="JavaScript" type="text/javascript" src="./js/iutil.js"></SCRIPT>
-<SCRIPT language="JavaScript" type="text/javascript" src="./js/carousel.js"></SCRIPT>
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/interface_carousel.js"></SCRIPT>
+<!--<SCRIPT language="JavaScript" type="text/javascript" src="./js/iutil.js"></SCRIPT>
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/carousel.js"></SCRIPT>-->
 <SCRIPT language="JavaScript">
 
 function place_cookie(valid, cookie, url)
@@ -36,10 +36,15 @@ $(document).ready(function(){
 //$('#main').hide();
 //$('.page_info').hide();
 $('#main').show(pageObj.speed);
-});
+}
 
-$(document).ready(
+);
+
+
+
+window.onload=(
 	function() {
+
 $('#carousel').Carousel(
 		{
 			itemWidth: 227,
@@ -55,6 +60,7 @@ $('#carousel').Carousel(
 	);	
 }
 );
+
 function timing(num,stop){
   //alert(num);
   //alert("show_info(['args__'+num],[display_info]),800");
@@ -110,7 +116,7 @@ function show_data(num){
 	</div>
     </TD>
   </TR>
-  <TR>
+	  <TR>
     <TD>
       <TMPL_LOOP NAME=ACTIONS>
       <DIV id="page_info<TMPL_VAR NAME=ID>" class="page_info dropMenu" style="display: none">
@@ -135,8 +141,9 @@ function show_data(num){
       </TR>
     </TABLE>
     </TD>
+    <td width=5px>
     <TD><TMPL_VAR NAME=SCREENSHOT></TD>
-    <TD valign="top" align=right><a href="#" onClick="$('#page_info<TMPL_VAR NAME=ID>').slideToggle()"><img src="/CoGe/picts/exit.png" width="17" height="16" border="0"></a></TD>
+    <TD valign="top" align=right><a href="#" onClick="$('#page_info<TMPL_VAR NAME=ID>').slideToggle()"><img src="/CoGe/picts/delete.png" width="16" height="16" border="0"></a></TD>
     </TR>
     </TABLE></DIV></TMPL_LOOP>
     </TD>
