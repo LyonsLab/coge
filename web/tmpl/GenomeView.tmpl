@@ -2,8 +2,8 @@
 
     <style type="text/css">
         #map {
-            width: 900px;
-            height: 282;
+            width: ;
+            height: 300;
             border: 1px solid black;
         }
         #zoomLevel {
@@ -150,13 +150,15 @@
          }
 
 $(document).ready(function(){
+$('#width').val($('#main').width());
+$('#map').css('width',$('#width').val());
 init();
 });
 
     </script>
-    <div id="map">
-    </div>
+    <div id="main"></div>
+    <div id="map"></div>
     <div id='resolution'></div>
     <div id='query'></div>
-
+OpenGene's map width: <input type=textbox class=backbox size=5 id="width" value=<TMPL_VAR NAME="width"> /><input type=button value="resize" onclick="$('#map').css('width',$('#width').val());updateZoom();" /><input type=button value="full-window" onclick="$('#map').css('width',$('#main').width());init();" />
 
