@@ -4,6 +4,11 @@ BODY {
   background: #FFFFFF;
 }
 
+a
+{
+  outline: none;
+}
+
 .up {
   font-family: fixed, monospace;
   color: #660000;
@@ -513,6 +518,7 @@ tr.ltblue {
   font-size: small;
 }
 
+
 .topItemSelected
 {
   background: url(/CoGe/picts/menus/coge_gradient-alt.png) repeat-x;
@@ -520,7 +526,7 @@ tr.ltblue {
   height:22px;
   cursor:pointer;
   text-decoration: none;
-  color: #009900; 
+  color: #000099;
   border: 1px solid #00FF36;
   font-size: small;
 }
@@ -632,3 +638,131 @@ tr.ltblue {
         background-repeat: no-repeat;
         background-position: 50% 50%;
 }
+
+th.header {
+ /*background-image: url(/CoGe/picts/blast_table/small.gif);*/
+ background-color: #edffed;
+ cursor: pointer;
+ font-weight: bold;
+ background-repeat: no-repeat;
+ background-position: center left;
+ padding-left: 20px;
+ border-right: 1px solid #dad9c7;
+ border-bottom: 2px solid #dad9c7;
+ margin-left: -1px;
+}
+
+.even {
+ background-color:#FCFAF6;
+}
+
+th.headerSortUp {
+ background-image: url(/CoGe/picts/blast_table/small_asc.gif);
+ background-color: #cbfecb;
+ border-right: 1px solid #c3c2b1;
+ border-bottom: 2px solid #c3c2b1;
+}
+
+th.headerSortDown {
+ background-image: url(/CoGe/picts/blast_table/small_desc.gif);
+ background-color: #cbfecb;
+ border-right: 1px solid #c3c2b1;
+ border-bottom: 2px solid #c3c2b1;
+}
+
+#ncbi_blast {
+	display: block;
+  	width: 89px;
+  	height: 26px;
+	background: url(/CoGe/picts/buttons/CoGeBlast/ncbi_blast.png) 0 0 no-repeat;
+}
+
+#ncbi_blast:hover {
+	background-position: -89px 0;
+}
+
+#ncbi_blast:active {
+	background-position: -178px 0;
+}
+
+#ncbi_blast span {
+	display: none;
+}
+
+#go_button {
+	display: block;
+  	width: 45px;
+  	height: 25px;
+	background: url(/CoGe/picts/buttons/GEvo/go.png) 0 0 no-repeat;
+}
+
+#go_button:hover {
+	background-position: -45px 0;
+}
+
+#go_button:active {
+	background-position: -90px 0;
+}
+
+#go_button span {
+	display: none;
+}
+
+#clear_button {
+	display: block;
+  	width: 54px;
+  	height: 26px;
+	background: url(/CoGe/picts/buttons/GEvo/clear.png) 0 0 no-repeat;
+}
+
+#clear_button:hover {
+	background-position: -54px 0;
+}
+
+#clear_button:active {
+	background-position: -108px 0;
+}
+
+#clear_button span {
+	display: none;
+}
+
+#add_button {
+	display: block;
+  	width: 41px;
+  	height: 26px;
+	background: url(/CoGe/picts/buttons/GEvo/add.png) 0 0 no-repeat;
+}
+
+#add_button:hover {
+	background-position: -41px 0;
+}
+
+#add_button:active {
+	background-position: -82px 0;
+}
+
+#add_button span {
+	display: none;
+}
+
+#remove_button {
+	display: block;
+  	width: 53px;
+  	height: 26px;
+	background: url(/CoGe/picts/buttons/GEvo/remove.png) 0 0 no-repeat;
+}
+
+#remove_button:hover {
+	background-position: -53px 0;
+}
+
+#remove_button:active {
+	background-position: -106px 0;
+}
+
+#remove_button span {
+	display: none;
+}
+
+
