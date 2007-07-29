@@ -1,0 +1,40 @@
+#
+# Sample scoring matrix that rewards both purine-purine
+# and pyrimidine-pyrimidine transitions.  This matrix
+# or one like it may be useful in developing better PCR
+# primers or in finding candidate noncoding RNA genes.
+# Simultaneous use of a shorter word length than the
+# default W=11 may be advisable.
+#
+# Specify matrix=pupy on the BLASTN command line
+#
+# The complete 4-bit (.4) alphabet is
+# ACGT RYMKWSBDHVN -
+#      acagaccaaaa g
+#      gtcttgggccc a
+#            tttgg p
+#                t
+#
+#   Subject letters ->
+# Query
+# letters
+# |
+# V
+#
+# Ungapped Lambda = 0.267098 bits, H = 0.510588 bits
+	A	C	G	T
+A	4	-8	2	-8
+C	-8	4	-8	2
+G	2	-8	4	-8
+T	-8	2	-8	4
+R	3	-8	3	-8
+Y	-8	3	-8	3
+M	-2	-2	-3	-3
+K	-3	-3	-2	-2
+W	-2	-3	-3	-2
+S	-3	-2	-2	-3
+B	-5	-1	-4	-1
+D	-1	-5	-1	-4
+H	-4	-1	-5	-1
+V	-1	-4	-1	-5
+N	-3	-3	-3	-3

@@ -1,0 +1,124 @@
+#!/usr/bin/env perl
+#
+# WU-FORMATDB -- mimic the NCBI's formatdb command line usage
+#
+# Copyright (C) 2000 Washington University, St. Louis, Missouri USA.
+# All Rights Reserved.
+#
+# THE CONTENTS OF THIS FILE ARE THE CONFIDENTIAL PROPERTY OF WASHINGTON
+# UNIVERSITY IN SAINT LOUIS.
+#
+#
+$^W=1;
+require 5.004;
+use strict;
+use POSIX;
+use FileHandle;
+use File::Basename;
+use Getopt::Std;
+use vars qw($opt_t $opt_i $opt_l $opt_p $opt_o $opt_a $opt_b $opt_e $opt_n
+		$opt_s $opt_v
+		);
+
+my (
+	$rc, $index, $accession, $infile, $outfile, $title, $seqtype, $basename, $logfile
+	);
+
+if (!defined $ARGV[0]) {
+	while (<DATA>) {
+		print;
+	}
+	exit 1;
+}
+
+getopts('t:i:l:p:o:a:b:e:n:v:s:');
+
+if (!$opt_i) {
+	die "No input file specified.\n";
+}
+$infile = &quoteopt($opt_i);
+
+if (defined $opt_n && $opt_n ne "") {
+	$opt_n = &quoteopt($opt_n);
+	$outfile = "-o $opt_n ";
+}
+else {
+	$outfile = "-o $infile ";
+}
+
+$index = '';
+if (defined $opt_o && $opt_o =~ /^t/i) {
+	$index = "-I ";
+}
+
+$accession = '';
+if (defined $opt_s && $opt_s =~ /^t/i) {
+	$accession = '-Taccession ';
+}
+
+if (defined $opt_t && $opt_t ne "") {
+	$opt_t = &quoteopt($opt_t);
+	$title = "-t $opt_t ";
+}
+else {
+	$title = "";
+}
+
+$seqtype = "-p ";
+if (defined $opt_p && $opt_p ne "") {
+	if ($opt_p !~ /^[tf]/i) {
+		die "Invalid argument to -p option:  $opt_p\n";
+	}
+	if ($opt_p =~ /^f/i) {
+		$seqtype = "-n ";
+	}
+}
+
+$logfile = "";
+if (defined $opt_l && $opt_l ne "") {
+	$opt_l = &quoteopt($opt_l);
+	$logfile = "-e $opt_l ";
+}
+
+
+print "Native xdformat command:\n\n  xdformat ${seqtype}${index}${accession}${outfile}${title}${logfile}${infile}\n\n";
+
+my($program) = "xdformat";
+my($dir) = dirname($0);
+if (-x "$dir/$program") {
+	$program = $dir . "/" . $program;
+}
+
+exec("${program} ${seqtype}${index}${accession}${outfile}${title}${logfile}${infile}");
+exit 1;
+
+# quoteopt -- quote a command line argument that needs to be quoted
+sub quoteopt {
+	my($opt) = @_;
+
+	if ("$opt" =~ /[ 	]/) {
+		$opt = "\"" . "$opt" . "\"";
+	}
+
+	return $opt;
+}
+
+
+__DATA__
+wu-formatdb   arguments:
+
+  -t  Title for database file [String]  Optional
+  -i  Input file for formatting (this parameter must be set) [File In]
+  -p  Type of file
+         T - protein   
+         F - nucleotide [T/F]  Optional
+    default = T
+  -n  Base name for BLAST files [String]  Optional
+  -o  Parse options
+         T - True: Parse SeqId and create indexes.
+         F - False: Do not parse SeqId. Do not create indexes.
+ [T/F]  Optional
+    default = F
+  -s  Create indexes limited only to accessions - sparse [T/F]  Optional
+      default = F
+

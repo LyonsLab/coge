@@ -1,0 +1,3643 @@
+Modification history:
+
+2006-04-19
+(Fix) The NCBI gi identifier of the query sequence was always displayed (if
+present).  Its display is now dependent on the use of the "gi" option, just
+as database gi identifiers have been.
+
+
+2006-03-22
+(Fix) In some cases, the use of a low-complexity filter could have led to a FATAL
+error due to a reported lack of sufficient memory.
+
+
+2006-02-14
+(Fix) A special [16-Jan-2006] release was transiently made available to help
+users avoid a severe bug in the Mac OS X version 10.4.4 (and earlier)
+operating system that could lead to complete system hangs when running large,
+multi-threaded, 64-bit jobs.  Since the release of Mac OS X 10.4.5 today, the
+operating system bug seems to be fixed.  The [16-Jan-2006] version of WU
+BLAST has therefore been pulled.  All Mac users should now be using the
+[01-Jan-2006] release after updating their Mac OS X 10.4 "Tiger" systems to
+version 10.4.5 (or later).
+
+
+2006-01-01
+(Fix) The "span" and "span1" options had no effect, with the search programs
+resorting to the default "span2" behavior, if the "stats" option was also
+specified.
+
+
+2005-12-30
+(Fix) More effective use of memory in 64-bit mode on PowerMac G5 systems
+configured with more than 2-3 GB memory.
+
+
+2005-11-16
+(Fix) When "nogaps" was specified, nonsensical values for X, E2 and S2 were
+mistakenly reported in the Parameters section for the irrelevant case
+of gapped alignments.
+
+
+2005-06-23
+(New) wu-blastall now tries to make rational settings of the BLASTMAT
+and BLASTFILTER environment variables, if they are not already set,
+before invoking the actual search program.
+
+
+2005-06-09
+(New) Support added for Mac OS 10.4.1 on Intel i386 processors and "Universal"
+binaries simultaneously supporting ppc, ppc64 and i386.
+
+
+2005-05-10
+(Fix) The output obtained with mformat=list had the entries for PostScript
+and neighborhood words swapped.  The description of mformat in
+parameters.html has been corrected, as well.
+
+(Fix) Segmentation faults readily arose with short BLASTN query sequences
+and long word lengths, if the neighborhood word score threshold, T, was set.
+
+(Change) Parameter values are again reported in the event a FATAL error
+is encountered.  This had been the practice prior to the addition of support
+for multiple output formats, but it got lost in the shuffle.
+
+
+2005-05-09
+(Fix) A thread deadlock could arise if the progress=# option was used
+along with multiple processors (cpus > 1).
+
+
+2005-04-20
+(Fix) In the default output format, when a single gap extended for a distance
+greater than the length of the current line of output, for those lines of the
+alignment that contained the extended gap, off-by-one errors in the
+coordinate numbers were reported for the gapped sequence (the sequence with
+the hyphens inserted).
+
+(Fix) Improved handling of interrupts when searching with multi-query files.
+
+(Change) Minor speed increase for some searches on at least some platforms.
+
+
+2005-04-08
+(Fix) When an invalid format was specified with the mformat option,
+the search program exited nonzero but did not describe the reason.
+
+
+2005-04-06
+(Fix) xdget was not honoring -m# format requests.
+
+
+2005-04-05
+(Fix) Corrected a bug in command line parsing that would erroneously
+cause a FATAL message to be reported concerning the lack of "asn1" support.
+
+
+2005-03-30
+(Fix) wu-blastall script was accepting invalid arguments to the -p option...
+and then failing.
+
+(Fix) In tabular output, identifiers beginning with backslash (\)
+also needed to be escaped with a backslash, just as those beginning
+with a pound sign (#) needed to be.
+
+(Fix) One warning message concerning the memory required for a search
+was reporting its requirements in KiB, while stating the units were MiB.
+thus, the requirements seemed to be 1024-fold larger than necessary.
+
+
+2005-03-26
+(Fix) In XML output, ampersand (&) was not being properly escaped!
+
+(Change) Non-printable ASCII characters in XML output are now all escaped
+as "&#x;".
+
+(Change) encoding="UTF-8" attribute now appears in XML output.
+
+(Change) An XML comment pointing to the use of the "xmlcompact" option is now
+included when the user has not invoked this option.
+
+
+2005-03-25
+(Fix) XML documents produced with mformat=7 were well-formed (compliant) but
+not strictly conforming to NCBI_BlastOutput.dtd.  One entity was omitted from
+output and another was reported in the wrong order relative to other entities
+in the same block.  "Parameters_matrix" was in the wrong order, relative to
+"Hit_expect", and is now correctly reported first.  "Hit_accession" had been
+omitted and is now reported, but it is not always instantiated with the same
+information as the NCBI software reports; deviations tend to arise when the
+sequence identifier string does not formally contain an "accession" field.
+The fall-back action by WU is to report the same information for
+"Hit_accession" as for "Hit_id"; these fields will both be empty (null
+string) if no identifier is available.
+
+(New) Support for "xmlcompact" option, to eliminate newlines and indentation
+in XML output that improve readability by humans when using viewers that
+don't understand XML structure, but often comprise a substantial fraction
+of the output bytes and do nothing for viewers that /do/ understand the
+structure (e.g., many web browsers).
+
+
+2005-03-23 (actually 2005-03-22 afternoon)
+(Change) In XML output, the "warnings", "notes" and "errors" options are
+now also obeyed.
+
+(Change) In XML output, individual messages are delimited from each other
+by a newline character in <Iteration_message> entities, such that the message
+keywords NOTE, WARNING, ERROR, FATAL and EXIT all begin in column one.
+
+(Fix) In XML output, the Control-A (hex 0x01) characters often
+found in nrdb multi-sequence deflines (but invalid in XML 1.0) are
+replaced with &gt; (>).
+
+
+2005-03-22
+(Fix) Simultaneous output of multiple formats (multiple mformat specifications)
+sometimes produced truncated results (e.g., missing Parameters and Statistics
+section) for some format combinations.
+
+(New) Preliminary support for XML output, using NCBI DTD (mformat=7).
+
+(New) wu-blastall supports -m7 (xml).
+
+(Change) Messages sent to tabular output now always include the query ID,
+independent of the msgstyle parameter setting.  msgstyle now only controls
+the message style in the default output format (mformat=1).
+
+
+2005-03-14
+(Fix) CPU times reported by binaries built for the Linux 2.4 kernel were
+incorrect when executed under a Linux 2.6 kernel.
+
+
+2005-03-13
+(New) Support added for the "qframe" option, to restrict BLASTX and TBLASTX
+searches to a specific reading frame (-3, -2, -1, +1, +2, +3) of the query
+sequence.
+
+(New) Partial support added to wu-blastall for the -m option.
+
+
+2005-03-10
+(New) Support added for the "mformat" command line option, to choose from a
+variety of output formats, including new tabular formats.  Multiple formats
+can be selected and produced during a single program run, as long as
+different output files are assigned to each format.  The syntax for this
+option is mformat=#[,outfile].  The default is mformat=1.  mformat=0 will
+clear any prior mformat specifications appearing to the left on the command
+line.  "outfile" can be omitted and implies the use of standard output or
+whatever output file is indicated with the -o option.
+
+(New) Support for the "msgstyle" command line option has been added, to
+select an alternate style of reporting informatory messages.  msgstyle=0 is
+the default.  msgstyle=1 will cause informatory messages to be reported on a
+single line without wrapping and for the identity of the query sequence to be
+included in messages when the identity is available.
+
+
+2005-03-03
+(Change) When the "echofilter" option is specified, in the FASTA-format
+reports of the query sequence that are produced in response, each strand or
+reading frame of the query is now appropriately labelled on the defline.  If
+the query was indeed processed by a filter, the name reported for the
+sequence is "Filtered#", where # is replaced by the strand or reading frame.
+If no filter was used, the name for the sequence is given as "Unfiltered#".
+The reading frame for peptide query sequences in the BLASTP and TBLASTN
+search modes is shown as +0.
+
+2005-02-23
+(New) Warnings are displayed when user settings of S2 or gapS2 are reduced
+by the software to maintain consistency with settings of S.
+
+(Fix) Improved consistency maintained between command line settings of E, S, S2,
+and gapS2.  The S2 and gapS2 score thresholds may be altered (downward) as a
+result of this change.  The change is therefore conservative, in that nothing
+will be lost from the results, but searches might well run slower if one
+of S2 or gapS2 is reduced.
+
+(Fix) Values displayed for E2 and gapE2 are now consistent with the
+values used for S2 and gapS2.  Importantly, the score thresholds used are
+not changed as a result of this specific fix; the E2 and gapE2 values reported
+have merely been corrected.
+
+
+2005-01-21
+(New) Support for -m parameter added to xdformat and xdget
+to allow the user to select different output formats when dumping
+or retrieving sequences.
+
+
+2005-01-14
+(Fix) Output was aborted under IRIX when redirected to a pipe.
+
+
+2004-12-10
+(Fix) Better estimation of maximum memory available on Mac OS X systems.
+
+
+2004-11-20
+(Fix) A "gapS" parameter that was advertised in program usage output was not
+actually being supported.  Support has been added instead for a "gaps"
+option, that reverses the action of any "nogaps" option that may have been
+specified previously on the command line.  ("nogaps" causes the default
+gapped alignment phase of the search programs to be skipped, so only ungapped
+alignments are produced).
+
+
+2004-11-11
+(Fix) Minor format string incompatibility in xdformat.
+
+(New) The included parameters.html file has been updated with descriptions
+of more options and parameters.  The usage display now points users to the
+on-line web page http://blast.wustl.edu/blast/parameters.html.
+
+
+2004-11-10
+(Change) Marginal speed increase.
+
+
+2004-11-08
+(Change) Another speed improvement when searching XDF nucleotide database
+sequences that contain ambiguity codes.
+
+
+2004-11-06
+(Change) Small speed improvement when searching XDF nucleotide database
+sequences that contain ambiguity codes.
+
+
+2004-11-04
+(Change) Further improvement in the changes made 2004-11-03.
+
+
+2004-11-03
+(Change) Often improved speed when reporting BLASTN results that involve
+long database sequences.
+
+
+2004-11-01
+(Fix) For Linux 2.4 systems, which use "Linux threads", not POSIX threads,
+protection was added against potential accumulation of zombie processes.
+
+
+2004-10-29
+(Fix) Carriage return characters at end of lines (typical of MS-DOS
+or Windows files) were not being stripped from sequence descriptions
+in FASTA-format files.  (The sequences themselves were parsed fine).
+
+
+2004-10-26
+(Fix) Genetic code initialization bug slipped in after 2004-10-23 and
+before its release on 2004-10-25.
+
+(Fix) Residual bug parsing the C=genetic code command line option.
+
+(Fix) Spurious diagnostic output was sometimes produced when dbslice option
+was used.
+
+
+2004-10-23
+(Fix) Command line settings of the genetic code were not effective
+in TBLASTN.
+
+
+2004-10-22
+(Fix) For word lengths 7 or greater, searches against nucleotide sequences
+containing ambiguity codes could fail due to a segmentation fault.
+
+
+2004-10-18
+(Fix) Warnings about the number of descriptions of database sequences
+not being reported due to the limiting value of the V parameter were
+over-counting by a factor of 2.
+
+(Fix) The gspmax parameter (not used by default) was being used to count
+gapped HSPs incorrectly when set to a non-zero value.  This could result
+in desired HSPs being discarded.
+
+
+2004-10-15
+(Fix) The changes made on 2004-10-13 have been backed out and replaced by
+code that ensures seed word detection when searching compressed sequences using
+any value of wink.  While the speed of BLASTN will suffer when wink is used
+(relative to previous versions), the behavior of the program should be more
+in line with user expectations -- as well as be more sensitive -- and will not
+require users to understand the nuanced logical pitfalls of particular
+parameter combinations when working with compressed sequences.
+
+(Fix) As of the changes made two days ago (2004-10-13), an obnoxious error
+message concerning the setting of the wink parameter was emitted by BLASTN,
+when wink was not even set by the user.
+
+
+2004-10-13
+(Fix) In the BLASTN search mode, when searching a nucleotide database in its
+compressed form, tests have been added to ensure that the value for wink is
+odd; and that the sum of the word length, W, plus wink is no more than 1/4-th
+the length of the query sequence.  Otherwise, even long stretches of absolute
+identity can be missed entirely, simply due to phase mismatch in the
+compression between the query and database.  If the user-specified value for
+wink does not satisfy these criteria, its value is automatically reduced
+and a warning is issued.
+
+
+2004-10-07
+(Change) Made the error message displayed by xdget more helpful when the
+sequence identifier index file it needs does not exist.
+
+
+2004-10-06
+(Fix) In some cases where a database had had its identifiers indexed on a
+different computer architecture than the one on which xdget was being
+executed, a cross-platform incompatibility existed in xdget, which
+would prevent the program from opening the index file.
+
+
+2004-10-01
+(New) Added support for "globalexit" option.  When multiple query sequences
+are being processed and any of them encounters a FATAL error, if the
+globalexit option was specified, the line "EXIT CODE 12" will be appended to
+the output.  This extra line of output only appears if a FATAL error was
+encountered.  As described in the note on 2004-09-29, if a FATAL error is
+encountered at any time during a multi-query job, the BLAST process will
+provide a testable exit status 12.  This new option merely causes the exit
+status to be saved in the output, where it can be interrogated later.
+
+
+2004-09-30
+(New) Added support for "haltonfatal" option.  When multiple query sequences
+are to be searched using a multi-sequence input file, the default behavior is
+to continue with the next query in the input when a FATAL error is
+encountered.  When haltonfatal is specified, the entire run is halted at the
+current query when a FATAL error is encountered; the testable exit status
+will be the EXIT CODE associated with the fatal error (not 12, as described
+below on 2004-09-29, when haltonfatal is not specified).
+
+
+2004-09-29
+(Fix) Previously, when a multi-sequence query file was specified, if the last
+query in the file completed without error, the overall program would exit
+zero (suggesting no error), even if one or more earlier queries did encounter
+fatal errors.  The program now consistently exits with a distinct, non-zero
+exit status (exit status 12) if a fatal error arises with any of the query
+sequences in a multi-sequence situation.  In such cases, the specific success
+and failure codes for the individual searches must be obtained by parsing the
+output for EXIT CODE lines.  ("EXIT CODE 0" will be displayed in cases of
+success).  To be clear, exit status 12 is not displayed on any of the EXIT
+CODE lines, but is only detectable by the program that invoked BLAST by
+testing the exit status of the BLAST process.  Exit status 12 is used for no
+other purpose than to signal the occurrence of one or more fatal errors
+during the processing of multiple tasks, such as multiple query sequences in
+a single input file.
+
+(Fix) One fatal exit code of BLASTN was changed from 23 to 16, to make it
+consistent with the behavior of the four other search modes.  The
+accompanying text in the fatal message was not changed.
+
+
+2004-08-31
+(Fix) Cosmetic bug in database filenames reported on "Database:" line,
+whereby double directory name delimiters (//) might be displayed.
+
+
+2004-08-26
+(Change) Altered one warning message to be a bit clearer.
+
+
+2004-08-22
+(Fix) Poisson P-values were sometimes computed incorrectly, for very
+low-scoring alignments.
+
+
+2004-08-12
+(Change) Slightly updated database I/O routines.
+
+
+2004-08-10
+(Fix) Lingering 64-bit crashing bug that wasn't addressed on 2004-07-14.
+
+
+2004-08-04
+(Fix) Fixed a bug introduced yesterday.
+
+
+2004-08-03
+(Change) Slight speed increase.
+
+
+2004-08-01
+(Fix) When hspmax was exceeded, the warned increase in the ungapped HSP score
+threshold could have been lower than the actual increase.
+
+(Change) The -c options of xdformat (to replace bad letter codes) and xdget
+(to choose a genetic code) have been renamed -C.
+
+
+2004-07-31
+(Change) Slightly reduced memory consumption and increased speed.
+
+
+2004-07-28
+(Fix) Corrected misspellings and a few omissions of available command line
+options in the usage instructions reported by xdformat and xdget.
+
+
+2004-07-16
+(Fix) The -mmio option was not working properly to turn off memory-mapped
+I/O on some platforms (principally Linux) and caused database-not-found
+errors instead.
+
+
+2004-07-14
+(Fix) Program crashes (segmentation faults) would often occur when
+using 64-bit binaries to analyze query sequences longer than the
+longest database sequence.  (No impact on 32-bit binaries).
+
+
+2004-07-12
+(Change) Better estimation of the amount of free memory available
+under Linux.
+
+
+2004-07-11
+(New) Added warnings when long query and database sequences are to be
+analyzed and the hspsepQmax and hspsepSmax parameters, respectively,
+have not been set.
+
+(Fix) Better signal handling, especially under Linux 2.4
+in the absence of native POSIX threads support.
+
+(Fix) Accounting of CPU time was incorrect under Linux 2.6
+when using multiple CPUs/threads.
+
+
+2004-06-29
+(Change) Estimates of memory requirements are more optimistic,
+thus allowing more CPUs to be employed in some cases.
+
+
+2004-06-25
+(Change) Improved speed under Linux 2.6 on i686 and i786 platforms.
+
+(Fix) sysblast.sample file had been omitted from distributions
+
+
+2004-06-23
+(Change) Further (marginal) improvement in Sum statistics calculations and
+the link lists reported.
+
+
+2004-06-22
+(Change) Generally improved Sum statistics calculations, both in
+accuracy and speed.
+
+(Fix) Links information was sometimes corrupted.  Added caveat to the
+description of the "links" option in parameters.html, concerning the
+potential inaccuracy of the HSPs listed for sets other than the
+most significant set.
+
+
+2004-06-18
+(Change) Support for <parameter-name>={min,max} for integer and
+floating-point command line parameter values.  Support for
+<parameter-name>={infinity,-infinity} for floating-point values.
+
+
+2004-06-16
+(Fix) Grouping of low-scoring HSPs into consistent sets was not performed
+reliably.
+
+
+2004-05-26
+(Fix) Corrected the descriptions of the gspmax and spoutmax parameters
+in README.html to indicate that the default value for both is zero (0),
+not 1000.  (The default value for hspmax is 1000).
+
+
+2004-05-22
+(Change) Under Mac OS X, the datasize resource limit is set to unlimited,
+to avoid some unusual habits of this operating system:  setting a default
+datasize limit of 8 MB and not enforcing datasize.
+
+
+2004-05-16
+(Fix) In one warning message, memory sizes were being reported in units of KiB
+while stated to be in units of MiB.
+
+
+2004-05-15
+(Fix) A false I/O error was being reported on some platforms for piped output.
+
+
+2004-05-14
+(New) Out-of-memory errors in the search programs now refer the user
+to web pages for assistance.
+
+(Fix) The -wstrict option had only supported the classical one-hit
+BLAST algorithm, not the two-hit BLAST algorithm (re: the hitdist option),
+but now supports both.
+
+
+2004-05-12
+(Change) Added I/O safety checks for typically rare situations in xdformat.
+
+2004-05-11
+(Change) Contextually aware warnings and error messages are spewed forth in
+some out-of-memory situations.
+
+(New) nrdb and patdb now automatically detect and read compressed FASTA
+input filenames (assuming gunzip, zcat and unzip are in the command path).
+
+(Change) Updated the values for lambda, K and H associated with the BLOSUM62
+scoring matrix in wu-blastall.
+
+
+2004-05-10
+(Change) Significantly reduced memory requirements.
+
+
+2004-05-07
+(New) Support for an optional "memmax" parameter in /etc/sysblast, to establish
+a limit on the amount of memory used by each individual BLAST job.  On a system-
+wide basis, the memmax limit overrides any datasize resource limit established
+by a user's terminal shell.
+
+
+2004-05-04
+(New) Added more tests for memory requirements, making multithreaded use
+more reliable and convenient.
+
+
+2004-05-02
+(Change) Significantly reduced memory requirements and, generally,
+a bit of improvement in search speed.
+
+
+2004-04-29
+(Change) Speed tweak.
+
+
+2004-04-29
+(Change) Tweaked wu-blastall for some cases of nondefault scoring matrices
+being used.
+
+
+2004-04-28
+(Change) The gapsepqmax and gapsepsmax parameters are deprecated, to be
+replaced by hspsepqmax and hspsepsmax, respectively, which are now for use
+with both gapped and ungapped alignments.  A warning to this effect is now
+produced if either gapsepqmax or gapsepsmax is used.
+
+
+2004-04-26
+(Change) Improved search speed for large jobs under typical usage,
+with the default sensitive parameters.
+
+
+2004-04-20
+(Fix) Some Linux systems would mung the display of the query sequence's
+effective length if it was larger than about 10^9.  In addition, values
+beyond approximately 10^18 (typically obtained via the command line option
+Y=#) would not be not displayed correctly on any system.
+
+
+2004-04-17
+(Change) wu-blastall updated with support for -t option.
+
+(Fix) Reading of compressed FASTA files was broken on some platforms.
+
+
+2004-04-13
+(Fix) A potentially crashing and corrupting bug was introduced at the last
+minute to blastn, tblastn and tblastx on 2004-04-10.
+
+(Fix) The old setdb and pressdb programs were broken in the 2004-04-10 release --
+they could not create their output files.
+
+
+2004-04-10
+(Fix) User settings of the hspsepqmax, hspsepsmax, gapsepqmax and gapsepsmax
+parameters were not consistently exploited for improving search sensitivity.
+When comparing long sequences (in the extreme case, whole chromosome or whole
+genome sequences, but also with great benefit for any sequences longer than
+most genes in the species under investigation), these parameters are useful for
+restricting consistent groups of alignments to being clustered within
+relatively short, gene-sized regions and (supposedly) increasing their
+statistical significance accordingly.  Due to the aforementioned inconsistent
+use of *sepmax* values, however, significant groups of alignments could have
+been missed, as if the *sepmax* parameters had not actually been used.  (The
+P-values reported were the expected, improved-significance values, which masked
+the presence of this bug).  Highly similar alignments were unlikely to be
+missed in any case, but marginally significant alignments (e.g., short exons)
+within a group were likely to be missed.  In the worst case, an entire group of
+alignments (a complete database "hit") could have been missed, if all
+members of the group were only marginally significant.  [Note:  If none of the
+*sepmax* parameters was used, this bug had no affect on results].
+
+(Fix) When any of the *sepmax* parameters were used in conjunction with the
+-links option, the Links output line was sometimes truncated.
+
+(Fix) Erroneous alignments could be produced when the pingpong option was
+used.  (This bug was introduced with the fix of another bug on 2004-03-24).
+
+(Fix) Less likely to segmentation fault when out-of-memory condition arises.
+
+(New) Added support for the Soffset=<n> option, as an adjunct to the old
+Qoffset=<n> option.  Soffset causes coordinate numbers reported for all Subject
+sequences to be adjusted by the integer quantity <n>.
+
+
+2004-04-08
+(Fix) Made two WARNINGs more accurate:  when HSPs or GSPs were discarded
+because hspmax or gspmax was exceeded, instances when the alignments were
+discarded without actually increasing the associated threshold score (S2 or
+gapS2, respectively) are now warned about distinctly from cases when the
+threshold was transiently increased.
+
+
+2004-04-07
+(New) BLASTA can now read compressed query sequence files.
+
+
+2004-03-27
+(Fix) In relation to the support added recently for compressed input files
+in xdformat, gb2fasta, gt2fasta, and sp2fasta, compressed filenames containing
+special characters were not parsed correctly.
+
+
+2004-03-24
+(Fix) At low frequency, gapped alignments could be truncated, such that
+either the full extent of similarity was not displayed or (in extreme
+cases) no alignment at all would be reported because the affected score
+was below the threshold.
+
+
+2004-03-23
+(New) xdformat, gb2fasta, gt2fasta, and sp2fasta now recognize input file
+name extensions that are suggestive of the files containing compressed
+data.  If the user specifies an input filename that ends with .Z, .z, -z,
+_z, .GZ, .gz, -gz, etc., the contents of the file are automatically piped
+through "gunzip".  If the input filename ends with .zip or -zip, its
+contents are piped through "unzip" instead.  Gunzip and unzip must of
+course be in a user's PATH for this to succeeed.
+
+(Change) wu-formatdb now displays the native xdformat command that is
+executed.
+
+(Fix) Better command line parsing by wu-formatdb, wu-blastall, and the "seg"
+filter programs.
+
+
+2004-03-03
+(New) The -wstrict option has been created.   When -wstrict is invoked, all
+ungapped alignments found during the ungapped phase of a search are required
+to contain an identical word hit (in the usual case of BLASTN usage) or a
+neighborhood word hit (in the case of TBLASTN and TBLASTX), when searching a
+nucleotide database sequence that contains one or more ambiguity codes.
+When a database sequence contains one or more ambiguity codes, candidate
+alignments are first identified in a variant of the database sequence that
+contains entirely specific residue codes.  Later, the ambiguity codes are
+put in place, which can obliterate the BLAST seed word hit that was
+originally used to find an alignment; nevertheless, the software by default
+will save and continue to work with an alignment seeded by a now
+non-existent hit, as long as the alignment continues to satisfy the score
+threshold, because sensitivity is often more important than strict adherence
+to the BLAST algorithm.  The -wstrict option forces each ungapped alignment
+to contain a seed hit even after ambiguity codes have been put in place.
+Consequently, some alignments may be discarded when -wstrict is specified.
+This has downstream effects on the gapped alignments reported, because
+ungapped alignments provide the seeds for the gapped.
+
+The -wstrict option has no effect whatsoever on BLASTX and has no effect on
+BLASTP when gapped alignments (the default) are to be produced.  Only when
+BLASTP is invoked with the -nogaps option does -wstrict turn off an
+otherwise unused, brute-force search step that the program performs in its
+BLAST 1.4-compatibility search mode.  This brute force search step involves
+linear dynamic programming performed along the entire length of any diagonal
+found to contain an HSP.  This heuristic was added to ungapped BLASTP 1.4
+for increased sensitivity but omitted from standard BLASTP 2.0 operations
+for increased speed in the presence of the more-sensitive gapped alignment
+method.
+
+
+2004-03-01
+(Fix) Using BLASTN with a short word length (W < 7), sporadic crashes
+(segmentation faults) could arise when searching a nucleotide database
+sequence containing ambiguity codes.  The likelihood of a crash increased
+with decreasing word length.
+
+
+2004-02-07
+(Change) Status messages from xdformat are more informative and consistent.
+
+(Change) xdformat examines the command line for duplicate input file names
+or database names; and complains and exits non-zero, if a duplicate is found.
+
+
+2004-02-01
+(Change) In xdformat and xdget, the upper bound has been increased on the
+in-memory cache size supported for sequence identifier indexes, particularly
+when these programs are executed in a 64-bit virtual addressing environment.
+See the -M option of xdformat and xdget (which are actually the same program,
+just invoked by two different names to yield two different behaviors).
+
+The default cache size for sequence identifier indexes (.xni and .xpi files)
+is 512M.  (A smaller cache may be used under resource-limiting conditions).
+When a larger index will be produced, speed will continue to increase with
+increasing cache size (specified with the -M option), until the cache is
+as large as the ultimate size of the .x[np]i index file.
+
+(Change) Indexing of sequence identifiers by xdformat is slightly faster.
+
+
+2004-01-30
+(Fix) Index files used by the xdget program to retrieve sequences by
+identifier (i.e., the .xni and .xpi files produced by xdformat with its -I
+and -X options) were previously limited to being 4 GB in size.  Furthermore,
+in situations requiring an index file larger than 4 GB, the contents of the
+file were silently corrupted, which made the index unusable.
+
+(Fix) The Start: and End: times reported by xdformat lacked data for minutes
+and seconds.
+
+
+2004-01-28
+(Change) For large databases, like nr or GenBank, xdformat now indexes sequence
+identifiers significantly faster, when invoked with either the -I option during
+database creation or -X (used for index creation at a later time or index
+reconstruction).
+
+
+2004-01-21
+(Fix) Contrary to its usage display, xdformat would not accept multiple
+database names when the -i operational mode was specified.
+
+
+2004-01-20
+(Change) Hopefully improved memory management in the nrdb program, to reduce
+memory fragmentation and increase the efficiency of memory utilization.
+
+
+2004-01-15
+(New) The syntax for dbslice usage is expanded to include a range of slices
+in the form dbslice=a-b/n, where 0 < a <= b <= n.  For example, the
+expression "dbslice=11-20/500" designates slices 11 through (and including)
+20 to be searched, out of 500 total slices.  This permits a database
+to be more equitably divided between cluster nodes, when individual nodes
+have different performance characteristics.
+
+
+2004-01-12
+(New) The dbslice=<m>/<n> option allows the database to be conveniently
+sliced at run time into n equivalent-sized partitions (counting sequences,
+not residues), where only the m-th partition (1 <= m <= n) is searched.
+
+
+2004-01-07 (*** slipstream update for some distributions***)
+(Fix) Some distributions for Linux platforms lacked a complete all upper-
+and all lower-case complement of amino acid scoring matrix files.  E.g.,
+the file "blosum62" was present in matrix/aa but "BLOSUM62" was missing.
+
+
+2003-12-15
+(Fix) Too-short alignments were sometimes produced because gapped alignments
+were sometimes not extended in the reverse direction as far as expected (or as
+far as should be), given how far the alignments had been extended in the
+forward direction.
+
+
+2003-10-22
+(Fix) On encountering invalid nucleotide codes in its input, the "dust"
+filter program would sometimes crash.  Any invalid code encountered is
+now treated internally to dust like an "N", although it will appear
+unaltered in the output (unless the nucleotide is masked).
+
+
+2003-10-21
+(Change) Any subsequent -matrix=<matrix-name> command line options specified
+after the first were ignored by BLASTA.  Now the last one specified is the
+matrix used for the search, instead of the first one.
+
+(New) Specifying -altscore=none on the command line will clear or nullify
+any prior altscore specifications on the command line.
+
+(Change) Better diagnostic message from xdformat when database file size
+exceeds the precision of file offsets being used.
+
+
+2003-10-03
+(Fix) The pam program raised array bounds errors for pam distances > 255.
+It now works as expected for PAM distances up to 4095(!).
+
+
+2003-09-22
+(Fix) when executed with the -X (index) option, xdformat was exiting
+non-zero, even if no error was actually detected.
+
+
+2003-09-10
+(Fix) Corrected the check for unambiguous output database file names in
+xdformat (use of the -o or -a option), when stdin or multiple input files are
+specified.
+
+
+2003-09-04
+(Change) Pragmatic default cache size selection for indexes in xdformat/xdget.
+The -M option, if used, overrides the default.
+
+
+2003-08-21
+(Change) Databases with a version assigned via the -v option of xdformat
+now have that version string reported at the end of blast search output.
+"Version:  ..." will appear only when a version was assigned.
+
+(Change) Tweaked settings of resource limits.
+
+
+2003-08-14
+(Fix) Neighborhood word lists were sometimes not managed properly,
+since the 2003-03-27 release.  This resulted in segmentation
+faults at low frequency.
+
+
+2003-05-16
+(New) A new "spoutmax" option limits the number of segment pairs
+reported per database sequence.  The default is no limit (spoutmax=0).
+
+(Change) The "hspmax" and "gspmax" options now strictly limit the number of
+ungapped HSPs and gapped HSPs, respectively, that are saved for subsequent
+processing steps.  The default value for hspmax remains 1000, while the
+default gspmax=0 imposes no limit.
+
+
+2003-04-11
+(New) More consistency checks of parameter settings.
+
+
+2003-03-27
+(Change) Minimal-to-greatly improved speed for most searches,
+with most improvement seen for larger searches.
+
+
+2003-02-20
+(Change) Improved speed of BLASTN with long queries and the default
+word length.
+
+(New) Implemented the "cdb" command line option to force BLASTN to search
+databases in their compressed form.
+
+
+**** Version [2003-02-16] Posted ****
+2003-02-16
+(Change) Improved speed and slightly reduced memory requirements for BLASTN,
+with short queries when the word length used is 6 < W < 11.  This is achieved
+by searching the compressed form of the database sequences.  Sensitivity in
+regions of the database sequences containing ambiguity codes may be
+compromised, however, relative to the previous default behavior of searching
+uncompressed database sequences with all ambiguity codes instantiated.
+
+(New) Implemented the "ucdb" command line option to have BLASTN
+unconditionally search databases in UnCompressed form, with ambiguity
+codes instantiated.  This new option complements the change in behavior
+described above, so users can still obtain the previous default behavior.
+This option can significantly improve speed for long queries and database
+sequences -- albeit at the expense of memory.
+CAUTION: ucdb causes the database to be unconditionally searched in
+uncompressed form, regardless of word length or query length; this may
+result in increased memory use and execution time, in cases where the
+database would ordinarily be searched in its compressed form.  This option
+offers improved sensitivity for databases in XDF format; no improvement
+will be seen for databases in the original BLAST 1.4 format, even though
+additional memory will still be used.
+
+(Change) Small speed-up in the "dust" complexity filter.
+
+
+**** Version [2003-02-04] Posted ****
+2003-02-03
+(Change) A small rearrangement to the source code for XDF database I/O has been
+found that avoids the Intel ecc compiler problem described yesterday.  This
+now permits high optimization to be used.
+
+
+**** Version [2003-02-02] Posted ****
+2003-02-02
+(Fix) An apparent bug in the Intel C ("ecc") compiler optimizer for Linux
+on Itanium (IA64) was observed to produce ERROR messages and cause BLASTN
+to miss database hits potentially at high frequency (perhaps 10% or
+more).  Aberrant code produced by the compiler at its highest optimization
+level was localized to a single function involved in the processing of
+nucleotide ambiguity codes during XDF database I/O.  Reducing the
+optimization level seems to have resolved the matter.
+
+
+2003-01-30
+(Change) In protein-level search modes, the default neighborhood word
+score threshold, T, for W=2 is now set to the same value as when W=3.
+Previously, the default behavior for word lengths other than 3 and 4 was
+not to use any neighborhood words at all, just identical word hits.
+
+
+**** Version [2003-01-28] Posted ****
+2003-01-28
+(Fix) blasta:  floating point exceptions often arose under Tru64 UNIX when
+the poissonp option was used.
+
+(Fix) xdformat:  when indexing a database, the appearance of redundant or
+duplicate IDs in the input FASTA data could lead to an unnecessarily fatal
+condition being raised.
+
+
+2003-01-27
+(Fix) xdformat:  corrected the auto-sizing of file offsets.
+
+
+**** Version [2003-01-18] Posted ****
+2003-01-18
+(Fix) For the alignments of a given database sequence reported in the output,
+when multiple HSPs had the same score and at least one of these same-scoring
+HSPs was ascribed an E-value of 0, these same-scoring HSPs may not have been
+sorted relative to each other by E-value.  (Note: this had no effect on the
+relative ranking of database sequences).
+
+
+2003-01-17
+(Fix) A bug in the gapped alignment routines could sometimes cause
+satisfactory alignments to be missed.  The problem could only arise when
+searching a database sequence containing one or more ambiguity codes;
+with typical scoring systems that are used, the problem could also only
+arise when ambiguity codes other than N (any) were present in the
+immediate vicinity of the aligned segment of the database sequence.
+
+
+2003-01-16
+(Fix) A bug in the gapped alignment procedures used in the BLASTN search
+mode produced sporadic FATAL errors ("Non-positive score returned from
+ExpandX").  The bug was introduced in the 2002-11-12 release, when the
+pingpong option was added.
+
+
+2003-01-11
+(Fix) Corrected inconsistencies in command line parsing that would
+cause some command line expressions to be rejected.
+
+
+2002-12-17
+(Fix) Cleaned up wu-blastall script's support for -A and -P options.
+
+(Change) Adjusted cutoff scores used by the wu-blastall script to be
+closer to the new values used by NCBI blastall, November 2002 release.
+
+
+**** Version [2002-12-07] Posted ****
+2002-12-07
+(Fix) Multi-sequence query files could catapult the search
+programs into endlessly searching the database with the same
+queries over and over and over... (since the [2002-11-12] release).
+
+
+**** Version [2002-11-21] Posted ****
+2002-11-21
+(Fix?) Eliminated the 64-bit virtual addressing "improvement"
+from IRIX binaries.  I couldn't adequately test them.
+
+
+**** Version [2002-11-18] Posted ****
+2002-11-18
+(Fix) The improvement in 64-bit virtual addressing mode that was
+introduced on 2002-10-25 caused the search programs to fail on some
+platforms (e.g., Tru64 and HP-UX, but not Solaris or Linux) when
+large database files were involved.
+
+
+**** Version [2002-11-15] Posted ****
+2002-11-15
+(Fix) The -t <title> option was being rejected by xdformat, when
+processing peptide sequence databases.  This bug arose in the
+2002-11-09 release.
+
+
+**** Version [2002-11-12] Posted ****
+2002-11-12
+(New) A new "pingpong" option invokes extra processing to help
+ensure the alignments produced are locally optimal.  In essence, one
+time-saving heuristic is eliminated.  However, the use of this option
+typically adds 3-10% to the execution time without altering or improving
+the results.  On rare occasion, though, an alignment and its associated
+alignment score may be improved.
+
+
+**** Version [2002-11-09] Posted ****
+2002-11-09
+(New) Added empirical lambda, K, H values for gapped alignments using
+the "pupy" matrix and gap penalties Q=10 R=10 and Q=20 R=10 with BLASTN.
+
+
+2002-11-07
+(New) xdget now supports a -t option, to have retrieved nucleotide
+sequences translated in the standard genetic code or in an alternate
+code specified with the new -c option.  For nucleotide sequences, if
+both start and end coordinates are specified (-a and -b options) and
+start > end, the reverse complement is implied, rather than being treated
+as an error (as it still is for peptide sequences).
+
+(Change) Synchronized genetic code definitions with the NCBI Toolbox.
+
+
+**** Version [2002-11-04] Posted ****
+2002-11-04
+(Fix) The "seqtest" option was ignored if it was specified prior
+to the Z=# option (to the left of Z) on the command line.
+
+
+2002-10-31
+(New) The "noedge_effect" command line option turns off Altschul's edge
+effect in statistical significant calculations.
+
+(Change) "xdformat -i", which retrieves descriptive information about
+a database, now reports duplicate, redundant, and missing identifier
+counts for the database, if the -I option is included on the command line.
+
+
+2002-10-28
+(New) Added a -sort_by_subjectlength option, to sort results
+by subject (database sequence) length, from longest to shortest.
+
+(Fix) An error message displayed on integer input errors from
+the command line was wrong.
+
+
+**** Version [2002-10-25] Posted ****
+2002-10-25
+(Change) Slight improvement in efficiency of the applications
+compiled to use 64-bit virtual addressing (P64).
+
+
+**** Version [2002-10-20] Posted ****
+2002-10-20
+(Fix) Errors in the reported alignments could arise when the -qoffset
+option was used.  An internal consistency check would fail in these
+cases, such that any occurrence of these errors was always associated
+with the appearance of an ERROR message in the output; however, some
+users may unadvisedly have been using the -errors option, which
+suppresses such ERROR messages.  When these errors arose, the alignment
+scores and start and end points were correct (optimal), such that the
+P-values and E-value statistics were unaffected, but the path of the
+alignment from start to end was incorrect (suboptimal) and this would
+result in suboptimal values reported for the number and percent
+Identities and Positives.
+
+
+2002-10-15
+(New) Added support for "-shortqueryok" option, to make situations
+where the query sequence is shorter than the word length a non-fatal
+error.
+
+(Change) More than 4 threads can now be explicitly requested in the
+BLASTN search mode, using the cpus=<n> option, with n > 4.  BLASTN
+still will use no more than 4 threads even on computers configured
+with more than 4 processors -- unless so requested.
+
+
+**** Version [2002-10-11] Posted ****
+2002-10-11
+(New) xdget can now output specific sequence segments and optionally
+reverse-complement nucleotide sequences.  When a segment is reported,
+the coordinates are appended to the defline with an "SQ" tag. If the
+sequence is reverse-complemented, this is indicated at the end of the
+defline by an "RC" tag.
+
+(Fix) wu-blastall was not interpreting the -f option in the same
+manner as blastall.
+
+
+**** Version [2002-10-07] Posted ****
+2002-10-07
+(Fix) Corrected the internal definition of the "M" nucleotide ambiguity
+code, from erroneous C/T to the correct A/C.
+
+
+**** Version [2002-10-05] Posted ****
+2002-10-05
+(Fix) Command line settings of the Y parameter (effective length of the
+query) were being ignored, dating back to the introduction of support
+for segmented query sequences (2000-05-20).
+
+
+2002-09-26
+(Change) Added support to xdformat/xdget for indexing of the new third-party
+annotation tags in FASTA identifiers:  tpd, tpe, and tpg.
+(tpd = DDBJ, tpe = EMBL, tpg = GenBank)
+
+
+**** Version [2002-09-16] Posted ****
+(Fix) The -mmio option was broken by the Mac OS X work-around
+for large files made on 2002-09-10.  This option is principally
+used to help diagnose problems, though, and not for routine use.
+
+
+**** Version [2002-09-10] Posted ****
+(Fix) Work-around found to support "large" files (files > 2 GB
+in size) over NFS by Mac OS X NFS clients.
+
+
+**** Version [2002-09-09] Posted ****
+2002-09-09
+(Change) Selenocysteine residues (IUPAC code 'U') are now scored by default
+like unknown residues (IUPAC code 'X'), with the exception that U-U pairs score
+0.  These default scores can be overridden by providing explicit scores for U
+in the scoring matrix file.  Previously, even though the software has been
+"selenocysteine-aware" and allowed scores for U to be specified in the scoring
+matrix for years, none of the scoring matrices distributed in the WU BLAST
+package has ever specified substitution scores for U; and the default
+substitution scores involving U were chosen to be large negative values, such
+that selenocysteine could never appear in an alignment except in a gap.  The
+new default scores will often permit U to appear in alignments aligned with
+a U or aligned with other residues, not just in gaps.
+
+(Change) The fraction of "Identities" (identical residues) reported for a
+sequence alignment is now computed slightly differently.  Previously, an
+aligned pair of residues was called an "identity" if-and-only-if the
+substitution score was positive and the two residue codes were the same.  Under
+the new rules, the substitution score is no longer relevant.  An aligned
+residue pair will be called an "identity" only on condition that (1) the
+residue codes are the same and (2) the residue codes are not ambiguity codes
+(e.g., not B, Z, or X for amino acid sequences).  The new rules permit aligned
+pairs of selenocysteine (U) residues to be counted as identities, even if the
+scoring matrix specifies a non-positive substitution score for a U-U pair.
+Computation of "Positives" remains unchanged.
+
+
+**** Version [2002-09-06] Posted ****
+2002-09-06
+(Fix) On Tru64 platforms only, some searches could abort due to detection of a
+floating point output error.
+
+
+2002-09-04
+(Change) gt2fasta now reports SOURCE information rather than ORGANISM,
+in response to the NCBI moving organellar qualifiers from ORGANISM
+to SOURCE in GenBank Major Release 131.
+
+(Change) Allow /etc/sysblast to be configured to prevent BLAST execution
+entirely on a computer, by setting cpusmax=<a negative integer>.
+
+(Fix) Slightly better rollback recovery if/when xdformat is interrupted.
+
+
+**** Version [2002-08-28] Posted ****
+2002-08-28
+(Fix) CPU time reporting was inaccurate under Linux when multiple threads were
+used.
+
+
+**** Version [2002-08-14] Posted ****
+2002-08-14
+(New) Support is provided for a system-wide configuration file named
+"/etc/sysblast".  Parameters "cpus=<int>", "cpusmax=<int>", and "nice=<int>"
+can be set as desired, one parameter line.  See the accompanying file
+README.html for details.
+
+
+**** Version [2002-06-24] Posted 2002-08-10 (slipstream) ****
+2002-06-24 (slip-stream revision for IA64 platforms only, 2002-08-10)
+(Fix) Data conversion problem on some IA64 platforms when manipulating
+indexed databases with xdformat and xdget.
+
+
+**** Version [2002-06-24] Posted ****
+2002-06-24
+(Change) The maximum allowed value for the E=# command line option
+was increased from 10000 to DBL_MAX.  "DBL_MAX" is a platform or hardware
+specific limit on double precision floating point values that is often
+greater than 1e300 (10**300).
+
+
+**** Version [2002-06-07] Posted ****
+2002-06-07
+(Fix) The cpus=# option, if specified, was not being honored by the
+search programs -- they proceeded to use the default number of CPUs
+or threads regardless.  This bug was introduced in the 2002-05-15
+release.
+
+
+**** Version [2002-05-29] Posted ****
+2002-05-29
+(Fix) When copious output was produced, users were advised to use a low
+complexity filter, even when the wordmask option had been specified.
+
+
+**** Version [2002-05-15] Posted ****
+2002-05-15
+(Fix) Another failure mode repaired where an invalid context in the
+query would produce a segmentation fault.  This bug was originally
+fixed in the 2002-03-30 release, but re-introduced in a different
+form in the 2002-04-02 release.
+
+
+2002-04-26
+(Fix) When appending sequences to an existing database with xdformat, the
+originally set title of the database was not maintained, being instead
+replaced by the name of the current FASTA input file (unless the -t option
+was specified when appending).
+
+(Change) Default sort order of subject sequences has been improved.
+In the case that the best P-values are identical (e.g., 0), the subject
+for which the highest scoring alignment was found is reported first.
+
+(Change) Made Sum P-values a little more accurate when hspsep[sq]max and
+gapsep[sq]max parameters are used.
+
+
+**** Version [2002-04-15] Posted ****
+2002-04-15
+(Fix) Parsing of -altscore command line options was broken in 2002-04-14
+release.
+
+
+**** Version [2002-04-14] Posted ****
+2002-04-14
+(Fix) More robust command line parsing, to reduce user input errors.
+
+
+**** Version [2002-04-12] Posted ****
+2002-04-12
+(Fix) Segmentation fault in xdformat when indexing empty identifiers (e.g., gb||).
+
+(New) Support for Intel Pentium4 (i786) under Linux.
+
+
+**** Version [2002-04-11] Posted ****
+2002-04-11
+(Fix) Parsing of FASTA deflines was errant when deflines began with
+white space instead of an identifier(s).
+
+(Fix) No longer trapping SIGFXFSZ (filesize) or SIGPIPE.
+
+
+**** Version [2002-04-06] Posted ****
+2002-04-06
+(Change) Made the filter= and wordmask= specifications more flexible,
+as far as how custom filters are supported.
+See http://blast.wustl.edu/blast/README.html#Filters for details.
+
+
+**** Version [2002-04-02] Posted ****
+2002-04-02
+(New) Significant speed improvement in all search modes on many classes of
+large problems.
+
+(New) Created "gspmax" command line option to govern the number of gapped HSPs
+reported.  The "hspmax" command line option now strictly governs the number of
+ungapped HSPs that feed the gapped alignment phase.  hspmax=0 and gspmax=0
+imply no limit.
+
+
+**** Version [2002-03-30] Posted ****
+2002-03-30
+(Fix) Segmentation violation always occurred whenever some (but not all)
+contexts were "invalid" (e.g., could not satisfy the cutoff score).
+
+(Change) Small performance improvement.
+
+
+2002-03-25
+(Change) Tweaked wu-blastall script.
+
+
+2002-03-22
+(Fix) When dumping a database into FASTA format (-r option), xdformat was
+exiting non-zero when no error condition existed.
+
+
+**** Version [2002-03-19] Posted ****
+2002-03-11
+(Change) Sum statistics now take into consideration any settings of the
+following command line options:  hspsepqmax, hspsepsmax, gapsepqmax,
+gapsepsmax.  See the on-line README for the parameters' descriptions at
+http://blast.wustl.edu/blast/README.html  These options impose distance
+limitations that are now factored into the search space size used in
+computing Sum P-values.  The result can be improved sensitivity,
+when the set distances are shorter than the query and/or subject sequences. 
+If none of these options has been specified in the past, then no change
+in P-values will be observed.
+
+
+2002-03-06
+(Change) Improved BLASTN search speed on some platforms (perhaps most notably
+on Solaris/SPARC), by recovering speed lost during an extensive code
+reorganization undergone in January 2001.
+
+
+2002-02-20
+(Change) Added new "dbchunks" command line option, to allow the database to be
+split into an aribitrary number of chunks for assignment to threads.  Higher
+values may be advised when the database contains sequences that vary widely in
+length or composition.
+
+(Change) The effective number of database "chunks" was restored to 500 from
+its previous value of 1000.  Chunks had been 500 for eons before raising it to
+1000 during the past year.  Raising it to 1000 has proven particularly
+inefficient on EST database searches, even though genomic searches may have
+proceeded more smoothly.
+
+(Change) Tweaked the wu-blastall script.
+
+(Change) Only one warning of Karlin-Altschul parameters not available,
+instead of one report for every reading frame or strand of the query.
+
+
+2002-02-07
+(Fix) BLASTN search mode was effectively filtering the reverse complement of
+the query sequence twice, in the case that both strands of the query were being
+used (which is the default) along with certain kinds of filter or wordmask
+programs.  When a filter program such as "seg" (or more specifically "nseg" in
+this case of nucleotide sequences) was used -- a program which can further mask
+an already masked sequence -- anomalous results were sometimes obtained for the
+reverse complementary strand, along with occasional segmentation violations.
+This bug only affected BLASTN in conjunction with filter programs that behave
+like nseg (e.g., not the version of dust that is distributed with WU-BLAST
+2.0).
+
+
+2002-01-14
+(Fix) Multi-sequence query files will no longer cause the blast search
+program to halt when a zero-length sequence is encountered.
+
+
+2002-01-11
+(Fix) Parsing of accessions from RefSeq flat files
+
+
+2001-11-20
+(Fix) Fixed MAJOR BUG introduced in BLASTA sometime after 2001-11-16 release.
+
+
+2001-11-19
+(Change) Updated xdget's usage display to include mention of the -M option.
+
+2001-11-18
+(Fix) rather than reporting the error and continuing with the next requested
+identifier (if any), when presented with an identifier of a class not found in
+the database or of improper syntax, xdget would report "Index error" and exit
+nonzero.
+
+2001-11-16
+(Fix) If a database had not originally been indexed, the first time xdformat
+was run with the -X option on the database, an empty index was created.
+Any subsequent invocations with -X would create a proper index, but the first
+time should have done it, too!
+
+2001-11-14
+(New) Added -F option to XDGET to write an ASCII formfeed or newpage character
+(Control-L) followed by a newline, and then flush the output stream after each
+request.  This facilitates interaction with XDGET over a two-way pipe, such as
+between a client and server, in such a manner that deadlock can be avoided
+where each program gets stuck waiting for input from the other.
+
+(Fix) Marginal speed improvement in XDGET startup time.
+
+
+********* Released version dated [2001-11-12] (slipstream release)
+2001-11-13
+(Fix) Database read error on large databases (file offsets > 4 bytes).
+
+
+********* Released version dated [2001-11-12]
+2001-11-11
+(New) The wu-formatdb script now supports the indexing options (-o and -s) of
+the NCBI formatdb program.
+
+2001-10-31
+(Fix) The cpus=# option was being ignored under HP-UX.
+
+
+2001-10-25
+(New) Parsing of SV (sequence version) line in EMBL database files
+by the sp2fasta program.
+
+
+2001-10-24
+(New) Indexing of sequences by identifier in XDF databases, using enhanced
+"xdformat" program.  Existing databases can be indexed without reformating.
+See enclosed README.html for further details.
+
+(New) Retrieval of sequences by identifier with new program "xdget".
+See enclosed README.html for further details.
+
+(Fix) Sporadic problem reading long definition lines from XDF databases.
+
+
+********* Released version dated [2001-10-01]
+2001-10-01
+(Fix) Tru64 UNIX incompatibility with 32-bit ("p32") binaries built under
+version 4.0 for execution under version 5.0.
+
+(Fix) Code cleaned up for 100% compatibility with Mac OS X 10.1
+
+
+********* Released version dated [2001-09-23]
+2001-09-23
+(Fix) Long filename problem under HP-UX 11.0.
+
+(Fix) More error checks.
+
+(Fix) Tweaked defline parser.
+
+
+2001-09-13
+(Fix) Fixed a bug in blasta's parser of database definition lines that was
+introduced 2001-09-09.
+
+(Fix) Added more error checks to xdformat.  This also corrects the dumping of
+any sequences back into FASTA format that contain NULL (nonexistent) definition
+lines.
+
+
+2001-09-09
+(Fix) Further tweak to get completely around Tru64 problem first thought to
+have been addressed on 2001-06-07.  A problem (leading to FATAL error) was only
+apparent when using multi-sequence query files, only sporadically after the
+first query sequence, and only under Compaq Tru64 UNIX.
+
+
+2001-09-04
+(Fix) The query was not displayed with the advertised lower-case indication of
+soft masked (word masked) residues.  Only hard masked (filtered) residues were
+indicated.
+
+
+2001-09-02
+(Fix) Free memory error introduced 2001-08-27.
+
+
+2001-08-27
+(Fix) Added more protections against anomalous data.
+
+(Fix) Improved compile- and link-time options for use of large
+memory under IBM AIX.
+
+
+2001-06-07
+(Changed) More consistency/error checking on database I/O.
+
+(Fix) Tweaked code to avoid what appears to be a bug in Tru64's buffered I/O
+routines that led to sporadic crashes and other indecent behavior.
+
+
+2001-06-05
+(Fix) Added support for "ref" (RefSeq) identifiers, which had been missing.
+
+(Fix) Unrecognized sequence identifier tags (such as "dog" in the identifier
+string "gi|1583|gb|AC1583|AC1583|dog|WOOF001") now cause the left-to-right
+parsing of identifiers to halt and no longer result in a space character
+(instead of the vertical bar) being displayed in BLAST output after the last
+recognized tag in the string.  A warning or error message really ought to be
+displayed when unrecognized identifiers are encountered, but that would be
+inconsistent with previous behavior.  (Perhaps it will be better anyway to warn
+of this problem if it's encountered while building the BLAST database).
+
+(New) pir2fasta now supports a -a option, to have ACCESSION omitted from
+the output identifiers.
+
+
+********* Released version dated [2001-06-01]
+2001-06-01
+(Fix) xdformat can now find databases in the current working directory, without
+having to specify an explicit path to it.
+
+(Fix) A resource allocation problem existed under some command shells (only
+tcsh observed) on some computing platforms that led to an out-of-memory
+condition when query sequence filtering (or wordmasking) was requested.
+
+
+2001-05-26
+(Change) The pressdb and setdb programs in the software distributions have been
+relegated to pressdb.real and setdb.real, to be replaced by soft links named
+"pressdb" and "setdb" that point to xdformat.
+
+
+********* Released version dated [2001-05-18]
+2001-05-21
+(New) Now bundling the "patdb" utility program, for removing redundancy from
+FASTA sequence database files.   The program has been in routine use in the lab
+for about 7 years.  Patdb performs a similar function to the older "nrdb"
+program, but it has the optional (via the -s option) ability to identify not
+just 100% identical sequences over their entire length but perfect (100%
+identical) substrings, as well.  The algorithmic techniques employed include
+Patricia trees and deterministic finite-state automata (see Gish, 1989,
+http://blast.wustl.edu/blast-1.4/gish/doc/dfa.3.pdf).  The net result is a
+program that is not appreciably different in speed from nrdb, yet it can glean
+an extra few percentage points of compression, depending on the input.
+However, patdb is less well suited to working with large nucleotide sequence
+data sets than is the nrdb program, because patdb works in memory with all
+sequences at 1 residue per byte, whereas nrdb can compact nt.  sequences to 2
+or 4 nucleotides per byte.  Typical usage for protein sequence databases might
+be "patdb -s 20".  Start and end coordinates of perfect substrings are
+currently appended to the defline for the associated sequence.  While the lab
+has benefited from using patdb, before blindly using this program yourself, the
+speed benefits of substring elimination should be weighed against the potential
+post-database-search complications arising from hits against longer database
+sequences that contain as a perfect substring the actual sequence(s) of
+interest.
+
+2001-05-18
+(Change) The echofilter option now causes the query sequence to be reported in
+the output, regardless of whether any of the filter, lcfilter, wordmask, or
+lcmask options have been specified, but only after application of any/all
+requested filters and masks.  Previously, the query was reported in the output
+iff filter or lcfilter was specified.  As before, "masked" letters are
+displayed in lower-case, whereas "filtered" letters produced by the bundled
+low-complexity filter programs (e.g., seg, dust, xnu) will be displayed
+respectively as X or N, for amino acid and nucleic acid alphabets.
+
+
+2001-05-17
+(Fix) Removed a minor inefficiency in working with XDF nucleotide sequence
+databases with ambiguity codes.  Accompanying this inefficiency on some (but by
+no means all) computing platforms and only with some databases (e.g., the UCSC
+whole chromosome sequences), BLASTN run time may previously have been severely
+impacted.
+
+(Fix) Corrected a bug in factorial calculations that was introduced
+to the bundled seg, pseg, and nseg programs on 2001-05-02.  This is not
+expected to have any apparent effect, but simply makes the code correct.
+
+
+2001-05-06
+(Fix) Corrected the sizes (memory use) reported for DFA structures.
+
+
+********* Released version dated [2001-05-02]
+2001-05-02
+(Fix) Fixed the source of segmentation violations in all of the bundled seg
+filter programs (seg/nseg/pseg), most easily seen under Linux when filtering
+long query sequences.
+
+
+2001-04-28
+(New) Added "evalues" option to have E-values instead of P-values reported
+in the first section of output;  a currently redundant "pvalues" option is
+also available.
+
+(Fix) Cleaned up command line parsing.
+
+
+2001-04-20
+(Fix) More cross-platform large file access code clean up.
+
+
+********* Released version dated [2001-04-12]
+2001-04-12
+(Change) The platform description reported at the beginning of program output
+now indicates sizes for integer, long, and pointer data types as ILP32 or
+ILP64.  Large file (>2 GB) support is indicated by F64.
+
+(Fix) Fixed configuration for large file support under HP-UX when 32-bit
+virtual addressing is being used (re:  the "-n32" distributions).
+
+(Fix) System processor count was incorrectly assessed under HP-UX.
+
+(Fix) Now trapping SIGPIPE.
+
+
+2001-04-10
+(Fix) Fixed configuration for large file support under IRIX when 32-bit virtual
+addressing is being used (re:  the "-n32" distributions).
+
+(Change) Slight change to interrupt handler in xdformat.
+
+
+2001-04-03
+(Change) Eliminated temporary files altogether in the filtering of query
+sequences (re: the "filter" and "wordfilter" options).  Filter programs now
+must read (write) sequences from (to) standard input (output), which is
+often signified by "-", "stdin", or "stdout" in UNIX parlance.
+
+
+********* Released version dated [2001-03-31]
+
+2001-03-31
+(Fix) Potential crashing bug fixed in TBLASTN and TBLASTX search modes that was
+introduced in the [12-Dec-2000] release.
+
+
+********* Released version dated [2001-03-27]
+
+2001-03-27
+(Fix) Temporary files (such as those created during sequence filtering) are now
+cleaned up (deleted) even if the search program is interrupted.
+
+
+2001-03-23
+(Change) Switch from using tmpnam() to tempnam(), so temporary files can be
+relocated if necessary to another directory, using the TMPDIR environment
+variable.
+
+(Fix) Made error message more specific to the situation when a temporary file
+can not be created or written to, either due to lack of permissions or
+insufficient free disk storage available.
+
+
+********* Released version dated [2001-02-28]
+
+2001-02-28
+(Fix) BLASTA refused to search virtual databases if the input query
+file contained multiple sequences.
+
+
+2001-02-20
+(Fix) Corrected/clarified some of the usage information displayed by xdformat.
+
+
+2001-02-15
+(Fix) Sped up and reduced the memory requirements of the "dust" (Tatusov &
+Lipman) external filter program, particularly when operating on huge sequences.
+
+
+********* Released version dated [2001-02-12]
+
+2001-02-12
+(Fix) Alignment errors could arise with "segmented" query sequences --
+that is, with query sequences containing one or more hyphens -- if and
+only if the matching database sequence contained one or more ambiguity
+codes.  If lucky, a prominent ERROR message would be displayed,
+pointing to a severe bug in the software, but most of the time when
+this problem arose, a satisfying alignment would simply be skipped
+without notice.
+
+(New) Added "nosegs" option (not to be confused with "noseqs") to turn
+off the default behavior of segmenting query sequences at any hyphen
+characters.  See README.html for further description.
+
+(Change) Made "gapall" the default behavior, which will significantly slow down
+some searches, but this should be compensated at least in part by recent speed
+increases.  To obtain the previous default behavior, set gapE=2000 on the
+command line.
+
+
+2001-02-01
+(Fix) the value of the command line option "vdbdescmax" was not being
+interpreted properly.
+
+
+2001-01-11
+(Fix) Reduced memory requirements for long sequences, although no change in
+speed is expected, except on systems with very limited memory, where speed
+should be marginally improved.
+
+(Change) The H=# option is now used to specify the Karlin-Altschul statistics H
+parameter value (in units of nats), for the evaluation of ungapped alignment
+scores.  Previously, the H option had been used to turn on/off a histogram plot
+of the distribution of ungapped alignment scores.
+
+
+2001-01-09
+(Fix) Incorrect score sometimes displayed in one of the WARNING messages.
+
+
+********* Released version dated [2001-01-03]
+
+2001-01-03
+(New) The PHAT scoring matrices of Ng, Henikoff, and Henikoff are now
+included.  See Bioinformatics 16:760-766 (2000).  NOTE: Empirical values for
+lambda, K, and H when searching for gapped alignments with these matrices
+are NOT currently available.
+
+
+2001-01-02
+(Fix) Crashing bug when both the "kap" option and either the "topcomboN" or
+"topcomboE" options were simultaneously specified.
+
+(New) Better reporting of exceptional conditions.
+
+
+********* Released version dated [2000-12-13]
+
+2000-12-13
+(Fix) A crashing bug (created on 2000-12-12) if the compat1.4 option
+was specified.
+
+
+********* Released version dated [2000-12-12]
+
+2000-12-12
+Speed bump in all search modes.
+
+Latest version of wu-blastall was inadvertantly setting W=3 for BLASTN
+searches, making them terribly slow.
+
+
+2000-12-07
+Fixed the condition upon which a NOTE suggesting usage of a low-complexity
+filter was displayed.
+
+
+2000-12-05
+Made search programs a bit more intelligent about how to find filter programs
+when the BLASTFILTER environment variable is not set.
+
+
+2000-12-02
+Fixed a bug in the hitdist (2-hit BLAST) algorithm that overcounted word hits
+and slowed down searches a bit while only very marginally increasing
+sensitivity.
+
+
+2000-12-01
+xdformat with -i option was not displaying the database's Release date,
+if a Release date had been set with the -d option.
+
+
+********* Released version dated [2000-11-09]
+
+2000-11-09
+Fixed a significant HSP sort bug.  In all search modes but BLASTP, HSPs may not
+have been sorted by score, while the primary sort key (strand) was correctly
+performed.
+
+
+2000-11-08
+When dbrecmin or dbrecmax was specified, the starting record number in the
+database was reported erroneously as being 1 greater than the actual starting
+record number.  (The starting record was indeed the one requested on the
+command line).
+
+User settings for dbrecmin and dbrecmax were not being validated against the
+actual number of records in the database, nor were they being compared for
+their relative values making sense (dbrecmin <= dbrecmax).
+
+If the (WU)BLASTFILTER or (WU)BLASTMAT environment variables are not set,
+filter programs and scoring matrix files will now be found and used, if they
+are located respectively in filter/ and matrix/ subdirectories of the directory
+where the BLAST search program resides.  This permits the BLAST software
+distributions to be unpacked and used immediately, without having to set these
+environment variables first -- the filter programs and scoring matrices should
+be found in the expected subdirectories after unpacking.
+
+
+2000-11-06
+If "filter=none" was specified on the command line, this fact was not reflected
+in the Parameters displayed in the search program output.
+
+
+********* Released version dated [2000-11-04]
+
+2000-11-04
+Added support for controlling the maximum _absolute_ length of overlap between
+"consistent" HSPs, to complement the existing "olf" and "golf" parameters used
+to express the maximum overlap as a _fraction_ of the overall alignment length.
+The new parameters for expressing absolute length of overlap (measured in units
+of residues) are:  "olmax" and "golmax", for ungapped and gapped HSPs,
+respectively.
+
+Fixed an adverse interaction between the topcombo options and the newer "links"
+option that could lead to erroneous link numbers -- or possibly even program
+crashes -- when topcombo and links were used together.
+
+
+********* Released version dated [2000-11-03]
+
+2000-11-03
+Fixed an adverse interaction between the external "seg" filter program and
+BLASTA that caused seg to crash under the Linux operating system (and only
+under Linux) when BLASTA invoked it for filtering the query sequence.  The same
+interaction could be constructed under other operating systems, though, so the
+potential bug has been fixed for all operating systems.
+
+If an error occurs during query filtering, the temporary file used to store the
+unfiltered query sequence now gets removed (unlinked) consistently.
+
+
+********* Released version dated [2000-10-26]
+
+2000-10-26
+When an environment variable is not set, instead of reporting "<NOT-FOUND>",
+getenv now reports no value; and when the environment variable is set to an
+empty string, an empty string ("") is reported as its value.
+
+
+********* Released version dated [2000-10-23]
+
+2000-10-23
+On fully 64-bit platforms (Alpha, Ultra64, MIPS R10000, HP PA-RISC), memory use
+for long query and long database sequences has been reduced by up to half, with
+a small attendant increase in speed.
+
+Added support for "links" option, to display consistent links of alignments.
+
+
+2000-10-05
+Added -i option to xdformat, to obtain information about an existing XDF
+database.  The option works in setdb- and pressdb-compatibility mode, too, on
+databases that are internally XDF.
+
+
+2000-09-29
+Failures to fork child processes (e.g., due to the system-wide process table
+being full) are now logged using the syslog facility and re-tried after a 5
+minute sleep.
+
+
+2000-09-25
+Ported to Mac OS X Public Beta 1.
+
+
+2000-09-04
+Produce only a warning, when the maximum ungapped score is less than the gapped
+alignment score threshold (gapS2).
+
+If S is less than S2, S2 is no longer reduced to S.  This brings some
+consistency to comparisons of sequences, independently of the database size.
+
+Added "maskextra=<n>" option, to mask <n> flanking residues of those masked by
+the lcmask or wordmask=<masker> options.
+
+
+2000-08-31
+Command line options are often reported now, even when a fatal error is
+encountered, to facilitate diagnosis.
+
+
+2000-08-30
+Added the "getenv" command line option, for interrogating the value of an
+environment variable.  Example usage:  getenv=BLASTMAT
+
+********* Released version dated [2000-08-27]
+
+2000-08-27
+Fixed an incorrect interaction between the Z and seqtest options, when both were
+used.
+
+Lower case word masks in a nucleotide query sequence, activated by the "lcmask"
+option, are now propagated to the conceptual translation products in BLASTX and
+TBLASTX.
+
+
+2000-08-26
+Added "vdbdescmax <n>" option (default n=1) to limit the depth of recursion in
+describing virtual database components in the output.  Setting this limit to 0
+means "no limit" and will cause all component databases to be described.
+
+Added "putenv" option for setting environment variables in BLASTA.  As a
+security precaution against WWW users setting paths to undesirable directory
+locations, the "endputenv" option was added, to have ignored any putenv options
+that follow it on the command line.
+
+Added -E option to xdformat, for setting environment variables on the command
+line in a similar fashion to the "putenv" option of BLASTA.
+
+The layout of date strings in the output of BLASTA and xdformat can now be
+entirely controlled by the user, via the CFTIME environment variable, under
+operating systems that commonly support this mechanism.  As an example of how
+this feature is useful, dates can now be displayed in ISO 8601 standard format
+by setting the environment variable CFTIME to "%Y-%m-%dT%T" before running
+BLAST, or by specifying putenv=CFTIME="%Y-%m-%dT%T" on the BLAST command line.
+In addition, setting the TZ environment variable to "GMT-0" may cause the date
+and time to be reported in Universal Coordinated Time (UTC); in this case,
+including a "Z" (for zero or Zulu) to the CFTIME specification will make it
+clear that UTC is being used, as in putenv="CFTIME=%Y-%m-%dT%TZ" putenv=TZ="GMT-0"
+
+
+2000-08-21
+Added descriptions of nwstart and nwlen parameters to the usage information for
+blastn, tblastn and tblastx search modes.  While these parameters have been
+available in all search modes, they had not been advertised as such by the
+usage information.
+
+
+2000-08-20
+Restored reporting of neighborhood word counts when the "stats" option
+is specified.
+
+Activated "wink" option for BLASTN searches, which had mistakenly not been
+activated earlier.  This has an effect on BLASTN's speed now!
+
+
+2000-08-16
+Added support for new "lcfilter" and "lcmask" options.  lcfilter causes
+lower case letters in the query sequence to be converted to the appropriate
+"unknown residue" code (N for nucleotide sequences and X for protein
+sequences).  lcfilter is similar to the NCBI blastall program's -U option.
+
+lcmask causes lower case letters to be masked from neighborhood word
+generation, without altering the sequence itself (e.g., see the
+wordmask=<masker> option).
+
+Added support for -U to the wu-blastall script, which converts it to
+the WU-BLAST equivalent "lcfilter".
+
+
+2000-08-15
+Fixed bugs in long deflines output by gt2fasta.  gt2fasta now also appends
+/note= information (if available) to the DEFINITION string, when no /gene= or
+/product= information is available.
+
+
+2000-08-11
+Added support for multi-sequence query files.  When the query FASTA file
+contains multiple sequences, they are individually compared against the
+database using all of the specified options.  All results are sent to the
+same output stream.   The individual results are delimited from one another
+by a single ASCII form feed character (control-L), allowing text pagers
+(such as "more") to be used conveniently to browse through each set of results.
+The cpu times and start/end times reported are for individual searches,
+except the last query's which is the total time for all searches.
+
+Added support for new command line options:  qrecmin, qrecmax.  If it is
+desired to compare only the first query sequence, specify qrecmax=1.
+
+
+2000-08-10
+Added support for -F "m ..." option to the wu-blastall script and
+use the BLASTA -kap option for all search modes.
+
+2000-08-09
+Added support for virtual databases, specified on the command line as white
+space-delimited lists of real database names.  Example: if the protein
+sequences from the GenBank "pri", "rod", and "mam" divisions are organized in
+separate databases, then all 3 databases can be searched at one time with the
+following command:
+
+  blastp "pri rod mam" query.aa
+
+Virtual databases can be comprised of real databases in either XDF or
+the classical BLAST 1.4 database formats; however, all real databases
+in a given virtual database must currently be of the same format.
+
+
+2000-08-09
+Added support for new "wordmask=<masker>" option, used to mask words from the
+neighborhood word list without altering the sequence itself (as sequence
+_filters_ would do).  The acceptable maskers include the same list of filters
+as the classical "filter=<filter>" option.  For example, wordmask=dust should
+be equivalent to the NCBI's -F "m D" option.  Multiple wordmasks may be
+specified and (just as with the filter= option) wordmask=none cancels any
+wordmask specifications appearing earlier on the command line.
+
+Added check for all search contexts being wordless.
+
+
+2000-08-08
+Added support for multiple (basically unlimited) filter= specifications on a
+single BLAST command line.  Filters are run separately on the native query, so
+the order in which multiple filters are applied does not alter the outcome
+(with the exception noted below).  Each filter's result is OR-ed against the
+others.  The "echofilter" option only displays the final result upon OR-ing
+all of the filter outputs.
+
+Exception:  specifying "filter=none" effectively wipes out all filter
+specifications coming before it (to the left) on the command line.  This for
+example allows a default filter to be specified in a script, which can then be
+completely overridden by a subsequent specification that might be optionally
+provided by the user.  In the following case, the initial seg filter is
+cancelled by filter=none, to be replaced by xnu.
+
+  blastp nr query.aa filter=seg filter=none filter=xnu
+
+
+2000-08-02
+Changed default gap penalties in blastn search mode of wu-blastall,
+to coincide with new defaults in the NCBI's blastall.
+
+
+********* Released version dated [2000-08-01]
+
+2000-08-01
+Fixed bug in reading of file offsets from large XDF database files.  Databases
+should not need to be reformatted.
+
+
+2000-07-29
+Eliminated all justification of deflines displayed in the one-line descriptions
+portion of output, to increase the amount of information displayed here.
+
+Display "----NO-DESCRIPTION-AVAILABLE----" when the description for a sequence
+is zero-length.
+
+
+********* Released version dated [2000-07-27]
+
+2000-07-27
+Fixed one-letter truncation of sequence IDs when no additional text was present
+on the defline besides the ID.
+
+Eliminated an occasional, annoying warning from xdformat.
+
+
+2000-07-25
+Bumped the maximum permitted value for the word length (W command line
+parameter) up to 1024, from the previous maximum of 32.
+
+Added -e option to wu-blastall, which surprisingly had been neglected.
+
+
+2000-06-19
+Added knowledge of the NCBI's new coiled-coil protein filter ("ccp") to the
+BLASTA program, for invocation via a simple "filter=ccp" command line option.
+However, the user must explicitly build this filter themselves from the
+NCBI Toolbox (see makenet.unx).  Why a simple analysis program should be
+doing network I/O, I dunno.
+
+
+2000-06-16
+Fixed VERSION line GI parse bug in gb2fasta.
+
+
+********* Released version dated [2000-06-15]
+
+2000-06-15
+BLAST search programs would fail to open a pressdb database unless the FASTA file
+was present.
+
+Restored support for the -p option in nrdb program.
+
+
+2000-06-07
+xdformat automatically increases the precision with which file offsets are
+stored (re: the -O option), when the input data can be determined in advance to
+warrant such an increase.
+
+
+2000-06-06
+Added more largefile error protections to xdformat.
+
+
+2000-06-02
+XDF database routines had not expected zero-length deflines in the FASTA
+input data.
+
+
+2000-06-01
+Added support for "-kap" option for Karlin-Altschul (1990) statistics without
+the consideration of multiple hits as with Poisson or Sum statistics.  This
+option complements the -poissonp and -sump options.
+
+
+2000-05-20
+Added support for segmented query sequences.  Default is to segment on
+boundaries denoted by hyphens ('-').  Use -segment option to turn it off.
+
+
+2000-04-23
+Some lower-scoring HSPs spanning higher-scoring HSPs were occasionally being
+reported.
+
+
+2000-04-21
+xdformat now accommodates multiple database names when dumping XDF
+databases into FASTA format (using the -r option).  this is useful,
+for example, when the dumped output is to be piped directly into another
+program, rather than having to save intermediate files to disk.
+
+xdformat accepts "-o outfile" option along with -r, to specify the name
+of the FASTA output file, overriding the default stdout.
+
+
+2000-04-07
+Fixed the parsing of command line options in sp2fasta.  Fixed misassignment
+of "sp" tag to some nucleic acid sequence entries.
+
+
+********* Released version dated [2000-04-05]
+
+2000-04-05
+Fixed trivial bug in TBLASTN search mode that prevented it from performing searches.
+
+
+2000-04-02
+Fixed a bug in the memory-mapped I/O used with XDF databases that could prevent
+XDF databases from being read properly if they contained any individual
+sequence(s) longer than about 2 Mbp or 512Kaa.
+
+Fixed the -c option of xdformat, which wasn't accepting nt. ambiguity codes as
+replacement characters.
+
+
+2000-03-17
+Cleaned up warnings produced in conjunction with nonnegative expected scores
+(re: the -nonnegok and -novalidctxok options).  Users of the -novalidctxok
+option should probably make sure they're also using the -nonnegok option, too.
+
+
+2000-02-27
+Changed (actually corrected) the parameter name "edegrade" to "topcomboE" in
+the blast program usage display.
+
+
+2000-01-27
+Fixed a conflict between the use of "topcombo" post-processing (topcomboN or
+topcomboE options) and all of the sort_by_ options except the default sort
+criterion, sort_by_pvalue.
+
+
+2000-01-25
+Fixed a disabling bug in XDF support for small-file operating systems (those
+that are limited to files 2 GB or less in size, e.g., Linux-X86 and Solaris
+pre-2.6).
+
+
+2000-01-24
+Fixed a crashing bug when the query sequence contained one or more gap
+characters (-).  When query filtering was used, the same bug manifested itself
+as a pre- and post-filtering mismatch reported in the query sequence length.
+
+Corrected an xdformat error message to report the correct input
+sequence number where the error arose (it had been off by 1).
+
+
+1999-12-16
+Fixed determination of "High Score" for the one-line description
+section of output.
+
+Fixed sort_by_highscore bug.
+
+Indent xdformat output.
+
+
+1999-12-14
+Fixed memory mapping problem under HP-UX.
+
+
+1999-12-13
+Fixed BlastStr free error.
+
+
+1999-12-10
+Added support for XDF (eXtended Database Format) databases.
+
+
+1999-11-23
+Standardized on new "WUSTLna" alphabet, which takes the "NCBI4na" alphabet and
+adds the letter code `X', which is interpreted as "any nucleotide" but can be
+scored differently than an `N'.
+
+
+1999-11-22
+Fixed minor command line parsing bug.
+
+
+1999-11-18
+Fixed bug in protein-level comparison modes (BLASTP/BLASTX/TBLASTN/TBLASTX)
+in the (uncommon) case word lengths larger than W=6 were requested.
+
+
+1999-11-17
+Put checks for corrupt (too large) BLAST database files in BLASTA that may have
+been produced by earlier versions of pressdb and setdb.
+
+
+1999-11-16
+Restored ability to compute lambda,K,H when the IDENTITY scoring
+matrix is requested.
+
+
+1999-11-15
+Added checks to pressdb for excursion beyond 1 GB (4 gigabases) for the *.csq
+file, 4 GB file size for the *.nhd file, and 4 GB size for the FASTA file.  The
+program will now fail if any of these limits is exceeded, as the BLAST 1.4
+database format does not support larger sizes.
+
+Added checks to setdb for excursion beyond 4 GB in the *.bsq and *.ahd files.
+
+
+1999-11-11
+Added version, date and platform descriptions to the trivial usage
+output of setdb and pressdb.  ("trivial usage" == when the program
+is invoked without any arguments or options).
+
+
+1999-11-10
+Converted nrdb from tallying its statistics with "[signed] long" values
+to "unsigned long", to increase precision another factor of 2 to 2**32 - 1.
+
+
+1999-10-11
+Cleaned and sped up xnu filter program.
+
+
+1999-10-10
+Marginally sped up Sum statistics calculations.
+
+
+1999-10-07
+gb2fasta and gt2fasta now report the accession.version from the VERSION
+line, when available.
+
+
+1999-10-06
+Plugged a memory leak in old NCBI seg/nseg/pseg filter programs.
+
+
+1999-09-29
+Fixed a small bug in topcombo processing when some E-values were 0.
+
+
+1999-09-28
+Fixed a recently introduced bug in command line parsing of nwstart and nwlen
+options.
+
+
+1999-09-14
+Incorporated a different fix for the thread synchronization bug originally
+fixed on 1999-09-01, so individual threads can start searching a hair faster.
+
+
+1999-09-09
+Reverted to previous statistical calculation, which may overestimate the
+significance of hits but will produce more twilight zone output for users who
+are interested.  The expected length of an alignment, relative to the lengths
+of the query and database sequences, had been weighted less heavily, yielding
+conservative P-values.
+
+
+1999-09-01
+Fixed a thread synchronization bug that caused sporadic "score mismatch" errors
+and occasional crashes, when multiple cpus/threads were used.
+
+Moved computation of default gapE after the point where E is determined, so
+user changes to E/S will effect gapE.
+
+Turned off support for gapS option, as it has been ignored, until a way to
+support it is figured out.
+
+
+1999-08-26
+Fixed a recently introduced bug in the -mmio option.  Improved efficiency of
+gapped alignment processing.
+
+
+1999-08-18
+Fixed potential crashing bug when "postsw" option is used (this option is
+currently available only in the blastp search mode).
+
+
+1999-08-10
+Fix-ups to avoid a floating point exception arising under Linux for Alpha.
+
+Database names specified on the command line can now contain a relative path,
+which is tacked onto any directory name(s) specified in the BLASTDB environment
+variable.  Example:  if setenv BLASTDB /usr/db; and the database name specified
+on the command line is "human/chr1"; then the human chr1 database will be found
+if it resides at the location /usr/db/human/chr1.
+
+
+1999-08-05
+Made Sum p-value calculation more robust to potential floating point exceptions
+-- overflow and underflow -- in particular to stabilize Linux on Alpha.
+
+
+1999-06-26
+Fixed crashing memory bug in BLASTX, TBLASTX, and BLASTN when filter= option
+resulted in completely masked (or nearly so) reading frames.
+
+
+1999-06-23
+Fixed a slow-speed bug in TBLASTN and TBLASTX search modes.
+
+
+1999-06-07
+Restored original interpretation of hitdist, but retained new lower limit.
+
+
+1999-05-23
+Migrated "wink" code into distribution/production.
+
+Changed the interpretation slightly of hitdist and relaxed the lower limit on
+its allowed value.  If one was using hitdist=n before, they should use
+hitdist=n-1 now to maintain 100% consistency in their results.  The value for
+hitdist can now be as small as the wordlength, W.  Setting hitdist=W in BLASTN
+effectively demands a word match be twice as long as W to seed the alignments.
+
+
+1999-05-18
+Added an ftell error check to pressdb.c
+
+Removed the unused inclusion of <ndbm.h> from gish/include/gishsys.h,
+for RedHat Linux 6.0 compatibility.
+
+
+1999-05-16
+gt2fasta now parses /protein_id="ACCESSION.VERSION" from CDS features.
+
+
+1999-05-14
+sp2fasta was assigning "sp" tags to circular DNA and RNA sequences.
+
+
+1999-05-12
+Search programs weren't looking in current working directory for databases when
+BLASTDB environment variable wasn't set.
+
+
+1999-04-09
+Updated gb2fasta and gt2fasta to parse GI identifiers from the new VERSION line
+and /db_xref="GI:#" qualifiers introduced in GenBank Release 111.0.
+
+Started including nrdb program in archives of executables, for FASTA database
+compression.
+
+Started distributing seg, xnu, and dust sequence filtering programs in the
+filter/ subdirectory.
+
+
+1999-03-01
+altscore modifications to scoring matrix were not honored when
+nondefault scoring matrix was used.
+
+
+1999-02-23
+Fixed assignment of K and L (K and lambda values for ungapped alignments) from
+the command line.
+
+
+1999-02-22
+Fixed assignment of gapK, gapL, and gapH values from the command line.
+Eliminated possible negative 0 (-0 [sic]) probabilities reported when Poisson
+statistics used.
+
+
+1998-11-21
+Fixed TBLASTX's HSP cutoff score (was using S instead of S2).
+
+Implemented "nwstart" and "nwlen" across all of the search programs.
+They had been available only for BLASTP and BLASTX.
+
+
+1998-11-17
+Fixed error in parsing gapL, gapK, and gapH.
+
+
+1998-11-04
+Normalized all note/warning/error/fatal message reporting.
+
+
+1998-11-03
+Replaced standard popen() used to execute filter programs with a home-built
+version that doesn't spew noise to stderr and cause parsers to gag.
+
+
+1998-10-30
+Converted all remaining calls to fprintf(stderr... in the *blast* search
+programs to standard ERROR, WARNING and FATAL messages.
+
+
+1998-10-23
+Fixed potential for UMR error in BLASTN when only bottom strand is being
+searched.
+
+
+1998-10-22
+Removed possible source of floating point errors.
+
+
+1998-10-22
+Added test to ensure gap penalties Q >= R.
+
+
+1998-10-21
+Added "ERROR" messages to the list of message types reportable, which now
+also include WARNING and FATAL.
+
+
+1998-10-20
+Fixed a segmentation fault bug in blastn, tblastn and tblastx when
+database sequences contained ambiguity codes; in addition, blastn
+required a nondefault wordlength W < 11 to evoke this bug.
+
+
+1998-10-14
+Added determinism to the compressed databases produced by pressdb
+in the presence of nucleotide ambiguity codes in the input sequences.
+
+Stopped truncating the very last nucleotide from the very last sequence in the
+input FASTA file to pressdb, when the last line of the file didn't end with a
+newline character.
+
+
+1998-10-03
+Fixed bug in nucleotide sequence neighborhood word generation (i.e., in BLASTN)
+when a query filter (e.g., dust or seg) is used.
+
+
+1998-08-27
+Slightly better elimination of overlapping/redundant alignments.
+
+
+1998-08-13
+Fixed duplicate gi identifier bug in gt2fasta.c
+
+
+1998-07-02
+Implemented "-novalidctxok" option and added description of the "-nonnegok"
+option to the program usage display.
+
+
+1998-06-17
+Set the default value for the "progress" command line option to 0, because most
+users may not be using this feature (which was meant to produce keepalive
+messages in client/server environments) and some unpatched operating systems
+may otherwise produce spurious Alarm Clock errors.
+
+
+1998-06-15
+Fixed sort_by_highscore
+
+
+1998-04-08
+Increased max. number of threads or processors to 64 (still subject to the
+number of processors available in the installed computer).
+
+Tweaked E-value computations for Sum and Poisson statistics.
+
+
+1998-04-06
+Made tweak in code to create single "blasta" executable.  The blastp, blastn,
+blastx etc. executables are just soft links to blasta.
+
+
+1998-04-01
+Fixed -span option for gapped alignments.  -span1 sorta works.
+
+
+1998-03-24
+Added first vestiges of dynamic link libary (DLL) support for output.
+
+
+1998-02-17
+The optional Poisson statistics wasn't returning correct results; and turning
+off consistency also wreaked havoc.  Thanks to Zhirong Bao for pointing out
+this bug.
+
+Somewhat improved the usage information displayed when the search programs
+are invoked without options.
+
+
+1998-02-08
+Sped up FASTA reading routines a hair for BLASTN, TBLASTN and TBLASTX.
+
+
+1998-02-05
+Posted version 2.0a19
+
+
+1998-02-04
+Fixed a bug Mike Cherry reported that sometimes produced a FATAL error in
+TBLASTN (and TBLASTX) on the very last sequence in a nt. database, if that
+sequence contains any ambiguity codes.  It's conceivable that this same bug
+could cause a segmentation fault under some conditions when examining the
+longest sequence in the database.
+
+Small amount of cruft removed.
+
+
+1998-02-02
+Posted version 2.0a18
+
+
+1998-01-31
+The included "pam" program can optionally report floating point (fractional)
+values.
+
+
+1998-01-28
+The "Searching" crash problem under Linux might be fixed -- we shall see!
+
+
+1998-01-16
+Scoring matrix files may now contain floating point values.  Scoring of
+alignments is still performed using integral values.  Fractional values are
+rounded to the nearest integer, e.g. 1.5 is rounded up to 2 and -1.5 is rounded
+down to -2.
+
+
+1998-01-08
+Fixed HSP list truncation procedure when there are more HSPs than hspmax
+allows.  In the programs that search more than one strand, HSPs on the minus
+strand were sometimes discarded when they were more significant than HSPs
+on the plus strand that were being retained.
+
+
+1997-12-07
+Fixed buffer over-run in gt2fasta.  Fixed empty database bug in setdb.
+gb2fasta now parses PID lines, in case input is "GenPept".  Fixed cosmetic
+bug in the display of "V=#" value in a WARNING text for DEC Alpha platforms.
+
+
+1997-11-12
+Fixed the accumulation of matches beyond the number reportable, which
+consumed unnecessary memory.
+
+
+1997-11-10
+Added tests for maximum achievable score in each context or reading frame.
+Searches are not attempted if the cutoff score can not be achieved.
+
+Value specified for gapH on the command line was erroneously being plugged
+in for gapK -- fixed.
+
+
+1997-10-30
+Added knowledge of the "dust" low-complexity filter to BLASTN, so users can
+specify "filter=dust" command line option.  This filter program must still be
+installed in the /usr/ncbi/blast/filter directory -- or in whatever directory
+the BLASTFILTER environment variable points to -- just like all other filters
+(i.e., seg, nseg, and xnu).  Current users of dust will need to update their
+copy, as well, because dust was not calling exit(0), leading to an undefined
+exit status that BLASTN interpreted as an error occurring in dust.  Roman
+Tatusov has modified the dust source code posted at the NCBI; and modified
+source code has been posted on the WU-BLAST Archives.
+
+
+1997-10-30
+Top combinations of HSPs are now sorted by their Group when topcombon feature
+is used.
+
+
+1997-10-21
+Posted version 2.0a17
+
+Deleted a straggling test left behind from debugging that could cause BLASTN,
+TBLASTN, and TBLASTX to abort searches -- "Non-positive score returned from
+ExpandX" -- particularly when searching ambiguity-code-containing sequences
+like ESTs.
+
+
+1997-10-15
+Posted version 2.0a16
+
+Fixed bug in alignment span detection when comparing gapped vs. ungapped
+alignments.
+
+
+1997-10-14
+When unacceptable nt. codes were encountered in the input FASTA file,
+pressdb wasn't reporting the proper error.
+
+
+1997-10-13
+Made fixes to POSIX threads support, which may improve threads performance
+under Digital UNIX 4.0.
+
+
+1997-10-11
+Speed tweak to BLASTP.  Speed tweak-ette to the other search programs.
+
+
+1997-10-05
+Expanded pressdb error messages.
+
+Added a platform description to the "Build" string in the introductory output
+from the search programs -- e.g, "sol2.5-x86" -- and reordered the month,
+day, and year in the build date.
+
+
+1997-09-27
+Optimized BLASTN a little.  Added double-hit method to BLASTN.
+
+Cleaned up a little the tabular display of Parameters.
+
+Fixed pattern recognition of some string=string command line parameters,
+e.g. "nogap" or "nogaps" are now acceptable.
+
+
+1997-09-23
+Fixed the behavior of Z parameter in BLASTP.  It was being ignored.
+
+
+1997-09-22
+Made the search programs better able to work in some obscure cases with
+scoring matrix files that are incompletely specified, in that scores
+are not provided for absolutely all acceptable letter pairs.
+
+
+1997-09-21
+Posted version 2.0a14.
+
+
+1997-09-18
+Sped up BLASTX, TBLASTN and TBLASTX a little.
+
+
+1997-09-12
+Fixed error in HSP linked list management that on rare occasions caused crashes
+in the code introduced 6/12/97.
+
+In some rare instances, BLASTX was crashing in Solaris qsort, and Purify
+reported UMR errors in the Solaris qsort() library function.  Crashing
+and UMR errors went away when HeapSort was substituted.  PureAtria staff
+say Solaris qsort() is safe, but my experience says otherwise, so I'm going
+back to using Old Reliable, HeapSort.
+
+
+1997-06-11
+Fixed minor error in Smith-Waterman score test.
+
+Added berror() function for reporting non-fatal ERROR messages, in addition
+to the existing WARNING messages and FATAL errors.  Some internal tests that
+formerly would have produced FATAL error reports will now simply report
+the ERROR and continue execution.  New "-errors" command line option
+suppresses ERROR messages, in case they get in someone's way.
+
+Got rid of the annoying copyright notice being sent to /dev/tty.
+
+1997-06-12
+Eliminated reports of superfluous, inferior alignments.
+
+
+1997-06-11
+Modified memfile.c for HP/Convex SPP compatibility.
+
+
+1997-06-10
+Posted version 2.0a13
+Added "postsw" option for Smith-Waterman algorithm to be applied to pairs of
+sequences that will be reported by BLASTP.  The S-W score and alignment, if
+different from the 2-d BLAST score and alignment, are used to re-rank the
+database matches before output.
+
+Eliminated reports of some superfluous, inferior alignments contained within
+longer ones.
+
+Added error checks to all read, write, and seek operations in pressdb
+and setdb.
+
+
+1997-06-09
+Posted version 2.0a12
+
+
+1997-05-31
+Fixed interactions between gapE2/gapS2 and E2/S2 command line parameters.
+
+
+1997-05-29
+Speed bump for BLASTP, BLASTX, TBLASTN, and TBLASTX (not BLASTN).
+
+
+1997-05-22
+Speed tweak for BLASTP, BLASTX, TBLASTN, and TBLASTX (not BLASTN).
+
+
+1997-05-15
+Posted version 2.0a10
+Speed tweak.
+
+
+1997-05-12
+Posted version 2.0a9
+Word-hit statistics gathering is now OFF by default, since it consumes about 2%
+of total cpu time and most users never use the results.  Use the -stats option
+to turn this feature back on.  (This reverses the usage of the -stats option,
+which formerly was used to turn OFF the statistics gathering).
+
+In BLASTP, the full-diagonal search for ungapped alignments is skipped when the
+gapped alignment procedure is in effect -- saves a few % cpu time.
+
+Made the number of blank lines output between ungapped and gapped HSP alignments
+consistently 1.
+
+Fixed an inconsistency in the mid-lines of BLASTN alignments.  Residue codes
+instead of vertical bars (|) were sometimes being displayed when no gaps were
+present in the alignment.  The convention is supposed to be that residue codes
+appear only when there are one or more gaps in the alignment.
+
+
+1997-04-14
+Added nonnegok option for permitting nonnegative expected score cases
+to halt without exiting nonzero.
+
+
+1997-02-25
+Posted version 2.0a8
+
+
+1997-02-20
+Fixed HSP memory management bug that tended to cause crashes after 100% search
+completion when the list of database matches needed to be truncated.
+Removed HSP memory management bug in HSPTruncate related to fwdptr/revptr.
+Removed duplicate free of a KarlinBlk at end of blastn.
+Removed memory leak of scoring matrix name info.
+Added more timing statistics to the end of output
+
+
+1997-02-06
+Eliminated any reports of exact duplicate gapped alignments when "span"
+option is used.
+
+Added -s option for simple sequence identifiers to gb2fasta, gt2fasta,
+sp2fasta, and pir2fasta programs.  Added -g option to omit NCBI gi
+identifiers in output from gb2fasta and gt2fasta.
+
+
+1997-01-23
+Posted version 2.0a7
+Fixed GSP (gapped alignment segment pair) consistency check, which worked
+inconsistently when -span or -span1 command line options were used.  No effect
+on HSP consistency in best P-value calculations, and no effect when span
+and span1 options were not used.
+
+
+1996-12-13
+Posted version 2.0a6
+Fixed a minor file permissions error in setdb and pressdb.
+
+
+1996-12-04
+Added "noseqs" option to produce abbreviated output that may be still parseable
+by legacy parsers.
+
+
+1996-12-03
+Posted version 2.0a5
+Added a "compat1.4" option to revert easily to version 1.4-like behavior,
+but with relevant bugs fixed.
+Improved the distribution of database sequences to the threads.
+Tweaked the search progress indicator so it always goes to "100%"
+even for databases of less than 100 sequences.
+
+
+1996-11-27
+Initial posting of version 2.0a4.
+
+Found and fixed another file addressing bug that could occasionally cause
+BLASTP and BLASTN to crash.
+
+
+1996-11-24
+Fixed a file addressing error that could yield segmentation faults with
+the initial 2.0a3 release, particularly when searching small databases.
+Slip-stream revision posted.
+
+
+1996-11-22
+Fixed a long-standing, occasional inconsistency in the sum statistics reported
+(since version 1.4).
+
+
+1996-11-19
+Initial posting of version 2.0a3
+
+
+1996-11-19
+When the BLASTDB environment variable has been set, which is a path of
+database-containing directories, the current working directory is automatically
+appended to the path.  This provides some backward compatibility with previous
+versions of BLAST software, which looked in the current working directory by
+default.
+
+
+1996-11-19
+Incorrect bounding diagonals were often being used to constrain alignments
+with database subsequences for display.  This affected the appearance of
+the alignments reported by those programs that search nucleotide sequence
+databases (BLASTN, TBLASTN, and TBLASTX) -- the programs that buffer database
+sequences in pieces for display.  SCORE_ERROR messages would be seen when the
+error arose, but the scores reported as "Score = #" and used in the statistics
+were not affected.
+
+
+1996-11-14
+sp2fasta parses NCBI gi identifiers from the SWISS-PROT 34 flat file.
+
+
+1996-11-13
+Decreased the granularity of the threads.
+
+
+1996-11-12
+Minor rework of database access routines, to reduce virtual address space
+requirements.
+
+
+1996-11-12
+Removed two sources of slowness in BLASTN 2.0 relative to version 1.4.  First,
+a high default value of 0.5 was being used for E2, which is 10-fold higher than
+the default value used in BLASTN version 1.4.  Worst case, this could slow the
+program down by a factor of 10.  Second, the default word length W has been
+increased to 11, restoring it to the same default value used by BLASTN 1.4.
+While these changes reduce the sensitivity of the program, they make direct
+comparisons easier of the relative performance of versions 1.4 and 2.
+
+
+1996-11-12
+Fixed a bug in sequence numbering (in BLAST version 2.0 ONLY) that caused the
+right-side coordinate numbers to be in error by 2 nucleotide positions in
+alignments of translated sequence.  This bug could affect both the Query and
+Subject coordinate numbering, but only on the right side, not the coordinates
+displayed immediately following the "Query:" and "Sbjct:" strings.
+Coordinates were only wrong when the alignment contained one or more gaps;
+and the bug only affected the numbering of sequences that had undergone
+translation prior to being compared -- e.g., only the query sequence in a
+BLASTX search.
+
+
+1996-10-29
+Fixed the display of gapped alignments involving long sequences.  With
+coordinate numbers greater than 5 digits in length, the alignments were
+skewed to the right.
+
+
+1996-10-28
+Sped up the gapping version of BLASTN and verified that it works properly
+when wordlength W is varied.  SCORE_ERROR bug/feature (sometimes seen
+with database sequences that contain ambiguity codes) is now history.
+Increased BLASTN's default value for W from 10 to 11, so it is the same default
+value used by BLASTN version 1.4, to facilitate and equalize the inevitable
+comparisons to be made between the two versions.  For additional speed, W can
+now be increased up to 32, albeit at a significant decrease in sensitivity
+and increase in memory use; the time saved during the search can also be lost
+in setting up for the search with long word lengths.
+
+
+1996-10-27
+Implemented gapK, gapL and gapH command line options to enable the user
+to manually set values for the Karlin-Altschul statistics' K, lambda and H
+parameters used in evaluating the significance of gapped alignment scores.
+The units of gapL and gapH are nats/score and nats/alignment position,
+respectively.  (1 nat ~= 1.443 bits; 1 bit ~= 0.693 nats)  For any
+of the 3 parameters' values that are not set on the command line,
+their default values will be obtained from precomputed tables as before.
+
+
+1996-10-20
+Added -mmio option to turn off memory-mapped I/O in all of the *BLAST*
+programs.  For some users, this means the programs may coexist better with
+other programs or with other users on a shared system (e.g., on a system that
+is not a dedicated blast server).  As a part of using this option, consumption
+of virtual memory address space is also reduced, which is becoming increasingly
+important as database files grow in size; some operating systems or system
+administrators will not necessarily allow per-process memory needs to increase
+concordantly; but frequently the shell's "limit" command can be used to
+increase "memorysize" and "datasize" limits, rather than resorting to turning
+off memory-mapped I/O.  The potential for a problem arises most often with
+nucleotide sequence database files, when the original FASTA-format file is
+available.  When holding all of the nt. sequences of GenBank, a single FASTA
+file is currently about 1 GB in size.  Memory-mapped I/O is still used by all
+of the programs by default, as it is faster and doesn't seem to be a problem
+for most users.
+
+
+1996-10-18
+Added Lambda, K, H entries for gapped alignments with BLOSUM80 scoring matrix.
+Precomputed values exist for Q=7, 5<=R<=7; Q=8, 4<=R<=8; Q=9, 3<=R<=9;
+Q=10, 2<=R<=10; Q=11, 2<=R<=11; Q=12, 2<=R<=12.
+
+
+1996-09-17
+Fixed an anomaly that arose at low frequency with the gapped blast heuristic.
+
+
+1996-09-10
+Changed blast sort routine to avoid possible arithmetic overflow on some
+platforms (e.g., Solaris for x86).
+
+
+1996-09-03
+Brought all genetic codes into synchrony with the NCBI Version 3.3.
+
+
+1996-07-09
+Fixed crashing of pressdb when the FASTA input file was zero-length.
+
+						  * * * * * * * * * *
+
+1996-05-10
+Posted WU-BLAST 2.0d1, the first publicly available BLAST with gapped
+alignments and statistics.  Announced in talk at Cold Spring Harbor Genome
+Mapping and Sequencing conference and on Usenet bionet.software newsgroup.
+
+						  * * * * * * * * * *
+
+1996-05-09
+Added an "identity" scoring matrix for BLASTN searches.  Not perfect, though,
+it ascribes a penalty of only -10000 to mismatches.  It's possible then to have
+one mismatch every 10 KB or so and still achieve a positive score.
+
+1996-04-29
+Fixed statistical calculation in the case of multiple consistent HSPs and sum
+statistics.  When r consistent alignments were combined, the p-values computed
+were too low by a factor of about r!.
+
+1996-02-13
+Added "Edegrade" command line parameter for regulating
+the quality of HSP combinations reported per database sequence.
+
+1995-11-04
+Fixed a bug in the parsing of sequence identifiers that could yield incorrectly
+justified text in the initial, one-line summary section of blast program
+output.  When this bug arose, there were 25 columns of white space at the
+beginning of each line.
+
+1995-11-03
+Updated the list of built-in genetic codes in blast/blast/gcode.h using the
+latest NCBI Toolbox ASN.1 data (toolbox/data/gc.prt).
+
+1995-10-26
+Fixed a multiprocessing bug in the blast programs that could arise when
+searching small databases (<500 sequences).
+
+1995-10-03
+Added support for NCBI (Wootton & Federhen) "nseg" program on the BLASTN
+command line, using "-filter seg" option.
+
+1995-09-27
+Added "-WashU" tag to the program version numbers, to ensure there is no
+mistaking WashU distribution of these programs from the NCBI distribution.
+
+1995-09-26
+Fixed a long-standing bug in pressdb regarding which sequences are tagged
+as having "ambiguous" nucleotide codes. Thanks to Colin Watanabe at Genentech
+for pointing this out.
+
+1995-09-18
+The PRESSDB program (pressdb.c) can now append sequences to an existing
+BLAST database, using the -a option.  (The SETDB program has not been
+so modified yet).
+
+1995-08-22
+The file locking described on 6/7/95 has been disabled at least
+temporarily because it is not functioning in the intended manner
+with files that reside on NFS-mounted partitions.
+
+1995-08-14
+gb2fasta now parses NCBI "gi" identifiers from the GenBank flat files.
+
+1995-06-07
+See note on 8/22/95!
+Database file locking has been added to the BLAST search programs and to the
+database maintenance programs setdb and pressdb, to eliminate (or optionally
+reduce) the opportunity for collisions between database search and database
+maintenance activities.  Previously, a setdb or pressdb invocation would cause
+active BLAST searches of the same database to fail.  File locking now prevents
+the blastable database files from being modified by setdb/pressdb until they
+are no longer in use by a search program.  This doesn't necessarily come
+without some risk.  With strict file locking in force (the default), deadlock
+or near-deadlock may now be a concern within a production environment, as
+multiple simultaneous BLAST search production lines involving one database
+can effectively block setdb or pressdb forever -- unless all production lines
+happen to finish their searches at the same time.   Having all production
+lines finish at virtually the same time may be an infrequent event if more than
+just a couple are running.  This new situation seems more desirable, though,
+than not using file locks and unwittingly allowing setdb and pressdb to blow
+away databases out from under any searches.  As an aid to diagnosing deadlock
+situations should they arise, when blocked, setdb and pressdb report their
+blocked status every 60 seconds.  If deadlock is a real problem, one can revert
+to the former, ungoverned situation by completely disabling file locking with
+the new -l option to the setdb/pressdb programs.  Significant file lock
+protection can still be obtained, though -- and without the risk of deadlock --
+by using the -b option to setdb/pressdb instead of completely disabling it with
+-l.  The -b option simply blocks any subsequently invoked BLAST searches until
+the current setdb/pressdb operation is finished, however any search that
+happened to be in progress when setdb/pressdb was invoked will get trashed.
+Through the use of locks, it is possible to update databases that are actively
+being searched or that reside on-line in a production area, without the need
+for off-line, ancillary working storage equivalent to a full copy of the
+database.  N.B. One area not addressed by the present file locking is that of
+the FASTA-format nt. sequence file accessed by BLASTN, TBLASTN, and TBLASTX,
+which still causes problems if updated in the middle of a search.
+
+1995-06-01
+Fixed a long-standing deadlock problem in the Solaris multithreaded
+executables (and more recently the OSF/1 executables).
+
+1995-05-28
+Removed the link between X & S that existed in blastapp/lib/context.c.
+
+1995-05-24
+Threads support (parallel processing) added for DEC OSF/1 3.0 (Digital UNIX).
+
+1995-05-20
+Switched to using Robinson&Robinson (PNAS 1991) amino acid residue frequencies.
+Fixed a minor slowness problem in BLASTN, TBLASTN, and TBLASTX (all of the
+programs that would access the FASTA-format database file, doing so more often
+than necessary).
+Changed the name of the recently added "pgsper" command line option to the
+simpler name "progress".  It's now described in the documentation file,
+blast.1, too.
+
+1995-04-26
+Added "-pgsper #" command line option to adjust the time-out period
+in progress messages.  Alarm clock errors when using Solaris threads
+prompted the creation of this parameter.  To avoid any possibility of
+the alarm clock error, set a time-out of 0.
+
+Changed basename() to misc_basename() for Linux compatibility.
+
+1995-03-30
+Made memory management a little more flexible and robust.  V & B command
+line options are supported in the ASN.1 form of the output now.
+Made changes for VMS compatibility kindly suggested by Scott Rose (GCG,
+Madison, WI).
+
+1995-03-08
+pressdb and setdb now parse arbitrarily large FASTA input databases,
+expanding their memory buffers as much as necessary.  No more need to modify
+ENTRY_MAX.
+
+1995-03-07
+I lied on 2/1/95.  Solaris threads support promises to be robust now.
+Famous last words.
+
+1995-02-13
+The dfa library was consolidated into the gish library.
+
+1995-02-01
+Too optimistic on 1/24/95 -- the Solaris threads/alarm problem was not fixed
+then.  It truly seems to be fixed now.  Also, fixed a bug in BLASTN's
+calculation of the Karlin-Altschul K value.  Plus some slight performance
+improvements to BLASTN, TBLASTN and TBLASTX, related to the FASTA file
+access;  because of this improvement, BLASTN is set to use up to 4 processors
+by default instead of the previous default of 3.
+
+1995-01-24
+Fixed (for the last time?!) the interaction between Solaris threads
+and SIGALRM signals in the "gish" library.
+
+1994-12-19
+Fixed a multiprocessing bug in all of the programs.  The bug would often
+produce crashes (segmentation faults) when searching tiny databases.
+
+hsp_max is now used to truncate HSP lists _after_ statistical significance
+estimates have been made and after the list has been sorted for output.
+
+
+1994-12-16
+Fixed handling of gap characters in the query sequence by blastx, tblastn,
+and tblastx.
+
+1994-12-15
+blastp was stripping gap characters (-) from the query sequence. fixed.
+
+1994-10-16
+Fixed a severe bug in the support for multiprocessing under Solaris 2.
+Some of the code involved in this bug fix is in the "gish" library.
+Program version numbers are unchanged by this fix; but the code release
+date displayed in the programs' introductory output is updated to day's date.
+
+1994-10-06
+First "final copy" release of BLAST 1.4 software.
+
+1994-10-04
+Changed "-overlap", "-overlap1", and "-overlap2" command line option names
+to "-span", "-span1", and "-span2", respectively.  "-span2" is the default.
+
+1994-09-30
+I'm now employed by the Department of Genetics, Washington University School of
+Medicine, St. Louis, MO 63108
+
+1993-09-03
+Fixed bug in gb2fasta's concatenation of long definitions.
+
+1993-08-08
+Added -qoffset option to BLASTP, BLASTX, TBLASTN, and BLASTN, to permit
+segments of long sequences to be used as queries and still have their residues
+numbered correctly in alignments.
+
+1993-07-28
+Changed the format of substitution matrix files read by BLASTP, BLASTX, TBLASTN
+and BLAST3.  Substitution scores in the matrix files can now properly have
+non-integral values.  The blast program still do their scoring using integral
+data types.  Upon being read by the blast programs, each score value is rounded
+to the nearest integer.  Matrices in the new format are generated by the pam
+program.
+
+Fixed the display of query sequence segments in BLASTX when its -codoninfo
+option is invoked.
+
+
+1993-07-07
+Prompted by Erik Sonnhammer, a "-overlap2" command line option (also available
+as simply "-over2") was added to make the criteria for HSP overlap detection
+tighter.  This option has a positive effect on the number of HSPs reported
+(fewer of them will satisfy the overlap2 criteria) for sequences that contain
+internal repeats, but will have a negative effect on their associated
+statistics.  The additionally reported HSPs may have Poisson statistics
+inappropriately applied, because the HSPs may be incompatible with others
+in the same global alignment and hence can not be considered as independent
+events.
+
+For query sequences too short to satisfy the cutoffs or expectation thresholds,
+the minimum acceptable expect values that were reported by BLASTP, BLASTN, and
+TBLASTN were incorrect, now fixed.
+
+1993-07-02
+Changed the way the cutoff score, S, and expectation cutoff, E, are reported.
+All output is now filtered based on its estimated statistical significance (E
+value), rather than using cutoff scores directly.
+
+1993-06-22
+Fixed bug in consistp.c's implementation of R(i,3) found by Phil Green.
+Followed another suggestion of Phil Green's for making Poisson probability
+calculations more efficient.
+
+1993-06-21
+Fixed bug in the calculation of "consistent N counts" for those HSPs found
+on minus strands in BLASTN, BLASTX, and TBLASTN.  Plus strand hit counts were
+not affected.
+
+Pressdb on 64-bit platforms now produces databases that are readable on
+all platforms.
+
+
+1993-06-16
+Fixed a conflict between static and global variables in bldaa.c and bldxa.c
+This produced a bug in the blast software under DEC Alpha OSF/1.
+
+1993-06-09
+Added "-gapdecayrate" parameter (default=0.5), as suggested by Phil Green
+(Washington University, St. Louis).  This parameter defines a geometric
+progression used to adjust Poisson probabilities upward, to account for the
+fact that many values for the N parameter in Poisson P(N) are considered when
+choosing the "best" alignments.  If r is the decay rate (0 < r < 1) for the
+progression and n is the number of segments under consideration, then the
+number of gaps is n-1 and the Poisson probabilities will be _divided_ by the
+quantity:
+
+                     n-1
+              (1-r) r
+
+For n=1 (one HSP) and the default r=0.5, the adjustment is by a factor
+of 1/(1-0.5) = 2.
+
+
+Fixed a bug in lib/consistp.c that produced undetected overflows in factorial
+calculations.  This was occasionally problematic in TBLASTN queries with hits
+against extremely long database sequences.
+
+
+1993-05-09
+In TBLASTN, fixed discrepancies in alignments when a database sequence
+contained one or more ambiguity (non-ACGT) codes.  Previously, the original
+FASTA format database sequence was only examined at the end of the search; now
+it is examined during the search, so that it is known up front what the real
+alignment score and extent of alignment is.
+
+The HSP cutoff score in TBLASTN is now S2.  Previously, there had to be at
+least one match scoring at least as high as S, after which the database
+sequence was re-scanned using a cutoff of S2.  Now each database sequence is
+scanned only once, using the lower cutoff.  Better sensitivity results for
+short exons.  Something not done now, however, is to scan the entire diagonal
+on which an HSP is found.
+
+
+1993-05-08
+Fixed severe bug in BLASTN.  Word hits on the plus- and minus- strands were
+being managed in a single pool, rather than separate pools.  Consequence:  hits
+on one strand could obscure hits on the other strand.  In typical use, this
+would rarely cause a problem because of the improbably long wordlength used by
+BLASTN (W=12) and the requirement for the word hits to appear in a particular
+order.  This bug was present since BLASTN's inception.
+
+In BLASTN, fixed discrepancies in alignments when a database sequence contained
+one or more ambiguity (non-ACGT) codes.  Previously, the original FASTA format
+database sequence was only examined at the end of the search; now it is
+examined during the search, so that it is known up front what the real
+alignment score and extent of alignment is.
+
+1993-05-06
+Fixed a bug introduced to BLASTN on 5/4/93, wherein the first residue in the
+complementary strand (i.e., the complementary residue to the last residue on
+the "plus" strand) was not initialized.  This bug would reveal itself iff the
+query contained one or more non-ACGT codes and the first residue on the
+complementary strand should have continued a matched with a database sequence.
+
+Tweaked the default value of E2 upward from 0.1 to 0.15, in reaction to the
+bug-fix on 5/5/93 which had raised the value of S2 calculated from E2.
+
+
+1993-05-05
+Stupid bug fixed in all blast programs.  The units that had been assumed for
+the Karlin-Altschul H statistic in the function stolen() were "nats per
+position", whereas the karlin() function was calculating H in units of "bits
+per position".  The karlin() function was modified to calculate H in nats, and
+all equations that were functions of H and had been (correctly) assuming H was
+in units of bits were modified to account for the change to nats.  H is still
+reported in units of bits, because of the automated parsers in the world.
+
+The consequences of this error were (1) that the expected length estimated
+for an alignment of any particular score was too short by a factor of log(2);
+and (2) the probability estimates reported by the programs were often higher
+(lower in statistical significance) than they should have been.
+
+
+1993-05-04
+In BLASTN, ambiguous nucleotides in the query sequence are handled consistently
+throughout the program as mismatching all other letters, so that, e.g., strings
+of N's can be used to mask a query sequence.  In addition, gap letters
+(hyphens) in the query sequence will never appear in an alignment (although
+they may appear in the database sequence half of an alignment).  Ambiguity
+codes in the database sequences (only) can still lead to discrepancies between
+the scores obtained during the search and the scores reported after the
+search.
+
+1993-04-23
+Recently, in all of the blast programs, a "consistent" N parameter was used in
+the Poisson statistics, to reflect the number of HSPs likely to be consistent
+with one another in the same gapped alignment.  Now, all of the blast programs
+build upon this by using another enhancement of Stephen Altschul's, which is to
+adjust the Poisson probabilities downwards (making them more significant) to
+account for the consistency requirement.  There is no effect on single-HSP
+probabilities.  Some reordering of the database sequences will be observed in
+the output, with multiple-hit cases often moving up a few notches relative to
+the single-hit cases.
+
+With the consistency-adjusted Poisson P-values, sensitivity is expected to be
+marginally improved, being practically confined to matches which would anyway
+come close to satisfying the statistical significance threshold.  If the
+threshold is set at a point within or just above background, it will be more
+common to see the new program report false positives than the previous
+version.  Improved sensitivity will also be noticed more often with longer
+sequences, which provide greater opportunity to accumulate multiple hits with a
+single database sequence.
+
+The consistency feature (which includes both the consistent N and consistent
+Poisson statistics) can be turned off with the "-consistency" command line
+option.
+
+The statistics of consistent HSPs is discussed by Karlin and Altschul in a
+manuscript recently submitted to Proc. Natl. Acad. Sci. USA.
+
+
+1993-04-06
+HSP == high-scoring segment pair, the unit of BLAST output
+
+In all of the BLAST programs, the Poisson event count (or the N parameter used
+in the Poisson statistics) assigned to each HSP is now estimated more
+accurately, using positional information as well as scores.  A simple midpoint
+rule of Stephen Altschul's design is used to estimate the number of HSPs that
+would be consistent with each other in the same gapped alignment.  Let (x,y)
+represent the location in 2-dimensional space of the midpoint of an HSP.  In a
+"consistent" set of HSPs, if the HSPs are sorted in increasing order of their x
+coordinates, then the y coordinates of the sorted list also produce a strictly
+increasing sequence.  For any given HSP, the maximum number of other HSPs that
+can be made consistent with it (plus 1 for the HSP under consideration) becomes
+the Poisson N parameter.  The effect of this change is to reduce the number
+of false positives reported (improved selectivity), which sets the stage for
+the following...
+
+In BLASTP and TBLASTN, a much lower cutoff score (S2 instead of S) for
+reporting HSPs is used in conjunction with the consistent event count.  HSPs
+are filtered from the output based on their statistical significance as
+estimated using Poisson statistics.  Due to Altschul's consistency rule, a
+lower cutoff score can be used without introducing too much extra noise in the
+output, while providing increased sensitivity in detecting homologs in the
+presence of insertion/deletion errors and mutations.  This change has not yet
+been documented in the blast manual page, and the values of S2 and E2 (E2
+defined to be the number of chance matches expected when comparing two random
+sequences each 300 amino acids in length) can not currently be modified from
+their default values through the NCBI BLAST E-mail Service.
+
+With previous versions of BLASTP and TBLASTN, a database sequence had to
+produce at least one segment (HSP) scoring at least as high as the cutoff
+score, S, in order to be reported.  And if this high threshold was met, the
+database sequence was scanned a second time using a lower cutoff, S2.  This
+repeat scanning no longer occurs--all database sequences are scanned using the
+lower cutoff.  The former cutoff score parameter, S, and expect parameter, E,
+now establish a threshold of statistical significance that must be satisfied by
+the Poisson P-values of the HSPs regardless of their individual scores.  The
+evaluation of HSPs works like this:  if a single database sequence yields one
+or more HSPs each scoring S2 or higher with the query, the list of HSPs is
+first sorted by score just as before; consistent event counts are then
+assigned; Poisson probabilities are calculated; and finally the list is
+truncated after the last HSP having a Poisson P-value that satisfies the S or E
+significance threshold.  If no Poisson P-values satisfy the threshold, then
+the whole list is thrown away and none of the HSPs is reported.  S might be
+thought of as the score that must be achieved by an HSP observed in isolation
+(Poisson event count = 1) for it to be reported.
+
+While use of a lower cutoff score is the default for BLASTP and TBLASTN, a
+similar low cutoff has been made an option for BLASTX, which may become the
+future default.  It is presently only an option because it is feared that some
+automated parsers of BLASTX output might break if the lower cutoff method was
+suddenly instituted as the default.  To invoke the option in BLASTX, specify a
+value for either E2 or S2 on the BLASTX command line.  E2 is the number of HSPs
+expected to be observed by chance when comparing a random sequence 100 codons
+in length against another random sequence 300 amino acids in length.  A
+suggested starting choice for E2 is 0.1.  This change to BLASTX has not yet
+been documented in the blast manual page, and the option is also not presently
+selectable through the NCBI BLAST E-mail Service.
+
+A lower cutoff was not introduced to BLASTN, because the sensitivity of this
+program with its fixed wordlength W=12 is low.  BLAST3 has always used a low
+cutoff.
+
+Symmetric multiprocessing can now be employed by the BLAST programs under
+SunSoft's Solaris 2.2 operating system, as well as the previous Silicon
+Graphics' IRIX operating system.  The code has only been tested under a beta
+release of Solaris 2.2.  Code is also included to putatively use threads in an
+OSF/1 environment such as Digital's OSF/1 on the Alpha AXP platform, however it
+has not been possible to test this code.
+
+Many more enhancements in the software are included, not all of which are
+documented yet or bundled here--e.g., support for the low-compositional
+complexity SEG filter of Wootton and Federhen (wootton@ncbi.nlm.nih.gov) and
+the short-periodicity repeat XNU filter of Claverie and States
+(jmc@ncbi.nlm.nih.gov).  Also, optional use by BLAST of codon bias information
+read from *.cdi files (States and Gish, manuscript submitted).  The interfaces
+to these features are not well developed, subject to change, and are presently
+provided "as is" in an effort to expedite moving the earlier-mentioned
+improvements into users' hands.
+
+
+
+1993-03-25
+The default neighborhood word score threshold (T parameter) was raised a notch
+in TBLASTN only, to obtain a roughly compensatory increase in speed for the
+performance hit that was incurred in the switch to using the new default
+BLOSUM62 matrix on 3/19/93.
+
+1993-03-19
+Changed the default substitution matrix used by BLASTP, BLASTX, TBLASTN and
+BLAST3 from PAM120 to BLOSUM62.  Speed declines by about 30-40% as a result.
+
+1993-03-05
+Changed the format of the sequence identifiers output by the programs
+gb2fasta, gt2fasta, pir2fasta, and sp2fasta.  LOCUS and ACCESSION identifiers
+are now included.
+
+1992-12-08
+sp2fasta now strips carriage-return characters from the definition lines,
+so the program now works well when parsing sequences files on the EMBL CD-ROM.
+
+1992-11-16
+BLASTP prunes its hitlists at the point where the expectation E/S is no
+longer satisfied.  E2/S2 is now the cutoff for saving HSPs for subsequent
+pruning by the E/S criterion; after pruning, no HSPs may remain.  Noise
+is reduced by the pruning, and better sensitivity is obtained by using
+a lower cutoff score followed by filtering on Poisson P-values.
+
+1992-11-05
+Moved lib/shmutil.c and lib/mfile.c into the "gish" library, and removed
+the USE_SHM macro.
+
+1992-11-04
+Renamed include/blast.h to include/blastapp.h, to prepare for migration
+to using a blast function library which contains blast.h.
+
+1992-10-26
+Fixed a bug in searcha.inc regarding the handling of segmented sequences in
+BLASTP and TBLASTN.  During examination of a diagonal for hits while ignoring
+X, the programs had been halting the diagonal search when a gap character was
+encountered in either the query or the database sequence.
+
+1992-10-02
+Made code compatible with architectures having 8-byte long integers,
+e.g. DEC Alpha.
+
+1992-10-01
+Added gt2fasta program for extracting coding sequence (CDS) feature
+translations from files in the GenBank(R) flat file format, saving the
+results in a FASTA format file.
+
+1992-09-07
+Moved bulk of the low-level multiprocessing support into the "gish" library.
+
+1992-09-04
+Corrected a bug in lib/hsppool.c that caused occasional bus errors and
+segmentation violations.
+
+1992-09-04
+Added several BLOSUM matrix files to the distribution.  Moved all matrix
+files into a new "matrix" subdirectory.  Renamed BLASTPAM environment
+variable to BLASTMAT, and changed its default value from "/usr/ncbi/blast/pam"
+to "/usr/ncbi/blast/matrix".
+
+1992-09-03
+Corrected the substitution scores for B-X and Z-X reported by pam program.
+Current version of pam is 1.0.5.
+
+1992-08-25
+Made the software compatible with DEC Ultrix and other operating systems
+running on "little endian" platforms.  BLAST databases, which contain
+binary encoded integers, can be shared between big and little endian platforms.
+Big endian platforms will be only marginally more efficient.
+
+1992-08-14
+Changed one fatal error message to what should have been merely a warning
+in BLASTN.  Added a warning message to BLASTP and TBLASTN.  No change in
+version numbers.
+
+Default value for the H (histogram) parameter is now 0 to omit reporting the
+histogram.
+
+1992-08-05
+Fixed a bug in the single-processor version of blast3(out3.c) that produced
+an infinite loop.  (How does this bug keep reappearing??)
+
+1992-07-01
+Corrected a bug in lib/getseq.c that would cause BLASTN and TBLASTN to crash
+when reporting hits on single-processor platforms when the compressed
+nucleotide database file *.csq was loaded in shared memory.  No effect
+if shared memory was not actively in use.
+
+1992-06-18
+In blastx, corrected the statistic reported for the highest observed
+score in each reading frame.
+
+1992-06-16
+Added several Hitlist sorting options to each of the BLAST programs
+except BLAST3.  -sort_by_pvalue is the default for all.  -sort_by_count
+sorts by the number of HSPs in each database sequence's hitlist.
+-sort_by_highscore sorts by the highest HSP score in a hitlist.
+-sort_by_totalscore sorts by the total of all HSP scores in a hitlist.
+
+Example:
+
+   blastp pir myquery -sort_by_totalscore
+
+1992-06-25
+Corrected the way averaging was performed to calculate substitution scores
+against letters B and Z in the matrices produced by the pam program (pam.c).
+Standard Dayhoff PAM-250 matrix is now included in the distribution,
+under the filename "dayhoff".
+
+1992-05-15
+Fixed a bug in blast3 that caused it to produce an unexpected number
+of pair-wise alignments.  Often no pairwise alignments were displayed
+at all.  This bug had no effect on the 3-way alignments produced.
+
+1992-04-17
+Fixed a bug in the single-processor version of blast3(out3.c) that produced
+an infinite loop.
+
+1992-04-08
+Pressdb still requires sequence lines to be of equal length (except for
+the last line of each sequence, which can be shorter), but it now tolerates
+one or more blank lines at the end of each sequence.
+
+1992-04-02
+Added function etop(), which uses new function fct_expm1() in the gish
+library, to calculate probabilities from expect values.
+
+Changed the letter 'X' in the nucleotide alphabet to '-', which is supposed
+to represent a gap (as it does in the amino acid alphabet), but currently
+is treated by BLASTN like a mismatch character.
+
+1992-03-31
+Added a "gap" character, '-', to the amino acid alphabet used by BLASTP,
+BLASTX, TBLASTN, and BLAST3, which breaks alignments into separate segments.
+BLASTN does not support gap characters.
+
+Fixed a severe bug in the multiprocessing version of TBLASTN:  the
+translate() function failed to set s_len, the database sequence length,
+in frame 1.  Until the gap letter was introduced to the amino acid alphabet
+today, it is not clear that this deficiency caused any problems.  It certainly
+did not affect the results on uniprocessing platforms.
+
+1992-03-30
+Fixed bug in blastn's overlap checking function, ovlap_n(), that caused
+minus-strand HSPs to be reported that were intended to be filtered out.  Merged
+versions of pvals_a(), pvals_n(), and pvals_t() into a single pvals() function.
+Fixed a bug in pressdb that would appear only if each sequence in the input
+FASTA-format database file resided on a single (possibly very long) line.
+
+1992-03-29
+blastp, blastn, blastx, tblastn, and blast3 have no theoretical limit
+on the line length in the query sequence file; setdb and pressdb have
+no theoretical limit on the length of lines in the input FASTA database files.
+Several programs were modified to accommodate a change in the gish
+library's misc/basename() function--an updated copy of the gish library
+must be obtained for compatibility.
+
+1992-03-28
+Better handling by TBLASTN of cases where the database sequence contains
+nucleotide ambiguity codes.  Now neither BLASTN nor TBLASTN requires the
+original FASTA-format nucleotide sequence database file.
+Long strings that had been static are now allocated dynamically.
+
+1992-03-27
+Better handling by BLASTN of cases where the database sequence contains
+ambiguity letters.  BLASTN now does not require the original FASTA-format
+nucleotide sequence database file.  (TBLASTN still does, however).
+
+1992-03-09
+Faster K calculations now performed.  Accuracy is 2+ decimal places for
+the PAM120 and 2- places for PAM250.  This generally translates into
+only a small error (<1%) in the dependent P-values, expectations, and
+bit scores, which seems acceptable for an approximate 20-fold improvement
+in the speed of calculating K.  Furthermore, the error in K is on the
+high side, so P-values etc. tend to be conservative.  The speed is achieved
+by performing fewer iterations in the main K loop and compensating for
+this by adding in several corrective terms from a geometric progression
+of Altschul's design.
+
+1992-02-20
+Made changes to the Makefiles.  Verified that all required libraries
+(ncbi, gish, dfa) and programs can be built.  New copies of all dependent
+source code should be gotten.
+
+1992-02-18
+Switched the BLAST application programs over to using a new version
+of the dfa library.  The new dfa library is required.
+
+1992-02-10
+Changed SGI IRIX compiler optimization flag from -O3 to -O2 in main copy
+of Makefile.sgi, for compatibility with IRIX 4.0.
+
+1992-01-23
+Fixed bug in sp2fasta.c that caused the last character of each DE line
+to be omitted.
+
+1992-01-17
+Minor bug fix in lib/mfile.c and a major bug fix in BLAST3's out3.c.
+Both bugs were introduced recently; the former one prevented compilation
+of mfile.c; the latter one sent the 3-way search phase of BLAST3 into
+an infinite loop on single-processor architectures.  Version numbers
+are not being incremented.
+
+1991-12-31
+In searchn.inc, which is used by BLASTN, the strand (frame) of each HSP was
+not being set.
+
+1991-12-30
+Added sp2fasta utility for converting SWISS-PROT text format into FASTA format.
+
+1991-12-29
+Fixed bug in blastx.c and others, in vicinity of isspace() macro usage.
+
+1991-12-24
+Fixed filesize bug in shmutil.c.  Only applicable to users of shared memory.
+
+1991-12-23
+Improved commande line parsing.  New -overlap option added to all blast
+programs to turn off HSP overlap detection and removal.
+
+1991-12-18
+Improved signal handling in multiprocessing situations.
+
+1991-12-11
+Fixed bug in blast3.print_p which arose if USE_MPROC was _not_ defined
+and the database was not resident in shared memory.
+
+Fixed semaphore SETVAL bug in shmutil.c and minor bug in memfile.c.
+
+1991-11-13
+The mode parameter of mfile.mfil_open() was not being passed to fopen()
+when USE_SHM was undefined.
+
+1991-11-11
+Neglected to initialize the pts[] array to NULL pointers in blast3.c.
+
+1991-10-23
+Fixed frame reference bug in blastx.print_parms.
+
+1991-10-04
+Hits on opposite strands of a query or database sequence are now considered
+to be distinguishable events, and so are counted separately in the Poisson
+statistics calculations.
+
+The default value for E used by BLASTP, BLASTN, BLASTX, and TBLASTN
+has been reduced from 25 down to 10, to avoid reporting quite so many
+hits which are statistically insignificant under the random sequence model.
+The experienced user may well want to routinely use even a lower value
+for E, e.g. E=1 or E=2.
+
+1991-09-27
+BLASTN is now rigid in its interpretation of matching/mismatching.
+Residues must be either A, C, G, T(U) to match with any other residue.
+And T now matches U.  There is no concept of a partial match with
+BLASTN.  For example, R (purine) does not half-match with a G or A,
+but rather is scored as a complete MISMATCH.
+
+The blast.1 manual page is better.
+
+1991-09-25
+Improved reporting of individual HSP statistics (including the number of bits
+of information associated with the alignment scores), and a more consistent
+report style across all blast programs.
+
+1991-09-23
+Marginal improvement in speed of BLASTP and TBLASTN (re: zero-ing of diagonal
+hit structures in search_aa()), with a concomittant correction to the
+hit statistics reported by these programs.  Only a minor change was made
+with respect to BLAST3, but since all three of these programs include
+the same searcha.inc file, the version number on BLAST3 was bumped up one.
+
+1991-09-20
+Better compatibility with Cray UNICOS (version 7.0)
+
+1991-09-19
+Removed one last dependency of the software on the alphabetical case
+of residues in the FASTA databases.  This change was localized to one
+line in blastn.c.
+
+1991-01-06
+Only the frequencies of occurrence of unambiguous letters (non-X for protein
+and non-N for nucleotide sequences) are used to calculate the Karlin
+parameters K and Lambda (and H).  This change can lead to occasional warning
+messages (usually not fatal errors and not serious) about the score
+probabilities not adding up to 1.0.
+
+The "pam" v1.0.3 utility program now calculates a weighted average substitution
+score against the ambiguity letter X; a command line option permits the user
+to set a constant substitution score instead.
+
+Several .h and .c files had some ANSI-incompatibilities fixed; in particular
+"Boolean" parameters were changed to "int" because of the use of old-style
+function declarations.
+
+1991-01-02
+Fixed severe multiprocessing bug in TBLASTN--has no effect on uniprocessing.
+

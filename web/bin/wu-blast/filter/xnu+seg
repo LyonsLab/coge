@@ -1,0 +1,63 @@
+#!/bin/sh
+#
+# simple script to run SEG and XNU separately,
+# store the intermediate results in temporary files,
+# then OR the results to stdout with PMERGE
+# (for proteins), and clean up the temporary files.
+# NOTE: the files seg+xnu and xnu+seg are hard
+# links to the same file.
+#
+# Usage:  seg+xnu infile
+#
+# SECURITY ALERT:  if infile is open for users
+# to specify in a filter option, then tests should
+# be added to ensure privacy is not compromised.
+#
+
+PATH=/bin:/usr/bin
+
+if [ $# != 1 ]; then
+	exit 1;
+fi
+
+# require seg and xnu to be in the same directory
+# as this script
+exedir="`dirname $0`"
+if [ ! -x $exedir/seg ]; then
+	exit 2;
+fi
+if [ ! -x $exedir/xnu ]; then
+	exit 2;
+fi
+if [ ! -x $exedir/pmerge ]; then
+	exit 2;
+fi
+
+# put our temporary files in the same directory
+# as the input file
+datadir="`dirname $1`"
+
+cat > $datadir/seg+xnu.$$
+if [ $? != 0 ]; then
+	exit 4;
+fi
+
+$exedir/seg - -x > $datadir/seg.$$ < $datadir/seg+xnu.$$
+if [ $? != 0 ]; then
+	exit 5;
+fi
+
+$exedir/xnu - > $datadir/xnu.$$ < $datadir/seg+xnu.$$
+if [ $? != 0 ]; then
+	exit 6;
+fi
+
+$exedir/pmerge $datadir/seg.$$ $datadir/xnu.$$
+if [ $? != 0 ]; then
+	exit 7;
+fi
+
+rm -f $datadir/seg+xnu.$$ $datadir/seg.$$ $datadir/xnu.$$
+
+exit 0;
+

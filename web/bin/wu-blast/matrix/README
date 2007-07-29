@@ -1,0 +1,18 @@
+This directory is often installed in the location /usr/ncbi/blast/matrix.
+If a different location is desired, use the BLASTMAT environment
+variable to instruct the BLAST programs where to look for scoring matrix
+files.
+
+The aa/ subdirectory contains scoring matrix files appropriate for
+amino acid scoring.  BLOSUM62 is the default matrix used.
+
+The nt/ subdirectory contains scoring matrix files appropriate for nucleic acid
+scoring (used by BLASTN only).  The default scoring system used by BLASTN is
++5,-4.  That is M=5 N=-4 on the command line, or a +5 reward for a match and -4
+penalty for a mismatch.  Internal to the program, BLASTN uses a matrix to score
+alignments, but the default matrix -- and any other matrix specified with the M
+and N command line options -- is actually computed internally by the program at
+run-time, precluding the need to read a scoring matrix file.  Only when the
+"matrix=<filename>" option to BLASTN is used is a scoring matrix file read.
+
+

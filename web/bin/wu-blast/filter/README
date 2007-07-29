@@ -1,0 +1,48 @@
+This directory is often installed in the location /usr/ncbi/blast/filter.
+If a different location is desired, use the WUBLASTFILTER (or BLASTFILTER)
+environment variable to direct the BLAST programs where to look.  See the
+README.html for more details about the use of environment variables and the
+WUBLASTFILTER variable in particular.
+
+The "filter" directory can contain executables for masking query sequences of
+low-complexity regions (or potentially any other regions of one's own design).
+These executables are invoked indirectly using the "filter=" option or
+"wordfilter=" option of the BLAST programs.  Filter programs must be capable of
+reading FASTA format sequences from standard input and writing their results in
+FASTA format to standard output.  Filter programs are maintained separately
+from the BLAST search programs, so they may be updated independently and
+extended if desired.  Pipelines of filter programs can be established in
+scripts placed in this directory or in commands fully specified in a filter=
+or wordfilter= command line option.
+
+Typical filters that the BLAST programs know about are "seg" (Wootton and
+Federhen), "xnu" (Claverie and States), and "dust" (Tatusov and Lipman).
+
+While individual filter and wordfilter specifications can themselves be
+comprised of command pipelines, as in "filter=seg - -x | xnu -", the BLAST
+programs permit multiple filter= and wordfilter= options to be specified.
+Each filter (or wordfilter) specified will be executed in succession and the
+individual results are then OR-ed with one another.
+
+
+Source code for seg is available at URL ftp://ncbi.nlm.nih.gov/pub/seg
+or ftp://blast.wustl.edu/pub/seg
+
+The seg distribution includes code for "pmerge" and "nmerge", two programs
+that logically OR masked regions from multiple protein/nucleotide sequences
+into a single FASTA-format output data stream.  These programs can be used
+to combine the results of applying multiple filter programs (or the same
+filter program with multiple sets of parameters).  pmerge expects masked
+residues will be represented by Xs, whereas nmerge expects masked residues
+will be represented by Ns.
+
+The script "seg+xnu" and "xnu+seg" executes seg and xnu, then runs pmerge
+to OR the results to stdout.
+
+Source code for xnu is available at URL ftp://ncbi.nlm.nih.gov/pub/jmc/xnu
+or ftp://blast.wustl.edu/pub/xnu
+
+Source code for dust is available at URL ftp://ncbi.nlm.nih.gov/pub/tatusov/dust
+or ftp://blast.wustl.edu/pub/dust
+
+
