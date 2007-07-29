@@ -10,21 +10,21 @@
 $(document).ready(function(){
  //prefetch button images
  if (document.images) {
-  go_inactive = new Image(); go_inactive.src = "/CoGe/picts/buttons/GEvo/go/inactive.png";
-  go_active = new Image(); go_active.src = "/CoGe/picts/buttons/GEvo/go/active.png";
-  go_pressed = new Image(); go_pressed.src = "/CoGe/picts/buttons/GEvo/go/pressed.png";
-  
-  clear_inactive = new Image(); clear_inactive.src = "/CoGe/picts/buttons/GEvo/clear/inactive.png";
-  clear_active = new Image(); clear_active.src = "/CoGe/picts/buttons/GEvo/clear/active.png";
-  clear_pressed = new Image(); clear_pressed.src = "/CoGe/picts/buttons/GEvo/clear/pressed.png";
-  
-  add_inactive = new Image(); add_inactive.src = "/CoGe/picts/buttons/GEvo/add/inactive.png";
-  add_active = new Image(); add_active.src = "/CoGe/picts/buttons/GEvo/add/active.png";
-  add_pressed = new Image(); add_pressed.src = "/CoGe/picts/buttons/GEvo/add/pressed.png";
-  
-  remove_inactive = new Image(); remove_inactive.src = "/CoGe/picts/buttons/GEvo/remove/inactive.png";
-  remove_active = new Image(); remove_active.src = "/CoGe/picts/buttons/GEvo/remove/active.png";
-  remove_pressed = new Image(); remove_pressed.src = "/CoGe/picts/buttons/GEvo/remove/pressed.png";
+//   go_inactive = new Image(); go_inactive.src = "/CoGe/picts/buttons/GEvo/go/inactive.png";
+//   go_active = new Image(); go_active.src = "/CoGe/picts/buttons/GEvo/go/active.png";
+//   go_pressed = new Image(); go_pressed.src = "/CoGe/picts/buttons/GEvo/go/pressed.png";
+//   
+//   clear_inactive = new Image(); clear_inactive.src = "/CoGe/picts/buttons/GEvo/clear/inactive.png";
+//   clear_active = new Image(); clear_active.src = "/CoGe/picts/buttons/GEvo/clear/active.png";
+//   clear_pressed = new Image(); clear_pressed.src = "/CoGe/picts/buttons/GEvo/clear/pressed.png";
+//   
+//   add_inactive = new Image(); add_inactive.src = "/CoGe/picts/buttons/GEvo/add/inactive.png";
+//   add_active = new Image(); add_active.src = "/CoGe/picts/buttons/GEvo/add/active.png";
+//   add_pressed = new Image(); add_pressed.src = "/CoGe/picts/buttons/GEvo/add/pressed.png";
+//   
+//   remove_inactive = new Image(); remove_inactive.src = "/CoGe/picts/buttons/GEvo/remove/inactive.png";
+//   remove_active = new Image(); remove_active.src = "/CoGe/picts/buttons/GEvo/remove/active.png";
+//   remove_pressed = new Image(); remove_pressed.src = "/CoGe/picts/buttons/GEvo/remove/pressed.png";
   }
 
  //animate_section(".seq_submission_type","hide"); 
@@ -350,8 +350,6 @@ function monitor_log(log)
 
 }
 
-
-
 </SCRIPT>
 
 <div id="go_run"><TMPL_VAR NAME="GO_RUN"></div>
@@ -360,20 +358,28 @@ function monitor_log(log)
 <table>
 <tr align left>
 <td>
-<div id="go_button" class="l"><a href="#" onMouseOver="activeButton('go')" onMouseOut="inactiveButton('go')" onMouseDown="pressedButton('go')" onMouseUp="inactiveButton('go')" onClick="loading([],['results']); go_run();"><img name="go" src="/CoGe/picts/buttons/GEvo/go/inactive.png" width="47" height="27" border="0" alt="javascript button"></a></div>
-<a href="#" onMouseOver="activeButton('clear')" onMouseOut="inactiveButton('clear')" onMouseDown="pressedButton('clear')" onMouseUp="inactiveButton('clear')" onClick="rset()">
+<a href="#" id=go_button onClick="loading([],['results']); go_run();"><span>Go</span></a>
+</TD>
+<!--<div id="go_button" class="l"><a href="#" onMouseOver="activeButton('go')" onMouseOut="inactiveButton('go')" onMouseDown="pressedButton('go')" onMouseUp="inactiveButton('go')" onClick="loading([],['results']); go_run();"><img name="go" src="/CoGe/picts/buttons/GEvo/go/inactive.png" width="47" height="27" border="0" alt="javascript button"></a></div>-->
+<TD>
+<a href="#" id=clear_button onClick="rset()"><span>Clear</span></a>
+</TD>
+<!--<a href="#" onMouseOver="activeButton('clear')" onMouseOut="inactiveButton('clear')" onMouseDown="pressedButton('clear')" onMouseUp="inactiveButton('clear')" onClick="rset()">
          <img name="clear" src="/CoGe/picts/buttons/GEvo/clear/inactive.png" width="56" height="27" border="0" alt="javascript button">
-         </a>
+         </a>-->
 <td nowrap>
 <td>Number of sequences: <input class="backbox" name=num_seqs id=num_seqs type="textbox" size=2 readonly value=<TMPL_VAR NAME ="NUM_SEQS">>
 <td>
-<a href="#" onMouseOver="activeButton('add')" onMouseOut="inactiveButton('add')" onMouseDown="pressedButton('add')" onMouseUp="inactiveButton('add')" onclick="add_seq(['num_seqs'],[process_add_seq]); $('#new_drseq').remove;">
-         <img name="add" src="/CoGe/picts/buttons/GEvo/add/inactive.png" width="43" height="27" border="0" alt="javascript button">
+  <a href="#" id=add_button
+  onClick="add_seq(['num_seqs'],[process_add_seq]); $('#new_drseq').remove;"><span>Add</span></a>
+<!--<a href="#" onMouseOver="activeButton('add')" onMouseOut="inactiveButton('add')" onMouseDown="pressedButton('add')" onMouseUp="inactiveButton('add')" onclick="add_seq(['num_seqs'],[process_add_seq]); $('#new_drseq').remove;">
+         <img name="add" src="/CoGe/picts/buttons/GEvo/add/inactive.png" width="43" height="27" border="0" alt="javascript button">-->
          </a>
 <td>
-<a href="#" onMouseOver="activeButton('remove')" onMouseOut="inactiveButton('remove')" onMouseDown="pressedButton('remove')" onMouseUp="inactiveButton('remove')" onclick="remove_seq()">
+<a href="#" id=remove_button onClick="remove_seq()"><span>Remove</span></a>
+<!--<a href="#" onMouseOver="activeButton('remove')" onMouseOut="inactiveButton('remove')" onMouseDown="pressedButton('remove')" onMouseUp="inactiveButton('remove')" onclick="remove_seq()">
          <img name="remove" src="/CoGe/picts/buttons/GEvo/remove/inactive.png" width="55" height="27" border="0" alt="javascript button">
-         </a>
+         </a>-->
 </table>
 
 
@@ -381,7 +387,7 @@ function monitor_log(log)
 <TABLE class="basic" width=100%>
  <TR>
   <TH colspan="<TMPL_VAR NAME="NUM_SEQS">" align=left>
-   <DIV id="seq_submission" class="topItem"  onMouseOver="changeColor('seq_submission','#000099'); " onMouseOut="changeColor('seq_submission','#009900');" onClick='animate_section("#seq_submission_menu","slideToggle")' >Sequence Submission:</DIV>
+   <DIV id="seq_submission" class="topItem"  onMouseOver="$('#seq_submission').removeClass('topItem').addClass('topItemSelected');" onMouseOut="$('#seq_submission').removeClass('topItemSelected').addClass('topItem');" onClick='animate_section("#seq_submission_menu","slideToggle")' >Sequence Submission:</DIV>
    <DIV class="dropMenu" id="seq_submission_menu">
     <table width="100%">
      <tr id = "new_seq_submission" valign="top">
@@ -399,7 +405,7 @@ function monitor_log(log)
 <TABLE class="basic" width=100%>
  <TR>
   <TH colspan="2" align=left>
-   <DIV id="bp" class="topItem" onMouseOver="changeColor('bp','#000099'); " onMouseOut="changeColor('bp','#009900');" onClick='animate_section("#algo_options","slideToggle")'>Comparison Parameters and Options:</DIV>
+   <DIV id="bp" class="topItem" onMouseOver="$('#bp').removeClass('topItem').addClass('topItemSelected');" onMouseOut="$('#bp').removeClass('topItemSelected').addClass('topItem');" onClick='animate_section("#algo_options","slideToggle")'>Comparison Parameters and Options:</DIV>
    <DIV id = "algo_options" >
      <TABLE style="width: 100%;" class="dropMenu" >
       <TR valign=top align=left>
@@ -678,7 +684,7 @@ function monitor_log(log)
 <TABLE class="basic" width=100%>
  <TR>
   <TH colspan="2" align=left>
-  <DIV  id="ip" class="topItem" onMouseOver="changeColor('ip','#000099')" onMouseOut="changeColor('ip','#009900');"  onClick='animate_section("#image_parameters","slideToggle")' >Image and Interface Parameters:</DIV>
+  <DIV  id="ip" class="topItem" onMouseOver="$('#ip').removeClass('topItem').addClass('topItemSelected');" onMouseOut="$('#ip').removeClass('topItemSelected').addClass('topItem');"  onClick='animate_section("#image_parameters","slideToggle")'>Image and Interface Parameters:</DIV>
 
 <div class="menu" id="image_parameters" style="display: none">
 
