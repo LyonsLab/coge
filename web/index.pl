@@ -2,12 +2,14 @@
 
 use strict;
 use CGI;
+use CGI::Cookie;
 use CGI::Carp 'fatalsToBrowser';
 use CGI::Ajax;
 use HTML::Template;
 use Data::Dumper;
 use CoGe::Accessory::LogUser;
 use CoGe::Genome;
+
 
 use vars qw($USER $UID $LAST_LOGIN $FORM $DATE);
 
@@ -55,7 +57,12 @@ sub gen_body
   {
     my $tmpl = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/index.tmpl');
     my $html;
-    my $disable = $FORM->param('disable');
+    my %cookies = fetch CGI::Cookie;
+    my $disable = 0;
+    if ($cookies{'anim_speed'})
+     {
+      $disable = $cookies{'anim_speed'}->value() eq "0" ? 1 : 0;
+     }
     if ($USER && !$FORM->param('logout'))
       {
 	if ($disable){
@@ -132,9 +139,9 @@ sub actions
 		   {
 		    ID => 7,
 		    LOGO => qq{<a href="./CoGe/help/CoGe"><img src="/CoGe/picts/carousel/FAQ-logo.png" width="227" height="75" border="0"></a>},
-		    ACTION => qq{<a href="./help/CoGe/">CoGe Faq</a>},
+		    ACTION => qq{<a href="./docs/help/CoGe/">CoGe Faq</a>},
 		    DESC   => qq{What is CoGe?  This document covers some of the basics about what CoGe is, how it has been designed, and other information about the system.},
-		    SCREENSHOT => qq{<a href="./CoGeBlast.pl"><img src="/CoGe/picts/preview/Blast.png" width="400" height="241" border="0"></a>},
+		    SCREENSHOT => qq{<a href="./docs/help/CoGe"><img src="/CoGe/picts/preview/app_schema.png" border="0"></a>},
 		   },
 		  );
     return \@actions;
