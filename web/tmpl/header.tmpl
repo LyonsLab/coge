@@ -2,23 +2,92 @@
 <HEAD>
  <TITLE><TMPL_VAR NAME=TITLE></TITLE>
  <link rel="stylesheet" type="text/css" href="/CoGe/css/styled.css" />
- <link rel="stylesheet" type="text/css" href="/CoGe/css/sddm.css" />
+
+<TMPL_UNLESS NAME="NO_JQUERY">
+ <link rel="stylesheet" type="text/css" href="/CoGe/css/jdMenu.css" />
+ <link rel="stylesheet" type="text/css" href="/CoGe/css/jdMenu.slate.css" />
+ <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.js"></SCRIPT>
+ <!--<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.bgiframe.js"></SCRIPT>-->
+ <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.dimensions.js"></SCRIPT>
+ <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.jdMenu.js"></SCRIPT>
+  <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.cookie.js"></SCRIPT>
+<!-- <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.jdMenu.packed.js"></SCRIPT>-->
+</TMPL_UNLESS>
+
+
  <TMPL_VAR NAME=HEAD>
 
  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
 </HEAD>
 
-<BODY onLoad="getBrowser(); <TMPL_VAR NAME=BODY_ONLOAD>">
+<BODY <TMPL_VAR NAME="BODY_ONLOAD">>
 <TMPL_VAR NAME=JAVASCRIPT>
 <SCRIPT language="JavaScript">
 
-function getBrowser()
+jQuery(document).ready(function(){ 
+  var anim_speed = jQuery.cookie('anim_speed');
+  //alert(anim_speed);
+  if (! anim_speed){
+  //alert('I am messing up');
+    jQuery.cookie('anim_speed',600);}
+  pageObj = new Object();
+  pageObj.speed = jQuery.cookie('anim_speed') || 600;
+  define_animation_speed(pageObj.speed)
+  //alert(pageObj.speed);
+  if (!jQuery.browser.mozilla)browserAlert();
+});
+
+jQuery(function(){
+jQuery('ul.jd_menu').jdMenu();
+});
+
+function browserAlert()
 {
-  if (navigator.appName == 'Microsoft Internet Explorer')
-  {
-    alert('You are using Internet Explorer.  Unfortunately, CoGe does not support this browser and may not function appropriately.  Please use Firefox which can be downloaded from http://www.mozilla.com/en-US/firefox/');
-  }
+ alert('Unfortunately, CoGe has been designed to work with the FireFox browser and may not function appropriately with your browser.  Please use FireFox, which can be downloaded from http://www.mozilla.com/en-US/firefox/');
 }
+
+function animate_section(name, style, speedy) {
+  if (speedy == undefined) speedy = pageObj.speed;
+  //alert('speedy is '+speedy);
+  if (!style) style = "toggle";
+  if (!speedy) {
+    if ((style == "show") || style == "slideDown" || style == "fadeIn") {jQuery(name).show();}
+    else if ((style == "hide") || style == "slideUp" || style == "fadeOut") {jQuery(name).hide();}
+    else {jQuery(name).toggle();}
+   }
+  else if (style == "toggle") {jQuery(name).toggle(speedy);}
+  else if (style == "hide") {jQuery(name).hide(speedy);}
+  else if (style == "show") {jQuery(name).show(speedy);}
+  else if (style == "slideToggle") {jQuery(name).slideToggle(speedy);}
+  else if (style == "slideUp") {jQuery(name).slideUp(speedy);}
+  else if (style == "slideDown") {jQuery(name).slideDown(speedy);}
+  else if (style == "fadeIn") {jQuery(name).fadeIn(speedy);}
+  else if (style == "fadeOut") {jQuery(name).fadeOut(speedy);}
+  return speedy;
+ }
+ 
+ function define_animation_speed(val){
+   //alert(val);
+   val *= 1;
+   pageObj.speed = val;
+   jQuery.cookie('anim_speed',val);
+   var menu_html;
+   
+   if (val == 0){
+     menu_html = '<li><a href="#" target="_self" onClick="define_animation_speed(0)">&radic; Off</a></li><li><a href="#" target="_self" onClick="define_animation_speed(600)">Slow</a></li><li><a href="#" target="_self" onClick="define_animation_speed(400)">Medium</a></li><li><a href="#" target="_self" onClick="define_animation_speed(200)">Fast</a></li>';}
+   else{
+     if (val == 600){
+      menu_html = '<li><a href="#" target="_self" onClick="define_animation_speed(0)">Off</a></li><li><a href="#" target="_self" onClick="define_animation_speed(600)">&radic; Slow</a></li><li><a href="#" target="_self" onClick="define_animation_speed(400)">Medium</a></li><li><a href="#" target="_self" onClick="define_animation_speed(200)">Fast</a></li>';}
+     else if (val == 400){
+      menu_html = '<li><a href="#" target="_self" onClick="define_animation_speed(0)">Off</a></li><li><a href="#" target="_self" onClick="define_animation_speed(600)">Slow</a></li><li><a href="#" target="_self" onClick="define_animation_speed(400)">&radic; Medium</a></li><li><a href="#" target="_self" onClick="define_animation_speed(200)">Fast</a></li>';}
+     else{
+      menu_html = '<li><a href="#" target="_self" onClick="define_animation_speed(0)">Off</a></li><li><a href="#" target="_self" onClick="define_animation_speed(600)">Slow</a></li><li><a href="#" target="_self" onClick="define_animation_speed(400)">Medium</a></li><li><a href="#" target="_self" onClick="define_animation_speed(200)">&radic; Fast</a></li>';
+     }
+     }
+     jQuery('.animations').html(menu_html);
+}
+
+
 </SCRIPT>
 
 <TABLE width = 100%>
@@ -27,14 +96,52 @@ function getBrowser()
    <TABLE>
     <TR>
      <TD>
-      <TMPL_IF NAME=LOGO_PNG><a href="<TMPL_IF NAME=HEADER_LINK><TMPL_VAR NAME=HEADER_LINK><TMPL_ELSE>/CoGe</TMPL_IF>" border=0><img src='/CoGe/picts/<TMPL_VAR NAME=LOGO_PNG>' border=0></a></TMPL_IF>
+      <TMPL_IF NAME=LOGO_PNG><div id=home_icon><a href="/CoGe" border=0></div><img src='/CoGe/picts/<TMPL_VAR NAME=LOGO_PNG>' border=0></a></TMPL_IF>
      </TD>
      <TD>
       <font class="title1"><TMPL_VAR NAME=TITLE></font>
      </TD>
     </TR>
    </TABLE>
-  <TD align=right>
+  </TD>
+  <TD align=left>
+	<ul class="jd_menu jd_menu_slate" style="position: absolute;right: 0px;top: 0px;">
+	 <li><a href="http://toxic.berkeley.edu/CoGe/" target="_self">Home</a></li>
+	 <li>Applications
+	  <ul>
+	  <li><a href="/CoGe/GEvo.pl" target="_self">GEvo</a></li>
+	  <li><a href="/CoGe/FeatView.pl" target="_self">FeatView</a></li>
+	  <li><a href="/CoGe/MSAView.pl" target="_self">MSAView</a></li>
+	  <li><a href="/CoGe/TreeView.pl" target="_self">TreeView</a></li>
+	  <li><a href="/CoGe/GeLo.pl" target="_self">GeLoView</a></li>
+	  <li><a href="/CoGe/CoGeBlast.pl" target="_self">CoGeBlast</a></li>
+	  </ul>
+	</li>
+	<li>User Stuff
+	 <ul>
+	  <li><a href="#" target="_self">My Page</a></li>
+	  <li><a href="#" target="_self">Contacts</a></li>
+	  <li><a href="#" target="_self">Saved Results</a></li>
+	  <li><a href="#" target="_self">Animation &raquo; </a>
+	    <ul class="animations">
+	      <li><a href="#" target="_self" onClick="define_animation_speed(0)">Off</a></li>
+	      <li><a href="#" target="_self" onClick="define_animation_speed(600)">&radic; Slow</a></li>
+	      <li><a href="#" target="_self" onClick="define_animation_speed(400)">Medium</a></li>
+	      <li><a href="#" target="_self" onClick="define_animation_speed(200)">Fast</a></li>
+	     </ul>
+	   </li>
+	 </ul>
+	</li>
+	<li>Help
+	 <ul>
+	      <li><a href="./docs/help/<TMPL_VAR NAME=HELP>" target="_self">Page Docs</a></li>
+	      <li><a href="/CoGe/docs/help/CoGe/Overview.html" target="_self">About CoGe</a></li>
+	      <li><a href="/CoGe/docs/help/Contact/Contact.html" target="_self">Contact Us</a></li>
+	</ul>
+	</li>
+	</ul>
+  </TD>
+  <!--<TD align=right>
    <TABLE>
     <TR>
      <TD align=right><TMPL_IF NAME="CLOSE"><INPUT type = 'button' value= 'Close Window' onClick='window.close()'></TMPL_IF>
@@ -43,6 +150,6 @@ function getBrowser()
      </TD>
    </TR>
   </TABLE>
-  </TD>
+  </TD>-->
  </TR>
 </TABLE>
