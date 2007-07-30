@@ -8,11 +8,11 @@ use GD;
 
 #for best performance, create all the chromosomes before generating the features.
 
-__PACKAGE__->mk_accessors(qw(organism chromosomes features image_width image_height legend_height _default_feature_color _gd _color_set color_band_flag legend));
+__PACKAGE__->mk_accessors(qw(organism chromosomes features image_width image_height legend_height _default_feature_color _gd _color_set color_band_flag legend chromosome_height));
 
 my $DEFAULT_COLOR = [255,0,0];
 my $FONT = GD::Font->MediumBold;
-
+my $FONTTT="/usr/lib/perl5/site_perl/CoGe/fonts/arial.ttf";
 
 
 sub generate_imagemap
@@ -145,7 +145,7 @@ sub generate_chromosomes
     my $black = $self->get_color([0,0,0]);
     my $white = $self->get_color([255,255,255]);
     my $TITLE_FONT = gdGiantFont;
-    $gd->string($TITLE_FONT, $self->image_width/2-(length ($self->organism)/2*$TITLE_FONT->width), $TITLE_FONT->height, $self->organism, $black);
+    $gd->string($TITLE_FONT, $self->image_width/2-(length ($self->organism)/2*$TITLE_FONT->width), $TITLE_FONT->height, $self->organism, $black) if $self->organism;
     
 
     foreach my $name (sort {$chrs->{$b}->{end} <=> $chrs->{$a}->{end}} keys %$chrs)
@@ -154,16 +154,19 @@ sub generate_chromosomes
 	$max = $chrs->{$name}->{end} unless $max;
 	my $width = ($horz_spacer*8)*($chrs->{$name}->{end}/$max);
 	my ($cstart, $cend) = ($chrs->{$name}->{centromere_start}, $chrs->{$name}->{centromere_end});
-	$self->draw_features($chrs->{$name}, $horz_spacer, $count*$vert_spacer, $width, $height);
 	$gd->rectangle($horz_spacer, $count*$vert_spacer, $horz_spacer+$width, $count*$vert_spacer+$height, $black);
 	$gd->arc($horz_spacer, $count*$vert_spacer+$height/2, $height, $height, 90, 270, $black);
 	$gd->arc($horz_spacer+$width, $count*$vert_spacer+$height/2, $height, $height, 270, 90, $black);
 	$gd->line($horz_spacer, $count*$vert_spacer+1, $horz_spacer, $count*$vert_spacer+$height-1, $white);
 	$gd->line($horz_spacer+$width, $count*$vert_spacer+1, $horz_spacer+$width, $count*$vert_spacer+$height-1, $white);
-	$gd->string($FONT, 5, $count*$vert_spacer-$FONT->height, $name, $black);
+        $gd->stringFT($black, $FONTTT, $vert_spacer/5, 0, 5, $count*$vert_spacer, $name);
+#	$gd->string($FONT, 5, $count*$vert_spacer-$FONT->height, $name, $black);
 #	$gd->string($FONT, $horz_spacer-$FONT->width*(length($chrs->{$name}{start})+1), $count*$vert_spacer-$FONT->height, $chrs->{$name}->{start}, $black);
-	$gd->string($FONT, $horz_spacer+$width+10, $count*$vert_spacer-$FONT->height, $chrs->{$name}->{end}, $black);
+	$gd->stringFT($black, $FONTTT, $vert_spacer/5, 0, $horz_spacer+$width, $count*$vert_spacer, $chrs->{$name}->{end});
+	#$gd->string($FONT, $horz_spacer+$width+10, $count*$vert_spacer-$FONT->height, $chrs->{$name}->{end}, $black);
 	$self->draw_centromere($horz_spacer, $count*$vert_spacer, $width, $height, $cstart/$chrs->{$name}->{end}, $cend/$chrs->{$name}->{end}, $black) if $cstart && $cend;
+	$self->draw_features($chrs->{$name}, $horz_spacer, $count*$vert_spacer, $width, $height);
+
 	$count++;
       }
     $self->_gd($gd);
@@ -188,6 +191,10 @@ sub draw_features
     my $black = $gd->colorAllocate(0,0,0);
     foreach my $feat (sort {$a->{end} <=> $b->{end} }@{$feats->{$chr->{name}}})
       {
+	my $color = $feat->{color};
+	$color = $self->get_color($color) if ref ($color) =~ /array/i;
+	$color = $self->default_feature_color unless $color;
+
 	my $x1 = $x+$feat->{end}/$chr->{end}*$width;
 	my $poly = new GD::Polygon;
 	$up = $feat->{up} if defined $feat->{up};
@@ -205,11 +212,11 @@ sub draw_features
 	    $poly->addPt($x1+$height/5, $y+$height+$height/1.3);
 	    $up = 1;
 	  }
-	$gd->filledPolygon($poly, $feat->{color});
+	$gd->filledPolygon($poly, $color);
 	$gd->openPolygon($poly, $black);
 	if ($color_band_flag)
 	  {
-	    $gd->line($x1, $y, $x1, $y+$height, $feat->{color});
+	    $gd->line($x1, $y, $x1, $y+$height, $color);
 	  }
       }
   }
@@ -261,19 +268,26 @@ sub gd
     unless ($gd)
       {
 	$self->image_width(800) unless $self->image_width;
-	$self->image_height(40 * (scalar (keys %{$self->chr})*2)) unless $self->image_height;
 	if ($self->legend)
 	  {
-	    my $legend_hei = scalar keys (%{$self->legend}) * $FONT->height;
+	    my $legend_hei = scalar keys (%{$self->legend}) * $FONT->height if keys %{$self->legend};
 	    $self->legend_height($legend_hei);
 	    $self->image_height($self->image_height() + $self->legend_height);
-	    
 	  }
+	else
+	  {
+	    $self->legend_height(0);
+	  }
+	$self->image_height(40 * (scalar (keys %{$self->chr})*2)) unless $self->image_height;
+        $self->image_height(((keys (%{$self->chr}) +1)*$self->chromosome_height+$self->legend_height)*1.5) if $self->chromosome_height;
+
 	my ($wid, $hei) = ($self->image_width, $self->image_height);
 	$gd = new GD::Image($wid, $hei);
 	$gd->colorAllocate(255,255,255);
 	$self->_gd($gd);
+	
       }
+
     return $gd;
   }
 
@@ -304,8 +318,8 @@ sub add_feature
     $chr = $self->get_chromosome($chr);
     my $link = $opts{'link'};
     my $color = $opts{'color'};
-    $color = $self->get_color($color) if ref ($color) =~ /array/i;
-    $color = $self->default_feature_color unless $color;
+#    $color = $self->get_color($color) if ref ($color) =~ /array/i;
+#    $color = $self->default_feature_color unless $color;
     my $desc = $opts{'desc'};
     my $up = $opts{'up'};
     unless ($start && $end && $chr)
