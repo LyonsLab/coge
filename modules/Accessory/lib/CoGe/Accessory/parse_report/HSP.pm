@@ -13,7 +13,7 @@ BEGIN
   {
     use vars qw($VERSION);
     $VERSION = "0.01";
-    __PACKAGE__->mk_accessors qw(score bits percent_id percent_sim match positive length pval query_start query_stop subject_start subject_stop query_alignment subject_alignment alignment query_gaps subject_gaps strand number qpercent_id spercent_id segments contains_spike query_name subject_name);
+    __PACKAGE__->mk_accessors qw(score bits percent_id percent_sim match positive length pval query_start query_stop subject_start subject_stop query_alignment subject_alignment alignment query_gaps subject_gaps strand number qpercent_id spercent_id segments contains_spike query_name subject_name query_length subject_length);
   }
 
 #ripped from class::Accessor
