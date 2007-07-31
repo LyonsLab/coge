@@ -868,7 +868,7 @@ sub process_features
 	warn "Possible problem with the object in process_features.  Returning";
 	return 0;
       }
-    foreach my $feat($obj->get_features(@opts))
+    foreach my $feat($obj->get_features())
       {
 
         my $f;
@@ -1273,7 +1273,6 @@ sub get_obj_from_genome_db
     my $t5 = new Benchmark;
     foreach my $f (@feats)
       {
-
 	my $name;
 	my @names = $f->names;
 	foreach my $tmp (@names)
