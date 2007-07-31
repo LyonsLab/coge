@@ -178,6 +178,10 @@ sub get_features_in_region
 								       "me.start"=>  {"<=" => $stop},
 								       "me.start"=> {">=" => $start},
 								      ],
+								-and=>[
+								       "me.start"=>  {"<=" => $start},
+								       "me.stop"=> {">=" => $stop},
+								      ],
 							       ],
 							 ],
 						  },
@@ -189,26 +193,26 @@ sub get_features_in_region
     my @feats = $self->resultset('Feature')->search({
                  "me.chromosome" => $chr,
                  "me.dataset_id" => $dataset_id,
-						     -and=>[
-                   -or=>[
-                     -and=>[
-                       "me.stop"=>  {"<=" => $stop},
-                       "me.stop"=> {">=" => $start},
-                     ],
-                     -and=>[
-                       "me.start"=>  {"<=" => $stop},
-                       "me.start"=> {">=" => $start},
-                     ],
-                   ],
-                 ],
-						     },
-                  {
-                    prefetch=>["locations", "feature_type"],
-                    #prefetch=>["locations", "dataset", "feature_type"],
-                    #prefetch=>["locations"],
-                    #prefetch=>["dataset"],
-                    #prefetch=>["feature_type"],
-                  }
+		 -and=>[
+			-or=>[
+			      -and=>[
+				     "me.stop"=>  {"<=" => $stop},
+				     "me.stop"=> {">=" => $start},
+				    ],
+			      -and=>[
+				     "me.start"=>  {"<=" => $stop},
+				     "me.start"=> {">=" => $start},
+				    ],
+			      -and=>[
+				     "me.start"=>  {"<=" => $start},
+				     "me.stop"=> {">=" => $stop},
+				    ],
+			     ],
+		       ],
+						    },
+						    {
+						     prefetch=>["locations", "feature_type"],
+						    }
 						   );
     return wantarray ? @feats : \@feats;
   }
