@@ -153,6 +153,11 @@ sub generate_chromosomes
 	my $height = $vert_spacer-$vert_spacer/1.5;
 	$max = $chrs->{$name}->{end} unless $max;
 	my $width = ($horz_spacer*8)*($chrs->{$name}->{end}/$max);
+	my $real_width = $horz_spacer+$width;
+	my $pos_word_length = (length $chrs->{$name}->{end})*($vert_spacer/5);
+	my $offset_width = ($real_width+$pos_word_length) - 300;
+	#print STDERR "offset width: ",$offset_width,"\n";
+	$real_width -= ($offset_width - 15) if $offset_width > 0; 
 	my ($cstart, $cend) = ($chrs->{$name}->{centromere_start}, $chrs->{$name}->{centromere_end});
 	$gd->rectangle($horz_spacer, $count*$vert_spacer, $horz_spacer+$width, $count*$vert_spacer+$height, $black);
 	$gd->arc($horz_spacer, $count*$vert_spacer+$height/2, $height, $height, 90, 270, $black);
@@ -162,7 +167,7 @@ sub generate_chromosomes
         $gd->stringFT($black, $FONTTT, $vert_spacer/5, 0, 5, $count*$vert_spacer, $name);
 #	$gd->string($FONT, 5, $count*$vert_spacer-$FONT->height, $name, $black);
 #	$gd->string($FONT, $horz_spacer-$FONT->width*(length($chrs->{$name}{start})+1), $count*$vert_spacer-$FONT->height, $chrs->{$name}->{start}, $black);
-	$gd->stringFT($black, $FONTTT, $vert_spacer/5, 0, $horz_spacer+$width, $count*$vert_spacer, $chrs->{$name}->{end});
+	$gd->stringFT($black, $FONTTT, $vert_spacer/5, 0, $real_width, $count*$vert_spacer, $chrs->{$name}->{end});
 	#$gd->string($FONT, $horz_spacer+$width+10, $count*$vert_spacer-$FONT->height, $chrs->{$name}->{end}, $black);
 	$self->draw_centromere($horz_spacer, $count*$vert_spacer, $width, $height, $cstart/$chrs->{$name}->{end}, $cend/$chrs->{$name}->{end}, $black) if $cstart && $cend;
 	$self->draw_features($chrs->{$name}, $horz_spacer, $count*$vert_spacer, $width, $height);
