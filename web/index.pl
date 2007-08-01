@@ -138,7 +138,7 @@ sub actions
 		   },
 		   {
 		    ID => 7,
-		    LOGO => qq{<a href="./CoGe/help/CoGe"><img src="/CoGe/picts/carousel/FAQ-logo.png" width="227" height="75" border="0"></a>},
+		    LOGO => qq{<a href="./docs/help/CoGe"><img src="/CoGe/picts/carousel/FAQ-logo.png" width="227" height="75" border="0"></a>},
 		    ACTION => qq{<a href="./docs/help/CoGe/">CoGe Faq</a>},
 		    DESC   => qq{What is CoGe?  This document covers some of the basics about what CoGe is, how it has been designed, and other information about the system.},
 		    SCREENSHOT => qq{<a href="./docs/help/CoGe"><img src="/CoGe/picts/preview/app_schema.png" border="0"></a>},
