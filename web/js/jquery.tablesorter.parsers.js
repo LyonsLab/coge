@@ -47,6 +47,17 @@ $.tablesorter.addParser({
 });
 
 $.tablesorter.addParser({
+	id: 'scientific',
+	is: function(s) {
+		return /^\de[\-]\d+$/.test(s);
+	},
+	format: function(s) {
+		return $.tablesorter.formatFloat(s);
+	},
+	type: 'numeric' 
+});
+
+$.tablesorter.addParser({
 	id: 'ipAddress',
 	is: function(s) {
 		return /^\d{2,3}[\.]\d{2,3}[\.]\d{2,3}[\.]\d{2,3}$/.test(s);
