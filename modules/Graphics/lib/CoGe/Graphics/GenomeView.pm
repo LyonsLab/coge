@@ -155,7 +155,7 @@ sub generate_chromosomes
 	my $width = ($horz_spacer*8)*($chrs->{$name}->{end}/$max);
 	my $real_width = $horz_spacer+$width;
 	my $pos_word_length = (length $chrs->{$name}->{end})*($vert_spacer/5);
-	my $offset_width = ($real_width+$pos_word_length) - 300;
+	my $offset_width = ($real_width+$pos_word_length) - $self->image_width;
 	#print STDERR "offset width: ",$offset_width,"\n";
 	$real_width -= ($offset_width - 15) if $offset_width > 0; 
 	my ($cstart, $cend) = ($chrs->{$name}->{centromere_start}, $chrs->{$name}->{centromere_end});
