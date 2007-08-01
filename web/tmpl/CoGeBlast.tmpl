@@ -1,92 +1,251 @@
 <TMPL_IF NAME="JAVASCRIPT">
-<script language="JavaScript" type="text/javascript" src="/CoGe/js/menu.js"></script>
-<!--<SCRIPT language="JavaScript" type="text/javascript" src="/CoGe/js/kaj.stable.js"></SCRIPT>-->
-<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.js"></SCRIPT>
-
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.js"></SCRIPT>
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.parsers.js"></SCRIPT>
+<!--<SCRIPT language="JavaScript" type="text/javascript" src="./js/metadata.js"></SCRIPT>-->
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/menu.js"></SCRIPT>
 <SCRIPT language="JavaScript">
 
 $(document).ready(function(){
-if (document.images) {
-//Preload Button Images
-ncbi_blast_inactive = new Image(); ncbi_blast_inactive.src = "/CoGe/picts/buttons/CoGeBlast/ncbi_blast/inactive.png";
-ncbi_blast_active = new Image(); ncbi_blast_active.src = "/CoGe/picts/buttons/CoGeBlast/ncbi_blast/active.png";
-ncbi_blast_pressed = new Image(); ncbi_blast_pressed.src = "/CoGe/picts/buttons/CoGeBlast/ncbi_blast/pressed.png";
-}
   radio_lock($('#bn')[0].checked);
-  blast_param_on_select($('#bn')[0].checked);
-  //alert($('#bn')[0].checked);
+  blast_param_on_select();
   get_displayFeature();
   blast_param([],[animate_params]);
   database_param([],['database']);
+  var seqview = <TMPL_VAR NAME=SEQVIEW> || 0;
+  if(seqview !=0){
+    var featid = <TMPL_VAR NAME=FEATID>;
+  if ((featid) && (featid!=0)){
+    pageObj.generate_seq_obj = generate_seq_obj(<TMPL_VAR NAME=DSID>,<TMPL_VAR NAME=UPSTREAM>,<TMPL_VAR NAME=DOWNSTREAM>,seqview,<TMPL_VAR NAME=CHR>,<TMPL_VAR NAME=RC>,featid);}
+  else{
+    pageObj.generate_seq_obj = generate_seq_obj(<TMPL_VAR NAME=DSID>,<TMPL_VAR NAME=UPSTREAM>,<TMPL_VAR NAME=DOWNSTREAM>,seqview,<TMPL_VAR NAME=CHR>,<TMPL_VAR NAME=RC>);}
+  }
+  //alert(pageObj.dsid);
 });
 
+function add_to_list(ds,org){
+  var check = $('#'+ds).val();
+  if (check){
+   alert('You have already added '+org+'.');
+   return;
+  }
+  var html = '<option id='+ds+' value='+ds+'>'+org+'</option>';
+  //alert(html);
+  $('#blank').remove();
+  $('#db_choice').append(html);
+  $('#db_choice').sortSelect();
+  counting();
+}
 
-function get_seq(url,radio) {
+jQuery.fn.checkCheckboxes = function()
+{
+	var returnWhat = jQuery([]);
+	this.each(
+		function()
+		{
+			var checked = jQuery("input[@type=checkbox]", this).each(
+				function()
+				{
+					this.checked = true;
+				}
+			).filter(":checked");
+			returnWhat = checked;
+		}
+	);
+
+		returnWhat = this;
+};
+
+function update_info_box(featname) {
+    $('#overlap_box').html('You have chosen to display the information for '+featname+'. You will be pleased to know that one day some useful info will be here.');
+}
+
+jQuery.fn.unCheckCheckboxes = function()
+{
+	var returnWhat = jQuery([]);
+	this.each(
+		function()
+		{
+			var unChecked = jQuery("input[@type=checkbox]", this).each(
+				function()
+				{
+					this.checked = false;
+				}
+			).filter(":not(:checked)");
+			returnWhat = unChecked;
+		}
+	);
+		returnWhat = this;
+};
+
+function generate_seq_obj(dsid,upstream,downstream,seqview,chr,rc,featid){
+  this.featid=featid;
+  this.dsid=dsid;
+  this.upstream=upstream;
+  this.downstream=downstream;
+  this.seqview=seqview;
+  this.chr=chr;
+  this.rc=rc;
+}
+
+function counting(){
+  var count = $('#db_choice').getLength();
+  $('.count').html('Database count: '+count);
+}
+
+function blastOff(){
+  var check = $('#db_choice').getLength();
+  if(($('#blank').val())||(check==0)){
+    alert('You have not selected any databases to blast. You must select at least one.');
+    $('#coge_blast').slideDown(pageObj.speed);
+    return;
+  }
+  $('.dropMenu').hide();
+  $('.bresults').slideToggle(pageObj.speed);
+  $('#blast_results').html('<font class="loading dna">Loading. . .</font>');
+  var params = get_params();
+  program = params.p;
+  expect = params.e;
+  job_title = params.j;
+  word_size = params.w;
+  comp = params.c;
+  matrix = params.m
+  match_score = params.mm;
+  gapcost = params.g;
+  seq = params.s;
+  var blastable_db = $('#db_choice').getLength(1);
+  //alert(blastable_db);
+  blastoff_search(['args__program','args__'+program,'args__expect','args__'+expect,'args__job_title','args__'+job_title,'args__wordsize','args__'+word_size,'args__comp','args__'+comp,'args__matrix','args__'+matrix,'args__matchscore','args__'+match_score,'args__gapcost','args__'+gapcost,'args__seq','args__'+seq,'args__blastable','args__'+blastable_db],[blastresults]);
+}
+
+// $(document).ready(function(){
+
+function blastresults(html){
+  $('#blast_results').html(html);
+  $(function(){
+  $("#overlap").tablesorter({		
+ 		sortColumn: 'name',			// Integer or String of the name of the column to sort by.
+		sortClassAsc: 'headerSortUp',		// Class name for ascending sorting action to header
+		sortClassDesc: 'headerSortDown',	// Class name for descending sorting action to header
+		headerClass: 'header',			// Class name for headers (th's)
+		widgets: ['zebra'],
+		});
+ });
+}
+
+function update_gapcost(){
+  var str = $('#match_score').val();
+  $('.gapcosts').hide();
+  var num1 = str.substr(0,1);
+  var num2 = str.substr(2);
+  $('#gapcosts_'+num1+num2).slideToggle(pageObj.speed);
+}
+
+$.fn.getLength = function(val){
+  var opt_length;
+  var blastable;
+  this.each(
+  	function()
+  	{
+  		var opts = this.options;
+  		opt_length = opts.length;
+  		blastable = opts[0].id;
+  		if (val){
+  		  for(var i=1;i<opts.length;i++)
+	  	  {
+	  		blastable += ","+opts[i].id;
+	  		//need to chopoff last comma
+	  	  }
+  		}
+  	}
+  );
+  if(val) return blastable;
+  else return opt_length;
+};
+
+$.fn.sortSelect = function(){
+  this.each(
+	  function()
+	  {
+	  	if(this.nodeName.toLowerCase() != "select"){
+	  	  return;}
+	  	var opts = this.options;
+	  	var sortArray = [];
+	  	for(var i=0;i<opts.length;i++)
+	  	{
+	  		sortArray[i] = {
+	  				v: opts[i].value,
+	  				t: opts[i].text,
+	  				d: opts[i].id,
+	  				}
+	  	}
+	  	sortArray.sort(
+	  			function(obj1,obj2)
+	  			{
+	  				obj1t = obj1.t.toLowerCase(),
+	  				obj2t = obj2.t.toLowerCase();
+	  				if(obj1t == obj2t){
+	  				  return 0;}
+	  				return obj1t < obj2t ? -1 : 1;
+	  			}
+	  	);
+	  	for(var i=0;i<opts.length;i++)
+	  	{
+	  		opts[i].id = sortArray[i].d;
+	  		opts[i].text = sortArray[i].t;
+	  		opts[i].value = sortArray[i].v;
+	  	}
+	  }
+	);
+	return this;
+};
+
+
+function get_params(){
+ radio = get_radio();
+ var word_size = $('#word_size').val();
+ var expect = $('#e_value').val();
+ var db = $('#blast_db').val();
+ var match_mismatch = $('#match_score').val();
+ var num1 = match_mismatch.substr(0,1);
+ var num2 = match_mismatch.substr(2);
+ var gapcost = $('#gapcosts_'+num1+num2).val();
+ var job_title = $('#job_title').val();
+ var program = $('#'+radio).val();
+
+ var matrix = $('#matrix').val();
+ var comp = $('#comp_adj').val();
+ var seq = $('#seq_box').val();
+ return {w : word_size, e : expect, db : db,g : gapcost,j : job_title,p : program,mm: match_mismatch,m : matrix,c : comp,s : seq};
+}
+
+function get_seq(url) {
  if (url == 1)
   {alert('You have not selected a BLAST program! Please select a program to run.');}
  else {
- seq = $('#seq_box').val();
+ var params = get_params();
+ seq = params.s;
  seq = seq.replace(/\n/,'%0D');
  //alert('seq: '+seq);
- word_size = $('#word_size').val();
- expect = $('#e_value').val();
- //alert(radio);
- db = $('#blast_db').val();
- exist = $('#gap_exist').val();
- extent = $('#gap_ext').val();
- gapcost = exist+' '+extent;
- job_title = $('#job_title').val();
+ db = params.db;
+ expect = params.e;
+ job_title = params.j;
+ word_size = params.w;
+ comp = params.c;
+ matrix = params.m
+ match_score = params.mm;
+ 
  url = url+'&DATABASE='+db+'&EXPECT='+expect+'&QUERY='+seq+'&JOB_TITLE='+job_title+'&WORD_SIZE='+word_size;
- //alert(url);
- //+'&DATABASE='+db;
- //alert(''+radio);
- program = $('#'+radio).val();
- //alert(program);
+ 
  if (program == 'blastn') {
- nuc_reward = $('#match_score').val();
- nuc_penalty = $('#mismatch_score').val();
- match_score = nuc_reward+','+nuc_penalty;
- //alert('I ran!');
- window.open(url+'&MATCH_SCORES='+match_score);
+   window.open(url+'&MATCH_SCORES='+match_score);
  }
-//alert(''+url);
+
 else {
- matrix = $('#matrix').val();
- comp = $('#comp_adj').val();
- //alert(comp);
- if (comp) {
-  window.open(url+'&MATRIX_NAME='+matrix+'&COMPOSITION_BASED_STATISTICS='+comp);}
- else {
- window.open(url+'&MATRIX_NAME='+matrix);}
+ if ($('#comp_adj').is(':hidden')) {window.open(url+'&MATRIX_NAME='+matrix);}
+ else {window.open(url+'&MATRIX_NAME='+matrix+'&COMPOSITION_BASED_STATISTICS='+comp);}
  }
 }
 }
-
-function speed () {
- var speedy = $("#animation_speed").val();
- if (!speedy) speedy = 0;
- speedy = speedy*1; // make sure speedy is a number according to javascript
- return speedy;
-}
-
-function animate_section(name, style, speedy) {
-  if (speedy == undefined) speedy = speed();
-  if (!style) style = "toggle";
-  if (!speedy) {
-    if ((style == "show") || style == "slideDown" || style == "fadeIn") {$(name).show();}
-    else if ((style == "hide") || style == "slideUp" || style == "fadeOut") {$(name).hide();}
-    else {$(name).toggle();}
-   }
-  else if (style == "toggle") {$(name).toggle(speedy);}
-  else if (style == "hide") {$(name).hide(speedy);}
-  else if (style == "show") {$(name).show(speedy);}
-  else if (style == "slideToggle") {$(name).slideToggle(speedy);}
-  else if (style == "slideUp") {$(name).slideUp(speedy);}
-  else if (style == "slideDown") {$(name).slideDown(speedy);}
-  else if (style == "fadeIn") {$(name).fadeIn(speedy);}
-  else if (style == "fadeOut") {$(name).fadeOut(speedy);}
-  return speedy;
- }
 
 function radio_lock(display) {
   if (display == false) {
@@ -100,112 +259,49 @@ function radio_lock(display) {
 }
 
 function select_blast() {
-  radio = $('#bn')[0].checked;
+  radio = get_radio();
+  //alert(radio);
+  get_url([radio],[get_seq]);
+}
+
+function get_radio(){
+   var radio = $('#bn')[0].checked;
   if (radio == true){
    radio = "blast_type_n";}
   else{
    radio = "blast_type_p";}
-  alert(radio);
-  //get_url([radio,'bn'],[get_seq]);
-}
-
-function changeColor(id, color) {
-  document.getElementById(id).style.color = color;
-}
-
-function activeButton (button_name){
-  document.images[button_name].src = eval(button_name+"_active.src");
-}
-
-function inactiveButton (button_name){
-  document.images[button_name].src = eval(button_name+"_inactive.src");
-}
-
-function pressedButton (button_name){
- document.images[button_name].src = eval(button_name+"_pressed.src");
+  return radio;
 }
 
 function check_seq_for_blast() {
- accn = $('#accn_select').val() || 0;
- dsid = $('#dsid').val() || 0;
- featid = $('#featid').val() || 0;
- chr = $('#chr').val() || 0;
+ dsid = pageObj.dsid;
+ featid = pageObj.featid;
+ chr = pageObj.chr;
 // radio2 = kaj.GS('bn');
 // alert('bn');
- type_name = $('#Type_name').val() || $('#featid').val() || 0; 
- if ((accn && dsid && type_name) || (chr && dsid)) {
   if (featid) {
-   get_sequence(['accn_select','featid','dsid','bn', 'seqview', 'upstream','downstream','rc'],['seq_box']);
+   get_sequence(['args__'+featid,'args__'+dsid,'bn', 'args__'+pageObj.seqview, 'args__'+pageObj.upstream,'args__'+pageObj.downstream,'args__'+pageObj.rc],['seq_box']);
   }
   else if (chr) {
-   get_sequence(['accn_select','chr','dsid','bn', 'seqview', 'upstream','downstream'],['seq_box']);
+   get_sequence(['args__'+chr,'args__'+dsid,'bn', 'args__'+pageObj.seqview, 'args__'+pageObj.upstream,'args__'+pageObj.downstream],['seq_box']);
    }
   else {
 // alert('Im being called!'+accn+dsid+type_name);
- get_sequence(['accn_select','Type_name','dsid','bn'],['seq_box']);}
+  return;
+  }
 }
-}
- 
-// function search_chain(val) {
-//  minlen = 4;
-//  if ((val == 1) && ($('#accn').val().length > minlen)){
-//    return;
-//  } 
-//  $('#DS_title').val('');
-//  $('#FT_title').val('');
-//  $('#accn_list').val('<input type="hidden" id="accn_select">');	
-//  $('#Source').val('<input type="hidden" id="dsid">');	
-//  $('#FeatType').val('<input type="hidden" id="Type_name">');	
-//  if (val == 1 || $('#accn').val().length > minlen) {
-// //   kaj.GS('DS_title','<font class="loading">Searching. . .</font>');// for "'+kaj.GS('accn')+'" type '+''+'. . .</font>');
-//    cogesearch(['accn','type', 'org'],[source_search_chain]); 
-//  }
-// }
-// 
-// function source_search_chain (val1) {
-//  $('#DS_title').val('');
-//  $('#FT_title').val('');
-//  $('#Source').val('<input type="hidden" id="dsid"><font class="loading">Loading. . .</font>');	
-//  $('#FeatType').val('<input type="hidden" id="Type_name">');		
-//  if (val1) {$('#accn_list').val(val1);}
-//  source_search(['accn_select'], [get_types_chain]);
-// }
-// 
-// function get_types_chain (val1, val2) {
-//  $('#FT_title').val('');
-//  $('#FeatType').val('<input type="hidden" id="Type_name"><font class="loading">Loading. . .</font>');	
-//  if (val1) {$('#Source').val(val1);}
-// // if (val2) {kaj.GS('DS_title', "Dataset");}
-//  get_types(['accn_select', 'dsid'],[get_anno_chain]);	
-// }
-// 
-// function get_anno_chain (val1, val2) {
-//  if (val1) {$('#FeatType').val(val1)};
-// // if (val2) {kaj.GS('FT_title', "Type Name");}
-//  as = $('#accn_select').val();
-// // v = kaj.G('version');
-//  tn = $('#Type_name').val();
-//  $('#anno_title').val("Feature Annotations");
-//  get_sequence(['accn_select', 'Type_name', 'dsid'],['seq_box']);
-//  get_pretty_print(['accn_select','Type_name', 'dsid'],['pretty_print_anno']);
-// }
 
-function blast_param_on_select(boolean) {
- if (boolean == true){
-  var radio = "blast_type_n";}
- else{
-   var radio = "blast_type_p";}
+function blast_param_on_select() {
+ radio = get_radio();
  program = $('#'+radio).val();
  //alert(''+program);
  database_param([radio],['database']);
  if ((program == 'blastx') || (program == 'tblastx')) {
  //alert('Program is true!');
-  $('#program_type').val("blast_type_p");
-  blast_param(['program_type','program_type'],[animate_params]);
+  blast_param(['args__'+"blast_type_p",'args__'+"blast_type_p"],[animate_params]);
   }
   else if ((program == 'blastp') || (program == 'tblastn')) {
-  $('#program_type').val("blast_type_p");
-  blast_param(['program_type'],[animate_params]);}
+  blast_param(['args__'+"blast_type_p"],[animate_params]);}
   else {
    blast_param([],[animate_params]);}
 }
@@ -217,6 +313,9 @@ function animate_params (html){
 }
 
 function get_displayFeature(){
+if (!$('#feature_display').val()){
+  return;
+}
 var stuff = $('#pretty_print_anno').html();
 var check = 0;
 if ($('#feature_display')[0].checked) {
@@ -224,8 +323,12 @@ if ($('#feature_display')[0].checked) {
 if (stuff){
  toggleFeature("",check);}
 else if (check){
-get_pretty_print(['accn_select','featid', 'dsid'],[toggleFeature]);}
+get_pretty_print(['args__'+pageObj.featid, 'args__'+pageObj.dsid],[toggleFeature]);}
+}
 
+function get_organism_name_chain(val)
+{
+ get_orgs(['args__'+val], ['org_list']);	 
 }
 
 function toggleFeature(html,check) {
@@ -242,17 +345,6 @@ else {
 animate_section("#pretty_print_anno", "hide");
 }
 }
-/*
-function fill_param_on_start() {
-  blast_param([],['pro_or_nu_param'])
-};
-
-function fill_db_param_on_start() {
-  database_param([],['database']);
-}
-
-fill_param_on_start();
-fill_db_param_on_start();*/
 
 </SCRIPT>
 </TMPL_IF>
@@ -260,10 +352,54 @@ fill_db_param_on_start();*/
 <TMPL_IF NAME="BLAST_FRONT_PAGE">
 <TABLE width=100%>
  <TR>
+ <TD><DIV id=blast_results></DIV></TD>
+ </TR>
+</TABLE>
+<TABLE>
+ <TR>
+   <TD>
+    <input type="button" value="CoGe BLAST" onClick="blastOff();">
+   </TD>
+   <TD>
+     <a href="#" id="ncbi_blast" onClick="select_blast()"><span>NCBI BLAST</span></a>
+   </TD>
+  </TR>
+</TABLE>
+<TABLE width=100%>
+ <TR>
+  <TD>
+  <TH colspan="3">
+  <DIV class="cogeblast_opts">
+   <DIV id = "co" class="topItem" onMouseOver="$('#co').removeClass('topItem').addClass('topItemSelected');" onMouseOut="$('#co').removeClass('topItemSelected').addClass('topItem');" onClick='animate_section("#coge_blast", "slideToggle")'>CoGe BLAST Options:</DIV>
+   <DIV class="dropMenu" id="coge_blast" style="display: none">
+   <TABLE class="list" >
+       <TR>
+          <TD>
+   	<DIV id="org_name"><TMPL_VAR NAME="ORG_NAME"></DIV>
+   	<DIV id="blah">Organism Name: <input type="text" size=10 value="" name = "org_name" id="org_name" onKeyUp='get_organism_name_chain(this.value);'></DIV>
+   	<DIV id="org_list"><TMPL_VAR NAME="ORG_LIST"></DIV>
+   	  </TD>
+   	  <TD valign="middle" align=middle>
+   	  <input type="button" id=add value="Add &rarr;  " onClick="get_from_id(['org_id'],[add_to_list]);">
+   	  <input type="button" style="display: none" id=remove value="&larr; Remove" onClick="$('#'+$('#db_choice').val()).remove();counting();">
+   	  </TD>
+           <TD>
+              <div id=db_title>Organism Database(s) to BLAST:</DIV>
+              <font class="small count">Database count: 0</font>
+              <DIV id=db_select><SELECT id="db_choice" SIZE="8" MULTIPLE onClick="$('#add').hide(0);$('#remove').show(0);">
+              <option id=blank value=null>No Database Selected</option>
+              </SELECT></DIV>
+           </TD>
+          </TR>
+         </TABLE>
+</DIV>
+</TD>
+ </TR>
+ <TR>
   <TD>
    <TH colspan="3">
    <DIV class="mainDiv">
-   <DIV id = "dr" class="topItem" onMouseOver="changeColor('dr','#000099'); " onMouseOut="changeColor('dr','#009900');" onClick='animate_section("#query_seqs", "slideToggle")'>Query Sequence(s):</DIV>
+   <DIV id = "dr" class="topItem" onMouseOver="$('#dr').removeClass('topItem').addClass('topItemSelected');" onMouseOut="$('#dr').removeClass('topItemSelected').addClass('topItem');" onClick='animate_section("#query_seqs", "slideToggle")'>Query Sequence(s):</DIV>
    <DIV class="dropMenu" id="query_seqs">
    <DIV class="subMenu" style="display:inline;">
    <TABLE> 
@@ -275,10 +411,10 @@ fill_db_param_on_start();*/
        <TABLE>
        <TR>
         <TD valign="top">
-         <label><input id=bn type=radio name=blast value="blast_type_n" checked="" onClick="radio_lock($('#bn')[0].checked);check_seq_for_blast();blast_param_on_select($('#bn')[0].checked);">Nucleotide Sequence</label>
+         <label><input id=bn type=radio name=blast value="blast_type_n" checked="" onClick="radio_lock($('#bn')[0].checked);check_seq_for_blast();blast_param_on_select();">Nucleotide Sequence</label>
          <br>
           <div id=select_n>
-           <select name=blasttype id=blast_type_n onChange="blast_param_on_select($('#bn')[0].checked)">
+           <select name=blasttype id=blast_type_n onChange="blast_param_on_select()">
             <optgroup label="--- Select BLAST Type ---">
             <option value = "blastn"> blastn
             <option value = "blastx"> blastx
@@ -288,7 +424,7 @@ fill_db_param_on_start();*/
            <br>
           </div>
          <br>
-         <label><input id=bn type=radio name=blast value="blast_type_p" onClick="radio_lock($('#bn')[0].checked);check_seq_for_blast();blast_param_on_select($('#bn')[0].checked)">Protein Sequence</label>
+         <label><input id=bn type=radio name=blast value="blast_type_p" onClick="radio_lock($('#bn')[0].checked);check_seq_for_blast();blast_param_on_select()">Protein Sequence</label>
          <br>
           <div id=select_p>
            <select name=blasttype id=blast_type_p>
@@ -300,34 +436,10 @@ fill_db_param_on_start();*/
            <br>
           </div>
          <br>
-         <a href="#" onMouseOver="activeButton('ncbi_blast')" onMouseOut="inactiveButton('ncbi_blast')" onMouseDown="pressedButton('ncbi_blast')" onMouseUp="inactiveButton('ncbi_blast')" onClick="select_blast()">
-         <img name="ncbi_blast" src="/CoGe/picts/buttons/CoGeBlast/ncbi_blast/inactive.png" width="87" height="27" border="0" alt="javascript button">
-         </a>
          <!--<input type=image name= onClick="get_radio(['args__bn','bn'],[select_blast])">-->
          </TR>
          </TABLE>
       </TD>
-      <TD>
-       <TABLE>
-        <TR>
-         <TD>
-          <DIV class="small">
-           Page Animations:
-          </DIV>
-         </TD>
-         <TD>
-          <DIV class="small">
-           <select id="animation_speed">
-            <option value=0>Off</option> 	
-            <option value=600>Slow</option>
-            <option selected value=400>Medium</option> 
-            <option value=200>Fast</option> 
-           </select>
-        </DIV>
-       </TD>
-      </TR>
-     </TABLE>
-    </TD>
    </TR>
    <TR align=left valign=top>
    <TMPL_IF NAME=DISPLAY_FEAT>
@@ -346,100 +458,20 @@ fill_db_param_on_start();*/
      <DIV id=pretty_print_anno></DIV>
     </TD>
     </TMPL_IF>    
-    <TD>
-    	<input type="hidden" id="accn_select" value="<TMPL_VAR NAME=FEATNAME>">
-    	<input type=hidden id=dsid value="<TMPL_VAR NAME=DSID>">
-    	<input type=hidden id=Type_name>
-       	<input type=hidden id=featid value="<TMPL_VAR NAME=FEATID>">
-       	<input type=hidden id=upstream value="<TMPL_VAR NAME=UPSTREAM>">
-       	<input type=hidden id=downstream value="<TMPL_VAR NAME=DOWNSTREAM>">
-       	<input type=hidden id=chr value="<TMPL_VAR NAME=CHR>">
-       	<input type=hidden id=seqview value="<TMPL_VAR NAME=SEQVIEW>">
-       	<input type=hidden id=rc value="<TMPL_VAR NAME=RC>">
-       	<input type=hidden id=program_type>
     </TR>
   </table>
    </DIV>
    </DIV>
    </DIV>
  </TR>
-<!-- <TR>-->
-<!--  <TD>
-   <TH colspan="3">
-    <DIV class="mainDiv">
-    <DIV id = "dr2" class="topItem" onMouseOver="Init(this); changeColor('dr2','#000099'); " onMouseOut="changeColor('dr2','#009900');">Select Feature to Blast:</DIV>
-    <DIV class="dropMenu">
-    <DIV class="subMenu" style="display:none;">
-    <TABLE>
-     <TR align=left valign=top>
-      <TH>Database Search
-       <TD>
-        <input type="text" name="accn" id="accn" tabindex="1"  size="10" onKeyup ="search_chain(0);"  onBlur="search_chain(1);"/>
-       </TD>
-     </TR>
-     <TR align=left valign=top>
-      <TH>Feature Type: 
-       <TD>
-        <select  name="type" id="type" onKeyup ="search_chain(0);"  onChange="search_chain(1);" />
-         <TMPL_LOOP NAME="TYPE_LOOP">
-          <TMPL_VAR NAME=TYPE> 
-         </TMPL_LOOP>
-        </SELECT>
-      </TR>
-      <TR align=left valign=top>
-       <TH>Organism:
-        <TD>
-         <select  name="org" id="org" onKeyup ="search_chain(0);"  onChange="search_chain(1);" />
-          <TMPL_LOOP NAME="ORG_LOOP">
-            <TMPL_VAR NAME=ORG> 
-          </TMPL_LOOP>
-         </SELECT>
-        </TD>
-        <TD valign=top>
-         <DIV id="DS_title"></DIV>
-        </TD>
-        <TD valign=top>
-         <DIV id="FT_title"></DIV>
-      </TR>
-      <TR valign=top>
-       <TD valign=top>
-        <DIV class="" id="accn_list"><input type="hidden" id="accn_select" value="<TMPL_VAR NAME=FEATNAME>"></DIV>
-       </TD>
-       <TD valign=top>
-        <DIV class="" id="Source"><input type=hidden id=dsid value="<TMPL_VAR NAME=DSID>"></DIV>
-       </TD>
-       <TD valign=top>
-        <DIV class="" id="FeatType"><input type=hidden id=Type_name></DIV>
-       </TD>-->
-<!--<SCRIPT language="Javascript">
-  if ($('#accn').val()) {search_chain(0);};
-</SCRIPT>
-   <TR>
-  <span class="subItem"></span>
-  <span class="subItem"></span>
-  <span class="subItem"></span>
-  <span class="subItem"></span>
-  <span class="subItem"></span>
-  <span class="subItem"></span>
-  <span class="subItem"></span>
-  <span class="subItem"></span>
-  <span class="subItem"></span>
-  <span class="subItem"></span>
-  <span class="subItem"></span>
-   </TR>	
-  </TABLE>
- </DIV>
- </DIV>
- </DIV>
- </TR>-->
  <TR>
   <TD>
   <TH colspan="3">
    <DIV class="mainDiv">
-   <DIV id = "dr3" class="topItem" onMouseOver="changeColor('dr3','#000099');" onMouseOut="changeColor('dr3','#009900');" onClick='animate_section("#blast_params", "slideToggle")'>Additional BLAST Options:</DIV>
+   <DIV id = "dr3" class="topItem" onMouseOver="$('#dr3').removeClass('topItem').addClass('topItemSelected');" onMouseOut="$('#dr3').removeClass('topItemSelected').addClass('topItem')" onClick='animate_section("#blast_params", "slideToggle")' >Additional BLAST Options:</DIV>
    <DIV class="dropMenu" id="blast_params">
    <DIV class="subMenu" style="display:inline;">
-   <TABLE>
+   <TABLE width=100% id=stuff>
     <TR>
      <TD valign="top">
       <TH align=left valign="top"><u>BLAST Parameters</u><br>
@@ -473,6 +505,7 @@ fill_db_param_on_start();*/
        </TR>
       </TABLE>
      </TD>
+     <td width="1" bgcolor="#99ff99"/>
      <TD valign="top">
       <TH align=left valign="top"> <u>BLAST Scoring</u><br>
       <TABLE>
@@ -503,23 +536,68 @@ fill_db_param_on_start();*/
        <TR>
 	<TD>
 	  Gap Costs:
-       </TR>
-       <TR>
-	<TD align=right>
-	  <DIV class="small">Existence Penalty</DIV>
-	</TD>
+       </TD>
 	<TD>
-	  <input type=text id=gap_exist value=5 size="7">
-       </TR>
-       <TR>
-        <TD align=right>
-	 <DIV class="small">Extension Penalty</DIV>
-	</TD>
-	<TD>
-	 <input type=text id=gap_ext value=2 size="7">
-       </TR>	  
+	  <select id="gapcosts_1-2" class="gapcosts" style="display: block">
+	  	<option value = "0 0"  >Linear</option>   
+		<option value = "5 2"  >Existence:  5 Extension: 2</option>				
+		<option value = "2 2"  >Existence:  2 Extension: 2</option>				
+		<option value = "1 2"  >Existence:  1 Extension: 2</option>
+		<option value = "0 2"  >Existence:  0 Extension: 2</option>
+		<option value = "3 1"  >Existence:  3 Extension: 1</option>		
+		<option value = "2 1"  >Existence:  2 Extension: 1</option>		
+		<option value = "1 1"  >Existence: 1 Extension: 1</option>				
+	</select>
+	<select id="gapcosts_1-3" class="gapcosts" style="display: none">
+		<option value = "0 0" >Linear</option>   
+		<option value = "5 2" >Existence:  5 Extension: 2</option>				
+		<option value = "2 2"  >Existence:  2 Extension: 2</option>		
+		<option value = "1 2"  >Existence:  1 Extension: 2</option>		
+		<option value = "0 2"  >Existence:  0 Extension: 2</option>		
+		<option value = "2 1"  >Existence:  2 Extension: 1</option>		
+		<option value = "1 1"  >Existence: 1 Extension: 1</option>	
+	</select>
+
+	<select id="gapcosts_1-4" class="gapcosts" style="display: none">
+		<option value = "0 0" >Linear</option>   
+		<option value = "5 2" >Existence:  5 Extension: 2</option>					
+		<option value = "1 2"  >Existence:  1 Extension: 2</option>		
+		<option value = "0 2"  >Existence:  0 Extension: 2</option>		
+		<option value = "2 1"  >Existence:  2 Extension: 1</option>		
+		<option value = "1 1"  >Existence: 1 Extension: 1</option>	
+	</select>
+	<select id="gapcosts_2-3" class="gapcosts" style="display: none">
+		<option value = "0 0" >Linear</option>   
+		<option value = "4 4"  >Existence:  4 Extension: 4</option>		
+		<option value = "2 4"  >Existence:  2 Extension: 4</option>		
+		<option value = "0 4"  >Existence:  0 Extension: 4</option>		
+		<option value = "3 3"  >Existence:  3 Extension: 3</option>		
+		<option value = "6 2"  >Existence:  6 Extension: 2</option>		
+		<option value = "5 2" >Existence:  5 Extension: 2</option>		
+		<option value = "4 2"  >Existence: 4 Extension: 2</option>		
+		<option value = "2 2"  >Existence:  2 Extension: 2</option>				
+	</select>
+	<select id="gapcosts_4-5" class="gapcosts" style="display: none">
+		<option value = "0 0" >Linear</option>   
+		<option value = "12 8" >Existence:  12 Extension: 8</option>		
+		<option value = "6 5"  >Existence:  6 Extension: 5</option>		
+		<option value = "5 5"  >Existence:  5 Extension: 5</option>		
+		<option value = "4 5"  >Existence:  4 Extension: 5</option>		
+		<option value = "3 5"  >Existence:  3 Extension: 5</option>	
+	</select>
+	<select id="gapcosts_1-1" class="gapcosts" style="display: none">
+		<option value = "5 2"  >Existence:  5 Extension: 2</option>							
+		<option value = "3 2"  >Existence:  3 Extension: 2</option>		
+		<option value = "2 2"  >Existence:  2 Extension: 2</option>		
+		<option value = "1 2"  >Existence:  1 Extension: 2</option>		
+		<option value = "0 2"  >Existence:  0 Extension: 2</option>		
+		<option value = "4 1"  >Existence:  4 Extension: 1</option>		
+		<option value = "3 1"  >Existence:  3 Extension: 1</option>		
+		<option value = "2 1"  >Existence:  2 Extension: 1</option>	
+      </TR>
       </TABLE>
      </TD>
+     <td width="1" bgcolor="#99ff99"/>
      <TD valign="top">
     <DIV id=pro_or_nu_param></DIV>
     </TMPL_IF>
@@ -539,26 +617,17 @@ fill_db_param_on_start();*/
       <TABLE>
        <TR>
 	<TD valign="top">
-	 Nucleotide Match/Mismatch Scores:
-       </TR>
-       <TR>
-	<TD align=right>
-	 <TABLE>
-	  <TR>
-	   <TD align=right>
-	    <DIV class="small"> Match Score</DIV>
-	   </TD>
-	   <TD>
-	    <input type=text id=match_score value=5 size="7">
-          </TR>
-          <TR>
-           <TD align=right>
-	    <DIV class="small">Mismatch Score</DIV>
-  	   </TD>
-	   <TD>
-	    <input type=text id=mismatch_score value=-2 size="7">
-          </TR>
-	 </TABLE>
+	 Match/Mismatch Scores:
+         </TD>
+         <TD>
+	    <select id=match_score name=match_score onchange="update_gapcost()">
+	     <option selected="selected" value="1,-2">1,-2</option>
+	     <option value="1,-3">1,-3</option>
+	     <option value="1,-4">1,-4</option>
+	     <option value="2,-3">2,-3</option>
+     	     <option value="4,-5">4,-5</option>
+	     <option value="1,-1">1,-1</option>
+	 </TD>
        </TR>
       </TABLE>
     </TMPL_IF>
@@ -645,4 +714,94 @@ fill_db_param_on_start();*/
 	<option value="dbsts">Sequence tagged sites (dbsts)</option>
 	<option value="wgs">Whole-genome shotgun reads (wgs)</option>
 	<option value="env_nt">Environmental samples (env_nt)</option>
+   </TMPL_IF>
+   
+   
+   <TMPL_IF NAME="OVERLAP_FEATURE_IF">
+   <TABLE id="overlap" cellspacing="2" class="resultborder">
+   	<THEAD>
+         <TR>
+          <TH>  </TH>
+          <TH class="header">Name</TH>
+          <TH class="header">Length</TH>
+          <TH class="header">E-Value</TH>
+          <TH class="header">Percent ID</TH>
+          <TH class="header">Score</TH>
+         </TR>
+         </THEAD>
+         <TBODY>
+         <TMPL_LOOP NAME=FEATURE_TABLE>
+         <TR id="table_row<TMPL_VAR NAME=FID>" onclick="update_info_box('<TMPL_VAR NAME=FID>')" onmouseover="$('#table_row<TMPL_VAR NAME=FID>').addClass('highlight_tablerows');" onmouseout="$('#table_row<TMPL_VAR NAME=FID>').removeClass('highlight_tablerows');">
+          <TD><input type=checkbox id="feature_checkbox<TMPL_VAR NAME=FID>" name="feature_checkbox" value="<TMPL_VAR NAME=FID>"></TD>
+          <TD><TMPL_VAR NAME=FEATURE_NAME></TD>
+          <TD><TMPL_VAR NAME=FEATURE_LENGTH></TD>
+          <TD><TMPL_VAR NAME=FEATURE_EVAL></TD>
+          <TD><TMPL_VAR NAME=FEATURE_PID></TD>
+          <TD><TMPL_VAR NAME=FEATURE_SCORE></TD>
+         </TR>
+        </TMPL_LOOP>
+        </TBODY>
+        </TABLE>
+         
+   </TMPL_IF>
+   
+   <TMPL_IF NAME=CHROMOSOMES_IF>
+       <TMPL_LOOP NAME=CHROMOSOME_LOOP>
+         <TMPL_VAR NAME=DB_NAME>
+         <TMPL_VAR NAME=CHR_IMAGE>
+         <br>
+       </TMPL_LOOP>
+   </TMPL_IF>
+   
+<TMPL_IF NAME=BLAST_RESULTS>
+<TABLE width=100%>
+  <TR>
+    <TD>
+   <TH colspan="3">
+   <DIV class="mainDiv bresults">
+   <DIV id = "br" class="topItem bresults" style="display: none" onMouseOver="$('#br').removeClass('topItem').addClass('topItemSelected');" onMouseOut="$('#br').removeClass('topItemSelected').addClass('topItem');" onClick='animate_section("#results", "slideToggle")'>Blast Results:</DIV>
+   <DIV class="dropMenu bresults" id="results">
+   <DIV class="subMenu" style="display:inline;">
+   <TABLE width=100%>
+    <TR>
+     <TD align=left valign="top" >
+     <DIV id=chromosomes class="bresultdiv resultborder">
+     <TMPL_VAR NAME=CHROMOSOMES>
+      </DIV>
+      Color HSP Hits by: 
+      <select name=color_hsp id=color_hsp>
+            <option value = "0"> Percent Identity </option>
+            <option value = "1"> E-value </option>
+            <option value = "2"> Score </option>
+            <option value = "3"> Length </option>
+     </select>
+      </TD>
+      <TD>
+       <DIV id=result_visual valign="top">
+        <DIV id=subject_image>Picture Here</DIV>
+        <BR>
+        <DIV id=query_image>Another Picture Here</DIV>
+        <BR>
+        <BR>
+        <DIV id=image_info class="resultborder">HSP info box.</DIV>
+        </DIV>
+      </TD>
+      <TD>
+       <DIV id=result_features align=right valign="top">
+         <form id=feature_list class="bresultdiv">
+         <TMPL_VAR NAME="OVERLAP_FEATURE_LIST">
+         <input type=button value="Select All" onClick="$('#feature_list').checkCheckboxes()">  <input type=button value="Select None" onClick="$('#feature_list').unCheckCheckboxes()">
+         </form>
+         <br>
+         <DIV id=feature_info class="bresultdiv"><textarea class="backbox resultborder" readonly type="textarea" name="overlap_box" id ="overlap_box" wrap=off cols=55 rows=10>Overlap Features info box</textarea></DIV>
+       </DIV>
+     </TD>
+    <TR>
+   </TABLE>
+   </TD>
+</DIV>
+</DIV>
+</DIV>
+  </TR>
+</TABLE>
    </TMPL_IF>
