@@ -42,7 +42,7 @@ delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 $ENV{'LAGAN_DIR'} = '/opt/apache/CoGe/bin/lagan/';
 #for dialign
 $ENV{'DIALIGN2_DIR'} = '/opt/apache/CoGe/bin/dialign2_dir/';
-use vars qw( $DATE $DEBUG $BL2SEQ $BLASTZ $LAGAN $CHAOS $DIALIGN $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge $NUM_SEQS $MAX_SEQS $BASEFILE $BASEFILENAME $LOGFILE $SQLITEFILE $REPEATMASKER);
+use vars qw( $DATE $DEBUG $BL2SEQ $BLASTZ $LAGAN $CHAOS $DIALIGN $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge $NUM_SEQS $MAX_SEQS $BASEFILE $BASEFILENAME $LOGFILE $SQLITEFILE $REPEATMASKER %RESTRICTED_ORGS);
 $BL2SEQ = "/opt/bin/bio/bl2seq ";
 $BLASTZ = "/usr/bin/blastz ";
 $LAGAN = "/opt/apache/CoGe/bin/lagan/lagan.pl";
@@ -65,6 +65,10 @@ $FORM = new CGI;
 $CGI::POST_MAX= 60 * 1024 * 1024; # 24MB
 $CGI::DISABLE_UPLOADS = 0; 
 ($USER) = CoGe::Accessory::LogUser->get_user();
+if (!$USER || $USER =~ /public/i)
+  {
+    $RESTRICTED_ORGS{papaya} = 1;
+  }
 my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
 $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 #$coge->storage->debugobj(new DBIxProfiler());
@@ -72,7 +76,7 @@ $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 #print STDERR Dumper $USER;
 
 my %ajax = CoGe::Accessory::Web::ajax_func();
-#$ajax{dataset_search} = \&dataset_search_for_feat_name; #override this method from Accessory::Web
+$ajax{dataset_search} = \&dataset_search_for_feat_name; #override this method from Accessory::Web for restricted organisms
 my $pj = new CGI::Ajax(
 		       run=>\&run,
 		       loading=>\&loading,
@@ -2330,4 +2334,61 @@ sub number_of_runs
 	$num--;
       }
     return $total;
+  }
+
+sub dataset_search_for_feat_name
+  {
+    my ($accn, $num, $dsid) = @_;
+    $num = 1 unless $num;
+    return ( qq{<input type="hidden" id="dsid$num">\n<input type="hidden" id="featid$num">}, $num )unless $accn;
+    my $html;
+    my %sources;
+    my $rs = $coge->resultset('Dataset')->search(
+						  {
+						   'feature_names.name'=> $accn,
+						  },
+						  {
+						   'join'=>{
+							    'features' => 'feature_names',
+							   },
+							    
+						   'prefetch'=>['datasource', 'organism'],
+						  }
+						 );
+    while (my $ds = $rs->next())
+      {
+	my $name = $ds->name;
+	my $ver = $ds->version;
+	my $desc = $ds->description;
+	my $sname = $ds->datasource->name;
+	my $ds_name = $ds->name;
+	my $org = $ds->organism->name;
+	my $title = "$org: $ds_name ($sname, v$ver)";
+	next if $RESTRICTED_ORGS{$org};
+	$sources{$ds->id} = {
+			     title=>$title,
+			     version=>$ver,
+			    };
+      }
+     if (keys %sources)
+       {
+ 	$html .= qq{
+ <SELECT name = "dsid$num" id= "dsid$num" onChange="feat_search(['accn$num','dsid$num', 'args__$num'],['feat$num']);">
+ };
+ 	foreach my $id (sort {$sources{$b}{version} <=> $sources{$a}{version}} keys %sources)
+ 	  {
+ 	    my $val = $sources{$id}{title};
+ 	    $html  .= qq{  <option value="$id"};
+	    $html .= qq{ selected } if $dsid && $id == $dsid;
+	    $html .= qq{>$val\n};
+ 	  }
+ 	$html .= qq{</SELECT>\n};
+ 	my $count = scalar keys %sources;
+ 	$html .= qq{<font class=small>($count)</font>};
+       }
+     else
+       {
+ 	$html .= qq{<span class=container>Accession not found.</span> <input type="hidden" id="dsid$num">\n<input type="hidden" id="featid$num">\n};	
+       }    
+    return ($html,$num);
   }
