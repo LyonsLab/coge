@@ -54,17 +54,17 @@ function changeColor(id, color) {
   document.getElementById(id).style.color = color;
 }
 
-function activeButton (button_name){
-  document.images[button_name].src = eval(button_name+"_active.src");
-}
-
-function inactiveButton (button_name){
-  document.images[button_name].src = eval(button_name+"_inactive.src");
-}
-
-function pressedButton (button_name){
- document.images[button_name].src = eval(button_name+"_pressed.src");
-}
+// function activeButton (button_name){
+//   document.images[button_name].src = eval(button_name+"_active.src");
+// }
+// 
+// function inactiveButton (button_name){
+//   document.images[button_name].src = eval(button_name+"_inactive.src");
+// }
+// 
+// function pressedButton (button_name){
+//  document.images[button_name].src = eval(button_name+"_pressed.src");
+// }
 
 function switchPlusButton (check, change){
   if ($(check).is(':hidden')) {$(change).removeClass('plus').addClass('minus');}
@@ -111,6 +111,18 @@ var num_seqs = $("#num_seqs").val();
 for (var i =1; i<= num_seqs; i++)
   {
     dataset_search(['accn'+i,'args__'+i],[feat_search_chain]);
+  }
+}
+
+function check_spike(tblastx) {
+  var spike_val = $('#spike').val();
+  if (spike_val == 0 || tblastx == 1)
+  {
+    $('#blast_eval').css({ background: "#F7FFF7", color: "#000099" }).removeAttr("readonly");
+  }
+  else
+  {
+    $('#blast_eval').css({ background: "#F5F5F5", color: "#808080" }).attr("readonly","readonly").val(100);
   }
 }
 
@@ -199,6 +211,7 @@ else if (alignment == "tblastx")
   $("#blast_gapopen").val(11);
   $("#blast_gapextend").val(1);
   $("#blast_eval").val(10);
+  check_spike(1);
   animate_section(".blastn_options", "hide",0);
   animate_section("#blast_options", "slideDown");
   animate_section("#tblastx_options", "slideDown");
@@ -210,7 +223,8 @@ else if (alignment == 'blastn')
   $("#blast_gapextend").val(2);
   $("#blast_eval").val(100);
   if (spike == "undefined" || spike == 0) {spike = 15;} 	
-  $("#spike").val(spike);		
+  $("#spike").val(spike);
+  check_spike();		
   animate_section("#blast_options", "slideDown");
   animate_section(".blastn_options", "slideDown");
  }
@@ -482,7 +496,7 @@ function monitor_log(log)
   <td>(set to 0 to turn off):
   <tr align=left class=small>
   <td><li>Spike sequence length:
-  <td><input type="text" size="3" class="backbox" id="spike" value=<TMPL_VAR NAME=SPIKE_LEN>> nucleotides
+  <td><input type="text" size="3" class="backbox" id="spike" onkeyup="check_spike();" value=<TMPL_VAR NAME=SPIKE_LEN>> nucleotides
    </TR>
   </table>
  </DIV>
