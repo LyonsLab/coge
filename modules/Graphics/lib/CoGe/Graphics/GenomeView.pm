@@ -100,13 +100,16 @@ sub imagemap_features
 	    $map .= qq!<area coords="$xt, $y, $xt, $yt" !;
 	    $map .= "\n";
 	    $map .= qq!href="$feat->{link}" ! if $feat->{link};
-	    $map .= $js_1;
-	    $map .= $feat->{name} ."\\n";
-	    $map .= $feat->{desc} ."\\n" if $feat->{desc};
-	    $map .= "Start:  ".$feat->{start}."\\n";
-	    $map .= "End:    ".$feat->{end}."\\n";
-	    $map .= "Length: ".($feat->{end}-$feat->{start})."\\n";
-	    $map .= $js_2."\n";
+	    if ($onchange)
+	      {
+		$map .= $js_1;
+		$map .= $feat->{name} ."\\n";
+		$map .= $feat->{desc} ."\\n" if $feat->{desc};
+		$map .= "Start:  ".$feat->{start}."\\n";
+		$map .= "End:    ".$feat->{end}."\\n";
+		$map .= "Length: ".($feat->{end}-$feat->{start})."\\n";
+		$map .= $js_2."\n";
+	      }
 	    $map .= qq!alt="$feat->{name}">\n!;
 	  }
       }
