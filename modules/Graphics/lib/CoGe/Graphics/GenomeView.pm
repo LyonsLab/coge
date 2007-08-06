@@ -34,7 +34,7 @@ sub generate_imagemap
 	my $height = $vert_spacer-$vert_spacer/1.5;
 	$max = $chrs->{$name}->{end} unless $max;
 	my $width = ($horz_spacer*8)*($chrs->{$name}->{end}/$max);
-	my $locs = $self->imagemap_features($chrs->{$name}, $horz_spacer, $count*$vert_spacer, $width, $height);
+	my $locs = $self->imagemap_features(chr=>$chrs->{$name}, x=>$horz_spacer, 'y'=>$count*$vert_spacer, width=>$width, height=>$height);
 	$map .= $locs if $locs;
 	$count++;
       }
@@ -44,7 +44,14 @@ sub generate_imagemap
 
 sub imagemap_features
   {
-    my ($self, $chr, $x, $y, $width, $height) = @_;
+    my ($self) = shift;
+    my %opts = @_;
+    my $chr =$opts{chr};
+    my $x = $opts{x};
+    my $y = $opts{'y'};
+    my $width = $opts{width};
+    my $height = $opts{height};
+    my $onchange = $opts{onchange} || 0;
     my $feats = $self->features();
     my $up = 1;
     my $color_band_flag = $self->color_band_flag;
@@ -73,14 +80,19 @@ sub imagemap_features
 	  }
 	$map .= "\n";
 	$map .= qq!href="$feat->{link}" ! if $feat->{link};
-	$map .= $js_1;
-	$map .= $feat->{name} ."\\n";
-	$map .= $feat->{desc} ."\\n" if $feat->{desc};
-	$map .= "Start:  ".$feat->{start}."\\n";
-	$map .= "End:    ".$feat->{end}."\\n";
-	$map .= "Length: ".($feat->{end}-$feat->{start})."\\n";
-	$map .= $js_2."\n";
+	if ($onchange)
+	  {
+	    $map .= $js_1;
+	    $map .= $feat->{name} ."\\n";
+	    $map .= $feat->{desc} ."\\n" if $feat->{desc};
+	    $map .= "Start:  ".$feat->{start}."\\n";
+	    $map .= "End:    ".$feat->{end}."\\n";
+	    $map .= "Length: ".($feat->{end}-$feat->{start})."\\n";
+	    $map .= $js_2."\n";
+	  }
+	$map .= " ".$feat->{imagemap}." " if $feat->{imagemap};
 	$map .= qq!alt="$feat->{name}">\n!;
+
 	if ($color_band_flag)
 	  {
 	    my $xt = ($x+$feat->{end}/$chr->{end}*$width)+2;
@@ -118,6 +130,8 @@ sub generate_png
     open (OUT, ">$file_name") || die "Can't open $file_name for writing: $!";
     binmode OUT;
 #    my $gd = $self->gd;
+    $self->_gd(undef);
+    $self->_color_set(undef);
     $self->generate_chromosomes();
     $self->generate_legend() if $self->legend;
     print OUT $self->gd->png;
@@ -323,10 +337,9 @@ sub add_feature
     $chr = $self->get_chromosome($chr);
     my $link = $opts{'link'};
     my $color = $opts{'color'};
-#    $color = $self->get_color($color) if ref ($color) =~ /array/i;
-#    $color = $self->default_feature_color unless $color;
     my $desc = $opts{'desc'};
     my $up = $opts{'up'};
+    my $imagemap = $opts{imagemap};
     unless ($start && $end && $chr)
       {
 	warn "add_feature call failed -- must have valid start, end, and chromosome";
@@ -343,6 +356,7 @@ sub add_feature
 				     link=>$link,
 				     desc=>$desc,
 				     up=>$up,
+				     imagemap=>$imagemap,
 				 };
     return 1;
   }
