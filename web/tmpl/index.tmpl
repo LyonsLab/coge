@@ -61,6 +61,7 @@ $('#carousel').Carousel(
 }
 );
 
+
 function timing(num,stop){
   //alert(num);
   //alert("show_info(['args__'+num],[display_info]),800");
@@ -68,19 +69,24 @@ function timing(num,stop){
   if (stop == 1){
    clearTimeout(pageObj.time);}
   else{
-   pageObj.time = setTimeout("show_data("+num+")",600);
+   pageObj.time = setTimeout("show_summary("+num+")",600);
     }
   //$('#'+id).mouseout(clearTimeout(time));
 }
 
-function show_data(num){
-  $('.page_info').hide();
-  $('#page_info'+num).slideDown(pageObj.speed);
+
+function show_summary(id) {
+  $('#summary').hide();
+  var popup_size = $('#main').width() * (3/4);
+  var left_padding = ($(window).width() - popup_size) / 2;
+  var html = "<a href='#' onClick=\"$('#summary').slideToggle(pageObj.speed);\" style='float: right;'><img src='/CoGe/picts/delete.png' width='16' height='16' border='0'></a>";
+  html = html + '<br>' + $('#page_info'+id).html();
+  $('#summary').html(html).css("left",''+left_padding).css("top","300").width(popup_size).slideDown(pageObj.speed);
 }
 
 </SCRIPT>
 
-
+<div id=summary style="display:none;z-index: 1000;" class="image_window"></div>
 <div id=main style="display: none">
 <TMPL_IF NAME="LOGIN">
 <DIV id="message"><TMPL_VAR NAME="MESSAGE"></DIV>
@@ -105,13 +111,13 @@ function show_data(num){
   <TR>
     <TD align=center>
     	<div id="carousel">
-		<a href="/CoGe/GEvo.pl" onmouseover="timing(1)" onmouseout="timing(1,1)" title="GEvo"><img src="/CoGe/picts/carousel/GEvo-logo.png" width="100%" border=0/></a>
-		<a href="/CoGe/FeatView.pl" onmouseover="timing(2)" onmouseout="timing(2,1)" title="FeatView"><img src="/CoGe/picts/carousel/FeatView-logo.png" width="100%" border=0/></a>
-		<a href="/CoGe/MSAView.pl" onmouseover="timing(3)" onmouseout="timing(3,1)" title="MSAView"><img src="/CoGe/picts/carousel/MSAView-logo.png" width="100%" border=0/></a>
-		<a href="/CoGe/TreeView.pl" onmouseover="timing(4)" onmouseout="timing(4,1)" title="TreeView"><img src="/CoGe/picts/carousel/TreeView-logo.png" width="100%" border=0/></a>
-		<a href="/CoGe/GeLo.pl" onmouseover="timing(5)" onmouseout="timing(5,1)" title="GeLoView"><img src="/CoGe/picts/carousel/GeLo-logo.png" width="100%" border=0/></a>
-		<a href="/CoGe/CoGeBlast.pl" onmouseover="timing(6)" onmouseout="timing(6,1)" title="CoGeBlast"><img src="/CoGe/picts/carousel/CoGeBlast-logo.png" width="100%" border=0/></a>
-		<a href="/CoGe/docs/help/CoGe" onmouseover="timing(7)" onmouseout="timing(7,1)" title="CoGe FAQ"><img src="/CoGe/picts/carousel/FAQ-logo.png" width="100%" border=0/></a>
+		<a href="/CoGe/GEvo.pl" onmouseover="timing(1)" onmouseout="timing(1,1)" onclick="timing(1,1)" title="GEvo"><img src="/CoGe/picts/carousel/GEvo-logo.png" width="100%" border=0/></a>
+		<a href="/CoGe/FeatView.pl" onmouseover="timing(2)" onmouseout="timing(2,1)" onclick="timing(2,1)" title="FeatView"><img src="/CoGe/picts/carousel/FeatView-logo.png" width="100%" border=0/></a>
+		<a href="/CoGe/MSAView.pl" onmouseover="timing(3)" onmouseout="timing(3,1)" onclick="timing(3,1)" title="MSAView"><img src="/CoGe/picts/carousel/MSAView-logo.png" width="100%" border=0/></a>
+		<a href="/CoGe/TreeView.pl" onmouseover="timing(4)" onmouseout="timing(4,1)" onclick="timing(4,1)" title="TreeView"><img src="/CoGe/picts/carousel/TreeView-logo.png" width="100%" border=0/></a>
+		<a href="/CoGe/GeLo.pl" onmouseover="timing(5)" onmouseout="timing(5,1)" onclick="timing(5,1)" title="GeLoView"><img src="/CoGe/picts/carousel/GeLo-logo.png" width="100%" border=0/></a>
+		<a href="/CoGe/CoGeBlast.pl" onmouseover="timing(6)" onmouseout="timing(6,1)" onclick="timing(6,1)" title="CoGeBlast"><img src="/CoGe/picts/carousel/CoGeBlast-logo.png" width="100%" border=0/></a>
+		<a href="/CoGe/docs/help/CoGe" onmouseover="timing(7)" onmouseout="timing(7,1)" onclick="timing(7,1)" title="CoGe FAQ"><img src="/CoGe/picts/carousel/FAQ-logo.png" width="100%" border=0/></a>
 
 	</div>
     </TD>
@@ -143,7 +149,6 @@ function show_data(num){
     </TD>
     <td width=5px>
     <TD><TMPL_VAR NAME=SCREENSHOT></TD>
-    <TD valign="top" align=right><a href="#" onClick="$('#page_info<TMPL_VAR NAME=ID>').slideToggle()"><img src="/CoGe/picts/delete.png" width="16" height="16" border="0"></a></TD>
     </TR>
     </TABLE></DIV></TMPL_LOOP>
     </TD>
