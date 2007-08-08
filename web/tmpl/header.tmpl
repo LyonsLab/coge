@@ -10,7 +10,7 @@
  <!--<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.bgiframe.js"></SCRIPT>-->
  <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.dimensions.js"></SCRIPT>
  <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.jdMenu.js"></SCRIPT>
-  <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.cookie.js"></SCRIPT>
+ <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.cookie.js"></SCRIPT>
 <!-- <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.jdMenu.packed.js"></SCRIPT>-->
 </TMPL_UNLESS>
 
@@ -18,6 +18,7 @@
  <TMPL_VAR NAME=HEAD>
 
  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+ <link rel="shortcut icon" href="/CoGe/picts/urlicon/favicon.ico">
 </HEAD>
 
 <BODY <TMPL_VAR NAME="BODY_ONLOAD">>
@@ -36,6 +37,7 @@ jQuery(document).ready(function(){
   //alert(pageObj.speed);
   if (!jQuery.browser.mozilla)browserAlert();
 });
+
 
 jQuery(function(){
 jQuery('ul.jd_menu').jdMenu();
@@ -138,9 +140,9 @@ function animate_section(name, style, speedy) {
 	 </li>
 	<li>Help
 	 <ul>
-	      <li><a href="./docs/help/<TMPL_VAR NAME=HELP>" target="_self">Page Docs</a></li>
-	      <li><a href="/CoGe/docs/help/CoGe/Overview.html" target="_self">About CoGe</a></li>
-	      <li><a href="/CoGe/docs/help/Contact/Contact.html" target="_self">Contact Us</a></li>
+	      <li><a href="./docs/help/<TMPL_VAR NAME=HELP>" target="_blank">Page Docs</a></li>
+	      <li><a href="/CoGe/docs/help/CoGe/Overview.html" target="_blank">About CoGe</a></li>
+	      <li><a href="/CoGe/docs/help/Contact/Contact.html" target="_blank">Contact Us</a></li>
 	</ul>
 	</li>
 	</ul>
