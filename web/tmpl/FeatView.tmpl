@@ -10,16 +10,15 @@
 
 function search_chain(val) {
  minlen = 4;
- if ((val == 1) && ($('#accn').val().length < minlen)){
-   return;
+ if ((val == 1)){
+   cogesearch(['accn', 'type', 'org'],[source_search_chain]);
  } 
  //$('#accn_list').html('<input type="hidden" id="accn_select">');	
  //$('#Source').html('<input type="hidden" id="dsid">');	
  //$('#FeatType').html('<input type="hidden" id="Type_name">');	
  $('#anno').hide();	
- if (val == 1 || $('#accn').val().length > minlen) {
+ if ($('#accn').val().length > minlen) {
    cogesearch(['accn', 'type', 'org'],[source_search_chain]);
-
  }
 }
 
@@ -53,6 +52,15 @@ function show_anno (anno)
  $('#anno').slideDown(pageObj.speed); 
  }
 
+
+function timing(){
+  if (pageObj.time){
+   clearTimeout(pageObj.time);
+  }
+   pageObj.time = setTimeout("search_chain(0)",200);
+}
+
+
 </SCRIPT>
 <TABLE>
  <TR>
@@ -63,7 +71,7 @@ function show_anno (anno)
          <TD nowrap>
            Feature Name:
          <tD>
-          <input type="text" name="accn" id="accn" tabindex="1"  size="10" onKeyup ="search_chain(0);"  onBlur="search_chain(1);" value="<TMPL_VAR NAME=ACCN>"/>
+          <input type="text" name="accn" id="accn" tabindex="1"  size="10" onKeyup ="timing();"  onBlur="search_chain(1);" value="<TMPL_VAR NAME=ACCN>"/>
         <TR>
 	 <tD nowrap>
           Feature Type:
