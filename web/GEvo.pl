@@ -435,7 +435,7 @@ sub run
       {
 	$analysis_reports = run_chaos (sets=>\@sets, params=>$param_string, parser_opts=>$parser_opts);
       }
-    elsif ($analysis_program eq "DIALIGN")
+    elsif ($analysis_program eq "DiAlign_2")
       {
 	($analysis_reports, $analysis_program,$message) = run_dialign (sets=>\@sets, params=>$param_string, parser_opts=>$parser_opts);
       }
@@ -970,6 +970,7 @@ sub process_hsps
     my $spike_seq = $opts{spike_seq};
     my $gbobj = $opts{gbobj};
     my $eval_cutoff = $opts{eval_cutoff};
+    my $score_cutoff = $opts{score_cutoff};
     my $color_hsp = $opts{color_hsp};
     my $colors = $opts{colors};
     my $show_hsps_with_stop_codon = $opts{show_hsps_with_stop_codon};
@@ -996,8 +997,17 @@ sub process_hsps
 		if ($hsp->qalign =~ /^$spike_seq$/i  || $hsp->salign =~ /^$spike_seq$/i)
 		  {
 		    $hsp->contains_spike(1);
-		    $eval_cutoff = $hsp->eval;
-		    write_log("Found spike sequence for $accn1 and $accn2: eval cutoff set to $eval_cutoff", $LOGFILE);
+		    if (defined $hsp->eval && $hsp->eval ne "N/A")
+		      {
+			$eval_cutoff = $hsp->eval;
+		      }
+		    elsif (defined $hsp->score)
+		      {
+			$score_cutoff=$hsp->score;
+#			print STDERR "score cutoff: $score_cutoff\n";
+		      }
+		    write_log("Found spike sequence for $accn1 and $accn2: eval cutoff set to $eval_cutoff", $LOGFILE) if defined $eval_cutoff;
+		    write_log("Found spike sequence for $accn1 and $accn2: score cutoff set to $score_cutoff", $LOGFILE) if defined $score_cutoff;
 		    last;
 		  }
 	      }
@@ -1006,6 +1016,7 @@ sub process_hsps
 	foreach my $hsp (@{$blast->hsps})
 	  {
 	    next if defined $eval_cutoff && $hsp->eval > $eval_cutoff;
+	    next if defined $score_cutoff && $hsp->score < $score_cutoff;
 	    my $color = $colors->[$i];
 	    my $skip = 0;
 
@@ -1553,7 +1564,7 @@ sub run_chaos
 	    }
 	    else
 	      {
-		push @tmp, "no results from comparing $accn1 and $accn2 with LAGAN";
+		push @tmp, "no results from comparing $accn1 and $accn2 with Chaos";
 	      }
 	    push @reports, \@tmp;
 	    $count++;
@@ -2052,7 +2063,7 @@ sub algorithm_list
   {
     my $program = shift;
     $program = "blastz" unless $program;
-    my @programs = sort {lc $a cmp lc $b} qw(blastn blastz CHAOS DIALIGN LAGAN tblastx);
+    my @programs = sort {lc $a cmp lc $b} qw(blastn blastz CHAOS DiAlign_2 LAGAN tblastx);
     my $html;
     foreach my $prog (@programs)
       {
