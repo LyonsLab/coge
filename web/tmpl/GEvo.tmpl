@@ -54,18 +54,6 @@ function changeColor(id, color) {
   document.getElementById(id).style.color = color;
 }
 
-// function activeButton (button_name){
-//   document.images[button_name].src = eval(button_name+"_active.src");
-// }
-// 
-// function inactiveButton (button_name){
-//   document.images[button_name].src = eval(button_name+"_inactive.src");
-// }
-// 
-// function pressedButton (button_name){
-//  document.images[button_name].src = eval(button_name+"_pressed.src");
-// }
-
 function switchPlusButton (check, change){
   if ($(check).is(':hidden')) {$(change).removeClass('plus').addClass('minus');}
   else {$(change).removeClass('minus').addClass('plus');}
@@ -198,8 +186,12 @@ else if (alignment == "LAGAN")
 else if (alignment == "CHAOS")
  {
   animate_section("#chaos_options", "slideToggle");	
+  animate_section("#spike_sequence", "slideDown");
+  if (spike == "undefined" || spike == 0) {spike = 15;} 	
+  $("#spike").val(spike);
+	
  }
-else if (alignment == "DIALIGN")
+else if (alignment == "DiAlign_2")
  {
   animate_section("#dialign_options", "slideToggle");	
   animate_section("#dialign_parameters", "slideToggle");	
@@ -489,18 +481,6 @@ function monitor_log(log)
 </DIV> 
 
 
- <DIV id="spike_sequence" class ="algo_options blastn_options" style="display: none">
-  <table class=small>
-  <tr colspan>
-  <th> HSP filter by spike sequence
-  <td>(set to 0 to turn off):
-  <tr align=left class=small>
-  <td><li>Spike sequence length:
-  <td><input type="text" size="3" class="backbox" id="spike" onkeyup="check_spike();" value=<TMPL_VAR NAME=SPIKE_LEN>> nucleotides
-   </TR>
-  </table>
- </DIV>
-
  <DIV id="chaos_options" class="small  algo_options" style="display: none">
 <table class = small>
    <TR>
@@ -509,11 +489,11 @@ function monitor_log(log)
  </TR>    
  <TR>
   <TD>Score cutoff: </TD>
-  <TD><input class="backbox" type="text" name="chaos_score_cutoff" id="chaos_score_cutoff" tabindex="1" size="3" value="25" /></TD>
+  <TD><input class="backbox" type="text" name="chaos_score_cutoff" id="chaos_score_cutoff" tabindex="1" size="3" value="10" /></TD>
  </TR>    
  <TR>
   <TD>Rescore cutoff: </TD>
-  <TD><input class="backbox" type="text" name="chaos_rescore_cutoff" id="chaos_rescore_cutoff" tabindex="1" size="3" value="0" /></TD>
+  <TD><input class="backbox" type="text" name="chaos_rescore_cutoff" id="chaos_rescore_cutoff" tabindex="1" size="3" value="100" /></TD>
  </TR>    
  <TR>
   <TD>Lookback distance:<br><font class=small>(length between seed alignments for chaining)</font></TD>
@@ -537,8 +517,22 @@ function monitor_log(log)
  </TR>         
 
 </table>
-
 </DIV>
+
+ <DIV id="spike_sequence" class ="algo_options blastn_options" style="display: none">
+  <table class=small>
+  <tr colspan>
+  <th> HSP filter by spike sequence
+  <td>(set to 0 to turn off):
+  <tr align=left class=small>
+  <td><li>Spike sequence length:
+  <td><input type="text" size="3" class="backbox" id="spike" onkeyup="check_spike();" value=<TMPL_VAR NAME=SPIKE_LEN>> nucleotides
+   </TR>
+  </table>
+ </DIV>
+
+
+
  <DIV id="blastz_options" class="small algo_options" style="display: none">
 <table class = small>
    <TR>
@@ -660,7 +654,7 @@ function monitor_log(log)
  <DIV id="dialign_parameters"  class="small algo_options" style="display: none">
  <Table class=small>
  <TR>
-  <TD>Other DIALIGN Parameters: </TD>
+  <TD>Other DiAlign Parameters: </TD>
   <TD><input class="backbox" type="text" name="dialign_params" id="dialign_params" tabindex="1" size="20"  value="-n"/></TD>
  </TR>         
 </TABLE>
