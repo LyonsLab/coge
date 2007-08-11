@@ -7,7 +7,21 @@ BODY {
 a
 {
   outline: none;
+  text-decoration: none;
 }
+
+
+a:hover {
+  color: #009900;
+  cursor: pointer;
+}
+
+/*a:visited {
+  color: #0000EE;
+  cursor: pointer;
+}*/
+
+
 
 .up {
   font-family: fixed, monospace;
@@ -642,17 +656,24 @@ tr.ltblue {
 th.header {
  /*background-image: url(/CoGe/picts/blast_table/small.gif);*/
  background-color: #edffed;
- cursor: pointer;
  font-weight: bold;
+ font-size: 14;
  background-repeat: no-repeat;
  background-position: center left;
- padding-left: 20px;
+ padding-left: 4px;
+ padding-right: 2px;
  border-right: 1px solid #dad9c7;
  border-bottom: 2px solid #dad9c7;
  margin-left: -1px;
+ cursor: pointer;
 }
 
-.even {
+tr.feat:hover {
+  background-color: #dad9c7;
+  cursor: pointer;
+}
+
+/*.even {
  background-color:#FCFAF6;
 }
 
@@ -668,7 +689,7 @@ th.headerSortDown {
  background-color: #cbfecb;
  border-right: 1px solid #c3c2b1;
  border-bottom: 2px solid #c3c2b1;
-}
+}*/
 
 #ncbi_blast {
 	display: block;
@@ -765,4 +786,42 @@ th.headerSortDown {
 	display: none;
 }
 
+/*.highlight_tablerows {
+	background-color: #ADFF2F;
+}*/
 
+.image_window {
+	background-color: #FFF;
+	position: absolute;
+	top: 300px;
+	border: 15px solid #cbfecb;
+	outline: 1px solid #00ff36;
+}
+
+.genomeview_popup {
+     background-color: #FFF;
+	border: 5px solid #cbfecb;
+	outline: 1px solid #00ff36;
+	max-width: 250px;
+	z-index: 1000;
+	overflow: auto;
+	max-height: 200px;
+}
+
+.imagemaplink {
+ cursor: pointer;
+}
+
+tr.highlight {
+ background-color: #90EE90;
+}
+
+
+#feature_count:hover {
+  color: #009900;
+  cursor: pointer;
+}
+
+#feature_count {
+  color: #0000EE;
+}
