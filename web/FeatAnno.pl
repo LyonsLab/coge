@@ -9,7 +9,7 @@ use CoGe::Accessory::LogUser;
 #use CoGeX;
 $ENV{PATH} = "/opt/apache/CoGe/";
 
-use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $DB $FORM $FID $DS $CHR $LOC $ORG $VERSION $START $STOP);
+use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $DB $FORM $FID $DS $CHR $LOC $ORG $VERSION $START $STOP $NAME_ONLY);
 
 # set this to 1 to print verbose messages to logs
 $DEBUG = 0;
@@ -29,6 +29,7 @@ $STOP = $FORM->param('stop');
 $STOP = $START unless defined $STOP;
 $ORG = $FORM->param('org') || $FORM->param('organism');
 $VERSION = $FORM->param('version') || $FORM->param('ver');
+$NAME_ONLY = $FORM->param('name_only') || 0;
 
 $DB = new CoGe::Genome;
 #my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
@@ -36,8 +37,15 @@ $DB = new CoGe::Genome;
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 print "Content-Type: text/html\n\n";
-my $rhtml = gen_html(featid=>$FID, start=>$START, stop=>$STOP, chr=>$CHR, ds=>$DS, org=>$ORG, version=>$VERSION) if $START > 0;
-print "<font class=title3>Position:</font> <font class=data>$START-$STOP</font><br><hr>";
+my $rhtml = gen_html(featid=>$FID, start=>$START, stop=>$STOP, chr=>$CHR, ds=>$DS, org=>$ORG, version=>$VERSION, name_only=>$NAME_ONLY) if $START > 0;
+if ($START == $STOP)
+{
+  print "<font class=title3>Position:</font> <font class=data>$START</font><br><hr>";
+}
+else
+{
+  print "<font class=title3>Position:</font> <font class=data>$START-$STOP</font><br><hr>";
+}
 $rhtml = "No annotations" unless $rhtml;
 print $rhtml;
 
@@ -52,6 +60,7 @@ sub gen_html
     my $ds = $args{ds};
     my $org = $args{org};
     my $version = $args{version};
+    my $name_only = $args{name_only};
 ##working here, taken frmo Graphics.pm
     $org = $DB->get_organism_obj->resolve_organism($org) if $org;
     $ds = $DB->get_dataset_obj->resolve_dataset($ds) if $ds;
@@ -82,6 +91,17 @@ sub gen_html
       }
     push @feats, $DB->get_feat_obj->retrieve($featid) if $featid;
     my $html;
+    if($name_only)
+    {
+      $html = "<table>";
+      foreach my $feat (sort {$a->type->name cmp $b->type->name} @feats)
+       {
+         next if $feat->type->name =~ /^source$/;
+         $html .= "<tr><td valign='top'>".$feat->type->name."</td><td valign='top'>".(join (", ", map {$_->name} $feat->names))."</td></tr>";
+       }
+    $html .="</table>";
+    return $html;
+    }
     foreach my $feat (sort {$a->type->name cmp $b->type->name} @feats)
       {
 	next if $feat->type->name =~ /^source$/;
