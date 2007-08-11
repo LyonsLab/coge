@@ -7,12 +7,12 @@ use CoGe::Accessory::Web;
 use HTML::Template;
 use Data::Dumper;
 use CGI::Ajax;
-use CoGe::Genome;
+use CoGeX;
 use Benchmark;
 
 $ENV{PATH} = "/opt/apache2/CoGe/";
 
-use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $NEATO $DOT $DB);
+use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $NEATO $DOT $coge $connstr);
 
 # set this to 1 to print verbose messages to logs
 $DEBUG = 0;
@@ -26,22 +26,24 @@ $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 
 $FORM = new CGI;
 ($USER) = CoGe::Accessory::LogUser->get_user();
-$DB = new CoGe::Genome;
+$connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
+$coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
+#$coge->storage->debugobj(new DBIxProfiler());
+#$coge->storage->debug(1);
 
 my $pj = new CGI::Ajax(
 		       get_dataset => \&get_dataset,
 		       get_dataset_info => \&get_dataset_info,
 		       get_dataset_chr_info => \&get_dataset_chr_info,
 		       gen_data => \&gen_data,
-		       get_genomic_seq => \&get_genomic_seq,
 		       get_orgs => \&get_orgs,
 		       get_start_stop=>\&get_start_stop,
+		       get_feature_counts => \&get_feature_counts,
 		      );
 $pj->JSDEBUG(0);
 $pj->DEBUG(0);
 print $pj->build_html($FORM, \&gen_html);
-#print "Content-Type: text/html\n\n";
-#print gen_html($FORM);
+#print "Content-Type: text/html\n\n";print gen_html($FORM);
 
 sub gen_html
   {
@@ -82,7 +84,7 @@ sub gen_body
 sub get_orgs
   {
     my $name = shift;
-    my @db = $name ? $DB->get_org_obj->search_like({name=>"%".$name."%"}) :$DB->get_org_obj->retrieve_all();
+    my @db = $name ? $coge->resultset("Organism")->search({name=>{like=>"%".$name."%"}}) : $coge->resultset("Organism")->all;
     my %restricted;
     if (!$USER || $USER =~ /public/i)
       {
@@ -113,7 +115,7 @@ sub get_dataset
   {
     my $oid = shift;
     my $html = "";
-    my $org = $DB->get_org_obj->retrieve($oid);
+    my $org = $coge->resultset("Organism")->find($oid);
     my @opts = map {"<OPTION value=\"".$_->id."\">".$_->name. " (v".$_->version.", id".$_->id.")</OPTION>"} sort {$b->version cmp $a->version || $a->name cmp $b->name} $org->datasets if $org;
     $html = qq{<FONT CLASS ="small">Dataset count: }.scalar (@opts).qq{</FONT>\n<BR>\n};
     unless (@opts) 
@@ -140,20 +142,21 @@ sub get_dataset_info
     	return $html;
     }
 
-    my $ds = $DB->get_dataset_obj->retrieve($dsd);
+    my $ds = $coge->resultset("Dataset")->find($dsd);
 
     return $html unless $ds;
     $html = "<table>";
-    my $ds_name = $ds->data_source->name ." ". $ds->data_source->description;
-    my $link = $ds->data_source->link;
+    my $ds_name = $ds->datasource->name ." ". $ds->datasource->description;
+    my $link = $ds->datasource->link;
 
     $link = "http://".$link if ($link && $link !~ /http/);
-    $ds_name = "<a href =\"".$link."\">".$ds_name."</a>" if $ds->data_source->link;
+    $ds_name = "<a href =\"".$link."\">".$ds_name."</a>" if $ds->datasource->link;
     $html .= qq{<TR><TD>Data Source:<TD>$ds_name}."\n";
     $html .= qq{<tr><td>Version:<td>}.$ds->version."\n";
 
     my %chr;
-    map{$chr{$_}++} ($ds->chromosomes, $DB->get_genomic_seq_obj->get_chromosome_for_dataset($ds));
+#    map{$chr{$_}++} ($ds->chromosomes, $DB->get_genomic_seq_obj->get_chromosome_for_dataset($ds));
+    map{$chr{$_}++} ($ds->get_chromosomes);
     my @chr = sort keys %chr;
     if (@chr)
       {
@@ -187,15 +190,15 @@ sub get_dataset_chr_info
     my $stop = "'stop'";	
     my $html .= "<table>";
     return $html unless $dsd;
-    my $ds = $DB->get_dataset_obj->retrieve($dsd);
+    my $ds = $coge->resultset("Dataset")->find($dsd);
     return $html unless $ds;
-    my $length = commify( $DB->get_genomic_seq_obj->get_last_position(ds=>$ds, chr=>$chr) );
+    my $length = commify( $ds->last_chromosome_position($chr) );
     $html .= qq{<tr><td>Nucleotides:<td>$length} if $length;
-    my $feats = $ds->get_feature_type_count(chr=>$chr);
-    $html .= qq{<tr><td valign=top>Features:<td valign=top><table>};
-    my $feat_string = join ("\n<tr valing=top>",map {"<td valign=top>$_<tdvalign=top>".$feats->{$_} } sort {$feats->{$b}<=> $feats->{$a}} keys %$feats);
-    $feat_string = "None" unless $feat_string;
-    $html .= "$feat_string</table>";
+#    my $feat_string = get_feature_counts($dsd, $chr);
+    my $feat_string = qq{
+<div id=feature_count onclick="gen_data(['args__loading. . .'],['feature_count_data']);\$('#feature_count').hide(0);get_feature_counts(['ds_id', 'chr'],['feature_count_data']);" >Click here for feature count information</div><div id=feature_count_data></div>
+};
+    $html .= "</table>$feat_string";
 
     my $viewer;
     if ($chr)
@@ -235,6 +238,33 @@ sub get_dataset_chr_info
     return $html, $viewer, $seq_grab;
   }
 
+sub get_feature_counts
+  {
+    my $dsd = shift;
+    my $chr = shift;
+    my $query = qq{
+SELECT count(distinct(feature_id)), ft.name 
+  FROM feature
+  JOIN feature_type ft using (feature_type_id)
+  JOIN location l USING (feature_id)
+ WHERE dataset_id = $dsd
+   AND l.chromosome = $chr
+ GROUP BY ft.name
+};
+    my $dbh = DBI->connect($connstr, 'cnssys', 'CnS' );
+    my $sth = $dbh->prepare($query);
+    $sth->execute;
+    my $feats = {};
+    while (my $row = $sth->fetchrow_arrayref)
+      {
+	$feats->{$row->[1]} = $row->[0];
+      }
+#    my $feats = $ds->get_feature_type_count(chr=>$chr);
+    my $feat_string .= qq{<tr><td valign=top>Features:<td valign=top><table>};
+    $feat_string .= join ("\n<tr valing=top>",map {"<td valign=top> ".$_."<td valign=top> ".$feats->{$_} } sort {($feats->{$b})<=>($feats->{$a})} keys %$feats);
+    $feat_string .= "None" unless $feat_string;
+  }
+
 sub gen_data
   {
     my $message = shift;
@@ -247,31 +277,5 @@ sub commify
       $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
       return scalar reverse $text;
     }
-
-sub get_genomic_seq
-  {
-    my $dsid = shift;
-    my $chr = shift;
-    my $start = shift;
-    my $stop = shift;
-    my $seq;
-    my $ds = $DB->get_dataset_obj->retrieve($dsid);
-    $seq .= ">".$ds->org->name.":".$chr.":".$start."-".$stop."\n";
-    $seq .= $DB->get_genomic_seq_obj->get_sequence(start=>$start, stop => $stop, chr=>$chr, info_id=>$dsid);
-    $seq =~ s/(.{80})/$1\n/g;
-    return "<pre>".$seq."</pre>";
-  }
-
-
-  sub get_organism_name
-  {
-  	my $blah = $_[0];
-    print $blah;
-
-	my $html .= "<table>";
-	$html .= "</tr></table>";
-#alert(this.value)
-    return $html;
-  }
 
 1;
