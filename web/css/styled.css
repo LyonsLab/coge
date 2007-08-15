@@ -592,10 +592,7 @@ tr.ltblue {
 
 .resultborder
 {
-  border-bottom: 1px solid #00FF35;
-  border-left: 1px solid #00FF35;
-  border-right: 1px solid #00FF35;
-  border-top: 1px solid #00FF35;
+  border: 2px solid #CCFFCC;
   background: #F7FFF7; 
 }
 
@@ -628,53 +625,62 @@ tr.ltblue {
   background-position: left;
 }
 
-#carousel
-{
-	width: 1000px;
-	height: 225px;
+#carousel {
+  width: 1000px;
+  height: 225px;
 	/*position: absolute;*/
-	background-image: url(/CoGe/picts/animations/DNA_orbit_animated_small-side.gif);
-        background-repeat: no-repeat;
-        background-position: 50% 50%;
+  background-image: url(/CoGe/picts/animations/DNA_orbit_animated_small-side.gif);
+  background-repeat: no-repeat;
+  background-position: 50% 50%;
 	/*top: 200px;
 	left: 100px;*/
 }
 
-#carousel a
-{
+#carousel a {
 	position: absolute;
 	width: 227px;
 }
 
 .carousel_background
 {
-	background-image: url(/CoGe/picts/carousel/carousel-background.png);
-        background-repeat: no-repeat;
-        background-position: 50% 50%;
+  background-image: url(/CoGe/picts/carousel/carousel-background.png);
+  background-repeat: no-repeat;
+  background-position: 50% 50%;
 }
 
 th.header {
  /*background-image: url(/CoGe/picts/blast_table/small.gif);*/
  background-color: #edffed;
  font-weight: bold;
- font-size: 14;
+ font-size: 12;
  background-repeat: no-repeat;
  background-position: center left;
- padding-left: 4px;
- padding-right: 2px;
+ padding-left: 20px;
+ padding-right: 12px;
  border-right: 1px solid #dad9c7;
  border-bottom: 2px solid #dad9c7;
  margin-left: -1px;
  cursor: pointer;
 }
 
+tr.feat {
+ font-size:10pt;
+/* font-size-adjust:none;
+ font-stretch:normal;
+ font-style:normal;
+ font-variant:normal;
+ font-weight:normal;
+ line-height:normal;
+ padding:3px 5px;*/
+}
+
 tr.feat:hover {
-  background-color: #dad9c7;
+  background-color: #EEE8AA;
   cursor: pointer;
 }
 
-/*.even {
- background-color:#FCFAF6;
+.even {
+ background-color:#EEE;
 }
 
 th.headerSortUp {
@@ -689,24 +695,43 @@ th.headerSortDown {
  background-color: #cbfecb;
  border-right: 1px solid #c3c2b1;
  border-bottom: 2px solid #c3c2b1;
-}*/
+}
 
 #ncbi_blast {
 	display: block;
-  	width: 89px;
+  	width: 97px;
   	height: 26px;
-	background: url(/CoGe/picts/buttons/CoGeBlast/ncbi_blast.png) 0 0 no-repeat;
+	background: url(/CoGe/picts/buttons/CoGeBlast/ncbi_blast_new.png) 0 0 no-repeat;
 }
 
 #ncbi_blast:hover {
-	background-position: -89px 0;
+	background-position: -97px 0;
 }
 
 #ncbi_blast:active {
-	background-position: -178px 0;
+	background-position: -194px 0;
 }
 
 #ncbi_blast span {
+	display: none;
+}
+
+#coge_blast_button {
+	display: block;
+  	width: 100px;
+  	height: 25px;
+	background: url(/CoGe/picts/buttons/CoGeBlast/coge_blast.png) 0 0 no-repeat;
+}
+
+#coge_blast_button:hover {
+	background-position: -100px 0;
+}
+
+#coge_blast_button:active {
+	background-position: -200px 0;
+}
+
+#coge_blast_button span {
 	display: none;
 }
 
@@ -824,4 +849,10 @@ tr.highlight {
 
 #feature_count {
   color: #0000EE;
+}
+
+.hsp_image {
+  background-color: #FFF;
+  width: 400px; 
+  height: 70px;
 }
