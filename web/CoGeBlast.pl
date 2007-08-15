@@ -18,6 +18,11 @@ use DBIxProfiler;
 use File::Temp;
 use CoGe::Accessory::blast_report;
 use CoGe::Graphics::GenomeView;
+use CoGe::Graphics;
+use CoGe::Graphics::Chromosome;
+use CoGe::Graphics::Feature::HSP;
+use CoGe::Genome;
+
 
 $ENV{PATH} = "/opt/apache/CoGe/";
 $ENV{BLASTDB}="/opt/apache/CoGe/data/blast/db/";
@@ -57,13 +62,14 @@ my $pj = new CGI::Ajax(
 		       get_url=>\&get_url,
 		       check_seq=>\&check_seq,
 		       set_seq=>\&set_seq,
-		       get_pretty_print=>\&get_pretty_print,
 		       blast_param=>\&blast_param,
 		       database_param=>\&database_param,
 		       get_orgs=>\&get_orgs,
 		       get_from_id=>\&get_from_id,
 		       blastoff_search=>\&blastoff_search,
-		       #%ajax,
+		       generate_feat_info=>\&generate_feat_info,
+		       get_hsp_info=>\&get_hsp_info,
+		       generate_overview_image=>\&generate_overview_image,
 			);
 $pj->js_encode_function('escape');
 print $pj->build_html($FORM, \&gen_html);
@@ -130,6 +136,7 @@ sub gen_body
     }
     else{
         $template->param(SEQVIEW=>0);
+        $template->param(SEQUENCE=>'Enter a fasta sequence here');
     }
     $template->param(USER_NAME=>$USER);
     #$template->param(DEFAULT_PARAM=>$param);
@@ -254,20 +261,6 @@ sub generate_fasta_without_featid
     return $fasta;
   }
 
-
-sub get_pretty_print
-{
-    my $featid = shift;
-    my $dsid = shift;
-    my ($feat) = $coge->resultset("Dataset")->find($dsid);
-    unless (ref($feat) =~ /Feature/i)
-    {
-      return "Unable to retrieve Feature object for id: $featid";
-    }
-    my $html = $feat->annotation_pretty_print_html();
-    return $html;
-}
-
 sub blast_param
 {
     my $seq_type = shift || "blast_type_n";
@@ -359,6 +352,10 @@ sub blastoff_search
     my $match_score = $opts{matchscore};
     my $seq = $opts{seq};
     my $blastable = $opts{blastable};
+    my $width = $opts{width};
+    my $type = $opts{type};
+    #print STDERR Dumper \%opts;
+    #print STDERR $width,"\n";
     initialize_basefile();
     my @org_ids = split(/,/,$blastable);
     my $fasta_file = create_fasta_file($seq);
@@ -404,8 +401,8 @@ sub blastoff_search
 		       };
 	$count++;
       }
-    my $html = gen_results_page(results=>\@results);
-    return $html;
+    my $html = gen_results_page(results=>\@results,width=>$width,type=>$type);
+    return $html,$BASEFILENAME;
     #return qq{<a href =$TEMPURL/$BASEFILENAME.log target=_new>$LOGFILE</a>};
   }
  
@@ -414,58 +411,99 @@ sub gen_results_page
    {
      my %opts = @_;
      my $results = $opts{results};
+     my $width = $opts{width};
+     my $type = $opts{type};
+     #print STDERR $width,"\n";
      my @table;
      my $length;
      my $flag;
      my @check;
+     my @no_feat;
      foreach my $set (@$results)
      {
       if (@{$set->{report}->hsps()})
       {
        foreach my $hsp (@{$set->{report}->hsps()})
        {
+#        print STDERR Dumper \$hsp;
         my ($dsid) = $hsp->subject_name =~ /id: (\d+)/;
         my ($chr) = $hsp->subject_name =~ /chromosome: (\d+)/;
+#	print STDERR $hsp->subject_name,"\n";
+        my ($org) = $hsp->subject_name =~ /^\s*(.*?)\s*\(/;
         next unless $dsid && $chr;
         my @feat = $coge->get_features_in_region(start=>$hsp->subject_start,  
 				     stop=>$hsp->subject_stop,
 				     chr=>$chr, 
 				     dataset_id=>$dsid,
 				     );
-	foreach my $feature (@feat)
-	{
-	 #print STDERR  $feature->type->name,"\n";
-	 next unless $feature->type->name =~ /gene/i;
-	 $length = (($feature->stop) - ($feature->start));		     
-	 my ($name) = sort $feature->names;
-	 foreach my $data (@check)
-	 {
-	   $flag = 1 if (($data->{name} eq $name) && ($data->{score} == $hsp->score));
-	 }
-	 unless ($flag) {
-	   push @table, {FID=>$feature->id,FEATURE_NAME=>$name,FEATURE_LENGTH=>$length,FEATURE_EVAL=>$hsp->pval,FEATURE_PID=>$hsp->percent_id,FEATURE_SCORE=>$hsp->score,};
-	   push @check,{name=>$name,score=>$hsp->score};
+	   if (@feat) {
+		foreach my $feature (@feat)
+		{
+		  next unless $feature->type->name =~ /gene/i;
+
+	 	  $length = (($feature->stop) - ($feature->start));		     
+		  my ($name) = sort $feature->names;
+	 	  foreach my $data (@check)
+	 	  {
+	  		 $flag = 1 if (($data->{name} eq $name) && ($data->{score} == $hsp->score));
+		  }
+	 	  unless ($flag) {
+	   	    my $fid = $feature->id."_".$hsp->number;
+	   	    my $pid = $hsp->percent_id =~ /\./ ? $hsp->percent_id : $hsp->percent_id.".0";
+	   #print STDERR $fid,"\n";
+	  	    push @table, {FID=>$fid,FEATURE_NAME=>$name,FEATURE_HSP=>$hsp->number,FEATURE_EVAL=>$hsp->pval,FEATURE_PID=>$hsp->percent_id,FEATURE_SCORE=>$hsp->score,FEATURE_LENGTH=>$length,FEATURE_ORG=>$org,};
+	   	    push @check,{name=>$name,score=>$hsp->score};
+	  	  }
+	 	  $flag=0;
+		}
 	  }
-	}
-       }
+	  else{
+	    push @no_feat, {NO_FEAT=>$hsp->number};
+	  }
       }
+     }
     }     
 #     my $chromosome_data = [{DB_NAME=>"AT",CHR_IMAGE=>"Pretty Pictures",},{DB_NAME=>"OS",CHR_IMAGE=>"Goody Pictures",}];
-     my ($chromosome_data) = generate_chromosome_images(results=>$results);
+     my ($chromosome_data, $chromosome_data_large) = generate_chromosome_images(results=>$results,large_width=>$width,hsp_type=>$type);
+     #print STDERR Dumper \$chromosome_data;
+#     my ($chromosome_data_large) = generate_chromosome_images(results=>$results,width=>$width);
+#     for(my $i=0;$i < scalar (@$chromosome_data);$i++)
+#     {
+#       delete $chromosome_data_large->[$i] if $chromosome_data->[$i]{DB_NAME} =~ /No\s+Hits/i;
+#     }
+    # print STDERR Dumper \$chromosome_data_large;
+     #print STDERR Dumper \@no_feat;
      unless (@table) 
      {
-     push @table,{FID=>'N/A',FEATURE_NAME=>'N/A',FEATURE_LENGTH=>'N/A',FEATURE_EVAL=>'N/A',FEATURE_PID=>'N/A',FEATURE_SCORE=>'N/A',};
+     push @table,{FID=>'N/A',FEATURE_NAME=>'N/A',FEATURE_HSP=>'N/A',FEATURE_ORG=>'N/A',FEATURE_LENGTH=>'N/A',FEATURE_EVAL=>'N/A',FEATURE_PID=>'N/A',FEATURE_SCORE=>'N/A',};
      }
+     #table sort!
+     @table = sort {$a->{FEATURE_ORG} cmp $b->{FEATURE_ORG} || $a->{FEATURE_NAME} cmp $b->{FEATURE_NAME} || $a->{FEATURE_EVAL} <=> $b->{FEATURE_EVAL} } @table;
      my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CoGeBlast.tmpl');
      $template->param(OVERLAP_FEATURE_IF=>1);
      $template->param(FEATURE_TABLE=>\@table);
+     if (@no_feat)
+     {
+       @no_feat = sort {$a->{NO_FEAT} <=> $b->{NO_FEAT}} @no_feat if @no_feat;
+       $template->param(NO_FEAT_IF=>1);
+       $template->param(NO_FEATS=>\@no_feat);
+     }
      my $overlap_feature_element = $template->output;
+     $template->param(NO_FEAT_IF=>0);
      $template->param(OVERLAP_FEATURE_IF=>0);
      $template->param(OVERLAP_FEATURE_LIST=>$overlap_feature_element);
      $template->param(CHROMOSOMES_IF=>1);
      $template->param(CHROMOSOME_LOOP=>$chromosome_data);
      my $chromosome_element = $template->output;
      $template->param(CHROMOSOMES_IF=>0);
+     if (scalar(@$chromosome_data_large) > 0)
+     {
+       $template->param(CHROMOSOMES_LARGE_IF=>1);
+       $template->param(CHROMOSOME_LOOP_LARGE=>$chromosome_data_large);
+       my $chr_large_element = $template->output;
+       $template->param(CHROMOSOMES_LARGE_IF=>0);
+       $template->param(CHR_LARGE=>$chr_large_element);
+     }
      $template->param(CHROMOSOMES=>$chromosome_element);
      $template->param(BLAST_RESULTS=>1);
      my $html = $template->output;
@@ -477,26 +515,65 @@ sub generate_chromosome_images
   {
     my %opts = @_;
     my $results = $opts{results};
+    my $hsp_type = $opts{hsp_type};
+    my $width = $opts{width} || 400;
+    my $large_width = $opts{large_width} || 3*$width;
+    my $imagefile_name = $opts{filename} || "null";
+    my $height = ($width / 16);
+    my $large_height = ($large_width / 16) <= 64 ? ($large_width / 16) : 64;
+    #print STDERR $width,"\n";
+    my $scale = $opts{scale} || 'linear';
     my %data;
-    my $color;
-    my (@data, @no_data);
+    my $filename;
+    my ($hsp_info,$max,$min,$length);
+    my (@data, @large_data,@no_data);
     foreach my $set (@$results)
-      {
+    {
 	my $org = $set->{organism};
-	$color = get_color_scheme($set);
-#	print STDERR Dumper $set->{report}->query;
-#	print STDERR Dumper $set->{report}->subject;
 	$data{$org}{file}=$set->{link};
-
+	$filename = $imagefile_name."_*.png";
+	if ($imagefile_name ne "null")
+	{
+	  if (`ls $filename 2>>/dev/null`)
+	  {
+	    $data{$org}{image} = $imagefile_name;
+	    $data{$org}{skip} = 1;
+	    next;
+	  }
+	}
+	$filename = $set->{link};
+	($hsp_info,$max,$min,$length) = get_color_scheme($set, $hsp_type);
 	if (@{$set->{report}->hsps()})
 	  {
-	    foreach my $hsp (@{$set->{report}->hsps()})
+	    my @hsps;
+	    if ($hsp_type eq "eval")
+	      {
+		@hsps = sort {$b->eval <=> $a->eval} @{$set->{report}->hsps()}
+	      }
+	    elsif ($hsp_type eq "length")
+	      {
+		@hsps = sort {$a->length <=> $b->length} @{$set->{report}->hsps()}
+	      }
+	    elsif ($hsp_type eq "score")
+	      {
+		@hsps = sort {$a->score <=> $b->score} @{$set->{report}->hsps()}
+	      }
+	    else
+	      {
+		@hsps = sort {$a->percent_id <=> $b->percent_id} @{$set->{report}->hsps()}
+	      }
+
+
+	    
+	    foreach my $hsp (@hsps)
 	      {
 		#first, initialize graphic
 #		my ($org) = $hsp->subject_name =~ /^(.*?)\(v/;
 		$org =~ s/\s+$//;
 		my ($chr) = $hsp->subject_name =~ /chromosome: (\d+)/;
-		$data{$org}{image} =new CoGe::Graphics::GenomeView({color_band_flag=>1, image_width=>300, chromosome_height=>25}) unless $data{$org}{image};
+		$data{$org}{image} =new CoGe::Graphics::GenomeView({color_band_flag=>1, image_width=>$width, chromosome_height=>$height}) unless $data{$org}{image};
+		$data{$org}{large_image} =new CoGe::Graphics::GenomeView({color_band_flag=>1, image_width=>$large_width, chromosome_height=>$large_height}) unless $data{$org}{large_image};
+		
 		#add chromosome to graphic
 		unless ($data{$org}{chr}{$chr})
 		  {
@@ -508,30 +585,86 @@ sub generate_chromosome_images
 						       end=>$last_pos,
 						      );
 		  }
-		$data{$org}{chr}{$chr}=1;
+		my $num = $hsp->number;
 		my $up = $hsp->strand eq "++" ? 1 : 0;
+		my $r = generate_colors(max=>$max,
+					min=>$min,
+					length=>$length,
+					scale=>$scale,
+					val=>$hsp_info->{$hsp->number},
+					);
+		my $b = generate_colors(max=>$max,
+					min=>$min,
+					length=>$length,
+					scale=>$scale,
+					val=>$hsp_info->{$hsp->number},
+					reverse_flag=>1,
+					);
+		#Reverse color scheme for eval, as less is more
+		($r, $b) = ($b, $r) if $hsp_type eq "eval";
 		$data{$org}{image}->add_feature(name=>$hsp->number,
 						start=>$hsp->sstart,
 						stop=>$hsp->sstop,
 						chr=>"Chr: $chr",
+						imagemap=>qq/class="imagemaplink" title="HSP No. /.$hsp->number.qq/" onclick="\$('#big_picture').slideToggle(pageObj.speed);show_hsp_div();loading('image_info','Information');loading('query_image','Image');loading('subject_image','Image');get_hsp_info(['args__blastfile','args__$filename','args__num','args__$num'],['image_info','query_image','subject_image']);"/,
 						up=>$up,
-						color=>[$color->{$hsp->number}{r},$color->{$hsp->number}{g},$color->{$hsp->number}{b}],
+						color=>[$r,0,$b],
 					       );
 	      }
-	  }
-	else
-	  {
 	  }
       }
     my $count = 1;
     foreach my $org (sort keys %data)
-      {
+    {
 	if ($data{$org}{image})
 	  {
-	    my $image_file = $BASEFILE."_$count.png";
-	    $data{$org}{image}->generate_png(filename=>$image_file);
+	    my $image_file;
+	    my $image_map;
+	    my $large_image_file;
+	    my $image_map_large;
+	    unless ($data{$org}{skip})	    
+	      {
+		my $x;
+		$large_image_file = $BASEFILE."_".$hsp_type."_$count"."_large.png";
+		($x, $large_image_file) = check_taint($large_image_file);
+		$image_file = $BASEFILE."_".$hsp_type."_$count.png";
+		($x, $image_file) = check_taint($image_file);
+		$data{$org}{image}->generate_png(filename=>$image_file);
+		$image_map = $data{$org}{image}->generate_imagemap(mapname=>$BASEFILENAME."_".$count);
+
+		my $map_file = "$TEMPDIR/$BASEFILENAME"."_$count.$hsp_type.map";
+		($x, $map_file) = check_taint($map_file);
+		open (MAP, ">$map_file");
+		print MAP $image_map;
+		close MAP;
+		$data{$org}{image}->image_width($large_width);
+		$data{$org}{image}->chromosome_height($large_height);
+		$data{$org}{image}->generate_png(filename=>$large_image_file);
+		$image_map_large = $data{$org}{image}->generate_imagemap(mapname=>$BASEFILENAME."_".$count."_large");
+		$map_file = "$TEMPDIR/$BASEFILENAME"."_$count.$hsp_type.large.map";
+		($x, $map_file) = check_taint($map_file);
+		open (MAP, ">$map_file");
+		print MAP $image_map_large;
+		close MAP;
+
+	    }
+	    else
+	      {
+		my $x;
+		$image_file = $data{$org}{image}."_$count.png";
+		$image_map = get_map("$TEMPDIR/$BASEFILENAME"."_$count.$hsp_type.map");
+		$large_image_file = $data{$org}{image}."_$count"."_large.png";
+		$image_map_large = get_map("$TEMPDIR/$BASEFILENAME"."_$count.$hsp_type.large.map");
+		print STDERR $image_map_large,"\n";
+		($x, $image_file) = check_taint($image_file);
+		($x, $large_image_file) = check_taint($large_image_file);
+	      }
+	    
 	    $image_file =~ s/$TEMPDIR/$TEMPURL/;
-	    push @data,  {DB_NAME=>"<a href=".$data{$org}{file}. " target=_new>$org</a><br>", CHR_IMAGE=>"<img src=$image_file>"};
+	    $large_image_file =~ s/$TEMPDIR/$TEMPURL/;
+	    
+	    push @large_data,  {DB_NAME_LARGE=>"<a href=".$data{$org}{file}. " target=_new>$org</a><br>", CHR_IMAGE_LARGE=>"<img src=$large_image_file ismap usemap='$BASEFILENAME"."_"."$count"."_large' border=0>$image_map_large",IMAGE_ID_LARGE=>$count,};
+	    push @data,  {DB_NAME=>"<a href=".$data{$org}{file}. " target=_new>$org</a><br>", CHR_IMAGE=>"<img src=$image_file ismap usemap='$BASEFILENAME"."_"."$count' border=0>$image_map",HIT=>1,IMAGE_ID=>$count,};
 	    $count++;
 	  }
 	else
@@ -541,8 +674,22 @@ sub generate_chromosome_images
       }
 
 
-    return [@data,@no_data];
+    return [@data,@no_data], \@large_data;
   }
+
+sub get_map
+  {
+    my $file = shift;
+    my $map;
+    open (IN, $file) || die "$!";;
+    while (<IN>)
+      {
+	$map .= $_;
+      }
+    close IN;
+    return $map;
+  }
+
 sub create_fasta_file
   {
     my $seq = shift;
@@ -557,41 +704,73 @@ sub create_fasta_file
 sub get_color_scheme
   {
     my $set = shift;
+    my $type = shift || 0;
     my %hsps;
-    my $length = 0;
-    my %colors;
-    my @sorted;
+    my %info;
+    my @sorted_vals;
+    my $max;
+    my $min;
+    my $code_ref;
+    if ($type eq "eval")
+      {
+	$code_ref = sub {$_->eval;};
+      }
+    elsif ($type eq "score")
+      {
+	$code_ref = sub {$_->score;};
+      }
+    elsif ($type eq "length")
+      {
+	$code_ref = sub {$_->query_length;};
+      }
+    else
+      {
+	$code_ref = sub {$_->percent_id;};
+      }
     if (@{$set->{report}->hsps()})
-    {
-	foreach my $hsp (@{$set->{report}->hsps()})
-	{
-	  $hsps{$hsp->number} = $hsp->percent_id;
-	  @sorted = sort {$hsps{$b} <=> $hsps{$a}} keys %hsps;
-	  $length++;
-	}
-  	print STDERR Dumper \%hsps;
-  	print STDERR Dumper \@sorted;
-    	my $color = generate_colors($length);
-    	my $j = 1;
-    	foreach my $hsp (@sorted)
-    	{
-    	  $colors{$j} = $color->[$hsp];
-    	  $j++;
-    	}
-    }
-    return \%colors;
+      {
+	%hsps = map {$_->number, &$code_ref} @{$set->{report}->hsps()};
+#	print STDERR Dumper \%hsps;
+	@sorted_vals = sort{$a<=> $b} values %hsps;
+#	while($sorted_vals[0] == 0) {shift @sorted_vals;}
+	$min = $sorted_vals[0];
+	$max = $sorted_vals[-1];
+      }
+    my $length = keys %hsps;
+
+    return \%hsps,$max,$min,$length;
    }
+
 
 sub generate_colors
   {
-    my $length = shift;
-    my ($r,$g,$b) = (255,0,0);
-    my @colors = ({r=>255,b=>255,g=>255},
-    		 {r=>255,b=>0,g=>0},
-    		 {r=>0,b=>255,g=>0},
-    		 {r=>0,b=>0,g=>255},
-    		 {r=>25,b=>150,g=>50});
-    return \@colors;
+    my %opts = @_;
+    my $max = $opts{max};
+    my $min = $opts{min};
+    my $length = $opts{length};
+    my $scale = $opts{scale} || 'linear';
+    my $val = $opts{val};
+    my $color_max = $opts{color_max} || 255;
+    my $color_min = $opts{color_min} || 50;
+    my $flag = $opts{reverse_flag} || 0;
+#    print STDERR Dumper \%opts;
+    my $color;
+    ($color_max,$color_min) = ($color_min,$color_max) if $flag;
+    return $color_max if ($val >= $max);
+    return $color_min if ($val <= $min);
+    if ($scale =~ /log/)
+      {
+        if ($val == 0) {$color = $color_max;}
+        else{
+          $color = log($val/$min)/log($max/$min)*($color_max-$color_min)+$color_min;
+          }
+      }
+    else #linear
+      {
+	$color = ($val-$min)/($max-$min)*($color_max-$color_min)+$color_min;
+      }
+   # print STDERR "Color: $color\n";
+    return $color;
   }
 	
 sub get_blast_db
@@ -712,4 +891,251 @@ sub initialize_basefile
 	($BASEFILENAME) = $file->filename =~ /([^\/]*$)/;
       }
     return $BASEFILENAME;
+  }
+
+sub generate_feat_info 
+  {
+    my $featid = shift;
+    $featid =~ s/^table_row//;
+    $featid =~ s/_\d+$//;
+    my ($feat) = $coge->resultset("Feature")->find($featid);
+    unless (ref($feat) =~ /Feature/i)
+    {
+      return "Unable to retrieve Feature object for id: $featid";
+    }
+    my $html = qq{<a href="#" onClick="\$('#overlap_box').slideToggle(pageObj.speed);" style="float: right;"><img src='/CoGe/picts/delete.png' width='16' height='16' border='0'></a>};
+    $html .= $feat->annotation_pretty_print_html();
+    return $html;
+  }
+
+sub get_hsp_info
+  {
+    my %opts = @_;
+    my $hsp_num = $opts{num};
+    my $filename = $opts{blastfile};
+    
+    $filename = "/opt/apache".$filename;
+    ($BASEFILENAME) = $filename=~ /$TEMPDIR\/*(CoGeBlast_\w+)-/;
+    
+    my $report = new CoGe::Accessory::blast_report({file=>$filename});# if -r $filename;
+    my $hsp = $report->hsps->[$hsp_num-1];
+    #print STDERR Dumper \$hsp;
+    
+    #my $query_loc = $hsp->query_start."-".$hsp->query_stop;
+    #$query_loc = $hsp->query_start."-<br>".$hsp->query_stop if (length $query_loc > 8);
+   # my $query_start = $hsp->query_start;
+   # my $query_stop = $hsp->query_stop;
+    my $query_length = $hsp->query_stop > $hsp->query_start ? (($hsp->query_stop) - ($hsp->query_start) + 1) : (($hsp->query_start) - ($hsp->query_stop) + 1);
+    my $query_loc = $hsp->query_stop > $hsp->query_start ? $hsp->query_start."-".$hsp->query_stop : $hsp->query_stop."-".$hsp->query_start;
+    my $query_mismatch = $query_length - $hsp->match;
+    
+    my $query_name = "<pre>".$hsp->query_name."</pre>";
+    $query_name = wrap('','',$query_name);
+    $query_name =~ s/\n/<br>/g;
+    
+    #my $subject_start = $hsp->subject_start;
+   # my $subject_stop = $hsp->subject_stop;
+   # my $subject_loc = $hsp->subject_start."-".$hsp->subject_stop;
+   # $subject_loc = $hsp->subject_start."-<br>".$hsp->subject_stop if (length $subject_loc > 8);
+    my $subject_length = $hsp->subject_stop > $hsp->subject_start ? (($hsp->subject_stop) - ($hsp->subject_start) + 1) : (($hsp->subject_start) - ($hsp->subject_stop) + 1);
+    my $subject_loc = $hsp->subject_stop > $hsp->subject_start ? $hsp->subject_start."-".$hsp->subject_stop : $hsp->subject_stop."-".$hsp->subject_start;
+    my $subject_mismatch = $subject_length - $hsp->match;
+    
+    my $subject_name = "<pre>".$hsp->subject_name."</pre>";
+    $subject_name = wrap('','',$subject_name);
+    $subject_name =~ s/\n/<br>/g;
+    
+    my @table1 = ({HSP_EVAL_QUERY=>$hsp->pval,
+		   HSP_PID_QUERY=>$hsp->percent_id,
+		   HSP_PSIM_QUERY=>$hsp->percent_sim,
+		   HSP_GAP_QUERY=>$hsp->query_gaps,
+		   HSP_EVAL_SUB=>$hsp->pval,
+		   HSP_PID_SUB=>$hsp->percent_id,
+		   HSP_PSIM_SUB=>$hsp->percent_sim,
+		   HSP_GAP_SUB=>$hsp->subject_gaps,
+		   HSP_SCORE_SUB=>$hsp->score,
+		   HSP_SCORE_QUERY=>$hsp->score,
+		  });
+    my @table2 = ({HSP_STRAND_QUERY=>$hsp->strand,
+		   HSP_LENGTH_QUERY=>$hsp->length,
+		   HSP_STRAND_SUB=>$hsp->strand,
+		   HSP_LENGTH_SUB=>$hsp->length,
+		   HSP_MATCH_QUERY=>$hsp->match,
+		   HSP_POSITION_QUERY=>$query_loc,
+		   HSP_POSITION_SUB=>$subject_loc,
+		   HSP_MISMATCH_QUERY=>$query_mismatch,
+		   HSP_MATCH_SUB=>$hsp->match,
+		   HSP_MISMATCH_SUB=>$subject_mismatch,
+    		  });
+     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CoGeBlast.tmpl');
+     $template->param(HSP_IF=>1);
+     $template->param(HSP_NUM=>$hsp->number);
+     $template->param(HSP_QUERY=>\@table1);
+     $template->param(HSP_SUB=>\@table2);
+     
+     my $query_seq = $hsp->query_alignment;
+     $query_seq = wrap('','',$query_seq);
+     my @query = split(/\n/,$query_seq);
+     $query_seq =~ s/[^atgc]//ig;
+     $query_seq = wrap('','',$query_seq);
+     $query_seq =~ s/\n/<br>/g;
+     $query_seq =~ tr/atgc/ATGC/;
+     $query_seq = qq{<pre>$query_seq</pre>};
+     
+     my $sub_seq = $hsp->subject_alignment;
+     $sub_seq = wrap('','',$sub_seq);
+     my @sub = split(/\n/, $sub_seq);
+     $sub_seq =~ s/[^atgc]//ig;
+     $sub_seq = wrap('','',$sub_seq);
+     $sub_seq =~ s/\n/<br>/g;
+     $sub_seq =~ tr/atgc/ATGC/;
+     $sub_seq = qq{<pre>$sub_seq</pre>};
+     
+     my ($sub_chr) = $hsp->subject_name =~ /chromosome: (\d+)/;
+     my ($sub_dsid) = $hsp->subject_name =~ /id: (\d+)/;
+    
+     my $alignment = $hsp->alignment;
+     $alignment = wrap('','',$alignment);
+     my @align = split(/\n/,$alignment);
+     my $align_str = "";
+     for(my $i=0;$i<scalar(@sub);$i++)
+     {
+       $align_str .= $query[$i]."<br>".$align[$i]."<br>".$sub[$i]."<br>";
+     }
+     $align_str =~ s/<br>$//;
+     $align_str = "<pre>$align_str</pre>";
+     
+     $template->param(QUERY_SEQ=>qq{<a href="#" onclick="show_seq('$query_seq','$query_name',1,'seqObj','seqObj','}.$hsp->query_start."','".$hsp->query_stop.qq{')">Click for Query Sequence</a>});
+     
+     $template->param(SUB_SEQ=>qq{<a href="#" onclick="show_seq('$sub_seq','$subject_name',2,'$sub_dsid','$sub_chr','}.$hsp->subject_start."','".$hsp->subject_stop.qq{')">Click for Subject Sequence</a>});
+     
+     $template->param(ALIGNMENT=>qq{<a href="#" onclick="show_seq('$align_str','N/A',0,0,0,0)">Click for Alignment Sequence</a>});
+     
+     my $html = $template->output;
+     $template->param(HSP_IF=>0);
+     my ($query_image, $subject_image) = generate_hit_image(report=>$report, hsp_num=>$hsp_num, hsp=>$hsp);
+     my $query_link = "<img src=$query_image border=0>";
+     $query_link =~ s/$TEMPDIR/$TEMPURL/;
+     my $subject_link = "<img src=$subject_image border=0>";
+     $subject_link =~ s/$TEMPDIR/$TEMPURL/;
+#    print STDERR $query_link,"\n", $query_image,"\n";
+     return $html, $query_link, $subject_link;
+  }
+  
+sub generate_overview_image
+  {
+     my %opts = @_;
+     my $basename = $opts{basename};
+     my $type = $opts{type};
+     my $image_width = $opts{width};
+     my @set = split/\n/, `ls $TEMPDIR/$basename*.blast`;
+     my @reports;
+     my $count = 1;
+     $BASEFILE = $TEMPDIR."/".$basename;
+     $BASEFILENAME = $basename;
+     foreach my $blast (@set){
+       my $report = new CoGe::Accessory::blast_report({file=>$blast});
+       my ($org_name) = $report->hsps->[$count-1]->subject_name =~ /^\s*(.*?)\s*\(/;
+       push @reports,{report=>$report,organism=>$org_name,link=>$TEMPURL."/".$basename."-".$count.".blast",};
+       $count++;
+     }
+     #print STDERR Dumper \@reports;
+     my $image_filename = $BASEFILE."_".$type;
+     my ($chromosome_data, $chromosome_data_large) = generate_chromosome_images(results=>\@reports,hsp_type=>$type,large_width=>$image_width,filename=>$image_filename);
+     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CoGeBlast.tmpl');
+     $template->param(CHROMOSOMES_IF=>1);
+     #print STDERR Dumper $chromosome_data;
+     $template->param(CHROMOSOME_LOOP=>$chromosome_data);
+     my $chromosome_element = $template->output;
+     $template->param(CHROMOSOMES_IF=>0);
+     my $chr_large_element;
+     if (scalar(@$chromosome_data_large) > 0)
+     {
+       $template->param(CHROMOSOMES_LARGE_IF=>1);
+       $template->param(CHROMOSOME_LOOP_LARGE=>$chromosome_data_large);
+       $chr_large_element = $template->output;
+       $template->param(CHROMOSOMES_LARGE_IF=>0);
+     }
+     my $html = $chromosome_element.$chr_large_element;
+     #print STDERR $html,"\n";
+     return $html;
+  }
+     
+
+sub generate_hit_image
+  {
+    my %opts = @_;
+    my $report = $opts{report};
+    my $hsp_num = $opts{hsp_num};
+    my $file = $opts{file};
+    my $hsp = $opts{hsp};
+    my $width = $opts{width} || 400;
+    return unless ($report || -r $file);
+    $report = new CoGe::Accessory::blast_report({file=>$file}) unless $report;
+    unless ($hsp)
+      {
+	foreach my $item (@{$report->hsps})
+	  {
+	    next unless $item->number eq $hsp_num;
+	    $hsp = $item;
+	    last;
+	  }
+      }
+#    print STDERR Dumper $hsp, $report;
+    #generate_query_image
+    my $c = new CoGe::Graphics::Chromosome ();
+    $c->chr_length($hsp->query_length);
+
+    $c->iw($width);
+    $c->draw_chromosome(1);
+    $c->draw_ruler(1);
+    $c->draw_chr_end(0);
+    $c->mag(0);
+    $c->mag_off(1);
+    $c->minor_tick_labels(1);
+    $c->draw_hi_qual(0);
+    $c->set_region(start=>1, stop=>$c->chr_length);
+    my $strand = $hsp->strand =~ /-/ ? "-1" : 1;
+    my $feat = CoGe::Graphics::Feature::HSP->new({start=>$hsp->qstart, stop=>$hsp->qstop, strand=>$strand});
+    $feat->color([255,0,0]);
+    $c->add_feature($feat);
+    my $query_file = $TEMPDIR."/".$BASEFILENAME.".q.".$hsp->number.".png";
+    $c->generate_png(file=>$query_file);
+    $c = new CoGe::Graphics::Chromosome ();
+    my $graphic = new CoGe::Graphics;
+    my ($dsid) = $hsp->subject_name =~ /id: (\d+)/;
+    my ($chr) = $hsp->subject_name =~ /chromosome: (\d+)/;
+    my $len = $hsp->subject_stop - $hsp->subject_start+1;
+    my $start = $hsp->subject_start-2*$len;
+    $start = 1 if $start < 1;
+    my $stop = $hsp->subject_stop+2*$len;    
+    $graphic->initialize_c (
+			   ds=>$dsid,
+			   chr=>$chr,
+			   c=>$c,
+			   iw=>$width,
+			   start=> $start,
+			   stop => $stop,
+			   draw_chr=>1,
+			   draw_ruler=>1,
+			   draw_chr_end=>0,
+			   #			    chr_start_height=>$ih,
+			   #			    chr_mag_height=>5,
+			   #			    feature_start_height=>$fh,
+			   mag=>0,
+			   mag_off=>1,
+			   chr_length => $len,
+			   fill_labels=>1,
+			   forcefit=>1,
+			   minor_tick_labels=>1,
+			   #			    overlap_adjustment=>$overlap_adjustment,
+			   #			    feature_labels=>$feature_labels,
+			   draw_hi_qual=>0,
+			   #			    padding=>$padding,
+			  );
+    my $db = new CoGe::Genome;
+#    $graphic->process_features(c=>$c, layers=>{all=>1}, db=>$db);
+    my $sub_file = $TEMPDIR."/".$BASEFILENAME.".s.".$hsp->number.".png";
+    $c->generate_png(file=>$sub_file);
+    return $query_file, $sub_file;
   }
