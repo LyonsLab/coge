@@ -86,19 +86,20 @@
                  ,{'ds':ds,'chr':chr,'version':version,layers:"rna",'organism':org}
                  ,{isBaseLayer:false}
              ),
-            new OpenLayers.Layer.Genomic( "proteins" , server
-                 ,{'ds':ds,'chr':chr,'version':version,layers:"protein",'organism':org}
-                 ,{isBaseLayer:false}
-             ),
             ]
             fd = new OpenLayers.Layer.Genomic( "functional domains" , server
                  ,{'ds':ds,'chr':chr,'organism':org,'ds':ds,'version':version,layers:"domain"}
                  ,{isBaseLayer:false}
-             )
+             );
             gc = new OpenLayers.Layer.Genomic( "<span id='gc'>GC content</span>" , server
                  ,{'ds':ds,'chr':chr,'version':version,layers:"gc",'organism':org}
                  ,{isBaseLayer:false}
-             )
+             );
+            prot = new OpenLayers.Layer.Genomic( "proteins" , server
+                 ,{'ds':ds,'chr':chr,'version':version,layers:"protein",'organism':org}
+                 ,{isBaseLayer:false}
+             );
+
             map.addControl(new OpenLayers.Control.LayerSwitcher())
 
             gc.setVisibility(false);
@@ -106,6 +107,8 @@
             map.addLayers(layers);
             fd.setVisibility(false);
             map.addLayer(fd)
+            prot.setVisibility(false);
+            map.addLayer(prot)
             /*                                          zoomLevel */
             map.setCenter(new OpenLayers.BasePair(loc), zoom);
             bp = new OpenLayers.Control.MousePosition() 
@@ -118,11 +121,14 @@
 
             map.events.register('mousedown',map,mapMouseDown);
             map.events.register('mouseup',map,mapMouseUp);
+            map.events.register('mousemove',map,mapMouseMove);
+            map.events.register('mouseout',map,mapMouseOut);
 
 
         }
 
         function mapMouseDown(e){
+        	  $('#popup').hide(0);
             map.lastMouseX = e.xy.x;
             map.lastMouseY = e.xy.y;
         }
@@ -137,7 +143,39 @@
                 query(parseInt(bp.element.innerHTML));
             }
         }
+        
+     function mapMouseOut(e) {
+       if (pageObj.time) clearTimeout(pageObj.time);
+     }
 
+	function mapMouseMove(e) {
+	  if ($('#disable').is(':checked') == true) return;
+	  if (pageObj.time) clearTimeout(pageObj.time);
+	  if (parseInt(bp.element.innerHTML) <= 0) return;
+       var mouse_x = e.pageX;
+       var mouse_y = e.pageY;
+            //alert(map.lastMouseX+","+map.lastMouseY);
+       pageObj.time = setTimeout("info_popup('"+mouse_x+","+mouse_y+"')",2000);
+     }
+     
+     function insert_query(html) {
+        $('#popup').append(html);
+     }
+     
+     function info_popup(position_str) {
+       var position = position_str.split(",");
+       var from_left = position[0];
+       var document_width = $(window).width();
+     //alert(document_width);
+     //if (document_width <= (from_left + 150)) {from_left += document_width - (from_left+150) - 5;}
+       var from_top = position[1];
+       var html = "<a href='#' onClick=\"$('#popup').slideToggle(pageObj.speed);\" style='float: right;'><img src='/CoGe/picts/delete.png' width='16' height='16' border='0'></a>";
+       $('#popup').css({position: "absolute", top: ""+from_top, left: ""+from_left}).html(html).slideDown(pageObj.speed);
+       var url = 'FeatAnno.pl?chr='+ chr + '&version='+version+'&org='+org+'&loc='
+       + parseInt(bp.element.innerHTML) +'&ds='+ds+'&name_only='+1;
+       jfetch(url,insert_query);
+     }
+	
         function updateZoom(){
             $('#resolution').innerHTML = map.getResolution() + 'bp/pixel';
 
@@ -147,7 +185,19 @@
            + chr + '&version='+version+'&org='+org+'&loc='
            + x+'&ds='+ds; 
            jfetch(url,'query');
+           var query_height = 1 - ($('#width').offset({scroll: false}).top / $(document).height());
+           query_height *= $(document).height();
+           $('#query').css("max-height",""+query_height).show(0);
+           $('#hide_query').show(0);
          }
+         
+ function onEnter(e){
+  if (!e){ 
+   var e = window.event;}
+  if(e.which == 13){
+    $('#map').css('width',$('#width').val());
+    updateZoom();}
+}
 
 $(document).ready(function(){
 $('#width').val($('#main').width());
@@ -157,8 +207,10 @@ init();
 
     </script>
     <div id="main"></div>
+    <div id="popup" class="genomeview_popup" style="display: none"></div>
     <div id="map"></div>
     <div id='resolution'></div>
-    <div id='query'></div>
-OpenGene's map width: <input type=textbox class=backbox size=5 id="width" value=<TMPL_VAR NAME="width"> /><input type=button value="resize" onclick="$('#map').css('width',$('#width').val());updateZoom();" /><input type=button value="full-window" onclick="$('#map').css('width',$('#main').width());init();" />
+    <div id='check' style="float:right"><input type=checkbox name=checkbox id=disable val=1/>Disable Pop-up Annotations</div>
+OpenGene's map width: <input type=textbox class=backbox size=5 id="width" onkeypress="onEnter(event);" value=<TMPL_VAR NAME="width"> /><input type=button value="resize" onclick="$('#map').css('width',$('#width').val());updateZoom();" /><input type=button value="Full-Window" onclick="$('#map').css('width',''+$('#main').width());updateZoom();" /> <input id='hide_query' style="display: none" type=button value="Hide Feature Info" onclick="$('#query').slideToggle(pageObj.speed);$('#hide_query').hide(0);" />
+    <div id='query' style="overflow: auto;"></div>
 
