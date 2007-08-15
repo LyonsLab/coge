@@ -1,26 +1,54 @@
 <TMPL_IF NAME="JAVASCRIPT">
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.js"></SCRIPT>
-<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.parsers.js"></SCRIPT>
+<!--<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.parsers.js"></SCRIPT>-->
 <!--<SCRIPT language="JavaScript" type="text/javascript" src="./js/metadata.js"></SCRIPT>-->
-<SCRIPT language="JavaScript" type="text/javascript" src="./js/menu.js"></SCRIPT>
+<!--<SCRIPT language="JavaScript" type="text/javascript" src="./js/menu.js"></SCRIPT>-->
 <SCRIPT language="JavaScript">
 
 $(document).ready(function(){
-  radio_lock($('#bn')[0].checked);
+  radio_lock($('#bn').is(':checked'));
   blast_param_on_select();
-  get_displayFeature();
   blast_param([],[animate_params]);
   database_param([],['database']);
+  
+  //Object Generation
   var seqview = <TMPL_VAR NAME=SEQVIEW> || 0;
   if(seqview !=0){
     var featid = <TMPL_VAR NAME=FEATID>;
-  if ((featid) && (featid!=0)){
-    pageObj.generate_seq_obj = generate_seq_obj(<TMPL_VAR NAME=DSID>,<TMPL_VAR NAME=UPSTREAM>,<TMPL_VAR NAME=DOWNSTREAM>,seqview,<TMPL_VAR NAME=CHR>,<TMPL_VAR NAME=RC>,featid);}
-  else{
-    pageObj.generate_seq_obj = generate_seq_obj(<TMPL_VAR NAME=DSID>,<TMPL_VAR NAME=UPSTREAM>,<TMPL_VAR NAME=DOWNSTREAM>,seqview,<TMPL_VAR NAME=CHR>,<TMPL_VAR NAME=RC>);}
+    if ((featid) && (featid!=0)){
+      seqObj = new generate_seq_obj(<TMPL_VAR NAME=DSID>,<TMPL_VAR NAME=UPSTREAM>,<TMPL_VAR NAME=DOWNSTREAM>,seqview,<TMPL_VAR NAME=CHR>,<TMPL_VAR NAME=RC>,featid);
+    }
+    else{
+      seqObj = new generate_seq_obj(<TMPL_VAR NAME=DSID>,<TMPL_VAR NAME=UPSTREAM>,<TMPL_VAR NAME=DOWNSTREAM>,seqview,<TMPL_VAR NAME=CHR>,<TMPL_VAR NAME=RC>);
+    }
   }
-  //alert(pageObj.dsid);
+  //TODO - handle js object error when checking for value when it hasn't been instantiated
+  else{
+    seqObj = new Object();
+  }
+  get_displayFeature();
+  //alert(seqObj.dsid);
+  //alert(seqObj.chr);
+  //alert(seqObj.featid);
 });
+
+function update_info_box(featid) {
+ var table_width = $('#overlap').width();
+ $('#overlap_box').width(table_width);
+ //if(pageObj.highlight)
+ //{
+ //  $('#'+pageObj.highlight).removeClass('highlight');
+// }
+ //$('#'+featid).addClass('highlight');
+ //pageObj.highlight = featid;
+ //alert(table_width);
+ if ($('#overlap_box').is(':hidden')) $('#overlap_box').slideDown(pageObj.speed);
+  generate_feat_info(['args__'+featid],['overlap_box']);
+}
+
+function show_hsp_div() {
+  if( $('#result_visual').is(':hidden') == true) $('#result_visual').show(0);
+}
 
 function add_to_list(ds,org){
   var check = $('#'+ds).val();
@@ -31,9 +59,13 @@ function add_to_list(ds,org){
   var html = '<option id='+ds+' value='+ds+'>'+org+'</option>';
   //alert(html);
   $('#blank').remove();
-  $('#db_choice').append(html);
-  $('#db_choice').sortSelect();
+  $('#db_choice').append(html).sortSelect();
   counting();
+}
+
+function loading(id,msg) {
+  var message = '<font class="loading">Loading '+msg+' . . .</font>';
+  $('#'+id).html(message);
 }
 
 jQuery.fn.checkCheckboxes = function()
@@ -51,13 +83,9 @@ jQuery.fn.checkCheckboxes = function()
 			returnWhat = checked;
 		}
 	);
-
-		returnWhat = this;
+	returnWhat = this;
 };
 
-function update_info_box(featname) {
-    $('#overlap_box').html('You have chosen to display the information for '+featname+'. You will be pleased to know that one day some useful info will be here.');
-}
 
 jQuery.fn.unCheckCheckboxes = function()
 {
@@ -74,11 +102,89 @@ jQuery.fn.unCheckCheckboxes = function()
 			returnWhat = unChecked;
 		}
 	);
-		returnWhat = this;
+	returnWhat = this;
 };
 
+jQuery.fn.selectOptions = function(index) {
+  this.each(
+  	function() {
+  		var opts = this.options;
+  		opts[index].selected = true;
+  	}	
+  );	
+  return this;
+};
+
+
+function enlarge_picture_window(id) {
+  var window_width = $(window).width();
+  //alert(window_width);
+  var image_width = pageObj.image_width || 800;
+  //alert(image_width);
+  var left_padding;
+  if ((window_width - image_width) <= 0) {
+    left_padding = 4;
+  }
+  else {
+    left_padding = ((window_width - image_width)/2);
+  }
+  //alert(image_width);
+  //alert(window_width);
+ // alert($(window).width());
+  //alert(left_padding);
+  var html = "<a href='#' onClick=\"$('#big_picture').slideToggle(pageObj.speed);$('#overlap_body').css('overflow','auto');\" style='float: right;'><img src='/CoGe/picts/delete.png' width='16' height='16' border='0'></a>";
+  html = html + $('#large_db'+id).html();
+  html = html+'<br>'+$('#large_pic'+id).html();
+  
+  $('#overlap_body').css("overflow","hidden");
+  $('#big_picture').html(html).css("left",''+left_padding).width(image_width).slideDown(pageObj.speed);
+}
+  
+function show_seq(seq,name,num,dsid,chr,start,stop) {
+  if (num == 1) which_seq = "Query";
+  else if (num == 2) which_seq = "Subject";
+  else which_seq = "Alignment";
+  //alert(seqObj.dsid);
+  //alert(seqObj.chr);
+  if (seqObj){
+    if (dsid == "seqObj") dsid = seqObj.dsid;
+    if (chr == "seqObj") chr = seqObj.chr;
+  } 
+  var html = "<a href='#' onClick=\"$('#sequence_popup').slideToggle(pageObj.speed);\" style='float: right;'><img src='/CoGe/picts/delete.png' width='16' height='16' border='0'></a>";
+  html = html + "<TABLE width=100%><TR><TD valign='top' align='right'>"+which_seq+" Name: </TD><TD align=justify>"+name+"</TD></TR>";
+  
+  //*1 to make sure js sees integer
+  if (stop*1 > start*1) { 
+    html = html + "<TR><TD valign='top' align='right'>"+which_seq+" Position: </TD><TD align=justify><pre>"+start+"-"+stop+"</pre></TD></TR>";
+  }
+  
+  html = html + "<TR><TD valign='top' align='right'>"+which_seq+" Sequence: </TD><TD align=justify>"+seq+"</TD></TR></TABLE>";
+  
+  //check to see if SeqView is an option, then display link
+  var regex = /^\d+$/;
+  if (regex.test(dsid) && dsid != 0) {
+    html = html + "<br><a target='_blank' href='/CoGe/SeqView.pl?dsid="+dsid+"&chr="+chr+"&start="+start+"&stop="+stop+"'>Click to view sequence in SeqView</a>";
+  }
+  var window_width = $(document).width();
+  var left_padding;
+  var info_width = 800;
+  if ((window_width - info_width) <= 0) {
+    left_padding = 4;
+  }
+  else {
+    left_padding = ((window_width - info_width)/2);
+  }
+  //$('#overlap_body').css("overflow","hidden");
+  $('#sequence_popup').html(html).css("left",''+left_padding).width(info_width).slideDown(pageObj.speed);
+  if ($('#sequence_popup').height() >= $(document).height() - 40) {
+    $('#sequence_popup').css("height",''+$(document).height() - 40);
+  }
+} 
+
 function generate_seq_obj(dsid,upstream,downstream,seqview,chr,rc,featid){
+ // alert(dsid+','+upstream+','+downstream+','+seqview+','+chr+','+rc+','+featid);
   this.featid=featid;
+  //alert(seqObj.featid);
   this.dsid=dsid;
   this.upstream=upstream;
   this.downstream=downstream;
@@ -112,27 +218,68 @@ function blastOff(){
   match_score = params.mm;
   gapcost = params.g;
   seq = params.s;
+  hsp_type = $('#hsp_type').val();
+  var page_width = ($('#co').width())*(95/100);
+  pageObj.image_width = page_width;
   var blastable_db = $('#db_choice').getLength(1);
-  //alert(blastable_db);
-  blastoff_search(['args__program','args__'+program,'args__expect','args__'+expect,'args__job_title','args__'+job_title,'args__wordsize','args__'+word_size,'args__comp','args__'+comp,'args__matrix','args__'+matrix,'args__matchscore','args__'+match_score,'args__gapcost','args__'+gapcost,'args__seq','args__'+seq,'args__blastable','args__'+blastable_db],[blastresults]);
+  blastoff_search(['args__program','args__'+program,'args__expect','args__'+expect,'args__job_title','args__'+job_title,'args__wordsize','args__'+word_size,'args__comp','args__'+comp,'args__matrix','args__'+matrix,'args__matchscore','args__'+match_score,'args__gapcost','args__'+gapcost,'args__seq','args__'+seq,'args__blastable','args__'+blastable_db,'args__width','args__'+page_width,'args__type','args__'+hsp_type],[blastresults],'POST');
+  
 }
 
 // $(document).ready(function(){
 
-function blastresults(html){
+function blastresults(html,basename){
+  pageObj.basename = basename;
+  //alert(pageObj.basename);
   $('#blast_results').html(html);
+  var overlap_height = $('#overlap_body').height();
+  var overlap_max = 300;
+  if (overlap_height > overlap_max) $('#overlap_body').height(overlap_max);
+  //$('#overlap').change(function () {
+//   		var overlap_table_height = $('#overlap').find('TR').length;
+//   		alert(overlap_table_height);
+//   		var nofeat_table_height = $('#no_feats').find('TR').length;
+//   		var row_id;
+//   		for(i=0;i< overlap_table_height;i++)
+//   		{
+//   		  //alert(i);
+// 		  if($('#overlap').find('TR')[i].id)
+// 		  {
+// 		  row_id = $('#overlap').find('TR')[i].id;
+// 		  break;
+// 		  }
+// 		}
+// 		alert(row_id);
+//   		var row_height = 21;//$('#'+row_id).height() || 25;
+//   		alert(row_height);
+//   		//alert(row_height);
+//   		if (nofeat_table_height > 0)
+//   		{
+//   		  nofeat_table_height = nofeat_table_height * row_height;
+//  		  if (nofeat_table_height > 300) nofeat_table_height = 300;
+//  		  $('no_feats').css("height",''+nofeat_table_height);
+//  		}
+//  		overlap_table_height = overlap_table_height * row_height;
+//  		if (overlap_table_height > 300) overlap_table_height = 300;
+//  		$('#overlap_body').css("height",''+overlap_table_height);
+ 		
+ 		var select_index = $('#hsp_type')[0].selectedIndex;
+ 		$('#color_hsp').selectOptions(select_index);
+ 		 
+ 		 
+ 	//});
   $(function(){
   $("#overlap").tablesorter({		
  		sortColumn: 'name',			// Integer or String of the name of the column to sort by.
 		sortClassAsc: 'headerSortUp',		// Class name for ascending sorting action to header
 		sortClassDesc: 'headerSortDown',	// Class name for descending sorting action to header
 		headerClass: 'header',			// Class name for headers (th's)
-		widgets: ['zebra'],
+		widgets: ['zebra','class'],
 		});
  });
 }
 
-function update_gapcost(){
+function update_gapcost() {
   var str = $('#match_score').val();
   $('.gapcosts').hide();
   var num1 = str.substr(0,1);
@@ -218,50 +365,50 @@ function get_params(){
  return {w : word_size, e : expect, db : db,g : gapcost,j : job_title,p : program,mm: match_mismatch,m : matrix,c : comp,s : seq};
 }
 
-function get_seq(url) {
+function ncbi_blast(url) {
  if (url == 1)
   {alert('You have not selected a BLAST program! Please select a program to run.');}
  else {
- var params = get_params();
- seq = params.s;
- seq = seq.replace(/\n/,'%0D');
+   var params = get_params();
+   seq = params.s;
+   seq = seq.replace(/\n/,'%0D');
  //alert('seq: '+seq);
- db = params.db;
- expect = params.e;
- job_title = params.j;
- word_size = params.w;
- comp = params.c;
- matrix = params.m
- match_score = params.mm;
+   db = params.db;
+   expect = params.e;
+   job_title = params.j;
+   word_size = params.w;
+   comp = params.c;
+   matrix = params.m
+   match_score = params.mm;
  
- url = url+'&DATABASE='+db+'&EXPECT='+expect+'&QUERY='+seq+'&JOB_TITLE='+job_title+'&WORD_SIZE='+word_size;
+   url = url+'&DATABASE='+db+'&EXPECT='+expect+'&QUERY='+seq+'&JOB_TITLE='+job_title+'&WORD_SIZE='+word_size;
  
- if (program == 'blastn') {
-   window.open(url+'&MATCH_SCORES='+match_score);
- }
+   if (program == 'blastn') {
+     window.open(url+'&MATCH_SCORES='+match_score);
+   }
 
-else {
- if ($('#comp_adj').is(':hidden')) {window.open(url+'&MATRIX_NAME='+matrix);}
- else {window.open(url+'&MATRIX_NAME='+matrix+'&COMPOSITION_BASED_STATISTICS='+comp);}
+   else {
+     if ($('#comp_adj').is(':hidden')) {window.open(url+'&MATRIX_NAME='+matrix);}
+     else {window.open(url+'&MATRIX_NAME='+matrix+'&COMPOSITION_BASED_STATISTICS='+comp);}
+   }
  }
-}
 }
 
 function radio_lock(display) {
   if (display == false) {
-  animate_section("#select_n", "hide",0);
-  animate_section("#select_p", "slideDown");
+    $("#select_n").hide(0);
+    $("#select_p").slideDown(pageObj.speed);
   }
   else {
-  animate_section("#select_p", "hide",0);
-  animate_section("#select_n", "slideDown");
+    $("#select_p").hide(0);
+    $("#select_n").slideDown(pageObj.speed);
   }
 }
 
 function select_blast() {
-  radio = get_radio();
+  var radio = get_radio();
   //alert(radio);
-  get_url([radio],[get_seq]);
+  get_url([radio],[ncbi_blast]);
 }
 
 function get_radio(){
@@ -273,22 +420,22 @@ function get_radio(){
   return radio;
 }
 
-function check_seq_for_blast() {
- dsid = pageObj.dsid;
- featid = pageObj.featid;
- chr = pageObj.chr;
+function get_seq() {
+ dsid = seqObj.dsid;
+ featid = seqObj.featid;
+ chr = seqObj.chr;
 // radio2 = kaj.GS('bn');
 // alert('bn');
-  if (featid) {
-   get_sequence(['args__'+featid,'args__'+dsid,'bn', 'args__'+pageObj.seqview, 'args__'+pageObj.upstream,'args__'+pageObj.downstream,'args__'+pageObj.rc],['seq_box']);
-  }
-  else if (chr) {
-   get_sequence(['args__'+chr,'args__'+dsid,'bn', 'args__'+pageObj.seqview, 'args__'+pageObj.upstream,'args__'+pageObj.downstream],['seq_box']);
-   }
-  else {
+ if (featid) {
+   get_sequence(['args__'+featid,'args__'+dsid,'bn', 'args__'+seqObj.seqview, 'args__'+seqObj.upstream,'args__'+seqObj.downstream,'args__'+seqObj.rc],['seq_box']);
+ }
+ else if (chr) {
+   get_sequence(['args__'+chr,'args__'+dsid,'bn', 'args__'+seqObj.seqview, 'args__'+seqObj.upstream,'args__'+seqObj.downstream],['seq_box']);
+ }
+ else {
 // alert('Im being called!'+accn+dsid+type_name);
   return;
-  }
+ }
 }
 
 function blast_param_on_select() {
@@ -296,60 +443,63 @@ function blast_param_on_select() {
  program = $('#'+radio).val();
  //alert(''+program);
  database_param([radio],['database']);
+ 
  if ((program == 'blastx') || (program == 'tblastx')) {
  //alert('Program is true!');
   blast_param(['args__'+"blast_type_p",'args__'+"blast_type_p"],[animate_params]);
-  }
-  else if ((program == 'blastp') || (program == 'tblastn')) {
-  blast_param(['args__'+"blast_type_p"],[animate_params]);}
-  else {
-   blast_param([],[animate_params]);}
+ }
+ else if ((program == 'blastp') || (program == 'tblastn')) {
+  blast_param(['args__'+"blast_type_p"],[animate_params]);
+ }
+ else {
+   blast_param([],[animate_params]);
+ }
 }
 
 function animate_params (html){
-  animate_section("#pro_or_nu_param", "hide",0);
-  $('#pro_or_nu_param').html(html);
-  animate_section("#pro_or_nu_param", "slideDown");
+  $('#pro_or_nu_param').hide(0).html(html).slideDown(pageObj.speed);
 }
 
 function get_displayFeature(){
-if (!$('#feature_display').val()){
+ if (!$('#feature_display').val()){
   return;
-}
-var stuff = $('#pretty_print_anno').html();
-var check = 0;
-if ($('#feature_display')[0].checked) {
-  check = 1;}
-if (stuff){
- toggleFeature("",check);}
-else if (check){
-get_pretty_print(['args__'+pageObj.featid, 'args__'+pageObj.dsid],[toggleFeature]);}
+ }
+ var stuff = $('#pretty_print_anno').html();
+ var check = 0;
+ if ($('#feature_display')[0].checked) {
+  check = 1;
+ }
+ if (stuff){
+  toggleFeature("",check);
+ }
+ else if (check){
+  generate_feat_info(['args__'+seqObj.featid],[toggleFeature]);
+ }
 }
 
-function get_organism_name_chain(val)
-{
+function get_organism_name_chain(val) {
  get_orgs(['args__'+val], ['org_list']);	 
 }
 
 function toggleFeature(html,check) {
- if (html)
- {
+ if (html) {
    $('#pretty_print_anno').html(html);
    animate_section("#pretty_print_anno", "show");
  }
- else if (check)
- {
+ else if (check) {
    animate_section("#pretty_print_anno", "show");
  }
-else {
-animate_section("#pretty_print_anno", "hide");
-}
+ else {
+  animate_section("#pretty_print_anno", "hide");
+ }
 }
 
 </SCRIPT>
 </TMPL_IF>
 
 <TMPL_IF NAME="BLAST_FRONT_PAGE">
+<div id=big_picture title="Enlarged Image of HSP Hits" class="image_window" style="display:none;"></div>
+<div id="sequence_popup" class="image_window" style="display:none;overflow: auto;max-height: 300px;"></div>
 <TABLE width=100%>
  <TR>
  <TD><DIV id=blast_results></DIV></TD>
@@ -358,7 +508,7 @@ animate_section("#pretty_print_anno", "hide");
 <TABLE>
  <TR>
    <TD>
-    <input type="button" value="CoGe BLAST" onClick="blastOff();">
+    <a href="#" id="coge_blast_button" onClick="blastOff();"><span>CoGe BLAST</span></a>
    </TD>
    <TD>
      <a href="#" id="ncbi_blast" onClick="select_blast()"><span>NCBI BLAST</span></a>
@@ -370,13 +520,13 @@ animate_section("#pretty_print_anno", "hide");
   <TD>
   <TH colspan="3">
   <DIV class="cogeblast_opts">
-   <DIV id = "co" class="topItem" onMouseOver="$('#co').removeClass('topItem').addClass('topItemSelected');" onMouseOut="$('#co').removeClass('topItemSelected').addClass('topItem');" onClick='animate_section("#coge_blast", "slideToggle")'>CoGe BLAST Options:</DIV>
+   <DIV id = "co" name="slider" class="topItem" onMouseOver="$('#co').removeClass('topItem').addClass('topItemSelected');" onMouseOut="$('#co').removeClass('topItemSelected').addClass('topItem');" onClick='animate_section("#coge_blast", "slideToggle")'>CoGe BLAST Options:</DIV>
    <DIV class="dropMenu" id="coge_blast" style="display: none">
    <TABLE class="list" >
        <TR>
           <TD>
    	<DIV id="org_name"><TMPL_VAR NAME="ORG_NAME"></DIV>
-   	<DIV id="blah">Organism Name: <input type="text" size=10 value="" name = "org_name" id="org_name" onKeyUp='get_organism_name_chain(this.value);'></DIV>
+   	<DIV id="blah">Organism Name: <input id="org_text" type="text" size=2 onFocus="$('#org_text').css({width: '140', background: '#F7FFF7'})" value="" name = "org_name" id="org_name" onKeyUp='get_organism_name_chain(this.value);'></DIV>
    	<DIV id="org_list"><TMPL_VAR NAME="ORG_LIST"></DIV>
    	  </TD>
    	  <TD valign="middle" align=middle>
@@ -390,6 +540,13 @@ animate_section("#pretty_print_anno", "hide");
               <option id=blank value=null>No Database Selected</option>
               </SELECT></DIV>
            </TD>
+           <TD valign>Sort HSP Results by: 
+           <select name=hsp_type id=hsp_type >
+            <option value = "percent"> Percent Identity </option>
+            <option value = "eval"> E-value </option>
+            <option value = "score"> Score </option>
+            <option value = "length"> Length </option>
+     </select>
           </TR>
          </TABLE>
 </DIV>
@@ -411,7 +568,7 @@ animate_section("#pretty_print_anno", "hide");
        <TABLE>
        <TR>
         <TD valign="top">
-         <label><input id=bn type=radio name=blast value="blast_type_n" checked="" onClick="radio_lock($('#bn')[0].checked);check_seq_for_blast();blast_param_on_select();">Nucleotide Sequence</label>
+         <label><input id=bn type=radio name=blast value="blast_type_n" checked="" onClick="radio_lock($('#bn')[0].checked);get_seq();blast_param_on_select();">Nucleotide Sequence</label>
          <br>
           <div id=select_n>
            <select name=blasttype id=blast_type_n onChange="blast_param_on_select()">
@@ -424,7 +581,7 @@ animate_section("#pretty_print_anno", "hide");
            <br>
           </div>
          <br>
-         <label><input id=bn type=radio name=blast value="blast_type_p" onClick="radio_lock($('#bn')[0].checked);check_seq_for_blast();blast_param_on_select()">Protein Sequence</label>
+         <label><input id=bn type=radio name=blast value="blast_type_p" onClick="radio_lock($('#bn')[0].checked);get_seq();blast_param_on_select()">Protein Sequence</label>
          <br>
           <div id=select_p>
            <select name=blasttype id=blast_type_p>
@@ -718,40 +875,173 @@ animate_section("#pretty_print_anno", "hide");
    
    
    <TMPL_IF NAME="OVERLAP_FEATURE_IF">
+   <div id=table_size style="max-height: 360px;">
    <TABLE id="overlap" cellspacing="2" class="resultborder">
+     <caption>Features Overlapped by HSP Hits</caption>
    	<THEAD>
-         <TR>
+         <TR align=middle>
           <TH>  </TH>
-          <TH class="header">Name</TH>
-          <TH class="header">Length</TH>
-          <TH class="header">E-Value</TH>
-          <TH class="header">Percent ID</TH>
-          <TH class="header">Score</TH>
+          <TH class="header" >Name</TH>
+          <TH class="header" >HSP No.</TH>
+          <TH class="header" >E-Value</TH>
+          <TH class="header" >Percent ID</TH>
+          <TH class="header" >Score</TH>
+          <TH class="header" >Length</TH>
+          <TH class="header" >Org</TH>
          </TR>
          </THEAD>
-         <TBODY>
+         <TBODY id=overlap_body style="overflow: auto;">
          <TMPL_LOOP NAME=FEATURE_TABLE>
-         <TR id="table_row<TMPL_VAR NAME=FID>" onclick="update_info_box('<TMPL_VAR NAME=FID>')" onmouseover="$('#table_row<TMPL_VAR NAME=FID>').addClass('highlight_tablerows');" onmouseout="$('#table_row<TMPL_VAR NAME=FID>').removeClass('highlight_tablerows');">
+         <TR id="table_row<TMPL_VAR NAME=FID>" title="Click for info" align=right class="feat" onclick="update_info_box('table_row<TMPL_VAR NAME=FID>')" >
+         <!--onmouseover="$('#table_row<TMPL_VAR NAME=FID>').addClass('highlight_tablerows');" onmouseout="$('#table_row<TMPL_VAR NAME=FID>').removeClass('highlight_tablerows');"-->
           <TD><input type=checkbox id="feature_checkbox<TMPL_VAR NAME=FID>" name="feature_checkbox" value="<TMPL_VAR NAME=FID>"></TD>
-          <TD><TMPL_VAR NAME=FEATURE_NAME></TD>
-          <TD><TMPL_VAR NAME=FEATURE_LENGTH></TD>
-          <TD><TMPL_VAR NAME=FEATURE_EVAL></TD>
-          <TD><TMPL_VAR NAME=FEATURE_PID></TD>
-          <TD><TMPL_VAR NAME=FEATURE_SCORE></TD>
+          <TD ><TMPL_VAR NAME=FEATURE_NAME></TD>
+          <TD ><TMPL_VAR NAME=FEATURE_HSP></TD>
+          <TD ><TMPL_VAR NAME=FEATURE_EVAL></TD>
+          <TD ><TMPL_VAR NAME=FEATURE_PID></TD>
+          <TD ><TMPL_VAR NAME=FEATURE_SCORE></TD>
+          <TD ><TMPL_VAR NAME=FEATURE_LENGTH></TD>
+          <TD ><TMPL_VAR NAME=FEATURE_ORG></TD>
          </TR>
         </TMPL_LOOP>
         </TBODY>
         </TABLE>
-         
+        </div>
+        <input type=button value="Select All" onClick="$('#feature_list').checkCheckboxes()">  <input type=button value="Select None" onClick="$('#feature_list').unCheckCheckboxes()">
+        <br>
+        <br>
+         <DIV id=overlap_box valign="top" align="left" class="resultborder" style="overflow: auto;display: none;max-height: 300px;"></DIV>
+         <TMPL_IF NAME=NO_FEAT_IF>
+         <br>
+          <div id=no_table_size style="max-height: 150px;overflow: auto;">
+             <table id="no_table" class="resultborder">
+               <caption>HSPs w/o overlapping features</caption>
+               <tbody id=no_feats style="overflow: auto">
+               <TMPL_LOOP NAME=NO_FEATS>
+                 <tr class="feat">
+                   <td>HSP Number: <TMPL_VAR NAME=NO_FEAT></td>
+                   <td>  No Overlapping Feature(s)</td>
+                 </tr>
+               </TMPL_LOOP>
+              </tbody>
+             </table>
+           </div>
+         </TMPL_IF>
    </TMPL_IF>
    
    <TMPL_IF NAME=CHROMOSOMES_IF>
        <TMPL_LOOP NAME=CHROMOSOME_LOOP>
          <TMPL_VAR NAME=DB_NAME>
          <TMPL_VAR NAME=CHR_IMAGE>
-         <br>
+         <TMPL_IF NAME=HIT>
+         <a href='#imagewindow' onClick="enlarge_picture_window(<TMPL_VAR NAME=IMAGE_ID>);">Enlarge Picture</a>
+         </TMPL_IF>
+        <br>
        </TMPL_LOOP>
    </TMPL_IF>
+   
+   <TMPL_IF NAME=CHROMOSOMES_LARGE_IF>
+        <TMPL_LOOP NAME=CHROMOSOME_LOOP_LARGE>
+          <div id=large_db<TMPL_VAR NAME=IMAGE_ID_LARGE> style="display:none"><TMPL_VAR NAME=DB_NAME_LARGE></div>
+          <div id=large_pic<TMPL_VAR NAME=IMAGE_ID_LARGE> style="display:none"><TMPL_VAR NAME=CHR_IMAGE_LARGE></div>
+        </TMPL_LOOP>
+   </TMPL_IF>
+   
+   <TMPL_IF NAME=HSP_IF>
+       <TABLE id="hsp_table" class="resultborder" style="width: 400px; overflow: auto;" cellspacing="2">
+     <caption>HSP Number <TMPL_VAR NAME=HSP_NUM> Info</caption>
+      <tr>
+      <td valign="top">
+      <table >
+   	  <THEAD>
+         <TR>
+          <TH> </TH>
+          <TH class="header">Query</TH>
+          <TH class="header">Subject</TH>
+         </TR>
+         </THEAD>
+         <TBODY style="font-size: 10pt;">
+         <TMPL_LOOP NAME=HSP_QUERY>
+         <TR>
+         <!--onmouseover="$('#table_row<TMPL_VAR NAME=FID>').addClass('highlight_tablerows');" onmouseout="$('#table_row<TMPL_VAR NAME=FID>').removeClass('highlight_tablerows');"-->
+          <TD>E-Value</TD>
+          <TD><TMPL_VAR NAME=HSP_EVAL_QUERY></TD>
+          <TD><TMPL_VAR NAME=HSP_EVAL_SUB></TD>
+          </tr>
+          <tr>
+          <TD >Perc ID</TD>
+          <TD><TMPL_VAR NAME=HSP_PID_QUERY></TD>
+          <TD><TMPL_VAR NAME=HSP_PID_SUB></TD>
+          </tr>
+          <tr>
+          <TD >Perc Sim</TD>
+          <TD><TMPL_VAR NAME=HSP_PSIM_QUERY></TD>
+          <TD><TMPL_VAR NAME=HSP_PSIM_SUB></TD>
+          </tr>
+          <tr>
+          <TD >Score</TD>
+          <TD><TMPL_VAR NAME=HSP_SCORE_QUERY></TD>
+          <TD><TMPL_VAR NAME=HSP_SCORE_SUB></TD>
+          </tr>
+          <tr>
+          <TD >Gap</TD>
+          <TD><TMPL_VAR NAME=HSP_GAP_QUERY></TD>
+          <TD><TMPL_VAR NAME=HSP_GAP_SUB></TD>
+         </TR>
+        </TBODY>
+        </TMPL_LOOP>
+        </table>
+        </TD>
+        <TD valign="top">
+        <table>
+         <THEAD>
+         <TR>
+          <TH> </TH>
+          <TH class="header">Query</TH>
+          <TH class="header">Subject</TH>
+         </TR>
+         </THEAD>
+          <TMPL_LOOP NAME=HSP_SUB>
+         <TBODY style="font-size: 10pt;">
+         <TR >
+         <TD >Match</TD>
+          <TD><TMPL_VAR NAME=HSP_MATCH_QUERY></TD>
+          <TD><TMPL_VAR NAME=HSP_MATCH_SUB></TD>
+          </tr>
+          <tr>
+          <TD >Mismatch</TD>
+          <TD><TMPL_VAR NAME=HSP_MISMATCH_QUERY></TD>
+          <TD><TMPL_VAR NAME=HSP_MISMATCH_SUB></TD>
+          </tr>
+          <tr>
+          <TD >Strand</TD>
+          <TD><TMPL_VAR NAME=HSP_STRAND_QUERY></TD>
+          <TD><TMPL_VAR NAME=HSP_STRAND_SUB></TD>
+          </tr>
+          <tr>
+          <TD >Length</TD>
+          <TD><TMPL_VAR NAME=HSP_LENGTH_QUERY></TD>
+          <TD><TMPL_VAR NAME=HSP_LENGTH_SUB></TD>
+          </TR>
+          <tr>
+          <TD >Position</TD>
+          <TD><TMPL_VAR NAME=HSP_POSITION_QUERY></TD>
+          <TD><TMPL_VAR NAME=HSP_POSITION_SUB></TD>
+          </TR>
+        </TBODY>
+        </TMPL_LOOP>
+        </table>
+        </TR>
+        </TABLE>
+        <br>
+        <table width=100%>
+          <tr>
+            <td><TMPL_VAR NAME=QUERY_SEQ></td>
+            <td><TMPL_VAR NAME=SUB_SEQ></TD>
+            <td><TMPL_VAR NAME=ALIGNMENT></td>
+          </tr>
+         </table>
+  </TMPL_IF>
    
 <TMPL_IF NAME=BLAST_RESULTS>
 <TABLE width=100%>
@@ -765,35 +1055,35 @@ animate_section("#pretty_print_anno", "hide");
    <TABLE width=100%>
     <TR>
      <TD align=left valign="top" >
-     <DIV id=chromosomes class="bresultdiv resultborder">
+     Database HSP Hits Visualization
+     <DIV id=chromosomes class="resultborder" style="width: 405px;overflow: auto;max-height: 80%;">
      <TMPL_VAR NAME=CHROMOSOMES>
+     <TMPL_VAR NAME=CHR_LARGE>
       </DIV>
       Color HSP Hits by: 
-      <select name=color_hsp id=color_hsp>
-            <option value = "0"> Percent Identity </option>
-            <option value = "1"> E-value </option>
-            <option value = "2"> Score </option>
-            <option value = "3"> Length </option>
+      <select name=color_hsp id=color_hsp onchange="loading('chromosomes','Images');generate_overview_image(['args__basename','args__'+pageObj.basename,'args__type','args__'+$('#color_hsp').val(),'args__width','args__'+pageObj.image_width],['chromosomes']);">
+            <option value = "percent"> Percent Identity </option>
+            <option value = "eval"> E-value </option>
+            <option value = "score"> Score </option>
+            <option value = "length"> Length </option>
      </select>
       </TD>
-      <TD>
-       <DIV id=result_visual valign="top">
-        <DIV id=subject_image>Picture Here</DIV>
+      <TD valign="top" align="middle">
+       <DIV id=result_visual valign="top" style="display: none">
+         HSP Hit Information
+        <DIV id=query_image class="hsp_image"></DIV>
         <BR>
-        <DIV id=query_image>Another Picture Here</DIV>
+        <DIV id=subject_image class="hsp_image"></DIV>
         <BR>
         <BR>
-        <DIV id=image_info class="resultborder">HSP info box.</DIV>
+        <DIV id=image_info><TMPL_VAR NAME=HSP></DIV>
         </DIV>
       </TD>
-      <TD>
+      <TD valign="top" align=right>
        <DIV id=result_features align=right valign="top">
-         <form id=feature_list class="bresultdiv">
+         <form id=feature_list style="position:static">
          <TMPL_VAR NAME="OVERLAP_FEATURE_LIST">
-         <input type=button value="Select All" onClick="$('#feature_list').checkCheckboxes()">  <input type=button value="Select None" onClick="$('#feature_list').unCheckCheckboxes()">
          </form>
-         <br>
-         <DIV id=feature_info class="bresultdiv"><textarea class="backbox resultborder" readonly type="textarea" name="overlap_box" id ="overlap_box" wrap=off cols=55 rows=10>Overlap Features info box</textarea></DIV>
        </DIV>
      </TD>
     <TR>
