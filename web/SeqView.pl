@@ -197,7 +197,7 @@ sub get_seq
 	$fasta_no_html = ">".$ds->org->name.", Location: ".$start."-".$stop.", Chromosome: ".$chr;
       }
 
-    $fasta = qq{<FONT class="main"><i>$fasta</i></FONT>};
+    #$fasta = qq{<FONT class="main"><i>$fasta</i></FONT>};
 #    $columns = 80;
 #    $fasta = join ("\n", wrap('','',$fasta));
     
@@ -222,34 +222,28 @@ sub get_seq
      $columns = 80;
      $seq = join ("\n", wrap('','',$seq));
      #print $seq;
-     my $up;
-     my $down;
-     my $main;
      #my $newline = $seq;
      #$newline =~ s/\n/\\n/g;
      #print STDERR $newline;
-     unless($pro)
-     {
-      if($feat_id)
-      {
-       unless ($rc)
-       {
-        $seq = color(seq=>$seq, upstream=>$upstream, downstream=>$downstream);
-       }
-       else
-       {
-        $seq = color(seq=>$seq, upstream=>$downstream, downstream=>$upstream, rc=>$rc);
-       }
-       
-      }
-     }
-     else{
-      $seq = qq{<FONT class="main">$seq</FONT>};
-     }
+#      unless($pro)
+#      {
+#       if($feat_id)
+#       {
+#        unless ($rc)
+#        {
+#         $seq = color(seq=>$seq, upstream=>$upstream, downstream=>$downstream);
+#        }
+#        else
+#        {
+#         $seq = color(seq=>$seq, upstream=>$downstream, downstream=>$upstream, rc=>$rc);
+#        }
+#        
+#       }
+#      }
     unless ($rc==2)
      {$seq = ($fasta. $seq);}
     #print STDERR "$seq\n";
-    return "<pre>".$seq."</pre>";
+    return $seq;
   }
   
 sub gen_foot
@@ -373,49 +367,48 @@ sub get_prot_seq_for_feat
   }
 
      
-sub color
-    {
-      my %opts = @_;
-      my $seq = $opts{'seq'};
-      my $rc = $opts{'rc'};
-      my $upstream = $opts{'upstream'};
-      my $downstream = $opts{'downstream'};
-      my $up;
-      my $down;
-      my $main;
-      my $nl1;
-      $nl1 = 0;
-      $up = substr($seq, 0, $upstream);
-      while ($up=~/\n/g){$nl1++;}
-      my $check = substr($seq, $upstream, $nl1);
-
-      if ($check =~ /\n/)
-       {$nl1++; }
-      $upstream += $nl1;
-      $up = substr($seq, 0, $upstream);
-      my $nl2 = 0;
-      $down = substr($seq, ((length $seq)-($downstream)), length $seq);
-      while ($down=~/\n/g){$nl2++;}
-      $check = substr($seq, ((length $seq)-($downstream+$nl2)), $nl2);
-      if ($check =~ /\n/)
-       {$nl2++;}
-      $downstream += $nl2;
-      $down = substr($seq, ((length $seq)-($downstream)), $downstream);
-      unless ($rc)
-      {
-      $down = qq{<FONT class="down">$down</FONT>};
-      $up = qq{<FONT class="up">$up</FONT>};
-      }
-      else
-      {
-      $down = qq{<FONT class="up">$down</FONT>};
-      $up = qq{<FONT class="down">$up</FONT>};
-      }
-      $main = substr($seq, $upstream, (((length $seq)) - ($downstream+$upstream)));
-      $main = qq{<FONT class="main">$main</FONT>};
-      $seq = join("", $up, $main, $down);
-      return $seq;
-    }
+# sub color
+#     {
+#       my %opts = @_;
+#       my $seq = $opts{'seq'};
+#       my $rc = $opts{'rc'};
+#       my $upstream = $opts{'upstream'};
+#       my $downstream = $opts{'downstream'};
+#       my $up;
+#       my $down;
+#       my $main;
+#       my $nl1;
+#       $nl1 = 0;
+#       $up = substr($seq, 0, $upstream);
+#       while ($up=~/\n/g){$nl1++;}
+#       my $check = substr($seq, $upstream, $nl1);
+# 
+#       if ($check =~ /\n/)
+#        {$nl1++; }
+#       $upstream += $nl1;
+#       $up = substr($seq, 0, $upstream);
+#       my $nl2 = 0;
+#       $down = substr($seq, ((length $seq)-($downstream)), length $seq);
+#       while ($down=~/\n/g){$nl2++;}
+#       $check = substr($seq, ((length $seq)-($downstream+$nl2)), $nl2);
+#       if ($check =~ /\n/)
+#        {$nl2++;}
+#       $downstream += $nl2;
+#       $down = substr($seq, ((length $seq)-($downstream)), $downstream);
+#       unless ($rc)
+#       {
+#       $down = qq{<u>$down</u>};
+#       $up = qq{<u>$up</u>};
+#       }
+#       else
+#       {
+#       $down = qq{<u>$down</u>};
+#       $up = qq{<u>$up</u>};
+#       }
+#       $main = substr($seq, $upstream, (((length $seq)) - ($downstream+$upstream)));
+#       $seq = join("", $up, $main, $down);
+#       return $seq;
+#     }
     
 sub gen_title
     {
