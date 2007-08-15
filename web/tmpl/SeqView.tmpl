@@ -72,7 +72,7 @@ function blastSeq() {
    rc = 1;}
  if (featid) {
  //alert('CoGeBlast.pl?featid='+featid+'&upstream='+up+'&downstream='+down+'&dsid='+dsid+'&featname='+featname+'&rc='+rc);
- window.open('CoGeBlast.pl?featid='+featid+'&upstream='+up+'&downstream='+down+'&dsid='+dsid+'&rc='+rc);}
+ window.open('CoGeBlast.pl?featid='+featid+'&upstream='+up+'&downstream='+down+'&dsid='+dsid+'&chr='+chr+'&rc='+rc);}
  else {
  //alert('CoGeBlast.pl?chr='+chr+'&upstream='+up+'&downstream='+down+'&dsid='+dsid,'window');
  window.open('CoGeBlast.pl?chr='+chr+'&upstream='+up+'&downstream='+down+'&dsid='+dsid+'&rc='+rc,'window');
@@ -137,14 +137,15 @@ function get_sequence(rc,pro,add){
   //alert($('#seq_text').html());
 }
 
+
 </SCRIPT>
 </TMPL_IF>
 <TMPL_IF NAME=SEQ_BOX>
-     <DIV id="seq" style="height: 300px; overflow: auto;">
+     <DIV id="seq">
       <TABLE>
        <TR>
         <TD>
-        <DIV id="seq_text" class="seq_text"></DIV>
+        <textarea id=seq_text name=seq_text class=backbox readonly ondblclick="this.select();" style="height: 400px; width: 750px; overflow: auto;"></textarea>
 	</TD>
        </TR>
       </TABLE>
