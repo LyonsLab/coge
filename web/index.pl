@@ -52,7 +52,6 @@ sub gen_html
 
     my $html;
     $html .= $template->output;
-    print STDERR $html;
     return $html;
   }
 
