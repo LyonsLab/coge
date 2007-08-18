@@ -437,26 +437,28 @@ sub read_log
   }
 
 sub check_filename_taint {
-	my $v = shift;
-	if ($v =~ /^([A-Za-z0-9\-\.=\/_]*)$/) {
-		my $v1 = $1;
-		return($v1);
-	} else {
-		return(0);
-	}
+  my $v = shift;
+  return 1 unless $v;
+  if ($v =~ /^([A-Za-z0-9\-\.=\/_]*)$/) {
+    my $v1 = $1;
+    return($v1);
+  } else {
+    return(0);
+  }
 }
 
 sub check_taint {
-	my $v = shift;
-	if ($v =~ /^([-\w._=\s+\/]+)$/) {
-			$v = $1;
-			# $v now untainted
-			return(1,$v);
-	} else {
-	# data should be thrown out
-	  carp "$v failed taint check\n";
-			return(0);
-	}
+  my $v = shift;
+  return 1 unless $v;
+  if ($v =~ /^([-\w._=\s+\/]+)$/) {
+    $v = $1;
+    # $v now untainted
+    return(1,$v);
+  } else {
+    # data should be thrown out
+    carp "'$v' failed taint check\n";
+    return(0);
+  }
 }
 
 
