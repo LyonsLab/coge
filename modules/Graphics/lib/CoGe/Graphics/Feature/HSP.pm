@@ -31,7 +31,7 @@ sub _initialize
     $self->type('HSP');
     $self->mag(1);
     $self->font_size(10);
-    $self->color_matches(1) unless defined $self->color_matches();
+    $self->color_matches(0) unless defined $self->color_matches();
   }
 
 sub _post_initialize
