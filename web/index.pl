@@ -11,7 +11,7 @@ use CoGe::Accessory::LogUser;
 use CoGe::Genome;
 
 
-use vars qw($USER $UID $LAST_LOGIN $FORM $DATE);
+use vars qw($USER $UID $LAST_LOGIN $FORM $DATE $update);
 
 $ENV{PATH} = "/opt/apache/CoGe";
 $FORM = new CGI;
@@ -23,8 +23,9 @@ my $pj = new CGI::Ajax(
 		       gen_html=>\&gen_html,
 		       login=>\&login,
 		      );
-print $pj->build_html($FORM, \&gen_html);
+$update =0;
 
+print $pj->build_html($FORM, \&gen_html);
 #print gen_html();
 
 
@@ -35,6 +36,7 @@ sub gen_html
     $template->param(TITLE=>'Comparative Genomics Homepage');
     $template->param(HELP=>'CoGe');
     #$template->param(HEAD=>'<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.js"></SCRIPT>');
+
     if ($FORM->param('logout') || !$USER)
       {
 	$template->param(USER=>"Not logged in");
@@ -50,6 +52,7 @@ sub gen_html
 
     my $html;
     $html .= $template->output;
+    print STDERR $html;
     return $html;
   }
 
@@ -63,7 +66,11 @@ sub gen_body
      {
       $disable = $cookies{'anim_speed'}->value() eq "0" ? 1 : 0;
      }
-    if ($USER && !$FORM->param('logout'))
+    if ($update)
+      {
+	$tmpl->param(update=>1);
+      }
+    elsif ($USER && !$FORM->param('logout'))
       {
 	if ($disable){
 	$tmpl->param(DISABLE=>1);
