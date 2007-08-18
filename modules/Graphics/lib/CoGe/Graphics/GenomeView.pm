@@ -120,6 +120,7 @@ sub generate_png
   {
     my ($self) = shift@_;
     my %opts = @_;
+    my $gif = $opts{gif} || 0;
     my $file_name = $opts{file_name};
     $file_name = $opts{filename} unless $file_name;
     $file_name = $opts{name} unless $file_name;
@@ -137,7 +138,14 @@ sub generate_png
     $self->_color_set(undef);
     $self->generate_chromosomes();
     $self->generate_legend() if $self->legend;
-    print OUT $self->gd->png;
+    if ($gif)
+      {
+	print OUT $self->gd->gif;
+      }
+    else
+      {
+	print OUT $self->gd->png;
+      }
     close OUT;
   }
 
@@ -211,7 +219,7 @@ sub draw_features
     my $color_band_flag = $self->color_band_flag;
     return unless $feats->{$chr->{name}};
     my $black = $gd->colorAllocate(0,0,0);
-    foreach my $feat (sort {$a->{end} <=> $b->{end} }@{$feats->{$chr->{name}}})
+    foreach my $feat (@{$feats->{$chr->{name}}})
       {
 	my $color = $feat->{color};
 	$color = $self->get_color($color) if ref ($color) =~ /array/i;
