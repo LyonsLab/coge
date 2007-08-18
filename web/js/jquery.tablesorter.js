@@ -527,17 +527,41 @@
 	});
 	
 	$.tablesorter.addParser({
-		id: 'integer',
+		id: 'scientific',
 		is: function(s) {
-			return s.match(new RegExp(/^\d+$/));
+			return /^\de[\-]\d+$/.test(s);
 		},
 		format: function(s) {
-			return $.tablesorter.formatInt(s);
+			return $.tablesorter.formatFloat(s);
+		},
+		type: 'numeric' 
+	});
+	
+	$.tablesorter.addParser({
+		id: 'integer',
+		is: function(s) {
+			return s.match(new RegExp(/^\d+(\.\d)?$/));
+		},
+		format: function(s) {
+			return $.tablesorter.formatFloat(s);
 		},
 		type: 'numeric'
 	});
 	
-	// add widgets
+	//add widgets
+	$.tablesorter.addWidget({
+		id: 'class',
+		format: function(table) {
+			var row_num = table.tBodies[0].rows.length;
+			
+			for (var i=0;i<row_num;i++)
+			{
+			  var id = $("tbody > tr:eq(" + i + ") > td:eq(0) > input:checkbox",table).attr("value");
+			  $("tbody > tr:eq(" + i + ")",table).addClass('feat').attr({onclick: "update_info_box('table_row"+id+"')", id: "'"+id+"'", align: "right"});
+			}
+		}
+	});
+	
 	$.tablesorter.addWidget({
 		id: 'zebra',
 		format: function(table) {
