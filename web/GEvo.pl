@@ -42,7 +42,8 @@ delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 $ENV{'LAGAN_DIR'} = '/opt/apache/CoGe/bin/lagan/';
 #for dialign
 $ENV{'DIALIGN2_DIR'} = '/opt/apache/CoGe/bin/dialign2_dir/';
-use vars qw( $DATE $DEBUG $BL2SEQ $BLASTZ $LAGAN $CHAOS $DIALIGN $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge $NUM_SEQS $MAX_SEQS $BASEFILE $BASEFILENAME $LOGFILE $SQLITEFILE $REPEATMASKER %RESTRICTED_ORGS);
+use vars qw( $PAGE_NAME $DATE $DEBUG $BL2SEQ $BLASTZ $LAGAN $CHAOS $DIALIGN $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge $NUM_SEQS $MAX_SEQS $BASEFILE $BASEFILENAME $LOGFILE $SQLITEFILE $REPEATMASKER %RESTRICTED_ORGS);
+$PAGE_NAME = "GEvo.pl";
 $BL2SEQ = "/opt/bin/bio/bl2seq ";
 $BLASTZ = "/usr/bin/blastz ";
 $LAGAN = "/opt/apache/CoGe/bin/lagan/lagan.pl";
@@ -85,6 +86,8 @@ my $pj = new CGI::Ajax(
 		       gen_go_run=>\&gen_go_run,
 		       gen_hsp_colors =>\&gen_hsp_colors,
 		       initialize_basefile=>\&initialize_basefile,
+		       save_settings_gevo=>\&save_settings_gevo,
+		       reset_settings_gevo=>\&reset_settings_gevo,
 		       %ajax,
 		      );
 $pj->JSDEBUG(0);
@@ -92,7 +95,7 @@ $pj->DEBUG(0);
 $pj->js_encode_function('escape');
 print $pj->build_html($FORM, \&gen_html);
 
-#$USER=1;print gen_html();
+#$USER="elyons";print gen_html();
 
 sub loading
   {
@@ -109,7 +112,6 @@ sub gen_html
       }
     else
       {
-	my $num_seqs = $FORM->param("num_seqs") || $NUM_SEQS;
 	my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
 	$template->param(LOGO_PNG=>"GEvo-logo.png");
 	$template->param(TITLE=>'Genome Evolution Analysis');
@@ -117,7 +119,7 @@ sub gen_html
 	$template->param(USER=>$USER);
 	$template->param(DATE=>$DATE);
 	$template->param(NO_BOX=>1);
-	$template->param(BODY=>gen_body($num_seqs));
+	$template->param(BODY=>gen_body());
 	my $prebox = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GEvo.tmpl');
 	$prebox->param(RESULTS_DIV=>1);
 	$template->param(PREBOX=>$prebox->output);
@@ -129,8 +131,16 @@ sub gen_html
 
 sub gen_body
   {
-    my $num_seqs = shift;;
     my $form = $FORM;
+    my $prefs = load_settings(user=>$USER, page=>$PAGE_NAME);
+    if ($prefs)
+      {
+	$prefs =~ s/VAR1/prefs/;
+	eval $prefs;
+      }
+#    print STDERR Dumper $prefs;
+    my $num_seqs = get_opt(params=>$prefs, form=>$form, param=>'num_seqs');
+    $num_seqs = $NUM_SEQS unless defined $num_seqs;
     $MAX_SEQS = 10 if $form->param('override');
     my $message;
     if (! ($num_seqs =~ /^\d+$/) )
@@ -196,11 +206,62 @@ sub gen_body
 		       }
       }
 
-    
-    my $prog = lc($form->param('prog')) if $form->param('prog');
-#    my $exon_mask = $form->param('exon_mask');
+    #page preferences
+
+    my $prog = get_opt(params=>$prefs, form=>$form, param=>'prog');
+    $prog = "blastz" unless $prog;
+    my $results_interface = get_opt(params=>$prefs, form=>$form, param=>'viewer');
+    $results_interface = "flash" unless $results_interface;
+    my $image_width = get_opt(params=>$prefs, form=>$form, param=>'iw');
+    $image_width = 1000 unless $image_width;
+    my $image_height = get_opt(params=>$prefs, form=>$form, param=>'ih');
+    $image_height = 100 unless $image_height;
+    my $feature_height = get_opt(params=>$prefs, form=>$form, param=>'fh');
+    $feature_height = 15 unless $feature_height;
+    my $padding  = get_opt(params=>$prefs, form=>$form, param=>'padding');
+    $padding = 5 unless defined $padding;
+    my $gc_color = get_opt(params=>$prefs, form=>$form, param=>'gc');
+    $gc_color = 0 unless $gc_color;
+    my $nt_color = get_opt(params=>$prefs, form=>$form, param=>'nt');
+    $nt_color = 0 unless $nt_color;
+    my $auto_adjust_feats = get_opt(params=>$prefs, form=>$form, param=>'overlap');
+    $auto_adjust_feats = 0 unless $auto_adjust_feats;
+    my $hiqual = get_opt(params=>$prefs, form=>$form, param=>'hiqual');
+    $hiqual = 0 unless $hiqual;
+    my $color_hsp = get_opt(params=>$prefs, form=>$form, param=>'colorhsp');
+    $color_hsp = 0 unless $color_hsp;
+    my $hsp_label = get_opt(params=>$prefs, form=>$form, param=>'hsplabel');
+    $hsp_label = "staggered" unless defined $hsp_label;
+    my $hsp_limit = get_opt(params=>$prefs, form=>$form, param=>'hsplim');
+    $hsp_limit = 0 unless $hsp_limit;
+    my $hsp_limit_num = get_opt(params=>$prefs, form=>$form, param=>'hsplimnum');
+    $hsp_limit_num = 20 unless defined $hsp_limit_num;
 
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GEvo.tmpl');
+    $template->param(GOBE_VIEWER=>"selected") if $results_interface eq "flash";
+    $template->param(HTML_VIEWER=>"selected") if $results_interface eq "html";
+    $template->param(IMAGE_WIDTH=>$image_width);
+    $template->param(IMAGE_HEIGHT=>$image_height);
+    $template->param(FEAT_HEIGHT=>$feature_height);
+    $template->param(PADDING=>$padding);
+    if ($gc_color) {$template->param(GC_COLOR_YES=>"checked");}
+    else {$template->param(GC_COLOR_NO=>"checked");}
+    if ($nt_color) {$template->param(NT_COLOR_YES=>"checked");}
+    else {$template->param(NT_COLOR_NO=>"checked");}
+    if ($auto_adjust_feats) {$template->param(OVERLAP_YES=>"checked");}
+    else {$template->param(OVERLAP_NO=>"checked");}
+    if ($hiqual) {$template->param(HIQUAL_YES=>"checked");}
+    else {$template->param(HIQUAL_NO=>"checked");}
+    if ($color_hsp) {$template->param(COLOR_HSP_YES=>"checked");}
+    else {$template->param(COLOR_HSP_NO=>"checked");}
+    if ($hsp_label eq "staggered") {$template->param(HSP_LABELS_STAG=>"selected");}
+    elsif ($hsp_label eq "linear") {$template->param(HSP_LABELS_LIN=>"selected");}
+    else {$template->param(HSP_LABELS_NO=>"selected");}
+    if ($hsp_limit) {$template->param(HSP_LIMIT_YES=>"checked");}
+    else {$template->param(HSP_LIMIT_NO=>"checked");}
+    $template->param(HSP_LIMIT_NUM=>$hsp_limit_num);
+
+
     my $box = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
     #generate sequence submission selector
     $template->param(SEQ_SELECT=>1);
@@ -225,6 +286,7 @@ sub gen_body
     $box->param(BOX_NAME=>"Options:");
     $template->param(OPTIONS=>1);
     $template->param(ALIGNMENT_PROGRAMS=>algorithm_list($prog));
+    $template->param(SAVE_SETTINGS=>gen_save_settings($num_seqs));
     $box->param(BODY=>$template->output);
     $html .= $box->output;
     return $html;
@@ -951,6 +1013,7 @@ sub process_features
         $f->type($type);
 	$f->description($feat->annotation);
 	$f->link("FeatView.pl?accn=$name") if $name;
+	$overlap = $overlap ? 0 : 1; #I think I need this to get this to work as expected
 	$f->skip_overlap_search($overlap);
         $c->add_feature($f);
     }
@@ -1873,7 +1936,7 @@ sub generate_annotation
     return $fullname;
   }
 
-sub gen_go_run
+sub gen_params
   {
     my $num_seqs = shift || $NUM_SEQS;
     my $params;
@@ -1971,6 +2034,12 @@ sub gen_go_run
 };
     $params =~ s/\n//g;
     $params =~ s/\s+/ /g;
+    return $params;
+  }
+sub gen_go_run
+  {
+    my $num_seqs = shift || $NUM_SEQS;
+    my $params = gen_params($num_seqs);
 #    my $run = "<SCRIPT language=\"JavaScript\">alert('hi');</script>";
     my $run = qq!
 <SCRIPT language="JavaScript">
@@ -1983,6 +2052,14 @@ function go_run (){
 #
 #    my $button = qq{<a href="#" onMouseOver="activeButton('go')" onMouseOut="inactiveButton('go')" onMouseDown="pressedButton('go')" onMouseUp="inactiveButton('go')" onClick="loading([],['results']); setTimeout('go_run()', 1000);"><img name="go" src="/CoGe/picts/buttons/GEvo/go/inactive.png" width="47" height="27" border="0" alt="javascript button"></a>};
     return $run;
+  }
+
+sub gen_save_settings
+  {
+    my $num_seqs = shift || $NUM_SEQS;
+    my $params = gen_params($num_seqs);
+    my $save_settings = qq{save_settings_gevo([$params],[])};
+    return $save_settings;
   }
 
 sub gen_hsp_colors
@@ -2402,4 +2479,33 @@ sub dataset_search_for_feat_name
  	$html .= qq{<span class=container>Accession not found.</span> <input type="hidden" id="dsid$num">\n<input type="hidden" id="featid$num">\n};	
        }    
     return ($html,$num);
+  }
+
+
+sub save_settings_gevo
+  {
+    my %opts = @_;
+    my $opts = Dumper \%opts;
+    my $item = save_settings(opts=>$opts, user=>$USER, page=>$PAGE_NAME);
+  }
+
+sub reset_settings_gevo
+  {
+    my %opts = @_;
+    my $item = reset_settings(user=>$USER, page=>$PAGE_NAME);
+  }
+
+
+
+sub get_opt
+  {
+    my %opts = @_;
+    my $params = $opts{params};
+    my $form = $opts{form} || $FORM;
+    my $param = $opts{param};
+    my $opt;
+    $opt = $form->param($param) if $form->param($param);
+    $opt = $params->{$param} if (ref ($params) =~ /hash/i &! defined $opt);
+    return $opt;
+      
   }
