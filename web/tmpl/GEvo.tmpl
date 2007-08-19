@@ -1,6 +1,6 @@
 <TMPL_IF NAME=SEQ_RETRIEVAL>
 <HTML>
-<HEAD>
+<HEAD no-cache>
  <TITLE><TMPL_VAR NAME=TITLE></TITLE>
  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
 </HEAD>
@@ -694,7 +694,8 @@ function monitor_log(log)
   <TH colspan="2" align=left>
   <DIV  id="ip" class="topItem" onMouseOver="$('#ip').removeClass('topItem').addClass('topItemSelected');" onMouseOut="$('#ip').removeClass('topItemSelected').addClass('topItem');"  onClick='animate_section("#image_parameters","slideToggle")'>Image and Interface Parameters:</DIV>
 
-<div class="menu" id="image_parameters" style="display: none">
+<!--<div class="menu" id="image_parameters" style="display: none">-->
+<div class="menu" id="image_parameters" >
 
 <table valign class="dropmenu" width="100%">
 <TR valign=top>
@@ -709,8 +710,8 @@ function monitor_log(log)
   <TD>
     <DIV class="small">
      <select id="viewer" onChange="checkViewer()">
-     <option selected value="flash">Gobe Flash Viewer</option>
-     <option value = "html">GeLo HTML Viewer</option> 
+     <option <TMPL_VAR NAME="GOBE_VIEWER"> value="flash">Gobe Flash Viewer</option>
+     <option <TMPL_VAR NAME="HTML_VIEWER"> value = "html">GeLo HTML Viewer</option> 
     </DIV>
   </TD>
  <TR valign=top>
@@ -721,7 +722,7 @@ function monitor_log(log)
   </TD>
   <TD>
     <DIV class="small">
-	<input class="backbox" type="text" name="iw" id="iw" tabindex="1"  size="10" value="1000" />
+	<input class="backbox" type="text" name="iw" id="iw" tabindex="1"  size="10" value="<TMPL_VAR NAME="IMAGE_WIDTH">" />
     </DIV>
   </TD>
  </TR>
@@ -733,7 +734,7 @@ function monitor_log(log)
   </Td>
   <TD>
     <DIV class="small">
-	<input class="backbox" type="text" name="ih" id="ih" tabindex="1"  size="10" value="100" />
+	<input class="backbox" type="text" name="ih" id="ih" tabindex="1"  size="10" value="<TMPL_VAR NAME="IMAGE_HEIGHT">" />
     </DIV>
   </TD>
 
@@ -746,7 +747,7 @@ function monitor_log(log)
   </Td>
   <TD>
     <DIV class="small">
-	<input class="backbox" type="text" name="feat_h" id="feat_h" tabindex="1"  size="10" value="15" />
+	<input class="backbox" type="text" name="feat_h" id="feat_h" tabindex="1"  size="10" value="<TMPL_VAR NAME="FEAT_HEIGHT">" />
     </DIV>
   </TD>
 
@@ -759,7 +760,7 @@ function monitor_log(log)
   </Td>
   <TD>
     <DIV class="small">
-	<input class="backbox" type="text" name="padding" id="padding" tabindex="1"  size="10" value="5" />
+	<input class="backbox" type="text" name="padding" id="padding" tabindex="1"  size="10" value="<TMPL_VAR NAME="PADDING">" />
     </DIV>
   </TD>
 
@@ -768,32 +769,32 @@ function monitor_log(log)
   <Td>
 <font class="small">Color GC content: green=GC, orange=N? (SLOW)</font>
   <td>
-<label class="small"><input class="backbox" type="radio" name="show_gc" id="show_gc" tabindex="1" value="1" />Yes</label>
-<label class=small><input class="backbox" type="radio" name="show_gc" id="show_gc" tabindex="1" value="0" checked />No</label>
+<label class="small"><input class="backbox" type="radio" name="show_gc" id="show_gc" tabindex="1" value="1" <TMPL_VAR NAME="GC_COLOR_YES"> />Yes</label>
+<label class=small><input class="backbox" type="radio" name="show_gc" id="show_gc" tabindex="1" value="0" <TMPL_VAR NAME="GC_COLOR_NO"> />No</label>
     </DIV>
   </TD>
  <TR>
   <Td>
 <font class="small">Color N orange? (SLOW)</font>
   <td>
-<label class="small"><input class="backbox" type="radio" name="show_nt" id="show_nt" tabindex="1" value="1" />Yes</label>
-<label class=small><input class="backbox" type="radio" name="show_nt" id="show_nt" tabindex="1" value="0" checked />No</label>
+<label class="small"><input class="backbox" type="radio" name="show_nt" id="show_nt" tabindex="1" value="1" <TMPL_VAR NAME="NT_COLOR_YES">/>Yes</label>
+<label class=small><input class="backbox" type="radio" name="show_nt" id="show_nt" tabindex="1" value="0" <TMPL_VAR NAME="NT_COLOR_NO">/>No</label>
     </DIV>
   </TD>
  <TR>
   <Td>
 <font class="small">Auto adjust overlapping features? </font>
   <td>
-  <label class="small"><input class="backbox" type="radio" name="overlap_adjustment" id="overlap_adjustment" tabindex="1" value="0" />Yes</label>
-  <label class="small"><input class="backbox" type="radio" name="overlap_adjustment" id="overlap_adjustment" tabindex="1" value="1"  checked />No</label>
+  <label class="small"><input class="backbox" type="radio" name="overlap_adjustment" id="overlap_adjustment" tabindex="1" value="1" <TMPL_VAR NAME="OVERLAP_YES">/>Yes</label>
+  <label class="small"><input class="backbox" type="radio" name="overlap_adjustment" id="overlap_adjustment" tabindex="1" value="0" <TMPL_VAR NAME="OVERLAP_NO"> />No</label>
     </DIV>
   </TD>
  <TR>
   <TD>
   <font class="small">Draw high-quality images? (SLOW) </font>
   <td>
-  <label class="small"><input class="backbox" type="radio" name="hiqual" id="hiqual" tabindex="1" value="1" />Yes</label>
-  <label class="small"><input class="backbox" type="radio" name="hiqual" id="hiqual" tabindex="1" value="0" checked />No</label>
+  <label class="small"><input class="backbox" type="radio" name="hiqual" id="hiqual" tabindex="1" value="1" <TMPL_VAR NAME="HIQUAL_YES">/>Yes</label>
+  <label class="small"><input class="backbox" type="radio" name="hiqual" id="hiqual" tabindex="1" value="0" <TMPL_VAR NAME="HIQUAL_NO"> />No</label>
  </TR>
 </TABLE>
 
@@ -807,25 +808,26 @@ function monitor_log(log)
   <Td>
 <font class="small">Color Matches in HSPs?</font>
  <td>
- <label class=small><input class="backbox" type="radio" name="color_hsp" id="color_hsp" tabindex="1" value="1" />Yes</label><label class=small><input class="backbox" type="radio" name="color_hsp" id="color_hsp" tabindex="1" value="0" checked />No</label>
+ <label class=small><input class="backbox" type="radio" name="color_hsp" id="color_hsp" tabindex="1" value="1" <TMPL_VAR NAME="COLOR_HSP_YES">/>Yes</label>
+ <label class=small><input class="backbox" type="radio" name="color_hsp" id="color_hsp" tabindex="1" value="0" <TMPL_VAR NAME="COLOR_HSP_NO"> />No</label>
 
  <TR>
   <Td>
 <font class="small">HSP Label options: </font>
  <td>
 <select id="hsp_labels">
-<option value="0">Don't draw</option>
-<option value="staggered" selected>Draw Staggered</option>
-<option value="linear">Draw Linear</option>
+<option value="0" <TMPL_VAR NAME="HSP_LABELS_NO">>Don't draw</option>
+<option value="staggered" <TMPL_VAR NAME="HSP_LABELS_STAG">>Draw Staggered</option>
+<option value="linear" <TMPL_VAR NAME="HSP_LABELS_LIN">>Draw Linear</option>
 </select>
   </TD>
  <TR>
   <Td>
 <font class="small">Limit HSP labels? </font>
  <td>
-<font class=small>Show Top: <input class=backbox type=textbox size=3 id="hsp_limit_num" value="20"/></font><br>
- <label class="small"><input class="backbox" type="radio" name="hsp_limit" id="hsp_limit" tabindex="1" value="1" />Yes</label> 
-<label class="small"><input class="backbox" type="radio" name="hsp_limit" id="hsp_limit" tabindex="1" value="0" checked />No</label> 
+<font class=small>Show Top: <input class=backbox type=textbox size=3 id="hsp_limit_num" value="<TMPL_VAR NAME="HSP_LIMIT_NUM">"/></font><br>
+ <label class="small"><input class="backbox" type="radio" name="hsp_limit" id="hsp_limit" tabindex="1" value="1" <TMPL_VAR NAME="HSP_LIMIT_YES">/>Yes</label> 
+<label class="small"><input class="backbox" type="radio" name="hsp_limit" id="hsp_limit" tabindex="1" value="0" <TMPL_VAR NAME="HSP_LIMIT_NO"> />No</label> 
 
   </TD>
 <!--  <tr>
@@ -839,6 +841,8 @@ function monitor_log(log)
   </table>
  </table>
 </div>
+<input type=button value="Save Settings" name="SaveSettings" id="SaveSettings" onclick="<TMPL_VAR NAME="SAVE_SETTINGS">">
+<input type=button value="Reset Settings" name="ResetSettings" id="ResetSettings" onclick="reset_settings_gevo([],[]);window.location.reload()">
 </TABLE>
 
 
