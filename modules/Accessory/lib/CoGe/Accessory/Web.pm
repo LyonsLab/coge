@@ -16,7 +16,7 @@ BEGIN {
     $TEMPDIR = "/opt/apache/CoGe/tmp";
     @ISA         = (@ISA, qw (Exporter));
     #Give a hoot don't pollute, do not export more than needed by default
-    @EXPORT      = qw (login write_log read_log check_taint check_filename_taint);
+    @EXPORT      = qw (login write_log read_log check_taint check_filename_taint save_settings load_settings reset_settings);
     @EXPORT_OK   = qw ();
     %EXPORT_TAGS = ();
     $coge = new CoGe::Genome;
@@ -461,7 +461,64 @@ sub check_taint {
   }
 }
 
+sub save_settings
+  {
+    my %opts = @_;
+    my $user = $opts{user};
+    my $user_id = $opts{user_id};
+    my $page = $opts{page};
+    my $opts = $opts{opts};
+    unless ($user_id)
+      {
+	my ($user_obj) = $cogex->resultset('User')->search({user_name=>$user});
+	$user_id = $user_obj->id if $user_obj;
+      }
+    return unless $user_id;
+    #delete previous settings
+    foreach my $item ($cogex->resultset('WebPreferences')->search({user_id=>$user_id, page=>$page}))
+      {
+	$item->delete;
+      }
+    my $item = $cogex->resultset('WebPreferences')->new({user_id=>$user_id, page=>$page, options=>$opts});
+    $item->insert;
+    return $item;
+  }
 
+sub load_settings
+  {
+    my %opts = @_;
+    my $user = $opts{user};
+    my $user_id = $opts{user_id};
+    my $page = $opts{page};
+    unless ($user_id)
+      {
+	my ($user_obj) = $cogex->resultset('User')->search({user_name=>$user});
+	$user_id = $user_obj->id if $user_obj;
+      }
+    return unless $user_id;
+    my ($item) = $cogex->resultset('WebPreferences')->search({user_id=>$user_id, page=>$page});
+    my $opts = $item->options if $item;
+    return $opts;
+    #$params =~ s/VAR1/params/;
+    #print STDERR $params;
+#    my $item = eval $params;
+#    return $item;
+  }
 
+sub reset_settings
+  {
+    my %opts = @_;
+    my $user = $opts{user};
+    my $user_id = $opts{user_id};
+    my $page = $opts{page};
+    unless ($user_id)
+      {
+	my ($user_obj) = $cogex->resultset('User')->search({user_name=>$user});
+	$user_id = $user_obj->id if $user_obj;
+      }
+    return unless $user_id;
+    my ($item) = $cogex->resultset('WebPreferences')->search({user_id=>$user_id, page=>$page});
+    $item->delete;
+  }
 
 1;
