@@ -70,6 +70,7 @@ if (!$USER || $USER =~ /public/i)
   {
     $RESTRICTED_ORGS{papaya} = 1;
   }
+else {delete $RESTRICTED_ORGS{papaya};}
 my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
 $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 #$coge->storage->debugobj(new DBIxProfiler());
@@ -225,7 +226,7 @@ sub gen_body
     my $nt_color = get_opt(params=>$prefs, form=>$form, param=>'nt');
     $nt_color = 0 unless $nt_color;
     my $auto_adjust_feats = get_opt(params=>$prefs, form=>$form, param=>'overlap');
-    $auto_adjust_feats = 0 unless $auto_adjust_feats;
+    $auto_adjust_feats = 1 unless defined $auto_adjust_feats;
     my $hiqual = get_opt(params=>$prefs, form=>$form, param=>'hiqual');
     $hiqual = 0 unless $hiqual;
     my $color_hsp = get_opt(params=>$prefs, form=>$form, param=>'colorhsp');
