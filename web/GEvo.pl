@@ -1,5 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
+use warnings;
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
 use CGI::Cookie;
@@ -134,12 +135,6 @@ sub gen_body
   {
     my $form = $FORM;
     my $prefs = load_settings(user=>$USER, page=>$PAGE_NAME);
-    if ($prefs)
-      {
-	$prefs =~ s/VAR1/prefs/;
-	eval $prefs;
-      }
-#    print STDERR Dumper $prefs;
     my $num_seqs = get_opt(params=>$prefs, form=>$form, param=>'num_seqs');
     $num_seqs = $NUM_SEQS unless defined $num_seqs;
     $MAX_SEQS = 10 if $form->param('override');
@@ -226,7 +221,7 @@ sub gen_body
     my $nt_color = get_opt(params=>$prefs, form=>$form, param=>'nt');
     $nt_color = 0 unless $nt_color;
     my $auto_adjust_feats = get_opt(params=>$prefs, form=>$form, param=>'overlap');
-    $auto_adjust_feats = 1 unless defined $auto_adjust_feats;
+    $auto_adjust_feats = 0 unless defined $auto_adjust_feats;
     my $hiqual = get_opt(params=>$prefs, form=>$form, param=>'hiqual');
     $hiqual = 0 unless $hiqual;
     my $color_hsp = get_opt(params=>$prefs, form=>$form, param=>'colorhsp');
@@ -271,7 +266,7 @@ sub gen_body
     $template->param(SEQ_SELECT=>0);
 
     #generate the hsp color option
-    my $hsp_colors = gen_hsp_colors($num_seqs);
+    my $hsp_colors = gen_hsp_colors(num_seqs=>$num_seqs, prefs=>$prefs);
     my $html;
     my $spike_len = spike_filter_select();
 
@@ -2065,10 +2060,12 @@ sub gen_save_settings
 
 sub gen_hsp_colors
   {
-    my $num_seqs = shift || $NUM_SEQS;
+    my %opts = @_;
+    my $num_seqs = $opts{num_seqs} || $NUM_SEQS;
+    my $prefs = $opts{prefs} || load_settings(user=>$USER, page=>$PAGE_NAME);
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GEvo.tmpl');
     my $hsp_colors;
-    my @colors = color_pallet(num_seqs=>$num_seqs);
+    my @colors = color_pallet(num_seqs=>$num_seqs, prefs=>$prefs);
     $template->param(HSP_COLOR_FORM=>1);
     $template->param(HSP_COLOR_LOOP=>\@colors);
     my $count = -2;
@@ -2094,13 +2091,15 @@ sub color_pallet
     my $start = $opts{start} || [255,100,100];
     my $offset = $opts{offset} || 75;
     my $num_seqs = $opts{num_seqs} || $NUM_SEQS;
+    my $prefs = $opts{prefs} || load_settings(user=>$USER, page=>$PAGE_NAME);
+    $prefs = {} unless $prefs;
+    $start = [$prefs->{r1}, $prefs->{g1}, $prefs->{b1}] if defined $prefs->{r1} && defined $prefs->{g1} && defined $prefs->{b1};
     my @colors;
-    push @colors, {
-		   HSP_NUM=>1,
-		   RED=>$start->[0],
-		   GREEN=>$start->[1],
-		   BLUE=>$start->[2],
-		  };
+    my %set = (HSP_NUM=>1,
+	       RED=>$start->[0],
+	       GREEN=>$start->[1],
+	       BLUE=>$start->[2]);
+    push @colors, \%set;
     for (my $i = 2; $i <= num_colors($num_seqs); $i++)
       {
 	my @color;
@@ -2115,7 +2114,7 @@ sub color_pallet
 	    $color += 255 if $color < 0;
 	    push @color, $color;
 	  }
-	
+	@color = ($prefs->{"r".$i}, $prefs->{"g".$i}, $prefs->{"b".$i}) if defined $prefs->{"r".$i} && defined $prefs->{"g".$i} && defined $prefs->{"b".$i};
 	push @colors, {
 		       HSP_NUM=>$i,
 		       RED=>$color[0],
@@ -2183,7 +2182,7 @@ sub add_seq
     my $hsp_colors;
     if ($num_seq > $MAX_SEQS)
       {
-	$hsp_colors = gen_hsp_colors($MAX_SEQS);
+	$hsp_colors = gen_hsp_colors(num_seqs=>$MAX_SEQS);
 	my $go_run = gen_go_run($MAX_SEQS);
 	return ('',$MAX_SEQS, $go_run, '', $hsp_colors,qq{Exceeded max number of sequences ($MAX_SEQS)});
       }
@@ -2204,7 +2203,7 @@ sub add_seq
     my $ref_seqs = $template->output;
     $template->param(GEN_REFERENCE_SEQUENCES=>0);
     my $go_run = gen_go_run($num_seq);
-    $hsp_colors = gen_hsp_colors($num_seq);
+    $hsp_colors = gen_hsp_colors(num_seqs=>$num_seq);
     return ($seq_submission, $num_seq, $go_run, $ref_seqs, $hsp_colors);
   }
 
