@@ -422,6 +422,7 @@ sub write_log
 sub read_log
   {
     my $logfile = shift;
+    print STDERR "Checking logfile $logfile\n";
     return unless $logfile;
     $logfile .= ".log" unless $logfile =~ /log$/;
     $logfile = $TEMPDIR."/$logfile" unless $logfile =~ /^$TEMPDIR/;
@@ -495,14 +496,15 @@ sub load_settings
 	my ($user_obj) = $cogex->resultset('User')->search({user_name=>$user});
 	$user_id = $user_obj->id if $user_obj;
       }
-    return unless $user_id;
+    return {} unless $user_id;
     my ($item) = $cogex->resultset('WebPreferences')->search({user_id=>$user_id, page=>$page});
+    return {} unless $item;
+    my $prefs;
     my $opts = $item->options if $item;
-    return $opts;
-    #$params =~ s/VAR1/params/;
-    #print STDERR $params;
-#    my $item = eval $params;
-#    return $item;
+    return {} unless $opts;
+    $opts =~ s/VAR1/prefs/;
+    eval $opts;
+    return $prefs;
   }
 
 sub reset_settings
