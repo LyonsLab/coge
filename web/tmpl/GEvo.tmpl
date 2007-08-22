@@ -841,8 +841,10 @@ function monitor_log(log)
   </table>
  </table>
 </div>
+<TMPL_IF NAME=SAVE_SETTINGS>
 <input type=button value="Save Settings" name="SaveSettings" id="SaveSettings" onclick="<TMPL_VAR NAME="SAVE_SETTINGS">">
 <input type=button value="Reset Settings" name="ResetSettings" id="ResetSettings" onclick="reset_settings_gevo([],[]);window.location.reload()">
+</TMPL_IF>
 </TABLE>
 
 
