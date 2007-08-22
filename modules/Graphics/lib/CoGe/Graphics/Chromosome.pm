@@ -1891,7 +1891,7 @@ sub _draw_feature_slow
 #    $size = $size*$feat->font_size if $size && $feat->font_size;
     $size = $feat->font_size if $feat->font_size;
     $self->_gd_string(y=>$sy, x=>$fs, text=>$feat->label, size=>$size) if ( ($self->feature_labels || $self->fill_labels)&& ($fw>5 || $feat->force_label)); #don't make the string unless the feature is at least 5 pixels wide
-    $feat->image_coordinates("$xmin, $ymin, $xmax, $ymax") if $xmin && $ymin && $xmax && $ymax;
+    $feat->image_coordinates("$xmin, $ymin, $xmax, $ymax") if defined $xmin && defined $ymin && defined $xmax && defined $ymax;
   }
 sub _draw_feature_fast
   {
@@ -2003,7 +2003,7 @@ sub _draw_feature_fast
     $size = $feat->font_size if $feat->font_size;
     $self->_gd_string(y=>$sy, x=>$fs, text=>$feat->label, size=>$size) if $feat->label && ( ($self->feature_labels || $self->fill_labels)&& ($fw>5 || $feat->force_label)); #don't make the string unless the feature is at least 5 pixels wide
 #    print STDERR "$xmin, $ymin, $xmax, $ymax\n";
-    $feat->image_coordinates("$xmin, $ymin, $xmax, $ymax") if $xmin && $ymin && $xmax && $ymax;
+    $feat->image_coordinates("$xmin, $ymin, $xmax, $ymax") if defined $xmin && defined $ymin && defined $xmax && defined $ymax;
   }
 
 #################### subroutine header begin ####################
