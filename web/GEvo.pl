@@ -282,7 +282,7 @@ sub gen_body
     $box->param(BOX_NAME=>"Options:");
     $template->param(OPTIONS=>1);
     $template->param(ALIGNMENT_PROGRAMS=>algorithm_list($prog));
-    $template->param(SAVE_SETTINGS=>gen_save_settings($num_seqs));
+    $template->param(SAVE_SETTINGS=>gen_save_settings($num_seqs)) unless !$USER || $USER =~ /public/i;
     $box->param(BODY=>$template->output);
     $html .= $box->output;
     return $html;
@@ -812,9 +812,12 @@ CREATE TABLE image_info
 (
 id INTEGER PRIMARY KEY AUTOINCREMENT,
 iname varchar(50),
-title varchar(1024)
+title varchar(1024),
+bpmin integer(255),
+bpmax integer(255)
 )
 };
+#TODO: make sure to populate the bpmin and pbmax
     $dbh->do($create);
      $index = qq{
  CREATE INDEX iname ON image_info (iname)
@@ -989,6 +992,7 @@ sub process_features
 		    foreach my $name (@{$feat->qualifiers->{names}})
 		      {
 			$f->color([255,255,0]) if $name =~ /$accn/i;
+			$f->label($name) if $name =~ /^$accn$/i;
 		      }
 		  }
 
