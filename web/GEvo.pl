@@ -685,9 +685,6 @@ sub generate_image
     my $seq_num = $opts{seq_num};
     my $graphic = new CoGe::Graphics;
     my $gfx = new CoGe::Graphics::Chromosome;
-    $gfx->overlap_adjustment(1);
-    $gfx->skip_duplicate_features(1);
-    $gfx->DEBUG(0);
 #    print STDERR "$start"."::"."$stop"." -- ".length($gbobj->sequence)."\n";
     $graphic->initialize_c (
 			    c=>$gfx,
@@ -711,6 +708,9 @@ sub generate_image
 			    draw_hi_qual=>$hiqual,
 			    padding=>$padding,
 			   );
+    $gfx->overlap_adjustment($overlap_adjustment);
+    $gfx->skip_duplicate_features(1);
+    $gfx->DEBUG(0);
     $gfx->major_tick_labels(0);
     my $f1= CoGe::Graphics::Feature->new({start=>1, order => 2, strand => 1});
     $f1->merge_percent(0);
@@ -850,7 +850,7 @@ INSERT INTO image_info (iname, title) values ("$image", "$title")
       {
 	next if $feat->fill; #skip backgroup images;
 	next unless $feat->image_coordinates;
-	next if $feat->desc =~ /spike sequence/;
+	next if $feat->desc && $feat->desc =~ /spike sequence/;
 	my $pair_id = "NULL";
 	my $coords = $feat->image_coordinates;
 	$coords =~ s/\s//g;
@@ -1353,6 +1353,7 @@ sub get_obj_from_genome_db
       {
 	my $name;
 	my @names = $f->names;
+	next if $f->type->name =~ /misc_feat/;
 	foreach my $tmp (@names)
 	  {
 	    $name = $tmp;
@@ -1360,7 +1361,9 @@ sub get_obj_from_genome_db
 	  }
 	unless (@names)
 	  {
-	    print STDERR "No Name: ",$f->id,"\n";;
+	    next;
+#	    print STDERR "No Name: ",$f->id,"\n" unless $f->type->name =~ /misc/;
+
 	  }
 	$name = $accn unless $name;
 	print STDERR $name,"\n" if $DEBUG;
