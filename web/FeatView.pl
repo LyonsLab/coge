@@ -88,7 +88,7 @@ sub cogesearch
     my @opts = sort map {"<OPTION>$_</OPTION>"} grep {! $seen{$_}++} map {uc($_)} $DB->get_feature_name_obj->power_search(accn=>$accn."%", type=>$type, org=>$org);
     if (@opts > 5000)
       {
-	return $blank."Search results over 1000, please refine your search.\n";
+	return $blank."Search results over 5000, please refine your search.\n";
       }
     $html .= "<font class=small>Name count: ".scalar @opts."</font>\n<BR>\n";
     $html .= qq{<SELECT id="accn_select" SIZE="5" MULTIPLE onChange="source_search_chain(); " >\n};
