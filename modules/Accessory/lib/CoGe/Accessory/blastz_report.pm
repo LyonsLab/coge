@@ -47,7 +47,7 @@ sub new
     my $class = ref($proto) || $proto;
     my $self = bless ({%$opts}, $class);
     $self->hsp_count(0);
-    $self->hsps([]);
+    $self->hsps([]) unless $self->hsps;
     $self->process_file();
     unless ($self->file_base())
       {
