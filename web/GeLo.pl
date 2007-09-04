@@ -4,6 +4,7 @@ use CGI;
 use CGI::Carp 'fatalsToBrowser';
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
+use CoGe::Accessory::Restricted_orgs;
 use HTML::Template;
 use Data::Dumper;
 use CGI::Ajax;
@@ -85,15 +86,12 @@ sub get_orgs
   {
     my $name = shift;
     my @db = $name ? $coge->resultset("Organism")->search({name=>{like=>"%".$name."%"}}) : $coge->resultset("Organism")->all;
-    my %restricted;
-    if (!$USER || $USER =~ /public/i)
-      {
-	$restricted{papaya} = 1;
-      }
+    ($USER) = CoGe::Accessory::LogUser->get_user();
+    my $restricted_orgs = restricted_orgs(user=>$USER);
     my @opts;
     foreach my $item (sort {uc($a->name) cmp uc($b->name)} @db)
       {
-	next if $restricted{$item->name};
+	next if $restricted_orgs->{$item->name};
 	push @opts, "<OPTION value=\"".$item->id."\">".$item->name."</OPTION>";
       }
     my $html;
