@@ -1406,7 +1406,7 @@ sub set_image_height
 	my $top_feat = $self->get_feats(last_order=>1, strand=>1, fill=>0);
 	my $bot_feat = $self->get_feats(last_order=>1, strand=>-1, fill=>0);
 	my $max = $top_feat->order if $top_feat;
-	$max = $bot_feat->order if $bot_feat && $bot_feat->order > $max;
+	$max = $bot_feat->order if $bot_feat && $max && $bot_feat->order > $max;
 	$max = 1 unless $max;
 	$self->_max_track($max);
       }
@@ -1902,6 +1902,7 @@ sub _draw_feature_fast
     my $y = $opts{'y'} || $opts{Y};
     my $ih = $opts{'image_height'} || $opts{'ih'} || $opts{'IH'} || $feat->ih;
     my $sy = $opts{'string_y'} || $opts{'sy'};#label y axis
+    use Data::Dumper;
     my $rb = $self->_region_start;
     my $re = $self->_region_stop;
     my $range = $re-$rb;
