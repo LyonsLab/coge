@@ -12,6 +12,7 @@ use File::Temp;
 use CoGe::Accessory::GenBank;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
+use CoGe::Accessory::Restricted_orgs;
 use CoGe::Accessory::bl2seq_report;
 use CoGe::Accessory::blastz_report;
 use CoGe::Accessory::lagan_report;
@@ -43,7 +44,7 @@ delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 $ENV{'LAGAN_DIR'} = '/opt/apache/CoGe/bin/lagan/';
 #for dialign
 $ENV{'DIALIGN2_DIR'} = '/opt/apache/CoGe/bin/dialign2_dir/';
-use vars qw( $PAGE_NAME $DATE $DEBUG $BL2SEQ $BLASTZ $LAGAN $CHAOS $DIALIGN $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge $NUM_SEQS $MAX_SEQS $BASEFILE $BASEFILENAME $LOGFILE $SQLITEFILE $REPEATMASKER %RESTRICTED_ORGS);
+use vars qw( $PAGE_NAME $DATE $DEBUG $BL2SEQ $BLASTZ $LAGAN $CHAOS $DIALIGN $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge $NUM_SEQS $MAX_SEQS $BASEFILE $BASEFILENAME $LOGFILE $SQLITEFILE $REPEATMASKER);
 $PAGE_NAME = "GEvo.pl";
 $BL2SEQ = "/opt/bin/bio/bl2seq ";
 $BLASTZ = "/usr/bin/blastz ";
@@ -67,11 +68,7 @@ $FORM = new CGI;
 $CGI::POST_MAX= 60 * 1024 * 1024; # 24MB
 $CGI::DISABLE_UPLOADS = 0; 
 ($USER) = CoGe::Accessory::LogUser->get_user();
-if (!$USER || $USER =~ /public/i)
-  {
-    $RESTRICTED_ORGS{papaya} = 1;
-  }
-else {delete $RESTRICTED_ORGS{papaya};}
+
 my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
 $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 #$coge->storage->debugobj(new DBIxProfiler());
@@ -2438,6 +2435,8 @@ sub dataset_search_for_feat_name
     return ( qq{<input type="hidden" id="dsid$num">\n<input type="hidden" id="featid$num">}, $num )unless $accn;
     my $html;
     my %sources;
+    ($USER) = CoGe::Accessory::LogUser->get_user();
+    my $restricted_orgs = restricted_orgs(user=>$USER);
     my $rs = $coge->resultset('Dataset')->search(
 						  {
 						   'feature_names.name'=> $accn,
@@ -2459,7 +2458,7 @@ sub dataset_search_for_feat_name
 	my $ds_name = $ds->name;
 	my $org = $ds->organism->name;
 	my $title = "$org: $ds_name ($sname, v$ver)";
-	next if $RESTRICTED_ORGS{$org};
+	next if $restricted_orgs->{$org};
 	$sources{$ds->id} = {
 			     title=>$title,
 			     version=>$ver,
