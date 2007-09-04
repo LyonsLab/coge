@@ -31,6 +31,7 @@ sub new {
 	$self->hsp_count(0);
 	# init
 	$self->process_file();
+	$self->hsps([]) unless $self->hsps;
 	return $self;
       }
 
