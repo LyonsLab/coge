@@ -5,6 +5,7 @@ use CGI::Carp 'fatalsToBrowser';
 use CGI::Ajax;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
+use CoGe::Accessory::Restricted_orgs;
 use HTML::Template;
 use Data::Dumper;
 use CoGe::Genome;
@@ -12,11 +13,12 @@ use CoGe::Graphics::Chromosome;
 use CoGe::Graphics::Feature;
 use CoGe::Graphics::Feature::Gene;
 use CoGe::Graphics::Feature::NucTide;
+use CoGeX;
 use POSIX;
 
 $ENV{PATH} = "/opt/apache2/CoGe/";
 
-use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $DB $FORM $ACCN $FID %restricted_orgs);
+use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $DB $FORM $ACCN $FID $coge);
 
 # set this to 1 to print verbose messages to logs
 $DEBUG = 0;
@@ -29,11 +31,10 @@ $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 $FORM = new CGI;
 $ACCN = $FORM->param('accn');
 ($USER) = CoGe::Accessory::LogUser->get_user();
-if (!$USER || $USER =~ /public/i)
-  {
-    $restricted_orgs{papaya} = 1;
-  }
 $DB = new CoGe::Genome;
+my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
+$coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
+
 my $pj = new CGI::Ajax(
 		       db_lookup=>\&db_lookup,
 		       source_search=>\&get_data_source_info_for_accn,
@@ -81,11 +82,33 @@ sub cogesearch
     my $type = shift;
     my $org = shift;
     my $blank = qq{<input type="hidden" id="accn_select">};
+#    print STDERR "cogesearch: $accn\n";
 #    print STDERR Dumper @_;
     return $blank unless length($accn) > 2 || $type || $org;
+    ($USER) = CoGe::Accessory::LogUser->get_user();
+    my $restricted_orgs = restricted_orgs(user=>$USER);
     my $html;
     my %seen;
-    my @opts = sort map {"<OPTION>$_</OPTION>"} grep {! $seen{$_}++} map {uc($_)} $DB->get_feature_name_obj->power_search(accn=>$accn."%", type=>$type, org=>$org);
+    my @opts;
+    my $search = {'me.name'=>{like=>$accn."%"}};
+    $search->{feature_type_id}=$type if $type;
+    $search->{organism_id}=$org if $org;
+    foreach my $name ($coge->resultset('FeatureName')->search(
+							       $search,
+							       {join=>{'feature'=>'dataset'},
+								prefetch=>'feature'},
+							      ))
+      {
+	my $item = $name->name;
+	next if $seen{uc($item)};
+	if (%{$restricted_orgs})
+	  {
+	    next if $restricted_orgs->{$name->feature->dataset->organism->name};
+	  }
+	$seen{uc($item)}++;
+	
+	push @opts, "<OPTION>$item</OPTION>"
+      }
     if (@opts > 5000)
       {
 	return $blank."Search results over 5000, please refine your search.\n";
@@ -179,9 +202,11 @@ sub gen_body
     $template->param(ACCN=>$ACCN);
     $template->param(TYPE_LOOP=> [{TYPE=>"<OPTION VALUE=0>All</OPTION>"},map {{TYPE=>"<OPTION value=\"".$_->id."\">".$_->name."</OPTION>"}} sort {uc($a->name) cmp uc($b->name)} $DB->all_feature_types]);
     my @orgs;
+    ($USER) = CoGe::Accessory::LogUser->get_user();
+    my $restricted_orgs = restricted_orgs(user=>$USER);
     foreach my $org ($DB->all_orgs)
       {
-	push @orgs, $org unless $restricted_orgs{$org->name};
+	push @orgs, $org unless $restricted_orgs->{$org->name};
       }
     $template->param(ORG_LOOP=> [{ORG=>"<OPTION VALUE=0>All</OPTION>"},map {{ORG=>"<OPTION value=\"".$_->id."\">".$_->name."</OPTION>"}} sort {uc($a->name) cmp uc($b->name)} @orgs]);
     my $html = $template->output;
@@ -196,6 +221,8 @@ sub get_data_source_info_for_accn
     return $blank unless $accn;
     my @feats = $DB->get_feats_by_name($accn);
     my %sources;
+    ($USER) = CoGe::Accessory::LogUser->get_user();
+    my $restricted_orgs = restricted_orgs(user=>$USER);
     foreach my $feat (@feats)
       {
 	my $val = $feat->dataset;
@@ -211,7 +238,7 @@ sub get_data_source_info_for_accn
 	my $ds_name = $val->name;
 	my $org = $val->org->name if $val->org;
 	my $title = "$org: $ds_name ($sname, v$ver)";
-	next if $restricted_orgs{$org};
+	next if $restricted_orgs->{$org};
 	$sources{$title} = $val->id;
       }
     my $html;
