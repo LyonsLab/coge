@@ -557,7 +557,7 @@
 			for (var i=0;i<row_num;i++)
 			{
 			  var id = $("tbody > tr:eq(" + i + ") > td:eq(0) > input:checkbox",table).attr("value");
-			  $("tbody > tr:eq(" + i + ")",table).addClass('feat').attr({onclick: "update_info_box('table_row"+id+"')", id: "'"+id+"'", align: "right"});
+			  $("tbody > tr:eq(" + i + ")",table).addClass('feat').attr({id: "'"+id+"'", align: "right"});
 			}
 		}
 	});
