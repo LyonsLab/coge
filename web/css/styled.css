@@ -676,7 +676,6 @@ tr.feat {
 
 tr.feat:hover {
   background-color: #EEE8AA;
-  cursor: pointer;
 }
 
 .even {
@@ -737,17 +736,17 @@ th.headerSortDown {
 
 #go_button {
 	display: block;
-  	width: 45px;
-  	height: 25px;
-	background: url(/CoGe/picts/buttons/GEvo/go.png) 0 0 no-repeat;
+  	width: 35px;
+  	height: 26px;
+	background: url(/CoGe/picts/buttons/GEvo/go_new.png) 0 0 no-repeat;
 }
 
 #go_button:hover {
-	background-position: -45px 0;
+	background-position: -35px 0;
 }
 
 #go_button:active {
-	background-position: -90px 0;
+	background-position: -70px 0;
 }
 
 #go_button span {
@@ -756,17 +755,17 @@ th.headerSortDown {
 
 #clear_button {
 	display: block;
-  	width: 54px;
+  	width: 52px;
   	height: 26px;
-	background: url(/CoGe/picts/buttons/GEvo/clear.png) 0 0 no-repeat;
+	background: url(/CoGe/picts/buttons/GEvo/clear_new.png) 0 0 no-repeat;
 }
 
 #clear_button:hover {
-	background-position: -54px 0;
+	background-position: -52px 0;
 }
 
 #clear_button:active {
-	background-position: -108px 0;
+	background-position: -104px 0;
 }
 
 #clear_button span {
@@ -775,17 +774,17 @@ th.headerSortDown {
 
 #add_button {
 	display: block;
-  	width: 41px;
+  	width: 42px;
   	height: 26px;
-	background: url(/CoGe/picts/buttons/GEvo/add.png) 0 0 no-repeat;
+	background: url(/CoGe/picts/buttons/GEvo/add_new.png) 0 0 no-repeat;
 }
 
 #add_button:hover {
-	background-position: -41px 0;
+	background-position: -42px 0;
 }
 
 #add_button:active {
-	background-position: -82px 0;
+	background-position: -84px 0;
 }
 
 #add_button span {
@@ -794,17 +793,17 @@ th.headerSortDown {
 
 #remove_button {
 	display: block;
-  	width: 53px;
+  	width: 72px;
   	height: 26px;
-	background: url(/CoGe/picts/buttons/GEvo/remove.png) 0 0 no-repeat;
+	background: url(/CoGe/picts/buttons/GEvo/remove_new.png) 0 0 no-repeat;
 }
 
 #remove_button:hover {
-	background-position: -53px 0;
+	background-position: -72px 0;
 }
 
 #remove_button:active {
-	background-position: -106px 0;
+	background-position: -144px 0;
 }
 
 #remove_button span {
