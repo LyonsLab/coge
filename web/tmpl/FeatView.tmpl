@@ -10,13 +10,22 @@
 
 function search_chain(val) {
  minlen = 4;
+ if (pageObj.searchterm == $('#accn').val() && pageObj.type == $('#type').val() && pageObj.org == $('#org').val()) {return;}
+ pageObj.searchterm = $('#accn').val();	
+ pageObj.type = $('#type').val();	
+ pageObj.org = $('#org').val();	
+ $('#anno').hide();	
+ $('#accn_list').hide();
+ $('#Source').hide();
+ $('#FeatType').hide();
+
  if ((val == 1)){
    cogesearch(['accn', 'type', 'org'],[source_search_chain]);
+   return;
  } 
  //$('#accn_list').html('<input type="hidden" id="accn_select">');	
  //$('#Source').html('<input type="hidden" id="dsid">');	
  //$('#FeatType').html('<input type="hidden" id="Type_name">');	
- $('#anno').hide();	
  if ($('#accn').val().length > minlen) {
    cogesearch(['accn', 'type', 'org'],[source_search_chain]);
  }
@@ -25,21 +34,21 @@ function search_chain(val) {
 function source_search_chain (val) {
 // $('#Source').html('<input type="hidden" id="dsid"><font class="loading">Loading. . .</font>');	
 // $('#FeatType').html('<input type="hidden" id="Type_name">');	
-// $('#anno').hide();	
- if (val) {$('#accn_list').html(val);}
+// $('#anno').hide();
+ if (val) {$('#accn_list').html(val);$('#accn_list').show()}
  source_search(['accn_select'], [get_types_chain]);
 }
 
 function get_types_chain (val1, val2) {
 // $('#FeatType').html('<input type="hidden" id="Type_name"><font class="loading">Loading. . .</font>');	
 // $('#anno').hide();	
- if (val1) {$('#Source').html(val1);}
+ if (val1) {$('#Source').html(val1);$('#Source').show();}
  get_types(['accn_select', 'dsid'],[get_anno_chain]);	
 }
 
 function get_anno_chain (val1, val2) {	
 //$('#anno').html('<font class="loading">Loading. . .</font>');
- if (val1) {$('#FeatType').html(val1)};
+ if (val1) {$('#FeatType').html(val1);$('#FeatType').show();};
  as = $('#accn_select').val();
  tn = $('#Type_name').val();
  get_anno(['accn_select', 'Type_name', 'dsid'],[show_anno]);
@@ -57,9 +66,12 @@ function timing(){
   if (pageObj.time){
    clearTimeout(pageObj.time);
   }
-   pageObj.time = setTimeout("search_chain(0)",1000);
+   pageObj.time = setTimeout("search_chain(0)",500);
 }
 
+$(document).ready(function(){
+    if ($('#accn').val()) {search_chain(0);}
+});
 
 </SCRIPT>
 <TABLE>
@@ -93,6 +105,8 @@ function timing(){
      </TABLE>
    </DIV>
   </TD>
+ </table>
+ <table>
  <TR valign=top>
   <TD valign=top>
    <DIV class="" id="accn_list"><input type="hidden" id="accn_select" ></DIV>
@@ -104,7 +118,4 @@ function timing(){
  </TR>
 </TABLE>
 <DIV id="anno"></DIV>
-<SCRIPT language="Javascript">
-  if ($('#accn')) {search_chain(0);};
-</SCRIPT>
 
