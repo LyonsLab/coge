@@ -8,6 +8,7 @@ lib/CoGe/Accessory/Tile/Cache.pm
 lib/CoGe/Accessory/LogUser.pm
 lib/CoGe/Accessory/GBlite.pm
 lib/CoGe/Accessory/Web.pm
+lib/CoGe/Accessory/Restricted_orgs.pm
 lib/Coge/Accessory/parse_report/HSP.pm
 lib/Coge/Accessory/blast_report.pm
 lib/Coge/Accessory/bl2seq_report.pm
