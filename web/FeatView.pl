@@ -18,7 +18,7 @@ use POSIX;
 
 $ENV{PATH} = "/opt/apache2/CoGe/";
 
-use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $DB $FORM $ACCN $FID $coge);
+use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $ACCN $FID $coge);
 
 # set this to 1 to print verbose messages to logs
 $DEBUG = 0;
@@ -31,7 +31,6 @@ $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 $FORM = new CGI;
 $ACCN = $FORM->param('accn');
 ($USER) = CoGe::Accessory::LogUser->get_user();
-$DB = new CoGe::Genome;
 my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
 $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 
@@ -64,7 +63,10 @@ sub get_types
     my $html;
     my $blank = qq{<input type="hidden" id="Type_name">};
     my %seen;
-    my @opts = sort map {"<OPTION>$_</OPTION>"} grep {! $seen{$_}++} map {$_->type->name} $DB->get_features_by_name_and_dataset_id(name=>$accn, id=>$dsid);
+    my @opts = sort map {"<OPTION>$_</OPTION>"} grep {! $seen{$_}++} map {$_->type->name} $coge->resultset('Feature')->search({
+															       'feature_names.name'=>$accn,
+															       dataset_id=>$dsid
+															      },{join=>'feature_names'});
 
     $html .= "<font class=small>Type count: ".scalar @opts."</font>\n<BR>\n";
     $html .= qq{<SELECT id="Type_name" SIZE="5" MULTIPLE onChange="get_anno(['accn_select','Type_name', 'dsid'],[show_anno])" >\n};
@@ -129,7 +131,10 @@ sub get_anno
     my $type = shift;
     my $dataset_id = shift;
     my @feats;
-    foreach my $feat ($DB->get_features_by_name_and_dataset_id(name=>$accn, id=>$dataset_id))
+    foreach my $feat ($coge->resultset('Feature')->search({
+							   'feature_names.name'=>$accn,
+							   dataset_id=>$dataset_id
+							  },{join=>'feature_names'}))
       {
 	push @feats, $feat if ($feat->type->name eq $type);
       }
@@ -144,11 +149,11 @@ sub get_anno
 	my $rc = 0;
 	my $pro = 0;
 	my $ds = $feat->dataset->id;
-	my $x = $feat->begin_location;
+	my $x = $feat->start;
 	my $z = 10;
 	$anno .= join "\n<BR><HR><BR>\n", $feat->annotation_pretty_print_html();
 	$anno .= qq{<DIV id="loc$i"><input type="button" value = "Click for Genome view" onClick="window.open('GenomeView.pl?chr=$chr&ds=$ds&x=$x&z=$z');"></DIV>};
-	$anno .= qq{<DIV id="exp$i"><input type="button" value = "Click for expression tree" onClick="gen_data(['args__Generating expression view image'],['exp$i']);show_express(['args__}.$accn.qq{','args__}.'1'.qq{','args__}.$i.qq{'],['exp$i']);"></DIV>};
+#	$anno .= qq{<DIV id="exp$i"><input type="button" value = "Click for expression tree" onClick="gen_data(['args__Generating expression view image'],['exp$i']);show_express(['args__}.$accn.qq{','args__}.'1'.qq{','args__}.$i.qq{'],['exp$i']);"></DIV>};
 	$anno .= qq{<DIV id="dnaseq$i"><input type="button" value = "Click for Sequence" onClick="window.open('SeqView.pl?featid=$featid&dsid=$ds&chr=$chr&featname=$accn');"></DIV>};
 	$anno = "<font class=\"annotation\">No annotations for this entry</font>" unless $anno;
       }
@@ -166,7 +171,7 @@ sub show_express
     my $link = qq{<img src="expressiontree.pl?locus=$accn&label=1&rw=80&rh=8&name=1&legend=1&mean=1&log_trans=$log">\n};
     $log = $log ? 0 : 1;
     my $type = $log ? "log transformed" : "normal";
-    print STDERR $link;
+#    print STDERR $link;
     $link .= qq{<br><input type="button" value = "Click for $type expression tree" onClick="gen_image([],['exp$div']);show_express(['args__}.$accn.qq{','args__}.$log.qq{','args__}.$div.qq{'],['exp$div']);">};
     return $link;
   }
@@ -200,11 +205,11 @@ sub gen_body
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/FeatView.tmpl');
 
     $template->param(ACCN=>$ACCN);
-    $template->param(TYPE_LOOP=> [{TYPE=>"<OPTION VALUE=0>All</OPTION>"},map {{TYPE=>"<OPTION value=\"".$_->id."\">".$_->name."</OPTION>"}} sort {uc($a->name) cmp uc($b->name)} $DB->all_feature_types]);
+    $template->param(TYPE_LOOP=> [{TYPE=>"<OPTION VALUE=0>All</OPTION>"},map {{TYPE=>"<OPTION value=\"".$_->id."\">".$_->name."</OPTION>"}} sort {uc($a->name) cmp uc($b->name)} $coge->resultset('FeatureType')->all]);
     my @orgs;
     ($USER) = CoGe::Accessory::LogUser->get_user();
     my $restricted_orgs = restricted_orgs(user=>$USER);
-    foreach my $org ($DB->all_orgs)
+    foreach my $org ($coge->resultset('Organism')->all)
       {
 	push @orgs, $org unless $restricted_orgs->{$org->name};
       }
@@ -219,7 +224,7 @@ sub get_data_source_info_for_accn
     my $accn = shift;
     my $blank = qq{<input type="hidden" id="dsid">};
     return $blank unless $accn;
-    my @feats = $DB->get_feats_by_name($accn);
+    my @feats = $coge->resultset('Feature')->search({'feature_names.name'=>$accn},{join=>'feature_names'});
     my %sources;
     ($USER) = CoGe::Accessory::LogUser->get_user();
     my $restricted_orgs = restricted_orgs(user=>$USER);
@@ -234,9 +239,9 @@ sub get_data_source_info_for_accn
 	my $name = $val->name;
 	my $ver = $val->version;
 	my $desc = $val->description;
-	my $sname = $val->data_source->name if $val->data_source;
+	my $sname = $val->datasource->name if $val->datasource;
 	my $ds_name = $val->name;
-	my $org = $val->org->name if $val->org;
+	my $org = $val->organism->name if $val->organism;
 	my $title = "$org: $ds_name ($sname, v$ver)";
 	next if $restricted_orgs->{$org};
 	$sources{$title} = $val->id;
