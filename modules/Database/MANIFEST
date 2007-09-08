@@ -31,6 +31,7 @@ lib/CoGeX/UserGroupFeatureListPermissionConnector.pm
 lib/CoGeX/FeatureListGroupImageConnector.pm
 lib/CoGeX/UserSession.pm
 lib/CoGeX/FeatureName.pm
+lib/CoGeX/WebPreferences.pm
 scripts/test_cogex1.pl
 scripts/test_cogex1.pl
 scripts/feature_by_name_and_type.pl
