@@ -217,7 +217,7 @@ sub get_chromosomes
 					{},
 					{
 					 select =>["chromosome"],
-					 distinct=>["chromosme"],
+					 distinct=>["chromosome"],
 					},
 				       );
 #     unless (@data)
