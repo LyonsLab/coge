@@ -96,10 +96,12 @@ sub cogesearch
     $search->{feature_type_id}=$type if $type;
     $search->{organism_id}=$org if $org;
     foreach my $name ($coge->resultset('FeatureName')->search(
-							       $search,
-							       {join=>{'feature'=>'dataset'},
-								prefetch=>'feature'},
-							      ))
+							      $search,
+							      {join=>{'feature'=>'dataset'},
+							       prefetch=>'feature',
+							       order_by=>'name ASC',
+							      },
+							     ))
       {
 	my $item = $name->name;
 	next if $seen{uc($item)};
