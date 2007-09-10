@@ -1994,7 +1994,7 @@ sub _draw_feature_fast
       {
         $size = $ih > 13 ? 13 : $ih; 
 	$size=$size/2 if $fw <$size * (length $feat->label)/1.5;
-	#print STDERR $feat->label,": $fw, $size\n";
+#	print STDERR $feat->label,": $fw, $size\n";
         $sy=$y+$ih/2-$size/2 unless $sy;
 	my $adjust = 0;
 	$adjust = $fw/10;
