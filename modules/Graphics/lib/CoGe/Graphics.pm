@@ -679,6 +679,7 @@ sub process_features
 	$f->link("GeLo.pl?".join("&", "chr=".$feat->chr,"ds=".$feat->dataset->id,"z=10", "INITIAL_CENTER=".$feat->start.",0"));
 	$f->label($name) if $print_names;
         $f->type($feat->type->name);
+	$f->skip_overlap_search(1) unless $c->overlap_adjustment;
 #	print STDERR Dumper $f;
         $c->add_feature($f);
 	print STDERR "\tfinished process feature.\n" if $self->DEBUG;
