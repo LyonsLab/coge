@@ -1715,6 +1715,7 @@ sub _draw_features
 	  }
 	my $feature_height = $self->feature_height;#($self->feature_start_height+$self->feature_mag_height*$self->mag);
 	my $feat_h = $feature_height/$feat->_overlap;#*$feat->mag;
+	$feat_h = 1 if $feat_h < 1;
 	my $offset = ($feat->order-1)*($feature_height+$self->padding/1.5)+$self->padding/2;
 	$offset = 0 if $feat->fill;
 	$feat_h = ($self->_chr_height-$self->mag-1)/2 if $feat->fill;
