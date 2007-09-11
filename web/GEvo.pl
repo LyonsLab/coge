@@ -700,12 +700,11 @@ sub generate_image
 			    fill_labels=>1,
 			    forcefit=>1,
 			    minor_tick_labels=>1,
-#			    overlap_adjustment=>$overlap_adjustment,
 			    feature_labels=>$feature_labels,
 			    draw_hi_qual=>$hiqual,
 			    padding=>$padding,
 			   );
-    $gfx->overlap_adjustment($overlap_adjustment);
+    $gfx->overlap_adjustment(1);
     $gfx->skip_duplicate_features(1);
     $gfx->DEBUG(0);
     $gfx->major_tick_labels(0);
@@ -1010,8 +1009,8 @@ sub process_features
         $f->type($type);
 	$f->description($feat->annotation);
 	$f->link("FeatView.pl?accn=$name") if $name;
-	$overlap = $overlap ? 0 : 1; #I think I need this to get this to work as expected
-	$f->skip_overlap_search($overlap);
+	my $foverlap = $overlap ? 0 : 1; #I think I need this to get this to work as expected
+	$f->skip_overlap_search($foverlap);
         $c->add_feature($f);
     }
   }
