@@ -6,12 +6,6 @@ use CGI::Ajax;
 use GS::LogUser;
 use HTML::Template;
 use Data::Dumper;
-use CoGe::Genome;
-#use CoGe::Accessory::bl2seq_report;
-#use CoGe::Accessory::blastz_report;
-#use CoGe::Accessory::chaos_report;
-#use CoGe::Accessory::lagan_report;
-#use CoGe::Accessory::dialign_report;
 use DBI;
 
 # for security purposes
@@ -83,7 +77,8 @@ sub gen_body
 #    print STDERR Dumper $report;
 
     my $hsps = get_info_from_db(db_file=>$db_file, hsp_num=>$hsp_num, report_file=>$report_file);
-    my ($qname, $sname) = $hsps->[0]{hsp}=~ /\((.*?)-(.*?)\)/;
+    print STDERR Dumper $hsps;
+    my ($qname, $sname) = $hsps->[0]{hsp}=~ />?\(?(.*?)-(.*)\)?<?/;
 
     my $hsp;
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/HSPView.tmpl');
@@ -192,30 +187,35 @@ sub get_info_from_db
     my @hsps;
     while(my $item = $sth->fetchrow_arrayref)
       {
-	print STDERR $item->[0];
-	my ($hsp, $location, $alignment, $match, $length, $identity, $eval);
-	($hsp, $location, $alignment, $match, $length, $identity, $eval) = split /<br>/i, $item->[0] if $item->[0] =~ /<br>/i;
-	($hsp, $location, $alignment, $match, $length, $identity, $eval) = split /\n/i, $item->[0] if $item->[0] =~ /\n/i;
-	($hsp, $location, $alignment, $match, $length, $identity, $eval) = split /\\n/i, $item->[0] if $item->[0] =~ /\\n/i;
-	($hsp, $location, $alignment, $match, $length, $identity, $eval) = split /<br\/>/i, $item->[0] if $item->[0] =~ /<br\/>/i;
-	($hsp, $location, $alignment, $match, $length, $identity, $eval) = split /&#10;/i, $item->[0] if $item->[0] =~ /&#10;/i;
-	print STDERR Dumper ($hsp, $location, $alignment, $match, $length, $identity, $eval);
-	my ($start, $stop, $orientation) = $location =~ /(\d+)-(\d+)\s+\((.*?)\)/;
-	$match =~ s/match:\s+//i;
-	$length =~ s/length:\s+//i;
-	$identity =~ s/identity:\s+//i;
-	$eval =~ s/e_val:\s+//i;
-	$eval =~ s/<.*?>//g;
+	my $split;
+	$split = "<br>" if $item->[0] =~/<br>/;
+	$split = "\n" if $item->[0] =~/\n/;
+	$split = "\\n" if $item->[0] =~/\\n/;
+	$split = "<br\/>" if $item->[0] =~/<br\/>/;
+	$split = "&#10;" if $item->[0] =~/&#10;/;
+	 my %data;
+	foreach my $item (split /$split/i, $item->[0])
+	  {
+	    my ($tmp1, $tmp2) = split/:/,$item,2;
+	    $tmp2 =~ s/^\s+//;
+	    $tmp2 =~ s/\s+$//;
+	    $data{$tmp1}=$tmp2;
+	  }
+	print STDERR Dumper \%data;
+	$data{HSP} =~ s/<.*?>//g;
+	$data{HSP} =~ s/^\d+\s*//;
+	my ($start, $stop, $orientation) = $data{Location} =~ /(\d+)-(\d+)\s+\(?(.*)\)?/;
 	push @hsps, {
-		     hsp=>$hsp,
+		     hsp=>$data{HSP},
 		     start=>$start,
 		     stop=>$stop,
 		     orientation=>$orientation,
-		     alignment=>$alignment,
-		     match=>$match,
-		     length=>$length,
-		     identity=>$identity,
-		     eval=>$eval,
+		     alignment=>$data{Sequence},
+		     match=>$data{Match},
+		     length=>$data{Length},
+		     identity=>$data{Identity},
+		     eval=>$data{E_val},
+		     location=>$data{Location},
 		    };
       }
     return \@hsps;
