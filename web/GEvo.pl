@@ -1148,11 +1148,13 @@ sub process_hsps
 		$f->label($hsp->number);
 	      }
 	    $f->alt(join ("-",$hsp->number,$accn1,$accn2));
-	    my $desc = join ("<br/>", "HSP: ".$hsp->number. qq{  <span class="small">(}.$blast->query."-". $blast->subject.")</span>", "Location: ".$start."-".$stop." (".$hsp->strand.")","Match: ".$hsp->match,"Length: ".$hsp->length,"Identity: ".$hsp->percent_id, "Sequence: ".$seq);
+	    my $desc = join ("<br/>", "HSP: ".$hsp->number. qq{  <span class="small">(}.$blast->query."-". $blast->subject.")</span>", "Location: ".$start."-".$stop." (".$hsp->strand.")","Match: ".$hsp->match,"Length: ".$hsp->length,"Identity: ".$hsp->percent_id);
+	    
 	    $desc .= "<br/>E_val: ".$hsp->pval if $hsp->pval;
 	    $desc .= "<br/>Score: ".$hsp->score if $hsp->score;
-	    $desc .= qq{<span class="small"> (cutoff: $eval_cutoff)</span>} if defined $eval_cutoff;
-	    $desc .= qq{ (contains spike sequence) } if $hsp->contains_spike;
+	    $desc .= "<br/>Sequence: ".$seq;
+	    $desc .= qq{<br/><span class="small">(cutoff: $eval_cutoff)</span>} if defined $eval_cutoff;
+	    $desc .= qq{<br/>(contains spike sequence) } if $hsp->contains_spike;
 	    $f->description($desc);
 	    if ($reverse)
 	      {
