@@ -830,6 +830,21 @@ function monitor_log(log)
 <label class="small"><input class="backbox" type="radio" name="hsp_limit" id="hsp_limit" tabindex="1" value="0" <TMPL_VAR NAME="HSP_LIMIT_NO"> />No</label> 
 
   </TD>
+ <tr>
+  <td>Don't show HSPs with <input class=backbox type=textbox size=3 id="hsp_overlap_limit" value="<TMPL_VAR NAME="HSP_OVERLAP_LIMIT">"/> overlaps
+ <Tr>
+  <td>Draw:
+  <select id="draw_model">
+   <option value = "full" <TMPL_VAR NAME="DRAW_MODEL_FULL">>Complete</option>
+   <option value = "gene" <TMPL_VAR NAME="DRAW_MODEL_GENE">>Gene</option>
+   <option value = "mRNA" <TMPL_VAR NAME="DRAW_MODEL_mRNA">>mRNA</option>
+   <option value = "CDS" <TMPL_VAR NAME="DRAW_MODEL_CDS">>CDS</option>
+   <option value = "RNA" <TMPL_VAR NAME="DRAW_MODEL_RNA">>RNA</option>
+   <option value = "0" <TMPL_VAR NAME="DRAW_MODEL_NO">>No</option>
+  </select> Models
+
+
+
 <!--  <tr>
    <TD> <font class="small">Preset colors: <label><input class="backbox" type="radio" name="hspcolor" onClick="set_hsp_colors('default');"/>Default</label><label><input class="backbox" type="radio" name="hspcolor" onClick="set_hsp_colors('cblind');"/>Color blind</label><label><input class="backbox" type="radio" name="hspcolor" onClick="set_hsp_colors('fire');"/>Fire</label><label><input class="backbox" type="radio" name="hspcolor" onClick="set_hsp_colors('rasta');"/>Rasta</label></font> -->
   </table>
