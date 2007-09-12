@@ -20,14 +20,14 @@ function search_chain(val) {
  $('#FeatType').hide();
 
  if ((val == 1)){
-   cogesearch(['accn', 'type', 'org'],[source_search_chain]);
+   cogesearch(['args__accn','accn', 'args__type','type', 'args__org','org'],[source_search_chain]);
    return;
  } 
  //$('#accn_list').html('<input type="hidden" id="accn_select">');	
  //$('#Source').html('<input type="hidden" id="dsid">');	
  //$('#FeatType').html('<input type="hidden" id="Type_name">');	
  if ($('#accn').val().length > minlen) {
-   cogesearch(['accn', 'type', 'org'],[source_search_chain]);
+   cogesearch(['args__accn','accn', 'args__type','type', 'args__org','org'],[source_search_chain]);
  }
 }
 
