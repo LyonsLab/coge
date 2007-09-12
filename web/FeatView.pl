@@ -14,6 +14,7 @@ use CoGe::Graphics::Feature::Gene;
 use CoGe::Graphics::Feature::NucTide;
 use CoGeX;
 use POSIX;
+use DBIxProfiler;
 
 $ENV{PATH} = "/opt/apache2/CoGe/";
 
@@ -32,7 +33,8 @@ $ACCN = $FORM->param('accn');
 ($USER) = CoGe::Accessory::LogUser->get_user();
 my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
 $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
-
+#$coge->storage->debugobj(new DBIxProfiler());
+#$coge->storage->debug(1);
 my $pj = new CGI::Ajax(
 		       db_lookup=>\&db_lookup,
 		       source_search=>\&get_data_source_info_for_accn,
@@ -81,36 +83,40 @@ sub cogesearch
   {
     my %opts = @_;
     my $accn = $opts{accn};
+    my $anno = $opts{anno};
     my $type = $opts{type};
     my $org = $opts{org};
-    my $blank = qq{<input type="hidden" id="accn_select">};
+    print STDERR Dumper \%opts;
+    my $blank = qq{Query needs better definition<input type="hidden" id="accn_select">};
 #    print STDERR "cogesearch: $accn\n";
 #    print STDERR Dumper @_;
-    return $blank unless length($accn) > 2 || $type || $org;
+    return $blank unless length($accn) > 2 || $type || $org || length($anno) > 5;
     ($USER) = CoGe::Accessory::LogUser->get_user();
     my $restricted_orgs = restricted_orgs(user=>$USER);
     my $html;
     my %seen;
     my @opts;
-    my $search = {'me.name'=>{like=>$accn."%"}};
+    my $search = {'me.name'=>{like=>$accn."%"}} if $accn;
+    $search->{annotation}={like=>"%".$anno."%"} if $anno;
     $search->{feature_type_id}=$type if $type;
+    $search->{organism_id}={ -not_in=>[values %$restricted_orgs]} if values %$restricted_orgs;
     $search->{organism_id}=$org if $org;
+    my $join = {'feature'=>'dataset'};
+    $join->{'feature'} = ['dataset','annotations'] if $anno;
     foreach my $name ($coge->resultset('FeatureName')->search(
 							      $search,
-							      {join=>{'feature'=>'dataset'},
-							       prefetch=>'feature',
+							      {join=>$join,
 							       order_by=>'name ASC',
 							      },
 							     ))
       {
 	my $item = $name->name;
 	next if $seen{uc($item)};
-	if (%{$restricted_orgs})
-	  {
-	    next if $restricted_orgs->{$name->feature->dataset->organism->name};
-	  }
+#	if (%{$restricted_orgs})
+#	  {
+#	    next if $restricted_orgs->{$name->feature->dataset->organism->name};
+#	  }
 	$seen{uc($item)}++;
-	
 	push @opts, "<OPTION>$item</OPTION>"
       }
     if (@opts > 5000)
