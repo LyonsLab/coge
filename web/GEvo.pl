@@ -210,13 +210,13 @@ sub gen_body
     my $image_height = get_opt(params=>$prefs, form=>$form, param=>'ih');
     $image_height = 100 unless $image_height;
     my $feature_height = get_opt(params=>$prefs, form=>$form, param=>'fh');
-    $feature_height = 15 unless $feature_height;
+    $feature_height = 10 unless $feature_height;
     my $padding  = get_opt(params=>$prefs, form=>$form, param=>'padding');
-    $padding = 5 unless defined $padding;
+    $padding = 2 unless defined $padding;
     my $gc_color = get_opt(params=>$prefs, form=>$form, param=>'gc');
     $gc_color = 0 unless $gc_color;
     my $nt_color = get_opt(params=>$prefs, form=>$form, param=>'nt');
-    $nt_color = 0 unless $nt_color;
+    $nt_color = 1 unless $nt_color;
     my $auto_adjust_feats = get_opt(params=>$prefs, form=>$form, param=>'overlap');
     $auto_adjust_feats = 0 unless defined $auto_adjust_feats;
     my $hiqual = get_opt(params=>$prefs, form=>$form, param=>'hiqual');
@@ -229,6 +229,10 @@ sub gen_body
     $hsp_limit = 0 unless $hsp_limit;
     my $hsp_limit_num = get_opt(params=>$prefs, form=>$form, param=>'hsplimnum');
     $hsp_limit_num = 20 unless defined $hsp_limit_num;
+    my $draw_model = get_opt(params=>$prefs, form=>$form, param=>'draw_model');
+    $draw_model = "full" unless $draw_model;
+    my $hsp_overlap_limit = get_opt(params=>$prefs, form=>$form, param=>'hsp_overlap_limit');
+    $hsp_overlap_limit = 0 unless $hsp_overlap_limit;
 
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GEvo.tmpl');
     $template->param(GOBE_VIEWER=>"selected") if $results_interface eq "flash";
@@ -237,6 +241,7 @@ sub gen_body
     $template->param(IMAGE_HEIGHT=>$image_height);
     $template->param(FEAT_HEIGHT=>$feature_height);
     $template->param(PADDING=>$padding);
+    $template->param(HSP_OVERLAP_LIMIT=>$hsp_overlap_limit);
     if ($gc_color) {$template->param(GC_COLOR_YES=>"checked");}
     else {$template->param(GC_COLOR_NO=>"checked");}
     if ($nt_color) {$template->param(NT_COLOR_YES=>"checked");}
@@ -253,7 +258,12 @@ sub gen_body
     if ($hsp_limit) {$template->param(HSP_LIMIT_YES=>"checked");}
     else {$template->param(HSP_LIMIT_NO=>"checked");}
     $template->param(HSP_LIMIT_NUM=>$hsp_limit_num);
-
+    if ($draw_model eq "full") {$template->param(DRAW_MODEL_FULL=>"selected");}
+    elsif ($draw_model eq "gene") {$template->param(DRAW_MODEL_GENE=>"selected");}
+    elsif ($draw_model eq "mRNA") {$template->param(DRAW_MODEL_mRNA=>"selected");}
+    elsif ($draw_model eq "CDS") {$template->param(DRAW_MODEL_CDS=>"selected");}
+    elsif ($draw_model eq "RNA") {$template->param(DRAW_MODEL_RNA=>"selected");}
+    else {$template->param(DRAW_MODEL_NO=>"selected");}
 
     my $box = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
     #generate sequence submission selector
@@ -297,6 +307,8 @@ sub run
     my $show_nt = $opts{nt};
     my $color_hsp = $opts{colorhsp};
     my $hsp_label = $opts{hsplabel};
+    my $draw_model = $opts{draw_model};
+    my $hsp_overlap_limit = $opts{hsp_overlap_limit};
     my $overlap_adjustment = $opts{overlap};
     my $hiqual = $opts{hiqual};
     my $hsp_limit = $opts{hsplim};
@@ -548,6 +560,8 @@ sub run
 									     padding=>$padding,
 									     seq_num=>$count,
 									     reverse_image=>$rev,
+									     draw_model=>$draw_model,
+									     hsp_overlap_limit=>$hsp_overlap_limit,
 									    );
 	    $frame_height += $gfx->ih + $gfx->ih*.1;
 	    $html_viewer .= qq!<div>$accn!;
@@ -680,6 +694,8 @@ sub generate_image
     my $hiqual = $opts{hiqual};
     my $padding = $opts{padding} || 5;
     my $seq_num = $opts{seq_num};
+    my $draw_model = $opts{draw_model};
+    my $hsp_overlap_limit = $opts{hsp_overlap_limit};
     my $graphic = new CoGe::Graphics;
     my $gfx = new CoGe::Graphics::Chromosome;
 #    print STDERR "$start"."::"."$stop"." -- ".length($gbobj->sequence)."\n";
@@ -715,7 +731,7 @@ sub generate_image
     $f2->merge_percent(0);
     $gfx->add_feature($f2);
     $graphic->process_nucleotides(c=>$gfx, seq=>$gbobj->sequence, layers=>{gc=>$show_gc, nt=>$show_nt});
-    process_features(c=>$gfx, obj=>$gbobj, start=>$start, stop=>$stop, overlap_adjustment=>$overlap_adjustment);
+    process_features(c=>$gfx, obj=>$gbobj, start=>$start, stop=>$stop, overlap_adjustment=>$overlap_adjustment, draw_model=>$draw_model);
     $eval_cutoff = process_hsps(
 				c=>$gfx, 
 				data=>$data, 
@@ -731,6 +747,7 @@ sub generate_image
 				color_hsp=>$color_hsp,
 				colors=>$hsp_colors,
 				show_hsps_with_stop_codon=>$show_hsps_with_stop_codon,
+				hsp_overlap_limit=>$hsp_overlap_limit,
 			       );
 #    $gfx->DEBUG(1);
 #    print STDERR Dumper $gfx;
@@ -874,8 +891,7 @@ INSERT INTO image_info (iname, title) values ("$image", "$title")
 	my $anno = $feat->description;
 	#	    $anno =~ s/'|"//g;
 	$anno =~ s/'//g;
-	$anno =~ s/<br\/?>/&#10;/ig;
-	$anno =~ s/\n/&#10;/g;
+	$anno =~ s/<br\/?>/&#10;/ig;	$anno =~ s/\n/&#10;/g;
 	$anno =~ s/[\[\]\(\)]//g;
 	#	    print STDERR $anno if $anno =~ /Location/;
 	#	    print STDERR $anno,"\n" if $anno =~ /01020/;
@@ -921,6 +937,8 @@ sub process_features
     my $start=$opts{start};
     my $stop = $opts{stop};
     my $overlap = $opts{overlap_adjustment};
+    my $draw_model = $opts{draw_model};
+    return unless $draw_model;
     my $accn = $obj->accn;
     my $track = 1;
     my @opts = ($start, $stop) if $start && $stop;
@@ -937,7 +955,7 @@ sub process_features
 	my ($name) = sort { length ($b) <=> length ($a) || $a cmp $b} @{$feat->qualifiers->{names}} if ref ($feat->qualifiers) =~ /hash/i ;
         if ($type =~ /pseudogene/i)
           {
-#	    next;
+	    next unless $draw_model eq "full";
 	    $f = CoGe::Graphics::Feature::Gene->new();
 	    $f->color([255,33,0,50]);
 	    $f->order($track);
@@ -946,7 +964,7 @@ sub process_features
           }
         elsif ($type =~ /Gene/i)
           {
-#	    next;
+	    next unless $draw_model eq "full" || $draw_model eq "gene";
 	    $f = CoGe::Graphics::Feature::Gene->new();
 	    $f->color([255,0,0,50]);
 	    $f->order($track);
@@ -955,23 +973,25 @@ sub process_features
           }
         elsif ($type =~ /CDS/i)
           {
-        	$f = CoGe::Graphics::Feature::Gene->new();
-        	$f->color([0,255,0, 50]);
-        	$f->order($track);
-		$f->overlay(3);
-		if ($accn)
+	    next unless $draw_model eq "full" || $draw_model eq "CDS";
+	    $f = CoGe::Graphics::Feature::Gene->new();
+	    $f->color([0,255,0, 50]);
+	    $f->order($track);
+	    $f->overlay(3);
+	    if ($accn)
+	      {
+		foreach my $name (@{$feat->qualifiers->{names}})
 		  {
-		    foreach my $name (@{$feat->qualifiers->{names}})
-		      {
-			$f->color([255,255,0]) if $name =~ /^$accn$/i;
-			$f->label($name) if $name =~ /^$accn$/i;
-		      }
+		    $f->color([255,255,0]) if $name =~ /^$accn$/i;
+		    $f->label($name) if $name =~ /^$accn$/i;
 		  }
-
+	      }
+	    
 		
           }
         elsif ($type =~ /mrna/i)
           {
+	    next unless $draw_model eq "full" || $draw_model eq "mRNA";
         	$f = CoGe::Graphics::Feature::Gene->new();
         	$f->color([0,0,255, 50]);
         	$f->order($track);
@@ -980,6 +1000,7 @@ sub process_features
           }
         elsif ($type =~ /rna/i)
           {
+	    next unless $draw_model eq "full" || $draw_model eq "RNA";
         	$f = CoGe::Graphics::Feature::Gene->new();
         	$f->color([200,200,200, 50]);
         	$f->order($track);		$f->overlay(2);
@@ -1032,6 +1053,7 @@ sub process_hsps
     my $score_cutoff = $opts{score_cutoff};
     my $color_hsp = $opts{color_hsp};
     my $colors = $opts{colors};
+    my $hsp_overlap_limit = $opts{hsp_overlap_limit};
     my $show_hsps_with_stop_codon = $opts{show_hsps_with_stop_codon};
     #to reverse hsps when using genomic sequences from CoGe, they need to be drawn on the opposite strand than where blast reports them.  This is because CoGe::Graphics has the option of reverse drawing a region.  However, the sequence fed into blast has already been reverse complemented so that the HSPs are in the correct orientation for the image.  Thus, if the image is reverse, they are drawn on the wrong strand.  This corrects for that problem.   Sorry for the convoluted logic, but it was the simplest way to substantiate this option
     my $i = 0;
@@ -1126,7 +1148,7 @@ sub process_hsps
 		$f->label($hsp->number);
 	      }
 	    $f->alt(join ("-",$hsp->number,$accn1,$accn2));
-	    my $desc = join ("<br/>", "HSP: ".$hsp->number. qq{  <span class="small">(}.$blast->query."-". $blast->subject.")</span>", "Location: ".$start."-".$stop." (".$hsp->strand.")", "Sequence: ".$seq,"Match: ".$hsp->match,"Length: ".$hsp->length,"Identity: ".$hsp->percent_id);
+	    my $desc = join ("<br/>", "HSP: ".$hsp->number. qq{  <span class="small">(}.$blast->query."-". $blast->subject.")</span>", "Location: ".$start."-".$stop." (".$hsp->strand.")","Match: ".$hsp->match,"Length: ".$hsp->length,"Identity: ".$hsp->percent_id, "Sequence: ".$seq);
 	    $desc .= "<br/>E_val: ".$hsp->pval if $hsp->pval;
 	    $desc .= "<br/>Score: ".$hsp->score if $hsp->score;
 	    $desc .= qq{<span class="small"> (cutoff: $eval_cutoff)</span>} if defined $eval_cutoff;
@@ -1166,7 +1188,6 @@ sub process_hsps
 	  }
 	$f->label_location($label_location) if $stagger_label;
 	$c->add_feature($f);
-
 	if (!$label_location)
 	  {
 	    $label_location = "bot";
@@ -1178,6 +1199,16 @@ sub process_hsps
 	else
 	  {
 	    $label_location = "top";
+	  }
+      }
+    if ($hsp_overlap_limit)
+      {
+	foreach my $f (@feats)
+	  {
+	    if ($f->_overlap >=$hsp_overlap_limit)
+	      {
+		$c->delete_feature($f);
+	      }
 	  }
       }
     return $eval_cutoff;
@@ -1365,7 +1396,7 @@ sub get_obj_from_genome_db
 	print STDERR $name,"\n" if $DEBUG;
 	print STDERR "\t", $f->genbank_location_string(),"\n" if $DEBUG;
 	print STDERR "\t", $f->genbank_location_string(recalibrate=>$start),"\n\n" if $DEBUG;
-	my $anno = $f->annotation_pretty_print_html;
+	my $anno = $f->annotation_pretty_print_html();
 	$anno =~ s/\n/<br\/>/ig;
 	my $location = $f->genbank_location_string(recalibrate=>$start);
 	$location = $obj->reverse_genbank_location(loc=>$location, ) if $rev;
@@ -2029,6 +2060,8 @@ sub gen_params
 	'args__showallhsps', 'show_hsps_with_stop_codon',
         'args__padding', 'padding',
         'args__num_seqs','args__$num_seqs',
+        'args__draw_model', 'draw_model',
+        'args__hsp_overlap_limit', 'hsp_overlap_limit',
         'args__basefile','args__'+pageObj.basefile
 };
     $params =~ s/\n//g;
