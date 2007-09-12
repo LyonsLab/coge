@@ -8,7 +8,6 @@ use CoGe::Accessory::Web;
 use CoGe::Accessory::Restricted_orgs;
 use HTML::Template;
 use Data::Dumper;
-use CoGe::Genome;
 use CoGe::Graphics::Chromosome;
 use CoGe::Graphics::Feature;
 use CoGe::Graphics::Feature::Gene;
@@ -80,9 +79,10 @@ sub get_types
 
 sub cogesearch
   {
-    my $accn = shift;
-    my $type = shift;
-    my $org = shift;
+    my %opts = @_;
+    my $accn = $opts{accn};
+    my $type = $opts{type};
+    my $org = $opts{org};
     my $blank = qq{<input type="hidden" id="accn_select">};
 #    print STDERR "cogesearch: $accn\n";
 #    print STDERR Dumper @_;
