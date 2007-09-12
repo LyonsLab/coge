@@ -39,6 +39,11 @@ sub restricted_orgs
 	delete $orgs{papaya};
 	delete $orgs{sorghum};
       }
+    foreach my $org (keys %orgs)
+      {
+	my ($orgo) = $coge->resultset('Organism')->search(name=>$org);
+	$orgs{$org}=$orgo->id;
+      }
     return \%orgs;
   }
 
