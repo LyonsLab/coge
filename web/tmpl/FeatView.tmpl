@@ -9,26 +9,41 @@
 <SCRIPT language="JavaScript">
 
 function search_chain(val) {
- minlen = 4;
- if (pageObj.searchterm == $('#accn').val() && pageObj.type == $('#type').val() && pageObj.org == $('#org').val()) {return;}
- pageObj.searchterm = $('#accn').val();	
- pageObj.type = $('#type').val();	
- pageObj.org = $('#org').val();	
+ accnminlen = 4;
+ annominlen = 8;
+ if (pageObj.searchterm == $('#accn').val() && pageObj.annosearch == $('#annosearch').val() && pageObj.type == $('#type').val() && pageObj.org == $('#org').val()) {return;}
  $('#anno').hide();	
  $('#accn_list').hide();
  $('#Source').hide();
  $('#FeatType').hide();
-
+ var searched = 0;
  if ((val == 1)){
-   cogesearch(['args__accn','accn', 'args__type','type', 'args__org','org'],[source_search_chain]);
-   return;
+   $('#anno').html('<img src="./picts/animations/DNA_orbit_animated_small_third.gif" >'); 
+   $('#anno').show();
+   searched=1;	
+   cogesearch(['args__accn','accn', 'args__anno','annosearch','args__type','type', 'args__org','org'],[source_search_chain]);
+    
  } 
- //$('#accn_list').html('<input type="hidden" id="accn_select">');	
- //$('#Source').html('<input type="hidden" id="dsid">');	
- //$('#FeatType').html('<input type="hidden" id="Type_name">');	
- if ($('#accn').val().length > minlen) {
-   cogesearch(['args__accn','accn', 'args__type','type', 'args__org','org'],[source_search_chain]);
+ else if ($('#accn').val().length > accnminlen) {
+   $('#anno').html('<img src="./picts/animations/DNA_orbit_animated_small_third.gif" >'); 
+   $('#anno').show();
+   searched=1;	
+   cogesearch(['args__accn','accn', 'args__anno','annosearch','args__type','type', 'args__org','org'],[source_search_chain]);
  }
+ else if ($('#annosearch').val().length > annominlen) {
+   $('#anno').html('<img src="./picts/animations/DNA_orbit_animated_small_third.gif" >'); 
+   $('#anno').show();
+   searched=1;	
+   cogesearch(['args__accn','accn', 'args__anno','annosearch','args__type','type', 'args__org','org'],[source_search_chain]);
+ }
+ if (searched)
+  {
+   pageObj.searchterm = $('#accn').val();	
+   pageObj.annosearch = $('#annosearch').val();	
+   pageObj.type = $('#type').val();	
+   pageObj.org = $('#org').val();	
+  }
+
 }
 
 function source_search_chain (val) {
@@ -84,6 +99,11 @@ $(document).ready(function(){
            Feature Name:
          <tD>
           <input type="text" name="accn" id="accn" tabindex="1"  size="10" onKeyup ="timing();"  onBlur="search_chain(1);" value="<TMPL_VAR NAME=ACCN>"/>
+       <TR>
+         <TD nowrap>
+           Feature Annotation:
+         <tD>
+          <input type="text" name="annosearch" id="annosearch" tabindex="1"  size="10" onKeyup ="timing();"  onBlur="search_chain(1);" value="<TMPL_VAR NAME=ANNO>"/> <span class=small>(SLOW)</span>
         <TR>
 	 <tD nowrap>
           Feature Type:
