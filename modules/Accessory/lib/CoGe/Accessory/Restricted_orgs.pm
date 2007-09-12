@@ -31,7 +31,7 @@ sub restricted_orgs
     my %orgs;
     if (!$user || $user =~ /public/i)
       {
-	$orgs{papaya} = 1;
+#	$orgs{papaya} = 1;
 	$orgs{sorghum} = 1;
       }
     else 
