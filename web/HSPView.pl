@@ -77,7 +77,6 @@ sub gen_body
 #    print STDERR Dumper $report;
 
     my $hsps = get_info_from_db(db_file=>$db_file, hsp_num=>$hsp_num, report_file=>$report_file);
-    print STDERR Dumper $hsps;
     my ($qname, $sname) = $hsps->[0]{hsp}=~ />?\(?(.*?)-(.*)\)?<?/;
 
     my $hsp;
@@ -201,7 +200,6 @@ sub get_info_from_db
 	    $tmp2 =~ s/\s+$//;
 	    $data{$tmp1}=$tmp2;
 	  }
-	print STDERR Dumper \%data;
 	$data{HSP} =~ s/<.*?>//g;
 	$data{HSP} =~ s/^\d+\s*//;
 	my ($start, $stop, $orientation) = $data{Location} =~ /(\d+)-(\d+)\s+\(?(.*)\)?/;
