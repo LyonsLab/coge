@@ -37,5 +37,22 @@ __PACKAGE__->add_columns(
 );
 __PACKAGE__->set_primary_key("user_id");
 
+sub generate_passwd
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $pwd = $opts{passwd} || $opts{pwd};
+    my $crypt_pwd = crypt( $pwd, "12" );
+  }
+
+#sub to check if entered password matches user passwd
+
+sub check_passwd
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $pwd = $opts{passwd} || $opts{pwd};
+    return crypt($pwd, $self->passwd) eq $self->passwd;
+  }
 1;
 
