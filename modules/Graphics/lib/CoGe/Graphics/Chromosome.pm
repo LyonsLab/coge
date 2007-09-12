@@ -591,6 +591,13 @@ sub add_feature
   }
 
 
+sub delete_feature
+  {
+    my $self = shift;
+    my $f = shift;
+    delete $self->_features->{$f->type}{$f->strand}{$f->order}{$f->layer}{$f->fill}{$f->start}{$f};
+  }
+
 #################### subroutine header begin ####################
 
 =head2 delete_features
