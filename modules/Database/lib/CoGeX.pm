@@ -343,5 +343,27 @@ sub get_current_datasets_for_org
     return wantarray ? values %data : [values %data];
   }
 
+sub log_user
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $user = $opts{user};
+    my $uid = ref($user) =~ /User/ ? $user->id : $user;
+    unless ($uid =~ /^\d+$/)
+      {
+	warn "Error adding user_id to User_session.  Not a valid uid: $uid\n";
+	return;
+      }
+    #FIRST REMOVE ALL ENTRIES FOR THIS USER
+    foreach my $item ($self->resultset('UserSession')->search(user_id=>$uid))
+      {
+	next unless $item;
+	$item->delete;
+      }
+    #ADD NEW ENTRY
+    my $item = $self->resultset('UserSession')->create({user_id=>$uid, date=>\'NOW()'});
+    return $item->id;
+  }
+
 
 1;
