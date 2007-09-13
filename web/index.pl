@@ -8,8 +8,7 @@ use CGI::Ajax;
 use HTML::Template;
 use Data::Dumper;
 use CoGe::Accessory::LogUser;
-use CoGe::Genome;
-
+use CoGeX;
 
 use vars qw($USER $UID $LAST_LOGIN $FORM $DATE $update);
 
@@ -35,7 +34,6 @@ sub gen_html
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
     $template->param(TITLE=>'Comparative Genomics Homepage');
     $template->param(HELP=>'CoGe');
-    #$template->param(HEAD=>'<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.js"></SCRIPT>');
 
     if ($FORM->param('logout') || !$USER)
       {
@@ -84,9 +82,6 @@ sub gen_body
 	my $url = $FORM->param('url') if $FORM->param('url');
 	$url =~ s/:::/;/g if $url;
 	$tmpl->param(url=>$url);
-#	print STDERR "Clearing old tmp files. . .\n";
-#	`/usr/bin/find /opt/apache/CoGe/tmp -depth -mindepth 1 -ctime +1 -delete`;
-
       }
     $html .= $tmpl->output;
     if ($FORM->param('logout'))
@@ -156,14 +151,15 @@ sub actions
 sub login
   {
     my ($name, $pwd, $url) = @_;
-    my $db = new CoGe::Genome;
-    my ($u) = $db->get_user_obj->search(user_name=>$name);
+    my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
+    my $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
+    my ($u) = $coge->resultset('User')->search({user_name=>$name});
     my $pwdc = $u->check_passwd(pwd=>$pwd) if $u;
     $url = $FORM->param('url') unless $url;
     $url = $FORM->url() unless $url;
     if ($pwdc)
       {
-	my $sid = $db->get_user_session_obj->log_user(user=>$u);
+	my $sid = $coge->log_user(user=>$u);
 	my $c = CoGe::Accessory::LogUser->gen_cookie(user_name=>$name, uid=>$u->id, session=>$sid);
 	return ('true', $c, $url );
       }
