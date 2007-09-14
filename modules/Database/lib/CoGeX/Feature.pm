@@ -508,19 +508,20 @@ sub genomic_sequence {
   my $self = shift;
   my $dataset = $self->dataset();
   my @sequences;
-  my $lociter = $self->locations();
-  while ( my $loc = $lociter->next() ) {
-    my $fseq = $dataset->get_genome_sequence(
-                                             chromosome=>$loc->chromosome(),
-                                             skip_length_check=>1,
-                                             start=>$loc->start,
-                                             stop=>$loc->stop );
-    if ( $loc->strand == -1 ) {
-      push @sequences, $self->reverse_complement($fseq);
-    } else {
-      push @sequences, $fseq;
+  foreach my $loc (sort {$a->start <=> $b->start} $self->locations())
+    {
+      #  while ( my $loc = $lociter->next() ) {
+      my $fseq = $dataset->get_genome_sequence(
+					       chromosome=>$loc->chromosome(),
+					       skip_length_check=>1,
+					       start=>$loc->start,
+					       stop=>$loc->stop );
+      if ( $loc->strand == -1 ) {
+	push @sequences, $self->reverse_complement($fseq);
+      } else {
+	push @sequences, $fseq;
+      }
     }
-  }
   return wantarray ? @sequences : join( "", @sequences );
 }
 
