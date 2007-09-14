@@ -1398,7 +1398,7 @@ sub get_obj_from_genome_db
 	print STDERR $name,"\n" if $DEBUG;
 	print STDERR "\t", $f->genbank_location_string(),"\n" if $DEBUG;
 	print STDERR "\t", $f->genbank_location_string(recalibrate=>$start),"\n\n" if $DEBUG;
-	my $anno = $f->annotation_pretty_print_html();
+	my $anno = $f->annotation_pretty_print();
 	$anno =~ s/\n/<br\/>/ig;
 	my $location = $f->genbank_location_string(recalibrate=>$start);
 	$location = $obj->reverse_genbank_location(loc=>$location, ) if $rev;
