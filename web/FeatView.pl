@@ -43,6 +43,7 @@ my $pj = new CGI::Ajax(
 		       get_anno=>\&get_anno,
 		       show_express=>\&show_express,
 		       gen_data=>\&gen_data,
+		       get_feature_types=>\&get_feature_types,
 		      );
 $pj->JSDEBUG(0);
 $pj->DEBUG(0);
@@ -70,7 +71,7 @@ sub get_types
 															      },{join=>'feature_names'});
 
     $html .= "<font class=small>Type count: ".scalar @opts."</font>\n<BR>\n";
-    $html .= qq{<SELECT id="Type_name" SIZE="5" MULTIPLE onChange="get_anno(['accn_select','Type_name', 'dsid'],[show_anno])" >\n};
+    $html .= qq{<SELECT id="Type_name" SIZE="10" MULTIPLE onChange="get_anno(['accn_select','Type_name', 'dsid'],[show_anno])" >\n};
     $html .= join ("\n", @opts);
     $html .= "\n</SELECT>\n";
     $html =~ s/OPTION/OPTION SELECTED/;
@@ -86,18 +87,29 @@ sub cogesearch
     my $anno = $opts{anno};
     my $type = $opts{type};
     my $org = $opts{org};
-    print STDERR Dumper \%opts;
-    my $blank = qq{Query needs better definition<input type="hidden" id="accn_select">};
+    my $feat_accn_wild = $opts{feat_name_wild};
+    my $feat_anno_wild = $opts{feat_anno_wild};
+#    print STDERR Dumper \%opts;
+    my $blank = qq{<input type="hidden" id="accn_select">};
 #    print STDERR "cogesearch: $accn\n";
 #    print STDERR Dumper @_;
-    return $blank unless length($accn) > 2 || $type || $org || length($anno) > 5;
+    my $weak_query = "Query needs to be better defined.";
+    return $weak_query.$blank unless length($accn) > 2 || $type || $org || length($anno) > 5;
+    if (!$accn && !$anno)
+      {
+	return $weak_query.$blank unless $org && $type;
+      }
     ($USER) = CoGe::Accessory::LogUser->get_user();
     my $restricted_orgs = restricted_orgs(user=>$USER);
     my $html;
     my %seen;
     my @opts;
-    my $search = {'me.name'=>{like=>$accn."%"}} if $accn;
-    $search->{annotation}={like=>"%".$anno."%"} if $anno;
+    $accn = "%".$accn if $accn && ($feat_accn_wild eq "both" || $feat_accn_wild eq "left");
+    $accn = $accn."%" if $accn && ($feat_accn_wild eq "both" || $feat_accn_wild eq "right");
+    $anno = "%".$anno if $anno && ($feat_anno_wild eq "both" || $feat_anno_wild eq "left");
+    $anno = $anno."%" if $anno && ($feat_anno_wild eq "both" || $feat_anno_wild eq "right");
+    my $search = {'me.name'=>{like=>$accn}} if $accn;
+    $search->{annotation}={like=>$anno} if $anno;
     $search->{feature_type_id}=$type if $type;
     $search->{organism_id}={ -not_in=>[values %$restricted_orgs]} if values %$restricted_orgs;
     $search->{organism_id}=$org if $org;
@@ -124,7 +136,7 @@ sub cogesearch
 	return $blank."Search results over 5000, please refine your search.\n";
       }
     $html .= "<font class=small>Name count: ".scalar @opts."</font>\n<BR>\n";
-    $html .= qq{<SELECT id="accn_select" SIZE="5" MULTIPLE onChange="source_search_chain(); " >\n};
+    $html .= qq{<SELECT id="accn_select" SIZE="10" MULTIPLE onChange="source_search_chain(); " >\n};
     $html .= join ("\n", @opts);
     $html .= "\n</SELECT>\n";
     $html =~ s/<OPTION/<OPTION SELECTED/;
@@ -213,7 +225,7 @@ sub gen_body
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/FeatView.tmpl');
 
     $template->param(ACCN=>$ACCN);
-    $template->param(TYPE_LOOP=> [{TYPE=>"<OPTION VALUE=0>All</OPTION>"},map {{TYPE=>"<OPTION value=\"".$_->id."\">".$_->name."</OPTION>"}} sort {uc($a->name) cmp uc($b->name)} $coge->resultset('FeatureType')->all]);
+    $template->param(FEAT_TYPE=> get_feature_types());
     my @orgs;
     ($USER) = CoGe::Accessory::LogUser->get_user();
     my $restricted_orgs = restricted_orgs(user=>$USER);
@@ -224,6 +236,34 @@ sub gen_body
     $template->param(ORG_LOOP=> [{ORG=>"<OPTION VALUE=0>All</OPTION>"},map {{ORG=>"<OPTION value=\"".$_->id."\">".$_->name."</OPTION>"}} sort {uc($a->name) cmp uc($b->name)} @orgs]);
     my $html = $template->output;
 #    $html =~ s/(>gene<\/OPTION)/ SELECTED$1/; 
+    return $html;
+  }
+
+
+sub get_feature_types
+  {
+    my %args = @_;
+    my $orgid = $args{orgid};
+    my $html=qq{<select  name="type" id="type" />
+<OPTION VALUE=0>All</OPTION>
+};
+    if ($orgid)
+      {
+	my @tmp = $coge->resultset('FeatureType')->search (
+																				   {
+																				    organism_id=>$orgid,
+																				   },
+																				   {
+																				    distinct=>['me.name'],
+																				    join =>{'features'=>'dataset'}
+																				   }
+																				  );
+	$html.= join("\n",map {"<OPTION value=\"".$_->id."\">".$_->name."</OPTION>"} sort {uc($a->name) cmp uc($b->name)} @tmp);
+      }
+    else
+      {
+	$html.= join ("\n",map {"<OPTION value=\"".$_->id."\">".$_->name."</OPTION>"} sort {uc($a->name) cmp uc($b->name)} $coge->resultset('FeatureType')->all);
+      }
     return $html;
   }
 
@@ -256,7 +296,7 @@ sub get_data_source_info_for_accn
       }
     my $html;
     $html .= qq{
-<SELECT name = "dsid" id="dsid" MULTIPLE SIZE="5" onChange="get_types_chain();">
+<SELECT name = "dsid" id="dsid" MULTIPLE SIZE="10" onChange="get_types_chain();">
 };
     my $count = 0;
     foreach my $title (sort {$b cmp $a} keys %sources)
