@@ -25,7 +25,7 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key("feature_type_id");
 
 
-#__PACKAGE__->has_many("feature_type_id"=>"CoGeX::Feature");
+__PACKAGE__->has_many("features"=>"CoGeX::Feature","feature_type_id");
 
 1;
 
