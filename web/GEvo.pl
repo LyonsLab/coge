@@ -949,7 +949,6 @@ sub process_features
       }
     foreach my $feat($obj->get_features())
       {
-
         my $f;
 	my $type = $feat->type;
 	my ($name) = sort { length ($b) <=> length ($a) || $a cmp $b} @{$feat->qualifiers->{names}} if ref ($feat->qualifiers) =~ /hash/i ;
@@ -1324,6 +1323,11 @@ sub get_obj_from_genome_db
     my $down = shift || 0;
     my $t1 = new Benchmark;
     my ($feat) = $coge->resultset('Feature')->esearch({"me.feature_id"=>$featid})->next;
+    unless (ref ($feat) =~ /feature/i)
+      {
+	write_log("Can't find valid feature database entry for id=$featid", $LOGFILE);
+	return;
+      }
     my $t2 = new Benchmark;
     my $start = 0;
     my $stop = 0;
