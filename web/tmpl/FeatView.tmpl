@@ -11,7 +11,6 @@
 function search_chain(val) {
  accnminlen = 4;
  annominlen = 8;
- if (pageObj.searchterm == $('#accn').val() && pageObj.annosearch == $('#annosearch').val() && pageObj.type == $('#type').val() && pageObj.org == $('#org').val()) {return;}
  $('#anno').hide();	
  $('#accn_list').hide();
  $('#Source').hide();
@@ -21,29 +20,31 @@ function search_chain(val) {
    $('#anno').html('<img src="./picts/animations/DNA_orbit_animated_small_third.gif" >'); 
    $('#anno').show();
    searched=1;	
-   cogesearch(['args__accn','accn', 'args__anno','annosearch','args__type','type', 'args__org','org'],[source_search_chain]);
+   go_cogesearch();
     
  } 
  else if ($('#accn').val().length > accnminlen) {
    $('#anno').html('<img src="./picts/animations/DNA_orbit_animated_small_third.gif" >'); 
    $('#anno').show();
    searched=1;	
-   cogesearch(['args__accn','accn', 'args__anno','annosearch','args__type','type', 'args__org','org'],[source_search_chain]);
+   go_cogesearch();
  }
  else if ($('#annosearch').val().length > annominlen) {
    $('#anno').html('<img src="./picts/animations/DNA_orbit_animated_small_third.gif" >'); 
    $('#anno').show();
    searched=1;	
-   cogesearch(['args__accn','accn', 'args__anno','annosearch','args__type','type', 'args__org','org'],[source_search_chain]);
+   go_cogesearch();
  }
- if (searched)
+
+ if (!searched)
   {
-   pageObj.searchterm = $('#accn').val();	
-   pageObj.annosearch = $('#annosearch').val();	
-   pageObj.type = $('#type').val();	
-   pageObj.org = $('#org').val();	
+    $('anno').html('Search not run.');
   }
 
+}
+
+function go_cogesearch () {
+ cogesearch(['args__accn','accn', 'args__anno','annosearch','args__type','type', 'args__org','org', 'args__feat_name_wild','feat_name_wild', 'args__feat_anno_wild', 'feat_anno_wild'],[source_search_chain]);
 }
 
 function source_search_chain (val) {
@@ -98,30 +99,42 @@ $(document).ready(function(){
          <TD nowrap>
            Feature Name:
          <tD>
-          <input type="text" name="accn" id="accn" tabindex="1"  size="10" onKeyup ="timing();"  onBlur="search_chain(1);" value="<TMPL_VAR NAME=ACCN>"/>
+          <input type="text" name="accn" id="accn" tabindex="1"  size="10" value="<TMPL_VAR NAME=ACCN>"/>
+	Add wildcard to <select id="feat_name_wild" >
+	<option>neither</option>
+	<option>left</option>
+	<option>right</option>
+	<option>both</option>
+ 	</select>
+	side(s) of the name.
        <TR>
          <TD nowrap>
            Feature Annotation:
          <tD>
-          <input type="text" name="annosearch" id="annosearch" tabindex="1"  size="10" onKeyup ="timing();"  onBlur="search_chain(1);" value="<TMPL_VAR NAME=ANNO>"/> <span class=small>(SLOW)</span>
+          <input type="text" name="annosearch" id="annosearch" tabindex="1"  size="10" value="<TMPL_VAR NAME=ANNO>"/>
+	Add wildcard to <select id="feat_anno_wild" >
+	<option>neither</option>
+	<option>left</option>
+	<option>right</option>
+	<option selected>both</option>
+ 	</select>
+	side(s) of the annotation.
+	<tr><td><span class=small>Note: wildcards slow search substantially</span>
         <TR>
 	 <tD nowrap>
           Feature Type:
-         <TD>
-          <select  name="type" id="type" onchange="search_chain(1);"/>
-          <TMPL_LOOP NAME="TYPE_LOOP">
-          <TMPL_VAR NAME=TYPE> 
-          </TMPL_LOOP>
-         </SELECT>
+         <TD><div id=search_type><TMPL_VAR NAME=FEAT_TYPE></div>
         <TR>
 	 <tD nowrap>
           Organism:
          <TD>
-          <select  name="org" id="org" onchange="search_chain(1);"/>
+          <select  name="org" id="org" onchange="get_feature_types(['args__orgid','org'],['search_type']);"/>
           <TMPL_LOOP NAME="ORG_LOOP">
           <TMPL_VAR NAME=ORG> 
           </TMPL_LOOP>
          </SELECT>
+        <tr>
+	<td><input type="button" value="Search" onclick="search_chain(1)">
      </TABLE>
    </DIV>
   </TD>
