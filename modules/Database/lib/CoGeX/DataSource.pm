@@ -32,6 +32,6 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key("data_source_id");
 
 
-#__PACKAGE__->has_many("data_source_id");
+__PACKAGE__->has_many('datasets'=>"CoGeX::Dataset", "data_source_id");
 1;
 
