@@ -40,6 +40,8 @@ __PACKAGE__->add_columns(
     is_nullable => 1,
     size => 65535,
   },
+  "date",
+  { data_type => "DATETIME", default_value => "", is_nullable => 0, size => 19 },
 );
 
 __PACKAGE__->set_primary_key("dataset_id");
