@@ -144,14 +144,21 @@ sub get_dataset_info
 
     return $html unless $ds;
     $html = "<table>";
-    my $ds_name = $ds->datasource->name ." ". $ds->datasource->description;
+    my $dataset = $ds->name.": ". $ds->description;
+#    $dataset .= " <a href= ".$ds->link.">(".$ds->link.")" if $ds->link;
+    my $source_name = $ds->datasource->name .": ". $ds->datasource->description;
     my $link = $ds->datasource->link;
 
     $link = "http://".$link if ($link && $link !~ /http/);
-    $ds_name = "<a href =\"".$link."\">".$ds_name."</a>" if $ds->datasource->link;
-    $html .= qq{<TR><TD>Data Source:<TD>$ds_name}."\n";
-    $html .= qq{<tr><td>Version:<td>}.$ds->version."\n";
-
+    $source_name = "<a href =\"".$link."\">".$source_name."</a>" if $ds->datasource->link;
+    $html .= qq{<tr><td>Name: <td>$dataset}."\n";
+    $html .= qq{<TR><TD>Data Source: <TD>$source_name}."\n";
+    $html .= qq{<tr><td>Version: <td>}.$ds->version."\n";
+    $html .= qq{<tr><td>Date deposited: <td>}.$ds->date."\n";
+    my $org = $ds->organism->name;
+    $org .= ": ".$ds->organism->description if $ds->organism->description;
+    $org .="\n" ;
+    $html .= qq{<tr><td>Organism: <td>$org\n};
     my %chr;
 #    map{$chr{$_}++} ($ds->chromosomes, $DB->get_genomic_seq_obj->get_chromosome_for_dataset($ds));
     map{$chr{$_}++} ($ds->get_chromosomes);
