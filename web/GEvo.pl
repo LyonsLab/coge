@@ -864,7 +864,7 @@ INSERT INTO image_info (iname, title) values ("$image", "$title")
 	next if $feat->fill; #skip backgroup images;
 	next unless $feat->image_coordinates;
 	next if $feat->desc && $feat->desc =~ /spike sequence/;
-	my $pair_id = "NULL";
+	my $pair_id = "-99";
 	my $coords = $feat->image_coordinates;
 	$coords =~ s/\s//g;
 	#next unless $feat->type =~ /HSP/i;
@@ -888,6 +888,8 @@ INSERT INTO image_info (iname, title) values ("$image", "$title")
 	$image_track = "-".$image_track if $feat->strand =~ /-/;
 	
 	my ($xmin, $ymin, $xmax, $ymax) = split /,/, $coords;
+	$ymin++;
+	$ymax++;
 	my $anno = $feat->description;
 	#	    $anno =~ s/'|"//g;
 	$anno =~ s/'//g;
