@@ -179,11 +179,12 @@ sub get_info_from_db
     my ($set1, $set2) = $report_file=~ /_(\d+)-(\d+)/;
     my $output;
     my $dbh = DBI->connect("dbi:SQLite:dbname=$TEMPDIR/$db","","");
-    my $statement = qq{SELECT annotation from image_data where name like "$hsp_num-%" and (image = "$base}."_".qq{$set1.png" or image = "$base}."_".qq{$set2.png")};
-    print STDERR $statement,"\n";
+    my $statement = qq{SELECT annotation, pair_id, id from image_data where name like "$hsp_num-%" and (image = "$base}."_".qq{$set1.png" or image = "$base}."_".qq{$set2.png")};
+#    print STDERR $statement,"\n";
     my $sth = $dbh->prepare($statement);
     $sth->execute();
-    my @hsps;
+    my %hsps;
+    my %ids;
     while(my $item = $sth->fetchrow_arrayref)
       {
 	my $split;
@@ -203,7 +204,8 @@ sub get_info_from_db
 	$data{HSP} =~ s/<.*?>//g;
 	$data{HSP} =~ s/^\d+\s*//;
 	my ($start, $stop, $orientation) = $data{Location} =~ /(\d+)-(\d+)\s+\(?(.*)\)?/;
-	push @hsps, {
+
+	$hsps{$item->[2]}= {
 		     hsp=>$data{HSP},
 		     start=>$start,
 		     stop=>$stop,
@@ -215,6 +217,15 @@ sub get_info_from_db
 		     eval=>$data{E_val},
 		     location=>$data{Location},
 		    };
+	$ids{$item->[1]}++;
+	$ids{$item->[2]}++;
+      }
+    my @hsps;
+    #uberlame workaround ,but hey, it works
+    foreach my $id (keys %ids)
+      {
+	next unless $ids{$id}==2;
+	push @hsps, $hsps{$id};
       }
     return \@hsps;
   }
