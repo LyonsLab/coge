@@ -253,7 +253,7 @@ SELECT count(distinct(feature_id)), ft.name
   JOIN feature_type ft using (feature_type_id)
   JOIN location l USING (feature_id)
  WHERE dataset_id = $dsd
-   AND l.chromosome = $chr
+   AND l.chromosome = "$chr"
  GROUP BY ft.name
 };
     my $dbh = DBI->connect($connstr, 'cnssys', 'CnS' );
