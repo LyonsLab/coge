@@ -16,18 +16,21 @@ use POSIX;
 use Digest::MD5 qw(md5_hex);
 use DBIxProfiler;
 use File::Temp;
+use File::Basename;
 use CoGe::Accessory::blast_report;
+use CoGe::Accessory::Restricted_orgs;
 use CoGe::Graphics::GenomeView;
 use CoGe::Graphics;
 use CoGe::Graphics::Chromosome;
 use CoGe::Graphics::Feature::HSP;
 use CoGe::Genome;
-
+use Spreadsheet::WriteExcel;
+use Benchmark qw(:all);
 
 $ENV{PATH} = "/opt/apache/CoGe/";
 $ENV{BLASTDB}="/opt/apache/CoGe/data/blast/db/";
 $ENV{BLASTMAT}="/opt/apache/CoGe/data/blast/matrix/";
-use vars qw( $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $FORMATDB $BLAST $FORM $USER $DATE $BASEFILENAME $BASEFILE $LOGFILE %restricted_orgs $coge);
+use vars qw( $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $FORMATDB $BLAST $FORM $USER $DATE $BASEFILENAME $BASEFILE $LOGFILE $coge $SQLITEFILE);
 
 $TEMPDIR = "/opt/apache/CoGe/tmp/";
 $DATADIR = "/opt/apache/CoGe/data/";
@@ -39,10 +42,6 @@ $BLAST = "/usr/bin/blast";
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
 ($USER) = CoGe::Accessory::LogUser->get_user();
-if (!$USER || $USER =~ /public/i)
-  {
-    $restricted_orgs{papaya} = 1;
-  }
 $FORM = new CGI;
 
 my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
@@ -70,6 +69,12 @@ my $pj = new CGI::Ajax(
 		       generate_feat_info=>\&generate_feat_info,
 		       get_hsp_info=>\&get_hsp_info,
 		       generate_overview_image=>\&generate_overview_image,
+		       overlap_feats_parse=>\&overlap_feats_parse,
+		       get_nearby_feats=>\&get_nearby_feats,
+		       export_fasta_file=>\&export_fasta_file,
+		       generate_excel_feature_file=>\&generate_excel_feature_file,
+		       generate_tab_deliminated=>\&generate_tab_deliminated,
+		       generate_feat_list=>\&generate_feat_list,
 			);
 $pj->js_encode_function('escape');
 print $pj->build_html($FORM, \&gen_html);
@@ -96,7 +101,6 @@ sub gen_html
     $template->param(LOGO_PNG=>"CoGeBlast-logo.png");
     $template->param(BOX_NAME=>'CoGe: Blast');
     $template->param(BODY=>$body);
-    my $html;
     $html .= $template->output;
     }
   }
@@ -156,7 +160,6 @@ sub get_sequence
     my $rc = shift || 0;
     my $seq;
     my $featid;
-    #print STDERR "type: ", $fid, ", dsid: ", $dsid, ", blast_type: ", $blast_type, "\n";
     my $fasta;
     if ($seqview == 2)
     {
@@ -188,8 +191,6 @@ sub get_sequence
     else{
     $featid = $fid;
     my $feat = $coge->resultset('Feature')->find($featid);
-    #print STDERR "dsid: ", $dsid, "\n";
-    #print STDERR "\nfeatid: ", $featid, ", up: ", $upstream, ", down: ", $downstream, "\n";
     $fasta = generate_fasta_with_featid(featid=>$featid, dsid=>$dsid, rc=>$rc, blast_type=>$blast_type);
     
     unless (ref($feat) =~ /Feature/i)
@@ -209,7 +210,6 @@ sub get_sequence
       $seq = join ("\n", wrap('','',$seq));
       $seq = ($fasta. $seq);
     return $seq;
-    #print STDERR "accn select: ",$featid, ", type name: ",$fid, ", dsid: ", $dsid, "\n";
   }
  }
 }
@@ -304,15 +304,12 @@ sub get_orgs
     my $name = shift;
     my @db = $name ? $coge->resultset('Organism')->search({name=>{like=>"%".$name."%"}})
       : $coge->resultset('Organism')->all();
-    my %restricted;
-    if (!$USER || $USER =~ /public/i)
-      {
-	$restricted{papaya} = 1;
-      }
+    ($USER) = CoGe::Accessory::LogUser->get_user();
+    my $restricted_orgs = restricted_orgs(user=>$USER);
     my @opts;
     foreach my $item (sort {uc($a->name) cmp uc($b->name)} @db)
       {
-	next if $restricted{$item->name};
+	next if $restricted_orgs->{$item->name};
 	push @opts, "<OPTION value=\"".$item->id."\" id=\"o".$item->id."\">".$item->name."</OPTION>";
       }
     my $html;
@@ -354,8 +351,7 @@ sub blastoff_search
     my $blastable = $opts{blastable};
     my $width = $opts{width};
     my $type = $opts{type};
-    #print STDERR Dumper \%opts;
-    #print STDERR $width,"\n";
+    my $t1 = new Benchmark;
     initialize_basefile();
     my @org_ids = split(/,/,$blastable);
     my $fasta_file = create_fasta_file($seq);
@@ -364,7 +360,7 @@ sub blastoff_search
     
     if ($match_score=~/^(\d)\,(-\d)/) {($exist,$extent) = ($1,$2);}
     my $pre_command = "$BLAST -p $program -i $fasta_file";
-    if ($program =~ /blastn/i)
+    if ($program =~ /^blastn$/i)
       {
 	$pre_command .= " -q $nuc_penalty -r $nuc_reward";
       }
@@ -373,13 +369,14 @@ sub blastoff_search
 	$pre_command .= " -M $matrix";
       }
     $pre_command .=" -W $wordsize";
-    $pre_command .= " -G $exist -E $extent";
+    $pre_command .= " -G $exist -E $extent" if $exist && $extent;
     $pre_command .= " -e $expect";
     $pre_command .= " -C $comp" if $program =~ /tblastn/i;
     my $x;
     ($x, $pre_command) = check_taint($pre_command);
     my @results;
     my $count =1;
+    my $t2 = new Benchmark;
     foreach my $orgid (@org_ids)
       {
 	my ($db, $org) = get_blast_db($orgid);
@@ -401,7 +398,22 @@ sub blastoff_search
 		       };
 	$count++;
       }
+    my $t3 = new Benchmark;
+    initialize_sqlite();
+    my $t4 = new Benchmark;
     my $html = gen_results_page(results=>\@results,width=>$width,type=>$type);
+    my $t5 = new Benchmark;
+    my $init_time = timestr(timediff($t2,$t1));
+    my $blast_time = timestr(timediff($t3,$t2));
+    my $dbinit_time = timestr(timediff($t4,$t3));
+    my $resultpage_time = timestr(timediff($t5,$t4));
+    my $benchmark = qq{
+Time to initialize:              $init_time
+Time to blast:                   $blast_time
+Time to initialize sqlite:       $dbinit_time
+Time to generate results page:   $resultpage_time
+};
+      write_log("$benchmark" ,$LOGFILE);
     return $html,$BASEFILENAME;
     #return qq{<a href =$TEMPURL/$BASEFILENAME.log target=_new>$LOGFILE</a>};
   }
@@ -413,81 +425,112 @@ sub gen_results_page
      my $results = $opts{results};
      my $width = $opts{width};
      my $type = $opts{type};
-     #print STDERR $width,"\n";
+     my $null;
+     my $hsp_count = 0;;
      my @table;
      my $length;
      my $flag;
      my @check;
      my @no_feat;
      foreach my $set (@$results)
-     {
-      if (@{$set->{report}->hsps()})
-      {
-       foreach my $hsp (@{$set->{report}->hsps()})
        {
-#        print STDERR Dumper \$hsp;
-        my ($dsid) = $hsp->subject_name =~ /id: (\d+)/;
-        my ($chr) = $hsp->subject_name =~ /chromosome: (\d+)/;
-#	print STDERR $hsp->subject_name,"\n";
-        my ($org) = $hsp->subject_name =~ /^\s*(.*?)\s*\(/;
-        next unless $dsid && $chr;
-        my @feat = $coge->get_features_in_region(start=>$hsp->subject_start,  
-				     stop=>$hsp->subject_stop,
-				     chr=>$chr, 
-				     dataset_id=>$dsid,
-				     );
-	   if (@feat) {
-		foreach my $feature (@feat)
-		{
-		  next unless $feature->type->name =~ /gene/i;
-
-	 	  $length = (($feature->stop) - ($feature->start));		     
-		  my ($name) = sort $feature->names;
-	 	  foreach my $data (@check)
-	 	  {
-	  		 $flag = 1 if (($data->{name} eq $name) && ($data->{score} == $hsp->score));
-		  }
-	 	  unless ($flag) {
-	   	    my $fid = $feature->id."_".$hsp->number;
-	   	    my $pid = $hsp->percent_id =~ /\./ ? $hsp->percent_id : $hsp->percent_id.".0";
-	   #print STDERR $fid,"\n";
-	  	    push @table, {FID=>$fid,FEATURE_NAME=>$name,FEATURE_HSP=>$hsp->number,FEATURE_EVAL=>$hsp->pval,FEATURE_PID=>$hsp->percent_id,FEATURE_SCORE=>$hsp->score,FEATURE_LENGTH=>$length,FEATURE_ORG=>$org,};
-	   	    push @check,{name=>$name,score=>$hsp->score};
-	  	  }
-	 	  $flag=0;
-		}
-	  }
-	  else{
-	    push @no_feat, {NO_FEAT=>$hsp->number};
-	  }
-      }
-     }
-    }     
-#     my $chromosome_data = [{DB_NAME=>"AT",CHR_IMAGE=>"Pretty Pictures",},{DB_NAME=>"OS",CHR_IMAGE=>"Goody Pictures",}];
+	 if (@{$set->{report}->hsps()})
+	   {
+	     foreach my $hsp (@{$set->{report}->hsps()})
+	       {
+		 $hsp_count++;
+		 my ($dsid) = $hsp->subject_name =~ /id: (\d+)/;
+		 my ($chr) = $hsp->subject_name =~ /chromosome: (\w+)/;
+		 my ($org) = $hsp->subject_name =~ /^\s*(.*?)\s*\(/;
+		 next unless $dsid && $chr;
+		 my @feat = $coge->get_features_in_region(start=>$hsp->subject_start,  
+							  stop=>$hsp->subject_stop,
+							  chr=>$chr, 
+							  dataset_id=>$dsid,
+							 );
+		if (@feat) 
+		  {
+		    my %seen;
+		    grep { ! $seen{lc($_)} ++ } map {$_->type->name} @feat;
+		    my $search_type = "gene" if $seen{gene};
+		    $search_type = "cds" if !$search_type && $seen{cds};
+		    $search_type = "rna" unless $search_type;
+		   my $no_genes = 0;
+		   foreach my $feature (@feat)
+		     {
+		       next unless $feature->type->name =~ /$search_type/i;
+		       $no_genes++;
+		       $length = (($feature->stop) - ($feature->start));		     
+		       my ($name) = sort $feature->names;
+		       foreach my $data (@check)
+			 {
+			   $flag = 1 if (($data->{name} eq $name) && ($data->{score} == $hsp->score));
+			 }
+		       unless ($flag) {
+			 my $fid = $feature->id."_".$hsp->number."_".$dsid;
+			 my $pid = $hsp->percent_id =~ /\./ ? $hsp->percent_id : $hsp->percent_id.".0";
+			 push @table, {FID=>$fid,FEATURE_NAME=>qq{<a href="#" onclick="update_info_box('table_row$fid')">$name</a>},
+				       FEATURE_HSP=>qq{<a href="#" onclick="update_hsp_info('table_row$fid')">}.$hsp->number."</a>",
+				       FEATURE_EVAL=>qq{<a href="#" onclick="update_hsp_info('table_row$fid')">}.$hsp->pval."</a>",
+				       FEATURE_PID=>qq{<a href="#" onclick="update_hsp_info('table_row$fid')">}.$hsp->percent_id."</a>",
+				       FEATURE_SCORE=>qq{<a href="#" onclick="update_hsp_info('table_row$fid')">}.$hsp->score."</a>",
+				       FEATURE_LENGTH=>qq{<a href="#" onclick="update_info_box('table_row$fid')">$length</a>},
+				       FEATURE_ORG=>qq{<a href="#" onclick="update_info_box('table_row$fid')">$org</a>},};
+			 push @check,{name=>$name,score=>$hsp->score};
+		       }
+		       $flag=0;
+		     }
+		   unless($no_genes)
+		     {
+		       my $id = $hsp->number."_".$dsid;
+		       my $no_link = qq{<a href="#" onclick="fill_nearby_feats('$id')">Click for Closest Feature</a>};
+		       push @no_feat, {ID=>$id,
+		       			   NO_FEAT_ORG=>$org,
+		       			   NO_FEAT=>qq{<a href="#" onclick="update_hsp_info('table_row$id')">}.$hsp->number."</a>",
+		       			   NO_FEAT_EVAL=>qq{<a href="#" onclick="update_hsp_info('table_row$id')">}.$hsp->pval."</a>",
+				             NO_FEAT_PID=>qq{<a href="#" onclick="update_hsp_info('table_row$id')">}.$hsp->percent_id."</a>",
+				             NO_FEAT_SCORE=>qq{<a href="#" onclick="update_hsp_info('table_row$id')">}.$hsp->score."</a>",
+		       			   NO_FEAT_LINK=>$no_link};
+		     }
+		 }
+		 else {
+		   #print STDERR "We have some no feat-hit hsps\n";
+		   my $id = $hsp->number."_".$dsid;
+		   my $no_link = qq{<a href="#" onclick="fill_nearby_feats('$id')">Click for Closest Feature</a>};
+		   push @no_feat, {ID=>$id,
+		       			   NO_FEAT_ORG=>$org,
+		       			   NO_FEAT=>qq{<a href="#" onclick="update_hsp_info('table_row$id')">}.$hsp->number."</a>",
+		       			   NO_FEAT_EVAL=>qq{<a href="#" onclick="update_hsp_info('table_row$id')">}.$hsp->pval."</a>",
+				             NO_FEAT_PID=>qq{<a href="#" onclick="update_hsp_info('table_row$id')">}.$hsp->percent_id."</a>",
+				             NO_FEAT_SCORE=>qq{<a href="#" onclick="update_hsp_info('table_row$id')">}.$hsp->score."</a>",
+		       			   NO_FEAT_LINK=>$no_link};
+		 }
+		 populate_sqlite($hsp,$dsid);
+	       }
+	   }
+       }
      my ($chromosome_data, $chromosome_data_large) = generate_chromosome_images(results=>$results,large_width=>$width,hsp_type=>$type);
-     #print STDERR Dumper \$chromosome_data;
-#     my ($chromosome_data_large) = generate_chromosome_images(results=>$results,width=>$width);
-#     for(my $i=0;$i < scalar (@$chromosome_data);$i++)
-#     {
-#       delete $chromosome_data_large->[$i] if $chromosome_data->[$i]{DB_NAME} =~ /No\s+Hits/i;
-#     }
-    # print STDERR Dumper \$chromosome_data_large;
-     #print STDERR Dumper \@no_feat;
      unless (@table) 
-     {
-     push @table,{FID=>'N/A',FEATURE_NAME=>'N/A',FEATURE_HSP=>'N/A',FEATURE_ORG=>'N/A',FEATURE_LENGTH=>'N/A',FEATURE_EVAL=>'N/A',FEATURE_PID=>'N/A',FEATURE_SCORE=>'N/A',};
-     }
+       {
+	 $null = "null";
+       }
      #table sort!
      @table = sort {$a->{FEATURE_ORG} cmp $b->{FEATURE_ORG} || $a->{FEATURE_NAME} cmp $b->{FEATURE_NAME} || $a->{FEATURE_EVAL} <=> $b->{FEATURE_EVAL} } @table;
+     
      my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CoGeBlast.tmpl');
      $template->param(OVERLAP_FEATURE_IF=>1);
-     $template->param(FEATURE_TABLE=>\@table);
+     	
+     $template->param(FEATURE_TABLE=>\@table) unless $null;
+     $template->param(NULLIFY=>$null) if $null;
+     $template->param(HSP_COUNT=>$hsp_count);
+
      if (@no_feat)
      {
-       @no_feat = sort {$a->{NO_FEAT} <=> $b->{NO_FEAT}} @no_feat if @no_feat;
+       @no_feat = sort {$a->{NO_FEAT_ORG} cmp $b->{NO_FEAT_ORG} || $a->{NO_FEAT} cmp $b->{NO_FEAT}} @no_feat if @no_feat;
        $template->param(NO_FEAT_IF=>1);
        $template->param(NO_FEATS=>\@no_feat);
      }
+     
      my $overlap_feature_element = $template->output;
      $template->param(NO_FEAT_IF=>0);
      $template->param(OVERLAP_FEATURE_IF=>0);
@@ -506,10 +549,22 @@ sub gen_results_page
      }
      $template->param(CHROMOSOMES=>$chromosome_element);
      $template->param(BLAST_RESULTS=>1);
+     $template->param(DATA_FILES=>gen_data_file_summary());
      my $html = $template->output;
      return $html;
    }
- 
+sub gen_data_file_summary
+  {
+    my $html = "<table><tr>";
+    $html .= qq{<td class = small>SQLite db};
+    my $dbname = $TEMPURL."/".basename($SQLITEFILE);
+    
+    $html .= "<div class=xsmall><A HREF=\"$dbname\" target=_new>SQLite DB file</A></DIV>\n";
+    $html .= qq{<td class = small>Log File};
+    my $logfile = $TEMPURL."/".basename($LOGFILE);
+    $html .= "<div class=xsmall><A HREF=\"$logfile\" target=_new>Log</A></DIV>\n";
+    $html .= qq{</table>};
+  }
 
 sub generate_chromosome_images
   {
@@ -568,16 +623,14 @@ sub generate_chromosome_images
 	    foreach my $hsp (@hsps)
 	      {
 		#first, initialize graphic
-#		my ($org) = $hsp->subject_name =~ /^(.*?)\(v/;
 		$org =~ s/\s+$//;
-		my ($chr) = $hsp->subject_name =~ /chromosome: (\d+)/;
+		my ($chr) = $hsp->subject_name =~ /chromosome: (\w+)/;
 		$data{$org}{image} =new CoGe::Graphics::GenomeView({color_band_flag=>1, image_width=>$width, chromosome_height=>$height}) unless $data{$org}{image};
 		$data{$org}{large_image} =new CoGe::Graphics::GenomeView({color_band_flag=>1, image_width=>$large_width, chromosome_height=>$large_height}) unless $data{$org}{large_image};
-		
+		my ($dsid) = $hsp->subject_name =~ /id: (\d+)/;
 		#add chromosome to graphic
 		unless ($data{$org}{chr}{$chr})
 		  {
-		    my ($dsid) = $hsp->subject_name =~ /id: (\d+)/;
 		    next unless $dsid;
 		    my $ds = $coge->resultset('Dataset')->find($dsid);
 		    my $last_pos = $ds->last_chromosome_position($chr);
@@ -585,7 +638,7 @@ sub generate_chromosome_images
 						       end=>$last_pos,
 						      );
 		  }
-		my $num = $hsp->number;
+		my $num = $hsp->number."_".$dsid;
 		my $up = $hsp->strand eq "++" ? 1 : 0;
 		my $r = generate_colors(max=>$max,
 					min=>$min,
@@ -606,7 +659,7 @@ sub generate_chromosome_images
 						start=>$hsp->sstart,
 						stop=>$hsp->sstop,
 						chr=>"Chr: $chr",
-						imagemap=>qq/class="imagemaplink" title="HSP No. /.$hsp->number.qq/" onclick="\$('#big_picture').slideToggle(pageObj.speed);show_hsp_div();loading('image_info','Information');loading('query_image','Image');loading('subject_image','Image');get_hsp_info(['args__blastfile','args__$filename','args__num','args__$num'],['image_info','query_image','subject_image']);"/,
+						imagemap=>qq/class="imagemaplink" title="HSP No. /.$hsp->number.qq/" onclick="hide_big_picture();show_hsp_div();loading('image_info','Information');loading('query_image','Image');loading('subject_image','Image');get_hsp_info(['args__blastfile','args__$BASEFILE','args__num','args__$num'],['image_info','query_image','subject_image']);"/,
 						up=>$up,
 						color=>[$r,0,$b],
 					       );
@@ -788,7 +841,7 @@ sub get_blast_db
 	my @chrs;
 	foreach my $ds (@ds)
 	  {
-	    push @chrs, join ("", map {"chr".$_." v".$ds->version." ds:".$ds->id} $ds->get_chromosomes);
+	    push @chrs, join (", ", map {"chr:".$_." v:".$ds->version." ds:".$ds->id} $ds->get_chromosomes);
 	  }
 	$title .= join (", ", @chrs);
       }
@@ -797,13 +850,13 @@ sub get_blast_db
 	$title .= "v".join ("",keys %vers)." ds:".$ds[0]->id();
       }
     $title .= ")";
-
+    $title =~ s/(`|')//g;
     my $md5 = md5_hex($title);
     my $file = $FASTADIR."/$md5.fasta";
     my $res;
     if (-r $file)
       {
-	write_log("fasta file for $title exists", $LOGFILE);
+	write_log("fasta file for $org_name ($md5) exists", $LOGFILE);
 	$res = 1;
       }
     else
@@ -813,12 +866,12 @@ sub get_blast_db
     my $blastdb = "$BLASTDBDIR/$md5";
     if (-r $blastdb.".nsq")
       {
-	write_log("blastdb file for $title exists", $LOGFILE);
+	write_log("blastdb file for $org_name ($md5) exists", $LOGFILE);
 	$res = 1;
       }
     else
       {
-	$res = generate_blast_db(fasta=>$file, blastdb=>$blastdb, title=>$title);
+	$res = generate_blast_db(fasta=>$file, blastdb=>$blastdb, org=>$org_name);
       }
     return $blastdb ,$org_name if $res;
     return 0;
@@ -833,7 +886,7 @@ sub generate_fasta
     my $file = $opts{file};
     $file = $FASTADIR."/$file" unless $file =~ /$FASTADIR/;
     write_log("creating fasta file.", $LOGFILE);
-    open (OUT, ">$file");
+    open (OUT, ">$file") || die "Can't open $file for writing: $!";;
     foreach my $ds (@$dslist)
       {
 	foreach my $chr (sort $ds->get_chromosomes)
@@ -858,15 +911,16 @@ sub generate_blast_db
     my %opts = @_;
     my $fasta = $opts{fasta};
     my $blastdb = $opts{blastdb};
-    my $title= $opts{title};
+#    my $title= $opts{title};
+    my $org= $opts{org};
     my $command = $FORMATDB." -p F";
     $command .= " -i '$fasta'";
-    $command .= " -t '$title'";
+    $command .= " -t '$org'";
     $command .= " -n '$blastdb'";
-    write_log("creating blastdb for $title",$LOGFILE);
+    write_log("creating blastdb for $org ($blastdb)",$LOGFILE);
     `$command`;
     return 1 if -r "$blastdb.nsq";
-    write_log("error creating blastdb for $title",$LOGFILE);
+    write_log("error creating blastdb for $org ($blastdb)",$LOGFILE);
     return 0;
   }
 
@@ -897,7 +951,8 @@ sub generate_feat_info
   {
     my $featid = shift;
     $featid =~ s/^table_row//;
-    $featid =~ s/_\d+$//;
+    $featid =~ s/^no_feat//;
+    $featid =~ s/_\d+_\d+$//;
     my ($feat) = $coge->resultset("Feature")->find($featid);
     unless (ref($feat) =~ /Feature/i)
     {
@@ -911,69 +966,89 @@ sub generate_feat_info
 sub get_hsp_info
   {
     my %opts = @_;
-    my $hsp_num = $opts{num};
+    my $hsp_id = $opts{num};
     my $filename = $opts{blastfile};
+#    print STDERR Dumper \%opts;
+    ($BASEFILE) = $filename;
+    $BASEFILE = $TEMPDIR."/".$BASEFILE unless $BASEFILE =~ /$TEMPDIR/;
+    my $tempfile = $BASEFILE.".sqlite";
+    $SQLITEFILE = $tempfile;
+    my $dbh = DBI->connect("dbi:SQLite:dbname=$SQLITEFILE","","");
+    ($BASEFILENAME) = $BASEFILE =~ /$TEMPDIR\/*(CoGeBlast_\w+)-?/;
+    $hsp_id =~ s/^table_row// if $hsp_id =~ /table_row/;
+    $hsp_id =~ s/^\d+_// if $hsp_id =~ tr/_/_/ > 1;
     
-    $filename = "/opt/apache".$filename;
-    ($BASEFILENAME) = $filename=~ /$TEMPDIR\/*(CoGeBlast_\w+)-/;
+    my ($hsp_num, $pval, $pid,$psim, $score, $qgap, $sgap, $match,$qmismatch, $smismatch, $strand, $length,$qstart, $qstop,$sstart, $sstop,$qalign,$salign,$align,$qname,$sname);
     
-    my $report = new CoGe::Accessory::blast_report({file=>$filename});# if -r $filename;
-    my $hsp = $report->hsps->[$hsp_num-1];
-    #print STDERR Dumper \$hsp;
+    my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data WHERE name = ?});
     
-    #my $query_loc = $hsp->query_start."-".$hsp->query_stop;
-    #$query_loc = $hsp->query_start."-<br>".$hsp->query_stop if (length $query_loc > 8);
-   # my $query_start = $hsp->query_start;
-   # my $query_stop = $hsp->query_stop;
-    my $query_length = $hsp->query_stop > $hsp->query_start ? (($hsp->query_stop) - ($hsp->query_start) + 1) : (($hsp->query_start) - ($hsp->query_stop) + 1);
-    my $query_loc = $hsp->query_stop > $hsp->query_start ? $hsp->query_start."-".$hsp->query_stop : $hsp->query_stop."-".$hsp->query_start;
-    my $query_mismatch = $query_length - $hsp->match;
+    ($hsp_num) = $hsp_id =~ /^(\d+)_\d+$/;
+#    print STDERR $hsp_id,"\n";
+#    print STDERR $hsp_num,"\n";
+    $sth->execute($hsp_id) || die "unable to execute";
+    while (my $info = $sth->fetchrow_hashref())
+	      {
+ 	        $pval = $info->{eval};
+ 	        $pid = $info->{pid};
+ 	        $psim = $info->{psim};
+ 	        $score = $info->{score};
+ 	        $qgap = $info->{qgap};
+ 	        $sgap = $info->{sgap};
+ 	        $match = $info->{match};
+ 	        $qmismatch = $info->{qmismatch};
+ 	        $smismatch = $info->{smismatch};
+ 	        $strand = $info->{strand};
+ 	        $length = $info->{length};
+		$qstart = $info->{qstart};
+		$qstop =  $info->{qstop};
+		$sstart = $info->{sstart};
+		$sstop =  $info->{sstop};
+ 	        $qalign = $info->{qalign};
+  	        $salign = $info->{salign};
+	        $align = $info->{align};
+	        $qname = $info->{qname};
+	        $sname = $info->{sname};
+	      }
+    #$sth->execute($name, $pval, $pid,$psim, $score, $qgap, $sgap,$match,$qmismatch, $smismatch, $strand, $length,$qposition,$sposition,$qalign,$salign,$align);
+    my $qlength = $qstop - $qstart;
     
-    my $query_name = "<pre>".$hsp->query_name."</pre>";
+    my ($sub_chr) = $sname =~ /chromosome: (\w+)/;
+#    print STDERR "$hsp_num, $pval, $pid,$psim, $score, $qgap, $sgap, $match,$qmismatch, $smismatch, $strand, $length,$qposition,$sposition,$qalign,$salign,$align,$qname,$sname\n";
+         
+    my $query_name = "<pre>".$qname."</pre>";
     $query_name = wrap('','',$query_name);
     $query_name =~ s/\n/<br>/g;
     
-    #my $subject_start = $hsp->subject_start;
-   # my $subject_stop = $hsp->subject_stop;
-   # my $subject_loc = $hsp->subject_start."-".$hsp->subject_stop;
-   # $subject_loc = $hsp->subject_start."-<br>".$hsp->subject_stop if (length $subject_loc > 8);
-    my $subject_length = $hsp->subject_stop > $hsp->subject_start ? (($hsp->subject_stop) - ($hsp->subject_start) + 1) : (($hsp->subject_start) - ($hsp->subject_stop) + 1);
-    my $subject_loc = $hsp->subject_stop > $hsp->subject_start ? $hsp->subject_start."-".$hsp->subject_stop : $hsp->subject_stop."-".$hsp->subject_start;
-    my $subject_mismatch = $subject_length - $hsp->match;
-    
-    my $subject_name = "<pre>".$hsp->subject_name."</pre>";
+    my $subject_name = "<pre>".$sname."</pre>";
     $subject_name = wrap('','',$subject_name);
     $subject_name =~ s/\n/<br>/g;
-    
-    my @table1 = ({HSP_EVAL_QUERY=>$hsp->pval,
-		   HSP_PID_QUERY=>$hsp->percent_id,
-		   HSP_PSIM_QUERY=>$hsp->percent_sim,
-		   HSP_GAP_QUERY=>$hsp->query_gaps,
-		   HSP_EVAL_SUB=>$hsp->pval,
-		   HSP_PID_SUB=>$hsp->percent_id,
-		   HSP_PSIM_SUB=>$hsp->percent_sim,
-		   HSP_GAP_SUB=>$hsp->subject_gaps,
-		   HSP_SCORE_SUB=>$hsp->score,
-		   HSP_SCORE_QUERY=>$hsp->score,
+#     
+    my @table1 = ({HSP_PID_QUERY=>$pid,
+		   HSP_PSIM_QUERY=>$psim,
+		   HSP_GAP_QUERY=>$qgap,
+		   HSP_PID_SUB=>$pid,
+		   HSP_PSIM_SUB=>$psim,
+		   HSP_GAP_SUB=>$sgap,
+		   HSP_MATCH_QUERY=>$match,
+		   HSP_MISMATCH_QUERY=>$qmismatch,
+		   HSP_MATCH_SUB=>$match,
+		   HSP_MISMATCH_SUB=>$smismatch,
+		   HSP_POSITION_QUERY=>$qstart."-".$qstop,
+		   HSP_POSITION_SUB=>$sstart."-".$sstop,
 		  });
-    my @table2 = ({HSP_STRAND_QUERY=>$hsp->strand,
-		   HSP_LENGTH_QUERY=>$hsp->length,
-		   HSP_STRAND_SUB=>$hsp->strand,
-		   HSP_LENGTH_SUB=>$hsp->length,
-		   HSP_MATCH_QUERY=>$hsp->match,
-		   HSP_POSITION_QUERY=>$query_loc,
-		   HSP_POSITION_SUB=>$subject_loc,
-		   HSP_MISMATCH_QUERY=>$query_mismatch,
-		   HSP_MATCH_SUB=>$hsp->match,
-		   HSP_MISMATCH_SUB=>$subject_mismatch,
+    my @table2 = ({HSP_STRAND=>$strand,
+		   HSP_EVAL=>$pval,
+		   HSP_SCORE=>$score,
+		   HSP_LENGTH=>$length,
+		   HSP_CHR=>$sub_chr,
     		  });
      my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CoGeBlast.tmpl');
      $template->param(HSP_IF=>1);
-     $template->param(HSP_NUM=>$hsp->number);
-     $template->param(HSP_QUERY=>\@table1);
-     $template->param(HSP_SUB=>\@table2);
+     $template->param(HSP_NUM=>$hsp_num);
+     $template->param(HSP_QS=>\@table1);
+     $template->param(HSP_HSP=>\@table2);
      
-     my $query_seq = $hsp->query_alignment;
+     my $query_seq = $qalign;
      $query_seq = wrap('','',$query_seq);
      my @query = split(/\n/,$query_seq);
      $query_seq =~ s/[^atgc]//ig;
@@ -982,7 +1057,7 @@ sub get_hsp_info
      $query_seq =~ tr/atgc/ATGC/;
      $query_seq = qq{<pre>$query_seq</pre>};
      
-     my $sub_seq = $hsp->subject_alignment;
+     my $sub_seq = $salign;
      $sub_seq = wrap('','',$sub_seq);
      my @sub = split(/\n/, $sub_seq);
      $sub_seq =~ s/[^atgc]//ig;
@@ -991,10 +1066,9 @@ sub get_hsp_info
      $sub_seq =~ tr/atgc/ATGC/;
      $sub_seq = qq{<pre>$sub_seq</pre>};
      
-     my ($sub_chr) = $hsp->subject_name =~ /chromosome: (\d+)/;
-     my ($sub_dsid) = $hsp->subject_name =~ /id: (\d+)/;
+     my ($sub_dsid) = $sname =~ /id: (\d+)/;
     
-     my $alignment = $hsp->alignment;
+     my $alignment = $align;
      $alignment = wrap('','',$alignment);
      my @align = split(/\n/,$alignment);
      my $align_str = "";
@@ -1005,22 +1079,36 @@ sub get_hsp_info
      $align_str =~ s/<br>$//;
      $align_str = "<pre>$align_str</pre>";
      
-     $template->param(QUERY_SEQ=>qq{<a href="#" onclick="show_seq('$query_seq','$query_name',1,'seqObj','seqObj','}.$hsp->query_start."','".$hsp->query_stop.qq{')">Click for Query Sequence</a>});
+     $template->param(QUERY_SEQ=>qq{<a href="#" onclick="show_seq('$query_seq','$query_name',1,'seqObj','seqObj','}.$qstart."','".$qstop.qq{')">Click for Query Sequence</a>});
      
-     $template->param(SUB_SEQ=>qq{<a href="#" onclick="show_seq('$sub_seq','$subject_name',2,'$sub_dsid','$sub_chr','}.$hsp->subject_start."','".$hsp->subject_stop.qq{')">Click for Subject Sequence</a>});
+     $template->param(SUB_SEQ=>qq{<a href="#" onclick="show_seq('$sub_seq','$subject_name',2,'$sub_dsid','$sub_chr','}.$sstart."','".$sstop.qq{')">Click for Subject Sequence</a>});
      
      $template->param(ALIGNMENT=>qq{<a href="#" onclick="show_seq('$align_str','N/A',0,0,0,0)">Click for Alignment Sequence</a>});
      
      my $html = $template->output;
      $template->param(HSP_IF=>0);
-     my ($query_image, $subject_image) = generate_hit_image(report=>$report, hsp_num=>$hsp_num, hsp=>$hsp);
-     my $query_link = "<img src=$query_image border=0>";
-     $query_link =~ s/$TEMPDIR/$TEMPURL/;
-     my $subject_link = "<img src=$subject_image border=0>";
-     $subject_link =~ s/$TEMPDIR/$TEMPURL/;
-#    print STDERR $query_link,"\n", $query_image,"\n";
-     return $html, $query_link, $subject_link;
-  }
+     
+    #get query sequence total length
+    my $query = $dbh->selectall_arrayref(qq{SELECT * FROM sequence_info WHERE type = "query" AND name = "$qname"});
+    my $subject = $dbh->selectall_arrayref(qq{SELECT * FROM sequence_info WHERE type = "subject" AND name = "$sname"});
+    my ($query_image, $subject_image) = generate_hit_image(hsp_num=>$hsp_num, hspdb=>$dbh, hsp_name=> $hsp_id);
+    my $query_link = qq{
+<div class=small>Query: $qname</div>
+<img src=$query_image border=0>
+};
+    $query_link =~ s/$TEMPDIR/$TEMPURL/;
+
+    my ($dsid) = $sname =~ /id: (\d+)/;
+    my ($chr) = $sname =~ /chromosome: (\w+)/;
+    
+    my $subject_link = qq{
+<div class=small>Subject: $sname</div>
+<a href = 'GenomeView.pl?chr=$chr&ds=$dsid&x=$sstart&z=7' target=_new border=0><img src=$subject_image border=0></a>
+};
+    $subject_link =~ s/$TEMPDIR/$TEMPURL/;
+    #    print STDERR $query_link,"\n", $query_image,"\n";
+    return $html, $query_link, $subject_link;
+   }
   
 sub generate_overview_image
   {
@@ -1065,77 +1153,566 @@ sub generate_overview_image
 sub generate_hit_image
   {
     my %opts = @_;
-    my $report = $opts{report};
-    my $hsp_num = $opts{hsp_num};
-    my $file = $opts{file};
-    my $hsp = $opts{hsp};
+    my $hsp_name = $opts{hsp_name};
     my $width = $opts{width} || 400;
-    return unless ($report || -r $file);
-    $report = new CoGe::Accessory::blast_report({file=>$file}) unless $report;
-    unless ($hsp)
-      {
-	foreach my $item (@{$report->hsps})
-	  {
-	    next unless $item->number eq $hsp_num;
-	    $hsp = $item;
-	    last;
-	  }
-      }
-#    print STDERR Dumper $hsp, $report;
+    my $dbh = $opts{dbh};
+    $dbh = DBI->connect("dbi:SQLite:dbname=$SQLITEFILE","","") unless $dbh;
+    my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data WHERE name = ?});
+    $sth->execute($hsp_name) || die "unable to execute";
+    my $hsp = $sth->fetchrow_hashref();
+    my $query = $dbh->selectall_arrayref(qq{SELECT * FROM sequence_info WHERE type = "query" AND name = "}.$hsp->{qname}.qq{"});
+    my $subject = $dbh->selectall_arrayref(qq{SELECT * FROM sequence_info WHERE type = "subject" AND name = "}.$hsp->{sname}.qq{"});
+    my ($hsp_num) = $hsp_name =~ /^(\d+)_\d+$/;
     #generate_query_image
-    my $c = new CoGe::Graphics::Chromosome ();
-    $c->chr_length($hsp->query_length);
-
-    $c->iw($width);
-    $c->draw_chromosome(1);
-    $c->draw_ruler(1);
-    $c->draw_chr_end(0);
-    $c->mag(0);
-    $c->mag_off(1);
-    $c->minor_tick_labels(1);
-    $c->draw_hi_qual(0);
-    $c->set_region(start=>1, stop=>$c->chr_length);
-    my $strand = $hsp->strand =~ /-/ ? "-1" : 1;
-    my $feat = CoGe::Graphics::Feature::HSP->new({start=>$hsp->qstart, stop=>$hsp->qstop, strand=>$strand});
-    $feat->color([255,0,0]);
-    $c->add_feature($feat);
-    my $query_file = $TEMPDIR."/".$BASEFILENAME.".q.".$hsp->number.".png";
-    $c->generate_png(file=>$query_file);
-    $c = new CoGe::Graphics::Chromosome ();
-    my $graphic = new CoGe::Graphics;
-    my ($dsid) = $hsp->subject_name =~ /id: (\d+)/;
-    my ($chr) = $hsp->subject_name =~ /chromosome: (\d+)/;
-    my $len = $hsp->subject_stop - $hsp->subject_start+1;
-    my $start = $hsp->subject_start-2*$len;
+    my $cq = new CoGe::Graphics::Chromosome ();
+    $cq->chr_length($query->[0][3]);
+    $cq->iw($width);
+    $cq->draw_chromosome(1);
+    $cq->draw_ruler(1);
+    $cq->draw_chr_end(0);
+    $cq->mag(0);
+    $cq->mag_off(1);
+    $cq->minor_tick_labels(0);
+    $cq->major_tick_labels(1);
+    $cq->draw_hi_qual(0);
+    $cq->padding(2);
+    $cq->set_region(start=>1, stop=>$cq->chr_length, forcefit=>1);
+    $cq->feature_height(10);
+    $cq->auto_zoom(0);
+    $cq->feature_labels(1);
+    my $strand = $hsp->{strand} =~ /-/ ? "-1" : 1;
+    my $feat = CoGe::Graphics::Feature::HSP->new({start=>$hsp->{qstart}, stop=>$hsp->{qstop}, strand=>$strand, label=>$hsp_num, type=>"HSP"});
+    $feat->color([255,200,0]);
+    $cq->add_feature($feat);
+    my ($dsid) = $hsp->{sname} =~ /id: (\d+)/;
+    my ($chr) = $hsp->{sname} =~ /chromosome: (\w+)/;
+    my $len = $hsp->{sstop} - $hsp->{sstart}+1;
+    my $start = $hsp->{sstart}-5000;
     $start = 1 if $start < 1;
-    my $stop = $hsp->subject_stop+2*$len;    
-    $graphic->initialize_c (
-			   ds=>$dsid,
-			   chr=>$chr,
-			   c=>$c,
-			   iw=>$width,
-			   start=> $start,
-			   stop => $stop,
-			   draw_chr=>1,
-			   draw_ruler=>1,
-			   draw_chr_end=>0,
-			   #			    chr_start_height=>$ih,
-			   #			    chr_mag_height=>5,
-			   #			    feature_start_height=>$fh,
-			   mag=>0,
-			   mag_off=>1,
-			   chr_length => $len,
-			   fill_labels=>1,
-			   forcefit=>1,
-			   minor_tick_labels=>1,
-			   #			    overlap_adjustment=>$overlap_adjustment,
-			   #			    feature_labels=>$feature_labels,
-			   draw_hi_qual=>0,
-			   #			    padding=>$padding,
-			  );
+    my $stop = $hsp->{sstop}+5000;    
+    my $cs = new CoGe::Graphics::Chromosome ();
+    $cs->chr_length($subject->[0][3]);
+    $cs->iw($width);
+    $cs->draw_chromosome(1);
+    $cs->draw_ruler(1);
+    $cs->draw_chr_end(0);
+    $cs->mag(0);
+    $cs->mag_off(1);
+    $cs->minor_tick_labels(0);
+    $cs->major_tick_labels(1);
+    $cs->draw_hi_qual(0);
+    $cs->padding(2);
+    $cs->set_region(start=>$start, stop=>$stop, forcefit=>1);
+    $cs->auto_zoom(0);
+    $cs->feature_height(10);
+    $cs->overlap_adjustment(0);
+    $cs->feature_labels(1);
+
+    $feat = CoGe::Graphics::Feature::HSP->new({start=>$hsp->{sstart}, stop=>$hsp->{sstop}, strand=>$strand, order=>2, label=>$hsp_num, type=>"HSP"});
+    $feat->color([255,200,0]);
+    $cs->add_feature($feat);
+    
     my $db = new CoGe::Genome;
-#    $graphic->process_features(c=>$c, layers=>{all=>1}, db=>$db);
-    my $sub_file = $TEMPDIR."/".$BASEFILENAME.".s.".$hsp->number.".png";
-    $c->generate_png(file=>$sub_file);
+    my $graphics = new CoGe::Graphics;
+    $graphics->process_features(c=>$cs, layers=>{features=>{gene=>1, cds=>1, mrna=>1, rna=>1, cns=>1}}, db=>$db, ds=>$dsid, chr=>$chr);
+    $cs->overlap_adjustment(1);
+    $cq->overlap_adjustment(1);
+
+    #find neighboring hsps
+    my $sname = $hsp->{sname};
+    my $qname = $hsp->{qname};
+    my $statement = qq{
+select * from hsp_data where
+((sstart <= $stop AND
+sstart >= $start) OR
+(sstop <= $stop AND
+sstop >= $start)) AND
+sname = "$sname" AND
+qname = "$qname"
+};
+    $sth = $dbh->prepare($statement);
+    $sth->execute;
+    while (my $data = $sth->fetchrow_hashref)
+      {
+	next if $data->{name} eq $hsp_name;
+	my ($label) = $data->{name} =~ /^(\d+)_\d+$/;
+	$feat = CoGe::Graphics::Feature::HSP->new({start=>$data->{sstart}, stop=>$data->{sstop}, strand=>$data->{strand}, order=>2, label=>$label, type=>"HSP"});
+	$feat->color([255,0,0]);
+	$cs->add_feature($feat);
+	$feat = CoGe::Graphics::Feature::HSP->new({start=>$data->{qstart}, stop=>$data->{qstop}, strand=>$data->{strand}, order=>1, label=>$label, type=>"HSP"});
+	$feat->color([255,0,0]);
+	$cq->add_feature($feat);
+      }
+
+    my $query_file = $TEMPDIR."/".$BASEFILENAME.".q.".$hsp_name.".png";
+    $cq->generate_png(file=>$query_file);
+    my $sub_file = $TEMPDIR."/".$BASEFILENAME.".s.".$hsp_name.".png";
+#    print STDERR Dumper $c;
+    $cs->generate_png(file=>$sub_file);
+#    print $c->_region_start,"--",$c->_region_stop;
     return $query_file, $sub_file;
   }
+
+sub overlap_feats_parse
+  {
+    my $accn_list = shift;
+    #print STDERR $accn_list,"\n";
+    my $num_accns = $accn_list =~ tr/,/,/;
+    return ("alert",$num_accns-1) if $num_accns > 9;
+    $num_accns = $num_accns-1 < 2 ? 2 : $num_accns-1;
+    $accn_list =~ s/^,//;
+    $accn_list =~ s/,$//;
+    my $url = "/CoGe/GEvo.pl?";
+    my $count = 1;
+    foreach my $featid (split /,/,$accn_list)
+    {
+		$featid =~ s/_\d+$//;
+		#print STDERR $featid,"\n";
+    		my ($feat) = $coge->resultset("Feature")->find($featid);
+    		my ($feat_name) = sort $feat->names;#something
+    		$url .= "accn$count=$feat_name&";
+    		$count ++;
+    }
+    $url .= "num_seqs=$num_accns";
+    return $url;
+  }
+	
+sub initialize_sqlite
+  {
+    my $tempfile = $BASEFILE.".sqlite";
+    $tempfile = $TEMPDIR."/".$tempfile unless $tempfile =~ /$TEMPDIR/;
+    $SQLITEFILE = $tempfile;
+    return if -r $SQLITEFILE;
+    my $dbh = DBI->connect("dbi:SQLite:dbname=$SQLITEFILE","","")  || die "cant connect to db";
+    my $create = qq{
+CREATE TABLE hsp_data
+(
+id INTEGER PRIMARY KEY AUTOINCREMENT,
+name varchar(50),
+eval varchar(10),
+pid varchar(10),
+psim varchar(10),
+score varchar(10),
+qgap integer(10),
+sgap integer(10),
+match integer(10),
+qmismatch integer(10),
+smismatch integer(10),
+strand varchar(2),
+length integer(10),
+qstart integer(50),
+qstop integer(50),
+sstart integer(50),
+sstop integer(50),
+qalign text,
+salign text,
+align text,
+qname text,
+sname text
+)
+};
+    $dbh->do($create);
+     my $index = qq{
+  ALTER TABLE 'hsp_data' ADD AUTO_INCREMENT 'id';
+ };
+#     $dbh->do($index);
+     $index = qq{
+ CREATE INDEX name ON hsp_data (name)
+ };
+     $dbh->do($index);
+     $index = qq{
+ CREATE INDEX qname ON hsp_data (qname)
+ };
+     $dbh->do($index);
+     $index = qq{
+ CREATE INDEX sname ON hsp_data (sname)
+ };
+     $dbh->do($index);
+    $create = qq{
+ CREATE TABLE sequence_info
+ (
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ name varchar(255),
+ type varchar(10),
+ length integer(1024)
+ )
+ };
+     $dbh->do($create);
+      $index = qq{
+  CREATE INDEX seqname ON sequence_info (name)
+  };
+      $dbh->do($index);
+      $index = qq{
+  CREATE INDEX type ON sequence_info (type)
+  };
+      $dbh->do($index);
+    system "chmod +rw $SQLITEFILE";
+  }
+  
+sub populate_sqlite
+  {
+     my ($hsp,$dsid) = @_;
+     my $pval = $hsp->pval;
+     my $pid = $hsp->percent_id;
+     my $qgap = $hsp->query_gaps;
+     my $sgap = $hsp->subject_gaps;
+     my $score = $hsp->score;
+     my $psim = $hsp->percent_sim;
+     my $length = $hsp->length;
+     my $strand = $hsp->strand;
+     my $match = $hsp->match;
+     my $qalign = $hsp->query_alignment;
+     my $salign = $hsp->subject_alignment;
+     my $align = $hsp->alignment;
+     my $qname = $hsp->query_name;
+     my $sname = $hsp->subject_name;
+#     print STDERR $hsp->query_length, "--",$hsp->subject_length,"\n";
+     my $name = $hsp->number."_".$dsid;
+    
+     my $dbh = DBI->connect("dbi:SQLite:dbname=$SQLITEFILE","","");
+     
+     my $query_length = $hsp->query_stop > $hsp->query_start ? (($hsp->query_stop) - ($hsp->query_start) + 1) : (($hsp->query_start) - ($hsp->query_stop) + 1);
+     my ($qstart, $qstop) = $hsp->query_stop > $hsp->query_start ? ($hsp->query_start, $hsp->query_stop) : ($hsp->query_stop, $hsp->query_start);
+     my $qmismatch = $query_length - $hsp->match;
+     
+     my $subject_length = $hsp->subject_stop > $hsp->subject_start ? (($hsp->subject_stop) - ($hsp->subject_start) + 1) : (($hsp->subject_start) - ($hsp->subject_stop) + 1);
+     my ($sstart, $sstop) = $hsp->subject_stop > $hsp->subject_start ? ($hsp->subject_start,$hsp->subject_stop) : ($hsp->subject_stop,$hsp->subject_start);
+     my $smismatch = $subject_length - $hsp->match;
+     
+     my $statement = qq{
+       INSERT INTO hsp_data (name, eval, pid, psim, score, qgap, sgap,match,qmismatch,smismatch, strand, length, qstart,qstop, sstart, sstop,qalign,salign,align,qname,sname) values ("$name", "$pval", "$pid","$psim", "$score", $qgap, $sgap, $match,$qmismatch, $smismatch, "$strand",$length,$qstart, $qstop, $sstart, $sstop,"$qalign","$salign","$align","$qname","$sname") 
+     };
+     print STDERR $statement unless $dbh->do($statement);
+
+     #populate sequence_info table
+
+     $statement = "SELECT name FROM sequence_info where name = '$qname'";
+     my $val = $dbh->selectall_arrayref($statement);
+#     print STDERR Dumper $val;
+     unless ($val->[0][0])
+       {
+	 my $qlength = $hsp->query_length;
+	 $statement = qq{
+INSERT INTO sequence_info (name, type, length) values ("$qname","query","$qlength")
+};
+	 print STDERR $statement unless $dbh->do($statement);
+       }
+     $statement = "SELECT name FROM sequence_info where name = '$sname'";
+     $val = $dbh->selectall_arrayref($statement);
+#     print STDERR Dumper $val;
+     unless ($val->[0][0])
+       {
+	 my $slength = $hsp->subject_length;
+	 $statement = qq{
+INSERT INTO sequence_info (name, type, length) values ("$sname","subject","$slength")
+};
+	 print STDERR $statement unless $dbh->do($statement);
+       }
+#     $statement = "SELECT * from sequence_info";
+#     my $sth = $dbh->prepare($statement);
+#     $sth->execute;
+#     while (my $row = $sth->fetchrow_arrayref)
+#       {
+#	 print STDERR join ("\t", @$row),"\n";
+#       }
+   }
+  
+sub get_nearby_feats
+  {
+    my %opts = @_;
+    my $hsp_id = $opts{num};
+    my $filename = $opts{basefile};
+    #print STDERR Dumper \%opts;
+    ($BASEFILE) = $filename;
+    $BASEFILE = $TEMPDIR."/".$BASEFILE unless $BASEFILE =~ /$TEMPDIR/;
+    #print STDERR qq{$BASEFILE = $TEMPDIR\n};
+    my $tempfile = $BASEFILE.".sqlite";
+    $SQLITEFILE = $tempfile;
+    my $dbh = DBI->connect("dbi:SQLite:dbname=$SQLITEFILE","","");
+    ($BASEFILENAME) = $filename=~ /$TEMPDIR\/*(CoGeBlast_\w+)-/;
+    $hsp_id =~ s/^table_row// if $hsp_id =~ /table_row/;
+    $hsp_id =~ s/^\d+_// if $hsp_id =~ tr/_/_/ > 1;
+    
+    my $name;
+    my $checkbox = " ";
+    my $distance = ">250";
+    my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data WHERE name = ?});
+    my ($sstart, $sstop,$sname);
+    my ($hsp_num,$dsid) = $hsp_id =~ /^(\d+)_(\d+)$/;
+    #print STDERR $hsp_id,"\n";
+    #print STDERR $hsp_num,"\n";
+    $sth->execute($hsp_id) || die "unable to execute";
+    while (my $info = $sth->fetchrow_hashref())
+      {
+	$sstart=$info->{sstart};
+	$sstop = $info->{sstop};
+	$sname = $info->{sname};
+      }
+	#print STDERR "($sstart,$sstop)\n";
+	my ($start,$stop) = ($sstart,$sstop);
+	my ($chr) = $sname =~ /chromosome: (\w+)/;
+	my @feat;
+	my $count = 1;
+	until(@feat)
+	{
+	  $sstart = ($sstart - 1000*$count) >= 0 ? ($sstart - 1000*$count) : 0;
+	  $sstop +=1000*$count;
+	  @feat = $coge->get_features_in_region(start=>$sstart, 
+						stop=>$sstop,
+						chr=>$chr, 
+						dataset_id=>$dsid,
+					       );
+	  last if ($sstop - $sstart) > 256000;
+	  $count *= 4;
+	}
+	my $html = qq{<a href="#" onClick="\$('#overlap_box').slideToggle(pageObj.speed);" style="float: right;"><img src='/CoGe/picts/delete.png' width='16' height='16' border='0'></a>};
+	my @feat_low;
+	my @feat_high;
+	my $closest_feat;
+	if (@feat) {
+	  my %seen;
+	  grep { ! $seen{lc($_)} ++ } map {$_->type->name} @feat;
+	  my $search_type = "gene" if $seen{gene};
+	  $search_type = "cds" if !$search_type && $seen{cds};
+	  $search_type = "rna" unless $search_type;
+	  foreach my $feature (@feat)
+	    {
+	      #print STDERR $feature->stop,",",$feature->start,"\n";
+	      next unless $feature->type->name =~ /$search_type/i;
+	      #print STDERR "I am a gene!\n";
+	      unless (ref($feature) =~ /Feature/i)
+		{
+		  next;
+		}
+	      if ($feature->stop < $start) {
+		push @feat_low,$feature;
+	      }
+	      else {
+		push @feat_high,$feature;
+	      }
+	    }
+	unless(@feat_low or @feat_high)
+	{
+	  $html .= "No Features within 250 kb of HSP No. $hsp_num";
+	  return $html;
+	}
+	my ($feat_low) = sort {$b->stop <=> $a->stop} @feat_low if @feat_low;
+	my ($feat_high) = sort {$a->start <=> $b->start}@feat_high if @feat_high;
+	
+	my $closest_feat;
+	
+	if($feat_low and $feat_high) 
+	{
+	  $closest_feat = ($start - $feat_low->stop) < ($feat_high->start - $stop) ? $feat_low : $feat_high;
+	  $distance = ($start - $feat_low->stop) < ($feat_high->start - $stop) ? ($start - $feat_low->stop)."!" : ($feat_high->start - $stop);
+	}
+	elsif($feat_high)
+	{
+	  $closest_feat = $feat_high;
+	  $distance = ($feat_high->start - $stop);
+	}
+	else
+	{
+	  $closest_feat = $feat_low;
+	  $distance = ($start - $feat_low->stop)."!";
+	}
+	
+	my $upstream = $distance =~ s/!$//;
+	
+	my $tmp_dist = $distance;
+# 	if($closest_feat->strand =~ /-/)
+# 	{
+# 	  $upstream = $upstream == 1 ? 0 : 1; #if on negative strand, address upstream as downstream, and vice versa
+# 	}
+		
+	my $val = $closest_feat->id."_".$hsp_id;
+	if ($distance >= 1000) {
+	  $distance = $distance / 1000;
+	  $distance .= " kb";
+	}
+	else {
+	$distance .= " bp";
+	}
+	
+	$distance .= $upstream ? " upstream" : " downstream";
+	
+	$html .= "Feature Closest to HSP No. $hsp_num: <br><br>";
+	$html .= $closest_feat->annotation_pretty_print_html();
+	($name) = sort $closest_feat->names;
+	$name = qq{<a href="#" onclick=update_info_box('no_feat}.$closest_feat->id."_".$hsp_num."_".$dsid."')>$name</a>";
+	$checkbox = "<input type=checkbox name='nofeat_checkbox' value='".$closest_feat->id."_".$hsp_num."_".$dsid."'  id='nofeat_checkbox".$closest_feat->id."_".$hsp_num."_".$dsid."'>";
+	$html .= "<font class=\"title4\">Distance from HSP:</font> <font class=\"data\">$distance</font>";
+	#$html .= "<br><br><input type=checkbox id=no_feat_checkbox value=$val> Add to Checked Features List";
+	$distance = $tmp_dist;
+	}	
+	else {
+	 $html .= "No Features within 250 kb of HSP No. $hsp_num";
+	 $name = "None";
+	}
+	$distance /= 1000;
+	$distance = sprintf("%.3f", $distance);
+	return $html,$name,$checkbox, $distance;
+}
+
+
+sub export_fasta_file
+  {
+    my $accn_list = shift;
+    my $basename = shift;
+    #print STDERR $accn_list,"\n";
+    $accn_list =~ s/^,//;
+    $accn_list =~ s/,$//;
+    my $fasta = "#";
+    foreach my $accn (split /,/,$accn_list)
+    {
+		my ($featid,$dsid) = $accn =~ m/^(\d+)_\d+_(\d+)$/; 
+		my $ds = $coge->resultset("Dataset")->find($dsid);
+   		my ($feat) = $coge->resultset("Feature")->find($featid);
+   		my ($strand) = $feat->strand;
+   		my ($name) = sort $feat->names;
+		$fasta .= ">".$ds->organism->name."(v.".$feat->version.")".", Name: $name, Type: ".$feat->type->name.", Location: ".$feat->genbank_location_string.", Chromosome: ".$feat->chr.", Strand: ".$strand."\n";
+		$fasta .= wrap('','',$feat->genomic_sequence);
+	}
+	$fasta =~ s/^#//;
+	$fasta =~ s/\n$//;
+	
+	open(NEW,"> $TEMPDIR/fasta_$basename.faa");
+	print  NEW $fasta;
+	close NEW;
+	return "tmp/fasta_$basename.faa";
+  }
+  
+sub generate_excel_feature_file
+  {
+    my $accn_list = shift;
+    my $filename = shift;
+    
+    ($BASEFILE) = $filename;
+    $BASEFILE = $TEMPDIR."/".$BASEFILE unless $BASEFILE =~ /$TEMPDIR/;
+    my $tempfile = $BASEFILE.".sqlite";
+    $SQLITEFILE = $tempfile;
+    my $dbh = DBI->connect("dbi:SQLite:dbname=$SQLITEFILE","","");
+    ($BASEFILENAME) = $BASEFILE =~ /$TEMPDIR\/*(CoGeBlast_\w+)-?/;
+    
+    my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data WHERE name = ?});
+
+    my $workbook = Spreadsheet::WriteExcel->new("$TEMPDIR/Excel_$filename.xls");
+    $workbook->set_tempdir("$TEMPDIR");
+    my $worksheet = $workbook->add_worksheet();
+    $accn_list =~ s/^,//;
+    $accn_list =~ s/,$//;
+    my $i = 1;
+       	 
+   	 $worksheet->write(0,0,"Feature Name");
+   	 $worksheet->write(0,1,"HSP No.");
+   	 $worksheet->write(0,2,"E-value");
+   	 $worksheet->write(0,3,"Percent ID");
+   	 $worksheet->write(0,4,"Score");
+   	 $worksheet->write(0,5,"Organism");
+    
+    foreach my $accn (split /,/,$accn_list)
+    {
+      my ($featid,$hsp_num,$dsid) = $accn =~ m/^(\d+)_(\d+)_(\d+)$/;
+      #print STDERR "$featid,$hsp_num,$dsid\n";
+	 my $ds = $coge->resultset("Dataset")->find($dsid);
+   	 my ($feat) = $coge->resultset("Feature")->find($featid);
+   	 
+   	 my ($name) = sort $feat->names;
+   	 my $org = $ds->organism->name;
+   	 
+   	 $sth->execute($hsp_num."_".$dsid) || die "unable to execute";
+      my ($pval,$pid,$score);
+      while (my $info = $sth->fetchrow_hashref())
+	      {
+ 	        $pval = $info->{eval};
+ 	        $pid = $info->{pid};
+ 	        $score = $info->{score};
+	      }
+   	 
+   	 $worksheet->write($i,0,"http://toxic.berkeley.edu/CoGe/FeatView.pl?accn=$name",$name);
+   	 $worksheet->write($i,1,$hsp_num);
+   	 $worksheet->write($i,2,$pval);
+   	 $worksheet->write($i,3,$pid);
+   	 $worksheet->write($i,4,$score);
+   	 $worksheet->write($i,5,$org);
+   	 
+   	 $i++;
+   	}
+   	
+   	$workbook->close() or die "Error closing file: $!";
+   	 
+   	return "tmp/Excel_$filename.xls"
+  }
+   	 
+sub generate_tab_deliminated
+  {
+    my $accn_list = shift;
+    my $filename = shift;
+    
+    ($BASEFILE) = $filename;
+    $BASEFILE = $TEMPDIR."/".$BASEFILE unless $BASEFILE =~ /$TEMPDIR/;
+    my $tempfile = $BASEFILE.".sqlite";
+    $SQLITEFILE = $tempfile;
+    my $dbh = DBI->connect("dbi:SQLite:dbname=$SQLITEFILE","","");
+    ($BASEFILENAME) = $BASEFILE =~ /$TEMPDIR\/*(CoGeBlast_\w+)-?/;
+    
+    my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data WHERE name = ?});
+
+    $accn_list =~ s/^,//;
+    $accn_list =~ s/,$//;
+    
+    my $str = "Name\tHSP No.\tE-value\tPerc ID\tScore\tOrganism\n";
+    
+    foreach my $accn (split /,/,$accn_list)
+    {
+      my ($featid,$hsp_num,$dsid) = $accn =~ m/^(\d+)_(\d+)_(\d+)$/;
+	 my $ds = $coge->resultset("Dataset")->find($dsid);
+   	 my ($feat) = $coge->resultset("Feature")->find($featid);
+   	 
+   	 my ($name) = sort $feat->names;
+   	 my $org = $ds->organism->name;
+   	 
+   	 $sth->execute($hsp_num."_".$dsid) || die "unable to execute";
+      my ($pval,$pid,$score);
+      while (my $info = $sth->fetchrow_hashref())
+	      {
+ 	        $pval = $info->{eval};
+ 	        $pid = $info->{pid};
+ 	        $score = $info->{score};
+	      }
+   	 $str .= "$name\t$hsp_num\t$pval\t$pid\t$score\t$org\n";
+   	}
+	$str =~ s/\n$//;
+	
+	open(NEW,"> $TEMPDIR/tab_delim$filename.tabbed");
+	print  NEW $str;
+	close NEW;
+	return "tmp/tab_delim$filename.tabbed";
+  }
+   	 
+sub generate_feat_list
+  {
+    my $accn_list = shift;
+    my $filename = shift;
+    
+    $accn_list =~ s/^,//;
+    $accn_list =~ s/,$//;
+    
+    my $file = "#";
+    
+    foreach my $accn (split /,/,$accn_list)
+    {
+      my ($featid,$dsid) = $accn=~/^(\d+)_\d+_(\d+)$/;
+      $file .= "$featid $dsid\n";
+    }
+    
+    $file =~ s/^#//;
+    
+     open(NEW,"> $TEMPDIR/$filename.featlist");
+	print NEW $file;
+	close NEW;
+	
+	return "/CoGe/FeatList.pl?basename=$filename";
+  }
+      
+      
