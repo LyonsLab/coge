@@ -8,6 +8,8 @@ use base 'Class::Accessor';
 use CGI::Carp('fatalsToBrowser');
 use CGI;
 use DBIxProfiler;
+use File::Basename;
+use File::Temp;
 
 BEGIN {
     use Exporter ();
@@ -16,7 +18,7 @@ BEGIN {
     $TEMPDIR = "/opt/apache/CoGe/tmp";
     @ISA         = (@ISA, qw (Exporter));
     #Give a hoot don't pollute, do not export more than needed by default
-    @EXPORT      = qw (login write_log read_log check_taint check_filename_taint save_settings load_settings reset_settings);
+    @EXPORT      = qw (login write_log read_log check_taint check_filename_taint save_settings load_settings reset_settings initialize_basefile);
     @EXPORT_OK   = qw ();
     %EXPORT_TAGS = ();
     $coge = new CoGe::Genome;
@@ -24,7 +26,7 @@ BEGIN {
     $cogex = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 #    $cogex->storage->debugobj(new DBIxProfiler());
 #    $cogex->storage->debug(1);
-    __PACKAGE__->mk_accessors qw(restricted_orgs);
+    __PACKAGE__->mk_accessors qw(restricted_orgs basefilename basefile logfile);
  }
 
 
@@ -405,6 +407,7 @@ sub ajax_func
        type_search=> \&type_search_for_feat_name,
        login=>\&login,
        read_log=>\&read_log,
+       initialize_basefile=>\&initialize_basefile,
       );
   }
 
@@ -422,7 +425,7 @@ sub write_log
 sub read_log
   {
     my $logfile = shift;
-    print STDERR "Checking logfile $logfile\n";
+#    print STDERR "Checking logfile $logfile\n";
     return unless $logfile;
     $logfile .= ".log" unless $logfile =~ /log$/;
     $logfile = $TEMPDIR."/$logfile" unless $logfile =~ /^$TEMPDIR/;
@@ -521,6 +524,36 @@ sub reset_settings
     return unless $user_id;
     my ($item) = $cogex->resultset('WebPreferences')->search({user_id=>$user_id, page=>$page});
     $item->delete;
+  }
+
+sub initialize_basefile
+  {
+    my ($self, %opts) = self_or_default(@_);
+    my $basename = $opts{basename};
+    my $prog=$opts{prog} || "CoGe";
+    my $return_name = $opts{return_name};
+    if ($basename)
+      {
+	my ($x, $cleanname) = check_taint($basename);
+	$self->basefilename($cleanname);
+	$self->basefile($TEMPDIR."/".$cleanname);
+	$self->logfile($self->basefile.".log");
+      }
+    else
+      {
+	my $file = new File::Temp ( TEMPLATE=>$prog.'_XXXXXXXX',
+				    DIR=>$TEMPDIR,
+				    #SUFFIX=>'.png',
+				    UNLINK=>1);
+	$self->basefile($file->filename);
+	$self->logfile($self->basefile.".log");
+	$self->basefilename($file->filename =~ /([^\/]*$)/)
+      }
+    if ($return_name)
+      {
+	return $self->basefilename;
+      }
+    else {return $self;}
   }
 
 1;
