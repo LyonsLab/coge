@@ -800,9 +800,91 @@ sub _process_seq
   }
 
 
-1;
 
+sub percent_translation_system
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $counts = $opts{counts};
+    my %code1 = (
+		 "W"=>1,
+		 "M"=>1,
+		 "L"=>1,
+		 "Y"=>1,
+		 "C"=>1,
+		 "I"=>1,
+#		 "K"=>1, #majority in code2
+		 "R"=>1,
+		 "Q"=>1,
+		 "V"=>1,
+		 "E"=>1,
+		 
+		);
+    my $code1 = $opts{code1} || \%code1;
+    my %code2 = (
+		 "F"=>1,
+		 "S"=>1,
+		 "T"=>1,
+		 "N"=>1,
+		 "P"=>1,
+		 "H"=>1,
+		 "A"=>1,
+		 "D"=>1,
+		 "G"=>1,
+		 "K"=>1,
+		);
+    my $code2 = $opts{code2} || \%code2;
+    my ($seq) = $opts{seq} || $self->protein_sequence;
+    return (0,0) unless $seq;
+    my ($c1, $c2, $total) = (0,0,0);
+    foreach (split //, $seq)
+      {
+	$_ = uc($_);
+	$c1++ if $code1->{$_};
+	$c2++ if $code2->{$_};
+	$total++;
+      }
+    if ($counts)
+      {
+	return $c1, $c2, $total;
+      }
+    else
+      {
+	return (map {sprintf("%.4f", $_)} $c1/$total, $c2/$total);
+      }
+  }
 
+sub aa_frequency
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $counts = $opts{counts};
+    my %data;
+    my ($seq) = $opts{seq} || $self->protein_sequence;
+    return \%data unless $seq;
+    foreach (split //,$seq)
+      {
+	next if $_ eq "*";
+	$data{$_}++;
+      }
+    if ($counts)
+      {
+	return \%data;
+      }
+    else
+      {
+	my $total = 0;
+	foreach (values %data)
+	  {
+	    $total+=$_;
+	  }
+	foreach my $aa (keys %data)
+	  {
+	    $data{$aa} = sprintf("%.4f", ($data{$aa}/$total));
+	  }
+	return \%data;
+      }
+  }
 ################################################ subroutine header begin ##
 
 =head2 
@@ -821,3 +903,4 @@ See Also   :
 
 ################################################## subroutine header end ##
 
+1;
