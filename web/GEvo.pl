@@ -771,6 +771,7 @@ CREATE TABLE image_data
 (
 id INTEGER PRIMARY KEY AUTOINCREMENT,
 name varchar(50),
+type varchar (50),
 xmin integer(10),
 xmax integer(10),
 ymin integer(10),
@@ -790,6 +791,10 @@ color varchar(10)
 #     $dbh->do($index);
      $index = qq{
  CREATE INDEX name ON image_data (name)
+ };
+     $dbh->do($index);
+     $index = qq{
+ CREATE INDEX type ON image_data (type)
  };
      $dbh->do($index);
      $index = qq{
@@ -864,6 +869,8 @@ INSERT INTO image_info (iname, title) values ("$image", "$title")
 	next if $feat->fill; #skip backgroup images;
 	next unless $feat->image_coordinates;
 	next if $feat->desc && $feat->desc =~ /spike sequence/;
+	my $type = $feat->type;
+#	$type  
 	my $pair_id = "-99";
 	my $coords = $feat->image_coordinates;
 	$coords =~ s/\s//g;
@@ -898,7 +905,7 @@ INSERT INTO image_info (iname, title) values ("$image", "$title")
 	#	    print STDERR $anno if $anno =~ /Location/;
 	#	    print STDERR $anno,"\n" if $anno =~ /01020/;
 	$statement = qq{
-INSERT INTO image_data (name, xmin, xmax, ymin, ymax, image, image_track,pair_id, link, annotation, color) values ("$name", $xmin, $xmax, $ymin, $ymax, "$image", "$image_track",$pair_id, '$link', '$anno', '$color')
+INSERT INTO image_data (name, type, xmin, xmax, ymin, ymax, image, image_track,pair_id, link, annotation, color) values ("$name", "$type", $xmin, $xmax, $ymin, $ymax, "$image", "$image_track",$pair_id, '$link', '$anno', '$color')
 };
 	print STDERR $statement unless $dbh->do($statement);
 	#create pair id
