@@ -84,7 +84,6 @@ my $pj = new CGI::Ajax(
 		       get_file=>\&get_file,
 		       gen_go_run=>\&gen_go_run,
 		       gen_hsp_colors =>\&gen_hsp_colors,
-		       initialize_basefile=>\&initialize_basefile,
 		       save_settings_gevo=>\&save_settings_gevo,
 		       reset_settings_gevo=>\&reset_settings_gevo,
 		       %ajax,
@@ -319,8 +318,7 @@ sub run
     my ($analysis_program, $param_string, $parser_opts) = get_algorithm_options(%opts);
     my $basefilename = $opts{basefile};
     my $message;
-    initialize_basefile($basefilename);
-
+    $cogeweb = initialize_basefile(basename=>$basefilename);
     my @hsp_colors;
     for (my $i = 1; $i <= num_colors($num_seqs); $i++)
       {
@@ -511,7 +509,7 @@ sub run
 	$analysis_reports = run_bl2seq(sets=>\@sets, params=>$param_string, parser_opts=>$parser_opts, blast_program=>$analysis_program, spike_seq=>$spike_seq);
       }
     $analysis_reports = [] unless ref($analysis_reports) =~ /ARRAY/i;
-    write_log($message, $LOGFILE) if $message;
+    write_log($message, $cogeweb->logfile) if $message;
    #sets => array or data for blast
    #blast_reports => array of arrays (report, accn1, accn2, parsed data)
 #    print STDERR Dumper $analysis_reports;
@@ -536,7 +534,7 @@ sub run
 	my $spike_seq = $item->{spike_seq};
 	if ($obj)
 	  {
-	    write_log("generating image ($count/".scalar @sets.")for ".$obj->accn, $LOGFILE);	
+	    write_log("generating image ($count/".scalar @sets.")for ".$obj->accn, $cogeweb->logfile);	
 	    my ($image, $map, $mapname, $gfx, $eval_cutoff) = generate_image(
 									     gbobj=>$obj, 
 									     start=>$file_begin,
@@ -582,7 +580,7 @@ sub run
       }
     $count--;
 
-    my $str = qq{/bpederse/gobe?imgdir=/CoGe/tmp/&img=$BASEFILENAME&n=}.($count-1);
+    my $str = qq{/bpederse/gobe?imgdir=/CoGe/tmp/&img=}.$cogeweb->basefilename.qq{&n=}.($count-1);
     my $t4 = new Benchmark;
     $html_viewer .= qq!<br/>!;
     $html_viewer .= qq!<FORM NAME=\"info\">\n!;
@@ -635,7 +633,7 @@ sub run
     
     $html .= "<div class=xsmall><A HREF=\"$dbname\" target=_new>SQLite DB file</A></DIV>\n";
     $html .= qq{<td class = small>Log File};
-    my $logfile = $TEMPURL."/".basename($LOGFILE);
+    my $logfile = $TEMPURL."/".basename($cogeweb->logfile);
     $html .= "<div class=xsmall><A HREF=\"$logfile\" target=_new>Log</A></DIV>\n";
     $html .= qq{</table>};
 
@@ -658,10 +656,10 @@ Time to generate images, maps, and sqlite database: $image_time
 Time to process html                              : $html_time
 };
     print STDERR $bench if $BENCHMARK;
-    write_log($bench, $LOGFILE);
-    write_log("Finished!", $LOGFILE);
+    write_log($bench, $cogeweb->logfile);
+    write_log("Finished!", $cogeweb->logfile);
 
-    return $outhtml, $iw+400, $frame_height, $BASEFILENAME,$count,$message;
+    return $outhtml, $iw+400, $frame_height, $cogeweb->basefilename,$count,$message;
 
 }
 
@@ -751,7 +749,7 @@ sub generate_image
 			       );
 #    $gfx->DEBUG(1);
 #    print STDERR Dumper $gfx;
-    my $filename = $BASEFILE."_".$seq_num.".png";
+    my $filename = $cogeweb->basefile."_".$seq_num.".png";
     $filename = check_filename_taint($filename);
     $gfx->generate_png(file=>$filename);
     my $mapname = "map_".$seq_num;
@@ -761,7 +759,8 @@ sub generate_image
 
 sub initialize_sqlite
   {
-    my $tempfile = $BASEFILE.".sqlite";
+    my %opts = @_;
+    my $tempfile = $cogeweb->basefile.".sqlite";
     $tempfile = $TEMPDIR."/".$tempfile unless $tempfile =~ /$TEMPDIR/;
     $SQLITEFILE = $tempfile;
     return if -r $SQLITEFILE;
@@ -1095,8 +1094,8 @@ sub process_hsps
 			$score_cutoff=$hsp->score;
 #			print STDERR "score cutoff: $score_cutoff\n";
 		      }
-		    write_log("Found spike sequence for $accn1 and $accn2: eval cutoff set to $eval_cutoff", $LOGFILE) if defined $eval_cutoff;
-		    write_log("Found spike sequence for $accn1 and $accn2: score cutoff set to $score_cutoff", $LOGFILE) if defined $score_cutoff;
+		    write_log("Found spike sequence for $accn1 and $accn2: eval cutoff set to $eval_cutoff", $cogeweb->logfile) if defined $eval_cutoff;
+		    write_log("Found spike sequence for $accn1 and $accn2: score cutoff set to $score_cutoff", $cogeweb->logfile) if defined $score_cutoff;
 		    last;
 		  }
 	      }
@@ -1172,7 +1171,7 @@ sub process_hsps
 		$stop = $tmp;
 	      }
 
-	    my $link = "HSPView.pl?report=$report&num=".$hsp->number."&db=".$BASEFILENAME.".sqlite";
+	    my $link = "HSPView.pl?report=$report&num=".$hsp->number."&db=".$cogeweb->basefilename.".sqlite";
 	    $link .= join ("&","&qstart=".($gbobj->start+$start-1), "qstop=".($gbobj->start+$stop-1),"qchr=".$gbobj->chromosome, "qds=". $gbobj->dataset,"qstrand=".$strand) if $gbobj->dataset;
 	    $f->link($link) if $link;
 	    $f->alignment($hsp->alignment);
@@ -1296,7 +1295,6 @@ sub generate_seq_file
     my $mask_ncs = $options{mask_ncs};
     my $seq_num = $options{seq_num};
     my $repeat_mask = $options{repeat_mask};
-    
     my $t1 = new Benchmark;
     my ($file, $file_begin, $file_end, $spike_seq, $seq) = 
       write_fasta(
@@ -1312,7 +1310,7 @@ sub generate_seq_file
 		 );
     if ($repeat_mask)
       {
-	write_log("repeat masking $file", $LOGFILE);
+	write_log("repeat masking $file", $cogeweb->logfile);
 	`$REPEATMASKER $file`;
 	`mv $file.masked $file` if -r "$file.masked";
       }
@@ -1334,7 +1332,7 @@ sub get_obj_from_genome_db
     my ($feat) = $coge->resultset('Feature')->esearch({"me.feature_id"=>$featid})->next;
     unless (ref ($feat) =~ /feature/i)
       {
-	write_log("Can't find valid feature database entry for id=$featid", $LOGFILE);
+	write_log("Can't find valid feature database entry for id=$featid", $cogeweb->logfile);
 	return;
       }
     my $t2 = new Benchmark;
@@ -1474,7 +1472,7 @@ sub run_bl2seq {
 	  
 	  
 	# need to create a temp filename here
-	  my ($tempfile) = $BASEFILE."_".($i+1)."-".($j+1).".bl2seq";;
+	  my ($tempfile) = $cogeweb->basefile."_".($i+1)."-".($j+1).".bl2seq";;
 	  
 	  # format the bl2seq command
 	  $command .= "-p $program -o $tempfile ";
@@ -1490,7 +1488,7 @@ sub run_bl2seq {
 	      next;
 	    }
 	  # execute the command
-	  write_log("running ($count/$total_runs) ".$command, $LOGFILE);
+	  write_log("running ($count/$total_runs) ".$command, $cogeweb->logfile);
 	  `$command`;
 	  system "chmod +rw $tempfile";
 	  my $blastreport = new CoGe::Accessory::bl2seq_report({file=>$tempfile}) if -r $tempfile;
@@ -1531,7 +1529,7 @@ sub run_blastz
 	    next unless -r $seqfile1 && -r $seqfile2; #make sure these files exist
 	    next unless $sets->[$i]{reference_seq} || $sets->[$j]{reference_seq};
 	    my ($accn1, $accn2) = ($sets->[$i]{accn}, $sets->[$j]{accn});
-	    my ($tempfile) = $BASEFILE."_".($i+1)."-".($j+1).".blastz";
+	    my ($tempfile) = $cogeweb->basefile."_".($i+1)."-".($j+1).".blastz";
 	    my $command = $BLASTZ;
 	    $command .= " $seqfile1 $seqfile2";
 	    $command .= " ".$params if $params;
@@ -1546,7 +1544,7 @@ sub run_blastz
 	      }
 	    $command .= " > ".$tempfile;
 	    	  # execute the command
-	    write_log("running ($count/$total_runs) ".$command, $LOGFILE);
+	    write_log("running ($count/$total_runs) ".$command, $cogeweb->logfile);
 #	    print STDERR $command,"\n";
 	    `$command`;
 	    system "chmod +rw $tempfile";
@@ -1587,7 +1585,7 @@ sub run_lagan
 	    next unless -r $seqfile1 && -r $seqfile2; #make sure these files exist
 	    next unless $sets->[$i]{reference_seq} || $sets->[$j]{reference_seq};
 	    my ($accn1, $accn2) = ($sets->[$i]{accn}, $sets->[$j]{accn});
-	    my ($tempfile) = $BASEFILE."_".($i+1)."-".($j+1).".lagan";
+	    my ($tempfile) = $cogeweb->basefile."_".($i+1)."-".($j+1).".lagan";
 	    my $command = $LAGAN;
 	    $command .= " $seqfile1 $seqfile2";
 	    $command .= " -mfa";
@@ -1602,7 +1600,7 @@ sub run_lagan
 		next;
 	      }
 	    $command .= " > ".$tempfile;
-	    write_log("running ($count/$total_runs) ".$command, $LOGFILE);
+	    write_log("running ($count/$total_runs) ".$command, $cogeweb->logfile);
 	    #time for execution
 	    `$command`;
 	    system "chmod +rw $tempfile";
@@ -1629,8 +1627,6 @@ sub run_chaos
     my $sets = $opts{sets};
     my $params= $opts{params};
     my $parser_opts = $opts{parser_opts};
-
-    
     my @files;
     my @reports;
     my $total_runs = number_of_runs($sets);
@@ -1645,7 +1641,7 @@ sub run_chaos
 	    next unless -r $seqfile1 && -r $seqfile2; #make sure these files exist
 	    next unless $sets->[$i]{reference_seq} || $sets->[$j]{reference_seq};
 	    my ($accn1, $accn2) = ($sets->[$i]{accn}, $sets->[$j]{accn});
-	    my ($tempfile) = $BASEFILE."_".($i+1)."-".($j+1).".chaos";
+	    my ($tempfile) = $cogeweb->basefile."_".($i+1)."-".($j+1).".chaos";
 	    my $command = $CHAOS;
 	    $command .= " $seqfile1 $seqfile2";
 	    
@@ -1660,7 +1656,7 @@ sub run_chaos
 		next;
 	      }
 	    $command .= " > ".$tempfile;
-	    write_log("running ($count/$total_runs) ".$command, $LOGFILE);
+	    write_log("running ($count/$total_runs) ".$command, $cogeweb->logfile);
 	    #time for execution
 	    `$command`;
 	    system "chmod +rw $tempfile";
@@ -1762,14 +1758,14 @@ sub run_dialign
 		my $obj = new CoGe::Accessory::dialign_report::anchors({
 									file1=>$seqfile1,
 									file2=>$seqfile2,
-									base_name=>$BASEFILENAME,
+									base_name=>$cogeweb->basefilename,
 									extension=>$parser_opts->{anchor_params}{prog},
 									run_anchor=>$anchor_prog,
 									run_dialign_opts=>$dialign_opts,
 									run_anchor_opts=>$anchor_opts,
 									dialign_report_opts=>$parser_opts,
 									anchor_report_opts=>$parser_opts->{anchor_params}{parser_opts},
-									log_file=>$LOGFILE,
+									log_file=>$cogeweb->logfile,
 #									DEBUG=>1,
 								       });
 		$tempfile = $obj->dialign_file;
@@ -1777,13 +1773,13 @@ sub run_dialign
 	      }
 	    else
 	      {
-		my $seqfile = $TEMPDIR."/".$BASEFILENAME."_".($i+1)."-".($j+1).".fasta";
+		my $seqfile = $TEMPDIR."/".$cogeweb->basefilename."_".($i+1)."-".($j+1).".fasta";
 		next unless -r $seqfile1 && -r $seqfile2; #make sure these files exist
 		#put two fasta files into one for dialign
 		`cat $seqfile1 > $seqfile`;
 		`cat $seqfile2 >> $seqfile`;
 		next unless $sets->[$i]{reference_seq} || $sets->[$j]{reference_seq};
-		($tempfile) = $BASEFILE."_".($i+1)."-".($j+1).".dialign";
+		($tempfile) = $cogeweb->basefile."_".($i+1)."-".($j+1).".dialign";
 		my $command = $DIALIGN;
 		$command .= " ".$params if $params;
 		$command .= " -fn ".$tempfile;
@@ -1799,7 +1795,7 @@ sub run_dialign
 		  }
 #		print STDERR $command,"\n";
 		#time for execution
-		write_log("running ($count/$total_runs) ".$command, $LOGFILE);
+		write_log("running ($count/$total_runs) ".$command, $cogeweb->logfile);
 		`$command`;
 		system "chmod +rw $tempfile";
 		$report = new CoGe::Accessory::dialign_report({file=>$tempfile, %$parser_opts}) if -r $tempfile;
@@ -1854,7 +1850,7 @@ sub write_fasta
     # vars
     my($seq,$seq_begin,$seq_end,$db_begin,$db_end,$chr);
     my($gene_end,$gene_begin);
-    my $fullname = $BASEFILE."_".$seq_num.".fa";
+    my $fullname = $cogeweb->basefile."_".$seq_num.".fa";
     my $hdr = $gbobj->get_headerfasta( );
     $seq_begin = $start - $upstream;
     if ( $seq_begin < 1 ) {
@@ -1895,7 +1891,7 @@ sub write_fasta
     print OUT $seq,"\n" if $seq;
     close(OUT);
     system "chmod +rw $fullname";
-    write_log("Created sequence file for $hdr.  Length ". $length, $LOGFILE);
+    write_log("Created sequence file for $hdr.  Length ". $length, $cogeweb->logfile);
     return($fullname,$seq_begin,$seq_end,$spike_seq, $full_seq);
   }
 
@@ -1932,7 +1928,7 @@ sub generate_annotation
     my $rev = $opts{rev};
     my $seq_num = $opts{seq_num};
     my @opts = ($start, $stop);
-    my $fullname = $BASEFILE."_".$seq_num.".anno";
+    my $fullname = $cogeweb->basefile."_".$seq_num.".anno";
     my %data;
     my $length = length($obj->sequence());
     foreach my $feat($obj->get_features(@opts))
@@ -2087,17 +2083,14 @@ sub gen_go_run
   {
     my $num_seqs = shift || $NUM_SEQS;
     my $params = gen_params($num_seqs);
-#    my $run = "<SCRIPT language=\"JavaScript\">alert('hi');</script>";
     my $run = qq!
 <SCRIPT language="JavaScript">
 function go_run (){ 
- initialize_basefile([],[populate_page_obj]);
+ initialize_basefile(['args__prog','args__GEvo', 'args__return_name','args__1'],[populate_page_obj]);
  setTimeout("run([$params],[handle_results], 'POST')",500); 
  setTimeout(" monitor_log()", 5000);
 }
 </script>!;
-#
-#    my $button = qq{<a href="#" onMouseOver="activeButton('go')" onMouseOut="inactiveButton('go')" onMouseDown="pressedButton('go')" onMouseUp="inactiveButton('go')" onClick="loading([],['results']); setTimeout('go_run()', 1000);"><img name="go" src="/CoGe/picts/buttons/GEvo/go/inactive.png" width="47" height="27" border="0" alt="javascript button"></a>};
     return $run;
   }
 
@@ -2202,28 +2195,28 @@ sub algorithm_list
     return $html;
   }
 
-sub initialize_basefile
-  {
-    my $basename = shift;
-    if ($basename)
-      {
-	my ($x, $cleanname) = check_taint($basename);
-	$BASEFILENAME = $cleanname;
-	$BASEFILE = $TEMPDIR."/".$cleanname;
-	$LOGFILE = $BASEFILE.".log";
-      }
-    else
-      {
-	my $file = new File::Temp ( TEMPLATE=>'GEvo_XXXXXXXX',
-				    DIR=>$TEMPDIR,
-				    #SUFFIX=>'.png',
-				    UNLINK=>1);
-	($BASEFILE)= $file->filename;
-	$LOGFILE = $BASEFILE.".log";
-	($BASEFILENAME) = $file->filename =~ /([^\/]*$)/;
-      }
-    return $BASEFILENAME;
-  }
+# sub initialize_basefile
+#   {
+#     my $basename = shift;
+#     if ($basename)
+#       {
+# 	my ($x, $cleanname) = check_taint($basename);
+# 	$BASEFILENAME = $cleanname;
+# 	$BASEFILE = $TEMPDIR."/".$cleanname;
+# 	$LOGFILE = $BASEFILE.".log";
+#       }
+#     else
+#       {
+# 	my $file = new File::Temp ( TEMPLATE=>'GEvo_XXXXXXXX',
+# 				    DIR=>$TEMPDIR,
+# 				    #SUFFIX=>'.png',
+# 				    UNLINK=>1);
+# 	($BASEFILE)= $file->filename;
+# 	$LOGFILE = $BASEFILE.".log";
+# 	($BASEFILENAME) = $file->filename =~ /([^\/]*$)/;
+#       }
+#     return $BASEFILENAME;
+#   }
 
 sub add_seq
   {
@@ -2445,7 +2438,7 @@ sub check_sequence_files_spike
 	  }
 	if ($nt =~ /$check_nt/i)
 	  {
-	    write_log(join ("-", @files)." had similar ends.  Additional sequence added between before spike sequence: "."N" x length($spike), $LOGFILE);
+	    write_log(join ("-", @files)." had similar ends.  Additional sequence added between before spike sequence: "."N" x length($spike), $cogeweb->logfile);
 	    substr($seq, $start, 0) = "N" x length($spike);
 	    open (OUT, ">$file");
 	    print OUT ">$name\n";
