@@ -321,7 +321,6 @@ function monitor_log(log)
    }
    match=log.match(/running\s+(\(.*?\))/g);
    if (match && match[0]) {
-//   if (log.match(/running/)) {
      sequence = sequence +"done!<br/>";
      match.reverse();
      val = match[0];
@@ -341,13 +340,13 @@ function monitor_log(log)
      image = image+"done!<br/>";
      database = "Generating annotation database. . .";
    }
-  }
+  } else {pageObj.nolog += 1;}
   var message;
   if (sequence) message = sequence;
   if (algo) message += algo;
   if (image) message += image;
   if (database) message += database;
-  else {pageObj.nolog += 1;}
+  
   if (!finished && pageObj.nolog<4)
   {
     setTimeout("read_log(['args__'+pageObj.basefile], [monitor_log])", 4000);
