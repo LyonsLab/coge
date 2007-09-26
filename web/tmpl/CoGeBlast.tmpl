@@ -16,10 +16,10 @@ $(document).ready(function(){
   if(seqview !=0){
     var featid = <TMPL_VAR NAME=FEATID>;
     if ((featid) && (featid!=0)){
-      seqObj = new generate_seq_obj(<TMPL_VAR NAME=DSID>,<TMPL_VAR NAME=UPSTREAM>,<TMPL_VAR NAME=DOWNSTREAM>,seqview,<TMPL_VAR NAME=CHR>,<TMPL_VAR NAME=RC>,featid);
+      seqObj = new generate_seq_obj(<TMPL_VAR NAME=DSID>,<TMPL_VAR NAME=UPSTREAM>,<TMPL_VAR NAME=DOWNSTREAM>,seqview,'<TMPL_VAR NAME=CHR>',<TMPL_VAR NAME=RC>,featid);
     }
     else{
-      seqObj = new generate_seq_obj(<TMPL_VAR NAME=DSID>,<TMPL_VAR NAME=UPSTREAM>,<TMPL_VAR NAME=DOWNSTREAM>,seqview,<TMPL_VAR NAME=CHR>,<TMPL_VAR NAME=RC>);
+      seqObj = new generate_seq_obj(<TMPL_VAR NAME=DSID>,<TMPL_VAR NAME=UPSTREAM>,<TMPL_VAR NAME=DOWNSTREAM>,seqview,'<TMPL_VAR NAME=CHR>',<TMPL_VAR NAME=RC>);
     }
   }
   //TODO - handle js object error when checking for value when it hasn't been instantiated
@@ -44,6 +44,16 @@ function update_info_box(featid) {
  //alert(table_width);
  if ($('#overlap_box').is(':hidden')) $('#overlap_box').slideDown(pageObj.speed);
   generate_feat_info(['args__'+featid],['overlap_box']);
+ 
+}
+
+function update_hsp_info (featid) {
+ hide_big_picture();
+ show_hsp_div();
+ loading('image_info','Information');
+ loading('query_image','Image');
+ loading('subject_image','Image');
+ get_hsp_info(['args__blastfile','args__'+pageObj.basename,'args__num','args__'+featid],['image_info','query_image','subject_image']);
 }
 
 function show_hsp_div() {
@@ -68,41 +78,109 @@ function loading(id,msg) {
   $('#'+id).html(message);
 }
 
+function fill_nearby_feats(id) {
+ var table_width = $('#overlap').width() || 300;
+ $('#overlap_box').width(table_width);
+ if ($('#overlap_box').is(':hidden')) $('#overlap_box').slideDown(pageObj.speed);
+ get_nearby_feats(['args__basefile','args__'+pageObj.basename,'args__num','args__'+id],['overlap_box','feat'+id,'checkbox'+id,'dist'+id]);
+}
+
+
+function overlap_checkboxes() {
+  var action = $('#overlap_action').val();
+  var accn = $('#feature_list').getCheckboxes();
+  //if ($('#no_feat_checkbox').is(':checked')) {
+ //   accn = accn + $('#no_feat_checkbox').val()+",";
+ // }
+  //alert(accn);
+  if (accn == ",") {
+    alert("You have not checked any features.");
+    return;
+  }
+  if(action == "gevo") {
+    overlap_feats_parse(['args__'+accn],[send_to_gevo]);
+  }
+  else if (action == "fasta"){
+    export_fasta_file(['args__'+accn,'args__'+pageObj.basename],[export_file]);
+  }
+  else if (action == "xls"){
+    generate_excel_feature_file(['args__'+accn,'args__'+pageObj.basename],[export_file]);
+  }
+  else if(action == "tab"){
+    generate_tab_deliminated(['args__'+accn,'args__'+pageObj.basename],[export_file]);
+  }
+  else if(action == "list"){
+    generate_feat_list(['args__'+accn,'args__'+pageObj.basename],[export_file]);
+  }
+  else {
+    alert("We will get this working ... soon.");
+  }
+}
+
+function export_file(dir) {
+  window.open(dir);
+}
+
+function send_to_gevo(url,num_accns) {
+  if (url == "alert") {
+    var remove = num_accns - 8;
+    alert("You have exceeded the number of features you can send to GEvo ( 8 Max ). You currently have "+num_accns+" selected. Please uncheck "+remove+" of your checked item(s).");
+  }
+  else {
+    window.open(url);
+  }
+}
+
+jQuery.fn.getCheckboxes = function()
+{
+	var str = ",";
+	this.each(
+			function()
+			{
+				jQuery("input[@type=checkbox]",this).each(
+					function() {
+					  //alert(this.value);
+					  if (this.checked == true) str = str + this.value +",";
+					}
+				);
+			}
+		);
+	return str;
+};
+
 jQuery.fn.checkCheckboxes = function()
 {
-	var returnWhat = jQuery([]);
+	//var returnWhat = jQuery([]);
 	this.each(
 		function()
 		{
-			var checked = jQuery("input[@type=checkbox]", this).each(
+			jQuery("input[@type=checkbox]", this).each(
 				function()
 				{
 					this.checked = true;
 				}
-			).filter(":checked");
-			returnWhat = checked;
+			);
+			//returnWhat = checked;
 		}
 	);
-	returnWhat = this;
+	//returnWhat = this;
 };
 
 
 jQuery.fn.unCheckCheckboxes = function()
 {
-	var returnWhat = jQuery([]);
+	//var returnWhat = jQuery([]);
 	this.each(
 		function()
 		{
-			var unChecked = jQuery("input[@type=checkbox]", this).each(
+			jQuery("input[@type=checkbox]", this).each(
 				function()
 				{
 					this.checked = false;
 				}
 			).filter(":not(:checked)");
-			returnWhat = unChecked;
 		}
 	);
-	returnWhat = this;
 };
 
 jQuery.fn.selectOptions = function(index) {
@@ -161,8 +239,8 @@ function show_seq(seq,name,num,dsid,chr,start,stop) {
   html = html + "<TR><TD valign='top' align='right'>"+which_seq+" Sequence: </TD><TD align=justify>"+seq+"</TD></TR></TABLE>";
   
   //check to see if SeqView is an option, then display link
-  var regex = /^\d+$/;
-  if (regex.test(dsid) && dsid != 0) {
+  //var regex = /^\d+$/;
+  if (regex.test(dsid) && dsid != 0 && which_seq == "Subject") {
     html = html + "<br><a target='_blank' href='/CoGe/SeqView.pl?dsid="+dsid+"&chr="+chr+"&start="+start+"&stop="+stop+"'>Click to view sequence in SeqView</a>";
   }
   var window_width = $(document).width();
@@ -205,10 +283,17 @@ function blastOff(){
     $('#coge_blast').slideDown(pageObj.speed);
     return;
   }
+  var params = get_params();
+  if ((program == "blastp") || (program == "blastx"))
+   {
+    alert('Sorry.  CoGeBlast only supports nucleotide databases at this time.  '+program+' requires a protein database.');
+    $('#query_seqs').slideDown(pageObj.speed);
+    return;
+   }
   $('.dropMenu').hide();
   $('.bresults').slideToggle(pageObj.speed);
   $('#blast_results').html('<font class="loading dna">Loading. . .</font>');
-  var params = get_params();
+
   program = params.p;
   expect = params.e;
   job_title = params.j;
@@ -232,6 +317,11 @@ function blastresults(html,basename){
   pageObj.basename = basename;
   //alert(pageObj.basename);
   $('#blast_results').html(html);
+  if($('#null').html() == "null") {
+    $('#null').hide(0);
+    $('#table_size').remove().html("No Overlapping Features");
+  }
+  else {
   var overlap_height = $('#overlap_body').height();
   var overlap_max = 300;
   if (overlap_height > overlap_max) $('#overlap_body').height(overlap_max);
@@ -270,13 +360,26 @@ function blastresults(html,basename){
  	//});
   $(function(){
   $("#overlap").tablesorter({		
- 		sortColumn: 'name',			// Integer or String of the name of the column to sort by.
+ 		sortColumn: 'Name',			// Integer or String of the name of the column to sort by.
 		sortClassAsc: 'headerSortUp',		// Class name for ascending sorting action to header
 		sortClassDesc: 'headerSortDown',	// Class name for descending sorting action to header
 		headerClass: 'header',			// Class name for headers (th's)
 		widgets: ['zebra','class'],
+		textExtraction: 'complex',
 		});
  });
+ 
+ $(function(){
+  $("#no_table").tablesorter({		
+ 		sortColumn: 'Org',			// Integer or String of the name of the column to sort by.
+		sortClassAsc: 'headerSortUp',		// Class name for ascending sorting action to header
+		sortClassDesc: 'headerSortDown',	// Class name for descending sorting action to header
+		headerClass: 'header',			// Class name for headers (th's)
+		widgets: ['zebra','class'],
+		textExtraction: 'complex',
+		});
+ });
+ }
 }
 
 function update_gapcost() {
@@ -353,8 +456,11 @@ function get_params(){
  var expect = $('#e_value').val();
  var db = $('#blast_db').val();
  var match_mismatch = $('#match_score').val();
- var num1 = match_mismatch.substr(0,1);
- var num2 = match_mismatch.substr(2);
+ if (match_mismatch)
+  {
+    var num1 = match_mismatch.substr(0,1);
+    var num2 = match_mismatch.substr(2);
+  }
  var gapcost = $('#gapcosts_'+num1+num2).val();
  var job_title = $('#job_title').val();
  var program = $('#'+radio).val();
@@ -405,6 +511,10 @@ function radio_lock(display) {
   }
 }
 
+function hide_big_picture() {
+  if ($('#big_picture').is(':hidden') == false) $('#big_picture').slideToggle(pageObj.speed);
+}
+
 function select_blast() {
   var radio = get_radio();
   //alert(radio);
@@ -412,7 +522,7 @@ function select_blast() {
 }
 
 function get_radio(){
-   var radio = $('#bn')[0].checked;
+  var radio = $('#bn')[0].checked;
   if (radio == true){
    radio = "blast_type_n";}
   else{
@@ -447,12 +557,15 @@ function blast_param_on_select() {
  if ((program == 'blastx') || (program == 'tblastx')) {
  //alert('Program is true!');
   blast_param(['args__'+"blast_type_p",'args__'+"blast_type_p"],[animate_params]);
+  $('#word_size').val(3);
  }
  else if ((program == 'blastp') || (program == 'tblastn')) {
   blast_param(['args__'+"blast_type_p"],[animate_params]);
+  $('#word_size').val(3);
  }
  else {
    blast_param([],[animate_params]);
+  $('#word_size').val(8);
  }
 }
 
@@ -479,6 +592,12 @@ function get_displayFeature(){
 
 function get_organism_name_chain(val) {
  get_orgs(['args__'+val], ['org_list']);	 
+}
+
+function show_add() {
+  if($('#add').is(":hidden")) {
+    $('#remove').hide(0);$('#add').show(0);
+  }
 }
 
 function toggleFeature(html,check) {
@@ -526,7 +645,7 @@ function toggleFeature(html,check) {
        <TR>
           <TD>
    	<DIV id="org_name"><TMPL_VAR NAME="ORG_NAME"></DIV>
-   	<DIV id="blah">Organism Name: <input id="org_text" type="text" size=2 onFocus="$('#org_text').css({width: '140', background: '#F7FFF7'})" value="" name = "org_name" id="org_name" onKeyUp='get_organism_name_chain(this.value);'></DIV>
+   	<DIV id="blah">Organism Name: <input id="org_text" type="text" size=8 onFocus="show_add()" value="" name = "org_name" id="org_name" onKeyUp='get_organism_name_chain(this.value);'></DIV>
    	<DIV id="org_list"><TMPL_VAR NAME="ORG_LIST"></DIV>
    	  </TD>
    	  <TD valign="middle" align=middle>
@@ -584,7 +703,7 @@ function toggleFeature(html,check) {
          <label><input id=bn type=radio name=blast value="blast_type_p" onClick="radio_lock($('#bn')[0].checked);get_seq();blast_param_on_select()">Protein Sequence</label>
          <br>
           <div id=select_p>
-           <select name=blasttype id=blast_type_p>
+           <select name=blasttype id=blast_type_p onChange="blast_param_on_select()">
             <optgroup label="--- Select BLAST Type ---">
             <option value = "blastp"> blastp
             <option value = "tblastn"> tblastn
@@ -688,7 +807,7 @@ function toggleFeature(html,check) {
 	   Word size
 	</TD>
 	<TD>
-	 <input type=text id=word_size value="28" size="7">
+	 <input type=text id=word_size value="8" size="7">
        </TR>
        <TR>
 	<TD>
@@ -875,6 +994,8 @@ function toggleFeature(html,check) {
    
    
    <TMPL_IF NAME="OVERLAP_FEATURE_IF">
+   Total Number of HSPs: <TMPL_VAR NAME=HSP_COUNT>
+   <div id="null"><TMPL_VAR NAME=NULLIFY></div>
    <div id=table_size style="max-height: 360px;">
    <TABLE id="overlap" cellspacing="2" class="resultborder">
      <caption>Features Overlapped by HSP Hits</caption>
@@ -886,13 +1007,13 @@ function toggleFeature(html,check) {
           <TH class="header" >E-Value</TH>
           <TH class="header" >Percent ID</TH>
           <TH class="header" >Score</TH>
-          <TH class="header" >Length</TH>
+          <TH class="header" >Feat Length</TH>
           <TH class="header" >Org</TH>
          </TR>
          </THEAD>
          <TBODY id=overlap_body style="overflow: auto;">
          <TMPL_LOOP NAME=FEATURE_TABLE>
-         <TR id="table_row<TMPL_VAR NAME=FID>" title="Click for info" align=right class="feat" onclick="update_info_box('table_row<TMPL_VAR NAME=FID>')" >
+         <TR id="table_row<TMPL_VAR NAME=FID>" title="Click for info" align=right class="feat">
          <!--onmouseover="$('#table_row<TMPL_VAR NAME=FID>').addClass('highlight_tablerows');" onmouseout="$('#table_row<TMPL_VAR NAME=FID>').removeClass('highlight_tablerows');"-->
           <TD><input type=checkbox id="feature_checkbox<TMPL_VAR NAME=FID>" name="feature_checkbox" value="<TMPL_VAR NAME=FID>"></TD>
           <TD ><TMPL_VAR NAME=FEATURE_NAME></TD>
@@ -907,7 +1028,7 @@ function toggleFeature(html,check) {
         </TBODY>
         </TABLE>
         </div>
-        <input type=button value="Select All" onClick="$('#feature_list').checkCheckboxes()">  <input type=button value="Select None" onClick="$('#feature_list').unCheckCheckboxes()">
+        <input type=button value="Select All" onClick="$('#feature_list').checkCheckboxes()">  <input type=button value="Select None" onClick="$('#feature_list').unCheckCheckboxes()"> 
         <br>
         <br>
          <DIV id=overlap_box valign="top" align="left" class="resultborder" style="overflow: auto;display: none;max-height: 300px;"></DIV>
@@ -916,16 +1037,38 @@ function toggleFeature(html,check) {
           <div id=no_table_size style="max-height: 150px;overflow: auto;">
              <table id="no_table" class="resultborder">
                <caption>HSPs w/o overlapping features</caption>
+               <THEAD>
+                <TR align=middle>
+                  <TH> </TH>
+                  <TH class=header>Org</TH>
+                  <TH class=header>HSP No.</TH>
+                  <TH class=header>E-value</TH>
+                  <TH class=header>Perc ID</TH>
+                  <TH class=header>Score</TH>
+                  <TH class=header>Feature</TH>
+                  <TH class=header>Dist (kb)</TH>
+                 </TR>
+               </THEAD>
                <tbody id=no_feats style="overflow: auto">
                <TMPL_LOOP NAME=NO_FEATS>
-                 <tr class="feat">
-                   <td>HSP Number: <TMPL_VAR NAME=NO_FEAT></td>
-                   <td>  No Overlapping Feature(s)</td>
+               <!--onclick="hide_big_picture();show_hsp_div();loading('image_info','Information');loading('query_image','Image');loading('subject_image','Image');get_hsp_info(['args__blastfile','args__'+pageObj.basename,'args__num','args__<TMPL_VAR NAME=ID>'],['image_info','query_image','subject_image']);"-->
+                 <tr class="feat" id="<TMPL_VAR NAME=ID>" >
+                   <td id="checkbox<TMPL_VAR NAME=ID>"></td>
+                   <td><TMPL_VAR NAME=NO_FEAT_ORG></td>
+                   <td><TMPL_VAR NAME=NO_FEAT></td>
+                   <td><TMPL_VAR NAME=NO_FEAT_EVAL></td>
+                   <td><TMPL_VAR NAME=NO_FEAT_PID></td>
+                   <td><TMPL_VAR NAME=NO_FEAT_SCORE></td>
+                   <td id="feat<TMPL_VAR NAME=ID>"><TMPL_VAR NAME=NO_FEAT_LINK></td>
+                   <td id="dist<TMPL_VAR NAME=ID>">-</td>
                  </tr>
                </TMPL_LOOP>
               </tbody>
              </table>
            </div>
+           <br>
+           <!--<div id=nearby_feat></div>
+           <div id=nearby_feat_results valign="top" align="left" class="resultborder" style="overflow: auto;display: none;max-height: 300px;"></div>-->
          </TMPL_IF>
    </TMPL_IF>
    
@@ -961,13 +1104,8 @@ function toggleFeature(html,check) {
          </TR>
          </THEAD>
          <TBODY style="font-size: 10pt;">
-         <TMPL_LOOP NAME=HSP_QUERY>
-         <TR>
+         <TMPL_LOOP NAME=HSP_QS>
          <!--onmouseover="$('#table_row<TMPL_VAR NAME=FID>').addClass('highlight_tablerows');" onmouseout="$('#table_row<TMPL_VAR NAME=FID>').removeClass('highlight_tablerows');"-->
-          <TD>E-Value</TD>
-          <TD><TMPL_VAR NAME=HSP_EVAL_QUERY></TD>
-          <TD><TMPL_VAR NAME=HSP_EVAL_SUB></TD>
-          </tr>
           <tr>
           <TD >Perc ID</TD>
           <TD><TMPL_VAR NAME=HSP_PID_QUERY></TD>
@@ -978,33 +1116,8 @@ function toggleFeature(html,check) {
           <TD><TMPL_VAR NAME=HSP_PSIM_QUERY></TD>
           <TD><TMPL_VAR NAME=HSP_PSIM_SUB></TD>
           </tr>
-          <tr>
-          <TD >Score</TD>
-          <TD><TMPL_VAR NAME=HSP_SCORE_QUERY></TD>
-          <TD><TMPL_VAR NAME=HSP_SCORE_SUB></TD>
-          </tr>
-          <tr>
-          <TD >Gap</TD>
-          <TD><TMPL_VAR NAME=HSP_GAP_QUERY></TD>
-          <TD><TMPL_VAR NAME=HSP_GAP_SUB></TD>
-         </TR>
-        </TBODY>
-        </TMPL_LOOP>
-        </table>
-        </TD>
-        <TD valign="top">
-        <table>
-         <THEAD>
-         <TR>
-          <TH> </TH>
-          <TH class="header">Query</TH>
-          <TH class="header">Subject</TH>
-         </TR>
-         </THEAD>
-          <TMPL_LOOP NAME=HSP_SUB>
-         <TBODY style="font-size: 10pt;">
-         <TR >
-         <TD >Match</TD>
+          <TR >
+          <TD >Match</TD>
           <TD><TMPL_VAR NAME=HSP_MATCH_QUERY></TD>
           <TD><TMPL_VAR NAME=HSP_MATCH_SUB></TD>
           </tr>
@@ -1014,19 +1127,48 @@ function toggleFeature(html,check) {
           <TD><TMPL_VAR NAME=HSP_MISMATCH_SUB></TD>
           </tr>
           <tr>
-          <TD >Strand</TD>
-          <TD><TMPL_VAR NAME=HSP_STRAND_QUERY></TD>
-          <TD><TMPL_VAR NAME=HSP_STRAND_SUB></TD>
-          </tr>
-          <tr>
-          <TD >Length</TD>
-          <TD><TMPL_VAR NAME=HSP_LENGTH_QUERY></TD>
-          <TD><TMPL_VAR NAME=HSP_LENGTH_SUB></TD>
-          </TR>
-          <tr>
+          <TD >Gap</TD>
+          <TD><TMPL_VAR NAME=HSP_GAP_QUERY></TD>
+          <TD><TMPL_VAR NAME=HSP_GAP_SUB></TD>
+         </TR>
+         <tr>
           <TD >Position</TD>
           <TD><TMPL_VAR NAME=HSP_POSITION_QUERY></TD>
           <TD><TMPL_VAR NAME=HSP_POSITION_SUB></TD>
+          </TR>
+          <tr>
+        </TBODY>
+        </TMPL_LOOP>
+        </table>
+        </TD>
+        <TD valign="top">
+        <table>
+         <THEAD>
+         <TR>
+          <TH> </TH>
+          <TH class="header">HSP</TH>
+         </TR>
+         </THEAD>
+          <TMPL_LOOP NAME=HSP_HSP>
+         <TBODY style="font-size: 10pt;">
+           <TR>
+          <TD>E-Value</TD>
+          <TD><TMPL_VAR NAME=HSP_EVAL></TD>
+          </tr>
+          <tr>
+          <TD >Score</TD>
+          <TD><TMPL_VAR NAME=HSP_SCORE></TD>
+          </tr>
+          <tr>
+          <TD >Strand</TD>
+          <TD><TMPL_VAR NAME=HSP_STRAND></TD>
+          </tr>
+          <TD >Length</TD>
+          <TD><TMPL_VAR NAME=HSP_LENGTH></TD>
+          </TR>
+          <tr>
+           <TD >Chromosome</TD>
+           <TD><TMPL_VAR NAME=HSP_CHR></TD>
           </TR>
         </TBODY>
         </TMPL_LOOP>
@@ -1068,10 +1210,12 @@ function toggleFeature(html,check) {
             <option value = "length"> Length </option>
      </select>
       </TD>
-      <TD valign="top" align="middle">
+      <TD valign="top">
        <DIV id=result_visual valign="top" style="display: none">
-         HSP Hit Information
+         HSP Graphics:<br>
         <DIV id=query_image class="hsp_image"></DIV>
+        <BR>
+        <BR>
         <BR>
         <DIV id=subject_image class="hsp_image"></DIV>
         <BR>
@@ -1084,9 +1228,20 @@ function toggleFeature(html,check) {
          <form id=feature_list style="position:static">
          <TMPL_VAR NAME="OVERLAP_FEATURE_LIST">
          </form>
+         Do Following to Checked Features: 
+          <select name=overlap_action id=overlap_action>
+            <option value = "gevo">Send to GEvo</option>
+            <option value = "fasta">Create FASTA File</option>
+            <option value = "xls">Export to .xls</option>
+            <option value = "tab">Tab Deliminated</option>
+            <option value = "list">Get Feature List</option>
+            <option value = "user">Add to MFF</option> 
+          </selected>  
+          <input type=button value="Go" onClick="overlap_checkboxes()">
        </DIV>
      </TD>
     <TR>
+    <td><TMPL_VAR NAME="DATA_FILES">
    </TABLE>
    </TD>
 </DIV>
