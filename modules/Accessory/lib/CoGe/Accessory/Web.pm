@@ -26,7 +26,7 @@ BEGIN {
     $cogex = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 #    $cogex->storage->debugobj(new DBIxProfiler());
 #    $cogex->storage->debug(1);
-    __PACKAGE__->mk_accessors qw(restricted_orgs basefilename basefile logfile);
+    __PACKAGE__->mk_accessors qw(restricted_orgs basefilename basefile logfile sqlitefile);
  }
 
 
@@ -534,10 +534,12 @@ sub initialize_basefile
     my $return_name = $opts{return_name};
     if ($basename)
       {
+	$basename =~ s/$TEMPDIR//g;
 	my ($x, $cleanname) = check_taint($basename);
 	$self->basefilename($cleanname);
 	$self->basefile($TEMPDIR."/".$cleanname);
 	$self->logfile($self->basefile.".log");
+	$self->sqlitefile($self->basefile.".sqlite");
       }
     else
       {
@@ -547,6 +549,7 @@ sub initialize_basefile
 				    UNLINK=>1);
 	$self->basefile($file->filename);
 	$self->logfile($self->basefile.".log");
+	$self->sqlitefile($self->basefile.".sqlite");
 	$self->basefilename($file->filename =~ /([^\/]*$)/)
       }
     if ($return_name)
