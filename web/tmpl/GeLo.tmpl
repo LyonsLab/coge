@@ -50,6 +50,12 @@ function launch_viewer (dsd, chr) {
  link =  "GenomeView.pl?z="+z+"&x="+x+"&ds="+dsd+"&chr="+chr;
  window.location=link;
 }
+function timing(){
+  if (pageObj.time){
+   clearTimeout(pageObj.time);
+  }
+   pageObj.time = setTimeout("get_organism_name_chain($('#org_text').val())",500);
+}
 
 </script>
 <TABLE>
@@ -57,7 +63,7 @@ function launch_viewer (dsd, chr) {
   <TD valign=top>
    <DIV class = "oblique">Organisms</DIV>
    <DIV id="org_name"><TMPL_VAR NAME="ORG_NAME"></DIV>
-   <DIV id="blah">Organism Name: <input type="text" size=10 value="" name = "org_name" id="org_name" onKeyUp='get_organism_name_chain(this.value);'></DIV>
+   <DIV id="blah">Organism Name: <input type="text" size=10 value="" name = "org_text" id="org_text" onKeyUp='timing();'></DIV>
    <DIV id="org_list"><TMPL_VAR NAME="ORG_LIST"></DIV>
    <DIV id="viewer"></DIV>
    <DIV id="get_seq"></DIV>
