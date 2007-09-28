@@ -30,7 +30,7 @@ use Benchmark qw(:all);
 $ENV{PATH} = "/opt/apache/CoGe/";
 $ENV{BLASTDB}="/opt/apache/CoGe/data/blast/db/";
 $ENV{BLASTMAT}="/opt/apache/CoGe/data/blast/matrix/";
-use vars qw( $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $FORMATDB $BLAST $FORM $USER $DATE $BASEFILENAME $BASEFILE $LOGFILE $coge $SQLITEFILE);
+use vars qw( $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $FORMATDB $BLAST $FORM $USER $DATE $coge $cogeweb);
 
 $TEMPDIR = "/opt/apache/CoGe/tmp/";
 $DATADIR = "/opt/apache/CoGe/data/";
@@ -150,7 +150,6 @@ sub gen_body
   
 sub get_sequence
   {
-    #my $accn = shift;
     my $fid = shift;
     my $dsid = shift;
     my $blast_type = shift || 0;
@@ -217,7 +216,6 @@ sub get_sequence
 sub get_url
   {
     my $url = shift;
-    #print STDERR "expect: ", $expect, "\n";
     if ($url eq "blastn") {
       $url = "http://www.ncbi.nlm.nih.gov/blast/Blast.cgi?PAGE=Nucleotides&PROGRAM=blastn&MEGABLAST=on&BLAST_PROGRAMS=megaBlast&PAGE_TYPE=BlastSearch&SHOW_DEFAULTS=on";}
     elsif ($url eq "blastp") {
@@ -352,7 +350,7 @@ sub blastoff_search
     my $width = $opts{width};
     my $type = $opts{type};
     my $t1 = new Benchmark;
-    initialize_basefile();
+    $cogeweb = initialize_basefile();
     my @org_ids = split(/,/,$blastable);
     my $fasta_file = create_fasta_file($seq);
     my ($nuc_penalty,$nuc_reward,$exist,$extent);
@@ -382,8 +380,8 @@ sub blastoff_search
 	my ($db, $org) = get_blast_db($orgid);
 	next unless $db;
 	my $command = $pre_command." -d $db";
-	my $outfile = "$BASEFILE-$count.blast";
-	write_log("running $command" ,$LOGFILE);
+	my $outfile = $cogeweb->basefile."-$count.blast";
+	write_log("running $command" ,$cogeweb->logfile);
 	`$command > $outfile`;
 	my $report = new CoGe::Accessory::blast_report({file=>$outfile}) if -r $outfile;
 	my $file = $report->file();
@@ -413,9 +411,8 @@ Time to blast:                   $blast_time
 Time to initialize sqlite:       $dbinit_time
 Time to generate results page:   $resultpage_time
 };
-      write_log("$benchmark" ,$LOGFILE);
-    return $html,$BASEFILENAME;
-    #return qq{<a href =$TEMPURL/$BASEFILENAME.log target=_new>$LOGFILE</a>};
+      write_log("$benchmark" ,$cogeweb->logfile);
+    return $html,$cogeweb->basefilename;
   }
  
  
@@ -553,15 +550,16 @@ sub gen_results_page
      my $html = $template->output;
      return $html;
    }
+
 sub gen_data_file_summary
   {
     my $html = "<table><tr>";
     $html .= qq{<td class = small>SQLite db};
-    my $dbname = $TEMPURL."/".basename($SQLITEFILE);
+    my $dbname = $TEMPURL."/".basename($cogeweb->sqlitefile);
     
     $html .= "<div class=xsmall><A HREF=\"$dbname\" target=_new>SQLite DB file</A></DIV>\n";
     $html .= qq{<td class = small>Log File};
-    my $logfile = $TEMPURL."/".basename($LOGFILE);
+    my $logfile = $TEMPURL."/".basename($cogeweb->logfile);
     $html .= "<div class=xsmall><A HREF=\"$logfile\" target=_new>Log</A></DIV>\n";
     $html .= qq{</table>};
   }
@@ -576,7 +574,6 @@ sub generate_chromosome_images
     my $imagefile_name = $opts{filename} || "null";
     my $height = ($width / 16);
     my $large_height = ($large_width / 16) <= 64 ? ($large_width / 16) : 64;
-    #print STDERR $width,"\n";
     my $scale = $opts{scale} || 'linear';
     my %data;
     my $filename;
@@ -659,7 +656,7 @@ sub generate_chromosome_images
 						start=>$hsp->sstart,
 						stop=>$hsp->sstop,
 						chr=>"Chr: $chr",
-						imagemap=>qq/class="imagemaplink" title="HSP No. /.$hsp->number.qq/" onclick="hide_big_picture();show_hsp_div();loading('image_info','Information');loading('query_image','Image');loading('subject_image','Image');get_hsp_info(['args__blastfile','args__$BASEFILE','args__num','args__$num'],['image_info','query_image','subject_image']);"/,
+						imagemap=>qq/class="imagemaplink" title="HSP No. /.$hsp->number.qq/" onclick="hide_big_picture();show_hsp_div();loading('image_info','Information');loading('query_image','Image');loading('subject_image','Image');get_hsp_info(['args__blastfile','args__/.$cogeweb->basefile.qq/','args__num','args__$num'],['image_info','query_image','subject_image']);"/,
 						up=>$up,
 						color=>[$r,0,$b],
 					       );
@@ -678,14 +675,14 @@ sub generate_chromosome_images
 	    unless ($data{$org}{skip})	    
 	      {
 		my $x;
-		$large_image_file = $BASEFILE."_".$hsp_type."_$count"."_large.png";
+		$large_image_file = $cogeweb->basefile."_".$hsp_type."_$count"."_large.png";
 		($x, $large_image_file) = check_taint($large_image_file);
-		$image_file = $BASEFILE."_".$hsp_type."_$count.png";
+		$image_file = $cogeweb->basefile."_".$hsp_type."_$count.png";
 		($x, $image_file) = check_taint($image_file);
 		$data{$org}{image}->generate_png(filename=>$image_file);
-		$image_map = $data{$org}{image}->generate_imagemap(mapname=>$BASEFILENAME."_".$count);
+		$image_map = $data{$org}{image}->generate_imagemap(mapname=>$cogeweb->basefilename."_".$count);
 
-		my $map_file = "$TEMPDIR/$BASEFILENAME"."_$count.$hsp_type.map";
+		my $map_file = "$TEMPDIR/".$cogeweb->basefilename."_$count.$hsp_type.map";
 		($x, $map_file) = check_taint($map_file);
 		open (MAP, ">$map_file");
 		print MAP $image_map;
@@ -693,8 +690,8 @@ sub generate_chromosome_images
 		$data{$org}{image}->image_width($large_width);
 		$data{$org}{image}->chromosome_height($large_height);
 		$data{$org}{image}->generate_png(filename=>$large_image_file);
-		$image_map_large = $data{$org}{image}->generate_imagemap(mapname=>$BASEFILENAME."_".$count."_large");
-		$map_file = "$TEMPDIR/$BASEFILENAME"."_$count.$hsp_type.large.map";
+		$image_map_large = $data{$org}{image}->generate_imagemap(mapname=>$cogeweb->basefilename."_".$count."_large");
+		$map_file = "$TEMPDIR/".$cogeweb->basefilename."_$count.$hsp_type.large.map";
 		($x, $map_file) = check_taint($map_file);
 		open (MAP, ">$map_file");
 		print MAP $image_map_large;
@@ -705,9 +702,9 @@ sub generate_chromosome_images
 	      {
 		my $x;
 		$image_file = $data{$org}{image}."_$count.png";
-		$image_map = get_map("$TEMPDIR/$BASEFILENAME"."_$count.$hsp_type.map");
+		$image_map = get_map("$TEMPDIR/".$cogeweb->basefilename."_$count.$hsp_type.map");
 		$large_image_file = $data{$org}{image}."_$count"."_large.png";
-		$image_map_large = get_map("$TEMPDIR/$BASEFILENAME"."_$count.$hsp_type.large.map");
+		$image_map_large = get_map("$TEMPDIR/".$cogeweb->basefilename."_$count.$hsp_type.large.map");
 		print STDERR $image_map_large,"\n";
 		($x, $image_file) = check_taint($image_file);
 		($x, $large_image_file) = check_taint($large_image_file);
@@ -716,8 +713,8 @@ sub generate_chromosome_images
 	    $image_file =~ s/$TEMPDIR/$TEMPURL/;
 	    $large_image_file =~ s/$TEMPDIR/$TEMPURL/;
 	    
-	    push @large_data,  {DB_NAME_LARGE=>"<a href=".$data{$org}{file}. " target=_new>$org</a><br>", CHR_IMAGE_LARGE=>"<img src=$large_image_file ismap usemap='$BASEFILENAME"."_"."$count"."_large' border=0>$image_map_large",IMAGE_ID_LARGE=>$count,};
-	    push @data,  {DB_NAME=>"<a href=".$data{$org}{file}. " target=_new>$org</a><br>", CHR_IMAGE=>"<img src=$image_file ismap usemap='$BASEFILENAME"."_"."$count' border=0>$image_map",HIT=>1,IMAGE_ID=>$count,};
+	    push @large_data,  {DB_NAME_LARGE=>"<a href=".$data{$org}{file}. " target=_new>$org</a><br>", CHR_IMAGE_LARGE=>"<img src=$large_image_file ismap usemap='".$cogeweb->basefilename."_"."$count"."_large' border=0>$image_map_large",IMAGE_ID_LARGE=>$count,};
+	    push @data,  {DB_NAME=>"<a href=".$data{$org}{file}. " target=_new>$org</a><br>", CHR_IMAGE=>"<img src=$image_file ismap usemap='".$cogeweb->basefilename."_"."$count' border=0>$image_map",HIT=>1,IMAGE_ID=>$count,};
 	    $count++;
 	  }
 	else
@@ -746,11 +743,11 @@ sub get_map
 sub create_fasta_file
   {
     my $seq = shift;
-    write_log("creating user's fasta file",$LOGFILE);
-    open(NEW,"> $BASEFILE.fasta");
+    write_log("creating user's fasta file",$cogeweb->logfile);
+    open(NEW,"> ".$cogeweb->basefile.".fasta");
     print NEW $seq;
     close NEW;
-    return "$BASEFILE.fasta";
+    return $cogeweb->basefile.".fasta";
   }
     
 
@@ -783,9 +780,7 @@ sub get_color_scheme
     if (@{$set->{report}->hsps()})
       {
 	%hsps = map {$_->number, &$code_ref} @{$set->{report}->hsps()};
-#	print STDERR Dumper \%hsps;
 	@sorted_vals = sort{$a<=> $b} values %hsps;
-#	while($sorted_vals[0] == 0) {shift @sorted_vals;}
 	$min = $sorted_vals[0];
 	$max = $sorted_vals[-1];
       }
@@ -806,7 +801,6 @@ sub generate_colors
     my $color_max = $opts{color_max} || 255;
     my $color_min = $opts{color_min} || 50;
     my $flag = $opts{reverse_flag} || 0;
-#    print STDERR Dumper \%opts;
     my $color;
     ($color_max,$color_min) = ($color_min,$color_max) if $flag;
     return $color_max if ($val >= $max);
@@ -822,7 +816,6 @@ sub generate_colors
       {
 	$color = ($val-$min)/($max-$min)*($color_max-$color_min)+$color_min;
       }
-   # print STDERR "Color: $color\n";
     return $color;
   }
 	
@@ -856,7 +849,7 @@ sub get_blast_db
     my $res;
     if (-r $file)
       {
-	write_log("fasta file for $org_name ($md5) exists", $LOGFILE);
+	write_log("fasta file for $org_name ($md5) exists", $cogeweb->logfile);
 	$res = 1;
       }
     else
@@ -866,7 +859,7 @@ sub get_blast_db
     my $blastdb = "$BLASTDBDIR/$md5";
     if (-r $blastdb.".nsq")
       {
-	write_log("blastdb file for $org_name ($md5) exists", $LOGFILE);
+	write_log("blastdb file for $org_name ($md5) exists", $cogeweb->logfile);
 	$res = 1;
       }
     else
@@ -885,7 +878,7 @@ sub generate_fasta
     my $dslist = $opts{dslist};
     my $file = $opts{file};
     $file = $FASTADIR."/$file" unless $file =~ /$FASTADIR/;
-    write_log("creating fasta file.", $LOGFILE);
+    write_log("creating fasta file.", $cogeweb->logfile);
     open (OUT, ">$file") || die "Can't open $file for writing: $!";;
     foreach my $ds (@$dslist)
       {
@@ -893,16 +886,15 @@ sub generate_fasta
 	  {
 	    my $title =  $ds->organism->name." (v". $ds->version.") "."chromosome: $chr".", CoGe database id: ".$ds->id;
 	    $title =~ s/^>+/>/;
-	    #write_log("adding sequence $title to $file");
-	    write_log("adding sequence $title", $LOGFILE);
+	    write_log("adding sequence $title", $cogeweb->logfile);
 	    print OUT ">".$title."\n";
 	    print OUT $ds->get_genomic_sequence(chr=>$chr),"\n";
 	  }
       }
     close OUT;
-    write_log("Completed fasta creation", $LOGFILE);
+    write_log("Completed fasta creation", $cogeweb->logfile);
     return 1 if -r $file;
-    write_log("Error with fasta file creation", $LOGFILE);
+    write_log("Error with fasta file creation", $cogeweb->logfile);
     return 0;
   }
 
@@ -917,34 +909,11 @@ sub generate_blast_db
     $command .= " -i '$fasta'";
     $command .= " -t '$org'";
     $command .= " -n '$blastdb'";
-    write_log("creating blastdb for $org ($blastdb)",$LOGFILE);
+    write_log("creating blastdb for $org ($blastdb)",$cogeweb->logfile);
     `$command`;
     return 1 if -r "$blastdb.nsq";
-    write_log("error creating blastdb for $org ($blastdb)",$LOGFILE);
+    write_log("error creating blastdb for $org ($blastdb)",$cogeweb->logfile);
     return 0;
-  }
-
-sub initialize_basefile
-  {
-    my $basename = shift;
-    if ($basename)
-      {
-	my ($x, $cleanname) = check_taint($basename);
-	$BASEFILENAME = $cleanname;
-	$BASEFILE = $TEMPDIR."/".$cleanname;
-	$LOGFILE = $BASEFILE.".log";
-      }
-    else
-      {
-	my $file = new File::Temp ( TEMPLATE=>'CoGeBlast_XXXXXXXX',
-				    DIR=>$TEMPDIR,
-				    #SUFFIX=>'.png',
-				    UNLINK=>1);
-	($BASEFILE)= $file->filename;
-	$LOGFILE = $BASEFILE.".log";
-	($BASEFILENAME) = $file->filename =~ /([^\/]*$)/;
-      }
-    return $BASEFILENAME;
   }
 
 sub generate_feat_info 
@@ -968,13 +937,9 @@ sub get_hsp_info
     my %opts = @_;
     my $hsp_id = $opts{num};
     my $filename = $opts{blastfile};
-#    print STDERR Dumper \%opts;
-    ($BASEFILE) = $filename;
-    $BASEFILE = $TEMPDIR."/".$BASEFILE unless $BASEFILE =~ /$TEMPDIR/;
-    my $tempfile = $BASEFILE.".sqlite";
-    $SQLITEFILE = $tempfile;
-    my $dbh = DBI->connect("dbi:SQLite:dbname=$SQLITEFILE","","");
-    ($BASEFILENAME) = $BASEFILE =~ /$TEMPDIR\/*(CoGeBlast_\w+)-?/;
+    $cogeweb = initialize_basefile(basename=>$filename);
+    my $dbfile = $cogeweb->sqlitefile;
+    my $dbh = DBI->connect("dbi:SQLite:dbname=$dbfile","","");
     $hsp_id =~ s/^table_row// if $hsp_id =~ /table_row/;
     $hsp_id =~ s/^\d+_// if $hsp_id =~ tr/_/_/ > 1;
     
@@ -983,8 +948,6 @@ sub get_hsp_info
     my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data WHERE name = ?});
     
     ($hsp_num) = $hsp_id =~ /^(\d+)_\d+$/;
-#    print STDERR $hsp_id,"\n";
-#    print STDERR $hsp_num,"\n";
     $sth->execute($hsp_id) || die "unable to execute";
     while (my $info = $sth->fetchrow_hashref())
 	      {
@@ -1119,20 +1082,17 @@ sub generate_overview_image
      my @set = split/\n/, `ls $TEMPDIR/$basename*.blast`;
      my @reports;
      my $count = 1;
-     $BASEFILE = $TEMPDIR."/".$basename;
-     $BASEFILENAME = $basename;
+     $cogeweb = initialize_basefile(basename=>$basename);
      foreach my $blast (@set){
        my $report = new CoGe::Accessory::blast_report({file=>$blast});
        my ($org_name) = $report->hsps->[$count-1]->subject_name =~ /^\s*(.*?)\s*\(/;
        push @reports,{report=>$report,organism=>$org_name,link=>$TEMPURL."/".$basename."-".$count.".blast",};
        $count++;
      }
-     #print STDERR Dumper \@reports;
-     my $image_filename = $BASEFILE."_".$type;
+     my $image_filename = $cogeweb->basefile."_".$type;
      my ($chromosome_data, $chromosome_data_large) = generate_chromosome_images(results=>\@reports,hsp_type=>$type,large_width=>$image_width,filename=>$image_filename);
      my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CoGeBlast.tmpl');
      $template->param(CHROMOSOMES_IF=>1);
-     #print STDERR Dumper $chromosome_data;
      $template->param(CHROMOSOME_LOOP=>$chromosome_data);
      my $chromosome_element = $template->output;
      $template->param(CHROMOSOMES_IF=>0);
@@ -1145,7 +1105,6 @@ sub generate_overview_image
        $template->param(CHROMOSOMES_LARGE_IF=>0);
      }
      my $html = $chromosome_element.$chr_large_element;
-     #print STDERR $html,"\n";
      return $html;
   }
      
@@ -1156,7 +1115,8 @@ sub generate_hit_image
     my $hsp_name = $opts{hsp_name};
     my $width = $opts{width} || 400;
     my $dbh = $opts{dbh};
-    $dbh = DBI->connect("dbi:SQLite:dbname=$SQLITEFILE","","") unless $dbh;
+    my $dbfile = $cogeweb->sqlitefile;
+    $dbh = DBI->connect("dbi:SQLite:dbname=$dbfile","","") unless $dbh;
     my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data WHERE name = ?});
     $sth->execute($hsp_name) || die "unable to execute";
     my $hsp = $sth->fetchrow_hashref();
@@ -1244,19 +1204,16 @@ qname = "$qname"
 	$cq->add_feature($feat);
       }
 
-    my $query_file = $TEMPDIR."/".$BASEFILENAME.".q.".$hsp_name.".png";
+    my $query_file = $TEMPDIR."/".$cogeweb->basefilename.".q.".$hsp_name.".png";
     $cq->generate_png(file=>$query_file);
-    my $sub_file = $TEMPDIR."/".$BASEFILENAME.".s.".$hsp_name.".png";
-#    print STDERR Dumper $c;
+    my $sub_file = $TEMPDIR."/".$cogeweb->basefilename.".s.".$hsp_name.".png";
     $cs->generate_png(file=>$sub_file);
-#    print $c->_region_start,"--",$c->_region_stop;
     return $query_file, $sub_file;
   }
 
 sub overlap_feats_parse
   {
     my $accn_list = shift;
-    #print STDERR $accn_list,"\n";
     my $num_accns = $accn_list =~ tr/,/,/;
     return ("alert",$num_accns-1) if $num_accns > 9;
     $num_accns = $num_accns-1 < 2 ? 2 : $num_accns-1;
@@ -1267,7 +1224,6 @@ sub overlap_feats_parse
     foreach my $featid (split /,/,$accn_list)
     {
 		$featid =~ s/_\d+$//;
-		#print STDERR $featid,"\n";
     		my ($feat) = $coge->resultset("Feature")->find($featid);
     		my ($feat_name) = sort $feat->names;#something
     		$url .= "accn$count=$feat_name&";
@@ -1279,11 +1235,10 @@ sub overlap_feats_parse
 	
 sub initialize_sqlite
   {
-    my $tempfile = $BASEFILE.".sqlite";
-    $tempfile = $TEMPDIR."/".$tempfile unless $tempfile =~ /$TEMPDIR/;
-    $SQLITEFILE = $tempfile;
-    return if -r $SQLITEFILE;
-    my $dbh = DBI->connect("dbi:SQLite:dbname=$SQLITEFILE","","")  || die "cant connect to db";
+    my $dbfile = $cogeweb->sqlitefile;
+    $dbfile = $TEMPDIR."/".$dbfile unless $dbfile =~ /$TEMPDIR/;
+    return if -r $dbfile;
+    my $dbh = DBI->connect("dbi:SQLite:dbname=$dbfile","","")  || die "cant connect to db";
     my $create = qq{
 CREATE TABLE hsp_data
 (
@@ -1346,7 +1301,7 @@ sname text
   CREATE INDEX type ON sequence_info (type)
   };
       $dbh->do($index);
-    system "chmod +rw $SQLITEFILE";
+    system "chmod +rw $dbfile";
   }
   
 sub populate_sqlite
@@ -1366,10 +1321,9 @@ sub populate_sqlite
      my $align = $hsp->alignment;
      my $qname = $hsp->query_name;
      my $sname = $hsp->subject_name;
-#     print STDERR $hsp->query_length, "--",$hsp->subject_length,"\n";
      my $name = $hsp->number."_".$dsid;
     
-     my $dbh = DBI->connect("dbi:SQLite:dbname=$SQLITEFILE","","");
+     my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
      
      my $query_length = $hsp->query_stop > $hsp->query_start ? (($hsp->query_stop) - ($hsp->query_start) + 1) : (($hsp->query_start) - ($hsp->query_stop) + 1);
      my ($qstart, $qstop) = $hsp->query_stop > $hsp->query_start ? ($hsp->query_start, $hsp->query_stop) : ($hsp->query_stop, $hsp->query_start);
@@ -1388,7 +1342,6 @@ sub populate_sqlite
 
      $statement = "SELECT name FROM sequence_info where name = '$qname'";
      my $val = $dbh->selectall_arrayref($statement);
-#     print STDERR Dumper $val;
      unless ($val->[0][0])
        {
 	 my $qlength = $hsp->query_length;
@@ -1399,7 +1352,6 @@ INSERT INTO sequence_info (name, type, length) values ("$qname","query","$qlengt
        }
      $statement = "SELECT name FROM sequence_info where name = '$sname'";
      $val = $dbh->selectall_arrayref($statement);
-#     print STDERR Dumper $val;
      unless ($val->[0][0])
        {
 	 my $slength = $hsp->subject_length;
@@ -1422,14 +1374,8 @@ sub get_nearby_feats
     my %opts = @_;
     my $hsp_id = $opts{num};
     my $filename = $opts{basefile};
-    #print STDERR Dumper \%opts;
-    ($BASEFILE) = $filename;
-    $BASEFILE = $TEMPDIR."/".$BASEFILE unless $BASEFILE =~ /$TEMPDIR/;
-    #print STDERR qq{$BASEFILE = $TEMPDIR\n};
-    my $tempfile = $BASEFILE.".sqlite";
-    $SQLITEFILE = $tempfile;
-    my $dbh = DBI->connect("dbi:SQLite:dbname=$SQLITEFILE","","");
-    ($BASEFILENAME) = $filename=~ /$TEMPDIR\/*(CoGeBlast_\w+)-/;
+    $cogeweb = initialize_basefile(basename=>$filename);
+    my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
     $hsp_id =~ s/^table_row// if $hsp_id =~ /table_row/;
     $hsp_id =~ s/^\d+_// if $hsp_id =~ tr/_/_/ > 1;
     
@@ -1439,8 +1385,6 @@ sub get_nearby_feats
     my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data WHERE name = ?});
     my ($sstart, $sstop,$sname);
     my ($hsp_num,$dsid) = $hsp_id =~ /^(\d+)_(\d+)$/;
-    #print STDERR $hsp_id,"\n";
-    #print STDERR $hsp_num,"\n";
     $sth->execute($hsp_id) || die "unable to execute";
     while (my $info = $sth->fetchrow_hashref())
       {
@@ -1448,7 +1392,6 @@ sub get_nearby_feats
 	$sstop = $info->{sstop};
 	$sname = $info->{sname};
       }
-	#print STDERR "($sstart,$sstop)\n";
 	my ($start,$stop) = ($sstart,$sstop);
 	my ($chr) = $sname =~ /chromosome: (\w+)/;
 	my @feat;
@@ -1477,9 +1420,7 @@ sub get_nearby_feats
 	  $search_type = "rna" unless $search_type;
 	  foreach my $feature (@feat)
 	    {
-	      #print STDERR $feature->stop,",",$feature->start,"\n";
 	      next unless $feature->type->name =~ /$search_type/i;
-	      #print STDERR "I am a gene!\n";
 	      unless (ref($feature) =~ /Feature/i)
 		{
 		  next;
@@ -1520,11 +1461,6 @@ sub get_nearby_feats
 	my $upstream = $distance =~ s/!$//;
 	
 	my $tmp_dist = $distance;
-# 	if($closest_feat->strand =~ /-/)
-# 	{
-# 	  $upstream = $upstream == 1 ? 0 : 1; #if on negative strand, address upstream as downstream, and vice versa
-# 	}
-		
 	my $val = $closest_feat->id."_".$hsp_id;
 	if ($distance >= 1000) {
 	  $distance = $distance / 1000;
@@ -1542,7 +1478,6 @@ sub get_nearby_feats
 	$name = qq{<a href="#" onclick=update_info_box('no_feat}.$closest_feat->id."_".$hsp_num."_".$dsid."')>$name</a>";
 	$checkbox = "<input type=checkbox name='nofeat_checkbox' value='".$closest_feat->id."_".$hsp_num."_".$dsid."'  id='nofeat_checkbox".$closest_feat->id."_".$hsp_num."_".$dsid."'>";
 	$html .= "<font class=\"title4\">Distance from HSP:</font> <font class=\"data\">$distance</font>";
-	#$html .= "<br><br><input type=checkbox id=no_feat_checkbox value=$val> Add to Checked Features List";
 	$distance = $tmp_dist;
 	}	
 	else {
@@ -1559,7 +1494,6 @@ sub export_fasta_file
   {
     my $accn_list = shift;
     my $basename = shift;
-    #print STDERR $accn_list,"\n";
     $accn_list =~ s/^,//;
     $accn_list =~ s/,$//;
     my $fasta = "#";
@@ -1586,14 +1520,8 @@ sub generate_excel_feature_file
   {
     my $accn_list = shift;
     my $filename = shift;
-    
-    ($BASEFILE) = $filename;
-    $BASEFILE = $TEMPDIR."/".$BASEFILE unless $BASEFILE =~ /$TEMPDIR/;
-    my $tempfile = $BASEFILE.".sqlite";
-    $SQLITEFILE = $tempfile;
-    my $dbh = DBI->connect("dbi:SQLite:dbname=$SQLITEFILE","","");
-    ($BASEFILENAME) = $BASEFILE =~ /$TEMPDIR\/*(CoGeBlast_\w+)-?/;
-    
+    $cogeweb = initialize_basefile(basename=>$filename);
+    my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
     my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data WHERE name = ?});
 
     my $workbook = Spreadsheet::WriteExcel->new("$TEMPDIR/Excel_$filename.xls");
@@ -1613,7 +1541,6 @@ sub generate_excel_feature_file
     foreach my $accn (split /,/,$accn_list)
     {
       my ($featid,$hsp_num,$dsid) = $accn =~ m/^(\d+)_(\d+)_(\d+)$/;
-      #print STDERR "$featid,$hsp_num,$dsid\n";
 	 my $ds = $coge->resultset("Dataset")->find($dsid);
    	 my ($feat) = $coge->resultset("Feature")->find($featid);
    	 
@@ -1648,13 +1575,8 @@ sub generate_tab_deliminated
   {
     my $accn_list = shift;
     my $filename = shift;
-    
-    ($BASEFILE) = $filename;
-    $BASEFILE = $TEMPDIR."/".$BASEFILE unless $BASEFILE =~ /$TEMPDIR/;
-    my $tempfile = $BASEFILE.".sqlite";
-    $SQLITEFILE = $tempfile;
-    my $dbh = DBI->connect("dbi:SQLite:dbname=$SQLITEFILE","","");
-    ($BASEFILENAME) = $BASEFILE =~ /$TEMPDIR\/*(CoGeBlast_\w+)-?/;
+    my $cogeweb = initialize_basefile(basename=>$filename);
+    my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
     
     my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data WHERE name = ?});
 
