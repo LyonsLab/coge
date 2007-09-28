@@ -1878,10 +1878,10 @@ sub _draw_feature_slow
 	$newgd->transparent($newgd->colorResolve(255,255,255));
 	#5. copy new image into appropriate place on image.
 	$self->gd->copyMerge($newgd, $fs, $y, 0, 0, $fw, $ih, $feat->merge_percent);
-	$xmin = $fs;
-	$ymin = $y;
-	$xmax = $fs+$fw;
-	$ymax = $y+$ih;
+	$xmin = sprintf("%.0f",$fs);
+	$ymin = sprintf("%.0f",$y);
+	$xmax = sprintf("%.0f",$fs+$fw);
+	$ymax = sprintf("%.0f",$y+$ih);
       }
     
     my $size;
@@ -1988,10 +1988,10 @@ sub _draw_feature_fast
  	$newgd->transparent($newgd->colorResolve(0,0,0));
 # 	#5. copy new image into appropriate place on image.
  	$self->gd->copyMerge($newgd, $fs, $y, 0, 0, $fw, $ih, $feat->merge_percent);
-	$xmin = $fs;
-	$ymin = $y;
-	$xmax = $fs+$fw;
-	$ymax = $y+$ih;
+	$xmin = sprintf("%.0f",$fs);
+	$ymin = sprintf("%.0f",$y);
+	$xmax = sprintf("%.0f",$fs+$fw);
+	$ymax = sprintf("%.0f",$y+$ih);
   
 #	$self->gd->copyResized($feat->gd, $fs, $y, 0, 0, $fw, $ih, $feat->iw, $feat->ih);
       }
