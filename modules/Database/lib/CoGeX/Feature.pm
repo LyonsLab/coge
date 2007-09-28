@@ -885,6 +885,57 @@ sub aa_frequency
 	return \%data;
       }
   }
+
+sub codon_frequency
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $counts = $opts{counts};
+    my %codon;
+    my $seq = $self->genomic_sequence;
+    my $x=0;
+    while ($x<length($seq))
+      {
+	$codon{uc(substr($seq, $x, 3))}++;
+	$x+=3;
+      }
+    if ($counts)
+      {
+	return \%codon;
+      }
+    else
+      {
+	my $total = 0;
+	foreach (values %codon)
+	  {
+	    $total+=$_;
+	  }
+	foreach my $codon (keys %codon)
+	  {
+	    $codon{$codon} = sprintf("%.4f", ($codon{$codon}/$total));
+	  }
+	return \%codon;
+      }
+  }
+
+sub gc_content
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $counts = $opts{counts};
+    my $seq = $self->genomic_sequence;
+    my ($gc,$at);
+    $gc = $seq =~ tr/gcGC/gcGC/;
+    $at = $seq =~ tr/atAT/atAT/;
+    return "NA" unless $gc && $at;
+    unless ($counts)
+      {
+	my $total = $gc+$at;
+	$gc = sprintf("%.4f", ($gc/$total));
+	$at = sprintf("%.4f", ($at/$total));
+      }
+    return $gc,$at;
+  }
 ################################################ subroutine header begin ##
 
 =head2 
