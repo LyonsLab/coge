@@ -290,7 +290,7 @@ function blastOff(){
     $('#query_seqs').slideDown(pageObj.speed);
     return;
    }
-  $('.dropMenu').hide();
+//  $('.dropMenu').hide();
   $('.bresults').slideToggle(pageObj.speed);
   $('#blast_results').html('<font class="loading dna">Loading. . .</font>');
 
@@ -325,42 +325,12 @@ function blastresults(html,basename){
   var overlap_height = $('#overlap_body').height();
   var overlap_max = 300;
   if (overlap_height > overlap_max) $('#overlap_body').height(overlap_max);
-  //$('#overlap').change(function () {
-//   		var overlap_table_height = $('#overlap').find('TR').length;
-//   		alert(overlap_table_height);
-//   		var nofeat_table_height = $('#no_feats').find('TR').length;
-//   		var row_id;
-//   		for(i=0;i< overlap_table_height;i++)
-//   		{
-//   		  //alert(i);
-// 		  if($('#overlap').find('TR')[i].id)
-// 		  {
-// 		  row_id = $('#overlap').find('TR')[i].id;
-// 		  break;
-// 		  }
-// 		}
-// 		alert(row_id);
-//   		var row_height = 21;//$('#'+row_id).height() || 25;
-//   		alert(row_height);
-//   		//alert(row_height);
-//   		if (nofeat_table_height > 0)
-//   		{
-//   		  nofeat_table_height = nofeat_table_height * row_height;
-//  		  if (nofeat_table_height > 300) nofeat_table_height = 300;
-//  		  $('no_feats').css("height",''+nofeat_table_height);
-//  		}
-//  		overlap_table_height = overlap_table_height * row_height;
-//  		if (overlap_table_height > 300) overlap_table_height = 300;
-//  		$('#overlap_body').css("height",''+overlap_table_height);
  		
  		var select_index = $('#hsp_type')[0].selectedIndex;
  		$('#color_hsp').selectOptions(select_index);
- 		 
- 		 
- 	//});
   $(function(){
   $("#overlap").tablesorter({		
- 		sortColumn: 'Name',			// Integer or String of the name of the column to sort by.
+// 		sortColumn: 'Name',			// Integer or String of the name of the column to sort by.
 		sortClassAsc: 'headerSortUp',		// Class name for ascending sorting action to header
 		sortClassDesc: 'headerSortDown',	// Class name for descending sorting action to header
 		headerClass: 'header',			// Class name for headers (th's)
@@ -370,8 +340,8 @@ function blastresults(html,basename){
  });
  
  $(function(){
-  $("#no_table").tablesorter({		
- 		sortColumn: 'Org',			// Integer or String of the name of the column to sort by.
+ $("#no_table").tablesorter({		
+// 		sortColumn: 'Org',			// Integer or String of the name of the column to sort by.
 		sortClassAsc: 'headerSortUp',		// Class name for ascending sorting action to header
 		sortClassDesc: 'headerSortDown',	// Class name for descending sorting action to header
 		headerClass: 'header',			// Class name for headers (th's)
@@ -613,6 +583,14 @@ function toggleFeature(html,check) {
  }
 }
 
+function timing(){
+  if (pageObj.time){
+   clearTimeout(pageObj.time);
+  }
+   pageObj.time = setTimeout("get_organism_name_chain($('#org_text').val())",500);
+}
+
+
 </SCRIPT>
 </TMPL_IF>
 
@@ -640,12 +618,12 @@ function toggleFeature(html,check) {
   <TH colspan="3">
   <DIV class="cogeblast_opts">
    <DIV id = "co" name="slider" class="topItem" onMouseOver="$('#co').removeClass('topItem').addClass('topItemSelected');" onMouseOut="$('#co').removeClass('topItemSelected').addClass('topItem');" onClick='animate_section("#coge_blast", "slideToggle")'>CoGe BLAST Options:</DIV>
-   <DIV class="dropMenu" id="coge_blast" style="display: none">
+   <DIV class="dropMenu" id="coge_blast" style="display: inline">
    <TABLE class="list" >
        <TR>
           <TD>
    	<DIV id="org_name"><TMPL_VAR NAME="ORG_NAME"></DIV>
-   	<DIV id="blah">Organism Name: <input id="org_text" type="text" size=8 onFocus="show_add()" value="" name = "org_name" id="org_name" onKeyUp='get_organism_name_chain(this.value);'></DIV>
+   	<DIV id="blah">Organism Name: <input type="text" size=8 onFocus="show_add()" value="" name = "org_text" id="org_text" onKeyUp='timing();'></DIV>
    	<DIV id="org_list"><TMPL_VAR NAME="ORG_LIST"></DIV>
    	  </TD>
    	  <TD valign="middle" align=middle>
