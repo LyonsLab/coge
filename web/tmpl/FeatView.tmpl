@@ -89,6 +89,14 @@ $(document).ready(function(){
     if ($('#accn').val()) {search_chain(0);}
 });
 
+function onEnter(e){
+  if (!e){ 
+   var e = window.event;}
+  if(e.which == 13){
+search_chain(1);
+ }
+}
+
 </SCRIPT>
 <TABLE>
  <TR>
@@ -99,7 +107,7 @@ $(document).ready(function(){
          <TD nowrap>
            Feature Name:
          <tD>
-          <input type="text" name="accn" id="accn" tabindex="1"  size="10" value="<TMPL_VAR NAME=ACCN>"/>
+          <input type="text" name="accn" id="accn" tabindex="1"  size="10" value="<TMPL_VAR NAME=ACCN>" onkeypress="onEnter(event);"/>
 	Add wildcard to <select id="feat_name_wild" >
 	<option>neither</option>
 	<option>left</option>
@@ -111,7 +119,7 @@ $(document).ready(function(){
          <TD nowrap>
            Feature Annotation:
          <tD>
-          <input type="text" name="annosearch" id="annosearch" tabindex="1"  size="10" value="<TMPL_VAR NAME=ANNO>"/>
+          <input type="text" name="annosearch" id="annosearch" tabindex="1"  size="10" value="<TMPL_VAR NAME=ANNO>" onkeypress="onEnter(event);"/>
 	Add wildcard to <select id="feat_anno_wild" >
 	<option>neither</option>
 	<option>left</option>
