@@ -44,7 +44,7 @@ delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 $ENV{'LAGAN_DIR'} = '/opt/apache/CoGe/bin/lagan/';
 #for dialign
 $ENV{'DIALIGN2_DIR'} = '/opt/apache/CoGe/bin/dialign2_dir/';
-use vars qw( $PAGE_NAME $DATE $DEBUG $BL2SEQ $BLASTZ $LAGAN $CHAOS $DIALIGN $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge $NUM_SEQS $MAX_SEQS $BASEFILE $BASEFILENAME $LOGFILE $SQLITEFILE $REPEATMASKER);
+use vars qw( $PAGE_NAME $DATE $DEBUG $BL2SEQ $BLASTZ $LAGAN $CHAOS $DIALIGN $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge $NUM_SEQS $MAX_SEQS $REPEATMASKER);
 $PAGE_NAME = "GEvo.pl";
 $BL2SEQ = "/opt/bin/bio/bl2seq ";
 $BLASTZ = "/usr/bin/blastz ";
@@ -629,7 +629,7 @@ sub run
 	$html .= "<div><font class=xsmall><A HREF=\"$basename\" target=_new>Annotation file for $accn</A></font></DIV>\n";
       }
     $html .= qq{<td class = small>SQLite db};
-    my $dbname = $TEMPURL."/".basename($SQLITEFILE);
+    my $dbname = $TEMPURL."/".basename($cogeweb->sqlitefile);
     
     $html .= "<div class=xsmall><A HREF=\"$dbname\" target=_new>SQLite DB file</A></DIV>\n";
     $html .= qq{<td class = small>Log File};
@@ -760,11 +760,9 @@ sub generate_image
 sub initialize_sqlite
   {
     my %opts = @_;
-    my $tempfile = $cogeweb->basefile.".sqlite";
-    $tempfile = $TEMPDIR."/".$tempfile unless $tempfile =~ /$TEMPDIR/;
-    $SQLITEFILE = $tempfile;
-    return if -r $SQLITEFILE;
-    my $dbh = DBI->connect("dbi:SQLite:dbname=$SQLITEFILE","","");
+    my $dbfile = $cogeweb->sqlitefile;
+    return if -r $dbfile;
+    my $dbh = DBI->connect("dbi:SQLite:dbname=$dbfile","","");
     my $create = qq{
 CREATE TABLE image_data
 (
@@ -840,7 +838,7 @@ bpmax integer(255)
  CREATE INDEX iname ON image_info (iname)
  };
      $dbh->do($index);
-    system "chmod +rw $SQLITEFILE";
+    system "chmod +rw $dbfile";
   }
 
 sub generate_imagemap_db
@@ -850,7 +848,7 @@ sub generate_imagemap_db
     my $set = $args{set};
     next unless $gfx;
 #    write_log("generating SQLite database");
-    my $dbh = DBI->connect("dbi:SQLite:dbname=$SQLITEFILE","","");
+    my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
     my $image = $set->{image};
 #	my $gfx = $item->{gfx};
     my $accn = $set->{accn};
