@@ -1,0 +1,25 @@
+<TABLE width=100%>
+ <THEAD align=left>
+   <TH>Feature Name</TH>
+   <TH>Type</TH>
+   <TH>Location</TH>
+   <th>Chromosome</th>
+   <th>Strand</th>
+   <th>Organism(version)</th>
+   <th>More Information</th>
+ </THEAD>
+ <tbody align=left valign="top">
+  <TMPL_LOOP NAME=INFO>
+    <TR>
+      <TD><TMPL_VAR NAME=NAME></TD>
+      <TD><TMPL_VAR NAME=TYPE></TD>
+      <TD><TMPL_VAR NAME=LOC></TD>
+      <TD><TMPL_VAR NAME=CHR></TD>
+      <TD><TMPL_VAR NAME=STRAND></TD>
+      <TD><TMPL_VAR NAME=ORG></TD>
+      <TD style="width: 35%;" ><TMPL_VAR NAME=HPP></TD>
+    </TR>
+   </TMPL_LOOP>
+  </tbody>
+ </TABLE>
+      
