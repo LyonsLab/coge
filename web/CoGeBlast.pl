@@ -350,7 +350,7 @@ sub blastoff_search
     my $width = $opts{width};
     my $type = $opts{type};
     my $t1 = new Benchmark;
-    $cogeweb = initialize_basefile();
+    $cogeweb = initialize_basefile(prog=>"CoGeBlast");
     my @org_ids = split(/,/,$blastable);
     my $fasta_file = create_fasta_file($seq);
     my ($nuc_penalty,$nuc_reward,$exist,$extent);
@@ -429,6 +429,7 @@ sub gen_results_page
      my $flag;
      my @check;
      my @no_feat;
+    my $t0 = new Benchmark;
      foreach my $set (@$results)
        {
 	 if (@{$set->{report}->hsps()})
@@ -440,11 +441,13 @@ sub gen_results_page
 		 my ($chr) = $hsp->subject_name =~ /chromosome: (\w+)/;
 		 my ($org) = $hsp->subject_name =~ /^\s*(.*?)\s*\(/;
 		 next unless $dsid && $chr;
-		 my @feat = $coge->get_features_in_region(start=>$hsp->subject_start,  
-							  stop=>$hsp->subject_stop,
-							  chr=>$chr, 
-							  dataset_id=>$dsid,
-							 );
+ 		 my @feat = $coge->get_features_in_region(start=>$hsp->subject_start,  
+ 							  stop=>$hsp->subject_stop,
+ 							  chr=>$chr, 
+ 							  dataset_id=>$dsid,
+ 							 );
+#		 my @feat;
+
 		if (@feat) 
 		  {
 		    my %seen;
@@ -506,13 +509,16 @@ sub gen_results_page
 	       }
 	   }
        }
+     my $t1 = new Benchmark;
      my ($chromosome_data, $chromosome_data_large) = generate_chromosome_images(results=>$results,large_width=>$width,hsp_type=>$type);
+     my $t2 = new Benchmark;
      unless (@table) 
        {
 	 $null = "null";
        }
      #table sort!
-     @table = sort {$a->{FEATURE_ORG} cmp $b->{FEATURE_ORG} || $a->{FEATURE_NAME} cmp $b->{FEATURE_NAME} || $a->{FEATURE_EVAL} <=> $b->{FEATURE_EVAL} } @table;
+#     @table = sort {$a->{FEATURE_ORG} cmp $b->{FEATURE_ORG} || $a->{FEATURE_HSP} <=> $b->{FEATURE_HSP} || $a->{FEATURE_EVAL} <=> $b->{FEATURE_EVAL} } @table;
+#     @table = sort {$a->{FEATURE_ORG} cmp $b->{FEATURE_ORG} || $a->{FEATURE_HSP} <=> $b->{FEATURE_HSP} } @table;
      
      my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CoGeBlast.tmpl');
      $template->param(OVERLAP_FEATURE_IF=>1);
@@ -548,6 +554,17 @@ sub gen_results_page
      $template->param(BLAST_RESULTS=>1);
      $template->param(DATA_FILES=>gen_data_file_summary());
      my $html = $template->output;
+     my $t3 = new Benchmark;
+    my $table_time = timestr(timediff($t1,$t0));
+    my $figure_time = timestr(timediff($t2,$t1));
+    my $render_time = timestr(timediff($t3,$t2));
+    my $benchmark = qq{
+Time to gen tables:              $table_time
+Time to gen images:              $figure_time
+Time to gen resutls:             $render_time
+};
+     print STDERR $benchmark;
+     write_log($benchmark, $cogeweb->logfile);
      return $html;
    }
 
@@ -634,6 +651,7 @@ sub generate_chromosome_images
 		    $data{$org}{image}->add_chromosome(name=>"Chr: $chr",
 						       end=>$last_pos,
 						      );
+		    $data{$org}{chr}{$chr}=1;
 		  }
 		my $num = $hsp->number."_".$dsid;
 		my $up = $hsp->strand eq "++" ? 1 : 0;
@@ -652,14 +670,14 @@ sub generate_chromosome_images
 					);
 		#Reverse color scheme for eval, as less is more
 		($r, $b) = ($b, $r) if $hsp_type eq "eval";
-		$data{$org}{image}->add_feature(name=>$hsp->number,
-						start=>$hsp->sstart,
-						stop=>$hsp->sstop,
-						chr=>"Chr: $chr",
-						imagemap=>qq/class="imagemaplink" title="HSP No. /.$hsp->number.qq/" onclick="hide_big_picture();show_hsp_div();loading('image_info','Information');loading('query_image','Image');loading('subject_image','Image');get_hsp_info(['args__blastfile','args__/.$cogeweb->basefile.qq/','args__num','args__$num'],['image_info','query_image','subject_image']);"/,
-						up=>$up,
-						color=>[$r,0,$b],
-					       );
+  		$data{$org}{image}->add_feature(name=>$hsp->number,
+  						start=>$hsp->sstart,
+  						stop=>$hsp->sstop,
+  						chr=>"Chr: $chr",
+  						imagemap=>qq/class="imagemaplink" title="HSP No. /.$hsp->number.qq/" onclick="hide_big_picture();show_hsp_div();loading('image_info','Information');loading('query_image','Image');loading('subject_image','Image');get_hsp_info(['args__blastfile','args__/.$cogeweb->basefile.qq/','args__num','args__$num'],['image_info','query_image','subject_image']);"/,
+  						up=>$up,
+  						color=>[$r,0,$b],
+  					       );
 	      }
 	  }
       }
