@@ -386,8 +386,49 @@ sub codon_table
     return unless $featid;
     my ($feat) = $coge->resultset('Feature')->find($featid);
     my $codon = $feat->codon_frequency(counts=>1);
+    foreach my $tri (keys %code)
+      {
+	$codon->{$tri} = 0 unless $codon->{$tri};
+      }
     my $html = "<table>";
-    $html .= join ("\n", map {"<tr><td>".$_."(".$code{$_}.")<td>".$codon->{$_}} sort keys %$codon);
+    my $count = 0;
+    my %aa;
+    foreach my $tri (keys %$codon)
+      {
+	$aa{$code{$tri}}+=$codon->{$tri};
+      }
+    foreach (map {$_."(".$code{$_}.") ".$codon->{$_}} sort { substr($a, 0, 2) cmp substr ($b, 0, 2) || sort_nt($a) <=> sort_nt($b) }keys %$codon)
+      {
+	$html .= "<tr>" unless $count;
+	$html .= "<td nospan>" unless $count%4;	
+	$html .= $_."<br>";
+	$count++;
+	$count = 0 if $count == 16;
+	
+      }
     $html .="</table>";
+    $html .= "<br>";
+    $html .= join "<br>",map  {"$_ ".$aa{$_}} sort keys %aa;
     return $html;
+  }
+
+sub sort_nt
+  {
+    my $chr = uc(shift);
+
+    $chr = substr($chr, -1,1) if length($chr)>1;
+    my $val = 0;
+    if ($chr eq "G")
+      {
+	$val = 1;
+      }
+    elsif ($chr eq "C")
+      {
+	$val = 2;
+      }
+    elsif ($chr eq "U" || $chr eq "T")
+      {
+	$val = 3;
+      }
+    return $val;
   }
