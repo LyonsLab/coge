@@ -210,7 +210,7 @@ init();
     <div id="popup" class="genomeview_popup" style="display: none"></div>
     <div id="map"></div>
     <div id='resolution'></div>
-    <div id='check' style="float:right"><input type=checkbox name=checkbox id=disable val=1/>Disable Pop-up Annotations</div>
+    <div id='check' style="float:right"><input type=checkbox name=checkbox id=disable checked/>Disable Pop-up Annotations</div>
 OpenGene's map width: <input type=textbox class=backbox size=5 id="width" onkeypress="onEnter(event);" value=<TMPL_VAR NAME="width"> /><input type=button value="resize" onclick="$('#map').css('width',$('#width').val());updateZoom();" /><input type=button value="Full-Window" onclick="$('#map').css('width',''+$('#main').width());updateZoom();" /> <input id='hide_query' style="display: none" type=button value="Hide Feature Info" onclick="$('#query').slideToggle(pageObj.speed);$('#hide_query').hide(0);" />
     <div id='query' style="overflow: auto;"></div>
 
