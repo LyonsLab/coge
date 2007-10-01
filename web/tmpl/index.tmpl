@@ -84,6 +84,16 @@ function show_summary(id) {
   $('#summary').html(html).css("left",''+left_padding).css("top","300").width(popup_size).slideDown(pageObj.speed);
 }
 
+function onEnter(e){
+  if (!e){ 
+   var e = window.event;}
+  if(e.which == 13){
+login(['uname', 'pwd','url'],[place_cookie]);
+ }
+}
+
+
+
 </SCRIPT>
 
 <div id=summary style="display:none;z-index: 1000;" class="image_window"></div>
@@ -94,10 +104,10 @@ function show_summary(id) {
 <TABLE class="basic">
  <TR>
   <TD>User Name:
-  <TD><input class="backbox" type="text" name="uname" id="uname" size="10">
+  <TD><input class="backbox" type="text" name="uname" id="uname" size="10" onkeypress="onEnter(event);">
  <TR>
   <TD>Password:
-  <TD><input class="backbox" type="password" name="pwd" id="pwd" size="10">
+  <TD><input class="backbox" type="password" name="pwd" id="pwd" size="10" onkeypress="onEnter(event);">
 </TABLE>
 <input type="hidden" id="url" value="<TMPL_VAR NAME="url">">
 <input type="submit" value="Log on" id="Login" onClick="login(['uname', 'pwd','url'],[place_cookie])">
