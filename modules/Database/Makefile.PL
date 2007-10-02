@@ -10,5 +10,7 @@ WriteMakefile(
     ABSTRACT     => 'CoGeX',
     PREREQ_PM    => {
                      'Test::Simple' => 0.44,
+                      'DBIx::Class'  => 0.08
+
                     },
 );
