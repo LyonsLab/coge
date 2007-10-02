@@ -96,24 +96,15 @@ sub get_genomic_sequence {
       # make sure two numbers were sent in
       return undef unless ($start =~ /\A\d+\z/ and  $stop =~ /\A\d+\z/);
       ($start, $stop) = ($stop, $start) if $stop < $start;
+      my $fstart = $start - ($start % 10000) + 1;
+      my @starts;
+      for(my $i=$fstart;$i<$stop;$i+=10000){
+        push(@starts,$i);
+      }
+
       my @seqs = $self->genomic_sequences(
 					  {chromosome=>$chr,
-					   -and=>[
-						  -or=>[
-							-and=>[
-							       start => {'<='=>$stop},
-							       stop  => {'>='=>$stop},
-							      ],
-							-and=>[
-							       start => {'<='=>$start},
-							       stop  => {'>='=>$start},
-							      ],
-							-and=>[
-							       start => {'>'=>$start},
-							       stop  => {'<'=>$stop},
-							      ],
-						       ],
-						 ],
+					   -and=>[ start=> { 'in', \@starts } ],
 					  },
 					  {order_by=>"start asc"}
 					 )->all;
