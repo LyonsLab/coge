@@ -9,11 +9,11 @@ use CoGeX;
 #postgresql         : real    0m30.214s
 
 
-#my $connstr = 'dbi:mysql:genomes:biocon:3306';
-#my $s = CoGeX->connect($connstr, 'cnssys', 'CnS' );
+my $connstr = 'dbi:mysql:genomes:biocon:3306';
+my $s = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 
-my $connstr = 'dbi:Pg:dbname=genomes;host=biocon;port=5432';
-my $s = CoGeX->connect($connstr, 'bpederse', 'wsa47r' );
+#my $connstr = 'dbi:Pg:dbname=genomes;host=biocon;port=5432';
+#my $s = CoGeX->connect($connstr, 'bpederse', 'wsa47r' );
 
 $s->storage->debug(1);
 
