@@ -54,16 +54,19 @@ function timing(){
   if (pageObj.time){
    clearTimeout(pageObj.time);
   }
-   pageObj.time = setTimeout("get_organism_name_chain($('#org_text').val())",500);
+   pageObj.time = setTimeout("get_organism_name_chain($('#org_name').val())",500);
 }
+
+$(document).ready(function(){
+//   if ($('org_name').val()) {get_organism_name_chain($('#org_name').val());}
+ }); 
 
 </script>
 <TABLE>
  <TR>
   <TD valign=top>
    <DIV class = "oblique">Organisms</DIV>
-   <DIV id="org_name"><TMPL_VAR NAME="ORG_NAME"></DIV>
-   <DIV id="blah">Organism Name: <input type="text" size=10 value="" name = "org_text" id="org_text" onKeyUp='timing();'></DIV>
+   <DIV id="blah">Organism Name: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_NAME">" name = "org_name" id="org_name" onKeyUp='timing();'></DIV>
    <DIV id="org_list"><TMPL_VAR NAME="ORG_LIST"></DIV>
    <DIV id="viewer"></DIV>
    <DIV id="get_seq"></DIV>
