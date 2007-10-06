@@ -40,6 +40,8 @@ my $pj = new CGI::Ajax(
 		       get_orgs => \&get_orgs,
 		       get_start_stop=>\&get_start_stop,
 		       get_feature_counts => \&get_feature_counts,
+		       gen_gc_for_chromosome=> \&gen_gc_for_chromosome,
+		       gen_gc_for_chromosome_and_type =>\&gen_gc_for_chromosome_and_type,
 		      );
 $pj->JSDEBUG(0);
 $pj->DEBUG(0);
@@ -78,7 +80,9 @@ sub gen_body
   {
     my $form = shift || $FORM;
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GeLo.tmpl');
-    $template->param(ORG_LIST=>get_orgs());
+    my $name = $form->param('org_name');
+    $template->param(ORG_NAME=>$name);
+    $template->param(ORG_LIST=>get_orgs($name));
     return $template->output;
   }
 
@@ -92,7 +96,7 @@ sub get_orgs
     foreach my $item (sort {uc($a->name) cmp uc($b->name)} @db)
       {
 	next if $restricted_orgs->{$item->name};
-	push @opts, "<OPTION value=\"".$item->id."\">".$item->name."</OPTION>";
+	push @opts, "<OPTION value=\"".$item->id."\">".$item->name."(id".$item->id.")</OPTION>";
       }
     my $html;
     $html .= qq{<FONT CLASS ="small">Organism count: }.scalar @opts.qq{</FONT>\n<BR>\n};
@@ -198,7 +202,7 @@ sub get_dataset_chr_info
     my $ds = $coge->resultset("Dataset")->find($dsd);
     return $html unless $ds;
     my $length = commify( $ds->last_chromosome_position($chr) );
-    $html .= qq{<tr><td>Nucleotides:<td>$length} if $length;
+    $html .= qq{<tr><td>Nucleotides:<td>$length<td><div id=chromosome_gc class="link" onclick="\$('#chromosome_gc').removeClass('link'); gen_gc_for_chromosome(['args__dsid','ds_id','args__chr','chr'],['chromosome_gc']);">Click for percent GC content</div>} if $length;
 #    my $feat_string = get_feature_counts($dsd, $chr);
     my $feat_string = qq{
 <div id=feature_count onclick="gen_data(['args__loading. . .'],['feature_count_data']);\$('#feature_count').hide(0);get_feature_counts(['ds_id', 'chr'],['feature_count_data']);" >Click here for feature count information</div><div id=feature_count_data></div>
@@ -266,8 +270,10 @@ SELECT count(distinct(feature_id)), ft.name
       }
 #    my $feats = $ds->get_feature_type_count(chr=>$chr);
     my $feat_string .= qq{<tr><td valign=top>Features:<td valign=top><table>};
-    $feat_string .= join ("\n<tr valing=top>",map {"<td valign=top> ".$_."<td valign=top> ".$feats->{$_} } sort {($feats->{$b})<=>($feats->{$a})} keys %$feats);
-    $feat_string .= "None" unless $feat_string;
+    $feat_string .= join ("\n<tr valing=top>",map {"<td valign=top><div id=$_ class=\"link\" onclick=\" \$('#$_').removeClass('link'); gen_data(['args__loading. . .'],['".$_."_type']); gen_gc_for_chromosome_and_type(['args__dsid','ds_id','args__chr','chr','args__type','args__$_'],['".$_."_type'])\">".$_."</div><td valign=top> ".$feats->{$_}."<td><div id=".$_."_type></div>" } sort {($feats->{$b})<=>($feats->{$a})} keys %$feats);
+    $feat_string .= "</table><div class=small>(click feature name for percent gc)</div>";
+    $feat_string .= "None" unless keys %$feats;
+    return $feat_string;
   }
 
 sub gen_data
@@ -276,11 +282,46 @@ sub gen_data
     return qq{<font class="loading">$message. . .</font>};
   }
 
+sub gen_gc_for_chromosome_and_type
+  {
+    my %args = @_;
+    my $dsid = $args{dsid};
+    my $chr = $args{chr};
+    my $type = $args{type};
+    return unless $dsid;
+    my $ds = $coge->resultset('Dataset')->find($dsid);
+    my $gc = 0;
+    my $at = 0;
+    my $count = 0;
+    foreach my $feat ($ds->features({"feature_type.name"=>$type},{join=>"feature_type"}))
+      {
+	my @gc = $feat->gc_content(counts=>1);
+	$gc+=$gc[0] if $gc[0] =~ /^\d+$/;
+	$at+=$gc[1] if $gc[1] =~ /^\d+$/;
+      }
+    my $total = $gc+$at;
+    return "error" unless $total;
+    return "GC: ".sprintf("%.2f",100*$gc/($total))."%  AT: ".sprintf("%.2f",100*$at/($total))."%";
+  }
+
+sub gen_gc_for_chromosome
+  {
+    my %args = @_;
+    my $dsid = $args{dsid};
+    my $chr = $args{chr};
+    return unless $dsid;
+    my $ds = $coge->resultset('Dataset')->find($dsid);
+    my $gc=$ds->percent_gc(chr=>$chr);
+    return "GC: ".(100*$gc)."%  AT: ".(100*(1-$gc))."%";
+  }
+
+
 sub commify
     {
       my $text = reverse $_[0];
       $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
       return scalar reverse $text;
     }
+
 
 1;
