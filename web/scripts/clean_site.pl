@@ -49,6 +49,7 @@ sub process_file
 	    s/â€/"/g;
 	    s/>\xa0</><br></g;
 	    s/\xa0/ /g;
+#	    s/å//g;
 #	    s/overflow: hidden/overflow: visible/g;
 	    s/http:\/\/\/?CoGe/\/CoGe/ig;
 #	    s/http:\/\/\/?coge/\/CoGe/ig;
