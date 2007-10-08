@@ -135,11 +135,11 @@ sub get_genome_sequence
   {
     return shift->get_genomic_sequence(@_);
   }
-#         .         .         .         .
-#1234567890123456789012345678901234567890
-#                                       CCACAACCAGCTGACTAGGTA
-#ACGACGCAGCTATGGCCTCCCCGCCCACCAGGCCGCCAGCCACAACCAGC
-#         CTATGGCCTC
+sub genomic_sequence
+  {
+    return shift->get_genomic_sequence(@_);
+  }
+
 sub trim_sequence {
   my $self = shift;
   my( $seq, $seqstart, $seqend, $newstart, $newend ) = @_;
@@ -233,5 +233,18 @@ sub get_chromosomes
 #       }
     return wantarray ? @data : \@data;
   }
+
+sub percent_gc
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $chr = $opts{chr};
+    my $seq = $self->genomic_sequence(chr=>$chr);
+    my $length = length $seq;
+    return unless $length;
+    my ($gc) = $seq =~ tr/GCgc/GCgc/;
+    return sprintf("%.4f", $gc/$length);
+  }
+
 
 1;
