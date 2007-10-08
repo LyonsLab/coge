@@ -45,6 +45,8 @@ my $pj = new CGI::Ajax(
 		       gen_data=>\&gen_data,
 		       get_feature_types=>\&get_feature_types,
 		       codon_table=>\&codon_table,
+		       protein_table=>\&protein_table,
+		       gc_content=>\&gc_content,
 		      );
 $pj->JSDEBUG(0);
 $pj->DEBUG(0);
@@ -176,7 +178,10 @@ sub get_anno
 	$anno .= qq{<DIV id="loc$i"><input type="button" value = "Click for Genome view" onClick="window.open('GenomeView.pl?chr=$chr&ds=$ds&x=$x&z=$z');"></DIV>};
 #	$anno .= qq{<DIV id="exp$i"><input type="button" value = "Click for expression tree" onClick="gen_data(['args__Generating expression view image'],['exp$i']);show_express(['args__}.$accn.qq{','args__}.'1'.qq{','args__}.$i.qq{'],['exp$i']);"></DIV>};
 	$anno .= qq{<DIV id="dnaseq$i"><input type="button" value = "Click for Sequence" onClick="window.open('SeqView.pl?featid=$featid&dsid=$ds&chr=$chr&featname=$accn');"></DIV>};
+	$anno .= qq{<DIV id="gc_info$i"><input type="button" value = "Click for GC content" onClick="gc_content(['args__featid','args__$featid'],['gc_info$i'])"></DIV>};
 	$anno .= qq{<DIV id="codon_info$i"><input type="button" value = "Click for codon usage" onClick="codon_table(['args__featid','args__$featid'],['codon_info$i'])"></DIV>} if $feat->type->name eq "CDS";
+	$anno .= qq{<DIV id="protein_info$i"><input type="button" value = "Click for amino acid usage" onClick="protein_table(['args__featid','args__$featid'],['protein_info$i'])"></DIV>} if $feat->protein_sequence;
+
 	$anno = "<font class=\"annotation\">No annotations for this entry</font>" unless $anno;
       }
     return ($anno);
@@ -312,103 +317,88 @@ sub get_data_source_info_for_accn
     return ("<font class=small>Dataset count: ".$count ."</font>\n<BR>\n".$html, 1);
   }
 
+sub gc_content
+  {
+    my %args = @_;
+    my $featid = $args{featid};
+    return unless $featid;
+    my ($feat) = $coge->resultset('Feature')->find($featid);
+    my ($gc, $at) = $feat->gc_content;
+    my $html = "GC:".(100*$gc)."%"."AT:".(100*$at)."%" ;
+    return $html;
+  }
+
 sub codon_table
   {
     my %args = @_;
     my $featid = $args{featid};
-   my(%code) = (
-                 'TCA' => 'S',# Serine
-                 'TCC' => 'S',# Serine
-                 'TCG' => 'S',# Serine
-                 'TCT' => 'S',# Serine
-                 'TTC' => 'F',# Fenilalanine
-                 'TTT' => 'F',# Fenilalanine
-                 'TTA' => 'L',# Leucine
-                 'TTG' => 'L',# Leucine
-                 'TAC' => 'Y',# Tirosine
-                 'TAT' => 'Y',# Tirosine
-                 'TAA' => '*',# Stop
-                 'TAG' => '*',# Stop
-                 'TGC' => 'C',# Cysteine
-                 'TGT' => 'C',# Cysteine
-                 'TGA' => '*',# Stop
-                 'TGG' => 'W',# Tryptofane
-                 'CTA' => 'L',# Leucine
-                 'CTC' => 'L',# Leucine
-                 'CTG' => 'L',# Leucine
-                 'CTT' => 'L',# Leucine
-                 'CCA' => 'P',# Proline
-                 'CCC' => 'P',# Proline
-                 'CCG' => 'P',# Proline
-                 'CCT' => 'P',# Proline
-                 'CAC' => 'H',# Hystidine
-                 'CAT' => 'H',# Hystidine
-                 'CAA' => 'Q',# Glutamine
-                 'CAG' => 'Q',# Glutamine
-                 'CGA' => 'R',# Arginine
-                 'CGC' => 'R',# Arginine
-                 'CGG' => 'R',# Arginine
-                 'CGT' => 'R',# Arginine
-                 'ATA' => 'I',# IsoLeucine
-                 'ATC' => 'I',# IsoLeucine
-                 'ATT' => 'I',# IsoLeucine
-                 'ATG' => 'M',# Methionina
-                 'ACA' => 'T',# Treonina
-                 'ACC' => 'T',# Treonina
-                 'ACG' => 'T',# Treonina
-                 'ACT' => 'T',# Treonina
-                 'AAC' => 'N',# Asparagina
-                 'AAT' => 'N',# Asparagina
-                 'AAA' => 'K',# Lisina
-                 'AAG' => 'K',# Lisina
-                 'AGC' => 'S',# Serine
-                 'AGT' => 'S',# Serine
-                 'AGA' => 'R',# Arginine
-                 'AGG' => 'R',# Arginine
-                 'GTA' => 'V',# Valine
-                 'GTC' => 'V',# Valine
-                 'GTG' => 'V',# Valine
-                 'GTT' => 'V',# Valine
-                 'GCA' => 'A',# Alanine
-                 'GCC' => 'A',# Alanine
-                 'GCG' => 'A',# Alanine
-                 'GCT' => 'A',# Alanine
-                 'GAC' => 'D',# Aspartic Acid
-                 'GAT' => 'D',# Aspartic Acid
-                 'GAA' => 'E',# Glutamic Acid
-                 'GAG' => 'E',# Glutamic Acid
-                 'GGA' => 'G',# Glicine
-                 'GGC' => 'G',# Glicine
-                 'GGG' => 'G',# Glicine
-                 'GGT' => 'G',# Glicine
-                );
 
     return unless $featid;
     my ($feat) = $coge->resultset('Feature')->find($featid);
-    my $codon = $feat->codon_frequency(counts=>1);
-    foreach my $tri (keys %code)
-      {
-	$codon->{$tri} = 0 unless $codon->{$tri};
-      }
-    my $html = "<table>";
+    my ($codon, $code_type) = $feat->codon_frequency(counts=>1);
+    my $codon_total = 0;
+    grep {$codon_total+=$_} values %$codon;
     my $count = 0;
     my %aa;
-    foreach my $tri (keys %$codon)
+    my $aa_total=0;
+    my ($code) = $feat->genetic_code;
+    foreach my $tri (keys %$code)
       {
-	$aa{$code{$tri}}+=$codon->{$tri};
+	$aa{$code->{$tri}}+=$codon->{$tri};
+	$aa_total+=$codon->{$tri};
       }
-    foreach (map {$_."(".$code{$_}.") ".$codon->{$_}} sort { substr($a, 0, 2) cmp substr ($b, 0, 2) || sort_nt($a) <=> sort_nt($b) }keys %$codon)
+    my $html = "Codon Usage: $code_type<table>";
+    foreach (sort { substr($a, 0, 2) cmp substr ($b, 0, 2) || sort_nt($a) <=> sort_nt($b) } keys %$code)
       {
-	$html .= "<tr>" unless $count;
-	$html .= "<td nospan>" unless $count%4;	
-	$html .= $_."<br>";
+	my $str = "<tr><td>".$_."(".$code->{$_}.")<td>".$codon->{$_}."<td>(".sprintf("%.2f",100*$codon->{$_}/$codon_total)."%)";
+	delete $codon->{$_};
+	$html .= "</table><tr><td><table>" unless $count;
+	if ($count%4)
+	  {
+	  }
+	else
+	  {
+	    $html .= "</table><td nospan><table>"; 
+	  }
+
+	$html .= $str;
 	$count++;
 	$count = 0 if $count == 16;
-	
       }
-    $html .="</table>";
-    $html .= "<br>";
-    $html .= join "<br>",map  {"$_ ".$aa{$_}} sort keys %aa;
+     $count = 0;
+     foreach (sort keys %$codon)
+       {
+ 	my $str = "<tr><td>".$_."<td>".$codon->{$_}."<td>(".sprintf("%.2f",100*$codon->{$_}/$codon_total)."%)";
+	$html .= "</table><tr><td><table>" unless $count;
+ 	if ($count%4)
+ 	  {
+ 	  }
+ 	else
+ 	  {
+ 	    $html .= "</table><td nospan><table>"; 
+ 	  }
+ 	$html .= $str;
+ 	$count++;
+ 	$count = 0 if $count == 16;
+      }
+    $html .="</table></table>";
+    $html .= "(Predicted amino acid usage for $code_type genetic code)<table>";
+    $html .= join ("<tr>",map  {"<td>$_<td>".$aa{$_}."<td>(".sprintf("%.2f",100*$aa{$_}/$aa_total)."%)"} sort keys %aa);
+    $html .= "</table>";
+    return $html;
+  }
+
+sub protein_table
+  {
+    my %args = @_;
+    my $featid = $args{featid};
+    my ($feat) = $coge->resultset('Feature')->find($featid);
+    my $aa = $feat->aa_frequency(counts=>1);
+    my $total = 0;
+    grep {$total+=$_} values %$aa;
+    my $html = "Amino Acid Usage"."<table>";
+    $html .= join ("<tr>",map  {"<td>$_<td>".$aa->{$_}."<td>(".sprintf("%.2f",100*$aa->{$_}/$total)."%)"} sort keys %$aa);
+    $html .= "</table>";
     return $html;
   }
 
