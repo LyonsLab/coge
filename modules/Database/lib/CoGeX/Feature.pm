@@ -3,6 +3,7 @@ package CoGeX::Feature;
 use strict;
 use warnings;
 use base 'DBIx::Class';
+use CoGe::Accessory::genetic_code;
 
 __PACKAGE__->load_components("PK::Auto", "ResultSetManager", "Core");
 __PACKAGE__->table("feature");
@@ -529,6 +530,27 @@ sub genomic_sequence {
   return wantarray ? @sequences : join( "", @sequences );
 }
 
+sub genomic_sequence_old {
+  my $self = shift;
+  my $dataset = $self->dataset();
+  my @sequences;
+  foreach my $loc (sort {$a->start <=> $b->start} $self->locations())
+    {
+      #  while ( my $loc = $lociter->next() ) {
+      my $fseq = $dataset->get_genome_sequence(
+					       chromosome=>$loc->chromosome(),
+					       skip_length_check=>1,
+					       start=>$loc->start,
+					       stop=>$loc->stop );
+      if ( $loc->strand == -1 ) {
+	push @sequences, $self->reverse_complement($fseq);
+      } else {
+	push @sequences, $fseq;
+      }
+    }
+  return wantarray ? @sequences : join( "", @sequences );
+}
+
 sub genome_sequence
   {
    shift->genomic_sequence(@_);
@@ -698,73 +720,8 @@ sub frame6_trans
   {
     my $self = shift;
     my %opts = @_;
-    my(%code) = (
-		 'TCA' => 'S',# Serine
-		 'TCC' => 'S',# Serine
-		 'TCG' => 'S',# Serine
-		 'TCT' => 'S',# Serine
-		 'TTC' => 'F',# Fenilalanine
-		 'TTT' => 'F',# Fenilalanine
-		 'TTA' => 'L',# Leucine
-		 'TTG' => 'L',# Leucine
-		 'TAC' => 'Y',# Tirosine
-		 'TAT' => 'Y',# Tirosine
-		 'TAA' => '*',# Stop
-		 'TAG' => '*',# Stop
-		 'TGC' => 'C',# Cysteine
-		 'TGT' => 'C',# Cysteine
-		 'TGA' => '*',# Stop
-		 'TGG' => 'W',# Tryptofane
-		 'CTA' => 'L',# Leucine
-		 'CTC' => 'L',# Leucine
-		 'CTG' => 'L',# Leucine
-		 'CTT' => 'L',# Leucine
-		 'CCA' => 'P',# Proline
-		 'CCC' => 'P',# Proline
-		 'CCG' => 'P',# Proline
-		 'CCT' => 'P',# Proline
-		 'CAC' => 'H',# Hystidine
-		 'CAT' => 'H',# Hystidine
-		 'CAA' => 'Q',# Glutamine
-		 'CAG' => 'Q',# Glutamine
-		 'CGA' => 'R',# Arginine
-		 'CGC' => 'R',# Arginine
-		 'CGG' => 'R',# Arginine
-		 'CGT' => 'R',# Arginine
-		 'ATA' => 'I',# IsoLeucine
-		 'ATC' => 'I',# IsoLeucine
-		 'ATT' => 'I',# IsoLeucine
-		 'ATG' => 'M',# Methionina
-		 'ACA' => 'T',# Treonina
-		 'ACC' => 'T',# Treonina
-		 'ACG' => 'T',# Treonina
-		 'ACT' => 'T',# Treonina
-		 'AAC' => 'N',# Asparagina
-		 'AAT' => 'N',# Asparagina
-		 'AAA' => 'K',# Lisina
-		 'AAG' => 'K',# Lisina
-		 'AGC' => 'S',# Serine
-		 'AGT' => 'S',# Serine
-		 'AGA' => 'R',# Arginine
-		 'AGG' => 'R',# Arginine
-		 'GTA' => 'V',# Valine
-		 'GTC' => 'V',# Valine
-		 'GTG' => 'V',# Valine
-		 'GTT' => 'V',# Valine
-		 'GCA' => 'A',# Alanine
-		 'GCC' => 'A',# Alanine
-		 'GCG' => 'A',# Alanine
-		 'GCT' => 'A',# Alanine
-		 'GAC' => 'D',# Aspartic Acid
-		 'GAT' => 'D',# Aspartic Acid
-		 'GAA' => 'E',# Glutamic Acid
-		 'GAG' => 'E',# Glutamic Acid
-		 'GGA' => 'G',# Glicine
-		 'GGC' => 'G',# Glicine
-		 'GGG' => 'G',# Glicine
-		 'GGT' => 'G',# Glicine
-		);
-    my $code = $opts{code} || \%code;
+
+    my $code = $opts{code} || $self->genetic_code;
     my $seq = $opts{seq} || $self->genomic_sequence;
 
     my %seqs;
@@ -779,6 +736,18 @@ sub frame6_trans
 
   }
 
+sub genetic_code
+  {
+    my $self = shift;
+    my $type = "1";
+    foreach my $anno ($self->annotations)
+      {
+	next unless $anno->annotation_type->name eq "transl_table";
+	$type = $anno->annotation;
+      }
+    my $code = code($type);
+    return ($code->{code}, $code->{name});
+  }
 sub _process_seq
   {
     my $self = shift;
@@ -863,13 +832,14 @@ sub aa_frequency
     my $self = shift;
     my %opts = @_;
     my $counts = $opts{counts};
-    my %data;
+    my ($code) = $self->genetic_code;
+    my %data = map {$_=>0} values %$code;
     my ($seq) = $opts{seq} || $self->protein_sequence;
     return \%data unless $seq;
     foreach (split //,$seq)
       {
 	next if $_ eq "*";
-	$data{$_}++;
+	$data{$_}++ if defined $data{$_};
       }
     if ($counts)
       {
@@ -895,7 +865,8 @@ sub codon_frequency
     my $self = shift;
     my %opts = @_;
     my $counts = $opts{counts};
-    my %codon;
+    my ($code, $code_type) = $self->genetic_code;
+    my %codon = map {$_=>0} keys %$code;
     my $seq = $self->genomic_sequence;
     my $x=0;
     while ($x<length($seq))
@@ -905,7 +876,7 @@ sub codon_frequency
       }
     if ($counts)
       {
-	return \%codon;
+	return \%codon, $code_type;
       }
     else
       {
@@ -918,7 +889,7 @@ sub codon_frequency
 	  {
 	    $codon{$codon} = sprintf("%.4f", ($codon{$codon}/$total));
 	  }
-	return \%codon;
+	return (\%codon, $code_type);
       }
   }
 
