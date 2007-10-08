@@ -47,8 +47,8 @@ sub imagemap_features
     my ($self) = shift;
     my %opts = @_;
     my $chr =$opts{chr};
-    my $x = $opts{x};
-    my $y = $opts{'y'};
+    my $x = sprintf("%.0f",$opts{x});
+    my $y = sprintf("%.0f",$opts{'y'});
     my $width = $opts{width};
     my $height = $opts{height};
     my $onchange = $opts{onchange} || 0;
@@ -61,21 +61,21 @@ sub imagemap_features
     return unless $feats->{$chr->{name}};
     foreach my $feat (sort {$a->{end} <=> $b->{end} }@{$feats->{$chr->{name}}})
       {
-	my $x1 = ($x+$feat->{end}/$chr->{end}*$width)-$height/5;
-	my $x2 = ($x+$feat->{end}/$chr->{end}*$width)+$height/5;
+	my $x1 = sprintf("%.0f",($x+$feat->{end}/$chr->{end}*$width)-$height/5);
+	my $x2 = sprintf("%.0f",($x+$feat->{end}/$chr->{end}*$width)+$height/5);
 	$up = $feat->{up} if defined $feat->{up};
 	if ($up)
 	  {
-	    my $y1 = $y;
-	    my $y2 = $y-$height/1.3;
-	    $map .= qq!<area coords="$x1, $y1, $x2, $y2" !;
+	    my $y1 = sprintf("%.0f",$y);
+	    my $y2 = sprintf("%.0f",$y-$height/1.3);
+	    $map .= qq!<area shape="rect"coords="$x1,$y1,$x2,$y2" !;
 	    $up = 0;
 	  }
 	else
 	  {
-	    my $y1 = $y+$height;
-	    my $y2 = $y+$height+$height/1.3;
-	    $map .= qq!<area coords="$x1, $y1, $x2, $y2" !;
+	    my $y1 = sprintf("%.0f",$y+$height);
+	    my $y2 = sprintf("%.0f",$y+$height+$height/1.3);
+	    $map .= qq!<area shape="rect" coords="$x1,$y1,$x2,$y2" !;
 	    $up = 1;
 	  }
 	$map .= "\n";
@@ -95,9 +95,9 @@ sub imagemap_features
 
 	if ($color_band_flag)
 	  {
-	    my $xt = ($x+$feat->{end}/$chr->{end}*$width)+2;
-	    my $yt = $y+$height;
-	    $map .= qq!<area coords="$xt, $y, $xt, $yt" !;
+	    my $xt = sprintf("%.0f",($x+$feat->{end}/$chr->{end}*$width)+2);
+	    my $yt = sprintf("%.0f",($y+$height));
+	    $map .= qq!<area shape="rect" coords="$xt, $y, $xt, $yt" !;
 	    $map .= "\n";
 	    $map .= qq!href="$feat->{link}" ! if $feat->{link};
 	    if ($onchange)
@@ -224,22 +224,22 @@ sub draw_features
 	my $color = $feat->{color};
 	$color = $self->get_color($color) if ref ($color) =~ /array/i;
 	$color = $self->default_feature_color unless $color;
-
-	my $x1 = $x+$feat->{end}/$chr->{end}*$width;
+	$y = sprintf("%.0f", $y);
+	my $x1 = sprintf("%.0f",$x+$feat->{end}/$chr->{end}*$width);
 	my $poly = new GD::Polygon;
 	$up = $feat->{up} if defined $feat->{up};
 	if ($up)
 	  {
 	    $poly->addPt($x1, $y);
-	    $poly->addPt($x1-$height/5, $y-$height/1.3);
-	    $poly->addPt($x1+$height/5, $y-$height/1.3);
+	    $poly->addPt(sprintf("%.0f",$x1-$height/5), sprintf("%.0f",$y-$height/1.3));
+	    $poly->addPt(sprintf("%.0f",$x1+$height/5), sprintf("%.0f",$y-$height/1.3));
 	    $up = 0;
 	  }
 	else
 	  {
 	    $poly->addPt($x1, $y+$height);
-	    $poly->addPt($x1-$height/5, $y+$height+$height/1.3);
-	    $poly->addPt($x1+$height/5, $y+$height+$height/1.3);
+	    $poly->addPt(sprintf("%.0f",$x1-$height/5), sprintf("%.0f",$y+$height+$height/1.3));
+	    $poly->addPt(sprintf("%.0f",$x1+$height/5), sprintf("%.0f",$y+$height+$height/1.3));
 	    $up = 1;
 	  }
 	$gd->filledPolygon($poly, $color);
