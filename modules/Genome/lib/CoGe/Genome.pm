@@ -5,7 +5,6 @@ use CoGe::Genome::DB::Annotation;
 use CoGe::Genome::DB::Annotation_type;
 use CoGe::Genome::DB::Annotation_type_group;
 use CoGe::Genome::DB::Data_source;
-use CoGe::Genome::DB::Data_information;
 use CoGe::Genome::DB::Feature;
 use CoGe::Genome::DB::Feature_name;
 use CoGe::Genome::DB::Feature_type;
