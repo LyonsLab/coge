@@ -114,12 +114,24 @@ sub get_genomic_sequence {
     } 
   elsif ( $chr ) 
     {    # get a whole chromosome
-      my $allseqs = $self->genomic_sequences( { 'chromosome' => $chr},
+
+#mysql> SET SESSION group_concat_max_len = 99999999;
+#Query OK, 0 rows affected (0.00 sec)
+#
+#mysql> select LENGTH(GROUP_CONCAT(sequence_data ORDER BY start SEPARATOR '')) from genomic_sequence where dataset_id = 565 and chromosome = 'chromosome_1' GROUP BY CHROMOSOME;
+#+-----------------------------------------------------------------+
+#| LENGTH(GROUP_CONCAT(sequence_data ORDER BY start SEPARATOR '')) |
+#+-----------------------------------------------------------------+
+#|                                                        73840631 |
+#+-----------------------------------------------------------------+
+#1 row in set (1.97 sec)
+
+#mysql> SET GLOBAL group_concat_max_len = 99999999;
+#ERROR 1227 (42000): Access denied; you need the SUPER privilege for this operation
+
+    $str = join("",map { $_->sequence_data } $self->genomic_sequences( { 'chromosome' => $chr},
 					      {order_by=>"start asc"}
-					    );
-      while ( my $g = $allseqs->next ) {
-	$str .= $g->sequence_data;
-      }
+					    ));
     } 
   else 
     {                 # entire sequence
