@@ -515,12 +515,12 @@ sub genomic_sequence {
   my @locs = map {[$_->start,$_->stop,$_->chromosome]}sort { $a->start <=> $b->start } $self->locations() ;
   if ($up)
     {
-      print STDERR "have up: $up\n";
-      print STDERR $locs[0][0],"--";
+#      print STDERR "have up: $up\n";
+#      print STDERR $locs[0][0],"--";
       my $start = $locs[0][0]-$up;
       $start = 1 if $start < 1;
       $locs[0][0]=$start;
-      print STDERR $locs[0][0],"\n";
+#      print STDERR $locs[0][0],"\n";
     }
   if ($down)
     {
@@ -530,7 +530,7 @@ sub genomic_sequence {
   my $chr = $self->chromosome || $locs[0][2];
   my $start = $locs[0][0];
   my $stop = $locs[-1][1];
-  print STDERR "Start: $start\n";
+#  print STDERR "Start: $start\n";
   my $full_seq = $dataset->get_genomic_sequence(
 					       chromosome=>$chr,
 					       skip_length_check=>1,
