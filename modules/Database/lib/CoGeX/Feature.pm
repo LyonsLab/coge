@@ -507,21 +507,41 @@ See Also   : CoGe::Genome
 
 sub genomic_sequence {
   my $self = shift;
+  my %opts = @_;
+  my $up = $opts{up} || $opts{upstream} || $opts{left};
+  my $down = $opts{down} || $opts{downstream} || $opts{right};
   my $dataset = $self->dataset();
   my @sequences;
-  my @locs = sort { $a->start <=> $b->start } $self->locations() ;
-  
+  my @locs = map {[$_->start,$_->stop,$_->chromosome]}sort { $a->start <=> $b->start } $self->locations() ;
+  if ($up)
+    {
+      print STDERR "have up: $up\n";
+      print STDERR $locs[0][0],"--";
+      my $start = $locs[0][0]-$up;
+      $start = 1 if $start < 1;
+      $locs[0][0]=$start;
+      print STDERR $locs[0][0],"\n";
+    }
+  if ($down)
+    {
+      my $stop = $locs[-1][1]+$down;
+      $locs[-1][1]=$stop;
+    }
+  my $chr = $self->chromosome || $locs[0][2];
+  my $start = $locs[0][0];
+  my $stop = $locs[-1][1];
+  print STDERR "Start: $start\n";
   my $full_seq = $dataset->get_genomic_sequence(
-					       chromosome=>$locs[0]->chromosome(),
+					       chromosome=>$chr,
 					       skip_length_check=>1,
-					       start=>$locs[0]->start,
-					       stop=>$locs[-1]->stop );
-  my $s0 = $locs[0]->start;
+					       start=>$start,
+					       stop=>$stop );
+  my $s0 = $locs[0][0];
   foreach my $loc (@locs){
       my $this_seq = substr($full_seq
-                          , $loc->start - $s0
-                          , $loc->stop - $loc->start + 1);
-      if ($loc->strand == -1){
+                          , $loc->[0] - $s0
+                          , $loc->[1] - $loc->[0] + 1);
+      if ($loc->[2] == -1){
             push @sequences, $self->reverse_complement($this_seq);
       }else{
             push @sequences, $this_seq;
