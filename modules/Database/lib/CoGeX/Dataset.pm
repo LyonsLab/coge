@@ -84,7 +84,7 @@ sub get_genomic_sequence {
   my $chr = $opts{chr} || $opts{chromosome};
   my $skip_length_check = $opts{skip_length_check} || 0;
   my $str = "";
-  if (defined $start && defined $stop && defined $chr)
+  if (defined $start && defined $stop)
     {
       $chr = "1" unless defined $chr;
       $start = 1 if $start < 1;
@@ -123,7 +123,7 @@ sub get_genomic_sequence {
     } 
   else 
     {                 # entire sequence
-      my $allseqs = $self->genomic_sequences();
+      my $allseqs = $self->genomic_sequences({},{order_by=>"start asc"});
       while ( my $g = $allseqs->next ) {
 	$str .= $g->sequence_data;
       }
