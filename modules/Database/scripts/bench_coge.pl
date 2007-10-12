@@ -21,6 +21,7 @@ my $rs = $s->resultset('Feature')->search(
                     { 'feature_names.name' => { 'like' => 'At1g16%' },
                     'feature_type.name' =>   'CDS' }, {
                         join => [ 'feature_names','feature_type'] 
+                        ,order_by => ['feature_names.name', 'me.start', 'feature_type.name']
                     });
 
 
