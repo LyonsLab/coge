@@ -40,4 +40,28 @@ sub resolve : ResultSet {
 }
 
 
+sub current_datasets
+  {
+    my $self = shift;
+    my %data;
+    my $version;
+    ds_loop: foreach my $ds ($self->datasets({},{distict=>'version',order_by=>'version desc'}))
+      {
+	$version = $ds->version unless $version;
+	foreach my $chr ($ds->get_chromosomes)
+	  {
+	    #this is a hack but the general problem is that some organisms have different chromosomes at different versions, however, partially complete genomes will have many contigs and different versions will have different contigs.  So, to get around this, there is a check to see if the chromosome name has contig in it, if so, then only the most current version is used.  Otherwise, all versions are game.
+	    next unless $chr;
+	    if ($chr =~ /contig/i)
+	      {
+		next ds_loop if $ds->version ne $version;
+	      }
+	    $data{$chr} = $ds unless $data{$chr};
+	    $data{$chr} = $ds if $ds->version > $data{$chr}->version;
+	  }
+      }
+    %data = map {$_->id,$_} values %data;
+    return wantarray ? values %data : [values %data];
+  }
+
 1;
