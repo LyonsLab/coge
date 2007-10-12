@@ -512,7 +512,7 @@ sub genomic_sequence {
   my $down = $opts{down} || $opts{downstream} || $opts{right};
   my $dataset = $self->dataset();
   my @sequences;
-  my @locs = map {[$_->start,$_->stop,$_->chromosome]}sort { $a->start <=> $b->start } $self->locations() ;
+  my @locs = map {[$_->start,$_->stop,$_->chromosome,$_->strand]}sort { $a->start <=> $b->start } $self->locations() ;
   if ($up)
     {
 #      print STDERR "have up: $up\n";
@@ -541,7 +541,7 @@ sub genomic_sequence {
       my $this_seq = substr($full_seq
                           , $loc->[0] - $s0
                           , $loc->[1] - $loc->[0] + 1);
-      if ($loc->[2] == -1){
+      if ($loc->[3] == -1){
             push @sequences, $self->reverse_complement($this_seq);
       }else{
             push @sequences, $this_seq;
