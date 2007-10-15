@@ -475,7 +475,7 @@ sub process_nucleotides
 	    next unless $subseq && $rcseq;
 	    my $options = $layers->{gc} ? "gc" : "nt";
 	    my $skip = 0;
-	    if ($options && $options eq "nt" && !$layers->{all} && $subseq !~/N/i)
+	    if ($options && $options eq "nt" && !$layers->{all} && $subseq !~/N/i && $subseq !~/X/i)
 	      {
 		$pos+=$chrs;
 		next;
