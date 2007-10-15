@@ -42,6 +42,7 @@ my $pj = new CGI::Ajax(
 		       get_feature_counts => \&get_feature_counts,
 		       gen_gc_for_chromosome=> \&gen_gc_for_chromosome,
 		       gen_gc_for_chromosome_and_type =>\&gen_gc_for_chromosome_and_type,
+		       get_codon_usage_for_chromosome=>\&get_codon_usage_for_chromosome,
 		      );
 $pj->JSDEBUG(0);
 $pj->DEBUG(0);
@@ -115,22 +116,49 @@ sub get_orgs
 
 sub get_dataset
   {
-    my $oid = shift;
-    my $html = "";
-    my $org = $coge->resultset("Organism")->find($oid);
-    my @opts = map {"<OPTION value=\"".$_->id."\">".$_->name. " (v".$_->version.", id".$_->id.")</OPTION>"} sort {$b->version cmp $a->version || $a->name cmp $b->name} $org->datasets if $org;
-    $html = qq{<FONT CLASS ="small">Dataset count: }.scalar (@opts).qq{</FONT>\n<BR>\n};
-    unless (@opts) 
+    my %opts = @_;
+    my $oid = $opts{oid};
+    my $dsname = $opts{dsname};
+    my $html; 
+    my $html2;
+    my @opts;
+    if ($oid)
+      {
+	my $org = $coge->resultset("Organism")->find($oid);
+	@opts = map {"<OPTION value=\"".$_->id."\">".$_->name. " (v".$_->version.", id".$_->id.")</OPTION>"} sort {$b->version cmp $a->version || $a->name cmp $b->name} $org->datasets if $org;
+
+	}
+    elsif ($dsname)
+      {
+	my @ds = $coge->resultset("Dataset")->search({name=>{like=>"%".$dsname."%"}});
+	($USER) = CoGe::Accessory::LogUser->get_user();
+	my $restricted_orgs = restricted_orgs(user=>$USER);
+	my @orgs;
+	foreach my $item (sort {uc($a->name) cmp uc($b->name)} @ds)
+	  {
+	    next if $restricted_orgs->{$item->organism->name};
+	    push @opts, "<OPTION value=\"".$item->id."\">".$item->name."(v".$item->version.", id".$item->id.")</OPTION>";
+	    push @orgs, "<OPTION value=\"".$item->organism->id."\">".$item->organism->name."(id".$item->organism->id.")</OPTION>";
+	  }
+	$html2 .= qq{<FONT CLASS ="small">Organism count: }.scalar @orgs.qq{</FONT>\n<BR>\n};
+	$html2 .= qq{<SELECT id="org_id" SIZE="5" MULTIPLE onChange="dataset_chain()" >\n};
+	$html2 .= join ("\n", @orgs);
+	$html2 .= "\n</SELECT>\n";
+	$html2 =~ s/OPTION/OPTION SELECTED/;
+      }
+    if (@opts) 
+      {
+	$html = qq{<FONT CLASS ="small">Dataset count: }.scalar (@opts).qq{</FONT>\n<BR>\n};
+	$html .= qq{<SELECT id="ds_id" SIZE="5" MULTIPLE onChange="gen_data(['args__loading. . .'],['ds_info']); dataset_info_chain()" >\n};
+	$html .= join ("\n", @opts);
+	$html .= "\n</SELECT>\n";
+	$html =~ s/OPTION/OPTION SELECTED/;
+      }
+    else
       {
 	$html .=  qq{<input type = hidden name="ds_id" id="ds_id">};
-	return $html;
       }
-
-    $html .= qq{<SELECT id="ds_id" SIZE="5" MULTIPLE onChange="gen_data(['args__loading. . .'],['ds_info']); dataset_info_chain()" >\n};
-    $html .= join ("\n", @opts);
-    $html .= "\n</SELECT>\n";
-    $html =~ s/OPTION/OPTION SELECTED/;
-    return $html;
+    return $html, $html2;
   }
 
 sub get_dataset_info
@@ -269,9 +297,13 @@ SELECT count(distinct(feature_id)), ft.name
 	$feats->{$row->[1]} = $row->[0];
       }
 #    my $feats = $ds->get_feature_type_count(chr=>$chr);
-    my $feat_string .= qq{<tr><td valign=top>Features:<td valign=top><table>};
+    my $feat_string .= qq{<tr><td valign=top>Features:<td valign=top><span class=small>(click feature name for percent gc)</span><table>};
     $feat_string .= join ("\n<tr valing=top>",map {"<td valign=top><div id=$_ class=\"link\" onclick=\" \$('#$_').removeClass('link'); gen_data(['args__loading. . .'],['".$_."_type']); gen_gc_for_chromosome_and_type(['args__dsid','ds_id','args__chr','chr','args__type','args__$_'],['".$_."_type'])\">".$_."</div><td valign=top> ".$feats->{$_}."<td><div id=".$_."_type></div>" } sort {($feats->{$b})<=>($feats->{$a})} keys %$feats);
-    $feat_string .= "</table><div class=small>(click feature name for percent gc)</div>";
+    $feat_string .= "</table>";
+    if ($feats->{CDS})
+      {
+	$feat_string .= "<div class=link id=codon_usage onclick=\" \$('#codon_usage').removeClass('link'); gen_data(['args__loading. . .'],['codon_usage']); get_codon_usage_for_chromosome(['args__dsid','ds_id','args__chr','chr'],['codon_usage'])\">"."Click for codon usage"."</div>";
+      }
     $feat_string .= "None" unless keys %$feats;
     return $feat_string;
   }
@@ -315,6 +347,110 @@ sub gen_gc_for_chromosome
     return "GC: ".(100*$gc)."%  AT: ".(100*(1-$gc))."%";
   }
 
+sub get_codon_usage_for_chromosome
+  {
+    my %args = @_;
+    my $dsid = $args{dsid};
+    my $chr = $args{chr};
+    return unless $dsid;
+    my $ds = $coge->resultset('Dataset')->find($dsid);
+    my %codons;
+    my ($code, $code_type);
+    my $codon_total = 0;
+    my %aa;
+    my $aa_total=0;
+    foreach my $feat ($ds->features({"feature_type.name"=>"CDS"},{join=>"feature_type"}))
+      {
+	($code, $code_type) = $feat->genetic_code() unless $code;
+	my ($codon) = $feat->codon_frequency(counts=>1);
+	grep {$codon_total+=$_} values %$codon;
+	grep {$codons{$_}+=$codon->{$_}} keys %$codon;
+	foreach (keys %$codon)
+	  {
+	    next if length ($_) eq 3;
+#	    print STDERR join ("\t", $_, $feat->id, $feat->names),"\n"
+	  }
+	foreach my $tri (keys %$code)
+	  {
+	    $aa{$code->{$tri}}+=$codon->{$tri};
+	    $aa_total+=$codon->{$tri};
+	  }
+      }
+#    foreach my $tri (keys %code)
+#      {
+#	$codons{$tri} = 0 unless $codons{$tri};
+#      }
+    my $count = 0;
+    my $html = "Codon Usage: $code_type<table>";
+    foreach (sort { substr($a, 0, 2) cmp substr ($b, 0, 2) || sort_nt($a) <=> sort_nt($b) } keys %$code)
+      {
+	my $str = "<tr><td>".$_."(".$code->{$_}.")<td>".$codons{$_}."<td>(".sprintf("%.2f",100*$codons{$_}/$codon_total)."%)";
+	delete $codons{$_};
+	$html .= "</table><tr><td><table>" unless $count;
+	if ($count%4)
+	  {
+	  }
+	else
+	  {
+	    $html .= "</table><td nospan><table>"; 
+	  }
+
+	$html .= $str;
+	$count++;
+	$count = 0 if $count == 16;
+      }
+     $count = 0;
+     foreach (sort keys %codons)
+       {
+ 	my $str = "<tr><td>".$_."<td>".$codons{$_}."<td>(".sprintf("%.2f",100*$codons{$_}/$codon_total)."%)";
+	$html .= "</table><tr><td><table>" unless $count;
+ 	if ($count%4)
+ 	  {
+ 	  }
+ 	else
+ 	  {
+ 	    $html .= "</table><td nospan><table>"; 
+ 	  }
+ 	$html .= $str;
+ 	$count++;
+ 	$count = 0 if $count == 16;
+      }
+    $html .="</table></table>";
+    $html .= "Predicted amino acid usage using $code_type<table>";
+    $html .= join ("<tr>",map  {"<td>$_<td>".$aa{$_}."<td>(".sprintf("%.2f",100*$aa{$_}/$aa_total)."%)"} sort keys %aa);
+    $html .= "</table>";
+    return $html;
+#     foreach (map {$_."(".$code->{$_}.") ".$codons{$_}} sort { substr($a, 0, 2) cmp substr ($b, 0, 2) || sort_nt($a) <=> sort_nt($b) }keys %codons)
+#       {
+# 	$html .= "<tr>" unless $count;
+# 	$html .= "<td nospan>" unless $count%4;	
+# 	$html .= $_."<br>";
+# 	$count++;
+# 	$count = 0 if $count == 16;	
+#       }
+#     return $html;
+  }
+
+sub sort_nt
+  {
+    my $chr = uc(shift);
+
+    $chr = substr($chr, -1,1) if length($chr)>1;
+    my $val = 0;
+    if ($chr eq "G")
+      {
+	$val = 1;
+      }
+    elsif ($chr eq "C")
+      {
+	$val = 2;
+      }
+    elsif ($chr eq "U" || $chr eq "T")
+      {
+	$val = 3;
+      }
+    return $val;
+  }
 
 sub commify
     {
