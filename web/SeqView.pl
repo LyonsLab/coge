@@ -4,6 +4,7 @@ use strict;
 use CGI;
 use CGI::Ajax;
 use CoGe::Accessory::LogUser;
+use CoGe::Accessory::Web;
 use HTML::Template;
 use CoGe::Genome;
 use Text::Wrap qw($columns &wrap);
@@ -36,6 +37,13 @@ print $pj->build_html($FORM, \&gen_html);
 
 sub gen_html
   {
+    my $html;
+    unless ($USER)
+      {
+	$html = login();
+      }
+    else
+     {
     my $form = $FORM;
     my $feat_id = $form->param('featid');
     my $rc = $form->param('rc');
@@ -53,8 +61,8 @@ sub gen_html
     #if($feat_id)
      #{$template->param(CLOSE=>1);}
     #print STDERR gen_foot()."\n";
-    my $html;
     $html .= $template->output;
+    }
     return $html;
   }
 
@@ -285,6 +293,7 @@ sub gen_foot
       $template->param(UPVALUE=>$start);
       $template->param(DOWNSTREAM=>"STOP: ");
       $template->param(DOWNVALUE=>$stop);
+      $template->param(ADD_EXTRA=>1);
       $template->param(RANGE=>1);
     }
     else{
