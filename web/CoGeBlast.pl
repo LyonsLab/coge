@@ -749,7 +749,7 @@ sub get_map
   {
     my $file = shift;
     my $map;
-    open (IN, $file) || die "$!";;
+    open (IN, $file) || die "$!";
     while (<IN>)
       {
 	$map .= $_;
@@ -937,6 +937,7 @@ sub generate_blast_db
 sub generate_feat_info 
   {
     my $featid = shift;
+    my $checkbox = shift;
     $featid =~ s/^table_row//;
     $featid =~ s/^no_feat//;
     $featid =~ s/_\d+_\d+$//;
@@ -945,7 +946,7 @@ sub generate_feat_info
     {
       return "Unable to retrieve Feature object for id: $featid";
     }
-    my $html = qq{<a href="#" onClick="\$('#overlap_box').slideToggle(pageObj.speed);" style="float: right;"><img src='/CoGe/picts/delete.png' width='16' height='16' border='0'></a>};
+    my $html = qq{<a href="#" onClick="\$('#overlap_box').slideToggle(pageObj.speed);" style="float: right;"><img src='/CoGe/picts/delete.png' width='16' height='16' border='0'></a>} unless $checkbox;
     $html .= $feat->annotation_pretty_print_html();
     return $html;
   }
