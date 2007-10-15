@@ -4,13 +4,14 @@ use base qw(CoGe::Graphics::Feature);
 
 
 BEGIN {
-    use vars qw($VERSION $HEIGHT $WIDTH $ATC $GCC $NC %EXTERNAL_IMAGES);
+    use vars qw($VERSION $HEIGHT $WIDTH $ATC $GCC $NC $XC %EXTERNAL_IMAGES);
     $VERSION     = '0.1';
     $HEIGHT = 5;
     $WIDTH = 5;
     $ATC= [255,255,255]; #ATs are white
     $GCC= [150,255,150]; #GCs are green
     $NC= [255,225,150]; #Ns are orange
+    $XC= [255,200,255]; #Xs are Pale Dull Magenta
     %EXTERNAL_IMAGES = (
 			A=>'/opt/apache/CoGe/picts/A.png',
 			T=>'/opt/apache/CoGe/picts/T.png',
@@ -42,25 +43,30 @@ sub _initialize
     my $at = 0;
     my $cg = 0;
     my $n = 0;
+    my $x = 0;
     my $seq = $self->nt;
     my $seq_len = length($seq);
     $self->color(255,255,255);
     if ($self->options)
       {
- 	while ($seq=~ /a|t|r|y|w|m|k|h|b|v|d/ig)
- 	  {
- 	    $at++;
- 	  }
- 	while ($seq =~/c|g|r|y|s|m|k|h|b|v|d/ig)
- 	  {
- 	    $cg++;
- 	  }
-	while ($seq =~/n|\?/ig)
-	  {
-	    $n++;
-	  }
+	($at) = $seq =~ tr/atrywmkhbvdATRYWMKHBVD/atrywmkhbvdATRYWMKHBVD/;
+	($cg) = $seq =~ tr/cgrysmkhbvdCGRYWMKHBVD/cgrysmkhbvdCGRYWMKHBVD/;
+	($n) = $seq =~ tr/nN/nN/;
+	($x) = $seq =~ tr/xX/xX/;
+#  	while ($seq=~ /a|t|r|y|w|m|k|h|b|v|d/ig)
+#  	  {
+#  	    $at++;
+#  	  }
+#  	while ($seq =~/c|g|r|y|s|m|k|h|b|v|d/ig)
+#  	  {
+#  	    $cg++;
+#  	  }
+# 	while ($seq =~/n|\?/ig)
+# 	  {
+# 	    $n++;
+# 	  }
 	
-	print STDERR "SEQ: $seq\n" unless ($at+$cg+$n) > 0;
+	print STDERR "SEQ: $seq\n" unless ($at+$cg+$n+$x) > 0;
 	
 	my @color;
 	
@@ -69,6 +75,7 @@ sub _initialize
 	    my $color = 0;
 	    $color += $self->options eq "gc" ? $ATC->[$i]*$at/($seq_len)+ $GCC->[$i]*$cg/($seq_len) : $ATC->[$i]*($at+$cg) /($seq_len)  ;
 	    $color += $NC->[$i]*$n/($seq_len);
+	    $color += $XC->[$i]*$x/($seq_len);
 #	    push @color, $ATC->[$i]*$at/($at+$cg+$n)+ $GCC->[$i]*$cg/($at+$cg+$n)+ $NC->[$i]*$n/($at+$cg+$n);
 
 	    push @color, $color;
