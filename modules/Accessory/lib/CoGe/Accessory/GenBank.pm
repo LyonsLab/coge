@@ -286,7 +286,7 @@ sub mask_exons {
 		      {
 			my $seglength = $block->[1] - $block->[0];
 			next if $block->[0] > length($seq);
-			my $maskstring = "N" x $seglength;
+			my $maskstring = "X" x $seglength;
 			substr( $seq, $block->[0], $seglength ) = $maskstring;
 		      }
 		  }
@@ -299,7 +299,7 @@ sub mask_exons {
 sub mask_ncs {
 	my $self = shift;
 	my $seq = shift;
-	my $tmp_seq = "N"x length $seq;
+	my $tmp_seq = "X"x length $seq;
 	foreach my $type (qw (CDS tRNA rRNA snRNA snoRNA))
 	  {
 	    foreach my $blocks ($self->get_blocks( $type ))
