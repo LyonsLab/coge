@@ -1,5 +1,5 @@
 <TMPL_IF NAME="JAVASCRIPT">
-<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.js"></SCRIPT>
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.1.js"></SCRIPT>
 <!--<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.parsers.js"></SCRIPT>-->
 <!--<SCRIPT language="JavaScript" type="text/javascript" src="./js/metadata.js"></SCRIPT>-->
 <!--<SCRIPT language="JavaScript" type="text/javascript" src="./js/menu.js"></SCRIPT>-->
@@ -239,7 +239,7 @@ function show_seq(seq,name,num,dsid,chr,start,stop) {
   html = html + "<TR><TD valign='top' align='right'>"+which_seq+" Sequence: </TD><TD align=justify>"+seq+"</TD></TR></TABLE>";
   
   //check to see if SeqView is an option, then display link
-  //var regex = /^\d+$/;
+  var regex = /^\d+$/;
   if (regex.test(dsid) && dsid != 0 && which_seq == "Subject") {
     html = html + "<br><a target='_blank' href='/CoGe/SeqView.pl?dsid="+dsid+"&chr="+chr+"&start="+start+"&stop="+stop+"'>Click to view sequence in SeqView</a>";
   }
@@ -273,6 +273,7 @@ function generate_seq_obj(dsid,upstream,downstream,seqview,chr,rc,featid){
 
 function counting(){
   var count = $('#db_choice').getLength();
+  if (count == 0) {$('#db_choice').html('<option id=blank value=null>No Database Selected</option>');}
   $('.count').html('Database count: '+count);
 }
 
@@ -328,13 +329,19 @@ function blastresults(html,basename){
  		
  		var select_index = $('#hsp_type')[0].selectedIndex;
  		$('#color_hsp').selectOptions(select_index);
+  
+/*  var myTextExtraction = function(node)  
+  {  
+    // extract data from markup and return it  
+    return node.childNodes[0].childNodes[0].innerHTML; 
+  } */ 
   $(function(){
   $("#overlap").tablesorter({		
 // 		sortColumn: 'Name',			// Integer or String of the name of the column to sort by.
 		sortClassAsc: 'headerSortUp',		// Class name for ascending sorting action to header
 		sortClassDesc: 'headerSortDown',	// Class name for descending sorting action to header
 		headerClass: 'header',			// Class name for headers (th's)
-		widgets: ['zebra','class'],
+		widgets: ['zebra'],
 		textExtraction: 'complex',
 		});
  });
@@ -345,7 +352,7 @@ function blastresults(html,basename){
 		sortClassAsc: 'headerSortUp',		// Class name for ascending sorting action to header
 		sortClassDesc: 'headerSortDown',	// Class name for descending sorting action to header
 		headerClass: 'header',			// Class name for headers (th's)
-		widgets: ['zebra','class'],
+		widgets: ['zebra'],
 		textExtraction: 'complex',
 		});
  });
@@ -368,6 +375,7 @@ $.fn.getLength = function(val){
   	{
   		var opts = this.options;
   		opt_length = opts.length;
+  		if (opt_length == 0) {return opt_length;}
   		blastable = opts[0].id;
   		if (val){
   		  for(var i=1;i<opts.length;i++)
@@ -556,7 +564,7 @@ function get_displayFeature(){
   toggleFeature("",check);
  }
  else if (check){
-  generate_feat_info(['args__'+seqObj.featid],[toggleFeature]);
+  generate_feat_info(['args__'+seqObj.featid,'args__1'],[toggleFeature]);
  }
 }
 
@@ -571,12 +579,13 @@ function show_add() {
 }
 
 function toggleFeature(html,check) {
+ var size = $('#seq_box').width();
  if (html) {
-   $('#pretty_print_anno').html(html);
-   animate_section("#pretty_print_anno", "show");
+   $('#pretty_print_anno').html(html).width(size).show(pageObj.speed);
+//    animate_section("#pretty_print_anno", "show");
  }
  else if (check) {
-   animate_section("#pretty_print_anno", "show");
+   $('#pretty_print_anno').width(size).show(pageObj.speed);
  }
  else {
   animate_section("#pretty_print_anno", "hide");
@@ -618,7 +627,7 @@ function timing(){
   <TH colspan="3">
   <DIV class="cogeblast_opts">
    <DIV id = "co" name="slider" class="topItem" onMouseOver="$('#co').removeClass('topItem').addClass('topItemSelected');" onMouseOut="$('#co').removeClass('topItemSelected').addClass('topItem');" onClick='animate_section("#coge_blast", "slideToggle")'>CoGe BLAST Options:</DIV>
-   <DIV class="dropMenu" id="coge_blast" style="display: inline">
+   <DIV class="dropMenu" id="coge_blast">
    <TABLE class="list" >
        <TR>
           <TD>
@@ -647,6 +656,7 @@ function timing(){
           </TR>
          </TABLE>
 </DIV>
+ </DIV>
 </TD>
  </TR>
  <TR>
@@ -709,7 +719,7 @@ function timing(){
        </TABLE>
     </TD>
     <TD>
-     <DIV id=pretty_print_anno></DIV>
+     <DIV id=pretty_print_anno class="backbox" style="display: none;"></DIV>
     </TD>
     </TMPL_IF>    
     </TR>
@@ -771,9 +781,9 @@ function timing(){
 	    <select name=e_value id=e_value>
              <option value = ".000001"> 1e-6
 	     <option value = ".00001"> 1e-5
-	     <option value = ".0001"> 0.0001
+	     <option value = ".0001" selected> 0.0001
              <option value = ".001"> 0.001
-             <option value = ".01" selected> 0.01
+             <option value = ".01"> 0.01
              <option value = ".1"> 0.1
 	     <option value = "1"> 1
 	     <option value = "10"> 10
