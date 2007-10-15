@@ -117,9 +117,15 @@ function make_focus() {
 }
 
 function redefine(){
+  var up = $('#upstream').val()*1-$('#addup').val()*1;
+  var down = $('#downstream').val()*1+$('#adddown').val()*1;
+  $('#upstream').val(up);
+  $('#downstream').val(down);
   myObj.start=$('#upstream').val();
   myObj.stop=$('#downstream').val();
   get_sequence(myObj.rc,myObj.pro,1);
+  $('#addup').val(0);
+  $('#adddown').val(0);
 }
 
 function get_sequence(rc,pro,add){
@@ -202,6 +208,14 @@ function get_sequence(rc,pro,add){
    </form>
   </TD>
   </TR>
+  <TMPL_IF NAME=ADD_EXTRA>
+  <TR>
+   <TD align = left valign = "middle">
+     Add to Upstream: <INPUT type="text" id="addup"  onkeypress="onEnter(event,1);" class="backbox" value= "0">
+     Add to Downstream: <INPUT type="text" id="adddown" onkeypress="onEnter(event,1);" class="backbox" value= "0">
+   </td>
+  </tr>
+  </TMPL_IF>
    </TMPL_IF>
    <TMPL_IF NAME="FEATURE">
 
