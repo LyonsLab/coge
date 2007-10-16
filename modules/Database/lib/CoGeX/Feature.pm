@@ -885,7 +885,9 @@ sub codon_frequency
     my $self = shift;
     my %opts = @_;
     my $counts = $opts{counts};
-    my ($code, $code_type) = $self->genetic_code;
+    my $code = $opts{code};
+    my $code_type = $opts{code_type};
+    ($code, $code_type) = $self->genetic_code unless $code;;
     my %codon = map {$_=>0} keys %$code;
     my $seq = $self->genomic_sequence;
     my $x=0;
