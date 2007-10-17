@@ -537,12 +537,32 @@ sub genomic_sequence {
 					       start=>$start,
 					       stop=>$stop );
   my $s0 = $locs[0][0];
+
+#  print STDERR $full_seq,"\n";
+#  print STDERR "START:  ", $locs[0][0],"::",$s0,"\n";
   foreach my $loc (@locs){
+    if ($loc->[0]-$s0+$loc->[1]-$loc->[0]+1 > length ($full_seq))
+      {
+	print STDERR "Error in feature->genomic_sequence, location is outside of retrieved sequence: \n";
+	use Data::Dumper;
+	print STDERR Dumper \@locs;
+	print STDERR length ($full_seq),"\n";
+	print STDERR Dumper {
+	  chromosome=>$chr,
+	    skip_length_check=>1,
+	      start=>$start,
+		stop=>$stop,
+		  dataset=>$dataset->id,
+		    feature=>$self->id,
+	      };
+
+      }
+
       my $this_seq = substr($full_seq
                           , $loc->[0] - $s0
                           , $loc->[1] - $loc->[0] + 1);
       if ($loc->[3] == -1){
-            push @sequences, $self->reverse_complement($this_seq);
+            unshift @sequences, $self->reverse_complement($this_seq);
       }else{
             push @sequences, $this_seq;
       }
