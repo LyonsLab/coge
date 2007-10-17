@@ -96,7 +96,8 @@ sub get_genomic_sequence {
       # make sure two numbers were sent in
       return undef unless ($start =~ /\A\d+\z/ and  $stop =~ /\A\d+\z/);
       ($start, $stop) = ($stop, $start) if $stop < $start;
-      my $fstart = $start - ($start % 10000) + 1;
+      my $fstart = $start%10000 ? $start - ($start % 10000) + 1 : ($start -1)- (($start-1) % 10000) +1;
+#      print STDERR "start: $start, fstart: $fstart\n";
       my @starts;
       push (@starts, $fstart) if $fstart == $stop;
       for(my $i=$fstart;$i<$stop;$i+=10000){
@@ -147,6 +148,7 @@ sub trim_sequence {
 #  print STDERR join ("\t", $seqstart, $seqend, $newstart, $newend),"\n";
 #  print STDERR join ("\t", length ($seq), $start, $stop, $stop-$start+1),"\n";
   $seq = substr($seq, $start, $stop-$start+1);
+#  print STDERR "final seq lenght: ",length($seq),"\n";
   return($seq);
 }
 
