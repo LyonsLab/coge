@@ -42,6 +42,7 @@ $(document).ready(function(){
 
 function populate_page_obj(basefile)
  {
+  if (!basefile) {alert (basefile);}
   pageObj.basefile = basefile;
   pageObj.nolog = 0;
  }
@@ -887,7 +888,7 @@ function monitor_log(log)
 <option value="dir<TMPL_VAR NAME="SEQ_NUM">">Direct Submission</option>
 </select>
 
-<DIV style="" id="db<TMPL_VAR NAME="SEQ_NUM">" style="display: none" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">
+<DIV id="db<TMPL_VAR NAME="SEQ_NUM">" style="display: none" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">
 <TABLE style="width: 100%;" class="small">
        <TR valign="top">
         <TD>Name:
@@ -906,8 +907,7 @@ function monitor_log(log)
 </DIV>      
 
 
-
-<DIV id="gb<TMPL_VAR NAME="SEQ_NUM">" style="display: none" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">       
+<DIV id="gb<TMPL_VAR NAME="SEQ_NUM">" style="display: none" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">
 <TABLE style="width: 100%;" class="small">
        <TR valign="top">
         <TD>Accession:
