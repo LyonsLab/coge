@@ -438,7 +438,7 @@ sub gen_results_page
 	       {
 		 $hsp_count++;
 		 my ($dsid) = $hsp->subject_name =~ /id: (\d+)/;
-		 my ($chr) = $hsp->subject_name =~ /chromosome: (\w+)/;
+		 my ($chr) = $hsp->subject_name =~ /chromosome: (.*?),/;
 		 my ($org) = $hsp->subject_name =~ /^\s*(.*?)\s*\(/;
 		 next unless $dsid && $chr;
  		 my @feat = $coge->get_features_in_region(start=>$hsp->subject_start,  
@@ -638,7 +638,7 @@ sub generate_chromosome_images
 	      {
 		#first, initialize graphic
 		$org =~ s/\s+$//;
-		my ($chr) = $hsp->subject_name =~ /chromosome: (\w+)/;
+		my ($chr) = $hsp->subject_name =~ /chromosome: (.*?),/;
 		$data{$org}{image} =new CoGe::Graphics::GenomeView({color_band_flag=>1, image_width=>$width, chromosome_height=>$height}) unless $data{$org}{image};
 		$data{$org}{large_image} =new CoGe::Graphics::GenomeView({color_band_flag=>1, image_width=>$large_width, chromosome_height=>$large_height}) unless $data{$org}{large_image};
 		my ($dsid) = $hsp->subject_name =~ /id: (\d+)/;
@@ -994,7 +994,7 @@ sub get_hsp_info
     #$sth->execute($name, $pval, $pid,$psim, $score, $qgap, $sgap,$match,$qmismatch, $smismatch, $strand, $length,$qposition,$sposition,$qalign,$salign,$align);
     my $qlength = $qstop - $qstart;
     
-    my ($sub_chr) = $sname =~ /chromosome: (\w+)/;
+    my ($sub_chr) = $sname =~ /chromosome: (.*?),/;
 #    print STDERR "$hsp_num, $pval, $pid,$psim, $score, $qgap, $sgap, $match,$qmismatch, $smismatch, $strand, $length,$qposition,$sposition,$qalign,$salign,$align,$qname,$sname\n";
          
     my $query_name = "<pre>".$qname."</pre>";
@@ -1081,7 +1081,7 @@ sub get_hsp_info
     $query_link =~ s/$TEMPDIR/$TEMPURL/;
 
     my ($dsid) = $sname =~ /id: (\d+)/;
-    my ($chr) = $sname =~ /chromosome: (\w+)/;
+    my ($chr) = $sname =~ /chromosome: (.*?),/;
     
     my $subject_link = qq{
 <div class=small>Subject: $sname</div>
@@ -1164,7 +1164,7 @@ sub generate_hit_image
     $feat->color([255,200,0]);
     $cq->add_feature($feat);
     my ($dsid) = $hsp->{sname} =~ /id: (\d+)/;
-    my ($chr) = $hsp->{sname} =~ /chromosome: (\w+)/;
+    my ($chr) = $hsp->{sname} =~ /chromosome: (.*?),/;
     my $len = $hsp->{sstop} - $hsp->{sstart}+1;
     my $start = $hsp->{sstart}-5000;
     $start = 1 if $start < 1;
@@ -1412,7 +1412,7 @@ sub get_nearby_feats
 	$sname = $info->{sname};
       }
 	my ($start,$stop) = ($sstart,$sstop);
-	my ($chr) = $sname =~ /chromosome: (\w+)/;
+	my ($chr) = $sname =~ /chromosome: (.*?),/;
 	my @feat;
 	my $count = 1;
 	until(@feat)
