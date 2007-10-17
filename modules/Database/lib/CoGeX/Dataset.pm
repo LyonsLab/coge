@@ -98,6 +98,7 @@ sub get_genomic_sequence {
       ($start, $stop) = ($stop, $start) if $stop < $start;
       my $fstart = $start - ($start % 10000) + 1;
       my @starts;
+      push (@starts, $fstart) if $fstart == $stop;
       for(my $i=$fstart;$i<$stop;$i+=10000){
         push(@starts,$i);
       }
@@ -113,22 +114,7 @@ sub get_genomic_sequence {
       
     } 
   elsif ( $chr ) 
-    {    # get a whole chromosome
-
-#mysql> SET SESSION group_concat_max_len = 99999999;
-#Query OK, 0 rows affected (0.00 sec)
-#
-#mysql> select LENGTH(GROUP_CONCAT(sequence_data ORDER BY start SEPARATOR '')) from genomic_sequence where dataset_id = 565 and chromosome = 'chromosome_1' GROUP BY CHROMOSOME;
-#+-----------------------------------------------------------------+
-#| LENGTH(GROUP_CONCAT(sequence_data ORDER BY start SEPARATOR '')) |
-#+-----------------------------------------------------------------+
-#|                                                        73840631 |
-#+-----------------------------------------------------------------+
-#1 row in set (1.97 sec)
-
-#mysql> SET GLOBAL group_concat_max_len = 99999999;
-#ERROR 1227 (42000): Access denied; you need the SUPER privilege for this operation
-
+    {
     $str = join("",map { $_->sequence_data } $self->genomic_sequences( { 'chromosome' => $chr},
 					      {order_by=>"start asc"}
 					    ));
@@ -198,6 +184,11 @@ See Also   :
 					   limit => 1,
 					  }
 					 );
+     unless ($gs)
+      {
+        warn "No genomic sequence for ",$self->name," for chr $chr\n";
+        return;
+      }
      $gs->stop;
    }
 
@@ -218,11 +209,11 @@ sub resolve : ResultSet {
 sub get_chromosomes
   {
     my $self = shift;
-    my @data = map {$_->chromosome} $self->genomic_sequences(
+    my @data =  map {$_->chromosome} $self->genomic_sequences(
 					{},
 					{
-					 select =>["chromosome"],
-					 distinct=>["chromosome"],
+					 select=>{distinct=>"chromosome"},
+					 as=>"chromosome",
 					},
 				       );
 #     unless (@data)
@@ -233,8 +224,8 @@ sub get_chromosomes
 # 					    },
 # 					    {
 # 					     select=>"locations.chromosome",
-# 					     join=>"locations",
-# 					     prefetch=>"locations",
+# 					     join=>"prefetch",
+# 					     locations=>"locations",
 # 					     distinct=>["locations.chromosome"],
 # 					     prefetch=>["locations"],
 # 					    },
