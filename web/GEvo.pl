@@ -616,6 +616,7 @@ sub run
 	  {
 	    next unless $item->{file};
 	    my $basename = $TEMPURL."/".basename ($item->{file});
+	    print STDERR "basename is undefined: $basename\n" if $basename =~ /defined/i;
 	    my $accn = $item->{accn};
 	    $html .= "<div><font class=xsmall><A HREF=\"$basename\" target=_new>Fasta file for $accn</A></font></DIV>\n";
 	  }
