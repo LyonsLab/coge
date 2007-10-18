@@ -9,7 +9,7 @@ use DBIxProfiler;
 
 
 my $profiler = new DBIxProfiler();
-$s->storage->debugobj( $profiler);
+$s->storage->debugobj($profiler);
 $s->storage->debug(1);
 
 # Thu Oct 11 15:52:34 2007
