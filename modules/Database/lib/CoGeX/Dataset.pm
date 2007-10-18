@@ -96,7 +96,8 @@ sub get_genomic_sequence {
       # make sure two numbers were sent in
       return undef unless ($start =~ /\A\d+\z/ and  $stop =~ /\A\d+\z/);
       ($start, $stop) = ($stop, $start) if $stop < $start;
-      my $fstart = $start%10000 ? $start - ($start % 10000) + 1 : ($start -1)- (($start-1) % 10000) +1;
+      #my $fstart = $start%10000 ? $start - ($start % 10000) + 1 : ($start -1)- (($start-1) % 10000) +1;
+      my $fstart = $start - (($start -1) % 10000);
 #      print STDERR "start: $start, fstart: $fstart\n";
       my @starts;
       push (@starts, $fstart) if $fstart == $stop;
