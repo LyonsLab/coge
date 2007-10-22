@@ -368,6 +368,8 @@ sub run
 	my ($up, $down);
 	my ($file, $file_begin, $file_end, $obj);
 	my $reference_seq =$opts{"ref_seq$i"};
+	my $skip_seq =$opts{"skip_seq$i"};
+	next if $skip_seq;
 	my $repeat_mask =$opts{"repmask$i"};
 	if ($featid)
 	  {
@@ -1993,6 +1995,7 @@ sub gen_params
 	$params .= qq{'args__dirstart$i', 'dirstart$i',};
 	$params .= qq{'args__dirlength$i', 'dirlength$i',};
 	$params .= qq{'args__ref_seq$i', 'ref_seq$i',};
+	$params .= qq{'args__skip_seq$i', 'skip_seq$i',};
 	$params .= qq{'args__repmask$i', 'repmask$i',};
 	$params .= qq{'args__rev$i', 'rev$i',};
 	$params .= qq{'args__maskcds$i', 'mask_cds$i',};
