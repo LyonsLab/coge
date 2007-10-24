@@ -51,7 +51,8 @@ function get_dataset_name_chain(val)
  $('#chr_info').empty();
  $('#ds_info').html('<input type=hidden id = "chr">');
  $('#viewer').empty();
- get_dataset(['args__dsname','args__'+val], [dataset_info_chain]);	 
+ if (val){get_dataset(['args__dsname','args__'+val], [dataset_info_chain]);}
+ else {get_orgs([],[dataset_chain])};
 }
 
 function launch_viewer (dsd, chr) {
@@ -64,7 +65,15 @@ function launch_viewer (dsd, chr) {
 function timing(val){
   var searchterm;
   if (val) {searchterm = $('#org_name').val();}
-  else {searchterm = $('#ds_name').val();}
+  else {
+    searchterm = $('#ds_name').val();
+    if (!searchterm) {val=0;}
+   }
+  if(searchterm == "Search")
+  {
+    searchterm = "";
+  }
+//  alert (searchterm);
   if (pageObj.search && pageObj.search == searchterm)
    {
     return;
@@ -77,22 +86,44 @@ function timing(val){
   else {pageObj.time = setTimeout("get_dataset_name_chain($('#ds_name').val())",500);}
 }
 
+//(document).ready(function(){
+//   if ($('#org_name').val()) {get_organism_name_chain($('#org_name').val());}
+// });
+
 $(document).ready(function(){
-//   if ($('org_name').val()) {get_organism_name_chain($('#org_name').val());}
- }); 
+  if($('#org_name').val() != "Search") {
+    $('#org_name').css({fontStyle: "normal"});
+    $('#ds_name').css({fontStyle: "normal"});
+  }  
+ });
+
+function search_bar(div_id){
+  if($('#'+div_id).val() == "Search") $('#'+div_id).val("").css({fontStyle: "normal"});
+}
+
+function restore_search_bar(div_id){
+  if(! $('#'+div_id).val()) {
+    //get_organism_name_chain($('#org_text').val());
+    //alert(pageObj.search);
+    //(pageObj.search != 'undefined' && pageObj.search != "Search") 
+//    get_organism_name_chain("");
+//    timing(1);
+    $('#'+div_id).val("Search").css({fontStyle: "italic"});
+  }
+}
 
 </script>
 <TABLE>
  <TR>
   <TD valign=top>
    <DIV class = "oblique">Organisms</DIV>
-   <DIV id="blah">Organism Name: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_NAME">" name = "org_name" id="org_name" onchange='timing(1);' onKeyUp='timing(1);'></DIV>
+   <DIV id="blah">Organism Name: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_NAME">" name = "org_name" id="org_name" style="font-style:italic" onFocus="search_bar('org_name')" onKeyUp='timing(1);'></DIV>
    <DIV id="org_list"><TMPL_VAR NAME="ORG_LIST"></DIV>
    <DIV id="viewer"></DIV>
    <DIV id="get_seq"></DIV>
   <TD valign=top>
    <DIV class = "oblique">Datasets</DIV>
-   <DIV id="blah">Dataset Name: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_NAME">" name = "ds_name" id="ds_name" onchange='timing();' onKeyUp='timing();'></DIV>
+   <DIV id="blah">Dataset Name: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_NAME">" name = "ds_name" style="font-style:italic" id="ds_name" onFocus="search_bar('ds_name')" onKeyUp='timing();' ></DIV>
    <DIV id="ds_list"><TMPL_VAR NAME="DI_LIST"></DIV>
 
   <TD valign=top>
