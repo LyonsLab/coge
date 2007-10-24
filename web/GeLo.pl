@@ -82,7 +82,9 @@ sub gen_body
     my $form = shift || $FORM;
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GeLo.tmpl');
     my $name = $form->param('org_name');
+    $name = "Search" unless $name;
     $template->param(ORG_NAME=>$name);
+    $name = "" if $name =~ /Search/;
     $template->param(ORG_LIST=>get_orgs($name));
     return $template->output;
   }
@@ -359,8 +361,11 @@ sub get_codon_usage_for_chromosome
     my $codon_total = 0;
     my %aa;
     my $aa_total=0;
+    my $feat_count = 0;
     foreach my $feat ($ds->features({"feature_type.name"=>"CDS"},{join=>"feature_type"}))
       {
+	$feat_count++;
+#	print STDERR "~$feat_count~";
 	($code, $code_type) = $feat->genetic_code() unless $code;
 	my ($codon) = $feat->codon_frequency(counts=>1);
 	grep {$codon_total+=$_} values %$codon;
@@ -375,6 +380,7 @@ sub get_codon_usage_for_chromosome
 	    $aa{$code->{$tri}}+=$codon->{$tri};
 	    $aa_total+=$codon->{$tri};
 	  }
+	print STDERR ".($feat_count)" if !$feat_count%10;
       }
 #    foreach my $tri (keys %code)
 #      {
@@ -382,7 +388,7 @@ sub get_codon_usage_for_chromosome
 #      }
     my $count = 0;
     my $html = "Codon Usage: $code_type<table>";
-    foreach (sort { substr($a, 0, 2) cmp substr ($b, 0, 2) || sort_nt($a) <=> sort_nt($b) } keys %$code)
+    foreach (sort { sort_nt2(substr($a, 0, 1)) <=> sort_nt2(substr($b,0, 1)) || sort_nt2(substr($a,1,1)) <=> sort_nt2(substr($b,1,1)) || sort_nt(substr($a,2,1)) <=> sort_nt(substr($b,2,1)) } keys %$code)
       {
 	my $str = "<tr><td>".$_."(".$code->{$_}.")<td>".$codons{$_}."<td>(".sprintf("%.2f",100*$codons{$_}/$codon_total)."%)";
 	delete $codons{$_};
@@ -431,21 +437,43 @@ sub get_codon_usage_for_chromosome
 #     return $html;
   }
 
+
 sub sort_nt
   {
     my $chr = uc(shift);
 
     $chr = substr($chr, -1,1) if length($chr)>1;
     my $val = 0;
-    if ($chr eq "G")
+    if ($chr eq "C")
       {
 	$val = 1;
       }
-    elsif ($chr eq "C")
+    elsif ($chr eq "G")
       {
 	$val = 2;
       }
-    elsif ($chr eq "U" || $chr eq "T")
+    elsif ($chr eq "A")
+      {
+	$val = 3;
+      }
+    return $val;
+  }
+
+sub sort_nt2
+  {
+    my $chr = uc(shift);
+
+    $chr = substr($chr, -1,1) if length($chr)>1;
+    my $val = 0;
+    if ($chr eq "A")
+      {
+	$val = 1;
+      }
+    elsif ($chr eq "G")
+      {
+	$val = 2;
+      }
+    elsif ($chr eq "C")
       {
 	$val = 3;
       }
