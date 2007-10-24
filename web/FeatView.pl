@@ -97,7 +97,7 @@ sub cogesearch
 #    print STDERR "cogesearch: $accn\n";
 #    print STDERR Dumper @_;
     my $weak_query = "Query needs to be better defined.";
-    return $weak_query.$blank unless length($accn) > 2 || $type || $org || length($anno) > 5;
+#    return $weak_query.$blank unless length($accn) > 2 || $type || $org || length($anno) > 5;
     if (!$accn && !$anno)
       {
 	return $weak_query.$blank unless $org && $type;
@@ -348,7 +348,9 @@ sub codon_table
 	$aa_total+=$codon->{$tri};
       }
     my $html = "Codon Usage: $code_type<table>";
-    foreach (sort { substr($a, 0, 2) cmp substr ($b, 0, 2) || sort_nt($a) <=> sort_nt($b) } keys %$code)
+    foreach (sort { sort_nt2(substr($a, 0, 1)) <=> sort_nt2(substr($b,
+    0, 1)) || sort_nt2(substr($a,1,1)) <=> sort_nt2(substr($b,1,1)) ||
+    sort_nt(substr($a,2,1)) <=> sort_nt(substr($b,2,1)) } keys %$code)
       {
 	my $str = "<tr><td>".$_."(".$code->{$_}.")<td>".$codon->{$_}."<td>(".sprintf("%.2f",100*$codon->{$_}/$codon_total)."%)";
 	delete $codon->{$_};
@@ -408,15 +410,36 @@ sub sort_nt
 
     $chr = substr($chr, -1,1) if length($chr)>1;
     my $val = 0;
-    if ($chr eq "G")
+    if ($chr eq "C")
       {
 	$val = 1;
       }
-    elsif ($chr eq "C")
+    elsif ($chr eq "G")
       {
 	$val = 2;
       }
-    elsif ($chr eq "U" || $chr eq "T")
+    elsif ($chr eq "A")
+      {
+	$val = 3;
+      }
+    return $val;
+  }
+
+sub sort_nt2
+  {
+    my $chr = uc(shift);
+
+    $chr = substr($chr, -1,1) if length($chr)>1;
+    my $val = 0;
+    if ($chr eq "A")
+      {
+	$val = 1;
+      }
+    elsif ($chr eq "G")
+      {
+	$val = 2;
+      }
+    elsif ($chr eq "C")
       {
 	$val = 3;
       }
