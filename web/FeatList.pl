@@ -75,15 +75,14 @@ sub generate_table
     
     foreach my $info (@feat_list)
     {
-      my ($featid,$dsid) = $info =~ /(\d+)\s+(\d+)/;
-      print STDERR "($featid,$dsid)\n";
-	 my ($ds) = $coge->resultset("Dataset")->find($dsid);
+      my $featid = $info;
+      print STDERR $featid,"\n";
    	 my ($feat) = $coge->resultset("Feature")->find($featid);
    	 
    	 my ($name) = sort $feat->names;
    	 my $hpp = $feat->annotation_pretty_print_html();
    	 
-   	 push @table,{NAME=>$name,TYPE=>$feat->type->name,LOC=>$feat->start."-".$feat->stop,CHR=>$feat->chr,STRAND=>$feat->strand,ORG=>$ds->organism->name."(v ".$feat->version.")",HPP=>$hpp};
+   	 push @table,{NAME=>$name,TYPE=>$feat->type->name,LOC=>$feat->start."-".$feat->stop,CHR=>$feat->chr,STRAND=>$feat->strand,ORG=>$feat->organism->name."(v ".$feat->version.")",HPP=>$hpp};
     }
    return \@table;
   }
