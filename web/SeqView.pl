@@ -233,21 +233,20 @@ sub get_seq
      #my $newline = $seq;
      #$newline =~ s/\n/\\n/g;
      #print STDERR $newline;
-#      unless($pro)
-#      {
-#       if($feat_id)
-#       {
-#        unless ($rc)
-#        {
-#         $seq = color(seq=>$seq, upstream=>$upstream, downstream=>$downstream);
-#        }
-#        else
-#        {
-#         $seq = color(seq=>$seq, upstream=>$downstream, downstream=>$upstream, rc=>$rc);
-#        }
-#        
-#       }
-#      }
+     unless($pro)
+     {
+      if($feat_id)
+      {
+       unless ($rc)
+       {
+        $seq = color(seq=>$seq, upstream=>$upstream, downstream=>$downstream);
+       }
+       else
+       {
+        $seq = color(seq=>$seq, upstream=>$downstream, downstream=>$upstream);
+       }
+      }
+     }
     unless ($rc==2)
      {$seq = ($fasta. $seq);}
     #print STDERR "$seq\n";
@@ -375,36 +374,39 @@ sub get_prot_seq_for_feat
     return $seq;
   }
 
-     
-# sub color
-#     {
-#       my %opts = @_;
-#       my $seq = $opts{'seq'};
+sub color
+    {
+      my %opts = @_;
+      my $seq = $opts{'seq'};
 #       my $rc = $opts{'rc'};
-#       my $upstream = $opts{'upstream'};
-#       my $downstream = $opts{'downstream'};
-#       my $up;
-#       my $down;
-#       my $main;
-#       my $nl1;
-#       $nl1 = 0;
-#       $up = substr($seq, 0, $upstream);
-#       while ($up=~/\n/g){$nl1++;}
-#       my $check = substr($seq, $upstream, $nl1);
-# 
-#       if ($check =~ /\n/)
-#        {$nl1++; }
-#       $upstream += $nl1;
-#       $up = substr($seq, 0, $upstream);
-#       my $nl2 = 0;
-#       $down = substr($seq, ((length $seq)-($downstream)), length $seq);
-#       while ($down=~/\n/g){$nl2++;}
-#       $check = substr($seq, ((length $seq)-($downstream+$nl2)), $nl2);
-#       if ($check =~ /\n/)
-#        {$nl2++;}
-#       $downstream += $nl2;
-#       $down = substr($seq, ((length $seq)-($downstream)), $downstream);
-#       unless ($rc)
+      my $upstream = $opts{'upstream'};
+      my $downstream = $opts{'downstream'};
+      my $up;
+      my $down;
+      my $main;
+      my $nl1;
+      $nl1 = 0;
+      $up = substr($seq, 0, $upstream);
+      while ($up=~/\n/g){$nl1++;}
+      my $check = substr($seq, $upstream, $nl1);
+
+      if ($check =~ /\n/)
+       {$nl1++; }
+      $upstream += $nl1;
+      $up = substr($seq, 0, $upstream);
+      my $nl2 = 0;
+      $down = substr($seq, ((length $seq)-($downstream)), length $seq);
+      while ($down=~/\n/g){$nl2++;}
+      $check = substr($seq, ((length $seq)-($downstream+$nl2)), $nl2);
+      if ($check =~ /\n/)
+       {$nl2++;}
+      $downstream += $nl2;
+      $down = substr($seq, ((length $seq)-($downstream)), $downstream);
+	   
+	 $up = lc($up);
+	 $down = lc($down);
+
+# 	   unless ($rc)
 #       {
 #       $down = qq{<u>$down</u>};
 #       $up = qq{<u>$up</u>};
@@ -414,10 +416,11 @@ sub get_prot_seq_for_feat
 #       $down = qq{<u>$down</u>};
 #       $up = qq{<u>$up</u>};
 #       }
-#       $main = substr($seq, $upstream, (((length $seq)) - ($downstream+$upstream)));
-#       $seq = join("", $up, $main, $down);
-#       return $seq;
-#     }
+      $main = substr($seq, $upstream, (((length $seq)) - ($downstream+$upstream)));
+	 $main = uc($main);
+      $seq = join("", $up, $main, $down);
+      return $seq;
+    }
     
 sub gen_title
     {
