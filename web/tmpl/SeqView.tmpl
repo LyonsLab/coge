@@ -117,8 +117,10 @@ function make_focus() {
 }
 
 function redefine(){
+  if(! isNaN($('#addup').val())) {
   var up = $('#upstream').val()*1-$('#addup').val()*1;
   var down = $('#downstream').val()*1+$('#adddown').val()*1;
+  }
   $('#upstream').val(up);
   $('#downstream').val(down);
   myObj.start=$('#upstream').val();
