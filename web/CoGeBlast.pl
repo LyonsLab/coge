@@ -264,15 +264,20 @@ sub blast_param
     my $seq_type = shift || "blast_type_n";
     my $pro = shift;
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CoGeBlast.tmpl');
+    my $template_n = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CoGeBlast.tmpl');
     if ($seq_type eq "blast_type_n") {
+        $template_n->param(NCBI_BLAST_NU=>1);
         $template->param(BLAST_NU=>1);}
     else {
 	$template->param(BLAST_PRO=>1);
+	$template_n->param(NCBI_BLAST_PRO=>1);
 	unless ($pro)
-	 {$template->param(BLAST_PRO_COMP=>1);}
+	 {$template->param(BLAST_PRO_COMP=>1);
+	  $template_n->param(NCBI_BLAST_PRO_COMP=>1);}
 	 }
-    my $html = $template->output;
-    return $html;
+    my $html1 = $template->output;
+    my $html2 = $template_n->output;
+    return $html1,$html2;
 }
 
 sub reverse_complement
@@ -314,7 +319,8 @@ sub get_orgs
     $html .= qq{<FONT CLASS ="small">Organism count: }.scalar @opts.qq{</FONT>\n<BR>\n};
     unless (@opts) 
       {
-	$html .=  qq{<input type = hidden name="org_id" id="org_id">};
+	$html .=  qq{<input type = hidden name="org_id" id="org_id"><br>};
+	$html .= "No results";
 	return $html;
       }
 
@@ -655,28 +661,28 @@ sub generate_chromosome_images
 		  }
 		my $num = $hsp->number."_".$dsid;
 		my $up = $hsp->strand eq "++" ? 1 : 0;
-		my $r = generate_colors(max=>$max,
-					min=>$min,
-					length=>$length,
-					scale=>$scale,
-					val=>$hsp_info->{$hsp->number},
-					);
-		my $b = generate_colors(max=>$max,
-					min=>$min,
-					length=>$length,
-					scale=>$scale,
-					val=>$hsp_info->{$hsp->number},
-					reverse_flag=>1,
-					);
-		#Reverse color scheme for eval, as less is more
-		($r, $b) = ($b, $r) if $hsp_type eq "eval";
+# 		my $r = generate_colors(max=>$max,
+# 					min=>$min,
+# 					length=>$length,
+# 					scale=>$scale,
+# 					val=>$hsp_info->{$hsp->number},
+# 					);
+# 		my $b = generate_colors(max=>$max,
+# 					min=>$min,
+# 					length=>$length,
+# 					scale=>$scale,
+# 					val=>$hsp_info->{$hsp->number},
+# 					reverse_flag=>1,
+# 					);
+# 		#Reverse color scheme for eval, as less is more
+# 		($r, $b) = ($b, $r) if $hsp_type eq "eval";
   		$data{$org}{image}->add_feature(name=>$hsp->number,
   						start=>$hsp->sstart,
   						stop=>$hsp->sstop,
   						chr=>"Chr: $chr",
   						imagemap=>qq/class="imagemaplink" title="HSP No. /.$hsp->number.qq/" onclick="hide_big_picture();show_hsp_div();loading('image_info','Information');loading('query_image','Image');loading('subject_image','Image');get_hsp_info(['args__blastfile','args__/.$cogeweb->basefile.qq/','args__num','args__$num'],['image_info','query_image','subject_image']);"/,
   						up=>$up,
-  						color=>[$r,0,$b],
+  						color=>[255,0,0],
   					       );
 	      }
 	  }
@@ -1088,8 +1094,7 @@ sub get_hsp_info
 <a href = 'GenomeView.pl?chr=$chr&ds=$dsid&x=$sstart&z=7' target=_new border=0><img src=$subject_image border=0></a>
 };
     $subject_link =~ s/$TEMPDIR/$TEMPURL/;
-    #    print STDERR $query_link,"\n", $query_image,"\n";
-    return $html, $query_link, $subject_link;
+     return $html, $query_link, $subject_link;
    }
   
 sub generate_overview_image
@@ -1230,25 +1235,34 @@ qname = "$qname"
     return $query_file, $sub_file;
   }
 
-sub overlap_feats_parse
+sub overlap_feats_parse #Send to GEvo
   {
     my $accn_list = shift;
     my $num_accns = $accn_list =~ tr/,/,/;
-    return ("alert",$num_accns-1) if $num_accns > 9;
-    $num_accns = $num_accns-1 < 2 ? 2 : $num_accns-1;
     $accn_list =~ s/^,//;
     $accn_list =~ s/,$//;
+    my @list;
     my $url = "/CoGe/GEvo.pl?";
     my $count = 1;
+    #print STDERR $url,"\n";
     foreach my $featid (split /,/,$accn_list)
-    {
-		$featid =~ s/_\d+$//;
-    		my ($feat) = $coge->resultset("Feature")->find($featid);
-    		my ($feat_name) = sort $feat->names;#something
-    		$url .= "accn$count=$feat_name&";
-    		$count ++;
-    }
-    $url .= "num_seqs=$num_accns";
+      {
+	$featid =~ s/_.*$//;
+	push @list, $featid;
+      }
+    my %seen = ();
+    @list = grep {!$seen{$_}++} @list;
+    foreach my $featid( @list)
+      {
+	my ($feat) = $coge->resultset("Feature")->find($featid);
+	my ($feat_name) = sort $feat->names;#something
+	$url .= "accn$count=$feat_name&";
+	$count ++;
+      }
+
+    $count--;
+    return ("alert",$count) if $count > 8;
+    $url .= "num_seqs=$count";
     return $url;
   }
 	
@@ -1639,18 +1653,21 @@ sub generate_feat_list
     $accn_list =~ s/^,//;
     $accn_list =~ s/,$//;
     
-    my $file = "#";
-    
+    my $str;
+    my %seen = ();
+    my @list;
     foreach my $accn (split /,/,$accn_list)
     {
-      my ($featid,$dsid) = $accn=~/^(\d+)_\d+_(\d+)$/;
-      $file .= "$featid $dsid\n";
+      #print STDERR $accn,"\n";
+      my ($featid) = $accn=~/^(\d+)_\d+_\d+$/;
+      #print STDERR "CBlast $featid\n";
+      #$file .= "$featid $dsid\n";
+      push @list, $featid;
     }
-    
-    $file =~ s/^#//;
+    $str = join ("\n", grep {!$seen{$_}++} @list)."\n";
     
      open(NEW,"> $TEMPDIR/$filename.featlist");
-	print NEW $file;
+	print NEW $str;
 	close NEW;
 	
 	return "/CoGe/FeatList.pl?basename=$filename";
