@@ -682,6 +682,17 @@
 	});
 	
 	ts.addParser({
+		id: 'scientific',
+		is: function(s) {
+			return /^\de[\-]\d+$/.test(s);
+		},
+		format: function(s) {
+			return $.tablesorter.formatFloat(s);
+		},
+		type: 'numeric' 
+	});
+	
+	ts.addParser({
 		id: "integer",
 		is: function(s) {
 			return /^\d+$/.test(s);
