@@ -1,5 +1,7 @@
 <TMPL_IF NAME="JAVASCRIPT">
+<link rel="stylesheet" type="text/css" href="/CoGe/css/ui.tabs.css" />
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.1.js"></SCRIPT>
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/ui.tabs.js"></SCRIPT>
 <!--<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.parsers.js"></SCRIPT>-->
 <!--<SCRIPT language="JavaScript" type="text/javascript" src="./js/metadata.js"></SCRIPT>-->
 <!--<SCRIPT language="JavaScript" type="text/javascript" src="./js/menu.js"></SCRIPT>-->
@@ -46,6 +48,10 @@ function update_info_box(featid) {
   generate_feat_info(['args__'+featid],['overlap_box']);
  
 }
+
+$(document).ready(function(){
+  $("#tab > ul").tabs();
+});
 
 function update_hsp_info (featid) {
  hide_big_picture();
@@ -304,11 +310,12 @@ function blastOff(){
   match_score = params.mm;
   gapcost = params.g;
   seq = params.s;
-  hsp_type = $('#hsp_type').val();
+//  hsp_type = $('#hsp_type').val();
   var page_width = ($('#co').width())*(95/100);
   pageObj.image_width = page_width;
   var blastable_db = $('#db_choice').getLength(1);
-  blastoff_search(['args__program','args__'+program,'args__expect','args__'+expect,'args__job_title','args__'+job_title,'args__wordsize','args__'+word_size,'args__comp','args__'+comp,'args__matrix','args__'+matrix,'args__matchscore','args__'+match_score,'args__gapcost','args__'+gapcost,'args__seq','args__'+seq,'args__blastable','args__'+blastable_db,'args__width','args__'+page_width,'args__type','args__'+hsp_type],[blastresults],'POST');
+//  blastoff_search(['args__program','args__'+program,'args__expect','args__'+expect,'args__job_title','args__'+job_title,'args__wordsize','args__'+word_size,'args__comp','args__'+comp,'args__matrix','args__'+matrix,'args__matchscore','args__'+match_score,'args__gapcost','args__'+gapcost,'args__seq','args__'+seq,'args__blastable','args__'+blastable_db,'args__width','args__'+page_width,'args__type','args__'+hsp_type],[blastresults],'POST');
+  blastoff_search(['args__program','args__'+program,'args__expect','args__'+expect,'args__job_title','args__'+job_title,'args__wordsize','args__'+word_size,'args__comp','args__'+comp,'args__matrix','args__'+matrix,'args__matchscore','args__'+match_score,'args__gapcost','args__'+gapcost,'args__seq','args__'+seq,'args__blastable','args__'+blastable_db,'args__width','args__'+page_width],[blastresults],'POST');
   
 }
 
@@ -327,8 +334,8 @@ function blastresults(html,basename){
   var overlap_max = 300;
   if (overlap_height > overlap_max) $('#overlap_body').height(overlap_max);
  		
- 		var select_index = $('#hsp_type')[0].selectedIndex;
- 		$('#color_hsp').selectOptions(select_index);
+// 		var select_index = $('#hsp_type')[0].selectedIndex;
+// 		$('#color_hsp').selectOptions(select_index);
   
 /*  var myTextExtraction = function(node)  
   {  
@@ -360,11 +367,19 @@ function blastresults(html,basename){
 }
 
 function update_gapcost() {
-  var str = $('#match_score').val();
-  $('.gapcosts').hide();
-  var num1 = str.substr(0,1);
-  var num2 = str.substr(2);
-  $('#gapcosts_'+num1+num2).slideToggle(pageObj.speed);
+    var str = $('#match_score').val();
+    $('.gapcosts').hide();
+    var num1 = str.substr(0,1);
+    var num2 = str.substr(2);
+    $('#gapcosts_'+num1+num2).slideToggle(pageObj.speed);
+}
+
+function update_gapcost_ncbi() {
+    var str = $('#ncbi_match_score').val();
+    $('.ncbi_gapcosts').hide();
+    var num1 = str.substr(0,1);
+    var num2 = str.substr(2);
+    $('#ncbi_gapcosts_'+num1+num2).slideToggle(pageObj.speed);
 }
 
 $.fn.getLength = function(val){
@@ -432,7 +447,6 @@ function get_params(){
  radio = get_radio();
  var word_size = $('#word_size').val();
  var expect = $('#e_value').val();
- var db = $('#blast_db').val();
  var match_mismatch = $('#match_score').val();
  if (match_mismatch)
   {
@@ -440,11 +454,31 @@ function get_params(){
     var num2 = match_mismatch.substr(2);
   }
  var gapcost = $('#gapcosts_'+num1+num2).val();
- var job_title = $('#job_title').val();
  var program = $('#'+radio).val();
 
  var matrix = $('#matrix').val();
  var comp = $('#comp_adj').val();
+ var seq = $('#seq_box').val();
+ return {w : word_size, e : expect,g : gapcost,p : program,mm: match_mismatch,m : matrix,c : comp,s : seq};
+}
+
+function get_ncbi_params(){
+ radio = get_radio();
+ var word_size = $('#ncbi_word_size').val();
+ var expect = $('#ncbi_e_value').val();
+ var db = $('#ncbi_db').val();
+ var match_mismatch = $('#ncbi_match_score').val();
+ if (match_mismatch)
+  {
+    var num1 = match_mismatch.substr(0,1);
+    var num2 = match_mismatch.substr(2);
+  }
+ var gapcost = $('#ncbi_gapcosts_'+num1+num2).val();
+ var job_title = $('#job_title').val();
+ var program = $('#'+radio).val();
+
+ var matrix = $('#ncbi_matrix').val();
+ var comp = $('#ncbi_comp_adj').val();
  var seq = $('#seq_box').val();
  return {w : word_size, e : expect, db : db,g : gapcost,j : job_title,p : program,mm: match_mismatch,m : matrix,c : comp,s : seq};
 }
@@ -453,7 +487,7 @@ function ncbi_blast(url) {
  if (url == 1)
   {alert('You have not selected a BLAST program! Please select a program to run.');}
  else {
-   var params = get_params();
+   var params = get_ncbi_params();
    seq = params.s;
    seq = seq.replace(/\n/,'%0D');
  //alert('seq: '+seq);
@@ -547,8 +581,15 @@ function blast_param_on_select() {
  }
 }
 
-function animate_params (html){
-  $('#pro_or_nu_param').hide(0).html(html).slideDown(pageObj.speed);
+function animate_params (html,html_ncbi){
+  if($('#ncbiblast_option').is(":hidden")){
+    $('#pro_or_nu_param').hide(0).html(html).slideDown(pageObj.speed);
+    $('#ncbi_pro_or_nu_param').html(html_ncbi);
+  }
+  else{
+    $('#ncbi_pro_or_nu_param').hide(0).html(html_ncbi).slideDown(pageObj.speed);
+    $('#pro_or_nu_param').html(html);
+  }
 }
 
 function get_displayFeature(){
@@ -599,6 +640,16 @@ function timing(){
    pageObj.time = setTimeout("get_organism_name_chain($('#org_text').val())",500);
 }
 
+function search_bar(div_id){
+  if($('#'+div_id).val() == "Search") $('#'+div_id).val("").css({fontStyle: "normal"});
+}
+
+function restore_search_bar(div_id){
+  if(! $('#'+div_id).val()) {
+    //get_organism_name_chain($('#org_text').val());
+    $('#'+div_id).val("Search").css({fontStyle: "italic"});
+  }
+}
 
 </SCRIPT>
 </TMPL_IF>
@@ -611,7 +662,7 @@ function timing(){
  <TD><DIV id=blast_results></DIV></TD>
  </TR>
 </TABLE>
-<TABLE>
+<!--<TABLE>
  <TR>
    <TD>
     <a href="#" id="coge_blast_button" onClick="blastOff();"><span>CoGe BLAST</span></a>
@@ -620,19 +671,39 @@ function timing(){
      <a href="#" id="ncbi_blast" onClick="select_blast()"><span>NCBI BLAST</span></a>
    </TD>
   </TR>
-</TABLE>
+</TABLE>-->
 <TABLE width=100%>
  <TR>
   <TD>
+  <div id=tab>
+   <ul class="ui-tabs-nav">
+     <li class="ui-tabs-selected">
+       <a href="#cogeblast_option">
+        <span>Use CoGe Blast</span>
+       </a>
+      </li>
+      <li class="ui-tabs-selected">
+       <a href="#ncbiblast_option">
+        <span>Use NCBI Blast</span>
+       </a>
+      </li>
+     </ul>
+    </div>
+  </TD>
+ </TR>
+ <TR>
+  <!--<TD>-->
   <TH colspan="3">
-  <DIV class="cogeblast_opts">
+  <div id="cogeblast_option">
+  <a href="#" id="coge_blast_button" onClick="blastOff();"><span>CoGe BLAST</span></a><br>
+   <DIV class="cogeblast_opts">
    <DIV id = "co" name="slider" class="topItem" onMouseOver="$('#co').removeClass('topItem').addClass('topItemSelected');" onMouseOut="$('#co').removeClass('topItemSelected').addClass('topItem');" onClick='animate_section("#coge_blast", "slideToggle")'>CoGe BLAST Options:</DIV>
    <DIV class="dropMenu" id="coge_blast">
    <TABLE class="list" >
        <TR>
           <TD>
    	<DIV id="org_name"><TMPL_VAR NAME="ORG_NAME"></DIV>
-   	<DIV id="blah">Organism Name: <input type="text" size=8 onFocus="show_add()" value="" name = "org_text" id="org_text" onKeyUp='timing();'></DIV>
+   	<DIV id="blah">Organism Name: <input type="text" size=11 onFocus="show_add();search_bar('org_text')" style="font-style:italic" value="Search" name="org_text" id="org_text" onBlur="restore_search_bar('org_text');" onKeyUp='timing();'></DIV>
    	<DIV id="org_list"><TMPL_VAR NAME="ORG_LIST"></DIV>
    	  </TD>
    	  <TD valign="middle" align=middle>
@@ -646,21 +717,270 @@ function timing(){
               <option id=blank value=null>No Database Selected</option>
               </SELECT></DIV>
            </TD>
-           <TD valign>Sort HSP Results by: 
+           <!--<td width="1" bgcolor="#99ff99"/>
+           <TD valign="top">
+      	<TH align=left valign="top"> <u>Results Options</u><br>
+     </TD>-->
+     <td width="1" bgcolor="#99ff99"/>
+     <TD valign="top">
+      <TH align=left valign="top"> <u>Blast Parameters</u><br>
+      <TABLE>
+       <TR>
+	<TD>
+	  E-Value
+	</TD>
+	<TD>
+	    <select name=e_value id=e_value>
+             <option value = ".000001"> 1e-6
+	     <option value = ".00001"> 1e-5
+	     <option value = ".0001" selected> 0.0001
+             <option value = ".001"> 0.001
+             <option value = ".01"> 0.01
+             <option value = ".1"> 0.1
+	     <option value = "1"> 1
+	     <option value = "10"> 10
+             <option value = "100"> 100
+            </select>
+       </TR>
+       <TR>
+	<TD>
+	   Word size
+	</TD>
+	<TD>
+	 <input type=text id=word_size value="8" size="7">
+       </TR>
+       <TR>
+	<TD>
+	  Gap Costs:
+       </TD>
+	<TD>
+	  <select id="gapcosts_1-2" class="gapcosts" style="display: block">
+	  	<option value = "0 0"  >Linear</option>   
+		<option value = "5 2"  >Existence:  5 Extension: 2</option>				
+		<option value = "2 2"  >Existence:  2 Extension: 2</option>				
+		<option value = "1 2"  >Existence:  1 Extension: 2</option>
+		<option value = "0 2"  >Existence:  0 Extension: 2</option>
+		<option value = "3 1"  >Existence:  3 Extension: 1</option>		
+		<option value = "2 1"  >Existence:  2 Extension: 1</option>		
+		<option value = "1 1"  >Existence: 1 Extension: 1</option>				
+	</select>
+	<select id="gapcosts_1-3" class="gapcosts" style="display: none">
+		<option value = "0 0" >Linear</option>   
+		<option value = "5 2" >Existence:  5 Extension: 2</option>				
+		<option value = "2 2"  >Existence:  2 Extension: 2</option>		
+		<option value = "1 2"  >Existence:  1 Extension: 2</option>		
+		<option value = "0 2"  >Existence:  0 Extension: 2</option>		
+		<option value = "2 1"  >Existence:  2 Extension: 1</option>		
+		<option value = "1 1"  >Existence: 1 Extension: 1</option>	
+	</select>
+
+	<select id="gapcosts_1-4" class="gapcosts" style="display: none">
+		<option value = "0 0" >Linear</option>   
+		<option value = "5 2" >Existence:  5 Extension: 2</option>					
+		<option value = "1 2"  >Existence:  1 Extension: 2</option>		
+		<option value = "0 2"  >Existence:  0 Extension: 2</option>		
+		<option value = "2 1"  >Existence:  2 Extension: 1</option>		
+		<option value = "1 1"  >Existence: 1 Extension: 1</option>	
+	</select>
+	<select id="gapcosts_2-3" class="gapcosts" style="display: none">
+		<option value = "0 0" >Linear</option>   
+		<option value = "4 4"  >Existence:  4 Extension: 4</option>		
+		<option value = "2 4"  >Existence:  2 Extension: 4</option>		
+		<option value = "0 4"  >Existence:  0 Extension: 4</option>		
+		<option value = "3 3"  >Existence:  3 Extension: 3</option>		
+		<option value = "6 2"  >Existence:  6 Extension: 2</option>		
+		<option value = "5 2" >Existence:  5 Extension: 2</option>		
+		<option value = "4 2"  >Existence: 4 Extension: 2</option>		
+		<option value = "2 2"  >Existence:  2 Extension: 2</option>				
+	</select>
+	<select id="gapcosts_4-5" class="gapcosts" style="display: none">
+		<option value = "0 0" >Linear</option>   
+		<option value = "12 8" >Existence:  12 Extension: 8</option>		
+		<option value = "6 5"  >Existence:  6 Extension: 5</option>		
+		<option value = "5 5"  >Existence:  5 Extension: 5</option>		
+		<option value = "4 5"  >Existence:  4 Extension: 5</option>		
+		<option value = "3 5"  >Existence:  3 Extension: 5</option>	
+	</select>
+	<select id="gapcosts_1-1" class="gapcosts" style="display: none">
+		<option value = "5 2"  >Existence:  5 Extension: 2</option>							
+		<option value = "3 2"  >Existence:  3 Extension: 2</option>		
+		<option value = "2 2"  >Existence:  2 Extension: 2</option>		
+		<option value = "1 2"  >Existence:  1 Extension: 2</option>		
+		<option value = "0 2"  >Existence:  0 Extension: 2</option>		
+		<option value = "4 1"  >Existence:  4 Extension: 1</option>		
+		<option value = "3 1"  >Existence:  3 Extension: 1</option>		
+		<option value = "2 1"  >Existence:  2 Extension: 1</option>	
+	  </td>
+	 </tr>
+<!--	<TR>
+	 <TD>
+ 	 Visualize HSP Results by:
+ 	</TD>
+ 	<TD>
            <select name=hsp_type id=hsp_type >
             <option value = "percent"> Percent Identity </option>
             <option value = "eval"> E-value </option>
             <option value = "score"> Score </option>
             <option value = "length"> Length </option>
      </select>
+     </td>
+     </tr>-->
+      </TABLE>
+     </TD>
+     <td width="1" bgcolor="#99ff99"/>
+     <TD valign="top">
+    <DIV id=pro_or_nu_param></DIV>
           </TR>
          </TABLE>
 </DIV>
  </DIV>
-</TD>
+<!--   </TD> -->
+  </div>
+   <div id="ncbiblast_option" ><!-- NCBI BLAST</div>-->
+   <a href="#" id="ncbi_blast" onClick="select_blast()"><span>NCBI BLAST</span></a><br>
+   <DIV class="ncbiblast_opts">
+   <DIV id = "ncbio" name="slider" class="topItem" onMouseOver="$('#ncbio').removeClass('topItem').addClass('topItemSelected');" onMouseOut="$('#ncbio').removeClass('topItemSelected').addClass('topItem');" onClick='animate_section("#ncbi_blast_opts", "slideToggle")'>NCBI BLAST Options:</DIV>
+   <DIV class="dropMenu" id="ncbi_blast_opts">
+   <TABLE width=100% id=stuff>
+    <TR>
+     <TD valign="top">
+      <TH align=left valign="top"><u>BLAST Parameters</u><br>
+      <TABLE>
+       <TR>
+	<TD>
+	 Job Title
+	</TD>
+	<TD> 
+	 <input id=job_title type=text value="<TMPL_VAR NAME=USER_NAME>'s BLAST">
+	</TD>
+       </TR>
+       <TR>
+        <TD>
+	  Database
+	</TD>
+	<TD>
+	<DIV id=database></DIV>
+       </TR>
+       <TR>
+	<TD>
+	  Filter
+ 	</TD>
+	<TD>
+	     <select name=complexity id=complexity>
+              <option value = "0"> Off
+	      <option value = "L"> Low Complexity
+              <option value = "R"> Human Repeats
+              <option value = "m"> Mask for Lookup
+             </select>
+       </TR>
+      </TABLE>
+     </TD>
+     <td width="1" bgcolor="#99ff99"/>
+     <TD valign="top">
+      <TH align=left valign="top"> <u>BLAST Scoring</u><br>
+      <TABLE>
+       <TR>
+	<TD>
+	  E-Value
+	</TD>
+	<TD>
+	    <select name=ncbi_e_value id=ncbi_e_value>
+             <option value = ".000001"> 1e-6
+	     <option value = ".00001"> 1e-5
+	     <option value = ".0001" selected> 0.0001
+             <option value = ".001"> 0.001
+             <option value = ".01"> 0.01
+             <option value = ".1"> 0.1
+	     <option value = "1"> 1
+	     <option value = "10"> 10
+             <option value = "100"> 100
+            </select>
+       </TR>
+       <TR>
+	<TD>
+	   Word size
+	</TD>
+	<TD>
+	 <input type=text id=ncbi_word_size value="8" size="7">
+       </TR>
+       <TR>
+	<TD>
+	  Gap Costs:
+       </TD>
+	<TD>
+	  <select id="ncbi_gapcosts_1-2" class="ncbi_gapcosts" style="display: block">
+	  	<option value = "0 0"  >Linear</option>   
+		<option value = "5 2"  >Existence:  5 Extension: 2</option>				
+		<option value = "2 2"  >Existence:  2 Extension: 2</option>				
+		<option value = "1 2"  >Existence:  1 Extension: 2</option>
+		<option value = "0 2"  >Existence:  0 Extension: 2</option>
+		<option value = "3 1"  >Existence:  3 Extension: 1</option>		
+		<option value = "2 1"  >Existence:  2 Extension: 1</option>		
+		<option value = "1 1"  >Existence: 1 Extension: 1</option>				
+	</select>
+	<select id="ncbi_gapcosts_1-3" class="ncbi_gapcosts" style="display: none">
+		<option value = "0 0" >Linear</option>   
+		<option value = "5 2" >Existence:  5 Extension: 2</option>				
+		<option value = "2 2"  >Existence:  2 Extension: 2</option>		
+		<option value = "1 2"  >Existence:  1 Extension: 2</option>		
+		<option value = "0 2"  >Existence:  0 Extension: 2</option>		
+		<option value = "2 1"  >Existence:  2 Extension: 1</option>		
+		<option value = "1 1"  >Existence: 1 Extension: 1</option>	
+	</select>
+
+	<select id="ncbi_gapcosts_1-4" class="ncbi_gapcosts" style="display: none">
+		<option value = "0 0" >Linear</option>   
+		<option value = "5 2" >Existence:  5 Extension: 2</option>					
+		<option value = "1 2"  >Existence:  1 Extension: 2</option>		
+		<option value = "0 2"  >Existence:  0 Extension: 2</option>		
+		<option value = "2 1"  >Existence:  2 Extension: 1</option>		
+		<option value = "1 1"  >Existence: 1 Extension: 1</option>	
+	</select>
+	<select id="ncbi_gapcosts_2-3" class="ncbi_gapcosts" style="display: none">
+		<option value = "0 0" >Linear</option>   
+		<option value = "4 4"  >Existence:  4 Extension: 4</option>		
+		<option value = "2 4"  >Existence:  2 Extension: 4</option>		
+		<option value = "0 4"  >Existence:  0 Extension: 4</option>		
+		<option value = "3 3"  >Existence:  3 Extension: 3</option>		
+		<option value = "6 2"  >Existence:  6 Extension: 2</option>		
+		<option value = "5 2" >Existence:  5 Extension: 2</option>		
+		<option value = "4 2"  >Existence: 4 Extension: 2</option>		
+		<option value = "2 2"  >Existence:  2 Extension: 2</option>				
+	</select>
+	<select id="ncbi_gapcosts_4-5" class="ncbi_gapcosts" style="display: none">
+		<option value = "0 0" >Linear</option>   
+		<option value = "12 8" >Existence:  12 Extension: 8</option>		
+		<option value = "6 5"  >Existence:  6 Extension: 5</option>		
+		<option value = "5 5"  >Existence:  5 Extension: 5</option>		
+		<option value = "4 5"  >Existence:  4 Extension: 5</option>		
+		<option value = "3 5"  >Existence:  3 Extension: 5</option>	
+	</select>
+	<select id="ncbi_gapcosts_1-1" class="ncbi_gapcosts" style="display: none">
+		<option value = "5 2"  >Existence:  5 Extension: 2</option>							
+		<option value = "3 2"  >Existence:  3 Extension: 2</option>		
+		<option value = "2 2"  >Existence:  2 Extension: 2</option>		
+		<option value = "1 2"  >Existence:  1 Extension: 2</option>		
+		<option value = "0 2"  >Existence:  0 Extension: 2</option>		
+		<option value = "4 1"  >Existence:  4 Extension: 1</option>		
+		<option value = "3 1"  >Existence:  3 Extension: 1</option>		
+		<option value = "2 1"  >Existence:  2 Extension: 1</option>	
+      </TR>
+      </TABLE>
+     </TD>
+     <td width="1" bgcolor="#99ff99"/>
+     <TD valign="top">
+    <DIV id=ncbi_pro_or_nu_param></DIV>
+   </TMPL_IF>
+    <TMPL_IF NAME="REST">
+     </TR>
+    </TABLE>
+</DIV>
+ </DIV>
+  </div>
  </TR>
+
  <TR>
-  <TD>
+<!--  <TD> -->
    <TH colspan="3">
    <DIV class="mainDiv">
    <DIV id = "dr" class="topItem" onMouseOver="$('#dr').removeClass('topItem').addClass('topItemSelected');" onMouseOut="$('#dr').removeClass('topItemSelected').addClass('topItem');" onClick='animate_section("#query_seqs", "slideToggle")'>Query Sequence(s):</DIV>
@@ -728,14 +1048,14 @@ function timing(){
    </DIV>
    </DIV>
  </TR>
- <TR>
-  <TD>
+ <!--<TR>
+ <TD> 
   <TH colspan="3">
    <DIV class="mainDiv">
    <DIV id = "dr3" class="topItem" onMouseOver="$('#dr3').removeClass('topItem').addClass('topItemSelected');" onMouseOut="$('#dr3').removeClass('topItemSelected').addClass('topItem')" onClick='animate_section("#blast_params", "slideToggle")' >Additional BLAST Options:</DIV>
    <DIV class="dropMenu" id="blast_params">
-   <DIV class="subMenu" style="display:inline;">
-   <TABLE width=100% id=stuff>
+   <DIV class="subMenu" style="display:inline;">-->
+   <!--<TABLE width=100% id=stuff>
     <TR>
      <TD valign="top">
       <TH align=left valign="top"><u>BLAST Parameters</u><br>
@@ -864,14 +1184,14 @@ function timing(){
      <td width="1" bgcolor="#99ff99"/>
      <TD valign="top">
     <DIV id=pro_or_nu_param></DIV>
-    </TMPL_IF>
+   </TMPL_IF>
     <TMPL_IF NAME="REST">
      </TR>
-    </TABLE>
+    </TABLE>-->
+<!--</DIV>
 </DIV>
 </DIV>
-</DIV>
- </TR>
+ </TR> -->
  </TABLE>
 </TMPL_IF>
 
@@ -928,8 +1248,60 @@ function timing(){
       </TABLE>
     </TMPL_IF>
     
+     <TMPL_IF NAME="NCBI_BLAST_NU">
+     <TH align=left valign="top"><u> Nucleotide Specific Parameters</u><br>
+      <TABLE>
+       <TR>
+	<TD valign="top">
+	 Match/Mismatch Scores:
+         </TD>
+         <TD>
+	    <select id=ncbi_match_score name=ncbi_match_score onchange="update_gapcost_ncbi()">
+	     <option selected="selected" value="1,-2">1,-2</option>
+	     <option value="1,-3">1,-3</option>
+	     <option value="1,-4">1,-4</option>
+	     <option value="2,-3">2,-3</option>
+     	     <option value="4,-5">4,-5</option>
+	     <option value="1,-1">1,-1</option>
+	 </TD>
+       </TR>
+      </TABLE>
+    </TMPL_IF>
+    <TMPL_IF NAME="NCBI_BLAST_PRO">
+     <TH align=left valign="top"><u>Protein Specific Parameters</u><br>
+      <TABLE>
+       <TR>
+        <TD valign="top">
+	 Matrix
+        </TD>
+        <TD>
+	     <select name=ncbi_matrix id=ncbi_matrix>
+              <option value = "PAM30"> PAM30
+	      <option value = "PAM70"> PAM70
+              <option value = "BLOSUM80"> BLOSUM80
+              <option value = "BLOSUM62" selected> BLOSUM62
+              <option value = "BLOSUM45"> BLOSUM45
+             </select>
+       </TR>
+       <TMPL_IF NAME=NCBI_BLAST_PRO_COMP>
+       <TR>
+        <TD>
+	 Compositional adjustments
+	</TD>
+	<TD>
+	     <select name=ncbi_comp_adj id=ncbi_comp_adj>
+              <option value = "0"> No adjustment
+	      <option value = "1" selected> Composition-based statistics
+              <option value = "2"> Conditional compositional score matrix adjustment
+              <option value = "3"> Universal compositional score matrix adjustment
+             </select>
+       </TR>
+       </TMPL_IF>
+      </TABLE>
+    </TMPL_IF>
+    
     <TMPL_IF NAME=NU_DB>
-    <select name=blast_db id=blast_db>
+    <select name=ncbi_db id=ncbi_db>
 	  <optgroup label="Genomic plus Transcript">
            <option value = "Test/gpipe/9606/allcontig_and_rna"> Human genomic plus transcript
            <option value = "Test/gpipe/10090/allcontig_and_rna"> Mouse genomic plus transcript
@@ -986,10 +1358,10 @@ function timing(){
    <div id="null"><TMPL_VAR NAME=NULLIFY></div>
    <div id=table_size style="max-height: 360px;">
    <TABLE id="overlap" cellspacing="2" class="resultborder">
-     <caption>Features Overlapped by HSP Hits</caption>
+     <caption>Features Overlapped by HSPs:</caption>
    	<THEAD>
          <TR align=middle>
-          <TH>  </TH>
+          <TH class=small>click to sort &rarr;</TH>
           <TH class="header" >Name</TH>
           <TH class="header" >HSP No.</TH>
           <TH class="header" >E-Value</TH>
@@ -1024,7 +1396,7 @@ function timing(){
          <br>
           <div id=no_table_size style="max-height: 150px;overflow: auto;">
              <table id="no_table" class="resultborder">
-               <caption>HSPs w/o overlapping features</caption>
+               <caption>HSPs w/o overlapping features:</caption>
                <THEAD>
                 <TR align=middle>
                   <TH> </TH>
@@ -1185,18 +1557,18 @@ function timing(){
    <TABLE width=100%>
     <TR>
      <TD align=left valign="top" >
-     Database HSP Hits Visualization
+     Genomic HSP Visualization:
      <DIV id=chromosomes class="resultborder" style="width: 405px;overflow: auto;max-height: 80%;">
      <TMPL_VAR NAME=CHROMOSOMES>
      <TMPL_VAR NAME=CHR_LARGE>
       </DIV>
-      Color HSP Hits by: 
+<!--      Color HSP Hits by: 
       <select name=color_hsp id=color_hsp onchange="loading('chromosomes','Images');generate_overview_image(['args__basename','args__'+pageObj.basename,'args__type','args__'+$('#color_hsp').val(),'args__width','args__'+pageObj.image_width],['chromosomes']);">
             <option value = "percent"> Percent Identity </option>
             <option value = "eval"> E-value </option>
             <option value = "score"> Score </option>
             <option value = "length"> Length </option>
-     </select>
+     </select>-->
       </TD>
       <TD valign="top">
        <DIV id=result_visual valign="top" style="display: none">
