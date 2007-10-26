@@ -86,14 +86,11 @@ function timing(val){
   else {pageObj.time = setTimeout("get_dataset_name_chain($('#ds_name').val())",500);}
 }
 
-//(document).ready(function(){
-//   if ($('#org_name').val()) {get_organism_name_chain($('#org_name').val());}
-// });
-
 $(document).ready(function(){
   if($('#org_name').val() != "Search") {
     $('#org_name').css({fontStyle: "normal"});
     $('#ds_name').css({fontStyle: "normal"});
+    timing(1);
   }  
  });
 
@@ -132,4 +129,4 @@ function restore_search_bar(div_id){
    <DIV id="chr_info"><TMPL_VAR NAME="CHR_INFO"></DIV>
 
 </TABLE>
-<IMG SRC = "picts/table/spacer-1x1.png" onload="dataset_chain();">
+<!--<IMG SRC = "picts/table/spacer-1x1.png">-->
