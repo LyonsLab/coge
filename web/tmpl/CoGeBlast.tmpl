@@ -645,10 +645,15 @@ function search_bar(div_id){
 }
 
 function restore_search_bar(div_id){
-  if(! $('#'+div_id).val()) {
-    //get_organism_name_chain($('#org_text').val());
-    $('#'+div_id).val("Search").css({fontStyle: "italic"});
-  }
+  //alert($('#'+div_id).val());
+  if($('#'+div_id).val() == "") {
+  var regex = /^Organism\scount:\s(\d+)$/;
+  var count = regex.exec($('#org_count').html());
+  //alert(count[1]);
+ // alert($('#org_count').val());
+   if (count[1] == 0) get_organism_name_chain($('#org_text').val());
+   $('#'+div_id).val("Search").css({fontStyle: "italic"});
+ }
 }
 
 </SCRIPT>
@@ -703,7 +708,7 @@ function restore_search_bar(div_id){
        <TR>
           <TD>
    	<DIV id="org_name"><TMPL_VAR NAME="ORG_NAME"></DIV>
-   	<DIV id="blah">Organism Name: <input type="text" size=11 onFocus="show_add();search_bar('org_text')" style="font-style:italic" value="Search" name="org_text" id="org_text" onBlur="restore_search_bar('org_text');" onKeyUp='timing();'></DIV>
+   	<DIV id="blah">Organism Name: <input type="text" size=11 onFocus="show_add();search_bar('org_text')" style="font-style:italic" value="Search" name="org_text" id="org_text" onBlur="restore_search_bar('org_text')" onKeyUp='timing();'></DIV>
    	<DIV id="org_list"><TMPL_VAR NAME="ORG_LIST"></DIV>
    	  </TD>
    	  <TD valign="middle" align=middle>
