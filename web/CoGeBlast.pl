@@ -75,7 +75,8 @@ my $pj = new CGI::Ajax(
 		       generate_excel_feature_file=>\&generate_excel_feature_file,
 		       generate_tab_deliminated=>\&generate_tab_deliminated,
 		       generate_feat_list=>\&generate_feat_list,
-			);
+		       dataset_description_for_org=>\&dataset_description_for_org,
+		      );
 $pj->js_encode_function('escape');
 print $pj->build_html($FORM, \&gen_html);
 #print $FORM->header;
@@ -316,7 +317,7 @@ sub get_orgs
 	push @opts, "<OPTION value=\"".$item->id."\" id=\"o".$item->id."\">".$item->name."</OPTION>";
       }
     my $html;
-    $html .= qq{<FONT CLASS ="small">Organism count: }.scalar @opts.qq{</FONT>\n<BR>\n};
+    $html .= qq{<FONT CLASS ="small" id="org_count">Organism count: }.scalar @opts.qq{</FONT>\n<BR>\n};
     unless (@opts) 
       {
 	$html .=  qq{<input type = hidden name="org_id" id="org_id"><br>};
@@ -1672,5 +1673,26 @@ sub generate_feat_list
 	
 	return "/CoGe/FeatList.pl?basename=$filename";
   }
-      
+
+sub dataset_description_for_org
+  {
+    my $org = shift;
+    my $html;
+    ($org) = $coge->resultset('Organism')->resolve($org);
+
+    foreach my $ds ($org->current_datasets)
+      {
+	my $name = $ds->name;
+	$name .= ": ".$ds->description if $ds->description;
+	$name = "<a href=".$ds->link." target=_new>".$name."</a>"if $ds->link;
+	my $source = $ds->datasource->name;
+	$source .= ": ".$ds->datasource->description if $ds->datasource->description;
+	$source = "<a href=".$ds->datasource->link."target=_new>".$source."</a>" if $ds->datasource->link;
+	$html .= "Current datasets for ".$org->name;
+	$html .= ": ".$org->description if $org->description;
+	$html .=  "<br>\n";
+	$html .= join ("\t", $name, $source),"<br>\n";
+      }
+    return $html;
+  }
       
