@@ -326,8 +326,10 @@ function blastresults(html,basename){
   //alert(pageObj.basename);
   $('#blast_results').html(html);
   if($('#null').html() == "null") {
-    $('#null').hide(0);
-    $('#table_size').remove().html("No Overlapping Features");
+    //$('#null').hide(0);
+   // $('#table_size').remove().html("No Overlapping Features");
+    $('#result_features').hide();
+    return;
   }
   else {
   var overlap_height = $('#overlap_body').height();
@@ -651,9 +653,30 @@ function restore_search_bar(div_id){
   var count = regex.exec($('#org_count').html());
   //alert(count[1]);
  // alert($('#org_count').val());
-   if (count[1] == 0) get_organism_name_chain($('#org_text').val());
+ 
+ //TODO - use javascript obj to update this value 3473 to current number of organisms!
+   if (count[1] < 3473) get_organism_name_chain($('#org_text').val()); 
    $('#'+div_id).val("Search").css({fontStyle: "italic"});
  }
+}
+
+function org_info(info){
+  var html = "<a href='#' onClick=\"$('#org_info_popup').slideToggle(pageObj.speed);\" style='float: right;'><img src='/CoGe/picts/delete.png' width='16' height='16' border='0'></a>";
+  html = html + info;
+  var window_width = $(document).width();
+  var left_padding;
+  var info_width = 800;
+  if ((window_width - info_width) <= 0) {
+    left_padding = 4;
+  }
+  else {
+    left_padding = ((window_width - info_width)/2);
+  }
+  //$('#overlap_body').css("overflow","hidden");
+  $('#org_info_popup').html(html).css("left",''+left_padding).width(info_width).slideDown(pageObj.speed);
+  if ($('#org_info_popup').height() >= $(document).height() - 40) {
+    $('#org_info_popup').css("height",''+$(document).height() - 40);
+  }
 }
 
 </SCRIPT>
@@ -662,6 +685,7 @@ function restore_search_bar(div_id){
 <TMPL_IF NAME="BLAST_FRONT_PAGE">
 <div id=big_picture title="Enlarged Image of HSP Hits" class="image_window" style="display:none;"></div>
 <div id="sequence_popup" class="image_window" style="display:none;overflow: auto;max-height: 300px;"></div>
+<div id="org_info_popup" class="image_window" style="display:none;overflow: auto;max-height: 300px;"></div>
 <TABLE width=100%>
  <TR>
  <TD><DIV id=blast_results></DIV></TD>
@@ -710,6 +734,7 @@ function restore_search_bar(div_id){
    	<DIV id="org_name"><TMPL_VAR NAME="ORG_NAME"></DIV>
    	<DIV id="blah">Organism Name: <input type="text" size=11 onFocus="show_add();search_bar('org_text')" style="font-style:italic" value="Search" name="org_text" id="org_text" onBlur="restore_search_bar('org_text')" onKeyUp='timing();'></DIV>
    	<DIV id="org_list"><TMPL_VAR NAME="ORG_LIST"></DIV>
+   	<input type=button value="Get Org Info" onClick="dataset_description_for_org(['org_id'],[org_info]);">
    	  </TD>
    	  <TD valign="middle" align=middle>
    	  <input type="button" id=add value="Add &rarr;  " onClick="get_from_id(['org_id'],[add_to_list]);">
@@ -1362,7 +1387,7 @@ function restore_search_bar(div_id){
    Total Number of HSPs: <TMPL_VAR NAME=HSP_COUNT>
    <div id="null"><TMPL_VAR NAME=NULLIFY></div>
    <div id=table_size style="max-height: 360px;">
-   <TABLE id="overlap" cellspacing="2" class="resultborder">
+   <TABLE id="overlap" cellspacing="2" class="resultborder" style="overflow: auto;">
      <caption>Features Overlapped by HSPs:</caption>
    	<THEAD>
          <TR align=middle>
@@ -1387,7 +1412,7 @@ function restore_search_bar(div_id){
           <TD ><TMPL_VAR NAME=FEATURE_PID></TD>
           <TD ><TMPL_VAR NAME=FEATURE_SCORE></TD>
           <TD ><TMPL_VAR NAME=FEATURE_LENGTH></TD>
-          <TD ><TMPL_VAR NAME=FEATURE_ORG></TD>
+          <TD style="white-space:nowrap;"><TMPL_VAR NAME=FEATURE_ORG></TD>
          </TR>
         </TMPL_LOOP>
         </TBODY>
@@ -1576,7 +1601,7 @@ function restore_search_bar(div_id){
      </select>-->
       </TD>
       <TD valign="top">
-       <DIV id=result_visual valign="top" style="display: none">
+       <DIV id=result_visual valign="top" style="display: none;width:450">
          HSP Graphics:<br>
         <DIV id=query_image class="hsp_image"></DIV>
         <BR>
@@ -1597,7 +1622,7 @@ function restore_search_bar(div_id){
           <select name=overlap_action id=overlap_action>
             <option value = "gevo">Send to GEvo</option>
             <option value = "fasta">Create FASTA File</option>
-            <option value = "xls">Export to .xls</option>
+            <option value = "xls">Export to Excel</option>
             <option value = "tab">Tab Deliminated</option>
             <option value = "list">Get Feature List</option>
             <option value = "user">Add to MFF</option> 
