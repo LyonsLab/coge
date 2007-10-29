@@ -458,7 +458,7 @@ sub sixframe
       	     $seq = join ("\n", wrap('','',$sequence->{$key}));
       	     $sixframe .= qq/$fasta Frame $key\n$seq\n/;
            }
-          return "<pre>".$sixframe."</pre>";
+          return $sixframe;
         }
 	
 sub find_feats
