@@ -9,7 +9,7 @@
 
 $(document).ready(function(){
  //prefetch button images
- if (document.images) {
+// if (document.images) {
 //   go_inactive = new Image(); go_inactive.src = "/CoGe/picts/buttons/GEvo/go/inactive.png";
 //   go_active = new Image(); go_active.src = "/CoGe/picts/buttons/GEvo/go/active.png";
 //   go_pressed = new Image(); go_pressed.src = "/CoGe/picts/buttons/GEvo/go/pressed.png";
@@ -25,7 +25,7 @@ $(document).ready(function(){
 //   remove_inactive = new Image(); remove_inactive.src = "/CoGe/picts/buttons/GEvo/remove/inactive.png";
 //   remove_active = new Image(); remove_active.src = "/CoGe/picts/buttons/GEvo/remove/active.png";
 //   remove_pressed = new Image(); remove_pressed.src = "/CoGe/picts/buttons/GEvo/remove/pressed.png";
-  }
+//  }
 
  //animate_section(".seq_submission_type","hide"); 
  check_seq_submit();
@@ -354,6 +354,13 @@ function monitor_log(log)
     if (message) $('#loading').html(message);
   }
 
+}
+
+function update_colors(hsp_num) {
+  var r = $('#r'+hsp_num).val();
+  var g = $('#g'+hsp_num).val();
+  var b = $('#b'+hsp_num).val();
+  $('#sample_color'+hsp_num).css("backgroundColor","rgb("+r+","+g+","+b+")");
 }
 
 </SCRIPT>
@@ -990,11 +997,13 @@ function monitor_log(log)
    <td class="small" nowrap>
      HSP <TMPL_VAR NAME="HSP_NUM"> color:
    <TD class="small" nowrap>
-     R:<input class="backbox" type="text" name="r<TMPL_VAR NAME="HSP_NUM">" id="r<TMPL_VAR NAME="HSP_NUM">" tabindex="1"  size="3" value="<TMPL_VAR NAME="RED">" />
+     R:<input class="backbox" type="text" onBlur="update_colors('<TMPL_VAR NAME="HSP_NUM">')" name="r<TMPL_VAR NAME="HSP_NUM">" id="r<TMPL_VAR NAME="HSP_NUM">" tabindex="1"  size="3" value="<TMPL_VAR NAME="RED">" />
    <TD class="small" nowrap>
-     G:<input class="backbox" type="text" name="g<TMPL_VAR NAME="HSP_NUM">" id="g<TMPL_VAR NAME="HSP_NUM">" tabindex="1"  size="3" value="<TMPL_VAR NAME="GREEN">" />
+     G:<input class="backbox" type="text" onBlur="update_colors('<TMPL_VAR NAME="HSP_NUM">')" name="g<TMPL_VAR NAME="HSP_NUM">" id="g<TMPL_VAR NAME="HSP_NUM">" tabindex="1"  size="3" value="<TMPL_VAR NAME="GREEN">" />
    <TD class="small" nowrap>
-     B:<input class="backbox" type="text" name="b<TMPL_VAR NAME="HSP_NUM">" id="b<TMPL_VAR NAME="HSP_NUM">" tabindex="1"  size="3" value="<TMPL_VAR NAME="BLUE">" />
+     B:<input class="backbox" type="text" onBlur="update_colors('<TMPL_VAR NAME="HSP_NUM">')" name="b<TMPL_VAR NAME="HSP_NUM">" id="b<TMPL_VAR NAME="HSP_NUM">" tabindex="1"  size="3" value="<TMPL_VAR NAME="BLUE">" />
+   <TD class="small" nowrap>
+     <div id="sample_color<TMPL_VAR NAME="HSP_NUM">" class="gevo_sample_color" style="background-color: rgb(<TMPL_VAR NAME="RED">,<TMPL_VAR NAME="GREEN">,<TMPL_VAR NAME="BLUE">)"></div>
   </table>
   </th>
  </TMPL_LOOP>
