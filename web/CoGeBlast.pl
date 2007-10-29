@@ -1072,7 +1072,7 @@ sub get_hsp_info
      
      $template->param(SUB_SEQ=>qq{<a href="#" onclick="show_seq('$sub_seq','$subject_name',2,'$sub_dsid','$sub_chr','}.$sstart."','".$sstop.qq{')">Click for Subject Sequence</a>});
      
-     $template->param(ALIGNMENT=>qq{<a href="#" onclick="show_seq('$align_str','N/A',0,0,0,0)">Click for Alignment Sequence</a>});
+     $template->param(ALIGNMENT=>qq{<a href="#" onclick="show_seq('$align_str','HSP No. $hsp_num',0,0,0,0)">Click for Alignment Sequence</a>});
      
      my $html = $template->output;
      $template->param(HSP_IF=>0);
@@ -1676,9 +1676,10 @@ sub generate_feat_list
 
 sub dataset_description_for_org
   {
-    my $org = shift;
+    my $org_id = shift;
     my $html;
-    ($org) = $coge->resultset('Organism')->resolve($org);
+    my ($org) = $coge->resultset('Organism')->find($org_id);
+    #$coge->resultset('Organism')->resolve($org);
 
     foreach my $ds ($org->current_datasets)
       {
