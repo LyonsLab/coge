@@ -112,9 +112,10 @@ if (hidden == true){
 waiting('annotation');
 }
 
-function make_focus() {
-  document.nt_stream.upstream.focus();
-}
+//obsolete, no longer needed; used for copy+paste problem before using text area
+// function make_focus() {
+//   document.nt_stream.upstream.focus();
+// }
 
 function redefine(){
   if(! isNaN($('#addup').val())) {
@@ -164,13 +165,13 @@ function get_sequence(rc,pro,add){
   <TABLE>
    <TR>
       <TD align=right valign="top">
-       <DIV class="seqview_button dna_button>" style="display: none" id="dna_button"><input type=button value="DNA Sequence" onClick="dynamic_buttons('dna_button');get_sequence(0,0);gen_title(['args__0','args__0'],['box_name']);make_focus();"></DIV>     
+       <DIV class="seqview_button dna_button>" style="display: none" id="dna_button"><input type=button value="DNA Sequence" onClick="dynamic_buttons('dna_button');get_sequence(0,0);gen_title(['args__0','args__0'],['box_name']);"></DIV>     
       </TD>
       <TD align=right valign="top">
-      <DIV class="seqview_button rc_button>" id="rc_button"><input type=button value="Reverse Complement" onClick="dynamic_buttons('rc_button');get_sequence(1,0);gen_title(['args__1','args__0'],['box_name']);make_focus();"></DIV>
+      <DIV class="seqview_button rc_button>" id="rc_button"><input type=button value="Reverse Complement" onClick="dynamic_buttons('rc_button');get_sequence(1,0);gen_title(['args__1','args__0'],['box_name']);"></DIV>
       </TD>
       <TD align=right valign="top">
-         <DIV class="seqview_button pro_button>" id="pro_button"><input type=button value="<TMPL_VAR NAME=PROTEIN>" onClick="dynamic_buttons('pro_button');get_sequence(<TMPL_VAR NAME=PRO_RC>,<TMPL_VAR NAME=PRO_PRO>);gen_title(['args__<TMPL_VAR NAME=PRO_RC>','args__<TMPL_VAR NAME=PRO_PRO>'],['box_name']);make_focus();"></DIV>
+         <DIV class="seqview_button pro_button>" id="pro_button"><input type=button value="<TMPL_VAR NAME=PROTEIN>" onClick="dynamic_buttons('pro_button');get_sequence(<TMPL_VAR NAME=PRO_RC>,<TMPL_VAR NAME=PRO_PRO>);gen_title(['args__<TMPL_VAR NAME=PRO_RC>','args__<TMPL_VAR NAME=PRO_PRO>'],['box_name']);"></DIV>
       </TD>
       <!--get_seq(['args__featid', 'args__<TMPL_VAR NAME=FEATID>', 'args__pro', 'args__<TMPL_VAR NAME=PRO>', 'args__rc', 'args__<TMPL_VAR NAME=RC>', 'args__chr', 'args__<TMPL_VAR NAME=CHR>', 'args__dsid', 'args__<TMPL_VAR NAME=DSID>', 'args__featname', 'args__<TMPL_VAR NAME=FEATNAME>', 'args__upstream', 'upstream', 'args__downstream', 'downstream', 'args__start', 'args__<TMPL_VAR NAME=START>','args__stop', 'args__<TMPL_VAR NAME=STOP>', 'args__strand', 'args__<TMPL_VAR NAME=STRAND>', 'args__add', 'args__<TMPL_VAR NAME=ADD>'],[get_sequence]);gen_title(['args__rc', 'args__<TMPL_VAR NAME=TITLE_RC>', 'args__pro', 'args__<TMPL_VAR NAME=PRO>'],['box_name']);-->
      <TMPL_IF NAME=FIND_FEATS>
@@ -196,25 +197,37 @@ function get_sequence(rc,pro,add){
   <div id = "maketable"></div>
 </Table>
 </DIV>
-<Table>
- <TR>
-  <TD align = left valign = "middle" class="seqbackbox">
-   <font class="oblique"><TMPL_VAR NAME="EXTEND"></font>
+   <div id=extend_title class="seqbackbox"><font class="oblique"><TMPL_VAR NAME="EXTEND"></font></div>
+  <table>
+ <TR align = left> 
+<!--    <form id="nt_stream" name="nt_stream"> -->
+  <TD>
+   <TMPL_VAR NAME = "UPSTREAM">
+   </td>
+   <td>
+   <INPUT type="text" id="upstream"  onkeypress="onEnter(event);" class="backbox" value= "<TMPL_VAR NAME="UPVALUE">">
+   </td>
+   <TD>
+   <TMPL_VAR NAME="DOWNSTREAM">
+   </td>
+   <td>
+   <INPUT type="text" id="downstream" onkeypress="onEnter(event);" class="backbox" value= "<TMPL_VAR NAME="DOWNVALUE">">
   </TD>
- </TR>
- <TR> 
-  <TD align = left valign = "middle">
-   <form id="nt_stream" name="nt_stream">
-   <TMPL_VAR NAME = "UPSTREAM"> <INPUT type="text" id="upstream"  onkeypress="onEnter(event);" class="backbox" value= "<TMPL_VAR NAME="UPVALUE">">
-   <TMPL_VAR NAME="DOWNSTREAM"><INPUT type="text" id="downstream" onkeypress="onEnter(event);" class="backbox" value= "<TMPL_VAR NAME="DOWNVALUE">">
-   </form>
-  </TD>
+<!--    </form> -->
   </TR>
   <TMPL_IF NAME=ADD_EXTRA>
-  <TR>
-   <TD align = left valign = "middle">
-     Add to Upstream: <INPUT type="text" id="addup"  onkeypress="onEnter(event,1);" class="backbox" value= "0">
-     Add to Downstream: <INPUT type="text" id="adddown" onkeypress="onEnter(event,1);" class="backbox" value= "0">
+  <TR align = left>
+   <TD>
+     Add to Upstream:
+    </td>
+   <td>
+   <INPUT type="text" id="addup"  onkeypress="onEnter(event,1);" class="backbox" value= "0">
+     </td>
+     <TD >
+     Add to Downstream: 
+    </td>
+   <td>
+     <INPUT type="text" id="adddown" onkeypress="onEnter(event,1);" class="backbox" value= "0">
    </td>
   </tr>
   </TMPL_IF>
