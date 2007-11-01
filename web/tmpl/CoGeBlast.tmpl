@@ -621,6 +621,12 @@ function show_add() {
   }
 }
 
+function clear_if_no_seq(){
+  if($('#seq_box').val() == "Enter a fasta sequence here"){
+    $('#seq_box').html('');
+  }
+}
+
 function toggleFeature(html,check) {
  var size = $('#seq_box').width();
  if (html) {
@@ -1019,7 +1025,7 @@ function org_info(info){
    <TABLE> 
     <TR align=left valign=top>
      <TH>Sequences (fasta format)
-      <TD><textarea class="backbox" type="textarea" name="seq_box" id ="seq_box" wrap=off cols=80 rows=15><TMPL_VAR NAME="SEQUENCE"></textarea>
+      <TD><textarea class="backbox" type="textarea" onFocus="clear_if_no_seq()" name="seq_box" id ="seq_box" wrap=off cols=80 rows=15><TMPL_VAR NAME="SEQUENCE"></textarea>
       </TD>
       <TD valign="top"> Select a BLAST to run: <br>
        <TABLE>
