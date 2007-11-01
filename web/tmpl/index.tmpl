@@ -81,7 +81,7 @@ function show_summary(id) {
   var left_padding = ($(window).width() - popup_size) / 2;
   var html = "<a href='#' onClick=\"$('#summary').slideToggle(pageObj.speed);\" style='float: right;'><img src='/CoGe/picts/delete.png' width='16' height='16' border='0'></a>";
   html = html + '<br>' + $('#page_info'+id).html();
-  $('#summary').html(html).css("left",''+left_padding).css("top","300").width(popup_size).slideDown(pageObj.speed);
+  $('#summary').html(html).css("left",''+left_padding).css("top","350").width(popup_size).slideDown(pageObj.speed);
 }
 
 function onEnter(e){
