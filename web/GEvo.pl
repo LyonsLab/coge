@@ -46,7 +46,7 @@ $ENV{'LAGAN_DIR'} = '/opt/apache/CoGe/bin/lagan/';
 $ENV{'DIALIGN2_DIR'} = '/opt/apache/CoGe/bin/dialign2_dir/';
 use vars qw( $PAGE_NAME $DATE $DEBUG $BL2SEQ $BLASTZ $LAGAN $CHAOS $DIALIGN $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge $NUM_SEQS $MAX_SEQS $REPEATMASKER);
 $PAGE_NAME = "GEvo.pl";
-$BL2SEQ = "/opt/bin/bio/bl2seq ";
+$BL2SEQ = "/usr/bin/bl2seq ";
 $BLASTZ = "/usr/bin/blastz ";
 $LAGAN = "/opt/apache/CoGe/bin/lagan/lagan.pl";
 $CHAOS = "/opt/apache/CoGe/bin/lagan/chaos_coge";
