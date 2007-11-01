@@ -850,10 +850,10 @@ tr.highlight {
   color: #0000EE;
 }
 
-#.link:hover {
+/*#.link:hover {
 #  color: #009900;
 #  cursor: pointer;
-#}
+#}*/
 
 .link {
   color: #0000EE;
@@ -862,6 +862,11 @@ tr.highlight {
 
 .hsp_image {
   background-color: #FFF;
-  width: 400px; 
-  height: 70px;
+  width: 400px;
+}
+
+.gevo_sample_color {
+  height: 16px;
+  width: 16px;
+  display: block;
 }
