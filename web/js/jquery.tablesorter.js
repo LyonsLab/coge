@@ -549,18 +549,18 @@
 	});
 	
 	//add widgets
-	$.tablesorter.addWidget({
-		id: 'class',
-		format: function(table) {
-			var row_num = table.tBodies[0].rows.length;
-			
-			for (var i=0;i<row_num;i++)
-			{
-			  var id = $("tbody > tr:eq(" + i + ") > td:eq(0) > input:checkbox",table).attr("value");
-			  $("tbody > tr:eq(" + i + ")",table).addClass('feat').attr({id: "'"+id+"'", align: "right"});
-			}
-		}
-	});
+// 	$.tablesorter.addWidget({
+// 		id: 'class',
+// 		format: function(table) {
+// 			var row_num = table.tBodies[0].rows.length;
+// 			
+// 			for (var i=0;i<row_num;i++)
+// 			{
+// 			  var id = $("tbody > tr:eq(" + i + ") > td:eq(0) > input:checkbox",table).attr("value");
+// 			  $("tbody > tr:eq(" + i + ")",table).addClass('feat').attr({id: "'"+id+"'", align: "right"});
+// 			}
+// 		}
+// 	});
 	
 	$.tablesorter.addWidget({
 		id: 'zebra',
