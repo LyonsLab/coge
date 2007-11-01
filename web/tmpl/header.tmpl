@@ -7,11 +7,11 @@
 <TMPL_UNLESS NAME="NO_JQUERY">
  <link rel="stylesheet" type="text/css" href="/CoGe/css/jdMenu.css" />
  <link rel="stylesheet" type="text/css" href="/CoGe/css/jdMenu.slate.css" />
- <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery-1.2.1.js"></SCRIPT>
+ <SCRIPT language="JavaScript" type="text/javascript" src="/CoGe/js/jquery-1.2.1.js"></SCRIPT>
  <!--<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.bgiframe.js"></SCRIPT>-->
- <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.dimensions.js"></SCRIPT>
- <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.jdMenu.js"></SCRIPT>
- <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.cookie.js"></SCRIPT>
+ <SCRIPT language="JavaScript" type="text/javascript" src="/CoGe/js/jquery.dimensions.js"></SCRIPT>
+ <SCRIPT language="JavaScript" type="text/javascript" src="/CoGe/js/jquery.jdMenu.js"></SCRIPT>
+ <SCRIPT language="JavaScript" type="text/javascript" src="/CoGe/js/jquery.cookie.js"></SCRIPT>
 <!-- <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.jdMenu.packed.js"></SCRIPT>-->
 </TMPL_UNLESS>
 
@@ -108,6 +108,7 @@ function animate_section(name, style, speedy, show) {
     </TR>
    </TABLE>
   </TD>
+<TMPL_UNLESS NAME=MENU>
   <TD align=left>
 	<ul class="jd_menu jd_menu_slate" style="position: absolute;right: 0px;top: 0px;">
 	 <li><a href="/CoGe/" target="_self">Home</a></li>
@@ -150,6 +151,7 @@ function animate_section(name, style, speedy, show) {
 	</li>
 	</ul>
   </TD>
+</TMPL_UNLESS>
   <!--<TD align=right>
    <TABLE>
     <TR>
