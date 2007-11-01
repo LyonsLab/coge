@@ -361,13 +361,14 @@ sub blastoff_search
     my @org_ids = split(/,/,$blastable);
     my $fasta_file = create_fasta_file($seq);
     my ($nuc_penalty,$nuc_reward,$exist,$extent);
+    #print STDERR $gapcost,"\n";
     if ($gapcost =~/^(\d)\s+(\d)/) {($nuc_penalty,$nuc_reward) = ($1,$2);}
     
     if ($match_score=~/^(\d)\,(-\d)/) {($exist,$extent) = ($1,$2);}
     my $pre_command = "$BLAST -p $program -i $fasta_file";
     if ($program =~ /^blastn$/i)
       {
-	$pre_command .= " -q $nuc_penalty -r $nuc_reward";
+	$pre_command .= " -q -$nuc_penalty -r $nuc_reward";
       }
     else
       {
