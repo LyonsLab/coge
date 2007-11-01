@@ -592,7 +592,7 @@ sub generate_chromosome_images
   {
     my %opts = @_;
     my $results = $opts{results};
-    my $hsp_type = $opts{hsp_type};
+    my $hsp_type = $opts{hsp_type} || "NA";
     my $width = $opts{width} || 400;
     my $large_width = $opts{large_width} || 3*$width;
     my $imagefile_name = $opts{filename} || "null";
@@ -1677,23 +1677,24 @@ sub generate_feat_list
 sub dataset_description_for_org
   {
     my $org_id = shift;
-    my $html;
     my ($org) = $coge->resultset('Organism')->find($org_id);
-    #$coge->resultset('Organism')->resolve($org);
-
+    my $html = "Current datasets for ".$org->name;
+    $html .= ": ".$org->description if $org->description;
+    $html .= "<table>";
+        
     foreach my $ds ($org->current_datasets)
       {
 	my $name = $ds->name;
 	$name .= ": ".$ds->description if $ds->description;
 	$name = "<a href=".$ds->link." target=_new>".$name."</a>"if $ds->link;
+	$name =~ s/href=/href=http:\/\// unless $name =~ /http/ || $name =~/ftp/;
 	my $source = $ds->datasource->name;
 	$source .= ": ".$ds->datasource->description if $ds->datasource->description;
-	$source = "<a href=".$ds->datasource->link."target=_new>".$source."</a>" if $ds->datasource->link;
-	$html .= "Current datasets for ".$org->name;
-	$html .= ": ".$org->description if $org->description;
-	$html .=  "<br>\n";
-	$html .= join ("\t", $name, $source),"<br>\n";
+	$source = "<a href=".$ds->datasource->link." target=_new>".$source."</a>" if $ds->datasource->link;
+	$source =~ s/href=/href=http:\/\// unless $source =~ /http/;
+	$html .= "<tr><td>".join ("<td>", $name, $source)."\n";
       }
+    $html.="</table>";
     return $html;
   }
       
