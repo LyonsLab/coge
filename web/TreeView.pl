@@ -72,15 +72,26 @@ sub gen_body
       {
 	$content = $FORM->param('tree');
       }
+    my $zoom = $FORM->param('zoom');
+#    return unless $content;
+    $content =~ s/#.*?;//s;
+    $content =~ s/\[.*?\]//sg;
+    $content =~ s/end;//g;
     $content =~ s/\r/\n/g;
     $content =~ s/\n+/\n/g;
+    my ($translate_table) = $content =~ /Translate(.*?);/s;
+    $content =~ s/Translate.*?;//s;
+    $content = translate_content(table=>$translate_table, content=>$content);
+#    print STDERR $content,"\n";
 
 #    $content =1;
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/TreeView.tmpl');
     $template->param(FRONT_PAGE => 1) unless $content;
     if ($content)
       {
-	my ($tree, $dot, $img, $imgmap) = generate_tree($content);
+	my $cogeweb = initialize_basefile(prog=>"TreeView");
+	my $basefile = $cogeweb->basefile;
+	my ($tree, $dot, $img, $imgmap) = generate_tree(content=>$content, basefile=>$basefile, zoom=>$zoom);
 	$img =~ s/$TEMPDIR/$TEMPURL/;
 	$tree =~ s/$TEMPDIR/$TEMPURL/;
 	$dot =~ s/$TEMPDIR/$TEMPURL/;
@@ -89,7 +100,7 @@ sub gen_body
 	$template->param('tree_file'=>$tree);
 	$template->param('dot_file'=>$dot);
 	$template->param('tfile'=>$tree);
-	my $mod_file = generate_mod_file($FORM->param('nodes')) if $FORM->param('nodes');
+	my $mod_file = generate_mod_file(mod=>$FORM->param('nodes'), basefile=>$basefile) if $FORM->param('nodes');
 	$mod_file =~ s/$TEMPDIR/$TEMPURL/;
 	$template->param('mod'=>$mod_file) if $mod_file;
 	$template->param('ROOTED'=>$FORM->param('rooted'));# if $FORM->param('rooted');
@@ -121,7 +132,7 @@ sub zoom
     $tfile =~ s/$TEMPURL/$TEMPDIR/;
     warn "can't read $tfile" unless -f $tfile;
     my ($dot_file) = generate_dot_file(file=>$tfile, zoom=>$zoom);
-    my ($img, $map) = generate_image($dot_file);
+    my ($img, $map) = generate_image(dot_file=>$dot_file);
     my $zoomin = '<input type="hidden" id = "zoi" value='.($zoom+1).'>';
     my $zoomout = '<input type="hidden" id = "zoo" value='.($zoom-1).'>';
     return ($img, $map, $zoomin, $zoomout);
@@ -129,24 +140,23 @@ sub zoom
 
 sub generate_tree
   {
-    my $content = shift;
-    return unless $content;
-    
-    my ($dot_file, $tree_file) = generate_dot_file(content=>$content);
-    my ($img_file, $map) = generate_image($dot_file);
+    my %opts = @_;
+    my $content = $opts{content};
+    my $basefile = $opts{basefile};
+    my $zoom= $opts{zoom};
+    my ($dot_file, $tree_file) = generate_dot_file(content=>$content, basefile=>$basefile, zoom=>$zoom);
+    my ($img_file, $map) = generate_image(dot_file=>$dot_file);
     return ($tree_file, $dot_file, $img_file, $map);
   }
 sub generate_image
   {
-    my $file = shift;
+    my %opts = @_;
+    my $file = $opts{dot_file};
+    my ($basefile) = $file =~ /^(.*)\.dot$/;
+    $basefile.= rand(100);
     my $cmd = $FORM->param("rooted") ? $DOT : $NEATO;
-    my $of = new File::Temp ( TEMPLATE=>'TV__XXXXX',
-			      DIR=>$TEMPDIR,
-			      SUFFIX=>'.png',
-			      UNLINK=>0);
-    my $ofn = $of->filename;
+    my $ofn = $basefile.".png";
     system "$cmd -Tpng $file -o $ofn";
-    close $of;
     open (IN,  "$cmd -Tcmap $file |");
     my $map;
     while (<IN>) {$map .= $_;}
@@ -160,26 +170,28 @@ sub generate_dot_file
   {
     my %opts = @_;
     my $content = $opts{content};
-    my $file = $opts{file};
+    my $basefile = $opts{basefile};
+    $content =~ s/end;//g;
+    my $file = $opts{file} || $basefile.".nexus_tree";
+    ($basefile) = $file =~ /^(.*)\.nexus_tree/ unless $basefile;
+    print STDERR $file,"\n";
     my $zoom = $opts{zoom};
     if ($content)
       {
-	my $tmp_file = new File::Temp ( TEMPLATE=>'TV__XXXXX',
-					DIR=>$TEMPDIR,
-					SUFFIX=>'.nexus_tree',
-					UNLINK=>0);
-	print $tmp_file $content;
-	$file = $tmp_file->filename;
-	close $tmp_file;
+	open (OUT, ">$file");
+	print OUT $content;
+	close OUT;
       }
     return unless -r $file;
     
     my $treeio = new Bio::TreeIO (#-format =>'newick',
 				  -file=>$file,
 				 );
-    $treeio->next_tree;
+#    print STDERR Dumper $treeio->next_tree;
     while (my $tree = $treeio->next_tree())
       {
+	print STDERR "Tree nodes ",$tree->number_nodes,"\n";;
+	next unless $tree->number_nodes;
 	my $node_names = get_names($file, $tree);
 	my $root_node = $tree->get_root_node;
 	next unless $root_node->internal_id;
@@ -207,14 +219,11 @@ sub generate_dot_file
 };
 	  }
 	$dot .= "}\n";
-	my $dot_file = new File::Temp ( TEMPLATE=>'TV__XXXXX',
-					DIR=>$TEMPDIR,
-					SUFFIX=>'.dot',
-					UNLINK=>0);
-	print $dot_file $dot;
-	my $dot_fn = $dot_file->filename;
-	close $dot_file;
-	return ($dot_fn, $file);
+	my $dot_file = $basefile.".dot";
+	open (OUT, ">$dot_file");
+	print OUT $dot;
+	close OUT;
+	return ($dot_file, $file);
       }
   }
 sub label_nodes
@@ -225,6 +234,7 @@ sub label_nodes
     my $content;
     foreach my $node ($tree->get_nodes)
       {
+#	print STDERR $node->id,"\n";
 	if ($node->id)
 	  {
 	    my $name = $names->{$node->id} || $node->id;
@@ -234,9 +244,11 @@ sub label_nodes
 	    my ($accn1) = $label =~ /^([^\\]+)/;
 	    my $url = "SynView.pl?";
 	    $url .= "accn1=$accn1&" if $accn1;
+#	    print STDERR $name,": ", Dumper $node;
 	    foreach my $sister ($node->ancestor->get_all_Descendents)
 	      {
 		next if $sister->internal_id == $node->internal_id;
+		next unless $sister->id;
 		my $tmp = $names->{$sister->id};
 		next unless $tmp;
 		$tmp =~ s/_/ /g;
@@ -246,16 +258,16 @@ sub label_nodes
 	      }
 	    while (my ($pat, $mod) = each %$node_labels)
 	      {
-		if ( $name =~ /$pat/i)
+		if ( $name =~ /$pat/)
 		  {
-		    $content .= "\t\t$name\t[label = \"$label\", URL=\"$url\", $mod ];\n";
+		    $content .= "\t\t\"$name\"\t[label = \"$label\", URL=\"$url\", $mod ];\n";
 		  }
 	      }
 	  }
 	else
 	  {
 	    my $id = $node->internal_id;
-	    $content .= "\t\t$id\t[label=\"$id\", shape=point ];\n";
+	    $content .= "\t\t\"$id\"\t[label=\"$id\", shape=point ];\n";
 	  }
       }
     return $content;
@@ -288,11 +300,15 @@ sub process_node
     foreach my $cnode ($node->each_Descendent)
       {
 	my $cname = $cnode->id ? $names->{$cnode->id} : $cnode->internal_id;
-	$content .= "\t$name -- $cname ";
+	$content .= "\t\"$name\" -- \"$cname\" ";
 	my $len = $cnode->branch_length if $cnode->branch_length;
-	$content .= "[label=\"".sprintf("%.2f",$len)."\"";
-#	$content .= ", len=$len" if defined $len;
-	$content .= "];\n";
+	if ($len)
+	  {
+	    $content .= "[label=\"".sprintf("%.2f",$len)."\"";
+	    #	$content .= ", len=$len" if defined $len;
+	    $content .= "];";
+	  }
+	$content .= "\n";
 	my $tmp = process_node($cnode, $names);
 	$content .= $tmp if $tmp;
       }
@@ -303,56 +319,53 @@ sub get_names
   {
     my $file = shift;
     my $tree = shift;
-    open (IN, $file);
+#    open (IN, $file);
     my %names;
-    my $flag = 0;
-    while (<IN>)
-      {
-	chomp;
-	if ($flag)
-	  {
-	    s/^\s+//g;
-	    my ($num, $name) = split /\s+/, $_, 2;
-	    $name =~ s/,$// if $name;
-	    $name =~ s/\|/_/g if $name;
-	    $name =~ s/jgi_//g if $name;
-	    $name =~ s/(Chlre3.\d+)_.*/$1/ if $name;
-	    $name =~ s/'//g;
-	    $name =~ s/-/_/g;
-	    $name =~ s/\./_/g;
-#	    $name =~ s/_/\./g;
-#	    $name =~ s/_/\\n/ if $name;
-	    last if $_ =~ ";";
-	    next unless ($num =~ /^\d+$/);
-	    $names{$num} = $name;
-	    $names{$name} = $num;
+#     my $flag = 0;
+#     while (<IN>)
+#       {
+# 	chomp;
+# 	if ($flag)
+# 	  {
+# 	    s/^\s+//g;
+# 	    my ($num, $name) = split /\s+/, $_, 2;
+# 	    next unless ($num =~ /^\d+$/);
+# 	    $name =~ s/,$// if $name;
+# 	    $name =~ s/\|/_/g if $name;
+# 	    $name =~ s/jgi_//g if $name;
+# 	    $name =~ s/(Chlre3.\d+)_.*/$1/ if $name;
+# 	    $name =~ s/'//g;
+# 	    $name =~ s/-/_/g;
+# 	    $name =~ s/\./_/g;
+# 	    last if $_ =~ ";";
+# 	    $names{$num} = $name;
+# 	    $names{$name} = $num;
 
-	  }
-	$flag = 1 if /Translate/;
-      }
-    close IN;
-    #check to see if we got the node names, otherwise, grab the ids from the tree
-    unless (keys %names)
-      {
+# 	  }
+# 	$flag = 1 if /Translate/;
+#       }
+#     close IN;
+#     #check to see if we got the node names, otherwise, grab the ids from the tree
+#     print STDERR Dumper \%names;
+#    unless (keys %names)
+#      {
 	foreach my $node ($tree->get_nodes)
 	  {
 	    $names{$node->id} = $node->id if $node->id;
 	  }
-      }
+#      }
     return \%names;
   }
 
 sub generate_mod_file
   {
-    my $stuff = shift;
-    my $file = new File::Temp ( TEMPLATE=>'TV__XXXXX',
-				    DIR=>$TEMPDIR,
-				    SUFFIX=>'.mod',
-				    UNLINK=>0);
-    print $file $stuff;
-    my $fn = $file->filename;
-    close $file;
-    return $fn;
+    my %opts = @_;
+    my $stuff = $opts{mod};
+    my $basefile = $opts{basefile}.".mod";
+    open (OUT, ">$basefile");
+    print OUT $stuff;
+    close OUT;
+    return $basefile;
   }
 
 sub load_mod
@@ -361,5 +374,31 @@ sub load_mod
     open (IN, $file);
     my $data;
     while (<IN>) {$data .= $_;}
+    close IN;
     return $data;
+  }
+
+sub translate_content
+  {
+    my %opts = @_;
+    my $content = $opts{content};
+    my $table = $opts{table};
+    foreach (split /\n/, $table)
+      {
+	s/^\s+//g;
+	my ($num, $name) = split /\s+/, $_, 2;
+	next unless ($num =~ /^\d+$/);
+	$name =~ s/,$// if $name;
+	$name =~ s/\|/_/g if $name;
+	$name =~ s/jgi_//g if $name;
+	$name =~ s/(Chlre3.\d+)_.*/$1/ if $name;
+	$name =~ s/'//g;
+	$name =~ s/-/_/g;
+	$name =~ s/\./_/g;
+	#	    $name =~ s/_/\./g;
+	#	    $name =~ s/_/\\n/ if $name;
+	last if $_ =~ ";";
+	$content =~ s/([\(\):,])$num([\(\):,])/$1$name$2/g;
+      }
+    return $content;
   }
