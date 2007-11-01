@@ -49,7 +49,8 @@ function browserAlert()
  alert('Unfortunately, CoGe has been designed to work with the FireFox browser and may not function appropriately with your browser.  Please use FireFox, which can be downloaded from http://www.mozilla.com/en-US/firefox/');
 }
 
-function animate_section(name, style, speedy) {
+function animate_section(name, style, speedy, show) {
+  if (show) {alert (name+"::"+style)}
   if (speedy == undefined) speedy = pageObj.speed;
   //alert('speedy is '+speedy);
   if (!style) style = "toggle";
