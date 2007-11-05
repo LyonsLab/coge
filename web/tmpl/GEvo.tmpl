@@ -203,7 +203,7 @@ else if (alignment == "tblastx")
   $("#blast_wordsize").val(3);
   $("#blast_gapopen").val(11);
   $("#blast_gapextend").val(1);
-  $("#blast_eval").val(10);
+  $("#blast_eval").val("1e-10");
   check_spike(1);
   animate_section(".blastn_options", "hide",0);
   animate_section("#blast_options", "slideDown");
@@ -472,7 +472,7 @@ function update_colors(hsp_num) {
  </TR>    
  <TR>
   <TD>Expectation value (-e): </TD>
-  <TD><input class="backbox" type="text" name="blast_eval" id="blast_eval" tabindex="1" size="3" value="30" /></TD>
+  <TD><input class="backbox" type="text" name="blast_eval" id="blast_eval" tabindex="1" size="4" value="30" /></TD>
  </TR>
  <TR>
   <TD>Other Blast Parameters: </TD>
