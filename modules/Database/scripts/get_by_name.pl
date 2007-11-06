@@ -4,26 +4,35 @@ use strict;
 use CoGeX;
 my $connstr = 'dbi:mysql:genomes:biocon:3306';
 my $s = CoGeX->connect($connstr, 'bpederse', 'brent_cnr');
-#$s->storage->debug(1);
 
-
+# example for getting 10,000-mer chunks.
 my $dataset = [565];
 get_10kmers('sorghum', $dataset);
 
+
+# example for getting accns from a file:
+# only gets OS01G12345, not OS01G12345.1
+# gets the CDS if available, else gene else *RNA, psuedogene
+# prints to an output file $org.fasta.
+# needs a file named $org_accns.txt which is a list of accn names.
+# can be made with an sql query like:
+
+#    SELECT DISTINCT(fn.name) from feature_name fn, feature f where
+#    fn.feature_id = f.feature_id AND f.dataset_id BETWEEN 582 AND 593 AND
+#    fn.name LIKE 'Os%%g%' AND fn.name NOT LIKE '%.%' ORDER BY fn.name;
+
 my $name_re = '^OS(\d\d)G\d{5}$';
 my $name_len = 10;
-
 my $org = 'rice';
 my @datasets = 582 .. 593;
-
 get_accn_locs($name_re, $name_len, $org, \@datasets);
 
 sub get_accn_locs {
     my ($name_re, $name_len, $org, $datasets) = @_;
     my %seen;
     my %order;
-    open(LOC, ">", $org . ".fasta");
     open(ACCN,"<", $org . "_accns.txt") or die "must have a list of accns in $org" . "_accns.txt";
+    open(LOC, ">", $org . ".fasta");
     while (my $accn = <ACCN>){
         chomp $accn;
         next unless $accn =~ /$name_re/i;
