@@ -3,7 +3,7 @@ use strict;
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
 use CGI::Ajax;
-use GS::LogUser;
+use CoGe::Accessory::LogUser;
 use HTML::Template;
 use Data::Dumper;
 use DBI;
@@ -25,7 +25,7 @@ $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 $FORM = new CGI;
 $CGI::POST_MAX= 60 * 1024 * 1024; # 24MB
 $CGI::DISABLE_UPLOADS = 0; 
-($USER) = GS::LogUser->get_user();
+($USER) = CoGe::Accessory::LogUser->get_user();
 my $pj = new CGI::Ajax(
 		       go=>\&gen_html,
 		      );
