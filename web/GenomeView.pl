@@ -1,6 +1,7 @@
 #! /usr/bin/perl -w
 use strict;
 use CGI;
+use CGI::Ajax;
 use CGI::Carp 'fatalsToBrowser';
 use HTML::Template;
 use Data::Dumper;
@@ -14,14 +15,25 @@ use vars qw( $DATE $DEBUG $USER $FORM $coge);
 
 $DEBUG = 0;
 $FORM = new CGI;
+$DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
+		sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
 ($USER) = CoGe::Accessory::LogUser->get_user();
 my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
 $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
-print gen_html();
+
+my $pj = new CGI::Ajax(
+		       gen_html=>\&gen_html,
+		       grab_sequence=>\&grab_sequence,
+			);
+$pj->js_encode_function('escape');
+print $pj->build_html($FORM, \&gen_html);
+#print gen_html();
+
+
 
 sub gen_html
   {
-    my $html =  "Content-Type: text/html\n\n";
+    my $html; #=  "Content-Type: text/html\n\n";
     unless ($USER)
       {
         $html .= login();
@@ -40,7 +52,7 @@ sub gen_html
         $template->param(BODY=>gen_body());
         $html .= $template->output;
       }
-    return $html;
+    #return $html;
   }
 
 sub gen_body
@@ -80,4 +92,14 @@ sub generate_box_name
   my $title = "$org (v $ver), Chromosome: $chr, Dataset ID No. $ds";
   return $title;
 }
+
+sub grab_sequence
+  {
+  	my $new_value = shift;
+  	my $first_value = shift;
+  	my @vals = ($new_value,$first_value);
+  	@vals = sort {$a <=> $b} (@vals);
+  	print STDERR Dumper \@vals;
+  	return $vals[0],$vals[1];
+  }
 
