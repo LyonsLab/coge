@@ -27,6 +27,7 @@
             color:white;
         }
         #gc {
+            background-color: white;
              color:green;
         }
     </style>
@@ -46,7 +47,7 @@
         var version = '<TMPL_VAR NAME=VER>';
         var bp;
         var size= 285;
-        var server = 'tiler.pl?'
+        var server = 'http://homer.cnr.berkeley.edu/CoGe/tiler.pl?'
         var org = "<TMPL_VAR NAME=ORG>";
         var ds = '<TMPL_VAR NAME=DS>';
         var loc = '<TMPL_VAR NAME=LOC>';
@@ -102,7 +103,7 @@
 
             map.addControl(new OpenLayers.Control.LayerSwitcher())
 
-            gc.setVisibility(false);
+            gc.setVisibility(true);
             map.addLayer(gc)
             map.addLayers(layers);
             fd.setVisibility(false);
@@ -140,9 +141,18 @@
             if(4 > tot){
                 // dont need to figure out basepairs from pixels
                 // just use the ones in the window already.
-                query(parseInt(bp.element.innerHTML));
+                if(pageObj.getseq < 3)
+                {
+                    pageObj.getseq++;
+                    var pos = parseInt(bp.element.innerHTML);
+        			update_grab(pos);
+        		}
+        		else{
+                	query(parseInt(bp.element.innerHTML));
+                }
             }
         }
+        
         
      function mapMouseOut(e) {
        if (pageObj.time) clearTimeout(pageObj.time);
@@ -199,7 +209,31 @@
     updateZoom();}
 }
 
+ function update_grab(pos){
+  var val = $('#grab_from').val();
+  grab_sequence(['args__'+pos,'args__'+val],[insert_grab_vals]);
+}
+
+ function insert_grab_vals(from,to){
+  if(pageObj.getseq*1 -1 == 1){
+    $('#grab_from').css('backgroundColor','white').val(to);
+    $('#grab_to').css('backgroundColor','FFFF66');
+  }
+  else{
+  $('#grab_from').val(from);
+  $('#grab_to').css('backgroundColor','white').val(to);
+  }
+ }
+
+function launch_seqview(dsid, chr)
+ {
+   start = $('#grab_from').val();
+   stop = $('#grab_to').val();
+   window.open("SeqView.pl?dsid="+dsid+"&chr="+chr+"&start="+start+"&stop="+stop);
+ }
+
 $(document).ready(function(){
+pageObj.getseq = 3;
 $('#width').val($('#main').width());
 $('#map').css('width',$('#width').val());
 init();
@@ -210,7 +244,10 @@ init();
     <div id="popup" class="genomeview_popup" style="display: none"></div>
     <div id="map"></div>
     <div id='resolution'></div>
+    <div id ='alert_grab'></div>
     <div id='check' style="float:right"><input type=checkbox name=checkbox id=disable checked/>Disable Pop-up Annotations</div>
-OpenGene's map width: <input type=textbox class=backbox size=5 id="width" onkeypress="onEnter(event);" value=<TMPL_VAR NAME="width"> /><input type=button value="resize" onclick="$('#map').css('width',$('#width').val());updateZoom();" /><input type=button value="Full-Window" onclick="$('#map').css('width',''+$('#main').width());updateZoom();" /> <input id='hide_query' style="display: none" type=button value="Hide Feature Info" onclick="$('#query').slideToggle(pageObj.speed);$('#hide_query').hide(0);" />
+OpenGene's map width: <input type=textbox class=backbox size=5 id="width" onkeypress="onEnter(event);" value=<TMPL_VAR NAME="width"> /><input type=button value="Resize" onclick="$('#map').css('width',$('#width').val());updateZoom();" /><input type=button value="Full-Window" onclick="$('#map').css('width',''+$('#main').width());updateZoom();" /> <input id='hide_query' style="display: none" type=button value="Hide Feature Info" onclick="$('#query').slideToggle(pageObj.speed);$('#hide_query').hide(0);" /><input type=button value="Grab Sequence" onclick="$('#grab').show(0);$('#grab_from').css('backgroundColor','FFFF66');pageObj.getseq=1;" />
+    <br><br>
+    <div id='grab' style="display:none"><input type=text id='grab_from' value=0> to <input type=text id="grab_to" value=0> <input type=button value="View Sequence" onClick="launch_seqview('<TMPL_VAR NAME=DS>','<TMPL_VAR NAME=CHR>')"></div>
     <div id='query' style="overflow: auto;"></div>
 
