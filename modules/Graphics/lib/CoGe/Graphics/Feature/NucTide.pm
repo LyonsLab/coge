@@ -53,18 +53,6 @@ sub _initialize
 	($cg) = $seq =~ tr/cgrysmkhbvdCGRYWMKHBVD/cgrysmkhbvdCGRYWMKHBVD/;
 	($n) = $seq =~ tr/nN/nN/;
 	($x) = $seq =~ tr/xX/xX/;
-#  	while ($seq=~ /a|t|r|y|w|m|k|h|b|v|d/ig)
-#  	  {
-#  	    $at++;
-#  	  }
-#  	while ($seq =~/c|g|r|y|s|m|k|h|b|v|d/ig)
-#  	  {
-#  	    $cg++;
-#  	  }
-# 	while ($seq =~/n|\?/ig)
-# 	  {
-# 	    $n++;
-# 	  }
 	
 	print STDERR "SEQ: $seq\n" unless ($at+$cg+$n+$x) > 0;
 	
@@ -76,7 +64,6 @@ sub _initialize
 	    $color += $self->options eq "gc" ? $ATC->[$i]*$at/($seq_len)+ $GCC->[$i]*$cg/($seq_len) : $ATC->[$i]*($at+$cg) /($seq_len)  ;
 	    $color += $NC->[$i]*$n/($seq_len);
 	    $color += $XC->[$i]*$x/($seq_len);
-#	    push @color, $ATC->[$i]*$at/($at+$cg+$n)+ $GCC->[$i]*$cg/($at+$cg+$n)+ $NC->[$i]*$n/($at+$cg+$n);
 
 	    push @color, $color;
 	  }
