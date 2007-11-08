@@ -33,6 +33,7 @@ use CoGeX;
 use CoGeX::Feature;
 use DBIxProfiler;
 use DBI;
+use LWP::Simple;
 #use Text::Wrap qw($columns &wrap);
 use Benchmark qw(:all);
 
@@ -661,7 +662,9 @@ sub run
     $html .= qq{<td class = small>Log File};
     my $logfile = $TEMPURL."/".basename($cogeweb->logfile);
     $html .= "<div class=xsmall><A HREF=\"$logfile\" target=_new>Log</A></DIV>\n";
-    $html .= qq{<td class = small>GEvo Link<div class=xsmall><pre><a href=$gevo_link target=_new>See log file if link does not work</a><pre></div>};
+    my $tiny = get("http://tinyurl.com/create.php?url=$gevo_link");
+    ($tiny) = $tiny =~ /<b>(http:\/\/tinyurl.com\/\w+)<\/b>/;
+    $html .= qq{<td class = small>GEvo Link<div class=xsmall><a href=$tiny target=_new>$tiny (See log file for full link)</a></div>};
     $html .= qq{</table>};
 
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
