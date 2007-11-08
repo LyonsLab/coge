@@ -156,6 +156,7 @@ sub gen_body
     for (my $i = 1; $i <= $num_seqs; $i++)
       {
 	my $draccn = $form->param("accn".$i) if $form->param("accn".$i);
+	my $drfid = $form->param("fid".$i) if $form->param("fid".$i); #to be continued
 	my $drup = $form->param('dr'.$i.'up') if $form->param('dr'.$i.'up');
 	my $drdown = $form->param('dr'.$i.'down') if $form->param('dr'.$i.'down');
 	$drup = $form->param('drup'.$i) if $form->param('drup'.$i);
@@ -169,6 +170,8 @@ sub gen_body
 	my $gblength = $form->param("gblen".$i) if $form->param("gblen".$i);
 	my $revy = "checked" if $form->param('rev'.$i);
 	my $revn = "checked" unless $revy;
+	my $refn = "checked" if $form->param('nref'.$i);
+	my $refy = "checked" unless $refn;
 	$autosearch_string .= 'if ($'.qq!('#accn$i').val()) {dataset_search(['accn$i','args__$i', 'args__!;
 	$autosearch_string .= $dsid if $dsid;
 	$autosearch_string .=qq!'],[feat_search_chain]);}!;
@@ -188,6 +191,8 @@ sub gen_body
 			SEQ_NUM=>$i,
 			REV_YES=>$revy,
 			REV_NO=>$revn,
+			REF_YES=>$refy,
+			REF_NO=>$refn,
 			DRUP=>$drup,
 			DRDOWN=>$drdown,
 			DRACCN=>$draccn,
@@ -342,17 +347,21 @@ sub run
     my $stagger_label = $hsp_label && $hsp_label =~ /staggered/i ? 1 : 0;
     my $feature_labels = !$hsp_label ? 0 : 1;
     my $form = $FORM;
-
+    my $gevo_link = $form->url."?";
     my @sets;
     my $html;
     my $t1 = new Benchmark;
     my $spike_seq;
+    my $seqcount = 1;
     for (my $i = 1; $i <= $num_seqs; $i++)
       {
+	my $skip_seq =$opts{"skip_seq$i"};
+	next if $skip_seq;
 	my $accn = $opts{"draccn$i"};
 	my $featid = $opts{"featid$i"};
 	my $drup = $opts{"drup$i"};
 	my $drdown = $opts{"drdown$i"};
+	
 
 	my $gbaccn = $opts{"gbaccn$i"};
 	my $gbstart = $opts{"gbstart$i"};
@@ -368,9 +377,18 @@ sub run
 	my ($up, $down);
 	my ($file, $file_begin, $file_end, $obj);
 	my $reference_seq =$opts{"ref_seq$i"};
-	my $skip_seq =$opts{"skip_seq$i"};
-	next if $skip_seq;
 	my $repeat_mask =$opts{"repmask$i"};
+	next unless $accn || $featid || $gbaccn || $dirseq;
+	$gevo_link .= ";accn$seqcount=".CGI::escape($accn) if $accn;
+	$gevo_link .= ";dr$seqcount"."up=$drup" if $drup;
+	$gevo_link .= ";dr$seqcount"."down=$drdown" if $drdown;
+	$gevo_link .= ";gbaccn$seqcount=".CGI::escape($gbaccn) if $gbaccn;
+	$gevo_link .= ";gbstart$seqcount=$gbstart" if $gbstart;
+	$gevo_link .= ";gblength$seqcount=$gblength" if $gblength;
+	$gevo_link .= ";rev$seqcount=1" if $rev;
+	$gevo_link .= ";nref$seqcount=1" unless $reference_seq;
+	$seqcount++;
+
 	if ($featid)
 	  {
 	    $obj = get_obj_from_genome_db( $accn, $featid, $rev, $drup, $drdown );
@@ -477,6 +495,11 @@ sub run
 			};
 	  }
       }
+    $seqcount--;
+    $gevo_link .= ";num_seqs=".$seqcount;
+#    print STDERR $gevo_link,"\n";
+#    print STDERR CGI::escape($gevo_link),"\n";
+#    $gevo_link = CGI::escape($gevo_link);
 #    print STDERR Dumper \@sets;
     unless (@sets >1)
       {
@@ -638,6 +661,7 @@ sub run
     $html .= qq{<td class = small>Log File};
     my $logfile = $TEMPURL."/".basename($cogeweb->logfile);
     $html .= "<div class=xsmall><A HREF=\"$logfile\" target=_new>Log</A></DIV>\n";
+    $html .= qq{<td class = small>GEvo Link<div class=xsmall><pre><a href=$gevo_link target=_new>See log file if link does not work</a><pre></div>};
     $html .= qq{</table>};
 
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
@@ -661,6 +685,7 @@ Time to process html                              : $html_time
     print STDERR $bench if $BENCHMARK;
     write_log($bench, $cogeweb->logfile);
     write_log("Finished!", $cogeweb->logfile);
+    write_log("\nGEvo link: $gevo_link\n", $cogeweb->logfile);
 
     return $outhtml, $iw+400, $frame_height, $cogeweb->basefilename,$count,$message;
 
@@ -874,10 +899,10 @@ INSERT INTO image_info (iname, title) values ("$image", "$title")
 	my $pair_id = "-99";
 	my $coords = $feat->image_coordinates;
 	$coords =~ s/\s//g;
-	#next unless $feat->type =~ /HSP/i;
+	#next unless $feat->type =~ /HSP/i;	
 	next if $feat->type eq "unknown";
 	my $name = $feat->type =~ /HSP/i ? $feat->alt : $feat->label;
-	$name = $feat->type unless $name;
+	$name .= "_".$feat->type;# unless $name;
 	my $color = "NULL";
 	if ($feat->type =~ /HSP/)
 	  {
@@ -889,6 +914,7 @@ INSERT INTO image_info (iname, title) values ("$image", "$title")
 	  }
 	#generate link
 	my $link = $feat->link;
+	print STDERR "No like for $name\n", Dumper $feat unless $link;
 	$link =~ s/'//g;
 	#generate image track
 	my $image_track = $feat->track;
@@ -919,7 +945,11 @@ INSERT INTO image_data (name, type, xmin, xmax, ymin, ymax, image, image_track,p
 	      {
 		push @items, $res;
 	      }
-	    next unless @items == 2;
+	    if (@items != 2)
+	      {
+		print STDERR "problem with $query\nRetrieved:\n".Dumper \@items if @items > 2;
+		next;
+	      }
 	    my $statement = "update image_data set pair_id = $items[0] where id = $items[1]";
 	    $dbh->do($statement);
 	    $statement = "update image_data set pair_id = $items[1] where id = $items[0]";
@@ -1171,8 +1201,8 @@ sub process_hsps
 		$start = $seq_len - $stop+1;
 		$stop = $tmp;
 	      }
-
 	    my $link = "HSPView.pl?report=$report&num=".$hsp->number."&db=".$cogeweb->basefilename.".sqlite";
+#	    print STDERR $link,"\n";# if $cogeweb->basefilename =~ /_$/;
 	    $link .= join ("&","&qstart=".($gbobj->start+$start-1), "qstop=".($gbobj->start+$stop-1),"qchr=".$gbobj->chromosome, "qds=". $gbobj->dataset,"qstrand=".$strand) if $gbobj->dataset;
 	    $f->link($link) if $link;
 	    $f->alignment($hsp->alignment);
@@ -2088,6 +2118,7 @@ sub gen_go_run
     my $run = qq!
 <SCRIPT language="JavaScript">
 function go_run (){ 
+ pageObj.basefile = "";
  initialize_basefile(['args__prog','args__GEvo', 'args__return_name','args__1'],[populate_page_obj]);
  setTimeout("run([$params],[handle_results], 'POST')",500); 
  setTimeout(" monitor_log()", 5000);
