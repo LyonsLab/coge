@@ -482,7 +482,7 @@ sub process_nucleotides
 	      }
 	    my $f1 = CoGe::Graphics::Feature::NucTide->new({nt=>$subseq, strand=>1, start =>$pos+$start, options=>$options}) if $layers->{gc} || $layers->{nt} || $layers->{all};
 	    my $f2 = CoGe::Graphics::Feature::NucTide->new({nt=>$rcseq, strand=>-1, start =>$pos+$start, options=>$options}) if $layers->{gc} || $layers->{nt} || $layers->{all};
-	    if ($layers->{nt} || $layers->{all})
+	    if ($layers->{nt} || $layers->{all} ||  $layers->{gc})
 	      {
 		$f1->show_label(1); 
 		$f2->show_label(1);
