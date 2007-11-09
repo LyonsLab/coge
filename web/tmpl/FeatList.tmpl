@@ -1,5 +1,101 @@
+<SCRIPT language="JavaScript">
+
+function feature_checkboxes(){
+  var action = $('#checked_action').val();
+  var accn = $('#feature_list').getCheckboxes();
+  
+  if (accn == ",") {
+    alert("You have not checked any features.");
+    return;
+  }
+  if(action == "gevo") {
+    feats_parse(['args__'+accn],[send_to_gevo]);
+  }
+ /* else if (action == "fasta"){
+    export_fasta_file(['args__'+accn,'args__'+pageObj.basename],[export_file]);
+  }
+  else if (action == "xls"){
+    generate_excel_feature_file(['args__'+accn,'args__'+pageObj.basename],[export_file]);
+  }
+  else if(action == "tab"){
+    generate_tab_deliminated(['args__'+accn,'args__'+pageObj.basename],[export_file]);
+  }
+  else if(action == "list"){
+    generate_feat_list(['args__'+accn,'args__'+pageObj.basename],[export_file]);
+  } */
+  else {
+    alert("We will get this working ... soon.");
+  }
+}
+
+function send_to_gevo(url,num_accns) {
+  if (url == "alert") {
+    var remove = num_accns - 10;
+    alert("You have exceeded the number of features you can send to GEvo ( 10 Max ). You currently have "+num_accns+" selected. Please uncheck "+remove+" of your checked item(s).");
+  }
+  else {
+    window.open(url);
+  }
+}
+
+jQuery.fn.getCheckboxes = function()
+{
+	var str = ",";
+	this.each(
+			function()
+			{
+				jQuery("input[@type=checkbox]",this).each(
+					function() {
+					  //alert(this.value);
+					  if (this.checked == true) str = str + this.id +",";
+					}
+				);
+			}
+		);
+	return str;
+};
+
+jQuery.fn.checkCheckboxes = function()
+{
+	//var returnWhat = jQuery([]);
+	this.each(
+		function()
+		{
+			jQuery("input[@type=checkbox]", this).each(
+				function()
+				{
+					this.checked = true;
+				}
+			);
+			//returnWhat = checked;
+		}
+	);
+	//returnWhat = this;
+};
+
+
+jQuery.fn.unCheckCheckboxes = function()
+{
+	//var returnWhat = jQuery([]);
+	this.each(
+		function()
+		{
+			jQuery("input[@type=checkbox]", this).each(
+				function()
+				{
+					this.checked = false;
+				}
+			).filter(":not(:checked)");
+		}
+	);
+};
+
+</SCRIPT>
+<TMPL
+<form id=feature_list>
 <TABLE width=100%>
  <THEAD align=left>
+   <TH> </TH>
    <TH>Feature Name</TH>
    <TH>Type</TH>
    <TH>Location</TH>
@@ -10,7 +106,8 @@
  </THEAD>
  <tbody align=left valign="top">
   <TMPL_LOOP NAME=INFO>
-    <TR>
+    <TR class="<TMPL_VAR NAME=TABLE_ROW>">
+      <TD><input type=checkbox id='<TMPL_VAR NAME=FEATID>'></TD>
       <TD><TMPL_VAR NAME=NAME></TD>
       <TD><TMPL_VAR NAME=TYPE></TD>
       <TD><TMPL_VAR NAME=LOC></TD>
@@ -22,4 +119,18 @@
    </TMPL_LOOP>
   </tbody>
  </TABLE>
-      
+ </form>
+<input type=button value="Check All" onclick="$('#feature_list').checkCheckboxes();">
+<input type=button value="Uncheck All" onclick="$('#feature_list').unCheckCheckboxes();">
+ <div id='gevo_button' style="float:left">
+ 			Do Following to Checked Features:  
+ 			<select name=checked_action id=checked_action>
+                 <option value = "gevo">Send to GEvo</option>
+           		 <option value = "fasta">Create FASTA File</option>
+           		 <option value = "xls">Export to Excel</option>
+           		 <option value = "tab">Tab Deliminated</option>
+           		 <option value = "list">Get Feature List</option>
+          		  <option value = "user">Add to MFF</option> 
+          </selected>  
+          <input type=button value="Go" onClick="feature_checkboxes()">    
+  </div>
