@@ -1240,7 +1240,6 @@ qname = "$qname"
 sub overlap_feats_parse #Send to GEvo
   {
     my $accn_list = shift;
-    my $num_accns = $accn_list =~ tr/,/,/;
     $accn_list =~ s/^,//;
     $accn_list =~ s/,$//;
     my @list;
@@ -1263,7 +1262,7 @@ sub overlap_feats_parse #Send to GEvo
       }
 
     $count--;
-    return ("alert",$count) if $count > 8;
+    return ("alert",$count) if $count > 10;
     $url .= "num_seqs=$count";
     return $url;
   }
@@ -1682,7 +1681,7 @@ sub dataset_description_for_org
     my $html = "Current datasets for ".$org->name;
     $html .= ": ".$org->description if $org->description;
     $html .= "<table>";
-        
+    my $i = 0;
     foreach my $ds ($org->current_datasets)
       {
 	my $name = $ds->name;
@@ -1693,7 +1692,10 @@ sub dataset_description_for_org
 	$source .= ": ".$ds->datasource->description if $ds->datasource->description;
 	$source = "<a href=".$ds->datasource->link." target=_new>".$source."</a>" if $ds->datasource->link;
 	$source =~ s/href=/href=http:\/\// unless $source =~ /http/;
-	$html .= "<tr><td>".join ("<td>", $name, $source)."\n";
+	$html .= "<tr";
+	$html .= " class='even'" if $i % 2 == 0;
+	$html .= "><td>".join ("<td>", $name, $source)."\n";
+	$i++;
       }
     $html.="</table>";
     return $html;
