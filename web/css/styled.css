@@ -696,22 +696,22 @@ th.headerSortDown {
  border-bottom: 2px solid #c3c2b1;
 }
 
-#ncbi_blast {
+#ncbi_blast_button {
 	display: block;
   	width: 97px;
   	height: 26px;
 	background: url(/CoGe/picts/buttons/CoGeBlast/ncbi_blast_new.png) 0 0 no-repeat;
 }
 
-#ncbi_blast:hover {
+#ncbi_blast_button:hover {
 	background-position: -97px 0;
 }
 
-#ncbi_blast:active {
+#ncbi_blast_button:active {
 	background-position: -194px 0;
 }
 
-#ncbi_blast span {
+#ncbi_blast_button span {
 	display: none;
 }
 
