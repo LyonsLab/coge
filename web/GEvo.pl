@@ -348,7 +348,7 @@ sub run
     my $stagger_label = $hsp_label && $hsp_label =~ /staggered/i ? 1 : 0;
     my $feature_labels = !$hsp_label ? 0 : 1;
     my $form = $FORM;
-    my $gevo_link = $form->url."?";
+    my $gevo_link = $form->url."?prog=$analysis_program";
     my @sets;
     my $html;
     my $t1 = new Benchmark;
