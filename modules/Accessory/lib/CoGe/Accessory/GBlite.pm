@@ -433,7 +433,7 @@ sub new {
     return 0;
   }
   my $string = join("", @$lines);  # join all lines
-  my @part = split(/\s{10,30}\//, $string); # split qualifiers from key/location
+  my @part = split(/\s{10,30}\/(?=\S)/x, $string); # split qualifiers from key/location
   $string =~ s/\s+/ /g;            # trim multiple spaces to one space
   my $key_loc = shift @part;
   my ($key, $location) = $key_loc =~ /^\s+(\S+)\s+(.+)/;
