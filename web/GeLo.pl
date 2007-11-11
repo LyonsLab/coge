@@ -441,7 +441,7 @@ sub get_codon_usage_for_chromosome
       }
     %aa_sort = map {$_,($aa_sort{$_}{GC}/($aa_sort{$_}{AT}+$aa_sort{$_}{GC}))} keys %aa_sort;
 
-    foreach (sort {$aa_sort{$b} <=> $aa_sort{$a} }keys %aa)
+    foreach (sort {$aa_sort{$b} <=> $aa_sort{$a} || $a cmp $b}keys %aa)
       {	
 	my $current_val = sprintf("%.2f",100*$aa{$_}/$aa_total);
 	my $color = color_by_usage($max_aa,$current_val);
