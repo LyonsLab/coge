@@ -99,7 +99,7 @@ sub get_orgs
     foreach my $item (sort {uc($a->name) cmp uc($b->name)} @db)
       {
 	next if $restricted_orgs->{$item->name};
-	push @opts, "<OPTION value=\"".$item->id."\">".$item->name."(id".$item->id.")</OPTION>";
+	push @opts, "<OPTION value=\"".$item->id."\">".$item->name." (id".$item->id.")</OPTION>";
       }
     my $html;
     $html .= qq{<FONT CLASS ="small">Organism count: }.scalar @opts.qq{</FONT>\n<BR>\n};
@@ -140,7 +140,7 @@ sub get_dataset
 	  {
 	    next if $restricted_orgs->{$item->organism->name};
 	    push @opts, "<OPTION value=\"".$item->id."\">".$item->name."(v".$item->version.", id".$item->id.")</OPTION>";
-	    push @orgs, "<OPTION value=\"".$item->organism->id."\">".$item->organism->name."(id".$item->organism->id.")</OPTION>";
+	    push @orgs, "<OPTION value=\"".$item->organism->id."\">".$item->organism->name." (id".$item->organism->id.")</OPTION>";
 	  }
 	$html2 .= qq{<FONT CLASS ="small">Organism count: }.scalar @orgs.qq{</FONT>\n<BR>\n};
 	$html2 .= qq{<SELECT id="org_id" SIZE="5" MULTIPLE onChange="dataset_chain()" >\n};
@@ -388,9 +388,13 @@ sub get_codon_usage_for_chromosome
 #      }
     my $count = 0;
     my $html = "Codon Usage: $code_type<table>";
+     my ($max_codon) = sort {$b<=>$a} values %codons;
+    $max_codon = sprintf("%.2f",100*$max_codon/$codon_total);
     foreach (sort { sort_nt2(substr($a, 0, 1)) <=> sort_nt2(substr($b,0, 1)) || sort_nt2(substr($a,1,1)) <=> sort_nt2(substr($b,1,1)) || sort_nt(substr($a,2,1)) <=> sort_nt(substr($b,2,1)) } keys %$code)
       {
-	my $str = "<tr><td>".$_."(".$code->{$_}.")<td>".$codons{$_}."<td>(".sprintf("%.2f",100*$codons{$_}/$codon_total)."%)";
+	my $current_val = sprintf("%.2f",100*$codons{$_}/$codon_total);
+	 my $color = color_by_usage($max_codon, $current_val);
+	my $str = "<tr style=\"background-color: rgb($color,255,$color)\" ><td>".$_."(".$code->{$_}.")<td>".$codons{$_}."<td>(".$current_val."%)";
 	delete $codons{$_};
 	$html .= "</table><tr><td><table>" unless $count;
 	if ($count%4)
@@ -408,7 +412,9 @@ sub get_codon_usage_for_chromosome
      $count = 0;
      foreach (sort keys %codons)
        {
- 	my $str = "<tr><td>".$_."<td>".$codons{$_}."<td>(".sprintf("%.2f",100*$codons{$_}/$codon_total)."%)";
+	 my $current_val = sprintf("%.2f",100*$codons{$_}/$codon_total);
+	 my $color = color_by_usage($max_codon, $current_val);
+ 	my $str = "<tr style=\"background-color: rgb($color,255,$color)\" ><td>".$_."<td>".$codons{$_}."<td>(".$current_val."%)";
 	$html .= "</table><tr><td><table>" unless $count;
  	if ($count%4)
  	  {
@@ -422,19 +428,27 @@ sub get_codon_usage_for_chromosome
  	$count = 0 if $count == 16;
       }
     $html .="</table></table>";
+     my ($max_aa) = sort {$b<=>$a} values %aa;
+    $max_aa = sprintf("%.2f",100*$max_aa/$aa_total);
     $html .= "Predicted amino acid usage using $code_type<table>";
-    $html .= join ("<tr>",map  {"<td>$_<td>".$aa{$_}."<td>(".sprintf("%.2f",100*$aa{$_}/$aa_total)."%)"} sort keys %aa);
+    my %aa_sort = map {$_,{}} keys %aa;
+    foreach my $codon (keys %$code)
+      {
+	my $gc = $codon =~ tr/GCgc/GCgc/;
+	my $at = $codon =~ tr/ATat/ATat/;
+	$aa_sort{$code->{$codon}}{AT}+=$at;
+	$aa_sort{$code->{$codon}}{GC}+=$gc;
+      }
+    %aa_sort = map {$_,($aa_sort{$_}{GC}/($aa_sort{$_}{AT}+$aa_sort{$_}{GC}))} keys %aa_sort;
+
+    foreach (sort {$aa_sort{$b} <=> $aa_sort{$a} }keys %aa)
+      {	
+	my $current_val = sprintf("%.2f",100*$aa{$_}/$aa_total);
+	my $color = color_by_usage($max_aa,$current_val);
+	$html .= "<tr style=\"background-color: rgb($color,255,$color)\"><td>$_ (GC:".sprintf("%.0f",100*$aa_sort{$_})."%)<td>".$aa{$_}."<td>(".$current_val."%)";
+  }
     $html .= "</table>";
     return $html;
-#     foreach (map {$_."(".$code->{$_}.") ".$codons{$_}} sort { substr($a, 0, 2) cmp substr ($b, 0, 2) || sort_nt($a) <=> sort_nt($b) }keys %codons)
-#       {
-# 	$html .= "<tr>" unless $count;
-# 	$html .= "<td nospan>" unless $count%4;	
-# 	$html .= $_."<br>";
-# 	$count++;
-# 	$count = 0 if $count == 16;	
-#       }
-#     return $html;
   }
 
 
@@ -486,6 +500,12 @@ sub commify
       $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
       return scalar reverse $text;
     }
+sub color_by_usage
+	{
+		my ($max,$value) = @_;
+		my $g = 255*(($max - $value) / $max);
+		return int($g + .5);
+	}
 
 
 1;
