@@ -27,13 +27,12 @@ open(QUERY_FASTA, $QUERY_FASTA);
 my $filei = 1;
 my $linei = 0;
 
-open(OUT, ">", $QUERY_FASTA . ".$filei");
+open(OUT, ">", sprintf($filename, $filei));
 
 while(my $line = <QUERY_FASTA>){
     chomp $line;
     next unless $line;
 
-    if($line =~/^>/){ ++$linei; }
     print OUT $line . "\n";
 
     if($linei > $lines_per_file){
@@ -44,6 +43,7 @@ while(my $line = <QUERY_FASTA>){
         ++$filei;
         open(OUT, ">", sprintf($filename, $filei));
     }
+    if($line =~/^>/){ ++$linei; }
 }
 printf($BLAST_CMD . " &\n", sprintf($filename, $filei), $SUBJECT_DATABASE, $filei);
 
