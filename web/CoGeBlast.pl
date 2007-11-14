@@ -171,7 +171,7 @@ sub get_sequence
 	  );
        $seq = CoGeX::Feature->reverse_complement($seq) if $rc;
        $fasta = generate_fasta_without_featid(chr=>$fid, dsid=>$dsid, start=>$upstream, stop=>$downstream);
-       if ($blast_type eq  "blast_type_p") {
+       if ($blast_type =~  "blast_type_p") {
        my $key;
        my $sixframe;
        my $sequence = CoGeX::Feature->frame6_trans(seq=>$seq);
@@ -199,7 +199,7 @@ sub get_sequence
     }
     else 
     {	  
-      if ($blast_type eq  "blast_type_p") {
+      if ($blast_type =~  "blast_type_p") {
        ($seq) = $feat->protein_sequence;
        $seq = "No sequence available" unless $seq;
       }
@@ -243,7 +243,7 @@ sub generate_fasta_with_featid
     my ($feat) = $coge->resultset("Feature")->find($featid);
     my ($strand) = $feat->strand;
     if ($rc)
-    	{$strand *= -1 unless ($blast_type eq "blast_type_p");}
+    	{$strand *= -1 unless ($blast_type =~ "blast_type_p");}
     my $fasta = ">".$ds->organism->name."(v.".$feat->version.")".", Type: ".$feat->type->name.", Location: ".$feat->genbank_location_string.", Chromosome: ".$feat->chr.", Strand: ".$strand."\n";
     return $fasta;
   }
@@ -262,23 +262,29 @@ sub generate_fasta_without_featid
 
 sub blast_param
 {
-    my $seq_type = shift || "blast_type_n";
-    my $pro = shift;
+    my %opts = @_;
+    my $seq_type = $opts{blast_type} || "blast_type_n";
+    my $translate = $opts{translate};
+    my $version = $opts{version};
+    my $pro;
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CoGeBlast.tmpl');
-    my $template_n = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CoGeBlast.tmpl');
-    if ($seq_type eq "blast_type_n") {
-        $template_n->param(NCBI_BLAST_NU=>1);
-        $template->param(BLAST_NU=>1);}
+    if ($seq_type =~ "blast_type_n") {
+      if($version =~ /cn/) {$template->param(BLAST_NU=>1);}
+      else {$template->param(NCBI_BLAST_NU=>1);}        
+    }
     else {
-	$template->param(BLAST_PRO=>1);
-	$template_n->param(NCBI_BLAST_PRO=>1);
-	unless ($pro)
-	 {$template->param(BLAST_PRO_COMP=>1);
-	  $template_n->param(NCBI_BLAST_PRO_COMP=>1);}
-	 }
-    my $html1 = $template->output;
-    my $html2 = $template_n->output;
-    return $html1,$html2;
+      $pro = 1;
+      if($version =~ /cn/) {$template->param(BLAST_PRO=>1);}
+      else {$template->param(NCBI_BLAST_PRO=>1);}
+	  
+	  unless ($translate)
+	  {
+	     if($version =~ /cn/) {$template->param(BLAST_PRO_COMP=>1);}
+	     else {$template->param(NCBI_BLAST_PRO_COMP=>1);}	  
+	  }
+    }
+    my $html = $template->output;
+    return $html,$version,$pro;
 }
 
 sub reverse_complement
@@ -356,19 +362,20 @@ sub blastoff_search
     my $blastable = $opts{blastable};
     my $width = $opts{width};
     my $type = $opts{type};
+#    print STDERR Dumper \%opts;
     my $t1 = new Benchmark;
     $cogeweb = initialize_basefile(prog=>"CoGeBlast");
     my @org_ids = split(/,/,$blastable);
     my $fasta_file = create_fasta_file($seq);
     my ($nuc_penalty,$nuc_reward,$exist,$extent);
     #print STDERR $gapcost,"\n";
-    if ($gapcost =~/^(\d)\s+(\d)/) {($nuc_penalty,$nuc_reward) = ($1,$2);}
+    if ($gapcost =~/^(\d+)\s+(\d+)/) {($exist,$extent) = ($1,$2);}
     
-    if ($match_score=~/^(\d)\,(-\d)/) {($exist,$extent) = ($1,$2);}
+    if ($match_score=~/^(\d+)\,(-\d+)/) {($nuc_penalty,$nuc_reward) = ($2,$1);}
     my $pre_command = "$BLAST -p $program -i $fasta_file";
     if ($program =~ /^blastn$/i)
       {
-	$pre_command .= " -q -$nuc_penalty -r $nuc_reward";
+	$pre_command .= " -q $nuc_penalty -r $nuc_reward";
       }
     else
       {
@@ -380,6 +387,7 @@ sub blastoff_search
     $pre_command .= " -C $comp" if $program =~ /tblastn/i;
     my $x;
     ($x, $pre_command) = check_taint($pre_command);
+#    print STDERR $pre_command,"\n";
     my @results;
     my $count =1;
     my $t2 = new Benchmark;
@@ -881,8 +889,7 @@ sub get_blast_db
     else
       {
 	$res = generate_fasta(dslist=>\@ds, file=>$file) unless -r $file;
-      }
-    my $blastdb = "$BLASTDBDIR/$md5";
+      }    my $blastdb = "$BLASTDBDIR/$md5";
     if (-r $blastdb.".nsq")
       {
 	write_log("blastdb file for $org_name ($md5) exists", $cogeweb->logfile);
@@ -1262,7 +1269,7 @@ sub overlap_feats_parse #Send to GEvo
       }
 
     $count--;
-    return ("alert",$count) if $count > 10;
+    return ("alert",$count) if $count > 8;
     $url .= "num_seqs=$count";
     return $url;
   }
