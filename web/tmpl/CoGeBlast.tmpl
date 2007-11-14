@@ -8,8 +8,8 @@
 <SCRIPT language="JavaScript">
 
 $(document).ready(function(){
-  radio_lock($('#bn').is(':checked'));
-  blast_param_on_select();
+  display_correct_radio($('#cn').is(':checked'));
+  blast_param_on_select('cn','coge');
   blast_param([],[animate_params]);
   database_param([],['database']);
   
@@ -129,8 +129,8 @@ function export_file(dir) {
 
 function send_to_gevo(url,num_accns) {
   if (url == "alert") {
-    var remove = num_accns - 8;
-    alert("You have exceeded the number of features you can send to GEvo ( 8 Max ). You currently have "+num_accns+" selected. Please uncheck "+remove+" of your checked item(s).");
+    var remove = num_accns - 10;
+    alert("You have exceeded the number of features you can send to GEvo ( 10 Max ). You currently have "+num_accns+" selected. Please uncheck "+remove+" of your checked item(s).");
   }
   else {
     window.open(url);
@@ -290,14 +290,9 @@ function blastOff(){
     $('#coge_blast').slideDown(pageObj.speed);
     return;
   }
+
   var params = get_params();
-  if ((program == "blastp") || (program == "blastx"))
-   {
-    alert('Sorry.  CoGeBlast only supports nucleotide databases at this time.  '+program+' requires a protein database.');
-    $('#query_seqs').slideDown(pageObj.speed);
-    return;
-   }
-//  $('.dropMenu').hide();
+
   $('.bresults').slideToggle(pageObj.speed);
   $('#blast_results').html('<font class="loading dna">Loading. . .</font>');
 
@@ -318,8 +313,6 @@ function blastOff(){
   blastoff_search(['args__program','args__'+program,'args__expect','args__'+expect,'args__job_title','args__'+job_title,'args__wordsize','args__'+word_size,'args__comp','args__'+comp,'args__matrix','args__'+matrix,'args__matchscore','args__'+match_score,'args__gapcost','args__'+gapcost,'args__seq','args__'+seq,'args__blastable','args__'+blastable_db,'args__width','args__'+page_width],[blastresults],'POST');
   
 }
-
-// $(document).ready(function(){
 
 function blastresults(html,basename){
   pageObj.basename = basename;
@@ -368,20 +361,36 @@ function blastresults(html,basename){
  }
 }
 
-function update_gapcost() {
-    var str = $('#match_score').val();
+function update_gapcost(pro) {
     $('.gapcosts').hide();
-    var num1 = str.substr(0,1);
-    var num2 = str.substr(2);
-    $('#gapcosts_'+num1+num2).slideToggle(pageObj.speed);
+    if(pro)
+    {
+      var val = $('#matrix').val();
+      $('#gapcosts_'+val).slideToggle(pageObj.speed);
+    }
+    else
+    {
+      var str = $('#match_score').val();
+      var num1 = str.substr(0,1);
+      var num2 = str.substr(2);
+      $('#gapcosts_'+num1+num2).slideToggle(pageObj.speed);
+    }
 }
 
-function update_gapcost_ncbi() {
-    var str = $('#ncbi_match_score').val();
+function update_gapcost_ncbi(pro) {
     $('.ncbi_gapcosts').hide();
-    var num1 = str.substr(0,1);
-    var num2 = str.substr(2);
-    $('#ncbi_gapcosts_'+num1+num2).slideToggle(pageObj.speed);
+    if(pro)
+    {
+      var val = $('#ncbi_matrix').val();
+      $('#ncbi_gapcosts_'+val).slideToggle(pageObj.speed);
+    }
+    else
+    {
+      var str = $('#ncbi_match_score').val();
+      var num1 = str.substr(0,1);
+      var num2 = str.substr(2);
+       $('#ncbi_gapcosts_'+num1+num2).slideToggle(pageObj.speed);
+    }
 }
 
 $.fn.getLength = function(val){
@@ -446,26 +455,32 @@ $.fn.sortSelect = function(){
 
 
 function get_params(){
- radio = get_radio();
+ radio = get_radio("cn","coge");
  var word_size = $('#word_size').val();
  var expect = $('#e_value').val();
  var match_mismatch = $('#match_score').val();
- if (match_mismatch)
+ var gapcost;
+ var matrix = $('#matrix').val();
+ if ($('#cn').is(':checked'))
   {
     var num1 = match_mismatch.substr(0,1);
     var num2 = match_mismatch.substr(2);
+    gapcost = $('#gapcosts_'+num1+num2).val();
   }
- var gapcost = $('#gapcosts_'+num1+num2).val();
+ else
+  {
+    gapcost = $('#gapcosts_'+matrix).val();
+  }
  var program = $('#'+radio).val();
 
- var matrix = $('#matrix').val();
+
  var comp = $('#comp_adj').val();
  var seq = $('#seq_box').val();
  return {w : word_size, e : expect,g : gapcost,p : program,mm: match_mismatch,m : matrix,c : comp,s : seq};
 }
 
 function get_ncbi_params(){
- radio = get_radio();
+ radio = get_radio("bn","ncbi");
  var word_size = $('#ncbi_word_size').val();
  var expect = $('#ncbi_e_value').val();
  var db = $('#ncbi_db').val();
@@ -514,14 +529,14 @@ function ncbi_blast(url) {
  }
 }
 
-function radio_lock(display) {
+function display_correct_radio(display,val) {
   if (display == false) {
-    $("#select_n").hide(0);
-    $("#select_p").slideDown(pageObj.speed);
+    $("#"+val+"_select_n").hide(0);
+    $("#"+val+"_select_p").slideDown(pageObj.speed);
   }
   else {
-    $("#select_p").hide(0);
-    $("#select_n").slideDown(pageObj.speed);
+    $("#"+val+"_select_p").hide(0);
+    $("#"+val+"_select_n").slideDown(pageObj.speed);
   }
 }
 
@@ -530,31 +545,31 @@ function hide_big_picture() {
 }
 
 function select_blast() {
-  var radio = get_radio();
+  var radio = get_radio('bn','ncbi');
   //alert(radio);
   get_url([radio],[ncbi_blast]);
 }
 
-function get_radio(){
-  var radio = $('#bn')[0].checked;
+function get_radio(which_type,val){
+  var radio = $('#'+which_type)[0].checked;
   if (radio == true){
-   radio = "blast_type_n";}
+   radio = val+"_blast_type_n";}
   else{
-   radio = "blast_type_p";}
+   radio = val+"_blast_type_p";}
   return radio;
 }
 
-function get_seq() {
+function get_seq(which_type) {
  dsid = seqObj.dsid;
  featid = seqObj.featid;
  chr = seqObj.chr;
 // radio2 = kaj.GS('bn');
 // alert('bn');
  if (featid) {
-   get_sequence(['args__'+featid,'args__'+dsid,'bn', 'args__'+seqObj.seqview, 'args__'+seqObj.upstream,'args__'+seqObj.downstream,'args__'+seqObj.rc],['seq_box']);
+   get_sequence(['args__'+featid,'args__'+dsid,which_type, 'args__'+seqObj.seqview, 'args__'+seqObj.upstream,'args__'+seqObj.downstream,'args__'+seqObj.rc],['seq_box']);
  }
  else if (chr) {
-   get_sequence(['args__'+chr,'args__'+dsid,'bn', 'args__'+seqObj.seqview, 'args__'+seqObj.upstream,'args__'+seqObj.downstream],['seq_box']);
+   get_sequence(['args__'+chr,'args__'+dsid,which_type, 'args__'+seqObj.seqview, 'args__'+seqObj.upstream,'args__'+seqObj.downstream],['seq_box']);
  }
  else {
 // alert('Im being called!'+accn+dsid+type_name);
@@ -562,35 +577,35 @@ function get_seq() {
  }
 }
 
-function blast_param_on_select() {
- radio = get_radio();
+function blast_param_on_select(which_type,val) {
+ radio = get_radio(which_type,val);
  program = $('#'+radio).val();
  //alert(''+program);
  database_param([radio],['database']);
  
  if ((program == 'blastx') || (program == 'tblastx')) {
  //alert('Program is true!');
-  blast_param(['args__'+"blast_type_p",'args__'+"blast_type_p"],[animate_params]);
+  blast_param(['args__blast_type','args__'+"blast_type_p",'args__translate','args__1','args__version','args__'+which_type],[animate_params]);
   $('#word_size').val(3);
  }
  else if ((program == 'blastp') || (program == 'tblastn')) {
-  blast_param(['args__'+"blast_type_p"],[animate_params]);
+  blast_param(['args__blast_type','args__'+"blast_type_p",'args__version','args__'+which_type],[animate_params]);
   $('#word_size').val(3);
  }
  else {
-   blast_param([],[animate_params]);
+   blast_param(['args__version','args__'+which_type],[animate_params]);
   $('#word_size').val(8);
  }
 }
 
-function animate_params (html,html_ncbi){
-  if($('#ncbiblast_option').is(":hidden")){
-    $('#pro_or_nu_param').hide(0).html(html).slideDown(pageObj.speed);
-    $('#ncbi_pro_or_nu_param').html(html_ncbi);
+function animate_params (html,version,pro){
+  if(version == "cn") {
+      $('#pro_or_nu_param').hide(0).html(html).slideDown(pageObj.speed);
+      update_gapcost(pro);
   }
   else{
-    $('#ncbi_pro_or_nu_param').hide(0).html(html_ncbi).slideDown(pageObj.speed);
-    $('#pro_or_nu_param').html(html);
+      $('#ncbi_pro_or_nu_param').hide(0).html(html).slideDown(pageObj.speed);
+      update_gapcost_ncbi(pro);
   }
 }
 
@@ -685,6 +700,25 @@ function org_info(info){
   }
 }
 
+function adjust_blast_types(val){
+  if(val == 1){
+    if($('#ncbi_blast_type').is(":hidden")){
+      $('#coge_blast_type').hide(0);
+      $('#ncbi_blast_type').show(0);
+      get_seq('bn');
+    }
+    else return;
+  }
+  else{
+    if($('#coge_blast_type').is(":hidden")){
+      $('#coge_blast_type').show(0);
+      $('#ncbi_blast_type').hide(0);
+      get_seq('cn');
+    }
+    else return;
+  }
+}
+
 </SCRIPT>
 </TMPL_IF>
 
@@ -703,7 +737,7 @@ function org_info(info){
     <a href="#" id="coge_blast_button" onClick="blastOff();"><span>CoGe BLAST</span></a>
    </TD>
    <TD>
-     <a href="#" id="ncbi_blast" onClick="select_blast()"><span>NCBI BLAST</span></a>
+     <a href="#" id="ncbi_blast_button" onClick="select_blast()"><span>NCBI BLAST</span></a>
    </TD>
   </TR>
 </TABLE>-->
@@ -713,12 +747,12 @@ function org_info(info){
   <div id=tab>
    <ul class="ui-tabs-nav">
      <li class="ui-tabs-selected">
-       <a href="#cogeblast_option">
+       <a href="#cogeblast_option" onclick="adjust_blast_types()">
         <span>Use CoGe Blast</span>
        </a>
       </li>
       <li class="ui-tabs-selected">
-       <a href="#ncbiblast_option">
+       <a href="#ncbiblast_option" onclick="adjust_blast_types(1)">
         <span>Use NCBI Blast</span>
        </a>
       </li>
@@ -845,7 +879,55 @@ function org_info(info){
 		<option value = "0 2"  >Existence:  0 Extension: 2</option>		
 		<option value = "4 1"  >Existence:  4 Extension: 1</option>		
 		<option value = "3 1"  >Existence:  3 Extension: 1</option>		
-		<option value = "2 1"  >Existence:  2 Extension: 1</option>	
+		<option value = "2 1"  >Existence:  2 Extension: 1</option>
+	</select>
+	<select id="gapcosts_BLOSUM62" class="gapcosts" style="display: none">
+		<option value = "9 2"   >Existence:  9 Extension: 2</option>	
+		<option value = "8 2"   >Existence:  8 Extension: 2</option>	
+		<option value = "7 2"   >Existence:  7 Extension: 2</option>	
+		<option value = "12 1"  >Existence: 12 Extension: 1</option>	
+		<option value = "11 1" selected >Existence: 11 Extension: 1</option>	
+		<option value = "10 1"  >Existence: 10 Extension: 1</option>		
+	</select>
+	<select id="gapcosts_PAM30" class="gapcosts" style="display: none">
+		<option value = "7 2"  >Existence:  7 Extension: 2</option>			
+		<option value = "6 2"  >Existence:  6 Extension: 2</option>		
+		<option value = "5 2"  >Existence:  5 Extension: 2</option>		
+		<option value = "10 1" >Existence: 10 Extension: 1</option>		
+		<option value = "9 1"  selected>Existence: 9 Extension: 1</option>		
+		<option value = "8 1"  >Existence: 8 Extension: 1</option>
+	</select>
+	<select id="gapcosts_PAM70" class="gapcosts" style="display: none">
+		<option value = "8 2"  >Existence:  8 Extension: 2</option>	
+		<option value = "7 2"  >Existence:  7 Extension: 2</option>			
+		<option value = "6 2"  >Existence:  6 Extension: 2</option>			
+		<option value = "11 1" >Existence: 11 Extension: 1</option>	
+		<option value = "10 1" selected>Existence: 10 Extension: 1</option>		
+		<option value = "9 1"  >Existence: 9 Extension: 1</option>
+	</select>
+	<select id="gapcosts_BLOSUM80" class="gapcosts" style="display: none">
+		<option value = "8 2"   >Existence:  8 Extension: 2</option>	
+		<option value = "7 2"   >Existence:  7 Extension: 2</option>			
+		<option value = "6 2"   >Existence:  6 Extension: 2</option>			
+		<option value = "11 1"   >Existence: 11 Extension: 1</option>	
+		<option value = "10 1"   selected>Existence: 10 Extension: 1</option>		
+		<option value = "9 1"   >Existence: 9 Extension: 1</option>		
+	</select>
+	<select id="gapcosts_BLOSUM45" class="gapcosts" style="display: none">
+		<option value = "13 3"   >Existence: 13 Extension: 3</option>	
+		<option value = "12 3"   >Existence: 12 Extension: 3</option>	
+		<option value = "11 3"   >Existence: 11 Extension: 3</option>	
+		<option value = "10 3"   >Existence: 10 Extension: 3</option>	
+		<option value = "15 2"  selected >Existence: 15 Extension: 2</option>	
+		<option value = "14 2"   >Existence: 14 Extension: 2</option>	
+		<option value = "13 2"   >Existence: 13 Extension: 2</option>	
+		<option value = "12 2"   >Existence: 12 Extension: 2</option>	
+		<option value = "19 1"   >Existence: 19 Extension: 1</option>	
+		<option value = "18 1"   >Existence: 18 Extension: 1</option>	
+		<option value = "17 1"   >Existence: 17 Extension: 1</option>	
+		<option value = "16 1"   >Existence: 16 Extension: 1</option>		
+	</select>
+	
 	  </td>
 	 </tr>
 <!--	<TR>
@@ -873,7 +955,7 @@ function org_info(info){
 <!--   </TD> -->
   </div>
    <div id="ncbiblast_option" ><!-- NCBI BLAST</div>-->
-   <a href="#" id="ncbi_blast" onClick="select_blast()"><span>NCBI BLAST</span></a><br>
+   <a href="#" id="ncbi_blast_button" onClick="select_blast()"><span>NCBI BLAST</span></a><br>
    <DIV class="ncbiblast_opts">
    <DIV id = "ncbio" name="slider" class="topItem" onMouseOver="$('#ncbio').removeClass('topItem').addClass('topItemSelected');" onMouseOut="$('#ncbio').removeClass('topItemSelected').addClass('topItem');" onClick='animate_section("#ncbi_blast_opts", "slideToggle")'>NCBI BLAST Options:</DIV>
    <DIV class="dropMenu" id="ncbi_blast_opts">
@@ -937,7 +1019,15 @@ function org_info(info){
 	   Word size
 	</TD>
 	<TD>
-	 <input type=text id=ncbi_word_size value="8" size="7">
+	 	 <select name=ncbi_word_size id=ncbi_word_size>
+           <option value = "16"> 16
+	       <option value = "20"> 20
+	       <option value = "24"> 24
+           <option value = "28" selected> 28
+           <option value = "32"> 32
+           <option value = "48"> 48
+	       <option value = "64"> 64
+         </select>
        </TR>
        <TR>
 	<TD>
@@ -1000,6 +1090,53 @@ function org_info(info){
 		<option value = "4 1"  >Existence:  4 Extension: 1</option>		
 		<option value = "3 1"  >Existence:  3 Extension: 1</option>		
 		<option value = "2 1"  >Existence:  2 Extension: 1</option>	
+	</select>
+	<select id="ncbi_gapcosts_BLOSUM62" class="ncbi_gapcosts" style="display: none">
+		<option value = "9 2"   >Existence:  9 Extension: 2</option>	
+		<option value = "8 2"   >Existence:  8 Extension: 2</option>	
+		<option value = "7 2"   >Existence:  7 Extension: 2</option>	
+		<option value = "12 1"  >Existence: 12 Extension: 1</option>	
+		<option value = "11 1" selected >Existence: 11 Extension: 1</option>	
+		<option value = "10 1"  >Existence: 10 Extension: 1</option>		
+	</select>
+	<select id="ncbi_gapcosts_PAM30" class="ncbi_gapcosts" style="display: none">
+		<option value = "7 2"  >Existence:  7 Extension: 2</option>			
+		<option value = "6 2"  >Existence:  6 Extension: 2</option>		
+		<option value = "5 2"  >Existence:  5 Extension: 2</option>		
+		<option value = "10 1" >Existence: 10 Extension: 1</option>		
+		<option value = "9 1"  selected>Existence: 9 Extension: 1</option>		
+		<option value = "8 1"  >Existence: 8 Extension: 1</option>
+	</select>
+	<select id="ncbi_gapcosts_PAM70" class="ncbi_gapcosts" style="display: none">
+		<option value = "8 2"  >Existence:  8 Extension: 2</option>	
+		<option value = "7 2"  >Existence:  7 Extension: 2</option>			
+		<option value = "6 2"  >Existence:  6 Extension: 2</option>			
+		<option value = "11 1" >Existence: 11 Extension: 1</option>	
+		<option value = "10 1" selected>Existence: 10 Extension: 1</option>		
+		<option value = "9 1"  >Existence: 9 Extension: 1</option>
+	</select>
+	<select id="ncbi_gapcosts_BLOSUM80" class="ncbi_gapcosts" style="display: none">
+		<option value = "8 2"   >Existence:  8 Extension: 2</option>	
+		<option value = "7 2"   >Existence:  7 Extension: 2</option>			
+		<option value = "6 2"   >Existence:  6 Extension: 2</option>			
+		<option value = "11 1"   >Existence: 11 Extension: 1</option>	
+		<option value = "10 1"   selected>Existence: 10 Extension: 1</option>		
+		<option value = "9 1"   >Existence: 9 Extension: 1</option>		
+	</select>
+	<select id="ncbi_gapcosts_BLOSUM45" class="ncbi_gapcosts" style="display: none">
+		<option value = "13 3"   >Existence: 13 Extension: 3</option>	
+		<option value = "12 3"   >Existence: 12 Extension: 3</option>	
+		<option value = "11 3"   >Existence: 11 Extension: 3</option>	
+		<option value = "10 3"   >Existence: 10 Extension: 3</option>	
+		<option value = "15 2"  selected >Existence: 15 Extension: 2</option>	
+		<option value = "14 2"   >Existence: 14 Extension: 2</option>	
+		<option value = "13 2"   >Existence: 13 Extension: 2</option>	
+		<option value = "12 2"   >Existence: 12 Extension: 2</option>	
+		<option value = "19 1"   >Existence: 19 Extension: 1</option>	
+		<option value = "18 1"   >Existence: 18 Extension: 1</option>	
+		<option value = "17 1"   >Existence: 17 Extension: 1</option>	
+		<option value = "16 1"   >Existence: 16 Extension: 1</option>		
+	</select>
       </TR>
       </TABLE>
      </TD>
@@ -1028,13 +1165,45 @@ function org_info(info){
       <TD><textarea class="backbox" type="textarea" onFocus="clear_if_no_seq()" name="seq_box" id ="seq_box" wrap=off cols=80 rows=15><TMPL_VAR NAME="SEQUENCE"></textarea>
       </TD>
       <TD valign="top"> Select a BLAST to run: <br>
+       <div id="coge_blast_type">
        <TABLE>
        <TR>
         <TD valign="top">
-         <label><input id=bn type=radio name=blast value="blast_type_n" checked="" onClick="radio_lock($('#bn')[0].checked);get_seq();blast_param_on_select();">Nucleotide Sequence</label>
+         <label><input id=cn type=radio name=cogeblast value="coge_blast_type_n" checked="" onClick="display_correct_radio($('#cn')[0].checked,'coge');get_seq('cn');blast_param_on_select('cn','coge');">Nucleotide Sequence</label>
          <br>
-          <div id=select_n>
-           <select name=blasttype id=blast_type_n onChange="blast_param_on_select()">
+          <div id=coge_select_n>
+           <select name=coge_blasttype id=coge_blast_type_n onChange="blast_param_on_select('cn','coge')">
+            <optgroup label="--- Select BLAST Type ---">
+            <option value = "blastn"> blastn
+            <option value = "tblastx"> tblastx
+           </optgroup>
+           </select>
+           <br>
+          </div>
+         <br>
+         <label><input id=cn type=radio name=cogeblast value="coge_blast_type_p" onClick="display_correct_radio($('#cn')[0].checked,'coge');get_seq('cn');blast_param_on_select('cn','coge')">Protein Sequence</label>
+         <br>
+          <div id=coge_select_p style="display:none;">
+           <select name=coge_blasttype id=coge_blast_type_p onChange="blast_param_on_select('cn','coge')">
+            <optgroup label="--- Select BLAST Type ---">
+            <option value = "tblastn"> tblastn
+            </optgroup>
+           </select>
+           <br>
+          </div>
+         <br>
+         <!--<input type=image name= onClick="get_radio(['args__bn','bn'],[select_blast])">-->
+         </TR>
+         </TABLE>
+         </div>
+      <div id="ncbi_blast_type" style="display:none;">
+       <TABLE>
+       <TR>
+        <TD valign="top">
+         <label><input id=bn type=radio name=ncbiblast value="ncbi_blast_type_n" checked="" onClick="display_correct_radio($('#bn')[0].checked,'ncbi');get_seq('bn');blast_param_on_select('bn','ncbi');">Nucleotide Sequence</label>
+         <br>
+          <div id=ncbi_select_n>
+           <select name=ncbi_blasttype id=ncbi_blast_type_n onChange="blast_param_on_select('bn','ncbi')">
             <optgroup label="--- Select BLAST Type ---">
             <option value = "blastn"> blastn
             <option value = "blastx"> blastx
@@ -1044,10 +1213,10 @@ function org_info(info){
            <br>
           </div>
          <br>
-         <label><input id=bn type=radio name=blast value="blast_type_p" onClick="radio_lock($('#bn')[0].checked);get_seq();blast_param_on_select()">Protein Sequence</label>
+         <label><input id=bn type=radio name=ncbiblast value="ncbi_blast_type_p" onClick="display_correct_radio($('#bn')[0].checked,'ncbi');get_seq('bn');blast_param_on_select('bn','ncbi')">Protein Sequence</label>
          <br>
-          <div id=select_p>
-           <select name=blasttype id=blast_type_p onChange="blast_param_on_select()">
+          <div id=ncbi_select_p style="display:none;">
+           <select name=ncbi_blasttype id=ncbi_blast_type_p onChange="blast_param_on_select('bn','ncbi')">
             <optgroup label="--- Select BLAST Type ---">
             <option value = "blastp"> blastp
             <option value = "tblastn"> tblastn
@@ -1059,6 +1228,7 @@ function org_info(info){
          <!--<input type=image name= onClick="get_radio(['args__bn','bn'],[select_blast])">-->
          </TR>
          </TABLE>
+         </div>
       </TD>
    </TR>
    <TR align=left valign=top>
@@ -1259,7 +1429,7 @@ function org_info(info){
 	 Matrix
         </TD>
         <TD>
-	     <select name=matrix id=matrix>
+	     <select name=matrix id=matrix onChange="update_gapcost(1)">
               <option value = "PAM30"> PAM30
 	      <option value = "PAM70"> PAM70
               <option value = "BLOSUM80"> BLOSUM80
@@ -1311,7 +1481,7 @@ function org_info(info){
 	 Matrix
         </TD>
         <TD>
-	     <select name=ncbi_matrix id=ncbi_matrix>
+	     <select name=ncbi_matrix id=ncbi_matrix onChange="update_gapcost_ncbi(1)">
               <option value = "PAM30"> PAM30
 	      <option value = "PAM70"> PAM70
               <option value = "BLOSUM80"> BLOSUM80
