@@ -1269,7 +1269,7 @@ sub overlap_feats_parse #Send to GEvo
       }
 
     $count--;
-    return ("alert",$count) if $count > 8;
+    return ("alert",$count) if $count > 10;
     $url .= "num_seqs=$count";
     return $url;
   }
