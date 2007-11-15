@@ -271,7 +271,7 @@ sub get_dataset_chr_info
 	$seq_grab .= "<tr><td class = \"ital\">End position: ";
 	$seq_grab .= qq{<td><input type="text" size=10 value="100000" id="stop">};
 	$seq_grab .= qq{</table>};
-	$seq_grab .= qq{<input type="submit" value = "Get Genomic Sequence!" onClick="launch_seqview($dsd, $chr)">};
+	$seq_grab .= qq{<input type="submit" value = "Get Genomic Sequence!" onClick="launch_seqview($dsd, '$chr')">};
 	$seq_grab .= qq{<div id="gseq"></div>};
       }
     return $html, $viewer, $seq_grab;
