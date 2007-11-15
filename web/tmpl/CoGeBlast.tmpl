@@ -8,8 +8,8 @@
 <SCRIPT language="JavaScript">
 
 $(document).ready(function(){
-  display_correct_radio($('#cn').is(':checked'));
-  blast_param_on_select('cn','coge');
+  display_correct_radio($('#coge_radio').is(':checked'));
+  blast_param_on_select('coge_radio','coge');
   blast_param([],[animate_params]);
   database_param([],['database']);
   
@@ -455,14 +455,16 @@ $.fn.sortSelect = function(){
 
 
 function get_params(){
- radio = get_radio("cn","coge");
+ radio = get_radio("coge_radio","coge");
  var word_size = $('#word_size').val();
  var expect = $('#e_value').val();
  var match_mismatch = $('#match_score').val();
- var gapcost;
  var matrix = $('#matrix').val();
- if ($('#cn').is(':checked'))
-  {
+ var program = $('#'+radio).val();
+ 
+ var gapcost;
+ if (program == "blastn")
+  { 
     var num1 = match_mismatch.substr(0,1);
     var num2 = match_mismatch.substr(2);
     gapcost = $('#gapcosts_'+num1+num2).val();
@@ -471,16 +473,14 @@ function get_params(){
   {
     gapcost = $('#gapcosts_'+matrix).val();
   }
- var program = $('#'+radio).val();
-
-
+ 
  var comp = $('#comp_adj').val();
  var seq = $('#seq_box').val();
  return {w : word_size, e : expect,g : gapcost,p : program,mm: match_mismatch,m : matrix,c : comp,s : seq};
 }
 
 function get_ncbi_params(){
- radio = get_radio("bn","ncbi");
+ radio = get_radio("ncbi_radio","ncbi");
  var word_size = $('#ncbi_word_size').val();
  var expect = $('#ncbi_e_value').val();
  var db = $('#ncbi_db').val();
@@ -545,7 +545,7 @@ function hide_big_picture() {
 }
 
 function select_blast() {
-  var radio = get_radio('bn','ncbi');
+  var radio = get_radio('ncbi_radio','ncbi');
   //alert(radio);
   get_url([radio],[ncbi_blast]);
 }
@@ -563,8 +563,8 @@ function get_seq(which_type) {
  dsid = seqObj.dsid;
  featid = seqObj.featid;
  chr = seqObj.chr;
-// radio2 = kaj.GS('bn');
-// alert('bn');
+// radio2 = kaj.GS('ncbi_radio');
+// alert('ncbi_radio');
  if (featid) {
    get_sequence(['args__'+featid,'args__'+dsid,which_type, 'args__'+seqObj.seqview, 'args__'+seqObj.upstream,'args__'+seqObj.downstream,'args__'+seqObj.rc],['seq_box']);
  }
@@ -599,7 +599,7 @@ function blast_param_on_select(which_type,val) {
 }
 
 function animate_params (html,version,pro){
-  if(version == "cn") {
+  if(version == "coge_radio") {
       $('#pro_or_nu_param').hide(0).html(html).slideDown(pageObj.speed);
       update_gapcost(pro);
   }
@@ -705,7 +705,7 @@ function adjust_blast_types(val){
     if($('#ncbi_blast_type').is(":hidden")){
       $('#coge_blast_type').hide(0);
       $('#ncbi_blast_type').show(0);
-      get_seq('bn');
+      get_seq('ncbi_radio');
     }
     else return;
   }
@@ -713,7 +713,7 @@ function adjust_blast_types(val){
     if($('#coge_blast_type').is(":hidden")){
       $('#coge_blast_type').show(0);
       $('#ncbi_blast_type').hide(0);
-      get_seq('cn');
+      get_seq('coge_radio');
     }
     else return;
   }
@@ -1169,10 +1169,10 @@ function adjust_blast_types(val){
        <TABLE>
        <TR>
         <TD valign="top">
-         <label><input id=cn type=radio name=cogeblast value="coge_blast_type_n" checked="" onClick="display_correct_radio($('#cn')[0].checked,'coge');get_seq('cn');blast_param_on_select('cn','coge');">Nucleotide Sequence</label>
+         <label><input id=coge_radio type=radio name=cogeblast value="coge_blast_type_n" checked="" onClick="display_correct_radio($('#coge_radio')[0].checked,'coge');get_seq('coge_radio');blast_param_on_select('coge_radio','coge');">Nucleotide Sequence</label>
          <br>
           <div id=coge_select_n>
-           <select name=coge_blasttype id=coge_blast_type_n onChange="blast_param_on_select('cn','coge')">
+           <select name=coge_blasttype id=coge_blast_type_n onChange="blast_param_on_select('coge_radio','coge')">
             <optgroup label="--- Select BLAST Type ---">
             <option value = "blastn"> blastn
             <option value = "tblastx"> tblastx
@@ -1181,10 +1181,10 @@ function adjust_blast_types(val){
            <br>
           </div>
          <br>
-         <label><input id=cn type=radio name=cogeblast value="coge_blast_type_p" onClick="display_correct_radio($('#cn')[0].checked,'coge');get_seq('cn');blast_param_on_select('cn','coge')">Protein Sequence</label>
+         <label><input id=coge_radio type=radio name=cogeblast value="coge_blast_type_p" onClick="display_correct_radio($('#coge_radio')[0].checked,'coge');get_seq('coge_radio');blast_param_on_select('coge_radio','coge')">Protein Sequence</label>
          <br>
           <div id=coge_select_p style="display:none;">
-           <select name=coge_blasttype id=coge_blast_type_p onChange="blast_param_on_select('cn','coge')">
+           <select name=coge_blasttype id=coge_blast_type_p onChange="blast_param_on_select('coge_radio','coge')">
             <optgroup label="--- Select BLAST Type ---">
             <option value = "tblastn"> tblastn
             </optgroup>
@@ -1192,7 +1192,7 @@ function adjust_blast_types(val){
            <br>
           </div>
          <br>
-         <!--<input type=image name= onClick="get_radio(['args__bn','bn'],[select_blast])">-->
+         <!--<input type=image name= onClick="get_radio(['args__ncbi_radio','ncbi_radio'],[select_blast])">-->
          </TR>
          </TABLE>
          </div>
@@ -1200,10 +1200,10 @@ function adjust_blast_types(val){
        <TABLE>
        <TR>
         <TD valign="top">
-         <label><input id=bn type=radio name=ncbiblast value="ncbi_blast_type_n" checked="" onClick="display_correct_radio($('#bn')[0].checked,'ncbi');get_seq('bn');blast_param_on_select('bn','ncbi');">Nucleotide Sequence</label>
+         <label><input id=ncbi_radio type=radio name=ncbiblast value="ncbi_blast_type_n" checked="" onClick="display_correct_radio($('#ncbi_radio')[0].checked,'ncbi');get_seq('ncbi_radio');blast_param_on_select('ncbi_radio','ncbi');">Nucleotide Sequence</label>
          <br>
           <div id=ncbi_select_n>
-           <select name=ncbi_blasttype id=ncbi_blast_type_n onChange="blast_param_on_select('bn','ncbi')">
+           <select name=ncbi_blasttype id=ncbi_blast_type_n onChange="blast_param_on_select('ncbi_radio','ncbi')">
             <optgroup label="--- Select BLAST Type ---">
             <option value = "blastn"> blastn
             <option value = "blastx"> blastx
@@ -1213,10 +1213,10 @@ function adjust_blast_types(val){
            <br>
           </div>
          <br>
-         <label><input id=bn type=radio name=ncbiblast value="ncbi_blast_type_p" onClick="display_correct_radio($('#bn')[0].checked,'ncbi');get_seq('bn');blast_param_on_select('bn','ncbi')">Protein Sequence</label>
+         <label><input id=ncbi_radio type=radio name=ncbiblast value="ncbi_blast_type_p" onClick="display_correct_radio($('#ncbi_radio')[0].checked,'ncbi');get_seq('ncbi_radio');blast_param_on_select('ncbi_radio','ncbi')">Protein Sequence</label>
          <br>
           <div id=ncbi_select_p style="display:none;">
-           <select name=ncbi_blasttype id=ncbi_blast_type_p onChange="blast_param_on_select('bn','ncbi')">
+           <select name=ncbi_blasttype id=ncbi_blast_type_p onChange="blast_param_on_select('ncbi_radio','ncbi')">
             <optgroup label="--- Select BLAST Type ---">
             <option value = "blastp"> blastp
             <option value = "tblastn"> tblastn
@@ -1225,7 +1225,7 @@ function adjust_blast_types(val){
            <br>
           </div>
          <br>
-         <!--<input type=image name= onClick="get_radio(['args__bn','bn'],[select_blast])">-->
+         <!--<input type=image name= onClick="get_radio(['args__ncbi_radio','ncbi_radio'],[select_blast])">-->
          </TR>
          </TABLE>
          </div>
