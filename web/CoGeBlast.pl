@@ -269,17 +269,17 @@ sub blast_param
     my $pro;
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CoGeBlast.tmpl');
     if ($seq_type =~ "blast_type_n") {
-      if($version =~ /cn/) {$template->param(BLAST_NU=>1);}
+      if($version =~ /coge_radio/) {$template->param(BLAST_NU=>1);}
       else {$template->param(NCBI_BLAST_NU=>1);}        
     }
     else {
       $pro = 1;
-      if($version =~ /cn/) {$template->param(BLAST_PRO=>1);}
+      if($version =~ /coge_radio/) {$template->param(BLAST_PRO=>1);}
       else {$template->param(NCBI_BLAST_PRO=>1);}
 	  
 	  unless ($translate)
 	  {
-	     if($version =~ /cn/) {$template->param(BLAST_PRO_COMP=>1);}
+	     if($version =~ /coge_radio/) {$template->param(BLAST_PRO_COMP=>1);}
 	     else {$template->param(NCBI_BLAST_PRO_COMP=>1);}	  
 	  }
     }
