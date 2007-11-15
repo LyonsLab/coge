@@ -87,7 +87,11 @@ sub cogesearch
   {
     my %opts = @_;
     my $accn = $opts{accn};
+    $accn =~ s/^\s+//;
+    $accn =~ s/\s+$//;
     my $anno = $opts{anno};
+    $anno =~ s/^\s+//;
+    $anno =~ s/\s+$//;
     my $type = $opts{type};
     my $org = $opts{org};
     my $feat_accn_wild = $opts{feat_name_wild};
