@@ -70,7 +70,7 @@ function autodistance_setup(){
 $(".location").keyup(function(){
      if($('#apply_all')[0].checked){
         var self = this;
-        $('.location').val(self.value)
+        $('.location').filter('input[id^=dr]').val(self.value)
      }
 });
 <TMPL_VAR NAME="AUTOSEARCH">
