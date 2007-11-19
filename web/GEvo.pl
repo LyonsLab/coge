@@ -77,7 +77,8 @@ $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 #print STDERR Dumper $USER;
 
 my %ajax = CoGe::Accessory::Web::ajax_func();
-$ajax{dataset_search} = \&dataset_search_for_feat_name; #override this method from Accessory::Web for restricted organisms
+$ajax{dataset_search} = \&dataset_search; #override this method from Accessory::Web for restricted organisms
+$ajax{feat_search} = \&feat_search; 
 my $pj = new CGI::Ajax(
 		       run=>\&run,
 		       loading=>\&loading,
@@ -157,6 +158,7 @@ sub gen_body
     for (my $i = 1; $i <= $num_seqs; $i++)
       {
 	my $draccn = $form->param("accn".$i) if $form->param("accn".$i);
+	my $pos = $form->param("x".$i) if $form->param("x".$i);
 	my $drfid = $form->param("fid".$i) if $form->param("fid".$i); #to be continued
 	my $drup = $form->param('dr'.$i.'up') if $form->param('dr'.$i.'up');
 	my $drdown = $form->param('dr'.$i.'down') if $form->param('dr'.$i.'down');
@@ -173,35 +175,36 @@ sub gen_body
 	my $revn = "checked" unless $revy;
 	my $refn = "checked" if $form->param('nref'.$i);
 	my $refy = "checked" unless $refn;
-	$autosearch_string .= 'if ($'.qq!('#accn$i').val()) {dataset_search(['accn$i','args__$i', 'args__!;
-	$autosearch_string .= $dsid if $dsid;
-	$autosearch_string .=qq!'],[feat_search_chain]);}!;
-#    if ($exon_mask)
-#      {
-#	$template->param(EXON_MASK_ON=>"checked");
-#      }
-#    else
-#      {
-#	$template->param(EXON_MASK_OFF=>"checked");
-#      }
+	$autosearch_string .= 'if ($'.qq!('#accn$i').val()) {dataset_search(['args__accn','accn$i','args__num', 'args__$i'!;
+	$autosearch_string .= ", 'args__dsid', 'args__$dsid'" if $dsid;
+	$autosearch_string .= ", 'args__featid', 'args__$drfid'" if $drfid;
+	$autosearch_string .=qq!],[feat_search_chain]);}!;
 
+	my $dsinfo = $dsid ? qq{<input type="hidden" id="posdsid$i" value="$dsid">} : qq{<input type="hidden" id="posdsid$i">};
+	$dsinfo .=get_dataset_info($dsid) if $dsid;
 	push @seq_nums, {
 			  SEQ_NUM=>$i,
 			 };
-	push @seq_sub, {
-			SEQ_NUM=>$i,
-			REV_YES=>$revy,
-			REV_NO=>$revn,
-			REF_YES=>$refy,
-			REF_NO=>$refn,
-			DRUP=>$drup,
-			DRDOWN=>$drdown,
-			DRACCN=>$draccn,
-			DSID=>$dsid,
-			GBACCN=>$gbaccn,
-			GBSTART=>$gbstart,
-			GBLENGTH=>$gblength,
-		       }
+	my %opts = (
+		    SEQ_NUM=>$i,
+		    REV_YES=>$revy,
+		    REV_NO=>$revn,
+		    REF_YES=>$refy,
+		    REF_NO=>$refn,
+		    DRUP=>$drup,
+		    DRDOWN=>$drdown,
+		    DRACCN=>$draccn,
+		    DSID=>$dsid,
+		    GBACCN=>$gbaccn,
+		    GBSTART=>$gbstart,
+		    GBLENGTH=>$gblength,
+		    POS=>$pos,
+		    DSINFO=>$dsinfo,
+		   );
+#	print STDERR "pos $i: $pos\n";
+	$opts{COGEPOS} = qq{<option value="cogepos$i" selected="selected">CoGe Database Position</option>} if $pos;
+	push @seq_sub, {%opts}
+	  
       }
 
     #page preferences
@@ -360,10 +363,18 @@ sub run
 	next if $skip_seq;
 	my $accn = $opts{"draccn$i"};
 	my $featid = $opts{"featid$i"};
+	my $feat = $coge->resultset('Feature')->find($featid);
+	my $dsid;
+	$dsid = $feat->dataset_id if $feat;
+	$dsid = $opts{"dsid$i"} unless $dsid;
+	$dsid = $opts{"posdsid$i"} unless $dsid;
+	my $chr;
+	$chr = $feat->chromosome if $feat;
+	$chr = $opts{"chr$i"} unless $chr;
+
 	my $drup = $opts{"drup$i"};
 	my $drdown = $opts{"drdown$i"};
-	
-
+	my $pos = $opts{"pos$i"};
 	my $gbaccn = $opts{"gbaccn$i"};
 	my $gbstart = $opts{"gbstart$i"};
 	my $gblength = $opts{"gblength$i"};
@@ -379,8 +390,10 @@ sub run
 	my ($file, $file_begin, $file_end, $obj);
 	my $reference_seq =$opts{"ref_seq$i"};
 	my $repeat_mask =$opts{"repmask$i"};
-	next unless $accn || $featid || $gbaccn || $dirseq;
+	next unless $accn || $featid || $gbaccn || $dirseq|| $pos;
 	$gevo_link .= ";accn$seqcount=".CGI::escape($accn) if $accn;
+	$gevo_link .= ";fid$seqcount=".CGI::escape($featid) if $featid;
+	$gevo_link .= ";dsid$seqcount=".CGI::escape($dsid) if $dsid;
 	$gevo_link .= ";dr$seqcount"."up=$drup" if $drup;
 	$gevo_link .= ";dr$seqcount"."down=$drdown" if $drdown;
 	$gevo_link .= ";gbaccn$seqcount=".CGI::escape($gbaccn) if $gbaccn;
@@ -389,10 +402,10 @@ sub run
 	$gevo_link .= ";rev$seqcount=1" if $rev;
 	$gevo_link .= ";nref$seqcount=1" unless $reference_seq;
 	$seqcount++;
-
-	if ($featid)
+	print STDERR "pos: $pos, dsid: $dsid, chr: $chr\n";
+	if ($featid || $pos)
 	  {
-	    $obj = get_obj_from_genome_db( $accn, $featid, $rev, $drup, $drdown );
+	    $obj = get_obj_from_genome_db( accn=>$accn, featid=>$featid, pos=>$pos, dsid=>$dsid, rev=>$rev, up=>$drup, down=>$drdown, chr=>$chr );
 	    if ($obj)
 	      {
 		($file, $file_begin, $file_end,$spike_seq) = 
@@ -590,7 +603,7 @@ sub run
 	    $frame_height += $gfx->ih + $gfx->ih*.1;
 	    $html_viewer .= qq!<div>$accn!;
 	    $html_viewer .= qq!(<font class=species>!.$obj->organism.qq!</font>)! if $obj->organism;
-	    $html_viewer .= "(".$up."::".$down.")" if defined $up;
+	    $html_viewer .= "(chr: ".$obj->chromosome." ".$obj->start."-".$obj->stop.")" if defined $up;
 	    $html_viewer .= qq!<font class=small> Reverse Complement</font>! if $rev;
 #	    $html_viewer .= qq!<font class=small> (eval cutoff: $eval_cutoff)</font>! if defined $eval_cutoff;
 	    $html_viewer .= qq!</DIV>\n!;
@@ -599,7 +612,7 @@ sub run
 	    $html_viewer .= qq!BORDER=0 ismap usemap="#$mapname">\n!;
 	    $html_viewer .= "$map\n";
 	    $item->{image} = $image;
-	    generate_imagemap_db(set=>$item, gfx=>$gfx);
+	    generate_image_db(set=>$item, gfx=>$gfx);
 #	    $item->{gfx} = $gfx;
 	  }
 	$count++;
@@ -800,13 +813,15 @@ CREATE TABLE image_data
 id INTEGER PRIMARY KEY AUTOINCREMENT,
 name varchar(50),
 type varchar (50),
-xmin integer(10),
-xmax integer(10),
-ymin integer(10),
-ymax integer(10),
-image varchar(50),
-image_track integer(10),
-pair_id integer(10),
+xmin integer,
+xmax integer,
+ymin integer,
+ymax integer,
+bpmin integer,
+bpmax integer,
+image_track integer,
+image_id integer,
+pair_id integer,
 link varchar(50),
 annotation blob,
 color varchar(10)
@@ -826,7 +841,7 @@ color varchar(10)
  };
      $dbh->do($index);
      $index = qq{
- CREATE INDEX image ON image_data (image)
+ CREATE INDEX image_id ON image_data (image_id)
  };
      $dbh->do($index);
      $index = qq{
@@ -859,11 +874,13 @@ CREATE TABLE image_info
 id INTEGER PRIMARY KEY AUTOINCREMENT,
 iname varchar(50),
 title varchar(1024),
-bpmin integer(255),
-bpmax integer(255)
+px_width integer,
+bpmin integer,
+bpmax integer,
+dsid integer
 )
 };
-#TODO: make sure to populate the bpmin and pbmax
+#TODO: make sure to populate the bpmin and pbmax and image width!!!!!!!!!!!!!!!!!
     $dbh->do($create);
      $index = qq{
  CREATE INDEX iname ON image_info (iname)
@@ -872,7 +889,7 @@ bpmax integer(255)
     system "chmod +rw $dbfile";
   }
 
-sub generate_imagemap_db
+sub generate_image_db
   {
     my %args = @_;
     my $gfx = $args{gfx};
@@ -886,18 +903,28 @@ sub generate_imagemap_db
     my $title;
     $title = $accn;
     $title .= " ".$set->{obj}->organism() if $set->{obj}->organism();
-    $title .= "(".$set->{up}."::".$set->{down}.")" if defined $set->{up};
+    $title .= "(chr: ".$set->{obj}->chromosome." ". $set->{obj}->start."-".$set->{obj}->stop.")" if defined $set->{up};
     $title .= qq! Reverse Complement! if $set->{rev};
+    my $width = $gfx->image_width;
+    my $dsid = $set->{obj}->dataset;
+    my $image_start = $set->{obj}->start;
+    my $image_stop = $set->{obj}->stop;
     my $statement = qq{
-INSERT INTO image_info (iname, title) values ("$image", "$title")
+INSERT INTO image_info (iname, title, px_width,dsid, bpmin, bpmax) values ("$image", "$title", $width, $dsid, $image_start, $image_stop)
 };
     print STDERR $statement unless $dbh->do($statement);
+    my $image_id = $dbh->last_insert_id("","","","");
     foreach my $feat ($gfx->get_feats)
       {
 	next if $feat->fill; #skip backgroup images;
 	next unless $feat->image_coordinates;
 	next if $feat->desc && $feat->desc =~ /spike sequence/;
 	my $type = $feat->type;
+	if ($type eq "CDS" && $feat->label)
+	  {
+	    $type = "anchor";
+	  }
+#	print STDERR Dumper $feat;
 #	$type  
 	my $pair_id = "-99";
 	my $coords = $feat->image_coordinates;
@@ -924,8 +951,6 @@ INSERT INTO image_info (iname, title) values ("$image", "$title")
 	$image_track = "-".$image_track if $feat->strand =~ /-/;
 	
 	my ($xmin, $ymin, $xmax, $ymax) = split /,/, $coords;
-	$ymin++;
-	$ymax++;
 	my $anno = $feat->description;
 	#	    $anno =~ s/'|"//g;
 	$anno =~ s/'//g;
@@ -933,10 +958,34 @@ INSERT INTO image_info (iname, title) values ("$image", "$title")
 	$anno =~ s/[\[\]\(\)]//g;
 	#	    print STDERR $anno if $anno =~ /Location/;
 	#	    print STDERR $anno,"\n" if $anno =~ /01020/;
-	$statement = qq{
-INSERT INTO image_data (name, type, xmin, xmax, ymin, ymax, image, image_track,pair_id, link, annotation, color) values ("$name", "$type", $xmin, $xmax, $ymin, $ymax, "$image", "$image_track",$pair_id, '$link', '$anno', '$color')
+	if (ref ($feat) =~ /gene/i)
+	  {
+	    my ($max_nt) = sort {$b<=>$a} map {@$_} @{$feat->segments}; 
+	    my ($min_nt) = sort {$a<=>$b} map {@$_} @{$feat->segments}; 
+	    my $length_nt = $max_nt-$min_nt;
+	    my $length_pix = $xmax-$xmin;
+	    foreach my $segment (@{$feat->segments})
+	      {
+		my ($start,$stop) = @$segment;
+		my $bpmin = $set->{obj}->start+$start;
+		my $bpmax = $set->{obj}->start+$stop;
+		my $xstart = sprintf("%.0f",$xmin+($start-$min_nt)/$length_nt*$length_pix);
+		my $xstop = sprintf("%.0f",$xmin+($stop-$min_nt)/$length_nt*$length_pix);
+		$statement = qq{
+INSERT INTO image_data (name, type, xmin, xmax, ymin, ymax, bpmin, bpmax, image_id, image_track,pair_id, link, annotation, color) values ("$name", "$type", $xstart, $xstop, $ymin, $ymax, $bpmin, $bpmax, $image_id, "$image_track",$pair_id, '$link', '$anno', '$color')
 };
-	print STDERR $statement unless $dbh->do($statement);
+		print STDERR $statement unless $dbh->do($statement);
+	      }
+	  }
+	else
+	  {
+	    my $bpmin = $set->{obj}->start+$feat->start;
+	    my $bpmax = $set->{obj}->start+$feat->stop;
+	    $statement = qq{
+INSERT INTO image_data (name, type, xmin, xmax, ymin, ymax, bpmin,bpmax,image_id, image_track,pair_id, link, annotation, color) values ("$name", "$type", $xmin, $xmax, $ymin, $ymax, $bpmin, $bpmax,$image_id, "$image_track",$pair_id, '$link', '$anno', '$color')
+};
+	    print STDERR $statement unless $dbh->do($statement);
+	  }
 	#create pair id
 	if ($feat->type =~ /HSP/)
 	  {
@@ -1357,14 +1406,19 @@ sub generate_seq_file
 
 sub get_obj_from_genome_db
   {
-    my $accn = shift;
-    my $featid = shift;
-    my $rev = shift;
-    my $up = shift || 0;
-    my $down = shift || 0;
+    my %opts = @_;
+    my $accn = $opts{accn};
+    my $featid = $opts{featid};
+    my $pos = $opts{pos};
+    my $dsid = $opts{dsid};
+    my $rev = $opts{rev};
+    my $chr = $opts{chr} || 1;
+    my $up = $opts{up} || 0;
+    my $down = $opts{down} || 0;
+    print STDERR Dumper \%opts;
     my $t1 = new Benchmark;
     my ($feat) = $coge->resultset('Feature')->esearch({"me.feature_id"=>$featid})->next;
-    unless (ref ($feat) =~ /feature/i)
+    unless (ref ($feat)=~ /feature/i || ($pos && $dsid && $chr))
       {
 	write_log("Can't find valid feature database entry for id=$featid", $cogeweb->logfile);
 	return;
@@ -1372,12 +1426,11 @@ sub get_obj_from_genome_db
     my $t2 = new Benchmark;
     my $start = 0;
     my $stop = 0;
-    my $chr;
     my $seq;
-    my $ds_id = $feat->dataset->id;
+    
     if ($feat)
       {
-	
+	$dsid = $feat->dataset->id;
 	if ($rev)
 	  {
 	    $start = $feat->start-$down;
@@ -1390,26 +1443,49 @@ sub get_obj_from_genome_db
 	  }
 	$start = 1 if $start < 1;
 	$chr = $feat->chr;
-
-	$seq = $coge->resultset('Dataset')->find($ds_id)->get_genomic_sequence(
-									      start => $start,
-									      stop => $stop,
-									      chr => $chr,
-									     );
-	$seq = CoGeX::Feature->reverse_complement($seq) if $rev;
       }
+    elsif ($pos)
+      {
+	if ($rev)
+	  {
+	    $start = $pos-$down;
+	    $stop = $pos+$up;
+	  }
+	else
+	  {
+	    $start = $pos-$up;
+	    $stop = $pos+$down;
+	  }
+	$start = 1 if $start < 1;
+	$accn = get_dataset_info($dsid);
+	$accn =~ s/<br>/, /g;
+	$accn =~ s/<.*?>//g;
+      }
+    my $ds = $coge->resultset('Dataset')->find($dsid);
+    $seq = $ds->get_genomic_sequence(
+				     start => $start,
+				     stop => $stop,
+				     chr => $chr,
+									 );
+    if ($stop-$start+1 > length($seq))
+      {
+	my $len = length($seq);
+	$stop = $start+$len-1;
+      }
+    $seq = CoGeX::Feature->reverse_complement($seq) if $rev;
+
     my $t3 = new Benchmark;
 
     my $obj= new CoGe::Accessory::GenBank({
 					   accn=>$accn,
 					   locus=>$accn,
-					   version=>$feat->dataset->version(),
-					   data_source=>$feat->dataset->datasource->name(),
-					   dataset=>$ds_id,
+					   version=>$ds->version(),
+					   data_source=>$ds->datasource->name(),
+					   dataset=>$dsid,
 					   chromosome=>$chr,
 					   start=>$start,
 					   stop=>$stop,
-					   organism=>$feat->org->name()."(v".$feat->dataset->version.")",
+					   organism=>$ds->organism->name()."(v".$ds->version.")",
 					   seq_length=>length($seq),
 					   sequence=>$seq,
 					 });
@@ -1419,9 +1495,9 @@ sub get_obj_from_genome_db
     $used_names{$accn} = 1;
     my $t4 = new Benchmark;
 
-    print STDERR "Region: $chr: $start-$stop\n" if $DEBUG;
+    print STDERR "Region: $chr: $start-$stop\n";# if $DEBUG;
 #    print STDERR "Region: $chr: ",$start-$start+1,"-",$stop-$start,"\n";
-    my @feats = $coge->get_features_in_region(start=>$start, stop=>$stop, chr=>$chr, dataset_id=>$ds_id);
+    my @feats = $coge->get_features_in_region(start=>$start, stop=>$stop, chr=>$chr, dataset_id=>$dsid);
     my $t5 = new Benchmark;
     foreach my $f (@feats)
       {
@@ -1471,7 +1547,7 @@ Getting sequence for region took:                     $seq_time
 Initialize obj took:                                  $int_obj_time
 Getting feats in region took:                         $feat_region_time
 Populating object took:                                $pop_obj_time
-Region:         ds_id: $ds_id $start-$stop($chr)
+Region:         dsid: $dsid $start-$stop($chr)
 } if $BENCHMARK && $DEBUG;
     return $obj;
   }
@@ -2021,6 +2097,9 @@ sub gen_params
 	$params .= qq{'args__featid$i', 'featid$i',};
 	$params .= qq{'args__drup$i', 'drup$i',};
 	$params .= qq{'args__drdown$i', 'drdown$i',};
+	$params .= qq{'args__pos$i', 'pos$i',};
+	$params .= qq{'args__dsid$i', 'dsid$i',};
+	$params .= qq{'args__posdsid$i', 'posdsid$i',};
 	$params .= qq{'args__gbaccn$i', 'gbaccn$i',};
 	$params .= qq{'args__gbstart$i', 'gbstart$i',};
 	$params .= qq{'args__gblength$i', 'gblength$i',};
@@ -2269,6 +2348,7 @@ sub add_seq
     my @seqs = {
 		SEQ_NUM=>$num_seq,
 		REV_NO=>"checked",
+		REF_YES=>"checked",
 		DRUP=>10000,
 		DRDOWN=>10000,
 	       };
@@ -2504,10 +2584,17 @@ sub number_of_runs
     return $total;
   }
 
-sub dataset_search_for_feat_name
+sub dataset_search
   {
-    my ($accn, $num, $dsid) = @_;
+    my %opts = @_;
+#    print STDERR "dataset_search\n";
+#    print STDERR Dumper \%opts;
+#    my ($accn, $num, $dsid) = @_;
+    my $accn = $opts{accn};
+    my $num = $opts{num};
     $num = 1 unless $num;
+    my $dsid = $opts{dsid};
+    my $featid = $opts{featid};
     return ( qq{<input type="hidden" id="dsid$num">\n<input type="hidden" id="featid$num">}, $num )unless $accn;
     my $html;
     my %sources;
@@ -2543,7 +2630,7 @@ sub dataset_search_for_feat_name
      if (keys %sources)
        {
  	$html .= qq{
- <SELECT name = "dsid$num" id= "dsid$num" onChange="feat_search(['accn$num','dsid$num', 'args__$num'],['feat$num']);">
+ <SELECT name = "dsid$num" id= "dsid$num" onChange="feat_search(['args__accn','accn$num','args__dsid', 'dsid$num', 'args__num','args__$num', 'args__featid'],['feat$num']);">
  };
  	foreach my $id (sort {$sources{$b}{version} <=> $sources{$a}{version}} keys %sources)
  	  {
@@ -2560,7 +2647,7 @@ sub dataset_search_for_feat_name
        {
  	$html .= qq{<span class=container>Accession not found.</span> <input type="hidden" id="dsid$num">\n<input type="hidden" id="featid$num">\n};	
        }    
-    return ($html,$num);
+    return ($html,$num, $featid);
   }
 
 
@@ -2590,4 +2677,74 @@ sub get_opt
     $opt = $params->{$param} if (ref ($params) =~ /hash/i &! defined $opt);
     return $opt;
       
+  }
+sub get_dataset_info
+  {
+    my $dsid = shift;
+    my ($ds) = $coge->resultset('Dataset')->resolve($dsid);
+    my $name = $ds->name;
+    my $ver = $ds->version;
+    my $desc = $ds->description;
+    my $sname = $ds->datasource->name;
+    my $ds_name = $ds->name;
+    my $org = $ds->organism->name;
+    my $chr = join (", ",$ds->get_chromosomes);
+    my $title = "<span class=species>$org v$ver:</span><br> $ds_name<br>chr: $chr<br>source: $sname";
+    return $title;
+  }  
+
+sub feat_search
+  {
+    my %opts = @_;
+#    my ($self, $accn, $dsid, $num) = self_or_default(@_);
+    my $accn = $opts{accn};
+    my $dsid=$opts{dsid};
+    my $num = $opts{num};
+    my $featid = $opts{featid};
+#    print STDERR "feat_search\n";
+#    print STDERR Dumper \%opts;
+    return qq{<input type="hidden" id="featid$num">\n} unless $dsid;
+    my @feats;
+    my $rs = $coge->resultset('Feature')->search(
+						  {
+						   'feature_names.name'=> $accn,
+						   'dataset.dataset_id' => "$dsid",
+						  },
+						  {
+						   'join'=>['feature_type','dataset', 'feature_names'],
+						   'prefetch'=>['feature_type', 'dataset'],
+						  }
+						 );
+    my %seen;
+    while( my $f =$rs->next())
+      {
+	next unless $f->dataset->id == $dsid;
+	push @feats, $f unless $seen{$f->id};
+	$seen{$f->id}=1;
+      }
+    my $html;
+    if (@feats)
+      {
+	$html .= qq{
+<SELECT name = "featid$num" id = "featid$num" >
+  };
+	foreach my $feat (sort {$a->type->name cmp $b->type->name} @feats)
+	  {
+	    my $loc = "(".$feat->type->name.") Chr:".$feat->locations->next->chromosome." ".$feat->start."-".$feat->stop;
+	    #working here, need to implement genbank_location_string before I can progress.  Need 
+	    $loc =~ s/(complement)|(join)//g;
+	    my $fid = $feat->id;
+	    $html .= qq {  <option value="$fid"};
+	    $html .= qq { selected } if $featid && $featid == $fid;
+	    $html .= qq{>$loc \n};
+	  }
+	$html .= qq{</SELECT>\n};
+	my $count = scalar @feats;
+	$html .= qq{<font class=small>($count)</font>};
+      }
+    else
+      {
+	$html .=  qq{<input type="hidden" id="featid$num">\n}
+      }
+    return $html;
   }
