@@ -86,7 +86,7 @@ for (var i =1; i<= num_seqs; i++)
     $('#accn'+i).val("");
     $('#drup'+i).val("10000");
     $('#drdown'+i).val("10000");
-    dataset_search(['accn'+i,'args__'+i],[feat_search_chain]);
+    dataset_search(['args__accn','accn'+i,'args__num', 'args__'+i],[feat_search_chain]);
     $('#gbaccn'+i).val("");
     $('#gbstart'+i).val("1");
     $('#gblength'+i).val("");
@@ -96,14 +96,6 @@ for (var i =1; i<= num_seqs; i++)
     
   }
 
-}
-
-function final_dataset_search () {
-var num_seqs = $("#num_seqs").val();
-for (var i =1; i<= num_seqs; i++)
-  {
-    dataset_search(['accn'+i,'args__'+i],[feat_search_chain]);
-  }
 }
 
 function check_spike(tblastx) {
@@ -118,10 +110,10 @@ function check_spike(tblastx) {
   }
 }
 
-function feat_search_chain(stuff, num) {
+function feat_search_chain(stuff, num, featid) {
  if (stuff) {
   $("#source"+num).html(stuff);
-  feat_search(['accn'+num,'dsid'+num, 'args__'+num],['feat'+num]);
+  feat_search(['args__accn', 'accn'+num,'args__dsid', 'dsid'+num, 'args__num', 'args__'+num, 'args__featid','args__'+featid],['feat'+num]);
  }
 }
 
@@ -281,6 +273,7 @@ for (var i =1; i<= num_seqs; i++)
     if ($('#accn'+i).val()) {selector='db'+i;}
     else if ($('#gbaccn'+i).val()) {selector='gb'+i;}
     else if ($('#dirseq'+i).val()) {selector='dir'+i;}
+    else if ($('#pos'+i).val()) {selector='cogepos'+i;}
     $('#seq_submit'+i).val(selector);
     seq_submit_change(i);
   }
@@ -893,16 +886,18 @@ function update_colors(hsp_num) {
 <th align=left id ="seq_set<TMPL_VAR NAME="SEQ_NUM">">Sequence <TMPL_VAR NAME="SEQ_NUM">: 
 
 <select class="backbox" id="seq_submit<TMPL_VAR NAME="SEQ_NUM">" size="1" onchange='seq_submit_change(<TMPL_VAR NAME="SEQ_NUM">)'>
-<option value="db<TMPL_VAR NAME="SEQ_NUM">">CoGe Database</option>
+<TMPL_VAR NAME=COGEPOS>
+<option value="db<TMPL_VAR NAME="SEQ_NUM">">CoGe Database Name</option>
 <option value="gb<TMPL_VAR NAME="SEQ_NUM">">NCBI GenBank</option>
 <option value="dir<TMPL_VAR NAME="SEQ_NUM">">Direct Submission</option>
+
 </select>
 
 <DIV id="db<TMPL_VAR NAME="SEQ_NUM">" style="display: none" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">
 <TABLE style="width: 100%;" class="small">
        <TR valign="top">
         <TD>Name:
-        <TD><input class="backbox" type="text" name="accn<TMPL_VAR NAME="SEQ_NUM">" id="accn<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="20" onBlur="dataset_search(['accn<TMPL_VAR NAME="SEQ_NUM">','args__<TMPL_VAR NAME="SEQ_NUM">', 'args__<TMPL_VAR NAME="DSID">'],[feat_search_chain])" value="<TMPL_VAR NAME=DRACCN>" />
+        <TD><input class="backbox" type="text" name="accn<TMPL_VAR NAME="SEQ_NUM">" id="accn<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="20" onBlur="dataset_search(['args__accn','accn<TMPL_VAR NAME="SEQ_NUM">','args__num', 'args__<TMPL_VAR NAME="SEQ_NUM">', 'args__dsid', 'args__<TMPL_VAR NAME="DSID">'],[feat_search_chain])" value="<TMPL_VAR NAME=DRACCN>" />
       <tr>
        <td colspan=2>     
         <DIV id="source<TMPL_VAR NAME="SEQ_NUM">" nowrap><input type="hidden" id="dsid<TMPL_VAR NAME="SEQ_NUM">"></DIV>
@@ -915,6 +910,25 @@ function update_colors(hsp_num) {
        <TD><DIV  id="down<TMPL_VAR NAME="SEQ_NUM">"><input class="location backbox" type="text" name="drdown<TMPL_VAR NAME="SEQ_NUM">" id="drdown<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10"  value="<TMPL_VAR NAME=DRDOWN>" /></DIV>
 </TABLE>
 </DIV>      
+
+
+<DIV id="cogepos<TMPL_VAR NAME="SEQ_NUM">" style="display: none" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">	
+<TABLE style="width: 100%;" class="small">
+      <TR valign="top">
+       <TD>Position:
+       <TD><input class="location backbox" type="text" id="pos<TMPL_VAR NAME="SEQ_NUM">" value="<TMPL_VAR NAME=POS>" size=10>
+      <TR>
+       <TD>Organism:
+       <TD><TMPL_VAR NAME=DSINFO>
+      <TR>
+       <TD><DIV class="small">Left sequence:</DIV>
+       <TD><DIV  id="up<TMPL_VAR NAME="SEQ_NUM">" ><input class="location backbox" type="text" name="drup<TMPL_VAR NAME="SEQ_NUM">" id="drup<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10" value="<TMPL_VAR NAME=DRUP>" /> </DIV>
+      <TR>
+       <TD><DIV class="small">Right sequence:</DIV>
+       <TD><DIV  id="down<TMPL_VAR NAME="SEQ_NUM">"><input class="location backbox" type="text" name="drdown<TMPL_VAR NAME="SEQ_NUM">" id="drdown<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10"  value="<TMPL_VAR NAME=DRDOWN>" /></DIV>
+     
+</table>
+</DIV>
 
 
 <DIV id="gb<TMPL_VAR NAME="SEQ_NUM">" style="display: none" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">
@@ -940,6 +954,7 @@ function update_colors(hsp_num) {
      <font class="small">Length: <input class="backbox" type="text" name="dirlength<TMPL_VAR NAME="SEQ_NUM">" id="dirlength<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="5" value=""  /></font><br>
 </table>
 </DIV>
+
 
 <table>
 <tr><td>
