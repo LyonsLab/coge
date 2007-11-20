@@ -824,7 +824,7 @@ CREATE TABLE image_data
 (
 id INTEGER PRIMARY KEY AUTOINCREMENT,
 name varchar(50),
-type varchar (50),
+type varchar (10),
 xmin integer,
 xmax integer,
 ymin integer,
@@ -840,39 +840,19 @@ color varchar(10)
 )
 };
     $dbh->do($create);
-#     my $index = qq{
-#  ALTER TABLE 'image_data' ADD AUTO_INCREMENT 'id';
-# };
-#     $dbh->do($index);
-#     $index = qq{
-# CREATE INDEX name ON image_data (name)
-# };
-#     $dbh->do($index);
+    $dbh->do('CREATE INDEX type ON image_data (type)');
+    $dbh->do('CREATE INDEX image_id ON image_data (image_id)');
+    $dbh->do('CREATE INDEX x_idx ON image_data (xmin,xmax)');
+    $dbh->do('CREATE INDEX y_idx ON image_data (ymin,ymax)');
+    $dbh->do('CREATE INDEX image_track ON image_data (image_track)');
+    $dbh->do('CREATE INDEX pair_id ON image_data (pair_id)');
 
-     my $index = qq{ CREATE INDEX type ON image_data (type) };
-     $dbh->do($index);
-
-     $index = qq{ CREATE INDEX image_id ON image_data (image_id) };
-     $dbh->do($index);
-
-     $index = qq{ CREATE INDEX x_idx ON image_data (xmin,xmax)};
-     $dbh->do($index);
-
-     $index = qq{ CREATE INDEX y_idx ON image_data (ymin,ymax) };
-     $dbh->do($index);
-
-     $index = qq{ CREATE INDEX image_track ON image_data (image_track) };
-     $dbh->do($index);
-
-     $index = qq{ CREATE INDEX pair_id ON image_data (pair_id) };
-
-     $dbh->do($index);
     $create = qq{
 CREATE TABLE image_info
 (
 id INTEGER PRIMARY KEY AUTOINCREMENT,
 iname varchar(50),
-title varchar(1024),
+title varchar(256),
 px_width integer,
 bpmin integer,
 bpmax integer,
