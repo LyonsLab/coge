@@ -284,6 +284,10 @@ function seq_submit_change (seq_num) {
  animate_section(".seq_submission_type"+seq_num,"hide",0);
  var seq_set = $('#seq_submit'+seq_num).val();
  animate_section("#"+seq_set, "fadeIn");
+ if (seq_set == "db"+seq_num || seq_set == "cogepos"+seq_num)
+  {
+    animate_section("#drcoge"+seq_num, "fadeIn");
+  }
 }
 
 function process_add_seq (newseq, num_seqs, go_run, refseq, colors, message)
@@ -367,7 +371,7 @@ function update_colors(hsp_num) {
 <table>
 <tr align left>
 <td>
-<a href="#" id=go_button onClick="loading([],['results']); go_run();"><span>Go</span></a>
+<a href="#" id=go_button onClick="loading([],['results']); initialize_basefile(['args__prog','args__GEvo', 'args__return_name','args__1'],[populate_page_obj]); go_run();"><span>Go</span></a>
 </TD>
 <!--<div id="go_button" class="l"><a href="#" onMouseOver="activeButton('go')" onMouseOut="inactiveButton('go')" onMouseDown="pressedButton('go')" onMouseUp="inactiveButton('go')" onClick="loading([],['results']); go_run();"><img name="go" src="/CoGe/picts/buttons/GEvo/go/inactive.png" width="47" height="27" border="0" alt="javascript button"></a></div>-->
 <TD>
@@ -893,33 +897,33 @@ function update_colors(hsp_num) {
 
 </select>
 
-<DIV id="db<TMPL_VAR NAME="SEQ_NUM">" style="display: none" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">
-<TABLE style="width: 100%;" class="small">
+<DIV id="db<TMPL_VAR NAME="SEQ_NUM">" style="display: none;" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">
+<TABLE class="small">
        <TR valign="top">
         <TD>Name:
-        <TD><input class="backbox" type="text" name="accn<TMPL_VAR NAME="SEQ_NUM">" id="accn<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="20" onBlur="dataset_search(['args__accn','accn<TMPL_VAR NAME="SEQ_NUM">','args__num', 'args__<TMPL_VAR NAME="SEQ_NUM">', 'args__dsid', 'args__<TMPL_VAR NAME="DSID">'],[feat_search_chain])" value="<TMPL_VAR NAME=DRACCN>" />
+        <TD align=left><input class="backbox" type="text" name="accn<TMPL_VAR NAME="SEQ_NUM">" id="accn<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="20" onBlur="dataset_search(['args__accn','accn<TMPL_VAR NAME="SEQ_NUM">','args__num', 'args__<TMPL_VAR NAME="SEQ_NUM">', 'args__dsid', 'args__<TMPL_VAR NAME="DSID">'],[feat_search_chain])" value="<TMPL_VAR NAME=DRACCN>" />
       <tr>
        <td colspan=2>     
         <DIV id="source<TMPL_VAR NAME="SEQ_NUM">" nowrap><input type="hidden" id="dsid<TMPL_VAR NAME="SEQ_NUM">"></DIV>
         <DIV id="feat<TMPL_VAR NAME="SEQ_NUM">"><input type="hidden" id="featid<TMPL_VAR NAME="SEQ_NUM">"></DIV>
-      <TR>
-       <TD><DIV class="small">Left sequence:</DIV>
-       <TD><DIV  id="up<TMPL_VAR NAME="SEQ_NUM">" ><input class="location backbox" type="text" name="drup<TMPL_VAR NAME="SEQ_NUM">" id="drup<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10" value="<TMPL_VAR NAME=DRUP>" /> </DIV>
-      <TR>
-       <TD><DIV class="small">Right sequence:</DIV>
-       <TD><DIV  id="down<TMPL_VAR NAME="SEQ_NUM">"><input class="location backbox" type="text" name="drdown<TMPL_VAR NAME="SEQ_NUM">" id="drdown<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10"  value="<TMPL_VAR NAME=DRDOWN>" /></DIV>
-</TABLE>
+</table>
 </DIV>      
 
 
-<DIV id="cogepos<TMPL_VAR NAME="SEQ_NUM">" style="display: none" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">	
-<TABLE style="width: 100%;" class="small">
+<DIV id="cogepos<TMPL_VAR NAME="SEQ_NUM">" style="display: none;" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">	
+<TABLE class="small">
       <TR valign="top">
        <TD>Position:
        <TD><input class="location backbox" type="text" id="pos<TMPL_VAR NAME="SEQ_NUM">" value="<TMPL_VAR NAME=POS>" size=10>
       <TR>
        <TD>Organism:
        <TD><TMPL_VAR NAME=DSINFO>
+</table>
+</DIV>
+
+<div id="drcoge<TMPL_VAR NAME="SEQ_NUM">"  style="display: none;" class="seq_submisttion_type seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> drcoge<TMPL_VAR NAME="SEQ_NUM"> ">
+<table>
+
       <TR>
        <TD><DIV class="small">Left sequence:</DIV>
        <TD><DIV  id="up<TMPL_VAR NAME="SEQ_NUM">" ><input class="location backbox" type="text" name="drup<TMPL_VAR NAME="SEQ_NUM">" id="drup<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10" value="<TMPL_VAR NAME=DRUP>" /> </DIV>
@@ -931,7 +935,7 @@ function update_colors(hsp_num) {
 </DIV>
 
 
-<DIV id="gb<TMPL_VAR NAME="SEQ_NUM">" style="display: none" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">
+<DIV id="gb<TMPL_VAR NAME="SEQ_NUM">" style="display: none;" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">
 <TABLE style="width: 100%;" class="small">
        <TR valign="top">
         <TD>Accession:
@@ -945,7 +949,7 @@ function update_colors(hsp_num) {
 </TABLE>
 </DIV>
 
-<DIV id="dir<TMPL_VAR NAME="SEQ_NUM">" style="display: none" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">	
+<DIV id="dir<TMPL_VAR NAME="SEQ_NUM">" style="display: none;" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">	
 <TABLE style="width: 100%;" class="small">
       <TR valign="top">
       <TD>       
@@ -960,7 +964,7 @@ function update_colors(hsp_num) {
 <tr><td>
 
    <DIV id="seqopts<TMPL_VAR NAME="SEQ_NUM">" class="topItemPlain small plus" onMouseOver="changeColor('seqopts<TMPL_VAR NAME="SEQ_NUM">','#000099'); " onMouseOut="changeColor('seqopts<TMPL_VAR NAME="SEQ_NUM">','#009900');" onClick='switchPlusButton(".sequence_options"+<TMPL_VAR NAME="SEQ_NUM">, "#seqopts"+<TMPL_VAR NAME="SEQ_NUM">);animate_section(".sequence_options<TMPL_VAR NAME="SEQ_NUM">","slideToggle"); ' >Sequence <TMPL_VAR NAME="SEQ_NUM"> Options:</DIV>
-   <Table class="small sequence_options<TMPL_VAR NAME="SEQ_NUM"> dropMenuPlain" style="display: none">
+   <Table class="small sequence_options<TMPL_VAR NAME="SEQ_NUM"> dropMenuPlain" style="display: none;">
       <TR>
 	<TD>Reverse complement: 
 	<td><label><input class="backbox" type="radio" name="rev<TMPL_VAR NAME="SEQ_NUM">" id="rev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="1" <TMPL_VAR NAME=REV_YES> onclick='rev_locs("<TMPL_VAR NAME="SEQ_NUM">")' />Yes</label>
