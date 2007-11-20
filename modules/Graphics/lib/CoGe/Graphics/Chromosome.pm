@@ -1709,7 +1709,6 @@ sub _draw_features
     my $c = $self->_image_h_used+($self->ih - $self->_image_h_used)/2;
     print STDERR "Image used: ".$self->_image_h_used."  Image Height: ".$self->ih."  Center: $c\n" if $self->DEBUG;
     foreach my $feat ( $self->get_feature(fill=>1), sort {$a->overlay <=> $b->overlay || $b->start <=> $a->start} $self->get_features(fill=>0))
-#    foreach my $feat ( sort {$a->fill<=>$b->fill || $a->overlay <=> $b->overlay} $self->get_features())
       {
 	#skip drawing features that are outside (by two times the range being viewed) the view
 	if ($feat->start)
@@ -1851,6 +1850,7 @@ sub _draw_feature_slow
 	    #5. copy new image into appropriate place on image.
 	    
 	    $self->gd->copyMerge($newgd, $fs, $hei, 0, 0, $newgd->width, $newgd->height, $feat->merge_percent);
+
 # 	    $self->gd->copy($newgd, $fs, $hei, 0, 0, $newgd->width, $newgd->height);
 	  }
       }
@@ -1878,11 +1878,11 @@ sub _draw_feature_slow
 	$newgd->transparent($newgd->colorResolve(255,255,255));
 	#5. copy new image into appropriate place on image.
 	$self->gd->copyMerge($newgd, $fs, $y, 0, 0, $fw, $ih, $feat->merge_percent);
-	$xmin = sprintf("%.0f",$fs);
-	$ymin = sprintf("%.0f",$y);
-	$xmax = sprintf("%.0f",$fs+$fw);
-	$ymax = sprintf("%.0f",$y+$ih);
       }
+    $xmin = sprintf("%.0f",$fs);
+    $ymin = sprintf("%.0f",$y);
+    $xmax = sprintf("%.0f",$fs+$fw);
+    $ymax = sprintf("%.0f",$y+$ih);
     
     my $size;
     if ($self->fill_labels && $feat->fill) {$size=$fw >= 15 ? 15 : $fw;}
@@ -1943,19 +1943,6 @@ sub _draw_feature_fast
 	    my $newgd = GD::Image->new ($fw, $ex_hei*$scale,[1]);
 	    #2. copy, resize, and resample the feature onto the new image
 	    $newgd->copyResampled($ei, 0, 0, 0, 0, $newgd->width, $newgd->height, $ex_wid, $ex_hei);  
-	    #3. find any colors that are close to white and set them to white.
-	    my $max = 200;
-	    for my $x (0..$fw)
-	      {
-		for my $y (0..$ih)
-		  {
-		    my ($r, $g, $b) = $newgd->rgb($newgd->getPixel($x, $y));
-		    if ($r > $max && $g > $max && $b > $max)
-		      {
-			$newgd->setPixel($x, $y, $newgd->colorResolve(255,255,255));
-		      }
-		  }
-	      }
 	    #4. make white transparent
 	    $newgd->transparent($newgd->colorResolve(255,255,255));
 	    #5. copy new image into appropriate place on image.
@@ -1971,30 +1958,17 @@ sub _draw_feature_fast
  	my $newgd = GD::Image->new ($fw, $ih,[1]);
 # 	#2. copy, resize, and resample the feature onto the new image
  	$newgd->copyResized($feat->gd, 0, 0, 0, 0, $fw, $ih, $feat->iw, $feat->ih);  
-# 	#3. find any colors that are close to white and set them to white.
-# 	my $max = 240;
-# 	for my $x (0..$fw)
-# 	  {
-# 	    for my $y (0..$ih)
-# 	      {
-# 		my ($r, $g, $b) = $newgd->rgb($newgd->getPixel($x, $y));
-# 		if ($r > $max && $g > $max && $b > $max)
-# 		  {
-# 		    $newgd->setPixel($x, $y, $newgd->colorResolve(255,255,255));
-# 		  }
-#  	      }
-# 	  }
 # 	#4. make white transparent
  	$newgd->transparent($newgd->colorResolve(0,0,0));
 # 	#5. copy new image into appropriate place on image.
  	$self->gd->copyMerge($newgd, $fs, $y, 0, 0, $fw, $ih, $feat->merge_percent);
+  
+#	$self->gd->copyResized($feat->gd, $fs, $y, 0, 0, $fw, $ih, $feat->iw, $feat->ih);
+      }
 	$xmin = sprintf("%.0f",$fs);
 	$ymin = sprintf("%.0f",$y);
 	$xmax = sprintf("%.0f",$fs+$fw);
 	$ymax = sprintf("%.0f",$y+$ih);
-  
-#	$self->gd->copyResized($feat->gd, $fs, $y, 0, 0, $fw, $ih, $feat->iw, $feat->ih);
-      }
     
     my $size;
     if ($self->fill_labels && $feat->fill) {$size=$fw >= 15 ? 15 : $fw;}
@@ -2011,7 +1985,7 @@ sub _draw_feature_fast
 #    $size = $size*$feat->font_size if $size && $feat->font_size;
     $size = $feat->font_size if $feat->font_size;
     $self->_gd_string(y=>$sy, x=>$fs, text=>$feat->label, size=>$size) if $feat->label && ( ($self->feature_labels || $self->fill_labels)&& ($fw>5 || $feat->force_label)); #don't make the string unless the feature is at least 5 pixels wide
-#    print STDERR "$xmin, $ymin, $xmax, $ymax\n";
+#    print STDERR $feat->type," ","$xmin, $ymin, $xmax, $ymax\n";
     $feat->image_coordinates("$xmin, $ymin, $xmax, $ymax") if defined $xmin && defined $ymin && defined $xmax && defined $ymax;
   }
 
