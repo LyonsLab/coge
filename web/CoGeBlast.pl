@@ -500,7 +500,9 @@ sub gen_results_page
 		     {
 		       my $id = $hsp->number."_".$dsid;
 		       my $no_link = qq{<a href="#" onclick="fill_nearby_feats('$id')">Click for Closest Feature</a>};
-		       push @no_feat, {ID=>$id,
+		       push @no_feat, {
+		       				CHECKBOX=>$id."_".$chr."_".$hsp->subject_start."no",
+		       				ID=>$id,
 		       			   NO_FEAT_ORG=>$org,
 		       			   NO_FEAT=>qq{<a href="#" onclick="update_hsp_info('table_row$id')">}.$hsp->number."</a>",
 		       			   NO_FEAT_EVAL=>qq{<a href="#" onclick="update_hsp_info('table_row$id')">}.$hsp->pval."</a>",
@@ -513,7 +515,8 @@ sub gen_results_page
 		   #print STDERR "We have some no feat-hit hsps\n";
 		   my $id = $hsp->number."_".$dsid;
 		   my $no_link = qq{<a href="#" onclick="fill_nearby_feats('$id')">Click for Closest Feature</a>};
-		   push @no_feat, {ID=>$id,
+		   push @no_feat, {CHECKBOX=>$id."_".$chr."_".$hsp->subject_start."no",
+		   					ID=>$id,
 		       			   NO_FEAT_ORG=>$org,
 		       			   NO_FEAT=>qq{<a href="#" onclick="update_hsp_info('table_row$id')">}.$hsp->number."</a>",
 		       			   NO_FEAT_EVAL=>qq{<a href="#" onclick="update_hsp_info('table_row$id')">}.$hsp->pval."</a>",
@@ -1250,24 +1253,37 @@ sub overlap_feats_parse #Send to GEvo
     $accn_list =~ s/^,//;
     $accn_list =~ s/,$//;
     my @list;
+     my @no_feats;
     my $url = "/CoGe/GEvo.pl?";
+    my ($chr,$dsid,$loc);
     my $count = 1;
     #print STDERR $url,"\n";
     foreach my $featid (split /,/,$accn_list)
-      {
-	$featid =~ s/_.*$//;
-	push @list, $featid;
-      }
+    {
+		if($featid=~/no/)
+		{
+			($dsid,$chr,$loc) = $featid =~/^\d+_(\d+)_(\w+)_(\d+)no$/;
+			push @no_feats,{dsid=>$dsid,chr=>$chr,loc=>$loc};
+		}
+		else{
+			$featid =~ s/_.*$//;
+			push @list, $featid;			
+		}
+    }
     my %seen = ();
     @list = grep {!$seen{$_}++} @list;
     foreach my $featid( @list)
       {
-	my ($feat) = $coge->resultset("Feature")->find($featid);
-	my ($feat_name) = sort $feat->names;#something
-	$url .= "accn$count=$feat_name&";
-	$count ++;
+      	my ($feat) = $coge->resultset("Feature")->find($featid);
+		my ($feat_name) = sort $feat->names;#something
+		$url .= "accn$count=$feat_name&";
+		$count ++;
       }
-
+	foreach my $no_feat (@no_feats)
+	{
+		$url .= "dsid$count=$no_feat->{dsid}&chr$count=$no_feat->{chr}&x$count=$no_feat->{loc}&";
+		$count++
+	}
     $count--;
     return ("alert",$count) if $count > 10;
     $url .= "num_seqs=$count";
@@ -1421,7 +1437,7 @@ sub get_nearby_feats
     $hsp_id =~ s/^\d+_// if $hsp_id =~ tr/_/_/ > 1;
     
     my $name;
-    my $checkbox = " ";
+    #my $checkbox = " ";
     my $distance = ">250";
     my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data WHERE name = ?});
     my ($sstart, $sstop,$sname);
@@ -1517,7 +1533,7 @@ sub get_nearby_feats
 	$html .= $closest_feat->annotation_pretty_print_html();
 	($name) = sort $closest_feat->names;
 	$name = qq{<a href="#" onclick=update_info_box('no_feat}.$closest_feat->id."_".$hsp_num."_".$dsid."')>$name</a>";
-	$checkbox = "<input type=checkbox name='nofeat_checkbox' value='".$closest_feat->id."_".$hsp_num."_".$dsid."'  id='nofeat_checkbox".$closest_feat->id."_".$hsp_num."_".$dsid."'>";
+	#$checkbox = "<input type=checkbox name='nofeat_checkbox' value='".$closest_feat->id."_".$hsp_num."_".$dsid."'  id='nofeat_checkbox".$closest_feat->id."_".$hsp_num."_".$dsid."'>";
 	$html .= "<font class=\"title4\">Distance from HSP:</font> <font class=\"data\">$distance</font>";
 	$distance = $tmp_dist;
 	}	
@@ -1527,7 +1543,7 @@ sub get_nearby_feats
 	}
 	$distance /= 1000;
 	$distance = sprintf("%.3f", $distance);
-	return $html,$name,$checkbox, $distance;
+	return $html,$name,$distance;
 }
 
 
