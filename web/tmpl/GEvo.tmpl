@@ -40,6 +40,9 @@ $(document).ready(function(){
 
  check_alignment_program();
  check_dialign_anchor_program();
+ if(window.location.toString().indexOf('autogo') != -1){
+     jQuery('#go_button').trigger('click');
+ }
 
  });
 
@@ -232,7 +235,10 @@ function handle_results (html,w, h, img_base, n_images,message) {
     so.addVariable('base_url', '/CoGe/gobe/');
     so.addVariable('tmp_dir', 'tmp/');
     so.addVariable('img', img_base );
-    so.write("flash_viewer");
+    so.addVariable('freezable', getQueryParamValue('freezable') || 'false'); 
+    so.addVariable('inset_gs', getQueryParamValue('inset_gs') || '0'); 
+    so.addVariable('gsid', getQueryParamValue('gsid') || '0'); 
+so.write("flash_viewer");
    }
   else
   {
