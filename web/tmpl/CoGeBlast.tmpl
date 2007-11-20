@@ -88,7 +88,7 @@ function fill_nearby_feats(id) {
  var table_width = $('#overlap').width() || 300;
  $('#overlap_box').width(table_width);
  if ($('#overlap_box').is(':hidden')) $('#overlap_box').slideDown(pageObj.speed);
- get_nearby_feats(['args__basefile','args__'+pageObj.basename,'args__num','args__'+id],['overlap_box','feat'+id,'checkbox'+id,'dist'+id]);
+ get_nearby_feats(['args__basefile','args__'+pageObj.basename,'args__num','args__'+id],['overlap_box','feat'+id,'dist'+id]);
 }
 
 
@@ -944,10 +944,8 @@ function adjust_blast_types(val){
      </td>
      </tr>-->
       </TABLE>
+     <DIV id=pro_or_nu_param></DIV>
      </TD>
-     <td width="1" bgcolor="#99ff99"/>
-     <TD valign="top">
-    <DIV id=pro_or_nu_param></DIV>
           </TR>
          </TABLE>
 </DIV>
@@ -1139,10 +1137,8 @@ function adjust_blast_types(val){
 	</select>
       </TR>
       </TABLE>
+      <DIV id=ncbi_pro_or_nu_param></DIV>
      </TD>
-     <td width="1" bgcolor="#99ff99"/>
-     <TD valign="top">
-    <DIV id=ncbi_pro_or_nu_param></DIV>
    </TMPL_IF>
     <TMPL_IF NAME="REST">
      </TR>
@@ -1160,11 +1156,16 @@ function adjust_blast_types(val){
    <DIV class="dropMenu" id="query_seqs">
    <DIV class="subMenu" style="display:inline;">
    <TABLE> 
+   <THEAD align="left">
+   <TH>Sequences (fasta format):</TH>
+   <TH>Select a BLAST to run:</TH>
+   </THEAD>
+   <TBODY>
     <TR align=left valign=top>
-     <TH>Sequences (fasta format)
-      <TD><textarea class="backbox" type="textarea" onFocus="clear_if_no_seq()" name="seq_box" id ="seq_box" wrap=off cols=80 rows=15><TMPL_VAR NAME="SEQUENCE"></textarea>
-      </TD>
-      <TD valign="top"> Select a BLAST to run: <br>
+    <TD>
+      <textarea class="backbox" type="textarea" onFocus="clear_if_no_seq()" name="seq_box" id ="seq_box" wrap=off cols=80 rows=15><TMPL_VAR NAME="SEQUENCE"></textarea>
+     </TD>
+      <TD valign="top">
        <div id="coge_blast_type">
        <TABLE>
        <TR>
@@ -1619,14 +1620,14 @@ function adjust_blast_types(val){
                <TMPL_LOOP NAME=NO_FEATS>
                <!--onclick="hide_big_picture();show_hsp_div();loading('image_info','Information');loading('query_image','Image');loading('subject_image','Image');get_hsp_info(['args__blastfile','args__'+pageObj.basename,'args__num','args__<TMPL_VAR NAME=ID>'],['image_info','query_image','subject_image']);"-->
                  <tr class="feat" id="<TMPL_VAR NAME=ID>" >
-                   <td id="checkbox<TMPL_VAR NAME=ID>"></td>
-                   <td><TMPL_VAR NAME=NO_FEAT_ORG></td>
+                   <td id="checkbox<TMPL_VAR NAME=CHECKBOX>"><input type=checkbox id="<TMPL_VAR NAME=CHECKBOX>" value="<TMPL_VAR NAME=CHECKBOX>"></td>
+                   <td style="white-space:nowrap;"><TMPL_VAR NAME=NO_FEAT_ORG></td>
                    <td><TMPL_VAR NAME=NO_FEAT></td>
                    <td><TMPL_VAR NAME=NO_FEAT_EVAL></td>
                    <td><TMPL_VAR NAME=NO_FEAT_PID></td>
                    <td><TMPL_VAR NAME=NO_FEAT_SCORE></td>
-                   <td id="feat<TMPL_VAR NAME=ID>"><TMPL_VAR NAME=NO_FEAT_LINK></td>
-                   <td id="dist<TMPL_VAR NAME=ID>">-</td>
+                   <td style="white-space:nowrap;" id="feat<TMPL_VAR NAME=ID>"><TMPL_VAR NAME=NO_FEAT_LINK></td>
+                   <td style="white-space:nowrap;" id="dist<TMPL_VAR NAME=ID>">-</td>
                  </tr>
                </TMPL_LOOP>
               </tbody>
