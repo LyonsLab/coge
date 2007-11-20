@@ -37,7 +37,7 @@ sub _initialize
     $self->bgcolor([255,255,255]) unless $self->bgcolor;
     $self->fill(1);
     $self->order(1);
-    $self->type('nt');
+    $self->type('nt') unless $self->type;
     $self->stop($self->start + length $self->nt-1) unless $self->stop;
     $self->skip_overlap_search(1); #make sure to skip searching for overlap for these guys.  Search can be slow
     my $at = 0;
@@ -45,8 +45,8 @@ sub _initialize
     my $n = 0;
     my $x = 0;
     my $seq = $self->nt;
-    my $seq_len = length($seq);
-    $self->color(255,255,255);
+    my $seq_len = length($seq) if $seq;
+    $self->color(255,255,255) unless $self->color();
     if ($self->options)
       {
 	($at) = $seq =~ tr/atrywmkhbvdATRYWMKHBVD/atrywmkhbvdATRYWMKHBVD/;
