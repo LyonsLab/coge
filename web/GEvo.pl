@@ -418,7 +418,7 @@ sub run
 	    $obj = get_obj_from_genome_db( accn=>$accn, featid=>$featid, pos=>$pos, dsid=>$dsid, rev=>$rev, up=>$drup, down=>$drdown, chr=>$chr );
 	    if ($obj)
 	      {
-		$obj->add_feature(type=>"anchor", location=>($pos-$obj->start), annotation=>"User specified anchor point") if $pos;
+
 #		print Dumper $obj->features;
 		($file, $file_begin, $file_end,$spike_seq) = 
 		  generate_seq_file(obj=>$obj,
@@ -835,50 +835,37 @@ image_track integer,
 image_id integer,
 pair_id integer,
 link varchar(50),
-annotation blob,
+annotation text,
 color varchar(10)
 )
 };
     $dbh->do($create);
-     my $index = qq{
-  ALTER TABLE 'image_data' ADD AUTO_INCREMENT 'id';
- };
+#     my $index = qq{
+#  ALTER TABLE 'image_data' ADD AUTO_INCREMENT 'id';
+# };
 #     $dbh->do($index);
-     $index = qq{
- CREATE INDEX name ON image_data (name)
- };
+#     $index = qq{
+# CREATE INDEX name ON image_data (name)
+# };
+#     $dbh->do($index);
+
+     my $index = qq{ CREATE INDEX type ON image_data (type) };
      $dbh->do($index);
-     $index = qq{
- CREATE INDEX type ON image_data (type)
- };
+
+     $index = qq{ CREATE INDEX image_id ON image_data (image_id) };
      $dbh->do($index);
-     $index = qq{
- CREATE INDEX image_id ON image_data (image_id)
- };
+
+     $index = qq{ CREATE INDEX x_idx ON image_data (xmin,xmax)};
      $dbh->do($index);
-     $index = qq{
- CREATE INDEX xmin ON image_data (xmin)
- };
+
+     $index = qq{ CREATE INDEX y_idx ON image_data (ymin,ymax) };
      $dbh->do($index);
-     $index = qq{
- CREATE INDEX xmax ON image_data (xmax)
- };
+
+     $index = qq{ CREATE INDEX image_track ON image_data (image_track) };
      $dbh->do($index);
-     $index = qq{
- CREATE INDEX ymin ON image_data (ymin)
- };
-     $dbh->do($index);
-     $index = qq{
- CREATE INDEX ymax ON image_data (ymax)
- };
-     $dbh->do($index);
-     $index = qq{
- CREATE INDEX image_track ON image_data (image_track)
- };
-     $dbh->do($index);
-     $index = qq{
- CREATE INDEX pair_id ON image_data (pair_id)
- };
+
+     $index = qq{ CREATE INDEX pair_id ON image_data (pair_id) };
+
      $dbh->do($index);
     $create = qq{
 CREATE TABLE image_info
@@ -894,10 +881,6 @@ dsid integer
 };
 #TODO: make sure to populate the bpmin and pbmax and image width!!!!!!!!!!!!!!!!!
     $dbh->do($create);
-     $index = qq{
- CREATE INDEX iname ON image_info (iname)
- };
-     $dbh->do($index);
     system "chmod +rw $dbfile";
   }
 
@@ -1522,7 +1505,6 @@ sub get_obj_from_genome_db
 					   sequence=>$seq,
 					 });
 
-    my $fnum = 1;
     my %used_names;
     $used_names{$accn} = 1;
     my $t4 = new Benchmark;
@@ -1557,7 +1539,6 @@ sub get_obj_from_genome_db
 	$location = $obj->reverse_genbank_location(loc=>$location, ) if $rev;
 	print STDERR $name, "\t",$f->type->name ,"\t",$location,"\n" if $DEBUG;
 	$obj->add_feature (
-			   number=>$fnum,
 			   type=>$f->type->name,
 			   location=> $location,
 			   qualifiers=>{
@@ -1565,8 +1546,9 @@ sub get_obj_from_genome_db
                                        },
 			   annotation=>$anno,
 			  );
-	$fnum++;
       }
+    my $pos_loc = $rev ? $stop-$pos: $pos-$start;
+    $obj->add_feature(type=>"anchor", location=>($pos_loc), annotation=>"User specified anchor point") if $pos;
     my $t6 = new Benchmark;
     my $db_time = timestr(timediff($t2,$t1));
     my $seq_time = timestr(timediff($t3,$t2));
