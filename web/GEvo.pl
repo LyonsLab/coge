@@ -157,9 +157,17 @@ sub gen_body
     my $autosearch_string;
     for (my $i = 1; $i <= $num_seqs; $i++)
       {
-	my $draccn = $form->param("accn".$i) if $form->param("accn".$i);
+	my $draccn;
+	$draccn= $form->param("accn".$i) if $form->param("accn".$i);
 	my $pos = $form->param("x".$i) if $form->param("x".$i);
-	my $drfid = $form->param("fid".$i) if $form->param("fid".$i); #to be continued
+	my $chr = $form->param("chr".$i) if $form->param("chr".$i);
+	my $drfid = $form->param("fid".$i) if $form->param("fid".$i);
+	if ($drfid && !$draccn)
+	  {
+	    print STDERR "$i: $drfid\n";
+	    my $feat = $coge->resultset('Feature')->find($drfid);
+	    ($draccn) = $feat->names if $feat;
+	  }
 	my $drup = $form->param('dr'.$i.'up') if $form->param('dr'.$i.'up');
 	my $drdown = $form->param('dr'.$i.'down') if $form->param('dr'.$i.'down');
 	$drup = $form->param('drup'.$i) if $form->param('drup'.$i);
@@ -179,9 +187,9 @@ sub gen_body
 	$autosearch_string .= ", 'args__dsid', 'args__$dsid'" if $dsid;
 	$autosearch_string .= ", 'args__featid', 'args__$drfid'" if $drfid;
 	$autosearch_string .=qq!],[feat_search_chain]);}!;
-
 	my $dsinfo = $dsid ? qq{<input type="hidden" id="posdsid$i" value="$dsid">} : qq{<input type="hidden" id="posdsid$i">};
-	$dsinfo .=get_dataset_info($dsid) if $dsid;
+	$dsinfo .= $chr ? qq{<input type="hidden" id="chr$i" value="$chr">} : qq{<input type="hidden" id="chr$i">};
+	$dsinfo .=get_dataset_info(dsid=>$dsid, chr=>$chr) if $dsid;
 	push @seq_nums, {
 			  SEQ_NUM=>$i,
 			 };
@@ -206,7 +214,7 @@ sub gen_body
 	push @seq_sub, {%opts}
 	  
       }
-
+    print STDERR Dumper \@seq_sub;
     #page preferences
 
     my $prog = get_opt(params=>$prefs, form=>$form, param=>'prog');
@@ -392,8 +400,10 @@ sub run
 	my $repeat_mask =$opts{"repmask$i"};
 	next unless $accn || $featid || $gbaccn || $dirseq|| $pos;
 	$gevo_link .= ";accn$seqcount=".CGI::escape($accn) if $accn;
+	$gevo_link .= ";x$seqcount=".CGI::escape($pos) if $pos;
 	$gevo_link .= ";fid$seqcount=".CGI::escape($featid) if $featid;
 	$gevo_link .= ";dsid$seqcount=".CGI::escape($dsid) if $dsid;
+	$gevo_link .= ";chr$seqcount=".CGI::escape($chr) if $chr;
 	$gevo_link .= ";dr$seqcount"."up=$drup" if $drup;
 	$gevo_link .= ";dr$seqcount"."down=$drdown" if $drdown;
 	$gevo_link .= ";gbaccn$seqcount=".CGI::escape($gbaccn) if $gbaccn;
@@ -402,12 +412,14 @@ sub run
 	$gevo_link .= ";rev$seqcount=1" if $rev;
 	$gevo_link .= ";nref$seqcount=1" unless $reference_seq;
 	$seqcount++;
-	print STDERR "pos: $pos, dsid: $dsid, chr: $chr\n";
+#	print STDERR "pos: $pos, dsid: $dsid, chr: $chr\n";
 	if ($featid || $pos)
 	  {
 	    $obj = get_obj_from_genome_db( accn=>$accn, featid=>$featid, pos=>$pos, dsid=>$dsid, rev=>$rev, up=>$drup, down=>$drdown, chr=>$chr );
 	    if ($obj)
 	      {
+		$obj->add_feature(type=>"anchor", location=>($pos-$obj->start), annotation=>"User specified anchor point") if $pos;
+#		print Dumper $obj->features;
 		($file, $file_begin, $file_end,$spike_seq) = 
 		  generate_seq_file(obj=>$obj,
 				    mask_cds=>$mask_cds_flag,
@@ -744,8 +756,8 @@ sub generate_image
     $graphic->initialize_c (
 			    c=>$gfx,
 			    iw=>$iw,
-			    start=> 1,
-			    stop => length($gbobj->sequence),
+			    start=> $start,
+			    stop => $start + 1 + length($gbobj->sequence),
 			    draw_chr=>1,
 			    draw_ruler=>1,
 			    draw_chr_end=>0,
@@ -766,10 +778,10 @@ sub generate_image
     $gfx->skip_duplicate_features(1);
     $gfx->DEBUG(0);
     $gfx->major_tick_labels(0);
-    my $f1= CoGe::Graphics::Feature->new({start=>1, order => 2, strand => 1});
+    my $f1= CoGe::Graphics::Feature->new({start=>$start, order => 2, strand => 1});
     $f1->merge_percent(0);
     $gfx->add_feature($f1);
-    my $f2= CoGe::Graphics::Feature->new({start=>1, order => 2, strand => -1});
+    my $f2= CoGe::Graphics::Feature->new({start=>$start, order => 2, strand => -1});
     $f2->merge_percent(0);
     $gfx->add_feature($f2);
     $graphic->process_nucleotides(c=>$gfx, seq=>$gbobj->sequence, layers=>{gc=>$show_gc, nt=>$show_nt});
@@ -916,7 +928,10 @@ INSERT INTO image_info (iname, title, px_width,dsid, bpmin, bpmax) values ("$ima
     my $image_id = $dbh->last_insert_id("","","","");
     foreach my $feat ($gfx->get_feats)
       {
-	next if $feat->fill; #skip backgroup images;
+	if ($feat->fill)
+	  {
+	    next unless $feat->type eq "anchor";
+	  }
 	next unless $feat->image_coordinates;
 	next if $feat->desc && $feat->desc =~ /spike sequence/;
 	my $type = $feat->type;
@@ -944,8 +959,9 @@ INSERT INTO image_info (iname, title, px_width,dsid, bpmin, bpmax) values ("$ima
 	  }
 	#generate link
 	my $link = $feat->link;
-	print STDERR "No like for $name\n", Dumper $feat unless $link;
-	$link =~ s/'//g;
+#	print STDERR "No link for $name\n", Dumper $feat unless $link;
+	$link = " " unless $link;
+	$link =~ s/'//g if $link;
 	#generate image track
 	my $image_track = $feat->track;
 	$image_track = "-".$image_track if $feat->strand =~ /-/;
@@ -1104,7 +1120,22 @@ sub process_features
 		  }
 
           }
-
+	elsif ($type =~ /anchor/)
+	  {
+	    $f = CoGe::Graphics::Feature::NucTide->new({type=>'anchor',start=>$feat->blocks->[0][0], strand=>1});
+	    $f->color([0,0,255]);
+	    $f->type($type);
+	    $f->description($feat->annotation);
+	    $c->add_feature($f);
+	    $f = CoGe::Graphics::Feature::NucTide->new({type=>'anchor',start=>$feat->blocks->[0][0], strand=>-1});
+	    $f->color([0,0,255]);
+	    $f->type($type);
+	    $f->description($feat->annotation);
+	    $c->add_feature($f);
+	    $c->add_feature($f);
+	    next;
+#	    my $f2 = CoGe::Graphics::Feature::NucTide->new({nt=>$rcseq, strand=>-1, start =>$pos+$start, options=>$options}) if $layers->{gc} || $layers->{nt} || $layers->{all};
+	  }
         next unless $f;
 	my $strand = 1;
  	$strand = -1 if $feat->location =~ /complement/;
@@ -1412,13 +1443,13 @@ sub get_obj_from_genome_db
     my $pos = $opts{pos};
     my $dsid = $opts{dsid};
     my $rev = $opts{rev};
-    my $chr = $opts{chr} || 1;
+    my $chr = $opts{chr};
     my $up = $opts{up} || 0;
     my $down = $opts{down} || 0;
-    print STDERR Dumper \%opts;
+#    print STDERR Dumper \%opts;
     my $t1 = new Benchmark;
     my ($feat) = $coge->resultset('Feature')->esearch({"me.feature_id"=>$featid})->next;
-    unless (ref ($feat)=~ /feature/i || ($pos && $dsid && $chr))
+    unless (ref ($feat)=~ /feature/i || ($pos && $dsid))
       {
 	write_log("Can't find valid feature database entry for id=$featid", $cogeweb->logfile);
 	return;
@@ -1457,11 +1488,12 @@ sub get_obj_from_genome_db
 	    $stop = $pos+$down;
 	  }
 	$start = 1 if $start < 1;
-	$accn = get_dataset_info($dsid);
+	$accn = get_dataset_info(dsid=>$dsid, chr=>$chr);
 	$accn =~ s/<br>/, /g;
 	$accn =~ s/<.*?>//g;
       }
     my $ds = $coge->resultset('Dataset')->find($dsid);
+    ($chr) = $ds->get_chromosomes unless $chr;
     $seq = $ds->get_genomic_sequence(
 				     start => $start,
 				     stop => $stop,
@@ -1495,7 +1527,7 @@ sub get_obj_from_genome_db
     $used_names{$accn} = 1;
     my $t4 = new Benchmark;
 
-    print STDERR "Region: $chr: $start-$stop\n";# if $DEBUG;
+    print STDERR "Region: $chr: $start-$stop\n" if $DEBUG;
 #    print STDERR "Region: $chr: ",$start-$start+1,"-",$stop-$start,"\n";
     my @feats = $coge->get_features_in_region(start=>$start, stop=>$stop, chr=>$chr, dataset_id=>$dsid);
     my $t5 = new Benchmark;
@@ -2100,6 +2132,7 @@ sub gen_params
 	$params .= qq{'args__pos$i', 'pos$i',};
 	$params .= qq{'args__dsid$i', 'dsid$i',};
 	$params .= qq{'args__posdsid$i', 'posdsid$i',};
+	$params .= qq{'args__chr$i', 'chr$i',};
 	$params .= qq{'args__gbaccn$i', 'gbaccn$i',};
 	$params .= qq{'args__gbstart$i', 'gbstart$i',};
 	$params .= qq{'args__gblength$i', 'gblength$i',};
@@ -2200,10 +2233,13 @@ sub gen_go_run
     my $run = qq!
 <SCRIPT language="JavaScript">
 function go_run (){ 
- pageObj.basefile = "";
- initialize_basefile(['args__prog','args__GEvo', 'args__return_name','args__1'],[populate_page_obj]);
- setTimeout("run([$params],[handle_results], 'POST')",500); 
- setTimeout(" monitor_log()", 5000);
+ if (ajax.length)
+  {
+   setTimeout("go_run()", 100);
+   return;
+  }
+run([$params],[handle_results], 'POST');
+setTimeout(" monitor_log()", 5000);
 }
 </script>!;
     return $run;
@@ -2680,15 +2716,18 @@ sub get_opt
   }
 sub get_dataset_info
   {
-    my $dsid = shift;
-    my ($ds) = $coge->resultset('Dataset')->resolve($dsid);
+    my %opts = @_;
+    my $dsid = $opts{dsid};
+    my $chr = $opts{chr};
+    
+    my ($ds) = $coge->resultset('Dataset')->find($dsid);
     my $name = $ds->name;
     my $ver = $ds->version;
     my $desc = $ds->description;
     my $sname = $ds->datasource->name;
     my $ds_name = $ds->name;
     my $org = $ds->organism->name;
-    my $chr = join (", ",$ds->get_chromosomes);
+    $chr = join (", ",$ds->get_chromosomes) unless $chr;
     my $title = "<span class=species>$org v$ver:</span><br> $ds_name<br>chr: $chr<br>source: $sname";
     return $title;
   }  
