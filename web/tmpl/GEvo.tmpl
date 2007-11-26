@@ -229,7 +229,7 @@ function handle_results (html,w, h, img_base, n_images,message) {
    {
     $('#results').html(html);
     checkViewer();
-    var so = new SWFObject("/CoGe/gobe/flash/gobe.swf", "gobe", w, h, "9", "#FFFFFF");
+    var so = new SWFObject("/CoGe/gobe/flash/gobe.swf?<TMPL_VAR NAME="GOBE_VERSION">", "gobe", w, h, "9", "#FFFFFF");
     so.useExpressInstall('/CoGe/gobe/flash/expressinstall.swf');
     so.addVariable('n', n_images);
     so.addVariable('base_url', '/CoGe/gobe/');
