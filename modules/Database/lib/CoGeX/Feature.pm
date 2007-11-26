@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use base 'DBIx::Class';
 use CoGe::Accessory::genetic_code;
+use Text::Wrap;
 
 __PACKAGE__->load_components("PK::Auto", "ResultSetManager", "Core");
 __PACKAGE__->table("feature");
@@ -555,6 +556,7 @@ sub genomic_sequence {
 		  dataset=>$dataset->id,
 		    feature=>$self->id,
 	      };
+	die;
 
       }
 
@@ -953,6 +955,24 @@ sub gc_content
       }
     return $gc,$at;
   }
+
+sub fasta
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $col = $opts{col};
+    #$col can be set to zero so we want to test for defined variable
+    $col = $opts{column} unless defined $col;
+    $col = $opts{wrap} unless defined $col;
+    $col = 100 unless defined $col;
+
+    my $head = ">".$self->dataset->organism->name."(v".$self->version.")".", Name: ".(join (", ", $self->names)).", Type: ".$self->type->name.", Chromosome: ".$self->chromosome.", ".$self->genbank_location_string."\n";
+    $Text::Wrap::columns=$col;
+    my $seq = $self->genomic_sequence;
+    $seq = join ("\n", wrap("","",$seq)) if $col;
+    return $head.$seq."\n";
+  }
+
 ################################################ subroutine header begin ##
 
 =head2 
