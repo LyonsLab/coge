@@ -155,6 +155,7 @@ sub gen_body
     my @seq_nums;
     my @seq_sub;
     my $autosearch_string;
+    my $inset_gs = $form->param("inset_gs") if $form->param("inset_gs");
     for (my $i = 1; $i <= $num_seqs; $i++)
       {
 	my $draccn;
@@ -174,6 +175,8 @@ sub gen_body
 	$drdown = $form->param('drdown'.$i) if $form->param('drdown'.$i);
 	$drup = 10000 unless defined $drup;
 	$drdown = 10000 unless defined $drdown;
+	$drup += $inset_gs if $inset_gs;
+	$drdown += $inset_gs if $inset_gs;
 	my $dsid = $form->param('dsid'.$i) if $form->param('dsid'.$i);
 	my $gbaccn = $form->param("gbaccn".$i) if $form->param("gbaccn".$i);
 	my $gbstart = $form->param("gbstart".$i) if $form->param("gbstart".$i);
@@ -214,7 +217,7 @@ sub gen_body
 	push @seq_sub, {%opts}
 	  
       }
-    print STDERR Dumper \@seq_sub;
+#    print STDERR Dumper \@seq_sub;
     #page preferences
 
     my $prog = get_opt(params=>$prefs, form=>$form, param=>'prog');
@@ -302,6 +305,9 @@ sub gen_body
     $template->param(HSP_COLOR=>$hsp_colors);
     $template->param(GO_RUN=>gen_go_run($num_seqs));
     $template->param(AUTOSEARCH=>$autosearch_string);
+    my $gobe_version = `svnversion /opt/apache/CoGe/gobe/flash`;
+    chomp $gobe_version;
+    $template->param(GOBE_VERSION=>$gobe_version);
     $box->param(BOX_NAME=>"Options:");
     $template->param(OPTIONS=>1);
     $template->param(ALIGNMENT_PROGRAMS=>algorithm_list($prog));
