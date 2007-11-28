@@ -541,6 +541,15 @@ function update_colors(hsp_num) {
   <td><li>Spike sequence length:
   <td><input type="text" size="3" class="backbox" id="spike" onkeyup="check_spike();" value=<TMPL_VAR NAME=SPIKE_LEN>> nucleotides
    </TR>
+  <tr>
+  <td><li>Show spike sequence in results?
+  <TD>
+    <select class="backbox" name="show_spike" id="show_spike" tabindex="1" >
+     <option value="1" >Yes</option>
+     <option value="0" selected>No</option>
+    </select>
+  </TD>
+  </tr>
   </table>
  </DIV>
 
