@@ -44,7 +44,7 @@ function search_chain(val) {
 }
 
 function go_cogesearch () {
- cogesearch(['args__accn','accn', 'args__anno','annosearch','args__type','type', 'args__org','org', 'args__feat_name_wild','feat_name_wild', 'args__feat_anno_wild', 'feat_anno_wild'],[source_search_chain]);
+ cogesearch(['args__accn','accn', 'args__anno','annosearch','args__type','type', 'args__org_id','org_id', 'args__feat_name_wild','feat_name_wild', 'args__feat_anno_wild', 'feat_anno_wild'],[source_search_chain]);
 }
 
 function source_search_chain (val) {
@@ -64,7 +64,15 @@ function get_types_chain (val1, val2) {
 
 function get_anno_chain (val1, val2) {	
 //$('#anno').html('<font class="loading">Loading. . .</font>');
- if (val1) {$('#FeatType').html(val1);$('#FeatType').show();};
+ if (val1) {
+   $('#FeatType').html(val1);
+   $('#FeatType').show();
+   if(! val1.match(/hidden/)){
+   		if ($('#remove').is(":hidden")) {$('#remove').show(0);}
+   		if ($('#send').is(":hidden")) {$('#send').show(0);}
+   		if($('#feat_list').is(":hidden")) {$('#feat_list').show(0);}
+   	}
+ }
  as = $('#accn_select').val();
  tn = $('#Type_name').val();
  get_anno(['accn_select', 'Type_name', 'dsid'],[show_anno]);
@@ -82,12 +90,110 @@ function timing(){
   if (pageObj.time){
    clearTimeout(pageObj.time);
   }
-   pageObj.time = setTimeout("search_chain(0)",500);
+   pageObj.time = setTimeout("get_orgs(['org_text'],['org_list'])",500);
+   //pageObj.time = setTimeout("search_chain(0)",500);
 }
 
 $(document).ready(function(){
     if ($('#accn').val()) {search_chain(0);}
 });
+
+function add_to_featlist(featname, featid){
+  //alert(featname+","+featid);
+  var check = $('#'+featid).val();
+  if (check){
+   alert('You have already added '+featname+'.');
+   return;
+  }
+  var html = '<option id='+featid+' value='+featid+'>'+featname+'</option>';
+  //alert(html);
+  $('#blank').remove();
+  $('#featlist_choice').append(html).sortSelect();
+  counting();
+}
+
+$.fn.sortSelect = function(){
+  this.each(
+	  function()
+	  {
+	  	if(this.nodeName.toLowerCase() != "select"){
+	  	  return;}
+	  	var opts = this.options;
+	  	var sortArray = [];
+	  	for(var i=0;i<opts.length;i++)
+	  	{
+	  		sortArray[i] = {
+	  				v: opts[i].value,
+	  				t: opts[i].text,
+	  				d: opts[i].id,
+	  				}
+	  	}
+	  	sortArray.sort(
+	  			function(obj1,obj2)
+	  			{
+	  				obj1t = obj1.t.toLowerCase(),
+	  				obj2t = obj2.t.toLowerCase();
+	  				if(obj1t == obj2t){
+	  				  return 0;}
+	  				return obj1t < obj2t ? -1 : 1;
+	  			}
+	  	);
+	  	for(var i=0;i<opts.length;i++)
+	  	{
+	  		opts[i].id = sortArray[i].d;
+	  		opts[i].text = sortArray[i].t;
+	  		opts[i].value = sortArray[i].v;
+	  	}
+	  }
+	);
+	return this;
+};
+
+function send_to_FeatList(){
+  var check = $('#featlist_choice').getLength();
+  if(($('#blank').val())||(check==0)){
+    alert('You have not selected any features to examine. You must select at least one.');
+    return;
+  }
+  var featlist = $('#featlist_choice').getLength(1);
+  parse_for_FeatList(['args__'+featlist],[send_to_url]);
+}
+  
+function send_to_url(url){
+  window.open(url);
+}
+
+function counting(){
+  var count;
+  if($('#blank').val()) {count = 0;}
+  else {count = $('#featlist_choice').getLength();}
+  if (count == 0) {$('#featlist_choice').html('<option id=blank value=null>No Feature Selected</option>');}
+  $('.count').html('Feature Count: '+count);
+}
+
+$.fn.getLength = function(val){
+  var opt_length;
+  var blastable;
+  this.each(
+  	function()
+  	{
+  		var opts = this.options;
+  		opt_length = opts.length;
+  		if (opt_length == 0) {return opt_length;}
+  		blastable = opts[0].id;
+  		if (val){
+  		  for(var i=1;i<opts.length;i++)
+	  	  {
+	  		blastable += ","+opts[i].id;
+	  		//need to chopoff last comma
+	  	  }
+  		}
+  	}
+  );
+  if(val) return blastable;
+  else return opt_length;
+};
+
 
 function onEnter(e){
   if (!e){ 
@@ -96,6 +202,11 @@ function onEnter(e){
 search_chain(1);
  }
 }
+
+function search_bar(div_id){
+  if($('#'+div_id).val() == "Search") $('#'+div_id).val("").css({fontStyle: "normal"});
+}
+
 
 </SCRIPT>
 <TABLE>
@@ -136,11 +247,13 @@ search_chain(1);
 	 <tD nowrap>
           Organism:
          <TD>
-          <select  name="org" id="org" onchange="get_feature_types(['args__orgid','org'],['search_type']);"/>
+         Name: <input type="text" size=11 onFocus="search_bar('org_text')" style="font-style:italic" value="Search" name="org_text" id="org_text" onKeyUp='timing();'><br>
+	  <DIV id="org_list"><TMPL_VAR NAME="ORG_LIST"></DIV>
+<!--          <select  name="org" id="org" onchange="get_feature_types(['args__orgid','org'],['search_type']);"/>
           <TMPL_LOOP NAME="ORG_LOOP">
           <TMPL_VAR NAME=ORG> 
           </TMPL_LOOP>
-         </SELECT>
+         </SELECT>-->
         <tr>
 	<td><input type="button" value="Search" onclick="search_chain(1)">
      </TABLE>
@@ -156,7 +269,19 @@ search_chain(1);
    <DIV class="" id="Source"></DIV>
   <TD valign=top>
     <DIV class="" id="FeatType"></DIV>
+  </td>
+  <TD >
+    <div id="feat_list" style="display:none">
+    <font class="small count">Feature Count: 0</font>
+              <DIV id=featlist_select><SELECT id="featlist_choice" SIZE="10" MULTIPLE >
+              <option id=blank value=null>No Feature Selected</option>
+              </SELECT>
+    </div>
+    <input type="button" style="display: none" id=remove value="Remove" onClick="$('#'+$('#featlist_choice').val()).remove();counting();">
+    <input type="button" style="display: none" id=send value="Send to Feature List Viewer" onClick="send_to_FeatList()">
+   </td>
+   <!-- <td valign=middle<
+     <input type="button" style="display: none" id=send value="Send to Feature List Viewer" onClick="send_to_FeatList()"> --> 
  </TR>
 </TABLE>
 <DIV id="anno"></DIV>
-
