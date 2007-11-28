@@ -408,18 +408,16 @@ sub get_blocks_all
 sub get_features
   {
     my $self = shift;
+    my %opts = @_;
+    my $start = $opts{start};
+    my $stop = $opts{stop};
 #    print "<pre>",Dumper ($self),"</pre>";
     my @features;
-    if ( @_ ) 
+    if ( $start && $stop ) 
       {
 	# only return blocks in this range
-	my $begin = shift;
-	my $end = shift;
-#	my $features = $self->features();
 	foreach my $feature (@{$self->features})
-#	foreach my $f_number ( keys %{ $features } ) 
 	  {
-#	    my $feature = $features->{$f_number};
 	    my $locdata = $self->process_location( $feature->location() );
 	    my @blocks;
 	    foreach my $subblock ( @{ $locdata } ) 
@@ -463,11 +461,8 @@ sub get_features
     else 
       {
 	# return all blocks
-#	my $features = $self->features();
-#	foreach my $f_number ( keys %{ $features } ) 
 	foreach my $feature (@{$self->features})
 	  {
-#	    my $feature = $features->{$f_number};
 	    my $locdata = $self->process_location( $feature->location() );
 	    my @blocks;
 	    foreach my $subblock ( @{ $locdata } ) 
@@ -484,31 +479,18 @@ sub get_features
     return( wantarray ? @features : \@features );
   }
 
-
-#sub get_feature {
-#	my $self = shift;
-#	my $feature = shift;
-#	if ( exists $self->features->{$feature} ) {
-#		return($self->features->{$feature});
-#	}
-#	else {
-#		return "?";
-#	}
-#}
-
-sub add_feature {
-	my $self = shift;
-	my %options = @_;
-	my $strand = $options{location} =~ /complement/i ? "-1" : "1";
-	my %info;
-#	$info{number}=$options{number} if $options{number};
-	$info{type}=$options{type} if $options{type};
-	$info{location}=$options{location} if $options{location};
-	$info{qualifiers}=$options{qualifiers} if $options{qualifiers};
-	$info{annotation}=$options{annotation} if $options{annotation};
-	$info{strand}=$options{strand} if $options{strand};
-	my $feature = new CoGe::Accessory::GenBank::Feature(\%info);
-#	$self->features->{ $options{number} } = $feature;
+sub add_feature 
+    {
+      my $self = shift;
+      my %options = @_;
+      my $strand = $options{location} =~ /complement/i ? "-1" : "1";
+      my %info;
+      $info{type}=$options{type} if $options{type};
+      $info{location}=$options{location} if $options{location};
+      $info{qualifiers}=$options{qualifiers} if $options{qualifiers};
+      $info{annotation}=$options{annotation} if $options{annotation};
+      $info{strand}=$options{strand} if $options{strand};
+      my $feature = new CoGe::Accessory::GenBank::Feature(\%info);
 	push @{$self->features}, $feature;
 	return;
 }
