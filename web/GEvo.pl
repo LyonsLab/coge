@@ -340,6 +340,7 @@ sub run
     my $viewer = $opts{viewer};
     my ($analysis_program, $param_string, $parser_opts) = get_algorithm_options(%opts);
     my $basefilename = $opts{basefile};
+    my $show_spike = $opts{show_spike} || 0;
     my $message;
     $cogeweb = initialize_basefile(basename=>$basefilename);
     my @hsp_colors;
@@ -400,8 +401,8 @@ sub run
 	my $rev = $opts{"rev$i"};
 	my $mask_cds_flag = $opts{"maskcds$i"};
 	my $mask_ncs_flag = $opts{"maskncs$i"};
-	my ($up, $down);
-	my ($file, $file_begin, $file_end, $obj);
+	my ($up, $down, $seq);
+	my ($file, $obj);
 	my $reference_seq =$opts{"ref_seq$i"};
 	my $repeat_mask =$opts{"repmask$i"};
 	next unless $accn || $featid || $gbaccn || $dirseq|| $pos;
@@ -426,7 +427,7 @@ sub run
 	      {
 
 #		print Dumper $obj->features;
-		($file, $file_begin, $file_end,$spike_seq) = 
+		($file, $spike_seq, $seq) = 
 		  generate_seq_file(obj=>$obj,
 				    mask_cds=>$mask_cds_flag,
 				    mask_ncs=>$mask_ncs_flag,
@@ -446,24 +447,27 @@ sub run
  	elsif ($dirseq )
  	  {
  	    ($obj) = generate_obj_from_seq($dirseq, $i, $rev);
-	    $dirlength = length($dirseq)-$dirstart unless $dirlength;
+	    $dirlength = length($dirseq)-$dirstart+1 unless $dirlength;
  	    #my $seq = get_substr(seq=>$dirseq, start=>$dirstart, stop=>($dirstart+$dirlength) );
  	    
  	    if ($obj)
 	      {
-		my $seq;
-		($file, $file_begin, $file_end, $spike_seq, $seq) = 
+		($file, $spike_seq, $seq) = 
 		  generate_seq_file (
 				     obj=>$obj,
 				     mask_cds=>$mask_cds_flag,
 				     mask_ncs=>$mask_ncs_flag,
 				     startpos=>$dirstart,
-				     downstream=>$dirlength,
+				     length=>$dirlength,
 				     spike_len=>$spike_len, 
 				     seq_num=>$i,
 				     repeat_mask=>$repeat_mask,
 				    );
-		$obj->sequence($seq);
+#		$obj->sequence($seq);
+		$obj->start($dirstart);
+		$obj->stop($dirstart+$dirlength);
+		$obj->chromosome(1);
+		$obj->dataset("NA");
 		$up = $dirstart;
 		$down = $dirlength;
 	      }
@@ -480,19 +484,17 @@ sub run
 	    $message .= $error."\n" unless $res;
 	    if ($obj->accn)
 	      {
-		my $seq;
-		($file, $file_begin, $file_end,$spike_seq, $seq) = 
+		($file, $spike_seq, $seq) = 
 		  generate_seq_file (
 				     obj=>$obj,
 				     mask_cds=>$mask_cds_flag,
 				     mask_ncs=>$mask_ncs_flag,
 				     startpos=>$gbstart,
-				     downstream=>$gblength,
+				     length=>$gblength,
 				     spike_len=>$spike_len,
 				     seq_num=>$i,
 				     repeat_mask=>$repeat_mask,
 				    );
-		$obj->sequence($seq);
 		$up = $gbstart;
 		$down = $gblength;
 	      }
@@ -501,6 +503,12 @@ sub run
 		$message .= "No GenBank entry found for $gbaccn\n";
 	      }
  	  }
+	unless ($show_spike)
+	  {
+	    $seq =~ s/N*$spike_seq.*$//;
+	  }
+	$obj->sequence($seq);
+
 	if ($obj && $obj->sequence)
 	  {
 	    #need to check for duplicate accession names -- sometimes happens and major pain in the ass for other parts of the code
@@ -515,8 +523,8 @@ sub run
 	    push @sets, {
 			 obj=>$obj,
 			 file=>$file,
-			 file_begin=>$file_begin,
-			 file_end=>$file_end,
+#			 file_begin=>$file_begin,
+#			 file_end=>$file_end,
 			 accn=>$accn,
 			 rev=>$rev,
 			 up=>$up,
@@ -582,8 +590,8 @@ sub run
 	my $obj = $item->{obj};
 	next unless $obj->sequence;
 	my $file = $item->{file};
-	my $file_begin = $item->{file_begin};
-	my $file_end = $item->{file_end};
+#	my $file_begin = $item->{file_begin};
+#	my $file_end = $item->{file_end};
 	my $rev = $item->{rev};
 	my $up = $item->{up};
 	my $down = $item->{down};
@@ -592,10 +600,13 @@ sub run
 	if ($obj)
 	  {
 	    write_log("generating image ($count/".scalar @sets.")for ".$obj->accn, $cogeweb->logfile);	
+	    print STDERR "gen image: ".length($obj->sequence),"\n";
 	    my ($image, $map, $mapname, $gfx, $eval_cutoff) = generate_image(
 									     gbobj=>$obj, 
-									     start=>$file_begin,
-									     stop => $file_end,
+#									     start=>$file_begin,
+#									     stop => $file_end,
+									     start=>1,
+									     stop=>length($obj->sequence),
 									     data=>$analysis_reports,
 									     iw=>$iw,
 									     ih=>$ih,
@@ -784,12 +795,12 @@ sub generate_image
     $gfx->skip_duplicate_features(1);
     $gfx->DEBUG(0);
     $gfx->major_tick_labels(0);
-    my $f1= CoGe::Graphics::Feature->new({start=>$start, order => 2, strand => 1});
-    $f1->merge_percent(0);
-    $gfx->add_feature($f1);
-    my $f2= CoGe::Graphics::Feature->new({start=>$start, order => 2, strand => -1});
-    $f2->merge_percent(0);
-    $gfx->add_feature($f2);
+#    my $f1= CoGe::Graphics::Feature->new({start=>$start, order => 2, strand => 1});
+#    $f1->merge_percent(0);
+#    $gfx->add_feature($f1);
+#    my $f2= CoGe::Graphics::Feature->new({start=>$start, order => 2, strand => -1});
+#    $f2->merge_percent(0);
+#    $gfx->add_feature($f2);
     $graphic->process_nucleotides(c=>$gfx, seq=>$gbobj->sequence, layers=>{gc=>$show_gc, nt=>$show_nt});
     process_features(c=>$gfx, obj=>$gbobj, start=>$start, stop=>$stop, overlap_adjustment=>$overlap_adjustment, draw_model=>$draw_model);
     $eval_cutoff = process_hsps(
@@ -891,7 +902,7 @@ sub generate_image_db
     my $image_start = $set->{obj}->start;
     my $image_stop = $set->{obj}->stop;
     my $statement = qq{
-INSERT INTO image_info (iname, title, px_width,dsid, bpmin, bpmax) values ("$image", "$title", $width, $dsid, $image_start, $image_stop)
+INSERT INTO image_info (iname, title, px_width,dsid, bpmin, bpmax) values ("$image", "$title", $width, "$dsid", $image_start, $image_stop)
 };
     print STDERR $statement unless $dbh->do($statement);
     my $image_id = $dbh->last_insert_id("","","","");
@@ -902,14 +913,8 @@ INSERT INTO image_info (iname, title, px_width,dsid, bpmin, bpmax) values ("$ima
 	    next unless $feat->type eq "anchor";
 	  }
 	next unless $feat->image_coordinates;
-	next if $feat->desc && $feat->desc =~ /spike sequence/;
+#	next if $$feat->desc && $feat->contains_spike;#desc =~ /spike sequence/;
 	my $type = $feat->type;
-	if ($type eq "CDS" && $feat->label)
-	  {
-	    $type = "anchor";
-	  }
-#	print STDERR Dumper $feat;
-#	$type  
 	my $pair_id = "-99";
 	my $coords = $feat->image_coordinates;
 	$coords =~ s/\s//g;
@@ -1057,8 +1062,12 @@ sub process_features
 	      {
 		foreach my $name (@{$feat->qualifiers->{names}})
 		  {
-		    $f->color([255,255,0]) if $name =~ /^$accn$/i;
-		    $f->label($name) if $name =~ /^$accn$/i;
+		    if ($accn =~ /^$name\(?\d*\)?$/i)
+		      {
+			$f->color([255,255,0]) ;
+			$f->label($name);
+			$type="anchor";
+		      }
 		  }
 	      }
 	    
@@ -1083,8 +1092,12 @@ sub process_features
 		  {
 		    foreach my $name (@{$feat->qualifiers->{names}})
 		      {
-			$f->color([255,255,0]) if $name =~ /$accn/i;
-			$f->label($name) if $name =~ /^$accn$/i;
+			if ($accn =~ /^$name\(?\d*\)?$/i)
+			  {
+			    $f->color([255,255,0]) ;
+			    $f->label($name);
+			    $type="anchor";
+			  }
 		      }
 		  }
 
@@ -1163,6 +1176,7 @@ sub process_hsps
 	  }
 	if ($spike_seq)
 	  {
+	    my $found_spike = 0;
 	    foreach my $hsp (@{$blast->hsps})
 	      {
 		if ($hsp->qalign =~ /^$spike_seq$/i  || $hsp->salign =~ /^$spike_seq$/i)
@@ -1179,9 +1193,11 @@ sub process_hsps
 		      }
 		    write_log("Found spike sequence for $accn1 and $accn2: eval cutoff set to $eval_cutoff", $cogeweb->logfile) if defined $eval_cutoff;
 		    write_log("Found spike sequence for $accn1 and $accn2: score cutoff set to $score_cutoff", $cogeweb->logfile) if defined $score_cutoff;
-		    last;
+		    $found_spike =1;
+#		    last;
 		  }
 	      }
+	    write_log("WARNING:  Did not find spike sequence: $spike_seq in any HSP", $cogeweb->logfile) unless $found_spike;
 	  }
 	print STDERR "\t",$blast->query," ", $blast->subject,"\n" if $DEBUG;
 	foreach my $hsp (@{$blast->hsps})
@@ -1224,7 +1240,7 @@ sub process_hsps
 	    print STDERR "\t",$hsp->number,": $start-$stop\n" if $DEBUG;
 	    my $strand = $hsp->strand =~ /-/ ? "-1" : 1;
 	    my $f = CoGe::Graphics::Feature::HSP->new({start=>$start, stop=>$stop});
-	    $color = [100,100,100] if $spike_seq && $hsp->qalign =~ /^$spike_seq$/i;
+	    $color = [100,100,100] if $spike_seq && $hsp->contains_spike;
 	    $f->color($color);
 	    $f->order($track);
 	    $f->strand($strand);
@@ -1328,8 +1344,8 @@ sub generate_obj_from_seq
     my $num = shift;
     my $rc = shift;
     
-    my ($obj, $file, $file_begin, $file_end, $spike_seq);
-    $obj = new CoGe::Accessory::GenBank;
+#    my ($obj, $file, $file_begin, $file_end, $spike_seq);
+    my $obj = new CoGe::Accessory::GenBank;
     if ($sequence =~ /^LOCUS/)
       {
 	#genbank sequence
@@ -1354,8 +1370,8 @@ sub generate_obj_from_seq
     else
       {
 	#just the sequence
-	$obj->accn("RAW_SEQUENCE_SUBMISSION $num");
-	$obj->locus("RAW_SEQUENCE_SUBMISSION $num");
+	$obj->accn("RAW_SEQUENCE_SUBMISSION_$num");
+	$obj->locus("RAW_SEQUENCE_SUBMISSION_$num");
 	$sequence =~ s/\n|\r//g;
 	$obj->sequence($sequence);
       }
@@ -1368,26 +1384,24 @@ sub generate_obj_from_seq
 
 sub generate_seq_file
   {
-    my %options = @_;
-    my $obj = $options{obj} || $options{gbobj};
-    my $start = $options{start} || $options{startpos} || 1;
-    my $up = $options{up} || $options{upstream} || 0;
-    my $down = $options{down} || $options{downstream} || 0;
-    my $spike_len = $options{spike_len} || 0;
-    my $mask = $options{mask_cds};
-    my $mask_ncs = $options{mask_ncs};
-    my $seq_num = $options{seq_num};
-    my $repeat_mask = $options{repeat_mask};
+    my %opts = @_;
+    my $obj = $opts{obj} || $opts{gbobj};
+    my $start = $opts{start} || $opts{startpos} || 1;
+    my $length = $opts{length} || 0;
+    my $spike_len = $opts{spike_len} || 0;
+    my $mask = $opts{mask_cds};
+    my $mask_ncs = $opts{mask_ncs};
+    my $seq_num = $opts{seq_num};
+    my $repeat_mask = $opts{repeat_mask};
     my $t1 = new Benchmark;
-    my ($file, $file_begin, $file_end, $spike_seq, $seq) = 
+    my ($file, $spike_seq, $seq) = 
       write_fasta(
 		  obj=>$obj,
 		  accn=>$obj->accn,
 		  mask=>$mask,
 		  mask_ncs=>$mask_ncs,
 		  start=>$start,
-		  upstream=>$up,
-		  downstream=>$down,
+		  length=>$length,
 		  spike=>$spike_len,
 		  seq_num=>$seq_num,
 		 );
@@ -1401,7 +1415,7 @@ sub generate_seq_file
     my $time = timestr(timediff($t2,$t1));
     print STDERR "Time to generate Sequence file:   $time\n" if $BENCHMARK && $DEBUG;
     
-    return ($file, $file_begin, $file_end, $spike_seq, $seq);
+    return ($file, $spike_seq, $seq);
   }
 
 sub get_obj_from_genome_db
@@ -1524,6 +1538,8 @@ sub get_obj_from_genome_db
 	my $location = $f->genbank_location_string(recalibrate=>$start);
 	$location = $obj->reverse_genbank_location(loc=>$location, ) if $rev;
 	print STDERR $name, "\t",$f->type->name ,"\t",$location,"\n" if $DEBUG;
+	my $type = $f->type->name;
+	$type = "anchor" if $f->id == $featid;
 	$obj->add_feature (
 			   type=>$f->type->name,
 			   location=> $location,
@@ -1533,8 +1549,11 @@ sub get_obj_from_genome_db
 			   annotation=>$anno,
 			  );
       }
-    my $pos_loc = $rev ? $stop-$pos: $pos-$start;
-    $obj->add_feature(type=>"anchor", location=>($pos_loc), annotation=>"User specified anchor point") if $pos;
+    if ($pos)
+      {
+	my $pos_loc = $rev ? $stop-$pos: $pos-$start;
+	$obj->add_feature(type=>"anchor", location=>($pos_loc), annotation=>"User specified anchor point");
+      }
     my $t6 = new Benchmark;
     my $db_time = timestr(timediff($t2,$t1));
     my $seq_time = timestr(timediff($t3,$t2));
@@ -1953,69 +1972,51 @@ sub write_fasta
     my $start = $opts{start};
     my $mask = $opts{mask};
     my $mask_ncs = $opts{mask_ncs};
-    my $downstream = $opts{downstream};
-    my $upstream = $opts{upstream};
+    my $length = $opts{length};
     my $spike = $opts{spike};
     my $seq_num = $opts{seq_num};
-    # vars
-    my($seq,$seq_begin,$seq_end,$db_begin,$db_end,$chr);
-    my($gene_end,$gene_begin);
-    my $fullname = $cogeweb->basefile."_".$seq_num.".fa";
+    my $fullname = $cogeweb->basefile."_".$seq_num.".faa";
     my $hdr = $gbobj->get_headerfasta( );
-    $seq_begin = $start - $upstream;
-    if ( $seq_begin < 1 ) {
-      $seq_begin = 1;
-    }
-    ($seq) = uc($gbobj->sequence());
-    if ($downstream)
-      {
-	$seq_end = $start + $downstream;
-      } else {
-	$seq_end = length($seq);
-      }
-    $seq_end = length($seq) if ( $seq_end > length( $seq ));
+    $start = 1 if $start < 1;
+    my ($seq) = uc($gbobj->sequence());
+
+    my $stop = $length? $start+$length-1 :length($seq);
     # mask out exons if required
     $seq = $gbobj->mask_exons( $seq ) if ( $mask );
     # mask out non coding sequences if required
     $seq = $gbobj->mask_ncs( $seq ) if ( $mask_ncs );
-    ($seq) = $gbobj->subsequence( $seq_begin, $seq_end, $seq );
-    my $full_seq = $seq;
+    ($seq) = $gbobj->subsequence( $start, $stop, $seq );
     my $spike_seq = "";
     if ($spike)
       {
 	($spike_seq) = generate_spike_seq($spike);
-	$seq .= "N" x length($spike_seq) . $spike_seq;
+	$seq = $seq."N" x length($spike_seq).$spike_seq."N" x length($spike_seq).$spike_seq;#."N" x length($spike_seq);
       }
     ($fullname) = check_filename_taint( $fullname );
-    my $length = length($seq);
+    $length = length($seq);
     open(OUT, ">$fullname") or die "Couldn't open $fullname!\n";
     print OUT "$hdr\n";
     my $max = 100;
     my $i = 0;
-    while ($i < $length && length($seq) > $max)
-      {
-	print OUT substr ($seq, 0, $max),"\n";;
-	substr ($seq, 0, $max) = "";
-	$i+=$max;
-      }
-    print OUT $seq,"\n" if $seq;
+    print OUT $seq,"\n";
     close(OUT);
     system "chmod +rw $fullname";
     write_log("Created sequence file for $hdr.  Length ". $length, $cogeweb->logfile);
-    return($fullname,$seq_begin,$seq_end,$spike_seq, $full_seq);
+    return($fullname, $spike_seq, $seq);
   }
 
 sub generate_spike_seq { 
 	my $spikesize = shift;
 	return unless $spikesize;
-	my %nt = (1=>'A', 2=>'T', 3=>'C', 4=>'G');
-	my $spike_seq;
-	my $idx = 1;
-	for (my $i =1; $i<=$spikesize; $i+=3)
+	my %nt = (0=>'A', 3=>'T', 2=>'C', 1=>'G');
+	my $spike_seq = "";
+	my $idx=1;
+	my $i = 1;
+	while (length($spike_seq) <=$spikesize)
 	  {
-	    $spike_seq .= $nt{$idx}x3;
-	    $idx++;
-	    $idx = 1 if $idx == 5;
+	    $spike_seq .= $nt{($i+$idx)%4}x($idx);
+	    $idx++ unless $i%4;
+	    $i+=$idx;
 	  }
 	$spike_seq = substr($spike_seq, 0, $spikesize);
 	return($spike_seq);
@@ -2127,6 +2128,7 @@ sub gen_params
 
     $params .= qq{
 	'args__spike', 'spike', 
+        'args__show_spike', 'show_spike',
 
 	'args__blast_word', 'blast_wordsize', 
 	'args__blast_gapo', 'blast_gapopen', 
