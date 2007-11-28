@@ -422,34 +422,34 @@ sub get_features
 	    my @blocks;
 	    foreach my $subblock ( @{ $locdata } ) 
 	      {
-		if (($subblock->[0] >= $begin) and ($subblock->[1] <= $end)) 
+		if (($subblock->[0] >= $start) and ($subblock->[1] <= $stop)) 
 		  {
 		    push @blocks, [ 
-				   $subblock->[0] - $begin,
-				   $subblock->[1]  - $begin
+				   $subblock->[0] - $start,
+				   $subblock->[1]  - $start
 				  ];
 		  } 
-		elsif (($subblock->[1] > $begin) and ($subblock->[1] < $end)) 
+		elsif (($subblock->[1] > $start) and ($subblock->[1] < $stop)) 
 		  {
 		    # begins up of region, but ends in region
 		    push @blocks,[
 				  0, 
-				  $subblock->[1] - $begin
+				  $subblock->[1] - $start
 				 ];
 		  } 
-		elsif (($subblock->[0] >= $begin) and ($subblock->[0] < $end)) 
+		elsif (($subblock->[0] >= $start) and ($subblock->[0] < $stop)) 
 		  {
 		    # begins in the region, but ends outside region
 		    push @blocks, [
-				   $subblock->[0] - $begin, 
-				   $end - $begin 
+				   $subblock->[0] - $start, 
+				   $stop - $start 
 				  ];
 		  }
-		elsif ( ($subblock->[0] < $begin) and ($subblock->[0] > $end) )  #begins and ends outside of region
+		elsif ( ($subblock->[0] < $start) and ($subblock->[0] > $stop) )  #begins and ends outside of region
 		  {
 		    push @blocks, [
 				   0, 
-				   $end-$begin, 
+				   $stop-$start, 
 				  ];
 		  
 		  }
