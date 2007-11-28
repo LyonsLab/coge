@@ -47,6 +47,9 @@ my $pj = new CGI::Ajax(
 		       codon_table=>\&codon_table,
 		       protein_table=>\&protein_table,
 		       gc_content=>\&gc_content,
+		       update_featlist=>\&update_featlist,
+		       parse_for_FeatList=>\&parse_for_FeatList,
+		       get_orgs=>\&get_orgs,
 		      );
 $pj->JSDEBUG(0);
 $pj->DEBUG(0);
@@ -71,7 +74,7 @@ sub get_types
     my @opts = sort map {"<OPTION>$_</OPTION>"} grep {! $seen{$_}++} map {$_->type->name} $coge->resultset('Feature')->search({
 															       'feature_names.name'=>$accn,
 															       dataset_id=>$dsid
-															      },{join=>'feature_names'});
+															       },{join=>'feature_names'});
 
     $html .= "<font class=small>Type count: ".scalar @opts."</font>\n<BR>\n";
     $html .= qq{<SELECT id="Type_name" SIZE="10" MULTIPLE onChange="get_anno(['accn_select','Type_name', 'dsid'],[show_anno])" >\n};
@@ -82,6 +85,28 @@ sub get_types
     return ($html, 1);
   }
 
+sub update_featlist
+  {
+  	my $accn = shift;
+    return unless $accn;
+    my $type = shift;
+    my $featid = shift;
+    $accn .= " ($type)";
+    return $accn,$featid;
+  }
+  
+sub parse_for_FeatList
+  {
+	my $featlist = shift;
+	my $url = "/CoGe/FeatList.pl?";
+	foreach my $featid (split /,/,$featlist)
+	{
+		next unless $featid;
+		$url .="fid=$featid&";
+	}
+	$url =~ s/&$//;
+	return $url;
+  }
 
 sub cogesearch
   {
@@ -93,7 +118,7 @@ sub cogesearch
     $anno =~ s/^\s+//;
     $anno =~ s/\s+$//;
     my $type = $opts{type};
-    my $org = $opts{org};
+    my $org_id = $opts{org_id};
     my $feat_accn_wild = $opts{feat_name_wild};
     my $feat_anno_wild = $opts{feat_anno_wild};
 #    print STDERR Dumper \%opts;
@@ -104,7 +129,7 @@ sub cogesearch
 #    return $weak_query.$blank unless length($accn) > 2 || $type || $org || length($anno) > 5;
     if (!$accn && !$anno)
       {
-	return $weak_query.$blank unless $org && $type;
+	return $weak_query.$blank unless $org_id && $type;
       }
     ($USER) = CoGe::Accessory::LogUser->get_user();
     my $restricted_orgs = restricted_orgs(user=>$USER);
@@ -119,7 +144,7 @@ sub cogesearch
     $search->{annotation}={like=>$anno} if $anno;
     $search->{feature_type_id}=$type if $type;
     $search->{organism_id}={ -not_in=>[values %$restricted_orgs]} if values %$restricted_orgs;
-    $search->{organism_id}=$org if $org;
+    $search->{organism_id}=$org_id if $org_id;
     my $join = {'feature'=>'dataset'};
     $join->{'feature'} = ['dataset','annotations'] if $anno;
     foreach my $name ($coge->resultset('FeatureName')->search(
@@ -185,6 +210,7 @@ sub get_anno
 	$anno .= qq{<DIV id="gc_info$i"><input type="button" value = "Click for GC content" onClick="gc_content(['args__featid','args__$featid'],['gc_info$i'])"></DIV>};
 	$anno .= qq{<DIV id="codon_info$i"><input type="button" value = "Click for codon usage" onClick="codon_table(['args__featid','args__$featid'],['codon_info$i'])"></DIV>} if $feat->type->name eq "CDS";
 	$anno .= qq{<DIV id="protein_info$i"><input type="button" value = "Click for amino acid usage" onClick="protein_table(['args__featid','args__$featid'],['protein_info$i'])"></DIV>} if $feat->protein_sequence;
+	$anno .= qq{<DIV id="addfeat$featid"><input type="button" value = "Add Feature to List" onClick="\$('#addfeat$featid').html('<i>$accn ($type) has been added to Feature List</i><br><br>');update_featlist(['args__$accn','args__$type','args__$featid'],[add_to_featlist]);"></DIV>};
 
 	$anno = "<font class=\"annotation\">No annotations for this entry</font>" unless $anno;
       }
@@ -237,14 +263,15 @@ sub gen_body
 
     $template->param(ACCN=>$ACCN);
     $template->param(FEAT_TYPE=> get_feature_types());
-    my @orgs;
-    ($USER) = CoGe::Accessory::LogUser->get_user();
-    my $restricted_orgs = restricted_orgs(user=>$USER);
-    foreach my $org ($coge->resultset('Organism')->all)
-      {
-	push @orgs, $org unless $restricted_orgs->{$org->name};
-      }
-    $template->param(ORG_LOOP=> [{ORG=>"<OPTION VALUE=0>All</OPTION>"},map {{ORG=>"<OPTION value=\"".$_->id."\">".$_->name."</OPTION>"}} sort {uc($a->name) cmp uc($b->name)} @orgs]);
+#    my @orgs;
+#    ($USER) = CoGe::Accessory::LogUser->get_user();
+#    my $restricted_orgs = restricted_orgs(user=>$USER);
+#    foreach my $org ($coge->resultset('Organism')->all)
+#      {
+#	push @orgs, $org unless $restricted_orgs->{$org->name};
+#      }
+#    $template->param(ORG_LOOP=> [{ORG=>"<OPTION VALUE=0>All</OPTION>"},map {{ORG=>"<OPTION value=\"".$_->id."\">".$_->name."</OPTION>"}} sort {uc($a->name) cmp uc($b->name)} @orgs]);
+    $template->param(ORG_LIST=>get_orgs());
     my $html = $template->output;
 #    $html =~ s/(>gene<\/OPTION)/ SELECTED$1/; 
     return $html;
@@ -320,6 +347,36 @@ sub get_data_source_info_for_accn
     $html .= qq{</SELECT>\n};
     return ("<font class=small>Dataset count: ".$count ."</font>\n<BR>\n".$html, 1);
   }
+
+sub get_orgs
+  {
+    my $name = shift;
+    my @db = $name ? $coge->resultset('Organism')->search({name=>{like=>"%".$name."%"}})
+      : $coge->resultset('Organism')->all();
+    ($USER) = CoGe::Accessory::LogUser->get_user();
+    my $restricted_orgs = restricted_orgs(user=>$USER);
+    my @opts;
+    foreach my $item (sort {uc($a->name) cmp uc($b->name)} @db)
+      {
+	next if $restricted_orgs->{$item->name};
+	push @opts, "<OPTION value=\"".$item->id."\" id=\"o".$item->id."\">".$item->name."</OPTION>";
+      }
+    my $html;
+    $html .= qq{<FONT CLASS ="small" id="org_count">Organism count: }.scalar @opts.qq{</FONT>\n<BR>\n};
+    unless (@opts) 
+      {
+	$html .=  qq{<input type = hidden name="org_id" id="org_id"><br>};
+	$html .= "No results";
+	return $html;
+      }
+
+    $html .= qq{<SELECT id="org_id" SIZE="8" MULTIPLE onClick="\$('#remove').hide(0);\$('#add').show(0);" ondblclick="get_from_id(['org_id'],[add_to_list]);">\n};
+    $html .= join ("\n", @opts);
+    $html .= "\n</SELECT>\n";
+    $html =~ s/OPTION/OPTION SELECTED/;
+    return $html;
+  }
+
 
 sub gc_content
   {
