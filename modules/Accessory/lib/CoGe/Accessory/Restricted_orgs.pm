@@ -31,12 +31,12 @@ sub restricted_orgs
     my %orgs;
     if (!$user || $user =~ /public/i)
       {
-#	$orgs{papaya} = 1;
-	$orgs{"sorghum bicolor"} = 1;
+      $orgs{"Carica papaya"} = 1;
+	#$orgs{"sorghum bicolor"} = 1;
       }
     else 
       {
-	delete $orgs{papaya};
+	delete $orgs{"Carica papaya"};
 	delete $orgs{"sorghum bicolor"};
       }
     foreach my $org (keys %orgs)
