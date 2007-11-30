@@ -445,7 +445,7 @@ sub gen_results_page
      my $flag;
      my @check;
      my @no_feat;
-    my $t0 = new Benchmark;
+     my $t0 = new Benchmark;
      foreach my $set (@$results)
        {
 	 if (@{$set->{report}->hsps()})
@@ -541,7 +541,7 @@ sub gen_results_page
      
      my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CoGeBlast.tmpl');
      $template->param(OVERLAP_FEATURE_IF=>1);
-     	
+     
      $template->param(FEATURE_TABLE=>\@table) unless $null;
      $template->param(NULLIFY=>$null) if $null;
      $template->param(HSP_COUNT=>$hsp_count);
@@ -977,6 +977,7 @@ sub get_hsp_info
     $cogeweb = initialize_basefile(basename=>$filename);
     my $dbfile = $cogeweb->sqlitefile;
     my $dbh = DBI->connect("dbi:SQLite:dbname=$dbfile","","");
+    
     $hsp_id =~ s/^table_row// if $hsp_id =~ /table_row/;
     $hsp_id =~ s/^\d+_// if $hsp_id =~ tr/_/_/ > 1;
     
@@ -999,10 +1000,10 @@ sub get_hsp_info
  	        $smismatch = $info->{smismatch};
  	        $strand = $info->{strand};
  	        $length = $info->{length};
-		$qstart = $info->{qstart};
-		$qstop =  $info->{qstop};
-		$sstart = $info->{sstart};
-		$sstop =  $info->{sstop};
+			$qstart = $info->{qstart};
+			$qstop =  $info->{qstop};
+			$sstart = $info->{sstart};
+			$sstop =  $info->{sstop};
  	        $qalign = $info->{qalign};
   	        $salign = $info->{salign};
 	        $align = $info->{align};
@@ -1274,9 +1275,9 @@ sub overlap_feats_parse #Send to GEvo
     @list = grep {!$seen{$_}++} @list;
     foreach my $featid( @list)
       {
-      	my ($feat) = $coge->resultset("Feature")->find($featid);
-		my ($feat_name) = sort $feat->names;#something
-		$url .= "accn$count=$feat_name&";
+      	#my ($feat) = $coge->resultset("Feature")->find($featid);
+		#my ($feat_name) = sort $feat->names;#something
+		$url .= "fid$count=$featid&";
 		$count ++;
       }
 	foreach my $no_feat (@no_feats)
@@ -1553,18 +1554,19 @@ sub export_fasta_file
     my $basename = shift;
     $accn_list =~ s/^,//;
     $accn_list =~ s/,$//;
-    my $fasta = "#";
+    my $fasta;
     foreach my $accn (split /,/,$accn_list)
     {
+		next if $accn =~ /no$/;
 		my ($featid,$dsid) = $accn =~ m/^(\d+)_\d+_(\d+)$/; 
-		my $ds = $coge->resultset("Dataset")->find($dsid);
+#		my $ds = $coge->resultset("Dataset")->find($dsid);
    		my ($feat) = $coge->resultset("Feature")->find($featid);
-   		my ($strand) = $feat->strand;
-   		my ($name) = sort $feat->names;
-		$fasta .= ">".$ds->organism->name."(v.".$feat->version.")".", Name: $name, Type: ".$feat->type->name.", Location: ".$feat->genbank_location_string.", Chromosome: ".$feat->chr.", Strand: ".$strand."\n";
-		$fasta .= wrap('','',$feat->genomic_sequence);
+   		$fasta .= $feat->fasta;
+#   		my ($strand) = $feat->strand;
+#   		my ($name) = sort $feat->names;
+#		$fasta .= ">".$ds->organism->name."(v.".$feat->version.")".", Name: $name, Type: ".$feat->type->name.", Location: ".$feat->genbank_location_string.", Chromosome: ".$feat->chr.", Strand: ".$strand."\n";
+#		$fasta .= wrap('','',$feat->genomic_sequence);
 	}
-	$fasta =~ s/^#//;
 	$fasta =~ s/\n$//;
 	
 	open(NEW,"> $TEMPDIR/fasta_$basename.faa");
@@ -1597,6 +1599,7 @@ sub generate_excel_feature_file
     
     foreach my $accn (split /,/,$accn_list)
     {
+      next if $accn =~ /no$/;
       my ($featid,$hsp_num,$dsid) = $accn =~ m/^(\d+)_(\d+)_(\d+)$/;
 	 my $ds = $coge->resultset("Dataset")->find($dsid);
    	 my ($feat) = $coge->resultset("Feature")->find($featid);
@@ -1644,6 +1647,7 @@ sub generate_tab_deliminated
     
     foreach my $accn (split /,/,$accn_list)
     {
+      next if $accn =~ /no$/;
       my ($featid,$hsp_num,$dsid) = $accn =~ m/^(\d+)_(\d+)_(\d+)$/;
 	 my $ds = $coge->resultset("Dataset")->find($dsid);
    	 my ($feat) = $coge->resultset("Feature")->find($featid);
