@@ -5,6 +5,9 @@ use CGI;
 use CGI::Ajax;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
+use CoGeX;
+use CoGeX::Feature;
+use CoGeX::Dataset;
 use HTML::Template;
 use CoGe::Genome;
 use Text::Wrap qw($columns &wrap);
@@ -13,7 +16,7 @@ use POSIX;
 
 $ENV{PATH} = "/opt/apache/CoGe/";
 
-use vars qw( $TEMPDIR $TEMPURL $FORM $USER $DATE $DB );
+use vars qw( $TEMPDIR $TEMPURL $FORM $USER $DATE $DB $coge);
 
 $TEMPDIR = "/opt/apache/CoGe/tmp";
 $TEMPURL = "/CoGe/tmp";
@@ -23,12 +26,16 @@ $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 $DB = new CoGe::Genome;
 $FORM = new CGI;
 
+my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
+$coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
+
 my $pj = new CGI::Ajax(
 		       gen_html=>\&gen_html,
 		       get_seq=>\&get_seq,
 		       gen_title=>\&gen_title,
 		       find_feats=>\&find_feats,
 		       parse_url=>\&parse_url,
+		       generate_feat_info=>\&generate_feat_info,
 			);
 $pj->js_encode_function('escape');
 print $pj->build_html($FORM, \&gen_html);
@@ -40,12 +47,12 @@ sub gen_html
     my $html;
     unless ($USER)
       {
-	$html = login();
+		$html = login();
       }
     else
      {
     my $form = $FORM;
-    my $feat_id = $form->param('featid');
+    my $featid = $form->param('featid');
     my $rc = $form->param('rc');
     my $pro;
     my ($title) = gen_title(protein=>$pro, rc=>$rc);
@@ -58,7 +65,7 @@ sub gen_html
     $template->param(BOX_NAME=>qq{<DIV id="box_name">$title</DIV>});
     $template->param(BODY=>gen_body());
     $template->param(POSTBOX=>gen_foot());
-    #if($feat_id)
+    #if($featid)
      #{$template->param(CLOSE=>1);}
     #print STDERR gen_foot()."\n";
     $html .= $template->output;
@@ -69,7 +76,7 @@ sub gen_html
 sub gen_body
   {
     my $form = $FORM;
-    my $feat_id = $form->param('featid') || 0;
+    my $featid = $form->param('featid') || 0;
     my $chr = $form->param('chr');
     my $dsid = $form->param('dsid');
     my $feat_name = $form->param('featname');
@@ -82,55 +89,21 @@ sub gen_body
     my $seq;
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SeqView.tmpl');
     $template->param(JS=>1);
-    #print STDERR "reporting for duty\n";
-    #$seq = find_feats(dsid=>$dsid, chr=>$chr, start=>$start, stop=>$stop);
     $template->param(SEQ_BOX=>1);
-    unless ($feat_id)
+    if ($featid)
     {
-      #print STDERR "I am going in\n";
-      #my $strand = 1;
-#       $seq = get_seq(pro=>$pro,
-# 		      rc=>$rc,
-# 		      chr=>$chr,
-# 		      dsid=>$dsid,
-# 		      strand=>$strand, 
-# 		      upstream=>$upstream, 
-# 		      downstream=>$downstream,
-# 		      start=>$start,
-# 		      stop=>$stop,
-# 		      );
-    $template->param(FEATID=>'false');
+   		$template->param(FEATID=>$featid);
+    	$template->param(FEATNAME=>$feat_name);
+    	$template->param(FEAT_INFO=>qq{<td valign=top><input type=button value="Get Feature Info" onClick="generate_feat_info(['args__$featid'],[display_feat_info])"><br><div id=feature_info style="display:none"></div>});
     }
     else
     {
-    #my $strand = get_strand($feat_id);
-    #print STDERR "Missed 'em!\n";
-#     $strand = check_strand(strand=>$strand, rc=>$rc);
-#     $seq = get_seq(featid=>$feat_id, 
-# 		      pro=>$pro,
-# 		      rc=>$rc,
-# 		      chr=>$chr,
-# 		      dsid=>$dsid,
-# 		      featname=>$feat_name,
-# 		      strand=>$strand, 
-# 		      upstream=>$upstream, 
-# 		      downstream=>$downstream,
-# 		      );
-    #print STDERR "Trying again\n";
-    $template->param(FEATID=>$feat_id);
-    #print STDERR "featname is $feat_name\n";
-    $template->param(FEATNAME=>$feat_name);
+		$template->param(FEATID=>'false');
     }
     $template->param(DSID=>$dsid);
     $template->param(CHR=>$chr);
-    #$template->param(TEXT=>1);
-    #$template->param(SEQ=>$seq);
-    #$seq = qq{<TABLE style="width: 628px; height: 300px; overflow: auto;"><TR><TD align=left valign="top">$seq</TD></TR></TABLE>};
-#    return qq{<DIV id="seq" style="width: 623px; height: 300px; overflow: auto;">$seq</div>};
     my $html = $template->output;
     return $html;
-    #return qq{<DIV id="seq" style="height: 300px; overflow: auto;"><DIV id="seqtext">$seq</DIV></div>};
-#    return qq{<DIV id="seq">$seq</div>};
   }
  
 sub check_strand
@@ -140,7 +113,7 @@ sub check_strand
     my $rc = $opts{'rc'} || 0;
     #print STDERR Dumper \%opts;
     if ($rc==1)
-      {
+    {
         if ($strand =~ /-/)
           {
             $strand = "1";
@@ -165,8 +138,8 @@ sub get_seq
   {
     my %opts = @_;
     my $add_to_seq = $opts{'add'};
-    my $feat_id = $opts{'featid'} || 0;
-    $feat_id = 0 if $feat_id eq "undefined"; #javascript funkiness
+    my $featid = $opts{'featid'} || 0;
+    $featid = 0 if $featid eq "undefined"; #javascript funkiness
     my $pro = $opts{'pro'};
     #my $pro = 1;
     my $rc = $opts{'rc'} || 0;
@@ -183,72 +156,58 @@ sub get_seq
       $start = $upstream if $upstream;
       $stop = $downstream if $downstream;
     }
-    my $ds = $DB->get_dataset_obj->retrieve($dsid);
     #print $rc;
     my $strand;
     my $seq;
     my $fasta;
     my $fasta_no_html;
     #print STDERR Dumper \%opts;
-    if ($feat_id)
-      {
-	#print STDERR "I shouldn't be running because featid is $feat_id\n";
-	$strand = get_strand($feat_id);
-	$strand = check_strand(strand=>$strand, rc=>$rc);
-	my ($feat) = $DB->get_feat_obj->retrieve($feat_id);
-	$fasta = ">".$ds->org->name."(v".$feat->version.")".", Name: ".$feat_name.", Type: ".$feat->type->name.", Location: ".$feat->genbank_location_string.", Chromosome: ".$chr.", Strand: ".$strand."\n";
-      }
-    else
-      {
-	$strand = $rc == 0 ? 1 : -1;
-	$fasta = ">".$ds->org->name.", Location: ".$start."-".$stop.", Chromosome: ".$chr.", Strand: ".$strand."\n";
-	$fasta_no_html = ">".$ds->org->name.", Location: ".$start."-".$stop.", Chromosome: ".$chr;
-      }
-
-    #$fasta = qq{<FONT class="main"><i>$fasta</i></FONT>};
-#    $columns = 80;
-#    $fasta = join ("\n", wrap('','',$fasta));
-    
-    
-    unless ($pro)
+    if ($featid)
     {
-      $seq .= get_dna_seq_for_feat (featid=>$feat_id,
-      				    dsid=>$dsid, 
-      				    rc=>$rc, 
-      				    upstream=>$upstream,
-      				    downstream=>$downstream, 
-      				    start=>$start,
-      				    stop=>$stop,
-      				    chr=>$chr,
-      				    fasta=>$fasta_no_html);
+		my $feat = $coge->resultset('Feature')->find($featid);
+		$strand = $feat->strand;
+		$strand = check_strand(strand=>$strand, rc=>$rc);		
+		$fasta = ">".$feat->org->name."(v".$feat->version.")".", Name: ".$feat_name.", Type: ".$feat->type->name.", Location: ".$feat->genbank_location_string.", Chromosome: ".$chr.", Strand: ".$strand."\n";
     }
     else
     {
-      $seq .= get_prot_seq_for_feat($feat_id);
+		my $ds = $coge->resultset("Dataset")->find($dsid);
+		$strand = $rc == 0 ? 1 : -1;
+		$fasta = ">".$ds->organism->name.", Location: ".$start."-".$stop.", Chromosome: ".$chr.", Strand: ".$strand."\n";
+		$fasta_no_html = ">".$ds->organism->name.", Location: ".$start."-".$stop.", Chromosome: ".$chr;
     }
-    #print length($seq);
+    
+    if ($pro)
+    {
+		$seq .= get_prot_seq_for_feat($featid);
+    }
+    else
+    {
+      	$seq .= get_dna_seq_for_feat (featid=>$featid,
+      				    			  dsid=>$dsid, 
+      				    			  rc=>$rc, 
+      						 	      upstream=>$upstream,
+      				  				  downstream=>$downstream, 
+      				 				  start=>$start,
+      				  				  stop=>$stop,
+      								  chr=>$chr,
+      				  				  fasta=>$fasta_no_html);
+       if($featid)
+   	   {
+    	  if ($rc)
+     	  {
+      		  $seq = color(seq=>$seq, upstream=>$downstream, downstream=>$upstream);
+      	  }
+       	  else
+       	  {
+        	  $seq = color(seq=>$seq, upstream=>$upstream, downstream=>$downstream);
+          }
+       }
+    }
+     #print length($seq);
      $columns = 80;
      $seq = join ("\n", wrap('','',$seq));
-     #print $seq;
-     #my $newline = $seq;
-     #$newline =~ s/\n/\\n/g;
-     #print STDERR $newline;
-     unless($pro)
-     {
-      if($feat_id)
-      {
-       unless ($rc)
-       {
-        $seq = color(seq=>$seq, upstream=>$upstream, downstream=>$downstream);
-       }
-       else
-       {
-        $seq = color(seq=>$seq, upstream=>$downstream, downstream=>$upstream);
-       }
-      }
-     }
-    unless ($rc==2)
-     {$seq = ($fasta. $seq);}
+     $seq = ($fasta. $seq) unless ($rc==2);
     #print STDERR "$seq\n";
     return $seq;
   }
@@ -256,7 +215,7 @@ sub get_seq
 sub gen_foot
   {
     my $form = $FORM;
-    my $feat_id = $form->param('featid');
+    my $featid = $form->param('featid');
     my $chr = $form->param('chr');
     my $dsid = $form->param('dsid');
     my $feat_name = $form->param('featname');
@@ -266,22 +225,30 @@ sub gen_foot
     my $downstream = $form->param('downstream') || 0;
     my $start = $form->param('start');
     my $stop = $form->param('stop');
-    my ($feat) = $DB->get_feat_obj->retrieve($feat_id);
+    my $feat = $coge->resultset('Feature')->find($featid);
     my $strand;
     my $DNAButton;
     my $RCButton;
     my $PROButton;
     my @button_loop;
-    unless ($feat_id)
-    {$strand = $form->param('strand');}
-    else
-    {$strand = $feat->strand;}
+    $strand = $featid ? $feat->strand : $form->param('strand');
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SeqView.tmpl');
     $template->param(BOTTOM_BUTTONS=>1);
-    #print STDERR $feat_id if $feat_id;
-   # print STDERR "nuthin" unless $feat_id;
+    #print STDERR $featid if $featid;
+   # print STDERR "nuthin" unless $featid;
     $template->param(ADDITION=>1);
-    unless ($feat_id){
+    if ($featid){
+	  $template->param(PROTEIN=>'Protein Sequence');
+      $template->param(PRO_RC=>0);
+      $template->param(PRO_PRO=>1);
+      $template->param(EXTEND=>"Extend Sequence");
+      $template->param(UPSTREAM=>"UPSTREAM: ");
+      $template->param(UPVALUE=>$upstream);
+      $template->param(DOWNSTREAM=>"DOWNSTREAM: ");
+      $template->param(DOWNVALUE=>$downstream);
+      $template->param(FEATURE=>1);
+    }
+    else{
       $template->param(PROTEIN=>'Six Frame Translation');
       $template->param(PRO_RC=>2);
       $template->param(PRO_PRO=>0);
@@ -293,18 +260,7 @@ sub gen_foot
       $template->param(DOWNSTREAM=>"STOP: ");
       $template->param(DOWNVALUE=>$stop);
       $template->param(ADD_EXTRA=>1);
-      $template->param(RANGE=>1);
-    }
-    else{
-      $template->param(PROTEIN=>'Protein Sequence');
-      $template->param(PRO_RC=>0);
-      $template->param(PRO_PRO=>1);
-      $template->param(EXTEND=>"Extend Sequence");
-      $template->param(UPSTREAM=>"UPSTREAM: ");
-      $template->param(UPVALUE=>$upstream);
-      $template->param(DOWNSTREAM=>"DOWNSTREAM: ");
-      $template->param(DOWNVALUE=>$downstream);
-      $template->param(FEATURE=>1);
+      $template->param(RANGE=>1);      
       }
    $template->param(REST=>1);
    #print STDERR $template->output."\n";
@@ -327,21 +283,18 @@ sub get_dna_seq_for_feat
     my $seq;
    # print STDERR Dumper \%opts;
 #    print STDERR "dsid;$dsid\n";
-    unless ($featid)
+    if ($featid)
       {
-	$seq = $DB->get_genomic_sequence(start=>$start,
-					 stop=>$stop,
-					 chr=>$chr,
-					 dataset_id=>$dsid);
+		my $feat = $coge->resultset('Feature')->find($featid);
+	    return "Unable to retrieve Feature object for id: $featid" unless ref($feat) =~ /Feature/i;
+		$seq = $feat->genomic_sequence(upstream=>$upstream, downstream=>$downstream);
       }
     else
       {
-	my ($feat) = $DB->get_feat_obj->retrieve($featid);
-	unless (ref($feat) =~ /Feature/i)
-	  {
-	    return "Unable to retrieve Feature object for id: $featid";
-	  }
-	$seq = $feat->genomic_sequence(upstream=>$upstream, downstream=>$downstream);
+		$seq = $DB->get_genomic_sequence(start=>$start,
+					 stop=>$stop,
+					 chr=>$chr,
+					 dataset_id=>$dsid);
       }
     #    print STDERR "Done\n";
     if ($rc==1)
@@ -365,8 +318,8 @@ sub get_prot_seq_for_feat
   {
     my $featid = shift;
     #print STDERR "featid: ", $featid, "\n";
-    my ($feat) = $DB->get_feat_obj->retrieve($featid);
-    my ($seq) = $DB->get_protein_sequence_for_feature($feat);
+    my $feat = $coge->resultset('Feature')->find($featid);
+    my ($seq) = $feat->protein_sequence;
     $seq = "No sequence available" unless $seq;
     #print $seq;
     $columns = 60;
@@ -387,19 +340,21 @@ sub color
       my $nl1;
       $nl1 = 0;
       $up = substr($seq, 0, $upstream);
-      while ($up=~/\n/g){$nl1++;}
+      while ($up=~/\n/g)
+      	{$nl1++;}
       my $check = substr($seq, $upstream, $nl1);
 
-      if ($check =~ /\n/)
-       {$nl1++; }
+      $nl1++ if $check =~ /\n/;
       $upstream += $nl1;
       $up = substr($seq, 0, $upstream);
+      
       my $nl2 = 0;
       $down = substr($seq, ((length $seq)-($downstream)), length $seq);
-      while ($down=~/\n/g){$nl2++;}
+      while ($down=~/\n/g)
+      	{$nl2++;}
       $check = substr($seq, ((length $seq)-($downstream+$nl2)), $nl2);
-      if ($check =~ /\n/)
-       {$nl2++;}
+      
+      $nl2++ if $check =~ /\n/;
       $downstream += $nl2;
       $down = substr($seq, ((length $seq)-($downstream)), $downstream);
 	   
@@ -417,7 +372,7 @@ sub color
 #       $up = qq{<u>$up</u>};
 #       }
       $main = substr($seq, $upstream, (((length $seq)) - ($downstream+$upstream)));
-	 $main = uc($main);
+	  $main = uc($main);
       $seq = join("", $up, $main, $down);
       return $seq;
     }
@@ -425,6 +380,7 @@ sub color
 sub gen_title
     {
       my %opts = @_;
+      #print STDERR Dumper \@_;
       my $rc = $opts{'rc'} || 0;
       my $pro = $opts{'pro'};
       my $title;
@@ -441,6 +397,7 @@ sub gen_title
       {
        $title = "Protein Sequence";
       }
+      #print STDERR $title, "\n";
       return $title;
     }
 
@@ -451,15 +408,15 @@ sub sixframe
 	  my $fasta = $opts{fasta};
 	  my $key;
 	  my $sixframe;
-     	  my $sequence = $DB->get_feat_obj->frame6_trans(seq=>$seq);
-          #print STDERR Dumper ($sequence);
-          foreach $key (sort {abs($a) <=> abs($b) || $b <=> $a} keys %$sequence)
-           {
-      	     $seq = join ("\n", wrap('','',$sequence->{$key}));
-      	     $sixframe .= qq/$fasta Frame $key\n$seq\n/;
-           }
-          return $sixframe;
-        }
+      my $sequence = $DB->get_feat_obj->frame6_trans(seq=>$seq);
+      #print STDERR Dumper ($sequence);
+      foreach $key (sort {abs($a) <=> abs($b) || $b <=> $a} keys %$sequence)
+      {
+      	  $seq = join ("\n", wrap('','',$sequence->{$key}));
+      	  $sixframe .= qq/$fasta Frame $key\n$seq\n/;
+      }
+      return $sixframe;
+    }
 	
 sub find_feats
 {
@@ -477,13 +434,17 @@ sub find_feats
         #$template->param(FEATTABLE=>qq{style = "overflow: auto; height: 300px;"});
         $html = $template->output;
         return $html;
-
 }
 
-sub get_strand
+sub generate_feat_info
   {
-    my $feat_id = shift;
-    my ($feat) = $DB->get_feat_obj->retrieve($feat_id);
-    my $strand = $feat->strand;
-    return $strand;
+    my $featid = shift;
+    my ($feat) = $coge->resultset("Feature")->find($featid);
+    unless (ref($feat) =~ /Feature/i)
+    {
+      return "Unable to retrieve Feature object for id: $featid";
+    }
+    my $html = qq{<a href="#" onClick="\$('#feature_info').slideToggle(pageObj.speed);" style="float: right;"><img src='/CoGe/picts/delete.png' width='16' height='16' border='0'></a>};
+    $html .= $feat->annotation_pretty_print_html();
+    return $html;
   }
