@@ -600,7 +600,6 @@ sub run
 	if ($obj)
 	  {
 	    write_log("generating image ($count/".scalar @sets.")for ".$obj->accn, $cogeweb->logfile);	
-	    print STDERR "gen image: ".length($obj->sequence),"\n";
 	    my ($image, $map, $mapname, $gfx, $eval_cutoff) = generate_image(
 									     gbobj=>$obj, 
 #									     start=>$file_begin,
@@ -2034,15 +2033,14 @@ sub generate_annotation
     my %opts = @_;
     my $obj = $opts{obj};
     return unless $obj;
-    my $start = $opts{file_begin};
-    my $stop = $opts{file_end};
+#    my $start = $opts{file_begin};
+#    my $stop = $opts{file_end};
     my $rev = $opts{rev};
     my $seq_num = $opts{seq_num};
-    my @opts = ($start, $stop);
     my $fullname = $cogeweb->basefile."_".$seq_num.".anno";
     my %data;
     my $length = length($obj->sequence());
-    foreach my $feat($obj->get_features(@opts))
+    foreach my $feat($obj->get_features())
       {
 	my $type = $feat->type;
 	my ($name) = sort { length ($b) <=> length ($a) || $a cmp $b} @{$feat->qualifiers->{names}} if ref($feat->qualifiers) =~ /hash/i;
@@ -2351,12 +2349,15 @@ sub add_seq
 	my $go_run = gen_go_run($MAX_SEQS);
 	return ('',$MAX_SEQS, $go_run, '', $hsp_colors,qq{Exceeded max number of sequences ($MAX_SEQS)});
       }
+    my $dsinfo =qq{<input type="hidden" id="posdsid$num_seq">};
+    $dsinfo .= qq{<input type="hidden" id="chr$num_seq">};
     my @seqs = {
 		SEQ_NUM=>$num_seq,
 		REV_NO=>"checked",
 		REF_YES=>"checked",
 		DRUP=>10000,
 		DRDOWN=>10000,
+		DSINFO=>$dsinfo,
 	       };
 
     $template->param(SEQ_SELECT=>1);
