@@ -133,9 +133,7 @@ sub generate_table
     #print STDERR $url,"\n";
     foreach my $featid (split /,/,$accn_list)
       {
-		my ($feat) = $coge->resultset("Feature")->find($featid);
-		my ($feat_name) = sort $feat->names;#something
-		$url .= "accn$count=$feat_name&";
+		$url .= "fid$count=$featid&";
 		$count ++;
       }
     $count--;
