@@ -69,14 +69,17 @@ sub gen_body
       }
     elsif ($USER && !$FORM->param('logout'))
       {
-#	if ($disable){
-	$tmpl->param(DISABLE=>1);
-	$tmpl->param(ACTIONS=>[map {{ACTION=>$_->{ACTION}, DESC=>$_->{DESC}}} @{actions()}  ]);
-#         }
-#	else{
-#	  $tmpl->param(ANIMATE=>1);
-#	  $tmpl->param(ACTIONS=>actions());
-#           }
+	$disable = 1;
+	if ($disable)
+	  {
+	    $tmpl->param(DISABLE=>1);
+	    $tmpl->param(ACTIONS=>[map {{ACTION=>$_->{ACTION}, DESC=>$_->{DESC}}} @{actions()}  ]);
+	  }
+	else
+	  {
+	    $tmpl->param(ANIMATE=>1);
+	    $tmpl->param(ACTIONS=>actions());
+	  }
       }
     else
       {
