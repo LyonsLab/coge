@@ -1,0 +1,132 @@
+<script language="javascript">
+
+function launch_seqview(dsid, chr)
+ {
+   start = $('#start').val();
+   stop = $('#stop').val();
+   window.open("SeqView.pl?dsid="+dsid+"&chr="+chr+"&start="+start+"&stop="+stop);
+ }
+
+function dataset_chain(val) {
+ if (val) {$('#org_list').html(val);}
+ $('#ds_list').html('<input type=hidden id = "ds_id"><font class="loading. . ."></font>');
+ $('#ds_info').html('<input type=hidden id = "chr">');
+ $('#chr_info').html('<input type=hidden id = "ds_id">');
+ get_dataset(['args__oid','org_id'],[dataset_info_chain]);
+}
+
+function dataset_info_chain(val, val2) {
+ $('#chr_info').html('<font class="loading"></font>');
+ $('#ds_info').html('<input type=hidden id = "chr"><font class="loading">loading. . .</font>');
+ $('#viewer').html('<font class="loading"></font>');
+ $('#get_seq').empty();
+ if (val) {$('#ds_list').html(val);}
+ if (val2) {$('#org_list').html(val2);}
+ get_dataset_info(['ds_id'],[dataset_info_chr_chain]);
+}
+
+function dataset_info_chr_chain(val) {
+ $('#chr_info').html('<input type=hidden id = "ds_id"><font class="loading">loading. . .</font>');
+ $('#ds_info').html('<input type=hidden id = "chr"><font class="loading">loading. . .</font>');
+ $('#viewer').html('<font class="loading"></font>');
+ $('#get_seq').empty();
+ if (val) {$('#ds_info').html(val); $('#chr_info').html('<font class="loading">searching for features. . .</font>');}
+ get_dataset_chr_info(['ds_id', 'chr'],['chr_info', 'viewer', 'get_seq']);
+}
+
+function get_organism_name_chain(val)
+{
+ $('#org_list').html('<input type=hidden id = "org_id"><font class="loading"></font>');
+ $('#ds_list').html('<input type=hidden id = "ds_id">');
+ $('#chr_info').empty();
+ $('#ds_info').html('<input type=hidden id = "chr">');
+ $('#viewer').empty();
+ get_orgs(['args__'+val], [dataset_chain]);	 
+}
+
+function get_dataset_name_chain(val)
+{
+// $('#org_list').html('<input type=hidden id = "org_id"><font class="loading"></font>');
+ $('#ds_list').html('<input type=hidden id = "ds_id">');
+ $('#chr_info').empty();
+ $('#ds_info').html('<input type=hidden id = "chr">');
+ $('#viewer').empty();
+ if (val){get_dataset(['args__dsname','args__'+val], [dataset_info_chain]);}
+ else {get_orgs([],[dataset_chain])};
+}
+
+function launch_viewer (dsd, chr) {
+ x = $('#x').val();
+ z = $('#z').val();
+ if (z > 12) {z=12;}
+ link =  "GenomeView.pl?z="+z+"&x="+x+"&ds="+dsd+"&chr="+chr;
+ window.location=link;
+}
+function timing(val){
+  var searchterm;
+  if (val) {searchterm = $('#org_name').val();}
+  else {
+    searchterm = $('#ds_name').val();
+    if (!searchterm) {val=0;}
+   }
+  if(searchterm == "Search")
+  {
+    searchterm = "";
+  }
+//  alert (searchterm);
+  if (pageObj.search && pageObj.search == searchterm)
+   {
+    return;
+   }
+  pageObj.search=searchterm;
+  if (pageObj.time){
+   clearTimeout(pageObj.time);
+  }
+  if (val) {pageObj.time = setTimeout("get_organism_name_chain($('#org_name').val())",500);}
+  else {pageObj.time = setTimeout("get_dataset_name_chain($('#ds_name').val())",500);}
+}
+
+$(document).ready(function(){
+  if($('#org_name').val() != "Search") {
+    $('#org_name').css({fontStyle: "normal"});
+    $('#ds_name').css({fontStyle: "normal"});
+    timing(1);
+  }  
+ });
+
+function search_bar(div_id){
+  if($('#'+div_id).val() == "Search") $('#'+div_id).val("").css({fontStyle: "normal"});
+}
+
+function restore_search_bar(div_id){
+  if(! $('#'+div_id).val()) {
+    //get_organism_name_chain($('#org_text').val());
+    //alert(pageObj.search);
+    //(pageObj.search != 'undefined' && pageObj.search != "Search") 
+//    get_organism_name_chain("");
+//    timing(1);
+    $('#'+div_id).val("Search").css({fontStyle: "italic"});
+  }
+}
+
+</script>
+<TABLE>
+ <TR>
+  <TD valign=top>
+   <DIV class = "oblique">Organisms</DIV>
+   <DIV id="blah">Organism Name: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_NAME">" name = "org_name" id="org_name" style="font-style:italic" onFocus="search_bar('org_name')" onKeyUp='timing(1);'></DIV>
+   <DIV id="org_list"><TMPL_VAR NAME="ORG_LIST"></DIV>
+   <DIV id="viewer"></DIV>
+   <DIV id="get_seq"></DIV>
+  <TD valign=top>
+   <DIV class = "oblique">Datasets</DIV>
+   <DIV id="blah">Dataset Name: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_NAME">" name = "ds_name" style="font-style:italic" id="ds_name" onFocus="search_bar('ds_name')" onKeyUp='timing();' ></DIV>
+   <DIV id="ds_list"><TMPL_VAR NAME="DI_LIST"></DIV>
+
+  <TD valign=top>
+   <DIV class = "oblique">Dataset information</DIV>
+   <DIV id="ds_info"><TMPL_VAR NAME="DS_INFO"></DIV>
+   <DIV id="chr_info"><TMPL_VAR NAME="CHR_INFO"></DIV>
+
+</TABLE>
+<!--<IMG SRC = "picts/table/spacer-1x1.png">-->
