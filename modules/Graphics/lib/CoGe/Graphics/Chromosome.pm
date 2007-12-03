@@ -1708,7 +1708,7 @@ sub _draw_features
     $self->_invert_chromosome if $self->invert_chromosome;
     my $c = $self->_image_h_used+($self->ih - $self->_image_h_used)/2;
     print STDERR "Image used: ".$self->_image_h_used."  Image Height: ".$self->ih."  Center: $c\n" if $self->DEBUG;
-    foreach my $feat ( $self->get_feature(fill=>1), sort {$a->overlay <=> $b->overlay || $b->start <=> $a->start} $self->get_features(fill=>0))
+    foreach my $feat ( sort {$b->type cmp $a->type} $self->get_feature(fill=>1), sort {$a->overlay <=> $b->overlay || $b->start <=> $a->start} $self->get_features(fill=>0))
       {
 	#skip drawing features that are outside (by two times the range being viewed) the view
 	if ($feat->start)
