@@ -70,7 +70,7 @@ sub gen_body
 	$org = $dso->organism->name;
 	$ver = $dso->version;
       }
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GenomeView.tmpl');
+    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GeLo.tmpl');
     $template->param(CHR=>$chr);
     $template->param(VER=>$ver);
     $template->param(ORG=>$org);
