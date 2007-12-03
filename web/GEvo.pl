@@ -1113,7 +1113,6 @@ sub process_features
 	    $f->type($type);
 	    $f->description($feat->annotation);
 	    $c->add_feature($f);
-	    $c->add_feature($f);
 	    next;
 #	    my $f2 = CoGe::Graphics::Feature::NucTide->new({nt=>$rcseq, strand=>-1, start =>$pos+$start, options=>$options}) if $layers->{gc} || $layers->{nt} || $layers->{all};
 	  }
@@ -1538,7 +1537,7 @@ sub get_obj_from_genome_db
 	$location = $obj->reverse_genbank_location(loc=>$location, ) if $rev;
 	print STDERR $name, "\t",$f->type->name ,"\t",$location,"\n" if $DEBUG;
 	my $type = $f->type->name;
-	$type = "anchor" if $f->id == $featid;
+	$type = "anchor" if $f->id && $featid && $f->id == $featid;
 	$obj->add_feature (
 			   type=>$f->type->name,
 			   location=> $location,
@@ -2056,6 +2055,7 @@ sub generate_annotation
 		$stop = $length - $block->[0];
 		$dir = $dir eq ">" ? "<" : ">";
 	      }
+	    next unless $name;
 	    push @{$data{$name}{$type}},[$start, $stop, $dir];
 	  }
       }
