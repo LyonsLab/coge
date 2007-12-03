@@ -69,7 +69,7 @@ sub gen_body
       }
     elsif ($USER && !$FORM->param('logout'))
       {
-	$disable = 1;
+#	$disable = 1;
 	if ($disable)
 	  {
 	    $tmpl->param(DISABLE=>1);
