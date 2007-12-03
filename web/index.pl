@@ -130,8 +130,8 @@ sub actions
 		   },
 		   {
 		    ID=>5,
-		    LOGO => qq{<a href="./GeLo.pl"><img src="/CoGe/picts/carousel/GeLo-logo.png" width="227" height="75" border="0"></a>},
-		    ACTION => qq{<a href="./GeLo.pl">GeLo: Genome Location Viewer</a>},
+		    LOGO => qq{<a href="./GenomeView.pl"><img src="/CoGe/picts/carousel/GenomeView-logo.png" width="227" height="75" border="0"></a>},
+		    ACTION => qq{<a href="./GenomeView.pl">GenomeView: Genome Viewer</a>},
 		    DESC   => qq{Allows users to get an overview of organisms in CoGe's genomes database and provides a dynamic, interactive browser of genomic information.},
 		    SCREENSHOT => qq{<img src="/CoGe/picts/preview/GenomeView.png" border="0"></a>},
 		   },
