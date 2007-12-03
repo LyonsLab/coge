@@ -74,7 +74,7 @@ sub gen_html
 sub gen_body
   {
     my $form = shift || $FORM;
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GeLo.tmpl');
+    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GenomeView.tmpl');
     my $name = $form->param('org_name');
     $name = "Search" unless $name;
     $template->param(ORG_NAME=>$name);
@@ -237,7 +237,7 @@ sub get_dataset_chr_info
     if ($chr)
      {
 	$viewer .= "<br><br>";
-	$viewer .= "<font class=\"oblique\">GeLo Viewer Launcher</font><br>";
+	$viewer .= "<font class=\"oblique\">Genome Viewer Launcher</font><br>";
 	$viewer .= "<table>";
 	$viewer .= "<tr><td class = \"ital\">Starting location: ";
 	$viewer .= qq{<td><input type="text" size=10 value="1000" id="x">};
@@ -252,7 +252,7 @@ sub get_dataset_chr_info
 	#    $viewer .= $zoom;
 	$viewer .= "</table>";
 	#$viewer .= qq{<input type="hidden" id="z" value="7">};
-	$viewer .= qq{<input type="submit" value = "Launch GeLo Viewer!" onClick="launch_viewer($dsd, '$chr')">};
+	$viewer .= qq{<input type="submit" value = "Launch Genome Viewer!" onClick="launch_viewer($dsd, '$chr')">};
       }
     my $seq_grab;
     if ($chr)
