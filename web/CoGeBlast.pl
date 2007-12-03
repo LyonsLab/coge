@@ -1104,7 +1104,7 @@ sub get_hsp_info
     
     my $subject_link = qq{
 <div class=small>Subject: $sname</div>
-<a href = 'GenomeView.pl?chr=$chr&ds=$dsid&x=$sstart&z=7' target=_new border=0><img src=$subject_image border=0></a>
+<a href = 'GeLo.pl?chr=$chr&ds=$dsid&x=$sstart&z=7' target=_new border=0><img src=$subject_image border=0></a>
 };
     $subject_link =~ s/$TEMPDIR/$TEMPURL/;
      return $html, $query_link, $subject_link;
