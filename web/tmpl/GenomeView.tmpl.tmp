@@ -1,0 +1,253 @@
+
+
+    <style type="text/css">
+        #map {
+            width: ;
+            height: 300;
+            border: 1px solid black;
+        }
+        #zoomLevel {
+           bottom: 10px;
+           left: 0px;
+        }
+        #gene {
+            background-color: red;
+            color:white;
+        }
+        #pseudogene {
+            background-color: orange;
+            color:white;
+        }
+        #mrna {
+            background-color: blue;
+            color:white;
+        }
+        #cds {
+            background-color: green;
+            color:white;
+        }
+        #gc {
+            background-color: white;
+             color:green;
+        }
+    </style>
+    <script src="js/OpenLayers.js"></script>
+    <script src="js/Grid1D.js"></script>
+    <script src="js/Genomic.js"></script>
+    <script src="js/opengenes.js"></script>
+
+    <script type="text/javascript">
+    /* ruler, chromosome, cds, rna, gene, protein,
+       domain, other, cns, nt, gc, background, */
+
+        if(! window.console){ console={}; console.log = console.debug = function(){}}
+
+        var map, layers;
+        var chr = '<TMPL_VAR NAME=CHR>';
+        var version = '<TMPL_VAR NAME=VER>';
+        var bp;
+        var size= 285;
+        var server = 'http://homer.cnr.berkeley.edu/CoGe/tiler.pl?'
+        var org = "<TMPL_VAR NAME=ORG>";
+        var ds = '<TMPL_VAR NAME=DS>';
+        var loc = '<TMPL_VAR NAME=LOC>';
+        var zoom = '<TMPL_VAR NAME=ZOOM>';
+        function init(){
+            map = new OpenLayers.GenomeBrowser( $('#map')[0] , 
+            {   
+                 maxExtent: new OpenLayers.Bounds(-50000,0,1000000000,1),
+                 units     :'bp',
+                 tileSize: new OpenLayers.Size(512, size),
+                 resolutions:[1024,512,256,128,64,32,16,8,4,2,1, 0.5, 0.25, 0.125, 0.0625, 0.032125, 0.015625],
+                 //resolutions:[128,64,32,16,8],
+                 controls: [new OpenLayers.Control.MouseDefaults()]
+            });
+            layers = [
+            new OpenLayers.Layer.Genomic( "Ruler" , server
+                 ,{'ds':ds, 'chr':chr,layers:"background,ruler",'version':version,'organism':org}
+                 ,{isBaseLayer:true} 
+             ),
+            new OpenLayers.Layer.Genomic( "<span id='gene'>Genes</span>" , server
+                 ,{'ds':ds,'chr':chr,layers:"gene",'version':version,'organism':org,}
+                 ,{isBaseLayer:false}
+             ),
+            new OpenLayers.Layer.Genomic( "<span id='pseudogene'>Pseudogenes</span>" , server
+                 ,{'ds':ds,'chr':chr,layers:"pseudogene",'version':version,'organism':org}
+                 ,{isBaseLayer:false}
+             ),
+            new OpenLayers.Layer.Genomic( "<span id='mrna'>mRNAs</span>" , server
+                 ,{'ds':ds,'chr':chr,'version':version,layers:"mRNA",'organism':org}
+                 ,{isBaseLayer:false}
+             ),
+            new OpenLayers.Layer.Genomic( "<span id='cds'>CDSs</span>" , server
+                 ,{'ds':ds,'chr':chr,'version':version,layers:"CDS",'organism':org}
+                 ,{isBaseLayer:false}
+             ),
+            new OpenLayers.Layer.Genomic( "other RNAs" , server
+                 ,{'ds':ds,'chr':chr,'version':version,layers:"rna",'organism':org}
+                 ,{isBaseLayer:false}
+             ),
+            ]
+            fd = new OpenLayers.Layer.Genomic( "functional domains" , server
+                 ,{'ds':ds,'chr':chr,'organism':org,'ds':ds,'version':version,layers:"domain"}
+                 ,{isBaseLayer:false}
+             );
+            gc = new OpenLayers.Layer.Genomic( "<span id='gc'>GC content</span>" , server
+                 ,{'ds':ds,'chr':chr,'version':version,layers:"gc",'organism':org}
+                 ,{isBaseLayer:false}
+             );
+            prot = new OpenLayers.Layer.Genomic( "proteins" , server
+                 ,{'ds':ds,'chr':chr,'version':version,layers:"protein",'organism':org}
+                 ,{isBaseLayer:false}
+             );
+
+            map.addControl(new OpenLayers.Control.LayerSwitcher())
+
+            gc.setVisibility(true);
+            map.addLayer(gc)
+            map.addLayers(layers);
+            fd.setVisibility(false);
+            map.addLayer(fd)
+            prot.setVisibility(false);
+            map.addLayer(prot)
+            /*                                          zoomLevel */
+            map.setCenter(new OpenLayers.BasePair(loc), zoom);
+            bp = new OpenLayers.Control.MousePosition() 
+            map.addControl(bp );
+            map.addControl(new OpenLayers.Control.PanZoomBar());
+
+
+            map.events.register('zoomend',map,updateZoom);
+            map.events.triggerEvent('zoomend');
+
+            map.events.register('mousedown',map,mapMouseDown);
+            map.events.register('mouseup',map,mapMouseUp);
+            map.events.register('mousemove',map,mapMouseMove);
+            map.events.register('mouseout',map,mapMouseOut);
+
+
+        }
+
+        function mapMouseDown(e){
+        	  $('#popup').hide(0);
+            map.lastMouseX = e.xy.x;
+            map.lastMouseY = e.xy.y;
+        }
+        function mapMouseUp(e){
+            var tx = e.xy.x;
+            var ty = e.xy.y;
+            var tot = Math.abs(map.lastMouseX - tx) 
+                + Math.abs(map.lastMouseY - ty);
+            if(4 > tot){
+                // dont need to figure out basepairs from pixels
+                // just use the ones in the window already.
+                if(pageObj.getseq < 3)
+                {
+                    pageObj.getseq++;
+                    var pos = parseInt(bp.element.innerHTML);
+        			update_grab(pos);
+        		}
+        		else{
+                	query(parseInt(bp.element.innerHTML));
+                }
+            }
+        }
+        
+        
+     function mapMouseOut(e) {
+       if (pageObj.time) clearTimeout(pageObj.time);
+     }
+
+	function mapMouseMove(e) {
+	  if ($('#disable').is(':checked') == true) return;
+	  if (pageObj.time) clearTimeout(pageObj.time);
+	  if (parseInt(bp.element.innerHTML) <= 0) return;
+       var mouse_x = e.pageX;
+       var mouse_y = e.pageY;
+            //alert(map.lastMouseX+","+map.lastMouseY);
+       pageObj.time = setTimeout("info_popup('"+mouse_x+","+mouse_y+"')",2000);
+     }
+     
+     function insert_query(html) {
+        $('#popup').append(html);
+     }
+     
+     function info_popup(position_str) {
+       var position = position_str.split(",");
+       var from_left = position[0];
+       var document_width = $(window).width();
+     //alert(document_width);
+     //if (document_width <= (from_left + 150)) {from_left += document_width - (from_left+150) - 5;}
+       var from_top = position[1];
+       var html = "<a href='#' onClick=\"$('#popup').slideToggle(pageObj.speed);\" style='float: right;'><img src='/CoGe/picts/delete.png' width='16' height='16' border='0'></a>";
+       $('#popup').css({position: "absolute", top: ""+from_top, left: ""+from_left}).html(html).slideDown(pageObj.speed);
+       var url = 'FeatAnno.pl?chr='+ chr + '&version='+version+'&org='+org+'&loc='
+       + parseInt(bp.element.innerHTML) +'&ds='+ds+'&name_only='+1;
+       jfetch(url,insert_query);
+     }
+	
+        function updateZoom(){
+            $('#resolution').innerHTML = map.getResolution() + 'bp/pixel';
+
+        }
+        function query(x){
+           var url = 'FeatAnno.pl?chr='
+           + chr + '&version='+version+'&org='+org+'&loc='
+           + x+'&ds='+ds; 
+           jfetch(url,'query');
+           var query_height = 1 - ($('#width').offset({scroll: false}).top / $(document).height());
+           query_height *= $(document).height();
+           $('#query').css("max-height",""+query_height).show(0);
+           $('#hide_query').show(0);
+         }
+         
+ function onEnter(e){
+  if (!e){ 
+   var e = window.event;}
+  if(e.which == 13){
+    $('#map').css('width',$('#width').val());
+    updateZoom();}
+}
+
+ function update_grab(pos){
+  var val = $('#grab_from').val();
+  grab_sequence(['args__'+pos,'args__'+val],[insert_grab_vals]);
+}
+
+ function insert_grab_vals(from,to){
+  if(pageObj.getseq*1 -1 == 1){
+    $('#grab_from').css('backgroundColor','white').val(to);
+    $('#grab_to').css('backgroundColor','FFFF66');
+  }
+  else{
+  $('#grab_from').val(from);
+  $('#grab_to').css('backgroundColor','white').val(to);
+  }
+ }
+
+function launch_seqview(dsid, chr)
+ {
+   start = $('#grab_from').val();
+   stop = $('#grab_to').val();
+   window.open("SeqView.pl?dsid="+dsid+"&chr="+chr+"&start="+start+"&stop="+stop);
+ }
+
+$(document).ready(function(){
+pageObj.getseq = 3;
+$('#width').val($('#main').width());
+$('#map').css('width',$('#width').val());
+init();
+});
+
+    </script>
+    <div id="main"></div>
+    <div id="popup" class="genomeview_popup" style="display: none"></div>
+    <div id="map"></div>
+    <div id='resolution'></div>
+    <div id ='alert_grab'></div>
+    <div id='check' style="float:right"><input type=checkbox name=checkbox id=disable checked/>Disable Pop-up Annotations</div>
+OpenGene's map width: <input type=textbox class=backbox size=5 id="width" onkeypress="onEnter(event);" value=<TMPL_VAR NAME="width"> /><input type=button value="Resize" onclick="$('#map').css('width',$('#width').val());updateZoom();" /><input type=button value="Full-Window" onclick="$('#map').css('width',''+$('#main').width());updateZoom();" /> <input id='hide_query' style="display: none" type=button value="Hide Feature Info" onclick="$('#query').slideToggle(pageObj.speed);$('#hide_query').hide(0);" /><input type=button value="Grab Sequence" onclick="$('#grab').show(0);$('#grab_from').css('backgroundColor','FFFF66');pageObj.getseq=1;" />
+    <br><br>
+    <div id='grab' style="display:none"><input type=text id='grab_from' value=0> to <input type=text id="grab_to" value=0> <input type=button value="View Sequence" onClick="launch_seqview('<TMPL_VAR NAME=DS>','<TMPL_VAR NAME=CHR>')"></div>
+    <div id='query' style="overflow: auto;"></div>
+
