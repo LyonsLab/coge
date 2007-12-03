@@ -442,7 +442,6 @@ sub run
 	      {
 		$message .=  "No entry found for $featid.\n";
 	      }
-
 	  }
  	elsif ($dirseq )
  	  {
@@ -505,7 +504,7 @@ sub run
  	  }
 	unless ($show_spike)
 	  {
-	    $seq =~ s/N*$spike_seq.*$//;
+	    $seq =~ s/N*$spike_seq$//g;
 	  }
 	$obj->sequence($seq);
 
