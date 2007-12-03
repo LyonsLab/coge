@@ -60,17 +60,11 @@ sub gen_html
       {
 	my ($body, $seq_names, $seqs) = gen_body();
 	my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
-	
-	
-	if ($FORM->param("ds"))
-	  {
-	    $template->param(HEADER_LINK=>'/CoGe/GeLo.pl');
-	  }
-	$template->param(TITLE=>'CoGe: Genome Location Viewer');
+	$template->param(TITLE=>'CoGe: Genome Viewer');
 	$template->param(HEAD=>qq{});
 	$template->param(USER=>$USER);
 	$template->param(DATE=>$DATE);
-	$template->param(LOGO_PNG=>"GeLo-logo.png");
+	$template->param(LOGO_PNG=>"GenomeView-logo.png");
 	$template->param(BODY=>$body);
 	$html .= $template->output;
       }
