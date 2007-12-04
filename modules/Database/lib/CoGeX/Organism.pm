@@ -30,6 +30,7 @@ sub resolve : ResultSet {
     my $self = shift;
     my $info = shift;
     return $info if ref($info) =~ /Organism/;
+    return $self->find($info) if $info =~ /^\d+$/;
     return $self->search({
 			  '-or'=>[
 				  { 'name' => { '-like' => '%' . $info . '%'}}, 
