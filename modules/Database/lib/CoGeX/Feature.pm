@@ -533,10 +533,11 @@ sub genomic_sequence {
   my $stop = $locs[-1][1];
 #  print STDERR "Start: $start\n";
   my $full_seq = $dataset->get_genomic_sequence(
-					       chromosome=>$chr,
-					       skip_length_check=>1,
-					       start=>$start,
-					       stop=>$stop );
+						chromosome=>$chr,
+						skip_length_check=>1,
+						start=>$start,
+						stop=>$stop,
+					       );
   my $s0 = $locs[0][0];
 
 #  print STDERR $full_seq,"\n";
