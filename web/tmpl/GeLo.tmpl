@@ -79,12 +79,12 @@
                  ,{'ds':ds,'chr':chr,'version':version,layers:"mRNA",'organism':org}
                  ,{isBaseLayer:false}
              ),
-            new OpenLayers.Layer.Genomic( "<span id='cds'>CDSs</span>" , server
-                 ,{'ds':ds,'chr':chr,'version':version,layers:"CDS",'organism':org}
-                 ,{isBaseLayer:false}
-             ),
             new OpenLayers.Layer.Genomic( "other RNAs" , server
                  ,{'ds':ds,'chr':chr,'version':version,layers:"rna",'organism':org}
+                 ,{isBaseLayer:false}
+             ),
+            new OpenLayers.Layer.Genomic( "<span id='cds'>CDSs</span>" , server
+                 ,{'ds':ds,'chr':chr,'version':version,layers:"CDS",'organism':org}
                  ,{isBaseLayer:false}
              ),
             ]
