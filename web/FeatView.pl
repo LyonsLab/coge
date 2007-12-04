@@ -69,7 +69,7 @@ sub get_types
   {
     my ($accn, $dsid) = @_;
     my $html;
-    my $blank = qq{<input type="hidden" id="Type_name">};
+    my $blank = qq{<input type="hidden" id="Type_name">-------};
     my %seen;
     my @opts = sort map {"<OPTION>$_</OPTION>"} grep {! $seen{$_}++} map {$_->type->name} $coge->resultset('Feature')->search({
 															       'feature_names.name'=>$accn,
@@ -118,7 +118,7 @@ sub cogesearch
     $anno =~ s/^\s+//;
     $anno =~ s/\s+$//;
     my $type = $opts{type};
-    my $org_id = $opts{org_id};
+    my $org_id = $opts{org_id} if $opts{org_id} && $opts{org_id} ne "all";
     my $feat_accn_wild = $opts{feat_name_wild};
     my $feat_anno_wild = $opts{feat_anno_wild};
 #    print STDERR Dumper \%opts;
@@ -172,7 +172,7 @@ sub cogesearch
     $html .= join ("\n", @opts);
     $html .= "\n</SELECT>\n";
     $html =~ s/<OPTION/<OPTION SELECTED/;
-    return $blank."No results found.\n" unless $html =~ /OPTION/;
+    return $blank."No results found\n" unless $html =~ /OPTION/;
     return $html;
   }
 
@@ -204,7 +204,7 @@ sub get_anno
 	my $x = $feat->start;
 	my $z = 7;
 	$anno .= join "\n<BR><HR><BR>\n", $feat->annotation_pretty_print_html(loc_link=>0);
-	$anno .= qq{<DIV id="loc$i"><input type="button" value = "Click for Genome view" onClick="window.open('GenomeView.pl?chr=$chr&ds=$ds&x=$x&z=$z');"></DIV>};
+	$anno .= qq{<DIV id="loc$i"><input type="button" value = "Click for Genome view" onClick="window.open('GeLo.pl?chr=$chr&ds=$ds&x=$x&z=$z');"></DIV>};
 #	$anno .= qq{<DIV id="exp$i"><input type="button" value = "Click for expression tree" onClick="gen_data(['args__Generating expression view image'],['exp$i']);show_express(['args__}.$accn.qq{','args__}.'1'.qq{','args__}.$i.qq{'],['exp$i']);"></DIV>};
 	$anno .= qq{<DIV id="dnaseq$i"><input type="button" value = "Click for Sequence" onClick="window.open('SeqView.pl?featid=$featid&dsid=$ds&chr=$chr&featname=$accn');"></DIV>};
 	$anno .= qq{<DIV id="gc_info$i"><input type="button" value = "Click for GC content" onClick="gc_content(['args__featid','args__$featid'],['gc_info$i'])"></DIV>};
@@ -308,7 +308,7 @@ sub get_feature_types
 sub get_data_source_info_for_accn
   {
     my $accn = shift;
-    my $blank = qq{<input type="hidden" id="dsid">};
+    my $blank = qq{<input type="hidden" id="dsid">------------};
     return $blank unless $accn;
     my @feats = $coge->resultset('Feature')->search({'feature_names.name'=>$accn},{join=>'feature_names'});
     my %sources;
@@ -369,8 +369,8 @@ sub get_orgs
 	$html .= "No results";
 	return $html;
       }
-
-    $html .= qq{<SELECT id="org_id" SIZE="8" MULTIPLE onClick="\$('#remove').hide(0);\$('#add').show(0);" ondblclick="get_from_id(['org_id'],[add_to_list]);">\n};
+	unshift(@opts,"<OPTION value=\"all\" id=\"all\">All Organisms</OPTION>") if !$name and @opts;
+    $html .= qq{<SELECT id="org_id" SIZE="8" MULTIPLE >\n};
     $html .= join ("\n", @opts);
     $html .= "\n</SELECT>\n";
     $html =~ s/OPTION/OPTION SELECTED/;
