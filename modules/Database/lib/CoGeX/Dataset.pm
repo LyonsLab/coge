@@ -7,6 +7,7 @@ use warnings;
 use Data::Dumper;
 
 use base 'DBIx::Class';
+use Text::Wrap;
 
 __PACKAGE__->load_components("PK::Auto", "ResultSetManager", "Core");
 __PACKAGE__->table("dataset");
@@ -69,13 +70,6 @@ sub chromosomes : ResultSet {
 
 }
 
-# get_sequence:
-# $rs->get_genome_sequence( [chromosome, from, to] )
-# $rs->get_genome_sequence() - returns the entire genome sequence *woot*
-# $rs->get_genome_sequence(1, 42, 101) - returns chromosome 1 sequence 
-#                                        from position 42 up to and
-#                                        including position 101
-
 sub get_genomic_sequence {
   my $self = shift;
   my %opts = @_;
@@ -94,14 +88,14 @@ sub get_genomic_sequence {
 	  $stop = $last if $stop > $last;
 	}
       # make sure two numbers were sent in
-      return undef unless ($start =~ /\A\d+\z/ and  $stop =~ /\A\d+\z/);
+      return undef unless ($start =~ /^\d+$/ and  $stop =~ /^\d+$/);
       ($start, $stop) = ($stop, $start) if $stop < $start;
       #my $fstart = $start%10000 ? $start - ($start % 10000) + 1 : ($start -1)- (($start-1) % 10000) +1;
       my $fstart = $start - (($start -1) % 10000);
 #      print STDERR "start: $start, fstart: $fstart\n";
       my @starts;
-      push (@starts, $fstart) if $fstart == $stop;
-      for(my $i=$fstart;$i<$stop;$i+=10000){
+#      push (@starts, $fstart) if $fstart == $stop;
+      for(my $i=$fstart;$i<=$stop;$i+=10000){
         push(@starts,$i);
       }
 
@@ -111,6 +105,7 @@ sub get_genomic_sequence {
 					  },
 					  {order_by=>"start asc"}
 					 )->all;
+      return unless @seqs;
       $str = join ("", map{$_->sequence_data} @seqs);  
       $str = $self->trim_sequence( $str, $seqs[0]->start, $seqs[-1]->stop, $start, $stop );
       
@@ -179,7 +174,7 @@ See Also   :
      my $chr = shift;
      my ($gs) =  $self->genomic_sequences(
 					  {
-					   dataset_id=>$self->dataset_id,
+#					   dataset_id=>$self->dataset_id,
 					   chromosome=>$chr,
 					  },
 					  {
@@ -250,6 +245,27 @@ sub percent_gc
     return unless $length;
     my ($gc) = $seq =~ tr/GCgc/GCgc/;
     return sprintf("%.4f", $gc/$length);
+  }
+
+sub fasta
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $col = $opts{col};
+    #$col can be set to zero so we want to test for defined variable
+    $col = $opts{column} unless defined $col;
+    $col = $opts{wrap} unless defined $col;
+    $col = 100 unless defined $col;
+    my $chr = $opts{chr};
+    ($chr) = $self->get_chromosomes unless defined $chr;
+    my $strand = $opts{strand} || 1;
+    my $start = $opts{start};
+    my $stop = $opts{stop};
+    my $head = ">".$self->org->name." (".$self->name.", ".$self->description.", v".$self->version.")".", Location: ".$start."-".$stop.", Chromosome: ".$chr.", Strand: ".$strand."\n";
+    $Text::Wrap::columns=$col;
+    my $seq = $self->genomic_sequence(start=>$start, stop=>$stop, chr=>$chr);
+    $seq = join ("\n", wrap("","",$seq)) if $col;
+    return $head.$seq."\n";
   }
 
 
