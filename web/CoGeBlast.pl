@@ -18,6 +18,7 @@ use DBIxProfiler;
 use File::Temp;
 use File::Basename;
 use CoGe::Accessory::blast_report;
+use CoGe::Accessory::blastz_report;
 use CoGe::Accessory::Restricted_orgs;
 use CoGe::Graphics::GenomeView;
 use CoGe::Graphics;
@@ -30,7 +31,7 @@ use Benchmark qw(:all);
 $ENV{PATH} = "/opt/apache/CoGe/";
 $ENV{BLASTDB}="/opt/apache/CoGe/data/blast/db/";
 $ENV{BLASTMAT}="/opt/apache/CoGe/data/blast/matrix/";
-use vars qw( $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $FORMATDB $BLAST $FORM $USER $DATE $coge $cogeweb);
+use vars qw( $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $FORMATDB $BLAST $BLASTZ $FORM $USER $DATE $coge $cogeweb);
 
 $TEMPDIR = "/opt/apache/CoGe/tmp/";
 $DATADIR = "/opt/apache/CoGe/data/";
@@ -39,6 +40,8 @@ $BLASTDBDIR = $DATADIR.'/blast/db/';
 $TEMPURL = "/CoGe/tmp/";
 $FORMATDB = "/usr/bin/formatdb";
 $BLAST = "/usr/bin/blast";
+$BLASTZ = "/usr/bin/blastz";
+
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
 ($USER) = CoGe::Accessory::LogUser->get_user();
@@ -64,7 +67,7 @@ my $pj = new CGI::Ajax(
 		       database_param=>\&database_param,
 		       get_orgs=>\&get_orgs,
 		       get_from_id=>\&get_from_id,
-		       blastoff_search=>\&blastoff_search,
+		       blast_search=>\&blast_search,
 		       generate_feat_info=>\&generate_feat_info,
 		       get_hsp_info=>\&get_hsp_info,
 		       generate_overview_image=>\&generate_overview_image,
@@ -346,7 +349,7 @@ sub get_from_id
     return ($id,$org);
   }
 
-sub blastoff_search
+sub blast_search
   {
     my %opts = @_;
     my $program = $opts{program};
@@ -357,48 +360,93 @@ sub blastoff_search
     my $matrix = $opts{matrix};
     my $gapcost = $opts{gapcost};
     my $match_score = $opts{matchscore};
+    #blastz params
+    my $zwordsize = $opts{zwordsize};
+    my $zgap_start = $opts{zgap_start};
+    my $zgap_extension = $opts{zgap_extension};
+    my $zchaining = $opts{zchaining};
+    my $zthreshold = $opts{zthreshold};
+    my $zmask = $opts{zmask};
+
+
     my $seq = $opts{seq};
     my $blastable = $opts{blastable};
     my $width = $opts{width};
     my $type = $opts{type};
+
+    
+
 #    print STDERR Dumper \%opts;
     my $t1 = new Benchmark;
     $cogeweb = initialize_basefile(prog=>"CoGeBlast");
     my @org_ids = split(/,/,$blastable);
     my $fasta_file = create_fasta_file($seq);
-    my ($nuc_penalty,$nuc_reward,$exist,$extent);
-    #print STDERR $gapcost,"\n";
-    if ($gapcost =~/^(\d+)\s+(\d+)/) {($exist,$extent) = ($1,$2);}
-    
-    if ($match_score=~/^(\d+)\,(-\d+)/) {($nuc_penalty,$nuc_reward) = ($2,$1);}
-    my $pre_command = "$BLAST -p $program -i $fasta_file";
-    if ($program =~ /^blastn$/i)
+    my $opts;
+    my $pre_command;
+    if ($program eq "blastz")
       {
-	$pre_command .= " -q $nuc_penalty -r $nuc_reward";
+	$pre_command = $BLASTZ;
+	$pre_command .= " $fasta_file";
+
+	$opts .= " W=" .$zwordsize if defined $zwordsize;
+	$opts .= " C=" .$zchaining if defined $zchaining;
+	$opts .= " K=" .$zthreshold if defined $zthreshold;
+	$opts .= " M=" .$zmask if defined $zmask;
+	$opts .= " O=" .$zgap_start if defined $zgap_start;
+	$opts .= " E=" .$zgap_extension if defined $zgap_extension;
+	my $tmp;
+	($tmp, $opts) = check_taint($opts);
       }
     else
       {
-	$pre_command .= " -M $matrix";
+	my ($nuc_penalty,$nuc_reward,$exist,$extent);
+	#print STDERR $gapcost,"\n";
+	if ($gapcost =~/^(\d+)\s+(\d+)/) {($exist,$extent) = ($1,$2);}
+	
+	if ($match_score=~/^(\d+)\,(-\d+)/) {($nuc_penalty,$nuc_reward) = ($2,$1);}
+	$pre_command = "$BLAST -p $program -i $fasta_file";
+	if ($program =~ /^blastn$/i)
+	  {
+	    $pre_command .= " -q $nuc_penalty -r $nuc_reward";
+	  }
+	else
+	  {
+	    $pre_command .= " -M $matrix";
+	  }
+	$pre_command .=" -W $wordsize";
+	$pre_command .= " -G $exist -E $extent" if $exist && $extent;
+	$pre_command .= " -e $expect";
+	$pre_command .= " -C $comp" if $program =~ /tblastn/i;
       }
-    $pre_command .=" -W $wordsize";
-    $pre_command .= " -G $exist -E $extent" if $exist && $extent;
-    $pre_command .= " -e $expect";
-    $pre_command .= " -C $comp" if $program =~ /tblastn/i;
     my $x;
     ($x, $pre_command) = check_taint($pre_command);
-#    print STDERR $pre_command,"\n";
     my @results;
     my $count =1;
     my $t2 = new Benchmark;
     foreach my $orgid (@org_ids)
       {
-	my ($db, $org) = get_blast_db($orgid);
+	my ($org, $db, $fasta_file) = get_blast_db($orgid);
 	next unless $db;
-	my $command = $pre_command." -d $db";
-	my $outfile = $cogeweb->basefile."-$count.blast";
-	write_log("running $command" ,$cogeweb->logfile);
-	`$command > $outfile`;
-	my $report = new CoGe::Accessory::blast_report({file=>$outfile}) if -r $outfile;
+	my $command;
+	my $outfile;
+	my $report;
+	if ($program eq "blastz")
+	  {
+	    $command = $pre_command." $fasta_file $opts";
+	    $outfile = $cogeweb->basefile."-$count.blastz";
+	    write_log("running $command" ,$cogeweb->logfile);
+	    `$command > $outfile`;
+	    $report = new CoGe::Accessory::blastz_report({file=>$outfile}) if -r $outfile;
+	  
+	  }
+	else
+	  {
+	    $command = $pre_command." -d $db";
+	    $outfile = $cogeweb->basefile."-$count.blast";
+	    write_log("running $command" ,$cogeweb->logfile);
+	    `$command > $outfile`;
+	    $report = new CoGe::Accessory::blast_report({file=>$outfile}) if -r $outfile;
+	  }
 	my $file = $report->file();
 	$file =~ s/$TEMPDIR//;
 	$file = $TEMPURL."/".$file;
@@ -461,8 +509,6 @@ sub gen_results_page
  							  chr=>$chr, 
  							  dataset_id=>$dsid,
  							 );
-#		 my @feat;
-
 		if (@feat) 
 		  {
 		    my %seen;
@@ -901,7 +947,7 @@ sub get_blast_db
       {
 	$res = generate_blast_db(fasta=>$file, blastdb=>$blastdb, org=>$org_name);
       }
-    return $blastdb ,$org_name if $res;
+    return $org_name, $blastdb, $file if $res;
     return 0;
     
   }
