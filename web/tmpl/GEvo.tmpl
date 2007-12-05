@@ -10,7 +10,12 @@ function set_genespace(drid,value){
     document.getElementById(drid).value = value;
 }
 
-function setheight(){ document.getElementById('gobe').style.height = '360px'; }
+function setheight(){ 
+    var g = jQuery('#gobe')
+    if(g.height() < 360){
+        g.height(360); 
+    }
+}
 
 $(document).ready(function(){
  //prefetch button images
