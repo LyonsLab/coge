@@ -306,12 +306,41 @@ function blastOff(){
   match_score = params.mm;
   gapcost = params.g;
   seq = params.s;
-//  hsp_type = $('#hsp_type').val();
+
+//blastz params
+ var zwordsize = params.zw;
+ var zgap_start = params.zgs;
+ var zgap_extension = params.zge;
+ var zchaining = params.zc;
+ var zthreshold = params.zt;
+ var zmask = params.zm;
+
+
   var page_width = ($('#co').width())*(95/100);
   pageObj.image_width = page_width;
   var blastable_db = $('#db_choice').getLength(1);
-//  blastoff_search(['args__program','args__'+program,'args__expect','args__'+expect,'args__job_title','args__'+job_title,'args__wordsize','args__'+word_size,'args__comp','args__'+comp,'args__matrix','args__'+matrix,'args__matchscore','args__'+match_score,'args__gapcost','args__'+gapcost,'args__seq','args__'+seq,'args__blastable','args__'+blastable_db,'args__width','args__'+page_width,'args__type','args__'+hsp_type],[blastresults],'POST');
-  blastoff_search(['args__program','args__'+program,'args__expect','args__'+expect,'args__job_title','args__'+job_title,'args__wordsize','args__'+word_size,'args__comp','args__'+comp,'args__matrix','args__'+matrix,'args__matchscore','args__'+match_score,'args__gapcost','args__'+gapcost,'args__seq','args__'+seq,'args__blastable','args__'+blastable_db,'args__width','args__'+page_width],[blastresults],'POST');
+
+  blast_search([
+  'args__program','args__'+program,
+  'args__expect','args__'+expect,
+  'args__job_title','args__'+job_title,
+  'args__wordsize','args__'+word_size,
+  'args__comp','args__'+comp,
+  'args__matrix','args__'+matrix,
+  'args__matchscore','args__'+match_score,
+  'args__gapcost','args__'+gapcost,
+
+  'args__zwordsize','args__'+zwordsize,
+  'args__zgap_start','args__'+zgap_start,
+  'args__zgap_extension','args__'+zgap_extension,
+  'args__zchaining','args__'+zchaining,
+  'args__zthreshold','args__'+zthreshold,
+  'args__zmask','args__'+zmask,
+
+  'args__seq','args__'+seq,
+  'args__blastable','args__'+blastable_db,
+  'args__width','args__'+page_width
+  ],[blastresults],'POST');
   
 }
 
@@ -327,8 +356,10 @@ function blastresults(html,basename){
   }
   else {
   var overlap_height = $('#overlap_body').height();
+  var nofeat_height = $('#no_feats').height();
   var overlap_max = 300;
   if (overlap_height > overlap_max) $('#overlap_body').height(overlap_max);
+  if (overlap_height > overlap_max) $('#no_feats').height(overlap_max);
  		
 // 		var select_index = $('#hsp_type')[0].selectedIndex;
 // 		$('#color_hsp').selectOptions(select_index);
@@ -474,10 +505,18 @@ function get_params(){
   {
     gapcost = $('#gapcosts_'+matrix).val();
   }
+
+//blastz parameters
+ var zwordsize = $('#blastz_wordsize').val();
+ var zgap_start = $('#blastz_gap_start').val();
+ var zgap_extension = $('#blastz_gap_extension').val();
+ var zchaining = $('#blastz_chaining').val();
+ var zthreshold = $('#blastz_threshold').val();
+ var zmask = $('#blastz_mask').val();
  
  var comp = $('#comp_adj').val();
  var seq = $('#seq_box').val();
- return {w : word_size, e : expect,g : gapcost,p : program,mm: match_mismatch,m : matrix,c : comp,s : seq};
+ return {w : word_size, e : expect,g : gapcost,p : program,mm: match_mismatch,m : matrix,c : comp,s : seq, zw : zwordsize, zgs : zgap_start, zge : zgap_extension, zc : zchaining, zt : zthreshold, zm : zmask};
 }
 
 function get_ncbi_params(){
@@ -584,18 +623,28 @@ function blast_param_on_select(which_type,val) {
  //alert(''+program);
  database_param([radio],['database']);
  
- if ((program == 'blastx') || (program == 'tblastx')) {
- //alert('Program is true!');
-  blast_param(['args__blast_type','args__'+"blast_type_p",'args__translate','args__1','args__version','args__'+which_type],[animate_params]);
-  $('#word_size').val(3);
- }
- else if ((program == 'blastp') || (program == 'tblastn')) {
-  blast_param(['args__blast_type','args__'+"blast_type_p",'args__version','args__'+which_type],[animate_params]);
-  $('#word_size').val(3);
- }
- else {
+ $('#blast_parameters').hide();
+ $('#blastz_parameters').hide();
+
+ if (program == 'blastz')
+  {
+  $('#blastz_parameters').slideDown(pageObj.speed);
+  }
+ else
+ {
+  $('#blast_parameters').slideDown(pageObj.speed);
+  if ((program == 'blastx') || (program == 'tblastx')) {
+   blast_param(['args__blast_type','args__'+"blast_type_p",'args__translate','args__1','args__version','args__'+which_type],[animate_params]);
+   $('#word_size').val(3);
+  }
+  else if ((program == 'blastp') || (program == 'tblastn')) {
+   blast_param(['args__blast_type','args__'+"blast_type_p",'args__version','args__'+which_type],[animate_params]);
+   $('#word_size').val(3);
+  }
+  else {
    blast_param(['args__version','args__'+which_type],[animate_params]);
-  $('#word_size').val(8);
+   $('#word_size').val(8);
+  }
  }
 }
 
@@ -798,6 +847,7 @@ function adjust_blast_types(val){
      <td width="1" bgcolor="#99ff99"/>
      <TD valign="top">
       <TH align=left valign="top"> <u>Blast Parameters</u><br>
+      <DIV id=blast_parameters>
       <TABLE>
        <TR>
 	<TD>
@@ -948,7 +998,50 @@ function adjust_blast_types(val){
      </td>
      </tr>-->
       </TABLE>
-     <DIV id=pro_or_nu_param></DIV>
+
+      <DIV id=pro_or_nu_param></DIV>
+     </div>
+     <DIV id=blastz_parameters>
+<table>
+   <TR>
+  <TD>Word size: </TD>
+  <TD><input class="backbox" type="text" name="blastz_wordsize" id="blastz_wordsize" tabindex="1" size="4" value="8" /></TD>
+ </TR>    
+<TR>
+  <TD>Gap start penality: </TD>
+  <TD><input class="backbox" type="text" name="blastz_gap_start" id="blastz_gap_start" tabindex="1" size="4" value="400" /></TD>
+ </TR>    
+ <TR>
+  <TD>Gap extend penality: </TD>
+  <TD><input class="backbox" type="text" name="blastz_gap_extension" id="blastz_gap_extension" tabindex="1" size="4" value="30" /></TD>
+ </TR>    
+ <TR>
+  <TD>Chaining: </TD>
+  <TD><select class="backbox" id="blastz_chaining" tabindex="1" />
+      <option value=0>no chaining</option>
+      <option value=1>just output chain</option>
+      <option value=2>chain and extend</option>
+      <option value=3>just output HSPs</option>
+      </select></TD>
+ </TR>    
+ <TR>
+  <TD>Score threshold: </TD>
+  <TD><input class="backbox" type="text" name="blastz_threshold" id="blastz_threshold" tabindex="1" size="4" value="3000" /></TD>
+ </TR>    
+ <TR>
+  <TD>Mask threshold: </TD>
+  <TD><input class="backbox" type="text" name="blastz_mask" id="blastz_mask" tabindex="1" size="4" value="0" /></TD>
+ </TR>    
+
+
+<!--  <TR>
+  <TD>Other Blastz parameters: </TD>
+  <TD><input class="backbox" type="text" name="blastz_params" id="blastz_params" tabindex="1" size="10" /></TD>
+ </TR>-->
+
+</table>
+
+     </div>
      </TD>
           </TR>
          </TABLE>
@@ -1181,6 +1274,7 @@ function adjust_blast_types(val){
             <optgroup label="--- Select BLAST Type ---">
             <option value = "blastn"> blastn
             <option value = "tblastx"> tblastx
+            <option value = "blastz"> blastz
            </optgroup>
            </select>
            <br>
@@ -1611,7 +1705,7 @@ function adjust_blast_types(val){
          <DIV id=overlap_box valign="top" align="left" class="resultborder" style="overflow: auto;display: none;max-height: 300px;"></DIV>
          <TMPL_IF NAME=NO_FEAT_IF>
          <br>
-          <div id=no_table_size style="max-height: 150px;overflow: auto;">
+         
              <table id="no_table" class="resultborder">
                <caption>HSPs w/o overlapping features:</caption>
                <THEAD>
@@ -1642,7 +1736,7 @@ function adjust_blast_types(val){
                </TMPL_LOOP>
               </tbody>
              </table>
-           </div>
+       
            <br>
            <!--<div id=nearby_feat></div>
            <div id=nearby_feat_results valign="top" align="left" class="resultborder" style="overflow: auto;display: none;max-height: 300px;"></div>-->
