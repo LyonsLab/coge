@@ -5,6 +5,7 @@ use warnings;
 use base 'DBIx::Class';
 use CoGe::Accessory::genetic_code;
 use Text::Wrap;
+use Data::Dumper;
 
 __PACKAGE__->load_components("PK::Auto", "ResultSetManager", "Core");
 __PACKAGE__->table("feature");
@@ -764,7 +765,7 @@ sub frame6_trans
     my $self = shift;
     my %opts = @_;
 
-    my $code = $opts{code} || $self->genetic_code;
+    my ($code) = $opts{code} || $self->genetic_code;
     my $seq = $opts{seq} || $self->genomic_sequence;
 
     my %seqs;
@@ -962,16 +963,41 @@ sub fasta
     my $self = shift;
     my %opts = @_;
     my $col = $opts{col};
+    my $prot = $opts{protein} || $opts{prot};
     #$col can be set to zero so we want to test for defined variable
     $col = $opts{column} unless defined $col;
     $col = $opts{wrap} unless defined $col;
     $col = 100 unless defined $col;
 
-    my $head = ">".$self->dataset->organism->name."(v".$self->version.")".", Name: ".(join (", ", $self->names)).", Type: ".$self->type->name.", Chromosome: ".$self->chromosome.", ".$self->genbank_location_string."\n";
+    my $head = ">".$self->dataset->organism->name."(v".$self->version.")".", Name: ".(join (", ", $self->names)).", Type: ".$self->type->name.", Chromosome: ".$self->chromosome.", ".$self->genbank_location_string;
     $Text::Wrap::columns=$col;
-    my $seq = $self->genomic_sequence;
-    $seq = join ("\n", wrap("","",$seq)) if $col;
-    return $head.$seq."\n";
+    my $fasta;
+    if ($prot)
+      {
+	my $seq = $self->protein_sequence;
+	if ($seq)
+	  {
+	    $seq = join ("\n", wrap("","",$seq)) if $col;
+	    $fasta = $head."\n".$seq."\n";
+	  }
+	else
+	  {
+	    my $seqs = $self->frame6_trans;
+	    foreach my $frame (sort {length($a) <=> length($b) || $a cmp $b} keys %$seqs)
+	      {
+		$seq = $seqs->{$frame};
+		$seq = join ("\n", wrap("","",$seq)) if $col;
+		$fasta .= $head. " frame $frame\n".$seq."\n";
+	      }
+	  }
+      }
+    else
+      {
+	my $seq = $self->genomic_sequence;
+	$seq = join ("\n", wrap("","",$seq)) if $col;
+	$fasta = $head."\n".$seq."\n";
+      }
+    return $fasta;
   }
 
 ################################################ subroutine header begin ##
