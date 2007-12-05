@@ -9,6 +9,7 @@
 <SCRIPT language="JavaScript">
 
 function search_chain(val) {
+ $('#data_table').show(0);
  accnminlen = 4;
  annominlen = 8;
  $('#anno').hide();	
@@ -67,11 +68,9 @@ function get_anno_chain (val1, val2) {
  if (val1) {
    $('#FeatType').html(val1);
    $('#FeatType').show();
-   if(! val1.match(/hidden/)){
-   		if ($('#remove').is(":hidden")) {$('#remove').show(0);}
-   		if ($('#send').is(":hidden")) {$('#send').show(0);}
-   		if($('#feat_list').is(":hidden")) {$('#feat_list').show(0);}
-   	}
+   if ($('#remove').is(":hidden")) {$('#remove').show(0);}
+   if ($('#send').is(":hidden")) {$('#send').show(0);}
+   if($('#feat_list').is(":hidden")) {$('#feat_list').show(0);}
  }
  as = $('#accn_select').val();
  tn = $('#Type_name').val();
@@ -244,7 +243,7 @@ function search_bar(div_id){
           Feature Type:
          <TD><div id=search_type><TMPL_VAR NAME=FEAT_TYPE></div>
         <TR>
-	 <tD nowrap>
+	 <tD valign="top" nowrap>
           Organism:
          <TD>
          Name: <input type="text" size=11 onFocus="search_bar('org_text')" style="font-style:italic" value="Search" name="org_text" id="org_text" onKeyUp='timing();'><br>
@@ -260,7 +259,14 @@ function search_bar(div_id){
    </DIV>
   </TD>
  </table>
- <table>
+ <table id="data_table" style="display:none">
+ <thead align=left>
+  <th>Annotation</th>
+  <th>Datasets</th>
+  <th>Type</th>
+  <th>Selected Features List</th>
+ </thead>
+ <tbody>
  <TR valign=top>
   <TD valign=top>
    <DIV class="" id="accn_list"><input type="hidden" id="accn_select" ></DIV>
@@ -283,5 +289,6 @@ function search_bar(div_id){
    <!-- <td valign=middle<
      <input type="button" style="display: none" id=send value="Send to Feature List Viewer" onClick="send_to_FeatList()"> --> 
  </TR>
+ </tbody>
 </TABLE>
 <DIV id="anno"></DIV>
