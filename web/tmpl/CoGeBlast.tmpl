@@ -8,7 +8,7 @@
 <SCRIPT language="JavaScript">
 
 $(document).ready(function(){
-  display_correct_radio($('#coge_radio').is(':checked'));
+  display_correct_radio($('#coge_radio')[0].checked,'coge');
   blast_param_on_select('coge_radio','coge');
   blast_param([],[animate_params]);
   database_param([],['database']);
@@ -32,6 +32,7 @@ $(document).ready(function(){
   //alert(seqObj.dsid);
   //alert(seqObj.chr);
   //alert(seqObj.featid);
+   get_seq('coge_radio');
 });
 
 function update_info_box(featid) {
@@ -682,6 +683,9 @@ function restore_search_bar(div_id){
 }
 
 function org_info(info){
+  var xpos = pageObj.lastMouseX + 5;
+  var ypos =pageObj.lastMouseY + 5;
+  //alert(xpos+','+ypos);
   var html = "<a href='#' onClick=\"$('#org_info_popup').slideToggle(pageObj.speed);\" style='float: right;'><img src='/CoGe/picts/delete.png' width='16' height='16' border='0'></a>";
   html = html + info;
   var window_width = $(document).width();
@@ -694,7 +698,7 @@ function org_info(info){
     left_padding = ((window_width - info_width)/2);
   }
   //$('#overlap_body').css("overflow","hidden");
-  $('#org_info_popup').html(html).css("left",''+left_padding).width(info_width).slideDown(pageObj.speed);
+  $('#org_info_popup').html(html).css({left:''+xpos,top:''+ypos}).width(info_width).slideDown(pageObj.speed);
   if ($('#org_info_popup').height() >= $(document).height() - 40) {
     $('#org_info_popup').css("height",''+$(document).height() - 40);
   }
@@ -774,7 +778,7 @@ function adjust_blast_types(val){
    	<DIV id="org_name"><TMPL_VAR NAME="ORG_NAME"></DIV>
    	<DIV id="blah">Organism Name: <input type="text" size=11 onFocus="show_add();search_bar('org_text')" style="font-style:italic" value="Search" name="org_text" id="org_text" onBlur="restore_search_bar('org_text')" onKeyUp='timing();'></DIV>
    	<DIV id="org_list"><TMPL_VAR NAME="ORG_LIST"></DIV>
-   	<input type=button value="Get Org Info" onClick="dataset_description_for_org(['org_id'],[org_info]);">
+   	<input type=button value="Get Org Info" onClick="dataset_description_for_org(['org_id'],[org_info]);pageObj.lastMouseX=event.pageX;pageObj.lastMouseY=event.pageY;">
    	  </TD>
    	  <TD valign="middle" align=middle>
    	  <input type="button" id=add value="Add &rarr;  " onClick="get_from_id(['org_id'],[add_to_list]);">
@@ -1170,7 +1174,7 @@ function adjust_blast_types(val){
        <TABLE>
        <TR>
         <TD valign="top">
-         <label><input id=coge_radio type=radio name=cogeblast value="coge_blast_type_n" checked="" onClick="display_correct_radio($('#coge_radio')[0].checked,'coge');get_seq('coge_radio');blast_param_on_select('coge_radio','coge');">Nucleotide Sequence</label>
+         <label><input id=coge_radio type=radio name=cogeblast value="coge_blast_type_n" checked onClick="display_correct_radio($('#coge_radio')[0].checked,'coge');get_seq('coge_radio');blast_param_on_select('coge_radio','coge');">Nucleotide Sequence</label>
          <br>
           <div id=coge_select_n>
            <select name=coge_blasttype id=coge_blast_type_n onChange="blast_param_on_select('coge_radio','coge')">
@@ -1245,7 +1249,9 @@ function adjust_blast_types(val){
         </TR>
        </TABLE>
     </TD>
-    <TD>
+   </tr>
+   <tr>
+     <td>
      <DIV id=pretty_print_anno class="backbox" style="display: none;"></DIV>
     </TD>
     </TMPL_IF>    
@@ -1561,7 +1567,12 @@ function adjust_blast_types(val){
    
    
    <TMPL_IF NAME="OVERLAP_FEATURE_IF">
+   <table>
+    <tr>
+     <td>
    Total Number of HSPs: <TMPL_VAR NAME=HSP_COUNT>
+     </tr>
+   </table>
    <div id="null"><TMPL_VAR NAME=NULLIFY></div>
    <div id=table_size style="max-height: 360px;">
    <TABLE id="overlap" cellspacing="2" class="resultborder" style="overflow: auto;">
@@ -1594,8 +1605,7 @@ function adjust_blast_types(val){
         </TMPL_LOOP>
         </TBODY>
         </TABLE>
-        </div>
-        <input type=button value="Select All" onClick="$('#feature_list').checkCheckboxes()">  <input type=button value="Select None" onClick="$('#feature_list').unCheckCheckboxes()"> 
+        </div>      
         <br>
         <br>
          <DIV id=overlap_box valign="top" align="left" class="resultborder" style="overflow: auto;display: none;max-height: 300px;"></DIV>
@@ -1765,7 +1775,7 @@ function adjust_blast_types(val){
     <TR>
      <TD align=left valign="top" >
      Genomic HSP Visualization:
-     <DIV id=chromosomes class="resultborder" style="width: 405px;overflow: auto;max-height: 80%;">
+     <DIV id=chromosomes class="resultborder" style="width: 405px;overflow: auto;max-height: 700px;">
      <TMPL_VAR NAME=CHROMOSOMES>
      <TMPL_VAR NAME=CHR_LARGE>
       </DIV>
@@ -1795,6 +1805,8 @@ function adjust_blast_types(val){
          <form id=feature_list style="position:static">
          <TMPL_VAR NAME="OVERLAP_FEATURE_LIST">
          </form>
+         <input type=button value="Select All" onClick="$('#feature_list').checkCheckboxes()">  <input type=button value="Select None" onClick="$('#feature_list').unCheckCheckboxes()"> 
+         <br><br>
          Do Following to Checked Features: 
           <select name=overlap_action id=overlap_action>
             <option value = "gevo">Send to GEvo</option>
