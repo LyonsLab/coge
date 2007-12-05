@@ -53,7 +53,6 @@ $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 
 my $pj = new CGI::Ajax(
 		       gen_html=>\&gen_html,
-		       get_seq=>\&get_seq,
 		       cogesearch=>\&cogesearch,
 		       source_search=>\&get_data_source_info_for_accn,
 		       get_types=>\&get_types,
@@ -1430,6 +1429,7 @@ INSERT INTO sequence_info (name, type, length) values ("$sname","subject","$slen
 sub get_nearby_feats
   {
     my %opts = @_;
+    print STDERR Dumper \%opts;
     my $hsp_id = $opts{num};
     my $filename = $opts{basefile};
     $cogeweb = initialize_basefile(basename=>$filename);
@@ -1445,11 +1445,11 @@ sub get_nearby_feats
     my ($hsp_num,$dsid) = $hsp_id =~ /^(\d+)_(\d+)$/;
     $sth->execute($hsp_id) || die "unable to execute";
     while (my $info = $sth->fetchrow_hashref())
-      {
-	$sstart=$info->{sstart};
-	$sstop = $info->{sstop};
-	$sname = $info->{sname};
-      }
+    {
+		$sstart=$info->{sstart};
+		$sstop = $info->{sstop};
+		$sname = $info->{sname};
+    }
 	my ($start,$stop) = ($sstart,$sstop);
 	my ($chr) = $sname =~ /chromosome: (.*?),/;
 	my @feat;
@@ -1470,73 +1470,72 @@ sub get_nearby_feats
 	my @feat_low;
 	my @feat_high;
 	my $closest_feat;
-	if (@feat) {
+	if (@feat) 
+	{
 	  my %seen;
 	  grep { ! $seen{lc($_)} ++ } map {$_->type->name} @feat;
 	  my $search_type = "gene" if $seen{gene};
 	  $search_type = "cds" if !$search_type && $seen{cds};
 	  $search_type = "rna" unless $search_type;
 	  foreach my $feature (@feat)
-	    {
+	  {
 	      next unless $feature->type->name =~ /$search_type/i;
-	      unless (ref($feature) =~ /Feature/i)
-		{
-		  next;
-		}
+	      next unless ref($feature) =~ /Feature/i;
 	      if ($feature->stop < $start) {
-		push @feat_low,$feature;
+			push @feat_low,$feature;
 	      }
 	      else {
-		push @feat_high,$feature;
+			push @feat_high,$feature;
 	      }
-	    }
-	unless(@feat_low or @feat_high)
-	{
-	  $html .= "No Features within 250 kb of HSP No. $hsp_num";
-	  return $html;
-	}
-	my ($feat_low) = sort {$b->stop <=> $a->stop} @feat_low if @feat_low;
-	my ($feat_high) = sort {$a->start <=> $b->start}@feat_high if @feat_high;
+	  }
+	  unless(@feat_low or @feat_high)
+	  {
+	 	$html .= "No Features within 250 kb of HSP No. $hsp_num";
+	  	return $html;
+	  }
+	  my ($feat_low) = sort {$b->stop <=> $a->stop} @feat_low if @feat_low;
+	  my ($feat_high) = sort {$a->start <=> $b->start}@feat_high if @feat_high;
 	
-	my $closest_feat;
+	  my $closest_feat;
+	  print STDERR $distance,"\n";
+	  if($feat_low and $feat_high) 
+	  {
+	 	 $closest_feat = ($start - $feat_low->stop) < ($feat_high->start - $stop) ? $feat_low : $feat_high;
+	 	 $distance = ($start - $feat_low->stop) < ($feat_high->start - $stop) ? ($start - $feat_low->stop)."!" : ($feat_high->start - $stop);
+	  }
+	  elsif($feat_high)
+	  {
+	  	$closest_feat = $feat_high;
+		$distance = ($feat_high->start - $stop);
+	  }
+	  else
+	  {
+	 	 $closest_feat = $feat_low;
+	 	 $distance = ($start - $feat_low->stop)."!";
+	  }
+	  print STDERR $distance,"\n";
+	  my $upstream = $distance =~ s/!$//;
 	
-	if($feat_low and $feat_high) 
-	{
-	  $closest_feat = ($start - $feat_low->stop) < ($feat_high->start - $stop) ? $feat_low : $feat_high;
-	  $distance = ($start - $feat_low->stop) < ($feat_high->start - $stop) ? ($start - $feat_low->stop)."!" : ($feat_high->start - $stop);
-	}
-	elsif($feat_high)
-	{
-	  $closest_feat = $feat_high;
-	  $distance = ($feat_high->start - $stop);
-	}
-	else
-	{
-	  $closest_feat = $feat_low;
-	  $distance = ($start - $feat_low->stop)."!";
-	}
-	
-	my $upstream = $distance =~ s/!$//;
-	
-	my $tmp_dist = $distance;
-	my $val = $closest_feat->id."_".$hsp_id;
-	if ($distance >= 1000) {
-	  $distance = $distance / 1000;
-	  $distance .= " kb";
-	}
-	else {
-	$distance .= " bp";
-	}
-	
-	$distance .= $upstream ? " upstream" : " downstream";
-	
-	$html .= "Feature Closest to HSP No. $hsp_num: <br><br>";
-	$html .= $closest_feat->annotation_pretty_print_html();
-	($name) = sort $closest_feat->names;
-	$name = qq{<a href="#" onclick=update_info_box('no_feat}.$closest_feat->id."_".$hsp_num."_".$dsid."')>$name</a>";
-	#$checkbox = "<input type=checkbox name='nofeat_checkbox' value='".$closest_feat->id."_".$hsp_num."_".$dsid."'  id='nofeat_checkbox".$closest_feat->id."_".$hsp_num."_".$dsid."'>";
-	$html .= "<font class=\"title4\">Distance from HSP:</font> <font class=\"data\">$distance</font>";
-	$distance = $tmp_dist;
+	  my $tmp_dist = $distance;
+	  my $val = $closest_feat->id."_".$hsp_id;
+	  if ($distance >= 1000) 
+	  {
+		$distance = $distance / 1000;
+	  	$distance .= " kb";
+	  }
+	  else {
+		$distance .= " bp";
+	  }
+	  print STDERR $distance,"\n";
+	  $distance .= $upstream ? " upstream" : " downstream";
+	  $html .= "Feature Closest to HSP No. $hsp_num: <br><br>";
+	  $html .= $closest_feat->annotation_pretty_print_html();
+	  ($name) = sort $closest_feat->names;
+	  $name = qq{<a href="#" onclick=update_info_box('no_feat}.$closest_feat->id."_".$hsp_num."_".$dsid."')>$name</a>";
+	  #$checkbox = "<input type=checkbox name='nofeat_checkbox' value='".$closest_feat->id."_".$hsp_num."_".$dsid."'  id='nofeat_checkbox".$closest_feat->id."_".$hsp_num."_".$dsid."'>";
+	  $html .= "<font class=\"title4\">Distance from HSP:</font> <font class=\"data\">$distance</font>";
+	  $distance = $tmp_dist;
+	  print STDERR $distance,"\n";
 	}	
 	else {
 	 $html .= "No Features within 250 kb of HSP No. $hsp_num";
@@ -1551,28 +1550,24 @@ sub get_nearby_feats
 sub export_fasta_file
   {
     my $accn_list = shift;
-    my $basename = shift;
     $accn_list =~ s/^,//;
     $accn_list =~ s/,$//;
-    my $fasta;
+    my $url = "FastaView.pl?";
+    my @list;
     foreach my $accn (split /,/,$accn_list)
     {
 		next if $accn =~ /no$/;
-		my ($featid,$dsid) = $accn =~ m/^(\d+)_\d+_(\d+)$/; 
-#		my $ds = $coge->resultset("Dataset")->find($dsid);
-   		my ($feat) = $coge->resultset("Feature")->find($featid);
-   		$fasta .= $feat->fasta;
-#   		my ($strand) = $feat->strand;
-#   		my ($name) = sort $feat->names;
-#		$fasta .= ">".$ds->organism->name."(v.".$feat->version.")".", Name: $name, Type: ".$feat->type->name.", Location: ".$feat->genbank_location_string.", Chromosome: ".$feat->chr.", Strand: ".$strand."\n";
-#		$fasta .= wrap('','',$feat->genomic_sequence);
+		my ($featid) = $accn =~ m/^(\d+)_\d+_\d+$/;
+		push @list,$featid;
 	}
-	$fasta =~ s/\n$//;
-	
-	open(NEW,"> $TEMPDIR/fasta_$basename.faa");
-	print  NEW $fasta;
-	close NEW;
-	return "tmp/fasta_$basename.faa";
+	my %seen = ();
+    @list = grep {!$seen{$_}++} @list;
+    foreach my $featid( @list)
+    {
+    	$url .= "featid=$featid&";
+    }
+	$url =~s/&$//;
+	return $url;
   }
   
 sub generate_excel_feature_file
@@ -1601,8 +1596,8 @@ sub generate_excel_feature_file
     {
       next if $accn =~ /no$/;
       my ($featid,$hsp_num,$dsid) = $accn =~ m/^(\d+)_(\d+)_(\d+)$/;
-	 my $ds = $coge->resultset("Dataset")->find($dsid);
-   	 my ($feat) = $coge->resultset("Feature")->find($featid);
+	  my $ds = $coge->resultset("Dataset")->find($dsid);
+   	  my ($feat) = $coge->resultset("Feature")->find($featid);
    	 
    	 my ($name) = sort $feat->names;
    	 my $org = $ds->organism->name;
@@ -1681,24 +1676,22 @@ sub generate_feat_list
     $accn_list =~ s/^,//;
     $accn_list =~ s/,$//;
     
-    my $str;
-    my %seen = ();
+    my $url = "FeatList.pl?";
     my @list;
     foreach my $accn (split /,/,$accn_list)
     {
-      #print STDERR $accn,"\n";
-      my ($featid) = $accn=~/^(\d+)_\d+_\d+$/;
-      #print STDERR "CBlast $featid\n";
-      #$file .= "$featid $dsid\n";
-      push @list, $featid;
+		next if $accn =~ /no$/;
+		my ($featid) = $accn =~ m/^(\d+)_\d+_\d+$/;
+		push @list,$featid;
+	}
+	my %seen = ();
+    @list = grep {!$seen{$_}++} @list;
+    foreach my $featid( @list)
+    {
+    	$url .= "fid=$featid&";
     }
-    $str = join ("\n", grep {!$seen{$_}++} @list)."\n";
-    
-     open(NEW,"> $TEMPDIR/$filename.featlist");
-	print NEW $str;
-	close NEW;
-	
-	return "/CoGe/FeatList.pl?basename=$filename";
+	$url =~s/&$//;
+	return $url;
   }
 
 sub dataset_description_for_org
