@@ -1085,7 +1085,8 @@ sub process_features
 	    next unless $draw_model eq "full" || $draw_model eq "RNA";
         	$f = CoGe::Graphics::Feature::Gene->new();
         	$f->color([200,200,200, 50]);
-        	$f->order($track);		$f->overlay(2);
+        	$f->order($track);
+		$f->overlay(2);
 		if ($accn)
 		  {
 		    foreach my $name (@{$feat->qualifiers->{names}})
