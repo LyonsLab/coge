@@ -328,6 +328,7 @@ sub parse_fasta_header
 	next unless $line;
 	$line =~ s/^\s+//;
 	$line =~ s/\s+$//g;
+	$line =~ s/^>//;
 	$self->seq_info->{$seq_count}{header}=$line;
 	$line =~ s/>//;
 	if ($self->query)
