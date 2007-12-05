@@ -28,16 +28,20 @@ $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 
 my $pj = new CGI::Ajax(
 		       gen_html=>\&gen_html,
-		       get_seq=>\&get_seq,
-		       gen_title=>\&gen_title,
-		       find_feats=>\&find_feats,
-		       parse_url=>\&parse_url,
+		       get_seqs=>\&get_seqs,
 		       export_to_file=>\&export_to_file,
 			);
 $pj->js_encode_function('escape');
-#print $pj->build_html($FORM, \&gen_html);
-print $FORM->header;
-print gen_html();
+if ($FORM->param('text'))
+    {
+      print $FORM->header('text');
+      print gen_html();
+    }
+else
+    {
+      print $pj->build_html($FORM, \&gen_html);
+    }
+
 
 sub gen_html
   {
@@ -49,108 +53,58 @@ sub gen_html
     else
      {
     my $form = $FORM;
-    my $feat_id = $form->param('featid');
     my $rc = $form->param('rc');
-    my $pro;
-    my ($title) = gen_title(protein=>$pro, rc=>$rc);
+    my $prot = $form->param('prot');
+    my $text = $form->param('text');
+    my $textbox = $text ? 0 : 1;
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
     $template->param(TITLE=>'Fasta Viewer');
     $template->param(HELP=>'FastaView');
     $template->param(USER=>$USER);
     $template->param(DATE=>$DATE);
     $template->param(LOGO_PNG=>"FastaView-logo.png");
-    $template->param(BOX_NAME=>qq{<DIV id="box_name">$title</DIV>});
-    $template->param(BODY=>gen_body());
-#    $template->param(POSTBOX=>gen_foot());
+    $template->param(BOX_NAME=>qq{<DIV id="box_name">Sequences:</DIV>});
+    my @fids = $form->param('featid');
+
+    if ($text)
+      {
+	my $seqs = get_seqs(prot=>$prot, fids=>\@fids, textbox=>$textbox);
+	return  $seqs;
+      }
+    $template->param(BODY=>gen_body(fids=>\@fids));
     $html .= $template->output;
     }
     return $html;
   }
 
-sub gen_body
+sub get_seqs
   {
-    my $form = $FORM;
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/FastaView.tmpl');
+    my %opts = @_;
+    my $fids = $opts{fids};
+    my $prot = $opts{prot};
+    my $textbox = $opts{textbox};
+    my @fids = ref($fids) =~ /array/i ? @$fids : split/,/, $fids;
     my $seqs;
-    foreach my $featid ($form->param('featid'))
+    foreach my $featid (@fids)
       {
 	my ($feat) = $coge->resultset('Feature')->find($featid);
 	next unless $feat;
-	$seqs .= $feat->fasta(col=>100);
+	$seqs .= $feat->fasta(col=>100, prot=>$prot);
       }
-    my $file_link = export_to_file($seqs);
-    $template->param(SEQ=>$seqs);
-    $template->param(FILE=>qq{<a href="$file_link">Click to Download Fasta File</a>});
+    $seqs = qq{<textarea id=seq_text name=seq_text class=backbox readonly ondblclick="this.select();" style="height: 400px; width: 750px; overflow: auto;">$seqs</textarea>} if $textbox;
+    return $seqs;
+  }
+
+sub gen_body
+  {
+    my %opts = @_;
+    my $seqs = $opts{seqs};
+    my $fids = $opts{fids};
+    $fids = join (",", @$fids) if ref($fids) =~ /array/i;
+    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/FastaView.tmpl');
+    $template->param(BOTTOM_BUTTONS=>1);
+    $template->param(SEQ=>$seqs) if $seqs;
+    $template->param(FIDS=>qq{<input type=hidden id=fids value=$fids>});
     return $template->output;
-  }
-  
-sub reverse_complementq
-  {
-    my $seq = shift;
-    $seq = reverse $seq;
-    $seq =~ tr/ATCG/TAGC/;
-    return $seq;
-  }
-
-sub get_prot_seq_for_feat
-  {
-    my $featid = shift;
-    #print STDERR "featid: ", $featid, "\n";
-    my ($feat) = $DB->get_feat_obj->retrieve($featid);
-    my ($seq) = $DB->get_protein_sequence_for_feature($feat);
-    $seq = "No sequence available" unless $seq;
-    #print $seq;
-    $columns = 60;
-    $seq = join ("\n", wrap('','',$seq));
-    return $seq;
-  }
- 
-sub gen_title
-    {
-      my %opts = @_;
-      my $rc = $opts{'rc'} || 0;
-      my $pro = $opts{'pro'};
-      my $title;
-      unless ($pro)
-      {
-       if ($rc == 2)
-        {$title = "Six Frame Translation";}
-       elsif ($rc == 1)
-        {$title = "Reverse Complement";}
-       else
-        {$title = "DNA Sequence";}
-      }
-      else
-      {
-       $title = "Protein Sequence";
-      }
-      return $title;
-    }
-
-sub sixframe
-	{
-	  my %opts = @_;
-	  my $seq = $opts{seq};
-	  my $fasta = $opts{fasta};
-	  my $key;
-	  my $sixframe;
-     	  my $sequence = $DB->get_feat_obj->frame6_trans(seq=>$seq);
-          #print STDERR Dumper ($sequence);
-          foreach $key (sort {abs($a) <=> abs($b) || $b <=> $a} keys %$sequence)
-           {
-      	     $seq = join ("\n", wrap('','',$sequence->{$key}));
-      	     $sixframe .= qq/$fasta Frame $key\n$seq\n/;
-           }
-          return $sixframe;
-        }
-sub export_to_file
-  {
-  	my $fasta = shift;
-  	my $date = $DATE;
-  	$date =~ s/\s/_/g;
-	open(NEW,"> $TEMPDIR/fasta_".$USER."_".$date.".fasta");
-	print  NEW $fasta;
-	close NEW;
-	return "tmp/fasta_".$USER."_".$date.".fasta";
   }
 	
