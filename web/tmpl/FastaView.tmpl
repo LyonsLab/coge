@@ -1,54 +1,64 @@
-     <DIV id="seq">
-      <TABLE>
-       <TR>
-        <TD>
-        <textarea id=seq_text name=seq_text class=backbox readonly ondblclick="this.select();" style="height: 400px; width: 750px; overflow: auto;"><TMPL_VAR NAME="SEQ"></textarea>
-	</TD>
-       </TR>
-       <tr>
-        <td>
-         <TMPL_VAR NAME=FILE>
-         </tr>
-      </TABLE>
- </div>
+<SCRIPT language="JavaScript">
+
+function update_seqs(prot, text)
+ {
+  if (prot)
+   {
+    if (text)
+     {
+       var url=window.location+";prot=1;text=1";
+       window.location =url;
+     }
+    get_seqs(['args__fids','fids', 'args__textbox','args__1','args__prot','args__1'],['seq']);
+    $('#prot_button').hide();
+    $('#prot_text_button').show();
+    $('#dna_button').show();
+    $('#dna_text_button').hide();
+   }
+  else
+   {
+    if (text)
+     {
+       var url=window.location+";text=1";
+       window.location =url;
+     }
+    get_seqs(['args__fids','fids', 'args__textbox','args__1','args__prot','args__0'],['seq']);
+    $('#prot_button').show();
+    $('#prot_text_button').hide();
+    $('#dna_button').hide();
+    $('#dna_text_button').show();
+   }
+ }
+
+$(document).ready(function()
+  {
+   update_seqs(<TMPL_VAR NAME=PROT>);
+  });
+</script>
+
+
+<TABLE>
+ <TR>
+  <TD><div id=seq>	
+   <TMPL_VAR NAME="SEQ">
+   </div>
+</TABLE>
+<TMPL_VAR NAME="FIDS">
 
 
 <TMPL_IF NAME=BOTTOM_BUTTONS>
   <DIV id="dynamic_button">
   <TABLE>
    <TR>
-      <TD align=right valign="top">
-       <DIV class="seqview_button dna_button>" style="display: none" id="dna_button"><input type=button value="DNA Sequence" onClick="dynamic_buttons('dna_button');get_sequence(0,0);gen_title(['args__0','args__0'],['box_name']);"></DIV>     
-      </TD>
-      <TD align=right valign="top">
-      <DIV class="seqview_button rc_button>" id="rc_button"><input type=button value="Reverse Complement" onClick="dynamic_buttons('rc_button');get_sequence(1,0);gen_title(['args__1','args__0'],['box_name']);"></DIV>
-      </TD>
-      <TD align=right valign="top">
-         <DIV class="seqview_button pro_button>" id="pro_button"><input type=button value="<TMPL_VAR NAME=PROTEIN>" onClick="dynamic_buttons('pro_button');get_sequence(<TMPL_VAR NAME=PRO_RC>,<TMPL_VAR NAME=PRO_PRO>);gen_title(['args__<TMPL_VAR NAME=PRO_RC>','args__<TMPL_VAR NAME=PRO_PRO>'],['box_name']);"></DIV>
-      </TD>
-      <!--get_seq(['args__featid', 'args__<TMPL_VAR NAME=FEATID>', 'args__pro', 'args__<TMPL_VAR NAME=PRO>', 'args__rc', 'args__<TMPL_VAR NAME=RC>', 'args__chr', 'args__<TMPL_VAR NAME=CHR>', 'args__dsid', 'args__<TMPL_VAR NAME=DSID>', 'args__featname', 'args__<TMPL_VAR NAME=FEATNAME>', 'args__upstream', 'upstream', 'args__downstream', 'downstream', 'args__start', 'args__<TMPL_VAR NAME=START>','args__stop', 'args__<TMPL_VAR NAME=STOP>', 'args__strand', 'args__<TMPL_VAR NAME=STRAND>', 'args__add', 'args__<TMPL_VAR NAME=ADD>'],[get_sequence]);gen_title(['args__rc', 'args__<TMPL_VAR NAME=TITLE_RC>', 'args__pro', 'args__<TMPL_VAR NAME=PRO>'],['box_name']);-->
-     <TMPL_IF NAME=FIND_FEATS>
-     <TD align=right valign="top">
-     <DIV id="annotation_button"> <input type=button value="Find Features in Sequence" onClick="get_feats();find_feats(['args__start', 'upstream', 'args__stop', 'downstream', 'args__chr', 'args__'+myObj.chr, 'args__dsid', 'args__'+myObj.dsid],['annotation']);"></DIV>
-     <DIV id="hide_annotation_button" style="display: none"> <input type=button value="Hide Features" onClick="get_feats();"></DIV>
-     </TMPL_IF>
-     </TD>
-     <TD align=right valign="top">
-     <DIV id="blast_button"><input type=button value="Blast Sequence" onClick="blastSeq()"></DIV>
-    </TD>
+   <td><input type=button id="prot_button" value="Protein Sequence" onclick="update_seqs(1)">
+   <td><input type=button id="dna_button" value="DNA Sequence" onclick="update_seqs(0)">
+   <td><input type=button id="prot_text_button" value="Plain Text" onclick="update_seqs(1,1)">
+   <td><input type=button id="dna_text_button" value="Plain Text" onclick="update_seqs(0,1)">
+
    </TR>
   </TABLE>
   </DIV>
 
 </TMPL_IF>
 
-
-<TMPL_IF NAME="FEATUREBOX">
- <TABLE>
-   <TR>
-   <TD align=right valign="top">
-    <TMPL_VAR NAME="LISTFEATURES">
-   </TR>
- </TABLE>
-</TMPL_IF>
 
