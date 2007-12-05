@@ -24,6 +24,7 @@ $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 my $pj = new CGI::Ajax(
 		       gen_html=>\&gen_html,
 		       feats_parse=>\&feats_parse,
+		       export_fasta_file=>\&export_fasta_file,
 			);
 $pj->js_encode_function('escape');
 print $pj->build_html($FORM, \&gen_html);
@@ -124,7 +125,7 @@ sub generate_table
   sub feats_parse #Send to GEvo
   {
     my $accn_list = shift;
-    print STDERR $accn_list,"\n";
+    #print STDERR $accn_list,"\n";
     $accn_list =~ s/^,//;
     $accn_list =~ s/,$//;
     my @list;
@@ -140,4 +141,18 @@ sub generate_table
     return ("alert",$count) if $count > 10;
     $url .= "num_seqs=$count";
     return $url;
+  }
+  
+  sub export_fasta_file
+  {
+    my $accn_list = shift;
+    $accn_list =~ s/^,//;
+    $accn_list =~ s/,$//;
+    my $url = "FastaView.pl?";
+    foreach my $featid (split /,/,$accn_list)
+    {
+		$url .= "featid=$featid&";
+	}
+	$url =~s/&$//;
+	return $url;
   }
