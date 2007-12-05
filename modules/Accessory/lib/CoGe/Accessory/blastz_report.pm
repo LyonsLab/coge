@@ -326,7 +326,8 @@ sub parse_fasta_header
 	next if $line =~ /{|}/; #skip brackets
 	$line =~ s/"//g;
 	next unless $line;
-	$line =~ s/\s//g;
+	$line =~ s/^\s+//;
+	$line =~ s/\s+$//g;
 	$self->seq_info->{$seq_count}{header}=$line;
 	$line =~ s/>//;
 	if ($self->query)
@@ -410,7 +411,13 @@ sub parse_alignment
     my $seg_count = 1;
     my $hsp_count =$self->hsp_count;
     $hsp_count++;
-    my $hsp = new CoGe::Accessory::parse_report::HSP({number=>$hsp_count});
+    my $hsp = new CoGe::Accessory::parse_report::HSP({
+						      number=>$hsp_count,
+						      query_name=>$self->seq_info->{1}->{header},
+						      subject_name=>$self->seq_info->{2}->{header},
+						      query_length=>$self->seq_info->{1}->{length},
+						      subject_length=>$self->seq_info->{2}->{length},
+						     });
     my @id;
 
     foreach my $line (split /\n/, $data)
@@ -424,11 +431,6 @@ sub parse_alignment
 	  {
 	    $hsp->query_start($data[0]);
 	    $hsp->subject_start($data[1]);
-	  }
-	if ($type eq "e")
-	  {
-	    $hsp->query_stop($data[0]);
-	    $hsp->subject_stop($data[1]);
 	  }
 	if ($type eq "e")
 	  {
@@ -497,6 +499,7 @@ sub parse_alignment
       }
     $hsp->match(ceil($pid/100));
     $hsp->percent_id(sprintf("%.2f",$pid/$total));
+    $hsp->percent_sim($hsp->percent_id());
     $hsp->positive(ceil($pid/100));
     push @{$self->hsps},$hsp;
     $self->hsp_count($hsp_count);
