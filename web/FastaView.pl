@@ -32,6 +32,7 @@ my $pj = new CGI::Ajax(
 		       gen_title=>\&gen_title,
 		       find_feats=>\&find_feats,
 		       parse_url=>\&parse_url,
+		       export_to_file=>\&export_to_file,
 			);
 $pj->js_encode_function('escape');
 #print $pj->build_html($FORM, \&gen_html);
@@ -77,7 +78,9 @@ sub gen_body
 	next unless $feat;
 	$seqs .= $feat->fasta(col=>100);
       }
+    my $file_link = export_to_file($seqs);
     $template->param(SEQ=>$seqs);
+    $template->param(FILE=>qq{<a href="$file_link">Click to Download Fasta File</a>});
     return $template->output;
   }
   
@@ -140,4 +143,14 @@ sub sixframe
            }
           return $sixframe;
         }
+sub export_to_file
+  {
+  	my $fasta = shift;
+  	my $date = $DATE;
+  	$date =~ s/\s/_/g;
+	open(NEW,"> $TEMPDIR/fasta_".$USER."_".$date.".fasta");
+	print  NEW $fasta;
+	close NEW;
+	return "tmp/fasta_".$USER."_".$date.".fasta";
+  }
 	
