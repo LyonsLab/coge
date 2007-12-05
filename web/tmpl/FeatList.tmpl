@@ -9,26 +9,17 @@ function feature_checkboxes(){
     return;
   }
   if(action == "gevo") {
-    feats_parse(['args__'+accn],[send_to_gevo]);
+    feats_parse(['args__'+accn],[export_url]);
   }
- /* else if (action == "fasta"){
-    export_fasta_file(['args__'+accn,'args__'+pageObj.basename],[export_file]);
+  else if (action == "fasta"){
+    export_fasta_file(['args__'+accn,'args__'+pageObj.basename],[export_url]);
   }
-  else if (action == "xls"){
-    generate_excel_feature_file(['args__'+accn,'args__'+pageObj.basename],[export_file]);
-  }
-  else if(action == "tab"){
-    generate_tab_deliminated(['args__'+accn,'args__'+pageObj.basename],[export_file]);
-  }
-  else if(action == "list"){
-    generate_feat_list(['args__'+accn,'args__'+pageObj.basename],[export_file]);
-  } */
   else {
     alert("We will get this working ... soon.");
   }
 }
 
-function send_to_gevo(url,num_accns) {
+function export_url(url,num_accns) {
   if (url == "alert") {
     var remove = num_accns - 10;
     alert("You have exceeded the number of features you can send to GEvo ( 10 Max ). You currently have "+num_accns+" selected. Please uncheck "+remove+" of your checked item(s).");
@@ -127,9 +118,6 @@ jQuery.fn.unCheckCheckboxes = function()
  			<select name=checked_action id=checked_action>
                  <option value = "gevo">Send to GEvo</option>
            		 <option value = "fasta">Create FASTA File</option>
-           		 <option value = "xls">Export to Excel</option>
-           		 <option value = "tab">Tab Deliminated</option>
-          		  <option value = "user">Add to MFF</option> 
           </selected>  
           <input type=button value="Go" onClick="feature_checkboxes()">    
   </div>
