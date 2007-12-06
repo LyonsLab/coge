@@ -230,6 +230,7 @@ else if (alignment == 'blastn')
  }
 
 
+
 function handle_results (html,w, h, img_base, n_images,message) {
  alert_message(message);
  if (n_images >1)
@@ -243,7 +244,7 @@ function handle_results (html,w, h, img_base, n_images,message) {
     so.addVariable('tmp_dir', 'tmp/');
     so.addVariable('img', img_base );
     so.addVariable('freezable', getQueryParamValue('freezable') || 'false'); 
-    so.addVariable('pad_gs', getQueryParamValue('pad_gs') || '0'); 
+    so.addVariable('pad_gs', jQuery('#pad_gs') ? jQuery('#pad_gs').val()  : getQueryParamValue('pad_gs') || '0'); 
     so.addVariable('gsid', getQueryParamValue('gsid') || getQueryParamValue('genespace_id') || '0'); 
 so.write("flash_viewer");
    }
@@ -376,6 +377,17 @@ function update_colors(hsp_num) {
   $('#sample_color'+hsp_num).css("backgroundColor","rgb("+r+","+g+","+b+")");
 }
 
+function get_seq(seq_num)
+ {
+  var fid = $('#featid'+seq_num).val();
+  var rc = $('input[name=rev1]:checked').val();
+  var left = $('#drup'+seq_num).val();
+  var right = $('#drdown'+seq_num).val();
+  //alert (fid+"::"+rc+"::"+left+"::"+right);
+ window.open("SeqView.pl?featid="+fid+"&upstream="+left+"&downstream="+right+"&rc="+rc);
+ }
+
+
 </SCRIPT>
 
 <div id="go_run"><TMPL_VAR NAME="GO_RUN"></div>
@@ -421,8 +433,11 @@ function update_colors(hsp_num) {
     </div>
     </table>
 
-     <Div class ="small" align = "left">Apply distance to all CoGe submissions?<input type="checkbox" name="apply_all" id="apply_all" value="0" /></div>
-  </DIV>
+     <Div class ="small" align = "left">
+     Apply distance to all CoGe submissions?<input type="checkbox" name="apply_all" id="apply_all" value="0" />
+     &nbsp&nbsp&nbsp&nbsp
+     Pad CoGe Sequences with additional sequence: <input type="textbox" name="pad_gs" id="pad_gs" value="<TMPL_VAR NAME="PAD_GS">" size =8/></div>
+     </DIV>
  </TR>
 </TABLE>
 </TMPL_IF>
@@ -952,6 +967,8 @@ function update_colors(hsp_num) {
       <TR>
        <TD><DIV class="small">Right sequence:</DIV>
        <TD><DIV  id="down<TMPL_VAR NAME="SEQ_NUM">"><input class="location backbox" type="text" name="drdown<TMPL_VAR NAME="SEQ_NUM">" id="drdown<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10"  value="<TMPL_VAR NAME=DRDOWN>" /></DIV>
+   <tr>
+    <TD class=small colspan=2 align=center><div id="get_seq<TMPL_VAR NAME=SEQ_NUM>" onclick="get_seq(<TMPL_VAR NAME=SEQ_NUM>)"  onMouseOver="changeColor('get_seq<TMPL_VAR NAME="SEQ_NUM">','#009900'); " onMouseOut="changeColor('get_seq<TMPL_VAR NAME="SEQ_NUM">','#000099');">Get Sequence</div>
      
 </table>
 </DIV>
@@ -1023,7 +1040,7 @@ function update_colors(hsp_num) {
   <TD>
 	<label><input class="backbox" type="radio" name="skip_seq<TMPL_VAR NAME=SEQ_NUM>" id="skip_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="1" />Yes</label>
 	<label><input class="backbox" type="radio" name="skip_seq<TMPL_VAR NAME=SEQ_NUM>" id="skip_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="0" checked/>No</label><br>
-   </table>
+ </table>
 </table>
 </th>
 </TMPL_LOOP>
