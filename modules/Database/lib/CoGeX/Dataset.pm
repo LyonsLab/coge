@@ -5,7 +5,7 @@ package CoGeX::Dataset;
 use strict;
 use warnings;
 use Data::Dumper;
-
+use CoGeX::Feature;
 use base 'DBIx::Class';
 use Text::Wrap;
 
@@ -261,12 +261,59 @@ sub fasta
     my $strand = $opts{strand} || 1;
     my $start = $opts{start};
     my $stop = $opts{stop};
-    my $head = ">".$self->org->name." (".$self->name.", ".$self->description.", v".$self->version.")".", Location: ".$start."-".$stop.", Chromosome: ".$chr.", Strand: ".$strand."\n";
-    $Text::Wrap::columns=$col;
+    my $prot = $opts{prot};
+    my $rc = $opts{rc};
     my $seq = $self->genomic_sequence(start=>$start, stop=>$stop, chr=>$chr);
-    $seq = join ("\n", wrap("","",$seq)) if $col;
-    return $head.$seq."\n";
+    $stop = $start + length($seq)-1 if $stop > $start+length($seq)-1;
+    my $head = ">".$self->organism->name." (".$self->name.", ".$self->description.", v".$self->version.")".", Location: ".$start."-".$stop.", Chromosome: ".$chr.", Strand: ".$strand;
+    $head .= " (reverse complement)" if $rc;
+    $Text::Wrap::columns=$col;
+    my $fasta;
+
+
+    $seq = $self->reverse_complement($seq) if $rc;
+    if ($prot)
+      {
+	my $trans_type = $self->trans_type;
+	my $feat = new CoGeX::Feature;
+	my ($seqs, $type) = $feat->frame6_trans(seq=>$seq, trans_type=>$trans_type);
+	foreach my $frame (sort {length($a) <=> length($b) || $a cmp $b} keys %$seqs)
+	  {
+	    $seq = $seqs->{$frame};
+	    $seq = $self->reverse_complement($seq) if $rc;
+	    $seq = join ("\n", wrap("","",$seq)) if $col;
+	    $fasta .= $head. " $type frame $frame\n".$seq."\n";
+	  }
+      }
+    else
+      {
+	$seq = join ("\n", wrap("","",$seq)) if $col;
+	$fasta = $head."\n".$seq."\n";
+      }
+    return $fasta;
   }
 
+sub trans_type
+  {
+    my $self = shift;
+    my $trans_type;
+    foreach my $feat ($self->features)
+      {
+	next unless $feat->type->name =~ /cds/i;
+	my ($code, $type) = $feat->genetic_code;
+	($type) = $type =~/transl_table=(\d+)/ if $type =~ /transl_table/;
+	return $type if $type;
+      }
+    return 1; #universal genetic code type;
+  }
+
+sub reverse_complement
+  {
+    my $self = shift;
+    my $seq = shift;# || $self->genomic_sequence;
+    my $rcseq = reverse($seq);
+    $rcseq =~ tr/ATCGatcg/TAGCtagc/; 
+    return $rcseq;
+  }
 
 1;
