@@ -11,7 +11,6 @@ use LWP::Simple;
 use LWP::Simple::Post qw(post post_xml);
 use URI::Escape;
 use CoGeX;
-use CoGeX::Feature;
 use POSIX;
 use Digest::MD5 qw(md5_hex);
 use DBIxProfiler;
@@ -112,7 +111,7 @@ sub gen_body
   {
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CoGeBlast.tmpl');
     my $form = $FORM;
-    my $featid = $form->param('featid') || 0;
+    my $featid = join (",",$form->param('featid')) || 0;
     my $chr = $form->param('chr') || 0;
     my $upstream = $form->param('upstream') || 0;
     my $downstream = $form->param('downstream') || 0;
@@ -132,14 +131,14 @@ sub gen_body
     {
     	$template->param(DISPLAY_FEAT=>1);
     	$template->param(SEQVIEW=>1);
-    	my $seq = get_sequence($featid, $dsid, 0, 1, $upstream, $downstream,$rc);
-        $template->param(SEQUENCE=>$seq);
+#    	my $seq = get_sequence($featid, $dsid, 0, 1, $upstream, $downstream,$rc);
+#        $template->param(SEQUENCE=>$seq);
     }
     elsif ($chr)
     {
     	$template->param(SEQVIEW=>2);
-    	my $seq = get_sequence($chr, $dsid, 0, 2, $upstream, $downstream,$rc);
-    	$template->param(SEQUENCE=>$seq);
+#    	my $seq = get_sequence($chr, $dsid, 0, 2, $upstream, $downstream,$rc);
+#    	$template->param(SEQUENCE=>$seq);
     }
     else{
         $template->param(SEQVIEW=>0);
@@ -153,68 +152,51 @@ sub gen_body
   
 sub get_sequence
   {
-    my $fid = shift;
-    my $dsid = shift;
-    my $blast_type = shift || 0;
-    my $seqview = shift || 0;
-    my $upstream = shift || 0;
-    my $downstream = shift || 0;
-    my $rc = shift || 0;
-    my $seq;
-    my $featid;
+    my %opts = @_;
+    my $fids = $opts{fid};
+    my $dsid = $opts{dsid};
+    my $chr = $opts{chr};
+    my $start = $opts{start};
+    my $stop = $opts{stop};
+    my $blast_type = $opts{blast_type};
+    my $upstream = $opts{upstream};
+    my $downstream = $opts{downstream};
+    my $rc = $opts{rc};
     my $fasta;
-    if ($seqview == 2)
-    {
-    	$seq = $coge->resultset('Dataset')->find($dsid)->get_genome_sequence
-	  (
-	   start=>$upstream,
-	   stop=>$downstream,
-	   chr=>$fid,
-	  );
-       $seq = CoGeX::Feature->reverse_complement($seq) if $rc;
-       $fasta = generate_fasta_without_featid(chr=>$fid, dsid=>$dsid, start=>$upstream, stop=>$downstream);
-       if ($blast_type =~  "blast_type_p") {
-       my $key;
-       my $sixframe;
-       my $sequence = CoGeX::Feature->frame6_trans(seq=>$seq);
-       foreach $key (sort {abs($a) <=> abs($b) || $b <=> $a} keys %$sequence)
-           {
-      	     $seq = join ("\n", wrap('','',$sequence->{$key}));
-      	     $sixframe .= qq/$fasta Frame $key\n$seq\n/;
-           }
-         $seq = $sixframe;
-        }
-        else {
-	$seq = join ("\n", wrap('','',$seq));
-	$seq = ($fasta. $seq);
-	}
-	return $seq;
-    }
-    else{
-    $featid = $fid;
-    my $feat = $coge->resultset('Feature')->find($featid);
-    $fasta = generate_fasta_with_featid(featid=>$featid, dsid=>$dsid, rc=>$rc, blast_type=>$blast_type);
-    
-    unless (ref($feat) =~ /Feature/i)
-    {
-      return "Unable to retrieve Feature object for id: $fid";
-    }
-    else 
-    {	  
-      if ($blast_type =~  "blast_type_p") {
-       ($seq) = $feat->protein_sequence;
-       $seq = "No sequence available" unless $seq;
+    my $prot = $blast_type =~ /blast_type_p/ ? 1 : 0;
+    if ($fids)
+      {
+	foreach my $fid (split /,/, $fids)
+	  {
+	    my $feat = $coge->resultset('Feature')->find($fid);
+	    $fasta .= ref($feat) =~ /Feature/i ?
+	      $feat->fasta(
+			   prot=>$prot,
+			   rc=>$rc,
+			   upstream=>$upstream,
+			   downstram=>$downstream,
+			  )
+		:
+		  ">Unable to retrieve Feature object for id: $fid\n";
+	  }
       }
-      else {
-      $seq = $feat->genomic_sequence(upstream=>$upstream, downstream=>$downstream);
-      $seq = reverse_complement($seq) if $rc;
-    }
-      $seq = join ("\n", wrap('','',$seq));
-      $seq = ($fasta. $seq);
-    return $seq;
+    else
+      {
+	my $ds = $coge->resultset('Dataset')->find($dsid);
+	$fasta = ref ($ds) =~ /dataset/i ? 
+	  $ds->fasta
+	    (
+	     start=>$start,
+	     stop=>$stop,
+	     chr=>$chr,
+	     prot=>$prot,
+	     rc=>$rc,
+	    )
+	      :
+		">Unable to retrieve dataset object for id: $dsid";
+      }
+    return $fasta
   }
- }
-}
 
 sub get_url
   {
@@ -234,34 +216,6 @@ sub get_url
     return $url;
   }
 
-sub generate_fasta_with_featid
-  {
-    my %opts = @_;
-    my $featid = $opts{featid};
-    my $dsid = $opts{dsid};
-    my $rc = $opts{rc};
-    my $blast_type = $opts{blast_type};
-    my $ds = $coge->resultset("Dataset")->find($dsid);
-    my ($feat) = $coge->resultset("Feature")->find($featid);
-    my ($strand) = $feat->strand;
-    if ($rc)
-    	{$strand *= -1 unless ($blast_type =~ "blast_type_p");}
-    my $fasta = ">".$ds->organism->name."(v.".$feat->version.")".", Type: ".$feat->type->name.", Location: ".$feat->genbank_location_string.", Chromosome: ".$feat->chr.", Strand: ".$strand."\n";
-    return $fasta;
-  }
-  
-sub generate_fasta_without_featid
-  {
-    my %opts = @_;
-    my $chr = $opts{chr};
-    my $dsid = $opts{dsid};
-    my $start = $opts{start};
-    my $stop = $opts{stop};
-    my ($ds) = $coge->resultset("Dataset")->find($dsid);
-    my $fasta = ">".$ds->organism->name.", Location: ".$start."-".$stop.", Chromosome: ".$chr."\n";
-    return $fasta;
-  }
-
 sub blast_param
 {
     my %opts = @_;
@@ -271,12 +225,12 @@ sub blast_param
     my $pro;
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CoGeBlast.tmpl');
     if ($seq_type =~ "blast_type_n") {
-      if($version =~ /coge_radio/) {$template->param(BLAST_NU=>1);}
+      if($version && $version =~ /coge_radio/) {$template->param(BLAST_NU=>1);}
       else {$template->param(NCBI_BLAST_NU=>1);}        
     }
     else {
       $pro = 1;
-      if($version =~ /coge_radio/) {$template->param(BLAST_PRO=>1);}
+      if($version && $version =~ /coge_radio/) {$template->param(BLAST_PRO=>1);}
       else {$template->param(NCBI_BLAST_PRO=>1);}
 	  
 	  unless ($translate)
@@ -289,14 +243,6 @@ sub blast_param
     return $html,$version,$pro;
 }
 
-sub reverse_complement
-  {
-    my $seq = shift;
-    $seq = reverse $seq;
-    $seq =~ tr/ATCG/TAGC/;
-    return $seq;
-  }
-  
 sub database_param
   {
     my $program = shift || "blastn";
@@ -513,12 +459,21 @@ sub gen_results_page
 		  {
 		    my %seen;
 		    grep { ! $seen{lc($_)} ++ } map {$_->type->name} @feat;
-		    my $search_type = "gene" if $seen{gene};
+		    foreach my $key (keys %seen)
+		      {
+			$seen{'rna'}=1 if $key =~ /rna/i;
+		      }
+		    my $search_type;
+		    $search_type = "gene" if $seen{gene};
 		    $search_type = "cds" if !$search_type && $seen{cds};
-		    $search_type = "rna" unless $search_type;
+		    $search_type = "rna" if !$search_type && $seen{rna};
+		    $search_type = "exon" if !$search_type && $seen{exon};
+		    ($search_type) = keys %seen unless $search_type;
+		    print STDERR Dumper \%seen if $feat[0]->dataset->organism->name =~ /Poplar/i;
 		   my $no_genes = 0;
 		   foreach my $feature (@feat)
 		     {
+		       print STDERR $search_type,"::",$feature->type->name,"\n" if $feature->dataset->organism->name =~ /Poplar/i;
 		       next unless $feature->type->name =~ /$search_type/i;
 		       $no_genes++;
 		       $length = (($feature->stop) - ($feature->start));		     
