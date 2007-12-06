@@ -3,32 +3,31 @@
 <SCRIPT language="JavaScript">
 
 $(document).ready(function(){
-if (document.images) {
-//Preload Button Images
-
-}
 //$('#hide_annotation_button').hide();
 //$('#dna_button').hide(0);
 $('#maketable').html('<div id ="annotation" style = "overflow: auto; height: 300px; width: auto;"></DIV>');
 //$('#feat_annos').toggle(0);
   var featid = <TMPL_VAR NAME=FEATID>;
   if (featid){
-  myObj = new generate_seq_obj(<TMPL_VAR NAME=DSID>,'<TMPL_VAR NAME=CHR>',featid,'<TMPL_VAR NAME=FEATNAME>');}
-  
-//  myObj = new generate_seq_obj(featid,'<TMPL_VAR NAME=FEATNAME>');}
+    myObj = new generate_seq_obj_with_featid(featid,'<TMPL_VAR NAME=FEATNAME>');}
   else{
-  myObj = new generate_seq_obj(<TMPL_VAR NAME=DSID>,'<TMPL_VAR NAME=CHR>');}
+    myObj = new generate_seq_obj(<TMPL_VAR NAME=DSID>,'<TMPL_VAR NAME=CHR>');}
   get_sequence();
 });
 
 
-function generate_seq_obj(dsid,chr,featid,featname){
-  this.featid=featid;
+function generate_seq_obj(dsid,chr){
   this.dsid=dsid;
   this.start=$('#upstream').val();
   this.stop=$('#downstream').val();
   this.chr=chr;
-  this.featname=featname;
+}
+
+function generate_seq_obj_with_featid(featid,featname){
+  this.featid=featid;
+  this.start=$('#upstream').val();
+  this.stop=$('#downstream').val();
+  this.featname=featname
 }
 
 function reset_updown() {
@@ -68,9 +67,9 @@ function get_blast_info(){
 }
 
 function blastSeq() {
- dsid = myObj.dsid;
- chr=myObj.chr;
- featid=myObj.featid;
+ dsid = myObj.dsid || 0;
+ chr=myObj.chr || 0;
+ featid=myObj.featid || 0;
  up = $('#upstream').val() || 0;
  down = $('#downstream').val() || 0;
  rc = 0;
@@ -83,6 +82,7 @@ function blastSeq() {
  }
 }
 
+/*
 function waiting(tag,rc) {
   var seq_length;
   if (typeof rc == 'undefined'){
@@ -106,6 +106,8 @@ function waiting(tag,rc) {
     return;}
 }
 
+*/
+
 function get_feats(){
 $('#feat_annos').toggle(0);
 $('#hide_annotation_button').toggle(0);
@@ -113,7 +115,7 @@ $('#annotation_button').toggle(0);
 var hidden = $('#feat_annos').is(':hidden');
 if (hidden == true){
  return;}
-waiting('annotation');
+//waiting('annotation');
 }
 
 //obsolete, no longer needed; used for copy+paste problem before using text area
@@ -136,7 +138,7 @@ function redefine(){
 }
 
 function get_sequence(rc,pro,add){
-  waiting('seq_text',rc);
+  //waiting('seq_text',rc);
   if (typeof pro == 'undefined'){
   pro=myObj.pro || 0;}
   else{
@@ -176,7 +178,7 @@ function get_sequence(rc,pro,add){
       <DIV class="seqview_button rc_button>" id="rc_button"><input type=button value="Reverse Complement" onClick="dynamic_buttons('rc_button');get_sequence(1,0);gen_title(['args__rc','args__1','args__pro','args__0'],['box_name']);"></DIV>
       </TD>
       <TD align=right valign="top">
-         <DIV class="seqview_button pro_button>" id="pro_button"><input type=button value="<TMPL_VAR NAME=PROTEIN>" onClick="dynamic_buttons('pro_button');get_sequence(<TMPL_VAR NAME=PRO_RC>,<TMPL_VAR NAME=PRO_PRO>);gen_title(['args__rc','args__<TMPL_VAR NAME=PRO_RC>','args__pro','args__<TMPL_VAR NAME=PRO_PRO>'],['box_name']);"></DIV>
+         <DIV class="seqview_button pro_button>" id="pro_button"><input type=button value="<TMPL_VAR NAME=PROTEIN>" onClick="dynamic_buttons('pro_button');get_sequence(0,1);gen_title(['args__rc','args__0','args__pro','args__1','args__sixframe','args__<TMPL_VAR NAME=SIXFRAME>'],['box_name']);"></DIV>
       </TD>
       <!--get_seq(['args__featid', 'args__<TMPL_VAR NAME=FEATID>', 'args__pro', 'args__<TMPL_VAR NAME=PRO>', 'args__rc', 'args__<TMPL_VAR NAME=RC>', 'args__chr', 'args__<TMPL_VAR NAME=CHR>', 'args__dsid', 'args__<TMPL_VAR NAME=DSID>', 'args__featname', 'args__<TMPL_VAR NAME=FEATNAME>', 'args__upstream', 'upstream', 'args__downstream', 'downstream', 'args__start', 'args__<TMPL_VAR NAME=START>','args__stop', 'args__<TMPL_VAR NAME=STOP>', 'args__strand', 'args__<TMPL_VAR NAME=STRAND>', 'args__add', 'args__<TMPL_VAR NAME=ADD>'],[get_sequence]);gen_title(['args__rc', 'args__<TMPL_VAR NAME=TITLE_RC>', 'args__pro', 'args__<TMPL_VAR NAME=PRO>'],['box_name']);-->
      <TMPL_IF NAME=FIND_FEATS>
