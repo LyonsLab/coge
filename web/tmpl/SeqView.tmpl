@@ -75,11 +75,9 @@ function blastSeq() {
  if ($('.rc_button').is(':hidden')==true){
    rc = 1;}
  if (featid) {
- //alert('CoGeBlast.pl?featid='+featid+'&upstream='+up+'&downstream='+down+'&dsid='+dsid+'&featname='+featname+'&rc='+rc);
- window.open('CoGeBlast.pl?featid='+featid+'&upstream='+up+'&downstream='+down+'&dsid='+dsid+'&chr='+chr+'&rc='+rc);}
+ window.open('CoGeBlast.pl?featid='+featid+'&upstream='+up+'&downstream='+down+'&rc='+rc);}
  else {
- //alert('CoGeBlast.pl?chr='+chr+'&upstream='+up+'&downstream='+down+'&dsid='+dsid,'window');
- window.open('CoGeBlast.pl?chr='+chr+'&upstream='+up+'&downstream='+down+'&dsid='+dsid+'&rc='+rc,'window');
+ window.open('CoGeBlast.pl?chr='+chr+'&upstream='+up+'&downstream='+down+'&dsid='+dsid+'&rc='+rc);
  }
 }
 
