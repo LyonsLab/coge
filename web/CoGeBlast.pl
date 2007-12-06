@@ -174,7 +174,7 @@ sub get_sequence
 			   prot=>$prot,
 			   rc=>$rc,
 			   upstream=>$upstream,
-			   downstram=>$downstream,
+			   downstream=>$downstream,
 			  )
 		:
 		  ">Unable to retrieve Feature object for id: $fid\n";
