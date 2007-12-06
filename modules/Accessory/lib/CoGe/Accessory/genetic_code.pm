@@ -12,7 +12,7 @@ BEGIN {
     %EXPORT_TAGS = ();
     $code = {
 	     'transl_table=22' => {
-				   'name' => 'Scenedesmus obliquus mitochondrial Code (transl_table=22)',
+				   'name' => 'The Scenedesmus obliquus mitochondrial Code (transl_table=22)',
 				   'code' => {
 					      'GCC' => 'A',
 					      'AGT' => 'S',
@@ -81,7 +81,7 @@ BEGIN {
 					     }
 				  },
 	     'transl_table=15' => {
-				   'name' => 'Blepharisma Nuclear Code (transl_table=15)',
+				   'name' => 'The Blepharisma Nuclear Code (transl_table=15)',
 				   'code' => {
 					      'GCC' => 'A',
 					      'AGT' => 'S',
@@ -426,7 +426,7 @@ BEGIN {
 					     }
 				  },
 	     'transl_table=23' => {
-				   'name' => 'Thraustochytrium Mitochondrial Code (transl_table=23)',
+				   'name' => 'The Thraustochytrium Mitochondrial Code (transl_table=23)',
 				   'code' => {
 					      'GCC' => 'A',
 					      'AGT' => 'S',
@@ -564,7 +564,7 @@ BEGIN {
 					    }
 				 },
 	     'transl_table=16' => {
-				   'name' => 'Chlorophycean Mitochondrial Code (transl_table=16)',
+				   'name' => 'The Chlorophycean Mitochondrial Code (transl_table=16)',
 				   'code' => {
 					      'GCC' => 'A',
 					      'AGT' => 'S',
@@ -771,7 +771,7 @@ BEGIN {
 					     }
 				  },
 	     'transl_table=21' => {
-				   'name' => 'Trematode Mitochondrial Code (transl_table=21)',
+				   'name' => 'The Trematode Mitochondrial Code (transl_table=21)',
 				   'code' => {
 					      'GCC' => 'A',
 					      'AGT' => 'S',
@@ -909,7 +909,7 @@ BEGIN {
 					     }
 				  },
 	     'transl_table=4' => {
-				  'name' => 'and the Mycoplasma/Spiroplasma Code (transl_table=4)',
+				  'name' => 'The Mycoplasma/Spiroplasma Code (transl_table=4)',
 				  'code' => {
 					     'GCC' => 'A',
 					     'AGT' => 'S',
