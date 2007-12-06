@@ -1708,7 +1708,7 @@ sub _draw_features
     $self->_invert_chromosome if $self->invert_chromosome;
     my $c = $self->_image_h_used+($self->ih - $self->_image_h_used)/2;
     print STDERR "Image used: ".$self->_image_h_used."  Image Height: ".$self->ih."  Center: $c\n" if $self->DEBUG;
-    foreach my $feat ( sort {$b->type cmp $a->type} $self->get_feature(fill=>1), sort {$a->overlay <=> $b->overlay || $b->start <=> $a->start} $self->get_features(fill=>0))
+    foreach my $feat ( (sort {$b->type cmp $a->type} $self->get_feature(fill=>1)), sort {$a->overlay <=> $b->overlay || $b->start <=> $a->start} $self->get_features(fill=>0))
       {
 	#skip drawing features that are outside (by two times the range being viewed) the view
 	if ($feat->start)
@@ -1894,7 +1894,8 @@ sub _draw_feature_slow
         $sy=$y+$ih/2-$size/2 unless $sy;
 	my $adjust = 0;
 	$adjust = $fw/10;
-	$fs+=$adjust;
+	$fs = 0 if $fs < 1;
+	$fs+=$adjust unless $fs+$adjust > $self->iw;
       }
 #    $size = $size*$feat->font_size if $size && $feat->font_size;
     $size = $feat->font_size if $feat->font_size;
@@ -1980,7 +1981,8 @@ sub _draw_feature_fast
         $sy=$y+$ih/2-$size/2 unless $sy;
 	my $adjust = 0;
 	$adjust = $fw/10;
-	$fs+=$adjust;
+	$fs = 0 if $fs < 1;
+	$fs+=$adjust unless $fs+$adjust > $self->iw;
       }
 #    $size = $size*$feat->font_size if $size && $feat->font_size;
     $size = $feat->font_size if $feat->font_size;
