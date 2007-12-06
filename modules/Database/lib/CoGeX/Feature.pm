@@ -719,12 +719,11 @@ Problem with scores.  Match: $match (should be greater than 0).
     return $lambda;
   }
 
-
 sub reverse_complement
   {
     my $self = shift;
     my $seq = shift;# || $self->genomic_sequence;
-    if (ref($seq) =~ /Feature/)
+    if (ref($self) =~ /Feature/)
       {
 	$seq = $self->genomic_sequence unless $seq; #self seq unless we have a seq
       }
@@ -764,8 +763,9 @@ sub frame6_trans
   {
     my $self = shift;
     my %opts = @_;
-
-    my ($code) = $opts{code} || $self->genetic_code;
+    my $trans_type = $opts{trans_type};
+    my $code;
+    ($code, $trans_type) = $opts{code} || $self->genetic_code(trans_type=>$trans_type);
     my $seq = $opts{seq} || $self->genomic_sequence;
 
     my %seqs;
@@ -776,20 +776,25 @@ sub frame6_trans
     $seqs{"-1"} = $self->_process_seq(seq=>$rcseq, start=>0, code1=>$code, codonl=>3);
     $seqs{"-2"} = $self->_process_seq(seq=>$rcseq, start=>1, code1=>$code, codonl=>3);
     $seqs{"-3"} = $self->_process_seq(seq=>$rcseq, start=>2, code1=>$code, codonl=>3);
-    return \%seqs;
+    return \%seqs, $trans_type;
 
   }
 
 sub genetic_code
   {
     my $self = shift;
-    my $type = "1";
-    foreach my $anno ($self->annotations)
+    my %opts = @_;
+    my $trans_type = $opts{trans_type};
+    unless ($trans_type)
       {
-	next unless $anno->annotation_type->name eq "transl_table";
-	$type = $anno->annotation;
+	foreach my $anno ($self->annotations)
+	  {
+	    next unless $anno->annotation_type->name eq "transl_table";
+	    $trans_type = $anno->annotation;
+	  }
       }
-    my $code = code($type);
+    $trans_type = 1 unless $trans_type;
+    my $code = code($trans_type);
     return ($code->{code}, $code->{name});
   }
 sub _process_seq
@@ -962,14 +967,20 @@ sub fasta
   {
     my $self = shift;
     my %opts = @_;
-    my $col = $opts{col};
+    my $col;
+    $col = $opts{col};
     my $prot = $opts{protein} || $opts{prot};
     #$col can be set to zero so we want to test for defined variable
     $col = $opts{column} unless defined $col;
     $col = $opts{wrap} unless defined $col;
     $col = 100 unless defined $col;
-
+    my $rc = $opts{rc};
+    my $upstream = $opts{upstream};
+    my $downstream = $opts{downstream};
     my $head = ">".$self->dataset->organism->name."(v".$self->version.")".", Name: ".(join (", ", $self->names)).", Type: ".$self->type->name.", Chromosome: ".$self->chromosome.", ".$self->genbank_location_string;
+    $head .= " +up: $upstream" if $upstream;
+    $head .= " +down: $upstream" if $downstream;
+    $head .= " (reverse complement)" if $rc;
     $Text::Wrap::columns=$col;
     my $fasta;
     if ($prot)
@@ -982,23 +993,27 @@ sub fasta
 	  }
 	else
 	  {
-	    my $seqs = $self->frame6_trans;
+	    my ($seqs,$type) = $self->frame6_trans;
 	    foreach my $frame (sort {length($a) <=> length($b) || $a cmp $b} keys %$seqs)
 	      {
 		$seq = $seqs->{$frame};
+		$seq = $self->reverse_complement($seq) if $rc;
 		$seq = join ("\n", wrap("","",$seq)) if $col;
-		$fasta .= $head. " frame $frame\n".$seq."\n";
+		$fasta .= $head. " $type frame $frame\n".$seq."\n";
 	      }
 	  }
       }
     else
       {
-	my $seq = $self->genomic_sequence;
+	my $seq = $self->genomic_sequence(upstream=>$upstream, downstream=>$downstream);
+	$seq = $self->reverse_complement($seq) if $rc;
 	$seq = join ("\n", wrap("","",$seq)) if $col;
 	$fasta = $head."\n".$seq."\n";
       }
     return $fasta;
   }
+
+ 
 
 ################################################ subroutine header begin ##
 
