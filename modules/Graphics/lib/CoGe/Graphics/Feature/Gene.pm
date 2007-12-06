@@ -33,7 +33,7 @@ sub add_segment
 	$start = $stop;
 	$stop = $tmp;
       }
-    $start = 1 if $start < 1;
+#    $start = 1 if $start < 1;
     return unless $start && $stop;
     my @segs;
     push @segs,  @{$self->segments} if $self->segments;
