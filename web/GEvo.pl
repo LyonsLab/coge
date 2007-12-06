@@ -92,7 +92,7 @@ my $pj = new CGI::Ajax(
 		      );
 $pj->JSDEBUG(0);
 $pj->DEBUG(0);
-$pj->js_encode_function('escape');
+#$pj->js_encode_function('escape');
 print $pj->build_html($FORM, \&gen_html);
 
 #$USER="elyons";print gen_html();
@@ -155,7 +155,6 @@ sub gen_body
     my @seq_nums;
     my @seq_sub;
     my $autosearch_string;
-    my $pad_gs = $form->param("pad_gs") if $form->param("pad_gs");
     for (my $i = 1; $i <= $num_seqs; $i++)
       {
 	my $draccn;
@@ -175,8 +174,8 @@ sub gen_body
 	$drdown = $form->param('drdown'.$i) if $form->param('drdown'.$i);
 	$drup = 10000 unless defined $drup;
 	$drdown = 10000 unless defined $drdown;
-	$drup += $pad_gs if $pad_gs;
-	$drdown += $pad_gs if $pad_gs;
+#	$drup += $pad_gs if $pad_gs;
+#	$drdown += $pad_gs if $pad_gs;
 	my $dsid = $form->param('dsid'.$i) if $form->param('dsid'.$i);
 	my $gbaccn = $form->param("gbaccn".$i) if $form->param("gbaccn".$i);
 	my $gbstart = $form->param("gbstart".$i) if $form->param("gbstart".$i);
@@ -219,7 +218,8 @@ sub gen_body
       }
 #    print STDERR Dumper \@seq_sub;
     #page preferences
-
+    my $pad_gs = $form->param("pad_gs") if $form->param("pad_gs");
+    $pad_gs = 0 unless $pad_gs;
     my $prog = get_opt(params=>$prefs, form=>$form, param=>'prog');
     $prog = "blastz" unless $prog;
     my $results_interface = get_opt(params=>$prefs, form=>$form, param=>'viewer');
@@ -254,6 +254,7 @@ sub gen_body
     $hsp_overlap_limit = 0 unless $hsp_overlap_limit;
 
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GEvo.tmpl');
+    $template->param(PAD_GS=>$pad_gs);
     $template->param(GOBE_VIEWER=>"selected") if $results_interface eq "flash";
     $template->param(HTML_VIEWER=>"selected") if $results_interface eq "html";
     $template->param(IMAGE_WIDTH=>$image_width);
@@ -341,6 +342,7 @@ sub run
     my ($analysis_program, $param_string, $parser_opts) = get_algorithm_options(%opts);
     my $basefilename = $opts{basefile};
     my $show_spike = $opts{show_spike} || 0;
+    my $pad_gs = $opts{pad_gs} || 0;
     my $message;
     $cogeweb = initialize_basefile(basename=>$basefilename);
     my @hsp_colors;
@@ -389,6 +391,8 @@ sub run
 
 	my $drup = $opts{"drup$i"};
 	my $drdown = $opts{"drdown$i"};
+	$drup += $pad_gs;
+	$drdown += $pad_gs;
 	my $pos = $opts{"pos$i"};
 	my $gbaccn = $opts{"gbaccn$i"};
 	my $gbstart = $opts{"gbstart$i"};
@@ -952,9 +956,20 @@ INSERT INTO image_info (iname, title, px_width,dsid, bpmin, bpmax) values ("$ima
 	    my ($min_nt) = sort {$a<=>$b} map {@$_} @{$feat->segments}; 
 	    my $length_nt = $max_nt-$min_nt;
 	    my $length_pix = $xmax-$xmin;
+	    $type = "anchor" if ($feat->{anchor});
+#	      {
+#		my $bpmin = int(($set->{obj}->start+$feat->start-$set->{obj}->start+$feat->stop))/2;
+#		my $bpmax = $bpmin;
+#		my $xcoord = int(($xmax-$xmin)/2+$xmin);
+#		$statement = qq{
+#INSERT INTO image_data (name, type, xmin, xmax, ymin, ymax, bpmin,bpmax,image_id, image_track,pair_id, link, annotation, color) values ("$name", "anchor", $xcoord, $xcoord, $ymin, $ymax, $bpmin, $bpmax,$image_id, "$image_track",$pair_id, '$link', '$anno', '$color')
+#};
+#		print STDERR $statement unless $dbh->do($statement);
+#	      }
 	    foreach my $segment (@{$feat->segments})
 	      {
 		my ($start,$stop) = @$segment;
+#		print STDERR Dumper $segment if $type eq "anchor";
 		my $bpmin = $set->{obj}->start+$start;
 		my $bpmax = $set->{obj}->start+$stop;
 		my $xstart = sprintf("%.0f",$xmin+($start-$min_nt)/$length_nt*$length_pix);
@@ -1031,6 +1046,7 @@ sub process_features
         my $f;
 	my $type = $feat->type;
 	my ($name) = sort { length ($b) <=> length ($a) || $a cmp $b} @{$feat->qualifiers->{names}} if ref ($feat->qualifiers) =~ /hash/i ;
+	my $anchor = 0;
         if ($type =~ /pseudogene/i)
           {
 	    next unless $draw_model eq "full";
@@ -1064,7 +1080,8 @@ sub process_features
 		      {
 			$f->color([255,255,0]) ;
 			$f->label($name);
-			$type="anchor";
+#			$type="anchor";
+			$anchor=1;
 		      }
 		  }
 	      }
@@ -1095,7 +1112,7 @@ sub process_features
 			  {
 			    $f->color([255,255,0]) ;
 			    $f->label($name);
-			    $type="anchor";
+			    $anchor="anchor";
 			  }
 		      }
 		  }
@@ -1133,6 +1150,7 @@ sub process_features
 	$f->link("FeatView.pl?accn=$name") if $name;
 	my $foverlap = $overlap ? 0 : 1; #I think I need this to get this to work as expected
 	$f->skip_overlap_search($foverlap);
+	$f->{anchor}=1 if $anchor;
         $c->add_feature($f);
     }
   }
@@ -2125,6 +2143,8 @@ sub gen_params
 #	'args__matchfilter', 'matchfilter', 
 
     $params .= qq{
+        'args__pad_gs', 'pad_gs',
+
 	'args__spike', 'spike', 
         'args__show_spike', 'show_spike',
 
