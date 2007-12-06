@@ -87,14 +87,22 @@ sub gen_body
     my $start = $form->param('start');
     my $stop = $form->param('stop');
     my $seq;
+    if ($featid)
+      {
+	my $feat = $coge->resultset('Feature')->find($featid);
+	if ($feat)
+	  {
+	    $dsid = $feat->dataset->id;
+	  }
+      }
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SeqView.tmpl');
     $template->param(JS=>1);
     $template->param(SEQ_BOX=>1);
     if ($featid)
     {
-   		$template->param(FEATID=>$featid);
-    	$template->param(FEATNAME=>$feat_name);
-    	$template->param(FEAT_INFO=>qq{<td valign=top><input type=button value="Get Feature Info" onClick="generate_feat_info(['args__$featid'],[display_feat_info])"><br><div id=feature_info style="display:none"></div>});
+      $template->param(FEATID=>$featid);
+      $template->param(FEATNAME=>$feat_name);
+      $template->param(FEAT_INFO=>qq{<td valign=top><input type=button value="Get Feature Info" onClick="generate_feat_info(['args__$featid'],[display_feat_info])"><br><div id=feature_info style="display:none"></div>});
     }
     else
     {
