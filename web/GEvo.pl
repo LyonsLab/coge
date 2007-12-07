@@ -168,10 +168,10 @@ sub gen_body
 	    my $feat = $coge->resultset('Feature')->find($drfid);
 	    ($draccn) = $feat->names if $feat;
 	  }
-	my $drup = $form->param('dr'.$i.'up') if $form->param('dr'.$i.'up');
-	my $drdown = $form->param('dr'.$i.'down') if $form->param('dr'.$i.'down');
-	$drup = $form->param('drup'.$i) if $form->param('drup'.$i);
-	$drdown = $form->param('drdown'.$i) if $form->param('drdown'.$i);
+	my $drup = $form->param('dr'.$i.'up') if defined $form->param('dr'.$i.'up');
+	my $drdown = $form->param('dr'.$i.'down') if defined $form->param('dr'.$i.'down');
+	$drup = $form->param('drup'.$i) if defined $form->param('drup'.$i);
+	$drdown = $form->param('drdown'.$i) if defined $form->param('drdown'.$i);
 	$drup = 10000 unless defined $drup;
 	$drdown = 10000 unless defined $drdown;
 #	$drup += $pad_gs if $pad_gs;
@@ -415,8 +415,8 @@ sub run
 	$gevo_link .= ";fid$seqcount=".CGI::escape($featid) if $featid;
 	$gevo_link .= ";dsid$seqcount=".CGI::escape($dsid) if $dsid;
 	$gevo_link .= ";chr$seqcount=".CGI::escape($chr) if $chr;
-	$gevo_link .= ";dr$seqcount"."up=$drup" if $drup;
-	$gevo_link .= ";dr$seqcount"."down=$drdown" if $drdown;
+	$gevo_link .= ";dr$seqcount"."up=$drup" if defined $drup;
+	$gevo_link .= ";dr$seqcount"."down=$drdown" if defined $drdown;
 	$gevo_link .= ";gbaccn$seqcount=".CGI::escape($gbaccn) if $gbaccn;
 	$gevo_link .= ";gbstart$seqcount=$gbstart" if $gbstart;
 	$gevo_link .= ";gblength$seqcount=$gblength" if $gblength;
@@ -776,7 +776,7 @@ sub generate_image
 			    c=>$gfx,
 			    iw=>$iw,
 			    start=> $start,
-			    stop => $start + 1 + length($gbobj->sequence),
+			    stop => $stop,
 			    draw_chr=>1,
 			    draw_ruler=>1,
 			    draw_chr_end=>0,
@@ -793,16 +793,11 @@ sub generate_image
 			    draw_hi_qual=>$hiqual,
 			    padding=>$padding,
 			   );
+ #   print STDERR $gfx->_region_start ."--".$gfx->_region_stop."\n";
     $gfx->overlap_adjustment(1);
     $gfx->skip_duplicate_features(1);
     $gfx->DEBUG(0);
     $gfx->major_tick_labels(0);
-#    my $f1= CoGe::Graphics::Feature->new({start=>$start, order => 2, strand => 1});
-#    $f1->merge_percent(0);
-#    $gfx->add_feature($f1);
-#    my $f2= CoGe::Graphics::Feature->new({start=>$start, order => 2, strand => -1});
-#    $f2->merge_percent(0);
-#    $gfx->add_feature($f2);
     $graphic->process_nucleotides(c=>$gfx, seq=>$gbobj->sequence, layers=>{gc=>$show_gc, nt=>$show_nt});
     process_features(c=>$gfx, obj=>$gbobj, start=>$start, stop=>$stop, overlap_adjustment=>$overlap_adjustment, draw_model=>$draw_model);
     $eval_cutoff = process_hsps(
@@ -947,7 +942,7 @@ INSERT INTO image_info (iname, title, px_width,dsid, bpmin, bpmax) values ("$ima
 	#	    $anno =~ s/'|"//g;
 	$anno =~ s/'//g;
 	$anno =~ s/<br\/?>/&#10;/ig;	$anno =~ s/\n/&#10;/g;
-	$anno =~ s/[\[\]\(\)]//g;
+	$anno =~ s/[\[\]\(\)]/ /g;
 	#	    print STDERR $anno if $anno =~ /Location/;
 	#	    print STDERR $anno,"\n" if $anno =~ /01020/;
 	if (ref ($feat) =~ /gene/i)
@@ -956,22 +951,29 @@ INSERT INTO image_info (iname, title, px_width,dsid, bpmin, bpmax) values ("$ima
 	    my ($min_nt) = sort {$a<=>$b} map {@$_} @{$feat->segments}; 
 	    my $length_nt = $max_nt-$min_nt;
 	    my $length_pix = $xmax-$xmin;
-	    $type = "anchor" if ($feat->{anchor});
-#	      {
+	    if ($feat->{anchor})
+	      {
 #		my $bpmin = int(($set->{obj}->start+$feat->start-$set->{obj}->start+$feat->stop))/2;
 #		my $bpmax = $bpmin;
 #		my $xcoord = int(($xmax-$xmin)/2+$xmin);
-#		$statement = qq{
-#INSERT INTO image_data (name, type, xmin, xmax, ymin, ymax, bpmin,bpmax,image_id, image_track,pair_id, link, annotation, color) values ("$name", "anchor", $xcoord, $xcoord, $ymin, $ymax, $bpmin, $bpmax,$image_id, "$image_track",$pair_id, '$link', '$anno', '$color')
-#};
-#		print STDERR $statement unless $dbh->do($statement);
-#	      }
+		my $start = $feat->start;
+		my $stop = $feat->stop;
+		my $bpmin = $set->{obj}->start+$start-1;
+		my $bpmax = $set->{obj}->start+$stop-1;
+		my $xstart = sprintf("%.0f",$xmin+($start-$min_nt)/$length_nt*$length_pix);
+		my $xstop = sprintf("%.0f",$xmin+($stop-$min_nt)/$length_nt*$length_pix);
+
+		$statement = qq{
+INSERT INTO image_data (name, type, xmin, xmax, ymin, ymax, bpmin,bpmax,image_id, image_track,pair_id, link, annotation, color) values ("$name", "anchor", $xmin, $xmax, $ymin, $ymax, $bpmin, $bpmax,$image_id, "$image_track",$pair_id, '$link', '$anno', '$color')
+};
+		print STDERR $statement unless $dbh->do($statement);
+	      }
 	    foreach my $segment (@{$feat->segments})
 	      {
 		my ($start,$stop) = @$segment;
 #		print STDERR Dumper $segment if $type eq "anchor";
-		my $bpmin = $set->{obj}->start+$start;
-		my $bpmax = $set->{obj}->start+$stop;
+		my $bpmin = $set->{obj}->start+$start-1;
+		my $bpmax = $set->{obj}->start+$stop-1;
 		my $xstart = sprintf("%.0f",$xmin+($start-$min_nt)/$length_nt*$length_pix);
 		my $xstop = sprintf("%.0f",$xmin+($stop-$min_nt)/$length_nt*$length_pix);
 		$statement = qq{
@@ -1506,7 +1508,6 @@ sub get_obj_from_genome_db
     $seq = CoGeX::Feature->reverse_complement($seq) if $rev;
 
     my $t3 = new Benchmark;
-
     my $obj= new CoGe::Accessory::GenBank({
 					   accn=>$accn,
 					   locus=>$accn,
