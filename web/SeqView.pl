@@ -262,6 +262,8 @@ sub color
 #       my $rc = $opts{'rc'};
       my $upstream = $opts{'upstream'};
       my $downstream = $opts{'downstream'};
+      $upstream = 0 if $upstream < 0;
+      $downstream = 0 if $downstream < 0;
       my $up;
       my $down;
       my $main;
@@ -269,38 +271,25 @@ sub color
       $nl1 = 0;
       $up = substr($seq, 0, $upstream);
       while ($up=~/\n/g)
-      	{$nl1++;}
+	{$nl1++;}
       my $check = substr($seq, $upstream, $nl1);
-
+      
       $nl1++ if $check =~ /\n/;
       $upstream += $nl1;
       $up = substr($seq, 0, $upstream);
-      
       my $nl2 = 0;
       $down = substr($seq, ((length $seq)-($downstream)), length $seq);
       while ($down=~/\n/g)
-      	{$nl2++;}
-      $check = substr($seq, ((length $seq)-($downstream+$nl2)), $nl2);
+	{$nl2++;}
+      my $check = substr($seq, ((length $seq)-($downstream+$nl2)), $nl2);
       
       $nl2++ if $check =~ /\n/;
       $downstream += $nl2;
       $down = substr($seq, ((length $seq)-($downstream)), $downstream);
-	   
-	 $up = lc($up);
-	 $down = lc($down);
-
-# 	   unless ($rc)
-#       {
-#       $down = qq{<u>$down</u>};
-#       $up = qq{<u>$up</u>};
-#       }
-#       else
-#       {
-#       $down = qq{<u>$down</u>};
-#       $up = qq{<u>$up</u>};
-#       }
+      $up = lc($up);
+      $down = lc($down);
       $main = substr($seq, $upstream, (((length $seq)) - ($downstream+$upstream)));
-	  $main = uc($main);
+      $main = uc($main);
       $seq = join("", $up, $main, $down);
       return $seq;
     }
