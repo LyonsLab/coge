@@ -979,8 +979,8 @@ sub fasta
     my $downstream = $opts{downstream};
     my $sep = $opts{sep}; #returns the header and sequence as separate items.
     my $head = ">".$self->dataset->organism->name."(v".$self->version.")".", Name: ".(join (", ", $self->names)).", Type: ".$self->type->name.", Chromosome: ".$self->chromosome.", ".$self->genbank_location_string;
-    $head .= " +up: $upstream" if $upstream;
-    $head .= " +down: $downstream" if $downstream;
+    $head .= " +left: $upstream" if $upstream;
+    $head .= " +right: $downstream" if $downstream;
     $head .= " (reverse complement)" if $rc;
     $Text::Wrap::columns=$col;
     my $fasta;
