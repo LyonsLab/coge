@@ -1733,7 +1733,7 @@ sub _draw_features
         my $sy;
 	if ($feat->fill)
 	  {
-	    $sy = $feat->strand =~ /-/ ? $c+2 : $c-$self->padding;
+	    $sy = $feat->strand =~ /-/ ? $c+2 : $c-$self->padding-$self->feature_height;
 	  }
 	elsif ($feat->label_location && $feat->label_location =~ /bot/)
 	  {
@@ -2050,7 +2050,7 @@ sub _draw_ruler
     return unless $self->draw_ruler;
     my $w = $self->iw; #width of image
     my $xb = $self->_region_start < 1 ? $w*abs(1-$self->_region_start)/($self->_region_length): 0; #x position begin
-    my $xe = $self->_region_stop > $self->chr_length ? $w-$w*($self->_region_stop - $self->chr_length-1)/($self->_region_length) : $w; #x position end
+    my $xe = $self->_region_stop > $self->chr_length ? $w-$w*($self->_region_stop - $self->chr_length)/($self->_region_length) : $w; #x position end
     return unless ($xe>0);
     $gd->line($xb,$c,$xe,$c,$self->get_color($self->ruler_color));
     my $mtyb = $c-$self->ruler_height/2; #major tick y begin
