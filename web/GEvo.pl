@@ -2272,8 +2272,8 @@ sub gen_hsp_colors
 sub color_pallet
   {
     my %opts = @_;
-    my $start = $opts{start} || [255,50,50];
-    my $offset = $opts{offset} || 100;
+    my $start = $opts{start} || [255,100,100];
+    my $offset = $opts{offset} || 50;
     my $num_seqs = $opts{num_seqs} || $NUM_SEQS;
     my $prefs = $opts{prefs} || load_settings(user=>$USER, page=>$PAGE_NAME);
     $prefs = {} unless $prefs;
@@ -2285,10 +2285,11 @@ sub color_pallet
 	       GREEN=>$start->[1],
 	       BLUE=>$start->[2]);
 #    push @colors, \%set;
+    my $temp = [@$start];
     for (my $i = 1; $i <= num_colors($num_seqs); $i++)
       {
 	my @color;
-	@color = @$start;
+	@color = @$temp;
 	@color = ($prefs->{"r".$i}, $prefs->{"g".$i}, $prefs->{"b".$i}) if defined $prefs->{"r".$i} && defined $prefs->{"g".$i} && defined $prefs->{"b".$i};
 	push @colors, {
 		       HSP_NUM=>$i,
@@ -2298,30 +2299,22 @@ sub color_pallet
 		      };
 	if ($i%3)
 	  {
-	    $start = [$start->[2], $start->[0], $start->[1]];
+	    $temp = [map {int($_/1.5)} @color];
 	  }
 	else
 	  {
-	    $start = [$start->[2], int($start->[2]/2), $start->[0]] unless !$i%6;
+	    $start = [$start->[2], $start->[0], $start->[1]];
+	    $temp =[@$start];
 	  }
-	unless ($i%6)
+	unless ($i%9)
 	  {
-#	    $start->[2] -=$offset;
-#	    $start->[0] += 255 if $start->[0]<0;
-#	    my $pass = 0;
-#	    while (!$pass)
-#	      {
-		foreach my $color (@$start)
-		  {
-		    
-		    $color -= $offset;
-		    $color += 255 if $color < 0;
-		    push @color, $color;
-		  }
-#		my $total =0;
-#		map {$total+=$_} @color;
-#		$pass = 1 if $total < 600;
-#	      }
+	    $start = [$start->[0], int($start->[0]/1.5), $start->[1]];
+	    $temp =[@$start];
+	  }
+	unless ($i%18)
+	  {
+	    $start = [$start->[0], $start->[0], int($start->[0]/4)];
+	    $temp =[@$start];
 	  }
       }
     return wantarray ? @colors : \@colors;
