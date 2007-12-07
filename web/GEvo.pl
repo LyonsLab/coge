@@ -2272,32 +2272,23 @@ sub gen_hsp_colors
 sub color_pallet
   {
     my %opts = @_;
-    my $start = $opts{start} || [255,100,100];
-    my $offset = $opts{offset} || 75;
+    my $start = $opts{start} || [255,50,50];
+    my $offset = $opts{offset} || 100;
     my $num_seqs = $opts{num_seqs} || $NUM_SEQS;
     my $prefs = $opts{prefs} || load_settings(user=>$USER, page=>$PAGE_NAME);
     $prefs = {} unless $prefs;
     $start = [$prefs->{r1}, $prefs->{g1}, $prefs->{b1}] if defined $prefs->{r1} && defined $prefs->{g1} && defined $prefs->{b1};
+
     my @colors;
     my %set = (HSP_NUM=>1,
 	       RED=>$start->[0],
 	       GREEN=>$start->[1],
 	       BLUE=>$start->[2]);
-    push @colors, \%set;
-    for (my $i = 2; $i <= num_colors($num_seqs); $i++)
+#    push @colors, \%set;
+    for (my $i = 1; $i <= num_colors($num_seqs); $i++)
       {
 	my @color;
-	unless ($i%5)
-	  {
-	    $start = [$start->[1], $start->[2], $start->[0]];
-	  }
-
-	foreach my $color (@$start)
-	  {
-	    $color -= $offset;
-	    $color += 255 if $color < 0;
-	    push @color, $color;
-	  }
+	@color = @$start;
 	@color = ($prefs->{"r".$i}, $prefs->{"g".$i}, $prefs->{"b".$i}) if defined $prefs->{"r".$i} && defined $prefs->{"g".$i} && defined $prefs->{"b".$i};
 	push @colors, {
 		       HSP_NUM=>$i,
@@ -2305,6 +2296,33 @@ sub color_pallet
 		       GREEN=>$color[1],
 		       BLUE=>$color[2],
 		      };
+	if ($i%3)
+	  {
+	    $start = [$start->[2], $start->[0], $start->[1]];
+	  }
+	else
+	  {
+	    $start = [$start->[2], int($start->[2]/2), $start->[0]] unless !$i%6;
+	  }
+	unless ($i%6)
+	  {
+#	    $start->[2] -=$offset;
+#	    $start->[0] += 255 if $start->[0]<0;
+#	    my $pass = 0;
+#	    while (!$pass)
+#	      {
+		foreach my $color (@$start)
+		  {
+		    
+		    $color -= $offset;
+		    $color += 255 if $color < 0;
+		    push @color, $color;
+		  }
+#		my $total =0;
+#		map {$total+=$_} @color;
+#		$pass = 1 if $total < 600;
+#	      }
+	  }
       }
     return wantarray ? @colors : \@colors;
   }
@@ -2732,8 +2750,6 @@ sub feat_search
     my $dsid=$opts{dsid};
     my $num = $opts{num};
     my $featid = $opts{featid};
-#    print STDERR "feat_search\n";
-#    print STDERR Dumper \%opts;
     return qq{<input type="hidden" id="featid$num">\n} unless $dsid;
     my @feats;
     my $rs = $coge->resultset('Feature')->search(
@@ -2747,22 +2763,39 @@ sub feat_search
 						  }
 						 );
     my %seen;
+    my @genes; #get genes on top of list!
     while( my $f =$rs->next())
       {
 	next unless $f->dataset->id == $dsid;
-	push @feats, $f unless $seen{$f->id};
+	unless ($seen{$f->id})
+	  {
+	    if ($f->type->name eq "gene")
+	      {
+		push @genes, $f;
+	      }
+	    else
+	      {
+		push @feats, $f;
+	      }
+	  }
 	$seen{$f->id}=1;
       }
+    print STDERR join ", ", map {$_->id} @feats;
+    print STDERR "\n";
+    @feats = sort {$a->type->name cmp $b->type->name} @feats;
+    unshift @feats, @genes if @genes;
+    print STDERR join ", ", map {$_->id} @feats;
+    print STDERR "\n";
     my $html;
     if (@feats)
       {
+	
 	$html .= qq{
 <SELECT name = "featid$num" id = "featid$num" >
   };
-	foreach my $feat (sort {$a->type->name cmp $b->type->name} @feats)
+	foreach my $feat (@feats)
 	  {
 	    my $loc = "(".$feat->type->name.") Chr:".$feat->locations->next->chromosome." ".$feat->start."-".$feat->stop;
-	    #working here, need to implement genbank_location_string before I can progress.  Need 
 	    $loc =~ s/(complement)|(join)//g;
 	    my $fid = $feat->id;
 	    $html .= qq {  <option value="$fid"};
