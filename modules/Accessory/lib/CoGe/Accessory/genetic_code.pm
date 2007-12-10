@@ -1203,4 +1203,168 @@ sub all_codes
     my $self = shift;
     return $code;
   }
+
+sub html_code_table
+    {
+      my $self = shift;
+      my %opts = @_;
+      my $data = $opts{data};
+      my $max_val = $opts{max_val};
+      my $trans_table = $opts{trans_table};
+      my $code = $opts{code};
+      $code = $self->code($trans_table) unless $code;
+      $code = $code->{code} if $code->{code};
+      ($max_val) = sort {$b <=> $a} map {$data->{$_}} keys %{$code};
+      my $html;
+      $html .= "<table><tr><td>";
+#      $html .= "<table>";
+      my $count = 0;
+      foreach my $codon (sort { $self->sort_nt1(substr($a, 0, 1)) <=> $self->sort_nt1(substr($b,0, 1)) || $self->sort_nt2(substr($a,1,1)) <=> $self->sort_nt2(substr($b,1,1)) || $self->sort_nt3(substr($a,2,1)) <=> $self->sort_nt3(substr($b,2,1)) } keys %{$code})
+	{
+	  my $tmp = substr($codon, 0, 1);
+	  my $current_val = sprintf("%.2f",100*$data->{$codon});
+	  my $color = $self->color_by_usage(100*$max_val, $current_val);
+	  my $str = "<span style=\"background-color: rgb($color, 255, $color);\" >".$codon."(".$code->{$codon}.") ".$current_val."%</span>";
+	  
+	  unless ($count % 4)
+	    {
+	      $html .= "<td size=1 style=\"background-color: rgb(200,200,200)\"><td>" if $count && $count != 16;
+	    }
+	  if ($count == 16)
+	    {
+	      $count = 0;
+#	      $html .= "</table>";
+	      $html .= "<tr size=1><td colspan=7 style=\"background-color: rgb(200,200,200)\"><tr><td>";
+	    }
+	  unless ($count % 4)
+	    {
+#	      $html .= "<table><tr><td>" if $count; 
+	    }
+	  $html .= $str."<br>";
+#	  $html .= $str;
+	  $count++;
+
+	}
+#      $html .= "</table>";
+      $html .= "</table>";
+      return $html;
+    }
+sub sort_nt1
+  {
+    my $self = shift;
+    my $chr = uc(shift);
+
+    $chr = substr($chr, -1,1) if length($chr)>1;
+    my $val = 0;
+    if ($chr eq "G")
+      {
+	$val = 1;
+      }
+    elsif ($chr eq "A")
+      {
+	$val = 2;
+      }
+    elsif ($chr eq "T")
+      {
+	$val = 3;
+      }
+    return $val;
+  }
+
+sub sort_nt2
+  {
+    my $self = shift;
+    my $chr = uc(shift);
+
+    $chr = substr($chr, -1,1) if length($chr)>1;
+    my $val = 0;
+    if ($chr eq "G")
+      {
+	$val = 1;
+      }
+    elsif ($chr eq "A")
+      {
+	$val = 2;
+      }
+    elsif ($chr eq "T")
+      {
+	$val = 3;
+      }
+    return $val;
+  }
+
+sub sort_nt3
+  {
+    my $self = shift;
+    my $chr = uc(shift);
+
+    $chr = substr($chr, -1,1) if length($chr)>1;
+    my $val = 0;
+    if ($chr eq "G")
+      {
+	$val = 1;
+      }
+    elsif ($chr eq "T")
+      {
+	$val = 2;
+      }
+    elsif ($chr eq "C")
+      {
+	$val = 3;
+      }
+    return $val;
+  }
+
+sub color_by_usage
+  {
+    my $self = shift;
+    my ($max,$value, $opt) = @_;
+    $opt = 255 unless $opt;
+    return $opt unless $max;
+    my $g = $opt*(($max - $value) / $max);
+    return int($g + .5);
+  }
+
+sub sort_aa_by_gc
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $trans_table = $opts{trans_table};
+    my $code = $opts{code};
+    $code = $self->code($trans_table) unless $code;
+    my %aa_sort = map {$_,{}} values %{$code->{code}};
+    foreach my $codon (keys %{$code->{code}})
+      {
+	my $gc = $codon =~ tr/GCgc/GCgc/;
+	my $at = $codon =~ tr/ATat/ATat/;
+	$aa_sort{$code->{code}{$codon}}{AT}+=$at;
+	$aa_sort{$code->{code}{$codon}}{GC}+=$gc;
+      }
+    %aa_sort = map {$_,($aa_sort{$_}{GC}/($aa_sort{$_}{AT}+$aa_sort{$_}{GC}))} keys %aa_sort;
+    return \%aa_sort;
+  }
+
+sub html_aa
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $trans_table = $opts{trans_table};
+    my $code = $opts{code};
+    my $data = $opts{data};
+    $code = $self->code($trans_table) unless $code;
+    my $aa_sort = $self->sort_aa_by_gc(code=>$code, trans_table=>$trans_table);
+    my ($max_aa) = sort {$b<=>$a} map{$data->{$_}} keys %$aa_sort;
+    my $html;
+    $html .= "<table>";
+    foreach (sort {$aa_sort->{$b} <=> $aa_sort->{$a} || $a cmp $b}keys %$aa_sort)
+      {	
+	my $current_val = sprintf("%.2f",100*$data->{$_});
+	my $color = $self->color_by_usage(100*$max_aa,$current_val);
+	$html .= "<tr style=\"background-color: rgb($color,255,$color)\"><td>$_ (GC:".sprintf("%.0f",100*$aa_sort->{$_})."%)<td>".$current_val."%";
+      }
+    $html .= "</table>";
+    return $html;
+  }
+
+
 1;
