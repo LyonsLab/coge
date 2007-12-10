@@ -60,7 +60,7 @@ function launch_viewer (dsd, chr) {
  z = $('#z').val();
  if (z > 12) {z=12;}
  link =  "GeLo.pl?z="+z+"&x="+x+"&ds="+dsd+"&chr="+chr;
- window.location=link;
+ window.open(link);
 }
 function timing(val){
   var searchterm;
