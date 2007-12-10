@@ -573,7 +573,7 @@ sub add_feature
 	$feat->_overlap_pos(1) unless $feat->_overlap_pos; #placement for overlapping features
 	$feat->layer(1) unless $feat->layer;
 	$feat->type("unknown") unless $feat->type;
-	unless ($feat->order)
+	unless (defined $feat->order)
 	  {
 	    my $last_feat = $self->get_feats(last_order=>1, strand=>$feat->strand, fill=>$feat->fill);
 	    my $order = $last_feat ? $last_feat->order()+1 : 1;
@@ -1710,6 +1710,8 @@ sub _draw_features
     print STDERR "Image used: ".$self->_image_h_used."  Image Height: ".$self->ih."  Center: $c\n" if $self->DEBUG;
     foreach my $feat ( (sort {$b->type cmp $a->type} $self->get_feature(fill=>1)), sort {$a->overlay <=> $b->overlay || $b->start <=> $a->start} $self->get_features(fill=>0))
       {
+	
+#	next if $feat->track == 0;
 	#skip drawing features that are outside (by two times the range being viewed) the view
 	if ($feat->start)
 	  {
@@ -1881,8 +1883,8 @@ sub _draw_feature_slow
       }
     $xmin = sprintf("%.0f",$fs);
     $ymin = sprintf("%.0f",$y);
-    $xmax = sprintf("%.0f",$fs+$fw);
-    $ymax = sprintf("%.0f",$y+$ih);
+    $xmax = sprintf("%.0f",$fs+$fw-2);
+    $ymax = sprintf("%.0f",$y+$ih-1);
     
     my $size;
     if ($self->fill_labels && $feat->fill) {$size=$fw >= 15 ? 15 : $fw;}
@@ -1966,10 +1968,10 @@ sub _draw_feature_fast
   
 #	$self->gd->copyResized($feat->gd, $fs, $y, 0, 0, $fw, $ih, $feat->iw, $feat->ih);
       }
-	$xmin = sprintf("%.0f",$fs);
-	$ymin = sprintf("%.0f",$y);
-	$xmax = sprintf("%.0f",$fs+$fw);
-	$ymax = sprintf("%.0f",$y+$ih);
+    $xmin = sprintf("%.0f",$fs);
+    $ymin = sprintf("%.0f",$y);
+    $xmax = sprintf("%.0f",$fs+$fw-2);
+    $ymax = sprintf("%.0f",$y+$ih-1);
     
     my $size;
     if ($self->fill_labels && $feat->fill) {$size=$fw >= 15 ? 15 : $fw;}
