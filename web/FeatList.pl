@@ -9,8 +9,9 @@ use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use HTML::Template;
 use URI::Escape;
+use Spreadsheet::WriteExcel;
 
-use vars qw( $TEMPDIR $USER $DATE $BASEFILE $coge $FORM);
+use vars qw( $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb $FORM);
 
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
@@ -25,6 +26,7 @@ my $pj = new CGI::Ajax(
 		       gen_html=>\&gen_html,
 		       feats_parse=>\&feats_parse,
 		       export_fasta_file=>\&export_fasta_file,
+		       generate_excel_file=>\&generate_excel_file,
 			);
 $pj->js_encode_function('escape');
 print $pj->build_html($FORM, \&gen_html);
@@ -125,10 +127,8 @@ sub generate_table
   sub feats_parse #Send to GEvo
   {
     my $accn_list = shift;
-    #print STDERR $accn_list,"\n";
     $accn_list =~ s/^,//;
     $accn_list =~ s/,$//;
-    my @list;
     my $url = "/CoGe/GEvo.pl?";
     my $count = 1;
     #print STDERR $url,"\n";
@@ -155,4 +155,47 @@ sub generate_table
 	}
 	$url =~s/&$//;
 	return $url;
+  }
+  
+sub generate_excel_file
+  {
+  	my $accn_list = shift;
+    $accn_list =~ s/^,//;
+    $accn_list =~ s/,$//;
+  	$cogeweb = initialize_basefile(prog=>"FeatList");
+  	my $basename = $cogeweb->basefile;
+  	my ($filename) = $basename =~ /^\/opt\/apache\/CoGe\/tmp\/(FeatList_\w+)$/;
+  	print STDERR $filename,"\n";
+  	my $workbook = Spreadsheet::WriteExcel->new("$TEMPDIR/Excel_$filename.xls");
+    $workbook->set_tempdir("$TEMPDIR");
+    my $worksheet = $workbook->add_worksheet();
+    my $i = 1;
+       	 
+   	 $worksheet->write(0,0,"Feature Name");
+   	 $worksheet->write(0,1,"Type");
+   	 $worksheet->write(0,2,"Location");
+   	 $worksheet->write(0,3,"Strand");
+   	 $worksheet->write(0,4,"Chromosome");
+   	 $worksheet->write(0,5,"Organism (version)");
+   	 $worksheet->write(0,6,"More information");
+   	
+   	foreach my $featid (split /,/,$accn_list)
+    {
+   	   my ($feat) = $coge->resultset("Feature")->find($featid);
+   	   next unless $feat;
+   	   my ($name) = sort $feat->names;
+   	   my $app = $feat->annotation_pretty_print();
+   	   $worksheet->write($i,0,"http://toxic.berkeley.edu/CoGe/FeatView.pl?accn=$name",$name);
+   	   $worksheet->write($i,1,$feat->type->name);
+   	   $worksheet->write($i,2,$feat->start."-".$feat->stop);
+   	   $worksheet->write($i,3,$feat->strand);
+   	   $worksheet->write($i,4,$feat->chr);
+   	   $worksheet->write($i,5,$feat->organism->name."(v ".$feat->version.")");
+   	   $worksheet->write($i,6,$app);
+   	   $i++;
+   	}
+   	
+   	$workbook->close() or die "Error closing file: $!";
+   	#print STDERR "tmp/Excel_$filename.xls\n";
+   	return "tmp/Excel_$filename.xls";
   }
