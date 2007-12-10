@@ -1,0 +1,17 @@
+<table>
+ <tr><td>Display type:  
+ <td>
+  <select id = code_layout>
+    <option value=0>Table</option>
+    <option value=1>Code</option>
+  </select>
+ <tr>
+ <td>Bin size: 
+ <td><input type="textbox" size=3 id="bin_size" value="5">
+</table>
+<TMPL_VAR NAME="GROUPS">
+<input type="button" value="Generate Chart" onclick="gen_data(['args__code_layout','code_layout', 'args__bin_size','bin_size', 'groups'],['data'])">
+<div id="data">
+<TMPL_VAR NAME=DATA>
+</TMPLE_VAR>
+</div>
