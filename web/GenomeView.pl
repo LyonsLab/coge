@@ -376,117 +376,16 @@ sub get_codon_usage_for_chromosome
 	  }
 	print STDERR ".($feat_count)" if !$feat_count%10;
       }
-#    foreach my $tri (keys %code)
-#      {
-#	$codons{$tri} = 0 unless $codons{$tri};
-#      }
-    my $count = 0;
-    my $html = "Codon Usage: $code_type<table>";
-     my ($max_codon) = sort {$b<=>$a} values %codons;
-    $max_codon = sprintf("%.2f",100*$max_codon/$codon_total);
-    foreach (sort { sort_nt2(substr($a, 0, 1)) <=> sort_nt2(substr($b,0, 1)) || sort_nt2(substr($a,1,1)) <=> sort_nt2(substr($b,1,1)) || sort_nt(substr($a,2,1)) <=> sort_nt(substr($b,2,1)) } keys %$code)
-      {
-	my $current_val = sprintf("%.2f",100*$codons{$_}/$codon_total);
-	 my $color = color_by_usage($max_codon, $current_val);
-	my $str = "<tr style=\"background-color: rgb($color,255,$color)\" ><td>".$_."(".$code->{$_}.")<td>".$codons{$_}."<td>(".$current_val."%)";
-	delete $codons{$_};
-	$html .= "</table><tr><td><table>" unless $count;
-	if ($count%4)
-	  {
-	  }
-	else
-	  {
-	    $html .= "</table><td nospan><table>"; 
-	  }
+    %codons = map {$_,$codons{$_}/$codon_total} keys %codons;
+    %aa = map {$_,$aa{$_}/$aa_total} keys %aa;
+    my $html = "Codon Usage: $code_type";
+    $html .= CoGe::Accessory::genetic_code->html_code_table(data=>\%codons, code=>$code);
 
-	$html .= $str;
-	$count++;
-	$count = 0 if $count == 16;
-      }
-     $count = 0;
-     foreach (sort keys %codons)
-       {
-	 my $current_val = sprintf("%.2f",100*$codons{$_}/$codon_total);
-	 my $color = color_by_usage($max_codon, $current_val);
- 	my $str = "<tr style=\"background-color: rgb($color,255,$color)\" ><td>".$_."<td>".$codons{$_}."<td>(".$current_val."%)";
-	$html .= "</table><tr><td><table>" unless $count;
- 	if ($count%4)
- 	  {
- 	  }
- 	else
- 	  {
- 	    $html .= "</table><td nospan><table>"; 
- 	  }
- 	$html .= $str;
- 	$count++;
- 	$count = 0 if $count == 16;
-      }
-    $html .="</table></table>";
-     my ($max_aa) = sort {$b<=>$a} values %aa;
-    $max_aa = sprintf("%.2f",100*$max_aa/$aa_total);
-    $html .= "Predicted amino acid usage using $code_type<table>";
-    my %aa_sort = map {$_,{}} keys %aa;
-    foreach my $codon (keys %$code)
-      {
-	my $gc = $codon =~ tr/GCgc/GCgc/;
-	my $at = $codon =~ tr/ATat/ATat/;
-	$aa_sort{$code->{$codon}}{AT}+=$at;
-	$aa_sort{$code->{$codon}}{GC}+=$gc;
-      }
-    %aa_sort = map {$_,($aa_sort{$_}{GC}/($aa_sort{$_}{AT}+$aa_sort{$_}{GC}))} keys %aa_sort;
-
-    foreach (sort {$aa_sort{$b} <=> $aa_sort{$a} || $a cmp $b}keys %aa)
-      {	
-	my $current_val = sprintf("%.2f",100*$aa{$_}/$aa_total);
-	my $color = color_by_usage($max_aa,$current_val);
-	$html .= "<tr style=\"background-color: rgb($color,255,$color)\"><td>$_ (GC:".sprintf("%.0f",100*$aa_sort{$_})."%)<td>".$aa{$_}."<td>(".$current_val."%)";
-  }
-    $html .= "</table>";
+    $html .= "Predicted amino acid usage using $code_type";
+    $html .= CoGe::Accessory::genetic_code->html_aa(data=>\%aa);
     return $html;
   }
 
-
-sub sort_nt
-  {
-    my $chr = uc(shift);
-
-    $chr = substr($chr, -1,1) if length($chr)>1;
-    my $val = 0;
-    if ($chr eq "C")
-      {
-	$val = 1;
-      }
-    elsif ($chr eq "G")
-      {
-	$val = 2;
-      }
-    elsif ($chr eq "A")
-      {
-	$val = 3;
-      }
-    return $val;
-  }
-
-sub sort_nt2
-  {
-    my $chr = uc(shift);
-
-    $chr = substr($chr, -1,1) if length($chr)>1;
-    my $val = 0;
-    if ($chr eq "A")
-      {
-	$val = 1;
-      }
-    elsif ($chr eq "G")
-      {
-	$val = 2;
-      }
-    elsif ($chr eq "C")
-      {
-	$val = 3;
-      }
-    return $val;
-  }
 
 sub commify
     {
@@ -494,12 +393,5 @@ sub commify
       $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
       return scalar reverse $text;
     }
-sub color_by_usage
-	{
-		my ($max,$value) = @_;
-		my $g = 255*(($max - $value) / $max);
-		return int($g + .5);
-	}
-
 
 1;
