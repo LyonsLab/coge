@@ -225,7 +225,7 @@ function enlarge_picture_window(id) {
   $('#big_picture').html(html).css("left",''+left_padding).width(image_width).slideDown(pageObj.speed);
 }
   
-function show_seq(seq,name,num,dsid,chr,start,stop) {
+function show_seq(seq,name,num,dsid,chr,start,stop, rc) {
   if (num == 1) which_seq = "Query";
   else if (num == 2) which_seq = "Subject";
   else which_seq = "Alignment";
@@ -248,7 +248,7 @@ function show_seq(seq,name,num,dsid,chr,start,stop) {
   //check to see if SeqView is an option, then display link
   var regex = /^\d+$/;
   if (regex.test(dsid) && dsid != 0 && which_seq == "Subject") {
-    html = html + "<br><a target='_blank' href='/CoGe/SeqView.pl?dsid="+dsid+"&chr="+chr+"&start="+start+"&stop="+stop+"'>Click to view sequence in SeqView</a>";
+    html = html + "<br><a target='_blank' href='/CoGe/SeqView.pl?dsid="+dsid+"&chr="+chr+"&start="+start+"&stop="+stop+"&rc="+rc+">Click to view sequence in SeqView</a>";
   }
   var window_width = $(document).width();
   var left_padding;
