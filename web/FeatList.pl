@@ -29,9 +29,9 @@ my $pj = new CGI::Ajax(
 		       generate_excel_file=>\&generate_excel_file,
 			);
 $pj->js_encode_function('escape');
-print $pj->build_html($FORM, \&gen_html);
-#print $FORM->header;
-#print gen_html();
+#print $pj->build_html($FORM, \&gen_html);
+print $FORM->header;
+print gen_html();
 
 sub gen_html
   {
@@ -67,6 +67,9 @@ sub gen_body
       {
 	push @$feat_list, $item if $item =~ /^\d+$/;
       }
+    my $dsid = $form->param('dsid') if $form->param('dsid');
+    my $ftid = $form->param('ftid') if $form->param('ftid');
+    push @$feat_list, @{get_fids_from_dataset(dsid=>$dsid, ftid=>$ftid)} if $dsid;
     my $table = generate_table(feature_list=>$feat_list);
     if ($table)
       {
@@ -78,7 +81,22 @@ sub gen_body
 	return "No feature ids were specified.";
       }
   }
-  
+
+sub get_fids_from_dataset
+  {
+    my %opts = @_;
+    my $dsid = $opts{dsid};
+    my $ftid = $opts{ftid};
+    my $search = {dataset_id=>$dsid};
+    my $join={};
+    if ($ftid)
+      {
+	$search->{feature_type_id}=$ftid;
+      }
+    my @ids = map{$_->id}$coge->resultset('Feature')->search($search);
+    return \@ids;
+  }
+
 sub generate_table
   {
     my %opts = @_;
