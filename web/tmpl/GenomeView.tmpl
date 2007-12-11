@@ -100,14 +100,14 @@ function search_bar(div_id){
 
 function restore_search_bar(div_id){
   if(! $('#'+div_id).val()) {
-    //get_organism_name_chain($('#org_text').val());
-    //alert(pageObj.search);
-    //(pageObj.search != 'undefined' && pageObj.search != "Search") 
-//    get_organism_name_chain("");
-//    timing(1);
     $('#'+div_id).val("Search").css({fontStyle: "italic"});
   }
 }
+
+function changeColor(id, color) {
+  document.getElementById(id).style.color = color;
+}
+
 
 </script>
 <TABLE>
