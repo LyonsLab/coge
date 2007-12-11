@@ -1081,8 +1081,8 @@ sub get_hsp_info
      $align_str = "<pre>$align_str</pre>";
      
      $template->param(QUERY_SEQ=>qq{<a href="#" onclick="show_seq('$query_seq','$query_name',1,'seqObj','seqObj','}.$qstart."','".$qstop.qq{')">Click for Query Sequence</a>});
-     
-     $template->param(SUB_SEQ=>qq{<a href="#" onclick="show_seq('$sub_seq','$subject_name',2,'$sub_dsid','$sub_chr','}.$sstart."','".$sstop.qq{')">Click for Subject Sequence</a>});
+     my $rc = $strand =~ /-/ ? 1 : 0;
+     $template->param(SUB_SEQ=>qq{<a href="#" onclick="show_seq('$sub_seq','$subject_name',2,'$sub_dsid','$sub_chr','}.$sstart."','".$sstop.qq{','$rc')">Click for Subject Sequence</a>});
      
      $template->param(ALIGNMENT=>qq{<a href="#" onclick="show_seq('$align_str','HSP No. $hsp_num',0,0,0,0)">Click for Alignment Sequence</a>});
      
@@ -1624,7 +1624,7 @@ sub generate_excel_feature_file
    	
    	$workbook->close() or die "Error closing file: $!";
    	 
-   	return "tmp/Excel_$filename.xls"
+   	return "tmp/Excel_$filename.xls";
   }
    	 
 sub generate_tab_deliminated
