@@ -87,6 +87,7 @@ sub gen_body
     my $start = $form->param('start');
     my $stop = $form->param('stop');
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SeqView.tmpl');
+    $template->param(RC=>$rc);
     $template->param(JS=>1);
     $template->param(SEQ_BOX=>1);
     if ($featid)
