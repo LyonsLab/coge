@@ -5,6 +5,7 @@ use CGI::Carp 'fatalsToBrowser';
 use CGI::Ajax;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
+use CoGe::Accessory::genetic_code;
 use CoGe::Accessory::Restricted_orgs;
 use HTML::Template;
 use Data::Dumper;
@@ -263,17 +264,8 @@ sub gen_body
 
     $template->param(ACCN=>$ACCN);
     $template->param(FEAT_TYPE=> get_feature_types());
-#    my @orgs;
-#    ($USER) = CoGe::Accessory::LogUser->get_user();
-#    my $restricted_orgs = restricted_orgs(user=>$USER);
-#    foreach my $org ($coge->resultset('Organism')->all)
-#      {
-#	push @orgs, $org unless $restricted_orgs->{$org->name};
-#      }
-#    $template->param(ORG_LOOP=> [{ORG=>"<OPTION VALUE=0>All</OPTION>"},map {{ORG=>"<OPTION value=\"".$_->id."\">".$_->name."</OPTION>"}} sort {uc($a->name) cmp uc($b->name)} @orgs]);
     $template->param(ORG_LIST=>get_orgs());
     my $html = $template->output;
-#    $html =~ s/(>gene<\/OPTION)/ SELECTED$1/; 
     return $html;
   }
 
@@ -397,57 +389,16 @@ sub codon_table
     return unless $featid;
     my ($feat) = $coge->resultset('Feature')->find($featid);
     my ($codon, $code_type) = $feat->codon_frequency(counts=>1);
-    my $codon_total = 0;
-    grep {$codon_total+=$_} values %$codon;
-    my $count = 0;
     my %aa;
-    my $aa_total=0;
     my ($code) = $feat->genetic_code;
     foreach my $tri (keys %$code)
       {
 	$aa{$code->{$tri}}+=$codon->{$tri};
-	$aa_total+=$codon->{$tri};
       }
-    my $html = "Codon Usage: $code_type<table>";
-    foreach (sort { sort_nt2(substr($a, 0, 1)) <=> sort_nt2(substr($b,
-    0, 1)) || sort_nt2(substr($a,1,1)) <=> sort_nt2(substr($b,1,1)) ||
-    sort_nt(substr($a,2,1)) <=> sort_nt(substr($b,2,1)) } keys %$code)
-      {
-	my $str = "<tr><td>".$_."(".$code->{$_}.")<td>".$codon->{$_}."<td>(".sprintf("%.2f",100*$codon->{$_}/$codon_total)."%)";
-	delete $codon->{$_};
-	$html .= "</table><tr><td><table>" unless $count;
-	if ($count%4)
-	  {
-	  }
-	else
-	  {
-	    $html .= "</table><td nospan><table>"; 
-	  }
-
-	$html .= $str;
-	$count++;
-	$count = 0 if $count == 16;
-      }
-     $count = 0;
-     foreach (sort keys %$codon)
-       {
- 	my $str = "<tr><td>".$_."<td>".$codon->{$_}."<td>(".sprintf("%.2f",100*$codon->{$_}/$codon_total)."%)";
-	$html .= "</table><tr><td><table>" unless $count;
- 	if ($count%4)
- 	  {
- 	  }
- 	else
- 	  {
- 	    $html .= "</table><td nospan><table>"; 
- 	  }
- 	$html .= $str;
- 	$count++;
- 	$count = 0 if $count == 16;
-      }
-    $html .="</table></table>";
-    $html .= "(Predicted amino acid usage for $code_type genetic code)<table>";
-    $html .= join ("<tr>",map  {"<td>$_<td>".$aa{$_}."<td>(".sprintf("%.2f",100*$aa{$_}/$aa_total)."%)"} sort keys %aa);
-    $html .= "</table>";
+    my $html = "Codon Usage: $code_type";
+    $html .= CoGe::Accessory::genetic_code->html_code_table(data=>$codon, code=>$code, counts=>1);
+    $html .= "Predicted amino acid usage for $code_type genetic code:";
+    $html .= CoGe::Accessory::genetic_code->html_aa(data=>\%aa, counts=>1);
     return $html;
   }
 
@@ -457,52 +408,8 @@ sub protein_table
     my $featid = $args{featid};
     my ($feat) = $coge->resultset('Feature')->find($featid);
     my $aa = $feat->aa_frequency(counts=>1);
-    my $total = 0;
-    grep {$total+=$_} values %$aa;
-    my $html = "Amino Acid Usage"."<table>";
-    $html .= join ("<tr>",map  {"<td>$_<td>".$aa->{$_}."<td>(".sprintf("%.2f",100*$aa->{$_}/$total)."%)"} sort keys %$aa);
-    $html .= "</table>";
+    my $html = "Amino Acid Usage";
+    $html .= CoGe::Accessory::genetic_code->html_aa(data=>$aa, counts=>1);
     return $html;
   }
 
-sub sort_nt
-  {
-    my $chr = uc(shift);
-
-    $chr = substr($chr, -1,1) if length($chr)>1;
-    my $val = 0;
-    if ($chr eq "C")
-      {
-	$val = 1;
-      }
-    elsif ($chr eq "G")
-      {
-	$val = 2;
-      }
-    elsif ($chr eq "A")
-      {
-	$val = 3;
-      }
-    return $val;
-  }
-
-sub sort_nt2
-  {
-    my $chr = uc(shift);
-
-    $chr = substr($chr, -1,1) if length($chr)>1;
-    my $val = 0;
-    if ($chr eq "A")
-      {
-	$val = 1;
-      }
-    elsif ($chr eq "G")
-      {
-	$val = 2;
-      }
-    elsif ($chr eq "C")
-      {
-	$val = 3;
-      }
-    return $val;
-  }
