@@ -276,7 +276,7 @@ sub get_feature_counts
     my $dsd = shift;
     my $chr = shift;
     my $query = qq{
-SELECT count(distinct(feature_id)), ft.name 
+SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
   FROM feature
   JOIN feature_type ft using (feature_type_id)
   JOIN location l USING (feature_id)
@@ -290,15 +290,25 @@ SELECT count(distinct(feature_id)), ft.name
     my $feats = {};
     while (my $row = $sth->fetchrow_arrayref)
       {
-	$feats->{$row->[1]} = $row->[0];
+	$feats->{$row->[1]} = {count=>$row->[0],
+			       id=>$row->[2]};
       }
 #    my $feats = $ds->get_feature_type_count(chr=>$chr);
-    my $feat_string .= qq{<tr><td valign=top>Features:<td valign=top><span class=small>(click feature name for percent gc)</span><table>};
-    $feat_string .= join ("\n<tr valing=top>",map {"<td valign=top><div id=$_ class=\"link\" onclick=\" \$('#$_').removeClass('link'); gen_data(['args__loading. . .'],['".$_."_type']); gen_gc_for_chromosome_and_type(['args__dsid','ds_id','args__chr','chr','args__type','args__$_'],['".$_."_type'])\">".$_."</div><td valign=top> ".$feats->{$_}."<td><div id=".$_."_type></div>" } sort {($feats->{$b})<=>($feats->{$a})} keys %$feats);
+    my $feat_string .= qq{<tr><td valign=top>Features:<td valign=top><table>};
+    $feat_string .= join ("\n<tr valing=top>",map {
+"<td valign=top><div id=$_  >".$_."</div>".
+"<td valign=top>".$feats->{$_}{count}.
+"<td><div id=".$_."_type class=\"link small\" 
+  onclick=\" \$('#".$_."_type').removeClass('link'); 
+  \$('#".$_."_type').removeClass('small'); 
+  gen_data(['args__loading'],['".$_."_type']); 
+  gen_gc_for_chromosome_and_type(['args__dsid','ds_id','args__chr','chr','args__type','args__$_'],['".$_."_type'])\">".'show %GC?</div>'.
+"<td class='small link' onclick=\"window.open('FeatList.pl?dsid=$dsd&type=".$feats->{$_}{id}."')\">Feature List?"
+} sort {($feats->{$b})<=>($feats->{$a})} keys %$feats);
     $feat_string .= "</table>";
     if ($feats->{CDS})
       {
-	$feat_string .= "<div class=link id=codon_usage onclick=\" \$('#codon_usage').removeClass('link'); gen_data(['args__loading. . .'],['codon_usage']); get_codon_usage_for_chromosome(['args__dsid','ds_id','args__chr','chr'],['codon_usage'])\">"."Click for codon usage"."</div>";
+	$feat_string .= "<div class=link id=codon_usage onclick=\" \$('#codon_usage').removeClass('link'); gen_data(['args__loading'],['codon_usage']); get_codon_usage_for_chromosome(['args__dsid','ds_id','args__chr','chr'],['codon_usage'])\">"."Click for codon usage"."</div>";
       }
     $feat_string .= "None" unless keys %$feats;
     return $feat_string;
