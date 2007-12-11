@@ -938,11 +938,14 @@ INSERT INTO image_info (iname, title, px_width,dsid, bpmin, bpmax) values ("$ima
 	$image_track = "-".$image_track if $feat->strand =~ /-/;
 	
 	my ($xmin, $ymin, $xmax, $ymax) = split /,/, $coords;
+	$xmin++;
+	$xmax++;
 	my $anno = $feat->description;
 	#	    $anno =~ s/'|"//g;
-	$anno =~ s/'//g;
-	$anno =~ s/<br\/?>/&#10;/ig;	$anno =~ s/\n/&#10;/g;
-	$anno =~ s/[\[\]\(\)]/ /g;
+	$anno =~ s/'//g if $anno;
+	$anno =~ s/<br\/?>/&#10;/ig if $anno;
+	$anno =~ s/\n/&#10;/g if $anno;
+	$anno =~ s/[\[\]\(\)]/ /g if $anno;
 	#	    print STDERR $anno if $anno =~ /Location/;
 	#	    print STDERR $anno,"\n" if $anno =~ /01020/;
 	if (ref ($feat) =~ /gene/i)
@@ -1048,7 +1051,7 @@ sub process_features
         my $f;
 	my $type = $feat->type;
 	my ($name) = sort { length ($b) <=> length ($a) || $a cmp $b} @{$feat->qualifiers->{names}} if ref ($feat->qualifiers) =~ /hash/i ;
-	my $anchor = 0;
+	my $anchor = 1 if ref ($feat->qualifiers) =~ /hash/i && $feat->qualifiers->{type} eq "anchor";
         if ($type =~ /pseudogene/i)
           {
 	    next unless $draw_model eq "full";
@@ -1083,7 +1086,7 @@ sub process_features
 			$f->color([255,255,0]) ;
 			$f->label($name);
 #			$type="anchor";
-			$anchor=1;
+#			$anchor=1;
 		      }
 		  }
 	      }
@@ -1114,7 +1117,7 @@ sub process_features
 			  {
 			    $f->color([255,255,0]) ;
 			    $f->label($name);
-			    $anchor="anchor";
+#			    $anchor="anchor";
 			  }
 		      }
 		  }
@@ -1133,7 +1136,15 @@ sub process_features
 	    $f->description($feat->annotation);
 	    $c->add_feature($f);
 	    next;
-#	    my $f2 = CoGe::Graphics::Feature::NucTide->new({nt=>$rcseq, strand=>-1, start =>$pos+$start, options=>$options}) if $layers->{gc} || $layers->{nt} || $layers->{all};
+	  }
+	if ($anchor && !$f)
+	  {
+	    $f = CoGe::Graphics::Feature->new({type=>'anchor',start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1], strand=>1});
+	    $f->{anchor}=1;
+	    $f->order(0);
+	    $f->skip_overlap_search(1);
+	    $c->add_feature($f);
+	    next;
 	  }
         next unless $f;
 	my $strand = 1;
@@ -1562,6 +1573,7 @@ sub get_obj_from_genome_db
 			   location=> $location,
 			   qualifiers=>{
                                         names=> [@names],
+					type=>$type,
                                        },
 			   annotation=>$anno,
 			  );
@@ -1672,7 +1684,7 @@ sub run_blastz
 	    next unless $j > $i;
 	    my $seqfile1 = $sets->[$i]->{file};
 	    my $seqfile2 = $sets->[$j]->{file};
-	    next unless -r $seqfile1 && -r $seqfile2; #make sure these files exist
+	    next unless $seqfile1 && $seqfile2 && -r $seqfile1 && -r $seqfile2; #make sure these files exist
 	    next unless $sets->[$i]{reference_seq} || $sets->[$j]{reference_seq};
 	    my ($accn1, $accn2) = ($sets->[$i]{accn}, $sets->[$j]{accn});
 	    my ($tempfile) = $cogeweb->basefile."_".($i+1)."-".($j+1).".blastz";
@@ -2300,6 +2312,7 @@ sub color_pallet
 	if ($i%3)
 	  {
 	    $temp = [map {int($_/1.5)} @color];
+	    
 	  }
 	else
 	  {
