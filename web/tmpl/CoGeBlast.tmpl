@@ -1695,16 +1695,16 @@ function adjust_blast_types(val){
          </THEAD>
          <TBODY id=overlap_body style="overflow: auto;">
          <TMPL_LOOP NAME=FEATURE_TABLE>
-         <TR id="table_row<TMPL_VAR NAME=FID>" title="Click for info" align=right class="feat">
+         <TR id="table_row<TMPL_VAR NAME=FID>" align=right class="feat">
          <!--onmouseover="$('#table_row<TMPL_VAR NAME=FID>').addClass('highlight_tablerows');" onmouseout="$('#table_row<TMPL_VAR NAME=FID>').removeClass('highlight_tablerows');"-->
           <TD><input type=checkbox id="feature_checkbox<TMPL_VAR NAME=FID>" name="feature_checkbox" value="<TMPL_VAR NAME=FID>"></TD>
-          <TD ><TMPL_VAR NAME=FEATURE_NAME></TD>
-          <TD ><TMPL_VAR NAME=FEATURE_HSP></TD>
-          <TD ><TMPL_VAR NAME=FEATURE_EVAL></TD>
-          <TD ><TMPL_VAR NAME=FEATURE_PID></TD>
-          <TD ><TMPL_VAR NAME=FEATURE_SCORE></TD>
-          <TD ><TMPL_VAR NAME=FEATURE_LENGTH></TD>
-          <TD style="white-space:nowrap;"><TMPL_VAR NAME=FEATURE_ORG></TD>
+          <TD title="Click for feature info"><TMPL_VAR NAME=FEATURE_NAME></TD>
+          <TD title="Click for HSP info"><TMPL_VAR NAME=FEATURE_HSP></TD>
+          <TD title="Click for HSP info"><TMPL_VAR NAME=FEATURE_EVAL></TD>
+          <TD title="Click for HSP info"><TMPL_VAR NAME=FEATURE_PID></TD>
+          <TD title="Click for HSP info"><TMPL_VAR NAME=FEATURE_SCORE></TD>
+          <TD title="Click for feature info"><TMPL_VAR NAME=FEATURE_LENGTH></TD>
+          <TD title="Click for feature info" style="white-space:nowrap;"><TMPL_VAR NAME=FEATURE_ORG></TD>
          </TR>
         </TMPL_LOOP>
         </TBODY>
@@ -1864,6 +1864,7 @@ function adjust_blast_types(val){
             <td><TMPL_VAR NAME=ALIGNMENT></td>
           </tr>
          </table>
+         <TMPL VAR NAME="HSP_EXCEL_LINK">
   </TMPL_IF>
    
 <TMPL_IF NAME=BLAST_RESULTS>
