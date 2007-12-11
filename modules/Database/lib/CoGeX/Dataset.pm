@@ -266,7 +266,7 @@ sub fasta
     $strand = -1 if $rc;
     my $seq = $self->genomic_sequence(start=>$start, stop=>$stop, chr=>$chr);
     $stop = $start + length($seq)-1 if $stop > $start+length($seq)-1;
-    my $head = ">".$self->organism->name." (".$self->name.", ".$self->description.", v".$self->version.")".", Location: ".$start."-".$stop.", Chromosome: ".$chr.", Strand: ".$strand;
+    my $head = ">".$self->organism->name." (".$self->name.", ".$self->description.", v".$self->version.")".", Location: ".$start."-".$stop." (length: ".($stop-$start+1)."), Chromosome: ".$chr.", Strand: ".$strand;
 
     $Text::Wrap::columns=$col;
     my $fasta;
