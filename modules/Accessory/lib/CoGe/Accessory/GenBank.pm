@@ -207,11 +207,13 @@ sub parse_genbank
 		}
 	      $quals{names} = \@names;
 	      $feat->{location} = $self->reverse_genbank_location(loc=>$feat->{location}) if $rev;
+	      my $strand = $feat->{location} =~ /complement/i ? -1 : 1;
 	      $self->add_feature(
 				 type=>$feat->{type},
 				 location=>$feat->{location},
 				 qualifiers=>\%quals,
 				 annotation=>$anno,
+				 strand=>$strand,
 				);
 	    }
 	  $self->_check_for_gene_models if $self->add_gene_models;
@@ -491,8 +493,8 @@ sub add_feature
       $info{annotation}=$options{annotation} if $options{annotation};
       $info{strand}=$options{strand} if $options{strand};
       my $feature = new CoGe::Accessory::GenBank::Feature(\%info);
-	push @{$self->features}, $feature;
-	return;
+      push @{$self->features}, $feature;
+      return;
 }
 
 
