@@ -180,7 +180,7 @@ sub gen_body
 	my $gbaccn = $form->param("gbaccn".$i) if $form->param("gbaccn".$i);
 	my $gbstart = $form->param("gbstart".$i) if $form->param("gbstart".$i);
 	$gbstart = 1 unless defined $gbstart;
-	my $gblength = $form->param("gblen".$i) if $form->param("gblen".$i);
+	my $gblength = $form->param("gblength".$i) if $form->param("gblength".$i);
 	my $revy = "checked" if $form->param('rev'.$i);
 	my $revn = "checked" unless $revy;
 	my $refn = "checked" if $form->param('nref'.$i);
@@ -455,6 +455,17 @@ sub run
  	    
  	    if ($obj)
 	      {
+		#add an anchor
+		$obj->add_feature(
+			      type=>"genbank entry",
+			      location=>(1-$dirstart+1)."..".(length($obj->sequence)-$dirstart+1),
+			      strand=>1,
+			      qualifiers=>{
+					   type=>"anchor",
+					   names=>[$obj->accn],
+					  }
+			     );
+
 		($file, $spike_seq, $seq) = 
 		  generate_seq_file (
 				     obj=>$obj,
@@ -485,8 +496,20 @@ sub run
 	    $obj->add_gene_models(1); #may want to make a user selectable option
  	    my ($res, $error) = $obj->get_genbank_from_ncbi($gbaccn, $rev);
 	    $message .= $error."\n" unless $res;
+	    
 	    if ($obj->accn)
 	      {
+		#add an anchor
+		$obj->add_feature(
+				  type=>"genbank entry",
+				  location=>(1-$gbstart+1)."..".(length($obj->sequence)-$dirstart+1),
+				  strand=>1,
+				  qualifiers=>{
+					       type=>"anchor",
+					       names=>[$gbaccn],
+					      }
+				 );
+
 		($file, $spike_seq, $seq) = 
 		  generate_seq_file (
 				     obj=>$obj,
@@ -498,6 +521,9 @@ sub run
 				     seq_num=>$i,
 				     repeat_mask=>$repeat_mask,
 				    );
+		$obj->start($gbstart);
+		$obj->stop($gbstart + length($seq)-1);
+		$obj->chromosome("?") unless $obj->chromosome;
 		$up = $gbstart;
 		$down = $gblength;
 	      }
@@ -896,6 +922,7 @@ sub generate_image_db
     $title .= qq! Reverse Complement! if $set->{rev};
     my $width = $gfx->image_width;
     my $dsid = $set->{obj}->dataset;
+    $dsid = "NULL" unless $dsid;
     my $image_start = $set->{obj}->start;
     my $image_stop = $set->{obj}->stop;
     my $statement = qq{
@@ -987,8 +1014,9 @@ INSERT INTO image_data (name, type, xmin, xmax, ymin, ymax, bpmin, bpmax, image_
 	  }
 	else
 	  {
-	    my $bpmin = $set->{obj}->start+$feat->start;
-	    my $bpmax = $set->{obj}->start+$feat->stop;
+#	    print STDERR Dumper $feat if $feat->{anchor};
+	    my $bpmin = $set->{obj}->start+$feat->start-1;
+	    my $bpmax = $set->{obj}->start+$feat->stop-1;
 	    $statement = qq{
 INSERT INTO image_data (name, type, xmin, xmax, ymin, ymax, bpmin,bpmax,image_id, image_track,pair_id, link, annotation, color) values ("$name", "$type", $xmin, $xmax, $ymin, $ymax, $bpmin, $bpmax,$image_id, "$image_track",$pair_id, '$link', '$anno', '$color')
 };
@@ -1050,8 +1078,8 @@ sub process_features
       {
         my $f;
 	my $type = $feat->type;
-	my ($name) = sort { length ($b) <=> length ($a) || $a cmp $b} @{$feat->qualifiers->{names}} if ref ($feat->qualifiers) =~ /hash/i ;
-	my $anchor = 1 if ref ($feat->qualifiers) =~ /hash/i && $feat->qualifiers->{type} eq "anchor";
+	my ($name) = sort { length ($b) <=> length ($a) || $a cmp $b} @{$feat->qualifiers->{names}} if ref ($feat->qualifiers) =~ /hash/i && $feat->qualifiers->{names};
+	my $anchor = 1 if ref ($feat->qualifiers) =~ /hash/i && $feat->qualifiers->{type} && $feat->qualifiers->{type} eq "anchor";
         if ($type =~ /pseudogene/i)
           {
 	    next unless $draw_model eq "full";
@@ -1137,13 +1165,17 @@ sub process_features
 	    $c->add_feature($f);
 	    next;
 	  }
+	#need to create an anchor if this feature is an anchor, but not to be drawn
 	if ($anchor && !$f)
 	  {
 	    $f = CoGe::Graphics::Feature->new({type=>'anchor',start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1], strand=>1});
 	    $f->{anchor}=1;
 	    $f->order(0);
 	    $f->skip_overlap_search(1);
+	    $f->description("auto generated anchor for GEvo");
 	    $c->add_feature($f);
+	    print STDERR Dumper $feat;
+	    print STDERR Dumper $f;
 	    next;
 	  }
         next unless $f;
