@@ -282,7 +282,7 @@ sub color
       $down = substr($seq, ((length $seq)-($downstream)), length $seq);
       while ($down=~/\n/g)
 	{$nl2++;}
-      my $check = substr($seq, ((length $seq)-($downstream+$nl2)), $nl2);
+      $check = substr($seq, ((length $seq)-($downstream+$nl2)), $nl2);
       
       $nl2++ if $check =~ /\n/;
       $downstream += $nl2;
