@@ -377,7 +377,7 @@ sub gc_content
     return unless $featid;
     my ($feat) = $coge->resultset('Feature')->find($featid);
     my ($gc, $at) = $feat->gc_content;
-    my $html = "GC:".(100*$gc)."%"."AT:".(100*$at)."%" ;
+    my $html = "GC:".(100*$gc)."%".", AT:".(100*$at)."%" ;
     return $html;
   }
 
