@@ -558,9 +558,18 @@ sub run
 			 seq_num=>$i,
 			};
 	  }
+	else
+	  {
+	    push @sets, {seq_num=>$i};
+	  }
       }
     $seqcount--;
     $gevo_link .= ";num_seqs=".$seqcount;
+    my $count = 0;
+#    foreach (@sets)
+#      {
+#	$count++ if $_->{obj};
+#      }
     unless (@sets >1)
       {
 	$message .= "Problem retrieving information.  Please check submissions.\n";
@@ -639,7 +648,8 @@ sub run
 									     show_hsps_with_stop_codon => $show_hsps_with_stop_codon,
 									     hiqual=>$hiqual,
 									     padding=>$padding,
-									     seq_num=>$count,
+									     seq_num=>$item->{seq_num},
+#									     seq_num=>$count,
 									     reverse_image=>$rev,
 									     draw_model=>$draw_model,
 									     hsp_overlap_limit=>$hsp_overlap_limit,
@@ -847,7 +857,7 @@ sub initialize_sqlite
     my $create = qq{
 CREATE TABLE image_data
 (
-id INTEGER PRIMARY KEY AUTOINCREMENT,
+id INTEGER PRIMARY KEY,
 name varchar(50),
 type varchar (10),
 xmin integer,
@@ -908,11 +918,12 @@ sub generate_image_db
     $dsid = "NULL" unless $dsid;
     my $image_start = $set->{obj}->start;
     my $image_stop = $set->{obj}->stop;
+    my $image_id = $set->{seq_num};
     my $statement = qq{
-INSERT INTO image_info (iname, title, px_width,dsid, bpmin, bpmax) values ("$image", "$title", $width, "$dsid", $image_start, $image_stop)
+INSERT INTO image_info (id, iname, title, px_width,dsid, bpmin, bpmax) values ($image_id, "$image", "$title", $width, "$dsid", $image_start, $image_stop)
 };
     print STDERR $statement unless $dbh->do($statement);
-    my $image_id = $dbh->last_insert_id("","","","");
+#    my $image_id = $dbh->last_insert_id("","","","");
     foreach my $feat ($gfx->get_feats)
       {
 	if ($feat->fill)
@@ -1645,7 +1656,7 @@ sub run_bl2seq {
 	  
 	  
 	# need to create a temp filename here
-	  my ($tempfile) = $cogeweb->basefile."_".($i+1)."-".($j+1).".bl2seq";;
+	  my ($tempfile) = $cogeweb->basefile."_".($sets->[$i]->{seq_num})."-".($sets->[$j]->{seq_num}).".bl2seq";;
 	  
 	  # format the bl2seq command
 	  $command .= "-p $program -o $tempfile ";
@@ -1702,7 +1713,7 @@ sub run_blastz
 	    next unless $seqfile1 && $seqfile2 && -r $seqfile1 && -r $seqfile2; #make sure these files exist
 	    next unless $sets->[$i]{reference_seq} || $sets->[$j]{reference_seq};
 	    my ($accn1, $accn2) = ($sets->[$i]{accn}, $sets->[$j]{accn});
-	    my ($tempfile) = $cogeweb->basefile."_".($i+1)."-".($j+1).".blastz";
+	    my ($tempfile) = $cogeweb->basefile."_".($sets->[$i]->{seq_num})."-".($sets->[$j]->{seq_num}).".blastz";
 	    my $command = $BLASTZ;
 	    $command .= " $seqfile1 $seqfile2";
 	    $command .= " ".$params if $params;
@@ -1758,7 +1769,7 @@ sub run_lagan
 	    next unless -r $seqfile1 && -r $seqfile2; #make sure these files exist
 	    next unless $sets->[$i]{reference_seq} || $sets->[$j]{reference_seq};
 	    my ($accn1, $accn2) = ($sets->[$i]{accn}, $sets->[$j]{accn});
-	    my ($tempfile) = $cogeweb->basefile."_".($i+1)."-".($j+1).".lagan";
+	    my ($tempfile) = $cogeweb->basefile."_".($sets->[$i]->{seq_num})."-".($sets->[$j]->{seq_num}).".lagan";
 	    my $command = $LAGAN;
 	    $command .= " $seqfile1 $seqfile2";
 	    $command .= " -mfa";
@@ -1814,7 +1825,7 @@ sub run_chaos
 	    next unless -r $seqfile1 && -r $seqfile2; #make sure these files exist
 	    next unless $sets->[$i]{reference_seq} || $sets->[$j]{reference_seq};
 	    my ($accn1, $accn2) = ($sets->[$i]{accn}, $sets->[$j]{accn});
-	    my ($tempfile) = $cogeweb->basefile."_".($i+1)."-".($j+1).".chaos";
+	    my ($tempfile) = $cogeweb->basefile."_".($sets->[$i]->{seq_num})."-".($sets->[$j]->{seq_num}).".chaos";
 	    my $command = $CHAOS;
 	    $command .= " $seqfile1 $seqfile2";
 	    
@@ -1946,13 +1957,13 @@ sub run_dialign
 	      }
 	    else
 	      {
-		my $seqfile = $TEMPDIR."/".$cogeweb->basefilename."_".($i+1)."-".($j+1).".fasta";
+		my $seqfile = $TEMPDIR."/".$cogeweb->basefilename."_".($sets->[$i]->{seq_num})."-".($sets->[$j]->{seq_num}).".fasta";
 		next unless -r $seqfile1 && -r $seqfile2; #make sure these files exist
 		#put two fasta files into one for dialign
 		`cat $seqfile1 > $seqfile`;
 		`cat $seqfile2 >> $seqfile`;
 		next unless $sets->[$i]{reference_seq} || $sets->[$j]{reference_seq};
-		($tempfile) = $cogeweb->basefile."_".($i+1)."-".($j+1).".dialign";
+		($tempfile) = $cogeweb->basefile."_".($sets->[$i]->{seq_num})."-".($sets->[$j]->{seq_num}).".dialign";
 		my $command = $DIALIGN;
 		$command .= " ".$params if $params;
 		$command .= " -fn ".$tempfile;
