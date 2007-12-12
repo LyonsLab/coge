@@ -750,8 +750,8 @@ sub generate_chromosome_images
 	    $image_file =~ s/$TEMPDIR/$TEMPURL/;
 	    $large_image_file =~ s/$TEMPDIR/$TEMPURL/;
 	    
-	    push @large_data,  {DB_NAME_LARGE=>"<a href=".$data{$org}{file}. " target=_new>$org</a><br>", CHR_IMAGE_LARGE=>"<img src=$large_image_file ismap usemap='".$cogeweb->basefilename."_"."$count"."_large' border=0>$image_map_large",IMAGE_ID_LARGE=>$count,};
-	    push @data,  {DB_NAME=>"<a href=".$data{$org}{file}. " target=_new>$org</a><br>", CHR_IMAGE=>"<img src=$image_file ismap usemap='".$cogeweb->basefilename."_"."$count' border=0>$image_map",HIT=>1,IMAGE_ID=>$count,};
+	    push @large_data,  {DB_NAME_LARGE=>"<a href=".$data{$org}{file}. " target=_new>$org <span class='small link'>Blast Report</span></a><br>", CHR_IMAGE_LARGE=>"<img src=$large_image_file ismap usemap='".$cogeweb->basefilename."_"."$count"."_large' border=0>$image_map_large",IMAGE_ID_LARGE=>$count,};
+	    push @data,  {DB_NAME=>"<a href=".$data{$org}{file}. " target=_new>$org <span class='small link'>Blast Report</span></a><br>", CHR_IMAGE=>"<img src=$image_file ismap usemap='".$cogeweb->basefilename."_"."$count' border=0>$image_map",HIT=>1,IMAGE_ID=>$count,};
 	    $count++;
 	  }
 	else
