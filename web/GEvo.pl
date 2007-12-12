@@ -429,8 +429,6 @@ sub run
 	    $obj = get_obj_from_genome_db( accn=>$accn, featid=>$featid, pos=>$pos, dsid=>$dsid, rev=>$rev, up=>$drup, down=>$drdown, chr=>$chr );
 	    if ($obj)
 	      {
-
-#		print Dumper $obj->features;
 		($file, $spike_seq, $seq) = 
 		  generate_seq_file(obj=>$obj,
 				    mask_cds=>$mask_cds_flag,
@@ -451,8 +449,6 @@ sub run
  	  {
  	    ($obj) = generate_obj_from_seq($dirseq, $i, $rev);
 	    $dirlength = length($dirseq)-$dirstart+1 unless $dirlength;
- 	    #my $seq = get_substr(seq=>$dirseq, start=>$dirstart, stop=>($dirstart+$dirlength) );
- 	    
  	    if ($obj)
 	      {
 		#add an anchor
@@ -477,7 +473,6 @@ sub run
 				     seq_num=>$i,
 				     repeat_mask=>$repeat_mask,
 				    );
-#		$obj->sequence($seq);
 		$obj->start($dirstart);
 		$obj->stop($dirstart+$dirlength);
 		$obj->chromosome(1);
@@ -566,10 +561,6 @@ sub run
       }
     $seqcount--;
     $gevo_link .= ";num_seqs=".$seqcount;
-#    print STDERR $gevo_link,"\n";
-#    print STDERR CGI::escape($gevo_link),"\n";
-#    $gevo_link = CGI::escape($gevo_link);
-#    print STDERR Dumper \@sets;
     unless (@sets >1)
       {
 	$message .= "Problem retrieving information.  Please check submissions.\n";
@@ -619,8 +610,6 @@ sub run
 	my $obj = $item->{obj};
 	next unless $obj->sequence;
 	my $file = $item->{file};
-#	my $file_begin = $item->{file_begin};
-#	my $file_end = $item->{file_end};
 	my $rev = $item->{rev};
 	my $up = $item->{up};
 	my $down = $item->{down};
@@ -631,8 +620,6 @@ sub run
 	    write_log("generating image ($count/".scalar @sets.")for ".$obj->accn, $cogeweb->logfile);	
 	    my ($image, $map, $mapname, $gfx, $eval_cutoff) = generate_image(
 									     gbobj=>$obj, 
-#									     start=>$file_begin,
-#									     stop => $file_end,
 									     start=>1,
 									     stop=>length($obj->sequence),
 									     data=>$analysis_reports,
@@ -670,7 +657,6 @@ sub run
 	    $html_viewer .= "$map\n";
 	    $item->{image} = $image;
 	    generate_image_db(set=>$item, gfx=>$gfx);
-#	    $item->{gfx} = $gfx;
 	  }
 	$count++;
       }
@@ -844,7 +830,6 @@ sub generate_image
 				hsp_overlap_limit=>$hsp_overlap_limit,
 			       );
 #    $gfx->DEBUG(1);
-#    print STDERR Dumper $gfx;
     my $filename = $cogeweb->basefile."_".$seq_num.".png";
     $filename = check_filename_taint($filename);
     $gfx->generate_png(file=>$filename);
@@ -910,10 +895,8 @@ sub generate_image_db
     my $gfx = $args{gfx};
     my $set = $args{set};
     next unless $gfx;
-#    write_log("generating SQLite database");
     my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
     my $image = $set->{image};
-#	my $gfx = $item->{gfx};
     my $accn = $set->{accn};
     my $title;
     $title = $accn;
@@ -1174,8 +1157,8 @@ sub process_features
 	    $f->skip_overlap_search(1);
 	    $f->description("auto generated anchor for GEvo");
 	    $c->add_feature($f);
-	    print STDERR Dumper $feat;
-	    print STDERR Dumper $f;
+#	    print STDERR Dumper $feat;
+#	    print STDERR Dumper $f;
 	    next;
 	  }
         next unless $f;
@@ -1983,7 +1966,6 @@ sub run_dialign
 		  {
 		    next;
 		  }
-#		print STDERR $command,"\n";
 		#time for execution
 		write_log("running ($count/$total_runs) ".$command, $cogeweb->logfile);
 		`$command`;
@@ -2095,8 +2077,6 @@ sub generate_annotation
     my %opts = @_;
     my $obj = $opts{obj};
     return unless $obj;
-#    my $start = $opts{file_begin};
-#    my $stop = $opts{file_end};
     my $rev = $opts{rev};
     my $seq_num = $opts{seq_num};
     my $fullname = $cogeweb->basefile."_".$seq_num.".anno";
@@ -2184,8 +2164,6 @@ sub gen_params
 	$params .= qq{'args__b$i', 'b$i',};
       }
 
-# old params
-#	'args__matchfilter', 'matchfilter', 
 
     $params .= qq{
         'args__pad_gs', 'pad_gs',
@@ -2390,29 +2368,6 @@ sub algorithm_list
       }
     return $html;
   }
-
-# sub initialize_basefile
-#   {
-#     my $basename = shift;
-#     if ($basename)
-#       {
-# 	my ($x, $cleanname) = check_taint($basename);
-# 	$BASEFILENAME = $cleanname;
-# 	$BASEFILE = $TEMPDIR."/".$cleanname;
-# 	$LOGFILE = $BASEFILE.".log";
-#       }
-#     else
-#       {
-# 	my $file = new File::Temp ( TEMPLATE=>'GEvo_XXXXXXXX',
-# 				    DIR=>$TEMPDIR,
-# 				    #SUFFIX=>'.png',
-# 				    UNLINK=>1);
-# 	($BASEFILE)= $file->filename;
-# 	$LOGFILE = $BASEFILE.".log";
-# 	($BASEFILENAME) = $file->filename =~ /([^\/]*$)/;
-#       }
-#     return $BASEFILENAME;
-#   }
 
 sub add_seq
   {
@@ -2671,9 +2626,6 @@ sub number_of_runs
 sub dataset_search
   {
     my %opts = @_;
-#    print STDERR "dataset_search\n";
-#    print STDERR Dumper \%opts;
-#    my ($accn, $num, $dsid) = @_;
     my $accn = $opts{accn};
     my $num = $opts{num};
     $num = 1 unless $num;
