@@ -29,9 +29,9 @@ my $pj = new CGI::Ajax(
 		       generate_excel_file=>\&generate_excel_file,
 			);
 $pj->js_encode_function('escape');
-#print $pj->build_html($FORM, \&gen_html);
-print $FORM->header;
-print gen_html();
+print $pj->build_html($FORM, \&gen_html);
+#print $FORM->header;
+#print gen_html();
 
 sub gen_html
   {
