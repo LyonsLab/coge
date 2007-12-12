@@ -27,6 +27,10 @@ my $pj = new CGI::Ajax(
 		       feats_parse=>\&feats_parse,
 		       export_fasta_file=>\&export_fasta_file,
 		       generate_excel_file=>\&generate_excel_file,
+		       codon_table=>\&codon_table,
+		       protein_table=>\&protein_table,
+		       gc_content=>\&gc_content,
+		       gen_data=>\&gen_data,
 			);
 $pj->js_encode_function('escape');
 print $pj->build_html($FORM, \&gen_html);
@@ -101,12 +105,12 @@ sub generate_table
   {
     my %opts = @_;
     my $feat_list = $opts{feature_list};
+    my $show_gc = $opts{show_gc} || 1;
     return unless @$feat_list;
     my @table;
     my $count = 1;
-    foreach my $info (@$feat_list)
+    foreach my $featid (@$feat_list)
     {
-      my $featid = $info;
       #print STDERR $featid,"\n";
       my ($feat) = $coge->resultset("Feature")->find($featid);
       unless ($feat)
@@ -117,12 +121,32 @@ sub generate_table
       my ($name) = sort $feat->names;
       my $hpp = $feat->annotation_pretty_print_html();
       my $row_style = $count%2 ? "even" : "odd";
-      push @table,{FEATID=>$info,NAME=>$name,TYPE=>$feat->type->name,LOC=>$feat->start."-".$feat->stop,CHR=>$feat->chr,STRAND=>$feat->strand,ORG=>$feat->organism->name."(v ".$feat->version.")",HPP=>$hpp, TABLE_ROW=>$row_style};
+      my $other;
+      $other .= $show_gc ? gc_content(featid=>$featid): qq{<DIV id="gc_info$count" class="link" onClick="gc_content(['args__featid','args__$featid'],['gc_info$count'])">GC content</DIV>};
+      $other .= "<div class=link id=codon_usage$count><DIV onclick=\" \$('#codon_usage$count').removeClass('link'); gen_data(['args__loading'],['codon_usage$count']); codon_table(['args__featid','args__$featid'],['codon_usage$count'])\">"."Click for codon usage"."</DIV></DIV>" if $feat->type->name eq "CDS";
+      push @table,{
+		   FEATID=>$featid,
+		   NAME=>$name,
+		   TYPE=>$feat->type->name,
+		   LOC=>$feat->start."-".$feat->stop,
+		   CHR=>$feat->chr,STRAND=>$feat->strand,
+		   ORG=>$feat->organism->name."(v ".$feat->version.")",
+		   HPP=>$hpp, 
+		   TABLE_ROW=>$row_style,
+		   LENGTH=>$feat->length(),
+		   OTHER=>$other,
+		  };
       $count++;
     }
    return \@table;
   }
-  
+
+  sub gen_data
+  {
+    my $message = shift;
+    return qq{<font class="loading">$message. . .</font>};
+  }
+
   sub read_file
   {
     my $file = "$TEMPDIR/$BASEFILE.featlist";
@@ -217,3 +241,47 @@ sub generate_excel_file
    	#print STDERR "tmp/Excel_$filename.xls\n";
    	return "tmp/Excel_$filename.xls";
   }
+
+sub gc_content
+  {
+    my %args = @_;
+    my $featid = $args{featid};
+    return unless $featid;
+    my ($feat) = $coge->resultset('Feature')->find($featid);
+    my ($gc, $at) = $feat->gc_content;
+    my $html = "GC:".(100*$gc)."%".", AT:".(100*$at)."%" ;
+    return $html;
+  }
+
+sub codon_table
+  {
+    my %args = @_;
+    my $featid = $args{featid};
+
+    return unless $featid;
+    my ($feat) = $coge->resultset('Feature')->find($featid);
+    my ($codon, $code_type) = $feat->codon_frequency(counts=>1);
+    my %aa;
+    my ($code) = $feat->genetic_code;
+    foreach my $tri (keys %$code)
+      {
+	$aa{$code->{$tri}}+=$codon->{$tri};
+      }
+    my $html = "Codon Usage: $code_type";
+    $html .= CoGe::Accessory::genetic_code->html_code_table(data=>$codon, code=>$code, counts=>1);
+#    $html .= "Predicted amino acid usage for $code_type genetic code:";
+#    $html .= CoGe::Accessory::genetic_code->html_aa(data=>\%aa, counts=>1);
+    return $html;
+  }
+
+sub protein_table
+  {
+    my %args = @_;
+    my $featid = $args{featid};
+    my ($feat) = $coge->resultset('Feature')->find($featid);
+    my $aa = $feat->aa_frequency(counts=>1);
+    my $html = "Amino Acid Usage";
+    $html .= CoGe::Accessory::genetic_code->html_aa(data=>$aa, counts=>1);
+    return $html;
+  }
+
