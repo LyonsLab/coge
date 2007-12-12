@@ -1224,7 +1224,7 @@ sub html_code_table
       $code = $code->{code} if $code->{code};
       ($max_val) = sort {$b <=> $a} map {$data->{$_}} keys %{$code};
       my $html;
-      $html .= "<table><tr><td>";
+      $html .= "<table><tr><td nowrap>";
 #      $html .= "<table>";
       my $count = 0;
       foreach my $codon (sort { $self->sort_nt1(substr($a, 0, 1)) <=> $self->sort_nt1(substr($b,0, 1)) || $self->sort_nt2(substr($a,1,1)) <=> $self->sort_nt2(substr($b,1,1)) || $self->sort_nt3(substr($a,2,1)) <=> $self->sort_nt3(substr($b,2,1)) } keys %{$code})
@@ -1238,12 +1238,12 @@ sub html_code_table
 	  
 	  unless ($count % 4)
 	    {
-	      $html .= "<td size=1 style=\"background-color: rgb(200,200,200)\"><td>" if $count && $count != 16;
+	      $html .= "<td size=1 style=\"background-color: rgb(200,200,200)\"><td nowrap>" if $count && $count != 16;
 	    }
 	  if ($count == 16)
 	    {
 	      $count = 0;
-	      $html .= "<tr size=1><td colspan=7 style=\"background-color: rgb(200,200,200)\"><tr><td>";
+	      $html .= "<tr size=1><td colspan=7 style=\"background-color: rgb(200,200,200)\"><tr><td nowrap>";
 	    }
 	  $html .= $str."<br>";
 	  $count++;
@@ -1370,7 +1370,7 @@ sub html_aa
       {	
 	my $current_val = sprintf("%.2f",100*$data->{$_});
 	my $color = $self->color_by_usage(100*$max_aa,$current_val);
-	$html .= "<tr style=\"background-color: rgb($color,255,$color)\"><td>$_ (GC:".sprintf("%.0f",100*$aa_sort->{$_})."%)<td>".$current_val."%";
+	$html .= "<tr style=\"background-color: rgb($color,255,$color)\"><td nowrap>$_ (GC:".sprintf("%.0f",100*$aa_sort->{$_})."%)<td nowrap>".$current_val."%";
 	$html .= " (".$counts->{$_}.")" if $counts;
       }
     $html .= "</table>";
