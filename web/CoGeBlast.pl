@@ -469,11 +469,11 @@ sub gen_results_page
 		    $search_type = "rna" if !$search_type && $seen{rna};
 		    $search_type = "exon" if !$search_type && $seen{exon};
 		    ($search_type) = keys %seen unless $search_type;
-		    print STDERR Dumper \%seen if $feat[0]->dataset->organism->name =~ /Poplar/i;
+		    #print STDERR Dumper \%seen if $feat[0]->dataset->organism->name =~ /Poplar/i;
 		   my $no_genes = 0;
 		   foreach my $feature (@feat)
 		     {
-		       print STDERR $search_type,"::",$feature->type->name,"\n" if $feature->dataset->organism->name =~ /Poplar/i;
+		       #print STDERR $search_type,"::",$feature->type->name,"\n" if $feature->dataset->organism->name =~ /Poplar/i;
 		       next unless $feature->type->name =~ /$search_type/i;
 		       $no_genes++;
 		       $length = (($feature->stop) - ($feature->start));		     
@@ -742,7 +742,7 @@ sub generate_chromosome_images
 		$image_map = get_map("$TEMPDIR/".$cogeweb->basefilename."_$count.$hsp_type.map");
 		$large_image_file = $data{$org}{image}."_$count"."_large.png";
 		$image_map_large = get_map("$TEMPDIR/".$cogeweb->basefilename."_$count.$hsp_type.large.map");
-		print STDERR $image_map_large,"\n";
+		#print STDERR $image_map_large,"\n";
 		($x, $image_file) = check_taint($image_file);
 		($x, $large_image_file) = check_taint($large_image_file);
 	      }
@@ -1048,7 +1048,10 @@ sub get_hsp_info
      $template->param(HSP_NUM=>$hsp_num);
      $template->param(HSP_QS=>\@table1);
      $template->param(HSP_HSP=>\@table2);
-     
+
+    #print STDERR join ("\n", $qalign, $align, $salign),"\n";
+     my ($sub_dsid) = $sname =~ /id: (\d+)/;
+     my $align_str = "";
      my $query_seq = $qalign;
      $query_seq = wrap('','',$query_seq);
      my @query = split(/\n/,$query_seq);
@@ -1067,17 +1070,20 @@ sub get_hsp_info
      $sub_seq =~ tr/atgc/ATGC/;
      $sub_seq = qq{<pre>$sub_seq</pre>};
      
-     my ($sub_dsid) = $sname =~ /id: (\d+)/;
+
     
      my $alignment = $align;
+    $alignment =~ s/ /\./g;
      $alignment = wrap('','',$alignment);
      my @align = split(/\n/,$alignment);
-     my $align_str = "";
+     
      for(my $i=0;$i<scalar(@sub);$i++)
      {
        $align_str .= $query[$i]."<br>".$align[$i]."<br>".$sub[$i]."<br>";
      }
-     $align_str =~ s/<br>$//;
+    $align_str =~ s/<br>$//;
+    $align_str =~ s/\./ /g;
+    #print STDERR $align_str,"\n";
      $align_str = "<pre>$align_str</pre>";
      
      $template->param(QUERY_SEQ=>qq{<a href="#" onclick="show_seq('$query_seq','$query_name',1,'seqObj','seqObj','}.$qstart."','".$qstop.qq{')">Click for Query Sequence</a>});
@@ -1430,7 +1436,7 @@ INSERT INTO sequence_info (name, type, length) values ("$sname","subject","$slen
 sub get_nearby_feats
   {
     my %opts = @_;
-    print STDERR Dumper \%opts;
+#    print STDERR Dumper \%opts;
     my $hsp_id = $opts{num};
     my $filename = $opts{basefile};
     $cogeweb = initialize_basefile(basename=>$filename);
@@ -1498,7 +1504,7 @@ sub get_nearby_feats
 	  my ($feat_high) = sort {$a->start <=> $b->start}@feat_high if @feat_high;
 	
 	  my $closest_feat;
-	  print STDERR $distance,"\n";
+	  #print STDERR $distance,"\n";
 	  if($feat_low and $feat_high) 
 	  {
 	 	 $closest_feat = ($start - $feat_low->stop) < ($feat_high->start - $stop) ? $feat_low : $feat_high;
@@ -1514,7 +1520,7 @@ sub get_nearby_feats
 	 	 $closest_feat = $feat_low;
 	 	 $distance = ($start - $feat_low->stop)."!";
 	  }
-	  print STDERR $distance,"\n";
+	  #print STDERR $distance,"\n";
 	  my $upstream = $distance =~ s/!$//;
 	
 	  my $tmp_dist = $distance;
@@ -1527,7 +1533,7 @@ sub get_nearby_feats
 	  else {
 		$distance .= " bp";
 	  }
-	  print STDERR $distance,"\n";
+	  #print STDERR $distance,"\n";
 	  $distance .= $upstream ? " upstream" : " downstream";
 	  $html .= "Feature Closest to HSP No. $hsp_num: <br><br>";
 	  $html .= $closest_feat->annotation_pretty_print_html();
@@ -1536,7 +1542,7 @@ sub get_nearby_feats
 	  #$checkbox = "<input type=checkbox name='nofeat_checkbox' value='".$closest_feat->id."_".$hsp_num."_".$dsid."'  id='nofeat_checkbox".$closest_feat->id."_".$hsp_num."_".$dsid."'>";
 	  $html .= "<font class=\"title4\">Distance from HSP:</font> <font class=\"data\">$distance</font>";
 	  $distance = $tmp_dist;
-	  print STDERR $distance,"\n";
+	  #print STDERR $distance,"\n";
 	}	
 	else {
 	 $html .= "No Features within 250 kb of HSP No. $hsp_num";
@@ -1597,11 +1603,10 @@ sub generate_excel_feature_file
     {
       next if $accn =~ /no$/;
       my ($featid,$hsp_num,$dsid) = $accn =~ m/^(\d+)_(\d+)_(\d+)$/;
-	  my $ds = $coge->resultset("Dataset")->find($dsid);
    	  my ($feat) = $coge->resultset("Feature")->find($featid);
    	 
    	 my ($name) = sort $feat->names;
-   	 my $org = $ds->organism->name;
+   	 my $org = $feat->organism->name;
    	 
    	 $sth->execute($hsp_num."_".$dsid) || die "unable to execute";
       my ($pval,$pid,$score);
