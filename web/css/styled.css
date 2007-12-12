@@ -854,6 +854,10 @@ div.link:hover {
  color: #009900;
 }
 
+span.link:hover {
+ color: #009900;
+}
+
 td.link:hover {
  color: #009900;
 }
