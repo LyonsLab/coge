@@ -92,11 +92,13 @@ jQuery.fn.unCheckCheckboxes = function()
    <TH> </TH>
    <TH>Feature Name</TH>
    <TH>Type</TH>
+   <th>Chr</th>
    <TH>Location</TH>
-   <th>Chromosome</th>
+   <TH>Length</TH>
    <th>Strand</th>
    <th>Organism(version)</th>
-   <th>More Information</th>
+   <th>Annotation</th>
+   <th>Other Information</th>
  </THEAD>
  <tbody align=left valign="top">
   <TMPL_LOOP NAME=INFO>
@@ -104,11 +106,13 @@ jQuery.fn.unCheckCheckboxes = function()
       <TD><input type=checkbox id='<TMPL_VAR NAME=FEATID>'></TD>
       <TD><TMPL_VAR NAME=NAME></TD>
       <TD><TMPL_VAR NAME=TYPE></TD>
-      <TD><TMPL_VAR NAME=LOC></TD>
       <TD><TMPL_VAR NAME=CHR></TD>
+      <TD><TMPL_VAR NAME=LOC></TD>
+      <TD><TMPL_VAR NAME=LENGTH></TD>
       <TD><TMPL_VAR NAME=STRAND></TD>
       <TD><TMPL_VAR NAME=ORG></TD>
-      <TD style="width: 35%;" ><TMPL_VAR NAME=HPP></TD>
+      <TD nowrap><TMPL_VAR NAME=HPP></TD>
+      <TD nowrap><TMPL_VAR NAME=OTHER></TD>
     </TR>
    </TMPL_LOOP>
   </tbody>
