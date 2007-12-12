@@ -850,13 +850,17 @@ tr.highlight {
   color: #0000EE;
 }
 
-/*#.link:hover {
-#  color: #009900;
-#  cursor: pointer;
-#}*/
+div.link:hover {
+ color: #009900;
+}
+
+td.link:hover {
+ color: #009900;
+}
 
 .link {
   color: #0000EE;
+  cursor: pointer;
 }
 
 
