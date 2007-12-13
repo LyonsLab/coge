@@ -53,11 +53,11 @@ sub gen_html
 	
 	my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
 	
-	$template->param(TITLE=>'CoGe: Secret Projects: Matrix View');
+	$template->param(TITLE=>'Sequence Alignment Matrix View');
 	$template->param(HEAD=>qq{});
 	$template->param(USER=>$USER);
 	$template->param(DATE=>$DATE);
-	$template->param(LOGO_PNG=>"CoGe-logo.png");
+	$template->param(LOGO_PNG=>"MatrixView-logo.png");
 	$template->param(BODY=>$body);
 	$html .= $template->output;
       }
@@ -67,13 +67,12 @@ sub gen_html
 sub gen_body
     {
       my $form = shift || $FORM;
+      my $matrix = $form->param('matrix');
       my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/MatrixView.tmpl');
-      my $matrices = process_dir();
-#      my ($data) = gen_data();
+      my $matrices = process_dir(matrix=>$matrix);
       $template->param(MATRICES=>$matrices);
-#      $template->param(DATA=>$data);
-#      my $groups = join ("<br>", map {qq{<INPUT TYPE=checkbox NAME=groups id=groups value=$_ checked>$_}} keys %$types)."<br>";
-      #      $template->param(GROUPS=>$groups);
+      my $data = gen_data(file=>$matrix);
+      $template->param(DATA=>$data);
       return $template->output;
       
     }
@@ -85,42 +84,50 @@ sub gen_data
     my $code_layout = $opts{code_layout} || 0;
     my $bin_size = $opts{bin_size} || 5;
     my $file = $opts{file};
+    return unless $file;
     my $code = CoGe::Accessory::genetic_code->code;
     $code = $code->{code};
-    
-    my %aa2codon;
-    foreach my $item (keys %$code)
-      {
-	push @{$aa2codon{$code->{$item}}},$item;
-      }
-    my $html;
-    my %aa_sort = map {$_,{}} keys %aa2codon;
-    foreach my $codon (keys %$code)
-      {
-	my $gc = $codon =~ tr/GCgc/GCgc/;
-	my $at = $codon =~ tr/ATat/ATat/;
-	$aa_sort{$code->{$codon}}{AT}+=$at;
-	$aa_sort{$code->{$codon}}{GC}+=$gc;
-      }
-    %aa_sort = map {$_,($aa_sort{$_}{GC}/($aa_sort{$_}{AT}+$aa_sort{$_}{GC}))} keys %aa_sort;
+    my $html ="<table>";
+    my ($data) = process_file(file=>$file);
 
-    my ($data, $max_val, $min_val) = process_file(file=>$file);
-    $html .= "<table>";
-    $html .= "<tr><th>".join ("<th>", "GC% (org count)", sort {$aa_sort{$b} <=> $aa_sort{$a} || $a cmp $b}keys %aa_sort);
-    $html .= "<tr>";
-    foreach my $aa1 (sort {$aa_sort{$b} <=> $aa_sort{$a} || $a cmp $b}keys %aa_sort)
-      {	
-	$html .= "<th>$aa1";
-#	print STDERR join ("\t",  sort {$b<=>$a} map {$data->{$aa1}{$_}} keys %aa_sort),"\n";
-	my ($max) = sort {$b<=>$a} map {$data->{$aa1}{$_}} keys %aa_sort;
-	my ($min1, $min2) = sort {$a<=>$b} map {$data->{$aa1}{$_}} keys %aa_sort; #min one will be for the stop aa, we'll skip this since it is always rediculous 
-	foreach my $aa2 (sort {$aa_sort{$b} <=> $aa_sort{$a} || $a cmp $b}keys %aa_sort)
-	  {	
-	    my $val = $data->{$aa1}{$aa2};
-	    my $color = color_by_usage($max+abs($min2), $val+abs($min2));
-	    $html .= "<td style=\"background-color: rgb($color,255,$color)\">".$val;
-	  }
+    if ($data->{P})
+      {
+	my $aa_sort = CoGe::Accessory::genetic_code->sort_aa_by_gc();
+	$html .= "<tr><th><th>".join ("<th>", sort {$aa_sort->{$b} <=> $aa_sort->{$a} || $a cmp $b}keys %$aa_sort);
 	$html .= "<tr>";
+	foreach my $aa1 (sort {$aa_sort->{$b} <=> $aa_sort->{$a} || $a cmp $b}keys %$aa_sort)
+	  {	
+	    $html .= "<th>$aa1";
+	    #	print STDERR join ("\t",  sort {$b<=>$a} map {$data->{$aa1}{$_}} keys %aa_sort),"\n";
+	    my ($max) = sort {$b<=>$a} map {$data->{$aa1}{$_}} keys %$aa_sort;
+	    my ($min1, $min2) = sort {$a<=>$b} map {$data->{$aa1}{$_}} keys %$aa_sort; #min one will be for the stop aa, we'll skip this since it is always rediculous 
+	    foreach my $aa2 (sort {$aa_sort->{$b} <=> $aa_sort->{$a} || $a cmp $b}keys %$aa_sort)
+	      {	
+		my $val = $data->{$aa1}{$aa2};
+		my $color = color_by_usage($max+abs($min2), $val+abs($min2));
+		$html .= "<td style=\"background-color: rgb($color,255,$color)\">".$val;
+	      }
+	    $html .= "<tr>";
+	  }
+      }
+    else
+      {
+	$html .= "<tr><th><th>".join ("<th>", sort keys %$data);
+	$html .= "<tr>";
+	foreach my $aa1 (sort keys  %$data)
+	  {	
+	    $html .= "<th>$aa1";
+	    #	print STDERR join ("\t",  sort {$b<=>$a} map {$data->{$aa1}{$_}} keys %aa_sort),"\n";
+	    my ($max) = sort {$b<=>$a} map {$data->{$aa1}{$_}} keys %$data;
+	    my ($min1, $min2, $min3, $min4) = sort {$a<=>$b} map {$data->{$aa1}{$_}} keys %$data; #min one will be for the stop aa, we'll skip this since it is always rediculous 
+	    foreach my $aa2 (sort keys %$data)
+	      {	
+		my $val = $data->{$aa1}{$aa2};
+		my $color = color_by_usage($max+abs($min4), $val+abs($min4));
+		$html .= "<td style=\"background-color: rgb($color,255,$color)\">".$val;
+	      }
+	    $html .= "<tr>";
+	  }
       }
     $html .= "</table>";
     return $html;
@@ -135,12 +142,13 @@ sub process_dir
     while (my $file = readdir(DIR))
       {
 	next if $file =~ /^\./;
-	$matrices{"$MATRIXDIR/$file"}=uc($file) unless $matrices{"$MATRIXDIR/".uc($file)} || $matrices{"$MATRIXDIR/".lc($file)};
+	$matrices{"$file"}=uc($file) unless $matrices{uc($file)} || $matrices{lc($file)};
       }
     closedir DIR;
     my $html = "<select id=matrix>";
     $html .= join ("\n", map {"<option value=\"".$_."\">".$matrices{$_}."</option>"} sort {$matrices{$a} cmp $matrices{$b}} keys %matrices )."\n";
-    $html .= "</selected>";
+    $html =~ s/(value=\"$matrix\")/selected $1/i if $matrix;
+    $html .= "</select>";
     return $html;
   }
 
@@ -153,6 +161,7 @@ sub process_file
     my $skip = $opts{skip} || [];#[qw(mitochond chloroplast virus phage)];
     my $keep = $opts{keep} || [];#[qw(mitochondr)];
     my $file = $opts{file};
+    $file = $MATRIXDIR."/".$file unless $file =~ /$MATRIXDIR/i;
     my %data;
     my @head;
     my $max = 0;
@@ -179,10 +188,6 @@ sub process_file
 	    next if $head[$i] eq "*";
 	    $min = $line[$i] if $line[$i] < $min;
 	  }
-	@line = sort {$b <=> $a} @line;
-
-	  
-
       }
     close IN;
     return \%data, $max, $min;
@@ -190,75 +195,6 @@ sub process_file
 
 
 
-sub sort_nt1
-  {
-    my $chr = uc(shift);
-
-    $chr = substr($chr, -1,1) if length($chr)>1;
-    my $val = 0;
-    if ($chr eq "G")
-      {
-	$val = 1;
-      }
-    elsif ($chr eq "A")
-      {
-	$val = 2;
-      }
-    elsif ($chr eq "T")
-      {
-	$val = 3;
-      }
-    return $val;
-  }
-
-sub sort_nt2
-  {
-    my $chr = uc(shift);
-
-    $chr = substr($chr, -1,1) if length($chr)>1;
-    my $val = 0;
-    if ($chr eq "G")
-      {
-	$val = 1;
-      }
-    elsif ($chr eq "A")
-      {
-	$val = 2;
-      }
-    elsif ($chr eq "T")
-      {
-	$val = 3;
-      }
-    return $val;
-  }
-
-sub sort_nt3
-  {
-    my $chr = uc(shift);
-
-    $chr = substr($chr, -1,1) if length($chr)>1;
-    my $val = 0;
-    if ($chr eq "G")
-      {
-	$val = 1;
-      }
-    elsif ($chr eq "T")
-      {
-	$val = 2;
-      }
-    elsif ($chr eq "C")
-      {
-	$val = 3;
-      }
-    return $val;
-  }
-
-sub commify
-    {
-      my $text = reverse $_[0];
-      $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
-      return scalar reverse $text;
-    }
 sub color_by_usage
       {
 	my ($max,$value, $opt) = @_;
