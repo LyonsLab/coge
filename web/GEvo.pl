@@ -2677,6 +2677,7 @@ sub dataset_search
 sub save_settings_gevo
   {
     my %opts = @_;
+    my $opts = Dumper \%opts;
     my $item = save_settings(opts=>$opts, user=>$USER, page=>$PAGE_NAME);
   }
 
