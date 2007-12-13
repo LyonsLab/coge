@@ -74,7 +74,6 @@ my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
 $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
-#print STDERR Dumper $USER;
 
 my %ajax = CoGe::Accessory::Web::ajax_func();
 $ajax{dataset_search} = \&dataset_search; #override this method from Accessory::Web for restricted organisms
@@ -216,7 +215,6 @@ sub gen_body
 	push @seq_sub, {%opts}
 	  
       }
-#    print STDERR Dumper \@seq_sub;
     #page preferences
     my $pad_gs = $form->param("pad_gs") if $form->param("pad_gs");
     $pad_gs = 0 unless $pad_gs;
@@ -363,7 +361,6 @@ sub run
       }
 
 
-#    print Dumper \@_;
 
     my $stagger_label = $hsp_label && $hsp_label =~ /staggered/i ? 1 : 0;
     my $feature_labels = !$hsp_label ? 0 : 1;
@@ -565,11 +562,6 @@ sub run
       }
     $seqcount--;
     $gevo_link .= ";num_seqs=".$seqcount;
-    my $count = 0;
-#    foreach (@sets)
-#      {
-#	$count++ if $_->{obj};
-#      }
     unless (@sets >1)
       {
 	$message .= "Problem retrieving information.  Please check submissions.\n";
@@ -606,7 +598,6 @@ sub run
     write_log($message, $cogeweb->logfile) if $message;
    #sets => array or data for blast
    #blast_reports => array of arrays (report, accn1, accn2, parsed data)
-#    print STDERR Dumper $analysis_reports;
     my $t3 = new Benchmark;
     my $count = 1;
     my $frame_height;
@@ -951,7 +942,6 @@ INSERT INTO image_info (id, iname, title, px_width,dsid, bpmin, bpmax) values ($
 	  }
 	#generate link
 	my $link = $feat->link;
-#	print STDERR "No link for $name\n", Dumper $feat unless $link;
 	$link = " " unless $link;
 	$link =~ s/'//g if $link;
 	#generate image track
@@ -995,7 +985,6 @@ INSERT INTO image_data (name, type, xmin, xmax, ymin, ymax, bpmin,bpmax,image_id
 	    foreach my $segment (@{$feat->segments})
 	      {
 		my ($start,$stop) = @$segment;
-#		print STDERR Dumper $segment if $type eq "anchor";
 		my $bpmin = $set->{obj}->start+$start-1;
 		my $bpmax = $set->{obj}->start+$stop-1;
 		my $xstart = sprintf("%.0f",$xmin+($start-$min_nt)/$length_nt*$length_pix);
@@ -1008,7 +997,6 @@ INSERT INTO image_data (name, type, xmin, xmax, ymin, ymax, bpmin, bpmax, image_
 	  }
 	else
 	  {
-#	    print STDERR Dumper $feat if $feat->{anchor};
 	    my $bpmin = $set->{obj}->start+$feat->start-1;
 	    my $bpmax = $set->{obj}->start+$feat->stop-1;
 	    $statement = qq{
@@ -1038,14 +1026,6 @@ INSERT INTO image_data (name, type, xmin, xmax, ymin, ymax, bpmin,bpmax,image_id
 	    $dbh->do($statement);
 	  }
       }
-    #     my $sth = $dbh->prepare("SELECT * from image_data");
-#     $sth->execute();
-#     while(my $item = $sth->fetchrow_arrayref)
-#       {
-# 	print STDERR Dumper $item;
-#       }
-#    system "chmod +rw $tempfile";
-#    return $tempfile;
   }
 
 
@@ -1168,8 +1148,6 @@ sub process_features
 	    $f->skip_overlap_search(1);
 	    $f->description("auto generated anchor for GEvo");
 	    $c->add_feature($f);
-#	    print STDERR Dumper $feat;
-#	    print STDERR Dumper $f;
 	    next;
 	  }
         next unless $f;
@@ -1484,7 +1462,6 @@ sub get_obj_from_genome_db
     my $chr = $opts{chr};
     my $up = $opts{up} || 0;
     my $down = $opts{down} || 0;
-#    print STDERR Dumper \%opts;
     my $t1 = new Benchmark;
     my ($feat) = $coge->resultset('Feature')->esearch({"me.feature_id"=>$featid})->next;
     unless (ref ($feat)=~ /feature/i || ($pos && $dsid))
@@ -2432,7 +2409,6 @@ sub hsp_color_cookie
 sub get_algorithm_options
   {
     my %opts = @_;
-#    print STDERR Dumper [map {"$_ => $opts{$_}" } sort keys %opts];
     my $analysis_program = $opts{prog};
     #blast stuff
     my $blast_wordsize = $opts{blast_word};
@@ -2701,7 +2677,6 @@ sub dataset_search
 sub save_settings_gevo
   {
     my %opts = @_;
-    my $opts = Dumper \%opts;
     my $item = save_settings(opts=>$opts, user=>$USER, page=>$PAGE_NAME);
   }
 
