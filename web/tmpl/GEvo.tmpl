@@ -6,9 +6,47 @@
 </HEAD>
 <script src="/CoGe/gobe/static/swfobject.js" ></script>
 <SCRIPT language="JavaScript">
-function set_genespace(drid,value){
-    document.getElementById(drid).value = value;
+/* e.g.  ('up', 1, 330) becomes: byId('drup1').value = 330; */
+/* so up is the 'left', down is the 'right' bar.   */
+
+function set_genespace(updown, idx, value, length){
+    console.log(updown+" "+value+" "+length);
+    value = parseFloat(value);
+    var eid = 'dr' + updown + idx;
+    document.getElementById(eid).value = value;
+    value = value*-1;
+    if (value < 1) {value = 1;}
+    if (value > length) {value = length;}
+
+    if (updown == "up") 
+     {
+      var orig_gbstart = $('#gbstart'+idx).val();
+      var orig_dirstart = $('#dirstart'+idx).val();
+      $('#gbstart'+idx).val(value);
+      $('#dirstart'+idx).val(value);
+      //adjust length
+
+       var gblength = $('#gblength'+idx).val();
+       if (gblength == undefined || gblength == ""){gblength=length;}
+       gblength = gblength-($('#gbstart'+idx).val()-orig_gbstart);
+       $('#gblength'+idx).val(gblength);
+
+       var dirlength = $('#dirlength'+idx).val();
+       if (dirlength == undefined || dirlength == ""){dirlength=length;}
+       dirlength = dirlength-($('#dirstart'+idx).val()-orig_dirstart);
+       $('#dirlength'+idx).val(dirlength);	
+
+     }
+    else if (updown == "down")
+     {
+       var tmp = (length-value+1)-parseFloat($('#gbstart'+idx).val());
+       if (tmp > length){tmp=length;}
+       $('#gblength'+idx).val(tmp);
+       var tmp = (length-value+1)-parseFloat($('#dirstart'+idx).val());
+       $('#dirlength'+idx).val(tmp);	
+     }
 }
+
 
 function setheight(){ 
     var g = jQuery('#gobe')
