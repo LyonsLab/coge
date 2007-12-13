@@ -445,12 +445,12 @@ sub run
  	elsif ($dirseq )
  	  {
  	    ($obj) = generate_obj_from_seq($dirseq, $i, $rev);
-	    $dirlength = length($dirseq)-$dirstart+1 unless $dirlength;
+	    $dirlength = length($obj->sequence)-$dirstart+1 unless $dirlength;
  	    if ($obj)
 	      {
 		#add an anchor
 		$obj->add_feature(
-			      type=>"genbank entry",
+			      type=>"direct sequence submission",
 			      location=>(1-$dirstart+1)."..".(length($obj->sequence)-$dirstart+1),
 			      strand=>1,
 			      qualifiers=>{
@@ -471,7 +471,7 @@ sub run
 				     repeat_mask=>$repeat_mask,
 				    );
 		$obj->start($dirstart);
-		$obj->stop($dirstart+$dirlength);
+		$obj->stop($dirstart+length($seq)-1);
 		$obj->chromosome(1);
 		$obj->dataset("NA");
 		$up = $dirstart;
