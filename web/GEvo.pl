@@ -473,7 +473,7 @@ sub run
 		$obj->start($dirstart);
 		$obj->stop($dirstart+length($seq)-1);
 		$obj->chromosome(1);
-		$obj->dataset("NA");
+#		$obj->dataset("NA");
 		$up = $dirstart;
 		$down = $dirlength;
 	      }
