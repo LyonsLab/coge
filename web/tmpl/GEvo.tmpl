@@ -9,14 +9,14 @@
 /* e.g.  ('up', 1, 330) becomes: byId('drup1').value = 330; */
 /* so up is the 'left', down is the 'right' bar.   */
 
-function set_genespace(updown, idx, value, length){
-    console.log(updown+" "+value+" "+length);
+function set_genespace(updown, idx, value, length, anchorlength){
+    console.log(updown+" "+value+" "+length+" "+anchorlength);
     value = parseFloat(value);
     var eid = 'dr' + updown + idx;
     document.getElementById(eid).value = value;
     value = value*-1;
     if (value < 1) {value = 1;}
-    if (value > length) {value = length;}
+//    if (value > length) {value = length;}
 
     if (updown == "up") 
      {
@@ -39,10 +39,10 @@ function set_genespace(updown, idx, value, length){
      }
     else if (updown == "down")
      {
-       var tmp = (length-value+1)-parseFloat($('#gbstart'+idx).val());
+       var tmp = (anchorlength-value+1)-parseFloat($('#gbstart'+idx).val());
        if (tmp > length){tmp=length;}
        $('#gblength'+idx).val(tmp);
-       var tmp = (length-value+1)-parseFloat($('#dirstart'+idx).val());
+       var tmp = (anchorlength-value+1)-parseFloat($('#dirstart'+idx).val());
        $('#dirlength'+idx).val(tmp);	
      }
 }
