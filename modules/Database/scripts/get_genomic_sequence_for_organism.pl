@@ -62,6 +62,7 @@ sub get_accn_locs {
         my ($name, $id) = @$name_id;
         my $feat = $s->resultset('Feature')->search( {
                            'me.feature_id'     => $id 
+                           'me.chromosome' => {'NOT LIKE' => 'contig%' }
                         , 'feature_names.name' => $name
                         }, {
                              prefetch  =>  ['feature_type', 'feature_names']
@@ -69,7 +70,6 @@ sub get_accn_locs {
                             ,limit    => 1
                         })->single(); 
         my ($chr) = $feat->chromosome =~ /(\d+)/;
-        if($chr == 2){ exit(); }
         #print STDERR $feat->feature_id . ", $name," .  $feat->chromosome . "," . $feat->feature_type->name . "\n";
         $chr = sprintf("%02i", $chr);
         if(!$files{$chr}){
@@ -108,7 +108,7 @@ sub get_10kmers {
     my %order;
     foreach my $gs ( $s->resultset('GenomicSequence')->search(
                         { 'dataset_id'   => {'IN' => $datasets } 
-                          #, 'chromosome' => {'NOT LIKE' => '%super%' }
+                          , 'chromosome' => {'NOT LIKE' => 'contig%' }
                         }, { order_by => ['start'] } )) {
             my ($chr) = $gs->chromosome =~ /(\d+)/;
             my $file = $outdir . $org . "10kmers_chr" . $chr . ".fasta";
