@@ -10,7 +10,7 @@ use Memoize;
 use DB_File;
 
 my %options;
-getopt("ot", \%options);
+getopt("otd", \%options);
 
 my %org_hash = (
    rice        => 3
@@ -37,6 +37,7 @@ memoize('get_feature_names_for_datasets', SCALAR_CACHE => [HASH => \%persistent]
 
 my $organism = $options{o} or die "send in organism name i.e. -o rice.\n";
 my $datasets = [sort map { $_->dataset_id  } @{$s->get_current_datasets_for_org($org_hash{$organism})}];
+my $outdir   = ($options{d} or ".") . "/";
 
 
 print STDERR "usings datasets: " . join(",", @$datasets) . " for $organism ...\n";
@@ -73,7 +74,7 @@ sub get_accn_locs {
         $chr = sprintf("%02i", $chr);
         if(!$files{$chr}){
             my $FH;
-            my $filename = $org . $chr . ".fasta";
+            my $filename = $outdir . $org . $chr . ".fasta";
             open($FH, ">", $filename);
             $files{$chr} = $FH;
             print STDERR "creating file $filename\n";
@@ -93,7 +94,7 @@ sub get_accn_locs {
         print $FH $feat->genomic_sequence() . "\n";
     }
     print STDERR "creating file " . $org . ".order contained the list of genes in order ...\n";
-    open(ORDER, ">", $org . ".order");
+    open(ORDER, ">", $outdir . $org . ".order");
     map { print ORDER $_ . "\n" } sort keys %order;
     map { close $_ } values %files;
     close(ORDER);
@@ -110,7 +111,7 @@ sub get_10kmers {
                           #, 'chromosome' => {'NOT LIKE' => '%super%' }
                         }, { order_by => ['start'] } )) {
             my ($chr) = $gs->chromosome =~ /(\d+)/;
-            my $file = $org . "_chr" . $chr . ".fasta";
+            my $file = $outdir . $org . "10kmers_chr" . $chr . ".fasta";
             my $FH;
             if (!$files{$file}) {
                 print STDERR "creating file $file ...\n";
@@ -126,7 +127,7 @@ sub get_10kmers {
             $order{$header} = 1;
     }
     print STDERR "creating file " . $org . ".order contained the list of 10kmers ...\n";
-    open(ORDER, ">", $org . ".order");
+    open(ORDER, ">", $outdir . $org . ".order");
     map { print ORDER $_ . "\n" } sort keys %order;
     close(ORDER);
 
@@ -135,17 +136,17 @@ sub get_10kmers {
 
 sub get_feature_names_for_datasets {
     my $datasets = shift;
+   
     my $rs = $s->resultset('FeatureName')->search( {
             'feature.dataset_id' => { 'IN' => $datasets }
             ,'me.name' => {'NOT REGEXP' => '\\.|,|\\-' }
+            ,'feature.chromosome' => { 'NOT LIKE' => 'contig%' } # keep only chrs and super_contigs
             } , { 
                join      =>  { 'feature' => 'feature_type' } 
                ,order_by => 'feature_type.name'  
                });
-    #print STDERR "found " . $rs->count . " names.\n";
     my %seen;
     my @names = grep { $_->[0] !~ /\W/ and !$seen{$_->[0]}++ } map { [uc($_->name), $_->feature_id] } $rs->all();
-    #print STDERR "filtered to " . ( $#names + 1 ). " names.\n";
     return [sort { $a->[0] cmp $b->[0] } @names];
 }
 
