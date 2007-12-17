@@ -59,17 +59,19 @@ sub get_accn_locs {
 
     my %files;
     foreach my $name_id (@$names_ids){
-        my ($name, $id) = @$name_id;
+        my ($name, $id, $start) = @$name_id;
         my $feat = $s->resultset('Feature')->search( {
                            'me.feature_id'     => $id 
-                           'me.chromosome' => {'NOT LIKE' => 'contig%' }
+                        ,  'me.chromosome' => {'NOT LIKE' => 'contig%' }
                         , 'feature_names.name' => $name
                         }, {
                              prefetch  =>  ['feature_type', 'feature_names']
                             ,order_by => 'feature_type.name'
                             ,limit    => 1
                         })->single(); 
+        if(!$feat){ next; }
         my ($chr) = $feat->chromosome =~ /(\d+)/;
+        if(length($chr) > 2){ next; } 
         #print STDERR $feat->feature_id . ", $name," .  $feat->chromosome . "," . $feat->feature_type->name . "\n";
         $chr = sprintf("%02i", $chr);
         if(!$files{$chr}){
@@ -111,6 +113,7 @@ sub get_10kmers {
                           , 'chromosome' => {'NOT LIKE' => 'contig%' }
                         }, { order_by => ['start'] } )) {
             my ($chr) = $gs->chromosome =~ /(\d+)/;
+            if(length($chr) > 2){ next; } 
             my $file = $outdir . $org . "10kmers_chr" . $chr . ".fasta";
             my $FH;
             if (!$files{$file}) {
@@ -139,14 +142,16 @@ sub get_feature_names_for_datasets {
    
     my $rs = $s->resultset('FeatureName')->search( {
             'feature.dataset_id' => { 'IN' => $datasets }
-            ,'me.name' => {'NOT REGEXP' => '\\.|,|\\-' }
+            ,'me.name' => {'NOT REGEXP' => ',|\\-' }
             ,'feature.chromosome' => { 'NOT LIKE' => 'contig%' } # keep only chrs and super_contigs
+            ,'feature_type.name' => { 'NOT LIKE' => '%contig%' }
             } , { 
-               join      =>  { 'feature' => 'feature_type' } 
+               prefetch      =>  { 'feature' => 'feature_type' } 
                ,order_by => 'feature_type.name'  
                });
     my %seen;
-    my @names = grep { $_->[0] !~ /\W/ and !$seen{$_->[0]}++ } map { [uc($_->name), $_->feature_id] } $rs->all();
-    return [sort { $a->[0] cmp $b->[0] } @names];
+    #my @names = grep { $_->[0] !~ /\W/ and !$seen{$_->[0]}++ } map { [uc($_->name), $_->feature_id] } $rs->all();
+    my @names = grep { !$seen{$_->[0]}++ } map { [uc($_->name), $_->feature_id, $_->feature->start] } $rs->all();
+    return [sort { $a->[2] cmp $b->[2] } @names];
 }
 
