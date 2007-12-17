@@ -65,6 +65,8 @@ sub gen_body
     my $form = $FORM;
     my $no_values;
     $BASEFILE = $form->param('basename');
+    my $sort_by_type = $form->param('sort_type');
+    my $sort_by_location = $form->param('sort_loc');
     my $feat_list = [];
     $feat_list = read_file() if $BASEFILE;#: $opts{feature_list};
     foreach my $item ($form->param('fid'))
@@ -74,7 +76,7 @@ sub gen_body
     my $dsid = $form->param('dsid') if $form->param('dsid');
     my $ftid = $form->param('ftid') if $form->param('ftid');
     push @$feat_list, @{get_fids_from_dataset(dsid=>$dsid, ftid=>$ftid)} if $dsid;
-    my $table = generate_table(feature_list=>$feat_list);
+    my $table = generate_table(feature_list=>$feat_list, sort_by_type=>$sort_by_type, sort_by_location=>$sort_by_location);
     if ($table)
       {
 	$template->param(INFO=>$table);
@@ -109,15 +111,16 @@ sub generate_table
     return unless @$feat_list;
     my @table;
     my $count = 1;
-    foreach my $featid (@$feat_list)
+    $feat_list = [map {$coge->resultset("Feature")->find($_)} @$feat_list];
+    $feat_list = [sort {$a->organism->name cmp $b->organism->name || $a->type->name cmp $b->type->name || $a->chromosome cmp $b->chromosome|| $a->start <=> $b->start}@$feat_list];
+    foreach my $feat(@$feat_list)
     {
-      #print STDERR $featid,"\n";
-      my ($feat) = $coge->resultset("Feature")->find($featid);
       unless ($feat)
 	{
-	  warn "feature id $featid failed to return a valid feature object\n";
+#	  warn "feature id $featid failed to return a valid feature object\n";
 	  next;
 	}
+      my $featid = $feat->id;
       my ($name) = sort $feat->names;
       my $hpp = $feat->annotation_pretty_print_html();
       my $row_style = $count%2 ? "even" : "odd";
@@ -128,8 +131,9 @@ sub generate_table
 		   FEATID=>$featid,
 		   NAME=>$name,
 		   TYPE=>$feat->type->name,
-		   LOC=>$feat->start."-".$feat->stop,
-		   CHR=>$feat->chr,STRAND=>$feat->strand,
+		   LOC=>"chr ".$feat->chr.": ".$feat->start."-".$feat->stop." (".$feat->strand.")",
+#		   CHR=>$feat->chr,
+#		   STRAND=>$feat->strand,
 		   ORG=>$feat->organism->name."(v ".$feat->version.")",
 		   HPP=>$hpp, 
 		   TABLE_ROW=>$row_style,
