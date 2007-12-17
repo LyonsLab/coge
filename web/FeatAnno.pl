@@ -5,11 +5,13 @@ use CGI;
 use CGI::Carp 'fatalsToBrowser';
 use Data::Dumper;
 use CoGe::Genome;
+use CoGeX;
+use DBIxProfiler;
 use CoGe::Accessory::LogUser;
 #use CoGeX;
 $ENV{PATH} = "/opt/apache/CoGe/";
 
-use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $DB $FORM $FID $DS $CHR $LOC $ORG $VERSION $START $STOP $NAME_ONLY);
+use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $DB $FORM $FID $DS $CHR $LOC $ORG $VERSION $START $STOP $NAME_ONLY $coge);
 
 # set this to 1 to print verbose messages to logs
 $DEBUG = 0;
@@ -32,10 +34,11 @@ $VERSION = $FORM->param('version') || $FORM->param('ver');
 $NAME_ONLY = $FORM->param('name_only') || 0;
 
 $DB = new CoGe::Genome;
-#my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
-#my $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
-#$coge->storage->debugobj(new DBIxProfiler());
-#$coge->storage->debug(1);
+my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
+$coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
+$coge->storage->debugobj(new DBIxProfiler());
+$coge->storage->debug(1);
+
 print "Content-Type: text/html\n\n";
 my $rhtml = gen_html(featid=>$FID, start=>$START, stop=>$STOP, chr=>$CHR, ds=>$DS, org=>$ORG, version=>$VERSION, name_only=>$NAME_ONLY) if $START > 0;
 if ($START == $STOP)

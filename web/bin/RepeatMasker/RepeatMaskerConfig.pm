@@ -83,7 +83,7 @@ BEGIN {
   ## ================
   ## Set the location of the WUBLAST programs and support utilities.
   ##
-    $WUBLAST_DIR   = "/opt/apache/CoGe/bin/wu-blast";
+    $WUBLAST_DIR   = "/usr/local/wublast";
     $WUBLASTN_PRGM = "$WUBLAST_DIR/blastn";
     $WUBLASTP_PRGM = "$WUBLAST_DIR/blastp";
     $WUBLASTX_PRGM = "$WUBLAST_DIR/blastx";
@@ -108,7 +108,7 @@ BEGIN {
 ##  Pick which search engine should be the default
 ##  Can be one of "crossmatch", "wublast", or "decypher".
 ##
-  $DEFAULT_SEARCH_ENGINE = "wublast";
+  $DEFAULT_SEARCH_ENGINE = "crossmatch";
 
 
 ##

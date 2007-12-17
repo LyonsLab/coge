@@ -104,27 +104,47 @@ sub gen_data
 	    foreach my $aa2 (sort {$aa_sort->{$b} <=> $aa_sort->{$a} || $a cmp $b}keys %$aa_sort)
 	      {	
 		my $val = $data->{$aa1}{$aa2};
-		my $color = color_by_usage($max+abs($min2), $val+abs($min2));
-		$html .= "<td style=\"background-color: rgb($color,255,$color)\">".$val;
+		my $color;
+		if ($val >0)
+		  {
+		    $color = color_by_usage($max, $val);
+		    $html .= "<td style=\"background-color: rgb($color,255,$color)\">".$val;
+		  }
+		else
+		  {
+		    $color = color_by_usage(abs($min2), $val*-1);
+		    $html .= "<td style=\"background-color: rgb(255,$color,$color)\">".$val;
+		  }
+#		my $color = color_by_usage($max+abs($min2), $val+abs($min2));
+#		$html .= "<td style=\"background-color: rgb($color,255,$color)\">".$val;
 	      }
 	    $html .= "<tr>";
 	  }
       }
     else
       {
-	$html .= "<tr><th><th>".join ("<th>", sort keys %$data);
+	$html .= "<tr><th><th>".join ("<th>", sort { sort_nt1(substr($a, 0, 1)) <=> sort_nt1(substr($b,0, 1)) || sort_nt2(substr($a,1,1)) <=> sort_nt2(substr($b,1,1)) || sort_nt3(substr($a,2,1)) <=> sort_nt3(substr($b,2,1)) }keys  %$data);
 	$html .= "<tr>";
-	foreach my $aa1 (sort keys  %$data)
-	  {	
+	foreach my $aa1 (sort { sort_nt1(substr($a, 0, 1)) <=> sort_nt1(substr($b,0, 1)) || sort_nt2(substr($a,1,1)) <=> sort_nt2(substr($b,1,1)) || sort_nt3(substr($a,2,1)) <=> sort_nt3(substr($b,2,1)) }keys  %$data)
+	  {
 	    $html .= "<th>$aa1";
 	    #	print STDERR join ("\t",  sort {$b<=>$a} map {$data->{$aa1}{$_}} keys %aa_sort),"\n";
 	    my ($max) = sort {$b<=>$a} map {$data->{$aa1}{$_}} keys %$data;
 	    my ($min1, $min2, $min3, $min4) = sort {$a<=>$b} map {$data->{$aa1}{$_}} keys %$data; #min one will be for the stop aa, we'll skip this since it is always rediculous 
-	    foreach my $aa2 (sort keys %$data)
+	foreach my $aa2 (sort { sort_nt1(substr($a, 0, 1)) <=> sort_nt1(substr($b,0, 1)) || sort_nt2(substr($a,1,1)) <=> sort_nt2(substr($b,1,1)) || sort_nt3(substr($a,2,1)) <=> sort_nt3(substr($b,2,1)) } keys  %$data)#	    foreach my $aa2 (sort keys %$data)
 	      {	
 		my $val = $data->{$aa1}{$aa2};
-		my $color = color_by_usage($max+abs($min4), $val+abs($min4));
-		$html .= "<td style=\"background-color: rgb($color,255,$color)\">".$val;
+		my $color;
+		if ($val >0)
+		  {
+		    $color = color_by_usage($max, $val);
+		    $html .= "<td style=\"background-color: rgb($color,255,$color)\">".$val;
+		  }
+		else
+		  {
+		    $color = color_by_usage(abs($min4), $val*-1);
+		    $html .= "<td style=\"background-color: rgb(255,$color,$color)\">".$val;
+		  }
 	      }
 	    $html .= "<tr>";
 	  }
@@ -204,5 +224,67 @@ sub color_by_usage
 	return int($g + .5);
       }
 
+sub sort_nt1
+  {
+    my $chr = uc(shift);
+
+    $chr = substr($chr, -1,1) if length($chr)>1;
+    my $val = 0;
+    if ($chr eq "G")
+      {
+	$val = 1;
+      }
+    elsif ($chr eq "A")
+      {
+	$val = 2;
+      }
+    elsif ($chr eq "T")
+      {
+	$val = 3;
+      }
+    return $val;
+  }
+
+sub sort_nt2
+  {
+    my $chr = uc(shift);
+
+    $chr = substr($chr, -1,1) if length($chr)>1;
+    my $val = 0;
+    if ($chr eq "G")
+      {
+	$val = 1;
+      }
+    elsif ($chr eq "A")
+      {
+	$val = 2;
+      }
+    elsif ($chr eq "T")
+      {
+	$val = 3;
+      }
+    return $val;
+  }
+
+sub sort_nt3
+  {
+    my $chr = uc(shift);
+
+    $chr = substr($chr, -1,1) if length($chr)>1;
+    my $val = 0;
+    if ($chr eq "G")
+      {
+	$val = 1;
+      }
+    elsif ($chr eq "T")
+      {
+	$val = 2;
+      }
+    elsif ($chr eq "C")
+      {
+	$val = 3;
+      }
+    return $val;
+  }
 
 1;
