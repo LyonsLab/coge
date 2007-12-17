@@ -9,21 +9,19 @@ use CoGeX;
 use CoGeX::Feature;
 use CoGeX::Dataset;
 use HTML::Template;
-use CoGe::Genome;
 use Text::Wrap qw($columns &wrap);
 use Data::Dumper;
 use POSIX;
 
 $ENV{PATH} = "/opt/apache/CoGe/";
 
-use vars qw( $TEMPDIR $TEMPURL $FORM $USER $DATE $DB $coge);
+use vars qw( $TEMPDIR $TEMPURL $FORM $USER $DATE $coge);
 
 $TEMPDIR = "/opt/apache/CoGe/tmp";
 $TEMPURL = "/CoGe/tmp";
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
 ($USER) = CoGe::Accessory::LogUser->get_user();
-$DB = new CoGe::Genome;
 $FORM = new CGI;
 
 my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
@@ -92,18 +90,22 @@ sub gen_body
     $template->param(SEQ_BOX=>1);
     if ($featid)
     {
+      my ($feat) = $coge->resultset('Feature')->find($featid);
+      $dsid = $feat->dataset_id;
+      $chr = $feat->chromosome;
+
       $template->param(FEATID=>$featid);
       $template->param(FEATNAME=>$feat_name);
       $template->param(FEAT_INFO=>qq{<td valign=top><input type=button value="Get Feature Info" onClick="generate_feat_info(['args__$featid'],[display_feat_info])"><br><div id=feature_info style="display:none"></div>});
-      $template->param(DSID=>0); #to make JS happy
-    $template->param(CHR=>'null'); #to make JS happy
+      $template->param(DSID=>$dsid); #to make JS happy
+    $template->param(CHR=>$chr); #to make JS happy
     }
     else
     {
         $template->param(DSID=>$dsid);
     	$template->param(CHR=>$chr);
     	$template->param(FEATID=>0); #to make JS happy
-    	$template->param(FEATNAME=>'null'); #to make JS happy
+    	$template->param(FEATNAME=>'null'); #to make JS happy	
     }
     my $html = $template->output;
     return $html;
@@ -228,14 +230,21 @@ sub gen_foot
    # print STDERR "nuthin" unless $featid;
     $template->param(ADDITION=>1);
     if ($featid){
-	  $template->param(PROTEIN=>'Protein Sequence');
-	  $template->param(SIXFRAME=>0);
+      my ($feat) = $coge->resultset('Feature')->find($featid);
+      $dsid = $feat->dataset_id;
+      $chr = $feat->chromosome;
+
+      $template->param(PROTEIN=>'Protein Sequence');
+      $template->param(SIXFRAME=>0);
+      $template->param(FIND_FEATS=>1);
       $template->param(EXTEND=>"Extend Sequence");
       $template->param(UPSTREAM=>"UPSTREAM: ");
       $template->param(UPVALUE=>$upstream);
       $template->param(DOWNSTREAM=>"DOWNSTREAM: ");
       $template->param(DOWNVALUE=>$downstream);
       $template->param(FEATURE=>1);
+      $start = $feat->start-$upstream;
+      $stop = $feat->stop+$downstream;
     }
     else{
       $template->param(PROTEIN=>'Six Frame Translation');
@@ -250,6 +259,8 @@ sub gen_foot
       $template->param(ADD_EXTRA=>1);
       $template->param(RANGE=>1);      
       }
+    my $link = find_feats(dsid=>$dsid, start=>$start, stop=>$stop, chr=>$chr);
+    $template->param(FEATLISTLINK=>$link);
    $template->param(REST=>1);
    #print STDERR $template->output."\n";
    my $html = $template->output;
@@ -323,14 +334,19 @@ sub find_feats
 	my $stop = $opts{'stop'};
 	my $chr = $opts{'chr'};
 	my $dsid = $opts{'dsid'};
-	my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SeqView.tmpl');
-	my $html = `$ENV{PATH}/FeatAnno.pl start=$start stop=$stop ds=$dsid chr=$chr`;
-	$html = substr($html, (44), length($html));
-        $template->param(FEATUREBOX=>1);
-        $template->param(LISTFEATURES=>$html);
+#	my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SeqView.tmpl');
+	my $link = "FeatList.pl?";
+	foreach my $feat ( $coge->get_features_in_region(start=>$start,stop=>$stop,chr=>$chr,dataset_id=>$dsid))
+	  {
+	    $link.="&fid=".$feat->id;
+	  }
+#	my $html = `$ENV{PATH}/FeatAnno.pl start=$start stop=$stop ds=$dsid chr=$chr`;
+#	$html = substr($html, (44), length($html));
+#        $template->param(FEATUREBOX=>1);
+#        $template->param(LISTFEATURES=>$html);
         #$template->param(FEATTABLE=>qq{style = "overflow: auto; height: 300px;"});
-        $html = $template->output;
-        return $html;
+#        $html = $template->output;
+        return $link;
 }
 
 sub generate_feat_info
