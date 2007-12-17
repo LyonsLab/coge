@@ -403,7 +403,7 @@ function monitor_log(log)
   if (!finished && pageObj.nolog<4)
   {
     setTimeout("read_log(['args__'+pageObj.basefile], [monitor_log])", 4000);
-    if (message) $('#loading').html(message);
+  if (message) $('#loading').html("<div class=small>"+message+'</div>');
   }
 
 }
