@@ -782,6 +782,11 @@ function adjust_blast_types(val){
   }
 }
 
+function matrix_view (){
+var matrix = $('#matrix').val();
+window.open('/CoGe/MatrixView.pl?matrix='+matrix);
+}
+
 </SCRIPT>
 </TMPL_IF>
 
@@ -1547,6 +1552,7 @@ function adjust_blast_types(val){
               <option value = "BLOSUM62" selected> BLOSUM62
               <option value = "BLOSUM45"> BLOSUM45
              </select>
+	     <div onclick="matrix_view();" class="link small">View Matrix</div>
        </TR>
        <TMPL_IF NAME=BLAST_PRO_COMP>
        <TR>
