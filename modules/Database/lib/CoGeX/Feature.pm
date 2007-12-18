@@ -94,10 +94,29 @@ sub names
       {
 	return wantarray ? @{$self->{_names}} : $self->{_names};
       }
-    my @names =  $self->feature_names()->get_column('name')->all;
+#    my @names =  sort $self->feature_names()->get_column('name')->all;
+    my @names;
+    foreach my $name (sort {$a->name cmp $b->name} $self->feature_names())
+      {
+	if ($name->primary_name)
+	  {
+	    unshift @names, $name->name;
+	  }
+	else
+	  {
+	    push @names, $name->name;
+	  }
+      }
     $self->{_names}=\@names;
     return wantarray ? @names : \@names;
   }
+
+sub primary_name
+ {
+   my $self = shift;
+   my ($nameo) = $self->feature_names({primary_name=>1});
+   my ($name) = ref($nameo) =~ /name/i ? $nameo->name : $self->names;
+ }
 
 sub locs
   {
@@ -121,6 +140,14 @@ sub annos
   {
     shift->eannotations(@_);
   }
+
+sub length
+    {
+      my $self = shift;
+      my $length = 0;
+      map {$length+=($_->stop-$_->start+1)} $self->locations;
+      return $length;
+    }
 
 ################################################ subroutine header begin ##
 
@@ -544,12 +571,12 @@ sub genomic_sequence {
 #  print STDERR $full_seq,"\n";
 #  print STDERR "START:  ", $locs[0][0],"::",$s0,"\n";
   foreach my $loc (@locs){
-    if ($loc->[0]-$s0+$loc->[1]-$loc->[0]+1 > length ($full_seq))
+    if ($loc->[0]-$s0+$loc->[1]-$loc->[0]+1 > CORE::length ($full_seq))
       {
 	print STDERR "Error in feature->genomic_sequence, location is outside of retrieved sequence: \n";
 	use Data::Dumper;
 	print STDERR Dumper \@locs;
-	print STDERR length ($full_seq),"\n";
+	print STDERR CORE::length ($full_seq),"\n";
 	print STDERR Dumper {
 	  chromosome=>$chr,
 	    skip_length_check=>1,
@@ -636,7 +663,7 @@ sub blast_bit_score
     my $lambda = $self->_estimate_lambda(match=>$match, mismatch=>$mismatch);
     my $seq = $self->genomic_sequence();
     warn "No genomic sequence could be obtained for this feature object.  Can't calculate a blast bit score.\n" unless $seq;
-    my $bs = sprintf("%.0f", $lambda*length($seq)*$match/log(2));
+    my $bs = sprintf("%.0f", $lambda*CORE::length($seq)*$match/log(2));
     return $bs;
   }
 
@@ -808,7 +835,7 @@ sub _process_seq
     my $alter = $opts{alter};
     my $codonl = $opts{codonl} || 2;
     my $seq_out;
-    for (my $i = $start; $i < length ($seq); $i = $i+$codonl)
+    for (my $i = $start; $i < CORE::length ($seq); $i = $i+$codonl)
       {
 	my $codon = uc(substr($seq, $i, $codonl));
 	my $chr = $code1->{$codon} || $code2->{$codon};
@@ -920,7 +947,7 @@ sub codon_frequency
     my %codon = map {$_=>0} keys %$code;
     my $seq = $self->genomic_sequence;
     my $x=0;
-    while ($x<length($seq))
+    while ($x<CORE::length($seq))
       {
 	$codon{uc(substr($seq, $x, 3))}++;
 	$x+=3;
@@ -995,7 +1022,7 @@ sub fasta
 	else
 	  {
 	    my ($seqs,$type) = $self->frame6_trans;
-	    foreach my $frame (sort {length($a) <=> length($b) || $a cmp $b} keys %$seqs)
+	    foreach my $frame (sort {CORE::length($a) <=> CORE::length($b) || $a cmp $b} keys %$seqs)
 	      {
 		$seq = $seqs->{$frame};
 		$seq = $self->reverse_complement($seq) if $rc;
