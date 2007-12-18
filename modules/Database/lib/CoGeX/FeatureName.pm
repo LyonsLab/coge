@@ -23,6 +23,8 @@ __PACKAGE__->add_columns(
   },
   "feature_id",
   { data_type => "INT", default_value => 0, is_nullable => 0, size => 10 },
+  "primary_name",
+  { data_type => "TINYINT", default_value => 0, is_nullable => 0, size => 1 },
 );
 __PACKAGE__->set_primary_key("feature_name_id");
 __PACKAGE__->belongs_to("feature" => "CoGeX::Feature", "feature_id");
