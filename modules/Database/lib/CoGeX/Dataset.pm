@@ -5,8 +5,8 @@ package CoGeX::Dataset;
 use strict;
 use warnings;
 use Data::Dumper;
-use CoGeX::Feature;
 use base 'DBIx::Class';
+use CoGeX::Feature;
 use Text::Wrap;
 
 __PACKAGE__->load_components("PK::Auto", "ResultSetManager", "Core");
