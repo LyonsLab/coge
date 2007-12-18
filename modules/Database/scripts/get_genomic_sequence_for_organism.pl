@@ -6,7 +6,6 @@ use Getopt::Std;
 my $connstr = 'dbi:mysql:genomes:biocon:3306';
 my $s = CoGeX->connect($connstr, 'bpederse', 'brent_cnr');
 use Data::Dumper;
-use Memoize;
 use DB_File;
 
 my %options;
@@ -21,20 +20,6 @@ my %org_hash = (
   ,maize       => 333
 );
 
-use Memoize;
-use Memoize::Expire;
-use Data::Dumper;
-tie my %cache => 'Memoize::Expire', 'LIFETIME' => 20;
-tie my %cachelist => 'Memoize::Expire', 'LIFETIME' => 10;
-
-memoize(\&CoGeX::Dataset::genomic_sequences
-          , NORMALIZE    => sub { print Dumper %cache; shift->genomic_sequence_id; }
-          , SCALAR_CACHE => [ 'HASH', \%cache]
-          , LIST_CACHE   => [ 'HASH', \%cachelist]);
-
-tie my %persistent => 'DB_File', '/tmp/getgene2s.cache' , O_RDWR|O_CREAT, 0666;
-memoize('get_feature_names_for_datasets', SCALAR_CACHE => [HASH => \%persistent], LIST_CACHE => 'MERGE', NORMALIZE => sub { join " ", @_ } );
-
 my $organism = $options{o} or die "send in organism name i.e. -o rice.\n";
 my $datasets = [sort map { $_->dataset_id  } @{$s->get_current_datasets_for_org($org_hash{$organism})}];
 my $outdir   = ($options{d} or ".") . "/";
@@ -42,14 +27,13 @@ my $outdir   = ($options{d} or ".") . "/";
 
 print STDERR "usings datasets: " . join(",", @$datasets) . " for $organism ...\n";
 
-my $feature_names_ids = get_feature_names_for_datasets($datasets);
-print STDERR "got " .  scalar(@$feature_names_ids) . " feature names\n";
-
-if($options{t}){
+if(defined $options{t}){
     get_10kmers($organism, $datasets);
     exit();
 }
 
+my $feature_names_ids = get_feature_names_for_datasets($datasets);
+print STDERR "got " .  scalar(@$feature_names_ids) . " feature names\n";
 get_accn_locs($organism, $datasets, $feature_names_ids);
 
 sub get_accn_locs {
@@ -86,7 +70,7 @@ sub get_accn_locs {
         my $start = sprintf("%09i", $feat->start);
         my $stop  = sprintf("%09i", $feat->stop );
 
-        my $header = $chr . "||" . $name . "||" . $start . "||" . $stop 
+        my $header = $chr . "||" . $start . "||" . $stop .  "||" .  $name
                . "||". $feat->strand . "||" . uc($feat->feature_type->name) 
                . "||". $feat->feature_id;
 
@@ -114,7 +98,8 @@ sub get_10kmers {
                         }, { order_by => ['start'] } )) {
             my ($chr) = $gs->chromosome =~ /(\d+)/;
             if(length($chr) > 2){ next; } 
-            my $file = $outdir . $org . "10kmers_chr" . $chr . ".fasta";
+            $chr = sprintf("%02i", $chr);
+            my $file = $outdir . $org . "tenkmers_chr" . $chr . ".fasta";
             my $FH;
             if (!$files{$file}) {
                 print STDERR "creating file $file ...\n";
@@ -123,9 +108,10 @@ sub get_10kmers {
             }else{
                 $FH = $files{$file};
             }
-            my $header = sprintf("%02i",$chr) . "||NONE||" . sprintf("%09i", $gs->start());
+            my $header = $chr . "||" . sprintf("%09i", $gs->start()) . "||" 
+                . sprintf("%09i", $gs->stop()) . "||10KMER" ;
             print $FH ">" . $header . "\n";
-            print $FH $gs->_sequence_data() ."\n";
+            print $FH $gs->sequence_data() ."\n";
 
             $order{$header} = 1;
     }
@@ -150,8 +136,11 @@ sub get_feature_names_for_datasets {
                ,order_by => 'feature_type.name'  
                });
     my %seen;
-    #my @names = grep { $_->[0] !~ /\W/ and !$seen{$_->[0]}++ } map { [uc($_->name), $_->feature_id] } $rs->all();
-    my @names = grep { !$seen{$_->[0]}++ } map { [uc($_->name), $_->feature_id, $_->feature->start] } $rs->all();
-    return [sort { $a->[2] cmp $b->[2] } @names];
+    my @names;
+    while(my $g = $rs->next()){
+        if($seen{$g->name}++){ next; }
+        push(@names, [uc($g->name), $g->feature_id, $g->feature->start]);
+    }
+    return [sort { $a->[2] <=> $b->[2] } @names];
 }
 
