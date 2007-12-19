@@ -544,12 +544,9 @@ sub genomic_sequence {
   my @locs = map {[$_->start,$_->stop,$_->chromosome,$_->strand]}sort { $a->start <=> $b->start } $self->locations() ;
   if ($up)
     {
-#      print STDERR "have up: $up\n";
-#      print STDERR $locs[0][0],"--";
       my $start = $locs[0][0]-$up;
       $start = 1 if $start < 1;
       $locs[0][0]=$start;
-#      print STDERR $locs[0][0],"\n";
     }
   if ($down)
     {
@@ -559,7 +556,6 @@ sub genomic_sequence {
   my $chr = $self->chromosome || $locs[0][2];
   my $start = $locs[0][0];
   my $stop = $locs[-1][1];
-#  print STDERR "Start: $start\n";
   my $full_seq = $dataset->get_genomic_sequence(
 						chromosome=>$chr,
 						skip_length_check=>1,
@@ -567,9 +563,6 @@ sub genomic_sequence {
 						stop=>$stop,
 					       );
   my $s0 = $locs[0][0];
-
-#  print STDERR $full_seq,"\n";
-#  print STDERR "START:  ", $locs[0][0],"::",$s0,"\n";
   foreach my $loc (@locs){
     if ($loc->[0]-$s0+$loc->[1]-$loc->[0]+1 > CORE::length ($full_seq))
       {
@@ -980,7 +973,6 @@ sub gc_content
     my ($gc,$at);
     $gc = $seq =~ tr/gcGC/gcGC/;
     $at = $seq =~ tr/atAT/atAT/;
-    return "NA" unless $gc && $at;
     unless ($counts)
       {
 	my $total = $gc+$at;
