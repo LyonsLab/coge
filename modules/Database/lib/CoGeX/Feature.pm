@@ -6,6 +6,7 @@ use base 'DBIx::Class';
 use CoGe::Accessory::genetic_code;
 use Text::Wrap;
 use Data::Dumper;
+use CoGe::Accessory::Annotation;
 
 __PACKAGE__->load_components("PK::Auto", "ResultSetManager", "Core");
 __PACKAGE__->table("feature");
@@ -172,7 +173,7 @@ See Also   : CoGe::Genome::Accessory::Annotation
 sub annotation_pretty_print
   {
     my $self = shift;
-    my $anno_obj = new CoGe::Genome::Accessory::Annotation(Type=>"anno");
+    my $anno_obj = new CoGe::Accessory::Annotation(Type=>"anno");
     $anno_obj->Val_delimit("\n");
     $anno_obj->Val_delimit("\n");
     $anno_obj->Add_type(0);
@@ -187,8 +188,8 @@ sub annotation_pretty_print
     $location .= join (", ", map {$_->start."-".$_->stop} $self->locs);
     $location .="(".$strand.")";
     #my $location = "Chr ".$chr. "".$start."-".$stop.""."(".$strand.")";
-    $anno_obj->add_Annot(new CoGe::Genome::Accessory::Annotation(Type=>"Location", Values=>[$location], Type_delimit=>": ", Val_delimit=>" "));
-    my $anno_type = new CoGe::Genome::Accessory::Annotation(Type=>"Name(s)");
+    $anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"Location", Values=>[$location], Type_delimit=>": ", Val_delimit=>" "));
+    my $anno_type = new CoGe::Accessory::Annotation(Type=>"Name(s)");
     $anno_type->Type_delimit(": ");
     $anno_type->Val_delimit(", ");
     foreach my $name ($self->names)
@@ -201,13 +202,13 @@ sub annotation_pretty_print
       {
 	my $type = $anno->type();
 	my $group = $type->group();
-	my $anno_type = new CoGe::Genome::Accessory::Annotation(Type=>$type->name);
+	my $anno_type = new CoGe::Accessory::Annotation(Type=>$type->name);
 	$anno_type->Val_delimit("\n");
 
 	$anno_type->add_Annot($anno->annotation);
 	if (ref ($group) =~ /group/i)
 	  {
-	    my $anno_g = new CoGe::Genome::Accessory::Annotation(Type=>$group->name);
+	    my $anno_g = new CoGe::Accessory::Annotation(Type=>$group->name);
 	    $anno_g->add_Annot($anno_type);
 	    $anno_g->Type_delimit(": ");
 	    $anno_g->Val_delimit(", ");
@@ -236,7 +237,7 @@ sub annotation_pretty_print
  Comments  : uses Coge::Genome::Accessory::Annotation to build the annotations,
            : specifying delimters, and printing to string.   Pretty cool object.
 
-See Also   : CoGe::Genome::Accessory::Annotation
+See Also   : CoGe::Accessory::Annotation
 
 =cut
 
@@ -249,7 +250,7 @@ sub annotation_pretty_print_html
     my %opts = @_;
     my $loc_link = $opts{loc_link};
     $loc_link = "SeqView.pl" unless defined $loc_link;
-    my $anno_obj = new CoGe::Genome::Accessory::Annotation(Type=>"anno");
+    my $anno_obj = new CoGe::Accessory::Annotation(Type=>"anno");
     $anno_obj->Val_delimit("<BR/>");
     $anno_obj->Add_type(0);
     $anno_obj->String_end("<BR/>");
@@ -258,7 +259,7 @@ sub annotation_pretty_print_html
     my $chr = $self->chr;
     my $strand = $self->strand;
     my $dataset_id = $self->dataset->id;
-    my $anno_type = new CoGe::Genome::Accessory::Annotation(Type=>"<span class=\"title4\">"."Name(s):"."</span>");
+    my $anno_type = new CoGe::Accessory::Annotation(Type=>"<span class=\"title4\">"."Name(s):"."</span>");
     $anno_type->Type_delimit("");
     $anno_type->Val_delimit(", ");
     my $outname;
@@ -276,13 +277,13 @@ sub annotation_pretty_print_html
 	my $anno_name = $type->name;
 	$anno_name = "<span class=\"title4\">". $anno_name."</span>" unless ref($group) =~ /group/i;
 	
-	my $anno_type = new CoGe::Genome::Accessory::Annotation(Type=>$anno_name);
+	my $anno_type = new CoGe::Accessory::Annotation(Type=>$anno_name);
 	$anno_type->Val_delimit(", ");
 
 	$anno_type->add_Annot("<span class=\"data\">".$anno->annotation."</span>");
 	if (ref ($group) =~ /group/i)
 	  {
-	    my $anno_g = new CoGe::Genome::Accessory::Annotation(Type=>"<span class=\"title4\">".$group->name."</span>");
+	    my $anno_g = new CoGe::Accessory::Annotation(Type=>"<span class=\"title4\">".$group->name."</span>");
 	    $anno_g->add_Annot($anno_type);
 	    $anno_g->Type_delimit(": ");
 	    $anno_g->Val_delimit(", ");
@@ -301,7 +302,7 @@ sub annotation_pretty_print_html
     my $featid = $self->id;
     $location = qq{<a href="$loc_link?featid=$featid&start=$start&stop=$stop&chr=$chr&dsid=$dataset_id&strand=$strand&featname=$outname" target=_new>}.$location."</a>" if $loc_link;
     $location = qq{<span class="data">$location</span>};
-    $anno_obj->add_Annot(new CoGe::Genome::Accessory::Annotation(Type=>"<span class=\"title4\">Location</span>", Values=>[$location], Type_delimit=>": ", Val_delimit=>" "));
+    $anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<span class=\"title4\">Location</span>", Values=>[$location], Type_delimit=>": ", Val_delimit=>" "));
     return $anno_obj->to_String;
   }
 
@@ -526,9 +527,9 @@ sub version
  Purpose   : gets the genomic seqence for a feature
  Returns   : a string
  Argument  : none
- Comments  : This method simply creates a CoGe::Genome object and calls:
+ Comments  : This method simply creates a CoGe object and calls:
              get_genomic_sequence_for_feature($self)
-See Also   : CoGe::Genome
+See Also   : CoGe
 
 =cut
 
