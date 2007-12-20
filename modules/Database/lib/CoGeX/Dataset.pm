@@ -175,7 +175,7 @@ See Also   :
      my ($gs) =  $self->genomic_sequences(
 					  {
 #					   dataset_id=>$self->dataset_id,
-					   chromosome=>$chr,
+					   chromosome=>"$chr",
 					  },
 					  {
 					   order_by=>'stop DESC',
