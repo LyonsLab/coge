@@ -19,11 +19,13 @@ my %org_hash = (
   ,papaya      => 322
   ,maize       => 333
 );
+my %ds_hash = (
+    'rice' => [ 582 .. 593 ],
+);
 
 my $organism = $options{o} or die "send in organism name i.e. -o rice.\n";
-my $datasets = [sort map { $_->dataset_id  } @{$s->get_current_datasets_for_org($org_hash{$organism})}];
+my $datasets = $ds_hash{$organism} or [sort map { $_->dataset_id  } @{$s->get_current_datasets_for_org($org_hash{$organism})}];
 my $outdir   = ($options{d} or ".") . "/";
-
 
 print STDERR "usings datasets: " . join(",", @$datasets) . " for $organism ...\n";
 
@@ -32,7 +34,7 @@ if(defined $options{t}){
     exit();
 }
 
-my $feature_names_ids = get_feature_names_for_datasets($datasets);
+my $feature_names_ids = get_feature_names_for_datasets($datasets, $organism);
 print STDERR "got " .  scalar(@$feature_names_ids) . " feature names\n";
 get_accn_locs($organism, $datasets, $feature_names_ids);
 
@@ -60,7 +62,7 @@ sub get_accn_locs {
         $chr = sprintf("%02i", $chr);
         if(!$files{$chr}){
             my $FH;
-            my $filename = $outdir . $org . $chr . ".fasta";
+            my $filename = $outdir . $org . "chr" . $chr . ".fasta";
             open($FH, ">", $filename);
             $files{$chr} = $FH;
             print STDERR "creating file $filename\n";
@@ -125,15 +127,22 @@ sub get_10kmers {
 
 sub get_feature_names_for_datasets {
     my $datasets = shift;
+    my $notre = ',|\\-';
+    my $org = shift;
+    if( grep { $_ eq $org } ('rice', 'arabidopsis', 'grape' )){
+        $notre = ',|\\-|\\.';
+    }
+       
    
     my $rs = $s->resultset('FeatureName')->search( {
             'feature.dataset_id' => { 'IN' => $datasets }
-            ,'me.name' => {'NOT REGEXP' => ',|\\-' }
+            ,'me.name' => {'NOT REGEXP' => $notre }
             ,'feature.chromosome' => { 'NOT LIKE' => 'contig%' } # keep only chrs and super_contigs
             ,'feature_type.name' => { 'NOT LIKE' => '%contig%' }
             } , { 
                prefetch      =>  { 'feature' => 'feature_type' } 
                ,order_by => 'feature_type.name'  
+               ,'distinct' => 'feature.feature_id'
                });
     my %seen;
     my @names;
