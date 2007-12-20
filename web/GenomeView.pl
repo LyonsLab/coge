@@ -41,6 +41,7 @@ my $pj = new CGI::Ajax(
 		       get_start_stop=>\&get_start_stop,
 		       get_feature_counts => \&get_feature_counts,
 		       gen_gc_for_chromosome=> \&gen_gc_for_chromosome,
+		       gen_gc_for_noncoding=> \&gen_gc_for_noncoding,
 		       gen_gc_for_chromosome_and_type =>\&gen_gc_for_chromosome_and_type,
 		       get_codon_usage_for_chromosome=>\&get_codon_usage_for_chromosome,
 		      );
@@ -145,7 +146,7 @@ sub get_dataset
     if (@opts) 
       {
 	$html = qq{<FONT CLASS ="small">Dataset count: }.scalar (@opts).qq{</FONT>\n<BR>\n};
-	$html .= qq{<SELECT id="ds_id" SIZE="5" MULTIPLE onChange="gen_data(['args__loading. . .'],['ds_info']); dataset_info_chain()" >\n};
+	$html .= qq{<SELECT id="ds_id" SIZE="5" MULTIPLE onChange="gen_data(['args__loading'],['ds_info']); dataset_info_chain()" >\n};
 	$html .= join ("\n", @opts);
 	$html .= "\n</SELECT>\n";
 	$html =~ s/OPTION/OPTION SELECTED/;
@@ -226,10 +227,13 @@ sub get_dataset_chr_info
     my $ds = $coge->resultset("Dataset")->find($dsd);
     return $html unless $ds;
     my $length = commify( $ds->last_chromosome_position($chr) );
-    $html .= qq{<tr><td>Nucleotides:<td>$length<td><div id=chromosome_gc class="link" onclick="\$('#chromosome_gc').removeClass('link'); gen_gc_for_chromosome(['args__dsid','ds_id','args__chr','chr'],['chromosome_gc']);">Click for percent GC content</div>} if $length;
+    $html .= qq{
+<tr><td>Nucleotides:<td>$length<td><div id=chromosome_gc class="link" onclick="\$('#chromosome_gc').removeClass('link'); gen_gc_for_chromosome(['args__dsid','ds_id','args__chr','chr'],['chromosome_gc']);">Click for percent GC content</div>
+<tr><td>Noncoding sequence:<td><div id=noncoding_gc class="link" onclick = "gen_data(['args__loading'],['noncoding_gc']);\$('#noncoding_gc').removeClass('link');  gen_gc_for_noncoding(['args__dsid','ds_id','args__chr','chr'],['noncoding_gc']);">Click for percent GC content</div>
+} if $length;
 #    my $feat_string = get_feature_counts($dsd, $chr);
     my $feat_string = qq{
-<div id=feature_count onclick="gen_data(['args__loading. . .'],['feature_count_data']);\$('#feature_count').hide(0);get_feature_counts(['ds_id', 'chr'],['feature_count_data']);" >Click here for feature count information</div><div id=feature_count_data></div>
+<div id=feature_count onclick="gen_data(['args__loading'],['feature_count_data']);\$('#feature_count').hide(0);get_feature_counts(['ds_id', 'chr'],['feature_count_data']);" >Click here for feature count information</div><div id=feature_count_data></div>
 };
     $html .= "</table>$feat_string";
 
@@ -339,7 +343,7 @@ sub gen_gc_for_chromosome_and_type
       }
     my $total = $gc+$at;
     return "error" unless $total;
-    return "GC: ".sprintf("%.2f",100*$gc/($total))."%  AT: ".sprintf("%.2f",100*$at/($total))."%";
+    return "Total length: ".commify($total).", GC: ".sprintf("%.2f",100*$gc/($total))."%  AT: ".sprintf("%.2f",100*$at/($total))."%";
   }
 
 sub gen_gc_for_chromosome
@@ -353,6 +357,30 @@ sub gen_gc_for_chromosome
     return "GC: ".(100*$gc)."%  AT: ".(100*(1-$gc))."%";
   }
 
+sub gen_gc_for_noncoding
+  {
+    my %args = @_;
+    my $dsid = $args{dsid};
+    my $chr = $args{chr};
+    return "no dsid specified" unless $dsid;
+    my $ds = $coge->resultset('Dataset')->find($dsid);
+    my $seq = $ds->get_genomic_sequence(chr=>$chr);
+    foreach my $feat ($ds->features)
+      {
+	next unless $feat->type->name eq "CDS" ||
+	  $feat->type->name =~ "RNA";
+	foreach my $loc ($feat->locations)
+	  {
+	    substr($seq, $loc->start-1,($loc->stop-$loc->start+1)) = "N"x($loc->stop-$loc->start+1);
+	  }
+      }
+    my $gc = $seq=~tr/GCgc/GCgc/;
+    my $at = $seq=~tr/ATat/ATat/;
+    my $total = $gc+$at;
+    return "error" unless $total;
+    return "Total length: ".commify($total).", GC: ".sprintf("%.2f",100*$gc/($total))."%  AT: ".sprintf("%.2f",100*$at/($total))."%";
+
+  }
 sub get_codon_usage_for_chromosome
   {
     my %args = @_;
