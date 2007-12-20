@@ -11,7 +11,7 @@ use CoGe::Graphics::Feature::Exon_motifs;
 use CoGe::Graphics::Feature::AminoAcid;
 use CoGe::Graphics::Feature::Domain;
 use CoGe::Graphics::Feature::Block;
-use CoGe::Genome;
+#use CoGe::Genome;
 use CoGeX;
 use Data::Dumper;
 use Benchmark;
@@ -189,8 +189,6 @@ sub genomic_view
     my $layers = process_layers($opts{layers});
     my $major_tick_labels = $opts{major_tick_labels} || 1;
     my $minor_tick_labels = $opts{minor_tick_labels} || -1;
-#    print STDERR Dumper $opts{layers}, $layers;
-
     $DEBUG = $opts{debug} || $opts{DEBUG} || 0;
     $self->DEBUG($DEBUG);
     print STDERR "Options: ".Dumper \%opts if $self->DEBUG;
@@ -206,24 +204,23 @@ sub genomic_view
     my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
     my $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
     #$coge->storage->debugobj(new DBIxProfiler());
-    $coge->storage->debug(1);
-    my $db = new CoGe::Genome;
+#    $coge->storage->debug(1);
     my $c = new CoGe::Graphics::Chromosome;
 
-    $org = $db->get_organism_obj->resolve_organism($org) if $org;
-    $ds = $db->get_dataset_obj->resolve_dataset($ds) if $ds;
+    ($org) = $coge->resultset('Organism')->resolve($org) if $org;
+    ($ds) = $coge->resultset('Dataset')->resolve($ds) if $ds;
 
     if ($ds) #there can be additional information about a chromosome for a particular version of the organism that is not in the same data_information.  Let's go find the organism_id and version for the specified data information item.
       {
-	$org = $ds->org unless $org;
+	($org) = $ds->organism unless $org;
 	$version = $ds->version unless $version;
 	($chr) = $ds->get_chromosomes() unless $chr;
       }
 
     if ($org && !$ds)
       {
-	$version = $db->get_dataset_obj->get_current_version_for_organism(org=>$org) unless $version;
-	($ds) = $db->get_dataset_obj->search({version=>$version, organism_id=>$org->id});
+	($ds) = $org->current_datasets();
+	$version = $ds->version;
 	($chr) = $ds->get_chromosomes() unless $chr;
       }
 
@@ -240,17 +237,22 @@ sub genomic_view
     my $ta = new Benchmark if $BENCHMARK;
     if ($org)
       {	
-	foreach my $did ( $db->get_dataset_obj->search({organism_id=>$org->id, version=>$version}))
+	foreach my $did ( $org->current_datasets)
 	  {
-	    $dids{$did} = 1;
+	    my $pass = 0;
+	    foreach ($did->get_chromosomes)
+	      {
+		$pass = 1 if $_ eq $chr;
+	      }
+	    $dids{$did->id} = $did if $pass;
 	  }
       }
     my $tb = new Benchmark if $BENCHMARK;
     my $finddid_time = timestr(timediff($tb, $ta))  if $BENCHMARK;
     
-    $dids{$ds}=1 if $ds;
+    $dids{$ds->id}=$ds if $ds;
 
-    my @dids = keys %dids;
+    my @dids = values %dids;
     my $tc = new Benchmark if $BENCHMARK;
     foreach my $did (@dids)
       {
@@ -262,7 +264,6 @@ sub genomic_view
 						   mag=>$mag,
 						   start=>$start,
 						   stop=>$stop,
-						   db=>$db,
 						   c=>$c,
 						   start_pict=>$start_pict,
 						   csh=>$chr_start_height,
@@ -280,7 +281,7 @@ sub genomic_view
 	    $start = $tstart;
 	    $stop = $tstop;
 	    print STDERR "processing nucleotides\n" if $self->DEBUG;
-	    $self->process_nucleotides(start=>$start, stop=>$stop, chr=>$chr, ds=>$did, db=>$db, c=>$c, layers=>$layers);
+	    $self->process_nucleotides(start=>$start, stop=>$stop, chr=>$chr, ds=>$did, c=>$c, layers=>$layers);
 	    last;
 	  }
       }
@@ -293,11 +294,11 @@ sub genomic_view
 	return(0);
       }
     my $t1 = new Benchmark if $BENCHMARK;
-    foreach my $did (keys %dids)
+    foreach my $did (@dids)
       {
 	my $taa = new Benchmark if $BENCHMARK;
 	print STDERR "processing features\n" if $self->DEBUG;
-	$self->process_features(start=>$start, stop=>$stop, chr=>$chr, ds=>$did, db=>$db, c=>$c, fids=>$fids, fnames=>$fnames, layers=>$layers) unless $simple;
+	$self->process_features(start=>$start, stop=>$stop, chr=>$chr, ds=>$did, coge=>$coge, c=>$c, fids=>$fids, fnames=>$fnames, layers=>$layers) unless $simple;
 	my $tab = new Benchmark if $BENCHMARK;
 	my $feat_time = timestr(timediff($tab, $taa)) if $BENCHMARK;
 	print STDERR " processing did $did:   $feat_time\n" if $BENCHMARK;
@@ -350,7 +351,6 @@ sub initialize_c
     my $start = $opts{start};
     my $stop = $opts{stop};
     my $chr_length = $opts{chr_length};
-    my $db = $opts{db};
     my $c = $opts{c};
     my $csh=$opts{csh} || $opts{chr_start_height};
     my $cmh=$opts{cmh} || $opts{chr_mag_height};
@@ -373,7 +373,7 @@ sub initialize_c
     my $max_track = $opts{max_track};
     $debug = 1 if $c->DEBUG;
     $draw_ruler = 1 unless defined $opts{draw_ruler};
-    $chr_length = $db->get_genomic_sequence_obj->get_last_position(ds=>$ds, chr=>$chr) if $ds && !$chr_length;
+    $chr_length = $ds->last_chromosome_position($chr) if $ds && !$chr_length;
     return unless $chr_length;
     $c->chr_length($chr_length);
     $c->mag_scale_type("constant_power");
@@ -446,18 +446,14 @@ sub process_nucleotides
       }
     my $chr = $opts{chr};
     my $ds = $opts{ds};
-    my $db = $opts{db};
-    my $c = $opts{c};
-#    $seq = uc($db->get_genomic_sequence_obj->get_sequence(start=>$start, stop=>$stop, chr=>$chr, ds=>$ds)) unless $seq;
     my $layers = $opts{layers};
-#    print STDERR Dumper $layers;
-#    print STDERR "IN $0: start: $start, stop: $stop\n";
+    my $c = $opts{c};
     #process nucleotides
     my $t7 = new Benchmark if $BENCHMARK;
     unless ($seq)
       {
-	return unless $db;
-	$seq = uc($db->get_genomic_sequence_obj->get_sequence(start=>$start, end=>$stop, chr=>$chr, dataset=>$ds));
+	return unless $ds;
+	$seq = uc($ds->get_genomic_sequence(start=>$start, end=>$stop, chr=>$chr));
       }
     my $t8 = new Benchmark if $BENCHMARK;
     my $seq_len = length $seq;
@@ -519,24 +515,28 @@ sub process_features
     my $stop = $opts{stop};
     my $chr = $opts{chr};
     my $ds = $opts{ds};
-    my $db = $opts{db};
+    my $coge=$opts{coge};
     my $c = $opts{c};
     my $accn = $opts{accn};
     my $print_names = $opts{print_names};
     my $fids = $opts{fids};
     my $fnames = $opts{fnames};
     my $layers = $opts{layers};
+#    delete $opts{coge};
+#    delete $opts{ds};
+#    delete $opts{c};
+#    print STDERR Dumper \%opts;
     return unless $layers->{all} || $layers->{features};
     $start = $c->_region_start unless $start;
     $stop = $c->_region_stop unless $stop;
     my $sstart = $start - ($stop - $start);
     my $sstop = $stop + ($stop - $start);
     $sstart = 0 if $sstart < 0;
-    my $chr_length = $db->get_genomic_sequence_obj->get_last_position(ds=>$ds);
+    my $chr_length = $ds->last_chromosome_position($chr);
     $sstop = $chr_length unless defined $sstop;
     $sstop = $chr_length if $sstop > $chr_length;
-    my $feat_count = $db->get_feature_obj->count_features_in_region(start=>$sstart, end=>$sstop, dataset=>$ds, chr=>$chr);
-#    print "$sstart - $sstop: feats: $feat_count\n";
+    my $feat_count = $coge->get_features_in_region(start=>$sstart, end=>$sstop, dataset=>$ds->id, chr=>$chr, count=>1);
+#    print STDERR "$sstart - $sstop: feats: $feat_count\n";
     my @cds_feats;
     if (defined $self->MAX_FEATURES && $feat_count > $self->MAX_FEATURES)
       {
@@ -550,7 +550,7 @@ sub process_features
     $size = $start if $start-$size < 0;
 
 #    print "Getting features: $start - $stop : adjust: $size\n";
-    foreach my $feat ($db->get_feature_obj->get_features_in_region(start=>$start-$size, end=>$stop+$size, dataset=>$ds, chr=>$chr))
+    foreach my $feat ($coge->get_features_in_region(start=>$sstart, end=>$sstop, dataset=>$ds->id, chr=>$chr))
       {
         my $f;
 	print STDERR "Feat info: Name: ",$feat->type->name,", Type: ",$feat->type->name, ", Loc: ", $feat->start,"-",$feat->stop,"\n" if $self->DEBUG;
@@ -674,7 +674,7 @@ sub process_features
 	    $f->strand($loc->strand);
 	    print "done!\n" if $self->DEBUG;
 	  }
-	my ($name) = sort { length ($b) <=> length ($a) || $a cmp $b} map {$_->name} $feat->names;
+	my ($name) = $feat->names;
 	$f->description($feat->annotation_pretty_print);
 	$f->link("GeLo.pl?".join("&", "chr=".$feat->chr,"ds=".$feat->dataset->id,"z=10", "INITIAL_CENTER=".$feat->start.",0"));
 	$f->label($name) if $print_names;
