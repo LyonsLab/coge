@@ -163,9 +163,8 @@ sub gen_body
 	my $drfid = $form->param("fid".$i) if $form->param("fid".$i);
 	if ($drfid && !$draccn)
 	  {
-	    print STDERR "$i: $drfid\n";
 	    my $feat = $coge->resultset('Feature')->find($drfid);
-	    ($draccn) = $feat->names if $feat;
+	    ($draccn) = $feat->primary_name if $feat;
 	  }
 	my $drup = $form->param('dr'.$i.'up') if defined $form->param('dr'.$i.'up');
 	my $drdown = $form->param('dr'.$i.'down') if defined $form->param('dr'.$i.'down');
@@ -377,7 +376,7 @@ sub run
 	next if $skip_seq;
 	my $accn = $opts{"draccn$i"};
 	my $featid = $opts{"featid$i"};
-	my $feat = $coge->resultset('Feature')->find($featid);
+	my $feat = $coge->resultset('Feature')->find($featid) if $featid;
 	my $dsid;
 	$dsid = $feat->dataset_id if $feat;
 	$dsid = $opts{"dsid$i"} unless $dsid;
@@ -2757,12 +2756,8 @@ sub feat_search
 	  }
 	$seen{$f->id}=1;
       }
-    print STDERR join ", ", map {$_->id} @feats;
-    print STDERR "\n";
     @feats = sort {$a->type->name cmp $b->type->name} @feats;
     unshift @feats, @genes if @genes;
-    print STDERR join ", ", map {$_->id} @feats;
-    print STDERR "\n";
     my $html;
     if (@feats)
       {
