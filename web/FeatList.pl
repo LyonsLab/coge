@@ -134,7 +134,7 @@ sub generate_table
 		   LOC=>"chr ".$feat->chr.": ".$feat->start."-".$feat->stop." (".$feat->strand.")",
 #		   CHR=>$feat->chr,
 #		   STRAND=>$feat->strand,
-		   ORG=>$feat->organism->name."(v ".$feat->version.")",
+		   ORG=>$feat->organism->name." (v".$feat->version.")",
 		   HPP=>$hpp, 
 		   TABLE_ROW=>$row_style,
 		   LENGTH=>$feat->length(),
