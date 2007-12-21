@@ -17,6 +17,17 @@ OpenLayers.GenomeBrowser.prototype.pan = function(dx, dy) {
     }
 };
 
+OpenLayers.GenomeBrowser.prototype.centerLayerContainer = function(lonlat){
+            var originPx = this.getViewPortPxFromLonLat(this.layerContainerOrigin);
+            var newPx = this.getViewPortPxFromLonLat(lonlat);
+    
+            if ((originPx != null) && (newPx != null)) {
+                this.layerContainerDiv.style.left = (originPx.x - newPx.x) + "px";
+            }
+
+
+};
+
 OpenLayers.Control.PanZoom.prototype.draw = function(px) {
     // initialize our internal div
     OpenLayers.Control.prototype.draw.apply(this, arguments);
