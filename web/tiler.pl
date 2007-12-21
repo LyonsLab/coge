@@ -44,7 +44,7 @@ open( IMG,"<", $fn) or warn "cant open $mesg\n"; binmode IMG;
 print <IMG>; close(IMG);
 }
 
-system 'chmod -R 777 /opt/apache/CoGe/_cache_/*';
+#system 'chmod -R 777 /opt/apache/CoGe/_cache_/*';
 
 ##################################################
 # Use %ENV to find where in directory structure
