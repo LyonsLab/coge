@@ -13,7 +13,6 @@ $IMGURL = 'http://homer.cnr.berkeley.edu/CoGe/GenomePNG.pl?';
 # where to start the caching
 #$BASEDIR = "/opt/apache/CoGe/_cache_/";
 $BASEDIR = "/home/apache/_cache_/";
-umask (022);
 while (! -e $BASEDIR){ mkdir($BASEDIR);  }
 print "Content-type: image/png; mode=24bit\n\n";
 
@@ -30,6 +29,7 @@ my $data;
 if(!-e $fn){
    pop @$dir; # get rid of the file name
    mkpath($basepath . '/' . join("/",@$dir),{mode=>0777});
+   umask (022);
    LWP::Simple::getstore($IMGURL . $ENV{QUERY_STRING},$fn);
 #   chmod (0777, $fn);
 #   print STDERR $IMGURL.$ENV{QUERY_STRING},"\n";
