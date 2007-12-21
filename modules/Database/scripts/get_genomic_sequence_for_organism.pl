@@ -24,8 +24,11 @@ my %ds_hash = (
 );
 
 my $organism = $options{o} or die "send in organism name i.e. -o rice.\n";
-my $datasets = $ds_hash{$organism} or [sort map { $_->dataset_id  } @{$s->get_current_datasets_for_org($org_hash{$organism})}];
+chomp $organism;
+print $organism;
+my $datasets = $ds_hash{$organism} || [sort map { $_->dataset_id  } @{$s->get_current_datasets_for_org($org_hash{$organism})}];
 my $outdir   = ($options{d} or ".") . "/";
+chomp $outdir;
 
 print STDERR "usings datasets: " . join(",", @$datasets) . " for $organism ...\n";
 
@@ -46,6 +49,7 @@ sub get_accn_locs {
     my %files;
     foreach my $name_id (@$names_ids){
         my ($name, $id, $start) = @$name_id;
+        if($seen{$id}){ next; }
         my $feat = $s->resultset('Feature')->search( {
                            'me.feature_id'     => $id 
                         ,  'me.chromosome' => {'NOT LIKE' => 'contig%' }
@@ -58,6 +62,7 @@ sub get_accn_locs {
         if(!$feat){ next; }
         my ($chr) = $feat->chromosome =~ /(\d+)/;
         if(length($chr) > 2){ next; } 
+        $seen{$id}++;
         #print STDERR $feat->feature_id . ", $name," .  $feat->chromosome . "," . $feat->feature_type->name . "\n";
         $chr = sprintf("%02i", $chr);
         if(!$files{$chr}){
@@ -118,7 +123,7 @@ sub get_10kmers {
             $order{$header} = 1;
     }
     print STDERR "creating file " . $org . ".order contained the list of 10kmers ...\n";
-    open(ORDER, ">", $outdir . $org . ".order");
+    open(ORDER, ">", $outdir . $org . "tenkmers.order");
     map { print ORDER $_ . "\n" } sort keys %order;
     close(ORDER);
 
