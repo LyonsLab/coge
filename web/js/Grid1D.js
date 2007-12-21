@@ -19,6 +19,8 @@ OpenLayers.Layer.Grid1D.prototype =
      * @param {Boolean} zoomChanged
      * @param {Boolean} dragging
      */
+    buffer: 1,
+
     moveTo:function(bounds, zoomChanged, dragging) {
         OpenLayers.Layer.HTTPRequest.prototype.moveTo.apply(this, arguments);
         
