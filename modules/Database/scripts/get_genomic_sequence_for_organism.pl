@@ -18,6 +18,7 @@ my %org_hash = (
   ,grape       => 351
   ,papaya      => 322
   ,maize       => 333
+  ,sorghum     => 331
 );
 my %ds_hash = (
     'rice' => [ 582 .. 593 ],
