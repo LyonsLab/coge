@@ -9,7 +9,7 @@ use Data::Dumper;
 use DB_File;
 
 my %options;
-getopt("otd", \%options);
+getopt("otdc", \%options);
 
 my %org_hash = (
    rice        => 3
@@ -27,6 +27,7 @@ my %ds_hash = (
 my $organism = $options{o} or die "send in organism name i.e. -o rice.\n";
 chomp $organism;
 print $organism;
+my $use_contigs = $options{c} or 0;
 my $datasets = $ds_hash{$organism} || [sort map { $_->dataset_id  } @{$s->get_current_datasets_for_org($org_hash{$organism})}];
 my $outdir   = ($options{d} or ".") . "/";
 chomp $outdir;
@@ -34,16 +35,16 @@ chomp $outdir;
 print STDERR "usings datasets: " . join(",", @$datasets) . " for $organism ...\n";
 
 if(defined $options{t}){
-    get_10kmers($organism, $datasets);
+    get_10kmers($organism, $datasets, $use_contigs);
     exit();
 }
 
-my $feature_names_ids = get_feature_names_for_datasets($datasets, $organism);
+my $feature_names_ids = get_feature_names_for_datasets($datasets, $organism, $use_contigs);
 print STDERR "got " .  scalar(@$feature_names_ids) . " feature names\n";
-get_accn_locs($organism, $datasets, $feature_names_ids);
+get_accn_locs($organism, $datasets, $feature_names_ids, $use_contigs);
 
 sub get_accn_locs {
-    my ($org, $datasets, $names_ids) = @_;
+    my ($org, $datasets, $names_ids, $use_contigs) = @_;
     my %seen;
     my %order;
 
@@ -61,6 +62,7 @@ sub get_accn_locs {
                             ,limit    => 1
                         })->single(); 
         if(!$feat){ next; }
+        if($use_contigs && $feat->chromosome =~ /contig/i ){ next; }
         my ($chr) = $feat->chromosome =~ /(\d+)/;
         if(length($chr) > 2){ next; } 
         $seen{$id}++;
@@ -97,13 +99,14 @@ sub get_accn_locs {
 
 
 sub get_10kmers {
-    my ($org, $datasets) = @_;
+    my ($org, $datasets, $use_contigs) = @_;
     my %files;
     my %order;
     foreach my $gs ( $s->resultset('GenomicSequence')->search(
                         { 'dataset_id'   => {'IN' => $datasets } 
                           , 'chromosome' => {'NOT LIKE' => 'contig%' }
                         }, { order_by => ['start'] } )) {
+            if(!$use_contigs && $gs->chromosome =~ /contig/i ){ next; }
             my ($chr) = $gs->chromosome =~ /(\d+)/;
             if(length($chr) > 2){ next; } 
             $chr = sprintf("%02i", $chr);
@@ -135,6 +138,7 @@ sub get_feature_names_for_datasets {
     my $datasets = shift;
     my $notre = ',|\\-';
     my $org = shift;
+    my $use_contigs = shift;
     if( grep { $_ eq $org } ('rice', 'arabidopsis', 'grape' )){
         $notre = ',|\\-|\\.';
     }
