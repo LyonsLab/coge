@@ -13,7 +13,7 @@ $IMGURL = 'http://homer.cnr.berkeley.edu/CoGe/GenomePNG.pl?';
 # where to start the caching
 #$BASEDIR = "/opt/apache/CoGe/_cache_/";
 $BASEDIR = "/home/apache/_cache_/";
-umask (022);
+umask (777);
 while (! -e $BASEDIR){ mkdir($BASEDIR);  }
 print "Content-type: image/png; mode=24bit\n\n";
 
