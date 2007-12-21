@@ -28,8 +28,8 @@ my $data;
 
 if(!-e $fn){
    pop @$dir; # get rid of the file name
-   mkpath($basepath . '/' . join("/",@$dir),{mode=>0777});
-   umask (022);
+   umask (0);
+   mkpath($basepath . '/' . join("/",@$dir));
    LWP::Simple::getstore($IMGURL . $ENV{QUERY_STRING},$fn);
 #   chmod (0777, $fn);
 #   print STDERR $IMGURL.$ENV{QUERY_STRING},"\n";
