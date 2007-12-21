@@ -34,6 +34,7 @@ chomp $outdir;
 
 print STDERR "usings datasets: " . join(",", @$datasets) . " for $organism ...\n";
 
+exit();
 if(defined $options{t}){
     get_10kmers($organism, $datasets, $use_contigs);
     exit();
@@ -62,7 +63,7 @@ sub get_accn_locs {
                             ,limit    => 1
                         })->single(); 
         if(!$feat){ next; }
-        if($use_contigs && $feat->chromosome =~ /contig/i ){ next; }
+        if($use_contigs && $feat->chromosome =~ /(contig|contig|random)/i ){ next; }
         my ($chr) = $feat->chromosome =~ /(\d+)/;
         if(length($chr) > 2){ next; } 
         $seen{$id}++;
@@ -106,7 +107,7 @@ sub get_10kmers {
                         { 'dataset_id'   => {'IN' => $datasets } 
                           , 'chromosome' => {'NOT LIKE' => 'contig%' }
                         }, { order_by => ['start'] } )) {
-            if(!$use_contigs && $gs->chromosome =~ /contig/i ){ next; }
+            if(!$use_contigs && $gs->chromosome =~ /(contig|super|random)/i ){ next; }
             my ($chr) = $gs->chromosome =~ /(\d+)/;
             if(length($chr) > 2){ next; } 
             $chr = sprintf("%02i", $chr);
