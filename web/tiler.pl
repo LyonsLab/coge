@@ -11,7 +11,8 @@ use vars qw($IMGURL $BASEDIR);
 
 $IMGURL = 'http://homer.cnr.berkeley.edu/CoGe/GenomePNG.pl?';
 # where to start the caching
-$BASEDIR = "/opt/apache/CoGe/_cache_/";
+#$BASEDIR = "/opt/apache/CoGe/_cache_/";
+$BASEDIR = "/home/apache/_cache_/";
 
 while (! -e $BASEDIR){ mkdir($BASEDIR);  }
 print "Content-type: image/png; mode=24bit\n\n";
