@@ -301,7 +301,7 @@ sub genomic_view
 	$self->process_features(start=>$start, stop=>$stop, chr=>$chr, ds=>$did, coge=>$coge, c=>$c, fids=>$fids, fnames=>$fnames, layers=>$layers) unless $simple;
 	my $tab = new Benchmark if $BENCHMARK;
 	my $feat_time = timestr(timediff($tab, $taa)) if $BENCHMARK;
-	print STDERR " processing did $did:   $feat_time\n" if $BENCHMARK;
+	print STDERR " processing features for dsid ".$did->name, " ", Dumper ($layers)," (",$did->id,"):   $feat_time\n" if $BENCHMARK;
       }
     unless ($layers->{ruler} || $layers->{chromosome} || $layers->{all})
       {
@@ -522,36 +522,46 @@ sub process_features
     my $fids = $opts{fids};
     my $fnames = $opts{fnames};
     my $layers = $opts{layers};
-#    delete $opts{coge};
-#    delete $opts{ds};
-#    delete $opts{c};
-#    print STDERR Dumper \%opts;
     return unless $layers->{all} || $layers->{features};
     $start = $c->_region_start unless $start;
     $stop = $c->_region_stop unless $stop;
-    my $sstart = $start - ($stop - $start);
-    my $sstop = $stop + ($stop - $start);
+    my $sstart = $start;# - ($stop - $start);
+    my $sstop = $stop;# + ($stop - $start);
     $sstart = 0 if $sstart < 0;
-    my $chr_length = $ds->last_chromosome_position($chr);
-    $sstop = $chr_length unless defined $sstop;
-    $sstop = $chr_length if $sstop > $chr_length;
-    my $feat_count = $coge->get_features_in_region(start=>$sstart, end=>$sstop, dataset=>$ds->id, chr=>$chr, count=>1);
-#    print STDERR "$sstart - $sstop: feats: $feat_count\n";
+    my $tf1 = new Benchmark if $BENCHMARK;
+#    my $chr_length = $ds->last_chromosome_position($chr);
+    my $tf2 = new Benchmark if $BENCHMARK;
+#    $sstop = $chr_length unless defined $sstop;
+#    $sstop = $chr_length if $sstop > $chr_length;
+#    my $feat_count = $coge->get_features_in_region(start=>$sstart, end=>$sstop, dataset=>$ds->id, chr=>$chr, count=>1);
+    my $tf3 = new Benchmark if $BENCHMARK;
     my @cds_feats;
-    if (defined $self->MAX_FEATURES && $feat_count > $self->MAX_FEATURES)
-      {
-	warn "exceeded maximum number of features ",$self->MAX_FEATURES(),". ($feat_count requested)\nskipping.\n";
-	return;
-      }
-    my $size = $stop - $start;
-    $size = 0 unless $c->overlap_adjustment;
-    $size = 0 if $feat_count > 100;
-    $size *=2 if $feat_count < 20;
-    $size = $start if $start-$size < 0;
+#    if (defined $self->MAX_FEATURES && $feat_count > $self->MAX_FEATURES)
+#      {
+#	warn "exceeded maximum number of features ",$self->MAX_FEATURES(),". ($feat_count requested)\nskipping.\n";
+#	return;
+#      }
 
-#    print "Getting features: $start - $stop : adjust: $size\n";
-    foreach my $feat ($coge->get_features_in_region(start=>$sstart, end=>$sstop, dataset=>$ds->id, chr=>$chr))
+    my @feats = $coge->get_features_in_region(start=>$sstart, end=>$sstop, dataset=>$ds->id, chr=>$chr);
+    my @tmp1;
+    my @tmp2;
+    shift @feats while (scalar @feats && !$feats[0]);
+    return unless scalar @feats;
+    shift @feats while (scalar @feats && $feats[0]->type->name =~/(contig|chr|source)/);
+    return unless scalar @feats;
+    if ($feats[0]->start < $sstart)
       {
+	@tmp1 = $coge->get_features_in_region(start=>$feats[0]->start, end=>$sstart, dataset=>$ds->id, chr=>$chr);
+      }
+    if ($feats[-1]->stop > $sstop)
+      {
+	@tmp2 = $coge->get_features_in_region(start=>$sstop, end=>$feats[-1]->stop, dataset=>$ds->id, chr=>$chr);
+      }
+    my %feats = map {$_->id, $_} @feats;
+    my $tf4 = new Benchmark if $BENCHMARK;
+    foreach my $feat (values %feats)
+      {
+	my $tf4a = new Benchmark if $BENCHMARK;
         my $f;
 	print STDERR "Feat info: Name: ",$feat->type->name,", Type: ",$feat->type->name, ", Loc: ", $feat->start,"-",$feat->stop,"\n" if $self->DEBUG;
         if (($layers->{features}{pseudogene} || $layers->{all}) && $feat->type->name =~ /pseudogene/i)
@@ -587,13 +597,6 @@ sub process_features
         	$f->order(1);
 		$f->overlay(3);
 		push @cds_feats, $feat;
-		if ($accn)
-		  {
-		    foreach my $name (@{$feat->{QUALIFIERS}{names}})
-		      {
-			$f->color([255,255,0]) if $name =~ /$accn/i;
-		      }
-		  }
           }
         elsif (($layers->{features}{mrna} || $layers->{all}) && $feat->type->name =~ /mrna/i || $feat->type->name =~ /exon/i)
           {
@@ -609,14 +612,6 @@ sub process_features
         	$f->color([200,200,200, 50]);
         	$f->order(1);
 		$f->overlay(2);
-		if ($accn)
-		  {
-		    foreach my $name (@{$feat->{QUALIFIERS}{names}})
-		      {
-			$f->color([255,255,0]) if $name =~ /$accn/i;
-		      }
-		  }
-
           }
         elsif (($layers->{features}{domain} || $layers->{all}) && $feat->type->name =~ /functional domains/i)
           {
@@ -648,13 +643,14 @@ sub process_features
 	    $self->process_proteins(genomic_feat=>$feat, c=>$c);
 			
 	  }
-
+	my $tf4b = new Benchmark if $BENCHMARK;
         next unless $f;
 	foreach my $id (@$fids)
 	  {
 	    next unless $id;
 	    $f->color([255,255,0]) if $feat->id eq $id;
-	  } 
+	  }
+	my $tf4c = new Benchmark if $BENCHMARK; 
 	foreach my $name (@$fnames)
 	  {
 	    next unless $name;
@@ -667,6 +663,7 @@ sub process_features
 		  }
 	      }
 	  }
+	my $tf4d = new Benchmark if $BENCHMARK; 
         foreach my $loc ($feat->locs)
 	  {
 	    print STDERR "\tadding feature location: ",$loc->start,"-", $loc->stop,". . ." if $self->DEBUG;
@@ -674,16 +671,31 @@ sub process_features
 	    $f->strand($loc->strand);
 	    print "done!\n" if $self->DEBUG;
 	  }
+	my $tf4e = new Benchmark if $BENCHMARK; 
 	my ($name) = $feat->names;
-	$f->description($feat->annotation_pretty_print);
-	$f->link("GeLo.pl?".join("&", "chr=".$feat->chr,"ds=".$feat->dataset->id,"z=10", "INITIAL_CENTER=".$feat->start.",0"));
+#	$f->description($feat->annotation_pretty_print);
+	$f->link("GeLo.pl?".join("&", "chr=".$feat->chr,"ds=".$feat->dataset_id,"z=10", "INITIAL_CENTER=".$feat->start.",0"));
 	$f->label($name) if $print_names;
         $f->type($feat->type->name);
 	$f->skip_overlap_search(1) unless $c->overlap_adjustment;
 #	print STDERR Dumper $f;
         $c->add_feature($f);
+	my $tf4f = new Benchmark if $BENCHMARK; 
 	print STDERR "\tfinished process feature.\n" if $self->DEBUG;
     }
+    my $tf5 = new Benchmark if $BENCHMARK;
+
+    my $time1 = timestr(timediff($tf2, $tf1)) if $BENCHMARK;
+    my $time2 = timestr(timediff($tf3, $tf2)) if $BENCHMARK;
+    my $time3 = timestr(timediff($tf4, $tf3)) if $BENCHMARK;
+    my $time4 = timestr(timediff($tf5, $tf4)) if $BENCHMARK;
+    print STDERR qq{
+sub process_features:
+ Time to get chr length            :  $time1
+ Time to count features            :  $time2
+ Time to get features              :  $time3
+ Time to process features for image:  $time4
+} if $BENCHMARK;
     return \@cds_feats;
   }
 
@@ -720,7 +732,7 @@ sub draw_prots
     my $chrs;
     foreach my $seq ($feat->sequences)
       {
-	next unless $seq->seq_type->name =~ /prot/i;
+	next unless $seq->sequence_type->name =~ /prot/i;
 	my ($pseq) = $seq->sequence_data;
 	my $lastaa = 0;
 	$chrs = int ((($c->_region_length)/$c->iw)/3+.5); 
@@ -729,16 +741,12 @@ sub draw_prots
 	while ($pos < length $pseq)
 	  {
 	    my $aseq = substr($pseq, $pos, $chrs);
-	    #print STDERR "length: ", (length $pseq), ", pos: ", $pos, ", chrs: ", $chrs, ", aseq: ", $aseq,"\n";
 	    if($pos+$chrs == (length $pseq))
 		{$lastaa = 1;}
 	    foreach my $loc ($seq->get_genomic_locations(start=>$pos+1, stop=>$pos+$chrs))
 	      {
-		
-#		next if $loc->stop < $c->_region_begin;
-#		next if $loc->start > $c->_region_end;
-		print STDERR "Adding protein feature: $aseq at position ", $loc->start,"-", $loc->stop,"\n" if $self->DEBUG;
-		my $ao = CoGe::Graphics::Feature::AminoAcid->new({aa=>$aseq, start=>$loc->start, stop=>$loc->stop, strand => $loc->strand, order=>2, lastaa=>$lastaa});
+		print STDERR "Adding protein feature: $aseq at position ", $loc->{start},"-", $loc->{stop},"\n" if $self->DEBUG;
+		my $ao = CoGe::Graphics::Feature::AminoAcid->new({aa=>$aseq, start=>$loc->{start}, stop=>$loc->{stop}, strand => $loc->{strand}, order=>2, lastaa=>$lastaa});
 		$ao->skip_overlap_search(1);
 		$ao->mag(0.75);
 		$ao->overlay(2);
