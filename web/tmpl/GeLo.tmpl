@@ -11,10 +11,10 @@
            left: 0px;
         }
         #gene {
-            background-color: red;
+//            background-color: red;
             color:white;
         }
-        #pseudogene {
+/*        #pseudogene {
             background-color: orange;
             color:white;
         }
@@ -29,7 +29,7 @@
         #gc {
             background-color: white;
              color:green;
-        }
+        }*/
     </style>
     <script src="js/OpenLayers.js"></script>
     <script src="js/Grid1D.js"></script>
@@ -47,7 +47,8 @@
         var version = '<TMPL_VAR NAME=VER>';
         var bp;
         var size= 285;
-        var server = 'http://homer.cnr.berkeley.edu/CoGe/tiler.pl?'
+        var server =
+        ['http://homer.cnr.berkeley.edu/CoGe/tiler.pl?','http://toxic.berkeley.edu/CoGe/tiler.pl?','http://biocon.berkeley.edu/CoGe/tiler.pl?','http://synteny.cnr.berkeley.edu/CoGe/tiler.pl?'];
         var org = "<TMPL_VAR NAME=ORG>";
         var ds = '<TMPL_VAR NAME=DS>';
         var loc = '<TMPL_VAR NAME=LOC>';
@@ -55,9 +56,10 @@
         function init(){
             map = new OpenLayers.GenomeBrowser( $('#map')[0] , 
             {   
-                 maxExtent: new OpenLayers.Bounds(-50000,0,1000000000,1),
+                 maxExtent: new
+                 OpenLayers.Bounds(-50000,-10000,1000000000,10000),
                  units     :'bp',
-                 tileSize: new OpenLayers.Size(512, size),
+                 tileSize: new OpenLayers.Size(768, size),
                  resolutions:[1024,512,256,128,64,32,16,8,4,2,1, 0.5, 0.25, 0.125, 0.0625, 0.032125, 0.015625],
                  //resolutions:[128,64,32,16,8],
                  controls: [new OpenLayers.Control.MouseDefaults()]
@@ -68,10 +70,10 @@
                  ,{isBaseLayer:true} 
              ),
             new OpenLayers.Layer.Genomic( "<span id='gene'>Genes</span>" , server
-                 ,{'ds':ds,'chr':chr,layers:"gene",'version':version,'organism':org,}
+                 ,{'ds':ds,'chr':chr,layers:"pseudogene,gene,mRNA,CDS,rna",'version':version,'organism':org,}
                  ,{isBaseLayer:false}
              ),
-            new OpenLayers.Layer.Genomic( "<span id='pseudogene'>Pseudogenes</span>" , server
+/*            new OpenLayers.Layer.Genomic( "<span id='pseudogene'>Pseudogenes</span>" , server
                  ,{'ds':ds,'chr':chr,layers:"pseudogene",'version':version,'organism':org}
                  ,{isBaseLayer:false}
              ),
@@ -86,7 +88,7 @@
             new OpenLayers.Layer.Genomic( "<span id='cds'>CDSs</span>" , server
                  ,{'ds':ds,'chr':chr,'version':version,layers:"CDS",'organism':org}
                  ,{isBaseLayer:false}
-             ),
+             ),*/
             ]
             fd = new OpenLayers.Layer.Genomic( "functional domains" , server
                  ,{'ds':ds,'chr':chr,'organism':org,'ds':ds,'version':version,layers:"domain"}
