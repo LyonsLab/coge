@@ -6,7 +6,7 @@ use strict;
 use warnings;
 use Data::Dumper;
 use base 'DBIx::Class';
-use CoGeX::Feature;
+#use CoGeX::Feature;
 use Text::Wrap;
 
 __PACKAGE__->load_components("PK::Auto", "ResultSetManager", "Core");
@@ -168,22 +168,17 @@ See Also   :
    {
      my $self = shift;
      my $chr = shift;
-     my ($gs) =  $self->genomic_sequences(
+     my $stop =  $self->genomic_sequences(
 					  {
-#					   dataset_id=>$self->dataset_id,
 					   chromosome=>"$chr",
 					  },
-					  {
-					   order_by=>'stop DESC',
-					   limit => 1,
-					  }
-					 );
-     unless ($gs)
+					 )->get_column('stop')->max;
+     unless ($stop)
       {
         warn "No genomic sequence for ",$self->name," for chr $chr\n";
         return;
       }
-     $gs->stop;
+     $stop;
    }
 
 
