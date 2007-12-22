@@ -8,8 +8,7 @@ use Data::Dumper;
 
 $ENV{'PATH'} = '';
 use vars qw($IMGURL $BASEDIR);
-
-$IMGURL = 'http://homer.cnr.berkeley.edu/CoGe/GenomePNG.pl?';
+$IMGURL = 'http://'.$ENV{SERVER_NAME}.'/CoGe/GenomePNG.pl?';
 # where to start the caching
 #$BASEDIR = "/opt/apache/CoGe/_cache_/";
 $BASEDIR = "/home/apache/_cache_/";
