@@ -89,68 +89,6 @@ See Also   :
 
 ################################################## subroutine header end ##
 
-sub get_features_in_region_old
-  {
-    my $self = shift;
-    my %opts = @_;
-    my $start = $opts{'start'} || $opts{'START'} || $opts{begin} || $opts{BEGIN};
-    $start = 0 unless $start;
-    my $stop = $opts{'stop'} || $opts{STOP} || $opts{end} || $opts{END};
-    $stop = $start unless defined $stop;
-    my $chr = $opts{chr} || $opts{CHR} || $opts{chromosome} || $opts{CHROMOSOME};
-    my $dataset_id = $opts{dataset} || $opts{dataset_id} || $opts{info_id} || $opts{INFO_ID} || $opts{data_info_id} || $opts{DATA_INFO_ID} ;
-    my $count_flag = $opts{count} || $opts{COUNT};
-    if ($count_flag)
-      {
-	return $self->resultset('Feature')->count({
-						   "locations.chromosome"=>$chr,
-						   "dataset_id"=>$dataset_id,
-						   -and=>[
-							  -or=>[
-								-and=>[
-								       "locations.stop"=>  {"<=" => $stop},
-								       "locations.stop"=> {">=" => $start},
-								      ],
-								-and=>[
-								       "locations.start"=>  {"<=" => $stop},
-								       "locations.start"=> {">=" => $start},
-								      ],
-							       ],
-							 ],
-						  },
-						  {
-						   join => ["locations"],
-						   distinct=>['feature_id'],
-						  }
-						 );
-      }
-    my @feats = $self->resultset('Feature')->search({
-						     "locations.chromosome"=>$chr,
-						     "me.dataset_id"=>$dataset_id,
-						     -and=>[
-                   -or=>[
-                     -and=>[
-                       "locations.stop"=>  {"<=" => $stop},
-                       "locations.stop"=> {">=" => $start},
-                     ],
-                     -and=>[
-                       "locations.start"=>  {"<=" => $stop},
-                       "locations.start"=> {">=" => $start},
-                     ],
-                   ],
-                 ],
-						     },
-                  {
-                     join => ["locations"],
-                     distinct=>['feature_id'],
-                     prefetch=>["locations", "feature_type"],
-                  }
-						   );
-    return wantarray ? @feats : \@feats;
-  }
-
-
-
 sub get_features_in_region
   {
     my $self = shift;
@@ -212,6 +150,7 @@ sub get_features_in_region
 						    },
 						    {
 						     prefetch=>["locations", "feature_type"],
+						     order_by=>"me.start",
 						    }
 						   );
     return wantarray ? @feats : \@feats;
