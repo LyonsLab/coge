@@ -29,5 +29,130 @@ __PACKAGE__->set_primary_key("sequence_id");
 
 __PACKAGE__->belongs_to("feature" => "CoGeX::Feature", 'feature_id');
 __PACKAGE__->belongs_to("sequence_type" => "CoGeX::SequenceType", 'sequence_type_id');
-1;
 
+sub genomic_position
+  {
+    my $self = shift;
+    my $pos = shift;
+    $pos = 1 unless $pos; #assume they want the start?
+    #need to figure out which location object the position is within.
+    my $npos = $self->sequence_type->name =~ /prot/i ? $pos*3-2: $pos; #relative position in nucleotides
+    foreach my $loc (sort {$a->start <=> $b->start} $self->feature->locs())
+      {
+	my $locsize = $loc->stop - $loc->start +1;
+	if ( $locsize > $npos) #we have fount the location object in which the position lies
+	  {
+	    return $loc->start+$npos-1;
+	  }
+	else
+	  {
+	    $npos -= $locsize;
+	  }
+      }
+    return 0;
+  }
+sub get_genomic_locations
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $start = $opts{start} || $opts{begin} || 1;
+    my $stop = $opts{stop} || $opts{end};
+    unless ($start && $stop)
+      {
+	warn "Need a valid start and stop position\n";
+	return 0;
+      }
+    my @locs;
+    #are we dealing with a protein sequence for locaiton conversion?
+    my $nstart = $self->sequence_type->name =~ /prot/i ? $start*3-2: $start; #relative position in nucleotides
+    my $nstop = $self->sequence_type->name =~ /prot/i ? $stop*3 : $stop; #relative position in nucleotides
+    my $genome_start;
+    my $genome_stop;
+    my $rev = $self->feature->strand =~ /-/; #are we on the bottom strand?
+    my @tlocs = sort {$a->start <=> $b->start} $self->feature->locs();
+    if ($rev)
+      {
+	@tlocs = reverse @tlocs if $rev;
+	foreach my $loc (@tlocs)
+	  {
+	    my $locsize = $loc->stop - $loc->start +1;
+	    #need to detect actual start
+	    if ( $locsize > $nstart && !$genome_stop) #we have found the location object in which the start lies
+	      {
+		$genome_stop = $loc->stop-$nstart+1;
+	      }
+	    elsif ($genome_stop) #we have a start, but the end has yet to be found.  Assign the start to the start of the current loc object
+	      {
+		$genome_stop = $loc->stop;
+	      }
+	    #once start is found, need to know if also have the stop in the exon, or if lies in a future exon
+	    if ( $locsize > $nstop && $genome_stop) #get have the real stop
+	      {
+		$genome_start = $loc->stop-$nstop+1;
+	      }
+	    elsif ( $genome_stop) #we have the start, but the end is in another exon
+	      {
+		$genome_start = $loc->start; 
+	      }
+	    if ($genome_start && $genome_stop)
+	      {
+		my $nloc = {
+			    start=>$genome_start,
+			    stop=>$genome_stop,
+			    strand=>$loc->strand,
+			    chromosome=>$loc->chromosome,
+			    chr=>$loc->chromosome,
+			    };
+		push @locs, $nloc;
+	      }
+	    $nstart -= $locsize; 
+	    $nstop -= $locsize;
+	    last if ($nstop <= 0); #better stop;
+	  }
+      }
+
+    else
+      {
+	foreach my $loc (@tlocs)
+	  {
+	    my $locsize = $loc->stop - $loc->start +1;
+	    #need to detect actual start
+	    if ( $locsize > $nstart && !$genome_start) #we have found the location object in which the start lies
+	      {
+		$genome_start = $loc->start+$nstart-1;
+	      }
+	    elsif ($genome_start) #we have a start, but the end has yet to be found.  Assign the start to the start of the current loc object
+	      {
+		$genome_start = $loc->start;
+	      }
+	    #once start is found, need to know if also have the stop in the exon, or if lies in a future exon
+	    if ( $locsize > $nstop && $genome_start) #get have the real stop
+	      {
+		$genome_stop = $loc->start+$nstop-1;
+	      }
+	    elsif ( $genome_start) #we have the start, but the end is in another exon
+	      {
+		$genome_stop = $loc->stop; 
+	      }
+	    if ($genome_start && $genome_stop)
+	      {
+		my $nloc = {
+			    start=>$genome_start,
+			    stop=>$genome_stop,
+			    strand=>$loc->strand,
+			    chromosome=>$loc->chromosome,
+			    chr=>$loc->chromosome,
+			    };
+		push @locs, $nloc;
+	      }
+	    $nstart -= $locsize; 
+	    $nstop -= $locsize;
+	    last if ($nstop <= 0); #better stop;
+	  }
+      }
+    return wantarray ? @locs : \@locs;
+  }
+
+
+
+1;
