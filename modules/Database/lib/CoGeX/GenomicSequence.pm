@@ -27,10 +27,13 @@ __PACKAGE__->add_columns(
   },
   "dataset_id",
   { data_type => "INT", default_value => 0, is_nullable => 0, size => 10 },
+  "genomic_sequence_type_id",
+  { data_type => "INT", default_value => 1, is_nullable => 0, size => 10 },
 );
 __PACKAGE__->set_primary_key("genomic_sequence_id");
 
 __PACKAGE__->belongs_to("dataset_id" => "CoGeX::Dataset");
+__PACKAGE__->belongs_to("genomic_sequence_type_id" => "CoGeX::GenomicSequenceType");
 
 1;
 
