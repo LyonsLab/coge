@@ -10,6 +10,7 @@ lib/CoGeX/Annotation.pm
 lib/CoGeX/FeatureType.pm
 lib/CoGeX/AnnotationType.pm
 lib/CoGeX/GenomicSequence.pm
+lib/CoGeX/GenomicSequenceType.pm
 lib/CoGeX/AnnotationTypeGroup.pm
 lib/CoGeX/Image.pm
 lib/CoGeX/DataInformation.pm
