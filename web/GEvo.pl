@@ -2617,6 +2617,8 @@ sub dataset_search
     $num = 1 unless $num;
     my $dsid = $opts{dsid};
     my $featid = $opts{featid};
+    my $feat = $coge->resultset('Feature')->find($featid) if $featid;
+    $dsid = $feat->dataset->id if $feat;
     return ( qq{<input type="hidden" id="dsid$num">\n<input type="hidden" id="featid$num">}, $num )unless $accn;
     my $html;
     my %sources;
