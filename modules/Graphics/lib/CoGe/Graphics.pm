@@ -237,22 +237,27 @@ sub genomic_view
     my $ta = new Benchmark if $BENCHMARK;
     if ($org)
       {	
-	foreach my $did ( $org->current_datasets)
+	foreach my $gstype ($org->genomic_sequence_types)
 	  {
-	    my $pass = 0;
-	    foreach ($did->get_chromosomes)
+	    foreach my $did ( $org->current_datasets(type=>$gstype))
 	      {
-		$pass = 1 if $_ eq $chr;
+		my $chrpass = 0;
+		foreach ($did->get_chromosomes)
+		  {
+		    $chrpass = 1 if $_ eq $chr;
+		  }
+		next unless $ds->version eq $did->version;
+		$dids{$did->id} = $did if $chrpass;
 	      }
-	    $dids{$did->id} = $did if $pass;
 	  }
       }
     my $tb = new Benchmark if $BENCHMARK;
     my $finddid_time = timestr(timediff($tb, $ta))  if $BENCHMARK;
     
-    $dids{$ds->id}=$ds if $ds;
-
+#    $dids{$ds->id}=$ds if $ds;
+    delete $dids{$ds->id};
     my @dids = values %dids;
+    unshift @dids, $ds if $ds;
     my $tc = new Benchmark if $BENCHMARK;
     foreach my $did (@dids)
       {
