@@ -81,21 +81,28 @@ sub gen_html
 #	($chr) = $ds->get_chromosomes() unless $chr;
 #      }
     my @feats;
-    foreach my $tmpds ($org->datasets)
-      {
-	next unless $tmpds->version eq $ds->version;
-	my $chrpass=0;
-	foreach my $tmpchr ($tmpds->get_chromosomes)
-	  {
-	    $chrpass = 1 if $tmpchr eq $chr;
-	  }
-	next unless $chrpass;
-	push @feats, $coge->get_features_in_region(dataset_id => $tmpds->id, 
-						   chr => $chr,
-						   start => $start,
-						   stop => $stop,
-						  ) if ($chr && $start && $stop);
-      }
+    #for finding associated datasets for additional annotation
+#    foreach my $tmpds ($org->datasets)
+#      {
+#	next unless $tmpds->version eq $ds->version;
+#	my $chrpass=0;
+#	foreach my $tmpchr ($tmpds->get_chromosomes)
+#	  {
+#	    $chrpass = 1 if $tmpchr eq $chr;
+#	  }
+#	next unless $chrpass;
+#	push @feats, $coge->get_features_in_region(dataset_id => $tmpds->id, 
+#						   chr => $chr,
+#						   start => $start,
+#						   stop => $stop,
+#						  ) if ($chr && $start && $stop);
+#      }
+    push @feats, $coge->get_features_in_region(dataset_id => $ds->id, 
+					       chr => $chr,
+					       start => $start,
+					       stop => $stop,
+					      ) if ($chr && $start && $stop);
+
     push @feats, $coge->resultset('Feature')->find($featid) if $featid;
     my $html;
     if($name_only)
