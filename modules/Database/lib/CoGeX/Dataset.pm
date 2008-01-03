@@ -182,6 +182,18 @@ See Also   :
    }
 
 
+sub sequence_type
+  {
+    my $self = shift;
+    my ($type) = $self->genomic_sequences->slice(0,0);
+    return $type ? $type->genomic_sequence_type : undef;
+  }
+sub genomic_sequence_type
+  {
+    my $self = shift;
+    return $self->sequence_type(@_);
+  }
+
 sub resolve : ResultSet {
     my $self = shift;
     my $info = shift;
