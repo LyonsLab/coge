@@ -89,9 +89,18 @@ function timing(val){
 $(document).ready(function(){
   if($('#org_name').val() != "Search") {
     $('#org_name').css({fontStyle: "normal"});
-    $('#ds_name').css({fontStyle: "normal"});
     timing(1);
   }  
+  if($('#ds_name').val() != "Search") {
+    $('#ds_name').css({fontStyle: "normal"});
+    if ($('#ds_list').html() == "undefined") {
+     timing(0);
+    } else { dataset_info_chain();}
+     
+  }
+  
+//  if ($('#ds_list').val())
+//   {timing(0);}  
  });
 
 function search_bar(div_id){
@@ -116,17 +125,23 @@ function changeColor(id, color) {
    <DIV class = "oblique">Organisms</DIV>
    <DIV id="blah">Organism Name: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_NAME">" name = "org_name" id="org_name" style="font-style:italic" onFocus="search_bar('org_name')" onKeyUp='timing(1);'></DIV>
    <DIV id="org_list"><TMPL_VAR NAME="ORG_LIST"></DIV>
-   <DIV id="viewer"></DIV>
-   <DIV id="get_seq"></DIV>
-  <TD valign=top>
+<TR nowrap>
+  <TD valign=top nowrap>
+  <table>
+   <tr nowrap valign=top>
+   <td nowrap>
    <DIV class = "oblique">Datasets</DIV>
-   <DIV id="blah">Dataset Name: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_NAME">" name = "ds_name" style="font-style:italic" id="ds_name" onFocus="search_bar('ds_name')" onKeyUp='timing();' ></DIV>
-   <DIV id="ds_list"><TMPL_VAR NAME="DI_LIST"></DIV>
-
+   <DIV id="blah">Dataset Name: <input type="text" size=10 value="<TMPL_VAR NAME="DS_NAME">" name = "ds_name" style="font-style:italic" id="ds_name" onFocus="search_bar('ds_name')" onKeyUp='timing();' ></DIV>
+   <DIV style="float: left; vertical-align: top;" id="ds_list"><TMPL_VAR NAME="DS_LIST"></DIV>
+  <td align=left nowrap>
+   <DIV style="float: left; vertical-align: top;" id="viewer"></DIV>
+  <td align=left nowrap>
+   <DIV style="float: left; vertical-align: top;" id="get_seq"></DIV>
+  </table>
+<tr>
   <TD valign=top>
    <DIV class = "oblique">Dataset information</DIV>
    <DIV id="ds_info"><TMPL_VAR NAME="DS_INFO"></DIV>
    <DIV id="chr_info"><TMPL_VAR NAME="CHR_INFO"></DIV>
 
 </TABLE>
-<!--<IMG SRC = "picts/table/spacer-1x1.png">-->
