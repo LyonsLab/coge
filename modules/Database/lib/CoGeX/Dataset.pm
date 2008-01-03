@@ -198,12 +198,8 @@ sub resolve : ResultSet {
     my $self = shift;
     my $info = shift;
     return $info if ref($info) =~ /Dataset/i;
-    return $self->search({
-			  '-or'=> [
-				   { 'name' => { '-like' => '%' . $info . '%'}},
-				   { 'dataset_id' => $info }
-				  ],
-			 }
+    return $self->find($info) if $info =~ /^\d+$/;
+    return $self->search({ 'name' => { '-like' => '%' . $info . '%'}},
 			 ,{});
   }
 
