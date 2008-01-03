@@ -1,0 +1,107 @@
+#!/usr/bin/perl -w
+
+use strict;
+use Data::Dumper;
+use CoGeX;
+use Getopt::Long;
+
+my $GO = 0;
+my $DEBUG = 1;
+my $dsid;
+my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
+my$coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
+#$coge->storage->debugobj(new DBIxProfiler());
+#$coge->storage->debug(1);
+
+
+GetOptions ( "dsid=i" => \$dsid,
+	     "go=s"    => \$GO,
+	     "debug=s" => \$DEBUG,
+	   );
+
+my $ds = $coge->resultset('Dataset')->find($dsid);
+
+unless ($ds)
+  {
+    warn "unable to find a valid dataset entry for $dsid\n";
+    exit;
+  }
+
+
+warn "-go flag is not true, nothing will be added to the database.\n" unless $GO;
+my %data;
+my %annos;
+while (<>)
+  {
+    next if /^#/;
+    chomp;
+    my @line = split /\t/;
+    my $chr = $line[0];
+    $chr =~ s/chromosome//i;
+    $chr =~ s/chr//i;
+    $chr =~ s/^_//i;
+    my $name;
+    foreach my $item (split /;/, $line[-1])
+      {
+	my ($type, $info) = split /=/,$item;
+	if ($type eq "ID")
+	  {
+	    $info =~ s/_.*$//;
+	    $name = $info;
+	  }
+	$annos{$name} = $info if $type eq "Description";
+      }
+    my $strand = $line[6] =~ /-/ ? -1 :1;
+    push @{$data{$name}{$line[2]}}, {
+				     start=>$line[3],
+				     stop=>$line[4],
+				     strand=>$strand,
+				     chr=>$chr,
+				    };
+    
+  }
+#print Dumper \%data;
+#print Dumper \%annos;
+#exit;
+
+my ($anno_type) = $coge->resultset('AnnotationType')->search({name=>"note"});
+foreach my $name (keys %data)
+  {
+    foreach my $feat_type (keys %{$data{$name}})
+      {
+	my ($start) = sort {$a<=>$b} map {$_->{start}} @{$data{$name}{$feat_type}};
+	my ($stop) = sort {$b<=>$a} map {$_->{stop}} @{$data{$name}{$feat_type}};
+	my ($strand) = map {$_->{strand}} @{$data{$name}{$feat_type}};
+	my ($chr) = map {$_->{chr}} @{$data{$name}{$feat_type}};
+	my $feat_type_obj = $coge->resultset('FeatureType')->find_or_create( { name => $feat_type } ) if $GO;
+	print "Creating feature of type $feat_type\n" if $DEBUG;
+	
+	my $feat = $ds->add_to_features({
+					 feature_type_id => $feat_type_obj->id,
+					 start=>$start,
+					 stop=>$stop,
+					 chromosome=>$chr,
+					 strand=>$strand,
+					}) if $GO;
+	my $featid = $feat->id if $feat;
+	foreach my $loc (@{$data{$name}{$feat_type}})
+	  {
+	    print "Adding location $chr:(".$loc->{start}."-".$loc->{stop}.", $strand)\n" if $DEBUG;
+	    my $loc_tmp = $feat->add_to_locations(
+						  {
+						   start      => $loc->{start},
+						   stop       => $loc->{stop},
+						   strand     => $loc->{strand},
+						   chromosome => $loc->{chr}
+						  }
+						 ) if $GO;
+	  }
+	print "Adding name $name to feature ", $featid ,"\n" if $DEBUG;
+	my $feat_name = $feat->add_to_feature_names({
+						     name=>$name,
+						     #				   feature_id=>$featid,
+						    }) if $GO ;
+	print "Adding annotation $annos{$name}\n" if $DEBUG && $annos{$name};
+	my $anno = $feat->add_to_annotations({annotation=>$annos{$name}, annotation_type_id => $anno_type->id}) if $GO && $annos{$name};
+      }
+  }
