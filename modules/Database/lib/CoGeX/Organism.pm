@@ -32,10 +32,7 @@ sub resolve : ResultSet {
     return $info if ref($info) =~ /Organism/;
     return $self->find($info) if $info =~ /^\d+$/;
     return $self->search({
-			  '-or'=>[
-				  { 'name' => { '-like' => '%' . $info . '%'}}, 
-				  { 'organism_id' => $info }
-				 ],
+			  'name' => { '-like' => '%' . $info . '%'}, 
 			 }
 			 ,{});
 }
@@ -44,10 +41,18 @@ sub resolve : ResultSet {
 sub current_datasets
   {
     my $self = shift;
+    my %opts = @_;
+    my $type = $opts{type} || $opts{genomic_sequence_type} || $opts{sequence_type};
+    $type =1 unless $type;
     my %data;
     my $version;
     ds_loop: foreach my $ds ($self->datasets({},{distict=>'version',order_by=>'version desc'}))
       {
+	if ($type)
+	  {
+	    my $typeid = ref($type) =~/Type/ ? $type->id : $type;
+	    next unless $typeid = $ds->sequence_type->id eq $typeid;
+	  }
 	$version = $ds->version unless $version;
 	foreach my $chr ($ds->get_chromosomes)
 	  {
@@ -65,5 +70,16 @@ sub current_datasets
     return wantarray ? values %data : [values %data];
   }
 
+sub genomic_sequence_types
+  {
+    my $self = shift;
+    my %data;
+    foreach my $ds ($self->datasets)
+      {
+	my $type = $ds->sequence_type;
+	$data{$type->id} = $type;
+      }
+    return wantarray ? values %data : [values %data];
+  }
 
 1;
