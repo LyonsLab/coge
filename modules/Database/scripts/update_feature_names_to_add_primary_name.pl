@@ -4,14 +4,16 @@ use Data::Dumper;
 use CoGeX;
 use Getopt::Long;
 
-my ($help, $debug, $orgname, $name_string, $DEBUG);
+my ($help, $debug, $orgname, $name_string, $DEBUG, $go);
 
 GetOptions ("h|help" =>  \$help,
             "o|org=s" => \$orgname,
             "d|debug"     => \$DEBUG,
             "n|name=s" =>\$name_string,
+	    "go=s"=>\$go,
             );
 $| =1;
+$go = 1 unless defined $go;
 unless ($orgname && $name_string)
   {
     print qq{
@@ -43,9 +45,10 @@ foreach my $ds ($org->datasets)
 	  {
 	    if ($name->name=~/$name_string/i)
 	      {
+		print $name->name, " matches ", $name_string,"\n" if $DEBUG;
 		print "." unless $count %100;
 		$count++;
-		$name->update({primary_name=>1});
+		$name->update({primary_name=>1}) if $go;
 	      }
 	  }
       }
