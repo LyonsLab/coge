@@ -4,14 +4,14 @@ use strict;
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
 use Data::Dumper;
-use CoGe::Genome;
+#use CoGe::Genome;
 use CoGeX;
 use DBIxProfiler;
 use CoGe::Accessory::LogUser;
 #use CoGeX;
 $ENV{PATH} = "/opt/apache/CoGe/";
 
-use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $DB $FORM $FID $DS $CHR $LOC $ORG $VERSION $START $STOP $NAME_ONLY $coge);
+use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $FID $DS $CHR $LOC $ORG $VERSION $START $STOP $NAME_ONLY $coge);
 
 # set this to 1 to print verbose messages to logs
 $DEBUG = 0;
@@ -33,11 +33,11 @@ $ORG = $FORM->param('org') || $FORM->param('organism');
 $VERSION = $FORM->param('version') || $FORM->param('ver');
 $NAME_ONLY = $FORM->param('name_only') || 0;
 
-$DB = new CoGe::Genome;
+#$DB = new CoGe::Genome;
 my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
 $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
-$coge->storage->debugobj(new DBIxProfiler());
-$coge->storage->debug(1);
+#$coge->storage->debugobj(new DBIxProfiler());
+#$coge->storage->debug(1);
 
 print "Content-Type: text/html\n\n";
 my $rhtml = gen_html(featid=>$FID, start=>$START, stop=>$STOP, chr=>$CHR, ds=>$DS, org=>$ORG, version=>$VERSION, name_only=>$NAME_ONLY) if $START > 0;
@@ -64,47 +64,51 @@ sub gen_html
     my $org = $args{org};
     my $version = $args{version};
     my $name_only = $args{name_only};
-##working here, taken frmo Graphics.pm
-    $org = $DB->get_organism_obj->resolve_organism($org) if $org;
-    $ds = $DB->get_dataset_obj->resolve_dataset($ds) if $ds;
+#    print STDERR Dumper \%args;
+    ($org) = $coge->resultset('Organism')->resolve($org) if $org;
+    ($ds) = $coge->resultset('Dataset')->resolve($ds) if $ds;
     if ($ds) #there can be additional information about a chromosome for a particular version of the organism that is not in the same data_information.  Let's go find the organism_id and version for the specified data information item.
       {
-	$org = $ds->org unless $org;
+	($org) = $ds->organism unless $org;
 	$version = $ds->version unless $version;
 	($chr) = $ds->get_chromosomes() unless $chr;
       }
 
-    if ($org && !$ds)
-      {
-	$version =
-    $DB->get_dataset_obj->get_current_version_for_organism(org=>$org) unless $version;
-	($ds) = $DB->get_dataset_obj->search({version=>$version, organism_id=>$org->id});
-	($chr) = $ds->get_chromosomes() unless $chr;
-      }
-###end working section
-    my ($dso) = $ds;#$DB->get_dataset_obj->retrieve($ds);
+#    if ($org && !$ds)
+#      {
+#	$version = $DB->get_dataset_obj->get_current_version_for_organism(org=>$org) unless $version;
+#	($ds) = $DB->get_dataset_obj->search({version=>$version, organism_id=>$org->id});
+#	($chr) = $ds->get_chromosomes() unless $chr;
+#      }
     my @feats;
-    foreach my $tdso ($dso->get_associated_datasets)
+    foreach my $tmpds ($org->datasets)
       {
-	push @feats, $DB->get_feat_obj->get_features_in_region(dataset => $tdso->id, 
-							       chr => $chr,
-							       start => $start,
-							       stop => $stop,
-							      ) if ($chr && $start && $stop);
+	next unless $tmpds->version eq $ds->version;
+	my $chrpass=0;
+	foreach my $tmpchr ($tmpds->get_chromosomes)
+	  {
+	    $chrpass = 1 if $tmpchr eq $chr;
+	  }
+	next unless $chrpass;
+	push @feats, $coge->get_features_in_region(dataset_id => $tmpds->id, 
+						   chr => $chr,
+						   start => $start,
+						   stop => $stop,
+						  ) if ($chr && $start && $stop);
       }
-    push @feats, $DB->get_feat_obj->retrieve($featid) if $featid;
+    push @feats, $coge->resultset('Feature')->find($featid) if $featid;
     my $html;
     if($name_only)
-    {
-      $html = "<table>";
-      foreach my $feat (sort {$a->type->name cmp $b->type->name} @feats)
-       {
-         next if $feat->type->name =~ /^source$/;
-         $html .= "<tr><td valign='top'>".$feat->type->name."</td><td valign='top'>".(join (", ", map {$_->name} $feat->names))."</td></tr>";
-       }
-    $html .="</table>";
-    return $html;
-    }
+      {
+	$html = "<table>";
+	foreach my $feat (sort {$a->type->name cmp $b->type->name} @feats)
+	  {
+	    next if $feat->type->name =~ /^source$/;
+	    $html .= "<tr><td valign='top'>".$feat->type->name."</td><td valign='top'>".(join (", ", map {$_->name} $feat->names))."</td></tr>";
+	  }
+	$html .="</table>";
+	return $html;
+      }
     foreach my $feat (sort {$a->type->name cmp $b->type->name} @feats)
       {
 	next if $feat->type->name =~ /^source$/;
@@ -133,11 +137,11 @@ sub gen_html
 	unless ($FORM->param('no_org'))
 	  {
 	    $html .= qq{<font class="title4">Organism: </font>};
-	    $html .= qq{<font class="data">}.$feat->dataset->org->name."</font>\n";
+	    $html .= qq{<font class="data">}.$feat->dataset->organism->name."</font>\n";
 	    $html .= qq{<br>};
 	  }
 	$html .= qq{<font class="title4">Type: </font>};
-	$html .= qq{<font class="data">}.$feat->feat_type->name."</font>\n";
+	$html .= qq{<font class="data">}.$feat->type->name."</font>\n";
 	$html .= qq{</table>};
 	$html .= qq{<HR>};
       }
