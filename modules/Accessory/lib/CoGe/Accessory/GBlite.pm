@@ -207,13 +207,13 @@ sub nextEntry {
   if ( $self->{FILETYPE} eq "GZIP" ) {
     while ($FH->gzreadline($_) > 0) {
       chomp;
-      last if ( /^REFERENCE/);
+      last if ( /^\w/);
       push( @lines, $_ );
     }
   } else {
     while (<$FH>) {
       chomp;
-      last if ( /^REFERENCE/);
+      last if ( /^\w/);
       push( @lines, $_ );
     }
   }
@@ -441,7 +441,7 @@ sub new {
   my $qualifiers = {};
   foreach my $qual (@part) {
     if ($qual =~ /\S=\S/) {
-      my ($key, $value) = $qual =~ /^(\S+)=(.+)/;
+      my ($key, $value) = $qual =~ /^(\S+?)=(.+)/;
       $value =~ s/"//g;  # remove "
       $value =~ s/\s+$//g; # remove trailing whitespace
       $value =~ s/\s+/ /g; # substitute multiple spaces for one
