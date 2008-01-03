@@ -77,10 +77,20 @@ sub gen_body
     my $form = shift || $FORM;
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GenomeView.tmpl');
     my $name = $form->param('org_name');
+    my $dsname = $form->param('dsname');
+    my $dsid = $form->param('dsid');
     $name = "Search" unless $name;
-    $template->param(ORG_NAME=>$name);
+    $template->param(ORG_NAME=>$name) if $name;
     $name = "" if $name =~ /Search/;
     $template->param(ORG_LIST=>get_orgs($name));
+    my ($ds) = $coge->resultset('Dataset')->resolve($dsid) if $dsid;
+    $dsname = $ds->name if $ds;
+    $dsname = "Search" unless $dsname;
+    $template->param(DS_NAME=>$dsname);
+    $dsname = "" if $dsname =~ /Search/;
+    my ($dslist,$orglist) = get_dataset(dsname=>$dsname, dsid=>$dsid) if $dsname;
+    $template->param(DS_LIST=>$dslist) if $dslist;
+    $template->param(ORG_LIST=>$orglist) if $orglist;
     return $template->output;
   }
 
@@ -116,6 +126,12 @@ sub get_dataset
     my %opts = @_;
     my $oid = $opts{oid};
     my $dsname = $opts{dsname};
+    my $dsid = $opts{dsid};
+    if ($dsid)
+      {
+	my ($ds) = $coge->resultset('Dataset')->resolve($dsid);
+	$dsname = $ds->name;
+      }
     my $html; 
     my $html2;
     my @opts;
@@ -130,13 +146,19 @@ sub get_dataset
 	my @ds = $coge->resultset("Dataset")->search({name=>{like=>"%".$dsname."%"}});
 	($USER) = CoGe::Accessory::LogUser->get_user();
 	my $restricted_orgs = restricted_orgs(user=>$USER);
-	my @orgs;
-	foreach my $item (sort {uc($a->name) cmp uc($b->name)} @ds)
+	my %orgs;
+	foreach my $item (sort {$b->version cmp $a->version || uc($a->name) cmp uc($b->name)} @ds)
 	  {
 	    next if $restricted_orgs->{$item->organism->name};
-	    push @opts, "<OPTION value=\"".$item->id."\">".$item->name."(v".$item->version.", id".$item->id.")</OPTION>";
-	    push @orgs, "<OPTION value=\"".$item->organism->id."\">".$item->organism->name." (id".$item->organism->id.")</OPTION>";
+	    my $option = "<OPTION value=\"".$item->id."\">".$item->name."(v".$item->version.", id".$item->id.")</OPTION>";
+	    if ($dsid && $dsid == $item->id)
+	      {
+		$option =~ s/(<OPTION)/$1 selected/;
+	      }
+	    push @opts, $option;
+	    $orgs{$item->organism->id}=$item->organism;
 	  }
+	my @orgs = map	{"<OPTION value=\"".$_->id."\">".$_->name." (id".$_->id.")</OPTION>"} values %orgs;
 	$html2 .= qq{<FONT CLASS ="small">Organism count: }.scalar @orgs.qq{</FONT>\n<BR>\n};
 	$html2 .= qq{<SELECT id="org_id" SIZE="5" MULTIPLE onChange="dataset_chain()" >\n};
 	$html2 .= join ("\n", @orgs);
@@ -149,7 +171,7 @@ sub get_dataset
 	$html .= qq{<SELECT id="ds_id" SIZE="5" MULTIPLE onChange="gen_data(['args__loading'],['ds_info']); dataset_info_chain()" >\n};
 	$html .= join ("\n", @opts);
 	$html .= "\n</SELECT>\n";
-	$html =~ s/OPTION/OPTION SELECTED/;
+	$html =~ s/OPTION/OPTION SELECTED/ unless $dsid;
       }
     else
       {
@@ -227,9 +249,14 @@ sub get_dataset_chr_info
     my $ds = $coge->resultset("Dataset")->find($dsd);
     return $html unless $ds;
     my $length = commify( $ds->last_chromosome_position($chr) );
+    my $type = $ds->sequence_type;
+    my $type_html = $type->name if $type;
+    $type_html .= ": ".$type->description if $type && $type->description;
+    $type_html = "Unknown" unless $type_html;
     $html .= qq{
 <tr><td>Nucleotides:<td>$length<td><div id=chromosome_gc class="link" onclick="\$('#chromosome_gc').removeClass('link'); gen_gc_for_chromosome(['args__dsid','ds_id','args__chr','chr'],['chromosome_gc']);">Click for percent GC content</div>
-<tr><td>Noncoding sequence:<td><div id=noncoding_gc class="link" onclick = "gen_data(['args__loading'],['noncoding_gc']);\$('#noncoding_gc').removeClass('link');  gen_gc_for_noncoding(['args__dsid','ds_id','args__chr','chr'],['noncoding_gc']);">Click for percent GC content</div>
+<tr><td>Sequence Type:<td colspan=2>$type_html
+<tr><td>Noncoding sequence:<td colspan=2><div id=noncoding_gc class="link" onclick = "gen_data(['args__loading'],['noncoding_gc']);\$('#noncoding_gc').removeClass('link');  gen_gc_for_noncoding(['args__dsid','ds_id','args__chr','chr'],['noncoding_gc']);">Click for percent GC content</div>
 } if $length;
 #    my $feat_string = get_feature_counts($dsd, $chr);
     my $feat_string = qq{
@@ -243,16 +270,16 @@ sub get_dataset_chr_info
 	$viewer .= "<br><br>";
 	$viewer .= "<font class=\"oblique\">Genome Viewer Launcher</font><br>";
 	$viewer .= "<table>";
-	$viewer .= "<tr><td class = \"ital\">Starting location: ";
+	$viewer .= "<tr><td nowrap class = \"ital\">Starting location: ";
 	$viewer .= qq{<td><input type="text" size=10 value="1000" id="x">};
 	my $zoom;
    	$zoom .= qq{<tr><td class = "ital">Zoom level:};
    	$zoom .= qq{<td><SELECT name = "z" id="z" size = 1>};
    	my @opts = map {"<OPTION value=\"$_\">".$_."</OPTION>"} (5..15);
    	$zoom .= join ("\n", @opts);
-   	$zoom =~ s/OPTION value="7"/OPTION SELECTED value="7"/;
+   	$zoom =~ s/OPTION value="4"/OPTION SELECTED value="4"/;
    	$zoom .= qq{</SELECT>};
-	$viewer .= qq{<tr><td class = "ital">Zoom level:<td><input type = "text" size=10 value ="8" id = "z">};
+	$viewer .= qq{<tr><td class = "ital">Zoom level:<td><input type = "text" size=10 value ="4" id = "z">};
 	#    $viewer .= $zoom;
 	$viewer .= "</table>";
 	#$viewer .= qq{<input type="hidden" id="z" value="7">};
