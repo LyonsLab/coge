@@ -259,7 +259,7 @@ sub annotation_pretty_print_html
     foreach my $name ($self->names)
       {
 	$outname = $name unless $outname;
-	$anno_type->add_Annot("<a class=\"data\" href=\"FeatView.pl?accn=".$name."\" target=_new>".$name."</a>");
+	$anno_type->add_Annot("<a class=\"data link\" href=\"FeatView.pl?accn=".$name."\" target=_new>".$name."</a>");
       }
     
     $anno_obj->add_Annot($anno_type);
@@ -296,6 +296,11 @@ sub annotation_pretty_print_html
     $location = qq{<a href="$loc_link?featid=$featid&start=$start&stop=$stop&chr=$chr&dsid=$dataset_id&strand=$strand&featname=$outname" target=_new>}.$location."</a>" if $loc_link;
     $location = qq{<span class="data">$location</span>};
     $anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<span class=\"title4\">Location</span>", Values=>[$location], Type_delimit=>": ", Val_delimit=>" "));
+    my $ds=$self->dataset;
+    my $dataset = qq{<a href = "GenomeView.pl?dsid=}.$ds->id."\" target=_new>".$ds->name;
+    $dataset .= ": ".$ds->description if $ds->description;
+    $dataset .= "</a>";
+    $anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<span class=\"title4\">Dataset</span>", Values=>[$dataset], Type_delimit=>": ", Val_delimit=>" "));
     return $anno_obj->to_String;
   }
 
