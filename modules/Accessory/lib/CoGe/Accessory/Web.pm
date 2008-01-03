@@ -58,7 +58,7 @@ sub feat_name_search
 
 sub dataset_search_for_feat_name
   {
-    my ($self, $accn, $num, $dsid) = self_or_default(@_);
+    my ($self, $accn, $num, $dsid, $featid) = self_or_default(@_);
     $num = 1 unless $num;
     return ( qq{<input type="hidden" id="dsid$num">\n<input type="hidden" id="featid$num">}, $num )unless $accn;
     my $html;
@@ -534,6 +534,7 @@ sub initialize_basefile
     my $return_name = $opts{return_name};
     if ($basename)
       {
+	print STDERR "Have basename: $basename\n";
 	$basename =~ s/$TEMPDIR//g;
 	my ($x, $cleanname) = check_taint($basename);
 	$self->basefilename($cleanname);
@@ -552,6 +553,10 @@ sub initialize_basefile
 	$self->sqlitefile($self->basefile.".sqlite");
 	$self->basefilename($file->filename =~ /([^\/]*$)/)
       }
+    print STDERR "Basename: ",$self->basefilename,"\n";
+    print STDERR "sqlitefile: ",$self->sqlitefile,"\n";
+    print STDERR "Basefile: ",$self->basefile,"\n";
+
     if ($return_name)
       {
 	return $self->basefilename;
