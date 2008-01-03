@@ -32,8 +32,8 @@ __PACKAGE__->add_columns(
 );
 __PACKAGE__->set_primary_key("genomic_sequence_id");
 
-__PACKAGE__->belongs_to("dataset_id" => "CoGeX::Dataset");
-__PACKAGE__->belongs_to("genomic_sequence_type_id" => "CoGeX::GenomicSequenceType");
+__PACKAGE__->belongs_to("dataset" => "CoGeX::Dataset", "dataset_id");
+__PACKAGE__->belongs_to("genomic_sequence_type" => "CoGeX::GenomicSequenceType","genomic_sequence_type_id");
 
 1;
 
