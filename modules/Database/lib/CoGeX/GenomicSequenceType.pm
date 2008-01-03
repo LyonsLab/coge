@@ -27,5 +27,17 @@ __PACKAGE__->set_primary_key("genomic_sequence_type_id");
 
 __PACKAGE__->has_many("genomic_sequences"=>"CoGeX::GenomicSequence","genomic_sequence_type_id");
 
+sub resolve : ResultSet {
+    my $self = shift;
+    my $info = shift;
+    return $info if ref($info) =~ /GenomicSequenceType/;
+    return $self->find($info) if $info =~ /^\d+$/;
+    return $self->search({
+			  'name' => { '-like' => '%' . $info . '%'}, 
+			 }
+			 ,{});
+}
+
+
 1;
 
