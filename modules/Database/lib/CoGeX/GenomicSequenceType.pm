@@ -7,7 +7,7 @@ use warnings;
 
 use base 'DBIx::Class';
 
-__PACKAGE__->load_components("PK::Auto", "Core");
+__PACKAGE__->load_components("PK::Auto", "ResultSetManager", "Core");
 __PACKAGE__->table("genomic_sequence_type");
 __PACKAGE__->add_columns(
   "genomic_sequence_type_id",
