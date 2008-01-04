@@ -9,7 +9,7 @@ use Data::Dumper;
 use DB_File;
 
 my %options;
-getopt("otdc", \%options);
+getopt("otdcm", \%options);
 
 my %org_hash = (
    rice        => 3
@@ -28,13 +28,23 @@ my $organism = $options{o} or die "send in organism name i.e. -o rice.\n";
 chomp $organism;
 print $organism;
 my $use_contigs = $options{c} or 0;
-my $datasets = $ds_hash{$organism} || [sort map { $_->dataset_id  } @{$s->get_current_datasets_for_org($org_hash{$organism})}];
+my ($org) = $s->resultset('Organism')->resolve($organism);
+my $datasets;
+if($options{m}){
+    print "getting masked...\n";
+    my ($genomic_sequence_type) = $s->resultset('GenomicSequenceType')->resolve('masked');
+    $datasets = [sort map { $_->dataset_id } $org->current_datasets(genomic_sequence_type=>$genomic_sequence_type)];
+}
+else {
+   print "getting NOT masked...\n";
+   $datasets = $ds_hash{$organism} || [sort map { $_->dataset_id  } @{$s->get_current_datasets_for_org($org_hash{$organism})}];
+}
+
 my $outdir   = ($options{d} or ".") . "/";
 chomp $outdir;
 
 print STDERR "usings datasets: " . join(",", @$datasets) . " for $organism ...\n";
-
-exit();
+exit;
 if(defined $options{t}){
     get_10kmers($organism, $datasets, $use_contigs);
     exit();
