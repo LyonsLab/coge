@@ -46,13 +46,11 @@ sub current_datasets
     $type =1 unless $type;
     my %data;
     my $version;
+    my $typeid;
+    $typeid = ref($type) =~/Type/ ? $type->id : $type;
     ds_loop: foreach my $ds ($self->datasets({},{distict=>'version',order_by=>'version desc'}))
       {
-	if ($type)
-	  {
-	    my $typeid = ref($type) =~/Type/ ? $type->id : $type;
-	    next unless $typeid = $ds->sequence_type->id eq $typeid;
-	  }
+	next unless $ds->sequence_type->id eq $typeid;
 	$version = $ds->version unless $version;
 	foreach my $chr ($ds->get_chromosomes)
 	  {
