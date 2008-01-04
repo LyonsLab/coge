@@ -32,10 +32,15 @@ sub resolve : ResultSet {
     my $info = shift;
     return $info if ref($info) =~ /GenomicSequenceType/;
     return $self->find($info) if $info =~ /^\d+$/;
-    return $self->search({
-			  'name' => { '-like' => '%' . $info . '%'}, 
-			 }
-			 ,{});
+    my @res = $self->search({
+			     'name' => { '-like' => $info . '%'}, 
+			    }
+			    ,{});
+    @res = $self->search({
+			     'name' => { '-like' => '%' . $info . '%'}, 
+			    }
+			    ,{}) unless scalar @res;
+    return wantarray? @res : \@res;
 }
 
 
