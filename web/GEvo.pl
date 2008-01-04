@@ -1163,7 +1163,7 @@ sub process_features
 	print STDERR $name,"\n\n" if $DEBUG;
         $f->type($type);
 	$f->description($feat->annotation);
-	$f->link("FeatView.pl?accn=$name") if $name;
+	$f->link("FeatList.pl?fid=".$feat->qualifiers->{id}) if $feat->qualifiers->{id};
 	my $foverlap = $overlap ? 0 : 1; #I think I need this to get this to work as expected
 	$f->skip_overlap_search($foverlap);
 	$f->{anchor}=1 if $anchor;
@@ -1576,6 +1576,7 @@ sub get_obj_from_genome_db
 			   qualifiers=>{
                                         names=> [@names],
 					type=>$type,
+					id=>$f->id,
                                        },
 			   annotation=>$anno,
 			  );
