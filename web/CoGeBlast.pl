@@ -1188,6 +1188,8 @@ sub generate_hit_image
     $feat->color([255,200,0]);
     $cq->add_feature($feat);
     my ($dsid) = $hsp->{sname} =~ /id: (\d+)/;
+    my ($ds) = $coge->resultset('Dataset')->resolve($dsid);
+#    print STDERR $dsid,"::",$ds->name,"!!!\n";;
     my ($chr) = $hsp->{sname} =~ /chromosome: (.*?),/;
     my $len = $hsp->{sstop} - $hsp->{sstart}+1;
     my $start = $hsp->{sstart}-5000;
@@ -1215,9 +1217,8 @@ sub generate_hit_image
     $feat->color([255,200,0]);
     $cs->add_feature($feat);
     
-    my $db = new CoGe::Genome;
     my $graphics = new CoGe::Graphics;
-    $graphics->process_features(c=>$cs, layers=>{features=>{gene=>1, cds=>1, mrna=>1, rna=>1, cns=>1}}, db=>$db, ds=>$dsid, chr=>$chr);
+    $graphics->process_features(c=>$cs, layers=>{features=>{gene=>1, cds=>1, mrna=>1, rna=>1, cns=>1}}, ds=>$ds, chr=>$chr, coge=>$coge);
     $cs->overlap_adjustment(1);
     $cq->overlap_adjustment(1);
 
