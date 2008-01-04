@@ -121,7 +121,7 @@ sub generate_table
 	  next;
 	}
       my $featid = $feat->id;
-      my ($name) = sort $feat->names;
+      my ($name) = $feat->names;
       my $hpp = $feat->annotation_pretty_print_html();
       my $row_style = $count%2 ? "even" : "odd";
       my $other;
