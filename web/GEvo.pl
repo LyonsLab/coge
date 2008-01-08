@@ -881,7 +881,8 @@ title varchar(256),
 px_width integer,
 bpmin integer,
 bpmax integer,
-dsid integer
+dsid integer,
+chromosome integer
 )
 };
 #TODO: make sure to populate the bpmin and pbmax and image width!!!!!!!!!!!!!!!!!
@@ -905,12 +906,14 @@ sub generate_image_db
     $title .= qq! Reverse Complement! if $set->{rev};
     my $width = $gfx->image_width;
     my $dsid = $set->{obj}->dataset;
+    my ($chr) =  $set->{obj}->chromosome =~ /(\d+)/;
+    #print STDERR "CHROMOSOME:" . $chr . "\n";
     $dsid = "NULL" unless $dsid;
     my $image_start = $set->{obj}->start;
     my $image_stop = $set->{obj}->stop;
     my $image_id = $set->{seq_num};
     my $statement = qq{
-INSERT INTO image_info (id, iname, title, px_width,dsid, bpmin, bpmax) values ($image_id, "$image", "$title", $width, "$dsid", $image_start, $image_stop)
+INSERT INTO image_info (id, iname, title, px_width,dsid, chromosome, bpmin, bpmax) values ($image_id, "$image", "$title", $width, "$dsid", $chr, $image_start, $image_stop)
 };
     print STDERR $statement unless $dbh->do($statement);
 #    my $image_id = $dbh->last_insert_id("","","","");
