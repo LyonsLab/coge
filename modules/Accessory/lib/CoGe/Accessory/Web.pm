@@ -415,6 +415,8 @@ sub write_log
   {
     $| = 1;
     my $message = shift;
+    $message =~ /(.*)/;
+    $message = $1;
     my $file = shift;
     return unless $file;
     open (OUT, ">>$file") || return;
