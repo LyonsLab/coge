@@ -2035,7 +2035,8 @@ sub write_fasta
     print OUT $seq,"\n";
     close(OUT);
     system "chmod +rw $fullname";
-    write_log("Created sequence file for $hdr.  Length ". $length, $cogeweb->logfile);
+    write_log("Created sequence file for $hdr.  Length:". $length, $cogeweb->logfile);
+    write_log('spike:' . $spike_seq, $cogeweb->logfile);
     return($fullname, $spike_seq, $seq);
   }
 
@@ -2053,6 +2054,7 @@ sub generate_spike_seq {
 	    $i+=$idx;
 	  }
 	$spike_seq = substr($spike_seq, 0, $spikesize);
+
 	return($spike_seq);
 }
 
