@@ -450,11 +450,16 @@ sub gen_results_page
 		 my ($chr) = $hsp->subject_name =~ /chromosome: (.*?),/;
 		 my ($org) = $hsp->subject_name =~ /^\s*(.*?)\s*\(/;
 		 next unless $dsid && $chr;
- 		 my @feat = $coge->get_features_in_region(start=>$hsp->subject_start,  
+ 		 my @feat;
+		 foreach my $feat($coge->get_features_in_region(start=>$hsp->subject_start,  
  							  stop=>$hsp->subject_stop,
  							  chr=>$chr, 
  							  dataset_id=>$dsid,
- 							 );
+ 							 ))
+		   {
+		     next if $feat->type->name =~ /source/;
+		     push @feat, $feat if $feat;
+		   }
 		if (@feat) 
 		  {
 		    my %seen;
@@ -469,35 +474,37 @@ sub gen_results_page
 		    $search_type = "rna" if !$search_type && $seen{rna};
 		    $search_type = "exon" if !$search_type && $seen{exon};
 		    ($search_type) = keys %seen unless $search_type;
-		    #print STDERR Dumper \%seen if $feat[0]->dataset->organism->name =~ /Poplar/i;
-		   my $no_genes = 0;
-		   foreach my $feature (@feat)
+		    $search_type = undef if $search_type =~ /source/i;
+		    my $no_genes = 0;
+		    foreach my $feature (@feat)
+		      {
+			#print STDERR $search_type,"::",$feature->type->name,"\n" if $feature->dataset->organism->name =~ /Poplar/i;
+			next unless $search_type && $feature->type->name =~ /$search_type/i;
+			$no_genes++;
+			$length = (($feature->stop) - ($feature->start));		     
+			my ($name) = sort $feature->names;
+			foreach my $data (@check)
+			  {
+			    $flag = 1 if (($data->{name} eq $name) && ($data->{score} == $hsp->score));
+			  }
+			unless ($flag) {
+			  my $fid = $feature->id."_".$hsp->number."_".$dsid;
+			  my $pid = $hsp->percent_id =~ /\./ ? $hsp->percent_id : $hsp->percent_id.".0";
+			  push @table, {FID=>$fid,FEATURE_NAME=>qq{<a href="#" onclick="update_info_box('table_row$fid')">$name</a>},
+					FEATURE_HSP=>qq{<a href="#" onclick="update_hsp_info('table_row$fid')">}.$hsp->number."</a>",
+					FEATURE_EVAL=>qq{<a href="#" onclick="update_hsp_info('table_row$fid')">}.$hsp->pval."</a>",
+					FEATURE_PID=>qq{<a href="#" onclick="update_hsp_info('table_row$fid')">}.$hsp->percent_id."</a>",
+					FEATURE_SCORE=>qq{<a href="#" onclick="update_hsp_info('table_row$fid')">}.$hsp->score."</a>",
+					FEATURE_LENGTH=>qq{<a href="#" onclick="update_info_box('table_row$fid')">$length</a>},
+					FEATURE_ORG=>qq{<a href="#" onclick="update_info_box('table_row$fid')">$org</a>},};
+			  push @check,{name=>$name,score=>$hsp->score};
+			}
+			$flag=0;
+		      }
+		    print STDERR "gene count: $no_genes\n";
+		    unless($no_genes)
 		     {
-		       #print STDERR $search_type,"::",$feature->type->name,"\n" if $feature->dataset->organism->name =~ /Poplar/i;
-		       next unless $feature->type->name =~ /$search_type/i;
-		       $no_genes++;
-		       $length = (($feature->stop) - ($feature->start));		     
-		       my ($name) = sort $feature->names;
-		       foreach my $data (@check)
-			 {
-			   $flag = 1 if (($data->{name} eq $name) && ($data->{score} == $hsp->score));
-			 }
-		       unless ($flag) {
-			 my $fid = $feature->id."_".$hsp->number."_".$dsid;
-			 my $pid = $hsp->percent_id =~ /\./ ? $hsp->percent_id : $hsp->percent_id.".0";
-			 push @table, {FID=>$fid,FEATURE_NAME=>qq{<a href="#" onclick="update_info_box('table_row$fid')">$name</a>},
-				       FEATURE_HSP=>qq{<a href="#" onclick="update_hsp_info('table_row$fid')">}.$hsp->number."</a>",
-				       FEATURE_EVAL=>qq{<a href="#" onclick="update_hsp_info('table_row$fid')">}.$hsp->pval."</a>",
-				       FEATURE_PID=>qq{<a href="#" onclick="update_hsp_info('table_row$fid')">}.$hsp->percent_id."</a>",
-				       FEATURE_SCORE=>qq{<a href="#" onclick="update_hsp_info('table_row$fid')">}.$hsp->score."</a>",
-				       FEATURE_LENGTH=>qq{<a href="#" onclick="update_info_box('table_row$fid')">$length</a>},
-				       FEATURE_ORG=>qq{<a href="#" onclick="update_info_box('table_row$fid')">$org</a>},};
-			 push @check,{name=>$name,score=>$hsp->score};
-		       }
-		       $flag=0;
-		     }
-		   unless($no_genes)
-		     {
+		       
 		       my $id = $hsp->number."_".$dsid;
 		       my $no_link = qq{<a href="#" onclick="fill_nearby_feats('$id')">Click for Closest Feature</a>};
 		       push @no_feat, {
@@ -531,7 +538,7 @@ sub gen_results_page
      my $t1 = new Benchmark;
      my ($chromosome_data, $chromosome_data_large) = generate_chromosome_images(results=>$results,large_width=>$width,hsp_type=>$type);
      my $t2 = new Benchmark;
-     unless (@table) 
+     unless (@table || @no_feat) 
        {
 	 $null = "null";
        }
@@ -540,9 +547,15 @@ sub gen_results_page
 #     @table = sort {$a->{FEATURE_ORG} cmp $b->{FEATURE_ORG} || $a->{FEATURE_HSP} <=> $b->{FEATURE_HSP} } @table;
      
      my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CoGeBlast.tmpl');
-     $template->param(OVERLAP_FEATURE_IF=>1);
-     
-     $template->param(FEATURE_TABLE=>\@table) unless $null;
+	 $template->param(OVERLAP_FEATURE_IF=>1);
+     # ERIC, i added this so it woulndt fail
+     if (@table)
+       {
+	 print STDERR Dumper \@table;
+
+	 $template->param(YES_FEAT_IF=>1);
+	 $template->param(FEATURE_TABLE=>\@table);#unless $null;
+       }
      $template->param(NULLIFY=>$null) if $null;
      $template->param(HSP_COUNT=>$hsp_count);
 
