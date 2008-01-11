@@ -1085,7 +1085,9 @@ sub process_features
 	      {
 		foreach my $name (@{$feat->qualifiers->{names}})
 		  {
-		    if ($accn =~ /^$name\(?\d*\)?$/i)
+            my $cleaned_name = $name;
+            $cleaned_name =~ s/[\(\)]//g;
+		    if ($accn =~ /^$cleaned_name\(?\d*\)?$/i)
 		      {
 			$f->color([255,255,0]) ;
 			$f->label($name);
@@ -1226,6 +1228,7 @@ sub process_hsps
 			$score_cutoff=$hsp->score;
 #			print STDERR "score cutoff: $score_cutoff\n";
 		      }
+              # ERIC DO NOT REMOVE THESE, I NEED THEM FOR THE PAIR TRACKING STUFF
 		    write_log("Found spike sequence for $accn1 and $accn2: eval cutoff set to $eval_cutoff", $cogeweb->logfile) if defined $eval_cutoff;
 		    write_log("Found spike sequence for $accn1 and $accn2: score cutoff set to $score_cutoff", $cogeweb->logfile) if defined $score_cutoff;
 		    $found_spike =1;
