@@ -349,8 +349,6 @@ function blastresults(html,basename){
   //alert(pageObj.basename);
   $('#blast_results').html(html);
   if($('#null').html() == "null") {
-    //$('#null').hide(0);
-   // $('#table_size').remove().html("No Overlapping Features");
     $('#result_features').hide();
     return;
   }
@@ -1685,6 +1683,7 @@ window.open('/CoGe/MatrixView.pl?matrix='+matrix);
    </table>
    <div id="null"><TMPL_VAR NAME=NULLIFY></div>
    <div id=table_size style="max-height: 360px;">
+         <TMPL_IF NAME=YES_FEAT_IF>
    <TABLE id="overlap" cellspacing="2" class="resultborder" style="overflow: auto;">
      <caption>Features Overlapped by HSPs:</caption>
    	<THEAD>
@@ -1715,6 +1714,7 @@ window.open('/CoGe/MatrixView.pl?matrix='+matrix);
         </TMPL_LOOP>
         </TBODY>
         </TABLE>
+         </TMPL_IF>
         </div>      
         <br>
         <br>
