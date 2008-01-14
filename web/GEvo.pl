@@ -720,7 +720,7 @@ sub run
     $html .= "<div class=xsmall><A HREF=\"$logfile\" target=_new>Log</A></DIV>\n";
     my $tiny = get("http://tinyurl.com/create.php?url=$gevo_link");
     ($tiny) = $tiny =~ /<b>(http:\/\/tinyurl.com\/\w+)<\/b>/;
-    $html .= qq{<td class = small>GEvo Link<div class=xsmall><a href=$tiny target=_new>$tiny (See log file for full link)</a></div>};
+    $html .= qq{<td class = small>GEvo Link<div class=xsmall><a href=$tiny target=_new>$tiny<br>(See log file for full link)</a></div>};
     $html .= qq{</table>};
 
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
@@ -811,7 +811,6 @@ sub generate_image
     $gfx->DEBUG(0);
     $gfx->major_tick_labels(0);
     $graphic->process_nucleotides(c=>$gfx, seq=>$gbobj->sequence, layers=>{gc=>$show_gc, nt=>$show_nt});
-    process_features(c=>$gfx, obj=>$gbobj, start=>$start, stop=>$stop, overlap_adjustment=>$overlap_adjustment, draw_model=>$draw_model);
     $eval_cutoff = process_hsps(
 				c=>$gfx, 
 				data=>$data, 
@@ -823,12 +822,13 @@ sub generate_image
 				hsp_limit_num=>$hsp_limit_num,
 				gbobj=>$gbobj,
 				spike_seq=>$spike_seq,
-#				eval_cutoff=>$eval_cutoff,
 				color_hsp=>$color_hsp,
 				colors=>$hsp_colors,
 				show_hsps_with_stop_codon=>$show_hsps_with_stop_codon,
 				hsp_overlap_limit=>$hsp_overlap_limit,
 			       );
+    process_features(c=>$gfx, obj=>$gbobj, start=>$start, stop=>$stop, overlap_adjustment=>$overlap_adjustment, draw_model=>$draw_model);
+
 #    $gfx->DEBUG(1);
     my $filename = $cogeweb->basefile."_".$seq_num.".png";
     $filename = check_filename_taint($filename);
@@ -1278,6 +1278,14 @@ sub process_hsps
 	      }
 	    print STDERR "\t",$hsp->number,": $start-$stop\n" if $DEBUG;
 	    my $strand = $hsp->strand =~ /-/ ? "-1" : 1;
+
+	    #find overlapping features in gbobj
+	    foreach my $feat ($gbobj->get_features(start=>$start, stop=>$stop))
+	      {
+#		print STDERR "HSP ".$hsp->number." contains feature: ".join (", ",@{$feat->qualifiers->{names}}),"\n";
+#		$feat->qualifiers->{overlapped_hsp}=1;
+	      }
+
 	    my $f = CoGe::Graphics::Feature::HSP->new({start=>$start, stop=>$stop});
 	    $color = [100,100,100] if $spike_seq && $hsp->contains_spike;
 	    $f->color($color);
