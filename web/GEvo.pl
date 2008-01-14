@@ -907,6 +907,7 @@ sub generate_image_db
     my $width = $gfx->image_width;
     my $dsid = $set->{obj}->dataset;
     my ($chr) =  $set->{obj}->chromosome =~ /(\d+)/;
+    $chr = "NULL" unless $chr;
     #print STDERR "CHROMOSOME:" . $chr . "\n";
     $dsid = "NULL" unless $dsid;
     my $image_start = $set->{obj}->start;
