@@ -501,7 +501,6 @@ sub gen_results_page
 			}
 			$flag=0;
 		      }
-		    print STDERR "gene count: $no_genes\n";
 		    unless($no_genes)
 		     {
 		       
@@ -551,8 +550,6 @@ sub gen_results_page
      # ERIC, i added this so it woulndt fail
      if (@table)
        {
-	 print STDERR Dumper \@table;
-
 	 $template->param(YES_FEAT_IF=>1);
 	 $template->param(FEATURE_TABLE=>\@table);#unless $null;
        }
