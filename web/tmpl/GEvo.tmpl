@@ -278,9 +278,10 @@ function handle_results (html,w, h, img_base, n_images,message) {
     var so = new SWFObject("/CoGe/gobe/flash/gobe.swf?<TMPL_VAR NAME="GOBE_VERSION">", "gobe", w, h, "9", "#FFFFFF");
     so.useExpressInstall('/CoGe/gobe/flash/expressinstall.swf');
     so.addVariable('n', n_images);
-    so.addVariable('base_url', '/CoGe/gobe/');
-    so.addVariable('tmp_dir', 'tmp/');
-    so.addVariable('img', img_base );
+    so.addVariable('base_url', '/CoGe/');
+    so.addVariable('img_url', '/CoGe/tmp/');
+//    so.addVariable('tmp_dir', 'tmp/');
+    so.addVariable('base_name', img_base );
     so.addVariable('freezable', getQueryParamValue('freezable') || 'false'); 
     so.addVariable('pad_gs', jQuery('#pad_gs') ? jQuery('#pad_gs').val()  : getQueryParamValue('pad_gs') || '0'); 
     so.addVariable('gsid', getQueryParamValue('gsid') || getQueryParamValue('genespace_id') || '0'); 
