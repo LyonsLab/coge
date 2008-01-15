@@ -536,9 +536,10 @@ sub run
 	    my $count = 0;
 	    foreach my $accn2 (map {$_->{obj}->accn()} @sets)
 	      {
+		$accn2 =~ s/\*\*\d+\*\*$//;
 		$count++ if $accn eq $accn2;
 	      }
-	    $accn .= "(".($count+1).")" if $count;
+	    $accn .= "**".($count+1)."**" if $count;
 	    $obj->accn($accn);
 	    push @sets, {
 			 obj=>$obj,
