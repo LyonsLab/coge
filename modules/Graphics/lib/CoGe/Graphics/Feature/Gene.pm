@@ -141,9 +141,9 @@ sub draw_arrow
     my $c = $self->ih()/2;
     my $y = $self->ih-1;
     my $w = ($seg->[1] - $seg->[0]); #width of segment
-#    use Data::Dumper;
-#    print STDERR Dumper $seg;
-#    print STDERR $self->start, "-", $self->stop,"\n";
+    use Data::Dumper;
+    print STDERR Dumper $seg;
+    print STDERR $self->start, "-", $self->stop,"\n";
     my $x = $seg->[0] - $self->start; #start of segment
     
     
@@ -169,64 +169,64 @@ sub draw_arrow
       if ($b -75 >= 0)
 	     {$b -= 75;}
       if ($self->strand =~ /-/i)
-      {
-	$self->_make_3d(r=>$r, g=>$g, b=>$b, x1=>$x, x2=>$x+($arrow_width), y1=>0, y2=>$y, gray_lvl=>15);
-	$poly1->addPt($x, 0);
-	$poly1->addPt($x+($arrow_width), 0);
-	$poly1->addPt($x, $c);
-	$poly2->addPt($x, $c);
-	$poly2->addPt($x, $y);
-	$poly2->addPt($x+($arrow_width), $y);
-	$arrow_end = $x+($arrow_width);
-      }
-    else
-      {
-	#$gd->filledRectangle($x+($w-$arrow_width),0, $x+$w, $y, $self->get_color(0,0,0));
-	$self->_make_3d(r=>$r, g=>$g, b=>$b, x1=>$x+($w-$arrow_width), x2=>$x+$w, y1=>0, y2=>$y, gray_lvl=>15);
-	#$poly->addPt($x+($w-$arrow_width), 0);
-	#$poly->addPt($x+($w-$arrow_width), $y);
-	#$poly->addPt($x+($w), $c);
-	$poly1->addPt($x+($w-$arrow_width), 0);
-	$poly1->addPt($x+$w, 0);
-	$poly1->addPt($x+($w), $c);
-	$poly2->addPt($x+($w), $c);
-	$poly2->addPt($x+($w), $y);
-	$poly2->addPt($x+($w-$arrow_width), $y);
-	$arrow_end=2;
-      }
-    #$gd->filledPolygon($poly, $self->get_color($self->color));
-    $gd->filledPolygon($poly1, $self->get_color(255,255,255));
-    $gd->filledPolygon($poly2, $self->get_color(255,255,255));
+	{
+	  $self->_make_3d(r=>$r, g=>$g, b=>$b, x1=>$x, x2=>$x+($arrow_width), y1=>0, y2=>$y, gray_lvl=>15);
+	  $poly1->addPt($x, 0);
+	  $poly1->addPt($x+($arrow_width), 0);
+	  $poly1->addPt($x, $c-2);
+	  $poly2->addPt($x, $c+2);
+	  $poly2->addPt($x, $y);
+	  $poly2->addPt($x+($arrow_width), $y);
+	  $arrow_end = $x+($arrow_width);
+	}
+      else
+	{
+	  #$gd->filledRectangle($x+($w-$arrow_width),0, $x+$w, $y, $self->get_color(0,0,0));
+	  $self->_make_3d(r=>$r, g=>$g, b=>$b, x1=>$x+($w-$arrow_width), x2=>$x+$w, y1=>0, y2=>$y, gray_lvl=>15);
+	  #$poly->addPt($x+($w-$arrow_width), 0);
+	  #$poly->addPt($x+($w-$arrow_width), $y);
+	  #$poly->addPt($x+($w), $c);
+	  $poly1->addPt($x+($w-$arrow_width), 0);
+	  $poly1->addPt($x+$w, 0);
+	  $poly1->addPt($x+($w), $c-2);
+	  $poly2->addPt($x+($w), $c+2);
+	  $poly2->addPt($x+($w), $y);
+	  $poly2->addPt($x+($w-$arrow_width), $y);
+	  $arrow_end=2;
+	}
+      #$gd->filledPolygon($poly, $self->get_color($self->color));
+      $gd->filledPolygon($poly1, $self->get_color(255,255,255));
+      $gd->filledPolygon($poly2, $self->get_color(255,255,255));
     }
     else {
       my $poly = GD::Polygon->new;
       if ($self->strand =~ /-/i)
-      {
-	$gd->filledRectangle($x,0, $x+($arrow_width), $y, $self->get_color(255,255,255));
-	$poly->addPt($x+($arrow_width), 0);
-	$poly->addPt($x+($arrow_width), $y);
-	$poly->addPt($x, $c);
-	$arrow_end = $x+($arrow_width);
-      }
+	{
+	  $gd->filledRectangle($x,0, $x+($arrow_width), $y, $self->get_color(255,255,255));
+	  $poly->addPt($x+($arrow_width), 0);
+	  $poly->addPt($x+($arrow_width), $y);
+	  $poly->addPt($x, $c);
+	  $arrow_end = $x+($arrow_width);
+	}
       else
-      {
-	$gd->filledRectangle($x+($w-$arrow_width),0, $x+$w, $y, $self->get_color(0,0,0));
-	$poly->addPt($x+($w-$arrow_width), 0);
-	$poly->addPt($x+($w-$arrow_width), $y);
-	$poly->addPt($x+($w), $c);
-	$arrow_end=2;
-      }
-    
-    my @tmp;
-    foreach my $c (@{$self->color})
-      {
-	$c-=100;
-	$c = 1 if $c < 1;
-	push @tmp, $c;
-      }
-    $gd->openPolygon($poly, $self->get_color([@tmp]));
+	{
+	  $gd->filledRectangle($x+($w-$arrow_width),0, $x+$w, $y, $self->get_color(0,0,0));
+	  $poly->addPt($x+($w-$arrow_width), 0);
+	  $poly->addPt($x+($w-$arrow_width), $y);
+	  $poly->addPt($x+($w), $c);
+	  $arrow_end=2;
+	}
+      
+      my @tmp;
+      foreach my $c (@{$self->color})
+	{
+	  $c-=100;
+	  $c = 1 if $c < 1;
+	  push @tmp, $c;
+	}
+      $gd->openPolygon($poly, $self->get_color([@tmp]));
     }
-   return $arrow_end;
+    return $arrow_end;
   }
 
 sub _draw_join
