@@ -232,31 +232,33 @@ sub genomic_view
 	return 0;
       }
     print STDERR "generating image for ds: ".$ds->name ." (".$ds->id.")\n" if $self->DEBUG;
-    
-    my %dids; #we will store a list of data_information objects that are related to the current dataset
     my $ta = new Benchmark if $BENCHMARK;
-    if ($org)
-      {	
-	foreach my $gstype ($org->genomic_sequence_types)
-	  {
-	    foreach my $did ( $org->current_datasets(type=>$gstype))
-	      {
-		my $chrpass = 0;
-		foreach ($did->get_chromosomes)
-		  {
-		    $chrpass = 1 if $_ eq $chr;
-		  }
-		next unless $ds->version eq $did->version;
-		$dids{$did->id} = $did if $chrpass;
-	      }
-	  }
-      }
+    #we will store a list of data_information objects that are related to the current dataset
+#    my %dids; 
+#
+#    if ($org)
+#      {	
+#	foreach my $gstype ($org->genomic_sequence_types)
+#	  {
+#	    foreach my $did ( $org->current_datasets(type=>$gstype))
+#	      {
+#		my $chrpass = 0;
+#		foreach ($did->get_chromosomes)
+#		  {
+#		    $chrpass = 1 if $_ eq $chr;
+#		  }
+#		next unless $ds->version eq $did->version;
+#		$dids{$did->id} = $did if $chrpass;
+#	      }
+#	  }
+#      }
+#
+#    delete $dids{$ds->id};
+#    my @dids = values %dids;
     my $tb = new Benchmark if $BENCHMARK;
     my $finddid_time = timestr(timediff($tb, $ta))  if $BENCHMARK;
-    
-#    $dids{$ds->id}=$ds if $ds;
-    delete $dids{$ds->id};
-    my @dids = values %dids;
+
+    my @dids;
     unshift @dids, $ds if $ds;
     my $tc = new Benchmark if $BENCHMARK;
     foreach my $did (@dids)
