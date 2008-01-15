@@ -141,9 +141,9 @@ sub draw_arrow
     my $c = $self->ih()/2;
     my $y = $self->ih-1;
     my $w = ($seg->[1] - $seg->[0]); #width of segment
-    use Data::Dumper;
-    print STDERR Dumper $seg;
-    print STDERR $self->start, "-", $self->stop,"\n";
+#    use Data::Dumper;
+#    print STDERR Dumper $seg;
+#    print STDERR $self->start, "-", $self->stop,"\n";
     my $x = $seg->[0] - $self->start; #start of segment
     
     
