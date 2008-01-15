@@ -340,6 +340,7 @@ sub run
     my $basefilename = $opts{basefile};
     my $show_spike = $opts{show_spike} || 0;
     my $pad_gs = $opts{pad_gs} || 0;
+    my $color_overlapped_features = $opts{color_overlapped_features};
     my $message;
     $cogeweb = initialize_basefile(basename=>$basefilename);
     my @hsp_colors;
@@ -618,7 +619,7 @@ sub run
 	if ($obj)
 	  {
 	    write_log("generating image ($count/".scalar @sets.")for ".$obj->accn, $cogeweb->logfile);	
-	    my ($image, $map, $mapname, $gfx, $eval_cutoff) = generate_image(
+	    my ($image, $map, $mapname, $gfx, $eval_cutoff, $feat_count, $overlap_count) = generate_image(
 									     gbobj=>$obj, 
 									     start=>1,
 									     stop=>length($obj->sequence),
@@ -644,7 +645,10 @@ sub run
 									     reverse_image=>$rev,
 									     draw_model=>$draw_model,
 									     hsp_overlap_limit=>$hsp_overlap_limit,
+									     color_overlapped_features=>$color_overlapped_features
 									    );
+	    $item->{feat_count} = $feat_count;
+	    $item->{overlap_count} = $overlap_count;
 	    $frame_height += $gfx->ih + $gfx->ih*.1;
 	    $html_viewer .= qq!<div>$accn!;
 	    $html_viewer .= qq!(<font class=species>!.$obj->organism.qq!</font>)! if $obj->organism;
@@ -687,22 +691,22 @@ sub run
 	    my $accn2 = $item->[2];
 	    my $basereportname = basename( $report );
 	    $basereportname = $TEMPURL . "/$basereportname\n";
-	    $html .= "<div><font class=xsmall><A HREF=\"$basereportname\" target=_new>View alignment output for $accn1 versus $accn2</A></font></DIV>\n";
+	    $html .= "<div><font class=small><A HREF=\"$basereportname\" target=_new>View alignment output for $accn1 versus $accn2</A></font></DIV>\n";
 	  }
       }
     else
       {
-	$html .= "<div class=xsmall>No alignment reports were generated</DIV>\n";
+	$html .= "<div class=small>No alignment reports were generated</DIV>\n";
       }
     $html .= qq{<td class = small>Fasta files};
-	foreach my $item (@sets)
-	  {
-	    next unless $item->{file};
-	    my $basename = $TEMPURL."/".basename ($item->{file});
-	    print STDERR "basename is undefined: $basename\n" if $basename =~ /defined/i;
-	    my $accn = $item->{accn};
-	    $html .= "<div><font class=xsmall><A HREF=\"$basename\" target=_new>Fasta file for $accn</A></font></DIV>\n";
-	  }
+    foreach my $item (@sets)
+      {
+	next unless $item->{file};
+	my $basename = $TEMPURL."/".basename ($item->{file});
+	print STDERR "basename is undefined: $basename\n" if $basename =~ /defined/i;
+	my $accn = $item->{accn};
+	$html .= "<div><font class=small><A HREF=\"$basename\" target=_new>Fasta file for $accn</A></font></DIV>\n";
+      }
     $html .= qq{<td class = small><a href = "http://baboon.math.berkeley.edu/mavid/gaf.html">GAF</a> annotation files};
     foreach my $item (@sets)
       {
@@ -710,18 +714,23 @@ sub run
 	next unless $anno_file;
 	my $basename = $TEMPURL."/".basename ($anno_file);
 	my $accn = $item->{accn};
-	$html .= "<div><font class=xsmall><A HREF=\"$basename\" target=_new>Annotation file for $accn</A></font></DIV>\n";
+	$html .= "<div><font class=small><A HREF=\"$basename\" target=_new>Annotation file for $accn</A></font></DIV>\n";
       }
     $html .= qq{<td class = small>SQLite db};
     my $dbname = $TEMPURL."/".basename($cogeweb->sqlitefile);
     
-    $html .= "<div class=xsmall><A HREF=\"$dbname\" target=_new>SQLite DB file</A></DIV>\n";
+    $html .= "<div class=small><A HREF=\"$dbname\" target=_new>SQLite DB file</A></DIV>\n";
     $html .= qq{<td class = small>Log File};
     my $logfile = $TEMPURL."/".basename($cogeweb->logfile);
-    $html .= "<div class=xsmall><A HREF=\"$logfile\" target=_new>Log</A></DIV>\n";
+    $html .= "<div class=small><A HREF=\"$logfile\" target=_new>Log</A></DIV>\n";
     my $tiny = get("http://tinyurl.com/create.php?url=$gevo_link");
     ($tiny) = $tiny =~ /<b>(http:\/\/tinyurl.com\/\w+)<\/b>/;
-    $html .= qq{<td class = small>GEvo Link<div class=xsmall><a href=$tiny target=_new>$tiny<br>(See log file for full link)</a></div>};
+    $html .= qq{<td class = small>GEvo Link<div class=small><a href=$tiny target=_new>$tiny<br>(See log file for full link)</a></div>};
+    $html .= qq{<td class = small>Overlap Feature Stats:};
+    foreach my $item (@sets)
+      {
+	$html .= "<div class = small>".$item->{obj}->accn.": ".$item->{overlap_count}." / ".$item->{feat_count};
+      }
     $html .= qq{</table>};
 
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
@@ -782,6 +791,7 @@ sub generate_image
     my $seq_num = $opts{seq_num};
     my $draw_model = $opts{draw_model};
     my $hsp_overlap_limit = $opts{hsp_overlap_limit};
+    my $color_overlapped_features = $opts{color_overlapped_features};
     my $graphic = new CoGe::Graphics;
     my $gfx = new CoGe::Graphics::Chromosome;
 #    print STDERR "$start"."::"."$stop"." -- ".length($gbobj->sequence)."\n";
@@ -828,7 +838,7 @@ sub generate_image
 				show_hsps_with_stop_codon=>$show_hsps_with_stop_codon,
 				hsp_overlap_limit=>$hsp_overlap_limit,
 			       );
-    process_features(c=>$gfx, obj=>$gbobj, start=>$start, stop=>$stop, overlap_adjustment=>$overlap_adjustment, draw_model=>$draw_model);
+    my ($feat_count, $overlap_count) = process_features(c=>$gfx, obj=>$gbobj, start=>$start, stop=>$stop, overlap_adjustment=>$overlap_adjustment, draw_model=>$draw_model, color_overlapped_features=>$color_overlapped_features);
 
 #    $gfx->DEBUG(1);
     my $filename = $cogeweb->basefile."_".$seq_num.".png";
@@ -836,7 +846,7 @@ sub generate_image
     $gfx->generate_png(file=>$filename);
     my $mapname = "map_".$seq_num;
     my ($map)=$gfx->generate_imagemap(name=>$mapname);
-    return (basename($filename), $map, $mapname, $gfx, $eval_cutoff);
+    return (basename($filename), $map, $mapname, $gfx, $eval_cutoff, $feat_count, $overlap_count);
   }
 
 sub initialize_sqlite
@@ -926,12 +936,10 @@ INSERT INTO image_info (id, iname, title, px_width,dsid, chromosome, bpmin, bpma
 	    next unless $feat->type eq "anchor";
 	  }
 	next unless $feat->image_coordinates;
-#	next if $$feat->desc && $feat->contains_spike;#desc =~ /spike sequence/;
 	my $type = $feat->type;
 	my $pair_id = "-99";
 	my $coords = $feat->image_coordinates;
 	$coords =~ s/\s//g;
-	#next unless $feat->type =~ /HSP/i;	
 	next if $feat->type eq "unknown";
 	my $name = $feat->type =~ /HSP/i ? $feat->alt : $feat->label;
 	$name .= "_".$feat->type;# unless $name;
@@ -961,8 +969,6 @@ INSERT INTO image_info (id, iname, title, px_width,dsid, chromosome, bpmin, bpma
 	$anno =~ s/<br\/?>/&#10;/ig if $anno;
 	$anno =~ s/\n/&#10;/g if $anno;
 	$anno =~ s/[\[\]\(\)]/ /g if $anno;
-	#	    print STDERR $anno if $anno =~ /Location/;
-	#	    print STDERR $anno,"\n" if $anno =~ /01020/;
 	if (ref ($feat) =~ /gene/i)
 	  {
 	    my ($max_nt) = sort {$b<=>$a} map {@$_} @{$feat->segments}; 
@@ -971,9 +977,6 @@ INSERT INTO image_info (id, iname, title, px_width,dsid, chromosome, bpmin, bpma
 	    my $length_pix = $xmax-$xmin;
 	    if ($feat->{anchor})
 	      {
-#		my $bpmin = int(($set->{obj}->start+$feat->start-$set->{obj}->start+$feat->stop))/2;
-#		my $bpmax = $bpmin;
-#		my $xcoord = int(($xmax-$xmin)/2+$xmin);
 		my $start = $feat->start;
 		my $stop = $feat->stop;
 		my $bpmin = $set->{obj}->start+$start-1;
@@ -1043,15 +1046,20 @@ sub process_features
     my $stop = $opts{stop};
     my $overlap = $opts{overlap_adjustment};
     my $draw_model = $opts{draw_model};
+    my $color_overlapped_features = $opts{color_overlapped_features};
     return unless $draw_model;
     my $accn = $obj->accn;
     my $track = 1;
+    my $feat_count = 0;
+    my $overlap_count = 0;
+    my %feat_count;
     my @opts = ($start, $stop) if $start && $stop;
     unless (ref $obj)
       {
 	warn "Possible problem with the object in process_features.  Returning";
 	return 0;
       }
+    
     foreach my $feat($obj->get_features())
       {
         my $f;
@@ -1157,6 +1165,7 @@ sub process_features
 	    next;
 	  }
         next unless $f;
+	$f->color([255,0,255]) if $color_overlapped_features && $feat->qualifiers->{overlapped_hsp};
 	my $strand = 1;
  	$strand = -1 if $feat->location =~ /complement/;
 	foreach my $block (@{$feat->blocks})
@@ -1175,7 +1184,14 @@ sub process_features
 	$f->skip_overlap_search($foverlap);
 	$f->{anchor}=1 if $anchor;
         $c->add_feature($f);
+	if ($feat->type =~ /gene/ &! $feat_count{$feat->start}{$feat->stop})
+	  {
+	    $feat_count++;
+	    $overlap_count++ if $feat->qualifiers->{overlapped_hsp};
+	    $feat_count{$feat->start}{$feat->stop}=1;
+	  }
     }
+    return ($feat_count, $overlap_count);
   }
 
 sub process_hsps
@@ -1281,10 +1297,13 @@ sub process_hsps
 	    my $strand = $hsp->strand =~ /-/ ? "-1" : 1;
 
 	    #find overlapping features in gbobj
+	    print STDERR $start."-".$stop,"\n";
 	    foreach my $feat ($gbobj->get_features(start=>$start, stop=>$stop))
 	      {
-#		print STDERR "HSP ".$hsp->number." contains feature: ".join (", ",@{$feat->qualifiers->{names}}),"\n";
-#		$feat->qualifiers->{overlapped_hsp}=1;
+		print STDERR "\t", $feat->type,": ",$feat->start,"-",$feat->stop,"\n";
+		print STDERR "\t\t", join ( "\n\t\t", map {$_->[0]."-".$_->[1]} @{$feat->blocks}),"\n";
+		next if $start == $feat->stop || $stop == $feat->start;
+		$feat->qualifiers->{overlapped_hsp}=1;
 	      }
 
 	    my $f = CoGe::Graphics::Feature::HSP->new({start=>$start, stop=>$stop});
@@ -2237,7 +2256,9 @@ sub gen_params
         'args__num_seqs','args__$num_seqs',
         'args__draw_model', 'draw_model',
         'args__hsp_overlap_limit', 'hsp_overlap_limit',
+        'args__color_overlapped_features','color_overlapped_features',
         'args__basefile','args__'+pageObj.basefile
+
 };
     $params =~ s/\n//g;
     $params =~ s/\s+/ /g;
