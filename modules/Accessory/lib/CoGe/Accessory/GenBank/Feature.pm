@@ -30,7 +30,7 @@ sub start
   {
     my $self = shift;
     return $self->_start if defined $self->_start;
-    my $start = $self->strand == 1 ? $self->_get_position() : $self->_get_position(high=>1);
+    my $start = $self->_get_position();
     $self->_start($start);
     return $self->_start;
   }
@@ -39,7 +39,7 @@ sub stop
   {
     my $self = shift;
     return $self->_stop if defined $self->_stop;
-    my $stop = $self->strand == 1 ? $self->_get_position(high=>1) : $self->_get_position();
+    my $stop = $self->_get_position(high=>1);
     $self->_stop($stop);
     return $self->_stop;
   }
