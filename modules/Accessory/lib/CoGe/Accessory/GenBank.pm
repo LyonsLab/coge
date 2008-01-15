@@ -557,7 +557,7 @@ sub reverse_genbank_location
       {
 	my ($start, $stop) = split /\.\./, $set;
 	$new_loc .= "," if $new_loc;
-	$new_loc .= ($length-$stop)."..".($length-$start);
+	$new_loc .= ($length-$stop+1)."..".($length-$start+1);
 	$count++;
       }
     $new_loc = "join($new_loc)" if $count > 1;
