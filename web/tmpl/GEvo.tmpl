@@ -888,15 +888,20 @@ function get_seq(seq_num)
  <td>
  <table class="small">
  <TR>
+  <td>Color features overlapped by HSPs?
+ <td>
+ <label class=small><input class="backbox" type="radio" name="color_overlapped_features" id="color_overlapped_features" tabindex="1" value="1" <TMPL_VAR NAME="COLOR_HSP_YES">/>Yes</label>
+ <label class=small><input class="backbox" type="radio" name="color_overlapped_features" id="color_overlapped_features" tabindex="1" value="0" <TMPL_VAR NAME="COLOR_HSP_NO"> />No</label>
+ <TR>
   <Td>
-<font class="small">Color Matches in HSPs?</font>
+<font class="small">Color matches in HSPs?</font>
  <td>
  <label class=small><input class="backbox" type="radio" name="color_hsp" id="color_hsp" tabindex="1" value="1" <TMPL_VAR NAME="COLOR_HSP_YES">/>Yes</label>
  <label class=small><input class="backbox" type="radio" name="color_hsp" id="color_hsp" tabindex="1" value="0" <TMPL_VAR NAME="COLOR_HSP_NO"> />No</label>
 
  <TR>
   <Td>
-<font class="small">HSP Label options: </font>
+<font class="small">HSP label options: </font>
  <td>
 <select id="hsp_labels">
 <option value="0" <TMPL_VAR NAME="HSP_LABELS_NO">>Don't draw</option>
