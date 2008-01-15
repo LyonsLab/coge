@@ -413,7 +413,7 @@ sub get_features
     my %opts = @_;
     my $start = $opts{start};
     my $stop = $opts{stop};
-#    print "<pre>",Dumper ($self),"</pre>";
+    #    print "<pre>",Dumper ($self),"</pre>";
     my @features;
     if ( $start && $stop ) 
       {
@@ -421,62 +421,54 @@ sub get_features
 	foreach my $feature (@{$self->features})
 	  {
 	    my $locdata = $self->process_location( $feature->location() );
-	    my @blocks;
+#	    my @blocks;
+	    my $pass =0;
 	    foreach my $subblock ( @{ $locdata } ) 
 	      {
-		if (($subblock->[0] >= $start) and ($subblock->[1] <= $stop)) 
+		#start of block between start and stop
+		if (($subblock->[0] >= $start) and ($subblock->[0] <= $stop)) 
 		  {
-		    push @blocks, [ 
-				   $subblock->[0] - $start,
-				   $subblock->[1]  - $start
-				  ];
+		    $pass=1;
+#		    push @blocks, [ 
+#				   $subblock->[0] - $start,
+#				   $subblock->[1]  - $start
+#				  ];
 		  } 
-		elsif (($subblock->[1] > $start) and ($subblock->[1] < $stop)) 
+		#end of block between start and stop
+		elsif (($subblock->[1] >= $start) and ($subblock->[1] <= $stop)) 
 		  {
-		    # begins up of region, but ends in region
-		    push @blocks,[
-				  0, 
-				  $subblock->[1] - $start
-				 ];
+		    $pass=1;
+#		    push @blocks,[
+#				  0, 
+#				  $subblock->[1] - $start
+#				 ];
 		  } 
-		elsif (($subblock->[0] >= $start) and ($subblock->[0] < $stop)) 
+		#block start below start and block stop above stop
+		elsif (($subblock->[0] < $start) and ($subblock->[1] > $stop)) 
 		  {
-		    # begins in the region, but ends outside region
-		    push @blocks, [
-				   $subblock->[0] - $start, 
-				   $stop - $start 
-				  ];
+		    $pass=1;
+#		    push @blocks, [
+#				   $subblock->[0] - $start, 
+#				   $stop - $start 
+#				  ];
 		  }
 		elsif ( ($subblock->[0] < $start) and ($subblock->[0] > $stop) )  #begins and ends outside of region
 		  {
-		    push @blocks, [
-				   0, 
-				   $stop-$start, 
-				  ];
+		    $pass=1;
+#		    push @blocks, [
+#				   0, 
+#				   $stop-$start, 
+#				  ];
 		  
 		  }
 	      }
-	    $feature->blocks( \@blocks );
-	    push @features, $feature if @blocks;
+	    push @features, $feature if $pass;
 	  }
       } 
     else 
       {
 	# return all blocks
-	foreach my $feature (@{$self->features})
-	  {
-	    my $locdata = $self->process_location( $feature->location() );
-	    my @blocks;
-	    foreach my $subblock ( @{ $locdata } ) 
-	      {
-		push @blocks, [
-			       $subblock->[0], 
-			       $subblock->[1] 
-			      ];
-	      }
-	    $feature->blocks(\@blocks);
-	    push @features, $feature;
-	  }
+	@features = @{$self->features};
       }
     return( wantarray ? @features : \@features );
   }
@@ -485,14 +477,25 @@ sub add_feature
     {
       my $self = shift;
       my %options = @_;
-      my $strand = $options{location} =~ /complement/i ? "-1" : "1";
-      my %info;
-      $info{type}=$options{type} if $options{type};
-      $info{location}=$options{location} if $options{location};
-      $info{qualifiers}=$options{qualifiers} if $options{qualifiers};
-      $info{annotation}=$options{annotation} if $options{annotation};
-      $info{strand}=$options{strand} if $options{strand};
-      my $feature = new CoGe::Accessory::GenBank::Feature(\%info);
+      my$type=$options{type} if $options{type};
+      my$location=$options{location} if $options{location};
+      my $qualifiers = $options{qualifiers};
+      $qualifiers = {} unless $qualifiers;
+      $qualifiers=$qualifiers;
+      my$annotation=$options{annotation} if $options{annotation};
+      my$strand=$options{strand} if $options{strand};
+      unless ($strand)
+	{
+	  $strand = $location=~/complement/i ? -1 : 1;
+	}
+      my $feature = new CoGe::Accessory::GenBank::Feature({
+							   type=>$type,
+							   location=>$location,
+							   qualifiers=>$qualifiers,
+							   annotation=>$annotation,
+							   strand=>$strand,
+							  });
+      $feature->blocks($self->process_location( $feature->location)) if $feature->location;
       push @{$self->features}, $feature;
       return;
 }
