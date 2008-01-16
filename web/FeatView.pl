@@ -299,7 +299,10 @@ sub get_feature_types
 
 sub get_data_source_info_for_accn
   {
-    my $accn = shift;
+    my %args = @_;
+    my $accn = $args{accn};
+    my $org_id = $args{org_id};
+    $org_id = undef if $org_id eq "all";
     my $blank = qq{<input type="hidden" id="dsid">------------};
     return $blank unless $accn;
     my @feats = $coge->resultset('Feature')->search({'feature_names.name'=>$accn},{join=>'feature_names'});
@@ -314,14 +317,15 @@ sub get_data_source_info_for_accn
 	    warn "error with feature: ".$feat->id ." for name $accn\n";
 	    next;
 	  }
+	my $org = $val->organism->name if $val->organism;
+	next if $restricted_orgs->{$org};
+	next if ($org_id && $val->organism->id ne $org_id);
 	my $name = $val->name;
 	my $ver = $val->version;
 	my $desc = $val->description;
 	my $sname = $val->datasource->name if $val->datasource;
 	my $ds_name = $val->name;
-	my $org = $val->organism->name if $val->organism;
 	my $title = "$org: $ds_name ($sname, v$ver)";
-	next if $restricted_orgs->{$org};
 	$sources{$title} = $val->id;
       }
     my $html;
