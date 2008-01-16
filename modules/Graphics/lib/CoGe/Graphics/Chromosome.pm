@@ -225,6 +225,7 @@ BEGIN {
 "_features", #internal storage of features
 "_fill_features", #internal storeage of fill features
 "_max_track", #place to store the maximum number of tracks on which to draw genomic features
+"region_generated",#place to store a flag for whether or not the region has been previously generated;
 "benchmark", #stores a flag for printing benchmark information for image generation
 "invert_chromosome", #flag to draw the image in reverse so that the chromosome has been "flipped" 180 degrees
 "draw_hi_qual", #flag to draw high quality features on chromosome (but slower)
@@ -1083,7 +1084,7 @@ sub generate_png
     my $self = shift;
     my %opts = @_;
     my $file_name = $opts{file_name} || $opts{file} || $opts{filename};
-    $self->generate_region();
+    $self->generate_region() unless $self->region_generated;
 #    $self->gd->transparent();
     if ($file_name)
       {
@@ -1140,6 +1141,7 @@ sub generate_region
     my $t4 = new Benchmark;
     $self->_draw_features;
     my $t5 = new Benchmark;
+    $self->region_generated(1);
     my $ih_time = timestr(timediff($t1, $t0));
     my $fl_time = timestr(timediff($t2, $t1));
     my $rl_time = timestr(timediff($t3, $t2));
