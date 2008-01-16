@@ -53,7 +53,7 @@ function source_search_chain (val) {
 // $('#FeatType').html('<input type="hidden" id="Type_name">');	
 // $('#anno').hide();
  if (val) {$('#accn_list').html(val);$('#accn_list').show()}
- source_search(['accn_select'], [get_types_chain]);
+ source_search(['args__accn','accn_select', 'args__org_id','org_id'], [get_types_chain]);
 }
 
 function get_types_chain (val1, val2) {
