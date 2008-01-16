@@ -8,6 +8,12 @@ my $s = CoGeX->connect($connstr, 'bpederse', 'brent_cnr');
 use Data::Dumper;
 use DB_File;
 
+# for orgs with lots of super contigs, only take this many
+# (will take the first ones).
+my $use_supers = 0;
+my $MAX_CHR = 20;
+
+
 my %options;
 getopt("otdcm", \%options);
 
@@ -44,7 +50,6 @@ my $outdir   = ($options{d} or ".") . "/";
 chomp $outdir;
 
 print STDERR "usings datasets: " . join(",", @$datasets) . " for $organism ...\n";
-exit;
 if(defined $options{t}){
     get_10kmers($organism, $datasets, $use_contigs);
     exit();
@@ -73,9 +78,11 @@ sub get_accn_locs {
                             ,limit    => 1
                         })->single(); 
         if(!$feat){ next; }
-        if($use_contigs && $feat->chromosome =~ /(contig|contig|random)/i ){ next; }
+        if(! $use_contigs && $feat->chromosome =~ /(contig|contig|random)/i ){ next; }
+        if(! $use_supers && $feat->chromosome =~ /super/i ){ next; }
         my ($chr) = $feat->chromosome =~ /(\d+)/;
         if(length($chr) > 2){ next; } 
+        if($chr > $MAX_CHR){ next; } 
         $seen{$id}++;
         #print STDERR $feat->feature_id . ", $name," .  $feat->chromosome . "," . $feat->feature_type->name . "\n";
         $chr = sprintf("%02i", $chr);
