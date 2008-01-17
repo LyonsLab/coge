@@ -34,6 +34,7 @@ use CoGeX::Feature;
 use DBIxProfiler;
 use DBI;
 use LWP::Simple;
+use Parallel::ForkManager;
 #use Text::Wrap qw($columns &wrap);
 use Benchmark qw(:all);
 
@@ -45,7 +46,7 @@ delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 $ENV{'LAGAN_DIR'} = '/opt/apache/CoGe/bin/lagan/';
 #for dialign
 $ENV{'DIALIGN2_DIR'} = '/opt/apache/CoGe/bin/dialign2_dir/';
-use vars qw( $PAGE_NAME $DATE $DEBUG $BL2SEQ $BLASTZ $LAGAN $CHAOS $DIALIGN $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge $NUM_SEQS $MAX_SEQS $REPEATMASKER);
+use vars qw( $PAGE_NAME $DATE $DEBUG $BL2SEQ $BLASTZ $LAGAN $CHAOS $DIALIGN $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge $NUM_SEQS $MAX_SEQS $REPEATMASKER $MAX_PROC);
 $PAGE_NAME = "GEvo.pl";
 $BL2SEQ = "/usr/bin/bl2seq ";
 $BLASTZ = "/usr/bin/blastz ";
@@ -53,9 +54,9 @@ $LAGAN = "/opt/apache/CoGe/bin/lagan/lagan.pl";
 $CHAOS = "/opt/apache/CoGe/bin/lagan/chaos_coge";
 $DIALIGN = "/opt/apache/CoGe/bin/dialign2_dir/dialign2-2_coge";
 $REPEATMASKER = "/opt/apache/CoGe/bin/RepeatMasker/RepeatMasker";
-$TEMPDIR = "/opt/apache/CoGe/tmp";
-$TEMPURL = "/CoGe/tmp";
-
+$TEMPDIR = "/opt/apache/CoGe/tmp/GEvo";
+$TEMPURL = "/CoGe/tmp/GEvo";
+$MAX_PROC=8;
 # set this to 1 to print verbose messages to logs
 $DEBUG = 0;
 $BENCHMARK = 1;
@@ -219,8 +220,6 @@ sub gen_body
     $pad_gs = 0 unless $pad_gs;
     my $prog = get_opt(params=>$prefs, form=>$form, param=>'prog');
     $prog = "blastz" unless $prog;
-    my $results_interface = get_opt(params=>$prefs, form=>$form, param=>'viewer');
-    $results_interface = "flash" unless $results_interface;
     my $image_width = get_opt(params=>$prefs, form=>$form, param=>'iw');
     $image_width = 1000 unless $image_width;
     my $image_height = get_opt(params=>$prefs, form=>$form, param=>'ih');
@@ -252,8 +251,6 @@ sub gen_body
 
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GEvo.tmpl');
     $template->param(PAD_GS=>$pad_gs);
-    $template->param(GOBE_VIEWER=>"selected") if $results_interface eq "flash";
-    $template->param(HTML_VIEWER=>"selected") if $results_interface eq "html";
     $template->param(IMAGE_WIDTH=>$image_width);
     $template->param(IMAGE_HEIGHT=>$image_height);
     $template->param(FEAT_HEIGHT=>$feature_height);
@@ -335,14 +332,14 @@ sub run
     my $hsp_limit_num = $opts{hsplimnum};
     my $show_hsps_with_stop_codon = $opts{showallhsps};
     my $padding = $opts{padding};
-    my $viewer = $opts{viewer};
     my ($analysis_program, $param_string, $parser_opts) = get_algorithm_options(%opts);
     my $basefilename = $opts{basefile};
     my $show_spike = $opts{show_spike} || 0;
     my $pad_gs = $opts{pad_gs} || 0;
     my $color_overlapped_features = $opts{color_overlapped_features};
+    my $hsp_overlap_length = $opts{hsp_overlap_length};
     my $message;
-    $cogeweb = initialize_basefile(basename=>$basefilename);
+    $cogeweb = initialize_basefile(basename=>$basefilename, prog=>"GEvo");
     my @hsp_colors;
     for (my $i = 1; $i <= num_colors($num_seqs); $i++)
       {
@@ -558,7 +555,7 @@ sub run
 	  }
 	else
 	  {
-	    push @sets, {seq_num=>$i};
+#	    push @sets, {seq_num=>$i};
 	  }
       }
     $seqcount--;
@@ -602,84 +599,79 @@ sub run
     my $t3 = new Benchmark;
     my $count = 1;
     my $frame_height;
-    my $html_viewer;
     initialize_sqlite();
-
+    my @gfxs;
     foreach my $item (@sets)
       {
-	my $accn = $item->{accn};
 	my $obj = $item->{obj};
 	next unless $obj->sequence;
-	my $file = $item->{file};
 	my $rev = $item->{rev};
-	my $up = $item->{up};
-	my $down = $item->{down};
-	$down = $obj->seq_length unless $down;
 	my $spike_seq = $item->{spike_seq};
 	if ($obj)
 	  {
-	    write_log("generating image ($count/".scalar @sets.")for ".$obj->accn, $cogeweb->logfile);	
-	    my ($image, $map, $mapname, $gfx, $eval_cutoff, $feat_count, $overlap_count) = generate_image(
-									     gbobj=>$obj, 
-									     start=>1,
-									     stop=>length($obj->sequence),
-									     data=>$analysis_reports,
-									     iw=>$iw,
-									     ih=>$ih,
-									     fh=>$feat_h,
-									     show_gc=>$show_gc,
-									     show_nt=>$show_nt,
-									     stagger_label=>$stagger_label,
-									     overlap_adjustment=>$overlap_adjustment,
-									     feature_labels=>$feature_labels,
-									     hsp_limit=>$hsp_limit,
-									     hsp_limit_num=>$hsp_limit_num,
-									     color_hsp=>$color_hsp,
-									     hsp_colors=>\@hsp_colors,
-									     spike_sequence=>$spike_seq,
-									     show_hsps_with_stop_codon => $show_hsps_with_stop_codon,
-									     hiqual=>$hiqual,
-									     padding=>$padding,
-									     seq_num=>$item->{seq_num},
-#									     seq_num=>$count,
-									     reverse_image=>$rev,
-									     draw_model=>$draw_model,
-									     hsp_overlap_limit=>$hsp_overlap_limit,
-									     color_overlapped_features=>$color_overlapped_features
-									    );
+	    write_log("generating image ($count/".scalar @sets.")for ".$obj->accn, $cogeweb->logfile);
+	    $count++;
+#	    my ($image, $map, $mapname, $gfx, $eval_cutoff, $feat_count, $overlap_count) = 
+	    my ($gfx, $eval_cutoff, $feat_count, $overlap_count) = 
+	      generate_image(
+			     set=>$item,
+			     start=>1,
+			     stop=>length($obj->sequence),
+			     data=>$analysis_reports,
+			     iw=>$iw,
+			     ih=>$ih,
+			     fh=>$feat_h,
+			     show_gc=>$show_gc,
+			     show_nt=>$show_nt,
+			     stagger_label=>$stagger_label,
+			     overlap_adjustment=>$overlap_adjustment,
+			     feature_labels=>$feature_labels,
+			     hsp_limit=>$hsp_limit,
+			     hsp_limit_num=>$hsp_limit_num,
+			     color_hsp=>$color_hsp,
+			     hsp_colors=>\@hsp_colors,
+			     spike_sequence=>$spike_seq,
+			     show_hsps_with_stop_codon => $show_hsps_with_stop_codon,
+			     hiqual=>$hiqual,
+			     padding=>$padding,
+#			     seq_num=>$item->{seq_num},
+			     reverse_image=>$rev,
+			     draw_model=>$draw_model,
+			     hsp_overlap_limit=>$hsp_overlap_limit,
+			     color_overlapped_features=>$color_overlapped_features,
+			     hsp_overlap_length=>$hsp_overlap_length,
+			    );
 	    $item->{feat_count} = $feat_count;
 	    $item->{overlap_count} = $overlap_count;
-	    $frame_height += $gfx->ih + $gfx->ih*.1;
-	    $html_viewer .= qq!<div>$accn!;
-	    $html_viewer .= qq!(<font class=species>!.$obj->organism.qq!</font>)! if $obj->organism;
-	    $html_viewer .= "(chr: ".$obj->chromosome." ".$obj->start."-".$obj->stop.")" if defined $up;
-	    $html_viewer .= qq!<font class=small> Reverse Complement</font>! if $rev;
-#	    $html_viewer .= qq!<font class=small> (eval cutoff: $eval_cutoff)</font>! if defined $eval_cutoff;
-	    $html_viewer .= qq!</DIV>\n!;
-	    $html_viewer .= qq!<IMG SRC="$TEMPURL/$image" !;
-	    my $tmp_count = $count -1;
-	    $html_viewer .= qq!BORDER=0 ismap usemap="#$mapname">\n!;
-	    $html_viewer .= "$map\n";
-	    $item->{image} = $image;
-	    generate_image_db(set=>$item, gfx=>$gfx);
+	    my $filename = $cogeweb->basefile."_".$item->{seq_num}.".png";
+	    $filename = check_filename_taint($filename);
+	    my $image = basename($filename);
+	    $item->{image}=$image;
+#	    push @gfxs,[$gfx,$filename, $item];
+#	  }
+#      }
+#    my $pm = new Parallel::ForkManager($MAX_PROC);
+#    foreach my $item (@gfxs)
+#      {
+#	my ($gfx, $filename, $set) = @$item;
+#	$pm->start and next if $pm;
+	$gfx->generate_png(file=>$filename);
+	generate_image_db(set=>$item, gfx=>$gfx);
+#	$pm->finish if $pm;
+#      }
+#    $pm->wait_all_children;
+#    foreach my $item (@gfxs)
+#      {
+#	my ($gfx, $filename, $set) = @$item;
+#	my ($w,$h) = imgsize($filename);
+	$frame_height += $gfx->ih + $gfx->ih*.1;
 	  }
-	$count++;
       }
-    $count--;
+    my $t3_5 = new Benchmark;
+    image_db_create_hsp_pairs();
 
-    my $str = qq{/bpederse/gobe?imgdir=/CoGe/tmp/&img=}.$cogeweb->basefilename.qq{&n=}.($count-1);
     my $t4 = new Benchmark;
-    $html_viewer .= qq!<br/>!;
-    $html_viewer .= qq!<FORM NAME=\"info\">\n!;
-    $html_viewer .= $form->br();
-    $html_viewer .= "Information: ";
-    $html_viewer .= $form->br();
-    $html_viewer .= qq!<DIV id="info"></DIV>!;
-    $html_viewer .= "</FORM>\n";
-    my $flash_viewer = qq{<DIV id=flash_viewer></DIV>};
-#    $html .= $viewer eq "flash" ? $flash_viewer : $html_viewer;
-    $html .= qq{<div id=html_viewer>$html_viewer</div>};
-    $html .= $flash_viewer;
+    $html .= qq{<DIV id=flash_viewer></DIV>};
     $html .= qq{<table>};
     $html .= qq{<tr valign=top><td class = small>Alignment reports};
     if ($analysis_reports && @$analysis_reports)
@@ -742,20 +734,22 @@ sub run
     my $t5 = new Benchmark;
     my $db_time = timestr(timediff($t2,$t1));
     my $blast_time = timestr(timediff($t3,$t2));
-    my $image_time = timestr(timediff($t4,$t3));
+    my $image_time = timestr(timediff($t3_5,$t3));
+    my $db_hsp_time = timestr(timediff($t4,$t3_5));
     my $html_time = timestr(timediff($t5,$t4));
     my $bench =  qq{
 GEvo Benchmark: $DATE
 Time to get sequence                              : $db_time
 Time to run $analysis_program                     : $blast_time
 Time to generate images, maps, and sqlite database: $image_time
+Time to find and update sqlite database for HSPs  : $db_hsp_time
 Time to process html                              : $html_time
 };
     print STDERR $bench if $BENCHMARK;
     write_log($bench, $cogeweb->logfile);
     write_log("Finished!", $cogeweb->logfile);
     write_log("\nGEvo link: $gevo_link\n", $cogeweb->logfile);
-
+    $count--;
     return $outhtml, $iw+400, $frame_height, $cogeweb->basefilename,$count,$message;
 
 }
@@ -764,7 +758,8 @@ Time to process html                              : $html_time
 sub generate_image
   {
     my %opts = @_;
-    my $gbobj = $opts{gbobj};
+    my $set = $opts{set};
+    my $gbobj = $set->{obj};#$opts{gbobj};
     my $start = $opts{start};
     my $stop = $opts{stop};
     my $data = $opts{data};
@@ -788,10 +783,11 @@ sub generate_image
     my $show_hsps_with_stop_codon = $opts{show_hsps_with_stop_codon};
     my $hiqual = $opts{hiqual};
     my $padding = $opts{padding} || 5;
-    my $seq_num = $opts{seq_num};
+#    my $seq_num = $opts{seq_num};
     my $draw_model = $opts{draw_model};
     my $hsp_overlap_limit = $opts{hsp_overlap_limit};
     my $color_overlapped_features = $opts{color_overlapped_features};
+    my $hsp_overlap_length = $opts{hsp_overlap_length};
     my $graphic = new CoGe::Graphics;
     my $gfx = new CoGe::Graphics::Chromosome;
 #    print STDERR "$start"."::"."$stop"." -- ".length($gbobj->sequence)."\n";
@@ -837,16 +833,11 @@ sub generate_image
 				colors=>$hsp_colors,
 				show_hsps_with_stop_codon=>$show_hsps_with_stop_codon,
 				hsp_overlap_limit=>$hsp_overlap_limit,
+				hsp_overlap_length=>$hsp_overlap_length,
 			       );
     my ($feat_count, $overlap_count) = process_features(c=>$gfx, obj=>$gbobj, start=>$start, stop=>$stop, overlap_adjustment=>$overlap_adjustment, draw_model=>$draw_model, color_overlapped_features=>$color_overlapped_features);
 
-#    $gfx->DEBUG(1);
-    my $filename = $cogeweb->basefile."_".$seq_num.".png";
-    $filename = check_filename_taint($filename);
-    $gfx->generate_png(file=>$filename);
-    my $mapname = "map_".$seq_num;
-    my ($map)=$gfx->generate_imagemap(name=>$mapname);
-    return (basename($filename), $map, $mapname, $gfx, $eval_cutoff, $feat_count, $overlap_count);
+    return ($gfx, $eval_cutoff, $feat_count, $overlap_count);
   }
 
 sub initialize_sqlite
@@ -883,10 +874,11 @@ color varchar(10)
     $dbh->do('CREATE INDEX image_track ON image_data (image_track)');
     $dbh->do('CREATE INDEX pair_id ON image_data (pair_id)');
 
+#id INTEGER PRIMARY KEY AUTOINCREMENT,
     $create = qq{
 CREATE TABLE image_info
 (
-id INTEGER PRIMARY KEY AUTOINCREMENT,
+id INTEGER,
 iname varchar(50),
 title varchar(256),
 px_width integer,
@@ -898,6 +890,7 @@ chromosome integer
 };
 #TODO: make sure to populate the bpmin and pbmax and image width!!!!!!!!!!!!!!!!!
     $dbh->do($create);
+    $dbh->do('CREATE INDEX id ON image_info (id)');
     system "chmod +rw $dbfile";
   }
 
@@ -919,7 +912,6 @@ sub generate_image_db
     my $dsid = $set->{obj}->dataset;
     my ($chr) =  $set->{obj}->chromosome =~ /(\d+)/;
     $chr = "NULL" unless $chr;
-    #print STDERR "CHROMOSOME:" . $chr . "\n";
     $dsid = "NULL" unless $dsid;
     my $image_start = $set->{obj}->start;
     my $image_stop = $set->{obj}->stop;
@@ -928,13 +920,13 @@ sub generate_image_db
 INSERT INTO image_info (id, iname, title, px_width,dsid, chromosome, bpmin, bpmax) values ($image_id, "$image", "$title", $width, "$dsid", $chr, $image_start, $image_stop)
 };
     print STDERR $statement unless $dbh->do($statement);
-#    my $image_id = $dbh->last_insert_id("","","","");
     foreach my $feat ($gfx->get_feats)
       {
 	if ($feat->fill)
 	  {
 	    next unless $feat->type eq "anchor";
 	  }
+#	print STDERR Dumper $feat if $feat->{anchor};
 	next unless $feat->image_coordinates;
 	my $type = $feat->type;
 	my $pair_id = "-99";
@@ -1011,27 +1003,30 @@ INSERT INTO image_data (name, type, xmin, xmax, ymin, ymax, bpmin,bpmax,image_id
 };
 	    print STDERR $statement unless $dbh->do($statement);
 	  }
-	#create pair id
-	if ($feat->type =~ /HSP/)
+      }
+  }
+
+sub image_db_create_hsp_pairs
+  {
+    my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
+    my $query = qq{select id,name from image_data where type = "HSP"};
+    my %ids;
+    foreach my $item (@{$dbh->selectall_arrayref($query)})
+      {
+	push @{$ids{$item->[1]}},$item->[0];
+      }
+    foreach my $name (keys %ids)
+      {
+	if (@{$ids{$name}} != 2)
 	  {
-	    my $query = qq{select id from image_data where name = "$name"};
-	    my $sth = $dbh->prepare($query);
-	    $sth->execute;
-	    my @items;
-	    while (my $res = $sth->fetchrow_array())
-	      {
-		push @items, $res;
-	      }
-	    if (@items != 2)
-	      {
-		print STDERR "problem with $query\nRetrieved:\n".Dumper \@items if @items > 2;
-		next;
-	      }
-	    my $statement = "update image_data set pair_id = $items[0] where id = $items[1]";
-	    $dbh->do($statement);
-	    $statement = "update image_data set pair_id = $items[1] where id = $items[0]";
-	    $dbh->do($statement);
+	    print STDERR "Problem with $name.  Retrieved", Dumper $ids{$name};
+	    next;
 	  }
+	my ($id1, $id2) = @{$ids{$name}};
+	my $statement = "update image_data set pair_id = $id1 where id = $id2";
+	$dbh->do($statement);
+	$statement = "update image_data set pair_id = $id2 where id = $id1";
+	$dbh->do($statement);
       }
   }
 
@@ -1064,8 +1059,8 @@ sub process_features
       {
         my $f;
 	my $type = $feat->type;
-	my ($name) = sort { length ($b) <=> length ($a) || $a cmp $b} @{$feat->qualifiers->{names}} if ref ($feat->qualifiers) =~ /hash/i && $feat->qualifiers->{names};
-	my $anchor = 1 if ref ($feat->qualifiers) =~ /hash/i && $feat->qualifiers->{type} && $feat->qualifiers->{type} eq "anchor";
+	my ($name) = sort { length ($b) <=> length ($a) || $a cmp $b} @{$feat->qualifiers->{names}} if ref ($feat->qualifiers) =~ /hash/i;
+	my $anchor = $feat if ref ($feat->qualifiers) =~ /hash/i && $feat->qualifiers->{type} && $feat->qualifiers->{type} eq "anchor";
         if ($type =~ /pseudogene/i)
           {
 	    next unless $draw_model eq "full";
@@ -1101,8 +1096,6 @@ sub process_features
 		      {
 			$f->color([255,255,0]) ;
 			$f->label($name);
-#			$type="anchor";
-#			$anchor=1;
 		      }
 		  }
 	      }
@@ -1133,7 +1126,6 @@ sub process_features
 			  {
 			    $f->color([255,255,0]) ;
 			    $f->label($name);
-#			    $anchor="anchor";
 			  }
 		      }
 		  }
@@ -1190,6 +1182,7 @@ sub process_features
 	    $overlap_count++ if $feat->qualifiers->{overlapped_hsp};
 	    $feat_count{$feat->start}{$feat->stop}=1;
 	  }
+
     }
     return ($feat_count, $overlap_count);
   }
@@ -1212,6 +1205,7 @@ sub process_hsps
     my $color_hsp = $opts{color_hsp};
     my $colors = $opts{colors};
     my $hsp_overlap_limit = $opts{hsp_overlap_limit};
+    my $hsp_overlap_length = $opts{hsp_overlap_length};
     my $show_hsps_with_stop_codon = $opts{show_hsps_with_stop_codon};
     #to reverse hsps when using genomic sequences from CoGe, they need to be drawn on the opposite strand than where blast reports them.  This is because CoGe::Graphics has the option of reverse drawing a region.  However, the sequence fed into blast has already been reverse complemented so that the HSPs are in the correct orientation for the image.  Thus, if the image is reverse, they are drawn on the wrong strand.  This corrects for that problem.   Sorry for the convoluted logic, but it was the simplest way to substantiate this option
     my $i = 0;
@@ -1297,13 +1291,14 @@ sub process_hsps
 	    my $strand = $hsp->strand =~ /-/ ? "-1" : 1;
 
 	    #find overlapping features in gbobj
-	    print STDERR $start."-".$stop,"\n";
-	    foreach my $feat ($gbobj->get_features(start=>$start, stop=>$stop))
+	    if (($hsp->qe-$hsp->qb+1)>=$hsp_overlap_length || ($hsp->se-$hsp->sb+1)>=$hsp_overlap_length)
 	      {
-		print STDERR "\t", $feat->type,": ",$feat->start,"-",$feat->stop,"\n";
-		print STDERR "\t\t", join ( "\n\t\t", map {$_->[0]."-".$_->[1]} @{$feat->blocks}),"\n";
-		next if $start == $feat->stop || $stop == $feat->start;
-		$feat->qualifiers->{overlapped_hsp}=1;
+		foreach my $feat ($gbobj->get_features(start=>$start, stop=>$stop))
+		  {
+		    #lets skip it if it only has minimal end overlap
+		    next if abs($start - $feat->stop)<=3 || abs($stop - $feat->start) <=3;
+		    $feat->qualifiers->{overlapped_hsp}=1;
+		  }
 	      }
 
 	    my $f = CoGe::Graphics::Feature::HSP->new({start=>$start, stop=>$stop});
@@ -1547,7 +1542,7 @@ sub get_obj_from_genome_db
 				     start => $start,
 				     stop => $stop,
 				     chr => $chr,
-									 );
+				    );
     if ($stop-$start+1 > length($seq))
       {
 	my $len = length($seq);
@@ -1577,6 +1572,7 @@ sub get_obj_from_genome_db
     print STDERR "Region: $chr: $start-$stop\n" if $DEBUG;
 #    print STDERR "Region: $chr: ",$start-$start+1,"-",$stop-$start,"\n";
     my @feats = $coge->get_features_in_region(start=>$start, stop=>$stop, chr=>$chr, dataset_id=>$dsid);
+    push @feats, $feat if $feat;
     my $t5 = new Benchmark;
     foreach my $f (@feats)
       {
@@ -1619,7 +1615,11 @@ sub get_obj_from_genome_db
     if ($pos)
       {
 	my $pos_loc = $rev ? $stop-$pos: $pos-$start;
-	$obj->add_feature(type=>"anchor", location=>($pos_loc), annotation=>"User specified anchor point");
+	$obj->add_feature(type=>"anchor", 
+			  location=>($pos_loc), 
+			  annotation=>"User specified anchor point",
+			  qualifiers=>{names=>[]},
+			 );
       }
     my $t6 = new Benchmark;
     my $db_time = timestr(timediff($t2,$t1));
@@ -1650,7 +1650,8 @@ sub run_bl2seq {
   $program = "blastn" unless $program;
   my @reports;
   my $total_runs = number_of_runs($sets);
-  my $count = 1;
+  my $count = 0;
+  my $pm = new Parallel::ForkManager($MAX_PROC);
   for (my $i=0; $i<scalar @$sets; $i++)
     {
       for (my $j=0; $j<scalar @$sets; $j++)
@@ -1663,12 +1664,16 @@ sub run_bl2seq {
 	  next unless $seqfile1 && -r $seqfile1 && $seqfile2 && -r $seqfile2; #make sure these files exist
 	  
 	  next unless $sets->[$i]{reference_seq} || $sets->[$j]{reference_seq};
+	  $count++;
 	  my ($accn1, $accn2) = ($sets->[$i]{accn}, $sets->[$j]{accn});
+	  my ($tempfile) = $cogeweb->basefile."_".($sets->[$i]->{seq_num})."-".($sets->[$j]->{seq_num}).".bl2seq";;
+	  push @reports,[$tempfile, $accn1, $accn2];
+	  $pm->start and next;
 	  my $command = $BL2SEQ;
 	  
 	  
 	# need to create a temp filename here
-	  my ($tempfile) = $cogeweb->basefile."_".($sets->[$i]->{seq_num})."-".($sets->[$j]->{seq_num}).".bl2seq";;
+
 	  
 	  # format the bl2seq command
 	  $command .= "-p $program -o $tempfile ";
@@ -1687,19 +1692,22 @@ sub run_bl2seq {
 	  write_log("running ($count/$total_runs) ".$command, $cogeweb->logfile);
 	  `$command`;
 	  system "chmod +rw $tempfile";
-	  my $blastreport = new CoGe::Accessory::bl2seq_report({file=>$tempfile}) if -r $tempfile;
-	  my @tmp = ($tempfile, $accn1, $accn2);
-	  if ($blastreport)
-	    {
-	      $blastreport->eval_cutoff($eval_cutoff);
-	      push @tmp, $blastreport
-	    }
-	  else
-	    {
-	      push @tmp, "no results from blasting $accn1 and $accn2";
-	    }
-	  push @reports, \@tmp;
-	  $count++;
+	  $pm->finish;
+	}
+    }
+  $pm->wait_all_children;
+  foreach my $item (@reports)
+    {
+      my $tempfile = $item->[0];
+      my $parser_opts = $opts{parser_opts};
+      my $blastreport = new CoGe::Accessory::bl2seq_report({file=>$tempfile}) if -r $tempfile;
+      if ($blastreport)
+	{
+	  push @$item, $blastreport
+	}
+      else
+	{
+	  push @$item, "no results from blasting ".$item->[1]." and ".$item->[2];
 	}
     }
   return( \@reports );
@@ -1714,7 +1722,8 @@ sub run_blastz
     my @files;
     my @reports;
     my $total_runs = number_of_runs($sets);
-    my $count = 1;
+    my $count = 0;
+    my $pm = new Parallel::ForkManager($MAX_PROC);
     for (my $i=0; $i<scalar @$sets; $i++)
       {
 	for (my $j=0; $j<scalar @$sets; $j++)
@@ -1724,8 +1733,11 @@ sub run_blastz
 	    my $seqfile2 = $sets->[$j]->{file};
 	    next unless $seqfile1 && $seqfile2 && -r $seqfile1 && -r $seqfile2; #make sure these files exist
 	    next unless $sets->[$i]{reference_seq} || $sets->[$j]{reference_seq};
+	    $count++;
 	    my ($accn1, $accn2) = ($sets->[$i]{accn}, $sets->[$j]{accn});
 	    my ($tempfile) = $cogeweb->basefile."_".($sets->[$i]->{seq_num})."-".($sets->[$j]->{seq_num}).".blastz";
+	    push @reports, [$tempfile, $accn1, $accn2];
+	    $pm->start and next;
 	    my $command = $BLASTZ;
 	    $command .= " $seqfile1 $seqfile2";
 	    $command .= " ".$params if $params;
@@ -1744,22 +1756,26 @@ sub run_blastz
 #	    print STDERR $command,"\n";
 	    `$command`;
 	    system "chmod +rw $tempfile";
-	    my $blastreport = new CoGe::Accessory::blastz_report({file=>$tempfile}) if -r $tempfile;
-	    my @tmp = ($tempfile, $accn1, $accn2);
-	    if ($blastreport)
-	    {
-	      push @tmp, $blastreport
-	    }
-	    else
-	      {
-		push @tmp, "no results from blasting $accn1 and $accn2";
-	      }
-	    push @reports, \@tmp;
-	    $count++;
+	    $pm->finish;
+	  }
+      }
+    $pm->wait_all_children;
+    foreach my $item (@reports)
+      {
+	my $tempfile = $item->[0];
+	my $blastreport = new CoGe::Accessory::blastz_report({file=>$tempfile}) if -r $tempfile;
+	if ($blastreport)
+	  {
+	    push @$item, $blastreport
+	  }
+	else
+	  {
+	    push @$item, "no results from blasting ".$item->[1]." and ".$item->[2];
 	  }
       }
     return \@reports;
   }
+
 
 sub run_lagan
   {
@@ -1969,7 +1985,7 @@ sub run_dialign
 	      }
 	    else
 	      {
-		my $seqfile = $TEMPDIR."/".$cogeweb->basefilename."_".($sets->[$i]->{seq_num})."-".($sets->[$j]->{seq_num}).".fasta";
+		my $seqfile = $cogeweb->basefile."_".($sets->[$i]->{seq_num})."-".($sets->[$j]->{seq_num}).".fasta";
 		next unless -r $seqfile1 && -r $seqfile2; #make sure these files exist
 		#put two fasta files into one for dialign
 		`cat $seqfile1 > $seqfile`;
@@ -2060,7 +2076,7 @@ sub write_fasta
       }
     ($fullname) = check_filename_taint( $fullname );
     $length = length($seq);
-    open(OUT, ">$fullname") or die "Couldn't open $fullname!\n";
+    open(OUT, ">$fullname") or die "Couldn't open $fullname!: $!\n";
     print OUT "$hdr\n";
     my $max = 100;
     my $i = 0;
@@ -2068,7 +2084,7 @@ sub write_fasta
     close(OUT);
     system "chmod +rw $fullname";
     write_log("Created sequence file for $hdr.  Length:". $length, $cogeweb->logfile);
-    write_log('spike:' . $spike_seq, $cogeweb->logfile);
+    write_log('spike:' . $spike_seq, $cogeweb->logfile) if $spike_seq;
     return($fullname, $spike_seq, $seq);
   }
 
@@ -2110,7 +2126,7 @@ sub generate_annotation
     foreach my $feat($obj->get_features())
       {
 	my $type = $feat->type;
-	my ($name) = sort { length ($b) <=> length ($a) || $a cmp $b} @{$feat->qualifiers->{names}} if ref($feat->qualifiers) =~ /hash/i;
+	my ($name) = sort { length ($b) <=> length ($a) || $a cmp $b} @{$feat->qualifiers->{names}} if ref($feat->qualifiers) =~ /hash/i && $feat->qualifiers->{names};
 	my $dir = $feat->location =~ /complement/ ? "<" : ">";
 	foreach my $block (@{$feat->blocks})
 	  {
@@ -2238,7 +2254,6 @@ sub gen_params
         'args__blastz_gap_extension','blastz_gap_extension',
         'args__blastz_params','blastz_params',
 
-        'args__viewer', 'viewer',
 	'args__iw', 'iw',
 	'args__ih', 'ih', 
 	'args__fh', 'feat_h',
@@ -2257,6 +2272,7 @@ sub gen_params
         'args__draw_model', 'draw_model',
         'args__hsp_overlap_limit', 'hsp_overlap_limit',
         'args__color_overlapped_features','color_overlapped_features',
+        'args__hsp_overlap_length','hsp_overlap_length',
         'args__basefile','args__'+pageObj.basefile
 
 };
