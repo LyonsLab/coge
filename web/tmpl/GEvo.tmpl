@@ -193,16 +193,6 @@ animate_section(".anchor", "fadeIn");
 
 }
   
-function checkViewer () {
-var viewer = $('#viewer').val();
-$('#html_viewer').hide();
-$('#flash_viewer').hide();
-if (viewer == "flash")
- {$('#flash_viewer').show();}
-else {animate_section('#html_viewer', 'show');}
-
-}
-
 function check_alignment_program (){
 
  var alignment = $("#alignment_program").val();
@@ -274,18 +264,16 @@ function handle_results (html,w, h, img_base, n_images,message) {
  if (n_images >1)
    {
     $('#results').html(html);
-    checkViewer();
     var so = new SWFObject("/CoGe/gobe/flash/gobe.swf?<TMPL_VAR NAME="GOBE_VERSION">", "gobe", w, h, "9", "#FFFFFF");
     so.useExpressInstall('/CoGe/gobe/flash/expressinstall.swf');
     so.addVariable('n', n_images);
     so.addVariable('base_url', '/CoGe/');
-    so.addVariable('img_url', '/CoGe/tmp/');
-//    so.addVariable('tmp_dir', 'tmp/');
+    so.addVariable('img_url', '/CoGe/tmp/GEvo/');
     so.addVariable('base_name', img_base );
     so.addVariable('freezable', getQueryParamValue('freezable') || 'false'); 
     so.addVariable('pad_gs', jQuery('#pad_gs') ? jQuery('#pad_gs').val()  : getQueryParamValue('pad_gs') || '0'); 
     so.addVariable('gsid', getQueryParamValue('gsid') || getQueryParamValue('genespace_id') || '0'); 
-so.write("flash_viewer");
+    so.write("flash_viewer");
    }
   else
   {
@@ -403,7 +391,7 @@ function monitor_log(log)
   
   if (!finished && pageObj.nolog<4)
   {
-    setTimeout("read_log(['args__'+pageObj.basefile], [monitor_log])", 4000);
+    setTimeout("read_log(['args__logfile', 'args__'+pageObj.basefile, 'args__prog','args__GEvo'], [monitor_log])", 4000);
   if (message) $('#loading').html("<div class=small>"+message+'</div>');
   }
 
@@ -764,10 +752,16 @@ function get_seq(seq_num)
 <td width="2" bgcolor="#99FF99">
 
 
-
+ <TR class="small"><th align=left>Other options:
+ <tr><td><Table>
+ <tr class="small">
+  <td>Minimum HSP length for finding overlapped features:
+  <td><input class="backbox" type="text" name="hsp_overlap_length" id="hsp_overlap_length" tabindex="1" size="5" value="50"/></TD>
+ </table>
  </table>
  </div>
  </TR>
+  
 </TABLE>
 
 
@@ -777,26 +771,12 @@ function get_seq(seq_num)
   <TH colspan="2" align=left>
   <DIV  id="ip" class="topItem" onMouseOver="$('#ip').removeClass('topItem').addClass('topItemSelected');" onMouseOut="$('#ip').removeClass('topItemSelected').addClass('topItem');"  onClick='animate_section("#image_parameters","slideToggle")'>Image and Interface Parameters:</DIV>
 
-<!--<div class="menu" id="image_parameters" style="display: none">-->
 <div class="menu" id="image_parameters" >
 
 <table valign class="dropmenu" width="100%">
 <TR valign=top>
 <td valign=top>
 <TABLE>
- <TR valign=top>
-  <TD>
-    <DIV class="small">
-      Results Interface:
-    </DIV>
-  </TD>
-  <TD>
-    <DIV class="small">
-     <select id="viewer" onChange="checkViewer()">
-     <option <TMPL_VAR NAME="GOBE_VIEWER"> value="flash">Gobe Flash Viewer</option>
-     <option <TMPL_VAR NAME="HTML_VIEWER"> value = "html">GeLo HTML Viewer</option> 
-    </DIV>
-  </TD>
  <TR valign=top>
   <TD>
     <DIV class="small">
