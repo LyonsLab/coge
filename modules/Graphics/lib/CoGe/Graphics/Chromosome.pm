@@ -1713,16 +1713,15 @@ sub _draw_features
     foreach my $feat ( (sort {$b->type cmp $a->type} $self->get_feature(fill=>1)), sort {$a->overlay <=> $b->overlay || $b->start <=> $a->start} $self->get_features(fill=>0))
       {
 	
-#	next if $feat->track == 0;
 	#skip drawing features that are outside (by two times the range being viewed) the view
-	if ($feat->start)
-	  {
-	    next if $feat->start > $self->_region_end+2*($self->_region_length);
-	  }
-	if ($feat->stop > 0)
-	  {
-	    next if $feat->stop < $self->_region_start-2*($self->_region_length);
-	  }
+#	if ($feat->start)
+#	  {
+#	    next if $feat->start > $self->_region_end+2*($self->_region_length);
+#	  }
+#	if ($feat->stop > 0)
+#	  {
+#	    next if $feat->stop < $self->_region_start-2*($self->_region_length);
+#	  }
 	my $feature_height = $self->feature_height;#($self->feature_start_height+$self->feature_mag_height*$self->mag);
 	my $feat_h = $feature_height/$feat->_overlap;#*$feat->mag;
 	$feat_h = 1 if $feat_h < 1;
@@ -1915,7 +1914,6 @@ sub _draw_feature_fast
     my $y = $opts{'y'} || $opts{Y};
     my $ih = $opts{'image_height'} || $opts{'ih'} || $opts{'IH'} || $feat->ih;
     my $sy = $opts{'string_y'} || $opts{'sy'};#label y axis
-    use Data::Dumper;
     my $rb = $self->_region_start;
     my $re = $self->_region_stop;
     my $range = $re-$rb;
@@ -1991,7 +1989,7 @@ sub _draw_feature_fast
 #    $size = $size*$feat->font_size if $size && $feat->font_size;
     $size = $feat->font_size if $feat->font_size;
     $self->_gd_string(y=>$sy, x=>$fs, text=>$feat->label, size=>$size) if $feat->label && ( ($self->feature_labels || $self->fill_labels)&& ($fw>5 || $feat->force_label)); #don't make the string unless the feature is at least 5 pixels wide
-#    print STDERR $feat->type," ","$xmin, $ymin, $xmax, $ymax\n";
+#    print STDERR $feat->type," ","$xmin, $ymin, $xmax, $ymax\n" if $feat->{anchor};
     $feat->image_coordinates("$xmin, $ymin, $xmax, $ymax") if defined $xmin && defined $ymin && defined $xmax && defined $ymax;
   }
 
