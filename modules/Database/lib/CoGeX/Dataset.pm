@@ -259,6 +259,7 @@ sub fasta
     ($chr) = $self->get_chromosomes unless defined $chr;
     my $strand = $opts{strand} || 1;
     my $start = $opts{start};
+    $start =1 if $start < 1;
     my $stop = $opts{stop};
     my $prot = $opts{prot};
     my $rc = $opts{rc};
