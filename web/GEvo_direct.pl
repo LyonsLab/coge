@@ -79,7 +79,7 @@ foreach my $img (@{$files{png}})
     $w = $x;
     $seq_num++;
   }
-
+$w+=400;
 my $html;
 $html .= qq{<DIV id=flash_viewer></DIV>};
 $html .= qq{<table>};
