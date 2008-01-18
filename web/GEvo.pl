@@ -723,7 +723,7 @@ sub run
     foreach my $item (@sets)
       {
 	$html .= "<div class = small>".$item->{obj}->accn.": ".$item->{overlap_count}." / ".$item->{feat_count};
-	$html .= ." (".sprintf("%.2f", $item->{overlap_count}/$item->{feat_count}*100)."%)" if $item->{feat_count};	
+	$html .= " (".sprintf("%.2f", $item->{overlap_count}/$item->{feat_count}*100)."%)" if $item->{feat_count};	
       }
     $html .= qq{</table>};
 
