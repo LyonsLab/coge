@@ -295,7 +295,7 @@ sub annotation_pretty_print_html
     my $featid = $self->id;
     $location = qq{<a href="$loc_link?featid=$featid&start=$start&stop=$stop&chr=$chr&dsid=$dataset_id&strand=$strand&featname=$outname" target=_new>}.$location."</a>" if $loc_link;
     $location = qq{<span class="data">$location</span>};
-    $anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<span class=\"title4\"><a href=\"GeLo.pl?chr=$chr&ds=$dataset_id&x=$start&z=5\">Location</a></span>", Values=>[$location], Type_delimit=>": ", Val_delimit=>" "));
+    $anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<span class=\"title4\"><a href=\"GeLo.pl?chr=$chr&ds=$dataset_id&x=$start&z=5\" target=_new>Location</a></span>", Values=>[$location], Type_delimit=>": ", Val_delimit=>" "));
     my $ds=$self->dataset;
     my $dataset = qq{<a href = "GenomeView.pl?dsid=}.$ds->id."\" target=_new>".$ds->name;
     $dataset .= ": ".$ds->description if $ds->description;
