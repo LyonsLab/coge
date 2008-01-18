@@ -222,7 +222,6 @@ sub gen_foot
     my $pro = $form->param('pro');
     my $upstream = $form->param('upstream') || 0;
     my $downstream = $form->param('downstream') || 0;
-    print STDERR $upstream,"::",$downstream,"\n";
     my $start = $form->param('start');
     my $stop = $form->param('stop');
     $stop = $start unless $stop;
