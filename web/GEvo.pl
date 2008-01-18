@@ -718,6 +718,7 @@ sub run
     my $tiny = get("http://tinyurl.com/create.php?url=$gevo_link");
     ($tiny) = $tiny =~ /<b>(http:\/\/tinyurl.com\/\w+)<\/b>/;
     $html .= qq{<td class = small>GEvo Link<div class=small><a href=$tiny target=_new>$tiny<br>(See log file for full link)</a></div>};
+    $html .=qq{<a href="GEvo_direct.pl?name=$basefilename" target=_new>Results only</a>};
     $html .= qq{<td class = small>Overlap Feature Stats:};
     foreach my $item (@sets)
       {
@@ -749,6 +750,7 @@ Time to process html                              : $html_time
     write_log($bench, $cogeweb->logfile);
     write_log("Finished!", $cogeweb->logfile);
     write_log("\nGEvo link: $gevo_link\n", $cogeweb->logfile);
+    write_log("Tiny url: $tiny", $cogeweb->logfile);
     $count--;
     return $outhtml, $iw+400, $frame_height, $cogeweb->basefilename,$count,$message;
 
