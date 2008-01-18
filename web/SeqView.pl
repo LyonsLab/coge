@@ -84,6 +84,7 @@ sub gen_body
     my $downstream = $form->param('downstream') || 0;
     my $start = $form->param('start');
     my $stop = $form->param('stop');
+    $stop = $start unless $stop;
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SeqView.tmpl');
     $template->param(RC=>$rc);
     $template->param(JS=>1);
@@ -161,6 +162,11 @@ sub get_seq
       $start = $upstream if $upstream;
       $stop = $downstream if $downstream;
     }
+    else
+      {
+	$start-=$upstream;
+	$stop+=$downstream;
+      }
     #print $rc;
     my $strand;
     my $seq;
@@ -189,6 +195,7 @@ sub get_seq
     {
 	  my $ds = $coge->resultset('Dataset')->find($dsid);
 	  $fasta = ref ($ds) =~ /dataset/i ? 
+	  
 	  $ds->fasta
 	    (
 	     start=>$start,
@@ -215,8 +222,10 @@ sub gen_foot
     my $pro = $form->param('pro');
     my $upstream = $form->param('upstream') || 0;
     my $downstream = $form->param('downstream') || 0;
+    print STDERR $upstream,"::",$downstream,"\n";
     my $start = $form->param('start');
     my $stop = $form->param('stop');
+    $stop = $start unless $stop;
     my $feat = $coge->resultset('Feature')->find($featid);
     my $strand;
     my $DNAButton;
@@ -247,6 +256,8 @@ sub gen_foot
       $stop = $feat->stop+$downstream;
     }
     else{
+      $start-=$upstream;
+      $stop+=$downstream;
       $template->param(PROTEIN=>'Six Frame Translation');
       $template->param(SIXFRAME=>1);
       $template->param(FIND_FEATS=>1);
@@ -257,7 +268,7 @@ sub gen_foot
       $template->param(DOWNSTREAM=>"STOP: ");
       $template->param(DOWNVALUE=>$stop);
       $template->param(ADD_EXTRA=>1);
-      $template->param(RANGE=>1);      
+      $template->param(RANGE=>1);
       }
     my $link = find_feats(dsid=>$dsid, start=>$start, stop=>$stop, chr=>$chr);
     $template->param(FEATLISTLINK=>$link);
