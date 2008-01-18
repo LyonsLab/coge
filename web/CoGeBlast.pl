@@ -32,11 +32,11 @@ $ENV{BLASTDB}="/opt/apache/CoGe/data/blast/db/";
 $ENV{BLASTMAT}="/opt/apache/CoGe/data/blast/matrix/";
 use vars qw( $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $FORMATDB $BLAST $BLASTZ $FORM $USER $DATE $coge $cogeweb);
 
-$TEMPDIR = "/opt/apache/CoGe/tmp/";
+$TEMPDIR = "/opt/apache/CoGe/tmp/CoGeBlast";
 $DATADIR = "/opt/apache/CoGe/data/";
 $FASTADIR = $DATADIR.'/fasta/';
 $BLASTDBDIR = $DATADIR.'/blast/db/';
-$TEMPURL = "/CoGe/tmp/";
+$TEMPURL = "/CoGe/tmp/CoGeBlast";
 $FORMATDB = "/usr/bin/formatdb";
 $BLAST = "/usr/bin/blast";
 $BLASTZ = "/usr/bin/blastz";
@@ -485,7 +485,7 @@ sub gen_results_page
 			my ($name) = sort $feature->names;
 			foreach my $data (@check)
 			  {
-			    $flag = 1 if (($data->{name} eq $name) && ($data->{score} == $hsp->score));
+			    $flag = 1 if ($data->{name} && $name && ($data->{name} eq $name) && ($data->{score} == $hsp->score));
 			  }
 			unless ($flag) {
 			  my $fid = $feature->id."_".$hsp->number."_".$dsid;
@@ -729,7 +729,7 @@ sub generate_chromosome_images
 		$data{$org}{image}->generate_png(filename=>$image_file);
 		$image_map = $data{$org}{image}->generate_imagemap(mapname=>$cogeweb->basefilename."_".$count);
 
-		my $map_file = "$TEMPDIR/".$cogeweb->basefilename."_$count.$hsp_type.map";
+		my $map_file = $cogeweb->basefile."_$count.$hsp_type.map";
 		($x, $map_file) = check_taint($map_file);
 		open (MAP, ">$map_file");
 		print MAP $image_map;
@@ -738,7 +738,7 @@ sub generate_chromosome_images
 		$data{$org}{image}->chromosome_height($large_height);
 		$data{$org}{image}->generate_png(filename=>$large_image_file);
 		$image_map_large = $data{$org}{image}->generate_imagemap(mapname=>$cogeweb->basefilename."_".$count."_large");
-		$map_file = "$TEMPDIR/".$cogeweb->basefilename."_$count.$hsp_type.large.map";
+		$map_file = $cogeweb->basefile."_$count.$hsp_type.large.map";
 		($x, $map_file) = check_taint($map_file);
 		open (MAP, ">$map_file");
 		print MAP $image_map_large;
@@ -749,9 +749,9 @@ sub generate_chromosome_images
 	      {
 		my $x;
 		$image_file = $data{$org}{image}."_$count.png";
-		$image_map = get_map("$TEMPDIR/".$cogeweb->basefilename."_$count.$hsp_type.map");
+		$image_map = get_map($cogeweb->basefile."_$count.$hsp_type.map");
 		$large_image_file = $data{$org}{image}."_$count"."_large.png";
-		$image_map_large = get_map("$TEMPDIR/".$cogeweb->basefilename."_$count.$hsp_type.large.map");
+		$image_map_large = get_map($cogeweb->basefile."_$count.$hsp_type.large.map");
 		#print STDERR $image_map_large,"\n";
 		($x, $image_file) = check_taint($image_file);
 		($x, $large_image_file) = check_taint($large_image_file);
@@ -984,7 +984,8 @@ sub get_hsp_info
     my %opts = @_;
     my $hsp_id = $opts{num};
     my $filename = $opts{blastfile};
-    $cogeweb = initialize_basefile(basename=>$filename);
+    $filename =~ s/$TEMPDIR//;
+    $cogeweb = initialize_basefile(basename=>$filename, prog=>"CoGeBlast");
     my $dbfile = $cogeweb->sqlitefile;
     my $dbh = DBI->connect("dbi:SQLite:dbname=$dbfile","","");
     
@@ -1135,7 +1136,7 @@ sub generate_overview_image
      my @set = split/\n/, `ls $TEMPDIR/$basename*.blast`;
      my @reports;
      my $count = 1;
-     $cogeweb = initialize_basefile(basename=>$basename);
+     $cogeweb = initialize_basefile(basename=>$basename,prog=>"CoGeBlast");
      foreach my $blast (@set){
        my $report = new CoGe::Accessory::blast_report({file=>$blast});
        my ($org_name) = $report->hsps->[$count-1]->subject_name =~ /^\s*(.*?)\s*\(/;
@@ -1258,9 +1259,9 @@ qname = "$qname"
 	$cq->add_feature($feat);
       }
 
-    my $query_file = $TEMPDIR."/".$cogeweb->basefilename.".q.".$hsp_name.".png";
+    my $query_file = $cogeweb->basefile.".q.".$hsp_name.".png";
     $cq->generate_png(file=>$query_file);
-    my $sub_file = $TEMPDIR."/".$cogeweb->basefilename.".s.".$hsp_name.".png";
+    my $sub_file = $cogeweb->basefile.".s.".$hsp_name.".png";
     $cs->generate_png(file=>$sub_file);
     return $query_file, $sub_file;
   }
@@ -1311,7 +1312,7 @@ sub overlap_feats_parse #Send to GEvo
 sub initialize_sqlite
   {
     my $dbfile = $cogeweb->sqlitefile;
-    $dbfile = $TEMPDIR."/".$dbfile unless $dbfile =~ /$TEMPDIR/;
+#    $dbfile = $TEMPDIR."/".$dbfile unless $dbfile =~ /$TEMPDIR/;
     return if -r $dbfile;
     my $dbh = DBI->connect("dbi:SQLite:dbname=$dbfile","","")  || die "cant connect to db";
     my $create = qq{
@@ -1450,7 +1451,7 @@ sub get_nearby_feats
 #    print STDERR Dumper \%opts;
     my $hsp_id = $opts{num};
     my $filename = $opts{basefile};
-    $cogeweb = initialize_basefile(basename=>$filename);
+    $cogeweb = initialize_basefile(basename=>$filename, prog=>"CoGeBlast");
     my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
     $hsp_id =~ s/^table_row// if $hsp_id =~ /table_row/;
     $hsp_id =~ s/^\d+_// if $hsp_id =~ tr/_/_/ > 1;
@@ -1592,7 +1593,7 @@ sub generate_excel_feature_file
   {
     my $accn_list = shift;
     my $filename = shift;
-    $cogeweb = initialize_basefile(basename=>$filename);
+    $cogeweb = initialize_basefile(basename=>$filename, prog=>"CoGeBlast");
     my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
     my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data WHERE name = ?});
 
@@ -1647,7 +1648,7 @@ sub generate_tab_deliminated
   {
     my $accn_list = shift;
     my $filename = shift;
-    my $cogeweb = initialize_basefile(basename=>$filename);
+    my $cogeweb = initialize_basefile(basename=>$filename, prog=>"CoGeBlast");
     my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
     
     my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data WHERE name = ?});
