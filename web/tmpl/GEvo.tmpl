@@ -407,11 +407,15 @@ function update_colors(hsp_num) {
 function get_seq(seq_num)
  {
   var fid = $('#featid'+seq_num).val();
+
   var rc = $('input[name=rev1]:checked').val();
   var left = $('#drup'+seq_num).val();
   var right = $('#drdown'+seq_num).val();
+  var dsid = $('#posdsid'+seq_num).val();
+  var pos = $('#pos'+seq_num).val();
+  var chr = $('#chr'+seq_num).val();
   //alert (fid+"::"+rc+"::"+left+"::"+right);
- window.open("SeqView.pl?featid="+fid+"&upstream="+left+"&downstream="+right+"&rc="+rc);
+ window.open("SeqView.pl?featid="+fid+"&dsid="+dsid+"&chr="+chr+"&start="+pos+"&upstream="+left+"&downstream="+right+"&rc="+rc);
  }
 
 
