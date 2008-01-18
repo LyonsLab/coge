@@ -831,9 +831,8 @@ window.open('/CoGe/MatrixView.pl?matrix='+matrix);
   <TH colspan="3">
   <div id="cogeblast_option">
   <a href="#" id="coge_blast_button" onClick="blastOff();"><span>CoGe BLAST</span></a><br>
-   <DIV class="cogeblast_opts">
-   <DIV id = "co" name="slider" class="topItem" onMouseOver="$('#co').removeClass('topItem').addClass('topItemSelected');" onMouseOut="$('#co').removeClass('topItemSelected').addClass('topItem');" onClick='animate_section("#coge_blast", "slideToggle")'>CoGe BLAST Options:</DIV>
-   <DIV class="dropMenu" id="coge_blast">
+   <DIV id = "co" name="slider" class="topItem">CoGe BLAST Options:</DIV>
+   <DIV class="dropMenu" id="query_seqs">
    <TABLE class="list" >
        <TR>
           <TD>
@@ -1253,7 +1252,6 @@ window.open('/CoGe/MatrixView.pl?matrix='+matrix);
     <TMPL_IF NAME="REST">
      </TR>
     </TABLE>
-</DIV>
  </DIV>
   </div>
  </TR>
@@ -1262,9 +1260,8 @@ window.open('/CoGe/MatrixView.pl?matrix='+matrix);
 <!--  <TD> -->
    <TH colspan="3">
    <DIV class="mainDiv">
-   <DIV id = "dr" class="topItem" onMouseOver="$('#dr').removeClass('topItem').addClass('topItemSelected');" onMouseOut="$('#dr').removeClass('topItemSelected').addClass('topItem');" onClick='animate_section("#query_seqs", "slideToggle")'>Query Sequence(s):</DIV>
+   <DIV id = "dr" class="topItem">Query Sequence(s):</DIV>
    <DIV class="dropMenu" id="query_seqs">
-   <DIV class="subMenu" style="display:inline;">
    <TABLE> 
    <THEAD align="left">
    <TH>Sequences (fasta format):</TH>
