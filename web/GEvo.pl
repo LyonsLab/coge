@@ -970,6 +970,7 @@ INSERT INTO image_info (id, iname, title, px_width,dsid, chromosome, bpmin, bpma
 	    my ($min_nt) = sort {$a<=>$b} map {@$_} @{$feat->segments}; 
 	    my $length_nt = $max_nt-$min_nt;
 	    my $length_pix = $xmax-$xmin;
+	    next if $length_nt == 0 || $length_pix == 0;
 	    if ($feat->{anchor})
 	      {
 		my $start = $feat->start;
