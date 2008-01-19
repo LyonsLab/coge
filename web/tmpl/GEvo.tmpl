@@ -363,7 +363,7 @@ function monitor_log(log)
   if (match && match[0])
    { 
      match.reverse();  
-     sequence = "Generating "+match[0];
+     sequence = "Generating "+match[0]+". . .";
    }
    match=log.match(/running\s+(\(.*?\))/g);
    if (match && match[0]) {
