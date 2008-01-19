@@ -76,7 +76,7 @@ sub gen_body
     my $dsid = $form->param('dsid') if $form->param('dsid');
     my $ftid = $form->param('ftid') if $form->param('ftid');
     push @$feat_list, @{get_fids_from_dataset(dsid=>$dsid, ftid=>$ftid)} if $dsid;
-    my $table = generate_table(feature_list=>$feat_list, sort_by_type=>$sort_by_type, sort_by_location=>$sort_by_location);
+    my $table = generate_table(feature_list=>$feat_list, ftid=>$ftid);
     if ($table)
       {
 	$template->param(INFO=>$table);
@@ -108,6 +108,7 @@ sub generate_table
     my %opts = @_;
     my $feat_list = $opts{feature_list};
     my $show_gc = $opts{show_gc} || 1;
+    my $ftid = $opts{ftid};
     return unless @$feat_list;
     my @table;
     my $count = 1;
@@ -119,6 +120,10 @@ sub generate_table
 	{
 #	  warn "feature id $featid failed to return a valid feature object\n";
 	  next;
+	}
+      if ($ftid) 
+	{
+	  next unless $feat->type->id eq $ftid;
 	}
       my $featid = $feat->id;
       my ($name) = $feat->names;
