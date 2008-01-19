@@ -269,8 +269,9 @@ sub gen_foot
       $template->param(ADD_EXTRA=>1);
       $template->param(RANGE=>1);
       }
-    my $link = find_feats(dsid=>$dsid, start=>$start, stop=>$stop, chr=>$chr);
+    my ($link, $types) = find_feats(dsid=>$dsid, start=>$start, stop=>$stop, chr=>$chr);
     $template->param(FEATLISTLINK=>$link);
+    $template->param(FEAT_TYPE_LIST=>$types);
    $template->param(REST=>1);
    #print STDERR $template->output."\n";
    my $html = $template->output;
@@ -346,17 +347,17 @@ sub find_feats
 	my $dsid = $opts{'dsid'};
 #	my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SeqView.tmpl');
 	my $link = "FeatList.pl?";
+	my %type;
 	foreach my $feat ( $coge->get_features_in_region(start=>$start,stop=>$stop,chr=>$chr,dataset_id=>$dsid))
 	  {
 	    $link.="&fid=".$feat->id;
+	    $type{$feat->feature_type->name}=$feat->feature_type->id;
 	  }
-#	my $html = `$ENV{PATH}/FeatAnno.pl start=$start stop=$stop ds=$dsid chr=$chr`;
-#	$html = substr($html, (44), length($html));
-#        $template->param(FEATUREBOX=>1);
-#        $template->param(LISTFEATURES=>$html);
-        #$template->param(FEATTABLE=>qq{style = "overflow: auto; height: 300px;"});
-#        $html = $template->output;
-        return $link;
+	$type{All}=0;
+	my $type = qq{<SELECT ID="feature_type">};
+	$type .= join ("\n", map {"<OPTION value=".$type{$_}.">".$_."</option>"} sort keys %type)."\n";
+	$type .= "</select>";
+        return $link,$type;
 }
 
 sub generate_feat_info
