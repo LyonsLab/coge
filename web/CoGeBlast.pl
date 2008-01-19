@@ -496,6 +496,8 @@ sub gen_results_page
 					FEATURE_PID=>qq{<a href="#" onclick="update_hsp_info('table_row$fid')">}.$hsp->percent_id."</a>",
 					FEATURE_SCORE=>qq{<a href="#" onclick="update_hsp_info('table_row$fid')">}.$hsp->score."</a>",
 					FEATURE_LENGTH=>qq{<a href="#" onclick="update_info_box('table_row$fid')">$length</a>},
+					FEATURE_START=>qq{<a href="#" onclick="update_info_box('table_row$fid')">}.$feature->start."</a>",
+					FEATURE_CHR=>qq{<a href="#" onclick="update_info_box('table_row$fid')">}.$feature->chromosome."</a>",
 					FEATURE_ORG=>qq{<a href="#" onclick="update_info_box('table_row$fid')">$org</a>},};
 			  push @check,{name=>$name,score=>$hsp->score};
 			}
