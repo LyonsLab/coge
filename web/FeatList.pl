@@ -24,8 +24,9 @@ $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 
 my $pj = new CGI::Ajax(
 		       gen_html=>\&gen_html,
-		       feats_parse=>\&feats_parse,
-		       export_fasta_file=>\&export_fasta_file,
+		       gevo=>\&gevo,
+		       blast=>\&blast,
+		       get_fasta_seqs=>\&get_fasta_seqs,
 		       generate_excel_file=>\&generate_excel_file,
 		       codon_table=>\&codon_table,
 		       protein_table=>\&protein_table,
@@ -175,7 +176,7 @@ sub generate_table
     return \@featlist;
   }
   
-  sub feats_parse #Send to GEvo
+  sub gevo #Send to GEvo
   {
     my $accn_list = shift;
     $accn_list =~ s/^,//;
@@ -194,7 +195,16 @@ sub generate_table
     return $url;
   }
   
-  sub export_fasta_file
+  sub blast #send to cogeblast
+    {
+    my $accn_list = shift;
+    $accn_list =~ s/^,//;
+    $accn_list =~ s/,$//;
+    my $url = "/CoGe/CoGeBlast.pl?featid=$accn_list";
+    return $url;
+  }
+  
+  sub get_fasta_seqs
   {
     my $accn_list = shift;
     $accn_list =~ s/^,//;
