@@ -357,9 +357,13 @@ function monitor_log(log)
      database = database+"done!\n";
      finished=1;
     }
-
-   if (log.match(/sequence/)) {
-     sequence = "Generating sequence files. . .";
+   
+   match=log.match(/sequence file\s+(\d+)/g);
+//  console.log(log);
+  if (match && match[0])
+   { 
+     match.reverse();  
+     sequence = "Generating "+match[0];
    }
    match=log.match(/running\s+(\(.*?\))/g);
    if (match && match[0]) {
