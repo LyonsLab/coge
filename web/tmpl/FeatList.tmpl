@@ -9,13 +9,16 @@ function feature_checkboxes(){
     return;
   }
   if(action == "gevo") {
-    feats_parse(['args__'+accn],[export_url]);
+    gevo(['args__'+accn],[export_url]);
   }
   else if (action == "fasta"){
-    export_fasta_file(['args__'+accn],[export_url]);
+    get_fasta_seqs(['args__'+accn],[export_url]);
   }
   else if (action == "xls"){
     generate_excel_file(['args__'+accn],[export_url]);
+  }
+  else if (action == "blast"){
+    blast(['args__'+accn],[export_url]);
   }
   else {
     alert("We will get this working ... soon.");
@@ -121,8 +124,9 @@ jQuery.fn.unCheckCheckboxes = function()
  <div id='gevo_button' style="float:left">
  			Do Following to Checked Features:  
  			<select name=checked_action id=checked_action>
-                 <option value = "gevo">Send to GEvo</option>
-           		 <option value = "fasta">Create FASTA File</option>
+	                 <option value = "gevo">Send to GEvo</option>
+	                 <option value = "blast">Send to CoGeBlast</option>
+           		 <option value = "fasta">Get FASTA Sequences</option>
            		 <option value = "xls">Export to Excel</option>
           </selected>  
           <input type=button value="Go" onClick="feature_checkboxes()">    
