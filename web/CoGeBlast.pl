@@ -492,13 +492,13 @@ sub gen_results_page
 			  my $pid = $hsp->percent_id =~ /\./ ? $hsp->percent_id : $hsp->percent_id.".0";
 			  push @table, {FID=>$fid,FEATURE_NAME=>qq{<a href="#" onclick="update_info_box('table_row$fid')">$name</a>},
 					FEATURE_HSP=>qq{<a href="#" onclick="update_hsp_info('table_row$fid')">}.$hsp->number."</a>",
-					FEATURE_EVAL=>qq{<a href="#" onclick="update_hsp_info('table_row$fid')">}.$hsp->pval."</a>",
-					FEATURE_PID=>qq{<a href="#" onclick="update_hsp_info('table_row$fid')">}.$hsp->percent_id."</a>",
-					FEATURE_SCORE=>qq{<a href="#" onclick="update_hsp_info('table_row$fid')">}.$hsp->score."</a>",
-					FEATURE_LENGTH=>qq{<a href="#" onclick="update_info_box('table_row$fid')">$length</a>},
-					FEATURE_START=>qq{<a href="#" onclick="update_info_box('table_row$fid')">}.$feature->start."</a>",
-					FEATURE_CHR=>qq{<a href="#" onclick="update_info_box('table_row$fid')">}.$feature->chromosome."</a>",
-					FEATURE_ORG=>qq{<a href="#" onclick="update_info_box('table_row$fid')">$org</a>},};
+					FEATURE_EVAL=>$hsp->pval,
+					FEATURE_PID=>$hsp->percent_id,
+					FEATURE_SCORE=>$hsp->score,
+					FEATURE_LENGTH=>$length,
+					FEATURE_START=>,$feature->start,
+					FEATURE_CHR=>$feature->chromosome,
+					FEATURE_ORG=>$org,};
 			  push @check,{name=>$name,score=>$hsp->score};
 			}
 			$flag=0;
@@ -509,28 +509,33 @@ sub gen_results_page
 		       my $id = $hsp->number."_".$dsid;
 		       my $no_link = qq{<a href="#" onclick="fill_nearby_feats('$id')">Click for Closest Feature</a>};
 		       push @no_feat, {
-		       				CHECKBOX=>$id."_".$chr."_".$hsp->subject_start."no",
-		       				ID=>$id,
-		       			   NO_FEAT_ORG=>$org,
-		       			   NO_FEAT=>qq{<a href="#" onclick="update_hsp_info('table_row$id')">}.$hsp->number."</a>",
-		       			   NO_FEAT_EVAL=>qq{<a href="#" onclick="update_hsp_info('table_row$id')">}.$hsp->pval."</a>",
-				             NO_FEAT_PID=>qq{<a href="#" onclick="update_hsp_info('table_row$id')">}.$hsp->percent_id."</a>",
-				             NO_FEAT_SCORE=>qq{<a href="#" onclick="update_hsp_info('table_row$id')">}.$hsp->score."</a>",
-		       			   NO_FEAT_LINK=>$no_link};
+				       CHECKBOX=>$id."_".$chr."_".$hsp->subject_start."no",
+				       ID=>$id,
+				       NO_FEAT_ORG=>$org,
+				       NO_FEAT=>qq{<a href="#" onclick="update_hsp_info('table_row$id')">}.$hsp->number."</a>",
+				       NO_FEAT_EVAL=>$hsp->pval,
+				       NO_FEAT_PID=>$hsp->percent_id,
+				       NO_FEAT_SCORE=>$hsp->score,
+				       NO_FEAT_POS=>$hsp->subject_start,
+				       NO_FEAT_CHR=>$chr,
+				       NO_FEAT_LINK=>$no_link};
 		     }
 		 }
 		 else {
-		   #print STDERR "We have some no feat-hit hsps\n";
 		   my $id = $hsp->number."_".$dsid;
 		   my $no_link = qq{<a href="#" onclick="fill_nearby_feats('$id')">Click for Closest Feature</a>};
-		   push @no_feat, {CHECKBOX=>$id."_".$chr."_".$hsp->subject_start."no",
-		   					ID=>$id,
-		       			   NO_FEAT_ORG=>$org,
-		       			   NO_FEAT=>qq{<a href="#" onclick="update_hsp_info('table_row$id')">}.$hsp->number."</a>",
-		       			   NO_FEAT_EVAL=>qq{<a href="#" onclick="update_hsp_info('table_row$id')">}.$hsp->pval."</a>",
-				             NO_FEAT_PID=>qq{<a href="#" onclick="update_hsp_info('table_row$id')">}.$hsp->percent_id."</a>",
-				             NO_FEAT_SCORE=>qq{<a href="#" onclick="update_hsp_info('table_row$id')">}.$hsp->score."</a>",
-		       			   NO_FEAT_LINK=>$no_link};
+		       push @no_feat, {
+				       CHECKBOX=>$id."_".$chr."_".$hsp->subject_start."no",
+				       ID=>$id,
+				       NO_FEAT_ORG=>$org,
+				       NO_FEAT=>qq{<a href="#" onclick="update_hsp_info('table_row$id')">}.$hsp->number."</a>",
+				       NO_FEAT_EVAL=>$hsp->pval,
+				       NO_FEAT_PID=>$hsp->percent_id,
+				       NO_FEAT_SCORE=>$hsp->score,
+				       NO_FEAT_POS=>$hsp->subject_start,
+				       NO_FEAT_CHR=>$chr,
+				       NO_FEAT_LINK=>$no_link};
+
 		 }
 		 populate_sqlite($hsp,$dsid);
 	       }
@@ -543,10 +548,6 @@ sub gen_results_page
        {
 	 $null = "null";
        }
-     #table sort!
-#     @table = sort {$a->{FEATURE_ORG} cmp $b->{FEATURE_ORG} || $a->{FEATURE_HSP} <=> $b->{FEATURE_HSP} || $a->{FEATURE_EVAL} <=> $b->{FEATURE_EVAL} } @table;
-#     @table = sort {$a->{FEATURE_ORG} cmp $b->{FEATURE_ORG} || $a->{FEATURE_HSP} <=> $b->{FEATURE_HSP} } @table;
-     
      my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CoGeBlast.tmpl');
 	 $template->param(OVERLAP_FEATURE_IF=>1);
      # ERIC, i added this so it woulndt fail
