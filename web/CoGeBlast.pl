@@ -38,7 +38,7 @@ $FASTADIR = $DATADIR.'/fasta/';
 $BLASTDBDIR = $DATADIR.'/blast/db/';
 $TEMPURL = "/CoGe/tmp/CoGeBlast";
 $FORMATDB = "/usr/bin/formatdb";
-$BLAST = "/usr/bin/blast";
+$BLAST = "/usr/bin/blast -a 6";
 $BLASTZ = "/usr/bin/blastz";
 
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
@@ -1458,7 +1458,7 @@ sub get_nearby_feats
     $hsp_id =~ s/^table_row// if $hsp_id =~ /table_row/;
     $hsp_id =~ s/^\d+_// if $hsp_id =~ tr/_/_/ > 1;
     
-    my $name;
+    my $name = "None";
     #my $checkbox = " ";
     my $distance = ">250";
     my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data WHERE name = ?});
@@ -1487,7 +1487,6 @@ sub get_nearby_feats
 	  last if ($sstop - $sstart) > 256000;
 	  $count *= 4;
 	}
-	my $html = qq{<a href="#" onClick="\$('#overlap_box').slideToggle(pageObj.speed);" style="float: right;"><img src='/CoGe/picts/delete.png' width='16' height='16' border='0'></a>};
 	my @feat_low;
 	my @feat_high;
 	my $closest_feat;
@@ -1511,8 +1510,8 @@ sub get_nearby_feats
 	  }
 	  unless(@feat_low or @feat_high)
 	  {
-	 	$html .= "No Features within 250 kb of HSP No. $hsp_num";
-	  	return $html;
+	 	$distance = "No Features within 250 kb of HSP No. $hsp_num";
+		return ($name, $distance);
 	  }
 	  my ($feat_low) = sort {$b->stop <=> $a->stop} @feat_low if @feat_low;
 	  my ($feat_high) = sort {$a->start <=> $b->start}@feat_high if @feat_high;
@@ -1537,34 +1536,23 @@ sub get_nearby_feats
 	  #print STDERR $distance,"\n";
 	  my $upstream = $distance =~ s/!$//;
 	
-	  my $tmp_dist = $distance;
 	  my $val = $closest_feat->id."_".$hsp_id;
 	  if ($distance >= 1000) 
 	  {
 		$distance = $distance / 1000;
-	  	$distance .= " kb";
+	  	$distance .= "kb";
 	  }
 	  else {
-		$distance .= " bp";
+		$distance .= "bp";
 	  }
-	  #print STDERR $distance,"\n";
 	  $distance .= $upstream ? " upstream" : " downstream";
-	  $html .= "Feature Closest to HSP No. $hsp_num: <br><br>";
-	  $html .= $closest_feat->annotation_pretty_print_html();
 	  ($name) = sort $closest_feat->names;
 	  $name = qq{<a href="#" onclick=update_info_box('no_feat}.$closest_feat->id."_".$hsp_num."_".$dsid."')>$name</a>";
-	  #$checkbox = "<input type=checkbox name='nofeat_checkbox' value='".$closest_feat->id."_".$hsp_num."_".$dsid."'  id='nofeat_checkbox".$closest_feat->id."_".$hsp_num."_".$dsid."'>";
-	  $html .= "<font class=\"title4\">Distance from HSP:</font> <font class=\"data\">$distance</font>";
-	  $distance = $tmp_dist;
-	  #print STDERR $distance,"\n";
 	}	
 	else {
-	 $html .= "No Features within 250 kb of HSP No. $hsp_num";
-	 $name = "None";
+	 $distance = "No Features within 250 kb of HSP No. $hsp_num";
 	}
-	$distance /= 1000;
-	$distance = sprintf("%.3f", $distance);
-	return $html,$name,$distance;
+	return $name,$distance;
 }
 
 
