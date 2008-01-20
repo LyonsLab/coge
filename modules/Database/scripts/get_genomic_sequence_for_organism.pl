@@ -83,7 +83,7 @@ sub get_accn_locs {
         if(! $use_contigs && $feat->chromosome =~ /(^contig|random)/i ){ next; }
         if(! $use_supers && $feat->chromosome =~ /super/i ){ next; }
         my ($chr) = $feat->chromosome =~ /(\d+)/;
-        print STDERR $chr . "\n";
+        #print STDERR $chr . "\n";
         if(length($chr) > 2){ next; } 
         if($chr > $MAX_CHR){ next; } 
         $seen{$id}++;
