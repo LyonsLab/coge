@@ -79,7 +79,7 @@ sub get_accn_locs {
                             ,limit    => 1
                         })->single(); 
         if(!$feat){ next; }
-        print STDERR $feat->chromosome . "\n";
+        #print STDERR $feat->chromosome . "\n";
         if(! $use_contigs && $feat->chromosome =~ /(^contig|random)/i ){ next; }
         if(! $use_supers && $feat->chromosome =~ /super/i ){ next; }
         my ($chr) = $feat->chromosome =~ /(\d+)/;
