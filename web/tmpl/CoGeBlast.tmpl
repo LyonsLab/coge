@@ -38,13 +38,6 @@ $(document).ready(function(){
 function update_info_box(featid) {
  var table_width = $('#overlap').width();
  $('#overlap_box').width(table_width);
- //if(pageObj.highlight)
- //{
- //  $('#'+pageObj.highlight).removeClass('highlight');
-// }
- //$('#'+featid).addClass('highlight');
- //pageObj.highlight = featid;
- //alert(table_width);
  if ($('#overlap_box').is(':hidden')) $('#overlap_box').slideDown(pageObj.speed);
   generate_feat_info(['args__'+featid],['overlap_box']);
  
@@ -74,7 +67,6 @@ function add_to_list(ds,org){
    return;
   }
   var html = '<option id='+ds+' value='+ds+'>'+org+'</option>';
-  //alert(html);
   $('#blank').remove();
   $('#db_choice').append(html).sortSelect();
   counting();
@@ -88,18 +80,13 @@ function loading(id,msg) {
 function fill_nearby_feats(id) {
  var table_width = $('#overlap').width() || 300;
  $('#overlap_box').width(table_width);
- if ($('#overlap_box').is(':hidden')) $('#overlap_box').slideDown(pageObj.speed);
- get_nearby_feats(['args__basefile','args__'+pageObj.basename,'args__num','args__'+id],['overlap_box','feat'+id,'dist'+id]);
+ get_nearby_feats(['args__basefile','args__'+pageObj.basename,'args__num','args__'+id],['feat'+id,'dist'+id]);
 }
 
 
 function overlap_checkboxes() {
   var action = $('#overlap_action').val();
   var accn = $('#feature_list').getCheckboxes();
-  //if ($('#no_feat_checkbox').is(':checked')) {
- //   accn = accn + $('#no_feat_checkbox').val()+",";
- // }
-  //alert(accn);
   if (accn == ",") {
     alert("You have not checked any features.");
     return;
@@ -1733,8 +1720,7 @@ window.open('/CoGe/MatrixView.pl?matrix='+matrix);
                   <TH class=header>E-value</TH>
                   <TH class=header>Perc ID</TH>
                   <TH class=header>Score</TH>
-                  <TH class=header>Feature</TH>
-                  <TH class=header>Dist (kb)</TH>
+                  <TH class=header>Closest Feature</TH>
                  </TR>
                </THEAD>
                <tbody id=no_feats style="overflow: auto">
@@ -1747,8 +1733,7 @@ window.open('/CoGe/MatrixView.pl?matrix='+matrix);
                    <td><TMPL_VAR NAME=NO_FEAT_EVAL></td>
                    <td><TMPL_VAR NAME=NO_FEAT_PID></td>
                    <td><TMPL_VAR NAME=NO_FEAT_SCORE></td>
-                   <td style="white-space:nowrap;" id="feat<TMPL_VAR NAME=ID>"><TMPL_VAR NAME=NO_FEAT_LINK></td>
-                   <td style="white-space:nowrap;" id="dist<TMPL_VAR NAME=ID>">-</td>
+                   <td style="white-space:nowrap;"><div id ="feat<TMPL_VAR NAME=ID>"><TMPL_VAR NAME=NO_FEAT_LINK></div><div id="dist<TMPL_VAR NAME=ID>"></div></td>
                  </tr>
                </TMPL_LOOP>
               </tbody>
