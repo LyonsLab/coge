@@ -1673,31 +1673,32 @@ window.open('/CoGe/MatrixView.pl?matrix='+matrix);
    	<THEAD>
          <TR align=middle>
           <TH class=small>click to sort &rarr;</TH>
+          <TH class="header" >Org</TH>
           <TH class="header" >Name</TH>
+	  <TH class="header" >Chr</TH>
+	  <TH class="header" >Position</TH>
+          <TH class="header" >Feat Length</TH>
           <TH class="header" >HSP No.</TH>
           <TH class="header" >E-Value</TH>
           <TH class="header" >Percent ID</TH>
           <TH class="header" >Score</TH>
-	  <TH class="header" >Feat Start</TH>
-	  <TH class="header" >Feat Chr</TH>
-          <TH class="header" >Feat Length</TH>
-          <TH class="header" >Org</TH>
+
          </TR>
          </THEAD>
          <TBODY id=overlap_body style="overflow: auto;">
          <TMPL_LOOP NAME=FEATURE_TABLE>
          <TR id="table_row<TMPL_VAR NAME=FID>" align=right class="feat">
-         <!--onmouseover="$('#table_row<TMPL_VAR NAME=FID>').addClass('highlight_tablerows');" onmouseout="$('#table_row<TMPL_VAR NAME=FID>').removeClass('highlight_tablerows');"-->
           <TD><input type=checkbox id="feature_checkbox<TMPL_VAR NAME=FID>" name="feature_checkbox" value="<TMPL_VAR NAME=FID>"></TD>
+          <TD title="Click for feature info" style="white-space:nowrap;"><TMPL_VAR NAME=FEATURE_ORG></TD>
           <TD title="Click for feature info"><TMPL_VAR NAME=FEATURE_NAME></TD>
+          <TD title="Click for feature info"><TMPL_VAR NAME=FEATURE_CHR></TD>
+          <TD title="Click for feature info"><TMPL_VAR NAME=FEATURE_START></TD>
+          <TD title="Click for feature info"><TMPL_VAR NAME=FEATURE_LENGTH></TD>
           <TD title="Click for HSP info"><TMPL_VAR NAME=FEATURE_HSP></TD>
           <TD title="Click for HSP info"><TMPL_VAR NAME=FEATURE_EVAL></TD>
           <TD title="Click for HSP info"><TMPL_VAR NAME=FEATURE_PID></TD>
           <TD title="Click for HSP info"><TMPL_VAR NAME=FEATURE_SCORE></TD>
-          <TD title="Click for feature info"><TMPL_VAR NAME=FEATURE_START></TD>
-          <TD title="Click for feature info"><TMPL_VAR NAME=FEATURE_CHR></TD>
-          <TD title="Click for feature info"><TMPL_VAR NAME=FEATURE_LENGTH></TD>
-          <TD title="Click for feature info" style="white-space:nowrap;"><TMPL_VAR NAME=FEATURE_ORG></TD>
+
          </TR>
         </TMPL_LOOP>
         </TBODY>
@@ -1714,8 +1715,10 @@ window.open('/CoGe/MatrixView.pl?matrix='+matrix);
                <caption>HSPs w/o overlapping features:</caption>
                <THEAD>
                 <TR align=middle>
-                  <TH> </TH>
+                  <TH class=small>click to sort &rarr;</TH>
                   <TH class=header>Org</TH>
+		  <TH class=header>Chr</TH>
+ 		  <TH class="header" >Position</TH>	
                   <TH class=header>HSP No.</TH>
                   <TH class=header>E-value</TH>
                   <TH class=header>Perc ID</TH>
@@ -1727,8 +1730,10 @@ window.open('/CoGe/MatrixView.pl?matrix='+matrix);
                <TMPL_LOOP NAME=NO_FEATS>
                <!--onclick="hide_big_picture();show_hsp_div();loading('image_info','Information');loading('query_image','Image');loading('subject_image','Image');get_hsp_info(['args__blastfile','args__'+pageObj.basename,'args__num','args__<TMPL_VAR NAME=ID>'],['image_info','query_image','subject_image']);"-->
                  <tr class="feat" id="<TMPL_VAR NAME=ID>" >
-                   <td id="checkbox<TMPL_VAR NAME=CHECKBOX>"><input type=checkbox id="<TMPL_VAR NAME=CHECKBOX>" value="<TMPL_VAR NAME=CHECKBOX>"></td>
+                   <td align=right id="checkbox<TMPL_VAR NAME=CHECKBOX>"><input type=checkbox id="<TMPL_VAR NAME=CHECKBOX>" value="<TMPL_VAR NAME=CHECKBOX>"></td>
                    <td style="white-space:nowrap;"><TMPL_VAR NAME=NO_FEAT_ORG></td>
+                   <td><TMPL_VAR NAME=NO_FEAT_CHR></td>
+                   <td><TMPL_VAR NAME=NO_FEAT_POS></td>
                    <td><TMPL_VAR NAME=NO_FEAT></td>
                    <td><TMPL_VAR NAME=NO_FEAT_EVAL></td>
                    <td><TMPL_VAR NAME=NO_FEAT_PID></td>
