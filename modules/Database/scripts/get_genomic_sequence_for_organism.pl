@@ -10,8 +10,8 @@ use DB_File;
 
 # for orgs with lots of super contigs, only take this many
 # (will take the first ones).
-my $use_supers = 0;
-my $MAX_CHR = 20;
+my $use_supers = 1;
+my $MAX_CHR = 99;
 
 
 my %options;
@@ -50,6 +50,7 @@ my $outdir   = ($options{d} or ".") . "/";
 chomp $outdir;
 
 print STDERR "usings datasets: " . join(",", @$datasets) . " for $organism ...\n";
+
 if(defined $options{t}){
     get_10kmers($organism, $datasets, $use_contigs);
     exit();
@@ -78,9 +79,11 @@ sub get_accn_locs {
                             ,limit    => 1
                         })->single(); 
         if(!$feat){ next; }
-        if(! $use_contigs && $feat->chromosome =~ /(contig|contig|random)/i ){ next; }
+        print STDERR $feat->chromosome . "\n";
+        if(! $use_contigs && $feat->chromosome =~ /(^contig|random)/i ){ next; }
         if(! $use_supers && $feat->chromosome =~ /super/i ){ next; }
         my ($chr) = $feat->chromosome =~ /(\d+)/;
+        print STDERR $chr . "\n";
         if(length($chr) > 2){ next; } 
         if($chr > $MAX_CHR){ next; } 
         $seen{$id}++;
@@ -122,9 +125,8 @@ sub get_10kmers {
     my %order;
     foreach my $gs ( $s->resultset('GenomicSequence')->search(
                         { 'dataset_id'   => {'IN' => $datasets } 
-                          , 'chromosome' => {'NOT LIKE' => 'contig%' }
                         }, { order_by => ['start'] } )) {
-            if(!$use_contigs && $gs->chromosome =~ /(contig|super|random)/i ){ next; }
+            if(!$use_contigs && $gs->chromosome =~ /(^contig|random)/i ){ next; }
             my ($chr) = $gs->chromosome =~ /(\d+)/;
             if(length($chr) > 2){ next; } 
             $chr = sprintf("%02i", $chr);
