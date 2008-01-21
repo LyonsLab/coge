@@ -8,7 +8,7 @@ use GD;
 
 #for best performance, create all the chromosomes before generating the features.
 
-__PACKAGE__->mk_accessors(qw(organism chromosomes features image_width image_height legend_height _default_feature_color _gd _color_set color_band_flag legend chromosome_height));
+__PACKAGE__->mk_accessors(qw(organism chromosomes features image_width image_height legend_height _default_feature_color _gd _color_set color_band_flag legend chromosome_height show_count));
 
 my $DEFAULT_COLOR = [255,0,0];
 my $FONT = GD::Font->MediumBold;
@@ -187,13 +187,10 @@ sub generate_chromosomes
 	$gd->rectangle($horz_spacer, $count*$vert_spacer, $horz_spacer+$width, $count*$vert_spacer+$height, $black);
 	$gd->arc($horz_spacer, $count*$vert_spacer+$height/2, $height, $height, 90, 270, $black);
 	$gd->arc($horz_spacer+$width, $count*$vert_spacer+$height/2, $height, $height, 270, 90, $black);
-	$gd->line($horz_spacer, $count*$vert_spacer+1, $horz_spacer, $count*$vert_spacer+$height-1, $white);
-	$gd->line($horz_spacer+$width, $count*$vert_spacer+1, $horz_spacer+$width, $count*$vert_spacer+$height-1, $white);
+	$gd->line($horz_spacer, $count*$vert_spacer, $horz_spacer, $count*$vert_spacer+$height, $white);
+	$gd->line($horz_spacer+$width, $count*$vert_spacer, $horz_spacer+$width, $count*$vert_spacer+$height, $white);
         $gd->stringFT($black, $FONTTT, $vert_spacer/5, 0, 5, $count*$vert_spacer, $name);
-#	$gd->string($FONT, 5, $count*$vert_spacer-$FONT->height, $name, $black);
-#	$gd->string($FONT, $horz_spacer-$FONT->width*(length($chrs->{$name}{start})+1), $count*$vert_spacer-$FONT->height, $chrs->{$name}->{start}, $black);
 	$gd->stringFT($black, $FONTTT, $vert_spacer/5, 0, $real_width, $count*$vert_spacer, $chrs->{$name}->{end});
-	#$gd->string($FONT, $horz_spacer+$width+10, $count*$vert_spacer-$FONT->height, $chrs->{$name}->{end}, $black);
 	$self->draw_centromere($horz_spacer, $count*$vert_spacer, $width, $height, $cstart/$chrs->{$name}->{end}, $cend/$chrs->{$name}->{end}, $black) if $cstart && $cend;
 	$self->draw_features($chrs->{$name}, $horz_spacer, $count*$vert_spacer, $width, $height);
 
@@ -218,37 +215,59 @@ sub draw_features
     my $up = 1;
     my $color_band_flag = $self->color_band_flag;
     return unless $feats->{$chr->{name}};
-    my $black = $gd->colorAllocate(0,0,0);
+    my $black = $self->get_color([0,0,0]);
+    my $white = $self->get_color([255,255,255]);
+    my %points;
     foreach my $feat (@{$feats->{$chr->{name}}})
       {
-	my $color = $feat->{color};
-	$color = $self->get_color($color) if ref ($color) =~ /array/i;
-	$color = $self->default_feature_color unless $color;
-	$y = sprintf("%.0f", $y);
 	my $x1 = sprintf("%.0f",$x+$feat->{end}/$chr->{end}*$width);
-	my $poly = new GD::Polygon;
-	$up = $feat->{up} if defined $feat->{up};
-	if ($up)
-	  {
-	    $poly->addPt($x1, $y);
-	    $poly->addPt(sprintf("%.0f",$x1-$height/5), sprintf("%.0f",$y-$height/1.3));
-	    $poly->addPt(sprintf("%.0f",$x1+$height/5), sprintf("%.0f",$y-$height/1.3));
-	    $up = 0;
-	  }
-	else
-	  {
-	    $poly->addPt($x1, $y+$height);
-	    $poly->addPt(sprintf("%.0f",$x1-$height/5), sprintf("%.0f",$y+$height+$height/1.3));
-	    $poly->addPt(sprintf("%.0f",$x1+$height/5), sprintf("%.0f",$y+$height+$height/1.3));
-	    $up = 1;
-	  }
-	$gd->filledPolygon($poly, $color);
-	$gd->openPolygon($poly, $black);
-	if ($color_band_flag)
-	  {
-	    $gd->line($x1, $y, $x1, $y+$height, $color);
-	  }
+	$points{$x1}{0}{count}=0 unless defined $points{$x1}{0}{count};
+	$points{$x1}{1}{count}=0 unless defined $points{$x1}{1}{count};
+	$points{$x1}{$feat->{up}}{count}++;
+	$points{$x1}{$feat->{up}}{color} = $feat->{color};
       }
+    foreach my $x1 (sort {$points{$a}{0}{count}+$points{$a}{1}{count} <=> $points{$b}{0}{count}+$points{$b}{1}{count}} keys %points)
+     {
+       foreach my $up (keys %{$points{$x1}})
+	 {
+	   my $count = $points{$x1}{$up}{count};
+	   next unless $count;
+#	   print STDERR $points{$x1}{$up}{count},"\n", Dumper $points{$x1};
+	   my $color = $points{$x1}{$up}{color};
+	   $color = $self->get_color($color) if ref ($color) =~ /array/i;
+	   $color = $self->default_feature_color unless $color;
+	   
+	   $y = sprintf("%.0f", $y);
+	   my $poly = new GD::Polygon;
+	   if ($up)
+	     {
+	       $poly->addPt($x1, $y);
+	       $poly->addPt(sprintf("%.0f",$x1-$height/5), sprintf("%.0f",$y-$height/1.3));
+	       $poly->addPt(sprintf("%.0f",$x1+$height/5), sprintf("%.0f",$y-$height/1.3));
+	       $up = 0;
+	     }
+	   else
+	     {
+	       $poly->addPt($x1, $y+$height);
+	       $poly->addPt(sprintf("%.0f",$x1-$height/5), sprintf("%.0f",$y+$height+$height/1.3));
+	       $poly->addPt(sprintf("%.0f",$x1+$height/5), sprintf("%.0f",$y+$height+$height/1.3));
+	       $up = 1;
+	     }
+	   $gd->filledPolygon($poly, $color);
+	   $gd->openPolygon($poly, $black);
+	   my $font_size = $self->chromosome_height/5;
+	   my $h = $up? $height+$height/1.3 : 0-$height/1.3+$font_size;
+	   if ($self->show_count)
+	     {
+	       $gd->stringFT($black, $FONTTT, $font_size+4, 0, $x1-$height/5, $y+$h, $count);
+	       $gd->stringFT($white, $FONTTT, $font_size, 0, $x1-$height/5+2, $y+$h-2, $count);
+	     }
+	   if ($color_band_flag)
+	     {
+	       $gd->line($x1, $y, $x1, $y+$height, $color);
+	     }
+	 }
+     }
   }
 
 sub generate_legend
@@ -349,7 +368,7 @@ sub add_feature
     my $link = $opts{'link'};
     my $color = $opts{'color'};
     my $desc = $opts{'desc'};
-    my $up = $opts{'up'};
+    my $up = $opts{'up'} || 0;
     my $imagemap = $opts{imagemap};
     unless ($start && $end && $chr)
       {
