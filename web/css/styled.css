@@ -156,6 +156,10 @@ a:hover {
   text-decoration: blink;
 }
 
+.alert {
+  color:#FF0000;
+  }
+
 .ital { 
   font-style: italic;
   color: #000099;
