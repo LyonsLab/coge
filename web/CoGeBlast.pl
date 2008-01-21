@@ -38,7 +38,7 @@ $FASTADIR = $DATADIR.'/fasta/';
 $BLASTDBDIR = $DATADIR.'/blast/db/';
 $TEMPURL = "/CoGe/tmp/CoGeBlast";
 $FORMATDB = "/usr/bin/formatdb";
-$BLAST = "/usr/bin/blast -a 6";
+$BLAST = "/usr/bin/blast -a 8";
 $BLASTZ = "/usr/bin/blastz";
 
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
@@ -496,7 +496,7 @@ sub gen_results_page
 					FEATURE_PID=>$hsp->percent_id,
 					FEATURE_SCORE=>$hsp->score,
 					FEATURE_LENGTH=>$length,
-					FEATURE_START=>,$feature->start,
+					FEATURE_START=>commify($feature->start),
 					FEATURE_CHR=>$feature->chromosome,
 					FEATURE_ORG=>$org,};
 			  push @check,{name=>$name,score=>$hsp->score};
@@ -516,7 +516,7 @@ sub gen_results_page
 				       NO_FEAT_EVAL=>$hsp->pval,
 				       NO_FEAT_PID=>$hsp->percent_id,
 				       NO_FEAT_SCORE=>$hsp->score,
-				       NO_FEAT_POS=>$hsp->subject_start,
+				       NO_FEAT_POS=>commify($hsp->subject_start),
 				       NO_FEAT_CHR=>$chr,
 				       NO_FEAT_LINK=>$no_link};
 		     }
@@ -739,6 +739,7 @@ sub generate_chromosome_images
 		close MAP;
 		$data{$org}{image}->image_width($large_width);
 		$data{$org}{image}->chromosome_height($large_height);
+		$data{$org}{image}->show_count(1);
 		$data{$org}{image}->generate_png(filename=>$large_image_file);
 		$image_map_large = $data{$org}{image}->generate_imagemap(mapname=>$cogeweb->basefilename."_".$count."_large");
 		$map_file = $cogeweb->basefile."_$count.$hsp_type.large.map";
@@ -1730,3 +1731,9 @@ sub dataset_description_for_org
     return $html;
   }
       
+sub commify {
+        my $input = shift;
+        $input = reverse $input;
+        $input =~ s<(\d\d\d)(?=\d)(?!\d*\.)><$1,>g;
+        return scalar reverse $input;
+}
