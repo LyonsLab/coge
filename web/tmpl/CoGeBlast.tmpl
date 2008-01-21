@@ -1705,12 +1705,7 @@ window.open('/CoGe/MatrixView.pl?matrix='+matrix);
         </TABLE>
          </TMPL_IF>
         </div>      
-        <br>
-        <br>
-         <DIV id=overlap_box valign="top" align="left" class="resultborder" style="overflow: auto;display: none;max-height: 300px;"></DIV>
          <TMPL_IF NAME=NO_FEAT_IF>
-         <br>
-         
              <table id="no_table" class="resultborder">
                <caption>HSPs w/o overlapping features:</caption>
                <THEAD>
@@ -1748,6 +1743,7 @@ window.open('/CoGe/MatrixView.pl?matrix='+matrix);
            <!--<div id=nearby_feat></div>
            <div id=nearby_feat_results valign="top" align="left" class="resultborder" style="overflow: auto;display: none;max-height: 300px;"></div>-->
          </TMPL_IF>
+
    </TMPL_IF>
    
    <TMPL_IF NAME=CHROMOSOMES_IF>
@@ -1919,10 +1915,14 @@ window.open('/CoGe/MatrixView.pl?matrix='+matrix);
             <option value = "user">Add to MFF</option> 
           </selected>  
           <input type=button value="Go" onClick="overlap_checkboxes()">
+
        </DIV>
      </TD>
     <TR>
-    <td><TMPL_VAR NAME="DATA_FILES">
+    <td valign=top><TMPL_VAR NAME="DATA_FILES">
+    <td>
+    <td align=right>         <DIV id=overlap_box valign="top" align="left" class="resultborder" style="overflow: auto;display: none;max-height: 300px;"></DIV>
+
    </TABLE>
    </TD>
 </DIV>
@@ -1930,4 +1930,5 @@ window.open('/CoGe/MatrixView.pl?matrix='+matrix);
 </DIV>
   </TR>
 </TABLE>
+
    </TMPL_IF>
