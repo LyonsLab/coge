@@ -55,7 +55,6 @@ $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 
 my $pj = new CGI::Ajax(
 		       gen_html=>\&gen_html,
-		       cogesearch=>\&cogesearch,
 		       source_search=>\&get_data_source_info_for_accn,
 		       get_types=>\&get_types,
 		       get_sequence=>\&get_sequence,
@@ -319,6 +318,7 @@ sub blast_search
     my $blastable = $opts{blastable};
     my $width = $opts{width};
     my $type = $opts{type};
+    my $resultslimit = $opts{limit} || 500;
 
     
 
@@ -408,7 +408,7 @@ sub blast_search
     my $t3 = new Benchmark;
     initialize_sqlite();
     my $t4 = new Benchmark;
-    my $html = gen_results_page(results=>\@results,width=>$width,type=>$type);
+    my $html = gen_results_page(results=>\@results,width=>$width,type=>$type, resultslimit=>$resultslimit);
     my $t5 = new Benchmark;
     my $init_time = timestr(timediff($t2,$t1));
     my $blast_time = timestr(timediff($t3,$t2));
@@ -431,6 +431,7 @@ sub gen_results_page
      my $results = $opts{results};
      my $width = $opts{width};
      my $type = $opts{type};
+     my $resultslimit = $opts{resultslimit};
      my $null;
      my $hsp_count = 0;;
      my @table;
@@ -443,9 +444,10 @@ sub gen_results_page
        {
 	 if (@{$set->{report}->hsps()})
 	   {
-	     foreach my $hsp (@{$set->{report}->hsps()})
+	     foreach my $hsp (sort {$b->score <=> $a->score} @{$set->{report}->hsps()})
 	       {
 		 $hsp_count++;
+		 next if ($hsp_count > $resultslimit);
 		 my ($dsid) = $hsp->subject_name =~ /id: (\d+)/;
 		 my ($chr) = $hsp->subject_name =~ /chromosome: (.*?),/;
 		 my ($org) = $hsp->subject_name =~ /^\s*(.*?)\s*\(/;
@@ -557,6 +559,7 @@ sub gen_results_page
 	 $template->param(FEATURE_TABLE=>\@table);#unless $null;
        }
      $template->param(NULLIFY=>$null) if $null;
+     $hsp_count .= "<br><span class=\"small alert\">Only top $resultslimit results shown.  All results are in the blast report.</span>" if $hsp_count > $resultslimit;
      $template->param(HSP_COUNT=>$hsp_count);
 
      if (@no_feat)
@@ -731,7 +734,6 @@ sub generate_chromosome_images
 		($x, $image_file) = check_taint($image_file);
 		$data{$org}{image}->generate_png(filename=>$image_file);
 		$image_map = $data{$org}{image}->generate_imagemap(mapname=>$cogeweb->basefilename."_".$count);
-
 		my $map_file = $cogeweb->basefile."_$count.$hsp_type.map";
 		($x, $map_file) = check_taint($map_file);
 		open (MAP, ">$map_file");
