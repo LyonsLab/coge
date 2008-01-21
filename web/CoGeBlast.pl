@@ -30,7 +30,7 @@ use Benchmark qw(:all);
 $ENV{PATH} = "/opt/apache/CoGe/";
 $ENV{BLASTDB}="/opt/apache/CoGe/data/blast/db/";
 $ENV{BLASTMAT}="/opt/apache/CoGe/data/blast/matrix/";
-use vars qw( $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $FORMATDB $BLAST $BLASTZ $FORM $USER $DATE $coge $cogeweb);
+use vars qw( $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $FORMATDB $BLAST $BLASTZ $FORM $USER $DATE $coge $cogeweb $RESULTSLIMIT);
 
 $TEMPDIR = "/opt/apache/CoGe/tmp/CoGeBlast";
 $DATADIR = "/opt/apache/CoGe/data/";
@@ -40,6 +40,7 @@ $TEMPURL = "/CoGe/tmp/CoGeBlast";
 $FORMATDB = "/usr/bin/formatdb";
 $BLAST = "/usr/bin/blast -a 8";
 $BLASTZ = "/usr/bin/blastz";
+$RESULTSLIMIT=500;
 
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
@@ -318,7 +319,7 @@ sub blast_search
     my $blastable = $opts{blastable};
     my $width = $opts{width};
     my $type = $opts{type};
-    my $resultslimit = $opts{limit} || 500;
+    my $resultslimit = $opts{limit} || $RESULTSLIMIT;
 
     
 
