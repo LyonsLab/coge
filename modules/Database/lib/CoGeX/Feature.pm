@@ -974,7 +974,8 @@ sub gc_content
     $at = $seq =~ tr/atAT/atAT/;
     unless ($counts)
       {
-	my $total = $gc+$at;
+	my $total = length($seq);
+	return (0,0) unless $total;
 	$gc = sprintf("%.4f", ($gc/$total));
 	$at = sprintf("%.4f", ($at/$total));
       }
