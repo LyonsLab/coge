@@ -81,7 +81,7 @@ function fill_nearby_feats(id) {
  var table_width = $('#overlap').width() || 300;
  $('#overlap_box').width(table_width);
  get_nearby_feats(['args__basefile','args__'+pageObj.basename,'args__num','args__'+id],['feat'+id,'dist'+id]);
-}
+} 
 
 
 function overlap_checkboxes() {
@@ -333,7 +333,6 @@ function blastOff(){
 
 function blastresults(html,basename){
   pageObj.basename = basename;
-  //alert(pageObj.basename);
   $('#blast_results').html(html);
   if($('#null').html() == "null") {
     $('#result_features').hide();
@@ -341,19 +340,10 @@ function blastresults(html,basename){
   }
   else {
   var overlap_height = $('#overlap_body').height();
-  var nofeat_height = $('#no_feats').height();
+  var nofeat_height = $('#no_overlap_body').height();
   var overlap_max = 300;
   if (overlap_height > overlap_max) $('#overlap_body').height(overlap_max);
-  if (overlap_height > overlap_max) $('#no_feats').height(overlap_max);
- 		
-// 		var select_index = $('#hsp_type')[0].selectedIndex;
-// 		$('#color_hsp').selectOptions(select_index);
-  
-/*  var myTextExtraction = function(node)  
-  {  
-    // extract data from markup and return it  
-    return node.childNodes[0].childNodes[0].innerHTML; 
-  } */ 
+  if (nofeat_height > overlap_max) $('#no_overlap_body').height(overlap_max);
   $(function(){
   $("#overlap").tablesorter({		
 // 		sortColumn: 'Name',			// Integer or String of the name of the column to sort by.
@@ -375,6 +365,7 @@ function blastresults(html,basename){
 		textExtraction: 'complex',
 		});
  });
+ 
  }
 }
 
@@ -1658,18 +1649,14 @@ window.open('/CoGe/MatrixView.pl?matrix='+matrix);
    </TMPL_IF>
    
    
-   <TMPL_IF NAME="OVERLAP_FEATURE_IF">
-   <table>
-    <tr>
-     <td>
-   Total Number of HSPs: <TMPL_VAR NAME=HSP_COUNT>
-     </tr>
-   </table>
+<TMPL_IF NAME="OVERLAP_FEATURE_IF">
+   <table><tr><td>Total Number of HSPs: <TMPL_VAR NAME=HSP_COUNT></table>
    <div id="null"><TMPL_VAR NAME=NULLIFY></div>
    <div id=table_size style="max-height: 360px;">
-         <TMPL_IF NAME=YES_FEAT_IF>
+
+   <TMPL_IF NAME=YES_FEAT_IF>
    <TABLE id="overlap" cellspacing="2" class="resultborder" style="overflow: auto;">
-     <caption>Features Overlapped by HSPs:</caption>
+     <!--<caption>Features Overlapped by HSPs:</caption>-->
    	<THEAD>
          <TR align=middle>
           <TH class=small>click to sort &rarr;</TH>
@@ -1703,48 +1690,47 @@ window.open('/CoGe/MatrixView.pl?matrix='+matrix);
         </TMPL_LOOP>
         </TBODY>
         </TABLE>
-         </TMPL_IF>
-        </div>      
-         <TMPL_IF NAME=NO_FEAT_IF>
-             <table id="no_table" class="resultborder">
-               <caption>HSPs w/o overlapping features:</caption>
-               <THEAD>
-                <TR align=middle>
-                  <TH class=small>click to sort &rarr;</TH>
-                  <TH class=header>Org</TH>
-		  <TH class=header>Chr</TH>
- 		  <TH class="header" >Position</TH>	
-                  <TH class=header>HSP No.</TH>
-                  <TH class=header>E-value</TH>
-                  <TH class=header>Perc ID</TH>
-                  <TH class=header>Score</TH>
-                  <TH class=header>Closest Feature</TH>
-                 </TR>
-               </THEAD>
-               <tbody id=no_feats style="overflow: auto">
-               <TMPL_LOOP NAME=NO_FEATS>
-               <!--onclick="hide_big_picture();show_hsp_div();loading('image_info','Information');loading('query_image','Image');loading('subject_image','Image');get_hsp_info(['args__blastfile','args__'+pageObj.basename,'args__num','args__<TMPL_VAR NAME=ID>'],['image_info','query_image','subject_image']);"-->
-                 <tr class="feat" id="<TMPL_VAR NAME=ID>" >
-                   <td align=right id="checkbox<TMPL_VAR NAME=CHECKBOX>"><input type=checkbox id="<TMPL_VAR NAME=CHECKBOX>" value="<TMPL_VAR NAME=CHECKBOX>"></td>
-                   <td style="white-space:nowrap;"><TMPL_VAR NAME=NO_FEAT_ORG></td>
-                   <td><TMPL_VAR NAME=NO_FEAT_CHR></td>
-                   <td><TMPL_VAR NAME=NO_FEAT_POS></td>
-                   <td><TMPL_VAR NAME=NO_FEAT></td>
-                   <td><TMPL_VAR NAME=NO_FEAT_EVAL></td>
-                   <td><TMPL_VAR NAME=NO_FEAT_PID></td>
-                   <td><TMPL_VAR NAME=NO_FEAT_SCORE></td>
-                   <td style="white-space:nowrap;"><div id ="feat<TMPL_VAR NAME=ID>"><TMPL_VAR NAME=NO_FEAT_LINK></div><div id="dist<TMPL_VAR NAME=ID>"></div></td>
-                 </tr>
-               </TMPL_LOOP>
-              </tbody>
-             </table>
-       
-           <br>
-           <!--<div id=nearby_feat></div>
-           <div id=nearby_feat_results valign="top" align="left" class="resultborder" style="overflow: auto;display: none;max-height: 300px;"></div>-->
-         </TMPL_IF>
-
    </TMPL_IF>
+ 
+   <TMPL_IF NAME=NO_FEAT_IF>
+   <TABLE id="no_table" cellspacing="2" class="resultborder" style="overflow: auto;">
+     <!--<caption>HSPs w/o overlapping features:</caption>-->
+     <THEAD>
+      <TR align=middle>
+        <TH class=small>click to sort &rarr;</TH>
+        <TH class=header>Org</TH>
+        <TH class=header>Chr</TH>
+ 	<TH class="header" >Position</TH>	
+        <TH class=header>HSP No.</TH>
+        <TH class=header>E-value</TH>
+        <TH class=header>Perc ID</TH>
+        <TH class=header>Score</TH>
+        <TH class=header>Closest Feature</TH>
+        <TH class=header>Distance</TH>
+       </TR>
+     </THEAD>
+     <TBODY id=no_overlap_body style="overflow: auto;">
+     <TMPL_LOOP NAME=NO_FEATS>
+       <tr class="feat" id="<TMPL_VAR NAME=ID>" >
+         <td align=right id="checkbox<TMPL_VAR NAME=CHECKBOX>"><input type=checkbox id="<TMPL_VAR NAME=CHECKBOX>" value="<TMPL_VAR NAME=CHECKBOX>"></td>
+         <td style="white-space:nowrap;"><TMPL_VAR NAME=NO_FEAT_ORG></td>
+         <td><TMPL_VAR NAME=NO_FEAT_CHR></td>
+         <td><TMPL_VAR NAME=NO_FEAT_POS></td>
+         <td><TMPL_VAR NAME=NO_FEAT></td>
+         <td><TMPL_VAR NAME=NO_FEAT_EVAL></td>
+         <td><TMPL_VAR NAME=NO_FEAT_PID></td>
+         <td><TMPL_VAR NAME=NO_FEAT_SCORE></td>
+         <td style="white-space:nowrap;"><div id ="feat<TMPL_VAR NAME=ID>"><TMPL_VAR NAME=NO_FEAT_LINK></div>
+         <td><div id="dist<TMPL_VAR NAME=ID>">-</div></td>
+       </tr>
+      </TMPL_LOOP>
+     </tbody>
+    </table>
+    <br>
+   </TMPL_IF>
+   </div>      
+
+</TMPL_IF>
    
    <TMPL_IF NAME=CHROMOSOMES_IF>
        <TMPL_LOOP NAME=CHROMOSOME_LOOP>
@@ -1921,7 +1907,7 @@ window.open('/CoGe/MatrixView.pl?matrix='+matrix);
     <TR>
     <td valign=top><TMPL_VAR NAME="DATA_FILES">
     <td>
-    <td align=right>         <DIV id=overlap_box valign="top" align="left" class="resultborder" style="overflow: auto;display: none;max-height: 300px;"></DIV>
+    <td align=left id=overlap_box valign="top" class="resultborder">
 
    </TABLE>
    </TD>
