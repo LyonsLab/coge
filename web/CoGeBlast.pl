@@ -26,11 +26,12 @@ use CoGe::Graphics::Feature::HSP;
 use CoGe::Genome;
 use Spreadsheet::WriteExcel;
 use Benchmark qw(:all);
+use Parallel::ForkManager;
 
 $ENV{PATH} = "/opt/apache/CoGe/";
 $ENV{BLASTDB}="/opt/apache/CoGe/data/blast/db/";
 $ENV{BLASTMAT}="/opt/apache/CoGe/data/blast/matrix/";
-use vars qw( $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $FORMATDB $BLAST $BLASTZ $FORM $USER $DATE $coge $cogeweb $RESULTSLIMIT);
+use vars qw( $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $FORMATDB $BLAST $BLASTZ $FORM $USER $DATE $coge $cogeweb $RESULTSLIMIT $MAX_PROC);
 
 $TEMPDIR = "/opt/apache/CoGe/tmp/CoGeBlast";
 $DATADIR = "/opt/apache/CoGe/data/";
@@ -41,6 +42,7 @@ $FORMATDB = "/usr/bin/formatdb";
 $BLAST = "/usr/bin/blast -a 8";
 $BLASTZ = "/usr/bin/blastz";
 $RESULTSLIMIT=500;
+$MAX_PROC=8;
 
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
@@ -381,31 +383,42 @@ sub blast_search
 	  {
 	    $command = $pre_command." $fasta_file $opts";
 	    $outfile = $cogeweb->basefile."-$count.blastz";
-	    write_log("running $command" ,$cogeweb->logfile);
-	    `$command > $outfile`;
-	    $report = new CoGe::Accessory::blastz_report({file=>$outfile}) if -r $outfile;
-	  
 	  }
 	else
 	  {
 	    $command = $pre_command." -d $db";
 	    $outfile = $cogeweb->basefile."-$count.blast";
-	    write_log("running $command" ,$cogeweb->logfile);
-	    `$command > $outfile`;
-	    $report = new CoGe::Accessory::blast_report({file=>$outfile}) if -r $outfile;
 	  }
-	my $file = $report->file();
-	$file =~ s/$TEMPDIR//;
-	$file = $TEMPURL."/".$file;
 	push @results, {
 			command=>$command,
 			file=>$outfile,
-			report=>$report,
-			link=>$file,
 			organism=>$org,
 		       };
 	$count++;
       }
+    my $pm = new Parallel::ForkManager($MAX_PROC);
+    foreach my $item (@results)
+      {
+	$pm->start and next;
+	my $command = $item->{command};
+	my $outfile = $item->{file};
+	write_log("running $command" ,$cogeweb->logfile);
+	`$command > $outfile`;
+	$pm->finish;
+      }
+    $pm->wait_all_children;
+    foreach my $item (@results)
+      {
+	my $command = $item->{command};
+	my $outfile = $item->{file};
+	my $report = $outfile =~ /blastz/ ? new CoGe::Accessory::blastz_report({file=>$outfile}) : new CoGe::Accessory::blast_report({file=>$outfile});
+	$item->{report}= $report;
+	my $file = $report->file();
+	$file =~ s/$TEMPDIR//;
+	$file = $TEMPURL."/".$file;
+	$item->{link}=$file;
+      }
+#    print STDERR Dumper \@results;
     my $t3 = new Benchmark;
     initialize_sqlite();
     my $t4 = new Benchmark;
@@ -454,15 +467,15 @@ sub gen_results_page
 		 my ($org) = $hsp->subject_name =~ /^\s*(.*?)\s*\(/;
 		 next unless $dsid && $chr;
  		 my @feat;
-		 foreach my $feat($coge->get_features_in_region(start=>$hsp->subject_start,  
- 							  stop=>$hsp->subject_stop,
- 							  chr=>$chr, 
- 							  dataset_id=>$dsid,
- 							 ))
-		   {
-		     next if $feat->type->name =~ /source/;
-		     push @feat, $feat if $feat;
-		   }
+#		 foreach my $feat($coge->get_features_in_region(start=>$hsp->subject_start,  
+# 							  stop=>$hsp->subject_stop,
+# 							  chr=>$chr, 
+# 							  dataset_id=>$dsid,
+# 							 ))
+#		   {
+#		     next if $feat->type->name =~ /source/;
+#		     push @feat, $feat if $feat;
+#		   }
 		if (@feat) 
 		  {
 		    my %seen;
@@ -493,52 +506,53 @@ sub gen_results_page
 			unless ($flag) {
 			  my $fid = $feature->id."_".$hsp->number."_".$dsid;
 			  my $pid = $hsp->percent_id =~ /\./ ? $hsp->percent_id : $hsp->percent_id.".0";
-			  push @table, {FID=>$fid,FEATURE_NAME=>qq{<a href="#" onclick="update_info_box('table_row$fid')">$name</a>},
-					FEATURE_HSP=>qq{<a href="#" onclick="update_hsp_info('table_row$fid')">}.$hsp->number."</a>",
+			  push @table, {FID=>$fid,FEATURE_NAME=>qq{<span class="link" onclick="update_info_box('table_row$fid')">$name</span>},
+					FEATURE_HSP=>qq{<span class="link" onclick="update_hsp_info('table_row$fid')">}.$hsp->number."</span>",
 					FEATURE_EVAL=>$hsp->pval,
 					FEATURE_PID=>$hsp->percent_id,
 					FEATURE_SCORE=>$hsp->score,
 					FEATURE_LENGTH=>$length,
-					FEATURE_START=>commify($feature->start),
+					FEATURE_START=>($feature->start),
 					FEATURE_CHR=>$feature->chromosome,
 					FEATURE_ORG=>$org,};
 			  push @check,{name=>$name,score=>$hsp->score};
 			}
 			$flag=0;
 		      }
+		    $no_genes = 0;
 		    unless($no_genes)
 		     {
 		       
 		       my $id = $hsp->number."_".$dsid;
-		       my $no_link = qq{<a href="#" onclick="fill_nearby_feats('$id')">Click for Closest Feature</a>};
+		       my $no_link = qq{<span class="link" onclick="fill_nearby_feats('$id')">Click for Closest Feature</span>};
 		       push @no_feat, {
 				       CHECKBOX=>$id."_".$chr."_".$hsp->subject_start."no",
 				       ID=>$id,
 				       NO_FEAT_ORG=>$org,
-				       NO_FEAT=>qq{<a href="#" onclick="update_hsp_info('table_row$id')">}.$hsp->number."</a>",
+				       NO_FEAT=>qq{<span class="link" onclick="update_hsp_info('table_row$id')">}.$hsp->number."</span>",
 				       NO_FEAT_EVAL=>$hsp->pval,
 				       NO_FEAT_PID=>$hsp->percent_id,
 				       NO_FEAT_SCORE=>$hsp->score,
-				       NO_FEAT_POS=>commify($hsp->subject_start),
+				       NO_FEAT_POS=>($hsp->subject_start),
 				       NO_FEAT_CHR=>$chr,
 				       NO_FEAT_LINK=>$no_link};
 		     }
 		 }
 		 else {
 		   my $id = $hsp->number."_".$dsid;
-		   my $no_link = qq{<a href="#" onclick="fill_nearby_feats('$id')">Click for Closest Feature</a>};
-		       push @no_feat, {
-				       CHECKBOX=>$id."_".$chr."_".$hsp->subject_start."no",
-				       ID=>$id,
-				       NO_FEAT_ORG=>$org,
-				       NO_FEAT=>qq{<a href="#" onclick="update_hsp_info('table_row$id')">}.$hsp->number."</a>",
-				       NO_FEAT_EVAL=>$hsp->pval,
-				       NO_FEAT_PID=>$hsp->percent_id,
-				       NO_FEAT_SCORE=>$hsp->score,
-				       NO_FEAT_POS=>$hsp->subject_start,
-				       NO_FEAT_CHR=>$chr,
-				       NO_FEAT_LINK=>$no_link};
-
+		   my $no_link = qq{<span class="link" onclick="fill_nearby_feats('$id')">Click for Closest Feature</span>};
+		   push @no_feat, {
+				   CHECKBOX=>$id."_".$chr."_".$hsp->subject_start."no",
+				   ID=>$id,
+				   NO_FEAT_ORG=>$org,
+				   NO_FEAT=>qq{<span class="link" onclick="update_hsp_info('table_row$id')">}.$hsp->number."</span>",
+				   NO_FEAT_EVAL=>$hsp->pval,
+				   NO_FEAT_PID=>$hsp->percent_id,
+				   NO_FEAT_SCORE=>$hsp->score,
+				   NO_FEAT_POS=>$hsp->subject_start,
+				   NO_FEAT_CHR=>$chr,
+				   NO_FEAT_LINK=>$no_link};
+		   
 		 }
 		 populate_sqlite($hsp,$dsid);
 	       }
@@ -1479,7 +1493,7 @@ sub get_nearby_feats
 	my ($start,$stop) = ($sstart,$sstop);
 	my ($chr) = $sname =~ /chromosome: (.*?),/;
 	my @feat;
-	my $count = 1;
+	my $count = 0;
 	until(@feat)
 	{
 	  $sstart = ($sstart - 1000*$count) >= 0 ? ($sstart - 1000*$count) : 0;
@@ -1490,7 +1504,14 @@ sub get_nearby_feats
 						dataset_id=>$dsid,
 					       );
 	  last if ($sstop - $sstart) > 256000;
-	  $count *= 4;
+	  if ($count)
+	    {
+	      $count *= 2;
+	    }
+	  else
+	    {
+	      $count++;
+	    }
 	}
 	my @feat_low;
 	my @feat_high;
@@ -1524,10 +1545,10 @@ sub get_nearby_feats
 	  my $closest_feat;
 	  #print STDERR $distance,"\n";
 	  if($feat_low and $feat_high) 
-	  {
-	 	 $closest_feat = ($start - $feat_low->stop) < ($feat_high->start - $stop) ? $feat_low : $feat_high;
-	 	 $distance = ($start - $feat_low->stop) < ($feat_high->start - $stop) ? ($start - $feat_low->stop)."!" : ($feat_high->start - $stop);
-	  }
+	    {
+	      $closest_feat = ($start - $feat_low->stop) < ($feat_high->start - $stop) ? $feat_low : $feat_high;
+	      $distance = ($start - $feat_low->stop) < ($feat_high->start - $stop) ? ($start - $feat_low->stop)."!" : ($feat_high->start - $stop);
+	    }
 	  elsif($feat_high)
 	  {
 	  	$closest_feat = $feat_high;
@@ -1551,7 +1572,8 @@ sub get_nearby_feats
 		$distance .= "bp";
 	  }
 	  $distance .= $upstream ? " upstream" : " downstream";
-	  ($name) = sort $closest_feat->names;
+	  ($name) = $closest_feat->names;
+	  $distance = "overlapping" if $distance =~ /-/;
 	  $name = qq{<a href="#" onclick=update_info_box('no_feat}.$closest_feat->id."_".$hsp_num."_".$dsid."')>$name</a>";
 	}	
 	else {
