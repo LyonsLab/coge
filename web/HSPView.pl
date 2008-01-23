@@ -178,7 +178,7 @@ sub get_info_from_db
     my ($base) = $db =~ /^(.*?)\./;
     my ($set1, $set2) = $report_file=~ /_(\d+)-(\d+)/;
     my $output;
-    my $dbh = DBI->connect("dbi:SQLite:dbname=$TEMPDIR/$db","","");
+    my $dbh = DBI->connect("dbi:SQLite:dbname=$TEMPDIR/GEvo/$db","","");
     my $statement = qq{SELECT annotation, pair_id, id from image_data where name like "$hsp_num-%" and (image_id = $set1 or image_id = $set2)};
 #    print STDERR $statement,"\n";
     my $sth = $dbh->prepare($statement);
