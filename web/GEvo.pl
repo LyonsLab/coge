@@ -521,6 +521,7 @@ sub run
 		$message .= "No GenBank entry found for $gbaccn\n";
 	      }
  	  }
+	next unless $obj;
 	unless ($show_spike)
 	  {
 	    $seq =~ s/N*$spike_seq$//g;
@@ -929,6 +930,7 @@ INSERT INTO image_info (id, iname, title, px_width,dsid, chromosome, bpmin, bpma
 	  {
 	    next unless $feat->type eq "anchor";
 	  }
+#	print STDERR Dumper $feat;
 #	print STDERR Dumper $feat if $feat->{anchor};
 	next unless $feat->image_coordinates;
 	my $type = $feat->type;
@@ -968,9 +970,8 @@ INSERT INTO image_info (id, iname, title, px_width,dsid, chromosome, bpmin, bpma
 	  {
 	    my ($max_nt) = sort {$b<=>$a} map {@$_} @{$feat->segments}; 
 	    my ($min_nt) = sort {$a<=>$b} map {@$_} @{$feat->segments}; 
-	    my $length_nt = $max_nt-$min_nt;
+	    my $length_nt = $max_nt-$min_nt+1;
 	    my $length_pix = $xmax-$xmin;
-	    next if $length_nt == 0 || $length_pix == 0;
 	    if ($feat->{anchor})
 	      {
 		my $start = $feat->start;
@@ -985,6 +986,7 @@ INSERT INTO image_data (name, type, xmin, xmax, ymin, ymax, bpmin,bpmax,image_id
 };
 		print STDERR $statement unless $dbh->do($statement);
 	      }
+	    next if $length_nt == 0 || $length_pix == 0;
 	    foreach my $segment (@{$feat->segments})
 	      {
 		my ($start,$stop) = @$segment;
@@ -1065,6 +1067,7 @@ sub process_features
 	my $type = $feat->type;
 	my ($name) = sort { length ($b) <=> length ($a) || $a cmp $b} @{$feat->qualifiers->{names}} if ref ($feat->qualifiers) =~ /hash/i;
 	my $anchor = $feat if ref ($feat->qualifiers) =~ /hash/i && $feat->qualifiers->{type} && $feat->qualifiers->{type} eq "anchor";
+
         if ($type =~ /pseudogene/i)
           {
 	    next unless $draw_model eq "full";
@@ -1575,10 +1578,10 @@ sub get_obj_from_genome_db
 
     print STDERR "Region: $chr: $start-$stop\n" if $DEBUG;
 #    print STDERR "Region: $chr: ",$start-$start+1,"-",$stop-$start,"\n";
-    my @feats = $coge->get_features_in_region(start=>$start, stop=>$stop, chr=>$chr, dataset_id=>$dsid);
-    push @feats, $feat if $feat;
+    my %feats = map{$_->id,$_} $coge->get_features_in_region(start=>$start, stop=>$stop, chr=>$chr, dataset_id=>$dsid);
+    $feats{$feat->id}=$feat if $feat;
     my $t5 = new Benchmark;
-    foreach my $f (@feats)
+    foreach my $f (values %feats)
       {
 	my $name;
 	my @names = $f->names;
