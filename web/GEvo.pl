@@ -525,7 +525,8 @@ sub run
 	next unless $obj;
 	unless ($show_spike)
 	  {
-	    $seq =~ s/N*$spike_seq//g;
+	    $seq =~ s/N*$spike_seq$//;
+	    $seq =~ s/N*$spike_seq$//;
 	  }
 	$obj->sequence($seq);
 
@@ -855,8 +856,8 @@ sub initialize_sqlite
 CREATE TABLE image_data
 (
 id INTEGER PRIMARY KEY,
-name varchar(50),
-type varchar (10),
+name varchar,
+type varchar,
 xmin integer,
 xmax integer,
 ymin integer,
@@ -866,9 +867,9 @@ bpmax integer,
 image_track integer,
 image_id integer,
 pair_id integer,
-link varchar(50),
+link varchar,
 annotation text,
-color varchar(10)
+color varchar
 )
 };
     $dbh->do($create);
@@ -884,13 +885,13 @@ color varchar(10)
 CREATE TABLE image_info
 (
 id INTEGER,
-iname varchar(50),
-title varchar(256),
+iname varchar,
+title varchar,
 px_width integer,
 bpmin integer,
 bpmax integer,
 dsid integer,
-chromosome integer
+chromosome varchar
 )
 };
 #TODO: make sure to populate the bpmin and pbmax and image width!!!!!!!!!!!!!!!!!
@@ -973,8 +974,9 @@ INSERT INTO image_info (id, iname, title, px_width,dsid, chromosome, bpmin, bpma
 	    my ($min_nt) = sort {$a<=>$b} map {@$_} @{$feat->segments}; 
 	    my $length_nt = $max_nt-$min_nt+1;
 	    my $length_pix = $xmax-$xmin;
-	    if ($feat->{anchor})
-	      {
+	    next if !$feat->{anchor} && ($length_nt == 0 || $length_pix == 0);
+#	    if ($feat->{anchor})
+#	      {
 		my $start = $feat->start;
 		my $stop = $feat->stop;
 		my $bpmin = $set->{obj}->start+$start-1;
@@ -986,20 +988,20 @@ INSERT INTO image_info (id, iname, title, px_width,dsid, chromosome, bpmin, bpma
 INSERT INTO image_data (name, type, xmin, xmax, ymin, ymax, bpmin,bpmax,image_id, image_track,pair_id, link, annotation, color) values ("$name", "anchor", $xmin, $xmax, $ymin, $ymax, $bpmin, $bpmax,$image_id, "$image_track",$pair_id, '$link', '$anno', '$color')
 };
 		print STDERR $statement unless $dbh->do($statement);
-	      }
-	    next if $length_nt == 0 || $length_pix == 0;
-	    foreach my $segment (@{$feat->segments})
-	      {
-		my ($start,$stop) = @$segment;
-		my $bpmin = $set->{obj}->start+$start-1;
-		my $bpmax = $set->{obj}->start+$stop-1;
-		my $xstart = sprintf("%.0f",$xmin+($start-$min_nt)/$length_nt*$length_pix);
-		my $xstop = sprintf("%.0f",$xmin+($stop-$min_nt)/$length_nt*$length_pix);
-		$statement = qq{
-INSERT INTO image_data (name, type, xmin, xmax, ymin, ymax, bpmin, bpmax, image_id, image_track,pair_id, link, annotation, color) values ("$name", "$type", $xstart, $xstop, $ymin, $ymax, $bpmin, $bpmax, $image_id, "$image_track",$pair_id, '$link', '$anno', '$color')
-};
-		print STDERR $statement unless $dbh->do($statement);
-	      }
+#	      }
+
+#	    foreach my $segment (@{$feat->segments})
+#	      {
+#		my ($start,$stop) = @$segment;
+#		my $bpmin = $set->{obj}->start+$start-1;
+#		my $bpmax = $set->{obj}->start+$stop-1;
+#		my $xstart = sprintf("%.0f",$xmin+($start-$min_nt)/$length_nt*$length_pix);
+#		my $xstop = sprintf("%.0f",$xmin+($stop-$min_nt)/$length_nt*$length_pix);
+#		$statement = qq{
+#INSERT INTO image_data (name, type, xmin, xmax, ymin, ymax, bpmin, bpmax, image_id, image_track,pair_id, link, annotation, color) values ("$name", "$type", $xstart, $xstop, $ymin, $ymax, $bpmin, $bpmax, $image_id, "$image_track",$pair_id, '$link', '$anno', '$color')
+#};
+#		print STDERR $statement unless $dbh->do($statement);
+#	      }
 	  }
 	else
 	  {
@@ -1049,7 +1051,7 @@ sub process_features
     my $overlap = $opts{overlap_adjustment};
     my $draw_model = $opts{draw_model};
     my $color_overlapped_features = $opts{color_overlapped_features};
-    return unless $draw_model;
+#    return unless $draw_model;
     my $accn = $obj->accn;
     my $track = 1;
     my $feat_count = 0;
@@ -1080,7 +1082,7 @@ sub process_features
           }
         elsif ($type =~ /Gene/i)
           {
-	    next unless $draw_model eq "full" || $draw_model eq "gene";
+	    next unless $draw_model eq "full" || $draw_model eq "gene" || $anchor;
 	    $f = CoGe::Graphics::Feature::Gene->new();
 	    $f->color([255,0,0,50]);
 	    $f->order($track);
@@ -2788,7 +2790,6 @@ sub get_dataset_info
 sub feat_search
   {
     my %opts = @_;
-#    my ($self, $accn, $dsid, $num) = self_or_default(@_);
     my $accn = $opts{accn};
     my $dsid=$opts{dsid};
     my $num = $opts{num};
