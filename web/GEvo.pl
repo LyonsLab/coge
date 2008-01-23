@@ -977,6 +977,7 @@ INSERT INTO image_info (id, iname, title, px_width,dsid, chromosome, bpmin, bpma
 	    next if !$feat->{anchor} && ($length_nt == 0 || $length_pix == 0);
 #	    if ($feat->{anchor})
 #	      {
+	    $type = "anchor" if $feat->{anchor};
 		my $start = $feat->start;
 		my $stop = $feat->stop;
 		my $bpmin = $set->{obj}->start+$start-1;
@@ -985,7 +986,7 @@ INSERT INTO image_info (id, iname, title, px_width,dsid, chromosome, bpmin, bpma
 		my $xstop = sprintf("%.0f",$xmin+($stop-$min_nt)/$length_nt*$length_pix);
 
 		$statement = qq{
-INSERT INTO image_data (name, type, xmin, xmax, ymin, ymax, bpmin,bpmax,image_id, image_track,pair_id, link, annotation, color) values ("$name", "anchor", $xmin, $xmax, $ymin, $ymax, $bpmin, $bpmax,$image_id, "$image_track",$pair_id, '$link', '$anno', '$color')
+INSERT INTO image_data (name, type, xmin, xmax, ymin, ymax, bpmin,bpmax,image_id, image_track,pair_id, link, annotation, color) values ("$name", "$type", $xmin, $xmax, $ymin, $ymax, $bpmin, $bpmax,$image_id, "$image_track",$pair_id, '$link', '$anno', '$color')
 };
 		print STDERR $statement unless $dbh->do($statement);
 #	      }
@@ -1070,7 +1071,6 @@ sub process_features
 	my $type = $feat->type;
 	my ($name) = sort { length ($b) <=> length ($a) || $a cmp $b} @{$feat->qualifiers->{names}} if ref ($feat->qualifiers) =~ /hash/i;
 	my $anchor = $feat if ref ($feat->qualifiers) =~ /hash/i && $feat->qualifiers->{type} && $feat->qualifiers->{type} eq "anchor";
-
         if ($type =~ /pseudogene/i)
           {
 	    next unless $draw_model eq "full";
