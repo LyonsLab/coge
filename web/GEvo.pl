@@ -390,6 +390,7 @@ sub run
 	my $pos = $opts{"pos$i"};
 	my $gbaccn = $opts{"gbaccn$i"};
 	my $gbstart = $opts{"gbstart$i"};
+	$gbstart = 1 unless defined $gbstart;
 	my $gblength = $opts{"gblength$i"};
 
 	my $dirseq = $opts{"dirseq$i"};
@@ -524,7 +525,7 @@ sub run
 	next unless $obj;
 	unless ($show_spike)
 	  {
-	    $seq =~ s/N*$spike_seq$//g;
+	    $seq =~ s/N*$spike_seq//g;
 	  }
 	$obj->sequence($seq);
 
@@ -2440,6 +2441,7 @@ sub add_seq
 		DRUP=>10000,
 		DRDOWN=>10000,
 		DSINFO=>$dsinfo,
+		GBSTART=>1,
 	       };
 
     $template->param(SEQ_SELECT=>1);
