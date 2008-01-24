@@ -725,7 +725,7 @@ sub run
     $html .= qq{<td class = small>Overlap Feature Stats:};
     foreach my $item (@sets)
       {
-	$html .= "<div class = small>".$item->{obj}->accn.": ".$item->{overlap_count}." / ".$item->{feat_count};
+	$html .= "<div class = small>".$item->{obj}->accn." (".commify(length $item->{obj}->sequence)."bp): ".$item->{overlap_count}." / ".$item->{feat_count};
 	$html .= " (".sprintf("%.2f", $item->{overlap_count}/$item->{feat_count}*100)."%)" if $item->{feat_count};	
       }
     $html .= qq{</table>};
@@ -2852,3 +2852,9 @@ sub feat_search
       }
     return $html;
   }
+sub commify {
+        my $input = shift;
+        $input = reverse $input;
+        $input =~ s<(\d\d\d)(?=\d)(?!\d*\.)><$1,>g;
+        return scalar reverse $input;
+}
