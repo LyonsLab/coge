@@ -39,3 +39,25 @@ UPDATE feature SET chromosome = 17 WHERE chromosome - "XVII";
 UPDATE feature SET chromosome = 18 WHERE chromosome - "XVIII";
 UPDATE feature SET chromosome = 19 WHERE chromosome - "XIX";
 UPDATE feature SET chromosome = 20 WHERE chromosome - "XX";
+
+UPDATE location SET chromosome = 1 WHERE chromosome - "I";
+UPDATE location SET chromosome = 2 WHERE chromosome - "II";
+UPDATE location SET chromosome = 3 WHERE chromosome - "III";
+UPDATE location SET chromosome = 4 WHERE chromosome - "IV";
+UPDATE location SET chromosome = 5 WHERE chromosome - "V";
+UPDATE location SET chromosome = 6 WHERE chromosome - "VI";
+UPDATE location SET chromosome = 7 WHERE chromosome - "VII";
+UPDATE location SET chromosome = 8 WHERE chromosome - "VIII";
+UPDATE location SET chromosome = 9 WHERE chromosome - "IX";
+UPDATE location SET chromosome = 10 WHERE chromosome - "X";
+UPDATE location SET chromosome = 11 WHERE chromosome - "XI";
+UPDATE location SET chromosome = 12 WHERE chromosome - "XII";
+UPDATE location SET chromosome = 13 WHERE chromosome - "XIII";
+UPDATE location SET chromosome = 14 WHERE chromosome - "XIV";
+UPDATE location SET chromosome = 15 WHERE chromosome - "XV";
+UPDATE location SET chromosome = 16 WHERE chromosome - "XVI";
+UPDATE location SET chromosome = 17 WHERE chromosome - "XVII";
+UPDATE location SET chromosome = 18 WHERE chromosome - "XVIII";
+UPDATE location SET chromosome = 19 WHERE chromosome - "XIX";
+UPDATE location SET chromosome = 20 WHERE chromosome - "XX";
+
