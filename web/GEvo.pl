@@ -437,7 +437,7 @@ sub run
 	      }
 	    else
 	      {
-		$message .=  "No entry found for $featid.\n";
+		$message .=  "Unable to generate sequence for sequence $i.  (Skipped.)";
 	      }
 	  }
  	elsif ($dirseq )
@@ -722,12 +722,15 @@ sub run
     ($tiny) = $tiny =~ /<b>(http:\/\/tinyurl.com\/\w+)<\/b>/;
     $html .= qq{<td class = small>GEvo Link<div class=small><a href=$tiny target=_new>$tiny<br>(See log file for full link)</a></div>};
     $html .=qq{<a href="GEvo_direct.pl?name=$basefilename" target=_new>Results only</a>};
-    $html .= qq{<td class = small>Overlap Feature Stats:};
+    $html .= qq{<td class = small>Overlap Feature Stats:<table>};
+    $html .= qq{<tr class=small>}.join ("<th align=left>", qw(Dataset ));
     foreach my $item (@sets)
       {
-	$html .= "<div class = small>".$item->{obj}->accn." (".commify(length $item->{obj}->sequence)."bp): ".$item->{overlap_count}." / ".$item->{feat_count};
-	$html .= " (".sprintf("%.2f", $item->{overlap_count}/$item->{feat_count}*100)."%)" if $item->{feat_count};	
+	$html .= "<tr class=small>";
+	$html .= "<td>".$item->{obj}->accn."<td nowrap>".commify(length $item->{obj}->sequence)."bp"."<td nowrap>".$item->{overlap_count}."/".$item->{feat_count};
+	$html .= "<td nowrap>".sprintf("%.2f", $item->{overlap_count}/$item->{feat_count}*100)."%" if $item->{feat_count};	
       }
+    $html .= qq{</table>};
     $html .= qq{</table>};
 
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
@@ -1547,6 +1550,7 @@ sub get_obj_from_genome_db
 	$accn =~ s/<.*?>//g;
       }
     my $ds = $coge->resultset('Dataset')->find($dsid);
+    return unless $ds;
     ($chr) = $ds->get_chromosomes unless $chr;
     $seq = $ds->get_genomic_sequence(
 				     start => $start,
@@ -2776,6 +2780,7 @@ sub get_dataset_info
     my $chr = $opts{chr};
     
     my ($ds) = $coge->resultset('Dataset')->find($dsid);
+    return "<span class=\"small alert\">Dataset id $dsid was not found</span>"unless $ds;
     my $name = $ds->name;
     my $ver = $ds->version;
     my $desc = $ds->description;
@@ -2783,7 +2788,7 @@ sub get_dataset_info
     my $ds_name = $ds->name;
     my $org = $ds->organism->name;
     $chr = join (", ",$ds->get_chromosomes) unless $chr;
-    my $title = "<span class=species>$org v$ver:</span><br> $ds_name<br>chr: $chr<br>source: $sname";
+    my $title = qq{<span class="species"><a href=GenomeView.pl?org_name=$org target=_new>$org v$ver:</a></span> <a href=GenomeView.pl?dsid=$dsid target=_new>chr, $chr</a>};
     return $title;
   }  
 
