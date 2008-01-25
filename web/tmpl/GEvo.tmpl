@@ -433,22 +433,15 @@ function get_seq(seq_num)
 <td>
 <a href="#" id=go_button onClick="loading([],['results']); initialize_basefile(['args__prog','args__GEvo', 'args__return_name','args__1'],[populate_page_obj]); go_run();"><span>Go</span></a>
 </TD>
-<!--<div id="go_button" class="l"><a href="#" onMouseOver="activeButton('go')" onMouseOut="inactiveButton('go')" onMouseDown="pressedButton('go')" onMouseUp="inactiveButton('go')" onClick="loading([],['results']); go_run();"><img name="go" src="/CoGe/picts/buttons/GEvo/go/inactive.png" width="47" height="27" border="0" alt="javascript button"></a></div>-->
 <TD>
 <a href="#" id=clear_button onClick="rset()"><span>Clear</span></a>
 </TD>
-<!--<a href="#" onMouseOver="activeButton('clear')" onMouseOut="inactiveButton('clear')" onMouseDown="pressedButton('clear')" onMouseUp="inactiveButton('clear')" onClick="rset()">
-         <img name="clear" src="/CoGe/picts/buttons/GEvo/clear/inactive.png" width="56" height="27" border="0" alt="javascript button">
-         </a>-->
-<td nowrap>
+ <td nowrap>
 <td>Number of sequences: <input class="backbox" name=num_seqs id=num_seqs type="textbox" size=2 readonly value=<TMPL_VAR NAME ="NUM_SEQS">>
 <td>
   <a href="#" id=add_button
   onClick="add_seq(['num_seqs'],[process_add_seq]); $('#new_drseq').remove;"><span>Add</span></a>
-<!--<a href="#" onMouseOver="activeButton('add')" onMouseOut="inactiveButton('add')" onMouseDown="pressedButton('add')" onMouseUp="inactiveButton('add')" onclick="add_seq(['num_seqs'],[process_add_seq]); $('#new_drseq').remove;">
-         <img name="add" src="/CoGe/picts/buttons/GEvo/add/inactive.png" width="43" height="27" border="0" alt="javascript button">-->
-         </a>
-<td>
+ <td>
 <a href="#" id=remove_button onClick="remove_seq()"><span>Remove</span></a>
 <!--<a href="#" onMouseOver="activeButton('remove')" onMouseOut="inactiveButton('remove')" onMouseDown="pressedButton('remove')" onMouseUp="inactiveButton('remove')" onclick="remove_seq()">
          <img name="remove" src="/CoGe/picts/buttons/GEvo/remove/inactive.png" width="55" height="27" border="0" alt="javascript button">
@@ -983,7 +976,7 @@ function get_seq(seq_num)
 <TABLE class="small">
       <TR valign="top">
        <TD>Position:
-       <TD><input class="location backbox" type="text" id="pos<TMPL_VAR NAME="SEQ_NUM">" value="<TMPL_VAR NAME=POS>" size=10>
+       <TD><input class="backbox" type="text" id="pos<TMPL_VAR NAME="SEQ_NUM">" value="<TMPL_VAR NAME=POS>" size=10>
       <TR>
        <TD>Organism:
        <TD><TMPL_VAR NAME=DSINFO>
