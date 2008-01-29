@@ -561,6 +561,16 @@ sub add_feature
 	    warn "Feature ($feat) does not appear to be a feature object.  Skipping. . .\n";
 	    next;
 	  }
+	if ($feat->start || $feat->stop)
+	  {
+	    my $start = $feat->start;
+	    my $stop = $feat->stop;
+	    $stop = $start unless $stop;
+	    $start = $stop unless $start;
+	    ($start, $stop) = ($stop, $start) if $start> $stop;
+	    $feat->start($start);
+	    $feat->stop($stop);
+	  }
 	$feat->strand(1) unless defined $feat->strand;
 	$feat->fill(0) unless $feat->fill;
 	$feat->merge_percent(100) unless defined $feat->merge_percent;
@@ -1924,6 +1934,7 @@ sub _draw_feature_fast
     my $unit = $self->_calc_unit_size;
     my $fs = $unit*($feat->start-$rb);
     my $fe = $unit*($feat->end-$rb+1);
+#    print STDERR $rb,"-",$re,"\t",$feat->start-$rb,"-",$feat->end-$rb+1,,"::",$unit,"\t",$fs,"-", $fe,"\n";
     my $fw = sprintf("%.1f",$fe - $fs)+1; #calculate the width of the feature;
     return if $fw < 1; #skip drawing if less than one pix wide
 
@@ -1970,7 +1981,7 @@ sub _draw_feature_fast
       }
     $xmin = sprintf("%.0f",$fs);
     $ymin = sprintf("%.0f",$y);
-    $xmax = sprintf("%.0f",$fs+$fw-2);
+    $xmax = sprintf("%.0f",$fe);
     $ymax = sprintf("%.0f",$y+$ih-1);
     
     my $size;
