@@ -566,6 +566,10 @@ sub process_features
       }
     my %feats = map {$_->id, $_} @feats;
     my $tf4 = new Benchmark if $BENCHMARK;
+    #let's find and color local duplications
+    my ($anno_type_group) = $coge->resultset('AnnotationTypeGroup')->find_or_create({name=>"Local Dup"});
+    my ($parent_type) = $coge->resultset('AnnotationType')->find_or_create({name=>"Parent", annotation_type_group_id=>$anno_type_group->id});
+    my ($daughter_type) = $coge->resultset('AnnotationType')->find_or_create({name=>"Daughter", annotation_type_group_id=>$anno_type_group->id});
     foreach my $feat (values %feats)
       {
 	my $tf4a = new Benchmark if $BENCHMARK;
@@ -600,7 +604,23 @@ sub process_features
         elsif (($layers->{features}{cds} || $layers->{all}) && $feat->type->name =~ /CDS/i)
           {
         	$f = CoGe::Graphics::Feature::Gene->new();
-        	$f->color([0,255,0, 50]);
+		my $color;
+		if ($coge->resultset('Annotation')->count({feature_id=>$feat->id, annotation_type_id=>$parent_type->id}))
+		  {
+		    print STDERR "Parent\n";
+		    $color = [0,225,255, 50];
+		  }
+		elsif ($coge->resultset('Annotation')->count({feature_id=>$feat->id, annotation_type_id=>$daughter_type->id}))
+		  {
+		    print STDERR "Daughter\n";
+		    $color = [0,255,255, 50];
+		  }
+		else
+		  {
+		    $color = [0,255,0, 50];
+		  }
+        	$f->color($color);
+		
         	$f->order(1);
 		$f->overlay(3);
 		push @cds_feats, $feat;
