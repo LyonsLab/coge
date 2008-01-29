@@ -12,7 +12,11 @@
         }
         #gene {
 //            background-color: red;
-            color:white;
+            color:red;
+        }
+        #local_dup {
+//            background-color: cyan;
+            color:cyan;
         }
 /*        #pseudogene {
             background-color: orange;
@@ -26,10 +30,15 @@
             background-color: green;
             color:white;
         }
+*/
         #gc {
             background-color: white;
              color:green;
-        }*/
+	}
+        #func_dom {
+         //   background-color: white;
+             color:orange;
+        }
     </style>
     <script src="js/OpenLayers.js"></script>
     <script src="js/Grid1D.js"></script>
@@ -74,6 +83,10 @@
                  ,{'ds':ds,'chr':chr,layers:"pseudogene,gene,mRNA,CDS,rna",'version':version,'organism':org,}
                  ,{isBaseLayer:false}
              ),
+            ld = new OpenLayers.Layer.Genomic( "<span id='local_dup'>Local Duplicates</span>" , server
+                 ,{'ds':ds,'chr':chr,layers:"local_dup",'version':version,'organism':org,}
+                 ,{isBaseLayer:false}
+             ),
 /*            new OpenLayers.Layer.Genomic( "<span id='pseudogene'>Pseudogenes</span>" , server
                  ,{'ds':ds,'chr':chr,layers:"pseudogene",'version':version,'organism':org}
                  ,{isBaseLayer:false}
@@ -91,7 +104,7 @@
                  ,{isBaseLayer:false}
              ),*/
             ]
-            fd = new OpenLayers.Layer.Genomic( "functional domains" , server
+            fd = new OpenLayers.Layer.Genomic( "<span id='func_dom'>functional domains</span>" , server
                  ,{'ds':ds,'chr':chr,'organism':org,'ds':ds,'version':version,layers:"domain"}
                  ,{isBaseLayer:false}
              );
@@ -109,6 +122,7 @@
             gc.setVisibility(true);
             map.addLayer(gc)
             map.addLayers(layers);
+            ld.setVisibility(false);
             fd.setVisibility(false);
             map.addLayer(fd)
             prot.setVisibility(false);
