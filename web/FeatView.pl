@@ -326,16 +326,17 @@ sub get_data_source_info_for_accn
 	my $sname = $val->datasource->name if $val->datasource;
 	my $ds_name = $val->name;
 	my $title = "$org: $ds_name ($sname, v$ver)";
-	$sources{$title} = $val->id;
+	$sources{$title}{id} = $val->id;
+	$sources{$title}{v} = $ver;
       }
     my $html;
     $html .= qq{
 <SELECT name = "dsid" id="dsid" MULTIPLE SIZE="10" onChange="get_types_chain();">
 };
     my $count = 0;
-    foreach my $title (sort {$b cmp $a} keys %sources)
+    foreach my $title (sort {$sources{$b}{v} <=> $sources{$a}{v}} keys %sources)
       {
-	my $id = $sources{$title};
+	my $id = $sources{$title}{id};
 	$html .= qq{  <option value="$id" >$title\n};
 	$html =~ s/option/option selected/ unless $count;
 	$count++;
