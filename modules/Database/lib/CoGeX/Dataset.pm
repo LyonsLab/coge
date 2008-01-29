@@ -238,8 +238,8 @@ sub percent_gc
   {
     my $self = shift;
     my %opts = @_;
-    my $chr = $opts{chr};
-    my $seq = $self->genomic_sequence(chr=>$chr);
+#    my $chr = $opts{chr};
+    my $seq = $self->genomic_sequence(%opts);
     my $length = length $seq;
     return unless $length;
     my ($gc) = $seq =~ tr/GCgc/GCgc/;
