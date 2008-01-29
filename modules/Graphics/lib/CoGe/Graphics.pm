@@ -573,11 +573,11 @@ sub process_features
     foreach my $feat (values %feats)
       {
 	my $tf4a = new Benchmark if $BENCHMARK;
-        my $f;
+        my @f;
 	print STDERR "Feat info: Name: ",$feat->type->name,", Type: ",$feat->type->name, ", Loc: ", $feat->start,"-",$feat->stop,"\n" if $self->DEBUG;
         if (($layers->{features}{pseudogene} || $layers->{all}) && $feat->type->name =~ /pseudogene/i)
           {
-	    $f = CoGe::Graphics::Feature::Gene->new();
+	    my $f = CoGe::Graphics::Feature::Gene->new();
 	    $f->color([255,33,0,50]);
 	    foreach my $loc ($feat->locs)
 	      {
@@ -587,10 +587,11 @@ sub process_features
 	    $f->order(1);
 	    $f->overlay(1);
 	    $f->mag(0.5);
+	    push @f, $f;
           }
         elsif (($layers->{features}{gene} || $layers->{all}) && $feat->type->name =~ /Gene/i)
           {
-	    $f = CoGe::Graphics::Feature::Gene->new();
+	    my $f = CoGe::Graphics::Feature::Gene->new();
 	    $f->color([255,0,0,50]);
 	    foreach my $loc ($feat->locs)
 	      {
@@ -600,58 +601,50 @@ sub process_features
 	    $f->order(1);
 	    $f->overlay(1);
 	    $f->mag(0.5);
+	    push @f, $f;
           }
         elsif (($layers->{features}{cds} || $layers->{all}) && $feat->type->name =~ /CDS/i)
           {
-        	$f = CoGe::Graphics::Feature::Gene->new();
-		my $color;
-		if ($coge->resultset('Annotation')->count({feature_id=>$feat->id, annotation_type_id=>$parent_type->id}))
-		  {
-		    print STDERR "Parent\n";
-		    $color = [0,225,255, 50];
-		  }
-		elsif ($coge->resultset('Annotation')->count({feature_id=>$feat->id, annotation_type_id=>$daughter_type->id}))
-		  {
-		    print STDERR "Daughter\n";
-		    $color = [0,255,255, 50];
-		  }
-		else
-		  {
-		    $color = [0,255,0, 50];
-		  }
-        	$f->color($color);
-		
-        	$f->order(1);
-		$f->overlay(3);
-		push @cds_feats, $feat;
+	    my $f = CoGe::Graphics::Feature::Gene->new();
+	    my $color= [0,255,0, 50];
+	    $f->color($color);
+	    
+	    $f->order(1);
+	    $f->overlay(3);
+	    push @f, $f;
+	    push @cds_feats, $feat;
           }
         elsif (($layers->{features}{mrna} || $layers->{all}) && $feat->type->name =~ /mrna/i || $feat->type->name =~ /exon/i)
           {
-        	$f = CoGe::Graphics::Feature::Gene->new();
-        	$f->color([0,0,255, 50]);
-        	$f->order(1);
-		$f->overlay(2);
-		$f->mag(0.75);
+	    my $f = CoGe::Graphics::Feature::Gene->new();
+	    $f->color([0,0,255, 50]);
+	    $f->order(1);
+	    $f->overlay(2);
+	    $f->mag(0.75);
+	    push @f, $f;
           }
         elsif (($layers->{features}{rna} || $layers->{all}) && $feat->type->name =~ /[^m]rna/i)
           {
-        	$f = CoGe::Graphics::Feature::Gene->new();
-        	$f->color([200,200,200, 50]);
-        	$f->order(1);
-		$f->overlay(2);
+	    my $f = CoGe::Graphics::Feature::Gene->new();
+	    $f->color([200,200,200, 50]);
+	    $f->order(1);
+	    $f->overlay(2);
+	    push @f, $f;
           }
         elsif (($layers->{features}{domain} || $layers->{all}) && $feat->type->name =~ /functional domains/i)
           {
-	    $f = CoGe::Graphics::Feature::Domain->new();
+	    my $f = CoGe::Graphics::Feature::Domain->new();
 	    $f->order(2);
 	    $f->overlay(1);
+	    push @f, $f;
           }
 	elsif (($layers->{features}{cns} || $layers->{all}) && $feat->type->name =~ /CNS/i)
           {
-	    $f = CoGe::Graphics::Feature::Block->new();
+	    my $f = CoGe::Graphics::Feature::Block->new();
 	    $f->order(1);
 	    my $color = [ 255, 100, 255];
 	    $f->color($color);
+	    push @f, $f;
           }
 	elsif ($feat->type->name =~ /source/i)
 	  {
@@ -659,10 +652,11 @@ sub process_features
 	  }
 	elsif ($layers->{features}{other} || $layers->{all})
 	  {
-	    $f = CoGe::Graphics::Feature::Block->new();
+	    my $f = CoGe::Graphics::Feature::Block->new();
 	    $f->order(3);
 	    my $color = [ 255, 100, 0];
 	    $f->color($color);
+	    push @f, $f;
 	  }
 	if (($layers->{features}{protein} || $layers->{all}) && $feat->type->name =~ /CDS/i)
 	  {
@@ -670,12 +664,36 @@ sub process_features
 	    $self->process_proteins(genomic_feat=>$feat, c=>$c);
 			
 	  }
+        if (($layers->{features}{local_dup} || $layers->{all}) && $feat->type->name =~ /CDS/i)
+          {
+	    my $color;
+	    if ($coge->resultset('Annotation')->count({feature_id=>$feat->id, annotation_type_id=>$parent_type->id}))
+	      {
+		$color = [0,225,255, 50];
+	      }
+	    elsif ($coge->resultset('Annotation')->count({feature_id=>$feat->id, annotation_type_id=>$daughter_type->id}))
+	      {
+		$color = [0,255,255, 50];
+	      }
+	    if ($color)
+	      {
+		my $f = CoGe::Graphics::Feature::Gene->new();
+		$f->color($color);
+		$f->order(1);
+		$f->overlay(4);
+		push @f, $f;
+	      }
+	  }
+
 	my $tf4b = new Benchmark if $BENCHMARK;
-        next unless $f;
+        next unless scalar @f;
 	foreach my $id (@$fids)
 	  {
 	    next unless $id;
-	    $f->color([255,255,0]) if $feat->id eq $id;
+	    foreach my $f (@f)
+	      {
+		$f->color([255,255,0]) if $feat->id eq $id;
+	      }
 	  }
 	my $tf4c = new Benchmark if $BENCHMARK; 
 	foreach my $name (@$fnames)
@@ -685,8 +703,11 @@ sub process_features
 	      {
 		if ($n =~ /^$name$/i)
 		  {
-		    $f->color([255,255,0]);
-		    $f->label($name);
+		    foreach my $f (@f)
+		      {
+			$f->color([255,255,0]);
+			$f->label($name);
+		      }
 		  }
 	      }
 	  }
@@ -694,19 +715,25 @@ sub process_features
         foreach my $loc ($feat->locs)
 	  {
 	    print STDERR "\tadding feature location: ",$loc->start,"-", $loc->stop,". . ." if $self->DEBUG;
-	    $f->add_segment(start=>$loc->start, stop=>$loc->stop);
-	    $f->strand($loc->strand);
+	    foreach my $f (@f)
+	      {
+		$f->add_segment(start=>$loc->start, stop=>$loc->stop);
+		$f->strand($loc->strand);
+	      }
 	    print "done!\n" if $self->DEBUG;
 	  }
 	my $tf4e = new Benchmark if $BENCHMARK; 
 	my ($name) = $feat->names;
 #	$f->description($feat->annotation_pretty_print);
-	$f->link("GeLo.pl?".join("&", "chr=".$feat->chr,"ds=".$feat->dataset_id,"z=10", "INITIAL_CENTER=".$feat->start.",0"));
-	$f->label($name) if $print_names;
-        $f->type($feat->type->name);
-	$f->skip_overlap_search(1) unless $c->overlap_adjustment;
-#	print STDERR Dumper $f;
-        $c->add_feature($f);
+	foreach my $f (@f)
+	  {
+	    $f->link("GeLo.pl?".join("&", "chr=".$feat->chr,"ds=".$feat->dataset_id,"z=10", "INITIAL_CENTER=".$feat->start.",0"));
+	    $f->label($name) if $print_names;
+	    $f->type($feat->type->name);
+	    $f->skip_overlap_search(1) unless $c->overlap_adjustment;
+	    #	print STDERR Dumper $f;
+	    $c->add_feature($f);
+	  }
 	my $tf4f = new Benchmark if $BENCHMARK; 
 	print STDERR "\tfinished process feature.\n" if $self->DEBUG;
     }
@@ -818,6 +845,9 @@ sub process_layers
        background=>"background",
        all=>"all",
        pseudogene=>"pseudogene",
+       "local_dup"=>"local_dup",
+       "local_dups"=>"local_dup",
+       "tandem"=>"local_dup",
       );
     my %features = 
       (
@@ -830,6 +860,7 @@ sub process_layers
        other=>1,
        cns=>1,
        rna=>1,
+       local_dup=>1,
       );
     my %layers;
     foreach my $layer (@$layers)
