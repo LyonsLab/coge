@@ -35,11 +35,11 @@ GetOptions ( "debug=s" => \$DEBUG,
 	     "org_name=s" => \$org_name,
 	     "org_desc=s" => \$org_desc,
 	     "org_id=s"   => \$org_id,
-	     "ds_name=s" => \$ds_name,
+	     "ds_name=s" => \$ds_name, # datasource
 	     "ds_desc=s" => \$ds_desc,
 	     "ds_link=s" => \$ds_link,
 	     "ds_id=s"   => \$ds_id,
-	     "di_name=s" => \$di_name,
+	     "di_name=s" => \$di_name,# datasetid
 	     "di_desc=s" => \$di_desc,
 	     "di_link=s" => \$di_link,
 	     "di_version=s" => \$di_version,
@@ -47,7 +47,7 @@ GetOptions ( "debug=s" => \$DEBUG,
 	     "use_contigs_as_features=i" => \$use_contigs_as_features,
 	     "seq_type_name=s" => \$seq_type_name,
 	     "seq_type_desc=s" => \$seq_type_desc,
-	     "seq_type_id=i"=>\$seq_type_id,
+	     "seq_type_id=i"=>\$seq_type_id, # masked50 == id 2
 	   );
 
 $DEBUG = 1 unless defined $DEBUG; # set to '1' to get updates on what's going on

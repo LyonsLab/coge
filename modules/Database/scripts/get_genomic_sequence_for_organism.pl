@@ -10,7 +10,7 @@ use DB_File;
 
 # for orgs with lots of super contigs, only take this many
 # (will take the first ones).
-my $use_supers = 1;
+my $use_supers = 0;
 my $MAX_CHR = 99;
 
 
