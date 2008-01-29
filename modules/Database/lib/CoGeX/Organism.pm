@@ -50,7 +50,7 @@ sub current_datasets
     $typeid = ref($type) =~/Type/ ? $type->id : $type;
     ds_loop: foreach my $ds ($self->datasets({},{distict=>'version',order_by=>'version desc'}))
       {
-	next unless $ds->sequence_type->id eq $typeid;
+	next unless $ds->sequence_type && $ds->sequence_type->id eq $typeid;
 	$version = $ds->version unless $version;
 	foreach my $chr ($ds->get_chromosomes)
 	  {
