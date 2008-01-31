@@ -96,6 +96,7 @@ function populate_page_obj(basefile)
   if (!basefile) {alert (basefile);}
   pageObj.basefile = basefile;
   pageObj.nolog = 0;
+  pageObj.waittime = 1000;
  }
 
 function change( info ) {
@@ -345,17 +346,17 @@ function process_add_seq (newseq, num_seqs, go_run, refseq, colors, message)
 
 function monitor_log(log)
 {
-  var finished = 0;
   var sequence = 0;
   var algo = 0;
   var image = 0;
   var database = 0;
   var match;
+  pageObj.finished = 0;
   if (log) {
    if (log.match(/Finished!/))
     {
      database = database+"done!\n";
-     finished=1;
+     pageObj.finished = 1;
     }
    
    match=log.match(/sequence file\s+(\d+)/g);
@@ -393,9 +394,12 @@ function monitor_log(log)
   if (image) message += image;
   if (database) message += database;
   
-  if (!finished && pageObj.nolog<4)
+  if (!pageObj.finished && pageObj.nolog<4)
   {
-    setTimeout("read_log(['args__logfile', 'args__'+pageObj.basefile, 'args__prog','args__GEvo'], [monitor_log])", 4000);
+    var waittime = pageObj.waittime;
+    pageObj.waittime = pageObj.waittime*2;
+//    console.log('ajax.len: '+ajax.length+", PageObj.nolog: "+pageObj.nolog);
+    if (ajax.length) {setTimeout("read_log(['args__logfile', 'args__'+pageObj.basefile, 'args__prog','args__GEvo'], [monitor_log])", waittime);}
   }
   if (message) $('#loading').html("<div class=small>"+message+'</div>');
 }
