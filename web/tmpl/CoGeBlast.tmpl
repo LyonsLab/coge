@@ -2,9 +2,6 @@
 <link rel="stylesheet" type="text/css" href="/CoGe/css/ui.tabs.css" />
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.1.js"></SCRIPT>
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/ui.tabs.js"></SCRIPT>
-<!--<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.parsers.js"></SCRIPT>-->
-<!--<SCRIPT language="JavaScript" type="text/javascript" src="./js/metadata.js"></SCRIPT>-->
-<!--<SCRIPT language="JavaScript" type="text/javascript" src="./js/menu.js"></SCRIPT>-->
 <SCRIPT language="JavaScript">
 
 $(document).ready(function(){
@@ -29,23 +26,30 @@ $(document).ready(function(){
     seqObj = new Object();
   }
   get_displayFeature();
-  //alert(seqObj.dsid);
-  //alert(seqObj.chr);
-  //alert(seqObj.featid);
    get_seq('coge_radio');
 });
 
+$(document).ready(function(){
+  $("#tab > ul").tabs();
+});
+
+function generate_seq_obj(dsid,upstream,downstream,seqview,chr,rc,featid){
+  this.featid=featid;
+  this.dsid=dsid;
+  this.upstream=upstream;
+  this.downstream=downstream;
+  this.seqview=seqview;
+  this.chr=chr;
+  this.rc=rc;
+}
+
 function update_info_box(featid) {
- var table_width = $('#overlap').width();
+ var table_width = $('#hsp_result_table').width();
  $('#overlap_box').width(table_width);
  if ($('#overlap_box').is(':hidden')) $('#overlap_box').slideDown(pageObj.speed);
   generate_feat_info(['args__'+featid],['overlap_box']);
  
 }
-
-$(document).ready(function(){
-  $("#tab > ul").tabs();
-});
 
 function update_hsp_info (featid) {
  hide_big_picture();
@@ -54,6 +58,11 @@ function update_hsp_info (featid) {
  loading('query_image','Image');
  loading('subject_image','Image');
  get_hsp_info(['args__blastfile','args__'+pageObj.basename,'args__num','args__'+featid],['image_info','query_image','subject_image']);
+}
+
+function loading(id,msg) {
+  var message = '<font class="loading">Loading '+msg+' . . .</font>';
+  $('#'+id).html(message);
 }
 
 function show_hsp_div() {
@@ -72,17 +81,54 @@ function add_to_list(ds,org){
   counting();
 }
 
-function loading(id,msg) {
-  var message = '<font class="loading">Loading '+msg+' . . .</font>';
-  $('#'+id).html(message);
+function counting(){
+  var count = $('#db_choice').getLength();
+  if (count == 0) {$('#db_choice').html('<option id=blank value=null>No Database Selected</option>');}
+  $('.count').html('Database count: '+count);
 }
 
-function fill_nearby_feats(id) {
- var table_width = $('#overlap').width() || 300;
- $('#overlap_box').width(table_width);
- get_nearby_feats(['args__basefile','args__'+pageObj.basename,'args__num','args__'+id],['feat'+id,'dist'+id]);
+function fill_nearby_feats(id,update) {
+ get_nearby_feats(['args__basefile','args__'+pageObj.basename,'args__num','args__'+id],[update_checkbox]);
+ if(update == "true") {update_sorting_table();}
 } 
 
+function click_all_feat_links(){
+  var link_str = pageObj.featlinks;
+  var link_array = new Array();
+  link_array = link_str.split(',');
+  for (var i = 0;i < link_array.length;i++)
+  {
+  	var val = link_array[i];
+  	if (!val) {continue;}
+  	fill_nearby_feats(link_array[i]);
+  }
+  update_sorting_table();
+ }
+ 
+function update_sorting_table() {
+  if (ajax.length)
+   {
+    setTimeout("update_sorting_table()",100);
+    return;
+   }
+  $("#hsp_result_table").trigger("update");
+}
+
+function update_checkbox(name, dist, hspid, id){
+  
+  $('#feat'+hspid).html(name);
+  $('#dist'+hspid).html(dist);
+  
+  if(dist == "overlapping")
+  {
+//        console.log(name+" "+id);  
+  	var id_array = new Array();
+  	id_array = id.split(',');
+//  console.log(	id_array[0]+"::"+id_array[1]);
+  	$('#checkbox'+id_array[0]).attr("id","checkbox"+id_array[1]);
+  	$('#'+id_array[0]).attr("value",id_array[1]).attr("id",id_array[1]);
+  }
+}  
 
 function overlap_checkboxes() {
   var action = $('#overlap_action').val();
@@ -111,6 +157,7 @@ function overlap_checkboxes() {
   }
 }
 
+//This function might be redundant, considering the send_to_gevo function. Consider eliminating / consolidating the functions
 function export_file(dir) {
   window.open(dir);
 }
@@ -190,9 +237,7 @@ jQuery.fn.selectOptions = function(index) {
 
 function enlarge_picture_window(id) {
   var window_width = $(window).width();
-  //alert(window_width);
   var image_width = pageObj.image_width || 800;
-  //alert(image_width);
   var left_padding;
   if ((window_width - image_width) <= 0) {
     left_padding = 4;
@@ -200,24 +245,18 @@ function enlarge_picture_window(id) {
   else {
     left_padding = ((window_width - image_width)/2);
   }
-  //alert(image_width);
-  //alert(window_width);
- // alert($(window).width());
-  //alert(left_padding);
-  var html = "<a href='#' onClick=\"$('#big_picture').slideToggle(pageObj.speed);$('#overlap_body').css('overflow','auto');\" style='float: right;'><img src='/CoGe/picts/delete.png' width='16' height='16' border='0'></a>";
+  var html = "<a href='#' onClick=\"$('#big_picture').slideToggle(pageObj.speed);\" style='float: right;'><img src='/CoGe/picts/delete.png' width='16' height='16' border='0'></a>";
   html = html + $('#large_db'+id).html();
   html = html+'<br>'+$('#large_pic'+id).html();
-  
-  $('#overlap_body').css("overflow","hidden");
   $('#big_picture').html(html).css("left",''+left_padding).width(image_width).slideDown(pageObj.speed);
 }
-  
+
+
+//TODO - clean this function up a bit
 function show_seq(seq,name,num,dsid,chr,start,stop, rc) {
   if (num == 1) which_seq = "Query";
   else if (num == 2) which_seq = "Subject";
   else which_seq = "Alignment";
-  //alert(seqObj.dsid);
-  //alert(seqObj.chr);
   if (seqObj){
     if (dsid == "seqObj") dsid = seqObj.dsid;
     if (chr == "seqObj") chr = seqObj.chr;
@@ -246,29 +285,64 @@ function show_seq(seq,name,num,dsid,chr,start,stop, rc) {
   else {
     left_padding = ((window_width - info_width)/2);
   }
-  //$('#overlap_body').css("overflow","hidden");
   $('#sequence_popup').html(html).css("left",''+left_padding).width(info_width).slideDown(pageObj.speed);
   if ($('#sequence_popup').height() >= $(document).height() - 40) {
     $('#sequence_popup').css("height",''+$(document).height() - 40);
   }
-} 
-
-function generate_seq_obj(dsid,upstream,downstream,seqview,chr,rc,featid){
- // alert(dsid+','+upstream+','+downstream+','+seqview+','+chr+','+rc+','+featid);
-  this.featid=featid;
-  //alert(seqObj.featid);
-  this.dsid=dsid;
-  this.upstream=upstream;
-  this.downstream=downstream;
-  this.seqview=seqview;
-  this.chr=chr;
-  this.rc=rc;
 }
 
-function counting(){
-  var count = $('#db_choice').getLength();
-  if (count == 0) {$('#db_choice').html('<option id=blank value=null>No Database Selected</option>');}
-  $('.count').html('Database count: '+count);
+function get_params(){
+ radio = get_radio("coge_radio","coge");
+ var word_size = $('#word_size').val();
+ var expect = $('#e_value').val();
+ var match_mismatch = $('#match_score').val();
+ var matrix = $('#matrix').val();
+ var program = $('#'+radio).val();
+ 
+ var gapcost;
+ if (program == "blastn")
+  { 
+    var num1 = match_mismatch.substr(0,1);
+    var num2 = match_mismatch.substr(2);
+    gapcost = $('#gapcosts_'+num1+num2).val();
+  }
+ else
+  {
+    gapcost = $('#gapcosts_'+matrix).val();
+  }
+
+//blastz parameters
+ var zwordsize = $('#blastz_wordsize').val();
+ var zgap_start = $('#blastz_gap_start').val();
+ var zgap_extension = $('#blastz_gap_extension').val();
+ var zchaining = $('#blastz_chaining').val();
+ var zthreshold = $('#blastz_threshold').val();
+ var zmask = $('#blastz_mask').val();
+ 
+ var comp = $('#comp_adj').val();
+ var seq = $('#seq_box').val();
+ return {w : word_size, e : expect,g : gapcost,p : program,mm: match_mismatch,m : matrix,c : comp,s : seq, zw : zwordsize, zgs : zgap_start, zge : zgap_extension, zc : zchaining, zt : zthreshold, zm : zmask};
+}
+
+function get_ncbi_params(){
+ radio = get_radio("ncbi_radio","ncbi");
+ var word_size = $('#ncbi_word_size').val();
+ var expect = $('#ncbi_e_value').val();
+ var db = $('#ncbi_db').val();
+ var match_mismatch = $('#ncbi_match_score').val();
+ if (match_mismatch)
+  {
+    var num1 = match_mismatch.substr(0,1);
+    var num2 = match_mismatch.substr(2);
+  }
+ var gapcost = $('#ncbi_gapcosts_'+num1+num2).val();
+ var job_title = $('#job_title').val();
+ var program = $('#'+radio).val();
+
+ var matrix = $('#ncbi_matrix').val();
+ var comp = $('#ncbi_comp_adj').val();
+ var seq = $('#seq_box').val();
+ return {w : word_size, e : expect, db : db,g : gapcost,j : job_title,p : program,mm: match_mismatch,m : matrix,c : comp,s : seq};
 }
 
 function blastOff(){
@@ -330,42 +404,64 @@ function blastOff(){
   ],[blastresults],'POST');
   
 }
-
-function blastresults(html,basename){
+ 
+function blastresults(html,basename, click_all_links){
   pageObj.basename = basename;
+  pageObj.featlinks = click_all_links;
   $('#blast_results').html(html);
   if($('#null').html() == "null") {
     $('#result_features').hide();
     return;
   }
   else {
-  var overlap_height = $('#overlap_body').height();
-  var nofeat_height = $('#no_overlap_body').height();
-  var overlap_max = 300;
-  if (overlap_height > overlap_max) $('#overlap_body').height(overlap_max);
-  if (nofeat_height > overlap_max) $('#no_overlap_body').height(overlap_max);
-  $(function(){
-  $("#overlap").tablesorter({		
-// 		sortColumn: 'Name',			// Integer or String of the name of the column to sort by.
+  var table_height = $('#hsp_result_table_body').height();
+  var max_height = 300;
+  if (table_height > max_height) $('#hsp_result_table_body').height(max_height);
+  init_table();
+ }
+}
+
+function init_table () {
+$(function(){
+ $("#hsp_result_table").tablesorter({		
+// 		sortColumn: 'HSP No.',			// Integer or String of the name of the column to sort by.
 		sortClassAsc: 'headerSortUp',		// Class name for ascending sorting action to header
 		sortClassDesc: 'headerSortDown',	// Class name for descending sorting action to header
 		headerClass: 'header',			// Class name for headers (th's)
 		widgets: ['zebra'],
 		textExtraction: 'complex',
+		headers: {0: {sorter: false}},					
+		sortList: [[1,0],[4,0]],
+		debug: true,
 		});
  });
+}
+
+function ncbi_blast(url) {
+ if (url == 1)
+  {alert('You have not selected a BLAST program! Please select a program to run.');}
+ else {
+   var params = get_ncbi_params();
+   seq = params.s;
+   seq = seq.replace(/\n/,'%0D');
+   db = params.db;
+   expect = params.e;
+   job_title = params.j;
+   word_size = params.w;
+   comp = params.c;
+   matrix = params.m
+   match_score = params.mm;
  
- $(function(){
- $("#no_table").tablesorter({		
-// 		sortColumn: 'Org',			// Integer or String of the name of the column to sort by.
-		sortClassAsc: 'headerSortUp',		// Class name for ascending sorting action to header
-		sortClassDesc: 'headerSortDown',	// Class name for descending sorting action to header
-		headerClass: 'header',			// Class name for headers (th's)
-		widgets: ['zebra'],
-		textExtraction: 'complex',
-		});
- });
+   url = url+'&DATABASE='+db+'&EXPECT='+expect+'&QUERY='+seq+'&JOB_TITLE='+job_title+'&WORD_SIZE='+word_size;
  
+   if (program == 'blastn') {
+     window.open(url+'&MATCH_SCORES='+match_score);
+   }
+
+   else {
+     if ($('#comp_adj').is(':hidden')) {window.open(url+'&MATRIX_NAME='+matrix);}
+     else {window.open(url+'&MATRIX_NAME='+matrix+'&COMPOSITION_BASED_STATISTICS='+comp);}
+   }
  }
 }
 
@@ -461,90 +557,6 @@ $.fn.sortSelect = function(){
 	return this;
 };
 
-
-function get_params(){
- radio = get_radio("coge_radio","coge");
- var word_size = $('#word_size').val();
- var expect = $('#e_value').val();
- var match_mismatch = $('#match_score').val();
- var matrix = $('#matrix').val();
- var program = $('#'+radio).val();
- 
- var gapcost;
- if (program == "blastn")
-  { 
-    var num1 = match_mismatch.substr(0,1);
-    var num2 = match_mismatch.substr(2);
-    gapcost = $('#gapcosts_'+num1+num2).val();
-  }
- else
-  {
-    gapcost = $('#gapcosts_'+matrix).val();
-  }
-
-//blastz parameters
- var zwordsize = $('#blastz_wordsize').val();
- var zgap_start = $('#blastz_gap_start').val();
- var zgap_extension = $('#blastz_gap_extension').val();
- var zchaining = $('#blastz_chaining').val();
- var zthreshold = $('#blastz_threshold').val();
- var zmask = $('#blastz_mask').val();
- 
- var comp = $('#comp_adj').val();
- var seq = $('#seq_box').val();
- return {w : word_size, e : expect,g : gapcost,p : program,mm: match_mismatch,m : matrix,c : comp,s : seq, zw : zwordsize, zgs : zgap_start, zge : zgap_extension, zc : zchaining, zt : zthreshold, zm : zmask};
-}
-
-function get_ncbi_params(){
- radio = get_radio("ncbi_radio","ncbi");
- var word_size = $('#ncbi_word_size').val();
- var expect = $('#ncbi_e_value').val();
- var db = $('#ncbi_db').val();
- var match_mismatch = $('#ncbi_match_score').val();
- if (match_mismatch)
-  {
-    var num1 = match_mismatch.substr(0,1);
-    var num2 = match_mismatch.substr(2);
-  }
- var gapcost = $('#ncbi_gapcosts_'+num1+num2).val();
- var job_title = $('#job_title').val();
- var program = $('#'+radio).val();
-
- var matrix = $('#ncbi_matrix').val();
- var comp = $('#ncbi_comp_adj').val();
- var seq = $('#seq_box').val();
- return {w : word_size, e : expect, db : db,g : gapcost,j : job_title,p : program,mm: match_mismatch,m : matrix,c : comp,s : seq};
-}
-
-function ncbi_blast(url) {
- if (url == 1)
-  {alert('You have not selected a BLAST program! Please select a program to run.');}
- else {
-   var params = get_ncbi_params();
-   seq = params.s;
-   seq = seq.replace(/\n/,'%0D');
- //alert('seq: '+seq);
-   db = params.db;
-   expect = params.e;
-   job_title = params.j;
-   word_size = params.w;
-   comp = params.c;
-   matrix = params.m
-   match_score = params.mm;
- 
-   url = url+'&DATABASE='+db+'&EXPECT='+expect+'&QUERY='+seq+'&JOB_TITLE='+job_title+'&WORD_SIZE='+word_size;
- 
-   if (program == 'blastn') {
-     window.open(url+'&MATCH_SCORES='+match_score);
-   }
-
-   else {
-     if ($('#comp_adj').is(':hidden')) {window.open(url+'&MATRIX_NAME='+matrix);}
-     else {window.open(url+'&MATRIX_NAME='+matrix+'&COMPOSITION_BASED_STATISTICS='+comp);}
-   }
- }
-}
-
 function display_correct_radio(display,val) {
   if (display == false) {
     $("#"+val+"_select_n").hide(0);
@@ -562,7 +574,6 @@ function hide_big_picture() {
 
 function select_blast() {
   var radio = get_radio('ncbi_radio','ncbi');
-  //alert(radio);
   get_url([radio],[ncbi_blast]);
 }
 
@@ -598,7 +609,6 @@ function get_seq(which_type) {
 	],['seq_box']);
  }
  else {
-// alert('Im being called!'+accn+dsid+type_name);
   return;
  }
 }
@@ -606,7 +616,6 @@ function get_seq(which_type) {
 function blast_param_on_select(which_type,val) {
  radio = get_radio(which_type,val);
  program = $('#'+radio).val();
- //alert(''+program);
  database_param([radio],['database']);
  
  $('#blast_parameters').hide();
@@ -682,7 +691,6 @@ function toggleFeature(html,check) {
  var size = $('#seq_box').width();
  if (html) {
    $('#pretty_print_anno').html(html).width(size).show(pageObj.speed);
-//    animate_section("#pretty_print_anno", "show");
  }
  else if (check) {
    $('#pretty_print_anno').width(size).show(pageObj.speed);
@@ -704,12 +712,9 @@ function search_bar(div_id){
 }
 
 function restore_search_bar(div_id){
-  //alert($('#'+div_id).val());
   if($('#'+div_id).val() == "") {
   var regex = /^Organism\scount:\s(\d+)$/;
   var count = regex.exec($('#org_count').html());
-  //alert(count[1]);
- // alert($('#org_count').val());
  
  //TODO - use javascript obj to update this value 3473 to current number of organisms!
    if (count[1] < 3473) get_organism_name_chain($('#org_text').val()); 
@@ -720,7 +725,6 @@ function restore_search_bar(div_id){
 function org_info(info){
   var xpos = pageObj.lastMouseX + 5;
   var ypos =pageObj.lastMouseY + 5;
-  //alert(xpos+','+ypos);
   var html = "<a href='#' onClick=\"$('#org_info_popup').slideToggle(pageObj.speed);\" style='float: right;'><img src='/CoGe/picts/delete.png' width='16' height='16' border='0'></a>";
   html = html + info;
   var window_width = $(document).width();
@@ -732,7 +736,6 @@ function org_info(info){
   else {
     left_padding = ((window_width - info_width)/2);
   }
-  //$('#overlap_body').css("overflow","hidden");
   $('#org_info_popup').html(html).css({left:''+xpos,top:''+ypos}).width(info_width).slideDown(pageObj.speed);
   if ($('#org_info_popup').height() >= $(document).height() - 40) {
     $('#org_info_popup').css("height",''+$(document).height() - 40);
@@ -1649,51 +1652,12 @@ window.open('/CoGe/MatrixView.pl?matrix='+matrix);
    </TMPL_IF>
    
    
-<TMPL_IF NAME="OVERLAP_FEATURE_IF">
+<TMPL_IF NAME="RESULT_TABLE">
+   <div id=table_size style="max-height: 360px;">
    <table><tr><td>Total Number of HSPs: <TMPL_VAR NAME=HSP_COUNT></table>
    <div id="null"><TMPL_VAR NAME=NULLIFY></div>
-   <div id=table_size style="max-height: 360px;">
-
-   <TMPL_IF NAME=YES_FEAT_IF>
-   <TABLE id="overlap" cellspacing="2" class="resultborder" style="overflow: auto;">
-     <!--<caption>Features Overlapped by HSPs:</caption>-->
-   	<THEAD>
-         <TR align=middle>
-          <TH class=small>click to sort &rarr;</TH>
-          <TH class="header" >Org</TH>
-          <TH class="header" >Name</TH>
-	  <TH class="header" >Chr</TH>
-	  <TH class="header" >Position</TH>
-          <TH class="header" >Feat Length</TH>
-          <TH class="header" >HSP No.</TH>
-          <TH class="header" >E-Value</TH>
-          <TH class="header" >Percent ID</TH>
-          <TH class="header" >Score</TH>
-
-         </TR>
-         </THEAD>
-         <TBODY id=overlap_body style="overflow: auto;">
-         <TMPL_LOOP NAME=FEATURE_TABLE>
-         <TR id="table_row<TMPL_VAR NAME=FID>" align=right class="feat">
-          <TD><input type=checkbox id="feature_checkbox<TMPL_VAR NAME=FID>" name="feature_checkbox" value="<TMPL_VAR NAME=FID>"></TD>
-          <TD title="Click for feature info" style="white-space:nowrap;"><TMPL_VAR NAME=FEATURE_ORG></TD>
-          <TD title="Click for feature info"><TMPL_VAR NAME=FEATURE_NAME></TD>
-          <TD title="Click for feature info"><TMPL_VAR NAME=FEATURE_CHR></TD>
-          <TD title="Click for feature info"><TMPL_VAR NAME=FEATURE_START></TD>
-          <TD title="Click for feature info"><TMPL_VAR NAME=FEATURE_LENGTH></TD>
-          <TD title="Click for HSP info"><TMPL_VAR NAME=FEATURE_HSP></TD>
-          <TD title="Click for HSP info"><TMPL_VAR NAME=FEATURE_EVAL></TD>
-          <TD title="Click for HSP info"><TMPL_VAR NAME=FEATURE_PID></TD>
-          <TD title="Click for HSP info"><TMPL_VAR NAME=FEATURE_SCORE></TD>
-
-         </TR>
-        </TMPL_LOOP>
-        </TBODY>
-        </TABLE>
-   </TMPL_IF>
- 
-   <TMPL_IF NAME=NO_FEAT_IF>
-   <TABLE id="no_table" cellspacing="2" class="resultborder" style="overflow: auto;">
+   <TMPL_IF NAME="HSP_TABLE">
+   <TABLE id="hsp_result_table" cellspacing="2" class="resultborder" style="overflow: auto;">
      <!--<caption>HSPs w/o overlapping features:</caption>-->
      <THEAD>
       <TR align=middle>
@@ -1709,18 +1673,18 @@ window.open('/CoGe/MatrixView.pl?matrix='+matrix);
         <TH class=header>Distance</TH>
        </TR>
      </THEAD>
-     <TBODY id=no_overlap_body style="overflow: auto;">
-     <TMPL_LOOP NAME=NO_FEATS>
+     <TBODY id=hsp_result_table_body style="overflow: auto;">
+     <TMPL_LOOP NAME=HSPS>
        <tr class="feat" id="<TMPL_VAR NAME=ID>" >
          <td align=right id="checkbox<TMPL_VAR NAME=CHECKBOX>"><input type=checkbox id="<TMPL_VAR NAME=CHECKBOX>" value="<TMPL_VAR NAME=CHECKBOX>"></td>
-         <td style="white-space:nowrap;"><TMPL_VAR NAME=NO_FEAT_ORG></td>
-         <td><TMPL_VAR NAME=NO_FEAT_CHR></td>
-         <td><TMPL_VAR NAME=NO_FEAT_POS></td>
-         <td><TMPL_VAR NAME=NO_FEAT></td>
-         <td><TMPL_VAR NAME=NO_FEAT_EVAL></td>
-         <td><TMPL_VAR NAME=NO_FEAT_PID></td>
-         <td><TMPL_VAR NAME=NO_FEAT_SCORE></td>
-         <td style="white-space:nowrap;"><div id ="feat<TMPL_VAR NAME=ID>"><TMPL_VAR NAME=NO_FEAT_LINK></div>
+         <td style="white-space:nowrap;"><TMPL_VAR NAME=HSP_ORG></td>
+         <td><TMPL_VAR NAME=HSP_CHR></td>
+         <td><TMPL_VAR NAME=HSP_POS></td>
+         <td><TMPL_VAR NAME=HSP></td>
+         <td><TMPL_VAR NAME=HSP_EVAL></td>
+         <td><TMPL_VAR NAME=HSP_PID></td>
+         <td><TMPL_VAR NAME=HSP_SCORE></td>
+         <td style="white-space:nowrap;"><div id ="feat<TMPL_VAR NAME=ID>"><TMPL_VAR NAME=HSP_LINK></div>
          <td><div id="dist<TMPL_VAR NAME=ID>">-</div></td>
        </tr>
       </TMPL_LOOP>
@@ -1887,9 +1851,9 @@ window.open('/CoGe/MatrixView.pl?matrix='+matrix);
       <TD valign="top" align=right>
        <DIV id=result_features align=right valign="top">
          <form id=feature_list style="position:static">
-         <TMPL_VAR NAME="OVERLAP_FEATURE_LIST">
+         <TMPL_VAR NAME="HSP_RESULTS">
          </form>
-         <input type=button value="Select All" onClick="$('#feature_list').checkCheckboxes()">  <input type=button value="Select None" onClick="$('#feature_list').unCheckCheckboxes()"> 
+          <input type=button id="click_links" value="Show all Features" onClick="click_all_feat_links();$('#click_links').hide(0)"> <input type=button value="Select All" onClick="$('#feature_list').checkCheckboxes()">  <input type=button value="Select None" onClick="$('#feature_list').unCheckCheckboxes()"> 
          <br><br>
          Do Following to Checked Features: 
           <select name=overlap_action id=overlap_action>
