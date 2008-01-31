@@ -396,9 +396,8 @@ function monitor_log(log)
   if (!finished && pageObj.nolog<4)
   {
     setTimeout("read_log(['args__logfile', 'args__'+pageObj.basefile, 'args__prog','args__GEvo'], [monitor_log])", 4000);
-  if (message) $('#loading').html("<div class=small>"+message+'</div>');
   }
-
+  if (message) $('#loading').html("<div class=small>"+message+'</div>');
 }
 
 function update_colors(hsp_num) {
