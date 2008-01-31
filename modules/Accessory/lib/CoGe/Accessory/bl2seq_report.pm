@@ -230,6 +230,8 @@ sub _processHSP {
 	$self->hsp_count($hsp_count);
 	my $qgaps = $ql =~ tr/-/-/;
 	my $sgaps = $sl =~ tr/-/-/;
+	($qb, $qe) = ($qe,$qb) if $qb > $qe;
+	($sb, $se) = ($se,$sb) if $sb > $se;
 	my $hsp = new CoGe::Accessory::parse_report::HSP
 	  ({
 	    score=>$score,
