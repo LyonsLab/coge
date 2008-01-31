@@ -61,7 +61,7 @@ $MAX_PROC=8;
 $DEBUG = 0;
 $BENCHMARK = 1;
 $NUM_SEQS = 3;
-$MAX_SEQS = 10;
+$MAX_SEQS = 21;
 $| = 1; # turn off buffering 
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		 sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
