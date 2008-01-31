@@ -41,7 +41,7 @@ $TEMPURL = "/CoGe/tmp/CoGeBlast";
 $FORMATDB = "/usr/bin/formatdb";
 $BLAST = "/usr/bin/blast -a 8";
 $BLASTZ = "/usr/bin/blastz";
-$RESULTSLIMIT=500;
+$RESULTSLIMIT=1000;
 $MAX_PROC=8;
 
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
@@ -422,7 +422,7 @@ sub blast_search
     my $t3 = new Benchmark;
     initialize_sqlite();
     my $t4 = new Benchmark;
-    my $html = gen_results_page(results=>\@results,width=>$width,type=>$type, resultslimit=>$resultslimit);
+    my ($html,$click_all_links) = gen_results_page(results=>\@results,width=>$width,type=>$type, resultslimit=>$resultslimit);
     my $t5 = new Benchmark;
     my $init_time = timestr(timediff($t2,$t1));
     my $blast_time = timestr(timediff($t3,$t2));
@@ -435,7 +435,7 @@ Time to initialize sqlite:       $dbinit_time
 Time to generate results page:   $resultpage_time
 };
       write_log("$benchmark" ,$cogeweb->logfile);
-    return $html,$cogeweb->basefilename;
+    return $html,$cogeweb->basefilename, $click_all_links;
   }
  
  
@@ -446,13 +446,12 @@ sub gen_results_page
      my $width = $opts{width};
      my $type = $opts{type};
      my $resultslimit = $opts{resultslimit};
+     my $click_all_links;
      my $null;
      my $hsp_count = 0;;
-     my @table;
      my $length;
-     my $flag;
      my @check;
-     my @no_feat;
+     my @hsp;
      my $t0 = new Benchmark;
      foreach my $set (@$results)
        {
@@ -466,94 +465,20 @@ sub gen_results_page
 		 my ($chr) = $hsp->subject_name =~ /chromosome: (.*?),/;
 		 my ($org) = $hsp->subject_name =~ /^\s*(.*?)\s*\(/;
 		 next unless $dsid && $chr;
- 		 my @feat;
-#		 foreach my $feat($coge->get_features_in_region(start=>$hsp->subject_start,  
-# 							  stop=>$hsp->subject_stop,
-# 							  chr=>$chr, 
-# 							  dataset_id=>$dsid,
-# 							 ))
-#		   {
-#		     next if $feat->type->name =~ /source/;
-#		     push @feat, $feat if $feat;
-#		   }
-		if (@feat) 
-		  {
-		    my %seen;
-		    grep { ! $seen{lc($_)} ++ } map {$_->type->name} @feat;
-		    foreach my $key (keys %seen)
-		      {
-			$seen{'rna'}=1 if $key =~ /rna/i;
-		      }
-		    my $search_type;
-		    $search_type = "gene" if $seen{gene};
-		    $search_type = "cds" if !$search_type && $seen{cds};
-		    $search_type = "rna" if !$search_type && $seen{rna};
-		    $search_type = "exon" if !$search_type && $seen{exon};
-		    ($search_type) = keys %seen unless $search_type;
-		    $search_type = undef if $search_type =~ /source/i;
-		    my $no_genes = 0;
-		    foreach my $feature (@feat)
-		      {
-			#print STDERR $search_type,"::",$feature->type->name,"\n" if $feature->dataset->organism->name =~ /Poplar/i;
-			next unless $search_type && $feature->type->name =~ /$search_type/i;
-			$no_genes++;
-			$length = (($feature->stop) - ($feature->start));		     
-			my ($name) = sort $feature->names;
-			foreach my $data (@check)
-			  {
-			    $flag = 1 if ($data->{name} && $name && ($data->{name} eq $name) && ($data->{score} == $hsp->score));
-			  }
-			unless ($flag) {
-			  my $fid = $feature->id."_".$hsp->number."_".$dsid;
-			  my $pid = $hsp->percent_id =~ /\./ ? $hsp->percent_id : $hsp->percent_id.".0";
-			  push @table, {FID=>$fid,FEATURE_NAME=>qq{<span class="link" onclick="update_info_box('table_row$fid')">$name</span>},
-					FEATURE_HSP=>qq{<span class="link" onclick="update_hsp_info('table_row$fid')">}.$hsp->number."</span>",
-					FEATURE_EVAL=>$hsp->pval,
-					FEATURE_PID=>$hsp->percent_id,
-					FEATURE_SCORE=>$hsp->score,
-					FEATURE_LENGTH=>$length,
-					FEATURE_START=>($feature->start),
-					FEATURE_CHR=>$feature->chromosome,
-					FEATURE_ORG=>$org,};
-			  push @check,{name=>$name,score=>$hsp->score};
-			}
-			$flag=0;
-		      }
-		    $no_genes = 0;
-		    unless($no_genes)
-		     {
-		       
-		       my $id = $hsp->number."_".$dsid;
-		       my $no_link = qq{<span class="link" onclick="fill_nearby_feats('$id')">Click for Closest Feature</span>};
-		       push @no_feat, {
-				       CHECKBOX=>$id."_".$chr."_".$hsp->subject_start."no",
-				       ID=>$id,
-				       NO_FEAT_ORG=>$org,
-				       NO_FEAT=>qq{<span class="link" onclick="update_hsp_info('table_row$id')">}.$hsp->number."</span>",
-				       NO_FEAT_EVAL=>$hsp->pval,
-				       NO_FEAT_PID=>$hsp->percent_id,
-				       NO_FEAT_SCORE=>$hsp->score,
-				       NO_FEAT_POS=>($hsp->subject_start),
-				       NO_FEAT_CHR=>$chr,
-				       NO_FEAT_LINK=>$no_link};
-		     }
-		 }
-		 else {
-		   my $id = $hsp->number."_".$dsid;
-		   my $no_link = qq{<span class="link" onclick="fill_nearby_feats('$id')">Click for Closest Feature</span>};
-		   push @no_feat, {
-				   CHECKBOX=>$id."_".$chr."_".$hsp->subject_start."no",
-				   ID=>$id,
-				   NO_FEAT_ORG=>$org,
-				   NO_FEAT=>qq{<span class="link" onclick="update_hsp_info('table_row$id')">}.$hsp->number."</span>",
-				   NO_FEAT_EVAL=>$hsp->pval,
-				   NO_FEAT_PID=>$hsp->percent_id,
-				   NO_FEAT_SCORE=>$hsp->score,
-				   NO_FEAT_POS=>$hsp->subject_start,
-				   NO_FEAT_CHR=>$chr,
-				   NO_FEAT_LINK=>$no_link};
-		   
-		 }
+		 my $id = $hsp->number."_".$dsid;
+		 $click_all_links .= $id.",";
+		 my $feat_link = qq{<span class="link" onclick="fill_nearby_feats('$id','true')">Click for Closest Feature</span>};
+		 push @hsp, {
+				 CHECKBOX=>$id."_".$chr."_".$hsp->subject_start."no",
+				 ID=>$id,
+				 HSP_ORG=>$org,
+				 HSP=>qq{<span class="link" title="Click for HSP information" onclick="update_hsp_info('table_row$id')">}.$hsp->number."</span>",
+				 HSP_EVAL=>$hsp->pval,
+				 HSP_PID=>$hsp->percent_id,
+				 HSP_SCORE=>$hsp->score,
+				 HSP_POS=>($hsp->subject_start),
+				 HSP_CHR=>$chr,
+				 HSP_LINK=>$feat_link};
 		 populate_sqlite($hsp,$dsid);
 	       }
 	   }
@@ -561,33 +486,28 @@ sub gen_results_page
      my $t1 = new Benchmark;
      my ($chromosome_data, $chromosome_data_large) = generate_chromosome_images(results=>$results,large_width=>$width,hsp_type=>$type);
      my $t2 = new Benchmark;
-     unless (@table || @no_feat) 
+     unless (@hsp) 
        {
 	 $null = "null";
        }
      my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CoGeBlast.tmpl');
-	 $template->param(OVERLAP_FEATURE_IF=>1);
+	 $template->param(RESULT_TABLE=>1);
      # ERIC, i added this so it woulndt fail
-     if (@table)
-       {
-	 $template->param(YES_FEAT_IF=>1);
-	 $template->param(FEATURE_TABLE=>\@table);#unless $null;
-       }
      $template->param(NULLIFY=>$null) if $null;
      $hsp_count .= "<br><span class=\"small alert\">Only top $resultslimit results shown.  All results are in the blast report.</span>" if $hsp_count > $resultslimit;
      $template->param(HSP_COUNT=>$hsp_count);
 
-     if (@no_feat)
+     if (@hsp)
      {
-       @no_feat = sort {$a->{NO_FEAT_ORG} cmp $b->{NO_FEAT_ORG} || $a->{NO_FEAT} cmp $b->{NO_FEAT}} @no_feat if @no_feat;
-       $template->param(NO_FEAT_IF=>1);
-       $template->param(NO_FEATS=>\@no_feat);
+       @hsp = sort {$a->{HSP_ORG} cmp $b->{HSP_ORG} || $a->{HSP} cmp $b->{HSP}} @hsp if @hsp;
+       $template->param(HSP_TABLE=>1);
+       $template->param(HSPS=>\@hsp);
      }
      
-     my $overlap_feature_element = $template->output;
-     $template->param(NO_FEAT_IF=>0);
-     $template->param(OVERLAP_FEATURE_IF=>0);
-     $template->param(OVERLAP_FEATURE_LIST=>$overlap_feature_element);
+     my $hsp_results = $template->output;
+     $template->param(HSP_TABLE=>0);
+     $template->param(RESULT_TABLE=>0);
+     $template->param(HSP_RESULTS=>$hsp_results);
      $template->param(CHROMOSOMES_IF=>1);
      $template->param(CHROMOSOME_LOOP=>$chromosome_data);
      my $chromosome_element = $template->output;
@@ -615,7 +535,7 @@ Time to gen resutls:             $render_time
 };
      print STDERR $benchmark;
      write_log($benchmark, $cogeweb->logfile);
-     return $html;
+     return $html, $click_all_links;
    }
 
 sub gen_data_file_summary
@@ -988,7 +908,7 @@ sub generate_feat_info
     my $featid = shift;
     my $checkbox = shift;
     $featid =~ s/^table_row//;
-    $featid =~ s/^no_feat//;
+    #$featid =~ s/^no_feat//;
     $featid =~ s/_\d+_\d+$//;
     my ($feat) = $coge->resultset("Feature")->find($featid);
     unless (ref($feat) =~ /Feature/i)
@@ -1216,7 +1136,9 @@ sub generate_hit_image
     $cq->auto_zoom(0);
     $cq->feature_labels(1);
     my $strand = $hsp->{strand} =~ /-/ ? "-1" : 1;
-    my $feat = CoGe::Graphics::Feature::HSP->new({start=>$hsp->{qstart}, stop=>$hsp->{qstop}, strand=>$strand, label=>$hsp_num, type=>"HSP"});
+    my ($qstart, $qstop) = ($hsp->{qstart}, $hsp->{qstop});
+    ($qstart,$qstop) = ($qstop,$qstart) if $qstart > $qstop;
+    my $feat = CoGe::Graphics::Feature::HSP->new({start=>$qstart, stop=>$qstop, strand=>$strand, label=>$hsp_num, type=>"HSP"});
     $feat->color([255,200,0]);
     $cq->add_feature($feat);
     my ($dsid) = $hsp->{sname} =~ /id: (\d+)/;
@@ -1244,8 +1166,9 @@ sub generate_hit_image
     $cs->feature_height(10);
     $cs->overlap_adjustment(0);
     $cs->feature_labels(1);
-
-    $feat = CoGe::Graphics::Feature::HSP->new({start=>$hsp->{sstart}, stop=>$hsp->{sstop}, strand=>$strand, order=>2, label=>$hsp_num, type=>"HSP"});
+    my ($sstart, $sstop) = ($hsp->{sstart}, $hsp->{sstop});
+    ($sstart,$sstop) = ($sstop,$sstart) if $sstart > $sstop;
+    $feat = CoGe::Graphics::Feature::HSP->new({start=>$sstart, stop=>$sstop, strand=>$strand, order=>2, label=>$hsp_num, type=>"HSP"});
     $feat->color([255,200,0]);
     $cs->add_feature($feat);
     
@@ -1314,7 +1237,7 @@ sub overlap_feats_parse #Send to GEvo
     @list = grep {!$seen{$_}++} @list;
     foreach my $featid( @list)
       {
-      	#my ($feat) = $coge->resultset("Feature")->find($featid);
+      	 #my ($feat) = $coge->resultset("Feature")->find($featid);
 		#my ($feat_name) = sort $feat->names;#something
 		$url .= "fid$count=$featid&";
 		$count ++;
@@ -1325,7 +1248,7 @@ sub overlap_feats_parse #Send to GEvo
 		$count++
 	}
     $count--;
-    return ("alert",$count) if $count > 10;
+    return ("alert",$count) if $count > 20;
     $url .= "num_seqs=$count";
     return $url;
   }
@@ -1424,10 +1347,12 @@ sub populate_sqlite
      
      my $query_length = $hsp->query_stop > $hsp->query_start ? (($hsp->query_stop) - ($hsp->query_start) + 1) : (($hsp->query_start) - ($hsp->query_stop) + 1);
      my ($qstart, $qstop) = $hsp->query_stop > $hsp->query_start ? ($hsp->query_start, $hsp->query_stop) : ($hsp->query_stop, $hsp->query_start);
+#     ($qstart, $qstop) = ($qstop, $qstart) if $qstop < $qstart;
      my $qmismatch = $query_length - $hsp->match;
      
      my $subject_length = $hsp->subject_stop > $hsp->subject_start ? (($hsp->subject_stop) - ($hsp->subject_start) + 1) : (($hsp->subject_start) - ($hsp->subject_stop) + 1);
-     my ($sstart, $sstop) = $hsp->subject_stop > $hsp->subject_start ? ($hsp->subject_start,$hsp->subject_stop) : ($hsp->subject_stop,$hsp->subject_start);
+     my ($sstart, $sstop) = ($hsp->subject_start,$hsp->subject_stop);
+#     ($sstart, $sstop) = ($sstop, $sstart) if $sstop < $sstart;
      my $smismatch = $subject_length - $hsp->match;
      
      my $statement = qq{
@@ -1478,6 +1403,7 @@ sub get_nearby_feats
     $hsp_id =~ s/^\d+_// if $hsp_id =~ tr/_/_/ > 1;
     
     my $name = "None";
+    my $fid;
     #my $checkbox = " ";
     my $distance = ">250";
     my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data WHERE name = ?});
@@ -1573,13 +1499,16 @@ sub get_nearby_feats
 	  }
 	  $distance .= $upstream ? " upstream" : " downstream";
 	  ($name) = $closest_feat->names;
+	  $fid = $closest_feat->id;
 	  $distance = "overlapping" if $distance =~ /-/;
-	  $name = qq{<a href="#" onclick=update_info_box('no_feat}.$closest_feat->id."_".$hsp_num."_".$dsid."')>$name</a>";
+	  $name = qq{<a href="#" title="Click for Feature Information" onclick=update_info_box('}.$closest_feat->id."_".$hsp_num."_".$dsid."')>$name</a>";
 	}	
 	else {
 	 $distance = "No Features within 250 kb of HSP No. $hsp_num";
 	}
-	return $name,$distance;
+	my $new_checkbox_info = $hsp_id."_".$chr."_".$sstart."no,".$fid."_".$hsp_id;
+	#print STDERR $new_checkbox_info,"\n";
+	return $name,$distance,$hsp_id,$new_checkbox_info;
 }
 
 
