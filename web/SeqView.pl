@@ -34,6 +34,7 @@ my $pj = new CGI::Ajax(
 		       find_feats=>\&find_feats,
 		       parse_url=>\&parse_url,
 		       generate_feat_info=>\&generate_feat_info,
+		       generate_gc_info=>\&generate_gc_info,
 			);
 $pj->js_encode_function('escape');
 print $pj->build_html($FORM, \&gen_html);
@@ -106,8 +107,11 @@ sub gen_body
         $template->param(DSID=>$dsid);
     	$template->param(CHR=>$chr);
     	$template->param(FEATID=>0); #to make JS happy
-    	$template->param(FEATNAME=>'null'); #to make JS happy	
+    	$template->param(FEATNAME=>'null'); #to make JS happy
+        #generate_gc_info(chr=>$chr,stop=>$stop,start=>$start,dsid=>$dsid);
     }
+#
+    $template->param(GC_INFO=>qq{<td valign=top><input type=button value="Calculate GC Content" onClick="generate_gc_info(['seq_text'],[display_gc_info],'POST')"><br><div id=gc_info style="display:none"></div>});
     my $html = $template->output;
     return $html;
   }
@@ -371,4 +375,19 @@ sub generate_feat_info
     my $html = qq{<a href="#" onClick="\$('#feature_info').slideToggle(pageObj.speed);" style="float: right;"><img src='/CoGe/picts/delete.png' width='16' height='16' border='0'></a>};
     $html .= $feat->annotation_pretty_print_html();
     return $html;
+  }
+  
+sub generate_gc_info
+  {
+    my $seq = shift;
+    $seq =~ s/>.*?\n//;
+    $seq =~ s/\n//g;
+    my $length = length($seq);
+    return "No sequence" unless $length;
+    my $gc = $seq =~ tr/GCgc/GCgc/;
+    my $at = $seq =~ tr/ATat/ATat/;
+    my $pgc = sprintf("%.2f",$gc/$length*100);
+    my $pat = sprintf("%.2f",$at/$length*100);
+    my $total_content = "GC: $gc (".$pgc."%)  AT: $at (".$pat."%)  total length: $length";
+    return $total_content;    
   }
