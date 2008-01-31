@@ -57,6 +57,9 @@ function display_feat_info(html){
  $('#feature_info').html(html).show(pageObj.speed);
 }
 
+function display_gc_info(html){
+ $('#gc_info').html(html).show(pageObj.speed);
+}
 
 function get_blast_info(){
   var url = location.href;
@@ -105,6 +108,7 @@ function waiting(tag,rc) {
 
 */
 function redefine(){
+  $('#gc_info').html('');
   if(! isNaN($('#addup').val())) {
   var up = $('#upstream').val()*1-$('#addup').val()*1;
   var down = $('#downstream').val()*1+$('#adddown').val()*1;
@@ -154,6 +158,7 @@ function featlist (link) {
         <textarea id=seq_text name=seq_text class=backbox readonly ondblclick="this.select();" style="height: 400px; width: 750px; overflow: auto;"></textarea>
 	</TD>
        <TMPL_VAR NAME=FEAT_INFO>
+       <TMPL_VAR NAME=GC_INFO>
        </TR>
       </TABLE>
  </div>
