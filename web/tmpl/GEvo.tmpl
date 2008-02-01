@@ -388,16 +388,17 @@ function monitor_log(log)
      database = "Generating annotation database. . .";
    }
   } else {pageObj.nolog += 1;}
-  var message;
+  var message = 0;
   if (sequence) message = sequence;
   if (algo) message += algo;
   if (image) message += image;
   if (database) message += database;
-  
+  if (!message) {message = "Initializing search";}
   if (!pageObj.finished && pageObj.nolog<4)
   {
     var waittime = pageObj.waittime;
     pageObj.waittime = pageObj.waittime*2;
+    message+="<br/>Progress will next be check in "+pageObj.waittime/1000+" seconds.";
 //    console.log('ajax.len: '+ajax.length+", PageObj.nolog: "+pageObj.nolog);
     if (ajax.length) {setTimeout("read_log(['args__logfile', 'args__'+pageObj.basefile, 'args__prog','args__GEvo'], [monitor_log])", waittime);}
   }
