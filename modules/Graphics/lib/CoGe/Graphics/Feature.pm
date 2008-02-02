@@ -189,8 +189,8 @@ BEGIN
 "image_height", "image_width", #generic image size for scaling later by Chromosome.pm
 "label", #feature label
 "label_location", #location to print label relative to image:  top, bottom, left, right, on.
-"start", #chromosomal start position
-"stop", #chromosomal stop position
+"_start", #chromosomal start position
+"_stop", #chromosomal stop position
 "strand", #top strand ("1") or bottom strand ("-1")
 #"placement", #will feature be inside or outside the chromosome picture (may default to another place depending on options used and magnification of chromosome) ("in" or "out")
 "fill", #should feature fill area (if possible?)
@@ -321,7 +321,45 @@ skip_overlap_search => When set to true, no overlap search is performed by CoGe:
 		 to determine the relative placement of the feature in the final image.
 =cut
 
+
 #################### subroutine header end ####################
+
+
+sub new
+  {
+    my $class = shift;
+    my $self = {};
+    bless $self , $class; 
+    my @opts = @_;
+    my $opts = ref($opts[0])=~/hash/i ? $opts[0] : {@opts};
+        my $start = $opts->{start};
+        my $stop = $opts->{stop};
+        delete $opts->{start};
+        delete $opts->{stop};
+        $opts->{_start}=$start if defined $start;
+        $opts->{_stop}=$stop if defined $stop;
+    while (my ($k, $v) = each %$opts)
+     {
+       $self->{$k} = $v;
+     }
+    return $self;
+  }
+
+sub start
+  {
+    my $self = shift;
+    my $val = shift;
+    return $self->_start($val) if $val;
+    return $self->_start;
+  }
+
+sub stop
+  {
+    my $self = shift;
+    my $val = shift;
+    return $self->_stop($val) if $val;
+    return $self->_stop();
+  }
 
 #################### subroutine header begin ####################
 
@@ -332,6 +370,7 @@ skip_overlap_search => When set to true, no overlap search is performed by CoGe:
 =cut
 
 #################### subroutine header end ####################
+
 
 sub transparency
   {
