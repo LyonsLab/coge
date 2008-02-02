@@ -21,15 +21,15 @@ BEGIN {
 sub start
   {
     my $self = shift;
-    my ($start) = sort {$a<=>$b} map {@$_} @{$self->segments};
-    return $start;
+    return unless $self->segments;
+    return $self->segments->[0][0];
   }
 
 sub stop
   {
     my $self = shift;
-    my ($stop) = sort {$b<=>$a} map {@$_} @{$self->segments};
-    return $stop;
+    return unless $self->segments;
+    return $self->segments->[-1][-1];
   }
 
 sub add_segment
