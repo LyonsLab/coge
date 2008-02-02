@@ -18,6 +18,20 @@ BEGIN {
 );
 }
 
+sub start
+  {
+    my $self = shift;
+    my ($start) = sort {$a<=>$b} map {@$_} @{$self->segments};
+    return $start;
+  }
+
+sub stop
+  {
+    my $self = shift;
+    my ($stop) = sort {$b<=>$a} map {@$_} @{$self->segments};
+    return $stop;
+  }
+
 sub add_segment
   {
     my $self = shift;
