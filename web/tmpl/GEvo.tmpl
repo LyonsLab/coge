@@ -398,7 +398,7 @@ function monitor_log(log)
   {
     var waittime = pageObj.waittime;
     pageObj.waittime = pageObj.waittime*2;
-    message+="<br/>Progress will next be check in "+pageObj.waittime/1000+" seconds.";
+    message+="<br/>Next progress check in "+waittime/1000+" seconds.";
 //    console.log('ajax.len: '+ajax.length+", PageObj.nolog: "+pageObj.nolog);
     if (ajax.length) {setTimeout("read_log(['args__logfile', 'args__'+pageObj.basefile, 'args__prog','args__GEvo'], [monitor_log])", waittime);}
   }
