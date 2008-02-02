@@ -35,7 +35,7 @@ use DBIxProfiler;
 use DBI;
 use LWP::Simple;
 use Parallel::ForkManager;
-#use Text::Wrap qw($columns &wrap);
+use Statistics::Basic;
 use Benchmark qw(:all);
 
 # for security purposes
@@ -615,7 +615,7 @@ sub run
 	    write_log("generating image ($count/".scalar @sets.")for ".$obj->accn, $cogeweb->logfile);
 	    $count++;
 #	    my ($image, $map, $mapname, $gfx, $eval_cutoff, $feat_count, $overlap_count) = 
-	    my ($gfx, $eval_cutoff, $feat_count, $overlap_count) = 
+	    my ($gfx, $stats) = 
 	      generate_image(
 			     set=>$item,
 			     start=>1,
@@ -644,30 +644,16 @@ sub run
 			     color_overlapped_features=>$color_overlapped_features,
 			     hsp_overlap_length=>$hsp_overlap_length,
 			    );
-	    $item->{feat_count} = $feat_count;
-	    $item->{overlap_count} = $overlap_count;
+#	    $item->{feat_count} = $feat_count;
+#	    $item->{overlap_count} = $overlap_count;
 	    my $filename = $cogeweb->basefile."_".$item->{seq_num}.".png";
 	    $filename = check_filename_taint($filename);
 	    my $image = basename($filename);
 	    $item->{image}=$image;
-#	    push @gfxs,[$gfx,$filename, $item];
-#	  }
-#      }
-#    my $pm = new Parallel::ForkManager($MAX_PROC);
-#    foreach my $item (@gfxs)
-#      {
-#	my ($gfx, $filename, $set) = @$item;
-#	$pm->start and next if $pm;
-	$gfx->generate_png(file=>$filename);
-	generate_image_db(set=>$item, gfx=>$gfx);
-#	$pm->finish if $pm;
-#      }
-#    $pm->wait_all_children;
-#    foreach my $item (@gfxs)
-#      {
-#	my ($gfx, $filename, $set) = @$item;
-#	my ($w,$h) = imgsize($filename);
-	$frame_height += $gfx->ih + $gfx->ih*.1;
+	    $item->{stats}=$stats;
+	    $gfx->generate_png(file=>$filename);
+	    generate_image_db(set=>$item, gfx=>$gfx);
+	    $frame_height += $gfx->ih + $gfx->ih*.1;
 	  }
       }
     my $t3_5 = new Benchmark;
@@ -677,6 +663,9 @@ sub run
     $html .= qq{<DIV id=flash_viewer></DIV>};
     $html .= qq{<table>};
     $html .= qq{<tr valign=top><td class = small>Alignment reports};
+    my $stats_file = $cogeweb->basefile."_stats.txt";
+    $stats_file = check_filename_taint($stats_file);
+
     if ($analysis_reports && @$analysis_reports)
       {
 	foreach my $item (@$analysis_reports)
@@ -703,6 +692,7 @@ sub run
 	$html .= "<div><font class=small><A HREF=\"$basename\" target=_new>Fasta file for $accn</A></font></DIV>\n";
       }
     $html .= qq{<td class = small><a href = "http://baboon.math.berkeley.edu/mavid/gaf.html">GAF</a> annotation files};
+    write_log("Features overlapped by HSPs:", $stats_file);
     foreach my $item (@sets)
       {
 	my $anno_file = generate_annotation(%$item);
@@ -710,6 +700,18 @@ sub run
 	my $basename = $TEMPURL."/".basename ($anno_file);
 	my $accn = $item->{accn};
 	$html .= "<div><font class=small><A HREF=\"$basename\" target=_new>Annotation file for $accn</A></font></DIV>\n";
+	my $stats = $item->{stats};
+	foreach my $accn1 (sort keys %{$stats->{data}})
+	  {
+	    foreach my $accn2 (sort keys %{$stats->{data}{$accn1}})
+	      {
+		foreach my $type (sort keys %{$stats->{data}{$accn1}{$accn2}})
+		  {
+		    next if $type eq "hsp";
+		    write_log(join ("\t", $accn1, $accn2, $type, $stats->{data}{$accn1}{$accn2}{$type}{overlapped_hsps}), $stats_file);
+		  }
+	      }
+	  }
       }
     $html .= qq{<td class = small>SQLite db};
     my $dbname = $TEMPURL."/".basename($cogeweb->sqlitefile);
@@ -724,12 +726,27 @@ sub run
     $html .=qq{<a href="GEvo_direct.pl?name=$basefilename" target=_new>Results only</a>};
     $html .= qq{<td class = small>Overlap Feature Stats:<table>};
     $html .= qq{<tr class=small>}.join ("<th align=left>", qw(Dataset ));
+    write_log("\nAverage percent identity for all HSPs (normalized to HSP length):", $stats_file);
     foreach my $item (@sets)
       {
 	$html .= "<tr class=small>";
-	$html .= "<td>".$item->{obj}->accn."<td nowrap>".commify(length $item->{obj}->sequence)."bp"."<td nowrap>".$item->{overlap_count}."/".$item->{feat_count};
-	$html .= "<td nowrap>".sprintf("%.2f", $item->{overlap_count}/$item->{feat_count}*100)."%" if $item->{feat_count};	
+	$html .= "<td>".$item->{obj}->accn."<td nowrap>".commify(length $item->{obj}->sequence)."bp"."<td nowrap>".$item->{stats}{overlap_count}."/".$item->{stats}{feat_count};
+	$html .= "<td nowrap>".sprintf("%.2f", $item->{stats}{overlap_count}/$item->{stats}{feat_count}*100)."%" if $item->{feat_count};
+	my $stats = $item->{stats};
+	foreach my $accn1 (sort keys %{$stats->{data}})
+	  {
+	    foreach my $accn2 (sort keys %{$stats->{data}{$accn1}})
+	      {
+		my $len= 0;
+		map {$len+=$_->[1]} @{$stats->{data}{$accn1}{$accn2}{hsp}};
+		my $pid = 0;
+		map {$pid+=$_->[1]*$_->[0]} @{$stats->{data}{$accn1}{$accn2}{hsp}};
+		write_log("$accn1\t$accn2\t".sprintf("%.2f",$pid/$len), $stats_file);
+	      }
+	  }
       }
+    my $stats_url = $TEMPURL."/".basename($stats_file);
+    $html .= qq{<tr class=small><td><a href=$stats_url target=_new>Stats file</a>};
     $html .= qq{</table>};
     $html .= qq{</table>};
 
@@ -768,7 +785,7 @@ sub generate_image
   {
     my %opts = @_;
     my $set = $opts{set};
-    my $gbobj = $set->{obj};#$opts{gbobj};
+    my $gbobj = $set->{obj};
     my $start = $opts{start};
     my $stop = $opts{stop};
     my $data = $opts{data};
@@ -827,26 +844,27 @@ sub generate_image
     $gfx->DEBUG(0);
     $gfx->major_tick_labels(0);
     $graphic->process_nucleotides(c=>$gfx, seq=>$gbobj->sequence, layers=>{gc=>$show_gc, nt=>$show_nt});
-    $eval_cutoff = process_hsps(
-				c=>$gfx, 
-				data=>$data, 
-				accn=>$gbobj->accn, 
-				rev=>$reverse_image, 
-				seq_length=> length($gbobj->sequence), 
-				stagger_label=>$stagger_label, 
-				hsp_limit=>$hsp_limit,
-				hsp_limit_num=>$hsp_limit_num,
-				gbobj=>$gbobj,
-				spike_seq=>$spike_seq,
-				color_hsp=>$color_hsp,
-				colors=>$hsp_colors,
-				show_hsps_with_stop_codon=>$show_hsps_with_stop_codon,
-				hsp_overlap_limit=>$hsp_overlap_limit,
-				hsp_overlap_length=>$hsp_overlap_length,
-			       );
+    my $stats = process_hsps(
+			  c=>$gfx, 
+			  data=>$data, 
+			  accn=>$gbobj->accn, 
+			  rev=>$reverse_image, 
+			  seq_length=> length($gbobj->sequence), 
+			  stagger_label=>$stagger_label, 
+			  hsp_limit=>$hsp_limit,
+			  hsp_limit_num=>$hsp_limit_num,
+			  gbobj=>$gbobj,
+			  spike_seq=>$spike_seq,
+			  color_hsp=>$color_hsp,
+			  colors=>$hsp_colors,
+			  show_hsps_with_stop_codon=>$show_hsps_with_stop_codon,
+			  hsp_overlap_limit=>$hsp_overlap_limit,
+			  hsp_overlap_length=>$hsp_overlap_length,
+			 );
     my ($feat_count, $overlap_count) = process_features(c=>$gfx, obj=>$gbobj, start=>$start, stop=>$stop, overlap_adjustment=>$overlap_adjustment, draw_model=>$draw_model, color_overlapped_features=>$color_overlapped_features);
-
-    return ($gfx, $eval_cutoff, $feat_count, $overlap_count);
+    $stats->{feat_count} = $feat_count;
+    $stats->{overlap_count} = $overlap_count;
+    return ($gfx, $stats);
   }
 
 sub initialize_sqlite
@@ -971,51 +989,19 @@ INSERT INTO image_info (id, iname, title, px_width,dsid, chromosome, bpmin, bpma
 	$anno =~ s/<br\/?>/&#10;/ig if $anno;
 	$anno =~ s/\n/&#10;/g if $anno;
 	$anno =~ s/[\[\]\(\)]/ /g if $anno;
-	if (ref ($feat) =~ /gene/i)
-	  {
-	    my ($max_nt) = sort {$b<=>$a} map {@$_} @{$feat->segments}; 
-	    my ($min_nt) = sort {$a<=>$b} map {@$_} @{$feat->segments}; 
-	    my $length_nt = $max_nt-$min_nt+1;
-	    my $length_pix = $xmax-$xmin;
-	    next if !$feat->{anchor} && ($length_nt == 0 || $length_pix == 0);
-#	    if ($feat->{anchor})
-#	      {
-	    $type = "anchor" if $feat->{anchor};
-		my $start = $feat->start;
-		my $stop = $feat->stop;
-		my $bpmin = $set->{obj}->start+$start-1;
-		my $bpmax = $set->{obj}->start+$stop-1;
-		my $xstart = sprintf("%.0f",$xmin+($start-$min_nt)/$length_nt*$length_pix);
-		my $xstop = sprintf("%.0f",$xmin+($stop-$min_nt)/$length_nt*$length_pix);
-
-		$statement = qq{
+	my $start = $feat->start;
+	my $stop = $feat->stop;
+	my $length_nt = $stop-$start+1;
+	my $length_pix = $xmax-$xmin;
+	next if !$feat->{anchor} && ($length_nt == 0 || $length_pix == 0);
+	$type = "anchor" if $feat->{anchor};
+	my $bpmin = $set->{obj}->start+$start-1;
+	my $bpmax = $set->{obj}->start+$stop-1;
+	
+	$statement = qq{
 INSERT INTO image_data (name, type, xmin, xmax, ymin, ymax, bpmin,bpmax,image_id, image_track,pair_id, link, annotation, color) values ("$name", "$type", $xmin, $xmax, $ymin, $ymax, $bpmin, $bpmax,$image_id, "$image_track",$pair_id, '$link', '$anno', '$color')
 };
-		print STDERR $statement unless $dbh->do($statement);
-#	      }
-
-#	    foreach my $segment (@{$feat->segments})
-#	      {
-#		my ($start,$stop) = @$segment;
-#		my $bpmin = $set->{obj}->start+$start-1;
-#		my $bpmax = $set->{obj}->start+$stop-1;
-#		my $xstart = sprintf("%.0f",$xmin+($start-$min_nt)/$length_nt*$length_pix);
-#		my $xstop = sprintf("%.0f",$xmin+($stop-$min_nt)/$length_nt*$length_pix);
-#		$statement = qq{
-#INSERT INTO image_data (name, type, xmin, xmax, ymin, ymax, bpmin, bpmax, image_id, image_track,pair_id, link, annotation, color) values ("$name", "$type", $xstart, $xstop, $ymin, $ymax, $bpmin, $bpmax, $image_id, "$image_track",$pair_id, '$link', '$anno', '$color')
-#};
-#		print STDERR $statement unless $dbh->do($statement);
-#	      }
-	  }
-	else
-	  {
-	    my $bpmin = $set->{obj}->start+$feat->start-1;
-	    my $bpmax = $set->{obj}->start+$feat->stop-1;
-	    $statement = qq{
-INSERT INTO image_data (name, type, xmin, xmax, ymin, ymax, bpmin,bpmax,image_id, image_track,pair_id, link, annotation, color) values ("$name", "$type", $xmin, $xmax, $ymin, $ymax, $bpmin, $bpmax,$image_id, "$image_track",$pair_id, '$link', '$anno', '$color')
-};
-	    print STDERR $statement unless $dbh->do($statement);
-	  }
+	print STDERR $statement unless $dbh->do($statement);
       }
   }
 
@@ -1032,7 +1018,7 @@ sub image_db_create_hsp_pairs
       {
 	if (@{$ids{$name}} != 2)
 	  {
-	    print STDERR "Problem with $name.  Retrieved", Dumper $ids{$name};
+	    print STDERR "Problem with $name.  Retrieved", Dumper $ids{$name} if $DEBUG;
 	    next;
 	  }
 	my ($id1, $id2) = @{$ids{$name}};
@@ -1221,9 +1207,11 @@ sub process_hsps
     my $hsp_overlap_length = $opts{hsp_overlap_length};
     my $show_hsps_with_stop_codon = $opts{show_hsps_with_stop_codon};
     #to reverse hsps when using genomic sequences from CoGe, they need to be drawn on the opposite strand than where blast reports them.  This is because CoGe::Graphics has the option of reverse drawing a region.  However, the sequence fed into blast has already been reverse complemented so that the HSPs are in the correct orientation for the image.  Thus, if the image is reverse, they are drawn on the wrong strand.  This corrects for that problem.   Sorry for the convoluted logic, but it was the simplest way to substantiate this option
+    my %stats;
     my $i = 0;
     my $track = 2;
     my @feats;
+    my %overlapped_feats;
     foreach my $item (@$data)
       {
 	my $report = $item->[0];
@@ -1236,6 +1224,7 @@ sub process_hsps
 	    $i++;
 	    next;
 	  }
+	my ($accna, $accnb) = $accn1 eq $accn ? ($accn1,$accn2) : ($accn2,$accn1);
 	if ($spike_seq)
 	  {
 	    my $found_spike = 0;
@@ -1302,6 +1291,7 @@ sub process_hsps
 	      }
 	    print STDERR "\t",$hsp->number,": $start-$stop\n" if $DEBUG;
 	    my $strand = $hsp->strand =~ /-/ ? "-1" : 1;
+	    push @{$stats{data}{$accna}{$accnb}{hsp}},[$hsp->percent_id, $hsp->length];
 
 	    #find overlapping features in gbobj
 	    if (($hsp->qe-$hsp->qb+1)>=$hsp_overlap_length || ($hsp->se-$hsp->sb+1)>=$hsp_overlap_length)
@@ -1311,6 +1301,9 @@ sub process_hsps
 		    #lets skip it if it only has minimal end overlap
 		    next if abs($start - $feat->stop)<=3 || abs($stop - $feat->start) <=3;
 		    $feat->qualifiers->{overlapped_hsp}=1;
+		    next if $overlapped_feats{$feat->type}{$feat->start}{$feat->stop};
+		    $overlapped_feats{$feat->type}{$feat->start}{$feat->stop}=1;
+		    $stats{data}{$accna}{$accnb}{$feat->type}{overlapped_hsps}++;
 		  }
 	      }
 
@@ -1394,7 +1387,8 @@ sub process_hsps
 	      }
 	  }
       }
-    return $eval_cutoff;
+    $stats{eval_cutoff} = $eval_cutoff;
+    return \%stats;;
   }
 
 sub generate_output
