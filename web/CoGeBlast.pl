@@ -32,7 +32,7 @@ $ENV{PATH} = "/opt/apache/CoGe/";
 $ENV{BLASTDB}="/opt/apache/CoGe/data/blast/db/";
 $ENV{BLASTMAT}="/opt/apache/CoGe/data/blast/matrix/";
 use vars qw( $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $FORMATDB $BLAST $BLASTZ $FORM $USER $DATE $coge $cogeweb $RESULTSLIMIT $MAX_PROC);
-
+#refresh again?
 $TEMPDIR = "/opt/apache/CoGe/tmp/CoGeBlast";
 $DATADIR = "/opt/apache/CoGe/data/";
 $FASTADIR = $DATADIR.'/fasta/';
@@ -553,7 +553,7 @@ sub gen_data_file_summary
 
 sub generate_chromosome_images
   {
-    my %opts = @_;
+     my %opts = @_;
     my $results = $opts{results};
     my $hsp_type = $opts{hsp_type} || "NA";
     my $width = $opts{width} || 400;
@@ -1040,7 +1040,8 @@ sub get_hsp_info
      
      $template->param(QUERY_SEQ=>qq{<a href="#" onclick="show_seq('$query_seq','$query_name',1,'seqObj','seqObj','}.$qstart."','".$qstop.qq{')">Click for Query Sequence</a>});
      my $rc = $strand =~ /-/ ? 1 : 0;
-     $template->param(SUB_SEQ=>qq{<a href="#" onclick="show_seq('$sub_seq','$subject_name',2,'$sub_dsid','$sub_chr','}.$sstart."','".$sstop.qq{','$rc')">Click for Subject Sequence</a>});
+#     $template->param(SUB_SEQ=>qq{<a href="#" onclick="show_seq('$sub_seq','$subject_name',2,'$sub_dsid','$sub_chr','}.$sstart."','".$sstop.qq{','$rc')">Click for Subject Sequence</a>});
+     $template->param(SUB_SEQ=>qq{<a href="SeqView.pl?dsid=$sub_dsid;chr=$sub_chr;start=$sstart;stop=$sstop;rc=$rc" target=_new>Click for Subject Sequence</a>});
      
      $template->param(ALIGNMENT=>qq{<a href="#" onclick="show_seq('$align_str','HSP No. $hsp_num',0,0,0,0)">Click for Alignment Sequence</a>});
      
