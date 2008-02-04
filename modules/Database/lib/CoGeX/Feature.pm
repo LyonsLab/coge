@@ -577,8 +577,8 @@ sub genomic_sequence {
 		  dataset=>$dataset->id,
 		    feature=>$self->id,
 	      };
-	die;
-
+#	die;
+	next;
       }
 
       my $this_seq = substr($full_seq
@@ -996,8 +996,10 @@ sub fasta
     my $rc = $opts{rc};
     my $upstream = $opts{upstream};
     my $downstream = $opts{downstream};
+    my $name_only = $opts{name_only};
     my $sep = $opts{sep}; #returns the header and sequence as separate items.
-    my $head = ">".$self->dataset->organism->name."(v".$self->version.")".", Name: ".(join (", ", $self->names)).", Type: ".$self->type->name.", Chromosome: ".$self->chromosome.", ".$self->genbank_location_string;
+    my ($pri_name) = $self->primary_name;
+    my $head = $name_only ? ">".$pri_name : ">".$self->dataset->organism->name."(v".$self->version.")".", Name: ".(join (", ", $self->names)).", Type: ".$self->type->name.", Chromosome: ".$self->chromosome.", ".$self->genbank_location_string;
     $head .= " +left: $upstream" if $upstream;
     $head .= " +right: $downstream" if $downstream;
     $head .= " (reverse complement)" if $rc;
@@ -1014,12 +1016,35 @@ sub fasta
 	else
 	  {
 	    my ($seqs,$type) = $self->frame6_trans;
-	    foreach my $frame (sort {CORE::length($a) <=> CORE::length($b) || $a cmp $b} keys %$seqs)
+	    #check to see if we can find the best translation
+	    my $found=0;
+	    while (my ($k, $v) = each %$seqs)
 	      {
-		$seq = $seqs->{$frame};
+		if ($v =~ /\*$/ || $v !~ /\*/)
+		  {
+		    $found = $k;
+		  }
+	      }
+	    if ($found)
+	      {
+		$seq = $seqs->{$found};
 		$seq = $self->reverse_complement($seq) if $rc;
 		$seq = join ("\n", wrap("","",$seq)) if $col;
-		$fasta .= $head. " $type frame $frame\n".$seq."\n";
+		$fasta .= $head;
+		$fasta .= " $type frame $found\n" unless $name_only;
+		$fasta .= $seq."\n";
+	      }
+	    else
+	      {
+		foreach my $frame (sort {CORE::length($a) <=> CORE::length($b) || $a cmp $b} keys %$seqs)
+		  {
+		    $seq = $seqs->{$frame};
+		    $seq = $self->reverse_complement($seq) if $rc;
+		    $seq = join ("\n", wrap("","",$seq)) if $col;
+		    $fasta .= $head;
+		    $fasta .= " $type frame $frame\n" unless $name_only;
+		    $fasta .= $seq."\n";
+		  }
 	      }
 	  }
       }
