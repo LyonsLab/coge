@@ -993,7 +993,7 @@ INSERT INTO image_info (id, iname, title, px_width,dsid, chromosome, bpmin, bpma
 	my $stop = $feat->stop;
 	my $length_nt = $stop-$start+1;
 	my $length_pix = $xmax-$xmin;
-	next if !$feat->{anchor} && ($length_nt == 0 || $length_pix == 0);
+	next if !$feat->{anchor} && ($length_nt == 0 );
 	$type = "anchor" if $feat->{anchor};
 	my $bpmin = $set->{obj}->start+$start-1;
 	my $bpmax = $set->{obj}->start+$stop-1;
