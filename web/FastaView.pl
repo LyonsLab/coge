@@ -83,13 +83,14 @@ sub get_seqs
     my $fids = $opts{fids};
     my $prot = $opts{prot};
     my $textbox = $opts{textbox};
+    my $name_only = $opts{name_only};
     my @fids = ref($fids) =~ /array/i ? @$fids : split/,/, $fids;
     my $seqs;
     foreach my $featid (@fids)
       {
 	my ($feat) = $coge->resultset('Feature')->find($featid);
 	next unless $feat;
-	$seqs .= $feat->fasta(col=>100, prot=>$prot);
+	$seqs .= $feat->fasta(col=>100, prot=>$prot, name_only=>$name_only);
       }
     $seqs = qq{<textarea id=seq_text name=seq_text class=backbox readonly ondblclick="this.select();" style="height: 400px; width: 750px; overflow: auto;">$seqs</textarea>} if $textbox;
     return $seqs;
