@@ -2,6 +2,10 @@
 
 function update_seqs(prot, text)
  {
+  var name_only = 0;
+  console.log($('#name_only').val());
+
+  if ($('#name_only')[0].checked) {name_only = 1};
   if (prot)
    {
     if (text)
@@ -9,7 +13,7 @@ function update_seqs(prot, text)
        var url=window.location+";prot=1;text=1";
        window.location =url;
      }
-    get_seqs(['args__fids','fids', 'args__textbox','args__1','args__prot','args__1'],['seq']);
+    get_seqs(['args__fids','fids', 'args__textbox','args__1','args__prot','args__1','args__name_only','args__'+name_only],['seq']);
     $('#prot_button').hide();
     $('#prot_text_button').show();
     $('#dna_button').show();
@@ -22,7 +26,7 @@ function update_seqs(prot, text)
        var url=window.location+";text=1";
        window.location =url;
      }
-    get_seqs(['args__fids','fids', 'args__textbox','args__1','args__prot','args__0'],['seq']);
+    get_seqs(['args__fids','fids', 'args__textbox','args__1','args__prot','args__0','args__name_only','args__'+name_only],['seq']);
     $('#prot_button').show();
     $('#prot_text_button').hide();
     $('#dna_button').hide();
@@ -47,6 +51,7 @@ $(document).ready(function()
 
 
 <TMPL_IF NAME=BOTTOM_BUTTONS>
+  <input type="checkbox" name="name_only" id="name_only" value=0 onclick="update_seqs(0);"/>&nbsp&nbsp Only use feature names in header.
   <DIV id="dynamic_button">
   <TABLE>
    <TR>
