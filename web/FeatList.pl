@@ -32,6 +32,7 @@ my $pj = new CGI::Ajax(
 		       protein_table=>\&protein_table,
 		       gc_content=>\&gc_content,
 		       gen_data=>\&gen_data,
+		       get_josh_fids=>\&get_josh_fids,
 			);
 $pj->js_encode_function('escape');
 print $pj->build_html($FORM, \&gen_html);
@@ -75,8 +76,9 @@ sub gen_body
 	push @$feat_list, $item if $item =~ /^\d+$/;
       }
     my $dsid = $form->param('dsid') if $form->param('dsid');
+    my $chr = $form->param('chr') if $form->param('chr');
     my $ftid = $form->param('ftid') if $form->param('ftid');
-    push @$feat_list, @{get_fids_from_dataset(dsid=>$dsid, ftid=>$ftid)} if $dsid;
+    push @$feat_list, @{get_fids_from_dataset(dsid=>$dsid, ftid=>$ftid, chr=>$chr)} if $dsid;
     my $table = generate_table(feature_list=>$feat_list, ftid=>$ftid);
     if ($table)
       {
@@ -94,11 +96,16 @@ sub get_fids_from_dataset
     my %opts = @_;
     my $dsid = $opts{dsid};
     my $ftid = $opts{ftid};
+    my $chr = $opts{chr};
     my $search = {dataset_id=>$dsid};
     my $join={};
     if ($ftid)
       {
 	$search->{feature_type_id}=$ftid;
+      }
+    if ($chr)
+      {
+	$search->{chromosome}=$chr;
       }
     my @ids = map{$_->id}$coge->resultset('Feature')->search($search);
     return \@ids;
@@ -217,6 +224,14 @@ sub generate_table
 	$url =~s/&$//;
 	return $url;
   }
+  
+sub get_josh_fids
+{
+	 my $accn_list = shift;
+    $accn_list =~ s/^,//;
+    $accn_list =~ s/,$//;
+    return $accn_list;    	
+}
   
 sub generate_excel_file
   {
