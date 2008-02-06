@@ -457,7 +457,7 @@ sub gen_results_page
        {
 	 if (@{$set->{report}->hsps()})
 	   {
-	     foreach my $hsp (sort {$b->score <=> $a->score} @{$set->{report}->hsps()})
+	     foreach my $hsp (sort {$a->number <=> $b->number} @{$set->{report}->hsps()})
 	       {
 		 $hsp_count++;
 		 next if ($hsp_count > $resultslimit);
