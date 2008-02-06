@@ -12,6 +12,7 @@ delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 my $form = new CGI;
 my $name = $form->param('name');
 my $tmpdir = "/opt/apache/CoGe/tmp/GEvo/";
+my $tmpurl = "/CoGe/tmp/GEvo";
 my $gobe_version = `svnversion /opt/apache/CoGe/gobe/flash`;
 $gobe_version =~ s/\n//g;;
 my ($USER) = CoGe::Accessory::LogUser->get_user();
@@ -45,9 +46,9 @@ while (<CMD>)
 	elsif (/\.log/)
 	  {
 	    open (IN, $_);
-	    while (<IN>)
+	    while (my $line = <IN>)
 	      {
-		if (/tiny url: (.*)/i)
+		if ($line =~ /tiny url: (.*)/i)
 		  {
 		    $tiny= $1;
 		    last;
@@ -87,7 +88,7 @@ $html .= qq{<tr valign=top><td class = small>Alignment reports};
 my $i = 1;
 foreach my $report (@{$files{report}})
   {
-    
+    $report =~ s/$tmpdir/$tmpurl/;
     $html .= "<div><font class=small><A HREF=\"$report\" target=_new>View alignment output $i</A></font></DIV>\n";
     $i++;
   }
@@ -96,6 +97,7 @@ $html .= qq{<td class = small>Fasta files};
 $i=1;
 foreach my $item (@{$files{faa}})
   {
+    $item =~ s/$tmpdir/$tmpurl/;
     $html .= "<div><font class=small><A HREF=\"$item\" target=_new>Fasta file $i</A></font></DIV>\n";
     $i++;
   }
@@ -104,14 +106,17 @@ $html .= qq{<td class = small><a href = "http://baboon.math.berkeley.edu/mavid/g
 $i=1;
 foreach my $item (@{$files{anno}})
   {
+    $item =~ s/$tmpdir/$tmpurl/;
     $html .= "<div><font class=small><A HREF=\"$item\" target=_new>Annotation file $i</A></font></DIV>\n";
     $i++;
   }
 $html .= qq{<td class = small>SQLite db};
 my $dbname = $files{sqlite}[0];
+$dbname =~ s/$tmpdir/$tmpurl/;
 $html .= "<div class=small><A HREF=\"$dbname\" target=_new>SQLite DB file</A></DIV>\n";
 $html .= qq{<td class = small>Log File};
 my $logfile = $files{log}[0];
+$logfile =~ s/$tmpdir/$tmpurl/;
 $html .= "<div class=small><A HREF=\"$logfile\" target=_new>Log</A></DIV>\n";
 $html .= qq{<td class = small>GEvo Link<div class=small><a href=$tiny target=_new>$tiny<br>(See log file for full link)</a></div>};
 $html .= qq{</table>};
