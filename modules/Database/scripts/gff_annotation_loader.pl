@@ -8,6 +8,7 @@ use Getopt::Long;
 my $GO = 0;
 my $DEBUG = 1;
 my $dsid;
+my $add_gene =0;
 my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
 my$coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 #$coge->storage->debugobj(new DBIxProfiler());
@@ -17,6 +18,7 @@ my$coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 GetOptions ( "dsid=i" => \$dsid,
 	     "go=s"    => \$GO,
 	     "debug=s" => \$DEBUG,
+	     "add_gene_feature" => \$add_gene,
 	   );
 
 my $ds = $coge->resultset('Dataset')->find($dsid);
@@ -46,19 +48,47 @@ while (<>)
 	my ($type, $info) = split /=/,$item;
 	if ($type eq "ID")
 	  {
-	    $info =~ s/_.*$//;
 	    $name = $info;
 	  }
-	$annos{$name} = $info if $type eq "Description";
+	push @{$annos{$name}},$info if $type eq "Description";
       }
     my $strand = $line[6] =~ /-/ ? -1 :1;
+    $line[2] = "mRNA" if $line[2] eq "exon";
     push @{$data{$name}{$line[2]}}, {
 				     start=>$line[3],
 				     stop=>$line[4],
 				     strand=>$strand,
 				     chr=>$chr,
 				    };
-    
+  }
+if ($add_gene)
+  {
+    name: foreach my $name (keys %data)
+      {
+	my $start;
+	my $stop;
+	my $strand;
+	my $chr;
+	foreach my $type (keys %{$data{$name}})
+	  {
+	    foreach my $loc (@{$data{$name}{$type}})
+	      {
+		next name if $type eq "gene";
+		$start = $loc->{start} unless $start;
+		$start = $loc->{start} if $loc->{start} < $start;
+		$stop = $loc->{stop} unless $stop;
+		$stop = $loc->{stop} if $loc->{stop} > $stop;
+		$strand = $loc->{strand};
+		$chr = $loc->{chr};
+	      }
+	  }
+	$data{$name}{gene}=[{
+			     start=>$start,
+			     stop=>$stop,
+			     strand=>$strand,
+			     chr=>$chr,
+			    }];
+      }
   }
 #print Dumper \%data;
 #print Dumper \%annos;
@@ -101,7 +131,13 @@ foreach my $name (keys %data)
 						     name=>$name,
 						     #				   feature_id=>$featid,
 						    }) if $GO ;
-	print "Adding annotation $annos{$name}\n" if $DEBUG && $annos{$name};
-	my $anno = $feat->add_to_annotations({annotation=>$annos{$name}, annotation_type_id => $anno_type->id}) if $GO && $annos{$name};
+	if ($DEBUG && $annos{$name})
+	  {
+	    print "Adding annotation $annos{$name}\n" ;
+	    foreach my $anno (@{$annos{$name}})
+	      {
+		my $annoo = $feat->add_to_annotations({annotation=>$anno, annotation_type_id => $anno_type->id}) if $GO && $anno;
+	      }
+	  }
       }
   }
