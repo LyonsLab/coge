@@ -28,7 +28,7 @@ sub _initialize
     $self->bgcolor([255,255,255]) unless $self->bgcolor;
     $self->skip_duplicate_search(1);
     $self->force_label(1);
-    $self->type('HSP');
+    $self->type('HSP') unless $self->type;
     $self->mag(1);
     $self->font_size(10);
     $self->color_matches(0) unless defined $self->color_matches();
