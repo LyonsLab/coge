@@ -22,7 +22,7 @@ GetOptions (
 my $dsq = $coge->resultset('Dataset')->find($ds1);
 my $dss = $coge->resultset('Dataset')->find($ds2);
 my ($anno_type) = $coge->resultset('AnnotationType')->search({name=>"note"});
-my $cds_id = 3;
+my $cds_id = 202;
 
 warn "-go flag is not true, nothing will be added to the database.\n" unless $GO;
 
@@ -37,6 +37,8 @@ while (my $line = <>) {
     my ($qname, $sname, @line)= split(/[,|\|]/, $line);
     my ($qchr) = $qname =~ /(\d+)G/g;
     my ($schr) = $sname =~ /(\d+)G/g;
+    $qchr =~ s/^0//;
+    $schr =~ s/^0//;
 
     my $tot = 0;
     for(my $i=0; $i<scalar(@line); $i+=4){
@@ -74,10 +76,10 @@ while (my $line = <>) {
 						  }) if $GO;
 
         my $qfeat_name = $qfeat->add_to_feature_names({
-						     name=>$qname . "_CDS_" . $i/4,
+						     name=>$qname . "_CNS_" . $i/4,
 						    }) if $GO ;
         my $sfeat_name = $sfeat->add_to_feature_names({
-						     name=>$sname . "_CDS_" . $i/4,
+						     name=>$sname . "_CNS_" . $i/4,
 						    }) if $GO ;
         
         print $qfeat->feature_id . "\n" if $qfeat;
