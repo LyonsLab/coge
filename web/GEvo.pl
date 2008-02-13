@@ -182,6 +182,8 @@ sub gen_body
 	my $gblength = $form->param("gblength".$i) if $form->param("gblength".$i);
 	my $revy = "checked" if $form->param('rev'.$i);
 	my $revn = "checked" unless $revy;
+	my $maskexonon = "checked" if $form->param('maskexon'.$i);
+	my $maskexonoff = "checked" unless $maskexonon;
 	my $refn = "checked" if $form->param('nref'.$i);
 	my $refy = "checked" unless $refn;
 	$autosearch_string .= 'if ($'.qq!('#accn$i').val()) {dataset_search(['args__accn','accn$i','args__num', 'args__$i'!;
@@ -209,6 +211,9 @@ sub gen_body
 		    GBLENGTH=>$gblength,
 		    POS=>$pos,
 		    DSINFO=>$dsinfo,
+		    EXON_MASK_ON=>$maskexonon,
+		    EXON_MASK_OFF=>$maskexonoff,
+
 		   );
 #	print STDERR "pos $i: $pos\n";
 	$opts{COGEPOS} = qq{<option value="cogepos$i" selected="selected">CoGe Database Position</option>} if $pos;
@@ -731,7 +736,7 @@ sub run
       {
 	$html .= "<tr class=small>";
 	$html .= "<td>".$item->{obj}->accn."<td nowrap>".commify(length $item->{obj}->sequence)."bp"."<td nowrap>".$item->{stats}{overlap_count}."/".$item->{stats}{feat_count};
-	$html .= "<td nowrap>".sprintf("%.2f", $item->{stats}{overlap_count}/$item->{stats}{feat_count}*100)."%" if $item->{feat_count};
+	$html .= "<td nowrap>".sprintf("%.2f", $item->{stats}{overlap_count}/$item->{stats}{feat_count}*100)."%" if $item->{stats}{feat_count};
 	my $stats = $item->{stats};
 	foreach my $accn1 (sort keys %{$stats->{data}})
 	  {
@@ -963,6 +968,7 @@ INSERT INTO image_info (id, iname, title, px_width,dsid, chromosome, bpmin, bpma
 	next if $feat->type eq "unknown";
 	my $name = $feat->type =~ /HSP/i ? $feat->alt : $feat->label;
 	$name .= "_".$feat->type;# unless $name;
+
 	my $color = "NULL";
 	if ($feat->type =~ /HSP/)
 	  {
@@ -997,7 +1003,6 @@ INSERT INTO image_info (id, iname, title, px_width,dsid, chromosome, bpmin, bpma
 	$type = "anchor" if $feat->{anchor};
 	my $bpmin = $set->{obj}->start+$start-1;
 	my $bpmax = $set->{obj}->start+$stop-1;
-	
 	$statement = qq{
 INSERT INTO image_data (name, type, xmin, xmax, ymin, ymax, bpmin,bpmax,image_id, image_track,pair_id, link, annotation, color) values ("$name", "$type", $xmin, $xmax, $ymin, $ymax, $bpmin, $bpmax,$image_id, "$image_track",$pair_id, '$link', '$anno', '$color')
 };
@@ -1073,7 +1078,8 @@ sub process_features
           {
 	    next unless $draw_model eq "full" || $draw_model eq "gene" || $anchor;
 	    $f = CoGe::Graphics::Feature::Gene->new();
-	    $f->color([255,0,0,50]);
+	    #$f->color([255,0,0,50]);
+        $f->color([219,219,219,50]);
 	    $f->order($track);
 	    $f->overlay(1);
 	    $f->mag(0.5);
@@ -1141,6 +1147,16 @@ sub process_features
 	    $f->color([0,0,255]);
 	    $f->type($type);
 	    $f->description($feat->annotation);
+	    $c->add_feature($f);
+	    next;
+	  }
+	elsif ($type =~ /cns/i)
+	  {
+	    $f = CoGe::Graphics::Feature::HSP->new({start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1]});
+	    $f->color([255,51,0]);
+	    $f->order($track);
+	    $f->overlay(4);
+	    $f->type($type);
 	    $c->add_feature($f);
 	    next;
 	  }
