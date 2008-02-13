@@ -8,6 +8,7 @@
 <SCRIPT language="JavaScript">
 /* e.g.  ('up', 1, 330) becomes: byId('drup1').value = 330; */
 /* so up is the 'left', down is the 'right' bar.   */
+if(window.console == undefined){ console = {}; console.debug = function(){}}
 
 function set_genespace(updown, idx, value, length, anchorlength){
 //    console.log(updown+" "+value+" "+length+" "+anchorlength);
@@ -1041,7 +1042,7 @@ function get_seq(seq_num)
    Mask Exons:
   <TD>
    <label><input class="backbox" type="radio" name="mask_cds<TMPL_VAR NAME="SEQ_NUM">" id="mask_cds<TMPL_VAR NAME="SEQ_NUM">" tabindex="22" value="1" <TMPL_VAR NAME=EXON_MASK_ON> />Yes</label>
-    <label><input class="backbox" type="radio" name="mask_cds<TMPL_VAR NAME="SEQ_NUM">" id="mask_cds<TMPL_VAR NAME="SEQ_NUM">" tabindex="22" value="0" checked <TMPL_VAR NAME=EXON_MASK_OFF> />No</label>
+    <label><input class="backbox" type="radio" name="mask_cds<TMPL_VAR NAME="SEQ_NUM">" id="mask_cds<TMPL_VAR NAME="SEQ_NUM">" tabindex="22" value="0" <TMPL_VAR NAME=EXON_MASK_OFF> />No</label>
  </TR>
  <TR align=left>
   <Td>
