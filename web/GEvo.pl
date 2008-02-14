@@ -2453,7 +2453,9 @@ sub add_seq
     my @seqs = {
 		SEQ_NUM=>$num_seq,
 		REV_NO=>"checked",
+		EXON_MASK_OFF=>"checked",
 		REF_YES=>"checked",
+
 		DRUP=>10000,
 		DRDOWN=>10000,
 		DSINFO=>$dsinfo,
