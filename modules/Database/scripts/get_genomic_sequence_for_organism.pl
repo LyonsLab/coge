@@ -10,19 +10,20 @@ use DB_File;
 
 # for orgs with lots of super contigs, only take this many
 # (will take the first ones).
-my $use_supers = 0;
-my $MAX_CHR = 99;
+my $use_supers = 1;
+my $MAX_CHR = 9999;
 
 
 my %options;
 getopt("otdcm", \%options);
+
 
 my %org_hash = (
    rice        => 3
   ,arabidopsis => 1
   ,poplar      => 3387
   ,grape       => 351
-  ,papaya      => 322
+  ,papaya      => 563
   ,maize       => 333
   ,sorghum     => 331
 );
@@ -43,7 +44,8 @@ if($options{m}){
 }
 else {
    print "getting NOT masked...\n";
-   $datasets = $ds_hash{$organism} || [sort map { $_->dataset_id  } @{$s->get_current_datasets_for_org($org_hash{$organism})}];
+   $datasets = [sort map { $_->dataset_id } $org->current_datasets()];
+   #$datasets = $ds_hash{$organism} || [sort map { $_->dataset_id  } @{$s->get_current_datasets_for_org($org_hash{$organism})}];
 }
 
 my $outdir   = ($options{d} or ".") . "/";
@@ -84,11 +86,11 @@ sub get_accn_locs {
         if(! $use_supers && $feat->chromosome =~ /super/i ){ next; }
         my ($chr) = $feat->chromosome =~ /(\d+)/;
         #print STDERR $chr . "\n";
-        if(length($chr) > 2){ next; } 
+        #if(length($chr) > 2){ next; } 
         if($chr > $MAX_CHR){ next; } 
         $seen{$id}++;
         #print STDERR $feat->feature_id . ", $name," .  $feat->chromosome . "," . $feat->feature_type->name . "\n";
-        $chr = sprintf("%02i", $chr);
+        $chr = sprintf("%04i", $chr);
         if(!$files{$chr}){
             my $FH;
             my $filename = $outdir . $org . "chr" . $chr . ".fasta";
@@ -128,8 +130,10 @@ sub get_10kmers {
                         }, { order_by => ['start'] } )) {
             if(!$use_contigs && $gs->chromosome =~ /(^contig|random)/i ){ next; }
             my ($chr) = $gs->chromosome =~ /(\d+)/;
-            if(length($chr) > 2){ next; } 
-            $chr = sprintf("%02i", $chr);
+            #if(length($chr) > 2){ next; } 
+            if($chr > $MAX_CHR){ next; } 
+
+            $chr = sprintf("%04i", $chr);
             my $file = $outdir . $org . "tenkmers_chr" . $chr . ".fasta";
             my $FH;
             if (!$files{$file}) {
@@ -182,4 +186,3 @@ sub get_feature_names_for_datasets {
     }
     return [sort { $a->[2] <=> $b->[2] } @names];
 }
-

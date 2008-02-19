@@ -19,15 +19,22 @@ GetOptions (
 	         "add_gene_feature" => \$add_gene,
 	   );
 
+exit() unless $ds1 && $ds2;
+
 my $dsq = $coge->resultset('Dataset')->find($ds1);
 my $dss = $coge->resultset('Dataset')->find($ds2);
 my ($anno_type) = $coge->resultset('AnnotationType')->search({name=>"note"});
 my $cds_id = 202;
 
+print STDERR $dsq->dataset_id . "\n";
+print STDERR $dss->dataset_id . "\n";
+
 warn "-go flag is not true, nothing will be added to the database.\n" unless $GO;
 
 my %data;
 my %annos;
+my %qseen;
+my %sseen;
 # line like:
 # OS02G04490,SB10G029285, 1986128,1986156,59117428,59117400|1986133,1986163,59117429,59117399|1992129,1992147,59096365,59096347|1984218,1984236,59096368,59096350|1992128,1992143,59096365,59096350|1982831,1982849,59113429,59113411|1995931,1995957,59090974,59090948|1993267,1993287,59103979,59103959|2001316,2001330,59109300,59109286|1982780,1982794,59109486,59109472|1978893,1978907,59110202,59110188|2000840,2000857,59114956,59114939|1979357,1979377,59116046,59116026|1986130,1986153,59117429,59117406
 while (my $line = <>) {
@@ -50,6 +57,12 @@ while (my $line = <>) {
             $strand = -1;
             ($sstart, $sstop) = ($sstop, $sstart);
         }
+
+        # dont do repeats.
+        if ($qseen{ $qstart . "," . $qstop }){ next; }
+        if ($sseen{ $sstart . "," . $sstop }){ next; }
+        $qseen{ $qstart . "," . $qstop } = 1;
+        $sseen{ $sstart . "," . $sstop } = 1;
         
   	    my $qfeat = $dsq->add_to_features({
 					 feature_type_id => $cds_id,
@@ -85,5 +98,5 @@ while (my $line = <>) {
         print $qfeat->feature_id . "\n" if $qfeat;
         print $sfeat->feature_id . "\n" if $qfeat;
       }
-      if ($tot > 40){ exit(); }
+      #if ($tot > 40){ exit(); }
 }
