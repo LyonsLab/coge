@@ -8,7 +8,7 @@ use GD;
 
 #for best performance, create all the chromosomes before generating the features.
 
-__PACKAGE__->mk_accessors(qw(organism chromosomes features image_width image_height legend_height _default_feature_color _gd _color_set color_band_flag legend chromosome_height show_count));
+__PACKAGE__->mk_accessors(qw(organism chromosomes features image_width image_height legend_height _default_feature_color _gd _color_set color_band_flag legend chromosome_height show_count draw_ends));
 
 my $DEFAULT_COLOR = [255,0,0];
 my $FONT = GD::Font->MediumBold;
@@ -200,8 +200,8 @@ sub generate_chromosomes
 	$real_width -= ($offset_width - 15) if $offset_width > 0; 
 	my ($cstart, $cend) = ($chrs->{$name}->{centromere_start}, $chrs->{$name}->{centromere_end});
 	$gd->rectangle($horz_spacer, $count*$vert_spacer, $horz_spacer+$width, $count*$vert_spacer+$height, $black);
-	$gd->arc($horz_spacer, $count*$vert_spacer+$height/2, $height, $height, 90, 270, $black);
-	$gd->arc($horz_spacer+$width, $count*$vert_spacer+$height/2, $height, $height, 270, 90, $black);
+	$gd->arc($horz_spacer, $count*$vert_spacer+$height/2, $height, $height, 90, 270, $black) unless defined $self->draw_ends && $self->draw_ends == 0;
+	$gd->arc($horz_spacer+$width, $count*$vert_spacer+$height/2, $height, $height, 270, 90, $black) unless defined $self->draw_ends && $self->draw_ends == 0;
 	$gd->line($horz_spacer, $count*$vert_spacer, $horz_spacer, $count*$vert_spacer+$height, $white);
 	$gd->line($horz_spacer+$width, $count*$vert_spacer, $horz_spacer+$width, $count*$vert_spacer+$height, $white);
         $gd->stringFT($black, $FONTTT, $vert_spacer/5, 0, 5, $count*$vert_spacer, $name);
@@ -274,8 +274,8 @@ sub draw_features
 	   my $h = $up? $height+$height/1.3 : 0-$height/1.3+$font_size;
 	   if ($self->show_count)
 	     {
-	       $gd->stringFT($black, $FONTTT, $font_size+4, 0, $x1-$height/5, $y+$h, $count);
-	       $gd->stringFT($white, $FONTTT, $font_size, 0, $x1-$height/5+2, $y+$h-2, $count);
+	       $gd->stringFT($black, $FONTTT, $font_size+4, 0, $x1-$height/5, $y+$h, $count) unless $count == 1;
+	       $gd->stringFT($white, $FONTTT, $font_size, 0, $x1-$height/5+2, $y+$h-2, $count) unless $count == 1;
 	     }
 	   if ($color_band_flag)
 	     {
