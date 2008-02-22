@@ -24,14 +24,13 @@ use Getopt::Long;
 use vars qw($DEBUG $coge $GENOMIC_SEQ_LEN $GO $ERASE);
 
 
-my ($nt_file, $nt_dir, $org_name, $org_desc, $org_id, $ds_name, $ds_desc, $ds_link, $ds_id, $di_name, $di_desc, $di_link, $di_version, $use_contigs_as_features, $chr, $seq_type_name, $seq_type_desc, $seq_type_id);
+my ($nt_file, $nt_dir, $org_name, $org_desc, $org_id, $ds_name, $ds_desc, $ds_link, $ds_id, $di_name, $di_desc, $di_link, $di_version, $di_id, $use_contigs_as_features, $chr, $seq_type_name, $seq_type_desc, $seq_type_id, $chr_basename);
 
 GetOptions ( "debug=s" => \$DEBUG,
 	     "go=s"    => \$GO,
 	     "erase|e" => \$ERASE, 
 	     "fasta_file|fasta|faa|nt_file|nt=s" => \$nt_file,
 	     "fasta_dir|nt_dir|dir=s"=>\$nt_dir,
-	     "fasta_dir=s"=>\$nt_dir,
 	     "org_name=s" => \$org_name,
 	     "org_desc=s" => \$org_desc,
 	     "org_id=s"   => \$org_id,
@@ -43,11 +42,13 @@ GetOptions ( "debug=s" => \$DEBUG,
 	     "di_desc=s" => \$di_desc,
 	     "di_link=s" => \$di_link,
 	     "di_version=s" => \$di_version,
+	     "di_id=s"=>\$di_id,
 	     "chr=s"=>\$chr,
 	     "use_contigs_as_features=i" => \$use_contigs_as_features,
 	     "seq_type_name=s" => \$seq_type_name,
 	     "seq_type_desc=s" => \$seq_type_desc,
 	     "seq_type_id=i"=>\$seq_type_id, # masked50 == id 2
+	     "chr_basename=s"=>\$chr_basename,
 	   );
 
 $DEBUG = 1 unless defined $DEBUG; # set to '1' to get updates on what's going on
@@ -67,19 +68,19 @@ $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 
 
 
-my $di = generate_di(
-		     org_name => $org_name,
-		     org_desc => $org_desc,
-		     org_id=>$org_id,
-		     ds_name => $ds_name,
-		     ds_desc => $ds_desc,
-		     ds_link => $ds_link,
-		     ds_id=>$ds_id,
-		     di_name => $di_name,
-		     di_desc => $di_desc,
-		     di_link => $di_link,
-		     di_version => $di_version,
-		    );
+my $di = $di_id ? $coge->resultset('Dataset')->find($di_id) : generate_di(
+									  org_name => $org_name,
+									  org_desc => $org_desc,
+									  org_id=>$org_id,
+									  ds_name => $ds_name,
+									  ds_desc => $ds_desc,
+									  ds_link => $ds_link,
+									  ds_id=>$ds_id,
+									  di_name => $di_name,
+									  di_desc => $di_desc,
+									  di_link => $di_link,
+									  di_version => $di_version,
+									 );
 unless ($di)
   {
     warn "dataset object not initialized.  Exiting.";
@@ -134,26 +135,16 @@ sub get_feature
     my $stop = $opts{stop};
     print "Working on $name of type $type\n" if $DEBUG;
     my $di = $opts{di};
-    my $feat;
-    foreach my $fn ($coge->resultset('FeatureName')->search({name=>$name}))
-      {
-	my $f = $fn->feature;
-	next unless $f->type->name eq $type;
-	next unless $di && $f->dataset->id eq $di->id;
-	$feat = $f;
-	print "Found existing feature for $name\n";
-#	return $feat;
-      }
     my $feat_type = $coge->resultset('FeatureType')->find_or_create( { name => $type } ) if $GO;
     print "Creating feature of type $type\n" if $DEBUG;
-    $feat = $di->add_to_features ({
+    my $feat = $di->add_to_features ({
 				   feature_type_id => $feat_type->id,
 				   #dataset_id => $di->id,
 				   start=>$start,
 				   stop=>$stop,
 				   chromosome=>$chr,
 				   strand=>1,
-				  }) if (!$feat && $GO);
+				  }) if ($GO);
     if ($DEBUG)
       {
 	print "Creating feature_name $name for feat ";
@@ -195,10 +186,10 @@ sub process_nt
 sub process_nt_file
   {
     my %opts = @_;
-
     my $file =$opts{file};
     my $di = $opts{di};
     return unless $file;
+    print "Processing $file\n";
     $/ = "\n>";
     open (IN, $file) || die "can't open $file for reading: $!";
     while (<IN>)
@@ -214,6 +205,8 @@ sub process_nt_file
 	$chrtmp =~ s/^0+//;
 	$chrtmp =~ s/^\s//;
 	$chrtmp =~ s/\s$//;
+	$chrtmp =0 unless $chrtmp;
+	$chrtmp = $chr_basename.$chrtmp if $chr_basename;
 	load_genomic_sequence(chr=>$chrtmp,
 			      seq=>$seq,
 			      di=>$di,
@@ -230,10 +223,10 @@ sub load_genomic_sequence
     my $chr = $opts{chr};
     my $di = $opts{di};
     $len = $GENOMIC_SEQ_LEN unless $len;
-    my $seqlen = length $seq;
-    print "Loading genomic sequence for chr $chr ($seqlen nt)\n" if $DEBUG;
     $seq =~ s/\s//g;
     $seq =~ s/\n//g;
+    my $seqlen = length $seq;
+    print "Loading genomic sequence for chr $chr ($seqlen nt)\n" if $DEBUG;
     my $i = 0;
 #    my $gso = $coge->get_genomic_sequence_obj;
     while ($i < $seqlen)
@@ -241,6 +234,12 @@ sub load_genomic_sequence
 	my $str = substr($seq,$i,$len);
 	my $start = $i+1;
 	my $stop = $i + length $str;
+	$i += $len;
+	unless ($str)
+	  {
+	    print join ("\t", $seqlen, $start, $stop, $i),"\n";
+	    exit;
+	  }
 	$di->add_to_genomic_sequences({start=>$start,
 				       stop=>$stop,
 				       chromosome=>$chr,
@@ -248,7 +247,6 @@ sub load_genomic_sequence
 				       genomic_sequence_type_id=>$gstype->id,
 				      }) if $GO;
 	#	print "\t$start-$stop\n";
-	$i += $len;
       }
     if ($use_contigs_as_features)
       {
