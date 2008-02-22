@@ -15,12 +15,13 @@ my $s = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 #my $connstr = 'dbi:Pg:dbname=genomes;host=biocon;port=5432';
 #my $s = CoGeX->connect($connstr, 'bpederse', 'wsa47r' );
 
-$s->storage->debug(1);
+#$s->storage->debug(1);
 
 my $rs = $s->resultset('Feature')->search(
         { 
-            'feature_type.name' =>   'CDS' ,
-            'feature_names.name' => {like => 'Atg%','-not_like' => "%.%" }
+            'feature_type.name' =>   'CDS' 
+            ,'feature_names.name' => {like => 'At%g%', '-not_like' => "%.%"}
+            ,'me.dataset_id'        => {'IN' => [6, 7, 8, 9, 10]}
         },
         {
             join => ['feature_names','feature_type'],
@@ -42,7 +43,7 @@ while (my $feat =$rs->next()){
     foreach my $seq ($feat->sequences){
         print $seq->sequence_data ;
     }
-    print STDERR "\n\n";
+    print "\n\n";
 }
 
 

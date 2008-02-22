@@ -11,7 +11,7 @@ use DB_File;
 # for orgs with lots of super contigs, only take this many
 # (will take the first ones).
 my $use_supers = 1;
-my $MAX_CHR = 9999;
+my $MAX_CHR = 99999;
 
 
 my %options;
@@ -33,17 +33,17 @@ my %ds_hash = (
 
 my $organism = $options{o} or die "send in organism name i.e. -o rice.\n";
 chomp $organism;
-print $organism;
+print STDERR $organism;
 my $use_contigs = $options{c} or 0;
 my ($org) = $s->resultset('Organism')->resolve($organism);
 my $datasets;
 if($options{m}){
-    print "getting masked...\n";
+    print STDERR "getting masked...\n";
     my ($genomic_sequence_type) = $s->resultset('GenomicSequenceType')->resolve('masked');
     $datasets = [sort map { $_->dataset_id } $org->current_datasets(genomic_sequence_type=>$genomic_sequence_type)];
 }
 else {
-   print "getting NOT masked...\n";
+   print STDERR "getting NOT masked...\n";
    $datasets = [sort map { $_->dataset_id } $org->current_datasets()];
    #$datasets = $ds_hash{$organism} || [sort map { $_->dataset_id  } @{$s->get_current_datasets_for_org($org_hash{$organism})}];
 }
@@ -135,25 +135,36 @@ sub get_10kmers {
 
             $chr = sprintf("%04i", $chr);
             my $file = $outdir . $org . "tenkmers_chr" . $chr . ".fasta";
-            my $FH;
-            if (!$files{$file}) {
-                print STDERR "creating file $file ...\n";
-                open($FH, ">", $file);
-                $files{$file} = $FH;
-            }else{
-                $FH = $files{$file};
-            }
             my $header = $chr . "||" . sprintf("%09i", $gs->start()) . "||" 
                 . sprintf("%09i", $gs->stop()) . "||10KMER" ;
-            print $FH ">" . $header . "\n";
-            print $FH $gs->sequence_data() ."\n";
 
-            $order{$header} = 1;
+            if(1){
+                my $FH;
+                if (!$files{$file}) {
+                    if(scalar(keys %files) > 900){
+                        my $k = (sort keys %files)[600];
+                        delete $files{$k};
+                    }
+                    print STDERR "creating file $file ...\n";
+                    open($FH, ">>", $file);
+                    $files{$file} = $FH;
+                }else{
+                    $FH = $files{$file};
+                }
+                print $FH ">" . $header . "\n";
+                print $FH $gs->sequence_data() ."\n";
+            } 
+            else {
+                print ">" . $header . "\n";
+                print $gs->sequence_data() ."\n";
+            }
+
+            #$order{$header} = 1;
     }
-    print STDERR "creating file " . $org . ".order contained the list of 10kmers ...\n";
-    open(ORDER, ">", $outdir . $org . "tenkmers.order");
-    map { print ORDER $_ . "\n" } sort keys %order;
-    close(ORDER);
+    #print STDERR "creating file " . $org . ".order contained the list of 10kmers ...\n";
+    #open(ORDER, ">", $outdir . $org . "tenkmers.order");
+    #map { print ORDER $_ . "\n" } sort keys %order;
+    #close(ORDER);
 
 }
 
