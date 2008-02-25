@@ -7,6 +7,7 @@ my $s = CoGeX->connect($connstr, 'bpederse', 'brent_cnr');
 #$s->storage->debug(1);
 
 my $organism = $ARGV[0] or die "send in organism name i.e. $0 rice.\n";
+print STDERR "making directory $organism";
 mkdir($organism);
 
 my ($genomic_sequence_type) = $s->resultset('GenomicSequenceType')->resolve('masked');
