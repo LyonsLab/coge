@@ -24,7 +24,7 @@ my $basepath = catfile(@$basedir);
 
 my $fn = catfile($basepath,@$dir) . '.png' ;
 my $data;
-
+#print STDERR $ENV{QUERY_STRING},"\n";
 if(!-e $fn){
    pop @$dir; # get rid of the file name
    umask (0);
@@ -53,10 +53,10 @@ sub get_dir_array {
     my ($qstr) = $ENV{QUERY_STRING} =~ /(.*)/;
     $qstr =~ s/[\s-]//;
     my @dir = ();
-
+    print STDERR $qstr,"\n";
     # parse the url;
     my %query_pairs = map { split('=', $_) } split(/&/,$qstr);
-
+#    print STDERR Dumper \%query_pairs;
     # keep order of entries but put the spatial pars last becuase
     # it just works out best that way.
     my $xmin = delete $query_pairs{xmin};
