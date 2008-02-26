@@ -33,6 +33,7 @@ my $pj = new CGI::Ajax(
 		       gc_content=>\&gc_content,
 		       gen_data=>\&gen_data,
 		       get_josh_fids=>\&get_josh_fids,
+		       send_to_featmap=>\&send_to_featmap,
 			);
 $pj->js_encode_function('escape');
 print $pj->build_html($FORM, \&gen_html);
@@ -199,6 +200,20 @@ sub generate_table
     $count--;
     return ("alert",$count) if $count > 10;
     $url .= "num_seqs=$count";
+    return $url;
+  }
+  
+  sub send_to_featmap
+  {
+    my $accn_list = shift;
+    $accn_list =~ s/^,//;
+    $accn_list =~ s/,$//;
+    my $url = "/CoGe/FeatMap.pl?";
+    foreach my $featid (split /,/,$accn_list)
+      {
+		$url .= "fid=$featid&";
+      }
+    $url =~ s/&$//;
     return $url;
   }
   
