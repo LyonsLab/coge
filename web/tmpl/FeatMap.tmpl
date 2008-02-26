@@ -1,0 +1,83 @@
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.1.js"></SCRIPT>
+<SCRIPT language="JavaScript">
+function show_feature_info(fid){
+//alert(fid);
+  generate_feat_info(['args__'+fid],['feat_info','genome_img']);
+}
+
+$(document).ready(function(){
+wait_til_table_is_populated();
+  });
+
+function wait_til_table_is_populated(){
+if (ajax.length)
+   {
+    setTimeout("wait_til_table_is_populated()",100);
+    return;
+   }
+   var table_height = $('#featlist_body').height();
+   var max_height = 300;
+  if (table_height > max_height) $('#featlist_body').height(max_height);
+  init_table();
+}
+
+function init_table () {
+$(function(){
+ $("#featlist").tablesorter({		
+// 		sortColumn: 'HSP No.',			// Integer or String of the name of the column to sort by.
+		sortClassAsc: 'headerSortUp',		// Class name for ascending sorting action to header
+		sortClassDesc: 'headerSortDown',	// Class name for descending sorting action to header
+		headerClass: 'header',			// Class name for headers (th's)
+		widgets: ['zebra'],
+		textExtraction: 'complex',
+		headers: {0: {sorter: false}},					
+		sortList: [[1,0],[2,0]],
+		});
+ });
+}
+
+</SCRIPT>
+
+<div id=chr_img style="overflow: auto;max-height: 500px;">
+<table>
+<TMPL_LOOP NAME=CHROMOSOME_LOOP>
+	 <tr>
+		 <td valign="top">
+		 <TMPL_VAR NAME=ORG_NAME>
+		 </td>
+		 <td>
+         <TMPL_VAR NAME=CHR_IMAGE>
+         </td>
+   </tr>       
+</TMPL_LOOP>
+</table>
+</div>
+<br>
+<div class="seqbackbox" style="width: 100%;height: 12px;"></div>
+<br>
+<div id=feat_table style="float: right; clear:none">
+ <table id="featlist">
+  <thead>
+   <tr>
+    <th> </th>
+    <th>Org</th>
+    <th>Feature</th>
+    <th>Chr</th>
+    <th>Loc</th>
+   </tr>
+  </thead>
+  <tbody id="featlist_body" style="overflow: auto;">
+   <TMPL_LOOP NAME=FEAT_TABLE>
+    <tr>
+     <td><input type=checkbox id="<TMPL_VAR NAME=CHECKBOX>" value="<TMPL_VAR NAME=CHECKBOX>"></td>
+     <td><TMPL_VAR NAME=ORG></td>
+     <td><TMPL_VAR NAME=FEAT_NAME></td>
+     <td><TMPL_VAR NAME=CHR></td>
+     <td><TMPL_VAR NAME=LOC></td>
+    </tr>
+   </TMPL_LOOP>
+  </tbody>
+ </table>
+</div>
+<div id=genome_img style="float: left"></div>
+<div id=feat_info style="width: 1200px;float: left;"></div>
