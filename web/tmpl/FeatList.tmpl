@@ -20,6 +20,12 @@ function feature_checkboxes(){
   else if (action == "blast"){
     blast(['args__'+accn],[export_url]);
   }
+  else if (action == "josh"){
+    get_josh_fids(['args__'+accn],['j']);
+  }
+  else if (action == "featmap"){
+  	send_to_featmap(['args__'+accn],[export_url]);
+  }
   else {
     alert("We will get this working ... soon.");
   }
@@ -88,7 +94,8 @@ jQuery.fn.unCheckCheckboxes = function()
 };
 
 </SCRIPT>
-<TMPL
+
+<div id="j"></div>
 <form id=feature_list>
 <TABLE width=100%>
  <THEAD align=left>
@@ -127,6 +134,7 @@ jQuery.fn.unCheckCheckboxes = function()
 	                 <option value = "gevo">Send to GEvo</option>
 	                 <option value = "blast">Send to CoGeBlast</option>
            		 <option value = "fasta">Get FASTA Sequences</option>
+           		 <option value = "featmap">Get Feature Genome Map</option>
            		 <option value = "xls">Export to Excel</option>
           </selected>  
           <input type=button value="Go" onClick="feature_checkboxes()">    
