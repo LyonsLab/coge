@@ -99,7 +99,6 @@ sub grab_sequence
   	my $first_value = shift;
   	my @vals = ($new_value,$first_value);
   	@vals = sort {$a <=> $b} (@vals);
-  	print STDERR Dumper \@vals;
   	return $vals[0],$vals[1];
   }
 
