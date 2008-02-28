@@ -24,7 +24,7 @@ exit() unless $ds1 && $ds2;
 my $dsq = $coge->resultset('Dataset')->find($ds1);
 my $dss = $coge->resultset('Dataset')->find($ds2);
 my ($anno_type) = $coge->resultset('AnnotationType')->search({name=>"note"});
-my $cds_id = 202;
+my $cns_id = 202;
 
 print STDERR $dsq->dataset_id . "\n";
 print STDERR $dss->dataset_id . "\n";
@@ -65,12 +65,12 @@ while (my $line = <>) {
         $sseen{ $sstart . "," . $sstop } = 1;
         
   	    my $qfeat = $dsq->add_to_features({
-					 feature_type_id => $cds_id,
+					 feature_type_id => $cns_id,
 					 start=>$qstart, stop=>$qstop,
 					 chromosome=>$qchr, strand=>$strand,
         }) if $GO;
   	    my $sfeat = $dss->add_to_features({
-					 feature_type_id => $cds_id,
+					 feature_type_id => $cns_id,
 					 start=>$sstart, stop=>$sstop,
 					 chromosome=>$schr, strand=>$strand,
         }) if $GO;
