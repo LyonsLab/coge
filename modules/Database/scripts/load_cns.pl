@@ -33,19 +33,16 @@ warn "-go flag is not true, nothing will be added to the database.\n" unless $GO
 
 my %data;
 my %annos;
-my %qseen;
-my %sseen;
+my %seen;
 # line like:
-# OS02G04490,SB10G029285, 1986128,1986156,59117428,59117400|1986133,1986163,59117429,59117399|1992129,1992147,59096365,59096347|1984218,1984236,59096368,59096350|1992128,1992143,59096365,59096350|1982831,1982849,59113429,59113411|1995931,1995957,59090974,59090948|1993267,1993287,59103979,59103959|2001316,2001330,59109300,59109286|1982780,1982794,59109486,59109472|1978893,1978907,59110202,59110188|2000840,2000857,59114956,59114939|1979357,1979377,59116046,59116026|1986130,1986153,59117429,59117406
+# OS02G04490,SB10G029285, 02, 10, 1986128,1986156,59117428,59117400|1986133,1986163,59117429,59117399|1992129,1992147,59096365,59096347|1984218,1984236,59096368,59096350|1992128,1992143,59096365,59096350|1982831,1982849,59113429,59113411|1995931,1995957,59090974,59090948|1993267,1993287,59103979,59103959|2001316,2001330,59109300,59109286|1982780,1982794,59109486,59109472|1978893,1978907,59110202,59110188|2000840,2000857,59114956,59114939|1979357,1979377,59116046,59116026|1986130,1986153,59117429,59117406
 while (my $line = <>) {
     next if $line =~ /^#/;
     chomp $line;
     $line =~ s/,\s/,/g;
-    my ($qname, $sname, @line)= split(/[,|\|]/, $line);
-    my ($qchr) = $qname =~ /(\d+)G/g;
-    my ($schr) = $sname =~ /(\d+)G/g;
-    $qchr =~ s/^0//;
-    $schr =~ s/^0//;
+    my ($qname, $sname, $qchr, $schr, @line)= split(/[,|\|]/, $line);
+    $qchr =~ s/^0+//;
+    $schr =~ s/^0+//;
 
     my $tot = 0;
     for(my $i=0; $i<scalar(@line); $i+=4){
@@ -59,10 +56,8 @@ while (my $line = <>) {
         }
 
         # dont do repeats.
-        if ($qseen{ $qstart . "," . $qstop }){ next; }
-        if ($sseen{ $sstart . "," . $sstop }){ next; }
-        $qseen{ $qstart . "," . $qstop } = 1;
-        $sseen{ $sstart . "," . $sstop } = 1;
+        if ($qseen{ $qstart . "," . $qstop . "," . $sstart . "," . $sstop }){ next; }
+        $seen{ $qstart . "," . $qstop . "," . $sstart . "," . $sstop } = 1;
         
   	    my $qfeat = $dsq->add_to_features({
 					 feature_type_id => $cns_id,
@@ -94,9 +89,15 @@ while (my $line = <>) {
         my $sfeat_name = $sfeat->add_to_feature_names({
 						     name=>$sname . "_CNS_" . $i/4,
 						    }) if $GO ;
+
+        my $qannos = $qfeat->add_to_annotations({
+						     annotation=>"CNS for $qname, $sname"
+						    }) if $GO ;
+        my $sannos = $sfeat->add_to_annotations({
+						     annotation=>"CNS for $qname, $sname"
+						    }) if $GO ;
         
         print $qfeat->feature_id . "\n" if $qfeat;
         print $sfeat->feature_id . "\n" if $qfeat;
       }
-      #if ($tot > 40){ exit(); }
 }
