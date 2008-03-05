@@ -48,7 +48,7 @@ else {
    #$datasets = $ds_hash{$organism} || [sort map { $_->dataset_id  } @{$s->get_current_datasets_for_org($org_hash{$organism})}];
 }
 
-my $outdir   = ($options{d} or ".") . "/";
+my $outdir   = ($options{d} or ".") . "./";
 chomp $outdir;
 
 print STDERR "usings datasets: " . join(",", @$datasets) . " for $organism ...\n";
@@ -91,14 +91,14 @@ sub get_accn_locs {
         $seen{$id}++;
         #print STDERR $feat->feature_id . ", $name," .  $feat->chromosome . "," . $feat->feature_type->name . "\n";
         $chr = sprintf("%04i", $chr);
+        my $FH;
         if(!$files{$chr}){
-            my $FH;
             my $filename = $outdir . $org . "chr" . $chr . ".fasta";
             open($FH, ">", $filename);
             $files{$chr} = $FH;
             print STDERR "creating file $filename\n";
         }
-        my $FH = $files{$chr};
+        $FH = $files{$chr};
 
         my $start = sprintf("%09i", $feat->start);
         my $stop  = sprintf("%09i", $feat->stop );
@@ -138,7 +138,7 @@ sub get_10kmers {
             my $header = $chr . "||" . sprintf("%09i", $gs->start()) . "||" 
                 . sprintf("%09i", $gs->stop()) . "||10KMER" ;
 
-            if(1){
+            if(0){
                 my $FH;
                 if (!$files{$file}) {
                     if(scalar(keys %files) > 900){

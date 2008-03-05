@@ -17,33 +17,35 @@ my ($org) = $s->resultset('Organism')->resolve($organism);
 # MASKED !!!!!!!!!!!!!!!!!!
 my $datasets = [sort map { $_->dataset_id } $org->current_datasets(genomic_sequence_type=>$genomic_sequence_type)];
 
-#my $datasets = [sort map { $_->dataset_id  } @{$s->get_current_datasets_for_org($org->organism_id)}];
 
-print STDERR "usings datasets: " . join(",", @$datasets) . " for $organism ...\n";
+print STDERR "usings datasets: " . join(", ", @$datasets) . " for $organism ...\n";
 
-my $feature_names_ids = get_feature_names_for_datasets($datasets, $organism);
-print STDERR "got " . scalar(@$feature_names_ids) . "\n";
 
-get_accn_locs($feature_names_ids);
+if (scalar($ARGV) > 1){
+    print STDERR "fetching features...";
+    my $feature_names_ids = get_feature_names_for_datasets($datasets, $organism);
+    print STDERR "got " . scalar(@$feature_names_ids) . "\n";
+    get_accn_locs($feature_names_ids);
+}
 
 foreach my $ds (@$datasets){
     my $ds = $s->resultset('Dataset')->resolve($ds);
     my %seen;
+    open(FA, ">", $organism . ".fasta");
     foreach my $chr ($ds->get_chromosomes){
         # TODO: this will break with contigs.
         next if $chr =~ /^contig/;
-        my $schr = $chr;
-        $schr =~ s/contig//;
+        next if $chr =~ /random/;
+        next if $chr =~ /scaffold/;
 
         print STDERR $chr . "\n" unless $seen{$chr};
         $seen{$chr} = 1;
         #  rice/chr01.fasta
-        open(FA, ">", $organism .  "/$schr" . ".fasta");
-        print FA "> $schr\n";
+        print FA "> $organism $chr\n";
         print FA $ds->get_genomic_sequence(chromosome => $chr);
-        close FA;
     }
 }
+close FA;
 
 
 sub get_accn_locs {
@@ -93,7 +95,6 @@ sub get_accn_locs {
         print "\n";
     }
 }
-
 
 sub get_feature_names_for_datasets {
     my $datasets = shift;
