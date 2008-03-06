@@ -39,7 +39,7 @@ foreach my $ds (@$datasets){
         print STDERR $chr . "\n" unless $seen{$chr};
         $seen{$chr} = 1;
         #  rice/chr01.fasta
-        print FA "> $organism $chr\n";
+        print FA "> $chr\n";
         print FA $ds->get_genomic_sequence(chromosome => $chr) . "\n";
     }
 }
