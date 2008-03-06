@@ -44,6 +44,8 @@ __PACKAGE__->belongs_to("dataset" => "CoGeX::Dataset", 'dataset_id');
 
 #__PACKAGE__->mk_group_accessors(['start', 'stop', 'chromosome', 'strand']);
 
+
+
 sub esearch : ResultSet {
     my $self = shift;
     my $join = $_[1]{'join'};
@@ -1031,8 +1033,8 @@ sub fasta
 		$seq = $self->reverse_complement($seq) if $rc;
 		$seq = join ("\n", wrap("","",$seq)) if $col;
 		$fasta .= $head;
-		$fasta .= " $type frame $found\n" unless $name_only;
-		$fasta .= $seq."\n";
+		$fasta .= " $type frame $found" unless $name_only;
+		$fasta .= "\n".$seq."\n";
 	      }
 	    else
 	      {
@@ -1042,8 +1044,8 @@ sub fasta
 		    $seq = $self->reverse_complement($seq) if $rc;
 		    $seq = join ("\n", wrap("","",$seq)) if $col;
 		    $fasta .= $head;
-		    $fasta .= " $type frame $frame\n" unless $name_only;
-		    $fasta .= $seq."\n";
+		    $fasta .= " $type frame $frame" unless $name_only;
+		    $fasta .= "\n".$seq."\n";
 		  }
 	      }
 	  }
@@ -1056,7 +1058,6 @@ sub fasta
 	$fasta = $head."\n".$seq."\n";
 	return $head, $seq if ($sep);
       }
-
     return $fasta;
   }
 
