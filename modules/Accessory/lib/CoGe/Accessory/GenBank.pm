@@ -269,10 +269,13 @@ sub mask_exons
 	{
 	  foreach my $block (@{$self->get_blocks(type=>$type)})
 	    {
-	      my $seglength = $block->[1] - $block->[0];
 	      next if $block->[0] > length($seq);
+	      next if $block->[1] < 1;
+	      my ($start, $stop) = @$block;
+	      $start = 1 if $start < 1;
+	      my $seglength = $stop - $start+1;
 	      my $maskstring = "X" x $seglength;
-	      substr( $seq, $block->[0], $seglength ) = $maskstring;
+	      substr( $seq, $start-1, $seglength ) = $maskstring;
 	    }
 	}
       return( $seq );
@@ -288,10 +291,13 @@ sub mask_ncs
       {
 	foreach my $block (@{$self->get_blocks(type=>$type)})
 	  {
-	    my $seglength = $block->[1] - $block->[0];
 	    next if $block->[0] > length($seq);
-	    my $coding_seq = substr($seq, $block->[0], $seglength);
-	    substr( $tmp_seq, $block->[0], $seglength ) = $coding_seq;
+	    next if $block->[1] < 1;
+	    my ($start, $stop) = @$block;
+	    $start = 1 if $start < 1;
+	    my $seglength = $stop - $start+1;
+	    my $coding_seq = substr($seq, $start-1, $seglength);
+	    substr( $tmp_seq, $start-1, $seglength ) = $coding_seq;
 	  }
       }
     return( $tmp_seq );
