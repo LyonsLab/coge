@@ -94,7 +94,7 @@ sub dataset_search_for_feat_name
      if (keys %sources)
        {
  	$html .= qq{
- <SELECT name = "dsid$num" id= "dsid$num" onChange="feat_search(['accn$num','dsid$num', 'args__$num'],['feat$num']);">
+ <SELECT name = "dsid$num" id= "dsid$num" onChange="feat_search(['accn$num','dsid$num', 'args__$num'],['feat$num']);" >
  };
  	foreach my $id (sort {$sources{$b}{version} <=> $sources{$a}{version}} keys %sources)
  	  {
@@ -377,7 +377,7 @@ sub login
   {
     my $form = new CGI;
     my $url = "index.pl?url=".$form->url(-relative=>1, -query=>1);
-    print STDERR $url;
+#    print STDERR $url;
     $url =~ s/&|;/:::/g;
     my $html1 = qq{
 <SCRIPT language="JavaScript">
@@ -426,11 +426,13 @@ sub write_log
 
 sub read_log
   {
-    my $logfile = shift;
+    my %args = @_;
+    my $logfile = $args{logfile};
+    my $prog = $args{prog};
 #    print STDERR "Checking logfile $logfile\n";
     return unless $logfile;
     $logfile .= ".log" unless $logfile =~ /log$/;
-    $logfile = $TEMPDIR."/$logfile" unless $logfile =~ /^$TEMPDIR/;
+    $logfile = $TEMPDIR."/$prog/$logfile" unless $logfile =~ /^$TEMPDIR/;
     return unless -r $logfile;
     my $str;
     open (IN, $logfile);
@@ -536,18 +538,19 @@ sub initialize_basefile
     my $return_name = $opts{return_name};
     if ($basename)
       {
-	print STDERR "Have basename: $basename\n";
-	$basename =~ s/$TEMPDIR//g;
+#	print STDERR "Have basename: $basename\n";
+	($basename) = $basename =~ /([^\/].*$)/;
 	my ($x, $cleanname) = check_taint($basename);
 	$self->basefilename($cleanname);
-	$self->basefile($TEMPDIR."/".$cleanname);
+	$self->basefile($TEMPDIR."/$prog/".$cleanname);
 	$self->logfile($self->basefile.".log");
 	$self->sqlitefile($self->basefile.".sqlite");
       }
     else
       {
+	mkdir "$TEMPDIR/$prog",0777 unless -d "$TEMPDIR/$prog";
 	my $file = new File::Temp ( TEMPLATE=>$prog.'_XXXXXXXX',
-				    DIR=>$TEMPDIR,
+				    DIR=>"$TEMPDIR/$prog/",
 				    #SUFFIX=>'.png',
 				    UNLINK=>1);
 	$self->basefile($file->filename);
@@ -555,9 +558,9 @@ sub initialize_basefile
 	$self->sqlitefile($self->basefile.".sqlite");
 	$self->basefilename($file->filename =~ /([^\/]*$)/)
       }
-    print STDERR "Basename: ",$self->basefilename,"\n";
-    print STDERR "sqlitefile: ",$self->sqlitefile,"\n";
-    print STDERR "Basefile: ",$self->basefile,"\n";
+#    print STDERR "Basename: ",$self->basefilename,"\n";
+#    print STDERR "sqlitefile: ",$self->sqlitefile,"\n";
+#    print STDERR "Basefile: ",$self->basefile,"\n";
 
     if ($return_name)
       {
