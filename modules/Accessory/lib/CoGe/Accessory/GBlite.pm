@@ -120,13 +120,16 @@ sub nextEntry {
   ($accession, $version, $gi) =
     $versionline =~ /^\S+\s+(\w+)\.(\d+)\s+GI:(\d+)/;
   if (not defined $gi) {
-    die ">>> $versionline";
+    warn "no gi identified >>> $versionline";
   }
   if (not defined $accession) {
-    die "acc>> $versionline";
+    warn "no accession identified acc >> $versionline";
+    $accession = $self->{LASTLINE};
+    $accession =~ s/ACCESSION\s+//;
+    $accession =~ s/\s+$//;
   }
   if (not defined $version) {
-    die "ver>> $versionline";
+    warn "no version identified >> $versionline";
   }
 	
   # parse the KEYWORDS, which may span several lines
@@ -363,7 +366,7 @@ sub new {
 		}
 	}
 	if ($CONSTRUCTOR_ERROR) {
-		die "Problems with entry object construction";
+		warn "Problems with entry object construction";
 	}
 
 	$entry->{DIR} = set_dir( $entry );
