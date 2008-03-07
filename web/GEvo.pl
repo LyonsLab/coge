@@ -995,6 +995,7 @@ INSERT INTO image_info (id, iname, title, px_width,dsid, chromosome, bpmin, bpma
 	$anno =~ s/<br\/?>/&#10;/ig if $anno;
 	$anno =~ s/\n/&#10;/g if $anno;
 	$anno =~ s/[\[\]\(\)]/ /g if $anno;
+	$anno = " " unless $anno;
 	my $start = $feat->start;
 	my $stop = $feat->stop;
 	my $length_nt = $stop-$start+1;
@@ -2075,6 +2076,7 @@ sub write_fasta
   {
     my %opts = @_;
     my $gbobj = $opts{obj};
+#    print STDERR Dumper $gbobj;
     my $start = $opts{start};
     my $mask = $opts{mask};
     my $mask_ncs = $opts{mask_ncs};
