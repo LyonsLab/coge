@@ -177,28 +177,29 @@ sub get_seq
     my $fasta;
     #print STDERR Dumper \%opts;
     if ($featid)
-    {
-		my $feat = $coge->resultset('Feature')->find($featid);
-	    ($fasta,$seq) = ref($feat) =~ /Feature/i ?
-	      $feat->fasta(
-			   prot=>$pro,
-			   rc=>$rc,
-			   upstream=>$upstream,
-			   downstream=>$downstream,
-			   col=>80,
-			   sep=>1,
-			  )
-		:
-		  ">Unable to retrieve Feature object for id: $featid\n";
-		$seq = $rc ? color(seq=>$seq, upstream=>$downstream, downstream=>$upstream) : color(seq=>$seq, upstream=>$upstream, downstream=>$downstream);
+      {
+	my $feat = $coge->resultset('Feature')->find($featid);
+	($fasta,$seq) = ref($feat) =~ /Feature/i ?
+	  $feat->fasta(
+		       prot=>$pro,
+		       rc=>$rc,
+		       upstream=>$upstream,
+		       downstream=>$downstream,
+		       col=>80,
+		       sep=>1,
+		      )
+	    :
+	      ">Unable to retrieve Feature object for id: $featid\n";
+	$seq = $rc ? color(seq=>$seq, upstream=>$downstream, downstream=>$upstream) : color(seq=>$seq, upstream=>$upstream, downstream=>$downstream);
     	$columns = 80;
         $seq = join ("\n", wrap('','',$seq));
         $fasta = ($fasta. "\n".$seq);  
-	}
+	print STDERR join ("\n\n", $feat->genomic_sequence),"\n";
+      }
     else
-    {
-	  my $ds = $coge->resultset('Dataset')->find($dsid);
-	  $fasta = ref ($ds) =~ /dataset/i ? 
+      {
+	my $ds = $coge->resultset('Dataset')->find($dsid);
+	$fasta = ref ($ds) =~ /dataset/i ? 
 	  
 	  $ds->fasta
 	    (
@@ -211,8 +212,8 @@ sub get_seq
 	    )
 	      :
 		">Unable to retrieve dataset object for id: $dsid";
-    }
-   return $fasta;
+      }
+    return $fasta;
   }
   
 sub gen_foot
