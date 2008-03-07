@@ -31,7 +31,7 @@ use Parallel::ForkManager;
 $ENV{PATH} = "/opt/apache/CoGe/";
 $ENV{BLASTDB}="/opt/apache/CoGe/data/blast/db/";
 $ENV{BLASTMAT}="/opt/apache/CoGe/data/blast/matrix/";
-use vars qw( $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $FORMATDB $BLAST $BLASTZ $FORM $USER $DATE $coge $cogeweb $RESULTSLIMIT $MAX_PROC);
+use vars qw( $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $FORMATDB $BLAST $BLASTZ $FORM $USER $DATE $coge $cogeweb $RESULTSLIMIT $MAX_PROC $connstr);
 #refresh again?
 $TEMPDIR = "/opt/apache/CoGe/tmp/CoGeBlast";
 $DATADIR = "/opt/apache/CoGe/data/";
@@ -49,7 +49,7 @@ $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 ($USER) = CoGe::Accessory::LogUser->get_user();
 $FORM = new CGI;
 
-my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
+$connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
 $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
@@ -460,11 +460,12 @@ sub gen_results_page
 	     foreach my $hsp (sort {$a->number <=> $b->number} @{$set->{report}->hsps()})
 	       {
 		 $hsp_count++;
-		 next if ($hsp_count > $resultslimit);
 		 my ($dsid) = $hsp->subject_name =~ /id: (\d+)/;
 		 my ($chr) = $hsp->subject_name =~ /chromosome: (.*?),/;
 		 my ($org) = $hsp->subject_name =~ /^\s*(.*?)\s*\(/;
 		 next unless $dsid && $chr;
+		 populate_sqlite($hsp,$dsid);
+		 next if ($hsp_count > $resultslimit);
 		 my $id = $hsp->number."_".$dsid;
 		 $click_all_links .= $id.",";
 		 my $feat_link = qq{<span class="link" onclick="fill_nearby_feats('$id','true')">Click for Closest Feature</span>};
@@ -479,7 +480,6 @@ sub gen_results_page
 				 HSP_POS=>($hsp->subject_start),
 				 HSP_CHR=>$chr,
 				 HSP_LINK=>$feat_link};
-		 populate_sqlite($hsp,$dsid);
 	       }
 	   }
        }
@@ -1404,7 +1404,7 @@ sub get_nearby_feats
     $hsp_id =~ s/^\d+_// if $hsp_id =~ tr/_/_/ > 1;
     
     my $name = "None";
-    my $fid;
+#    my $fid;
     #my $checkbox = " ";
     my $distance = ">250";
     my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data WHERE name = ?});
@@ -1421,88 +1421,138 @@ sub get_nearby_feats
     my ($chr) = $sname =~ /chromosome: (.*?),/;
     my @feat;
     my $count = 0;
-    until(@feat)
+    my $mid = ($stop+$start)/2;
+
+    my $cogedb = DBI->connect($connstr,"cnssys","CnS");
+    my $query =qq!
+
+select * from (
+  (SELECT * FROM ((SELECT * FROM feature where start<=$mid and dataset_id = $dsid and chromosome = '$chr' ORDER BY
+start DESC  LIMIT 1) UNION (SELECT * FROM feature where start>=$mid and dataset_id = $dsid and chromosome = '$chr'
+ORDER BY start LIMIT 1)) as u)
+  UNION
+  (SELECT * FROM ((SELECT * FROM feature where stop<=$mid and dataset_id = $dsid and chromosome = '$chr' ORDER BY
+stop   DESC  LIMIT 1) UNION (SELECT * FROM feature where stop>=$mid and dataset_id = $dsid and chromosome = '$chr'
+ORDER BY stop LIMIT 1)) as v)
+) as w
+order by abs((start + stop)/2 - $mid) LIMIT 1
+
+!;
+    my $handle = $cogedb->prepare($query);
+    $handle->execute();
+    my $res = $handle->fetchrow_arrayref();
+    my $fid = $res->[0];
+    my ($feat) = $coge->resultset('Feature')->find($fid);
+#     my ($feat) = $coge->resultset('Feature')->search(
+# 						     {
+# 						      'me.dataset_id'=>$dsid,
+# 						      'me.chromosome'=>$chr,
+# 						     },
+# 						     {
+# 						      order_by=> ['abs((me.start+me.stop)/2 -'.$mid.')'],
+# 						      limit=>1,
+# 						     }
+# 						    );
+
+#     until(@feat)
+#       {
+# 	$sstart = ($sstart - 1000*$count) >= 0 ? ($sstart - 1000*$count) : 0;
+# 	$sstop +=1000*$count;
+# 	@feat = $coge->get_features_in_region(start=>$sstart, 
+# 					      stop=>$sstop,
+# 					      chr=>$chr, 
+# 					      dataset_id=>$dsid,
+# 					     );
+# 	last if ($sstop - $sstart) > 256000;
+# 	if ($count)
+# 	  {
+# 	    $count *= 2;
+# 	  }
+# 	else
+# 	  {
+# 	    $count++;
+# 	  }
+#       }
+#     my @feat_low;
+#     my @feat_high;
+#     my $closest_feat;
+#     if (@feat) 
+#       {
+# 	my %seen;
+# 	grep { ! $seen{lc($_)} ++ } map {$_->type->name} @feat;
+# 	my $search_type = "gene" if $seen{gene};
+# 	$search_type = "cds" if !$search_type && $seen{cds};
+# 	$search_type = "rna" unless $search_type;
+# 	foreach my $feature (@feat)
+# 	  {
+# 	    next unless $feature->type->name =~ /$search_type/i;
+# 	    next unless ref($feature) =~ /Feature/i;
+# 	    if ($feature->stop < $start) {
+# 	      push @feat_low,$feature;
+# 	    }
+# 	    else {
+# 	      push @feat_high,$feature;
+# 	    }
+# 	  }
+# 	my ($feat_low) = sort {$b->stop <=> $a->stop} @feat_low if @feat_low;
+# 	my ($feat_high) = sort {$a->start <=> $b->start}@feat_high if @feat_high;
+	
+# 	my $closest_feat;
+# 	#print STDERR $distance,"\n";
+# 	if($feat_low and $feat_high) 
+# 	    {
+# 	      $closest_feat = ($start - $feat_low->stop) < ($feat_high->start - $stop) ? $feat_low : $feat_high;
+# 	      $distance = ($start - $feat_low->stop) < ($feat_high->start - $stop) ? ($start - $feat_low->stop)."!" : ($feat_high->start - $stop);
+# 	    }
+# 	  elsif($feat_high)
+# 	  {
+# 	  	$closest_feat = $feat_high;
+# 		$distance = ($feat_high->start - $stop);
+# 	  }
+# 	  else
+# 	  {
+# 	 	 $closest_feat = $feat_low;
+# 	 	 $distance = ($start - $feat_low->stop)."!";
+# 	  }
+# 	  #print STDERR $distance,"\n";
+# 	  my $upstream = $distance =~ s/!$//;
+	
+# 	  my $val = $closest_feat->id."_".$hsp_id;
+# 	  if ($distance >= 1000) 
+# 	  {
+# 		$distance = $distance / 1000;
+# 	  	$distance .= "kb";
+# 	  }
+# 	  else {
+# 		$distance .= "bp";
+# 	  }
+# 	  $distance .= $upstream ? " upstream" : " downstream";
+# 	  ($name) = $closest_feat->names;
+# 	  $fid = $closest_feat->id;
+# 	  $distance = "overlapping" if $distance =~ /^0/ || $distance =~ /-/;
+# 	  $name = qq{<a href="#" title="Click for Feature Information" onclick=update_info_box('}.$closest_feat->id."_".$hsp_num."_".$dsid."')>$name</a>";
+#       }	
+#     else {
+#       $distance = "No Features within 250 kb of HSP No. $hsp_num";
+#     }
+    if ($feat)
       {
-	$sstart = ($sstart - 1000*$count) >= 0 ? ($sstart - 1000*$count) : 0;
-	$sstop +=1000*$count;
-	@feat = $coge->get_features_in_region(start=>$sstart, 
-					      stop=>$sstop,
-					      chr=>$chr, 
-					      dataset_id=>$dsid,
-					     );
-	last if ($sstop - $sstart) > 256000;
-	if ($count)
+	if (($start >= $feat->start && $start <= $feat->stop) || ($stop >= $feat->start && $stop <= $feat->stop) )
 	  {
-	    $count *= 2;
+	    $distance = "overlapping";
 	  }
 	else
 	  {
-	    $count++;
+	    $distance = abs(($stop+$start)/2-($feat->stop+$feat->start)/2);
 	  }
+	($name) = $feat->names;
+	$name = qq{<a href="#" title="Click for Feature Information" onclick=update_info_box('}.$feat->id."_".$hsp_num."_".$dsid."')>$name</a>";
       }
-    my @feat_low;
-    my @feat_high;
-    my $closest_feat;
-    if (@feat) 
+    else
       {
-	my %seen;
-	grep { ! $seen{lc($_)} ++ } map {$_->type->name} @feat;
-	my $search_type = "gene" if $seen{gene};
-	$search_type = "cds" if !$search_type && $seen{cds};
-	$search_type = "rna" unless $search_type;
-	foreach my $feature (@feat)
-	  {
-	    next unless $feature->type->name =~ /$search_type/i;
-	    next unless ref($feature) =~ /Feature/i;
-	    if ($feature->stop < $start) {
-	      push @feat_low,$feature;
-	    }
-	    else {
-	      push @feat_high,$feature;
-	    }
-	  }
-	my ($feat_low) = sort {$b->stop <=> $a->stop} @feat_low if @feat_low;
-	my ($feat_high) = sort {$a->start <=> $b->start}@feat_high if @feat_high;
-	
-	my $closest_feat;
-	#print STDERR $distance,"\n";
-	if($feat_low and $feat_high) 
-	    {
-	      $closest_feat = ($start - $feat_low->stop) < ($feat_high->start - $stop) ? $feat_low : $feat_high;
-	      $distance = ($start - $feat_low->stop) < ($feat_high->start - $stop) ? ($start - $feat_low->stop)."!" : ($feat_high->start - $stop);
-	    }
-	  elsif($feat_high)
-	  {
-	  	$closest_feat = $feat_high;
-		$distance = ($feat_high->start - $stop);
-	  }
-	  else
-	  {
-	 	 $closest_feat = $feat_low;
-	 	 $distance = ($start - $feat_low->stop)."!";
-	  }
-	  #print STDERR $distance,"\n";
-	  my $upstream = $distance =~ s/!$//;
-	
-	  my $val = $closest_feat->id."_".$hsp_id;
-	  if ($distance >= 1000) 
-	  {
-		$distance = $distance / 1000;
-	  	$distance .= "kb";
-	  }
-	  else {
-		$distance .= "bp";
-	  }
-	  $distance .= $upstream ? " upstream" : " downstream";
-	  ($name) = $closest_feat->names;
-	  $fid = $closest_feat->id;
-	  $distance = "overlapping" if $distance =~ /^0/ || $distance =~ /-/;
-	  $name = qq{<a href="#" title="Click for Feature Information" onclick=update_info_box('}.$closest_feat->id."_".$hsp_num."_".$dsid."')>$name</a>";
-      }	
-    else {
-      $distance = "No Features within 250 kb of HSP No. $hsp_num";
-    }
-    my $new_checkbox_info = $hsp_id."_".$chr."_".$sstart."no,".$fid."_".$hsp_id;
+	$distance = "No Features within 250 kb of HSP No. $hsp_num";
+      }
+    my $new_checkbox_info = $hsp_id."_".$chr."_".$sstart."no,".$feat->id."_".$hsp_id;
     #print STDERR $new_checkbox_info,"\n";
     return $name,$distance,$hsp_id,$new_checkbox_info;
   }
