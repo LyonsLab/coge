@@ -129,7 +129,7 @@ sub _post_initialize
 	  {
 	    $gd->filledRectangle($x1,$y1, $x2, $y2, $color);
 	  }
-	$gd->rectangle($x1,$y1, $x2, $y2, $border);
+#	$gd->rectangle($x1,$y1, $x2, $y2, $border);
 	#$gd->setStyle($black, $black, $black, GD::gdTransparent, GD::gdTransparent);
 	#if ($last)
 	#  {
