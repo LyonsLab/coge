@@ -214,6 +214,7 @@ BEGIN
 "options", #place to store additional options
 "alt", #used for the alt tag in image maps
 "image_coordinates", #used to store the coordinates (xmin, ymin, xmax, ymax) of the feature on the resulting image
+"force_draw", #used to make sure that the feature is drawn with a width of 1px, even if it is smaller
 );
   }
 
