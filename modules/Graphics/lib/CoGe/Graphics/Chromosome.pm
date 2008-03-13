@@ -1818,6 +1818,7 @@ sub _draw_feature
     my $fe = $unit*($feat->end-$rb);
     my $fw = sprintf("%.1f",$fe - $fs)+1; #calculate the width of the feature;
 #    print STDERR $rb,"-",$re,"\t",$feat->start-$rb,"-",$feat->end-$rb+1,,"::",$unit,"\t",$fs,"-", $fe," :: ",$fw,"\n" if ref($feat) =~ /gene/i;
+    $fw = 1 if $feat->force_draw();
     return if $fw < 1; #skip drawing if less than one pix wide
 
     my ($xmin, $xmax, $ymin , $ymax);
@@ -1867,9 +1868,9 @@ sub _draw_feature
 # 	#okay, we are going to need to do some fancy stuff in order to smoothly resize and paste the feature onto the main image
 # 	#1. create a blank image of the appropriate size
  	my $newgd = GD::Image->new ($fw, $ih,[1]);
-	$newgd->fill(1,1,$newgd->colorResolve(255,255,255));
+	$newgd->fill(0,0,$newgd->colorResolve(255,255,255));
 # 	#2. copy, resize, and resample the feature onto the new image
- 	$newgd->copyResized($feat->gd, 0, 0, 0, 0, $fw-1, $ih-1, $feat->iw, $feat->ih);  
+ 	$newgd->copyResized($feat->gd, 0, 0, 0, 0, $fw, $ih, $feat->iw, $feat->ih);  
 	if ($highqual)
 	      {
 		#3. find any colors that are close to white and set them to white.
