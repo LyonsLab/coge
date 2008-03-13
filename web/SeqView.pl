@@ -194,7 +194,7 @@ sub get_seq
     	$columns = 80;
         $seq = join ("\n", wrap('','',$seq));
         $fasta = ($fasta. "\n".$seq);  
-	print STDERR join ("\n\n", $feat->genomic_sequence),"\n";
+#	print STDERR join ("\n\n", $feat->genomic_sequence),"\n";
       }
     else
       {
