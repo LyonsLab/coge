@@ -1158,6 +1158,7 @@ sub process_features
 	    $f->order($track);
 	    $f->overlay(4);
 	    $f->type($type);
+	    $f->force_draw(1);
 	    $c->add_feature($f);
 	    next;
 	  }
