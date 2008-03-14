@@ -368,6 +368,7 @@ sub run
     my $feature_labels = !$hsp_label ? 0 : 1;
     my $form = $FORM;
     my $gevo_link = $form->url."?prog=$analysis_program";
+    $gevo_link .= ";spike_len=$spike_len";
     my @sets;
     my $html;
     my $t1 = new Benchmark;
@@ -567,6 +568,7 @@ sub run
 	  }
       }
     $seqcount--;
+
     $gevo_link .= ";num_seqs=".$seqcount;
     unless (@sets >1)
       {
