@@ -1440,101 +1440,16 @@ order by abs((start + stop)/2 - $mid) LIMIT 1
 !;
     my $handle = $cogedb->prepare($query);
     $handle->execute();
-    my $res = $handle->fetchrow_arrayref();
-    my $fid = $res->[0];
-    my ($feat) = $coge->resultset('Feature')->find($fid);
-#     my ($feat) = $coge->resultset('Feature')->search(
-# 						     {
-# 						      'me.dataset_id'=>$dsid,
-# 						      'me.chromosome'=>$chr,
-# 						     },
-# 						     {
-# 						      order_by=> ['abs((me.start+me.stop)/2 -'.$mid.')'],
-# 						      limit=>1,
-# 						     }
-# 						    );
-
-#     until(@feat)
-#       {
-# 	$sstart = ($sstart - 1000*$count) >= 0 ? ($sstart - 1000*$count) : 0;
-# 	$sstop +=1000*$count;
-# 	@feat = $coge->get_features_in_region(start=>$sstart, 
-# 					      stop=>$sstop,
-# 					      chr=>$chr, 
-# 					      dataset_id=>$dsid,
-# 					     );
-# 	last if ($sstop - $sstart) > 256000;
-# 	if ($count)
-# 	  {
-# 	    $count *= 2;
-# 	  }
-# 	else
-# 	  {
-# 	    $count++;
-# 	  }
-#       }
-#     my @feat_low;
-#     my @feat_high;
-#     my $closest_feat;
-#     if (@feat) 
-#       {
-# 	my %seen;
-# 	grep { ! $seen{lc($_)} ++ } map {$_->type->name} @feat;
-# 	my $search_type = "gene" if $seen{gene};
-# 	$search_type = "cds" if !$search_type && $seen{cds};
-# 	$search_type = "rna" unless $search_type;
-# 	foreach my $feature (@feat)
-# 	  {
-# 	    next unless $feature->type->name =~ /$search_type/i;
-# 	    next unless ref($feature) =~ /Feature/i;
-# 	    if ($feature->stop < $start) {
-# 	      push @feat_low,$feature;
-# 	    }
-# 	    else {
-# 	      push @feat_high,$feature;
-# 	    }
-# 	  }
-# 	my ($feat_low) = sort {$b->stop <=> $a->stop} @feat_low if @feat_low;
-# 	my ($feat_high) = sort {$a->start <=> $b->start}@feat_high if @feat_high;
-	
-# 	my $closest_feat;
-# 	#print STDERR $distance,"\n";
-# 	if($feat_low and $feat_high) 
-# 	    {
-# 	      $closest_feat = ($start - $feat_low->stop) < ($feat_high->start - $stop) ? $feat_low : $feat_high;
-# 	      $distance = ($start - $feat_low->stop) < ($feat_high->start - $stop) ? ($start - $feat_low->stop)."!" : ($feat_high->start - $stop);
-# 	    }
-# 	  elsif($feat_high)
-# 	  {
-# 	  	$closest_feat = $feat_high;
-# 		$distance = ($feat_high->start - $stop);
-# 	  }
-# 	  else
-# 	  {
-# 	 	 $closest_feat = $feat_low;
-# 	 	 $distance = ($start - $feat_low->stop)."!";
-# 	  }
-# 	  #print STDERR $distance,"\n";
-# 	  my $upstream = $distance =~ s/!$//;
-	
-# 	  my $val = $closest_feat->id."_".$hsp_id;
-# 	  if ($distance >= 1000) 
-# 	  {
-# 		$distance = $distance / 1000;
-# 	  	$distance .= "kb";
-# 	  }
-# 	  else {
-# 		$distance .= "bp";
-# 	  }
-# 	  $distance .= $upstream ? " upstream" : " downstream";
-# 	  ($name) = $closest_feat->names;
-# 	  $fid = $closest_feat->id;
-# 	  $distance = "overlapping" if $distance =~ /^0/ || $distance =~ /-/;
-# 	  $name = qq{<a href="#" title="Click for Feature Information" onclick=update_info_box('}.$closest_feat->id."_".$hsp_num."_".$dsid."')>$name</a>";
-#       }	
-#     else {
-#       $distance = "No Features within 250 kb of HSP No. $hsp_num";
-#     }
+    my $feat;
+    my $new_checkbox_info;
+    while (my $res = $handle->fetchrow_arrayref())
+      {
+	my $fid = $res->[0];
+	my ($tmpfeat) = $coge->resultset('Feature')->find($fid);
+	next if $tmpfeat->type->name =~ /contig/;
+	$feat = $tmpfeat;
+	last;
+      }
     if ($feat)
       {
 	if (($start >= $feat->start && $start <= $feat->stop) || ($stop >= $feat->start && $stop <= $feat->stop) )
@@ -1547,12 +1462,13 @@ order by abs((start + stop)/2 - $mid) LIMIT 1
 	  }
 	($name) = $feat->names;
 	$name = qq{<a href="#" title="Click for Feature Information" onclick=update_info_box('}.$feat->id."_".$hsp_num."_".$dsid."')>$name</a>";
+	$new_checkbox_info = $hsp_id."_".$chr."_".$sstart."no,".$feat->id."_".$hsp_id;
       }
     else
       {
-	$distance = "No Features within 250 kb of HSP No. $hsp_num";
+	$distance = "No neighboring features found";
       }
-    my $new_checkbox_info = $hsp_id."_".$chr."_".$sstart."no,".$feat->id."_".$hsp_id;
+    
     #print STDERR $new_checkbox_info,"\n";
     return $name,$distance,$hsp_id,$new_checkbox_info;
   }
