@@ -426,11 +426,11 @@ sub codon_aa_alignment
     my %args = @_;
     my $featid = $args{featid};
     my ($feat) = $coge->resultset('Feature')->find($featid);
-    my $seq = $feat->genomic_sequence();
-    my $aa = $feat->protein_sequence();
+    my $seq = join (" ", $feat->genomic_sequence()=~ /(...)/g);
+    my $aa = join ("   ",split //,$feat->protein_sequence());
     my $aln = "<pre>";
-    $aln .= $seq."\n";
     $aln .= $aa."\n";
+    $aln .= $seq."\n";
     $aln .="</pre>";
     return $aln;
   }
