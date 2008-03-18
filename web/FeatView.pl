@@ -51,6 +51,7 @@ my $pj = new CGI::Ajax(
 		       update_featlist=>\&update_featlist,
 		       parse_for_FeatList=>\&parse_for_FeatList,
 		       get_orgs=>\&get_orgs,
+		       codon_aa_alignment=>\&codon_aa_alignment,
 		      );
 $pj->JSDEBUG(0);
 $pj->DEBUG(0);
@@ -205,13 +206,15 @@ sub get_anno
 	my $x = $feat->start;
 	my $z = 4;
 	$anno .= join "\n<BR><HR><BR>\n", $feat->annotation_pretty_print_html(loc_link=>0);
+	$anno .= qq{<DIV id="addfeat$featid"><input type="button" value = "Add Feature to List" onClick="\$('#addfeat$featid').html('<i>$accn ($type) has been added to Feature List</i><br><br>');update_featlist(['args__$accn','args__$type','args__$featid'],[add_to_featlist]);"></DIV>};
 	$anno .= qq{<DIV id="loc$i"><input type="button" value = "Click for Genome view" onClick="window.open('GeLo.pl?chr=$chr&ds=$ds&x=$x&z=$z');"></DIV>};
 #	$anno .= qq{<DIV id="exp$i"><input type="button" value = "Click for expression tree" onClick="gen_data(['args__Generating expression view image'],['exp$i']);show_express(['args__}.$accn.qq{','args__}.'1'.qq{','args__}.$i.qq{'],['exp$i']);"></DIV>};
 	$anno .= qq{<DIV id="dnaseq$i"><input type="button" value = "Click for Sequence" onClick="window.open('SeqView.pl?featid=$featid&dsid=$ds&chr=$chr&featname=$accn');"></DIV>};
 	$anno .= qq{<DIV id="gc_info$i"><input type="button" value = "Click for GC content" onClick="gc_content(['args__featid','args__$featid'],['gc_info$i'])"></DIV>};
 	$anno .= qq{<DIV id="codon_info$i"><input type="button" value = "Click for codon usage" onClick="codon_table(['args__featid','args__$featid'],['codon_info$i'])"></DIV>} if $feat->type->name eq "CDS";
 	$anno .= qq{<DIV id="protein_info$i"><input type="button" value = "Click for amino acid usage" onClick="protein_table(['args__featid','args__$featid'],['protein_info$i'])"></DIV>} if $feat->protein_sequence;
-	$anno .= qq{<DIV id="addfeat$featid"><input type="button" value = "Add Feature to List" onClick="\$('#addfeat$featid').html('<i>$accn ($type) has been added to Feature List</i><br><br>');update_featlist(['args__$accn','args__$type','args__$featid'],[add_to_featlist]);"></DIV>};
+	$anno .= qq{<DIV id="codon_aa_align$i"><input type="button" value = "Click for codon/aa alignment" onClick="codon_aa_alignment(['args__featid','args__$featid'],['codon_aa_align$i'])"></DIV>} if $feat->type->name eq "CDS";
+
 
 	$anno = "<font class=\"annotation\">No annotations for this entry</font>" unless $anno;
       }
@@ -418,3 +421,16 @@ sub protein_table
     return $html;
   }
 
+sub codon_aa_alignment
+  {
+    my %args = @_;
+    my $featid = $args{featid};
+    my ($feat) = $coge->resultset('Feature')->find($featid);
+    my $seq = $feat->genomic_sequence();
+    my $aa = $feat->protein_sequence();
+    my $aln = "<pre>";
+    $aln .= $seq."\n";
+    $aln .= $aa."\n";
+    $aln .="</pre>";
+    return $aln;
+  }
