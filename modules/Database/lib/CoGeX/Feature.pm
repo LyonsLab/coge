@@ -770,13 +770,35 @@ sub protein_sequence {
     push @sequence_objects, $seq;
   }
 
-  if (@sequence_objects == 1) {
-    return $sequence_objects[0]->sequence_data();
-  } elsif ( @sequence_objects > 1 )  {
-    return \@sequence_objects;
-  } else {
-    return undef;
-  }
+  if (@sequence_objects == 1) 
+    {
+      return $sequence_objects[0]->sequence_data();
+    } 
+  elsif ( @sequence_objects > 1 )  
+    {
+      return \@sequence_objects;
+    } 
+  else 
+    {
+      my ($seqs,$type) = $self->frame6_trans;
+      #check to see if we can find the best translation
+      my $found=0;
+      while (my ($k, $v) = each %$seqs)
+	{
+	  if ($v =~ /\*$/ || $v !~ /\*/)
+	    {
+	      $found = $k;
+	    }
+	}
+      if ($found)
+	{
+	  return $seqs->{$found};
+	}
+      else
+	{
+	  return undef;
+	}
+    }
 }
 
 
