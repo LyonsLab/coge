@@ -395,13 +395,16 @@ function monitor_log(log)
   if (image) message += image;
   if (database) message += database;
   if (!message) {message = "Initializing search";}
-  if (!pageObj.finished && pageObj.nolog<4)
+  if (!pageObj.finished && pageObj.nolog<8)
   {
     var waittime = pageObj.waittime;
     pageObj.waittime = pageObj.waittime*2;
     message+="<br/>Next progress check in "+waittime/1000+" seconds.";
-//    console.log('ajax.len: '+ajax.length+", PageObj.nolog: "+pageObj.nolog);
     if (ajax.length) {setTimeout("read_log(['args__logfile', 'args__'+pageObj.basefile, 'args__prog','args__GEvo'], [monitor_log])", waittime);}
+  }
+  else
+  {
+   message = "There has been no update on your results during the first "+pageObj.waittime/1000+ "seconds of your analysis.  An error may have occured.  You can check your logfile at <a href='tmp/GEvo/"+pageObj.basefile+".log' target=_new>this link</a> which may help you determin what went wrong, or send it to CoGe's adminstrator for debugging.  In the meanwhile, we suggest that you either wait a bit longer to see if the analsysi completes, and if not rerun your analysis.  If you have submitting very large regions for anlaysis (e.g. several megabases), please try a smaller region for analsyis.";
   }
   if (message) $('#loading').html("<div class=small>"+message+'</div>');
 }
