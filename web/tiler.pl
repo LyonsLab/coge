@@ -53,7 +53,7 @@ sub get_dir_array {
     my ($qstr) = $ENV{QUERY_STRING} =~ /(.*)/;
     $qstr =~ s/[\s-]//;
     my @dir = ();
-    print STDERR $qstr,"\n";
+#    print STDERR $qstr,"\n";
     # parse the url;
     my %query_pairs = map { split('=', $_) } split(/&/,$qstr);
 #    print STDERR Dumper \%query_pairs;
