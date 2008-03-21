@@ -444,6 +444,7 @@ sub process_nucleotides
     my $start = $opts{start};
     my $stop = $opts{stop};
     my $seq = $opts{seq};
+
     $start = 1 unless $start;
     $stop = length $seq if $seq && !$stop;
     if ($self->MAX_NT && abs ($stop-$start) > $self->MAX_NT())
@@ -462,6 +463,8 @@ sub process_nucleotides
 	return unless $ds;
 	$seq = uc($ds->get_genomic_sequence(start=>$start, end=>$stop, chr=>$chr));
       }
+#    print STDERR $start,"-",$stop,"\t",$seq,"\n";
+
     my $t8 = new Benchmark if $BENCHMARK;
     my $seq_len = length $seq;
     my $chrs = int (($c->_region_stop-$c->_region_start)/$c->iw);
@@ -483,6 +486,8 @@ sub process_nucleotides
 		$pos+=$chrs;
 		next;
 	      }
+#	    print STDERR "\t",$pos," ",$start," ",$pos+$start,": ",$subseq,"\t",$rcseq,"\n";
+
 	    my $f1 = CoGe::Graphics::Feature::NucTide->new({nt=>$subseq, strand=>1, start =>$pos+$start, options=>$options}) if $layers->{gc} || $layers->{nt} || $layers->{all};
 	    my $f2 = CoGe::Graphics::Feature::NucTide->new({nt=>$rcseq, strand=>-1, start =>$pos+$start, options=>$options}) if $layers->{gc} || $layers->{nt} || $layers->{all};
 	    if ($layers->{nt} || $layers->{all} ||  $layers->{gc})
