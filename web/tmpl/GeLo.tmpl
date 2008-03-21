@@ -12,7 +12,7 @@
         }
         #gene {
 //            background-color: red;
-            color:red;
+            color:grey;
         }
         #local_dup {
 //            background-color: cyan;
@@ -35,6 +35,10 @@
             background-color: white;
              color:green;
 	}
+	#gaga {
+	    color: red;
+        }
+	   
         #func_dom {
          //   background-color: white;
              color:orange;
@@ -112,6 +116,10 @@
                  ,{'ds':ds,'chr':chr,'version':version,layers:"gc",'organism':org}
                  ,{isBaseLayer:false}
              );
+            gaga = new OpenLayers.Layer.Genomic( "<span id='gaga'>GAGA content</span>" , server
+                 ,{'ds':ds,'chr':chr,'version':version,layers:"gaga",'organism':org}
+                 ,{isBaseLayer:false}
+             );
             prot = new OpenLayers.Layer.Genomic( "proteins" , server
                  ,{'ds':ds,'chr':chr,'version':version,layers:"protein",'organism':org}
                  ,{isBaseLayer:false}
@@ -121,6 +129,8 @@
 
             gc.setVisibility(true);
             map.addLayer(gc)
+            gaga.setVisibility(false);
+            map.addLayer(gaga)
             map.addLayers(layers);
             ld.setVisibility(false);
             fd.setVisibility(false);
