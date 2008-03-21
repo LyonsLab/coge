@@ -271,7 +271,7 @@ sub get_dataset_chr_info
 	$viewer .= "<font class=\"oblique\">Genome Viewer Launcher</font><br>";
 	$viewer .= "<table>";
 	$viewer .= "<tr><td nowrap class = \"ital\">Starting location: ";
-	$viewer .= qq{<td><input type="text" size=10 value="1000" id="x">};
+	$viewer .= qq{<td><input type="text" size=10 value="10000" id="x">};
 	my $zoom;
    	$zoom .= qq{<tr><td class = "ital">Zoom level:};
    	$zoom .= qq{<td><SELECT name = "z" id="z" size = 1>};
