@@ -590,7 +590,7 @@ sub add_feature
 	    my $order = $last_feat ? $last_feat->order()+1 : 1;
 	    $feat->order($order);
 	  }
-	$self->_check_overlap($feat) if $self->overlap_adjustment;
+#	$self->_check_overlap($feat) if $self->overlap_adjustment;
 	if ($self->skip_duplicate_features)
 	  {
 	    next if $self->_check_duplicate($feat);   #should implement this
@@ -904,13 +904,13 @@ sub _check_overlap
     return unless @feats;
     foreach my $f (@feats)
     	{
+	  next if $feat eq $f;
 	  next unless $feat->overlay() == $f->overlay();  #skip the check if the features are at different overlay levels.
 	  unless ( ($feat->start > $f->stop) || ($feat->stop < $f->start) )
 	    {
-	      print STDERR "Overlap: ",$feat->name,"\t",$f->name,"\n" if $self->DEBUG; 
 	      $feat->_overlap($feat->_overlap+1);
-	      $f->_overlap($f->_overlap+1);
 	      $feat->_overlap_pos($feat->_overlap_pos+1);
+	      $f->_overlap_pos($f->_overlap_pos-1) if $f->_overlap_pos > 1;
 	    }
 # 	  if ( ($feat->start == $f->start) && ($feat->stop == $f->stop) ) #two features are on top of one another
 # 	    {
@@ -1720,9 +1720,16 @@ sub _draw_features
     $self->_invert_chromosome if $self->invert_chromosome;
     my $c = $self->_image_h_used+($self->ih - $self->_image_h_used)/2;
     print STDERR "Image used: ".$self->_image_h_used."  Image Height: ".$self->ih."  Center: $c\n" if $self->DEBUG;
+    foreach my $feat(sort {$b->start <=> $a->start}$self->get_features(fill=>0))
+      {
+#	my $str = $feat->type."\t". $feat->start."-".$feat->stop."\t".$feat->overlay."\t";
+#	$str .= $feat->_overlap."::";
+	$self->_check_overlap($feat) if $self->overlap_adjustment;
+#	$str .= $feat->_overlap."\t".$feat->_overlap_pos."\n";
+#	print STDERR $str,"\n";
+      }
     foreach my $feat ( (sort {$b->type cmp $a->type} $self->get_feature(fill=>1)), sort {$a->overlay <=> $b->overlay || $b->start <=> $a->start} $self->get_features(fill=>0))
       {
-	
 	#skip drawing features that are outside (by two times the range being viewed) the view
 #	if ($feat->start)
 #	  {
@@ -1814,10 +1821,10 @@ sub _draw_feature
     $feat->gd;
     $feat->stop($feat->start) unless defined $feat->stop;
     my $unit = $self->_calc_unit_size;
-    my $fs = $unit*($feat->start-$rb-1);
-    my $fe = $unit*($feat->end-$rb);
+    my $fs = $unit*($feat->start-$rb);
+    my $fe = $unit*($feat->end-$rb+1);
     my $fw = sprintf("%.1f",$fe - $fs)+1; #calculate the width of the feature;
-#    print STDERR $rb,"-",$re,"\t",$feat->start-$rb,"-",$feat->end-$rb+1,,"::",$unit,"\t",$fs,"-", $fe," :: ",$fw,"\n" if ref($feat) =~ /gene/i;
+#    print STDERR $rb,"-",$re,"\t",$feat->start-$rb,"-",$feat->end-$rb+1,,"::",$unit,"\t",$fs,"-", $fe," :: ",$fw,"\n";# if ref($feat) =~ /gene/i;
     $fw = 1 if $feat->force_draw();
     return if $fw < 1; #skip drawing if less than one pix wide
 
@@ -1830,9 +1837,9 @@ sub _draw_feature
 	if ($feat->external_image && $fw > 10) #if we have an external image and the feature width is greater than 10. . .
 	  {
 	    my $ei = $feat->external_image;
-#	    $ei->transparent($ei->colorResolve(255,255,255));
 	    my $ex_wid = $ei->width;
 	    my $ex_hei = $ei->height;
+	    $ei->fill(0,0,$ei->colorResolve(@{$feat->color}));
 	    my $scale = $fw/$ex_wid; #scaling factor for external image
 	    my $hei = $feat->strand =~ /-/ ? $y : $y+$ih-($ex_hei*$scale);
 	    #okay, we are going to need to do some fancy stuff in order to smoothly resize and paste the feature onto the main image
@@ -1841,26 +1848,24 @@ sub _draw_feature
 	    #2. copy, resize, and resample the feature onto the new image
 	    $newgd->copyResampled($ei, 0, 0, 0, 0, $newgd->width, $newgd->height, $ex_wid, $ex_hei);  
 	    if ($highqual)
-	      {
-		#3. find any colors that are close to white and set them to white.
-		my $max = 200;
-		for my $x (0..$fw)
-		  {
-		    for my $y (0..$ih)
-		      {
-			my ($r, $g, $b) = $newgd->rgb($newgd->getPixel($x, $y));
-			if ($r > $max && $g > $max && $b > $max)
-			  {
-			    $newgd->setPixel($x, $y, $newgd->colorResolve(255,255,255));
-			  }
-		      }
-		  }
-	      }#4. make white transparent
-	    $newgd->transparent($newgd->colorResolve(255,255,255));
-	    #5. copy new image into appropriate place on image.
-
-#	    $self->gd->copyMerge($newgd, $fs, $hei, 0, 0, $newgd->width, $newgd->height, $feat->merge_percent);
- 	    $self->gd->copy($newgd, $fs, $hei, 0, 0, $newgd->width, $newgd->height);
+ 	      {
+ 		#3. find any colors that are close to white and set them to white.
+ 		my $max = 200;
+ 		for my $x (0..$fw)
+ 		  {
+ 		    for my $y (0..$ih)
+ 		      {
+ 			my ($r, $g, $b) = $newgd->rgb($newgd->getPixel($x, $y));
+ 			if ($r > $max && $g > $max && $b > $max)
+ 			  {
+ 			    $newgd->setPixel($x, $y, $newgd->colorResolve(255,255,255));
+ 			  }
+ 		      }
+ 		  }
+ 	      }#4. make white transparent
+ 	    $newgd->transparent($newgd->colorResolve(255,255,255));
+# 	    #5. copy new image into appropriate place on image.
+ 	    $self->gd->copyMerge($newgd, $fs, $hei, 0, 0, $newgd->width, $newgd->height,100);
 	  }
       }
     else
