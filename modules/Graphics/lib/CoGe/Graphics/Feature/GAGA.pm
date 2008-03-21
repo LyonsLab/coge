@@ -10,6 +10,7 @@ BEGIN {
     $WIDTH = 5;
     __PACKAGE__->mk_accessors(
 "nt",
+"show_label",
 );
 }
 
@@ -30,12 +31,12 @@ sub _initialize
     my $ct = 0;
     my $sum = 0;
     my $seq = $self->nt;
-    while ($seq=~ /(g+a+g+)/ig)
+    while ($seq=~ /(g+a+g+a+)/ig)
       {
 	$sum += length $1;
 	$ga++;
       }
-    while ($seq =~ /(c+t+c+)/ig)
+    while ($seq =~ /(c+t+c+t+)/ig)
       {
 	$sum += length $1;
 	$ct++;
@@ -57,7 +58,7 @@ sub _initialize
 
 
     $self->color(\@color);
-    $self->label($self->nt) if $self->nt;
+    $self->label($self->nt) if $self->nt && $self->show_label;
     $self->type('gaga');
   }
 
@@ -67,6 +68,7 @@ sub _post_initialize
     my %opts = @_;
     my $gd = $self->gd;
     $gd->fill(0,0, $self->get_color($self->color));
+#    $gd->transparent($gd->colorResolve(255,255,255));
   }
 
 #################### subroutine header begin ####################
