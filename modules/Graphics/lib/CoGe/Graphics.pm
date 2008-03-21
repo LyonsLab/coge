@@ -501,18 +501,15 @@ sub process_nucleotides
 	      }
 	    $c->add_feature($f1) if $f1;
 	    $c->add_feature($f2) if $f2;
-
-	    $f1 = CoGe::Graphics::Feature::GAGA->new({nt=>$subseq, strand=>1, start =>$pos+$start}) if $layers->{gaga} || $layers->{all};
-	    $f2 = CoGe::Graphics::Feature::GAGA->new({nt=>$rcseq, strand=>-1, start =>$pos+$start}) if $layers->{gaga} || $layers->{all};
-	    if ($layers->{all} ||  $layers->{gaga})
+	    if ($layers->{gaga} || $layers->{all})
 	      {
+		$f1 = CoGe::Graphics::Feature::GAGA->new({nt=>$subseq, strand=>1, start =>$pos+$start});
+		$f2 = CoGe::Graphics::Feature::GAGA->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
 		$f1->show_label(1); 
 		$f2->show_label(1);
+		$c->add_feature($f1) if $f1;
+		$c->add_feature($f2) if $f2;
 	      }
-#	    $f1->transparency(50) if $f1;
-#	    $f2->transparency(50) if $f2;
-	    $c->add_feature($f1) if $f1;
-	    $c->add_feature($f2) if $f2;
 	    $pos+=$chrs;
 	  }
       }
