@@ -11,6 +11,7 @@ BEGIN {
     __PACKAGE__->mk_accessors(
 "nt",
 "show_label",
+"extra",
 );
 }
 
@@ -31,28 +32,42 @@ sub _initialize
     my $ct = 0;
     my $sum = 0;
     my $seq = $self->nt;
-    while ($seq=~ /(g+a+g+a+)/ig)
+#    print STDERR length ($seq),"\n";
+    if (length ($seq) > 3)
       {
-	$sum += length $1;
-	$ga++;
+	while ($seq=~ /(g+a+g+a+)/ig)
+	  {
+	    $sum += length $1;
+	    $ga++;
+	  }
+	while ($seq =~ /(c+t+c+t+)/ig)
+	  {
+	    $sum += length $1;
+	    $ct++;
+	  }
       }
-    while ($seq =~ /(c+t+c+t+)/ig)
-      {
-	$sum += length $1;
-	$ct++;
-      }
-
-
+#     elsif(length ($seq) > 2)
+#       {
+# 	while ($seq=~ /(g*a*g+a+g*a*)/ig)
+# 	  {
+# 	    next unless length ($1) > 3;
+# 	    $sum += length $1;
+# 	    $ga++;
+# 	  }
+# 	while ($seq =~ /(c*t*c+t+c*t*)/ig)
+# 	  {
+# 	    next unless length ($1) > 3;
+# 	    $sum += length $1;
+# 	    $ct++;
+# 	  }
+#       }
     
-    my $pga = $ga/(length ($self->nt) / 2);
-    my $pct = $ct/(length ($self->nt) / 2);
-    my $p = ($sum)/(length ($self->nt));
+    my $p = ($sum)/(length ($seq));
     my @color;
     my $red = 255;
     $red -= ($p*200);
     my $blue = 255;
     my $green = 255;
-#    $green -= ($pga*250);
 
     @color = ($blue, $red, $red);
 
