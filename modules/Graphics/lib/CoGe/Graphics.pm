@@ -597,7 +597,7 @@ sub process_features
         elsif (($layers->{features}{gene} || $layers->{all}) && $feat->type->name =~ /Gene/i)
           {
 	    my $f = CoGe::Graphics::Feature::Gene->new();
-	    $f->color([255,0,0,50]);
+	    $f->color([219, 219,219,50]);
 	    foreach my $loc ($feat->locs)
 	      {
 		$f->add_segment(start=>$loc->start, stop=>$loc->stop);
