@@ -463,6 +463,8 @@ sub process_nucleotides
 	return unless $ds;
 	$seq = uc($ds->get_genomic_sequence(start=>$start, end=>$stop, chr=>$chr));
       }
+#    print STDERR Dumper $layers, $seq;
+
 #    print STDERR $start,"-",$stop,"\t",$seq,"\n";
 
     my $t8 = new Benchmark if $BENCHMARK;
@@ -471,7 +473,7 @@ sub process_nucleotides
     $chrs = 1 if $chrs < 1;
     my $pos = 0;
     $start = 1 if $start < 1;
-    if ($layers->{gc} || $layers->{nt} || $layers->{all})
+    if ($layers->{gc} || $layers->{gaga} || $layers->{nt} || $layers->{all})
       {
 	while ($pos < $seq_len)
 	  {
@@ -479,15 +481,14 @@ sub process_nucleotides
 	    my $rcseq = substr ($seq, $pos, $chrs);
 	    $rcseq =~ tr/ATCG/TAGC/;
 	    next unless $subseq && $rcseq;
-	    my $options = $layers->{gc} ? "gc" : "nt";
-	    my $skip = 0;
-	    if ($options && $options eq "nt" && !$layers->{all} && $subseq !~/N/i && $subseq !~/X/i)
+	    if (!$layers->{gc} && !$layers->{gaga} && !$layers->{all} && $subseq !~/N/i && $subseq !~/X/i)
 	      {
 		$pos+=$chrs;
 		next;
 	      }
 #	    print STDERR "\t",$pos," ",$start," ",$pos+$start,": ",$subseq,"\t",$rcseq,"\n";
 
+	    my $options = $layers->{gc} ? "gc" : "nt";
 	    my $f1 = CoGe::Graphics::Feature::NucTide->new({nt=>$subseq, strand=>1, start =>$pos+$start, options=>$options}) if $layers->{gc} || $layers->{nt} || $layers->{all};
 	    my $f2 = CoGe::Graphics::Feature::NucTide->new({nt=>$rcseq, strand=>-1, start =>$pos+$start, options=>$options}) if $layers->{gc} || $layers->{nt} || $layers->{all};
 	    if ($layers->{nt} || $layers->{all} ||  $layers->{gc})
@@ -496,13 +497,21 @@ sub process_nucleotides
 		$f2->show_label(1);
 		$f1->use_external_image(1);
 		$f2->use_external_image(1);
+
 	      }
-	    #my $f2 = CoGe::Graphics::Feature::Exon_motifs->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
-	    #my $f2 = CoGe::Graphics::Feature::GAGA->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
-	    #	my $f2 = CoGe::Graphics::Feature::Sigma54->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
+	    $c->add_feature($f1) if $f1;
+	    $c->add_feature($f2) if $f2;
+
+	    $f1 = CoGe::Graphics::Feature::GAGA->new({nt=>$subseq, strand=>1, start =>$pos+$start}) if $layers->{gaga} || $layers->{all};
+	    $f2 = CoGe::Graphics::Feature::GAGA->new({nt=>$rcseq, strand=>-1, start =>$pos+$start}) if $layers->{gaga} || $layers->{all};
+	    if ($layers->{all} ||  $layers->{gaga})
+	      {
+		$f1->show_label(1); 
+		$f2->show_label(1);
+	      }
 #	    $f1->transparency(50) if $f1;
 #	    $f2->transparency(50) if $f2;
-	    $c->add_feature($f1) if $f1;# && $f1->color->[0] ne 255;
+	    $c->add_feature($f1) if $f1;
 	    $c->add_feature($f2) if $f2;
 	    $pos+=$chrs;
 	  }
@@ -853,6 +862,7 @@ sub process_layers
        "local_dup"=>"local_dup",
        "local_dups"=>"local_dup",
        "tandem"=>"local_dup",
+       "gaga"=>"gaga",
       );
     my %features = 
       (
