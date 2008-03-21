@@ -1095,7 +1095,7 @@ sub generate_png
     my %opts = @_;
     my $file_name = $opts{file_name} || $opts{file} || $opts{filename};
     $self->generate_region() unless $self->region_generated;
-#    $self->gd->transparent();
+#    $self->gd->transparent($self->gd->colorResolve(255,255,255));
     if ($file_name)
       {
 	open (OUT, ">$file_name") || die "Can't open $file_name for writing: $!";
@@ -1720,7 +1720,7 @@ sub _draw_features
     $self->_invert_chromosome if $self->invert_chromosome;
     my $c = $self->_image_h_used+($self->ih - $self->_image_h_used)/2;
     print STDERR "Image used: ".$self->_image_h_used."  Image Height: ".$self->ih."  Center: $c\n" if $self->DEBUG;
-    foreach my $feat(sort {$b->start <=> $a->start}$self->get_features(fill=>0))
+    foreach my $feat(sort {$b->start <=> $a->start || $b->stop <=> $a->stop}$self->get_features(fill=>0))
       {
 #	my $str = $feat->type."\t". $feat->start."-".$feat->stop."\t".$feat->overlay."\t";
 #	$str .= $feat->_overlap."::";
@@ -1833,7 +1833,7 @@ sub _draw_feature
     print STDERR "Drawing feature ".$feat->label." Order: ".$feat->order." Overlap: ".$feat->_overlap." : ", $feat->start, "-", $feat->end," Dimentions:",$fw,"x",$ih, " at position: $fs,$y"."\n" if $self->DEBUG;
     if ($feat->fill)
       {
-	$self->gd->copyResampled($feat->gd, $fs, $y,0,0, $fw, $ih, $feat->iw, $feat->ih);
+	$self->gd->copyResized($feat->gd, $fs, $y,0,0, $fw, $ih, $feat->iw, $feat->ih);
 	if ($feat->external_image && $fw > 10) #if we have an external image and the feature width is greater than 10. . .
 	  {
 	    my $ei = $feat->external_image;
