@@ -36,7 +36,12 @@
              color:green;
 	}
 	#gaga {
+	    background-color: white;
 	    color: red;
+        }
+	#gbox {
+	    background-color: white;
+	    color: blue;
         }
 	   
         #func_dom {
@@ -61,8 +66,8 @@
         var bp;
         var size= 285;
         var server =
-        ['http://homer.cnr.berkeley.edu/CoGe/tiler.pl?','http://toxic.berkeley.edu/CoGe/tiler.pl?','http://biocon.berkeley.edu/CoGe/tiler.pl?','http://synteny.cnr.berkeley.edu/CoGe/tiler.pl?'];
-//        ['http://toxic.berkeley.edu/CoGe/tiler.pl?'];
+//        ['http://homer.cnr.berkeley.edu/CoGe/tiler.pl?','http://toxic.berkeley.edu/CoGe/tiler.pl?','http://biocon.berkeley.edu/CoGe/tiler.pl?','http://synteny.cnr.berkeley.edu/CoGe/tiler.pl?'];
+        ['http://toxic.berkeley.edu/CoGe/tiler.pl?'];
         var org = "<TMPL_VAR NAME=ORG>";
         var ds = '<TMPL_VAR NAME=DS>';
         var loc = '<TMPL_VAR NAME=LOC>';
@@ -74,7 +79,7 @@
                  OpenLayers.Bounds(-50000,-10000,1000000000,10000),
                  units     :'bp',
                  tileSize: new OpenLayers.Size(768, size),
-                 resolutions:[4096, 1024,256,64,16,4,1,0.25, 0.125, 0.0625, 0.032125, 0.015625],
+                 resolutions:[4096, 1024,256,64,16,4,1,0.25, 0.125, 0.0625, 0.03125, 0.015625],
 //                 resolutions:[2048, 1024,512,256,128,64,32,16,8,4,2,1, 0.5, 0.25, 0.125, 0.0625, 0.032125, 0.015625],
                   controls: [new OpenLayers.Control.MouseDefaults()]
             });
@@ -83,35 +88,10 @@
                  ,{'ds':ds, 'chr':chr,layers:"background,ruler",'version':version,'organism':org}
                  ,{isBaseLayer:true} 
              ),
-            new OpenLayers.Layer.Genomic( "<span id='gene'>Genes</span>" , server
-                 ,{'ds':ds,'chr':chr,layers:"pseudogene,gene,mRNA,CDS,rna",'version':version,'organism':org,}
-                 ,{isBaseLayer:false}
-             ),
-            ld = new OpenLayers.Layer.Genomic( "<span id='local_dup'>Local Duplicates</span>" , server
-                 ,{'ds':ds,'chr':chr,layers:"local_dup",'version':version,'organism':org,}
-                 ,{isBaseLayer:false}
-             ),
-/*            new OpenLayers.Layer.Genomic( "<span id='pseudogene'>Pseudogenes</span>" , server
-                 ,{'ds':ds,'chr':chr,layers:"pseudogene",'version':version,'organism':org}
-                 ,{isBaseLayer:false}
-             ),
-            new OpenLayers.Layer.Genomic( "<span id='mrna'>mRNAs</span>" , server
-                 ,{'ds':ds,'chr':chr,'version':version,layers:"mRNA",'organism':org}
-                 ,{isBaseLayer:false}
-             ),
-            new OpenLayers.Layer.Genomic( "other RNAs" , server
-                 ,{'ds':ds,'chr':chr,'version':version,layers:"rna",'organism':org}
-                 ,{isBaseLayer:false}
-             ),
-            new OpenLayers.Layer.Genomic( "<span id='cds'>CDSs</span>" , server
-                 ,{'ds':ds,'chr':chr,'version':version,layers:"CDS",'organism':org}
-                 ,{isBaseLayer:false}
-             ),*/
             ]
-            fd = new OpenLayers.Layer.Genomic( "<span id='func_dom'>functional domains</span>" , server
-                 ,{'ds':ds,'chr':chr,'organism':org,'ds':ds,'version':version,layers:"domain"}
-                 ,{isBaseLayer:false}
-             );
+
+            map.addLayers(layers);
+
             gc = new OpenLayers.Layer.Genomic( "<span id='gc'>GC content</span>" , server
                  ,{'ds':ds,'chr':chr,'version':version,layers:"gc",'organism':org}
                  ,{isBaseLayer:false}
@@ -120,8 +100,25 @@
                  ,{'ds':ds,'chr':chr,'version':version,layers:"gaga",'organism':org}
                  ,{isBaseLayer:false}
              );
+            gbox = new OpenLayers.Layer.Genomic( "<span id='gbox'>G-Box CACGTG</span>" , server
+                 ,{'ds':ds,'chr':chr,'version':version,layers:"gbox",'organism':org}
+                 ,{isBaseLayer:false}
+             );
+            genes = new OpenLayers.Layer.Genomic( "<span id='gene'>Genes</span>" , server
+                 ,{'ds':ds,'chr':chr,layers:"pseudogene,gene,mRNA,CDS,rna",'version':version,'organism':org,}
+                 ,{isBaseLayer:false}
+             );
+            ld = new OpenLayers.Layer.Genomic( "<span id='local_dup'>Local Duplicates</span>" , server
+                 ,{'ds':ds,'chr':chr,layers:"local_dup",'version':version,'organism':org,}
+                 ,{isBaseLayer:false}
+             );
+
             prot = new OpenLayers.Layer.Genomic( "proteins" , server
                  ,{'ds':ds,'chr':chr,'version':version,layers:"protein",'organism':org}
+                 ,{isBaseLayer:false}
+             );
+            fd = new OpenLayers.Layer.Genomic( "<span id='func_dom'>functional domains</span>" , server
+                 ,{'ds':ds,'chr':chr,'organism':org,'ds':ds,'version':version,layers:"domain"}
                  ,{isBaseLayer:false}
              );
 
@@ -131,8 +128,12 @@
             map.addLayer(gc)
             gaga.setVisibility(false);
             map.addLayer(gaga)
-            map.addLayers(layers);
+            gbox.setVisibility(false);
+            map.addLayer(gbox)
+            genes.setVisibility(true);
+            map.addLayer(genes)
             ld.setVisibility(false);
+            map.addLayer(ld)
             fd.setVisibility(false);
             map.addLayer(fd)
             prot.setVisibility(false);
