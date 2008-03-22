@@ -88,9 +88,9 @@ OpenLayers.Layer.Genomic.prototype =
     },
     getURL: function (bounds) {
         var zoom = this.getZoom();
-        var res = this.getResolution();
+        var res = this.getResolution();        
         var xmin = Math.ceil(Math.ceil(bounds.left/res) * res);
-        var xmax = Math.floor(Math.floor(bounds.right/res) * res)-1;
+        var xmax = Math.floor(Math.floor(bounds.right/res) * res);
         return this.getFullRequestString(
                      {
                      xmin : xmin,
