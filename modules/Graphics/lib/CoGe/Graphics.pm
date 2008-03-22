@@ -6,6 +6,7 @@ use CoGe::Graphics::Feature;
 use CoGe::Graphics::Feature::Gene;
 use CoGe::Graphics::Feature::NucTide;
 use CoGe::Graphics::Feature::GAGA;
+use CoGe::Graphics::Feature::GBox;
 use CoGe::Graphics::Feature::Sigma54;
 use CoGe::Graphics::Feature::Exon_motifs;
 use CoGe::Graphics::Feature::AminoAcid;
@@ -463,7 +464,7 @@ sub process_nucleotides
 	return unless $ds;
 	$seq = uc($ds->get_genomic_sequence(start=>$start, end=>$stop, chr=>$chr));
       }
-#    print STDERR Dumper $layers, $seq;
+#    print STDERR Dumper $layers;
 
 #    print STDERR $start,"-",$stop,"\t",$seq,"\n";
 
@@ -473,15 +474,17 @@ sub process_nucleotides
     $chrs = 1 if $chrs < 1;
     my $pos = 0;
     $start = 1 if $start < 1;
-    if ($layers->{gc} || $layers->{gaga} || $layers->{nt} || $layers->{all})
+    if ($layers->{gc} || $layers->{nt} || $layers->{all})
       {
+#	print STDERR $start,"-",$stop,"; ",$seq,"\n";
 	while ($pos < $seq_len)
 	  {
 	    my $subseq = substr ($seq, $pos, $chrs);
 	    my $rcseq = substr ($seq, $pos, $chrs);
 	    $rcseq =~ tr/ATCG/TAGC/;
 	    next unless $subseq && $rcseq;
-	    if (!$layers->{gc} && !$layers->{gaga} && !$layers->{all} && $subseq !~/N/i && $subseq !~/X/i)
+#	    print STDERR $subseq,"\t",$pos,"\n";
+	    if (!$layers->{gc} && !$layers->{gaga} && !$layers->{gbox} && !$layers->{all} && $subseq !~/N/i && $subseq !~/X/i)
 	      {
 		$pos+=$chrs;
 		next;
@@ -501,15 +504,42 @@ sub process_nucleotides
 	      }
 	    $c->add_feature($f1) if $f1;
 	    $c->add_feature($f2) if $f2;
-	    if ($layers->{gaga} || $layers->{all})
-	      {
-		$f1 = CoGe::Graphics::Feature::GAGA->new({nt=>$subseq, strand=>1, start =>$pos+$start});
-		$f2 = CoGe::Graphics::Feature::GAGA->new({nt=>$rcseq, strand=>-1, start =>$pos+$start});
-		$f1->show_label(1); 
-		$f2->show_label(1);
-		$c->add_feature($f1) if $f1;
-		$c->add_feature($f2) if $f2;
-	      }
+	    $pos+=$chrs;
+	  }
+      }
+    my $step = $chrs;
+    $step = 6 if $step < 6;
+    $pos = 0;
+    if ($layers->{gbox} || $layers->{all})
+      {
+	while ($pos < $seq_len)
+	  {
+	    my $subseq = substr ($seq, $pos, $step);
+	    my $rcseq = substr ($seq, $pos, $step);
+	    $rcseq =~ tr/ATCG/TAGC/;
+	    next unless $subseq && $rcseq;
+	    my $f1 = CoGe::Graphics::Feature::GBox->new({nt=>$subseq, strand=>1, start =>$pos+$start, stop =>$pos+$start+$step-1});
+	    my $f2 = CoGe::Graphics::Feature::GBox->new({nt=>$rcseq, strand=>-1, start =>$pos+$start, stop =>$pos+$start+$step-1});
+	    $c->add_feature($f1) if $f1;
+	    $c->add_feature($f2) if $f2;
+	    $pos+=$chrs;
+	  }
+      }
+    $step = $chrs;
+    $step = 4 if $step < 4;
+    $pos = 0;
+    if ($layers->{gaga} || $layers->{all})
+      {
+	while ($pos < $seq_len)
+	  {
+	    my $subseq = substr ($seq, $pos, $step);
+	    my $rcseq = substr ($seq, $pos, $step);
+	    $rcseq =~ tr/ATCG/TAGC/;
+	    next unless $subseq && $rcseq;
+	    my $f1 = CoGe::Graphics::Feature::GAGA->new({nt=>$subseq, strand=>1, start =>$pos+$start, stop =>$pos+$start+$step-1});
+	    my $f2 = CoGe::Graphics::Feature::GAGA->new({nt=>$rcseq, strand=>-1, start =>$pos+$start, stop =>$pos+$start+$step-1});
+	    $c->add_feature($f1) if $f1;
+	    $c->add_feature($f2) if $f2;
 	    $pos+=$chrs;
 	  }
       }
@@ -860,6 +890,7 @@ sub process_layers
        "local_dups"=>"local_dup",
        "tandem"=>"local_dup",
        "gaga"=>"gaga",
+       "gbox"=>"gbox",
       );
     my %features = 
       (
