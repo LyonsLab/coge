@@ -1384,6 +1384,7 @@ sub process_hsps
 	  }
 	$f->label_location($label_location) if $stagger_label;
 	$c->add_feature($f);
+	$c->_check_overlap($f);
 	if (!$label_location)
 	  {
 	    $label_location = "bot";
