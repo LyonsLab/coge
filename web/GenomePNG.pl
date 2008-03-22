@@ -56,7 +56,7 @@ else
   {
     CoGe::Graphics->genomic_view(
 				 start=>$start,
-				 stop=>$stop,
+				 stop=>$stop-1,
 				 ds=>$ds,
 				 version=>$version,
 				 org=>$org,
