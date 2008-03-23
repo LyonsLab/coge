@@ -1482,7 +1482,7 @@ See Also   : Accessor functions $self->chr_outer_color, $self->chr_inner_color
 sub chr_brush
   {
     my $self = shift;
-#    return $self->_chr_brush if $self->_chr_brush;
+    return $self->_chr_brush if $self->_chr_brush;
     my $mag = $self->mag;
     my @bc = @{$self->chr_outer_color()};
     my @ic = @{$self->chr_inner_color()};
@@ -1680,14 +1680,19 @@ sub _draw_chr_end
     my $ch = $self->_chr_height;
     
     my @arc1 = $dir =~ /left/i ? (90, 180) : (0, 90);
-    my @arc2 = $dir =~ /left/i ? (180, 270) : (270, 0);
+    my @arc2 = $dir =~ /left/i ? (180, 270) : (270, 360);
     my @arc3 = $dir =~ /left/i ? (90, 270) : (270,90);
     $gd->filledArc($x, $y, $ch, $ch, @arc3, $self->get_color($self->chr_inner_color));
-    $self->chr_brush->flipVertical;
+#    $self->chr_brush->flipVertical;
+    $gd->setBrush($self->chr_brush);
     $gd->arc($x, $y, $ch, $ch, @arc1, gdBrushed);
     $self->chr_brush->flipVertical;
     $gd->setBrush($self->chr_brush);
     $gd->arc($x, $y, $ch, $ch, @arc2, gdBrushed);
+    $self->chr_brush->flipVertical;
+    $gd->setBrush($self->chr_brush);
+
+#$image->arc($cx,$cy,$width,$height,$start,$end,$color)
   }
 
 
