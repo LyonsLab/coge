@@ -203,7 +203,7 @@ sub get_dataset_info
     $link = "http://".$link if ($link && $link !~ /http/);
     $source_name = "<a href =\"".$link."\">".$source_name."</a>" if $ds->datasource->link;
     $html .= qq{<tr><td>Name: <td>$dataset}."\n";
-    $html .= qq{<TR><TD>Data Source: <TD>$source_name}."\n";
+    $html .= qq{<TR><TD>Data Source: <TD>$source_name (id}.$ds->datasource->id.qq{)}."\n";
     $html .= qq{<tr><td>Version: <td>}.$ds->version."\n";
     $html .= qq{<tr><td>Date deposited: <td>}.$ds->date."\n";
     my $org = $ds->organism->name;
