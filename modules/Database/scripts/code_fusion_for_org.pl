@@ -5,8 +5,9 @@ use Data::Dumper;
 use CoGeX;
 use Getopt::Long;
 use DBIxProfiler;
+use DBI;
 
-my ($help, @orgids, $version, $type, $chr, $DEBUG, $length, $org_search);
+my ($help, @orgids, $version, $type, $chr, $DEBUG, $length, $org_search, $sqlite);
 
 GetOptions ("h|help" =>  \$help,
             "o|org=s" => \@orgids,
@@ -22,14 +23,19 @@ my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
 my $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
-
 $type = "CDS" unless $type;
 my $aragorn = "/home/elyons/bin//aragorn";
-
+my $db = "/home/elyons/projects/code_fusion/data/code_usage/code_usage.sqlite"; 
+my $init = -r $db ? 0 : 1;
+$sqlite = DBI->connect("dbi:SQLite:dbname=$db","","");
 
 
 my @aa = qw(R H K D E S T N Q C G P A I L M F W Y V);
 my @codons = gen_codon_table();
+init_sqlite() if $init;
+#populate_sqlite();
+#exit;
+
 print STDERR "length limit $length\n" if $DEBUG && $length;
 
 $| =1;
@@ -56,6 +62,15 @@ foreach my $org (@orgs)
     if ($org_search) {next unless $org->name =~ /$org_search/i || $org->description =~ /$org_search/i};
     my $oname = $org->name;
     $oname .= ": ".$org->description if $org->description;
+    my $statement = qq{
+SELECT * FROM code_usage where name = "$oname";
+};
+    my $ary_ref  = $sqlite->selectall_arrayref($statement);
+    if (@$ary_ref)
+      {
+	warn "data for $oname exists.  skipping. . .\n";
+	next;
+      }
 #    print $oname,"\n";
 #    next;
 
@@ -145,41 +160,55 @@ foreach my $org (@orgs)
     my $codon_total =0;
     map {$codon_total+=$codon_usage{$_}} sort @codons;
     my $nt_total = $at+$gc;
+    my $insert = "INSERT INTO code_usage (";
+    $insert .= join (",", qw(clade type name length cds_count sys1_perc sys2_perc),(map{$_,$_."_perc"} sort @aa, sort @codons), (map {"t".$_,"t".$_."_perc"} sort @codons), (map {$_,$_."_perc"} qw(GC AT) ) );
+    $insert .= ") values (";
     print join ("\t", $group, $otype, $oname, $org_length, $cds_count);
-    print "\t";
+    $insert .= '"'.join ('", "', $group, $otype, $oname, $org_length, $cds_count).'"';
     if ($sys1 || $sys2)
       {
-	print join ("\t", map {sprintf("%.4f", $_)} $sys1/($sys1+$sys2), $sys2/($sys1+$sys2));
+	print "\t",join ("\t", map {sprintf("%.4f", $_)} $sys1/($sys1+$sys2), $sys2/($sys1+$sys2));
+	$insert .= ", \"".join ('", "', map {sprintf("%.2f", $_)} 100*$sys1/($sys1+$sys2), 100*$sys2/($sys1+$sys2)).'"';
+
       }
     else
       {
 	print "\tN/A\tN/A";
+	$insert .= qq{, "N/A", "N/A"};
       }
     if ($aa_total)
       {
 	print "\t",join ("\t", (map {$aa_usage{$_}, sprintf("%.4f",$aa_usage{$_}/$aa_total)} sort @aa));
+	$insert .=  ', "'.join ('", "', (map {$aa_usage{$_}, sprintf("%.2f",100*$aa_usage{$_}/$aa_total)} sort @aa)).'"';
       }
     else
       {
 	print "\tN/A\tN/A"x scalar@aa;
+	$insert .= qq{, "N/A", "N/A"} x scalar@aa;
       }
     if ($codon_total)
       {
-	print join "\t",("\t", (map {$codon_usage{$_}, sprintf("%.4f",$codon_usage{$_}/$codon_total)} sort @codons));
+	print "\t",join ("\t", (map {$codon_usage{$_}, sprintf("%.4f",$codon_usage{$_}/$codon_total)} sort @codons));
+	$insert .=  ', "'.join ('", "', (map {$codon_usage{$_}, sprintf("%.2f",100*$codon_usage{$_}/$codon_total)} sort @codons)).'"';
       }
     else
       {
 	print "\tN/A\tN/A"x scalar@codons;
+	$insert .= qq{, "N/A", "N/A"} x scalar@codons;
       }
     if ($trna_count)
       {
 	print "\t",join ("\t", (map {$trna_codon_usage{$_}, sprintf("%.4f",$trna_codon_usage{$_}/$trna_count)} sort @codons));
+	$insert .= ', "'.join ('", "', (map {$trna_codon_usage{$_}, sprintf("%.2f",100*$trna_codon_usage{$_}/$trna_count)} sort @codons)).'"';
       }
     else
       {
 	print "\t0\t0"x scalar@codons;
+	$insert .= qq{, "0", "0"} x scalar@codons;
       }
     print "\t",join ("\t", (map {$_, sprintf("%.4f",$_/$nt_total)} $gc, $at)),"\n";
+    $insert .= ', "'.join ('", "', (map {$_, sprintf("%.2f",100*$_/$nt_total)} $gc, $at)).'")';
+    print STDERR $insert unless $sqlite->do($insert);
   }
 
 sub get_group
@@ -335,3 +364,44 @@ sub run_aragorn
     return \%data;
   }
     
+sub init_sqlite
+  {
+    my $create = qq{
+CREATE TABLE code_usage
+(
+id INTEGER PRIMARY KEY AUTOINCREMENT,
+clade varchar(255),
+type varchar(255),
+name varchar(1024),
+length varchar,
+cds_count varchar,
+sys1_perc varchar(255),
+sys2_perc varchar(255),
+};
+    $create .= join (" varchar(255),\n", (map{$_,$_."_perc"} sort @aa, sort @codons), (map {"t".$_,"t".$_."_perc"} sort @codons), (map {$_,$_."_perc"} qw(GC AT) ) )." varchar(255)\n";
+    $create .= ")";
+#    print $create;
+    $sqlite->do($create); 
+  }
+
+sub populate_sqlite
+ {
+   my $file = "/home/elyons/projects/code_fusion/data/code_usage/code_fusion_all.txt";
+   open (IN, $file);
+   my $head = <IN>;
+   chomp $head;
+   $head = [split /\t/, $head];
+   while (<IN>)
+     {
+       chomp;
+       my $i = 0;
+       foreach my $item (split /\t/)
+	 {
+	   next unless $item=~/\w/;
+	   $item *=100 if $head->[$i] =~ /%/;
+	   print $head->[$i],"\t",$item,"\n";
+	   $i++;
+	 }
+     }
+   close IN;
+ }
