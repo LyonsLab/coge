@@ -24,7 +24,7 @@ use Getopt::Long;
 use vars qw($DEBUG $coge $GENOMIC_SEQ_LEN $GO $ERASE);
 
 
-my ($nt_file, $nt_dir, $org_name, $org_desc, $org_id, $ds_name, $ds_desc, $ds_link, $ds_id, $di_name, $di_desc, $di_link, $di_version, $di_id, $use_contigs_as_features, $chr, $seq_type_name, $seq_type_desc, $seq_type_id, $chr_basename);
+my ($nt_file, $nt_dir, $org_name, $org_desc, $org_id, $ds_name, $ds_desc, $ds_link, $ds_id, $di_name, $di_desc, $di_link, $di_version, $di_id, $use_contigs_as_features, $chr, $seq_type_name, $seq_type_desc, $seq_type_id, $chr_basename, $add_chr_name);
 
 GetOptions ( "debug=s" => \$DEBUG,
 	     "go=s"    => \$GO,
@@ -49,6 +49,7 @@ GetOptions ( "debug=s" => \$DEBUG,
 	     "seq_type_desc=s" => \$seq_type_desc,
 	     "seq_type_id=i"=>\$seq_type_id, # masked50 == id 2
 	     "chr_basename=s"=>\$chr_basename,
+	     "add_chr_name=s"=>\$add_chr_name,
 	   );
 
 $DEBUG = 1 unless defined $DEBUG; # set to '1' to get updates on what's going on
@@ -198,11 +199,12 @@ sub process_nt_file
 	my ($name, $seq) = split /\n/, $_,2;
 	my $chrtmp = $chr;
 	$seq =~ s/\n//g;
-	($chrtmp) = $name=~/(\d+)/ unless $chrtmp;
+	($chrtmp) = $name=~/(\d+)/ unless $chrtmp|| $add_chr_name;
 	$chrtmp = $name unless $chrtmp;
 	$chrtmp =~ s/chromosome//;
 	$chrtmp =~ s/chr//;
 	$chrtmp =~ s/^0+//;
+	$chrtmp =~ s/^_+//;
 	$chrtmp =~ s/^\s//;
 	$chrtmp =~ s/\s$//;
 	$chrtmp =0 unless $chrtmp;
