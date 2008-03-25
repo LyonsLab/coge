@@ -45,11 +45,14 @@ while (<>)
     my $name;
     foreach my $item (split /;/, $line[-1])
       {
-	my ($type, $info) = split /=/,$item;
-	if ($type eq "ID")
+	$item =~ s/"//g;
+	my ($type, $info) = split / /,$item,2;
+	$type = "name" if $type eq "mRNA";
+	if ($type eq "name")
 	  {
 	    $name = $info;
 	  }
+	next if $type eq "exonNumber";
 	push @{$annos{$name}},$info if $type eq "Description";
       }
     my $strand = $line[6] =~ /-/ ? -1 :1;
