@@ -8,12 +8,14 @@ my $s = CoGeX->connect($connstr, 'bpederse', 'brent_cnr');
 
 my $organism = $ARGV[0] or die "send in organism name i.e. $0 rice.\n";
 
-my ($genomic_sequence_type) = $s->resultset('GenomicSequenceType')->resolve('masked');
+my ($genomic_sequence_type) = $s->resultset('GenomicSequenceType')->resolve('masked'); print STDERR "getting masked\n";
+#my ($genomic_sequence_type) = $s->resultset('GenomicSequenceType')->resolve('unmasked'); print STDERR "getting unmasked\n";
 
 my ($org) = $s->resultset('Organism')->resolve($organism);
 
 # MASKED !!!!!!!!!!!!!!!!!!
 my $datasets = [sort map { $_->dataset_id } $org->current_datasets(genomic_sequence_type=>$genomic_sequence_type)];
+#my $datasets = [34580];
 
 
 print STDERR "usings datasets: " . join(", ", @$datasets) . " for $organism ...\n";
@@ -32,8 +34,9 @@ foreach my $ds (@$datasets){
     open(FA, ">", $organism . ".fasta");
     foreach my $chr ($ds->get_chromosomes){
         # TODO: this will break with contigs.
-        next if $chr =~ /^contig/;
+        #next if $chr =~ /^contig/;
         next if $chr =~ /random/;
+        $chr =~ s/scaffold/super/g;
         next if $chr =~ /scaffold/;
 
         print STDERR $chr . "\n" unless $seen{$chr};
