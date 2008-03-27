@@ -65,13 +65,13 @@ sub gen_html
     $template->param(LOGO_PNG=>"FastaView-logo.png");
     $template->param(BOX_NAME=>qq{<DIV id="box_name">Sequences:</DIV>});
     my @fids = $form->param('featid');
+    my $seqs = get_seqs(prot=>$prot, fids=>\@fids, textbox=>$textbox);
 
     if ($text)
       {
-	my $seqs = get_seqs(prot=>$prot, fids=>\@fids, textbox=>$textbox);
 	return  $seqs;
       }
-    $template->param(BODY=>gen_body(fids=>\@fids));
+    $template->param(BODY=>gen_body(fids=>\@fids, seqs=>$seqs));
     $html .= $template->output;
     }
     return $html;
