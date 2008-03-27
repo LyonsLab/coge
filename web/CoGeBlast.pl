@@ -1549,7 +1549,7 @@ sub generate_excel_feature_file
    	
    	$workbook->close() or die "Error closing file: $!";
    	 
-   	return "tmp/Excel_$filename.xls";
+   	return "$TEMPURL/Excel_$filename.xls";
   }
    	 
 sub generate_tab_deliminated
@@ -1567,31 +1567,31 @@ sub generate_tab_deliminated
     my $str = "Name\tHSP No.\tE-value\tPerc ID\tScore\tOrganism\n";
     
     foreach my $accn (split /,/,$accn_list)
-    {
-      next if $accn =~ /no$/;
-      my ($featid,$hsp_num,$dsid) = $accn =~ m/^(\d+)_(\d+)_(\d+)$/;
-	 my $ds = $coge->resultset("Dataset")->find($dsid);
-   	 my ($feat) = $coge->resultset("Feature")->find($featid);
-   	 
-   	 my ($name) = sort $feat->names;
-   	 my $org = $ds->organism->name;
-   	 
-   	 $sth->execute($hsp_num."_".$dsid) || die "unable to execute";
-      my ($pval,$pid,$score);
-      while (my $info = $sth->fetchrow_hashref())
-	      {
- 	        $pval = $info->{eval};
- 	        $pid = $info->{pid};
- 	        $score = $info->{score};
-	      }
-   	 $str .= "$name\t$hsp_num\t$pval\t$pid\t$score\t$org\n";
-   	}
-	$str =~ s/\n$//;
+      {
+	next if $accn =~ /no$/;
+	my ($featid,$hsp_num,$dsid) = $accn =~ m/^(\d+)_(\d+)_(\d+)$/;
+	my $ds = $coge->resultset("Dataset")->find($dsid);
+	my ($feat) = $coge->resultset("Feature")->find($featid);
 	
-	open(NEW,"> $TEMPDIR/tab_delim$filename.tabbed");
-	print  NEW $str;
-	close NEW;
-	return "tmp/tab_delim$filename.tabbed";
+	my ($name) = sort $feat->names;
+	my $org = $ds->organism->name;
+	
+	$sth->execute($hsp_num."_".$dsid) || die "unable to execute";
+	my ($pval,$pid,$score);
+	while (my $info = $sth->fetchrow_hashref())
+	  {
+	    $pval = $info->{eval};
+	    $pid = $info->{pid};
+	    $score = $info->{score};
+	  }
+	$str .= "$name\t$hsp_num\t$pval\t$pid\t$score\t$org\n";
+      }
+    $str =~ s/\n$//;
+	
+    open(NEW,"> $TEMPDIR/tab_delim$filename.tabbed");
+    print  NEW $str;
+    close NEW;
+    return "$TEMPURL/tab_delim$filename.tabbed";
   }
    	 
 sub generate_feat_list
