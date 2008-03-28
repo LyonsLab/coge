@@ -75,7 +75,7 @@ my $pj = new CGI::Ajax(
 		       overlap_feats_parse=>\&overlap_feats_parse,
 		       get_nearby_feats=>\&get_nearby_feats,
 		       export_fasta_file=>\&export_fasta_file,
-		       generate_excel_feature_file=>\&generate_excel_feature_file,
+		       export_to_excel=>\&export_to_excel,
 		       generate_tab_deliminated=>\&generate_tab_deliminated,
 		       generate_feat_list=>\&generate_feat_list,
 		       dataset_description_for_org=>\&dataset_description_for_org,
@@ -1462,7 +1462,7 @@ order by abs((start + stop)/2 - $mid) LIMIT 1
 	  }
 	($name) = $feat->names;
 	$name = qq{<a href="#" title="Click for Feature Information" onclick=update_info_box('}.$feat->id."_".$hsp_num."_".$dsid."')>$name</a>";
-	$new_checkbox_info = $hsp_id."_".$chr."_".$sstart."no,".$feat->id."_".$hsp_id;
+	$new_checkbox_info = $distance eq "overlapping" ? $hsp_id."_".$chr."_".$sstart."no,".$feat->id."_".$hsp_id : $hsp_id."_".$chr."_".$sstart."no,".$hsp_id."_".$chr."_".$sstart."_".$feat->id."_".$distance;
       }
     else
       {
@@ -1497,7 +1497,7 @@ sub export_fasta_file
 	return $url;
   }
   
-sub generate_excel_feature_file
+sub export_to_excel
   {
     my $accn_list = shift;
     my $filename = shift;
@@ -1511,38 +1511,95 @@ sub generate_excel_feature_file
     $accn_list =~ s/^,//;
     $accn_list =~ s/,$//;
     my $i = 1;
-       	 
-   	 $worksheet->write(0,0,"Feature Name");
-   	 $worksheet->write(0,1,"HSP No.");
-   	 $worksheet->write(0,2,"E-value");
-   	 $worksheet->write(0,3,"Percent ID");
-   	 $worksheet->write(0,4,"Score");
-   	 $worksheet->write(0,5,"Organism");
+    if ($accn_list =~/no/)
+    {  	 
+   	 $worksheet->write(0,0,"Organism");
+   	 $worksheet->write(0,1,"Chr");
+   	 $worksheet->write(0,2,"Position");
+   	 $worksheet->write(0,3,"HSP No.");
+   	 $worksheet->write(0,4,"E-value");
+   	 $worksheet->write(0,5,"Percent ID");
+   	 $worksheet->write(0,6,"Score");
+    }
+    else
+    {
+     $worksheet->write(0,0,"Organism");
+   	 $worksheet->write(0,1,"Chr");
+   	 $worksheet->write(0,2,"Position");
+   	 $worksheet->write(0,3,"HSP No.");
+   	 $worksheet->write(0,4,"E-value");
+   	 $worksheet->write(0,5,"Percent ID");
+   	 $worksheet->write(0,6,"Score");
+   	 $worksheet->write(0,7,"Closest Feature");
+   	 $worksheet->write(0,8,"Distance");
+    }
     
+    my ($org,$chr,$pos,$hsp_no,$eval,$pid,$score,$distance,$featid,$dsid);
     foreach my $accn (split /,/,$accn_list)
     {
-      next if $accn =~ /no$/;
-      my ($featid,$hsp_num,$dsid) = $accn =~ m/^(\d+)_(\d+)_(\d+)$/;
-   	  my ($feat) = $coge->resultset("Feature")->find($featid);
-   	 
-   	 my ($name) = sort $feat->names;
-   	 my $org = $feat->organism->name;
-   	 
-   	 $sth->execute($hsp_num."_".$dsid) || die "unable to execute";
-      my ($pval,$pid,$score);
-      while (my $info = $sth->fetchrow_hashref())
+      if($accn =~/no/)
+      {
+      	 my $accn_with_commas = $accn;
+        $accn_with_commas =~ tr/_/,/;
+      	($hsp_no,$dsid,$chr,$pos) = $accn_with_commas =~ /(\d+),(\d+),(\w*_?\d+),(\d+)no/;
+      	my $ds = $coge->resultset("Dataset")->find($dsid);
+      	$org = $ds->organism->name;
+      	$sth->execute($hsp_no."_".$dsid) || die "unable to execute";
+      	while (my $info = $sth->fetchrow_hashref())
 	      {
- 	        $pval = $info->{eval};
+ 	        $eval = $info->{eval};
  	        $pid = $info->{pid};
  	        $score = $info->{score};
 	      }
-   	 
-   	 $worksheet->write($i,0,"http://toxic.berkeley.edu/CoGe/FeatView.pl?accn=$name",$name);
-   	 $worksheet->write($i,1,$hsp_num);
-   	 $worksheet->write($i,2,$pval);
-   	 $worksheet->write($i,3,$pid);
-   	 $worksheet->write($i,4,$score);
-   	 $worksheet->write($i,5,$org);
+      	
+      	$worksheet->write($i,0,$org);
+   		$worksheet->write($i,1,$chr);
+   	 	$worksheet->write($i,2,$pos);
+   	 	$worksheet->write($i,3,$hsp_no);
+   	 	$worksheet->write($i,4,$eval);
+   	 	$worksheet->write($i,5,$pid);
+   	 	$worksheet->write($i,6,$score);
+      	
+      }
+      else
+      {
+      	if ($accn =~ tr/_/_/ > 2)
+      	{
+      		my $accn_with_commas = $accn;
+      		$accn_with_commas =~ tr/_/,/;
+      		($hsp_no,$dsid,$chr,$pos,$featid,$distance) = $accn_with_commas =~ /(\d+),(\d+),(\w*_?\d+),(\d+),(\d+),(\d+.?\d*)/;
+      	}
+      	else
+      	{
+      		($featid,$hsp_no,$dsid) = $accn =~ /(\d+)_(\d+)_(\d+)/;
+      		$distance = "overlapping";
+      	}
+      	
+      	    my $ds = $coge->resultset("Dataset")->find($dsid);
+      		$org = $ds->organism->name;
+      		$sth->execute($hsp_no."_".$dsid) || die "unable to execute";
+      		while (my $info = $sth->fetchrow_hashref())
+	     	 {
+ 	       	  $eval = $info->{eval};
+ 	      	  $pid = $info->{pid};
+ 	      	  $score = $info->{score};
+ 	      	  $pos = $info->{sstart} unless $pos;
+	     	 }
+           my ($feat) = $coge->resultset("Feature")->find($featid);
+   	       my ($name) = sort $feat->names;
+   	       $chr = $feat->chr if $accn =~ tr/_/_/ < 3;
+   	    
+   	    $worksheet->write($i,0,$org);
+   		$worksheet->write($i,1,$chr);
+   	 	$worksheet->write($i,2,$pos);
+   	 	$worksheet->write($i,3,$hsp_no);
+   	 	$worksheet->write($i,4,$eval);
+   	 	$worksheet->write($i,5,$pid);
+   	 	$worksheet->write($i,6,$score);
+   	 	$worksheet->write($i,7,"http://toxic.berkeley.edu/CoGe/FeatView.pl?accn=$name",$name);
+   	 	$worksheet->write($i,8,$distance);
+      
+      }
    	 
    	 $i++;
    	}
