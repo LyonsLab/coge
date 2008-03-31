@@ -258,9 +258,9 @@ sub fasta
     my $chr = $opts{chr};
     ($chr) = $self->get_chromosomes unless defined $chr;
     my $strand = $opts{strand} || 1;
-    my $start = $opts{start};
+    my $start = $opts{start} || 1;
     $start =1 if $start < 1;
-    my $stop = $opts{stop};
+    my $stop = $opts{stop} || $self->last_chromosome_position($chr);
     my $prot = $opts{prot};
     my $rc = $opts{rc};
     $strand = -1 if $rc;
