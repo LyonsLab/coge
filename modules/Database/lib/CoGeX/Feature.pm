@@ -180,7 +180,7 @@ sub annotation_pretty_print
     #look into changing this to set_id
     my $info_id = $self->dataset->id;
     my $location = "Chr ".$chr." ";
-    $location .= join (", ", map {$_->start."-".$_->stop} $self->locs);
+    $location .= join (", ", map {$_->start."-".$_->stop} sort {$a->start <=> $b->start} $self->locs);
     $location .="(".$strand.")";
     #my $location = "Chr ".$chr. "".$start."-".$stop.""."(".$strand.")";
     $anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"Location", Values=>[$location], Type_delimit=>": ", Val_delimit=>" "));
@@ -292,7 +292,7 @@ sub annotation_pretty_print_html
 	  }
       }
     my $location = "Chr ".$chr." ";
-    $location .= join (", ", map {$_->start."-".$_->stop} $self->locs);
+    $location .= join (", ", map {$_->start."-".$_->stop} sort {$a->start <=> $b->start} $self->locs);
     $location .="(".$strand.")";
     my $featid = $self->id;
     $location = qq{<a href="$loc_link?featid=$featid&start=$start&stop=$stop&chr=$chr&dsid=$dataset_id&strand=$strand&featname=$outname" target=_new>}.$location."</a>" if $loc_link;
