@@ -61,6 +61,13 @@ LICENSE file included with this module.
 perl(1).
 
 =cut
+
+
+
+
+
+
+
 ################################################ subroutine header begin ##
 
 =head2 get_features_in_region
@@ -266,7 +273,9 @@ sub get_current_datasets_for_org
     ds_loop: while (my $ds = $rs->next())
       {
 	$version = $ds->version unless $version;
-	foreach my $chr ($ds->get_chromosomes)
+	next unless $version == $ds->version;
+	my @chrs = $ds->get_chromosomes;
+	foreach my $chr (@chrs)
 	  {
 	    #this is a hack but the general problem is that some organisms have different chromosomes at different versions, however, partially complete genomes will have many contigs and different versions will have different contigs.  So, to get around this, there is a check to see if the chromosome name has contig in it, if so, then only the most current version is used.  Otherwise, all versions are game.
 	    next unless $chr;
