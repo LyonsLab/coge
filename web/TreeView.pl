@@ -49,7 +49,7 @@ sub gen_html
 	my ($body, $seq_names, $seqs) = gen_body();
 	my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
 	
-	$template->param(TITLE=>'CoGe: Phylogenetic Tree Viewer');
+	$template->param(TITLE=>'Phylogenetic Tree Viewer');
 	$template->param(USER=>$USER);
 	$template->param(DATE=>$DATE);
 	$template->param(LOGO_PNG=>"TreeView-logo.png");

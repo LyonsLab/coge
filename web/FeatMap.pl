@@ -52,7 +52,7 @@ sub gen_html
       {
 	my ($body) = gen_body();
 	my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
-	$template->param(TITLE=>'CoGe: Feature Map');
+	$template->param(TITLE=>'Feature Map');
 	$template->param(HELP=>'FeatMap');
 	# print STDERR "user is: ",$USER,"\n";
 	$template->param(USER=>$USER);
