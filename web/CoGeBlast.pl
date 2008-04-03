@@ -79,6 +79,10 @@ my $pj = new CGI::Ajax(
 		       generate_tab_deliminated=>\&generate_tab_deliminated,
 		       generate_feat_list=>\&generate_feat_list,
 		       dataset_description_for_org=>\&dataset_description_for_org,
+		       export_hsp_info=>\&export_hsp_info,
+		       export_hsp_query_fasta=>\&export_hsp_query_fasta,
+		       export_hsp_subject_fasta=>\&export_hsp_subject_fasta,
+		       export_alignment_file=>\&export_alignment_file,
 		      );
 $pj->js_encode_function('escape');
 print $pj->build_html($FORM, \&gen_html);
@@ -464,7 +468,7 @@ sub gen_results_page
 		 my ($chr) = $hsp->subject_name =~ /chromosome: (.*?),/;
 		 my ($org) = $hsp->subject_name =~ /^\s*(.*?)\s*\(/;
 		 next unless $dsid && $chr;
-		 populate_sqlite($hsp,$dsid);
+		 populate_sqlite($hsp,$dsid,$org);
 		 next if ($hsp_count > $resultslimit);
 		 my $id = $hsp->number."_".$dsid;
 		 $click_all_links .= $id.",";
@@ -541,11 +545,16 @@ Time to gen resutls:             $render_time
 sub gen_data_file_summary
   {
     my $html = "<table><tr>";
-    $html .= qq{<td class = small>SQLite db};
+    $html .= qq{<td class = small valign="top">Export Data};
+    $html .= "<div class=xsmall><A HREF=\"#\" onClick=\"get_all_hsp_data();\">HSP Data</A></DIV>\n";
+    $html .= "<div class=xsmall><A HREF=\"#\" onClick=\"get_query_fasta();\">Query FASTA File</A></DIV>\n";
+    $html .= "<div class=xsmall><A HREF=\"#\" onClick=\"get_subject_fasta();\">Subject FASTA File</A></DIV>\n";
+    $html .= "<div class=xsmall><A HREF=\"#\" onClick=\"get_alignment_file();\">Alignment File</A></DIV>\n";
+    $html .= qq{<td class = small valign="top">SQLite db};
     my $dbname = $TEMPURL."/".basename($cogeweb->sqlitefile);
     
     $html .= "<div class=xsmall><A HREF=\"$dbname\" target=_new>SQLite DB file</A></DIV>\n";
-    $html .= qq{<td class = small>Log File};
+    $html .= qq{<td class = small valign="top">Log File};
     my $logfile = $TEMPURL."/".basename($cogeweb->logfile);
     $html .= "<div class=xsmall><A HREF=\"$logfile\" target=_new>Log</A></DIV>\n";
     $html .= qq{</table>};
@@ -1284,7 +1293,9 @@ qalign text,
 salign text,
 align text,
 qname text,
-sname text
+sname text,
+hsp_num integer,
+org text
 )
 };
     $dbh->do($create);
@@ -1327,7 +1338,7 @@ sname text
   
 sub populate_sqlite
   {
-     my ($hsp,$dsid) = @_;
+     my ($hsp,$dsid,$org) = @_;
      my $pval = $hsp->pval;
      my $pid = $hsp->percent_id;
      my $qgap = $hsp->query_gaps;
@@ -1343,6 +1354,7 @@ sub populate_sqlite
      my $qname = $hsp->query_name;
      my $sname = $hsp->subject_name;
      my $name = $hsp->number."_".$dsid;
+     my $hsp_num = $hsp->number;
     
      my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
      
@@ -1357,7 +1369,7 @@ sub populate_sqlite
      my $smismatch = $subject_length - $hsp->match;
      
      my $statement = qq{
-       INSERT INTO hsp_data (name, eval, pid, psim, score, qgap, sgap,match,qmismatch,smismatch, strand, length, qstart,qstop, sstart, sstop,qalign,salign,align,qname,sname) values ("$name", "$pval", "$pid","$psim", "$score", $qgap, $sgap, $match,$qmismatch, $smismatch, "$strand",$length,$qstart, $qstop, $sstart, $sstop,"$qalign","$salign","$align","$qname","$sname") 
+       INSERT INTO hsp_data (name, eval, pid, psim, score, qgap, sgap,match,qmismatch,smismatch, strand, length, qstart,qstop, sstart, sstop,qalign,salign,align,qname,sname,hsp_num,org) values ("$name", "$pval", "$pid","$psim", "$score", $qgap, $sgap, $match,$qmismatch, $smismatch, "$strand",$length,$qstart, $qstop, $sstart, $sstop,"$qalign","$salign","$align","$qname","$sname",$hsp_num,"$org") 
      };
      print STDERR $statement unless $dbh->do($statement);
 
@@ -1596,7 +1608,7 @@ sub export_to_excel
    	 	$worksheet->write($i,4,$eval);
    	 	$worksheet->write($i,5,$pid);
    	 	$worksheet->write($i,6,$score);
-   	 	$worksheet->write($i,7,"http://toxic.berkeley.edu/CoGe/FeatView.pl?accn=$name",$name);
+   	 	$worksheet->write($i,7,"http://synteny.cnr.berkeley.edu/CoGe/FeatView.pl?accn=$name",$name);
    	 	$worksheet->write($i,8,$distance);
       
       }
@@ -1709,4 +1721,147 @@ sub commify {
         $input = reverse $input;
         $input =~ s<(\d\d\d)(?=\d)(?!\d*\.)><$1,>g;
         return scalar reverse $input;
+}
+
+sub export_hsp_info
+{
+	my $accn = shift;
+	my $filename = shift;
+	my $cogeweb = initialize_basefile(basename=>$filename, prog=>"CoGeBlast");
+    my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
+
+    my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data ORDER BY org,hsp_num});
+    $sth->execute();
+    
+    my $str = qq{Org\tChr\tPosition\tStrand\tHSP No.\tPercent ID\tAligment length\tE-value\tScore\tMatch\tQuery Mismatch\tQuery Gap\tQuery Length\tSubject Mismatch\tSubject Gap\tSubject Length\tQuery HSP Sequence\tSubject HSP Sequence\n};
+    
+    my ($org,$chr,$pos,$hsp_num,$pid,$align_length,$eval,$score,$match,$strand,$query_mismatch,$query_gap,$query_length,$subject_mismatch,$subject_gap,$subject_length,$query_seq,$subject_seq,$align_seq,$sstart,$sstop,$sname,$align);
+    while (my $row = $sth->fetchrow_hashref())
+      {
+        ($hsp_num) = $row->{name}=~/(\d+)_\d+/;
+        $org = $row->{org};
+        $eval = $row->{eval};
+ 	    $pid = $row->{pid};
+ 	    $score = $row->{score};
+ 	    $query_gap = $row->{qgap};
+ 	    $subject_gap = $row->{sgap};
+ 	    $match = $row->{match};
+ 	    $query_mismatch = $row->{qmismatch};
+ 	    $subject_mismatch = $row->{smismatch};
+ 	    $strand = $row->{strand};
+ 	    $align_length = $row->{length};
+		$sstart = $row->{sstart};
+		$sstop =  $row->{sstop};
+ 	    $query_seq = $row->{qalign};
+  	    $subject_seq = $row->{salign};
+	    $align = $row->{align};
+	    $sname = $row->{sname};
+	    
+	    ($chr) = $sname =~ /chromosome: (.*?),/;
+	    $pos = $sstart." - ".$sstop;
+	    $align_seq = $query_seq."<br>".$align."<br>".$subject_seq;
+	    
+	    $query_seq =~ s/-//g;
+	    $query_length = length $query_seq;
+	    
+	    $subject_seq =~ s/-//g;
+	    $subject_length = length $subject_seq;
+	    
+	    $str .= "$org\t$chr\t$pos\t$strand\t$hsp_num\t$pid\t$align_length\t$eval\t$score\t$match\t$query_mismatch\t$query_gap\t$query_length\t$subject_mismatch\t$subject_gap\t$subject_length\t$query_seq\t$subject_seq\n";
+      }
+    open(NEW,"> $TEMPDIR/tab_delim_$filename.txt");
+    print  NEW $str;
+    close NEW;
+    return "$TEMPURL/tab_delim_$filename.txt";
+    
+    }
+    
+sub export_hsp_query_fasta
+{
+	my $filename = shift;
+	my $cogeweb = initialize_basefile(basename=>$filename, prog=>"CoGeBlast");
+    my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
+
+    my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data});
+    $sth->execute();
+    my ($fasta,$query_seq,$name,$qstart,$qstop);
+    while (my $row = $sth->fetchrow_hashref())
+      {
+      	$query_seq = $row->{qalign};
+      	$name = $row->{qname};
+      	$name =~ s/^\s+//;
+      	$name =~ s/\s+$//;
+      	$qstart = $row->{qstart};
+      	$qstop = $row->{qstop};
+      	
+      	$query_seq =~ s/-//g;
+      	$fasta .= ">".$name.", Subsequence: ".$qstart."-".$qstop."\n".$query_seq."\n";
+      }
+    open(NEW,"> $TEMPDIR/query_fasta_$filename.txt");
+    print  NEW $fasta;
+    close NEW;
+    return "$TEMPURL/query_fasta_$filename.txt";
+      	
+}
+
+sub export_hsp_subject_fasta
+{
+	my $filename = shift;
+	my $cogeweb = initialize_basefile(basename=>$filename, prog=>"CoGeBlast");
+    my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
+
+    my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data});
+    $sth->execute();
+    my ($fasta,$subject_seq,$name,$sstart,$sstop);
+    while (my $row = $sth->fetchrow_hashref())
+      {
+      	$subject_seq = $row->{salign};
+      	$name = $row->{sname};
+      	$sstart = $row->{sstart};
+      	$sstop = $row->{sstop};
+      	$name =~ s/^\s+//;
+      	$name =~ s/\s+$//;
+      	$subject_seq =~ s/-//g;
+      	$fasta .= ">".$name.", Location: ".$sstart."-".$sstop."\n".$subject_seq."\n";
+      }
+    open(NEW,"> $TEMPDIR/subject_fasta_$filename.txt");
+    print  NEW $fasta;
+    close NEW;
+    return "$TEMPURL/subject_fasta_$filename.txt";
+      	
+}
+
+sub export_alignment_file
+{
+	my $filename = shift;
+	my $cogeweb = initialize_basefile(basename=>$filename, prog=>"CoGeBlast");
+    my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
+
+    my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data ORDER BY org,hsp_num});
+    $sth->execute();
+    my ($sname,$qname,$qstop,$qstart,$sstart,$sstop,$align,$qseq,$sseq,$str,$hsp_num);
+    while (my $row = $sth->fetchrow_hashref())
+    {
+    	$hsp_num = $row->{hsp_num};
+    	$sseq = $row->{salign};
+      	$sname = $row->{sname};
+      	$sstart = $row->{sstart};
+      	$sstop = $row->{sstop};
+      	$qseq = $row->{qalign};
+      	$qname = $row->{qname};
+      	$qname =~ s/^\s+//;
+      	$qname =~ s/\s+$//;
+        $sname =~ s/^\s+//;
+      	$sname =~ s/\s+$//;
+      	$qstart = $row->{qstart};
+      	$qstop = $row->{qstop};
+      	$align = $row->{align};
+      	$str .= "HSP: ".$hsp_num."\n>Query: ".$qname.", Subsequence: ".$qstart."-".$qstop."\n>Subject: ".$sname.", Location: ".$sstart."-".$sstop."\n".$qseq."\n".$align."\n".$sseq."\n\n";
+    }
+    #print STDERR $str;
+    $str =~ s/\n+$//;
+    open(NEW,"> $TEMPDIR/alignment_file_$filename.txt");
+    print  NEW $str;
+    close NEW;
+    return "$TEMPURL/alignment_file_$filename.txt";
 }
