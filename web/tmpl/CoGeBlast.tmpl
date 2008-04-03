@@ -149,9 +149,28 @@ function overlap_checkboxes() {
   else if(action == "list"){
     generate_feat_list(['args__'+accn,'args__'+pageObj.basename],[export_file]);
   }
+   else if(action == "hsp"){
+    export_hsp_info(['args__'+accn,'args__'+pageObj.basename],[export_file]);
+  }
   else {
     alert("We will get this working ... soon.");
   }
+}
+
+function get_all_hsp_data() {
+	export_hsp_info(['args__all','args__'+pageObj.basename],[export_file]);
+}
+
+function get_query_fasta() {
+	export_hsp_query_fasta(['args__'+pageObj.basename],[export_file]);
+}
+
+function get_subject_fasta() {
+	export_hsp_subject_fasta(['args__'+pageObj.basename],[export_file]);
+}
+
+function get_alignment_file() {
+	export_alignment_file(['args__'+pageObj.basename],[export_file]);
 }
 
 //This function might be redundant, considering the send_to_gevo function. Consider eliminating / consolidating the functions
@@ -1858,6 +1877,7 @@ window.open('/CoGe/MatrixView.pl?matrix='+matrix);
             <option value = "xls">Export to Excel</option>
             <option value = "tab">Tab Deliminated</option>
             <option value = "list">Get Feature List</option>
+            <option value = "hsp">Export HSP Information</option>
             <option value = "user">Add to MFF</option> 
           </selected>  
           <input type=button value="Go" onClick="overlap_checkboxes()">
