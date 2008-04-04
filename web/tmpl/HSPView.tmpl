@@ -56,13 +56,15 @@
   <td class=title>E-Value
   <td class=data><TMPL_VAR NAME=eval>
   <td class=data>
- <tr>
+ <tr valign=top>
   <td class=title>Sequence
   <td class=data valign=top><TMPL_VAR NAME=qseq>
+  <a class=small href="CoGeBlast.pl?seq=<TMPL_VAR NAME=qseq_plain>">CoGeBlast</a>
   <td class=data valign=top><TMPL_VAR NAME=sseq>
- <tr>
+  <a class=small href="CoGeBlast.pl?seq=<TMPL_VAR NAME=sseq_plain>">CoGeBlast</a>
+ <tr valign=top>
   <td class=title>Alignment
-  <td colspan = 2 class=data><TMPL_VAR NAME=align>
+  <td colspan = 2 class=data ><TMPL_VAR NAME=align>
 </table>
 	
 </BODY>
