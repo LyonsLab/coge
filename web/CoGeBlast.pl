@@ -124,6 +124,7 @@ sub gen_body
     my $dsid = $form->param('dsid') || 0;
     #my $feat_name = $form->param('featname');
     my $rc = $form->param('rc') || 0;
+    my $seq = $form->param('seq');
     $template->param(JAVASCRIPT=>1);
     $template->param(BLAST_FRONT_PAGE=>1);
     $template->param(UPSTREAM=>$upstream);
@@ -146,6 +147,12 @@ sub gen_body
 #    	my $seq = get_sequence($chr, $dsid, 0, 2, $upstream, $downstream,$rc);
 #    	$template->param(SEQUENCE=>$seq);
     }
+    elsif($seq)
+      {
+	$template->param(SEQVIEW=>0);
+        $template->param(SEQUENCE=>$seq);
+    
+      }
     else{
         $template->param(SEQVIEW=>0);
         $template->param(SEQUENCE=>'Enter a fasta sequence here');
