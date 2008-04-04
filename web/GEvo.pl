@@ -369,6 +369,7 @@ sub run
     my $form = $FORM;
     my $gevo_link = $form->url."?prog=$analysis_program";
     $gevo_link .= ";spike_len=$spike_len";
+    
     my @sets;
     my $html;
     my $t1 = new Benchmark;
@@ -570,6 +571,7 @@ sub run
     $seqcount--;
 
     $gevo_link .= ";num_seqs=".$seqcount;
+    $gevo_link .= ";hsp_overlap_limit=".$hsp_overlap_limit if defined $hsp_overlap_limit;
     unless (@sets >1)
       {
 	$message .= "Problem retrieving information.  Please check submissions.\n";
@@ -2786,7 +2788,7 @@ sub get_opt
     my $form = $opts{form} || $FORM;
     my $param = $opts{param};
     my $opt;
-    $opt = $form->param($param) if $form->param($param);
+    $opt = $form->param($param) if defined $form->param($param);
     $opt = $params->{$param} if (ref ($params) =~ /hash/i &! defined $opt);
     return $opt;
       
