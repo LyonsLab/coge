@@ -120,7 +120,9 @@ sub gen_body
     $qseq_out .= "<font class=small><a href = $qseqview_link target=_new>Open Sequence in SeqView</a></font>" if $qseqview_link;
       
     $template->param(qseq=>$qseq_out);
+    $template->param(qseq_plain=>$qseq);
     $template->param(sseq=>"<pre>".seqwrap($sseq)."</pre>");
+    $template->param(sseq_plain=>$sseq);
     my @qln = split /\n/,seqwrap($hsps->[0]{alignment},100);
     my @sln = split /\n/,seqwrap($hsps->[1]{alignment},100);
     my @aln = split /\n/,seqwrap(get_alignment($hsps->[0]{alignment},$hsps->[1]{alignment}),100);
