@@ -229,6 +229,7 @@ BEGIN {
 "benchmark", #stores a flag for printing benchmark information for image generation
 "invert_chromosome", #flag to draw the image in reverse so that the chromosome has been "flipped" 180 degrees
 "draw_hi_qual", #flag to draw high quality features on chromosome (but slower)
+"top_padding", #how many pixels to pad the top of the image with white space
 #"start", "stop", #user defined start and stop.  Not sure if this is needed. . .
 );
 }
@@ -1433,9 +1434,13 @@ sub set_image_height
     my $ch = $feat_space*2 > $self->chr_start_height ? $feat_space*2 : $self->chr_start_height; #chromosome height
 
     my $ruler_h = $self->ruler_height + $self->padding;
-    my $h=$ruler_h;# = $self->padding; #give use some padding
-#    $h += $self->padding;
+    my $h=$ruler_h;
     $h+=$ch;
+    if ($self->top_padding)#add space to top
+      {
+	$h+= $self->top_padding;
+	$self->_image_h_used($self->top_padding);
+      }
     print STDERR "Image Height: $h\n" if $self->DEBUG;
     if ($self->ih)
       {
