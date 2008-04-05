@@ -849,6 +849,7 @@ sub generate_image
 			   );
  #   print STDERR $gfx->_region_start ."--".$gfx->_region_stop."\n";
     $gfx->overlap_adjustment(1);
+    $gfx->top_padding(15);
     $gfx->skip_duplicate_features(1);
     $gfx->DEBUG(0);
     $gfx->major_tick_labels(0);
