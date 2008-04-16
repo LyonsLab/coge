@@ -327,6 +327,9 @@ function get_params(){
     gapcost = $('#gapcosts_'+matrix).val();
   }
 
+  var filter_query = 0;
+  if ($('#filter_query')[0].checked) {filter_query=1;}
+
 //blastz parameters
  var zwordsize = $('#blastz_wordsize').val();
  var zgap_start = $('#blastz_gap_start').val();
@@ -337,7 +340,7 @@ function get_params(){
  
  var comp = $('#comp_adj').val();
  var seq = $('#seq_box').val();
- return {w : word_size, e : expect,g : gapcost,p : program,mm: match_mismatch,m : matrix,c : comp,s : seq, zw : zwordsize, zgs : zgap_start, zge : zgap_extension, zc : zchaining, zt : zthreshold, zm : zmask};
+ return {w : word_size, e : expect,g : gapcost,p : program,mm: match_mismatch,m : matrix,c : comp,s : seq, zw : zwordsize, zgs : zgap_start, zge : zgap_extension, zc : zchaining, zt : zthreshold, zm : zmask, fq : filter_query};
 }
 
 function get_ncbi_params(){
@@ -383,7 +386,7 @@ function blastOff(){
   match_score = params.mm;
   gapcost = params.g;
   seq = params.s;
-
+  filter_query = params.fq;
 //blastz params
  var zwordsize = params.zw;
  var zgap_start = params.zgs;
@@ -406,6 +409,7 @@ function blastOff(){
   'args__matrix','args__'+matrix,
   'args__matchscore','args__'+match_score,
   'args__gapcost','args__'+gapcost,
+  'args__filter_query','args__'+filter_query,
 
   'args__zwordsize','args__'+zwordsize,
   'args__zgap_start','args__'+zgap_start,
@@ -992,6 +996,9 @@ window.open('/CoGe/MatrixView.pl?matrix='+matrix);
 	
 	  </td>
 	 </tr>
+	 <TR> 
+	  <td>Filter query sequence:
+	  <td><label><input class="backbox" type="radio" name="filter_query" id="filter_query" value="T" />Yes</label><label><input class="backbox" type="radio" name="filter_query" id="filter_query" value="F" checked />No</label>
 <!--	<TR>
 	 <TD>
  	 Visualize HSP Results by:
