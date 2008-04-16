@@ -319,6 +319,7 @@ sub blast_search
     my $matrix = $opts{matrix};
     my $gapcost = $opts{gapcost};
     my $match_score = $opts{matchscore};
+    my $filter_query = $opts{filter_query};
     #blastz params
     my $zwordsize = $opts{zwordsize};
     my $zgap_start = $opts{zgap_start};
@@ -377,6 +378,7 @@ sub blast_search
 	$pre_command .= " -G $exist -E $extent" if $exist && $extent;
 	$pre_command .= " -e $expect";
 	$pre_command .= " -C $comp" if $program =~ /tblastn/i;
+	$pre_command .= " -F F " unless $filter_query;
       }
     my $x;
     ($x, $pre_command) = check_taint($pre_command);
