@@ -335,7 +335,7 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
   gen_data(['args__loading'],['".$_."_type']); 
   gen_gc_for_chromosome_and_type(['args__dsid','ds_id','args__chr','chr','args__type','args__$_'],['".$_."_type'])\">".'show %GC?</div>'.
 "<td class='small link' onclick=\"window.open('FeatList.pl?dsid=$dsd&ftid=".$feats->{$_}{id}.";chr=$chr')\">Feature List?"
-} sort {($feats->{$b})<=>($feats->{$a})} keys %$feats);
+} sort {$a cmp $b} keys %$feats);
     $feat_string .= "</table>";
     if ($feats->{CDS})
       {
