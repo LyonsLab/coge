@@ -121,10 +121,13 @@ function update_checkbox(name, dist, hspid, id){
   
 //        console.log(name+" "+id);  
   	var id_array = new Array();
+	if (id)
+	 {
   	id_array = id.split(',');
 //  console.log(	id_array[0]+"::"+id_array[1]);
   	$('#checkbox'+id_array[0]).attr("id","checkbox"+id_array[1]);
   	$('#'+id_array[0]).attr("value",id_array[1]).attr("id",id_array[1]);
+         }
 }  
 
 function overlap_checkboxes() {
@@ -1884,7 +1887,7 @@ window.open('/CoGe/MatrixView.pl?matrix='+matrix);
             <option value = "xls">Export to Excel</option>
             <option value = "tab">Tab Deliminated</option>
             <option value = "list">Get Feature List</option>
-            <option value = "user">Add to MFF</option> 
+<!--            <option value = "user">Add to MFF</option> -->
           </selected>  
           <input type=button value="Go" onClick="overlap_checkboxes()">
 
