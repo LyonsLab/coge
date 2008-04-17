@@ -1483,7 +1483,9 @@ order by abs((start + stop)/2 - $mid) LIMIT 1
 	  }
 	($name) = $feat->names;
 	$name = qq{<a href="#" title="Click for Feature Information" onclick=update_info_box('}.$feat->id."_".$hsp_num."_".$dsid."')>$name</a>";
-	$new_checkbox_info = $distance eq "overlapping" ? $hsp_id."_".$chr."_".$sstart."no,".$feat->id."_".$hsp_id : $hsp_id."_".$chr."_".$sstart."no,".$hsp_id."_".$chr."_".$sstart."_".$feat->id."_".$distance;
+	$new_checkbox_info = #$distance eq "overlapping" ? 
+	  $hsp_id."_".$chr."_".$sstart."no,".$feat->id."_".$hsp_id;# : 
+#	  $hsp_id."_".$chr."_".$sstart."no,".$hsp_id."_".$chr."_".$sstart."_".$feat->id."_".$distance;
       }
     else
       {
@@ -1491,7 +1493,10 @@ order by abs((start + stop)/2 - $mid) LIMIT 1
       }
     
     #print STDERR $new_checkbox_info,"\n";
+#    print STDERR Dumper $name,$distance,$hsp_id,$new_checkbox_info;
+#    print STDERR "\n";
     return $name,$distance,$hsp_id,$new_checkbox_info;
+    
   }
 
 
