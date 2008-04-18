@@ -244,7 +244,7 @@ sub gen_body
     my $color_hsp = get_opt(params=>$prefs, form=>$form, param=>'colorhsp');
     $color_hsp = 0 unless $color_hsp;
     my $hsp_label = get_opt(params=>$prefs, form=>$form, param=>'hsplabel');
-    $hsp_label = "staggered" unless defined $hsp_label;
+    $hsp_label = undef unless defined $hsp_label;
     my $hsp_limit = get_opt(params=>$prefs, form=>$form, param=>'hsplim');
     $hsp_limit = 0 unless $hsp_limit;
     my $hsp_limit_num = get_opt(params=>$prefs, form=>$form, param=>'hsplimnum');
