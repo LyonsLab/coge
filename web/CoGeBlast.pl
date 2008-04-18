@@ -1244,7 +1244,7 @@ sub overlap_feats_parse #Send to GEvo
     {
 		if($featid=~/no/)
 		{
-			($dsid,$chr,$loc) = $featid =~/^\d+_(\d+)_(\w+)_(\d+)no$/;
+			($dsid,$chr,$loc) = $featid =~/^\d+_(\d+)_(.+?)_(\d+)no$/;
 			push @no_feats,{dsid=>$dsid,chr=>$chr,loc=>$loc};
 		}
 		else{
