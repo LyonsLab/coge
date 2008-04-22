@@ -13,7 +13,7 @@ BEGIN
     use vars qw($VERSION);
     $VERSION = "0.01";
   }
-__PACKAGE__->mk_accessors qw(file lastline report_done hsps hsp_count eval_cutoff query subject qlength slength);
+__PACKAGE__->mk_accessors qw(file lastline report_done hsps hsp_count eval_cutoff query subject qlength slength limit);
 
 sub qname    {shift->query(@_)}
 sub sbjct    {shift->subject(@_)}
@@ -40,14 +40,18 @@ sub process_file
   {
     my $self = shift;
     my $file = shift || $self->file;
+    my $limit = shift || $self->limit;
     my @hsps;
     
     open (IN, $file) || die "can't open $file for reading: $!";
-    my $data = join ("", <IN>);
-    close IN;
+#    my $data = join ("", <IN>);
+#    close IN;
     my $header;
     my $hsps = [];
-    foreach my $qsection (split /Query=/, $data)
+    my $oldris = $/;
+    $/ = "Query=";
+#    loop: foreach my $qsection (split /Query=/, $data)
+    loop: while (my $qsection = <IN>)
       {
 	next if $qsection =~ /Reference:/; #skip header
 	$qsection = "Query=".$qsection;
@@ -72,10 +76,13 @@ sub process_file
 		$self->query->{$subject}++;
 		my $hsp = $self->_processHSP(data=>"Score".$hsp_data, query_name=>$query, query_length=>$qlength, subject_name=>$subject, subject_length=>$slength);
 		push @hsps, $hsp if $hsp;
+		last loop if $self->hsp_count > $limit;
 	      }
 	  }
       }
+    close IN;
     #	close( $self->{FH} );
+    $/ = $oldris;
     $self->hsps(\@hsps);
     return $self;
   }
@@ -85,7 +92,7 @@ sub _parseQuery
   {
     my $self = shift;
     my $data = shift;
-    my ($query, $length) = $data =~/Query=(.*)\((\d+).*?letters\)/s;
+    my ($query, $length) = $data =~/Query=(.*?)\((\d+).*?letters\)/s;
     $query =~ s/\n//gs;
     $query =~ s/ +/ /gs;
     return ($query, $length);
@@ -95,7 +102,7 @@ sub _parseSubject
   {
     my $self = shift;
     my $data = shift;
-    my ($subject, $length) = $data =~ />(.*)Length = (\d+)/s;
+    my ($subject, $length) = $data =~ />(.*?)Length = (\d+)/s;
     return unless $subject;
     $subject =~ s/\n//g;
     $subject =~ s/ +/ /g;
