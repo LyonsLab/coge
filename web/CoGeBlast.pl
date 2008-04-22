@@ -452,8 +452,8 @@ Time to initialize sqlite:       $dbinit_time
 Time to generate results page:   $resultpage_time
 };
       write_log("$benchmark" ,$cogeweb->logfile);
-    print STDERR $cogeweb->logfile,"\n";
-    print STDERR $benchmark;
+#    print STDERR $cogeweb->logfile,"\n";
+#    print STDERR $benchmark;
 
     
     return $html,$cogeweb->basefilename, $click_all_links;
@@ -569,7 +569,7 @@ Time to gen tables:              $table_time
 Time to gen images:              $figure_time
 Time to gen results:             $render_time
 };
-     print STDERR $benchmark;
+#     print STDERR $benchmark;
      write_log($benchmark, $cogeweb->logfile);
      return $html, $click_all_links;
    }
