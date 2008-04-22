@@ -41,7 +41,7 @@ $TEMPURL = "/CoGe/tmp/CoGeBlast";
 $FORMATDB = "/usr/bin/formatdb";
 $BLAST = "/usr/bin/blast -a 8";
 $BLASTZ = "/usr/bin/blastz";
-$RESULTSLIMIT=1000;
+$RESULTSLIMIT=500;
 $MAX_PROC=8;
 
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
@@ -320,6 +320,8 @@ sub blast_search
     my $gapcost = $opts{gapcost};
     my $match_score = $opts{matchscore};
     my $filter_query = $opts{filter_query};
+    my $resultslimit = $opts{resultslimit} || $RESULTSLIMIT;
+
     #blastz params
     my $zwordsize = $opts{zwordsize};
     my $zgap_start = $opts{zgap_start};
@@ -333,7 +335,6 @@ sub blast_search
     my $blastable = $opts{blastable};
     my $width = $opts{width};
     my $type = $opts{type};
-    my $resultslimit = $opts{limit} || $RESULTSLIMIT;
 
     
 
@@ -424,7 +425,10 @@ sub blast_search
       {
 	my $command = $item->{command};
 	my $outfile = $item->{file};
-	my $report = $outfile =~ /blastz/ ? new CoGe::Accessory::blastz_report({file=>$outfile}) : new CoGe::Accessory::blast_report({file=>$outfile});
+	my $ta = new Benchmark;
+	my $report = $outfile =~ /blastz/ ? new CoGe::Accessory::blastz_report({file=>$outfile, limit=>$resultslimit}) : new CoGe::Accessory::blast_report({file=>$outfile, limit=>$resultslimit});
+	my $tb = new Benchmark;
+	my $itime = timestr(timediff($tb,$ta));
 	$item->{report}= $report;
 	my $file = $report->file();
 	$file =~ s/$TEMPDIR//;
@@ -448,6 +452,10 @@ Time to initialize sqlite:       $dbinit_time
 Time to generate results page:   $resultpage_time
 };
       write_log("$benchmark" ,$cogeweb->logfile);
+    print STDERR $cogeweb->logfile,"\n";
+    print STDERR $benchmark;
+
+    
     return $html,$cogeweb->basefilename, $click_all_links;
   }
  
@@ -461,7 +469,7 @@ sub gen_results_page
      my $resultslimit = $opts{resultslimit};
      my $click_all_links;
      my $null;
-     my $hsp_count = 0;;
+     my %hsp_count;
      my $length;
      my @check;
      my @hsp;
@@ -472,13 +480,14 @@ sub gen_results_page
 	   {
 	     foreach my $hsp (sort {$a->number <=> $b->number} @{$set->{report}->hsps()})
 	       {
-		 $hsp_count++;
 		 my ($dsid) = $hsp->subject_name =~ /id: (\d+)/;
 		 my ($chr) = $hsp->subject_name =~ /chromosome: (.*?),/;
 		 my ($org) = $hsp->subject_name =~ /^\s*(.*?)\s*\(/;
 		 next unless $dsid && $chr;
+		 $hsp_count{$org}++;
+		 next if ($hsp_count{$org} > $resultslimit);
+
 		 populate_sqlite($hsp,$dsid,$org);
-		 next if ($hsp_count > $resultslimit);
 		 my $id = $hsp->number."_".$dsid;
 		 $click_all_links .= $id.",";
 		 my $feat_link = qq{<span class="link" onclick="fill_nearby_feats('$id','true')">Click for Closest Feature</span>};
@@ -497,7 +506,7 @@ sub gen_results_page
 	   }
        }
      my $t1 = new Benchmark;
-     my ($chromosome_data, $chromosome_data_large) = generate_chromosome_images(results=>$results,large_width=>$width,hsp_type=>$type);
+     my ($chromosome_data, $chromosome_data_large) = generate_chromosome_images(results=>$results,large_width=>$width,hsp_type=>$type, resultslimit=>$resultslimit);
      my $t2 = new Benchmark;
      unless (@hsp) 
        {
@@ -507,7 +516,21 @@ sub gen_results_page
 	 $template->param(RESULT_TABLE=>1);
      # ERIC, i added this so it woulndt fail
      $template->param(NULLIFY=>$null) if $null;
-     $hsp_count .= "<br><span class=\"small alert\">Only top $resultslimit results shown.  All results are in the blast report.</span>" if $hsp_count > $resultslimit;
+     my $hsp_limit_flag =0;
+     my $hsp_count;
+     foreach my $org (keys %hsp_count)
+       {
+	 if ($hsp_count{$org} > $resultslimit)
+	   {
+	     $hsp_count .= "<br><span class=\"small alert\">Only top $resultslimit results shown for $org.</span>";
+	     $hsp_limit_flag = 1;
+	   }
+	 else
+	   {
+	     $hsp_count .= "<br><span class=\"small\">".$hsp_count{$org}." results shown for $org.</span>";
+	   }
+       }
+     $hsp_count .= "<br><span class=\"small alert\">All results are in the blast report.</span>" if $hsp_limit_flag;
      $template->param(HSP_COUNT=>$hsp_count);
 
      if (@hsp)
@@ -544,7 +567,7 @@ sub gen_results_page
     my $benchmark = qq{
 Time to gen tables:              $table_time
 Time to gen images:              $figure_time
-Time to gen resutls:             $render_time
+Time to gen results:             $render_time
 };
      print STDERR $benchmark;
      write_log($benchmark, $cogeweb->logfile);
@@ -572,10 +595,11 @@ sub gen_data_file_summary
 sub generate_chromosome_images
   {
      my %opts = @_;
-    my $results = $opts{results};
-    my $hsp_type = $opts{hsp_type} || "NA";
-    my $width = $opts{width} || 400;
-    my $large_width = $opts{large_width} || 3*$width;
+     my $results = $opts{results};
+     my $hsp_type = $opts{hsp_type} || "NA";
+     my $width = $opts{width} || 400;
+     my $large_width = $opts{large_width} || 3*$width;
+     my $resultslimit = $opts{resultslimit};
     my $imagefile_name = $opts{filename} || "null";
     my $height = ($width / 16);
     my $large_height = ($large_width / 16) <= 64 ? ($large_width / 16) : 64;
@@ -584,6 +608,7 @@ sub generate_chromosome_images
     my $filename;
     my ($hsp_info,$max,$min,$length);
     my (@data, @large_data,@no_data);
+     my %hsp_count;
     foreach my $set (@$results)
     {
 	my $org = $set->{organism};
@@ -602,30 +627,32 @@ sub generate_chromosome_images
 	($hsp_info,$max,$min,$length) = get_color_scheme($set, $hsp_type);
 	if (@{$set->{report}->hsps()})
 	  {
-	    my @hsps;
-	    if ($hsp_type eq "eval")
-	      {
-		@hsps = sort {$b->eval <=> $a->eval} @{$set->{report}->hsps()}
-	      }
-	    elsif ($hsp_type eq "length")
-	      {
-		@hsps = sort {$a->length <=> $b->length} @{$set->{report}->hsps()}
-	      }
-	    elsif ($hsp_type eq "score")
-	      {
-		@hsps = sort {$a->score <=> $b->score} @{$set->{report}->hsps()}
-	      }
-	    else
-	      {
-		@hsps = sort {$a->percent_id <=> $b->percent_id} @{$set->{report}->hsps()}
-	      }
+#	    my @hsps;
+#	    if ($hsp_type eq "eval")
+#	      {
+#		@hsps = sort {$b->eval <=> $a->eval} @{$set->{report}->hsps()}
+#	      }
+#	    elsif ($hsp_type eq "length")
+#	      {
+#		@hsps = sort {$a->length <=> $b->length} @{$set->{report}->hsps()}
+#	      }
+#	    elsif ($hsp_type eq "score")
+#	      {
+#		@hsps = sort {$a->score <=> $b->score} @{$set->{report}->hsps()}
+#	      }
+#	    else
+#	      {
+#		@hsps = sort {$a->percent_id <=> $b->percent_id} @{$set->{report}->hsps()}
+#	      }
 
 
 	    
-	    foreach my $hsp (@hsps)
+	    foreach my $hsp (@{$set->{report}->hsps()})
 	      {
 		#first, initialize graphic
 		$org =~ s/\s+$//;
+		$hsp_count{$org}++;
+		next if $hsp_count{$org}> $resultslimit;
 		my ($chr) = $hsp->subject_name =~ /chromosome: (.*?),/;
 		$data{$org}{image} =new CoGe::Graphics::GenomeView({color_band_flag=>1, image_width=>$width, chromosome_height=>$height}) unless $data{$org}{image};
 		$data{$org}{large_image} =new CoGe::Graphics::GenomeView({color_band_flag=>1, image_width=>$large_width, chromosome_height=>$large_height}) unless $data{$org}{large_image};
