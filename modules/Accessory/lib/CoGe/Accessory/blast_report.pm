@@ -55,6 +55,7 @@ sub process_file
       {
 	next if $qsection =~ /Reference:/; #skip header
 	$qsection = "Query=".$qsection;
+	$qsection =~ s/Query=$//;
 	my ($query, $qlength) = $self->_parseQuery($qsection);
 	next unless $query;
 	$self->query->{$query}=0 unless $self->query->{$query};
@@ -92,7 +93,7 @@ sub _parseQuery
   {
     my $self = shift;
     my $data = shift;
-    my ($query, $length) = $data =~/Query=(.*?)\((\d+).*?letters\)/s;
+    my ($query, $length) = $data =~/Query=(.*?)\((\d+)\s*letters\)/s;
     $query =~ s/\n//gs;
     $query =~ s/ +/ /gs;
     return ($query, $length);
@@ -113,6 +114,7 @@ sub _processHSP {
 	my $self = shift;
 	my %opts = @_;
 	my $data = $opts{data};
+	$data =~ s/Query=$//;
 	my $query_name = $opts{query_name};
 	my $subject_name = $opts{subject_name};
 	my $query_length = $opts{query_length};
@@ -170,7 +172,6 @@ sub _processHSP {
 	my ($ql, $sl, $as) = ("", "", "");
 	my ($qb, $qe, $sb, $se) = (0,0,0,0);
 	my (@QL, @SL, @AS) = (); # for better memory management
-			
 	for(my $i=0;$i<@hspline;$i+=3) {
 		#warn $hspline[$i], $hspline[$i+2];
 		$hspline[$i]   =~ /^Query:\s+(\d+)\s*(\S+)\s+(\d+)/;
@@ -185,7 +186,6 @@ sub _processHSP {
 		
 		push @QL, $ql; push @SL, $sl; push @AS, $as;
 	}
-
 	##################
 	# the HSP object #
 	##################
