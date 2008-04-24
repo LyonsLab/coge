@@ -59,7 +59,7 @@ $TEMPURL = "/CoGe/tmp/GEvo";
 $MAX_PROC=8;
 # set this to 1 to print verbose messages to logs
 $DEBUG = 0;
-$BENCHMARK = 1;
+$BENCHMARK = 0;
 $NUM_SEQS = 3;
 $MAX_SEQS = 21;
 $| = 1; # turn off buffering 
@@ -701,7 +701,6 @@ sub run
 	$html .= "<div><font class=small><A HREF=\"$basename\" target=_new>Fasta file for $accn</A></font></DIV>\n";
       }
     $html .= qq{<td class = small><a href = "http://baboon.math.berkeley.edu/mavid/gaf.html">GAF</a> annotation files};
-    write_log("Features overlapped by HSPs:", $stats_file);
     foreach my $item (@sets)
       {
 	my $anno_file = generate_annotation(%$item);
@@ -709,19 +708,7 @@ sub run
 	my $basename = $TEMPURL."/".basename ($anno_file);
 	my $accn = $item->{accn};
 	$html .= "<div><font class=small><A HREF=\"$basename\" target=_new>Annotation file for $accn</A></font></DIV>\n";
-	my $stats = $item->{stats};
-	foreach my $accn1 (sort keys %{$stats->{data}})
-	  {
-	    foreach my $accn2 (sort keys %{$stats->{data}{$accn1}})
-	      {
-		foreach my $type (sort keys %{$stats->{data}{$accn1}{$accn2}})
-		  {
-		    next if $type eq "hsp";
-		    write_log(join ("\t", $accn1, $accn2, $type, $stats->{data}{$accn1}{$accn2}{$type}{overlapped_hsps}), $stats_file);
-		  }
-	      }
-	  }
-      }
+     }
     $html .= qq{<td class = small>SQLite db};
     my $dbname = $TEMPURL."/".basename($cogeweb->sqlitefile);
     
@@ -733,14 +720,48 @@ sub run
     ($tiny) = $tiny =~ /<b>(http:\/\/tinyurl.com\/\w+)<\/b>/;
     $html .= qq{<td class = small>GEvo Link<div class=small><a href=$tiny target=_new>$tiny<br>(See log file for full link)</a></div>};
     $html .=qq{<a href="GEvo_direct.pl?name=$basefilename" target=_new>Results only</a>};
-    $html .= qq{<td class = small>Overlap Feature Stats:<table>};
-    $html .= qq{<tr class=small>}.join ("<th align=left>", qw(Dataset ));
-    write_log("\nAverage percent identity for all HSPs (normalized to HSP length):", $stats_file);
+    $html .= qq{<td class = small>Gene Homology Stats:<table>};
+
+
+    write_log("Summary of overlap data for genes only:", $stats_file);
+    write_log(join ("\t", qw(REGION1 REGION2 LENGTH OVERLAP/TOTAL PERCENT_OVERLAP)),$stats_file);
     foreach my $item (@sets)
       {
 	$html .= "<tr class=small>";
-	$html .= "<td>".$item->{obj}->accn."<td nowrap>".commify(length $item->{obj}->sequence)."bp"."<td nowrap>".$item->{stats}{overlap_count}."/".$item->{stats}{feat_count};
-	$html .= "<td nowrap>".sprintf("%.2f", $item->{stats}{overlap_count}/$item->{stats}{feat_count}*100)."%" if $item->{stats}{feat_count};
+	my @data = ("<td>".$item->{obj}->accn,commify(length $item->{obj}->sequence)."bp",$item->{stats}{feat_counts}{gene}{overlap}."/".$item->{stats}{feat_counts}{gene}{count});
+	push @data, sprintf("%.2f", $item->{stats}{feat_counts}{gene}{overlap}/$item->{stats}{feat_counts}{gene}{count}*100)."%" if $item->{stats}{feat_counts}{gene}{count};
+	$html .= join ("<td nowrap>",@data);
+	shift @data;
+	write_log(join ("\t",$item->{obj}->accn,"all",@data), $stats_file);
+      }
+
+    write_log("\n",$stats_file);
+    write_log("Features overlapped by HSPs:", $stats_file);
+    write_log(join ("\t", qw(REGION1 REGION2 TYPE OVERLAP_COUNT TOTAL PERCENT_W_OVERLAP)),$stats_file);
+    foreach my $item (@sets)
+      {
+	my $stats = $item->{stats};
+	foreach my $type (sort keys %{$stats->{feat_counts}})
+	  {
+	    foreach my $accn1 (sort keys %{$stats->{data}})
+	      {
+		foreach my $accn2 (sort keys %{$stats->{data}{$accn1}})
+		  {
+		    next if $type eq "hsp";
+		    my $overlap_count = $stats->{data}{$accn1}{$accn2}{$type}{overlapped_hsps} || 0;
+		    my $percent = sprintf("%.2f",$overlap_count/$stats->{feat_counts}{$type}{count}*100) if $stats->{feat_counts}{$type}{count};
+		    write_log(join ("\t", $accn1, $accn2, $type, $overlap_count, $stats->{feat_counts}{$type}{count}, $percent), $stats_file);
+		  }
+	      }
+	  }
+      }
+
+
+    write_log("\n",$stats_file);
+    write_log("Average percent identity for all HSPs (normalized to HSP length):", $stats_file);
+    write_log(join ("\t", qw(REGION1 REGION2 AVG_PERCENT_ID)),$stats_file);
+    foreach my $item (@sets)
+      {
 	my $stats = $item->{stats};
 	foreach my $accn1 (sort keys %{$stats->{data}})
 	  {
@@ -871,9 +892,8 @@ sub generate_image
 			  hsp_overlap_limit=>$hsp_overlap_limit,
 			  hsp_overlap_length=>$hsp_overlap_length,
 			 );
-    my ($feat_count, $overlap_count) = process_features(c=>$gfx, obj=>$gbobj, start=>$start, stop=>$stop, overlap_adjustment=>$overlap_adjustment, draw_model=>$draw_model, color_overlapped_features=>$color_overlapped_features);
-    $stats->{feat_count} = $feat_count;
-    $stats->{overlap_count} = $overlap_count;
+    my ($feat_counts) = process_features(c=>$gfx, obj=>$gbobj, start=>$start, stop=>$stop, overlap_adjustment=>$overlap_adjustment, draw_model=>$draw_model, color_overlapped_features=>$color_overlapped_features);
+    $stats->{feat_counts} = $feat_counts;
     return ($gfx, $stats);
   }
 
@@ -963,8 +983,6 @@ INSERT INTO image_info (id, iname, title, px_width,dsid, chromosome, bpmin, bpma
 	  {
 	    next unless $feat->type eq "anchor";
 	  }
-#	print STDERR Dumper $feat;
-#	print STDERR Dumper $feat if $feat->{anchor};
 	next unless $feat->image_coordinates;
 	my $type = $feat->type;
 	my $pair_id = "-99";
@@ -1055,17 +1073,15 @@ sub process_features
 #    return unless $draw_model;
     my $accn = $obj->accn;
     my $track = 1;
-    my $feat_count = 0;
-    my $overlap_count = 0;
-    my %feat_count;
+    my %feat_counts;
     my @opts = ($start, $stop) if $start && $stop;
     unless (ref $obj)
       {
 	warn "Possible problem with the object in process_features.  Returning";
 	return 0;
       }
-    
-    foreach my $feat($obj->get_features())
+    my %prior_feat;
+    foreach my $feat (sort {$a->start <=> $b->start} $obj->get_features())
       {
         my $f;
 	my $type = $feat->type;
@@ -1198,15 +1214,21 @@ sub process_features
 	$f->skip_overlap_search($foverlap);
 	$f->{anchor}=1 if $anchor;
         $c->add_feature($f);
-	if ($feat->type =~ /gene/ &! $feat_count{$feat->start}{$feat->stop})
+	if ($prior_feat{$feat->type})
 	  {
-	    $feat_count++;
-	    $overlap_count++ if $feat->qualifiers->{overlapped_hsp};
-	    $feat_count{$feat->start}{$feat->stop}=1;
+	    if ($feat->start < $prior_feat{$feat->type}->stop)
+	      {
+		$prior_feat{$feat->type} = $feat;
+		next;
+	      }
 	  }
-
-    }
-    return ($feat_count, $overlap_count);
+	next if $feat->start > $stop;
+	next if $feat->stop < $start;
+	$feat_counts{$feat->type}{count}++;
+	$feat_counts{$feat->type}{overlap}++ if $feat->qualifiers->{overlapped_hsp};
+	$prior_feat{$feat->type} = $feat;
+      }
+    return (\%feat_counts);
   }
 
 sub process_hsps
@@ -1234,7 +1256,6 @@ sub process_hsps
     my $i = 0;
     my $track = 2;
     my @feats;
-    my %overlapped_feats;
     foreach my $item (@$data)
       {
 	my $report = $item->[0];
@@ -1275,6 +1296,7 @@ sub process_hsps
 	    write_log("WARNING:  Did not find spike sequence: $spike_seq in any HSP", $cogeweb->logfile) unless $found_spike;
 	  }
 	print STDERR "\t",$blast->query," ", $blast->subject,"\n" if $DEBUG;
+	my %overlapped_feats;
 	foreach my $hsp (@{$blast->hsps})
 	  {
 	    next if defined $eval_cutoff && $hsp->eval > $eval_cutoff;
@@ -1319,14 +1341,26 @@ sub process_hsps
 	    #find overlapping features in gbobj
 	    if (($hsp->qe-$hsp->qb+1)>=$hsp_overlap_length || ($hsp->se-$hsp->sb+1)>=$hsp_overlap_length)
 	      {
-		foreach my $feat ($gbobj->get_features(start=>$start, stop=>$stop))
+		my %prev_features;
+		foreach my $feat (sort {$a->start <=> $b->start} $gbobj->get_features(start=>$start, stop=>$stop))
 		  {
+		    if ($prev_features{$feat->type})
+		      {
+			if ($feat->start < $prev_features{$feat->type}->stop)
+			  {
+			    $prev_features{$feat->type} = $feat;
+			    next;
+			  }
+		      }
 		    #lets skip it if it only has minimal end overlap
 		    next if abs($start - $feat->stop)<=3 || abs($stop - $feat->start) <=3;
 		    $feat->qualifiers->{overlapped_hsp}=1;
-		    next if $overlapped_feats{$feat->type}{$feat->start}{$feat->stop};
-		    $overlapped_feats{$feat->type}{$feat->start}{$feat->stop}=1;
+		    next if $overlapped_feats{$feat->type}{start}{$feat->start};
+		    next if $overlapped_feats{$feat->type}{stop}{$feat->stop};
+		    $overlapped_feats{$feat->type}{start}{$feat->start}=1;
+		    $overlapped_feats{$feat->type}{stop}{$feat->stop}=1;
 		    $stats{data}{$accna}{$accnb}{$feat->type}{overlapped_hsps}++;
+		    $prev_features{$feat->type}=$feat;
 		  }
 	      }
 
@@ -1602,9 +1636,9 @@ sub get_obj_from_genome_db
     my $t4 = new Benchmark;
 
     print STDERR "Region: $chr: $start-$stop\n" if $DEBUG;
-#    print STDERR "Region: $chr: ",$start-$start+1,"-",$stop-$start,"\n";
     my %feats = map{$_->id,$_} $coge->get_features_in_region(start=>$start, stop=>$stop, chr=>$chr, dataset_id=>$dsid);
     $feats{$feat->id}=$feat if $feat;
+
     my $t5 = new Benchmark;
     foreach my $f (values %feats)
       {
@@ -2083,7 +2117,6 @@ sub write_fasta
   {
     my %opts = @_;
     my $gbobj = $opts{obj};
-#    print STDERR Dumper $gbobj;
     my $start = $opts{start};
     my $mask = $opts{mask};
     my $mask_ncs = $opts{mask_ncs};
