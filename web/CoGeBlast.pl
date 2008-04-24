@@ -985,28 +985,29 @@ sub get_hsp_info
     ($hsp_num) = $hsp_id =~ /^(\d+)_\d+$/;
     $sth->execute($hsp_id) || die "unable to execute";
     while (my $info = $sth->fetchrow_hashref())
-	      {
- 	        $pval = $info->{eval};
- 	        $pid = $info->{pid};
- 	        $psim = $info->{psim};
- 	        $score = $info->{score};
- 	        $qgap = $info->{qgap};
- 	        $sgap = $info->{sgap};
- 	        $match = $info->{match};
- 	        $qmismatch = $info->{qmismatch};
- 	        $smismatch = $info->{smismatch};
- 	        $strand = $info->{strand};
- 	        $length = $info->{length};
-			$qstart = $info->{qstart};
-			$qstop =  $info->{qstop};
-			$sstart = $info->{sstart};
-			$sstop =  $info->{sstop};
- 	        $qalign = $info->{qalign};
-  	        $salign = $info->{salign};
-	        $align = $info->{align};
-	        $qname = $info->{qname};
-	        $sname = $info->{sname};
-	      }
+      
+      {
+	$pval = $info->{eval};
+	$pid = $info->{pid};
+	$psim = $info->{psim};
+	$score = $info->{score};
+	$qgap = $info->{qgap};
+	$sgap = $info->{sgap};
+	$match = $info->{match};
+	$qmismatch = $info->{qmismatch};
+	$smismatch = $info->{smismatch};
+	$strand = $info->{strand};
+	$length = $info->{length};
+	$qstart = $info->{qstart};
+	$qstop =  $info->{qstop};
+	$sstart = $info->{sstart};
+	$sstop =  $info->{sstop};
+	$qalign = $info->{qalign};
+	$salign = $info->{salign};
+	$align = $info->{align};
+	$qname = $info->{qname};
+	$sname = $info->{sname};
+      }
     #$sth->execute($name, $pval, $pid,$psim, $score, $qgap, $sgap,$match,$qmismatch, $smismatch, $strand, $length,$qposition,$sposition,$qalign,$salign,$align);
     my $qlength = $qstop - $qstart;
     
@@ -1393,7 +1394,6 @@ sub populate_sqlite
      my $hsp_num = $hsp->number;
     
      my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
-     
      my $query_length = $hsp->query_stop > $hsp->query_start ? (($hsp->query_stop) - ($hsp->query_start) + 1) : (($hsp->query_start) - ($hsp->query_stop) + 1);
      my ($qstart, $qstop) = $hsp->query_stop > $hsp->query_start ? ($hsp->query_start, $hsp->query_stop) : ($hsp->query_stop, $hsp->query_start);
 #     ($qstart, $qstop) = ($qstop, $qstart) if $qstop < $qstart;
