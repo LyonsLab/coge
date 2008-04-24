@@ -6,14 +6,14 @@ my $DIR = shift || ".";
 my $new_dir = shift || "new";
 
 mkdir $new_dir unless -d $new_dir;
-mkdir "$new_dir/$DIR" unless -d "$new_dir/$DIR";
-process_dir($DIR);
+#mkdir "$new_dir/$DIR" unless -d "$new_dir/$DIR";
+process_dir();
 
 sub process_dir
   {
-    my $dir = shift;
+    my $dir = shift || ".";
     my @files;
-    opendir (DIR, $dir) || die;
+    opendir (DIR, "$DIR/$dir") || die;
     while (my $file = readdir(DIR))
       {
 	next if $file =~ /^\.\.?$/;
@@ -22,7 +22,7 @@ sub process_dir
     closedir DIR;
     foreach my $file (@files)
       {
-	if (-d $file)
+	if (-d "$DIR/$file")
 	  {
 	    mkdir "$new_dir/$file";
 	    process_dir($file);
@@ -39,7 +39,7 @@ sub process_file
     my $file = shift;
     if ($file =~ /\.html$/)
       {
-	open (IN, $file) || die "can't open $file for reading";
+	open (IN, "$DIR/$file") || die "can't open $DIR/$file for reading";
 	open (OUT, ">$new_dir/$file") || die;
 	while (<IN>)
 	  {
@@ -60,6 +60,6 @@ sub process_file
       }
     else
       {
-	`cp "$file" "$new_dir/$file"`;
+	`cp "$DIR/$file" "$new_dir/$file"`;
       }
   }
