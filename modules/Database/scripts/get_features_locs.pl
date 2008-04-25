@@ -8,14 +8,14 @@ my $s = CoGeX->connect($connstr, 'bpederse', 'brent_cnr');
 
 my $organism = $ARGV[0] or die "send in organism name i.e. $0 rice.\n";
 
-my ($genomic_sequence_type) = $s->resultset('GenomicSequenceType')->resolve('masked'); print STDERR "getting masked\n";
-#my ($genomic_sequence_type) = $s->resultset('GenomicSequenceType')->resolve('unmasked'); print STDERR "getting unmasked\n";
+#my ($genomic_sequence_type) = $s->resultset('GenomicSequenceType')->resolve('masked'); print STDERR "getting masked\n";
+my ($genomic_sequence_type) = $s->resultset('GenomicSequenceType')->resolve('unmasked'); print STDERR "getting unmasked\n";
 
 my ($org) = $s->resultset('Organism')->resolve($organism);
 
 # MASKED !!!!!!!!!!!!!!!!!!
 my $datasets = [sort map { $_->dataset_id } $org->current_datasets(genomic_sequence_type=>$genomic_sequence_type)];
-#my $datasets = [34580];
+#my $datasets = [34574]; print "!!!\nusing hard-coded dataset_ids\n!!!\n";
 
 
 print STDERR "usings datasets: " . join(", ", @$datasets) . " for $organism ...\n";
@@ -35,14 +35,19 @@ foreach my $ds (@$datasets){
     foreach my $chr ($ds->get_chromosomes){
         # TODO: this will break with contigs.
         #next if $chr =~ /^contig/;
-        next if $chr =~ /random/;
-        $chr =~ s/scaffold/super/g;
-        next if $chr =~ /scaffold/;
+        if (0){
+            next if $chr =~ /random/;
+            $chr =~ s/scaffold/super/g;
+            next if $chr =~ /scaffold/;
+            my $chrn =  $chr;
+            $chrn =~ s/contig_super/super/;
+        }
+        my $chrn =  $chr;
 
         print STDERR $chr . "\n" unless $seen{$chr};
         $seen{$chr} = 1;
         #  rice/chr01.fasta
-        print FA "> $chr\n";
+        print FA "> $chrn\n";
         print FA $ds->get_genomic_sequence(chromosome => $chr) . "\n";
     }
 }
@@ -127,4 +132,3 @@ sub get_feature_names_for_datasets {
     }
     return [sort { $a->[0] cmp $b->[0] } @names];
 }
-
