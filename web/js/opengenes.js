@@ -93,6 +93,99 @@ OpenLayers.Control.MousePosition.prototype.redraw = function(evt) {
     }
 };
 
+/**************************************************************/
+/*  WHEN GETTING A PINK TILE, RELOAD FROM A DIFFERENT SERVER  */
+/**************************************************************/
+OpenLayers.IMAGE_RELOAD_ATTEMPTS = 3;
+OpenLayers.Util.onImageLoadError = function() {
+    this._attempts = (this._attempts) ? (this._attempts + 1) : 1;
+    if(this._attempts <= OpenLayers.IMAGE_RELOAD_ATTEMPTS) {
+        var urls = this.layer.url;
+        if(urls instanceof Array && urls.length > 1){
+            var src = this.src.toString();
+            var current_url, k;
+            for (k = 0; current_url = urls[k]; k++){
+                if(src.indexOf(current_url) != -1){
+                    break;
+                }
+            }
+            var guess = Math.floor(urls.length * Math.random())
+            var new_url = urls[guess];
+            k = 0;
+            while(new_url == current_url && k++ < 4){
+                guess = Math.floor(urls.length * Math.random())
+                new_url = urls[guess];
+            }
+            this.src = src.replace(current_url, new_url); 
+        } else {
+            this.src = this.src;
+        }
+    } else {
+        this.style.backgroundColor = OpenLayers.Util.onImageLoadErrorColor;
+    }
+    this.style.display = "";
+};
+OpenLayers.Tile.Image.prototype.destroy = function() {
+        if (this.imgDiv != null)  {
+            OpenLayers.Event.stopObservingElement(this.imgDiv.id);
+            if (this.imgDiv.parentNode == this.frame) {
+                this.frame.removeChild(this.imgDiv);
+                this.imgDiv.map = null;
+            }
+            this.imgDiv.layer = null;
+        }
+        this.imgDiv = null;
+        if ((this.frame != null) && (this.frame.parentNode == this.layer.div)) {
+            this.layer.div.removeChild(this.frame);
+        }
+        this.frame = null;
+        OpenLayers.Tile.prototype.destroy.apply(this, arguments);
+    };
+
+
+OpenLayers.Tile.Image.prototype.draw = function() {
+        if (this.layer != this.layer.map.baseLayer && this.layer.reproject) {
+            this.bounds = this.getBoundsFromBaseLayer(this.position);
+        }
+        if (!OpenLayers.Tile.prototype.draw.apply(this, arguments)) {
+            return false;
+        }
+
+        if (this.isLoading) {
+            //if we're already loading, send 'reload' instead of 'loadstart'.
+            this.events.triggerEvent("reload");
+        } else {
+            this.isLoading = true;
+            this.events.triggerEvent("loadstart");
+        }
+
+        if (this.imgDiv == null) {
+            this.initImgDiv();
+        }
+        // ADDED FOR CHANGING URLS:
+        this.imgDiv.layer = this.layer;
+
+        this.imgDiv.viewRequestID = this.layer.map.viewRequestID;
+
+        this.url = this.layer.getURL(this.bounds);
+        // position the frame
+        OpenLayers.Util.modifyDOMElement(this.frame,
+                                         null, this.position, this.size);
+
+        var imageSize = this.layer.getImageSize();
+        if (this.layerAlphaHack) {
+            OpenLayers.Util.modifyAlphaImageDiv(this.imgDiv,
+                    null, null, imageSize, this.url);
+        } else {
+            this.imgDiv.src = this.url;
+            OpenLayers.Util.modifyDOMElement(this.imgDiv,
+                    null, null, imageSize) ;
+        }
+        return true;
+    };
+
+/********************************************************/
+
 OpenLayers.BasePair = function(bp){
     var ll = new OpenLayers.LonLat(bp,0);
     ll.basepair = ll.x;
