@@ -48,7 +48,7 @@ sub gen_html
         $template->param(USER=>$USER);
         $template->param(DATE=>$DATE);
         $template->param(BOX_NAME=>generate_box_name());
-	$template->param(BODY_ONLOAD=>'init();');
+#	$template->param(BODY_ONLOAD=>'init();');
         $template->param(BODY=>gen_body());
         $html .= $template->output;
       }
