@@ -93,7 +93,7 @@ sub _parseQuery
   {
     my $self = shift;
     my $data = shift;
-    my ($query, $length) = $data =~/Query=(.*?)\((\d+)\s*letters\)/s;
+    my ($query, $length) = $data =~/Query=(.*?)\((\S+)\s*letters\)/s;
     $query =~ s/\n//gs;
     $query =~ s/ +/ /gs;
     return ($query, $length);
@@ -103,7 +103,7 @@ sub _parseSubject
   {
     my $self = shift;
     my $data = shift;
-    my ($subject, $length) = $data =~ />(.*?)Length = (\d+)/s;
+    my ($subject, $length) = $data =~ />(.*?)Length = (\S+)/s;
     return unless $subject;
     $subject =~ s/\n//g;
     $subject =~ s/ +/ /g;
