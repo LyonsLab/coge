@@ -163,6 +163,7 @@ sub process_nt
   {
     my %opts = @_;
     my $file =$opts{file};
+    print $file,"\n";
     my $di = $opts{di};
     my $dir = $opts{dir};
     my @files;
@@ -200,7 +201,7 @@ sub process_nt_file
 	my $chrtmp = $chr;
 	$seq =~ s/\n//g;
 	($chrtmp) = $name=~/(\d+)/ unless $chrtmp|| $add_chr_name;
-	$chrtmp = $name unless $chrtmp;
+	$chrtmp = $name unless defined $chrtmp;
 	$chrtmp =~ s/chromosome//;
 	$chrtmp =~ s/chr//;
 	$chrtmp =~ s/^0+//;
