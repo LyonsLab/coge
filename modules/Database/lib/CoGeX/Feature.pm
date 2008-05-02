@@ -543,6 +543,7 @@ sub genomic_sequence {
   my $dataset = $self->dataset();
   my @sequences;
   my @locs = map {[$_->start,$_->stop,$_->chromosome,$_->strand]}sort { $a->start <=> $b->start } $self->locations() ;
+  ($up,$down) = ($down, $up) if ($self->strand =~/-/); #must switch these if we are on the - strand;
   if ($up)
     {
       my $start = $locs[0][0]-$up;
