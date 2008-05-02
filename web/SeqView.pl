@@ -251,9 +251,9 @@ sub gen_foot
       $template->param(SIXFRAME=>0);
       $template->param(FIND_FEATS=>1);
       $template->param(EXTEND=>"Extend Sequence");
-      $template->param(UPSTREAM=>"UPSTREAM: ");
+      $template->param(UPSTREAM=>"UPSTREAM (5'): ");
       $template->param(UPVALUE=>$upstream);
-      $template->param(DOWNSTREAM=>"DOWNSTREAM: ");
+      $template->param(DOWNSTREAM=>"DOWNSTREAM (3'): ");
       $template->param(DOWNVALUE=>$downstream);
       $template->param(FEATURE=>1);
       $start = $feat->start-$upstream;
