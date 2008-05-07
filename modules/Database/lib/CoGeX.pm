@@ -8,8 +8,16 @@ use vars qw( $VERSION );
 $VERSION = 0.01;
 
 use base 'DBIx::Class::Schema';
+use base qw(Class::Accessor);
 
 __PACKAGE__->load_classes;
+__PACKAGE__->mk_accessors(qw(db_connection_string db_name db_passwd));
+
+
+use vars qw($DEFAULT_CONNECTION_STRING $DEFAULT_NAME $DEFAULT_PASSWD);
+$DEFAULT_CONNECTION_STRING = 'dbi:mysql:dbname=genomes;host=biocon.berkeley.edu;port=3306';
+$DEFAULT_NAME = "coge";
+$DEFAULT_PASSWD = "123coge321";
 
 =head1 NAME
 
@@ -18,7 +26,9 @@ CoGeX - CoGeX
 =head1 SYNOPSIS
 
   use CoGeX;
-  blah blah blah
+  This object is the API to the CoGe genomes database.  It uses DBIx::Class for managing
+  relationships and access to the database.  Various other "high-level" functions are
+  provided to make getting genomic data easier.
 
 
 =head1 DESCRIPTION
@@ -29,8 +39,7 @@ Primary object for interacting with CoGe database system.
 
   use CoGeX;
 
-  my $connstr = 'dbi:mysql:genomes:biocon:3306';
-  my $s = CoGeX->connect($connstr, 'cnssys', 'CnS' ); # Biocon's ro user
+  my $s = CoGeX->connectdb(); # Biocon's ro user
 
   my $rs = $s->resultset('Feature')->search(
                 {
@@ -45,7 +54,10 @@ Primary object for interacting with CoGe database system.
 =head1 SUPPORT
 
 
-=head1 AUTHOR
+=head1 AUTHORS
+
+ Eric Lyons
+ Brent Pedersen
 
 =head1 COPYRIGHT
 
@@ -62,9 +74,45 @@ perl(1).
 
 =cut
 
+################################################ subroutine header begin ##
+
+=head2 dbconnect
+
+ Usage     : use CoGeX;
+             my $coge = CoGeX->dbconnect;
+
+ Purpose   : generates the CoGe genomes API object
+ Returns   : CoGeX object
+ Argument  : db_connection_string=>'dbi:mysql:dbname=genomes;host=dbhostname.edu;port=3306'
+             db_name=>'database_user_name'
+             db_passwd=>'user_password'
+             Arguments should be optional with defaults set in object so that this function can be
+             called to generate db API object
+ Throws    : none
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
 
 
-
+sub dbconnect
+  {
+    my ($self, %opts) = self_or_default(@_);
+    my $str = $opts{db_connection_string};
+    my $name = $opts{db_name};
+    my $pwd = $opts{db_passwd};
+    $str = $self->db_connection_string unless $str;
+    $str = $DEFAULT_CONNECTION_STRING unless $str;
+    $name = $self->db_name unless $name;
+    $name = $DEFAULT_NAME unless $name;
+    $pwd = $self->db_passwd unless $pwd;
+    $pwd = $DEFAULT_PASSWD unless $pwd;
+    my $cogedb = CoGeX->connect($str, $name, $pwd );
+    return $cogedb;
+  }
 
 
 
@@ -312,6 +360,21 @@ sub log_user
     my $item = $self->resultset('UserSession')->create({user_id=>$uid, date=>\'NOW()'});
     return $item->id;
   }
+
+sub self_or_default 
+    { #adapted from CGI.pm
+      shift @_ if $_[0] eq "CoGeX";
+      my $Q;
+      unless (
+	      defined($_[0]) && 
+	      (ref($_[0]) eq 'CoGeX')# || UNIVERSAL::isa($_[0],'CoGeX')) # slightly optimized for common case
+	     ) 
+	{
+	  $Q = CoGeX->new unless defined($Q);
+	  unshift(@_,$Q);
+	}
+      return wantarray ? @_ : $Q;
+    }
 
 
 1;
