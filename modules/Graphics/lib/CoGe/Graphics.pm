@@ -202,8 +202,7 @@ sub genomic_view
     my $t0 = new Benchmark if $BENCHMARK;
 
     #CoGe objects that we will need
-    my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
-    my $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
+    my $coge = CoGeX->dbconnect();
     #$coge->storage->debugobj(new DBIxProfiler());
 #    $coge->storage->debug(1);
     my $c = new CoGe::Graphics::Chromosome;
