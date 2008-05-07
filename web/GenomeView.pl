@@ -196,7 +196,7 @@ sub get_dataset_info
     return $html unless $ds;
     $html = "<table>";
     my $dataset = $ds->name.": ". $ds->description;
-#    $dataset .= " <a href= ".$ds->link.">(".$ds->link.")" if $ds->link;
+    $dataset = " <a href=\"".$ds->link."\">".$dataset."</a>" if $ds->link;
     my $source_name = $ds->datasource->name .": ". $ds->datasource->description;
     my $link = $ds->datasource->link;
 
