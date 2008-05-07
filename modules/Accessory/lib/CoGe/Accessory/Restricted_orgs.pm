@@ -17,8 +17,7 @@ BEGIN {
     @EXPORT      = qw (restricted_orgs);
     @EXPORT_OK   = qw ();
     %EXPORT_TAGS = ();
-    my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
-    $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
+    $coge = CoGeX->dbconnect();
 #    $cogex->storage->debugobj(new DBIxProfiler());
 #    $cogex->storage->debug(1);
     __PACKAGE__->mk_accessors qw(orgs);
