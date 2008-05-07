@@ -22,8 +22,7 @@ BEGIN {
     @EXPORT_OK   = qw ();
     %EXPORT_TAGS = ();
     $coge = new CoGe::Genome;
-    my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
-    $cogex = CoGeX->connect($connstr, 'cnssys', 'CnS' );
+    $cogex = CoGeX->dbconnect();
 #    $cogex->storage->debugobj(new DBIxProfiler());
 #    $cogex->storage->debug(1);
     __PACKAGE__->mk_accessors qw(restricted_orgs basefilename basefile logfile sqlitefile);
@@ -114,49 +113,6 @@ sub dataset_search_for_feat_name
     return ($html,$num);
   }
 
-sub dataset_search_for_feat_name_old
-  {
-    my ($self, $accn, $num, $user) = self_or_default(@_);
-    $num = 1 unless $num;
-    return ( qq{<input type="hidden" id="dsid$num">\n<input type="hidden" id="featid$num">}, $num )unless $accn;
-    my $html;
-    my %sources;
-    my %restricted_orgs = %{$self->restricted_orgs} if $self->restricted_orgs;
-    foreach my $feat ($coge->get_feats_by_name($accn))
-      {
-	my $val = $feat->dataset;
-	my $name = $val->name;
-	my $ver = $val->version;
-	my $desc = $val->description;
-	my $sname = $val->data_source->name;
-	my $ds_name = $val->name;
-	my $org = $val->org->name;
-	my $title = "$org: $ds_name ($sname, v$ver)";
-#	$sources{$feat->data_info->id} = $feat->data_info;
-	next if $restricted_orgs{$org};
-	$sources{$feat->dataset->id} = $title;
-      }
-    if (keys %sources)
-      {
-	$html .= qq{
-<SELECT name = "dsid$num" id= "dsid$num" onChange="feat_search(['accn$num','dsid$num', 'args__$num'],['feat$num']);">
-};
-	foreach my $id (sort {$b <=> $a} keys %sources)
-	  {
-	    my $val = $sources{$id};
-	    $html  .= qq{  <option value="$id">$val\n};
-	  }
-	$html .= qq{</SELECT>\n};
-	my $count = scalar keys %sources;
-	$html .= qq{<font class=small>($count)</font>};
-      }
-    else
-      {
-	$html .= qq{Accession not found <input type="hidden" id="dsid$num">\n<input type="hidden" id="featid$num">\n};	
-      }    
-    return ($html,$num);
-  }
-
 sub feat_search_for_feat_name
   {
     my ($self, $accn, $dsid, $num) = self_or_default(@_);
@@ -191,42 +147,6 @@ sub feat_search_for_feat_name
 	  {
 	    my $loc = "(".$feat->type->name.") Chr:".$feat->locations->next->chromosome." ".$feat->start."-".$feat->stop;
 	    #working here, need to implement genbank_location_string before I can progress.  Need 
-	    $loc =~ s/(complement)|(join)//g;
-	    my $fid = $feat->id;
-	    $html .= qq {  <option value="$fid">$loc \n};
-	  }
-	$html .= qq{</SELECT>\n};
-	my $count = scalar @feats;
-	$html .= qq{<font class=small>($count)</font>};
-      }
-    else
-      {
-	$html .=  qq{<input type="hidden" id="featid$num">\n}
-      }
-    return $html;
-  }
-
-sub feat_search_for_feat_name_old
-  {
-    my ($self, $accn, $dsid, $num) = self_or_default(@_);
-    return unless $dsid;
-    my @feats;
-    foreach my $f ($coge->get_feats_by_name($accn))
-      {
-	next unless $f->dataset->id == $dsid;
-	next if $f->type->name =~ /CDS/i;
-	next if $f->type->name =~ /RNA/i;
-	push @feats, $f;
-      }
-    my $html;
-    if (@feats)
-      {
-	$html .= qq{
-<SELECT name = "featid$num" id = "featid$num" >
-  };
-	foreach my $feat (@feats)
-	  {
-	    my $loc = "Chr:".$feat->chr." ".$feat->genbank_location_string;
 	    $loc =~ s/(complement)|(join)//g;
 	    my $fid = $feat->id;
 	    $html .= qq {  <option value="$fid">$loc \n};
