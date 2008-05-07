@@ -111,6 +111,9 @@ sub dbconnect
     $pwd = $self->db_passwd unless $pwd;
     $pwd = $DEFAULT_PASSWD unless $pwd;
     my $cogedb = CoGeX->connect($str, $name, $pwd );
+    $cogedb->db_connection_string($str);
+    $cogedb->db_name($name);
+    $cogedb->db_passwd($pwd);
     return $cogedb;
   }
 
