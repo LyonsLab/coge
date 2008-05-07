@@ -27,10 +27,6 @@ $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 
 $FORM = new CGI;
 ($USER) = CoGe::Accessory::LogUser->get_user();
-#$connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
-#$coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
-#$coge->storage->debugobj(new DBIxProfiler());
-#$coge->storage->debug(1);
 
 my $pj = new CGI::Ajax(
 		       gen_data=>\&gen_data,

@@ -33,9 +33,8 @@ $ORG = $FORM->param('org') || $FORM->param('organism');
 $VERSION = $FORM->param('version') || $FORM->param('ver');
 $NAME_ONLY = $FORM->param('name_only') || 0;
 
-#$DB = new CoGe::Genome;
-my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
-$coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
+
+$coge = CoGeX->dbconnect();
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 

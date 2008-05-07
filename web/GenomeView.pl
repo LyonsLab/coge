@@ -13,7 +13,7 @@ use Benchmark;
 
 $ENV{PATH} = "/opt/apache2/CoGe/";
 
-use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $NEATO $DOT $coge $connstr);
+use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $NEATO $DOT $coge);
 
 # set this to 1 to print verbose messages to logs
 $DEBUG = 0;
@@ -27,8 +27,7 @@ $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 
 $FORM = new CGI;
 ($USER) = CoGe::Accessory::LogUser->get_user();
-$connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
-$coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
+$coge = CoGeX->connect();
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 
@@ -315,7 +314,8 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
    AND l.chromosome = "$chr"
  GROUP BY ft.name
 };
-    my $dbh = DBI->connect($connstr, 'cnssys', 'CnS' );
+    my $coge = CoGeX->dbconnect();
+    my $dbh = DBI->connect($coge->db_connection_string,$coge->db_name,$coge->db_passwd);
     my $sth = $dbh->prepare($query);
     $sth->execute;
     my $feats = {};

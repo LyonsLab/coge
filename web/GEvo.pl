@@ -71,8 +71,7 @@ $CGI::POST_MAX= 60 * 1024 * 1024; # 24MB
 $CGI::DISABLE_UPLOADS = 0; 
 ($USER) = CoGe::Accessory::LogUser->get_user();
 
-my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
-$coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
+$coge = CoGeX->dbconnect();
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 

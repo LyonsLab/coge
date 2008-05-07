@@ -19,8 +19,7 @@ $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 $TEMPDIR = "/opt/apache/CoGe/tmp/";
 $FORM = new CGI;
 
-my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
-$coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
+$coge = CoGeX->dbconnect();
 
 my $pj = new CGI::Ajax(
 		       gen_html=>\&gen_html,

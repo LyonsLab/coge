@@ -156,8 +156,7 @@ sub actions
 sub login
   {
     my ($name, $pwd, $url) = @_;
-    my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
-    my $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
+    my $coge = CoGeX->dbconnect();
     my ($u) = $coge->resultset('User')->search({user_name=>$name});
     my $pwdc = $u->check_passwd(pwd=>$pwd) if $u;
     $url = $FORM->param('url') unless $url;

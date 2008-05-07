@@ -49,8 +49,7 @@ $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 ($USER) = CoGe::Accessory::LogUser->get_user();
 $FORM = new CGI;
 
-$connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
-$coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
+$coge = CoGeX->dbconnect();
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 
@@ -1470,8 +1469,8 @@ sub get_nearby_feats
     my @feat;
     my $count = 0;
     my $mid = ($stop+$start)/2;
-
-    my $cogedb = DBI->connect($connstr,"cnssys","CnS");
+    my $coge = CoGeX->dbconnect();
+    my $cogedb = DBI->connect($coge->db_connection_string,$coge->db_name,$coge->db_passwd);
     my $query =qq!
 
 select * from (
