@@ -2,11 +2,11 @@
 
 use strict;
 use CGI;
-use CoGe::Genome;
 use CoGe::Accessory::LogUser;
+use CoGeX;
 $ENV{PATH} = "/opt/apache/CoGe/";
 
-use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $DB);
+use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $coge);
 
 # set this to 1 to print verbose messages to logs
 $DEBUG = 0;
@@ -18,10 +18,10 @@ $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 
 $FORM = new CGI;
 ($USER) = CoGe::Accessory::LogUser->get_user();
-$DB = new CoGe::Genome;
+$coge=CoGeX->dbconnect();
 
 my $id = $FORM->param('id');
 exit unless $id;
-my $img = $DB->get_image_obj->retrieve($id);
+my $img = $coge->resultset('Image')->find($id);
 print "Content-type: image/png\n\n";
 print $img->image;
