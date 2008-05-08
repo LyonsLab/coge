@@ -6,21 +6,19 @@ use CGI::Ajax;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use HTML::Template;
-use CoGe::Genome;
 use Text::Wrap qw($columns &wrap);
 use Data::Dumper;
 use POSIX;
 
 $ENV{PATH} = "/opt/apache/CoGe/";
 
-use vars qw( $TEMPDIR $TEMPURL $FORM $USER $DATE $DB $coge);
+use vars qw( $TEMPDIR $TEMPURL $FORM $USER $DATE $coge);
 
 $TEMPDIR = "/opt/apache/CoGe/tmp";
 $TEMPURL = "/CoGe/tmp";
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
 ($USER) = CoGe::Accessory::LogUser->get_user();
-$DB = new CoGe::Genome;
 $FORM = new CGI;
 
 $coge = CoGeX->dbconnect();
