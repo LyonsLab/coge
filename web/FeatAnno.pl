@@ -4,7 +4,6 @@ use strict;
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
 use Data::Dumper;
-#use CoGe::Genome;
 use CoGeX;
 use DBIxProfiler;
 use CoGe::Accessory::LogUser;
