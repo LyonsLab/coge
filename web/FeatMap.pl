@@ -16,7 +16,6 @@ use CoGe::Accessory::Restricted_orgs;
 use CoGe::Graphics::GenomeView;
 use CoGe::Graphics;
 use CoGe::Graphics::Chromosome;
-use CoGe::Genome;
 
 use vars qw( $TEMPDIR $TEMPURL $FORM $USER $DATE $coge $cogeweb );
 
