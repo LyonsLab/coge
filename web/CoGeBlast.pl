@@ -23,7 +23,6 @@ use CoGe::Graphics::GenomeView;
 use CoGe::Graphics;
 use CoGe::Graphics::Chromosome;
 use CoGe::Graphics::Feature::HSP;
-use CoGe::Genome;
 use Spreadsheet::WriteExcel;
 use Benchmark qw(:all);
 use Parallel::ForkManager;
@@ -53,7 +52,6 @@ $coge = CoGeX->dbconnect();
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 
-#my %ajax = CoGe::Accessory::Web::ajax_func();
 
 my $pj = new CGI::Ajax(
 		       gen_html=>\&gen_html,
@@ -482,7 +480,7 @@ sub gen_results_page
 		 my ($dsid) = $hsp->subject_name =~ /id: (\d+)/;
 		 my ($chr) = $hsp->subject_name =~ /chromosome: (.*?),/;
 		 my ($org) = $hsp->subject_name =~ /^\s*(.*?)\s*\(/;
-		 next unless $dsid && $chr;
+		 next unless $dsid && defined $chr;
 		 $hsp_count{$org}++;
 		 next if ($hsp_count{$org} > $resultslimit);
 
