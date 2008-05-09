@@ -252,6 +252,8 @@ sub gen_body
     $draw_model = "full" unless $draw_model;
     my $hsp_overlap_limit = get_opt(params=>$prefs, form=>$form, param=>'hsp_overlap_limit');
     $hsp_overlap_limit = 0 unless $hsp_overlap_limit;
+    my $hsp_size_limit = get_opt(params=>$prefs, form=>$form, param=>'hsp_size_limit');
+    $hsp_size_limit = 0 unless $hsp_size_limit;
 
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GEvo.tmpl');
     $template->param(PAD_GS=>$pad_gs);
@@ -260,6 +262,7 @@ sub gen_body
     $template->param(FEAT_HEIGHT=>$feature_height);
     $template->param(PADDING=>$padding);
     $template->param(HSP_OVERLAP_LIMIT=>$hsp_overlap_limit);
+    $template->param(HSP_SIZE_LIMIT=>$hsp_size_limit);
     if ($gc_color) {$template->param(GC_COLOR_YES=>"checked");}
     else {$template->param(GC_COLOR_NO=>"checked");}
     if ($nt_color) {$template->param(NT_COLOR_YES=>"checked");}
@@ -330,6 +333,7 @@ sub run
     my $hsp_label = $opts{hsplabel};
     my $draw_model = $opts{draw_model};
     my $hsp_overlap_limit = $opts{hsp_overlap_limit};
+    my $hsp_size_limit = $opts{hsp_size_limit};
     my $overlap_adjustment = $opts{overlap};
     my $hiqual = $opts{hiqual};
     my $hsp_limit = $opts{hsplim};
@@ -571,6 +575,7 @@ sub run
 
     $gevo_link .= ";num_seqs=".$seqcount;
     $gevo_link .= ";hsp_overlap_limit=".$hsp_overlap_limit if defined $hsp_overlap_limit;
+    $gevo_link .= ";hsp_size_limit=".$hsp_size_limit if defined $hsp_size_limit;
     unless (@sets >1)
       {
 	$message .= "Problem retrieving information.  Please check submissions.\n";
@@ -649,6 +654,7 @@ sub run
 			     reverse_image=>$rev,
 			     draw_model=>$draw_model,
 			     hsp_overlap_limit=>$hsp_overlap_limit,
+			     hsp_size_limit=>$hsp_size_limit,
 			     color_overlapped_features=>$color_overlapped_features,
 			     hsp_overlap_length=>$hsp_overlap_length,
 			    );
@@ -727,8 +733,10 @@ sub run
     foreach my $item (@sets)
       {
 	$html .= "<tr class=small>";
-	my @data = ("<td>".$item->{obj}->accn,commify(length $item->{obj}->sequence)." bp",$item->{stats}{feat_counts}{gene}{overlap}."/".$item->{stats}{feat_counts}{gene}{count});
-	push @data, sprintf("%.2f", $item->{stats}{feat_counts}{gene}{overlap}/$item->{stats}{feat_counts}{gene}{count}*100)."%" if $item->{stats}{feat_counts}{gene}{count};
+	my $count = $item->{stats}{feat_counts}{gene}{overlap};
+	$count = 0 unless $count;
+	my @data = ("<td>".$item->{obj}->accn,commify(length $item->{obj}->sequence)." bp",$count."/".$item->{stats}{feat_counts}{gene}{count});
+	push @data, sprintf("%.2f", $count/$item->{stats}{feat_counts}{gene}{count}*100)."%" if $item->{stats}{feat_counts}{gene}{count};
 	$html .= join ("<td nowrap>",@data);
 	shift @data;
 	write_log(join ("\t",$item->{obj}->accn,"all",@data), $stats_file);
@@ -841,6 +849,7 @@ sub generate_image
 #    my $seq_num = $opts{seq_num};
     my $draw_model = $opts{draw_model};
     my $hsp_overlap_limit = $opts{hsp_overlap_limit};
+    my $hsp_size_limit = $opts{hsp_size_limit};
     my $color_overlapped_features = $opts{color_overlapped_features};
     my $hsp_overlap_length = $opts{hsp_overlap_length};
     my $graphic = new CoGe::Graphics;
@@ -889,6 +898,7 @@ sub generate_image
 			  colors=>$hsp_colors,
 			  show_hsps_with_stop_codon=>$show_hsps_with_stop_codon,
 			  hsp_overlap_limit=>$hsp_overlap_limit,
+			  hsp_size_limit=>$hsp_size_limit,
 			  hsp_overlap_length=>$hsp_overlap_length,
 			 );
     my ($feat_counts) = process_features(c=>$gfx, obj=>$gbobj, start=>$start, stop=>$stop, overlap_adjustment=>$overlap_adjustment, draw_model=>$draw_model, color_overlapped_features=>$color_overlapped_features);
@@ -1249,6 +1259,7 @@ sub process_hsps
     my $color_hsp = $opts{color_hsp};
     my $colors = $opts{colors};
     my $hsp_overlap_limit = $opts{hsp_overlap_limit};
+    my $hsp_size_limit = $opts{hsp_size_limit};
     my $hsp_overlap_length = $opts{hsp_overlap_length};
     my $show_hsps_with_stop_codon = $opts{show_hsps_with_stop_codon};
     #to reverse hsps when using genomic sequences from CoGe, they need to be drawn on the opposite strand than where blast reports them.  This is because CoGe::Graphics has the option of reverse drawing a region.  However, the sequence fed into blast has already been reverse complemented so that the HSPs are in the correct orientation for the image.  Thus, if the image is reverse, they are drawn on the wrong strand.  This corrects for that problem.   Sorry for the convoluted logic, but it was the simplest way to substantiate this option
@@ -1303,7 +1314,7 @@ sub process_hsps
 	    next if defined $score_cutoff && $hsp->score < $score_cutoff;
 	    my $color = $colors->[$i];
 	    my $skip = 0;
-
+	    next if $hsp_size_limit && $hsp->length < $hsp_size_limit;
 	    if ($show_hsps_with_stop_codon && ($hsp->qalign =~ /\*/ || $hsp->salign =~ /\*/))
 	      {
 		for my $i (0..(length ($hsp->qalign)-1))
@@ -2337,6 +2348,7 @@ sub gen_params
         'args__num_seqs','args__$num_seqs',
         'args__draw_model', 'draw_model',
         'args__hsp_overlap_limit', 'hsp_overlap_limit',
+        'args__hsp_size_limit', 'hsp_size_limit',
         'args__color_overlapped_features','color_overlapped_features',
         'args__hsp_overlap_length','hsp_overlap_length',
         'args__basefile','args__'+pageObj.basefile
