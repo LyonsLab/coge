@@ -1213,20 +1213,17 @@ sub process_features
 	$f->skip_overlap_search($foverlap);
 	$f->{anchor}=1 if $anchor;
         $c->add_feature($f);
-	print STDERR $feat->type, " ", $feat->start,"-", $feat->stop," ",$strand," :: ",$start,"-",$stop,"\n";
 
 	if ($prior_feat{$feat->type}{$strand})
 	  {
 	    if ($feat->start < $prior_feat{$feat->type}{$strand}->stop)
 	      {
-		print STDERR "IN skip\n";
 		$prior_feat{$feat->type}{$strand} = $feat;
 		next;
 	      }
 	  }
 	next if $feat->start > $stop;
 	next if $feat->stop < $start;
-	print STDERR "!!\n";
 	$feat_counts{$feat->type}{count}++;
 	$feat_counts{$feat->type}{overlap}++ if $feat->qualifiers->{overlapped_hsp};
 	$prior_feat{$feat->type}{$strand} = $feat;
