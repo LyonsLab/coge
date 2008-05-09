@@ -930,6 +930,8 @@ function get_seq(seq_num)
   </TD>
  <tr>
   <td>Don't show HSPs with <input class=backbox type=textbox size=3 id="hsp_overlap_limit" value="<TMPL_VAR NAME="HSP_OVERLAP_LIMIT">"/> overlaps
+ <tr>
+  <td colspan=2>Don't show HSPs that are shorter than <input class=backbox type=textbox size=3 id="hsp_size_limit" value="<TMPL_VAR NAME="HSP_SIZE_LIMIT">"/> nt. <span class="small">(0 means no limit)</span>
  <Tr>
   <td>Draw:
   <select id="draw_model">
