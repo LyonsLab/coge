@@ -56,6 +56,24 @@ function setheight(){
     }
 }
 
+function open_all_sequence_option_menus(open) {
+    var num_seqs = $("#num_seqs").val();
+    for (var i=1; i<=num_seqs; i++)
+     {
+       if (open)
+        {
+         $('#open_all_sequence_open_menus').hide();
+         $('#close_all_sequence_open_menus').show();
+         animate_section(".sequence_options"+i,"slideDown");
+        }
+       else
+        {
+         $('#close_all_sequence_open_menus').hide();
+         $('#open_all_sequence_open_menus').show();
+         animate_section(".sequence_options"+i,"slideUp");
+        }
+     }
+}
 $(document).ready(function(){
  //prefetch button images
 // if (document.images) {
@@ -472,7 +490,10 @@ function get_seq(seq_num)
      <Div class ="small" align = "left">
      Apply distance to all CoGe submissions?<input type="checkbox" name="apply_all" id="apply_all" value="0" />
      &nbsp&nbsp&nbsp&nbsp
-     Pad CoGe Sequences with additional sequence: <input type="textbox" name="pad_gs" id="pad_gs" value="<TMPL_VAR NAME="PAD_GS">" size =8/></div>
+     Pad CoGe Sequences with additional sequence: <input type="textbox" name="pad_gs" id="pad_gs" value="<TMPL_VAR NAME="PAD_GS">" size =8/>
+     <Div class="link" id="open_all_sequence_open_menus" onclick="open_all_sequence_option_menus(1);">Open all sequence option menus</div>
+     <Div class="link" style="display: none" id="close_all_sequence_open_menus" onclick="open_all_sequence_option_menus(0);">Close all sequence option menus</div>
+     </div>
      </DIV>
  </TR>
 </TABLE>
