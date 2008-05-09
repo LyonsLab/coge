@@ -30,8 +30,9 @@ use Parallel::ForkManager;
 $ENV{PATH} = "/opt/apache/CoGe/";
 $ENV{BLASTDB}="/opt/apache/CoGe/data/blast/db/";
 $ENV{BLASTMAT}="/opt/apache/CoGe/data/blast/matrix/";
-use vars qw( $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $FORMATDB $BLAST $BLASTZ $FORM $USER $DATE $coge $cogeweb $RESULTSLIMIT $MAX_PROC $connstr);
+use vars qw( $PAGE_NAME $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $FORMATDB $BLAST $BLASTZ $FORM $USER $DATE $coge $cogeweb $RESULTSLIMIT $MAX_PROC $connstr);
 #refresh again?
+$PAGE_NAME = "CoGeBlast.pl";
 $TEMPDIR = "/opt/apache/CoGe/tmp/CoGeBlast";
 $DATADIR = "/opt/apache/CoGe/data/";
 $FASTADIR = $DATADIR.'/fasta/';
@@ -80,6 +81,7 @@ my $pj = new CGI::Ajax(
 		       export_hsp_query_fasta=>\&export_hsp_query_fasta,
 		       export_hsp_subject_fasta=>\&export_hsp_subject_fasta,
 		       export_alignment_file=>\&export_alignment_file,
+		       save_settings_cogeblast=>\&save_settings_cogeblast,
 		      );
 $pj->js_encode_function('escape');
 print $pj->build_html($FORM, \&gen_html);
@@ -122,6 +124,7 @@ sub gen_body
     #my $feat_name = $form->param('featname');
     my $rc = $form->param('rc') || 0;
     my $seq = $form->param('seq');
+    my $prefs = load_settings(user=>$USER, page=>$PAGE_NAME);
     $template->param(JAVASCRIPT=>1);
     $template->param(BLAST_FRONT_PAGE=>1);
     $template->param(UPSTREAM=>$upstream);
@@ -157,7 +160,16 @@ sub gen_body
     $template->param(USER_NAME=>$USER);
     #$template->param(DEFAULT_PARAM=>$param);
     $template->param(REST=>1);
-    $template->output;
+    my $db_list;
+    foreach my $orgid (split /,/,$prefs->{orgids})
+      {
+	my ($id, $org) = get_from_id($orgid);
+	$db_list .= qq{
+        add_to_list('$id', '$org');
+}
+      }
+    $template->param(document_ready=>$db_list) if $db_list;
+    return $template->output;
   }
   
 sub get_sequence
@@ -1903,3 +1915,10 @@ sub export_alignment_file
     close NEW;
     return "$TEMPURL/alignment_file_$filename.txt";
 }
+
+sub save_settings_cogeblast
+  {
+    my %opts = @_;
+    my $opts = Dumper \%opts;
+    my $item = save_settings(opts=>$opts, user=>$USER, page=>$PAGE_NAME);
+  }
