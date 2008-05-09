@@ -27,6 +27,7 @@ $(document).ready(function(){
   }
   get_displayFeature();
    get_seq('coge_radio');
+   <TMPL_VAR NAME="document_ready">
 });
 
 $(document).ready(function(){
@@ -403,7 +404,6 @@ function blastOff(){
   var page_width = ($('#co').width())*(95/100);
   pageObj.image_width = page_width;
   var blastable_db = $('#db_choice').getLength(1);
-
   blast_search([
   'args__program','args__'+program,
   'args__expect','args__'+expect,
@@ -790,6 +790,12 @@ var matrix = $('#matrix').val();
 window.open('/CoGe/MatrixView.pl?matrix='+matrix);
 }
 
+function clear_org_list()
+ {
+ $('#db_choice').empty();
+ counting();
+ } 
+
 </SCRIPT>
 </TMPL_IF>
 
@@ -856,6 +862,8 @@ window.open('/CoGe/MatrixView.pl?matrix='+matrix);
               <DIV id=db_select><SELECT id="db_choice" SIZE="8" MULTIPLE onClick="$('#add').hide(0);$('#remove').show(0);">
               <option id=blank value=null>No Database Selected</option>
               </SELECT></DIV>
+	      <input type=button value="Save Org List" name="SaveSettings" id="SaveSettings" onclick="save_settings_cogeblast(['args__orgids','args__'+$('#db_choice').getLength(1)],[])">
+	      <input type=button value="Clear Org List" name="clearlist" id="clearlist" onclick="clear_org_list();">
            </TD>
            <!--<td width="1" bgcolor="#99ff99"/>
            <TD valign="top">
