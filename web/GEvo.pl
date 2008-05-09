@@ -727,7 +727,7 @@ sub run
     foreach my $item (@sets)
       {
 	$html .= "<tr class=small>";
-	my @data = ("<td>".$item->{obj}->accn,commify(length $item->{obj}->sequence)."bp",$item->{stats}{feat_counts}{gene}{overlap}."/".$item->{stats}{feat_counts}{gene}{count});
+	my @data = ("<td>".$item->{obj}->accn,commify(length $item->{obj}->sequence)." bp",$item->{stats}{feat_counts}{gene}{overlap}."/".$item->{stats}{feat_counts}{gene}{count});
 	push @data, sprintf("%.2f", $item->{stats}{feat_counts}{gene}{overlap}/$item->{stats}{feat_counts}{gene}{count}*100)."%" if $item->{stats}{feat_counts}{gene}{count};
 	$html .= join ("<td nowrap>",@data);
 	shift @data;
@@ -1213,19 +1213,23 @@ sub process_features
 	$f->skip_overlap_search($foverlap);
 	$f->{anchor}=1 if $anchor;
         $c->add_feature($f);
-	if ($prior_feat{$feat->type})
+	print STDERR $feat->type, " ", $feat->start,"-", $feat->stop," ",$strand," :: ",$start,"-",$stop,"\n";
+
+	if ($prior_feat{$feat->type}{$strand})
 	  {
-	    if ($feat->start < $prior_feat{$feat->type}->stop)
+	    if ($feat->start < $prior_feat{$feat->type}{$strand}->stop)
 	      {
-		$prior_feat{$feat->type} = $feat;
+		print STDERR "IN skip\n";
+		$prior_feat{$feat->type}{$strand} = $feat;
 		next;
 	      }
 	  }
 	next if $feat->start > $stop;
 	next if $feat->stop < $start;
+	print STDERR "!!\n";
 	$feat_counts{$feat->type}{count}++;
 	$feat_counts{$feat->type}{overlap}++ if $feat->qualifiers->{overlapped_hsp};
-	$prior_feat{$feat->type} = $feat;
+	$prior_feat{$feat->type}{$strand} = $feat;
       }
     return (\%feat_counts);
   }
