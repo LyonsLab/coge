@@ -1184,11 +1184,12 @@ sub process_features
 	elsif ($type =~ /cns/i)
 	  {
 	    $f = CoGe::Graphics::Feature::HSP->new({start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1]});
-	    $f->color([255,51,0]);
+	    $f->color([204,0,204]);
 	    $f->order($track);
 	    $f->overlay(4);
 	    $f->type($type);
 	    $f->force_draw(1);
+	    $f->description($feat->annotation);
 	    $c->add_feature($f);
 	    next;
 	  }
