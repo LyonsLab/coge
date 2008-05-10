@@ -1814,7 +1814,7 @@ sub _draw_feature
     my $fe = $unit*($feat->end-$rb+1);
     my $fw = sprintf("%.1f",$fe - $fs)+1; #calculate the width of the feature;
 #    print STDERR $rb,"-",$re,"\t",$feat->start-$rb,"-",$feat->end-$rb+1,,"::",$unit,"\t",$fs,"-", $fe," :: ",$fw,"\n";# if ref($feat) =~ /gene/i;
-    $fw = 1 if $feat->force_draw();
+    $fw = 1 if $feat->force_draw() && $fw < 1;
     return if $fw < 1; #skip drawing if less than one pix wide
 
     my ($xmin, $xmax, $ymin , $ymax);
