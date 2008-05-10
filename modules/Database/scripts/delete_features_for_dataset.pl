@@ -10,12 +10,16 @@ my$coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 
 
 my $dsid = shift;
+my $feat_type_id = shift;
+
+
 unless ($dsid)
   {
-    print "Usage: $0 <dsid>\n";
+    print "Usage: $0 <dsid> <feature_type_id optional>\n";
     exit;
   }
 my $ds = $coge->resultset('Dataset')->find($dsid);
+my $ft = $coge->resultset('FeatureType')->find($feat_type_id) if $feat_type_id;
 unless ($ds)
   {
     print "No dataset object for $dsid\n";
@@ -23,8 +27,19 @@ unless ($ds)
   }
 
 print STDERR "deleting feature for ",$ds->name,"\n";
-foreach my $feat ($ds->features)
+if ($ft)
   {
-    $feat->delete;
+    print STDERR "\tdeleting features of type ",$ft->name," only.\n";
+    foreach my $feat ($ds->features({feature_type_id=>$ft->id}))
+      {
+	$feat->delete;
+      }
+  }
+else
+  {
+    foreach my $feat ($ds->features)
+      {
+	    $feat->delete;
+      }
   }
 
