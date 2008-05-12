@@ -16,6 +16,7 @@ __PACKAGE__->mk_accessors(qw(db_connection_string db_name db_passwd));
 
 use vars qw($DEFAULT_CONNECTION_STRING $DEFAULT_NAME $DEFAULT_PASSWD);
 $DEFAULT_CONNECTION_STRING = 'dbi:mysql:dbname=genomes;host=biocon.berkeley.edu;port=3306';
+#$DEFAULT_CONNECTION_STRING = 'dbi:mysql:dbname=genomes;host=homer.cnr.berkeley.edu;port=3306';
 $DEFAULT_NAME = "coge";
 $DEFAULT_PASSWD = "123coge321";
 
