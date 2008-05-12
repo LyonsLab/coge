@@ -37,8 +37,7 @@ my $pj = new CGI::Ajax(
 			);
 $pj->js_encode_function('escape');
 print $pj->build_html($FORM, \&gen_html);
-#print $FORM->header;
-#print gen_html();
+#print $FORM->header, gen_html();
 
 sub gen_html
   {
@@ -255,12 +254,10 @@ sub gen_foot
       $template->param(DOWNSTREAM=>"DOWNSTREAM (3'): ");
       $template->param(DOWNVALUE=>$downstream);
       $template->param(FEATURE=>1);
-      $start = $feat->start-$upstream;
-      $stop = $feat->stop+$downstream;
+      $start = $feat->start;
+      $stop = $feat->stop;
     }
     else{
-      $start-=$upstream;
-      $stop+=$downstream;
       $template->param(PROTEIN=>'Six Frame Translation');
       $template->param(SIXFRAME=>1);
       $template->param(FIND_FEATS=>1);
@@ -272,6 +269,16 @@ sub gen_foot
       $template->param(DOWNVALUE=>$stop);
       $template->param(ADD_EXTRA=>1);
       $template->param(RANGE=>1);
+      }
+    if ($rc)
+      {
+	$start -= $downstream;
+	$stop += $upstream;
+      }
+    else
+      {
+	$start -= $upstream;
+	$stop += $downstream;
       }
     my ($link, $types) = find_feats(dsid=>$dsid, start=>$start, stop=>$stop, chr=>$chr);
     $template->param(FEATLISTLINK=>$link);
@@ -352,10 +359,17 @@ sub find_feats
 #	my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SeqView.tmpl');
 	my $link = "FeatList.pl?";
 	my %type;
-	foreach my $feat ( $coge->get_features_in_region(start=>$start,stop=>$stop,chr=>$chr,dataset_id=>$dsid))
+	$link .="start=$start;stop=$stop;chr=$chr;dsid=$dsid";
+	foreach my $ft ($coge->resultset('FeatureType')->search(
+								{"features.dataset_id"=>$dsid,
+								 "features.chromosome"=>$chr},
+								{join=>"features",
+								 select=>[{"distinct"=>"me.feature_type_id"},"name"],
+								 as=>["feature_type_id","name"],
+								}
+							   ))
 	  {
-	    $link.="&fid=".$feat->id;
-	    $type{$feat->feature_type->name}=$feat->feature_type->id;
+	    $type{$ft->name}=$ft->id;
 	  }
 	$type{All}=0;
 	my $type = qq{<SELECT ID="feature_type">};
