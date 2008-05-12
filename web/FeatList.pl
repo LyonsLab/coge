@@ -78,7 +78,9 @@ sub gen_body
     my $dsid = $form->param('dsid') if $form->param('dsid');
     my $chr = $form->param('chr') if $form->param('chr');
     my $ftid = $form->param('ftid') if $form->param('ftid');
-    push @$feat_list, @{get_fids_from_dataset(dsid=>$dsid, ftid=>$ftid, chr=>$chr)} if $dsid;
+    my $start = $form->param('start') if $form->param('start');
+    my $stop = $form->param('stop') if $form->param('stop');
+    push @$feat_list, @{get_fids_from_dataset(dsid=>$dsid, ftid=>$ftid, chr=>$chr, start=>$start, stop=>$stop)} if $dsid;
     my $table = generate_table(feature_list=>$feat_list, ftid=>$ftid);
     if ($table)
       {
@@ -97,6 +99,8 @@ sub get_fids_from_dataset
     my $dsid = $opts{dsid};
     my $ftid = $opts{ftid};
     my $chr = $opts{chr};
+    my $start = $opts{start};
+    my $stop = $opts{stop};
     my $search = {dataset_id=>$dsid};
     my $join={};
     if ($ftid)
@@ -107,7 +111,16 @@ sub get_fids_from_dataset
       {
 	$search->{chromosome}=$chr;
       }
-    my @ids = map{$_->id}$coge->resultset('Feature')->search($search);
+    my @ids;
+    if ($start)
+      {
+	@ids = map{$_->id} $coge->get_features_in_region(dataset=>$dsid, chr=>$chr, start=>$start, stop=>$stop);
+      }
+    else
+      {
+	@ids = map{$_->id} $coge->resultset('Feature')->search($search);
+      }
+
     return \@ids;
   }
 
