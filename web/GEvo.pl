@@ -667,7 +667,7 @@ sub run
 	    $item->{stats}=$stats;
 	    $gfx->generate_png(file=>$filename);
 	    generate_image_db(set=>$item, gfx=>$gfx);
-	    $frame_height += $gfx->ih + $gfx->ih*.1;
+	    $frame_height += $gfx->ih;# + $gfx->ih*.1;
 	  }
       }
     my $t3_5 = new Benchmark;
@@ -765,8 +765,20 @@ sub run
 
 
     write_log("\n",$stats_file);
-    write_log("Average percent identity for all HSPs (normalized to HSP length):", $stats_file);
-    write_log(join ("\t", qw(REGION1 REGION2 AVG_PERCENT_ID)),$stats_file);
+    write_log("Average percent identity for all HSPs (normalized to HSP length); tab-delimited.  Import into spreadsheet for viewing:", $stats_file);
+#    write_log(join ("\t", qw(REGION1 REGION2 AVG_PERCENT_ID)),$stats_file);
+
+    my @region_names = map {$_->{obj}->accn} @sets;
+    my %thing;
+    foreach my $i (@region_names)
+      {
+	foreach my $j (@region_names)
+	  {
+	    my $val = 0;
+	    $val = 100 if $j eq $i;
+	    $thing{$i}{$j}=$val;
+	  }
+      }
     foreach my $item (@sets)
       {
 	my $stats = $item->{stats};
@@ -778,9 +790,16 @@ sub run
 		map {$len+=$_->[1]} @{$stats->{data}{$accn1}{$accn2}{hsp}};
 		my $pid = 0;
 		map {$pid+=$_->[1]*$_->[0]} @{$stats->{data}{$accn1}{$accn2}{hsp}};
-		write_log("$accn1\t$accn2\t".sprintf("%.2f",$pid/$len), $stats_file);
+		$thing{$accn1}{$accn2} = sprintf("%.2f",$pid/$len);
+		$thing{$accn2}{$accn1} = $thing{$accn1}{$accn2};
+#		write_log("$accn1\t$accn2\t".sprintf("%.2f",$pid/$len), $stats_file);
 	      }
 	  }
+      }
+    write_log("\t".join ("\t", @region_names), $stats_file);
+    foreach my $i (@region_names)
+      {
+	write_log(join ("\t",$i, map {$thing{$i}{$_}} @region_names), $stats_file);
       }
     my $stats_url = $TEMPURL."/".basename($stats_file);
     $html .= qq{<tr class=small><td><a href=$stats_url target=_new>Stats file</a>};
@@ -810,7 +829,7 @@ Time to process html                              : $html_time
     print STDERR $bench if $BENCHMARK;
     write_log($bench, $cogeweb->logfile);
     write_log("Finished!", $cogeweb->logfile);
-    write_log("\nGEvo link: $gevo_link\n", $cogeweb->logfile);
+    write_log("GEvo link: $gevo_link", $cogeweb->logfile);
     write_log("Tiny url: $tiny", $cogeweb->logfile);
     $count--;
     return $outhtml, $iw+400, $frame_height, $cogeweb->basefilename,$count,$message;
