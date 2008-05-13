@@ -110,7 +110,7 @@ sub gen_body
       foreach my $img (@{$files{png}})
 	{
 	  my ($x, $y) = imgsize($img);
-	  $h += $y+0.1*$y;
+	  $h += $y;
 	  $w = $x;
 	  $seq_num++;
 	}
@@ -158,29 +158,11 @@ sub gen_body
       $template->param('STUFF'=>$html);
       $template->param('WIDTH'=>$w);
       $template->param('HEIGHT'=>$h);
-      $template->param('HEIGHT'=>$h);
       $template->param('GOBE_VERSION'=>$gobe_version);
       $template->param('SEQ_NUM'=>$seq_num);
       $template->param('BASE_NAME'=>$name);
       return $template->output;
     }
 
-#$html = qq{
-#<script src="/CoGe/gobe/static/swfobject.js" ></script>
-#$html
-#<DIV id="flash_viewer"></DIV>
-#<SCRIPT language="JavaScript">
-#    var so = new SWFObject("/CoGe/gobe/flash/gobe.swf?$gobe_version", "gobe", $w, $h, "9", "#FFFFFF");
-#    so.useExpressInstall('/CoGe/gobe/flash/expressinstall.swf');
-#    so.addVariable('n', $seq_num);
-#    so.addVariable('base_url', '/CoGe/');
-#    so.addVariable('img_url', '/CoGe/tmp/GEvo/');
-#    so.addVariable('base_name', '$name');
-#    so.addVariable('freezable', getQueryParamValue('freezable') || 'false'); 
-#    so.addVariable('pad_gs', jQuery('#pad_gs') ? jQuery('#pad_gs').val()  : getQueryParamValue('pad_gs') || '0'); 
-#    so.addVariable('gsid', getQueryParamValue('gsid') || getQueryParamValue('genespace_id') || '0'); 
-#    so.write("flash_viewer");
-#</script>
-#};
 
 
