@@ -1409,6 +1409,7 @@ sub process_hsps
 		my %prev_features;
 		foreach my $feat (sort {$a->start <=> $b->start} $gbobj->get_features(start=>$start, stop=>$stop))
 		  {
+		    $feat->qualifiers->{overlapped_hsp}=1;
 		    if ($prev_features{$feat->type})
 		      {
 			if ($feat->start < $prev_features{$feat->type}->stop)
@@ -1423,7 +1424,7 @@ sub process_hsps
 			$prev_features{$feat->type}=$feat;
 			next;
 		      }
-		    $feat->qualifiers->{overlapped_hsp}=1;
+
 		    if ($overlapped_feats{$feat->type}{start}{$feat->start} || $overlapped_feats{$feat->type}{stop}{$feat->stop})
 		      {
 			$prev_features{$feat->type}=$feat;
