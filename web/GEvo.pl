@@ -689,7 +689,7 @@ sub run
 	    my $accn2 = $item->[2];
 	    my $basereportname = basename( $report );
 	    $basereportname = $TEMPURL . "/$basereportname\n";
-	    $html .= "<div><font class=small><A HREF=\"$basereportname\" target=_new>View alignment output for $accn1 versus $accn2</A></font></DIV>\n";
+	    $html .= "<div><font class=small><A HREF=\"$basereportname\" target=_new>$accn1 versus $accn2</A></font></DIV>\n";
 	  }
       }
     else
@@ -703,7 +703,7 @@ sub run
 	my $basename = $TEMPURL."/".basename ($item->{file});
 	print STDERR "basename is undefined: $basename\n" if $basename =~ /defined/i;
 	my $accn = $item->{accn};
-	$html .= "<div><font class=small><A HREF=\"$basename\" target=_new>Fasta file for $accn</A></font></DIV>\n";
+	$html .= "<div><font class=small><A HREF=\"$basename\" target=_new>$accn</A></font></DIV>\n";
       }
     $html .= qq{<td class = small><a href = "http://baboon.math.berkeley.edu/mavid/gaf.html">GAF</a> annotation files};
     foreach my $item (@sets)
@@ -712,7 +712,7 @@ sub run
 	next unless $anno_file;
 	my $basename = $TEMPURL."/".basename ($anno_file);
 	my $accn = $item->{accn};
-	$html .= "<div><font class=small><A HREF=\"$basename\" target=_new>Annotation file for $accn</A></font></DIV>\n";
+	$html .= "<div><font class=small><A HREF=\"$basename\" target=_new>$accn</A></font></DIV>\n";
      }
     $html .= qq{<td class = small>SQLite db};
     my $dbname = $TEMPURL."/".basename($cogeweb->sqlitefile);
@@ -766,8 +766,6 @@ sub run
 
     write_log("\n",$stats_file);
     write_log("Average percent identity for all HSPs (normalized to HSP length); tab-delimited.  Import into spreadsheet for viewing:", $stats_file);
-#    write_log(join ("\t", qw(REGION1 REGION2 AVG_PERCENT_ID)),$stats_file);
-
     my @region_names = map {$_->{obj}->accn} @sets;
     my %thing;
     foreach my $i (@region_names)
@@ -800,6 +798,41 @@ sub run
     foreach my $i (@region_names)
       {
 	write_log(join ("\t",$i, map {$thing{$i}{$_}} @region_names), $stats_file);
+      }
+    #summary of features with and without overlapping hsps -- nice list to have for other uses
+    my %overlaps;
+    foreach my $item (@sets)
+      {
+	my $obj = $item->{obj};
+
+	foreach my $feat (sort {$a->start <=> $b->start} $obj->get_features())
+	  {
+	    next if $feat->stop < 1 || $feat->start > length ($obj->sequence);
+	    if ($feat->qualifiers->{overlapped_hsp})
+	      {
+		$overlaps{$obj->accn}{with}{$feat->type}{join ("\t", @{$feat->qualifiers->{names}})}=1
+	      }
+	    else
+	      {
+		$overlaps{$obj->accn}{without}{$feat->type}{join ("\t", @{$feat->qualifiers->{names}})}=1
+	      }
+	  }
+      }
+    write_log("\n",$stats_file);
+    write_log("List of genes in each region with and without overlapping HSPS",$stats_file);
+    foreach my $i (@region_names)
+      {
+	foreach my $with (sort keys %{$overlaps{$i}})
+	  {
+	    write_log("$i $with overlap:",$stats_file);
+	    foreach my $type (sort keys %{$overlaps{$i}{$with}})
+	      {
+		foreach my $item (sort keys %{$overlaps{$i}{$with}{$type}})
+		  {
+		    write_log("\t$type\t$item",$stats_file);
+		  }
+	      }
+	  }
       }
     my $stats_url = $TEMPURL."/".basename($stats_file);
     $html .= qq{<tr class=small><td><a href=$stats_url target=_new>Stats file</a>};
@@ -1145,8 +1178,8 @@ sub process_features
 	      {
 		foreach my $name (@{$feat->qualifiers->{names}})
 		  {
-            my $cleaned_name = $name;
-            $cleaned_name =~ s/[\(\)]//g;
+		    my $cleaned_name = $name;
+		    $cleaned_name =~ s/[\(\)]//g;
 		    if ($accn =~ /^$cleaned_name\(?\d*\)?$/i)
 		      {
 			$f->color([255,255,0]) ;
@@ -1242,6 +1275,7 @@ sub process_features
 	my $foverlap = $overlap ? 0 : 1; #I think I need this to get this to work as expected
 	$f->skip_overlap_search($foverlap);
 	$f->{anchor}=1 if $anchor;
+	$f->label(join ("\t", @{$feat->qualifiers->{names}})) if !$f->label && $feat->qualifiers->{names};
         $c->add_feature($f);
 
 	if ($prior_feat{$feat->type}{$strand})
@@ -1384,10 +1418,17 @@ sub process_hsps
 			  }
 		      }
 		    #lets skip it if it only has minimal end overlap
-		    next if abs($start - $feat->stop)<=3 || abs($stop - $feat->start) <=3;
+		    if (abs($start - $feat->stop)<=3 || abs($stop - $feat->start) <=3)
+		      {
+			$prev_features{$feat->type}=$feat;
+			next;
+		      }
 		    $feat->qualifiers->{overlapped_hsp}=1;
-		    next if $overlapped_feats{$feat->type}{start}{$feat->start};
-		    next if $overlapped_feats{$feat->type}{stop}{$feat->stop};
+		    if ($overlapped_feats{$feat->type}{start}{$feat->start} || $overlapped_feats{$feat->type}{stop}{$feat->stop})
+		      {
+			$prev_features{$feat->type}=$feat;
+			next;
+		      }
 		    $overlapped_feats{$feat->type}{start}{$feat->start}=1;
 		    $overlapped_feats{$feat->type}{stop}{$feat->stop}=1;
 		    $stats{data}{$accna}{$accnb}{$feat->type}{overlapped_hsps}++;
