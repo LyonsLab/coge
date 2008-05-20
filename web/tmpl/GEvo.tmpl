@@ -4,7 +4,7 @@
  <TITLE><TMPL_VAR NAME=TITLE></TITLE>
  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
 </HEAD>
-<script src="/CoGe/gobe/static/swfobject.js" ></script>
+<script src="/CoGe/gobe/static/swfobject/swfobject.js" ></script>
 <SCRIPT language="JavaScript">
 /* e.g.  ('up', 1, 330) becomes: byId('drup1').value = 330; */
 /* so up is the 'left', down is the 'right' bar.   */
@@ -75,33 +75,9 @@ function open_all_sequence_option_menus(open) {
      }
 }
 $(document).ready(function(){
- //prefetch button images
-// if (document.images) {
-//   go_inactive = new Image(); go_inactive.src = "/CoGe/picts/buttons/GEvo/go/inactive.png";
-//   go_active = new Image(); go_active.src = "/CoGe/picts/buttons/GEvo/go/active.png";
-//   go_pressed = new Image(); go_pressed.src = "/CoGe/picts/buttons/GEvo/go/pressed.png";
-//   
-//   clear_inactive = new Image(); clear_inactive.src = "/CoGe/picts/buttons/GEvo/clear/inactive.png";
-//   clear_active = new Image(); clear_active.src = "/CoGe/picts/buttons/GEvo/clear/active.png";
-//   clear_pressed = new Image(); clear_pressed.src = "/CoGe/picts/buttons/GEvo/clear/pressed.png";
-//   
-//   add_inactive = new Image(); add_inactive.src = "/CoGe/picts/buttons/GEvo/add/inactive.png";
-//   add_active = new Image(); add_active.src = "/CoGe/picts/buttons/GEvo/add/active.png";
-//   add_pressed = new Image(); add_pressed.src = "/CoGe/picts/buttons/GEvo/add/pressed.png";
-//   
-//   remove_inactive = new Image(); remove_inactive.src = "/CoGe/picts/buttons/GEvo/remove/inactive.png";
-//   remove_active = new Image(); remove_active.src = "/CoGe/picts/buttons/GEvo/remove/active.png";
-//   remove_pressed = new Image(); remove_pressed.src = "/CoGe/picts/buttons/GEvo/remove/pressed.png";
-//  }
-
- //animate_section(".seq_submission_type","hide"); 
  check_seq_submit();
 
  autodistance_setup();
- //$("#image_parameters").hide();
- //$(".algo_options").hide();
- //$(".anchor").hide();
-
  check_alignment_program();
  check_dialign_anchor_program();
  if(window.location.toString().indexOf('autogo') != -1){
@@ -284,16 +260,21 @@ function handle_results (html,w, h, img_base, n_images,message) {
  if (n_images >1)
    {
     $('#results').html(html);
-    var so = new SWFObject("/CoGe/gobe/flash/gobe.swf?<TMPL_VAR NAME="GOBE_VERSION">", "gobe", w, h, "9", "#FFFFFF");
-    so.useExpressInstall('/CoGe/gobe/flash/expressinstall.swf');
-    so.addVariable('n', n_images);
-    so.addVariable('base_url', '/CoGe/');
-    so.addVariable('img_url', '/CoGe/tmp/GEvo/');
-    so.addVariable('base_name', img_base );
-    so.addVariable('freezable', getQueryParamValue('freezable') || 'false'); 
-    so.addVariable('pad_gs', jQuery('#pad_gs') ? jQuery('#pad_gs').val()  : getQueryParamValue('pad_gs') || '0'); 
-    so.addVariable('gsid', getQueryParamValue('gsid') || getQueryParamValue('genespace_id') || '0'); 
-    so.write("flash_viewer");
+    var getQueryParamValue = swfobject.getQueryParamValue;
+    var width = getQueryParamValue('w') || w; 
+    var height = getQueryParamValue('h') || h; 
+    var params = {'bgcolor': '#FFFFFF'};
+    var flashVars = {
+            'n'        : getQueryParamValue('n') || n_images,
+            'freezable': getQueryParamValue('freezable') || 'false',
+            'pad_gs'   : jQuery('#pad_gs') ? jQuery('#pad_gs').val()  : getQueryParamValue('pad_gs') || '0',
+            'gsid'     : getQueryParamValue('gsid') || getQueryParamValue('genespace_id') || '0',
+            'base_url' : getQueryParamValue('base_url')|| '/CoGe/',
+            'img_url'  : getQueryParamValue('img_url')|| '/CoGe/tmp/GEvo/',
+            'base_name': getQueryParamValue('base_name')|| img_base
+        };
+    swfobject.embedSWF("/CoGe/gobe/flash/gobe.swf?<TMPL_VAR NAME="GOBE_VERSION">", "flash_viewer", width, height, "9.0.0"
+                , "/CoGe/gobe/static/swfobject/expresssinstall.swf", flashVars, params, {});
    }
   else
   {

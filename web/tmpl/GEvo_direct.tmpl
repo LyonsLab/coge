@@ -31,7 +31,7 @@ function prepare_update()
             'img_url'  : getQueryParamValue('img_url')|| '/CoGe/tmp/GEvo/',
             'base_name': getQueryParamValue('base_name')|| '<TMPL_VAR NAME="BASE_NAME">'
         };
-    swfobject.embedSWF("/CoGe/gobe/flash/gobe.swf", "flash_viewer", width, height, "9.0.0"
+    swfobject.embedSWF("/CoGe/gobe/flash/gobe.swf?<TMPL_VAR NAME="GOBE_VERSION">", "flash_viewer", width, height, "9.0.0"
                 , "/CoGe/gobe/static/swfobject/expresssinstall.swf", flashVars, params, {});
 
 </script>
