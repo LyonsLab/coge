@@ -216,7 +216,7 @@ select * from image_info order by display_id asc
 
 };
     $html .= "</div>";
-
+    $dbh->disconnect();
     return $html;
   }
 
@@ -238,4 +238,5 @@ UPDATE image_info set display_id = $k where id = $v;
 };
        print STDERR $query unless $dbh->do($query);
      }
+   $dbh->disconnect();
  }
