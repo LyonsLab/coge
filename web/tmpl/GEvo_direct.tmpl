@@ -11,7 +11,13 @@ function prepare_update()
  //      args[i-1] = 'args__'+$('#display-'+i).val()+"-"+$('#image-'+i).val();
      }
    update(['sqlite','args__'+args],[]);
-   window.location.reload();
+   check_update();
+   setTimeout("window.location.reload()",100);
+ }
+
+function check_update()
+ {
+   if (ajax.length) {setTimeout("check_update()",200);}
  }
 </script>
 
