@@ -997,6 +997,7 @@ color varchar
 CREATE TABLE image_info
 (
 id INTEGER,
+display_id INTEGER,
 iname varchar,
 title varchar,
 px_width integer,
@@ -1022,9 +1023,11 @@ sub generate_image_db
     my $image = $set->{image};
     my $accn = $set->{accn};
     my $title;
-    $title = $accn;
-    $title .= " ".$set->{obj}->organism() if $set->{obj}->organism();
-    $title .= "(chr: ".$set->{obj}->chromosome." ". $set->{obj}->start."-".$set->{obj}->stop.")" if defined $set->{up};
+    
+    $title = $set->{obj}->organism() if $set->{obj}->organism();
+    $title .= " " if $title;
+    $title .= $accn;
+    $title .= " (chr: ".$set->{obj}->chromosome." ". $set->{obj}->start."-".$set->{obj}->stop.")" if defined $set->{up};
     $title .= qq! Reverse Complement! if $set->{rev};
     my $width = $gfx->image_width;
     my $dsid = $set->{obj}->dataset;
@@ -1035,7 +1038,7 @@ sub generate_image_db
     my $image_stop = $set->{obj}->stop;
     my $image_id = $set->{seq_num};
     my $statement = qq{
-INSERT INTO image_info (id, iname, title, px_width,dsid, chromosome, bpmin, bpmax) values ($image_id, "$image", "$title", $width, "$dsid", $chr, $image_start, $image_stop)
+INSERT INTO image_info (id, display_id, iname, title, px_width,dsid, chromosome, bpmin, bpmax) values ($image_id, $image_id, "$image", "$title", $width, "$dsid", $chr, $image_start, $image_stop)
 };
     print STDERR $statement unless $dbh->do($statement);
     foreach my $feat ($gfx->get_feats)
