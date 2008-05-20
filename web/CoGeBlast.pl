@@ -538,15 +538,22 @@ sub gen_results_page
        {
 	 if ($hsp_count{$org} > $resultslimit)
 	   {
-	     $hsp_count .= "<br><span class=\"small alert\">Only top $resultslimit results shown for $org.</span>";
+	     $hsp_count .= "<br><span class=\"small alert\">Only top $resultslimit HSPs shown for $org.</span>";
 	     $hsp_limit_flag = 1;
 	   }
 	 else
 	   {
-	     $hsp_count .= "<br><span class=\"small\">".$hsp_count{$org}." results shown for $org.</span>";
+	     $hsp_count .= "<br><span class=\"small\">".$hsp_count{$org}." for $org.</span>";
 	   }
        }
      $hsp_count .= "<br><span class=\"small alert\">All results are in the blast report.</span>" if $hsp_limit_flag;
+     $hsp_count .= "<br>";
+     foreach my $item (@$chromosome_data)
+       {
+	 next unless $item->{DB_NAME} =~ /No Hits.*_new>(.*)<\/a>/i;
+	 print STDERR Dumper $item;
+	 $hsp_count .= "<br><span class=\"small\">None for $1</span>";
+       }
      $template->param(HSP_COUNT=>$hsp_count);
 
      if (@hsp)
