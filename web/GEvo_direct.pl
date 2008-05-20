@@ -216,6 +216,8 @@ select * from image_info order by display_id asc
 
 };
     $html .= "</div>";
+    $sth->finish();
+    $sth = undef;
     $dbh->disconnect();
     return $html;
   }
