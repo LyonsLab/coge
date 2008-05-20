@@ -1011,6 +1011,7 @@ chromosome varchar
     $dbh->do($create);
     $dbh->do('CREATE INDEX id ON image_info (id)');
     system "chmod +rw $dbfile";
+    $dbh->disconnect();
   }
 
 sub generate_image_db
@@ -1096,6 +1097,7 @@ INSERT INTO image_data (name, type, xmin, xmax, ymin, ymax, bpmin,bpmax,image_id
 };
 	print STDERR $statement unless $dbh->do($statement);
       }
+    $dbh->disconnect();
   }
 
 sub image_db_create_hsp_pairs
@@ -1120,6 +1122,7 @@ sub image_db_create_hsp_pairs
 	$statement = "update image_data set pair_id = $id2 where id = $id1";
 	$dbh->do($statement);
       }
+    $dbh->disconnect();
   }
 
 
