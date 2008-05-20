@@ -1,4 +1,20 @@
 <script src="/CoGe/gobe/static/swfobject.js" ></script>
+<script language="JavaScript">
+function prepare_update()
+ {
+   var num_seqs = $("#num_seqs").val();
+   var args;
+   for (var i=1; i<=num_seqs; i++)
+     {
+       if (i > 1) {args = args+":"+$('#display-'+i).val()+"-"+$('#image-'+i).val();}
+       else {args = $('#display-'+i).val()+"-"+$('#image-'+i).val();}
+ //      args[i-1] = 'args__'+$('#display-'+i).val()+"-"+$('#image-'+i).val();
+     }
+   update(['sqlite','args__'+args],[]);
+   window.location.reload();
+ }
+</script>
+
 <TMPL_VAR NAME="STUFF">
 <DIV id="flash_viewer"></DIV>
 <SCRIPT language="JavaScript">
