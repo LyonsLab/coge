@@ -1861,9 +1861,12 @@ function clear_org_list()
      <TD align=left valign="top" >
      Genomic HSP Visualization:
      <DIV id=chromosomes class="resultborder" style="width: 405px;overflow: auto;max-height: 700px;">
+
      <TMPL_VAR NAME=CHROMOSOMES>
      <TMPL_VAR NAME=CHR_LARGE>
       </DIV>
+     <TMPL_VAR NAME="DATA_FILES">
+
 <!--      Color HSP Hits by: 
       <select name=color_hsp id=color_hsp onchange="loading('chromosomes','Images');generate_overview_image(['args__basename','args__'+pageObj.basename,'args__type','args__'+$('#color_hsp').val(),'args__width','args__'+pageObj.image_width],['chromosomes']);">
             <option value = "percent"> Percent Identity </option>
@@ -1883,15 +1886,18 @@ function clear_org_list()
         <BR>
         <BR>
         <DIV id=image_info><TMPL_VAR NAME=HSP></DIV>
-        </DIV>
+      </DIV>
       </TD>
       <TD valign="top" align=left>
        	<DIV id=result_features align=left valign="top">
          <form id=feature_list style="position:static">
          <TMPL_VAR NAME="HSP_RESULTS">
          </form>
-        <table><tr>
-	<td>
+        <table width=900px>
+        <tr valign=top>
+	<td align=left>HSP count: <TMPL_VAR NAME=HSP_COUNT>
+
+	<td align=right>
           <input type=button id="click_links" value="Show all Features" onClick="click_all_feat_links();$('#click_links').hide(0)"> <input type=button value="Select All" onClick="$('#feature_list').checkCheckboxes()">  <input type=button value="Select None" onClick="$('#feature_list').unCheckCheckboxes()"> 
          <br>
          Do Following to Checked Features: 
@@ -1904,14 +1910,14 @@ function clear_org_list()
 <!--            <option value = "user">Add to MFF</option> -->
           </selected>  
           <input type=button value="Go" onClick="overlap_checkboxes()">
-	  <td>HSP count: <TMPL_VAR NAME=HSP_COUNT>
        </DIV>
+       <tr><td colspan=2 align=left><div id=overlap_box valign="top" class="resultborder"></div>
  </table>
      </TD>
     <TR>
-    <td valign=top><TMPL_VAR NAME="DATA_FILES">
+    <td valign=top>
     <td>
-    <td align=left id=overlap_box valign="top" class="resultborder">
+
     
 
    </TABLE>
