@@ -236,6 +236,6 @@ sub update
        my $query = qq{
 UPDATE image_info set display_id = $k where id = $v;
 };
-       $dbh->do($query);
+       print STDERR $query unless $dbh->do($query);
      }
  }
