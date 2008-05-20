@@ -8,6 +8,7 @@ use HTML::Template;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use CGI::Ajax;
+use DBI;
 
 $ENV{PATH} = "/opt/apache/CoGe/";
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
@@ -24,6 +25,7 @@ $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 
 my $pj = new CGI::Ajax (
 			gen_html => \&gen_html,
+			update => \&update,
 		       );
 
 $pj->js_encode_function('escape');
@@ -117,6 +119,9 @@ sub gen_body
       $w+=400;
       my $html;
       $html .= qq{<DIV id=flash_viewer></DIV>};
+      my $dbname = $files{sqlite}[0];
+      $html .= get_db_stuff($dbname);
+
       $html .= qq{<table>};
       $html .= qq{<tr valign=top><td class = small>Alignment reports};
       my $i = 1;
@@ -145,7 +150,6 @@ sub gen_body
 	  $i++;
 	}
       $html .= qq{<td class = small>SQLite db};
-      my $dbname = $files{sqlite}[0];
       $dbname =~ s/$TMPDIR/$TMPURL/;
       $html .= "<div class=small><A HREF=\"$dbname\" target=_new>SQLite DB file</A></DIV>\n";
       $html .= qq{<td class = small>Log File};
@@ -166,3 +170,72 @@ sub gen_body
 
 
 
+sub get_db_stuff
+  {
+    my $dbname = shift;
+    my $html;
+    $html .= qq{
+<Div class="topItem">Change image display order:</DIV>
+<div class="dropMenu">
+<table>
+ <tr>
+  <th>Order<th>Image Name
+};
+    my $dbh = DBI->connect("dbi:SQLite:dbname=$dbname","","");
+    my $query = qq{
+select * from image_info order by display_id asc
+};
+    my $sth = $dbh->prepare($query);
+    $sth->execute;
+    my $count = 1;
+#    my @stuff;
+    my $display = '$(\'#display';
+    my $image = '$(\'#image';
+
+    while (my $data = $sth->fetchrow_arrayref)
+      {
+	my $id = $data->[0];
+	my $display_id = $data->[1];
+	my $name = $data->[3];
+	$html .= qq{<tr><td><input type="text" id="display-$count" value="$count" size=2><input type=hidden id="image-$count" value=$id><td>$name};
+#	push @stuff, qq{'args__'+$display-$count').val()+'_'+$image-$count').val()};
+
+	$count++;
+      }
+    $count--;
+    $html .= qq{</table>};
+    $html .= qq{<input type=hidden id="num_seqs" value="$count">};
+
+#    my $params = join (", ",@stuff);
+#    print STDERR $params;
+    $dbname =~ s/$TMPDIR\/?//;
+    $html .= qq{<input type=hidden id="sqlite" value=$dbname>};
+
+    $html .= qq{
+<input type=button value="Update Image" onclick=prepare_update()>
+
+};
+    $html .= "</div>";
+
+    return $html;
+  }
+
+sub update
+ {
+   my $dbname = shift @_;
+   my %data;
+   my $count = 1;
+   foreach my $item (sort {$a->[0] <=> $b->[0] || $a->[1] <=> $b->[1]} map {[split/-/]} split/:/,shift @_)
+     {
+       $data{$count}=$item->[1];
+       $count++;
+     }
+   my $dbh = DBI->connect("dbi:SQLite:dbname=$TMPDIR/$dbname","","");
+   while (my ($k,$v) = each %data)
+     {
+       my $query = qq{
+UPDATE image_info set display_id = $k where id = $v;
+};
+       $dbh->do($query);
+     }
+ }
