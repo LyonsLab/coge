@@ -419,7 +419,7 @@ function get_seq(seq_num)
  {
   var fid = $('#featid'+seq_num).val();
 
-  var rc = $('input[name=rev1]:checked').val();
+  var rc = $('input[name=rev'+seq_num+']:checked').val();
   var left = $('#drup'+seq_num).val();
   var right = $('#drdown'+seq_num).val();
   var dsid = $('#posdsid'+seq_num).val();
