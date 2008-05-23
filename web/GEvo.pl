@@ -273,8 +273,8 @@ sub gen_body
     else {$template->param(HIQUAL_NO=>"checked");}
     if ($color_hsp) {$template->param(COLOR_HSP_YES=>"checked");}
     else {$template->param(COLOR_HSP_NO=>"checked");}
-    if ($hsp_label eq "staggered") {$template->param(HSP_LABELS_STAG=>"selected");}
-    elsif ($hsp_label eq "linear") {$template->param(HSP_LABELS_LIN=>"selected");}
+    if ($hsp_label && $hsp_label eq "staggered") {$template->param(HSP_LABELS_STAG=>"selected");}
+    elsif ($hsp_label && $hsp_label eq "linear") {$template->param(HSP_LABELS_LIN=>"selected");}
     else {$template->param(HSP_LABELS_NO=>"selected");}
     if ($hsp_limit) {$template->param(HSP_LIMIT_YES=>"checked");}
     else {$template->param(HSP_LIMIT_NO=>"checked");}
