@@ -785,7 +785,7 @@ sub protein_sequence {
       my $found=0;
       while (my ($k, $v) = each %$seqs)
 	{
-	  if ($v =~ /\*$/ || $v !~ /\*/)
+	  if (($v =~ /\*$/ && !$v =~ /\*\w/)|| $v !~ /\*/)
 	    {
 	      $found = $k;
 	    }
@@ -1057,7 +1057,7 @@ sub fasta
 	    my $found=0;
 	    while (my ($k, $v) = each %$seqs)
 	      {
-		if ($v =~ /\*$/ || $v !~ /\*/)
+		if (($v =~ /\*$/ && !$v =~ /\*\w/)|| $v !~ /\*/)
 		  {
 		    $found = $k;
 		  }
