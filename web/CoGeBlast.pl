@@ -160,6 +160,7 @@ sub gen_body
     $template->param(USER_NAME=>$USER);
     #$template->param(DEFAULT_PARAM=>$param);
     $template->param(REST=>1);
+    #populate user specified default values
     my $db_list;
     foreach my $orgid (split /,/,$prefs->{orgids})
       {
@@ -169,6 +170,9 @@ sub gen_body
 }
       }
     $template->param(document_ready=>$db_list) if $db_list;
+    my $resultslimit = 200;
+    $resultslimit = $prefs->{'resultslimit'} if $prefs->{'resultslimit'};
+    $template->param(RESULTSLIMIT=>$resultslimit);
     return $template->output;
   }
   
