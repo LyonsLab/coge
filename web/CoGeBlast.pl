@@ -1502,28 +1502,30 @@ sub get_nearby_feats
     my $query =qq!
 
 select * from (
-  (SELECT * FROM ((SELECT * FROM feature where start<=$mid and dataset_id = $dsid and chromosome = '$chr' ORDER BY
-start DESC  LIMIT 1) UNION (SELECT * FROM feature where start>=$mid and dataset_id = $dsid and chromosome = '$chr'
-ORDER BY start LIMIT 1)) as u)
+  (SELECT * FROM ((SELECT * FROM feature where start<=$mid and dataset_id = $dsid and chromosome = '$chr' ORDER BY start DESC  LIMIT 1) 
+   UNION (SELECT * FROM feature where start>=$mid and dataset_id = $dsid and chromosome = '$chr' ORDER BY start LIMIT 1)) as u)
   UNION
-  (SELECT * FROM ((SELECT * FROM feature where stop<=$mid and dataset_id = $dsid and chromosome = '$chr' ORDER BY
-stop   DESC  LIMIT 1) UNION (SELECT * FROM feature where stop>=$mid and dataset_id = $dsid and chromosome = '$chr'
-ORDER BY stop LIMIT 1)) as v)
-) as w
-order by abs((start + stop)/2 - $mid) LIMIT 1
+  (SELECT * FROM ((SELECT * FROM feature where stop<=$mid and dataset_id = $dsid and chromosome = '$chr' ORDER BY stop   DESC  LIMIT 1) 
+   UNION (SELECT * FROM feature where stop>=$mid and dataset_id = $dsid and chromosome = '$chr' ORDER BY stop LIMIT 1)) as v)
+   ) as w
+order by abs((start + stop)/2 - $mid) LIMIT 10
 
 !;
     my $handle = $cogedb->prepare($query);
     $handle->execute();
     my $feat;
     my $new_checkbox_info;
+    my $min_dist;
     while (my $res = $handle->fetchrow_arrayref())
       {
 	my $fid = $res->[0];
 	my ($tmpfeat) = $coge->resultset('Feature')->find($fid);
 	next if $tmpfeat->type->name =~ /contig/;
-	$feat = $tmpfeat;
-	last;
+	$feat = $tmpfeat unless $feat;
+	$min_dist = abs($tmpfeat->start-$mid) unless defined $min_dist;
+	my $newmin = abs($tmpfeat->start-$mid) < abs($tmpfeat->stop-$mid) ?  abs($tmpfeat->start-$mid) : abs($tmpfeat->stop-$mid);
+	$feat = $tmpfeat if $newmin < $min_dist;
+	$min_dist = $newmin if $newmin < $min_dist;
       }
     if ($feat)
       {
