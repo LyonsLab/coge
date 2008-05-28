@@ -862,7 +862,7 @@ function clear_org_list()
               <DIV id=db_select><SELECT id="db_choice" SIZE="8" MULTIPLE onClick="$('#add').hide(0);$('#remove').show(0);">
               <option id=blank value=null>No Database Selected</option>
               </SELECT></DIV>
-	      <input type=button value="Save Org List" name="SaveSettings" id="SaveSettings" onclick="save_settings_cogeblast(['args__orgids','args__'+$('#db_choice').getLength(1)],[])">
+	      <input type=button value="Save Org List" name="SaveSettings" id="SaveSettings" onclick="save_settings_cogeblast(['args__orgids','args__'+$('#db_choice').getLength(1), 'args__resultslimit','resultslimit'],[])">
 	      <input type=button value="Clear Org List" name="clearlist" id="clearlist" onclick="clear_org_list();">
            </TD>
            <!--<td width="1" bgcolor="#99ff99"/>
@@ -1014,7 +1014,7 @@ function clear_org_list()
 	  <td><label><input class="backbox" type="radio" name="filter_query" id="filter_query" value="T"  checked />Yes</label><label><input class="backbox" type="radio" name="filter_query" id="filter_query" value="F"/>No</label>
 	<TR>
 	  <td> Limit results to:
-	  <td><input type=text id="resultslimit" value="200" size="5"> per organism
+	  <td><input type=text id="resultslimit" value="<TMPL_VAR NAME="RESULTSLIMIT">" size="5"> per organism
 <!--	<TR>
 	 <TD>
  	 Visualize HSP Results by:
