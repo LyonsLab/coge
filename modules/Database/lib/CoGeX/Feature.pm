@@ -564,9 +564,8 @@ sub genomic_sequence {
 						start=>$start,
 						stop=>$stop,
 					       );
-  my $s0 = $locs[0][0];
   foreach my $loc (@locs){
-    if ($loc->[0]-$s0+$loc->[1]-$loc->[0]+1 > CORE::length ($full_seq))
+    if ($loc->[0]-$start+$loc->[1]-$loc->[0]+1 > CORE::length ($full_seq))
       {
 	print STDERR "Error in feature->genomic_sequence, location is outside of retrieved sequence: \n";
 	use Data::Dumper;
@@ -581,11 +580,11 @@ sub genomic_sequence {
 		    feature=>$self->id,
 	      };
 #	die;
-	next;
+#	next;
       }
 
       my $this_seq = substr($full_seq
-                          , $loc->[0] - $s0
+                          , $loc->[0] - $start
                           , $loc->[1] - $loc->[0] + 1);
       if ($loc->[3] == -1){
             unshift @sequences, $self->reverse_complement($this_seq);
@@ -1024,10 +1023,23 @@ sub fasta
     my $name_only = $opts{name_only};
     my $sep = $opts{sep}; #returns the header and sequence as separate items.
     my ($pri_name) = $self->primary_name;
-    my $head = $name_only ? ">".$pri_name : ">".$self->dataset->organism->name."(v".$self->version.")".", Name: ".(join (", ", $self->names)).", Type: ".$self->type->name.", Chromosome: ".$self->chromosome.", ".$self->genbank_location_string;
-    $head .= " +left: $upstream" if $upstream;
-    $head .= " +right: $downstream" if $downstream;
+    my $head = $name_only ? ">".$pri_name : ">".$self->dataset->organism->name."(v".$self->version.")".", Name: ".(join (", ", $self->names)).", Type: ".$self->type->name.", Feature Location: (Chr: ".$self->chromosome.", ".$self->genbank_location_string.")";
+    $head .= " +up: $upstream" if $upstream;
+    $head .= " +down: $downstream" if $downstream;
     $head .= " (reverse complement)" if $rc;
+    my ($start, $stop) = ($self->start, $self->stop);
+    if ($rc) 
+      {
+	$start -= $downstream;
+	$stop += $upstream;
+      }
+    else
+      {
+	$start -= $upstream;
+	$stop += $downstream;
+      }
+
+    $head .= " Genomic Location: $start-$stop";
     $Text::Wrap::columns=$col;
     my $fasta;
     if ($prot)
