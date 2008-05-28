@@ -555,7 +555,7 @@ sub gen_results_page
      foreach my $item (@$chromosome_data)
        {
 	 next unless $item->{DB_NAME} =~ /No Hits.*_new>(.*)<\/a>/i;
-	 print STDERR Dumper $item;
+#	 print STDERR Dumper $item;
 	 $hsp_count .= "<br><span class=\"small\">None for $1</span>";
        }
      $template->param(HSP_COUNT=>$hsp_count);
