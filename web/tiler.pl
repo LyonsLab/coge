@@ -51,6 +51,7 @@ print <IMG>; close(IMG);
 ##################################################
 sub get_dir_array {
     my ($qstr) = $ENV{QUERY_STRING} =~ /(.*)/;
+    #print STDERR $IMGURL.$ENV{QUERY_STRING},"\n";
     $qstr =~ s/[\s-]//;
     my @dir = ();
 #    print STDERR $qstr,"\n";
