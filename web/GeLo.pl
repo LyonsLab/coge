@@ -70,6 +70,7 @@ sub gen_body
 	$ver = $dso->version;
       }
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GeLo.tmpl');
+    $ver = "unk" unless $ver;
     $template->param(CHR=>$chr);
     $template->param(VER=>$ver);
     $template->param(ORG=>$org);
