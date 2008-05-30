@@ -96,6 +96,7 @@ sub _parseQuery
     my ($query, $length) = $data =~/Query=(.*?)\((\S+)\s*letters\)/s;
     $query =~ s/\n//gs;
     $query =~ s/ +/ /gs;
+    $length =~ s/,//g;
     return ($query, $length);
   }
 
@@ -107,6 +108,7 @@ sub _parseSubject
     return unless $subject;
     $subject =~ s/\n//g;
     $subject =~ s/ +/ /g;
+    $length =~ s/,//g;
     return ($subject,$length);
   }
 
