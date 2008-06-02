@@ -120,6 +120,35 @@ $(".location").keyup(function(){
 <TMPL_VAR NAME="AUTOSEARCH">
 }
 
+//Following 2 js functions take care of emailing GEvo results to user
+
+function toggle_email_field(){
+	if ($('#check_email')[0].checked)
+	{
+		$('#email_box').show(0);
+	}
+	else{
+		$('#email_box').hide(0);
+		$('#email').val('');
+		$('#email_error').hide(0);
+	}
+}
+
+function address_validity_check(validity){
+	if (validity)
+	{
+		if(validity == 'invalid'){
+		$('#email_error').show(0);
+		}
+		else{
+		$('#email_error').hide(0);
+		}
+	}
+	else{
+	check_address_validity(['email'],[address_validity_check]);
+	}
+}
+
 function rset () {
 var num_seqs = $("#num_seqs").val();
 $("#results").html(" ");
@@ -474,6 +503,7 @@ function get_seq(seq_num)
      Pad CoGe Sequences with additional sequence: <input type="textbox" name="pad_gs" id="pad_gs" value="<TMPL_VAR NAME="PAD_GS">" size =8/>
      <Div class="link" id="open_all_sequence_open_menus" onclick="open_all_sequence_option_menus(1);">Open all sequence option menus</div>
      <Div class="link" style="display: none" id="close_all_sequence_open_menus" onclick="open_all_sequence_option_menus(0);">Close all sequence option menus</div>
+     E-mail GEvo results?<input type=checkbox id=check_email onclick="toggle_email_field()"><div id=email_box style="display:none;">Your E-mail Address: <input type=text id=email onBlur='address_validity_check()'><font id=email_error style="display: none; color: red;">You have supplied an invalid e-mail address.</font></div> 
      </div>
      </DIV>
  </TR>
