@@ -37,6 +37,8 @@ use LWP::Simple;
 use Parallel::ForkManager;
 use Statistics::Basic;
 use Benchmark qw(:all);
+#use Mail::Mailer;
+use Mail::Mailer qw(mail);
 
 # for security purposes
 
@@ -87,6 +89,7 @@ my $pj = new CGI::Ajax(
 		       gen_hsp_colors =>\&gen_hsp_colors,
 		       save_settings_gevo=>\&save_settings_gevo,
 		       reset_settings_gevo=>\&reset_settings_gevo,
+		       check_address_validity=>\&check_address_validity,
 		       %ajax,
 		      );
 $pj->JSDEBUG(0);
@@ -346,6 +349,7 @@ sub run
     my $pad_gs = $opts{pad_gs} || 0;
     my $color_overlapped_features = $opts{color_overlapped_features};
     my $hsp_overlap_length = $opts{hsp_overlap_length};
+    my $email_address = $opts{email};
     my $message;
     $cogeweb = initialize_basefile(basename=>$basefilename, prog=>"GEvo");
     my @hsp_colors;
@@ -865,6 +869,7 @@ Time to process html                              : $html_time
     write_log("GEvo link: $gevo_link", $cogeweb->logfile);
     write_log("Tiny url: $tiny", $cogeweb->logfile);
     $count--;
+    email_results(email=>$email_address,basefile=>$basefilename);
     return $outhtml, $iw+400, $frame_height, $cogeweb->basefilename,$count,$message;
 
 }
@@ -2410,6 +2415,7 @@ sub gen_params
 	'args__hiqual', 'hiqual',
 	'args__hsplim', 'hsp_limit',
 	'args__hsplimnum', 'hsp_limit_num',
+	'args__email', 'email',
 	'args__prog', 'alignment_program',
 	'args__showallhsps', 'show_hsps_with_stop_codon',
         'args__padding', 'padding',
@@ -2997,3 +3003,44 @@ sub commify {
         $input =~ s<(\d\d\d)(?=\d)(?!\d*\.)><$1,>g;
         return scalar reverse $input;
 }
+
+sub email_results {
+	my %opts = @_;
+	my $email_address = $opts{email};
+	my $basefilename = $opts{basefile};
+	#print STDERR Dumper \%ENV;
+	my $server = $ENV{HTTP_HOST};
+	#print STDERR "my server is $server\n";
+	return unless $email_address =~/^[_a-zA-Z0-9-]+(\.[_a-zA-Z0-9-]+)*@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*\.(([0-9]{1,3})|([a-zA-Z]{2,3})|(aero|coop|info|museum|name))$/;
+	my $mailer = Mail::Mailer->new("sendmail");
+	$mailer->open({From	=> 'GEvo <gevo_results@synteny.cnr.berkeley.edu>',
+				   To	=> $email_address,
+				   Subject	=> 'GEvo Analysis Results Ready',
+				})
+		or die "Can't open: $!\n";
+	my $username = $USER;
+	my $body = qq{Dear $username,
+		
+	Thank you for using the Genome Evolution Analysis Tool! The results from your latest analysis are ready, and can be viewed here:
+http://}.$server.qq{/CoGe/GEvo_direct.pl?name=$basefilename
+			
+Please cite any GEvo data used as:
+			
+<TODO>
+			
+Thank you for using the CoGe Software Package.
+	
+- The CoGe Team
+};
+	
+	print $mailer $body;
+	$mailer->close();
+}
+
+sub check_address_validity {
+	my $address = shift;
+	return 'valid' unless $address;
+	my $validity = $address =~/^[_a-zA-Z0-9-]+(\.[_a-zA-Z0-9-]+)*@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*\.(([0-9]{1,3})|([a-zA-Z]{2,3})|(aero|coop|info|museum|name))$/ ? 'valid' : 'invalid';
+	return $validity;
+}
+
