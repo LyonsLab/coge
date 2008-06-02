@@ -85,6 +85,7 @@ sub gen_body
     if ($table)
       {
 	$template->param(INFO=>$table);
+	$template->param(JOSH=>qq{<option value = "josh">Get Josh some fids</option>}) if $USER =~ /jkane/;
 	return $template->output;
       }
     else
