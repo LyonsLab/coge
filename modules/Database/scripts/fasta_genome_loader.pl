@@ -200,7 +200,7 @@ sub process_nt_file
 	my ($name, $seq) = split /\n/, $_,2;
 	my $chrtmp = $chr;
 	$seq =~ s/\n//g;
-	($chrtmp) = $name=~/(\d+)/ unless $chrtmp|| $add_chr_name;
+	($chrtmp) = $name=~/(\d+\S+)/ unless $chrtmp|| $add_chr_name;
 	$chrtmp = $name unless defined $chrtmp;
 	$chrtmp =~ s/chromosome//;
 	$chrtmp =~ s/chr//;
@@ -210,6 +210,8 @@ sub process_nt_file
 	$chrtmp =~ s/\s$//;
 	$chrtmp =0 unless $chrtmp;
 	$chrtmp = $chr_basename.$chrtmp if $chr_basename;
+	print $chrtmp,"\n";
+        #($chrtmp) = $name =~ /(^\S+)/;
 	load_genomic_sequence(chr=>$chrtmp,
 			      seq=>$seq,
 			      di=>$di,
