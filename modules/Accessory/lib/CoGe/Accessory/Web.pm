@@ -243,6 +243,7 @@ sub save_settings
     my $user_id = $opts{user_id};
     my $page = $opts{page};
     my $opts = $opts{opts};
+    $user_id = $user->id if (ref ($user) =~ /User/i) && !$user_id;
     unless ($user_id)
       {
 	my ($user_obj) = $cogex->resultset('User')->search({user_name=>$user});
@@ -265,6 +266,7 @@ sub load_settings
     my $user = $opts{user};
     my $user_id = $opts{user_id};
     my $page = $opts{page};
+    $user_id = $user->id if (ref ($user) =~ /User/i) && !$user_id;
     unless ($user_id)
       {
 	my ($user_obj) = $cogex->resultset('User')->search({user_name=>$user});
@@ -287,6 +289,7 @@ sub reset_settings
     my $user = $opts{user};
     my $user_id = $opts{user_id};
     my $page = $opts{page};
+    $user_id = $user->id if (ref ($user) =~ /User/i) && !$user_id;
     unless ($user_id)
       {
 	my ($user_obj) = $cogex->resultset('User')->search({user_name=>$user});
