@@ -36,6 +36,8 @@ __PACKAGE__->add_columns(
   { data_type => "VARCHAR", default_value => "", is_nullable => 0, size => 255 },
 );
 __PACKAGE__->set_primary_key("user_id");
+__PACKAGE__->has_many('sessions'=>"CoGeX::UserSession",'user_id');
+
 
 sub generate_passwd
   {
