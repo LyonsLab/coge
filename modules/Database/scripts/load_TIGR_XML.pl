@@ -19,24 +19,25 @@ use CoGeX;
 
 #use CoGe::Genome;
 
-my ($file, $verbose, $help, $chr, $empty_db, $org_name, $org_desc, $org_id, $data_source_name, $data_source_desc, $data_source_link, $data_source_id, $dataset_id, $dataset_name, $dataset_desc, $dataset_link, $dataset_version, $coge, $add_genomic_seq, $GO);
+my ($file, $dir, $verbose, $help, $chromo, $empty_db, $org_name, $org_desc, $org_id, $data_source_name, $data_source_desc, $data_source_link, $data_source_id, $dataset_id, $dataset_name, $dataset_desc, $dataset_link, $dataset_version, $coge, $add_genomic_seq, $GO);
 
 GetOptions('file|f=s'=>\$file,
+	   'dir=s'=>\$dir,
 	   'verbose|debug'=>\$verbose,
 	   'help|h' => \$help,
-	   'chromosome|chr|c=s' => \$chr,
+	   'chromosome|chr|c=s' => \$chromo,
 	   'empty_db|e' =>\$empty_db,
-	   'version|ds_version|v=s' => \$dataset_version,
+	   'version|di_version|v=s' => \$dataset_version,
 	   'org_name|on=s' => \$org_name,
 	   'org_desc|od=s' => \$org_desc,
 	   'org_id|oid=s'=>\$org_id,
-	   'data_source_name|dsn=s' => \$data_source_name,
-	   'data_source_desc|dsd=s' => \$data_source_desc,
-	   'data_source_link|dsl=s' => \$data_source_link,
+	   'data_source_name|dsn|ds_name=s' => \$data_source_name,
+	   'data_source_desc|dsd|ds_desc=s' => \$data_source_desc,
+	   'data_source_link|dsl|ds_link=s' => \$data_source_link,
 	   'data_source_id|dsid=s' => \$data_source_id,
-	   'dataset_name|din=s' => \$dataset_name,
-	   'dataset_desc|did=s' => \$dataset_desc,
-	   'dataset_link|dil=s' => \$dataset_link,
+	   'dataset_name|din|di_name=s' => \$dataset_name,
+	   'dataset_desc|did|di_desc=s' => \$dataset_desc,
+	   'dataset_link|dil|di_link=s' => \$dataset_link,
 	   'dataset_id|did=s'=>\$dataset_id,
 	   'add_genomic_seq' => \$add_genomic_seq,
 	   'go'=>\$GO,
@@ -48,11 +49,11 @@ $data_source_name = "TAIR" unless $data_source_name;
 $data_source_desc = "The Arabidopsis Information Resource" unless $data_source_desc;
 $data_source_link = "www.arabidopsis.org" unless $data_source_link;
 ($dataset_name) = $file=~ /([^\/]*$)/ unless $dataset_name;
-$dataset_desc = "TAIR Version $dataset_version Chromosome $chr, TIGR XML format" unless $dataset_desc;
+$dataset_desc = "TAIR Version $dataset_version Chromosome $chromo, TIGR XML format" unless $dataset_desc;
 $dataset_link = "ftp://ftp.arabidopsis.org/home/tair/Genes/TAIR8_genome_release/Tair8_XML/" unless $dataset_link;
 
 
-unless (-r $file)
+unless (-r $file || -d $dir)
   {
     $help = 1;
     print "WARNING: You need a valid XML file.\n";
@@ -65,71 +66,83 @@ unless ($dataset_version)
   }
 
 
-my $xml = XMLin($file);
-$chr = $xml->{PSEUDOCHROMOSOME}{ASSEMBLY}{CHROMOSOME} unless $chr;
-$chr =~ s/^0+//; #remove those preceeding 0
-
 my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
 my $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
-
-my $organism = process_header ($xml->{PSEUDOCHROMOSOME}{ASSEMBLY}{HEADER}) if $xml->{PSEUDOCHROMOSOME}{ASSEMBLY}{HEADER};
-
-#my $organism = get_organism(name=>$org_name, desc=>$org_desc, id=>$org_id);
-my $data_source = get_data_source(name=>$data_source_name, desc=>$data_source_desc, link=>$data_source_link, id=>$data_source_id);
 
 
 my $genomic_seq_len = 10000;
 
-
 show_help() if $help; 
 
-my $pwd = `pwd`;
-chomp $pwd;
-unless ($file =~ /\//) {
-    #full path not specified.
-    $file = "$pwd/$file";
-}
+my @files = process_dir($dir) if $dir;
+push @files, $file if $file;
+foreach my $item (@files)
+  {
+    process_file($item);
+  }
 
-my ($dataset);
-$dataset = $coge->resultset('Dataset')->find($dataset_id) if $dataset_id;
-$dataset = $coge->resultset('Dataset')->find_or_create(
-							    {
-							     name                => $dataset_name,
-							     description         => $dataset_desc,
-							     link                => $dataset_link,
-							     organism_id         => $organism->id,
-							     data_source_id      => $data_source->id(),
-							     version             => $dataset_version,
-							    })  if $GO && !$dataset;
-empty_db($dataset) if $empty_db;
+sub process_dir
+  {
+    my $dir = shift;
+    my @files;
+    opendir (DIR, $dir);
+    while (my $item = readdir(DIR))
+      {
+	push @files, "$dir/$item" if $item =~ /xml$/;
+      }
+    return @files;
+  }
 
+sub process_file
+  {
+    my $file = shift;
+    print "Processing $file.\n";
+    my $xml = XMLin($file);
+    my $organism = process_header ($xml->{PSEUDOCHROMOSOME}{ASSEMBLY}{HEADER}) if $xml->{PSEUDOCHROMOSOME}{ASSEMBLY}{HEADER};
+    $organism = get_organism() unless $organism;
+    my $data_source = get_data_source(name=>$data_source_name, desc=>$data_source_desc, link=>$data_source_link, id=>$data_source_id);
+    my $chr;
+    $chr = $xml->{PSEUDOCHROMOSOME}{ASSEMBLY}{CHROMOSOME} if $xml->{PSEUDOCHROMOSOME}{ASSEMBLY}{CHROMOSOME};
+    $chr = $xml->{ASSEMBLY}{ASMBL_ID}{CLONE_NAME} if !$chr && $xml->{ASSEMBLY}{ASMBL_ID}{CLONE_NAME};
+    $chr= $chromo if $chromo;
+    $chr =~ s/^0+//; #remove those preceeding 0
+#    print Dumper $xml;
+    print "\tChr: $chr\n";
+    my $pwd = `pwd`;
+    chomp $pwd;
+    unless ($file =~ /\//) {
+      #full path not specified.
+      $file = "$pwd/$file";
+    }
+    
+    my ($dataset);
+    $dataset = $coge->resultset('Dataset')->find($dataset_id) if $dataset_id;
+    $dataset = $coge->resultset('Dataset')->find_or_create(
+							   {
+							    name                => $dataset_name,
+							    description         => $dataset_desc,
+							    link                => $dataset_link,
+							    organism_id         => $organism->id,
+							    data_source_id      => $data_source->id(),
+							    version             => $dataset_version,
+							   })  if $GO && !$dataset;
+    empty_db($dataset) if $empty_db;
 
-#Dump of $xml->{PSEUDOCHROMOSOME}{ASSEMBLY}
-#$VAR1 = [
-#          'DATABASE',
-#          'ASMBL_ID',
-#          'COORDSET',
-#          'CHROMOSOME', ->chr number
-#          'CURRENT_DATE',
-#          'CLONE_ID',
-#          'GENE_LIST', ->important
-#          'MISC_INFO',
-#          'ASSEMBLY_SEQUENCE',  -> main sequence
-#          'HEADER' -> organims name and lineage desc
-#        ];
+    my $seq = $xml->{PSEUDOCHROMOSOME}{ASSEMBLY}{ASSEMBLY_SEQUENCE} if $xml->{PSEUDOCHROMOSOME}{ASSEMBLY}{ASSEMBLY_SEQUENCE};
+    $seq = $xml->{ASSEMBLY}{ASSEMBLY_SEQUENCE} if $xml->{ASSEMBLY}{ASSEMBLY_SEQUENCE};
+    load_genomic_sequence($seq, $genomic_seq_len, $dataset, $chr) if $add_genomic_seq && $seq;
 
-load_genomic_sequence($xml->{PSEUDOCHROMOSOME}{ASSEMBLY}{ASSEMBLY_SEQUENCE}, $genomic_seq_len) if $add_genomic_seq && $xml->{PSEUDOCHROMOSOME}{ASSEMBLY}{ASSEMBLY_SEQUENCE};
-
-#print Dumper $xml;
-my $gene_list = $xml->{PSEUDOCHROMOSOME}{ASSEMBLY}{GENE_LIST} ? $xml->{PSEUDOCHROMOSOME}{ASSEMBLY}{GENE_LIST} : $xml->{ASSEMBLY}{GENE_LIST};
+#    print Dumper $xml;
+    my $gene_list = $xml->{PSEUDOCHROMOSOME}{ASSEMBLY}{GENE_LIST} ? $xml->{PSEUDOCHROMOSOME}{ASSEMBLY}{GENE_LIST} : $xml->{ASSEMBLY}{GENE_LIST};
 #print Dumper $gene_list;
-process_genes($gene_list);
-
-exit;
+    process_genes($gene_list, $dataset, $chr);
+  }
 
 sub process_genes
   {
     my $genes = shift;
+    my $dataset = shift;
+    my $chr = shift;
     my $feature_count = 0;
     my $gene_count = 0;
     my $public_locus_count = 0;
@@ -141,7 +154,8 @@ sub process_genes
 	foreach my $sub_type (keys %{$genes->{$type}})
 	  {
 	    print "\tProcess subtype $sub_type\n";
-	    foreach my $item (@{$genes->{$type}{$sub_type}})
+	    my @list = ref ($genes->{$type}{$sub_type}) =~ /array/i ? @{$genes->{$type}{$sub_type}} : $genes->{$type}{$sub_type};
+	    foreach my $item (@list)
 	      {
 #		if ($sub_type eq "TU" || $sub_type eq "TRANSPOSABLE_ELEMENT_GENE")
 		  {
@@ -284,6 +298,7 @@ sub process_genes
 				  go=>\%go,
 				  names=>\%names,
 				  prot_seq=>$prot_seq,
+				  dataset=>$dataset,
 				 );
 
 		      }
@@ -298,87 +313,6 @@ sub process_genes
     print "Types processed:";
     print Dumper (\%count);
   }
-
-# foreach my $gene ($TIGRparser->get_genes()) {
-#   $gene->refine_gene_object();
-#   $gene->create_all_sequence_types(\$TIGRparser->{assembly_seq}) if $TIGRparser->{assembly_seq};
-#   print Dumper $gene;
-#   next;
-#   my $entry = $gene->toString;
-# #  my $locus = new CNS::TIGRXMLLIB::BSBC::Feature(verbose=>$verbose);
-#   $gene_count++;
-#   $public_locus_count++ if $gene->{'pub_locus'};
-#   foreach my $item (split /ISOFORM:/, $entry)
-#     {
-#       print $item,"\n";
-#       my $locus = gen_locus($item);
-
-#       next;
-# #      $locus->process_entry($gene, $item);
-#       $count{$locus->gene_type}++;
-#       $feature_count++;
-#       my @feats;
-#       #gene feature
-#       my $gene_feat = $locus->pseudogene? create_feature("pseudogene"): create_feature("gene");
-#       next unless load_locations($gene_feat, $locus->gene_location, $locus->strand, $chr);
-#       load_xref($gene_feat, $locus->supporting_cdna());
-#       push @feats, $gene_feat;
-#       if  ($locus->gene_type() =~ /rna/i)
-# 	{
-# 	  my $type = $locus->gene_type();
-# 	  $type =~ s/rna/RNA/;
-# 	  my $rna_feat = create_feature($type);
-# 	  my $locs = load_locations($rna_feat, $locus->exon_locations, $locus->strand, $chr);
-# 	  push @feats, $rna_feat if $locs;
-# 	}
-#       if ($locus->gene_type() eq "protein-coding")
-#    	{
-# 	  #mRNA feature
-# 	  if ($locus->exon_locations) #untested!
-# 	    {
-# 	      my $mrna_feat = create_feature("mRNA");
-# 	      my $locs = load_locations($mrna_feat, $locus->exon_locations, $locus->strand, $chr);
-# 	      push @feats, $mrna_feat if $locs;
-# 	    }
-#    	  #CDS feature
-# 	  if ($locus->CDS_locations) #untested
-# 	    {
-# 	      my $cds_feat = create_feature("CDS");
-# 	      my $locs = load_locations($cds_feat, $locus->CDS_locations, $locus->strand, $chr);
-# 	      load_protein($cds_feat, $locus->protein_seq()) if $locus->protein_seq();
-# 	      push @feats, $cds_feat if $locs;
-# 	    }
-# 	}
-#       #names
-#       foreach my $feat (@feats)
-# 	{
-# 	  next if ref ($feat) =~ /Deleted/;
-# 	  #names
-# 	  foreach my $name (
-# 			    $locus->public_locus(),
-# 			    $locus->public_locus_model(),
-# 			    $locus->TU_feat_name(),
-# 			    $locus->model_feat_name(),
-# 			    $locus->alt_locus(),
-# 			    $locus->locus(),
-# 			    $locus->gene_synonyms(),
-# 			    split/;\s*/, $locus->common_name(),
-# 			   )
-# 	    {
-# 	      next unless $name;
-# 	      load_name($feat, $name);
-# 	    }
-# 	  #GO
-# 	  load_go($feat, $locus->GO);
-# 	  #additional annotations
-# 	  load_annotation($feat, "secondary products", $locus->secondary_products()) if $locus->secondary_products;
-# 	  load_annotation($feat, "public comment", $locus->public_comment()) if $locus->public_comment;
-	  
-# 	}
-#     }
-# }
-
-
 sub load_info
     {
       my %opts = @_;
@@ -387,10 +321,13 @@ sub load_info
       my $go = $opts{go};
       my $names = $opts{names};
       my $prot_seq = $opts{prot_seq};
+      my $dataset = $opts{dataset};
+      delete $opts{dataset};
+#      print Dumper \%opts;
       foreach my $type (keys %$locs)
 	{
 	  my $locs = $locs->{$type};
-	  my $feat = create_feature($type);
+	  my $feat = create_feature($type, $dataset);
 	  
 	  load_locations($feat, $locs);
 	  foreach my $name (keys %$names)
@@ -548,11 +485,10 @@ sub load_locations
 
 sub create_feature
   {
-    my ($type) = @_;
+    my ($type, $dataset) = @_;
     return 0 unless $type;
     $type = "tRNA" if $type eq "TRNA";
     my $feat_type = $coge->resultset('FeatureType')->find_or_create({name=>$type}) if $GO;
-
     my $db_feature = $coge->resultset('Feature')->create(
 							 {feature_type_id=>$feat_type->id,
 							  dataset_id=>$dataset->id,
@@ -562,13 +498,13 @@ sub create_feature
 
 sub load_genomic_sequence
   {
-    my ($seq, $len) = @_;
+    my ($seq, $len, $dataset, $chr) = @_;
     $seq =~ s/\n//g;
     $seq =~ s/\r//g;
     $seq =~ s/\s+//g;
     my $seqlen = length $seq;
     
-    print STDERR "Loading genomic sequence ($seqlen nt)\n";
+    print "\tLoading genomic sequence ($seqlen nt)\n";
     $seq =~ s/\s//g;
     $seq =~ s/\n//g;
     my $i = 0;
@@ -605,15 +541,15 @@ sub process_header
 sub get_organism
 {
   my %opts = @_;
-  my $name = $opts{name};
-  my $desc = $opts{desc};
+  my $name = $opts{name} || $org_name;
+  my $desc = $opts{desc} || $org_desc;
   my $id = $opts{id};
   return $coge->resultset('Organism')->find($id) if $id;
   return $coge->resultset('Organism')->find_or_create(
-                                                   {
-                                                    name=>$name,
-                                                    description=>$desc,
-                                                   }) if $GO;
+						      {
+						       name=>$name,
+						       description=>$desc,
+						      }) if $GO;
 }
 
 sub get_data_source
