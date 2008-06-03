@@ -3,11 +3,13 @@ package CoGe::Accessory::LogUser;
 use strict;
 use CGI::Cookie;
 use Data::Dumper;
+use CoGeX;
+use CoGeX::User;
 
-use vars qw($cookie_name);
+use vars qw($cookie_name $coge);
 
 $cookie_name = "CoGe";
-
+$coge = CoGeX->dbconnect();
 sub get_user
   {
     my $self = shift;
@@ -16,31 +18,30 @@ sub get_user
     if (ref $cookies{$cookie_name})
       {
 	my %session = $cookies{$cookie_name}->value;
-	$user = $session{user_name} if $session{user_name};
-	$uid = $session{uid} if $session{uid};
-	$session = $session{session} if $session{session};
+	$session = $session{session};
+	my ($user_session) = $coge->resultset("UserSession")->find({session=>$session});
+	$user = $user_session->user if $user_session;
       }
-    return ($user, $uid, $session);
+    unless ($user)
+      {
+	$user = new CoGeX::User;
+	$user->user_name("public");
+      }
+    return ($user);
   }
 
 sub gen_cookie
   {
     my $self = shift;
     my %opts = @_;
-    my $user_name = $opts{user_name};
-    my $uid = $opts{uid} || 0;
-    my $expires = $opts{exp} || "+24h";
     my $session = $opts{session} || 0;
-    $expires = "+".$expires unless $expires =~ /^\+/;
-    
-    my $c = new CGI::Cookie(-name=>$cookie_name,
-			    -expires=>$expires,
-			    -values=>{
-				      user_name=>$user_name,
-				      uid => $uid,
-				      session=>$session,
-				     },
-			    );
+    my $exp = $opts{exp} || "+12M";
+    my %params = (-name=>$cookie_name,
+		 -path=>"/CoGe");
+
+    $params{-expires} = $exp if $exp;
+    $params{-values}={session=>$session} if $session;
+    my $c = new CGI::Cookie(%params);
     return $c;
   }
 
