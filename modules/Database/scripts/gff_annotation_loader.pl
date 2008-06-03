@@ -9,6 +9,7 @@ my $GO = 0;
 my $DEBUG = 1;
 my $dsid;
 my $add_gene =0;
+my @names;
 my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
 my$coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 #$coge->storage->debugobj(new DBIxProfiler());
@@ -18,6 +19,7 @@ my$coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 GetOptions ( "dsid=i" => \$dsid,
 	     "go=s"    => \$GO,
 	     "debug=s" => \$DEBUG,
+	     "name=s" => \@names
 	     "add_gene_feature" => \$add_gene,
 	   );
 
@@ -28,7 +30,7 @@ unless ($ds)
     warn "unable to find a valid dataset entry for $dsid\n";
     exit;
   }
-
+push @names, "mRNA" unless @names;
 
 warn "-go flag is not true, nothing will be added to the database.\n" unless $GO;
 my %data;
@@ -47,12 +49,18 @@ while (<>)
       {
 	$item =~ s/"//g;
 	my ($type, $info) = split / /,$item,2;
-	$type = "name" if $type eq "mRNA";
+	foreach my $namecheck (@names)
+	  {
+	    $type = "name" if $type eq $namecheck;
+	  }
 	if ($type eq "name")
 	  {
 	    $name = $info;
 	  }
 	next if $type eq "exonNumber";
+	next if $type eq "transcriptId";
+	next if $type eq "proteinId";
+
 	push @{$annos{$name}},$info if $type eq "Description";
       }
     my $strand = $line[6] =~ /-/ ? -1 :1;
