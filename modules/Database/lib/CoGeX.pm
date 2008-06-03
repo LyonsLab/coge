@@ -348,6 +348,7 @@ sub log_user
     my $self = shift;
     my %opts = @_;
     my $user = $opts{user};
+    my $session = $opts{session};
     my $uid = ref($user) =~ /User/ ? $user->id : $user;
     unless ($uid =~ /^\d+$/)
       {
@@ -355,14 +356,14 @@ sub log_user
 	return;
       }
     #FIRST REMOVE ALL ENTRIES FOR THIS USER
-    foreach my $item ($self->resultset('UserSession')->search(user_id=>$uid))
+    foreach my $item ($self->resultset('UserSession')->search(session=>$session))
       {
 	next unless $item;
 	$item->delete;
       }
     #ADD NEW ENTRY
-    my $item = $self->resultset('UserSession')->create({user_id=>$uid, date=>\'NOW()'});
-    return $item->id;
+    my $item = $self->resultset('UserSession')->create({user_id=>$uid, date=>\'NOW()', session=>$session});
+    return $item;
   }
 
 sub self_or_default 
