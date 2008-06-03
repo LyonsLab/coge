@@ -28,8 +28,9 @@ sub restricted_orgs
     my ($self, %opts) = self_or_default(@_);
     my $user = $opts{user};
     my %orgs;
-    if (!$user || $user =~ /public/i)
+    if (!$user || $user->user_name =~ /public/i)
       {
+	$orgs{"Brachypodium distachyon"} = 1;
 #      $orgs{"Carica papaya"} = 1;
 	#$orgs{"sorghum bicolor"} = 1;
       }
