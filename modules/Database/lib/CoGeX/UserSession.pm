@@ -16,8 +16,11 @@ __PACKAGE__->add_columns(
   { data_type => "INT", default_value => "", is_nullable => 0, size => 10 },
   "date",
   { data_type => "DATETIME", default_value => "", is_nullable => 0, size => 19 },
+  "session",
+  { data_type => "VARCHAR", default_value => "", is_nullable => 0, size => 22 },
 );
 __PACKAGE__->set_primary_key("user_session_id");
+__PACKAGE__->belongs_to("user"=>"CoGeX::User", 'user_id');
 
 
 
