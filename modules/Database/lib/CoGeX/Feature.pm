@@ -215,6 +215,11 @@ sub annotation_pretty_print
 	    $anno_obj->add_Annot($anno_type);
 	  }
       }
+    my $org = $ds->organism->name;
+    $org .= ": ".$ds->organism->description if $ds->organism->description;
+    
+    $anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"Organism", Values=>[$org], Type_delimit=>": ", Val_delimit=>" "));
+    
     return $anno_obj->to_String;
   }
 
