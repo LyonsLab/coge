@@ -648,7 +648,12 @@ sub process_features
 	    my $f = CoGe::Graphics::Feature::Gene->new();
 	    my $color= [0,255,0, 50];
 	    $f->color($color);
-	    
+	    if ($layers->{features}{cbc})
+	      {
+		my $seq = $feat->genomic_sequence;
+		$f->sequence($seq);
+		$f->color_by_codon(1);
+	      }
 	    $f->order(1);
 	    $f->overlay(3);
 	    push @f, $f;
@@ -890,6 +895,7 @@ sub process_layers
        "tandem"=>"local_dup",
        "gaga"=>"gaga",
        "gbox"=>"gbox",
+       "cbc"=>"cbc", #color CDS by codon
       );
     my %features = 
       (
@@ -903,6 +909,7 @@ sub process_layers
        cns=>1,
        rna=>1,
        local_dup=>1,
+       cbc=>1,
       );
     my %layers;
     foreach my $layer (@$layers)
