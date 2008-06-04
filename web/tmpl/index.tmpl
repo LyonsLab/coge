@@ -27,22 +27,15 @@ function place_cookie(valid, cookie, url)
      }
   }
 
-function delete_cookie(cookie)
+function delete_cookie()
   {
-    document.cookie=cookie;
+      $.cookie('CoGe','',{expires: -1});
   }
 
 $(document).ready(function(){
-//$('#main').hide();
-//$('.page_info').hide();
-$('#main').show(pageObj.speed);
-}
-
-);
-
-
-$(document).ready(function(){
+  $('#main').show(pageObj.speed);
   $('#uname').focus();
+  <TMPL_VAR NAME=READY>
 });
 
 window.onload=(
@@ -100,35 +93,10 @@ login(['uname', 'pwd','url'],[place_cookie]);
 </SCRIPT>
 
 <div id=summary style="display:none;z-index: 1000;" class="image_window"></div>
-<div id=main style="display: none">
-<TMPL_IF NAME="LOGIN">
-<DIV id="message"><TMPL_VAR NAME="MESSAGE"></DIV>
-<DIV class=large>Please log on: <font class="small">(You will need make sure to set <a href="http://www.mozilla.com/firefox/">Firefox</a> accept <a href="http://en.wikipedia.org/wiki/HTTP_cookie">cookies</a>)</font></div>
-<TABLE class="basic">
- <TR>
-  <TD>User Name:
-  <TD><input class="backbox" type="text" name="uname" id="uname" size="10" onkeypress="onEnter(event);">
- <TR>
-  <TD>Password:
-  <TD><input class="backbox" type="password" name="pwd" id="pwd" size="10" onkeypress="onEnter(event);">
-</TABLE>
-<input type="hidden" id="url" value="<TMPL_VAR NAME="url">">
-<input type="submit" value="Log on" id="Login" onClick="login(['uname', 'pwd','url'],[place_cookie])">
-<input type="submit" value="Use Public Login" id="Login" onClick="login(['args__public', 'args__none','url'],[place_cookie])">
-<input type="checkbox" id="disable_animations" value=1><font class=small>Check to Disable CoGe Animations (Recommended for Older Computers)</font><br>
-<div class=small>Use "public login" if you don't have a registered CoGe account.</div>
-<br>
-<br>
-
-<div style="width: 600px"><div align=center><a href="/CoGe/GEvo.pl?prog=blastz;accn1=at1g07300;fid1=4091274;dsid1=556;chr1=1;dr1up=20000;dr1down=20000;gbstart1=1;gblength1=772;accn2=at2g29640;fid2=4113333;dsid2=557;chr2=2;dr2up=20000;dr2down=20000;gbstart2=1;rev2=1;num_seqs=2;autogo=1"><img src="/CoGe/picts/gevo-synteny.png" width=500px border=0 ></a></div><div align = center class="small species"><a href="/CoGe/GEvo.pl?prog=blastz;accn1=at1g07300;fid1=4091274;dsid1=556;chr1=1;dr1up=20000;dr1down=20000;gbstart1=1;gblength1=772;accn2=at2g29640;fid2=4113333;dsid2=557;chr2=2;dr2up=20000;dr2down=20000;gbstart2=1;rev2=1;num_seqs=2;autogo=1">GEvo analysis</a> of syntenic regions of Arabidopsis derived from its most recent genome duplication event.</div>Welcome to CoGe.  CoGe is a comparative genomics platform designed to allow easy access to genomic data from any organism and provide analysis tools for finding homologous sequences and comparing multiple genomic regions.  There are several ways to access data using CoGe.  When you login, you will be presented with a carousel displaying a list of CoGe's tools.  If you are new to CoGe, we recommending reading <a href="/CoGe/docs/help/Tutorials/Tutorials.html">one of our tutorials</a> for examples of how to use CoGe.  Also, check out the help pages which can be found in the "help" section of the menu bar at the top left of your screen.  The lead developer of the CoGe system is Eric Lyons in the Freeling Lab at UC Berkeley, California  USA.
-<br><br>
-To obtain pre-made lists of syntenic gene sets with links for GEvo analyses, please visit our <a href="/CoGe/docs/help/Precomputed_menus_and_lists/CoGe_menus.html">downloads page</a> (also available on the menu bar).
-</div>
-
-</TMPL_IF>
+<div id=main style="display: none" align=center>
 
 <TMPL_IF NAME=ANIMATE>
-<TABLE width=100%>
+<TABLE>
   <TR>
     <TD align=center>
     	<div id="carousel">
@@ -176,17 +144,18 @@ To obtain pre-made lists of syntenic gene sets with links for GEvo analyses, ple
   </TR>
 </TABLE>
 </TMPL_IF>
+
 <TMPL_IF NAME=DISABLE>
-<TABLE class="basic" width=100%>
+<TABLE class="basic" width=600px>
  <TR>
   <TH>
     <DIV class = large>
-      ACTION
+      Application
     </DIV>
   </TH>
   <TH>
     <DIV class = large>
-      DESCRIPTION
+      Description
     </DIV>
   </TH>
  </TR>
@@ -211,6 +180,41 @@ To obtain pre-made lists of syntenic gene sets with links for GEvo analyses, ple
 </TMPL_LOOP>
 </TABLE>
 </TMPL_IF>
+
+
+<TMPL_IF NAME="LOGIN">
+<DIV align=left>
+<DIV id="message"><TMPL_VAR NAME="MESSAGE"></DIV>
+<DIV class=large>Please log on: <font class="small">(You will need make sure to set <a href="http://www.mozilla.com/firefox/">Firefox</a> accept <a href="http://en.wikipedia.org/wiki/HTTP_cookie">cookies</a>)</font></div>
+<TABLE class="basic">
+ <TR>
+  <TD>User Name:
+  <TD><input class="backbox" type="text" name="uname" id="uname" size="10" onkeypress="onEnter(event);">
+ <TR>
+  <TD>Password:
+  <TD><input class="backbox" type="password" name="pwd" id="pwd" size="10" onkeypress="onEnter(event);">
+</TABLE>
+<input type="hidden" id="url" value="<TMPL_VAR NAME="url">">
+<input type="submit" value="Log on" id="Login" onClick="login(['uname', 'pwd','url'],[place_cookie])">
+<input type="submit" value="cancel" id="Login" onClick="login(['args__public', 'args__none','url'],[place_cookie])">
+<input type="checkbox" id="disable_animations" value=1><font class=small>Check to Disable CoGe Animations (Recommended for Older Computers)</font><br>
+<!--<div class=small>Use "public login" if you don't have a registered CoGe account.</div>-->
+</DIV>
+
+</TMPL_IF>
+
+<TMPL_IF NAME="INTRO">
+<div style="width: 600px"><div><a href="/CoGe/GEvo.pl?prog=blastz;accn1=at1g07300;fid1=4091274;dsid1=556;chr1=1;dr1up=20000;dr1down=20000;gbstart1=1;gblength1=772;accn2=at2g29640;fid2=4113333;dsid2=557;chr2=2;dr2up=20000;dr2down=20000;gbstart2=1;rev2=1;num_seqs=2;autogo=1"><img src="/CoGe/picts/gevo-synteny.png" width=500px border=0 ></a></div><div align = center class="small species"><a href="/CoGe/GEvo.pl?prog=blastz;accn1=at1g07300;fid1=4091274;dsid1=556;chr1=1;dr1up=20000;dr1down=20000;gbstart1=1;gblength1=772;accn2=at2g29640;fid2=4113333;dsid2=557;chr2=2;dr2up=20000;dr2down=20000;gbstart2=1;rev2=1;num_seqs=2;autogo=1">GEvo analysis</a> of syntenic regions of Arabidopsis derived from its most recent genome duplication event.</div><p align=left>Welcome to CoGe.  CoGe is a comparative genomics platform designed to allow easy access to genomic data from any organism and provide analysis tools for finding homologous sequences and comparing multiple genomic regions.  There are several ways to access data using CoGe.  When you login, you will be presented with a carousel displaying a list of CoGe's tools.  If you are new to CoGe, we recommend reading <a href="/CoGe/docs/help/Tutorials/Tutorials.html">one of our tutorials</a> for examples of how to use CoGe.  Also, check out the help pages which can be found in the "help" section of the menu bar at the top left of your screen.  The lead developer of the CoGe system is Eric Lyons in the Freeling Lab at UC Berkeley, California  USA.
+<br><br>
+To obtain pre-made lists of syntenic gene sets with links for GEvo analyses, please visit our <a href="/CoGe/docs/help/Precomputed_menus_and_lists/CoGe_menus.html">downloads page</a> (also available on the menu bar).
+<br>
+<div align=center>
+<img src="./picts/nsf-logo.gif"><br>
+<span class="small">Funding provided by NSF</span>
+</div>
+</div>
+</TMPL_IF>
+
 
 <TMPL_IF NAME=UPDATE>
 The CoGe System is undergoing an update.  Please check back in a few hours.
