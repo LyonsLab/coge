@@ -215,6 +215,7 @@ sub annotation_pretty_print
 	    $anno_obj->add_Annot($anno_type);
 	  }
       }
+    my $ds = $self->dataset;
     my $org = $ds->organism->name;
     $org .= ": ".$ds->organism->description if $ds->organism->description;
     
@@ -313,6 +314,17 @@ sub annotation_pretty_print_html
     $org .= "</a>";
     
     $anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<span class=\"title4\">Organism</span>", Values=>[$org], Type_delimit=>": ", Val_delimit=>" "));
+    my ($gc, $at) = $self->gc_content;
+    $gc*=100;
+    $at*=100;
+    $anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<span class=\"title4\">DNA content</span>", Values=>["GC: $gc%","AT: $at%"], Type_delimit=>": ", Val_delimit=>" "));
+    my ($wgc, $wat) = $self->wobble_content;
+    if ($wgc || $wat)
+      {
+	$wgc*=100;
+	$wat*=100;
+	$anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<span class=\"title4\">Wobble content</span>", Values=>["GC: $wgc%","AT: $wat%"], Type_delimit=>": ", Val_delimit=>" "));
+      }
     return $anno_obj->to_String;
   }
 
@@ -1015,6 +1027,27 @@ sub gc_content
 	$at = sprintf("%.4f", ($at/$total));
       }
     return $gc,$at;
+  }
+
+sub wobble_content
+  {
+    my $self = shift;
+    return unless $self->type->name =~ /cds/i;
+    my $seq = $self->genomic_sequence;
+    my $codon_count=0;;
+    my $at_count=0;
+    my $gc_count=0;
+    for (my $i =0; $i < length($seq); $i+=3)
+      {
+        my $codon = substr ($seq, $i, 3);
+        $codon_count++;
+        my ($wobble) = $codon =~ /(.$)/;
+        $at_count++ if $wobble =~ /[at]/i;
+        $gc_count++ if $wobble =~ /[gc]/i;
+      }
+    my $pat = sprintf("%.4f", $at_count/$codon_count);
+    my $pgc = sprintf("%.4f", $gc_count/$codon_count);
+    return ($pgc, $pat);
   }
 
 sub fasta
