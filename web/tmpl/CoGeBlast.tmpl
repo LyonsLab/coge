@@ -862,7 +862,9 @@ function clear_org_list()
               <DIV id=db_select><SELECT id="db_choice" SIZE="8" MULTIPLE onClick="$('#add').hide(0);$('#remove').show(0);">
               <option id=blank value=null>No Database Selected</option>
               </SELECT></DIV>
+              <TMPL_IF NAME="SAVE_ORG_LIST">
 	      <input type=button value="Save Org List" name="SaveSettings" id="SaveSettings" onclick="save_settings_cogeblast(['args__orgids','args__'+$('#db_choice').getLength(1), 'args__resultslimit','resultslimit'],[])">
+              </TMPL_IF>
 	      <input type=button value="Clear Org List" name="clearlist" id="clearlist" onclick="clear_org_list();">
            </TD>
            <!--<td width="1" bgcolor="#99ff99"/>
