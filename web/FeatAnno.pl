@@ -71,30 +71,7 @@ sub gen_html
 	$version = $ds->version unless $version;
 	($chr) = $ds->get_chromosomes() unless $chr;
       }
-
-#    if ($org && !$ds)
-#      {
-#	$version = $DB->get_dataset_obj->get_current_version_for_organism(org=>$org) unless $version;
-#	($ds) = $DB->get_dataset_obj->search({version=>$version, organism_id=>$org->id});
-#	($chr) = $ds->get_chromosomes() unless $chr;
-#      }
     my @feats;
-    #for finding associated datasets for additional annotation
-#    foreach my $tmpds ($org->datasets)
-#      {
-#	next unless $tmpds->version eq $ds->version;
-#	my $chrpass=0;
-#	foreach my $tmpchr ($tmpds->get_chromosomes)
-#	  {
-#	    $chrpass = 1 if $tmpchr eq $chr;
-#	  }
-#	next unless $chrpass;
-#	push @feats, $coge->get_features_in_region(dataset_id => $tmpds->id, 
-#						   chr => $chr,
-#						   start => $start,
-#						   stop => $stop,
-#						  ) if ($chr && $start && $stop);
-#      }
     push @feats, $coge->get_features_in_region(dataset_id => $ds->id, 
 					       chr => $chr,
 					       start => $start,
@@ -139,12 +116,6 @@ sub gen_html
 	    $color = "#FFDDBB";
 	  }
 	$html .= "<table bgcolor=$color width=100%><tr><td>".$feat->annotation_pretty_print_html(loc_link=>"SeqView.pl");
-	unless ($FORM->param('no_org'))
-	  {
-	    $html .= qq{<font class="title4">Organism: </font>};
-	    $html .= qq{<font class="data">}.$feat->dataset->organism->name."</font>\n";
-	    $html .= qq{<br>};
-	  }
 	$html .= qq{<font class="title4">Type: </font>};
 	$html .= qq{<font class="data">}.$feat->type->name."</font>\n";
 	$html .= qq{</table>};
