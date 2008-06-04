@@ -15,6 +15,8 @@ BEGIN {
 "add_type", #flag to set if gene type should be appended to label
 "no_three_D", #switch between flat images and "3D" images, if given value, use flat images
 "arrow_width", #width of arrow in pixels
+"sequence",#store the sequence
+"color_by_codon",#flag for coloring CDS by codon
 );
 }
 
@@ -100,6 +102,7 @@ sub _post_initialize
 	push @tmp, $ct;
       }
     my $border = $self->get_color(@tmp);
+    $self->gen_color_by_codon if $self->color_by_codon;
     my $color = $self->get_color($self->color);
     my $black = $self->get_color(1,1,1);
     my $last;
@@ -284,7 +287,34 @@ sub _make_3d
 	    }
 	  $draw_lines++;
 	}
-}
+  }
+
+sub gen_color_by_codon
+  {
+    my $self = shift;
+    my $seq = $self->sequence;
+    return unless $seq;
+    my $codon_count=0;;
+    my $at_count=0;
+    my $gc_count=0;
+    for (my $i =0; $i < length($seq); $i+=3)
+      {
+	my $codon = substr ($seq, $i, 3);
+	$codon_count++;
+	my ($wobble) = $codon =~ /(.$)/;
+	$at_count++ if $wobble =~ /[at]/i;
+	$gc_count++ if $wobble =~ /[gc]/i;
+      }
+    my $pat = $at_count/$codon_count;
+    my $pgc = $gc_count/$codon_count;
+    my $c1 = 255;
+    $c1 = 255*($pat+$pat) if $pat < .5;
+    my $c2 = 255;
+    $c2 = 255*($pgc+$pgc) if $pgc < .5;
+    $self->color([sprintf("%.0f",$c1),sprintf("%.0f",$c2),0,50]);
+  }
+
+
 #################### subroutine header begin ####################
 
 =head2 sample_function
