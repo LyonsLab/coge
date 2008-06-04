@@ -46,6 +46,40 @@ function browserAlert()
  alert('Unfortunately, CoGe has been designed to work with the FireFox browser and may not function appropriately with your browser.  Please use FireFox, which can be downloaded from http://www.mozilla.com/en-US/firefox/');
 }
 
+/*
+//Login related functions
+
+function login_popup(){
+
+var html = "<DIV class=large>Please log on: <font class='small'>(You will need make sure to set <a href='http://www.mozilla.com/firefox/'>Firefox</a> accept <a href='http://en.wikipedia.org/wiki/HTTP_cookie'>cookies</a>)</font></div>";
+html = html+"<TABLE class='basic'><TR><TD>User Name:<TD><input class='backbox' type='text' name='uname' id='uname' size='10' onkeypress='onEnter(event);'>";
+html = html+"<TR><TD>Password:<TD><input class='backbox' type='password' name='pwd' id='pwd' size='10' onkeypress='onEnter(event);'></TABLE>";
+html = html+"<input type='hidden' id='url' value='<TMPL_VAR NAME=url>'><input type='submit' value='Log on' id='Login' onClick=login(['uname', 'pwd','url'],[place_cookie])><input type='submit' value='Cancel' id='Login' onClick=$('#signin_popup').hide(0);login(['args__public', 'args__none','url'],[place_cookie])>";
+
+var pos = {};
+
+$('#home').offset({ scroll: false }, pos);
+//alert(pos.top);
+var Top = pos.top+50;
+var Left = pos.left-200;
+
+
+$('#signin_popup').html(html).css({position: "absolute", top:''+Top, left:''+Left}).show(0);
+
+}
+
+function onEnter(e){
+  if (!e){ 
+   var e = window.event;}
+  if(e.which == 13){
+login(['uname', 'pwd','url'],[place_cookie]);
+ }
+}
+
+
+
+//end of login related functions
+*/
 function animate_section(name, style, speedy, show) {
   if (show) {alert (name+"::"+style)}
   if (speedy == undefined) speedy = pageObj.speed;
@@ -91,24 +125,23 @@ function animate_section(name, style, speedy, show) {
 
 </SCRIPT>
 
+<div id=signin_popup class="image_window" style="display:none"></div>
 <TABLE width = 100%>
- <TR>
-  <TD>
-   <TABLE>
-    <TR>
-     <TD>
-      <TMPL_IF NAME=LOGO_PNG><div id=home_icon><a href="/CoGe" border=0></div><img src='/CoGe/picts/<TMPL_VAR NAME=LOGO_PNG>' border=0></a></TMPL_IF>
-     </TD>
-     <TD>
-      <font class="title1"><TMPL_VAR NAME=TITLE></font>
-     </TD>
-    </TR>
-   </TABLE>
-  </TD>
 <TMPL_UNLESS NAME=MENU>
-  <TD align=left>
-	<ul class="jd_menu jd_menu_slate" style="position: absolute;right: 0px;top: 0px;">
-	 <li><a href="/CoGe/" target="_self">Home</a></li>
+  
+	<!-- <ul class="jd_menu jd_menu_slate" style="position: absolute;right: 0px;top: 0px;"> -->
+	<table style="float: right";>
+	 <tr>
+	 <td>
+	<TMPL_IF NAME=LOGON>
+	<span class="small species">Welcome, <TMPL_VAR NAME=USER></span> <a href="/CoGe/index.pl?logout=1" class="small">Sign-out</a>
+	<TMPL_ELSE>
+	 <a href="/CoGe/index.pl?login=1" class="small">Sign-in</a> <!-- onclick="login_popup()"  -->
+	</TMPL_IF>
+	</td>
+	<td>
+	<ul class="jd_menu jd_menu_slate" >
+	 <li><a id=home href="/CoGe/" target="_self">Home</a></li>
 	 <li>Applications
 	  <ul>
 	  <li><a href="/CoGe/GenomeView.pl" target="_self">GenomeView</a></li>
@@ -149,8 +182,27 @@ function animate_section(name, style, speedy, show) {
 	</ul>
 	</li>
 	</ul>
-  </TD>
+	</table>
 </TMPL_UNLESS>
+ <TR>
+  <TD>
+   <TABLE>
+    <TR>
+     <TD>
+      <TMPL_IF NAME=LOGO_PNG><div id=home_icon><a href="/CoGe" border=0></div><img src='/CoGe/picts/<TMPL_VAR NAME=LOGO_PNG>' border=0></a></TMPL_IF>
+     </TD>
+     <TD>
+      <font class="title1"><TMPL_VAR NAME=TITLE></font>
+     </TD>
+    </TR>
+   </TABLE>
+  </TD>
+  </TR>
+</TABLE>
+
+  <!-- <TD align=left> -->
+  <!-- <TMPL_VAR NAME=LOGON> -->
+  
   <!--<TD align=right>
    <TABLE>
     <TR>
@@ -161,6 +213,4 @@ function animate_section(name, style, speedy, show) {
    </TR>
   </TABLE>
   </TD>-->
- </TR>
-</TABLE>
 <noscript>We have detected that your browser currently has JavaScript disabled. In order for CoGe to function properly, JavaScript must be enabled in your browser. For instruction on how to do so in Mozilla Firefox, please click <a href="http://www.mozilla.org/support/firefox/options#content" target="_blank">here</a>. After enabling JavaScript, simply refresh the page, or click <a href="javascript:location.reload(true);" target="_self">here</a>.</noscript>
