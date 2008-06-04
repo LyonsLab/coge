@@ -100,6 +100,7 @@ sub gen_body
     if ($FORM->param('logout'))
       {
 	my $session = md5_base64($USER->user_name.$ENV{REMOTE_ADDR});
+	$session =~ s/\+/1/g;
 	($session) = $coge->resultset('UserSession')->find({session=>$session});
 	$session->delete if $session;
 	$tmpl->param(READY=>"delete_cookie();");
@@ -177,6 +178,7 @@ sub login
     if ($pwdc)
       {
 	my $session = md5_base64($name.$ENV{REMOTE_ADDR});
+	$session =~ s/\+/1/g;
 	my $sid = $coge->log_user(user=>$u,session=>$session);
 	my $c = CoGe::Accessory::LogUser->gen_cookie(session=>$session);
 	return ('true', $c, $url );
