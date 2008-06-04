@@ -43,6 +43,10 @@
 	    background-color: white;
 	    color: blue;
         }
+	#codon_usage {
+	    background-color: white;
+	    color: purple;
+        }
 	   
         #func_dom {
          //   background-color: white;
@@ -107,6 +111,10 @@
                  ,{'ds':ds,'chr':chr,layers:"pseudogene,gene,mRNA,CDS,rna",'version':version,'organism':org,}
                  ,{isBaseLayer:false}
              );
+            codon_usage = new OpenLayers.Layer.Genomic( "<span id='codon_usage'>Codon Usage</span>" , server
+                 ,{'ds':ds,'chr':chr,'version':version,layers:"CDS,cbc",'organism':org}
+                 ,{isBaseLayer:false}
+             );
             ld = new OpenLayers.Layer.Genomic( "<span id='local_dup'>Local Duplicates</span>" , server
                  ,{'ds':ds,'chr':chr,layers:"local_dup",'version':version,'organism':org,}
                  ,{isBaseLayer:false}
@@ -131,6 +139,8 @@
             map.addLayer(gbox)
             genes.setVisibility(true);
             map.addLayer(genes)
+            codon_usage.setVisibility(false);
+            map.addLayer(codon_usage)
             ld.setVisibility(false);
             map.addLayer(ld)
             fd.setVisibility(false);
