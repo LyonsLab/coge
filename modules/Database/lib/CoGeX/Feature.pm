@@ -1037,7 +1037,7 @@ sub wobble_content
     my $codon_count=0;;
     my $at_count=0;
     my $gc_count=0;
-    for (my $i =0; $i < length($seq); $i+=3)
+    for (my $i =0; $i < CORE::length($seq); $i+=3)
       {
         my $codon = substr ($seq, $i, 3);
         $codon_count++;
