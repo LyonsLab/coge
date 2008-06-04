@@ -303,6 +303,11 @@ sub annotation_pretty_print_html
     $dataset .= ": ".$ds->description if $ds->description;
     $dataset .= "</a>";
     $anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<span class=\"title4\">Dataset</span>", Values=>[$dataset], Type_delimit=>": ", Val_delimit=>" "));
+    my $org = qq{<a href = "GenomeView.pl?oid=}.$ds->organism->id."\" target=_new>".$ds->organism->name;
+    $org .= ": ".$ds->organism->description if $ds->organism->description;
+    $org .= "</a>";
+    
+    $anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<span class=\"title4\">Organism</span>", Values=>[$org], Type_delimit=>": ", Val_delimit=>" "));
     return $anno_obj->to_String;
   }
 
