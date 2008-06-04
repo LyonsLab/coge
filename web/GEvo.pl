@@ -244,6 +244,8 @@ sub gen_body
     $gc_color = 0 unless $gc_color;
     my $nt_color = get_opt(params=>$prefs, form=>$form, param=>'nt');
     $nt_color = 1 unless $nt_color;
+    my $cbc_color = get_opt(params=>$prefs, form=>$form, param=>'cbc');
+    $cbc_color = 0 unless $cbc_color;
     my $auto_adjust_feats = get_opt(params=>$prefs, form=>$form, param=>'overlap');
     $auto_adjust_feats = 0 unless defined $auto_adjust_feats;
     my $hiqual = get_opt(params=>$prefs, form=>$form, param=>'hiqual');
@@ -275,6 +277,8 @@ sub gen_body
     else {$template->param(GC_COLOR_NO=>"checked");}
     if ($nt_color) {$template->param(NT_COLOR_YES=>"checked");}
     else {$template->param(NT_COLOR_NO=>"checked");}
+    if ($cbc_color) {$template->param(CBC_YES=>"checked");}
+    else {$template->param(CBC_NO=>"checked");}
     if ($auto_adjust_feats) {$template->param(OVERLAP_YES=>"checked");}
     else {$template->param(OVERLAP_NO=>"checked");}
     if ($hiqual) {$template->param(HIQUAL_YES=>"checked");}
@@ -337,6 +341,7 @@ sub run
     my $feat_h = $opts{fh};
     my $show_gc = $opts{gc};
     my $show_nt = $opts{nt};
+    my $show_cbc = $opts{cbc};
     my $color_hsp = $opts{colorhsp};
     my $hsp_label = $opts{hsplabel};
     my $draw_model = $opts{draw_model};
@@ -648,6 +653,7 @@ sub run
 			     fh=>$feat_h,
 			     show_gc=>$show_gc,
 			     show_nt=>$show_nt,
+			     show_cbc=>$show_cbc,
 			     stagger_label=>$stagger_label,
 			     overlap_adjustment=>$overlap_adjustment,
 			     feature_labels=>$feature_labels,
@@ -896,6 +902,7 @@ sub generate_image
     my $fh = $opts{fh} || 25;
     my $show_gc = $opts{show_gc};
     my $show_nt = $opts{show_nt};
+    my $show_cbc = $opts{show_cbc};
     my $reverse_image = $opts{reverse_image};
     my $stagger_label = $opts{stagger_label};
     my $overlap_adjustment = $opts{overlap_adjustment};
@@ -963,7 +970,7 @@ sub generate_image
 			  hsp_size_limit=>$hsp_size_limit,
 			  hsp_overlap_length=>$hsp_overlap_length,
 			 );
-    my ($feat_counts) = process_features(c=>$gfx, obj=>$gbobj, start=>$start, stop=>$stop, overlap_adjustment=>$overlap_adjustment, draw_model=>$draw_model, color_overlapped_features=>$color_overlapped_features);
+    my ($feat_counts) = process_features(c=>$gfx, obj=>$gbobj, start=>$start, stop=>$stop, overlap_adjustment=>$overlap_adjustment, draw_model=>$draw_model, color_overlapped_features=>$color_overlapped_features, cbc=>$show_cbc);
     $stats->{feat_counts} = $feat_counts;
     return ($gfx, $stats);
   }
@@ -1147,7 +1154,7 @@ sub process_features
     my $overlap = $opts{overlap_adjustment};
     my $draw_model = $opts{draw_model};
     my $color_overlapped_features = $opts{color_overlapped_features};
-#    return unless $draw_model;
+    my $cbc = $opts{cbc};
     my $accn = $obj->accn;
     my $track = 1;
     my %feat_counts;
@@ -1190,6 +1197,7 @@ sub process_features
 	    $f->color([0,255,0, 50]);
 	    $f->order($track);
 	    $f->overlay(3);
+
 	    if ($accn)
 	      {
 		foreach my $name (@{$feat->qualifiers->{names}})
@@ -1203,6 +1211,29 @@ sub process_features
 		      }
 		  }
 	      }
+	    if ($cbc)
+              {
+                #my $seq = $feat->genomic_sequence;
+                #$f->sequence($seq);
+                my $seq;
+		my $seq_len = length($obj->sequence);
+		foreach my $block (sort {$a->[0] <=> $b->[0]} @{$feat->blocks})
+		  {
+		    $block->[0] =1 unless $block->[0]; #in case $block is set to 0
+		    my $start = $block->[0];
+		    next if $start > $seq_len;
+		    $stop = $block->[1];
+		    $stop = $seq_len if $block->[1] > $seq_len;
+		    $seq .= substr($obj->sequence, $start-1, $stop-$start+1);
+		  }
+		if ($feat->location =~ /complement/)
+		  {
+		    $seq = reverse uc($seq);
+		    $seq =~ tr /ATCG/TAGC/;
+		  }
+		$f->sequence($seq);
+		$f->color_by_codon(1);
+              }
 	    
 		
           }
@@ -2414,6 +2445,7 @@ sub gen_params
 	'args__fh', 'feat_h',
         'args__gc', 'show_gc',
         'args__nt', 'show_nt',
+        'args__cbc', 'show_cbc',
 	'args__colorhsp', 'color_hsp',
 	'args__hsplabel', 'hsp_labels',
 	'args__overlap', 'overlap_adjustment',
