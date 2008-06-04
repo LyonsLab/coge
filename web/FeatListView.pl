@@ -6,7 +6,6 @@ use CoGe::Accessory::LogUser;
 use HTML::Template;
 use Data::Dumper;
 use CGI::Ajax;
-use CoGe::Genome;
 use CoGe::Graphics;
 use File::Temp;
 
@@ -24,7 +23,6 @@ $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 
 $FORM = new CGI;
 ($USER) = CoGe::Accessory::LogUser->get_user();
-$DB = new CoGe::Genome;
 
 my $pj = new CGI::Ajax(
 		       expand_list=>\&expand_list,
@@ -59,7 +57,12 @@ sub gen_html
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
 
     $template->param(TITLE=>'Feature List Viewer');
-    $template->param(USER=>$USER);
+    my $name = $USER->user_name;
+        $name = $USER->first_name if $USER->first_name;
+        $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
+        $template->param(USER=>$name);
+
+    $template->param(LOGON=>1) unless $USER->user_name eq "public";
     $template->param(DATE=>$DATE);
     $template->param(LOGO_PNG=>"FeatListView-logo.png");
     $template->param(BODY=>$body);

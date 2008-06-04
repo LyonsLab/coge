@@ -118,7 +118,12 @@ sub gen_html
 	$template->param(LOGO_PNG=>"GEvo-logo.png");
 	$template->param(TITLE=>'Genome Evolution Analysis');
 	$template->param(HELP=>'GEvo');
-	$template->param(USER=>$USER);
+	my $name = $USER->user_name;
+        $name = $USER->first_name if $USER->first_name;
+        $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
+        $template->param(USER=>$name);
+
+	$template->param(LOGON=>1) unless $USER->user_name eq "public";
 	$template->param(DATE=>$DATE);
 	$template->param(NO_BOX=>1);
 	$template->param(BODY=>gen_body());
@@ -316,7 +321,7 @@ sub gen_body
     $box->param(BOX_NAME=>"Options:");
     $template->param(OPTIONS=>1);
     $template->param(ALIGNMENT_PROGRAMS=>algorithm_list($prog));
-    $template->param(SAVE_SETTINGS=>gen_save_settings($num_seqs)) unless !$USER || $USER =~ /public/i;
+    $template->param(SAVE_SETTINGS=>gen_save_settings($num_seqs)) unless !$USER || $USER->user_name =~ /public/i;
     $box->param(BODY=>$template->output);
     $html .= $box->output;
     return $html;
@@ -2755,7 +2760,7 @@ sub get_algorithm_options
     my ($x, $clean_param_string) = check_taint($param_string);
     unless ($x)
       {
-	print STDERR "user $USER's param_string: $param_string was tainted!\n";
+	print STDERR "user ".$USER->user_name."'s param_string: $param_string was tainted!\n";
       }
     return ($analysis_program, $clean_param_string, \%parser_options);
   }
@@ -3018,7 +3023,7 @@ sub email_results {
 				   Subject	=> 'GEvo Analysis Results Ready',
 				})
 		or die "Can't open: $!\n";
-	my $username = $USER;
+	my $username = $USER->user_name;
 	my $body = qq{Dear $username,
 		
 	Thank you for using the Genome Evolution Analysis Tool! The results from your latest analysis are ready, and can be viewed here:

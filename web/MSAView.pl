@@ -43,7 +43,12 @@ sub gen_html
 	my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/MSAView.tmpl');
 	
 	$template->param(TITLE=>'Multiple Sequence Alignment Viewer');
-	$template->param(USER=>$USER);
+	my $name = $USER->user_name;
+        $name = $USER->first_name if $USER->first_name;
+        $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
+        $template->param(USER=>$name);
+
+	$template->param(LOGON=>1) unless $USER->user_name eq "public";
 	$template->param(DATE=>$DATE);
 	$template->param(LOGO_PNG=>"MSAView-logo.png");
 	$template->param(BODY=>$body);

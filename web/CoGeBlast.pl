@@ -86,7 +86,7 @@ my $pj = new CGI::Ajax(
 $pj->js_encode_function('escape');
 print $pj->build_html($FORM, \&gen_html);
 #print $FORM->header;
-#$USER=1;print gen_html();
+#print gen_html();
 
 
 sub gen_html
@@ -103,7 +103,12 @@ sub gen_html
     $template->param(TITLE=>'BLAST');
     $template->param(HELP=>'BLAST');
    # print STDERR "user is: ",$USER,"\n";
-    $template->param(USER=>$USER);
+    my $name = $USER->user_name;
+        $name = $USER->first_name if $USER->first_name;
+        $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
+        $template->param(USER=>$name);
+
+    $template->param(LOGON=>1) unless $USER->user_name eq "public";
     $template->param(DATE=>$DATE);
     $template->param(LOGO_PNG=>"CoGeBlast-logo.png");
     $template->param(BOX_NAME=>'CoGe: Blast');
@@ -157,7 +162,7 @@ sub gen_body
         $template->param(SEQVIEW=>0);
         $template->param(SEQUENCE=>'Enter a fasta sequence here');
     }
-    $template->param(USER_NAME=>$USER);
+    $template->param(USER_NAME=>$USER->user_name);
     #$template->param(DEFAULT_PARAM=>$param);
     $template->param(REST=>1);
     #populate user specified default values
@@ -173,6 +178,7 @@ sub gen_body
     my $resultslimit = 200;
     $resultslimit = $prefs->{'resultslimit'} if $prefs->{'resultslimit'};
     $template->param(RESULTSLIMIT=>$resultslimit);
+    $template->param(SAVE_ORG_LIST=>1) unless $USER->user_name eq "public";
     return $template->output;
   }
   

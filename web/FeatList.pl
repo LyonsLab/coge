@@ -53,7 +53,12 @@ sub gen_html
     $template->param(TITLE=>'Feature List Viewer');
     $template->param(HELP=>'BLAST');
    # print STDERR "user is: ",$USER,"\n";
-    $template->param(USER=>$USER);
+    my $name = $USER->user_name;
+        $name = $USER->first_name if $USER->first_name;
+        $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
+        $template->param(USER=>$name);
+
+    $template->param(LOGON=>1) unless $USER->user_name eq "public";
     $template->param(DATE=>$DATE);
     $template->param(BOX_NAME=>'CoGe: Blast');
     $template->param(BODY=>$body);
@@ -85,7 +90,7 @@ sub gen_body
     if ($table)
       {
 	$template->param(INFO=>$table);
-	$template->param(JOSH=>qq{<option value = "josh">Get Josh some fids</option>}) if $USER =~ /jkane/;
+	$template->param(JOSH=>qq{<option value = "josh">Get Josh some fids</option>}) if $USER->user_name =~ /jkane/;
 	return $template->output;
       }
     else

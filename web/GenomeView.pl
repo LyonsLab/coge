@@ -62,7 +62,12 @@ sub gen_html
 	my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
 	$template->param(TITLE=>'Genome Viewer');
 	$template->param(HEAD=>qq{});
-	$template->param(USER=>$USER);
+	my $name = $USER->user_name;
+        $name = $USER->first_name if $USER->first_name;
+        $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
+        $template->param(USER=>$name);
+
+	$template->param(LOGON=>1) unless $USER->user_name eq "public";
 	$template->param(DATE=>$DATE);
 	$template->param(LOGO_PNG=>"GenomeView-logo.png");
 	$template->param(BODY=>$body);

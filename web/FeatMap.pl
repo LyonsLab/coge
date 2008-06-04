@@ -53,7 +53,12 @@ sub gen_html
 	$template->param(TITLE=>'Feature Map');
 	$template->param(HELP=>'FeatMap');
 	# print STDERR "user is: ",$USER,"\n";
-	$template->param(USER=>$USER);
+	my $name = $USER->user_name;
+        $name = $USER->first_name if $USER->first_name;
+        $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
+        $template->param(USER=>$name);
+
+	$template->param(LOGON=>1) unless $USER->user_name eq "public";
 	$template->param(DATE=>$DATE);
 	#$template->param(LOGO_PNG=>"CoGeBlast-logo.png");
 	$template->param(BOX_NAME=>'CoGe: Feature Map');

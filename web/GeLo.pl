@@ -44,7 +44,12 @@ sub gen_html
         $template->param(LOGO_PNG=>"GeLo-logo.png");
         $template->param(TITLE=>'Genome Viewer');
         $template->param(HELP=>'');
-        $template->param(USER=>$USER);
+        my $name = $USER->user_name;
+        $name = $USER->first_name if $USER->first_name;
+        $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
+        $template->param(USER=>$name);
+
+	$template->param(LOGON=>1) unless $USER->user_name eq "public";
         $template->param(DATE=>$DATE);
         $template->param(BOX_NAME=>generate_box_name());
 #	$template->param(BODY_ONLOAD=>'init();');
