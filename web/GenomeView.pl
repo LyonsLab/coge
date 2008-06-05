@@ -81,6 +81,9 @@ sub gen_body
     my $form = shift || $FORM;
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GenomeView.tmpl');
     my $name = $form->param('org_name');
+    my $oid = $form->param('oid');
+    my $org = $coge->resultset('Organism')->resolve($oid) if $oid;
+    $name = $org->name if $org;
     my $dsname = $form->param('dsname');
     my $dsid = $form->param('dsid');
     $name = "Search" unless $name;
