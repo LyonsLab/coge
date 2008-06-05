@@ -220,7 +220,17 @@ sub annotation_pretty_print
     $org .= ": ".$ds->organism->description if $ds->organism->description;
     
     $anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"Organism", Values=>[$org], Type_delimit=>": ", Val_delimit=>" "));
-    
+    my ($gc, $at) = $self->gc_content;
+    $gc*=100;
+    $at*=100;
+    $anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"DNA content", Values=>["GC: $gc%","AT: $at%"], Type_delimit=>": ", Val_delimit=>" "));
+    my ($wgc, $wat) = $self->wobble_content;
+    if ($wgc || $wat)
+      {
+	$wgc*=100;
+	$wat*=100;
+	$anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"Wobble content", Values=>["GC: $wgc%","AT: $wat%"], Type_delimit=>": ", Val_delimit=>" "));
+      }
     return $anno_obj->to_String;
   }
 
