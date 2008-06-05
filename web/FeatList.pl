@@ -134,7 +134,6 @@ sub generate_table
   {
     my %opts = @_;
     my $feat_list = $opts{feature_list};
-    my $show_gc = $opts{show_gc} || 1;
     my $ftid = $opts{ftid};
     return unless @$feat_list;
     my @table;
@@ -157,7 +156,6 @@ sub generate_table
       my $hpp = $feat->annotation_pretty_print_html();
       my $row_style = $count%2 ? "even" : "odd";
       my $other;
-      $other .= $show_gc ? gc_content(featid=>$featid): qq{<DIV id="gc_info$count" class="link" onClick="gc_content(['args__featid','args__$featid'],['gc_info$count'])">GC content</DIV>};
       $other .= "<div class=link id=codon_usage$count><DIV onclick=\" \$('#codon_usage$count').removeClass('link'); gen_data(['args__loading'],['codon_usage$count']); codon_table(['args__featid','args__$featid'],['codon_usage$count'])\">"."Click for codon usage"."</DIV></DIV>" if $feat->type->name eq "CDS";
       push @table,{
 		   FEATID=>$featid,
