@@ -934,7 +934,7 @@ sub generate_image
 			    draw_chr_end=>0,
 			    chr_start_height=>$ih,
 			    chr_mag_height=>5,
-			    feature_start_height=>$fh,
+			    feature_height=>$fh,
 			    mag=>0,
 			    mag_off=>1,
 			    chr_length => length($gbobj->sequence),
