@@ -78,14 +78,16 @@ sub get_genomic_sequence {
     {
       $chr = "1" unless defined $chr;
       $start = 1 if $start < 1;
+      $stop = $start unless $stop;
+      return undef unless ($start =~ /^\d+$/ and  $stop =~ /^\d+$/);
+      ($start, $stop) = ($stop, $start) if $stop < $start;
+
       if (! $skip_length_check)
 	{
 	  my $last = $self->last_chromosome_position($chr);
 	  $stop = $last if $stop > $last;
 	}
       # make sure two numbers were sent in
-      return undef unless ($start =~ /^\d+$/ and  $stop =~ /^\d+$/);
-      ($start, $stop) = ($stop, $start) if $stop < $start;
       #my $fstart = $start%10000 ? $start - ($start % 10000) + 1 : ($start -1)- (($start-1) % 10000) +1;
       my $fstart = $start - (($start -1) % 10000);
 #      print STDERR "start: $start, fstart: $fstart\n";
@@ -94,7 +96,7 @@ sub get_genomic_sequence {
       for(my $i=$fstart;$i<=$stop;$i+=10000){
         push(@starts,$i);
       }
-
+      return unless @starts;
       my @seqs = $self->genomic_sequences(
 					  {chromosome=>$chr,
 					   -and=>[ start=> { 'in', \@starts } ],
@@ -102,9 +104,11 @@ sub get_genomic_sequence {
 					  {order_by=>"start asc"}
 					 )->all;
       return unless @seqs;
+#      print STDERR Dumper \@starts;
       $str = join ("", map{$_->sequence_data} @seqs);  
+#      print STDERR "!!",$str,"\n";;
       $str = $self->trim_sequence( $str, $seqs[0]->start, $seqs[-1]->stop, $start, $stop );
-      
+#      print STDERR "!!",$str,"\n";;
     } 
   elsif ( $chr ) 
     {
