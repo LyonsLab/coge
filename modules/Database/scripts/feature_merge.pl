@@ -2,6 +2,10 @@ use strict;
 use Data::Dumper;
 use CoGeX;
 
+
+# THOUGH this is called feature_merge, it just gets all features, and
+# all chromosomal sequences for a given organism.
+
 my $connstr = 'dbi:mysql:genomes:biocon:3306';
 my $s = CoGeX->connect($connstr, 'bpederse', 'brent_cnr');
 
@@ -25,6 +29,7 @@ sub get_locs {
 
     
     while(my $g = $rs->next()){
+        if($g->feature_type->name eq 'CNS'){ next; }
         my $f = {'locs' => [map { {'start' => $_->start, 'stop' => $_->stop, 'strand' => $_->strand, 'chr' => $_->chromosome }
                                             } $g->locations({} , {'order' => 'start'})]
                             , 'type' => uc($g->feature_type->name), 'names' => [ map { uc($_->name) } $g->feature_names() ]};
