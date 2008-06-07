@@ -19,15 +19,6 @@ my %options;
 getopt("otdcm", \%options);
 
 
-my %org_hash = (
-   rice        => 3
-  ,arabidopsis => 1
-  ,poplar      => 3387
-  ,grape       => 351
-  ,papaya      => 563
-  ,maize       => 333
-  ,sorghum     => 331
-);
 my %ds_hash = (
     'rice' => [ 582 .. 593 ],
 );
@@ -46,7 +37,6 @@ if($options{m}){
 else {
    print STDERR "getting NOT masked...\n";
    $datasets = [sort map { $_->dataset_id } $org->current_datasets()];
-   #$datasets = $ds_hash{$organism} || [sort map { $_->dataset_id  } @{$s->get_current_datasets_for_org($org_hash{$organism})}];
 }
 
 my $outdir   = ($options{d} or ".") . "./";
