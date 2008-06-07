@@ -285,10 +285,13 @@ sub gen_color_by_codon
     my $c2 = 255;
     $c2 = 255*($pgc+$pgc) if $pgc < .5;
     $self->color([sprintf("%.0f",$c1),sprintf("%.0f",$c2),0,50]);
-    foreach my $c (@{$self->color})
+    if ($self->no_3D)
       {
-	$c-=50;
-	$c = 1 if $c < 1;
+	foreach my $c (@{$self->color})
+	  {
+	    $c-=50;
+	    $c = 1 if $c < 1;
+	  }
       }
   }
 
