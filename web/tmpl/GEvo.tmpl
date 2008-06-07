@@ -833,19 +833,6 @@ function get_seq(seq_num)
  <TR>
   <Td>
     <DIV class="small">
-      Image Height (Pixels):
-    </DIV>
-  </Td>
-  <TD>
-    <DIV class="small">
-	<input class="backbox" type="text" name="ih" id="ih" tabindex="1"  size="10" value="<TMPL_VAR NAME="IMAGE_HEIGHT">" />
-    </DIV>
-  </TD>
-
- </TR>
- <TR>
-  <Td>
-    <DIV class="small">
       Feature Height (Pixels):
     </DIV>
   </Td>
@@ -879,7 +866,7 @@ function get_seq(seq_num)
   </TD>
  <TR>
   <Td>
-<font class="small">Color N orange? (SLOW)</font>
+<font class="small">Color N orange?</font>
   <td>
 <label class="small"><input class="backbox" type="radio" name="show_nt" id="show_nt" tabindex="1" value="1" <TMPL_VAR NAME="NT_COLOR_YES">/>Yes</label>
 <label class=small><input class="backbox" type="radio" name="show_nt" id="show_nt" tabindex="1" value="0" <TMPL_VAR NAME="NT_COLOR_NO">/>No</label>
@@ -887,7 +874,7 @@ function get_seq(seq_num)
   </TD>
  <TR>
   <Td>
-<font class="small">Color wobble codon content:</font>
+<font class="small">Color wobble codon GC content:</font>
   <td>
 <label class="small"><input class="backbox" type="radio" name="show_cbc" id="show_cbc" tabindex="1" value="1" <TMPL_VAR NAME="CBC_YES"> />Yes</label>
 <label class=small><input class="backbox" type="radio" name="show_cbc" id="show_cbc" tabindex="1" value="0" <TMPL_VAR NAME="CBC_NO"> />No</label>
