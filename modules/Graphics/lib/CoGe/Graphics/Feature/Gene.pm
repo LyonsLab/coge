@@ -13,10 +13,11 @@ BEGIN {
 "segments", 
 "print_label", #flag for printing feature label in gene
 "add_type", #flag to set if gene type should be appended to label
-"no_three_D", #switch between flat images and "3D" images, if given value, use flat images
+"no_3D", #switch between flat images and "3D" images, if given value, use flat images
 "arrow_width", #width of arrow in pixels
 "sequence",#store the sequence
 "color_by_codon",#flag for coloring CDS by codon
+"codon_limit",#number of codons to evaluate (5')
 );
 }
 
@@ -116,7 +117,7 @@ sub _post_initialize
 	my $y1 = $c-$bh;
 	my $y2 = $c+$bh;
 	my $gray_lvl = 15 || $opts{gray_lvl};
-	if (!$self->no_three_D)
+	if (!$self->no_3D)
 	  {
 	    my @colors = $gd->rgb($color);
 	    my ($r, $g, $b) = ($colors[0],$colors[1],$colors[2]);
@@ -132,15 +133,6 @@ sub _post_initialize
 	  {
 	    $gd->filledRectangle($x1,$y1, $x2, $y2, $color);
 	  }
-#	$gd->rectangle($x1,$y1, $x2, $y2, $border);
-	#$gd->setStyle($black, $black, $black, GD::gdTransparent, GD::gdTransparent);
-	#if ($last)
-	#  {
-	#    my $mid = ($x1-$last)/2+$last;
-	#    $gd->line($last, $y1, $mid, 0, GD::gdStyled);
-	#    $gd->line($mid, 0, $x1, $y1, GD::gdStyled);
-	#xs  }
-	#$last = $x2;
       }
 
     my $x = $self->draw_arrow;
@@ -158,9 +150,6 @@ sub draw_arrow
     my $c = $self->ih()/2;
     my $y = $self->ih-1;
     my $w = ($seg->[1] - $seg->[0]); #width of segment
-#    use Data::Dumper;
-#    print STDERR Dumper $seg;
-#    print STDERR $self->start, "-", $self->stop,"\n";
     my $x = $seg->[0] - $self->start; #start of segment
     
     
@@ -169,12 +158,11 @@ sub draw_arrow
     $arrow_width = ($self->stop-$self->start)/10 if (!$arrow_width && $self->start && $self->stop);
     $arrow_width = $self->ih*6 unless $arrow_width;
     $arrow_width = $w if $arrow_width > $w;
-#    print STDERR "Arrowhead: X: $x, width: $arrow_width\n";
     my $arrow_end;
     my $gdb = new GD::Image(1,2);
     $gdb->fill(0,0,$gdb->colorResolve(1,1,1));
     $gd->setBrush($gdb);
-    unless ($self->no_three_D) {
+    unless ($self->no_3D) {
       my $poly1 = GD::Polygon->new;
       my $poly2 = GD::Polygon->new;
       my @colors = $gd->rgb($self->get_color($self->color));
@@ -198,11 +186,7 @@ sub draw_arrow
 	}
       else
 	{
-	  #$gd->filledRectangle($x+($w-$arrow_width),0, $x+$w, $y, $self->get_color(0,0,0));
 	  $self->_make_3d(r=>$r, g=>$g, b=>$b, x1=>$x+($w-$arrow_width), x2=>$x+$w, y1=>0, y2=>$y, gray_lvl=>15);
-	  #$poly->addPt($x+($w-$arrow_width), 0);
-	  #$poly->addPt($x+($w-$arrow_width), $y);
-	  #$poly->addPt($x+($w), $c);
 	  $poly1->addPt($x+($w-$arrow_width), 0);
 	  $poly1->addPt($x+$w, 0);
 	  $poly1->addPt($x+($w), $c-2);
@@ -227,7 +211,7 @@ sub draw_arrow
 	}
       else
 	{
-	  $gd->filledRectangle($x+($w-$arrow_width),0, $x+$w, $y, $self->get_color(0,0,0));
+	  $gd->filledRectangle($x+($w-$arrow_width),0, $x+$w, $y, $self->get_color(255,255,255));
 	  $poly->addPt($x+($w-$arrow_width), 0);
 	  $poly->addPt($x+($w-$arrow_width), $y);
 	  $poly->addPt($x+($w), $c);
@@ -237,11 +221,11 @@ sub draw_arrow
       my @tmp;
       foreach my $c (@{$self->color})
 	{
-	  $c-=100;
-	  $c = 1 if $c < 1;
+#	  $c-=100;
+#	  $c = 1 if $c < 1;
 	  push @tmp, $c;
 	}
-      $gd->openPolygon($poly, $self->get_color([@tmp]));
+      $gd->filledPolygon($poly, $self->get_color($self->color));
     }
     return $arrow_end;
   }
@@ -304,6 +288,7 @@ sub gen_color_by_codon
 	my ($wobble) = $codon =~ /(.$)/;
 	$at_count++ if $wobble =~ /[at]/i;
 	$gc_count++ if $wobble =~ /[gc]/i;
+	last if $self->codon_limit && $codon_count > $self->codon_limit;
       }
     my $pat = $at_count/$codon_count;
     my $pgc = $gc_count/$codon_count;
