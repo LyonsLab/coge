@@ -11,7 +11,7 @@
            left: 0px;
         }
         #gene {
-//            background-color: red;
+            background-color: white;
             color:grey;
         }
         #local_dup {
@@ -43,7 +43,11 @@
 	    background-color: white;
 	    color: blue;
         }
-	#codon_usage {
+	#wobble_GC_usage {
+	    background-color: white;
+	    color: purple;
+        }
+	#wobble_GC_usage_first_50 {
 	    background-color: white;
 	    color: purple;
         }
@@ -68,8 +72,9 @@
         var bp;
         var size= 285;
         var server =
-        ['http://homer.cnr.berkeley.edu/CoGe/tiler.pl?','http://toxic.berkeley.edu/CoGe/tiler.pl?','http://biocon.berkeley.edu/CoGe/tiler.pl?','http://synteny.cnr.berkeley.edu/CoGe/tiler.pl?'];
-//        ['http://toxic.berkeley.edu/CoGe/tiler.pl?'];
+//        ['http://homer.cnr.berkeley.edu/CoGe/tiler.pl?','http://biocon.berkeley.edu/CoGe/tiler.pl?','http://synteny.cnr.berkeley.edu/CoGe/tiler.pl?'];
+//        ['http://homer.cnr.berkeley.edu/CoGe/tiler.pl?','http://toxic.berkeley.edu/CoGe/tiler.pl?','http://biocon.berkeley.edu/CoGe/tiler.pl?','http://synteny.cnr.berkeley.edu/CoGe/tiler.pl?'];
+        ['http://toxic.berkeley.edu/CoGe/GenomePNG.pl?'];
         var org = "<TMPL_VAR NAME=ORG>";
         var ds = '<TMPL_VAR NAME=DS>';
         var loc = '<TMPL_VAR NAME=LOC>';
@@ -111,8 +116,12 @@
                  ,{'ds':ds,'chr':chr,layers:"pseudogene,gene,mRNA,CDS,rna",'version':version,'organism':org,}
                  ,{isBaseLayer:false}
              );
-            codon_usage = new OpenLayers.Layer.Genomic( "<span id='codon_usage'>Codon Usage</span>" , server
+            wobble_GC_usage = new OpenLayers.Layer.Genomic( "<span id='wobble_GC_usage'>Wobble GC Usage</span>" , server
                  ,{'ds':ds,'chr':chr,'version':version,layers:"CDS,cbc",'organism':org}
+                 ,{isBaseLayer:false}
+             );
+            wobble_GC_usage_first_50 = new OpenLayers.Layer.Genomic( "<span id='wobble_GC_usage_first_50'>Wobble GC Usage (first 50 codons)</span>" , server
+                 ,{'ds':ds,'chr':chr,'version':version,layers:"CDS,cbc50",'organism':org}
                  ,{isBaseLayer:false}
              );
             ld = new OpenLayers.Layer.Genomic( "<span id='local_dup'>Local Duplicates</span>" , server
@@ -128,25 +137,27 @@
                  ,{'ds':ds,'chr':chr,'organism':org,'ds':ds,'version':version,layers:"domain"}
                  ,{isBaseLayer:false}
              );
-
+	    
             map.addControl(new OpenLayers.Control.LayerSwitcher())
 
             gc.setVisibility(true);
-            map.addLayer(gc)
+            map.addLayer(gc);
             gaga.setVisibility(false);
-            map.addLayer(gaga)
+            map.addLayer(gaga);
             gbox.setVisibility(false);
-            map.addLayer(gbox)
+            map.addLayer(gbox);
             genes.setVisibility(true);
-            map.addLayer(genes)
-            codon_usage.setVisibility(false);
-            map.addLayer(codon_usage)
+            map.addLayer(genes);
+            wobble_GC_usage.setVisibility(true);
+            map.addLayer(wobble_GC_usage);
+            wobble_GC_usage_first_50.setVisibility(false);
+            map.addLayer(wobble_GC_usage_first_50);
             ld.setVisibility(false);
-            map.addLayer(ld)
+            map.addLayer(ld);
             fd.setVisibility(false);
-            map.addLayer(fd)
+            map.addLayer(fd);
             prot.setVisibility(false);
-            map.addLayer(prot)
+            map.addLayer(prot);
             /*                                          zoomLevel */
             map.setCenter(new OpenLayers.BasePair(loc), zoom);
             bp = new OpenLayers.Control.MousePosition() 
@@ -269,6 +280,31 @@ function launch_seqview(dsid, chr)
    window.open("SeqView.pl?dsid="+dsid+"&chr="+chr+"&start="+start+"&stop="+stop);
  }
 
+function change_gene_model_type()
+ {
+   var goods = [genes, wobble_GC_usage, wobble_GC_usage_first_50];
+   for (var i in goods)
+    {
+      if ($('#flat_models').is(':checked') == true)
+       {
+         goods[i].params.layers +=',flat';
+       }
+      else
+       {
+         goods[i].params.layers = goods[i].params.layers.replace(',flat','');
+       }
+      if ($('#overlap_models').is(':checked') == true)
+       {
+         goods[i].params.layers +=',olc';
+       }
+      else
+       {
+         goods[i].params.layers = goods[i].params.layers.replace(',olc','');
+       }
+	 goods[i].redraw();
+    }
+ }
+
 $(document).ready(function(){
 pageObj.getseq = 3;
 $('#width').val($('#main').width());
@@ -282,8 +318,10 @@ init();
     <div id="map"></div>
     <div id='resolution'></div>
     <div id ='alert_grab'></div>
-    <div id='check' style="float:right"><input type=checkbox name=checkbox id=disable checked/>Disable Pop-up Annotations</div>
+    <div id='check' style="float:right">Disable Pop-up Annotations<input type=checkbox name=checkbox id=disable checked/></div>
 OpenGene's map width: <input type=textbox class=backbox size=5 id="width" onkeypress="onEnter(event);" value=<TMPL_VAR NAME="width"> /><input type=button value="Resize" onclick="$('#map').css('width',$('#width').val());updateZoom();" /><input type=button value="Full-Window" onclick="$('#map').css('width',''+$('#main').width());updateZoom();" /> <input id='hide_query' style="display: none" type=button value="Hide Feature Info" onclick="$('#query').slideToggle(pageObj.speed);$('#hide_query').hide(0);" /><input type=button value="Grab Sequence" onclick="$('#grab').show(0);$('#grab_from').css('backgroundColor','FFFF66');pageObj.getseq=1;" />
+    <div style="float:right">Use Flat Gene Models<input type=checkbox name=flat_models id=flat_models onclick="change_gene_model_type();" /></div><br>
+    <div style="float:right">Expand Overlapping Gene Models<input type=checkbox name=overlap_models id=overlap_models onclick="change_gene_model_type();" /></div>
     <br><br>
     <div id='grab' style="display:none"><input type=text id='grab_from' value=0> to <input type=text id="grab_to" value=0> <input type=button value="View Sequence" onClick="launch_seqview('<TMPL_VAR NAME=DS>','<TMPL_VAR NAME=CHR>')"></div>
     <div id='query' style="overflow: auto;"></div>
