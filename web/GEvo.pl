@@ -234,10 +234,8 @@ sub gen_body
     $prog = "blastz" unless $prog;
     my $image_width = get_opt(params=>$prefs, form=>$form, param=>'iw');
     $image_width = 1000 unless $image_width;
-    my $image_height = get_opt(params=>$prefs, form=>$form, param=>'ih');
-    $image_height = 100 unless $image_height;
     my $feature_height = get_opt(params=>$prefs, form=>$form, param=>'fh');
-    $feature_height = 10 unless $feature_height;
+    $feature_height = 20 unless $feature_height;
     my $padding  = get_opt(params=>$prefs, form=>$form, param=>'padding');
     $padding = 2 unless defined $padding;
     my $gc_color = get_opt(params=>$prefs, form=>$form, param=>'gc');
@@ -268,7 +266,6 @@ sub gen_body
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GEvo.tmpl');
     $template->param(PAD_GS=>$pad_gs);
     $template->param(IMAGE_WIDTH=>$image_width);
-    $template->param(IMAGE_HEIGHT=>$image_height);
     $template->param(FEAT_HEIGHT=>$feature_height);
     $template->param(PADDING=>$padding);
     $template->param(HSP_OVERLAP_LIMIT=>$hsp_overlap_limit);
@@ -337,7 +334,6 @@ sub run
     my $num_seqs = $opts{num_seqs} || $NUM_SEQS;
     my $spike_len = $opts{spike};
     my $iw = $opts{iw};
-    my $ih = $opts{ih};
     my $feat_h = $opts{fh};
     my $show_gc = $opts{gc};
     my $show_nt = $opts{nt};
@@ -649,7 +645,6 @@ sub run
 			     stop=>length($obj->sequence),
 			     data=>$analysis_reports,
 			     iw=>$iw,
-			     ih=>$ih,
 			     fh=>$feat_h,
 			     show_gc=>$show_gc,
 			     show_nt=>$show_nt,
@@ -898,7 +893,6 @@ sub generate_image
     my $masked_ncs = $opts{mask_ncs};
     my $spike_seq = $opts{spike_sequence};
     my $iw = $opts{iw} || 1600;
-    my $ih = $opts{ih} || 200;
     my $fh = $opts{fh} || 25;
     my $show_gc = $opts{show_gc};
     my $show_nt = $opts{show_nt};
@@ -931,15 +925,10 @@ sub generate_image
 			    stop => $stop,
 			    draw_chr=>1,
 			    draw_ruler=>1,
-			    draw_chr_end=>0,
-			    chr_start_height=>$ih,
-			    chr_mag_height=>5,
+			    draw_chr_end=>1,
 			    feature_height=>$fh,
-			    mag=>0,
-			    mag_off=>1,
 			    chr_length => length($gbobj->sequence),
 			    fill_labels=>1,
-			    forcefit=>1,
 			    minor_tick_labels=>1,
 			    feature_labels=>$feature_labels,
 			    draw_hi_qual=>$hiqual,
@@ -2441,7 +2430,6 @@ sub gen_params
         'args__blastz_params','blastz_params',
 
 	'args__iw', 'iw',
-	'args__ih', 'ih', 
 	'args__fh', 'feat_h',
         'args__gc', 'show_gc',
         'args__nt', 'show_nt',
