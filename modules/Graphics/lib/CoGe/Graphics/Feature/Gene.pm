@@ -94,15 +94,6 @@ sub _post_initialize
     $gd->fill(0,0, $self->get_color($self->bgcolor));
 #    $gd->transparent($self->get_color($self->bgcolor));
     my $s = $self->start;
-    my @tmp;
-    foreach my $c (@{$self->color})
-      {
-	my $ct = $c;
-	$ct-=100;
-	$ct = 1 if $ct < 1;
-	push @tmp, $ct;
-      }
-    my $border = $self->get_color(@tmp);
     $self->gen_color_by_codon if $self->color_by_codon;
     my $color = $self->get_color($self->color);
     my $black = $self->get_color(1,1,1);
@@ -131,7 +122,12 @@ sub _post_initialize
 	  }
 	else 
 	  {
-	    $gd->filledRectangle($x1,$y1, $x2, $y2, $color);
+	    foreach my $c (@{$self->color})
+	      {
+		$c-=50;
+		$c = 1 if $c < 1;
+	      }
+	    $gd->filledRectangle($x1,$y1, $x2, $y2, $self->get_color($self->color));
 	  }
       }
 
@@ -217,14 +213,11 @@ sub draw_arrow
 	  $poly->addPt($x+($w), $c);
 	  $arrow_end=2;
 	}
-      
-      my @tmp;
-      foreach my $c (@{$self->color})
-	{
-#	  $c-=100;
-#	  $c = 1 if $c < 1;
-	  push @tmp, $c;
-	}
+#       foreach my $c (@{$self->color})
+# 	{
+# 	  $c-=50;
+# 	  $c = 1 if $c < 1;
+# 	}
       $gd->filledPolygon($poly, $self->get_color($self->color));
     }
     return $arrow_end;
