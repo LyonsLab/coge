@@ -129,18 +129,12 @@ perl(1).
 				   chr=>$chr,
 				   iw=>$iw,
 				   ih=>$ih,
-				   mag=>$mag,
-				   z=>$z,
 				   file=>$file,
-				   start_pict=>$start_pict,
 				   simple=>$simple,
-				   csh=>$chr_start_height,
-				   cmh=>$chr_mag_height,
-				   fsh=>$feat_start_height,
-				   fmh=>$feat_mag_height,
+				   ch=>$chr_height,
+				   fh=>$feat_height,
 				   fids=>\@fids,
 				   fns=>\@fnames,
-				   forcefit=>$forcefit,
                                    layers=>\@layers,
 				   );
  Purpose   : mama of a function.  Docs to come.
@@ -173,19 +167,13 @@ sub genomic_view
     my $chr = $opts{'chr'} ||$opts{'chromosome'};
     my $iw = $opts{'iw'} || $opts{'width'} || $opts{'tile size'}|| $opts{'tile_size'} || 256;
     my $ih = $opts{'ih'};
-    my $mag = $opts{'m'} || $opts{'mag'} || $opts{'magnification'};
-    my $z = $opts{'z'};
     my $file = $opts{'file'};# || "./tmp/pict.png";
-    my $start_pict = $opts{'start_pict'};
     my $simple = $opts{'simple'};
-    my $chr_start_height = $opts{'csh'} || 200;
-    my $chr_mag_height = $opts{'cmh'} || 5;
-    my $feat_start_height = $opts{'fsh'} || 10;
-    my $feat_mag_height = $opts{'fmh'} || 2;
+    my $chr_height = $opts{'ch'} || 200;
+    my $feat_height = $opts{'fh'} || 10;
     $BENCHMARK = $opts{'bm'} || 0;
     my $fids = $opts{'fid'} || $opts{'fids'}; #used to highlight special features by their database id
     my $fnames = $opts{'fn'} || $opts{'fns'}|| $opts{'fnames'}; #used to highlight special features by their name
-    my $forcefit = $opts{'forcefit'} || 0;
     my $img_map_name = $opts{'img_map'};
     my $layers = process_layers($opts{layers});
     my $major_tick_labels = $opts{major_tick_labels} || 1;
@@ -257,41 +245,32 @@ sub genomic_view
 #    my @dids = values %dids;
     my $tb = new Benchmark if $BENCHMARK;
     my $finddid_time = timestr(timediff($tb, $ta))  if $BENCHMARK;
+    my $last_position = $ds->last_chromosome_position($chr);
+    $self->initialize_c(ds=>$ds,
+			chr=>$chr,
+			iw=>$iw,
+			ih=>$ih,
+			start=>$start,
+			stop=>$stop,
+			c=>$c,
+			ch=>$chr_height,
+			fh=>$feat_height,
+			feature_labels=>1,
+			major_tick_labels=>$major_tick_labels,
+			minor_tick_labels=>$minor_tick_labels,
+			max_track=>2,
+			overlap_adjustment=>$layers->{features}{overlap_check},
+		       );
 
-    my @dids;
-    unshift @dids, $ds if $ds;
-    my $tc = new Benchmark if $BENCHMARK;
-    foreach my $did (@dids)
+    if ($last_position < $stop)
       {
-	my ($tstart, $tstop) = $self->initialize_c(ds=>$did,
-						   chr=>$chr,
-						   iw=>$iw,
-						   ih=>$ih,
-						   z=>$z,
-						   mag=>$mag,
-						   start=>$start,
-						   stop=>$stop,
-						   c=>$c,
-						   start_pict=>$start_pict,
-						   csh=>$chr_start_height,
-						   cmh=>$chr_mag_height,
-						   fsh=>$feat_start_height,
-						   fmh=>$feat_mag_height,
-						   forcefit=>$forcefit,
-						   feature_labels=>1,
-						   major_tick_labels=>$major_tick_labels,
-						   minor_tick_labels=>$minor_tick_labels,
-						   mag_off=>1,
-						  ) unless $c->chr_length;
-	if ($c->chr_length)
-	  {
-	    $start = $tstart;
-	    $stop = $tstop;
-	    print STDERR "processing nucleotides\n" if $self->DEBUG;
-	    $self->process_nucleotides(start=>$start, stop=>$stop, chr=>$chr, ds=>$did, c=>$c, layers=>$layers);
-	    last;
-	  }
+	$c->chr_end($last_position);
+#	$c->stop($last_position);
+#	print STDERR join ("\t", $c->start, $c->stop, $c->chr_end, $c->chr_length),"\n" ;
       }
+    my $tc = new Benchmark if $BENCHMARK;
+    print STDERR "processing nucleotides\n" if $self->DEBUG;
+    $self->process_nucleotides(start=>$start, stop=>$stop, chr=>$chr, ds=>$ds, c=>$c, layers=>$layers);
     my $td = new Benchmark if $BENCHMARK;
     my $init_c_time = timestr(timediff($td, $tc)) if $BENCHMARK;
 
@@ -301,15 +280,12 @@ sub genomic_view
 	return(0);
       }
     my $t1 = new Benchmark if $BENCHMARK;
-    foreach my $did (@dids)
-      {
-	my $taa = new Benchmark if $BENCHMARK;
-	print STDERR "processing features\n" if $self->DEBUG;
-	$self->process_features(start=>$start, stop=>$stop, chr=>$chr, ds=>$did, coge=>$coge, c=>$c, fids=>$fids, fnames=>$fnames, layers=>$layers) unless $simple;
-	my $tab = new Benchmark if $BENCHMARK;
-	my $feat_time = timestr(timediff($tab, $taa)) if $BENCHMARK;
-	print STDERR " processing features for dsid ".$did->name, " ", Dumper ($layers)," (",$did->id,"):   $feat_time\n" if $BENCHMARK;
-      }
+    my $taa = new Benchmark if $BENCHMARK;
+    print STDERR "processing features\n" if $self->DEBUG;
+    $self->process_features(start=>$start, stop=>$c->stop, chr=>$chr, ds=>$ds, coge=>$coge, c=>$c, fids=>$fids, fnames=>$fnames, layers=>$layers) unless $simple;
+    my $tab = new Benchmark if $BENCHMARK;
+    my $feat_time = timestr(timediff($tab, $taa)) if $BENCHMARK;
+    print STDERR " processing features for dsid ".$ds->name, " ", Dumper ($layers)," (",$ds->id,"):   $feat_time\n" if $BENCHMARK;
     unless ($layers->{ruler} || $layers->{chromosome} || $layers->{all})
       {
 	$c->draw_ruler(0);
@@ -352,88 +328,46 @@ sub initialize_c
     my $chr = $opts{chr};
     my $iw = $opts{iw};
     my $ih = $opts{ih};
-    my $z = $opts{z};
-    my $mag = $opts{mag};
-    my $mag_off = $opts{mag_off};
     my $start = $opts{start};
     my $stop = $opts{stop};
-    my $chr_length = $opts{chr_length};
     my $c = $opts{c};
-    my $csh=$opts{csh} || $opts{chr_start_height};
-    my $cmh=$opts{cmh} || $opts{chr_mag_height};
-    my $fsh=$opts{fsh} || $opts{feature_start_height};
-    my $fmh=$opts{fmh} || $opts {feature_mag_height};
+    my $csh=$opts{csh} || $opts{chr_height};
+    my $fh=$opts{fh} || $opts{feature_height};
     my $draw_chr = $opts{draw_chr};
     my $draw_ruler = $opts{draw_ruler};
     my $draw_chr_end = $opts{draw_chr_end};
-    my $forcefit = $opts{forcefit};
-    my $start_pict = $opts{'start_pict'} || 'left';
     my $feature_labels = $opts{feature_labels};
     my $fill_labels = $opts{fill_labels};
     my $debug = $opts{debug} || 0;
     my $invert_chromosome = $opts{invert_chromosome};
     my $major_tick_labels = $opts{major_tick_labels};
     my $minor_tick_labels = $opts{minor_tick_labels};
-    my $overlap_adjustment = $opts{overlap_adjustment};
     my $draw_hi_qual = $opts{draw_hi_qual};
     my $padding = $opts{padding};
     my $max_track = $opts{max_track};
+    my $overlap_adjustment= $opts{overlap_adjustment};
     $debug = 1 if $c->DEBUG;
     $draw_ruler = 1 unless defined $opts{draw_ruler};
-    $chr_length = $ds->last_chromosome_position($chr) if $ds && !$chr_length;
-    return unless $chr_length;
-    $c->chr_length($chr_length);
-    $c->mag_scale_type("constant_power");
     $c->iw($iw);
     $c->ih($ih) if $ih;
-    $c->max_mag((10));
     $c->DEBUG($debug);
     $c->feature_labels($feature_labels) if defined $feature_labels;
     $c->fill_labels($fill_labels) if defined $fill_labels ;
     $c->draw_chromosome($draw_chr) if defined $draw_chr;
     $c->draw_ruler($draw_ruler) if defined $draw_ruler;
     $c->draw_chr_end($draw_chr_end) if defined $draw_chr_end;
-    $c->chr_start_height($csh) if defined $csh;
-    $c->chr_mag_height($cmh) if defined $cmh;;
-    $c->feature_start_height($fsh) if defined $fsh;
-    $c->feature_mag_height($fmh) if defined $fmh;
+    $c->chr_height($csh) if defined $csh;
+    $c->feature_height($fh) if defined $fh;
     $c->major_tick_labels($major_tick_labels) if defined $major_tick_labels;
     $c->minor_tick_labels($minor_tick_labels) if defined $minor_tick_labels;
     $c->overlap_adjustment($overlap_adjustment) if defined $overlap_adjustment;
-    $c->mag_off($mag_off) if defined $mag_off;
     $c->invert_chromosome($invert_chromosome) if defined $invert_chromosome;
     $c->draw_hi_qual($draw_hi_qual) if defined $draw_hi_qual;
     $c->padding($padding) if defined $padding;
     $c->_max_track($max_track) if $max_track;
-    if (defined $z) #the $z val is used by the program for making tiles of genomic views.
-                #by convention, a z value of 0 means maximum magnification which is
-        	#opposite the convention used in chromosome.pm.  Thus, we need
-        	#to reformat the z value appropriately
-      {
-         my ($max) = sort {$b <=> $a} keys %{$c->mag_scale};
-         $mag = $max-$z;
-         $mag = 1 if $mag < 1;
-         $mag = $max if $mag > $max;
-         $c->start_picture($start_pict);
-      }
-    if (defined $mag)
-      {
-        $c->mag($mag);
-      }
-    else
-      {
-        $c->mag($c->mag-1);
-      }
-    $c->set_region(start=>$start, stop=>$stop, forcefit=>$forcefit);
-    $start = $c->_region_start;
-    $stop= $c->_region_stop;
-    #let's add the max top and bottom tracks to the image to keep its size constant
-#    my $f1= CoGe::Graphics::Feature->new({start=>1, order => 3, strand => 1});
-#    $f1->merge_percent(0);
-#    $c->add_feature($f1);
-#    my $f2= CoGe::Graphics::Feature->new({start=>1, order => 3, strand => -1});
-#    $f2->merge_percent(0);
-#    $c->add_feature($f2);
+    $c->set_region(start=>$start, stop=>$stop);
+    $start = $c->region_start;
+    $stop= $c->region_stop;
     return ($start, $stop);
 }
 
@@ -444,7 +378,7 @@ sub process_nucleotides
     my $start = $opts{start};
     my $stop = $opts{stop};
     my $seq = $opts{seq};
-
+    
     $start = 1 unless $start;
     $stop = length $seq if $seq && !$stop;
     if ($self->MAX_NT && abs ($stop-$start) > $self->MAX_NT())
@@ -469,12 +403,14 @@ sub process_nucleotides
 
     my $t8 = new Benchmark if $BENCHMARK;
     my $seq_len = length $seq;
-    my $chrs = int (($c->_region_stop-$c->_region_start)/$c->iw);
+#    my $rstop = $c->chr_end ? $c->chr_end : $c->stop;
+    my $chrs = int (($c->region_length)/$c->iw);
     $chrs = 1 if $chrs < 1;
     my $pos = 0;
     $start = 1 if $start < 1;
     if ($layers->{gc} || $layers->{nt} || $layers->{all})
       {
+#	print STDERR $start,"::",$stop," $chrs","\n";
 #	print STDERR $start,"-",$stop,"; ",$seq,"\n";
 	while ($pos < $seq_len)
 	  {
@@ -488,7 +424,7 @@ sub process_nucleotides
 		$pos+=$chrs;
 		next;
 	      }
-#	    print STDERR "\t",$pos," ",$start," ",$pos+$start,": ",$subseq,"\t",$rcseq,"\n";
+#	    print STDERR "\t",$pos," ",$pos+$start,"\n";#,": ",$subseq,"\t",$rcseq,"\n";
 
 	    my $options = $layers->{gc} ? "gc" : "nt";
 	    my $f1 = CoGe::Graphics::Feature::NucTide->new({nt=>$subseq, strand=>1, start =>$pos+$start, options=>$options}) if $layers->{gc} || $layers->{nt} || $layers->{all};
@@ -570,17 +506,11 @@ sub process_features
     my $fnames = $opts{fnames};
     my $layers = $opts{layers};
     return unless $layers->{all} || $layers->{features};
-    $start = $c->_region_start unless $start;
-    $stop = $c->_region_stop unless $stop;
-    my $sstart = $start;# - ($stop - $start);
-    my $sstop = $stop;# + ($stop - $start);
-    $sstart = 0 if $sstart < 0;
+    $start = $c->region_start unless $start;
+    $stop = $c->region_stop unless $stop;
+    $start = 0 if $start < 0;
     my $tf1 = new Benchmark if $BENCHMARK;
-#    my $chr_length = $ds->last_chromosome_position($chr);
     my $tf2 = new Benchmark if $BENCHMARK;
-#    $sstop = $chr_length unless defined $sstop;
-#    $sstop = $chr_length if $sstop > $chr_length;
-#    my $feat_count = $coge->get_features_in_region(start=>$sstart, end=>$sstop, dataset=>$ds->id, chr=>$chr, count=>1);
     my $tf3 = new Benchmark if $BENCHMARK;
     my @cds_feats;
 #    if (defined $self->MAX_FEATURES && $feat_count > $self->MAX_FEATURES)
@@ -589,21 +519,31 @@ sub process_features
 #	return;
 #      }
 
-    my @feats = $coge->get_features_in_region(start=>$sstart, end=>$sstop, dataset=>$ds->id, chr=>$chr);
+    my @feats = $coge->get_features_in_region(start=>$start, end=>$stop, dataset=>$ds->id, chr=>$chr);
     my @tmp1;
     my @tmp2;
     shift @feats while (scalar @feats && !$feats[0]);
     return unless scalar @feats;
     shift @feats while (scalar @feats && $feats[0]->type->name =~/(contig|chr|source)/);
     return unless scalar @feats;
-    if ($feats[0]->start < $sstart)
+    my $research =0;
+    my ($tmpfeat) = sort {$a->start <=> $b->start} @feats;
+#    print STDERR "$start - $stop\n";
+    if ($tmpfeat->start < $start)
       {
-	@tmp1 = $coge->get_features_in_region(start=>$feats[0]->start, end=>$sstart, dataset=>$ds->id, chr=>$chr);
+#	@tmp1 = $coge->get_features_in_region(start=>$feats[0]->start, end=>$start, dataset=>$ds->id, chr=>$chr);
+	$start = $tmpfeat->start;
+	$research=1;
       }
-    if ($feats[-1]->stop > $sstop)
+    ($tmpfeat) = sort {$b->stop <=> $a->stop} @feats;
+    if ($tmpfeat->stop > $stop)
       {
-	@tmp2 = $coge->get_features_in_region(start=>$sstop, end=>$feats[-1]->stop, dataset=>$ds->id, chr=>$chr);
+#	@tmp2 = $coge->get_features_in_region(start=>$stop, end=>$feats[-1]->stop, dataset=>$ds->id, chr=>$chr);
+	$stop = $tmpfeat->stop;
+	$research=1;
       }
+    @feats = $coge->get_features_in_region(start=>$start, end=>$stop, dataset=>$ds->id, chr=>$chr) if $research;
+#    print STDERR "$start - $stop\n";
     my %feats = map {$_->id, $_} @feats;
     my $tf4 = new Benchmark if $BENCHMARK;
     #let's find and color local duplications
@@ -614,7 +554,7 @@ sub process_features
       {
 	my $tf4a = new Benchmark if $BENCHMARK;
         my @f;
-	print STDERR "Feat info: Name: ",$feat->type->name,", Type: ",$feat->type->name, ", Loc: ", $feat->start,"-",$feat->stop,"\n" if $self->DEBUG;
+#	print STDERR "Feat info: Name: ",$feat->type->name,", Type: ",$feat->type->name, ", Loc: ", $feat->start,"-",$feat->stop,"\n" if $feat->type->name =~/gene/i;# if $self->DEBUG;
         if (($layers->{features}{pseudogene} || $layers->{all}) && $feat->type->name =~ /pseudogene/i)
           {
 	    my $f = CoGe::Graphics::Feature::Gene->new();
@@ -627,6 +567,7 @@ sub process_features
 	    $f->order(1);
 	    $f->overlay(1);
 	    $f->mag(0.5);
+	    $f->no_3D(1) if $layers->{features}{flat};
 	    push @f, $f;
           }
         elsif (($layers->{features}{gene} || $layers->{all}) && $feat->type->name =~ /Gene/i)
@@ -641,6 +582,7 @@ sub process_features
 	    $f->order(1);
 	    $f->overlay(1);
 	    $f->mag(0.5);
+	    $f->no_3D(1) if $layers->{features}{flat};
 	    push @f, $f;
           }
         elsif (($layers->{features}{cds} || $layers->{all}) && $feat->type->name =~ /CDS/i)
@@ -648,14 +590,16 @@ sub process_features
 	    my $f = CoGe::Graphics::Feature::Gene->new();
 	    my $color= [0,255,0, 50];
 	    $f->color($color);
-	    if ($layers->{features}{cbc})
+	    if ($layers->{features}{cbc} || $layers->{features}{cbc50})
 	      {
 		my $seq = $feat->genomic_sequence;
 		$f->sequence($seq);
 		$f->color_by_codon(1);
+		$f->codon_limit(50) if $layers->{features}{cbc50};
 	      }
 	    $f->order(1);
 	    $f->overlay(3);
+	    $f->no_3D(1) if $layers->{features}{flat};
 	    push @f, $f;
 	    push @cds_feats, $feat;
           }
@@ -666,6 +610,7 @@ sub process_features
 	    $f->order(1);
 	    $f->overlay(2);
 	    $f->mag(0.75);
+	    $f->no_3D(1) if $layers->{features}{flat};
 	    push @f, $f;
           }
         elsif (($layers->{features}{rna} || $layers->{all}) && $feat->type->name =~ /[^m]rna/i)
@@ -674,6 +619,7 @@ sub process_features
 	    $f->color([200,200,200, 50]);
 	    $f->order(1);
 	    $f->overlay(2);
+	    $f->no_3D(1) if $layers->{features}{flat};
 	    push @f, $f;
           }
         elsif (($layers->{features}{domain} || $layers->{all}) && $feat->type->name =~ /functional domains/i)
@@ -726,6 +672,7 @@ sub process_features
 		$f->color($color);
 		$f->order(1);
 		$f->overlay(4);
+		$f->no_3D(1) if $layers->{features}{flat};
 		push @f, $f;
 	      }
 	  }
@@ -777,6 +724,7 @@ sub process_features
 	    $f->type($feat->type->name);
 	    $f->skip_overlap_search(1) unless $c->overlap_adjustment;
 	    #	print STDERR Dumper $f;
+	    
 	    $c->add_feature($f);
 	  }
 	my $tf4f = new Benchmark if $BENCHMARK; 
@@ -834,7 +782,7 @@ sub draw_prots
 	next unless $seq->sequence_type->name =~ /prot/i;
 	my ($pseq) = $seq->sequence_data;
 	my $lastaa = 0;
-	$chrs = int ((($c->_region_length)/$c->iw)/3+.5); 
+	$chrs = int ((($c->region_length)/$c->iw)/3+.5); 
 	$chrs = 1 if $chrs < 1;
 	my $pos = 0;
 	while ($pos < length $pseq)
@@ -844,7 +792,9 @@ sub draw_prots
 		{$lastaa = 1;}
 	    foreach my $loc ($seq->get_genomic_locations(start=>$pos+1, stop=>$pos+$chrs))
 	      {
-		print STDERR "Adding protein feature: $aseq at position ", $loc->{start},"-", $loc->{stop},"\n" if $self->DEBUG;
+		next if $loc->{stop} < $c->start;
+		next if $loc->{start} > $c->stop;
+		print STDERR "Adding protein feature: $aseq at position ", $loc->{start},"-", $loc->{stop},": region: ", $c->start,"-",$c->stop,"\n" if $self->DEBUG;
 		my $ao = CoGe::Graphics::Feature::AminoAcid->new({aa=>$aseq, start=>$loc->{start}, stop=>$loc->{stop}, strand => $loc->{strand}, order=>2, lastaa=>$lastaa});
 		$ao->skip_overlap_search(1);
 		$ao->mag(0.75);
@@ -896,6 +846,10 @@ sub process_layers
        "gaga"=>"gaga",
        "gbox"=>"gbox",
        "cbc"=>"cbc", #color CDS by codon
+       "cbc50"=>"cbc50", #color CDS by codon
+       "flat"=>"flat", #are gene models draw 'flat' or pseudo-3D?
+       "olc"=>"overlap_check", #are features checked for overlap when drawing image?
+       "overlap_check"=>"overlap_check",
       );
     my %features = 
       (
@@ -910,6 +864,9 @@ sub process_layers
        rna=>1,
        local_dup=>1,
        cbc=>1,
+       cbc50=>1,
+       "flat"=>1,
+       "overlap_check"=>1,
       );
     my %layers;
     foreach my $layer (@$layers)
