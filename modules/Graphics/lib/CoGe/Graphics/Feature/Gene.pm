@@ -122,11 +122,6 @@ sub _post_initialize
 	  }
 	else 
 	  {
-	    foreach my $c (@{$self->color})
-	      {
-		$c-=50;
-		$c = 1 if $c < 1;
-	      }
 	    $gd->filledRectangle($x1,$y1, $x2, $y2, $self->get_color($self->color));
 	  }
       }
@@ -290,6 +285,11 @@ sub gen_color_by_codon
     my $c2 = 255;
     $c2 = 255*($pgc+$pgc) if $pgc < .5;
     $self->color([sprintf("%.0f",$c1),sprintf("%.0f",$c2),0,50]);
+    foreach my $c (@{$self->color})
+      {
+	$c-=50;
+	$c = 1 if $c < 1;
+      }
   }
 
 
