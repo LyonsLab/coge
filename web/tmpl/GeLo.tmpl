@@ -207,13 +207,13 @@
      }
 
 	function mapMouseMove(e) {
-	  if ($('#disable').is(':checked') == true) return;
+	  if ($('#popup_anno').is(':checked') == false) return;
 	  if (pageObj.time) clearTimeout(pageObj.time);
 	  if (parseInt(bp.element.innerHTML) <= 0) return;
        var mouse_x = e.pageX;
        var mouse_y = e.pageY;
             //alert(map.lastMouseX+","+map.lastMouseY);
-       pageObj.time = setTimeout("info_popup('"+mouse_x+","+mouse_y+"')",2000);
+       pageObj.time = setTimeout("info_popup('"+mouse_x+","+mouse_y+"')",1000);
      }
      
      function insert_query(html) {
@@ -318,11 +318,22 @@ init();
     <div id="map"></div>
     <div id='resolution'></div>
     <div id ='alert_grab'></div>
-<div style="float:left">OpenGene's map width: <input type=textbox class=backbox size=5 id="width" onkeypress="onEnter(event);" value=<TMPL_VAR NAME="width"> /><input type=button value="Resize" onclick="$('#map').css('width',$('#width').val());updateZoom();" /><input type=button value="Full-Window" onclick="$('#map').css('width',''+$('#main').width());updateZoom();" /> <input id='hide_query' style="display: none" type=button value="Hide Feature Info" onclick="$('#query').slideToggle(pageObj.speed);$('#hide_query').hide(0);" /><input type=button value="Grab Sequence" onclick="$('#grab').show(0);$('#grab_from').css('backgroundColor','FFFF66');pageObj.getseq=1;" />
-    <div id='grab' style="display:none;"><input type=text id='grab_from' value=0> to <input type=text id="grab_to" value=0> <input type=button value="View Sequence" onClick="launch_seqview('<TMPL_VAR NAME=DS>','<TMPL_VAR NAME=CHR>')"></div></div>
+<div style="float:left">
+OpenGene's map width: <input type=textbox class=backbox size=5 id="width" onkeypress="onEnter(event);" value=<TMPL_VAR NAME="width"> />
+<input type=button value="Resize" onclick="$('#map').css('width',$('#width').val());updateZoom();" />
+<input type=button value="Full-Window" onclick="$('#map').css('width',''+$('#main').width());updateZoom();" /> 
 
-    <div align="right">Use Flat Gene Models<input type=checkbox name=flat_models id=flat_models onclick="change_gene_model_type();" /></div>
+<input type=button value="Grab Sequence" onclick="$('#grab').show(0);$('#grab_from').css('backgroundColor','FFFF66');pageObj.getseq=1;" />
+
+    <div id='grab' style="display:none;"><input type=text id='grab_from' value=0> to <input type=text id="grab_to" value=0> <input type=button value="View Sequence" onClick="launch_seqview('<TMPL_VAR NAME=DS>','<TMPL_VAR NAME=CHR>')"></div>
+<input id='hide_query' style="display: none; float:left" type=button value="Hide Feature Info" onclick="$('#query').slideToggle(pageObj.speed);$('#hide_query').hide(0);" />
+
+</div>
+
+    <div align="right">Flat Gene Models<input type=checkbox name=flat_models id=flat_models onclick="change_gene_model_type();" /></div>
     <div align="right" >Expand Overlapping Gene Models<input type=checkbox name=overlap_models id=overlap_models onclick="change_gene_model_type();" /></div>
-    <div id='check' style="float:right">Disable Pop-up Annotations<input type=checkbox name=checkbox id=disable checked/></div>
-    <div id='query' style="float: left; overflow: auto;"></div>
+    <div id='check' style="float:right">Pop-up Annotations<input type=checkbox name="popup_anno" id="popup_anno" /></div>
+    <div id='query' style="float: left; overflow: auto;">
+
+</div>
 
