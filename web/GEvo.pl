@@ -97,7 +97,7 @@ $pj->DEBUG(0);
 #$pj->js_encode_function('escape');
 print $pj->build_html($FORM, \&gen_html);
 
-#$USER="elyons";print gen_html();
+#print gen_html();
 
 sub loading
   {
@@ -614,10 +614,11 @@ sub run
       {
 	($analysis_reports, $analysis_program,$message) = run_dialign (sets=>\@sets, params=>$param_string, parser_opts=>$parser_opts);
       }
-    else
+    elsif($analysis_program eq "blastn" || $analysis_program eq "tblastx")
       {
 	$analysis_reports = run_bl2seq(sets=>\@sets, params=>$param_string, parser_opts=>$parser_opts, blast_program=>$analysis_program, spike_seq=>$spike_seq);
       }
+    
     $analysis_reports = [] unless ref($analysis_reports) =~ /ARRAY/i;
     write_log($message, $cogeweb->logfile) if $message;
    #sets => array or data for blast
@@ -2579,6 +2580,7 @@ sub algorithm_list
     my $program = shift;
     $program = "blastz" unless $program;
     my @programs = sort {lc $a cmp lc $b} qw(blastn blastz CHAOS DiAlign_2 LAGAN tblastx);
+    push @programs, "-=NONE=-";
     my $html;
     foreach my $prog (@programs)
       {
