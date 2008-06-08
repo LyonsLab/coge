@@ -81,6 +81,7 @@ sub gen_body
     my $form = shift || $FORM;
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GenomeView.tmpl');
     my $name = $form->param('org_name');
+    my $desc = $form->param('org_desc');
     my $oid = $form->param('oid');
     my $org = $coge->resultset('Organism')->resolve($oid) if $oid;
     $name = $org->name if $org;
@@ -88,6 +89,8 @@ sub gen_body
     my $dsid = $form->param('dsid');
     $name = "Search" unless $name;
     $template->param(ORG_NAME=>$name) if $name;
+    $desc = "Search" unless $desc;
+    $template->param(ORG_DESC=>$desc) if $desc;
     $name = "" if $name =~ /Search/;
     $template->param(ORG_LIST=>get_orgs($name));
     my ($ds) = $coge->resultset('Dataset')->resolve($dsid) if $dsid;
@@ -103,8 +106,22 @@ sub gen_body
 
 sub get_orgs
   {
-    my $name = shift;
-    my @db = $name ? $coge->resultset("Organism")->search({name=>{like=>"%".$name."%"}}) : $coge->resultset("Organism")->all;
+    my %opts = @_;
+    my $name = $opts{name};
+    my $desc = $opts{desc};
+    my @db;
+    if ($name) 
+      {
+	@db = $coge->resultset("Organism")->search({name=>{like=>"%".$name."%"}});
+      }
+    elsif($desc)
+      {
+	@db = $coge->resultset("Organism")->search({description=>{like=>"%".$desc."%"}});
+      }
+    else
+      {
+	@db = $coge->resultset("Organism")->all;
+      }
     ($USER) = CoGe::Accessory::LogUser->get_user();
     my $restricted_orgs = restricted_orgs(user=>$USER);
     my @opts;
@@ -255,13 +272,16 @@ sub get_dataset_chr_info
     return $html unless $dsd;
     my $ds = $coge->resultset("Dataset")->find($dsd);
     return $html unless $ds;
-    my $length = commify( $ds->last_chromosome_position($chr) );
+    my $length = $ds->last_chromosome_position($chr);
     my $type = $ds->sequence_type;
     my $type_html = $type->name if $type;
     $type_html .= ": ".$type->description if $type && $type->description;
     $type_html = "Unknown" unless $type_html;
+    my $gc = $length < 10000000? gen_gc_for_chromosome(dsid=>$ds->id, chr=>$chr): 0;
+    $length = commify($length);
+    $gc = $gc ? $gc : qq{<div id=chromosome_gc class="link" onclick="\$('#chromosome_gc').removeClass('link'); gen_gc_for_chromosome(['args__dsid','ds_id','args__chr','chr'],['chromosome_gc']);">Click for percent GC content</div>};
     $html .= qq{
-<tr><td>Nucleotides:<td>$length<td><div id=chromosome_gc class="link" onclick="\$('#chromosome_gc').removeClass('link'); gen_gc_for_chromosome(['args__dsid','ds_id','args__chr','chr'],['chromosome_gc']);">Click for percent GC content</div>
+<tr><td>Nucleotides:<td>$length<td>$gc
 <tr><td>Sequence Type:<td colspan=2>$type_html
 <tr><td>Noncoding sequence:<td colspan=2><div id=noncoding_gc class="link" onclick = "gen_data(['args__loading'],['noncoding_gc']);\$('#noncoding_gc').removeClass('link');  gen_gc_for_noncoding(['args__dsid','ds_id','args__chr','chr'],['noncoding_gc']);">Click for percent GC content</div>
 } if $length;
