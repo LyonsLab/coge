@@ -86,7 +86,7 @@ sub gen_html
 	foreach my $feat (sort {$a->type->name cmp $b->type->name} @feats)
 	  {
 	    next if $feat->type->name =~ /^source$/;
-	    $html .= "<tr><td valign='top'>".$feat->type->name."</td><td valign='top'>".(join (", ", map {$_->name} $feat->names))."</td></tr>";
+	    $html .= "<tr><td valign='top'>".$feat->type->name."</td><td valign='top'>".(join (", ",$feat->names))."</td></tr>";
 	  }
 	$html .="</table>";
 	return $html;
