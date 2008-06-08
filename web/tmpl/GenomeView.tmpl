@@ -41,7 +41,17 @@ function get_organism_name_chain(val)
  $('#chr_info').empty();
  $('#ds_info').html('<input type=hidden id = "chr">');
  $('#viewer').empty();
- get_orgs(['args__'+val], [dataset_chain]);	 
+ get_orgs(['args__name','args__'+val], [dataset_chain]);	 
+}
+
+function get_organism_desc_chain(val)
+{
+ $('#org_list').html('<input type=hidden id = "org_id"><font class="loading"></font>');
+ $('#ds_list').html('<input type=hidden id = "ds_id">');
+ $('#chr_info').empty();
+ $('#ds_info').html('<input type=hidden id = "chr">');
+ $('#viewer').empty();
+ get_orgs(['args__desc','args__'+val], [dataset_chain]);	 
 }
 
 function get_dataset_name_chain(val)
@@ -64,11 +74,20 @@ function launch_viewer (dsd, chr) {
 }
 function timing(val){
   var searchterm;
-  if (val) {searchterm = $('#org_name').val();}
-  else {
+  if (val == "org_name") 
+   {
+    searchterm = $('#org_name').val();
+   }
+  else if (val == "org_desc")
+   {
+    searchterm = $('#org_desc').val();
+   }
+  else if (val == "ds_name")
+   {
     searchterm = $('#ds_name').val();
     if (!searchterm) {val=0;}
    }
+  if (!searchterm) {val=0;}
   if(searchterm == "Search")
   {
     searchterm = "";
@@ -82,19 +101,33 @@ function timing(val){
   if (pageObj.time){
    clearTimeout(pageObj.time);
   }
-  if (val) {pageObj.time = setTimeout("get_organism_name_chain($('#org_name').val())",500);}
-  else {pageObj.time = setTimeout("get_dataset_name_chain($('#ds_name').val())",500);}
+  if (val == "org_name") 
+   {
+     pageObj.time = setTimeout("get_organism_name_chain($('#org_name').val())",500);
+   }
+  else if (val == "org_desc")
+   {
+     pageObj.time = setTimeout("get_organism_desc_chain($('#org_desc').val())",500);
+   }
+  else if (val == "ds_name")
+   {
+     pageObj.time = setTimeout("get_dataset_name_chain($('#ds_name').val())",500);
+   }
 }
 
 $(document).ready(function(){
   if($('#org_name').val() != "Search") {
     $('#org_name').css({fontStyle: "normal"});
-    timing(1);
+    timing('org_name');
+  }  
+  if($('#org_desc').val() != "Search") {
+    $('#org_desc').css({fontStyle: "normal"});
+    timing('org_desc');
   }  
   if($('#ds_name').val() != "Search") {
     $('#ds_name').css({fontStyle: "normal"});
     if ($('#ds_list').html() == "undefined") {
-     timing(0);
+     timing('ds_name');
     } else { dataset_info_chain();}
      
   }
@@ -122,8 +155,9 @@ function changeColor(id, color) {
 <TABLE>
  <TR>
   <TD valign=top>
-   <DIV class = "oblique">Organisms</DIV>
-   <DIV id="blah">Organism Name: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_NAME">" name = "org_name" id="org_name" style="font-style:italic" onFocus="search_bar('org_name')" onKeyUp='timing(1);'></DIV>
+   <DIV class = "oblique">Organisms: </DIV>
+   <DIV style="">Organism Name: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_NAME">" name = "org_name" id="org_name" style="font-style:italic" onFocus="search_bar('org_name')" onKeyUp='timing("org_name");'></DIV>
+   <DIV>Organism Description: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_DESC">" name = "org_desc" id="org_desc" style="font-style:italic" onFocus="search_bar('org_desc')" onKeyUp='timing("org_desc");'></DIV>
    <DIV id="org_list"><TMPL_VAR NAME="ORG_LIST"></DIV>
 <TR nowrap>
   <TD valign=top nowrap>
@@ -131,7 +165,7 @@ function changeColor(id, color) {
    <tr nowrap valign=top>
    <td nowrap>
    <DIV class = "oblique">Datasets</DIV>
-   <DIV id="blah">Dataset Name: <input type="text" size=10 value="<TMPL_VAR NAME="DS_NAME">" name = "ds_name" style="font-style:italic" id="ds_name" onFocus="search_bar('ds_name')" onKeyUp='timing();' ></DIV>
+   <DIV id="blah">Dataset Name: <input type="text" size=10 value="<TMPL_VAR NAME="DS_NAME">" name = "ds_name" style="font-style:italic" id="ds_name" onFocus="search_bar('ds_name')" onKeyUp='timing("ds_name");' ></DIV>
    <DIV style="float: left; vertical-align: top;" id="ds_list"><TMPL_VAR NAME="DS_LIST"></DIV>
   <td align=left nowrap>
    <DIV style="float: left; vertical-align: top;" id="viewer"></DIV>
