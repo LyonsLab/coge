@@ -1213,20 +1213,20 @@ sub html_code_table
       my $trans_table = $opts{trans_table};
       my $code = $opts{code};
       my $counts = $opts{counts};
+      my $total_codon_count =0;
       if ($counts)
 	{
 	  $counts = $data;
-	  my $total = 0;
-	  grep {$total+=$_} values %$counts;
-	  $data = {map {$_,$counts->{$_}/$total} keys %$counts};
+	  grep {$total_codon_count+=$_} values %$counts;
+	  $data = {map {$_,$counts->{$_}/$total_codon_count} keys %$counts};
 	}
       $code = $self->code($trans_table) unless $code;
       $code = $code->{code} if $code->{code};
       ($max_val) = sort {$b <=> $a} map {$data->{$_}} keys %{$code};
       my $html;
       $html .= "<table><tr><td nowrap>";
-#      $html .= "<table>";
       my $count = 0;
+      my $codon_set_total =0;
       foreach my $codon (sort { $self->sort_nt1(substr($a, 0, 1)) <=> $self->sort_nt1(substr($b,0, 1)) || $self->sort_nt2(substr($a,1,1)) <=> $self->sort_nt2(substr($b,1,1)) || $self->sort_nt3(substr($a,2,1)) <=> $self->sort_nt3(substr($b,2,1)) } keys %{$code})
 	{
 	  my $tmp = substr($codon, 0, 1);
@@ -1235,20 +1235,25 @@ sub html_code_table
 	  my $str = "<span style=\"background-color: rgb($color, 255, $color);\" >".$codon."(".$code->{$codon}.") ".$current_val."%";
 	  $str .= " (".$counts->{$codon}.")" if $counts;
 	  $str .="</span>";
-	  
 	  unless ($count % 4)
 	    {
+	      $html .= "<span class=small>Total: ".100*sprintf("%.4f",$codon_set_total/$total_codon_count)."% ($codon_set_total)</span>" if $counts && $count && $count!=16;
 	      $html .= "<td size=1 style=\"background-color: rgb(200,200,200)\"><td nowrap>" if $count && $count != 16;
+	      $codon_set_total=0 unless $count == 16;
 	    }
 	  if ($count == 16)
 	    {
 	      $count = 0;
+	      $html .= "<span class=small>Total: ".100*sprintf("%.4f",$codon_set_total/$total_codon_count)."% ($codon_set_total)</span>" if $counts;
 	      $html .= "<tr size=1><td colspan=7 style=\"background-color: rgb(200,200,200)\"><tr><td nowrap>";
+	      $codon_set_total=0;
 	    }
 	  $html .= $str."<br>";
 	  $count++;
-
+	  $codon_set_total+=$counts->{$codon} if $counts;
+#
 	}
+      $html .= "<span class=small>Total: ".100*sprintf("%.4f",$codon_set_total/$total_codon_count)."% ($codon_set_total)</span>" if $counts;
       $html .= "</table>";
       return $html;
     }
@@ -1353,6 +1358,7 @@ sub html_aa
     my %opts = @_;
     my $trans_table = $opts{trans_table};
     my $code = $opts{code};
+    my $split_table =$opts{split};
     $code = $self->code($trans_table) unless $code;    my $data = $opts{data};
     my $counts = $opts{counts};
     if ($counts)
@@ -1365,15 +1371,20 @@ sub html_aa
     my $aa_sort = $self->sort_aa_by_gc(code=>$code, trans_table=>$trans_table);
     my ($max_aa) = sort {$b<=>$a} map{$data->{$_}} keys %$aa_sort;
     my $html;
+    $html .= "<table><tr valign=top><td>" if $split_table;
     $html .= "<table>";
+    my $total = 0;
     foreach (sort {$aa_sort->{$b} <=> $aa_sort->{$a} || $a cmp $b}keys %$aa_sort)
       {	
 	my $current_val = sprintf("%.2f",100*$data->{$_});
 	my $color = $self->color_by_usage(100*$max_aa,$current_val);
 	$html .= "<tr style=\"background-color: rgb($color,255,$color)\"><td nowrap>$_ (GC:".sprintf("%.0f",100*$aa_sort->{$_})."%)<td nowrap>".$current_val."%";
 	$html .= " (".$counts->{$_}.")" if $counts;
+	$total++;
+	$html .= "</table><td><table>" if $split_table && $total == 10;
       }
     $html .= "</table>";
+    $html .= "</table>" if $split_table;
     return $html;
   }
 
