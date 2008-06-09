@@ -328,11 +328,20 @@ sub codon_table
     my ($codon, $code_type) = $feat->codon_frequency(counts=>1);
     my %aa;
     my ($code) = $feat->genetic_code;
+    my $count = 0;
     foreach my $tri (keys %$code)
       {
 	$aa{$code->{$tri}}+=$codon->{$tri};
+	$count += $codon->{$tri};
       }
-    my $html = "Codon Usage: $code_type";
+    my $html = "Codon Usage: $code_type<br>";
+    my ($at, $gc) = $feat->gc_content;
+    $at*=100;
+    $gc*=100;
+    my ($wat, $wgc) = $feat->wobble_content;
+    $wat*=100;
+    $wgc*=100;
+    $html .= "Codon Count: $count".", GC: $at% $gc%".", Wobble GC: $wat% $wgc%";
     $html .= CoGe::Accessory::genetic_code->html_code_table(data=>$codon, code=>$code, counts=>1);
 #    $html .= "Predicted amino acid usage for $code_type genetic code:";
 #    $html .= CoGe::Accessory::genetic_code->html_aa(data=>\%aa, counts=>1);
