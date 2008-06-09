@@ -20,9 +20,6 @@ function feature_checkboxes(){
   else if (action == "blast"){
     blast(['args__'+accn],[export_url]);
   }
-  else if (action == "josh"){
-    get_josh_fids(['args__'+accn],['j']);
-  }
   else if (action == "featmap"){
   	send_to_featmap(['args__'+accn],[export_url]);
   }
@@ -93,6 +90,26 @@ jQuery.fn.unCheckCheckboxes = function()
 	);
 };
 
+function show_all_codon_tables(num) {
+ for (var i=1; i<=num; i++)
+  {
+   $('#codon_usage'+i).removeClass('link');
+   gen_data(['args__loading'],['codon_usage'+i]);
+   get_codon_table(i);
+  }
+}
+
+function get_codon_table (num) {
+if (ajax.length)
+   {
+    setTimeout("get_codon_table("+num+")",100);
+    return;
+   }
+   var fid =    $('#CDS'+num).val();
+   codon_table(['args__featid','args__'+fid],['codon_usage'+num]);
+
+}
+
 </SCRIPT>
 
 <div id="j"></div>
@@ -106,7 +123,11 @@ jQuery.fn.unCheckCheckboxes = function()
    <TH>Length</TH>
    <th>Organism(version)</th>
    <th>Annotation</th>
-   <th>Other Information</th>
+   <th>Other Information
+<TMPL_IF NAME=SHOW_ALL_CODON_TABLES>
+<br><span class="link small" onclick="show_all_codon_tables(<TMPL_VAR NAME="CDS_COUNT">)">Show all codon table</span>
+</TMPL_IF>
+   </th>
  </THEAD>
  <tbody align=left valign="top">
   <TMPL_LOOP NAME=INFO>
@@ -136,7 +157,6 @@ jQuery.fn.unCheckCheckboxes = function()
            		 <option value = "fasta">Get FASTA Sequences</option>
            		 <option value = "featmap">Get Feature Genome Map</option>
            		 <option value = "xls">Export to Excel</option>
-           		 <TMPL_VAR NAME=JOSH>
           </selected>  
           <input type=button value="Go" onClick="feature_checkboxes()">    
   </div>
