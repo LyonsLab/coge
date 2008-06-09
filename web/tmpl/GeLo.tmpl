@@ -1,5 +1,4 @@
 
-
     <style type="text/css">
         #map {
             width: ;
@@ -124,7 +123,7 @@
                  ,{'ds':ds,'chr':chr,'version':version,layers:"CDS,cbc50",'organism':org}
                  ,{isBaseLayer:false}
              );
-            ld = new OpenLayers.Layer.Genomic( "<span id='local_dup'>Local Duplicates</span>" , server
+            local_dup = new OpenLayers.Layer.Genomic( "<span id='local_dup'>Local Duplicates</span>" , server
                  ,{'ds':ds,'chr':chr,layers:"local_dup",'version':version,'organism':org,}
                  ,{isBaseLayer:false}
              );
@@ -133,30 +132,30 @@
                  ,{'ds':ds,'chr':chr,'version':version,layers:"protein",'organism':org}
                  ,{isBaseLayer:false}
              );
-            fd = new OpenLayers.Layer.Genomic( "<span id='func_dom'>functional domains</span>" , server
+            func_domain = new OpenLayers.Layer.Genomic( "<span id='func_dom'>functional domains</span>" , server
                  ,{'ds':ds,'chr':chr,'organism':org,'ds':ds,'version':version,layers:"domain"}
                  ,{isBaseLayer:false}
              );
 	    
             map.addControl(new OpenLayers.Control.LayerSwitcher())
 
-            gc.setVisibility(true);
+            gc.setVisibility(<TMPL_VAR NAME="GC">);
             map.addLayer(gc);
-            gaga.setVisibility(false);
+            gaga.setVisibility(<TMPL_VAR NAME="GAGA">);
             map.addLayer(gaga);
-            gbox.setVisibility(false);
+            gbox.setVisibility(<TMPL_VAR NAME="GBOX">);
             map.addLayer(gbox);
-            genes.setVisibility(true);
+            genes.setVisibility(<TMPL_VAR NAME="GENES">);
             map.addLayer(genes);
-            wobble_GC_usage.setVisibility(true);
+            wobble_GC_usage.setVisibility(<TMPL_VAR NAME="WOBBLEGC">);
             map.addLayer(wobble_GC_usage);
-            wobble_GC_usage_first_50.setVisibility(false);
+            wobble_GC_usage_first_50.setVisibility(<TMPL_VAR NAME="WOBBLE50GC">);
             map.addLayer(wobble_GC_usage_first_50);
-            ld.setVisibility(false);
-            map.addLayer(ld);
-            fd.setVisibility(false);
-            map.addLayer(fd);
-            prot.setVisibility(false);
+            local_dup.setVisibility(<TMPL_VAR NAME="LOCALDUP">);
+            map.addLayer(local_dup);
+            func_domain.setVisibility(<TMPL_VAR NAME="FUNCDOMAIN">);
+            map.addLayer(func_domain);
+            prot.setVisibility(<TMPL_VAR NAME="PROT">);
             map.addLayer(prot);
             /*                                          zoomLevel */
             map.setCenter(new OpenLayers.BasePair(loc), zoom);
@@ -305,11 +304,40 @@ function change_gene_model_type()
     }
  }
 
+function go_save_options() {
+
+var show_gc =gc.visibility;
+var show_gaga =gaga.visibility;
+var show_gbox =gbox.visibility;
+var show_genes =genes.visibility;
+var show_wobblegc =wobble_GC_usage.visibility;
+var show_wobble50gc =wobble_GC_usage_first_50.visibility;
+var show_localdup =local_dup.visibility;
+var show_funcdomain =func_domain.visibility;
+var show_prot =prot.visibility;
+save_options([
+'args__flat','args__'+$('#flat_models').is(':checked'), 
+'args__expand','args__'+$('#overlap_models').is(':checked'), 
+'args__popupanno','args__'+$('#popup_anno').is(':checked'), 
+'args__gc','args__'+show_gc,
+'args__gaga','args__'+show_gaga,
+'args__gbox','args__'+show_gbox,
+'args__genes','args__'+show_genes,
+'args__wobblegc','args__'+show_wobblegc,
+'args__wobble50gc','args__'+show_wobble50gc,
+'args__localdup','args__'+show_localdup,
+'args__funcdomain','args__'+show_funcdomain,
+'args__prot','args__'+show_prot,
+],[]);
+}
+
 $(document).ready(function(){
 pageObj.getseq = 3;
 $('#width').val($('#main').width());
 $('#map').css('width',$('#width').val());
 init();
+change_gene_model_type();
+
 });
 
     </script>
@@ -330,9 +358,15 @@ OpenGene's map width: <input type=textbox class=backbox size=5 id="width" onkeyp
 
 </div>
 
-    <div align="right">Flat Gene Models<input type=checkbox name=flat_models id=flat_models onclick="change_gene_model_type();" /></div>
-    <div align="right" >Expand Overlapping Gene Models<input type=checkbox name=overlap_models id=overlap_models onclick="change_gene_model_type();" /></div>
-    <div id='check' style="float:right">Pop-up Annotations<input type=checkbox name="popup_anno" id="popup_anno" /></div>
+    <TMPL_IF NAME="SAVE_SETTINGS">
+    <div align="right"><input type=button value="Save Settings" name="SaveSettings" id="SaveSettings" onclick="go_save_options();"></div>
+    </TMPL_IF>
+
+
+
+    <div align="right">Flat Gene Models<input type=checkbox name=flat_models id=flat_models onclick="change_gene_model_type();" <TMPL_VAR NAME=FLAT> /></div>
+    <div align="right" >Expand Overlapping Gene Models<input type=checkbox name=overlap_models id=overlap_models onclick="change_gene_model_type();" <TMPL_VAR NAME=EXPAND> /></div>
+    <div id='check' style="float:right">Pop-up Annotations<input type=checkbox name="popup_anno" id="popup_anno" <TMPL_VAR NAME=POPUPANNO> /></div>
     <div id='query' style="float: left; overflow: auto;">
 
 </div>
