@@ -31,7 +31,6 @@ my $pj = new CGI::Ajax(
 		       protein_table=>\&protein_table,
 		       gc_content=>\&gc_content,
 		       gen_data=>\&gen_data,
-		       get_josh_fids=>\&get_josh_fids,
 		       send_to_featmap=>\&send_to_featmap,
 			);
 $pj->js_encode_function('escape');
@@ -86,11 +85,12 @@ sub gen_body
     my $start = $form->param('start') if $form->param('start');
     my $stop = $form->param('stop') if $form->param('stop');
     push @$feat_list, @{get_fids_from_dataset(dsid=>$dsid, ftid=>$ftid, chr=>$chr, start=>$start, stop=>$stop)} if $dsid;
-    my $table = generate_table(feature_list=>$feat_list, ftid=>$ftid);
+    my ($table, $feat_types) = generate_table(feature_list=>$feat_list, ftid=>$ftid);
+    $template->param('CDS_COUNT'=>$feat_types->{CDS});
+    $template->param('SHOW_ALL_CODON_TABLES'=>$feat_types->{CDS}) if $feat_types->{CDS};
     if ($table)
       {
 	$template->param(INFO=>$table);
-	$template->param(JOSH=>qq{<option value = "josh">Get Josh some fids</option>}) if $USER->user_name =~ /jkane/;
 	return $template->output;
       }
     else
@@ -137,6 +137,7 @@ sub generate_table
     my $ftid = $opts{ftid};
     return unless @$feat_list;
     my @table;
+    my %feat_types;
     my $count = 1;
     $feat_list = [map {$coge->resultset("Feature")->find($_)} @$feat_list];
     $feat_list = [sort {$a->organism->name cmp $b->organism->name || $a->type->name cmp $b->type->name || $a->chromosome cmp $b->chromosome|| $a->start <=> $b->start}@$feat_list];
@@ -151,12 +152,14 @@ sub generate_table
 	{
 	  next unless $feat->type->id eq $ftid;
 	}
+      $feat_types{$feat->type->name}++;
       my $featid = $feat->id;
       my ($name) = $feat->names;
       my $hpp = $feat->annotation_pretty_print_html();
       my $row_style = $count%2 ? "even" : "odd";
       my $other;
-      $other .= "<div class=link id=codon_usage$count><DIV onclick=\" \$('#codon_usage$count').removeClass('link'); gen_data(['args__loading'],['codon_usage$count']); codon_table(['args__featid','args__$featid'],['codon_usage$count'])\">"."Click for codon usage"."</DIV></DIV>" if $feat->type->name eq "CDS";
+      my $cds_count = $feat_types{CDS};
+      $other .= "<div class=link id=codon_usage$cds_count><DIV onclick=\" \$('#codon_usage$cds_count').removeClass('link'); gen_data(['args__loading'],['codon_usage$cds_count']); codon_table(['args__featid','args__$featid'],['codon_usage$cds_count'])\">"."Click for codon usage"."</DIV></DIV><input type=hidden id=CDS$cds_count value=$featid>" if $feat->type->name eq "CDS";
       push @table,{
 		   FEATID=>$featid,
 		   NAME=>$name,
@@ -172,7 +175,7 @@ sub generate_table
 		  };
       $count++;
     }
-   return \@table;
+   return \@table, \%feat_types;
   }
 
   sub gen_data
@@ -255,14 +258,6 @@ sub generate_table
 	$url =~s/&$//;
 	return $url;
   }
-  
-sub get_josh_fids
-{
-	 my $accn_list = shift;
-    $accn_list =~ s/^,//;
-    $accn_list =~ s/,$//;
-    return $accn_list;    	
-}
   
 sub generate_excel_file
   {
