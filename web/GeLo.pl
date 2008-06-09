@@ -11,8 +11,9 @@ use CoGeX;
 $ENV{PATH} = "/opt/apache2/CoGe/";
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 
-use vars qw( $DATE $DEBUG $USER $FORM $coge);
+use vars qw( $PAGE_NAME $DATE $DEBUG $USER $FORM $coge);
 
+$PAGE_NAME="GenomeView.pl";
 $DEBUG = 0;
 $FORM = new CGI;
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
@@ -23,6 +24,7 @@ $coge = CoGeX->dbconnect();
 my $pj = new CGI::Ajax(
 		       gen_html=>\&gen_html,
 		       grab_sequence=>\&grab_sequence,
+		       save_options=>\&save_options,
 			);
 $pj->js_encode_function('escape');
 print $pj->build_html($FORM, \&gen_html);
@@ -68,6 +70,7 @@ sub gen_body
     my $loc = $form->param('x');
     my $ver = $form->param('ver');
     my $org = $form->param('org');
+    my $prefs = load_settings(user=>$USER, page=>$PAGE_NAME);
     if ($ds)
       {
 	my $dso = $coge->resultset('Dataset')->find($ds);
@@ -82,6 +85,21 @@ sub gen_body
     $template->param(DS=>$ds);
     $template->param(LOC=>$loc);
     $template->param(ZOOM=>$z);
+    $template->param(SAVE_SETTINGS=>1) unless $USER->user_name eq "public";
+    $template->param(FLAT=>"checked") if $prefs->{'flat'} eq "true";
+    $template->param(EXPAND=>"checked") if $prefs->{'expand'} eq "true";
+    $template->param(POPUPANNO=>"checked") if $prefs->{'popupanno'} eq "true";
+    my %default_true = (
+			gc=>'true',
+			genes=>'true',
+		       );
+    foreach my $item (qw (gc gaga gbox genes wobblegc wobble50gc localdup funcdomain prot))
+      {
+	my $show = $prefs->{$item};
+	$show = $default_true{$item} unless $show;
+	$show = 'false' unless $show;
+	$template->param(uc($item)=>$show);
+      }
     my $html = $template->output;
     return $html;
   }
@@ -107,3 +125,9 @@ sub grab_sequence
   	return $vals[0],$vals[1];
   }
 
+sub save_options
+  {
+    my %opts = @_;
+    my $opts = Dumper \%opts;
+    my $item = save_settings(opts=>$opts, user=>$USER, page=>$PAGE_NAME);
+  }
