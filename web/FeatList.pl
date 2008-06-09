@@ -160,6 +160,13 @@ sub generate_table
       my $other;
       my $cds_count = $feat_types{CDS};
       $other .= "<div class=link id=codon_usage$cds_count><DIV onclick=\" \$('#codon_usage$cds_count').removeClass('link'); gen_data(['args__loading'],['codon_usage$cds_count']); codon_table(['args__featid','args__$featid'],['codon_usage$cds_count'])\">"."Click for codon usage"."</DIV></DIV><input type=hidden id=CDS$cds_count value=$featid>" if $feat->type->name eq "CDS";
+    my ($at, $gc) = $feat->gc_content;
+    $at*=100;
+    $gc*=100;
+    my ($wat, $wgc) = $feat->wobble_content;
+    $wat*=100;
+    $wgc*=100;
+
       push @table,{
 		   FEATID=>$featid,
 		   NAME=>$name,
@@ -172,6 +179,11 @@ sub generate_table
 		   TABLE_ROW=>$row_style,
 		   LENGTH=>$feat->length(),
 		   OTHER=>$other,
+		   AT=>$at,
+		   GC=>$gc,
+		   WAT=>$wat,
+		   WGC=>$wgc,
+
 		  };
       $count++;
     }
@@ -278,31 +290,46 @@ sub generate_excel_file
    	 $worksheet->write(0,2,"Location");
    	 $worksheet->write(0,3,"Strand");
    	 $worksheet->write(0,4,"Chromosome");
-   	 $worksheet->write(0,5,"Organism (version)");
-   	 $worksheet->write(0,6,"More information");
+   	 $worksheet->write(0,5,"Length");
+   	 $worksheet->write(0,6,"Percent GC");
+   	 $worksheet->write(0,7,"Percent AT");
+   	 $worksheet->write(0,8,"Percent Wobble GC");
+   	 $worksheet->write(0,9,"Percent Wobble AT");
+   	 $worksheet->write(0,10,"Organism (version)");
+   	 $worksheet->write(0,11,"More information");
    	
    	foreach my $featid (split /,/,$accn_list)
-    {
+	  {
    	   my ($feat) = $coge->resultset("Feature")->find($featid);
    	   next unless $feat;
    	   my ($name) = sort $feat->names;
    	   my $app = $feat->annotation_pretty_print();
-   	   $worksheet->write($i,0,"http://toxic.berkeley.edu/CoGe/FeatView.pl?accn=$name",$name);
-   	   $worksheet->write($i,1,$feat->type->name);
-   	   $worksheet->write($i,2,$feat->start."-".$feat->stop);
-   	   $worksheet->write($i,3,$feat->strand);
-   	   $worksheet->write($i,4,$feat->chr);
-   	   $worksheet->write($i,5,$feat->organism->name."(v ".$feat->version.")");
-   	   $worksheet->write($i,6,$app);
-   	   $i++;
-   	}
-   	
+	   my ($at, $gc) = $feat->gc_content;
+	   $at*=100;
+	   $gc*=100;
+	   my ($wat, $wgc) = $feat->wobble_content;
+	   $wat*=100;
+	   $wgc*=100;
+	   $worksheet->write($i,0,"http://toxic.berkeley.edu/CoGe/FeatView.pl?accn=$name",$name);
+	   $worksheet->write($i,1,$feat->type->name);
+	   $worksheet->write($i,2,$feat->start."-".$feat->stop);
+	   $worksheet->write($i,3,$feat->strand);
+	   $worksheet->write($i,4,$feat->chr);
+	   $worksheet->write($i,5,$feat->length);
+	   $worksheet->write($i,6,$gc);
+	   $worksheet->write($i,7,$at);
+	   $worksheet->write($i,8,$wgc);
+	   $worksheet->write($i,9,$wat);
+	   $worksheet->write($i,10,$feat->organism->name."(v ".$feat->version."), ".$feat->organism->description);
+	   $worksheet->write($i,11,$app);
+	   $i++;
+	 };
    	$workbook->close() or die "Error closing file: $!";
    	#print STDERR "tmp/Excel_$filename.xls\n";
    	return "tmp/Excel_$filename.xls";
-  }
-
-sub gc_content
+      }
+  
+  sub gc_content
   {
     my %args = @_;
     my $featid = $args{featid};
@@ -329,7 +356,9 @@ sub codon_table
 	$aa{$code->{$tri}}+=$codon->{$tri};
 	$count += $codon->{$tri};
       }
-    my $html = "Codon Usage: $code_type<br>";
+    my $html;
+    $html .= "<table><tr valign=top><td>";
+    $html .= "Codon Usage: $code_type<br>";
     my ($at, $gc) = $feat->gc_content;
     $at*=100;
     $gc*=100;
@@ -337,9 +366,15 @@ sub codon_table
     $wat*=100;
     $wgc*=100;
     $html .= "Codon Count: $count".", GC: $at% $gc%".", Wobble GC: $wat% $wgc%";
+    $html .="<td>";
+    $html .= "Predicted amino acid usage";
+    $html .= "<tr valign=top><td>";
     $html .= CoGe::Accessory::genetic_code->html_code_table(data=>$codon, code=>$code, counts=>1);
+#    $html .= "</div>";
 #    $html .= "Predicted amino acid usage for $code_type genetic code:";
-#    $html .= CoGe::Accessory::genetic_code->html_aa(data=>\%aa, counts=>1);
+    $html .= "<td>";
+    $html .= CoGe::Accessory::genetic_code->html_aa(data=>\%aa, counts=>1, split=>1);
+    $html .= "</table>";
     return $html;
   }
 
