@@ -92,7 +92,7 @@ sub gen_body
     $desc = "Search" unless $desc;
     $template->param(ORG_DESC=>$desc) if $desc;
     $name = "" if $name =~ /Search/;
-    $template->param(ORG_LIST=>get_orgs($name));
+    $template->param(ORG_LIST=>get_orgs(name=>$name));
     my ($ds) = $coge->resultset('Dataset')->resolve($dsid) if $dsid;
     $dsname = $ds->name if $ds;
     $dsname = "Search" unless $dsname;
@@ -237,7 +237,15 @@ sub get_dataset_info
     my %chr;
 #    map{$chr{$_}++} ($ds->chromosomes, $DB->get_genomic_seq_obj->get_chromosome_for_dataset($ds));
     map{$chr{$_}++} ($ds->get_chromosomes);
-    my @chr = sort keys %chr;
+    my $count = 100000;
+    foreach my $item (sort keys %chr)
+      {
+	my ($num) = $item=~/(\d+)/;
+	$num = $count unless $num;
+	$chr{$item} = $num;
+	$count++;
+      }
+    my @chr = sort {$chr{$a} <=> $chr{$b}}keys %chr;
     if (@chr)
       {
 	$html .= qq{<tr><td>Chromosome};
