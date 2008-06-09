@@ -121,6 +121,10 @@ if (ajax.length)
    <TH>Type</TH>
    <TH>Location</TH>
    <TH>Length</TH>
+   <TH>GC%</TH>
+   <TH>AT%</TH>
+   <TH>Wobble GC%</TH>
+   <TH>Wobble AT%</TH>
    <th>Organism(version)</th>
    <th>Annotation</th>
    <th>Other Information
@@ -135,12 +139,14 @@ if (ajax.length)
       <TD><input type=checkbox id='<TMPL_VAR NAME=FEATID>'></TD>
       <TD><TMPL_VAR NAME=NAME></TD>
       <TD><TMPL_VAR NAME=TYPE></TD>
-<!--      <TD><TMPL_VAR NAME=CHR></TD>-->
       <TD><TMPL_VAR NAME=LOC></TD>
       <TD><TMPL_VAR NAME=LENGTH></TD>
-<!--      <TD><TMPL_VAR NAME=STRAND></TD>-->
+      <TD><TMPL_VAR NAME=GC></TD>
+      <TD><TMPL_VAR NAME=AT></TD>
+      <TD><TMPL_VAR NAME=WGC></TD>
+      <TD><TMPL_VAR NAME=WAT></TD>
       <TD><TMPL_VAR NAME=ORG></TD>
-      <TD nowrap><TMPL_VAR NAME=HPP></TD>
+      <TD><TMPL_VAR NAME=HPP></TD>
       <TD nowrap><TMPL_VAR NAME=OTHER></TD>
     </TR>
    </TMPL_LOOP>
