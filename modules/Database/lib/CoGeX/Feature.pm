@@ -215,6 +215,7 @@ sub annotation_pretty_print
 	    $anno_obj->add_Annot($anno_type);
 	  }
       }
+    $anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<span class=\"title4\">Length</span>", Values=>[$self->length],Type_delimit=>": ", Val_delimit=>" "));
     my $ds = $self->dataset;
     my $org = $ds->organism->name;
     $org .= ": ".$ds->organism->description if $ds->organism->description;
@@ -311,6 +312,7 @@ sub annotation_pretty_print_html
     $location .= join (", ", map {$_->start."-".$_->stop} sort {$a->start <=> $b->start} $self->locs);
     $location .="(".$strand.")";
     my $featid = $self->id;
+    $anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<span class=\"title4\">Length</span>", Values=>[$self->length],Type_delimit=>": ", Val_delimit=>" "));
     $location = qq{<a href="$loc_link?featid=$featid&start=$start&stop=$stop&chr=$chr&dsid=$dataset_id&strand=$strand&featname=$outname" target=_new>}.$location."</a>" if $loc_link;
     $location = qq{<span class="data">$location</span>};
     $anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<span class=\"title4\"><a href=\"GeLo.pl?chr=$chr&ds=$dataset_id&x=$start&z=5\" target=_new>Location</a></span>", Values=>[$location], Type_delimit=>": ", Val_delimit=>" "));
@@ -1072,8 +1074,8 @@ sub fasta
     $col = $opts{wrap} unless defined $col;
     $col = 100 unless defined $col;
     my $rc = $opts{rc};
-    my $upstream = $opts{upstream};
-    my $downstream = $opts{downstream};
+    my $upstream = $opts{upstream} || 0;
+    my $downstream = $opts{downstream} || 0;
     my $name_only = $opts{name_only};
     my $sep = $opts{sep}; #returns the header and sequence as separate items.
     my ($pri_name) = $self->primary_name;
