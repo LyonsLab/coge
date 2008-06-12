@@ -120,15 +120,25 @@ sub cogesearch
     $anno =~ s/^\s+//;
     $anno =~ s/\s+$//;
     my $type = $opts{type};
-    my $org_id = $opts{org_id} if $opts{org_id} && $opts{org_id} ne "all";
+    my $org_id = $opts{org_id};
+    my $org_name = $opts{org_name};
+    my $org_desc = $opts{org_desc};
+    my @org_ids;
+    $org_id = "all" unless $org_id;
+    if ($org_id eq "all")
+      {
+	my ($type, $search) = ("name", $org_name) if $org_name && $org_name ne "Search";
+	my ($type, $search) = ("desc", $org_desc) if $org_desc && $org_desc ne "Search";
+	@org_ids = get_orgs(id_only=>1, type=>$type, search=>$search);
+      }
+    else
+      {
+	push @org_ids, $org_id;
+      }
     my $feat_accn_wild = $opts{feat_name_wild};
     my $feat_anno_wild = $opts{feat_anno_wild};
-#    print STDERR Dumper \%opts;
     my $blank = qq{<input type="hidden" id="accn_select">};
-#    print STDERR "cogesearch: $accn\n";
-#    print STDERR Dumper @_;
     my $weak_query = "Query needs to be better defined.";
-#    return $weak_query.$blank unless length($accn) > 2 || $type || $org || length($anno) > 5;
     if (!$accn && !$anno)
       {
 	return $weak_query.$blank unless $org_id && $type;
@@ -145,8 +155,8 @@ sub cogesearch
     my $search = {'me.name'=>{like=>$accn}} if $accn;
     $search->{annotation}={like=>$anno} if $anno;
     $search->{feature_type_id}=$type if $type;
-    $search->{organism_id}={ -not_in=>[values %$restricted_orgs]} if values %$restricted_orgs;
-    $search->{organism_id}=$org_id if $org_id;
+    $search->{organism_id}{ -not_in}=[values %$restricted_orgs] if values %$restricted_orgs;
+    $search->{organism_id}{ -in}=[@org_ids] if @org_ids;
     my $join = {'feature'=>'dataset'};
     $join->{'feature'} = ['dataset','annotations'] if $anno;
     foreach my $name ($coge->resultset('FeatureName')->search(
@@ -276,7 +286,7 @@ sub gen_body
 
     $template->param(ACCN=>$ACCN);
     $template->param(FEAT_TYPE=> get_feature_types());
-    $template->param(ORG_LIST=>get_orgs());
+    $template->param(ORG_LIST=>get_orgs(type=>"none"));
     my $html = $template->output;
     return $html;
   }
@@ -311,10 +321,23 @@ sub get_feature_types
 
 sub get_data_source_info_for_accn
   {
-    my %args = @_;
-    my $accn = $args{accn};
-    my $org_id = $args{org_id};
-    $org_id = undef if $org_id eq "all";
+    my %opts = @_;
+    my $accn = $opts{accn};
+    my $org_id = $opts{org_id};
+    my $org_name = $opts{org_name};
+    my $org_desc = $opts{org_desc};
+    $org_id = "all" unless $org_id;
+    my %org_ids;
+    if ($org_id eq "all")
+      {
+	my ($type, $search) = ("name", $org_name) if $org_name && $org_name ne "Search";
+	my ($type, $search) = ("desc", $org_desc) if $org_desc && $org_desc ne "Search";
+	%org_ids = map {$_=>1} get_orgs(id_only=>1, type=>$type, search=>$search) if $type && $search;
+      }
+    else
+      {
+	$org_ids{$org_id}=1;
+      }
     my $blank = qq{<input type="hidden" id="dsid">------------};
     return $blank unless $accn;
     my @feats = $coge->resultset('Feature')->search({'feature_names.name'=>$accn},{join=>'feature_names'});
@@ -331,7 +354,7 @@ sub get_data_source_info_for_accn
 	  }
 	my $org = $val->organism->name if $val->organism;
 	next if $restricted_orgs->{$org};
-	next if ($org_id && $val->organism->id ne $org_id);
+	if (keys %org_ids) {next unless $org_ids{$val->organism->id};}
 	my $name = $val->name;
 	my $ver = $val->version;
 	my $desc = $val->description;
@@ -359,9 +382,26 @@ sub get_data_source_info_for_accn
 
 sub get_orgs
   {
-    my $name = shift;
-    my @db = $name ? $coge->resultset('Organism')->search({name=>{like=>"%".$name."%"}})
-      : $coge->resultset('Organism')->all();
+    my %opts = @_;
+    my $type = $opts{type};
+    my $search = $opts{search};
+    my $id_only = $opts{id_only};
+    my @db;
+    if ($type eq "name")
+      {
+	@db = $coge->resultset("Organism")->search({name=>{like=>"%".$search."%"}});
+      }
+    elsif($type eq "desc")
+      {
+	@db = $coge->resultset("Organism")->search({description=>{like=>"%".$search."%"}});
+      }
+    else
+      {
+	@db = $coge->resultset("Organism")->all;
+      }
+    return map {$_->id} @db if $id_only;
+    #my @db = $name ? $coge->resultset('Organism')->search({name=>{like=>"%".$name."%"}})
+    #  : $coge->resultset('Organism')->all();
     ($USER) = CoGe::Accessory::LogUser->get_user();
     my $restricted_orgs = restricted_orgs(user=>$USER);
     my @opts;
@@ -378,7 +418,7 @@ sub get_orgs
 	$html .= "No results";
 	return $html;
       }
-	unshift(@opts,"<OPTION value=\"all\" id=\"all\">All Organisms</OPTION>") if !$name and @opts;
+	unshift(@opts,"<OPTION value=\"all\" id=\"all\">All Listed Organisms</OPTION>");
     $html .= qq{<SELECT id="org_id" SIZE="8" MULTIPLE >\n};
     $html .= join ("\n", @opts);
     $html .= "\n</SELECT>\n";
@@ -389,8 +429,8 @@ sub get_orgs
 
 sub gc_content
   {
-    my %args = @_;
-    my $featid = $args{featid};
+    my %opts = @_;
+    my $featid = $opts{featid};
     return unless $featid;
     my ($feat) = $coge->resultset('Feature')->find($featid);
     my ($gc, $at) = $feat->gc_content;
@@ -400,8 +440,8 @@ sub gc_content
 
 sub codon_table
   {
-    my %args = @_;
-    my $featid = $args{featid};
+    my %opts = @_;
+    my $featid = $opts{featid};
 
     return unless $featid;
     my ($feat) = $coge->resultset('Feature')->find($featid);
@@ -421,8 +461,8 @@ sub codon_table
 
 sub protein_table
   {
-    my %args = @_;
-    my $featid = $args{featid};
+    my %opts = @_;
+    my $featid = $opts{featid};
     my ($feat) = $coge->resultset('Feature')->find($featid);
     my $aa = $feat->aa_frequency(counts=>1);
     my $html = "Amino Acid Usage";
@@ -432,8 +472,8 @@ sub protein_table
 
 sub codon_aa_alignment
   {
-    my %args = @_;
-    my $featid = $args{featid};
+    my %opts = @_;
+    my $featid = $opts{featid};
     my ($feat) = $coge->resultset('Feature')->find($featid);
     my $seq = join (" ", $feat->genomic_sequence()=~ /(...)/g);
     my $aa = join ("   ",split //,$feat->protein_sequence());
