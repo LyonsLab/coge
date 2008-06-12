@@ -14,7 +14,7 @@ $(document).ready(function(){
 
 function search_chain(val) {
  $('#data_table').show(0);
- accnminlen = 4;
+ accnminlen = 3;
  annominlen = 8;
  $('#anno').hide();	
  $('#accn_list').hide();
@@ -49,7 +49,7 @@ function search_chain(val) {
 }
 
 function go_cogesearch () {
- cogesearch(['args__accn','accn', 'args__anno','annosearch','args__type','type', 'args__org_id','org_id', 'args__feat_name_wild','feat_name_wild', 'args__feat_anno_wild', 'feat_anno_wild'],[source_search_chain]);
+ cogesearch(['args__accn','accn', 'args__anno','annosearch','args__type','type', 'args__org_id','org_id', 'args__feat_name_wild','feat_name_wild', 'args__feat_anno_wild', 'feat_anno_wild','args__org_name','org_name','args__org_desc','org_desc'],[source_search_chain]);
 }
 
 function source_search_chain (val) {
@@ -57,7 +57,7 @@ function source_search_chain (val) {
 // $('#FeatType').html('<input type="hidden" id="Type_name">');	
 // $('#anno').hide();
  if (val) {$('#accn_list').html(val);$('#accn_list').show()}
- source_search(['args__accn','accn_select', 'args__org_id','org_id'], [get_types_chain]);
+ source_search(['args__accn','accn_select', 'args__org_id','org_id','args__org_name','org_name','args__org_desc','org_desc'], [get_types_chain]);
 }
 
 function get_types_chain (val1, val2) {
@@ -89,13 +89,51 @@ function show_anno (anno)
  }
 
 
-function timing(){
+function timing(val){
+  namere = /name/;
+  descre = /desc/;
+  if (namere.exec(val)) 
+   {
+    $('#org_desc').val("Search").css({fontStyle: "italic"}); 
+    searchterm = $('#'+val).val();
+   }
+  else if (descre.exec(val)) 
+   {
+    $('#org_name').val("Search").css({fontStyle: "italic"}); ;
+    searchterm = $('#'+val).val();
+   }
+  var searchterm;
+  if (!searchterm) {val=0;}
+  if(searchterm == "Search")
+  {
+    searchterm = "";
+  }
+  if (pageObj.search && pageObj.search+val == searchterm+val)
+   {
+    return;
+   }
+  pageObj.search=searchterm+val;
   if (pageObj.time){
    clearTimeout(pageObj.time);
   }
-   pageObj.time = setTimeout("get_orgs(['org_text'],['org_list'])",500);
-   //pageObj.time = setTimeout("search_chain(0)",500);
+  re = /(\d+)/;
+  i = re.exec(val);
+  if (namere.exec(val)) 
+   {
+     pageObj.time = setTimeout("get_orgs(['args__type','args__name','args__search','org_name'],['org_list'])",500);
+   }
+  else if (descre.exec(val)) 
+   {
+     pageObj.time = setTimeout("get_orgs(['args__type','args__desc','args__search','org_desc'],['org_list'])",500);
+   }
 }
+
+//function timing(){
+//  if (pageObj.time){
+//   clearTimeout(pageObj.time);
+//  }
+//   pageObj.time = setTimeout("get_orgs(['org_text'],['org_list'])",500);
+//}
 
 $(document).ready(function(){
     if ($('#accn').val()) {search_chain(0);}
@@ -250,7 +288,8 @@ function search_bar(div_id){
 	 <tD valign="top" nowrap>
           Organism:
          <TD>
-         Name: <input type="text" size=11 onFocus="search_bar('org_text')" style="font-style:italic" value="Search" name="org_text" id="org_text" onKeyUp='timing();'><br>
+         Name: <input type="text" size=11 onFocus="search_bar('org_name')" style="font-style:italic" value="Search" name="org_name" id="org_name" onKeyUp='timing("org_name");'><br>
+	 Description: <input type="text" size=11 value="Search" name = "org_desc" id="org_desc" style="font-style:italic" onFocus="search_bar('org_desc')" onKeyUp='timing("org_desc");'></DIV>
 	  <DIV id="org_list"><TMPL_VAR NAME="ORG_LIST"></DIV>
 <!--          <select  name="org" id="org" onchange="get_feature_types(['args__orgid','org'],['search_type']);"/>
           <TMPL_LOOP NAME="ORG_LOOP">
