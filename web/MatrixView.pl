@@ -95,6 +95,7 @@ sub gen_data
       {
 	my $aa_sort = CoGe::Accessory::genetic_code->sort_aa_by_gc();
 	$html .= "<tr><th><th>".join ("<th>", sort {$aa_sort->{$b} <=> $aa_sort->{$a} || $a cmp $b}keys %$aa_sort);
+	$html.="<th>Total:";
 	$html .= "<tr>";
 	foreach my $aa1 (sort {$aa_sort->{$b} <=> $aa_sort->{$a} || $a cmp $b}keys %$aa_sort)
 	  {	
@@ -102,9 +103,11 @@ sub gen_data
 	    #	print STDERR join ("\t",  sort {$b<=>$a} map {$data->{$aa1}{$_}} keys %aa_sort),"\n";
 	    my ($max) = sort {$b<=>$a} map {$data->{$aa1}{$_}} keys %$aa_sort;
 	    my ($min1, $min2) = sort {$a<=>$b} map {$data->{$aa1}{$_}} keys %$aa_sort; #min one will be for the stop aa, we'll skip this since it is always rediculous 
+	    my $total = 0;
 	    foreach my $aa2 (sort {$aa_sort->{$b} <=> $aa_sort->{$a} || $a cmp $b}keys %$aa_sort)
 	      {	
 		my $val = $data->{$aa1}{$aa2};
+		$total+=$val;
 		my $color;
 		if ($val >0)
 		  {
@@ -119,12 +122,13 @@ sub gen_data
 #		my $color = color_by_usage($max+abs($min2), $val+abs($min2));
 #		$html .= "<td style=\"background-color: rgb($color,255,$color)\">".$val;
 	      }
-	    $html .= "<tr>";
+	    $html .= "<td>$total<tr>";
 	  }
       }
     else
       {
 	$html .= "<tr><th><th>".join ("<th>", sort { sort_nt1(substr($a, 0, 1)) <=> sort_nt1(substr($b,0, 1)) || sort_nt2(substr($a,1,1)) <=> sort_nt2(substr($b,1,1)) || sort_nt3(substr($a,2,1)) <=> sort_nt3(substr($b,2,1)) }keys  %$data);
+	$html .= "<th>Total";
 	$html .= "<tr>";
 	foreach my $aa1 (sort { sort_nt1(substr($a, 0, 1)) <=> sort_nt1(substr($b,0, 1)) || sort_nt2(substr($a,1,1)) <=> sort_nt2(substr($b,1,1)) || sort_nt3(substr($a,2,1)) <=> sort_nt3(substr($b,2,1)) }keys  %$data)
 	  {
@@ -132,9 +136,11 @@ sub gen_data
 	    #	print STDERR join ("\t",  sort {$b<=>$a} map {$data->{$aa1}{$_}} keys %aa_sort),"\n";
 	    my ($max) = sort {$b<=>$a} map {$data->{$aa1}{$_}} keys %$data;
 	    my ($min1, $min2, $min3, $min4) = sort {$a<=>$b} map {$data->{$aa1}{$_}} keys %$data; #min one will be for the stop aa, we'll skip this since it is always rediculous 
-	foreach my $aa2 (sort { sort_nt1(substr($a, 0, 1)) <=> sort_nt1(substr($b,0, 1)) || sort_nt2(substr($a,1,1)) <=> sort_nt2(substr($b,1,1)) || sort_nt3(substr($a,2,1)) <=> sort_nt3(substr($b,2,1)) } keys  %$data)#	    foreach my $aa2 (sort keys %$data)
+	    my $total =0;
+	    foreach my $aa2 (sort { sort_nt1(substr($a, 0, 1)) <=> sort_nt1(substr($b,0, 1)) || sort_nt2(substr($a,1,1)) <=> sort_nt2(substr($b,1,1)) || sort_nt3(substr($a,2,1)) <=> sort_nt3(substr($b,2,1)) } keys  %$data)#	    foreach my $aa2 (sort keys %$data)
 	      {	
 		my $val = $data->{$aa1}{$aa2};
+		$total+=$val;
 		my $color;
 		if ($val >0)
 		  {
@@ -147,7 +153,7 @@ sub gen_data
 		    $html .= "<td style=\"background-color: rgb(255,$color,$color)\">".$val;
 		  }
 	      }
-	    $html .= "<tr>";
+	    $html .= "<td>$total<tr>";
 	  }
       }
     $html .= "</table>";
