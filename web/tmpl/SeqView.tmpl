@@ -18,13 +18,15 @@ function generate_seq_obj(dsid,chr){
   this.start=$('#upstream').val();
   this.stop=$('#downstream').val();
   this.chr=chr;
+  this.pro=0;
 }
 
 function generate_seq_obj_with_featid(featid,featname){
   this.featid=featid;
   this.start=$('#upstream').val();
   this.stop=$('#downstream').val();
-  this.featname=featname
+  this.featname=featname;
+  this.pro=0;
 }
 
 function reset_updown() {
@@ -158,13 +160,16 @@ function featlist (link) {
         <textarea id=seq_text name=seq_text class=backbox readonly ondblclick="this.select();" style="height: 400px; width: 750px; overflow: auto;"></textarea>
 	</TD>
        <TMPL_VAR NAME=FEAT_INFO>
+       <div id=feature_info style="display:none"></div>
+       <br><br>
        <TMPL_VAR NAME=GC_INFO>
+       <div id=gc_info style="display:none"></div>
        </TR>
       </TABLE>
  </div>
 </TMPL_IF>
 <TMPL_IF NAME=BOTTOM_BUTTONS>
-  <DIV id="dynamic_button">
+  <DIV id="dynamic_button" align=center>
   <TABLE>
    <TR>
       <TD align=right valign="top">
@@ -192,15 +197,15 @@ function featlist (link) {
 </TMPL_IF>
 
 <TMPL_IF NAME="ADDITION">
-<DIV id="feat_annos" style="display: none">
+<DIV id="feat_annos" style="display: none" align=center>
 <TABLE>
  <TR>
   <TD>
   <div id = "maketable"></div>
 </Table>
 </DIV>
-   <div id=extend_title class="seqbackbox"><font class="oblique"><TMPL_VAR NAME="EXTEND"></font></div>
-  <table>
+   <div id=extend_title align=center class="seqbackbox"><font class="oblique"><TMPL_VAR NAME="EXTEND"></font></div>
+  <table align=center>
  <TR style="float:left"> 
 <!--    <form id="nt_stream" name="nt_stream"> -->
   <TD>
@@ -240,7 +245,7 @@ function featlist (link) {
    <TMPL_IF NAME="FEATURE">
 
   <TR>
-   <TD align = left valign = "middle">
+   <TD align =center valign = "middle">
    <input type = button value = "Reset" id="reset" onClick="reset_updown();get_sequence();">
    <!--<input type=button value="Select Sequence" id="select" onClick="selectText()">-->
       <input type= button value ="Add to Sequence" id = "add_to" onClick="redefine();"> 
