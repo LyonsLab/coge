@@ -78,7 +78,7 @@ function get_anno_chain (val1, val2) {
  }
  as = $('#accn_select').val();
  tn = $('#Type_name').val();
- get_anno(['accn_select', 'Type_name', 'dsid'],[show_anno]);
+ get_anno(['args__accn','accn_select', 'args__type','Type_name', 'args__dsid','dsid'],[show_anno]);
 }
 
 function show_anno (anno)
@@ -146,7 +146,7 @@ function add_to_featlist(featname, featid){
    alert('You have already added '+featname+'.');
    return;
   }
-  var html = '<option id='+featid+' value='+featid+'>'+featname+'</option>';
+  var html = '<option id='+featid+' value='+featid+ ' onClick="get_anno(['+"'args__fid','args__"+featid+"'"+'],[show_anno])">'+featname+'</option>';
   //alert(html);
   $('#blank').remove();
   $('#featlist_choice').append(html).sortSelect();
