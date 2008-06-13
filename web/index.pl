@@ -39,7 +39,7 @@ sub gen_html
 
     if ($FORM->param('logout') || !$USER)
       {
-	$template->param(USER=>"Not logged in");
+	$template->param(USER=>"public");
       }
     else
       {
@@ -92,9 +92,9 @@ sub gen_body
 #     else
 #       {
 # 	$tmpl->param(LOGIN=>1);
-# 	my $url = $FORM->param('url') if $FORM->param('url');
-# 	$url =~ s/:::/;/g if $url;
-# 	$tmpl->param(url=>$url);
+ 	my $url = $FORM->param('url') if $FORM->param('url');
+ 	$url =~ s/:::/;/g if $url;
+ 	$tmpl->param(url=>$url);
 #       }
 
     if ($FORM->param('logout'))
