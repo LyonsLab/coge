@@ -80,6 +80,16 @@ login(['uname', 'pwd','url'],[place_cookie]);
 
 //end of login related functions
 */
+
+function sign_in(){
+	var my_url = "&url=";
+	my_url = my_url+location.href;
+	my_url = my_url.replace(/http.+CoGe\//,"");
+	my_url = my_url.replace(/#$/,"");
+	my_url = my_url.replace(/;/g,":::");
+	window.location = "/CoGe/index.pl?login=1"+my_url;
+}
+	
 function animate_section(name, style, speedy, show) {
   if (show) {alert (name+"::"+style)}
   if (speedy == undefined) speedy = pageObj.speed;
@@ -136,7 +146,7 @@ function animate_section(name, style, speedy, show) {
 	<TMPL_IF NAME=LOGON>
 	<span class="small species">Welcome, <TMPL_VAR NAME=USER></span> <a href="/CoGe/index.pl?logout=1" class="small">Sign-out</a>
 	<TMPL_ELSE>
-	 <a href="/CoGe/index.pl?login=1" class="small">Sign-in</a> <!-- onclick="login_popup()"  -->
+	 <a href="#" onClick=sign_in() class="small">Sign-in</a> <!-- onclick="login_popup()"  -->
 	</TMPL_IF>
 	</td>
 	<td>
