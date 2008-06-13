@@ -79,7 +79,7 @@ sub get_types
 															       },{join=>'feature_names'});
 
     $html .= "<font class=small>Type count: ".scalar @opts."</font>\n<BR>\n";
-    $html .= qq{<SELECT id="Type_name" SIZE="10" MULTIPLE onChange="get_anno(['accn_select','Type_name', 'dsid'],[show_anno])" >\n};
+    $html .= qq{<SELECT id="Type_name" SIZE="10" MULTIPLE onChange="get_anno(['args__accn','accn_select','args__type','Type_name', 'args__dsid','dsid'],[show_anno])" >\n};
     $html .= join ("\n", @opts);
     $html .= "\n</SELECT>\n";
     $html =~ s/OPTION/OPTION SELECTED/;
@@ -89,7 +89,7 @@ sub get_types
 
 sub update_featlist
   {
-  	my $accn = shift;
+    my $accn = shift;
     return unless $accn;
     my $type = shift;
     my $featid = shift;
@@ -190,17 +190,26 @@ sub cogesearch
 
 sub get_anno
   {
-    my $accn = shift;
-    return unless $accn;
-    my $type = shift;
-    my $dataset_id = shift;
+    my %opts = @_;
+    my $accn = $opts{accn};
+    my $fid = $opts{fid};
+    return unless $accn || $fid;
+    my $type = $opts{type};
+    my $dataset_id = $opts{dsid};
     my @feats;
-    foreach my $feat ($coge->resultset('Feature')->search({
-							   'feature_names.name'=>$accn,
-							   dataset_id=>$dataset_id
-							  },{join=>'feature_names'}))
+    if ($accn)
       {
-	push @feats, $feat if ($feat->type->name eq $type);
+	foreach my $feat ($coge->resultset('Feature')->search({
+							       'feature_names.name'=>$accn,
+							       dataset_id=>$dataset_id
+							      },{join=>'feature_names'}))
+	  {
+	    push @feats, $feat if ($feat->type->name eq $type);
+	  }
+      }
+    else
+      {
+	push @feats,$coge->resultset('Feature')->find($fid);
       }
     my $anno;
     $anno .= "<font class=small>Annotation count: ".scalar @feats."</font>\n<BR>\n" if scalar @feats;
@@ -330,8 +339,9 @@ sub get_data_source_info_for_accn
     my %org_ids;
     if ($org_id eq "all")
       {
-	my ($type, $search) = ("name", $org_name) if $org_name && $org_name ne "Search";
-	my ($type, $search) = ("desc", $org_desc) if $org_desc && $org_desc ne "Search";
+	my ($type, $search);
+	($type, $search) = ("name", $org_name) if $org_name && $org_name ne "Search";
+	($type, $search) = ("desc", $org_desc) if $org_desc && $org_desc ne "Search";
 	%org_ids = map {$_=>1} get_orgs(id_only=>1, type=>$type, search=>$search) if $type && $search;
       }
     else
