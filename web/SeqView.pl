@@ -101,7 +101,7 @@ sub gen_body
 
       $template->param(FEATID=>$featid);
       $template->param(FEATNAME=>$feat_name);
-      $template->param(FEAT_INFO=>qq{<td valign=top><input type=button value="Get Feature Info" onClick="generate_feat_info(['args__$featid'],[display_feat_info])"><br><div id=feature_info style="display:none"></div>});
+      $template->param(FEAT_INFO=>qq{<td valign=top><input type=button value="Get Feature Info" onClick="generate_feat_info(['args__$featid'],[display_feat_info])">});
       $template->param(DSID=>$dsid); #to make JS happy
     $template->param(CHR=>$chr); #to make JS happy
     }
@@ -114,7 +114,7 @@ sub gen_body
         #generate_gc_info(chr=>$chr,stop=>$stop,start=>$start,dsid=>$dsid);
     }
 #
-    $template->param(GC_INFO=>qq{<td valign=top><input type=button value="Calculate GC Content" onClick="generate_gc_info(['seq_text'],[display_gc_info],'POST')"><br><div id=gc_info style="display:none"></div>});
+    $template->param(GC_INFO=>qq{<td valign=top><input type=button value="Calculate GC Content" onClick="generate_gc_info(['seq_text','args__'+myObj.pro],[display_gc_info],'POST')">});
     my $html = $template->output;
     return $html;
   }
@@ -399,6 +399,8 @@ sub generate_feat_info
 sub generate_gc_info
   {
     my $seq = shift;
+    my $seq_type = shift;
+    return "Cannot Calculate GC content of Protein Sequence" if $seq_type;
     $seq =~ s/>.*?\n//;
     $seq =~ s/\n//g;
     my $length = length($seq);
