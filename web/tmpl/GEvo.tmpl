@@ -458,6 +458,13 @@ function get_seq(seq_num)
  window.open("SeqView.pl?featid="+fid+"&dsid="+dsid+"&chr="+chr+"&start="+pos+"&upstream="+left+"&downstream="+right+"&rc="+rc);
  }
 
+function show_skip(num){
+  $('#skip_font'+num).show(0);
+}
+
+function hide_skip(num){
+	$('#skip_font'+num).hide(0);
+}
 
 </SCRIPT>
 
@@ -790,8 +797,9 @@ function get_seq(seq_num)
  </TABLE>
 
 </TD>
+<!--
 <td width="2" bgcolor="#99FF99">
-
+-->
 
  <TR class="small"><th align=left>Other options:
  <tr><td><Table>
@@ -978,7 +986,7 @@ function get_seq(seq_num)
 </TMPL_IF>
 
 <TMPL_IF NAME="RESULTS_DIV">
-<table><tr><td>
+<table align=center><tr><td>
 <DIV id="results" ></DIV><br>
 </table>
 </TMPL_IF>
@@ -989,6 +997,7 @@ function get_seq(seq_num)
 <th align=left id ="seq_set<TMPL_VAR NAME="SEQ_NUM">">Sequence <TMPL_VAR NAME="SEQ_NUM">: 
 
 <select class="backbox" id="seq_submit<TMPL_VAR NAME="SEQ_NUM">" size="1" onchange='seq_submit_change(<TMPL_VAR NAME="SEQ_NUM">)'>
+
 <TMPL_VAR NAME=COGEPOS>
 <option value="db<TMPL_VAR NAME="SEQ_NUM">">CoGe Database Name</option>
 <option value="gb<TMPL_VAR NAME="SEQ_NUM">">NCBI GenBank</option>
@@ -997,6 +1006,7 @@ function get_seq(seq_num)
 </select>
 
 <DIV id="db<TMPL_VAR NAME="SEQ_NUM">" style="display: none;" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">
+<font id=skip_font<TMPL_VAR NAME="SEQ_NUM"> style="color: red;display:none"> Sequence Skipped</font>
 <TABLE class="small">
        <TR valign="top">
         <TD>Name:
@@ -1099,8 +1109,8 @@ function get_seq(seq_num)
   <Td>
    Skip Sequence:
   <TD>
-	<label><input class="backbox" type="radio" name="skip_seq<TMPL_VAR NAME=SEQ_NUM>" id="skip_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="1" />Yes</label>
-	<label><input class="backbox" type="radio" name="skip_seq<TMPL_VAR NAME=SEQ_NUM>" id="skip_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="0" checked/>No</label><br>
+	<label><input class="backbox" onClick=show_skip(<TMPL_VAR NAME="SEQ_NUM">) type="radio" name="skip_seq<TMPL_VAR NAME=SEQ_NUM>" id="skip_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="1" />Yes</label>
+	<label><input class="backbox" onClick=hide_skip(<TMPL_VAR NAME="SEQ_NUM">) type="radio" name="skip_seq<TMPL_VAR NAME=SEQ_NUM>" id="skip_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="0" checked/>No</label><br>
  </table>
 </table>
 </th>
