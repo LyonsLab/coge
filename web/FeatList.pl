@@ -156,7 +156,7 @@ sub generate_table
       my $featid = $feat->id;
       my ($name) = $feat->names;
       my $hpp = $feat->annotation_pretty_print_html();
-      my $row_style = $count%2 ? "even" : "odd";
+      #my $row_style = $count%2 ? "even" : "odd";
       my $other;
       my $cds_count = $feat_types{CDS};
       $other .= "<div class=link id=codon_usage$cds_count><DIV onclick=\" \$('#codon_usage$cds_count').removeClass('link'); gen_data(['args__loading'],['codon_usage$cds_count']); codon_table(['args__featid','args__$featid'],['codon_usage$cds_count'])\">"."Click for codon usage"."</DIV></DIV><input type=hidden id=CDS$cds_count value=$featid>" if $feat->type->name eq "CDS";
@@ -176,7 +176,7 @@ sub generate_table
 #		   STRAND=>$feat->strand,
 		   ORG=>$feat->organism->name." (v".$feat->version.")",
 		   HPP=>$hpp, 
-		   TABLE_ROW=>$row_style,
+#		   TABLE_ROW=>$row_style,
 		   LENGTH=>$feat->length(),
 		   OTHER=>$other,
 		   AT=>$at,
