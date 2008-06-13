@@ -1,4 +1,32 @@
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.1.js"></SCRIPT>
 <SCRIPT language="JavaScript">
+
+$(document).ready(function(){
+		$('#feat_table').tablesorter({		
+		sortClassAsc: 'headerSortUp',		// Class name for ascending sorting action to header
+		sortClassDesc: 'headerSortDown',	// Class name for descending sorting action to header
+		headerClass: 'header',			// Class name for headers (th's)
+		widgets: ['zebra'],
+		textExtraction: 'complex',
+		headers: {0: {sorter: false},10: {sorter: false},11: {sorter: false}},					
+		});
+});
+
+/*
+$(document).ready(function()
+	{
+		init_table();
+	}
+);
+*/
+function init_table() {
+	if (ajax.length)
+   {
+    setTimeout("init_table()",100);
+    return;
+   }
+	$('#feat_table').trigger('update');
+}
 
 function feature_checkboxes(){
   var action = $('#checked_action').val();
@@ -97,6 +125,7 @@ function show_all_codon_tables(num) {
    gen_data(['args__loading'],['codon_usage'+i]);
    get_codon_table(i);
   }
+  $('#show_all_codon').remove();
 }
 
 function get_codon_table (num) {
@@ -114,28 +143,30 @@ if (ajax.length)
 
 <div id="j"></div>
 <form id=feature_list>
-<TABLE width=100%>
+<TABLE id=feat_table>
  <THEAD align=left>
+  <tr>
    <TH> </TH>
-   <TH>Feature Name</TH>
-   <TH>Type</TH>
-   <TH>Location</TH>
-   <TH>Length</TH>
-   <TH>GC%</TH>
-   <TH>AT%</TH>
-   <TH>Wobble GC%</TH>
-   <TH>Wobble AT%</TH>
-   <th>Organism(version)</th>
+   <TH class=header>Feature Name</TH>
+   <TH class=header>Type</TH>
+   <TH class=header>Location</TH>
+   <TH class=header>Length</TH>
+   <TH class=header>GC%</TH>
+   <TH class=header>AT%</TH>
+   <TH class=header>Wobble GC%</TH>
+   <TH class=header>Wobble AT%</TH>
+   <th class=header>Organism(version)</th>
    <th>Annotation</th>
    <th>Other Information
 <TMPL_IF NAME=SHOW_ALL_CODON_TABLES>
-<br><span class="link small" onclick="show_all_codon_tables(<TMPL_VAR NAME="CDS_COUNT">)">Show all codon table</span>
+<br><span id="show_all_codon" class="link small" onclick="show_all_codon_tables(<TMPL_VAR NAME="CDS_COUNT">)">Show all codon table</span>
 </TMPL_IF>
    </th>
+   </tr>
  </THEAD>
  <tbody align=left valign="top">
   <TMPL_LOOP NAME=INFO>
-    <TR class="<TMPL_VAR NAME=TABLE_ROW>">
+    <TR>
       <TD><input type=checkbox id='<TMPL_VAR NAME=FEATID>'></TD>
       <TD><TMPL_VAR NAME=NAME></TD>
       <TD><TMPL_VAR NAME=TYPE></TD>
