@@ -638,7 +638,7 @@ sub get_features
       }
     if ($last)
       {
-	my @return_feats = sort {$b->order <=> $a->order} @return_feats;
+	my @return_feats = sort {abs($b->order) <=> abs($a->order)} @return_feats;
 	return $return_feats[0];
       }
 #    print "Found feats: ", scalar @return_feats,"\n";
@@ -1205,12 +1205,12 @@ sub set_image_height
   {
     #this sub calculates how much height out picture needs based on options and features to be drawn
     my $self = shift;
-
     unless ($self->_max_track)
       {
 	my $top_feat = $self->get_feats(last_order=>1, strand=>1, fill=>0);
 	my $bot_feat = $self->get_feats(last_order=>1, strand=>-1, fill=>0);
 	my $max = $top_feat->order if $top_feat;
+	$max = $bot_feat->order unless $max;
 	$max = $bot_feat->order if $bot_feat && $max && $bot_feat->order > $max;
 	$max = 1 unless $max;
 	$self->_max_track($max);
