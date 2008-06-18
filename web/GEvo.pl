@@ -1559,22 +1559,6 @@ sub process_hsps
     return \%stats;;
   }
 
-sub generate_output
-  {
-    my %opts = @_;
-    my $file = $opts{file};
-    my $c = $opts{c};
-    if ($file)
-      {
-        $c->generate_png(file=>$file);
-      }
-    else
-      {
-        print "Content-type: image/png\n\n";
-        $c->generate_png();
-      }
-  } 
-
 sub generate_obj_from_seq
   {
     my $sequence = shift;
