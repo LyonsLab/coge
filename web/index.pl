@@ -52,6 +52,7 @@ sub gen_html
       }
     $template->param(DATE=>$DATE);
     $template->param(BOX_NAME=>"Welcome!");
+     $template->param(ADJUST_BOX=>1);
     $template->param(LOGO_PNG=>"CoGe-logo.png");
     $template->param(BODY=>gen_body());
 
