@@ -1,8 +1,16 @@
+<TMPL_IF NAME=ADJUST_BOX>
 <table align=center border="0" cellspacing="0" cellpadding="0">
+<TMPL_ELSE>
+<table width=100% border="0" cellspacing="0" cellpadding="0">
+</TMPL_IF>
  <tr> 
   <td width="6"><img src="/CoGe/picts/table/table_bg_head_tl.png" width="6" height="23"></td>
   <td width="6"  class="boxarttop">&nbsp;</td>
+  <TMPL_IF NAME=ADJUST_BOX>
   <td   class="boxarttop"><font class="oblique"><TMPL_VAR NAME=BOX_NAME></font></td>
+  <TMPL_ELSE>
+  <td width=100% class="boxarttop"><font class="oblique"><TMPL_VAR NAME=BOX_NAME></font></td>
+  </TMPL_IF>
   <td width="6" class="boxarttop">&nbsp;</td>
   <td width="6"><img src="/CoGe/picts/table/table_bg_head_tr.png" width="6" height="23"></td>
  </tr>
