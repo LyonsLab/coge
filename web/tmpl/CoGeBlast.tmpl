@@ -368,7 +368,22 @@ function get_ncbi_params(){
  return {w : word_size, e : expect, db : db,g : gapcost,j : job_title,p : program,mm: match_mismatch,m : matrix,c : comp,s : seq};
 }
 
+function update_basename(basename){
+	pageObj.basename=basename;
+	//alert(pageObj.basename);
+}
+
+function reset_basename(){
+	if(pageObj.basename) pageObj.basename=0;
+}
+
 function blastOff(){
+  if(!pageObj.basename) 
+  {
+  	setTimeout("blastOff()", 100);
+  	return;
+  }
+  //alert("Passed setTimeout loop");
   var check = $('#db_choice').getLength();
   if(($('#blank').val())||(check==0)){
     alert('You have not selected any databases to blast. You must select at least one.');
@@ -378,8 +393,12 @@ function blastOff(){
 
   var params = get_params();
 
-  $('.bresults').slideToggle(pageObj.speed);
-  $('#blast_results').html('<font class="loading dna">Loading. . .</font>');
+  //$('.bresults').slideToggle(pageObj.speed);
+  $('#blast_results').html('');
+  //$('#blast_results').html('<font class="loading dna">Running BLAST Search . . .</font>');
+  $('#log_text').html('').show(0);
+  pageObj.nolog=1;
+  setTimeout("monitor_log()", 1000);
 
   program = params.p;
   expect = params.e;
@@ -404,6 +423,7 @@ function blastOff(){
   var page_width = ($('#co').width())*(95/100);
   pageObj.image_width = page_width;
   var blastable_db = $('#db_choice').getLength(1);
+  //alert(pageObj.basename);
   blast_search([
   'args__program','args__'+program,
   'args__expect','args__'+expect,
@@ -423,6 +443,8 @@ function blastOff(){
   'args__zthreshold','args__'+zthreshold,
   'args__zmask','args__'+zmask,
 
+  'args__basename','args__'+pageObj.basename,
+
   'args__seq','args__'+seq,
   'args__blastable','args__'+blastable_db,
   'args__width','args__'+page_width
@@ -430,8 +452,8 @@ function blastOff(){
   
 }
  
-function blastresults(html,basename, click_all_links){
-  pageObj.basename = basename;
+function blastresults(html, click_all_links){
+  $('#log_text').hide(0);
   pageObj.featlinks = click_all_links;
   $('#blast_results').html(html);
   if($('#null').html() == "null") {
@@ -794,7 +816,128 @@ function clear_org_list()
  {
  $('#db_choice').empty();
  counting();
- } 
+ }
+ 
+ function monitor_log(log)
+{
+  var fasta = 0;
+  var blast = 0;
+  var results = 0;
+  var done = 0;
+  var match;
+  pageObj.finished = 0;
+  if (log) {
+  /*
+ 
+   if (log.match(/Finished!/))
+    {
+     database = database+"done!\n";
+     pageObj.finished = 1;
+    }
+   
+   match=log.match(/fasta/i);
+//  console.log(log);
+  if (match && match[0])
+   { 
+     match.reverse();  
+     sequence = "Generating "+match[0]+". . .";
+   }
+   match=log.match(/running\s+(\(.*?\))/g);
+   if (match && match[0]) {
+     sequence = sequence +"done!<br/>";
+     match.reverse();
+     val = match[0];
+     if (!val) val = "";
+     algo = "Alignment algorithm "+val+". . .";
+   }
+  
+   match=log.match(/image\s+(\(.*?\))/g);
+   if (match && match[0]) {
+     algo = algo+"done!<br/>";
+     match.reverse();
+     val = match[0];
+     if (!val) val = "";
+     image = "Rendering "+val+". . .";
+   }
+   if (log.match(/database/)) {
+     image = image+"done!<br/>";
+     database = "Generating annotation database. . .";
+   }
+  } 
+  */
+  //match=log.match(/\*\s+fasta\sfile/);
+  if(log.match(/\*\s+fasta\sfile/i))
+  {
+  	fasta="Generating blastable databases . . . <br/>";
+  	match=log.match(/\*(.+)\*\sblastdb/g);
+  	if(match)
+  	{
+  		var crappy_workaround;
+  		for (i=0;i<match.length;i++)
+  		{
+  			crappy_workaround = match[i].match(/\*(.+)\*/);
+  			fasta += "&nbsp;&nbsp;&nbsp;"+crappy_workaround[1]+" database built!<br/>";
+  		}
+  	}
+  }
+  
+    if(log.match(/running/i))
+  {
+  	fasta += "Blastable databases generation done!<br/>";
+  	var blast_program = log.match(/-p\s(\w+)\s/);
+  	blast="Running "+blast_program[1]+" algorithm . . . <br/>";
+  	
+  	match=log.match(/\*(.+)\*\sblast\sanalysis\scomplete/g);
+  	if(match)
+  	{
+  		var crappy_workaround;
+  		for (i=0;i<match.length;i++)
+  		{
+  			crappy_workaround = match[i].match(/\*(.+)\*/);
+  			blast += "&nbsp;&nbsp;&nbsp;"+crappy_workaround[1]+" complete!<br/>";
+  		}
+  	}
+  }
+  
+  if(log.match(/Results/i))
+  {
+  	blast += "Analysis complete!<br/>";
+  	results = "Collecting resultings . . . ";
+  }
+     if (log.match(/Finished/i))
+    {
+     results += "done!<br/>";
+     done = "Displaying results . . ."
+     
+     pageObj.finished = 1;
+    }
+    
+  }
+  
+  else {pageObj.nolog += 1;}
+  var message = "Initializing search . . . ";
+  
+  if (fasta) message += "done!<br/>"+fasta;
+  if (blast) message += blast;
+  if (results) message += results;
+  if (done) message += done;
+  
+  if (!pageObj.finished && pageObj.nolog<8) {setTimeout("read_log(['args__logfile', 'args__'+pageObj.basename, 'args__prog','args__CoGeBlast'], [monitor_log])",1000);}
+  /*
+  if (!pageObj.finished && pageObj.nolog<3)
+  {
+    var waittime = pageObj.waittime;
+    pageObj.waittime = pageObj.waittime*2;
+    message+="<br/>Next progress check in "+waittime/1000+" seconds.";
+    if (ajax.length) {setTimeout("read_log(['args__logfile', 'args__'+pageObj.basename, 'args__prog','args__GEvo'], [monitor_log])");}
+  }
+  else
+  {
+   message = "There has been no update on your results during the first "+pageObj.waittime/1000+ "seconds of your analysis.  An error may have occured.  You can check your logfile at <a href='tmp/GEvo/"+pageObj.basename+".log' target=_new>this link</a> which may help you determin what went wrong, or send it to CoGe's adminstrator for debugging.  In the meanwhile, we suggest that you either wait a bit longer to see if the analsysi completes, and if not rerun your analysis.  If you have submitting very large regions for anlaysis (e.g. several megabases), please try a smaller region for analsyis.";
+  }
+  */
+  if (message) $('#log_text').html("<div class='small'>"+message+'</div>');
+}
 
 </SCRIPT>
 </TMPL_IF>
@@ -803,15 +946,16 @@ function clear_org_list()
 <div id=big_picture title="Enlarged Image of HSP Hits" class="image_window" style="display:none;"></div>
 <div id="sequence_popup" class="image_window" style="display:none;overflow: auto;max-height: 300px;"></div>
 <div id="org_info_popup" class="image_window" style="display:none;overflow: auto;max-height: 300px;"></div>
+<!--
 <TABLE width=100%>
  <TR>
- <TD><DIV id=blast_results></DIV></TD>
+ <TD><DIV id=log_text></DIV><DIV id=blast_results></DIV></TD>
  </TR>
 </TABLE>
-<!--<TABLE>
+<TABLE>
  <TR>
    <TD>
-    <a href="#" id="coge_blast_button" onClick="blastOff();"><span>CoGe BLAST</span></a>
+    <a href="#" id="coge_blast_button" onClick="generate_basefile([],[update_basename]);blastOff();"><span>CoGe BLAST</span></a>
    </TD>
    <TD>
      <a href="#" id="ncbi_blast_button" onClick="select_blast()"><span>NCBI BLAST</span></a>
@@ -841,7 +985,7 @@ function clear_org_list()
   <!--<TD>-->
   <TH colspan="3">
   <div id="cogeblast_option">
-  <a href="#" id="coge_blast_button" onClick="blastOff();"><span>CoGe BLAST</span></a><br>
+  <a href="#" id="coge_blast_button" onClick="reset_basename();generate_basefile([],[update_basename]);blastOff();"><span>CoGe BLAST</span></a><br>
    <DIV id = "co" name="slider" class="topItem">CoGe BLAST Options:</DIV>
    <DIV class="dropMenu" id="query_seqs">
    <TABLE class="list" >
@@ -1082,7 +1226,7 @@ function clear_org_list()
  </DIV>
 <!--   </TD> -->
   </div>
-   <div id="ncbiblast_option" ><!-- NCBI BLAST</div>-->
+   <div id="ncbiblast_option" style="display:none"><!-- NCBI BLAST</div>-->
    <a href="#" id="ncbi_blast_button" onClick="select_blast()"><span>NCBI BLAST</span></a><br>
    <DIV class="ncbiblast_opts">
    <DIV id = "ncbio" name="slider" class="topItem" onMouseOver="$('#ncbio').removeClass('topItem').addClass('topItemSelected');" onMouseOut="$('#ncbio').removeClass('topItemSelected').addClass('topItem');" onClick='animate_section("#ncbi_blast_opts", "slideToggle")'>NCBI BLAST Options:</DIV>
@@ -1709,7 +1853,7 @@ function clear_org_list()
         <TH nowrap class=header>Perc ID</TH>
         <TH nowrap class=header>Score</TH>
         <TH nowrap class=header>Closest Feature</TH>
-        <TH nowrap class=header>Distance</TH>
+        <TH nowrap class=header>Distance (kb)</TH>
        </TR>
      </THEAD>
      <TBODY id=hsp_result_table_body style="overflow: auto;">
@@ -1858,9 +2002,16 @@ function clear_org_list()
    <DIV id = "br" class="topItem bresults" style="display: none" onMouseOver="$('#br').removeClass('topItem').addClass('topItemSelected');" onMouseOut="$('#br').removeClass('topItemSelected').addClass('topItem');" onClick='animate_section("#results", "slideToggle")'>Blast Results:</DIV>
    <DIV class="dropMenu bresults" id="results">
    <DIV class="subMenu" style="display:inline;">
-   <TABLE width=100%>
+    <TABLE width=100%>
+    <thead>
+     <th><input type=button value="Hide Genome Data" id=left_column_button_hide onClick="$('#left_column').hide(0);$('#left_column_button_hide').hide(0);$('#left_column_button_show').show(0);"><input type=button value="Show Genome Data" id=left_column_button_show style="display:none" onClick="$('#left_column').show(0);$('#left_column_button_show').hide(0);$('#left_column_button_hide').show(0);"></th>
+    <th><input type=button value="Hide HSP Data" id=middle_column_button_hide style="display:none" onClick="$('#result_visual').hide(0);$('#middle_column_button_hide').hide(0);$('#middle_column_button_show').show(0);"><input type=button value="Show HSP Data" id=middle_column_button_show style="display:none" onClick="$('#result_visual').show(0);$('#middle_column_button_show').hide(0);$('#middle_column_button_hide').show(0);"></th>
+    <th><input type=button value="Hide Table/Feature Data" id=right_column_button_hide onClick="$('#result_features').hide(0);$('#right_column_button_hide').hide(0);$('#right_column_button_show').show(0);"><input type=button value="Show Table/Feature Data" id=right_column_button_show style="display:none" onClick="$('#result_features').show(0);$('#right_column_button_show').hide(0);$('#right_column_button_hide').show(0);"></th>
+    </thead>
+ 	<tbody>
     <TR>
-     <TD align=left valign="top" >
+     <TD align=left  valign="top" >
+     <div id=left_column>
      Genomic HSP Visualization:
      <DIV id=chromosomes class="resultborder" style="width: 405px;overflow: auto;max-height: 700px;">
 
@@ -1876,6 +2027,7 @@ function clear_org_list()
             <option value = "score"> Score </option>
             <option value = "length"> Length </option>
      </select>-->
+     </div>
       </TD>
       <TD valign="top">
        <DIV id=result_visual valign="top" style="display: none;width:450">
@@ -1890,31 +2042,31 @@ function clear_org_list()
         <DIV id=image_info><TMPL_VAR NAME=HSP></DIV>
       </DIV>
       </TD>
-      <TD valign="top" align=left>
-       	<DIV id=result_features align=left valign="top">
-         <form id=feature_list style="position:static">
-         <TMPL_VAR NAME="HSP_RESULTS">
-         </form>
-        <table width=900px>
-        <tr valign=top>
-	<td align=left>HSP count: <TMPL_VAR NAME=HSP_COUNT>
+      <TD valign="top" align=left >
+       	 <DIV id=result_features align=left valign="top">
+          <form id=feature_list style="position:static">
+          <TMPL_VAR NAME="HSP_RESULTS">
+          </form>
+          <table width=900px>
+            <tr valign=top>
+				<td align=left>HSP count: <TMPL_VAR NAME=HSP_COUNT>
 
-	<td align=right>
-          <input type=button id="click_links" value="Show all Features" onClick="click_all_feat_links();$('#click_links').hide(0)"> <input type=button value="Select All" onClick="$('#feature_list').checkCheckboxes()">  <input type=button value="Select None" onClick="$('#feature_list').unCheckCheckboxes()"> 
-         <br>
-         Do Following to Checked Features: 
-          <select name=overlap_action id=overlap_action>
-            <option value = "gevo">Send to GEvo</option>
-            <option value = "fasta">Create FASTA File</option>
-            <option value = "xls">Export to Excel</option>
-            <option value = "tab">Tab Deliminated</option>
-            <option value = "list">Get Feature List</option>
+				<td align=right>
+       			<input type=button id="click_links" value="Show all Features" onClick="click_all_feat_links();$('#click_links').hide(0)"> <input type=button value="Select All" onClick="$('#feature_list').checkCheckboxes()">  <input type=button value="Select None" onClick="$('#feature_list').unCheckCheckboxes()"> 
+        		<br>
+         		Do Following to Checked Features: 
+          		<select name=overlap_action id=overlap_action>
+           		 <option value = "gevo">Send to GEvo</option>
+           		 <option value = "fasta">Create FASTA File</option>
+          		  <option value = "xls">Export to Excel</option>
+           		 <option value = "tab">Tab Deliminated</option>
+           		 <option value = "list">Get Feature List</option>
 <!--            <option value = "user">Add to MFF</option> -->
-          </selected>  
-          <input type=button value="Go" onClick="overlap_checkboxes()">
-       </DIV>
-       <tr><td colspan=2 align=left><div id=overlap_box valign="top" class="resultborder"></div>
- </table>
+          	    </selected>  
+          		<input type=button value="Go" onClick="overlap_checkboxes()">
+       <tr><td colspan=2 align=left><div id=overlap_box style="display: none" valign="top" class="resultborder"></div>
+ 		</table>
+ </div>
      </TD>
     <TR>
     <td valign=top>
@@ -1931,3 +2083,10 @@ function clear_org_list()
 </TABLE>
 
    </TMPL_IF>
+   
+<TMPL_IF NAME="RESULTS_DIV">
+<table align=center><tr><td>
+<DIV id=log_text class='dna' style="display:none"></DIV>
+<DIV id=blast_results ></DIV>
+</table>
+</TMPL_IF>
