@@ -51,6 +51,9 @@ function feature_checkboxes(){
   else if (action == "featmap"){
   	send_to_featmap(['args__'+accn],[export_url]);
   }
+  else if (action == "msa"){
+    send_to_msa(['args__'+accn],[export_url]);
+  }
   else {
     alert("We will get this working ... soon.");
   }
@@ -193,6 +196,7 @@ if (ajax.length)
 	                 <option value = "gevo">Send to GEvo</option>
            		 <option value = "fasta">Get FASTA Sequences</option>
            		 <option value = "featmap">Get Feature Genome Map</option>
+           		 <option value = "msa">Align Features Using ClustalW</option>
            		 <option value = "xls">Export to Excel</option>
           </selected>  
           <input type=button value="Go" onClick="feature_checkboxes()">    
