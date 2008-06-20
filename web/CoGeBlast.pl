@@ -48,6 +48,7 @@ $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
 ($USER) = CoGe::Accessory::LogUser->get_user();
 $FORM = new CGI;
+my %ajax = CoGe::Accessory::Web::ajax_func();
 
 $coge = CoGeX->dbconnect();
 #$coge->storage->debugobj(new DBIxProfiler());
@@ -82,6 +83,8 @@ my $pj = new CGI::Ajax(
 		       export_hsp_subject_fasta=>\&export_hsp_subject_fasta,
 		       export_alignment_file=>\&export_alignment_file,
 		       save_settings_cogeblast=>\&save_settings_cogeblast,
+		       generate_basefile=>\&generate_basefile,
+		       %ajax,
 		      );
 $pj->js_encode_function('escape');
 print $pj->build_html($FORM, \&gen_html);
@@ -100,7 +103,7 @@ sub gen_html
      {
     my ($body) = gen_body();
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
-    $template->param(TITLE=>'BLAST');
+    $template->param(TITLE=>'CoGe BLAST Analysis');
     $template->param(HELP=>'BLAST');
    # print STDERR "user is: ",$USER,"\n";
     my $name = $USER->user_name;
@@ -111,8 +114,12 @@ sub gen_html
     $template->param(LOGON=>1) unless $USER->user_name eq "public";
     $template->param(DATE=>$DATE);
     $template->param(LOGO_PNG=>"CoGeBlast-logo.png");
-    $template->param(BOX_NAME=>'CoGe: Blast');
+    $template->param(BOX_NAME=>'CoGeBlast Settings');
+    $template->param(ADJUST_BOX=>1);
     $template->param(BODY=>$body);
+    my $prebox = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CoGeBlast.tmpl');
+	$prebox->param(RESULTS_DIV=>1);
+	$template->param(PREBOX=>$prebox->output);
     $html .= $template->output;
     }
   }
@@ -334,6 +341,13 @@ sub get_from_id
     return ($id,$org);
   }
 
+sub generate_basefile
+{
+	$cogeweb = initialize_basefile(prog=>"CoGeBlast");
+	#print STDERR $cogeweb->basefilename,"\n";
+	return $cogeweb->basefilename;
+}
+
 sub blast_search
   {
     my %opts = @_;
@@ -347,7 +361,10 @@ sub blast_search
     my $match_score = $opts{matchscore};
     my $filter_query = $opts{filter_query};
     my $resultslimit = $opts{resultslimit} || $RESULTSLIMIT;
-
+    my $basename = $opts{basename};
+	$cogeweb = initialize_basefile(basename=>$basename, prog=>"CoGeBlast");
+	
+	#print STDERR $cogeweb->basefilename,"\n";
     #blastz params
     my $zwordsize = $opts{zwordsize};
     my $zgap_start = $opts{zgap_start};
@@ -362,11 +379,10 @@ sub blast_search
     my $width = $opts{width};
     my $type = $opts{type};
 
-    
+   # exit;
 
 #    print STDERR Dumper \%opts;
     my $t1 = new Benchmark;
-    $cogeweb = initialize_basefile(prog=>"CoGeBlast");
     my @org_ids = split(/,/,$blastable);
     my $fasta_file = create_fasta_file($seq);
     my $opts;
@@ -441,9 +457,11 @@ sub blast_search
       {
 	$pm->start and next;
 	my $command = $item->{command};
+	my $organism_name = $item->{organism};
 	my $outfile = $item->{file};
-	write_log("running $command" ,$cogeweb->logfile);
+	write_log("*$organism_name* running $command" ,$cogeweb->logfile);
 	`$command > $outfile`;
+	write_log("*$organism_name* blast analysis complete",$cogeweb->logfile);
 	$pm->finish;
       }
     $pm->wait_all_children;
@@ -463,8 +481,10 @@ sub blast_search
       }
 #    print STDERR Dumper \@results;
     my $t3 = new Benchmark;
+    write_log("Initializing sqlite database",$cogeweb->logfile);
     initialize_sqlite();
     my $t4 = new Benchmark;
+    write_log("Generating Results",$cogeweb->logfile);
     my ($html,$click_all_links) = gen_results_page(results=>\@results,width=>$width,type=>$type, resultslimit=>$resultslimit);
     my $t5 = new Benchmark;
     my $init_time = timestr(timediff($t2,$t1));
@@ -481,8 +501,8 @@ Time to generate results page:   $resultpage_time
 #    print STDERR $cogeweb->logfile,"\n";
 #    print STDERR $benchmark;
 
-    
-    return $html,$cogeweb->basefilename, $click_all_links;
+    write_log("Finished!", $cogeweb->logfile);
+    return $html, $click_all_links;
   }
  
  
@@ -521,7 +541,7 @@ sub gen_results_page
 				 CHECKBOX=>$id."_".$chr."_".$hsp->subject_start."no",
 				 ID=>$id,
 				 HSP_ORG=>$org,
-				 HSP=>qq{<span class="link" title="Click for HSP information" onclick="update_hsp_info('table_row$id')">}.$hsp->number."</span>",
+				 HSP=>qq{<span class="link" title="Click for HSP information" onclick="update_hsp_info('table_row$id');\$('#middle_column_button_hide').show(0);\$('#middle_column_button_show').hide(0);">}.$hsp->number."</span>",
 				 HSP_EVAL=>$hsp->pval,
 				 HSP_PID=>$hsp->percent_id,
 				 HSP_SCORE=>$hsp->score,
@@ -540,7 +560,7 @@ sub gen_results_page
        }
      my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CoGeBlast.tmpl');
 	 $template->param(RESULT_TABLE=>1);
-     # ERIC, i added this so it woulndt fail
+     # ERIC, i added this so it wouldnt fail
      $template->param(NULLIFY=>$null) if $null;
      my $hsp_limit_flag =0;
      my $hsp_count;
@@ -593,6 +613,10 @@ sub gen_results_page
      $template->param(BLAST_RESULTS=>1);
      $template->param(DATA_FILES=>gen_data_file_summary());
      my $html = $template->output;
+     my $box_template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
+     $box_template->param(BOX_NAME=>"CoGeBlast Results");
+     $box_template->param(BODY=>$html);
+     my $outhtml = $box_template->output;
      my $t3 = new Benchmark;
     my $table_time = timestr(timediff($t1,$t0));
     my $figure_time = timestr(timediff($t2,$t1));
@@ -604,7 +628,7 @@ Time to gen results:             $render_time
 };
 #     print STDERR $benchmark;
      write_log($benchmark, $cogeweb->logfile);
-     return $html, $click_all_links;
+     return $outhtml, $click_all_links;
    }
 
 sub gen_data_file_summary
@@ -616,11 +640,13 @@ sub gen_data_file_summary
     $html .= "<div class=xsmall><A HREF=\"#\" onClick=\"get_subject_fasta();\">Subject FASTA File</A></DIV>\n";
     $html .= "<div class=xsmall><A HREF=\"#\" onClick=\"get_alignment_file();\">Alignment File</A></DIV>\n";
     $html .= qq{<td class = small valign="top">SQLite db};
-    my $dbname = $TEMPURL."/".basename($cogeweb->sqlitefile);
+    #my $dbname = $TEMPURL."/".basename($cogeweb->sqlitefile);
+    my $dbname = $TEMPURL."/".$cogeweb->basefilename.".sqlite";
     
     $html .= "<div class=xsmall><A HREF=\"$dbname\" target=_new>SQLite DB file</A></DIV>\n";
     $html .= qq{<td class = small valign="top">Log File};
-    my $logfile = $TEMPURL."/".basename($cogeweb->logfile);
+    #my $logfile = $TEMPURL."/".basename($cogeweb->logfile);
+    my $logfile = $TEMPURL."/".$cogeweb->basefilename.".log";
     $html .= "<div class=xsmall><A HREF=\"$logfile\" target=_new>Log</A></DIV>\n";
     $html .= qq{</table>};
   }
@@ -915,7 +941,7 @@ sub get_blast_db
     my $res;
     if (-r $file)
       {
-	write_log("fasta file for $org_name ($md5) exists", $cogeweb->logfile);
+	write_log("*$org_name* fasta file ($md5) exists", $cogeweb->logfile);
 	$res = 1;
       }
     else
@@ -924,7 +950,7 @@ sub get_blast_db
       }    my $blastdb = "$BLASTDBDIR/$md5";
     if (-r $blastdb.".nsq")
       {
-	write_log("blastdb file for $org_name ($md5) exists", $cogeweb->logfile);
+	write_log("*$org_name* blastdb file ($md5) exists", $cogeweb->logfile);
 	$res = 1;
       }
     else
