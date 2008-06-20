@@ -32,6 +32,7 @@ my $pj = new CGI::Ajax(
 		       gc_content=>\&gc_content,
 		       gen_data=>\&gen_data,
 		       send_to_featmap=>\&send_to_featmap,
+		       send_to_msa=>\&send_to_msa,
 			);
 $pj->js_encode_function('escape');
 print $pj->build_html($FORM, \&gen_html);
@@ -247,6 +248,21 @@ sub generate_table
     $url =~ s/&$//;
     return $url;
   }
+  
+    sub send_to_msa
+  {
+    my $accn_list = shift;
+    $accn_list =~ s/^,//;
+    $accn_list =~ s/,$//;
+    my $url = "/CoGe/CoGeAlign.pl?";
+    foreach my $featid (split /,/,$accn_list)
+      {
+		$url .= "fid=$featid&";
+      }
+    $url =~ s/&$//;
+    return $url;
+  }
+  
   
   sub blast #send to cogeblast
     {
