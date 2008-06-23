@@ -128,7 +128,7 @@ sub cogesearch
     if ($org_id eq "all")
       {
 	my ($type, $search) = ("name", $org_name) if $org_name && $org_name ne "Search";
-	my ($type, $search) = ("desc", $org_desc) if $org_desc && $org_desc ne "Search";
+	($type, $search) = ("desc", $org_desc) if $org_desc && $org_desc ne "Search";
 	@org_ids = get_orgs(id_only=>1, type=>$type, search=>$search);
       }
     else
@@ -397,11 +397,11 @@ sub get_orgs
     my $search = $opts{search};
     my $id_only = $opts{id_only};
     my @db;
-    if ($type eq "name")
+    if ($type && $type eq "name")
       {
 	@db = $coge->resultset("Organism")->search({name=>{like=>"%".$search."%"}});
       }
-    elsif($type eq "desc")
+    elsif($type && $type eq "desc")
       {
 	@db = $coge->resultset("Organism")->search({description=>{like=>"%".$search."%"}});
       }
