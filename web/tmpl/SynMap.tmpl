@@ -1,0 +1,185 @@
+<script language="javascript">
+function get_organism_chain(type,val,i)
+{
+ $('#org_list').html('<input type=hidden id = "org_id"+i><font class="loading"></font>');
+ if (type == 'name') {get_orgs(['args__name','args__'+val,'args__i','args__'+i], ['org_list'+i]);}
+ else if (type == 'desc') {get_orgs(['args__desc','args__'+val,'args__i','args__'+i], ['org_list'+i]);}
+ ajax_wait("get_datasets(['args__oid','org_id"+i+"','args__seq_type','seq_type"+i+"'],['ds_info"+i+"']);");
+}
+
+function ajax_wait (val){
+if (ajax.length)
+   {
+    setTimeout("ajax_wait("+'"'+val+'"'+")",100);
+    return;
+   }
+  eval(val);
+}
+
+function timing(val, val2){
+  namere = /name/;
+  descre = /desc/;
+  if (namere.exec(val)) 
+   {
+    searchterm = $('#'+val).val();
+   }
+  else if (descre.exec(val)) 
+   {
+    searchterm = $('#'+val).val();
+   }
+  var searchterm;
+  if (!searchterm) {val=0;}
+  if(searchterm == "Search")
+  {
+    searchterm = "";
+  }
+  pageobjsearch = "search"+val;
+  pageobjtime = "time"+val;
+  if (pageObj.pageobjsearch && pageObj.pageobjsearch == searchterm+val)
+   {
+    return;
+   }
+  pageObj.pageobjsearch=searchterm+val;
+  if (pageObj.pageobjtime){
+   clearTimeout(pageObj.pageobjtime);
+  }
+  re = /(\d+)/;
+  i = re.exec(val);
+
+  if (namere.exec(val)) 
+   {
+     if (val2)
+     {
+      get_organism_chain('name',$('#'+val).val(),i[0])
+     }
+     else
+     {
+       pageObj.pageobjtime = setTimeout("get_organism_chain('name',$('#"+val+"').val(),i[0])",500);
+     }
+
+   }
+  else if (descre.exec(val)) 
+   {
+     if (val2)
+     {
+      get_organism_chain('desc',$('#'+val).val(),i[0])
+     }
+     else
+     {
+       pageObj.pageobjtime = setTimeout("get_organism_chain('desc',$('#"+val+"').val(),i[0])",500);
+     }
+   }  
+}
+
+$(document).ready(function(){
+  if($('#org_name1').val() != "Search") {
+    $('#org_name1').css({fontStyle: "normal"});
+    timing('org_name1',1);
+  }  
+  if($('#org_desc1').val() != "Search") {
+    $('#org_desc1').css({fontStyle: "normal"});
+    timing('org_desc1',1);
+  }  
+  if($('#org_name2').val() != "Search") {
+    $('#org_name2').css({fontStyle: "normal"});
+    timing('org_name2',1);
+  }  
+  if($('#org_desc2').val() != "Search") {
+    $('#org_desc2').css({fontStyle: "normal"});
+    timing('org_desc2',1);
+  }  
+ });
+
+function search_bar(div_id){
+  if($('#'+div_id).val() == "Search") $('#'+div_id).val("").css({fontStyle: "normal"});
+}
+
+function restore_search_bar(div_id){
+  if(! $('#'+div_id).val()) {
+    $('#'+div_id).val("Search").css({fontStyle: "italic"});
+  }
+}
+
+function handle_results(val){
+ $('#results').html(val);
+ $('#synmap_go').show();
+
+}
+
+</script>
+<table><tr><td>
+<DIV id=results><span class="alert">WARNING:</span>  SynMap is very computationally intense multi-step program which may take hours to complete.  Please do not repeatedly pressed the "Generate SynMap" button!  When run, SynMap will:
+<li class=small>Generate fasta files of all coding sequence in selected genoems
+<li class=small>Generate blastable databases of sequences
+<li class=small>Blast genomes (self-self and self-other)
+<li class=small>Find tandem duplicates in each genome (hence the self-self blast)
+<li class=small>Use DAGchainer to find syntenic regions (parameters below)
+<li class=small>Generate dotplot images and image maps with GEvo links<br>
+<span class=species>SynMap will run faster if it has been previously run as it won't regenerate anything that has been previously made.</span>
+
+</div>
+</table>
+
+<div>
+<input type=button id="synmap_go" value="Generate SynMap" onClick="$('#synmap_go').hide(); $('#results').html('<span class=dna>Loading. . .</span>');go(['args__oid1','org_id1','args__oid2','org_id2','args__D','D','args__g','g','args__A','A','args__chr_length_limit','chr_length_limit','args__blast','blast', 'args__seq_type1','seq_type1', 'args__seq_type2','seq_type2'],[handle_results]);" \>
+
+<input type=button value="Clear Results" onClick="$('#results').html('');" \>
+
+<TABLE>
+<tr><th><DIV class="topItemSelected ">Select Organisms:</DIV>
+<table class="dropMenu" width=100%>
+ <TR align=left>
+  <TD valign=top>
+   <DIV class = "oblique">Organism 1: </DIV>
+   <DIV style="">Search <span class=small>Name: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_NAME1">" name = "org_name1" id="org_name1" style="font-style:italic" onFocus="search_bar('org_name1')" onKeyUp='timing("org_name1");'><span>
+   Description: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_DESC1">" name = "org_desc1" id="org_desc1" style="font-style:italic" onFocus="search_bar('org_desc1')" onKeyUp='timing("org_desc1");'></DIV>
+   Try to use sequence of type:
+   <select id=seq_type1 onChange="get_datasets(['args__oid','org_id1', 'args__seq_type','seq_type1'],['ds_info1'])">
+     <option value="1">unmasked</option>
+     <option value="2" selected>masked</option>
+   </select>
+   <DIV id="org_list1"><TMPL_VAR NAME="ORG_LIST1"></DIV>
+   <DIV style="float: left; vertical-align: top;" id="ds_info1"><TMPL_VAR NAME="DS_INFO1"></DIV>
+
+  <TD valign=top>
+   <DIV class = "oblique">Organism 2: </DIV>
+   <DIV style="">Search <span class=small>Name: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_NAME2">" name = "org_name2" id="org_name2" style="font-style:italic" onFocus="search_bar('org_name2')" onKeyUp='timing("org_name2");'></span>
+   Description: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_DESC2">" name = "org_desc2" id="org_desc2" style="font-style:italic" onFocus="search_bar('org_desc2')" onKeyUp='timing("org_desc2");'></DIV>
+   Try to use sequence of type:
+   <select id=seq_type2 onChange="get_datasets(['args__oid','org_id2', 'args__seq_type','seq_type2'],['ds_info2'])">
+     <option value="1">unmasked</option>
+     <option value="2" selected>masked</option>
+   </select>
+   <DIV id="org_list2"><TMPL_VAR NAME="ORG_LIST2"></DIV>
+   <DIV style="float: left; vertical-align: top;" id="ds_info2"><TMPL_VAR NAME="DS_INFO2"></DIV>
+</TABLE>
+
+<tr><th>
+<DIV class="topItemSelected "><a href =http://dagchainer.sourceforge.net/ target=_new>DAGChainer</a> Options:</DIV>
+<table class="dropMenu">
+ <TR>
+   <TD>Average distance expected between syntenic genes:
+   <TD><input type=text size=8 id="g" value="24000"> bp
+ <TR>
+   <TD>Maximum distance between two matches: 
+   <TD><input type=text size=8 id="D" value="120000"> bp
+ <TR>
+   <TD>Minimum number of aligned pairs: 
+   <TD><input type=text size=8 id="A" value="6"> bp
+</TABLE>
+
+<tr><th>
+<DIV class="topItemSelected ">SynMap Options:</DIV>
+<table class="dropMenu">
+ <TR>
+   <TD>Minimum length of chromosomes:
+   <TD><input type=text size=8 id="chr_length_limit" value="1000000"> bp
+ <TR>
+   <TD>Blast Algorithm:
+   <TD><select id="blast" name="blast">
+        <OPTION VALUE="1" selected>BlastN
+        <OPTION VALUE="2">TBlastX
+       </select>
+</TABLE>
+</TABLE>
+</div>
