@@ -1210,7 +1210,7 @@ sub set_image_height
 	my $top_feat = $self->get_feats(last_order=>1, strand=>1, fill=>0);
 	my $bot_feat = $self->get_feats(last_order=>1, strand=>-1, fill=>0);
 	my $max = $top_feat->order if $top_feat;
-	$max = $bot_feat->order unless $max;
+	$max = $bot_feat->order unless !$bot_feat || $max;
 	$max = $bot_feat->order if $bot_feat && $max && $bot_feat->order > $max;
 	$max = 1 unless $max;
 	$self->_max_track($max);
