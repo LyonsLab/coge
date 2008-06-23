@@ -15,7 +15,7 @@ use GD;
 use File::Path;
 
 $ENV{PATH} = "/opt/apache2/CoGe/";
-
+umask(0);
 use vars qw( $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $FORMATDB $BLAST $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $TANDEM_FINDER $FILTER_REPETITIVE_MATCHES $RUN_DAGCHAINER $FIND_NEARBY $PLOT_DAG);
 $DEBUG = 0;
 $DIR = "/opt/apache/CoGe/";
@@ -533,7 +533,7 @@ sub go
 	$tmp =~ s/\(//g;
 	$tmp =~ s/\)//g;
 	my $outfile = $DIAGSDIR."/".$tmp;
-	mkpath ($outfile) unless -d $outfile;
+	mkpath ($outfile,0,0777) unless -d $outfile;
 	$org_dirs{$org_dir}{dir}=$outfile;
 	warn "didn't make $outfile: $!" unless -d $outfile;
 	$outfile .= "/".$org_dirs{$org_dir}{blastfile};
@@ -629,7 +629,7 @@ sub go
 		my @chr1 = split/_/,$chr1;
 		$pm->start and next;
 		my $out = $org_dirs{$org_name1."_".$org_name2}{dir}."/html/";
-		mkpath ($out) unless -d $out;
+		mkpath ($out,0,0777) unless -d $out;
 		$out .= "$chr1"."_".$chr2."_D$dagchainer_D"."_g$dagchainer_g"."_A$dagchainer_A".".$blast.html";
 		generate_dotplot(dag=>$dag_file12.".all", coords=>$tmp, outfile=>$out, qchr=>$chr1, schr=>$chr2, qdsid=>$chr1{$chr1}, sdsid=>$chr2{$chr2},qlabel=>$name1.":".$chr1[-1],slabel=>$name2.":".$chr2[-1]);
 		$pm->finish;
