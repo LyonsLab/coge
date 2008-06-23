@@ -1272,6 +1272,7 @@ sub process_features
 	  }
 	elsif ($type =~ /cns/i)
 	  {
+	    next unless $draw_model eq "cns";
 	    $f = CoGe::Graphics::Feature::HSP->new({start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1]});
 	    $f->color([204,0,204]);
 	    $f->order($track);
