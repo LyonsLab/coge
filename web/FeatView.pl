@@ -41,6 +41,7 @@ my $pj = new CGI::Ajax(
 		       source_search=>\&get_data_source_info_for_accn,
 		       get_types=>\&get_types,
 		       cogesearch=>\&cogesearch,
+		       cogesearch_featids=>\&cogesearch_featids,
 		       get_anno=>\&get_anno,
 		       show_express=>\&show_express,
 		       gen_data=>\&gen_data,
@@ -193,6 +194,65 @@ sub cogesearch
     $html =~ s/<OPTION/<OPTION SELECTED/;
     return $blank."No results found\n" unless $html =~ /OPTION/;
     return $html;
+  }
+sub cogesearch_featids
+  {
+    my %opts = @_;
+    my $accn = $opts{accn};
+    $accn =~ s/^\s+//;
+    $accn =~ s/\s+$//;
+    my $anno = $opts{anno};
+    $anno =~ s/^\s+//;
+    $anno =~ s/\s+$//;
+    my $type = $opts{type};
+    my $org_id = $opts{org_id};
+    my $org_name = $opts{org_name};
+    my $org_desc = $opts{org_desc};
+    my @org_ids;
+    $org_id = "all" unless $org_id;
+    if ($org_id eq "all")
+      {
+	my ($otype, $search) = ("name", $org_name) if $org_name && $org_name ne "Search";
+	($otype, $search) = ("desc", $org_desc) if $org_desc && $org_desc ne "Search";
+	@org_ids = get_orgs(id_only=>1, type=>$type, search=>$search);
+      }
+    else
+      {
+	push @org_ids, $org_id;
+      }
+    my $feat_accn_wild = $opts{feat_name_wild};
+    my $feat_anno_wild = $opts{feat_anno_wild};
+    my $blank = qq{<input type="hidden" id="accn_select">};
+    my $weak_query = "Query needs to be better defined.";
+    if (!$accn && !$anno)
+      {
+	return $weak_query.$blank unless $org_id && $type;
+      }
+    ($USER) = CoGe::Accessory::LogUser->get_user();
+    my $restricted_orgs = restricted_orgs(user=>$USER);
+    my $html;
+    my %seen;
+    my @opts;
+    $accn = "%".$accn if $accn && ($feat_accn_wild eq "both" || $feat_accn_wild eq "left");
+    $accn = $accn."%" if $accn && ($feat_accn_wild eq "both" || $feat_accn_wild eq "right");
+    $anno = "%".$anno if $anno && ($feat_anno_wild eq "both" || $feat_anno_wild eq "left");
+    $anno = $anno."%" if $anno && ($feat_anno_wild eq "both" || $feat_anno_wild eq "right");
+    my $search = {'me.name'=>{like=>$accn}} if $accn;
+    $search->{annotation}={like=>$anno} if $anno;
+    $search->{feature_type_id}=$type if $type;
+    $search->{organism_id}{ -not_in}=[values %$restricted_orgs] if values %$restricted_orgs;
+    $search->{organism_id}{ -in}=[@org_ids] if @org_ids;
+    my $join = {'feature'=>'dataset'};
+    $join->{'feature'} = ['dataset','annotations'] if $anno;
+    foreach my $name ($coge->resultset('FeatureName')->search(
+							      $search,
+							      {join=>$join,
+							      },
+							     ))
+      {
+	$seen{$name->feature_id}=$name->name." (".$name->feature->type->name.")";
+      }
+    return join ",", map {$_.":".$seen{$_}} keys %seen;
   }
 
 sub get_anno
