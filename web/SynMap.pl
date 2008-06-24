@@ -659,22 +659,19 @@ sub go
 
 		if (-r $out)
 		  {
+		    my $default =  $count > 4 ? "display: none" : "";
 		    $out =~ s/$DATADIR/$URL\/data/;
 		    $png =~ s/$DATADIR/$URL\/data/;
 		    $out = qq{
 
 <img id=close$id_num src="picts/delete.png" style="display: none; float:right; position: relative; top: 60px; right: 40px;" onclick="\$('#img$id_num').toggle();\$('#iframe$id_num').toggle(); \$('#close$id_num').toggle();" valign=top \>
-<iframe id=iframe$id_num src=$out frameborder=0 width=$w height=$h scrolling=no style="display: none"></iframe>
+<iframe id=iframe$id_num src=$out frameborder=0 width=$w height=$h scrolling=no style="$default"></iframe>
 
 };
-		    if ($count > 4)
-		      {
-			my ($tmpw, $tmph) = (sprintf("%0f",$w/4),sprintf("%0f",$h/4));
-			$out .= qq{
+		    my ($tmpw, $tmph) = (sprintf("%0f",$w/4),sprintf("%0f",$h/4));
+		    $out .= qq{
 <img id= img$id_num src=$png width=$tmpw height=$tmph onclick="\$('#img$id_num').toggle();\$('#iframe$id_num').toggle(); \$('#close$id_num').toggle();" \>
-};
-#<img id= img$id_num src=$png width=$tmpw height=$tmph onclick="\$('#cell$id_num').html('$out')" \>
-		      }
+} if $count > 4;
 		  }
 		else {$out = " ";}
 		$html .= "<td id=cell$id_num>$out";
