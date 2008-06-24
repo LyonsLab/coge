@@ -53,22 +53,16 @@ function go_cogesearch () {
 }
 
 function source_search_chain (val) {
-// $('#Source').html('<input type="hidden" id="dsid"><font class="loading">Loading. . .</font>');	
-// $('#FeatType').html('<input type="hidden" id="Type_name">');	
-// $('#anno').hide();
  if (val) {$('#accn_list').html(val);$('#accn_list').show()}
  source_search(['args__accn','accn_select', 'args__org_id','org_id','args__org_name','org_name','args__org_desc','org_desc'], [get_types_chain]);
 }
 
 function get_types_chain (val1, val2) {
-// $('#FeatType').html('<input type="hidden" id="Type_name"><font class="loading">Loading. . .</font>');	
-// $('#anno').hide();	
  if (val1) {$('#Source').html(val1);$('#Source').show();}
- get_types(['accn_select', 'dsid'],[get_anno_chain]);	
+ get_types(['args__accn','accn_select', 'args__dsid','dsid', 'args__ftid','type'],[get_anno_chain]);	
 }
 
 function get_anno_chain (val1, val2) {	
-//$('#anno').html('<font class="loading">Loading. . .</font>');
  if (val1) {
    $('#FeatType').html(val1);
    $('#FeatType').show();
@@ -127,13 +121,6 @@ function timing(val){
      pageObj.time = setTimeout("get_orgs(['args__type','args__desc','args__search','org_desc'],['org_list'])",500);
    }
 }
-
-//function timing(){
-//  if (pageObj.time){
-//   clearTimeout(pageObj.time);
-//  }
-//   pageObj.time = setTimeout("get_orgs(['org_text'],['org_list'])",500);
-//}
 
 $(document).ready(function(){
     if ($('#accn').val()) {search_chain(0);}
