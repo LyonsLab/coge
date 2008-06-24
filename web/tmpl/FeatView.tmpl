@@ -66,7 +66,9 @@ function get_anno_chain (val1, val2) {
  if (val1) {
    $('#FeatType').html(val1);
    $('#FeatType').show();
+   if ($('#add_all').is(":hidden")) {$('#add_all').show(0);}
    if ($('#remove').is(":hidden")) {$('#remove').show(0);}
+   if ($('#clear').is(":hidden")) {$('#clear').show(0);}
    if ($('#send').is(":hidden")) {$('#send').show(0);}
    if($('#feat_list').is(":hidden")) {$('#feat_list').show(0);}
  }
@@ -139,6 +141,29 @@ function add_to_featlist(featname, featid){
   $('#featlist_choice').append(html).sortSelect();
   counting();
 }
+
+function add_all (val) {
+ var id_array = val.split(',');
+ for (var i =0; i < id_array.length; i++) 
+  {
+      var item = id_array[i].split(':');      
+      var html = '<option id='+item[0]+' value='+item[0]+ ' onClick="get_anno(['+"'args__fid','args__"+item[0]+"'"+'],[show_anno])">'+item[1]+'</option>';
+     $('#featlist_choice').append(html);
+  }
+  if (val) {$('#blank').remove();}
+  $('#featlist_choice').sortSelect();
+  counting();
+}
+
+function clear_feat_list(){
+  var listlength = $('#featlist_choice').getLength();
+  for (var i=0; i<listlength;i++)
+   {
+     $('#'+$('#featlist_choice')[0][0].id).remove();
+   }
+  counting();
+}
+
 
 $.fn.sortSelect = function(){
   this.each(
@@ -313,7 +338,9 @@ function search_bar(div_id){
               <option id=blank value=null>No Feature Selected</option>
               </SELECT>
     </div>
+    <input type="button" style="display: none" id=add_all value="Add All Features" onClick="cogesearch_featids(['args__accn','accn', 'args__anno','annosearch','args__type','type', 'args__org_id','org_id', 'args__feat_name_wild','feat_name_wild', 'args__feat_anno_wild', 'feat_anno_wild','args__org_name','org_name','args__org_desc','org_desc'],[add_all]);">
     <input type="button" style="display: none" id=remove value="Remove" onClick="$('#'+$('#featlist_choice').val()).remove();counting();">
+    <input type="button" style="display: none" id=clear value="Clear" onClick="clear_feat_list()"><br>
     <input type="button" style="display: none" id=send value="Send to Feature List Viewer" onClick="send_to_FeatList()">
    </td>
    <!-- <td valign=middle<
