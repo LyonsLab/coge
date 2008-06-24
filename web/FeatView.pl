@@ -69,14 +69,21 @@ sub gen_data
 
 sub get_types
   {
-    my ($accn, $dsid) = @_;
+    my %opts = @_;
+    my $accn = $opts{accn};
+    my $dsid = $opts{dsid};
+    my $ftid = $opts{ftid};
     my $html;
     my $blank = qq{<input type="hidden" id="Type_name">-------};
     my %seen;
-    my @opts = sort map {"<OPTION>$_</OPTION>"} grep {! $seen{$_}++} map {$_->type->name} $coge->resultset('Feature')->search({
-															       'feature_names.name'=>$accn,
-															       dataset_id=>$dsid
-															       },{join=>'feature_names'});
+    my $search = {
+		  'feature_names.name'=>$accn,
+		  dataset_id=>$dsid,
+		  };
+    $search->{feature_type_id}=$ftid if $ftid;
+    my @opts = sort map {"<OPTION>$_</OPTION>"} grep {! $seen{$_}++} map {$_->type->name} $coge->resultset('Feature')->search(
+															      $search,
+															      ,{join=>'feature_names'});
 
     $html .= "<font class=small>Type count: ".scalar @opts."</font>\n<BR>\n";
     $html .= qq{<SELECT id="Type_name" SIZE="10" MULTIPLE onChange="get_anno(['args__accn','accn_select','args__type','Type_name', 'args__dsid','dsid'],[show_anno])" >\n};
@@ -127,8 +134,8 @@ sub cogesearch
     $org_id = "all" unless $org_id;
     if ($org_id eq "all")
       {
-	my ($type, $search) = ("name", $org_name) if $org_name && $org_name ne "Search";
-	($type, $search) = ("desc", $org_desc) if $org_desc && $org_desc ne "Search";
+	my ($otype, $search) = ("name", $org_name) if $org_name && $org_name ne "Search";
+	($otype, $search) = ("desc", $org_desc) if $org_desc && $org_desc ne "Search";
 	@org_ids = get_orgs(id_only=>1, type=>$type, search=>$search);
       }
     else
@@ -175,9 +182,9 @@ sub cogesearch
 	$seen{uc($item)}++;
 	push @opts, "<OPTION>$item</OPTION>"
       }
-    if (@opts > 5000)
+    if (@opts > 10000)
       {
-	return $blank."Search results over 5000, please refine your search.\n";
+	return $blank."Search results over 10000, please refine your search.\n";
       }
     $html .= "<font class=small>Name count: ".scalar @opts."</font>\n<BR>\n";
     $html .= qq{<SELECT id="accn_select" SIZE="10" MULTIPLE onChange="source_search_chain(); " >\n};
