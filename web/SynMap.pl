@@ -431,7 +431,6 @@ sub add_GEvo_links
 	my @line = split/\t/;
 	my @feat1 = split/\|\|/,$line[1];
 	my @feat2 = split/\|\|/,$line[5];
-
 	my $link = "http://".$ENV{SERVER_NAME}."/CoGe/GEvo.pl?accn1=".$feat1[3]."&fid1=".$feat1[6]."&accn2=".$feat2[3]."&fid2=".$feat2[6] if $feat1[3] && $feat1[6] && $feat2[3] && $feat2[6];
 	print OUT $_,"\t",$link,"\n";
       }
@@ -441,24 +440,97 @@ sub add_GEvo_links
     `$cmd`;
   }
 
+sub add_reverse_match#this is for when there is a self-self comparison.  DAGchainer, for some reason, is only adding one diag.  For example, if chr_14 vs chr_10 have a diag, chr_10 vs chr_14 does not.
+  {
+    my %opts = @_;
+    my $infile = $opts{infile};
+    open (IN, $infile);
+    my $stuff;
+    my $skip =0;
+    while (<IN>)
+      {
+	chomp;
+	s/^\s+//;
+	$skip = 1 if /GEvo\.pl/; #GEvo links have been added, this file was generated on a previous run.  Skip!
+	last if ($skip);
+	next unless $_;
+	my @line = split/\s+/;
+	if (/^#/)
+	  {
+	    my $chr1 = $line[2];
+	    my $chr2 = $line[4];
+	    $chr1 =~ s/^a//;
+	    $chr2 =~ s/^b//;
+	    next if $chr1 eq $chr2;
+	    $line[2] = "b".$chr2;
+	    $line[4] = "a".$chr1;
+	    $stuff .= join (" ",@line)."\n";
+	    next;
+	  }
+	my $chr1 = $line[0];
+	my $chr2 = $line[4];
+	$chr1 =~ s/^a//;
+	$chr2 =~ s/^b//;
+	next if $chr1 eq $chr2;
+	my @tmp1 = @line[1..3];
+	my @tmp2 = @line[5..7];
+	@line[1..3] = @tmp2;
+	@line[5..7] = @tmp1;
+	$line[0] = "a".$chr2;
+	$line[4] = "b".$chr1;
+	$stuff .= join ("\t",@line)."\n";
+      }
+    return if $skip;
+    close IN;
+    open (OUT, ">>$infile");
+    print OUT $stuff;
+    close OUT;
+
+  }
+
+sub retrieve_chrs_with_diags
+  {
+    my %opts = @_;
+    my $infile = $opts{infile};
+    my %data;
+    open (IN, $infile);
+    while (<IN>)
+      {
+	next unless /^#/;
+	my @line = split/\s+/;
+	my $chr1 = $line[2];
+	my $chr2 = $line[4];
+	$chr1 =~ s/^a//;
+	$chr2 =~ s/^a//;
+	$chr1 =~ s/^b//;
+	$chr2 =~ s/^b//;
+	$data{$chr1}{$chr2}=1;
+	$data{$chr2}{$chr1}=1;
+      }
+    close IN;
+    return \%data;
+  }
+
 sub generate_dotplot
   {
     my %opts = @_;
     my $dag = $opts{dag};
     my $coords = $opts{coords};
     my $outfile = $opts{outfile};
-    my $qchr = $opts{qchr} || "15b125f449b49ae32a1293e324ead4d8_0001";
-    my $schr = $opts{schr} || "b5893fc7e77073f2aaa5ae29ff1490a9_0001";
+    my $qchr = $opts{qchr};
+    my $schr = $opts{schr};
     my $q_dsid = $opts{qdsid};
     my $s_dsid = $opts{sdsid};
     my $q_label = $opts{qlabel};
     my $s_label = $opts{slabel};
+    my $q_max = $opts{q_max};
+    my $s_max = $opts{s_max};
     if (-r $outfile)
       {
 	write_log("file $outfile already exists",$cogeweb->logfile);
 	return 1;
       }
-    my $cmd = "$PLOT_DAG -d $dag -a $coords --html $outfile --q_dsid=$q_dsid --s_dsid=$s_dsid --qchr $qchr --schr $schr";
+    my $cmd = "$PLOT_DAG -d $dag -a $coords --html $outfile --q_dsid $q_dsid --s_dsid $s_dsid --qchr $qchr --schr $schr --q_max $q_max --s_max $s_max";
     $cmd .= " --q_label=$q_label" if $q_label;
     $cmd .= " --s_label=$s_label" if $s_label;
     write_log("running $cmd", $cogeweb->logfile);
@@ -477,6 +549,8 @@ sub go
     my $dagchainer_g = $opts{g};
     my $dagchainer_A = $opts{A};
     my $chr_length_limit = $opts{chr_length_limit};
+    my $show_diags_only = $opts{show_diags_only};
+    $show_diags_only = $show_diags_only eq "true" ? 1 : 0;
     my $blast = $opts{blast};
     $blast = $blast == 2 ? "tblastx" : "blastn";
     unless ($oid1 && $oid2)
@@ -553,9 +627,9 @@ sub go
 
     #Find local dups
     my $dag_file11 = $org_dirs{$org_name1."_".$org_name1}{dir}."/$md51"."_"."$md51.$blast.dag";
-    run_dag_tools(query=>$md51, subject=>$md51, blast=>$org_dirs{$org_name1."_".$org_name1}{blastfile}, outfile=>$dag_file11);
+    run_dag_tools(query=>"a".$md51, subject=>"b".$md51, blast=>$org_dirs{$org_name1."_".$org_name1}{blastfile}, outfile=>$dag_file11);
     my $dag_file22 = $org_dirs{$org_name2."_".$org_name2}{dir}."/$md52"."_"."$md52.$blast.dag";
-    run_dag_tools(query=>$md52, subject=>$md52, blast=>$org_dirs{$org_name2."_".$org_name2}{blastfile}, outfile=>$dag_file22);
+    run_dag_tools(query=>"a".$md52, subject=>"b".$md52, blast=>$org_dirs{$org_name2."_".$org_name2}{blastfile}, outfile=>$dag_file22);
     my $dup_file1 = $org_dirs{$org_name1."_".$org_name1}{dir}."/$md51"."_"."$md51.$blast.dups";
     run_tandem_finder(infile=>$dag_file11,outfile=>$dup_file1);
     my $dup_file2 = $org_dirs{$org_name2."_".$org_name2}{dir}."/$md52"."_"."$md52.$blast.dups";
@@ -563,7 +637,7 @@ sub go
 
     #prepare dag for synteny anlaysis
     my $dag_file12 = $org_dirs{$org_name1."_".$org_name2}{dir}."/$md51"."_"."$md52.$blast.dag";
-    run_dag_tools(query=>$md51, subject=>$md52, blast=>$org_dirs{$org_name1."_".$org_name2}{blastfile}, outfile=>$dag_file12.".all", query_dup_file=>$dup_file1,subject_dup_file=>$dup_file2);
+    run_dag_tools(query=>"a".$md51, subject=>"b".$md52, blast=>$org_dirs{$org_name1."_".$org_name2}{blastfile}, outfile=>$dag_file12.".all", query_dup_file=>$dup_file1,subject_dup_file=>$dup_file2);
     #remove repetitive matches
     run_filter_repetitive_matches(infile=>$dag_file12.".all",outfile=>$dag_file12);
     #run dagchainer
@@ -574,6 +648,8 @@ sub go
 	my $tmp = $dagchainer_file;
 	$tmp =~ s/aligncoords/all\.aligncoords/;
 	run_find_nearby(infile=>$dagchainer_file, dag_all_file=>$dag_file12.".all", outfile=>$tmp);
+	add_reverse_match(infile=>$tmp) if $md51 eq $md52;
+	my $chrs_w_diags = retrieve_chrs_with_diags(infile=>$tmp) if $show_diags_only;
 	#generate dotplot images
 	my %chr1;
 	my %chr2;
@@ -597,7 +673,8 @@ sub go
 		next if $chr =~ /random/;
 		my $last = $ds->last_chromosome_position($chr);
 		next if $last < $chr_length_limit;
-		$chr1{$md51."_".$chr} = $ds->id;
+		$chr1{$md51."_".$chr}= {dsid => $ds->id,
+					chr_end=>$last};
 	      }
 	  }
 	foreach my $ds (@ds2)
@@ -607,7 +684,8 @@ sub go
 		next if $chr =~ /random/;
 		my $last = $ds->last_chromosome_position($chr);
 		next if $last < $chr_length_limit;
-		$chr2{$md52."_".$chr} = $ds->id;
+		$chr2{$md52."_".$chr}= {dsid => $ds->id,
+					chr_end=>$last};
 	      }
 	  }
 
@@ -631,7 +709,7 @@ sub go
 		my $out = $org_dirs{$org_name1."_".$org_name2}{dir}."/html/";
 		mkpath ($out,0,0777) unless -d $out;
 		$out .= "$chr1"."_".$chr2."_D$dagchainer_D"."_g$dagchainer_g"."_A$dagchainer_A".".$blast.html";
-		generate_dotplot(dag=>$dag_file12.".all", coords=>$tmp, outfile=>$out, qchr=>$chr1, schr=>$chr2, qdsid=>$chr1{$chr1}, sdsid=>$chr2{$chr2},qlabel=>$name1.":".$chr1[-1],slabel=>$name2.":".$chr2[-1]);
+		generate_dotplot(dag=>$dag_file12.".all", coords=>$tmp, outfile=>$out, qchr=>"a".$chr1, schr=>"b".$chr2, qdsid=>$chr1{$chr1}{dsid}, sdsid=>$chr2{$chr2}{dsid},qlabel=>$name1.":".$chr1[-1],slabel=>$name2.":".$chr2[-1], q_max=>$chr1{$chr1}{chr_end}, s_max=>$chr2{$chr2}{chr_end});
 		$pm->finish;
 	      }
 	  }
@@ -645,6 +723,14 @@ sub go
 	    $html .= "<tr align=center>";
 	    foreach my $chr1 (sort keys %chr1)
 	      {
+		if ($show_diags_only)
+		  {
+		    unless ($chrs_w_diags->{$chr1}{$chr2})
+		      {
+			$html .= "<td>";
+			next;
+		      }
+		  }
 		my $out = $org_dirs{$org_name1."_".$org_name2}{dir}."/html/$chr1"."_".$chr2."_D$dagchainer_D"."_g$dagchainer_g"."_A$dagchainer_A".".$blast.html";
 		my @chr1 = split/_/,$chr1;
 #		next unless ($chr1[-1] eq "1" || $chr1[-1] eq "10");
