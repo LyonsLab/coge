@@ -710,6 +710,8 @@ sub go
 	$name2 =~ s/\)//g;
 	my $qlead = "a";
 	my $slead = "b";
+	my $qdsid = "qdsid";
+	my $sdsid = "sdsid";
 	if ($flip_output)
 	  {
 	    my %tmp = %chr2;
@@ -718,6 +720,8 @@ sub go
 	    ($name1, $name2) = ($name2, $name1);
 	    $qlead = "b";
 	    $slead = "a";
+	    $qdsid = "sdsid";
+	    $sdsid = "qdsid";
 	  }
 
 	foreach my $chr2 (sort keys %chr2)
@@ -730,7 +734,7 @@ sub go
 		my $out = $org_dirs{$org_name1."_".$org_name2}{dir}."/html/";
 		mkpath ($out,0,0777) unless -d $out;
 		$out .= "$chr1"."_".$chr2."_D$dagchainer_D"."_g$dagchainer_g"."_A$dagchainer_A".".$blast.html";
-		generate_dotplot(dag=>$dag_file12.".all", coords=>$tmp, outfile=>$out, qchr=>$qlead.$chr1, schr=>$slead.$chr2, qdsid=>$chr1{$chr1}{dsid}, sdsid=>$chr2{$chr2}{dsid},qlabel=>$name1.":".$chr1[-1],slabel=>$name2.":".$chr2[-1], q_max=>$chr1{$chr1}{chr_end}, s_max=>$chr2{$chr2}{chr_end});
+		generate_dotplot(dag=>$dag_file12.".all", coords=>$tmp, outfile=>$out, qchr=>$qlead.$chr1, schr=>$slead.$chr2, $qdsid=>$chr1{$chr1}{dsid}, $sdsid=>$chr2{$chr2}{dsid},qlabel=>$name1.":".$chr1[-1],slabel=>$name2.":".$chr2[-1], q_max=>$chr1{$chr1}{chr_end}, s_max=>$chr2{$chr2}{chr_end});
 		$pm->finish;
 	      }
 	  }
