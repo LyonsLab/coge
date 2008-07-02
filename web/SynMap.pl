@@ -239,7 +239,13 @@ sub generate_fasta
 	foreach my $feat (sort {$a->chromosome cmp $b->chromosome || $a->start <=> $b->start} $ds->features({feature_type_id=>3}))
 	  {
 	    my ($chr) = $feat->chromosome;#=~/(\d+)/;
-	    my ($name) = $feat->names;
+	    my $name;
+	    foreach my $n ($feat->names)
+	      {
+		$name = $n;
+		last unless $name =~ /\s/;
+	      }
+	    $name =~ s/\s+/_/g;
 	    my $title = join ("||",$chr, $feat->start, $feat->stop, $name, $feat->strand, $feat->type->name, $feat->id);
 	    print OUT ">".$title."\n";
 	    print OUT $feat->genomic_sequence(),"\n";
@@ -343,7 +349,7 @@ sub run_tandem_finder
     my $outfile = $opts{outfile};
     if (-r $outfile)
       {
-	write_log("file $outfile already exists",$cogeweb->logfile);
+	write_log("run_tandem_filter: file $outfile already exists",$cogeweb->logfile);
 	return 1;
       }
     my $cmd = "$PYTHON $TANDEM_FINDER -i $infile > $outfile";
@@ -359,7 +365,7 @@ sub run_filter_repetitive_matches
     my $outfile = $opts{outfile};
     if (-r $outfile)
       {
-	write_log("file $outfile already exists",$cogeweb->logfile);
+	write_log("run_filter_repetitive+_matches: file $outfile already exists",$cogeweb->logfile);
 	return 1;
       }
     my $cmd = "$FILTER_REPETITIVE_MATCHES < $infile > $outfile";
@@ -432,7 +438,9 @@ sub add_GEvo_links
 	my @feat1 = split/\|\|/,$line[1];
 	my @feat2 = split/\|\|/,$line[5];
 	my $link = "http://".$ENV{SERVER_NAME}."/CoGe/GEvo.pl?accn1=".$feat1[3]."&fid1=".$feat1[6]."&accn2=".$feat2[3]."&fid2=".$feat2[6] if $feat1[3] && $feat1[6] && $feat2[3] && $feat2[6];
-	print OUT $_,"\t",$link,"\n";
+	print OUT $_;
+	print OUT "\t",$link if $link;
+	print OUT "\n";
       }
     close IN;
     close OUT;
@@ -523,8 +531,8 @@ sub generate_dotplot
     my $s_dsid = $opts{sdsid};
     my $q_label = $opts{qlabel};
     my $s_label = $opts{slabel};
-    my $q_max = $opts{q_max};
-    my $s_max = $opts{s_max};
+    my $q_max = $opts{"q_max"};
+    my $s_max = $opts{"s_max"};
     if (-r $outfile)
       {
 	write_log("file $outfile already exists",$cogeweb->logfile);
@@ -551,6 +559,8 @@ sub go
     my $chr_length_limit = $opts{chr_length_limit};
     my $show_diags_only = $opts{show_diags_only};
     $show_diags_only = $show_diags_only eq "true" ? 1 : 0;
+    my $flip_output = $opts{flip_output};
+    $flip_output = $flip_output eq "true" ? 1 : 0;
     my $blast = $opts{blast};
     $blast = $blast == 2 ? "tblastx" : "blastn";
     unless ($oid1 && $oid2)
@@ -698,6 +708,17 @@ sub go
 	$name2 =~ s/\s+/_/g;
 	$name2 =~ s/\(//g;
 	$name2 =~ s/\)//g;
+	my $qlead = "a";
+	my $slead = "b";
+	if ($flip_output)
+	  {
+	    my %tmp = %chr2;
+	    %chr2 = %chr1;
+	    %chr1 = %tmp;
+	    ($name1, $name2) = ($name2, $name1);
+	    $qlead = "b";
+	    $slead = "a";
+	  }
 
 	foreach my $chr2 (sort keys %chr2)
 	  {
@@ -709,7 +730,7 @@ sub go
 		my $out = $org_dirs{$org_name1."_".$org_name2}{dir}."/html/";
 		mkpath ($out,0,0777) unless -d $out;
 		$out .= "$chr1"."_".$chr2."_D$dagchainer_D"."_g$dagchainer_g"."_A$dagchainer_A".".$blast.html";
-		generate_dotplot(dag=>$dag_file12.".all", coords=>$tmp, outfile=>$out, qchr=>"a".$chr1, schr=>"b".$chr2, qdsid=>$chr1{$chr1}{dsid}, sdsid=>$chr2{$chr2}{dsid},qlabel=>$name1.":".$chr1[-1],slabel=>$name2.":".$chr2[-1], q_max=>$chr1{$chr1}{chr_end}, s_max=>$chr2{$chr2}{chr_end});
+		generate_dotplot(dag=>$dag_file12.".all", coords=>$tmp, outfile=>$out, qchr=>$qlead.$chr1, schr=>$slead.$chr2, qdsid=>$chr1{$chr1}{dsid}, sdsid=>$chr2{$chr2}{dsid},qlabel=>$name1.":".$chr1[-1],slabel=>$name2.":".$chr2[-1], q_max=>$chr1{$chr1}{chr_end}, s_max=>$chr2{$chr2}{chr_end});
 		$pm->finish;
 	      }
 	  }
@@ -717,23 +738,26 @@ sub go
 	my $count = scalar (keys %chr1) * scalar (keys%chr2);
 	$html .= "<table cellspacing=0 cellpadding=0>";
 	my $id_num =1;
-	foreach my $chr2 (sort keys %chr2)
+
+#	print STDERR Dumper $chrs_w_diags;
+	foreach my $tchr2 (sort keys %chr2)
 	  {
-	    my @chr2 = split/_/,$chr2;
 	    $html .= "<tr align=center>";
-	    foreach my $chr1 (sort keys %chr1)
+	    foreach my $tchr1 (sort keys %chr1)
 	      {
+#		my ($chr1, $chr2) = $flip_output ? ($tchr2, $tchr1) : ($tchr1, $tchr2);
+		my ($chr1, $chr2) = ($tchr1, $tchr2);
+		my $out = $org_dirs{$org_name1."_".$org_name2}{dir}."/html/$chr1"."_".$chr2."_D$dagchainer_D"."_g$dagchainer_g"."_A$dagchainer_A".".$blast.html";
 		if ($show_diags_only)
 		  {
 		    unless ($chrs_w_diags->{$chr1}{$chr2})
 		      {
-			$html .= "<td>";
+#			$html .= "<td>";
+#			$html .= "<td>$out";
 			next;
 		      }
 		  }
-		my $out = $org_dirs{$org_name1."_".$org_name2}{dir}."/html/$chr1"."_".$chr2."_D$dagchainer_D"."_g$dagchainer_g"."_A$dagchainer_A".".$blast.html";
-		my @chr1 = split/_/,$chr1;
-#		next unless ($chr1[-1] eq "1" || $chr1[-1] eq "10");
+
 		my $png = $out;
 		$png =~ s/html$/png/;
 		my ($w, $h) = (0,0);
