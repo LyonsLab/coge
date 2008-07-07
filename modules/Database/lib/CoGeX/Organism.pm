@@ -45,14 +45,15 @@ sub current_datasets
     my $type = $opts{type} || $opts{genomic_sequence_type} || $opts{sequence_type};
     $type =1 unless $type;
     my %data;
-    my $version;
     my $typeid;
     $typeid = ref($type) =~/Type/ ? $type->id : $type;
+    my $version;
     ds_loop: foreach my $ds ($self->datasets({},{distict=>'version',order_by=>'version desc'}))
       {
 	next unless $ds->sequence_type && $ds->sequence_type->id eq $typeid;
 	$version = $ds->version unless $version;
-	next unless $version == $ds->version;
+	$version = $ds->version if $ds->version > $version;
+#	next unless $version == $ds->version;
 	my @chrs = $ds->get_chromosomes;
 	foreach my $chr (@chrs)
 	  {
