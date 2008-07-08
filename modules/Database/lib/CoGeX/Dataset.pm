@@ -242,12 +242,15 @@ sub percent_gc
   {
     my $self = shift;
     my %opts = @_;
+    my $count = $opts{count};
 #    my $chr = $opts{chr};
     my $seq = $self->genomic_sequence(%opts);
     my $length = length $seq;
     return unless $length;
     my ($gc) = $seq =~ tr/GCgc/GCgc/;
-    return sprintf("%.4f", $gc/$length);
+    my ($at) = $seq =~ tr/ATat/ATat/;
+    return ($gc,$at) if $count;
+    return sprintf("%.4f", $gc/$length),sprintf("%.4f", $at/$length);
   }
 
 sub fasta
