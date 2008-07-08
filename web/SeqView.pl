@@ -245,6 +245,17 @@ sub gen_foot
     #print STDERR $featid if $featid;
    # print STDERR "nuthin" unless $featid;
     $template->param(ADDITION=>1);
+    if ($rc)
+      {
+	$start -= $downstream;
+	$stop += $upstream;
+      }
+    else
+      {
+	$start -= $upstream;
+	$stop += $downstream;
+      }
+
     if ($featid){
       my ($feat) = $coge->resultset('Feature')->find($featid);
       $dsid = $feat->dataset_id;
@@ -274,6 +285,8 @@ sub gen_foot
       $template->param(DOWNVALUE=>$stop);
       $template->param(ADD_EXTRA=>1);
       $template->param(RANGE=>1);
+#      $template->param(ADDUP=>$upstream);
+#      $template->param(ADDDOWN=>$downstream);
       }
     if ($rc)
       {
