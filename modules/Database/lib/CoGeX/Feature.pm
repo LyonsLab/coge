@@ -576,7 +576,9 @@ sub genomic_sequence {
   my $down = $opts{down} || $opts{downstream} || $opts{right};
   my $dataset = $self->dataset();
   my @sequences;
-  my @locs = map {[$_->start,$_->stop,$_->chromosome,$_->strand]}sort { $a->start <=> $b->start } $self->locations() ;
+  my %locs = map {($_->start,$_->stop)}$self->locations() ;#in case a mistake happened when loading locations and there are multiple ones with the same start
+  my @locs = map {[$_, $locs{$_}]} sort {$a <=> $b} keys %locs;
+#  my @locs = map {[$_->start,$_->stop,$_->chromosome,$_->strand]}sort { $a->start <=> $b->start } $self->locations() ;
   ($up,$down) = ($down, $up) if ($self->strand =~/-/); #must switch these if we are on the - strand;
   if ($up)
     {
@@ -589,7 +591,7 @@ sub genomic_sequence {
       my $stop = $locs[-1][1]+$down;
       $locs[-1][1]=$stop;
     }
-  my $chr = $self->chromosome || $locs[0][2];
+  my $chr = $self->chromosome;
   my $start = $locs[0][0];
   my $stop = $locs[-1][1];
   my $full_seq = $dataset->get_genomic_sequence(
@@ -620,7 +622,7 @@ sub genomic_sequence {
       my $this_seq = substr($full_seq
                           , $loc->[0] - $start
                           , $loc->[1] - $loc->[0] + 1);
-      if ($loc->[3] == -1){
+      if ($self->strand == -1){
             unshift @sequences, $self->reverse_complement($this_seq);
       }else{
             push @sequences, $this_seq;
@@ -1044,6 +1046,8 @@ sub gc_content
 sub wobble_content
   {
     my $self = shift;
+    my %opts = @_;
+    my $counts = $opts{counts};
     return unless $self->type->name =~ /cds/i;
     my $seq = $self->genomic_sequence;
     my $codon_count=0;;
@@ -1057,6 +1061,7 @@ sub wobble_content
         $at_count++ if $wobble =~ /[at]/i;
         $gc_count++ if $wobble =~ /[gc]/i;
       }
+    return ($gc_count, $at_count) if $counts;
     my $pat = sprintf("%.4f", $at_count/$codon_count);
     my $pgc = sprintf("%.4f", $gc_count/$codon_count);
     return ($pgc, $pat);
