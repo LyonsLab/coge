@@ -8,7 +8,7 @@ use GD;
 
 #for best performance, create all the chromosomes before generating the features.
 
-__PACKAGE__->mk_accessors(qw(organism chromosomes features image_width image_height legend_height _default_feature_color _gd _color_set color_band_flag legend chromosome_height show_count draw_ends));
+__PACKAGE__->mk_accessors(qw(organism chromosomes features image_width image_height legend_height _default_feature_color _gd _color_set color_band_flag legend chromosome_height show_count draw_ends max_count));
 
 my $DEFAULT_COLOR = [255,0,0];
 my $FONT = GD::Font->MediumBold;
@@ -233,22 +233,37 @@ sub draw_features
     my $black = $self->get_color([0,0,0]);
     my $white = $self->get_color([255,255,255]);
     my %points;
+    my $max_count =1;
     foreach my $feat (@{$feats->{$chr->{name}}})
       {
 	my $x1 = sprintf("%.0f",$x+$feat->{end}/$chr->{end}*$width);
 	$points{$x1}{0}{count}=0 unless defined $points{$x1}{0}{count};
 	$points{$x1}{1}{count}=0 unless defined $points{$x1}{1}{count};
 	$points{$x1}{$feat->{up}}{count}++;
+	$max_count = $points{$x1}{$feat->{up}}{count} if $points{$x1}{$feat->{up}}{count} > $max_count;
 	$points{$x1}{$feat->{up}}{color} = $feat->{color};
+	$points{$x1}{$feat->{up}}{heatmap} = $feat->{heatmap};
+	
       }
+    $self->max_count($max_count);
     foreach my $x1 (sort {$points{$a}{0}{count}+$points{$a}{1}{count} <=> $points{$b}{0}{count}+$points{$b}{1}{count}} keys %points)
      {
-       foreach my $up (keys %{$points{$x1}})
+       foreach my $up (sort keys %{$points{$x1}})
 	 {
 	   my $count = $points{$x1}{$up}{count};
 	   next unless $count;
-#	   print STDERR $points{$x1}{$up}{count},"\n", Dumper $points{$x1};
-	   my $color = $points{$x1}{$up}{color};
+
+	   my $color;
+	   if (defined $points{$x1}{$up}{heatmap})
+	     {
+	       my $c1 = sprintf("%.0f",100 + 155*$count/$max_count);
+	       $color = [0,0,0];
+	       $color->[$points{$x1}{$up}{heatmap}]=$c1;
+	     }
+	   else
+	     {
+	       $color = $points{$x1}{$up}{color};
+	     }
 	   $color = $self->get_color($color) if ref ($color) =~ /array/i;
 	   $color = $self->default_feature_color unless $color;
 	   
@@ -385,6 +400,7 @@ sub add_feature
     my $desc = $opts{'desc'};
     my $up = $opts{'up'} || 0;
     my $imagemap = $opts{imagemap};
+    my $heatmap = $opts{heatmap};
     unless ($start && $end && $chr)
       {
 	warn "add_feature call failed -- must have valid start, end, and chromosome";
@@ -402,6 +418,7 @@ sub add_feature
 				     desc=>$desc,
 				     up=>$up,
 				     imagemap=>$imagemap,
+				     heatmap=>$heatmap,
 				 };
     return 1;
   }
