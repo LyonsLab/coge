@@ -10,6 +10,8 @@ use CoGe::Accessory::Web;
 use HTML::Template;
 use URI::Escape;
 use Spreadsheet::WriteExcel;
+use LWP::Simple;
+use LWP::Simple::Post qw(post post_xml);
 
 
 $ENV{PATH} = "/opt/apache/CoGe/";
@@ -85,10 +87,9 @@ sub gen_html
     #print STDERR Dumper \@$feat_list;
     my $dsid = $form->param('dsid') if $form->param('dsid');
     my $chr = $form->param('chr') if $form->param('chr');
-    my $ftid = $form->param('ftid') if $form->param('ftid');
-    push @$feat_list, @{get_fids_from_dataset(dsid=>$dsid, ftid=>$ftid, chr=>$chr)} if $dsid;
+    push @$feat_list, @{get_fids_from_dataset(dsid=>$dsid, chr=>$chr)} if $dsid;
     
-    my $seqs = generate_sequence(feature_list=>$feat_list, ftid=>$ftid);
+    my $seqs = generate_sequence(feature_list=>$feat_list);
     my $fid_string;
     foreach my $fid (@$feat_list)
     {
@@ -115,7 +116,6 @@ sub gen_html
   {
   	my %opts = @_;
     my $feat_list = $opts{feature_list};
-    my $ftid = $opts{ftid};
     return unless @$feat_list;
     $feat_list = [map {$coge->resultset("Feature")->find($_)} @$feat_list];
     my $seqs;
@@ -125,10 +125,6 @@ sub gen_html
 	{
 #	  warn "feature id $featid failed to return a valid feature object\n";
 	  next;
-	}
-      if ($ftid) 
-	{
-	  next unless $feat->type->id eq $ftid;
 	}
 	$seqs .= $feat->fasta(col=>0,prot=>0, name_only=>1);
     }
@@ -187,7 +183,7 @@ sub gen_html
   	my $num_seqs = $seqs =~ tr/>/>/;
 
   	my %file_format = (NEXUS=>'nxs',PHYLIP=>'phy',GDE=>'gde',PIR=>'pir');
-  	print STDERR Dumper \%file_format;
+  	#print STDERR Dumper \%file_format;
   	
   	$cogeweb = initialize_basefile(prog=>"CoGeAlign");
   	
@@ -197,9 +193,9 @@ sub gen_html
   	open(NEW,"> $seq_file");
     print  NEW $seqs;
     close NEW;
-  	print STDERR $format,"\n";
+  	#print STDERR $format,"\n";
   	my $suffix = $format =~/(coge|clustal)/ ? 'aln' : $file_format{$format};
-  	print STDERR $suffix," is your suffix!\n";
+  	#print STDERR $suffix," is your suffix!\n";
   	my $outfile = $cogeweb->basefile."_clustalw.".$suffix;
   	my $tree_out = $TEMPURL."/".$cogeweb->basefilename."_clustalw.dnd";
   	my $phylip_file = $TEMPURL."/".$cogeweb->basefilename."_clustalw.ph";
@@ -225,7 +221,7 @@ sub gen_html
   	
   	my $command = "$CLUSTAL $pre_command";
   	
-  	#print STDERR $command, "\n";
+  	print STDERR $command, "\n";
   	
   	`$command`;
   	
@@ -277,7 +273,6 @@ sub gen_html
   	my $clustal = $opts{clustal};
   	my $num_seqs = $opts{num_seqs};
   	my $no_color = $opts{no_color};
-  	$num_seqs;
   	my @lines;
   	my @headers;
   	my @seqs;
