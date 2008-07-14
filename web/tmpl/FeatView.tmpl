@@ -153,6 +153,8 @@ function add_all (val) {
   if (val) {$('#blank').remove();}
   $('#featlist_choice').sortSelect();
   counting();
+  $('#add_all_search').html('');
+  $('#add_all').show();
 }
 
 function clear_feat_list(){
@@ -338,7 +340,8 @@ function search_bar(div_id){
               <option id=blank value=null>No Feature Selected</option>
               </SELECT>
     </div>
-    <input type="button" style="display: none" id=add_all value="Add All Features" onClick="cogesearch_featids(['args__accn','accn', 'args__anno','annosearch','args__type','type', 'args__org_id','org_id', 'args__feat_name_wild','feat_name_wild', 'args__feat_anno_wild', 'feat_anno_wild','args__org_name','org_name','args__org_desc','org_desc'],[add_all]);">
+    <div id=add_all_search></div>
+    <input type="button" style="display: none" id=add_all value="Add All Features" onClick="$('#add_all').hide();$('#add_all_search').html('<img src=./picts/animations/DNA_orbit_animated_small_third.gif >'); cogesearch_featids(['args__accn','accn', 'args__anno','annosearch','args__type','type', 'args__org_id','org_id', 'args__feat_name_wild','feat_name_wild', 'args__feat_anno_wild', 'feat_anno_wild','args__org_name','org_name','args__org_desc','org_desc'],[add_all]);">
     <input type="button" style="display: none" id=remove value="Remove" onClick="$('#'+$('#featlist_choice').val()).remove();counting();">
     <input type="button" style="display: none" id=clear value="Clear" onClick="clear_feat_list()"><br>
     <input type="button" style="display: none" id=send value="Send to Feature List Viewer" onClick="send_to_FeatList()">
