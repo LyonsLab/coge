@@ -11,6 +11,8 @@ function update_options(type){
 		$('#dna_matrix').show(0);
 		$('#gap_open').val(15);
 		$('#gap_ext').val(6.66);
+		$('#PROTEIN_results_format').hide(0);
+		$('#DNA_results_format').show(0);
 	}
 	else
 	{
@@ -18,6 +20,8 @@ function update_options(type){
 		$('#prot_matrix').show(0);
 		$('#gap_open').val(10);
 		$('#gap_ext').val(0.2);
+		$('#DNA_results_format').hide(0);
+		$('#PROTEIN_results_format').show(0);
 	}
 	
 }
@@ -32,7 +36,7 @@ function prepare_run(){
 	var gap_open = $('#gap_open').val();
 	var gap_ext = $('#gap_ext').val();
 	var iteration = $('#iteration').val();
-	var format = $('#results_format').val();
+	var format = $('#'+type+'_results_format').val();
 	
 	var matrix;
 	
@@ -95,9 +99,16 @@ Iteration:
 Results Options
 <div id=results_opts>
 Results Format:
-<select id=results_format>
+<select id=DNA_results_format>
 <option value=coge>CoGe Default
 <option value=coge_nocolor>CoGe (No Color)
+<option value=clustal>Clustal Default
+<option value=GDE>GDE
+<option value=PHYLIP>Phylip
+<option value=PIR>PIR
+<option value=NEXUS>NEXUS
+</select>
+<select id=PROTEIN_results_format style="display:none">
 <option value=clustal>Clustal Default
 <option value=GDE>GDE
 <option value=PHYLIP>Phylip
