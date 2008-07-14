@@ -214,7 +214,7 @@ sub cogesearch_featids
       {
 	my ($otype, $search) = ("name", $org_name) if $org_name && $org_name ne "Search";
 	($otype, $search) = ("desc", $org_desc) if $org_desc && $org_desc ne "Search";
-	@org_ids = get_orgs(id_only=>1, type=>$type, search=>$search);
+	@org_ids = get_orgs(id_only=>1, type=>$otype, search=>$search);
       }
     else
       {
