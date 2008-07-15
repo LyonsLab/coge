@@ -578,7 +578,7 @@ sub genomic_sequence {
   my @sequences;
   my %locs = map {($_->start,$_->stop)}$self->locations() ;#in case a mistake happened when loading locations and there are multiple ones with the same start
   my @locs = map {[$_, $locs{$_}]} sort {$a <=> $b} keys %locs;
-#  my @locs = map {[$_->start,$_->stop,$_->chromosome,$_->strand]}sort { $a->start <=> $b->start } $self->locations() ;
+  my ($strand) = map{$_->strand} $self->locations;
   ($up,$down) = ($down, $up) if ($self->strand =~/-/); #must switch these if we are on the - strand;
   if ($up)
     {
@@ -600,34 +600,35 @@ sub genomic_sequence {
 						start=>$start,
 						stop=>$stop,
 					       );
-  foreach my $loc (@locs){
-    if ($loc->[0]-$start+$loc->[1]-$loc->[0]+1 > CORE::length ($full_seq))
-      {
-	print STDERR "Error in feature->genomic_sequence, location is outside of retrieved sequence: \n";
-	use Data::Dumper;
-	print STDERR Dumper \@locs;
-	print STDERR CORE::length ($full_seq),"\n";
-	print STDERR Dumper {
-	  chromosome=>$chr,
-	    skip_length_check=>1,
-	      start=>$start,
-		stop=>$stop,
-		  dataset=>$dataset->id,
-		    feature=>$self->id,
-	      };
-#	die;
-#	next;
-      }
-
-      my $this_seq = substr($full_seq
-                          , $loc->[0] - $start
-                          , $loc->[1] - $loc->[0] + 1);
-      if ($self->strand == -1){
-            unshift @sequences, $self->reverse_complement($this_seq);
-      }else{
-            push @sequences, $this_seq;
-      }
-  }        
+  if ($full_seq)
+    {
+      foreach my $loc (@locs){
+	if ($loc->[0]-$start+$loc->[1]-$loc->[0]+1 > CORE::length ($full_seq))
+	  {
+	    print STDERR "Error in feature->genomic_sequence, location is outside of retrieved sequence: \n";
+	    use Data::Dumper;
+	    print STDERR Dumper \@locs;
+	    print STDERR CORE::length ($full_seq),"\n";
+	    print STDERR Dumper {
+	      chromosome=>$chr,
+		skip_length_check=>1,
+		  start=>$start,
+		    stop=>$stop,
+		      dataset=>$dataset->id,
+			feature=>$self->id,
+		      };
+	  }
+	
+	my $this_seq = substr($full_seq
+			      , $loc->[0] - $start
+			      , $loc->[1] - $loc->[0] + 1);
+	if ($strand == -1){
+	  unshift @sequences, $self->reverse_complement($this_seq);
+	}else{
+	  push @sequences, $this_seq;
+	}
+      }      
+    }
   return wantarray ? @sequences : join( "", @sequences );
 }
 
@@ -1082,9 +1083,12 @@ sub fasta
     my $upstream = $opts{upstream} || 0;
     my $downstream = $opts{downstream} || 0;
     my $name_only = $opts{name_only};
+    my $add_fid = $opts{add_fid};
     my $sep = $opts{sep}; #returns the header and sequence as separate items.
     my ($pri_name) = $self->primary_name;
-    my $head = $name_only ? ">".$pri_name : ">".$self->dataset->organism->name."(v".$self->version.")".", Name: ".(join (", ", $self->names)).", Type: ".$self->type->name.", Feature Location: (Chr: ".$self->chromosome.", ".$self->genbank_location_string.")";
+    my $head = $name_only ? $pri_name : $self->dataset->organism->name."(v".$self->version.")".", Name: ".(join (", ", $self->names)).", Type: ".$self->type->name.", Feature Location: (Chr: ".$self->chromosome.", ".$self->genbank_location_string.")";
+    $head = "fid:".$self->id." ".$head if $add_fid;
+    $head = ">".$head;
     $head .= " +up: $upstream" if $upstream;
     $head .= " +down: $downstream" if $downstream;
     $head .= " (reverse complement)" if $rc;
