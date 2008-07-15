@@ -262,7 +262,8 @@ sub gen_body
     $hsp_overlap_limit = 0 unless $hsp_overlap_limit;
     my $hsp_size_limit = get_opt(params=>$prefs, form=>$form, param=>'hsp_size_limit');
     $hsp_size_limit = 0 unless $hsp_size_limit;
-
+    my $show_cns = get_opt(params=>$prefs, form=>$form, param=>'show_cns');
+    $show_cns=0 unless $show_cns;
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GEvo.tmpl');
     $template->param(PAD_GS=>$pad_gs);
     $template->param(IMAGE_WIDTH=>$image_width);
@@ -282,6 +283,8 @@ sub gen_body
     else {$template->param(HIQUAL_NO=>"checked");}
     if ($color_hsp) {$template->param(COLOR_HSP_YES=>"checked");}
     else {$template->param(COLOR_HSP_NO=>"checked");}
+    if ($show_cns) {$template->param(SHOW_CNS_YES=>"checked");}
+    else {$template->param(SHOW_CNS_NO=>"checked");}
     if ($hsp_label && $hsp_label eq "staggered") {$template->param(HSP_LABELS_STAG=>"selected");}
     elsif ($hsp_label && $hsp_label eq "linear") {$template->param(HSP_LABELS_LIN=>"selected");}
     else {$template->param(HSP_LABELS_NO=>"selected");}
@@ -356,6 +359,7 @@ sub run
     my $color_overlapped_features = $opts{color_overlapped_features};
     my $hsp_overlap_length = $opts{hsp_overlap_length};
     my $email_address = $opts{email};
+    my $show_cns = $opts{show_cns};
     my $message;
     $cogeweb = initialize_basefile(basename=>$basefilename, prog=>"GEvo");
     my @hsp_colors;
@@ -668,6 +672,7 @@ sub run
 			     hsp_size_limit=>$hsp_size_limit,
 			     color_overlapped_features=>$color_overlapped_features,
 			     hsp_overlap_length=>$hsp_overlap_length,
+			     show_cns=>$show_cns,
 			    );
 #	    $item->{feat_count} = $feat_count;
 #	    $item->{overlap_count} = $overlap_count;
@@ -916,6 +921,7 @@ sub generate_image
     my $hsp_size_limit = $opts{hsp_size_limit};
     my $color_overlapped_features = $opts{color_overlapped_features};
     my $hsp_overlap_length = $opts{hsp_overlap_length};
+    my $show_cns = $opts{show_cns};
     my $graphic = new CoGe::Graphics;
     my $gfx = new CoGe::Graphics::Chromosome;
 #    print STDERR "$start"."::"."$stop"." -- ".length($gbobj->sequence)."\n";
@@ -960,7 +966,7 @@ sub generate_image
 			  hsp_size_limit=>$hsp_size_limit,
 			  hsp_overlap_length=>$hsp_overlap_length,
 			 );
-    my ($feat_counts) = process_features(c=>$gfx, obj=>$gbobj, start=>$start, stop=>$stop, overlap_adjustment=>$overlap_adjustment, draw_model=>$draw_model, color_overlapped_features=>$color_overlapped_features, cbc=>$show_cbc);
+    my ($feat_counts) = process_features(c=>$gfx, obj=>$gbobj, start=>$start, stop=>$stop, overlap_adjustment=>$overlap_adjustment, draw_model=>$draw_model, color_overlapped_features=>$color_overlapped_features, cbc=>$show_cbc, cns=>$show_cns);
     $stats->{feat_counts} = $feat_counts;
     return ($gfx, $stats);
   }
@@ -1145,6 +1151,7 @@ sub process_features
     my $draw_model = $opts{draw_model};
     my $color_overlapped_features = $opts{color_overlapped_features};
     my $cbc = $opts{cbc};
+    my $show_cns = $opts{cns};
     my $accn = $obj->accn;
     my $track = 1;
     my %feat_counts;
@@ -1270,9 +1277,8 @@ sub process_features
 	    $c->add_feature($f);
 	    next;
 	  }
-	elsif ($type =~ /cns/i)
+	elsif ($show_cns && $type =~ /cns/i)
 	  {
-	    next unless $draw_model eq "cns";
 	    $f = CoGe::Graphics::Feature::HSP->new({start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1]});
 	    $f->color([204,0,204]);
 	    $f->order($track);
@@ -2436,8 +2442,8 @@ sub gen_params
         'args__hsp_size_limit', 'hsp_size_limit',
         'args__color_overlapped_features','color_overlapped_features',
         'args__hsp_overlap_length','hsp_overlap_length',
-        'args__basefile','args__'+pageObj.basefile
-
+        'args__basefile','args__'+pageObj.basefile,
+        'args__show_cns','show_cns'
 };
     $params =~ s/\n//g;
     $params =~ s/\s+/ /g;
