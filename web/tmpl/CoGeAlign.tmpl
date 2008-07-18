@@ -27,7 +27,8 @@ function update_options(type){
 }
 
 function prepare_run(){
-	$('#results').hide(0);
+//	$('#results').hide(0);
+	$('#results').html('<div class="loading dna">Running alignment. . .</div>');
 	var type;
 	
 	if($('#seq_type:checked').val()) type='DNA';
@@ -44,13 +45,15 @@ function prepare_run(){
 	else matrix = $('#prot_matrix').val();
 	
 	run([
-	'args__seq_type','args__'+type,
+	'args__seq_type','seq_type',
 	'args__gap_open','args__'+gap_open,
 	'args__gap_ext','args__'+gap_ext,
 	'args__seq','seq_box',
 	'args__matrix','args__'+matrix,
 	'args__format','args__'+format,
-	'args__iteration','args__'+iteration],[gather_results],['POST']);
+	'args__iteration','args__'+iteration,
+	'args__gen_matrix','gen_matrix',
+	],[gather_results],['POST']);
 }
 
 function gather_results(html){
@@ -69,7 +72,10 @@ function gather_results(html){
 <br>
 Basic Alignment Options
 <div id=basic_opts>
-Sequence Type<br><label><input type=radio id=seq_type checked name=seq_type value="dna" onclick="update_options('dna');refresh_seq(['args__fids','args__'+pageObj.fids,'args__seq_type','seq_type'],['seq_box']);">DNA</label><label><input type=radio id=seq_type name=seq_type value="prot" onclick="update_options('prot');refresh_seq(['args__fids','args__'+pageObj.fids,'args__seq_type','seq_type'],['seq_box']);">Protein</label>
+Sequence Type<br>
+<label><input type=radio id=seq_type checked name=seq_type value="dna" onclick="$('#seq_box').val('loading. . .');update_options('dna');refresh_seq(['args__fids','args__'+pageObj.fids,'args__seq_type','seq_type'],['seq_box']);">DNA</label>
+<label><input type=radio id=seq_type name=seq_type value="prot" onclick="$('#seq_box').val('loading. . .');update_options('prot');refresh_seq(['args__fids','args__'+pageObj.fids,'args__seq_type','seq_type'],['seq_box']);">Protein</label>
+<TMPL_IF name=codon_align><label><input type=radio id=seq_type name=seq_type value="codon" onclick="$('#seq_box').val('loading. . .');update_options('prot');refresh_seq(['args__fids','args__'+pageObj.fids,'args__seq_type','seq_type'],['seq_box']);">codon</label></TMPL_IF>
 </div>
 Advanced Alignment Options
 <div id=adv_opts>
@@ -100,8 +106,8 @@ Results Options
 <div id=results_opts>
 Results Format:
 <select id=DNA_results_format>
-<option value=coge>CoGe Default
-<option value=coge_nocolor>CoGe (No Color)
+<option value=coge_color>CoGe Color
+<option value=coge>CoGe
 <option value=clustal>Clustal Default
 <option value=GDE>GDE
 <option value=PHYLIP>Phylip
@@ -109,6 +115,7 @@ Results Format:
 <option value=NEXUS>NEXUS
 </select>
 <select id=PROTEIN_results_format style="display:none">
+<option value=coge>CoGe
 <option value=clustal>Clustal Default
 <option value=GDE>GDE
 <option value=PHYLIP>Phylip
@@ -116,10 +123,10 @@ Results Format:
 <option value=NEXUS>NEXUS
 </select>
 </div>
+Generating Scoring Matrix for Alignment <input type=checkbox id="gen_matrix">
+<span class="small">(Using the method describe in Henikoff and Henikoff, 1992)</span>
 </TMPL_IF>
 
 <TMPL_IF NAME="RESULTS_DIV">
-<table align=center style="overflow:auto;width:90%;"><tr><td>
-<pre ><div align=center id=results></div></pre>
-</table>
+  <div id=results></div>
 </TMPL_IF>
