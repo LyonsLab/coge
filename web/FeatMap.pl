@@ -57,7 +57,7 @@ sub gen_html
         $name = $USER->first_name if $USER->first_name;
         $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
         $template->param(USER=>$name);
-
+	$template->param(LOGO_PNG=>"FeatMap-logo.png");
 	$template->param(LOGON=>1) unless $USER->user_name eq "public";
 	$template->param(DATE=>$DATE);
 	#$template->param(LOGO_PNG=>"CoGeBlast-logo.png");
