@@ -59,7 +59,7 @@ sub gen_html
 	$name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
 	$template->param(USER=>$name);
 	$template->param(ADJUST_BOX=>1);
-	
+	$template->param(LOGO_PNG=>"CoGeAlign-logo.png");
 	$template->param(LOGON=>1) unless $USER->user_name eq "public";
 	$template->param(DATE=>$DATE);
 	$template->param(BOX_NAME=>'CoGe: ClustalW2');
