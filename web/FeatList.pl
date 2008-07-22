@@ -165,8 +165,8 @@ sub generate_table
     $at*=100;
     $gc*=100;
     my ($wgc, $wat) = $feat->wobble_content;
-    $wat*=100;
-    $wgc*=100;
+    $wat*=100 if $wat;
+    $wgc*=100 if $wgc;
 
       push @table,{
 		   FEATID=>$featid,
