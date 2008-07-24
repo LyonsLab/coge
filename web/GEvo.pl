@@ -1201,7 +1201,9 @@ sub process_features
 		  {
 		    my $cleaned_name = $name;
 		    $cleaned_name =~ s/[\(\)]//g;
-		    if ($accn =~ /^$cleaned_name\(?\d*\)?$/i)
+		    my $tmp = $accn;
+		    $tmp =~ s/\*\*\d+\*\*$//;
+		    if ($tmp =~ /^$cleaned_name\(?\d*\)?$/i)
 		      {
 			$f->color([255,255,0]) ;
 			$f->label($name);
