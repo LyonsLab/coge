@@ -38,7 +38,7 @@ use Parallel::ForkManager;
 use Statistics::Basic;
 use Benchmark qw(:all);
 #use Mail::Mailer;
-use Mail::Mailer qw(mail);
+use Mail::Mailer;# ("mail);
 
 # for security purposes
 
@@ -881,7 +881,7 @@ Time to process html                              : $html_time
     write_log("GEvo link: $gevo_link", $cogeweb->logfile);
     write_log("Tiny url: $tiny", $cogeweb->logfile);
     $count--;
-    email_results(email=>$email_address,basefile=>$basefilename);
+    email_results(email=>$email_address,basefile=>$basefilename) if $email_address;
     return $outhtml, $iw+400, $frame_height, $cogeweb->basefilename,$count,$message;
 
 }
@@ -3032,10 +3032,10 @@ sub email_results {
 	return unless $email_address =~/^[_a-zA-Z0-9-]+(\.[_a-zA-Z0-9-]+)*@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*\.(([0-9]{1,3})|([a-zA-Z]{2,3})|(aero|coop|info|museum|name))$/;
 	my $mailer = Mail::Mailer->new("sendmail");
 	$mailer->open({From	=> 'GEvo <gevo_results@synteny.cnr.berkeley.edu>',
-				   To	=> $email_address,
-				   Subject	=> 'GEvo Analysis Results Ready',
-				})
-		or die "Can't open: $!\n";
+		       To	=> $email_address,
+		       Subject	=> 'GEvo Analysis Results Ready',
+		      })
+	  or die "Can't open: $!\n";
 	my $username = $USER->user_name;
 	my $body = qq{Dear $username,
 		
