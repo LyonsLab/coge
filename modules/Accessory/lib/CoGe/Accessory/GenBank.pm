@@ -21,8 +21,10 @@ sub new
 sub get_genbank_from_ncbi
   {
     my $self = shift;
-    my $id = shift;
-    my $rev = shift;
+    my %opts = @_;
+    my $id = $opts{accn};
+    my $rev = $opts{rev};
+    my $start = $opts{start};
     my $ua = new LWP::UserAgent;
     my $url = "http://www.ncbi.nlm.nih.gov/entrez/viewer.fcgi?db=nucleotide&qty=1&c_start=1&list_uids=$id&dopt=gb&send=Send&sendto=t&from=begin&to=end&extrafeatpresent=1&ef_MGC=16";
     my $search = $ua->get($url);
@@ -31,15 +33,17 @@ sub get_genbank_from_ncbi
 	print STDERR "Trouble retrieving $id: ", $search->status_link,"\n";
       }
 
-    return $self->parse_genbank($search->content, $rev);    
+    return $self->parse_genbank(content=>$search->content, rev=>$rev, start=>$start);    
 
   }
 
 sub parse_genbank
   {
     my $self = shift;
-    my $gb = shift;
-    my $rev = shift;
+    my %opts = @_;
+    my $gb = $opts{content};
+    my $rev = $opts{rev};
+    my $start = $opts{start};
     my @gb = split /\n/, $gb;
     my %moltype_list = ( 'mRNA' => '1', 'RNA' => '1', 'tRNA' => '1',
 			 'rRNA' => '1', 'DNA' => '1', 'scRNA' => '1',
@@ -149,7 +153,7 @@ sub parse_genbank
 	        else
 		  {
 		    my $line = $gb[$x];
-		    $line =~ s/\s+//g;
+		    $line =~ s/\s+/ /g;
 		    $feature{$iso} .= $line if $iso;
 		  }
 	        $x++;
@@ -214,9 +218,10 @@ sub parse_genbank
 				 qualifiers=>\%quals,
 				 annotation=>$anno,
 				 strand=>$strand,
+				 start=>$start,
 				);
 	    }
-	  $self->_check_for_gene_models if $self->add_gene_models;
+	  $self->_check_for_gene_models() if $self->add_gene_models;
 	  return $self;
 	}
 	$pos++; # incr position counter
@@ -227,6 +232,7 @@ sub parse_genbank
 sub _check_for_gene_models
   {
     my $self = shift;
+    my %opts = @_;
     my %data;
     foreach my $feat (sort {$a->start <=> $b->start} $self->get_features)
       {
@@ -265,9 +271,11 @@ sub mask_exons
     {
       my $self = shift;
       my $seq = shift;
-      foreach my $type (qw (CDS tRNA rRNA snRNA snoRNA))
+      my %type = (CDS=>1, tRNA=>1, rRNA=>1, snRNA=>1, snoRNA=>1);
+      foreach my $feat (@{$self->features})
 	{
-	  foreach my $block (@{$self->get_blocks(type=>$type)})
+	  next unless $type{$feat->type};
+	  foreach my $block (@{$feat->blocks})
 	    {
 	      next if $block->[0] > length($seq);
 	      next if $block->[1] < 1;
@@ -287,9 +295,11 @@ sub mask_ncs
     my $self = shift;
     my $seq = shift;
     my $tmp_seq = "X"x length $seq;
-    foreach my $type (qw (CDS tRNA rRNA snRNA snoRNA))
+    my %type = (CDS=>1, tRNA=>1, rRNA=>1, snRNA=>1, snoRNA=>1);
+    foreach my $feat (@{$self->features})
       {
-	foreach my $block (@{$self->get_blocks(type=>$type)})
+	next unless $type{$feat->type};
+	foreach my $block (@{$feat->blocks})
 	  {
 	    next if $block->[0] > length($seq);
 	    next if $block->[1] < 1;
@@ -308,7 +318,9 @@ sub mask_ncs
 sub process_location 
     {
       my $self = shift;
-      my $locline = shift;
+      my %opts = @_;
+      my $locline = $opts{loc};
+      my $start = $opts{start};
       my @locdata = ();
       $locline =~ s/\s+//g;                   #remove leading spaces
       $locline =~ s/complement\((.*)\)/$1/g;  #forget about "complement"
@@ -325,6 +337,8 @@ sub process_location
 		  # need this for single nucleotide, which sometimes happens
 		  $temp[1] = $temp[0];
 		}
+	      $temp[0] = $temp[0]-$start+1 if $start;
+	      $temp[1] = $temp[1]-$start+1 if $start;
 	      push(@locdata, [ $temp[0], $temp[1] ] );
 	    }
 	} 
@@ -336,147 +350,17 @@ sub process_location
 	      # need this for single nucleotide, which sometimes happens
 	      $temp[1] = $temp[0];
 	    }
+	  $temp[0] = $temp[0]-$start+1 if $start;
+	  $temp[1] = $temp[1]-$start+1 if $start;
 	  push(@locdata, [ $temp[0], $temp[1] ] );
 	}
       return(\@locdata);
     }
 
-sub get_blocks 
-  {
-    my $self = shift;
-    my %opts = @_;
-    my $type = $opts{type};
-    my $start = $opts{start};
-    my $stop = $opts{stop};
-    my @blocks;
-    
-    if ( $start && $stop ) 
-      {
-	foreach my $feature ( @{$self->features} ) 
-	  {
-	    if (!$type || $feature->type() eq $type ) 
-	      {
-		my $locdata = $self->process_location( $feature->location() );
-		foreach my $subblock ( @{ $locdata } ) 
-		  {
-		    if (($subblock->[0] >= $start) and ($subblock->[1] <= $stop)) 
-		      {
-			push @blocks, [ 
-				       $subblock->[0] - $start,
-				       $subblock->[1]  - $start
-				      ];
-		      } 
-		    elsif (($subblock->[1] >= $start) and ($subblock->[1] <= $stop)) 
-		      {
-			# begins up of region, but stops in region
-			push @blocks, [
-				       0, 
-				       $subblock->[1] - $start
-				      ];
-		      } 
-		    elsif (($subblock->[0] >= $start) and ($subblock->[0] <= $stop)) 
-		      {
-			# begins in the region, but stops outside region
-			push @blocks, [
-				       $subblock->[0] - $start, 
-				       $stop - $start 
-				      ];
-		      }
-		  }
-	      }
-	  }
-      } 
-    else 
-      {
-	# return all blocks
-	foreach my $feature ( @{$self->features} ) 
-	  {
-	    if (!$type || $feature->type eq $type) 
-	      {
-		# this is a match
-		my $locdata = $self->process_location( $feature->location() );
-		foreach my $subblock ( @{ $locdata } ) 
-		  {
-		    push @blocks, [
-				   $subblock->[0], $subblock->[1] 
-				  ];
-		  }
-	      }
-	  }
-      }
-    return( \@blocks );
-  }
-
-sub get_blocks_all
-  {
-    my $self = shift;
-    return $self->get_blocks(@_);
-  }
-
 sub get_features
   {
     my $self = shift;
-    my %opts = @_;
-    my $start = $opts{start};
-    my $stop = $opts{stop};
-    #    print "<pre>",Dumper ($self),"</pre>";
-    my @features;
-    if ( $start && $stop ) 
-      {
-	# only return blocks in this range
-	foreach my $feature (@{$self->features})
-	  {
-	    my $locdata = $self->process_location( $feature->location() );
-#	    my @blocks;
-	    my $pass =0;
-	    foreach my $subblock ( @{ $locdata } ) 
-	      {
-		#start of block between start and stop
-		if (($subblock->[0] >= $start) and ($subblock->[0] <= $stop)) 
-		  {
-		    $pass=1;
-#		    push @blocks, [ 
-#				   $subblock->[0] - $start,
-#				   $subblock->[1]  - $start
-#				  ];
-		  } 
-		#end of block between start and stop
-		elsif (($subblock->[1] >= $start) and ($subblock->[1] <= $stop)) 
-		  {
-		    $pass=1;
-#		    push @blocks,[
-#				  0, 
-#				  $subblock->[1] - $start
-#				 ];
-		  } 
-		#block start below start and block stop above stop
-		elsif (($subblock->[0] < $start) and ($subblock->[1] > $stop)) 
-		  {
-		    $pass=1;
-#		    push @blocks, [
-#				   $subblock->[0] - $start, 
-#				   $stop - $start 
-#				  ];
-		  }
-		elsif ( ($subblock->[0] < $start) and ($subblock->[0] > $stop) )  #begins and ends outside of region
-		  {
-		    $pass=1;
-#		    push @blocks, [
-#				   0, 
-#				   $stop-$start, 
-#				  ];
-		  
-		  }
-	      }
-	    push @features, $feature if $pass;
-	  }
-      } 
-    else 
-      {
-	# return all blocks
-	@features = @{$self->features};
-      }
-    return( wantarray ? @features : \@features );
+    return( wantarray ? @{$self->features} : $self->features );
   }
 
 sub add_feature 
@@ -489,7 +373,9 @@ sub add_feature
       $qualifiers = {} unless $qualifiers;
       $qualifiers=$qualifiers;
       my$annotation=$options{annotation} if $options{annotation};
+      $annotation .= "location: ".$location if $location;
       my$strand=$options{strand} if $options{strand};
+      my $start = $options{start};
       unless ($strand)
 	{
 	  $strand = $location=~/complement/i ? -1 : 1;
@@ -501,7 +387,8 @@ sub add_feature
 							   annotation=>$annotation,
 							   strand=>$strand,
 							  });
-      $feature->blocks($self->process_location( $feature->location)) if $feature->location;
+      $feature->blocks($self->process_location( loc=>$feature->location, start=>$start)) if $feature->location;
+      return if $feature->stop < 0;
       push @{$self->features}, $feature;
       return;
 }
