@@ -508,7 +508,7 @@ sub run
 	  {
 	    $obj = new CoGe::Accessory::GenBank;
 	    $obj->add_gene_models(1); #may want to make a user selectable option
- 	    my ($res, $error) = $obj->get_genbank_from_ncbi($gbaccn, $rev);
+ 	    my ($res, $error) = $obj->get_genbank_from_ncbi(accn=>$gbaccn, rev=>$rev, start=>$gbstart);
 	    $message .= $error."\n" unless $res;
 	    
 	    if ($obj->accn)
@@ -1155,7 +1155,6 @@ sub process_features
     my $accn = $obj->accn;
     my $track = 1;
     my %feat_counts;
-    my @opts = ($start, $stop) if $start && $stop;
     unless (ref $obj)
       {
 	warn "Possible problem with the object in process_features.  Returning";
@@ -1164,6 +1163,8 @@ sub process_features
     my %prior_feat;
     foreach my $feat (sort {$a->start <=> $b->start} $obj->get_features())
       {
+	next if $feat->start > $stop;
+	next if $feat->stop < $start;
         my $f;
 	my $type = $feat->type;
 	my ($name) = sort { length ($b) <=> length ($a) || $a cmp $b} @{$feat->qualifiers->{names}} if ref ($feat->qualifiers) =~ /hash/i;
@@ -1332,8 +1333,6 @@ sub process_features
 		next;
 	      }
 	  }
-	next if $feat->start > $stop;
-	next if $feat->stop < $start;
 	$feat_counts{$feat->type}{count}++;
 	$feat_counts{$feat->type}{overlap}++ if $feat->qualifiers->{overlapped_hsp};
 	$prior_feat{$feat->type}{$strand} = $feat;
@@ -1556,11 +1555,19 @@ sub process_hsps
       }
     if ($hsp_overlap_limit)
       {
+	#first, let's get their names in hash so that we can delete them when detected
+	#this ain't going to work -- need to do this after all the image objects have been populated, but before they have been draw.  Can't do due to the fact that we we want to dump the graphics object ASAP as they are memory hogs.  Need to do this before the images are created!
+#	my %feats;
+#	map {push @{$feats{$_->alt}},$_} @feats;
+#	print STDERR Dumper %feats;
 	foreach my $f (@feats)
 	  {
 	    if ($f->_overlap >=$hsp_overlap_limit)
 	      {
+		#		foreach my $f2 (@{$feats{$f->alt}})
+		#		  {
 		$c->delete_feature($f);
+		#		  }
 	      }
 	  }
       }
