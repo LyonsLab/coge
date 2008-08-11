@@ -247,8 +247,10 @@ sub generate_fasta
 	      }
 	    $name =~ s/\s+/_/g;
 	    my $title = join ("||",$chr, $feat->start, $feat->stop, $name, $feat->strand, $feat->type->name, $feat->id);
+	    my $seq = $feat->genomic_sequence;
+	    next unless $seq;
 	    print OUT ">".$title."\n";
-	    print OUT $feat->genomic_sequence(),"\n";
+	    print OUT $seq,"\n";
 	  }
 	$i++;
       }
