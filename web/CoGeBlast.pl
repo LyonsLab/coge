@@ -295,40 +295,49 @@ sub database_param
     my $html = $template->output;
     return $html;
   }
-
 sub get_orgs
   {
-    my $name = shift;
+    my %opts = @_;
+    my $name = $opts{name};
+    my $desc = $opts{desc};
+    $name = "" if $name =~ /^Search$/i;
+    $desc = "" if $desc =~ /^Search$/i;
     my $html;
+    my @db;
     if ($name)
       {
-	my @db = $coge->resultset('Organism')->search({name=>{like=>"%".$name."%"}});
-	($USER) = CoGe::Accessory::LogUser->get_user();
-	my $restricted_orgs = restricted_orgs(user=>$USER);
-	my @opts;
-	foreach my $item (sort {uc($a->name) cmp uc($b->name)} @db)
-	  {
-	    next if $restricted_orgs->{$item->name};
-	    push @opts, "<OPTION value=\"".$item->id."\" id=\"o".$item->id."\">".$item->name."</OPTION>";
-	  }
-
-	$html .= qq{<FONT CLASS ="small" id="org_count">Organism count: }.scalar @opts.qq{</FONT>\n<BR>\n};
-	unless (@opts) 
-	  {
-	    $html .=  qq{<input type = hidden name="org_id" id="org_id"><br>};
-	    $html .= "No results";
-	    return $html;
-	  }
-	
-	$html .= qq{<SELECT id="org_id" SIZE="8" MULTIPLE onClick="\$('#remove').hide(0);\$('#add').show(0);" ondblclick="get_from_id(['org_id'],[add_to_list]);">\n};
-	$html .= join ("\n", @opts);
-	$html .= "\n</SELECT>\n";
-	$html =~ s/OPTION/OPTION SELECTED/;
+	@db = $coge->resultset('Organism')->search({name=>{like=>"%".$name."%"}});
+      }
+    elsif($desc)
+      {
+	@db = $coge->resultset("Organism")->search({description=>{like=>"%".$desc."%"}});
       }
     else
       {
 	$html .= qq{<FONT CLASS ="small" id="org_count">Organism count: }.$coge->resultset('Organism')->count().qq{</FONT>\n<BR>\n};
+	return $html;
       }
+    ($USER) = CoGe::Accessory::LogUser->get_user();
+    my $restricted_orgs = restricted_orgs(user=>$USER);
+    my @opts;
+    foreach my $item (sort {uc($a->name) cmp uc($b->name)} @db)
+      {
+	next if $restricted_orgs->{$item->name};
+	push @opts, "<OPTION value=\"".$item->id."\" id=\"o".$item->id."\">".$item->name."</OPTION>";
+      }
+    
+    $html .= qq{<FONT CLASS ="small" id="org_count">Organism count: }.scalar @opts.qq{</FONT>\n<BR>\n};
+    unless (@opts) 
+      {
+	$html .=  qq{<input type = hidden name="org_id" id="org_id"><br>};
+	$html .= "No results";
+	return $html;
+      }
+	
+    $html .= qq{<SELECT id="org_id" SIZE="8" MULTIPLE onClick="\$('#remove').hide(0);\$('#add').show(0);" ondblclick="get_from_id(['org_id'],[add_to_list]);">\n};
+    $html .= join ("\n", @opts);
+    $html .= "\n</SELECT>\n";
+    $html =~ s/OPTION/OPTION SELECTED/;
     return $html;
   }
   
