@@ -47,6 +47,7 @@ $coge = CoGeX->dbconnect();
 my $pj = new CGI::Ajax(
 		       get_orgs => \&get_orgs,
 		       get_datasets => \&get_datasets,
+		       get_previous_analyses=>\&get_previous_analyses,
 		       go=>\&go,
 		      );
 print $pj->build_html($FORM, \&gen_html);
@@ -129,7 +130,7 @@ sub get_orgs
 	return $html;
       }
 
-    $html .= qq{<SELECT id="org_id$i" SIZE="5" MULTIPLE onChange="get_datasets(['args__oid','org_id$i', 'args__seq_type','seq_type$i'],['ds_info$i'])" >\n};
+    $html .= qq{<SELECT id="org_id$i" SIZE="5" MULTIPLE onChange="get_datasets(['args__oid','org_id$i', 'args__seq_type','seq_type$i'],['ds_info$i']);check_previous_analyses();" >\n};
     $html .= join ("\n", @opts);
     $html .= "\n</SELECT>\n";
     $html =~ s/OPTION/OPTION SELECTED/;
@@ -180,6 +181,26 @@ sub gen_fasta
   {
     my $oid = shift;
     my $seq_type = shift || 1;
+    my ($org_name, $md5,$ds_list) = gen_org_name($oid, $seq_type);
+    my $file = $FASTADIR."/$md5.fasta";
+    my $res;
+    if (-r $file)
+      {
+	write_log("fasta file for $org_name ($md5) exists", $cogeweb->logfile);
+	$res = 1;
+      }
+    else
+      {
+	$res = generate_fasta(dslist=>$ds_list, file=>$file) unless -r $file;
+      }
+    return $file, $md5, $org_name if $res;
+    return 0;
+  }
+    
+sub gen_org_name
+  {
+    my $oid = shift;
+    my $seq_type = shift || 1;
     my ($org) = $coge->resultset('Organism')->resolve($oid);
     my @ds = $org->current_datasets(type=>$seq_type);
     unless (@ds)
@@ -208,22 +229,8 @@ sub gen_fasta
     $title .= ")";
     $title =~ s/(`|')//g;
     my $md5 = md5_hex($title);
-    my $file = $FASTADIR."/$md5.fasta";
-    my $res;
-    if (-r $file)
-      {
-	write_log("fasta file for $org_name ($md5) exists", $cogeweb->logfile);
-	$res = 1;
-      }
-    else
-      {
-	$res = generate_fasta(dslist=>\@ds, file=>$file) unless -r $file;
-      }
-    return $file, $md5, $org_name if $res;
-    return 0;
+    return ($org_name, $md5, \@ds);
   }
-    
-
 
 sub generate_fasta
   {
@@ -813,3 +820,52 @@ sub go
     return $html;
   }
 
+sub get_previous_analyses
+  {
+    my %opts = @_;
+    my $oid1 = $opts{oid1};
+    my $oid2 = $opts{oid2};
+    return unless $oid1 && $oid2;
+    my $seq_type1 = $opts{seq_type1};
+    my $seq_type2 = $opts{seq_type2};
+    my ($org_name1, $md51) = gen_org_name($oid1, $seq_type1);
+    my ($org_name2, $md52) = gen_org_name($oid2, $seq_type2);
+    ($oid1, $seq_type1, $md51,$org_name1,$oid2, $seq_type2, $md52,$org_name2) = ($oid2, $seq_type2, $md52,$org_name2,$oid1, $seq_type1, $md51,$org_name1) if ($md52 lt $md51);
+    my $dir = "$org_name1"."_".$org_name2;
+    $dir =~ s/\///g;
+    $dir =~ s/\s+/_/g;
+    $dir =~ s/\(//g;
+    $dir =~ s/\)//g;
+    $dir = "$DIAGSDIR/".$dir;
+    my @items;
+    if (-d $dir)
+      {
+	opendir (DIR, $dir);
+	while (my $file = readdir(DIR))
+	  {
+	    next unless $file =~ /all\.aligncoords/;
+	    my ($D, $g, $A) = $file =~ /D(\d+)_g(\d+)_A(\d+)/;
+	    my $type = $file =~ /blastn/ ? "BlastN" : "TBlastX";
+	    push @items, {D=>$D,
+			  g=>$g,
+			  A=>$A,
+			  type=>$type,
+			 };
+	  }
+      }
+    return unless @items;
+    
+    my $html = qq{
+<select id="prev_params" size=4 multiple onChange="update_params();">
+};
+    foreach (sort {$a->{g}<=>$b->{g} } @items)
+      {
+	my $val = $_->{g}."_".$_->{D}."_".$_->{A};
+	my $name = $_->{type}.": g:".$_->{g}." D:".$_->{D}." A:".$_->{A};
+	$html .= qq{
+ <option value="$val">$name
+};
+      }
+    $html .= "</select>";
+    return "  Previously run parameters:<br>$html";
+  }
