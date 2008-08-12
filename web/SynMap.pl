@@ -59,7 +59,7 @@ sub gen_html
     my $html;
     my ($body) = gen_body();
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
-    $template->param(TITLE=>'SynMap: Powered by <a href=dagchainer.sourceforge.net>DAGchainer</a>');
+    $template->param(TITLE=>'SynMap: Powered by <a href=http://dagchainer.sourceforge.net>DAGchainer</a>');
     $template->param(HEAD=>qq{});
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
