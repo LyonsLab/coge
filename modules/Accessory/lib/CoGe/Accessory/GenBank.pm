@@ -130,6 +130,11 @@ sub parse_genbank
 	    my %feature;
 	    while ( $pos < $x ) 
 	      {
+		unless ($gb[$x])
+		  {
+		    $x++;
+		    next;
+		  }
 		if  ($gb[ $x ] =~ /^ORIGIN/)
 		  {
 		    my %tmp = %feature;
