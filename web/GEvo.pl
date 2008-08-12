@@ -1364,7 +1364,18 @@ sub process_hsps
     #to reverse hsps when using genomic sequences from CoGe, they need to be drawn on the opposite strand than where blast reports them.  This is because CoGe::Graphics has the option of reverse drawing a region.  However, the sequence fed into blast has already been reverse complemented so that the HSPs are in the correct orientation for the image.  Thus, if the image is reverse, they are drawn on the wrong strand.  This corrects for that problem.   Sorry for the convoluted logic, but it was the simplest way to substantiate this option
     my %stats;
     my $i = 0;
-    my $track = 2;
+    my $track = scalar @$data+1;
+    foreach my $item (@$data)
+      {
+	my $report = $item->[0];
+	my $accn1 = $item->[1];
+	my $accn2 = $item->[2];
+	my $blast = $item->[3];
+	unless ($accn eq $accn1 || $accn eq $accn2)
+	  {
+	    $track--;
+	  }
+      }
     my @feats;
     foreach my $item (@$data)
       {
@@ -1372,7 +1383,6 @@ sub process_hsps
 	my $accn1 = $item->[1];
 	my $accn2 = $item->[2];
 	my $blast = $item->[3];
-#	next unless ref($blast) =~ /bl2seq/i || ref($blast) =~ /blastz/i;
 	unless ($accn eq $accn1 || $accn eq $accn2)
 	  {
 	    $i++;
@@ -1522,7 +1532,7 @@ sub process_hsps
 
 	  }
 	$i++;
-	$track++;
+	$track--;
       }
     my $label_location = "top";
     my $order;
