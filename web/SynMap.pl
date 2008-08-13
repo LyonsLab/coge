@@ -543,7 +543,6 @@ sub generate_dotplot
     my $q_max = $opts{"q_max"};
     my $s_max = $opts{"s_max"};
     my $regen_images = $opts{regen_images}=~/true/i ? 1 : 0;
-    print STDERR $regen_images,"\n";
     if (-r $outfile && !$regen_images)
       {
 	write_log("file $outfile already exists",$cogeweb->logfile);
