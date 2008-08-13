@@ -261,6 +261,7 @@ sub annotation_pretty_print_html
     my $self = shift;
     my %opts = @_;
     my $loc_link = $opts{loc_link};
+    my $minimal = $opts{minimal};
     $loc_link = "SeqView.pl" unless defined $loc_link;
     my $anno_obj = new CoGe::Accessory::Annotation(Type=>"anno");
     $anno_obj->Val_delimit("<BR/>");
@@ -280,62 +281,67 @@ sub annotation_pretty_print_html
 	$outname = $name unless $outname;
 	$anno_type->add_Annot("<a class=\"data link\" href=\"FeatView.pl?accn=".$name."\" target=_new>".$name."</a>");
       }
-    
     $anno_obj->add_Annot($anno_type);
-    foreach my $anno (sort {$b->type->name cmp $a->type->name} $self->annos)
+    unless ($minimal)
       {
-	my $type = $anno->type();
-	my $group = $type->group();
-	my $anno_name = $type->name;
-	$anno_name = "<span class=\"title4\">". $anno_name."</span>" unless ref($group) =~ /group/i;
-	
-	my $anno_type = new CoGe::Accessory::Annotation(Type=>$anno_name);
-	$anno_type->Val_delimit(", ");
-
-	$anno_type->add_Annot("<span class=\"data\">".$anno->annotation."</span>");
-	if (ref ($group) =~ /group/i)
+	foreach my $anno (sort {$b->type->name cmp $a->type->name} $self->annos)
 	  {
-	    my $anno_g = new CoGe::Accessory::Annotation(Type=>"<span class=\"title4\">".$group->name."</span>");
-	    $anno_g->add_Annot($anno_type);
-	    $anno_g->Type_delimit(": ");
-	    $anno_g->Val_delimit(", ");
-#	    $anno_g->Val_delimit(" ");
-	    $anno_obj->add_Annot($anno_g);
-	  }
-	else
-	  {
-	    $anno_type->Type_delimit(": ");
-	    $anno_obj->add_Annot($anno_type);
+	    my $type = $anno->type();
+	    my $group = $type->group();
+	    my $anno_name = $type->name;
+	    $anno_name = "<span class=\"title4\">". $anno_name."</span>" unless ref($group) =~ /group/i;
+	    
+	    my $anno_type = new CoGe::Accessory::Annotation(Type=>$anno_name);
+	    $anno_type->Val_delimit(", ");
+	    
+	    $anno_type->add_Annot("<span class=\"data\">".$anno->annotation."</span>");
+	    if (ref ($group) =~ /group/i)
+	      {
+		my $anno_g = new CoGe::Accessory::Annotation(Type=>"<span class=\"title4\">".$group->name."</span>");
+		$anno_g->add_Annot($anno_type);
+		$anno_g->Type_delimit(": ");
+		$anno_g->Val_delimit(", ");
+		#	    $anno_g->Val_delimit(" ");
+		$anno_obj->add_Annot($anno_g);
+	      }
+	    else
+	      {
+		$anno_type->Type_delimit(": ");
+		$anno_obj->add_Annot($anno_type);
+	      }
 	  }
       }
     my $location = "Chr ".$chr." ";
     $location .= join (", ", map {$_->start."-".$_->stop} sort {$a->start <=> $b->start} $self->locs);
     $location .="(".$strand.")";
     my $featid = $self->id;
-    $anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<span class=\"title4\">Length</span>", Values=>[$self->length],Type_delimit=>": ", Val_delimit=>" "));
+    $anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<span class=\"title4\">Length</span>", Values=>[$self->length],Type_delimit=>": ", Val_delimit=>" ")) unless $minimal;
     $location = qq{<a href="$loc_link?featid=$featid&start=$start&stop=$stop&chr=$chr&dsid=$dataset_id&strand=$strand&featname=$outname" target=_new>}.$location."</a>" if $loc_link;
     $location = qq{<span class="data">$location</span>};
     $anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<span class=\"title4\"><a href=\"GeLo.pl?chr=$chr&ds=$dataset_id&x=$start&z=5\" target=_new>Location</a></span>", Values=>[$location], Type_delimit=>": ", Val_delimit=>" "));
-    my $ds=$self->dataset;
-    my $dataset = qq{<a href = "GenomeView.pl?dsid=}.$ds->id."\" target=_new>".$ds->name;
-    $dataset .= ": ".$ds->description if $ds->description;
-    $dataset .= "</a>";
-    $anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<span class=\"title4\">Dataset</span>", Values=>[$dataset], Type_delimit=>": ", Val_delimit=>" "));
-    my $org = qq{<a href = "GenomeView.pl?oid=}.$ds->organism->id."\" target=_new>".$ds->organism->name;
-    $org .= ": ".$ds->organism->description if $ds->organism->description;
-    $org .= "</a>";
-    
-    $anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<span class=\"title4\">Organism</span>", Values=>[$org], Type_delimit=>": ", Val_delimit=>" "));
-    my ($gc, $at) = $self->gc_content;
-    $gc*=100;
-    $at*=100;
-    $anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<span class=\"title4\">DNA content</span>", Values=>["GC: $gc%","AT: $at%"], Type_delimit=>": ", Val_delimit=>" "));
-    my ($wgc, $wat) = $self->wobble_content;
-    if ($wgc || $wat)
+    unless ($minimal)
       {
-	$wgc*=100;
-	$wat*=100;
-	$anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<span class=\"title4\">Wobble content</span>", Values=>["GC: $wgc%","AT: $wat%"], Type_delimit=>": ", Val_delimit=>" "));
+	my $ds=$self->dataset;
+	my $dataset = qq{<a href = "GenomeView.pl?dsid=}.$ds->id."\" target=_new>".$ds->name;
+	$dataset .= ": ".$ds->description if $ds->description;
+	$dataset .= "</a>";
+	$anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<span class=\"title4\">Dataset</span>", Values=>[$dataset], Type_delimit=>": ", Val_delimit=>" "));
+	my $org = qq{<a href = "GenomeView.pl?oid=}.$ds->organism->id."\" target=_new>".$ds->organism->name;
+	$org .= ": ".$ds->organism->description if $ds->organism->description;
+	$org .= "</a>";
+	
+	$anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<span class=\"title4\">Organism</span>", Values=>[$org], Type_delimit=>": ", Val_delimit=>" "));
+	my ($gc, $at) = $self->gc_content;
+	$gc*=100;
+	$at*=100;
+	$anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<span class=\"title4\">DNA content</span>", Values=>["GC: $gc%","AT: $at%"], Type_delimit=>": ", Val_delimit=>" "));
+	my ($wgc, $wat) = $self->wobble_content;
+	if ($wgc || $wat)
+	  {
+	    $wgc*=100;
+	    $wat*=100;
+	    $anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<span class=\"title4\">Wobble content</span>", Values=>["GC: $wgc%","AT: $wat%"], Type_delimit=>": ", Val_delimit=>" "));
+	  }
       }
     return $anno_obj->to_String;
   }
