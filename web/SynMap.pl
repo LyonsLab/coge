@@ -542,7 +542,9 @@ sub generate_dotplot
     my $s_label = $opts{slabel};
     my $q_max = $opts{"q_max"};
     my $s_max = $opts{"s_max"};
-    if (-r $outfile)
+    my $regen_images = $opts{regen_images}=~/true/i ? 1 : 0;
+    print STDERR $regen_images,"\n";
+    if (-r $outfile && !$regen_images)
       {
 	write_log("file $outfile already exists",$cogeweb->logfile);
 	return 1;
@@ -567,6 +569,7 @@ sub go
     my $dagchainer_A = $opts{A};
     my $chr_length_limit = $opts{chr_length_limit};
     my $show_diags_only = $opts{show_diags_only};
+    my $regen_images = $opts{regen_images};
     $show_diags_only = $show_diags_only eq "true" ? 1 : 0;
     my $flip_output = $opts{flip_output};
     $flip_output = $flip_output eq "true" ? 1 : 0;
@@ -743,7 +746,7 @@ sub go
 		my $out = $org_dirs{$org_name1."_".$org_name2}{dir}."/html/";
 		mkpath ($out,0,0777) unless -d $out;
 		$out .= "$chr1"."_".$chr2."_D$dagchainer_D"."_g$dagchainer_g"."_A$dagchainer_A".".$blast.html";
-		generate_dotplot(dag=>$dag_file12.".all", coords=>$tmp, outfile=>$out, qchr=>$qlead.$chr1, schr=>$slead.$chr2, $qdsid=>$chr1{$chr1}{dsid}, $sdsid=>$chr2{$chr2}{dsid},qlabel=>$name1.":".$chr1[-1],slabel=>$name2.":".$chr2[-1], q_max=>$chr1{$chr1}{chr_end}, s_max=>$chr2{$chr2}{chr_end});
+		generate_dotplot(dag=>$dag_file12.".all", coords=>$tmp, outfile=>$out, qchr=>$qlead.$chr1, schr=>$slead.$chr2, $qdsid=>$chr1{$chr1}{dsid}, $sdsid=>$chr2{$chr2}{dsid},qlabel=>$name1.":".$chr1[-1],slabel=>$name2.":".$chr2[-1], q_max=>$chr1{$chr1}{chr_end}, s_max=>$chr2{$chr2}{chr_end}, regen_images=>$regen_images);
 		$pm->finish;
 	      }
 	  }
