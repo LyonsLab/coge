@@ -48,6 +48,7 @@ my $pj = new CGI::Ajax(
 		       get_orgs => \&get_orgs,
 		       get_datasets => \&get_datasets,
 		       get_previous_analyses=>\&get_previous_analyses,
+		       get_pair_info=> \&get_pair_info,
 		       go=>\&go,
 		      );
 print $pj->build_html($FORM, \&gen_html);
@@ -870,4 +871,20 @@ sub get_previous_analyses
       }
     $html .= "</select>";
     return "  Previously run parameters:<br>$html";
+  }
+
+sub get_pair_info
+  {
+    my @anno;
+    foreach my $fid (@_)
+      {
+	next unless $fid =~ /^\d+$/;
+	my $feat = $coge->resultset('Feature')->find($fid);
+	my $anno = "Name: ".join (", ",map {"<a class=\"data link\" href=\"FeatView.pl?accn=".$_."\" target=_new>".$_."</a>"} $feat->names);
+	my $location = "Chr ".$feat->chromosome." ";
+	$location .= $feat->start."-".$feat->stop;
+	$location .="(".$feat->strand.")";
+	push @anno, $anno."<br>".$location;
+      }
+    return "<table class=small><tr>".join ("<td>",@anno)."</table>";
   }
