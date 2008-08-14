@@ -880,7 +880,7 @@ sub get_pair_info
       {
 	next unless $fid =~ /^\d+$/;
 	my $feat = $coge->resultset('Feature')->find($fid);
-	my $anno = "Name: ".join (", ",map {"<a class=\"data link\" href=\"FeatView.pl?accn=".$_."\" target=_new>".$_."</a>"} $feat->names);
+	my $anno = "Name: ".join (", ",map {"<a class=\"data link\" href=\"/CoGe/FeatView.pl?accn=".$_."\" target=_new>".$_."</a>"} $feat->names);
 	my $location = "Chr ".$feat->chromosome." ";
 	$location .= $feat->start."-".$feat->stop;
 	$location .="(".$feat->strand.")";
