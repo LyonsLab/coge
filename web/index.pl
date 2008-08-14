@@ -163,7 +163,15 @@ sub actions
 # 		    ACTION => qq{<a href="./docs/help/CoGe/">CoGe Faq</a>},
 # 		    DESC   => qq{What is CoGe?  This document covers some of the basics about what CoGe is, how it has been designed, and other information about the system.},
 # 		    SCREENSHOT => qq{<a href="./docs/help/CoGe"><img src="/CoGe/picts/preview/app_schema.png" border="0"></a>},
-# 		   },
+# 		   }
+		   {
+		    ID=>8,
+		    LOGO=>qq{<a href="./SynMap.pl"><img src="/CoGe/picts/SynMap-logo.png"  border="0"></a>},
+		    ACTION=>qq{<a href="./SynMap.pl">SynMap</a>},
+		    DESC => qq{SynMap allows you to select two genomes and identify syntenic regions by generating syntenic dot-plots.  These dot-plots are interactive and have links that will pre-load GEvo with those genomic regions for in-depth syntenic analysis and comparative genomics.  SynMap is powered by <a href="http://dagchainer.sourceforge.net/">DAGchainer</a>},
+		    SCREENSHOT=>qq{<a href="./SynMap.pl"><img src="/CoGe/picts/preview/SynMap.png" border="0" width="400" height="320"></a>},
+		   },
+
 		  );
     return \@actions;
   }
