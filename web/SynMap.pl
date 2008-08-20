@@ -131,7 +131,7 @@ sub get_orgs
 	return $html;
       }
 
-    $html .= qq{<SELECT id="org_id$i" SIZE="5" MULTIPLE onChange="get_datasets(['args__oid','org_id$i', 'args__seq_type','seq_type$i'],['ds_info$i']);check_previous_analyses();" >\n};
+    $html .= qq{<SELECT id="org_id$i" SIZE="5" MULTIPLE onChange="get_datasets(['args__oid','org_id$i', 'args__masked','masked$i'],['ds_info$i']);check_previous_analyses();" >\n};
     $html .= join ("\n", @opts);
     $html .= "\n</SELECT>\n";
     $html =~ s/OPTION/OPTION SELECTED/;
@@ -142,7 +142,7 @@ sub get_datasets
   {
     my %opts = @_;
     my $oid = $opts{oid};
-    my $seq_type = $opts{seq_type};
+    my $masked = $opts{masked};
     my $html; 
     my ($org) = $coge->resultset("Organism")->resolve($oid);
     return unless $org;
@@ -151,13 +151,13 @@ sub get_datasets
     $html .= qq{<div><span class="oblique">Organism:</span> $orgname\n</div>};
     $html .= qq{<div><span class="oblique">Current Datasets: </span>};
     my $i =0;
-    my @ds = $org->current_datasets(type=>$seq_type);
+    my @ds = $org->current_datasets(type=>$masked);
     unless (@ds)
       {
-	$seq_type=1; #unmasked sequence
-	@ds = $org->current_datasets(type=>$seq_type);
+	$masked=1; #unmasked sequence
+	@ds = $org->current_datasets(type=>$masked);
       }
-    my ($type) = $coge->resultset('GenomicSequenceType')->find($seq_type);
+    my ($type) = $coge->resultset('GenomicSequenceType')->find($masked);
     $html.= "<span class=alert> ".$type->name."</span>" if $type;
     $html.= ", ".$type->description if $type && $type->description;
     $html .= "</DIV>";
@@ -180,9 +180,12 @@ sub get_datasets
 
 sub gen_fasta
   {
-    my $oid = shift;
-    my $seq_type = shift || 1;
-    my ($org_name, $md5,$ds_list) = gen_org_name($oid, $seq_type);
+    my %opts = @_;
+    my $oid = $opts{oid};
+    my $masked = $opts{masked};
+    my $seq_type = $opts{seq_type};
+    my ($org_name, $md5,$ds_list);
+    ($org_name, $md5,$ds_list,$masked) = gen_org_name(oid=>$oid, masked=>$masked, seq_type=>$seq_type);
     my $file = $FASTADIR."/$md5.fasta";
     my $res;
     if (-r $file)
@@ -192,27 +195,30 @@ sub gen_fasta
       }
     else
       {
-	$res = generate_fasta(dslist=>$ds_list, file=>$file) unless -r $file;
+	$res = generate_fasta(dslist=>$ds_list, file=>$file, type=>$seq_type) unless -r $file;
       }
-    return $file, $md5, $org_name if $res;
+    return $file, $md5, $org_name, $masked if $res;
     return 0;
   }
     
 sub gen_org_name
   {
-    my $oid = shift;
-    my $seq_type = shift || 1;
+    my %opts = @_;
+    my $oid = $opts{oid};
+    my $masked = $opts{masked} || 1;
+    my $seq_type = $opts{seq_type} || 1;
     my ($org) = $coge->resultset('Organism')->resolve($oid);
-    my @ds = $org->current_datasets(type=>$seq_type);
+    my @ds = $org->current_datasets(type=>$masked);
     unless (@ds)
       {
-	$seq_type=1; #unmasked sequence
-	@ds = $org->current_datasets(type=>$seq_type);
+	$masked=1; #unmasked sequence
+	@ds = $org->current_datasets(type=>$masked);
       }
     @ds = sort {$a->id <=> $b->id }@ds;
     return unless @ds;
     my $org_name = $ds[0]->organism->name;
-    my $title = $org_name ." CDS (";
+    my $title = $org_name ." $seq_type (";
+#    my $title = $org_name ." CDS (";
     my %vers = map {$_->version,1} @ds;
     if (keys %vers > 1)
       {
@@ -230,7 +236,7 @@ sub gen_org_name
     $title .= ")";
     $title =~ s/(`|')//g;
     my $md5 = md5_hex($title);
-    return ($org_name, $md5, \@ds);
+    return ($org_name, $md5, \@ds, $masked);
   }
 
 sub generate_fasta
@@ -238,29 +244,42 @@ sub generate_fasta
     my %opts = @_;
     my $dslist = $opts{dslist};
     my $file = $opts{file};
+    my $type = $opts{type};
     $file = $FASTADIR."/$file" unless $file =~ /$FASTADIR/;
     write_log("creating fasta file.", $cogeweb->logfile);
     open (OUT, ">$file") || die "Can't open $file for writing: $!";;
-    my $i = 1;
     foreach my $ds (@$dslist)
       {
-	foreach my $feat (sort {$a->chromosome cmp $b->chromosome || $a->start <=> $b->start} $ds->features({feature_type_id=>3}))
+	if ($type eq "CDS")
 	  {
-	    my ($chr) = $feat->chromosome;#=~/(\d+)/;
-	    my $name;
-	    foreach my $n ($feat->names)
+	    foreach my $feat (sort {$a->chromosome cmp $b->chromosome || $a->start <=> $b->start} $ds->features({feature_type_id=>3}))
 	      {
-		$name = $n;
-		last unless $name =~ /\s/;
+		my ($chr) = $feat->chromosome;#=~/(\d+)/;
+		my $name;
+		foreach my $n ($feat->names)
+		  {
+		    $name = $n;
+		    last unless $name =~ /\s/;
+		  }
+		$name =~ s/\s+/_/g;
+		my $title = join ("||",$chr, $feat->start, $feat->stop, $name, $feat->strand, $feat->type->name, $feat->id);
+		my $seq = $feat->genomic_sequence;
+		next unless $seq;
+		print OUT ">".$title."\n";
+		print OUT $seq,"\n";
 	      }
-	    $name =~ s/\s+/_/g;
-	    my $title = join ("||",$chr, $feat->start, $feat->stop, $name, $feat->strand, $feat->type->name, $feat->id);
-	    my $seq = $feat->genomic_sequence;
-	    next unless $seq;
-	    print OUT ">".$title."\n";
-	    print OUT $seq,"\n";
 	  }
-	$i++;
+	else
+	  {
+	    foreach my $chr (sort $ds->get_chromosomes)
+	      {
+#		my $title = join ("||",$chr, 1, $ds->last_chromosome_position($chr), "Chr_$chr",1, "genomic", "N/A");
+		my $seq = $ds->get_genomic_sequence(chr=>$chr);
+		next unless $seq;
+		print OUT ">".$chr."\n";
+		print OUT $seq,"\n";
+	      }
+	  }
       }
     close OUT;
     write_log("Completed fasta creation", $cogeweb->logfile);
@@ -336,6 +355,8 @@ sub run_dag_tools
       my $subject = $opts{subject};
       my $blast = $opts{blast};
       my $outfile = $opts{outfile};
+      my $seq_type1 = $opts{seq_type1};
+      my $seq_type2 = $opts{seq_type2};
       if (-r $outfile)
       {
 	write_log("file $outfile already exists",$cogeweb->logfile);
@@ -344,6 +365,7 @@ sub run_dag_tools
       my $query_dup_file= $opts{query_dup_files};
       my $subject_dup_file= $opts{subject_dup_files};
       my $cmd = "$PYTHON $DAG_TOOL -q \"$query\" -s \"$subject\" -b $blast";
+      $cmd .= " -c" if $seq_type1 eq "genomic" && $seq_type2 eq "genomic";
       $cmd .= " --query_dups $query_dup_file" if $query_dup_file;
       $cmd .= " --subject_dups $subject_dup_file" if $subject_dup_file;
       $cmd .=  " > $outfile";
@@ -562,8 +584,8 @@ sub go
     my %opts = @_;
     my $oid1 = $opts{oid1};
     my $oid2 = $opts{oid2};
-    my $seq_type1 = $opts{seq_type1};
-    my $seq_type2 = $opts{seq_type2};
+    my $masked1 = $opts{masked1};
+    my $masked2 = $opts{masked2};
     my $dagchainer_D = $opts{D};
     my $dagchainer_g = $opts{g};
     my $dagchainer_A = $opts{A};
@@ -575,6 +597,10 @@ sub go
     $flip_output = $flip_output eq "true" ? 1 : 0;
     my $blast = $opts{blast};
     $blast = $blast == 2 ? "tblastx" : "blastn";
+    my $seq_type1 = $opts{seq_type1};
+    $seq_type1 = $seq_type1 == 2 ? "genomic" : "CDS";
+    my $seq_type2 = $opts{seq_type2};
+    $seq_type2 = $seq_type2 == 2 ? "genomic" : "CDS";
     unless ($oid1 && $oid2)
       {
 	return "<span class=alert>You must select two organisms.</span>"
@@ -582,19 +608,27 @@ sub go
     $cogeweb = initialize_basefile(prog=>"SynMap");
     ##generate fasta files and blastdbs
     my $pm = new Parallel::ForkManager($MAX_PROC);
-    my @oids = ([$oid1,$seq_type1]);
-    push @oids, [$oid2,$seq_type2] unless $oid1 == $oid2 && $seq_type1 == $seq_type2;
+    my @oids = ([$oid1,$masked1, $seq_type1]);
+    push @oids, [$oid2,$masked2,$seq_type2] unless $oid1 == $oid2 && $masked1 == $masked2 && $seq_type1 eq $seq_type2;
     foreach my $item (@oids)
       {
 	$pm->start and next;
-	my ($fasta,$md5,$org_name) = gen_fasta(@$item);
+	my $oid = $item->[0];
+	my $masked = $item->[1];
+	my $seq_type = $item->[2];
+	my ($fasta,$md5,$org_name) = gen_fasta(oid=>$oid, masked=>$masked, seq_type=>$seq_type);
 	gen_blastdb(md5=>$md5,fasta=>$fasta,org_name=>$org_name);
 	$pm->finish;
       }
     $pm->wait_all_children();
-    my ($fasta1,$md51,$org_name1) = gen_fasta($oid1, $seq_type1);
-    my ($fasta2,$md52,$org_name2) = gen_fasta($oid2, $seq_type2);
-    ($oid1, $seq_type1, $fasta1,$md51,$org_name1,$oid2, $seq_type2, $fasta2,$md52,$org_name2) = ($oid2, $seq_type2, $fasta2,$md52,$org_name2,$oid1, $seq_type1, $fasta1,$md51,$org_name1) if ($md52 lt $md51);
+    my ($fasta1,$md51,$org_name1);
+    my ($fasta2,$md52,$org_name2);
+    ($fasta1,$md51,$org_name1,$masked1) = gen_fasta(oid=>$oid1, masked=>$masked1, seq_type=>$seq_type1);
+    ($fasta2,$md52,$org_name2,$masked2) = gen_fasta(oid=>$oid2, masked=>$masked2, seq_type=>$seq_type2);
+    ($oid1, $masked1, $md51,$org_name1,$fasta1,$seq_type1, $oid2,
+    $masked2, $md52,$org_name2,$fasta2, $seq_type2) = ($oid2,
+    $masked2, $md52,$org_name2,$fasta2, $seq_type2,$oid1, $masked1,
+    $md51,$org_name1,$fasta1, $seq_type1) if ($md52 lt $md51);
     my ($org1) = $coge->resultset('Organism')->resolve($oid1);
     my ($org2) = $coge->resultset('Organism')->resolve($oid2);
     unless ($fasta1 && $fasta2)
@@ -610,17 +644,21 @@ sub go
     my %org_dirs = ( 
 		    $org_name1."_".$org_name2=>{fasta=>$fasta1,
 						db=>$blastdb2,
-						blastfile=>$md51."_".$md52.".$blast.blast",
+#						blastfile=>$md51."_".$md52.".$blast.blast",
+						basename=>$md51."_".$md52.".$masked1-$masked2.$seq_type1-$seq_type2.$blast",
 						},
 		    $org_name1."_".$org_name1=>{fasta=>$fasta1,
 						db=>$blastdb1,
-						blastfile=>$md51."_".$md51.".$blast.blast",
+						#blastfile=>$md51."_".$md51.".$blast.blast",
+						basename=>$md51."_".$md51.".$masked1-$masked1.$seq_type1-$seq_type1.$blast",
 						},
 		    $org_name2."_".$org_name2=>{fasta=>$fasta2,
 						db=>$blastdb2,
-						blastfile=>$md52."_".$md52.".$blast.blast",
+#						blastfile=>$md52."_".$md52.".$blast.blast",
+						basename=>$md52."_".$md52.".$masked2-$masked2.$seq_type2-$seq_type2.$blast",
 						},
 		    );
+#    print STDERR Dumper \%org_dirs;
     foreach my $org_dir (keys %org_dirs)
       {
 	my $tmp = $org_dir;
@@ -632,8 +670,8 @@ sub go
 	mkpath ($outfile,0,0777) unless -d $outfile;
 	$org_dirs{$org_dir}{dir}=$outfile;
 	warn "didn't make $outfile: $!" unless -d $outfile;
-	$outfile .= "/".$org_dirs{$org_dir}{blastfile};
-	$org_dirs{$org_dir}{blastfile}=$outfile;
+	$outfile .= "/".$org_dirs{$org_dir}{basename};
+	$org_dirs{$org_dir}{blastfile}=$outfile.".blast";
       }
     #blast!
     foreach my $key (keys %org_dirs)
@@ -648,18 +686,18 @@ sub go
     $pm->wait_all_children();
 
     #Find local dups
-    my $dag_file11 = $org_dirs{$org_name1."_".$org_name1}{dir}."/$md51"."_"."$md51.$blast.dag";
-    run_dag_tools(query=>"a".$md51, subject=>"b".$md51, blast=>$org_dirs{$org_name1."_".$org_name1}{blastfile}, outfile=>$dag_file11);
-    my $dag_file22 = $org_dirs{$org_name2."_".$org_name2}{dir}."/$md52"."_"."$md52.$blast.dag";
-    run_dag_tools(query=>"a".$md52, subject=>"b".$md52, blast=>$org_dirs{$org_name2."_".$org_name2}{blastfile}, outfile=>$dag_file22);
-    my $dup_file1 = $org_dirs{$org_name1."_".$org_name1}{dir}."/$md51"."_"."$md51.$blast.dups";
+    my $dag_file11 = $org_dirs{$org_name1."_".$org_name1}{dir}."/".$org_dirs{$org_name1."_".$org_name1}{basename}.".dag";
+    run_dag_tools(query=>"a".$md51, subject=>"b".$md51, blast=>$org_dirs{$org_name1."_".$org_name1}{blastfile}, outfile=>$dag_file11, seq_type1=>$seq_type1, seq_type1=>$seq_type1);
+    my $dag_file22 = $org_dirs{$org_name2."_".$org_name2}{dir}."/".$org_dirs{$org_name2."_".$org_name2}{basename}.".dag";
+    run_dag_tools(query=>"a".$md52, subject=>"b".$md52, blast=>$org_dirs{$org_name2."_".$org_name2}{blastfile}, outfile=>$dag_file22, seq_type1=>$seq_type2, seq_type1=>$seq_type2);
+    my $dup_file1  = $org_dirs{$org_name1."_".$org_name1}{dir}."/".$org_dirs{$org_name1."_".$org_name1}{basename}.".dups";#."/$md51"."_"."$md51.$blast.dups";
     run_tandem_finder(infile=>$dag_file11,outfile=>$dup_file1);
-    my $dup_file2 = $org_dirs{$org_name2."_".$org_name2}{dir}."/$md52"."_"."$md52.$blast.dups";
+    my $dup_file2  = $org_dirs{$org_name2."_".$org_name2}{dir}."/".$org_dirs{$org_name2."_".$org_name2}{basename}.".dups";#."/$md52"."_"."$md52.$blast.dups";
     run_tandem_finder(infile=>$dag_file22,outfile=>$dup_file2);
 
     #prepare dag for synteny anlaysis
-    my $dag_file12 = $org_dirs{$org_name1."_".$org_name2}{dir}."/$md51"."_"."$md52.$blast.dag";
-    run_dag_tools(query=>"a".$md51, subject=>"b".$md52, blast=>$org_dirs{$org_name1."_".$org_name2}{blastfile}, outfile=>$dag_file12.".all", query_dup_file=>$dup_file1,subject_dup_file=>$dup_file2);
+    my $dag_file12 = $org_dirs{$org_name1."_".$org_name2}{dir}."/".$org_dirs{$org_name1."_".$org_name2}{basename}.".dag";#."/$md51"."_"."$md52.$blast.dag";
+    run_dag_tools(query=>"a".$md51, subject=>"b".$md52, blast=>$org_dirs{$org_name1."_".$org_name2}{blastfile}, outfile=>$dag_file12.".all", query_dup_file=>$dup_file1,subject_dup_file=>$dup_file2, seq_type1=>$seq_type1, seq_type2=>$seq_type2);
     #remove repetitive matches
     run_filter_repetitive_matches(infile=>$dag_file12.".all",outfile=>$dag_file12);
     #run dagchainer
@@ -675,17 +713,17 @@ sub go
 	#generate dotplot images
 	my %chr1;
 	my %chr2;
-	my @ds1 = $org1->current_datasets(type=>$seq_type1);
+	my @ds1 = $org1->current_datasets(type=>$masked1);
 	unless (@ds1)
 	  {
-	    $seq_type1=1; #unmasked sequence
-	    @ds1 = $org1->current_datasets(type=>$seq_type1);
+	    $masked1=1; #unmasked sequence
+	    @ds1 = $org1->current_datasets(type=>$masked1);
 	  }
-	my @ds2 = $org2->current_datasets(type=>$seq_type2);
+	my @ds2 = $org2->current_datasets(type=>$masked2);
 	unless (@ds2)
 	  {
-	    $seq_type2=1; #unmasked sequence
-	    @ds2 = $org2->current_datasets(type=>$seq_type2);
+	    $masked2=1; #unmasked sequence
+	    @ds2 = $org2->current_datasets(type=>$masked2);
 	  }
 
 	foreach my $ds (@ds1)
@@ -745,7 +783,7 @@ sub go
 		$pm->start and next;
 		my $out = $org_dirs{$org_name1."_".$org_name2}{dir}."/html/";
 		mkpath ($out,0,0777) unless -d $out;
-		$out .= "$chr1"."_".$chr2."_D$dagchainer_D"."_g$dagchainer_g"."_A$dagchainer_A".".$blast.html";
+		$out .= "$chr1-$masked1-$seq_type1"."_".$chr2."-$masked2-$seq_type2"."_D$dagchainer_D"."_g$dagchainer_g"."_A$dagchainer_A".".$blast.html";
 		generate_dotplot(dag=>$dag_file12.".all", coords=>$tmp, outfile=>$out, qchr=>$qlead.$chr1, schr=>$slead.$chr2, $qdsid=>$chr1{$chr1}{dsid}, $sdsid=>$chr2{$chr2}{dsid},qlabel=>$name1.":".$chr1[-1],slabel=>$name2.":".$chr2[-1], q_max=>$chr1{$chr1}{chr_end}, s_max=>$chr2{$chr2}{chr_end}, regen_images=>$regen_images);
 		$pm->finish;
 	      }
@@ -763,7 +801,7 @@ sub go
 	      {
 #		my ($chr1, $chr2) = $flip_output ? ($tchr2, $tchr1) : ($tchr1, $tchr2);
 		my ($chr1, $chr2) = ($tchr1, $tchr2);
-		my $out = $org_dirs{$org_name1."_".$org_name2}{dir}."/html/$chr1"."_".$chr2."_D$dagchainer_D"."_g$dagchainer_g"."_A$dagchainer_A".".$blast.html";
+		my $out = $org_dirs{$org_name1."_".$org_name2}{dir}."/html/$chr1-$masked1-$seq_type1"."_".$chr2."-$masked2-$seq_type2"."_D$dagchainer_D"."_g$dagchainer_g"."_A$dagchainer_A".".$blast.html";
 		if ($show_diags_only)
 		  {
 		    unless ($chrs_w_diags->{$chr1}{$chr2})
@@ -829,11 +867,15 @@ sub get_previous_analyses
     my $oid1 = $opts{oid1};
     my $oid2 = $opts{oid2};
     return unless $oid1 && $oid2;
+    my $masked1 = $opts{masked1};
+    my $masked2 = $opts{masked2};
     my $seq_type1 = $opts{seq_type1};
+    $seq_type1 = $seq_type1 == 2 ? "genomic" : "CDS";
     my $seq_type2 = $opts{seq_type2};
-    my ($org_name1, $md51) = gen_org_name($oid1, $seq_type1);
-    my ($org_name2, $md52) = gen_org_name($oid2, $seq_type2);
-    ($oid1, $seq_type1, $md51,$org_name1,$oid2, $seq_type2, $md52,$org_name2) = ($oid2, $seq_type2, $md52,$org_name2,$oid1, $seq_type1, $md51,$org_name1) if ($md52 lt $md51);
+    $seq_type2 = $seq_type2 == 2 ? "genomic" : "CDS";
+    my ($org_name1, $md51) = gen_org_name(oid=>$oid1, masked=>$masked1, seq_type=>$seq_type1);
+    my ($org_name2, $md52) = gen_org_name(oid=>$oid2, masked=>$masked2, seq_type=>$seq_type2);
+    ($oid1, $masked1, $md51,$org_name1,$seq_type1, $oid2, $masked2, $md52,$org_name2,$seq_type2) = ($oid2, $masked2, $md52,$org_name2,$seq_type2,$oid1, $masked1, $md51,$org_name1,$seq_type1) if ($md52 lt $md51);
     my $dir = "$org_name1"."_".$org_name2;
     $dir =~ s/\///g;
     $dir =~ s/\s+/_/g;
@@ -848,11 +890,17 @@ sub get_previous_analyses
 	  {
 	    next unless $file =~ /all\.aligncoords/;
 	    my ($D, $g, $A) = $file =~ /D(\d+)_g(\d+)_A(\d+)/;
-	    my $type = $file =~ /blastn/ ? "BlastN" : "TBlastX";
+	    my $blast = $file =~ /blastn/ ? "BlastN" : "TBlastX";
+	    my ($mask1, $mask2, $type1, $type2) = $file =~ /\.(\d)-(\d)\.(\w+)-(\w+)/;
+	    next unless ($mask1 && $mask2 && $type1 && $type2);
+	    $mask1 = $mask1 == "1" ? "unmasked" : "masked";
+	    $mask2 = $mask2 == "1" ? "unmasked" : "masked";
+	    ($mask1, $type1, $mask2, $type2) = ($mask2, $type2, $mask1, $type1)  if ($md52 lt $md51);
 	    push @items, {D=>$D,
 			  g=>$g,
 			  A=>$A,
-			  type=>$type,
+			  blast=>$blast,
+			  masked => "$org_name1: $mask1-$type1, $org_name2: $mask2-$type2",
 			 };
 	  }
       }
@@ -864,7 +912,7 @@ sub get_previous_analyses
     foreach (sort {$a->{g}<=>$b->{g} } @items)
       {
 	my $val = $_->{g}."_".$_->{D}."_".$_->{A};
-	my $name = $_->{type}.": g:".$_->{g}." D:".$_->{D}." A:".$_->{A};
+	my $name = $_->{blast}.": g:".$_->{g}." D:".$_->{D}." A:".$_->{A}." ".$_->{masked};
 	$html .= qq{
  <option value="$val">$name
 };
@@ -878,7 +926,11 @@ sub get_pair_info
     my @anno;
     foreach my $fid (@_)
       {
-	next unless $fid =~ /^\d+$/;
+	unless ($fid =~ /^\d+$/)
+	  {
+	    push @anno, $fid;
+	    next;
+	  }
 	my $feat = $coge->resultset('Feature')->find($fid);
 	my $anno = "Name: ".join (", ",map {"<a class=\"data link\" href=\"/CoGe/FeatView.pl?accn=".$_."\" target=_new>".$_."</a>"} $feat->names);
 	my $location = "Chr ".$feat->chromosome." ";
@@ -886,5 +938,6 @@ sub get_pair_info
 	$location .="(".$feat->strand.")";
 	push @anno, $anno."<br>".$location;
       }
+    return unless @anno;
     return "<table class=small><tr>".join ("<td>",@anno)."</table>";
   }
