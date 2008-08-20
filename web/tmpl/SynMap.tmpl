@@ -4,13 +4,13 @@ function get_organism_chain(type,val,i)
  $('#org_list').html('<input type=hidden id = "org_id"+i><font class="loading"></font>');
  if (type == 'name') {get_orgs(['args__name','args__'+val,'args__i','args__'+i], ['org_list'+i]);}
  else if (type == 'desc') {get_orgs(['args__desc','args__'+val,'args__i','args__'+i], ['org_list'+i]);}
- ajax_wait("get_datasets(['args__oid','org_id"+i+"','args__seq_type','seq_type"+i+"'],['ds_info"+i+"']);");
+ ajax_wait("get_datasets(['args__oid','org_id"+i+"','args__masked','masked"+i+"'],['ds_info"+i+"']);");
  ajax_wait("check_previous_analyses();");
 }
 
 
 function check_previous_analyses(){
- get_previous_analyses(['args__oid1','org_id1','args__oid2','org_id2','args__seq_type1','seq_type1', 'args__seq_type2','seq_type2'],['previous_analyses']);
+ get_previous_analyses(['args__oid1','org_id1','args__oid2','org_id2','args__seq_type1','seq_type1','args__seq_type2','seq_type2','args__masked1','masked1', 'args__masked2','masked2'],['previous_analyses']);
 }
 
 function update_params() {
@@ -123,20 +123,20 @@ function handle_results(val){
 
 </script>
 <table><tr><td>
-<DIV id=results><span class="alert">WARNING:</span>  SynMap is very computationally intense multi-step program which may take hours to complete.  Please do not repeatedly pressed the "Generate SynMap" button!  When run, SynMap will:
+<DIV id=results><span class="alert">WARNING:</span>  SynMap is a very computationally intense, multi-step program which may take hours to complete.  Please do not repeatedly pressed the "Generate SynMap" button!  When run, SynMap will:
 <li class=small>Generate fasta files of all coding sequence in selected genomes
 <li class=small>Generate blastable databases of sequences
 <li class=small>Blast genomes (self-self and self-other)
 <li class=small>Find tandem duplicates in each genome (hence the self-self blast)
 <li class=small>Use DAGchainer to find syntenic regions (parameters below)
 <li class=small>Generate dotplot images and image maps with GEvo links<br>
-<span class=species>SynMap will run faster if it has been previously run as it won't regenerate any previously made data-set.</span>
+<span class=species>SynMap will run faster if it has been previously run as it won't regenerate any previously made data-sets.</span>
 
 </div>
 </table>
 
 <div>
-<input type=button id="synmap_go" value="Generate SynMap" onClick="$('#synmap_go').hide(); $('#results').html('<span class=dna>Loading. . .</span>');go(['args__oid1','org_id1','args__oid2','org_id2','args__D','D','args__g','g','args__A','A','args__chr_length_limit','chr_length_limit','args__blast','blast', 'args__seq_type1','seq_type1', 'args__seq_type2','seq_type2','args__show_diags_only','args__'+$('#show_diags_only')[0].checked,'args__flip_output','args__'+$('#flip_output')[0].checked, 'args__regen_images','args__'+$('#regen_images')[0].checked],[handle_results]);" \>
+<input type=button id="synmap_go" value="Generate SynMap" onClick="$('#synmap_go').hide(); $('#results').html('<span class=dna>Loading. . .</span>');go(['args__oid1','org_id1','args__oid2','org_id2','args__D','D','args__g','g','args__A','A','args__chr_length_limit','chr_length_limit','args__blast','blast', 'args__seq_type1','seq_type1', 'args__seq_type2','seq_type2','args__masked1','masked1', 'args__masked2','masked2','args__show_diags_only','args__'+$('#show_diags_only')[0].checked,'args__flip_output','args__'+$('#flip_output')[0].checked, 'args__regen_images','args__'+$('#regen_images')[0].checked],[handle_results]);" \>
 
 <input type=button value="Clear Results" onClick="$('#results').html('');" \>
 
@@ -149,9 +149,13 @@ function handle_results(val){
    <DIV style="">Search <span class=small>Name: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_NAME1">" name = "org_name1" id="org_name1" style="font-style:italic" onFocus="search_bar('org_name1')" onKeyUp='timing("org_name1");'><span>
    Description: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_DESC1">" name = "org_desc1" id="org_desc1" style="font-style:italic" onFocus="search_bar('org_desc1')" onKeyUp='timing("org_desc1");'></DIV>
    Try to use sequence of type:
-   <select id=seq_type1 onChange="get_datasets(['args__oid','org_id1', 'args__seq_type','seq_type1'],['ds_info1'])">
+   <select id=masked1 onChange="get_datasets(['args__oid','org_id1', 'args__masked','masked1'],['ds_info1'])">
      <option value="1">unmasked</option>
      <option value="2" selected>masked</option>
+   </select>
+   <select id="seq_type1" name ="seq_type1">
+       <OPTION VALUE="1" selected>CDS
+       <OPTION VALUE="2">genomic
    </select>
    <DIV id="org_list1"><TMPL_VAR NAME="ORG_LIST1"></DIV>
    <DIV style="float: left; vertical-align: top;" id="ds_info1"><TMPL_VAR NAME="DS_INFO1"></DIV>
@@ -161,9 +165,13 @@ function handle_results(val){
    <DIV style="">Search <span class=small>Name: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_NAME2">" name = "org_name2" id="org_name2" style="font-style:italic" onFocus="search_bar('org_name2')" onKeyUp='timing("org_name2");'></span>
    Description: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_DESC2">" name = "org_desc2" id="org_desc2" style="font-style:italic" onFocus="search_bar('org_desc2')" onKeyUp='timing("org_desc2");'></DIV>
    Try to use sequence of type:
-   <select id=seq_type2 onChange="get_datasets(['args__oid','org_id2', 'args__seq_type','seq_type2'],['ds_info2'])">
+   <select id=masked2 onChange="get_datasets(['args__oid','org_id2', 'args__masked','masked2'],['ds_info2'])">
      <option value="1">unmasked</option>
      <option value="2" selected>masked</option>
+   </select>
+   <select id="seq_type2" name ="seq_type2">
+       <OPTION VALUE="1" selected>CDS
+       <OPTION VALUE="2">genomic
    </select>
    <DIV id="org_list2"><TMPL_VAR NAME="ORG_LIST2"></DIV>
    <DIV style="float: left; vertical-align: top;" id="ds_info2"><TMPL_VAR NAME="DS_INFO2"></DIV>
@@ -191,14 +199,14 @@ function handle_results(val){
 <DIV class="topItemSelected ">SynMap Options:</DIV>
 <table class="dropMenu">
  <TR>
-   <TD>Minimum length of chromosomes:
-   <TD><input type=text size=8 id="chr_length_limit" value="1000000"> bp
- <TR>
    <TD>Blast Algorithm:
    <TD><select id="blast" name="blast">
         <OPTION VALUE="1" selected>BlastN
         <OPTION VALUE="2">TBlastX
        </select>
+ <TR>
+   <TD>Minimum length of chromosomes:
+   <TD><input type=text size=8 id="chr_length_limit" value="1000000"> bp
  <TR>
    <TD>Only show comparisons with diagonals?
    <TD><input type=checkbox name="show_diags_only" id="show_diags_only">
