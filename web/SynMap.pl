@@ -903,8 +903,8 @@ sub get_previous_analyses
 	    $mask1 = $mask1 == "1" ? "unmasked" : "masked";
 	    $mask2 = $mask2 == "1" ? "unmasked" : "masked";
 	    $data{name} = "$org_name1: $mask1-$type1, $org_name2: $mask2-$type2";
-	    my $type1 = $type1 eq "CDS" ? 0 : 1; 
-	    my $type2 = $type2 eq "CDS" ? 0 : 1; 
+	    $type1 = $type1 eq "CDS" ? 0 : 1; 
+	    $type2 = $type2 eq "CDS" ? 0 : 1; 
 	    $data{type1} = $type1;
 	    $data{type2} = $type2;
 	    push @items, \%data;
