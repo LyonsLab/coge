@@ -174,12 +174,15 @@ sub gen_body
     $template->param(REST=>1);
     #populate user specified default values
     my $db_list;
-    foreach my $orgid (split /,/,$prefs->{orgids})
+    if ($prefs->{orgids})
       {
-	my ($id, $org) = get_from_id($orgid);
-	$db_list .= qq{
+	foreach my $orgid (split /,/,$prefs->{orgids})
+	  {
+	    my ($id, $org) = get_from_id($orgid);
+	    $db_list .= qq{
         add_to_list('$id', '$org');
 }
+	  }
       }
     $template->param(document_ready=>$db_list) if $db_list;
     my $resultslimit = 200;
@@ -300,8 +303,8 @@ sub get_orgs
     my %opts = @_;
     my $name = $opts{name};
     my $desc = $opts{desc};
-    $name = "" if $name =~ /^Search$/i;
-    $desc = "" if $desc =~ /^Search$/i;
+    $name = "" if $name && $name =~ /^Search$/i;
+    $desc = "" if $desc && $desc =~ /^Search$/i;
     my $html;
     my @db;
     if ($name)
