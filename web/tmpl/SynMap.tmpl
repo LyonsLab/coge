@@ -18,7 +18,20 @@ function update_params() {
  $('#g').val(params[0]);
  $('#D').val(params[1]);
  $('#A').val(params[2]);
- 
+ if ($('#org_id1').val() == params[3])
+  {
+    $('#seq_type1 option:eq('+params[5]+')').attr('selected','selected');
+    $('#seq_type2 option:eq('+params[8]+')').attr('selected','selected');
+    $('#masked1 option:eq('+params[4]+')').attr('selected','selected');
+    $('#masked2 option:eq('+params[7]+')').attr('selected','selected');
+  }
+ else
+  {
+    $('#seq_type2 option:eq('+params[5]+')').attr('selected','selected');
+    $('#seq_type1 option:eq('+params[8]+')').attr('selected','selected');
+    $('#masked2 option:eq('+params[4]+')').attr('selected','selected');
+    $('#masked1 option:eq('+params[7]+')').attr('selected','selected');
+  }
 }
 
 function ajax_wait (val){
