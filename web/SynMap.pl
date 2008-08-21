@@ -917,7 +917,8 @@ sub get_previous_analyses
     
     foreach (sort {$a->{g}<=>$b->{g} } @items)
       {
-	my $val = join ("_",$_->{g},$_->{D},$_->{A}, $oid1, $_->{mask1},$_->{type1},$oid2, $_->{mask2},$_->{type2});
+	my $blast = $_->{blast} =~ /^blastn$/i ? 0 : 1;
+	my $val = join ("_",$_->{g},$_->{D},$_->{A}, $oid1, $_->{mask1},$_->{type1},$oid2, $_->{mask2},$_->{type2}, $blast);
 	print STDERR $val,"\n";
 	my $name = $_->{blast}.": g:".$_->{g}." D:".$_->{D}." A:".$_->{A}." ".$_->{name};
 	$html .= qq{
