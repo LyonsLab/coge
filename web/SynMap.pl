@@ -893,26 +893,33 @@ sub get_previous_analyses
 	    my $blast = $file =~ /blastn/ ? "BlastN" : "TBlastX";
 	    my ($mask1, $mask2, $type1, $type2) = $file =~ /\.(\d)-(\d)\.(\w+)-(\w+)/;
 	    next unless ($mask1 && $mask2 && $type1 && $type2);
+	    my %data = (D=>$D,
+			g=>$g,
+			A=>$A,
+			blast=>$blast);
+	    ($mask1, $type1, $mask2, $type2) = ($mask2, $type2, $mask1, $type1)  if ($md52 lt $md51);
+	    $data{mask1} = $mask1-1;
+	    $data{mask2} = $mask2-1;
 	    $mask1 = $mask1 == "1" ? "unmasked" : "masked";
 	    $mask2 = $mask2 == "1" ? "unmasked" : "masked";
-	    ($mask1, $type1, $mask2, $type2) = ($mask2, $type2, $mask1, $type1)  if ($md52 lt $md51);
-	    push @items, {D=>$D,
-			  g=>$g,
-			  A=>$A,
-			  blast=>$blast,
-			  masked => "$org_name1: $mask1-$type1, $org_name2: $mask2-$type2",
-			 };
+	    $data{name} = "$org_name1: $mask1-$type1, $org_name2: $mask2-$type2";
+	    my $type1 = $type1 eq "CDS" ? 0 : 1; 
+	    my $type2 = $type2 eq "CDS" ? 0 : 1; 
+	    $data{type1} = $type1;
+	    $data{type2} = $type2;
+	    push @items, \%data;
 	  }
       }
     return unless @items;
-    
     my $html = qq{
 <select id="prev_params" size=4 multiple onChange="update_params();">
 };
+    
     foreach (sort {$a->{g}<=>$b->{g} } @items)
       {
-	my $val = $_->{g}."_".$_->{D}."_".$_->{A};
-	my $name = $_->{blast}.": g:".$_->{g}." D:".$_->{D}." A:".$_->{A}." ".$_->{masked};
+	my $val = join ("_",$_->{g},$_->{D},$_->{A}, $oid1, $_->{mask1},$_->{type1},$oid2, $_->{mask2},$_->{type2});
+	print STDERR $val,"\n";
+	my $name = $_->{blast}.": g:".$_->{g}." D:".$_->{D}." A:".$_->{A}." ".$_->{name};
 	$html .= qq{
  <option value="$val">$name
 };
