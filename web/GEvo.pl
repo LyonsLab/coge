@@ -189,8 +189,28 @@ sub gen_body
 	my $gblength = $form->param("gblength".$i) if $form->param("gblength".$i);
 	my $revy = "checked" if $form->param('rev'.$i);
 	my $revn = "checked" unless $revy;
-	my $maskexonon = "checked" if $form->param('maskexon'.$i);
-	my $maskexonoff = "checked" unless $maskexonon;
+	my ($maskexonon,$maskexonoff);
+	if ($form->param('maskexon'.$i))
+	  {
+	    $maskexonon = "checked";
+	    $maskexonoff = " ";
+	  }
+	else
+	  {
+	    $maskexonon = " ";
+	    $maskexonoff = "checked";
+	  }
+	my ($masknoncodingon,$masknoncodingoff);
+	if ($form->param('masknc'.$i))
+	  {
+	    $masknoncodingon = "checked";
+	    $masknoncodingoff = " ";
+	  }
+	else
+	  {
+	    $masknoncodingon = " ";
+	    $masknoncodingoff = "checked";
+	  }
 	my $refn = "checked" if $form->param('nref'.$i);
 	my $refy = "checked" unless $refn;
 	$autosearch_string .= 'if ($'.qq!('#accn$i').val()) {dataset_search(['args__accn','accn$i','args__num', 'args__$i'!;
@@ -220,6 +240,8 @@ sub gen_body
 		    DSINFO=>$dsinfo,
 		    EXON_MASK_ON=>$maskexonon,
 		    EXON_MASK_OFF=>$maskexonoff,
+		    NONCODING_MASK_ON=>$masknoncodingon,
+		    NONCODING_MASK_OFF=>$masknoncodingoff,
 
 		   );
 #	print STDERR "pos $i: $pos\n";
@@ -441,6 +463,8 @@ sub run
 	$gevo_link .= ";gblength$seqcount=$gblength" if $gblength;
 	$gevo_link .= ";rev$seqcount=1" if $rev;
 	$gevo_link .= ";nref$seqcount=1" unless $reference_seq;
+	$gevo_link .= ";maskexon$seqcount=1" if $mask_cds_flag;
+	$gevo_link .= ";masknc$seqcount=1" if $mask_ncs_flag;
 	$seqcount++;
 #	print STDERR "pos: $pos, dsid: $dsid, chr: $chr\n";
 	if ($featid || $pos)
