@@ -13,6 +13,7 @@ use Digest::MD5 qw(md5_hex);
 use Parallel::ForkManager;
 use GD;
 use File::Path;
+use Mail::Mailer;
 
 $ENV{PATH} = "/opt/apache2/CoGe/";
 umask(0);
@@ -50,6 +51,7 @@ my $pj = new CGI::Ajax(
 		       get_previous_analyses=>\&get_previous_analyses,
 		       get_pair_info=> \&get_pair_info,
 		       go=>\&go,
+		       check_address_validity=>\&check_address_validity,
 		      );
 print $pj->build_html($FORM, \&gen_html);
 #print "Content-Type: text/html\n\n";print gen_html($FORM);
@@ -60,7 +62,7 @@ sub gen_html
     my $html;
     my ($body) = gen_body();
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
-    $template->param(TITLE=>'SynMap: Powered by <a href=http://dagchainer.sourceforge.net>DAGchainer</a>');
+    $template->param(TITLE=>'SynMap: Powered by <a href=http://dagchainer.sourceforge.net/ target=_new>DAGChainer</a>');
     $template->param(HEAD=>qq{});
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
@@ -69,6 +71,7 @@ sub gen_html
     
     $template->param(LOGON=>1) unless $USER->user_name eq "public";
     $template->param(DATE=>$DATE);
+    #$template->param(ADJUST_BOX=>1);
     $template->param(LOGO_PNG=>"SynMap-logo.png");
     $template->param(BODY=>$body);
     $html .= $template->output;
@@ -93,7 +96,27 @@ sub gen_body
 	$name = "" if $name =~ /Search/;
 	$template->param('ORG_LIST'.$i=>get_orgs(name=>$name,i=>$i));
       }
+    my $file = $form->param('file');
+    if($file)
+    {
+    	my $results = read_file($file);
+    	$template->param(RESULTS=>$results);
+    }
     return $template->output;
+  }
+  
+  sub read_file
+  {
+  	my $file = shift;
+
+	my $html;
+	open (IN, "/opt/apache/CoGe/tmp/SynMap/".$file) || die "can't open $file for reading: $!";
+    while (<IN>)
+      {
+		$html .= $_;
+      }
+    close IN;
+    return $html;
   }
 
 sub get_orgs
@@ -131,7 +154,7 @@ sub get_orgs
 	return $html;
       }
 
-    $html .= qq{<SELECT id="org_id$i" SIZE="5" MULTIPLE onChange="get_datasets(['args__oid','org_id$i', 'args__masked','masked$i'],['ds_info$i']);check_previous_analyses();" >\n};
+    $html .= qq{<SELECT id="org_id$i" SIZE="5" MULTIPLE onChange="\$('#ds_info'+$i).html('<div class=dna_small class=loading class=small>loading. . .</div>'); get_datasets(['args__oid','org_id$i', 'args__masked','masked$i'],['ds_info$i']);check_previous_analyses();" >\n};
     $html .= join ("\n", @opts);
     $html .= "\n</SELECT>\n";
     $html =~ s/OPTION/OPTION SELECTED/;
@@ -592,6 +615,8 @@ sub go
     my $chr_length_limit = $opts{chr_length_limit};
     my $show_diags_only = $opts{show_diags_only};
     my $regen_images = $opts{regen_images};
+    my $email = $opts{email};
+    $email = 0 if check_address_validity($email) eq 'invalid';
     $show_diags_only = $show_diags_only eq "true" ? 1 : 0;
     my $flip_output = $opts{flip_output};
     $flip_output = $flip_output eq "true" ? 1 : 0;
@@ -858,6 +883,9 @@ sub go
     my $log = $cogeweb->logfile;
     $log =~ s/$DIR/$URL/;
     $html .= "<a href=$log target=_new>log</a><br>";
+
+    email_results(email=>$email,html=>$html,org1=>$org_name1,org2=>$org_name2) if $email;
+
     return $html;
   }
 
@@ -949,3 +977,55 @@ sub get_pair_info
     return unless @anno;
     return "<table class=small><tr>".join ("<td>",@anno)."</table>";
   }
+
+  
+  sub check_address_validity {
+	my $address = shift;
+	return 'valid' unless $address;
+	my $validity = $address =~/^[_a-zA-Z0-9-]+(\.[_a-zA-Z0-9-]+)*@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*\.(([0-9]{1,3})|([a-zA-Z]{2,3})|(aero|coop|info|museum|name))$/ ? 'valid' : 'invalid';
+	return $validity;
+}
+
+sub email_results {
+	my %opts = @_;
+	my $email_address = $opts{email};
+	my $html = $opts{html};
+	my $org_name1 = $opts{org1};
+	my $org_name2 = $opts{org2};
+
+	my $file = $cogeweb->basefile."_results.data";
+    open(NEW,"> $file") || die "Cannot Save $!\n";
+    print NEW $html;
+    close NEW;
+    
+    ($file) = $file =~/SynMap\/(.+\.data)/;
+    
+	my $server = $ENV{HTTP_HOST};
+	
+	my $url = "http://".$server."/CoGe/SynMap.pl?file=".$file;
+	
+	my $mailer = Mail::Mailer->new("sendmail");
+	$mailer->open({From	=> 'CoGE <coge_results@synteny.cnr.berkeley.edu>',
+		       To	=> $email_address,
+		       Subject	=> 'SynMap Results',
+		      })
+	  or die "Can't open: $!\n";
+	my $username = $USER->user_name;
+    $username = $USER->first_name if $USER->first_name;
+    $username .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
+	my $body = qq{Dear $username,
+		
+Thank you for using SynMap! The results from your latest analysis between $org_name1 and $org_name2 are ready, and can be viewed here:
+	
+$url
+
+These results will remain on our servers for approximately 24 hours; please save them to your own computer before they are removed.
+			
+Thank you for using the CoGe Software Package.
+	
+- The CoGe Team
+};
+	
+	print $mailer $body;
+	$mailer->close();
+}
