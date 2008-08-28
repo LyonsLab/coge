@@ -84,6 +84,22 @@ function blastSeq() {
  }
 }
 
+function AragornSeq() {
+ dsid = myObj.dsid || 0;
+ chr=myObj.chr || 0;
+ featid=myObj.featid || 0;
+ up = $('#upstream').val() || 0;
+ down = $('#downstream').val() || 0;
+ rc = 0;
+ if ($('.rc_button').is(':hidden')==true){
+   rc = 1;}
+ if (featid) {
+ window.open('RNA.pl?featid='+featid+'&upstream='+up+'&downstream='+down+'&rc='+rc);}
+ else {
+ window.open('RNA.pl?chr='+chr+'&upstream='+up+'&downstream='+down+'&dsid='+dsid+'&rc='+rc);
+ }
+}
+
 /*
 function waiting(tag,rc) {
   var seq_length;
@@ -134,9 +150,20 @@ function get_sequence(rc,pro,add){
   rc = myObj.rc || 0;}
   else{
   myObj.rc=rc;}
+  var nowrap = myObj.nowrap;
   //alert(rc);
-  get_seq(['args__featid', 'args__'+myObj.featid, 'args__pro', 'args__'+pro, 'args__rc', 'args__'+rc, 'args__chr', 'args__'+myObj.chr, 'args__dsid', 'args__'+myObj.dsid, 'args__featname', 'args__'+myObj.featname, 'args__upstream', 'upstream', 'args__downstream', 'downstream', 'args__start', 'args__'+myObj.start,'args__stop', 'args__'+myObj.stop,'args__add', 'args__'+add],['seq_text']);
+  get_seq(['args__featid', 'args__'+myObj.featid, 'args__pro', 'args__'+pro, 'args__rc', 'args__'+rc, 'args__chr', 'args__'+myObj.chr, 'args__dsid', 'args__'+myObj.dsid, 'args__featname', 'args__'+myObj.featname, 'args__upstream', 'upstream', 'args__downstream', 'downstream', 'args__start', 'args__'+myObj.start,'args__stop', 'args__'+myObj.stop,'args__add', 'args__'+add, 'args__nowrap','args__'+nowrap],['seq_text']);
   //alert($('#seq_text').html());
+}
+
+function set_nowrap(){
+	if($('#nowrap')[0].checked)
+	{
+		myObj.nowrap=1;
+	}
+	else{
+		myObj.nowrap=0;
+	}
 }
 
 function featlist (link) {
@@ -158,6 +185,8 @@ function featlist (link) {
        <TR>
         <TD>
         <textarea id=seq_text name=seq_text class=backbox readonly ondblclick="this.select();" style="height: 400px; width: 750px; overflow: auto;"></textarea>
+        <br>
+		<input type=checkbox id=nowrap onclick='set_nowrap()'> Check to disable sequence wrapping
 	</TD>
        <TMPL_VAR NAME=FEAT_INFO>
        <div id=feature_info style="display:none"></div>
@@ -189,6 +218,7 @@ function featlist (link) {
      </TD>
      <TD align=right valign="top">
      <DIV id="blast_button"><input type=button value="Blast Sequence" onClick="blastSeq()"></DIV>
+     <DIV id="trna_button"><input type=button value="Scan Sequence for tRNAs" onClick="AragornSeq()"></DIV>
     </TD>
    </TR>
   </TABLE>
