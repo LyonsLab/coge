@@ -163,6 +163,8 @@ sub get_seq
     my $downstream = $opts{'downstream'};
     my $start = $opts{'start'};
     my $stop = $opts{'stop'};
+    my $nowrap = $opts{'nowrap'} || 0;
+    $nowrap = 0 if $nowrap =~ /undefined/;
     #print STDERR Dumper \%opts;
     #my $change_strand = $opts{'changestrand'} || 0;
     if($add_to_seq){
@@ -194,13 +196,18 @@ sub get_seq
 	    :
 	      ">Unable to retrieve Feature object for id: $featid\n";
 	$seq = $rc ? color(seq=>$seq, upstream=>$downstream, downstream=>$upstream) : color(seq=>$seq, upstream=>$upstream, downstream=>$downstream);
-    	$columns = 80;
-        $seq = join ("\n", wrap('','',$seq));
-        $fasta = ($fasta. "\n".$seq);  
+		unless ($nowrap !~ /undefined/)
+		{
+    		$columns = 80;
+        	$seq = join ("\n", wrap('','',$seq));
+        	$fasta = ($fasta. "\n".$seq);  
+		}
 #	print STDERR join ("\n\n", $feat->genomic_sequence),"\n";
       }
     else
       {
+	
+	my $col= $nowrap > 0 ? 0 : 80;
 	my $ds = $coge->resultset('Dataset')->find($dsid);
 	$fasta = ref ($ds) =~ /dataset/i ? 
 	  
@@ -211,7 +218,7 @@ sub get_seq
 	     chr=>$chr,
 	     prot=>$pro,
 	     rc=>$rc,
-	     col=>80,
+	     col=>$col,
 	    )
 	      :
 		">Unable to retrieve dataset object for id: $dsid";
