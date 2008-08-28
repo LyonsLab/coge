@@ -41,6 +41,7 @@ $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
                  sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
 $FORM = new CGI;
 ($USER) = CoGe::Accessory::LogUser->get_user();
+my %ajax = CoGe::Accessory::Web::ajax_func();
 
 $coge = CoGeX->dbconnect();
 #$coge->storage->debugobj(new DBIxProfiler());
@@ -52,6 +53,8 @@ my $pj = new CGI::Ajax(
 		       get_pair_info=> \&get_pair_info,
 		       go=>\&go,
 		       check_address_validity=>\&check_address_validity,
+		       generate_basefile=>\&generate_basefile,
+		       %ajax,
 		      );
 print $pj->build_html($FORM, \&gen_html);
 #print "Content-Type: text/html\n\n";print gen_html($FORM);
@@ -213,7 +216,7 @@ sub gen_fasta
     my $res;
     if (-r $file)
       {
-	write_log("fasta file for $org_name ($md5) exists", $cogeweb->logfile);
+	write_log("fasta file for *".$org_name."* ($md5) exists", $cogeweb->logfile);
 	$res = 1;
       }
     else
@@ -305,7 +308,6 @@ sub generate_fasta
 	  }
       }
     close OUT;
-    write_log("Completed fasta creation", $cogeweb->logfile);
     return 1 if -r $file;
     write_log("Error with fasta file creation", $cogeweb->logfile);
     return 0;
@@ -321,7 +323,7 @@ sub gen_blastdb
     my $res = 0;
     if (-r $blastdb.".nsq")
       {
-	write_log("blastdb file for $org_name ($md5) exists", $cogeweb->logfile);
+	write_log("blastdb file for *".$org_name."* ($md5) exists", $cogeweb->logfile);
 	$res = 1;
       }
     else
@@ -343,12 +345,19 @@ sub generate_blast_db
     $command .= " -i '$fasta'";
     $command .= " -t '$org'";
     $command .= " -n '$blastdb'";
-    write_log("creating blastdb for $org ($blastdb)",$cogeweb->logfile);
+    write_log("creating blastdb for *".$org."* ($blastdb)",$cogeweb->logfile);
     `$command`;
     return 1 if -r "$blastdb.nsq";
     write_log("error creating blastdb for $org ($blastdb)",$cogeweb->logfile);
     return 0;
   }
+  
+  sub generate_basefile
+{
+	$cogeweb = initialize_basefile(prog=>"SynMap");
+	#print STDERR $cogeweb->basefilename,"\n";
+	return $cogeweb->basefilename;
+}
 
 sub run_blast
   {
@@ -360,7 +369,7 @@ sub run_blast
     $prog = "blastn" unless $prog;
     if (-r $outfile)
       {
-	write_log("file $outfile already exists",$cogeweb->logfile);
+	write_log("blastfile $outfile already exists",$cogeweb->logfile);
 	return 1;
       }
     my $pre_command = "$BLAST -p $prog -o $outfile -i $fasta -d $blastdb";
@@ -382,7 +391,7 @@ sub run_dag_tools
       my $seq_type2 = $opts{seq_type2};
       if (-r $outfile)
       {
-	write_log("file $outfile already exists",$cogeweb->logfile);
+	write_log("run dag_tools: file $outfile already exists",$cogeweb->logfile);
 	return 1;
       }
       my $query_dup_file= $opts{query_dup_files};
@@ -392,7 +401,7 @@ sub run_dag_tools
       $cmd .= " --query_dups $query_dup_file" if $query_dup_file;
       $cmd .= " --subject_dups $subject_dup_file" if $subject_dup_file;
       $cmd .=  " > $outfile";
-      write_log("running $cmd",$cogeweb->logfile);
+      write_log("run dag_tools: running $cmd",$cogeweb->logfile);
       `$cmd`;
       return 1 if -r $outfile;
     }
@@ -408,7 +417,7 @@ sub run_tandem_finder
 	return 1;
       }
     my $cmd = "$PYTHON $TANDEM_FINDER -i $infile > $outfile";
-    write_log("running $cmd", $cogeweb->logfile);
+    write_log("run_tandem_filter: running $cmd", $cogeweb->logfile);
     `$cmd`;
     return 1 if -r $outfile;
   }
@@ -424,7 +433,7 @@ sub run_filter_repetitive_matches
 	return 1;
       }
     my $cmd = "$FILTER_REPETITIVE_MATCHES < $infile > $outfile";
-    write_log("running $cmd", $cogeweb->logfile);
+    write_log("run_filter_repetitive+_matches: running $cmd", $cogeweb->logfile);
     `$cmd`;
     return 1 if -r $outfile;
   }
@@ -443,14 +452,14 @@ sub run_dagchainer
     $outfile .= ".aligncoords";
     if (-r $outfile)
       {
-	write_log("file $outfile already exists",$cogeweb->logfile);
+	write_log("run dagchainer: file $outfile already exists",$cogeweb->logfile);
 	return $outfile;
       }
     my $cmd = "$RUN_DAGCHAINER -i $infile";
     $cmd .= " -D $D" if $D;
     $cmd .= " -g $g" if $g;
     $cmd .= " -A $A" if $A;
-    write_log("running $cmd", $cogeweb->logfile);
+    write_log("run dagchainer: running $cmd", $cogeweb->logfile);
     `$cmd`;
     `mv $infile.aligncoords $outfile`;
     return $outfile
@@ -464,11 +473,11 @@ sub run_find_nearby
     my $outfile = $opts{outfile};
     if (-r $outfile)
       {
-	write_log("file $outfile already exists",$cogeweb->logfile);
+	write_log("run find_nearby: file $outfile already exists",$cogeweb->logfile);
 	return 1;
       }
     my $cmd = "$PYTHON $FIND_NEARBY --diags=$infile --all=$dag_all_file > $outfile";
-    write_log("running $cmd", $cogeweb->logfile);
+    write_log("run find_nearby: running $cmd", $cogeweb->logfile);
     `$cmd`;
     return 1 if -r $outfile;
   }
@@ -591,13 +600,13 @@ sub generate_dotplot
     my $regen_images = $opts{regen_images}=~/true/i ? 1 : 0;
     if (-r $outfile && !$regen_images)
       {
-	write_log("file $outfile already exists",$cogeweb->logfile);
+	write_log("generate dotplot: file $outfile already exists",$cogeweb->logfile);
 	return 1;
       }
     my $cmd = "$PLOT_DAG -d $dag -a $coords --html $outfile --q_dsid $q_dsid --s_dsid $s_dsid --qchr $qchr --schr $schr --q_max $q_max --s_max $s_max";
     $cmd .= " --q_label=$q_label" if $q_label;
     $cmd .= " --s_label=$s_label" if $s_label;
-    write_log("running $cmd", $cogeweb->logfile);
+    write_log("generate dotplot: running $cmd", $cogeweb->logfile);
     `$cmd`;
     return 1 if -r $outfile;
   }
@@ -616,6 +625,11 @@ sub go
     my $show_diags_only = $opts{show_diags_only};
     my $regen_images = $opts{regen_images};
     my $email = $opts{email};
+    my $job_title = $opts{jobtitle};
+    
+    my $basename = $opts{basename};
+    $cogeweb = initialize_basefile(basename=>$basename, prog=>"SynMap");
+    
     $email = 0 if check_address_validity($email) eq 'invalid';
     $show_diags_only = $show_diags_only eq "true" ? 1 : 0;
     my $flip_output = $opts{flip_output};
@@ -630,7 +644,7 @@ sub go
       {
 	return "<span class=alert>You must select two organisms.</span>"
       }
-    $cogeweb = initialize_basefile(prog=>"SynMap");
+    #$cogeweb = initialize_basefile(prog=>"SynMap");
     ##generate fasta files and blastdbs
     my $pm = new Parallel::ForkManager($MAX_PROC);
     my @oids = ([$oid1,$masked1, $seq_type1]);
@@ -660,9 +674,19 @@ sub go
       {
 	return "<span class=alert>Something went wrong generating the fasta files: ".$cogeweb->logfile."</span>";
       }
+    else{
+    	write_log("Completed fasta creation", $cogeweb->logfile);
+    }
     
     my ($blastdb1) = gen_blastdb(md5=>$md51,fasta=>$fasta1,org_name=>$org_name1);
     my ($blastdb2) = gen_blastdb(md5=>$md52,fasta=>$fasta2,org_name=>$org_name2);
+    unless ($blastdb1 && $blastdb2)
+      {
+	return "<span class=alert>Something went wrong generating the blastdb files: ".$cogeweb->logfile."</span>";
+      }
+    else{
+    	write_log("Completed blastdb creation", $cogeweb->logfile);
+    }
     my $html;
 
     #need to blast each org against itself for finding local dups, then to one another
@@ -709,7 +733,7 @@ sub go
 	$pm->finish;
       }
     $pm->wait_all_children();
-
+	write_log("Completed blast run", $cogeweb->logfile);
     #Find local dups
     my $dag_file11 = $org_dirs{$org_name1."_".$org_name1}{dir}."/".$org_dirs{$org_name1."_".$org_name1}{basename}.".dag";
     run_dag_tools(query=>"a".$md51, subject=>"b".$md51, blast=>$org_dirs{$org_name1."_".$org_name1}{blastfile}, outfile=>$dag_file11, seq_type1=>$seq_type1, seq_type1=>$seq_type1);
@@ -720,13 +744,14 @@ sub go
     my $dup_file2  = $org_dirs{$org_name2."_".$org_name2}{dir}."/".$org_dirs{$org_name2."_".$org_name2}{basename}.".dups";#."/$md52"."_"."$md52.$blast.dups";
     run_tandem_finder(infile=>$dag_file22,outfile=>$dup_file2);
 
-    #prepare dag for synteny anlaysis
+    #prepare dag for synteny analysis
     my $dag_file12 = $org_dirs{$org_name1."_".$org_name2}{dir}."/".$org_dirs{$org_name1."_".$org_name2}{basename}.".dag";#."/$md51"."_"."$md52.$blast.dag";
     run_dag_tools(query=>"a".$md51, subject=>"b".$md52, blast=>$org_dirs{$org_name1."_".$org_name2}{blastfile}, outfile=>$dag_file12.".all", query_dup_file=>$dup_file1,subject_dup_file=>$dup_file2, seq_type1=>$seq_type1, seq_type2=>$seq_type2);
     #remove repetitive matches
     run_filter_repetitive_matches(infile=>$dag_file12.".all",outfile=>$dag_file12);
     #run dagchainer
     my $dagchainer_file = run_dagchainer(infile=>$dag_file12, D=>$dagchainer_D, g=>$dagchainer_g,A=>$dagchainer_A);
+    write_log("Completed dagchainer run", $cogeweb->logfile);
     if (-r $dagchainer_file)
       {
 	#add pairs that were skipped by dagchainer
@@ -884,7 +909,7 @@ sub go
     $log =~ s/$DIR/$URL/;
     $html .= "<a href=$log target=_new>log</a><br>";
 
-    email_results(email=>$email,html=>$html,org1=>$org_name1,org2=>$org_name2) if $email;
+    email_results(email=>$email,html=>$html,org1=>$org_name1,org2=>$org_name2, jobtitle=>$job_title) if $email;
 
     return $html;
   }
@@ -992,11 +1017,15 @@ sub email_results {
 	my $html = $opts{html};
 	my $org_name1 = $opts{org1};
 	my $org_name2 = $opts{org2};
+	my $job_title = $opts{jobtitle};
 
 	my $file = $cogeweb->basefile."_results.data";
     open(NEW,"> $file") || die "Cannot Save $!\n";
     print NEW $html;
     close NEW;
+    
+    my $subject = "SynMap Results";
+    $subject .= ": $job_title" if $job_title;
     
     ($file) = $file =~/SynMap\/(.+\.data)/;
     
@@ -1007,7 +1036,7 @@ sub email_results {
 	my $mailer = Mail::Mailer->new("sendmail");
 	$mailer->open({From	=> 'CoGE <coge_results@synteny.cnr.berkeley.edu>',
 		       To	=> $email_address,
-		       Subject	=> 'SynMap Results',
+		       Subject	=> $subject,
 		      })
 	  or die "Can't open: $!\n";
 	my $username = $USER->user_name;
