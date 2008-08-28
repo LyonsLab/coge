@@ -4,10 +4,16 @@ use base qw(CoGe::Graphics::Feature);
 
 
 BEGIN {
-    use vars qw($VERSION $HEIGHT $WIDTH);
+    use vars qw($VERSION $HEIGHT $WIDTH %EXTERNAL_IMAGES);
     $VERSION     = '0.1';
     $HEIGHT = 5;
     $WIDTH = 5;
+    %EXTERNAL_IMAGES = (
+			A=>'/opt/apache/CoGe/picts/A.png',
+			T=>'/opt/apache/CoGe/picts/T.png',
+			C=>'/opt/apache/CoGe/picts/C.png',
+			G=>'/opt/apache/CoGe/picts/G.png',
+		       );
     __PACKAGE__->mk_accessors(
 "nt",
 "show_label",
@@ -45,22 +51,6 @@ sub _initialize
 	    $gbox++;
 	  }
       }
-#     elsif(length ($seq) > 2)
-#       {
-# 	while ($seq=~ /(g*a*g+a+g*a*)/ig)
-# 	  {
-# 	    next unless length ($1) > 3;
-# 	    $sum += length $1;
-# 	    $ga++;
-# 	  }
-# 	while ($seq =~ /(c*t*c+t+c*t*)/ig)
-# 	  {
-# 	    next unless length ($1) > 3;
-# 	    $sum += length $1;
-# 	    $ct++;
-# 	  }
-#       }
-    
     my $p = ($sum)/(length ($seq));
     my @color;
     my $red = 255;
@@ -72,7 +62,7 @@ sub _initialize
 
 
     $self->color(\@color);
-    $self->label($self->nt) if $self->nt && $self->show_label;
+    $self->label("GBOX\n".$self->nt) if $self->nt && $self->show_label && $sum;
     $self->type('gbox');
   }
 
@@ -82,7 +72,16 @@ sub _post_initialize
     my %opts = @_;
     my $gd = $self->gd;
     $gd->fill(0,0, $self->get_color($self->color));
-#    $gd->transparent($gd->colorResolve(255,255,255));
+    if ($self->label && length ($self->label) == 1 && $EXTERNAL_IMAGES{uc($self->label)} && -r $EXTERNAL_IMAGES{uc($self->label)})
+      {
+	my $ei= GD::Image->new($EXTERNAL_IMAGES{uc($self->label)});
+#	print STDERR Dumper ($ei);
+	if ($self->strand =~ /-/ || $self->strand =~ /bot/i)
+	  {
+	    $ei->rotate180();
+	  }
+	$self->external_image($ei) if $self->use_external_image;
+      }
   }
 
 #################### subroutine header begin ####################
