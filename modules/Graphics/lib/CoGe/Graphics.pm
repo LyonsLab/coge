@@ -378,7 +378,7 @@ sub process_nucleotides
     my $start = $opts{start};
     my $stop = $opts{stop};
     my $seq = $opts{seq};
-    
+
     $start = 1 unless $start;
     $stop = length $seq if $seq && !$stop;
     if ($self->MAX_NT && abs ($stop-$start) > $self->MAX_NT())
@@ -397,6 +397,7 @@ sub process_nucleotides
 	return unless $ds;
 	$seq = uc($ds->get_genomic_sequence(start=>$start, end=>$stop, chr=>$chr));
       }
+
 #    print STDERR Dumper $layers;
 
 #    print STDERR $start,"-",$stop,"\t",$seq,"\n";
@@ -410,33 +411,25 @@ sub process_nucleotides
     $start = 1 if $start < 1;
     if ($layers->{gc} || $layers->{nt} || $layers->{all})
       {
-#	print STDERR $start,"::",$stop," $chrs","\n";
-#	print STDERR $start,"-",$stop,"; ",$seq,"\n";
 	while ($pos < $seq_len)
 	  {
 	    my $subseq = substr ($seq, $pos, $chrs);
 	    my $rcseq = substr ($seq, $pos, $chrs);
 	    $rcseq =~ tr/ATCG/TAGC/;
 	    next unless $subseq && $rcseq;
-#	    print STDERR $subseq,"\t",$pos,"\n";
 	    if (!$layers->{gc} && !$layers->{gaga} && !$layers->{gbox} && !$layers->{all} && $subseq !~/N/i && $subseq !~/X/i)
 	      {
 		$pos+=$chrs;
 		next;
 	      }
-#	    print STDERR "\t",$pos," ",$pos+$start,"\n";#,": ",$subseq,"\t",$rcseq,"\n";
 
 	    my $options = $layers->{gc} ? "gc" : "nt";
-	    my $f1 = CoGe::Graphics::Feature::NucTide->new({nt=>$subseq, strand=>1, start =>$pos+$start, options=>$options}) if $layers->{gc} || $layers->{nt} || $layers->{all};
-	    my $f2 = CoGe::Graphics::Feature::NucTide->new({nt=>$rcseq, strand=>-1, start =>$pos+$start, options=>$options}) if $layers->{gc} || $layers->{nt} || $layers->{all};
-	    if ($layers->{nt} || $layers->{all} ||  $layers->{gc})
-	      {
-		$f1->show_label(1); 
-		$f2->show_label(1);
-		$f1->use_external_image(1);
-		$f2->use_external_image(1);
-
-	      }
+	    my $f1 = CoGe::Graphics::Feature::NucTide->new({nt=>$subseq, strand=>1, start =>$pos+$start, options=>$options});
+	    my $f2 = CoGe::Graphics::Feature::NucTide->new({nt=>$rcseq, strand=>-1, start =>$pos+$start, options=>$options});
+	    $f1->show_label(1); 
+	    $f2->show_label(1);
+	    $f1->use_external_image(1);
+	    $f2->use_external_image(1);
 	    $c->add_feature($f1) if $f1;
 	    $c->add_feature($f2) if $f2;
 	    $pos+=$chrs;
@@ -445,19 +438,40 @@ sub process_nucleotides
     my $step = $chrs;
     $step = 6 if $step < 6;
     $pos = 0;
-    if ($layers->{gbox} || $layers->{all})
+    if ($layers->{gbox})
       {
-	while ($pos < $seq_len)
+	my $startseq = uc($ds->get_genomic_sequence(start=>$start-5, end=>$start-1, chr=>$chr));
+	my $stopseq = uc($ds->get_genomic_sequence(start=>$stop+1, end=>$stop+5, chr=>$chr));
+	my $tmpseq = $seq;
+	$tmpseq = $startseq.$tmpseq if $startseq;
+	$tmpseq .= $stopseq if $stopseq;
+	
+	while ($pos < length($tmpseq))
 	  {
-	    my $subseq = substr ($seq, $pos, $step);
-	    my $rcseq = substr ($seq, $pos, $step);
+#	    print STDERR $pos,":",":",$chrs,"\n";
+	    my $subseq = substr ($tmpseq, $pos, $step);
+	    my $rcseq = $subseq;
 	    $rcseq =~ tr/ATCG/TAGC/;
 	    next unless $subseq && $rcseq;
-	    my $f1 = CoGe::Graphics::Feature::GBox->new({nt=>$subseq, strand=>1, start =>$pos+$start, stop =>$pos+$start+$step-1});
-	    my $f2 = CoGe::Graphics::Feature::GBox->new({nt=>$rcseq, strand=>-1, start =>$pos+$start, stop =>$pos+$start+$step-1});
-	    $c->add_feature($f1) if $f1;
-	    $c->add_feature($f2) if $f2;
-	    $pos+=$chrs;
+	    if ($subseq =~ /CACGTG/ || $subseq =~ /GTGCAC/)
+	      {
+		my $f1 = CoGe::Graphics::Feature::GBox->new({nt=>$subseq, strand=>1, start =>$pos+$start-length($startseq), stop =>$pos+$start+$step-length($startseq)-1});
+		my $f2 = CoGe::Graphics::Feature::GBox->new({nt=>$rcseq, strand=>-1, start =>$pos+$start-length($startseq), stop =>$pos+$start+$step-length($startseq)-1});
+		$f1->show_label(1);
+		$f2->show_label(1);
+		#	    $f1->use_external_image(1);
+		#	    $f2->use_external_image(1);
+		$c->add_feature($f1) if $f1;
+		$c->add_feature($f2) if $f2;
+	      }
+	    if ($chrs < 6)
+	      {
+		$pos+=1;
+	      }
+	    else
+	      {
+		$pos+=$chrs-5;
+	      }
 	  }
       }
     $step = $chrs;
