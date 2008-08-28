@@ -294,8 +294,7 @@ sub generate_excel_file
     $accn_list =~ s/,$//;
   	$cogeweb = initialize_basefile(prog=>"FeatList");
   	my $basename = $cogeweb->basefile;
-  	my ($filename) = $basename =~ /^\/opt\/apache\/CoGe\/tmp\/(FeatList_\w+)$/;
-  	print STDERR $filename,"\n";
+  	my ($filename) = $basename =~ /FeatList\/(FeatList_.+)/;
   	my $workbook = Spreadsheet::WriteExcel->new("$TEMPDIR/Excel_$filename.xls");
     $workbook->set_tempdir("$TEMPDIR");
     my $worksheet = $workbook->add_worksheet();
@@ -313,13 +312,18 @@ sub generate_excel_file
    	 $worksheet->write(0,9,"Percent Wobble AT");
    	 $worksheet->write(0,10,"Organism (version)");
    	 $worksheet->write(0,11,"More information");
+   	 $worksheet->write(0,12,"Sequence");
    	
    	foreach my $featid (split /,/,$accn_list)
 	  {
    	   my ($feat) = $coge->resultset("Feature")->find($featid);
    	   next unless $feat;
    	   my ($name) = sort $feat->names;
-   	   my $app = $feat->annotation_pretty_print();
+   	   my $app = $feat->annotation_pretty_print_html();
+   	   $app =~ s/(<\/?span(\s*class=\"\w+\")?\s*>)?//ig;
+   	   my ($anno) = $app =~ /annotation: (.+)?/i;
+   	   ($anno) = split (/<BR/, $anno);
+   	   $anno =~ s/;/;\n/g;
 	   my ($at, $gc) = $feat->gc_content;
 	   $at*=100;
 	   $gc*=100;
@@ -336,12 +340,12 @@ sub generate_excel_file
 	   $worksheet->write($i,7,$at);
 	   $worksheet->write($i,8,$wgc);
 	   $worksheet->write($i,9,$wat);
-	   $worksheet->write($i,10,$feat->organism->name."(v ".$feat->version."), ".$feat->organism->description);
-	   $worksheet->write($i,11,$app);
+	   $worksheet->write($i,10,$feat->organism->name."(v ".$feat->version.")");
+	   $worksheet->write($i,11,$anno);
+	   $worksheet->write($i,12,$feat->genomic_sequence);
 	   $i++;
 	 };
    	$workbook->close() or die "Error closing file: $!";
-   	#print STDERR "tmp/Excel_$filename.xls\n";
    	return "tmp/Excel_$filename.xls";
       }
   
