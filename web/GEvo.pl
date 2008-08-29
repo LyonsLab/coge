@@ -532,7 +532,9 @@ sub run
 	  {
 	    $obj = new CoGe::Accessory::GenBank;
 	    $obj->add_gene_models(1); #may want to make a user selectable option
- 	    my ($res, $error) = $obj->get_genbank_from_ncbi(accn=>$gbaccn, rev=>$rev, start=>$gbstart);
+	    my ($tmp) = $gbaccn =~/(.*)/;
+ 	    my ($res, $error) = $obj->get_genbank_from_ncbi(file=>$TEMPDIR."/".uc($tmp).".gbk",accn=>$tmp, rev=>$rev, start=>$gbstart);
+#	    print STDERR Dumper $res;
 	    $message .= $error."\n" unless $res;
 	    
 	    if ($obj->accn)
