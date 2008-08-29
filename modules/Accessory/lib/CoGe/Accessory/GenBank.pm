@@ -2,13 +2,14 @@ package CoGe::Accessory::GenBank;
 
 use strict;
 use Data::Dumper;
+#use LWP::Simple;
 use LWP::UserAgent;
 use base qw(Class::Accessor);
 use CoGe::Accessory::GenBank::Feature;
 use CoGeX::Feature;
 
 
-__PACKAGE__->mk_accessors qw(id locus accn seq_length moltype division date definition verison keywords data_source dataset organism sequence srcfile dir anntoation features start stop chromosome add_gene_models);
+__PACKAGE__->mk_accessors qw(id locus accn seq_length moltype division date definition version keywords data_source dataset organism sequence srcfile dir anntoation features start stop chromosome add_gene_models);
 
 sub new
   {
@@ -25,8 +26,19 @@ sub get_genbank_from_ncbi
     my $id = $opts{accn};
     my $rev = $opts{rev};
     my $start = $opts{start};
-    my $ua = new LWP::UserAgent;
+    my $file = $opts{file};
     my $url = "http://www.ncbi.nlm.nih.gov/entrez/viewer.fcgi?db=nucleotide&qty=1&c_start=1&list_uids=$id&dopt=gb&send=Send&sendto=t&from=begin&to=end&extrafeatpresent=1&ef_MGC=16";
+    my $ua = new LWP::UserAgent;
+    if ($file)
+      {
+	unless (-r $file)
+	  {
+	    $ua->mirror($url, $file);
+#	    LWP::Simple->getstore($url, $file)
+	  }
+	return $self->parse_genbank_file(file=>$file, rev=>$rev, start=>$start);
+      }
+
     my $search = $ua->get($url);
     unless ($search->is_success)
       {
@@ -36,6 +48,188 @@ sub get_genbank_from_ncbi
     return $self->parse_genbank(content=>$search->content, rev=>$rev, start=>$start);    
 
   }
+
+
+sub parse_genbank_file
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $file = $opts{file};
+    my $rev = $opts{rev};
+    my $start = $opts{start};
+    open (IN, $file) || die "Can't open $file for reading";
+    my $working_line;
+    my $feature_flag = 0;
+    my $seq_flag = 0;
+    while (my $line = <IN>)
+      {
+	chomp $line;
+	next unless $line;
+	$line =~ s/^\s+// if ($line =~ /ORGANISM/);
+	if ($line=~/^FEATURES/)
+	  {
+	    $self->process_line(line=>$working_line, rev=>$rev, start=>$start, feature_flag=>$feature_flag);
+	    $working_line = "";;
+	    $feature_flag = 1;
+	    next;
+	  }
+	if ($line=~/^ORIGIN/)
+	  {
+	    $self->process_line(line=>$working_line, rev=>$rev, start=>$start, feature_flag=>$feature_flag);
+	    $working_line = "";
+	    $seq_flag = 1;
+	    $feature_flag = 0;
+	    next;
+	  }
+	if ($feature_flag && $line =~ /^\s\s\s\s\s\w/)
+	  {
+	    $self->process_line(line=>$working_line, rev=>$rev, start=>$start, feature_flag=>$feature_flag);
+	    $line =~ s/^\s+//;
+	    $working_line = $line;
+	    next;
+	  }
+	elsif ($feature_flag)
+	  {
+	    $line =~ s/^\s+//;
+	    if ($line =~ /^\//)
+	      {
+		$working_line .= "\n".$line;
+	      }
+	    else
+	      {
+		$working_line .= " ".$line;
+	      }
+	    next;
+	  }
+
+	if ($seq_flag)
+	  {
+	    if ($line =~ /^\/\//)
+	      {
+		$working_line = CoGeX::Feature->reverse_complement($working_line) if $rev;
+		$self->sequence($working_line);
+		next;
+	      }
+	    $line =~ s/^\s+//;
+	    my ($num, $seq) = split/\s+/,$line,2;
+	    $seq =~ s/\s//g;
+	    $working_line .= $seq;
+	    next;
+	  }
+	if ($line =~ /^\S/)
+	  {
+	    $self->process_line(line=>$working_line, rev=>$rev, start=>$start, feature_flag=>$feature_flag);
+	    $working_line = $line;
+	  }
+	else
+	  {
+	    $line =~ s/^\s+/ /;
+	    $working_line .= $line;
+	  }
+      }
+    close (IN);
+    $self->_check_for_gene_models() if $self->add_gene_models;
+    return $self;
+  }
+
+
+sub process_line
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $line = $opts{line};
+    my $rev = $opts{rev};
+    my $start = $opts{start};
+    my $feature_flag = $opts{feature_flag};
+    return unless $line;
+    if ($line =~ /^LOCUS/)
+      {
+	my @tmp = split /\s+/, $line;
+	$self->locus($tmp[1]);
+	$self->seq_length($tmp[2]);
+	$self->date($tmp[-1]);
+	$tmp[4]="?" unless $tmp[4];
+	$tmp[5]="?" unless $tmp[5];
+	$self->moltype($tmp[4]);
+	$self->division($tmp[5]);
+      }
+    elsif ( $line =~ /^DEFINITION\s+(.*)/ ) {
+      $self->definition($1);
+    }
+    elsif ( $line =~ /^ACCESSION\s+(\S+)/ ) {
+      $self->accn($1);
+    }
+    elsif ( $line =~ /^VERSION\s+(.*)/ ) {
+      my @temp = split(/\s+/,$1);
+      $self->version(join(" ", @temp));
+    }
+    elsif ( $line =~ /^KEYWORDS\s+(.*)\./ ) {
+      $self->keywords($1);
+    }
+    elsif ( $line =~ /^SOURCE\s+(.*)/ ) {
+      my $tmp = $1;
+      $tmp =~ s/\.$//; #get rid of trailing ".", if present
+      $self->data_source($tmp);
+    }
+    elsif ( $line =~ /^\s+ORGANISM\s+(.*)/ ) {
+      $self->organism($1)
+    }
+    elsif ( $feature_flag ) 
+      {
+	my $iso;
+	my %feature;
+	foreach my $item (split/\n/,$line)
+	  {
+#		my %tmp = %feature;
+#		push @features, \%tmp if keys %tmp;
+	    if ($item !~ /^\// && $item =~ /^(\S+)\s\s+(.*)$/)
+	      {
+		$feature{type} = $1;
+		$feature{location} = $2;
+		$feature{location}=~ s/\s//g;
+	      }
+	    elsif($item =~ /\/(.*?)=(.*)$/)
+	      {
+		$iso = $1;
+		$feature{$iso} = $2;
+	      }
+	    else
+	      {
+		$item =~ s/\s+/ /g;
+		$feature{$iso} .= $line if $iso;
+	      }
+	  }
+	my %quals;
+	my @names;
+	my $anno;
+	foreach (keys %feature)
+	  {
+	    my ($qual, $val) = ($_, $feature{$_});
+	    $val =~ s/"//g;
+	    next if $qual eq "type" || $qual eq "location";
+	    push @{$quals{$qual}},$val;
+	    $anno .= "$qual: $val\n";
+	    push @names, $val if $qual =~ /gene/;
+	    push @names, $val if $qual =~ /synonym/;
+	    push @names, $val if $qual =~ /locus/;
+	    push @names, $val if $qual =~ /transcript_id/;
+	    push @names, $val if $qual =~ /protein_id/;
+	  }
+	$quals{names} = \@names;
+	$feature{location} = $self->reverse_genbank_location(loc=>$feature{location}) if $rev;
+	my $strand = $feature{location} =~ /complement/i ? -1 : 1;
+	$self->add_feature(
+			   type=>$feature{type},
+			   location=>$feature{location},
+			   qualifiers=>\%quals,
+			   annotation=>$anno,
+			   strand=>$strand,
+			   start=>$start,
+			  );
+      }
+  }
+
+
 
 sub parse_genbank
   {
@@ -190,7 +384,7 @@ sub parse_genbank
 	  $self->seq_length($length);
 	  $self->moltype($moltype);
 	  $self->division($division);
-	  $self->verison($version);
+	  $self->version($version);
 	  $self->date($date);
 	  $self->accn($accn);
 	  $self->keywords($keywords);
@@ -201,7 +395,6 @@ sub parse_genbank
 	  $self->sequence( $sequence );
 	  foreach my $feat (@features)
 	    {
-	      #  print STDERR "$locus\n",Dumper $feat;
 	      my %quals;
 	      my @names;
 	      my $anno;
