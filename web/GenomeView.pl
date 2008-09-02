@@ -416,8 +416,8 @@ sub gen_gc_for_chromosome
     my $chr = $args{chr};
     return unless $dsid;
     my $ds = $coge->resultset('Dataset')->find($dsid);
-    my $gc=$ds->percent_gc(chr=>$chr);
-    return "GC: ".(100*$gc)."%  AT: ".(100*(1-$gc))."%";
+    my ($gc, $at)=$ds->percent_gc(chr=>$chr);
+    return "GC: ".(100*$gc)."%  AT: ".(100*($at))."%";
   }
 
 sub gen_gc_for_noncoding
