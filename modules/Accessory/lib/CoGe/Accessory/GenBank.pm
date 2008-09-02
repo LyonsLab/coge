@@ -110,6 +110,7 @@ sub parse_genbank_file
 	      {
 		$working_line = CoGeX::Feature->reverse_complement($working_line) if $rev;
 		$self->sequence($working_line);
+		$seq_flag = 0;
 		next;
 	      }
 	    $line =~ s/^\s+//;
@@ -130,6 +131,10 @@ sub parse_genbank_file
 	  }
       }
     close (IN);
+    if ($seq_flag) #terminal // was missing from entry, process
+      {
+	$self->sequence($working_line);
+      }
     $self->_check_for_gene_models() if $self->add_gene_models;
     unless ($self->chromosome eq "X") #dunno if it is a sex chromosome
       {
@@ -202,11 +207,21 @@ sub process_line
 		$feature{location} = $2;
 		$feature{location}=~ s/\s//g;
 	      }
-	    elsif($item =~ /\/(.*?)=(.*)$/)
+	    elsif($item =~ /\//)#(.*?)=?(.*)$/)
 	      {
-		$iso = $1;
-		$feature{$iso} = $2;
-		$feature{$iso} =~ s/"//g;
+		$item =~ s/\///;
+		my $val;
+		($iso,$val) = split/=/,$item,2;
+#		$iso = $1;
+#		my $val = $2;
+		if ($iso =~ /^pseudo/i)
+		  {
+		    $feature{type} = "pseudogene";
+		    next;
+		  }
+		$val =1 unless $val;
+		$val =~ s/"//g;
+		$feature{$iso} = $val;
 		$self->chromosome($feature{$iso}) if $iso eq "chromosome";
 	      }
 	    else
