@@ -7,9 +7,11 @@ use LWP::UserAgent;
 use base qw(Class::Accessor);
 use CoGe::Accessory::GenBank::Feature;
 use CoGeX::Feature;
+use Roman;
+
+__PACKAGE__->mk_accessors qw(id locus accn seq_length moltype division date definition version gi keywords data_source dataset organism sequence srcfile dir anntoation features start stop chromosome add_gene_models);
 
 
-__PACKAGE__->mk_accessors qw(id locus accn seq_length moltype division date definition version keywords data_source dataset organism sequence srcfile dir anntoation features start stop chromosome add_gene_models);
 
 sub new
   {
@@ -129,6 +131,10 @@ sub parse_genbank_file
       }
     close (IN);
     $self->_check_for_gene_models() if $self->add_gene_models;
+    unless ($self->chromosome eq "X") #dunno if it is a sex chromosome
+      {
+	$self->chromosome(arabic( $self->chromosome )) if isroman($self->chromosome);
+      }
     return $self;
   }
 
@@ -155,13 +161,21 @@ sub process_line
       }
     elsif ( $line =~ /^DEFINITION\s+(.*)/ ) {
       $self->definition($1);
+      if ($self->definition() =~ /(linkage group \w+),?/i || $self->definition =~ /chromosome (\w+),?/)
+	{
+	  $self->chromosome($1);
+	}
     }
     elsif ( $line =~ /^ACCESSION\s+(\S+)/ ) {
       $self->accn($1);
     }
-    elsif ( $line =~ /^VERSION\s+(.*)/ ) {
+    elsif ( $line =~ /^VERSION\s+.*?\.(\d+)/ ) {
       my @temp = split(/\s+/,$1);
       $self->version(join(" ", @temp));
+      if ($line =~ /GI:(\d+)/)
+	{
+	  $self->gi($1);
+	}
     }
     elsif ( $line =~ /^KEYWORDS\s+(.*)\./ ) {
       $self->keywords($1);
@@ -171,7 +185,7 @@ sub process_line
       $tmp =~ s/\.$//; #get rid of trailing ".", if present
       $self->data_source($tmp);
     }
-    elsif ( $line =~ /^\s+ORGANISM\s+(.*)/ ) {
+    elsif ( $line =~ /^ORGANISM\s+(.*)/ ) {
       $self->organism($1)
     }
     elsif ( $feature_flag ) 
@@ -192,6 +206,8 @@ sub process_line
 	      {
 		$iso = $1;
 		$feature{$iso} = $2;
+		$feature{$iso} =~ s/"//g;
+		$self->chromosome($feature{$iso}) if $iso eq "chromosome";
 	      }
 	    else
 	      {
@@ -200,7 +216,7 @@ sub process_line
 	      }
 	  }
 	my %quals;
-	my @names;
+	my %names;
 	my $anno;
 	foreach (keys %feature)
 	  {
@@ -209,13 +225,13 @@ sub process_line
 	    next if $qual eq "type" || $qual eq "location";
 	    push @{$quals{$qual}},$val;
 	    $anno .= "$qual: $val\n";
-	    push @names, $val if $qual =~ /gene/;
-	    push @names, $val if $qual =~ /synonym/;
-	    push @names, $val if $qual =~ /locus/;
-	    push @names, $val if $qual =~ /transcript_id/;
-	    push @names, $val if $qual =~ /protein_id/;
+	    $names{$val}=1 if $qual =~ /gene/;
+	    $names{$val}=1 if $qual =~ /synonym/;
+	    $names{$val}=1 if $qual =~ /locus/;
+	    $names{$val}=1 if $qual =~ /transcript_id/;
+	    $names{$val}=1 if $qual =~ /protein_id/;
 	  }
-	$quals{names} = \@names;
+	$quals{names} = [sort keys %names];
 	$feature{location} = $self->reverse_genbank_location(loc=>$feature{location}) if $rev;
 	my $strand = $feature{location} =~ /complement/i ? -1 : 1;
 	$self->add_feature(
@@ -654,6 +670,12 @@ sub reverse_genbank_location
     $new_loc = "join($new_loc)" if $count > 1;
     $new_loc = "complement($new_loc)" if $complement;
     return $new_loc;
+  }
+
+
+sub accession
+  {
+    shift->accn(@_);
   }
 
 1;
