@@ -9,7 +9,7 @@ use CoGe::Accessory::GenBank::Feature;
 use CoGeX::Feature;
 use Roman;
 
-__PACKAGE__->mk_accessors qw(id locus accn seq_length moltype division date definition version gi keywords data_source dataset organism sequence srcfile dir anntoation features start stop chromosome add_gene_models);
+__PACKAGE__->mk_accessors qw(id locus accn seq_length moltype division date definition version gi keywords data_source dataset organism sequence srcfile dir anntoation features start stop chromosome add_gene_models _has_genes);
 
 
 
@@ -135,11 +135,19 @@ sub parse_genbank_file
       {
 	$self->sequence($working_line);
       }
-    $self->_check_for_gene_models() if $self->add_gene_models;
     unless ($self->chromosome eq "X") #dunno if it is a sex chromosome
       {
 	$self->chromosome(arabic( $self->chromosome )) if isroman($self->chromosome);
       }
+    if ($rev)
+      {
+	foreach my $feat (@{$self->features})
+	  {
+	    $feat->location($self->reverse_genbank_location(loc=>$feat->location));
+	    $feat->blocks($self->process_location( loc=>$feat->location, start=>$start)) if $feat->location;
+	  }
+      }
+    $self->_check_for_gene_models() if $self->add_gene_models;
     return $self;
   }
 
@@ -247,7 +255,7 @@ sub process_line
 	    $names{$val}=1 if $qual =~ /protein_id/;
 	  }
 	$quals{names} = [sort keys %names];
-	$feature{location} = $self->reverse_genbank_location(loc=>$feature{location}) if $rev;
+#	$feature{location} = $self->reverse_genbank_location(loc=>$feature{location}) if $rev;
 	my $strand = $feature{location} =~ /complement/i ? -1 : 1;
 	$self->add_feature(
 			   type=>$feature{type},
@@ -461,6 +469,7 @@ sub parse_genbank
 sub _check_for_gene_models
   {
     my $self = shift;
+    return if $self->_has_genes;
     my %opts = @_;
     my %data;
     foreach my $feat (sort {$a->start <=> $b->start} $self->get_features)
@@ -596,8 +605,9 @@ sub add_feature
     {
       my $self = shift;
       my %options = @_;
-      my$type=$options{type} if $options{type};
-      my$location=$options{location} if $options{location};
+      my $type=$options{type} if $options{type};
+      my $location=$options{location} if $options{location};
+      $self->_has_genes(1) if $type =~ /^gene$/i;
       my $qualifiers = $options{qualifiers};
       $qualifiers = {} unless $qualifiers;
       $qualifiers=$qualifiers;
