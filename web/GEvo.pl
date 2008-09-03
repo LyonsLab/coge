@@ -531,7 +531,7 @@ sub run
 	elsif ($gbaccn )
 	  {
 	    $obj = new CoGe::Accessory::GenBank;
-	    $obj->add_gene_models(1); #may want to make a user selectable option
+#	    $obj->add_gene_models(1); #may want to make a user selectable option
 	    my ($tmp) = $gbaccn =~/(.*)/;
  	    my ($res, $error) = $obj->get_genbank_from_ncbi(file=>$TEMPDIR."/".uc($tmp).".gbk",accn=>$tmp, rev=>$rev, start=>$gbstart);
 #	    print STDERR Dumper $res;
