@@ -1118,7 +1118,7 @@ INSERT INTO image_info (id, display_id, iname, title, px_width,dsid, chromosome,
 	  }
 	#generate link
 	my $link = $feat->link;
-	$link = " " unless $link;
+	$link = " " unless $feat->link;
 	$link =~ s/'//g if $link;
 	#generate image track
 	my $image_track = $feat->track;
@@ -1355,7 +1355,16 @@ sub process_features
 	print STDERR $name,"\n\n" if $DEBUG;
         $f->type($type);
 	$f->description($feat->annotation);
-	$f->link("FeatList.pl?fid=".$feat->qualifiers->{id}) if $feat->qualifiers->{id};
+	if ($feat->qualifiers->{id})
+	  {
+	    $f->link("FeatList.pl?fid=".$feat->qualifiers->{id});
+	  }
+	elsif ($feat->qualifiers->{names})
+	  {
+	    my $names = $feat->qualifiers->{names};
+	    $f->link("FeatView.pl?accn=".$names->[0]) if ref($names) =~ /array/i;
+	  }
+	
 	my $foverlap = $overlap ? 0 : 1; #I think I need this to get this to work as expected
 	$f->skip_overlap_search($foverlap);
 	$f->{anchor}=1 if $anchor;
