@@ -530,13 +530,23 @@ sub run
 	  }
 	elsif ($gbaccn )
 	  {
-	    $obj = new CoGe::Accessory::GenBank;
-#	    $obj->add_gene_models(1); #may want to make a user selectable option
+	    my $got = 0;
+	    my $try = 0;
 	    my ($tmp) = $gbaccn =~/(.*)/;
- 	    my ($res, $error) = $obj->get_genbank_from_ncbi(file=>$TEMPDIR."/".uc($tmp).".gbk",accn=>$tmp, rev=>$rev, start=>$gbstart);
-#	    print STDERR Dumper $res;
-	    $message .= $error."\n" unless $res;
-	    
+	    my $gbfile = $TEMPDIR."/".uc($tmp).".gbk";
+	    $obj = new CoGe::Accessory::GenBank;
+	    while (!$got && $try < 5)
+	      {
+		if ($try > 1 && -r $gbfile)
+		  {
+		    unlink $gbfile;
+		  }
+		my ($res, $error) = $obj->get_genbank_from_ncbi(file=>$gbfile,accn=>$tmp, rev=>$rev, start=>$gbstart, length=>$gblength);
+		$message .= $error."\n" unless $res;
+		$got = 1 if $obj->accn;
+		$try++;
+	      }
+	    #	    $obj->add_gene_models(1); #may want to make a user selectable option
 	    if ($obj->accn)
 	      {
 		#add an anchor
@@ -549,7 +559,8 @@ sub run
 					       names=>[$gbaccn],
 					      }
 				 );
-
+		$gbstart = $obj->seq_length -$gbstart+1 if $rev;
+		$gbstart -= $gblength if $rev && $gblength;
 		($file, $spike_seq, $seq) = 
 		  generate_seq_file (
 				     obj=>$obj,
@@ -580,7 +591,7 @@ sub run
 	  }
 	$obj->sequence($seq);
 
-	if ($obj && $obj->sequence)
+	if ($obj && $obj->sequence && $obj->start ne $obj->stop)
 	  {
 	    #need to check for duplicate accession names -- sometimes happens and major pain in the ass for other parts of the code
 	    my $accn = $obj->accn;
