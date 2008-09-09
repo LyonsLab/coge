@@ -28,6 +28,7 @@ sub get_genbank_from_ncbi
     my $id = $opts{accn};
     my $rev = $opts{rev};
     my $start = $opts{start};
+    my $length = $opts{length};
     my $file = $opts{file};
     my $url = "http://www.ncbi.nlm.nih.gov/entrez/viewer.fcgi?db=nucleotide&qty=1&c_start=1&list_uids=$id&dopt=gb&send=Send&sendto=t&from=begin&to=end&extrafeatpresent=1&ef_MGC=16";
     my $ua = new LWP::UserAgent;
@@ -36,9 +37,8 @@ sub get_genbank_from_ncbi
 	unless (-r $file)
 	  {
 	    $ua->mirror($url, $file);
-#	    LWP::Simple->getstore($url, $file)
 	  }
-	return $self->parse_genbank_file(file=>$file, rev=>$rev, start=>$start);
+	return $self->parse_genbank_file(file=>$file, rev=>$rev, start=>$start, length=>$length);
       }
 
     my $search = $ua->get($url);
@@ -59,7 +59,11 @@ sub parse_genbank_file
     my $file = $opts{file};
     my $rev = $opts{rev};
     my $start = $opts{start};
+    my $length = $opts{length};
+    $/="\n";
+
     open (IN, $file) || die "Can't open $file for reading";
+    seek IN, 0, 0;
     my $working_line;
     my $feature_flag = 0;
     my $seq_flag = 0;
@@ -77,7 +81,7 @@ sub parse_genbank_file
 	  }
 	if ($line=~/^ORIGIN/)
 	  {
-	    $self->process_line(line=>$working_line, rev=>$rev, start=>$start, feature_flag=>$feature_flag);
+	    $self->process_line(line=>$working_line, rev=>$rev, start=>$start, feature_flag=>$feature_flag, length=>$length);
 	    $working_line = "";
 	    $seq_flag = 1;
 	    $feature_flag = 0;
@@ -85,7 +89,7 @@ sub parse_genbank_file
 	  }
 	if ($feature_flag && $line =~ /^\s\s\s\s\s\w/)
 	  {
-	    $self->process_line(line=>$working_line, rev=>$rev, start=>$start, feature_flag=>$feature_flag);
+	    $self->process_line(line=>$working_line, rev=>$rev, start=>$start, feature_flag=>$feature_flag, length=>$length);
 	    $line =~ s/^\s+//;
 	    $working_line = $line;
 	    next;
@@ -135,17 +139,9 @@ sub parse_genbank_file
       {
 	$self->sequence($working_line);
       }
-    unless ($self->chromosome eq "X") #dunno if it is a sex chromosome
+    unless ($self->chromosome && $self->chromosome eq "X") #dunno if it is a sex chromosome
       {
-	$self->chromosome(arabic( $self->chromosome )) if isroman($self->chromosome);
-      }
-    if ($rev)
-      {
-	foreach my $feat (@{$self->features})
-	  {
-	    $feat->location($self->reverse_genbank_location(loc=>$feat->location));
-	    $feat->blocks($self->process_location( loc=>$feat->location, start=>$start)) if $feat->location;
-	  }
+	$self->chromosome(arabic( $self->chromosome )) if $self->chromosome && isroman($self->chromosome);
       }
     $self->_check_for_gene_models() if $self->add_gene_models;
     return $self;
@@ -159,6 +155,7 @@ sub process_line
     my $line = $opts{line};
     my $rev = $opts{rev};
     my $start = $opts{start};
+    my $length = $opts{length};
     my $feature_flag = $opts{feature_flag};
     return unless $line;
     if ($line =~ /^LOCUS/)
@@ -207,8 +204,6 @@ sub process_line
 	my %feature;
 	foreach my $item (split/\n/,$line)
 	  {
-#		my %tmp = %feature;
-#		push @features, \%tmp if keys %tmp;
 	    if ($item !~ /^\// && $item =~ /^(\S+)\s\s+(.*)$/)
 	      {
 		$feature{type} = $1;
@@ -220,8 +215,6 @@ sub process_line
 		$item =~ s/\///;
 		my $val;
 		($iso,$val) = split/=/,$item,2;
-#		$iso = $1;
-#		my $val = $2;
 		if ($iso =~ /^pseudo/i)
 		  {
 		    $feature{type} = "pseudogene";
@@ -255,8 +248,10 @@ sub process_line
 	    $names{$val}=1 if $qual =~ /protein_id/;
 	  }
 	$quals{names} = [sort keys %names];
-#	$feature{location} = $self->reverse_genbank_location(loc=>$feature{location}) if $rev;
+	$feature{location} = $self->reverse_genbank_location(loc=>$feature{location}) if $rev;
 	my $strand = $feature{location} =~ /complement/i ? -1 : 1;
+	$start = $self->seq_length -$start+1 if $rev;
+	$start -= $length if $rev && $length;
 	$self->add_feature(
 			   type=>$feature{type},
 			   location=>$feature{location},
@@ -264,6 +259,7 @@ sub process_line
 			   annotation=>$anno,
 			   strand=>$strand,
 			   start=>$start,
+			   length=>$length,
 			  );
       }
   }
@@ -602,35 +598,38 @@ sub get_features
   }
 
 sub add_feature 
-    {
-      my $self = shift;
-      my %options = @_;
-      my $type=$options{type} if $options{type};
-      my $location=$options{location} if $options{location};
-      $self->_has_genes(1) if $type =~ /^gene$/i;
-      my $qualifiers = $options{qualifiers};
-      $qualifiers = {} unless $qualifiers;
-      $qualifiers=$qualifiers;
-      my$annotation=$options{annotation} if $options{annotation};
-      $annotation .= "location: ".$location if $location;
-      my$strand=$options{strand} if $options{strand};
-      my $start = $options{start};
-      unless ($strand)
-	{
-	  $strand = $location=~/complement/i ? -1 : 1;
-	}
-      my $feature = new CoGe::Accessory::GenBank::Feature({
-							   type=>$type,
-							   location=>$location,
-							   qualifiers=>$qualifiers,
-							   annotation=>$annotation,
-							   strand=>$strand,
-							  });
-      $feature->blocks($self->process_location( loc=>$feature->location, start=>$start)) if $feature->location;
-      return if $feature->stop < 0;
-      push @{$self->features}, $feature;
-      return;
-}
+  {
+    my $self = shift;
+    my %options = @_;
+    my $type=$options{type} if $options{type};
+    my $location=$options{location} if $options{location};
+    $self->_has_genes(1) if $type =~ /^gene$/i;
+    my $qualifiers = $options{qualifiers};
+    $qualifiers = {} unless $qualifiers;
+    $qualifiers=$qualifiers;
+    my$annotation=$options{annotation} if $options{annotation};
+    $annotation .= "location: ".$location if $location;
+    my$strand=$options{strand} if $options{strand};
+    my $start = $options{start};
+    my $length = $options{length};
+    unless ($strand)
+      {
+	$strand = $location=~/complement/i ? -1 : 1;
+      }
+    my $feature = new CoGe::Accessory::GenBank::Feature({
+							 type=>$type,
+							 location=>$location,
+							 qualifiers=>$qualifiers,
+							 annotation=>$annotation,
+							 strand=>$strand,
+							});
+    $feature->blocks($self->process_location( loc=>$feature->location, start=>$start)) if $feature->location;
+    return unless $feature->stop && $feature->start;
+    return if $feature->stop < 0;
+    return if $start && $start > 1 && $length && $feature->start > $length;
+    push @{$self->features}, $feature;
+    return;
+  }
 
 
 # write out a header for a fasta dump;  if any extra parameters are
@@ -676,7 +675,7 @@ sub reverse_genbank_location
     my $self = shift;
     my %opts = @_;
     my $loc = $opts{location} || $opts{loc};
-    my $length = $opts{length} || length($self->sequence);
+    my $length = $opts{length} || $self->seq_length || length($self->sequence);
     my $complement = $loc=~/complement/ ? 0 : 1; #get the opposite
     $loc =~ s/complement//;
     $loc =~ s/join//;
