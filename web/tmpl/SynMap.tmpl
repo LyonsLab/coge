@@ -5,7 +5,7 @@ function get_organism_chain(type,val,i)
  if (type == 'name') {get_orgs(['args__name','args__'+val,'args__i','args__'+i], ['org_list'+i]);}
  else if (type == 'desc') {get_orgs(['args__desc','args__'+val,'args__i','args__'+i], ['org_list'+i]);}
  $('#ds_info'+i).html('<div class="loading dna_small small">loading. . .</div>');
- ajax_wait("get_datasets(['args__oid','org_id"+i+"','args__masked','masked"+i+"'],['ds_info"+i+"']);");
+ ajax_wait("get_datasets(['args__oid','org_id"+i+"','args__masked','masked"+i+"', 'args__seq_type','seq_type"+i+"'],['ds_info"+i+"']);");
  ajax_wait("check_previous_analyses();");
 }
 
@@ -279,7 +279,7 @@ function reset_basename(){
    <DIV style="">Search <span class=small>Name: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_NAME1">" name = "org_name1" id="org_name1" style="font-style:italic" onFocus="search_bar('org_name1')" onKeyUp='timing("org_name1");'><span>
    Description: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_DESC1">" name = "org_desc1" id="org_desc1" style="font-style:italic" onFocus="search_bar('org_desc1')" onKeyUp='timing("org_desc1");'></DIV>
    Try to use sequence of type:
-   <select id=masked1 onChange="get_datasets(['args__oid','org_id1', 'args__masked','masked1'],['ds_info1'])">
+   <select id=masked1 onChange="get_datasets(['args__oid','org_id1', 'args__masked','masked1', 'args__seq_type','seq_type1', 'args__seq_type','seq_type1'],['ds_info1'])">
      <option value="1">unmasked</option>
      <option value="2" selected>masked</option>
    </select>
@@ -295,7 +295,7 @@ function reset_basename(){
    <DIV style="">Search <span class=small>Name: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_NAME2">" name = "org_name2" id="org_name2" style="font-style:italic" onFocus="search_bar('org_name2')" onKeyUp='timing("org_name2");'></span>
    Description: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_DESC2">" name = "org_desc2" id="org_desc2" style="font-style:italic" onFocus="search_bar('org_desc2')" onKeyUp='timing("org_desc2");'></DIV>
    Try to use sequence of type:
-   <select id=masked2 onChange="get_datasets(['args__oid','org_id2', 'args__masked','masked2'],['ds_info2'])">
+   <select id=masked2 onChange="get_datasets(['args__oid','org_id2', 'args__masked','masked2', 'args__seq_type','seq_type2', 'args__seq_type','seq_type2'],['ds_info2'])">
      <option value="1">unmasked</option>
      <option value="2" selected>masked</option>
    </select>
@@ -352,7 +352,7 @@ function reset_basename(){
    <TD><input type=checkbox name="flip_output" id="flip_output">
  <TR>
    <TD>Regenerate dotplot images?
-   <TD><input type=checkbox name="regen_images" id="regen_images">
+   <TD><input type=checkbox name="regen_images" id="regen_images" checked>
 <!-- <TR>
    <TD>Pop-up Annotations?
    <TD><input type=checkbox name="popup_anno" id="popup_anno">-->
