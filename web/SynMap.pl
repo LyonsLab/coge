@@ -493,6 +493,7 @@ sub add_GEvo_links
 	chomp;
 	if (/^#/ || /GEvo/)
 	  {
+	    s/toxic/synteny.cnr/;
 	    print OUT $_,"\n";
 	    next;
 	  }
@@ -501,7 +502,7 @@ sub add_GEvo_links
 	my @line = split/\t/;
 	my @feat1 = split/\|\|/,$line[1];
 	my @feat2 = split/\|\|/,$line[5];
-	my $link = "http://".$ENV{SERVER_NAME}."/CoGe/GEvo.pl?accn1=".$feat1[3]."&fid1=".$feat1[6]."&accn2=".$feat2[3]."&fid2=".$feat2[6] if $feat1[3] && $feat1[6] && $feat2[3] && $feat2[6];
+	my $link = "http://synteny.cnr.berkeley.edu/CoGe/GEvo.pl?accn1=".$feat1[3]."&fid1=".$feat1[6]."&accn2=".$feat2[3]."&fid2=".$feat2[6] if $feat1[3] && $feat1[6] && $feat2[3] && $feat2[6];
 	print OUT $_;
 	print OUT "\t",$link if $link;
 	print OUT "\n";
