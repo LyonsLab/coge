@@ -870,15 +870,12 @@ sub go
 	    $html .= "<tr align=center>";
 	    foreach my $tchr1 (sort keys %chr1)
 	      {
-#		my ($chr1, $chr2) = $flip_output ? ($tchr2, $tchr1) : ($tchr1, $tchr2);
 		my ($chr1, $chr2) = ($tchr1, $tchr2);
 		my $out = $org_dirs{$org_name1."_".$org_name2}{dir}."/html/$chr1-$masked1-$seq_type1"."_".$chr2."-$masked2-$seq_type2"."_D$dagchainer_D"."_g$dagchainer_g"."_A$dagchainer_A".".$blast.html";
 		if ($show_diags_only)
 		  {
 		    unless ($chrs_w_diags->{$chr1}{$chr2})
 		      {
-#			$html .= "<td>";
-#			$html .= "<td>$out";
 			next;
 		      }
 		  }
@@ -894,23 +891,24 @@ sub go
 		my $stuff;
 		if (-r $out)
 		  {
-		    my $default =  $count > 0 ? "display: none" : "";
-#		    $out =~ s/$DATADIR/$URL\/data/;
 		    $png =~ s/$DATADIR/$URL\/data/;
-		    
-		    $stuff = qq{
+		    if ($count > 4)
+		      {
+			$stuff = qq{
 
 <img id=close$id_num src="picts/delete.png" style="display: none; float:right; position: relative; top: 60px; right: 40px;" onclick="\$('#img$id_num').toggle();\$('#close$id_num').toggle();\$('#iframe$id_num').html('');" valign=top \>
 <div id=iframe$id_num></div>
 };
-#  \$('#iframe$id_num').toggle(); 
-#<iframe id=iframe$id_num src=$out frameborder=0 width=$w height=$h scrolling=no style="$default"></iframe>
-#};
-		    my ($tmpw, $tmph) = (sprintf("%0f",$w/4),sprintf("%0f",$h/4));
-		    $stuff .= qq{
+			my ($tmpw, $tmph) = (sprintf("%0f",$w/4),sprintf("%0f",$h/4));
+			$stuff .= qq{
 <img id= img$id_num src=$png width=$tmpw height=$tmph onclick="\$('#img$id_num').toggle();get_iframe(['args__src','args__$out'],['iframe$id_num']);\$('#close$id_num').toggle();" \>
-} if $count > 0;
-# \$('#iframe$id_num').toggle(); 
+};
+		      }
+		    else
+		      {
+			$out =~ s/$DATADIR/$URL\/data/;
+			$html = qq{<iframe src=$out frameborder=0 width=$w height=$h scrolling=no></iframe>};
+		      }
 		  }
 		else {$stuff = " ";}
 		$html .= "<td id=cell$id_num>$stuff";
