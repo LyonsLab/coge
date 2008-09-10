@@ -157,7 +157,7 @@ sub get_orgs
 	return $html;
       }
 
-    $html .= qq{<SELECT id="org_id$i" SIZE="5" MULTIPLE onChange="\$('#ds_info'+$i).html('<div class=dna_small class=loading class=small>loading. . .</div>'); get_datasets(['args__oid','org_id$i', 'args__masked','masked$i'],['ds_info$i']);check_previous_analyses();" >\n};
+    $html .= qq{<SELECT id="org_id$i" SIZE="5" MULTIPLE onChange="\$('#ds_info'+$i).html('<div class=dna_small class=loading class=small>loading. . .</div>'); get_datasets(['args__oid','org_id$i', 'args__masked','masked$i', 'args__seq_type','seq_type$i'],['ds_info$i']);check_previous_analyses();" >\n};
     $html .= join ("\n", @opts);
     $html .= "\n</SELECT>\n";
     $html =~ s/OPTION/OPTION SELECTED/;
@@ -169,6 +169,8 @@ sub get_datasets
     my %opts = @_;
     my $oid = $opts{oid};
     my $masked = $opts{masked};
+    my $seq_type = $opts{seq_type};
+    print STDERR $seq_type;
     my $html; 
     my ($org) = $coge->resultset("Organism")->resolve($oid);
     return unless $org;
