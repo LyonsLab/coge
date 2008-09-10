@@ -14,6 +14,7 @@ use Parallel::ForkManager;
 use GD;
 use File::Path;
 use Mail::Mailer;
+use Benchmark;
 
 $ENV{PATH} = "/opt/apache2/CoGe/";
 umask(0);
@@ -714,21 +715,17 @@ sub go
     my %org_dirs = ( 
 		    $org_name1."_".$org_name2=>{fasta=>$fasta1,
 						db=>$blastdb2,
-#						blastfile=>$md51."_".$md52.".$blast.blast",
 						basename=>$md51."_".$md52.".$masked1-$masked2.$seq_type1-$seq_type2.$blast",
 						},
 		    $org_name1."_".$org_name1=>{fasta=>$fasta1,
 						db=>$blastdb1,
-						#blastfile=>$md51."_".$md51.".$blast.blast",
 						basename=>$md51."_".$md51.".$masked1-$masked1.$seq_type1-$seq_type1.$blast",
 						},
 		    $org_name2."_".$org_name2=>{fasta=>$fasta2,
 						db=>$blastdb2,
-#						blastfile=>$md52."_".$md52.".$blast.blast",
 						basename=>$md52."_".$md52.".$masked2-$masked2.$seq_type2-$seq_type2.$blast",
 						},
 		    );
-#    print STDERR Dumper \%org_dirs;
     foreach my $org_dir (keys %org_dirs)
       {
 	my $tmp = $org_dir;
@@ -760,13 +757,13 @@ sub go
     run_dag_tools(query=>"a".$md51, subject=>"b".$md51, blast=>$org_dirs{$org_name1."_".$org_name1}{blastfile}, outfile=>$dag_file11, seq_type1=>$seq_type1, seq_type1=>$seq_type1);
     my $dag_file22 = $org_dirs{$org_name2."_".$org_name2}{dir}."/".$org_dirs{$org_name2."_".$org_name2}{basename}.".dag";
     run_dag_tools(query=>"a".$md52, subject=>"b".$md52, blast=>$org_dirs{$org_name2."_".$org_name2}{blastfile}, outfile=>$dag_file22, seq_type1=>$seq_type2, seq_type1=>$seq_type2);
-    my $dup_file1  = $org_dirs{$org_name1."_".$org_name1}{dir}."/".$org_dirs{$org_name1."_".$org_name1}{basename}.".dups";#."/$md51"."_"."$md51.$blast.dups";
+    my $dup_file1  = $org_dirs{$org_name1."_".$org_name1}{dir}."/".$org_dirs{$org_name1."_".$org_name1}{basename}.".dups";
     run_tandem_finder(infile=>$dag_file11,outfile=>$dup_file1);
-    my $dup_file2  = $org_dirs{$org_name2."_".$org_name2}{dir}."/".$org_dirs{$org_name2."_".$org_name2}{basename}.".dups";#."/$md52"."_"."$md52.$blast.dups";
+    my $dup_file2  = $org_dirs{$org_name2."_".$org_name2}{dir}."/".$org_dirs{$org_name2."_".$org_name2}{basename}.".dups";
     run_tandem_finder(infile=>$dag_file22,outfile=>$dup_file2);
 
     #prepare dag for synteny analysis
-    my $dag_file12 = $org_dirs{$org_name1."_".$org_name2}{dir}."/".$org_dirs{$org_name1."_".$org_name2}{basename}.".dag";#."/$md51"."_"."$md52.$blast.dag";
+    my $dag_file12 = $org_dirs{$org_name1."_".$org_name2}{dir}."/".$org_dirs{$org_name1."_".$org_name2}{basename}.".dag";
     run_dag_tools(query=>"a".$md51, subject=>"b".$md52, blast=>$org_dirs{$org_name1."_".$org_name2}{blastfile}, outfile=>$dag_file12.".all", query_dup_file=>$dup_file1,subject_dup_file=>$dup_file2, seq_type1=>$seq_type1, seq_type2=>$seq_type2);
     #remove repetitive matches
     run_filter_repetitive_matches(infile=>$dag_file12.".all",outfile=>$dag_file12);
@@ -861,10 +858,9 @@ sub go
 	  }
 	$pm->wait_all_children();
 	my $count = scalar (keys %chr1) * scalar (keys%chr2);
+#	my $bm1 = new Benchmark;
 	$html .= "<table cellspacing=0 cellpadding=0>";
 	my $id_num =1;
-
-#	print STDERR Dumper $chrs_w_diags;
 	foreach my $tchr2 (sort keys %chr2)
 	  {
 	    $html .= "<tr align=center>";
@@ -882,12 +878,13 @@ sub go
 
 		my $png = $out;
 		$png =~ s/html$/png/;
-		my ($w, $h) = (0,0);
-		if (-r $png)
-		  {
-		    my $img = GD::Image->new($png);
-		    ($w,$h) = $img->getBounds();
-		  }
+		#image dimensions hard-coded because of the time it takes to get w and h from image directly
+		my ($w, $h) = (576,504);
+#		if (-r $png)
+#		  {
+#		    my $img = GD::Image->new($png);
+#		    ($w,$h) = $img->getBounds();
+#		  }
 		my $stuff;
 		if (-r $out)
 		  {
@@ -916,6 +913,9 @@ sub go
 	      }
 	  }
 	$html .= "</table>";
+#	my $bm2 = new Benchmark;
+#	my $diff = timediff($bm2, $bm1);
+#	print STDERR "HTML table generation took: ",timestr($diff),"\n";
 	add_GEvo_links (infile=>$tmp);
 	$tmp =~ s/$DATADIR/$URL\/data/;
 	$html .= "<br><a href=$tmp target=_new>Syntolog file with GEvo links</a><br>";
@@ -1085,11 +1085,12 @@ sub get_iframe
   {
     my %args = @_;
     my $src = $args{src};
-    my $png = $src;
-    $png =~ s/html$/png/;
+#    my $png = $src;
+#    $png =~ s/html$/png/;
     $src =~ s/$DATADIR/$URL\/data/;
-    my $img = GD::Image->new($png);
-    my ($w,$h) = $img->getBounds();
+#    my $img = GD::Image->new($png);
+#    my ($w,$h) = $img->getBounds();
+    my ($w, $h) = (576,504);
     my $html = qq{<iframe src=$src frameborder=0 width=$w height=$h scrolling=no></iframe>};
     return $html;
   }
