@@ -54,6 +54,7 @@ my $pj = new CGI::Ajax(
 		       go=>\&go,
 		       check_address_validity=>\&check_address_validity,
 		       generate_basefile=>\&generate_basefile,
+		       get_iframe=>\&get_iframe,
 		       %ajax,
 		      );
 print $pj->build_html($FORM, \&gen_html);
@@ -219,7 +220,7 @@ sub get_datasets
 
         $i++;
       }
-    $html .= "<span class=alert>WARNING: dataset contains no CDS features</span>" if ($seq_type == 1 &&  !$has_cds);
+    $html .= "<span class=alert>WARNING: datasets contain no CDS features</span>" if ($seq_type == 1 &&  !$has_cds);
     return $html;
   }
 
@@ -890,25 +891,29 @@ sub go
 		    my $img = GD::Image->new($png);
 		    ($w,$h) = $img->getBounds();
 		  }
-
+		my $stuff;
 		if (-r $out)
 		  {
-		    my $default =  $count > 4 ? "display: none" : "";
-		    $out =~ s/$DATADIR/$URL\/data/;
+		    my $default =  $count > 0 ? "display: none" : "";
+#		    $out =~ s/$DATADIR/$URL\/data/;
 		    $png =~ s/$DATADIR/$URL\/data/;
-		    $out = qq{
+		    
+		    $stuff = qq{
 
-<img id=close$id_num src="picts/delete.png" style="display: none; float:right; position: relative; top: 60px; right: 40px;" onclick="\$('#img$id_num').toggle();\$('#iframe$id_num').toggle(); \$('#close$id_num').toggle();" valign=top \>
-<iframe id=iframe$id_num src=$out frameborder=0 width=$w height=$h scrolling=no style="$default"></iframe>
-
+<img id=close$id_num src="picts/delete.png" style="display: none; float:right; position: relative; top: 60px; right: 40px;" onclick="\$('#img$id_num').toggle();\$('#close$id_num').toggle();\$('#iframe$id_num').html('');" valign=top \>
+<div id=iframe$id_num></div>
 };
+#  \$('#iframe$id_num').toggle(); 
+#<iframe id=iframe$id_num src=$out frameborder=0 width=$w height=$h scrolling=no style="$default"></iframe>
+#};
 		    my ($tmpw, $tmph) = (sprintf("%0f",$w/4),sprintf("%0f",$h/4));
-		    $out .= qq{
-<img id= img$id_num src=$png width=$tmpw height=$tmph onclick="\$('#img$id_num').toggle();\$('#iframe$id_num').toggle(); \$('#close$id_num').toggle();" \>
-} if $count > 4;
+		    $stuff .= qq{
+<img id= img$id_num src=$png width=$tmpw height=$tmph onclick="\$('#img$id_num').toggle();get_iframe(['args__src','args__$out'],['iframe$id_num']);\$('#close$id_num').toggle();" \>
+} if $count > 0;
+# \$('#iframe$id_num').toggle(); 
 		  }
-		else {$out = " ";}
-		$html .= "<td id=cell$id_num>$out";
+		else {$stuff = " ";}
+		$html .= "<td id=cell$id_num>$stuff";
 		$id_num++;
 	      }
 	  }
@@ -992,7 +997,6 @@ sub get_previous_analyses
       {
 	my $blast = $_->{blast} =~ /^blastn$/i ? 0 : 1;
 	my $val = join ("_",$_->{g},$_->{D},$_->{A}, $oid1, $_->{mask1},$_->{type1},$oid2, $_->{mask2},$_->{type2}, $blast);
-	print STDERR $val,"\n";
 	my $name = $_->{blast}.": g:".$_->{g}." D:".$_->{D}." A:".$_->{A}." ".$_->{name};
 	$html .= qq{
  <option value="$val">$name
@@ -1078,3 +1082,16 @@ Thank you for using the CoGe Software Package.
 	print $mailer $body;
 	$mailer->close();
 }
+
+sub get_iframe
+  {
+    my %args = @_;
+    my $src = $args{src};
+    my $png = $src;
+    $png =~ s/html$/png/;
+    $src =~ s/$DATADIR/$URL\/data/;
+    my $img = GD::Image->new($png);
+    my ($w,$h) = $img->getBounds();
+    my $html = qq{<iframe src=$src frameborder=0 width=$w height=$h scrolling=no></iframe>};
+    return $html;
+  }
