@@ -170,7 +170,6 @@ sub get_datasets
     my $oid = $opts{oid};
     my $masked = $opts{masked};
     my $seq_type = $opts{seq_type};
-    print STDERR $seq_type;
     my $html; 
     my ($org) = $coge->resultset("Organism")->resolve($oid);
     return unless $org;
@@ -189,6 +188,7 @@ sub get_datasets
     $html.= "<span class=alert> ".$type->name."</span>" if $type;
     $html.= ", ".$type->description if $type && $type->description;
     $html .= "</DIV>";
+    my $has_cds=0;
     foreach my $ds (@ds)
       {
 	my $name = $ds->name;
@@ -201,8 +201,25 @@ sub get_datasets
         $html .= "<div";
         $html .= " class='even'" if $i % 2 == 0;
         $html .= ">".join (": ", $name, $source)."</div>\n";
+	if ($seq_type == 1) #want to use CDS.  Let's see if any exist for this dataset
+	  {
+	    foreach my $ft ($coge->resultset('Feature')->search(
+								{
+								 feature_type_id=>3,
+								 dataset_id=>$ds->id,
+								},
+								{
+								 limit=>1
+								}
+							       ))
+	      {
+		$has_cds=1;
+	      }
+	  }
+
         $i++;
       }
+    $html .= "<span class=alert>WARNING: dataset contains no CDS features</span>" if ($seq_type == 1 &&  !$has_cds);
     return $html;
   }
 
