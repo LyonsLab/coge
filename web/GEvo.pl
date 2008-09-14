@@ -356,6 +356,8 @@ sub gen_body
 sub run
   {
     my %opts = @_;
+    print STDERR join ("-",@_),"\n";
+    print STDERR Dumper \%opts;
     my $num_seqs = $opts{num_seqs} || $NUM_SEQS;
     my $spike_len = $opts{spike};
     my $iw = $opts{iw};
@@ -2666,7 +2668,7 @@ sub add_seq
 		REV_NO=>"checked",
 		EXON_MASK_OFF=>"checked",
 		REF_YES=>"checked",
-
+		NONCODING_MASK_OFF=>"checked",
 		DRUP=>10000,
 		DRDOWN=>10000,
 		DSINFO=>$dsinfo,
