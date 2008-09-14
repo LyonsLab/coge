@@ -196,13 +196,19 @@ sub get_datasets
 	my $name = $ds->name;
         $name .= ": ".$ds->description if $ds->description;
         $name = "<a href=GenomeView.pl?dsid=".$ds->id." target=_new>".$name."</a>";
-        my $source = $ds->datasource->name;
-        $source .= ": ".$ds->datasource->description if $ds->datasource->description;
-        $source = "<a href=".$ds->datasource->link." target=_new>".$source."</a>" if $ds->datasource->link;
-        $source =~ s/href=/href=http:\/\// unless $source =~ /http/;
+#        my $source = $ds->datasource->name;
+#        $source .= ": ".$ds->datasource->description if $ds->datasource->description;
+#        $source = "<a href=".$ds->datasource->link." target=_new>".$source."</a>" if $ds->datasource->link;
+#        $source =~ s/href=/href=http:\/\// unless $source =~ /http/;
+	my $length = 0;
+	foreach my $chr ($ds->get_chromosomes)
+	  {$length += $ds->last_chromosome_position($chr);}
+	$length = reverse $length;
+	$length =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
+	$length = reverse $length;
         $html .= "<div";
         $html .= " class='even'" if $i % 2 == 0;
-        $html .= ">".join (": ", $name, $source)."</div>\n";
+        $html .= ">".join (", length: ", $name, $length. "bp")."</div>\n";
 	if ($seq_type == 1) #want to use CDS.  Let's see if any exist for this dataset
 	  {
 	    foreach my $ft ($coge->resultset('Feature')->search(
