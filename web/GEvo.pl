@@ -1232,7 +1232,6 @@ sub process_features
 	    $f->color([0,255,0, 50]);
 	    $f->order($track);
 	    $f->overlay(3);
-
 	    if ($accn)
 	      {
 		foreach my $name (@{$feat->qualifiers->{names}})
@@ -1257,11 +1256,11 @@ sub process_features
 		foreach my $block (sort {$a->[0] <=> $b->[0]} @{$feat->blocks})
 		  {
 		    $block->[0] =1 unless $block->[0]; #in case $block is set to 0
-		    my $start = $block->[0];
-		    next if $start > $seq_len;
-		    $stop = $block->[1];
-		    $stop = $seq_len if $block->[1] > $seq_len;
-		    $seq .= substr($obj->sequence, $start-1, $stop-$start+1);
+		    my $tmp_start = $block->[0];
+		    next if $tmp_start > $seq_len;
+		    my $tmp_stop = $block->[1];
+		    $tmp_stop = $seq_len if $block->[1] > $seq_len;
+		    $seq .= substr($obj->sequence, $tmp_start-1, $tmp_stop-$tmp_start+1);
 		  }
 		if ($feat->location =~ /complement/)
 		  {
