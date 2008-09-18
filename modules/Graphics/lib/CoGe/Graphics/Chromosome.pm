@@ -7,15 +7,19 @@ use Benchmark;
 use GD;
 
 #################### main pod documentation begin ###################
-## Below is the stub of documentation for your module. 
-## You better edit it!
+## 
+## 
 
 
 =head1 NAME
 
-CoGe::Graphics::Chromosome - Object for drawing chromosomes that provides functionality for painting chromosomes with location based features (such as genes), magnifying/zooming on particular regions, and printing pictures of chromosomes as pngs.
+CoGe::Graphics::Chromosome - Object for drawing chromosomes that provides functionality for painting chromosomes with location based features (such as genes), and printing pictures of chromosomes as pngs.
 
 =head1 SYNOPSIS
+
+  #!/usr/bin/perl -w
+
+  use strict;
 
   use CoGe::Graphics::Chromosome;
   use CoGe::Graphics::Feature::Gene;
@@ -43,7 +47,7 @@ CoGe::Graphics::Chromosome - Object for drawing chromosomes that provides functi
   $f->add_segment(start=>9400, end=>9600);
   $f->add_segment(start=>9700, end=>9800);
   $f->add_segment(start=>10000, end=>10500);
-  $f->add_segment(start=>11000, end=>12000);
+  $f->add_segment(start=>11000, end=>12000); #feature goes off region, but no worries!
   #give the feature a label
   $f->label("My special gene")
   #set the color of the feature (an array ref of RGB values where each is between 0 and 255)
@@ -61,25 +65,28 @@ CoGe::Graphics::Chromosome - Object for drawing chromosomes that provides functi
   
   #First, we'll need to get some DNA sequence covering the region of interest.  This is
   #NOT a subroutine of this object and is mearly provided to fill in code.
-  my $seq = get_dna_sequence(start=>8000, end=>12000); #returns a string of DNA sequence (ATCGTC...)
+  my $seq = get_dna_sequence(); #returns a string of DNA sequence (ATCGTC...) for the region
 
-  my %trans = (A=>'T',
-               T=>'A',
-       	       C=>'G',
-	       G=>'C');
-
-  my $ i = 0;
-  foreach my $chr (split //, $seq)
+  my $seq_len = length $seq;
+  my $chrs = int (($c->region_length)/$c->iw); #number of characters to use per pixel
+  $chrs = 1 if $chrs < 1;
+  my $pos = 0; #position in sequence string
+  while ($pos < $seq_len)my $ i = 0;
    {
-    $chr=uc($chr);
-    my $rc_chr = $trans{$chr}
-    my $f1 = CoGe::Graphics::Feature::NucTide->new({nt=>$chr, strand=>1, start =>$i+8000});
-    my $f2 = CoGe::Graphics::Feature::NucTide->new({nt=>$rc_chr, strand=>-1, start =>$i+8000});
-    $c->add_feature($f1, $f2);
-    $i++;
+     my $subseq = substr ($seq, $pos, $chrs);
+     my $rcseq = substr ($seq, $pos, $chrs);
+     $rcseq =~ tr/ATCG/TAGC/;
+     next unless $subseq && $rcseq;
+     my $f1 = CoGe::Graphics::Feature::NucTide->new({nt=>$subseq, strand=>1, start =>$pos+1, options=>"gc"});
+     my $f2 = CoGe::Graphics::Feature::NucTide->new({nt=>$rcseq, strand=>-1, start =>$pos+1, options=>"gc"});
+     $f1->show_label(1); 
+     $f2->show_label(1);
+     $c->add_feature($f1) if $f1;
+     $c->add_feature($f2) if $f2;
+     $pos+=$chrs;
    }
 
-  #don't print labels of genes as the CoGe::Graphics::Feature::Gene object will take care of that
+  #set to "1" to print labels of features;
   $c->feature_labels(0);
 
   #turn on the flag for printing labels of the nucleotides (which are "fill" type features)
@@ -225,9 +232,10 @@ See Also   :
 
 sub new
 {
-    my ($class, %parameters) = @_;
+    my ($class, %opts) = @_;
     #print STDERR "CHR IS BEING CALLED\n";
     my $self = bless ({}, ref ($class) || $class);
+    
     $self->chr_height($CHR_HEIGHT);
     $self->image_width($DEFAULT_WIDTH);
     $self->padding ($PADDING);
@@ -248,7 +256,7 @@ sub new
     $self->_features({});
     $self->_fill_features([]);
     $self->_image_h_used(0);
-    $self->draw_hi_qual(1);
+    $self->draw_hi_qual(0);
     return $self;
 }
 
@@ -268,8 +276,10 @@ sub new
  benchmark        =>    (DEFAULT: 0) Output benchmarking on image generation
 
  region_start     =>    starting position of the chromosome (USER SPECIFIED)
+ alias: start
 
  region_stop      =>    stopping position of the chromosome (USER SPECIFIED)
+ alias: stop
 
  draw_chromosome  =>    (DEFAULT: 1) Flag (0 or 1) for whether or not the chromosome is
                         drawn on the final image
@@ -295,26 +305,32 @@ sub new
                         0 for not drawing tick labels.  (DEFAULT: 0)
 
  chr_height       =>    (DEFAULT: 30)  This is the number, in pixels, of the starting height of the 
-                        chromosome before magnification is applied
- image_width      =>    (DEFAULT: 200) The width in pixels of the final image.  This value can be
-                        modified by the user without undue (aka strange) effects
+                        chromosome before adjustments for featurs are made
+
+ image_width      =>    (DEFAULT: 200) The width in pixels of the final image. 
+ alias:  iw
+
+
  image_height     =>    This holds the height of the image and is a value that is calculated
                         dynamically by the module (sub set_image_height) when the image is 
                         generated.  IMPORTANT:  THIS VALUE SHOULD NOT BE MODIFIED BY THE USER
                         DIRECTLY.  One thing to keep in mind is that, the height of the 
                         chromosomal images are dynamic.  This is due to the factors such as the
-                        number and scaling aspects of features on the chromosome, how the 
-                        scaling of the chromsome image changes with increased magnification, and
-                        other factors such as the heigth of the positional ruler.  You may 
+                        number and scaling aspects of features on the chromosome,and
                         customize the final height of the image by specifying the scaling factors
                         and heights of the various image parts, but it is not recommended to 
                         change this value as strange(tm) things may happen.
+ alias:  ih
+
+
  padding         =>     (DEFAULT: 15) This is the padding (in pixels) used between most items 
                         drawn on the final image.  
+
  font            =>     (DEFAULT: "/usr/lib/perl5/site_perl/CoGe/fonts/arial.ttf")
                         This is the path to a true-type font used for text labels on the image
+
  feature_labels  =>     (DEFAULT: 0) Flag used for whether or not to print feature labels.
-                        Usually the feature object has already taken care of how to print a label
+
  fill_labels     =>     (DEFAULT: 1) Flag used for whether or not to print "fill" features labels.
                         A "fill feature" is one that is used to fill in a region on the chromosome
                         and is distinct from regular features.  An example of this would be 
@@ -324,26 +340,43 @@ sub new
                         resulting image will then have individual regions of the chromsome colored
                         according the nucleotide composition and thus generates an easily viewed
                         image.
+
  chr_inner_color =>     (DEFAULT: [220,255,220]) Defines the interior color of the chromosome.
                         This is the an array reference of three values
                         that corresponds to RGB color values.  Each color ranges from 0-255
+
  chr_outer_color =>     (DEFAULT: [0,0,0]) Defines the border color of the chromosome.
                         This is the an array reference of three values
                         that corresponds to RGB color values.  Each color ranges from 0-255
- invert_chromosome  =>  Draw the chromosome such that it has been inverted
+
+ invert_chromosome  =>  Draw the chromosome such that it has been inverted 5' => 3'
 
  overlap_adjustment =>  flag for whether overlapping features are rescaled and position such that
                         they don't overlap when the image is generated.  Default: 1
 
  skip_duplicate_features => flag for whether to skip two featrues if they are identical.  Default: 0
 
- draw_hi_qual       =>  This flag determines if the high quality mapping function for drawing features
+ draw_hi_qual       =>  (DEFAULT: 0)This flag determines if the high quality mapping function for drawing features
                         on the chromosome is used or the low quality mapping.  The cost, of course, is 
-                        speed (roughly twice as long for high quality).  Default: 1
+                        speed (roughly twice as long for high quality).  Overall, there is only minor difference
+                        between hi qual and low qual images
 
  top_padding        =>  (DEFAULT: 0) Amount of whitespace padding added to the top of the final image.
 
 =cut
+
+#################### subroutine header end ####################
+
+
+#################### subroutine header begin ####################
+
+#=head2 start
+
+# Usage     : $c->start(100);
+             my $start = $c->start;
+# Purpose   : alias for region_start
+
+#=cut
 
 #################### subroutine header end ####################
 
@@ -353,6 +386,18 @@ sub start
   {
     return shift->region_start(@_);
   }
+
+#################### subroutine header begin ####################
+
+#=head2 stop
+
+# Usage     : $c->stop(100);
+             my $stop = $c->stop;
+# Purpose   : alias for region_stop
+
+=cut
+
+#################### subroutine header end ####################
 
 sub stop
   {
@@ -374,21 +419,13 @@ sub _region_stop
 =head2 set_region
 
  Usage     : $c->set_region(start=>$start, stop=>$stop);
- Purpose   : This routine sets the magnification to the appropriate level for viewing the
-             selected region as well as the internal accessor functions to track the beginning
-             and end of the viewable region.  
+ Purpose   : This routine sets the region by define region_start and region_stop
  Returns   : none
  Argument  : hash with at least one key-value pair for "start"
              accepts "start", "begin", "START", "BEGIN" to specify the beginning of the region
              accepts "stop", "end", "STOP", "END" to specify the end of the region
              Nominally, the values should be integers the correspond to a chromosomal location.
  Throws    : None
- Comment   : Since this object uses the concept of magnification to set the viewable range
-           : on the chromosome, this routine will find the highest magnification that will 
-           : encompase the requested region.  For example, if you request to see region
-           : 300-400, you may actually see the region from 250-450.
-           : 
-See Also   :
 
 =cut
 
@@ -423,17 +460,22 @@ sub set_region
            : merge_perecent => 100
            : magnification  => 1
            : overlay        => 1
+           : mag            => 1
+           : layer          => 1
+           : type           => "unknown"
            : Also, the feature's GD object will be initialized upon import.
 	   : There is a check for whether the added feature overlaps other features.  
 	   : If so, a counter, $feat->_overlap is incemented in the feature object.
 	   : This is later used by the $self->_draw_feature algorithm to figure
 	   : out how to best draw overlapping features.  The overlap check is skipped
-           : unless $self->overlap_adjectment is true.
+           : unless $self->overlap_adjustment is true.
 See Also   : CoGe::Graphics::Feature
 
 =cut
 
 #################### subroutine header end ####################
+
+
 
 
 sub add_feature
@@ -491,6 +533,22 @@ sub add_feature
       }
   }
 
+#################### subroutine header begin ####################
+
+=head2 delete_feature
+
+ Usage     : $c->delete_featuer($feat);
+ Purpose   : deletes a feature from the chromosome graphics object
+ Returns   : nothing
+ Argument  : a CoGe::Graphics::Feature object or derivative object
+ Throws    : 
+ Comment   : Features are stored in a complex hash for quick and speedy retrieval
+
+See Also   : 
+
+=cut
+
+#################### subroutine header end ####################
 
 sub delete_feature
   {
@@ -646,65 +704,6 @@ sub get_features
     return wantarray ? @return_feats : \@return_feats;
   }
 
-
-
-sub get_features_old
-  {
-    my $self = shift;
-    my %opts = @_;
-    my $order = $opts{order} || $opts{ORDER};
-    my $type = $opts{type} || $opts{TYPE};
-    my $last = $opts{last_order} || $opts{LAST_ORDER}; #flag to get the highest order feature for a location
-    my $strand = $opts{strand} || $opts{STRAND};
-    my $fill = $opts{fill};
-    $fill = $opts{FILL} unless defined $fill; #get filled features?
-    my $start = $opts{start};
-    my $stop  = $opts{stop};
-    my $overlay  = $opts{overlay};
-    my @rfeats;
-    my @feat_refs;
-    push @feat_refs, $self->_fill_features if $fill || !(defined $fill);
-    push @feat_refs, $self->_features if (defined $fill && $fill == 0) || !(defined $fill);
-    foreach my $ref (@feat_refs)
-     {
-#       foreach my $feat (sort {$a->overlay <=> $b->overlay} @$ref)
-       foreach my $feat (@$ref)
-       {
-	if ($strand)
-	  {
-	    if ($strand =~ /-/)
-	      {
-		next unless $feat->strand =~ /-/;
-	      }
-	    else
-	      {
-		next if $feat->strand =~ /-/;
-	      }
-	  }
-	if ($order)
-	  {
-	    next unless $feat->order eq $order;
-	  }
-	if ($type)
-	  {
-	    next unless $feat->type && $feat->type eq $type;
-	  }
-	if ($start) {next unless $feat->start eq $start;}
-	if ($stop) {next unless $feat->stop eq $stop;}
-	if ($overlay) {next unless $feat->overlay == $overlay;}
-	push @rfeats, $feat
-      }
-     }
-#    @rfeats = sort {$a->order <=> $b->order} @rfeats;
-
-    if ($last)
-      {
-	return $rfeats[-1];
-      }
-    return wantarray ? @rfeats : \@rfeats;
-  }
-
-
 #################### subroutine header begin ####################
 
 =head2 get_feature
@@ -739,121 +738,6 @@ sub get_feats
     my $self = shift;
     my %opts = @_;
     return $self->get_features(%opts);
-  }
-
-
-sub _invert_chromosome
-  {
-    my $self = shift;
-    #make up->down, down->up, left->right and right->left . . . up, up, down, down, left, right, left, right, B, A start! 
-    foreach my $feat ($self->get_features())
-      {
-	my $strand = $feat->strand =~ /-/ ? 1 : "-1";
-	my $start = $self->region_stop - $feat->stop;
-	my $stop = $self->region_stop - $feat->start;
-	$feat->strand($strand);
-	$feat->start($start);
-	$feat->stop($stop);
-	$feat->gd->flipHorizontal();
-      }
-  }
-
-
-
-#################### subroutine header begin ####################
-
-=head2 _check_overlap
-
- Usage     : $self->_check_overlap($feature);
- Purpose   : This internal method is called by $self->add_feature in determine if the 
-           : being added overlaps another feature on the same strand, order, overlay level, and fill
-	   : type.  If so, it increments an internal counter in both features called
-	   : _overlap. A positional counter called _overlap_pos is incremented in the feature 
-	   : being searched.  This counter is later used by $self->_draw_feature to 
-	   : determine the appropriate way to draw the overlapping features
- Returns   : none
- Argument  : a CoGe::Graphics::Feature object
- Throws    : none
- Comment   : this algorithm can get slow with lots of features and doing an overlap search.
-           : The overlap search algorithm is a linear search through all previously entered features 
-             for any that overlap the newly added feature.  This can probably go faster with a different 
-             algo.
-
-See Also   : $self->add_feature();
-
-=cut
-
-#################### subroutine header end ####################
-
-sub _check_overlap
-  {
-    my $self = shift;
-    my $feat = shift;
-    return if $feat->skip_overlap_search;
-    my @feats = $self->get_feats(strand=>$feat->strand, fill=>$feat->fill, order=>$feat->order);
-    return unless @feats;
-    my @overlapped_feats;
-#    print STDERR "Checking ",$feat->start,"-",$feat->stop,"\n";
-    foreach my $f (@feats)
-    	{
-	  next if $feat eq $f;
-	  next unless $feat->overlay() == $f->overlay();  #skip the check if the features are at different overlay levels.
-	  push @overlapped_feats, $f unless ( ($feat->start > $f->stop) || ($feat->stop < $f->start) );
-	}
-    #let's figure out the number of overlaps for each sequence
-    my @overlap_tracker;
-    my $i =0;
-#    foreach my $f1 (sort {abs($b->stop-$b->start) <=> abs($a->stop-$a->start)} @overlapped_feats, $feat)
-    foreach my $f1 (sort {$a->start <=> $b->start} @overlapped_feats, $feat)
-      {
-	my $count=1;
-	my $prevfeat;
-	foreach my $f2 (sort {$a->start <=> $b->start} @overlapped_feats, $feat)
-#	foreach my $f2 (sort {abs($b->stop-$b->start) <=> abs($a->stop-$a->start)} @overlapped_feats, $feat)
-	  {
-	    my $s1 = scalar $f1;
-	    my $s2 = scalar $f2;
-	    next if $s1 eq $s2;
-	    next if ( ($f1->start > $f2->stop) || ($f1->stop < $f2->start) );# skip if there ain't no overlap
-	    if ($prevfeat)
-	      {
-		if ($prevfeat->stop < $f2->start)
-		  {
-		    $prevfeat = $f2;
-		    next;
-		  }
-	      }
-	    $count++;
-	    $prevfeat = $f2;
-	  }
-	$i++;
-	push @overlap_tracker,[$f1,$count, $i];
-      }
-    my ($item1, $item2) = sort {$b->[1] <=> $a->[1]} @overlap_tracker;
-    $item1->[1] = $item2->[1] if $item2->[1];
-    foreach my $item (@overlap_tracker)
-      {
-	my ($f,$count,$pos) = @$item;
-	$f->_overlap($count) unless $f->_overlap() > $count;
-	$f->_overlap_pos($pos);
-#	print STDERR $f->start,"-",$f->stop," ",$f->_overlap," ",$f->_overlap_pos,"\n";
-      }
-#    print STDERR "\n";
-  }
-
-sub _check_duplicate
-  {
-    my $self = shift;
-    my $feat = shift;
-    return 0 if $feat->skip_duplicate_search;
-    my @feats = $self->get_feats(strand=>$feat->strand, fill=>$feat->fill, order=>$feat->order, type=>$feat->type, start=>$feat->start);
-    return 0 unless @feats;
-    my $check = 0;
-    foreach my $f (@feats)
-      {
-	$check = 1 if $f->stop eq $feat->stop && $f->layer eq $feat->layer && $f->order eq $feat->order;
-      }
-    return $check;
   }
 
 #################### subroutine header begin ####################
@@ -1060,11 +944,11 @@ sub generate_imagemap
 
 #################### subroutine header begin ####################
 
-=head2 ih
+#=head2 ih
 
- Purpose   : alias for Accessor method $self->image_height
+# Purpose   : alias for Accessor method $self->image_height
 
-=cut
+#=cut
 
 #################### subroutine header end ####################
 
@@ -1077,11 +961,11 @@ sub ih
 
 #################### subroutine header begin ####################
 
-=head2 iw
+#=head2 iw
 
- Purpose   : alias for Accessor method $self->image_width
+# Purpose   : alias for Accessor method $self->image_width
 
-=cut
+#=cut
 
 #################### subroutine header end ####################
 
@@ -1184,7 +1068,7 @@ sub get_color
  Usage     : $c->set_image_height
  Purpose   : This routine figures out how tall the final image will be and sets 
              $self->image_height with that value.  The height of the image depends on
-             a number of factors including magnification level, feature height, the number 
+             a number of factors including feature height, the number 
              type and placement of features, the height of the positional ruler, the padding
              between picture elements, etc.
  Returns   : none
@@ -1296,6 +1180,188 @@ sub chr_brush
 
 
 
+
+#################### subroutine header begin ####################
+
+=head2 region_length
+
+ Usage     : my $length = $self->region_length()
+ Purpose   : returns the length of the chromosomal region
+ Returns   : int
+ Argument  : none
+ Throws    : none
+ Comment   : return the value of $self->region_stop - $self->region_start + 1;
+           : 
+
+See Also   : 
+
+=cut
+
+#################### subroutine header end ####################
+
+sub region_length
+  {
+    my $self = shift;
+#    my $stop = $self->chr_end ? $self->chr_end : $self->stop;
+    return ($self->stop - $self->start+1);
+  }
+
+#################### subroutine header begin ####################
+
+=head2 chr_length
+
+ Usage     : my $length = $c->chr_length
+ Purpose   : alias for region_length
+
+=cut
+
+#################### subroutine header end ####################
+
+
+
+
+sub chr_length
+  {
+    shift->region_length(@_);
+  }
+
+
+
+
+#################### subroutine header begin ####################
+
+=head2 _invert_chromosome
+
+ Usage     : $c->_invert_chromosome
+ Purpose   : makes up->down, down->up, etc.  
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comment   : Should not be called directly.  Set invert_chromosome flag to 1 and this will be called by _draw_features
+           : 
+
+See Also   : 
+
+=cut
+
+#################### subroutine header end ####################
+
+
+
+sub _invert_chromosome
+  {
+    my $self = shift;
+    #make up->down, down->up, left->right and right->left . . . up, up, down, down, left, right, left, right, B, A start! 
+    foreach my $feat ($self->get_features())
+      {
+	my $strand = $feat->strand =~ /-/ ? 1 : "-1";
+	my $start = $self->region_stop - $feat->stop;
+	my $stop = $self->region_stop - $feat->start;
+	$feat->strand($strand);
+	$feat->start($start);
+	$feat->stop($stop);
+	$feat->gd->flipHorizontal();
+      }
+  }
+
+
+
+#################### subroutine header begin ####################
+
+=head2 _check_overlap
+
+ Usage     : $self->_check_overlap($feature);
+ Purpose   : This internal method is called by $self->add_feature in determine if the 
+           : being added overlaps another feature on the same strand, order, overlay level, and fill
+	   : type.  If so, it increments an internal counter in both features called
+	   : _overlap. A positional counter called _overlap_pos is incremented in the feature 
+	   : being searched.  This counter is later used by $self->_draw_feature to 
+	   : determine the appropriate way to draw the overlapping features
+ Returns   : none
+ Argument  : a CoGe::Graphics::Feature object
+ Throws    : none
+ Comment   : this algorithm can get slow with lots of features and doing an overlap search.
+           : The overlap search algorithm is a linear search through all previously entered features 
+             for any that overlap the newly added feature.  This can probably go faster with a different 
+             algo.
+
+See Also   : $self->add_feature();
+
+=cut
+
+#################### subroutine header end ####################
+
+sub _check_overlap
+  {
+    my $self = shift;
+    my $feat = shift;
+    return if $feat->skip_overlap_search;
+    my @feats = $self->get_feats(strand=>$feat->strand, fill=>$feat->fill, order=>$feat->order);
+    return unless @feats;
+    my @overlapped_feats;
+#    print STDERR "Checking ",$feat->start,"-",$feat->stop,"\n";
+    foreach my $f (@feats)
+    	{
+	  next if $feat eq $f;
+	  next unless $feat->overlay() == $f->overlay();  #skip the check if the features are at different overlay levels.
+	  push @overlapped_feats, $f unless ( ($feat->start > $f->stop) || ($feat->stop < $f->start) );
+	}
+    #let's figure out the number of overlaps for each sequence
+    my @overlap_tracker;
+    my $i =0;
+#    foreach my $f1 (sort {abs($b->stop-$b->start) <=> abs($a->stop-$a->start)} @overlapped_feats, $feat)
+    foreach my $f1 (sort {$a->start <=> $b->start} @overlapped_feats, $feat)
+      {
+	my $count=1;
+	my $prevfeat;
+	foreach my $f2 (sort {$a->start <=> $b->start} @overlapped_feats, $feat)
+#	foreach my $f2 (sort {abs($b->stop-$b->start) <=> abs($a->stop-$a->start)} @overlapped_feats, $feat)
+	  {
+	    my $s1 = scalar $f1;
+	    my $s2 = scalar $f2;
+	    next if $s1 eq $s2;
+	    next if ( ($f1->start > $f2->stop) || ($f1->stop < $f2->start) );# skip if there ain't no overlap
+	    if ($prevfeat)
+	      {
+		if ($prevfeat->stop < $f2->start)
+		  {
+		    $prevfeat = $f2;
+		    next;
+		  }
+	      }
+	    $count++;
+	    $prevfeat = $f2;
+	  }
+	$i++;
+	push @overlap_tracker,[$f1,$count, $i];
+      }
+    my ($item1, $item2) = sort {$b->[1] <=> $a->[1]} @overlap_tracker;
+    $item1->[1] = $item2->[1] if $item2->[1];
+    foreach my $item (@overlap_tracker)
+      {
+	my ($f,$count,$pos) = @$item;
+	$f->_overlap($count) unless $f->_overlap() > $count;
+	$f->_overlap_pos($pos);
+#	print STDERR $f->start,"-",$f->stop," ",$f->_overlap," ",$f->_overlap_pos,"\n";
+      }
+#    print STDERR "\n";
+  }
+
+sub _check_duplicate
+  {
+    my $self = shift;
+    my $feat = shift;
+    return 0 if $feat->skip_duplicate_search;
+    my @feats = $self->get_feats(strand=>$feat->strand, fill=>$feat->fill, order=>$feat->order, type=>$feat->type, start=>$feat->start);
+    return 0 unless @feats;
+    my $check = 0;
+    foreach my $f (@feats)
+      {
+	$check = 1 if $f->stop eq $feat->stop && $f->layer eq $feat->layer && $f->order eq $feat->order;
+      }
+    return $check;
+  }
+
 #################### subroutine header begin ####################
 
 =head2 _draw_chromosome
@@ -1314,6 +1380,7 @@ See Also   :
 =cut
 
 #################### subroutine header end ####################
+
 
 
 sub _draw_chromosome
@@ -1391,7 +1458,6 @@ sub _draw_chr_end
     $self->chr_brush->flipVertical;
     $gd->setBrush($self->chr_brush);
 
-#$image->arc($cx,$cy,$width,$height,$start,$end,$color)
   }
 
 
@@ -1510,7 +1576,6 @@ sub _draw_feature
     my $fs = $unit*($feat->start-$rb);
     my $fe = $unit*($feat->end-$rb+1);
     my $fw = sprintf("%.1f",$fe - $fs)+1; #calculate the width of the feature;
-#    print STDERR $rb,"-",$re,"\t",$feat->start-$rb,"-",$feat->end-$rb+1,,"::",$unit,"\t",$fs,"-", $fe," :: ",$fw,"\n";# if ref($feat) =~ /gene/i;
     $fw = 1 if $feat->force_draw() && $fw < 1;
     return if $fw < 1; #skip drawing if less than one pix wide
 
@@ -1618,7 +1683,7 @@ sub _draw_feature
  Returns   : an number
  Argument  : none
  Throws    : none
- Comment   : formula is image_width/visable_region_size
+ Comment   : formula is image_width/visable_region_size (nt)
            : 
 
 See Also   : 
@@ -1840,36 +1905,6 @@ sub _gd_string
       {
 	$gd->string($FONT, $x, $y, $text, $color);
       }
-  }
-
-#################### subroutine header begin ####################
-
-=head2 region_length
-
- Usage     : my $length = $self->region_length()
- Purpose   : returns the length of the chromosomal region
- Returns   : int
- Argument  : none
- Throws    : none
- Comment   : return the value of $self->region_stop - $self->region_start + 1;
-           : 
-
-See Also   : 
-
-=cut
-
-#################### subroutine header end ####################
-
-sub region_length
-  {
-    my $self = shift;
-#    my $stop = $self->chr_end ? $self->chr_end : $self->stop;
-    return ($self->stop - $self->start+1);
-  }
-
-sub chr_length
-  {
-    shift->region_length(@_);
   }
 
 sub round
