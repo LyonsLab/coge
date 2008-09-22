@@ -59,7 +59,7 @@ sub current_datasets
 	  {
 	    #this is a hack but the general problem is that some organisms have different chromosomes at different versions, however, partially complete genomes will have many contigs and different versions will have different contigs.  So, to get around this, there is a check to see if the chromosome name has contig in it, if so, then only the most current version is used.  Otherwise, all versions are game.
 	    next unless $chr;
-	    if ($chr =~ /contig/i)
+	    if ($chr =~ /contig/i || $chr=~/scaffold/i)
 	      {
 		next ds_loop if $ds->version ne $version;
 	      }
