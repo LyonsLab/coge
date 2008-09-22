@@ -8,8 +8,8 @@ my $s = CoGeX->connect($connstr, 'bpederse', 'brent_cnr');
 
 my $organism = $ARGV[0] or die "send in organism name i.e. $0 rice.\n";
 
-#my ($genomic_sequence_type) = $s->resultset('GenomicSequenceType')->resolve('masked'); print STDERR "getting masked\n";
-my ($genomic_sequence_type) = $s->resultset('GenomicSequenceType')->resolve('unmasked'); print STDERR "getting unmasked\n";
+my ($genomic_sequence_type) = $s->resultset('GenomicSequenceType')->resolve('masked'); print STDERR "getting masked\n";
+#my ($genomic_sequence_type) = $s->resultset('GenomicSequenceType')->resolve('unmasked'); print STDERR "getting unmasked\n";
 
 my ($org) = $s->resultset('Organism')->resolve($organism);
 
@@ -21,7 +21,7 @@ my $datasets = [sort map { $_->dataset_id } $org->current_datasets(genomic_seque
 print STDERR "usings datasets: " . join(", ", @$datasets) . " for $organism ...\n";
 
 
-if (scalar($ARGV) > 1){
+if (scalar(@ARGV) > 1){
     print STDERR "fetching features...";
     my $feature_names_ids = get_feature_names_for_datasets($datasets, $organism);
     print STDERR "got " . scalar(@$feature_names_ids) . "\n";
