@@ -19,11 +19,17 @@ my$coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 GetOptions ( "dsid=i" => \$dsid,
 	     "go=s"    => \$GO,
 	     "debug=s" => \$DEBUG,
-	     "name=s" => \@names
+	     "name=s" => \@names,
 	     "add_gene_feature" => \$add_gene,
 	   );
 
 my $ds = $coge->resultset('Dataset')->find($dsid);
+
+unless ($dsid)
+  {
+    warn "No dataset id specified\nUsage: $0 -dsid dataset_id -go 1 < gff_annotation_file.gff\n";
+    exit;
+  }
 
 unless ($ds)
   {
@@ -35,6 +41,7 @@ push @names, "mRNA" unless @names;
 warn "-go flag is not true, nothing will be added to the database.\n" unless $GO;
 my %data;
 my %annos;
+my %feat_types; #store feature type objects
 while (<>)
   {
     next if /^#/;
@@ -114,7 +121,9 @@ foreach my $name (keys %data)
 	my ($stop) = sort {$b<=>$a} map {$_->{stop}} @{$data{$name}{$feat_type}};
 	my ($strand) = map {$_->{strand}} @{$data{$name}{$feat_type}};
 	my ($chr) = map {$_->{chr}} @{$data{$name}{$feat_type}};
-	my $feat_type_obj = $coge->resultset('FeatureType')->find_or_create( { name => $feat_type } ) if $GO;
+	$feat_types{$feat_type} = $coge->resultset('FeatureType')->find_or_create( { name => $feat_type } ) if $GO && !$feat_types{$feat_type};
+	my $feat_type_obj = $feat_types{$feat_type};
+	
 	print "Creating feature of type $feat_type\n" if $DEBUG;
 	
 	my $feat = $ds->add_to_features({
