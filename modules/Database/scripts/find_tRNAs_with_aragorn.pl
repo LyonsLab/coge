@@ -7,7 +7,7 @@ use Getopt::Long;
 use DBIxProfiler;
 use DBI;
 
-my ($help, @orgids, $version, $type, $chr, $DEBUG, $length, $org_search, $sqlite);
+my ($help, @orgids, $version, $type, $chr, $DEBUG, $length, $org_search, $sqlite, $fasta, $short);
 
 GetOptions ("h|help" =>  \$help,
             "o|org=s" => \@orgids,
@@ -16,6 +16,8 @@ GetOptions ("h|help" =>  \$help,
             "d|debug"     => \$DEBUG,
             "c|chr=s"     => \$chr,
 	    "org_search|os=s" =>\$org_search,
+	    "fasta"       => \$fasta,
+	    "short"=>\$short,
             );
 
 my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
@@ -53,17 +55,42 @@ unless (@orgs)
     print "No organisms identified\n";
     exit;
   }
-print join ("\t", qw{ORG DSID CHR START STOP STRAND AA ANTICODON CODON SEQ}),"\n";
+print join ("\t", qw{ORG DSID CHR START STOP STRAND AA ANTICODON CODON SEQ}),"\n" unless $fasta;
+
 foreach my $org (@orgs)
   {
     if ($org_search) {next unless $org->name =~ /$org_search/i || $org->description =~ /$org_search/i};
     my $oname = $org->name;
     $oname .= ": ".$org->description if $org->description;
-    foreach my $ds ($coge->get_current_datasets_for_org(org=>$org->id))
+    foreach my $ds ($org->current_datasets())
       {
 	#tRNA stuff
 	my $file = gen_fasta($ds);
 	my $trna_data = run_aragorn($file);
+	if ($fasta)
+	  {
+	    foreach my $org(sort keys %$trna_data)
+	      {
+		foreach my $aa (sort keys %{$trna_data->{$org}})
+		  {
+		    my $count =1;
+		    foreach my $seq (sort keys %{$trna_data->{$org}{$aa}})
+		      {
+			my $head;
+			foreach my $item (split/\s+/,$org,2)
+			  {
+			    $head.=substr($item,0,1);
+			  }
+			$head .= $trna_data->{$org}{$aa}{$seq}{aa};
+			$head .= $count;
+			$head .= $trna_data->{$org}{$aa}{$seq}{codon};
+			print ">$head\n";
+			print $seq,"\n";
+			$count++;
+		      }
+		  }
+	      }
+	  }
       }
   }
 sub gen_fasta
@@ -103,6 +130,7 @@ sub run_aragorn
 	if (/^>/)
 	  {
 	    $org = $_;
+	    $org =~ s/^>//;
 	    ($dsid) = /id:\s(\d+)/;
 	    ($chr) = /chromosome: (\w+),/;
 	    $ds = $coge->resultset('Dataset')->find($dsid);
@@ -122,7 +150,29 @@ sub run_aragorn
 					strand=>$strand,
 					chr=>$chr,
 					);
-	print join ("\t",$org, $dsid, $chr, $start, $stop, $strand, $aa, $anticodon, $codon, $seq),"\n";
+	if ($data{$org}{$aa}{$seq})
+	  {
+	    $data{$org}{$aa}{$seq}{count}++;
+	  }
+	else
+	  {
+	    $data{$org}{$aa}{$seq}={
+			 count=>1,
+			 org=>$org,
+			 dsid=>$dsid,
+			 chr=>$chr,
+			 start=>$start,
+			 stop=>$stop,
+			 strand=>$strand,
+			 aa=>$aa,
+			 anticodon=>$anticodon,
+			 codon=>$codon,
+			};
+	  }
+	unless ($fasta)
+	  {
+	    print join ("\t",$org, $dsid, $chr, $start, $stop, $strand, $aa, $anticodon, $codon, $seq),"\n";
+	  }
 
       }
     print STDERR "\tfound $count tRNAs\n";
