@@ -437,7 +437,8 @@ sub get_data_source_info_for_accn
 	my $desc = $val->description;
 	my $sname = $val->datasource->name if $val->datasource;
 	my $ds_name = $val->name;
-	my $title = "$org: $ds_name ($sname, v$ver)";
+	my $type = $val->sequence_type->name;
+	my $title = "$org: $ds_name ($sname, v$ver, $type)";
 	$sources{$title}{id} = $val->id;
 	$sources{$title}{v} = $ver;
       }
@@ -446,7 +447,7 @@ sub get_data_source_info_for_accn
 <SELECT name = "dsid" id="dsid" MULTIPLE SIZE="10" onChange="get_types_chain();">
 };
     my $count = 0;
-    foreach my $title (sort { $a cmp $b || $sources{$b}{v} <=> $sources{$a}{v}} keys %sources)
+    foreach my $title (sort { $sources{$b}{v} <=> $sources{$a}{v} || $a cmp $b } keys %sources)
       {
 	my $id = $sources{$title}{id};
 	$html .= qq{  <option value="$id" >$title\n};
