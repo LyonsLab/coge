@@ -2937,7 +2937,8 @@ sub dataset_search
 	my $sname = $ds->datasource->name;
 	my $ds_name = $ds->name;
 	my $org = $ds->organism->name;
-	my $title = "$org: $ds_name ($sname, v$ver)";
+	my $type = $ds->sequence_type->name;
+	my $title = "$org: $ds_name ($sname, v$ver, $type)";
 	next if $restricted_orgs->{$org};
 	$sources{$ds->id} = {
 			     title=>$title,
