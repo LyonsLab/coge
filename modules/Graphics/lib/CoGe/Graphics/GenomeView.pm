@@ -109,7 +109,7 @@ sub imagemap_features
 	   
 	   if ($color_band_flag)
 	     {
-	       my $xt = sprintf("%.0f",($x+$feat->{end}/$chr->{end}*$width)+2);
+	       my $xt = sprintf("%.0f",($x+$feat->{end}/$chr->{end}*$width));
 	       my $yt = sprintf("%.0f",($y+$height));
 	       $map .= qq!<area shape="rect" coords="$xt,$y, $xt,$yt" !;
 	       $map .= "\n";
@@ -279,7 +279,7 @@ sub draw_features
 	     }
 	   else
 	     {
-	       $poly->addPt($x1, $y+$height);
+	       $poly->addPt($x1, sprintf("%.0f",$y+$height));
 	       $poly->addPt(sprintf("%.0f",$x1-$height/5), sprintf("%.0f",$y+$height+$height/1.3));
 	       $poly->addPt(sprintf("%.0f",$x1+$height/5), sprintf("%.0f",$y+$height+$height/1.3));
 	       $up = 1;
@@ -287,11 +287,11 @@ sub draw_features
 	   $gd->filledPolygon($poly, $color);
 	   $gd->openPolygon($poly, $black);
 	   my $font_size = $self->chromosome_height/5;
-	   my $h = $up? $height+$height/1.3 : 0-$height/1.3+$font_size;
+	   my $h = $up? sprintf("%.0f",$height+$height/1.3) : sprintf("%.0f",0-$height/1.3+$font_size);
 	   if ($self->show_count)
 	     {
-	       $gd->stringFT($black, $FONTTT, $font_size+4, 0, $x1-$height/5, $y+$h, $count) unless $count == 1;
-	       $gd->stringFT($white, $FONTTT, $font_size, 0, $x1-$height/5+2, $y+$h-2, $count) unless $count == 1;
+	       $gd->stringFT($black, $FONTTT, $font_size+4, 0, sprintf("%.0f",$x1-$height/5), $y+$h, $count) unless $count == 1;
+	       $gd->stringFT($white, $FONTTT, $font_size, 0, sprintf("%.0f",$x1-$height/5+2), $y+$h-2, $count) unless $count == 1;
 	     }
 	   if ($color_band_flag)
 	     {
