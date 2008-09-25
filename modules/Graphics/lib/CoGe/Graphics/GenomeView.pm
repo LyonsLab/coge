@@ -71,8 +71,8 @@ sub imagemap_features
       }
     foreach my $x (sort {$points{$a}{0}{count}+$points{$a}{1}{count} <=> $points{$b}{0}{count}+$points{$b}{1}{count}} keys %points)
       {
-	my $x1 = $x-$height/5;
-	my $x2 = $x+$height/5;
+	my $x1 = sprintf("%.0f",$x-$height/5);
+	my $x2 = sprintf("%.0f",$x+$height/5);
 	foreach my $up (keys %{$points{$x}})
 	 {
 	   next unless $points{$x}{$up}{count};
@@ -82,14 +82,14 @@ sub imagemap_features
 	     {
 	       my $y1 = sprintf("%.0f",$y);
 	       my $y2 = sprintf("%.0f",$y-$height/1.3);
-	       $map .= qq!<area shape="rect"coords="$x1,$y1,$x2,$y2" !;
+	       $map .= qq!<area shape="rect" coords="$x1,$y1, $x2,$y2" !;
 	       $up = 0;
 	     }
 	   else
 	     {
 	       my $y1 = sprintf("%.0f",$y+$height);
 	       my $y2 = sprintf("%.0f",$y+$height+$height/1.3);
-	       $map .= qq!<area shape="rect" coords="$x1,$y1,$x2,$y2" !;
+	       $map .= qq!<area shape="rect" coords="$x1,$y1, $x2,$y2" !;
 	       $up = 1;
 	     }
 	   $map .= "\n";
@@ -111,7 +111,7 @@ sub imagemap_features
 	     {
 	       my $xt = sprintf("%.0f",($x+$feat->{end}/$chr->{end}*$width)+2);
 	       my $yt = sprintf("%.0f",($y+$height));
-	       $map .= qq!<area shape="rect" coords="$xt, $y, $xt, $yt" !;
+	       $map .= qq!<area shape="rect" coords="$xt,$y, $xt,$yt" !;
 	       $map .= "\n";
 	       $map .= qq!href="$feat->{link}" ! if $feat->{link};
 	       if ($onchange)
@@ -124,6 +124,7 @@ sub imagemap_features
 		   $map .= "Length: ".($feat->{end}-$feat->{start})."\\n";
 		   $map .= $js_2."\n";
 		 }
+	       $map .= " ".$feat->{imagemap}." " if $feat->{imagemap};
 	       $map .= qq!alt="$feat->{name}">\n!;
 	     }
 	  }
