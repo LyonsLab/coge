@@ -373,7 +373,7 @@ sub new
 #=head2 start
 
 # Usage     : $c->start(100);
-             my $start = $c->start;
+#             my $start = $c->start;
 # Purpose   : alias for region_start
 
 #=cut
@@ -392,10 +392,10 @@ sub start
 #=head2 stop
 
 # Usage     : $c->stop(100);
-             my $stop = $c->stop;
+#             my $stop = $c->stop;
 # Purpose   : alias for region_stop
 
-=cut
+#=cut
 
 #################### subroutine header end ####################
 
