@@ -12,7 +12,6 @@ use CoGe::Graphics::Feature::Exon_motifs;
 use CoGe::Graphics::Feature::AminoAcid;
 use CoGe::Graphics::Feature::Domain;
 use CoGe::Graphics::Feature::Block;
-#use CoGe::Genome;
 use CoGeX;
 use Data::Dumper;
 use Benchmark;
