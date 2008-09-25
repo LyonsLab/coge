@@ -24,7 +24,7 @@ $DIR = "/opt/apache/CoGe/";
 $URL = "/CoGe/";
 $FORMATDB = "/usr/bin/formatdb";
 $BLAST = "/usr/bin/blast -a 8 -K 80 -m 8 -e 0.05";
-$DATADIR = "/home/apache/data/";
+$DATADIR = "$DIR/data/";
 $DIAGSDIR = "$DATADIR/diags";
 $FASTADIR = $DATADIR.'/fasta/';
 $BLASTDBDIR = $DATADIR.'/blast/db/';
@@ -700,7 +700,9 @@ sub go
     my ($org2) = $coge->resultset('Organism')->resolve($oid2);
     unless ($fasta1 && $fasta2)
       {
-	return "<span class=alert>Something went wrong generating the fasta files: ".$cogeweb->logfile."</span>";
+	my $log = $cogeweb->logfile;
+	$log =~ s/$DIR/$URL/;
+	return "<span class=alert>Something went wrong generating the fasta files: <a href=$log>log file</a></span>";
       }
     else{
     	write_log("Completed fasta creation", $cogeweb->logfile);
@@ -710,7 +712,9 @@ sub go
     my ($blastdb2) = gen_blastdb(md5=>$md52,fasta=>$fasta2,org_name=>$org_name2);
     unless ($blastdb1 && $blastdb2)
       {
-	return "<span class=alert>Something went wrong generating the blastdb files: ".$cogeweb->logfile."</span>";
+	my $log = $cogeweb->logfile;
+	$log =~ s/$DIR/$URL/;
+	return "<span class=alert>Something went wrong generating the blastdb files: <a href=$log>log file</a></span>";
       }
     else{
     	write_log("Completed blastdb creation", $cogeweb->logfile);
@@ -931,7 +935,7 @@ sub go
     foreach my $org_dir (keys %org_dirs)
       {
 	my $output = $org_dirs{$org_dir}{blastfile};
-	$output =~ s/$DIR/$URL/;
+	$output =~ s/$DATADIR/$URL/;
 	$html .= "<a href=$output target=_new>Blast results for $org_dir</a><br>";;	
       }
     my $log = $cogeweb->logfile;
