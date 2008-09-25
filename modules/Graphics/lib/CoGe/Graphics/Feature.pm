@@ -640,7 +640,7 @@ sub name
 
 #See Also   : 
 
-=cut
+#=cut
 
 #################### subroutine header end ####################
 sub begin 
@@ -658,6 +658,7 @@ sub begin
 #=cut
 
 #################### subroutine header end ####################
+
 sub end
   {
     my $self = shift;
