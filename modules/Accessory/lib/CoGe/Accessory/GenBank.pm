@@ -624,6 +624,7 @@ sub add_feature
 							 strand=>$strand,
 							});
     $feature->blocks($self->process_location( loc=>$feature->location, start=>$start)) if $feature->location;
+    $feature->blocks([]) unless $feature->blocks;
     return unless $feature->stop && $feature->start;
     return if $feature->stop < 0;
     return if $start && $start > 1 && $length && $feature->start > $length;
