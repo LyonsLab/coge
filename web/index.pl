@@ -34,7 +34,7 @@ print $pj->build_html($FORM, \&gen_html);
 sub gen_html
   {
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
-    $template->param(TITLE=>'Comparative Genomics Homepage');
+    $template->param(TITLE=>'A new kind of Comparative Genomics');
     $template->param(HELP=>'CoGe');
 
     if ($FORM->param('logout') || !$USER)
@@ -51,7 +51,16 @@ sub gen_html
 
       }
     $template->param(DATE=>$DATE);
-    $template->param(BOX_NAME=>"Welcome!");
+    my $welcome = "Welcome to CoGe!&nbsp&nbsp&nbsp";
+    unless ($update)
+      {
+      	$welcome .= "<span class='species small'>Organisms: ";
+	$welcome .= commify($coge->resultset('Organism')->count());
+	$welcome .= "&nbsp&nbsp&nbsp&nbsp   Nucleotides: ";
+	$welcome .= commify($coge->resultset('GenomicSequence')->count()*10000);
+	$welcome .= "</span>";
+      }
+    $template->param(BOX_NAME=>$welcome);
      $template->param(ADJUST_BOX=>1);
     $template->param(LOGO_PNG=>"CoGe-logo.png");
     $template->param(BODY=>gen_body());
@@ -115,14 +124,14 @@ sub actions
 		    ID=>5,
 		    LOGO=>qq{<a href="./GEvo.pl"><img src="/CoGe/picts/carousel/GEvo-logo.png" width="227" height="75" border="0"></a>},
 		    ACTION=>qq{<a href="./GEvo.pl">GEvo</a>},
-		    DESC => qq{Compare sequences and genomic regions using a variety of sequence comparison algorithms to find regions of similarity.<a href="/CoGe/docs/help/GEvo/Overview.html">Learn more...</a>},
+		    DESC => qq{Compare sequences and genomic regions to discover patterns of genome evolution.},
 		    SCREENSHOT=>qq{<a href="./GEvo.pl"><img src="/CoGe/picts/preview/GEvo.png"border="0"></a>},
 		   },
 		   {
 		    ID=>3,
 		    LOGO=>qq{<a href="./FeatView.pl"><img src="/CoGe/picts/carousel/FeatView-logo.png" width="227" height="75" border="0"></a>},
 		    ACTION=>qq{<a href="./FeatView.pl">FeatView</a>},
-		    DESC => qq{Find and display information about a genomic feature (e.g. gene) by searching names and annotations.},
+		    DESC => qq{Find and display information about a genomic feature (e.g. gene).},
 		    SCREENSHOT=>qq{<a href="./FeatView.pl"><img src="/CoGe/picts/preview/FeatView.png" width="400" height="241" border="0"></a>},
 		   },
 # 		   {
@@ -150,7 +159,7 @@ sub actions
 		    ID => 2,
 		    LOGO => qq{<a href="./CoGeBlast.pl"><img src="/CoGe/picts/carousel/CoGeBlast-logo.png" width="227" height="75" border="0"></a>},
 		    ACTION => qq{<a href="./CoGeBlast.pl">CoGeBlast</a>},
-		    DESC   => qq{Blast sequences against any number of organisms in CoGe and vizualize results in an interactive, graphical system.},
+		    DESC   => qq{Blast sequences against any number of organisms in CoGe.},
 		    SCREENSHOT => qq{<a href="./CoGeBlast.pl"><img src="/CoGe/picts/preview/Blast.png" width="400" height="241" border="0"></a>},
 		   },
 # 		   {
@@ -198,3 +207,10 @@ sub login
 	return ('false',undef, $url);
       }
   }
+
+sub commify 
+    {
+      my $text = reverse $_[0];
+      $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
+      return scalar reverse $text;
+    }
