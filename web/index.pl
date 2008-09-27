@@ -65,23 +65,18 @@ sub gen_body
   {
     my $tmpl = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/index.tmpl');
     my $html;
-    my %cookies = fetch CGI::Cookie;
-    my $disable = 0;
-    if ($cookies{'anim_speed'})
-     {
-      $disable = $cookies{'anim_speed'}->value() eq "0" ? 1 : 0;
-     }
+    my $disable = 1;
+    $disable = 0 if $FORM->param('wheel');
     if ($update)
       {
 	$tmpl->param(update=>1);
       }
     elsif ($USER && !$FORM->param('logout') && !$FORM->param('login'))
       {
-#	$disable = 1;
 	if ($disable)
 	  {
 	    $tmpl->param(DISABLE=>1);
-	    $tmpl->param(ACTIONS=>[map {{ACTION=>$_->{ACTION}, DESC=>$_->{DESC}}} @{actions()}  ]);
+	    $tmpl->param(ACTIONS=>[map {{ACTION=>$_->{ACTION}, DESC=>$_->{DESC}}} sort {$a->{ID} <=> $b->{ID}}@{actions()}  ]);
 	  }
 	else
 	  {
@@ -89,6 +84,7 @@ sub gen_body
 	    $tmpl->param(ACTIONS=>actions());
 	  }
 	$tmpl->param('INTRO'=>1);
+	$tmpl->param('NSF'=>1);
       }
 #     else
 #       {
@@ -116,14 +112,14 @@ sub actions
   {
     my @actions = (
 		   {
-		    ID=>1,
+		    ID=>5,
 		    LOGO=>qq{<a href="./GEvo.pl"><img src="/CoGe/picts/carousel/GEvo-logo.png" width="227" height="75" border="0"></a>},
 		    ACTION=>qq{<a href="./GEvo.pl">GEvo</a>},
-		    DESC => qq{Compare sequences using a variety of sequence comparison algorithms to find regions of similarity and displays the results graphically.<a href="/CoGe/docs/help/GEvo/Overview.html">Learn more...</a>},
+		    DESC => qq{Compare sequences and genomic regions using a variety of sequence comparison algorithms to find regions of similarity.<a href="/CoGe/docs/help/GEvo/Overview.html">Learn more...</a>},
 		    SCREENSHOT=>qq{<a href="./GEvo.pl"><img src="/CoGe/picts/preview/GEvo.png"border="0"></a>},
 		   },
 		   {
-		    ID=>2,
+		    ID=>3,
 		    LOGO=>qq{<a href="./FeatView.pl"><img src="/CoGe/picts/carousel/FeatView-logo.png" width="227" height="75" border="0"></a>},
 		    ACTION=>qq{<a href="./FeatView.pl">FeatView</a>},
 		    DESC => qq{Find and display information about a genomic feature (e.g. gene) by searching names and annotations.},
@@ -144,17 +140,17 @@ sub actions
 # 		    SCREENSHOT=>qq{<a href="./FeatView.pl"><img src="/CoGe/picts/preview/TreeView.png"border="0"></a>},
 # 		   },
 		   {
-		    ID=>5,
+		    ID=>1,
 		    LOGO => qq{<a href="./GenomeView.pl"><img src="/CoGe/picts/carousel/GenomeView-logo.png" width="227" height="75" border="0"></a>},
 		    ACTION => qq{<a href="./GenomeView.pl">GenomeView</a>},
-		    DESC   => qq{Get an overview of organisms in CoGe's genomes database and provides a dynamic, interactive genome browser.},
+		    DESC   => qq{Search for organisms, get an overview of their genomic make-up, and visualize them using a dynamic, interactive genome browser.},
 		    SCREENSHOT => qq{<img src="/CoGe/picts/preview/GenomeView.png" border="0"></a>},
 		   },
 		   {
-		    ID => 6,
+		    ID => 2,
 		    LOGO => qq{<a href="./CoGeBlast.pl"><img src="/CoGe/picts/carousel/CoGeBlast-logo.png" width="227" height="75" border="0"></a>},
 		    ACTION => qq{<a href="./CoGeBlast.pl">CoGeBlast</a>},
-		    DESC   => qq{Blast sequences from the CoGe system against multiple genomes and view the results in an interactive graphical system.},
+		    DESC   => qq{Blast sequences against any number of organisms in CoGe and vizualize results in an interactive, graphical system.},
 		    SCREENSHOT => qq{<a href="./CoGeBlast.pl"><img src="/CoGe/picts/preview/Blast.png" width="400" height="241" border="0"></a>},
 		   },
 # 		   {
@@ -165,10 +161,10 @@ sub actions
 # 		    SCREENSHOT => qq{<a href="./docs/help/CoGe"><img src="/CoGe/picts/preview/app_schema.png" border="0"></a>},
 # 		   }
 		   {
-		    ID=>8,
+		    ID=>4,
 		    LOGO=>qq{<a href="./SynMap.pl"><img src="/CoGe/picts/SynMap-logo.png"  border="0"></a>},
 		    ACTION=>qq{<a href="./SynMap.pl">SynMap</a>},
-		    DESC => qq{SynMap allows you to select two genomes and identify syntenic regions by generating syntenic dot-plots.  These dot-plots are interactive and have links that will pre-load GEvo with those genomic regions for in-depth syntenic analysis and comparative genomics.  SynMap is powered by <a href="http://dagchainer.sourceforge.net/">DAGchainer</a>},
+		    DESC => qq{Compare any two genomes to identify regions of synteny.},
 		    SCREENSHOT=>qq{<a href="./SynMap.pl"><img src="/CoGe/picts/preview/SynMap.png" border="0" width="400" height="320"></a>},
 		   },
 
