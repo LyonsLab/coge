@@ -94,20 +94,36 @@ login(['uname', 'pwd','url'],[place_cookie]);
 
 <div id=summary style="display:none;z-index: 1000;" class="image_window"></div>
 <div id=main style="display: none" align=center>
+<!--<span class="alert">PLEASE NOTE:</span><br>
+We have developed a new comparative genomics tools called SynMap which
+allows you to compare two genomes to identify regions of synteny.
+This tool is considered to be beta-software (in other words, its works
+most of the time, but your mileage may vary.)  If you come across any
+problems with it, please e-mail Eric Lyons
+(elyons@nature.berkeley.edu) with
+a description or screenshot of the analysis parameters.  He will fix the problem
+as soon as possible.-->
+<TMPL_IF NAME="INTRO">
+<div style="width: 600px"><div><a href="/CoGe/GEvo.pl?prog=blastz;accn1=at1g07300;fid1=4091274;dsid1=556;chr1=1;dr1up=20000;dr1down=20000;gbstart1=1;gblength1=772;accn2=at2g29640;fid2=4113333;dsid2=557;chr2=2;dr2up=20000;dr2down=20000;gbstart2=1;rev2=1;num_seqs=2;autogo=1"><img src="/CoGe/picts/gevo-synteny.png" width=500px border=0 ></a></div><div align = center class="small species"><a href="/CoGe/GEvo.pl?prog=blastz;accn1=at1g07300;fid1=4091274;dsid1=556;chr1=1;dr1up=20000;dr1down=20000;gbstart1=1;gblength1=772;accn2=at2g29640;fid2=4113333;dsid2=557;chr2=2;dr2up=20000;dr2down=20000;gbstart2=1;rev2=1;num_seqs=2;autogo=1">GEvo analysis</a> of syntenic regions of Arabidopsis derived from its most recent genome duplication event.</div><p align=left>Welcome to CoGe.  CoGe is a comparative genomics platform designed to allow easy access to genomic data from any organism and provide analysis tools for finding homologous sequences and comparing multiple genomic regions.  If you are new to CoGe, we recommend reading <a href="/CoGe/docs/help/Tutorials/Tutorials.html">one of our tutorials</a> for examples of how to use CoGe.
+<!--<br><br>
+To obtain pre-made lists of syntenic gene sets with links for GEvo analyses, please visit our <a href="/CoGe/docs/help/Precomputed_menus_and_lists/CoGe_menus.html">downloads page</a> (also available on the menu bar).-->
+</div>
+</TMPL_IF>
+
 
 <TMPL_IF NAME=ANIMATE>
 <TABLE>
   <TR>
     <TD align=center>
     	<div id="carousel">
-		<a href="/CoGe/GEvo.pl" onmouseover="timing(1)" onmouseout="timing(1,1)" onclick="timing(1,1)" title="GEvo"><img src="/CoGe/picts/carousel/GEvo-logo.png" width="100%" border=0/></a>
-		<a href="/CoGe/FeatView.pl" onmouseover="timing(2)" onmouseout="timing(2,1)" onclick="timing(2,1)" title="FeatView"><img src="/CoGe/picts/carousel/FeatView-logo.png" width="100%" border=0/></a>
+		<a href="/CoGe/GEvo.pl" onmouseover="timing(5)" onmouseout="timing(5,1)" onclick="timing(5,1)" title="GEvo"><img src="/CoGe/picts/carousel/GEvo-logo.png" width="100%" border=0/></a>
+		<a href="/CoGe/FeatView.pl" onmouseover="timing(3)" onmouseout="timing(3,1)" onclick="timing(3,1)" title="FeatView"><img src="/CoGe/picts/carousel/FeatView-logo.png" width="100%" border=0/></a>
 <!--		<a href="/CoGe/MSAView.pl" onmouseover="timing(3)" onmouseout="timing(3,1)" onclick="timing(3,1)" title="MSAView"><img src="/CoGe/picts/carousel/MSAView-logo.png" width="100%" border=0/></a>
 		<a href="/CoGe/TreeView.pl" onmouseover="timing(4)" onmouseout="timing(4,1)" onclick="timing(4,1)" title="TreeView"><img src="/CoGe/picts/carousel/TreeView-logo.png" width="100%" border=0/></a>
--->		<a href="/CoGe/GenomeView.pl" onmouseover="timing(5)" onmouseout="timing(5,1)" onclick="timing(5,1)" title="GenomeView"><img src="/CoGe/picts/carousel/GenomeView-logo.png" width="100%" border=0/></a>
-		<a href="/CoGe/CoGeBlast.pl" onmouseover="timing(6)" onmouseout="timing(6,1)" onclick="timing(6,1)" title="CoGeBlast"><img src="/CoGe/picts/CoGeBlast-logo.png" width="100%" border=0/></a>
+-->		<a href="/CoGe/GenomeView.pl" onmouseover="timing(1)" onmouseout="timing(1,1)" onclick="timing(1,1)" title="GenomeView"><img src="/CoGe/picts/carousel/GenomeView-logo.png" width="100%" border=0/></a>
+		<a href="/CoGe/CoGeBlast.pl" onmouseover="timing(2)" onmouseout="timing(2,1)" onclick="timing(2,1)" title="CoGeBlast"><img src="/CoGe/picts/CoGeBlast-logo.png" width="100%" border=0/></a>
 <!--		<a href="/CoGe/docs/help/CoGe" onmouseover="timing(7)" onmouseout="timing(7,1)" onclick="timing(7,1)" title="CoGe FAQ"><img src="/CoGe/picts/carousel/FAQ-logo.png" width="100%" border=0/></a>-->
-		<a href="/CoGe/SynMap.pl" onmouseover="timing(8)" onmouseout="timing(8,1)" onclick="timing(8,1)" title="SynMap"><img src="/CoGe/picts/SynMap-logo.png" width="100%" border=0/></a>
+		<a href="/CoGe/SynMap.pl" onmouseover="timing(4)" onmouseout="timing(4,1)" onclick="timing(4,1)" title="SynMap"><img src="/CoGe/picts/SynMap-logo.png" width="100%" border=0/></a>
 
 	</div>
     </TD>
@@ -204,18 +220,13 @@ login(['uname', 'pwd','url'],[place_cookie]);
 
 </TMPL_IF>
 
-<TMPL_IF NAME="INTRO">
-<div style="width: 600px"><div><a href="/CoGe/GEvo.pl?prog=blastz;accn1=at1g07300;fid1=4091274;dsid1=556;chr1=1;dr1up=20000;dr1down=20000;gbstart1=1;gblength1=772;accn2=at2g29640;fid2=4113333;dsid2=557;chr2=2;dr2up=20000;dr2down=20000;gbstart2=1;rev2=1;num_seqs=2;autogo=1"><img src="/CoGe/picts/gevo-synteny.png" width=500px border=0 ></a></div><div align = center class="small species"><a href="/CoGe/GEvo.pl?prog=blastz;accn1=at1g07300;fid1=4091274;dsid1=556;chr1=1;dr1up=20000;dr1down=20000;gbstart1=1;gblength1=772;accn2=at2g29640;fid2=4113333;dsid2=557;chr2=2;dr2up=20000;dr2down=20000;gbstart2=1;rev2=1;num_seqs=2;autogo=1">GEvo analysis</a> of syntenic regions of Arabidopsis derived from its most recent genome duplication event.</div><p align=left>Welcome to CoGe.  CoGe is a comparative genomics platform designed to allow easy access to genomic data from any organism and provide analysis tools for finding homologous sequences and comparing multiple genomic regions.  There are several ways to access data using CoGe.  If you are new to CoGe, we recommend reading <a href="/CoGe/docs/help/Tutorials/Tutorials.html">one of our tutorials</a> for examples of how to use CoGe.  Also, check out the help pages which can be found in the "help" section of the menu bar at the top left of your screen.  The lead developer of the CoGe system is Eric Lyons in the Freeling Lab at UC Berkeley, California  USA.
-<br><br>
-To obtain pre-made lists of syntenic gene sets with links for GEvo analyses, please visit our <a href="/CoGe/docs/help/Precomputed_menus_and_lists/CoGe_menus.html">downloads page</a> (also available on the menu bar).
+<TMPL_IF NAME=NSF>
 <br>
 <div align=center>
 <a href="http://www.nsf.gov" target= "_new"><img src="./picts/nsf-logo.gif" border=0><br></a>
 <span class="small">Funding provided by NSF</span>
 </div>
-</div>
 </TMPL_IF>
-
 
 <TMPL_IF NAME=UPDATE>
 The CoGe System is undergoing an update.  Please check back in a few hours.
