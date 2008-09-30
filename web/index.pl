@@ -173,7 +173,7 @@ sub actions
 		    ID=>4,
 		    LOGO=>qq{<a href="./SynMap.pl"><img src="/CoGe/picts/SynMap-logo.png"  border="0"></a>},
 		    ACTION=>qq{<a href="./SynMap.pl">SynMap</a>},
-		    DESC => qq{Compare any two genomes to identify regions of synteny.},
+		    DESC => qq{Compare any two genomes to identify regions of synteny.  (Powered by <a href=http://dagchainer.sourceforge.net/ target=_new>DAGChainer</a>)},
 		    SCREENSHOT=>qq{<a href="./SynMap.pl"><img src="/CoGe/picts/preview/SynMap.png" border="0" width="400" height="320"></a>},
 		   },
 
