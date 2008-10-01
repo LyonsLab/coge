@@ -1891,7 +1891,7 @@ sub export_hsp_query_fasta
 
     my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data});
     $sth->execute();
-    my ($fasta,$query_seq,$name,$qstart,$qstop);
+    my ($fasta,$query_seq,$name,$qstart,$qstop, $hsp_num);
     while (my $row = $sth->fetchrow_hashref())
       {
       	$query_seq = $row->{qalign};
@@ -1900,9 +1900,9 @@ sub export_hsp_query_fasta
       	$name =~ s/\s+$//;
       	$qstart = $row->{qstart};
       	$qstop = $row->{qstop};
-      	
+	$hsp_num = $row->{hsp_num};
       	$query_seq =~ s/-//g;
-      	$fasta .= ">".$name.", Subsequence: ".$qstart."-".$qstop."\n".$query_seq."\n";
+      	$fasta .= ">HSP".$hsp_num."_".$name.", Subsequence: ".$qstart."-".$qstop."\n".$query_seq."\n";
       }
     open(NEW,"> $TEMPDIR/query_fasta_$filename.txt");
     print  NEW $fasta;
@@ -1919,17 +1919,20 @@ sub export_hsp_subject_fasta
 
     my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data});
     $sth->execute();
-    my ($fasta,$subject_seq,$name,$sstart,$sstop);
+    my ($fasta,$subject_seq,$name,$sstart,$sstop, $hsp_num);
     while (my $row = $sth->fetchrow_hashref())
       {
+#	print STDERR Dumper $row;
       	$subject_seq = $row->{salign};
       	$name = $row->{sname};
       	$sstart = $row->{sstart};
       	$sstop = $row->{sstop};
+	$hsp_num = $row->{hsp_num};
       	$name =~ s/^\s+//;
       	$name =~ s/\s+$//;
+	$name =~ s/\s+/_/g;
       	$subject_seq =~ s/-//g;
-      	$fasta .= ">".$name.", Location: ".$sstart."-".$sstop."\n".$subject_seq."\n";
+      	$fasta .= ">HSP".$hsp_num."_".$name.", Location: ".$sstart."-".$sstop."\n".$subject_seq."\n";
       }
     open(NEW,"> $TEMPDIR/subject_fasta_$filename.txt");
     print  NEW $fasta;
