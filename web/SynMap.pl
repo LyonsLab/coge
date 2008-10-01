@@ -18,7 +18,7 @@ use Benchmark;
 
 $ENV{PATH} = "/opt/apache2/CoGe/";
 umask(0);
-use vars qw( $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $FORMATDB $BLAST $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $TANDEM_FINDER $FILTER_REPETITIVE_MATCHES $RUN_DAGCHAINER $FIND_NEARBY $PLOT_DAG);
+use vars qw( $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $FORMATDB $BLAST $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $TANDEM_FINDER $FILTER_REPETITIVE_MATCHES $RUN_DAGCHAINER $FIND_NEARBY $PLOT_DAG $DAG_PLOT);
 $DEBUG = 0;
 $DIR = "/opt/apache/CoGe/";
 $URL = "/CoGe/";
@@ -36,6 +36,7 @@ $FILTER_REPETITIVE_MATCHES = $DIR."/bin/parepair/filter_repetitive_matches.pl 20
 $RUN_DAGCHAINER = $DIR."/bin/parepair/run_dagchainer.pl -E 0.05";
 $FIND_NEARBY = $DIR."/bin/parepair/find_nearby.py -d 200000";
 $PLOT_DAG = $PYTHON ." ".$DIR."/bin/parepair/plot_dag.py";
+$DAG_PLOT = $PYTHON ." ".$DIR."/bin/parepair/dag_plot.py"; #new and improved!
 
 $| = 1; # turn off buffering
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
@@ -625,16 +626,21 @@ sub generate_dotplot
     my $s_label = $opts{slabel};
     my $q_max = $opts{"q_max"};
     my $s_max = $opts{"s_max"};
+    my $oid1 = $opts{oid1};
+    my $oid2 = $opts{oid2};
+    my ($basename) = $coords =~ /([^\/]*).all.aligncoords/;
     my $regen_images = $opts{regen_images}=~/true/i ? 1 : 0;
     if (-r $outfile && !$regen_images)
       {
 	write_log("generate dotplot: file $outfile already exists",$cogeweb->logfile);
 	return 1;
       }
-    my $cmd = "$PLOT_DAG -d $dag -a $coords --html $outfile --q_dsid $q_dsid --s_dsid $s_dsid --qchr $qchr --schr $schr --q_max $q_max --s_max $s_max";
-    $cmd .= " --q_label=$q_label" if $q_label;
-    $cmd .= " --s_label=$s_label" if $s_label;
+#    my $cmd = "$PLOT_DAG -d $dag -a $coords --html $outfile --q_dsid $q_dsid --s_dsid $s_dsid --qchr $qchr --schr $schr --q_max $q_max --s_max $s_max";
+    my $cmd = qq{$DAG_PLOT -d $dag -a $coords -f $outfile -l 'javascript:synteny_zoom("$oid1","$oid2","$basename","XCHR","YCHR")'};
+#    $cmd .= " --q_label=$q_label" if $q_label;
+#    $cmd .= " --s_label=$s_label" if $s_label;
     write_log("generate dotplot: running $cmd", $cogeweb->logfile);
+    
     `$cmd`;
     return 1 if -r $outfile;
   }
@@ -851,83 +857,98 @@ sub go
 	    $qdsid = "sdsid";
 	    $sdsid = "qdsid";
 	  }
-
-	foreach my $chr2 (sort keys %chr2)
-	  {
-	    my @chr2 = split/_/,$chr2;
-	    foreach my $chr1 (sort keys %chr1)
-	      {
-		my @chr1 = split/_/,$chr1;
-		$pm->start and next;
-		my $out = $org_dirs{$org_name1."_".$org_name2}{dir}."/html/";
-		mkpath ($out,0,0777) unless -d $out;
-		$out .= "$chr1-$masked1-$seq_type1"."_".$chr2."-$masked2-$seq_type2"."_D$dagchainer_D"."_g$dagchainer_g"."_A$dagchainer_A".".$blast.html";
-		generate_dotplot(dag=>$dag_file12.".all", coords=>$tmp, outfile=>$out, qchr=>$qlead.$chr1, schr=>$slead.$chr2, $qdsid=>$chr1{$chr1}{dsid}, $sdsid=>$chr2{$chr2}{dsid},qlabel=>$name1.":".$chr1[-1],slabel=>$name2.":".$chr2[-1], q_max=>$chr1{$chr1}{chr_end}, s_max=>$chr2{$chr2}{chr_end}, regen_images=>$regen_images);
-		$pm->finish;
-	      }
-	  }
-	$pm->wait_all_children();
-	my $count = scalar (keys %chr1) * scalar (keys%chr2);
+	my $out = $org_dirs{$org_name1."_".$org_name2}{dir}."/html/";
+	mkpath ($out,0,0777) unless -d $out;
+	$out .="master_".$org_dirs{$org_name1."_".$org_name1}{basename};
+	generate_dotplot(dag=>$dag_file12.".all", coords=>$tmp, outfile=>"$out.png", regen_images=>$regen_images, oid1=>$oid1, oid2=>$oid2);
+#	foreach my $chr2 (sort keys %chr2)
+#	  {
+#	    my @chr2 = split/_/,$chr2;
+#	    foreach my $chr1 (sort keys %chr1)
+# 	      {
+# 		my @chr1 = split/_/,$chr1;
+# 		$pm->start and next;
+# 		my $out = $org_dirs{$org_name1."_".$org_name2}{dir}."/html/";
+# 		mkpath ($out,0,0777) unless -d $out;
+# 		$out .= "$chr1-$masked1-$seq_type1"."_".$chr2."-$masked2-$seq_type2"."_D$dagchainer_D"."_g$dagchainer_g"."_A$dagchainer_A".".$blast.html";
+# 		generate_dotplot(dag=>$dag_file12.".all", coords=>$tmp, outfile=>$out, qchr=>$qlead.$chr1, schr=>$slead.$chr2, $qdsid=>$chr1{$chr1}{dsid}, $sdsid=>$chr2{$chr2}{dsid},qlabel=>$name1.":".$chr1[-1],slabel=>$name2.":".$chr2[-1], q_max=>$chr1{$chr1}{chr_end}, s_max=>$chr2{$chr2}{chr_end}, regen_images=>$regen_images);
+# 		$pm->finish;
+# 	      }
+# 	  }
+# 	$pm->wait_all_children();
+#	my $count = scalar (keys %chr1) * scalar (keys%chr2);
 #	my $bm1 = new Benchmark;
-	$html .= "<table cellspacing=0 cellpadding=0>";
-	my $id_num =1;
-	foreach my $tchr2 (sort keys %chr2)
-	  {
-	    $html .= "<tr align=center>";
-	    foreach my $tchr1 (sort keys %chr1)
-	      {
-		my ($chr1, $chr2) = ($tchr1, $tchr2);
-		my $out = $org_dirs{$org_name1."_".$org_name2}{dir}."/html/$chr1-$masked1-$seq_type1"."_".$chr2."-$masked2-$seq_type2"."_D$dagchainer_D"."_g$dagchainer_g"."_A$dagchainer_A".".$blast.html";
-		if ($show_diags_only)
-		  {
-		    unless ($chrs_w_diags->{$chr1}{$chr2})
-		      {
-			next;
-		      }
-		  }
+#	$html .= "<table cellspacing=0 cellpadding=0>";
+# 	my $id_num =1;
+# 	foreach my $tchr2 (sort keys %chr2)
+# 	  {
+# 	    $html .= "<tr align=center>";
+# 	    foreach my $tchr1 (sort keys %chr1)
+# 	      {
+# 		my ($chr1, $chr2) = ($tchr1, $tchr2);
+# 		my $out = $org_dirs{$org_name1."_".$org_name2}{dir}."/html/$chr1-$masked1-$seq_type1"."_".$chr2."-$masked2-$seq_type2"."_D$dagchainer_D"."_g$dagchainer_g"."_A$dagchainer_A".".$blast.html";
+# 		if ($show_diags_only)
+# 		  {
+# 		    unless ($chrs_w_diags->{$chr1}{$chr2})
+# 		      {
+# 			next;
+# 		      }
+# 		  }
 
-		my $png = $out;
-		$png =~ s/html$/png/;
-		#image dimensions hard-coded because of the time it takes to get w and h from image directly
-		my ($w, $h) = (576,504);
-#		if (-r $png)
-#		  {
-#		    my $img = GD::Image->new($png);
-#		    ($w,$h) = $img->getBounds();
-#		  }
-		my $stuff;
-		if (-r $out)
-		  {
-		    $png =~ s/$DATADIR/$URL\/data/;
-		    if ($count > 4)
-		      {
-			$stuff = qq{
+# 		my $png = $out;
+# 		$png =~ s/html$/png/;
+# 		#image dimensions hard-coded because of the time it takes to get w and h from image directly
+# 		my ($w, $h) = (576,504);
+# #		if (-r $png)
+# #		  {
+# #		    my $img = GD::Image->new($png);
+# #		    ($w,$h) = $img->getBounds();
+# #		  }
+# 		my $stuff;
+# 		if (-r $out)
+# 		  {
+# 		    $png =~ s/$DATADIR/$URL\/data/;
+# 		    if ($count > 4)
+# 		      {
+# 			$stuff = qq{
 
-<img id=close$id_num src="picts/delete.png" style="display: none; float:right; position: relative; top: 60px; right: 40px;" onclick="\$('#img$id_num').toggle();\$('#close$id_num').toggle();\$('#iframe$id_num').html('');" valign=top \>
-<div id=iframe$id_num></div>
-};
-			my ($tmpw, $tmph) = (sprintf("%0f",$w/4),sprintf("%0f",$h/4));
-			$stuff .= qq{
-<img id= img$id_num src=$png width=$tmpw height=$tmph onclick="\$('#img$id_num').toggle();get_iframe(['args__src','args__$out'],['iframe$id_num']);\$('#close$id_num').toggle();" \>
-};
-		      }
-		    else
-		      {
-			$out =~ s/$DATADIR/$URL\/data/;
-			$html = qq{<iframe src=$out frameborder=0 width=$w height=$h scrolling=no></iframe>};
-		      }
-		  }
-		else {$stuff = " ";}
-		$html .= "<td id=cell$id_num>$stuff";
-		$id_num++;
-	      }
-	  }
-	$html .= "</table>";
+# <img id=close$id_num src="picts/delete.png" style="display: none; float:right; position: relative; top: 60px; right: 40px;" onclick="\$('#img$id_num').toggle();\$('#close$id_num').toggle();\$('#iframe$id_num').html('');" valign=top \>
+# <div id=iframe$id_num></div>
+# };
+# 			my ($tmpw, $tmph) = (sprintf("%0f",$w/4),sprintf("%0f",$h/4));
+# 			$stuff .= qq{
+# <img id= img$id_num src=$png width=$tmpw height=$tmph onclick="\$('#img$id_num').toggle();get_iframe(['args__src','args__$out'],['iframe$id_num']);\$('#close$id_num').toggle();" \>
+# };
+# 		      }
+# 		    else
+# 		      {
+# 			$out =~ s/$DATADIR/$URL\/data/;
+# 			$html = qq{<iframe src=$out frameborder=0 width=$w height=$h scrolling=no></iframe>};
+# 		      }
+# 		  }
+# 		else {$stuff = " ";}
+# 		$html .= "<td id=cell$id_num>$stuff";
+# 		$id_num++;
+# 	      }
+# 	  }
+#	$html .= "</table>";
 #	my $bm2 = new Benchmark;
 #	my $diff = timediff($bm2, $bm1);
 #	print STDERR "HTML table generation took: ",timestr($diff),"\n";
 	add_GEvo_links (infile=>$tmp);
 	$tmp =~ s/$DATADIR/$URL\/data/;
+	open (IN, "$out.html");
+	$html = "<table><tr><td>";
+	while (<IN>)
+	  {
+	    next if /<\/?html>/;
+	    $html .= $_;
+	  }
+	$out =~ s/$DATADIR//;
+	$html =~ s/master.*\.png/data\/$out.png/;
+	close IN;
+#	$out =~ s/$DATADIR/$URL\/data/;
+#	$html .=  qq{<iframe src=$out.html frameborder=0 scrolling=no></iframe>};
 	$html .= "<br><a href=$tmp target=_new>Syntolog file with GEvo links</a><br>";
       }
     
@@ -941,7 +962,11 @@ sub go
     my $log = $cogeweb->logfile;
     $log =~ s/$DIR/$URL/;
     $html .= "<a href=$log target=_new>log</a><br>";
-
+    $html .= "<td valign=top>";
+    $html .= "<div id=syn_loc1></div>";
+    $html .= "<div id=syn_loc2></div>";
+    $html .= "<div id=syn_loc3></div>";
+    $html .= "</table>";
     email_results(email=>$email,html=>$html,org1=>$org_name1,org2=>$org_name2, jobtitle=>$job_title) if $email;
 
     return $html;

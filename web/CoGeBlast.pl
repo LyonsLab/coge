@@ -1916,7 +1916,7 @@ sub export_hsp_subject_fasta
     while (my $row = $sth->fetchrow_hashref())
       {
       	$name = $row->{sname};
-	my ($chr, $dsid) = $name =~ /chromosome:\s+(\S+?),?.*?id:\s+(\d+)/;
+	my ($chr, $dsid) = $name =~ /chromosome:\s+(\S+?),.*?id:\s+(\d+)/;
 	my $strand = $row->{strand} =~ /\+/ ? 1 : -1;
       	$sstart = $row->{sstart};
       	$sstop = $row->{sstop};

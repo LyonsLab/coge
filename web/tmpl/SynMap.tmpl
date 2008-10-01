@@ -249,6 +249,20 @@ function reset_basename(){
   if (message) $('#log_text').html(message);
 }
 
+function synteny_zoom(oid1, oid2, basename, chr1, chr2)
+{
+ var url = '/CoGe/run_plot_dag.pl?org1='+oid1+';org2='+oid2+';chr1='+chr1+';chr2='+chr2+';base='+basename;
+ var loc = $('#map_loc').val();
+ if (loc == 'window')
+  {
+    window.open(url,'synteny_zoom','status=1,width=576,height=504');
+  }
+ else
+  {
+    $('#syn_loc'+loc).html("<iframe src="+url+" width=576 height=504 scrolling=no></iframe>");
+  }
+}
+
 </script>
 <table><tr><td>
 <DIV id=log_text class="small dna" style="display:none"></DIV>
@@ -328,6 +342,8 @@ function reset_basename(){
 <tr><th>
 <DIV class="topItemSelected ">SynMap Options:</DIV>
 <table class="dropMenu">
+<tr><td>
+<table>
  <TR>
    <TD>Blast Algorithm:
    <TD><select id="blast" name="blast">
@@ -356,6 +372,15 @@ function reset_basename(){
 <!-- <TR>
    <TD>Pop-up Annotations?
    <TD><input type=checkbox name="popup_anno" id="popup_anno">-->
+</TABLE>
+<td valign = top>
+Zoomed SynMap Display Location:
+<select name=map_loc id=map_loc>
+ <option value="window">New Window
+ <option value="1" selected>Area 1
+ <option value="2">Area 2
+ <option value="3">Area 3
+</select>
 </TABLE>
 </TABLE>
 </div>
