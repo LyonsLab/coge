@@ -72,6 +72,7 @@ sub get_genomic_sequence {
   my $start = $opts{start} || $opts{begin};
   my $stop = $opts{stop} || $opts{end};
   my $chr = $opts{chr} || $opts{chromosome};
+  my $strand = $opts{strand};
   my $skip_length_check = $opts{skip_length_check} || 0;
   my $str = "";
   if (defined $start && defined $stop)
@@ -123,6 +124,7 @@ sub get_genomic_sequence {
 	$str .= $g->sequence_data;
       }
     }
+  $str = $self->reverse_complement($str) if $strand =~ /-/;
   return $str;
 }
 
