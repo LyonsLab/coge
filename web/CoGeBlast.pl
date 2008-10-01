@@ -389,7 +389,6 @@ sub blast_search
     my $seq = $opts{seq};
     my $blastable = $opts{blastable};
     my $width = $opts{width};
-    my $type = $opts{type};
 
    # exit;
 
@@ -416,7 +415,6 @@ sub blast_search
     else
       {
 	my ($nuc_penalty,$nuc_reward,$exist,$extent);
-	#print STDERR $gapcost,"\n";
 	if ($gapcost =~/^(\d+)\s+(\d+)/) {($exist,$extent) = ($1,$2);}
 	
 	if ($match_score=~/^(\d+)\,(-\d+)/) {($nuc_penalty,$nuc_reward) = ($2,$1);}
@@ -491,13 +489,12 @@ sub blast_search
 	$file = $TEMPURL."/".$file;
 	$item->{link}=$file;
       }
-#    print STDERR Dumper \@results;
     my $t3 = new Benchmark;
     write_log("Initializing sqlite database",$cogeweb->logfile);
     initialize_sqlite();
     my $t4 = new Benchmark;
     write_log("Generating Results",$cogeweb->logfile);
-    my ($html,$click_all_links) = gen_results_page(results=>\@results,width=>$width,type=>$type, resultslimit=>$resultslimit);
+    my ($html,$click_all_links) = gen_results_page(results=>\@results,width=>$width,resultslimit=>$resultslimit,prog=>$program);
     my $t5 = new Benchmark;
     my $init_time = timestr(timediff($t2,$t1));
     my $blast_time = timestr(timediff($t3,$t2));
@@ -510,8 +507,6 @@ Time to initialize sqlite:       $dbinit_time
 Time to generate results page:   $resultpage_time
 };
       write_log("$benchmark" ,$cogeweb->logfile);
-#    print STDERR $cogeweb->logfile,"\n";
-#    print STDERR $benchmark;
 
     write_log("Finished!", $cogeweb->logfile);
     return $html, $click_all_links;
@@ -523,8 +518,8 @@ sub gen_results_page
      my %opts = @_;
      my $results = $opts{results};
      my $width = $opts{width};
-     my $type = $opts{type};
      my $resultslimit = $opts{resultslimit};
+     my $prog=$opts{prog};
      my $click_all_links;
      my $null;
      my %hsp_count;
@@ -564,7 +559,7 @@ sub gen_results_page
 	   }
        }
      my $t1 = new Benchmark;
-     my ($chromosome_data, $chromosome_data_large) = generate_chromosome_images(results=>$results,large_width=>$width,hsp_type=>$type, resultslimit=>$resultslimit);
+     my ($chromosome_data, $chromosome_data_large) = generate_chromosome_images(results=>$results,large_width=>$width,, resultslimit=>$resultslimit);
      my $t2 = new Benchmark;
      unless (@hsp) 
        {
@@ -593,7 +588,6 @@ sub gen_results_page
      foreach my $item (@$chromosome_data)
        {
 	 next unless $item->{DB_NAME} =~ /No Hits.*_new>(.*)<\/a>/i;
-#	 print STDERR Dumper $item;
 	 $hsp_count .= "<br><span class=\"small\">None for $1</span>";
        }
      $template->param(HSP_COUNT=>$hsp_count);
@@ -623,7 +617,7 @@ sub gen_results_page
      }
      $template->param(CHROMOSOMES=>$chromosome_element);
      $template->param(BLAST_RESULTS=>1);
-     $template->param(DATA_FILES=>gen_data_file_summary());
+     $template->param(DATA_FILES=>gen_data_file_summary(prog=>$prog));
      my $html = $template->output;
      my $box_template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
      $box_template->param(BOX_NAME=>"CoGeBlast Results");
@@ -638,18 +632,27 @@ Time to gen tables:              $table_time
 Time to gen images:              $figure_time
 Time to gen results:             $render_time
 };
-#     print STDERR $benchmark;
      write_log($benchmark, $cogeweb->logfile);
      return $outhtml, $click_all_links;
    }
 
 sub gen_data_file_summary
   {
+    my %opts = @_;
+    my $prog = $opts{prog};
     my $html = "<table><tr>";
     $html .= qq{<td class = small valign="top">Export Data};
     $html .= "<div class=xsmall><A HREF=\"#\" onClick=\"get_all_hsp_data();\">HSP Data</A></DIV>\n";
     $html .= "<div class=xsmall><A HREF=\"#\" onClick=\"get_query_fasta();\">Query FASTA File</A></DIV>\n";
-    $html .= "<div class=xsmall><A HREF=\"#\" onClick=\"get_subject_fasta();\">Subject FASTA File</A></DIV>\n";
+    if ($prog eq "tblastn")
+      {
+	$html .= "<div class=xsmall><A HREF=\"#\" onClick=\"get_subject_fasta();\">Subject Protein FASTA File</A></DIV>\n";
+	$html .= "<div class=xsmall><A HREF=\"#\" onClick=\"get_subject_fasta('dna');\">Subject DNA FASTA File</A></DIV>\n";
+      }
+    else
+      {
+	$html .= "<div class=xsmall><A HREF=\"#\" onClick=\"get_subject_fasta();\">Subject FASTA File</A></DIV>\n";
+      }
     $html .= "<div class=xsmall><A HREF=\"#\" onClick=\"get_alignment_file();\">Alignment File</A></DIV>\n";
     $html .= qq{<td class = small valign="top">SQLite db};
     #my $dbname = $TEMPURL."/".basename($cogeweb->sqlitefile);
@@ -809,7 +812,6 @@ sub generate_chromosome_images
 		$image_map = get_map($cogeweb->basefile."_$count.$hsp_type.map");
 		$large_image_file = $data{$org}{image}."_$count"."_large.png";
 		$image_map_large = get_map($cogeweb->basefile."_$count.$hsp_type.large.map");
-		#print STDERR $image_map_large,"\n";
 		($x, $image_file) = check_taint($image_file);
 		($x, $large_image_file) = check_taint($large_image_file);
 	      }
@@ -1083,8 +1085,6 @@ sub get_hsp_info
     my $qlength = $qstop - $qstart;
     
     my ($sub_chr) = $sname =~ /chromosome: (.*?),/;
-#    print STDERR "$hsp_num, $pval, $pid,$psim, $score, $qgap, $sgap, $match,$qmismatch, $smismatch, $strand, $length,$qposition,$sposition,$qalign,$salign,$align,$qname,$sname\n";
-         
     my $query_name = "<pre>".$qname."</pre>";
     $query_name = wrap('','',$query_name);
     $query_name =~ s/\n/<br>/g;
@@ -1118,7 +1118,6 @@ sub get_hsp_info
      $template->param(HSP_QS=>\@table1);
      $template->param(HSP_HSP=>\@table2);
 
-    #print STDERR join ("\n", $qalign, $align, $salign),"\n";
      my ($sub_dsid) = $sname =~ /id: (\d+)/;
      my $align_str = "";
      my $query_seq = $qalign;
@@ -1152,7 +1151,6 @@ sub get_hsp_info
      }
     $align_str =~ s/<br>$//;
     $align_str =~ s/\./ /g;
-    #print STDERR $align_str,"\n";
      $align_str = "<pre>$align_str</pre>";
      
      $template->param(QUERY_SEQ=>qq{<a href="#" onclick="show_seq('$query_seq','$query_name',1,'seqObj','seqObj','}.$qstart."','".$qstop.qq{')">Click for Query Sequence</a>});
@@ -1257,7 +1255,6 @@ sub generate_hit_image
     $cq->add_feature($feat);
     my ($dsid) = $hsp->{sname} =~ /id: (\d+)/;
     my ($ds) = $coge->resultset('Dataset')->resolve($dsid);
-#    print STDERR $dsid,"::",$ds->name,"!!!\n";;
     my ($chr) = $hsp->{sname} =~ /chromosome: (.*?),/;
     my $len = $hsp->{sstop} - $hsp->{sstart}+1;
     my $start = $hsp->{sstart}-5000;
@@ -1331,7 +1328,6 @@ sub overlap_feats_parse #Send to GEvo
     my $url = "/CoGe/GEvo.pl?";
     my ($chr,$dsid,$loc);
     my $count = 1;
-    #print STDERR $url,"\n";
     foreach my $featid (split /,/,$accn_list)
     {
 		if($featid=~/no/)
@@ -1507,7 +1503,6 @@ INSERT INTO sequence_info (name, type, length) values ("$sname","subject","$slen
 sub get_nearby_feats
   {
     my %opts = @_;
-#    print STDERR Dumper \%opts;
     my $hsp_id = $opts{num};
     my $filename = $opts{basefile};
     $cogeweb = initialize_basefile(basename=>$filename, prog=>"CoGeBlast");
@@ -1585,9 +1580,6 @@ order by abs((start + stop)/2 - $mid) LIMIT 10
 	$distance = "No neighboring features found";
       }
     
-    #print STDERR $new_checkbox_info,"\n";
-#    print STDERR Dumper $name,$distance,$hsp_id,$new_checkbox_info;
-#    print STDERR "\n";
     return $name,$distance,$hsp_id,$new_checkbox_info;
     
   }
@@ -1912,9 +1904,10 @@ sub export_hsp_query_fasta
 }
 
 sub export_hsp_subject_fasta
-{
-	my $filename = shift;
-	my $cogeweb = initialize_basefile(basename=>$filename, prog=>"CoGeBlast");
+  {
+    my $filename = shift;
+    my $dna = 1 if shift;
+    my $cogeweb = initialize_basefile(basename=>$filename, prog=>"CoGeBlast");
     my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
 
     my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data});
@@ -1922,17 +1915,26 @@ sub export_hsp_subject_fasta
     my ($fasta,$subject_seq,$name,$sstart,$sstop, $hsp_num);
     while (my $row = $sth->fetchrow_hashref())
       {
-#	print STDERR Dumper $row;
-      	$subject_seq = $row->{salign};
       	$name = $row->{sname};
+	my ($chr, $dsid) = $name =~ /chromosome:\s+(\S+?),?.*?id:\s+(\d+)/;
+	my $strand = $row->{strand} =~ /\+/ ? 1 : -1;
       	$sstart = $row->{sstart};
       	$sstop = $row->{sstop};
 	$hsp_num = $row->{hsp_num};
       	$name =~ s/^\s+//;
       	$name =~ s/\s+$//;
 	$name =~ s/\s+/_/g;
-      	$subject_seq =~ s/-//g;
-      	$fasta .= ">HSP".$hsp_num."_".$name.", Location: ".$sstart."-".$sstop."\n".$subject_seq."\n";
+	if ($dna)
+	  {
+	    my ($ds) = $coge->resultset('Dataset')->find($dsid);
+	    $subject_seq = $ds->get_genomic_sequence(chr=>$chr, strand=>$strand, start=>$sstart, stop=>$sstop);
+	  }
+	else
+	  {
+	    $subject_seq = $row->{salign};
+	    $subject_seq =~ s/-//g;
+	  }
+	$fasta .= ">HSP".$hsp_num."_".$name.", Location: ".$sstart."-".$sstop."($strand)"."\n".$subject_seq."\n";
       }
     open(NEW,"> $TEMPDIR/subject_fasta_$filename.txt");
     print  NEW $fasta;
@@ -1968,7 +1970,6 @@ sub export_alignment_file
       	$align = $row->{align};
       	$str .= "HSP: ".$hsp_num."\n>Query: ".$qname.", Subsequence: ".$qstart."-".$qstop."\n>Subject: ".$sname.", Location: ".$sstart."-".$sstop."\n".$qseq."\n".$align."\n".$sseq."\n\n";
     }
-    #print STDERR $str;
     $str =~ s/\n+$//;
     open(NEW,"> $TEMPDIR/alignment_file_$filename.txt");
     print  NEW $str;
