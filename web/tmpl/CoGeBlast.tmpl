@@ -166,8 +166,16 @@ function get_query_fasta() {
 	export_hsp_query_fasta(['args__'+pageObj.basename],[export_file]);
 }
 
-function get_subject_fasta() {
-	export_hsp_subject_fasta(['args__'+pageObj.basename],[export_file]);
+function get_subject_fasta(val) {
+  if (val)
+   {
+    export_hsp_subject_fasta(['args__'+pageObj.basename,'args__'+val],[export_file]);
+   }
+  else
+   {
+    export_hsp_subject_fasta(['args__'+pageObj.basename],[export_file]);
+   }
+   
 }
 
 function get_alignment_file() {
