@@ -179,6 +179,7 @@ sub gen_body
 	foreach my $orgid (split /,/,$prefs->{orgids})
 	  {
 	    my ($id, $org) = get_from_id($orgid);
+	    next unless ($id);
 	    $db_list .= qq{
         add_to_list('$id', '$org');
 }
@@ -349,6 +350,7 @@ sub get_from_id
     my $id = shift;
     #print STDERR "search for $id\n";
     my ($obj) = $coge->resultset('Organism')->find($id);
+    return unless $obj;
     my $org = $obj->name;
     return ($id,$org);
   }
