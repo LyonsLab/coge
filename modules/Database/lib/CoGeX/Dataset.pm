@@ -124,7 +124,7 @@ sub get_genomic_sequence {
 	$str .= $g->sequence_data;
       }
     }
-  $str = $self->reverse_complement($str) if $strand =~ /-/;
+  $str = $self->reverse_complement($str) if $strand && $strand =~ /-/;
   return $str;
 }
 
