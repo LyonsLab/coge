@@ -246,14 +246,17 @@ sub get_dataset_info
 	$count++;
       }
     my @chr = sort {$chr{$a} <=> $chr{$b}}keys %chr;
+    
     if (@chr)
       {
+	my $size = scalar @chr;
+	$size = 5 if $size > 5;
 	$html .= qq{<tr><td>Chromosome};
 	$html .= "s". " (".scalar @chr.")" if scalar @chr > 1;
 	$html .= ":";
 	$html .= "<td>";
     my $select;
-	$select .= qq{<SELECT id="chr" onChange="gen_data(['args__searching for features. . .'],['chr_info']); gen_data(['args__waiting. . .'],['viewer']); gen_data(['args__'],['get_seq']); get_dataset_chr_info(['ds_id', 'chr'],['chr_info','viewer', 'get_seq'])" >\n};
+	$select .= qq{<SELECT id="chr" size =$size onChange="gen_data(['args__searching for features. . .'],['chr_info']); gen_data(['args__waiting. . .'],['viewer']); gen_data(['args__'],['get_seq']); get_dataset_chr_info(['ds_id', 'chr'],['chr_info','viewer', 'get_seq'])" >\n};
 	$select .= join ("\n", map {"<OPTION value=\"$_\">".$_."</OPTION>"} @chr)."\n";
 	$select =~ s/OPTION/OPTION SELECTED/;
 	$select .= "\n</SELECT>\n";
