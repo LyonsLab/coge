@@ -15,6 +15,13 @@ function dataset_chain(val) {
  get_dataset(['args__oid','org_id'],[dataset_info_chain]);
 }
 
+function recent_dataset_chain() {
+ $('#ds_list').html('<input type=hidden id = "ds_id"><font class="loading. . ."></font>');
+ $('#ds_info').html('<input type=hidden id = "chr">');
+ $('#chr_info').html('<input type=hidden id = "ds_id">');
+ get_dataset(['args__oid','recent_org_id'],[dataset_info_chain]);
+}
+
 function dataset_info_chain(val, val2) {
  $('#chr_info').html('<font class="loading"></font>');
  $('#ds_info').html('<input type=hidden id = "chr"><font class="loading">loading. . .</font>');
@@ -155,10 +162,16 @@ function changeColor(id, color) {
 <TABLE>
  <TR>
   <TD valign=top>
+  <table>
+   <TR><TD valign=top>
    <DIV class = "oblique">Organisms: </DIV>
    <DIV style="">Organism Name: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_NAME">" name = "org_name" id="org_name" style="font-style:italic" onFocus="search_bar('org_name')" onKeyUp='timing("org_name");'></DIV>
    <DIV>Organism Description: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_DESC">" name = "org_desc" id="org_desc" style="font-style:italic" onFocus="search_bar('org_desc')" onKeyUp='timing("org_desc");'></DIV>
    <DIV id="org_list"><TMPL_VAR NAME="ORG_LIST"></DIV>
+   <td valign=top>
+   Organisms With Recently Added Datasets:
+    <DIV id="recent_orgs"><a href="#" onclick="get_recent_orgs([],['recent_orgs']);">Show</a></DIV>
+  </Table>
 <TR nowrap>
   <TD valign=top nowrap>
   <table>
