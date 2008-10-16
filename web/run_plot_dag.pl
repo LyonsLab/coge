@@ -26,8 +26,9 @@ my $org2 = $FORM->param('org2');
 my $chr1 = $FORM->param('chr1');
 my $chr2 = $FORM->param('chr2');
 my $basename = $FORM->param('base');
+my $url_only = $FORM->param('link');
+my $square = $FORM->param('square');
 $DEBUG=1 if $FORM->param('debug');
-
 exit unless ($org1 && $org2 && $chr1 && $chr2 && $basename);
 my ($md51, $md52, $mask1, $mask2, $type1, $type2, $blast,$params) = $basename =~/(.*?)_(.*?)\.(\d+)-(\d+)\.(\w+)-(\w+)\.(\w+)\.dag_(.*)/ ;
 
@@ -39,11 +40,15 @@ my @ds2 = $org2->current_datasets(type=>$mask2);
 
 my %params;
 
+
+
 foreach my $ds (@ds1)
   {
     foreach my $chr ($ds->get_chromosomes)
       {
-	next unless $chr == $chr1;
+	my @tmp = split/_/,$chr; #this stuff is a hack to deal with chromosome names liek supercontig_1 which are passed in as "1" . . .
+	next unless $chr eq $chr1 || $chr1 eq $tmp[-1];
+	$chr1 = $chr if $chr ne $chr1;
 	my $last = $ds->last_chromosome_position($chr);
 	$params{1}= {dsid => $ds->id,
 		     chr_end=>$last};
@@ -54,21 +59,25 @@ foreach my $ds (@ds2)
   {
     foreach my $chr ($ds->get_chromosomes)
       {
-	next unless $chr == $chr2;
+	my @tmp = split/_/,$chr;
+	next unless $chr eq $chr2 || $chr2 eq $tmp[-1];
+	$chr2 = $chr if $chr ne $chr2;
 	my $last = $ds->last_chromosome_position($chr);
 	$params{2}= {dsid => $ds->id,
 		     chr_end=>$last};
       }
   }
+
 my $name1 = $org1->name;
 $name1 =~ s/\s+/_/g;
 $name1 =~ s/\(//g;
 $name1 =~ s/\)//g;
-
+$name1 =~ s/://g;
 my $name2 = $org2->name;
 $name2 =~ s/\s+/_/g;
 $name2 =~ s/\(//g;
 $name2 =~ s/\)//g;
+$name2 =~ s/://g;
 my $dir = "$DIAGSDIR/$name1"."_".$name2;
 my $dag_file = $dir."/".$basename;
 $dag_file =~ s/\.dag_.*//;
@@ -78,7 +87,15 @@ my $res = generate_dotplot(dag=>$dag_file, coords=>"$dir/$basename.all.aligncoor
 if ($res)
   {
     $res=~s/$DIR/$URL/;
-    print qq{Content-Type: text/html
+    print $res if $url_only;
+    #open (IN, $res);
+    #my $file = join ("",<IN>);
+    #close IN;
+    #$res=~s/$DIR/$URL/;
+    #$res =~ s/html$/png/;
+    #$file =~ s/src=".*?"/src="$res"/;
+    #print "Content-Type: text/html\n\n";
+print qq{Content-Type: text/html
 
 
 <html>
@@ -87,7 +104,8 @@ if ($res)
 $res
 </head>
 </html>
-}
+};
+    #print $file;
   }
 
 #input file
@@ -120,7 +138,9 @@ sub generate_dotplot
 #	write_log("generate dotplot: file $outfile already exists",$cogeweb->logfile);
 	return $outfile;
       }
-    my $cmd = "$PLOT_DAG -d $dag -a $coords --html $outfile --q_dsid $q_dsid --s_dsid $s_dsid --qchr $qchr --schr $schr --q_max $q_max --s_max $s_max";
+    my $cmd = "$PLOT_DAG -d $dag -a $coords --html $outfile --q_dsid $q_dsid --s_dsid $s_dsid --qchr $qchr --schr $schr";
+    $cmd .= " --q_max $q_max" if $q_max;
+    $cmd .= " --s_max $s_max" if $s_max;
 #    my $cmd = "$DAG_PLOT -d $dag -a $coords -f $outfile";
     $cmd .= " --q_label=$q_label" if $q_label;
     $cmd .= " --s_label=$s_label" if $s_label;
