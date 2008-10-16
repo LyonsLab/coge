@@ -46,11 +46,11 @@
 	    background-color: white;
 	    color: purple;
         }
-	#wobble_GC_usage_first_50 {
+/*	#wobble_GC_usage_first_50 {
 	    background-color: white;
 	    color: purple;
         }
-	   
+*/   
         #func_dom {
          //   background-color: white;
              color:orange;
@@ -119,10 +119,10 @@
                  ,{'ds':ds,'chr':chr,'version':version,layers:"CDS,cbc",'organism':org}
                  ,{isBaseLayer:false}
              );
-            wobble_GC_usage_first_50 = new OpenLayers.Layer.Genomic( "<span id='wobble_GC_usage_first_50'>Wobble GC Usage (first 50 codons)</span>" , server
-                 ,{'ds':ds,'chr':chr,'version':version,layers:"CDS,cbc50",'organism':org}
-                 ,{isBaseLayer:false}
-             );
+//            wobble_GC_usage_first_50 = new OpenLayers.Layer.Genomic( "<span id='wobble_GC_usage_first_50'>Wobble GC Usage (first 50 codons)</span>" , server
+//                 ,{'ds':ds,'chr':chr,'version':version,layers:"CDS,cbc50",'organism':org}
+//                 ,{isBaseLayer:false}
+//             );
             local_dup = new OpenLayers.Layer.Genomic( "<span id='local_dup'>Local Duplicates</span>" , server
                  ,{'ds':ds,'chr':chr,layers:"local_dup",'version':version,'organism':org,}
                  ,{isBaseLayer:false}
@@ -149,8 +149,8 @@
             map.addLayer(genes);
             wobble_GC_usage.setVisibility(<TMPL_VAR NAME="WOBBLEGC">);
             map.addLayer(wobble_GC_usage);
-            wobble_GC_usage_first_50.setVisibility(<TMPL_VAR NAME="WOBBLE50GC">);
-            map.addLayer(wobble_GC_usage_first_50);
+//            wobble_GC_usage_first_50.setVisibility(<TMPL_VAR NAME="WOBBLE50GC">);
+//            map.addLayer(wobble_GC_usage_first_50);
             local_dup.setVisibility(<TMPL_VAR NAME="LOCALDUP">);
             map.addLayer(local_dup);
             func_domain.setVisibility(<TMPL_VAR NAME="FUNCDOMAIN">);
