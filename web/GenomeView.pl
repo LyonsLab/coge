@@ -28,8 +28,8 @@ $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 $FORM = new CGI;
 ($USER) = CoGe::Accessory::LogUser->get_user();
 $coge = CoGeX->dbconnect();
-#$coge->storage->debugobj(new DBIxProfiler());
-#$coge->storage->debug(1);
+$coge->storage->debugobj(new DBIxProfiler());
+$coge->storage->debug(1);
 
 my $pj = new CGI::Ajax(
 		       get_dataset => \&get_dataset,
@@ -37,6 +37,7 @@ my $pj = new CGI::Ajax(
 		       get_dataset_chr_info => \&get_dataset_chr_info,
 		       gen_data => \&gen_data,
 		       get_orgs => \&get_orgs,
+		       get_recent_orgs=>\&get_recent_orgs,
 		       get_start_stop=>\&get_start_stop,
 		       get_feature_counts => \&get_feature_counts,
 		       gen_gc_for_chromosome=> \&gen_gc_for_chromosome,
@@ -93,6 +94,7 @@ sub gen_body
     $template->param(ORG_DESC=>$desc) if $desc;
     $name = "" if $name =~ /Search/;
     $template->param(ORG_LIST=>get_orgs(name=>$name));
+    #$template->param(RECENT=>get_recent_orgs());
     my ($ds) = $coge->resultset('Dataset')->resolve($dsid) if $dsid;
     $dsname = $ds->name if $ds;
     $dsname = "Search" unless $dsname;
@@ -103,6 +105,46 @@ sub gen_body
     $template->param(ORG_LIST=>$orglist) if $orglist;
     return $template->output;
   }
+
+sub get_recent_orgs
+  {
+    my %opts = @_;
+    my $limit = $opts{limit} || 100;
+    my @db = $coge->resultset("Dataset")->search({},
+						 {
+						  distinct=>"organism.name",
+						  join=>"organism",
+						  order_by=>"me.date desc",
+						  rows=>$limit}
+						);
+    ($USER) = CoGe::Accessory::LogUser->get_user();
+    my $restricted_orgs = restricted_orgs(user=>$USER);
+    my @opts;
+    my %org_names;
+    foreach my $item (@db)
+      {
+	my $date = $item->date;
+	$date =~ s/\s.*//;
+	next if $restricted_orgs->{$item->organism->name};
+	next if $org_names{$item->organism->name};
+	$org_names{$item->organism->name}=1;
+	push @opts, "<OPTION value=\"".$item->organism->id."\">".$date." ".$item->organism->name." (id".$item->organism->id.") "."</OPTION>";
+      }
+    my $html;
+#    $html .= qq{<FONT CLASS ="small">Organism count: }.scalar @opts.qq{</FONT>\n<BR>\n};
+    unless (@opts) 
+      {
+	$html .=  qq{<input type = hidden name="org_id" id="org_id">};
+	return $html;
+      }
+
+    $html .= qq{<SELECT id="recent_org_id" SIZE="5" MULTIPLE onChange="recent_dataset_chain()" >\n};
+    $html .= join ("\n", @opts);
+    $html .= "\n</SELECT>\n";
+    $html =~ s/OPTION/OPTION SELECTED/;
+    return $html;
+  }
+
 
 sub get_orgs
   {
