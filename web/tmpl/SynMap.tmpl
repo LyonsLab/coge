@@ -19,9 +19,9 @@ if(!pageObj.basename)
   	$('#log_text').show(0);
 
   pageObj.nolog=1;
-  setTimeout("monitor_log()", 2000);
+  setTimeout("monitor_log()", 5000);
   
-go(['args__oid1','org_id1','args__oid2','org_id2','args__D','D','args__g','g','args__A','A','args__chr_length_limit','chr_length_limit','args__blast','blast', 'args__seq_type1','seq_type1', 'args__seq_type2','seq_type2','args__masked1','masked1', 'args__masked2','masked2','args__jobtitle','jobtitle','args__basename','args__'+pageObj.basename,'args__email','email','args__show_diags_only','args__'+$('#show_diags_only')[0].checked,'args__flip_output','args__'+$('#flip_output')[0].checked, 'args__regen_images','args__'+$('#regen_images')[0].checked],[handle_results]);
+go(['args__oid1','org_id1','args__oid2','org_id2','args__D','D','args__g','g','args__A','A','args__blast','blast', 'args__seq_type1','seq_type1', 'args__seq_type2','seq_type2','args__masked1','masked1', 'args__masked2','masked2','args__jobtitle','jobtitle','args__basename','args__'+pageObj.basename,'args__email','email','args__regen_images','args__'+$('#regen_images')[0].checked],[handle_results]);
 }
 
 function handle_results(val){
@@ -244,7 +244,7 @@ function reset_basename(){
   if (dag) message += dag;
   if (results) message += results;
   
-  if (!pageObj.finished && pageObj.nolog<8) {setTimeout("read_log(['args__logfile', 'args__'+pageObj.basename, 'args__prog','args__SynMap'], [monitor_log])",2000);}
+  if (!pageObj.finished && pageObj.nolog<8) {setTimeout("read_log(['args__logfile', 'args__'+pageObj.basename, 'args__prog','args__SynMap'], [monitor_log])",5000);}
   
   if (message) $('#log_text').html(message);
 }
@@ -253,15 +253,24 @@ function synteny_zoom(oid1, oid2, basename, chr1, chr2)
 {
  var url = '/CoGe/run_plot_dag.pl?org1='+oid1+';org2='+oid2+';chr1='+chr1+';chr2='+chr2+';base='+basename;
  var loc = $('#map_loc').val();
- if (loc == 'window')
+ if (/window/.test(loc))
   {
-    window.open(url,'synteny_zoom','status=1,width=576,height=504');
+    get_plot_dag(['args__src','args__'+url, 'args__loc','args__'+loc, 'args__flip','args__'+$('#flip')[0].checked,'args__regen_images','args__'+$('#regen_images')[0].checked],[open_window]);
   }
  else
   {
-    $('#syn_loc'+loc).html("<iframe src="+url+" width=576 height=504 scrolling=no></iframe>");
+    get_plot_dag(['args__src','args__'+url, 'args__flip','args__'+$('#flip')[0].checked,'args__regen_images','args__'+$('#regen_images')[0].checked],['syn_loc'+loc]);
   }
 }
+
+function open_window (url, loc, width, height)
+ {
+    my_window = window.open(url,loc,'"width='+width+',height='+height+', scrollbars=1"');
+//    console.log(width+"::"+height);
+//    height = parseInt(height)+parseInt(50);
+//    console.log(height);
+    my_window.resizeTo(width,height);
+ }
 
 </script>
 <table><tr><td>
@@ -346,41 +355,23 @@ function synteny_zoom(oid1, oid2, basename, chr1, chr2)
 <table>
  <TR>
    <TD>Blast Algorithm:
-   <TD><select id="blast" name="blast">
+   <select id="blast" name="blast">
         <OPTION VALUE="1" selected>BlastN
         <OPTION VALUE="2">TBlastX
        </select>
    </td>
+  <TR>
    <td>E-mail results? <input type=checkbox id=check_email onclick="toggle_email_field()"></td>
 		<td><div class=email_box style="display:none;">Your E-mail Address: <input type=text id=email onBlur='address_validity_check()'>
 		<br>
 		<font id=email_error class="small" style="display: none; color: red;">You have supplied an invalid e-mail address.</font></div></td>
- <TR>
-   <TD>Minimum length of chromosomes (bp):
-   <TD><input type=text size=8 id="chr_length_limit" value="1000000">
-   <td><div class=email_box style="display:none;">Job Title:</div></td>
-   <td><div class=email_box style="display:none;"><input type=text id=jobtitle> <input type=button value="Use Org Names" onClick="fill_jobtitle()"></div></td>
- <TR>
-   <TD>Only show comparisons with diagonals?
-   <TD><input type=checkbox name="show_diags_only" id="show_diags_only">
- <TR>
-   <TD>Flip output grid?
-   <TD><input type=checkbox name="flip_output" id="flip_output">
+		<td><div class=email_box style="display:none;">Job Title:</div></td>
+		<td><div class=email_box style="display:none;"><input type=text id=jobtitle> <input type=button value="Use Org Names" onClick="fill_jobtitle()"></div></td>
+
  <TR>
    <TD>Regenerate dotplot images?
-   <TD><input type=checkbox name="regen_images" id="regen_images">
-<!-- <TR>
-   <TD>Pop-up Annotations?
-   <TD><input type=checkbox name="popup_anno" id="popup_anno">-->
+   <input type=checkbox name="regen_images" id="regen_images">
 </TABLE>
-<td valign = top>
-Zoomed SynMap Display Location:
-<select name=map_loc id=map_loc>
- <option value="window">New Window
- <option value="1" selected>Area 1
- <option value="2">Area 2
- <option value="3">Area 3
-</select>
 </TABLE>
 </TABLE>
 </div>
