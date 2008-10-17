@@ -22,7 +22,7 @@ unless ($ds)
     print "Unable to find a dataset for $dsid\n";
     exit;
   }
-print "Do you want to delete:  \n\t".$ds->name.": ".$ds->description." (y/n)?\n";
+print "Do you want to delete:  \n\t".$ds->name.": ".$ds->description." from organism".$ds->organism->name,": ".$ds->organism->description," (y/n)?\n";
 my $var = <STDIN>;
 if ($var =~ /y/i)
   {
