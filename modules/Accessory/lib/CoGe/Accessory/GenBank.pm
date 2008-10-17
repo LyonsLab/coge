@@ -9,7 +9,7 @@ use CoGe::Accessory::GenBank::Feature;
 use CoGeX::Feature;
 use Roman;
 
-__PACKAGE__->mk_accessors qw(id locus accn seq_length moltype division date definition version gi keywords data_source dataset organism sequence srcfile dir anntoation features start stop chromosome add_gene_models _has_genes);
+__PACKAGE__->mk_accessors qw(id locus accn seq_length moltype division date definition version gi keywords data_source dataset organism sequence srcfile dir anntoation features start stop chromosome add_gene_models _has_genes wgs wgs_scafld wgs_data);
 
 
 
@@ -18,6 +18,7 @@ sub new
     my $self = shift;
     $self = __PACKAGE__->SUPER::new(@_);
     $self->features([]) unless $self->features;
+    $self->wgs_data([]) unless $self->wgs_data;
     return $self;
   }
 
@@ -30,26 +31,67 @@ sub get_genbank_from_ncbi
     my $start = $opts{start};
     my $length = $opts{length};
     my $file = $opts{file};
-    my $url = "http://www.ncbi.nlm.nih.gov/entrez/viewer.fcgi?db=nucleotide&qty=1&c_start=1&list_uids=$id&dopt=gb&send=Send&sendto=t&from=begin&to=end&extrafeatpresent=1&ef_MGC=16";
+    $self->srcfile($file);
+    my $url = "http://www.ncbi.nlm.nih.gov/entrez/viewer.fcgi?db=nucleotide&qty=1&c_start=1&dopt=gbwithparts&send=Send&sendto=t&from=begin&to=end&extrafeatpresent=1&ef_CDD=8&ef_MGC=16&ef_HPRD=32&ef_STS=64&ef_tRNA=128&ef_microRNA=256&ef_Exon=512&list_uids=";
     my $ua = new LWP::UserAgent;
-    if ($file)
+    unless ($file)
       {
-	unless (-r $file)
+	print STDERR "must specify a file where the gb file exists or where it will be written using file=>$file!\n";
+	return;
+      }
+
+    my @files = ([$file,$id]);
+    if ($id =~ /^NZ_\w\w\w\w00000000/i)
+      {
+	#we have shotgun sequence.  There is inconsistencies with how these can be stored.  Often there accession NZ_XXXX00000000 and XXXX00000000 are both available.  Sometimes one of these accessions has a more useful sequence by either having annotations, or having better contig assembly.  We'll try to figure that out!
+	my $tmp = $file;
+	$tmp =~ s/NZ_//i;
+	my $tmpid = $id;
+	$tmpid =~ s/NZ_//i;
+	push @files, [$tmp, $tmpid];
+      }
+    foreach my $tmp (@files)
+      {
+	my ($fileloc, $accn) = @$tmp;
+	unless (-r $fileloc)
 	  {
-	    $ua->mirror($url, $file);
+	    $ua->mirror($url."$accn", $fileloc);
 	  }
+      }
+    if (@files == 1)
+      {
 	return $self->parse_genbank_file(file=>$file, rev=>$rev, start=>$start, length=>$length);
       }
-
-    my $search = $ua->get($url);
-    unless ($search->is_success)
+    my @gbs;
+    foreach my $tmp (@files)
       {
-	print STDERR "Trouble retrieving $id: ", $search->status_link,"\n";
+	my ($fileloc, $accn) = @$tmp;
+	my $gb = $self->new();
+	$gb->srcfile($fileloc);
+	$gb->parse_genbank_file(file=>$fileloc, rev=>$rev, start=>$start, length=>$length);
+	push @gbs, $gb;
       }
-
-    return $self->parse_genbank(content=>$search->content, rev=>$rev, start=>$start);    
-
+    #try to find the one with the most features
+    my $best_gb = $gbs[0];
+    my $max_count=0;
+    foreach my $gb (@gbs)
+      {
+	my $feat_count = 0;
+	foreach my $item (@{$gb->wgs_data})
+	  {
+	    $feat_count += scalar @{$item->features}-1;
+	    $feat_count --; #subtract one for each dataset -- this gives an advantage to that dataset with fewer contigs
+	  }
+	if ($feat_count > $max_count)
+	  {
+	    $best_gb = $gb;
+	    $max_count = $feat_count;
+	  }
+      }
+    $self->parse_genbank_file(file=>$best_gb->srcfile, rev=>$rev, start=>$start, length=>$length);  #reparse and go!
+    return $self;
   }
+
 
 
 sub parse_genbank_file
@@ -86,6 +128,11 @@ sub parse_genbank_file
 	    $seq_flag = 1;
 	    $feature_flag = 0;
 	    next;
+	  }
+	if ($line =~ /^WGS/)
+	  {
+	    $self->process_line(line=>$working_line, rev=>$rev, start=>$start, feature_flag=>$feature_flag, length=>$length);
+	    $feature_flag=0;
 	  }
 	if ($feature_flag && $line =~ /^\s\s\s\s\s\w/)
 	  {
@@ -144,6 +191,7 @@ sub parse_genbank_file
 	$self->chromosome(arabic( $self->chromosome )) if $self->chromosome && isroman($self->chromosome);
       }
     $self->_check_for_gene_models() if $self->add_gene_models;
+    $self->process_wgs if ($self->wgs);
     return $self;
   }
 
@@ -171,7 +219,7 @@ sub process_line
       }
     elsif ( $line =~ /^DEFINITION\s+(.*)/ ) {
       $self->definition($1);
-      if ($self->definition() =~ /(linkage group \w+),?/i || $self->definition =~ /chromosome (\w+),?/)
+      if ($self->definition() =~ /(linkage group \w+),?/i || $self->definition =~ /chromosome (\w+),?/ || $self->definition =~ /(plasmid \w+),?/i)
 	{
 	  $self->chromosome($1);
 	}
@@ -198,6 +246,14 @@ sub process_line
     elsif ( $line =~ /^ORGANISM\s+(.*)/ ) {
       $self->organism($1)
     }
+    elsif ($line =~ /^WGS\s+(.*)/)
+      {
+	$self->wgs($1);
+      }
+    elsif ($line =~ /^WGS_SCAFLD\s+(.*)/)
+      {
+	$self->wgs_scafld($1);
+      }
     elsif ( $feature_flag ) 
       {
 	my $iso;
@@ -701,6 +757,50 @@ sub reverse_genbank_location
 sub accession
   {
     shift->accn(@_);
+  }
+
+sub process_wgs
+  {
+    my $self = shift;
+    my $wgs = $self->wgs;
+    $wgs = $self->wgs_scafld if $self->wgs_scafld; #this is a better assembly
+    return unless $wgs;
+    my @ids;
+    if ($wgs =~/-/)
+      {
+	my ($id1, $id2) = split /-/, $wgs;
+	my ($head) = $id1=~/^(\D+)/;
+	my ($num1) = $id1=~/(\d+)/;
+	my ($num2) = $id2=~/(\d+)/;
+	my $num_len = length($num1);
+	for (my $i=$num1; $i<=$num2; $i++)
+	  {
+	    my $num = $i;
+	    while (length ($num) < $num_len)
+	      {
+		$num = "0".$num;
+	      }
+	    push @ids, $head.$num;
+	  }
+      }
+    else
+      {
+	push @ids, $wgs;
+      }
+    $self->wgs_data([]) unless $self->wgs_data();
+    my $file = $self->srcfile;
+    $file =~ s/[^\/]*$//;
+    foreach my $id(@ids)
+      {
+	my $gb = $self->new;
+	$gb->get_genbank_from_ncbi(accn=>$id, file=>$file.$id.".gbk");
+	push @{$self->wgs_data},$gb;
+#	my $url = "http://www.ncbi.nlm.nih.gov/entrez/viewer.fcgi?view=gbwithparts&val=".$id;
+#	my $ua = new LWP::UserAgent;
+#	my $response = $ua->get($url);
+#	my $content = $response->content if $response->is_success;
+#	print $content;
+      }
   }
 
 1;
