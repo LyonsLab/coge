@@ -28,6 +28,8 @@ my $chr2 = $FORM->param('chr2');
 my $basename = $FORM->param('base');
 my $url_only = $FORM->param('link');
 my $square = $FORM->param('square');
+my $flip = $FORM->param('flip');
+my $regen = $FORM->param('regen');
 $DEBUG=1 if $FORM->param('debug');
 exit unless ($org1 && $org2 && $chr1 && $chr2 && $basename);
 my ($md51, $md52, $mask1, $mask2, $type1, $type2, $blast,$params) = $basename =~/(.*?)_(.*?)\.(\d+)-(\d+)\.(\w+)-(\w+)\.(\w+)\.dag_(.*)/ ;
@@ -82,7 +84,7 @@ my $dir = "$DIAGSDIR/$name1"."_".$name2;
 my $dag_file = $dir."/".$basename;
 $dag_file =~ s/\.dag_.*//;
 $dag_file .= ".dag.all";
-my $res = generate_dotplot(dag=>$dag_file, coords=>"$dir/$basename.all.aligncoords", qchr=>"a".$md51."_".$chr1, schr=>"b".$md52."_".$chr2, qdsid=>$params{1}{dsid}, q_max=>$params{1}{chr_end},  sdsid=>$params{2}{dsid}, s_max=>$params{2}{chr_end}, 'qlabel'=>$name1.":".$chr1, 'slabel'=>$name2.":".$chr2, 'outfile'=>$dir."/html/".$md51."_".$chr1."-".$mask1."-".$type1."_".$md52."_".$chr2."-".$mask2."-".$type2."_".$params.".".$blast.".html", 'regen_images'=>'false');
+my $res = generate_dotplot(dag=>$dag_file, coords=>"$dir/$basename.all.aligncoords", qchr=>"a".$md51."_".$chr1, schr=>"b".$md52."_".$chr2, qdsid=>$params{1}{dsid}, q_max=>$params{1}{chr_end},  sdsid=>$params{2}{dsid}, s_max=>$params{2}{chr_end}, 'qlabel'=>$name1.":".$chr1, 'slabel'=>$name2.":".$chr2, 'outfile'=>$dir."/html/".$md51."_".$chr1."-".$mask1."-".$type1."_".$md52."_".$chr2."-".$mask2."-".$type2."_".$params.".".$blast.".html", 'regen_images'=>'false', flip=>$flip, regen_images=>$regen);
 
 if ($res)
   {
@@ -131,8 +133,9 @@ sub generate_dotplot
     my $s_label = $opts{slabel};
     my $q_max = $opts{"q_max"};
     my $s_max = $opts{"s_max"};
-    my $regen_images = $opts{regen_images}=~/true/i ? 1 : 0;
-#    print STDERR Dumper \%opts;
+    my $flip = $opts{flip};
+    $outfile =~ s/html$/flip\.html/ if $flip;
+    my $regen_images = $opts{regen_images};
     if (-r $outfile && !$regen_images)
       {
 #	write_log("generate dotplot: file $outfile already exists",$cogeweb->logfile);
@@ -144,8 +147,10 @@ sub generate_dotplot
 #    my $cmd = "$DAG_PLOT -d $dag -a $coords -f $outfile";
     $cmd .= " --q_label=$q_label" if $q_label;
     $cmd .= " --s_label=$s_label" if $s_label;
+    $cmd .= " --flip=$flip";
 #    write_log("generate dotplot: running $cmd", $cogeweb->logfile);
-    `$cmd`;
     print STDERR $cmd,"\n" if $DEBUG;
+    `$cmd`;
+
     return $outfile if -r $outfile;
   }
