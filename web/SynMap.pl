@@ -15,7 +15,7 @@ use GD;
 use File::Path;
 use Mail::Mailer;
 use Benchmark;
-
+use LWP::Simple;
 $ENV{PATH} = "/opt/apache2/CoGe/";
 umask(0);
 use vars qw( $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $FORMATDB $BLAST $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $TANDEM_FINDER $FILTER_REPETITIVE_MATCHES $RUN_DAGCHAINER $FIND_NEARBY $PLOT_DAG $DAG_PLOT);
@@ -56,7 +56,7 @@ my $pj = new CGI::Ajax(
 		       go=>\&go,
 		       check_address_validity=>\&check_address_validity,
 		       generate_basefile=>\&generate_basefile,
-		       get_iframe=>\&get_iframe,
+		       get_plot_dag=>\&get_plot_dag,
 		       %ajax,
 		      );
 print $pj->build_html($FORM, \&gen_html);
@@ -195,21 +195,24 @@ sub get_datasets
     foreach my $ds (@ds)
       {
 	my $name = $ds->name;
-        $name .= ": ".$ds->description if $ds->description;
+        #$name .= ": ".$ds->description if $ds->description;
         $name = "<a href=GenomeView.pl?dsid=".$ds->id." target=_new>".$name."</a>";
-#        my $source = $ds->datasource->name;
-#        $source .= ": ".$ds->datasource->description if $ds->datasource->description;
-#        $source = "<a href=".$ds->datasource->link." target=_new>".$source."</a>" if $ds->datasource->link;
-#        $source =~ s/href=/href=http:\/\// unless $source =~ /http/;
 	my $length = 0;
+	my $chr_count =0;
 	foreach my $chr ($ds->get_chromosomes)
-	  {$length += $ds->last_chromosome_position($chr);}
+	  {
+	    $length += $ds->last_chromosome_position($chr);
+	    $chr_count++;
+	  }
 	$length = reverse $length;
 	$length =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
 	$length = reverse $length;
         $html .= "<div";
         $html .= " class='even'" if $i % 2 == 0;
-        $html .= ">".join (", length: ", $name, $length. "bp")."</div>\n";
+        $html .= ">";
+	$html .= join (", length: ", $name, $length. "bp");
+	$html .= "; chr count: $chr_count";
+	$html .= "</div>\n";
 	if ($seq_type == 1) #want to use CDS.  Let's see if any exist for this dataset
 	  {
 	    foreach my $ft ($coge->resultset('Feature')->search(
@@ -589,29 +592,6 @@ sub add_reverse_match#this is for when there is a self-self comparison.  DAGchai
 
   }
 
-sub retrieve_chrs_with_diags
-  {
-    my %opts = @_;
-    my $infile = $opts{infile};
-    my %data;
-    open (IN, $infile);
-    while (<IN>)
-      {
-	next unless /^#/;
-	my @line = split/\s+/;
-	my $chr1 = $line[2];
-	my $chr2 = $line[4];
-	$chr1 =~ s/^a//;
-	$chr2 =~ s/^a//;
-	$chr1 =~ s/^b//;
-	$chr2 =~ s/^b//;
-	$data{$chr1}{$chr2}=1;
-	$data{$chr2}{$chr1}=1;
-      }
-    close IN;
-    return \%data;
-  }
-
 sub generate_dotplot
   {
     my %opts = @_;
@@ -630,17 +610,15 @@ sub generate_dotplot
     my $oid2 = $opts{oid2};
     my ($basename) = $coords =~ /([^\/]*).all.aligncoords/;
     my $regen_images = $opts{regen_images}=~/true/i ? 1 : 0;
+    my $width = $opts{width} || 10;
+    
     if (-r $outfile && !$regen_images)
       {
 	write_log("generate dotplot: file $outfile already exists",$cogeweb->logfile);
 	return 1;
       }
-#    my $cmd = "$PLOT_DAG -d $dag -a $coords --html $outfile --q_dsid $q_dsid --s_dsid $s_dsid --qchr $qchr --schr $schr --q_max $q_max --s_max $s_max";
-    my $cmd = qq{$DAG_PLOT -d $dag -a $coords -f $outfile -l 'javascript:synteny_zoom("$oid1","$oid2","$basename","XCHR","YCHR")'};
-#    $cmd .= " --q_label=$q_label" if $q_label;
-#    $cmd .= " --s_label=$s_label" if $s_label;
+    my $cmd = qq{$DAG_PLOT -d $dag -a $coords -f $outfile -l 'javascript:synteny_zoom("$oid1","$oid2","$basename","XCHR","YCHR")' -w $width -r 2 -g 1};
     write_log("generate dotplot: running $cmd", $cogeweb->logfile);
-    
     `$cmd`;
     return 1 if -r $outfile;
   }
@@ -655,8 +633,6 @@ sub go
     my $dagchainer_D = $opts{D};
     my $dagchainer_g = $opts{g};
     my $dagchainer_A = $opts{A};
-    my $chr_length_limit = $opts{chr_length_limit};
-    my $show_diags_only = $opts{show_diags_only};
     my $regen_images = $opts{regen_images};
     my $email = $opts{email};
     my $job_title = $opts{jobtitle};
@@ -665,9 +641,6 @@ sub go
     $cogeweb = initialize_basefile(basename=>$basename, prog=>"SynMap");
     
     $email = 0 if check_address_validity($email) eq 'invalid';
-    $show_diags_only = $show_diags_only eq "true" ? 1 : 0;
-    my $flip_output = $opts{flip_output};
-    $flip_output = $flip_output eq "true" ? 1 : 0;
     my $blast = $opts{blast};
     $blast = $blast == 2 ? "tblastx" : "blastn";
     my $seq_type1 = $opts{seq_type1};
@@ -749,6 +722,7 @@ sub go
 	$tmp =~ s/\s+/_/g;
 	$tmp =~ s/\(//g;
 	$tmp =~ s/\)//g;
+	$tmp =~ s/://g;
 	my $outfile = $DIAGSDIR."/".$tmp;
 	mkpath ($outfile,0,0777) unless -d $outfile;
 	$org_dirs{$org_dir}{dir}=$outfile;
@@ -792,11 +766,7 @@ sub go
 	my $tmp = $dagchainer_file;
 	$tmp =~ s/aligncoords/all\.aligncoords/;
 	run_find_nearby(infile=>$dagchainer_file, dag_all_file=>$dag_file12.".all", outfile=>$tmp);
-	add_reverse_match(infile=>$tmp) if $md51 eq $md52;
-	my $chrs_w_diags = retrieve_chrs_with_diags(infile=>$tmp) if $show_diags_only;
 	#generate dotplot images
-	my %chr1;
-	my %chr2;
 	my @ds1 = $org1->current_datasets(type=>$masked1);
 	unless (@ds1)
 	  {
@@ -809,132 +779,53 @@ sub go
 	    $masked2=1; #unmasked sequence
 	    @ds2 = $org2->current_datasets(type=>$masked2);
 	  }
-
+	my $org1_length =0;
+	my $org2_length =0;
+	my $chr1_count = 0;
+	my $chr2_count = 0;
 	foreach my $ds (@ds1)
 	  {
 	    foreach my $chr ($ds->get_chromosomes)
 	      {
-		next if $chr =~ /random/;
+		$chr1_count++;
 		my $last = $ds->last_chromosome_position($chr);
-		next if $last < $chr_length_limit;
-		$chr1{$md51."_".$chr}= {dsid => $ds->id,
-					chr_end=>$last};
+		$org1_length += $last;
 	      }
 	  }
 	foreach my $ds (@ds2)
 	  {
 	    foreach my $chr ($ds->get_chromosomes)
 	      {
-		next if $chr =~ /random/;
-		my $last = $ds->last_chromosome_position($chr);
-		next if $last < $chr_length_limit;
-		$chr2{$md52."_".$chr}= {dsid => $ds->id,
-					chr_end=>$last};
+		$chr2_count++;
+#		my $last = $ds->last_chromosome_position($chr);
+#		$org2_length += $last;
 	      }
 	  }
-
+	my $width = int($org1_length/10000000);
+	$width = 20 if $width > 20;
+	$width = 5 if $width < 5;
+	$width = 20 if $chr1_count > 9 || $chr2_count > 9;
 	my $name1 = $org_name1;
 	$name1 =~ s/\s+/_/g;
 	$name1 =~ s/\(//g;
 	$name1 =~ s/\)//g;
-
+	$name1 =~ s/://g;
 	my $name2 = $org_name2;
 	$name2 =~ s/\s+/_/g;
 	$name2 =~ s/\(//g;
 	$name2 =~ s/\)//g;
+	$name2 =~ s/://g;
 	my $qlead = "a";
 	my $slead = "b";
 	my $qdsid = "qdsid";
 	my $sdsid = "sdsid";
-	if ($flip_output)
-	  {
-	    my %tmp = %chr2;
-	    %chr2 = %chr1;
-	    %chr1 = %tmp;
-	    ($name1, $name2) = ($name2, $name1);
-	    $qlead = "b";
-	    $slead = "a";
-	    $qdsid = "sdsid";
-	    $sdsid = "qdsid";
-	  }
 	my $out = $org_dirs{$org_name1."_".$org_name2}{dir}."/html/";
 	mkpath ($out,0,0777) unless -d $out;
 	$out .="master_".$org_dirs{$org_name1."_".$org_name1}{basename};
-	generate_dotplot(dag=>$dag_file12.".all", coords=>$tmp, outfile=>"$out.png", regen_images=>$regen_images, oid1=>$oid1, oid2=>$oid2);
-#	foreach my $chr2 (sort keys %chr2)
-#	  {
-#	    my @chr2 = split/_/,$chr2;
-#	    foreach my $chr1 (sort keys %chr1)
-# 	      {
-# 		my @chr1 = split/_/,$chr1;
-# 		$pm->start and next;
-# 		my $out = $org_dirs{$org_name1."_".$org_name2}{dir}."/html/";
-# 		mkpath ($out,0,0777) unless -d $out;
-# 		$out .= "$chr1-$masked1-$seq_type1"."_".$chr2."-$masked2-$seq_type2"."_D$dagchainer_D"."_g$dagchainer_g"."_A$dagchainer_A".".$blast.html";
-# 		generate_dotplot(dag=>$dag_file12.".all", coords=>$tmp, outfile=>$out, qchr=>$qlead.$chr1, schr=>$slead.$chr2, $qdsid=>$chr1{$chr1}{dsid}, $sdsid=>$chr2{$chr2}{dsid},qlabel=>$name1.":".$chr1[-1],slabel=>$name2.":".$chr2[-1], q_max=>$chr1{$chr1}{chr_end}, s_max=>$chr2{$chr2}{chr_end}, regen_images=>$regen_images);
-# 		$pm->finish;
-# 	      }
-# 	  }
-# 	$pm->wait_all_children();
-#	my $count = scalar (keys %chr1) * scalar (keys%chr2);
-#	my $bm1 = new Benchmark;
-#	$html .= "<table cellspacing=0 cellpadding=0>";
-# 	my $id_num =1;
-# 	foreach my $tchr2 (sort keys %chr2)
-# 	  {
-# 	    $html .= "<tr align=center>";
-# 	    foreach my $tchr1 (sort keys %chr1)
-# 	      {
-# 		my ($chr1, $chr2) = ($tchr1, $tchr2);
-# 		my $out = $org_dirs{$org_name1."_".$org_name2}{dir}."/html/$chr1-$masked1-$seq_type1"."_".$chr2."-$masked2-$seq_type2"."_D$dagchainer_D"."_g$dagchainer_g"."_A$dagchainer_A".".$blast.html";
-# 		if ($show_diags_only)
-# 		  {
-# 		    unless ($chrs_w_diags->{$chr1}{$chr2})
-# 		      {
-# 			next;
-# 		      }
-# 		  }
-
-# 		my $png = $out;
-# 		$png =~ s/html$/png/;
-# 		#image dimensions hard-coded because of the time it takes to get w and h from image directly
-# 		my ($w, $h) = (576,504);
-# #		if (-r $png)
-# #		  {
-# #		    my $img = GD::Image->new($png);
-# #		    ($w,$h) = $img->getBounds();
-# #		  }
-# 		my $stuff;
-# 		if (-r $out)
-# 		  {
-# 		    $png =~ s/$DATADIR/$URL\/data/;
-# 		    if ($count > 4)
-# 		      {
-# 			$stuff = qq{
-
-# <img id=close$id_num src="picts/delete.png" style="display: none; float:right; position: relative; top: 60px; right: 40px;" onclick="\$('#img$id_num').toggle();\$('#close$id_num').toggle();\$('#iframe$id_num').html('');" valign=top \>
-# <div id=iframe$id_num></div>
-# };
-# 			my ($tmpw, $tmph) = (sprintf("%0f",$w/4),sprintf("%0f",$h/4));
-# 			$stuff .= qq{
-# <img id= img$id_num src=$png width=$tmpw height=$tmph onclick="\$('#img$id_num').toggle();get_iframe(['args__src','args__$out'],['iframe$id_num']);\$('#close$id_num').toggle();" \>
-# };
-# 		      }
-# 		    else
-# 		      {
-# 			$out =~ s/$DATADIR/$URL\/data/;
-# 			$html = qq{<iframe src=$out frameborder=0 width=$w height=$h scrolling=no></iframe>};
-# 		      }
-# 		  }
-# 		else {$stuff = " ";}
-# 		$html .= "<td id=cell$id_num>$stuff";
-# 		$id_num++;
-# 	      }
-# 	  }
-#	$html .= "</table>";
-#	my $bm2 = new Benchmark;
-#	my $diff = timediff($bm2, $bm1);
-#	print STDERR "HTML table generation took: ",timestr($diff),"\n";
+	$out .= "_D$dagchainer_D" if $dagchainer_D;
+	$out .= "_g$dagchainer_g" if $dagchainer_g;
+	$out .= "_A$dagchainer_A" if $dagchainer_A;
+	generate_dotplot(dag=>$dag_file12.".all", coords=>$tmp, outfile=>"$out.png", regen_images=>$regen_images, oid1=>$oid1, oid2=>$oid2, width=>$width);
 	add_GEvo_links (infile=>$tmp);
 	$tmp =~ s/$DATADIR/$URL\/data/;
 	open (IN, "$out.html");
@@ -947,21 +838,34 @@ sub go
 	$out =~ s/$DATADIR//;
 	$html =~ s/master.*\.png/data\/$out.png/;
 	close IN;
-#	$out =~ s/$DATADIR/$URL\/data/;
-#	$html .=  qq{<iframe src=$out.html frameborder=0 scrolling=no></iframe>};
-	$html .= "<br><a href=$tmp target=_new>Syntolog file with GEvo links</a><br>";
+	$html .= qq{
+<br>
+Zoomed SynMap Display Location:
+<select name=map_loc id=map_loc>
+ <option value="window1">New Window 1
+ <option value="window2">New Window 2
+ <option value="window3">New Window 3
+ <option value="1" selected>Area 1
+ <option value="2">Area 2
+ <option value="3">Area 3
+</select>
+<br>
+Flip axes?
+<input type=checkbox id=flip>
+};
+	$html .= "<br><span class=small><a href=$tmp target=_new>Syntolog file with GEvo links</a><br>";
       }
     
 
     foreach my $org_dir (keys %org_dirs)
       {
 	my $output = $org_dirs{$org_dir}{blastfile};
-	$output =~ s/$DATADIR/$URL/;
+	$output =~ s/$DATADIR/$URL\/data/;
 	$html .= "<a href=$output target=_new>Blast results for $org_dir</a><br>";;	
       }
     my $log = $cogeweb->logfile;
     $log =~ s/$DIR/$URL/;
-    $html .= "<a href=$log target=_new>log</a><br>";
+    $html .= "<a href=$log target=_new>log</a></span><br>";
     $html .= "<td valign=top>";
     $html .= "<div id=syn_loc1></div>";
     $html .= "<div id=syn_loc2></div>";
@@ -992,6 +896,7 @@ sub get_previous_analyses
     $dir =~ s/\s+/_/g;
     $dir =~ s/\(//g;
     $dir =~ s/\)//g;
+    $dir =~ s/://g;
     $dir = "$DIAGSDIR/".$dir;
     my @items;
     if (-d $dir)
@@ -1116,16 +1021,27 @@ Thank you for using the CoGe Software Package.
 	$mailer->close();
 }
 
-sub get_iframe
+sub get_plot_dag
   {
     my %args = @_;
     my $src = $args{src};
-#    my $png = $src;
-#    $png =~ s/html$/png/;
-    $src =~ s/$DATADIR/$URL\/data/;
-#    my $img = GD::Image->new($png);
-#    my ($w,$h) = $img->getBounds();
-    my ($w, $h) = (576,504);
-    my $html = qq{<iframe src=$src frameborder=0 width=$w height=$h scrolling=no></iframe>};
+    my $loc = $args{loc};
+    my $flip = $args{flip} eq "true" ? 1 : 0;
+    my $regen = $args{regen_images} eq "true" ? 1 : 0;
+    $src .= ";flip=$flip" if $flip;
+    $src .= ";regen=$regen" if $regen;
+    my $content = get("http://".$ENV{SERVER_NAME}."/".$src);
+    my ($url) = $content =~ /url=(.*?)"/is;
+    my $png = $url;
+    $png =~ s/html$/png/;
+    $png =~ s/$URL\/data/$DATADIR/;
+    my $img = GD::Image->new($png);
+    my ($w,$h) = $img->getBounds();
+#    print STDERR $w,"::",$h."\n";
+    if ($loc)
+      {
+	return ($url,$loc, $w, $h);
+      }
+    my $html = qq{<iframe src=$url frameborder=0 width=$w height=$h scrolling=no></iframe>};
     return $html;
   }
