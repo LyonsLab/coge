@@ -289,7 +289,7 @@ sub generate_di
     my $ds = $coge->resultset('DataSource')->find($ds_id) if $ds_id;
     $ds = $coge->resultset('DataSource')->find_or_create({
 							  name=>$ds_name,
-							  description=>$ds_name,
+							  description=>$ds_desc,
 							  link=>$ds_link,
 							 }) if $GO && !$ds;
     unless ($di_name)
