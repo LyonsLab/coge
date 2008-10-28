@@ -44,6 +44,7 @@ my $pj = new CGI::Ajax(
 		       gen_gc_for_noncoding=> \&gen_gc_for_noncoding,
 		       gen_gc_for_chromosome_and_type =>\&gen_gc_for_chromosome_and_type,
 		       get_codon_usage_for_chromosome=>\&get_codon_usage_for_chromosome,
+		       get_total_length_for_ds=>\&get_total_length_for_ds,
 		      );
 $pj->JSDEBUG(0);
 $pj->DEBUG(0);
@@ -302,7 +303,8 @@ sub get_dataset_info
 	$select .= join ("\n", map {"<OPTION value=\"$_\">".$_."</OPTION>"} @chr)."\n";
 	$select =~ s/OPTION/OPTION SELECTED/;
 	$select .= "\n</SELECT>\n";
-    $html .= $select;
+	$select .= qq{<tr><td>Total length of all chromosomes: <td><div id=ds_total_length class="link" onclick="\$('#ds_total_length').html('<span class=loading>loading. . .</span>');\$('#ds_total_length').removeClass('link'); get_total_length_for_ds(['args__dsid','ds_id'],['ds_total_length']);">Click for total length</div>} if scalar @chr>1;
+	$html .= $select;
       }
     else {
       $html .= qq{<input type="hidden" id="chr" value="">};
@@ -334,6 +336,7 @@ sub get_dataset_chr_info
     $length = commify($length);
     $gc = $gc ? $gc : qq{<div id=chromosome_gc class="link" onclick="\$('#chromosome_gc').removeClass('link'); gen_gc_for_chromosome(['args__dsid','ds_id','args__chr','chr'],['chromosome_gc']);">Click for percent GC content</div>};
     $html .= qq{
+<tr><td class = oblique>Specifics for chromosome $chr:
 <tr><td>Nucleotides:<td>$length<td>$gc
 <tr><td>Sequence Type:<td colspan=2>$type_html
 <tr><td>Noncoding sequence:<td colspan=2><div id=noncoding_gc class="link" onclick = "gen_data(['args__loading'],['noncoding_gc']);\$('#noncoding_gc').removeClass('link');  gen_gc_for_noncoding(['args__dsid','ds_id','args__chr','chr'],['noncoding_gc']);">Click for percent GC content</div>
@@ -532,6 +535,15 @@ sub get_codon_usage_for_chromosome
     return $html;
   }
 
+sub get_total_length_for_ds
+  {
+    my %opts = @_;
+    my $dsid = $opts{dsid};
+    my $ds = $coge->resultset('Dataset')->find($dsid);
+    my $length = 0;
+    map {$length+=$ds->last_chromosome_position($_)} $ds->get_chromosomes();
+    return commify($length);
+  }
 
 sub commify
     {
