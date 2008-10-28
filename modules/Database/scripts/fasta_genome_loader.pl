@@ -95,7 +95,7 @@ if ($ERASE)
     exit;
   }
 
-process_nt (file=>$nt_file, di=>$di, dir=>$nt_dir) if $nt_file || $nt_dir;
+process_nt (file=>$nt_file, di=>$di, dir=>$nt_dir, chr=>$chr) if $nt_file || $nt_dir;
 sub add_location
   {
     my %opts = @_;
@@ -157,6 +157,7 @@ sub process_nt
     print $file,"\n";
     my $di = $opts{di};
     my $dir = $opts{dir};
+    my $chr = $opts{chr};
     my @files;
     push @files, $file if $file && -r $file;
     if (-d $dir)
@@ -171,7 +172,7 @@ sub process_nt
       }
     foreach my $file (@files)
       {
-	process_nt_file (file=>$file, di=>$di);
+	process_nt_file (file=>$file, di=>$di, chr=>$chr);
       }
   }
 
@@ -181,6 +182,7 @@ sub process_nt_file
     my %opts = @_;
     my $file =$opts{file};
     my $di = $opts{di};
+    my $chr = $opts{chr};
     return unless $file;
     print "Processing $file\n";
     $/ = "\n>";
@@ -189,10 +191,12 @@ sub process_nt_file
       {
 	s/>//g;
 	my ($name, $seq) = split /\n/, $_,2;
-	my $chrtmp = $chr if $chr;
-	$chrtmp = $name if $use_fasta_header;
 	$seq =~ s/\n//g;
-	($chrtmp) = $name=~/(\d+\S+)/ unless $chrtmp || $add_chr_name;
+
+	my $chrtmp;
+	$chrtmp = $chr if defined $chr;
+	$chrtmp = $name if $use_fasta_header;
+	($chrtmp) = $name=~/^(\S+)/ unless $chrtmp || $add_chr_name;
 	$chrtmp = $name unless defined $chrtmp;
 	$chrtmp =~ s/chromosome//;
 	$chrtmp =~ s/chr//;
@@ -202,7 +206,6 @@ sub process_nt_file
 	$chrtmp =~ s/\s$//;
 	$chrtmp =0 unless $chrtmp;
 	$chrtmp = $chr_basename.$chrtmp if $chr_basename;
-	print $chrtmp,"\n";
         #($chrtmp) = $name =~ /(^\S+)/;
 	load_genomic_sequence(chr=>$chrtmp,
 			      seq=>$seq,
