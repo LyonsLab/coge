@@ -56,6 +56,20 @@ function update_params() {
  $('#blast option:eq('+params[9]+')').attr('selected','selected');
 }
 
+function set_dagchainer_defaults() {
+  var settings = $('#dagchainer_default').val();
+  var params;
+  if (settings == 1)
+   { params = [24000, 120000, 3];}
+  else if (settings == 2)
+   { params = [1000, 2000, 3];}
+  console.log(params);
+  if (!params) {return;}
+  $('#g').val(params[0]);
+  $('#D').val(params[1]);
+  $('#A').val(params[2]);
+ }
+
 function ajax_wait (val){
 if (ajax.length)
    {
@@ -336,6 +350,13 @@ function open_window (url, loc, width, height)
 <tr><td>
 <table class="dropMenu">
  <TR>
+   <TD>Default settings for:
+   <TD>
+      <select id="dagchainer_default" onChange="set_dagchainer_defaults();">
+       <option value="1">Plant
+       <option value="2">Microbe
+      </select>
+ <TR>
    <TD>Average distance expected between syntenic genes (-g):
    <TD><input type=text size=8 id="g" value="24000"> bp
  <TR>
@@ -343,7 +364,7 @@ function open_window (url, loc, width, height)
    <TD><input type=text size=8 id="D" value="120000"> bp
  <TR>
    <TD>Minimum number of aligned pairs (-A): 
-   <TD><input type=text size=8 id="A" value="6"> bp
+   <TD><input type=text size=8 id="A" value="3"> bp
 </TABLE>
 <td valign=top><div id=previous_analyses></div>
 </TABLE>
