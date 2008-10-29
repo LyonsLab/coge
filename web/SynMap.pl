@@ -428,7 +428,7 @@ sub run_dag_tools
       my $query_dup_file= $opts{query_dup_files};
       my $subject_dup_file= $opts{subject_dup_files};
       my $cmd = "$PYTHON $DAG_TOOL -q \"$query\" -s \"$subject\" -b $blast";
-      $cmd .= " -c" if $seq_type1 eq "genomic" && $seq_type2 eq "genomic";
+      $cmd .= " -c";# if $seq_type1 eq "genomic" && $seq_type2 eq "genomic";
       $cmd .= " --query_dups $query_dup_file" if $query_dup_file;
       $cmd .= " --subject_dups $subject_dup_file" if $subject_dup_file;
       $cmd .=  " > $outfile";
