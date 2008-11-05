@@ -263,12 +263,12 @@ sub get_dataset_info
     return $html unless $ds;
     $html = "<table>";
     my $dataset = $ds->name.": ". $ds->description;
-    $dataset = " <a href=\"".$ds->link."\">".$dataset."</a>" if $ds->link;
+    $dataset = " <a href=\"".$ds->link."\" target=_new\>".$dataset."</a>" if $ds->link;
     my $source_name = $ds->datasource->name .": ". $ds->datasource->description;
     my $link = $ds->datasource->link;
 
     $link = "http://".$link if ($link && $link !~ /http/);
-    $source_name = "<a href =\"".$link."\">".$source_name."</a>" if $ds->datasource->link;
+    $source_name = "<a href =\"".$link."\" target=_new\>".$source_name."</a>" if $ds->datasource->link;
     $html .= qq{<tr><td>Name: <td>$dataset}."\n";
     $html .= qq{<TR><TD>Data Source: <TD>$source_name (id}.$ds->datasource->id.qq{)}."\n";
     $html .= qq{<tr><td>Version: <td>}.$ds->version."\n";
