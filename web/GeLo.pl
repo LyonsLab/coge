@@ -43,7 +43,7 @@ sub gen_html
       {
         my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
 #	$template->param(HEADER_LINK=>'/CoGe/GeLo.pl');
-        $template->param(LOGO_PNG=>"GeLo-logo.png");
+        $template->param(LOGO_PNG=>"GenomeView-logo.png");
         $template->param(TITLE=>'Genome Viewer');
         $template->param(HELP=>'');
         my $name = $USER->user_name;
