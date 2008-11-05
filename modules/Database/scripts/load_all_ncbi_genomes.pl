@@ -4,6 +4,17 @@ use strict;
 use LWP::Simple;
 use Data::Dumper;
 use Parallel::ForkManager;
+use Getopt::Long;
+
+
+my ($DEBUG, $forks, $pause);
+
+GetOptions (
+	    "debug"=>\$DEBUG,
+	    "forks|f=i"=>\$forks,
+	    "pause|p"=>\$pause,
+	    );
+$forks = 20 unless defined $forks;
 
 # for understanding accession nomeclature from NCBI see http://www.ncbi.nlm.nih.gov/RefSeq/key.html#accessions
 # genbank genlist.cgi type codes:
@@ -16,21 +27,9 @@ use Parallel::ForkManager;
 # 6 == phages
 # 7 == all plasmids for all proks? (NC_)
 # 8 == Chromosomes (NC_ and NS_)
-# 9 == chromosomes and plasmids (NC_ NS_ NZ_)
-my @pages = qw(
-http://www.ncbi.nlm.nih.gov/genomes/genlist.cgi?taxid=2157&type=1&name=Archaea%20Complete%20Chromosomes
-http://www.ncbi.nlm.nih.gov/genomes/genlist.cgi?taxid=2&type=0
-http://www.ncbi.nlm.nih.gov/genomes/genlist.cgi?taxid=2759&type=8&name=Eukaryotae%20Complete%20Chromosomes
-http://www.ncbi.nlm.nih.gov/genomes/genlist.cgi?taxid=10239&type=5&name=Viruses
-http://www.ncbi.nlm.nih.gov/genomes/genlist.cgi?taxid=10239&type=6&name=Phages
-http://www.ncbi.nlm.nih.gov/genomes/genlist.cgi?taxid=12884&type=0&name=Viroids
-);
-my $base_url = "http://www.ncbi.nlm.nih.gov/genomes/genlist.cgi?";
+# 9 == chromosomes (complete and WGS) and plasmids (NC_ NS_ NZ_)
 
-#taxids
-#2157 == archaea
-#2    == bacteria
-#2759 == euks
+my $base_url = "http://www.ncbi.nlm.nih.gov/genomes/genlist.cgi?";
 
 #taxid type
 my @taxids =(
@@ -41,7 +40,7 @@ my @taxids =(
 	     [12884,9], #viroids
 	    );
 
-my $pm = new Parallel::ForkManager(20);
+my $pm = new Parallel::ForkManager($forks);
 foreach my $item (@taxids)
   {
     my ($id, $type) = @$item;
@@ -73,12 +72,19 @@ foreach my $item (@taxids)
 	$run .= " -td '/tmp/gb/'";
 	$run .= " -go";
 	print "\n",$run,"\n";
+	my $previously_loaded = 0;
 	open (IN, $run." |");
 	while (<IN>)
 	  {
+	    $previously_loaded =1 if /already inserted/;
 	    print $_;
 	  }
 	close IN;
+	if ($pause && !$previously_loaded)
+	  {
+	    print "Paused:  press enter to continue\n";
+	    <STDIN>;
+	  }
 	$pm->finish;
       }
   }
