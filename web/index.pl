@@ -151,7 +151,7 @@ sub actions
 		   {
 		    ID=>1,
 		    LOGO => qq{<a href="./GenomeView.pl"><img src="/CoGe/picts/carousel/GenomeView-logo.png" width="227" height="75" border="0"></a>},
-		    ACTION => qq{<a href="./GenomeView.pl">GenomeView</a>},
+		    ACTION => qq{<a href="./GenomeView.pl">OrganismView</a>},
 		    DESC   => qq{Search for organisms, get an overview of their genomic make-up, and visualize them using a dynamic, interactive genome browser.},
 		    SCREENSHOT => qq{<img src="/CoGe/picts/preview/GenomeView.png" border="0"></a>},
 		   },
