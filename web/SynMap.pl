@@ -433,7 +433,7 @@ sub run_blast
     ($x, $pre_command) = check_taint($pre_command);
     write_log("running $pre_command" ,$cogeweb->logfile);
     `$pre_command`;
-    system "rm $outfile.running"; #remove track file
+    system "rm $outfile.running" if -r "$outfile.running"; #remove track file
     unless (-s $outfile)
       {
 	    write_log("WARNING: Problem running $pre_command command.  Blast output file contains no data!" ,$cogeweb->logfile);
@@ -475,7 +475,7 @@ sub run_dag_tools
       system "touch $outfile.running"; #track that a blast anlaysis is running for this
       write_log("run dag_tools: running $cmd",$cogeweb->logfile);
       `$cmd`;
-      system "rm $outfile.running"; #remove track file
+      system "rm $outfile.running" if -r "$outfile.running"; #remove track file
       unless (-s $outfile)
 	{
 	  write_log("WARNING: DAGChainer input file ($outfile) contains no data!" ,$cogeweb->logfile);
@@ -507,7 +507,7 @@ sub run_tandem_finder
     system "touch $outfile.running"; #track that a blast anlaysis is running for this
     write_log("run_tandem_filter: running $cmd", $cogeweb->logfile);
     `$cmd`;
-    system "rm $outfile.running"; #remove track file
+    system "rm $outfile.running" if -r "$outfile.running"; #remove track file
     return 1 if -r $outfile;
   }
 
@@ -534,7 +534,7 @@ sub run_filter_repetitive_matches
     system "touch $outfile.running"; #track that a blast anlaysis is running for this
     write_log("run_filter_repetitive_matches: running $cmd", $cogeweb->logfile);
     `$cmd`;
-    system "rm $outfile.running"; #remove track file
+    system "rm $outfile.running" if -r "$outfile.running";; #remove track file
     return 1 if -r $outfile;
   }
 
@@ -572,7 +572,7 @@ sub run_dagchainer
     write_log("run dagchainer: running $cmd", $cogeweb->logfile);
     `$cmd`;
     `mv $infile.aligncoords $outfile`;
-    system "rm $outfile.running"; #remove track file
+    system "rm $outfile.running" if -r "$outfile.running";; #remove track file
     return $outfile
   }
 
@@ -595,7 +595,7 @@ sub run_find_nearby
     system "touch $outfile.running"; #track that a blast anlaysis is running for this
     write_log("run find_nearby: running $cmd", $cogeweb->logfile);
     `$cmd`;
-    system "rm $outfile.running"; #remove track file
+    system "rm $outfile.running" if -r "$outfile.running";; #remove track file
     return 1 if -r $outfile;
   }
 
@@ -709,7 +709,7 @@ sub generate_dotplot
     my $cmd = qq{$DAG_PLOT -d $dag -a $coords -f $outfile -l 'javascript:synteny_zoom("$oid1","$oid2","$basename","XCHR","YCHR")' -w $width -r 2 -g 1};
     system "touch $outfile.running"; #track that a blast anlaysis is running for this
     write_log("generate dotplot: running $cmd", $cogeweb->logfile);
-    system "rm $outfile.running"; #remove track file
+    system "rm $outfile.running" if -r "$outfile.running";; #remove track file
     `$cmd`;
     return 1 if -r $outfile;
   }
@@ -1023,13 +1023,20 @@ sub get_previous_analyses
     $seq_type2 = $seq_type2 == 2 ? "genomic" : "CDS";
     my ($org_name1, $md51) = gen_org_name(oid=>$oid1, masked=>$masked1, seq_type=>$seq_type1);
     my ($org_name2, $md52) = gen_org_name(oid=>$oid2, masked=>$masked2, seq_type=>$seq_type2);
-    ($oid1, $masked1, $md51,$org_name1,$seq_type1, $oid2, $masked2, $md52,$org_name2,$seq_type2) = ($oid2, $masked2, $md52,$org_name2,$seq_type2,$oid1, $masked1, $md51,$org_name1,$seq_type1) if ($md52 lt $md51);
-    my $dir = "$org_name1"."_".$org_name2;
-    $dir =~ s/\///g;
-    $dir =~ s/\s+/_/g;
-    $dir =~ s/\(//g;
-    $dir =~ s/\)//g;
-    $dir =~ s/://g;
+    ($oid1, $masked1, $md51,$org_name1,$seq_type1, $oid2, $masked2, $md52,$org_name2,$seq_type2) = ($oid2, $masked2, $md52,$org_name2,$seq_type2,$oid1, $masked1, $md51,$org_name1,$seq_type1) if ($org_name2 lt $org_name1);
+
+    my $tmp1 = $org_name1;
+    my $tmp2 = $org_name2;
+    foreach my $tmp ($tmp1, $tmp2)
+      {
+	$tmp =~ s/\///g;
+	$tmp =~ s/\s+/_/g;
+	$tmp =~ s/\(//g;
+	$tmp =~ s/\)//g;
+	$tmp =~ s/://g;
+      }
+
+    my $dir = $tmp1."/".$tmp2;
     $dir = "$DIAGSDIR/".$dir;
     my @items;
     if (-d $dir)
@@ -1046,7 +1053,7 @@ sub get_previous_analyses
 			g=>$g,
 			A=>$A,
 			blast=>$blast);
-	    ($mask1, $type1, $mask2, $type2) = ($mask2, $type2, $mask1, $type1)  if ($md52 lt $md51);
+#	    ($mask1, $type1, $mask2, $type2) = ($mask2, $type2, $mask1, $type1)  if ($md52 lt $md51); #not sure about this comment for now
 	    $data{mask1} = $mask1-1;
 	    $data{mask2} = $mask2-1;
 	    $mask1 = $mask1 == "1" ? "unmasked" : "masked";
