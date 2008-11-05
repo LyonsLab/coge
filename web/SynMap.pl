@@ -241,8 +241,9 @@ sub gen_fasta
     my $oid = $opts{oid};
     my $masked = $opts{masked};
     my $seq_type = $opts{seq_type};
+    my $write_log = $opts{write_log} || 0;
     my ($org_name, $md5,$ds_list);
-    ($org_name, $md5,$ds_list,$masked) = gen_org_name(oid=>$oid, masked=>$masked, seq_type=>$seq_type);
+    ($org_name, $md5,$ds_list,$masked) = gen_org_name(oid=>$oid, masked=>$masked, seq_type=>$seq_type, write_log=>$write_log);
     my $file = $FASTADIR."/$md5.fasta";
     my $res;
     if (-r $file)
@@ -264,6 +265,7 @@ sub gen_org_name
     my $oid = $opts{oid};
     my $masked = $opts{masked} || 1;
     my $seq_type = $opts{seq_type} || 1;
+    my $write_log = $opts{write_log} || 0;
     my ($org) = $coge->resultset('Organism')->resolve($oid);
     my @ds = $org->current_datasets(type=>$masked);
     unless (@ds)
@@ -292,8 +294,9 @@ sub gen_org_name
       }
     $title .= ")";
     $title =~ s/(`|')//g;
+    write_log("ORGANISM: ".$title, $cogeweb->logfile) if $write_log;
     my $md5 = md5_hex($title);
-    return ($org_name, $md5, \@ds, $masked);
+    return ($org_name, $md5, \@ds, $masked, $title);
   }
 
 sub generate_fasta
@@ -398,16 +401,32 @@ sub run_blast
     my $outfile = $opts{outfile};
     my $prog = $opts{prog};
     $prog = "blastn" unless $prog;
+    while (-e "$outfile.running")
+      {
+	sleep 60;
+      }
     if (-r $outfile)
       {
+	unless (-s $outfile)
+	  {
+	    write_log("WARNING: Blast output file ($outfile) contains no data!" ,$cogeweb->logfile);
+	    return 0;
+	  }
 	write_log("blastfile $outfile already exists",$cogeweb->logfile);
 	return 1;
       }
     my $pre_command = "$BLAST -p $prog -o $outfile -i $fasta -d $blastdb";
     my $x;
+    system "touch $outfile.running"; #track that a blast anlaysis is running for this
     ($x, $pre_command) = check_taint($pre_command);
     write_log("running $pre_command" ,$cogeweb->logfile);
     `$pre_command`;
+    system "rm $outfile.running"; #remove track file
+    unless (-s $outfile)
+      {
+	    write_log("WARNING: Problem running $pre_command command.  Blast output file contains no data!" ,$cogeweb->logfile);
+	    return 0;
+      }
     return 1 if -r $outfile;
   }
 
@@ -420,6 +439,15 @@ sub run_dag_tools
       my $outfile = $opts{outfile};
       my $seq_type1 = $opts{seq_type1};
       my $seq_type2 = $opts{seq_type2};
+      while (-e "$outfile.running")
+      {
+	sleep 60;
+      }
+      unless (-r $blast && -s $blast)
+	{
+	  write_log("WARNING:   Cannot create input file for DAGChainer! Blast output file ($blast) contains no data!" ,$cogeweb->logfile);
+	  return 0;
+	}
       if (-r $outfile)
       {
 	write_log("run dag_tools: file $outfile already exists",$cogeweb->logfile);
@@ -432,8 +460,15 @@ sub run_dag_tools
       $cmd .= " --query_dups $query_dup_file" if $query_dup_file;
       $cmd .= " --subject_dups $subject_dup_file" if $subject_dup_file;
       $cmd .=  " > $outfile";
+      system "touch $outfile.running"; #track that a blast anlaysis is running for this
       write_log("run dag_tools: running $cmd",$cogeweb->logfile);
       `$cmd`;
+      system "rm $outfile.running"; #remove track file
+      unless (-s $outfile)
+	{
+	  write_log("WARNING: DAGChainer input file ($outfile) contains no data!" ,$cogeweb->logfile);
+	  return 0;
+	}
       return 1 if -r $outfile;
     }
 
@@ -442,14 +477,25 @@ sub run_tandem_finder
     my %opts = @_;
     my $infile = $opts{infile}; #dag file produced by dat_tools.py
     my $outfile = $opts{outfile};
+    while (-e "$outfile.running")
+      {
+	sleep 60;
+      }
+    unless (-r $infile && -s $infile)
+	{
+	  write_log("WARNING:   Cannot run tandem finder! DAGChainer input file ($infile) contains no data!" ,$cogeweb->logfile);
+	  return 0;
+	}
     if (-r $outfile)
       {
 	write_log("run_tandem_filter: file $outfile already exists",$cogeweb->logfile);
 	return 1;
       }
     my $cmd = "$PYTHON $TANDEM_FINDER -i $infile > $outfile";
+    system "touch $outfile.running"; #track that a blast anlaysis is running for this
     write_log("run_tandem_filter: running $cmd", $cogeweb->logfile);
     `$cmd`;
+    system "rm $outfile.running"; #remove track file
     return 1 if -r $outfile;
   }
 
@@ -458,14 +504,25 @@ sub run_filter_repetitive_matches
     my %opts = @_;
     my $infile = $opts{infile};
     my $outfile = $opts{outfile};
+    while (-e "$outfile.running")
+      {
+	sleep 60;
+      }
+    unless (-r $infile && -s $infile)
+	{
+	  write_log("WARNING:   Cannot filter repetitive matches! DAGChainer input file ($infile) contains no data!" ,$cogeweb->logfile);
+	  return 0;
+	}
     if (-r $outfile)
       {
 	write_log("run_filter_repetitive+_matches: file $outfile already exists",$cogeweb->logfile);
 	return 1;
       }
     my $cmd = "$FILTER_REPETITIVE_MATCHES < $infile > $outfile";
-    write_log("run_filter_repetitive+_matches: running $cmd", $cogeweb->logfile);
+    system "touch $outfile.running"; #track that a blast anlaysis is running for this
+    write_log("run_filter_repetitive_matches: running $cmd", $cogeweb->logfile);
     `$cmd`;
+    system "rm $outfile.running"; #remove track file
     return 1 if -r $outfile;
   }
 
@@ -481,6 +538,15 @@ sub run_dagchainer
     $outfile .= "_g$g" if $g;
     $outfile .= "_A$A" if $A;
     $outfile .= ".aligncoords";
+    while (-e "$outfile.running")
+      {
+	sleep 60;
+      }
+    unless (-r $infile && -s $infile)
+      {
+	  write_log("WARNING:   Cannot run DAGChainer! DAGChainer input file ($infile) contains no data!" ,$cogeweb->logfile);
+	  return 0;
+	}
     if (-r $outfile)
       {
 	write_log("run dagchainer: file $outfile already exists",$cogeweb->logfile);
@@ -490,9 +556,11 @@ sub run_dagchainer
     $cmd .= " -D $D" if $D;
     $cmd .= " -g $g" if $g;
     $cmd .= " -A $A" if $A;
+    system "touch $outfile.running"; #track that a blast anlaysis is running for this
     write_log("run dagchainer: running $cmd", $cogeweb->logfile);
     `$cmd`;
     `mv $infile.aligncoords $outfile`;
+    system "rm $outfile.running"; #remove track file
     return $outfile
   }
 
@@ -502,14 +570,20 @@ sub run_find_nearby
     my $infile = $opts{infile};
     my $dag_all_file = $opts{dag_all_file};
     my $outfile = $opts{outfile};
+    while (-e "$outfile.running")
+      {
+	sleep 60;
+      }
     if (-r $outfile)
       {
 	write_log("run find_nearby: file $outfile already exists",$cogeweb->logfile);
 	return 1;
       }
     my $cmd = "$PYTHON $FIND_NEARBY --diags=$infile --all=$dag_all_file > $outfile";
+    system "touch $outfile.running"; #track that a blast anlaysis is running for this
     write_log("run find_nearby: running $cmd", $cogeweb->logfile);
     `$cmd`;
+    system "rm $outfile.running"; #remove track file
     return 1 if -r $outfile;
   }
 
@@ -611,14 +685,19 @@ sub generate_dotplot
     my ($basename) = $coords =~ /([^\/]*).all.aligncoords/;
     my $regen_images = $opts{regen_images}=~/true/i ? 1 : 0;
     my $width = $opts{width} || 10;
-    
+    while (-e "$outfile.running")
+      {
+	sleep 60;
+      }
     if (-r $outfile && !$regen_images)
       {
 	write_log("generate dotplot: file $outfile already exists",$cogeweb->logfile);
 	return 1;
       }
     my $cmd = qq{$DAG_PLOT -d $dag -a $coords -f $outfile -l 'javascript:synteny_zoom("$oid1","$oid2","$basename","XCHR","YCHR")' -w $width -r 2 -g 1};
+    system "touch $outfile.running"; #track that a blast anlaysis is running for this
     write_log("generate dotplot: running $cmd", $cogeweb->logfile);
+    system "rm $outfile.running"; #remove track file
     `$cmd`;
     return 1 if -r $outfile;
   }
@@ -654,15 +733,16 @@ sub go
     #$cogeweb = initialize_basefile(prog=>"SynMap");
     ##generate fasta files and blastdbs
     my $pm = new Parallel::ForkManager($MAX_PROC);
-    my @oids = ([$oid1,$masked1, $seq_type1]);
+    my @oids = ([$oid1,$masked1,$seq_type1]);
     push @oids, [$oid2,$masked2,$seq_type2] unless $oid1 == $oid2 && $masked1 == $masked2 && $seq_type1 eq $seq_type2;
+    
     foreach my $item (@oids)
       {
 	$pm->start and next;
 	my $oid = $item->[0];
 	my $masked = $item->[1];
 	my $seq_type = $item->[2];
-	my ($fasta,$md5,$org_name) = gen_fasta(oid=>$oid, masked=>$masked, seq_type=>$seq_type);
+	my ($fasta,$md5,$org_name) = gen_fasta(oid=>$oid, masked=>$masked, seq_type=>$seq_type, write_log=>1);
 	gen_blastdb(md5=>$md5,fasta=>$fasta,org_name=>$org_name);
 	$pm->finish;
       }
@@ -674,7 +754,7 @@ sub go
     ($oid1, $masked1, $md51,$org_name1,$fasta1,$seq_type1, $oid2,
     $masked2, $md52,$org_name2,$fasta2, $seq_type2) = ($oid2,
     $masked2, $md52,$org_name2,$fasta2, $seq_type2,$oid1, $masked1,
-    $md51,$org_name1,$fasta1, $seq_type1) if ($md52 lt $md51);
+    $md51,$org_name1,$fasta1, $seq_type1) if ($org_name2 lt $org_name1);
     my ($org1) = $coge->resultset('Organism')->resolve($oid1);
     my ($org2) = $coge->resultset('Organism')->resolve($oid2);
     unless ($fasta1 && $fasta2)
@@ -685,6 +765,7 @@ sub go
       }
     else{
     	write_log("Completed fasta creation", $cogeweb->logfile);
+    	write_log("", $cogeweb->logfile);
     }
     
     my ($blastdb1) = gen_blastdb(md5=>$md51,fasta=>$fasta1,org_name=>$org_name1);
@@ -697,6 +778,7 @@ sub go
       }
     else{
     	write_log("Completed blastdb creation", $cogeweb->logfile);
+    	write_log("", $cogeweb->logfile);
     }
     my $html;
 
@@ -730,23 +812,34 @@ sub go
 	$outfile .= "/".$org_dirs{$org_dir}{basename};
 	$org_dirs{$org_dir}{blastfile}=$outfile.".blast";
       }
-    #blast!
+    #blast! use Parallel::ForkManager
     foreach my $key (keys %org_dirs)
       {
 	$pm->start and next;
 	my $fasta = $org_dirs{$key}{fasta};
 	my $db = $org_dirs{$key}{db};
 	my $outfile = $org_dirs{$key}{blastfile};
-	run_blast(fasta=>$fasta, blastdb=>$db, outfile=>$outfile, prog=>$blast) unless -r $outfile;
+	run_blast(fasta=>$fasta, blastdb=>$db, outfile=>$outfile, prog=>$blast);# unless -r $outfile;
 	$pm->finish;
       }
+    #check blast runs for problems;  Not forked in order to keep variables
+    my $problem =0;
+    foreach my $key (keys %org_dirs)
+      {
+	my $fasta = $org_dirs{$key}{fasta};
+	my $db = $org_dirs{$key}{db};
+	my $outfile = $org_dirs{$key}{blastfile};
+	my $blast_run = run_blast(fasta=>$fasta, blastdb=>$db, outfile=>$outfile, prog=>$blast);
+	$problem=1 unless $blast_run;
+      }
     $pm->wait_all_children();
-	write_log("Completed blast run", $cogeweb->logfile);
+    write_log("Completed blast run(s)", $cogeweb->logfile);
+    write_log("", $cogeweb->logfile);
     #Find local dups
     my $dag_file11 = $org_dirs{$org_name1."_".$org_name1}{dir}."/".$org_dirs{$org_name1."_".$org_name1}{basename}.".dag";
-    run_dag_tools(query=>"a".$md51, subject=>"b".$md51, blast=>$org_dirs{$org_name1."_".$org_name1}{blastfile}, outfile=>$dag_file11, seq_type1=>$seq_type1, seq_type1=>$seq_type1);
+    $problem=1 unless (run_dag_tools(query=>"a".$md51, subject=>"b".$md51, blast=>$org_dirs{$org_name1."_".$org_name1}{blastfile}, outfile=>$dag_file11, seq_type1=>$seq_type1, seq_type1=>$seq_type1));
     my $dag_file22 = $org_dirs{$org_name2."_".$org_name2}{dir}."/".$org_dirs{$org_name2."_".$org_name2}{basename}.".dag";
-    run_dag_tools(query=>"a".$md52, subject=>"b".$md52, blast=>$org_dirs{$org_name2."_".$org_name2}{blastfile}, outfile=>$dag_file22, seq_type1=>$seq_type2, seq_type1=>$seq_type2);
+    $problem=1 unless run_dag_tools(query=>"a".$md52, subject=>"b".$md52, blast=>$org_dirs{$org_name2."_".$org_name2}{blastfile}, outfile=>$dag_file22, seq_type1=>$seq_type2, seq_type1=>$seq_type2);
     my $dup_file1  = $org_dirs{$org_name1."_".$org_name1}{dir}."/".$org_dirs{$org_name1."_".$org_name1}{basename}.".dups";
     run_tandem_finder(infile=>$dag_file11,outfile=>$dup_file1);
     my $dup_file2  = $org_dirs{$org_name2."_".$org_name2}{dir}."/".$org_dirs{$org_name2."_".$org_name2}{basename}.".dups";
@@ -754,12 +847,13 @@ sub go
 
     #prepare dag for synteny analysis
     my $dag_file12 = $org_dirs{$org_name1."_".$org_name2}{dir}."/".$org_dirs{$org_name1."_".$org_name2}{basename}.".dag";
-    run_dag_tools(query=>"a".$md51, subject=>"b".$md52, blast=>$org_dirs{$org_name1."_".$org_name2}{blastfile}, outfile=>$dag_file12.".all", query_dup_file=>$dup_file1,subject_dup_file=>$dup_file2, seq_type1=>$seq_type1, seq_type2=>$seq_type2);
+    $problem=1 unless run_dag_tools(query=>"a".$md51, subject=>"b".$md52, blast=>$org_dirs{$org_name1."_".$org_name2}{blastfile}, outfile=>$dag_file12.".all", query_dup_file=>$dup_file1,subject_dup_file=>$dup_file2, seq_type1=>$seq_type1, seq_type2=>$seq_type2);
     #remove repetitive matches
     run_filter_repetitive_matches(infile=>$dag_file12.".all",outfile=>$dag_file12);
     #run dagchainer
     my $dagchainer_file = run_dagchainer(infile=>$dag_file12, D=>$dagchainer_D, g=>$dagchainer_g,A=>$dagchainer_A);
     write_log("Completed dagchainer run", $cogeweb->logfile);
+    write_log("", $cogeweb->logfile);
     if (-r $dagchainer_file)
       {
 	#add pairs that were skipped by dagchainer
@@ -828,17 +922,19 @@ sub go
 	generate_dotplot(dag=>$dag_file12.".all", coords=>$tmp, outfile=>"$out.png", regen_images=>$regen_images, oid1=>$oid1, oid2=>$oid2, width=>$width);
 	add_GEvo_links (infile=>$tmp);
 	$tmp =~ s/$DATADIR/$URL\/data/;
-	open (IN, "$out.html");
-	$html = "<table><tr><td>";
-	while (<IN>)
+	if (-r "$out.html")
 	  {
-	    next if /<\/?html>/;
-	    $html .= $_;
-	  }
-	$out =~ s/$DATADIR//;
-	$html =~ s/master.*\.png/data\/$out.png/;
-	close IN;
-	$html .= qq{
+	    open (IN, "$out.html");
+	    $html = "<table><tr><td>";
+	    while (<IN>)
+	      {
+		next if /<\/?html>/;
+		$html .= $_;
+	      }
+	    $out =~ s/$DATADIR//;
+	    $html =~ s/master.*\.png/data\/$out.png/;
+	    close IN;
+	    $html .= qq{
 <br>
 Zoomed SynMap Display Location:
 <select name=map_loc id=map_loc>
@@ -853,13 +949,17 @@ Zoomed SynMap Display Location:
 Flip axes?
 <input type=checkbox id=flip>
 };
-	$html .= "<br><span class=small><a href=$tmp target=_new>Syntolog file with GEvo links</a><br>";
+	    $html .= "<br><span class=small><a href=$tmp target=_new>Syntolog file with GEvo links</a><br>";
+	  }
       }
-    
-
+    else
+      {
+	$problem=1
+      }
     foreach my $org_dir (keys %org_dirs)
       {
 	my $output = $org_dirs{$org_dir}{blastfile};
+	next unless -s $output;
 	$output =~ s/$DATADIR/$URL\/data/;
 	$html .= "<a href=$output target=_new>Blast results for $org_dir</a><br>";;	
       }
@@ -871,6 +971,12 @@ Flip axes?
     $html .= "<div id=syn_loc2></div>";
     $html .= "<div id=syn_loc3></div>";
     $html .= "</table>";
+    if ($problem)
+      {
+	$html .= qq{
+<span class=alert>There was a problem running your analysis.  Please check the log file for details.</span><br>
+	  };
+      }
     email_results(email=>$email,html=>$html,org1=>$org_name1,org2=>$org_name2, jobtitle=>$job_title) if $email;
 
     return $html;
