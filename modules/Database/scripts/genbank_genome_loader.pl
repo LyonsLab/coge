@@ -176,12 +176,11 @@ foreach my $accn (@accns)
 		print Dumper $feature;
 		next;
 	      }
-	    my $feat_type = $coge->resultset('FeatureType')->find_or_create({ name => $feature->type() })  if $GO;
 	    if ($feature->type() =~ /source/i)
 	      {
-		my $quals = $feature->qualifiers(); # get the source qualifiers
+		next;
 	      }
-	    
+	    my $feat_type = $coge->resultset('FeatureType')->find_or_create({ name => $feature->type() })  if $GO;
 	    # create a db_feature for to link this feature with the dataset table
 	    my ($start, $stop, $strand) = get_feature_location($feature);
 	    my $db_feature = $coge->resultset('Feature')->create({
@@ -194,7 +193,7 @@ foreach my $accn (@accns)
 								 }) if $GO;
 	    
 	    # expect first feature to be the source feature!
-	    if ($feature->type() =~ /source/i)
+	    if ($feature->type() =~ /source/i) #source is now skipped.
 	      {
 		# generate name based on organism name and chromosome
 		my $feat_name = $coge->resultset('FeatureName')->create(
@@ -286,18 +285,17 @@ foreach my $accn (@accns)
 		       || $anno =~ /protein_id/i
 		       || $anno =~ /gene/i
 		       || $anno =~ /standard_name/i
-		       || $anno =~ /synonym/i )    # synonyms are embedded in the /note= tag! these are names
+		       || $anno =~ /synonym/i # synonyms are embedded in the /note= tag! these are names
+		       || $anno eq "names")    
 		  {
 		    foreach my $item (@{$stuff})
 		      {
-			$names{$item}=1;
-		      }
-		  }
-		elsif ($anno eq "names")
-		  {
-		    foreach my $item (@{$stuff})
-		      {
-			$names{$item}=1;
+			foreach my $thing (split/;/,$item)
+			  {
+			    $thing =~ s/^\s+//;
+			    $thing =~ s/\s+$//;
+			    $names{$thing}=1;
+			  }
 		      }
 		  }
 		elsif ($anno =~ /translation/i) # this needs to be entered into the sequence table
