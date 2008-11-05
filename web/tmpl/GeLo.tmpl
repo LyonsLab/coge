@@ -281,7 +281,7 @@ function launch_seqview(dsid, chr)
 
 function change_gene_model_type()
  {
-   var goods = [genes, wobble_GC_usage, wobble_GC_usage_first_50];
+   var goods = [genes, wobble_GC_usage];
    for (var i in goods)
     {
       if ($('#flat_models').is(':checked') == true)
@@ -311,7 +311,7 @@ var show_gaga =gaga.visibility;
 var show_gbox =gbox.visibility;
 var show_genes =genes.visibility;
 var show_wobblegc =wobble_GC_usage.visibility;
-var show_wobble50gc =wobble_GC_usage_first_50.visibility;
+//var show_wobble50gc =wobble_GC_usage_first_50.visibility;
 var show_localdup =local_dup.visibility;
 var show_funcdomain =func_domain.visibility;
 var show_prot =prot.visibility;
@@ -324,7 +324,7 @@ save_options([
 'args__gbox','args__'+show_gbox,
 'args__genes','args__'+show_genes,
 'args__wobblegc','args__'+show_wobblegc,
-'args__wobble50gc','args__'+show_wobble50gc,
+//'args__wobble50gc','args__'+show_wobble50gc,
 'args__localdup','args__'+show_localdup,
 'args__funcdomain','args__'+show_funcdomain,
 'args__prot','args__'+show_prot,
