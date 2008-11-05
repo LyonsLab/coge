@@ -850,6 +850,7 @@ sub go
 	run_blast(fasta=>$fasta, blastdb=>$db, outfile=>$outfile, prog=>$blast);# unless -r $outfile;
 	$pm->finish;
       }
+    $pm->wait_all_children();
     #check blast runs for problems;  Not forked in order to keep variables
     my $problem =0;
     foreach my $key (keys %org_dirs)
@@ -860,7 +861,6 @@ sub go
 	my $blast_run = run_blast(fasta=>$fasta, blastdb=>$db, outfile=>$outfile, prog=>$blast);
 	$problem=1 unless $blast_run;
       }
-    $pm->wait_all_children();
     write_log("Completed blast run(s)", $cogeweb->logfile);
     write_log("", $cogeweb->logfile);
     #Find local dups
