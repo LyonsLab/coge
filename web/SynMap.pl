@@ -173,6 +173,7 @@ sub get_datasets
     my $oid = $opts{oid};
     my $masked = $opts{masked};
     my $seq_type = $opts{seq_type};
+    return unless $oid;
     my $html; 
     my ($org) = $coge->resultset("Organism")->resolve($oid);
     return unless $org;
