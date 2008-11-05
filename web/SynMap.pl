@@ -177,7 +177,7 @@ sub get_datasets
     my ($org) = $coge->resultset("Organism")->resolve($oid);
     return unless $org;
     my $orgname = $org->name;
-    $orgname .= ": ".$org->description if $org->description;
+    $orgname = "<a href=\"GenomeView.pl?oid=".$org->id."\" target=_new>$orgname</a>: ".$org->description if $org->description;
     $html .= qq{<div><span class="oblique">Organism:</span> $orgname\n</div>};
     $html .= qq{<div><span class="oblique">Current Datasets: </span>};
     my $i =0;
@@ -192,15 +192,19 @@ sub get_datasets
     $html.= ", ".$type->description if $type && $type->description;
     $html .= "</DIV>";
     my $has_cds=0;
-    foreach my $ds (@ds)
+    foreach my $ds (sort {$a->name cmp $b->name} @ds)
       {
 	my $name = $ds->name;
         #$name .= ": ".$ds->description if $ds->description;
         $name = "<a href=GenomeView.pl?dsid=".$ds->id." target=_new>".$name."</a>";
 	my $length = 0;
 	my $chr_count =0;
+	my $plasmid = 0;
+	my $contig =0;
 	foreach my $chr ($ds->get_chromosomes)
 	  {
+	    $plasmid = 1 if $chr =~ /plasmid/i;
+	    $contig = 1 if $chr =~ /contig/i;
 	    $length += $ds->last_chromosome_position($chr);
 	    $chr_count++;
 	  }
@@ -212,6 +216,14 @@ sub get_datasets
         $html .= ">";
 	$html .= join (", length: ", $name, $length. "bp");
 	$html .= "; chr count: $chr_count";
+	if ($plasmid || $contig)
+	  {
+	    $html .= " <span class=small>(";
+	    $html .= "plastmid" if $plasmid;
+	    $html .= " " if $plasmid && $contig;
+	    $html .= "contig" if $contig;
+	    $html .= ")</span>";
+	  }
 	$html .= "</div>\n";
 	if ($seq_type == 1) #want to use CDS.  Let's see if any exist for this dataset
 	  {
@@ -783,32 +795,47 @@ sub go
     my $html;
 
     #need to blast each org against itself for finding local dups, then to one another
-    my %org_dirs = ( 
-		    $org_name1."_".$org_name2=>{fasta=>$fasta1,
-						db=>$blastdb2,
-						basename=>$md51."_".$md52.".$masked1-$masked2.$seq_type1-$seq_type2.$blast",
-						},
-		    $org_name1."_".$org_name1=>{fasta=>$fasta1,
-						db=>$blastdb1,
-						basename=>$md51."_".$md51.".$masked1-$masked1.$seq_type1-$seq_type1.$blast",
-						},
-		    $org_name2."_".$org_name2=>{fasta=>$fasta2,
-						db=>$blastdb2,
-						basename=>$md52."_".$md52.".$masked2-$masked2.$seq_type2-$seq_type2.$blast",
-						},
-		    );
-    foreach my $org_dir (keys %org_dirs)
+    my $tmp1 = $org_name1;
+    my $tmp2 = $org_name2;
+    foreach my $tmp ($tmp1, $tmp2)
       {
-	my $tmp = $org_dir;
 	$tmp =~ s/\///g;
 	$tmp =~ s/\s+/_/g;
 	$tmp =~ s/\(//g;
 	$tmp =~ s/\)//g;
 	$tmp =~ s/://g;
-	my $outfile = $DIAGSDIR."/".$tmp;
+      }
+    
+    my %org_dirs = (
+		    $org_name1."_".$org_name2=>{fasta=>$fasta1,
+						db=>$blastdb2,
+						basename=>$md51."_".$md52.".$masked1-$masked2.$seq_type1-$seq_type2.$blast",
+						dir=>$DIAGSDIR."/".$tmp1."/".$tmp2,
+						},
+		    $org_name1."_".$org_name1=>{fasta=>$fasta1,
+						db=>$blastdb1,
+						basename=>$md51."_".$md51.".$masked1-$masked1.$seq_type1-$seq_type1.$blast",
+						dir=>$DIAGSDIR."/".$tmp1."/".$tmp1,
+						},
+		    $org_name2."_".$org_name2=>{fasta=>$fasta2,
+						db=>$blastdb2,
+						basename=>$md52."_".$md52.".$masked2-$masked2.$seq_type2-$seq_type2.$blast",
+						dir=>$DIAGSDIR."/".$tmp2."/".$tmp2,
+						},
+		   );
+    foreach my $org_dir (keys %org_dirs)
+      {
+# 	my $tmp = $org_dir;
+# 	$tmp =~ s/\///g;
+# 	$tmp =~ s/\s+/_/g;
+# 	$tmp =~ s/\(//g;
+# 	$tmp =~ s/\)//g;
+# 	$tmp =~ s/://g;
+# 	my $outfile = $DIAGSDIR."/".$tmp;
+	my $outfile = $org_dirs{$org_dir}{dir};
 	mkpath ($outfile,0,0777) unless -d $outfile;
-	$org_dirs{$org_dir}{dir}=$outfile;
-	warn "didn't make $outfile: $!" unless -d $outfile;
+#	$org_dirs{$org_dir}{dir}=$outfile;
+	warn "didn't create path $outfile: $!" unless -d $outfile;
 	$outfile .= "/".$org_dirs{$org_dir}{basename};
 	$org_dirs{$org_dir}{blastfile}=$outfile.".blast";
       }
