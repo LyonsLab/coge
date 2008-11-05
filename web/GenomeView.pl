@@ -62,7 +62,7 @@ sub gen_html
       {
 	my ($body, $seq_names, $seqs) = gen_body();
 	my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
-	$template->param(TITLE=>'Genome Browser');
+	$template->param(TITLE=>'Organism Overview');
 	$template->param(HEAD=>qq{});
 	my $name = $USER->user_name;
         $name = $USER->first_name if $USER->first_name;
@@ -71,7 +71,7 @@ sub gen_html
 
 	$template->param(LOGON=>1) unless $USER->user_name eq "public";
 	$template->param(DATE=>$DATE);
-	$template->param(LOGO_PNG=>"GenomeView-logo.png");
+	$template->param(LOGO_PNG=>"OrganismView-logo.png");
 	$template->param(BODY=>$body);
 	$html .= $template->output;
       }
