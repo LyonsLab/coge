@@ -5,8 +5,9 @@ function get_organism_chain(type,val,i)
  if (type == 'name') {get_orgs(['args__name','args__'+val,'args__i','args__'+i], ['org_list'+i]);}
  else if (type == 'desc') {get_orgs(['args__desc','args__'+val,'args__i','args__'+i], ['org_list'+i]);}
  $('#ds_info'+i).html('<div class="loading dna_small small">loading. . .</div>');
+ check_previous_analyses();
  ajax_wait("get_datasets(['args__oid','org_id"+i+"','args__masked','masked"+i+"', 'args__seq_type','seq_type"+i+"'],['ds_info"+i+"']);");
- ajax_wait("check_previous_analyses();");
+// ajax_wait("check_previous_analyses();");
 }
 
 function run_synmap(){
