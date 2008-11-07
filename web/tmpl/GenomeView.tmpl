@@ -1,5 +1,14 @@
 <script language="javascript">
 
+function ajax_wait (val){
+if (ajax.length)
+   {
+    setTimeout("ajax_wait("+'"'+val+'"'+")",100);
+    return;
+   }
+  eval(val);
+}
+
 function launch_seqview(dsid, chr)
  {
    start = $('#start').val();
