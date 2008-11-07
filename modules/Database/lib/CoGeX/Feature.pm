@@ -1069,8 +1069,8 @@ sub wobble_content
         $gc_count++ if $wobble =~ /[gc]/i;
       }
     return ($gc_count, $at_count) if $counts;
-    my $pat = sprintf("%.4f", $at_count/$codon_count);
-    my $pgc = sprintf("%.4f", $gc_count/$codon_count);
+    my $pat = sprintf("%.4f", $at_count/$codon_count) if $codon_count;
+    my $pgc = sprintf("%.4f", $gc_count/$codon_count) if $codon_count;
     return ($pgc, $pat);
   }
 
