@@ -193,6 +193,7 @@ sub get_datasets
     $html.= ", ".$type->description if $type && $type->description;
     $html .= "</DIV>";
     my $has_cds=0;
+    my $total_length=0;
     foreach my $ds (sort {$a->name cmp $b->name} @ds)
       {
 	my $name = $ds->name;
@@ -210,6 +211,7 @@ sub get_datasets
 	    $length += $ds->last_chromosome_position($chr);
 	    $chr_count++;
 	  }
+	$total_length += $length;
 	$length = reverse $length;
 	$length =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
 	$length = reverse $length;
@@ -246,6 +248,10 @@ sub get_datasets
 
         $i++;
       }
+    $total_length = reverse $total_length;
+    $total_length =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
+    $total_length = reverse $total_length;
+    $html .= "Total Length: $total_length";
     $html .= "<span class=alert>WARNING: datasets contain no CDS features</span>" if ($seq_type == 1 &&  !$has_cds);
     return $html;
   }
@@ -261,6 +267,10 @@ sub gen_fasta
     ($org_name, $md5,$ds_list,$masked) = gen_org_name(oid=>$oid, masked=>$masked, seq_type=>$seq_type, write_log=>$write_log);
     my $file = $FASTADIR."/$md5.fasta";
     my $res;
+    while (-e "$file.running")
+      {
+	sleep 60;
+      }
     if (-r $file)
       {
 	write_log("fasta file for *".$org_name."* ($md5) exists", $cogeweb->logfile);
@@ -268,7 +278,9 @@ sub gen_fasta
       }
     else
       {
+	system "touch $file.running"; #track that a blast anlaysis is running for this
 	$res = generate_fasta(dslist=>$ds_list, file=>$file, type=>$seq_type) unless -r $file;
+	system "rm $file.running" if -r "$file.running"; #remove track file
       }
     return $file, $md5, $org_name, $masked if $res;
     return 0;
@@ -370,6 +382,10 @@ sub gen_blastdb
     my $org_name = $opts{org_name};
     my $blastdb = "$BLASTDBDIR/$md5";
     my $res = 0;
+    while (-e "$blastdb.running")
+      {
+	sleep 60;
+      }
     if (-r $blastdb.".nsq")
       {
 	write_log("blastdb file for *".$org_name."* ($md5) exists", $cogeweb->logfile);
@@ -377,7 +393,9 @@ sub gen_blastdb
       }
     else
       {
+	system "touch $blastdb.running"; #track that a blast anlaysis is running for this
 	$res = generate_blast_db(fasta=>$fasta, blastdb=>$blastdb, org=>$org_name);
+	system "rm $blastdb.running" if -r "$blastdb.running"; #remove track file
       }
     return $blastdb if $res;
     return 0;
