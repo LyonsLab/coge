@@ -955,6 +955,11 @@ sub get_blast_db
     my $md5 = md5_hex($title);
     my $file = $FASTADIR."/$md5.fasta";
     my $res;
+    while (-e "$file.running")
+      {
+#	print STDERR "slepping on $file.running\n";
+	sleep 60;
+      }
     if (-r $file)
       {
 	write_log("*$org_name* fasta file ($md5) exists", $cogeweb->logfile);
@@ -962,8 +967,15 @@ sub get_blast_db
       }
     else
       {
+	system "touch $file.running"; #track that a blast anlaysis is running for this
 	$res = generate_fasta(dslist=>\@ds, file=>$file) unless -r $file;
-      }    my $blastdb = "$BLASTDBDIR/$md5";
+	system "rm $file.running" if -r "$file.running"; #remove track file
+      }    
+    my $blastdb = "$BLASTDBDIR/$md5";
+     while (-e "$blastdb.running")
+      {
+	sleep 60;
+      }
     if (-r $blastdb.".nsq")
       {
 	write_log("*$org_name* blastdb file ($md5) exists", $cogeweb->logfile);
@@ -971,7 +983,9 @@ sub get_blast_db
       }
     else
       {
+	system "touch $blastdb.running"; #track that a blast anlaysis is running for this
 	$res = generate_blast_db(fasta=>$file, blastdb=>$blastdb, org=>$org_name);
+	system "rm $blastdb.running" if -r "$blastdb.running"; #remove track file
       }
     return $org_name, $blastdb, $file if $res;
     return 0;
