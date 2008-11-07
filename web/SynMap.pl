@@ -18,7 +18,7 @@ use Benchmark;
 use LWP::Simple;
 $ENV{PATH} = "/opt/apache2/CoGe/";
 umask(0);
-use vars qw( $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $FORMATDB $BLAST $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $TANDEM_FINDER $FILTER_REPETITIVE_MATCHES $RUN_DAGCHAINER $FIND_NEARBY $PLOT_DAG $DAG_PLOT);
+use vars qw( $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $FORMATDB $BLAST $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $TANDEM_FINDER $FILTER_REPETITIVE_MATCHES $RUN_DAGCHAINER $FIND_NEARBY $PLOT_DAG $DAG_PLOT $CONVERT_TO_GENE_ORDER);
 $DEBUG = 0;
 $DIR = "/opt/apache/CoGe/";
 $URL = "/CoGe/";
@@ -37,7 +37,7 @@ $RUN_DAGCHAINER = $DIR."/bin/parepair/run_dagchainer.pl -E 0.05";
 $FIND_NEARBY = $DIR."/bin/parepair/find_nearby.py -d 200000";
 $PLOT_DAG = $PYTHON ." ".$DIR."/bin/parepair/plot_dag.py";
 $DAG_PLOT = $PYTHON ." ".$DIR."/bin/parepair/dag_plot.py"; #new and improved!
-
+$CONVERT_TO_GENE_ORDER = $DIR."/bin/parepair/convert_to_gene_order.pl";  #this needs to be implemented
 $| = 1; # turn off buffering
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
                  sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
@@ -160,7 +160,7 @@ sub get_orgs
 	return $html;
       }
 
-    $html .= qq{<SELECT id="org_id$i" SIZE="5" MULTIPLE onChange="\$('#ds_info'+$i).html('<div class=dna_small class=loading class=small>loading. . .</div>'); get_datasets(['args__oid','org_id$i', 'args__masked','masked$i', 'args__seq_type','seq_type$i'],['ds_info$i']);check_previous_analyses();" >\n};
+    $html .= qq{<SELECT id="org_id$i" SIZE="5" MULTIPLE onChange="\$('#ds_info'+$i).html('<div class=dna_small class=loading class=small>loading. . .</div>'); check_previous_analyses();get_datasets(['args__oid','org_id$i', 'args__masked','masked$i', 'args__seq_type','seq_type$i'],['ds_info$i']);" >\n};
     $html .= join ("\n", @opts);
     $html .= "\n</SELECT>\n";
     $html =~ s/OPTION/OPTION SELECTED/;
@@ -202,7 +202,8 @@ sub get_datasets
 	my $chr_count =0;
 	my $plasmid = 0;
 	my $contig =0;
-	foreach my $chr ($ds->get_chromosomes)
+	my @chrs = $ds->get_chromosomes();
+	foreach my $chr (@chrs)
 	  {
 	    $plasmid = 1 if $chr =~ /plasmid/i;
 	    $contig = 1 if $chr =~ /contig/i;
@@ -217,6 +218,7 @@ sub get_datasets
         $html .= ">";
 	$html .= join (", length: ", $name, $length. "bp");
 	$html .= "; chr count: $chr_count";
+	$html .= " (".join (", ", @chrs).")" if scalar @chrs < 5;
 	if ($plasmid || $contig)
 	  {
 	    $html .= " <span class=small>(";
