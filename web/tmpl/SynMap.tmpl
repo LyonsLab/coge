@@ -64,7 +64,6 @@ function set_dagchainer_defaults() {
    { params = [24000, 120000, 3];}
   else if (settings == 2)
    { params = [1000, 2000, 3];}
-  console.log(params);
   if (!params) {return;}
   $('#g').val(params[0]);
   $('#D').val(params[1]);
@@ -290,7 +289,9 @@ function open_window (url, loc, width, height)
 </script>
 <table><tr><td>
 <DIV id=log_text class="small dna" style="display:none"></DIV>
-<DIV id=results><TMPL_IF NAME=RESULTS><TMPL_VAR NAME=RESULTS><TMPL_ELSE><span class="alert">WARNING:</span>  SynMap is a very computationally intense, multi-step program which may take hours to complete. It is highly recommended to have your results emailed to you. Please do not repeatedly pressed the "Generate SynMap" button!  When run, SynMap will:
+<DIV id=results><TMPL_IF NAME=RESULTS><TMPL_VAR NAME=RESULTS><TMPL_ELSE>
+<span class="alert">WARNING:</span> SynMap is still in beta; this version has many known problems that will cause SynMap to crash and not return results.  We are currently working on a new version to address these issues and will update SynMap as soon as possible.  In the meanwhile, please contact Eric Lyons if you feel your analysis has a problem and would like some help.<br>
+<span class="alert">Please Note:</span>  SynMap is a very computationally intense, multi-step program which may take hours to complete. It is highly recommended to have your results emailed to you. Please do not repeatedly pressed the "Generate SynMap" button!  When run, SynMap will:
 <li class=small>Generate fasta files of all coding sequence in selected genomes
 <li class=small>Generate blastable databases of sequences
 <li class=small>Blast genomes (self-self and self-other)
