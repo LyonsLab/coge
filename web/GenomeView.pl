@@ -262,7 +262,8 @@ sub get_dataset_info
 
     return $html unless $ds;
     $html = "<table>";
-    my $dataset = $ds->name.": ". $ds->description;
+    my $dataset = $ds->name;
+    $dataset .= ": ". $ds->description if $ds->description;
     $dataset = " <a href=\"".$ds->link."\" target=_new\>".$dataset."</a>" if $ds->link;
     my $source_name = $ds->datasource->name .": ". $ds->datasource->description;
     my $link = $ds->datasource->link;
@@ -464,8 +465,8 @@ sub gen_gc_for_chromosome
     my $chr = $args{chr};
     return unless $dsid;
     my $ds = $coge->resultset('Dataset')->find($dsid);
-    my ($gc, $at)=$ds->percent_gc(chr=>$chr);
-    return "GC: ".(100*$gc)."%  AT: ".(100*($at))."%";
+    my ($gc, $at, $n)=$ds->percent_gc(chr=>$chr);
+    return "GC: ".(100*$gc)."%  AT: ".(100*($at))."%  N: ".(100*($n))."%";
   }
 
 sub gen_gc_for_noncoding
