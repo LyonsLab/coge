@@ -251,8 +251,9 @@ sub percent_gc
     return unless $length;
     my ($gc) = $seq =~ tr/GCgc/GCgc/;
     my ($at) = $seq =~ tr/ATat/ATat/;
-    return ($gc,$at) if $count;
-    return sprintf("%.4f", $gc/$length),sprintf("%.4f", $at/$length);
+    my ($n) = $seq =~ tr/nNxX/nNxX/;
+    return ($gc,$at, $n) if $count;
+    return sprintf("%.4f", $gc/$length),sprintf("%.4f", $at/$length),,sprintf("%.4f", $n/$length);
   }
 
 sub fasta
