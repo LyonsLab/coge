@@ -161,7 +161,7 @@ sub generate_table
       my $other;
       my $cds_count = $feat_types{CDS};
       $other .= "<div class=link id=codon_usage$cds_count><DIV onclick=\" \$('#codon_usage$cds_count').removeClass('link'); gen_data(['args__loading'],['codon_usage$cds_count']); codon_table(['args__featid','args__$featid'],['codon_usage$cds_count'])\">"."Click for codon usage"."</DIV></DIV><input type=hidden id=CDS$cds_count value=$featid>" if $feat->type->name eq "CDS";
-    my ($gc, $at) = $feat->gc_content;
+    my ($gc, $at, $n) = $feat->gc_content;
     $at*=100;
     $gc*=100;
     my ($wgc, $wat) = $feat->wobble_content;
