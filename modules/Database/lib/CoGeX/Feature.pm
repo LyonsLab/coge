@@ -323,11 +323,11 @@ sub annotation_pretty_print_html
       {
 	my $ds=$self->dataset;
 	my $dataset = qq{<a href = "GenomeView.pl?dsid=}.$ds->id."\" target=_new>".$ds->name;
-	$dataset .= ": ".$ds->description if $ds->description;
+#	$dataset .= ": ".$ds->description if $ds->description;
 	$dataset .= "</a>";
 	$anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<span class=\"title4\">Dataset</span>", Values=>[$dataset], Type_delimit=>": ", Val_delimit=>" "));
 	my $org = qq{<a href = "GenomeView.pl?oid=}.$ds->organism->id."\" target=_new>".$ds->organism->name;
-	$org .= ": ".$ds->organism->description if $ds->organism->description;
+#	$org .= ": ".$ds->organism->description if $ds->organism->description;
 	$org .= "</a>";
 	
 	$anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<span class=\"title4\">Organism</span>", Values=>[$org], Type_delimit=>": ", Val_delimit=>" "));
@@ -1037,17 +1037,19 @@ sub gc_content
     my %opts = @_;
     my $counts = $opts{counts};
     my $seq = $self->genomic_sequence;
-    my ($gc,$at);
+    my ($gc,$at, $n);
     $gc = $seq =~ tr/gcGC/gcGC/;
     $at = $seq =~ tr/atAT/atAT/;
+    $n = $seq =~ tr/atAT/atAT/;
     unless ($counts)
       {
 	my $total = CORE::length($seq);
-	return (0,0) unless $total;
+	return (0,0,0) unless $total;
 	$gc = sprintf("%.4f", ($gc/$total));
 	$at = sprintf("%.4f", ($at/$total));
+	$n = sprintf("%.4f", ($n/$total));
       }
-    return $gc,$at;
+    return $gc,$at, $n;
   }
 
 sub wobble_content
