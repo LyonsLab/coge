@@ -28,8 +28,8 @@ $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 $FORM = new CGI;
 ($USER) = CoGe::Accessory::LogUser->get_user();
 $coge = CoGeX->dbconnect();
-$coge->storage->debugobj(new DBIxProfiler());
-$coge->storage->debug(1);
+#$coge->storage->debugobj(new DBIxProfiler());
+#$coge->storage->debug(1);
 
 my $pj = new CGI::Ajax(
 		       get_dataset => \&get_dataset,
