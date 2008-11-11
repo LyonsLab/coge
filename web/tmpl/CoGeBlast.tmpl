@@ -995,7 +995,7 @@ function clear_org_list()
    	<DIV id="blah">Organism Name: <input type="text" size=11 onFocus="show_add();search_bar('org_name');clear_box('org_desc');restore_search_bar('org_desc');" style="font-style:italic" value="Search" name="org_name" id="org_name" onBlur="restore_search_bar('org_name')" onKeyUp='org_search();'></DIV>
    	<DIV id="blah">Organism Description: <input type="text" size=11 onFocus="show_add();search_bar('org_desc');clear_box('org_name');restore_search_bar('org_name');" style="font-style:italic" value="Search" name="org_desc" id="org_desc" onBlur="restore_search_bar('org_desc')" onKeyUp='org_search();'></DIV>
    	<DIV id="org_list"><TMPL_VAR NAME="ORG_LIST"></DIV>
-   	<input type=button value="Get Org Info" onClick="dataset_description_for_org(['org_id'],[org_info]);pageObj.lastMouseX=event.pageX;pageObj.lastMouseY=event.pageY;">
+   	<input type=button value="Get Org Info" onClick="org_info('<span class=loading>Loading. . .</span>');dataset_description_for_org(['org_id'],[org_info]);pageObj.lastMouseX=event.pageX;pageObj.lastMouseY=event.pageY;">
    	  </TD>
    	  <TD valign="middle" align=middle>
    	  <input type="button" id=add value="Add &rarr;  " onClick="get_from_id(['org_id'],[add_to_list]);">
