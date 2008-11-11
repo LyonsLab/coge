@@ -37,7 +37,7 @@ sub get_locs {
             $chrs{$chr} = 1;
         }
     }
-    my @chrs = sort { $a <=> $b } keys %chrs;
+    my @chrs = sort { $a cmp $b } keys %chrs;
 
     print "##gff-version\t3\n";
     foreach my $chr (@chrs){
@@ -60,14 +60,36 @@ sub get_locs {
         print STDERR join(",", @$datasets) . "\n";
         while(my $g = $gene_rs->next()){
             my $gene_name = $g->feature_names()->next()->name;
+
+            my $mrna_rs = $s->resultset('Feature')->search( {
+                  'me.dataset_id' => { 'IN' => $datasets },
+                  'me.chromosome' => $chr,
+                  'feature_names.name' => $gene_name,
+                  'feature_type.name'  =>  'mRNA' 
+                } , { 
+                    'join' => 'feature_names',
+                   'prefetch'           => [ 'feature_type', 'feature_names'] 
+                  ,'order_by'           => [ 'me.start']
+                });
+
+            my $mrna = $mrna_rs->next();
+
+
             my $strand = $g->strand == 1 ? '+' : '-';
             my $attrs = "ID=$gene_name;Name=$gene_name";
             print join("\t", ($chr, 'ucb', $g->feature_type->name, $g->start, $g->stop, ".", $strand, ".", $attrs)) . "\n";
+            my $parent = $gene_name;
+            if ($mrna){
+                $attrs = "ID=$gene_name" . ".mRNA;Parent=$gene_name";
+                $parent = $gene_name . ".mRNA";
+            }
+
+            print join("\t", ($chr, 'ucb', 'mRNA', $mrna->start, $mrna->stop, ".", $strand, ".", $attrs)) . "\n";
             $chrs{$g->chr} = 1;
             my $sub_rs = $s->resultset('Feature')->search( {
                   'me.dataset_id' => { 'IN' => $datasets },
                   'feature_names.name'  =>  $gene_name
-                  , 'feature_type.name'  =>  { '!=' => 'gene' }
+                  , 'feature_type.name'  =>  { 'NOT IN' => ['gene', 'mRNA'] }
                 } , { 
                    'join'               => [ 'feature_names'],
                    'prefetch'           => [ 'feature_type', 'locations'] 
@@ -75,7 +97,7 @@ sub get_locs {
                 });
             while(my $f = $sub_rs->next()){
                 my $locs = $f->locations({}, {'order_by' => 'start'});
-                $attrs = "Parent=$gene_name;Name=$gene_name";
+                $attrs = "Parent=$parent";
                 while(my $loc = $locs->next()){
                     print join("\t", ($f->chr, 'ucb', $f->feature_type->name, $loc->start, $loc->stop, ".", $strand, ".", $attrs)) . "\n";
             
