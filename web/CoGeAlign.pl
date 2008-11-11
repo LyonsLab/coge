@@ -461,7 +461,8 @@ sub gen_matrix
 	    my $q = $q{$c1}{$c2} ? $q{$c1}{$c2} : $q{$c2}{$c1};
 	    next unless $q;
 #	    print STDERR $c1,"::",$c2," ",$q{$c1}{$c2}," ",$q{$c2}{$c1}," ",$q/($p{$c1}*$p{$c2}),"\n";
-	    my $val = sprintf("%.0f",2*log($q/($p{$c1}*$p{$c2})));
+	    my $denom = ($p{$c1}*$p{$c2});
+	    my $val = sprintf("%.0f",2*log($q/$denom)) if $denom;
 	    $val = 0 if $val eq "-0";
 	    $matrix{uc($c1)}{uc($c2)} = $val;
 	  }
