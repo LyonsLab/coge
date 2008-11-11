@@ -1812,22 +1812,51 @@ sub dataset_description_for_org
     $html .= ": ".$org->description if $org->description;
     $html .= "<table>";
     my $i = 0;
-    foreach my $ds ($org->current_datasets)
+    my $total_length=0;
+    foreach my $ds (sort {$a->name cmp $b->name} $org->current_datasets)
       {
 	my $name = $ds->name;
-	$name .= ": ".$ds->description if $ds->description;
-	$name = "<a href=".$ds->link." target=_new>".$name."</a>"if $ds->link;
-	$name =~ s/href=/href=http:\/\// unless $name =~ /http/ || $name =~/ftp/;
-	my $source = $ds->datasource->name;
-	$source .= ": ".$ds->datasource->description if $ds->datasource->description;
-	$source = "<a href=".$ds->datasource->link." target=_new>".$source."</a>" if $ds->datasource->link;
-	$source =~ s/href=/href=http:\/\// unless $source =~ /http/;
+#	$name .= ": ".$ds->description if $ds->description;
+        $name = "<a href=GenomeView.pl?dsid=".$ds->id." target=_new>".$name."</a>";
+#	$name = "<a href=".$ds->link." target=_new>".$name."</a>"if $ds->link;
+#	$name =~ s/href=/href=http:\/\// unless $name =~ /http/ || $name =~/ftp/;
+#	my $source = $ds->datasource->name;
+#	$source .= ": ".$ds->datasource->description if $ds->datasource->description;
+#	$source = "<a href=".$ds->datasource->link." target=_new>".$source."</a>" if $ds->datasource->link;
+#	$source =~ s/href=/href=http:\/\// unless $source =~ /http/;
+	my $length = 0;
+	my $chr_count =0;
+	my $plasmid = 0;
+	my $contig =0;
+	my @chrs = $ds->get_chromosomes();
+	foreach my $chr (@chrs)
+	  {
+	    $plasmid = 1 if $chr =~ /plasmid/i;
+	    $contig = 1 if $chr =~ /contig/i;
+	    $length += $ds->last_chromosome_position($chr);
+	    $chr_count++;
+	  }
+	$total_length += $length;
+	$length = commify ($length);
 	$html .= "<tr";
 	$html .= " class='even'" if $i % 2 == 0;
-	$html .= "><td>".join ("<td>", $name, $source)."\n";
+	$html .= "><td>";#.join ("<td>", $name, $source)."\n";
+	$html .= join (", length: ", $name, $length. "bp");
+	$html .= "; chr count: $chr_count";
+	$html .= " (".join (", ", @chrs).")" if scalar @chrs < 5;
+	if ($plasmid || $contig)
+	  {
+	    $html .= " <span class=small>(";
+	    $html .= "plastmid" if $plasmid;
+	    $html .= " " if $plasmid && $contig;
+	    $html .= "contig" if $contig;
+	    $html .= ")</span>";
+	  }
 	$i++;
       }
     $html.="</table>";
+    $total_length = commify($total_length);
+    $html .= "Total Length: $total_length";
     return $html;
   }
       
