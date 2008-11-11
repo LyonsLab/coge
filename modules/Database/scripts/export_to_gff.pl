@@ -11,28 +11,43 @@ my $datasets = \@ARGV;
 
 
 get_locs($datasets);
-get_sequence($datasets);
+#get_sequence($datasets);
 
 
 sub get_locs {
     my $SEP = "\t";
     my $datasets = shift;
-    my $rs = $s->resultset('Feature')->search( {
-              'me.dataset_id' => { 'IN' => $datasets }
-              #, 'feature_type.name'  => { 'NOT LIKE' => '%contig%' }
+    my $gene_rs = $s->resultset('Feature')->search( {
+              'me.dataset_id' => { 'IN' => $datasets },
+              'feature_type.name'  =>  'gene' 
             } , { 
-               'prefetch'           => [ 'feature_type', 'locations'] 
+               'prefetch'           => [ 'feature_type', 'feature_names'] 
               ,'order_by'           => [ 'me.chromosome', 'me.start']
             });
 
     #gff: chr  organization feature_type  start stop strand . name
-    while(my $g = $rs->next()){
-        if($g->feature_type->name eq 'CNS'){ next; }
+    print "##gff-version\t3\n";
+    while(my $g = $gene_rs->next()){
+        my $gene_name = $g->feature_names()->next()->name;
+        my $strand = $g->strand == 1 ? '+' : '-';
+        my $attrs = "ID=$gene_name;Name=$gene_name";
+        print join("\t", ($g->chr, 'ucb', $g->feature_type->name, $g->start, $g->stop, ".", $strand, ".", $attrs)) . "\n";
+        my $sub_rs = $s->resultset('Feature')->search( {
+              'me.dataset_id' => { 'IN' => $datasets },
+              'feature_names.name'  =>  $gene_name
+              , 'feature_type.name'  =>  { '!=' => 'gene' }
+            } , { 
+               'join'               => [ 'feature_names'],
+               'prefetch'           => [ 'feature_type', 'locations'] 
+              ,'order_by'           => [ 'me.chromosome', 'me.start']
+            });
+        while(my $f = $sub_rs->next()){
+            my $locs = $f->locations({}, {'order' => 'start'});
+            $attrs = "Parent=$gene_name;Name=$gene_name";
+            while(my $loc = $locs->next()){
+                print join("\t", ($f->chr, 'ucb', $f->feature_type->name, $loc->start, $loc->stop, ".", $strand, ".", $attrs)) . "\n";
         
-        my $locs = $g->locations({}, {'order' => 'start'});
-        while(my $loc = $locs->next()){
-            my $name = join("#", map { $_->name } $g->feature_names());
-            print join("\t", ($g->chr, 'ucb', $g->feature_type->name, $loc->start, $loc->stop, $loc->strand, ".", $name)) . "\n";
+            }
 
         }
     }
