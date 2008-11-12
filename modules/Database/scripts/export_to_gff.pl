@@ -9,6 +9,7 @@ my $s = CoGeX->connect($connstr, 'bpederse', 'brent_cnr');
 my $organism = shift;
 my $datasets = \@ARGV;
 
+# gt sketch -seqid 1 -addintrons yes -start 1000 -style default.style -force -end 70000  out.png grape.gff3
 
 my $chrs = get_locs($datasets);
 exit(0);
@@ -34,15 +35,16 @@ sub get_locs {
     foreach my $ds (@$datasets){
         my $dso = $s->resultset('Dataset')->resolve($ds);
         foreach my $chr ($dso->get_chromosomes){
-            $chrs{$chr} = 1;
+            $chrs{$chr} = $dso->last_chromosome_position($chr);
         }
     }
     my @chrs = sort { $a cmp $b } keys %chrs;
 
     print "##gff-version\t3\n";
     foreach my $chr (@chrs){
-        print "##sequence-region $chr 1 99999999\n";
+        print "##sequence-region $chr 1 " . $chrs{$chr} . "\n";
     }
+    exit();
     foreach my $chr (@chrs){
         
         my $gene_rs = $s->resultset('Feature')->search( {
