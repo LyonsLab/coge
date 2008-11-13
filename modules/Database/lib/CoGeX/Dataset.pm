@@ -52,20 +52,6 @@ __PACKAGE__->belongs_to("datasource" => "CoGeX::DataSource", 'data_source_id');
 __PACKAGE__->belongs_to("organism" => "CoGeX::Organism", 'organism_id');
 
 
-sub chromosomes : ResultSet {
-    my $self = shift;
-    my $r1 = $self->search(undef,{
-        prefetch =>['genomic_sequences']
-    });
-    return $r1 if $r1->count;
-    # TODO: should probably just return an array here instead of 
-    # full objects...
-    return $self->search(undef,{
-        prefetch =>[{'features' => 'locations' }]
-    });
-
-}
-
 sub get_genomic_sequence {
   my $self = shift;
   my %opts = @_;
@@ -239,6 +225,13 @@ sub get_chromosomes
 #       }
     return wantarray ? @data : \@data;
   }
+
+sub chromosomes
+  {
+    my $self = shift;
+    $self->get_chromosomes(@_);
+  }
+    
 
 sub percent_gc
   {
