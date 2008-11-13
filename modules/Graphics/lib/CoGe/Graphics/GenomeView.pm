@@ -6,6 +6,106 @@ use Data::Dumper;
 use GD;
 
 
+#################### main pod documentation begin ###################
+## 
+## 
+
+
+=head1 NAME  GenomeView
+
+ CoGe::Graphics::GenomeView
+
+=head1 SYNOPSIS
+
+ my $gv = new CoGe::Graphics::GenomeView({color_band_flag=>1, image_width=>800, chromosome_height=>20}) ;
+ $gv->add_chromosome(name=>"Chr: 1",
+		     end=>30000000,
+		     );
+ $gv->add_chromosome(name=>"Chr: 10",
+		     end=>10000000,
+		     );
+ #add a series of tick marks at various positions
+ my $up = 0; #is the tick on top or bottom of chromosome?
+ foreach (my $i=1;$i<=30000000,$i+=100000)
+  {
+    $gv->add_feature(name=>"Mark at position $i,
+  		     start=>$i,
+  		     stop=>$i,
+  		     chr=>"Chr: 1", #must match one of the specified chromosomes
+  		     imagemap=>qq/"Mark at position $i" onclick="your_js_function(1, $i);"/,
+  		     up=>$up,
+  		     color=>[255,0,0],
+  		    );
+    $up = $up == 1 ? 0 : 1;
+  }
+
+ foreach (my $i=1;$i<=10000000,$i+=1000000)
+  {
+    $gv->add_feature(name=>"Mark at position $i,
+  		     start=>$i,
+  		     stop=>$i,
+  		     chr=>"Chr: 10",
+  		     imagemap=>qq/"Mark at position $i" onclick="your_js_function(1, $i);"/,
+  		     up=>$up,
+  		     color=>[0,255,0],
+  		    );
+    $up = $up == 1 ? 0 : 1;
+  }
+
+ my $file = $gv->generate_png(filename=>"image.png");
+ my $map = $gv->generate_imagemap(mapname=>"genomeview_imagemap");
+ 
+ print qq{Content-Type: text/html
+
+<html>
+<head></head>
+<body>
+<img src=$file ismap usemap='#genomeview_imagemap' border=0>$map
+</body>
+</html>
+};
+
+
+=head1 DESCRIPTION
+ 
+ GenomeView creates images that give a graphical overview of an entire chromosome that can be painted
+ with tick marks.  These tick marks can be used to show where blast hits fall on a chromosome, where
+ genes reside, etc.  Each tick mark can also be used as a link in an imagemap to other web-pages or
+ javascript functions.
+
+
+=head1 USAGE
+
+ use CoGe::Graphics::GenomeView;
+ my $gv = CoGe::Graphics::GenomeView->new();
+
+=head1 BUGS
+ Documentation for this module is lacking
+
+=head1 SUPPORT
+
+ Please contact Eric Lyons with questions, comments, suggestions, and most importantly code 
+improvements.
+
+=head1 AUTHOR
+
+	Eric Lyons
+	elyons@nature.berkeley.edu
+
+=head1 COPYRIGHT
+
+Permission to use, copy, modify, and distribute this software and its documentation for educational, research, and not-for-profit purposes, without fee and without a signed licensing agreement, is hereby granted, provided that the above copyright notice, this paragraph and the following two paragraphs appear in all copies, modifications, and distributions. Contact The Office of Technology Licensing, UC Berkeley, 2150 Shattuck Avenue, Suite 510, Berkeley, CA 94720-1620, (510) 643-7201, for commercial licensing opportunities.
+
+The full text of the license can be found in the
+LICENSE file included with this module.
+
+=head1 SEE ALSO
+
+ perl(1).
+ GD
+=cut
+
+
 #for best performance, create all the chromosomes before generating the features.
 
 __PACKAGE__->mk_accessors(qw(organism chromosomes features image_width image_height legend_height _default_feature_color _gd _color_set color_band_flag legend chromosome_height show_count draw_ends max_count));

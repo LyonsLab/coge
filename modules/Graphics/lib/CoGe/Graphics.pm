@@ -72,13 +72,6 @@ CoGe::Graphics - CoGe::Graphics
 
 =head1 DESCRIPTION
 
-Stub documentation for this module was created by ExtUtils::ModuleMaker.
-It looks like the author of the extension was negligent enough
-to leave the stub unedited.
-
-Blah blah blah.
-
-
 =head1 USAGE
 
 
@@ -98,13 +91,10 @@ Blah blah blah.
 
 =head1 COPYRIGHT
 
-This program is free software licensed under the...
-
-	The Artistic License
+Permission to use, copy, modify, and distribute this software and its documentation for educational, research, and not-for-profit purposes, without fee and without a signed licensing agreement, is hereby granted, provided that the above copyright notice, this paragraph and the following two paragraphs appear in all copies, modifications, and distributions. Contact The Office of Technology Licensing, UC Berkeley, 2150 Shattuck Avenue, Suite 510, Berkeley, CA 94720-1620, (510) 643-7201, for commercial licensing opportunities.
 
 The full text of the license can be found in the
 LICENSE file included with this module.
-
 
 =head1 SEE ALSO
 
@@ -583,7 +573,7 @@ sub process_features
 	    $f->no_3D(1) if $layers->{features}{flat};
 	    push @f, $f;
           }
-        elsif (($layers->{features}{gene} || $layers->{all}) && $feat->type->name =~ /Gene/i)
+        elsif (($layers->{features}{gene} || $layers->{all}) && $feat->type->name =~ /^Gene$/i)
           {
 	    my $f = CoGe::Graphics::Feature::Gene->new();
 	    $f->color([219, 219,219,50]);
@@ -647,6 +637,16 @@ sub process_features
 	    my $f = CoGe::Graphics::Feature::Block->new();
 	    $f->order(1);
 	    my $color = [ 255, 100, 255];
+	    $f->color($color);
+	    push @f, $f;
+          }
+	elsif (($layers->{features}{gene_space} || $layers->{all}) && $feat->type->name =~ /gene_space/i)
+          {
+	    my $f = CoGe::Graphics::Feature::Block->new();
+	    $f->order(1);
+	    $f->overlay(0);
+	    $f->transparency(.5);
+	    my $color = [ 255, 255, 100];
 	    $f->color($color);
 	    push @f, $f;
           }

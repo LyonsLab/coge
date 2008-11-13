@@ -2,6 +2,19 @@ package CoGe::Graphics::Feature::Domain;
 use strict;
 use base qw(CoGe::Graphics::Feature);
 
+=head1 AUTHOR
+
+	Eric Lyons
+	elyons@nature.berkeley.edu
+
+=head1 COPYRIGHT
+
+Permission to use, copy, modify, and distribute this software and its documentation for educational, research, and not-for-profit purposes, without fee and without a signed licensing agreement, is hereby granted, provided that the above copyright notice, this paragraph and the following two paragraphs appear in all copies, modifications, and distributions. Contact The Office of Technology Licensing, UC Berkeley, 2150 Shattuck Avenue, Suite 510, Berkeley, CA 94720-1620, (510) 643-7201, for commercial licensing opportunities.
+
+The full text of the license can be found in the
+LICENSE file included with this module.
+
+=cut
 
 BEGIN {
     use vars qw($VERSION $HEIGHT $BLOCK_HEIGHT);
