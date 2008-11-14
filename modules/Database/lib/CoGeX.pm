@@ -307,40 +307,14 @@ sub count_features_in_region
 sub get_current_datasets_for_org
   {
     my $self = shift;
+    warn 'THIS METHOD (get_current_datasets_for_org) IS OBSELETE.  PLEASE CALL $org_obj->current_datasets()\n';
     my %opts = @_ if @_ >1;
     my $orgid = $opts{org} || $opts{orgid} || $opts{organism};
     $orgid = shift unless $orgid;
     return unless $orgid;
-    my $rs = $self->resultset('Dataset')->search(
-						 {
-						  'organism_id'=> $orgid,
-						 },
-						 {
-						  distinct=>'version',
-						  order_by=>'version desc',
-						 }
-						);
-    my $version;
-    my %data;
-    ds_loop: while (my $ds = $rs->next())
-      {
-	$version = $ds->version unless $version;
-	next unless $version == $ds->version;
-	my @chrs = $ds->get_chromosomes;
-	foreach my $chr (@chrs)
-	  {
-	    #this is a hack but the general problem is that some organisms have different chromosomes at different versions, however, partially complete genomes will have many contigs and different versions will have different contigs.  So, to get around this, there is a check to see if the chromosome name has contig in it, if so, then only the most current version is used.  Otherwise, all versions are game.
-	    next unless $chr;
-	    if ($chr =~ /contig/i)
-	      {
-		next ds_loop if $ds->version ne $version;
-	      }
-	    $data{$chr} = $ds unless $data{$chr};
-	    $data{$chr} = $ds if $ds->version > $data{$chr}->version;
-	  }
-      }
-    %data = map {$_->id,$_} values %data;
-    return wantarray ? values %data : [values %data];
+    my ($org) = $self->resultset('Organism')->resolve($orgid);
+    return unless $org;
+    return $org->current_datasets();
   }
 
 sub log_user
