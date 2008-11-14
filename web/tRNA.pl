@@ -417,7 +417,7 @@ sub get_genome_fasta
   {
     my $orgid = shift;
     my $org = $coge->resultset('Organism')->find($orgid);
-    my @ds = $coge->get_current_datasets_for_org(org=>$orgid);
+    my @ds = $org->current_datasets();
     @ds = sort {$a->id <=> $b->id }@ds;
     return unless @ds;
     my $org_name = $ds[0]->organism->name;
