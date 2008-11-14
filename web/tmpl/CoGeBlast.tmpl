@@ -27,6 +27,7 @@ $(document).ready(function(){
   }
   get_displayFeature();
    get_seq('coge_radio');
+  pageObj.waittime=1000;
    <TMPL_VAR NAME="document_ready">
 });
 
@@ -886,6 +887,10 @@ function clear_org_list()
   {
   	fasta += "Blastable databases generation done!<br/>";
   	var blast_program = log.match(/-p\s(\w+)\s/);
+	if (!blast_program)
+	  {
+	    blast_program = log.match(/(blastz)/);
+	  }
   	blast="Running "+blast_program[1]+" algorithm . . . <br/>";
   	
   	match=log.match(/\*(.+)\*\sblast\sanalysis\scomplete/g);
@@ -923,15 +928,19 @@ function clear_org_list()
   if (results) message += results;
   if (done) message += done;
   
-  if (!pageObj.finished && pageObj.nolog<8) {setTimeout("read_log(['args__logfile', 'args__'+pageObj.basename, 'args__prog','args__CoGeBlast'], [monitor_log])",1000);}
-  /*
-  if (!pageObj.finished && pageObj.nolog<3)
+/*  if (!pageObj.finished && pageObj.nolog<8) {
+  setTimeout("read_log(['args__logfile', 'args__'+pageObj.basename, 'args__prog','args__CoGeBlast'], [monitor_log])",1000);
+  }
+*/
+//  if (ajax.length) {setTimeout("read_log(['args__logfile', 'args__'+pageObj.basename, 'args__prog','args__GEvo'], [monitor_log])",1000);}
+  if (!pageObj.finished && pageObj.nolog<8)
   {
     var waittime = pageObj.waittime;
     pageObj.waittime = pageObj.waittime*2;
     message+="<br/>Next progress check in "+waittime/1000+" seconds.";
-    if (ajax.length) {setTimeout("read_log(['args__logfile', 'args__'+pageObj.basename, 'args__prog','args__GEvo'], [monitor_log])");}
+    setTimeout("read_log(['args__logfile', 'args__'+pageObj.basename, 'args__prog','args__CoGeBlast'], [monitor_log])",waittime);
   }
+/*
   else
   {
    message = "There has been no update on your results during the first "+pageObj.waittime/1000+ "seconds of your analysis.  An error may have occured.  You can check your logfile at <a href='tmp/GEvo/"+pageObj.basename+".log' target=_new>this link</a> which may help you determin what went wrong, or send it to CoGe's adminstrator for debugging.  In the meanwhile, we suggest that you either wait a bit longer to see if the analsysi completes, and if not rerun your analysis.  If you have submitting very large regions for anlaysis (e.g. several megabases), please try a smaller region for analsyis.";
