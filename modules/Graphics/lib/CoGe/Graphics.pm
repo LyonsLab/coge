@@ -476,8 +476,10 @@ sub process_nucleotides
 	    next unless $subseq && $rcseq;
 	    my $f1 = CoGe::Graphics::Feature::GAGA->new({nt=>$subseq, strand=>1, start =>$pos+$start, stop =>$pos+$start+$step-1});
 	    my $f2 = CoGe::Graphics::Feature::GAGA->new({nt=>$rcseq, strand=>-1, start =>$pos+$start, stop =>$pos+$start+$step-1});
-	    $c->add_feature($f1) if $f1;
-	    $c->add_feature($f2) if $f2;
+	    $f1->gd;
+	    $f2->gd;
+	    $c->add_feature($f1) if $f1 && $f1->gaga_count;
+	    $c->add_feature($f2) if $f2 && $f2->gaga_count;
 	    $pos+=$chrs;
 	  }
       }
