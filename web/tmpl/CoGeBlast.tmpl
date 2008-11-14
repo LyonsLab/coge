@@ -389,6 +389,7 @@ function blastOff(){
   	setTimeout("blastOff()", 100);
   	return;
   }
+  pageObj.waittime=1000;
   //alert("Passed setTimeout loop");
   var check = $('#db_choice').getLength();
   if(($('#blank').val())||(check==0)){
