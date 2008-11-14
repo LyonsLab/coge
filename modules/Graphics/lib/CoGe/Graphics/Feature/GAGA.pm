@@ -27,6 +27,7 @@ BEGIN {
 "nt",
 "show_label",
 "extra",
+"gaga_count",
 );
 }
 
@@ -61,6 +62,7 @@ sub _initialize
 	    $ct++;
 	  }
       }
+    $self->gaga_count($sum);
 #     elsif(length ($seq) > 2)
 #       {
 # 	while ($seq=~ /(g*a*g+a+g*a*)/ig)
