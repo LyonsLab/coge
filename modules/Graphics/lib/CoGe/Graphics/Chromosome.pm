@@ -830,7 +830,7 @@ sub generate_region
     my $rl_time = timestr(timediff($t3, $t2));
     my $ch_time = timestr(timediff($t4, $t3));
     my $ft_time = timestr(timediff($t5, $t4));
-    print qq {
+    print STDERR qq {
          ---------------------------------------
          Time to set image height:   $ih_time
          Time to full region bg:     $fl_time
@@ -1571,11 +1571,15 @@ sub _draw_feature
     $feat->stop($feat->start) unless defined $feat->stop;
     my $unit = $self->_calc_unit_size;
     my $fs = $unit*($feat->start-$rb);
+    $fs = 0 if $fs < 0;
     my $fe = $unit*($feat->end-$rb+1);
+    $fe = $w if $fe > $w;
     my $fw = sprintf("%.1f",$fe - $fs)+1; #calculate the width of the feature;
     $fw = 1 if $feat->force_draw() && $fw < 1;
+    return if $fe < 0;
+    
     return if $fw < 1; #skip drawing if less than one pix wide
-
+#    return if $fw > 1000000;
     my ($xmin, $xmax, $ymin , $ymax);
 
     print STDERR "Drawing feature ".$feat->label." Order: ".$feat->order." Overlap: ".$feat->_overlap." : ", $feat->start, "-", $feat->end," Dimentions:",$fw,"x",$ih, " at position: $fs,$y"."\n" if $self->DEBUG;
@@ -1623,7 +1627,12 @@ sub _draw_feature
  	my $newgd = GD::Image->new ($fw, $ih,[1]);
 	$newgd->fill(0,0,$newgd->colorResolve(255,255,255));
 # 	#2. copy, resize, and resample the feature onto the new image
- 	$newgd->copyResized($feat->gd, 0, 0, 0, 0, $fw, $ih, $feat->iw, $feat->ih);  
+	my $srcx = $feat->start < $rb ? $rb-$feat->start : 0;
+	$rb = 0 if $rb < 1;
+	my $srcw = $feat->stop-$feat->start+1 - $srcx-1;
+	$srcw -= ($feat->stop-$re) if $re< $feat->stop;
+	# source image   destx dest y  srcx srcy  destw desth  srcw  srch
+ 	$newgd->copyResized($feat->gd, 0, 0, $srcx, 0, $fw, $ih, $srcw, $feat->ih);  
 	if ($highqual)
 	      {
 		#3. find any colors that are close to white and set them to white.
@@ -1642,9 +1651,8 @@ sub _draw_feature
 	      }#4. make white transparent# 	#4. make white transparent
  	$newgd->transparent($newgd->colorResolve(255,255,255));
 # 	#5. copy new image into appropriate place on image.
+	#srcimg, destx, desty srcx, srcy, wid, hei, mergepercent
  	$self->gd->copyMerge($newgd, $fs, $y, 0, 0, $fw, $ih, $feat->merge_percent);
-  
-#	$self->gd->copyResized($feat->gd, $fs, $y, 0, 0, $fw, $ih, $feat->iw, $feat->ih);
       }
     $xmin = sprintf("%.0f",$fs);
     $ymin = sprintf("%.0f",$y);
