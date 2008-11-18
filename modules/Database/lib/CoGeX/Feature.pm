@@ -876,6 +876,7 @@ sub genetic_code
       {
 	foreach my $anno ($self->annotations)
 	  {
+	    next unless $anno->annotation_type;
 	    next unless $anno->annotation_type->name eq "transl_table";
 	    $trans_type = $anno->annotation;
 	  }
