@@ -301,11 +301,12 @@ sub get_anno
 	$anno .= qq{<td><DIV id="addfeat$featid"><input type="button" value = "Add to List" onClick="\$('#addfeat$featid').html('<i>$accn ($type) has been added to Feature List</i><br><br>');update_featlist(['args__$accn','args__$type','args__$featid'],[add_to_featlist]);"></DIV>};
 	$anno .= "</table>";
 	$anno .= qq{<DIV id="gc_info$i"><input type="button" value = "GC content" onClick="gc_content(['args__featid','args__$featid'],['gc_info$i'])"></DIV>};
-	$anno .= qq{<DIV id="codon_info$i"><input type="button" value = "Codon usage" onClick="codon_table(['args__featid','args__$featid'],['codon_info$i'])"></DIV>} if $feat->type->name eq "CDS";
-	$anno .= qq{<DIV id="protein_info$i"><input type="button" value = "Amino acid usage" onClick="protein_table(['args__featid','args__$featid'],['protein_info$i'])"></DIV>} if $feat->protein_sequence;
-	$anno .= qq{<DIV id="codon_aa_align$i"><input type="button" value = "Codon/AA alignment" onClick="codon_aa_alignment(['args__featid','args__$featid'],['codon_aa_align$i'])"></DIV>} if $feat->type->name eq "CDS";
-
-
+	if ($feat->type->name eq "CDS")
+	  {
+	    $anno .= qq{<DIV id="codon_info$i"><input type="button" value = "Codon usage" onClick="codon_table(['args__featid','args__$featid'],['codon_info$i'])"></DIV>};
+	      $anno .= qq{<DIV id="protein_info$i"><input type="button" value = "Amino acid usage" onClick="protein_table(['args__featid','args__$featid'],['protein_info$i'])"></DIV>};
+	    $anno .= qq{<DIV id="codon_aa_align$i"><input type="button" value = "Codon/AA alignment" onClick="codon_aa_alignment(['args__featid','args__$featid'],['codon_aa_align$i'])"></DIV>};
+	  }
 	$anno = "<font class=\"annotation\">No annotations for this entry</font>" unless $anno;
       }
     return ($anno);
