@@ -1643,28 +1643,46 @@ sub generate_obj_from_seq
 	#genbank sequence
 	$obj->parse_genbank($sequence, $rc);
       }
-   elsif ($sequence =~ /^>/)
-      {
-	#fasta sequence
-	my ($header, $seq) = split /\n/, $sequence, 2;
-
-	$header =~ s/>//g;
-	$header =~ s/\|/_/g;
-	$header =~ s/^\s+//;
-	$header =~ s/\s+$//;
-	my ($accn) = $header=~/^(\S*)/;
-	$obj->accn($accn);
-	$obj->locus($header);
-	$obj->definition($header);
-	$seq =~ s/\n|\r//g;
-	$obj->sequence($seq);
-      }
     else
       {
-	#just the sequence
-	$obj->accn("RAW_SEQUENCE_SUBMISSION_$num");
-	$obj->locus("RAW_SEQUENCE_SUBMISSION_$num");
-	$sequence =~ s/\n|\r//g;
+	my $seq;
+	if ($sequence =~ /^>/)
+	  {
+	    #fasta sequence
+	    my ($header, $seq) = split /\n/, $sequence, 2;
+	    
+	    unless ($seq)
+	      {
+		$seq = $header unless $seq;
+		$header = 'NO_HEADER';
+	      }
+	    if ($header)
+	      {
+		$header =~ s/>//g;
+		$header =~ s/\|/_/g;
+		$header =~ s/^\s+//;
+		$header =~ s/\s+$//;
+	      }
+	    if ($seq)
+	      {
+		$seq =~ s/\n//g;
+		$seq =~ s/\s//g;
+	      }
+	    return unless $seq;
+	    my ($accn) = $header=~/^(\S*)/;
+	    $obj->accn($accn);
+	    $obj->locus($header);
+	    $obj->definition($header);
+	    $seq =~ s/\n|\r//g;
+	    $sequence = $seq;
+	  }
+	else
+	  {
+	    #just the sequence
+	    $obj->accn("RAW_SEQUENCE_SUBMISSION_$num");
+	    $obj->locus("RAW_SEQUENCE_SUBMISSION_$num");
+	  }
+	$sequence =~ s/\n|\r|\s//g;
 	$obj->sequence($sequence);
       }
     if ($rc)
