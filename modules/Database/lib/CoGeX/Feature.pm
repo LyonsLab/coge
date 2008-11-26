@@ -294,8 +294,8 @@ sub annotation_pretty_print_html
 	    
 	    my $anno_type = new CoGe::Accessory::Annotation(Type=>$anno_name);
 	    $anno_type->Val_delimit(", ");
-	    
-	    $anno_type->add_Annot("<span class=\"data\">".$anno->annotation."</span>");
+	    $anno_type->Type_delimit(" ");
+	    $anno_type->add_Annot("<span class=\"data\">".$anno->annotation."</span>") if $anno->annotation;
 	    if (ref ($group) =~ /group/i)
 	      {
 		my $anno_g = new CoGe::Accessory::Annotation(Type=>"<span class=\"title4\">".$group->name."</span>");
