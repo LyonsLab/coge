@@ -289,6 +289,7 @@ sub annotation_pretty_print_html
 	    my $type = $anno->type();
 	    my $group = $type->group();
 	    my $anno_name = $type->name;
+	    $anno_name .= ", ".$type->description if $type->description;
 	    $anno_name = "<span class=\"title4\">". $anno_name."</span>" unless ref($group) =~ /group/i;
 	    
 	    my $anno_type = new CoGe::Accessory::Annotation(Type=>$anno_name);
