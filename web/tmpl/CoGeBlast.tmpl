@@ -25,7 +25,6 @@ $(document).ready(function(){
   else{
     seqObj = new Object();
   }
-  get_displayFeature();
    get_seq('coge_radio');
   pageObj.waittime=1000;
    <TMPL_VAR NAME="document_ready">
@@ -350,7 +349,8 @@ function get_params(){
  
  var comp = $('#comp_adj').val();
  var seq = $('#seq_box').val();
- return {w : word_size, e : expect,g : gapcost,p : program,mm: match_mismatch,m : matrix,c : comp,s : seq, zw : zwordsize, zgs : zgap_start, zge : zgap_extension, zc : zchaining, zt : zthreshold, zm : zmask, fq : filter_query, rl : reslimit};
+var color_hsps_by_query = $('#color_hsps_by_query_seq')[0].checked; 
+ return {w : word_size, e : expect,g : gapcost,p : program,mm: match_mismatch,m : matrix,c : comp,s : seq, zw : zwordsize, zgs : zgap_start, zge : zgap_extension, zc : zchaining, zt : zthreshold, zm : zmask, fq : filter_query, rl : reslimit, colorhsps:color_hsps_by_query};
 }
 
 function get_ncbi_params(){
@@ -371,6 +371,7 @@ function get_ncbi_params(){
  var matrix = $('#ncbi_matrix').val();
  var comp = $('#ncbi_comp_adj').val();
  var seq = $('#seq_box').val();
+ 
  return {w : word_size, e : expect, db : db,g : gapcost,j : job_title,p : program,mm: match_mismatch,m : matrix,c : comp,s : seq};
 }
 
@@ -425,7 +426,7 @@ function blastOff(){
  var zchaining = params.zc;
  var zthreshold = params.zt;
  var zmask = params.zm;
-
+ var colorhsps = params.colorhsps;
 
   var page_width = ($('#co').width())*(95/100);
   pageObj.image_width = page_width;
@@ -454,7 +455,8 @@ function blastOff(){
 
   'args__seq','args__'+seq,
   'args__blastable','args__'+blastable_db,
-  'args__width','args__'+page_width
+  'args__width','args__'+page_width,
+  'args__color_hsps_by_query_seq', 'args__'+colorhsps
   ],[blastresults],'POST');
   
 }
@@ -707,22 +709,6 @@ function animate_params (html,version,pro){
   }
 }
 
-function get_displayFeature(){
- if (!$('#feature_display').val()){
-  return;
- }
- var stuff = $('#pretty_print_anno').html();
- var check = 0;
- if ($('#feature_display')[0].checked) {
-  check = 1;
- }
- if (stuff){
-  toggleFeature("",check);
- }
- else if (check){
-  generate_feat_info(['args__'+seqObj.featid,'args__1'],[toggleFeature]);
- }
-}
 
 
 function show_add() {
@@ -1516,26 +1502,9 @@ function clear_org_list()
          </div>
       </TD>
    </TR>
-   <TR align=left valign=top>
-   <TMPL_IF NAME=DISPLAY_FEAT>
-   <TD>
-    <TABLE>
-        <TR>
-         <TD><form name=check_feat>
-          <input type="checkbox" name="feature_display" id="feature_display" onClick="get_displayFeature();"></form>
-         </TD>
-         <TD valign="top">
-          Click to show feature information
-        </TR>
-       </TABLE>
-    </TD>
-   </tr>
-   <tr>
-     <td>
-     <DIV id=pretty_print_anno class="backbox" style="display: none;"></DIV>
-    </TD>
-    </TMPL_IF>    
-    </TR>
+   <TR>
+    <TD>Color Blast Hits According to Query Sequence?
+    <input type="checkbox" name = "color_hsps_by_query_seq" id = "color_hsps_by_query_seq">
   </table>
    </DIV>
    </DIV>
