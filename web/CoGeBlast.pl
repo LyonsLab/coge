@@ -1579,7 +1579,7 @@ order by abs((start + stop)/2 - $mid) LIMIT 10
       {
 	my $fid = $res->[0];
 	my ($tmpfeat) = $coge->resultset('Feature')->find($fid);
-	next if $tmpfeat->type->name =~ /contig/;
+	next unless $tmpfeat->type->name =~ /gene/i || $tmpfeat->type->name =~ /rna/i || $tmpfeat->type->name =~ /cds/i;
 	$feat = $tmpfeat unless $feat;
 	$min_dist = abs($tmpfeat->start-$mid) unless defined $min_dist;
 	my $newmin = abs($tmpfeat->start-$mid) < abs($tmpfeat->stop-$mid) ?  abs($tmpfeat->start-$mid) : abs($tmpfeat->stop-$mid);
