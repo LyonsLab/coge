@@ -646,7 +646,6 @@ sub gen_data_file_summary
     my %opts = @_;
     my $prog = $opts{prog};
     my $results = $opts{results};
-    print STDERR Dumper $results;
     my $html = "<table><tr>";
     $html .= qq{<td class = small valign="top">Data Download};
     $html .= "<div class=xsmall><A HREF=\"#\" onClick=\"get_all_hsp_data();\">HSP Data</A></DIV>\n";
