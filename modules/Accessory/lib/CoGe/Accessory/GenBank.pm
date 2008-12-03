@@ -557,28 +557,55 @@ sub _check_for_gene_models
 ## find all "features" and replace them with "N".  Uses
 ## "CDS" to determine mask, since many genomic GB entries lack mRNA
 ## entries.
-sub mask_exons 
-    {
-      my $self = shift;
-      my $seq = shift;
-      my %type = (CDS=>1, tRNA=>1, rRNA=>1, snRNA=>1, snoRNA=>1);
-      foreach my $feat (@{$self->features})
-	{
-	  next unless $type{$feat->type};
-	  foreach my $block (@{$feat->blocks})
-	    {
-	      next if $block->[0] > length($seq);
-	      next if $block->[1] < 1;
-	      my ($start, $stop) = @$block;
-	      $start = 1 if $start < 1;
-	      my $seglength = $stop - $start+1;
-	      my $maskstring = "X" x $seglength;
-	      substr( $seq, $start-1, $seglength ) = $maskstring;
-	    }
-	}
-      return( $seq );
-    }
-
+sub mask_cds
+  {
+    my $self = shift;
+    my $seq = shift;
+    my %type = (CDS=>1);
+    foreach my $feat (@{$self->features})
+      {
+	next unless $type{$feat->type};
+	foreach my $block (@{$feat->blocks})
+	  {
+	    next if $block->[0] > length($seq);
+	    next if $block->[1] < 1;
+	    my ($start, $stop) = @$block;
+	    $start = 1 if $start < 1;
+	    my $seglength = $stop - $start+1;
+	    my $maskstring = "X" x $seglength;
+	    substr( $seq, $start-1, $seglength ) = $maskstring;
+	  }
+      }
+    return( $seq );
+  }
+  
+sub mask_exons
+  {
+    my $self = shift;
+    warn "please use sub mask_cds\n";
+    $self->mask_cds(@_);
+  }
+#mask rna sequences
+sub mask_rna
+  {
+    my $self = shift;
+    my $seq = shift;
+    foreach my $feat (@{$self->features})
+      {
+	next unless $feat->type =~ /rna/i;
+	foreach my $block (@{$feat->blocks})
+	  {
+	    next if $block->[0] > length($seq);
+	    next if $block->[1] < 1;
+	    my ($start, $stop) = @$block;
+	    $start = 1 if $start < 1;
+	    my $seglength = $stop - $start+1;
+	    my $maskstring = "X" x $seglength;
+	    substr( $seq, $start-1, $seglength ) = $maskstring;
+	  }
+      }
+    return( $seq );
+  }
 #mask non coding sequences
 sub mask_ncs 
   {
