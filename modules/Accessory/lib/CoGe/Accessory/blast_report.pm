@@ -96,7 +96,7 @@ sub _parseQuery
     my ($query, $length) = $data =~/Query=(.*?)\((\S+)\s*letters\)/s;
     $query =~ s/\n/ /gs;
     $query =~ s/ +/ /gs;
-    $query =~ s/\s\s+/\s/g;
+    $query =~ s/\s\s+/ /g;
     $length =~ s/,//g;
     return ($query, $length);
   }
