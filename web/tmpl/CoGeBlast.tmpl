@@ -485,7 +485,7 @@ $(function(){
 		widgets: ['zebra'],
 		textExtraction: 'complex',
 		headers: {0: {sorter: false}},					
-		sortList: [[1,0],[4,0]],
+		sortList: [[2,0],[5,0]],
 		});
  });
 }
@@ -1856,6 +1856,7 @@ function clear_org_list()
      <THEAD>
       <TR nowrap align=middle>
         <TH nowrap class=small>click to sort &rarr;</TH>
+        <TH nowrap class=header>Query Seq</TH>
         <TH nowrap class=header>Org</TH>
         <TH nowrap class=header>Chr</TH>
  	<TH nowrap class="header" >Position</TH>	
@@ -1863,7 +1864,7 @@ function clear_org_list()
         <TH nowrap class=header>E-value</TH>
         <TH nowrap class=header>Perc ID</TH>
         <TH nowrap class=header>Score</TH>
-        <TH nowrap class=header>Closest Feature</TH>
+        <TH nowrap class=header>Closest Genomic Feature</TH>
         <TH nowrap class=header>Distance (bp)</TH>
        </TR>
      </THEAD>
@@ -1871,6 +1872,7 @@ function clear_org_list()
      <TMPL_LOOP NAME=HSPS>
        <tr class="feat" id="<TMPL_VAR NAME=ID>" >
          <td align=right id="checkbox<TMPL_VAR NAME=CHECKBOX>"><input type=checkbox id="<TMPL_VAR NAME=CHECKBOX>" value="<TMPL_VAR NAME=CHECKBOX>"></td>
+         <td><TMPL_VAR NAME=QUERY_SEQ></td>
          <td style="white-space:nowrap;"><TMPL_VAR NAME=HSP_ORG></td>
          <td><TMPL_VAR NAME=HSP_CHR></td>
          <td><TMPL_VAR NAME=HSP_POS></td>
