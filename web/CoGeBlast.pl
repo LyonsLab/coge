@@ -693,7 +693,6 @@ sub generate_chromosome_images
     my $scale = $opts{scale} || 'linear';
     my %data;
     my $filename;
-    my ($hsp_info,$max,$min,$length);
     my (@data, @large_data,@no_data);
      my %hsp_count;
     foreach my $set (@$results)
@@ -711,29 +710,8 @@ sub generate_chromosome_images
 	  }
 	}
 	$filename = $set->{link};
-	($hsp_info,$max,$min,$length) = get_color_scheme($set, $hsp_type);
 	if (@{$set->{report}->hsps()})
 	  {
-#	    my @hsps;
-#	    if ($hsp_type eq "eval")
-#	      {
-#		@hsps = sort {$b->eval <=> $a->eval} @{$set->{report}->hsps()}
-#	      }
-#	    elsif ($hsp_type eq "length")
-#	      {
-#		@hsps = sort {$a->length <=> $b->length} @{$set->{report}->hsps()}
-#	      }
-#	    elsif ($hsp_type eq "score")
-#	      {
-#		@hsps = sort {$a->score <=> $b->score} @{$set->{report}->hsps()}
-#	      }
-#	    else
-#	      {
-#		@hsps = sort {$a->percent_id <=> $b->percent_id} @{$set->{report}->hsps()}
-#	      }
-
-
-	    
 	    foreach my $hsp (@{$set->{report}->hsps()})
 	      {
 		#first, initialize graphic
@@ -757,21 +735,6 @@ sub generate_chromosome_images
 		  }
 		my $num = $hsp->number."_".$dsid;
 		my $up = $hsp->strand eq "++" ? 1 : 0;
-# 		my $r = generate_colors(max=>$max,
-# 					min=>$min,
-# 					length=>$length,
-# 					scale=>$scale,
-# 					val=>$hsp_info->{$hsp->number},
-# 					);
-# 		my $b = generate_colors(max=>$max,
-# 					min=>$min,
-# 					length=>$length,
-# 					scale=>$scale,
-# 					val=>$hsp_info->{$hsp->number},
-# 					reverse_flag=>1,
-# 					);
-# 		#Reverse color scheme for eval, as less is more
-# 		($r, $b) = ($b, $r) if $hsp_type eq "eval";
   		$data{$org}{image}->add_feature(name=>$hsp->number,
   						start=>$hsp->sstart,
   						stop=>$hsp->sstop,
@@ -870,74 +833,6 @@ sub create_fasta_file
   }
     
 
-sub get_color_scheme
-  {
-    my $set = shift;
-    my $type = shift || 0;
-    my %hsps;
-    my %info;
-    my @sorted_vals;
-    my $max;
-    my $min;
-    my $code_ref;
-    if ($type eq "eval")
-      {
-	$code_ref = sub {$_->eval;};
-      }
-    elsif ($type eq "score")
-      {
-	$code_ref = sub {$_->score;};
-      }
-    elsif ($type eq "length")
-      {
-	$code_ref = sub {$_->query_length;};
-      }
-    else
-      {
-	$code_ref = sub {$_->percent_id;};
-      }
-    if (@{$set->{report}->hsps()})
-      {
-	%hsps = map {$_->number, &$code_ref} @{$set->{report}->hsps()};
-	@sorted_vals = sort{$a<=> $b} values %hsps;
-	$min = $sorted_vals[0];
-	$max = $sorted_vals[-1];
-      }
-    my $length = keys %hsps;
-
-    return \%hsps,$max,$min,$length;
-   }
-
-
-sub generate_colors
-  {
-    my %opts = @_;
-    my $max = $opts{max};
-    my $min = $opts{min};
-    my $length = $opts{length};
-    my $scale = $opts{scale} || 'linear';
-    my $val = $opts{val};
-    my $color_max = $opts{color_max} || 255;
-    my $color_min = $opts{color_min} || 50;
-    my $flag = $opts{reverse_flag} || 0;
-    my $color;
-    ($color_max,$color_min) = ($color_min,$color_max) if $flag;
-    return $color_max if ($val >= $max);
-    return $color_min if ($val <= $min);
-    if ($scale =~ /log/)
-      {
-        if ($val == 0) {$color = $color_max;}
-        else{
-          $color = log($val/$min)/log($max/$min)*($color_max-$color_min)+$color_min;
-          }
-      }
-    else #linear
-      {
-	$color = ($val-$min)/($max-$min)*($color_max-$color_min)+$color_min;
-      }
-    return $color;
-  }
-	
 sub get_blast_db
   {
     my $orgid = shift;
