@@ -148,7 +148,6 @@ sub gen_body
     $template->param(CHR=>$chr);
     if ($featid)
     {
-    	$template->param(DISPLAY_FEAT=>1);
     	$template->param(SEQVIEW=>1);
 #    	my $seq = get_sequence($featid, $dsid, 0, 1, $upstream, $downstream,$rc);
 #        $template->param(SEQUENCE=>$seq);
@@ -365,6 +364,7 @@ sub generate_basefile
 sub blast_search
   {
     my %opts = @_;
+    my $color_hsps_by_query_seq =  $opts{color_hsps_by_query_seq};
     my $program = $opts{program};
     my $expect = $opts{expect};
     my $job_title = $opts{job_title};
@@ -397,7 +397,7 @@ sub blast_search
 #    print STDERR Dumper \%opts;
     my $t1 = new Benchmark;
     my @org_ids = split(/,/,$blastable);
-    my $fasta_file = create_fasta_file($seq);
+    my ($fasta_file) = create_fasta_file($seq);
     my $opts;
     my $pre_command;
     if ($program eq "blastz")
@@ -496,7 +496,7 @@ sub blast_search
     initialize_sqlite();
     my $t4 = new Benchmark;
     write_log("Generating Results",$cogeweb->logfile);
-    my ($html,$click_all_links) = gen_results_page(results=>\@results,width=>$width,resultslimit=>$resultslimit,prog=>$program);
+    my ($html,$click_all_links) = gen_results_page(results=>\@results,width=>$width,resultslimit=>$resultslimit,prog=>$program, color_hsps_by_query_seq =>  $color_hsps_by_query_seq);
     my $t5 = new Benchmark;
     my $init_time = timestr(timediff($t2,$t1));
     my $blast_time = timestr(timediff($t3,$t2));
@@ -521,6 +521,7 @@ sub gen_results_page
      my $results = $opts{results};
      my $width = $opts{width};
      my $resultslimit = $opts{resultslimit};
+     my $color_hsps_by_query_seq =  $opts{color_hsps_by_query_seq};
      my $prog=$opts{prog};
      my $click_all_links;
      my $null;
@@ -564,7 +565,7 @@ sub gen_results_page
 	   }
        }
      my $t1 = new Benchmark;
-     my ($chromosome_data, $chromosome_data_large) = generate_chromosome_images(results=>$results,large_width=>$width,, resultslimit=>$resultslimit);
+     my ($chromosome_data, $chromosome_data_large) = generate_chromosome_images(results=>$results,large_width=>$width,, resultslimit=>$resultslimit, color_hsps_by_query_seq =>  $color_hsps_by_query_seq);
      my $t2 = new Benchmark;
      unless (@hsp) 
        {
@@ -687,15 +688,33 @@ sub generate_chromosome_images
      my $width = $opts{width} || 400;
      my $large_width = $opts{large_width} || 3*$width;
      my $resultslimit = $opts{resultslimit};
-    my $imagefile_name = $opts{filename} || "null";
-    my $height = ($width / 16);
-    my $large_height = ($large_width / 16) <= 64 ? ($large_width / 16) : 64;
-    my $scale = $opts{scale} || 'linear';
-    my %data;
-    my $filename;
-    my (@data, @large_data,@no_data);
+     my $imagefile_name = $opts{filename} || "null";
+     my $color_hsps_by_query_seq =  $opts{color_hsps_by_query_seq};
+     $color_hsps_by_query_seq = 0 if $color_hsps_by_query_seq =~ /false/;
+     my $height = ($width / 16);
+     my $large_height = ($large_width / 16) <= 64 ? ($large_width / 16) : 64;
+     my $scale = $opts{scale} || 'linear';
+     my %data;
+     my $filename;
+     my (@data, @large_data,@no_data);
      my %hsp_count;
-    foreach my $set (@$results)
+     my %query_seqs;
+     if ($color_hsps_by_query_seq)
+       {
+	 foreach my $set (@$results)
+	   {
+	     map {$query_seqs{$_->query_name}=1} @{$set->{report}->hsps()};
+	   }
+	 my $colors = color_pallet(num_seqs=>scalar keys %query_seqs);
+	 my $count = 0;
+	 foreach my $key (keys %query_seqs)
+	   {
+	     $query_seqs{$key} = $colors->[$count];
+	     $count++;
+	   }
+       }
+
+     foreach my $set (@$results)
     {
 	my $org = $set->{organism};
 	$data{$org}{file}=$set->{link};
@@ -735,13 +754,14 @@ sub generate_chromosome_images
 		  }
 		my $num = $hsp->number."_".$dsid;
 		my $up = $hsp->strand eq "++" ? 1 : 0;
+		my $color = $color_hsps_by_query_seq ? $query_seqs{$hsp->query_name} : [0,200,0];
   		$data{$org}{image}->add_feature(name=>$hsp->number,
   						start=>$hsp->sstart,
   						stop=>$hsp->sstop,
   						chr=>"Chr: $chr",
   						imagemap=>qq/class="imagemaplink" title="HSP No. /.$hsp->number.qq/" onclick="hide_big_picture();show_hsp_div();loading('image_info','Information');loading('query_image','Image');loading('subject_image','Image');get_hsp_info(['args__blastfile','args__/.$cogeweb->basefile.qq/','args__num','args__$num'],['image_info','query_image','subject_image']);"/,
   						up=>$up,
-  						color=>[255,0,0],
+  						color=>$color,
   					       );
 	      }
 	  }
@@ -825,11 +845,13 @@ sub get_map
 sub create_fasta_file
   {
     my $seq = shift;
+    my $seqcount = $seq =~ tr/>/>/;
+    $seqcount = 1 unless $seqcount;
     write_log("creating user's fasta file",$cogeweb->logfile);
     open(NEW,"> ".$cogeweb->basefile.".fasta");
     print NEW $seq;
     close NEW;
-    return $cogeweb->basefile.".fasta";
+    return $cogeweb->basefile.".fasta", $seqcount;
   }
     
 
@@ -1934,3 +1956,50 @@ sub save_settings_cogeblast
     my $opts = Dumper \%opts;
     my $item = save_settings(opts=>$opts, user=>$USER, page=>$PAGE_NAME);
   }
+
+sub color_pallet
+  {
+    my %opts = @_;
+    my $start = $opts{start} || [255,100,100];
+    my $offset = $opts{offset} || 50;
+    my $num_seqs = $opts{num_seqs};
+
+    my @colors;
+    my %set = (HSP_NUM=>1,
+	       RED=>$start->[0],
+	       GREEN=>$start->[1],
+	       BLUE=>$start->[2]);
+#    push @colors, \%set;
+    my $temp = [@$start];
+    for (my $i = 1; $i <= $num_seqs; $i++)
+      {
+	my @color;
+	@color = @$temp;
+	push @colors, [$color[0],
+		       $color[1],
+		       $color[2],
+		      ];
+	if ($i%3)
+	  {
+	    $temp = [map {int($_/1.5)} @color];
+	    
+	  }
+	else
+	  {
+	    $start = [$start->[2], $start->[0], $start->[1]];
+	    $temp =[@$start];
+	  }
+	unless ($i%9)
+	  {
+	    $start = [$start->[0], int($start->[0]/1.5), $start->[1]];
+	    $temp =[@$start];
+	  }
+	unless ($i%18)
+	  {
+	    $start = [$start->[0], $start->[0], int($start->[0]/4)];
+	    $temp =[@$start];
+	  }
+      }
+    return wantarray ? @colors : \@colors;
+  }
+
