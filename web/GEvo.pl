@@ -200,6 +200,17 @@ sub gen_body
 	    $maskexonon = " ";
 	    $maskexonoff = "checked";
 	  }
+	my ($maskrnaon,$maskrnaoff);
+	if ($form->param('maskrna'.$i))
+	  {
+	    $maskrnaon = "checked";
+	    $maskrnaoff = " ";
+	  }
+	else
+	  {
+	    $maskrnaon = " ";
+	    $maskrnaoff = "checked";
+	  }
 	my ($masknoncodingon,$masknoncodingoff);
 	if ($form->param('masknc'.$i))
 	  {
@@ -240,6 +251,8 @@ sub gen_body
 		    DSINFO=>$dsinfo,
 		    EXON_MASK_ON=>$maskexonon,
 		    EXON_MASK_OFF=>$maskexonoff,
+		    RNA_MASK_ON=>$maskrnaon,
+		    RNA_MASK_OFF=>$maskrnaoff,
 		    NONCODING_MASK_ON=>$masknoncodingon,
 		    NONCODING_MASK_OFF=>$masknoncodingoff,
 
@@ -445,6 +458,7 @@ sub run
 
 	my $rev = $opts{"rev$i"};
 	my $mask_cds_flag = $opts{"maskcds$i"};
+	my $mask_rna_flag = $opts{"maskrna$i"};
 	my $mask_ncs_flag = $opts{"maskncs$i"};
 	my ($up, $down, $seq);
 	my ($file, $obj);
@@ -464,6 +478,7 @@ sub run
 	$gevo_link .= ";rev$seqcount=1" if $rev;
 	$gevo_link .= ";nref$seqcount=1" unless $reference_seq;
 	$gevo_link .= ";maskexon$seqcount=1" if $mask_cds_flag;
+	$gevo_link .= ";maskrna$seqcount=1" if $mask_rna_flag;
 	$gevo_link .= ";masknc$seqcount=1" if $mask_ncs_flag;
 	$seqcount++;
 #	print STDERR "pos: $pos, dsid: $dsid, chr: $chr\n";
@@ -475,6 +490,7 @@ sub run
 		($file, $spike_seq, $seq) = 
 		  generate_seq_file(obj=>$obj,
 				    mask_cds=>$mask_cds_flag,
+				    mask_rna=>$mask_rna_flag,
 				    mask_ncs=>$mask_ncs_flag,
 				    spike_len=>$spike_len,
 				    seq_num=>$i,
@@ -509,6 +525,7 @@ sub run
 		  generate_seq_file (
 				     obj=>$obj,
 				     mask_cds=>$mask_cds_flag,
+				     mask_rna=>$mask_rna_flag,
 				     mask_ncs=>$mask_ncs_flag,
 				     startpos=>$dirstart,
 				     length=>$dirlength,
@@ -565,6 +582,7 @@ sub run
 		  generate_seq_file (
 				     obj=>$obj,
 				     mask_cds=>$mask_cds_flag,
+				     mask_rna=>$mask_rna_flag,
 				     mask_ncs=>$mask_ncs_flag,
 				     startpos=>$gbstart,
 				     length=>$gblength,
@@ -1699,7 +1717,8 @@ sub generate_seq_file
     my $start = $opts{start} || $opts{startpos} || 1;
     my $length = $opts{length} || 0;
     my $spike_len = $opts{spike_len} || 0;
-    my $mask = $opts{mask_cds};
+    my $mask_cds = $opts{mask_cds};
+    my $mask_rna = $opts{mask_rna};
     my $mask_ncs = $opts{mask_ncs};
     my $seq_num = $opts{seq_num};
     my $repeat_mask = $opts{repeat_mask};
@@ -1708,7 +1727,8 @@ sub generate_seq_file
       write_fasta(
 		  obj=>$obj,
 		  accn=>$obj->accn,
-		  mask=>$mask,
+		  mask_cds=>$mask_cds,
+		  mask_rna=>$mask_rna,
 		  mask_ncs=>$mask_ncs,
 		  start=>$start,
 		  length=>$length,
@@ -2301,7 +2321,8 @@ sub write_fasta
     my %opts = @_;
     my $gbobj = $opts{obj};
     my $start = $opts{start};
-    my $mask = $opts{mask};
+    my $mask_cds = $opts{mask_cds};
+    my $mask_rna = $opts{mask_rna};
     my $mask_ncs = $opts{mask_ncs};
     my $length = $opts{length};
     my $spike = $opts{spike};
@@ -2312,8 +2333,10 @@ sub write_fasta
     my ($seq) = uc($gbobj->sequence());
 
     my $stop = $length? $start+$length-1 :length($seq);
-    # mask out exons if required
-    $seq = $gbobj->mask_exons( $seq ) if ( $mask );
+    # mask out cds if required
+    $seq = $gbobj->mask_cds( $seq ) if ( $mask_cds );
+    # mask out rna if required
+    $seq = $gbobj->mask_rna( $seq ) if ( $mask_rna );
     # mask out non coding sequences if required
     $seq = $gbobj->mask_ncs( $seq ) if ( $mask_ncs );
     ($seq) = $gbobj->subsequence( $start, $stop, $seq );
@@ -2441,9 +2464,10 @@ sub gen_params
 	$params .= qq{'args__dirlength$i', 'dirlength$i',};
 	$params .= qq{'args__ref_seq$i', 'ref_seq$i',};
 	$params .= qq{'args__skip_seq$i', 'skip_seq$i',};
-	$params .= qq{'args__repmask$i', 'repmask$i',};
+#	$params .= qq{'args__repmask$i', 'repmask$i',};
 	$params .= qq{'args__rev$i', 'rev$i',};
 	$params .= qq{'args__maskcds$i', 'mask_cds$i',};
+	$params .= qq{'args__maskrna$i', 'mask_rna$i',};
 	$params .= qq{'args__maskncs$i', 'mask_ncs$i',};
 
       }

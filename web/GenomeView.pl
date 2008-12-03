@@ -205,7 +205,7 @@ sub get_dataset
     if ($oid)
       {
 	my $org = $coge->resultset("Organism")->find($oid);
-	@opts = map {"<OPTION value=\"".$_->id."\">".$_->name. " (v".$_->version.", id".$_->id.")</OPTION>"} sort {$b->version cmp $a->version || $a->name cmp $b->name} $org->datasets if $org;
+	@opts = map {"<OPTION value=\"".$_->id."\">".$_->name. " (v".$_->version.", id".$_->id.")</OPTION>"} sort {$b->version <=> $a->version || $a->name cmp $b->name} $org->datasets if $org;
 
 	}
     elsif ($dsname)
@@ -214,7 +214,7 @@ sub get_dataset
 	($USER) = CoGe::Accessory::LogUser->get_user();
 	my $restricted_orgs = restricted_orgs(user=>$USER);
 	my %orgs;
-	foreach my $item (sort {$b->version cmp $a->version || uc($a->name) cmp uc($b->name)} @ds)
+	foreach my $item (sort {$b->version <=> $a->version || uc($a->name) cmp uc($b->name)} @ds)
 	  {
 	    next if $restricted_orgs->{$item->organism->name};
 	    my $option = "<OPTION value=\"".$item->id."\">".$item->name."(v".$item->version.", id".$item->id.")</OPTION>";
@@ -289,7 +289,7 @@ sub get_dataset_info
 	$chr{$item} = $num;
 	$count++;
       }
-    my @chr = sort {$chr{$a} <=> $chr{$b}}keys %chr;
+    my @chr = sort {$chr{$a} <=> $chr{$b} || $a=~/(\d+$)/ <=> $b=~/(\d+$)/ || $a cmp $b}keys %chr;
     
     if (@chr)
       {

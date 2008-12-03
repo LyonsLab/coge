@@ -156,18 +156,18 @@ sub generate_table
       $feat_types{$feat->type->name}++;
       my $featid = $feat->id;
       my ($name) = $feat->names;
-      my $hpp = $feat->annotation_pretty_print_html();
+      my $hpp = qq{<div id=anno_$count>}.$feat->annotation_pretty_print_html().qq{</div>};
       #my $row_style = $count%2 ? "even" : "odd";
       my $other;
       my $cds_count = $feat_types{CDS};
       $other .= "<div class=link id=codon_usage$cds_count><DIV onclick=\" \$('#codon_usage$cds_count').removeClass('link'); gen_data(['args__loading'],['codon_usage$cds_count']); codon_table(['args__featid','args__$featid'],['codon_usage$cds_count'])\">"."Click for codon usage"."</DIV></DIV><input type=hidden id=CDS$cds_count value=$featid>" if $feat->type->name eq "CDS";
-    my ($gc, $at, $n) = $feat->gc_content;
-    $at*=100;
-    $gc*=100;
-    my ($wgc, $wat) = $feat->wobble_content;
-    $wat*=100 if $wat;
-    $wgc*=100 if $wgc;
-
+      my ($gc, $at, $n) = $feat->gc_content;
+      $at*=100;
+      $gc*=100;
+      my ($wgc, $wat) = $feat->wobble_content;
+      $wat*=100 if $wat;
+      $wgc*=100 if $wgc;
+      
       push @table,{
 		   FEATID=>$featid,
 		   NAME=>$name,

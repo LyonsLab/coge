@@ -972,18 +972,20 @@ sub go
 	$tmp =~ s/$DATADIR/$URL\/data/;
 	if (-r "$out.html")
 	  {
-	    open (IN, "$out.html");
-	    $html = "<table><tr><td>";
+	    open (IN, "$out.html") || warn "problem opening $out.html for reading\n";
+	    $html = "<span class=species>$org_name2</span><table><tr><td>";
+	    $/ = "\n";
 	    while (<IN>)
 	      {
 		next if /<\/?html>/;
 		$html .= $_;
 	      }
+	    close IN;
 	    $out =~ s/$DATADIR//;
 	    $html =~ s/master.*\.png/data\/$out.png/;
-	    close IN;
+	    warn "$out.html did not parse correctly\n" unless $html =~ /map/i;
 	    $html .= qq{
-<br>
+<br><span class=species>$org_name1</span><br>
 Zoomed SynMap Display Location:
 <select name=map_loc id=map_loc>
  <option value="window1">New Window 1

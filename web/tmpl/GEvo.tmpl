@@ -1087,10 +1087,16 @@ function hide_skip(num){
 	<td nowrap><label><input class="backbox" type="radio" name="rev<TMPL_VAR NAME="SEQ_NUM">" id="rev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="1" <TMPL_VAR NAME=REV_YES> onclick='rev_locs("<TMPL_VAR NAME="SEQ_NUM">")' />Yes</label>&nbsp<label><input class="backbox" type="radio" name="rev<TMPL_VAR NAME="SEQ_NUM">" id="rev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="0" <TMPL_VAR NAME=REV_NO> onclick='rev_locs("<TMPL_VAR NAME="SEQ_NUM">")' />No</label>
  <TR align=left>
   <Td>
-   Mask Exons:
+   Mask Exons (CDS):
   <TD>
    <label><input class="backbox" type="radio" name="mask_cds<TMPL_VAR NAME="SEQ_NUM">" id="mask_cds<TMPL_VAR NAME="SEQ_NUM">" tabindex="22" value="1" <TMPL_VAR NAME=EXON_MASK_ON> />Yes</label>
     <label><input class="backbox" type="radio" name="mask_cds<TMPL_VAR NAME="SEQ_NUM">" id="mask_cds<TMPL_VAR NAME="SEQ_NUM">" tabindex="22" value="0" <TMPL_VAR NAME=EXON_MASK_OFF> />No</label>
+ </TR>
+  <Td>
+   Mask RNA (mRNA, miRNA, tRNA, etc.):
+  <TD>
+   <label><input class="backbox" type="radio" name="mask_rna<TMPL_VAR NAME="SEQ_NUM">" id="mask_rna<TMPL_VAR NAME="SEQ_NUM">" tabindex="22" value="1" <TMPL_VAR NAME=RNA_MASK_ON> />Yes</label>
+    <label><input class="backbox" type="radio" name="mask_rna<TMPL_VAR NAME="SEQ_NUM">" id="mask_rna<TMPL_VAR NAME="SEQ_NUM">" tabindex="22" value="0" <TMPL_VAR NAME=RNA_MASK_OFF> />No</label>
  </TR>
  <TR align=left>
   <Td>
@@ -1099,12 +1105,13 @@ function hide_skip(num){
    <label><input class="backbox" type="radio" name="mask_ncs<TMPL_VAR NAME="SEQ_NUM">" id="mask_ncs<TMPL_VAR NAME="SEQ_NUM">" tabindex="22" value="1" <TMPL_VAR NAME=NONCODING_MASK_ON> />Yes</label>
    <label><input class="backbox" type="radio" name="mask_ncs<TMPL_VAR NAME="SEQ_NUM">" id="mask_ncs<TMPL_VAR NAME="SEQ_NUM">" tabindex="22" value="0" <TMPL_VAR NAME=NONCODING_MASK_OFF> />No</label>
  </TR>
- <TR align=left>
+<!-- <TR align=left>
   <Td>
    RepeatMasker (SLOW):
   <TD>
 	<label><input class="backbox" type="radio" name="repmask<TMPL_VAR NAME=SEQ_NUM>" id="repmask<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="1" />Yes</label>
 	<label><input class="backbox" type="radio" name="repmask<TMPL_VAR NAME=SEQ_NUM>" id="repmask<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="0" checked />No</label><br>
+-->
  <TR align=left>
   <Td>
    Reference Sequence:
