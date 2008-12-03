@@ -546,17 +546,20 @@ sub gen_results_page
 		 my $id = $hsp->number."_".$dsid;
 		 $click_all_links .= $id.",";
 		 my $feat_link = qq{<span class="link" onclick="fill_nearby_feats('$id','true')">Click for Closest Feature</span>};
+		 my $qname = $hsp->query_name =~ /Name: (\S*)/ ? $1 : $hsp->query_name;
+		 $qname =~ s/,$//;
 		 push @hsp, {
-				 CHECKBOX=>$id."_".$chr."_".$hsp->subject_start."no",
-				 ID=>$id,
-				 HSP_ORG=>$org,
-				 HSP=>qq{<span class="link" title="Click for HSP information" onclick="update_hsp_info('table_row$id');\$('#middle_column_button_hide').show(0);\$('#middle_column_button_show').hide(0);">}.$hsp->number."</span>",
-				 HSP_EVAL=>$hsp->pval,
-				 HSP_PID=>$hsp->percent_id,
-				 HSP_SCORE=>$hsp->score,
-				 HSP_POS=>($hsp->subject_start),
-				 HSP_CHR=>$chr,
-				 HSP_LINK=>$feat_link};
+			     CHECKBOX=>$id."_".$chr."_".$hsp->subject_start."no",
+			     ID=>$id,
+			     QUERY_SEQ=>$qname,
+			     HSP_ORG=>$org,
+			     HSP=>qq{<span class="link" title="Click for HSP information" onclick="update_hsp_info('table_row$id');\$('#middle_column_button_hide').show(0);\$('#middle_column_button_show').hide(0);">}.$hsp->number."</span>",
+			     HSP_EVAL=>$hsp->pval,
+			     HSP_PID=>$hsp->percent_id,
+			     HSP_SCORE=>$hsp->score,
+			     HSP_POS=>($hsp->subject_start),
+			     HSP_CHR=>$chr,
+			     HSP_LINK=>$feat_link};
 	       }
 	   }
        }
@@ -619,7 +622,7 @@ sub gen_results_page
      }
      $template->param(CHROMOSOMES=>$chromosome_element);
      $template->param(BLAST_RESULTS=>1);
-     $template->param(DATA_FILES=>gen_data_file_summary(prog=>$prog));
+     $template->param(DATA_FILES=>gen_data_file_summary(prog=>$prog, results=>$results));
      my $html = $template->output;
      my $box_template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
      $box_template->param(BOX_NAME=>"CoGeBlast Results");
@@ -642,25 +645,34 @@ sub gen_data_file_summary
   {
     my %opts = @_;
     my $prog = $opts{prog};
+    my $results = $opts{results};
+    print STDERR Dumper $results;
     my $html = "<table><tr>";
-    $html .= qq{<td class = small valign="top">Export Data};
+    $html .= qq{<td class = small valign="top">Data Download};
     $html .= "<div class=xsmall><A HREF=\"#\" onClick=\"get_all_hsp_data();\">HSP Data</A></DIV>\n";
-    $html .= "<div class=xsmall><A HREF=\"#\" onClick=\"get_query_fasta();\">Query FASTA File</A></DIV>\n";
+    $html .= "<div class=xsmall><A HREF=\"#\" onClick=\"get_query_fasta();\">Query HSP FASTA File</A></DIV>\n";
     if ($prog eq "tblastn")
       {
-	$html .= "<div class=xsmall><A HREF=\"#\" onClick=\"get_subject_fasta();\">Subject Protein FASTA File</A></DIV>\n";
-	$html .= "<div class=xsmall><A HREF=\"#\" onClick=\"get_subject_fasta('dna');\">Subject DNA FASTA File</A></DIV>\n";
+	$html .= "<div class=xsmall><A HREF=\"#\" onClick=\"get_subject_fasta();\">Subject HSP Protein FASTA File</A></DIV>\n";
+	$html .= "<div class=xsmall><A HREF=\"#\" onClick=\"get_subject_fasta('dna');\">Subject HSP DNA FASTA File</A></DIV>\n";
       }
     else
       {
-	$html .= "<div class=xsmall><A HREF=\"#\" onClick=\"get_subject_fasta();\">Subject FASTA File</A></DIV>\n";
+	$html .= "<div class=xsmall><A HREF=\"#\" onClick=\"get_subject_fasta();\">Subject HSP FASTA File</A></DIV>\n";
       }
     $html .= "<div class=xsmall><A HREF=\"#\" onClick=\"get_alignment_file();\">Alignment File</A></DIV>\n";
-    $html .= qq{<td class = small valign="top">SQLite db};
+    $html .= qq{<td class = small valign="top">Analysis Files};
     #my $dbname = $TEMPURL."/".basename($cogeweb->sqlitefile);
     my $dbname = $TEMPURL."/".$cogeweb->basefilename.".sqlite";
-    
     $html .= "<div class=xsmall><A HREF=\"$dbname\" target=_new>SQLite DB file</A></DIV>\n";
+    foreach my $item (@$results)
+      {
+	my $blast_file = $item->{link};
+	my $org = $item->{organism};
+	$html .= qq{<div class=xsmall><a href = "$blast_file" target=_new>Blast file for $org</div>\n};
+      }
+#    my $blast = $TEMPURL."/".$cogeweb->basefilename.".sqlite";
+#    $html .= "<div class=xsmall><A HREF=\"$dbname\" target=_new>SQLite DB file</A></DIV>\n";
     $html .= qq{<td class = small valign="top">Log File};
     #my $logfile = $TEMPURL."/".basename($cogeweb->logfile);
     my $logfile = $TEMPURL."/".$cogeweb->basefilename.".log";
