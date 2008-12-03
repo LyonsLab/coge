@@ -94,8 +94,9 @@ sub _parseQuery
     my $self = shift;
     my $data = shift;
     my ($query, $length) = $data =~/Query=(.*?)\((\S+)\s*letters\)/s;
-    $query =~ s/\n//gs;
+    $query =~ s/\n/ /gs;
     $query =~ s/ +/ /gs;
+    $query =~ s/\s\s+/\s/g;
     $length =~ s/,//g;
     return ($query, $length);
   }
