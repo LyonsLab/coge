@@ -6,13 +6,18 @@ use CoGeX;
 my $connstr = 'dbi:mysql:genomes:biocon:3306';
 my $s = CoGeX->connect($connstr, 'bpederse', 'brent_cnr');
 
+if(scalar(@ARGV) < 2){
+    print "send in organism and datasets\n";
+    print "$0 org [datasets]\n";
+    exit();
+}
+
 my $organism = shift;
 my $datasets = \@ARGV;
 
 # gt sketch -seqid 1 -addintrons yes -start 1000 -style default.style -force -end 70000  out.png grape.gff3
 
 my $chrs = get_locs($datasets);
-exit(0);
 my $schrs = get_sequence($datasets);
 
 foreach my $k (keys %$chrs){
@@ -44,7 +49,7 @@ sub get_locs {
     foreach my $chr (@chrs){
         print "##sequence-region $chr 1 " . $chrs{$chr} . "\n";
     }
-    exit();
+    my %seen = {};
     foreach my $chr (@chrs){
         
         my $gene_rs = $s->resultset('Feature')->search( {
@@ -74,19 +79,36 @@ sub get_locs {
                   ,'order_by'           => [ 'me.start']
                 });
 
-            my $mrna = $mrna_rs->next();
+            #my $mrna = $mrna_rs->next();
 
 
             my $strand = $g->strand == 1 ? '+' : '-';
             my $attrs = "ID=$gene_name;Name=$gene_name";
-            print join("\t", ($chr, 'ucb', $g->feature_type->name, $g->start, $g->stop, ".", $strand, ".", $attrs)) . "\n";
+            my $gstr = join("\t", ($chr, 'ucb', $g->feature_type->name, $g->start, $g->stop, ".", $strand, ".", $attrs));
+            if($seen{$gstr}){ next; }
+            $seen{$gstr} = 1;
+            print $gstr . "\n";
             my $parent = $gene_name;
-            if ($mrna){
-                $attrs = "ID=$gene_name" . ".mRNA;Parent=$gene_name";
-                $parent = $gene_name . ".mRNA";
+            my $has_mrna = 0;
+            while(my $f = $mrna_rs->next()){
+                $attrs = "Parent=$parent;ID=$parent" . ".mRNA";
+                my $has_mrna = 1;
+                my $locs = $f->locations({}, {'order_by' => 'start'});
+                while(my $loc = $locs->next()){
+                    my $gstr = join("\t", ($f->chr, 'ucb', $f->feature_type->name, $loc->start, $loc->stop, ".", $strand, ".", $attrs));
+                    if($seen{$gstr}){ next; }
+                    print $gstr . "\n";
+            
+                }
+            }
+            if($has_mrna){
+                $attrs = "Parent=$gene_name" . "mRNA";
+            }
+            else {
+                $attrs = "Parent=$gene_name";
             }
 
-            print join("\t", ($chr, 'ucb', 'mRNA', $mrna->start, $mrna->stop, ".", $strand, ".", $attrs)) . "\n";
+            #print join("\t", ($chr, 'ucb', 'mRNA', $mrna->start, $mrna->stop, ".", $strand, ".", $attrs)) . "\n";
             $chrs{$g->chr} = 1;
             my $sub_rs = $s->resultset('Feature')->search( {
                   'me.dataset_id' => { 'IN' => $datasets },
@@ -99,9 +121,10 @@ sub get_locs {
                 });
             while(my $f = $sub_rs->next()){
                 my $locs = $f->locations({}, {'order_by' => 'start'});
-                $attrs = "Parent=$parent";
                 while(my $loc = $locs->next()){
-                    print join("\t", ($f->chr, 'ucb', $f->feature_type->name, $loc->start, $loc->stop, ".", $strand, ".", $attrs)) . "\n";
+                    my $gstr = join("\t", ($f->chr, 'ucb', $f->feature_type->name, $loc->start, $loc->stop, ".", $strand, ".", $attrs));
+                    if($seen{$gstr}){ next; }
+                    print $gstr . "\n";
             
                 }
 
