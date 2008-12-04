@@ -138,7 +138,27 @@ sub gen_body
 	$align .= join ("\n", $qln[$i],$aln[$i],$sln[$i])."\n\n";
       }
     $template->param(align=>"<pre>".$align."</pre>");
-#    $template->param(newstuff=>get_info_from_db(db_file=>$db_file, hsp_num=>$hsp_num, report_file=>$report_file));
+    if ($hsps->[0]{dsid}=~/^\d+$/)
+      {
+	my $seqview = "<a class = small href=SeqView.pl?dsid=".$hsps->[0]{dsid}.";chr=".$hsps->[0]{chr}.";start=".($hsps->[0]{start}+$hsps->[0]{chr_start}-1).";stop=".($hsps->[0]{stop}+$hsps->[0]{chr_start}-1).">SeqView</a>";
+	$template->param(qseqview=>$seqview);
+      }
+    else
+      {
+	$template->param(qseqview=>"<span class=small>N/A</small>");
+      }
+
+    if ($hsps->[1]{dsid}=~/^\d+$/)
+      {
+	my $rc = $hsps->[1]{orientation} =~ /-/ ? 1 : 0;
+	my $seqview = "<a class = small href=SeqView.pl?dsid=".$hsps->[1]{dsid}.";chr=".$hsps->[1]{chr}.";start=".($hsps->[1]{start}+$hsps->[1]{chr_start}-1).";stop=".($hsps->[1]{stop}+$hsps->[1]{chr_start}-1).";rc=$rc>SeqView</a>";
+	$template->param(sseqview=>$seqview);
+      }
+    else
+      {
+	$template->param(sseqview=>"<span class=small>N/A</small>");
+      }
+
     my $html;
     $html .= $template->output;
     return $html;
@@ -186,9 +206,10 @@ sub get_info_from_db
     my ($set1, $set2) = $report_file=~ /_(\d+)-(\d+)/;
     my $output;
     my $dbh = DBI->connect("dbi:SQLite:dbname=$TEMPDIR/GEvo/$db","","");
-    my $statement = qq{SELECT annotation, pair_id, id from image_data where name like "$hsp_num-%" and (image_id = $set1 or image_id = $set2)};
-#    print STDERR $statement,"\n";
+    my $statement = qq{SELECT annotation, pair_id, id, image_id from image_data where name like "$hsp_num-%" and (image_id = $set1 or image_id = $set2)};
     my $sth = $dbh->prepare($statement);
+    my $statement2 = qq{SELECT dsid, chromosome, bpmin, bpmax from image_info where id = ?};
+    my $sth2 = $dbh->prepare($statement2);
     $sth->execute();
     my %hsps;
     my %ids;
@@ -212,24 +233,33 @@ sub get_info_from_db
 	$data{HSP} =~ s/^\d+\s*//;
 	my ($start, $stop, $orientation) = $data{Location} =~ /(\d+)-(\d+)\s+\(?(.*)\)?/;
 
+
+	$sth2->execute($item->[3]);
+	my ($dsid, $chr, $bpmin, $bpmax) =  $sth2->fetchrow_array;
 	$hsps{$item->[2]}= {
-		     hsp=>$data{HSP},
-		     start=>$start,
-		     stop=>$stop,
-		     orientation=>$orientation,
-		     alignment=>$data{Sequence},
-		     match=>$data{Match},
-		     length=>$data{Length},
-		     identity=>$data{Identity},
-		     eval=>$data{E_val},
-		     location=>$data{Location},
+			    hsp=>$data{HSP},
+			    start=>$start,
+			    stop=>$stop,
+			    orientation=>$orientation,
+			    alignment=>$data{Sequence},
+			    match=>$data{Match},
+			    length=>$data{Length},
+			    identity=>$data{Identity},
+			    eval=>$data{E_val},
+			    location=>$data{Location},
+			    image_id=>$item->[3],
+			    dsid=>$dsid,
+			    chr_start=>$bpmin,
+			    chr_stop=>$bpmax,
+			    chr=>$chr,
 		    };
+
 	$ids{$item->[1]}++;
 	$ids{$item->[2]}++;
       }
     my @hsps;
     #uberlame workaround ,but hey, it works
-    foreach my $id (keys %ids)
+    foreach my $id (sort {$hsps{$a}{image_id} <=> $hsps{$b}{image_id}} keys %hsps)
       {
 	next unless $ids{$id}==2;
 	push @hsps, $hsps{$id};
