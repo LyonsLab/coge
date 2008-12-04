@@ -70,13 +70,13 @@ function show_hsp_div() {
   if( $('#result_visual').is(':hidden') == true) $('#result_visual').show(0);
 }
 
-function add_to_list(ds,org){
-  var check = $('#'+ds).val();
+function add_to_list(id,org){
+  var check = $('#'+id).val();
   if (check){
    alert('You have already added '+org+'.');
    return;
   }
-  var html = '<option id='+ds+' value='+ds+'>'+org+'</option>';
+  var html = '<option id='+id+' value='+id+'>'+org+'</option>';
   $('#blank').remove();
   $('#db_choice').append(html).sortSelect();
   counting();
@@ -85,7 +85,7 @@ function add_to_list(ds,org){
 function counting(){
   var count = $('#db_choice').getLength();
   if (count == 0) {$('#db_choice').html('<option id=blank value=null>No Database Selected</option>');}
-  $('.count').html('Database count: '+count);
+  $('.count').html('Organism count: '+count);
 }
 
 function fill_nearby_feats(id,update) {
@@ -991,10 +991,11 @@ function clear_org_list()
    	<DIV id="blah">Organism Name: <input type="text" size=11 onFocus="show_add();search_bar('org_name');clear_box('org_desc');restore_search_bar('org_desc');" style="font-style:italic" value="Search" name="org_name" id="org_name" onBlur="restore_search_bar('org_name')" onKeyUp='org_search();'></DIV>
    	<DIV id="blah">Organism Description: <input type="text" size=11 onFocus="show_add();search_bar('org_desc');clear_box('org_name');restore_search_bar('org_name');" style="font-style:italic" value="Search" name="org_desc" id="org_desc" onBlur="restore_search_bar('org_desc')" onKeyUp='org_search();'></DIV>
    	<DIV id="org_list"><TMPL_VAR NAME="ORG_LIST"></DIV>
-   	<input type=button value="Get Org Info" onClick="org_info('<span class=loading>Loading. . .</span>');dataset_description_for_org(['org_id'],[org_info]);pageObj.lastMouseX=event.pageX;pageObj.lastMouseY=event.pageY;">
+   	<DIV id="org_seq_types"><TMPL_VAR NAME="ORG_SEQ_TYPES"></DIV>
+   	<input type=button value="Get Org Info" onClick="org_info('<span class=loading>Loading. . .</span>');dataset_description_for_org(['org_id', 'seq_type_id'],[org_info]);pageObj.lastMouseX=event.pageX;pageObj.lastMouseY=event.pageY;">
    	  </TD>
    	  <TD valign="middle" align=middle>
-   	  <input type="button" id=add value="Add &rarr;  " onClick="get_from_id(['org_id'],[add_to_list]);">
+   	  <input type="button" id=add value="Add &rarr;  " onClick="get_from_id(['org_id', 'seq_type_id'],[add_to_list]);">
    	  <input type="button" style="display: none" id=remove value="&larr; Remove" onClick="$('#'+$('#db_choice').val()).remove();counting();">
    	  </TD>
            <TD>
@@ -1817,6 +1818,7 @@ function clear_org_list()
    
    
 <TMPL_IF NAME="RESULT_TABLE">
+<span class=species>HSP Table:</span>
    <div id=table_size style="max-height: 340px;">
    <div id="null"><TMPL_VAR NAME=NULLIFY></div>
    <TMPL_IF NAME="HSP_TABLE">
@@ -2031,7 +2033,7 @@ function clear_org_list()
           </form>
           <table>
             <tr valign=top>
-				<td align=left>HSP count: <TMPL_VAR NAME=HSP_COUNT>
+				<td align=left class=species>HSP count: <TMPL_VAR NAME=HSP_COUNT>
 
 				<td align=right>
        			<input type=button id="click_links" value="Show all Features" onClick="click_all_feat_links();$('#click_links').hide(0)"> <input type=button value="Select All" onClick="$('#feature_list').checkCheckboxes()">  <input type=button value="Select None" onClick="$('#feature_list').unCheckCheckboxes()"> 
