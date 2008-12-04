@@ -77,7 +77,7 @@ sub process_file
 		$self->query->{$subject}++;
 		my $hsp = $self->_processHSP(data=>"Score".$hsp_data, query_name=>$query, query_length=>$qlength, subject_name=>$subject, subject_length=>$slength);
 		push @hsps, $hsp if $hsp;
-		last loop if $self->hsp_count > $limit;
+		last loop if $limit && $self->hsp_count > $limit;
 	      }
 	  }
       }
