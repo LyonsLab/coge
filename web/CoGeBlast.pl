@@ -593,6 +593,7 @@ sub gen_results_page
      foreach my $org (sort keys %hsp_count)
        {
 	 my $count = $hsp_count{$org};
+	 $count = "<span class=alert>$count</span>" if $count > $resultslimit;
 	 $hsp_count .= qq{<td align=center>$count};
 	 
        }
