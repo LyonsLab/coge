@@ -2018,7 +2018,6 @@ sub color_pallet
 	  {
 	    $_ = 200 if $_ < 0;
 	  }
-	print STDERR Dumper $temp;
 	unless ($i%3)
 	  {
 	    $temp = [map {int($_/2)} @color];
@@ -2030,7 +2029,6 @@ sub color_pallet
 	$temp = [map {$_-1} @$temp] unless ($i%6);
 
       }
-    print STDERR Dumper \@colors;
     return wantarray ? @colors : \@colors;
   }
 
