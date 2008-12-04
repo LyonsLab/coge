@@ -66,6 +66,7 @@ my $pj = new CGI::Ajax(
 		       blast_param=>\&blast_param,
 		       database_param=>\&database_param,
 		       get_orgs=>\&get_orgs,
+		       get_seq_types=>\&get_seq_types,
 		       get_from_id=>\&get_from_id,
 		       blast_search=>\&blast_search,
 		       generate_feat_info=>\&generate_feat_info,
@@ -297,6 +298,7 @@ sub database_param
     my $html = $template->output;
     return $html;
   }
+  
 sub get_orgs
   {
     my %opts = @_;
@@ -335,21 +337,44 @@ sub get_orgs
 	$html .= "No results";
 	return $html;
       }
-	
-    $html .= qq{<SELECT id="org_id" SIZE="8" MULTIPLE onClick="\$('#remove').hide(0);\$('#add').show(0);" ondblclick="get_from_id(['org_id'],[add_to_list]);">\n};
+    $html .= qq{<SELECT id="org_id" SIZE="8" MULTIPLE onClick="\$('#remove').hide(0);\$('#add').show(0);get_seq_types(['org_id'],['org_seq_types']);" ondblclick="get_from_id(['org_id', 'seq_type_id'],[add_to_list]);">\n};
     $html .= join ("\n", @opts);
     $html .= "\n</SELECT>\n";
     $html =~ s/OPTION/OPTION SELECTED/;
     return $html;
   }
-  
+
+sub get_seq_types
+  {
+    my $org_id = shift;
+    return unless $org_id;
+    my $org = $coge->resultset('Organism')->find($org_id);
+    my %types;
+    foreach my $ds ($org->datasets)
+      {
+	my $type = $ds->sequence_type;
+	next unless $type;
+	$types{$type->id}=$type;
+      }
+    my $html = "Sequence Types<br>";
+    $html .= qq{<SELECT id="seq_type_id" size=}.scalar keys (%types).qq{ multiple onSelect="\$('#remove').hide(0);\$('#add').show(0);get_seq_types(['org_id'],['org_seq_types']);" ondblclick="get_from_id(['org_id', 'seq_type_id'],[add_to_list]);">};
+    $html .= join ("\n", map{qq{<option value="}.$types{$_}->id.qq{" id="}.$types{$_}->id.qq{">}.$types{$_}->name.qq{</OPTION>}} sort keys %types);
+    $html .= "</SELECT>";
+    $html =~ s/OPTION/OPTION SELECTED/i;
+    return $html,"\n";
+  }
+
 sub get_from_id
   {
     my $id = shift;
+    my $seq_type_id = shift || 1;
+    ($id, $seq_type_id) = split /_/, $id if $id =~ /_/;
     my ($obj) = $coge->resultset('Organism')->find($id);
     return unless $obj;
+    my $seq_type = $coge->resultset('GenomicSequenceType')->find($seq_type_id);
     my $org = $obj->name;
-    return ($id,$org);
+    $org .= " (".$seq_type->name.")";
+    return ($id."_".$seq_type_id,$org);
   }
 
 sub generate_basefile
@@ -594,7 +619,7 @@ sub gen_results_page
        {
 	 my $count = $hsp_count{$org};
 	 $count = "<span class=alert>$count</span>" if $count > $resultslimit;
-	 $hsp_count .= qq{<td align=center>$count};
+	 $hsp_count .= qq{<td align=center class=species>$count</td>};
 	 
        }
      $hsp_count .= "</table>";
@@ -869,12 +894,15 @@ sub create_fasta_file
 
 sub get_blast_db
   {
-    my $orgid = shift;
+    my $id = shift;
+    my ($orgid, $seqtypeid) = $id =~ /_/ ? split/_/, $id : ($id,1);
     my $org = $coge->resultset('Organism')->find($orgid);
-    my @ds = $org->current_datasets();
+    my $seqtype = $coge->resultset('GenomicSequenceType')->find($seqtypeid);
+    my @ds = $org->current_datasets(type=>$seqtypeid);
     @ds = sort {$a->id <=> $b->id }@ds;
     return unless @ds;
     my $org_name = $ds[0]->organism->name;
+    $org_name .= " (".$seqtype->name.")" if $seqtype;
     my $title = $org_name ." (";
     my %vers = map {$_->version,1} @ds;
     if (keys %vers > 1)
@@ -1739,23 +1767,20 @@ sub generate_feat_list
 sub dataset_description_for_org
   {
     my $org_id = shift;
+    my $seq_type_id = shift;
     my ($org) = $coge->resultset('Organism')->find($org_id);
     my $html = "Current datasets for ".$org->name;
     $html .= ": ".$org->description if $org->description;
     $html .= "<table>";
     my $i = 0;
     my $total_length=0;
-    foreach my $ds (sort {$a->name cmp $b->name} $org->current_datasets)
+    my $type;
+    foreach my $ds (sort {$a->name cmp $b->name} $org->current_datasets(type=>$seq_type_id))
       {
+	$type = $ds->sequence_type unless $type;
 	my $name = $ds->name;
-#	$name .= ": ".$ds->description if $ds->description;
+	$name .= " (v ".$ds->version.")" if $ds->version;
         $name = "<a href=GenomeView.pl?dsid=".$ds->id." target=_new>".$name."</a>";
-#	$name = "<a href=".$ds->link." target=_new>".$name."</a>"if $ds->link;
-#	$name =~ s/href=/href=http:\/\// unless $name =~ /http/ || $name =~/ftp/;
-#	my $source = $ds->datasource->name;
-#	$source .= ": ".$ds->datasource->description if $ds->datasource->description;
-#	$source = "<a href=".$ds->datasource->link." target=_new>".$source."</a>" if $ds->datasource->link;
-#	$source =~ s/href=/href=http:\/\// unless $source =~ /http/;
 	my $length = 0;
 	my $chr_count =0;
 	my $plasmid = 0;
@@ -1788,7 +1813,13 @@ sub dataset_description_for_org
       }
     $html.="</table>";
     $total_length = commify($total_length);
-    $html .= "Total Length: $total_length";
+    $html .= "<span class=species>Total Length: $total_length</span>";
+    if ($type)
+      {
+	$html .= "<br><span class=small>Type: ".$type->name;
+	$html .= ", ".$type->description if $type->description;
+	$html .= "</span>";
+      }
     return $html;
   }
       
