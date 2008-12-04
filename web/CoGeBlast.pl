@@ -744,7 +744,7 @@ sub generate_chromosome_images
 	   }
 	 my $colors = color_pallet(num_seqs=>scalar keys %query_seqs);
 	 my $count = 0;
-	 foreach my $key (keys %query_seqs)
+	 foreach my $key (sort keys %query_seqs)
 	   {
 	     $query_seqs{$key} = $colors->[$count];
 	     $count++;
@@ -1995,8 +1995,8 @@ sub save_settings_cogeblast
 sub color_pallet
   {
     my %opts = @_;
-    my $start = $opts{start} || [255,100,100];
-    my $offset = $opts{offset} || 50;
+    my $start = $opts{start} || [0,200,0];
+    my $offset = $opts{offset} || 75;
     my $num_seqs = $opts{num_seqs};
 
     my @colors;
@@ -2014,27 +2014,23 @@ sub color_pallet
 		       $color[1],
 		       $color[2],
 		      ];
-	if ($i%3)
+	foreach (@$temp)
 	  {
-	    $temp = [map {int($_/1.5)} @color];
-	    
+	    $_ = 200 if $_ < 0;
+	  }
+	print STDERR Dumper $temp;
+	unless ($i%3)
+	  {
+	    $temp = [map {int($_/2)} @color];
 	  }
 	else
 	  {
-	    $start = [$start->[2], $start->[0], $start->[1]];
-	    $temp =[@$start];
+	    $temp =[$temp->[2], $temp->[0], $temp->[1]];
 	  }
-	unless ($i%9)
-	  {
-	    $start = [$start->[0], int($start->[0]/1.5), $start->[1]];
-	    $temp =[@$start];
-	  }
-	unless ($i%18)
-	  {
-	    $start = [$start->[0], $start->[0], int($start->[0]/4)];
-	    $temp =[@$start];
-	  }
+	$temp = [map {$_-1} @$temp] unless ($i%6);
+
       }
+    print STDERR Dumper \@colors;
     return wantarray ? @colors : \@colors;
   }
 
