@@ -105,7 +105,6 @@ sub gen_html
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
     $template->param(TITLE=>'CoGe BLAST Analysis');
     $template->param(HELP=>'BLAST');
-   # print STDERR "user is: ",$USER,"\n";
     my $name = $USER->user_name;
         $name = $USER->first_name if $USER->first_name;
         $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
@@ -347,7 +346,6 @@ sub get_orgs
 sub get_from_id
   {
     my $id = shift;
-    #print STDERR "search for $id\n";
     my ($obj) = $coge->resultset('Organism')->find($id);
     return unless $obj;
     my $org = $obj->name;
@@ -357,7 +355,6 @@ sub get_from_id
 sub generate_basefile
 {
 	$cogeweb = initialize_basefile(prog=>"CoGeBlast");
-	#print STDERR $cogeweb->basefilename,"\n";
 	return $cogeweb->basefilename;
 }
 
@@ -378,7 +375,6 @@ sub blast_search
     my $basename = $opts{basename};
 	$cogeweb = initialize_basefile(basename=>$basename, prog=>"CoGeBlast");
 	
-	#print STDERR $cogeweb->basefilename,"\n";
     #blastz params
     my $zwordsize = $opts{zwordsize};
     my $zgap_start = $opts{zgap_start};
@@ -394,7 +390,6 @@ sub blast_search
 
    # exit;
 
-#    print STDERR Dumper \%opts;
     my $t1 = new Benchmark;
     my @org_ids = split(/,/,$blastable);
     my ($fasta_file) = create_fasta_file($seq);
@@ -482,7 +477,8 @@ sub blast_search
 	my $command = $item->{command};
 	my $outfile = $item->{file};
 	my $ta = new Benchmark;
-	my $report = $outfile =~ /blastz/ ? new CoGe::Accessory::blastz_report({file=>$outfile, limit=>$resultslimit}) : new CoGe::Accessory::blast_report({file=>$outfile, limit=>$resultslimit});
+	my $report = $outfile =~ /blastz/ ? new CoGe::Accessory::blastz_report({file=>$outfile}) : new CoGe::Accessory::blast_report({file=>$outfile});
+#	my $report = $outfile =~ /blastz/ ? new CoGe::Accessory::blastz_report({file=>$outfile, limit=>$resultslimit}) : new CoGe::Accessory::blast_report({file=>$outfile, limit=>$resultslimit});
 	my $tb = new Benchmark;
 	my $itime = timestr(timediff($tb,$ta));
 	$item->{report}= $report;
@@ -530,25 +526,28 @@ sub gen_results_page
      my @check;
      my @hsp;
      my $t0 = new Benchmark;
+     my %query_hit_count;
      foreach my $set (@$results)
        {
+	 $hsp_count{$set->{organism}}=0 unless $hsp_count{$set->{organism}};
 	 if (@{$set->{report}->hsps()})
 	   {
 	     foreach my $hsp (sort {$a->number <=> $b->number} @{$set->{report}->hsps()})
 	       {
 		 my ($dsid) = $hsp->subject_name =~ /id: (\d+)/;
 		 my ($chr) = $hsp->subject_name =~ /chromosome: (.*?),/;
-		 my ($org) = $hsp->subject_name =~ /^\s*(.*?)\s*\(/;
+		 my ($org) = $set->{organism};#$hsp->subject_name =~ /^\s*(.*?)\s*\(/;
 		 next unless $dsid && defined $chr;
 		 $hsp_count{$org}++;
-		 next if ($hsp_count{$org} > $resultslimit);
-
+		 last if ($hsp_count{$org} > $resultslimit);
+		 
 		 populate_sqlite($hsp,$dsid,$org);
 		 my $id = $hsp->number."_".$dsid;
 		 $click_all_links .= $id.",";
 		 my $feat_link = qq{<span class="link" onclick="fill_nearby_feats('$id','true')">Click for Closest Feature</span>};
 		 my $qname = $hsp->query_name =~ /Name: (\S*)/ ? $1 : $hsp->query_name;
 		 $qname =~ s/,$//;
+		 $query_hit_count{$qname}{$org}++;
 		 push @hsp, {
 			     CHECKBOX=>$id."_".$chr."_".$hsp->subject_start."no",
 			     ID=>$id,
@@ -563,6 +562,7 @@ sub gen_results_page
 			     HSP_LINK=>$feat_link};
 	       }
 	   }
+	 $hsp_count{$set->{organism}} = scalar @{$set->{report}->hsps()}
        }
      my $t1 = new Benchmark;
      my ($chromosome_data, $chromosome_data_large) = generate_chromosome_images(results=>$results,large_width=>$width,, resultslimit=>$resultslimit, color_hsps_by_query_seq =>  $color_hsps_by_query_seq);
@@ -577,25 +577,36 @@ sub gen_results_page
      $template->param(NULLIFY=>$null) if $null;
      my $hsp_limit_flag =0;
      my $hsp_count;
+     $hsp_count .= qq{<table class="small resultborder"><tr><th>Query Seq<th>}.join "<th>", sort keys %hsp_count;
+     my $class = "even";
+     foreach my $query (sort keys %query_hit_count)
+       {
+	 $hsp_count.= qq{<tr class="$class"><td>$query};
+	 foreach my $org (sort keys %hsp_count)
+	   {
+	     my $count = $query_hit_count{$query}{$org} ? $query_hit_count{$query}{$org} : 0;
+	     $hsp_count .= qq{<td align=center>$count};
+	   }
+	 $class = $class eq "even" ? "odd" : "even";
+       }
+     $hsp_count.= qq{<tr class="$class"><th>Total};
+     foreach my $org (sort keys %hsp_count)
+       {
+	 my $count = $hsp_count{$org};
+	 $hsp_count .= qq{<td align=center>$count};
+	 
+       }
+     $hsp_count .= "</table>";
      foreach my $org (keys %hsp_count)
        {
 	 if ($hsp_count{$org} > $resultslimit)
 	   {
-	     $hsp_count .= "<br><span class=\"small alert\">Only top $resultslimit HSPs shown for $org.</span>";
+	     $hsp_count .= "<span class=\"small alert\">Only top $resultslimit HSPs shown for $org.</span><br>";
 	     $hsp_limit_flag = 1;
 	   }
-	 else
-	   {
-	     $hsp_count .= "<br><span class=\"small\">".$hsp_count{$org}." for $org.</span>";
-	   }
        }
-     $hsp_count .= "<br><span class=\"small alert\">All results are in the blast report.</span>" if $hsp_limit_flag;
-     $hsp_count .= "<br>";
-     foreach my $item (@$chromosome_data)
-       {
-	 next unless $item->{DB_NAME} =~ /No Hits.*_new>(.*)<\/a>/i;
-	 $hsp_count .= "<br><span class=\"small\">None for $1</span>";
-       }
+     $hsp_count .= "<span class=\"small alert\">All results are in the blast report.</span>" if $hsp_limit_flag;
+
      $template->param(HSP_COUNT=>$hsp_count);
 
      if (@hsp)
@@ -885,7 +896,6 @@ sub get_blast_db
     my $res;
     while (-e "$file.running")
       {
-#	print STDERR "slepping on $file.running\n";
 	sleep 60;
       }
     if (-r $file)
@@ -1435,13 +1445,6 @@ INSERT INTO sequence_info (name, type, length) values ("$sname","subject","$slen
 };
 	 print STDERR $statement unless $dbh->do($statement);
        }
-#     $statement = "SELECT * from sequence_info";
-#     my $sth = $dbh->prepare($statement);
-#     $sth->execute;
-#     while (my $row = $sth->fetchrow_arrayref)
-#       {
-#	 print STDERR join ("\t", @$row),"\n";
-#       }
    }
   
 sub get_nearby_feats
