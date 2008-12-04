@@ -1688,7 +1688,7 @@ sub generate_obj_from_seq
 	      }
 	    return unless $seq;
 	    my ($accn) = $header=~/^(\S*)/;
-	    $obj->accn($accn);
+	    $obj->accn($header);
 	    $obj->locus($header);
 	    $obj->definition($header);
 	    $seq =~ s/\n|\r//g;
@@ -2707,6 +2707,7 @@ sub add_seq
 		REV_NO=>"checked",
 		EXON_MASK_OFF=>"checked",
 		REF_YES=>"checked",
+		RNA_MASK_OFF=>"checked",
 		NONCODING_MASK_OFF=>"checked",
 		DRUP=>10000,
 		DRDOWN=>10000,
