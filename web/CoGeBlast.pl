@@ -417,7 +417,7 @@ sub blast_search
 
     my $t1 = new Benchmark;
     my @org_ids = split(/,/,$blastable);
-    my ($fasta_file) = create_fasta_file($seq);
+    my ($fasta_file, $query_seqs_info) = create_fasta_file($seq);
     my $opts;
     my $pre_command;
     if ($program eq "blastz")
@@ -517,7 +517,7 @@ sub blast_search
     initialize_sqlite();
     my $t4 = new Benchmark;
     write_log("Generating Results",$cogeweb->logfile);
-    my ($html,$click_all_links) = gen_results_page(results=>\@results,width=>$width,resultslimit=>$resultslimit,prog=>$program, color_hsps_by_query_seq =>  $color_hsps_by_query_seq);
+    my ($html,$click_all_links) = gen_results_page(results=>\@results,width=>$width,resultslimit=>$resultslimit,prog=>$program, color_hsps_by_query_seq =>  $color_hsps_by_query_seq, query_seqs_info=>$query_seqs_info);
     my $t5 = new Benchmark;
     my $init_time = timestr(timediff($t2,$t1));
     my $blast_time = timestr(timediff($t3,$t2));
@@ -544,6 +544,7 @@ sub gen_results_page
      my $resultslimit = $opts{resultslimit};
      my $color_hsps_by_query_seq =  $opts{color_hsps_by_query_seq};
      my $prog=$opts{prog};
+     my $query_seqs_info = $opts{query_seqs_info};
      my $click_all_links;
      my $null;
      my %hsp_count;
@@ -573,6 +574,7 @@ sub gen_results_page
 		 my $qname = $hsp->query_name =~ /Name: (\S*)/ ? $1 : $hsp->query_name;
 		 $qname =~ s/,$//;
 		 $query_hit_count{$qname}{$org}++;
+		 my $coverage = $query_seqs_info->{$hsp->query_name} ? sprintf("%.1f", $hsp->length/$query_seqs_info->{$hsp->query_name}*100)."%" : "Error";
 		 push @hsp, {
 			     CHECKBOX=>$id."_".$chr."_".$hsp->subject_start."no",
 			     ID=>$id,
@@ -580,7 +582,9 @@ sub gen_results_page
 			     HSP_ORG=>$org,
 			     HSP=>qq{<span class="link" title="Click for HSP information" onclick="update_hsp_info('table_row$id');\$('#middle_column_button_hide').show(0);\$('#middle_column_button_show').hide(0);">}.$hsp->number."</span>",
 			     HSP_EVAL=>$hsp->pval,
-			     HSP_PID=>$hsp->percent_id,
+			     HSP_LENGTH=>$hsp->length,
+			     COVERAGE=>$coverage,
+			     HSP_PID=>$hsp->percent_id."%",
 			     HSP_SCORE=>$hsp->score,
 			     HSP_POS=>($hsp->subject_start),
 			     HSP_CHR=>$chr,
@@ -606,7 +610,7 @@ sub gen_results_page
      my $class = "even";
      foreach my $query (sort keys %query_hit_count)
        {
-	 $hsp_count.= qq{<tr class="$class"><td>$query};
+	 $hsp_count.= qq{<tr class="$class"><td>$query. <span class = species>Length: }.$query_seqs_info->{$query}."</span>";
 	 foreach my $org (sort keys %hsp_count)
 	   {
 	     my $count = $query_hit_count{$query}{$org} ? $query_hit_count{$query}{$org} : 0;
@@ -796,7 +800,7 @@ sub generate_chromosome_images
   						start=>$hsp->sstart,
   						stop=>$hsp->sstop,
   						chr=>"Chr: $chr",
-  						imagemap=>qq/class="imagemaplink" title="HSP No. /.$hsp->number.qq/" onclick="hide_big_picture();show_hsp_div();loading('image_info','Information');loading('query_image','Image');loading('subject_image','Image');get_hsp_info(['args__blastfile','args__/.$cogeweb->basefile.qq/','args__num','args__$num'],['image_info','query_image','subject_image']);"/,
+  						imagemap=>qq/class="imagemaplink species" title="HSP No. /.$hsp->number.qq/" onclick="hide_big_picture();show_hsp_div();loading('image_info','Information');loading('query_image','Image');loading('subject_image','Image');get_hsp_info(['args__blastfile','args__/.$cogeweb->basefile.qq/','args__num','args__$num'],['image_info','query_image','subject_image']);"/,
   						up=>$up,
   						color=>$color,
   					       );
@@ -882,13 +886,22 @@ sub get_map
 sub create_fasta_file
   {
     my $seq = shift;
-    my $seqcount = $seq =~ tr/>/>/;
-    $seqcount = 1 unless $seqcount;
+    my %seqs; #names and lengths
+    if ($seq =~ />/)
+      {
+	foreach (split />/, $seq)
+	  {
+	    next unless $_;
+	    my ($name, $tmp) = split/\n/,$_,2;
+	    $tmp =~ s/\n//g;
+	    $seqs{$name}=length($tmp);
+	  }
+      }
     write_log("creating user's fasta file",$cogeweb->logfile);
     open(NEW,"> ".$cogeweb->basefile.".fasta");
     print NEW $seq;
     close NEW;
-    return $cogeweb->basefile.".fasta", $seqcount;
+    return $cogeweb->basefile.".fasta", \%seqs;
   }
     
 
@@ -1136,12 +1149,12 @@ sub get_hsp_info
     $align_str =~ s/\./ /g;
      $align_str = "<pre>$align_str</pre>";
      
-     $template->param(QUERY_SEQ=>qq{<a href="#" onclick="show_seq('$query_seq','$query_name',1,'seqObj','seqObj','}.$qstart."','".$qstop.qq{')">Click for Query Sequence</a>});
+     $template->param(QUERY_SEQ=>qq{<a href="#" class="small" onclick="show_seq('$query_seq','$query_name',1,'seqObj','seqObj','}.$qstart."','".$qstop.qq{')">Query Sequence Hit</a>});
      my $rc = $strand =~ /-/ ? 1 : 0;
 #     $template->param(SUB_SEQ=>qq{<a href="#" onclick="show_seq('$sub_seq','$subject_name',2,'$sub_dsid','$sub_chr','}.$sstart."','".$sstop.qq{','$rc')">Click for Subject Sequence</a>});
-     $template->param(SUB_SEQ=>qq{<a href="SeqView.pl?dsid=$sub_dsid;chr=$sub_chr;start=$sstart;stop=$sstop;rc=$rc" target=_new>Click for Subject Sequence</a>});
+     $template->param(SUB_SEQ=>qq{<a class="small" href="SeqView.pl?dsid=$sub_dsid;chr=$sub_chr;start=$sstart;stop=$sstop;rc=$rc" target=_new>Subject Sequence Hit</a>});
      
-     $template->param(ALIGNMENT=>qq{<a href="#" onclick="show_seq('$align_str','HSP No. $hsp_num',0,0,0,0)">Click for Alignment Sequence</a>});
+     $template->param(ALIGNMENT=>qq{<a href="#" class="small" onclick="show_seq('$align_str','HSP No. $hsp_num',0,0,0,0)">Alignment</a>});
      
      my $html = $template->output;
      $template->param(HSP_IF=>0);
