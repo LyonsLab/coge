@@ -6,7 +6,7 @@ $(document).ready(function(){
 $('#maketable').html('<div id ="annotation" style = "overflow: auto; height: 300px; width: auto;"></DIV>');
   var featid = <TMPL_VAR NAME=FEATID>;
   if (featid){
-    myObj = new generate_seq_obj_with_featid(featid,'<TMPL_VAR NAME=FEATNAME>');}
+    myObj = new generate_seq_obj_with_featid(featid,'<TMPL_VAR NAME=FEATNAME>',<TMPL_VAR NAME=DSID>,'<TMPL_VAR NAME=CHR>','<TMPL_VAR NAME=FEAT_START>','<TMPL_VAR NAME=FEAT_STOP>');}
   else{
     myObj = new generate_seq_obj(<TMPL_VAR NAME=DSID>,'<TMPL_VAR NAME=CHR>');}
   get_sequence(<TMPL_VAR NAME=RC>);
@@ -14,18 +14,21 @@ $('#maketable').html('<div id ="annotation" style = "overflow: auto; height: 300
 
 
 function generate_seq_obj(dsid,chr){
-  this.dsid=dsid;
+
   this.start=$('#upstream').val();
   this.stop=$('#downstream').val();
+  this.dsid=dsid;
   this.chr=chr;
   this.pro=0;
 }
 
-function generate_seq_obj_with_featid(featid,featname){
+function generate_seq_obj_with_featid(featid,featname, dsid, chr, feat_start, feat_stop){
   this.featid=featid;
-  this.start=$('#upstream').val();
-  this.stop=$('#downstream').val();
+  this.start=feat_start-$('#upstream').val();
+  this.stop=$('#downstream').val()+feat_stop;
   this.featname=featname;
+  this.dsid=dsid;
+  this.chr=chr;
   this.pro=0;
 }
 
@@ -84,6 +87,24 @@ function blastSeq() {
  }
 }
 
+function RNAFold() {
+ dsid = myObj.dsid || 0;
+ chr=myObj.chr || 0;
+ featid=myObj.featid || 0;
+ start = $('#upstream').val() || 0;
+ stop = $('#downstream').val() || 0;
+ up = $('#addup').val() || 0;
+ down = $('#adddown').val() || 0;
+ rc = 0;
+ if ($('.rc_button').is(':hidden')==true){
+   rc = 1;}
+ if (featid) {
+ window.open('ViennaFold.pl?featid='+featid+'&upstream='+up+'&downstream='+down+'&rc='+rc);}
+ else {
+ window.open('ViennaFold.pl?chr='+chr+'&upstream='+up+'&downstream='+down+'&start='+start+'&stop='+stop+'&dsid='+dsid+'&rc='+rc);
+ }
+}
+
 function AragornSeq() {
  dsid = myObj.dsid || 0;
  chr=myObj.chr || 0;
@@ -127,17 +148,26 @@ function waiting(tag,rc) {
 */
 function redefine(){
   $('#gc_info').html('');
+
+  var up;
+  var down;
   if(! isNaN($('#addup').val())) {
-  var up = $('#upstream').val()*1-$('#addup').val()*1;
-  var down = $('#downstream').val()*1+$('#adddown').val()*1;
+   up = $('#upstream').val()*1-$('#addup').val()*1;
+   down = $('#downstream').val()*1+$('#adddown').val()*1;
+   $('#upstream').val(up);
+   $('#downstream').val(down);
+   myObj.start=$('#upstream').val();
+   myObj.stop=$('#downstream').val();
+
   }
-  $('#upstream').val(up);
-  $('#downstream').val(down);
-  myObj.start=$('#upstream').val();
-  myObj.stop=$('#downstream').val();
+  else {
+   myObj.start = myObj.start*1 - $('#upstream').val()*1;
+   myObj.stop  = myObj.stop *1 + $('#downstream').val()*1;
+  }
   get_sequence(myObj.rc,myObj.pro,1);
   $('#addup').val(0);
   $('#adddown').val(0);
+  find_feats(['args__dsid','args__'+myObj.dsid,'args__start','args__'+myObj.start,'args__stop','args__'+myObj.stop,'args__chr','args__'+myObj.chr],['find_feats_button','feat_type_list']);
 }
 
 function get_sequence(rc,pro,add){
@@ -186,8 +216,8 @@ function featlist (link) {
         <TD>
         <textarea id=seq_text name=seq_text class=backbox readonly ondblclick="this.select();" style="height: 400px; width: 750px; overflow: auto;"></textarea>
         <br>
-		<input type=checkbox id=nowrap onclick='set_nowrap()'> Check to disable sequence wrapping
 	</TD>
+        <td valign=top>
        <TMPL_VAR NAME=FEAT_INFO>
        <div id=feature_info style="display:none"></div>
        <br><br>
@@ -196,33 +226,10 @@ function featlist (link) {
        </TR>
       </TABLE>
  </div>
-</TMPL_IF>
-<TMPL_IF NAME=BOTTOM_BUTTONS>
-  <DIV id="dynamic_button" align=center>
-  <TABLE>
-   <TR>
-      <TD align=right valign="top">
-       <DIV class="seqview_button dna_button>" style="display: none" id="dna_button"><input type=button value="DNA Sequence" onClick="dynamic_buttons('dna_button');get_sequence(0,0);gen_title(['args__rc','args__0','args__pro','args__0'],['box_name']);"></DIV>     
-      </TD>
-      <TD align=right valign="top">
-      <DIV class="seqview_button rc_button>" id="rc_button"><input type=button value="Reverse Complement" onClick="dynamic_buttons('rc_button');get_sequence(1,0);gen_title(['args__rc','args__1','args__pro','args__0'],['box_name']);"></DIV>
-      </TD>
-      <TD align=right valign="top">
-         <DIV class="seqview_button pro_button>" id="pro_button"><input type=button value="<TMPL_VAR NAME=PROTEIN>" onClick="dynamic_buttons('pro_button');get_sequence(0,1);gen_title(['args__rc','args__0','args__pro','args__1','args__sixframe','args__<TMPL_VAR NAME=SIXFRAME>'],['box_name']);"></DIV>
-      </TD>
-      <!--get_seq(['args__featid', 'args__<TMPL_VAR NAME=FEATID>', 'args__pro', 'args__<TMPL_VAR NAME=PRO>', 'args__rc', 'args__<TMPL_VAR NAME=RC>', 'args__chr', 'args__<TMPL_VAR NAME=CHR>', 'args__dsid', 'args__<TMPL_VAR NAME=DSID>', 'args__featname', 'args__<TMPL_VAR NAME=FEATNAME>', 'args__upstream', 'upstream', 'args__downstream', 'downstream', 'args__start', 'args__<TMPL_VAR NAME=START>','args__stop', 'args__<TMPL_VAR NAME=STOP>', 'args__strand', 'args__<TMPL_VAR NAME=STRAND>', 'args__add', 'args__<TMPL_VAR NAME=ADD>'],[get_sequence]);gen_title(['args__rc', 'args__<TMPL_VAR NAME=TITLE_RC>', 'args__pro', 'args__<TMPL_VAR NAME=PRO>'],['box_name']);-->
-     <TMPL_IF NAME=FIND_FEATS>
-     <TD align=right valign="top">
-     <DIV id="annotation_button"> <input type=button value="Find Features in Sequence" onClick="featlist('<TMPL_VAR NAME=FEATLISTLINK>')"> <TMPL_VAR NAME="FEAT_TYPE_LIST"></DIV>
-     </TMPL_IF>
-     </TD>
-     <TD align=right valign="top">
-     <DIV id="blast_button"><input type=button value="Blast Sequence" onClick="blastSeq()"></DIV>
-     <DIV id="trna_button"><input type=button value="Scan Sequence for tRNAs" onClick="AragornSeq()"></DIV>
-    </TD>
-   </TR>
-  </TABLE>
-  </DIV>
+       <DIV class="seqview_button dna_button" style="display: none; float: left" id="dna_button"><input type=button value="DNA Sequence" onClick="dynamic_buttons('dna_button');get_sequence(0,0);gen_title(['args__rc','args__0','args__pro','args__0'],['box_name']);"></DIV>
+      <DIV class="seqview_button rc_button" style="float: left" id="rc_button"><input type=button value="Reverse Complement" onClick="dynamic_buttons('rc_button');get_sequence(1,0);gen_title(['args__rc','args__1','args__pro','args__0'],['box_name']);"></DIV>
+      <DIV class="seqview_button pro_button" style="float: left" id="pro_button"><input type=button value="<TMPL_VAR NAME=PROTEIN>" onClick="dynamic_buttons('pro_button');$('#seq_text').val('Loading. . .');get_sequence(0,1);gen_title(['args__rc','args__0','args__pro','args__1','args__sixframe','args__<TMPL_VAR NAME=SIXFRAME>'],['box_name']);"></DIV>
+ <input type=checkbox id=nowrap onclick='set_nowrap()'> Check to disable sequence wrapping
 
 </TMPL_IF>
 
@@ -234,61 +241,67 @@ function featlist (link) {
   <div id = "maketable"></div>
 </Table>
 </DIV>
-   <div id=extend_title align=center class="seqbackbox"><font class="oblique"><TMPL_VAR NAME="EXTEND"></font></div>
-  <table align=center>
- <TR style="float:left"> 
-<!--    <form id="nt_stream" name="nt_stream"> -->
+<table>
+ <TR>
   <TD>
    <TMPL_VAR NAME = "UPSTREAM">
    </td>
    <td>
-   <INPUT type="text" id="upstream"  onkeypress="onEnter(event);" class="backbox" value= "<TMPL_VAR NAME="UPVALUE">">
+   <INPUT type="text" id="upstream"  onkeypress="onEnter(event);" class="backbox" value= "<TMPL_VAR NAME="UPVALUE">" size=6>
    </td>
    <TD>
    <TMPL_VAR NAME="DOWNSTREAM">
    </td>
    <td>
-   <INPUT type="text" id="downstream" onkeypress="onEnter(event);" class="backbox" value= "<TMPL_VAR NAME="DOWNVALUE">">
+   <INPUT type="text" id="downstream" onkeypress="onEnter(event);" class="backbox" value= "<TMPL_VAR NAME="DOWNVALUE">" size=6>
   </TD>
-<!--    </form> -->
   </TR>
   <TMPL_IF NAME=ADD_EXTRA>
-  <TR style="float:left">
-  <TD>
-  OR
+  <TR>
   </td>
    <TD>
-     Add to Upstream:
+     Add Upstream:
     </td>
    <td>
-   <INPUT type="text" id="addup"  onkeypress="onEnter(event,1);" class="backbox" value= "<TMPL_VAR NAME="ADDUP">">
+   <INPUT type="text" id="addup"  onkeypress="onEnter(event,1);" class="backbox" value= "<TMPL_VAR NAME="ADDUP">"  size=6>
      </td>
      <TD >
-     Add to Downstream: 
+     Add Downstream: 
     </td>
    <td>
-     <INPUT type="text" id="adddown" onkeypress="onEnter(event,1);" class="backbox" value= "<TMPL_VAR NAME="ADDDOWN">">
+     <INPUT type="text" id="adddown" onkeypress="onEnter(event,1);" class="backbox" value= "<TMPL_VAR NAME="ADDDOWN">" size=6>
    </td>
   </tr>
   </TMPL_IF>
-   </TMPL_IF>
-   <TMPL_IF NAME="FEATURE">
+
 
   <TR>
-   <TD align =center valign = "middle">
+<tr><td><input type= button value ="Redefine Sequence" id = "add_to" onClick="redefine();">
+   <TMPL_IF NAME="FEATURE">
+   <TD align>
    <input type = button value = "Reset" id="reset" onClick="reset_updown();get_sequence();">
-   <!--<input type=button value="Select Sequence" id="select" onClick="selectText()">-->
-      <input type= button value ="Add to Sequence" id = "add_to" onClick="redefine();"> 
    </TMPL_IF>
-   <TMPL_IF NAME="RANGE">
-    <TR>
-     <TD>
-      <input type= button value ="Redefine Sequence" id = "add_to" onClick="redefine();"> 
-   </TMPL_IF>
-
-<TMPL_IF NAME="REST">
-   </TR>
  </TABLE>
+<table>
+     <tr>
+     <TD valign="top">
+     <DIV id="find_feats_button" style="float:left"> <TMPL_VAR NAME=FEATLISTLINK></div> <div id="feat_type_list" style="float:left"> <TMPL_VAR NAME="FEAT_TYPE_LIST"></DIV>
+
+     </TD>
+     <TR>
+     <TD align=right valign="top">
+     <DIV id="blast_button" style="float: left" ><input type=button value="Blast Sequence" onClick="blastSeq()"></DIV>
+     <DIV id="trna_button" style="float: left" ><input type=button value="Scan Sequence for tRNAs" onClick="AragornSeq()"></DIV>
+     <DIV id="rnafold_button" style="float: left" ><input type=button value="RNA Fold" onClick="RNAFold()"></DIV>
+    </TD>
+   </TR>
+</table>
+
+</TMPL_IF>
+
+
+
+<TMPL_IF NAME=BOTTOM_BUTTONS>
 </TMPL_IF>
 
 <TMPL_IF NAME="FEATUREBOX">
