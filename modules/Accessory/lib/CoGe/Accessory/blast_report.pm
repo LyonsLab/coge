@@ -97,6 +97,8 @@ sub _parseQuery
     $query =~ s/\n/ /gs;
     $query =~ s/ +/ /gs;
     $query =~ s/\s\s+/ /g;
+    $query =~ s/^\s+//;
+    $query =~ s/\s+$//;
     $length =~ s/,//g;
     return ($query, $length);
   }
