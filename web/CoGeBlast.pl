@@ -800,7 +800,7 @@ sub generate_chromosome_images
   						start=>$hsp->sstart,
   						stop=>$hsp->sstop,
   						chr=>"Chr: $chr",
-  						imagemap=>qq/class="imagemaplink species" title="HSP No. /.$hsp->number.qq/" onclick="hide_big_picture();show_hsp_div();loading('image_info','Information');loading('query_image','Image');loading('subject_image','Image');get_hsp_info(['args__blastfile','args__/.$cogeweb->basefile.qq/','args__num','args__$num'],['image_info','query_image','subject_image']);"/,
+  						imagemap=>qq/class="imagemaplink" title="HSP No. /.$hsp->number.qq/" onclick="hide_big_picture();show_hsp_div();loading('image_info','Information');loading('query_image','Image');loading('subject_image','Image');get_hsp_info(['args__blastfile','args__/.$cogeweb->basefile.qq/','args__num','args__$num'],['image_info','query_image','subject_image']);"/,
   						up=>$up,
   						color=>$color,
   					       );
