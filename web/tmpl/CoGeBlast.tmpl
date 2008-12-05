@@ -478,19 +478,31 @@ function blastresults(html, click_all_links){
 }
 
 function init_table () {
+
+$.tablesorter.addParser({
+ id: 'percent',
+ is: function(s) {return false;},
+ format: function(s) {return s.replace(/%/,'');},
+ type: 'numeric'
+});
+
 $(function(){
  $("#hsp_result_table").tablesorter({		
-// 		sortColumn: 'HSP No.',			// Integer or String of the name of the column to sort by.
+// 		sortColumn: 'HSP#',			// Integer or String of the name of the column to sort by.
 		sortClassAsc: 'headerSortUp',		// Class name for ascending sorting action to header
 		sortClassDesc: 'headerSortDown',	// Class name for descending sorting action to header
 		headerClass: 'header',			// Class name for headers (th's)
 		widgets: ['zebra'],
 		textExtraction: 'complex',
-		headers: {0: {sorter: false}},					
+		headers: {0: {sorter: false},
+		          7: {sorter: 'percent'},
+		          9: {sorter: 'percent'}
+			 },					
 		sortList: [[2,0],[5,0]],
 		});
  });
 }
+
 
 function ncbi_blast(url) {
  if (url == 1)
@@ -1831,12 +1843,14 @@ function clear_org_list()
         <TH nowrap class=header>Org</TH>
         <TH nowrap class=header>Chr</TH>
  	<TH nowrap class="header" >Position</TH>	
-        <TH nowrap class=header>HSP No.</TH>
+        <TH nowrap class=header>HSP#</TH>
+        <TH nowrap class=header>Length</TH>
+        <TH class=header>Coverage</TH>
         <TH nowrap class=header>E-value</TH>
         <TH nowrap class=header>Perc ID</TH>
         <TH nowrap class=header>Score</TH>
-        <TH nowrap class=header>Closest Genomic Feature</TH>
-        <TH nowrap class=header>Distance (bp)</TH>
+        <TH class=header>Closest Genomic Feature</TH>
+        <TH nowrap class=header>Distance(bp)</TH>
        </TR>
      </THEAD>
      <TBODY id=hsp_result_table_body style="overflow: auto;">
@@ -1848,6 +1862,8 @@ function clear_org_list()
          <td><TMPL_VAR NAME=HSP_CHR></td>
          <td><TMPL_VAR NAME=HSP_POS></td>
          <td><TMPL_VAR NAME=HSP></td>
+         <td><TMPL_VAR NAME=HSP_LENGTH></td>
+         <td><TMPL_VAR NAME=COVERAGE></td>
          <td><TMPL_VAR NAME=HSP_EVAL></td>
          <td><TMPL_VAR NAME=HSP_PID></td>
          <td><TMPL_VAR NAME=HSP_SCORE></td>
@@ -1882,8 +1898,8 @@ function clear_org_list()
    </TMPL_IF>
    
    <TMPL_IF NAME=HSP_IF>
-       <TABLE id="hsp_table" class="resultborder" style="width: 400px; overflow: auto;" cellspacing="2">
-     <caption>HSP Number <TMPL_VAR NAME=HSP_NUM> Info</caption>
+     <span class=species>HSP Number <TMPL_VAR NAME=HSP_NUM> Information:</span><br>
+      <TABLE id="hsp_table" class="resultborder" style="width: 400px; overflow: auto;" cellspacing="2">
       <tr>
       <td valign="top">
       <table >
@@ -1995,7 +2011,7 @@ function clear_org_list()
  	<tbody>
     <TR>
      <TD align=left  valign="top" >
-     <div id=left_column>
+     <div id=left_column class=species>
      Genomic HSP Visualization:
      <DIV id=chromosomes class="resultborder" style="width: 405px;overflow: auto;max-height: 700px;">
 
@@ -2015,14 +2031,9 @@ function clear_org_list()
       </TD>
       <TD valign="top">
        <DIV id=result_visual valign="top" style="display: none;width:450">
-         HSP Graphics:<br>
+         <span class=species>HSP Graphics:</span>
         <DIV id=query_image class="hsp_image"></DIV>
-        <BR>
-        <BR>
-        <BR>
         <DIV id=subject_image class="hsp_image"></DIV>
-        <BR>
-        <BR>
         <DIV id=image_info><TMPL_VAR NAME=HSP></DIV>
       </DIV>
       </TD>
