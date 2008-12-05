@@ -66,10 +66,8 @@ sub gen_html
     $template->param(BOX_NAME=>qq{<DIV id="box_name">$title</DIV>});
     $template->param(BODY=>gen_body());
     $template->param(POSTBOX=>gen_foot());
+    $template->param(ADJUST_BOX=>1);
     $template->param(LOGON=>1) unless $USER->user_name eq "public";
-    #if($featid)
-     #{$template->param(CLOSE=>1);}
-    #print STDERR gen_foot()."\n";
     $html .= $template->output;
     }
     return $html;
@@ -93,17 +91,30 @@ sub gen_body
     $template->param(RC=>$rc);
     $template->param(JS=>1);
     $template->param(SEQ_BOX=>1);
+    $template->param(ADDITION=>1);
     if ($featid)
     {
       my ($feat) = $coge->resultset('Feature')->find($featid);
       $dsid = $feat->dataset_id;
       $chr = $feat->chromosome;
 
+      $template->param(FEAT_START=>$feat->start);
+      $template->param(FEAT_STOP=>$feat->stop);
       $template->param(FEATID=>$featid);
       $template->param(FEATNAME=>$feat_name);
-      $template->param(FEAT_INFO=>qq{<td valign=top><input type=button value="Get Feature Info" onClick="generate_feat_info(['args__$featid'],[display_feat_info])">});
+      $template->param(FEAT_INFO=>qq{<input type=button value="Get Feature Info" onClick="generate_feat_info(['args__$featid'],[display_feat_info])">});
       $template->param(DSID=>$dsid); #to make JS happy
-    $template->param(CHR=>$chr); #to make JS happy
+      $template->param(CHR=>$chr); #to make JS happy
+
+      $template->param(PROTEIN=>'Protein Sequence');
+      $template->param(SIXFRAME=>0);
+      $template->param(UPSTREAM=>"UPSTREAM (5'): ");
+      $template->param(UPVALUE=>$upstream);
+      $template->param(DOWNSTREAM=>"DOWNSTREAM (3'): ");
+      $template->param(DOWNVALUE=>$downstream);
+      $template->param(FEATURE=>1);
+      $start = $feat->start;
+      $stop = $feat->stop;
     }
     else
     {
@@ -112,8 +123,30 @@ sub gen_body
     	$template->param(FEATID=>0); #to make JS happy
     	$template->param(FEATNAME=>'null'); #to make JS happy
         #generate_gc_info(chr=>$chr,stop=>$stop,start=>$start,dsid=>$dsid);
+
+	$template->param(PROTEIN=>'Six Frame Translation');
+      $template->param(SIXFRAME=>1);
+      $template->param(UPSTREAM=>"START: ");
+      $template->param(UPVALUE=>$start);
+      $template->param(DOWNSTREAM=>"STOP: ");
+      $template->param(DOWNVALUE=>$stop);
+      $template->param(ADD_EXTRA=>1);
+
+
     }
-#
+    if ($rc)
+      {
+	$start -= $downstream;
+	$stop += $upstream;
+      }
+    else
+      {
+	$start -= $upstream;
+	$stop += $downstream;
+      }
+    my ($link, $types) = find_feats(dsid=>$dsid, start=>$start, stop=>$stop, chr=>$chr);
+    $template->param(FEATLISTLINK=>$link);
+    $template->param(FEAT_TYPE_LIST=>$types);
     $template->param(GC_INFO=>qq{<td valign=top><input type=button value="Calculate GC Content" onClick="generate_gc_info(['seq_text','args__'+myObj.pro],[display_gc_info],'POST')">});
     my $html = $template->output;
     return $html;
@@ -124,7 +157,6 @@ sub check_strand
     my %opts = @_;
     my $strand = $opts{'strand'} || 1;
     my $rc = $opts{'rc'} || 0;
-    #print STDERR Dumper \%opts;
     if ($rc==1)
     {
         if ($strand =~ /-/)
@@ -165,8 +197,6 @@ sub get_seq
     my $stop = $opts{'stop'};
     my $nowrap = $opts{'nowrap'} || 0;
     $nowrap = 0 if $nowrap =~ /undefined/;
-    #print STDERR Dumper \%opts;
-    #my $change_strand = $opts{'changestrand'} || 0;
     if($add_to_seq){
       $start = $upstream if $upstream;
       $stop = $downstream if $downstream;
@@ -176,11 +206,9 @@ sub get_seq
 	$start-=$upstream;
 	$stop+=$downstream;
       }
-    #print $rc;
     my $strand;
     my $seq;
     my $fasta;
-    #print STDERR Dumper \%opts;
     my $col= $nowrap > 0 ? 0 : 80;
 
     if ($featid)
@@ -226,69 +254,24 @@ sub gen_foot
     my $featid = $form->param('featid');
     my $chr = $form->param('chr');
     my $dsid = $form->param('dsid');
-    my $feat_name = $form->param('featname');
     my $rc = $form->param('rc');
-    my $pro = $form->param('pro');
     my $upstream = $form->param('upstream') || 0;
     my $downstream = $form->param('downstream') || 0;
     my $start = $form->param('start');
     my $stop = $form->param('stop');
     $stop = $start unless $stop;
     my $feat = $coge->resultset('Feature')->find($featid);
-    my $strand;
-    my $DNAButton;
-    my $RCButton;
-    my $PROButton;
-    my @button_loop;
-    $strand = $featid ? $feat->strand : $form->param('strand');
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SeqView.tmpl');
     $template->param(BOTTOM_BUTTONS=>1);
-    #print STDERR $featid if $featid;
-   # print STDERR "nuthin" unless $featid;
-    $template->param(ADDITION=>1);
-    if ($rc)
-      {
-	$start -= $downstream;
-	$stop += $upstream;
-      }
-    else
-      {
-	$start -= $upstream;
-	$stop += $downstream;
-      }
 
+    
     if ($featid){
       my ($feat) = $coge->resultset('Feature')->find($featid);
       $dsid = $feat->dataset_id;
       $chr = $feat->chromosome;
-
-      $template->param(PROTEIN=>'Protein Sequence');
-      $template->param(SIXFRAME=>0);
-      $template->param(FIND_FEATS=>1);
-      $template->param(EXTEND=>"Extend Sequence");
-      $template->param(UPSTREAM=>"UPSTREAM (5'): ");
-      $template->param(UPVALUE=>$upstream);
-      $template->param(DOWNSTREAM=>"DOWNSTREAM (3'): ");
-      $template->param(DOWNVALUE=>$downstream);
-      $template->param(FEATURE=>1);
       $start = $feat->start;
       $stop = $feat->stop;
     }
-    else{
-      $template->param(PROTEIN=>'Six Frame Translation');
-      $template->param(SIXFRAME=>1);
-      $template->param(FIND_FEATS=>1);
-      $template->param(RANGE=>1);
-      $template->param(EXTEND=>"Sequence Range");
-      $template->param(UPSTREAM=>"START: ");
-      $template->param(UPVALUE=>$start);
-      $template->param(DOWNSTREAM=>"STOP: ");
-      $template->param(DOWNVALUE=>$stop);
-      $template->param(ADD_EXTRA=>1);
-      $template->param(RANGE=>1);
-#      $template->param(ADDUP=>$upstream);
-#      $template->param(ADDDOWN=>$downstream);
-      }
     if ($rc)
       {
 	$start -= $downstream;
@@ -302,8 +285,6 @@ sub gen_foot
     my ($link, $types) = find_feats(dsid=>$dsid, start=>$start, stop=>$stop, chr=>$chr);
     $template->param(FEATLISTLINK=>$link);
     $template->param(FEAT_TYPE_LIST=>$types);
-   $template->param(REST=>1);
-   #print STDERR $template->output."\n";
    my $html = $template->output;
    return $html;
   }
@@ -350,7 +331,6 @@ sub color
 sub gen_title
     {
       my %opts = @_;
-      #print STDERR Dumper \@_;
       my $rc = $opts{'rc'} || 0;
       my $pro = $opts{'pro'};
       my $sixframe = $opts{sixframe};
@@ -363,22 +343,20 @@ sub gen_title
       {
         $title = $rc ? "Reverse Complement" : "DNA Sequence";
       }
-      #print STDERR $title, "\n";
       return $title;
     }
 	
 sub find_feats
 {
-	#print STDERR "Here";
 	my %opts = @_;
 	my $start = $opts{'start'};
 	my $stop = $opts{'stop'};
 	my $chr = $opts{'chr'};
 	my $dsid = $opts{'dsid'};
 #	my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SeqView.tmpl');
-	my $link = "FeatList.pl?";
+	my $link = qq{<input type=button value="Find Features in Sequence" onClick="featlist('FeatList.pl?};
 	my %type;
-	$link .="start=$start;stop=$stop;chr=$chr;dsid=$dsid";
+	$link .="start=$start;stop=$stop;chr=$chr;dsid=$dsid".qq{')">};
 	foreach my $ft ($coge->resultset('FeatureType')->search(
 								{"features.dataset_id"=>$dsid,
 								 "features.chromosome"=>$chr},
@@ -391,6 +369,7 @@ sub find_feats
 	    $type{$ft->name}=$ft->id;
 	  }
 	$type{All}=0;
+
 	my $type = qq{<SELECT ID="feature_type">};
 	$type .= join ("\n", map {"<OPTION value=".$type{$_}.">".$_."</option>"} sort keys %type)."\n";
 	$type .= "</select>";
