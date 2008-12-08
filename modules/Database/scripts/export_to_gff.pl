@@ -97,6 +97,7 @@ sub get_locs {
                 while(my $loc = $locs->next()){
                     my $gstr = join("\t", ($f->chr, 'ucb', $f->feature_type->name, $loc->start, $loc->stop, ".", $strand, ".", $attrs));
                     if($seen{$gstr}){ next; }
+                    $seen{$gstr} = 1;
                     print $gstr . "\n";
             
                 }
