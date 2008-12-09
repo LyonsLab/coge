@@ -1072,7 +1072,8 @@ px_width integer,
 bpmin integer,
 bpmax integer,
 dsid integer,
-chromosome varchar
+chromosome varchar,
+reverse_complement integer
 )
 };
 #TODO: make sure to populate the bpmin and pbmax and image width!!!!!!!!!!!!!!!!!
@@ -1100,14 +1101,15 @@ sub generate_image_db
     $title .= qq! Reverse Complement! if $set->{rev};
     my $width = $gfx->image_width;
     my $dsid = $set->{obj}->dataset;
-    my ($chr) =  $set->{obj}->chromosome =~ /(\d+)/;
+    my ($chr) =  $set->{obj}->chromosome;# =~ /(\d+)/;
     $chr = "NULL" unless $chr;
     $dsid = "NULL" unless $dsid;
     my $image_start = $set->{obj}->start;
     my $image_stop = $set->{obj}->stop;
     my $image_id = $set->{seq_num};
+    my $rc = $set->{rev};
     my $statement = qq{
-INSERT INTO image_info (id, display_id, iname, title, px_width,dsid, chromosome, bpmin, bpmax) values ($image_id, $image_id, "$image", "$title", $width, "$dsid", $chr, $image_start, $image_stop)
+INSERT INTO image_info (id, display_id, iname, title, px_width,dsid, chromosome, bpmin, bpmax, reverse_complement) values ($image_id, $image_id, "$image", "$title", $width, "$dsid", "$chr", $image_start, $image_stop, $rc)
 };
     print STDERR $statement unless $dbh->do($statement);
     foreach my $feat ($gfx->get_feats)
@@ -1833,7 +1835,6 @@ sub get_obj_from_genome_db
 					   seq_length=>length($seq),
 					   sequence=>$seq,
 					 });
-
     my %used_names;
     $used_names{$accn} = 1;
     my $t4 = new Benchmark;
