@@ -417,6 +417,7 @@ function blastOff(){
   match_score = params.mm;
   gapcost = params.g;
   seq = params.s;
+  seq = seq.replace(/__/g,/_/);
   filter_query = params.fq;
   resultslimit = params.rl;
 //blastz params
