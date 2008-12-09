@@ -573,8 +573,11 @@ sub gen_results_page
 		 my $feat_link = qq{<span class="link" onclick="fill_nearby_feats('$id','true')">Click for Closest Feature</span>};
 		 my $qname = $hsp->query_name =~ /Name: (\S*)/ ? $1 : $hsp->query_name;
 		 $qname =~ s/,$//;
-		 $query_hit_count{$qname}{$org}++;
-		 my $coverage = $query_seqs_info->{$hsp->query_name} ? sprintf("%.1f", $hsp->length/$query_seqs_info->{$hsp->query_name}*100)."%" : "Error";
+		 $query_hit_count{$qname}{org}{$org}++;
+		 $query_hit_count{$qname}{orig_name} = $hsp->query_name;
+		 my $tmp = $hsp->query_name;
+		 $tmp =~ s/\s//g;
+		 my $coverage = $query_seqs_info->{$tmp} ? sprintf("%.1f", $hsp->length/$query_seqs_info->{$tmp}*100)."%" : "Error";
 		 push @hsp, {
 			     CHECKBOX=>$id."_".$chr."_".$hsp->subject_start."no",
 			     ID=>$id,
@@ -610,10 +613,12 @@ sub gen_results_page
      my $class = "even";
      foreach my $query (sort keys %query_hit_count)
        {
-	 $hsp_count.= qq{<tr class="$class"><td>$query. <span class = species>Length: }.$query_seqs_info->{$query}."</span>";
+	 my $name = $query_hit_count{$query}{orig_name};
+	 $name =~ s/\s//g;
+	 $hsp_count.= qq{<tr class="$class"><td>$query <span class = species>Length: }.$query_seqs_info->{$name}."</span>";
 	 foreach my $org (sort keys %hsp_count)
 	   {
-	     my $count = $query_hit_count{$query}{$org} ? $query_hit_count{$query}{$org} : 0;
+	     my $count = $query_hit_count{$query}{org}{$org} ? $query_hit_count{$query}{org}{$org} : 0;
 	     $hsp_count .= qq{<td align=center>$count};
 	   }
 	 $class = $class eq "even" ? "odd" : "even";
@@ -894,7 +899,9 @@ sub create_fasta_file
 	    next unless $_;
 	    my ($name, $tmp) = split/\n/,$_,2;
 	    $tmp =~ s/\n//g;
+	    $name =~ s/\s//g; #need to remove spaces due to how blast breaks query names at spaces or commas
 	    $seqs{$name}=length($tmp);
+	    
 	  }
       }
     write_log("creating user's fasta file",$cogeweb->logfile);
