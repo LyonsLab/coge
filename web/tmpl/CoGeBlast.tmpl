@@ -725,7 +725,8 @@ function animate_params (html,version,pro){
 
 function show_add() {
   if($('#add').is(":hidden")) {
-    $('#remove').hide(0);$('#add').show(0);
+    $('#remove').hide(0);
+    $('#add').show(0);
   }
 }
 
@@ -766,7 +767,7 @@ function seq_type_search() {
     }
   else if ($('#org_id').val()) {
     get_seq_types(['org_id'],['org_seq_types']);
-    $('#add').show(1);
+    show_add();
    }
   else {
    $('#org_seq_types').html('');
