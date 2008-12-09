@@ -125,12 +125,14 @@ sub gen_body
         #generate_gc_info(chr=>$chr,stop=>$stop,start=>$start,dsid=>$dsid);
 
 	$template->param(PROTEIN=>'Six Frame Translation');
-      $template->param(SIXFRAME=>1);
-      $template->param(UPSTREAM=>"START: ");
-      $template->param(UPVALUE=>$start);
-      $template->param(DOWNSTREAM=>"STOP: ");
-      $template->param(DOWNVALUE=>$stop);
-      $template->param(ADD_EXTRA=>1);
+	$template->param(SIXFRAME=>1);
+	$template->param(UPSTREAM=>"START: ");
+	$template->param(UPVALUE=>$start);
+	$template->param(DOWNSTREAM=>"STOP: ");
+	$template->param(DOWNVALUE=>$stop);
+	$template->param(ADD_EXTRA=>1);
+	$template->param(ADDUP=>$upstream);
+	$template->param(ADDDOWN=>$downstream);
 
 
     }
