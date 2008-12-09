@@ -412,9 +412,7 @@ sub blast_search
     my $seq = $opts{seq};
     my $blastable = $opts{blastable};
     my $width = $opts{width};
-
    # exit;
-
     my $t1 = new Benchmark;
     my @org_ids = split(/,/,$blastable);
     my ($fasta_file, $query_seqs_info) = create_fasta_file($seq);
