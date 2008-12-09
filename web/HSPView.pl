@@ -84,7 +84,6 @@ sub gen_body
     my $hsps = get_info_from_db(db_file=>$db_file, hsp_num=>$hsp_num, report_file=>$report_file);
     my ($qname, $sname) = $hsps->[0]{hsp}=~ />?\(?(.*?)-(.*)\)?<?/;
 
-    my $hsp;
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/HSPView.tmpl');
     $template->param(Query=>$qname);
     $template->param(Subject=>$sname);
@@ -114,15 +113,7 @@ sub gen_body
     $template->param(Match=>$hsps->[0]{match});
     $template->param(Sim=>$hsps->[0]{match});
 
-    my $qstart = $FORM->param('qstart');
-    my $qstop = $FORM->param('qstop');
-    my $qchr = $FORM->param('qchr');
-    my $qds = $FORM->param('qds');
-    my $qstrand = $FORM->param('qstrand') || 1;
-    my $qrc = $qstrand =~ /-/ ? "1" : "0";
-    my $qseqview_link = "SeqView.pl?start=$qstart&stop=$qstop&chr=$qchr&dsid=$qds&strand=$qstrand&rc=$qrc" if $qstart && $qstop && $qchr && $qds;
     my $qseq_out = "<pre>".seqwrap($qseq)."</pre>";
-    $qseq_out .= "<font class=small><a href = $qseqview_link target=_new>Open Sequence in SeqView</a></font>" if $qseqview_link;
       
     $template->param(qseq=>$qseq_out);
     $template->param(qseq_plain=>$qseq);
@@ -140,7 +131,20 @@ sub gen_body
     $template->param(align=>"<pre>".$align."</pre>");
     if ($hsps->[0]{dsid}=~/^\d+$/)
       {
-	my $seqview = "<a class = small href=SeqView.pl?dsid=".$hsps->[0]{dsid}.";chr=".$hsps->[0]{chr}.";start=".($hsps->[0]{start}+$hsps->[0]{chr_start}-1).";stop=".($hsps->[0]{stop}+$hsps->[0]{chr_start}-1).">SeqView</a>";
+	my ($start, $stop);
+	if ($hsps->[0]{reverse_complement})
+	  {
+	    my $adj = $hsps->[0]{chr_stop} - $hsps->[0]{chr_start}+1;
+	    $start = $adj-$hsps->[0]{start}+$hsps->[0]{chr_start};
+	    $stop = $adj-$hsps->[0]{stop}+$hsps->[0]{chr_start};
+	  }
+	else
+	  {
+	    $start = $hsps->[0]{start}+$hsps->[0]{chr_start}-1;
+	    $stop = $hsps->[0]{stop}+$hsps->[0]{chr_start}-1;
+	  }
+	my $rc = $hsps->[0]{reverse_complement};
+	my $seqview = "<a class = small href=SeqView.pl?dsid=".$hsps->[0]{dsid}.";chr=".$hsps->[0]{chr}.";start=".$start.";stop=".$stop.";rc=$rc>SeqView</a>";
 	$template->param(qseqview=>$seqview);
       }
     else
@@ -150,8 +154,26 @@ sub gen_body
 
     if ($hsps->[1]{dsid}=~/^\d+$/)
       {
-	my $rc = $hsps->[1]{orientation} =~ /-/ ? 1 : 0;
-	my $seqview = "<a class = small href=SeqView.pl?dsid=".$hsps->[1]{dsid}.";chr=".$hsps->[1]{chr}.";start=".($hsps->[1]{start}+$hsps->[1]{chr_start}-1).";stop=".($hsps->[1]{stop}+$hsps->[1]{chr_start}-1).";rc=$rc>SeqView</a>";
+#	print STDERR Dumper $hsps->[1];
+	my ($start, $stop);
+	if ($hsps->[1]{reverse_complement})
+	  {
+	    my $adj = $hsps->[1]{chr_stop} - $hsps->[1]{chr_start}+1;
+	    $start = $adj-$hsps->[1]{start}+$hsps->[1]{chr_start};
+	    $stop = $adj-$hsps->[1]{stop}+$hsps->[1]{chr_start};
+	  }
+	else
+	  {
+	    $start = $hsps->[1]{start}+$hsps->[1]{chr_start}-1;
+	    $stop = $hsps->[1]{stop}+$hsps->[1]{chr_start}-1;
+	  }
+	my $rc = $hsps->[1]{reverse_complement};
+	if ($hsps->[1]{orientation} =~ /-/)
+	  {
+	    $rc = $rc ? 0 : 1; #change orientation
+	  }
+	my $seqview = "<a class = small href=SeqView.pl?dsid=".$hsps->[1]{dsid}.";chr=".$hsps->[1]{chr}.";start=".$start.";stop=".$stop.";rc=$rc>SeqView</a>";
+#	my $seqview = "<a class = small href=SeqView.pl?dsid=".$hsps->[1]{dsid}.";chr=".$hsps->[1]{chr}.";start=".($hsps->[1]{start}+$hsps->[1]{chr_start}-1).";stop=".($hsps->[1]{stop}+$hsps->[1]{chr_start}-1).";rc=$rc>SeqView</a>";
 	$template->param(sseqview=>$seqview);
       }
     else
@@ -208,7 +230,7 @@ sub get_info_from_db
     my $dbh = DBI->connect("dbi:SQLite:dbname=$TEMPDIR/GEvo/$db","","");
     my $statement = qq{SELECT annotation, pair_id, id, image_id from image_data where name like "$hsp_num-%" and (image_id = $set1 or image_id = $set2)};
     my $sth = $dbh->prepare($statement);
-    my $statement2 = qq{SELECT dsid, chromosome, bpmin, bpmax from image_info where id = ?};
+    my $statement2 = qq{SELECT dsid, chromosome, bpmin, bpmax, reverse_complement from image_info where id = ?};
     my $sth2 = $dbh->prepare($statement2);
     $sth->execute();
     my %hsps;
@@ -235,7 +257,7 @@ sub get_info_from_db
 
 
 	$sth2->execute($item->[3]);
-	my ($dsid, $chr, $bpmin, $bpmax) =  $sth2->fetchrow_array;
+	my ($dsid, $chr, $bpmin, $bpmax, $rc) =  $sth2->fetchrow_array;
 	$hsps{$item->[2]}= {
 			    hsp=>$data{HSP},
 			    start=>$start,
@@ -252,6 +274,7 @@ sub get_info_from_db
 			    chr_start=>$bpmin,
 			    chr_stop=>$bpmax,
 			    chr=>$chr,
+			    reverse_complement=>$rc,
 		    };
 
 	$ids{$item->[1]}++;
