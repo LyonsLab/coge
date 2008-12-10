@@ -76,10 +76,19 @@ sub process_file
 		$self->query->{$query}++;
 		$self->query->{$subject}++;
 		my $hsp = $self->_processHSP(data=>"Score".$hsp_data, query_name=>$query, query_length=>$qlength, subject_name=>$subject, subject_length=>$slength);
+		$hsp->query_coverage($hsp->length/$qlength) if $qlength;
+		$hsp->quality($hsp->query_coverage*$hsp->percent_id);
 		push @hsps, $hsp if $hsp;
 		last loop if $limit && $self->hsp_count > $limit;
 	      }
 	  }
+      }
+    @hsps = sort {$b->score <=> $a->score} @hsps;
+    my $count = 1;
+    foreach my $hsp (@hsps)
+      {
+	$hsp->number($count);
+	$count++;
       }
     close IN;
     #	close( $self->{FH} );
