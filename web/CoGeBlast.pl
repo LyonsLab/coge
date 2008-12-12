@@ -386,7 +386,7 @@ sub generate_basefile
 sub blast_search
   {
     my %opts = @_;
-    my $color_hsps_by_query_seq =  $opts{color_hsps_by_query_seq};
+    my $color_hsps= $opts{color_hsps};
     my $program = $opts{program};
     my $expect = $opts{expect};
     my $job_title = $opts{job_title};
@@ -515,7 +515,7 @@ sub blast_search
     initialize_sqlite();
     my $t4 = new Benchmark;
     write_log("Generating Results",$cogeweb->logfile);
-    my ($html,$click_all_links) = gen_results_page(results=>\@results,width=>$width,resultslimit=>$resultslimit,prog=>$program, color_hsps_by_query_seq =>  $color_hsps_by_query_seq, query_seqs_info=>$query_seqs_info);
+    my ($html,$click_all_links) = gen_results_page(results=>\@results,width=>$width,resultslimit=>$resultslimit,prog=>$program, color_hsps => $color_hsps,  query_seqs_info=>$query_seqs_info,);
     my $t5 = new Benchmark;
     my $init_time = timestr(timediff($t2,$t1));
     my $blast_time = timestr(timediff($t3,$t2));
@@ -540,7 +540,7 @@ sub gen_results_page
      my $results = $opts{results};
      my $width = $opts{width};
      my $resultslimit = $opts{resultslimit};
-     my $color_hsps_by_query_seq =  $opts{color_hsps_by_query_seq};
+     my $color_hsps =  $opts{color_hsps};
      my $prog=$opts{prog};
      my $query_seqs_info = $opts{query_seqs_info};
      my $click_all_links;
@@ -549,6 +549,11 @@ sub gen_results_page
      my $length;
      my @check;
      my @hsp;
+
+     my $t1 = new Benchmark;
+     my ($chromosome_data, $chromosome_data_large) = generate_chromosome_images(results=>$results,large_width=>$width,, resultslimit=>$resultslimit, color_hsps => $color_hsps);
+     my $t2 = new Benchmark;
+
      my $t0 = new Benchmark;
      my %query_hit_count;
      foreach my $set (@$results)
@@ -569,13 +574,15 @@ sub gen_results_page
 		 my $id = $hsp->number."_".$dsid;
 		 $click_all_links .= $id.",";
 		 my $feat_link = qq{<span class="link" onclick="fill_nearby_feats('$id','true')">Click for Closest Feature</span>};
-		 my $qname = $hsp->query_name =~ /Name: (\S*)/ ? $1 : $hsp->query_name;
+		 my $qname = $hsp->query_name =~ /Name: (.*), Type:/ ? $1 : $hsp->query_name;
+		 ($qname) = split /,/, $qname;
+		 $qname =~ s/^\s+//;
+		 $qname =~ s/\s+$//;
 		 $qname =~ s/,$//;
 		 $query_hit_count{$qname}{org}{$org}++;
 		 $query_hit_count{$qname}{orig_name} = $hsp->query_name;
-		 my $tmp = $hsp->query_name;
-		 $tmp =~ s/\s//g;
-		 my $coverage = $query_seqs_info->{$tmp} ? sprintf("%.1f", $hsp->length/$query_seqs_info->{$tmp}*100)."%" : "Error";
+		 $query_hit_count{$qname}{color} = $hsp->{color} if $hsp->{color};
+#		 my $qual = sprintf("%.1f", $hsp->percent_id * $coverage / 100);
 		 push @hsp, {
 			     CHECKBOX=>$id."_".$chr."_".$hsp->subject_start."no",
 			     ID=>$id,
@@ -584,19 +591,19 @@ sub gen_results_page
 			     HSP=>qq{<span class="link" title="Click for HSP information" onclick="update_hsp_info('table_row$id');\$('#middle_column_button_hide').show(0);\$('#middle_column_button_show').hide(0);">}.$hsp->number."</span>",
 			     HSP_EVAL=>$hsp->pval,
 			     HSP_LENGTH=>$hsp->length,
-			     COVERAGE=>$coverage,
+			     COVERAGE=>sprintf("%.1f",$hsp->query_coverage*100)."%",
 			     HSP_PID=>$hsp->percent_id."%",
 			     HSP_SCORE=>$hsp->score,
 			     HSP_POS=>($hsp->subject_start),
 			     HSP_CHR=>$chr,
-			     HSP_LINK=>$feat_link};
+			     HSP_LINK=>$feat_link,
+			     HSP_QUALITY=>sprintf("%.1f",$hsp->quality)."%",
+			    };
+		 
 	       }
 	   }
 	 $hsp_count{$set->{organism}} = scalar @{$set->{report}->hsps()}
        }
-     my $t1 = new Benchmark;
-     my ($chromosome_data, $chromosome_data_large) = generate_chromosome_images(results=>$results,large_width=>$width,, resultslimit=>$resultslimit, color_hsps_by_query_seq =>  $color_hsps_by_query_seq);
-     my $t2 = new Benchmark;
      unless (@hsp) 
        {
 	 $null = "null";
@@ -613,7 +620,15 @@ sub gen_results_page
        {
 	 my $name = $query_hit_count{$query}{orig_name};
 	 $name =~ s/\s//g;
-	 $hsp_count.= qq{<tr class="$class"><td>$query <span class = species>Length: }.$query_seqs_info->{$name}."</span>";
+	 my $out_name = $query;
+	 my $color;
+	 foreach my $item (map{sprintf("%x",$_)} @{$query_hit_count{$query}{color}})
+	   {
+	     $item = "0".$item if length $item == 1;
+	     $color.=$item;
+	   }
+	 $out_name = qq{<span style="color:#}.$color.qq{">$out_name</span>} if $color;
+	 $hsp_count.= qq{<tr class="$class"><td>$out_name <span class = species>Length: }.$query_seqs_info->{$name}."</span>";
 	 foreach my $org (sort keys %hsp_count)
 	   {
 	     my $count = $query_hit_count{$query}{org}{$org} ? $query_hit_count{$query}{org}{$org} : 0;
@@ -733,8 +748,7 @@ sub generate_chromosome_images
      my $large_width = $opts{large_width} || 3*$width;
      my $resultslimit = $opts{resultslimit};
      my $imagefile_name = $opts{filename} || "null";
-     my $color_hsps_by_query_seq =  $opts{color_hsps_by_query_seq};
-     $color_hsps_by_query_seq = 0 if $color_hsps_by_query_seq =~ /false/;
+     my $color_hsps =  $opts{color_hsps};
      my $height = ($width / 16);
      my $large_height = ($large_width / 16) <= 64 ? ($large_width / 16) : 64;
      my $scale = $opts{scale} || 'linear';
@@ -743,7 +757,10 @@ sub generate_chromosome_images
      my (@data, @large_data,@no_data);
      my %hsp_count;
      my %query_seqs;
-     if ($color_hsps_by_query_seq)
+
+     #colorize!
+
+     if ($color_hsps eq "query")
        {
 	 foreach my $set (@$results)
 	   {
@@ -757,10 +774,10 @@ sub generate_chromosome_images
 	     $count++;
 	   }
        }
-
      foreach my $set (@$results)
-    {
+       {
 	my $org = $set->{organism};
+	$org =~ s/\s+$//;
 	$data{$org}{file}=$set->{link};
 	$filename = $imagefile_name."_*.png";
 	if ($imagefile_name ne "null")
@@ -772,13 +789,44 @@ sub generate_chromosome_images
 	    next;
 	  }
 	}
+	#colorize!
+	my ($max_quality, $min_quality, $range_quality);
+	if ($color_hsps eq "quality")
+	  {
+	    foreach my $hsp (@{$set->{report}->hsps()})
+	      {
+		$max_quality = $hsp->quality unless defined $max_quality;
+		$max_quality = $hsp->quality if $hsp->quality > $max_quality;
+		$min_quality = $hsp->quality unless defined $min_quality;
+		$min_quality = $hsp->quality if $hsp->quality < $min_quality;
+	      }
+	    $max_quality = sprintf("%.3f", log($max_quality));
+	    $min_quality = sprintf("%.3f", log($min_quality));
+	    $range_quality = $max_quality - $min_quality;
+	    $data{$org}{extra} = qq{<span class=small>Hits colored by Log Quality.  <span style="color:#AA0000">Min: $min_quality</span> <span style="color:#00AA00">Max: $max_quality</span></span>};
+	  }
+	my ($max_identity, $min_identity, $range_identity);
+	if ($color_hsps eq "identity")
+	  {
+	    foreach my $hsp (@{$set->{report}->hsps()})
+	      {
+		$max_identity = $hsp->percent_id unless defined $max_identity;
+		$max_identity = $hsp->percent_id if $hsp->percent_id > $max_identity;
+		$min_identity = $hsp->percent_id unless defined $min_identity;
+		$min_identity = $hsp->percent_id if $hsp->percent_id < $min_identity;
+	      }
+	    $range_identity = $max_identity - $min_identity;
+	    $max_identity = sprintf("%.1f", $max_identity);
+	    $min_identity = sprintf("%.1f", $min_identity);
+	    $data{$org}{extra} = qq{<span class=small>Hits colored by Identity.  <span style="color:#AA0000">Min: $min_identity</span> <span style="color:#00AA00">Max: $max_identity</span></span>};
+	  }
+
 	$filename = $set->{link};
 	if (@{$set->{report}->hsps()})
 	  {
 	    foreach my $hsp (@{$set->{report}->hsps()})
 	      {
 		#first, initialize graphic
-		$org =~ s/\s+$//;
 		$hsp_count{$org}++;
 		next if $hsp_count{$org}> $resultslimit;
 		my ($chr) = $hsp->subject_name =~ /chromosome: (.*?),/;
@@ -798,7 +846,23 @@ sub generate_chromosome_images
 		  }
 		my $num = $hsp->number."_".$dsid;
 		my $up = $hsp->strand eq "++" ? 1 : 0;
-		my $color = $color_hsps_by_query_seq ? $query_seqs{$hsp->query_name} : [0,200,0];
+		my $color;
+		if ($color_hsps eq "identity"|| $color_hsps eq "quality")
+		  {
+		    my $relative;
+		    $relative = sprintf("%.3f", 1- ($max_quality-log($hsp->quality))/($range_quality)) if $range_quality && $color_hsps eq "quality";
+		    $relative = sprintf("%.3f", 1-($max_identity-$hsp->percent_id)/($range_identity)) if $range_identity && $color_hsps eq "identity";
+		    $relative = 1 unless $relative;
+		    my $other = 1-$relative;
+		    my $c1 = 200;
+		    $c1 = 200*($relative*2) if $relative < .5;
+		    my $c2 = 200;
+		    $c2 = 200*($other*2) if $other < .5;
+		    $color = [$c2, $c1,0];
+		  }
+		elsif ($color_hsps eq "query")
+		  { $color = $query_seqs{$hsp->query_name}; }
+		else { $color = [0,200,0]; }
   		$data{$org}{image}->add_feature(name=>$hsp->number,
   						start=>$hsp->sstart,
   						stop=>$hsp->sstop,
@@ -807,9 +871,20 @@ sub generate_chromosome_images
   						up=>$up,
   						color=>$color,
   					       );
+		$hsp->{color}=$color if $color_hsps eq "query";
+	      }
+	  }
+	#let's reverse the order of the image features so that the first one is drawn on top of the latters;
+	if ($data{$org}{image})
+	  {
+	    while (my ($k, $v) = each %{$data{$org}{image}->features})
+	      {
+		$v = [reverse @$v];
+		$data{$org}{image}->features->{$k}=$v;
 	      }
 	  }
       }
+
     my $count = 1;
     foreach my $org (sort keys %data)
     {
@@ -835,7 +910,7 @@ sub generate_chromosome_images
 		close MAP;
 		$data{$org}{image}->image_width($large_width);
 		$data{$org}{image}->chromosome_height($large_height);
-		$data{$org}{image}->show_count(1);
+#		$data{$org}{image}->show_count(1);
 		$data{$org}{image}->generate_png(filename=>$large_image_file);
 		$image_map_large = $data{$org}{image}->generate_imagemap(mapname=>$cogeweb->basefilename."_".$count."_large");
 		$map_file = $cogeweb->basefile."_$count.$hsp_type.large.map";
@@ -858,9 +933,12 @@ sub generate_chromosome_images
 	    
 	    $image_file =~ s/$TEMPDIR/$TEMPURL/;
 	    $large_image_file =~ s/$TEMPDIR/$TEMPURL/;
-	    
-	    push @large_data,  {DB_NAME_LARGE=>"<a href=".$data{$org}{file}. " target=_new>$org <span class='small link'>Blast Report</span></a><br>", CHR_IMAGE_LARGE=>"<img src=$large_image_file ismap usemap='#".$cogeweb->basefilename."_"."$count"."_large' border=0>$image_map_large",IMAGE_ID_LARGE=>$count,};
-	    push @data,  {DB_NAME=>"<a href=".$data{$org}{file}. " target=_new>$org <span class='small link'>Blast Report</span></a><br>", CHR_IMAGE=>"<img src=$image_file ismap usemap='#".$cogeweb->basefilename."_"."$count' border=0>$image_map",HIT=>1,IMAGE_ID=>$count,};
+	    #working here -- clean up join to extra so that no warnings are thrown and it is not defined.
+	    my $blast_link = "<a href=".$data{$org}{file}. " target=_new>$org <span class='small link'>Blast Report</span></a> ";
+	    $blast_link .= $data{$org}{extra} if $data{$org}{extra};
+	    $blast_link .= "<br>";
+	    push @large_data,  {DB_NAME_LARGE=>$blast_link, CHR_IMAGE_LARGE=>"<img src=$large_image_file ismap usemap='#".$cogeweb->basefilename."_"."$count"."_large' border=0>$image_map_large",IMAGE_ID_LARGE=>$count,};
+	    push @data,  {DB_NAME=>$blast_link, CHR_IMAGE=>"<img src=$image_file ismap usemap='#".$cogeweb->basefilename."_"."$count' border=0>$image_map",HIT=>1,IMAGE_ID=>$count,};
 	    $count++;
 	  }
 	else
@@ -890,6 +968,7 @@ sub create_fasta_file
   {
     my $seq = shift;
     my %seqs; #names and lengths
+    $seq = ">seq\n".$seq unless $seq =~/>/;
     if ($seq =~ />/)
       {
 	foreach (split />/, $seq)
