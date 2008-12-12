@@ -349,8 +349,7 @@ function get_params(){
  
  var comp = $('#comp_adj').val();
  var seq = $('#seq_box').val();
-var color_hsps_by_query = $('#color_hsps_by_query_seq')[0].checked; 
- return {w : word_size, e : expect,g : gapcost,p : program,mm: match_mismatch,m : matrix,c : comp,s : seq, zw : zwordsize, zgs : zgap_start, zge : zgap_extension, zc : zchaining, zt : zthreshold, zm : zmask, fq : filter_query, rl : reslimit, colorhsps:color_hsps_by_query};
+ return {w : word_size, e : expect,g : gapcost,p : program,mm: match_mismatch,m : matrix,c : comp,s : seq, zw : zwordsize, zgs : zgap_start, zge : zgap_extension, zc : zchaining, zt : zthreshold, zm : zmask, fq : filter_query, rl : reslimit};
 }
 
 function get_ncbi_params(){
@@ -427,7 +426,6 @@ function blastOff(){
  var zchaining = params.zc;
  var zthreshold = params.zt;
  var zmask = params.zm;
- var colorhsps = params.colorhsps;
 
   var page_width = ($('#co').width())*(95/100);
   pageObj.image_width = page_width;
@@ -457,7 +455,7 @@ function blastOff(){
   'args__seq','args__'+seq,
   'args__blastable','args__'+blastable_db,
   'args__width','args__'+page_width,
-  'args__color_hsps_by_query_seq', 'args__'+colorhsps
+  'args__color_hsps', 'color_by',
   ],[blastresults],'POST');
   
 }
@@ -497,7 +495,8 @@ $(function(){
 		textExtraction: 'complex',
 		headers: {0: {sorter: false},
 		          7: {sorter: 'percent'},
-		          9: {sorter: 'percent'}
+		          9: {sorter: 'percent'},
+		          11: {sorter: 'percent'}
 			 },					
 		sortList: [[2,0],[5,0]],
 		});
@@ -1042,10 +1041,6 @@ function clear_org_list()
               </TMPL_IF>
 	      <input type=button value="Clear Org List" name="clearlist" id="clearlist" onclick="clear_org_list();">
            </TD>
-           <!--<td width="1" bgcolor="#99ff99"/>
-           <TD valign="top">
-      	<TH align=left valign="top"> <u>Results Options</u><br>
-     </TD>-->
      <td width="1" bgcolor="#99ff99"/>
      <TD valign="top">
       <TH align=left valign="top"> <u>Blast Parameters</u><br>
@@ -1192,19 +1187,6 @@ function clear_org_list()
 	<TR>
 	  <td> Limit results to:
 	  <td><input type=text id="resultslimit" value="<TMPL_VAR NAME="RESULTSLIMIT">" size="5"> per organism
-<!--	<TR>
-	 <TD>
- 	 Visualize HSP Results by:
- 	</TD>
- 	<TD>
-           <select name=hsp_type id=hsp_type >
-            <option value = "percent"> Percent Identity </option>
-            <option value = "eval"> E-value </option>
-            <option value = "score"> Score </option>
-            <option value = "length"> Length </option>
-     </select>
-     </td>
-     </tr>-->
       </TABLE>
 
       <DIV id=pro_or_nu_param></DIV>
@@ -1500,6 +1482,12 @@ function clear_org_list()
          <!--<input type=image name= onClick="get_radio(['args__ncbi_radio','ncbi_radio'],[select_blast])">-->
          </TR>
          </TABLE>
+<b>Color Blast Hits According to:<br></b>
+    &nbsp&nbsp<input type="radio" name = "color_by" id = "color_by" value="0" checked> None<br>
+    &nbsp&nbsp<input type="radio" name = "color_by" id = "color_by" value="query"> Query Sequence<br>
+    &nbsp&nbsp<input type="radio" name = "color_by" id = "color_by" value="quality"> Log Quality<bR>
+    &nbsp&nbsp<input type="radio" name = "color_by" id = "color_by" value="identity"> Percent Identity<bR>
+
          </div>
       <div id="ncbi_blast_type" style="display:none;">
        <TABLE>
@@ -1530,15 +1518,11 @@ function clear_org_list()
            <br>
           </div>
          <br>
-         <!--<input type=image name= onClick="get_radio(['args__ncbi_radio','ncbi_radio'],[select_blast])">-->
          </TR>
          </TABLE>
          </div>
       </TD>
    </TR>
-   <TR>
-    <TD>Color Blast Hits According to Query Sequence?
-    <input type="checkbox" name = "color_hsps_by_query_seq" id = "color_hsps_by_query_seq">
   </table>
    </DIV>
    </DIV>
@@ -1870,6 +1854,7 @@ function clear_org_list()
         <TH nowrap class=header>E-value</TH>
         <TH nowrap class=header>Perc ID</TH>
         <TH nowrap class=header>Score</TH>
+        <TH nowrap class=header>Quality</TH>
         <TH class=header>Closest Genomic Feature</TH>
         <TH nowrap class=header>Distance(bp)</TH>
        </TR>
@@ -1888,6 +1873,7 @@ function clear_org_list()
          <td><TMPL_VAR NAME=HSP_EVAL></td>
          <td><TMPL_VAR NAME=HSP_PID></td>
          <td><TMPL_VAR NAME=HSP_SCORE></td>
+         <td><TMPL_VAR NAME=HSP_QUALITY></td>
          <td style="white-space:nowrap;"><div id ="feat<TMPL_VAR NAME=ID>"><TMPL_VAR NAME=HSP_LINK></div>
          <td><div id="dist<TMPL_VAR NAME=ID>">-</div></td>
        </tr>
@@ -1905,9 +1891,9 @@ function clear_org_list()
          <TMPL_VAR NAME=DB_NAME>
          <TMPL_VAR NAME=CHR_IMAGE>
          <TMPL_IF NAME=HIT>
-         <a href='#imagewindow' onClick="enlarge_picture_window(<TMPL_VAR NAME=IMAGE_ID>);">Enlarge Picture</a>
+         <a href='#imagewindow' onClick="enlarge_picture_window(<TMPL_VAR NAME=IMAGE_ID>);" class=small>Enlarge Picture</a>
          </TMPL_IF>
-        <br>
+        <br><br>
        </TMPL_LOOP>
    </TMPL_IF>
    
@@ -2032,8 +2018,8 @@ function clear_org_list()
  	<tbody>
     <TR>
      <TD align=left  valign="top" >
-     <div id=left_column class=species>
-     Genomic HSP Visualization:
+     <div id=left_column>
+     <span class=species>Genomic HSP Visualization:</span>
      <DIV id=chromosomes class="resultborder" style="width: 405px;overflow: auto;max-height: 700px;">
 
      <TMPL_VAR NAME=CHROMOSOMES>
@@ -2041,13 +2027,6 @@ function clear_org_list()
       </DIV>
      <TMPL_VAR NAME="DATA_FILES">
 
-<!--      Color HSP Hits by: 
-      <select name=color_hsp id=color_hsp onchange="loading('chromosomes','Images');generate_overview_image(['args__basename','args__'+pageObj.basename,'args__type','args__'+$('#color_hsp').val(),'args__width','args__'+pageObj.image_width],['chromosomes']);">
-            <option value = "percent"> Percent Identity </option>
-            <option value = "eval"> E-value </option>
-            <option value = "score"> Score </option>
-            <option value = "length"> Length </option>
-     </select>-->
      </div>
       </TD>
       <TD valign="top">
