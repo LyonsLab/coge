@@ -2101,20 +2101,22 @@ sub color_pallet
 	       RED=>$start->[0],
 	       GREEN=>$start->[1],
 	       BLUE=>$start->[2]);
-#    push @colors, \%set;
     my $temp = [@$start];
     for (my $i = 1; $i <= $num_seqs; $i++)
       {
+	foreach (@$temp)
+	  {
+	    if ($_ <20)
+	      {
+		my $color = $i> 18 ? int(255*rand())/2+125 : 255;
+		$_=$color;
+	      }
 	my @color;
 	@color = @$temp;
 	push @colors, [$color[0],
 		       $color[1],
 		       $color[2],
 		      ];
-	foreach (@$temp)
-	  {
-	    $_ = 200 if $_ < 0;
-	  }
 	unless ($i%3)
 	  {
 	    $temp = [map {int($_/2)} @color];
@@ -2123,7 +2125,7 @@ sub color_pallet
 	  {
 	    $temp =[$temp->[2], $temp->[0], $temp->[1]];
 	  }
-	$temp = [map {$_-1} @$temp] unless ($i%6);
+	$temp = [map {$_-25} @$temp] unless ($i%6);
 
       }
     return wantarray ? @colors : \@colors;
