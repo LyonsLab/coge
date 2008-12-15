@@ -975,22 +975,7 @@ function clear_org_list()
 <div id=big_picture title="Enlarged Image of HSP Hits" class="image_window" style="display:none;"></div>
 <div id="sequence_popup" class="image_window" style="display:none;overflow: auto;max-height: 300px;"></div>
 <div id="org_info_popup" class="image_window" style="display:none;overflow: auto;max-height: 300px;"></div>
-<!--
-<TABLE width=100%>
- <TR>
- <TD><DIV id=log_text></DIV><DIV id=blast_results></DIV></TD>
- </TR>
-</TABLE>
-<TABLE>
- <TR>
-   <TD>
-    <a href="#" id="coge_blast_button" onClick="generate_basefile([],[update_basename]);blastOff();"><span>CoGe BLAST</span></a>
-   </TD>
-   <TD>
-     <a href="#" id="ncbi_blast_button" onClick="select_blast()"><span>NCBI BLAST</span></a>
-   </TD>
-  </TR>
-</TABLE>-->
+
 <TABLE width=100%>
  <TR>
   <TD>
@@ -1011,7 +996,6 @@ function clear_org_list()
   </TD>
  </TR>
  <TR>
-  <!--<TD>-->
   <TH colspan="3">
   <div id="cogeblast_option">
   <a href="#" id="coge_blast_button" onClick="reset_basename();generate_basefile([],[update_basename]);blastOff();"><span>CoGe BLAST</span></a><br>
@@ -1237,9 +1221,8 @@ function clear_org_list()
          </TABLE>
 </DIV>
  </DIV>
-<!--   </TD> -->
   </div>
-   <div id="ncbiblast_option" style="display:none"><!-- NCBI BLAST</div>-->
+   <div id="ncbiblast_option" style="display:none">
    <a href="#" id="ncbi_blast_button" onClick="select_blast()"><span>NCBI BLAST</span></a><br>
    <DIV class="ncbiblast_opts">
    <DIV id = "ncbio" name="slider" class="topItem" onMouseOver="$('#ncbio').removeClass('topItem').addClass('topItemSelected');" onMouseOut="$('#ncbio').removeClass('topItemSelected').addClass('topItem');" onClick='animate_section("#ncbi_blast_opts", "slideToggle")'>NCBI BLAST Options:</DIV>
@@ -1435,7 +1418,6 @@ function clear_org_list()
  </TR>
 
  <TR>
-<!--  <TD> -->
    <TH colspan="3">
    <DIV class="mainDiv">
    <DIV id = "dr" class="topItem">Query Sequence(s):</DIV>
@@ -1479,7 +1461,6 @@ function clear_org_list()
            <br>
           </div>
          <br>
-         <!--<input type=image name= onClick="get_radio(['args__ncbi_radio','ncbi_radio'],[select_blast])">-->
          </TR>
          </TABLE>
 <b>Color Blast Hits According to:<br></b>
@@ -1528,150 +1509,8 @@ function clear_org_list()
    </DIV>
    </DIV>
  </TR>
- <!--<TR>
- <TD> 
-  <TH colspan="3">
-   <DIV class="mainDiv">
-   <DIV id = "dr3" class="topItem" onMouseOver="$('#dr3').removeClass('topItem').addClass('topItemSelected');" onMouseOut="$('#dr3').removeClass('topItemSelected').addClass('topItem')" onClick='animate_section("#blast_params", "slideToggle")' >Additional BLAST Options:</DIV>
-   <DIV class="dropMenu" id="blast_params">
-   <DIV class="subMenu" style="display:inline;">-->
-   <!--<TABLE width=100% id=stuff>
-    <TR>
-     <TD valign="top">
-      <TH align=left valign="top"><u>BLAST Parameters</u><br>
-      <TABLE>
-       <TR>
-	<TD>
-	 Job Title
-	</TD>
-	<TD> 
-	 <input id=job_title type=text value="<TMPL_VAR NAME=USER_NAME>'s BLAST">
-	</TD>
-       </TR>
-       <TR>
-        <TD>
-	  Database
-	</TD>
-	<TD>
-	<DIV id=database></DIV>
-       </TR>
-       <TR>
-	<TD>
-	  Filter
- 	</TD>
-	<TD>
-	     <select name=complexity id=complexity>
-              <option value = "0"> Off
-	      <option value = "L"> Low Complexity
-              <option value = "R"> Human Repeats
-              <option value = "m"> Mask for Lookup
-             </select>
-       </TR>
-      </TABLE>
-     </TD>
-     <td width="1" bgcolor="#99ff99"/>
-     <TD valign="top">
-      <TH align=left valign="top"> <u>BLAST Scoring</u><br>
-      <TABLE>
-       <TR>
-	<TD>
-	  E-Value
-	</TD>
-	<TD>
-	    <select name=e_value id=e_value>
-             <option value = ".000001"> 1e-6
-	     <option value = ".00001"> 1e-5
-	     <option value = ".0001" selected> 0.0001
-             <option value = ".001"> 0.001
-             <option value = ".01"> 0.01
-             <option value = ".1"> 0.1
-	     <option value = "1"> 1
-	     <option value = "10"> 10
-             <option value = "100"> 100
-            </select>
-       </TR>
-       <TR>
-	<TD>
-	   Word size
-	</TD>
-	<TD>
-	 <input type=text id=word_size value="8" size="7">
-       </TR>
-       <TR>
-	<TD>
-	  Gap Costs:
-       </TD>
-	<TD>
-	  <select id="gapcosts_1-2" class="gapcosts" style="display: block">
-	  	<option value = "0 0"  >Linear</option>   
-		<option value = "5 2"  >Existence:  5 Extension: 2</option>				
-		<option value = "2 2"  >Existence:  2 Extension: 2</option>				
-		<option value = "1 2"  >Existence:  1 Extension: 2</option>
-		<option value = "0 2"  >Existence:  0 Extension: 2</option>
-		<option value = "3 1"  >Existence:  3 Extension: 1</option>		
-		<option value = "2 1"  >Existence:  2 Extension: 1</option>		
-		<option value = "1 1"  >Existence: 1 Extension: 1</option>				
-	</select>
-	<select id="gapcosts_1-3" class="gapcosts" style="display: none">
-		<option value = "0 0" >Linear</option>   
-		<option value = "5 2" >Existence:  5 Extension: 2</option>				
-		<option value = "2 2"  >Existence:  2 Extension: 2</option>		
-		<option value = "1 2"  >Existence:  1 Extension: 2</option>		
-		<option value = "0 2"  >Existence:  0 Extension: 2</option>		
-		<option value = "2 1"  >Existence:  2 Extension: 1</option>		
-		<option value = "1 1"  >Existence: 1 Extension: 1</option>	
-	</select>
 
-	<select id="gapcosts_1-4" class="gapcosts" style="display: none">
-		<option value = "0 0" >Linear</option>   
-		<option value = "5 2" >Existence:  5 Extension: 2</option>					
-		<option value = "1 2"  >Existence:  1 Extension: 2</option>		
-		<option value = "0 2"  >Existence:  0 Extension: 2</option>		
-		<option value = "2 1"  >Existence:  2 Extension: 1</option>		
-		<option value = "1 1"  >Existence: 1 Extension: 1</option>	
-	</select>
-	<select id="gapcosts_2-3" class="gapcosts" style="display: none">
-		<option value = "0 0" >Linear</option>   
-		<option value = "4 4"  >Existence:  4 Extension: 4</option>		
-		<option value = "2 4"  >Existence:  2 Extension: 4</option>		
-		<option value = "0 4"  >Existence:  0 Extension: 4</option>		
-		<option value = "3 3"  >Existence:  3 Extension: 3</option>		
-		<option value = "6 2"  >Existence:  6 Extension: 2</option>		
-		<option value = "5 2" >Existence:  5 Extension: 2</option>		
-		<option value = "4 2"  >Existence: 4 Extension: 2</option>		
-		<option value = "2 2"  >Existence:  2 Extension: 2</option>				
-	</select>
-	<select id="gapcosts_4-5" class="gapcosts" style="display: none">
-		<option value = "0 0" >Linear</option>   
-		<option value = "12 8" >Existence:  12 Extension: 8</option>		
-		<option value = "6 5"  >Existence:  6 Extension: 5</option>		
-		<option value = "5 5"  >Existence:  5 Extension: 5</option>		
-		<option value = "4 5"  >Existence:  4 Extension: 5</option>		
-		<option value = "3 5"  >Existence:  3 Extension: 5</option>	
-	</select>
-	<select id="gapcosts_1-1" class="gapcosts" style="display: none">
-		<option value = "5 2"  >Existence:  5 Extension: 2</option>							
-		<option value = "3 2"  >Existence:  3 Extension: 2</option>		
-		<option value = "2 2"  >Existence:  2 Extension: 2</option>		
-		<option value = "1 2"  >Existence:  1 Extension: 2</option>		
-		<option value = "0 2"  >Existence:  0 Extension: 2</option>		
-		<option value = "4 1"  >Existence:  4 Extension: 1</option>		
-		<option value = "3 1"  >Existence:  3 Extension: 1</option>		
-		<option value = "2 1"  >Existence:  2 Extension: 1</option>	
-      </TR>
-      </TABLE>
-     </TD>
-     <td width="1" bgcolor="#99ff99"/>
-     <TD valign="top">
-    <DIV id=pro_or_nu_param></DIV>
-   </TMPL_IF>
-    <TMPL_IF NAME="REST">
-     </TR>
-    </TABLE>-->
-<!--</DIV>
-</DIV>
-</DIV>
- </TR> -->
+
  </TABLE>
 </TMPL_IF>
 
