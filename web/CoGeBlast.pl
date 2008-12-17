@@ -2101,6 +2101,7 @@ sub color_pallet
 	       RED=>$start->[0],
 	       GREEN=>$start->[1],
 	       BLUE=>$start->[2]);
+
     my $temp = [@$start];
     for (my $i = 1; $i <= $num_seqs; $i++)
       {
@@ -2111,6 +2112,7 @@ sub color_pallet
 		my $color = $i> 18 ? int(255*rand())/2+125 : 255;
 		$_=$color;
 	      }
+	  }
 	my @color;
 	@color = @$temp;
 	push @colors, [$color[0],
