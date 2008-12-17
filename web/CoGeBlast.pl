@@ -2092,7 +2092,7 @@ sub save_settings_cogeblast
 sub color_pallet
   {
     my %opts = @_;
-    my $start = $opts{start} || [0,200,0];
+    my $start = $opts{start} || [20,200,20];
     my $offset = $opts{offset} || 75;
     my $num_seqs = $opts{num_seqs};
 
@@ -2127,9 +2127,10 @@ sub color_pallet
 	  {
 	    $temp =[$temp->[2], $temp->[0], $temp->[1]];
 	  }
-	$temp = [map {$_-25} @$temp] unless ($i%6);
+	$temp = [map {$_-25} @$temp] unless ($i%6) || $i < 3;
 
       }
+    print STDERR map {join ("\t", @$_)."\n"} @colors;
     return wantarray ? @colors : \@colors;
   }
 
