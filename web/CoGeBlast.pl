@@ -800,8 +800,8 @@ sub generate_chromosome_images
 		$min_quality = $hsp->quality unless defined $min_quality;
 		$min_quality = $hsp->quality if $hsp->quality < $min_quality;
 	      }
-	    $max_quality = sprintf("%.3f", log($max_quality));
-	    $min_quality = sprintf("%.3f", log($min_quality));
+	    $max_quality = sprintf("%.3f", log($max_quality)) unless $max_quality == 0;
+	    $min_quality = sprintf("%.3f", log($min_quality)) unless $min_quality == 0;
 	    $range_quality = $max_quality - $min_quality;
 	    $data{$org}{extra} = qq{<span class=small>Hits colored by Log Quality.  <span style="color:#AA0000">Min: $min_quality</span> <span style="color:#00AA00">Max: $max_quality</span></span>};
 	  }
