@@ -83,12 +83,14 @@ sub get_locs {
 
 
             my $strand = $g->strand == 1 ? '+' : '-';
-            my $attrs = "ID=$gene_name;Name=$gene_name";
+            my $clean_name = $gene_name;
+            $clean_name =~ s/\s+/_/g;
+            my $attrs = "ID=$clean_name;Name=$clean_name";
             my $gstr = join("\t", ($chr, 'ucb', $g->feature_type->name, $g->start, $g->stop, ".", $strand, ".", $attrs));
             if($seen{$gstr}){ next; }
             $seen{$gstr} = 1;
             print $gstr . "\n";
-            my $parent = $gene_name;
+            my $parent = $clean_name;
             my $has_mrna = 0;
             while(my $f = $mrna_rs->next()){
                 $attrs = "Parent=$parent;ID=$parent" . ".mRNA";
@@ -103,17 +105,17 @@ sub get_locs {
                 }
             }
             if($has_mrna){
-                $attrs = "Parent=$gene_name" . "mRNA";
+                $attrs = "Parent=$clean_name" . "mRNA";
             }
             else {
-                $attrs = "Parent=$gene_name";
+                $attrs = "Parent=$clean_name";
             }
 
             #print join("\t", ($chr, 'ucb', 'mRNA', $mrna->start, $mrna->stop, ".", $strand, ".", $attrs)) . "\n";
             $chrs{$g->chr} = 1;
             my $sub_rs = $s->resultset('Feature')->search( {
                   'me.dataset_id' => { 'IN' => $datasets },
-                  'feature_names.name'  =>  $gene_name
+                  'feature_names.name'  =>  $clean_name
                   , 'feature_type.name'  =>  { 'NOT IN' => ['gene', 'mRNA'] }
                 } , { 
                    'join'               => [ 'feature_names'],
