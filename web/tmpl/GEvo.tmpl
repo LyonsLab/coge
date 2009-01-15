@@ -963,6 +963,13 @@ function hide_skip(num){
   <label class="small"><input class="backbox" type="radio" name="show_cns" id="show_cns" tabindex="1" value="1" <TMPL_VAR NAME="SHOW_CNS_YES">/>Yes</label>
   <label class="small"><input class="backbox" type="radio" name="show_cns" id="show_cns" tabindex="1" value="0" <TMPL_VAR NAME="SHOW_CNS_NO"> />No</label>
 
+ <TR>
+  <TD>
+  <font class="small">Show pre-annotated Gene spaces?</font>
+  <td>
+  <label class="small"><input class="backbox" type="radio" name="show_gene_space" id="show_gene_space" tabindex="1" value="1" <TMPL_VAR NAME="SHOW_GENESPACE_YES">/>Yes</label>
+  <label class="small"><input class="backbox" type="radio" name="show_gene_space" id="show_gene_space" tabindex="1" value="0" <TMPL_VAR NAME="SHOW_GENESPACE_NO"> />No</label>
+
 
 
 <!--  <tr>
@@ -981,11 +988,6 @@ function hide_skip(num){
 <input type=button value="Reset Settings" name="ResetSettings" id="ResetSettings" onclick="reset_settings_gevo([],[]);window.location.reload()">
 </TMPL_IF>
 </TABLE>
-
-
-
-
-
 </form>
 </BODY>
 </HTML>
