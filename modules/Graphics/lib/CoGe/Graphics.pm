@@ -638,20 +638,21 @@ sub process_features
           {
 	    my $f = CoGe::Graphics::Feature::Block->new();
 	    $f->order(1);
-	    my $color = [ 255, 100, 255];
+	    #$f->overlay(0);
+	    my $color = [ 255, 102, 0];
 	    $f->color($color);
 	    push @f, $f;
           }
 	elsif (($layers->{features}{gene_space} || $layers->{all}) && $feat->type->name =~ /gene_space/i)
-          {
-	    my $f = CoGe::Graphics::Feature::Block->new();
+	{
+	    my $f = CoGe::Graphics::Feature::Domain->new();
 	    $f->order(1);
 	    $f->overlay(0);
 	    $f->transparency(.5);
-	    my $color = [ 255, 255, 100];
+	    my $color = [ 255, 255, 200];
 	    $f->color($color);
 	    push @f, $f;
-          }
+	}
 	elsif ($feat->type->name =~ /source/i)
 	  {
 	    next;
@@ -855,6 +856,7 @@ sub process_layers
        background=>"background",
        all=>"all",
        pseudogene=>"pseudogene",
+       gene_space=>"gene_space",
        "local_dup"=>"local_dup",
        "local_dups"=>"local_dup",
        "tandem"=>"local_dup",
@@ -880,6 +882,7 @@ sub process_layers
        local_dup=>1,
        cbc=>1,
        cbc50=>1,
+       gene_space=>1,
        "flat"=>1,
        "overlap_check"=>1,
       );
