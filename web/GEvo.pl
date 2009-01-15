@@ -29,6 +29,8 @@ use CoGe::Graphics::Feature::Exon_motifs;
 use CoGe::Graphics::Feature::AminoAcid;
 use CoGe::Graphics::Feature::Domain;
 use CoGe::Graphics::Feature::HSP;
+use CoGe::Graphics::Feature::Block;
+use CoGe::Graphics::Feature::Line;
 use CoGeX;
 use CoGeX::Feature;
 use DBIxProfiler;
@@ -299,6 +301,8 @@ sub gen_body
     $hsp_size_limit = 0 unless $hsp_size_limit;
     my $show_cns = get_opt(params=>$prefs, form=>$form, param=>'show_cns');
     $show_cns=0 unless $show_cns;
+    my $show_gene_space = get_opt(params=>$prefs, form=>$form, param=>'show_gene_space');
+    $show_gene_space=0 unless $show_gene_space;
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GEvo.tmpl');
     $template->param(PAD_GS=>$pad_gs);
     $template->param(IMAGE_WIDTH=>$image_width);
@@ -320,6 +324,8 @@ sub gen_body
     else {$template->param(COLOR_HSP_NO=>"checked");}
     if ($show_cns) {$template->param(SHOW_CNS_YES=>"checked");}
     else {$template->param(SHOW_CNS_NO=>"checked");}
+    if ($show_gene_space) {$template->param(SHOW_GENESPACE_YES=>"checked");}
+    else {$template->param(SHOW_GENESPACE_NO=>"checked");}
     if ($hsp_label && $hsp_label eq "staggered") {$template->param(HSP_LABELS_STAG=>"selected");}
     elsif ($hsp_label && $hsp_label eq "linear") {$template->param(HSP_LABELS_LIN=>"selected");}
     else {$template->param(HSP_LABELS_NO=>"selected");}
@@ -331,6 +337,7 @@ sub gen_body
     elsif ($draw_model eq "mRNA") {$template->param(DRAW_MODEL_mRNA=>"selected");}
     elsif ($draw_model eq "CDS") {$template->param(DRAW_MODEL_CDS=>"selected");}
     elsif ($draw_model eq "RNA") {$template->param(DRAW_MODEL_RNA=>"selected");}
+    #elsif ($draw_model eq "Gene_space") {$template->param(DRAW_MODEL_GENE_SPACE=>"selected");}
     else {$template->param(DRAW_MODEL_NO=>"selected");}
 
     my $box = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
@@ -395,6 +402,7 @@ sub run
     my $hsp_overlap_length = $opts{hsp_overlap_length};
     my $email_address = $opts{email};
     my $show_cns = $opts{show_cns};
+    my $show_gene_space = $opts{show_gene_space};
     my $message;
     $cogeweb = initialize_basefile(basename=>$basefilename, prog=>"GEvo");
     my @hsp_colors;
@@ -728,6 +736,7 @@ sub run
 			     color_overlapped_features=>$color_overlapped_features,
 			     hsp_overlap_length=>$hsp_overlap_length,
 			     show_cns=>$show_cns,
+		             show_gene_space=>$show_gene_space,
 			    );
 #	    $item->{feat_count} = $feat_count;
 #	    $item->{overlap_count} = $overlap_count;
@@ -977,6 +986,7 @@ sub generate_image
     my $color_overlapped_features = $opts{color_overlapped_features};
     my $hsp_overlap_length = $opts{hsp_overlap_length};
     my $show_cns = $opts{show_cns};
+    my $show_gene_space = $opts{show_gene_space};
     my $graphic = new CoGe::Graphics;
     my $gfx = new CoGe::Graphics::Chromosome;
 #    print STDERR "$start"."::"."$stop"." -- ".length($gbobj->sequence)."\n";
@@ -1021,7 +1031,9 @@ sub generate_image
 			  hsp_size_limit=>$hsp_size_limit,
 			  hsp_overlap_length=>$hsp_overlap_length,
 			 );
-    my ($feat_counts) = process_features(c=>$gfx, obj=>$gbobj, start=>$start, stop=>$stop, overlap_adjustment=>$overlap_adjustment, draw_model=>$draw_model, color_overlapped_features=>$color_overlapped_features, cbc=>$show_cbc, cns=>$show_cns);
+    
+    my ($feat_counts) = process_features(c=>$gfx, obj=>$gbobj, start=>$start, stop=>$stop, overlap_adjustment=>$overlap_adjustment, draw_model=>$draw_model, color_overlapped_features=>$color_overlapped_features, cbc=>$show_cbc, cns=>$show_cns, gene_space=>$show_gene_space);
+
     $stats->{feat_counts} = $feat_counts;
     return ($gfx, $stats);
   }
@@ -1202,13 +1214,14 @@ sub process_features
     my %opts = @_;
     my $c = $opts{c};
     my $obj=$opts{obj};
-    my $start=$opts{start};
+    my $start=$opts{start}; 
     my $stop = $opts{stop};
     my $overlap = $opts{overlap_adjustment};
     my $draw_model = $opts{draw_model};
     my $color_overlapped_features = $opts{color_overlapped_features};
     my $cbc = $opts{cbc};
     my $show_cns = $opts{cns};
+    my $show_gene_space = $opts{gene_space};
     my $accn = $obj->accn;
     my $track = 1;
     my %feat_counts;
@@ -1226,6 +1239,8 @@ sub process_features
 	my $type = $feat->type;
 	my ($name) = sort { length ($b) <=> length ($a) || $a cmp $b} @{$feat->qualifiers->{names}} if ref ($feat->qualifiers) =~ /hash/i;
 	my $anchor = $feat if ref ($feat->qualifiers) =~ /hash/i && $feat->qualifiers->{type} && $feat->qualifiers->{type} eq "anchor";
+
+
         if ($type =~ /pseudogene/i)
           {
 	    next unless $draw_model eq "full";
@@ -1235,7 +1250,8 @@ sub process_features
 	    $f->overlay(1);
 	    $f->mag(0.5);
           }
-        elsif ($type =~ /Gene/i)
+
+        elsif ($type =~ /Gene$/i)
           {
 	    next unless $draw_model eq "full" || $draw_model eq "gene" || $anchor;
 	    $f = CoGe::Graphics::Feature::Gene->new();
@@ -1294,36 +1310,37 @@ sub process_features
 		
           }
         elsif ($type =~ /mrna/i)
-          {
+	{
 	    next unless $draw_model eq "full" || $draw_model eq "mRNA";
-        	$f = CoGe::Graphics::Feature::Gene->new();
-        	$f->color([0,0,255, 50]);
-        	$f->order($track);
-		$f->overlay(2);
-		$f->mag(0.75);
-          }
+	    $f = CoGe::Graphics::Feature::Gene->new();
+	    $f->color([0,0,255, 50]);
+	    $f->order($track);
+	    $f->overlay(2);
+	    $f->mag(0.75);
+	}
+	
         elsif ($type =~ /rna/i)
-          {
+	{
 	    next unless $draw_model eq "full" || $draw_model eq "RNA";
-        	$f = CoGe::Graphics::Feature::Gene->new();
-        	$f->color([200,200,200, 50]);
-        	$f->order($track);
-		$f->overlay(2);
-		if ($accn)
-		  {
-		    foreach my $name (@{$feat->qualifiers->{names}})
-		      {
-			if ($accn =~ /^$name\(?\d*\)?$/i)
-			  {
-			    $f->color([255,255,0]) ;
-			    $f->label($name);
+	    $f = CoGe::Graphics::Feature::Gene->new();
+	    $f->color([200,200,200, 50]);
+	    $f->order($track);
+	    $f->overlay(2);
+	    if ($accn)
+	    {
+		foreach my $name (@{$feat->qualifiers->{names}})
+		{
+		    if ($accn =~ /^$name\(?\d*\)?$/i)
+		    {
+			$f->color([255,255,0]) ;
+			$f->label($name);
 			  }
-		      }
-		  }
-
-          }
+		}
+	    }
+	    
+	}
 	elsif ($type =~ /anchor/)
-	  {
+	{
 	    $f = CoGe::Graphics::Feature::NucTide->new({type=>'anchor',start=>$feat->blocks->[0][0], strand=>1});
 	    $f->color([0,0,255]);
 	    $f->type($type);
@@ -1338,17 +1355,41 @@ sub process_features
 	  }
 	elsif ($show_cns && $type =~ /cns/i)
 	  {
-	    $f = CoGe::Graphics::Feature::HSP->new({start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1]});
+	    $f = CoGe::Graphics::Feature::Line->new({start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1]});
 	    $f->color([204,0,204]);
-	    $f->order($track);
-	    $f->overlay(4);
+
+	    my $order = 1;
+	    $order = 0 if $feat->location =~ /complement/;
+
+	    $f->order($order);
+	    $f->overlay(-1);
 	    $f->type($type);
-	    $f->force_draw(1);
+	    #$f->force_draw(1);
 	    $f->description($feat->annotation);
 	    $c->add_feature($f);
 	    next;
 	  }
-	#need to create an anchor if this feature is an anchor, but not to be drawn
+	if ($show_gene_space && $type =~ /gene_space/i)
+	{
+	      $f = CoGe::Graphics::Feature::HSP->new({start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1]});
+	      #$f = CoGe::Graphics::Feature::Line->new({start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1]});
+	     
+	      $f->color([255,255,102]);
+
+	      my $order = 1;
+	      $order = 0 if $feat->location =~ /complement/;
+	     
+	      $f->order($order);
+	     
+	      $f->overlay(-2);
+	      $f->transparency(0);
+	      $f->type($type);
+	      $f->description($feat->annotation);
+	      $c->add_feature($f);
+	      next;
+	  }
+
+#need to create an anchor if this feature is an anchor, but not to be drawn
 	if ($anchor && !$f)
 	  {
 	    $f = CoGe::Graphics::Feature->new({type=>'anchor',start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1], strand=>1});
@@ -1593,6 +1634,7 @@ sub process_hsps
 	    $f->link($link) if $link;
 	    $f->alignment($hsp->alignment);
 	    push @feats, $f;
+
 	    print STDERR $hsp->number,"-", $hsp->strand, $track,":", $strand,"\n" if $DEBUG;
 
 	  }
@@ -1634,7 +1676,7 @@ sub process_hsps
 	#this ain't going to work -- need to do this after all the image objects have been populated, but before they have been draw.  Can't do due to the fact that we we want to dump the graphics object ASAP as they are memory hogs.  Need to do this before the images are created!
 #	my %feats;
 #	map {push @{$feats{$_->alt}},$_} @feats;
-#	print STDERR Dumper %feats;
+	
 	foreach my $f (@feats)
 	  {
 	    if ($f->_overlap >=$hsp_overlap_limit)
@@ -2550,8 +2592,12 @@ sub gen_params
         'args__color_overlapped_features','color_overlapped_features',
         'args__hsp_overlap_length','hsp_overlap_length',
         'args__basefile','args__'+pageObj.basefile,
-        'args__show_cns','show_cns'
+        'args__show_cns','show_cns',
+        'args__show_gene_space','show_gene_space',
+
 };
+
+
     $params =~ s/\n//g;
     $params =~ s/\s+/ /g;
     return $params;
