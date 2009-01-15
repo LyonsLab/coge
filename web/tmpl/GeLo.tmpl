@@ -9,7 +9,17 @@
            bottom: 10px;
            left: 0px;
         }
-        #gene {
+        #CNS {
+	background-color:white;
+	color:orange;
+	}
+
+	#gene_space {
+	background-color: yellow;
+	color:black;
+	}
+	
+	#gene {
             background-color: white;
             color:grey;
         }
@@ -71,9 +81,26 @@
         var bp;
         var size= 285;
         var server =
-        ['http://homer.cnr.berkeley.edu/CoGe/tiler.pl?','http://biocon.berkeley.edu/CoGe/tiler.pl?','http://synteny.cnr.berkeley.edu/CoGe/tiler.pl?'];
+//     ##################################
+//     ##CACHING SYSTEM USING ALL SERVERS
+//     ##################################
+//        ['http://homer.cnr.berkeley.edu/CoGe/tiler.pl?','http://biocon.berkeley.edu/CoGe/tiler.pl?','http://synteny.cnr.berkeley.edu/CoGe/tiler.pl?'];
+
+//     ##################################
+//     ##CACHING SYSTEM USING ALL SERVERS BUT TOXIC
+//     ##################################
 //        ['http://homer.cnr.berkeley.edu/CoGe/tiler.pl?','http://toxic.berkeley.edu/CoGe/tiler.pl?','http://biocon.berkeley.edu/CoGe/tiler.pl?','http://synteny.cnr.berkeley.edu/CoGe/tiler.pl?'];
+
+//     ##################################
+//     ##NO_CACHING USING ALL SERVERS
+//     ##################################
+        ['http://homer.cnr.berkeley.edu/CoGe/GenomePNG.pl?','http://toxic.berkeley.edu/CoGe/GenomePNG.pl?','http://biocon.berkeley.edu/CoGe/GenomePNG.pl?','http://synteny.cnr.berkeley.edu/CoGe/GenomePNG.pl?'];
+
+//     ##################################
+//     ##NO CACHING USING ONLY TOXIC
+//     ##################################
 //        ['http://toxic.berkeley.edu/CoGe/GenomePNG.pl?'];
+
         var org = "<TMPL_VAR NAME=ORG>";
         var ds = '<TMPL_VAR NAME=DS>';
         var loc = '<TMPL_VAR NAME=LOC>';
@@ -112,9 +139,14 @@
                  ,{isBaseLayer:false}
              );
             genes = new OpenLayers.Layer.Genomic( "<span id='gene'>Genes</span>" , server
-                 ,{'ds':ds,'chr':chr,layers:"pseudogene,gene,mRNA,CDS,rna",'version':version,'organism':org,}
+                 ,{'ds':ds,'chr':chr,layers:"pseudogene,gene,mRNA,CDS,rna,CNS",'version':version,'organism':org,}
                  ,{isBaseLayer:false}
              );
+	    gene_space = new OpenLayers.Layer.Genomic( "<span id='gene_space'>Gene space</span>" , server
+	                       ,{'ds':ds,'chr':chr,layers:"gene_space",'version':version,'organism':org,}
+			                        ,{isBaseLayer:false}
+						             );
+
             wobble_GC_usage = new OpenLayers.Layer.Genomic( "<span id='wobble_GC_usage'>Wobble GC Usage</span>" , server
                  ,{'ds':ds,'chr':chr,'version':version,layers:"CDS,cbc",'organism':org}
                  ,{isBaseLayer:false}
@@ -145,6 +177,9 @@
             map.addLayer(gaga);
             gbox.setVisibility(<TMPL_VAR NAME="GBOX">);
             map.addLayer(gbox);
+	    gene_space.setVisibility(<TMPL_VAR NAME="Gene_Space">);
+            map.addLayer(gene_space);
+
             genes.setVisibility(<TMPL_VAR NAME="GENES">);
             map.addLayer(genes);
             wobble_GC_usage.setVisibility(<TMPL_VAR NAME="WOBBLEGC">);
