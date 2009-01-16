@@ -30,7 +30,7 @@ use CoGe::Graphics::Feature::AminoAcid;
 use CoGe::Graphics::Feature::Domain;
 use CoGe::Graphics::Feature::HSP;
 use CoGe::Graphics::Feature::Block;
-use CoGe::Graphics::Feature::Line;
+#use CoGe::Graphics::Feature::Line;
 use CoGeX;
 use CoGeX::Feature;
 use DBIxProfiler;
@@ -1355,7 +1355,7 @@ sub process_features
 	  }
 	elsif ($show_cns && $type =~ /cns/i)
 	  {
-	    $f = CoGe::Graphics::Feature::Line->new({start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1]});
+	    $f = CoGe::Graphics::Feature::HSP->new({start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1]});
 	    $f->color([204,0,204]);
 
 	    my $order = 1;
