@@ -931,13 +931,17 @@ sub run
     my $image_time = timestr(timediff($t3_5,$t3));
     my $db_hsp_time = timestr(timediff($t4,$t3_5));
     my $html_time = timestr(timediff($t5,$t4));
+    my $total_time = timestr(timediff($t5,$t1));
     my $bench =  qq{
 GEvo Benchmark: $DATE
-Time to get sequence                              : $db_time
-Time to run $analysis_program                     : $blast_time
-Time to generate images, maps, and sqlite database: $image_time
-Time to find and update sqlite database for HSPs  : $db_hsp_time
-Time to process html                              : $html_time
+  Time to get sequence                              : $db_time
+  Time to run $analysis_program                     : $blast_time
+  Time to generate images, maps, and sqlite database: $image_time
+  Time to find and update sqlite database for HSPs  : $db_hsp_time
+  Time to process html                              : $html_time
+Total time                                          : $total_time
+
+
 };
     print STDERR $bench if $BENCHMARK;
     write_log($bench, $cogeweb->logfile);
