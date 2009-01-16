@@ -10,7 +10,7 @@ $ENV{'PATH'} = '';
 use vars qw($IMGURL $BASEDIR);
 $IMGURL = 'http://'.$ENV{SERVER_NAME}.'/CoGe/GenomePNG.pl?';
 # where to start the caching
-$BASEDIR = "/opt/apache/CoGe/_cache_/";
+$BASEDIR = "/opt/apache/CoGe/data/image_cache/";
 #$BASEDIR = "/home/apache/_cache_/";
 #$ENV{QUERY_STRING} = shift @ARGV;
 #print STDERR $ENV{QUERY_STRING},"\n";
