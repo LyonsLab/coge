@@ -89,7 +89,12 @@
 //     ##################################
 //     ##CACHING SYSTEM USING ALL SERVERS BUT TOXIC
 //     ##################################
-        ['http://homer.cnr.berkeley.edu/CoGe/tiler.pl?','http://biocon.berkeley.edu/CoGe/tiler.pl?','http://synteny.cnr.berkeley.edu/CoGe/tiler.pl?'];
+//        ['http://homer.cnr.berkeley.edu/CoGe/tiler.pl?','http://biocon.berkeley.edu/CoGe/tiler.pl?','http://synteny.cnr.berkeley.edu/CoGe/tiler.pl?'];
+
+//     ##################################
+//     ##CACHING SYSTEM USING ONLY TOXIC
+//     ##################################
+        ['http://toxic.berkeley.edu/CoGe/tiler.pl?'];
 
 //     ##################################
 //     ##NO_CACHING USING ALL SERVERS
@@ -119,7 +124,7 @@
             });
             layers = [
             new OpenLayers.Layer.Genomic( "Ruler" , server
-                 ,{'ds':ds, 'chr':chr,layers:"background,ruler",'version':version,'organism':org}
+                 ,{'ds':ds, 'chr':chr,layers:"background,ruler"}
                  ,{isBaseLayer:true} 
              ),
             ]
@@ -127,45 +132,45 @@
             map.addLayers(layers);
 
             gc = new OpenLayers.Layer.Genomic( "<span id='gc'>GC content</span>" , server
-                 ,{'ds':ds,'chr':chr,'version':version,layers:"gc",'organism':org}
+                 ,{'ds':ds,'chr':chr,layers:"gc"}
                  ,{isBaseLayer:false}
              );
             gaga = new OpenLayers.Layer.Genomic( "<span id='gaga'>GAGA content</span>" , server
-                 ,{'ds':ds,'chr':chr,'version':version,layers:"gaga",'organism':org}
+                 ,{'ds':ds,'chr':chr,layers:"gaga"}
                  ,{isBaseLayer:false}
              );
             gbox = new OpenLayers.Layer.Genomic( "<span id='gbox'>G-Box CACGTG</span>" , server
-                 ,{'ds':ds,'chr':chr,'version':version,layers:"gbox",'organism':org}
+                 ,{'ds':ds,'chr':chr,layers:"gbox"}
                  ,{isBaseLayer:false}
              );
             genes = new OpenLayers.Layer.Genomic( "<span id='gene'>Genes</span>" , server
-                 ,{'ds':ds,'chr':chr,layers:"pseudogene,gene,mRNA,CDS,rna,CNS",'version':version,'organism':org,}
+                 ,{'ds':ds,'chr':chr,layers:"pseudogene,gene,mRNA,CDS,rna,CNS",}
                  ,{isBaseLayer:false}
              );
 	    gene_space = new OpenLayers.Layer.Genomic( "<span id='gene_space'>Gene space</span>" , server
-	                       ,{'ds':ds,'chr':chr,layers:"gene_space",'version':version,'organism':org,}
+	                       ,{'ds':ds,'chr':chr,layers:"gene_space",}
 			                        ,{isBaseLayer:false}
 						             );
 
             wobble_GC_usage = new OpenLayers.Layer.Genomic( "<span id='wobble_GC_usage'>Wobble GC Usage</span>" , server
-                 ,{'ds':ds,'chr':chr,'version':version,layers:"CDS,cbc",'organism':org}
+                 ,{'ds':ds,'chr':chr,layers:"CDS,cbc"}
                  ,{isBaseLayer:false}
              );
 //            wobble_GC_usage_first_50 = new OpenLayers.Layer.Genomic( "<span id='wobble_GC_usage_first_50'>Wobble GC Usage (first 50 codons)</span>" , server
-//                 ,{'ds':ds,'chr':chr,'version':version,layers:"CDS,cbc50",'organism':org}
+//                 ,{'ds':ds,'chr':chr,layers:"CDS,cbc50"}
 //                 ,{isBaseLayer:false}
 //             );
             local_dup = new OpenLayers.Layer.Genomic( "<span id='local_dup'>Local Duplicates</span>" , server
-                 ,{'ds':ds,'chr':chr,layers:"local_dup",'version':version,'organism':org,}
+                 ,{'ds':ds,'chr':chr,layers:"local_dup",}
                  ,{isBaseLayer:false}
              );
 
             prot = new OpenLayers.Layer.Genomic( "proteins" , server
-                 ,{'ds':ds,'chr':chr,'version':version,layers:"protein",'organism':org}
+                 ,{'ds':ds,'chr':chr,layers:"protein"}
                  ,{isBaseLayer:false}
              );
             func_domain = new OpenLayers.Layer.Genomic( "<span id='func_dom'>functional domains</span>" , server
-                 ,{'ds':ds,'chr':chr,'organism':org,'ds':ds,'version':version,layers:"domain"}
+                 ,{'ds':ds,'chr':chr,'ds':ds,layers:"domain"}
                  ,{isBaseLayer:false}
              );
 	    
