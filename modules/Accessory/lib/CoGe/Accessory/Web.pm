@@ -182,7 +182,7 @@ sub write_log
   {
     $| = 1;
     my $message = shift;
-    $message =~ /(.*)/;
+    $message =~ /(.*)/xs;
     $message = $1;
     my $file = shift;
     return unless $file;
