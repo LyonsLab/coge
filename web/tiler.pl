@@ -10,21 +10,23 @@ $ENV{'PATH'} = '';
 use vars qw($IMGURL $BASEDIR);
 $IMGURL = 'http://'.$ENV{SERVER_NAME}.'/CoGe/GenomePNG.pl?';
 # where to start the caching
-#$BASEDIR = "/opt/apache/CoGe/_cache_/";
-$BASEDIR = "/home/apache/_cache_/";
-while (! -e $BASEDIR){ mkdir($BASEDIR);  }
+$BASEDIR = "/opt/apache/CoGe/_cache_/";
+#$BASEDIR = "/home/apache/_cache_/";
+#$ENV{QUERY_STRING} = shift @ARGV;
+#print STDERR $ENV{QUERY_STRING},"\n";
+if (! -e $BASEDIR ){ mkdir($BASEDIR);  }
+if (! -e $BASEDIR ){ warn "unable to find and create $BASEDIR";exit;}
 print "Content-type: image/png; mode=24bit\n\n";
 
 my $basedir = [split(/[\\\/]/,$BASEDIR)];
-my ($dir) = get_dir_array();
 
+my ($dir) = get_dir_array();
 my $reldir = catfile(@$dir) . '.png';
 my $basepath = catfile(@$basedir);
 
 
 my $fn = catfile($basepath,@$dir) . '.png' ;
 my $data;
-#print STDERR $ENV{QUERY_STRING},"\n";
 if(!-e $fn){
    pop @$dir; # get rid of the file name
    umask (0);
