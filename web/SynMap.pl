@@ -18,7 +18,7 @@ use Benchmark;
 use LWP::Simple;
 $ENV{PATH} = "/opt/apache2/CoGe/";
 umask(0);
-use vars qw( $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $FORMATDB $BLAST $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $TANDEM_FINDER $FILTER_REPETITIVE_MATCHES $RUN_DAGCHAINER $FIND_NEARBY $PLOT_DAG $DAG_PLOT $CONVERT_TO_GENE_ORDER $DOTPLOT);
+use vars qw( $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $FORMATDB $BLAST $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $TANDEM_FINDER $FILTER_REPETITIVE_MATCHES $RUN_DAGCHAINER $FIND_NEARBY $CONVERT_TO_GENE_ORDER $DOTPLOT);
 $DEBUG = 0;
 $DIR = "/opt/apache/CoGe/";
 $URL = "/CoGe/";
@@ -35,8 +35,6 @@ $TANDEM_FINDER = $DIR."/bin/parepair/tandems.py -d 5 -s -r"; #-d option is the d
 $FILTER_REPETITIVE_MATCHES = $DIR."/bin/parepair/filter_repetitive_matches.pl 200000"; #filters multiple matches to the same accession within the "window size", here set to 80000 nt
 $RUN_DAGCHAINER = $DIR."/bin/parepair/run_dagchainer.pl -E 0.05";
 $FIND_NEARBY = $DIR."/bin/parepair/find_nearby.py -d 200000";
-$PLOT_DAG = $PYTHON ." ".$DIR."/bin/parepair/plot_dag.py";
-$DAG_PLOT = $PYTHON ." ".$DIR."/bin/parepair/dag_plot.py"; #new and improved!
 $DOTPLOT = $DIR."/bin/dotplot.pl";#Eric gives up waiting for new and improved to really work, and writes his own.
 $CONVERT_TO_GENE_ORDER = $DIR."/bin/parepair/convert_to_gene_order.pl";  #this needs to be implemented
 $| = 1; # turn off buffering
@@ -728,7 +726,6 @@ sub generate_dotplot
 	write_log("generate dotplot: file $outfile already exists",$cogeweb->logfile);
 	return 1;
       }
-#    my $cmd = qq{$DAG_PLOT -d $dag -a $coords -f $outfile -l 'javascript:synteny_zoom("$oid1","$oid2","$basename","XCHR","YCHR")' -w $width -r 2 -g 1};
     my $cmd = qq{$DOTPLOT -d $dag -a $coords -b $outfile -l 'javascript:synteny_zoom("$oid1","$oid2","$basename","XCHR","YCHR")' -o1 $oid1 -o2 $oid2 -w $width -lt 2};
     system "touch $outfile.running"; #track that a blast anlaysis is running for this
     write_log("generate dotplot: running $cmd", $cogeweb->logfile);
@@ -947,7 +944,6 @@ sub go
 	  }
 	my $test = $org1_length > $org2_length ? $org1_length : $org2_length;
 	my $width = int($test/100000);
-	print STDERR $width;
 	$width = 1200 if $width > 1200;
 	$width = 500 if $width < 500;
 	$width = 1200 if $chr1_count > 9 || $chr2_count > 9;
@@ -1204,6 +1200,8 @@ sub get_plot_dag
     $png =~ s/$URL\/data/$DATADIR/;
     my $img = GD::Image->new($png);
     my ($w,$h) = $img->getBounds();
+    $w+=20;
+    $h+=50;
 #    print STDERR $w,"::",$h."\n";
     if ($loc)
       {
