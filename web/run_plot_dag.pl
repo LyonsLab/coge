@@ -7,16 +7,14 @@ use Data::Dumper;
 
 $ENV{PATH} = "/opt/apache2/CoGe/";
 umask(0);
-use vars qw( $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $DATADIR $DIAGSDIR $PYTHON $PLOT_DAG);
+use vars qw( $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $DATADIR $DIAGSDIR $DOTPLOT);
 
 $DEBUG = 0;
 $DIR = "/opt/apache/CoGe/";
 $URL = "/CoGe/";
 $DATADIR = "$DIR/data/";
 $DIAGSDIR = "$DATADIR/diags";
-$PYTHON = "/usr/bin/python";
-$PLOT_DAG = $PYTHON ." ".$DIR."/bin/parepair/plot_dag.py";
-
+$DOTPLOT = $DIR."/bin/dotplot.pl";
 
 $FORM = new CGI;
 $coge = CoGeX->dbconnect();
@@ -84,25 +82,17 @@ my $dir = "$DIAGSDIR/$name1"."/".$name2;
 my $dag_file = $dir."/".$basename;
 $dag_file =~ s/\.dag_.*//;
 $dag_file .= ".dag.all";
-my $res = generate_dotplot(dag=>$dag_file, coords=>"$dir/$basename.all.aligncoords", qchr=>"a".$md51."_".$chr1, schr=>"b".$md52."_".$chr2, qdsid=>$params{1}{dsid}, q_max=>$params{1}{chr_end},  sdsid=>$params{2}{dsid}, s_max=>$params{2}{chr_end}, 'qlabel'=>$name1.":".$chr1, 'slabel'=>$name2.":".$chr2, 'outfile'=>$dir."/html/".$md51."_".$chr1."-".$mask1."-".$type1."_".$md52."_".$chr2."-".$mask2."-".$type2."_".$params.".".$blast.".html", 'regen_images'=>'false', flip=>$flip, regen_images=>$regen);
-
+my $res = generate_dotplot(dag=>$dag_file, coords=>"$dir/$basename.all.aligncoords", qchr=>$chr1, schr=>$chr2, 'outfile'=>$dir."/html/".$md51."_".$chr1."-".$mask1."-".$type1."_".$md52."_".$chr2."-".$mask2."-".$type2."_".$params.".".$blast, 'regen_images'=>'false', flip=>$flip, regen_images=>$regen, oid1=>$org1->id, oid2=>$org2->id);
 if ($res)
   {
     $res=~s/$DIR/$URL/;
     print $res if $url_only;
-    #open (IN, $res);
-    #my $file = join ("",<IN>);
-    #close IN;
-    #$res=~s/$DIR/$URL/;
-    #$res =~ s/html$/png/;
-    #$file =~ s/src=".*?"/src="$res"/;
-    #print "Content-Type: text/html\n\n";
-print qq{Content-Type: text/html
+    print qq{Content-Type: text/html
 
 
 <html>
 <head>
-<meta HTTP-EQUIV="REFRESH" content="0; url=$res">
+<meta HTTP-EQUIV="REFRESH" content="0; url=$res.html">
 $res
 </head>
 </html>
@@ -125,32 +115,23 @@ sub generate_dotplot
     my $dag = $opts{dag};
     my $coords = $opts{coords};
     my $outfile = $opts{outfile};
+    my $oid1 = $opts{oid1};
+    my $oid2 = $opts{oid2};
     my $qchr = $opts{qchr};
     my $schr = $opts{schr};
-    my $q_dsid = $opts{qdsid};
-    my $s_dsid = $opts{sdsid};
-    my $q_label = $opts{qlabel};
-    my $s_label = $opts{slabel};
-    my $q_max = $opts{"q_max"};
-    my $s_max = $opts{"s_max"};
     my $flip = $opts{flip};
-    $outfile =~ s/html$/flip\.html/ if $flip;
+#    $outfile =~ s/html$/flip\.html/ if $flip;
+    $outfile .= ".flip" if $flip;
     my $regen_images = $opts{regen_images};
-    if (-r $outfile && !$regen_images)
+    if (-r $outfile.".html" && !$regen_images)
       {
 #	write_log("generate dotplot: file $outfile already exists",$cogeweb->logfile);
 	return $outfile;
       }
-    my $cmd = "$PLOT_DAG -d $dag -a $coords --html $outfile --q_dsid $q_dsid --s_dsid $s_dsid --qchr $qchr --schr $schr";
-    $cmd .= " --q_max $q_max" if $q_max;
-    $cmd .= " --s_max $s_max" if $s_max;
-#    my $cmd = "$DAG_PLOT -d $dag -a $coords -f $outfile";
-    $cmd .= " --q_label=$q_label" if $q_label;
-    $cmd .= " --s_label=$s_label" if $s_label;
-    $cmd .= " --flip=$flip";
 #    write_log("generate dotplot: running $cmd", $cogeweb->logfile);
-    print STDERR $cmd,"\n" if $DEBUG;
+    my $cmd = qq{$DOTPLOT -d $dag -a $coords -b $outfile -l '' -o1 $oid1 -o2 $oid2 -w 600 -lt 1 -chr1 $qchr -chr2 $schr};
+#    print STDERR $cmd,"\n";# if $DEBUG;
     `$cmd`;
 
-    return $outfile if -r $outfile;
+    return $outfile if -r $outfile.".html";
   }
