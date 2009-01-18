@@ -553,10 +553,6 @@ sub _check_for_gene_models
       }
   }
 
-## mask_exons: mask exons over entire sequence: 
-## find all "features" and replace them with "N".  Uses
-## "CDS" to determine mask, since many genomic GB entries lack mRNA
-## entries.
 sub mask_cds
   {
     my $self = shift;
@@ -616,6 +612,30 @@ sub mask_ncs
     foreach my $feat (@{$self->features})
       {
 	next unless $type{$feat->type};
+	foreach my $block (@{$feat->blocks})
+	  {
+	    next if $block->[0] > length($seq);
+	    next if $block->[1] < 1;
+	    my ($start, $stop) = @$block;
+	    $start = 1 if $start < 1;
+	    my $seglength = $stop - $start+1;
+	    my $coding_seq = substr($seq, $start-1, $seglength);
+	    substr( $tmp_seq, $start-1, $seglength ) = $coding_seq;
+	  }
+      }
+    return( $tmp_seq );
+  }
+
+#mask non genic sequence (everything but start to stop of genes
+sub mask_ngene
+  {
+    my $self = shift;
+    my $seq = shift;
+    my $tmp_seq = "X"x length $seq;
+    my %type = (gene=>1);
+    foreach my $feat (@{$self->features})
+      {
+	next unless $type{lc($feat->type)};
 	foreach my $block (@{$feat->blocks})
 	  {
 	    next if $block->[0] > length($seq);
