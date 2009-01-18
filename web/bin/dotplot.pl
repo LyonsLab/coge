@@ -41,7 +41,7 @@ my $org2length =0;
 map {$org2length+=$_->{length}} values %$org2info;
 
 my $height = sprintf("%.0f", $width*$org2length/$org1length);
-$height = $width if ($height > 5*$width);
+$height = $width if ($height > 5*$width) || ($height <  $width/5);
 my $x_bp_per_pix = sprintf("%.0f", $org1length/$width);
 my $x_pix_per_bp = 1/$x_bp_per_pix;
 my $y_bp_per_pix = sprintf("%.0f", $org2length/$height);
@@ -52,7 +52,7 @@ my $gd = new GD::Image($width, $height);
 my $white = $gd->colorResolve(255,255,255);
 $gd->fill(1,1,$white);
 
-draw_chromosome_grid(gd=>$gd, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, link=>$link);
+draw_chromosome_grid(gd=>$gd, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, link=>$link, link_type=>$link_type);
 draw_dots(gd=>$gd, file=>$dagfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp);
 my $add = 1 if $orgid1 eq $orgid2;
 draw_dots(gd=>$gd, file=>$alignfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, color=>$gd->colorResolve(0,150,0), size=>2, add_inverse=>$add);
@@ -107,6 +107,7 @@ sub draw_chromosome_grid
     my $x_pix_per_bp=$opts{x_pix_per_bp};
     my $y_pix_per_bp=$opts{y_pix_per_bp};
     my $link = $opts{link};
+    my $link_type = $opts{link_type};
     my $black = $gd->colorResolve(0,0,0);
     $gd->line(0,0, $gd->width, 0, $black);
     $gd->line(0, $gd->height-1, $gd->width, $gd->height-1, $black);
@@ -139,7 +140,7 @@ sub draw_chromosome_grid
 	$pv =$y+1;
       }
     $data{y}{$pchr}=[0,$pv-1];
-    if ($link)
+    if ($link_type == 2)
       {
 	open (OUT, ">".$basename.".html") || die "$!";
 	print OUT "<html><head></head><body>\n";
@@ -235,7 +236,7 @@ basename     | b       base path and name for output files (test)
 link         | l       link to be used in image map
 
 link_type    | lt      are image map links for chromosome blocks or points:
-                       1  ::   blocks  (default if link is specified)  (Use "XCHR","YCHR" which will get the appropriate chr substituted in) 
+                       1  ::   blocks  (Use "XCHR","YCHR" which will get the appropriate chr substituted in) 
                        2  ::   points
 
 help         | h       print this message
