@@ -195,7 +195,7 @@ sub draw_chromosome_grid
     foreach my $chr (sort {$org1->{$a}{start}<=>$org1->{$b}{start} } keys %$org1)
       {
 	my $x = sprintf("%.0f",$org1->{$chr}{start}*$x_pix_per_bp);
-	next if $x == $pv-1;
+	next if $pv && $x == $pv-1;
 	$gd->line($x, 0, $x, $gd->height, $black);
 	$gd->string(gdSmallFont, $x+2, $gd->height-15, $chr, $black);
 	$data{x}{$pchr}=[$pv,$x] if $pchr;
@@ -208,7 +208,7 @@ sub draw_chromosome_grid
     foreach my $chr (sort {$org2->{$a}{start}<=>$org2->{$b}{start} } keys %$org2)
       {
 	my $y = $gd->height-sprintf("%.0f",$org2->{$chr}{start}*$y_pix_per_bp);
-	next if $y == $pv-1;
+	next if $pv && $y == $pv-1;
 	$gd->line(0, $y, $gd->width, $y, $black);
 	$gd->string(gdSmallFont, 2, $y-15, $chr, $black);
 	$data{y}{$pchr}=[$y, $pv] if $pchr;
