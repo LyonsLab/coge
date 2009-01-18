@@ -1122,8 +1122,8 @@ sub get_pair_info
 	my $feat = $coge->resultset('Feature')->find($fid);
 	my $anno = "Name: ".join (", ",map {"<a class=\"data link\" href=\"/CoGe/FeatView.pl?accn=".$_."\" target=_new>".$_."</a>"} $feat->names);
 	my $location = "Chr ".$feat->chromosome." ";
-	$location .= $feat->start."-".$feat->stop;
-	$location .="(".$feat->strand.")";
+	$location .= commify($feat->start)." - ".commify($feat->stop);
+	$location .=" (".$feat->strand.")";
 	push @anno, $anno."<br>".$location;
       }
     return unless @anno;
@@ -1209,4 +1209,11 @@ sub get_plot_dag
       }
     my $html = qq{<iframe src=$url frameborder=0 width=$w height=$h scrolling=no></iframe>};
     return $html;
+  }
+
+sub commify
+  {
+    my $text = reverse $_[0];
+    $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
+    return scalar reverse $text;
   }
