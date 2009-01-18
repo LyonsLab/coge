@@ -1084,28 +1084,47 @@ function hide_skip(num){
 
    <DIV id="seqopts<TMPL_VAR NAME="SEQ_NUM">" class="topItemPlain small plus" onMouseOver="changeColor('seqopts<TMPL_VAR NAME="SEQ_NUM">','#000099'); " onMouseOut="changeColor('seqopts<TMPL_VAR NAME="SEQ_NUM">','#009900');" onClick='switchPlusButton(".sequence_options"+<TMPL_VAR NAME="SEQ_NUM">, "#seqopts"+<TMPL_VAR NAME="SEQ_NUM">);animate_section(".sequence_options<TMPL_VAR NAME="SEQ_NUM">","slideToggle"); ' >Sequence <TMPL_VAR NAME="SEQ_NUM"> Options:</DIV>
    <Table class="small sequence_options<TMPL_VAR NAME="SEQ_NUM"> dropMenuPlain" style="display: none;">
-      <TR nowrap>
+ <TR align=left>
+  <Td>
+   Skip Sequence:
+  <TD>
+	<label><input class="backbox" onClick=show_skip(<TMPL_VAR NAME="SEQ_NUM">) type="radio" name="skip_seq<TMPL_VAR NAME=SEQ_NUM>" id="skip_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="1" />Yes</label>
+	<label><input class="backbox" onClick=hide_skip(<TMPL_VAR NAME="SEQ_NUM">) type="radio" name="skip_seq<TMPL_VAR NAME=SEQ_NUM>" id="skip_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="0" checked/>No</label><br>
+ <TR align=left>
+  <Td>
+   Reference Sequence:
+  <TD>
+	<label><input class="backbox" type="radio" name="ref_seq<TMPL_VAR NAME=SEQ_NUM>" id="ref_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="1" <TMPL_VAR NAME=REF_YES> />Yes</label>
+	<label><input class="backbox" type="radio" name="ref_seq<TMPL_VAR NAME=SEQ_NUM>" id="ref_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="0" <TMPL_VAR NAME=REF_NO> />No</label><br>
+  <TR nowrap>
 	<TD>Reverse complement: 
 	<td nowrap><label><input class="backbox" type="radio" name="rev<TMPL_VAR NAME="SEQ_NUM">" id="rev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="1" <TMPL_VAR NAME=REV_YES> onclick='rev_locs("<TMPL_VAR NAME="SEQ_NUM">")' />Yes</label>&nbsp<label><input class="backbox" type="radio" name="rev<TMPL_VAR NAME="SEQ_NUM">" id="rev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="0" <TMPL_VAR NAME=REV_NO> onclick='rev_locs("<TMPL_VAR NAME="SEQ_NUM">")' />No</label>
  <TR align=left>
   <Td>
-   Mask Exons (CDS):
+   Mask CDS:
   <TD>
    <label><input class="backbox" type="radio" name="mask_cds<TMPL_VAR NAME="SEQ_NUM">" id="mask_cds<TMPL_VAR NAME="SEQ_NUM">" tabindex="22" value="1" <TMPL_VAR NAME=EXON_MASK_ON> />Yes</label>
     <label><input class="backbox" type="radio" name="mask_cds<TMPL_VAR NAME="SEQ_NUM">" id="mask_cds<TMPL_VAR NAME="SEQ_NUM">" tabindex="22" value="0" <TMPL_VAR NAME=EXON_MASK_OFF> />No</label>
- </TR>
+ <TR align left>
   <Td>
-   Mask RNA (mRNA, miRNA, tRNA, etc.):
+   Mask all RNA:
   <TD>
    <label><input class="backbox" type="radio" name="mask_rna<TMPL_VAR NAME="SEQ_NUM">" id="mask_rna<TMPL_VAR NAME="SEQ_NUM">" tabindex="22" value="1" <TMPL_VAR NAME=RNA_MASK_ON> />Yes</label>
     <label><input class="backbox" type="radio" name="mask_rna<TMPL_VAR NAME="SEQ_NUM">" id="mask_rna<TMPL_VAR NAME="SEQ_NUM">" tabindex="22" value="0" <TMPL_VAR NAME=RNA_MASK_OFF> />No</label>
  </TR>
  <TR align=left>
   <Td>
-   Mask Non-coding Sequence:
+   Mask Non-CDS:
   <TD>
    <label><input class="backbox" type="radio" name="mask_ncs<TMPL_VAR NAME="SEQ_NUM">" id="mask_ncs<TMPL_VAR NAME="SEQ_NUM">" tabindex="22" value="1" <TMPL_VAR NAME=NONCODING_MASK_ON> />Yes</label>
    <label><input class="backbox" type="radio" name="mask_ncs<TMPL_VAR NAME="SEQ_NUM">" id="mask_ncs<TMPL_VAR NAME="SEQ_NUM">" tabindex="22" value="0" <TMPL_VAR NAME=NONCODING_MASK_OFF> />No</label>
+ </TR>
+ <TR align=left>
+  <Td>
+   Mask Non-genic:
+  <TD>
+   <label><input class="backbox" type="radio" name="mask_ngene<TMPL_VAR NAME="SEQ_NUM">" id="mask_ngene<TMPL_VAR NAME="SEQ_NUM">" tabindex="22" value="1" <TMPL_VAR NAME=NONGENE_MASK_ON> />Yes</label>
+   <label><input class="backbox" type="radio" name="mask_ngene<TMPL_VAR NAME="SEQ_NUM">" id="mask_ngene<TMPL_VAR NAME="SEQ_NUM">" tabindex="22" value="0" <TMPL_VAR NAME=NONGENE_MASK_OFF> />No</label>
  </TR>
 <!-- <TR align=left>
   <Td>
@@ -1114,18 +1133,6 @@ function hide_skip(num){
 	<label><input class="backbox" type="radio" name="repmask<TMPL_VAR NAME=SEQ_NUM>" id="repmask<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="1" />Yes</label>
 	<label><input class="backbox" type="radio" name="repmask<TMPL_VAR NAME=SEQ_NUM>" id="repmask<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="0" checked />No</label><br>
 -->
- <TR align=left>
-  <Td>
-   Reference Sequence:
-  <TD>
-	<label><input class="backbox" type="radio" name="ref_seq<TMPL_VAR NAME=SEQ_NUM>" id="ref_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="1" <TMPL_VAR NAME=REF_YES> />Yes</label>
-	<label><input class="backbox" type="radio" name="ref_seq<TMPL_VAR NAME=SEQ_NUM>" id="ref_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="0" <TMPL_VAR NAME=REF_NO> />No</label><br>
- <TR align=left>
-  <Td>
-   Skip Sequence:
-  <TD>
-	<label><input class="backbox" onClick=show_skip(<TMPL_VAR NAME="SEQ_NUM">) type="radio" name="skip_seq<TMPL_VAR NAME=SEQ_NUM>" id="skip_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="1" />Yes</label>
-	<label><input class="backbox" onClick=hide_skip(<TMPL_VAR NAME="SEQ_NUM">) type="radio" name="skip_seq<TMPL_VAR NAME=SEQ_NUM>" id="skip_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="0" checked/>No</label><br>
  </table>
 </table>
 </th>
