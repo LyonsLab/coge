@@ -1201,7 +1201,7 @@ sub get_plot_dag
     my $img = GD::Image->new($png);
     my ($w,$h) = $img->getBounds();
     $w+=20;
-    $h+=50;
+    $h+=60;
 #    print STDERR $w,"::",$h."\n";
     if ($loc)
       {
