@@ -941,11 +941,13 @@ sub go
 	    foreach my $chr ($ds->get_chromosomes)
 	      {
 		$chr2_count++;
-#		my $last = $ds->last_chromosome_position($chr);
-#		$org2_length += $last;
+		my $last = $ds->last_chromosome_position($chr);
+		$org2_length += $last;
 	      }
 	  }
-	my $width = int($org1_length/1000000);
+	my $test = $org1_length > $org2_length ? $org1_length : $org2_length;
+	my $width = int($test/100000);
+	print STDERR $width;
 	$width = 1200 if $width > 1200;
 	$width = 500 if $width < 500;
 	$width = 1200 if $chr1_count > 9 || $chr2_count > 9;
@@ -966,7 +968,7 @@ sub go
 	my $sdsid = "sdsid";
 	my $out = $org_dirs{$org_name1."_".$org_name2}{dir}."/html/";
 	mkpath ($out,0,0777) unless -d $out;
-	$out .="master_".$org_dirs{$org_name1."_".$org_name1}{basename};
+	$out .="master_".$org_dirs{$org_name1."_".$org_name2}{basename};
 	$out .= "_D$dagchainer_D" if $dagchainer_D;
 	$out .= "_g$dagchainer_g" if $dagchainer_g;
 	$out .= "_A$dagchainer_A" if $dagchainer_A;
