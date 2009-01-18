@@ -273,6 +273,7 @@ function synteny_zoom(oid1, oid2, basename, chr1, chr2)
   }
  else
   {
+  $('#syn_loc'+loc).html('<span class=loading>loading . . .</span>');
     get_plot_dag(['args__src','args__'+url, 'args__flip','args__'+$('#flip')[0].checked,'args__regen_images','args__'+$('#regen_images')[0].checked],['syn_loc'+loc]);
   }
 }
