@@ -53,7 +53,7 @@ my $white = $gd->colorResolve(255,255,255);
 $gd->fill(1,1,$white);
 
 draw_chromosome_grid(gd=>$gd, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, link=>$link, link_type=>$link_type);
-draw_dots(gd=>$gd, file=>$dagfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp);
+draw_dots(gd=>$gd, file=>$dagfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, link_type => $link_type, orgid1=>$orgid1, orgid2=>$orgid2);
 my $add = 1 if $orgid1 eq $orgid2;
 draw_dots(gd=>$gd, file=>$alignfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, color=>$gd->colorResolve(0,150,0), size=>2, add_inverse=>$add);
 
@@ -73,8 +73,15 @@ sub draw_dots
     my $size = $opts{size} || 1;
     my $color = $opts{color};
     my $add_inverse = $opts{add_inverse};
+    my $link_type = $opts{link_type} || 0;
+    my $oid1 = $opts{orgid1};
+    my $oid2 = $opts{orgid2};
+     
     $color = $gd->colorResolve(150,150,150) unless $color;
+
     open (IN, $file) || die "$!";
+    my @feats;
+    my %points;
     while (<IN>)
       {
 	chomp;
@@ -83,19 +90,87 @@ sub draw_dots
 	my @line = split /\t/;
 	my ($a, $chr1) = split /_/,$line[0],2;
 	my ($b, $chr2) = split /_/,$line[4],2;
-	next if $CHR1 && $chr1 ne $CHR1;
-	next if $CHR2 && $chr2 ne $CHR2;
+	my $special = 0; #stupid variable name so that if we a viewing a single chr to single chr comparison within the same organism, this will make collinear matches appear on the inverse section 
+	if ($CHR1 && $CHR2)
+	  {
+	    if ($add_inverse && $CHR1 eq $chr2 && $CHR2 eq $chr1)
+	      {
+		$special = 1;
+		($chr1, $chr2) = ($chr2, $chr1);
+	      }
+	    else
+	      {
+		next if $chr1 ne $CHR1;
+		next if $chr2 ne $CHR2;
+	      }
+	  }
+
 	my $org1 = $opts{org1};
 	my $org2 = $opts{org2};
 	my ($xmin) = sort ($line[2], $line[3]);
 	my $x = sprintf("%.0f",($org1->{$chr1}{start}+$xmin+abs($line[3]-$line[2])/2)*$x_pix_per_bp);
 	my ($ymin) = sort ($line[6], $line[7]);
 	my $y = sprintf("%.0f",($org2->{$chr2}{start}+$ymin+abs($line[7]-$line[6])/2)*$y_pix_per_bp);
+	($x,$y) = ($y, $x) if $special;
 #	print STDERR $x,"x", $y,"\n";
 	$gd->arc($x, $gd->height-$y, $size, $size, 0, 360, $color);
-	$gd->arc($y, $gd->height-$x, $size, $size, 0, 360, $color) if $add_inverse && $x ne $y;
+	$gd->arc($y, $gd->height-$x, $size, $size, 0, 360, $color) if ($add_inverse && !$CHR1 && $x ne $y);
+	$gd->arc($y, $gd->height-$x, $size, $size, 0, 360, $color) if ($add_inverse && $chr1 eq $chr2 && $x ne $y);
+	
+	if ($link_type == 1)
+	  {
+	    my @item1 = split /\|\|/, $line[1];
+	    my @item2 = split /\|\|/, $line[5];
+	    unless ($points{$x}{$y}) #cuts down on the size of the image map
+	      {
+		push @feats, [$x, $gd->height-$y, $item1[6],$item2[6]];
+		$points{$x}{$y}=1;
+	      }
+	  }
       }
     close IN;
+
+    if ($link_type == 1)
+      {
+	open (OUT, ">".$basename.".html") || die "$!";
+	my $org1name = $coge->resultset('Organism')->find($oid1)->name if $oid1;
+	my $org2name = $coge->resultset('Organism')->find($oid2)->name if $oid2;
+	print OUT qq{
+<html><head>
+<link href="/CoGe/css/styled.css" type="text/css" rel="stylesheet"/>
+<SCRIPT type="text/javascript">
+var ajax = [];function pjx(args,fname,method) { this.target=args[1]; this.args=args[0]; method=(method)?method:'GET'; if(method=='post'){method='POST';} this.method = method; this.r=ghr(); this.url = this.getURL(fname);}function formDump(){ var all = []; var fL = document.forms.length; for(var f = 0;f<fL;f++){ var els = document.forms[f].elements; for(var e in els){ var tmp = (els[e].id != undefined)? els[e].id : els[e].name; if(typeof tmp != 'string'){continue;} if(tmp){ all[all.length]=tmp} } } return all;}function getVal(id) { if (id.constructor == Function ) { return id(); } if (typeof(id)!= 'string') { return id; } var element = document.getElementById(id); if( !element ) { for( var i=0; i<document.forms.length; i++ ){ element = document.forms[i].elements[id]; if( element ) break; } if( element && !element.type ) element = element[0]; } if(!element){ alert('ERROR: Cant find HTML element with id or name: ' + id+'. Check that an element with name or id='+id+' exists'); return 0; } if(element.type == 'select-one') { if(element.selectedIndex == -1) return; var item = element[element.selectedIndex]; return item.value || item.text; } if(element.type == 'select-multiple') { var ans = []; var k =0; for (var i=0;i<element.length;i++) { if (element[i].selected || element[i].checked ) { ans[k++]= element[i].value || element[i].text; } } return ans; } if(element.type == 'radio' || element.type == 'checkbox'){ var ans =[]; var elms = document.getElementsByTagName('input'); var endk = elms.length ; var i =0; for(var k=0;k<endk;k++){ if(elms[k].type== element.type && elms[k].checked && (elms[k].id==id||elms[k].name==id)){ ans[i++]=elms[k].value; } } return ans; } if( element.value == undefined ){ return element.innerHTML; }else{ return element.value; }}function fnsplit(arg) { var url=""; if(arg=='NO_CACHE'){return '&pjxrand='+Math.random()} if((typeof(arg)).toLowerCase() == 'object'){ for(var k in arg){ url += '&' + k + '=' + arg[k]; } }else if (arg.indexOf('__') != -1) { arga = arg.split(/__/); url += '&' + arga[0] +'='+ escape(arga[1]); } else { var res = getVal(arg) || ''; if(res.constructor != Array){ res = [res] } for(var i=0;i<res.length;i++) { url += '&args=' + escape(res[i]) + '&' + arg + '=' + escape(res[i]); } } return url;}pjx.prototype = { send2perl : function(){ var r = this.r; var dt = this.target; this.pjxInitialized(dt); var url=this.url; var postdata; if(this.method=="POST"){ var idx=url.indexOf('?'); postdata = url.substr(idx+1); url = url.substr(0,idx); } r.open(this.method,url,true); ; if(this.method=="POST"){ r.setRequestHeader("Content-Type", "application/x-www-form-urlencoded"); r.send(postdata); } if(this.method=="GET"){ r.send(null); } r.onreadystatechange = handleReturn; }, pjxInitialized : function(){}, pjxCompleted : function(){}, readyState4 : function(){ var rsp = unescape(this.r.responseText); /* the response from perl */ var splitval = '__pjx__'; /* to split text */ /* fix IE problems with undef values in an Array getting squashed*/ rsp = rsp.replace(splitval+splitval+'g',splitval+" "+splitval); var data = rsp.split(splitval); dt = this.target; if (dt.constructor != Array) { dt=[dt]; } if (data.constructor != Array) { data=[data]; } if (typeof(dt[0])!='function') { for ( var i=0; i<dt.length; i++ ) { var div = document.getElementById(dt[i]); if (div.type =='text' || div.type=='textarea' || div.type=='hidden' ) { div.value=data[i]; } else{ div.innerHTML = data[i]; } } } else if (typeof(dt[0])=='function') { dt[0].apply(this,data); } this.pjxCompleted(dt); }, getURL : function(fname) { var args = this.args; var url= 'fname=' + fname; for (var i=0;i<args.length;i++) { url=url + args[i]; } return url; }};handleReturn = function() { for( var k=0; k<ajax.length; k++ ) { if (ajax[k].r==null) { ajax.splice(k--,1); continue; } if ( ajax[k].r.readyState== 4) { ajax[k].readyState4(); ajax.splice(k--,1); continue; } }};var ghr=getghr();function getghr(){ if(typeof XMLHttpRequest != "undefined") { return function(){return new XMLHttpRequest();} } var msv= ["Msxml2.XMLHTTP.7.0", "Msxml2.XMLHTTP.6.0", "Msxml2.XMLHTTP.5.0", "Msxml2.XMLHTTP.4.0", "MSXML2.XMLHTTP.3.0", "MSXML2.XMLHTTP", "Microsoft.XMLHTTP"]; for(var j=0;j<=msv.length;j++){ try { A = new ActiveXObject(msv[j]); if(A){ return function(){return new ActiveXObject(msv[j]);} } } catch(e) { } } return false;}function jsdebug(){ var tmp = document.getElementById('pjxdebugrequest').innerHTML = "<br><pre>"; for( var i=0; i < ajax.length; i++ ) { tmp += '<a href= '+ ajax[i].url +' target=_blank>' + decodeURI(ajax[i].url) + ' </a><br>'; } document.getElementById('pjxdebugrequest').innerHTML = tmp + "</pre>";}function get_pair_info() { var args = get_pair_info.arguments; for( var i=0; i<args[0].length;i++ ) { args[0][i] = fnsplit(args[0][i]); } var l = ajax.length; ajax[l]= new pjx(args,"get_pair_info",args[2]); ajax[l].url = '/CoGe/SynMap.pl?' + ajax[l].url; ajax[l].send2perl(); ;}
+4//]]>
+</SCRIPT>
+</head><body>
+<DIV id=pair_info style='position: absolute;left: 0px;top: 0px;'></DIV>
+};
+	my ($img) = $basename =~ /([^\/]*$)/;
+	print OUT qq{
+
+<IMG SRC="$img.png" usemap="#points" border="0" style='position: absolute;left: 0px;top:40px;'>
+<span class=xsmall style='position: absolute;left: 0px;top: 40px;'>$org1name: $CHR1</span>
+<map name="points">
+};
+	foreach my $item (@feats)
+	  {
+	    my ($x, $y, $f1, $f2) = @$item;
+	    print OUT qq{
+<area shape='circle' coords='$x, $y, 2' href='/CoGe/GEvo.pl?autogo=1&fid1=$f1;fid2=$f2;&drup1=50000&drdown1=50000&drup2=50000&drdown2=50000' onMouseOver="get_pair_info(['args__$f1','args__$f2'],['pair_info']);" target='_blank' >
+};
+#
+	  }
+	my $pos = $gd->height+40;
+	$pos .='px';
+	print OUT qq{
+</map>
+<span class=xsmall style='position: absolute;left: 0px;top: $pos;'>$org2name: $CHR2</span>
+</body></html>
+};
+	close OUT;
+      }
+
+
   }
 
 sub draw_chromosome_grid
