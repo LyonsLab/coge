@@ -148,8 +148,8 @@ var ajax = [];function pjx(args,fname,method) { this.target=args[1]; this.args=a
 	my ($img) = $basename =~ /([^\/]*$)/;
 	print OUT qq{
 
-<IMG SRC="$img.png" usemap="#points" border="0" style='position: absolute;left: 0px;top:40px;'>
-<span class=xsmall style='position: absolute;left: 0px;top: 40px;'>$org1name: $CHR1</span>
+<IMG SRC="$img.png" usemap="#points" border="0" style='position: absolute;left: 0px;top:45px;'>
+<span class=xsmall style='position: absolute;left: 0px;top: 45px;'>$org1name: $CHR1</span>
 <map name="points">
 };
 	foreach my $item (@feats)
@@ -160,7 +160,7 @@ var ajax = [];function pjx(args,fname,method) { this.target=args[1]; this.args=a
 };
 #
 	  }
-	my $pos = $gd->height+40;
+	my $pos = $gd->height+45;
 	$pos .='px';
 	print OUT qq{
 </map>
