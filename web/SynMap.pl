@@ -18,7 +18,7 @@ use Benchmark;
 use LWP::Simple;
 $ENV{PATH} = "/opt/apache2/CoGe/";
 umask(0);
-use vars qw( $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $FORMATDB $BLAST $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $TANDEM_FINDER $FILTER_REPETITIVE_MATCHES $RUN_DAGCHAINER $FIND_NEARBY $PLOT_DAG $DAG_PLOT $CONVERT_TO_GENE_ORDER);
+use vars qw( $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $FORMATDB $BLAST $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $TANDEM_FINDER $FILTER_REPETITIVE_MATCHES $RUN_DAGCHAINER $FIND_NEARBY $PLOT_DAG $DAG_PLOT $CONVERT_TO_GENE_ORDER $DOTPLOT);
 $DEBUG = 0;
 $DIR = "/opt/apache/CoGe/";
 $URL = "/CoGe/";
@@ -37,6 +37,7 @@ $RUN_DAGCHAINER = $DIR."/bin/parepair/run_dagchainer.pl -E 0.05";
 $FIND_NEARBY = $DIR."/bin/parepair/find_nearby.py -d 200000";
 $PLOT_DAG = $PYTHON ." ".$DIR."/bin/parepair/plot_dag.py";
 $DAG_PLOT = $PYTHON ." ".$DIR."/bin/parepair/dag_plot.py"; #new and improved!
+$DOTPLOT = $DIR."/bin/dotplot.pl";#Eric gives up waiting for new and improved to really work, and writes his own.
 $CONVERT_TO_GENE_ORDER = $DIR."/bin/parepair/convert_to_gene_order.pl";  #this needs to be implemented
 $| = 1; # turn off buffering
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
@@ -717,22 +718,23 @@ sub generate_dotplot
     my $oid2 = $opts{oid2};
     my ($basename) = $coords =~ /([^\/]*).all.aligncoords/;
     my $regen_images = $opts{regen_images}=~/true/i ? 1 : 0;
-    my $width = $opts{width} || 10;
+    my $width = $opts{width} || 1000;
     while (-e "$outfile.running")
       {
 	sleep 60;
       }
-    if (-r $outfile && !$regen_images)
+    if (-r "$outfile.png" && !$regen_images)
       {
 	write_log("generate dotplot: file $outfile already exists",$cogeweb->logfile);
 	return 1;
       }
-    my $cmd = qq{$DAG_PLOT -d $dag -a $coords -f $outfile -l 'javascript:synteny_zoom("$oid1","$oid2","$basename","XCHR","YCHR")' -w $width -r 2 -g 1};
+#    my $cmd = qq{$DAG_PLOT -d $dag -a $coords -f $outfile -l 'javascript:synteny_zoom("$oid1","$oid2","$basename","XCHR","YCHR")' -w $width -r 2 -g 1};
+    my $cmd = qq{$DOTPLOT -d $dag -a $coords -b $outfile -l 'javascript:synteny_zoom("$oid1","$oid2","$basename","XCHR","YCHR")' -o1 $oid1 -o2 $oid2 -w $width -lt 2};
     system "touch $outfile.running"; #track that a blast anlaysis is running for this
     write_log("generate dotplot: running $cmd", $cogeweb->logfile);
     system "rm $outfile.running" if -r "$outfile.running";; #remove track file
     `$cmd`;
-    return 1 if -r $outfile;
+    return 1 if -r "$outfile.html";
   }
 
 sub go
@@ -943,10 +945,11 @@ sub go
 #		$org2_length += $last;
 	      }
 	  }
-	my $width = int($org1_length/10000000);
-	$width = 20 if $width > 20;
-	$width = 5 if $width < 5;
-	$width = 20 if $chr1_count > 9 || $chr2_count > 9;
+	my $width = int($org1_length/1000000);
+	$width = 1200 if $width > 1200;
+	$width = 500 if $width < 500;
+	$width = 1200 if $chr1_count > 9 || $chr2_count > 9;
+	$width = 4000 if $chr1_count > 100 || $chr2_count > 100;
 	my $name1 = $org_name1;
 	$name1 =~ s/\s+/_/g;
 	$name1 =~ s/\(//g;
@@ -967,13 +970,13 @@ sub go
 	$out .= "_D$dagchainer_D" if $dagchainer_D;
 	$out .= "_g$dagchainer_g" if $dagchainer_g;
 	$out .= "_A$dagchainer_A" if $dagchainer_A;
-	generate_dotplot(dag=>$dag_file12.".all", coords=>$tmp, outfile=>"$out.png", regen_images=>$regen_images, oid1=>$oid1, oid2=>$oid2, width=>$width);
+	generate_dotplot(dag=>$dag_file12.".all", coords=>$tmp, outfile=>"$out", regen_images=>$regen_images, oid1=>$oid1, oid2=>$oid2, width=>$width);
 	add_GEvo_links (infile=>$tmp);
 	$tmp =~ s/$DATADIR/$URL\/data/;
 	if (-r "$out.html")
 	  {
 	    open (IN, "$out.html") || warn "problem opening $out.html for reading\n";
-	    $html = "<span class=species>$org_name2</span><table><tr><td>";
+	    $html = "<span class=species>$org_name2</span><table><tr valign=top><td valign=top>";
 	    $/ = "\n";
 	    while (<IN>)
 	      {
@@ -999,6 +1002,7 @@ Zoomed SynMap Display Location:
 Flip axes?
 <input type=checkbox id=flip>
 };
+	    $html .= "<br><span class=small><a href=data/$out.png target=_new>Image File</a><br>";
 	    $html .= "<br><span class=small><a href=$tmp target=_new>Syntolog file with GEvo links</a><br>";
 	  }
       }
@@ -1173,8 +1177,6 @@ Thank you for using SynMap! The results from your latest analysis between $org_n
 	
 $url
 
-These results will remain on our servers for approximately 24 hours; please save them to your own computer before they are removed.
-			
 Thank you for using the CoGe Software Package.
 	
 - The CoGe Team
