@@ -195,6 +195,7 @@ sub draw_chromosome_grid
     foreach my $chr (sort {$org1->{$a}{start}<=>$org1->{$b}{start} } keys %$org1)
       {
 	my $x = sprintf("%.0f",$org1->{$chr}{start}*$x_pix_per_bp);
+	next if $x == $pv-1;
 	$gd->line($x, 0, $x, $gd->height, $black);
 	$gd->string(gdSmallFont, $x+2, $gd->height-15, $chr, $black);
 	$data{x}{$pchr}=[$pv,$x] if $pchr;
@@ -207,7 +208,7 @@ sub draw_chromosome_grid
     foreach my $chr (sort {$org2->{$a}{start}<=>$org2->{$b}{start} } keys %$org2)
       {
 	my $y = $gd->height-sprintf("%.0f",$org2->{$chr}{start}*$y_pix_per_bp);
-	
+	next if $y == $pv-1;
 	$gd->line(0, $y, $gd->width, $y, $black);
 	$gd->string(gdSmallFont, 2, $y-15, $chr, $black);
 	$data{y}{$pchr}=[$y, $pv] if $pchr;
@@ -227,12 +228,14 @@ sub draw_chromosome_grid
 	foreach my $xchr (keys %{$data{x}})
 	  {
 	    my ($x1, $x2) = @{$data{x}{$xchr}};
+	    next if abs($x1-$x2)<5;
 	    foreach my $ychr (keys %{$data{y}})
 	      {
 		my $tmp = $link;
 		$tmp =~ s/XCHR/$xchr/;
 		$tmp =~ s/YCHR/$ychr/;
 		my ($y1, $y2) = @{$data{y}{$ychr}};
+		next if abs($y1-$y2)<3;
 		print OUT qq{
 <area href='$tmp' alt="$xchr vs $ychr" title="$xchr vs $ychr" shap=rect coords="$x1, $y1, $x2, $y2">
 };
