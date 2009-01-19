@@ -22,7 +22,7 @@ GetOptions(
 	   "chr1|c1=s"=>\$CHR1,
 	   "chr2|c2=s"=>\$CHR2,
 	   "basename|b=s"=>\$basename,
-	   "flip|f"=>\$flip
+	   "flip|f=i"=>\$flip
 	   );
 usage() if $help;
 usage() unless -r $dagfile;
@@ -362,7 +362,7 @@ link_type    | lt      are image map links for chromosome blocks or points:
                        1  ::   blocks  (Use "XCHR","YCHR" which will get the appropriate chr substituted in) 
                        2  ::   points
 
-flip         | f       flip axes
+flip         | f       flip axes (1 flip, 0 don't flip [DEFAULT])
 
 help         | h       print this message
 
