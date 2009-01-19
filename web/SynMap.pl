@@ -824,19 +824,20 @@ sub go
 	$tmp =~ s/\)//g;
 	$tmp =~ s/://g;
       }
-    
+    my $orgkey1 = $org_name1.$masked1.$seq_type1;
+    my $orgkey2 = $org_name2.$masked2.$seq_type2;
     my %org_dirs = (
-		    $org_name1."_".$org_name2=>{fasta=>$fasta1,
+		    $orgkey1."_".$orgkey2=>{fasta=>$fasta1,
 						db=>$blastdb2,
 						basename=>$md51."_".$md52.".$masked1-$masked2.$seq_type1-$seq_type2.$blast",
 						dir=>$DIAGSDIR."/".$tmp1."/".$tmp2,
 						},
-		    $org_name1."_".$org_name1=>{fasta=>$fasta1,
+		    $orgkey1."_".$orgkey1=>{fasta=>$fasta1,
 						db=>$blastdb1,
 						basename=>$md51."_".$md51.".$masked1-$masked1.$seq_type1-$seq_type1.$blast",
 						dir=>$DIAGSDIR."/".$tmp1."/".$tmp1,
 						},
-		    $org_name2."_".$org_name2=>{fasta=>$fasta2,
+		    $orgkey2."_".$orgkey2=>{fasta=>$fasta2,
 						db=>$blastdb2,
 						basename=>$md52."_".$md52.".$masked2-$masked2.$seq_type2-$seq_type2.$blast",
 						dir=>$DIAGSDIR."/".$tmp2."/".$tmp2,
@@ -844,16 +845,8 @@ sub go
 		   );
     foreach my $org_dir (keys %org_dirs)
       {
-# 	my $tmp = $org_dir;
-# 	$tmp =~ s/\///g;
-# 	$tmp =~ s/\s+/_/g;
-# 	$tmp =~ s/\(//g;
-# 	$tmp =~ s/\)//g;
-# 	$tmp =~ s/://g;
-# 	my $outfile = $DIAGSDIR."/".$tmp;
 	my $outfile = $org_dirs{$org_dir}{dir};
 	mkpath ($outfile,0,0777) unless -d $outfile;
-#	$org_dirs{$org_dir}{dir}=$outfile;
 	warn "didn't create path $outfile: $!" unless -d $outfile;
 	$outfile .= "/".$org_dirs{$org_dir}{basename};
 	$org_dirs{$org_dir}{blastfile}=$outfile.".blast";
@@ -882,18 +875,18 @@ sub go
     write_log("Completed blast run(s)", $cogeweb->logfile);
     write_log("", $cogeweb->logfile);
     #Find local dups
-    my $dag_file11 = $org_dirs{$org_name1."_".$org_name1}{dir}."/".$org_dirs{$org_name1."_".$org_name1}{basename}.".dag";
-    $problem=1 unless (run_dag_tools(query=>"a".$md51, subject=>"b".$md51, blast=>$org_dirs{$org_name1."_".$org_name1}{blastfile}, outfile=>$dag_file11, seq_type1=>$seq_type1, seq_type1=>$seq_type1));
-    my $dag_file22 = $org_dirs{$org_name2."_".$org_name2}{dir}."/".$org_dirs{$org_name2."_".$org_name2}{basename}.".dag";
-    $problem=1 unless run_dag_tools(query=>"a".$md52, subject=>"b".$md52, blast=>$org_dirs{$org_name2."_".$org_name2}{blastfile}, outfile=>$dag_file22, seq_type1=>$seq_type2, seq_type1=>$seq_type2);
-    my $dup_file1  = $org_dirs{$org_name1."_".$org_name1}{dir}."/".$org_dirs{$org_name1."_".$org_name1}{basename}.".dups";
+    my $dag_file11 = $org_dirs{$orgkey1."_".$orgkey1}{dir}."/".$org_dirs{$orgkey1."_".$orgkey1}{basename}.".dag";
+    $problem=1 unless (run_dag_tools(query=>"a".$md51, subject=>"b".$md51, blast=>$org_dirs{$orgkey1."_".$orgkey1}{blastfile}, outfile=>$dag_file11, seq_type1=>$seq_type1, seq_type1=>$seq_type1));
+    my $dag_file22 = $org_dirs{$orgkey2."_".$orgkey2}{dir}."/".$org_dirs{$orgkey2."_".$orgkey2}{basename}.".dag";
+    $problem=1 unless run_dag_tools(query=>"a".$md52, subject=>"b".$md52, blast=>$org_dirs{$orgkey2."_".$orgkey2}{blastfile}, outfile=>$dag_file22, seq_type1=>$seq_type2, seq_type1=>$seq_type2);
+    my $dup_file1  = $org_dirs{$orgkey1."_".$orgkey1}{dir}."/".$org_dirs{$orgkey1."_".$orgkey1}{basename}.".dups";
     run_tandem_finder(infile=>$dag_file11,outfile=>$dup_file1);
-    my $dup_file2  = $org_dirs{$org_name2."_".$org_name2}{dir}."/".$org_dirs{$org_name2."_".$org_name2}{basename}.".dups";
+    my $dup_file2  = $org_dirs{$orgkey2."_".$orgkey2}{dir}."/".$org_dirs{$orgkey2."_".$orgkey2}{basename}.".dups";
     run_tandem_finder(infile=>$dag_file22,outfile=>$dup_file2);
 
     #prepare dag for synteny analysis
-    my $dag_file12 = $org_dirs{$org_name1."_".$org_name2}{dir}."/".$org_dirs{$org_name1."_".$org_name2}{basename}.".dag";
-    $problem=1 unless run_dag_tools(query=>"a".$md51, subject=>"b".$md52, blast=>$org_dirs{$org_name1."_".$org_name2}{blastfile}, outfile=>$dag_file12.".all", query_dup_file=>$dup_file1,subject_dup_file=>$dup_file2, seq_type1=>$seq_type1, seq_type2=>$seq_type2);
+    my $dag_file12 = $org_dirs{$orgkey1."_".$orgkey2}{dir}."/".$org_dirs{$orgkey1."_".$orgkey2}{basename}.".dag";
+    $problem=1 unless run_dag_tools(query=>"a".$md51, subject=>"b".$md52, blast=>$org_dirs{$orgkey1."_".$orgkey2}{blastfile}, outfile=>$dag_file12.".all", query_dup_file=>$dup_file1,subject_dup_file=>$dup_file2, seq_type1=>$seq_type1, seq_type2=>$seq_type2);
     #remove repetitive matches
     run_filter_repetitive_matches(infile=>$dag_file12.".all",outfile=>$dag_file12);
     #run dagchainer
@@ -947,23 +940,13 @@ sub go
 	$width = 500 if $width < 500;
 	$width = 1200 if $chr1_count > 9 || $chr2_count > 9;
 	$width = 4000 if $chr1_count > 100 || $chr2_count > 100;
-	my $name1 = $org_name1;
-	$name1 =~ s/\s+/_/g;
-	$name1 =~ s/\(//g;
-	$name1 =~ s/\)//g;
-	$name1 =~ s/://g;
-	my $name2 = $org_name2;
-	$name2 =~ s/\s+/_/g;
-	$name2 =~ s/\(//g;
-	$name2 =~ s/\)//g;
-	$name2 =~ s/://g;
 	my $qlead = "a";
 	my $slead = "b";
 	my $qdsid = "qdsid";
 	my $sdsid = "sdsid";
-	my $out = $org_dirs{$org_name1."_".$org_name2}{dir}."/html/";
+	my $out = $org_dirs{$orgkey1."_".$orgkey2}{dir}."/html/";
 	mkpath ($out,0,0777) unless -d $out;
-	$out .="master_".$org_dirs{$org_name1."_".$org_name2}{basename};
+	$out .="master_".$org_dirs{$orgkey1."_".$orgkey2}{basename};
 	$out .= "_D$dagchainer_D" if $dagchainer_D;
 	$out .= "_g$dagchainer_g" if $dagchainer_g;
 	$out .= "_A$dagchainer_A" if $dagchainer_A;
