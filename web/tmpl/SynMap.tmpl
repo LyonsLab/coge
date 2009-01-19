@@ -265,16 +265,16 @@ function reset_basename(){
 
 function synteny_zoom(oid1, oid2, basename, chr1, chr2)
 {
- var url = '/CoGe/run_plot_dag.pl?org1='+oid1+';org2='+oid2+';chr1='+chr1+';chr2='+chr2+';base='+basename;
+ var url = '/CoGe/run_dotplot.pl?org1='+oid1+';org2='+oid2+';chr1='+chr1+';chr2='+chr2+';base='+basename;
  var loc = $('#map_loc').val();
  if (/window/.test(loc))
   {
-    get_plot_dag(['args__src','args__'+url, 'args__loc','args__'+loc, 'args__flip','args__'+$('#flip')[0].checked,'args__regen_images','args__'+$('#regen_images')[0].checked],[open_window]);
+    get_dotplot(['args__src','args__'+url, 'args__loc','args__'+loc, 'args__flip','args__'+$('#flip')[0].checked,'args__regen_images','args__'+$('#regen_images')[0].checked],[open_window]);
   }
  else
   {
   $('#syn_loc'+loc).html('<span class=loading>loading . . .</span>');
-    get_plot_dag(['args__src','args__'+url, 'args__flip','args__'+$('#flip')[0].checked,'args__regen_images','args__'+$('#regen_images')[0].checked],['syn_loc'+loc]);
+    get_dotplot(['args__src','args__'+url, 'args__flip','args__'+$('#flip')[0].checked,'args__regen_images','args__'+$('#regen_images')[0].checked],['syn_loc'+loc]);
   }
 }
 
