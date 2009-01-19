@@ -767,7 +767,6 @@ sub go
     my $pm = new Parallel::ForkManager($MAX_PROC);
     my @oids = ([$oid1,$masked1,$seq_type1]);
     push @oids, [$oid2,$masked2,$seq_type2] unless $oid1 == $oid2 && $masked1 == $masked2 && $seq_type1 eq $seq_type2;
-    
     foreach my $item (@oids)
       {
 	$pm->start and next;
@@ -1116,15 +1115,15 @@ sub get_pair_info
       {
 	unless ($fid =~ /^\d+$/)
 	  {
-	    push @anno, $fid;
+	    push @anno, $fid."<br>genomic";
 	    next;
 	  }
 	my $feat = $coge->resultset('Feature')->find($fid);
 	my $anno = "Name: ".join (", ",map {"<a class=\"data link\" href=\"/CoGe/FeatView.pl?accn=".$_."\" target=_new>".$_."</a>"} $feat->names);
 	my $location = "Chr ".$feat->chromosome." ";
 	$location .= commify($feat->start)." - ".commify($feat->stop);
-	$location .=" (".$feat->strand.")";
-	push @anno, $anno."<br>".$location;
+#	$location .=" (".$feat->strand.")";
+	push @anno, $location."<br>".$anno;
       }
     return unless @anno;
     return "<table class=small><tr>".join ("<td>",@anno)."</table>";
