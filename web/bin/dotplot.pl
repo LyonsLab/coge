@@ -107,23 +107,51 @@ sub draw_dots
 
 	my $org1 = $opts{org1};
 	my $org2 = $opts{org2};
+#	print STDERR Dumper $org1, $org2;
 	my ($xmin) = sort ($line[2], $line[3]);
-	my $x = sprintf("%.0f",($org1->{$chr1}{start}+$xmin+abs($line[3]-$line[2])/2)*$x_pix_per_bp);
+	my $midx = sprintf("%.0f",$org1->{$chr1}{start}+$xmin+abs($line[3]-$line[2])/2);
+	my $x = sprintf("%.0f",$midx*$x_pix_per_bp);
 	my ($ymin) = sort ($line[6], $line[7]);
-	my $y = sprintf("%.0f",($org2->{$chr2}{start}+$ymin+abs($line[7]-$line[6])/2)*$y_pix_per_bp);
+	my $midy = sprintf("%.0f",$org2->{$chr2}{start}+$ymin+abs($line[7]-$line[6])/2);
+	my $y = sprintf("%.0f",$midy*$y_pix_per_bp);
 	($x,$y) = ($y, $x) if $special;
 #	print STDERR $x,"x", $y,"\n";
 	$gd->arc($x, $gd->height-$y, $size, $size, 0, 360, $color);
 	$gd->arc($y, $gd->height-$x, $size, $size, 0, 360, $color) if ($add_inverse && !$CHR1 && $x ne $y);
 	$gd->arc($y, $gd->height-$x, $size, $size, 0, 360, $color) if ($add_inverse && $chr1 eq $chr2 && $x ne $y);
-	
 	if ($link_type == 1)
 	  {
 	    my @item1 = split /\|\|/, $line[1];
 	    my @item2 = split /\|\|/, $line[5];
+	    #working here.  Need to build a GEvo link using datasets/chr/position if dealing with genomic data.
+	    my $link = qq{/CoGe/GEvo.pl?autogo=1;&drup1=50000&drdown1=50000&drup2=50000&drdown2=50000};
+	    if ($item1[6])
+	      {
+		$link .= qq{;fid1=$item1[6]};
+	      }
+	    else
+	      {
+		#just added the coge->ds object to $org
+		$item1[6] = "Chr: ".$item1[0]." ".commify($item1[1])." - ".commify($item1[2]);
+		my $dsid1 = $org1->{$item1[0]}->{ds}->id;
+		my $chr = $item1[0];
+		$link .= qq{;dsid1=$dsid1;x1=$midx;chr1=$chr};
+	      }
+	    if ($item2[6])
+	      {
+		$link .= qq{;fid2=$item2[6]};
+	      }
+	    else
+	      {
+		#just added the coge->ds object to $org
+		$item2[6] = "Chr: ".$item2[0]." ".commify($item2[1])." - ".commify($item2[2]);
+		my $dsid2 = $org2->{$item2[0]}->{ds}->id;
+		my $chr = $item1[0];
+		$link .= qq{;dsid2=$dsid2;x2=$midy;chr2=$chr};
+	      }
 	    unless ($points{$x}{$y}) #cuts down on the size of the image map
 	      {
-		push @feats, [$x, $gd->height-$y, $item1[6],$item2[6]];
+		push @feats, [$x, $gd->height-$y, $item1[6],$item2[6], $link];
 		$points{$x}{$y}=1;
 	      }
 	  }
@@ -154,9 +182,9 @@ var ajax = [];function pjx(args,fname,method) { this.target=args[1]; this.args=a
 };
 	foreach my $item (@feats)
 	  {
-	    my ($x, $y, $f1, $f2) = @$item;
+	    my ($x, $y, $f1, $f2, $link) = @$item;
 	    print OUT qq{
-<area shape='circle' coords='$x, $y, 2' href='/CoGe/GEvo.pl?autogo=1&fid1=$f1;fid2=$f2;&drup1=50000&drdown1=50000&drup2=50000&drdown2=50000' onMouseOver="get_pair_info(['args__$f1','args__$f2'],['pair_info']);" target='_blank' >
+<area shape='circle' coords='$x, $y, 2' href='$link' onMouseOver="get_pair_info(['args__$f1','args__$f2'],['pair_info']);" target='_blank' >
 };
 #
 	  }
@@ -267,6 +295,7 @@ sub get_org_info
       {
 	foreach my $chrtmp ($ds->chromosomes)
 	  {
+	    next if $chrtmp =~ /random/i;
 	    next if $chr && $chr ne $chrtmp;
 	    my $last = $ds->last_chromosome_position($chrtmp);
 	    next if $minsize && $minsize > $last;
@@ -275,6 +304,7 @@ sub get_org_info
 		warn "Duplicate chromosome: $chrtmp\n";
 	      }
 	    $data{$chrtmp}{length}=$last;
+	    $data{$chrtmp}{ds}=$ds;
 	  }
       }
     my $pos = 1;
@@ -286,6 +316,14 @@ sub get_org_info
 		      
     return \%data;
   }
+
+sub commify
+  {
+    my $text = reverse $_[0];
+    $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
+    return scalar reverse $text;
+  }
+
 
 sub usage
   {
