@@ -623,6 +623,8 @@ sub add_GEvo_links
   {
     my %opts = @_;
     my $infile = $opts{infile};
+    my $chr1 = $opts{chr1};
+    my $chr2 = $opts{chr2};
     open (IN, $infile);
     open (OUT,">$infile.tmp");
     while (<IN>)
@@ -639,7 +641,28 @@ sub add_GEvo_links
 	my @line = split/\t/;
 	my @feat1 = split/\|\|/,$line[1];
 	my @feat2 = split/\|\|/,$line[5];
-	my $link = "http://synteny.cnr.berkeley.edu/CoGe/GEvo.pl?accn1=".$feat1[3]."&fid1=".$feat1[6]."&accn2=".$feat2[3]."&fid2=".$feat2[6] if $feat1[3] && $feat1[6] && $feat2[3] && $feat2[6];
+	my $link = "http://synteny.cnr.berkeley.edu/CoGe/GEvo.pl?";
+	if ($feat1[6])
+	  {
+	    $link .= "fid1=".$feat1[6];
+	  }
+	else
+	  {
+	    my ($xmin) = sort ($feat1[1], $feat1[2]);
+	    my $x = sprintf("%.0f", $xmin+abs($feat1[1]-$feat1[2])/2);
+	    $link .= "chr1=".$feat1[0].";dsid1=".$chr1->{$feat1[0]}->id.";x1=".$x;
+	  }
+	if ($feat2[6])
+	  {
+	    $link .= ";fid2=".$feat2[6];
+	  }
+	else
+	  {
+	    my ($xmin) = sort ($feat2[1], $feat2[2]);
+	    my $x = sprintf("%.0f", $xmin+abs($feat2[1]-$feat2[2])/2);
+	    $link .= ";chr2=".$feat2[0].";dsid2=".$chr2->{$feat2[0]}->id.";x2=".$x;
+	  }
+#	accn1=".$feat1[3]."&fid1=".$feat1[6]."&accn2=".$feat2[3]."&fid2=".$feat2[6] if $feat1[3] && $feat1[6] && $feat2[3] && $feat2[6];
 	print OUT $_;
 	print OUT "\t",$link if $link;
 	print OUT "\n";
@@ -916,10 +939,13 @@ sub go
 	my $org2_length =0;
 	my $chr1_count = 0;
 	my $chr2_count = 0;
+	my %chr1;
+	my %chr2;
 	foreach my $ds (@ds1)
 	  {
 	    foreach my $chr ($ds->get_chromosomes)
 	      {
+		$chr1{$chr}=$ds;
 		$chr1_count++;
 		my $last = $ds->last_chromosome_position($chr);
 		$org1_length += $last;
@@ -929,6 +955,7 @@ sub go
 	  {
 	    foreach my $chr ($ds->get_chromosomes)
 	      {
+		$chr2{$chr}=$ds;
 		$chr2_count++;
 		my $last = $ds->last_chromosome_position($chr);
 		$org2_length += $last;
@@ -951,7 +978,7 @@ sub go
 	$out .= "_g$dagchainer_g" if $dagchainer_g;
 	$out .= "_A$dagchainer_A" if $dagchainer_A;
 	generate_dotplot(dag=>$dag_file12.".all", coords=>$tmp, outfile=>"$out", regen_images=>$regen_images, oid1=>$oid1, oid2=>$oid2, width=>$width);
-	add_GEvo_links (infile=>$tmp);
+	add_GEvo_links (infile=>$tmp, chr1=>\%chr1, chr2=>\%chr2);
 	$tmp =~ s/$DATADIR/$URL\/data/;
 	if (-r "$out.html")
 	  {
