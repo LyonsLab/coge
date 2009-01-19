@@ -215,8 +215,9 @@ sub get_datasets
 	$length =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
 	$length = reverse $length;
         $html .= "<div";
-        $html .= " class='even'" if $i % 2 == 0;
-        $html .= ">";
+        $html .= " class='small";# if $i % 2 == 0;
+        $html .= " even'" if $i % 2 == 0;
+        $html .= "'>";
 	$html .= join (", length: ", $name, $length. "bp");
 	$html .= "; chr count: $chr_count";
 	$html .= " (".join (", ", @chrs).")" if scalar @chrs < 5;
@@ -229,8 +230,8 @@ sub get_datasets
 	    $html .= ")</span>";
 	  }
 	$html .= "</div>\n";
-	if ($seq_type == 1) #want to use CDS.  Let's see if any exist for this dataset
-	  {
+#	if ($seq_type == 1) #want to use CDS.  Let's see if any exist for this dataset
+#	  {
 	    foreach my $ft ($coge->resultset('Feature')->search(
 								{
 								 feature_type_id=>3,
@@ -243,7 +244,7 @@ sub get_datasets
 	      {
 		$has_cds=1;
 	      }
-	  }
+#	  }
 
         $i++;
       }
@@ -251,8 +252,8 @@ sub get_datasets
     $total_length =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
     $total_length = reverse $total_length;
     $html .= "Total Length: $total_length";
-    $html .= "<span class=alert>WARNING: datasets contain no CDS features</span>" if ($seq_type == 1 &&  !$has_cds);
-    return $html;
+    $html .= "<br><span class=alert>WARNING: datasets contain no CDS features</span>" unless $has_cds;# if ($seq_type == 1 &&  !$has_cds);
+    return $html, $has_cds;
   }
 
 sub gen_fasta
@@ -421,7 +422,6 @@ sub generate_blast_db
   sub generate_basefile
 {
 	$cogeweb = initialize_basefile(prog=>"SynMap");
-	#print STDERR $cogeweb->basefilename,"\n";
 	return $cogeweb->basefilename;
 }
 
@@ -1211,7 +1211,6 @@ sub get_dotplot
     my ($w,$h) = $img->getBounds();
     $w+=20;
     $h+=60;
-#    print STDERR $w,"::",$h."\n";
     if ($loc)
       {
 	return ($url,$loc, $w, $h);
