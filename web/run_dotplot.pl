@@ -119,10 +119,8 @@ sub generate_dotplot
     my $oid2 = $opts{oid2};
     my $qchr = $opts{qchr};
     my $schr = $opts{schr};
-    my $flip = $opts{flip};
-#    $outfile =~ s/html$/flip\.html/ if $flip;
+    my $flip = $opts{flip} || 0; 
     $outfile .= ".flip" if $flip;
-    print STDERR $outfile,"\n";;
     my $regen_images = $opts{regen_images};
     if (-r $outfile.".html" && !$regen_images)
       {
@@ -130,8 +128,7 @@ sub generate_dotplot
 	return $outfile;
       }
 #    write_log("generate dotplot: running $cmd", $cogeweb->logfile);
-    my $cmd = qq{$DOTPLOT -d $dag -a $coords -b $outfile -l '' -o1 $oid1 -o2 $oid2 -w 600 -lt 1 -chr1 $qchr -chr2 $schr -flip};
-#    print STDERR $cmd,"\n";# if $DEBUG;
+    my $cmd = qq{$DOTPLOT -d $dag -a $coords -b $outfile -l '' -o1 $oid1 -o2 $oid2 -w 600 -lt 1 -chr1 $qchr -chr2 $schr -flip $flip};
     `$cmd`;
 
     return $outfile if -r $outfile.".html";
