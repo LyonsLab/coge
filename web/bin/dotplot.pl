@@ -6,7 +6,7 @@ use Getopt::Long;
 use CoGeX;
 use Data::Dumper;
 
-use vars qw($dagfile $alignfile $width $link $min_chr_size $orgid1 $orgid2 $help $coge $gd $CHR1 $CHR2 $basename $link_type);
+use vars qw($dagfile $alignfile $width $link $min_chr_size $orgid1 $orgid2 $help $coge $gd $CHR1 $CHR2 $basename $link_type $flip);
 
 
 GetOptions(
@@ -22,7 +22,7 @@ GetOptions(
 	   "chr1|c1=s"=>\$CHR1,
 	   "chr2|c2=s"=>\$CHR2,
 	   "basename|b=s"=>\$basename,
-	   
+	   "flip|f"=>\$flip
 	   );
 usage() if $help;
 usage() unless -r $dagfile;
@@ -40,6 +40,7 @@ my $org2info = get_org_info(oid=>$orgid2, chr=>$CHR2, minsize=>$min_chr_size);
 my $org2length =0;
 map {$org2length+=$_->{length}} values %$org2info;
 
+($org1info, $org1length, $org2info, $org2length) = ($org2info, $org2length, $org1info, $org1length) if $flip;
 my $height = sprintf("%.0f", $width*$org2length/$org1length);
 $height = $width if ($height > 5*$width) || ($height <  $width/5);
 my $x_bp_per_pix = sprintf("%.0f", $org1length/$width);
@@ -52,10 +53,10 @@ my $gd = new GD::Image($width, $height);
 my $white = $gd->colorResolve(255,255,255);
 $gd->fill(1,1,$white);
 
-draw_chromosome_grid(gd=>$gd, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, link=>$link, link_type=>$link_type);
-draw_dots(gd=>$gd, file=>$dagfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, link_type => $link_type, orgid1=>$orgid1, orgid2=>$orgid2);
+draw_chromosome_grid(gd=>$gd, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, link=>$link, link_type=>$link_type, flip=>$flip);
+draw_dots(gd=>$gd, file=>$dagfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, link_type => $link_type, orgid1=>$orgid1, orgid2=>$orgid2, flip=>$flip);
 my $add = 1 if $orgid1 eq $orgid2;
-draw_dots(gd=>$gd, file=>$alignfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, color=>$gd->colorResolve(0,150,0), size=>2, add_inverse=>$add);
+draw_dots(gd=>$gd, file=>$alignfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, color=>$gd->colorResolve(0,150,0), size=>2, add_inverse=>$add, flip=>$flip);
 
 open (OUT, ">".$basename.".png") || die "$!";
 binmode OUT;
@@ -76,7 +77,7 @@ sub draw_dots
     my $link_type = $opts{link_type} || 0;
     my $oid1 = $opts{orgid1};
     my $oid2 = $opts{orgid2};
-     
+    my $flip = $opts{flip};
     $color = $gd->colorResolve(150,150,150) unless $color;
 
     open (IN, $file) || die "$!";
@@ -88,6 +89,12 @@ sub draw_dots
 	next if /^#/;
 	next unless $_;
 	my @line = split /\t/;
+	if ($flip)
+	  {
+	    my @tmp = @line[0..3];
+	    @line[0..3] = @line[4..7];
+	    @line[4..7] = @tmp;
+	  }
 	my ($a, $chr1) = split /_/,$line[0],2;
 	my ($b, $chr2) = split /_/,$line[4],2;
 	my $special = 0; #stupid variable name so that if we a viewing a single chr to single chr comparison within the same organism, this will make collinear matches appear on the inverse section 
@@ -354,6 +361,8 @@ link         | l       link to be used in image map
 link_type    | lt      are image map links for chromosome blocks or points:
                        1  ::   blocks  (Use "XCHR","YCHR" which will get the appropriate chr substituted in) 
                        2  ::   points
+
+flip         | f       flip axes
 
 help         | h       print this message
 
