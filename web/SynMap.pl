@@ -300,7 +300,7 @@ sub gen_org_name
 	@ds = $org->current_datasets(type=>$masked);
       }
     @ds = sort {$a->id <=> $b->id }@ds;
-    return unless @ds;
+    return $org->name unless @ds;
     my $org_name = $ds[0]->organism->name;
     my $title = $org_name ." $seq_type (";
 #    my $title = $org_name ." CDS (";
