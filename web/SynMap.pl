@@ -55,7 +55,7 @@ my $pj = new CGI::Ajax(
 		       go=>\&go,
 		       check_address_validity=>\&check_address_validity,
 		       generate_basefile=>\&generate_basefile,
-		       get_plot_dag=>\&get_plot_dag,
+		       get_dotplot=>\&get_dotplot,
 		       %ajax,
 		      );
 print $pj->build_html($FORM, \&gen_html);
@@ -1193,7 +1193,7 @@ Thank you for using the CoGe Software Package.
 	$mailer->close();
 }
 
-sub get_plot_dag
+sub get_dotplot
   {
     my %args = @_;
     my $src = $args{src};
