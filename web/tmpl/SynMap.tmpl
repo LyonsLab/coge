@@ -10,6 +10,9 @@ function get_organism_chain(type,val,i)
 // ajax_wait("check_previous_analyses();");
 }
 
+
+	
+
 function run_synmap(){
 if(!pageObj.basename) 
   {
@@ -22,7 +25,7 @@ if(!pageObj.basename)
   pageObj.nolog=1;
   setTimeout("monitor_log()", 5000);
   
-go(['args__oid1','org_id1','args__oid2','org_id2','args__D','D','args__g','g','args__A','A','args__blast','blast', 'args__seq_type1','seq_type1', 'args__seq_type2','seq_type2','args__masked1','masked1', 'args__masked2','masked2','args__jobtitle','jobtitle','args__basename','args__'+pageObj.basename,'args__email','email','args__regen_images','args__'+$('#regen_images')[0].checked],[handle_results]);
+go(['args__oid1','org_id1','args__oid2','org_id2','args__D','D','args__g','g','args__A','A','args__blast','blast', 'args__seq_type1','seq_type1', 'args__seq_type2','seq_type2','args__masked1','masked1', 'args__masked2','masked2','args__jobtitle','jobtitle','args__basename','args__'+pageObj.basename,'args__email','email','args__regen_images','args__'+$('#regen_images')[0].checked, 'args__width', 'args__'+$('#master_width').val()],[handle_results]);
 }
 
 function handle_results(val){
@@ -267,14 +270,15 @@ function synteny_zoom(oid1, oid2, basename, chr1, chr2)
 {
  var url = '/CoGe/run_dotplot.pl?org1='+oid1+';org2='+oid2+';chr1='+chr1+';chr2='+chr2+';base='+basename;
  var loc = $('#map_loc').val();
+ var width = $('#zoom_width').val();
  if (/window/.test(loc))
   {
-    get_dotplot(['args__src','args__'+url, 'args__loc','args__'+loc, 'args__flip','args__'+$('#flip')[0].checked,'args__regen_images','args__'+$('#regen_images')[0].checked],[open_window]);
+    get_dotplot(['args__src','args__'+url, 'args__loc','args__'+loc, 'args__flip','args__'+$('#flip')[0].checked,'args__regen_images','args__'+$('#regen_images')[0].checked, 'args__width', 'args__'+width],[open_window]);
   }
  else
   {
   $('#syn_loc'+loc).html('<span class=loading>loading . . .</span>');
-    get_dotplot(['args__src','args__'+url, 'args__flip','args__'+$('#flip')[0].checked,'args__regen_images','args__'+$('#regen_images')[0].checked],['syn_loc'+loc]);
+    get_dotplot(['args__src','args__'+url, 'args__flip','args__'+$('#flip')[0].checked,'args__regen_images','args__'+$('#regen_images')[0].checked, 'args__width', 'args__'+width],['syn_loc'+loc]);
   }
 }
 
@@ -392,6 +396,9 @@ function open_window (url, loc, width, height)
 		<td><div class=email_box style="display:none;">Job Title:</div></td>
 		<td><div class=email_box style="display:none;"><input type=text id=jobtitle> <input type=button value="Use Org Names" onClick="fill_jobtitle()"></div></td>
 
+ <tr>
+   <td>Master image width (0 == dynamic)
+   <td><input type=text name=master_width id=master_width size=6 value="0">
  <TR>
    <TD>Regenerate dotplot images?
    <input type=checkbox name="regen_images" id="regen_images">
