@@ -1,0 +1,97 @@
+######################################################################################################
+########## DAGchainer Software Description ###########################################################
+
+DAGchainer finds sets of genes found in the same order along two genome contigs as a path thru a directed acyclic graph (DAG).  Individual graph nodes correspond to genes paired by BLAST matches and node positions correspond to gene coordinates along each contig.  Each blast paired gene set {X,Y} is positioned in a two-dimensional matrix with coordinates (X.midpt, Y.midpt) and the graph is traced using dynamic progromaming to find the highest scoring path containing ordered gene pairs with the most significant BLAST scores, accounting for the distance between gene pairs and the diagonality of the path.
+
+This software consists of a single C++ program (source: dagchainer.cpp) which is driven by a perl script (run_DAG_chainer.pl).  DAGchainer operates on a single input file which contains the gene coordinate positions and BLAST E-value between matches.  The input file format is:
+
+chrA <tab> accessionA <tab> end5_A <tab> end3_A <tab> chrB <tab> accessionB <tab> end5_B <tab> end3_B <tab> E-value
+
+A sample input files corresponding to BLAST paired genes are found in the following directories:
+
+-Mining Segmental Genome Duplications in Arabidopsis:
+input file: data_sets/Arabidopsis/Arabidopsis.Release5.matchList.filtered
+Here, gene coordinates were used for the end5 and end3 values described in the input file.
+
+-Mining Genome Synteny Among Trypanosomes:
+input file: data_sets/Trypanosomes/Tbrucei_vs_Lmajor.match_file.filtered
+Here, gene order along the contig was used for the end5 and end3 values rather than their true sequence coordinates.  This exemplifies an alternate approach to analyzing gene order and the DAGchainer scoring parameters.
+
+
+A single output file is generated and named based on the input file name including a ".aligncoords" extension.  The output file contains the subset of those matches described in the input file which are classified as syntenic, and ordered as a chain of paired matches traced from the DAG.  An additional field is added to each data row which contains the path score for that node in the DAG in the context of the reported chain.  Example output files are provided for each sample input file data set.
+
+
+In each data_set directory, a notes file indicates how the data set was generated the parameters used with DAGchainer in order to obtain optimal results.
+
+
+Accessory scripts and an XY-plot visualization tool are included and described below.
+
+
+#######################################################################################################
+#################### Installation and Execution #######################################################
+## Build the executable on your OS 
+
+Just type 'make' in this directory.
+
+
+The extension for dagchainer should be your OSname as defined by the env variable HOSTTYPE.
+
+## Run the example input data (based on mining the Arabidopsis Genome Duplications):
+
+cd data_sets/Arabidopsis
+
+../../run_DAG_chainer.pl -i Arabidopsis.Release5.matchList.filtered -s -I
+
+(use -h for all available options)
+
+## The output file that is generated has the name of the input file + ".aligncoords"
+
+
+(** For another example, visit: data_sets/Trypanosomes **)
+
+
+######################################################################################################
+#################################### Visualization Tool ##############################################
+An included accessory XY-plot visualization tool can be used to navigate the results.  Java 1.4 is required.  You can run the visualization tool like so:
+
+Run the visualization tool like so:
+
+Java_XY_plotter/run_XYplot.pl matchFile DAGchainer_output_file
+
+After processing the example Arabidopsis input data set, you can run the visualization tool as follows:
+
+(from data_sets/Arabidopsis directory:)
+../../Java_XY_plotter/run_XYplot.pl Arabidopsis.Release5.matchList.filtered Arabidopsis.Release5.matchList.filtered.aligncoords
+
+Each of the pairwise matches are displayed as a single dot.  Those found in diagonals are highlighted, using a different color for each diagonal. You can zoom in on regions using the right mouse button.  The left mouse button can be used to select and identify matches, reported in the terminal from which the visualization tool was launched.  This visualization tool is not considered part of the DAGchainer tool suite and is provided simply as a means to interrogate the data.  Future developments and enhancements to the visualization tool is ongoing.
+
+
+#####################################################################################################
+################################### Accessory Scripts ###############################################
+
+
+The "accessory_scripts" directory contains several Perl scripts which can be used to manipulate the input and output files.  These scripts are described below:
+
+separateDataSets.pl :extracts all chromosome pairwise match data from the input or output file and writes separate data files for each pairwise comparison.  This is useful for restricting a DAGchainer analysis to a single pairwise comparison rather than to all comparisons when optimizing parameters for finding collinear gene sets.  This can also be useful to limit visualization with the XY-plot viewer to a single pairwise comparison between genomic contigs.
+
+    usage: separateDataSets.pl matchFile
+
+
+filter_repetitive_matches.pl :Given a pairwise comparison between contig A and contig B, gene A' on contig A may have many matches to genes on contig B.  This can be problematic if the genes matching A' are closely spaced.  From the XY-plot visual, this would look like a series of closely spaced dots.  This script filters an input data set and removes the lower scoring matches from the closely spaced series, and does so in both the X and Y directions of the plot.  The sample input data file "Arabidopsis.Release5.matchList.filtered" was generated by running this script on the raw match file, analyzing groups of repetitive matches found within 50 kb windows.
+
+    usage: filter_repetitive_matches.pl windowSize < inputFile > inputFile.filtered
+    in my example, windowSize = 50000
+
+extract_only_chromo_pairs_with_dups.pl :The XY-plot visualization tool generates an individual XY-plot for each pairwise comparison in the match input file.  Often, one is interested in only examining those plots for which collinear sets of genes were identified.  Given a DAGchainer output file (inputFile.aligncoords), only those matches corresponding to contig pairs for which collinear genes were identified are extracted.  This subset of the input file, along with the output file, can be used with the XY-plot visualization tool.  This is useful, for example, when analyzing duplications in the human genome given that relatively few of the many pairwise comparisons yield collinear gene sets.
+
+    usage: extract_only_chromo_pairs_with_dups.pl matchFile matchFile.aligncoords > matchFile.onlyResultPairs
+    then, launch the XY-plot viewer like so:
+         
+    ../Java_XY_plotter/run_XYplot.pl matchFile.onlyResultPairs matchFile.aligncoords
+ 
+ 
+###################################################################################################
+All of this software is open source, free of license restrictions. 
+
+Questions, comments, etc., contact Brian Haas (bhaas(at)tigr.org)
+

@@ -1,0 +1,368 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+    "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta name="generator" content="AsciiDoc 7.1.2" />
+<style type="text/css">
+/* Debug borders */
+p, li, dt, dd, div, pre, h1, h2, h3, h4, h5, h6 {
+/*
+  border: 1px solid red;
+*/
+}
+
+body {
+  margin: 1em 5% 1em 5%;
+}
+
+a {
+  color: blue;
+  text-decoration: underline;
+}
+a:visited {
+  color: fuchsia;
+}
+
+em {
+  font-style: italic;
+}
+
+strong {
+  font-weight: bold;
+}
+
+tt {
+  color: navy;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: #527bbd;
+  font-family: sans-serif;
+  margin-top: 1.2em;
+  margin-bottom: 0.5em;
+  line-height: 1.3;
+}
+
+h1 {
+  border-bottom: 2px solid silver;
+}
+h2 {
+  border-bottom: 2px solid silver;
+  padding-top: 0.5em;
+}
+
+div.sectionbody {
+  font-family: serif;
+  margin-left: 0;
+}
+
+hr {
+  border: 1px solid silver;
+}
+
+p {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+pre {
+  padding: 0;
+  margin: 0;
+}
+
+span#author {
+  color: #527bbd;
+  font-family: sans-serif;
+  font-weight: bold;
+  font-size: 1.2em;
+}
+span#email {
+}
+span#revision {
+  font-family: sans-serif;
+}
+
+div#footer {
+  font-family: sans-serif;
+  font-size: small;
+  border-top: 2px solid silver;
+  padding-top: 0.5em;
+  margin-top: 4.0em;
+}
+div#footer-text {
+  float: left;
+  padding-bottom: 0.5em;
+}
+div#footer-badges {
+  float: right;
+  padding-bottom: 0.5em;
+}
+
+div#preamble,
+div.tableblock, div.imageblock, div.exampleblock, div.verseblock,
+div.quoteblock, div.literalblock, div.listingblock, div.sidebarblock,
+div.admonitionblock {
+  margin-right: 10%;
+  margin-top: 1.5em;
+  margin-bottom: 1.5em;
+}
+div.admonitionblock {
+  margin-top: 2.5em;
+  margin-bottom: 2.5em;
+}
+
+div.content { /* Block element content. */
+  padding: 0;
+}
+
+/* Block element titles. */
+div.title, caption.title {
+  font-family: sans-serif;
+  font-weight: bold;
+  text-align: left;
+  margin-top: 1.0em;
+  margin-bottom: 0.5em;
+}
+div.title + * {
+  margin-top: 0;
+}
+
+td div.title:first-child {
+  margin-top: 0.0em;
+}
+div.content div.title:first-child {
+  margin-top: 0.0em;
+}
+div.content + div.title {
+  margin-top: 0.0em;
+}
+
+div.sidebarblock > div.content {
+  background: #ffffee;
+  border: 1px solid silver;
+  padding: 0.5em;
+}
+
+div.listingblock > div.content {
+  border: 1px solid silver;
+  background: #f4f4f4;
+  padding: 0.5em;
+}
+
+div.quoteblock > div.content {
+  padding-left: 2.0em;
+}
+
+div.attribution {
+  text-align: right;
+}
+div.verseblock + div.attribution {
+  text-align: left;
+}
+
+div.admonitionblock .icon {
+  vertical-align: top;
+  font-size: 1.1em;
+  font-weight: bold;
+  text-decoration: underline;
+  color: #527bbd;
+  padding-right: 0.5em;
+}
+div.admonitionblock td.content {
+  padding-left: 0.5em;
+  border-left: 2px solid silver;
+}
+
+div.exampleblock > div.content {
+  border-left: 2px solid silver;
+  padding: 0.5em;
+}
+
+div.verseblock div.content {
+  white-space: pre;
+}
+
+div.imageblock div.content { padding-left: 0; }
+div.imageblock img { border: 1px solid silver; }
+span.image img { border-style: none; }
+
+dl {
+  margin-top: 0.8em;
+  margin-bottom: 0.8em;
+}
+dt {
+  margin-top: 0.5em;
+  margin-bottom: 0;
+  font-style: italic;
+}
+dd > *:first-child {
+  margin-top: 0;
+}
+
+ul, ol {
+    list-style-position: outside;
+}
+ol.olist2 {
+  list-style-type: lower-alpha;
+}
+
+div.tableblock > table {
+  border: 3px solid #527bbd;
+}
+thead {
+  font-family: sans-serif;
+  font-weight: bold;
+}
+tfoot {
+  font-weight: bold;
+}
+
+div.hlist {
+  margin-top: 0.8em;
+  margin-bottom: 0.8em;
+}
+td.hlist1 {
+  vertical-align: top;
+  font-style: italic;
+  padding-right: 0.8em;
+}
+td.hlist2 {
+  vertical-align: top;
+}
+
+@media print {
+  div#footer-badges { display: none; }
+}
+/* Workarounds for IE6's broken and incomplete CSS2. */
+
+div.sidebar-content {
+  background: #ffffee;
+  border: 1px solid silver;
+  padding: 0.5em;
+}
+div.sidebar-title, div.image-title {
+  font-family: sans-serif;
+  font-weight: bold;
+  margin-top: 0.0em;
+  margin-bottom: 0.5em;
+}
+
+div.listingblock div.content {
+  border: 1px solid silver;
+  background: #f4f4f4;
+  padding: 0.5em;
+}
+
+div.quoteblock-content {
+  padding-left: 2.0em;
+}
+
+div.exampleblock-content {
+  border-left: 2px solid silver;
+  padding-left: 0.5em;
+}
+</style>
+<title>The DAGchainer XY-Plotter Tutorial</title>
+</head>
+<body>
+<div id="header">
+<h1>The DAGchainer XY-Plotter Tutorial</h1>
+</div>
+<div id="preamble">
+<div class="sectionbody">
+<p>The plotter can be used with only the initial match list, or with both the match list and the syntenic pairs reported by DAGchainer.  First, we highlight the use of the plotter with the match list alone and using the Arabidopsis sample data set.</p>
+<p>We can launch the plotter from the root of the installation directory like so:</p>
+<div class="literalblock">
+<div class="content">
+<pre><tt>% Java_XY_plotter/run_XYplot.pl data_sets/Arabidopsis/Arabidopsis.Release5.matchList</tt></pre>
+</div></div>
+<p>The result is shown below:</p>
+<p><span class="image">
+<a class="image" href="xy_plotter_images/arab_2vs4.gif">
+<img src="xy_plotter_images/arab_2vs4.small.gif" alt="arabidopsis chr2 vs. chr4" title="arabidopsis chr2 vs. chr4"/>
+</a>
+</span></p>
+<p>In this view, chrosome 2 is ordered along the Y-axis and chromosome 4 is ordered along the X-axis.  Each pair of matching genes is shown as a single dot in the plot.  The left and right mouse buttons can be used to either select matches of gene pairs or to zoom in on selected regions.</p>
+<p>To zoom in on a region, use the right mouse button and drag a rectangle over the region of interest. For example:</p>
+<p><span class="image">
+<a class="image" href="xy_plotter_images/arab_2vs4.select.gif">
+<img src="xy_plotter_images/arab_2vs4.select.small.gif" alt="select region of plot" title="select region of plot"/>
+</a>
+</span></p>
+<p>The zoomed display is shown below:</p>
+<p><span class="image">
+<a class="image" href="xy_plotter_images/arab_2vs4.zoomed.gif">
+<img src="xy_plotter_images/arab_2vs4.zoomed.small.gif" alt="zoomed region of plot" title="zoomed region of plot"/>
+</a>
+</span></p>
+<p>In the zoomed display, the scrollbars at the right and bottom of the display can be used to navigate the region in the viewer.</p>
+</div>
+</div>
+<h2>Filtering Matches in the Display</h2>
+<div class="sectionbody">
+<p>The pairwise matches between genes can be filtered based on their repetitiveness or by asserting an E-value threshold.  To obtain the match filter controller, select from the menu bar MatchDisplay -&gt; <em>Show matches by E-value</em>.</p>
+<p>Two controls allow you to filter the match.  The Maximum Log E-value option can be used to exclude matches from the display that are above the set E-value threshold.  This can be used to restrict the display to only the best matching genes.  In addition, the Max # of Matches filter can be used to restrict the display to include only those genes that have at most the specified number of different gene matches.  By setting this to one, only those genes that uniquely match another gene are shown.  By using these filters, you can effectively explore different signal to noise ratios among the set of matches, often revealing patterns to the eye that are otherwise difficult to detect.</p>
+<p>Below is an example of our plotted region showing only the unique matches.</p>
+<p><span class="image">
+<a class="image" href="xy_plotter_images/arab_2vs4.zoomed.unique_matches.gif">
+<img src="xy_plotter_images/arab_2vs4.zoomed.unique_matches.small.gif" alt="unique matches shown" title="unique matches shown"/>
+</a>
+</span></p>
+</div>
+<h2>Selecting Matches from the Display</h2>
+<div class="sectionbody">
+<p>Using the left mouse button, you can draw a rectangle around a set of matches as shown below:</p>
+<p><span class="image">
+<a class="image" href="xy_plotter_images/arab_2vs4.zoomed.gene_selection.gif">
+<img src="xy_plotter_images/arab_2vs4.zoomed.gene_selection.small.gif" alt="selecting matching gene pairs within the plot" title="selecting matching gene pairs within the plot"/>
+</a>
+</span></p>
+<p>The selected matches are then circled in the display, and the corresponding match information from the original match input file is printed to the terminal.</p>
+<div class="literalblock">
+<div class="content">
+<pre><tt>Selected region is: (14645347,8019225) , (14933095,8306688)
+number of hits: 19
+2       At2g19010       8250171 8252460 4       At4g30140       14740554        14738609        2.3E-105
+2       At2g19050       8260498 8262616 4       At4g30140       14740554        14738609        6.9E-113
+2       At2g19060       8264113 8266897 4       At4g30140       14740554        14738609        7.8E-105
+2       At2g19090       8274961 8272260 4       At4g30130       14735407        14737799        5.0E-194
+2       At2g18960       8228940 8234350 4       At4g30190       14775926        14770826        0.0E0
+2       At2g18980       8242376 8240501 4       At4g30170       14762928        14764488        5.7E-141
+2       At2g18880       8184078 8185870 4       At4g30200       14790076        14786858        1.0E-53
+2       At2g18870       8174553 8175750 4       At4g30200       14790076        14786858        5.0E-22
+2       At2g19110       8286560 8293337 4       At4g30120       14733508        14731137        1.9E-204
+2       At2g19110       8286560 8293337 4       At4g30110       14724583        14720259        0.0E0
+2       At2g19120       8298884 8294118 4       At4g30100       14714197        14719341        0.0E0
+2       At2g18730       8126058 8128771 4       At4g30340       14840947        14839074        7.7E-169
+2       At2g18740       8130416 8131792 4       At4g30330       14837925        14836779        1.1E-41
+2       At2g18670       8100551 8101534 4       At4g30370       14859279        14858749        1.6E-33
+2       At2g18660       8098726 8098114 4       At4g30380       14860492        14861000        3.3E-19
+2       At2g18650       8095213 8093942 4       At4g30400       14867074        14868492        5.1E-108
+2       At2g18800       8152029 8153347 4       At4g30270       14820454        14819451        5.7E-92
+2       At2g18840       8165370 8166930 4       At4g30260       14818728        14816896        2.5E-108
+2       At2g18860       8171440 8172732 4       At4g30240       14809751        14808365        2.8E-84</tt></pre>
+</div></div>
+</div>
+<h2>Illustrating Matches and DAGchainer Reported Syntenic Regions</h2>
+<div class="sectionbody">
+<p>Both the original match list and the output from DAGchainer can be used as input to the XY plotter like so:</p>
+<div class="literalblock">
+<div class="content">
+<pre><tt>Java_XY_plotter/run_XYplot.pl data_sets/Arabidopsis/Arabidopsis.Release5.matchList data_sets/Arabidopsis/Arabidopsis.Release5.matchList.filtered.aligncoords</tt></pre>
+</div></div>
+<p>The regions reported by DAGchainer as candidate syntenic genes are highlighted with a random color, and each chain is colored differently, as shown below:</p>
+<p><span class="image">
+<a class="image" href="xy_plotter_images/arab_2vs4.with_chains.gif">
+<img src="xy_plotter_images/arab_2vs4.with_chains.small.gif" alt="image with diagonals colored" title="image with diagonals colored"/>
+</a>
+</span></p>
+<p>The menu option Diagonals-&gt;<em>Toggle show diagonals</em> can be used to toggle the diagonal coloring on/off.</p>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated 27-Nov-2006 14:22:19 EDT
+</div>
+</div>
+</body>
+</html>

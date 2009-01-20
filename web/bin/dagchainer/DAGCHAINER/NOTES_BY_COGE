@@ -1,0 +1,2 @@
+run_DAG_chainer.pl modified to surpress unwanted output to STDOUT
+dagchainer.cp modified to remove Duplicate Score output to STDERR
