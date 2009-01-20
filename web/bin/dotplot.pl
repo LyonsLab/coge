@@ -6,7 +6,7 @@ use Getopt::Long;
 use CoGeX;
 use Data::Dumper;
 
-use vars qw($dagfile $alignfile $width $link $min_chr_size $orgid1 $orgid2 $help $coge $gd $CHR1 $CHR2 $basename $link_type $flip);
+use vars qw($dagfile $alignfile $width $link $min_chr_size $orgid1 $orgid2 $help $coge $gd $CHR1 $CHR2 $basename $link_type $flip $grid);
 
 
 GetOptions(
@@ -22,7 +22,8 @@ GetOptions(
 	   "chr1|c1=s"=>\$CHR1,
 	   "chr2|c2=s"=>\$CHR2,
 	   "basename|b=s"=>\$basename,
-	   "flip|f=i"=>\$flip
+	   "flip|f=i"=>\$flip,
+	   "grid|g=i"=>\$grid
 	   );
 usage() if $help;
 usage() unless -r $dagfile;
@@ -41,6 +42,7 @@ my $org2length =0;
 map {$org2length+=$_->{length}} values %$org2info;
 
 ($org1info, $org1length, $org2info, $org2length) = ($org2info, $org2length, $org1info, $org1length) if $flip;
+($CHR1, $CHR2) = ($CHR2, $CHR1) if $flip && ($CHR1 || $CHR2);
 my $height = sprintf("%.0f", $width*$org2length/$org1length);
 $height = $width if ($height > 5*$width) || ($height <  $width/5);
 my $x_bp_per_pix = sprintf("%.0f", $org1length/$width);
@@ -53,7 +55,7 @@ my $gd = new GD::Image($width, $height);
 my $white = $gd->colorResolve(255,255,255);
 $gd->fill(1,1,$white);
 
-draw_chromosome_grid(gd=>$gd, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, link=>$link, link_type=>$link_type, flip=>$flip);
+draw_chromosome_grid(gd=>$gd, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, link=>$link, link_type=>$link_type, flip=>$flip, grid=>$grid);
 draw_dots(gd=>$gd, file=>$dagfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, link_type => $link_type, orgid1=>$orgid1, orgid2=>$orgid2, flip=>$flip);
 my $add = 1 if $orgid1 eq $orgid2;
 draw_dots(gd=>$gd, file=>$alignfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, color=>$gd->colorResolve(0,150,0), size=>2, add_inverse=>$add, flip=>$flip);
@@ -169,7 +171,9 @@ sub draw_dots
       {
 	open (OUT, ">".$basename.".html") || die "$!";
 	my $org1name = $coge->resultset('Organism')->find($oid1)->name if $oid1;
+	my $org1length = commify($org1->{$CHR1}->{length})." bp";
 	my $org2name = $coge->resultset('Organism')->find($oid2)->name if $oid2;
+	my $org2length = commify($org2->{$CHR2}->{length})." bp";
 	print OUT qq{
 <html><head>
 <link href="/CoGe/css/styled.css" type="text/css" rel="stylesheet"/>
@@ -184,7 +188,7 @@ var ajax = [];function pjx(args,fname,method) { this.target=args[1]; this.args=a
 	print OUT qq{
 
 <IMG SRC="$img.png" usemap="#points" border="0" style='position: absolute;left: 0px;top:45px;'>
-<span class=xsmall style='position: absolute;left: 0px;top: 45px;'>$org1name: $CHR1</span>
+<span class=xsmall style='position: absolute;left: 0px;top: 45px;'>$org2name: $CHR2 ($org2length)</span>
 <map name="points">
 };
 	foreach my $item (@feats)
@@ -199,7 +203,7 @@ var ajax = [];function pjx(args,fname,method) { this.target=args[1]; this.args=a
 	$pos .='px';
 	print OUT qq{
 </map>
-<span class=xsmall style='position: absolute;left: 0px;top: $pos;'>$org2name: $CHR2</span>
+<span class=xsmall style='position: absolute;left: 0px;top: $pos;'>$org1name: $CHR1 ($org1length)</span>
 </body></html>
 };
 	close OUT;
@@ -218,7 +222,9 @@ sub draw_chromosome_grid
     my $y_pix_per_bp=$opts{y_pix_per_bp};
     my $link = $opts{link};
     my $link_type = $opts{link_type};
+    my $grid = $opts{grid};
     my $black = $gd->colorResolve(0,0,0);
+    my $span_color = $gd->colorResolve(200,255,200);
     $gd->line(0,0, $gd->width, 0, $black);
     $gd->line(0, $gd->height-1, $gd->width, $gd->height-1, $black);
     $gd->line(0,0, 0, $gd->height, $black);
@@ -231,6 +237,16 @@ sub draw_chromosome_grid
       {
 	my $x = sprintf("%.0f",$org1->{$chr}{start}*$x_pix_per_bp);
 	next if $pv && $x == $pv-1;
+	if ($grid)
+	  {
+	    my $tmp = $x;
+	    my $span = sprintf("%.0f",($org1->{$chr}{length}/10*$x_pix_per_bp));
+	    for (1..9)
+	      {
+		$tmp+=$span;
+		$gd->line($tmp, 0, $tmp, $gd->height, $span_color);
+	      }
+	  }
 	$gd->line($x, 0, $x, $gd->height, $black);
 	$gd->string(gdSmallFont, $x+2, $gd->height-15, $chr, $black);
 	$data{x}{$pchr}=[$pv,$x] if $pchr;
@@ -242,8 +258,20 @@ sub draw_chromosome_grid
     $pv=undef;
     foreach my $chr (sort {$org2->{$a}{start}<=>$org2->{$b}{start} } keys %$org2)
       {
+#	print STDERR join ("\t", $chr, $org2->{$chr}{start},$org2->{$chr}{length}),"\n";
 	my $y = $gd->height-sprintf("%.0f",$org2->{$chr}{start}*$y_pix_per_bp);
 	next if $pv && $y == $pv-1;
+	if ($grid)
+	  {
+	    my $tmp = $y;
+	    my $span = sprintf("%.0f",($org2->{$chr}{length}/10*$y_pix_per_bp));
+	    for (1..9)
+	      {
+		$tmp-=$span;
+		$gd->line(0, $tmp, $gd->width, $tmp, $span_color);
+	      }
+	  }
+
 	$gd->line(0, $y, $gd->width, $y, $black);
 	$gd->string(gdSmallFont, 2, $y-15, $chr, $black);
 	$data{y}{$pchr}=[$y, $pv] if $pchr;
@@ -363,6 +391,8 @@ link_type    | lt      are image map links for chromosome blocks or points:
                        2  ::   points
 
 flip         | f       flip axes (1 flip, 0 don't flip [DEFAULT])
+
+grid         | g       add a positional grid to dotplot
 
 help         | h       print this message
 
