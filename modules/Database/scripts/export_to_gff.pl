@@ -115,7 +115,7 @@ sub get_locs {
             $chrs{$g->chr} = 1;
             my $sub_rs = $s->resultset('Feature')->search( {
                   'me.dataset_id' => { 'IN' => $datasets },
-                  'feature_names.name'  =>  $clean_name
+                  'feature_names.name'  =>  $gene_name
                   , 'feature_type.name'  =>  { 'NOT IN' => ['gene', 'mRNA'] }
                 } , { 
                    'join'               => [ 'feature_names'],
