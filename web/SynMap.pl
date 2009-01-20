@@ -770,7 +770,7 @@ sub go
     my $regen_images = $opts{regen_images};
     my $email = $opts{email};
     my $job_title = $opts{jobtitle};
-    
+    my $width = $opts{width};
     my $basename = $opts{basename};
     $cogeweb = initialize_basefile(basename=>$basename, prog=>"SynMap");
     
@@ -962,11 +962,11 @@ sub go
 	      }
 	  }
 	my $test = $org1_length > $org2_length ? $org1_length : $org2_length;
-	my $width = int($test/100000);
+	$width = int($test/100000) unless $width;
 	$width = 1200 if $width > 1200;
 	$width = 500 if $width < 500;
 	$width = 1200 if $chr1_count > 9 || $chr2_count > 9;
-	$width = 4000 if $chr1_count > 100 || $chr2_count > 100;
+	$width = 2000 if $chr1_count > 100 || $chr2_count > 100;
 	my $qlead = "a";
 	my $slead = "b";
 	my $qdsid = "qdsid";
@@ -977,13 +977,14 @@ sub go
 	$out .= "_D$dagchainer_D" if $dagchainer_D;
 	$out .= "_g$dagchainer_g" if $dagchainer_g;
 	$out .= "_A$dagchainer_A" if $dagchainer_A;
+	$out .= ".w$width";
 	generate_dotplot(dag=>$dag_file12.".all", coords=>$tmp, outfile=>"$out", regen_images=>$regen_images, oid1=>$oid1, oid2=>$oid2, width=>$width);
 	add_GEvo_links (infile=>$tmp, chr1=>\%chr1, chr2=>\%chr2);
 	$tmp =~ s/$DATADIR/$URL\/data/;
 	if (-r "$out.html")
 	  {
 	    open (IN, "$out.html") || warn "problem opening $out.html for reading\n";
-	    $html = "<span class=species>$org_name2</span><table><tr valign=top><td valign=top>";
+	    $html = "<span class='species small'>$org_name2</span><table><tr valign=top><td valign=top>";
 	    $/ = "\n";
 	    while (<IN>)
 	      {
@@ -995,9 +996,12 @@ sub go
 	    $html =~ s/master.*\.png/data\/$out.png/;
 	    warn "$out.html did not parse correctly\n" unless $html =~ /map/i;
 	    $html .= qq{
-<br><span class=species>$org_name1</span><br>
-Zoomed SynMap Display Location:
-<select name=map_loc id=map_loc>
+<br><span class="species small">$org_name1</span><br>
+Zoomed SynMap:
+<table class=species>
+<tr>
+<td> Display Location:
+<td><select name=map_loc id=map_loc>
  <option value="window1">New Window 1
  <option value="window2">New Window 2
  <option value="window3">New Window 3
@@ -1005,11 +1009,16 @@ Zoomed SynMap Display Location:
  <option value="2">Area 2
  <option value="3">Area 3
 </select>
-<br>
-Flip axes?
-<input type=checkbox id=flip>
+
+<tr>
+<td>Flip axes?
+<td><input type=checkbox id=flip>
+<tr>
+<td>Image Width
+<td><input type=text name=zoom_width id=zoom_width size=6 value="600">
+</table>
 };
-	    $html .= "<br><span class=small><a href=data/$out.png target=_new>Image File</a><br>";
+	    $html .= "<br><span class=small><a href=data/$out.png target=_new>Image File</a>";
 	    $html .= "<br><span class=small><a href=$tmp target=_new>Syntolog file with GEvo links</a><br>";
 	  }
       }
@@ -1200,8 +1209,10 @@ sub get_dotplot
     my $loc = $args{loc};
     my $flip = $args{flip} eq "true" ? 1 : 0;
     my $regen = $args{regen_images} eq "true" ? 1 : 0;
+    my $width = $args{width};
     $src .= ";flip=$flip" if $flip;
     $src .= ";regen=$regen" if $regen;
+    $src .= ";width=$width" if $width;
     my $content = get("http://".$ENV{SERVER_NAME}."/".$src);
     my ($url) = $content =~ /url=(.*?)"/is;
     my $png = $url;
