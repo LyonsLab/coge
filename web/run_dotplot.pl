@@ -28,6 +28,9 @@ my $url_only = $FORM->param('link');
 my $square = $FORM->param('square');
 my $flip = $FORM->param('flip');
 my $regen = $FORM->param('regen');
+my $width = $FORM->param('width') || 600;
+my $grid = $FORM->param('grid');
+$grid = 1 unless defined $grid;
 $DEBUG=1 if $FORM->param('debug');
 exit unless ($org1 && $org2 && $chr1 && $chr2 && $basename);
 my ($md51, $md52, $mask1, $mask2, $type1, $type2, $blast,$params) = $basename =~/(.*?)_(.*?)\.(\d+)-(\d+)\.(\w+)-(\w+)\.(\w+)\.dag_(.*)/ ;
@@ -82,7 +85,8 @@ my $dir = "$DIAGSDIR/$name1"."/".$name2;
 my $dag_file = $dir."/".$basename;
 $dag_file =~ s/\.dag_.*//;
 $dag_file .= ".dag.all";
-my $res = generate_dotplot(dag=>$dag_file, coords=>"$dir/$basename.all.aligncoords", qchr=>$chr1, schr=>$chr2, 'outfile'=>$dir."/html/".$md51."_".$chr1."-".$mask1."-".$type1."_".$md52."_".$chr2."-".$mask2."-".$type2."_".$params.".".$blast, 'regen_images'=>'false', flip=>$flip, regen_images=>$regen, oid1=>$org1->id, oid2=>$org2->id);
+my $outfile = $dir."/html/".$md51."_".$chr1."-".$mask1."-".$type1."_".$md52."_".$chr2."-".$mask2."-".$type2."_".$params.".".$blast.".w$width";
+my $res = generate_dotplot(dag=>$dag_file, coords=>"$dir/$basename.all.aligncoords", qchr=>$chr1, schr=>$chr2, 'outfile'=>$outfile, 'regen_images'=>'false', flip=>$flip, regen_images=>$regen, oid1=>$org1->id, oid2=>$org2->id, width=>$width, grid=>$grid);
 if ($res)
   {
     $res=~s/$DIR/$URL/;
@@ -120,6 +124,8 @@ sub generate_dotplot
     my $qchr = $opts{qchr};
     my $schr = $opts{schr};
     my $flip = $opts{flip} || 0; 
+    my $width = $opts{width} || 600;
+    my $grid = $opts{grid} || 0; 
     $outfile .= ".flip" if $flip;
     my $regen_images = $opts{regen_images};
     if (-r $outfile.".html" && !$regen_images)
@@ -128,7 +134,7 @@ sub generate_dotplot
 	return $outfile;
       }
 #    write_log("generate dotplot: running $cmd", $cogeweb->logfile);
-    my $cmd = qq{$DOTPLOT -d $dag -a $coords -b $outfile -l '' -o1 $oid1 -o2 $oid2 -w 600 -lt 1 -chr1 $qchr -chr2 $schr -flip $flip};
+    my $cmd = qq{$DOTPLOT -d $dag -a $coords -b $outfile -l '' -o1 $oid1 -o2 $oid2 -w $width -lt 1 -chr1 $qchr -chr2 $schr -flip $flip -grid 1};
     `$cmd`;
 
     return $outfile if -r $outfile.".html";
