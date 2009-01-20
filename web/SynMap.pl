@@ -33,7 +33,7 @@ $PYTHON = "/usr/bin/python";
 $DAG_TOOL = $DIR."/bin/dagchainer/dag_tools.py";
 $TANDEM_FINDER = $DIR."/bin/dagchainer/tandems.py -d 5 -s -r"; #-d option is the distance (in genes) between dups -- not sure if the -s and -r options are needed -- they create dups files based on the input file name
 $FILTER_REPETITIVE_MATCHES = $DIR."/bin/dagchainer/filter_repetitive_matches.pl 200000"; #filters multiple matches to the same accession within the "window size", here set to 80000 nt
-$RUN_DAGCHAINER = $DIR."/bin/parepair/run_dagchainer.pl -E 0.05";
+$RUN_DAGCHAINER = $DIR."/bin/dagchainer/DAGCHAINER/run_DAG_chainer.pl -E 0.05";
 $FIND_NEARBY = $DIR."/bin/dagchainer/find_nearby.py -d 200000";
 $DOTPLOT = $DIR."/bin/dotplot.pl";#Eric gives up waiting for new and improved to really work, and writes his own.
 $CONVERT_TO_GENE_ORDER = $DIR."/bin/dagchainer/convert_to_gene_order.pl";  #this needs to be implemented
@@ -851,20 +851,20 @@ sub go
     my $orgkey2 = $org_name2.$masked2.$seq_type2;
     my %org_dirs = (
 		    $orgkey1."_".$orgkey2=>{fasta=>$fasta1,
-						db=>$blastdb2,
-						basename=>$md51."_".$md52.".$masked1-$masked2.$seq_type1-$seq_type2.$blast",
-						dir=>$DIAGSDIR."/".$tmp1."/".$tmp2,
-						},
+					    db=>$blastdb2,
+					    basename=>$md51."_".$md52.".$masked1-$masked2.$seq_type1-$seq_type2.$blast",
+					    dir=>$DIAGSDIR."/".$tmp1."/".$tmp2,
+					   },
 		    $orgkey1."_".$orgkey1=>{fasta=>$fasta1,
-						db=>$blastdb1,
-						basename=>$md51."_".$md51.".$masked1-$masked1.$seq_type1-$seq_type1.$blast",
-						dir=>$DIAGSDIR."/".$tmp1."/".$tmp1,
-						},
+					    db=>$blastdb1,
+					    basename=>$md51."_".$md51.".$masked1-$masked1.$seq_type1-$seq_type1.$blast",
+					    dir=>$DIAGSDIR."/".$tmp1."/".$tmp1,
+					   },
 		    $orgkey2."_".$orgkey2=>{fasta=>$fasta2,
-						db=>$blastdb2,
-						basename=>$md52."_".$md52.".$masked2-$masked2.$seq_type2-$seq_type2.$blast",
-						dir=>$DIAGSDIR."/".$tmp2."/".$tmp2,
-						},
+					    db=>$blastdb2,
+					    basename=>$md52."_".$md52.".$masked2-$masked2.$seq_type2-$seq_type2.$blast",
+					    dir=>$DIAGSDIR."/".$tmp2."/".$tmp2,
+					   },
 		   );
     foreach my $org_dir (keys %org_dirs)
       {
