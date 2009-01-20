@@ -136,6 +136,5 @@ sub generate_dotplot
 #    write_log("generate dotplot: running $cmd", $cogeweb->logfile);
     my $cmd = qq{$DOTPLOT -d $dag -a $coords -b $outfile -l '' -o1 $oid1 -o2 $oid2 -w $width -lt 1 -chr1 $qchr -chr2 $schr -flip $flip -grid 1};
     `$cmd`;
-
     return $outfile if -r $outfile.".html";
   }
