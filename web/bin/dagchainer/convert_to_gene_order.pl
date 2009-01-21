@@ -5,24 +5,27 @@ use CoGeX;
 use Getopt::Long;
 use Data::Dumper;
 
-my ($DEBUG, $oid1, $oid2, $input_file);
+my ($DEBUG, $oid1, $oid2, $input_file, $ftid1, $ftid2);
 
 GetOptions(
 	   "DEBUG"=>\$DEBUG,
 	   "oid1|org1|o1=s"=>\$oid1,
 	   "oid2|org2|o2=s"=>\$oid2,
 	   "input|file|i|f=s"=>\$input_file,
+	   "ftid1|ft1=i"=>\$ftid1,
+	   "ftid2|ft2=i"=>\$ftid2,
 	  );
 
 
 my $coge = CoGeX->dbconnect();
-my $org1 = $coge->resultset('Organism')->resolve($oid1);
-my $org2 = $coge->resultset('Organism')->resolve($oid2);
-my $order1 = get_gene_order($org1);
-my $order2 = get_gene_order($org2);
-#print Dumper [keys %$order2];
-#print map {$_."\n"} sort {$order2->{'contig_NZ_AAKB02000001'}{$a} <=> $order2->{'contig_NZ_AAKB02000001'}{$b}} keys %{$order2->{'contig_NZ_AAKB02000001'}};
-#print Dumper $order1;
+my ($org1) = $coge->resultset('Organism')->resolve($oid1);
+my ($org2) = $coge->resultset('Organism')->resolve($oid2);
+my $order1 = get_gene_order(org=>$org1, ftid=>$ftid1);
+my $order2 = get_gene_order(org=>$org2, ftid=>$ftid2);
+
+$order1 = get_order_from_input(file=>$input_file, set=>1) unless $order1;
+$order2 = get_order_from_input(file=>$input_file, set=>2) unless $order2;
+
 open (IN, $input_file);
 while (<IN>)
   {
@@ -31,12 +34,32 @@ while (<IN>)
     my @item1 = split/\|\|/, $line[1];
     my @item2 = split/\|\|/, $line[5];
 #    print $item1[0],"\n",$item1[3],"\n";
-    next unless $order1->{$item1[0]}{$item1[3]};
-    next unless $order2->{$item2[0]}{$item2[3]};
-    $line[2] = $order1->{$item1[0]}{$item1[3]};
-    $line[3] = $order1->{$item1[0]}{$item1[3]};
-    $line[6] = $order2->{$item2[0]}{$item2[3]};
-    $line[7] = $order2->{$item2[0]}{$item2[3]};
+    if ($item1[4])
+      {
+	next unless $order1->{$item1[0]}{$item1[3]};
+	$line[2] = $order1->{$item1[0]}{$item1[3]};
+	$line[3] = $order1->{$item1[0]}{$item1[3]};
+      }
+    else
+      {
+	$line[2] = $order1->{$item1[0]}{$item1[1]}{$item1[2]};
+	$line[2] = $order1->{$item1[0]}{$item1[2]}{$item1[1]} unless $line[2];
+	$line[3] = $order1->{$item1[0]}{$item1[1]}{$item1[2]};
+	$line[3] = $order1->{$item1[0]}{$item1[2]}{$item1[1]} unless $line[3];
+      }
+    if ($item2[4])
+      {
+	next unless $order2->{$item2[0]}{$item2[3]};
+	$line[6] = $order2->{$item2[0]}{$item2[3]};
+	$line[7] = $order2->{$item2[0]}{$item2[3]};
+      }
+    else
+      {
+	$line[6] = $order2->{$item2[0]}{$item2[1]}{$item2[2]};
+	$line[6] = $order2->{$item2[0]}{$item2[2]}{$item2[1]} unless $line[6];
+	$line[7] = $order2->{$item2[0]}{$item2[1]}{$item2[2]};
+	$line[7] = $order2->{$item2[0]}{$item2[2]}{$item2[1]} unless $line[7];
+      }
     print join "\t", @line,"\n";
   }
 close IN;
@@ -44,16 +67,49 @@ close IN;
 
 
 
+sub get_order_from_input
+  {
+    my %opts = @_;
+    my $file = $opts{file};
+    my $set = $opts{set};
+    my %data;
+    open (IN, $file) || die "can't open $file for reading: $!";
+    while (<IN>)
+      {
+	my @line = split/\t/;
+	my @item = $set == 1 ? split(/\|\|/,$line[1]) : split/\|\|/, $line[5];
+	my ($start, $stop) = sort {$a <=> $b} ($item[1],$item[2]);
+	$data{$item[0]}{$start}{$stop}=1;
+      }
+    close IN;
+    foreach my $chr (keys %data)
+      {
+	my $count =1;
+	foreach my $start (sort {$a <=> $b} keys %{$data{$chr}})
+	  {
+	    foreach my $stop (sort {$a <=> $b} keys %{$data{$chr}{$start}})
+	      {
+		$data{$chr}{$start}{$stop}=$count;
+		$count++;
+	      }
+	  }
+      }
+    return \%data;
+  }
+
 sub get_gene_order
   {
-    my $org = shift;
+    my %opts = @_;
+    my $org = $opts{org};
+    my $ftid = $opts{ftid};
+    $ftid = 3 unless defined $ftid; #default for CDS
     my %data;
     foreach my $ds ($org->current_datasets())
       {
 	my %chr;
 	foreach my $feat ($coge->resultset('Feature')->search({
 							       datAset_id=>$ds->id,
-							       feature_type_id=>3},
+							       feature_type_id=>$ftid},
 							     {
 							      order_by=>'start desc',
 							     }))
@@ -63,6 +119,8 @@ sub get_gene_order
 	    $data{$feat->chromosome}{$name} = $chr{$feat->chromosome};
 	  }
       }
+    return 0 unless keys %data;
+
     return \%data;
   }
 
