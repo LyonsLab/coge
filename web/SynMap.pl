@@ -33,7 +33,7 @@ $PYTHON = "/usr/bin/python";
 $DAG_TOOL = $DIR."/bin/dagchainer/dag_tools.py";
 $TANDEM_FINDER = $DIR."/bin/dagchainer/tandems.py -d 5 -s -r"; #-d option is the distance (in genes) between dups -- not sure if the -s and -r options are needed -- they create dups files based on the input file name
 $FILTER_REPETITIVE_MATCHES = $DIR."/bin/dagchainer/filter_repetitive_matches.pl 200000"; #filters multiple matches to the same accession within the "window size", here set to 80000 nt
-$RUN_DAGCHAINER = $DIR."/bin/dagchainer/DAGCHAINER/run_DAG_chainer.pl -E 0.05";
+$RUN_DAGCHAINER = $DIR."/bin/dagchainer/DAGCHAINER/run_DAG_chainer.pl -E 0.05 -s";
 $FIND_NEARBY = $DIR."/bin/dagchainer/find_nearby.py -d 200000";
 $DOTPLOT = $DIR."/bin/dotplot.pl";#Eric gives up waiting for new and improved to really work, and writes his own.
 $CONVERT_TO_GENE_ORDER = $DIR."/bin/dagchainer/convert_to_gene_order.pl";  #this needs to be implemented
@@ -558,6 +558,74 @@ sub run_filter_repetitive_matches
     return 1 if -r $outfile;
   }
 
+sub run_convert_to_gene_order
+  {
+    my %opts = @_;
+    my $infile = $opts{infile};
+    my $oid1 = $opts{oid1};
+    my $oid2 = $opts{oid2};
+    my $outfile = $infile."_geneorder";
+    while (-e "$outfile.running")
+      {
+	sleep 60;
+      }
+    unless (-r $infile && -s $infile)
+	{
+	  write_log("WARNING:   Cannot convert to gene order! DAGChainer input file ($infile) contains no data!" ,$cogeweb->logfile);
+	  return 0;
+	}
+    if (-r $outfile)
+      {
+	write_log("run_filter_repetitive+_matches: file $outfile already exists",$cogeweb->logfile);
+	return $outfile;
+      }
+    my $cmd = $CONVERT_TO_GENE_ORDER ." -i $infile -o1 $oid1 -o2 $oid2 > $outfile";
+    system "touch $outfile.running"; #track that a blast anlaysis is running for this
+    write_log("run_convert_to_gene_order: running $cmd", $cogeweb->logfile);
+    `$cmd`;
+    write_log("Completed conversion!", $cogeweb->logfile);
+    system "rm $outfile.running" if -r "$outfile.running";; #remove track filereturn $outfile;
+    return $outfile;
+  }
+
+sub replace_gene_order_with_genomic_positions
+  {
+    my %opts = @_;
+    my $file = $opts{file};
+    #must convert file's coordinates back to genomic
+    while (-e "$file.orig.running")
+      {
+	sleep 60;
+      }
+    if (-r "$file.orig" && -s "$file.orig")
+      {
+	write_log("  no cnoversion for $file back to genomic coordinates needed, convered file exists", $cogeweb->logfile);
+	return;
+      }
+    system "touch $file.orig.running"; #track that a blast anlaysis is running for this
+    write_log("  converting $file back to genomic coordinates", $cogeweb->logfile);
+    `mv $file $file.orig`;
+    open (IN,  "$file.orig");
+    open (OUT, ">$file");
+    while (<IN>)
+      {
+	if (/^#/){print OUT $_; next;}
+	my @line = split /\t/;
+	my @item1 = split /\|\|/, $line[1];
+	my @item2 = split /\|\|/, $line[5];
+	my ($start, $stop) = $item1[4] == 1 ? ($item1[1], $item1[2]) : ($item1[2],$item1[1]);
+	$line[2] = $start;
+	$line[3] = $stop;
+	($start, $stop) = $item2[4] == 1 ? ($item2[1], $item2[2]) : ($item2[2],$item2[1]);
+	$line[6] = $start;
+	$line[7] = $stop;
+	print OUT join ("\t", @line);
+      }
+    close IN;
+    close OUT;
+    system "rm $file.orig.running" if -r "$file.orig.running"; 
+  }
+
 sub run_dagchainer
   {
     my %opts = @_;
@@ -737,6 +805,7 @@ sub generate_dotplot
     my $s_max = $opts{"s_max"};
     my $oid1 = $opts{oid1};
     my $oid2 = $opts{oid2};
+    my $dagtype = $opts{dagtype};
     my ($basename) = $coords =~ /([^\/]*).all.aligncoords/;
     my $regen_images = $opts{regen_images}=~/true/i ? 1 : 0;
     my $width = $opts{width} || 1000;
@@ -781,6 +850,8 @@ sub go
     $seq_type1 = $seq_type1 == 2 ? "genomic" : "CDS";
     my $seq_type2 = $opts{seq_type2};
     $seq_type2 = $seq_type2 == 2 ? "genomic" : "CDS";
+    my $dagchainer_type = $opts{dagchainer_type};
+    $dagchainer_type = $dagchainer_type eq "true" ? "distance" : "geneorder";
     unless ($oid1 && $oid2)
       {
 	return "<span class=alert>You must select two organisms.</span>"
@@ -912,16 +983,25 @@ sub go
     $problem=1 unless run_dag_tools(query=>"a".$md51, subject=>"b".$md52, blast=>$org_dirs{$orgkey1."_".$orgkey2}{blastfile}, outfile=>$dag_file12.".all", query_dup_file=>$dup_file1,subject_dup_file=>$dup_file2, seq_type1=>$seq_type1, seq_type2=>$seq_type2);
     #remove repetitive matches
     run_filter_repetitive_matches(infile=>$dag_file12.".all",outfile=>$dag_file12);
+    #is this an ordered gene run?
+    my $dag_file12_all = $dag_file12.".all";
+    $dag_file12 = run_convert_to_gene_order(infile=>$dag_file12, oid1=>$oid1, oid2=>$oid2) if $dagchainer_type eq "geneorder";
     #run dagchainer
-    my $dagchainer_file = run_dagchainer(infile=>$dag_file12, D=>$dagchainer_D, g=>$dagchainer_g,A=>$dagchainer_A);
+    my $dagchainer_file = run_dagchainer(infile=>$dag_file12, D=>$dagchainer_D, g=>$dagchainer_g,A=>$dagchainer_A, type=>$dagchainer_type);
     write_log("Completed dagchainer run", $cogeweb->logfile);
     write_log("", $cogeweb->logfile);
     if (-r $dagchainer_file)
       {
-	#add pairs that were skipped by dagchainer
-	my $tmp = $dagchainer_file;
+	my $tmp = $dagchainer_file; #temp file name for the final post-processed data
 	$tmp =~ s/aligncoords/all\.aligncoords/;
-	run_find_nearby(infile=>$dagchainer_file, dag_all_file=>$dag_file12.".all", outfile=>$tmp);
+	#convert to genomic coordinates if gene order was used
+	if ($dagchainer_type eq "geneorder")
+	  {
+	    replace_gene_order_with_genomic_positions(file=>$dagchainer_file);
+	  }
+	#add pairs that were skipped by dagchainer
+	run_find_nearby(infile=>$dagchainer_file, dag_all_file=>$dag_file12_all, outfile=>$tmp);
+
 	#generate dotplot images
 	my @ds1 = $org1->current_datasets(type=>$masked1);
 	unless (@ds1)
@@ -974,11 +1054,13 @@ sub go
 	my $out = $org_dirs{$orgkey1."_".$orgkey2}{dir}."/html/";
 	mkpath ($out,0,0777) unless -d $out;
 	$out .="master_".$org_dirs{$orgkey1."_".$orgkey2}{basename};
+	$out .= "_$dagchainer_type";
 	$out .= "_D$dagchainer_D" if $dagchainer_D;
 	$out .= "_g$dagchainer_g" if $dagchainer_g;
 	$out .= "_A$dagchainer_A" if $dagchainer_A;
 	$out .= ".w$width";
-	generate_dotplot(dag=>$dag_file12.".all", coords=>$tmp, outfile=>"$out", regen_images=>$regen_images, oid1=>$oid1, oid2=>$oid2, width=>$width);
+	
+	generate_dotplot(dag=>$dag_file12_all, coords=>$tmp, outfile=>"$out", regen_images=>$regen_images, oid1=>$oid1, oid2=>$oid2, width=>$width, dagtype=>$dagchainer_type);
 	add_GEvo_links (infile=>$tmp, chr1=>\%chr1, chr2=>\%chr2);
 	$tmp =~ s/$DATADIR/$URL\/data/;
 	if (-r "$out.html")
@@ -1096,6 +1178,7 @@ sub get_previous_analyses
 			g=>$g,
 			A=>$A,
 			blast=>$blast);
+	    my $geneorder = $file =~ /geneorder/;
 #	    ($mask1, $type1, $mask2, $type2) = ($mask2, $type2, $mask1, $type1)  if ($md52 lt $md51); #not sure about this comment for now
 	    $data{mask1} = $mask1-1;
 	    $data{mask2} = $mask2-1;
@@ -1106,6 +1189,7 @@ sub get_previous_analyses
 	    $type2 = $type2 eq "CDS" ? 0 : 1; 
 	    $data{type1} = $type1;
 	    $data{type2} = $type2;
+	    $data{dagtype} = $geneorder ? "Ordered genes" : "Distance";
 	    push @items, \%data;
 	  }
       }
@@ -1117,8 +1201,8 @@ sub get_previous_analyses
     foreach (sort {$a->{g}<=>$b->{g} } @items)
       {
 	my $blast = $_->{blast} =~ /^blastn$/i ? 0 : 1;
-	my $val = join ("_",$_->{g},$_->{D},$_->{A}, $oid1, $_->{mask1},$_->{type1},$oid2, $_->{mask2},$_->{type2}, $blast);
-	my $name = $_->{blast}.": g:".$_->{g}." D:".$_->{D}." A:".$_->{A}." ".$_->{name};
+	my $val = join ("_",$_->{g},$_->{D},$_->{A}, $oid1, $_->{mask1},$_->{type1},$oid2, $_->{mask2},$_->{type2}, $blast, $_->{dagtype});
+	my $name = $_->{blast}.", ".$_->{dagtype}.": g:".$_->{g}." D:".$_->{D}." A:".$_->{A}." ".$_->{name};
 	$html .= qq{
  <option value="$val">$name
 };
