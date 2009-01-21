@@ -186,7 +186,7 @@ sub to_String {
 	  }
       else 
 	{
-          $str .= $item ;
+          $str .= $item if $item;
         } 
       ## Attach a delimiter between every
       #element.  
