@@ -22,7 +22,7 @@ my $order1 = get_gene_order($org1);
 my $order2 = get_gene_order($org2);
 #print Dumper [keys %$order2];
 #print map {$_."\n"} sort {$order2->{'contig_NZ_AAKB02000001'}{$a} <=> $order2->{'contig_NZ_AAKB02000001'}{$b}} keys %{$order2->{'contig_NZ_AAKB02000001'}};
-#print Dumper $order2;
+#print Dumper $order1;
 open (IN, $input_file);
 while (<IN>)
   {
@@ -30,6 +30,7 @@ while (<IN>)
     my @line = split/\t/;
     my @item1 = split/\|\|/, $line[1];
     my @item2 = split/\|\|/, $line[5];
+#    print $item1[0],"\n",$item1[3],"\n";
     $line[2] = $order1->{$item1[0]}{$item1[3]};
     $line[3] = $order1->{$item1[0]}{$item1[3]};
     $line[6] = $order2->{$item2[0]}{$item2[3]};
@@ -48,9 +49,12 @@ sub get_gene_order
     foreach my $ds ($org->current_datasets())
       {
 	my %chr;
-	foreach my $feat (sort {$a->start <=> $b->start} $coge->resultset('Feature')->search({
-											      datAset_id=>$ds->id,
-											      feature_type_id=>3}))
+	foreach my $feat ($coge->resultset('Feature')->search({
+							       datAset_id=>$ds->id,
+							       feature_type_id=>3},
+							     {
+							      order_by=>'start desc',
+							     }))
 	  {
 	    $chr{$feat->chromosome}++;
 	    my ($name) = $feat->names;
