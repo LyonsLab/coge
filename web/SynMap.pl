@@ -56,6 +56,7 @@ my $pj = new CGI::Ajax(
 		       check_address_validity=>\&check_address_validity,
 		       generate_basefile=>\&generate_basefile,
 		       get_dotplot=>\&get_dotplot,
+		       gen_seqtype_menu=>\&gen_seqtype_menu,
 		       %ajax,
 		      );
 print $pj->build_html($FORM, \&gen_html);
@@ -87,20 +88,55 @@ sub gen_body
   {
     my $form = shift || $FORM;
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SynMap.tmpl');
+    $template->param(MAIN=>1);
+    
+    my $master_width = $FORM->param('w') || 0;
+    $template->param(MWIDTH=>$master_width);
+    if ($FORM->param('b') && $FORM->param('b') == 2)
+      {
+	$template->param(TBLASTX_SELECT=>"selected");
+      }
+    else
+      {
+	$template->param(BLASTN_SELECT=>"selected");
+      }
+    my ($D, $g, $A, $dt) = ($FORM->param('D'),$FORM->param('g'),$FORM->param('A'), $FORM->param('dt'));
+    my $display_dagchainer_settings;
+    if ($D && $g && $A && $dt) 
+      {
+	my $type;
+	if ($dt =~ /gene/i)
+	  {
+	    $type = " genes";
+	    $template->param('DAG_GENE_SELECT'=>'checked');
+	  }
+	else
+	  {
+	    $type = " bp";
+	    $template->param('DAG_DISTANCE_SELECT'=>'checked');
+	  }
+	$display_dagchainer_settings = qq{display_dagchainer_settings([$g,$D,$A],'$type');};
+      }
+    else
+      {
+	$template->param('DAG_GENE_SELECT'=>'checked');
+	$display_dagchainer_settings = qq{display_dagchainer_settings();};
+      }
+    $template->param('DISPLAY_DAGCHAINER_SETTINGS'=>$display_dagchainer_settings);
+    
+    #populate organism menus
     for (my $i=1; $i<=2;$i++)
       {
-	my $name = $form->param('org_name'.$i);
-	my $desc = $form->param('org_desc'.$i);
-	my $oid = $form->param('oid'.$i);
-	my ($org) = $coge->resultset('Organism')->resolve($oid) if $oid;
-	$name = $org->name if $org;
-	$name = "Search" unless $name;
-	$template->param('ORG_NAME'.$i=>$name);
-	$desc = "Search" unless $desc;
-	$template->param('ORG_DESC'.$i=>$desc);
-	$name = "" if $name =~ /Search/;
-	$template->param('ORG_LIST'.$i=>get_orgs(name=>$name,i=>$i));
+	my $name = $form->param('org_name'.$i) || $form->param('name'.$i) || 0;
+	my $desc = $form->param('org_desc'.$i) || $form->param('desc'.$i) || 0;
+	my $oid = $form->param('oid'.$i) || 0;
+	my $masked_param = $FORM->param('m'.$i) if $FORM->param('m'.$i);
+	my $seqtype_param = $FORM->param('st'.$i) if $FORM->param('st'.$i);
+	my $org_menu = gen_org_menu(oid=>$oid, name=>$name, desc=>$desc, num=>$i, masked_param=>$masked_param, seqtype_param=>$seqtype_param);
+	$template->param("ORG_MENU".$i=>$org_menu);
       }
+
+
     my $file = $form->param('file');
     if($file)
     {
@@ -110,7 +146,113 @@ sub gen_body
     return $template->output;
   }
   
-  sub read_file
+
+sub gen_org_menu
+  {
+    my %opts = @_;
+    my $oid = $opts{oid};
+    my $num = $opts{num};
+    my $name = $opts{name};
+    my $desc = $opts{desc};
+    my $masked_param = $opts{masked_param};
+    $masked_param = 1 unless $masked_param;
+    my $seqtype_param = $opts{seqtype_param};
+    $seqtype_param = 1 unless $seqtype_param;
+
+
+    my ($org) = $coge->resultset('Organism')->resolve($oid) if $oid;
+    $name = $org->name if $org;
+    $name = "Search" unless $name;
+    $desc = "Search" unless $desc;
+    my $menu_template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SynMap.tmpl');
+    $menu_template->param(ORG_MENU=>1);
+    $menu_template->param(NUM=>$num);
+    $menu_template->param('ORG_NAME'=>$name);
+    $menu_template->param('ORG_DESC'=>$desc);
+    $menu_template->param('ORG_LIST'=>get_orgs(name=>$name,i=>$num, oid=>$oid));
+    my ($masked_menu, $seqtype_menu) = gen_seqtype_menu(oid=>$oid, masked_param=>$masked_param, seqtype_param=>$seqtype_param, num=>$num);
+    $menu_template->param(MASK_MENU=>$masked_menu);
+    $menu_template->param(SEQTYPE_MENU=>$seqtype_menu);
+    return $menu_template->output;
+  }
+
+
+sub gen_seqtype_menu
+  {
+    #create masked menu
+    my %opts = @_;
+    my $oid = $opts{oid};
+    my $num = $opts{num};
+    my $masked_param = $opts{masked_param};
+    $masked_param = 1 unless $masked_param;
+    my $seqtype_param = $opts{seqtype_param};
+    $seqtype_param = 1 unless $seqtype_param;
+    my %types;
+    my ($org) = $coge->resultset('Organism')->resolve($oid) if $oid;
+    my $has_cds;
+    if ($org)
+      {
+	foreach my $ds ($org->datasets)
+	  {
+	    my $type = $ds->sequence_type;
+	    next unless $type;
+	    $types{$type->id}=$type->name;
+	    unless ($has_cds)
+	      {
+		foreach my $ft ($coge->resultset('Feature')->search(
+								    {
+								     feature_type_id=>3,
+								     dataset_id=>$ds->id,
+								    },
+								    {
+								     limit=>1
+								    }
+								   ))
+		  {
+		    $has_cds=1;
+		  }
+	      }
+	  }
+      }
+
+    my @masked_menu = map {[$_,$types{$_}]} sort keys %types;
+    #	= ([1,'unmasked'],[2,'masked']);
+    my $masked_menu = qq{
+   <select id=masked$num onChange="\$('#ds_info$num').html('<div class=dna_small class=loading class=small>loading. . .</div>'); get_datasets(['args__oid','org_id$num', 'args__masked','masked$num', 'args__seq_type','seq_type$num', 'args__seq_type','seq_type$num'],['ds_info$num'])">
+};
+    foreach (@masked_menu)
+      {
+	my ($numt, $name) = @$_;
+	my $selected = " selected" if $numt == $masked_param;
+	$selected = " " unless $selected;
+	$masked_menu .= qq{
+   <OPTION VALUE=$numt $selected>$name</option>
+};
+      }
+    $masked_menu .= "</select>";
+    
+    #create sequence type menu
+    my @seqtype_menu;
+    push @seqtype_menu,[1,'CDS'] if $has_cds;
+    push @seqtype_menu,[2,'genomic'];
+    my $seqtype_menu = qq{
+  <select id="seq_type$num" name ="seq_type$num">
+};
+    foreach (@seqtype_menu)
+      {
+	my ($numt, $name) = @$_;
+	my $selected = " selected" if $numt == $seqtype_param;
+	$selected = " " unless $selected;
+	$seqtype_menu .= qq{
+   <OPTION VALUE=$numt $selected>$name</option>
+};
+      }
+    $seqtype_menu .= "</select>";
+    return ($masked_menu, $seqtype_menu);
+    
+  }
+
+sub read_file
   {
   	my $file = shift;
 
@@ -129,9 +271,17 @@ sub get_orgs
     my %opts = @_;
     my $name = $opts{name};
     my $desc = $opts{desc};
+    my $oid = $opts{oid};
     my $i = $opts{i};
     my @db;
-    if ($name) 
+    $name = "" if $name =~ /Search/; #need to clear to get full org count
+    if ($oid)
+      {
+	my $org = $coge->resultset("Organism")->find($oid);
+	$name = $org->name if $org;
+	push @db, $org if $name;
+      }
+    elsif ($name) 
       {
 	@db = $coge->resultset("Organism")->search({name=>{like=>"%".$name."%"}});
       }
@@ -149,7 +299,11 @@ sub get_orgs
     foreach my $item (sort {uc($a->name) cmp uc($b->name)} @db)
       {
 	next if $restricted_orgs->{$item->name};
-	push @opts, "<OPTION value=\"".$item->id."\">".$item->name." (id".$item->id.")</OPTION>";
+	my $option = "<OPTION value=\"".$item->id."\""; 
+	$option .= " selected" if $oid && $oid == $item->id;
+	$option .= ">".$item->name." (id".$item->id.")</OPTION>";
+	push @opts, $option;
+
       }
     my $html;
     $html .= qq{<FONT CLASS ="small">Organism count: }.scalar @opts.qq{</FONT>\n<BR>\n};
@@ -159,10 +313,10 @@ sub get_orgs
 	return $html;
       }
 
-    $html .= qq{<SELECT id="org_id$i" SIZE="5" MULTIPLE onChange="\$('#ds_info'+$i).html('<div class=dna_small class=loading class=small>loading. . .</div>'); check_previous_analyses();get_datasets(['args__oid','org_id$i', 'args__masked','masked$i', 'args__seq_type','seq_type$i'],['ds_info$i']);" >\n};
+    $html .= qq{<SELECT id="org_id$i" SIZE="5" MULTIPLE onChange="get_dataset_chain($i)" >\n};
     $html .= join ("\n", @opts);
     $html .= "\n</SELECT>\n";
-    $html =~ s/OPTION/OPTION SELECTED/;
+    $html =~ s/OPTION/OPTION SELECTED/ unless $oid;
     return $html;
   }
 
@@ -230,21 +384,18 @@ sub get_datasets
 	    $html .= ")</span>";
 	  }
 	$html .= "</div>\n";
-#	if ($seq_type == 1) #want to use CDS.  Let's see if any exist for this dataset
-#	  {
-	    foreach my $ft ($coge->resultset('Feature')->search(
-								{
-								 feature_type_id=>3,
-								 dataset_id=>$ds->id,
-								},
-								{
-								 limit=>1
-								}
-							       ))
-	      {
-		$has_cds=1;
-	      }
-#	  }
+	foreach my $ft ($coge->resultset('Feature')->search(
+							    {
+							     feature_type_id=>3,
+							     dataset_id=>$ds->id,
+							    },
+							    {
+							     limit=>1
+							    }
+							   ))
+	  {
+	    $has_cds=1;
+	  }
 
         $i++;
       }
@@ -564,6 +715,10 @@ sub run_convert_to_gene_order
     my $infile = $opts{infile};
     my $oid1 = $opts{oid1};
     my $oid2 = $opts{oid2};
+    my $st1 = $opts{st1};
+    my $st2 = $opts{st2};
+    my $ftid1 = $st1 eq "CDS" ? 3 : 0; #set feat type id to 3 if CDS
+    my $ftid2 = $st2 eq "CDS" ? 3 : 0; #set feat type id to 3 if CDS
     my $outfile = $infile."_geneorder";
     while (-e "$outfile.running")
       {
@@ -579,7 +734,7 @@ sub run_convert_to_gene_order
 	write_log("run_filter_repetitive+_matches: file $outfile already exists",$cogeweb->logfile);
 	return $outfile;
       }
-    my $cmd = $CONVERT_TO_GENE_ORDER ." -i $infile -o1 $oid1 -o2 $oid2 > $outfile";
+    my $cmd = $CONVERT_TO_GENE_ORDER ." -i $infile -o1 $oid1 -o2 $oid2 -ft1 $ftid1 -ft2 $ftid2  > $outfile";
     system "touch $outfile.running"; #track that a blast anlaysis is running for this
     write_log("run_convert_to_gene_order: running $cmd", $cogeweb->logfile);
     `$cmd`;
@@ -613,10 +768,12 @@ sub replace_gene_order_with_genomic_positions
 	my @line = split /\t/;
 	my @item1 = split /\|\|/, $line[1];
 	my @item2 = split /\|\|/, $line[5];
-	my ($start, $stop) = $item1[4] == 1 ? ($item1[1], $item1[2]) : ($item1[2],$item1[1]);
+	my ($start, $stop) =($item1[1], $item1[2]);
+	($start, $stop) = ($stop, $start) if $item1[4] && $item1[4]=~/-/;
 	$line[2] = $start;
 	$line[3] = $stop;
-	($start, $stop) = $item2[4] == 1 ? ($item2[1], $item2[2]) : ($item2[2],$item2[1]);
+	($start, $stop) =($item2[1], $item2[2]);
+	($start, $stop) = ($stop, $start) if $item2[4] && $item2[4]=~/-/;
 	$line[6] = $start;
 	$line[7] = $stop;
 	print OUT join ("\t", @line);
@@ -841,14 +998,15 @@ sub go
     my $job_title = $opts{jobtitle};
     my $width = $opts{width};
     my $basename = $opts{basename};
-    $cogeweb = initialize_basefile(basename=>$basename, prog=>"SynMap");
-    
-    $email = 0 if check_address_validity($email) eq 'invalid';
     my $blast = $opts{blast};
-    $blast = $blast == 2 ? "tblastx" : "blastn";
     my $seq_type1 = $opts{seq_type1};
-    $seq_type1 = $seq_type1 == 2 ? "genomic" : "CDS";
     my $seq_type2 = $opts{seq_type2};
+
+    $cogeweb = initialize_basefile(basename=>$basename, prog=>"SynMap");
+    my $synmap_link = "SynMap.pl?oid1=$oid1;oid2=$oid2;D=$dagchainer_D;g=$dagchainer_g;A=$dagchainer_A;w=$width;b=$blast;st1=$seq_type1;st2=$seq_type2";
+    $email = 0 if check_address_validity($email) eq 'invalid';
+    $blast = $blast == 2 ? "tblastx" : "blastn";
+    $seq_type1 = $seq_type1 == 2 ? "genomic" : "CDS";
     $seq_type2 = $seq_type2 == 2 ? "genomic" : "CDS";
     my $dagchainer_type = $opts{dagchainer_type};
     $dagchainer_type = $dagchainer_type eq "true" ? "distance" : "geneorder";
@@ -856,6 +1014,7 @@ sub go
       {
 	return "<span class=alert>You must select two organisms.</span>"
       }
+    $synmap_link .=";dt=$dagchainer_type"; #masked type to be added later after determining if the correct one was selected.  I guess this could be checked in the UI before GO is pressed
     #$cogeweb = initialize_basefile(prog=>"SynMap");
     ##generate fasta files and blastdbs
     my $pm = new Parallel::ForkManager($MAX_PROC);
@@ -876,6 +1035,7 @@ sub go
     my ($fasta2,$md52,$org_name2);
     ($fasta1,$md51,$org_name1,$masked1) = gen_fasta(oid=>$oid1, masked=>$masked1, seq_type=>$seq_type1);
     ($fasta2,$md52,$org_name2,$masked2) = gen_fasta(oid=>$oid2, masked=>$masked2, seq_type=>$seq_type2);
+    $synmap_link .= ";m1=$masked1;m2=$masked2";
     ($oid1, $masked1, $md51,$org_name1,$fasta1,$seq_type1, $oid2,
     $masked2, $md52,$org_name2,$fasta2, $seq_type2) = ($oid2,
     $masked2, $md52,$org_name2,$fasta2, $seq_type2,$oid1, $masked1,
@@ -985,7 +1145,7 @@ sub go
     run_filter_repetitive_matches(infile=>$dag_file12.".all",outfile=>$dag_file12);
     #is this an ordered gene run?
     my $dag_file12_all = $dag_file12.".all";
-    $dag_file12 = run_convert_to_gene_order(infile=>$dag_file12, oid1=>$oid1, oid2=>$oid2) if $dagchainer_type eq "geneorder";
+    $dag_file12 = run_convert_to_gene_order(infile=>$dag_file12, oid1=>$oid1, oid2=>$oid2, st1=>$seq_type1, st2=>$seq_type2) if $dagchainer_type eq "geneorder";
     #run dagchainer
     my $dagchainer_file = run_dagchainer(infile=>$dag_file12, D=>$dagchainer_D, g=>$dagchainer_g,A=>$dagchainer_A, type=>$dagchainer_type);
     write_log("Completed dagchainer run", $cogeweb->logfile);
@@ -1117,7 +1277,12 @@ Zoomed SynMap:
       }
     my $log = $cogeweb->logfile;
     $log =~ s/$DIR/$URL/;
-    $html .= "<a href=$log target=_new>log</a></span><br>";
+    my $tiny = get("http://tinyurl.com/create.php?url=$synmap_link");
+    ($tiny) = $tiny =~ /<b>(http:\/\/tinyurl.com\/\w+)<\/b>/;
+    write_log("\nLink: $synmap_link", $cogeweb->logfile);
+    write_log("tinyurl: $tiny", $cogeweb->logfile);
+    $html .= "<a href=$log target=_new>log</a><br>";
+    $html .= "<a href='$synmap_link' target=_new>SynMap Link: $tiny</a></span>";
     $html .= "<td valign=top>";
     $html .= "<div id=syn_loc1></div>";
     $html .= "<div id=syn_loc2></div>";
@@ -1129,7 +1294,7 @@ Zoomed SynMap:
 <span class=alert>There was a problem running your analysis.  Please check the log file for details.</span><br>
 	  };
       }
-    email_results(email=>$email,html=>$html,org1=>$org_name1,org2=>$org_name2, jobtitle=>$job_title) if $email;
+    email_results(email=>$email,html=>$html,org1=>$org_name1,org2=>$org_name2, jobtitle=>$job_title, link=>$synmap_link) if $email;
 
     return $html;
   }
