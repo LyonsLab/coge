@@ -5,9 +5,8 @@ function get_organism_chain(type,val,i)
  if (type == 'name') {get_orgs(['args__name','args__'+val,'args__i','args__'+i], ['org_list'+i]);}
  else if (type == 'desc') {get_orgs(['args__desc','args__'+val,'args__i','args__'+i], ['org_list'+i]);}
  $('#ds_info'+i).html('<div class="loading dna_small small">loading. . .</div>');
- check_previous_analyses();
+ ajax_wait("check_previous_analyses();");   
  ajax_wait("get_datasets(['args__oid','org_id"+i+"','args__masked','masked"+i+"', 'args__seq_type','seq_type"+i+"'],['ds_info"+i+"']);");
-// ajax_wait("check_previous_analyses();");
 }
 
 
@@ -25,7 +24,8 @@ if(!pageObj.basename)
   pageObj.nolog=1;
   setTimeout("monitor_log()", 5000);
   
-go(['args__oid1','org_id1','args__oid2','org_id2','args__D','D','args__g','g','args__A','A','args__blast','blast', 'args__seq_type1','seq_type1', 'args__seq_type2','seq_type2','args__masked1','masked1', 'args__masked2','masked2','args__jobtitle','jobtitle','args__basename','args__'+pageObj.basename,'args__email','email','args__regen_images','args__'+$('#regen_images')[0].checked, 'args__width', 'args__'+$('#master_width').val()],[handle_results]);
+go(['args__oid1','org_id1','args__oid2','org_id2','args__D','D','args__g','g','args__A','A','args__blast','blast', 'args__seq_type1','seq_type1', 'args__seq_type2','seq_type2','args__masked1','masked1', 'args__masked2','masked2','args__jobtitle','jobtitle','args__basename','args__'+pageObj.basename,'args__email','email','args__regen_images','args__'+$('#regen_images')[0].checked, 'args__width', 'args__'+$('#master_width').val(), 'args__dagchainer_type','args__'+$('#dagchainer_type')[0].checked],[handle_results]);
+ajax_wait("check_previous_analyses();");
 }
 
 function handle_results(val){
@@ -58,19 +58,32 @@ function update_params() {
     $('#masked1 option:eq('+params[7]+')').attr('selected','selected');
   }
  $('#blast option:eq('+params[9]+')').attr('selected','selected');
+ if (params[10] == 'Distance') {$("input[@name='dagchainer_type']:nth(0)").attr("checked","checked");}
+ else {$("input[@name='dagchainer_type']:nth(1)").attr("checked","checked");}
 }
 
 function set_dagchainer_defaults() {
   var settings = $('#dagchainer_default').val();
   var params;
-  if (settings == 1)
-   { params = [24000, 120000, 3];}
-  else if (settings == 2)
-   { params = [1000, 2000, 3];}
+  var type;
+  if ($('#dagchainer_type')[0].checked)
+   {
+    if (settings == 1)
+     { params = [24000, 120000, 3];}
+    else if (settings == 2)
+     { params = [1000, 2000, 3];}
+     type=" bp";
+   }
+  else
+   { 
+     params = [2,5,3];
+     type = " genes";  
+   }
   if (!params) {return;}
   $('#g').val(params[0]);
   $('#D').val(params[1]);
   $('#A').val(params[2]);
+  $('.distance_type').html(type);
  }
 
 function ajax_wait (val){
@@ -153,8 +166,24 @@ $(document).ready(function(){
   if($('#org_desc2').val() != "Search") {
     $('#org_desc2').css({fontStyle: "normal"});
     timing('org_desc2',1);
-  }  
+  }
+  display_dagchainer_settings();  
  });
+
+function display_dagchainer_settings(val) {
+ 
+ if ($('#dagchainer_type')[0].checked)
+  {
+   $('#dagchainer_distance').show(0);
+   $('#dagchainer_gene_order').hide(0);
+  }
+ else
+  {
+   $('#dagchainer_distance').hide(0);
+   $('#dagchainer_gene_order').show(0);
+  }
+  set_dagchainer_defaults();
+}
 
 function search_bar(div_id){
   if($('#'+div_id).val() == "Search") $('#'+div_id).val("").css({fontStyle: "normal"});
@@ -213,7 +242,6 @@ function fill_jobtitle(){
 
 function update_basename(basename){
 	pageObj.basename=basename;
-	//alert(pageObj.basename);
 }
 
 function reset_basename(){
@@ -226,6 +254,7 @@ function reset_basename(){
   var blast = 0;
   var blastdb = 0;
   var dag = 0;
+  var converting=0;
   var results = 0;
   var match;
   pageObj.finished = 0;
@@ -285,9 +314,6 @@ function synteny_zoom(oid1, oid2, basename, chr1, chr2)
 function open_window (url, loc, width, height)
  {
     my_window = window.open(url,loc,'"width='+width+',height='+height+', scrollbars=1"');
-//    console.log(width+"::"+height);
-//    height = parseInt(height)+parseInt(50);
-//    console.log(height);
     my_window.resizeTo(width,height);
  }
 
@@ -357,21 +383,35 @@ function open_window (url, loc, width, height)
 <tr><td>
 <table class="dropMenu">
  <TR>
-   <TD>Default settings for:
-   <TD>
+  <TD colspan=2>
+    <label>Nucleotide Distance<input id="dagchainer_type" name="dagchainer_type" type=radio value="distance"   onCLick="display_dagchainer_settings()"></label>
+    <label>Relative Gene Order<input id="dagchainer_type" name="dagchainer_type" type=radio value="gene_order" checked onCLick="display_dagchainer_settings()"></label>
+
+<DIV id=dagchainer_distance>
+   <table width=100%><tr><th class='species'>Distance settings</table>
+   Default settings for:
       <select id="dagchainer_default" onChange="set_dagchainer_defaults();">
        <option value="1">Plant
        <option value="2">Microbe
       </select>
+</div>
+
+<DIV id=dagchainer_gene_order><table width=100%><tr><th class='species'>Ordered gene settings</table></div>
+ <table>
+ <TR>
+   <TD>
+   <TD>
  <TR>
    <TD>Average distance expected between syntenic genes (-g):
-   <TD><input type=text size=8 id="g" value="24000"> bp
+   <TD><input type=text size=8 id="g" value="24000"><span class=distance_type></span>
  <TR>
    <TD>Maximum distance between two matches (-D): 
-   <TD><input type=text size=8 id="D" value="120000"> bp
+   <TD><input type=text size=8 id="D" value="120000"><span class=distance_type></span>
  <TR>
    <TD>Minimum number of aligned pairs (-A): 
-   <TD><input type=text size=8 id="A" value="3"> bp
+   <TD><input type=text size=8 id="A" value="3"> genes
+</table>
+
 </TABLE>
 <td valign=top><div id=previous_analyses></div>
 </TABLE>
