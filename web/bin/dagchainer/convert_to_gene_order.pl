@@ -31,6 +31,8 @@ while (<IN>)
     my @item1 = split/\|\|/, $line[1];
     my @item2 = split/\|\|/, $line[5];
 #    print $item1[0],"\n",$item1[3],"\n";
+    next unless $order1->{$item1[0]}{$item1[3]};
+    next unless $order2->{$item2[0]}{$item2[3]};
     $line[2] = $order1->{$item1[0]}{$item1[3]};
     $line[3] = $order1->{$item1[0]}{$item1[3]};
     $line[6] = $order2->{$item2[0]}{$item2[3]};
