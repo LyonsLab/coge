@@ -1,15 +1,27 @@
+<TMPL_IF NAME=MAIN>
+
 <script language="javascript">
+
 function get_organism_chain(type,val,i)
 {
  $('#org_list').html('<input type=hidden id = "org_id"+i><font class="loading"></font>');
  if (type == 'name') {get_orgs(['args__name','args__'+val,'args__i','args__'+i], ['org_list'+i]);}
  else if (type == 'desc') {get_orgs(['args__desc','args__'+val,'args__i','args__'+i], ['org_list'+i]);}
  $('#ds_info'+i).html('<div class="loading dna_small small">loading. . .</div>');
+ ajax_wait("gen_seqtype_menu(['args__oid','org_id"+i+"', 'args__num','args__"+i+"', 'args__masked_param','masked"+i+"', 'args__seqtype_param','seq_type"+i+"'],['maskedopts"+i+"', 'seqtypeopts"+i+"']);");
  ajax_wait("check_previous_analyses();");   
  ajax_wait("get_datasets(['args__oid','org_id"+i+"','args__masked','masked"+i+"', 'args__seq_type','seq_type"+i+"'],['ds_info"+i+"']);");
 }
 
+function get_dataset_chain(i)
+{
+ $('#ds_info'+i).html('<div class=dna_small class=loading class=small>loading. . .</div>'); 
+ ajax_wait("gen_seqtype_menu(['args__oid','org_id"+i+"', 'args__num','args__"+i+"'],['maskedopts"+i+"', 'seqtypeopts"+i+"']);");
+ ajax_wait("check_previous_analyses();");   
+ ajax_wait("get_datasets(['args__oid','org_id"+i+"','args__masked','masked"+i+"', 'args__seq_type','seq_type"+i+"'],['ds_info"+i+"']);");
+}
 
+//\gen_seqtype_menu(['args__oid','org_id$i', 'args__num','args__$i'],['maskedopts$i', 'seqtypeopts$i']); check_previous_analyses();get_datasets(['args__oid','org_id$i', 'args__masked','masked$i', 'args__seq_type','seq_type$i'],['ds_info$i']);
 	
 
 function run_synmap(){
@@ -38,11 +50,16 @@ function check_previous_analyses(){
  get_previous_analyses(['args__oid1','org_id1','args__oid2','org_id2','args__seq_type1','seq_type1','args__seq_type2','seq_type2','args__masked1','masked1', 'args__masked2','masked2'],['previous_analyses']);
 }
 
-function update_params() {
- var params = $('#prev_params').val()[0].split('_');;
- $('#g').val(params[0]);
- $('#D').val(params[1]);
- $('#A').val(params[2]);
+function update_params(val) {
+ var params;
+ if (val)
+   {
+     var params = val.split('_');
+   }
+ else
+   {
+     params = $('#prev_params').val()[0].split('_');;
+   }
  if ($('#org_id1').val() == params[3])
   {
     $('#seq_type1 option:eq('+params[5]+')').attr('selected','selected');
@@ -57,28 +74,39 @@ function update_params() {
     $('#masked2 option:eq('+params[4]+')').attr('selected','selected');
     $('#masked1 option:eq('+params[7]+')').attr('selected','selected');
   }
+ var type;
  $('#blast option:eq('+params[9]+')').attr('selected','selected');
- if (params[10] == 'Distance') {$("input[@name='dagchainer_type']:nth(0)").attr("checked","checked");}
- else {$("input[@name='dagchainer_type']:nth(1)").attr("checked","checked");}
+ if (params[10] == 'Distance') 
+  {
+   $("input[@name='dagchainer_type']:nth(0)").attr("checked","checked");
+   type=" bp";
+  }
+ else 
+  {
+   $("input[@name='dagchainer_type']:nth(1)").attr("checked","checked");
+   type= " genes"
+  }
+ display_dagchainer_settings([params[0],params[1],params[2]],type);
 }
 
-function set_dagchainer_defaults() {
+function set_dagchainer_defaults(params, type) {
   var settings = $('#dagchainer_default').val();
-  var params;
-  var type;
-  if ($('#dagchainer_type')[0].checked)
+  if (!(params && type))
    {
-    if (settings == 1)
-     { params = [24000, 120000, 3];}
-    else if (settings == 2)
-     { params = [1000, 2000, 3];}
-     type=" bp";
-   }
-  else
-   { 
-     params = [2,5,3];
-     type = " genes";  
-   }
+    if ($('#dagchainer_type')[0].checked)
+     {
+      if (settings == 1) // for plant genomes
+       { params = [24000, 120000, 3];}
+      else if (settings == 2) // for microbe genomes
+       { params = [1000, 2000, 3];}
+       type=" bp";
+     } 
+    else
+     { 
+       params = [2,5,3];
+       type = " genes";  
+     }
+  }
   if (!params) {return;}
   $('#g').val(params[0]);
   $('#D').val(params[1]);
@@ -167,10 +195,11 @@ $(document).ready(function(){
     $('#org_desc2').css({fontStyle: "normal"});
     timing('org_desc2',1);
   }
-  display_dagchainer_settings();  
+//  display_dagchainer_settings();  
+    <TMPL_VAR NAME=DISPLAY_DAGCHAINER_SETTINGS>
  });
 
-function display_dagchainer_settings(val) {
+function display_dagchainer_settings(params,type) {
  
  if ($('#dagchainer_type')[0].checked)
   {
@@ -182,7 +211,7 @@ function display_dagchainer_settings(val) {
    $('#dagchainer_distance').hide(0);
    $('#dagchainer_gene_order').show(0);
   }
-  set_dagchainer_defaults();
+  set_dagchainer_defaults(params, type);
 }
 
 function search_bar(div_id){
@@ -344,37 +373,10 @@ function open_window (url, loc, width, height)
 <tr><th><DIV class="topItemSelected ">Select Organisms:</DIV>
 <table class="dropMenu" width=100%>
  <TR align=left>
-  <TD valign=top>
-   <DIV class = "oblique">Organism 1: </DIV>
-   <DIV style="">Search <span class=small>Name: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_NAME1">" name = "org_name1" id="org_name1" style="font-style:italic" onFocus="search_bar('org_name1')" onKeyUp='timing("org_name1");'><span>
-   Description: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_DESC1">" name = "org_desc1" id="org_desc1" style="font-style:italic" onFocus="search_bar('org_desc1')" onKeyUp='timing("org_desc1");'></DIV>
-   Try to use sequence of type:
-   <select id=masked1 onChange="get_datasets(['args__oid','org_id1', 'args__masked','masked1', 'args__seq_type','seq_type1', 'args__seq_type','seq_type1'],['ds_info1'])">
-     <option value="1">unmasked</option>
-     <option value="2" selected>masked</option>
-   </select>
-   <select id="seq_type1" name ="seq_type1">
-       <OPTION VALUE="1" selected>CDS
-       <OPTION VALUE="2">genomic
-   </select>
-   <DIV id="org_list1"><TMPL_VAR NAME="ORG_LIST1"></DIV>
-   <DIV style="float: left; vertical-align: top;" id="ds_info1"><TMPL_VAR NAME="DS_INFO1"></DIV>
 
-  <TD valign=top>
-   <DIV class = "oblique">Organism 2: </DIV>
-   <DIV style="">Search <span class=small>Name: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_NAME2">" name = "org_name2" id="org_name2" style="font-style:italic" onFocus="search_bar('org_name2')" onKeyUp='timing("org_name2");'></span>
-   Description: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_DESC2">" name = "org_desc2" id="org_desc2" style="font-style:italic" onFocus="search_bar('org_desc2')" onKeyUp='timing("org_desc2");'></DIV>
-   Try to use sequence of type:
-   <select id=masked2 onChange="get_datasets(['args__oid','org_id2', 'args__masked','masked2', 'args__seq_type','seq_type2', 'args__seq_type','seq_type2'],['ds_info2'])">
-     <option value="1">unmasked</option>
-     <option value="2" selected>masked</option>
-   </select>
-   <select id="seq_type2" name ="seq_type2">
-       <OPTION VALUE="1" selected>CDS
-       <OPTION VALUE="2">genomic
-   </select>
-   <DIV id="org_list2"><TMPL_VAR NAME="ORG_LIST2"></DIV>
-   <DIV style="float: left; vertical-align: top;" id="ds_info2"><TMPL_VAR NAME="DS_INFO2"></DIV>
+  <TMPL_VAR NAME=ORG_MENU1>
+  <TMPL_VAR NAME=ORG_MENU2>
+
 </TABLE>
 
 <tr><th>
@@ -384,8 +386,8 @@ function open_window (url, loc, width, height)
 <table class="dropMenu">
  <TR>
   <TD colspan=2>
-    <label>Nucleotide Distance<input id="dagchainer_type" name="dagchainer_type" type=radio value="distance"   onCLick="display_dagchainer_settings()"></label>
-    <label>Relative Gene Order<input id="dagchainer_type" name="dagchainer_type" type=radio value="gene_order" checked onCLick="display_dagchainer_settings()"></label>
+    <label>Nucleotide Distance<input id="dagchainer_type" name="dagchainer_type" type=radio value="distance" <TMPL_VAR DAG_DISTANCE_SELECT>  onCLick="display_dagchainer_settings()"></label>
+    <label>Relative Gene Order<input id="dagchainer_type" name="dagchainer_type" type=radio value="gene_order" <TMPL_VAR DAG_GENE_SELECT>  onCLick="display_dagchainer_settings()"></label>
 
 <DIV id=dagchainer_distance>
    <table width=100%><tr><th class='species'>Distance settings</table>
@@ -403,13 +405,13 @@ function open_window (url, loc, width, height)
    <TD>
  <TR>
    <TD>Average distance expected between syntenic genes (-g):
-   <TD><input type=text size=8 id="g" value="24000"><span class=distance_type></span>
+   <TD><input type=text size=8 id="g" value=""><span class=distance_type></span>
  <TR>
    <TD>Maximum distance between two matches (-D): 
-   <TD><input type=text size=8 id="D" value="120000"><span class=distance_type></span>
+   <TD><input type=text size=8 id="D" value=""><span class=distance_type></span>
  <TR>
    <TD>Minimum number of aligned pairs (-A): 
-   <TD><input type=text size=8 id="A" value="3"> genes
+   <TD><input type=text size=8 id="A" value=""> genes
 </table>
 
 </TABLE>
@@ -424,8 +426,8 @@ function open_window (url, loc, width, height)
  <TR>
    <TD>Blast Algorithm:
    <select id="blast" name="blast">
-        <OPTION VALUE="1" selected>BlastN
-        <OPTION VALUE="2">TBlastX
+        <OPTION VALUE="1" <TMPL_VAR NAME="BLASTN_SELECT">">BlastN
+        <OPTION VALUE="2" <TMPL_VAR NAME="TBLASTX_SELECT">">TBlastX
        </select>
    </td>
   <TR>
@@ -438,7 +440,7 @@ function open_window (url, loc, width, height)
 
  <tr>
    <td>Master image width (0 == dynamic)
-   <td><input type=text name=master_width id=master_width size=6 value="0">
+   <td><input type=text name=master_width id=master_width size=6 value="<TMPL_VAR NAME="MWIDTH">">
  <TR>
    <TD>Regenerate dotplot images?
    <input type=checkbox name="regen_images" id="regen_images">
@@ -446,3 +448,27 @@ function open_window (url, loc, width, height)
 </TABLE>
 </TABLE>
 </div>
+
+</TMPL_IF>
+
+<TMPL_IF NAME=ORG_MENU>
+<TD VALIGN=TOP>
+
+<DIV class = "oblique">Organism <TMPL_VAR NAME="NUM">: </DIV>
+   <DIV>Search <span class=small>Name: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_NAME">" name = "org_name<TMPL_VAR NAME="NUM">" id="org_name<TMPL_VAR NAME="NUM">" style="font-style:italic" onFocus="search_bar('org_name<TMPL_VAR NAME="NUM">')" onKeyUp='timing("org_name<TMPL_VAR NAME="NUM">");'><span>
+   Description: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_DESC">" name = "org_desc<TMPL_VAR NAME="NUM">" id="org_desc<TMPL_VAR NAME="NUM">" style="font-style:italic" onFocus="search_bar('org_desc<TMPL_VAR NAME="NUM">')" onKeyUp='timing("org_desc<TMPL_VAR NAME="NUM">");'></DIV>
+   <DIV id="org_list<TMPL_VAR NAME="NUM">"><TMPL_VAR NAME="ORG_LIST"></DIV>
+   <Table><Tr>
+     <td>Sequence type:
+     <td><DIV id="maskedopts<TMPL_VAR NAME="NUM">">
+         <TMPL_VAR NAME="MASK_MENU">
+         </div>
+
+     <td><DIV id="seqtypeopts<TMPL_VAR NAME="NUM">">
+         <TMPL_VAR NAME="SEQTYPE_MENU">
+         </div>
+     </table>
+</DIV>
+<DIV style="vertical-align: top;" id="ds_info<TMPL_VAR NAME="NUM">"><TMPL_VAR NAME="DS_INFO"></DIV>
+
+</TMPL_IF>
