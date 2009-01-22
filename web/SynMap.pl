@@ -760,6 +760,7 @@ sub replace_gene_order_with_genomic_positions
     system "touch $file.orig.running"; #track that a blast anlaysis is running for this
     write_log("  converting $file back to genomic coordinates", $cogeweb->logfile);
     `mv $file $file.orig`;
+    $/="\n"; #just in case
     open (IN,  "$file.orig");
     open (OUT, ">$file");
     while (<IN>)
