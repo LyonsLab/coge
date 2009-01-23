@@ -116,7 +116,7 @@ sub draw_dots
 
 	my $org1 = $opts{org1};
 	my $org2 = $opts{org2};
-#	print STDERR Dumper $org1, $org2;
+	next unless $org1->{$chr1} && $org2->{$chr2}; #sometimes there will be data that is skipped, e.g. where chromosome="random";
 	my ($xmin) = sort ($line[2], $line[3]);
 	my $midx = sprintf("%.0f",$org1->{$chr1}{start}+$xmin+abs($line[3]-$line[2])/2);
 	my $x = sprintf("%.0f",$midx*$x_pix_per_bp);
@@ -124,7 +124,6 @@ sub draw_dots
 	my $midy = sprintf("%.0f",$org2->{$chr2}{start}+$ymin+abs($line[7]-$line[6])/2);
 	my $y = sprintf("%.0f",$midy*$y_pix_per_bp);
 	($x,$y) = ($y, $x) if $special;
-#	print STDERR $x,"x", $y,"\n";
 	$gd->arc($x, $gd->height-$y, $size, $size, 0, 360, $color);
 	$gd->arc($y, $gd->height-$x, $size, $size, 0, 360, $color) if ($add_inverse && !$CHR1 && $x ne $y);
 	$gd->arc($y, $gd->height-$x, $size, $size, 0, 360, $color) if ($add_inverse && $chr1 eq $chr2 && $x ne $y);
