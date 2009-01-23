@@ -25,7 +25,7 @@ my $order2 = get_gene_order(org=>$org2, ftid=>$ftid2);
 
 $order1 = get_order_from_input(file=>$input_file, set=>1) unless $order1;
 $order2 = get_order_from_input(file=>$input_file, set=>2) unless $order2;
-
+#print Dumper $order1, $order2;
 open (IN, $input_file);
 while (<IN>)
   {
@@ -115,8 +115,10 @@ sub get_gene_order
 							     }))
 	  {
 	    $chr{$feat->chromosome}++;
-	    my ($name) = $feat->names;
-	    $data{$feat->chromosome}{$name} = $chr{$feat->chromosome};
+	    foreach my $name($feat->names)
+	      {
+		$data{$feat->chromosome}{$name} = $chr{$feat->chromosome};
+	      }
 	  }
       }
     return 0 unless keys %data;
