@@ -8,10 +8,11 @@ use Getopt::Long;
 my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
 my $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 
-my ($org, $mask);
+my ($org, $mask, $chr_only);
 
 GetOptions ("m|mask" =>  \$mask,
             "o|org=s" => \$org,
+	    "c|chr"=>\$chr_only,
 	    );
 
 ($org) = $coge->resultset('Organism')->resolve($org);
@@ -26,6 +27,8 @@ foreach my $ds (sort @ds)
     foreach my $chr (sort $ds->get_chromosomes())
       {
 	print STDERR "\tWorking on chromosome $chr\n";
-	print $ds->fasta(chr=>$chr);
+	my $fasta = $ds->fasta(chr=>$chr);
+	$fasta =~s/>.*/>$chr/ if $chr_only;
+	print $fasta;
       }
   }
