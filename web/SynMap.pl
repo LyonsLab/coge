@@ -851,8 +851,11 @@ sub add_GEvo_links
     my $infile = $opts{infile};
     my $chr1 = $opts{chr1};
     my $chr2 = $opts{chr2};
+    
     open (IN, $infile);
     open (OUT,">$infile.tmp");
+    my %condensed;
+    my %names;
     while (<IN>)
       {
 	chomp;
@@ -868,9 +871,11 @@ sub add_GEvo_links
 	my @feat1 = split/\|\|/,$line[1];
 	my @feat2 = split/\|\|/,$line[5];
 	my $link = "http://synteny.cnr.berkeley.edu/CoGe/GEvo.pl?";
+	my ($fid1, $fid2);
 	if ($feat1[6])
 	  {
-	    $link .= "fid1=".$feat1[6];
+	    $fid1 = $feat1[6];
+	    $link .= "fid1=".$fid1;
 	  }
 	else
 	  {
@@ -880,7 +885,8 @@ sub add_GEvo_links
 	  }
 	if ($feat2[6])
 	  {
-	    $link .= ";fid2=".$feat2[6];
+	    $fid2 = $feat2[6];
+	    $link .= ";fid2=".$fid2;
 	  }
 	else
 	  {
@@ -888,12 +894,36 @@ sub add_GEvo_links
 	    my $x = sprintf("%.0f", $xmin+abs($feat2[1]-$feat2[2])/2);
 	    $link .= ";chr2=".$feat2[0].";dsid2=".$chr2->{$feat2[0]}->id.";x2=".$x;
 	  }
+	if ($fid1 && $fid2)
+	  {
+	    $condensed{$fid1}{$fid2} = 1;
+	    $condensed{$fid2}{$fid1} = 1;
+	    $names{$fid1} = $feat1[3];
+	    $names{$fid2} = $feat2[3];
+	  }
 #	accn1=".$feat1[3]."&fid1=".$feat1[6]."&accn2=".$feat2[3]."&fid2=".$feat2[6] if $feat1[3] && $feat1[6] && $feat2[3] && $feat2[6];
 	print OUT $_;
 	print OUT "\t",$link if $link;
 	print OUT "\n";
       }
     close IN;
+    close OUT;
+    open (OUT,">$infile.condensed");
+    foreach my $id1 (sort keys %condensed)
+      {
+	my @names = $names{$id1};
+	my $link = "http://synteny.cnr.berkeley.edu/CoGe/GEvo.pl?fid1=$id1";
+	my $count =2;
+	foreach my $id2 (sort keys %{$condensed{$id1}})
+	  {
+	    $link .= ";fid$count=$id2";
+	    push @names, $names{$id2};
+	    $count++;
+	  }
+	$count--;
+	$link .= ";num_seqs=$count";
+	print OUT join ("\t", $link, @names), "\n";
+      }
     close OUT;
     my $cmd = "/bin/mv $infile.tmp $infile";
     `$cmd`;
@@ -1262,7 +1292,8 @@ Zoomed SynMap:
 </table>
 };
 	    $html .= "<br><span class=small><a href=data/$out.png target=_new>Image File</a>";
-	    $html .= "<br><span class=small><a href=$tmp target=_new>Syntolog file with GEvo links</a><br>";
+	    $html .= "<br><span class=small><a href=$tmp target=_new>DAGChainer syntelog file with GEvo links</a><br>";
+	    $html .= "<span class=small><a href=$tmp.condensed target=_new>Condensed syntelog file with GEvo links</a><br>";
 	  }
       }
     else
