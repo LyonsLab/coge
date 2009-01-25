@@ -1607,30 +1607,45 @@ sub get_nearby_feats
     my $query =qq!
 
 select * from (
-  (SELECT * FROM ((SELECT * FROM feature where start<=$mid and dataset_id = $dsid and chromosome = '$chr' ORDER BY start DESC  LIMIT 1) 
-   UNION (SELECT * FROM feature where start>=$mid and dataset_id = $dsid and chromosome = '$chr' ORDER BY start LIMIT 1)) as u)
+  (SELECT * FROM ((SELECT * FROM feature where start<=$mid and dataset_id = $dsid and chromosome = '$chr' ORDER BY start DESC  LIMIT 10) 
+   UNION (SELECT * FROM feature where start>=$mid and dataset_id = $dsid and chromosome = '$chr' ORDER BY start LIMIT 10)) as u)
   UNION
-  (SELECT * FROM ((SELECT * FROM feature where stop<=$mid and dataset_id = $dsid and chromosome = '$chr' ORDER BY stop   DESC  LIMIT 1) 
-   UNION (SELECT * FROM feature where stop>=$mid and dataset_id = $dsid and chromosome = '$chr' ORDER BY stop LIMIT 1)) as v)
+  (SELECT * FROM ((SELECT * FROM feature where stop<=$mid and dataset_id = $dsid and chromosome = '$chr' ORDER BY stop   DESC  LIMIT 10) 
+   UNION (SELECT * FROM feature where stop>=$mid and dataset_id = $dsid and chromosome = '$chr' ORDER BY stop LIMIT 10)) as v)
    ) as w
 order by abs((start + stop)/2 - $mid) LIMIT 10
 
 !;
     my $handle = $cogedb->prepare($query);
     $handle->execute();
-    my $feat;
     my $new_checkbox_info;
-    my $min_dist;
+#    my $feat;
+#    my $min_dist;
+    my %dist;
     while (my $res = $handle->fetchrow_arrayref())
       {
 	my $fid = $res->[0];
 	my ($tmpfeat) = $coge->resultset('Feature')->find($fid);
 	next unless $tmpfeat->type->name =~ /gene/i || $tmpfeat->type->name =~ /rna/i || $tmpfeat->type->name =~ /cds/i;
-	$feat = $tmpfeat unless $feat;
-	$min_dist = abs($tmpfeat->start-$mid) unless defined $min_dist;
+	#$feat = $tmpfeat unless $feat;
+	#$min_dist = abs($tmpfeat->start-$mid) unless defined $min_dist;
 	my $newmin = abs($tmpfeat->start-$mid) < abs($tmpfeat->stop-$mid) ?  abs($tmpfeat->start-$mid) : abs($tmpfeat->stop-$mid);
-	$feat = $tmpfeat if $newmin < $min_dist;
-	$min_dist = $newmin if $newmin < $min_dist;
+	$dist{$fid}={type=>$tmpfeat->type->name, dist=>$newmin, feat=>$tmpfeat};
+	#$feat = $tmpfeat if $newmin < $min_dist;
+	#$min_dist = $newmin if $newmin < $min_dist;
+      }
+    my $feat;
+    my $min_dist;
+    foreach my $fid (sort {$dist{$a}{dist} <=> $dist{$b}{dist}} keys %dist)
+      {
+	$min_dist = $dist{$fid}{dist} unless defined $min_dist;
+	$feat = $dist{$fid}{feat} unless $feat;
+	last if $feat->type->name eq "CDS";
+	my $f = $dist{$fid}{feat};
+	if ($f->type->name eq "CDS")
+	  {
+	    $feat=$f unless $feat->stop < $f->start || $feat->start > $f->stop;
+	  }
       }
     if ($feat)
       {
