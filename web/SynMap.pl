@@ -912,7 +912,7 @@ sub add_GEvo_links
     foreach my $id1 (sort keys %condensed)
       {
 	my @names = $names{$id1};
-	my $link = "http://synteny.cnr.berkeley.edu/CoGe/GEvo.pl?fid1=$id1";
+	my $link = "http://synteny.cnr.berkeley.edu/CoGe/GEvo.pl?pad_gs=50000;fid1=$id1";
 	my $count =2;
 	foreach my $id2 (sort keys %{$condensed{$id1}})
 	  {
@@ -922,7 +922,7 @@ sub add_GEvo_links
 	  }
 	$count--;
 	$link .= ";num_seqs=$count";
-	print OUT join ("\t", $link, @names), "\n";
+	print OUT join ("\t", $link, "<a href=$link;autogo=1>AutoGo</a>",@names), "\n";
       }
     close OUT;
     my $cmd = "/bin/mv $infile.tmp $infile";
@@ -1309,7 +1309,7 @@ Zoomed SynMap:
       }
     my $log = $cogeweb->logfile;
     $log =~ s/$DIR/$URL/;
-    my $tiny = get("http://tinyurl.com/create.php?url=$synmap_link");
+    my $tiny = get("http://tinyurl.com/create.php?url=http://".$ENV{SERVER_NAME}."/CoGe/$synmap_link");
     ($tiny) = $tiny =~ /<b>(http:\/\/tinyurl.com\/\w+)<\/b>/;
     write_log("\nLink: $synmap_link", $cogeweb->logfile);
     write_log("tinyurl: $tiny", $cogeweb->logfile);
@@ -1366,7 +1366,7 @@ sub get_previous_analyses
 	opendir (DIR, $dir);
 	while (my $file = readdir(DIR))
 	  {
-	    next unless $file =~ /all\.aligncoords/;
+	    next unless $file =~ /all\.aligncoords$/;
 	    my ($D, $g, $A) = $file =~ /D(\d+)_g(\d+)_A(\d+)/;
 	    my $blast = $file =~ /blastn/ ? "BlastN" : "TBlastX";
 	    my ($mask1, $mask2, $type1, $type2) = $file =~ /\.(\d)-(\d)\.(\w+)-(\w+)/;
