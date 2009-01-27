@@ -11,22 +11,15 @@ __PACKAGE__->load_components("PK::Auto", "Core");
 __PACKAGE__->table("genomic_sequence");
 __PACKAGE__->add_columns(
   "genomic_sequence_id",
-  { data_type => "INT", default_value => undef, is_nullable => 0, size => 10 },
+  { data_type => "INT", default_value => 1, is_nullable => 0, size => 10 },
   "start",
-  { data_type => "INT", default_value => 0, is_nullable => 0, size => 10 },
+  { data_type => "INT", default_value => 1, is_nullable => 0, size => 10 },
   "stop",
-  { data_type => "INT", default_value => 0, is_nullable => 0, size => 10 },
+  { data_type => "INT", default_value => "", is_nullable => 0, size => 10 },
   "chromosome",
-  { data_type => "VARCHAR", default_value => "", is_nullable => 0, size => 15 },
-  "sequence_data",
-  {
-    data_type => "LONGTEXT",
-    default_value => "",
-    is_nullable => 0,
-    size => 4294967295,
-  },
+  { data_type => "VARCHAR", default_value => "", is_nullable => 0, size => 255 },
   "dataset_id",
-  { data_type => "INT", default_value => 0, is_nullable => 0, size => 10 },
+  { data_type => "INT", default_value => "", is_nullable => 0, size => 10 },
   "genomic_sequence_type_id",
   { data_type => "INT", default_value => 1, is_nullable => 0, size => 10 },
 );
