@@ -50,6 +50,7 @@ sub get_locs {
         print "##sequence-region $chr 1 " . $chrs{$chr} . "\n";
     }
     my %seen = {};
+    my %names = {};
     foreach my $chr (@chrs){
         
         my $gene_rs = $s->resultset('Feature')->search( {
@@ -84,6 +85,10 @@ sub get_locs {
 
             my $strand = $g->strand == 1 ? '+' : '-';
             my $clean_name = $gene_name;
+            while ($names{$clean_name}){
+                $clean_name .= ".1";
+            }
+            $names{$clean_name} = 1;
             $clean_name =~ s/\s+/_/g;
             my $attrs = "ID=$clean_name;Name=$clean_name";
             my $gstr = join("\t", ($chr, 'ucb', $g->feature_type->name, $g->start, $g->stop, ".", $strand, ".", $attrs));

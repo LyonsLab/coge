@@ -52,9 +52,9 @@ sub get_sequence {
             #next if $chr =~ /^contig/;
             next if $chr =~ /random/;
             
-            $chr =~ s/scaffold/super/g; print STDERR "CHANGING scaffold => super\n";
+            #$chr =~ s/scaffold/super/g; print STDERR "CHANGING scaffold => super\n";
 
-            next if $chr =~ /scaffold/;
+            #next if $chr =~ /scaffold/;
 
             print STDERR $chr . "\n" unless $seen{$chr};
             $seen{$chr} = 1;
