@@ -5,6 +5,7 @@ package CoGeX::Dataset;
 use strict;
 use warnings;
 use Data::Dumper;
+use POSIX;
 use base 'DBIx::Class';
 #use CoGeX::Feature;
 use Text::Wrap;
@@ -45,12 +46,53 @@ __PACKAGE__->set_primary_key("dataset_id");
 
 __PACKAGE__->has_many("features" => "CoGeX::Feature", 'dataset_id');
 
-__PACKAGE__->has_many("genomic_sequences" => "CoGeX::GenomicSequence", 'dataset_id');
+__PACKAGE__->has_many("genomic_sequences" => "CoGeX::GenomicSequenceOld", 'dataset_id');
+#__PACKAGE__->has_many("genomic_sequences" => "CoGeX::GenomicSequence", 'dataset_id');
 
 __PACKAGE__->belongs_to("datasource" => "CoGeX::DataSource", 'data_source_id');
 
 __PACKAGE__->belongs_to("organism" => "CoGeX::Organism", 'organism_id');
 
+
+sub get_genomic_sequence_new {
+  my $self = shift;
+  my %opts = @_;
+  my $start = $opts{start} || $opts{begin};
+  my $stop = $opts{stop} || $opts{end};
+  my $chr = $opts{chr} || $opts{chromosome};
+  my $strand = $opts{strand};
+  my $skip_length_check = $opts{skip_length_check} || 0;
+  my $str = "";
+  if (defined $start && defined $stop)
+    {
+      $chr = "1" unless defined $chr;
+      $start = 1 if $start < 1;
+      $stop = $start unless $stop;
+      return undef unless ($start =~ /^\d+$/ and  $stop =~ /^\d+$/);
+      ($start, $stop) = ($stop, $start) if $stop < $start;
+
+      if (! $skip_length_check)
+	{
+	  my $last = $self->last_chromosome_position($chr);
+	  $stop = $last if $stop > $last;
+	}
+    }
+  my $SEQDIR = "/opt/apache/CoGe/data/genomic_sequence";
+  my $chr_total = $self->genomic_sequences->count();
+  my $chr_level=1;
+  if ($chr_total > 1000)
+    {
+      my $chr_count=0;
+      foreach my $testchr (sort $self->chromosomes)
+	{
+	  last if $chr eq $testchr;
+	  $chr_count++;
+	  $chr_level++ unless $chr_count%1000;
+	}
+    }
+  my $file = join ("/", $SEQDIR,ceil($self->organism->id/1000), "org_".$self->organism->id, "seqtype_".$self->sequence_type->id, "dataset_".$self->id,$chr_level,$chr);
+  return $file;
+}
 
 sub get_genomic_sequence {
   my $self = shift;
@@ -156,15 +198,17 @@ See Also   :
 ################################################## subroutine header end ##
 
 
- sub last_chromosome_position
+ sub last_chromosome_position_new
    {
      my $self = shift;
      my $chr = shift;
-     my $stop =  $self->genomic_sequences(
+     my ($item) =  $self->genomic_sequences(
 					  {
 					   chromosome=>"$chr",
 					  },
-					 )->get_column('stop')->max;
+#					 )->get_column('stop')->max;
+					 );
+     my $stop = $item->stop();
      unless ($stop)
       {
         warn "No genomic sequence for ",$self->name," for chr $chr\n";
@@ -172,6 +216,24 @@ See Also   :
       }
      $stop;
    }
+
+sub last_chromosome_position
+   {
+     my $self = shift;
+     my $chr = shift;
+     my $stop =  $self->genomic_sequences(
+                                          {
+                                           chromosome=>"$chr",
+                                          },
+                                         )->get_column('stop')->max;
+     unless ($stop)
+      {
+        warn "No genomic sequence for ",$self->name," for chr $chr\n";
+        return;
+      }
+     $stop;
+   }
+
 
 
 sub sequence_type
