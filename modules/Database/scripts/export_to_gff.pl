@@ -50,11 +50,10 @@ sub get_locs {
     foreach my $chr (@chrs){
         print "##sequence-region $chr 1 " . $chrs{$chr} . "\n";
     }
-    my %seen = {};
     my %names = {};
-    #my $i = 0;
     my %fids = {};
     foreach my $chr (@chrs){
+        my %seen = {};
         #if ($i++ > 2){ print STDERR "*" x 1000 . "\nENDING EARLY";  last; }
         
         my $gene_rs = $s->resultset('Feature')->search( {
@@ -174,18 +173,8 @@ sub get_sequence {
         my %seen;
         foreach my $chr ($ds->get_chromosomes){
             # TODO: this will break with contigs.
-            #next if $chr =~ /^contig/;
             next if $chr =~ /random/;
-            
-            #$chr =~ s/scaffold/super/g; print STDERR "CHANGING scaffold => super\n";
-
-            #next if $chr =~ /scaffold/;
-
-            #print STDERR $chr . "\n" unless $seen{$chr};
-            $seen{$chr} = 1;
             $chrs{$chr} = 1;
-
-            #  rice/chr01.fasta
             print FA "> $chr\n";
             print FA $ds->get_genomic_sequence(chromosome => $chr) . "\n";
         }
