@@ -6,13 +6,14 @@ use CoGeX;
 my $connstr = 'dbi:mysql:genomes:biocon:3306';
 my $s = CoGeX->connect($connstr, 'bpederse', 'brent_cnr');
 
-if(scalar(@ARGV) < 2){
-    print "send in organism and datasets\n";
-    print "$0 org [datasets]\n";
+if(scalar(@ARGV) < 3){
+    print "send in organism, reg-exp for-name, and datasets\n";
+    print "$0 org name_re [datasets]\n";
     exit();
 }
 
 my $organism = shift;
+my $name_re = shift;
 my $datasets = \@ARGV;
 
 # gt sketch -seqid 1 -addintrons yes -start 1000 -style default.style -force -end 70000  out.png grape.gff3
@@ -67,7 +68,15 @@ sub get_locs {
         print STDERR $chr . "\n";
         print STDERR join(",", @$datasets) . "\n";
         while(my $g = $gene_rs->next()){
-            my $gene_name = $g->feature_names()->next()->name;
+
+            my @gene_names = grep { $_->name =~ /$name_re/ } $g->feature_names(); 
+            my $gene_name;
+            if (scalar(@gene_names) == 0){
+                $gene_name = $g->feature_names()->next()->name;
+            }
+            else {
+                $gene_name = $gene_names[0];
+            }
 
             my $mrna_rs = $s->resultset('Feature')->search( {
                   'me.dataset_id' => { 'IN' => $datasets },
