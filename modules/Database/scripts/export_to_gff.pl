@@ -71,8 +71,13 @@ sub get_locs {
         while(my $g = $gene_rs->next()){
             if ($fids{$g->feature_id}){ next; }
             $fids{$g->feature_id} = 1;
-
-            my @gene_names = grep { $_->name =~ /$name_re/i } $g->feature_names(); 
+            my @gene_names;
+            if($name_re){
+                @gene_names = grep { $_->name =~ /$name_re/i } $g->feature_names(); 
+            }
+            else {
+                @gene_names = $g->feature_names(); 
+            }
             my $gene_name;
             if (scalar(@gene_names) == 0){
                 $gene_name = $g->feature_names()->next()->name;
@@ -175,7 +180,7 @@ sub get_sequence {
             # TODO: this will break with contigs.
             next if $chr =~ /random/;
             $chrs{$chr} = 1;
-            print FA "> $chr\n";
+            print FA ">$chr\n";
             print FA $ds->get_genomic_sequence(chromosome => $chr) . "\n";
         }
     }
