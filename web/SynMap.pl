@@ -851,19 +851,24 @@ sub add_GEvo_links
     my $infile = $opts{infile};
     my $chr1 = $opts{chr1};
     my $chr2 = $opts{chr2};
-    
     open (IN, $infile);
     open (OUT,">$infile.tmp");
     my %condensed;
     my %names;
     while (<IN>)
       {
+	my $prev_link =0;
 	chomp;
-	if (/^#/ || /GEvo/)
+	if (/^#/)
 	  {
-	    s/toxic/synteny.cnr/;
 	    print OUT $_,"\n";
 	    next;
+	  }
+	if (/GEvo/)
+	  {
+	    s/toxic/synteny.cnr/;
+#	    print OUT $_,"\n";
+	    $prev_link =1;
 	  }
 	s/^\s+//;
 	next unless $_;
@@ -903,11 +908,12 @@ sub add_GEvo_links
 	  }
 #	accn1=".$feat1[3]."&fid1=".$feat1[6]."&accn2=".$feat2[3]."&fid2=".$feat2[6] if $feat1[3] && $feat1[6] && $feat2[3] && $feat2[6];
 	print OUT $_;
-	print OUT "\t",$link if $link;
+	print OUT "\t",$link if $link && !$prev_link;
 	print OUT "\n";
       }
     close IN;
     close OUT;
+#    print STDERR Dumper \%condensed;
     open (OUT,">$infile.condensed");
     foreach my $id1 (sort keys %condensed)
       {
@@ -1233,11 +1239,14 @@ sub go
 	      }
 	  }
 	my $test = $org1_length > $org2_length ? $org1_length : $org2_length;
-	$width = int($test/100000) unless $width;
-	$width = 1200 if $width > 1200;
-	$width = 500 if $width < 500;
-	$width = 1200 if $chr1_count > 9 || $chr2_count > 9;
-	$width = 2000 if $chr1_count > 100 || $chr2_count > 100;
+	unless ($width)
+	  {
+	    $width = int($test/100000);
+	    $width = 1200 if $width > 1200;
+	    $width = 500 if $width < 500;
+	    $width = 1200 if $chr1_count > 9 || $chr2_count > 9;
+	    $width = 2000 if ($chr1_count > 100 || $chr2_count > 100);
+	  }
 	my $qlead = "a";
 	my $slead = "b";
 	my $qdsid = "qdsid";
