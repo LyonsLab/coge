@@ -147,6 +147,8 @@ sub gen_body
 	$stop += $downstream;
       }
     my ($link, $types) = find_feats(dsid=>$dsid, start=>$start, stop=>$stop, chr=>$chr);
+#    print STDERR $link,"\n\n";;
+
     $template->param(FEATLISTLINK=>$link);
     $template->param(FEAT_TYPE_LIST=>$types);
     $template->param(GC_INFO=>qq{<td valign=top><input type=button value="Calculate GC Content" onClick="generate_gc_info(['seq_text','args__'+myObj.pro],[display_gc_info],'POST')">});
