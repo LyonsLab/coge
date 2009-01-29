@@ -113,7 +113,7 @@ sub get_locs {
             my $clean_name = $gene_name;
             $names{$gene_name} = 1;
             $clean_name =~ s/\s+/_/g;
-            my $attrs = "ID=$clean_name;Name=$clean_name";
+            my $attrs = "ID=$clean_name;Name=$clean_name;rname=$clean_name";
 
             my $gstr = join("\t", ($chr, 'ucb', $g->feature_type->name, $g->start, $g->stop, ".", $strand, ".", $attrs));
             if($seen{$gstr}){ next; }
@@ -126,7 +126,7 @@ sub get_locs {
             while(my $f = $mrna_rs->next()){
                 if($fids{$f->feature_id}){ next; }
                 $fids{$f->feature_id} = 1;
-                $attrs = "Parent=$parent;ID=$parent" . ".mRNA";
+                $attrs = "Parent=$parent;ID=$parent" . ".mRNA;rname=$parent";
                 $has_mrna = 1;
                                
                 foreach my $loc ($f->locations()){
@@ -141,6 +141,7 @@ sub get_locs {
             if($has_mrna){
                 $attrs .=  ".mRNA";
             }
+            $attrs .= ";rname=$clean_name"; # keep it in another attr
 
             #print join("\t", ($chr, 'ucb', 'mRNA', $mrna->start, $mrna->stop, ".", $strand, ".", $attrs)) . "\n";
             $chrs{$g->chr} = 1;
