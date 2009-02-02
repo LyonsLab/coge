@@ -24,6 +24,7 @@ lib/CoGeX/SequenceType.pm
 lib/CoGeX/Feature.pm
 lib/CoGeX/User.pm
 lib/CoGeX/FeatureList.pm
+lib/CoGeX/Fasta.pm
 lib/CoGeX/UserGroup.pm
 lib/CoGeX/FeatureListConnector.pm
 lib/CoGeX/UserGroupConnector.pm

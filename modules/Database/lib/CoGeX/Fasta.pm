@@ -9,7 +9,7 @@ sub get_seq {
     my $blastdb = $opts->{blastdb} || $opts->{db};
     my $seqid   = $opts->{seqid} || $opts->{chr} || $opts->{chromosome}; # chr 
 
-    my $cmd = "$fastacmd -d $blastdb -s $seqid ";
+    my $cmd = "$fastacmd -d $blastdb -s $seqid -l 999999999 ";
     if($opts->{start} && ($opts->{stop} || $opts->{end})){
         $cmd .= "-L " . $opts->{start} . "," . ($opts->{stop} || $opts->{end} ). " ";
     }
@@ -17,7 +17,11 @@ sub get_seq {
         $cmd .= "-S 2";
     }
     #print $cmd . "\n";
-    return `$cmd`;
+    open(FASTA, $cmd . "|") || die "cant run $cmd";
+    # get rid of the header line...
+    <FASTA>;
+    my $seq = <FASTA>;
+    return $seq;
 
 }
 1;
