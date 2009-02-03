@@ -10,8 +10,8 @@ $('#maketable').html('<div id ="annotation" style = "overflow: auto; height: 300
   else{
     myObj = new generate_seq_obj(<TMPL_VAR NAME=DSID>,'<TMPL_VAR NAME=CHR>');}
 
-  redefine();
-  get_sequence(<TMPL_VAR NAME=RC>);
+  redefine(<TMPL_VAR NAME=RC>);
+//  get_sequence(<TMPL_VAR NAME=RC>);
 });
 
 
@@ -152,12 +152,12 @@ function waiting(tag,rc) {
 }
 
 */
-function redefine(){
+function redefine(rc){
   $('#gc_info').html('');
 
   var up;
   var down;
-  
+  myObj.rc=rc;
   if(! isNaN($('#addup').val())) {
    up = ($('#upstream').val()*1)-($('#addup').val()*1);
    down = ($('#downstream').val())*1+($('#adddown').val()*1);
@@ -287,7 +287,7 @@ function featlist (link) {
 
 
   <TR>
-<tr><td><input type= button value ="Redefine Sequence" id = "add_to" onClick="redefine();">
+<tr><td><input type= button value ="Redefine Sequence" id = "add_to" onClick="redefine(myObj.rc);">
    <TMPL_IF NAME="FEATURE">
    <TD align>
    <input type = button value = "Reset" id="reset" onClick="reset_updown();get_sequence();">
