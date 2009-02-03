@@ -1,11 +1,11 @@
 package CoGe::Algos::KsCalc;
 use strict;
 use base qw(CoGe::Algos::Pairwise);
-use CoGe::Genome;
+#use CoGeX;
 use CoGe::Algos::Codeml;
 use Data::Dumper;
 use Carp;
-
+use Benchmark qw(:all);
 
 BEGIN {
     use Exporter ();
@@ -16,7 +16,7 @@ BEGIN {
     @EXPORT      = qw();
     @EXPORT_OK   = qw();
     %EXPORT_TAGS = ();
-    __PACKAGE__->mk_accessors(qw(gdb version name1 name2 prot1 prot2 palign1 palign2 dna1 dna2 dalign1 dalign2 gaplessP1 gaplessP2 gaplessD1 gaplessD2 results gapless_prot_pid gapless_DNA_pid prot_pid DNA_pid));
+    __PACKAGE__->mk_accessors(qw(gdb version name1 name2 prot1 prot2 palign1 palign2 dna1 dna2 dalign1 dalign2 gaplessP1 gaplessP2 gaplessD1 gaplessD2 results gapless_prot_pid gapless_DNA_pid prot_pid DNA_pid feat1 feat2 benchmark));
 }
 
 
@@ -49,7 +49,7 @@ CoGe::Algos::KsCalc - CoGe::Algos::KsCalc
 
 Inherets from CoGe::Algos::Pairwise and provides extended funcitonality 
 to calculate Ks Kd (synonymous and nonsynonymous substitution rates) from sequences 
-in the CoGe::Genome database.  Calculations are performed by Codeml of PAML 
+in the CoGeX database.  Calculations are performed by Codeml of PAML 
 (Phylogenetic Analysis by Maximum Likelihood) package of Ziheng Yang.  See
 http://abacus.gene.ucl.ac.uk/software/paml.html for more information.
 
@@ -140,7 +140,7 @@ sub new
 =head2 Class::Accessor functions
 
 This is a list of the Class::Accessor functions and the information they hold:
-gdb              CoGe::Genome object
+gdb              CoGeX object
 version          Version of the data source to limit search when finding sequences
                  for sequence names.  This is in the data_information table of
                  the genomes database
@@ -160,6 +160,8 @@ gaplessD1        Storage for the gapless alignment of dna1 based on gaplessP1
 gaplessD2        Storage for the gapless alignment of dna2 based on gaplessP2
 results          Storage for the results hash for the Ks calculation by codeml
 
+feat1            Storage for CoGeX feature object for feature 1
+feat2            Storage for CoGeX feature object for feature 2
 =cut
 
 
@@ -171,7 +173,7 @@ results          Storage for the results hash for the Ks calculation by codeml
 
  Usage     : $self->init (called by new)
  Purpose   : create and set default parameters.  Currently, creates a 
-             CoGe::Genome object and sets it with $self->gdb
+             CoGeX object and sets it with $self->gdb
  Returns   : none
  Argument  : none
  Throws    : none
@@ -188,8 +190,8 @@ See Also   :
 sub init
   {
     my $self = shift;
-    $self->gdb(CoGe::Genome->new());
-    die "Can't create genome database base object: ".ref($self->gdb()) unless ref($self->gdb()) =~ /CoGe::Genome/;
+    $self->gdb(CoGeX->dbconnect());
+    die "Can't create genome database base object: ".ref($self->gdb()) unless ref($self->gdb()) =~ /CoGeX/;
   }
 
 #################### subroutine header begin ####################
@@ -428,7 +430,9 @@ sub KsCalc
   {
     my $self = shift;
     my $file = shift;
+    my $t1 = new Benchmark if $self->benchmark;
     my $tmp = $self->palign(); #returns 0 if fails
+    my $t2 = new Benchmark if $self->benchmark;
     unless ($tmp)
       {
 	carp ("Problem running alignment");
@@ -440,7 +444,19 @@ sub KsCalc
     close OUT;
     my $cml = new CoGe::Algos::Codeml(-alignment=>$file);
     $cml->run();
+    my $t3 = new Benchmark  if $self->benchmark;
     $self->results($cml->results);
+    delete $self->results->{"dN/dS"};
+    if ($self->benchmark)
+      {
+	my $align_time = timestr(timediff($t2,$t1));
+	my $codeml_time = timestr(timediff($t3,$t2));
+	print qq{
+Time to align:     $align_time
+Time to codeml:    $codeml_time
+};
+      }
+
     return $self->results;
 
   }
@@ -468,8 +484,26 @@ sub get_prot_seq_by_name
   {
     my $self = shift;
     my $name = shift;
-    return $self->gdb->get_prot_seq_by_feat_name(name=>$name,
-						 version=>$self->version);
+#    return $self->gdb->get_prot_seq_by_feat_name(name=>$name,
+#						 version=>$self->version);
+    my $feat;
+    my $search = {name=>$name};
+    $search->{version} = $self->version if $self->version;
+    foreach my $item ($self->gdb->resultset('FeatureName')->search($search,{}))
+      {
+	my $tfeat = $item->feature;
+	next unless $tfeat->type->name eq "CDS";
+	$feat = $tfeat unless $feat;
+	if ($self->version)
+	  {
+	    $feat = $tfeat if $tfeat->dataset->version eq $self->version;
+	  }
+	else
+	  {
+	    $feat = $tfeat if $tfeat->dataset->version > $feat->dataset->version;
+	  }
+      }
+    return $feat->protein_sequence();
   }
 
 #################### subroutine header begin ####################
@@ -563,16 +597,41 @@ See Also   :
 sub _check_seqs
   {
     my $self = shift;
-    my ($seq) = $self->get_prot_seq_by_name($self->name1); #returns an array with longest seq first
-    $seq =~ s/\*//g;
-    $self->prot1($seq) if $self->name1;
-    ($seq) = $self->get_prot_seq_by_name($self->name2); #returns an array with longest seq first
-    $seq =~ s/\*//g;
-    $self->prot2($seq) if $self->name2;
-    ($seq) = $self->get_coding_seq_by_name($self->name1);
-    $self->dna1($seq) if $self->name1;
-    ($seq) = $self->get_coding_seq_by_name($self->name2);
-    $self->dna2($seq) if $self->name2;
+    
+    #check to make sure that feat objects exist and are of type CDS
+    unless ($self->feat1 && ref($self->feat1()) =~ /Feature/ && $self->feat1->type->name eq "CDS")
+      {
+	warn "problem with feat1:  not defined or not a CoGeX::Feature object or Feature object is not of feature_type->name 'CDS'\n";
+	return 0;
+      }
+    unless ($self->feat2 && ref($self->feat2()) =~ /Feature/&& $self->feat1->type->name eq "CDS")
+      {
+	warn "problem with feat2:  not defined or not a CoGeX::Feature object or Feature object is not of feature_type->name 'CDS'\n";
+	return 0;
+      }
+    my ($seq) = $self->feat1->protein_sequence;
+    $self->prot1($seq) if $seq;
+    ($seq) = $self->feat2->protein_sequence;
+    $self->prot2($seq) if $seq;
+    ($seq) = $self->feat1->genomic_sequence;
+    $self->dna1($seq) if $seq;
+    ($seq) = $self->feat2->genomic_sequence;
+    $self->dna2($seq) if $seq;
+    my ($name) = $self->feat1->names();
+    $self->name1($name);
+    ($name) = $self->feat2->names();
+    $self->name2($name);
+
+#    my ($seq) = $self->get_prot_seq_by_name($self->name1); #returns an array with longest seq first
+#    $seq =~ s/\*//g;
+#    $self->prot1($seq) if $self->name1;
+#    ($seq) = $self->get_prot_seq_by_name($self->name2); #returns an array with longest seq first
+#    $seq =~ s/\*//g;
+#    $self->prot2($seq) if $self->name2;
+#    ($seq) = $self->get_coding_seq_by_name($self->name1);
+#    $self->dna1($seq) if $self->name1;
+#    ($seq) = $self->get_coding_seq_by_name($self->name2);
+#    $self->dna2($seq) if $self->name2;
     return ($self->prot1 && $self->prot2 && $self->dna1 && $self->dna2) ? 1 : 0;
   }
 
