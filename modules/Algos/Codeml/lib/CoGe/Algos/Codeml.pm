@@ -367,7 +367,7 @@ sub new {
   my $self = $class->SUPER::new();
 
   $self->program_name('codeml');
-  $self->program_dir('/opt/bin/bio/');
+  $self->program_dir('/opt/apache/CoGe/bin/');
   $self->tempdir('/tmp');
   $self->{'_branchLengths'} = 0;
   $self->outfile_name('mlc');
