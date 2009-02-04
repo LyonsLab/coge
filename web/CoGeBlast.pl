@@ -337,7 +337,7 @@ sub get_orgs
 	$html .= "No results";
 	return $html;
       }
-    $html .= qq{<SELECT id="org_id" SIZE="8" MULTIPLE onClick="\$('#remove').hide(0);\$('#add').show(0);get_seq_types(['org_id'],['org_seq_types']);" ondblclick="get_from_id(['org_id', 'seq_type_id'],[add_to_list]);">\n};
+    $html .= qq{<SELECT id="org_id" SIZE="8" MULTIPLE onClick="\$('#remove').hide(0);\$('#add').show(0);get_seq_types(['org_id'],['org_seq_types']);" ondblclick="add_selected_orgs();">\n};
     $html .= join ("\n", @opts);
     $html .= "\n</SELECT>\n";
     $html =~ s/OPTION/OPTION SELECTED/;
