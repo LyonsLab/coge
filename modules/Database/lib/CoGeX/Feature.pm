@@ -636,7 +636,7 @@ sub genomic_sequence {
 	}
       }      
     }
-  return wantarray ? @sequences : join( "", @sequences );
+  return join( "", @sequences );
 }
 
 sub genome_sequence
@@ -808,7 +808,7 @@ sub protein_sequence {
       my $found=0;
       while (my ($k, $v) = each %$seqs)
 	{
-	  if (($v =~ /\*$/)|| $v !~ /\*/)
+	  if (($v =~ /^M/ && $v =~ /\*$/))
 	    {
 	      next if $v =~ /\*\w/;
 	      $found = $k;
