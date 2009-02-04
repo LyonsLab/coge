@@ -991,6 +991,12 @@ function add_selected_orgs() {
     });
 }
 
+function toggle_hsp_column(index) {
+$('#hsp_result_table tr').each(function() { 
+            $('td:eq('+index+')',this).toggle();
+            $('th:eq('+index+')',this).toggle();
+        });
+}
 
 
 </SCRIPT>
@@ -1746,7 +1752,7 @@ function add_selected_orgs() {
       </TMPL_LOOP>
      </tbody>
     </table>
-    <br>
+   <br>
    </TMPL_IF>
    </div>      
 
@@ -1904,8 +1910,30 @@ function add_selected_orgs() {
       </DIV>
       </TD>
       <TD valign="top" align=left >
+    <table class = small>
+     <tr><th>Show columns:
+     <tr>
+       <td><input type = checkbox onclick="toggle_hsp_column(1);" checked>Query Sequence Name
+       <td><input type = checkbox onclick="toggle_hsp_column(2);" checked>Organism Name
+       <td><input type = checkbox onclick="toggle_hsp_column(3);" checked>Chromosome
+       <td><input type = checkbox onclick="toggle_hsp_column(4);" checked>Position
+     <tr>
+       <td><input type = checkbox onclick="toggle_hsp_column(5);" checked>HSP Number
+       <td><input type = checkbox onclick="toggle_hsp_column(6);" checked>HSP Length
+       <td><input type = checkbox onclick="toggle_hsp_column(7);" checked>Query Sequence Coverage
+       <td><input type = checkbox onclick="toggle_hsp_column(8);" checked>HSP E-value
+     <tr>
+       <td><input type = checkbox onclick="toggle_hsp_column(9);" checked>HSP Percent Identity
+       <td><input type = checkbox onclick="toggle_hsp_column(10);" checked>HSP Score
+       <td><input type = checkbox onclick="toggle_hsp_column(11);" checked>HSP Quality (query coverage * percent ID)
+       <td><input type = checkbox onclick="toggle_hsp_column(12);" checked>Closest Genomic Feature
+     <tr>
+       <td><input type = checkbox onclick="toggle_hsp_column(13);" checked>Distance to Closest Feature
+
+    </table>
+ 
        	 <DIV id=result_features align=left valign="top">
-          <form id=feature_list style="position:static">
+          <form id=feature_list>
           <TMPL_VAR NAME="HSP_RESULTS">
           </form>
           <table>
