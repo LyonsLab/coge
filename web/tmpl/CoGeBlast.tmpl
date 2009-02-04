@@ -71,12 +71,13 @@ function show_hsp_div() {
 }
 
 function add_to_list(id,org){
+  if (!id && !org) {return;}
   var check = $('#'+id).val();
   if (check){
-   alert('You have already added '+org+'.');
+//   alert('You have already added '+org+'.');
    return;
   }
-  var html = '<option id='+id+' value='+id+'>'+org+'</option>';
+  var html = '<option id='+id+' value='+id+' ondblclick="remove_selected_orgs();">'+org+'</option>';
   $('#blank').remove();
   $('#db_choice').append(html).sortSelect();
   counting();
@@ -834,12 +835,6 @@ var matrix = $('#matrix').val();
 window.open('/CoGe/MatrixView.pl?matrix='+matrix);
 }
 
-function clear_org_list()
- {
- $('#db_choice').empty();
- counting();
- }
- 
  function monitor_log(log)
 {
   var fasta = 0;
@@ -968,6 +963,36 @@ function clear_org_list()
   if (message) $('#log_text').html("<div class='small'>"+message+'</div>');
 }
 
+
+function clear_org_list()
+ {
+ $('#db_choice').empty();
+ counting();
+ }
+
+
+function remove_selected_orgs() {
+ $('#db_choice option:selected').each(function(){
+    $('#'+$(this).val()).remove();
+    });
+ counting();
+
+ }
+ 
+function add_all_orgs() {
+ $('#org_id option').each(function(){
+    get_from_id(['args__'+$(this).val()],[add_to_list])
+    });
+}
+
+function add_selected_orgs() {
+ $('#org_id option:selected').each(function(){
+    get_from_id(['args__'+$(this).val()],[add_to_list])
+    });
+}
+
+
+
 </SCRIPT>
 </TMPL_IF>
 
@@ -1009,10 +1034,12 @@ function clear_org_list()
    	<DIV id="org_list"><TMPL_VAR NAME="ORG_LIST"></DIV>
    	<DIV id="org_seq_types"><TMPL_VAR NAME="ORG_SEQ_TYPES"></DIV>
    	<input type=button value="Get Org Info" onClick="org_info('<span class=loading>Loading. . .</span>');dataset_description_for_org(['org_id', 'seq_type_id'],[org_info]);pageObj.lastMouseX=event.pageX;pageObj.lastMouseY=event.pageY;">
+   	<input type=button value="Add all" onClick="add_all_orgs();">
    	  </TD>
    	  <TD valign="middle" align=middle>
-   	  <input type="button" style="display: none" id=add value="Add &rarr;  " onClick="get_from_id(['org_id', 'seq_type_id'],[add_to_list]);">
-   	  <input type="button" style="display: none" id=remove value="&larr; Remove" onClick="$('#'+$('#db_choice').val()).remove();counting();">
+<!--	  <input type="button" style="display: none" id=remove value="&larr; Remove" onClick="$('#'+$('#db_choice').val()).remove();counting();"> -->
+	  <input type="button" style="display: none" id=remove value="&larr; Remove" onClick="remove_selected_orgs();">
+   	  <input type="button" style="display: none" id=add value="Add &rarr;  " onClick="add_selected_orgs();">
    	  </TD>
            <TD>
               <div id=db_title>Organism Database(s) to BLAST:</DIV>
