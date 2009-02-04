@@ -1034,7 +1034,7 @@ function add_selected_orgs() {
    	<DIV id="org_list"><TMPL_VAR NAME="ORG_LIST"></DIV>
    	<DIV id="org_seq_types"><TMPL_VAR NAME="ORG_SEQ_TYPES"></DIV>
    	<input type=button value="Get Org Info" onClick="org_info('<span class=loading>Loading. . .</span>');dataset_description_for_org(['org_id', 'seq_type_id'],[org_info]);pageObj.lastMouseX=event.pageX;pageObj.lastMouseY=event.pageY;">
-   	<input type=button value="Add all" onClick="add_all_orgs();">
+   	<input type=button value="Add all listed" onClick="add_all_orgs();">
    	  </TD>
    	  <TD valign="middle" align=middle>
 <!--	  <input type="button" style="display: none" id=remove value="&larr; Remove" onClick="$('#'+$('#db_choice').val()).remove();counting();"> -->
