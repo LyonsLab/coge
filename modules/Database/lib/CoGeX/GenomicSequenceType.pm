@@ -23,9 +23,8 @@ __PACKAGE__->add_columns(
   },
 );
 __PACKAGE__->set_primary_key("genomic_sequence_type_id");
+__PACKAGE__->has_many("dataset_groups"=>"CoGeX::DatasetGroup","genomic_sequence_type_id");
 
-
-__PACKAGE__->has_many("genomic_sequences"=>"CoGeX::GenomicSequence","genomic_sequence_type_id");
 
 sub resolve : ResultSet {
     my $self = shift;

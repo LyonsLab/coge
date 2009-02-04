@@ -24,7 +24,7 @@ __PACKAGE__->add_columns(
 );
 __PACKAGE__->set_primary_key("organism_id");
 
-__PACKAGE__->has_many("datasets" => "CoGeX::Dataset", 'organism_id');
+__PACKAGE__->has_many("dataset_groups" => "CoGeX::DatasetGroup", 'organism_id');
 
 sub resolve : ResultSet {
     my $self = shift;
