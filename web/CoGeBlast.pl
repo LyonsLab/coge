@@ -800,10 +800,13 @@ sub generate_chromosome_images
 		$min_quality = $hsp->quality unless defined $min_quality;
 		$min_quality = $hsp->quality if $hsp->quality < $min_quality;
 	      }
-	    $max_quality = sprintf("%.3f", log($max_quality)) unless $max_quality == 0;
-	    $min_quality = sprintf("%.3f", log($min_quality)) unless $min_quality == 0;
-	    $range_quality = $max_quality - $min_quality;
-	    $data{$org}{extra} = qq{<span class=small>Hits colored by Log Quality.  <span style="color:#AA0000">Min: $min_quality</span> <span style="color:#00AA00">Max: $max_quality</span></span>};
+	    if (defined $min_quality && defined $max_quality)
+	      {
+		$max_quality = sprintf("%.3f", log($max_quality)) unless $max_quality == 0;
+		$min_quality = sprintf("%.3f", log($min_quality)) unless $min_quality == 0;
+		$range_quality = $max_quality - $min_quality;
+		$data{$org}{extra} = qq{<span class=small>Hits colored by Log Quality.  <span style="color:#AA0000">Min: $min_quality</span> <span style="color:#00AA00">Max: $max_quality</span></span>};
+	      }
 	  }
 	my ($max_identity, $min_identity, $range_identity);
 	if ($color_hsps eq "identity")
@@ -815,10 +818,13 @@ sub generate_chromosome_images
 		$min_identity = $hsp->percent_id unless defined $min_identity;
 		$min_identity = $hsp->percent_id if $hsp->percent_id < $min_identity;
 	      }
-	    $range_identity = $max_identity - $min_identity;
-	    $max_identity = sprintf("%.1f", $max_identity);
-	    $min_identity = sprintf("%.1f", $min_identity);
-	    $data{$org}{extra} = qq{<span class=small>Hits colored by Identity.  <span style="color:#AA0000">Min: $min_identity</span> <span style="color:#00AA00">Max: $max_identity</span></span>};
+	    if (defined $max_identity && $min_identity)
+	      {
+		$range_identity = $max_identity - $min_identity;
+		$max_identity = sprintf("%.1f", $max_identity);
+		$min_identity = sprintf("%.1f", $min_identity);
+		$data{$org}{extra} = qq{<span class=small>Hits colored by Identity.  <span style="color:#AA0000">Min: $min_identity</span> <span style="color:#00AA00">Max: $max_identity</span></span>};
+	      }
 	  }
 
 	$filename = $set->{link};
