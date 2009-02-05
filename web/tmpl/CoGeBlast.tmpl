@@ -80,7 +80,7 @@ function add_to_list(id,org,sort){
   var html = '<option id='+id+' value='+id+' ondblclick="remove_selected_orgs();">'+org+'</option>';
   $('#blank').remove();
   $('#db_choice').append(html);	
-  if (sort) {sort_db_choice}
+  if (sort) {sort_db_choice();}
   counting();
 }
 
