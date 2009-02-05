@@ -1910,8 +1910,9 @@ $('#hsp_result_table tr').each(function() {
       </DIV>
       </TD>
       <TD valign="top" align=left >
-    <table class = small>
-     <tr><th>Show columns:
+       	 <DIV id=result_features align=left valign="top">
+    <input type = checkbox onclick="$('#show_columns').slideToggle();">Show HSP Table column display options?	
+    <table class = "small resultborder" id="show_columns" style="display :none">
      <tr>
        <td><input type = checkbox onclick="toggle_hsp_column(1);" checked>Query Sequence Name
        <td><input type = checkbox onclick="toggle_hsp_column(2);" checked>Organism Name
@@ -1932,17 +1933,15 @@ $('#hsp_result_table tr').each(function() {
 
     </table>
  
-       	 <DIV id=result_features align=left valign="top">
+
           <form id=feature_list>
           <TMPL_VAR NAME="HSP_RESULTS">
           </form>
           <table>
             <tr valign=top>
-				<td align=left class=species>HSP count: <TMPL_VAR NAME=HSP_COUNT>
-
-				<td align=right>
-       			<input type=button id="click_links" value="Show all Features" onClick="click_all_feat_links();$('#click_links').hide(0)"> <input type=button value="Select All" onClick="$('#feature_list').checkCheckboxes()">  <input type=button value="Select None" onClick="$('#feature_list').unCheckCheckboxes()"> 
-        		<br>
+		<td align=left>
+       		    <input type=button id="click_links" value="Show all Features" onClick="click_all_feat_links();$('#click_links').hide(0)"> <input type=button value="Select All" onClick="$('#feature_list').checkCheckboxes()">  <input type=button value="Select None" onClick="$('#feature_list').unCheckCheckboxes()"> 
+        	    <br>
          		Do Following to Checked Features: 
           		<select name=overlap_action id=overlap_action>
            		 <option value = "gevo">Send to GEvo</option>
@@ -1950,19 +1949,14 @@ $('#hsp_result_table tr').each(function() {
           		  <option value = "xls">Export to Excel</option>
            		 <option value = "tab">Tab Deliminated</option>
            		 <option value = "list">Get Feature List</option>
-<!--            <option value = "user">Add to MFF</option> -->
-          	    </selected>  
+			</selected>  
           		<input type=button value="Go" onClick="overlap_checkboxes()">
+            <tr valign=top>
+		<td align=left class=species>HSP count: <TMPL_VAR NAME=HSP_COUNT>
        <tr><td colspan=2 align=left><div id=overlap_box style="display: none" valign="top" class="resultborder"></div>
- 		</table>
+ 	</table>
  </div>
      </TD>
-    <TR>
-    <td valign=top>
-    <td>
-
-    
-
    </TABLE>
    </TD>
 </DIV>
