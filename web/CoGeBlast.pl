@@ -128,7 +128,7 @@ sub gen_body
   {
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CoGeBlast.tmpl');
     my $form = $FORM;
-    my $featid = join (",",$form->param('featid')) || 0;
+    my $featid = join (",",$form->param('featid'), $form->param('fid')) || 0;
     my $chr = $form->param('chr') || 0;
     my $upstream = $form->param('upstream') || 0;
     my $downstream = $form->param('downstream') || 0;
