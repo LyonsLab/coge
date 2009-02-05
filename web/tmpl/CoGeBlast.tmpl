@@ -70,7 +70,7 @@ function show_hsp_div() {
   if( $('#result_visual').is(':hidden') == true) $('#result_visual').show(0);
 }
 
-function add_to_list(id,org){
+function add_to_list(id,org,sort){
   if (!id && !org) {return;}
   var check = $('#'+id).val();
   if (check){
@@ -79,7 +79,8 @@ function add_to_list(id,org){
   }
   var html = '<option id='+id+' value='+id+' ondblclick="remove_selected_orgs();">'+org+'</option>';
   $('#blank').remove();
-  $('#db_choice').append(html).sortSelect();
+  $('#db_choice').append(html);	
+  if (sort) {sort_db_choice}
   counting();
 }
 
@@ -983,12 +984,23 @@ function add_all_orgs() {
  $('#org_id option').each(function(){
     get_from_id(['args__'+$(this).val()],[add_to_list])
     });
+  sort_db_choice();
 }
 
 function add_selected_orgs() {
  $('#org_id option:selected').each(function(){
     get_from_id(['args__'+$(this).val()],[add_to_list])
     });
+  sort_db_choice();
+}
+
+function sort_db_choice() {
+    if (ajax.length)
+     {
+       setTimeout("sort_db_choice()",100);	
+       return;
+     }
+   $('#db_choice').append().sortSelect();
 }
 
 function toggle_hsp_column(index) {
