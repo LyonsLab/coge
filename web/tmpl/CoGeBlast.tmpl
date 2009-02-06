@@ -1719,7 +1719,8 @@ $('#hsp_result_table tr').each(function() {
    
    
 <TMPL_IF NAME="RESULT_TABLE">
-<span class=species>HSP Table:</span><input type = checkbox onclick="$('#show_columns').slideToggle();"><span class = "small" >Show HSP Table column display options?</span>
+<span class=species>HSP Table:</span>
+<input type = checkbox onclick="$('#show_columns').slideToggle();"><span class = "small" >Show HSP Table column display options?</span>
     <table class = "small resultborder" id="show_columns" style="display :none">
      <tr>
        <td><input type = checkbox onclick="toggle_hsp_column(1);" checked>Query Sequence Name
@@ -1964,7 +1965,9 @@ $('#hsp_result_table tr').each(function() {
 			</selected>  
           		<input type=button value="Go" onClick="overlap_checkboxes()">
             <tr valign=top>
-		<td align=left class=species>HSP count: <TMPL_VAR NAME=HSP_COUNT>
+		<td align=left class=species>HSP count:
+		<input type = checkbox onclick="$('#hsp_count_data').slideToggle();" checked><span class = "small" >Show Table?</span>
+	        <div id="hsp_count_data"><TMPL_VAR NAME=HSP_COUNT></div>
        <tr><td colspan=2 align=left><div id=overlap_box style="display: none" valign="top" class="resultborder"></div>
  	</table>
  </div>
