@@ -1260,7 +1260,6 @@ sub process_features
 	my ($name) = sort { length ($b) <=> length ($a) || $a cmp $b} @{$feat->qualifiers->{names}} if ref ($feat->qualifiers) =~ /hash/i;
 	my $anchor = $feat if ref ($feat->qualifiers) =~ /hash/i && $feat->qualifiers->{type} && $feat->qualifiers->{type} eq "anchor";
 
-
         if ($type =~ /pseudogene/i)
           {
 	    next unless $draw_model eq "full";
@@ -1389,7 +1388,7 @@ sub process_features
 	    $c->add_feature($f);
 	    next;
 	  }
-	if ($show_gene_space && $type =~ /gene_space/i)
+	elsif ($show_gene_space && $type =~ /gene_space/i)
 	{
 	      $f = CoGe::Graphics::Feature::HSP->new({start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1]});
 	      #$f = CoGe::Graphics::Feature::Line->new({start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1]});
@@ -1408,7 +1407,10 @@ sub process_features
 	      $c->add_feature($f);
 	      next;
 	  }
-
+	else
+	  {
+#	    print STDERR "Didn't draw feature_type: ", $type,"\n";
+	  }
 #need to create an anchor if this feature is an anchor, but not to be drawn
 	if ($anchor && !$f)
 	  {
@@ -1920,7 +1922,7 @@ sub get_obj_from_genome_db
 	  }
 	unless (@names)
 	  {
-	    next;
+#	    next;
 #	    print STDERR "No Name: ",$f->id,"\n" unless $f->type->name =~ /misc/;
 
 	  }
