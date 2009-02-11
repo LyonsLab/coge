@@ -1,7 +1,9 @@
 package CoGeX;
 
+no warnings qw(redefine);
 use strict;
 use warnings;
+
 
 use vars qw( $VERSION );
 
