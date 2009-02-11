@@ -9,7 +9,7 @@ use Getopt::Long;
 use CoGeX;
 
 # variables
-my ($DEBUG, $GO, $ERASE, $DELETED, @files, $dir, @accns, $tmpdir, $help, $chromosome, $ds_link, $test);
+my ($DEBUG, $GO, $ERASE, $DELETED, $autoupdate, @files, $dir, @accns, $tmpdir, $help, $chromosome, $ds_link, $test, $annotation_check);
 my $genomic_seq_len = 10000; 		# length to break up genomic sequence
 my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
 my $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
@@ -31,7 +31,9 @@ GetOptions (
 	    "help|h"			=> \$help,
 	    "chromosome|chr=s"=>\$chromosome,
 	    "dataset_link=s"=>\$ds_link,
+	    "annotation_check|ac"=>\$annotation_check,
 	    "test"=>\$test, #to add the name test to dataset name for testing purposes
+	    "autoupdate"=>\$autoupdate,
 	   );
 $chromosome = 1 unless $chromosome;
 $tmpdir = "/tmp/gb" unless $tmpdir;	# set default directory to /tmp
@@ -39,6 +41,7 @@ $DEBUG = 0 unless defined $DEBUG;   # set to 1 to enable debug printing
 $GO = 0 unless defined $GO; 		# set to 1 to actually make db calls (instead of testing)
 $ERASE = 0 unless defined $ERASE;
 $DELETED = 0 if $ERASE;
+$autoupdate = 0 unless $autoupdate;
 #my $ERASE = 0; 					# set to 1 to clear the database of entries created for $dataset
 #my @files = @ARGV;
 help () if $help;
@@ -59,6 +62,7 @@ my $orig_chr;
 foreach my $accn (@accns)
   {
     print "Processing accn $accn... \n";
+    my $UPDATE = $autoupdate; #flag for updating a dataset if something went wrong with it.
     $file_count++;
     # open our input data file...
     my $genbank = new CoGe::Accessory::GenBank();
@@ -66,15 +70,21 @@ foreach my $accn (@accns)
     # remove path from file name
 #    my ($file) = $longfile=~ /([^\/]*$)/;
 #    chomp $file;
-
+    my $EXIT =0;
+    
     my ($organism, $data_source, $dataset);
     my $ds_count = 0;
-    $chromosome = $genbank->chromosome if $genbank->chromosome;
-    my $EXIT =0;
-    $chromosome = $orig_chr if $orig_chr;
-    $chromosome = $orig_chr.".".$ds_count if ($orig_chr && $orig_chr eq $chromosome);
-    $orig_chr = $chromosome unless defined $orig_chr;
-    $chromosome = $orig_chr.".".$file_count if $increment_chr_version;
+    if ($genbank->chromosome)
+      {
+	$chromosome = $genbank->chromosome ;
+      }
+    else
+      {
+	$chromosome = $orig_chr if $orig_chr;
+	$chromosome = $orig_chr.".".$ds_count if ($orig_chr && $orig_chr eq $chromosome);
+	$orig_chr = $chromosome unless defined $orig_chr;
+	$chromosome = $orig_chr.".".$file_count if $increment_chr_version;
+      }
     $chromosome =~ s/^\s+//;
     $chromosome =~ s/\s+$//;
     $chromosome =~ s/\s+/_/g;
@@ -107,7 +117,7 @@ foreach my $accn (@accns)
 							    description         => $dataset_desc,
 							    organism_id         => $organism->id,
 							    data_source_id      => $data_source->id(),
-							   }) if $GO;
+							   });
     # loop through results and see if we have any matches
     foreach my $test (@dataset_test)
       {
@@ -115,8 +125,42 @@ foreach my $accn (@accns)
 	    if (($test->name == $accn || $test->name == $genbank->accession) && $test->version == $genbank->version)
 	      {
 		# stop executing if a match is found
-		$EXIT = 1;
 		print "Genome is already inserted in the database...\n";
+		foreach my $chr ($test->chromosomes)
+		  {
+		    my $wgs =  scalar@{$genbank->wgs_data()};
+		    if (($chr ne $chromosome) && !$wgs) #wgs is funky due to nested genbank files, each used as a contig_
+		      {
+			print "WARNING:  chromosome in genbank file does not match chromosome in database:  old: $chr vs. new: $chromosome\n";
+			#update genomic_sequence chromosomes
+			unless ($UPDATE)
+			  {
+			    print "Would you like to update this dataset (y/n)?  ";
+			    my $ans = <STDIN>;
+			    $UPDATE = $ans =~ /y/i;
+			  }
+			if ($UPDATE)
+			  {
+			    print "Updating $accn's dataset, features, locations, and genomic sequence to new chromosome\n";
+			    foreach my $gs ($test->genomic_sequences)
+			      {
+				$gs->chromosome($chromosome);
+				$gs->update if $GO;
+			      }
+			    foreach my $feat ($test->features)
+			      {
+				$feat->chromosome($chromosome);
+				$feat->update if $GO;
+				foreach my $loc ($feat->locations)
+				  {
+				    $loc->chromosome($chromosome);
+				    $loc->update if $GO;
+				  }
+			      }
+			  }
+		      }
+		    $EXIT = 1;
+		  }
 		
 		# if match and erase flag is set, erase the entry
 		if ($ERASE)
@@ -184,14 +228,13 @@ foreach my $accn (@accns)
 	    # create a db_feature for to link this feature with the dataset table
 	    my ($start, $stop, $strand) = get_feature_location($feature);
 	    my $db_feature = $coge->resultset('Feature')->create({
-								  feature_type_id     => $feat_type->id,
-								  dataset_id => $dataset->id,
-								  chromosome=> $chromosome,
-								  strand=>$strand,
-								  start=>$start,
-								  stop=>$stop,
-								 }) if $GO;
-	    
+							       feature_type_id     => $feat_type->id,
+							       dataset_id => $dataset->id,
+							       chromosome=> $chromosome,
+							       strand=>$strand,
+							       start=>$start,
+							       stop=>$stop,
+							      }) if $GO;
 	    # expect first feature to be the source feature!
 	    if ($feature->type() =~ /source/i) #source is now skipped.
 	      {
@@ -526,7 +569,7 @@ sub get_organism
   $name =~ s/'//g;
 #  print $name,"\n";
 #  print $entry->organism,"\n";
-  my $org = $coge->resultset('Organism')->find({name=>$name}) if $GO;
+  my $org = $coge->resultset('Organism')->find({name=>$name});
   unless ($org)
     {
       $org = $coge->resultset('Organism')->find_or_create(
@@ -544,6 +587,6 @@ sub get_data_source
 						      name=>'NCBI',
 						      description=>"National Center for Biotechnology Information",
 						      link=>'www.ncbi.nih.gov'
-						     }) if $GO;
+						     });
 }
 
