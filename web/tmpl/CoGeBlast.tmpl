@@ -132,7 +132,10 @@ function update_checkbox(name, dist, hspid, id){
 
 function overlap_checkboxes() {
   var action = $('#overlap_action').val();
-  var accn = $('#feature_list').getCheckboxes();
+  var accn="";
+  $('#hsp_result_table :checkbox').each(function(){
+     if (this.checked == true) accn = accn + this.id+",";
+   });
   if (accn == ",") {
     alert("You have not checked any features.");
     return;
@@ -199,67 +202,6 @@ function send_to_gevo(url,num_accns) {
   }
 }
 
-jQuery.fn.getCheckboxes = function()
-{
-	var str = ",";
-	this.each(
-			function()
-			{
-				jQuery("input[@type=checkbox]",this).each(
-					function() {
-					  //alert(this.value);
-					  if (this.checked == true) str = str + this.value +",";
-					}
-				);
-			}
-		);
-	return str;
-};
-
-jQuery.fn.checkCheckboxes = function()
-{
-	//var returnWhat = jQuery([]);
-	this.each(
-		function()
-		{
-			jQuery("input[@type=checkbox]", this).each(
-				function()
-				{
-					this.checked = true;
-				}
-			);
-			//returnWhat = checked;
-		}
-	);
-	//returnWhat = this;
-};
-
-
-jQuery.fn.unCheckCheckboxes = function()
-{
-	//var returnWhat = jQuery([]);
-	this.each(
-		function()
-		{
-			jQuery("input[@type=checkbox]", this).each(
-				function()
-				{
-					this.checked = false;
-				}
-			).filter(":not(:checked)");
-		}
-	);
-};
-
-jQuery.fn.selectOptions = function(index) {
-  this.each(
-  	function() {
-  		var opts = this.options;
-  		opts[index].selected = true;
-  	}	
-  );	
-  return this;
-};
 
 
 function enlarge_picture_window(id) {
@@ -1953,7 +1895,7 @@ $('#hsp_result_table tr').each(function() {
           <table>
             <tr valign=top>
 		<td align=left>
-       		    <input type=button id="click_links" value="Show all Features" onClick="click_all_feat_links();$('#click_links').hide(0)"> <input type=button value="Select All" onClick="$('#feature_list').checkCheckboxes()">  <input type=button value="Select None" onClick="$('#feature_list').unCheckCheckboxes()"> 
+       		    <input type=button id="click_links" value="Show all Features" onClick="click_all_feat_links();$('#click_links').hide(0)"> <input type=button value="Select All" onClick="$('#hsp_result_table :checkbox').attr('checked', true);">  <input type=button value="Select None" onClick="$('#hsp_result_table :checkbox').attr('checked', false);"> 
         	    <br>
          		Do Following to Checked Features: 
           		<select name=overlap_action id=overlap_action>
