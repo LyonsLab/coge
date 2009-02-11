@@ -142,10 +142,39 @@ if (ajax.length)
 
 }
 
+function toggle_column(index) {
+ $('#feat_table tr').each(function() {
+  $('td:eq('+index+')',this).toggle();
+  $('th:eq('+index+')',this).toggle();
+ });
+}
+
+
 </SCRIPT>
 
 <div id="j"></div>
 <form id=feature_list>
+<input type = checkbox onclick="$('#show_columns').slideToggle();"><span class = "small" >Show table Column display options?</span>
+    <table class = "small resultborder" id="show_columns" style="display :none">
+     <tr>
+       <td><input type = checkbox onclick="toggle_column(1);" checked>Feature Name
+       <td><input type = checkbox onclick="toggle_column(2);" checked>Type
+       <td><input type = checkbox onclick="toggle_column(3);" checked>Chromosome
+       <td><input type = checkbox onclick="toggle_column(4);" checked>Start
+       <td><input type = checkbox onclick="toggle_column(5);" checked>Stop
+     <tr>
+       <td><input type = checkbox onclick="toggle_column(6);" checked>Strand
+       <td><input type = checkbox onclick="toggle_column(7);" checked>Lenght
+       <td><input type = checkbox onclick="toggle_column(8);" checked>Total GC%
+       <td><input type = checkbox onclick="toggle_column(9);" checked>Total AT%
+       <td><input type = checkbox onclick="toggle_column(10);" checked>Wobble Codon GC%
+     <tr>
+       <td><input type = checkbox onclick="toggle_column(11);" checked>Wobble Codon  AT%
+       <td><input type = checkbox onclick="toggle_column(12);" checked>Organism (version)
+       <td><input type = checkbox onclick="toggle_column(13);" checked>Annotation
+       <td><input type = checkbox onclick="toggle_column(14);" checked>Other
+    </table>
+
 <TABLE id=feat_table>
  <THEAD align=left>
   <tr>
