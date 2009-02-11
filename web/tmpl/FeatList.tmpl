@@ -12,26 +12,12 @@ $(document).ready(function(){
 		});
 });
 
-/*
-$(document).ready(function()
-	{
-		init_table();
-	}
-);
-*/
-function init_table() {
-	if (ajax.length)
-   {
-    setTimeout("init_table()",100);
-    return;
-   }
-	$('#feat_table').trigger('update');
-}
-
 function feature_checkboxes(){
   var action = $('#checked_action').val();
-  var accn = $('#feature_list').getCheckboxes();
-  
+  var accn="";
+  $('#feat_table :checkbox').each(function(){
+     if (this.checked == true) accn = accn + this.id+",";
+   });
   if (accn == ",") {
     alert("You have not checked any features.");
     return;
@@ -68,58 +54,6 @@ function export_url(url,num_accns) {
     window.open(url);
   }
 }
-
-jQuery.fn.getCheckboxes = function()
-{
-	var str = ",";
-	this.each(
-			function()
-			{
-				jQuery("input[@type=checkbox]",this).each(
-					function() {
-					  //alert(this.value);
-					  if (this.checked == true) str = str + this.id +",";
-					}
-				);
-			}
-		);
-	return str;
-};
-
-jQuery.fn.checkCheckboxes = function()
-{
-	//var returnWhat = jQuery([]);
-	this.each(
-		function()
-		{
-			jQuery("input[@type=checkbox]", this).each(
-				function()
-				{
-					this.checked = true;
-				}
-			);
-			//returnWhat = checked;
-		}
-	);
-	//returnWhat = this;
-};
-
-
-jQuery.fn.unCheckCheckboxes = function()
-{
-	//var returnWhat = jQuery([]);
-	this.each(
-		function()
-		{
-			jQuery("input[@type=checkbox]", this).each(
-				function()
-				{
-					this.checked = false;
-				}
-			).filter(":not(:checked)");
-		}
-	);
-};
 
 function show_all_codon_tables(num) {
  for (var i=1; i<=num; i++)
@@ -222,8 +156,8 @@ function toggle_column(index) {
   </tbody>
  </TABLE>
  </form>
-<input type=button value="Check All" onclick="$('#feature_list').checkCheckboxes();">
-<input type=button value="Uncheck All" onclick="$('#feature_list').unCheckCheckboxes();">
+<input type=button value="Check All" onclick="$('#feat_table :checkbox').attr('checked', true);">
+<input type=button value="Uncheck All" onclick="$('#feat_table :checkbox').attr('checked', false);">
  <div id='gevo_button' style="float:left">
  			Do Following to Checked Features:  
  			<select name=checked_action id=checked_action>
