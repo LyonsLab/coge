@@ -7,12 +7,13 @@ use Parallel::ForkManager;
 use Getopt::Long;
 
 
-my ($DEBUG, $forks, $pause);
+my ($DEBUG, $forks, $pause, $autoupdate);
 
 GetOptions (
 	    "debug"=>\$DEBUG,
 	    "forks|f=i"=>\$forks,
 	    "pause|p"=>\$pause,
+	    "autoupdate"=>\$autoupdate,
 	    );
 $forks = 20 unless defined $forks;
 
@@ -49,6 +50,7 @@ foreach my $item (@taxids)
     my @tables = split /<\/table>/, $content;
     my @rows = split /<tr>/,$tables[8];
     my $prog = '/home/elyons/projects/CoGeX/scripts/genbank_genome_loader.pl';
+    $prog .= " -autoupdate" if $autoupdate;
     foreach my $row (@rows)
       {
 	$pm->start and next;
