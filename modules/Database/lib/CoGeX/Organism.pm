@@ -11,9 +11,9 @@ __PACKAGE__->load_components("PK::Auto", "ResultSetManager", "Core");
 __PACKAGE__->table("organism");
 __PACKAGE__->add_columns(
   "organism_id",
-  { data_type => "INT", default_value => undef, is_nullable => 0, size => 10 },
+  { data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
   "name",
-  { data_type => "VARCHAR", default_value => "", is_nullable => 0, size => 100 },
+  { data_type => "VARCHAR", default_value => "", is_nullable => 0, size => 200 },
   "description",
   {
     data_type => "VARCHAR",
@@ -21,6 +21,8 @@ __PACKAGE__->add_columns(
     is_nullable => 1,
     size => 255,
   },
+  "normalized_name",
+  { data_type => "VARCHAR", default_value => "", is_nullable => 0, size => 200 },
 );
 __PACKAGE__->set_primary_key("organism_id");
 

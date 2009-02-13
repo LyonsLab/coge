@@ -11,9 +11,9 @@ __PACKAGE__->load_components("PK::Auto", "Core");
 __PACKAGE__->table("annotation_type");
 __PACKAGE__->add_columns(
   "annotation_type_id",
-  { data_type => "INT", default_value => undef, is_nullable => 0, size => 10 },
+  { data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
   "name",
-  { data_type => "VARCHAR", default_value => "", is_nullable => 0, size => 50 },
+  { data_type => "VARCHAR", default_value => "", is_nullable => 0, size => 100 },
   "description",
   {
     data_type => "VARCHAR",
@@ -22,12 +22,11 @@ __PACKAGE__->add_columns(
     size => 255,
   },
   "annotation_type_group_id",
-  { data_type => "INT", default_value => undef, is_nullable => 1, size => 10 },
+  { data_type => "INT", default_value => undef, is_nullable => 1, size => 11 },
 );
 __PACKAGE__->set_primary_key("annotation_type_id");
 
-__PACKAGE__->has_many("annotations" => "CoGeX::Annotation",
-                      'annotation_type_id');
+__PACKAGE__->has_many("annotations" => "CoGeX::Annotation", 'annotation_type_id');
 
 __PACKAGE__->belongs_to("annotation_type_group" => "CoGeX::AnnotationTypeGroup", 'annotation_type_group_id');
 

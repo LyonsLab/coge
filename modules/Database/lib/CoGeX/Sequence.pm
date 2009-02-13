@@ -11,9 +11,9 @@ __PACKAGE__->load_components("PK::Auto", "Core");
 __PACKAGE__->table("sequence");
 __PACKAGE__->add_columns(
   "sequence_id",
-  { data_type => "INT", default_value => undef, is_nullable => 0, size => 10 },
+  { data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
   "sequence_type_id",
-  { data_type => "INT", default_value => 0, is_nullable => 0, size => 10 },
+  { data_type => "INT", default_value => 0, is_nullable => 0, size => 11 },
   "sequence_data",
   {
     data_type => "LONGTEXT",
@@ -22,7 +22,7 @@ __PACKAGE__->add_columns(
     size => 4294967295,
   },
   "feature_id",
-  { data_type => "INT", default_value => 0, is_nullable => 0, size => 10 },
+  { data_type => "INT", default_value => 0, is_nullable => 0, size => 11 },
 );
 
 __PACKAGE__->set_primary_key("sequence_id");

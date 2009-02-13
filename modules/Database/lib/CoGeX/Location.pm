@@ -11,17 +11,17 @@ __PACKAGE__->load_components("PK::Auto", "Core");
 __PACKAGE__->table("location");
 __PACKAGE__->add_columns(
   "location_id",
-  { data_type => "INT", default_value => undef, is_nullable => 0, size => 10 },
+  { data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
   "start",
-  { data_type => "INT", default_value => 0, is_nullable => 0, size => 10 },
+  { data_type => "INT", default_value => 0, is_nullable => 0, size => 11 },
   "stop",
-  { data_type => "INT", default_value => 0, is_nullable => 0, size => 10 },
-  "strand",
-  { data_type => "VARCHAR", default_value => "", is_nullable => 0, size => 2 },
+  { data_type => "INT", default_value => 0, is_nullable => 0, size => 11 },
   "chromosome",
-  { data_type => "VARCHAR", default_value => "", is_nullable => 0, size => 15 },
+  { data_type => "VARCHAR", default_value => "", is_nullable => 0, size => 255 },
   "feature_id",
-  { data_type => "INT", default_value => 0, is_nullable => 0, size => 10 },
+  { data_type => "INT", default_value => 0, is_nullable => 0, size => 11 },
+  "strand",
+  { data_type => "TINYINT", default_value => "", is_nullable => 0, size => 4 },
 );
 __PACKAGE__->set_primary_key("location_id");
 

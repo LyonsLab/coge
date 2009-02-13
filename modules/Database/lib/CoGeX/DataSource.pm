@@ -11,9 +11,9 @@ __PACKAGE__->load_components("PK::Auto", "Core");
 __PACKAGE__->table("data_source");
 __PACKAGE__->add_columns(
   "data_source_id",
-  { data_type => "INT", default_value => undef, is_nullable => 0, size => 10 },
+  { data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
   "name",
-  { data_type => "VARCHAR", default_value => "", is_nullable => 0, size => 50 },
+  { data_type => "VARCHAR", default_value => "", is_nullable => 0, size => 100 },
   "description",
   {
     data_type => "VARCHAR",

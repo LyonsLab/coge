@@ -9,8 +9,8 @@ use base 'DBIx::Class';
 __PACKAGE__->load_components("PK::Auto", "ResultSetManager", "Core");
 __PACKAGE__->table("dataset_group");
 __PACKAGE__->add_columns(
-  "dataset_group_id",{ data_type => "INT", default_value => undef, is_nullable => 0, size => 10 },
-  "name",{ data_type => "VARCHAR", default_value => "", is_nullable => 0, size => 50 },
+  "dataset_group_id",{ data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
+  "name",{ data_type => "VARCHAR", default_value => "", is_nullable => 0, size => 200 },
   "description",
   {
     data_type => "VARCHAR",
@@ -25,8 +25,8 @@ __PACKAGE__->add_columns(
     is_nullable => 0,
     size => 50,
   },
-  "organism_id",{ data_type => "INT", default_value => 0, is_nullable => 0, size => 10 },
-  "genomic_sequence_type_id",{ data_type => "INT", default_value => 0, is_nullable => 0, size => 10 },
+  "organism_id",{ data_type => "INT", default_value => 0, is_nullable => 0, size => 11 },
+  "genomic_sequence_type_id",{ data_type => "INT", default_value => 0, is_nullable => 0, size => 11 },
   "file_path",
   {
     data_type => "VARCHAR",

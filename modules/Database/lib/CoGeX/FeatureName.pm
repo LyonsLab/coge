@@ -13,7 +13,7 @@ __PACKAGE__->add_columns(
   "feature_name_id",
   { data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
   "name",
-  { data_type => "VARCHAR", default_value => "", is_nullable => 0, size => 50 },
+  { data_type => "VARCHAR", default_value => "", is_nullable => 0, size => 100 },
   "description",
   {
     data_type => "VARCHAR",
@@ -22,7 +22,7 @@ __PACKAGE__->add_columns(
     size => 255,
   },
   "feature_id",
-  { data_type => "INT", default_value => 0, is_nullable => 0, size => 10 },
+  { data_type => "INT", default_value => 0, is_nullable => 0, size => 11 },
   "primary_name",
   { data_type => "TINYINT", default_value => 0, is_nullable => 0, size => 1 },
 );

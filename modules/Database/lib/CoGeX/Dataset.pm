@@ -13,9 +13,9 @@ use Text::Wrap;
 __PACKAGE__->load_components("PK::Auto", "ResultSetManager", "Core");
 __PACKAGE__->table("dataset");
 __PACKAGE__->add_columns(
-  "dataset_id",{ data_type => "INT", default_value => undef, is_nullable => 0, size => 10 },
-  "data_source_id",{ data_type => "INT", default_value => 0, is_nullable => 0, size => 10 },
-  "name",{ data_type => "VARCHAR", default_value => "", is_nullable => 0, size => 50 },
+  "dataset_id",{ data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
+  "data_source_id",{ data_type => "INT", default_value => 0, is_nullable => 0, size => 11 },
+  "name",{ data_type => "VARCHAR", default_value => "", is_nullable => 0, size => 100 },
   "description",
   {
     data_type => "VARCHAR",
@@ -44,8 +44,14 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key("dataset_id");
 __PACKAGE__->has_many("features" => "CoGeX::Feature", 'dataset_id');
 __PACKAGE__->has_many("dataset_connectors" => "CoGeX::DatasetConnector", 'dataset_id');
-__PACKAGE__->belongs_to("datasource" => "CoGeX::DataSource", 'data_source_id');
+__PACKAGE__->belongs_to("data_source" => "CoGeX::DataSource", 'data_source_id');
 
+
+sub datasource
+  {
+    print STDERR "You are using an alias for data_source\n";
+    shift->data_source(@_);
+  }
 
 sub get_genomic_sequence_new {
   my $self = shift;

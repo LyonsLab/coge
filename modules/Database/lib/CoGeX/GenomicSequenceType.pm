@@ -11,9 +11,9 @@ __PACKAGE__->load_components("PK::Auto", "ResultSetManager", "Core");
 __PACKAGE__->table("genomic_sequence_type");
 __PACKAGE__->add_columns(
   "genomic_sequence_type_id",
-  { data_type => "INT", default_value => undef, is_nullable => 0, size => 10 },
+  { data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
   "name",
-  { data_type => "VARCHAR", default_value => "", is_nullable => 0, size => 50 },
+  { data_type => "VARCHAR", default_value => "", is_nullable => 0, size => 100 },
   "description",
   {
     data_type => "VARCHAR",

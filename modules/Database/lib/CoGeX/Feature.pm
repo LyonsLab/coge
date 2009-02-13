@@ -11,13 +11,13 @@ use CoGe::Accessory::Annotation;
 __PACKAGE__->load_components("PK::Auto", "ResultSetManager", "Core");
 __PACKAGE__->table("feature");
 __PACKAGE__->add_columns(
-  "feature_id",{ data_type => "INT", default_value => undef, is_nullable => 0, size => 10 },
-  "feature_type_id",{ data_type => "INT", default_value => 0, is_nullable => 0, size => 10 },
-  "dataset_id",{ data_type => "INT", default_value => 0, is_nullable => 0, size => 10 },
-  "start",{ data_type => "INT", default_value => 0, is_nullable => 1, size => 10 },
-  "stop",{ data_type => "INT", default_value => 0, is_nullable => 1, size => 10 },
-  "chromosome",{ data_type => "VARCHAR", default_value => 0, is_nullable => 1, size => 50 },
-  "strand",{ data_type => "VARCHAR", default_value => 0, is_nullable => 1, size => 2 },
+  "feature_id",{ data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
+  "feature_type_id",{ data_type => "INT", default_value => 0, is_nullable => 0, size => 11 },
+  "dataset_id",{ data_type => "INT", default_value => 0, is_nullable => 0, size => 11 },
+  "start",{ data_type => "INT", default_value => 0, is_nullable => 1, size => 11 },
+  "stop",{ data_type => "INT", default_value => 0, is_nullable => 1, size => 11 },
+  "strand",{ data_type => "TINYINT", default_value => 0, is_nullable => 1, size => 4 },
+  "chromosome",{ data_type => "VARCHAR", default_value => 0, is_nullable => 1, size => 255 },
 );
 
 __PACKAGE__->set_primary_key("feature_id");

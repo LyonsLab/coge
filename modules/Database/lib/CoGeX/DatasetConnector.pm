@@ -11,11 +11,11 @@ __PACKAGE__->load_components("PK::Auto", "Core");
 __PACKAGE__->table("dataset_connector");
 __PACKAGE__->add_columns(
   "dataset_connector_id",
-  { data_type => "INT", default_value => 1, is_nullable => 0, size => 10 },
+  { data_type => "INT", default_value => 1, is_nullable => 0, size => 11 },
   "dataset_id",
-  { data_type => "INT", default_value => "", is_nullable => 0, size => 10 },
+  { data_type => "INT", default_value => "", is_nullable => 0, size => 11 },
   "dataset_group_id",
-  { data_type => "INT", default_value => "", is_nullable => 0, size => 10 },
+  { data_type => "INT", default_value => "", is_nullable => 0, size => 11 },
 );
 __PACKAGE__->set_primary_key("dataset_connector_id");
 __PACKAGE__->belongs_to("dataset_group" => "CoGeX::DatasetGroup", "dataset_group_id");

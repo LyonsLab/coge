@@ -11,7 +11,7 @@ __PACKAGE__->load_components("PK::Auto", "ResultSetManager", "Core");
 __PACKAGE__->table("annotation");
 __PACKAGE__->add_columns(
   "annotation_id",
-  { data_type => "INT", default_value => undef, is_nullable => 0, size => 10 },
+  { data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
   "annotation",
   { data_type => "TEXT", default_value => "", is_nullable => 0, size => 65535 },
   "feature_id",
