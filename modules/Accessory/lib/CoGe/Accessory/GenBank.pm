@@ -9,7 +9,7 @@ use CoGe::Accessory::GenBank::Feature;
 use CoGeX::Feature;
 use Roman;
 
-__PACKAGE__->mk_accessors qw(id locus accn seq_length moltype division date definition version gi keywords data_source dataset organism sequence srcfile dir anntoation features start stop chromosome add_gene_models _has_genes wgs wgs_scafld wgs_data);
+__PACKAGE__->mk_accessors qw(id locus accn seq_length moltype division date definition version gi keywords data_source dataset organism sequence srcfile dir anntoation features start stop chromosome add_gene_models _has_genes wgs wgs_scafld wgs_data strain substrain);
 
 
 
@@ -113,7 +113,11 @@ sub parse_genbank_file
       {
 	chomp $line;
 	next unless $line;
-	$line =~ s/^\s+// if ($line =~ /ORGANISM/);
+	if ($line =~ /ORGANISM/)
+	  {
+	    $line =~ s/^\s+//;
+	    $line .="::";
+	  }
 	if ($line=~/^FEATURES/)
 	  {
 	    $self->process_line(line=>$working_line, rev=>$rev, start=>$start, feature_flag=>$feature_flag);
@@ -134,7 +138,7 @@ sub parse_genbank_file
 	    $self->process_line(line=>$working_line, rev=>$rev, start=>$start, feature_flag=>$feature_flag, length=>$length);
 	    $feature_flag=0;
 	  }
-	if ($feature_flag && $line =~ /^\s\s\s\s\s\w/)
+	if ($feature_flag && $line =~ /^\s\s\s\s\s\S/)
 	  {
 	    $self->process_line(line=>$working_line, rev=>$rev, start=>$start, feature_flag=>$feature_flag, length=>$length);
 	    $line =~ s/^\s+//;
@@ -186,10 +190,13 @@ sub parse_genbank_file
       {
 	$self->sequence($working_line);
       }
-    unless ($self->chromosome && $self->chromosome eq "X") #dunno if it is a sex chromosome
-      {
-	$self->chromosome(arabic( $self->chromosome )) if $self->chromosome && isroman($self->chromosome);
-      }
+#    unless ($self->chromosome && ($self->chromosome eq "X" || $self->chromosome=~/\s/)) #dunno if it is a sex chromosome
+#      {
+#	print "---\n";
+#	print STDERR $self->chromosome,"\n";
+#	$self->chromosome(arabic( $self->chromosome )) if $self->chromosome && isroman($self->chromosome);
+#	print STDERR $self->chromosome,"!!!\n";
+#      }
     $self->_check_for_gene_models() if $self->add_gene_models;
     $self->process_wgs if ($self->wgs);
     return $self;
@@ -219,9 +226,17 @@ sub process_line
       }
     elsif ( $line =~ /^DEFINITION\s+(.*)/ ) {
       $self->definition($1);
-      if ($self->definition() =~ /(linkage group \w+),?/i || $self->definition =~ /chromosome (\w+),?/ || $self->definition =~ /(plasmid \w+),?/i)
+      if ($self->definition() =~ /(linkage group \w+),?/i || $self->definition =~ /chromosome ([^,]*),?/ || $self->definition =~ /(plasmid[^,]*),?/i || $self->definition =~ /(extrachromosomal[^,]*),?/i || $self->definition =~ /(scaffold[^,]*),?/i || $self->definition =~ /(segment[^,]*),?/i || $self->definition =~ /\s(part [^,]*),?/i|| $self->definition =~ /\s(clone [^,]*),?/i)
 	{
-	  $self->chromosome($1);
+	  my $tmp = $1;
+	  $tmp =~ s/clone/contig/;
+	  $tmp =~ s/\.$//;
+	  $tmp =~ s/complete//;
+	  $tmp =~ s/sequence//;
+	  $tmp =~ s/genomic scaffold//;
+	  $tmp =~ s/\s+$//;
+	  $tmp =~ s/^\s+//;
+	  $self->chromosome($tmp);
 	}
     }
     elsif ( $line =~ /^ACCESSION\s+(\S+)/ ) {
@@ -279,7 +294,17 @@ sub process_line
 		$val =1 unless $val;
 		$val =~ s/"//g;
 		$feature{$iso} = $val;
-		$self->chromosome($feature{$iso}) if $iso eq "chromosome";
+		#funky ways for getting chromosome info
+		if ($feature{type} eq "source" && ($iso eq "segment" || $iso eq "chromosome" || $iso eq "plasmid"))
+		  {
+		    my $chr = $val;
+		    $chr = $iso ." ".$val unless $iso eq "chromosome" || $chr =~ /\s/ || $chr =~ /$iso/i;
+		    $self->chromosome($chr) unless $self->chromosome;
+		    $self->chromosome($chr) if length ($chr) > length($self->chromosome);
+		  }
+		if ($feature{type} eq "source" && $iso eq "strain") {$self->strain($val);}
+		if ($feature{type} eq "source" && $iso eq "substrain") {$self->substrain($val);}
+		if ($feature{type} eq "source" && $iso eq "sub_strain") {$self->substrain($val);}
 	      }
 	    else
 	      {
@@ -710,7 +735,8 @@ sub add_feature
     my $qualifiers = $options{qualifiers};
     $qualifiers = {} unless $qualifiers;
     $qualifiers=$qualifiers;
-    my$annotation=$options{annotation} if $options{annotation};
+    my $annotation;
+    $annotation =$options{annotation} if $options{annotation};
     $annotation .= "location: ".$location if $location;
     my$strand=$options{strand} if $options{strand};
     my $start = $options{start};
