@@ -44,16 +44,13 @@ sub process_file
     my @hsps;
     
     open (IN, $file) || die "can't open $file for reading: $!";
-#    my $data = join ("", <IN>);
-#    close IN;
     my $header;
     my $hsps = [];
     my $oldris = $/;
     $/ = "Query=";
-#    loop: foreach my $qsection (split /Query=/, $data)
     loop: while (my $qsection = <IN>)
       {
-	next if $qsection =~ /Reference:/; #skip header
+#	next if $qsection =~ /Reference:/; #skip header
 	$qsection = "Query=".$qsection;
 	$qsection =~ s/Query=$//;
 	my ($query, $qlength) = $self->_parseQuery($qsection);
@@ -66,13 +63,10 @@ sub process_file
 	    my ($subject, $slength) = $self->_parseSubject($ssection);
 	    next unless $subject;
 	    $self->subject->{$subject}=0 unless $self->subject->{$subject};
-#	return $self unless $data;  #no data?
 	    foreach my $hsp_data (split /Score/, $ssection)
 	      {
 		next unless $hsp_data;
 		next if $hsp_data =~ /^>/;
-		#print STDERR $hsp_data,"\n::::::::::\n";
-		#	next if $hsp_data =~ /Query=/;
 		$self->query->{$query}++;
 		$self->query->{$subject}++;
 		my $hsp = $self->_processHSP(data=>"Score".$hsp_data, query_name=>$query, query_length=>$qlength, subject_name=>$subject, subject_length=>$slength);
@@ -103,6 +97,7 @@ sub _parseQuery
     my $self = shift;
     my $data = shift;
     my ($query, $length) = $data =~/Query=(.*?)\((\S+)\s*letters\)/s;
+    return unless $query;
     $query =~ s/\n/ /gs;
     $query =~ s/ +/ /gs;
     $query =~ s/\s\s+/ /g;
@@ -133,7 +128,6 @@ sub _processHSP {
 	my $subject_name = $opts{subject_name};
 	my $query_length = $opts{query_length};
 	my $subject_length = $opts{subject_length};
-
 	my $info;
 	($info,$data) = split /Query:/, $data,2;
 	$data = "Query:".$data;
@@ -179,7 +173,6 @@ sub _processHSP {
 	    push @hspline, $_;           # store the query line
 	  }
 	}
-	
 	#########################
 	# parse alignment lines #
 	#########################
@@ -188,8 +181,11 @@ sub _processHSP {
 	my (@QL, @SL, @AS) = (); # for better memory management
 	for(my $i=0;$i<@hspline;$i+=3) {
 		#warn $hspline[$i], $hspline[$i+2];
+	  next unless $hspline[$i] =~ /^Query:/;
 		$hspline[$i]   =~ /^Query:\s+(\d+)\s*(\S+)\s+(\d+)/;
-		$ql = $2; $qb = $1 unless $qb; $qe = $3;
+		$ql = $2; 
+		$qb = $1 unless $qb; 
+		$qe = $3;
 		
 		my $offset = index($hspline[$i], $ql);
 		$as = substr($hspline[$i+1], $offset, CORE::length($ql))
