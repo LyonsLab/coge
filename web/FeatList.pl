@@ -332,7 +332,7 @@ sub generate_excel_file
 	   my ($wat, $wgc) = $feat->wobble_content;
 	   $wat*=100;
 	   $wgc*=100;
-	   $worksheet->write($i,0,"http://toxic.berkeley.edu/CoGe/FeatView.pl?accn=$name",$name);
+	   $worksheet->write($i,0,"http://synteny.cnr.berkeley.edu/CoGe/FeatView.pl?accn=$name",$name);
 	   $worksheet->write($i,1,$feat->type->name);
 	   $worksheet->write($i,2,$feat->start."-".$feat->stop);
 	   $worksheet->write($i,3,$feat->strand);
