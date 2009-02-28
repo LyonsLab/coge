@@ -32,7 +32,10 @@ my $width = $FORM->param('width') || 600;
 my $grid = $FORM->param('grid');
 $grid = 1 unless defined $grid;
 $DEBUG=1 if $FORM->param('debug');
-exit unless ($org1 && $org2 && $chr1 && $chr2 && $basename);
+unless ($org1 && $org2 && $chr1 && $chr2 && $basename)
+  {
+    warn "Problem running run_dotplot.pl\n";
+  }
 my ($md51, $md52, $mask1, $mask2, $type1, $type2, $blast,$params) = $basename =~/(.*?)_(.*?)\.(\d+)-(\d+)\.(\w+)-(\w+)\.(\w+)\.dag_(.*)/ ;
 
 
@@ -76,11 +79,13 @@ $name1 =~ s/\s+/_/g;
 $name1 =~ s/\(//g;
 $name1 =~ s/\)//g;
 $name1 =~ s/://g;
+$name1 =~ s/\///g;
 my $name2 = $org2->name;
 $name2 =~ s/\s+/_/g;
 $name2 =~ s/\(//g;
 $name2 =~ s/\)//g;
 $name2 =~ s/://g;
+$name2 =~ s/\///g;
 my $dir = "$DIAGSDIR/$name1"."/".$name2;
 my $dag_file = $dir."/".$basename;
 $dag_file =~ s/\.dag_.*//;
