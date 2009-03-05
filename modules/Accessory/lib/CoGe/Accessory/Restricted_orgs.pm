@@ -31,17 +31,10 @@ sub restricted_orgs
     if (!$user || $user->user_name =~ /public/i)
       {
 	$orgs{"Brachypodium distachyon"} = 1;
-#      $orgs{"Carica papaya"} = 1;
-	#$orgs{"sorghum bicolor"} = 1;
-      }
-    else 
-      {
-#	delete $orgs{"Carica papaya"};
-#	delete $orgs{"sorghum bicolor"};
       }
     foreach my $org (keys %orgs)
       {
-	my ($orgo) = $coge->resultset('Organism')->resolve($org);
+	my ($orgo) = $coge->resultset('Organism')->search({name=>$org});
 	$orgs{$org}=$orgo->id if $orgo;
       }
     return \%orgs;
