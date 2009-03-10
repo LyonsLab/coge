@@ -1,0 +1,217 @@
+<script language="javascript">
+
+function ajax_wait (val){
+if (ajax.length)
+   {
+    setTimeout("ajax_wait("+'"'+val+'"'+")",100);
+    return;
+   }
+  eval(val);
+}
+
+
+function get_organism_name_chain(val)
+{
+ get_orgs(['args__name','args__'+val], [get_org_info_chain]);	 
+}
+
+function get_organism_desc_chain(val)
+{
+ get_orgs(['args__desc','args__'+val], [get_org_info_chain]);	 
+}
+
+function get_org_info_chain(val, val2)
+ {
+  if (val) {$('#org_list').html(val);}
+  if (val2) {$('#org_count').html(val2);}
+  get_org_info(['args__oid','org_id'],[dataset_group_chain]);
+ }
+
+
+function get_dataset_name_chain(val)
+{
+ if (val){get_dataset(['args__dsname','args__'+val], [dataset_info_chain]);}
+ else {get_orgs([],[dataset_chain])};
+}
+
+
+function dataset_group_chain(val) {
+   if (val) {$('#org_info').html(val);}
+ get_dataset_groups(['args__oid','org_id','args__dsgid','dsg_id'],[dataset_group_info_chain]);
+}
+
+function dataset_group_info_chain(val, val2) {
+  if (val) {$('#dsg_list').html(val);}
+  if (val2) {$('#dsg_count').html(val2);}
+  get_dataset_group_info(['args__dsgid','dsg_id'],[dataset_chain]);
+}
+
+function dataset_chain(val)
+{
+ if (val) {$('#dsg_info').html(val);}
+ get_dataset(['args__dsgid','dsg_id'],[dataset_info_chain]);
+}
+
+function recent_dataset_chain() {
+ get_dataset(['args__oid','recent_org_id'],[dataset_info_chain]);
+}
+
+function dataset_info_chain(val, val2, val3) {
+ if (val) {$('#ds_list').html(val);}
+ if (val2) {$('#ds_count').html(val2);}
+ get_dataset_info(['ds_id'],[dataset_chr_info_chain]);
+}
+
+function dataset_chr_info_chain(val, val2, val3) {
+ if (val) {$('#ds_info').html(val);}
+ if (val2) {$('#chr_list').html(val2);}
+ if (val3) {$('#chr_count').html(val3);}	
+ $('#viewer').empty();
+ $('#get_seq').empty();
+ $('#feature_count_data').empty();
+ get_dataset_chr_info(['ds_id', 'chr'],['chr_info','viewer', 'get_seq']);
+}
+
+
+function launch_seqview(dsid, chr)
+ {
+   start = $('#start').val();
+   stop = $('#stop').val();
+   window.open("SeqView.pl?dsid="+dsid+"&chr="+chr+"&start="+start+"&stop="+stop);
+ }
+
+
+function launch_viewer (dsd, chr) {
+ x = $('#x').val();
+ z = $('#z').val();
+ if (z > 12) {z=12;}
+ link =  "GeLo.pl?z="+z+"&x="+x+"&ds="+dsd+"&chr="+chr;
+ window.open(link);
+}
+function timing(val){
+  var searchterm;
+  if (val == "org_name") 
+   {
+    searchterm = $('#org_name').val();
+   }
+  else if (val == "org_desc")
+   {
+    searchterm = $('#org_desc').val();
+   }
+  else if (val == "ds_name")
+   {
+    searchterm = $('#ds_name').val();
+    if (!searchterm) {val=0;}
+   }
+  if (!searchterm) {val=0;}
+  if(searchterm == "Search")
+  {
+    searchterm = "";
+  }
+//  alert (searchterm);
+  if (pageObj.search && pageObj.search == searchterm)
+   {
+    return;
+   }
+  pageObj.search=searchterm;
+  if (pageObj.time){
+   clearTimeout(pageObj.time);
+  }
+  if (val == "org_name") 
+   {
+     pageObj.time = setTimeout("get_organism_name_chain($('#org_name').val())",500);
+   }
+  else if (val == "org_desc")
+   {
+     pageObj.time = setTimeout("get_organism_desc_chain($('#org_desc').val())",500);
+   }
+  else if (val == "ds_name")
+   {
+     pageObj.time = setTimeout("get_dataset_name_chain($('#ds_name').val())",500);
+   }
+}
+
+$(document).ready(function(){
+  if($('#org_name').val() && $('#org_name').val() != "Search") {
+    $('#org_name').css({fontStyle: "normal"});
+    timing('org_name');
+  }  
+  if($('#org_desc').val() && $('#org_desc').val() != "Search") {
+    $('#org_desc').css({fontStyle: "normal"});
+    timing('org_desc');
+  }  
+  if($('#ds_name').val() && $('#ds_name').val() != "Search") {
+    $('#ds_name').css({fontStyle: "normal"});
+    if ($('#ds_list').html() == "undefined") {
+     timing('ds_name');
+    } else { dataset_info_chain();}
+     
+  }
+  
+//  if ($('#ds_list').val())
+//   {timing(0);}  
+ });
+
+function search_bar(div_id){
+  if($('#'+div_id).val() == "Search") $('#'+div_id).val("").css({fontStyle: "normal"});
+}
+
+function restore_search_bar(div_id){
+  if(! $('#'+div_id).val()) {
+    $('#'+div_id).val("Search").css({fontStyle: "italic"});
+  }
+}
+
+function changeColor(id, color) {
+  document.getElementById(id).style.color = color;
+}
+
+
+</script>
+<TABLE>
+   <TR><TD valign=top>
+   <DIV style="">Organism Name: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_NAME">" name = "org_name" id="org_name" style="font-style:italic" onFocus="search_bar('org_name')" onKeyUp='timing("org_name");'></DIV>
+   <DIV>Organism Description: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_DESC">" name = "org_desc" id="org_desc" style="font-style:italic" onFocus="search_bar('org_desc')" onKeyUp='timing("org_desc");'></DIV>
+   <DIV id="blah">Dataset Name: <input type="text" size=10 value="<TMPL_VAR NAME="DS_NAME">" name = "ds_name" style="font-style:italic" id="ds_name" onFocus="search_bar('ds_name')" onKeyUp='timing("ds_name");' ></DIV>
+  <tr><td>
+   <span class = "oblique">Organisms: </span><span class=small id=org_count><TMPL_VAR NAME="ORG_COUNT"></span> 
+   <DIV id="org_list"><TMPL_VAR NAME="ORG_LIST"></DIV>
+   
+   <td valign=top>
+   <DIV class = "oblique">Organism information</DIV>
+   <div id=org_info class = "small backbox" ></div>
+  <tr valign=top>
+  <td>
+  <span class = "oblique"> Dataset Groups: </span><span class=small id=dsg_count><TMPL_VAR NAME="DSG_COUNT"></span> 
+  <DIV style="float: left; vertical-align: top;" id ="dsg_list"><TMPL_VAR NAME="DSG_LIST"></DIV>
+  <TD valign=top>
+   <DIV class = "oblique">Dataset Group information</DIV>
+   <DIV id="dsg_info" class = "small backbox"><TMPL_VAR NAME="DSG_INFO"></DIV>
+
+  <tr  valign=top>
+  <td>
+   <span class = "oblique">Datasets: </span><span class=small id=ds_count><TMPL_VAR NAME="DS_COUNT"></span> 
+   <DIV style="float: left; vertical-align: top;" id="ds_list"><TMPL_VAR NAME="DS_LIST"></DIV>
+  <TD valign=top>
+   <DIV class = "oblique">Dataset information</DIV>
+   <DIV id="ds_info" class = "small backbox" ><TMPL_VAR NAME="DS_INFO"></DIV>
+  <tr  valign=top>
+  <td>
+   <span class = "oblique">Chromosomes: </span><span class=small id=chr_count><TMPL_VAR NAME="CHR_COUNT"></span> 
+   <DIV style="float: left; vertical-align: top;" id="chr_list"><TMPL_VAR NAME="CHR_LIST"></DIV>
+  <TD valign=top>
+   <DIV class = "oblique">Chromosome information</DIV>
+   <DIV id="chr_info" class = "small backbox" ><TMPL_VAR NAME="CHR_INFO"></DIV>
+
+<!--   <td valign=top>
+   Organisms With Recently Added Datasets:
+    <DIV id="recent_orgs"><a href="#" onclick="get_recent_orgs([],['recent_orgs']);">Show</a></DIV>-->
+
+<TR nowrap>
+  <TD align=left valign=top nowrap>
+   <DIV style="vertical-align: top;" id="viewer"></DIV>
+   <DIV style="vertical-align: top;" id="get_seq"></DIV>
+  <td>
+   <div id="feature_count_data"></div>
+  </Table>
+
