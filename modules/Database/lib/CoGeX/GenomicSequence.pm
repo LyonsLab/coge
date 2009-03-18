@@ -12,7 +12,7 @@ __PACKAGE__->table("genomic_sequence");
 __PACKAGE__->add_columns(
   "genomic_sequence_id",
   { data_type => "INT", default_value => 1, is_nullable => 0, size => 11 },
-  "length",
+  "sequence_length",
   { data_type => "INT", default_value => "", is_nullable => 0, size => 11 },
   "chromosome",
   { data_type => "VARCHAR", default_value => "", is_nullable => 0, size => 255 },

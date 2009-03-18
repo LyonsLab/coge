@@ -40,11 +40,30 @@ sub resolve : ResultSet {
 }
 
 
+sub current_genome
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $gstid = $opts{type} || $opts{genomic_sequence_type} || $opts{sequence_type} || $opts{gstid};
+    $gstid = 1 unless $gstid;
+    $gstid = ref($gstid) =~/Type/ ? $gstid->id : $gstid;
+    my ($dsg) = $self->dataset_groups({genomic_sequence_type_id=>$gstid},{'order_by' => 'version desc'});
+    return $dsg;
+  }
+
 sub current_datasets
   {
     my $self = shift;
     my %opts = @_;
-    my $type = $opts{type} || $opts{genomic_sequence_type} || $opts{sequence_type};
+    my $dgs = $self->current_genome(%opts);
+    return $dgs->datasets();
+  }
+
+sub current_datasets_old
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $type = $opts{type} || $opts{genomic_sequence_type} || $opts{sequence_type} || $opts{gstid};
     $type =1 unless $type;
     my %data;
     my $typeid;
@@ -86,6 +105,20 @@ sub genomic_sequence_types
 	$data{$type->id} = $type;
       }
     return wantarray ? values %data : [values %data];
+  }
+
+sub types
+  {
+    return shift->genomic_sequence_types(@_);
+  }
+
+sub datasets
+  {
+    my $self = shift;
+    my %opts = @_;
+    my %ds;
+    map {$ds{$_->id}=$_} map{$_->datasets} $self->dataset_groups;
+    return wantarray ? values %ds : [values %ds];
   }
 
 1;

@@ -9,6 +9,7 @@ use POSIX;
 use base 'DBIx::Class';
 #use CoGeX::Feature;
 use Text::Wrap;
+use Carp;
 
 __PACKAGE__->load_components("PK::Auto", "ResultSetManager", "Core");
 __PACKAGE__->table("dataset");
@@ -47,113 +48,75 @@ __PACKAGE__->has_many("dataset_connectors" => "CoGeX::DatasetConnector", 'datase
 __PACKAGE__->belongs_to("data_source" => "CoGeX::DataSource", 'data_source_id');
 
 
+
+sub dataset_groups
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $chr = $opts{chr};
+    my @dsgs;
+    foreach my $dsc($self->dataset_connectors())
+      {
+	if ($chr)
+	  {
+	    my %chrs = map {$_,1} $dsc->dataset_group->chromosomes;
+	    next unless $chrs{$chr};
+	  }
+	push @dsgs, $dsc->dataset_group;
+      }
+    return wantarray ? @dsgs : \@dsgs;
+  }
+
+sub groups
+  {
+    shift->dataset_groups(@_);
+  }
+
+sub organism
+  {
+    my $self = shift;
+    my %opts = @_;
+    my %orgs = map{$_->id, $_} map {$_->organism} $self->dataset_groups;
+    if (keys %orgs > 1)
+      {
+	warn "sub organism in Dataset.pm fetched more than one organism!  Very odd:\n";
+	warn join ("\n", map {$_->name} values %orgs),"\n";
+	warn "Only one will be returned\n";
+      }
+    my ($org) = values %orgs;
+    return $org;
+  }
+
 sub datasource
   {
     print STDERR "You are using an alias for data_source\n";
     shift->data_source(@_);
   }
 
-sub get_genomic_sequence_new {
-  my $self = shift;
-  my %opts = @_;
-  my $start = $opts{start} || $opts{begin};
-  my $stop = $opts{stop} || $opts{end};
-  my $chr = $opts{chr} || $opts{chromosome};
-  my $strand = $opts{strand};
-  my $skip_length_check = $opts{skip_length_check} || 0;
-  my $str = "";
-  if (defined $start && defined $stop)
-    {
-      $chr = "1" unless defined $chr;
-      $start = 1 if $start < 1;
-      $stop = $start unless $stop;
-      return undef unless ($start =~ /^\d+$/ and  $stop =~ /^\d+$/);
-      ($start, $stop) = ($stop, $start) if $stop < $start;
-
-      if (! $skip_length_check)
-	{
-	  my $last = $self->last_chromosome_position($chr);
-	  $stop = $last if $stop > $last;
-	}
-    }
-  my $SEQDIR = "/opt/apache/CoGe/data/genomic_sequence";
-  my $chr_total = $self->genomic_sequences->count();
-  my $chr_level=1;
-  if ($chr_total > 1000)
-    {
-      my $chr_count=0;
-      foreach my $testchr (sort $self->chromosomes)
-	{
-	  last if $chr eq $testchr;
-	  $chr_count++;
-	  $chr_level++ unless $chr_count%1000;
-	}
-    }
-  my $file = join ("/", $SEQDIR,ceil($self->organism->id/1000), "org_".$self->organism->id, "seqtype_".$self->sequence_type->id, "dataset_".$self->id,$chr_level,$chr);
-  return $file;
-}
-
-sub get_genomic_sequence {
-  my $self = shift;
-  my %opts = @_;
-  my $start = $opts{start} || $opts{begin};
-  my $stop = $opts{stop} || $opts{end};
-  my $chr = $opts{chr} || $opts{chromosome};
-  my $strand = $opts{strand};
-  my $skip_length_check = $opts{skip_length_check} || 0;
-  my $str = "";
-  if (defined $start && defined $stop)
-    {
-      $chr = "1" unless defined $chr;
-      $start = 1 if $start < 1;
-      $stop = $start unless $stop;
-      return undef unless ($start =~ /^\d+$/ and  $stop =~ /^\d+$/);
-      ($start, $stop) = ($stop, $start) if $stop < $start;
-
-      if (! $skip_length_check)
-	{
-	  my $last = $self->last_chromosome_position($chr);
-	  $stop = $last if $stop > $last;
-	}
-      # make sure two numbers were sent in
-      #my $fstart = $start%10000 ? $start - ($start % 10000) + 1 : ($start -1)- (($start-1) % 10000) +1;
-      my $fstart = $start - (($start -1) % 10000);
-#      print STDERR "start: $start, fstart: $fstart\n";
-      my @starts;
-#      push (@starts, $fstart) if $fstart == $stop;
-      for(my $i=$fstart;$i<=$stop;$i+=10000){
-        push(@starts,$i);
+sub get_genomic_sequence 
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $start = $opts{start} || $opts{begin};
+    my $stop = $opts{stop} || $opts{end};
+    my $chr = $opts{chr} || $opts{chromosome};
+    my $strand = $opts{strand};
+    my $seq_type = $opts{seq_type} || $opts{gstid};
+    my $debug = $opts{debug};
+    my $seq_type_id = ref($seq_type) =~ /GenomicSequenceType/i ? $seq_type->id : $seq_type;
+    $seq_type_id = 1 unless $seq_type_id && $seq_type_id =~ /^\d+$/;
+    foreach my $dsg ($self->groups)
+      {
+	if ($dsg->genomic_sequence_type->id == $seq_type_id)
+	  {
+	    return $dsg->genomic_sequence(start=>$start, stop=>$stop, chr=>$chr, strand=>$strand, debug=>$debug);
+	  }
       }
-      return unless @starts;
-      my @seqs = $self->genomic_sequences(
-					  {chromosome=>$chr,
-					   -and=>[ start=> { 'in', \@starts } ],
-					  },
-					  {order_by=>"start asc"}
-					 )->all;
-      return unless @seqs;
-#      print STDERR Dumper \@starts;
-      $str = join ("", map{$_->sequence_data} @seqs);  
-#      print STDERR "!!",$str,"\n";;
-      $str = $self->trim_sequence( $str, $seqs[0]->start, $seqs[-1]->stop, $start, $stop );
-#      print STDERR "!!",$str,"\n";;
-    } 
-  elsif ( $chr ) 
-    {
-    $str = join("",map { $_->sequence_data } $self->genomic_sequences( { 'chromosome' => $chr},
-					      {order_by=>"start asc"}
-					    ));
-    } 
-  else 
-    {                 # entire sequence
-      my $allseqs = $self->genomic_sequences({},{order_by=>"start asc"});
-      while ( my $g = $allseqs->next ) {
-	$str .= $g->sequence_data;
-      }
-    }
-  $str = $self->reverse_complement($str) if $strand && $strand =~ /-/;
-  return $str;
-}
+    #hmm didn't return -- perhaps the seq_type_id was off.  Go ahead and see if anything can be returned
+    carp "In Dataset.pm, sub get_genomic_sequence.  Did not return sequence from a dataset_group with a matching sequence_type_id.  Going to try to return some sequence from any dataset_group.\n";
+    my ($dsg) = $self->groups;
+    return $dsg->genomic_sequence(start=>$start, stop=>$stop, chr=>$chr, strand=>$strand, debug=>$debug);
+  }
 
 sub get_genome_sequence
   {
@@ -197,17 +160,18 @@ See Also   :
 ################################################## subroutine header end ##
 
 
- sub last_chromosome_position_new
+ sub last_chromosome_position
    {
      my $self = shift;
      my $chr = shift;
-     my ($item) =  $self->genomic_sequences(
+     return unless $chr;
+     my ($dsg) = $self->dataset_groups;
+     my ($item) =  $dsg->genomic_sequences(
 					  {
 					   chromosome=>"$chr",
 					  },
-#					 )->get_column('stop')->max;
-					 );
-     my $stop = $item->stop();
+					  );
+     my $stop = $item->sequence_length();
      unless ($stop)
       {
         warn "No genomic sequence for ",$self->name," for chr $chr\n";
@@ -216,7 +180,7 @@ See Also   :
      $stop;
    }
 
-sub last_chromosome_position
+sub last_chromosome_position_old
    {
      my $self = shift;
      my $chr = shift;
@@ -238,8 +202,23 @@ sub last_chromosome_position
 sub sequence_type
   {
     my $self = shift;
-    my ($type) = $self->genomic_sequences->slice(0,0);
-    return $type ? $type->genomic_sequence_type : undef;
+    my (@dsgs) = $self->groups;
+    my %types = map{$_->id, $_} map {$_->genomic_sequence_type} @dsgs;
+    my @types = values %types;
+#    my ($type) = $self->genomic_sequences->slice(0,0);
+#    return $type ? $type->genomic_sequence_type : undef;
+    if (@types ==1)
+      {
+	return shift @types;
+      }
+    elsif (@types > 1)
+      {
+	return wantarray ? @types : \@types;
+      }
+    else
+      {
+	return undef;
+      }
   }
 sub genomic_sequence_type
   {
@@ -259,31 +238,56 @@ sub resolve : ResultSet {
 sub get_chromosomes
   {
     my $self = shift;
-    my @data =  map {$_->chromosome} $self->genomic_sequences(
-					{},
-					{
-					 select=>{distinct=>"chromosome"},
-					 as=>"chromosome",
-					},
-				       );
-#     unless (@data)
-#       {
-# 	foreach my $item ($self->features(
-# 					    {
-					     
-# 					    },
-# 					    {
-# 					     select=>"locations.chromosome",
-# 					     join=>"prefetch",
-# 					     locations=>"locations",
-# 					     distinct=>["locations.chromosome"],
-# 					     prefetch=>["locations"],
-# 					    },
-# 					    ))
-# 	  {
-# 	    print $item->chromosome,"\n";
-# 	  }
-#       }
+    my %opts = @_;
+    my $ftid = $opts{ftid}; #feature_type_id for feature_type of name "chromosome";
+    my $length = $opts{length}; #opts to return length of chromosomes as well
+    my @data;
+    #this query is faster if the feature_type_id of feature_type "chromosome" is known.
+    #features of this type refer to the entire stored sequence which may be a fully
+    # assembled chromosome, or a contig, supercontig, bac, etc.
+    if ($length)
+      {
+	if ($ftid)
+	  {
+	    @data = $self->features({
+				     feature_type_id=>$ftid,
+				    },
+				   );
+	  }
+	else
+	  {
+	    @data =  $self->features(
+				     {name=>"chromosome"},
+				     {
+				      join=>"feature_type",
+				     },
+				    );
+	  }
+      }
+    else
+      {
+	if ($ftid)
+	  {
+	    @data = map{$_->chromosome} $self->features({
+							 feature_type_id=>$ftid,
+							},
+							{
+							 select=>{distinct=>"chromosome"},
+							 as=>"chromosome",
+							});
+	  }
+	else
+	  {
+	    @data =  map {$_->chromosome} $self->features(
+							  {name=>"chromosome"},
+							  {
+							   join=>"feature_type",
+							   select=>{distinct=>"chromosome"},
+							   as=>"chromosome",
+							  },
+							 );
+	  }
+      }
     return wantarray ? @data : \@data;
   }
 
@@ -310,6 +314,11 @@ sub percent_gc
     return sprintf("%.4f", $gc/$length),sprintf("%.4f", $at/$length),,sprintf("%.4f", $n/$length);
   }
 
+sub gc_content
+  {
+    shift->percent_gc(@_);
+  }
+
 sub fasta
   {
     my $self = shift;
@@ -327,8 +336,9 @@ sub fasta
     my $stop = $opts{stop} || $self->last_chromosome_position($chr);
     my $prot = $opts{prot};
     my $rc = $opts{rc};
+    my $gstid=$opts{gstid};
     $strand = -1 if $rc;
-    my $seq = $self->genomic_sequence(start=>$start, stop=>$stop, chr=>$chr);
+    my $seq = $self->genomic_sequence(start=>$start, stop=>$stop, chr=>$chr, gstid=>$gstid);
     $stop = $start + length($seq)-1 if $stop > $start+length($seq)-1;
     my $head = ">".$self->organism->name." (".$self->name;
     $head .= ", ".$self->description if $self->description;
@@ -343,7 +353,7 @@ sub fasta
       {
 	my $trans_type = $self->trans_type;
 	my $feat = new CoGeX::Feature;
-	my ($seqs, $type) = $feat->frame6_trans(seq=>$seq, trans_type=>$trans_type);
+	my ($seqs, $type) = $feat->frame6_trans(seq=>$seq, trans_type=>$trans_type, gstid=>$gstid);
 	foreach my $frame (sort {length($a) <=> length($b) || $a cmp $b} keys %$seqs)
 	  {
 	    $seq = $seqs->{$frame};

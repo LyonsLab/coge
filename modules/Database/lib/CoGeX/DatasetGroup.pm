@@ -5,6 +5,8 @@ package CoGeX::DatasetGroup;
 use strict;
 use warnings;
 use base 'DBIx::Class';
+use File::Spec::Functions;
+use Data::Dumper;
 
 __PACKAGE__->load_components("PK::Auto", "ResultSetManager", "Core");
 __PACKAGE__->table("dataset_group");
@@ -43,45 +45,28 @@ __PACKAGE__->belongs_to("organism" => "CoGeX::Organism", 'organism_id');
 __PACKAGE__->belongs_to("genomic_sequence_type" => "CoGeX::GenomicSequenceType", 'genomic_sequence_type_id');
 
 
-sub get_genomic_sequence_new {
-  my $self = shift;
-  my %opts = @_;
-  my $start = $opts{start} || $opts{begin};
-  my $stop = $opts{stop} || $opts{end};
-  my $chr = $opts{chr} || $opts{chromosome};
-  my $strand = $opts{strand};
-  my $skip_length_check = $opts{skip_length_check} || 0;
-  my $str = "";
-  if (defined $start && defined $stop)
-    {
-      $chr = "1" unless defined $chr;
-      $start = 1 if $start < 1;
-      $stop = $start unless $stop;
-      return undef unless ($start =~ /^\d+$/ and  $stop =~ /^\d+$/);
-      ($start, $stop) = ($stop, $start) if $stop < $start;
-
-      if (! $skip_length_check)
-	{
-	  my $last = $self->last_chromosome_position($chr);
-	  $stop = $last if $stop > $last;
-	}
-    }
-  my $SEQDIR = "/opt/apache/CoGe/data/genomic_sequence";
-  my $chr_total = $self->genomic_sequences->count();
-  my $chr_level=1;
-  if ($chr_total > 1000)
-    {
-      my $chr_count=0;
-      foreach my $testchr (sort $self->chromosomes)
-	{
-	  last if $chr eq $testchr;
-	  $chr_count++;
-	  $chr_level++ unless $chr_count%1000;
-	}
-    }
-  my $file = join ("/", $SEQDIR,ceil($self->organism->id/1000), "org_".$self->organism->id, "seqtype_".$self->sequence_type->id, "dataset_".$self->id,$chr_level,$chr);
-  return $file;
-}
+sub datasets
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $chr = $opts{chr} || $opts{chromosome};
+    my @ds;
+    foreach my $dsc ($self->dataset_connectors())
+      {
+	if ($chr)
+	  {
+	    foreach my $ds_chr ($dsc->dataset->chromosomes)
+	      {
+		return $dsc->dataset if $ds_chr eq $chr;
+	      }
+	  }
+	else
+	  {
+	    push @ds, $dsc->dataset;
+	  }
+      }
+    return wantarray ? @ds : \@ds;
+  }
 
 sub get_genomic_sequence {
   my $self = shift;
@@ -90,8 +75,15 @@ sub get_genomic_sequence {
   my $stop = $opts{stop} || $opts{end};
   my $chr = $opts{chr} || $opts{chromosome};
   my $strand = $opts{strand};
-  my $skip_length_check = $opts{skip_length_check} || 0;
+  my $debug = $opts{debug};
   my $str = "";
+  $start = 1 unless $start;
+  my $last = $self->sequence_length($chr);
+  return if $start > $last && $stop > $last; #outside of chromosome
+  return if $start < 1 && $stop < 1;
+  $stop = $last unless $stop;
+  $stop = $last if $stop > $last;
+  $start = $last if $start > $last;
   if (defined $start && defined $stop)
     {
       $chr = "1" unless defined $chr;
@@ -99,50 +91,50 @@ sub get_genomic_sequence {
       $stop = $start unless $stop;
       return undef unless ($start =~ /^\d+$/ and  $stop =~ /^\d+$/);
       ($start, $stop) = ($stop, $start) if $stop < $start;
-
-      if (! $skip_length_check)
-	{
-	  my $last = $self->last_chromosome_position($chr);
-	  $stop = $last if $stop > $last;
-	}
-      # make sure two numbers were sent in
-      #my $fstart = $start%10000 ? $start - ($start % 10000) + 1 : ($start -1)- (($start-1) % 10000) +1;
-      my $fstart = $start - (($start -1) % 10000);
-#      print STDERR "start: $start, fstart: $fstart\n";
-      my @starts;
-#      push (@starts, $fstart) if $fstart == $stop;
-      for(my $i=$fstart;$i<=$stop;$i+=10000){
-        push(@starts,$i);
-      }
-      return unless @starts;
-      my @seqs = $self->genomic_sequences(
-					  {chromosome=>$chr,
-					   -and=>[ start=> { 'in', \@starts } ],
-					  },
-					  {order_by=>"start asc"}
-					 )->all;
-      return unless @seqs;
-#      print STDERR Dumper \@starts;
-      $str = join ("", map{$_->sequence_data} @seqs);  
-#      print STDERR "!!",$str,"\n";;
-      $str = $self->trim_sequence( $str, $seqs[0]->start, $seqs[-1]->stop, $start, $stop );
-#      print STDERR "!!",$str,"\n";;
-    } 
-  elsif ( $chr ) 
-    {
-    $str = join("",map { $_->sequence_data } $self->genomic_sequences( { 'chromosome' => $chr},
-					      {order_by=>"start asc"}
-					    ));
-    } 
-  else 
-    {                 # entire sequence
-      my $allseqs = $self->genomic_sequences({},{order_by=>"start asc"});
-      while ( my $g = $allseqs->next ) {
-	$str .= $g->sequence_data;
-      }
     }
-  $str = $self->reverse_complement($str) if $strand && $strand =~ /-/;
-  return $str;
+  else
+    {
+      warn "missing parameters in sub get_genomic_sequence\n";
+      warn Dumper \%opts;
+      return;
+    }
+#  my ($seq) = $self->genomic_sequences({chromosome=>$chr});
+  my $file = $self->file_path();
+  return $self->get_seq(db=>$file, chr=>$chr, start=>$start, stop=>$stop, strand=>$strand, debug=>$debug);
+}
+
+sub get_seq #using fastacmd to get the sequence
+  { 
+    my $self = shift;
+    my %opts = @_;
+#    use Data::Dumper;
+#    print STDERR Dumper \%opts;
+    my $fastacmd = $opts{fastacmd} || '/usr/bin/fastacmd';
+    my $blastdb = $opts{blastdb} || $opts{db};
+    my $seqid   = $opts{seqid} || $opts{chr} || $opts{chromosome}; # chr 
+    my $debug = $opts{debug};
+    my $start = $opts{start};
+    ($start) = $start=~/(\d+)/ if $start;
+    my $stop = $opts{stop} || $opts{end};
+    ($stop) = $stop=~/(\d+)/ if $stop;
+    my $cmd = "$fastacmd -d $blastdb -s \"$seqid\" ";
+    if($start && $stop)
+      {
+        $cmd .= "-L " . $start . "," . $stop. " ";
+      }
+    if($opts{reverse_complement} || $opts{rc} || ($opts{strand} && $opts{strand} =~/-/) )
+      {
+        $cmd .= "-S 2";
+      }
+    print STDERR $cmd,"\n" if $debug;
+
+    open(FASTA, $cmd . "|") || die "can't run $cmd";
+    # get rid of the header line...
+    <FASTA>;
+    my $seq = join ("",<FASTA>);
+    close FASTA;
+    $seq =~ s/\n//g;
+    return $seq;
 }
 
 sub get_genome_sequence
@@ -153,19 +145,6 @@ sub genomic_sequence
   {
     return shift->get_genomic_sequence(@_);
   }
-
-sub trim_sequence {
-  my $self = shift;
-  my( $seq, $seqstart, $seqend, $newstart, $newend ) = @_;
-  
-  my $start = $newstart-$seqstart;
-  my $stop = length($seq)-($seqend-$newend)-1;  
-#  print STDERR join ("\t", $seqstart, $seqend, $newstart, $newend),"\n";
-#  print STDERR join ("\t", length ($seq), $start, $stop, $stop-$start+1),"\n";
-  $seq = substr($seq, $start, $stop-$start+1);
-#  print STDERR "final seq lenght: ",length($seq),"\n";
-  return($seq);
-}
 
 
 ################################################## subroutine header start ##
@@ -187,54 +166,33 @@ See Also   :
 ################################################## subroutine header end ##
 
 
- sub last_chromosome_position_new
+ sub sequence_length
    {
      my $self = shift;
      my $chr = shift;
+     return unless $chr;
      my ($item) =  $self->genomic_sequences(
-					  {
-					   chromosome=>"$chr",
-					  },
-#					 )->get_column('stop')->max;
-					 );
-     my $stop = $item->stop();
+					    {
+					     chromosome=>"$chr",
+					    },
+					   );
+     my $stop = $item->sequence_length;
      unless ($stop)
       {
         warn "No genomic sequence for ",$self->name," for chr $chr\n";
         return;
       }
-     $stop;
+     return $stop;
    }
-
-sub last_chromosome_position
-   {
-     my $self = shift;
-     my $chr = shift;
-     my $stop =  $self->genomic_sequences(
-                                          {
-                                           chromosome=>"$chr",
-                                          },
-                                         )->get_column('stop')->max;
-     unless ($stop)
-      {
-        warn "No genomic sequence for ",$self->name," for chr $chr\n";
-        return;
-      }
-     $stop;
-   }
-
-
 
 sub sequence_type
   {
-    my $self = shift;
-    my ($type) = $self->genomic_sequences->slice(0,0);
-    return $type ? $type->genomic_sequence_type : undef;
+    shift->genomic_sequence_type(@_);
   }
-sub genomic_sequence_type
+
+sub type
   {
-    my $self = shift;
-    return $self->sequence_type(@_);
+    shift->genomic_sequence_type(@_);
   }
 
 sub resolve : ResultSet {
@@ -256,26 +214,9 @@ sub get_chromosomes
 					 as=>"chromosome",
 					},
 				       );
-#     unless (@data)
-#       {
-# 	foreach my $item ($self->features(
-# 					    {
-					     
-# 					    },
-# 					    {
-# 					     select=>"locations.chromosome",
-# 					     join=>"prefetch",
-# 					     locations=>"locations",
-# 					     distinct=>["locations.chromosome"],
-# 					     prefetch=>["locations"],
-# 					    },
-# 					    ))
-# 	  {
-# 	    print $item->chromosome,"\n";
-# 	  }
-#       }
     return wantarray ? @data : \@data;
   }
+
 
 sub chromosomes
   {
@@ -289,7 +230,6 @@ sub percent_gc
     my $self = shift;
     my %opts = @_;
     my $count = $opts{count};
-#    my $chr = $opts{chr};
     my $seq = $self->genomic_sequence(%opts);
     my $length = length $seq;
     return unless $length;
@@ -297,7 +237,7 @@ sub percent_gc
     my ($at) = $seq =~ tr/ATat/ATat/;
     my ($n) = $seq =~ tr/nNxX/nNxX/;
     return ($gc,$at, $n) if $count;
-    return sprintf("%.4f", $gc/$length),sprintf("%.4f", $at/$length),,sprintf("%.4f", $n/$length);
+    return sprintf("%.4f", $gc/$length),sprintf("%.4f", $at/$length),sprintf("%.4f", $n/$length);
   }
 
 sub fasta
@@ -314,7 +254,7 @@ sub fasta
     my $strand = $opts{strand} || 1;
     my $start = $opts{start} || 1;
     $start =1 if $start < 1;
-    my $stop = $opts{stop} || $self->last_chromosome_position($chr);
+    my $stop = $opts{stop} || $self->sequence_length($chr);
     my $prot = $opts{prot};
     my $rc = $opts{rc};
     $strand = -1 if $rc;
@@ -350,20 +290,6 @@ sub fasta
     return $fasta;
   }
 
-sub trans_type
-  {
-    my $self = shift;
-    my $trans_type;
-    foreach my $feat ($self->features)
-      {
-	next unless $feat->type->name =~ /cds/i;
-	my ($code, $type) = $feat->genetic_code;
-	($type) = $type =~/transl_table=(\d+)/ if $type =~ /transl_table/;
-	return $type if $type;
-      }
-    return 1; #universal genetic code type;
-  }
-
 sub reverse_complement
   {
     my $self = shift;
@@ -372,5 +298,28 @@ sub reverse_complement
     $rcseq =~ tr/ATCGatcg/TAGCtagc/; 
     return $rcseq;
   }
+
+#this sub determines the correct directory structure for storing the sequence files for a dataset group
+#By Dan Hembry
+#The idea is to build a dir structure that holds large amounts of files, and is easy to lookup based on dataset_group ID number.
+	#The strucuture is three levels of directorys, and each dir holds 1000 files and/or directorys.
+	#Thus:
+	#./0/0/0/ will hold files 0-999
+	#./0/0/1/ will hold files 1000-1999
+	#./0/0/2/ will hold files 2000-2999
+	#./0/1/0 will hold files 1000000-1000999 (I think).
+	#./level0/level1/level2/
+
+sub get_path
+  {
+    my $self = shift;
+    my $dataset_group_id = $self->id;
+    my $level0 = floor($dataset_group_id / 1000000000) % 1000;
+    my $level1 = floor($dataset_group_id / 1000000) % 1000;
+    my $level2 = floor($dataset_group_id / 1000) % 1000;
+    my $path = catdir($level0,$level1,$level2, $dataset_group_id); #adding dataset_group_id for final directory.  blast's formatdb will be run on the faa file and this will help keep that stuff organized
+    return $path;
+  }
+
 
 1;

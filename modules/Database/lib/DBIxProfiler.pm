@@ -15,7 +15,7 @@ sub query_start {
   my $sql = shift();
   my @params = @_;
 
-  #print STDERR "Executing $sql: ".join(', ', @params)."\n";
+  print STDERR "Executing $sql: ".join(', ', @params)."\n";
   $start = time();
 }
 
@@ -24,8 +24,8 @@ sub query_end {
   my $sql = shift();
   my @params = @_;
 
-  #printf STDERR "Execution took %0.4f seconds.", time() - $start;
-  #print STDERR " QCOUNT: $QCOUNT\n";
+  printf STDERR "Execution took %0.4f seconds.", time() - $start;
+  print STDERR " QCOUNT: $QCOUNT\n";
   $QCOUNT += 1;
   $TOTAL += time() - $start;
   $start = undef;

@@ -7,6 +7,7 @@ use CoGe::Accessory::genetic_code;
 use Text::Wrap;
 use Data::Dumper;
 use CoGe::Accessory::Annotation;
+use base 'Class::Accessor';
 
 __PACKAGE__->load_components("PK::Auto", "ResultSetManager", "Core");
 __PACKAGE__->table("feature");
@@ -42,29 +43,10 @@ __PACKAGE__->belongs_to("feature_type" => "CoGeX::FeatureType", 'feature_type_id
 __PACKAGE__->belongs_to("dataset" => "CoGeX::Dataset", 'dataset_id');
 
 
-#__PACKAGE__->mk_group_accessors(['start', 'stop', 'chromosome', 'strand']);
+__PACKAGE__->mk_accessors('_genomic_sequence'); #place to store the feature's genomic sequence with no up and down stream stuff
 
 
 
-sub esearch : ResultSet {
-    my $self = shift;
-    my $join = $_[1]{'join'};
-    map { push(@$join, $_ ) } 
-        ();
-
-
-    my $prefetch = $_[1]{'prefetch'};
-    map { push(@$prefetch, $_ ) } 
-        ('feature_type','locations', 
-            { 'dataset' => 'organism' }
-        );
-
-    $_[1]{'join'} = $join;
-    $_[1]{'prefetch'} = $prefetch;
-    my $rs = $self->search(@_);
-    return $rs;
-
-}
 sub type
   {
     my $self = shift;
@@ -168,6 +150,8 @@ See Also   : CoGe::Genome::Accessory::Annotation
 sub annotation_pretty_print
   {
     my $self = shift;
+    my %opts = @_;
+    my $gstid = $opts{gstid};
     my $anno_obj = new CoGe::Accessory::Annotation(Type=>"anno");
     $anno_obj->Val_delimit("\n");
     $anno_obj->Val_delimit("\n");
@@ -221,11 +205,11 @@ sub annotation_pretty_print
     $org .= ": ".$ds->organism->description if $ds->organism->description;
     
     $anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"Organism", Values=>[$org], Type_delimit=>": ", Val_delimit=>" "));
-    my ($gc, $at) = $self->gc_content;
+    my ($gc, $at) = $self->gc_content(gstid=>$gstid);
     $gc*=100;
     $at*=100;
     $anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"DNA content", Values=>["GC: $gc%","AT: $at%"], Type_delimit=>": ", Val_delimit=>" "));
-    my ($wgc, $wat) = $self->wobble_content;
+    my ($wgc, $wat) = $self->wobble_content(gstid=>$gstid);
     if ($wgc || $wat)
       {
 	$wgc*=100;
@@ -262,6 +246,8 @@ sub annotation_pretty_print_html
     my %opts = @_;
     my $loc_link = $opts{loc_link};
     my $minimal = $opts{minimal};
+    my $gstid = $opts{gstid};
+    my $skip_GC = $opts{skip_GC};
     $loc_link = "SeqView.pl" unless defined $loc_link;
     my $anno_obj = new CoGe::Accessory::Annotation(Type=>"anno");
     $anno_obj->Val_delimit("<BR/>");
@@ -272,79 +258,99 @@ sub annotation_pretty_print_html
     my $chr = $self->chr;
     my $strand = $self->strand;
     my $dataset_id = $self->dataset->id;
-    my $anno_type = new CoGe::Accessory::Annotation(Type=>"<span class=\"title4\">"."Name(s):"."</span>");
-    $anno_type->Type_delimit("");
+    my $anno_type = new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\">"."Name(s)"."</span>");
+    $anno_type->Type_delimit(":<td>");
     $anno_type->Val_delimit(", ");
     my $outname;
     foreach my $name ($self->names)
       {
 	$outname = $name unless $outname;
-	$anno_type->add_Annot("<a class=\"data link\" href=\"FeatView.pl?accn=".$name."\" target=_new>".$name."</a>");
+	$anno_type->add_Annot("<a class=\"data5 link\" href=\"FeatView.pl?accn=".$name."\" target=_new>".$name."</a>");
       }
     $anno_obj->add_Annot($anno_type);
     unless ($minimal)
       {
-	foreach my $anno (sort {$b->type->name cmp $a->type->name} $self->annos)
+	foreach my $anno (sort {$b->type->name cmp $a->type->name} $self->annos({},{prefetch=>{annotation_type=>'annotation_type_group'}}))
 	  {
 	    my $type = $anno->type();
 	    my $group = $type->group();
 	    my $anno_name = $type->name;
 	    $anno_name .= ", ".$type->description if $type->description;
-	    $anno_name = "<span class=\"title4\">". $anno_name."</span>" unless ref($group) =~ /group/i;
-	    
+	    if (ref($group) =~ /group/i)
+	      {
+		$anno_name .= ":" unless $anno_name =~/:$/;
+		$anno_name = "<span class=\"title5\">". $anno_name."</span>";
+	      }
+	    else
+	      {
+		$anno_name = "<tr><td nowrap='true'><span class=\"title5\">". $anno_name."</span>";
+	      }
 	    my $anno_type = new CoGe::Accessory::Annotation(Type=>$anno_name);
 	    $anno_type->Val_delimit(", ");
 	    $anno_type->Type_delimit(" ");
-	    $anno_type->add_Annot("<span class=\"data\">".$anno->annotation."</span>") if $anno->annotation;
+	    $anno_type->add_Annot("<span class=\"data5\">".$anno->annotation."</span>") if $anno->annotation;
 	    if (ref ($group) =~ /group/i)
 	      {
-		my $anno_g = new CoGe::Accessory::Annotation(Type=>"<span class=\"title4\">".$group->name."</span>");
+		my $anno_g = new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\">".$group->name."</span>");
 		$anno_g->add_Annot($anno_type);
-		$anno_g->Type_delimit(": ");
+		$anno_g->Type_delimit(":<td>");
 		$anno_g->Val_delimit(", ");
 		#	    $anno_g->Val_delimit(" ");
 		$anno_obj->add_Annot($anno_g);
 	      }
 	    else
 	      {
-		$anno_type->Type_delimit(": ");
+		$anno_type->Type_delimit(":<td>");
 		$anno_obj->add_Annot($anno_type);
 	      }
 	  }
       }
     my $location = "Chr ".$chr." ";
-    $location .= join (", ", map {$_->start."-".$_->stop} sort {$a->start <=> $b->start} $self->locs);
-    $location .="(".$strand.")";
+#    $location .= join (", ", map {$_->start."-".$_->stop} sort {$a->start <=> $b->start} $self->locs);
+    $location .= $self->commify($self->start)."-".$self->commify($self->stop);
+    $location .=" (".$strand.")";
     my $featid = $self->id;
-    $anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<span class=\"title4\">Length</span>", Values=>[$self->length],Type_delimit=>": ", Val_delimit=>" ")) unless $minimal;
-    $location = qq{<a href="$loc_link?featid=$featid&start=$start&stop=$stop&chr=$chr&dsid=$dataset_id&strand=$strand&featname=$outname" target=_new>}.$location."</a>" if $loc_link;
+    $anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\">Length</span>", Values=>["<span class='data5'>".$self->length." nt</span>"],Type_delimit=>":<td>", Val_delimit=>" ")) unless $minimal;
+    $location = qq{<a class="data5 link" href="$loc_link?featid=$featid&start=$start&stop=$stop&chr=$chr&dsid=$dataset_id&strand=$strand" target=_new>}.$location."</a>" if $loc_link;
     $location = qq{<span class="data">$location</span>};
-    $anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<span class=\"title4\"><a href=\"GeLo.pl?chr=$chr&ds=$dataset_id&x=$start&z=5\" target=_new>Location</a></span>", Values=>[$location], Type_delimit=>": ", Val_delimit=>" "));
+    $anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\"><a href=\"GenomeView.pl?chr=$chr&ds=$dataset_id&x=$start&z=5&gstid=$gstid\" target=_new>Location</a></span>", Values=>[$location], Type_delimit=>":<td>", Val_delimit=>" "));
     unless ($minimal)
       {
-	my $ds=$self->dataset;
-	my $dataset = qq{<a href = "GenomeView.pl?dsid=}.$ds->id."\" target=_new>".$ds->name;
+	my $ds=$self->dataset();
+	my $dataset = qq{<a class="data5 link" href = "OrganismView.pl?dsid=}.$ds->id."\" target=_new>".$ds->name;
 #	$dataset .= ": ".$ds->description if $ds->description;
 	$dataset .= "</a>";
-	$anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<span class=\"title4\">Dataset</span>", Values=>[$dataset], Type_delimit=>": ", Val_delimit=>" "));
-	my $org = qq{<a href = "GenomeView.pl?oid=}.$ds->organism->id."\" target=_new>".$ds->organism->name;
+	$anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\">Dataset</span>", Values=>[$dataset], Type_delimit=>":<td>", Val_delimit=>" "));
+	my $org = qq{<a class="data5 link" href = "OrganismView.pl?oid=}.$ds->organism->id."\" target=_new>".$ds->organism->name;
 #	$org .= ": ".$ds->organism->description if $ds->organism->description;
 	$org .= "</a>";
 	
-	$anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<span class=\"title4\">Organism</span>", Values=>[$org], Type_delimit=>": ", Val_delimit=>" "));
-	my ($gc, $at) = $self->gc_content;
-	$gc*=100;
-	$at*=100;
-	$anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<span class=\"title4\">DNA content</span>", Values=>["GC: $gc%","AT: $at%"], Type_delimit=>": ", Val_delimit=>" "));
-	my ($wgc, $wat) = $self->wobble_content;
-	if ($wgc || $wat)
+	$anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\">Organism</span>", Values=>[$org], Type_delimit=>":<td>", Val_delimit=>" "));
+	my $gst;
+	foreach my $dsg ($ds->dataset_groups)
 	  {
-	    $wgc*=100;
-	    $wat*=100;
-	    $anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<span class=\"title4\">Wobble content</span>", Values=>["GC: $wgc%","AT: $wat%"], Type_delimit=>": ", Val_delimit=>" "));
+	    $gst = $dsg->type if $dsg->type->id == $gstid;
+	  }
+	if ($gst)
+	  {
+	    $anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\">Genomic Sequnce</span>", Values=>["<span class=data5>".$gst->name."</span>"], Type_delimit=>":<td>", Val_delimit=>" "));
+	  }
+	unless ($skip_GC)
+	  {
+	    my ($gc, $at) = $self->gc_content(gstid=>$gstid);
+	    $gc*=100;
+	    $at*=100;
+	    $anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\">DNA content</span>", Values=>["<span class='data5'>GC: $gc%","AT: $at%</span>"], Type_delimit=>":<td>", Val_delimit=>" "));
+	    my ($wgc, $wat) = $self->wobble_content(gstid=>$gstid);
+	    if ($wgc || $wat)
+	      {
+		$wgc*=100;
+		$wat*=100;
+		$anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\">Wobble content</span>", Values=>["<span class='data5'>GC: $wgc%","AT: $wat%</span>"], Type_delimit=>":<td>", Val_delimit=>" "));
+	      }
 	  }
       }
-    return $anno_obj->to_String;
+    return "<table cellpadding=0 class='annotation_table'>".$anno_obj->to_String."</table>";
   }
 
 
@@ -581,6 +587,14 @@ sub genomic_sequence {
   my %opts = @_;
   my $up = $opts{up} || $opts{upstream} || $opts{left};
   my $down = $opts{down} || $opts{downstream} || $opts{right};
+  my $debug=$opts{debug};
+  my $gstid = $opts{gstid};
+  my $seq = $opts{seq};  #have a full sequence? -- pass it in and the locations will be parsed out of it!
+  if (!$up && !$down && $self->_genomic_sequence)
+    {
+      return $self->_genomic_sequence;
+    }
+
   my $dataset = $self->dataset();
   my @sequences;
   my %locs = map {($_->start,$_->stop)}$self->locations() ;#in case a mistake happened when loading locations and there are multiple ones with the same start
@@ -601,42 +615,49 @@ sub genomic_sequence {
   my $chr = $self->chromosome;
   my $start = $locs[0][0];
   my $stop = $locs[-1][1];
-  my $full_seq = $dataset->get_genomic_sequence(
-						chromosome=>$chr,
-						skip_length_check=>1,
-						start=>$start,
-						stop=>$stop,
-					       );
+  my $full_seq = $seq ? $seq : $dataset->get_genomic_sequence(
+							      chromosome=>$chr,
+							      skip_length_check=>1,
+							      start=>$start,
+							      stop=>$stop,
+							      debug=>$debug,
+							      gstid=>$gstid,
+							     );
   if ($full_seq)
     {
-      foreach my $loc (@locs){
-	if ($loc->[0]-$start+$loc->[1]-$loc->[0]+1 > CORE::length ($full_seq))
-	  {
-	    print STDERR "Error in feature->genomic_sequence, location is outside of retrieved sequence: \n";
-	    use Data::Dumper;
-	    print STDERR Dumper \@locs;
-	    print STDERR CORE::length ($full_seq),"\n";
-	    print STDERR Dumper {
-	      chromosome=>$chr,
-		skip_length_check=>1,
-		  start=>$start,
-		    stop=>$stop,
-		      dataset=>$dataset->id,
-			feature=>$self->id,
-		      };
+      foreach my $loc (@locs)
+	{
+	  if ($loc->[0]-$start+$loc->[1]-$loc->[0]+1 > CORE::length ($full_seq))
+	    {
+	      print STDERR "Error in feature->genomic_sequence, location is outside of retrieved sequence: \n";
+	      use Data::Dumper;
+	      print STDERR Dumper \@locs;
+	      print STDERR CORE::length ($full_seq),"\n";
+	      print STDERR Dumper {
+		chromosome=>$chr,
+		  skip_length_check=>1,
+		    start=>$start,
+		      stop=>$stop,
+			dataset=>$dataset->id,
+			  feature=>$self->id,
+			};
+	    }
+	  
+	  my $sub_seq = substr($full_seq, $loc->[0] - $start, $loc->[1] - $loc->[0] + 1);
+	  next unless $sub_seq;
+	  if ($strand == -1){
+	    unshift @sequences, $self->reverse_complement($sub_seq);
+	  }else{
+	    push @sequences, $sub_seq;
 	  }
-	
-	my $this_seq = substr($full_seq
-			      , $loc->[0] - $start
-			      , $loc->[1] - $loc->[0] + 1);
-	if ($strand == -1){
-	  unshift @sequences, $self->reverse_complement($this_seq);
-	}else{
-	  push @sequences, $this_seq;
-	}
-      }      
+	}      
     }
-  return join( "", @sequences );
+  my $outseq = join( "", @sequences );
+  if (!$up && !$down)
+    {
+      $self->_genomic_sequence($outseq);
+    }
+  return $outseq;
 }
 
 sub genome_sequence
@@ -675,12 +696,15 @@ sub blast_bit_score
   {
     my $self = shift;
     my %opts = @_;
+    my $gstid = $opts{gstid};
     my $match = $opts{match} || 1;
     my $mismatch = $opts{mismatch} || -3;
+    my $seq_length = $opts{seq_length} || $opts{length}; #need a sequence length for calculation
     my $lambda = $self->_estimate_lambda(match=>$match, mismatch=>$mismatch);
-    my $seq = $self->genomic_sequence();
-    warn "No genomic sequence could be obtained for this feature object.  Can't calculate a blast bit score.\n" unless $seq;
-    my $bs = sprintf("%.0f", $lambda*CORE::length($seq)*$match/log(2));
+    my $seq = $self->genomic_sequence(gstid=>$gstid) unless $seq_length; #get sequence for feature if no seq_length has been passed in;
+    $seq_length = CORE::length ($seq) if $seq;
+    warn "No genomic sequence could be obtained for this feature object.  Can't calculate a blast bit score.\n" unless $seq_length;
+    my $bs = sprintf("%.0f", $lambda*$seq_length*$match/log(2));
     return $bs;
   }
 
@@ -787,6 +811,8 @@ sub reverse_comp {
 
 sub protein_sequence {
   my $self = shift;
+  my %opts = @_;
+  my $gstid = $opts{gstid};
   my $siter = $self->sequences();
   my @sequence_objects;
   while ( my $seq = $siter->next() ) {
@@ -799,15 +825,17 @@ sub protein_sequence {
     } 
   elsif ( @sequence_objects > 1 )  
     {
-      return \@sequence_objects;
+      return wantarray ? @sequence_objects : \@sequence_objects;
     } 
   else 
     {
-      my ($seqs,$type) = $self->frame6_trans;
+      my ($seqs,$type) = $self->frame6_trans(gstid=>$gstid);
       #check to see if we can find the best translation
       my $found=0;
+      my @seqs;
       while (my ($k, $v) = each %$seqs)
 	{
+	  push @seqs, $v;
 	  if (($v =~ /^M/ && $v =~ /\*$/))
 	    {
 	      next if $v =~ /\*\w/;
@@ -820,7 +848,7 @@ sub protein_sequence {
 	}
       else
 	{
-	  return undef;
+	  return wantarray ? @seqs : \@seqs;
 	}
     }
 }
@@ -831,9 +859,10 @@ sub frame6_trans
     my $self = shift;
     my %opts = @_;
     my $trans_type = $opts{trans_type};
+    my $gstid = $opts{gstid};
     my $code;
     ($code, $trans_type) = $opts{code} || $self->genetic_code(trans_type=>$trans_type);
-    my $seq = $opts{seq} || $self->genomic_sequence;
+    my $seq = $opts{seq} || $self->genomic_sequence(gstid=>$gstid);
 
     my %seqs;
     $seqs{"1"} = $self->_process_seq(seq=>$seq, start=>0, code1=>$code, codonl=>3);
@@ -949,9 +978,10 @@ sub aa_frequency
     my $self = shift;
     my %opts = @_;
     my $counts = $opts{counts};
+    my $gstid = $opts{gstid};
     my ($code) = $self->genetic_code;
     my %data = map {$_=>0} values %$code;
-    my ($seq) = $opts{seq} || $self->protein_sequence;
+    my ($seq) = $opts{seq} || $self->protein_sequence(gstid=>$gstid);
     return \%data unless $seq;
     foreach (split //,$seq)
       {
@@ -984,9 +1014,10 @@ sub codon_frequency
     my $counts = $opts{counts};
     my $code = $opts{code};
     my $code_type = $opts{code_type};
+    my $gstid = $opts{gstid};
     ($code, $code_type) = $self->genetic_code unless $code;;
     my %codon = map {$_=>0} keys %$code;
-    my $seq = $self->genomic_sequence;
+    my $seq = $self->genomic_sequence(gstid=>$gstid);
     my $x=0;
     while ($x<CORE::length($seq))
       {
@@ -1017,11 +1048,12 @@ sub gc_content
     my $self = shift;
     my %opts = @_;
     my $counts = $opts{counts};
-    my $seq = $self->genomic_sequence;
+    my $gstid = $opts{gstid}; #genomic_sequence_type_id
+    my $seq = $self->genomic_sequence(gstid=>$gstid);
     my ($gc,$at, $n);
     $gc = $seq =~ tr/gcGC/gcGC/;
     $at = $seq =~ tr/atAT/atAT/;
-    $n = $seq =~ tr/atAT/atAT/;
+    $n = $seq =~ tr/nxNX/nxNX/;
     unless ($counts)
       {
 	my $total = CORE::length($seq);
@@ -1033,13 +1065,19 @@ sub gc_content
     return $gc,$at, $n;
   }
 
+sub percent_gc
+  {
+    shift->gc_content(@_);
+  }
+
 sub wobble_content
   {
     my $self = shift;
     my %opts = @_;
     my $counts = $opts{counts};
+    my $gstid = $opts{gstid}; #genomic_sequence_type_id
     return unless $self->type->name =~ /cds/i;
-    my $seq = $self->genomic_sequence;
+    my $seq = $self->genomic_sequence(gstid=>$gstid);
     my $codon_count=0;;
     my $at_count=0;
     my $gc_count=0;
@@ -1074,8 +1112,19 @@ sub fasta
     my $name_only = $opts{name_only};
     my $add_fid = $opts{add_fid};
     my $sep = $opts{sep}; #returns the header and sequence as separate items.
+    my $gstid = $opts{gstid};
+    my $gst;
+    if ($gstid)
+      {
+	foreach my $dsg ($self->dataset->dataset_groups)
+	  {
+	    $gst = $dsg->type if $dsg->type->id == $gstid;
+	  }
+      }
     my ($pri_name) = $self->primary_name;
-    my $head = $name_only ? $pri_name : $self->dataset->organism->name."(v".$self->version.")".", Name: ".(join (", ", $self->names)).", Type: ".$self->type->name.", Feature Location: (Chr: ".$self->chromosome.", ".$self->genbank_location_string.")";
+    my $head = $name_only ? $pri_name : $self->dataset->organism->name."(v".$self->version;
+    $head .= ", ".$gst->name if $gst;
+    $head .= ")".", Name: ".(join (", ", $self->names)).", Type: ".$self->type->name.", Feature Location: (Chr: ".$self->chromosome.", ".$self->genbank_location_string.")";
     $head = "fid:".$self->id." ".$head if $add_fid;
     $head = ">".$head;
     $head .= " +up: $upstream" if $upstream;
@@ -1098,51 +1147,15 @@ sub fasta
     my $fasta;
     if ($prot)
       {
-	my $seq = $self->protein_sequence;
-	if ($seq)
+	foreach my $seq ($self->protein_sequence(gstid=>$gstid))
 	  {
 	    $seq = join ("\n", wrap("","",$seq)) if $col;
-	    $fasta = $head."\n".$seq."\n";
-	  }
-	else
-	  {
-	    my ($seqs,$type) = $self->frame6_trans;
-	    #check to see if we can find the best translation
-	    my $found=0;
-	    while (my ($k, $v) = each %$seqs)
-	      {
-		if (($v =~ /\*$/)|| $v !~ /\*/)
-		  {
-		    next if $v =~ /\*\w/;
-		    $found = $k;
-		  }
-	      }
-	    if ($found)
-	      {
-		$seq = $seqs->{$found};
-		$seq = $self->reverse_complement($seq) if $rc;
-		$seq = join ("\n", wrap("","",$seq)) if $col;
-		$fasta .= $head;
-		$fasta .= " $type frame $found" unless $name_only;
-		$fasta .= "\n".$seq."\n";
-	      }
-	    else
-	      {
-		foreach my $frame (sort {CORE::length($a) <=> CORE::length($b) || $a cmp $b} keys %$seqs)
-		  {
-		    $seq = $seqs->{$frame};
-		    $seq = $self->reverse_complement($seq) if $rc;
-		    $seq = join ("\n", wrap("","",$seq)) if $col;
-		    $fasta .= $head;
-		    $fasta .= " $type frame $frame" unless $name_only;
-		    $fasta .= "\n".$seq."\n";
-		  }
-	      }
+	    $fasta .= $head."\n".$seq."\n";
 	  }
       }
     else
       {
-	my $seq = $self->genomic_sequence(upstream=>$upstream, downstream=>$downstream);
+	my $seq = $self->genomic_sequence(upstream=>$upstream, downstream=>$downstream, gstid=>$gstid);
 	$seq = $self->reverse_complement($seq) if $rc;
 	$seq = join ("\n", wrap("","",$seq)) if $col;
 	$fasta = $head."\n".$seq."\n";
@@ -1151,7 +1164,15 @@ sub fasta
     return $fasta;
   }
 
- 
+sub commify 
+    {
+      my $self = shift;
+      my $input = shift;
+      $input = reverse $input;
+      $input =~ s<(\d\d\d)(?=\d)(?!\d*\.)><$1,>g;
+      return scalar reverse $input;
+    }
+
 
 ################################################ subroutine header begin ##
 
