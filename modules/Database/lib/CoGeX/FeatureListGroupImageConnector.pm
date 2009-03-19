@@ -13,12 +13,9 @@ CoGeX::FeatureListGroupImageConnector
 
 =head1 SYNOPSIS
 
-  use CoGeX::FeatureListGroupImageConnector;
 This object uses the DBIx::Class to define an interface to the C<feature_list_group_image_connector> table in the CoGe database.
 
-
 =head1 DESCRIPTION
-
 
 Has columns:
 C<feature_list_group_image_connector_id> (Primary Key)
@@ -32,6 +29,8 @@ Type: INT, Default: "", Nullable: no, Size: 10
 
 
 =head1 USAGE
+
+  use CoGeX;
 
 =head1 METHODS
 

@@ -9,11 +9,10 @@ use base 'DBIx::Class';
 
 =head1 NAME
 
-CoGeX::
+CoGeX::GenomicSequenceType
 
 =head1 SYNOPSIS
 
-  use CoGeX::
 This object uses the DBIx::Class to define an interface to the C<genomic_sequence_type> table in the CoGe database.
 
 
@@ -34,6 +33,8 @@ Type: VARCHAR, Default: undef, Nullable: yes, Size: 255
 Has many C<CoGeX::DatasetGroup> via C<genomic_sequence_type_id>
 
 =head1 USAGE
+
+  use CoGeX;
 
 =head1 METHODS
 

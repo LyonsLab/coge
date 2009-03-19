@@ -13,12 +13,9 @@ CoGeX::FeatureList
 
 =head1 SYNOPSIS
 
-  use CoGeX::FeatureList;
 This object uses the DBIx::Class to define an interface to the C<feature_list> table in the CoGe database.
 
-
 =head1 DESCRIPTION
-
 
 Has columns:
 C<feature_list_id> (Primary Key)
@@ -38,6 +35,8 @@ Type: VARCHAR, Default: undef, Nullable: yes, Size: 1024
 
 
 =head1 USAGE
+
+  use CoGeX;
 
 =head1 METHODS
 

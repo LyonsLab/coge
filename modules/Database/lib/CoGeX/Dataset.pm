@@ -17,12 +17,9 @@ CoGeX::Dataset
 
 =head1 SYNOPSIS
 
-  use CoGeX::Dataset;
 This object uses the DBIx::Class to define an interface to the C<dataset> table in the CoGe database.
 
-
 =head1 DESCRIPTION
-
 
 Has columns:
 C<dataset_id> (Primary Key)
@@ -51,6 +48,8 @@ Has many C<CoGeX::Feature> via C<dataset_id>
 Has many C<CoGeX::DatasetConnector> via C<dataset_id>
 
 =head1 USAGE
+
+ use CoGeX;
 
 =head1 METHODS
 

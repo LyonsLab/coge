@@ -13,7 +13,6 @@ CoGeX::AnnotationTypeGroup
 
 =head1 SYNOPSIS
 
-  use CoGeX::AnnotationTypeGroup;
 This object uses the DBIx::Class to define an interface to the C<annotation_type_group> table in the CoGe database.
 
 
@@ -34,6 +33,8 @@ Type: VARCHAR, Default: undef, Nullable: yes, Size: 255
 Has many C<CoGeX::AnnotationType> via C<annotation_type_group_id>
 
 =head1 USAGE
+
+ use CoGeX;
 
 =head1 METHODS
 

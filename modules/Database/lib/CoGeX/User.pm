@@ -9,16 +9,13 @@ use base 'DBIx::Class';
 
 =head1 NAME
 
-CoGeX::
+CoGeX::User
 
 =head1 SYNOPSIS
 
-  use CoGeX::
-This object uses the DBIx::Class to define an interface to the C<AnnotationsType> table in the CoGe database.
-
+This object uses the DBIx::Class to define an interface to the C<user> table in the CoGe database.
 
 =head1 DESCRIPTION
-
 
 Has columns:
 C<user_id> (Primary Key)
@@ -46,6 +43,8 @@ Type: VARCHAR, Default: "", Nullable: no, Size: 255
 Has many C<CoGeX::UserSession> via C<user_id>
 
 =head1 USAGE
+
+  use CoGeX;
 
 =head1 METHODS
 

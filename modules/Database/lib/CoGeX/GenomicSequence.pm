@@ -13,12 +13,9 @@ CoGeX::GenomicSequence
 
 =head1 SYNOPSIS
 
-  use CoGeX::GenomicSequence;
 This object uses the DBIx::Class to define an interface to the C<genomic_sequence_id> table in the CoGe database.
 
-
 =head1 DESCRIPTION
-
 
 Has columns:
 C<genomic_sequence_id> (Primary Key)
@@ -37,6 +34,8 @@ Type: INT, Default: "", Nullable: no, Size: 11
 Belongs to C<CoGeX::DatasetGroup> via C<dataset_group_id>
 
 =head1 USAGE
+
+  use CoGeX;
 
 =head1 METHODS
 

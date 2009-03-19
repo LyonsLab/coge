@@ -14,12 +14,9 @@ CoGeX::UserGroup
 
 =head1 SYNOPSIS
 
-  use CoGeX::UserGroup;
 This object uses the DBIx::Class to define an interface to the C<user_group> table in the CoGe database.
 
-
 =head1 DESCRIPTION
-
 
 Has columns:
 C<user_group_id> (Primary Key)
@@ -33,6 +30,8 @@ Type: VARCHAR, Default: undef, Nullable: yes, Size: 255
 
 
 =head1 USAGE
+
+  use CoGeX;
 
 =head1 METHODS
 

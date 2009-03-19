@@ -13,12 +13,9 @@ CoGeX::
 
 =head1 SYNOPSIS
 
-  use CoGeX::
-This object uses the DBIx::Class to define an interface to the C<AnnotationsType> table in the CoGe database.
-
+This object uses the DBIx::Class to define an interface to the C<dataset_connector> table in the CoGe database.
 
 =head1 DESCRIPTION
-
 
 Has columns:
 C<dataset_connector_id> (Primary Key)
@@ -36,6 +33,8 @@ Belongs to C<CoGeX::Dataset> via C<dataset_id>
 
 
 =head1 USAGE
+
+ use CoGeX;
 
 =head1 METHODS
 

@@ -13,7 +13,6 @@ CoGeX::Annotation
 
 =head1 SYNOPSIS
 
- use CoGeX::Annotation;
 This object uses the DBIx::Class to define an interface to the C<annotation> table in the CoGe database.
 
 =head1 DESCRIPTION
@@ -39,6 +38,7 @@ Belongs to C<CoGeX::AnnotationType> via C<annotation_type_id>
 Belongs to C<CoGeX::Feature> via C<feature_id>
 
 =head1 USAGE
+ use CoGeX;
 
 =head1 METHODS
 
@@ -67,14 +67,11 @@ __PACKAGE__->belongs_to( feature => 'CoGeX::Feature', 'feature_id');
 
 =head2 esearch
 
- Usage     : use CoGeX;
-             my $coge = CoGeX->dbconnect;
-             ?????
-
+ Usage     : 
  Purpose   : 
  Returns   : 
  Argument  : 
- Throws    : none
+ Throws    : 
  Comments  : 
  
  
@@ -109,14 +106,11 @@ sub esearch : ResultSet
 
 =head2 type
 
- Usage     : use CoGeX;
-             my $coge = CoGeX->dbconnect;
-             ?????
-
+ Usage     : 
  Purpose   : 
  Returns   : 
  Argument  : 
- Throws    : none
+ Throws    :
  Comments  : 
 
 See Also   : 

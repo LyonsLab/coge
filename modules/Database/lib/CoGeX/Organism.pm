@@ -13,12 +13,9 @@ CoGeX::Organism
 
 =head1 SYNOPSIS
 
-  use CoGeX::Organism
 This object uses the DBIx::Class to define an interface to the C<organism> table in the CoGe database.
 
-
 =head1 DESCRIPTION
-
 
 Has columns:
 C<organism_id> (Primary Key)
@@ -37,6 +34,8 @@ Type:VARCHAR, Default: "", Nullable: no, Size: 200
 Has many C<CoGeX::DatasetGroup> via C<organism_id>
 
 =head1 USAGE
+
+  use CoGeX;
 
 =head1 METHODS
 

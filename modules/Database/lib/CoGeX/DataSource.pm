@@ -9,13 +9,11 @@ use base 'DBIx::Class';
 
 =head1 NAME
 
-CoGeX::
+CoGeX::DataSource
 
 =head1 SYNOPSIS
 
-  use CoGeX::
 This object uses the DBIx::Class to define an interface to the C<data_source> table in the CoGe database.
-
 
 =head1 DESCRIPTION
 
@@ -36,6 +34,8 @@ Type: TEXT, Default: undef, Nullable: yes, Size: 65535
 Has many C<CoGeX::Dataset> via C<data_source_id>
 
 =head1 USAGE
+
+ use CoGeX;
 
 =head1 METHODS
 

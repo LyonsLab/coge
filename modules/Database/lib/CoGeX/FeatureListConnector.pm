@@ -13,12 +13,9 @@ CoGeX::FeatureListConnector
 
 =head1 SYNOPSIS
 
-  use CoGeX::FeatureListConnector;
 This object uses the DBIx::Class to define an interface to the C<feature_list_connector> table in the CoGe database.
 
-
 =head1 DESCRIPTION
-
 
 Has columns:
 C<feature_list_connector_id> (Primary Key)
@@ -41,6 +38,8 @@ Belongs to C<CoGeX::> via C<>
 Has many C<CoGeX::> via C<>
 
 =head1 USAGE
+
+  use CoGeX;
 
 =head1 METHODS
 

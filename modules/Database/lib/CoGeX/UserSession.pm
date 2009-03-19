@@ -13,12 +13,9 @@ CoGeX::UserSession
 
 =head1 SYNOPSIS
 
-  use CoGeX::UserSession;
 This object uses the DBIx::Class to define an interface to the C<user_session> table in the CoGe database.
 
-
 =head1 DESCRIPTION
-
 
 Has columns:
 C<user_session_id> (Primary Key)
@@ -36,6 +33,8 @@ Type: VARCHAR, Default: "", Nullable: no, Size: 22
 Belongs to C<CoGeX::User> via C<user_id>
 
 =head1 USAGE
+
+  use CoGeX;
 
 =head1 METHODS
 

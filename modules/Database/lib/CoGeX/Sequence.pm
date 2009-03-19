@@ -13,12 +13,9 @@ CoGeX::Sequence
 
 =head1 SYNOPSIS
 
-  use CoGeX::Sequence;
 This object uses the DBIx::Class to define an interface to the C<sequence> table in the CoGe database.
 
-
 =head1 DESCRIPTION
-
 
 Has columns:
 C<sequence_id> (Primary Key)
@@ -39,6 +36,8 @@ Belongs to C<CoGeX::SequenceType> via C<sequence_type_id>
 
 
 =head1 USAGE
+
+  use CoGeX;
 
 =head1 METHODS
 

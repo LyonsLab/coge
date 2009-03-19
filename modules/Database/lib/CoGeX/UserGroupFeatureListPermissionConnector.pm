@@ -13,12 +13,9 @@ CoGeX::UserGroupFeatureListPermissionConnector
 
 =head1 SYNOPSIS
 
-  use CoGeX::UserGroupFeatureListPermissionConnector;
 This object uses the DBIx::Class to define an interface to the C<user_group_feature_list_permission_connector> table in the CoGe database.
 
-
 =head1 DESCRIPTION
-
 
 Has columns:
 C<user_group_feature_list_permission_connector_id> (Primary Key)
@@ -34,6 +31,8 @@ C<permission_id>
 Type: INT, Default: "", Nullable: no, Size: 10
 
 =head1 USAGE
+
+  use CoGeX;
 
 =head1 METHODS
 

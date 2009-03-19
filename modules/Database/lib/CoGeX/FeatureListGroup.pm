@@ -13,9 +13,7 @@ CoGeX::FeatureListGroup
 
 =head1 SYNOPSIS
 
-  use CoGeX::FeatureListGroup;
 This object uses the DBIx::Class to define an interface to the C<feature_list_group> table in the CoGe database.
-
 
 =head1 DESCRIPTION
 
@@ -34,6 +32,8 @@ Type: VARCHAR, Default: undef, Nullable: yes, Size: 1024
 
 
 =head1 USAGE
+
+  use CoGeX;
 
 =head1 METHODS
 

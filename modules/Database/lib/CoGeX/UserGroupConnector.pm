@@ -13,9 +13,7 @@ CoGeX::UserGroupConnector
 
 =head1 SYNOPSIS
 
-  use CoGeX::UserGroupConnector;
 This object uses the DBIx::Class to define an interface to the C<user_group_connector> table in the CoGe database.
-
 
 =head1 DESCRIPTION
 
@@ -32,6 +30,8 @@ Type: INT, Default: "", Nullable: no, Size: 10
 
 
 =head1 USAGE
+
+  use CoGeX;
 
 =head1 METHODS
 

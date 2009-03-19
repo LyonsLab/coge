@@ -13,12 +13,9 @@ CoGeX::FeatureName
 
 =head1 SYNOPSIS
 
-  use CoGeX::FeatureName
 This object uses the DBIx::Class to define an interface to the C<feature_name> table in the CoGe database.
 
-
 =head1 DESCRIPTION
-
 
 Has columns:
 C<feature_name_id> (Primary Key)
@@ -39,6 +36,8 @@ Type: TINYINT, Default: 0, Nullable: no, Size: 1
 Belongs to C<CoGeX::Feature> via C<feature_id>
 
 =head1 USAGE
+
+  use CoGeX;
 
 =head1 METHODS
 

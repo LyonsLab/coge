@@ -15,9 +15,7 @@ CoGeX::Feature
 
 =head1 SYNOPSIS
 
-  use CoGeX::Feature;
 This object uses the DBIx::Class to define an interface to the C<feature> table in the CoGe database.
-
 
 =head1 DESCRIPTION
 
@@ -53,6 +51,8 @@ Has many C<CoGeX::Location> via C<feature_id>
 Has many C<CoGeX::Sequence> via C<feature_id>
 
 =head1 USAGE
+
+  use CoGeX;
 
 =head1 METHODS
 

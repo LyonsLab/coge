@@ -13,9 +13,7 @@ CoGeX::Image
 
 =head1 SYNOPSIS
 
-  use CoGeX::Image
 This object uses the DBIx::Class to define an interface to the C<image> table in the CoGe database.
-
 
 =head1 DESCRIPTION
 
@@ -35,6 +33,8 @@ Type: LONGBLOB, Default: "", Nullable: no, Size: 4294967295
 
 
 =head1 USAGE
+
+  use CoGeX;
 
 =head1 METHODS
 

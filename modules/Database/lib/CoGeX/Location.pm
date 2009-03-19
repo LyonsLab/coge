@@ -9,16 +9,13 @@ use base 'DBIx::Class';
 
 =head1 NAME
 
-CoGeX::
+CoGeX::Location
 
 =head1 SYNOPSIS
 
-  use CoGeX::
-This object uses the DBIx::Class to define an interface to the C<AnnotationsType> table in the CoGe database.
-
+This object uses the DBIx::Class to define an interface to the C<location> table in the CoGe database.
 
 =head1 DESCRIPTION
-
 
 Has columns:
 C<location_id> (Primary Key)
@@ -43,6 +40,8 @@ Belongs to C<CoGeX::Feature> via C<feature_id>
 
 
 =head1 USAGE
+
+  use CoGeX;
 
 =head1 METHODS
 

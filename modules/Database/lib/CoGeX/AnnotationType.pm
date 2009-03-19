@@ -13,7 +13,6 @@ CoGeX::AnnotationType
 
 =head1 SYNOPSIS
 
-  use CoGeX::AnnotationType;
 This object uses the DBIx::Class to define an interface to the C<annotation_type> table in the CoGe database.
 
 =head1 DESCRIPTION
@@ -37,6 +36,8 @@ Has many C<CoGeX::Annotation> via C<annotation_type_id>
 
 =head1 USAGE
 
+ use CoGeX;
+ 
 =head1 METHODS
 
 =cut

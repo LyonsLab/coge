@@ -14,9 +14,7 @@ CoGeX::DatasetGroup
 
 =head1 SYNOPSIS
 
-  use CoGeX::DatasetGroup;
 This object uses the DBIx::Class to define an interface to the C<dataset_group> table in the CoGe database.
-
 
 =head1 DESCRIPTION
 
@@ -50,6 +48,8 @@ Has many C<CoGeX::GenomicSequence> via C<dataset_group_id>
 
 
 =head1 USAGE
+
+ use CoGeX;
 
 =head1 METHODS
 

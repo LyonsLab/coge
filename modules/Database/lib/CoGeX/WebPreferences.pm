@@ -13,12 +13,9 @@ CoGeX::WebPreferences
 
 =head1 SYNOPSIS
 
-  use CoGeX::WebPreferences;
-This object uses the DBIx::Class to define an interface to the C<AnnotationsType> table in the CoGe database.
-
+This object uses the DBIx::Class to define an interface to the C<web_preferences> table in the CoGe database.
 
 =head1 DESCRIPTION
-
 
 Has columns:
 C<id>
@@ -35,6 +32,8 @@ Type: TEXT, Default: "", Nullable: no, Size: N/A
 
 
 =head1 USAGE
+
+  use CoGeX;
 
 =head1 METHODS
 
