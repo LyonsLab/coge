@@ -7,6 +7,43 @@ use warnings;
 
 use base 'DBIx::Class';
 
+=head1 NAME
+
+CoGeX::Sequence
+
+=head1 SYNOPSIS
+
+  use CoGeX::Sequence;
+This object uses the DBIx::Class to define an interface to the C<sequence> table in the CoGe database.
+
+
+=head1 DESCRIPTION
+
+
+Has columns:
+C<sequence_id> (Primary Key)
+Type: INT, Default: undef, Nullable: no, Size: 11
+
+C<sequence_type_id>
+Type: INT, Default: 0, Nullable: no, Size: 11
+
+C<sequence_data>
+Type:LONGTEXT, Default: "", Nullable: no, Size: 4294967295
+
+C<feature_id>
+Type: INT, Default: 0, Nullable: no, Size: 11
+
+
+Belongs to C<CoGeX::Feature> via C<feature_id>
+Belongs to C<CoGeX::SequenceType> via C<sequence_type_id>
+
+
+=head1 USAGE
+
+=head1 METHODS
+
+=cut
+
 __PACKAGE__->load_components("PK::Auto", "Core");
 __PACKAGE__->table("sequence");
 __PACKAGE__->add_columns(
@@ -30,6 +67,26 @@ __PACKAGE__->set_primary_key("sequence_id");
 __PACKAGE__->belongs_to("feature" => "CoGeX::Feature", 'feature_id');
 __PACKAGE__->belongs_to("sequence_type" => "CoGeX::SequenceType", 'sequence_type_id');
 
+
+
+################################################ subroutine header begin ##
+
+=head2 genomic_position
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 sub genomic_position
   {
     my $self = shift;
@@ -51,6 +108,27 @@ sub genomic_position
       }
     return 0;
   }
+  
+  
+ 
+################################################ subroutine header begin ##
+
+=head2 get_genomic_locations
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 sub get_genomic_locations
   {
     my $self = shift;
@@ -156,3 +234,28 @@ sub get_genomic_locations
 
 
 1;
+
+
+=head1 BUGS
+
+
+=head1 SUPPORT
+
+
+=head1 AUTHORS
+
+ Eric Lyons
+ Brent Pedersen
+
+=head1 COPYRIGHT
+
+This program is free software; you can redistribute
+it and/or modify it under the same terms as Perl itself.
+
+The full text of the license can be found in the
+LICENSE file included with this module.
+
+
+=head1 SEE ALSO
+
+=cut

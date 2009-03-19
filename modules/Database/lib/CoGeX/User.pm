@@ -7,6 +7,50 @@ use warnings;
 
 use base 'DBIx::Class';
 
+=head1 NAME
+
+CoGeX::
+
+=head1 SYNOPSIS
+
+  use CoGeX::
+This object uses the DBIx::Class to define an interface to the C<AnnotationsType> table in the CoGe database.
+
+
+=head1 DESCRIPTION
+
+
+Has columns:
+C<user_id> (Primary Key)
+Type: INT, Default: undef, Nullable: no, Size: 10
+
+C<user_name>
+Type: VARCHAR, Default: "", Nullable: no, Size: 10
+
+C<first_name>
+Type: VARCHAR, Default: "", Nullable: no, Size: 10
+
+C<last_name>
+Type: VARCHAR, Default: "", Nullable: no, Size: 10
+
+C<email>
+Type: VARCHAR, Default: undef, Nullable: yes, Size: 50
+
+C<description>
+Type: VARCHAR, Default: undef, Nullable: yes, Size: 255
+
+C<passwd>
+Type: VARCHAR, Default: "", Nullable: no, Size: 255
+
+
+Has many C<CoGeX::UserSession> via C<user_id>
+
+=head1 USAGE
+
+=head1 METHODS
+
+=cut
+
 __PACKAGE__->load_components("PK::Auto", "Core");
 __PACKAGE__->table("user");
 __PACKAGE__->add_columns(
@@ -39,6 +83,25 @@ __PACKAGE__->set_primary_key("user_id");
 __PACKAGE__->has_many('sessions'=>"CoGeX::UserSession",'user_id');
 
 
+
+################################################ subroutine header begin ##
+
+=head2 generate_passwd
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 sub generate_passwd
   {
     my $self = shift;
@@ -47,7 +110,25 @@ sub generate_passwd
     my $crypt_pwd = crypt( $pwd, "12" );
   }
 
-#sub to check if entered password matches user passwd
+
+
+################################################ subroutine header begin ##
+
+=head2 check_passwd
+
+ Usage     : 
+ Purpose   : check if entered password matches user passwd
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
 
 sub check_passwd
   {
@@ -58,3 +139,28 @@ sub check_passwd
   }
 1;
 
+
+
+=head1 BUGS
+
+
+=head1 SUPPORT
+
+
+=head1 AUTHORS
+
+ Eric Lyons
+ Brent Pedersen
+
+=head1 COPYRIGHT
+
+This program is free software; you can redistribute
+it and/or modify it under the same terms as Perl itself.
+
+The full text of the license can be found in the
+LICENSE file included with this module.
+
+
+=head1 SEE ALSO
+
+=cut

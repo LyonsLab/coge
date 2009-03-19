@@ -11,6 +11,51 @@ use base 'DBIx::Class';
 use Text::Wrap;
 use Carp;
 
+=head1 NAME
+
+CoGeX::Dataset
+
+=head1 SYNOPSIS
+
+  use CoGeX::Dataset;
+This object uses the DBIx::Class to define an interface to the C<dataset> table in the CoGe database.
+
+
+=head1 DESCRIPTION
+
+
+Has columns:
+C<dataset_id> (Primary Key)
+Type: INT, Default: undef, Nullable: no, Size: 11
+
+C<data_source_id>
+Type: INT, Default: 0, Nullable: no, Size: 11
+
+C<name>
+Type: VARCHAR, Default: "", Nullable: no, Size: 100
+
+C<description>
+Type: VARCHAR, Default: undef, Nullable: yes, Size: 255
+
+C<version>
+Type: VARCHAR, Default: undef, Nullable: yes, Size: 50
+
+C<link>
+Type: TEXT, Default: undef, Nullable: yes, Size: 65535
+
+C<date>
+Type: DATETIME, Default: "", Nullable: no, Size: 19
+
+Belongs to C<CoGeX::CoGeX::DataSource> via C<data_source_id>
+Has many C<CoGeX::Feature> via C<dataset_id>
+Has many C<CoGeX::DatasetConnector> via C<dataset_id>
+
+=head1 USAGE
+
+=head1 METHODS
+
+=cut
+
 __PACKAGE__->load_components("PK::Auto", "ResultSetManager", "Core");
 __PACKAGE__->table("dataset");
 __PACKAGE__->add_columns(
@@ -48,6 +93,25 @@ __PACKAGE__->has_many("dataset_connectors" => "CoGeX::DatasetConnector", 'datase
 __PACKAGE__->belongs_to("data_source" => "CoGeX::DataSource", 'data_source_id');
 
 
+################################################ subroutine header begin ##
+
+=head2 dataset_groups
+
+ Usage     : use CoGeX;
+             my $coge = CoGeX->dbconnect;
+             ?????
+
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    :
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
 
 sub dataset_groups
   {
@@ -67,10 +131,52 @@ sub dataset_groups
     return wantarray ? @dsgs : \@dsgs;
   }
 
+
+################################################ subroutine header begin ##
+
+=head2 groups
+
+ Usage     : use CoGeX;
+             my $coge = CoGeX->dbconnect;
+             ?????
+
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    :
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 sub groups
   {
     shift->dataset_groups(@_);
   }
+
+
+################################################ subroutine header begin ##
+
+=head2 organism
+
+ Usage     : use CoGeX;
+             my $coge = CoGeX->dbconnect;
+             ?????
+
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    :
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
 
 sub organism
   {
@@ -87,11 +193,53 @@ sub organism
     return $org;
   }
 
+
+################################################ subroutine header begin ##
+
+=head2 datasource
+
+ Usage     : use CoGeX;
+             my $coge = CoGeX->dbconnect;
+             ?????
+
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    :
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 sub datasource
   {
     print STDERR "You are using an alias for data_source\n";
     shift->data_source(@_);
   }
+
+
+################################################ subroutine header begin ##
+
+=head2 get_genomic_sequence 
+
+ Usage     : use CoGeX;
+             my $coge = CoGeX->dbconnect;
+             ?????
+
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    :
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
 
 sub get_genomic_sequence 
   {
@@ -118,14 +266,78 @@ sub get_genomic_sequence
     return $dsg->genomic_sequence(start=>$start, stop=>$stop, chr=>$chr, strand=>$strand, debug=>$debug);
   }
 
+
+################################################ subroutine header begin ##
+
+=head2 get_genome_sequence
+
+ Usage     : use CoGeX;
+             my $coge = CoGeX->dbconnect;
+             ?????
+
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    :
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 sub get_genome_sequence
   {
     return shift->get_genomic_sequence(@_);
   }
+  
+  
+################################################ subroutine header begin ##
+
+=head2 genomic_sequence
+
+ Usage     : use CoGeX;
+             my $coge = CoGeX->dbconnect;
+             ?????
+
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    :
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##  
+  
 sub genomic_sequence
   {
     return shift->get_genomic_sequence(@_);
   }
+
+
+################################################ subroutine header begin ##
+
+=head2 trim_sequence
+
+ Usage     : use CoGeX;
+             my $coge = CoGeX->dbconnect;
+             ?????
+
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    :
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
 
 sub trim_sequence {
   my $self = shift;
@@ -180,6 +392,27 @@ See Also   :
      $stop;
    }
 
+
+################################################ subroutine header begin ##
+
+=head2 last_chromosome_position_old
+
+ Usage     : use CoGeX;
+             my $coge = CoGeX->dbconnect;
+             ?????
+
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : none
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 sub last_chromosome_position_old
    {
      my $self = shift;
@@ -198,6 +431,25 @@ sub last_chromosome_position_old
    }
 
 
+################################################ subroutine header begin ##
+
+=head2 sequence_type
+
+ Usage     : use CoGeX;
+             my $coge = CoGeX->dbconnect;
+             ?????
+
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : none
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
 
 sub sequence_type
   {
@@ -220,11 +472,54 @@ sub sequence_type
 	return undef;
       }
   }
+  
+ 
+################################################ subroutine header begin ##
+
+=head2 genomic_sequence_type
+
+ Usage     : use CoGeX;
+             my $coge = CoGeX->dbconnect;
+             ?????
+
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : none
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 sub genomic_sequence_type
   {
     my $self = shift;
     return $self->sequence_type(@_);
   }
+
+
+################################################ subroutine header begin ##
+
+=head2 resolve
+
+ Usage     : use CoGeX;
+             my $coge = CoGeX->dbconnect;
+             ?????
+
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : none
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
 
 sub resolve : ResultSet {
     my $self = shift;
@@ -234,6 +529,27 @@ sub resolve : ResultSet {
     return $self->search({ 'name' => { '-like' => '%' . $info . '%'}},
 			 ,{});
   }
+
+
+################################################ subroutine header begin ##
+
+=head2 get_chromosomes
+
+ Usage     : use CoGeX;
+             my $coge = CoGeX->dbconnect;
+             ?????
+
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : none
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
 
 sub get_chromosomes
   {
@@ -291,12 +607,53 @@ sub get_chromosomes
     return wantarray ? @data : \@data;
   }
 
+
+################################################ subroutine header begin ##
+
+=head2 chromosomes
+
+ Usage     : use CoGeX;
+             my $coge = CoGeX->dbconnect;
+             ?????
+
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : none
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 sub chromosomes
   {
     my $self = shift;
     $self->get_chromosomes(@_);
   }
     
+
+################################################ subroutine header begin ##
+
+=head2 percent_gc
+
+ Usage     : use CoGeX;
+             my $coge = CoGeX->dbconnect;
+             ?????
+
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : none
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
 
 sub percent_gc
   {
@@ -314,10 +671,52 @@ sub percent_gc
     return sprintf("%.4f", $gc/$length),sprintf("%.4f", $at/$length),,sprintf("%.4f", $n/$length);
   }
 
+
+################################################ subroutine header begin ##
+
+=head2 gc_content
+
+ Usage     : use CoGeX;
+             my $coge = CoGeX->dbconnect;
+             ?????
+
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : none
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 sub gc_content
   {
     shift->percent_gc(@_);
   }
+
+
+################################################ subroutine header begin ##
+
+=head2 fasta
+
+ Usage     : use CoGeX;
+             my $coge = CoGeX->dbconnect;
+             ?????
+
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : none
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
 
 sub fasta
   {
@@ -370,6 +769,27 @@ sub fasta
     return $fasta;
   }
 
+
+################################################ subroutine header begin ##
+
+=head2 trans_type
+
+ Usage     : use CoGeX;
+             my $coge = CoGeX->dbconnect;
+             ?????
+
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : none
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 sub trans_type
   {
     my $self = shift;
@@ -383,6 +803,27 @@ sub trans_type
       }
     return 1; #universal genetic code type;
   }
+
+
+################################################ subroutine header begin ##
+
+=head2 reverse_complement
+
+ Usage     : use CoGeX;
+             my $coge = CoGeX->dbconnect;
+             ?????
+
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : none
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
 
 sub reverse_complement
   {

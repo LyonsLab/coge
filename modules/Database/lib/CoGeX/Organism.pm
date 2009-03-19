@@ -7,6 +7,41 @@ use warnings;
 
 use base 'DBIx::Class';
 
+=head1 NAME
+
+CoGeX::Organism
+
+=head1 SYNOPSIS
+
+  use CoGeX::Organism
+This object uses the DBIx::Class to define an interface to the C<organism> table in the CoGe database.
+
+
+=head1 DESCRIPTION
+
+
+Has columns:
+C<organism_id> (Primary Key)
+Type: INT, Default: undef, Nullable: no, Size: 11
+
+C<name>
+Type: VARCHAR, Default: "", Nullable: no, Size: 200
+
+C<description>
+Type: VARCHAR, Default: undef, Nullable: yes, Size: 255
+
+C<normalized_name>
+Type:VARCHAR, Default: "", Nullable: no, Size: 200
+
+
+Has many C<CoGeX::DatasetGroup> via C<organism_id>
+
+=head1 USAGE
+
+=head1 METHODS
+
+=cut
+
 __PACKAGE__->load_components("PK::Auto", "ResultSetManager", "Core");
 __PACKAGE__->table("organism");
 __PACKAGE__->add_columns(
@@ -28,6 +63,25 @@ __PACKAGE__->set_primary_key("organism_id");
 
 __PACKAGE__->has_many("dataset_groups" => "CoGeX::DatasetGroup", 'organism_id');
 
+
+################################################ subroutine header begin ##
+
+=head2 resolve
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 sub resolve : ResultSet {
     my $self = shift;
     my $info = shift;
@@ -40,6 +94,24 @@ sub resolve : ResultSet {
 }
 
 
+################################################ subroutine header begin ##
+
+=head2 current_genome
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 sub current_genome
   {
     my $self = shift;
@@ -51,6 +123,25 @@ sub current_genome
     return $dsg;
   }
 
+
+################################################ subroutine header begin ##
+
+=head2 current_datasets
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 sub current_datasets
   {
     my $self = shift;
@@ -58,6 +149,25 @@ sub current_datasets
     my $dgs = $self->current_genome(%opts);
     return $dgs->datasets();
   }
+
+
+################################################ subroutine header begin ##
+
+=head2 current_datasets_old
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
 
 sub current_datasets_old
   {
@@ -95,6 +205,25 @@ sub current_datasets_old
     return wantarray ? values %data : [values %data];
   }
 
+
+################################################ subroutine header begin ##
+
+=head2 genomic_sequence_types
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 sub genomic_sequence_types
   {
     my $self = shift;
@@ -107,10 +236,48 @@ sub genomic_sequence_types
     return wantarray ? values %data : [values %data];
   }
 
+
+################################################ subroutine header begin ##
+
+=head2 types
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 sub types
   {
     return shift->genomic_sequence_types(@_);
   }
+
+
+################################################ subroutine header begin ##
+
+=head2 datasets
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
 
 sub datasets
   {
@@ -122,3 +289,29 @@ sub datasets
   }
 
 1;
+
+
+
+=head1 BUGS
+
+
+=head1 SUPPORT
+
+
+=head1 AUTHORS
+
+ Eric Lyons
+ Brent Pedersen
+
+=head1 COPYRIGHT
+
+This program is free software; you can redistribute
+it and/or modify it under the same terms as Perl itself.
+
+The full text of the license can be found in the
+LICENSE file included with this module.
+
+
+=head1 SEE ALSO
+
+=cut

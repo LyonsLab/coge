@@ -9,6 +9,55 @@ use Data::Dumper;
 use CoGe::Accessory::Annotation;
 use base 'Class::Accessor';
 
+=head1 NAME
+
+CoGeX::Feature
+
+=head1 SYNOPSIS
+
+  use CoGeX::Feature;
+This object uses the DBIx::Class to define an interface to the C<feature> table in the CoGe database.
+
+
+=head1 DESCRIPTION
+
+Has columns:
+C<feature_id> (Primary Key)
+Type: INT, Default: undef, Nullable: no, Size: 11
+
+C<feature_type_id>
+Type: INT, Default: 0, Nullable: no, Size: 11
+
+C<dataset_id>
+Type: INT, Default: 0, Nullable: no, Size: 11
+
+C<start>
+Type: INT, Default: 0, Nullable: yes, Size: 11
+
+C<stop>
+Type: INT, Default: 0, Nullable: yes, Size: 11
+
+C<strand>
+Type: TINYINT, Default: 0, Nullable: yes, Size: 4
+
+C<chromosome>
+Type: VARCHAR, Default: 0, Nullable: yes, Size: 255
+
+
+Belongs to C<CoGeX::FeatureType> via C<feature_type_id>
+Belongs to C<CoGeX::Dataset> via C<dataset_id>
+
+Has many C<CoGeX::FeatureName> via C<feature_id>
+Has many C<CoGeX::Annotation> via C<feature_id>
+Has many C<CoGeX::Location> via C<feature_id>
+Has many C<CoGeX::Sequence> via C<feature_id>
+
+=head1 USAGE
+
+=head1 METHODS
+
+=cut
+
 __PACKAGE__->load_components("PK::Auto", "ResultSetManager", "Core");
 __PACKAGE__->table("feature");
 __PACKAGE__->add_columns(
@@ -46,6 +95,23 @@ __PACKAGE__->belongs_to("dataset" => "CoGeX::Dataset", 'dataset_id');
 __PACKAGE__->mk_accessors('_genomic_sequence'); #place to store the feature's genomic sequence with no up and down stream stuff
 
 
+################################################ subroutine header begin ##
+
+=head2 type
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
 
 sub type
   {
@@ -53,17 +119,74 @@ sub type
     return $self->feature_type();
   }
 
+
+################################################ subroutine header begin ##
+
+=head2 organism
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 sub organism
   {
     my $self = shift;
     return $self->dataset->organism();
   }
 
+
+################################################ subroutine header begin ##
+
+=head2 org
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 sub org
   {
     my $self = shift;
     return $self->organism();
   }
+
+
+################################################ subroutine header begin ##
+
+=head2 names
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
 
 sub names
   {
@@ -89,6 +212,25 @@ sub names
     return wantarray ? @names : \@names;
   }
 
+
+################################################ subroutine header begin ##
+
+=head2 primary_name
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 sub primary_name
  {
    my $self = shift;
@@ -96,11 +238,49 @@ sub primary_name
    my ($name) = ref($nameo) =~ /name/i ? $nameo->name : $self->names;
  }
 
+
+################################################ subroutine header begin ##
+
+=head2 locs
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 sub locs
   {
     my $self = shift;
     return $self->locations();
   }
+
+
+################################################ subroutine header begin ##
+
+=head2 seqs
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
 
 sub seqs
   {
@@ -108,16 +288,73 @@ sub seqs
     return $self->sequences();
   }
 
+
+################################################ subroutine header begin ##
+
+=head2 eannotations
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 sub eannotations
   {
     my $self = shift;
     return $self->annotations(undef,{prefetch=>['annotation_type']});
   }
 
+
+################################################ subroutine header begin ##
+
+=head2 annos
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 sub annos
   {
     shift->eannotations(@_);
   }
+
+
+################################################ subroutine header begin ##
+
+=head2 length
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
 
 sub length
     {
@@ -401,21 +638,21 @@ sub genbank_location_string
 
 
 ################################################ subroutine header begin ##
-
-=head2 start
-
- Usage     : my $feat_start = $feat->start
- Purpose   : returns the start of the feature (does not take into account the strand on which
-             the feature is located)
- Returns   : a string, number usually
- Argument  : none
- Throws    : 
- Comments  : this simply calles $feat->locs, sorts them based on their starting position, and
-           : returns the smallest position
-
-See Also   : 
-
-=cut
+#
+#=head2 start
+#
+# Usage     : my $feat_start = $feat->start
+# Purpose   : returns the start of the feature (does not take into account the strand on which
+#             the feature is located)
+# Returns   : a string, number usually
+# Argument  : none
+# Throws    : 
+# Comments  : this simply calles $feat->locs, sorts them based on their starting position, and
+#           : returns the smallest position
+#
+#See Also   : 
+#
+#=cut
 
 ################################################## subroutine header end ##
 
@@ -436,21 +673,21 @@ See Also   :
 #  }
 
 ################################################ subroutine header begin ##
-
-=head2 stop
-
- Usage     : my $feat_end = $feat->stop
- Purpose   : returns the end of the feature (does not take into account the strand on which
-             the feature is located)
- Returns   : a string, number usually
- Argument  : none
- Throws    : 
- Comments  : this simply calles $feat->locs, sorts them based on their ending position, and
-           : returns the largest position
-
-See Also   : 
-
-=cut
+#
+#=head2 stop
+#
+# Usage     : my $feat_end = $feat->stop
+# Purpose   : returns the end of the feature (does not take into account the strand on which
+#             the feature is located)
+# Returns   : a string, number usually
+# Argument  : none
+# Throws    : 
+# Comments  : this simply calles $feat->locs, sorts them based on their ending position, and
+#           : returns the largest position
+#
+#See Also   : 
+#
+#=cut
 
 ################################################## subroutine header end ##
 
@@ -471,19 +708,19 @@ See Also   :
 #  }
 ################################################ subroutine header begin ##
 
-=head2 chromosome
-
- Usage     : my $chr = $feat->chromosome
- Purpose   : return the chromosome of the feature
- Returns   : a string
- Argument  : none
- Throws    : none
- Comments  : returns $self->locs->next->chr
-           : 
-
-See Also   : 
-
-=cut
+#=head2 chromosome
+#
+# Usage     : my $chr = $feat->chromosome
+# Purpose   : return the chromosome of the feature
+# Returns   : a string
+# Argument  : none
+# Throws    : none
+# Comments  : returns $self->locs->next->chr
+#           : 
+#
+#See Also   : 
+#
+#=cut
 
 ################################################## subroutine header end ##
 
@@ -514,20 +751,20 @@ sub chr
   }
 
 ################################################ subroutine header begin ##
-
-=head2 strand
-
- Usage     : my $strand = $feat->strand
- Purpose   : return the chromosome strand of the feature
- Returns   : a string (usally something like 1, -1, +, -, etc)
- Argument  : none
- Throws    : none
- Comments  : returns $self->locs->next->strand
-           : 
-
-See Also   : 
-
-=cut
+#
+#=head2 strand
+#
+# Usage     : my $strand = $feat->strand
+# Purpose   : return the chromosome strand of the feature
+# Returns   : a string (usally something like 1, -1, +, -, etc)
+# Argument  : none
+# Throws    : none
+# Comments  : returns $self->locs->next->strand
+#           : 
+#
+#See Also   : 
+#
+#=cut
 
 ################################################## subroutine header end ##
 
@@ -660,10 +897,48 @@ sub genomic_sequence {
   return $outseq;
 }
 
+
+################################################ subroutine header begin ##
+
+=head2 genome_sequence
+
+ Usage     : 
+ Purpose   : See genomic_sequence?
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 sub genome_sequence
   {
    shift->genomic_sequence(@_);
   }
+
+
+################################################ subroutine header begin ##
+
+=head2 has_genomic_sequence
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
 
 sub has_genomic_sequence
   {
@@ -787,6 +1062,25 @@ Problem with scores.  Match: $match (should be greater than 0).
     return $lambda;
   }
 
+
+################################################ subroutine header begin ##
+
+=head2 reverse_complement
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 sub reverse_complement
   {
     my $self = shift;
@@ -804,10 +1098,47 @@ sub reverse_complement
     return $rcseq;
   }
 
+
+################################################ subroutine header begin ##
+
+=head2 reverse_comp
+
+ Usage     : 
+ Purpose   : See reverse_complement
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 sub reverse_comp {
   shift->reverse_complement(@_);
 }
 
+
+################################################ subroutine header begin ##
+
+=head2 protein_sequence
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
 
 sub protein_sequence {
   my $self = shift;
@@ -854,6 +1185,24 @@ sub protein_sequence {
 }
 
 
+################################################ subroutine header begin ##
+
+=head2 frame6_trans
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 sub frame6_trans
   {
     my $self = shift;
@@ -876,6 +1225,25 @@ sub frame6_trans
 
   }
 
+
+################################################ subroutine header begin ##
+
+=head2 genetic_code
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 sub genetic_code
   {
     my $self = shift;
@@ -894,6 +1262,26 @@ sub genetic_code
     my $code = code($trans_type);
     return ($code->{code}, $code->{name});
   }
+  
+  
+################################################ subroutine header begin ##
+
+=head2 _process_seq
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+  
 sub _process_seq
   {
     my $self = shift;
@@ -919,6 +1307,23 @@ sub _process_seq
   }
 
 
+################################################ subroutine header begin ##
+
+=head2 percent_translation_system
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
 
 sub percent_translation_system
   {
@@ -973,6 +1378,25 @@ sub percent_translation_system
       }
   }
 
+
+################################################ subroutine header begin ##
+
+=head2 aa_frequency
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 sub aa_frequency
   {
     my $self = shift;
@@ -1006,6 +1430,25 @@ sub aa_frequency
 	return \%data;
       }
   }
+
+
+################################################ subroutine header begin ##
+
+=head2 codon_frequency
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
 
 sub codon_frequency
   {
@@ -1043,6 +1486,25 @@ sub codon_frequency
       }
   }
 
+
+################################################ subroutine header begin ##
+
+=head2 gc_content
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 sub gc_content
   {
     my $self = shift;
@@ -1065,10 +1527,48 @@ sub gc_content
     return $gc,$at, $n;
   }
 
+
+################################################ subroutine header begin ##
+
+=head2 percent_gc
+
+ Usage     : 
+ Purpose   : See gc_content
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 sub percent_gc
   {
     shift->gc_content(@_);
   }
+
+
+################################################ subroutine header begin ##
+
+=head2 wobble_content
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
 
 sub wobble_content
   {
@@ -1094,6 +1594,25 @@ sub wobble_content
     my $pgc = sprintf("%.4f", $gc_count/$codon_count) if $codon_count;
     return ($pgc, $pat);
   }
+
+
+################################################ subroutine header begin ##
+
+=head2 fasta
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
 
 sub fasta
   {
@@ -1164,6 +1683,25 @@ sub fasta
     return $fasta;
   }
 
+
+################################################ subroutine header begin ##
+
+=head2 commify
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 sub commify 
     {
       my $self = shift;
@@ -1193,3 +1731,30 @@ See Also   :
 ################################################## subroutine header end ##
 
 1;
+
+
+
+
+=head1 BUGS
+
+
+=head1 SUPPORT
+
+
+=head1 AUTHORS
+
+ Eric Lyons
+ Brent Pedersen
+
+=head1 COPYRIGHT
+
+This program is free software; you can redistribute
+it and/or modify it under the same terms as Perl itself.
+
+The full text of the license can be found in the
+LICENSE file included with this module.
+
+
+=head1 SEE ALSO
+
+=cut

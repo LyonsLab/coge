@@ -7,6 +7,40 @@ use warnings;
 
 use base 'DBIx::Class';
 
+=head1 NAME
+
+CoGeX::AnnotationType
+
+=head1 SYNOPSIS
+
+  use CoGeX::AnnotationType;
+This object uses the DBIx::Class to define an interface to the C<annotation_type> table in the CoGe database.
+
+=head1 DESCRIPTION
+
+Has columns:
+C<annotation_type_id> B<Primary Key>
+Type:INT, Default: undef, Nullable: no, Size: 11
+
+C<name>
+Type: VARCHAR, Default: "", Nullable: no, Size: 100
+
+C<description>
+Type: VARCHAR, Default: undef, Nullable: yes, Size: 255
+
+C<annotation_type_group_id>
+Type: INT, Default: undef, Nullable: yes, Size: 11
+
+
+Belongs to C<CoGeX::AnnotationTypeGroup> via C<annotation_type_group_id>
+Has many C<CoGeX::Annotation> via C<annotation_type_id>
+
+=head1 USAGE
+
+=head1 METHODS
+
+=cut
+
 __PACKAGE__->load_components("PK::Auto", "Core");
 __PACKAGE__->table("annotation_type");
 __PACKAGE__->add_columns(
@@ -31,9 +65,57 @@ __PACKAGE__->has_many("annotations" => "CoGeX::Annotation", 'annotation_type_id'
 __PACKAGE__->belongs_to("annotation_type_group" => "CoGeX::AnnotationTypeGroup", 'annotation_type_group_id');
 
 
+
+################################################ subroutine header begin ##
+
+=head2 group
+
+ Usage     : use CoGeX;
+             my $coge = CoGeX->dbconnect;
+             ?????
+
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : none
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 sub group
   {
     shift->annotation_type_group(@_);
   }
 
 1;
+
+
+
+
+=head1 BUGS
+
+
+=head1 SUPPORT
+
+
+=head1 AUTHORS
+
+ Eric Lyons
+ Brent Pedersen
+
+=head1 COPYRIGHT
+
+This program is free software; you can redistribute
+it and/or modify it under the same terms as Perl itself.
+
+The full text of the license can be found in the
+LICENSE file included with this module.
+
+
+=head1 SEE ALSO
+
+=cut

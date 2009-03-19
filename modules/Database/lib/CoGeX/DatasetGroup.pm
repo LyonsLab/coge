@@ -8,6 +8,53 @@ use base 'DBIx::Class';
 use File::Spec::Functions;
 use Data::Dumper;
 
+=head1 NAME
+
+CoGeX::DatasetGroup
+
+=head1 SYNOPSIS
+
+  use CoGeX::DatasetGroup;
+This object uses the DBIx::Class to define an interface to the C<dataset_group> table in the CoGe database.
+
+
+=head1 DESCRIPTION
+
+Has columns:
+C<dataset_group_id> (Primary Key)
+Type: INT, Default: undef, Nullable: no, Size: 11
+
+C<name>
+Type:VARCHAR, Default: "", Nullable: no, Size: 200
+
+C<description>
+Type: VARCHAR, Default: undef, Nullable: yes, Size: 255
+
+C<version>
+Type:VARCHAR, Default: undef, Nullable: no, Size: 50
+
+C<organism_id>
+Type: INT, Default: 0, Nullable: no, Size: 11
+
+C<genomic_sequence_type_id>
+Type: INT, Default: 0, Nullable: no, Size: 11
+
+C<file_path>
+Type: VARCHAR, Default: undef, Nullable: 0, Size: 255
+
+
+Belongs to C<CoGeX::Organism> via C<organism_id>
+Belongs to C<CoGeX::GenomicSequenceType> via C<genomic_sequence_type_id>
+Has many C<CoGeX::DatasetConnector> via C<dataset_group_id>
+Has many C<CoGeX::GenomicSequence> via C<dataset_group_id>
+
+
+=head1 USAGE
+
+=head1 METHODS
+
+=cut
+
 __PACKAGE__->load_components("PK::Auto", "ResultSetManager", "Core");
 __PACKAGE__->table("dataset_group");
 __PACKAGE__->add_columns(
@@ -45,6 +92,26 @@ __PACKAGE__->belongs_to("organism" => "CoGeX::Organism", 'organism_id');
 __PACKAGE__->belongs_to("genomic_sequence_type" => "CoGeX::GenomicSequenceType", 'genomic_sequence_type_id');
 
 
+################################################ subroutine header begin ##
+
+=head2 datasets
+
+ Usage     : use CoGeX;
+             my $coge = CoGeX->dbconnect;
+             ?????
+
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : none
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 sub datasets
   {
     my $self = shift;
@@ -67,6 +134,27 @@ sub datasets
       }
     return wantarray ? @ds : \@ds;
   }
+
+
+################################################ subroutine header begin ##
+
+=head2 get_genomic_sequence
+
+ Usage     : use CoGeX;
+             my $coge = CoGeX->dbconnect;
+             ?????
+
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : none
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
 
 sub get_genomic_sequence {
   my $self = shift;
@@ -103,6 +191,26 @@ sub get_genomic_sequence {
   return $self->get_seq(db=>$file, chr=>$chr, start=>$start, stop=>$stop, strand=>$strand, debug=>$debug);
 }
 
+################################################ subroutine header begin ##
+
+=head2 get_seq
+
+ Usage     : use CoGeX;
+             my $coge = CoGeX->dbconnect;
+             ?????
+
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : none
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 sub get_seq #using fastacmd to get the sequence
   { 
     my $self = shift;
@@ -137,10 +245,52 @@ sub get_seq #using fastacmd to get the sequence
     return $seq;
 }
 
+################################################ subroutine header begin ##
+
+=head2 get_genome_sequence
+
+ Usage     : use CoGeX;
+             my $coge = CoGeX->dbconnect;
+             ?????
+
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : none
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 sub get_genome_sequence
   {
     return shift->get_genomic_sequence(@_);
   }
+  
+  
+################################################ subroutine header begin ##
+
+=head2 genomic_sequence
+
+ Usage     : use CoGeX;
+             my $coge = CoGeX->dbconnect;
+             ?????
+
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : none
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 sub genomic_sequence
   {
     return shift->get_genomic_sequence(@_);
@@ -184,16 +334,79 @@ See Also   :
       }
      return $stop;
    }
+   
+   
+################################################ subroutine header begin ##
+
+=head2 sequence_type
+
+ Usage     : use CoGeX;
+             my $coge = CoGeX->dbconnect;
+             ?????
+
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : none
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
 
 sub sequence_type
   {
     shift->genomic_sequence_type(@_);
   }
 
+
+################################################ subroutine header begin ##
+
+=head2 type
+
+ Usage     : use CoGeX;
+             my $coge = CoGeX->dbconnect;
+             ?????
+
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : none
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 sub type
   {
     shift->genomic_sequence_type(@_);
   }
+
+
+################################################ subroutine header begin ##
+
+=head2 resolve
+
+ Usage     : use CoGeX;
+             my $coge = CoGeX->dbconnect;
+             ?????
+
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : none
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
 
 sub resolve : ResultSet {
     my $self = shift;
@@ -203,6 +416,27 @@ sub resolve : ResultSet {
     return $self->search({ 'name' => { '-like' => '%' . $info . '%'}},
 			 ,{});
   }
+
+
+################################################ subroutine header begin ##
+
+=head2 get_chromosomes
+
+ Usage     : use CoGeX;
+             my $coge = CoGeX->dbconnect;
+             ?????
+
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : none
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
 
 sub get_chromosomes
   {
@@ -218,12 +452,52 @@ sub get_chromosomes
   }
 
 
+################################################ subroutine header begin ##
+
+=head2 chromosomes
+
+ Usage     : use CoGeX;
+             my $coge = CoGeX->dbconnect;
+             ?????
+
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : none
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 sub chromosomes
   {
     my $self = shift;
     $self->get_chromosomes(@_);
   }
     
+
+################################################ subroutine header begin ##
+
+=head2 percent_gc
+
+ Usage     : use CoGeX;
+             my $coge = CoGeX->dbconnect;
+             ?????
+
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : none
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
 
 sub percent_gc
   {
@@ -239,6 +513,27 @@ sub percent_gc
     return ($gc,$at, $n) if $count;
     return sprintf("%.4f", $gc/$length),sprintf("%.4f", $at/$length),sprintf("%.4f", $n/$length);
   }
+
+
+################################################ subroutine header begin ##
+
+=head2 fasta
+
+ Usage     : use CoGeX;
+             my $coge = CoGeX->dbconnect;
+             ?????
+
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : none
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
 
 sub fasta
   {
@@ -290,6 +585,27 @@ sub fasta
     return $fasta;
   }
 
+
+################################################ subroutine header begin ##
+
+=head2 reverse_complement
+
+ Usage     : use CoGeX;
+             my $coge = CoGeX->dbconnect;
+             ?????
+
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : none
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 sub reverse_complement
   {
     my $self = shift;
@@ -299,16 +615,33 @@ sub reverse_complement
     return $rcseq;
   }
 
-#this sub determines the correct directory structure for storing the sequence files for a dataset group
-#By Dan Hembry
-#The idea is to build a dir structure that holds large amounts of files, and is easy to lookup based on dataset_group ID number.
-	#The strucuture is three levels of directorys, and each dir holds 1000 files and/or directorys.
-	#Thus:
-	#./0/0/0/ will hold files 0-999
-	#./0/0/1/ will hold files 1000-1999
-	#./0/0/2/ will hold files 2000-2999
-	#./0/1/0 will hold files 1000000-1000999 (I think).
-	#./level0/level1/level2/
+
+################################################ subroutine header begin ##
+
+=head2 get_path
+
+ Usage     : 
+ Purpose   : This method determines the correct directory structure for storing
+ 			the sequence files for a dataset group.
+ Returns   : 
+ Argument  : 
+ Throws    : none
+ Comments  : The idea is to build a dir structure that holds large amounts of
+ 			files, and is easy to lookup based on dataset_group ID number.
+			The strucuture is three levels of directorys, and each dir holds
+			1000 files and/or directorys.
+			Thus:
+			./0/0/0/ will hold files 0-999
+			./0/0/1/ will hold files 1000-1999
+			./0/0/2/ will hold files 2000-2999
+			./0/1/0 will hold files 1000000-1000999
+			./level0/level1/level2/
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
 
 sub get_path
   {
@@ -322,4 +655,29 @@ sub get_path
   }
 
 
+
+=head1 BUGS
+
+
+=head1 SUPPORT
+
+
+=head1 AUTHORS
+
+ Eric Lyons
+ Brent Pedersen
+ Daniel Hembry
+
+=head1 COPYRIGHT
+
+This program is free software; you can redistribute
+it and/or modify it under the same terms as Perl itself.
+
+The full text of the license can be found in the
+LICENSE file included with this module.
+
+
+=head1 SEE ALSO
+
+=cut
 1;

@@ -7,6 +7,43 @@ use warnings;
 
 use base 'DBIx::Class';
 
+=head1 NAME
+
+CoGeX::Annotation
+
+=head1 SYNOPSIS
+
+ use CoGeX::Annotation;
+This object uses the DBIx::Class to define an interface to the C<annotation> table in the CoGe database.
+
+=head1 DESCRIPTION
+
+Object for interacting with the Annotations table in the CoGe database.
+Has columns:
+
+C<annotation_id> (Primary Key)
+Type: INT, Default: undef, Nullable: no, Size: 11
+
+C<annotation>
+Type: TEXT, Deault: "", Nullable: no, Size 65535
+
+C<feature_id>
+Type: INT, Default: 0, Nullable: no, Size: 11
+
+C<annotation_type_id>
+Type: INT, Default: 0, Nullable: no, Size: 11
+
+
+Belongs to C<CoGeX::AnnotationType> via C<annotation_type_id>
+
+Belongs to C<CoGeX::Feature> via C<feature_id>
+
+=head1 USAGE
+
+=head1 METHODS
+
+=cut
+
 __PACKAGE__->load_components("PK::Auto", "ResultSetManager", "Core");
 __PACKAGE__->table("annotation");
 __PACKAGE__->add_columns(
@@ -23,6 +60,29 @@ __PACKAGE__->set_primary_key("annotation_id");
 
 __PACKAGE__->belongs_to( annotation_type => 'CoGeX::AnnotationType', 'annotation_type_id');
 __PACKAGE__->belongs_to( feature => 'CoGeX::Feature', 'feature_id');
+
+
+
+################################################ subroutine header begin ##
+
+=head2 esearch
+
+ Usage     : use CoGeX;
+             my $coge = CoGeX->dbconnect;
+             ?????
+
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : none
+ Comments  : 
+ 
+ 
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
 
 sub esearch : ResultSet
   {
@@ -44,9 +104,53 @@ sub esearch : ResultSet
 
   }
 
+
+################################################ subroutine header begin ##
+
+=head2 type
+
+ Usage     : use CoGeX;
+             my $coge = CoGeX->dbconnect;
+             ?????
+
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : none
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
 sub type
   {
     shift->annotation_type(@_);
   }
 
 1;
+
+
+=head1 BUGS
+
+
+=head1 SUPPORT
+
+
+=head1 AUTHORS
+
+ Eric Lyons
+ Brent Pedersen
+
+=head1 COPYRIGHT
+
+This program is free software; you can redistribute
+it and/or modify it under the same terms as Perl itself.
+
+The full text of the license can be found in the
+LICENSE file included with this module.
+
+
+=head1 SEE ALSO
