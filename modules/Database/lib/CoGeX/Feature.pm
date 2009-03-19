@@ -903,14 +903,13 @@ sub genomic_sequence {
 =head2 genome_sequence
 
  Usage     : 
- Purpose   : See genomic_sequence?
+ Purpose   : See genomic_sequence()
  Returns   : 
  Argument  : 
  Throws    : 
- Comments  : 
-           : 
+ Comments  : Alias for the genomic_sequence() method.
 
-See Also   : 
+See Also   : genomic_sequence()
 
 =cut
 
@@ -1104,14 +1103,14 @@ sub reverse_complement
 =head2 reverse_comp
 
  Usage     : 
- Purpose   : See reverse_complement
+ Purpose   : See reverse_complement()
  Returns   : 
  Argument  : 
  Throws    : 
- Comments  : 
+ Comments  : Alias for the reverse_complement function.
            : 
 
-See Also   : 
+See Also   : reverse_complement()
 
 =cut
 
@@ -1533,14 +1532,14 @@ sub gc_content
 =head2 percent_gc
 
  Usage     : 
- Purpose   : See gc_content
+ Purpose   : See gc_content()
  Returns   : 
  Argument  : 
  Throws    : 
- Comments  : 
+ Comments  : Alias for the gc_content() method.
            : 
 
-See Also   : 
+See Also   : gc_content()
 
 =cut
 
@@ -1711,29 +1710,7 @@ sub commify
       return scalar reverse $input;
     }
 
-
-################################################ subroutine header begin ##
-
-=head2 
-
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-           : 
-
-See Also   : 
-
-=cut
-
-################################################## subroutine header end ##
-
 1;
-
-
-
 
 =head1 BUGS
 

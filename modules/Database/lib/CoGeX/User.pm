@@ -88,14 +88,13 @@ __PACKAGE__->has_many('sessions'=>"CoGeX::UserSession",'user_id');
 =head2 generate_passwd
 
  Usage     : 
- Purpose   : 
+ Purpose   : Generates a password based on a hashed string and a salt value.
  Returns   : 
- Argument  : 
- Throws    : 
+ Argument  : 'passwd' or 'pwd'
+ Throws    : None.
  Comments  : 
-           : 
 
-See Also   : 
+See Also   : check_passwd()
 
 =cut
 
@@ -116,14 +115,13 @@ sub generate_passwd
 =head2 check_passwd
 
  Usage     : 
- Purpose   : check if entered password matches user passwd
+ Purpose   : Checks to see if entered password matches user password.
  Returns   : 
  Argument  : 
  Throws    : 
  Comments  : 
-           : 
 
-See Also   : 
+See Also   : generate_passwd()
 
 =cut
 

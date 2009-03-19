@@ -71,14 +71,11 @@ __PACKAGE__->belongs_to("annotation_type_group" => "CoGeX::AnnotationTypeGroup",
 
 =head2 group
 
- Usage     : use CoGeX;
-             my $coge = CoGeX->dbconnect;
-             ?????
-
+ Usage     : 
  Purpose   : 
  Returns   : 
  Argument  : 
- Throws    : none
+ Throws    : 
  Comments  : 
 
 See Also   : 

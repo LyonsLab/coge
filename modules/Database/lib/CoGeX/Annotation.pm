@@ -38,6 +38,7 @@ Belongs to C<CoGeX::AnnotationType> via C<annotation_type_id>
 Belongs to C<CoGeX::Feature> via C<feature_id>
 
 =head1 USAGE
+
  use CoGeX;
 
 =head1 METHODS

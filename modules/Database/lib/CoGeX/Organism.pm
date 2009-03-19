@@ -215,7 +215,6 @@ sub current_datasets_old
  Argument  : 
  Throws    : 
  Comments  : 
-           : 
 
 See Also   : 
 
@@ -241,14 +240,13 @@ sub genomic_sequence_types
 =head2 types
 
  Usage     : 
- Purpose   : 
+ Purpose   : See genomic_sequence_types()
  Returns   : 
  Argument  : 
  Throws    : 
- Comments  : 
-           : 
+ Comments  : Alias for genomic_sequence_types() method.
 
-See Also   : 
+See Also   : genomic_sequence_types()
 
 =cut
 
@@ -270,7 +268,6 @@ sub types
  Argument  : 
  Throws    : 
  Comments  : 
-           : 
 
 See Also   : 
 

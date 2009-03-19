@@ -33,10 +33,6 @@ Type: VARCHAR, Default: undef, Nullable: yes, Size: 50
 C<description>
 Type: VARCHAR, Default: undef, Nullable: yes, Size: 1024
 
-
-Belongs to C<CoGeX::> via C<>
-Has many C<CoGeX::> via C<>
-
 =head1 USAGE
 
   use CoGeX;

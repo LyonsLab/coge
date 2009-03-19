@@ -96,10 +96,7 @@ __PACKAGE__->belongs_to("data_source" => "CoGeX::DataSource", 'data_source_id');
 
 =head2 dataset_groups
 
- Usage     : use CoGeX;
-             my $coge = CoGeX->dbconnect;
-             ?????
-
+ Usage     : 
  Purpose   : 
  Returns   : 
  Argument  : 
@@ -135,10 +132,7 @@ sub dataset_groups
 
 =head2 groups
 
- Usage     : use CoGeX;
-             my $coge = CoGeX->dbconnect;
-             ?????
-
+ Usage     : 
  Purpose   : 
  Returns   : 
  Argument  : 
@@ -161,10 +155,7 @@ sub groups
 
 =head2 organism
 
- Usage     : use CoGeX;
-             my $coge = CoGeX->dbconnect;
-             ?????
-
+ Usage     : 
  Purpose   : 
  Returns   : 
  Argument  : 
@@ -197,10 +188,7 @@ sub organism
 
 =head2 datasource
 
- Usage     : use CoGeX;
-             my $coge = CoGeX->dbconnect;
-             ?????
-
+ Usage     : 
  Purpose   : 
  Returns   : 
  Argument  : 
@@ -224,10 +212,7 @@ sub datasource
 
 =head2 get_genomic_sequence 
 
- Usage     : use CoGeX;
-             my $coge = CoGeX->dbconnect;
-             ?????
-
+ Usage     : 
  Purpose   : 
  Returns   : 
  Argument  : 
@@ -270,10 +255,7 @@ sub get_genomic_sequence
 
 =head2 get_genome_sequence
 
- Usage     : use CoGeX;
-             my $coge = CoGeX->dbconnect;
-             ?????
-
+ Usage     : 
  Purpose   : 
  Returns   : 
  Argument  : 
@@ -296,10 +278,7 @@ sub get_genome_sequence
 
 =head2 genomic_sequence
 
- Usage     : use CoGeX;
-             my $coge = CoGeX->dbconnect;
-             ?????
-
+ Usage     : 
  Purpose   : 
  Returns   : 
  Argument  : 
@@ -322,10 +301,7 @@ sub genomic_sequence
 
 =head2 trim_sequence
 
- Usage     : use CoGeX;
-             my $coge = CoGeX->dbconnect;
-             ?????
-
+ Usage     : 
  Purpose   : 
  Returns   : 
  Argument  : 
@@ -396,14 +372,11 @@ See Also   :
 
 =head2 last_chromosome_position_old
 
- Usage     : use CoGeX;
-             my $coge = CoGeX->dbconnect;
-             ?????
-
+ Usage     : 
  Purpose   : 
  Returns   : 
  Argument  : 
- Throws    : none
+ Throws    : 
  Comments  : 
 
 See Also   : 
@@ -434,14 +407,11 @@ sub last_chromosome_position_old
 
 =head2 sequence_type
 
- Usage     : use CoGeX;
-             my $coge = CoGeX->dbconnect;
-             ?????
-
+ Usage     : 
  Purpose   : 
  Returns   : 
  Argument  : 
- Throws    : none
+ Throws    : 
  Comments  : 
 
 See Also   : 
@@ -477,14 +447,11 @@ sub sequence_type
 
 =head2 genomic_sequence_type
 
- Usage     : use CoGeX;
-             my $coge = CoGeX->dbconnect;
-             ?????
-
+ Usage     : 
  Purpose   : 
  Returns   : 
  Argument  : 
- Throws    : none
+ Throws    : 
  Comments  : 
 
 See Also   : 
@@ -504,14 +471,11 @@ sub genomic_sequence_type
 
 =head2 resolve
 
- Usage     : use CoGeX;
-             my $coge = CoGeX->dbconnect;
-             ?????
-
+ Usage     : 
  Purpose   : 
  Returns   : 
  Argument  : 
- Throws    : none
+ Throws    : 
  Comments  : 
 
 See Also   : 
@@ -534,14 +498,11 @@ sub resolve : ResultSet {
 
 =head2 get_chromosomes
 
- Usage     : use CoGeX;
-             my $coge = CoGeX->dbconnect;
-             ?????
-
+ Usage     : 
  Purpose   : 
  Returns   : 
  Argument  : 
- Throws    : none
+ Throws    : 
  Comments  : 
 
 See Also   : 
@@ -611,14 +572,11 @@ sub get_chromosomes
 
 =head2 chromosomes
 
- Usage     : use CoGeX;
-             my $coge = CoGeX->dbconnect;
-             ?????
-
+ Usage     : 
  Purpose   : 
  Returns   : 
  Argument  : 
- Throws    : none
+ Throws    : 
  Comments  : 
 
 See Also   : 
@@ -638,14 +596,11 @@ sub chromosomes
 
 =head2 percent_gc
 
- Usage     : use CoGeX;
-             my $coge = CoGeX->dbconnect;
-             ?????
-
+ Usage     : 
  Purpose   : 
  Returns   : 
  Argument  : 
- Throws    : none
+ Throws    : 
  Comments  : 
 
 See Also   : 
@@ -675,14 +630,11 @@ sub percent_gc
 
 =head2 gc_content
 
- Usage     : use CoGeX;
-             my $coge = CoGeX->dbconnect;
-             ?????
-
+ Usage     : 
  Purpose   : 
  Returns   : 
  Argument  : 
- Throws    : none
+ Throws    : 
  Comments  : 
 
 See Also   : 
@@ -701,14 +653,11 @@ sub gc_content
 
 =head2 fasta
 
- Usage     : use CoGeX;
-             my $coge = CoGeX->dbconnect;
-             ?????
-
+ Usage     : 
  Purpose   : 
  Returns   : 
  Argument  : 
- Throws    : none
+ Throws    : 
  Comments  : 
 
 See Also   : 
@@ -773,14 +722,12 @@ sub fasta
 
 =head2 trans_type
 
- Usage     : use CoGeX;
-             my $coge = CoGeX->dbconnect;
-             ?????
+ Usage     : 
 
  Purpose   : 
  Returns   : 
  Argument  : 
- Throws    : none
+ Throws    : 
  Comments  : 
 
 See Also   : 
@@ -808,14 +755,11 @@ sub trans_type
 
 =head2 reverse_complement
 
- Usage     : use CoGeX;
-             my $coge = CoGeX->dbconnect;
-             ?????
-
+ Usage     : 
  Purpose   : 
  Returns   : 
  Argument  : 
- Throws    : none
+ Throws    : 
  Comments  : 
 
 See Also   : 
