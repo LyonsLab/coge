@@ -89,9 +89,9 @@ __PACKAGE__->has_many('sessions'=>"CoGeX::UserSession",'user_id');
 
  Usage     : 
  Purpose   : Generates a password based on a hashed string and a salt value.
- Returns   : 
+ Returns   : Hash of password and salt value.
  Argument  : 'passwd' or 'pwd'
- Throws    : None.
+ Throws    : None
  Comments  : 
 
 See Also   : check_passwd()
@@ -116,10 +116,10 @@ sub generate_passwd
 
  Usage     : 
  Purpose   : Checks to see if entered password matches user password.
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
+ Returns   : Result of logic test 'eq' between password from database and a hash of the supplied password and the local password as the salt value.
+ Argument  : 'passwd' or 'pwd'
+ Throws    : None
+ Comments  : Using the database copy of the password as the salt value may result in this function always returning false except in some very specific instances.
 
 See Also   : generate_passwd()
 
