@@ -101,12 +101,12 @@ See Also   : check_passwd()
 ################################################## subroutine header end ##
 
 sub generate_passwd
-  {
-    my $self = shift;
-    my %opts = @_;
-    my $pwd = $opts{passwd} || $opts{pwd};
-    my $crypt_pwd = crypt( $pwd, "12" );
-  }
+{
+	my $self = shift;
+	my %opts = @_;
+	my $pwd = $opts{passwd} || $opts{pwd};
+	my $crypt_pwd = crypt( $pwd, "12" );
+}
 
 
 
@@ -128,12 +128,12 @@ See Also   : generate_passwd()
 ################################################## subroutine header end ##
 
 sub check_passwd
-  {
-    my $self = shift;
-    my %opts = @_;
-    my $pwd = $opts{passwd} || $opts{pwd};
-    return crypt($pwd, $self->passwd) eq $self->passwd;
-  }
+{
+	my $self = shift;
+	my %opts = @_;
+	my $pwd = $opts{passwd} || $opts{pwd};
+	return crypt($pwd, $self->passwd) eq $self->passwd;
+}
 1;
 
 

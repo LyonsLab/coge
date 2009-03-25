@@ -55,12 +55,7 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key("user_session_id");
 __PACKAGE__->belongs_to("user"=>"CoGeX::User", 'user_id');
 
-
-
-
 1;
-
-
 
 
 =head1 BUGS
