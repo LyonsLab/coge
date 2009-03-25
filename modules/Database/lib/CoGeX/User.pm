@@ -116,10 +116,10 @@ sub generate_passwd
 
  Usage     : 
  Purpose   : Checks to see if entered password matches user password.
- Returns   : Result of logic test 'eq' between password from database and a hash of the supplied password and the local password as the salt value.
+ Returns   : Result of logic test 'eq' between password has from the database and a hash of the user supplied password.
  Argument  : 'passwd' or 'pwd'
  Throws    : None
- Comments  : Using the database copy of the password as the salt value may result in this function always returning false except in some very specific instances.
+ Comments  : 
 
 See Also   : generate_passwd()
 
