@@ -69,11 +69,11 @@ __PACKAGE__->belongs_to( feature => 'CoGeX::Feature', 'feature_id');
 =head2 esearch
 
  Usage     : 
- Purpose   : 
+ Purpose   : Returns not only annotaion data, but related annotaion type and annotation type group.
  Returns   : 
  Argument  : 
  Throws    : 
- Comments  : 
+ Comments  : Extended SEARCH
  
  
 See Also   : 

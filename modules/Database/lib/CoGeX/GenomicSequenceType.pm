@@ -64,12 +64,12 @@ __PACKAGE__->has_many("dataset_groups"=>"CoGeX::DatasetGroup","genomic_sequence_
 
 =head2 resolve
 
- Usage     : 
+ Usage     : resolve('<object or string here>')
  Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : none
- Comments  : 
+ Returns   : A result set(?), or the GenomicSequenceType object.
+ Argument  : One (no hash)
+ Throws    : 
+ Comments  : Searches for results like (or not like?) the provided string.
 
 See Also   : 
 
@@ -80,17 +80,22 @@ See Also   :
 sub resolve : ResultSet {
     my $self = shift;
     my $info = shift;
-    return $info if ref($info) =~ /GenomicSequenceType/;
-    return $self->find($info) if $info =~ /^\d+$/;
+    return $info if ref($info) =~ /GenomicSequenceType/;	#If $info is a reference to a GenomicSequenceType object, return it.
+    return $self->find($info) if $info =~ /^\d+$/;		#If $info is all digits, query for it and return the result (some kind of reference number?)
+
+	#Search for name with beginning (not?) like contents of $info
     my @res = $self->search({
 			     'name' => { '-like' => $info . '%'}, 
 			    }
 			    ,{});
+
+	#If previous search did not return a scalar, repeat, but search for $info anywhere in string
     @res = $self->search({
 			     'name' => { '-like' => '%' . $info . '%'}, 
 			    }
 			    ,{}) unless scalar @res;
-    return wantarray? @res : \@res;
+
+    return wantarray ? @res : \@res;	#Check context, return approprate data.
 }
 
 

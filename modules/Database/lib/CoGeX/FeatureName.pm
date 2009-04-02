@@ -88,8 +88,8 @@ See Also   :
 sub esearch : ResultSet {
     my $self = shift;
     my $join = $_[1]{'join'};
-
     my $prefetch = $_[1]{'prefetch'};
+
     map { push(@$prefetch, $_ ) } 
         ({ 'feature' => ['locations','feature_type'] });
 
