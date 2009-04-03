@@ -14,6 +14,8 @@ CoGeX::DataSource
 =head1 SYNOPSIS
 
 This object uses the DBIx::Class to define an interface to the C<data_source> table in the CoGe database.
+The C<data_source> table contains infomation on the source of the data described by a record in the C<dataset> table.
+This includes the name and description of the source, as well as URL to the origonal source.
 
 =head1 DESCRIPTION
 
@@ -21,17 +23,21 @@ This object uses the DBIx::Class to define an interface to the C<data_source> ta
 Has columns:
 C<data_source_id> (Primary Key)
 Type: INT, Default: undef, Nullable: no, Size: 11
+Primary identification key for table.
 
 C<name>
 Type: VARCHAR, Default: "", Nullable: no, Size: 100
+Name of source.
 
 C<description>
 Type: VARCHAR, Default: undef, Nullable: yes, Size: 255
+Description of source.
 
 C<link>
 Type: TEXT, Default: undef, Nullable: yes, Size: 65535
+URL to origonal source.
 
-Has many C<CoGeX::Dataset> via C<data_source_id>
+Relates to C<CoGeX::Dataset> via C<data_source_id>, one-to-many relationship.
 
 =head1 USAGE
 

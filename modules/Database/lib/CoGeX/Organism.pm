@@ -14,6 +14,7 @@ CoGeX::Organism
 =head1 SYNOPSIS
 
 This object uses the DBIx::Class to define an interface to the C<organism> table in the CoGe database.
+The C<organism> table contains the name, description, and normalized name for an organism.
 
 =head1 DESCRIPTION
 

@@ -14,7 +14,7 @@ CoGeX::FeatureType
 =head1 SYNOPSIS
 
 This object uses the DBIx::Class to define an interface to the C<feature_type> table in the CoGe database.
-This object describes a type of feature.
+The C<feature_type> table describes a feature type. Pretty straight forward really.
 
 =head1 DESCRIPTION
 

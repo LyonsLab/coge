@@ -14,10 +14,10 @@ CoGeX::GenomicSequenceType
 =head1 SYNOPSIS
 
 This object uses the DBIx::Class to define an interface to the C<genomic_sequence_type> table in the CoGe database.
-
+The C<genomic_sequence_type> table defines the name and description of a genomic sequence type, and is used by the C<dataset_group> table.
+This table should not be confused with the C<sequence_type> table - that table defines sequence types for the C<sequence> table which is used by the C<feature> table.
 
 =head1 DESCRIPTION
-
 
 Has columns:
 C<genomic_sequence_type_id> (Primary Key)

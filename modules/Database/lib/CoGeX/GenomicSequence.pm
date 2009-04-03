@@ -14,7 +14,8 @@ CoGeX::GenomicSequence
 =head1 SYNOPSIS
 
 This object uses the DBIx::Class to define an interface to the C<genomic_sequence_id> table in the CoGe database.
-This object defines a genomic sequence (that is, a simple sequence of DNA). The actual sequence is stored in flat text file on disk in FASTA format.
+The C<genomic_sequence_id> table defines a genomic sequence (that is, a simple sequence of DNA). The actual sequence is stored in flat text file on disk in FASTA format.
+Note that this table is used by the C<dataset_group> table, and is unrelated to the C<sequence> table or the C<feature> table.
 
 =head1 DESCRIPTION
 

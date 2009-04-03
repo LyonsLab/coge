@@ -14,7 +14,7 @@ CoGeX::Location
 =head1 SYNOPSIS
 
 This object uses the DBIx::Class to define an interface to the C<location> table in the CoGe database.
-This object descriibes the location of a feature (a record in the C<feature> table). This includes the beginning and end of the feature, the strand it exists on, and the name of the chromosome it exists on.
+The C<location> table describes the location of a feature (a record in the C<feature> table) on a give genomic sequence. This includes the beginning and end of the feature, the strand it exists on, and the name of the chromosome it exists on.
 
 =head1 DESCRIPTION
 
@@ -41,7 +41,8 @@ Reference to record in C<feature> table.
 
 C<strand>
 Type: TINYINT, Default: "", Nullable: no, Size: 4
-
+Which strand the feature exists on, the options being Top (+) and Bottom (-).
+[Editors note: Why is this a TINYINT?]
 
 Belongs to C<CoGeX::Feature> via C<feature_id>
 

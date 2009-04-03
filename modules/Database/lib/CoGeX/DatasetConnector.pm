@@ -14,19 +14,24 @@ CoGeX::
 =head1 SYNOPSIS
 
 This object uses the DBIx::Class to define an interface to the C<dataset_connector> table in the CoGe database.
+The C<dataset_connector> table is used to associate C<dataset_group> records with C<dataset> records.
+
 
 =head1 DESCRIPTION
 
 Has columns:
 C<dataset_connector_id> (Primary Key)
 Type: INT, Default: yes, Nullable: no, Size: 11
+Primary identification key for table.
 
 C<dataset_id>
 Type: INT, Default: "", Nullable: no, Size: 11
+Key for identifying the record in the C<dataset> table.
+
 
 C<dataset_group_id>
 Type: INT, Default: "", Nullable: no, Size: 11
-
+Key for identifying the record in the C<dataset_group> table.
 
 Belongs to C<CoGeX::DatasetGroup> via C<dataset_group_id>
 Belongs to C<CoGeX::Dataset> via C<dataset_id>
