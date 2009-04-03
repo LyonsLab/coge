@@ -22,15 +22,17 @@ This object uses the DBIx::Class to define an interface to the C<genomic_sequenc
 Has columns:
 C<genomic_sequence_type_id> (Primary Key)
 Type: INT, Default: undef, Nullable: no, Size: 11
+Primary identification key for table.
 
 C<name>
 Type: VARCHAR, Default: "", Nullable: no, Size: 100
+Name of genomic sequence type.
 
 C<description>
 Type: VARCHAR, Default: undef, Nullable: yes, Size: 255
+Description of the genomic sequence type.
 
-
-Has many C<CoGeX::DatasetGroup> via C<genomic_sequence_type_id>
+Relates to C<CoGeX::DatasetGroup> via C<genomic_sequence_type_id> in a one-to-many relationship.
 
 =head1 USAGE
 

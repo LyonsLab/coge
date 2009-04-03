@@ -14,20 +14,25 @@ CoGeX::SequenceType
 =head1 SYNOPSIS
 
 This object uses the DBIx::Class to define an interface to the C<sequence_type> table in the CoGe database.
+The C<sequence_type> table contains names and descriptions of the various sequence types stored in the C<sequence> table.
 
 =head1 DESCRIPTION
 
 Has columns:
 C<sequence_type_id> (Primary Key)
 Type: INT, Default: undef, Nullable: no, Size: 11
+Primary identification key for table.
 
 C<name>
 Type: VARCHAR, Default: "", Nullable: no, Size: 100
+Name of sequence type.
 
 C<description>
 Type: VARCHAR, Default: undef, Nullable: yes, Size: 255
+Description of sequence type.
 
-Has many C<CoGeX::Sequence> via C<sequence_type_id>
+Relates to C<CoGeX::Sequence> via C<sequence_type_id>; one-to-many relationship.
+
 
 =head1 USAGE
 

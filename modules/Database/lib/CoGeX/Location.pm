@@ -14,27 +14,34 @@ CoGeX::Location
 =head1 SYNOPSIS
 
 This object uses the DBIx::Class to define an interface to the C<location> table in the CoGe database.
+This object descriibes the location of a feature (a record in the C<feature> table). This includes the beginning and end of the feature, the strand it exists on, and the name of the chromosome it exists on.
 
 =head1 DESCRIPTION
 
 Has columns:
 C<location_id> (Primary Key)
 Type: INT, Default: undef, Nullable: no, Size: 11
+Primary identification key for table.
 
 C<start>
 Type: INT, Default: 0, Nullable: no, Size: 11
+Start location of feature (in terms of basepairs) on the genomic data.
 
 C<stop>
 Type: INT, Default: 0, Nullable: no, Size: 11
+Stop location of feature (in terms of basepairs) on the genomic data.
 
 C<chromosome>
 Type: VARCHAR, Default: "", Nullable: no, Size: 255
+Name of chromosome this location resides in.
 
 C<feature_id>
 Type: INT, Default: 0, Nullable: no, Size: 11
+Reference to record in C<feature> table.
 
 C<strand>
 Type: TINYINT, Default: "", Nullable: no, Size: 4
+
 
 Belongs to C<CoGeX::Feature> via C<feature_id>
 

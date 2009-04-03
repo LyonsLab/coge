@@ -20,18 +20,22 @@ This object uses the DBIx::Class to define an interface to the C<organism> table
 Has columns:
 C<organism_id> (Primary Key)
 Type: INT, Default: undef, Nullable: no, Size: 11
+Primary identification key for table.
 
 C<name>
 Type: VARCHAR, Default: "", Nullable: no, Size: 200
+Organism name.
 
 C<description>
 Type: VARCHAR, Default: undef, Nullable: yes, Size: 255
+Organism description.
 
 C<normalized_name>
 Type:VARCHAR, Default: "", Nullable: no, Size: 200
+File-system 'safe' (only alphanumeric characters and underscores) version of 'name' field above.
 
 
-Has many C<CoGeX::DatasetGroup> via C<organism_id>
+Relates to C<CoGeX::DatasetGroup> via C<organism_id>, in a one-to-many relationship.
 
 =head1 USAGE
 

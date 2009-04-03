@@ -14,25 +14,29 @@ CoGeX::Sequence
 =head1 SYNOPSIS
 
 This object uses the DBIx::Class to define an interface to the C<sequence> table in the CoGe database.
+The C<sequence> table contains an actual genomic sequence, the type of sequence (in the form of a reference to the C<sequence_type> table/the C<CoGeX::SequenceType> object, and an ID number that relates it to a record in the C<feature> table/a C<CoGeX::Feature> object.
 
 =head1 DESCRIPTION
 
 Has columns:
 C<sequence_id> (Primary Key)
 Type: INT, Default: undef, Nullable: no, Size: 11
+Primary identification key for table.
 
 C<sequence_type_id>
 Type: INT, Default: 0, Nullable: no, Size: 11
+Reference key to a record in the C<sequence_type> table.
 
 C<sequence_data>
 Type:LONGTEXT, Default: "", Nullable: no, Size: 4294967295
+Genomic sequence data.
 
 C<feature_id>
 Type: INT, Default: 0, Nullable: no, Size: 11
+Reference to a record in the C<feature> table.
 
-
-Belongs to C<CoGeX::Feature> via C<feature_id>
-Belongs to C<CoGeX::SequenceType> via C<sequence_type_id>
+Relates to C<CoGeX::Feature> via C<feature_id>, one-to-one relationship.
+Relates to C<CoGeX::SequenceType> via C<sequence_type_id>, one-to-one relationship.
 
 
 =head1 USAGE

@@ -20,18 +20,23 @@ This object uses the DBIx::Class to define an interface to the C<feature_name> t
 Has columns:
 C<feature_name_id> (Primary Key)
 Type: INT, Default: undef, Nullable: no, Size: 11
+Primary identification key for table.
 
 C<name>
 Type: VARCHAR, Default: "", Nullable: no, Size: 100
 
+
 C<description>
 Type: VARCHAR, Default: undef, Nullable: yes, Size: 255
+
 
 C<feature_id>
 Type: INT, Default: 0, Nullable: no, Size: 11
 
+
 C<primary_name>
 Type: TINYINT, Default: 0, Nullable: no, Size: 1
+
 
 Belongs to C<CoGeX::Feature> via C<feature_id>
 

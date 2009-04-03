@@ -14,20 +14,24 @@ CoGeX::FeatureType
 =head1 SYNOPSIS
 
 This object uses the DBIx::Class to define an interface to the C<feature_type> table in the CoGe database.
+This object describes a type of feature.
 
 =head1 DESCRIPTION
 
 Has columns:
 C<feature_type_id> (Primary Key)
 Type: INT, Default: undef, Nullable: no, Size: 11
+Primary identification key for table.
 
 C<name>
 Type: VARCHAR, Default: "", Nullable: no, Size: 100
+Name of the feature type.
 
 C<description>
 Type: VARCHAR, Default: undef, Nullable: yes, Size: 255
+Description of the feature type.
 
-Has many C<CoGeX::Feature> via C<feature_type_id>
+Relates to C<CoGeX::Feature> via C<feature_type_id> in a one-to-many relationship.
 
 =head1 USAGE
 

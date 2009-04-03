@@ -14,24 +14,28 @@ CoGeX::GenomicSequence
 =head1 SYNOPSIS
 
 This object uses the DBIx::Class to define an interface to the C<genomic_sequence_id> table in the CoGe database.
+This object defines a genomic sequence (that is, a simple sequence of DNA). The actual sequence is stored in flat text file on disk in FASTA format.
 
 =head1 DESCRIPTION
 
 Has columns:
 C<genomic_sequence_id> (Primary Key)
 Type: INT, Default: 1, Nullable: no, Size: 11
+Primary identification key for table.
 
 C<sequence_length>
 Type: INT, Default: "", Nullable: no, Size: 11
+Length of genomic sequence, in basepairs.
 
 C<chromosome>
 Type: VARCHAR, Default: "", Nullable: no, Size: 255
+Name of chromosome described by this record.
 
 C<dataset_group_id>
 Type: INT, Default: "", Nullable: no, Size: 11
+Reference to a record in the C<dataset_group> table.
 
-
-Belongs to C<CoGeX::DatasetGroup> via C<dataset_group_id>
+Relates to a record in the C<CoGeX::DatasetGroup> object via C<dataset_group_id> in a one-to-one relationship.
 
 =head1 USAGE
 
