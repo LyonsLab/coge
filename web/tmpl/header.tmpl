@@ -7,9 +7,16 @@
 <TMPL_UNLESS NAME="NO_JQUERY">
  <link rel="stylesheet" type="text/css" href="/CoGe/css/jdMenu.css" />
  <link rel="stylesheet" type="text/css" href="/CoGe/css/jdMenu.slate.css" />
- <SCRIPT language="JavaScript" type="text/javascript" src="/CoGe/js/jquery-1.2.3.js"></SCRIPT>
+
+<!-- This is the implementation of jquery into the header of all CoGe pages -->
+ <SCRIPT language="JavaScript" type="text/javascript" src="/CoGe/js/jquery-1.3.2.js"></SCRIPT>
+
+<!-- Implementation of jQuery UI, first line javascript, second for css  -->
+<SCRIPT language="JavaScript" type="text/javascript" src="/CoGe/js/jquery-ui-1.7.custom.min.js"></SCRIPT>
+<link rel="stylesheet" type="text/css" href="/CoGe/css/jquery-ui-1.7.custom.css" />
+
  <!--<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.bgiframe.js"></SCRIPT>-->
- <SCRIPT language="JavaScript" type="text/javascript" src="/CoGe/js/jquery.dimensions.js"></SCRIPT>
+<!-- <SCRIPT language="JavaScript" type="text/javascript" src="/CoGe/js/jquery.dimensions.js"></SCRIPT>-->
  <SCRIPT language="JavaScript" type="text/javascript" src="/CoGe/js/jquery.jdMenu.js"></SCRIPT>
  <SCRIPT language="JavaScript" type="text/javascript" src="/CoGe/js/jquery.cookie.js"></SCRIPT>
 <!-- <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.jdMenu.packed.js"></SCRIPT>-->
@@ -34,13 +41,13 @@ jQuery(document).ready(function(){
   define_animation_speed(pageObj.speed)
   //alert(pageObj.speed);
   if (jQuery.browser.msie)browserAlert();
+  setup_button_states();
 });
 
 
 jQuery(function(){
 jQuery('ul.jd_menu').jdMenu();
 });
-
 function browserAlert()
 {
  alert('Unfortunately, CoGe has been designed to work with the FireFox browser and may not function appropriately with your browser.  Please use FireFox, which can be downloaded from http://www.mozilla.com/en-US/firefox/');
@@ -132,6 +139,51 @@ function animate_section(name, style, speedy, show) {
      jQuery('.animations').html(menu_html);
 }
 
+//set up the jquery ui button behavior
+function setup_button_states (id) {
+//$(function() {
+	     //button effects on events
+           var item;
+            
+           if (id) { item='#'+id; }
+           else { item = '.ui-button'; }
+	     $(item+':not(.ui-state-disabled)')
+			.hover(	function(){
+				$(this).addClass("ui-state-hover");
+			},
+				function(){
+				$(this).removeClass("ui-state-hover");
+			});
+	     $(item+':not(.ui-button-toggle)') //buttons that aren't toggle-able
+                        .mousedown(function(){
+                        	$(this).addClass("ui-state-active");
+                        })
+			.mouseup(function(){
+			        $(this).removeClass("ui-state-active");
+                       	});
+             $(item+'.ui-button-toggle') // buttons that are toggle-able
+                       .click(function(){
+				if( $(this).hasClass('ui-state-active') ){ 
+				    $(this).removeClass("ui-state-active"); 
+				    }
+				else { $(this).addClass("ui-state-active"); 
+				}
+                        });
+
+}
+
+//add button behavior to new buttons, takes in array
+function add_button_states (ids) {
+    if(!ids) return;
+
+    if(!(ids instanceof Array)) ids = [ids]; //check if ids is an array, if not, make it one
+
+    for(var i=0; i<ids.length; i++)
+    {
+         setup_button_states(ids[i]);
+    }
+}
+//}); 
 
 </SCRIPT>
 
@@ -154,7 +206,7 @@ function animate_section(name, style, speedy, show) {
 	 <li><a id=home href="/CoGe/" target="_self">Home</a></li>
 	 <li>Applications
 	  <ul>
-	  <li><a href="/CoGe/GenomeView.pl" target="_self">OrganismView</a></li>
+	  <li><a href="/CoGe/OrganismView.pl" target="_self">OrganismView</a></li>
 	  <li><a href="/CoGe/CoGeBlast.pl" target="_self">CoGeBlast</a></li>
 	  <li><a href="/CoGe/FeatView.pl" target="_self">FeatView</a></li>
 	  <li><a href="/CoGe/SynMap.pl" target="_self">SynMap</a></li>
