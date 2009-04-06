@@ -21,16 +21,19 @@ This object uses the DBIx::Class to define an interface to the C<image> table in
 Has columns:
 C<image_id> (Primary Key)
 Type: INT, Default: undef, Nullable: no, Size: 10
+Primary identification key for table.
 
 C<name>
 Type: VARCHAR, Default: "", Nullable: no, Size: 50
+Name of image.
 
 C<description>
 Type: VARCHAR, Default: undef, Nullable: yes, Size: 2048
+Description of image.
 
 C<image>
 Type: LONGBLOB, Default: "", Nullable: no, Size: 4294967295
-
+Blob containing image data.
 
 =head1 USAGE
 

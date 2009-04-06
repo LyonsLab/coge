@@ -107,11 +107,11 @@ sub esearch : ResultSet
 
 =head2 type
 
- Usage     : 
- Purpose   : 
- Returns   : 
+ Usage     : $Annotation_obj->type->AnnotationType_object_method_or_value
+ Purpose   : Shorthand for getting an Annotation Type from an Annotation object.
+ Returns   : AnnotationType object.
  Argument  : 
- Throws    :
+ Throws    : None.
  Comments  : 
 
 See Also   : 

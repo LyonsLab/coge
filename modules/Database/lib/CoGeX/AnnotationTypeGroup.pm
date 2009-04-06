@@ -14,7 +14,7 @@ CoGeX::AnnotationTypeGroup
 =head1 SYNOPSIS
 
 This object uses the DBIx::Class to define an interface to the C<annotation_type_group> table in the CoGe database.
-
+The C<annotation_type_group> table contains the name and description of all the Annotation Type Groups.
 
 =head1 DESCRIPTION
 
@@ -22,15 +22,17 @@ This object uses the DBIx::Class to define an interface to the C<annotation_type
 Has columns:
 C<annotation_type_group_id> (Primary Key)
 Type: INT, Default: undef, Nullable: no, Size: 11
+Primary identification key for table.
 
 C<name>
 Type: VARCHAR, Default: "", Nullable: no, Size: 100
+Name of Annotation Type Group.
 
 C<description>
 Type: VARCHAR, Default: undef, Nullable: yes, Size: 255
+Description of Annotation Type Group.
 
-
-Has many C<CoGeX::AnnotationType> via C<annotation_type_group_id>
+Relates to C<CoGeX::AnnotationType> via C<annotation_type_group_id>; has a one-to-many relationship.
 
 =head1 USAGE
 

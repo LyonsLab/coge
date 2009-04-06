@@ -74,7 +74,7 @@ __PACKAGE__->belongs_to("annotation_type_group" => "CoGeX::AnnotationTypeGroup",
  Usage     : $AnnotationType_obj->group->AnnotationTypeGroup_object_method_or_value
  Purpose   : Returns the AnnotationTypeGroup object associated with this AnnotationType object.
  Returns   : AnnotationTypeGroup object
- Argument  : None
+ Argument  : 
  Throws    : None
  Comments  : 
 
