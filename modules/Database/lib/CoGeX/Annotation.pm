@@ -83,24 +83,22 @@ See Also   :
 ################################################## subroutine header end ##
 
 sub esearch : ResultSet
-  {
-    my $self = shift;
-    my $join = $_[1]{'join'};
-    map { push(@$join, $_ ) }
-        ('annotation_type');
+{
+	my $self = shift;
+	my $join = $_[1]{'join'};
+	
+	map { push(@$join, $_ ) } ('annotation_type');
 
+	my $prefetch = $_[1]{'prefetch'};
+	map { push(@$prefetch, $_ ) }
+	     ('annotation_type',
+	          { 'annotation_type' => 'annotation_type_group' }
+	     );
 
-    my $prefetch = $_[1]{'prefetch'};
-    map { push(@$prefetch, $_ ) }
-        ('annotation_type',
-            { 'annotation_type' => 'annotation_type_group' }
-        );
-
-    $_[1]{'join'} = $join;
-    $_[1]{'prefetch'} = $prefetch;
-    return $self->search( @_ );
-
-  }
+	$_[1]{'join'} = $join;
+	$_[1]{'prefetch'} = $prefetch;
+	return $self->search( @_ );
+}
 
 
 ################################################ subroutine header begin ##

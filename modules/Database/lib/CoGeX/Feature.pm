@@ -17,6 +17,7 @@ CoGeX::Feature
 
 This object uses the DBIx::Class to define an interface to the C<feature> table in the CoGe database.
 
+
 =head1 DESCRIPTION
 
 Has columns:
@@ -99,10 +100,10 @@ __PACKAGE__->mk_accessors('_genomic_sequence'); #place to store the feature's ge
 
 =head2 type
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
+ Usage     : $returned_featuretype_object = $FeatureObject->type();
+ Purpose   : Shortcut to return a FeatureType object from a Feature object.
+ Returns   : A FeatureType object.
+ Argument  : None
  Throws    : 
  Comments  : 
            : 
@@ -124,15 +125,15 @@ sub type
 
 =head2 organism
 
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
+ Usage     : $returned_organism_object = $FeatureObject->organism();
+ Purpose   : Shortcut to return an Organism object (name, description, normalized name) from a Feature object.
+ Returns   : An Organism object.
+ Argument  : None
  Throws    : 
  Comments  : 
            : 
 
-See Also   : 
+See Also   : org()
 
 =cut
 
@@ -150,14 +151,14 @@ sub organism
 =head2 org
 
  Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
+ Purpose   : Alias to the organism() method.
+ Returns   : See organism()
+ Argument  : None
  Throws    : 
  Comments  : 
            : 
 
-See Also   : 
+See Also   : organism()
 
 =cut
 
