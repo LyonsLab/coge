@@ -123,7 +123,12 @@ sub current_genome
     my $gstid = $opts{type} || $opts{genomic_sequence_type} || $opts{sequence_type} || $opts{gstid};
     $gstid = 1 unless $gstid;
     $gstid = ref($gstid) =~/Type/ ? $gstid->id : $gstid;
-    my ($dsg) = $self->dataset_groups({genomic_sequence_type_id=>$gstid},{'order_by' => 'version desc'});
+    my ($dsg) = $self->dataset_groups({genomic_sequence_type_id=>$gstid},
+				      {'order_by' => 'me.version desc',
+				       join=>[{'dataset_connectors'=>'dataset'}, 'organism'],
+				      prefetch=>[{'dataset_connectors'=>'dataset'}, 'organism']
+				      },
+				     );
     return $dsg;
   }
 

@@ -485,6 +485,7 @@ sub annotation_pretty_print_html
     my $loc_link = $opts{loc_link};
     my $minimal = $opts{minimal};
     my $gstid = $opts{gstid};
+    $gstid = 1 unless defined $gstid;
     my $skip_GC = $opts{skip_GC};
     $loc_link = "SeqView.pl" unless defined $loc_link;
     my $anno_obj = new CoGe::Accessory::Annotation(Type=>"anno");
@@ -542,18 +543,17 @@ sub annotation_pretty_print_html
 		$anno_obj->add_Annot($anno_type);
 	      }
 	  }
-      }
-    my $location = "Chr ".$chr." ";
-#    $location .= join (", ", map {$_->start."-".$_->stop} sort {$a->start <=> $b->start} $self->locs);
-    $location .= $self->commify($self->start)."-".$self->commify($self->stop);
-    $location .=" (".$strand.")";
-    my $featid = $self->id;
-    $anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\">Length</span>", Values=>["<span class='data5'>".$self->length." nt</span>"],Type_delimit=>":<td>", Val_delimit=>" ")) unless $minimal;
-    $location = qq{<a class="data5 link" href="$loc_link?featid=$featid&start=$start&stop=$stop&chr=$chr&dsid=$dataset_id&strand=$strand" target=_new>}.$location."</a>" if $loc_link;
-    $location = qq{<span class="data">$location</span>};
-    $anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\"><a href=\"GenomeView.pl?chr=$chr&ds=$dataset_id&x=$start&z=5&gstid=$gstid\" target=_new>Location</a></span>", Values=>[$location], Type_delimit=>":<td>", Val_delimit=>" "));
-    unless ($minimal)
-      {
+
+	my $location = "Chr ".$chr." ";
+	#    $location .= join (", ", map {$_->start."-".$_->stop} sort {$a->start <=> $b->start} $self->locs);
+	$location .= $self->commify($self->start)."-".$self->commify($self->stop);
+	$location .=" (".$strand.")";
+	my $featid = $self->id;
+	$anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\">Length</span>", Values=>["<span class='data5'>".$self->length." nt</span>"],Type_delimit=>":<td>", Val_delimit=>" ")) unless $minimal;
+	$location = qq{<a class="data5 link" href="$loc_link?featid=$featid&start=$start&stop=$stop&chr=$chr&dsid=$dataset_id&strand=$strand" target=_new>}.$location."</a>" if $loc_link;
+	$location = qq{<span class="data">$location</span>};
+	$anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\"><a href=\"GenomeView.pl?chr=$chr&ds=$dataset_id&x=$start&z=3&gstid=$gstid\" target=_new>Location</a></span>", Values=>[$location], Type_delimit=>":<td>", Val_delimit=>" "));
+
 	my $ds=$self->dataset();
 	my $dataset = qq{<a class="data5 link" href = "OrganismView.pl?dsid=}.$ds->id."\" target=_new>".$ds->name;
 #	$dataset .= ": ".$ds->description if $ds->description;
@@ -827,7 +827,9 @@ sub genomic_sequence {
   my $down = $opts{down} || $opts{downstream} || $opts{right};
   my $debug=$opts{debug};
   my $gstid = $opts{gstid};
-  my $seq = $opts{seq};  #have a full sequence? -- pass it in and the locations will be parsed out of it!
+  my $seq = $opts{seq};
+  my $dsgid = $opts{dsgid};
+  #have a full sequence? -- pass it in and the locations will be parsed out of it!
   if (!$up && !$down && $self->_genomic_sequence)
     {
       return $self->_genomic_sequence;
@@ -860,6 +862,7 @@ sub genomic_sequence {
 							      stop=>$stop,
 							      debug=>$debug,
 							      gstid=>$gstid,
+							      dsgid=>$dsgid,
 							     );
   if ($full_seq)
     {
@@ -1641,14 +1644,19 @@ sub fasta
 	  }
       }
     my ($pri_name) = $self->primary_name;
-    my $head = $name_only ? $pri_name : $self->dataset->organism->name."(v".$self->version;
-    $head .= ", ".$gst->name if $gst;
-    $head .= ")".", Name: ".(join (", ", $self->names)).", Type: ".$self->type->name.", Feature Location: (Chr: ".$self->chromosome.", ".$self->genbank_location_string.")";
-    $head = "fid:".$self->id." ".$head if $add_fid;
-    $head = ">".$head;
-    $head .= " +up: $upstream" if $upstream;
-    $head .= " +down: $downstream" if $downstream;
-    $head .= " (reverse complement)" if $rc;
+    my $head = ">";
+    if ($name_only)
+      {$head .= $pri_name;}
+    else
+      {
+	$head .= $self->dataset->organism->name."(v".$self->version;
+	$head .= ", ".$gst->name if $gst;
+	$head .= ")".", Name: ".(join (", ", $self->names)).", Type: ".$self->type->name.", Feature Location: (Chr: ".$self->chromosome.", ".$self->genbank_location_string.")";
+	$head = "fid:".$self->id." ".$head if $add_fid;
+	$head .= " +up: $upstream" if $upstream;
+	$head .= " +down: $downstream" if $downstream;
+	$head .= " (reverse complement)" if $rc;
+      }
     my ($start, $stop) = ($self->start, $self->stop);
     if ($rc) 
       {
@@ -1661,7 +1669,7 @@ sub fasta
 	$stop += $downstream;
       }
 
-    $head .= " Genomic Location: $start-$stop";
+    $head .= " Genomic Location: $start-$stop" unless $name_only;
     $Text::Wrap::columns=$col;
     my $fasta;
     if ($prot)

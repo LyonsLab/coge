@@ -7,6 +7,7 @@ use warnings;
 use base 'DBIx::Class';
 use File::Spec::Functions;
 use Data::Dumper;
+use Text::Wrap;
 
 =head1 NAME
 
@@ -161,11 +162,12 @@ sub get_genomic_sequence {
   my $str = "";
   $start = 1 unless $start;
   my $last = $self->sequence_length($chr);
-  return if $start > $last && $stop > $last; #outside of chromosome
-  return if $start < 1 && $stop < 1;
   $stop = $last unless $stop;
   $stop = $last if $stop > $last;
   $start = $last if $start > $last;
+
+  return if $start > $last && $stop > $last; #outside of chromosome
+  return if $start < 1 && $stop < 1;
   if (defined $start && defined $stop)
     {
       $chr = "1" unless defined $chr;
@@ -182,6 +184,11 @@ sub get_genomic_sequence {
     }
 #  my ($seq) = $self->genomic_sequences({chromosome=>$chr});
   my $file = $self->file_path();
+  unless (-r $file)
+    {
+      warn "Dataset group id: ".$self->id." does not have a valid sequence file: $file!\n";
+      return 0;
+    }
   return $self->get_seq(db=>$file, chr=>$chr, start=>$start, stop=>$stop, strand=>$strand, debug=>$debug);
 }
 
@@ -202,7 +209,43 @@ See Also   :
 
 ################################################## subroutine header end ##
 
-sub get_seq #using fastacmd to get the sequence
+
+sub get_seq
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $chr = $opts{chr} || $opts{chromosome}; # chr 
+    my $debug = $opts{debug};
+    my $start = $opts{start};
+    my $stop = $opts{stop} || $opts{end};
+    my $strand = $opts{strand};
+    $strand  = 1 unless defined $strand;
+    ($start, $stop) = ($stop, $start) if $start && $stop && $start > $stop;
+    my $file = $self->file_path;
+    $file =~ s/\/[^\/]*\.faa$//;
+    $file .= "/chr/$chr";
+    my $seq;
+    unless (-r $file)
+      {
+	warn "$file does not exist for get_seq to extract sequence\n";
+	return "error retrieving sequence.  $file does not exist or is not available for reading.\n";
+      }
+    open (IN, $file);
+    if ($start && $stop)
+      {
+	seek(IN, $start-1, 0);
+	read(IN, $seq, $stop-$start+1);
+      }
+    else
+      {
+	$seq = <IN>;
+      }
+    close (IN);
+    $seq = $self->reverse_complement($seq) if $strand =~ /-/;
+    return $seq;
+  }
+
+sub get_seq_fastacmd #using fastacmd to get the sequence
   { 
     my $self = shift;
     my %opts = @_;
@@ -211,6 +254,7 @@ sub get_seq #using fastacmd to get the sequence
     my $fastacmd = $opts{fastacmd} || '/usr/bin/fastacmd';
     my $blastdb = $opts{blastdb} || $opts{db};
     my $seqid   = $opts{seqid} || $opts{chr} || $opts{chromosome}; # chr 
+    ($seqid) = $seqid =~ /^(.*)$/; #make taint happy
     my $debug = $opts{debug};
     my $start = $opts{start};
     ($start) = $start=~/(\d+)/ if $start;
@@ -227,12 +271,19 @@ sub get_seq #using fastacmd to get the sequence
       }
     print STDERR $cmd,"\n" if $debug;
 
-    open(FASTA, $cmd . "|") || die "can't run $cmd";
+#    open(FASTA, $cmd . "|") || die "can't run $cmd";
     # get rid of the header line...
-    <FASTA>;
-    my $seq = join ("",<FASTA>);
-    close FASTA;
+#    <FASTA>;
+#    my $seq = join ("",<FASTA>);
+#    close FASTA;
+    my $seq;
+    foreach my $line (split /\n/, `$cmd`)
+      {
+	next if $line =~ /^>/;
+	$seq.= $line;
+      }
     $seq =~ s/\n//g;
+    print STDERR "No sequence returned: ",$cmd,"\n" unless $seq ;
     return $seq;
 }
 
@@ -519,7 +570,8 @@ sub fasta
     $strand = -1 if $rc;
     my $seq = $self->genomic_sequence(start=>$start, stop=>$stop, chr=>$chr);
     $stop = $start + length($seq)-1 if $stop > $start+length($seq)-1;
-    my $head = ">".$self->organism->name." (".$self->name;
+    my $head = ">".$self->organism->name." (";
+    $head .= $self->name if $self->name;
     $head .= ", ".$self->description if $self->description;
     $head .= ", v".$self->version.")".", Location: ".$start."-".$stop." (length: ".($stop-$start+1)."), Chromosome: ".$chr.", Strand: ".$strand;
 
@@ -616,6 +668,51 @@ sub get_path
   }
 
 
+sub chr_info
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $summary = $opts{summary};
+#    print STDERR Dumper \%opts;
+    my $html;
+    my $total_length;
+    my @gs = sort {$a->chromosome=~/(\d+)/ <=> $b->chromosome=~/(\d+)/ || $a->chromosome cmp $b->chromosome} $self->genomic_sequences;
+    my $chr_num = scalar @gs;
+    my $count =0;
+    my $chr_list;
+    foreach my $gs (@gs)
+      {
+	my $chr = $gs->chromosome;
+	my $length = $gs->sequence_length;
+	$total_length += $length;
+	$length = $self->commify($length);
+	$chr_list .= qq{$chr:  $length bp<br>};
+	$count++;
+      }
+    $html .= 
+      qq{Chromosome count: $chr_num<br>}. qq{Total length: }.
+	$self->commify($total_length)." bp";
+    $html .=
+	  "<br>".
+	  qq{-----------<br>Chr:   (length)<br>}.$chr_list unless $summary;
+    return $html;
+  }
+
+sub commify
+    {
+      my $self = shift;
+      my $text = reverse $_[0];
+      $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
+      return scalar reverse $text;
+    }
+
+sub distinct_feature_type_ids
+  {
+    my $self = shift;
+    my %opts = @_;
+    my %ids = map{$_=>1} map {$_->distinct_feature_type_ids} $self->datasets;
+    return wantarray ? keys %ids : [keys %ids];
+  }
 
 =head1 BUGS
 

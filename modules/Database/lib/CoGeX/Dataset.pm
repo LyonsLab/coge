@@ -235,18 +235,23 @@ sub get_genomic_sequence
     my $strand = $opts{strand};
     my $seq_type = $opts{seq_type} || $opts{gstid};
     my $debug = $opts{debug};
+    my $dsgid = $opts{dsgid};
+    my ($dsg) = $dsgid if ref ($dsgid) =~ /DatasetGroup/;
+    return $dsg->genomic_sequence(start=>$start, stop=>$stop, chr=>$chr, strand=>$strand, debug=>$debug) if $dsg;
+
     my $seq_type_id = ref($seq_type) =~ /GenomicSequenceType/i ? $seq_type->id : $seq_type;
     $seq_type_id = 1 unless $seq_type_id && $seq_type_id =~ /^\d+$/;
-    foreach my $dsg ($self->groups)
+    foreach $dsg ($self->groups)
       {
-	if ($dsg->genomic_sequence_type->id == $seq_type_id)
+	if ( ($dsgid && $dsg->id == $dsgid) || ($seq_type_id && $dsg->genomic_sequence_type->id == $seq_type_id) )
 	  {
 	    return $dsg->genomic_sequence(start=>$start, stop=>$stop, chr=>$chr, strand=>$strand, debug=>$debug);
 	  }
       }
     #hmm didn't return -- perhaps the seq_type_id was off.  Go ahead and see if anything can be returned
     carp "In Dataset.pm, sub get_genomic_sequence.  Did not return sequence from a dataset_group with a matching sequence_type_id.  Going to try to return some sequence from any dataset_group.\n";
-    my ($dsg) = $self->groups;
+    print STDERR Dumper \%opts;
+    ($dsg) = $self->groups;
     return $dsg->genomic_sequence(start=>$start, stop=>$stop, chr=>$chr, strand=>$strand, debug=>$debug);
   }
 
@@ -775,6 +780,23 @@ sub reverse_complement
     my $rcseq = reverse($seq);
     $rcseq =~ tr/ATCGatcg/TAGCtagc/; 
     return $rcseq;
+  }
+
+sub distinct_feature_type_ids
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $type = $opts{type}; #not used. . .
+    my @ids;
+    foreach my $id ($self->features({},
+			       {
+				select=>[{distinct=>"me.feature_type_id"}],
+				as=>["feature_type_id"],
+			       }))
+      {
+	print STDERR $id,"\n";;
+      }
+    return wantarray ? @ids : \@ids;
   }
 
 1;
