@@ -24,7 +24,7 @@ exit() unless $ds1 && $ds2;
 my $dsq = $coge->resultset('Dataset')->find($ds1);
 my $dss = $coge->resultset('Dataset')->find($ds2);
 my ($anno_type) = $coge->resultset('AnnotationType')->search({name=>"note"});
-my $cns_id = 202;
+my $cns_id = 202; #feature type id
 
 print STDERR $dsq->dataset_id . "\n";
 print STDERR $dss->dataset_id . "\n";
@@ -91,7 +91,8 @@ while (my $line = <>) {
 						    }) if $GO ;
 
         my $qannos = $qfeat->add_to_annotations({
-						     annotation=>"CNS for $qname, $sname"
+						 annotation=>"CNS for $qname, $sname",
+						 annotation_type_id=>$anno_type->id,
 						    }) if $GO ;
         my $sannos = $sfeat->add_to_annotations({
 						     annotation=>"CNS for $qname, $sname"
