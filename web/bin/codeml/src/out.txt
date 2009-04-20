@@ -1,0 +1,12 @@
+Supplemental results for CODEML (seqf: ../edata/SynMap_CFBvQZBp.align  treef: )
+CODONML in paml version 4.2b, February 2009
+
+Number of codon sites with 0,1,2,3 position differences
+   2 vs.    1    338     0     0     0  -1.0000 (0.0000 0.0000)
+
+
+
+pairwise comparison (Goldman & Yang 1994)
+seq seq        N       S       dN       dS     dN/dS   Paras.
+  2   1    806.6    207.4   0.0000   0.0000   0.5066   0.0000   1.5705   0.5066 -1340.161
+
