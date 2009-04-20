@@ -12,7 +12,7 @@ function update_seqs(prot, text)
        var url=window.location+";prot=1;text=1";
        window.location =url;
      }
-    get_seqs(['args__fids','fids', 'args__textbox','args__1','args__prot','args__1','args__name_only','args__'+name_only],['seq']);
+    get_seqs(['args__fids','fids', 'args__textbox','args__1','args__prot','args__1','args__name_only','args__'+name_only, 'args__gstid','gstid'],['seq']);
     $('#prot_button').hide();
     $('#prot_text_button').show();
     $('#dna_button').show();
@@ -25,7 +25,7 @@ function update_seqs(prot, text)
        var url=window.location+";text=1";
        window.location =url;
      }
-    get_seqs(['args__fids','fids', 'args__textbox','args__1','args__prot','args__0','args__name_only','args__'+name_only],['seq']);
+    get_seqs(['args__fids','fids', 'args__textbox','args__1','args__prot','args__0','args__name_only','args__'+name_only, 'args__gstid','gstid'],['seq']);
     $('#prot_button').show();
     $('#prot_text_button').hide();
     $('#dna_button').hide();
@@ -35,7 +35,7 @@ function update_seqs(prot, text)
 
 $(document).ready(function()
   {
-   update_seqs(<TMPL_VAR NAME=PROT>);
+//   update_seqs(<TMPL_VAR NAME=PROT>);
   });
 </script>
 

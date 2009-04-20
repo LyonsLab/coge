@@ -57,12 +57,12 @@ function source_search_chain (val) {
  source_search(['args__accn','accn_select', 'args__org_id','org_id','args__org_name','org_name','args__org_desc','org_desc'], [get_types_chain]);
 }
 
-function get_types_chain (val1, val2) {
+function get_types_chain (val1) {
  if (val1) {$('#Source').html(val1);$('#Source').show();}
  get_types(['args__accn','accn_select', 'args__dsid','dsid', 'args__ftid','type'],[get_anno_chain]);	
 }
 
-function get_anno_chain (val1, val2) {	
+function get_anno_chain (val1,val2) {	
  if (val1) {
    $('#FeatType').html(val1);
    $('#FeatType').show();
@@ -74,7 +74,7 @@ function get_anno_chain (val1, val2) {
  }
  as = $('#accn_select').val();
  tn = $('#Type_name').val();
- get_anno(['args__accn','accn_select', 'args__type','Type_name', 'args__dsid','dsid'],[show_anno]);
+ get_anno(['args__accn','accn_select', 'args__type','Type_name', 'args__dsid','dsid','args__gstid','args__'+val2],[show_anno]);
 }
 
 function show_anno (anno)
@@ -128,14 +128,14 @@ $(document).ready(function(){
     if ($('#accn').val()) {search_chain(0);}
 });
 
-function add_to_featlist(featname, featid){
+function add_to_featlist(featname, featid, gstid){
   //alert(featname+","+featid);
   var check = $('#'+featid).val();
   if (check){
    alert('You have already added '+featname+'.');
    return;
   }
-  var html = '<option id='+featid+' value='+featid+ ' onClick="get_anno(['+"'args__fid','args__"+featid+"'"+'],[show_anno])">'+featname+'</option>';
+  var html = '<option id='+featid+'_'+gstid+' value='+featid+'_'+gstid+ ' >'+featname+'</option>';
   //alert(html);
   $('#blank').remove();
   $('#featlist_choice').append(html).sortSelect();
@@ -143,11 +143,11 @@ function add_to_featlist(featname, featid){
 }
 
 function add_all (val) {
- var id_array = val.split(',');
+ var id_array = val.split('||');
  for (var i =0; i < id_array.length; i++) 
   {
-      var item = id_array[i].split(':');      
-      var html = '<option id='+item[0]+' value='+item[0]+ ' onClick="get_anno(['+"'args__fid','args__"+item[0]+"'"+'],[show_anno])">'+item[1]+'</option>';
+      var item = id_array[i].split('::');
+      var html = '<option id='+item[0]+' value='+item[0]+ ' >'+item[1]+'</option>';
      $('#featlist_choice').append(html);
   }
   if (val) {$('#blank').remove();}
@@ -264,14 +264,10 @@ function search_bar(div_id){
 
 
 </SCRIPT>
-<TABLE>
- <TR>
-  <TD valign=top>
-   <DIV class="">
-     <TABLE>
+<TABLE style="float:left">
        <TR>
          <TD nowrap>
-           Feature Name:
+           Name:
          <tD>
           <input type="text" name="accn" id="accn" tabindex="1"  size="10" value="<TMPL_VAR NAME=ACCN>" onkeypress="onEnter(event);"/>
 	Add wildcard to <select id="feat_name_wild" >
@@ -283,7 +279,7 @@ function search_bar(div_id){
 	side(s) of the name.
        <TR>
          <TD nowrap>
-           Feature Annotation:
+          Annotation:
          <tD>
           <input type="text" name="annosearch" id="annosearch" tabindex="1"  size="10" value="<TMPL_VAR NAME=ANNO>" onkeypress="onEnter(event);"/>
 	Add wildcard to <select id="feat_anno_wild" >
@@ -293,17 +289,17 @@ function search_bar(div_id){
 	<option selected>both</option>
  	</select>
 	side(s) of the annotation.
-	<tr><td><span class=small>Note: wildcards may slow search substantially</span>
+	<tr><td><td><span class=small>Note: wildcards may slow search substantially</span>
         <TR>
 	 <tD nowrap>
-          Feature Type:
+          Type:
          <TD><div id=search_type><TMPL_VAR NAME=FEAT_TYPE></div>
         <TR>
 	 <tD valign="top" nowrap>
           Organism:
          <TD>
          Name: <input type="text" size=11 onFocus="search_bar('org_name')" style="font-style:italic" value="Search" name="org_name" id="org_name" onKeyUp='timing("org_name");'><br>
-	 Description: <input type="text" size=11 value="Search" name = "org_desc" id="org_desc" style="font-style:italic" onFocus="search_bar('org_desc')" onKeyUp='timing("org_desc");'></DIV>
+	 Description: <input type="text" size=11 value="Search" name = "org_desc" id="org_desc" style="font-style:italic" onFocus="search_bar('org_desc')" onKeyUp='timing("org_desc");'>
 	  <DIV id="org_list"><TMPL_VAR NAME="ORG_LIST"></DIV>
 <!--          <select  name="org" id="org" onchange="get_feature_types(['args__orgid','org'],['search_type']);"/>
           <TMPL_LOOP NAME="ORG_LOOP">
@@ -312,16 +308,29 @@ function search_bar(div_id){
          </SELECT>-->
         <tr>
 	<td><input type="button" value="Search" onclick="search_chain(1)">
-     </TABLE>
-   </DIV>
-  </TD>
- </table>
+</TABLE>
+
+<div >
+  <div class="header"> Selected Features List</div>
+    <div id="feat_list" style="display:none">
+    <font class="small count">Feature Count: 0</font>
+              <DIV id=featlist_select><SELECT id="featlist_choice" SIZE="10" MULTIPLE onchange="get_anno(['args__featlist_choice','featlist_choice'],[show_anno])">
+              <option id=blank value=null>No Feature Selected</option>
+              </SELECT>
+    </div>
+    <div id=add_all_search></div>
+    <input type="button" style="display: none" id=add_all value="Add All Features" onClick="$('#add_all').hide();$('#add_all_search').html('<img src=./picts/animations/DNA_orbit_animated_small_third.gif >'); cogesearch_featids(['args__accn','accn', 'args__anno','annosearch','args__type','type', 'args__org_id','org_id', 'args__feat_name_wild','feat_name_wild', 'args__feat_anno_wild', 'feat_anno_wild','args__org_name','org_name','args__org_desc','org_desc'],[add_all]);">
+    <input type="button" style="display: none" id=remove value="Remove" onClick="$('#'+$('#featlist_choice').val()).remove();counting();">
+    <input type="button" style="display: none" id=clear value="Clear" onClick="clear_feat_list()"><br>
+    <input type="button" style="display: none" id=send value="Send to Feature List Viewer" onClick="send_to_FeatList()">
+ </div>
+</div>
+</div>
  <table id="data_table" style="display:none">
  <thead align=left>
   <th>Annotation</th>
   <th>Datasets</th>
   <th>Type</th>
-  <th>Selected Features List</th>
  </thead>
  <tbody>
  <TR valign=top>
@@ -333,22 +342,7 @@ function search_bar(div_id){
   <TD valign=top>
     <DIV class="" id="FeatType"></DIV>
   </td>
-  <TD >
-    <div id="feat_list" style="display:none">
-    <font class="small count">Feature Count: 0</font>
-              <DIV id=featlist_select><SELECT id="featlist_choice" SIZE="10" MULTIPLE >
-              <option id=blank value=null>No Feature Selected</option>
-              </SELECT>
-    </div>
-    <div id=add_all_search></div>
-    <input type="button" style="display: none" id=add_all value="Add All Features" onClick="$('#add_all').hide();$('#add_all_search').html('<img src=./picts/animations/DNA_orbit_animated_small_third.gif >'); cogesearch_featids(['args__accn','accn', 'args__anno','annosearch','args__type','type', 'args__org_id','org_id', 'args__feat_name_wild','feat_name_wild', 'args__feat_anno_wild', 'feat_anno_wild','args__org_name','org_name','args__org_desc','org_desc'],[add_all]);">
-    <input type="button" style="display: none" id=remove value="Remove" onClick="$('#'+$('#featlist_choice').val()).remove();counting();">
-    <input type="button" style="display: none" id=clear value="Clear" onClick="clear_feat_list()"><br>
-    <input type="button" style="display: none" id=send value="Send to Feature List Viewer" onClick="send_to_FeatList()">
-   </td>
-   <!-- <td valign=middle<
-     <input type="button" style="display: none" id=send value="Send to Feature List Viewer" onClick="send_to_FeatList()"> --> 
- </TR>
  </tbody>
 </TABLE>
 <DIV id="anno"></DIV>
+

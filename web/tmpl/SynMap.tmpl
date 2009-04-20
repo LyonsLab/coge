@@ -7,21 +7,21 @@ function get_organism_chain(type,val,i)
  $('#org_list').html('<input type=hidden id = "org_id"+i><font class="loading"></font>');
  if (type == 'name') {get_orgs(['args__name','args__'+val,'args__i','args__'+i], ['org_list'+i]);}
  else if (type == 'desc') {get_orgs(['args__desc','args__'+val,'args__i','args__'+i], ['org_list'+i]);}
- $('#ds_info'+i).html('<div class="loading dna_small small">loading. . .</div>');
- ajax_wait("gen_seqtype_menu(['args__oid','org_id"+i+"', 'args__num','args__"+i+"', 'args__masked_param','masked"+i+"', 'args__seqtype_param','seq_type"+i+"'],['maskedopts"+i+"', 'seqtypeopts"+i+"']);");
+ $('#dsg_info'+i).html('<div class="loading dna_small small">loading. . .</div>');
+ ajax_wait("gen_dsg_menu(['args__oid','org_id"+i+"', 'args__num','args__"+i+"'],['dsg_menu"+i+"', 'genome_message"+i+"']);");
  ajax_wait("check_previous_analyses();");   
- ajax_wait("get_datasets(['args__oid','org_id"+i+"','args__masked','masked"+i+"', 'args__seq_type','seq_type"+i+"'],['ds_info"+i+"']);");
+ ajax_wait("get_dataset_group_info(['args__dsgid','dsgid"+i+"','args__org_num','args__"+i+"'],['dsg_info"+i+"','feattype_menu"+i+"','genome_message"+i+"']);");
 }
 
-function get_dataset_chain(i)
+function get_dataset_group_info_chain(i)
 {
- $('#ds_info'+i).html('<div class=dna_small class=loading class=small>loading. . .</div>'); 
- ajax_wait("gen_seqtype_menu(['args__oid','org_id"+i+"', 'args__num','args__"+i+"'],['maskedopts"+i+"', 'seqtypeopts"+i+"']);");
+ $('#dsg_info'+i).html('<div class=dna_small class=loading class=small>loading. . .</div>'); 
+ // ajax_wait("gen_dsg_menu(['args__oid','org_id"+i+"', 'args__num','args__"+i+"'],['dsg_menu"+i+"','genome_message"+i+"']);");
+ gen_dsg_menu(['args__oid','org_id'+i, 'args__num','args__'+i],['dsg_menu'+i,'genome_message'+i]);
  ajax_wait("check_previous_analyses();");   
- ajax_wait("get_datasets(['args__oid','org_id"+i+"','args__masked','masked"+i+"', 'args__seq_type','seq_type"+i+"'],['ds_info"+i+"']);");
+ ajax_wait("get_dataset_group_info(['args__dsgid','dsgid"+i+"','args__org_num','args__"+i+"'],['dsg_info"+i+"','feattype_menu"+i+"','genome_message"+i+"']);");
 }
 
-//\gen_seqtype_menu(['args__oid','org_id$i', 'args__num','args__$i'],['maskedopts$i', 'seqtypeopts$i']); check_previous_analyses();get_datasets(['args__oid','org_id$i', 'args__masked','masked$i', 'args__seq_type','seq_type$i'],['ds_info$i']);
 	
 
 function run_synmap(){
@@ -36,7 +36,7 @@ if(!pageObj.basename)
   pageObj.nolog=1;
   setTimeout("monitor_log()", 5000);
   
-go(['args__oid1','org_id1','args__oid2','org_id2','args__D','D','args__g','g','args__A','A','args__blast','blast', 'args__seq_type1','seq_type1', 'args__seq_type2','seq_type2','args__masked1','masked1', 'args__masked2','masked2','args__jobtitle','jobtitle','args__basename','args__'+pageObj.basename,'args__email','email','args__regen_images','args__'+$('#regen_images')[0].checked, 'args__width', 'args__'+$('#master_width').val(), 'args__dagchainer_type','args__'+$('#dagchainer_type')[0].checked],[handle_results]);
+go(['args__D','D','args__g','g','args__A','A','args__blast','blast', 'args__feat_type1','feat_type1', 'args__feat_type2','feat_type2','args__dsgid1','dsgid1', 'args__dsgid2','dsgid2','args__jobtitle','jobtitle','args__basename','args__'+pageObj.basename,'args__email','email','args__regen_images','args__'+$('#regen_images')[0].checked, 'args__width', 'args__'+$('#master_width').val(), 'args__dagchainer_type','args__'+$('#dagchainer_type')[0].checked],[handle_results]);
 ajax_wait("check_previous_analyses();");
 }
 
@@ -47,7 +47,7 @@ function handle_results(val){
 }
 
 function check_previous_analyses(){
- get_previous_analyses(['args__oid1','org_id1','args__oid2','org_id2','args__seq_type1','seq_type1','args__seq_type2','seq_type2','args__masked1','masked1', 'args__masked2','masked2'],['previous_analyses']);
+get_previous_analyses(['args__oid1','org_id1', 'args__oid2','org_id2'],['previous_analyses']);
 }
 
 function update_params(val) {
@@ -62,28 +62,29 @@ function update_params(val) {
    }
  if ($('#org_id1').val() == params[3])
   {
-    $('#seq_type1 option:eq('+params[5]+')').attr('selected','selected');
-    $('#seq_type2 option:eq('+params[8]+')').attr('selected','selected');
-    $('#masked1 option:eq('+params[4]+')').attr('selected','selected');
-    $('#masked2 option:eq('+params[7]+')').attr('selected','selected');
+    $('#feat_type1').attr('value', params[5]);
+    $('#feat_type2').attr('value', params[8]);
+    $('#dsgid1').attr('value',params[4]);
+    $('#dsgid2').attr('value',params[7]);
   }
  else
   {
-    $('#seq_type2 option:eq('+params[5]+')').attr('selected','selected');
-    $('#seq_type1 option:eq('+params[8]+')').attr('selected','selected');
-    $('#masked2 option:eq('+params[4]+')').attr('selected','selected');
-    $('#masked1 option:eq('+params[7]+')').attr('selected','selected');
+    $('#feat_type2').attr('value', params[5]);
+    $('#feat_type1').attr('value', params[8]);
+    $('#dsgid2').attr('value',params[4]);
+    $('#dsgid1').attr('value',params[7]);
   }
  var type;
- $('#blast option:eq('+params[9]+')').attr('selected','selected');
+//$("#state").attr("value","ME");
+ $('#blast option:eq('+params[0]+')').attr('selected','selected');
  if (params[10] == 'Distance') 
   {
-   $("input[@name='dagchainer_type']:nth(0)").attr("checked","checked");
+   $("input[name='dagchainer_type']:nth(0)").attr("checked","checked");
    type=" bp";
   }
  else 
   {
-   $("input[@name='dagchainer_type']:nth(1)").attr("checked","checked");
+   $("input[name='dagchainer_type']:nth(1)").attr("checked","checked");
    type= " genes"
   }
  display_dagchainer_settings([params[0],params[1],params[2]],type);
@@ -103,7 +104,7 @@ function set_dagchainer_defaults(params, type) {
      } 
     else
      { 
-       params = [2,5,3];
+       params = [10,20,5];
        type = " genes";  
      }
   }
@@ -195,7 +196,7 @@ $(document).ready(function(){
     $('#org_desc2').css({fontStyle: "normal"});
     timing('org_desc2',1);
   }
-//  display_dagchainer_settings();  
+  ajax_wait("check_previous_analyses();"); 
     <TMPL_VAR NAME=DISPLAY_DAGCHAINER_SETTINGS>
  });
 
@@ -324,9 +325,10 @@ function reset_basename(){
   if (message) $('#log_text').html(message);
 }
 
-function synteny_zoom(oid1, oid2, basename, chr1, chr2)
+function synteny_zoom(dsgid1, dsgid2, basename, chr1, chr2)
 {
- var url = '/CoGe/run_dotplot.pl?org1='+oid1+';org2='+oid2+';chr1='+chr1+';chr2='+chr2+';base='+basename;
+ console.log (dsgid1, dsgid2, basename, chr1, chr2);
+ var url = '/CoGe/run_dotplot.pl?dsg1='+dsgid1+';dsg2='+dsgid2+';chr1='+chr1+';chr2='+chr2+';base='+basename;
  var loc = $('#map_loc').val();
  var width = $('#zoom_width').val();
  if (/window/.test(loc))
@@ -350,15 +352,15 @@ function open_window (url, loc, width, height)
 <table><tr><td>
 <DIV id=log_text class="small dna" style="display:none"></DIV>
 <DIV id=results><TMPL_IF NAME=RESULTS><TMPL_VAR NAME=RESULTS><TMPL_ELSE>
-<span class="alert">WARNING:</span> SynMap is still in beta; this version has many known problems that will cause SynMap to crash and not return results.  We are currently working on a new version to address these issues and will update SynMap as soon as possible.  In the meanwhile, please contact Eric Lyons if you feel your analysis has a problem and would like some help.<br>
-<span class="alert">Please Note:</span>  SynMap is a very computationally intense, multi-step program which may take hours to complete. It is highly recommended to have your results emailed to you. Please do not repeatedly pressed the "Generate SynMap" button!  When run, SynMap will:
+<p><span class="alert">WARNING:</span> SynMap is still in beta; this version has many known problems that will cause SynMap to crash and not return results.  We are currently working on a new version to address these issues and will update SynMap as soon as possible.  In the meanwhile, please contact Eric Lyons if you feel your analysis has a problem and would like some help.</p>
+<p><span class="alert">Please Note:</span>  SynMap is a very computationally intense, multi-step program which may take hours to complete. It is highly recommended to have your results emailed to you. Please do not repeatedly press the "Generate SynMap" button!  When run, SynMap will:
 <li class=small>Generate fasta files of all coding sequence in selected genomes
 <li class=small>Generate blastable databases of sequences
 <li class=small>Blast genomes (self-self and self-other)
 <li class=small>Find tandem duplicates in each genome (hence the self-self blast)
 <li class=small>Use DAGchainer to find syntenic regions (parameters below)
 <li class=small>Generate dotplot images and image maps with GEvo links
-<li class=small>If requested, will e-mail your results to you<br>
+<li class=small>If requested, will e-mail your results to you<br></p>
 <span class=species>SynMap will run faster if it has been previously run as it won't regenerate any previously made data-sets.</span>
 </TMPL_IF>
 </div>
@@ -369,7 +371,7 @@ function open_window (url, loc, width, height)
 
 <input type=button value="Clear Results" onClick="$('#results').html('');" \>
 
-<TABLE>
+<TABLE width=100%>
 <tr><th><DIV class="topItemSelected ">Select Organisms:</DIV>
 <table class="dropMenu" width=100%>
  <TR align=left>
@@ -452,23 +454,28 @@ function open_window (url, loc, width, height)
 </TMPL_IF>
 
 <TMPL_IF NAME=ORG_MENU>
-<TD VALIGN=TOP>
-
+<TD VALIGN=TOP width="50%">
 <DIV class = "oblique">Organism <TMPL_VAR NAME="NUM">: </DIV>
    <DIV>Search <span class=small>Name: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_NAME">" name = "org_name<TMPL_VAR NAME="NUM">" id="org_name<TMPL_VAR NAME="NUM">" style="font-style:italic" onFocus="search_bar('org_name<TMPL_VAR NAME="NUM">')" onKeyUp='timing("org_name<TMPL_VAR NAME="NUM">");'><span>
    Description: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_DESC">" name = "org_desc<TMPL_VAR NAME="NUM">" id="org_desc<TMPL_VAR NAME="NUM">" style="font-style:italic" onFocus="search_bar('org_desc<TMPL_VAR NAME="NUM">')" onKeyUp='timing("org_desc<TMPL_VAR NAME="NUM">");'></DIV>
    <DIV id="org_list<TMPL_VAR NAME="NUM">"><TMPL_VAR NAME="ORG_LIST"></DIV>
    <Table><Tr>
-     <td>Sequence type:
-     <td><DIV id="maskedopts<TMPL_VAR NAME="NUM">">
-         <TMPL_VAR NAME="MASK_MENU">
+     <td>Genome:
+     <td><DIV id="dsg_menu<TMPL_VAR NAME="NUM">">
+         <TMPL_VAR NAME="DSG_MENU">
          </div>
 
-     <td><DIV id="seqtypeopts<TMPL_VAR NAME="NUM">">
-         <TMPL_VAR NAME="SEQTYPE_MENU">
+     <td>
+     <DIV id="feattype_menu<TMPL_VAR NAME="NUM">">
+     <TMPL_IF NAME="FEATTYPE_MENU">
+       <TMPL_VAR NAME="FEATTYPE_MENU">
+     <TMPL_ELSE>
+      <input type=hidden id=feat_type<TMPL_VAR NAME="NUM">>
+     </TMPL_IF>
          </div>
+    <TR><Td colspan=3><div id="genome_message<TMPL_VAR NAME="NUM">"><TMPL_VAR NAME="GENOME_MESSAGE"></div>
      </table>
 </DIV>
-<DIV style="vertical-align: top;" id="ds_info<TMPL_VAR NAME="NUM">"><TMPL_VAR NAME="DS_INFO"></DIV>
+<DIV style="vertical-align: top;" id="dsg_info<TMPL_VAR NAME="NUM">"><TMPL_VAR NAME="DSG_INFO"></DIV>
 
 </TMPL_IF>

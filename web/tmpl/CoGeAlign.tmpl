@@ -2,6 +2,7 @@
 $(document).ready(function(){
 	pageObj=new Object();
 	pageObj.fids = "<TMPL_VAR NAME=FIDS>";
+//	pageObj.gstid = "<TMPL_VAR NAME=GSTID>";
 });
 
 function update_options(type){
@@ -52,9 +53,13 @@ function prepare_run(){
 	'args__matrix','args__'+matrix,
 	'args__format','args__'+format,
 	'args__iteration','args__'+iteration,
-	'args__gen_matrix','gen_matrix',
+//	'args__gen_matrix','gen_matrix',
 	],[gather_results],['POST']);
 }
+
+function cipres_results(data) {
+	 window.open(data);
+} 
 
 function gather_results(html){
 	$('#results').html(html).show(0);
@@ -62,11 +67,22 @@ function gather_results(html){
 	$('#max_height').width(size+30);
 }
 
+function clear_box(box){
+	 if(box.value == "Enter Fasta Sequences here")
+	 {
+		box.value = null;
+	}	
+}
+
 </SCRIPT>
 <TMPL_IF NAME=MAIN>
+<!--<applet width="200" height="100" code="jalview.bin.JalviewLite" archive="/CoGe/bin/JalView/jalviewApplet.jar">
+<param name="file" value="/CoGe/tmp/CoGeAlign/CoGeAlign_CkoKHUWm_clustalw.aln">
+<param name="embedded" value="true">
+</applet>-->
 <font >Sequences to be Aligned:</font>
 <br>
-<textarea class="backbox" type="textarea" name="seq_box" id ="seq_box" wrap=off cols=80 rows=15><TMPL_VAR NAME="SEQUENCE"></textarea>
+<textarea class="backbox" type="textarea" onClick="clear_box(this)" name="seq_box" id ="seq_box" wrap=off cols=80 rows=15><TMPL_VAR NAME="SEQUENCE"></textarea>
 <br>
 <input type=button value="Run Alignment" onclick="prepare_run()">
 <br>
@@ -77,6 +93,7 @@ Sequence Type<br>
 <label><input type=radio id=seq_type name=seq_type value="prot" onclick="$('#seq_box').val('loading. . .');update_options('prot');refresh_seq(['args__fids','args__'+pageObj.fids,'args__seq_type','seq_type'],['seq_box']);">Protein</label>
 <TMPL_IF name=codon_align><label><input type=radio id=seq_type name=seq_type value="codon" onclick="$('#seq_box').val('loading. . .');update_options('prot');refresh_seq(['args__fids','args__'+pageObj.fids,'args__seq_type','seq_type'],['seq_box']);">codon</label></TMPL_IF>
 </div>
+
 Advanced Alignment Options
 <div id=adv_opts>
 
@@ -106,8 +123,9 @@ Results Options
 <div id=results_opts>
 Results Format:
 <select id=DNA_results_format>
-<option value=coge_color>CoGe Color
-<option value=coge>CoGe
+<!--<option value=coge_color>CoGe Color
+<option value=coge>CoGe-->
+<option value=jalview>Use Jalview
 <option value=clustal>Clustal Default
 <option value=GDE>GDE
 <option value=PHYLIP>Phylip
@@ -123,10 +141,22 @@ Results Format:
 <option value=NEXUS>NEXUS
 </select>
 </div>
+<div id=jalview_opts>
+Embed Jalview into browser (No pop-up) <input type=checkbox id=jalview_embed>
+<!--
+Default Color scheme <select id=jalview_color>
+<option value=none>None
+<option default value=clustal>Clustal
+<option value=GDE>Blosum62
+<option value=PHYLIP>% 
+<option value=PIR>PIR
+<option value=NEXUS>NEXUS
+</select>-->
+</div>
 Generate Scoring Matrix for Alignment <input type=checkbox id="gen_matrix">
 <span class="small">(Using the method describe in Henikoff and Henikoff, 1992)</span>
 </TMPL_IF>
 
 <TMPL_IF NAME="RESULTS_DIV">
-  <div id=results></div>
+  <div id=results></div><br/><br/>
 </TMPL_IF>

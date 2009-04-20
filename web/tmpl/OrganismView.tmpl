@@ -29,20 +29,40 @@ function get_org_info_chain(val, val2)
 
 
 function get_dataset_name_chain(val)
-{
- if (val){get_dataset(['args__dsname','args__'+val], [dataset_info_chain]);}
+{ 
+ if (val){
+    get_dataset(['args__dsname','args__'+val], [dataset_info_chain]);
+    $('#org_list').html('<hidden id=org_id>');
+    $('#org_info').html(' ');
+    $('#org_count').html(' ');
+    $('#dsg_list').html('<hidden id=dsg_id>');
+    $('#dsg_info').html(' ');
+    $('#dsg_count').html(' ');
+   }
  else {get_orgs([],[dataset_chain])};
 }
 
 
 function dataset_group_chain(val) {
    if (val) {$('#org_info').html(val);}
- get_dataset_groups(['args__oid','org_id','args__dsgid','dsg_id'],[dataset_group_info_chain]);
+   get_dataset_groups(['args__oid','org_id','args__dsgid','dsg_id'],[dataset_group_info_chain]);
+   $('#dsg_list').empty();
+   $('#dsg_count').empty();	
+   $('#dsg_info').empty();	
+   $('#ds_list').empty();
+   $('#ds_count').empty();	
+   $('#ds_info').empty();	
+   $('#chr_list').empty();
+   $('#chr_count').empty();	
+   $('#chr_info').empty();	
+   $('#viewer').empty();
+   $('#get_seq').empty();
 }
 
 function dataset_group_info_chain(val, val2) {
   if (val) {$('#dsg_list').html(val);}
   if (val2) {$('#dsg_count').html(val2);}
+  $('#dsg_info').html('<span class="small alert">loading. . .</span>');
   get_dataset_group_info(['args__dsgid','dsg_id'],[dataset_chain]);
 }
 
@@ -56,10 +76,12 @@ function recent_dataset_chain() {
  get_dataset(['args__oid','recent_org_id'],[dataset_info_chain]);
 }
 
-function dataset_info_chain(val, val2, val3) {
+function dataset_info_chain(val, val2) {
  if (val) {$('#ds_list').html(val);}
  if (val2) {$('#ds_count').html(val2);}
+ $('#ds_info').html('<span class="small alert">loading. . .</span>');
  get_dataset_info(['ds_id'],[dataset_chr_info_chain]);
+
 }
 
 function dataset_chr_info_chain(val, val2, val3) {
@@ -69,9 +91,16 @@ function dataset_chr_info_chain(val, val2, val3) {
  $('#viewer').empty();
  $('#get_seq').empty();
  $('#feature_count_data').empty();
- get_dataset_chr_info(['ds_id', 'chr'],['chr_info','viewer', 'get_seq']);
+ get_dataset_chr_info(['ds_id', 'chr'],[populate_dataset_chr_info]);
 }
 
+
+function populate_dataset_chr_info (chr_info, viewer, get_seq){
+ $('#chr_info').html(chr_info);
+ $('#viewer').html(viewer);
+ $('#get_seq').html(get_seq);
+ setup_button_states(); //get them buttons working!
+}
 
 function launch_seqview(dsid, chr)
  {
@@ -81,11 +110,12 @@ function launch_seqview(dsid, chr)
  }
 
 
-function launch_viewer (dsd, chr) {
+function launch_viewer (dsid, chr, gstid) {
  x = $('#x').val();
  z = $('#z').val();
+ if (!gstid) {gstid = $('#gstid').val();}
  if (z > 12) {z=12;}
- link =  "GeLo.pl?z="+z+"&x="+x+"&ds="+dsd+"&chr="+chr;
+ link =  "GenomeView.pl?z="+z+"&x="+x+"&ds="+dsid+"&chr="+chr+"&gstid="+gstid;
  window.open(link);
 }
 function timing(val){
@@ -182,10 +212,10 @@ function changeColor(id, color) {
    <div id=org_info class = "small backbox" ></div>
   <tr valign=top>
   <td>
-  <span class = "oblique"> Dataset Groups: </span><span class=small id=dsg_count><TMPL_VAR NAME="DSG_COUNT"></span> 
+  <span class = "oblique">Genomes: </span><span class=small id=dsg_count><TMPL_VAR NAME="DSG_COUNT"></span> 
   <DIV style="float: left; vertical-align: top;" id ="dsg_list"><TMPL_VAR NAME="DSG_LIST"></DIV>
   <TD valign=top>
-   <DIV class = "oblique">Dataset Group information</DIV>
+   <DIV class = "oblique">Genome information</DIV>
    <DIV id="dsg_info" class = "small backbox"><TMPL_VAR NAME="DSG_INFO"></DIV>
 
   <tr  valign=top>

@@ -201,9 +201,9 @@
             /*                                          zoomLevel */
             map.setCenter(new OpenLayers.BasePair(loc), zoom);
             bp = new OpenLayers.Control.MousePosition() 
-            map.addControl(bp );
-            map.addControl(new OpenLayers.Control.PanZoomBar());
 
+            map.addControl(new OpenLayers.Control.PanZoomBar());
+            map.addControl(bp );
 
             map.events.register('zoomend',map,updateZoom);
             map.events.triggerEvent('zoomend');
@@ -212,9 +212,17 @@
             map.events.register('mouseup',map,mapMouseUp);
             map.events.register('mousemove',map,mapMouseMove);
             map.events.register('mouseout',map,mapMouseOut);
+	    map.events.register('drag',map,updateSliderPosition);
 	    map.zoomOut();
 
         }
+	
+	function updateSliderPosition() {
+		 var pos_obj = map.getCenter();
+		 var pos = pos_obj.lon;
+		 console.log(pos);
+		 $('#slider').slider('value',pos);
+	}
 
         function mapMouseDown(e){
         	  $('#popup').hide(0);
@@ -240,7 +248,6 @@
                 }
             }
         }
-        
         
      function mapMouseOut(e) {
        if (pageObj.time) clearTimeout(pageObj.time);
@@ -320,6 +327,14 @@ function launch_seqview(dsid, chr, gstid)
    window.open("SeqView.pl?dsid="+dsid+"&chr="+chr+"&start="+start+"&stop="+stop+"&gstid="+gstid);
  }
 
+function launch_featlist(dsid, chr, gstid)
+ {
+   start = $('#grab_from').val();
+   stop = $('#grab_to').val();
+   ftid = 0;
+   window.open("FeatList.pl?dsid="+dsid+"&chr="+chr+"&start="+start+"&stop="+stop+"&gstid="+gstid+"&ftid="+ftid);
+ }
+
 function change_gene_model_type()
  {
    var goods = [genes, wobble_GC_usage];
@@ -381,34 +396,63 @@ change_gene_model_type();
 
 });
 
+function moveMap(){
+	 var mypos= $('#slider').slider("value");
+	// console.log(mypos);
+	 var myzoom = map.getResolution();
+	//  console.log(myzoom);
+	 map.setCenter(OpenLayers.BasePair(mypos));
+}
+
+//instantiates slider tool
+$(function() {
+	     $('#slider').slider({
+		orientation: 'horizontal',
+		max: <TMPL_VAR NAME="CHR_LENGTH">, 
+		value: <TMPL_VAR NAME="LOC">, 
+		slide: moveMap,
+		change: moveMap
+});
+});
+
     </script>
+Window Width: <input type=textbox class=backbox size=4 id="width" onkeypress="onEnter(event);" value=<TMPL_VAR NAME="width"> />px
+
+<span class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="$('#map').css('width',$('#width').val());updateZoom();"><span class="ui-icon ui-icon-arrow-2-e-w"></span>Resize</span>
+<span class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="$('#map').css('width',''+$('#main').width());updateZoom();"><span class="ui-icon ui-icon-arrow-4-diag"></span>Full-Window</span>
+
     <div id="main"></div>
     <div id="popup" class="genomeview_popup" style="display: none"></div>
     <div id="map"></div>
     <div id='resolution'></div>
     <div id ='alert_grab'></div>
+<div id="slider"></div>
+
 <div style="float:left">
-OpenGene's map width: <input type=textbox class=backbox size=5 id="width" onkeypress="onEnter(event);" value=<TMPL_VAR NAME="width"> />
-<input type=button value="Resize" onclick="$('#map').css('width',$('#width').val());updateZoom();" />
-<input type=button value="Full-Window" onclick="$('#map').css('width',''+$('#main').width());updateZoom();" /> 
+<span class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="$('#set_range').show(0);$('#grab_seq').show();$('#extract_feat').hide();$('#grab_from').css('backgroundColor','FFFF66');pageObj.getseq=1;"><span class="ui-icon ui-icon-scissors"></span>Grab Sequence</span>
+<span class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="$('#set_range').show(0);$('#extract_feat').show();$('#grab_seq').hide();$('#grab_from').css('backgroundColor','FFFF66');pageObj.getseq=1;"><span class="ui-icon ui-icon-scissors"></span>Extract Features</span>
+<br>
+<span id="set_range" style="display:none" > 
+  <input type=text id='grab_from' value=0> to <input type=text id="grab_to" value=0> 
+ </span>
+ <span id="grab_seq" style="display:none" class='ui-button ui-state-default ui-corner-all' onClick="launch_seqview('<TMPL_VAR NAME=DS>','<TMPL_VAR NAME=CHR>','<TMPL_VAR NAME=GSTID>')"> View Sequence</span>
+ <span id="extract_feat" style="display:none" class='ui-button ui-state-default ui-corner-all' onClick="launch_featlist('<TMPL_VAR NAME=DS>','<TMPL_VAR NAME=CHR>','<TMPL_VAR NAME=GSTID>')">Get Features</span>
+ 
 
-<input type=button value="Grab Sequence" onclick="$('#grab').show(0);$('#grab_from').css('backgroundColor','FFFF66');pageObj.getseq=1;" />
-
-    <div id='grab' style="display:none;"><input type=text id='grab_from' value=0> to <input type=text id="grab_to" value=0> <input type=button value="View Sequence" onClick="launch_seqview('<TMPL_VAR NAME=DS>','<TMPL_VAR NAME=CHR>','<TMPL_VAR NAME=GSTID>')"></div>
-<input id='hide_query' style="display: none; float:left" type=button value="Hide Feature Info" onclick="$('#query').slideToggle(pageObj.speed);$('#hide_query').hide(0);" />
-
+<br>
+<span id = 'hide_query' style="display: none;" class='ui-button ui-state-default ui-corner-all' onClick="$('#query').slideToggle(pageObj.speed);$('#hide_query').hide(0);">Hide Feature Info</span>
+    <div id='query' style="overflow: auto;"></div>
 </div>
 
+<div align=right>
     <TMPL_IF NAME="SAVE_SETTINGS">
-    <div align="right"><input type=button value="Save Settings" name="SaveSettings" id="SaveSettings" onclick="go_save_options();"></div>
+    <span align="right" class='ui-button ui-state-default ui-corner-all ui-button-icon-left' id="SaveSettings" onclick="go_save_options();"><span class="ui-icon ui-icon-disk"></span>Save Settings</span>
     </TMPL_IF>
-
+</div>
 
 
     <div align="right">Flat Gene Models<input type=checkbox name=flat_models id=flat_models onclick="change_gene_model_type();" <TMPL_VAR NAME=FLAT> /></div>
     <div align="right" >Expand Overlapping Gene Models<input type=checkbox name=overlap_models id=overlap_models onclick="change_gene_model_type();" <TMPL_VAR NAME=EXPAND> /></div>
     <div id='check' style="float:right">Pop-up Annotations<input type=checkbox name="popup_anno" id="popup_anno" <TMPL_VAR NAME=POPUPANNO> /></div>
-    <div id='query' style="float: left; overflow: auto;">
 
-</div>
 

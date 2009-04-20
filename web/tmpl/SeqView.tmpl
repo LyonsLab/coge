@@ -6,27 +6,30 @@ $(document).ready(function(){
 $('#maketable').html('<div id ="annotation" style = "overflow: auto; height: 300px; width: auto;"></DIV>');
   var featid = <TMPL_VAR NAME=FEATID>;
   if (featid){
-    myObj = new generate_seq_obj_with_featid(featid,'<TMPL_VAR NAME=FEATNAME>',<TMPL_VAR NAME=DSID>,'<TMPL_VAR NAME=CHR>','<TMPL_VAR NAME=FEAT_START>','<TMPL_VAR NAME=FEAT_STOP>');}
+    myObj = new generate_seq_obj_with_featid(featid,'<TMPL_VAR NAME=FEATNAME>','<TMPL_VAR NAME=DSID>','<TMPL_VAR NAME=DSGID>','<TMPL_VAR NAME=CHR>','<TMPL_VAR NAME=FEAT_START>','<TMPL_VAR NAME=FEAT_STOP>','<TMPL_VAR NAME=GSTID>');
+   }
   else{
-    myObj = new generate_seq_obj(<TMPL_VAR NAME=DSID>,'<TMPL_VAR NAME=CHR>');}
+    myObj = new generate_seq_obj('<TMPL_VAR NAME=DSID>','<TMPL_VAR NAME=DSGID>', '<TMPL_VAR NAME=CHR>','<TMPL_VAR NAME=GSTID>');}
 
   redefine(<TMPL_VAR NAME=RC>);
 //  get_sequence(<TMPL_VAR NAME=RC>);
 });
 
 
-function generate_seq_obj(dsid,chr){
+function generate_seq_obj(dsid,dsgid, chr,gstid){
 
   this.start=$('#upstream').val()*1;
   this.stop=$('#downstream').val()*1;
   this.orig_start=$('#upstream').val()*1;
   this.orig_stop=$('#downstream').val()*1;
   this.dsid=dsid;
+  this.dsgid=dsgid;
   this.chr=chr;
   this.pro=0;
+  this.gstid=gstid;
 }
 
-function generate_seq_obj_with_featid(featid,featname, dsid, chr, feat_start, feat_stop){
+function generate_seq_obj_with_featid(featid,featname, dsid, dsgid, chr, feat_start, feat_stop,gstid){
   this.featid=featid;
   this.start=feat_start*1;//-$('#upstream').val()*1;
   this.stop=feat_stop*1; //+$('#downstream').val()*1;
@@ -34,8 +37,10 @@ function generate_seq_obj_with_featid(featid,featname, dsid, chr, feat_start, fe
   this.orig_stop=feat_stop*1;
   this.featname=featname;
   this.dsid=dsid;
+  this.dsgid=dsgid;
   this.chr=chr;
   this.pro=0;
+  this.gstid=gstid;
 }
 
 function reset_updown() {
@@ -81,15 +86,16 @@ function blastSeq() {
  dsid = myObj.dsid || 0;
  chr=myObj.chr || 0;
  featid=myObj.featid || 0;
+ gstid = myObj.gstid || 1;
  up = $('#upstream').val() || 0;
  down = $('#downstream').val() || 0;
  rc = 0;
  if ($('.rc_button').is(':hidden')==true){
    rc = 1;}
  if (featid) {
- window.open('CoGeBlast.pl?featid='+featid+'&upstream='+up+'&downstream='+down+'&rc='+rc);}
+ window.open('CoGeBlast.pl?featid='+featid+'&upstream='+up+'&downstream='+down+'&rc='+rc+'&gstid='+gstid);}
  else {
- window.open('CoGeBlast.pl?chr='+chr+'&upstream='+up+'&downstream='+down+'&dsid='+dsid+'&rc='+rc);
+ window.open('CoGeBlast.pl?chr='+chr+'&upstream='+up+'&downstream='+down+'&dsid='+dsid+'&rc='+rc+'&gstid='+gstid);
  }
 }
 
@@ -174,7 +180,7 @@ function redefine(rc){
   get_sequence(myObj.rc,myObj.pro,1);
   $('#addup').val(0);
   $('#adddown').val(0);
-  find_feats(['args__dsid','args__'+myObj.dsid,'args__start','args__'+myObj.start,'args__stop','args__'+myObj.stop,'args__chr','args__'+myObj.chr],['find_feats_button','feat_type_list']);
+//  find_feats(['args__dsid','args__'+myObj.dsid,'args__start','args__'+myObj.start,'args__stop','args__'+myObj.stop,'args__chr','args__'+myObj.chr,'args__gstid','args__'+myObj.gstid],['find_feats_button','feat_type_list']);
 }
 
 function get_sequence(rc,pro,add){
@@ -187,13 +193,13 @@ function get_sequence(rc,pro,add){
   rc = myObj.rc || 0;}
   else{
   myObj.rc=rc;}
-  if (rc) {
-    $('#rc_button').hide(0);
-    $('#dna_button').show(0);
-   }	
+//  if (rc) {
+//    $('#rc_button').hide(0);
+//    $('#dna_button').show(0);
+//   }	
   var nowrap = myObj.nowrap;
   //alert(rc);
-  get_seq(['args__featid', 'args__'+myObj.featid, 'args__pro', 'args__'+pro, 'args__rc', 'args__'+rc, 'args__chr', 'args__'+myObj.chr, 'args__dsid', 'args__'+myObj.dsid, 'args__featname', 'args__'+myObj.featname, 'args__upstream', 'upstream', 'args__downstream', 'downstream', 'args__start', 'args__'+myObj.start,'args__stop', 'args__'+myObj.stop,'args__add', 'args__'+add, 'args__nowrap','args__'+nowrap],['seq_text']);
+  get_seq(['args__featid', 'args__'+myObj.featid, 'args__pro', 'args__'+pro, 'args__rc', 'args__'+rc, 'args__chr', 'args__'+myObj.chr, 'args__dsid', 'args__'+myObj.dsid, 'args__dsgid', 'args__'+myObj.dsgid, 'args__featname', 'args__'+myObj.featname, 'args__upstream', 'upstream', 'args__downstream', 'downstream', 'args__start', 'args__'+myObj.start,'args__stop', 'args__'+myObj.stop,'args__add', 'args__'+add, 'args__nowrap','args__'+nowrap, 'args__gstid','args__'+myObj.gstid],['seq_text']);
   //alert($('#seq_text').html());
 }
 
@@ -217,6 +223,19 @@ function featlist (link) {
 
 }
 
+//Set up radio behavior for sequence buttons
+$(function(){
+		$(".seq_button")
+		.click(function(){
+				$(this).parents('.ui-buttonset-single:first').find(".ui-button.ui-state-active").removeClass("ui-state-active");
+				if( $(this).is('.ui-state-active') ){ $(this).removeClass("ui-state-active"); }
+				else { $(this).addClass("ui-state-active"); }
+		if(! $(this).is('.ui-buttonset-single .ui-button') ){
+				$(this).removeClass("ui-state-active");
+			}
+		});
+});
+
 
 </SCRIPT>
 </TMPL_IF>
@@ -237,9 +256,16 @@ function featlist (link) {
        </TR>
       </TABLE>
  </div>
+<div id=seq_buttons class="ui-buttonset ui-buttonset-single">
+<button id="dna_button" class="ui-button ui-state-default ui-corner-left seq_button ui-state-active" onClick="get_sequence(0,0);gen_title(['args__rc','args__0','args__pro','args__0'],['box_name']);">Genomic DNA</button>
+<button id="rc_button" class="ui-button ui-state-default seq_button" onClick="get_sequence(1,0);gen_title(['args__rc','args__1','args__pro','args__0'],['box_name']);">Reverse Complement</button>
+<button id="pro_button" class="ui-button ui-state-default ui-corner-right seq_button" onClick="$('#seq_text').val('Loading. . .');get_sequence(0,1);gen_title(['args__rc','args__0','args__pro','args__1','args__sixframe','args__<TMPL_VAR NAME=SIXFRAME>'],['box_name']);">Protein (Translated)</button>
+</div>
+
+<!--
        <DIV class="seqview_button dna_button" style="display: none; float: left" id="dna_button"><input type=button value="DNA Sequence" onClick="dynamic_buttons('dna_button');get_sequence(0,0);gen_title(['args__rc','args__0','args__pro','args__0'],['box_name']);"></DIV>
       <DIV class="seqview_button rc_button" style="float: left" id="rc_button"><input type=button value="Reverse Complement" onClick="dynamic_buttons('rc_button');get_sequence(1,0);gen_title(['args__rc','args__1','args__pro','args__0'],['box_name']);"></DIV>
-      <DIV class="seqview_button pro_button" style="float: left" id="pro_button"><input type=button value="<TMPL_VAR NAME=PROTEIN>" onClick="dynamic_buttons('pro_button');$('#seq_text').val('Loading. . .');get_sequence(0,1);gen_title(['args__rc','args__0','args__pro','args__1','args__sixframe','args__<TMPL_VAR NAME=SIXFRAME>'],['box_name']);"></DIV>
+      <DIV class="seqview_button pro_button" style="float: left" id="pro_button"><input type=button value="<TMPL_VAR NAME=PROTEIN>" onClick="dynamic_buttons('pro_button');$('#seq_text').val('Loading. . .');get_sequence(0,1);gen_title(['args__rc','args__0','args__pro','args__1','args__sixframe','args__<TMPL_VAR NAME=SIXFRAME>'],['box_name']);"></DIV> -->
  <input type=checkbox id=nowrap onclick='set_nowrap()'> Check to disable sequence wrapping
 
 </TMPL_IF>

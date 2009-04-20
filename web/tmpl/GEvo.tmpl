@@ -1,28 +1,108 @@
 <TMPL_IF NAME=SEQ_RETRIEVAL>
-<HTML>
-<HEAD>
- <TITLE><TMPL_VAR NAME=TITLE></TITLE>
- <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
-</HEAD>
+
+<link rel="stylesheet" type="text/css" href="/CoGe/css/colorpicker.css" />
 <script src="/CoGe/gobe/static/swfobject/swfobject.js" ></script>
+<!-- <script type="text/javascript" src="js/jquery.simpleColor.js"></script> -->
+<script type="text/javascript" src="js/colorpicker.js"></script>
+<style type="text/css">
+	#red, #green, #blue {
+		float: left;
+		clear: left;
+		width: 300px;
+		margin: 15px;
+	}
+	#swatch {
+		width: 120px;
+		height: 100px;
+		margin-top: 18px;
+		margin-left: 350px;
+		background-image: none;
+	}
+	#red .ui-slider-range { background: #ef2929; }
+	#red .ui-slider-handle { border-color: #ef2929; }
+	#green .ui-slider-range { background: #8ae234; }
+	#green .ui-slider-handle { border-color: #8ae234; }
+	#blue .ui-slider-range { background: #729fcf; }
+	#blue .ui-slider-handle { border-color: #729fcf; }
+</style>
+
 <SCRIPT language="JavaScript">
-/* e.g.  ('up', 1, 330) becomes: byId('drup1').value = 330; */
-/* so up is the 'left', down is the 'right' bar.   */
+
+//Color Chooser js
+	function refreshSwatch() {
+		var red = $("#red").slider("value")
+			,green = $("#green").slider("value")
+			,blue = $("#blue").slider("value")
+		$("#swatch").css("background-color", "rgb("+red+","+green+","+blue+")");
+	}
+	$(function() {
+		$("#red, #green, #blue").slider({
+			orientation: 'horizontal',
+			range: "min",
+			max: 255,
+			value: 127,
+			slide: refreshSwatch,
+			change: refreshSwatch
+		});
+		$("#red").slider("value", 255);
+		$("#green").slider("value", 140);
+		$("#blue").slider("value", 60);
+	});
+
+//set up the jquery ui
+$(function() {
+	     //initialize dialog box	     
+	     $("#color_dialog").dialog({autoOpen: false,
+	     				height: 233,
+					width: 502,
+	});
+	     //button effects on events
+	     $('.color_chooser').click(function() {
+					color_dialog_setter(this);
+			});
+
+});
+
+function color_dialog_setter(me) {
+	 var rgb = $(me).css("backgroundColor");
+	 rgb = rgb.replace(/^rgb\((.+)\)$/,'$1')
+	 var myArray = new Array;
+	 myArray=rgb.split(",");
+	// console.log(myArray);
+	 $("#swatch").css("background-color", "rgb("+myArray[0]+","+myArray[1]+","+myArray[2]+")");
+	 $("#red").slider("value", myArray[0]);
+         $("#green").slider("value", myArray[1]);
+         $("#blue").slider("value", myArray[2]);
+	 var color_id = $(me).attr("id");
+	 var html = "<button class='ui-button ui-state-default ui-corner-all' onClick=update_color_picker('"+color_id+"');$('#color_dialog').dialog('close');>OK</button> <button class='ui-button ui-state-default ui-corner-all' onClick=$('#color_dialog').dialog('close');>Cancel</button>";
+	 $('#hsp_buttons').html(html);
+	 $('#color_dialog').dialog('open');
+}
+
+function update_color_picker(color_id) {
+	 var setcolor = $("#swatch").css("backgroundColor");
+	 $('#'+color_id).css("background-color", ""+setcolor);
+}
+
 if(window.console == undefined){ console = {}; console.debug = function(){}}
 
 function set_genespace(updown, idx, value, length, anchorlength){
-//    console.log(updown+" "+value+" "+length+" "+anchorlength);
+
+//  console.log(updown, idx, value, length, anchorlength);
+/* e.g.  ('up', 1, 330) becomes: byId('drup1').value = 330; */
+/* so up is the 'left', down is the 'right' bar.   */
     value = parseFloat(value);
     var eid = 'dr' + updown + idx;
-    document.getElementById(eid).value = value;
+    $('#'+eid).val(value);
+//    document.getElementById(eid).value = value;
     value = value*-1;
     if (value < 1) {value = 1;}
 //    if (value > length) {value = length;}
 
     if (updown == "up") 
      {
-      var orig_gbstart = $('#gbstart'+idx).val();
-      var orig_dirstart = $('#dirstart'+idx).val();
+      var orig_gbstart = parseFloat($('#gbstart'+idx).val());
+      var orig_dirstart = parseFloat($('#dirstart'+idx).val());
       $('#gbstart'+idx).val(value);
       $('#dirstart'+idx).val(value);
       //adjust length
@@ -35,8 +115,7 @@ function set_genespace(updown, idx, value, length, anchorlength){
        var dirlength = $('#dirlength'+idx).val();
        if (dirlength == undefined || dirlength == ""){dirlength=length;}
        dirlength = dirlength-($('#dirstart'+idx).val()-orig_dirstart);
-       $('#dirlength'+idx).val(dirlength);	
-
+       $('#dirlength'+idx).val(dirlength);      
      }
     else if (updown == "down")
      {
@@ -44,7 +123,7 @@ function set_genespace(updown, idx, value, length, anchorlength){
        if (tmp > length){tmp=length;}
        $('#gblength'+idx).val(tmp);
        var tmp = (anchorlength-value+1)-parseFloat($('#dirstart'+idx).val());
-       $('#dirlength'+idx).val(tmp);	
+       $('#dirlength'+idx).val(tmp);    
      }
 }
 
@@ -57,33 +136,27 @@ function setheight(){
 }
 
 function open_all_sequence_option_menus(open) {
-    var num_seqs = $("#num_seqs").val();
-    for (var i=1; i<=num_seqs; i++)
-     {
-       if (open)
-        {
-         $('#open_all_sequence_open_menus').hide();
-         $('#close_all_sequence_open_menus').show();
-         animate_section(".sequence_options"+i,"slideDown");
-        }
-       else
-        {
-         $('#close_all_sequence_open_menus').hide();
-         $('#open_all_sequence_open_menus').show();
-         animate_section(".sequence_options"+i,"slideUp");
-        }
-     }
+   if (open)
+    { $('.ui-button-toggle:not(.ui-state-active)').click(); 
+      $('#open_all_sequence_open_menus').hide();
+      $('#close_all_sequence_open_menus').show();
+    }
+   else
+    { $('.ui-button-toggle.ui-state-active').click(); 
+      $('#open_all_sequence_open_menus').show();
+      $('#close_all_sequence_open_menus').hide();
+    }
 }
+
 $(document).ready(function(){
- check_seq_submit();
-
- autodistance_setup();
- check_alignment_program();
- check_dialign_anchor_program();
- if(window.location.toString().indexOf('autogo') != -1){
-     jQuery('#go_button').trigger('click');
- }
-
+ 	 check_seq_submit();
+ 	 autodistance_setup();
+	 autosearch_coge_names();
+ 	 check_alignment_program();
+ 	 check_dialign_anchor_program();
+ 	 if(window.location.toString().indexOf('autogo') != -1){
+     	  jQuery('#go').trigger('click');
+ 	 }
  });
 
 function populate_page_obj(basefile)
@@ -94,21 +167,6 @@ function populate_page_obj(basefile)
   pageObj.waittime = 1000;
  }
 
-function change( info ) {
-        document.getElementById("info").innerHTML = info;        
-}
-
-function changeColor(id, color) {
-  document.getElementById(id).style.color = color;
-}
-
-function switchPlusButton (check, change){
-  if ($(check).is(':hidden')) {$(change).removeClass('plus').addClass('minus');}
-  else {$(change).removeClass('minus').addClass('plus');}
-}
-
-
-
 function autodistance_setup(){
 
 $(".location").keyup(function(){
@@ -117,8 +175,17 @@ $(".location").keyup(function(){
         $('.location').filter('input[id^=dr]').val(self.value)
      }
 });
-<TMPL_VAR NAME="AUTOSEARCH">
 }
+
+function autosearch_coge_names (seqs){
+ var num_seqs = $('#num_seqs').val();
+ if (!seqs) {seqs = 1;}
+ for (var i =seqs; i <= num_seqs; i++)
+  {
+    dataset_search(['args__accn','accn'+i,'args__num', 'args__'+i, 'args__dsid', 'dsid'+i, 'args__dsgid', 'dsgid'+i, 'args__gstid', 'gstid'+i, 'args__featid', 'featid'+i],[dataset_group_search_chain]);
+  }
+}
+
 
 //Following 2 js functions take care of emailing GEvo results to user
 
@@ -150,16 +217,16 @@ function address_validity_check(validity){
 }
 
 function rset () {
-var num_seqs = $("#num_seqs").val();
-$("#results").html(" ");
+ var num_seqs = $("#num_seqs").val();
+ $("#results").html(" ");
 
-for (var i =1; i<= num_seqs; i++)
+ for (var i =1; i<= num_seqs; i++)
   {
     
     $('#accn'+i).val("");
     $('#drup'+i).val("10000");
     $('#drdown'+i).val("10000");
-    dataset_search(['args__accn','accn'+i,'args__num', 'args__'+i],[feat_search_chain]);
+    dataset_search(['args__accn','accn'+i,'args__num', 'args__'+i],[dataset_group_search_chain]);
     $('#gbaccn'+i).val("");
     $('#gbstart'+i).val("1");
     $('#gblength'+i).val("");
@@ -183,10 +250,18 @@ function check_spike(tblastx) {
   }
 }
 
+function dataset_group_search_chain(stuff, num, featid) {
+  if (stuff) {
+  $("#dataset"+num).html(stuff);
+  dataset_group_search(['args__dsid', 'dsid'+num, 'args__dsgid', 'dsgid'+num,'args__gstid', 'gstid'+num,'args__num', 'args__'+num, 'args__featid','args__'+featid],[feat_search_chain]);
+ }
+}
+
 function feat_search_chain(stuff, num, featid) {
  if (stuff) {
-  $("#source"+num).html(stuff);
-  feat_search(['args__accn', 'accn'+num,'args__dsid', 'dsid'+num, 'args__num', 'args__'+num, 'args__featid','args__'+featid],['feat'+num]);
+  $("#dataset_group"+num).html(stuff);
+   dsgid = $('#dagis'+num).val();
+   feat_search(['args__accn', 'accn'+num,'args__dsid', 'dsid'+num, 'args__dsgid', 'dsgid'+num, 'args__num', 'args__'+num, 'args__featid','args__'+featid],['feat'+num]);
  }
 }
 
@@ -284,7 +359,7 @@ else if (alignment == 'blastn')
 
 
 
-function handle_results (html,w, h, img_base, n_images,message) {
+function handle_results (html,w, h, img_base, n_images, gevo_link, message) {
  alert_message(message);
  if (n_images >1)
    {
@@ -309,36 +384,43 @@ function handle_results (html,w, h, img_base, n_images,message) {
   {
     $('#results').html('');
   }
+  if (gevo_link)
+   {
+     get_tiny_url(['args__url','args__'+gevo_link],['tiny_link']);
+   }
 }
 
 function remove_seq () {
-var num_seqs = $('#num_seqs').val();
-if (num_seqs < 3){
- alert("You must have at least two sequences to perform an alignment. You cannot remove another sequence. Please click \"Clear\" to remove information from sequence entries.");
- return;
+ var num_seqs = $('#num_seqs').val();
+ if (num_seqs < 3){
+  alert("You must have at least two sequences to perform an alignment. You cannot remove another sequence.");
+  return;
+ }
+ $('#refseq'+num_seqs).remove();
+ $('#seq_set'+num_seqs).remove();
+ num_seqs--;
+ $('#num_seqs').val(num_seqs);
+ gen_go_run(['num_seqs'],update_go_run);
+ gen_hsp_colors(['args__num_seqs','num_seqs'],[add_hsp_colors]);
 }
-//$('#new_seq_submission').remove();
-$('#refseq'+num_seqs).remove();
-$('#seq_set'+num_seqs).remove();
-//$('#new_seq_submission').html('');
-num_seqs--;
-$('#num_seqs').val(num_seqs);
-gen_go_run(['num_seqs'],update_go_run);
 
-gen_hsp_colors(['args__num_seqs','num_seqs'],['hsp_colors']);
+function add_hsp_colors (stuff, num) {
+ $('#hsp_colors').html(stuff);
+ $('.color_chooser').click(function() {color_dialog_setter(this);});
 }
+
 
 function update_go_run (val){
-if (val) $('#go_run').html(val);
+ if (val) $('#go_run').html(val);
 }
 
 function alert_message (message) {
-if (message) alert(message);
+ if (message) alert(message);
 } 
 
 function check_seq_submit () {
-var num_seqs = $("#num_seqs").val();
-for (var i =1; i<= num_seqs; i++)
+ var num_seqs = $("#num_seqs").val();
+ for (var i =1; i<= num_seqs; i++)
   {
     var selector = "db"+i;
     if ($('#accn'+i).val()) {selector='db'+i;}
@@ -351,6 +433,7 @@ for (var i =1; i<= num_seqs; i++)
 
 }
 
+
 function seq_submit_change (seq_num) {
  animate_section(".seq_submission_type"+seq_num,"hide",0);
  var seq_set = $('#seq_submit'+seq_num).val();
@@ -361,17 +444,32 @@ function seq_submit_change (seq_num) {
   }
 }
 
-function process_add_seq (newseq, num_seqs, go_run, refseq, colors, message)
+function process_add_seq (newseq, num_seqs, go_run, refseq, old_num_seqs)
 {
  $('#new_seq_submission').append(newseq);
- seq_submit_change(num_seqs);
+ if (!old_num_seqs)
+  {
+   old_num_seqs = num_seqs*1-1;
+  }
+ var i = old_num_seqs*1+1;
+ while (i <= num_seqs)
+  {
+   seq_submit_change(i);
+   add_button_states('seqopts'+i); 
+   if ($('#accn'+i).val())
+    {
+     $('#accn'+i).select();   
+     $('#accn'+i).blur();
+    }
+   i++;   
+  }
  $('#num_seqs').val(num_seqs);
  $('#go_run').html(go_run);
  $('#new_refseq').html(refseq);
- $('#hsp_colors').html(colors);
  autodistance_setup();
- alert_message(message);
+ gen_hsp_colors(['args__num_seqs','num_seqs'],[add_hsp_colors]); 
 }
+
 
 function monitor_log(log)
 {
@@ -388,12 +486,11 @@ function monitor_log(log)
      pageObj.finished = 1;
     }
    
-   match=log.match(/sequence file\s+(\d+)/g);
-//  console.log(log);
+   match=log.match(/sequence file/g); //\s+(\d+)/g);
   if (match && match[0])
    { 
      match.reverse();  
-     sequence = "Generating "+match[0]+". . .";
+     sequence = "Generating "+match[0]+"s. . .";
    }
    match=log.match(/running\s+(\(.*?\))/g);
    if (match && match[0]) {
@@ -437,12 +534,14 @@ function monitor_log(log)
   if (message) $('#loading').html("<div class=small>"+message+'</div>');
 }
 
+/*Depreciated, no longer use rgb textboxes to adjust HSP Colors
 function update_colors(hsp_num) {
   var r = $('#r'+hsp_num).val();
   var g = $('#g'+hsp_num).val();
   var b = $('#b'+hsp_num).val();
   $('#sample_color'+hsp_num).css("backgroundColor","rgb("+r+","+g+","+b+")");
 }
+*/
 
 function get_seq(seq_num)
  {
@@ -451,11 +550,23 @@ function get_seq(seq_num)
   var rc = $('input[name=rev'+seq_num+']:checked').val();
   var left = $('#drup'+seq_num).val();
   var right = $('#drdown'+seq_num).val();
-  var dsid = $('#posdsid'+seq_num).val();
+  var dsid = $('#dsid'+seq_num).val();
   var pos = $('#pos'+seq_num).val();
   var chr = $('#chr'+seq_num).val();
+  var dsgid = $('#dsgid'+seq_num).val();
   //alert (fid+"::"+rc+"::"+left+"::"+right);
- window.open("SeqView.pl?featid="+fid+"&dsid="+dsid+"&chr="+chr+"&start="+pos+"&upstream="+left+"&downstream="+right+"&rc="+rc);
+ window.open("SeqView.pl?featid="+fid+"&dsid="+dsid+"&chr="+chr+"&start="+pos+"&upstream="+left+"&downstream="+right+"&rc="+rc+"&dsgid="+dsgid);
+ }
+
+function genome_view(seq_num)
+ {
+  var fid = $('#featid'+seq_num).val();
+  var dsid = $('#dsid'+seq_num).val();
+  var pos = $('#pos'+seq_num).val();
+  var chr = $('#chr'+seq_num).val();
+  var dsgid = $('#dsgid'+seq_num).val();
+  //alert (fid+"::"+rc+"::"+left+"::"+right);
+ window.open("GenomeView.pl?fid="+fid+"&dsid="+dsid+"&chr="+chr+"&x="+pos+"&dsgid="+dsgid+";z=3");
  }
 
 function show_skip(num){
@@ -471,24 +582,52 @@ function hide_skip(num){
 <div id="go_run"><TMPL_VAR NAME="GO_RUN"></div>
 
 <div id="message"><TMPL_VAR NAME="MESSAGE"></div>
+<div id="color_dialog" title="Choose HSP Color">
+<table>
+<tr>
+<td>
+<div id="red"></div>
+<div id="green"></div>
+<div id="blue"></div>
+
+<div id="swatch" class="ui-widget-content ui-corner-all"></div>
+</tr>
+<tr>
+<td align="right">
+<div id="hsp_buttons"></div>
+</tr>
+</table>
+</div>
 <table>
 <tr align left>
 <td>
-<a href="#" id=go_button onClick="loading([],['results']); initialize_basefile(['args__prog','args__GEvo', 'args__return_name','args__1'],[populate_page_obj]); go_run();"><span>Go</span></a>
+<span id=go class='ui-button ui-state-default ui-corner-all' onClick="loading([],['results']); initialize_basefile(['args__prog','args__GEvo', 'args__return_name','args__1'],[populate_page_obj]); go_run();">Go</span>
 </TD>
-<TD>
-<a href="#" id=clear_button onClick="rset()"><span>Clear</span></a>
-</TD>
+<!--<TD>
+<span class='ui-button ui-state-default ui-corner-all' onClick="rset()">Clear</span>
+</TD>-->
  <td nowrap>
 <td>Number of sequences: <input class="backbox" name=num_seqs id=num_seqs type="textbox" size=2 readonly value=<TMPL_VAR NAME ="NUM_SEQS">>
 <td>
-  <a href="#" id=add_button
-  onClick="add_seq(['num_seqs'],[process_add_seq]); $('#new_drseq').remove;"><span>Add</span></a>
+  <span class='ui-button ui-state-default ui-corner-all ui-button-icon-left ' 
+  onClick="add_seq(['num_seqs'],[process_add_seq]);  $('#new_drseq').remove;"><span class="ui-icon ui-icon-plus"></span>Add</span>
+
  <td>
-<a href="#" id=remove_button onClick="remove_seq()"><span>Remove</span></a>
-<!--<a href="#" onMouseOver="activeButton('remove')" onMouseOut="inactiveButton('remove')" onMouseDown="pressedButton('remove')" onMouseUp="inactiveButton('remove')" onclick="remove_seq()">
+<span class='ui-button ui-state-default ui-corner-all ui-button-icon-left ' onClick="remove_seq()"><span class="ui-icon ui-icon-minus"></span>Remove</span>
+<!--<a href="javascript:void(0);" onMouseOver="activeButton('remove')" onMouseOut="inactiveButton('remove')" onMouseDown="pressedButton('remove')" onMouseUp="inactiveButton('remove')" onclick="remove_seq()">
          <img name="remove" src="/CoGe/picts/buttons/GEvo/remove/inactive.png" width="55" height="27" border="0" alt="javascript button">
          </a>-->
+<td>
+ <td nowrap>
+<td>Merge Previous GEvo Analysis: <input class="backbox" name=previous_url id=previous_url type="textbox" size=20 value=<TMPL_VAR NAME ="PANEL_URL">>
+<td>
+  <span class='ui-button ui-state-default ui-corner-all ui-button-icon-left ' 
+  onClick="merge_previous(['previous_url','num_seqs'],[process_add_seq]); gen_hsp_colors(['args__num_seqs','num_seqs'],[add_hsp_colors]);"><span class="ui-icon ui-icon-plus"></span>Merge</span>
+
+
+
+
+
 </table>
 
 
@@ -499,8 +638,8 @@ function hide_skip(num){
    <DIV id="seq_submission" class="topItem"  onMouseOver="$('#seq_submission').removeClass('topItem').addClass('topItemSelected');" onMouseOut="$('#seq_submission').removeClass('topItemSelected').addClass('topItem');" onClick='animate_section("#seq_submission_menu","slideToggle")' >Sequence Submission:</DIV>
    <DIV class="dropMenu" id="seq_submission_menu">
     <table width="100%">
-     <tr id = "new_seq_submission" valign="top">
-     <TMPL_VAR NAME="SEQ_SUB">
+     	   <tr id = "new_seq_submission" valign="top">
+          <TMPL_VAR NAME="SEQ_SUB">
     </div>
     </table>
 
@@ -578,7 +717,7 @@ function hide_skip(num){
   <TD><input class="backbox" type="text" name="blast_eval" id="blast_eval" tabindex="1" size="4" value="30" /></TD>
  </TR>
  <TR>
-  <TD>Other Blast Parameters: </TD>
+      <TD>Other Blast Parameters: </TD>
   <TD><input class="backbox" type="text" name="blastparams" id="blastparams" tabindex="1" size="10"/></TD>
  </TR>
 </TABLE>
@@ -638,15 +777,6 @@ function hide_skip(num){
   <td><li>Spike sequence length:
   <td><input type="text" size="3" class="backbox" id="spike" onkeyup="check_spike();" value=<TMPL_VAR NAME=SPIKE_LEN>> nucleotides
    </TR>
-  <tr>
-  <td><li>Show spike sequence in results?
-  <TD>
-    <select class="backbox" name="show_spike" id="show_spike" tabindex="1" >
-     <option value="1" >Yes</option>
-     <option value="0" selected>No</option>
-    </select>
-  </TD>
-  </tr>
   </table>
  </DIV>
 
@@ -892,8 +1022,16 @@ function hide_skip(num){
   <Td>
 <font class="small">Auto adjust overlapping features? </font>
   <td>
-  <label class="small"><input class="backbox" type="radio" name="overlap_adjustment" id="overlap_adjustment" tabindex="1" value="1" <TMPL_VAR NAME="OVERLAP_YES">/>Yes</label>
-  <label class="small"><input class="backbox" type="radio" name="overlap_adjustment" id="overlap_adjustment" tabindex="1" value="0" <TMPL_VAR NAME="OVERLAP_NO"> />No</label>
+  <label class="small"><input class="backbox" type="radio" name="skip_feat_overlap" id="skip_feat_overlap" tabindex="1" value="0" <TMPL_VAR NAME="FEAT_OVERLAP_YES">/>Yes</label>
+  <label class="small"><input class="backbox" type="radio" name="skip_feat_overlap" id="skip_feat_overlap" tabindex="1" value="1" <TMPL_VAR NAME="FEAT_OVERLAP_NO"> />No</label>
+    </DIV>
+  </TD>
+ <TR>
+  <Td>
+<font class="small">Auto adjust overlapping HSPs (SLOW)? </font>
+  <td>
+  <label class="small"><input class="backbox" type="radio" name="skip_hsp_overlap" id="skip_hsp_overlap" tabindex="1" value="0" <TMPL_VAR NAME="HSP_OVERLAP_YES">/>Yes</label>
+  <label class="small"><input class="backbox" type="radio" name="skip_hsp_overlap" id="skip_hsp_overlap" tabindex="1" value="1" <TMPL_VAR NAME="HSP_OVERLAP_NO"> />No</label>
     </DIV>
   </TD>
  <TR>
@@ -933,7 +1071,7 @@ function hide_skip(num){
 <option value="linear" <TMPL_VAR NAME="HSP_LABELS_LIN">>Draw Linear</option>
 </select>
   </TD>
- <TR>
+<!-- <TR>
   <Td>
 <font class="small">Limit HSP labels? </font>
  <td>
@@ -941,7 +1079,7 @@ function hide_skip(num){
  <label class="small"><input class="backbox" type="radio" name="hsp_limit" id="hsp_limit" tabindex="1" value="1" <TMPL_VAR NAME="HSP_LIMIT_YES">/>Yes</label> 
 <label class="small"><input class="backbox" type="radio" name="hsp_limit" id="hsp_limit" tabindex="1" value="0" <TMPL_VAR NAME="HSP_LIMIT_NO"> />No</label> 
 
-  </TD>
+  </TD>-->
  <tr>
   <td>Don't show HSPs with <input class=backbox type=textbox size=3 id="hsp_overlap_limit" value="<TMPL_VAR NAME="HSP_OVERLAP_LIMIT">"/> overlaps
  <tr>
@@ -977,20 +1115,18 @@ function hide_skip(num){
   </table>
 <td width="3" bgcolor="#99FF99">
   <td class = "small">
-   Change HSP colors <span class=small>(red, green, blue values between 0-255)</span>
-   <DIV id="hsp_colors"><TMPL_VAR NAME="HSP_COLOR"></DIV>
+   Change HSP colors <span class=small>(Click Color to Adjust)</span>
+ <DIV id="hsp_colors"><TMPL_VAR NAME="HSP_COLOR"></DIV>
 
   </table>
  </table>
 </div>
 <TMPL_IF NAME=SAVE_SETTINGS>
-<input type=button value="Save Settings" name="SaveSettings" id="SaveSettings" onclick="<TMPL_VAR NAME="SAVE_SETTINGS">">
-<input type=button value="Reset Settings" name="ResetSettings" id="ResetSettings" onclick="reset_settings_gevo([],[]);window.location.reload()">
+<span class='ui-button ui-state-default ui-corner-all ui-button-icon-left' id="SaveSettings" onclick="<TMPL_VAR NAME="SAVE_SETTINGS">"><span class="ui-icon ui-icon-disk"></span>Save Settings</span>
+<span class='ui-button ui-state-default ui-corner-all ui-button-icon-left' id="ResetSettings" onclick="reset_settings_gevo([],[]); window.location.reload()"><span class="ui-icon ui-icon-arrowrefresh-1-s"></span>Reset Settings </span>
 </TMPL_IF>
 </TABLE>
 </form>
-</BODY>
-</HTML>
 </TMPL_IF>
 
 <TMPL_IF NAME="RESULTS_DIV">
@@ -1012,17 +1148,11 @@ function hide_skip(num){
 <option value="dir<TMPL_VAR NAME="SEQ_NUM">">Direct Submission</option>
 
 </select>
-
 <DIV id="db<TMPL_VAR NAME="SEQ_NUM">" style="display: none;" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">
-<font id=skip_font<TMPL_VAR NAME="SEQ_NUM"> style="color: red;display:none"> Sequence Skipped</font>
 <TABLE class="small">
        <TR valign="top">
         <TD>Name:
-        <TD align=left><input class="backbox" type="text" name="accn<TMPL_VAR NAME="SEQ_NUM">" id="accn<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="20" onBlur="dataset_search(['args__accn','accn<TMPL_VAR NAME="SEQ_NUM">','args__num', 'args__<TMPL_VAR NAME="SEQ_NUM">', 'args__dsid', 'args__<TMPL_VAR NAME="DSID">'],[feat_search_chain])" value="<TMPL_VAR NAME=DRACCN>" />
-      <tr>
-       <td colspan=2>     
-        <DIV id="source<TMPL_VAR NAME="SEQ_NUM">" nowrap><input type="hidden" id="dsid<TMPL_VAR NAME="SEQ_NUM">"></DIV>
-        <DIV id="feat<TMPL_VAR NAME="SEQ_NUM">"><input type="hidden" id="featid<TMPL_VAR NAME="SEQ_NUM">"></DIV>
+        <TD align=left><input class="backbox" type="text" name="accn<TMPL_VAR NAME="SEQ_NUM">" id="accn<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="20" onBlur="dataset_search(['args__accn','accn<TMPL_VAR NAME="SEQ_NUM">','args__num', 'args__<TMPL_VAR NAME="SEQ_NUM">', 'args__dsid', 'args__<TMPL_VAR NAME="DSID">', 'args__dsgid', 'args__<TMPL_VAR NAME="DSGID">', 'args__gstid', 'args__<TMPL_VAR NAME="GSTID">'],[dataset_group_search_chain])" value="<TMPL_VAR NAME=DRACCN>" />
 </table>
 </DIV>      
 
@@ -1034,12 +1164,19 @@ function hide_skip(num){
        <TD><input class="backbox" type="text" id="pos<TMPL_VAR NAME="SEQ_NUM">" value="<TMPL_VAR NAME=POS>" size=10>
       <TR>
        <TD>Organism:
-       <TD><TMPL_VAR NAME=DSINFO>
+       <TD><TMPL_VAR NAME=ORGINFO>
 </table>
 </DIV>
 
 <div id="drcoge<TMPL_VAR NAME="SEQ_NUM">"  style="display: none;" class="seq_submisttion_type seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> drcoge<TMPL_VAR NAME="SEQ_NUM"> ">
 <table>
+      <tr>
+       <td colspan=2>     
+        <DIV id="dataset<TMPL_VAR NAME="SEQ_NUM">" nowrap><input type="hidden" id="dsid<TMPL_VAR NAME="SEQ_NUM">" value ="<TMPL_VAR NAME="DSID">"></DIV>
+        <DIV id="dataset_group<TMPL_VAR NAME="SEQ_NUM">" nowrap><input type="hidden" id="dsgid<TMPL_VAR NAME="SEQ_NUM">" value ="<TMPL_VAR NAME="DSGID">"></DIV>
+        <DIV id="genomic_sequence_type<TMPL_VAR NAME="SEQ_NUM">" nowrap><input type="hidden" id="gstid<TMPL_VAR NAME="SEQ_NUM">" value ="<TMPL_VAR NAME="GSTID">"></DIV>
+        <DIV id="feat<TMPL_VAR NAME="SEQ_NUM">"><input type="hidden" id="featid<TMPL_VAR NAME="SEQ_NUM">" value ="<TMPL_VAR NAME="FEATID">"></DIV>
+        <DIV id="chromosome<TMPL_VAR NAME="SEQ_NUM">"><input type="hidden" id="chr<TMPL_VAR NAME="SEQ_NUM">" value ="<TMPL_VAR NAME="CHR">"></DIV>
 
       <TR>
        <TD><DIV class="small">Left sequence:</DIV>
@@ -1048,7 +1185,8 @@ function hide_skip(num){
        <TD><DIV class="small">Right sequence:</DIV>
        <TD><DIV  id="down<TMPL_VAR NAME="SEQ_NUM">"><input class="location backbox" type="text" name="drdown<TMPL_VAR NAME="SEQ_NUM">" id="drdown<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10"  value="<TMPL_VAR NAME=DRDOWN>" /></DIV>
    <tr>
-    <TD class=small colspan=2 align=center><div id="get_seq<TMPL_VAR NAME=SEQ_NUM>" onclick="get_seq(<TMPL_VAR NAME=SEQ_NUM>)"  onMouseOver="changeColor('get_seq<TMPL_VAR NAME="SEQ_NUM">','#009900'); " onMouseOut="changeColor('get_seq<TMPL_VAR NAME="SEQ_NUM">','#000099');">Get Sequence</div>
+    <TD class=small><div class="link" id="get_seq<TMPL_VAR NAME=SEQ_NUM>" onclick="get_seq(<TMPL_VAR NAME=SEQ_NUM>)">Get Sequence</div>
+    <TD class=small><div class="link" id="get_seq<TMPL_VAR NAME=SEQ_NUM>" onclick="genome_view(<TMPL_VAR NAME=SEQ_NUM>)">Genome View</div>
      
 </table>
 </DIV>
@@ -1081,58 +1219,44 @@ function hide_skip(num){
 
 <table>
 <tr><td>
+<div id=skip_font<TMPL_VAR NAME="SEQ_NUM"> style="color: red;display:none"> Sequence Skipped</div>
 
-   <DIV id="seqopts<TMPL_VAR NAME="SEQ_NUM">" class="topItemPlain small plus" onMouseOver="changeColor('seqopts<TMPL_VAR NAME="SEQ_NUM">','#000099'); " onMouseOut="changeColor('seqopts<TMPL_VAR NAME="SEQ_NUM">','#009900');" onClick='switchPlusButton(".sequence_options"+<TMPL_VAR NAME="SEQ_NUM">, "#seqopts"+<TMPL_VAR NAME="SEQ_NUM">);animate_section(".sequence_options<TMPL_VAR NAME="SEQ_NUM">","slideToggle"); ' >Sequence <TMPL_VAR NAME="SEQ_NUM"> Options:</DIV>
+   <span id="seqopts<TMPL_VAR NAME="SEQ_NUM">" class="small ui-button ui-state-default ui-corner-all ui-button-toggle" onClick='$(".sequence_options<TMPL_VAR NAME="SEQ_NUM">").slideToggle("normal");'>Sequence <TMPL_VAR NAME="SEQ_NUM"> Options</span>
    <Table class="small sequence_options<TMPL_VAR NAME="SEQ_NUM"> dropMenuPlain" style="display: none;">
  <TR align=left>
   <Td>
    Skip Sequence:
+</td>
   <TD>
 	<label><input class="backbox" onClick=show_skip(<TMPL_VAR NAME="SEQ_NUM">) type="radio" name="skip_seq<TMPL_VAR NAME=SEQ_NUM>" id="skip_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="1" />Yes</label>
 	<label><input class="backbox" onClick=hide_skip(<TMPL_VAR NAME="SEQ_NUM">) type="radio" name="skip_seq<TMPL_VAR NAME=SEQ_NUM>" id="skip_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="0" checked/>No</label><br>
- <TR align=left>
+ </tr>
+<TR align=left>
   <Td>
    Reference Sequence:
+</td>
   <TD>
 	<label><input class="backbox" type="radio" name="ref_seq<TMPL_VAR NAME=SEQ_NUM>" id="ref_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="1" <TMPL_VAR NAME=REF_YES> />Yes</label>
 	<label><input class="backbox" type="radio" name="ref_seq<TMPL_VAR NAME=SEQ_NUM>" id="ref_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="0" <TMPL_VAR NAME=REF_NO> />No</label><br>
+  </tr>
   <TR nowrap>
 	<TD>Reverse complement: 
 	<td nowrap><label><input class="backbox" type="radio" name="rev<TMPL_VAR NAME="SEQ_NUM">" id="rev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="1" <TMPL_VAR NAME=REV_YES> onclick='rev_locs("<TMPL_VAR NAME="SEQ_NUM">")' />Yes</label>&nbsp<label><input class="backbox" type="radio" name="rev<TMPL_VAR NAME="SEQ_NUM">" id="rev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="0" <TMPL_VAR NAME=REV_NO> onclick='rev_locs("<TMPL_VAR NAME="SEQ_NUM">")' />No</label>
+</tr>
  <TR align=left>
   <Td>
-   Mask CDS:
+   Mask Sequence:
+  </TD>
   <TD>
-   <label><input class="backbox" type="radio" name="mask_cds<TMPL_VAR NAME="SEQ_NUM">" id="mask_cds<TMPL_VAR NAME="SEQ_NUM">" tabindex="22" value="1" <TMPL_VAR NAME=EXON_MASK_ON> />Yes</label>
-    <label><input class="backbox" type="radio" name="mask_cds<TMPL_VAR NAME="SEQ_NUM">" id="mask_cds<TMPL_VAR NAME="SEQ_NUM">" tabindex="22" value="0" <TMPL_VAR NAME=EXON_MASK_OFF> />No</label>
- <TR align left>
-  <Td>
-   Mask all RNA:
-  <TD>
-   <label><input class="backbox" type="radio" name="mask_rna<TMPL_VAR NAME="SEQ_NUM">" id="mask_rna<TMPL_VAR NAME="SEQ_NUM">" tabindex="22" value="1" <TMPL_VAR NAME=RNA_MASK_ON> />Yes</label>
-    <label><input class="backbox" type="radio" name="mask_rna<TMPL_VAR NAME="SEQ_NUM">" id="mask_rna<TMPL_VAR NAME="SEQ_NUM">" tabindex="22" value="0" <TMPL_VAR NAME=RNA_MASK_OFF> />No</label>
- </TR>
- <TR align=left>
-  <Td>
-   Mask Non-CDS:
-  <TD>
-   <label><input class="backbox" type="radio" name="mask_ncs<TMPL_VAR NAME="SEQ_NUM">" id="mask_ncs<TMPL_VAR NAME="SEQ_NUM">" tabindex="22" value="1" <TMPL_VAR NAME=NONCODING_MASK_ON> />Yes</label>
-   <label><input class="backbox" type="radio" name="mask_ncs<TMPL_VAR NAME="SEQ_NUM">" id="mask_ncs<TMPL_VAR NAME="SEQ_NUM">" tabindex="22" value="0" <TMPL_VAR NAME=NONCODING_MASK_OFF> />No</label>
- </TR>
- <TR align=left>
-  <Td>
-   Mask Non-genic:
-  <TD>
-   <label><input class="backbox" type="radio" name="mask_ngene<TMPL_VAR NAME="SEQ_NUM">" id="mask_ngene<TMPL_VAR NAME="SEQ_NUM">" tabindex="22" value="1" <TMPL_VAR NAME=NONGENE_MASK_ON> />Yes</label>
-   <label><input class="backbox" type="radio" name="mask_ngene<TMPL_VAR NAME="SEQ_NUM">" id="mask_ngene<TMPL_VAR NAME="SEQ_NUM">" tabindex="22" value="0" <TMPL_VAR NAME=NONGENE_MASK_OFF> />No</label>
- </TR>
-<!-- <TR align=left>
-  <Td>
-   RepeatMasker (SLOW):
-  <TD>
-	<label><input class="backbox" type="radio" name="repmask<TMPL_VAR NAME=SEQ_NUM>" id="repmask<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="1" />Yes</label>
-	<label><input class="backbox" type="radio" name="repmask<TMPL_VAR NAME=SEQ_NUM>" id="repmask<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="0" checked />No</label><br>
--->
+    <select name="mask<TMPL_VAR NAME="SEQ_NUM">" id="mask<TMPL_VAR NAME="SEQ_NUM">">
+      <option value=""   >--None--
+      <option value="cds" <TMPL_VAR NAME=MASK_CDS> >CDS
+      <option value="rna" <TMPL_VAR NAME=MASK_RNA> >All RNA
+      <option value="non-cds" <TMPL_VAR NAME=MASK_NCDS> >Non-CDS
+      <option value="non-genic" <TMPL_VAR NAME=MASK_NGENIC> >Non-genic
+    </select>
+</TD>
+</tr>
  </table>
 </table>
 </th>
@@ -1146,23 +1270,23 @@ function hide_skip(num){
    <td>
  <TMPL_LOOP NAME="HSP_COLOR_LOOP">
   <table>
-
   <tr>
    <td class="small" nowrap>
-     HSP <TMPL_VAR NAME="HSP_NUM"> color:
-   <TD class="small" nowrap>
+    HSP <TMPL_VAR NAME="HSP_NUM"> color:
+   <!-- <TD class="small" nowrap>
      R:<input class="backbox" type="text" onBlur="update_colors('<TMPL_VAR NAME="HSP_NUM">')" name="r<TMPL_VAR NAME="HSP_NUM">" id="r<TMPL_VAR NAME="HSP_NUM">" tabindex="1"  size="3" value="<TMPL_VAR NAME="RED">" />
    <TD class="small" nowrap>
      G:<input class="backbox" type="text" onBlur="update_colors('<TMPL_VAR NAME="HSP_NUM">')" name="g<TMPL_VAR NAME="HSP_NUM">" id="g<TMPL_VAR NAME="HSP_NUM">" tabindex="1"  size="3" value="<TMPL_VAR NAME="GREEN">" />
    <TD class="small" nowrap>
-     B:<input class="backbox" type="text" onBlur="update_colors('<TMPL_VAR NAME="HSP_NUM">')" name="b<TMPL_VAR NAME="HSP_NUM">" id="b<TMPL_VAR NAME="HSP_NUM">" tabindex="1"  size="3" value="<TMPL_VAR NAME="BLUE">" />
+     B:<input class="backbox" type="text" onBlur="update_colors('<TMPL_VAR NAME="HSP_NUM">')" name="b<TMPL_VAR NAME="HSP_NUM">" id="b<TMPL_VAR NAME="HSP_NUM">" tabindex="1"  size="3" value="<TMPL_VAR NAME="BLUE">" /> -->
    <TD class="small" nowrap>
-     <div id="sample_color<TMPL_VAR NAME="HSP_NUM">" class="gevo_sample_color" style="background-color: rgb(<TMPL_VAR NAME="RED">,<TMPL_VAR NAME="GREEN">,<TMPL_VAR NAME="BLUE">)"></div>
+     <div id="sample_color<TMPL_VAR NAME="HSP_NUM">" class="color_chooser" value='<TMPL_VAR NAME="RED">,<TMPL_VAR NAME="GREEN">,<TMPL_VAR NAME="BLUE">' style="background-color: rgb(<TMPL_VAR NAME="RED">,<TMPL_VAR NAME="GREEN">,<TMPL_VAR NAME="BLUE">)"></div>
+ <!-- <div id="sample_color<TMPL_VAR NAME="HSP_NUM">" style="background-color: rgb(<TMPL_VAR NAME="RED">,<TMPL_VAR NAME="GREEN">,<TMPL_VAR NAME="BLUE">)"  value="rgb(<TMPL_VAR NAME="RED">,<TMPL_VAR NAME="GREEN">,<TMPL_VAR NAME="BLUE">)"class="simple_color"</div>-->
   </table>
-  </th>
  </TMPL_LOOP>
   </table>
 </TMPL_IF>
+
 
 
 <TMPL_IF NAME=GEN_REFERENCE_SEQUENCES>
@@ -1175,5 +1299,5 @@ function hide_skip(num){
 </TMPL_LOOP>
 <div id="new_refseq"></div>
 </TMPL_IF>
-
+ 
 

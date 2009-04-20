@@ -1,6 +1,8 @@
 <TMPL_IF NAME="JAVASCRIPT">
 <link rel="stylesheet" type="text/css" href="/CoGe/css/ui.tabs.css" />
-<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.1.js"></SCRIPT>
+<!-- <link rel="stylesheet" type="text/css" href="/CoGe/css/jquery.tablesorter.pager.css" /> -->
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
+<!-- <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></SCRIPT> -->
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/ui.tabs.js"></SCRIPT>
 <SCRIPT language="JavaScript">
 
@@ -34,6 +36,52 @@ $(document).ready(function(){
   $("#tab > ul").tabs();
 });
 
+//jQuery UI opts
+$(function() {
+ //substaniate dialog boxes	     
+        $(".dialog_box").dialog({ autoOpen: false });
+	
+/**Button initializations**/
+	//Run CoGeBlast
+	$('#run_cogeblast_button').click(function() {
+					reset_basename();
+					generate_basefile([],[update_basename]);
+					blastOff();
+			});
+	//Add all Listed
+	$('#add_all_listed_button').click(function() {
+				 add_all_orgs();
+			});
+	//Remove
+	$('#remove').click(function() {
+		$('#genome_choice option:selected').each(function(){
+    			      $('#'+$(this).val()).remove();
+    		});
+ 		counting();
+	});
+	//Add
+	$('#add').click(function() {
+			add_selected_orgs();
+	});
+	
+	
+				  	
+	//Get org info
+	$("#genome_info_button").click(function() {
+					get_genome_info(['args__dsgid','dsgid'],['genome_info_popup']);
+					$('#genome_info_popup').dialog('open');
+			});
+});
+/*
+$(function() {
+	     $("#tab").tabs({
+	select: function(){adjust_blast_types(0);}
+});
+	     $(".coge_opts").bind('tabselect',function(){adjust_blast_types();}); 
+	     $(".ncbi_opts").bind('tabselect',function(){adjust_blast_types(1);alert('Heelo, woorld');});
+});
+*/
+
 function generate_seq_obj(dsid,upstream,downstream,seqview,chr,rc,featid){
   this.featid=featid;
   this.dsid=dsid;
@@ -42,6 +90,7 @@ function generate_seq_obj(dsid,upstream,downstream,seqview,chr,rc,featid){
   this.seqview=seqview;
   this.chr=chr;
   this.rc=rc;
+  this.gstid=<TMPL_VAR NAME=GSTID>;
 }
 
 function update_info_box(featid) {
@@ -67,27 +116,14 @@ function loading(id,msg) {
 }
 
 function show_hsp_div() {
-  if( $('#result_visual').is(':hidden') == true) $('#result_visual').show(0);
+  if( $('#result_visual').is(':hidden') ) $('#result_visual').show(0);
 }
 
-function add_to_list(id,org,sort){
-  if (!id && !org) {return;}
-  var check = $('#'+id).val();
-  if (check){
-//   alert('You have already added '+org+'.');
-   return;
-  }
-  var html = '<option id='+id+' value='+id+' ondblclick="remove_selected_orgs();">'+org+'</option>';
-  $('#blank').remove();
-  $('#db_choice').append(html);	
-  if (sort) {sort_db_choice();}
-  counting();
-}
 
 function counting(){
-  var count = $('#db_choice').getLength();
-  if (count == 0) {$('#db_choice').html('<option id=blank value=null>No Database Selected</option>');}
-  $('.count').html('Organism count: '+count);
+  var count = $('#genome_choice').getLength();
+  if (count == 0) {$('#genome_choice').html('<option id=blank value=null>No Organism Selected</option>');}
+  $('#selected_genome_count').html(count);
 }
 
 function fill_nearby_feats(id,update) {
@@ -121,13 +157,13 @@ function update_checkbox(name, dist, hspid, id){
   
   $('#feat'+hspid).html(name);
   $('#dist'+hspid).html(dist);
-  	var id_array = new Array();
-	if (id)
-	 {
-  	id_array = id.split(',');
-  	$('#checkbox'+id_array[0]).attr("id","checkbox"+id_array[1]);
-  	$('#'+id_array[0]).attr("value",id_array[1]).attr("id",id_array[1]);
-         }
+  var id_array = new Array();
+  if (id)
+   {
+     id_array = id.split(',');
+     $('#checkbox'+id_array[0]).attr("id","checkbox"+id_array[1]);
+     $('#'+id_array[0]).attr("value",id_array[1]).attr("id",id_array[1]);
+   }
 }  
 
 function overlap_checkboxes() {
@@ -205,19 +241,9 @@ function send_to_gevo(url,num_accns) {
 
 
 function enlarge_picture_window(id) {
-  var window_width = $(window).width();
-  var image_width = pageObj.image_width || 800;
-  var left_padding;
-  if ((window_width - image_width) <= 0) {
-    left_padding = 4;
-  }
-  else {
-    left_padding = ((window_width - image_width)/2);
-  }
-  var html = "<a href='#' onClick=\"$('#big_picture').slideToggle(pageObj.speed);\" style='float: right;'><img src='/CoGe/picts/delete.png' width='16' height='16' border='0'></a>";
-  html = html + $('#large_db'+id).html();
-  html = html+'<br>'+$('#large_pic'+id).html();
-  $('#big_picture').html(html).css("left",''+left_padding).width(image_width).slideDown(pageObj.speed);
+ var  html = $('#large_db'+id).html();
+  html = html+'<br/>'+$('#large_pic'+id).html();
+  $('#big_picture').html(html).dialog('open');
 }
 
 
@@ -230,8 +256,8 @@ function show_seq(seq,name,num,dsid,chr,start,stop, rc) {
     if (dsid == "seqObj") dsid = seqObj.dsid;
     if (chr == "seqObj") chr = seqObj.chr;
   } 
-  var html = "<a href='#' onClick=\"$('#sequence_popup').slideToggle(pageObj.speed);\" style='float: right;'><img src='/CoGe/picts/delete.png' width='16' height='16' border='0'></a>";
-  html = html + "<TABLE width=100%><TR><TD valign='top' align='right'>"+which_seq+" Name: </TD><TD align=justify>"+name+"</TD></TR>";
+ 
+  var html = html + "<TABLE width=100%><TR><TD valign='top' align='right'>"+which_seq+" Name: </TD><TD align=justify>"+name+"</TD></TR>";
   
   //*1 to make sure js sees integer
   if (stop*1 > start*1) { 
@@ -243,21 +269,10 @@ function show_seq(seq,name,num,dsid,chr,start,stop, rc) {
   //check to see if SeqView is an option, then display link
   var regex = /^\d+$/;
   if (regex.test(dsid) && dsid != 0 && which_seq == "Subject") {
-    html = html + "<br><a target='_blank' href='/CoGe/SeqView.pl?dsid="+dsid+"&chr="+chr+"&start="+start+"&stop="+stop+"&rc="+rc+">Click to view sequence in SeqView</a>";
+    var seqview = "/CoGe/SeqView.pl?dsid="+dsid+"&chr="+chr+"&start="+start+"&stop="+stop+"&rc="+rc;
+    $('#sequence_popup').dialog('option','buttons',{"View Sequence in SeqView": function() { window.open(seqview); }});
   }
-  var window_width = $(document).width();
-  var left_padding;
-  var info_width = 800;
-  if ((window_width - info_width) <= 0) {
-    left_padding = 4;
-  }
-  else {
-    left_padding = ((window_width - info_width)/2);
-  }
-  $('#sequence_popup').html(html).css("left",''+left_padding).width(info_width).slideDown(pageObj.speed);
-  if ($('#sequence_popup').height() >= $(document).height() - 40) {
-    $('#sequence_popup').css("height",''+$(document).height() - 40);
-  }
+  $('#sequence_popup').html(html).dialog('open');
 }
 
 function get_params(){
@@ -335,7 +350,7 @@ function blastOff(){
   }
   pageObj.waittime=1000;
   //alert("Passed setTimeout loop");
-  var check = $('#db_choice').getLength();
+  var check = $('#genome_choice').getLength();
   if(($('#blank').val())||(check==0)){
     alert('You have not selected any databases to blast. You must select at least one.');
     $('#coge_blast').slideDown(pageObj.speed);
@@ -373,7 +388,7 @@ function blastOff(){
 
   var page_width = ($('#co').width())*(95/100);
   pageObj.image_width = page_width;
-  var blastable_db = $('#db_choice').getLength(1);
+  var blastable_db = $('#genome_choice').getLength(1);
   //alert(pageObj.basename);
   blast_search([
   'args__program','args__'+program,
@@ -414,10 +429,15 @@ function blastresults(html, click_all_links){
   }
   else {
   var table_height = $('#hsp_result_table_body').height();
-  var max_height = 300;
+  var max_height = 400;
   if (table_height > max_height) $('#hsp_result_table_body').height(max_height);
   init_table();
+  init_table_opts();
+  add_button_states('#table_opts');
  }
+ check_display();
+
+
 }
 
 function init_table () {
@@ -443,10 +463,24 @@ $(function(){
 		          11: {sorter: 'percent'}
 			 },					
 		sortList: [[2,0],[5,0]],
+//		})
+//		.tablesorterPager({container: $("#pager")
 		});
  });
 }
 
+//Need to instantiate this seperately from other dialog boxes, need to do this AFTER results are generated
+function init_table_opts() {
+	//substaniate dialog box	     
+	     $("#table_opts_dialog").dialog({ height: 163,
+	       				     width: 746,
+					     autoOpen: false,
+	});
+	     //button effects on events
+	     $('#table_opts').click(function() {
+					$('#table_opts_dialog').dialog('open');
+		});
+}
 
 function ncbi_blast(url) {
  if (url == 1)
@@ -511,6 +545,7 @@ function update_gapcost_ncbi(pro) {
 $.fn.getLength = function(val){
   var opt_length;
   var blastable;
+  var blanked=0; //otherwise get math problems later...boo javascript
   this.each(
   	function()
   	{
@@ -518,6 +553,7 @@ $.fn.getLength = function(val){
   		opt_length = opts.length;
   		if (opt_length == 0) {return opt_length;}
   		blastable = opts[0].id;
+		if (blastable == 'blank') {blanked++;} //Counts the number of instances of blank
   		if (val){
   		  for(var i=1;i<opts.length;i++)
 	  	  {
@@ -528,7 +564,8 @@ $.fn.getLength = function(val){
   	}
   );
   if(val) return blastable;
-  else return opt_length;
+  if (blanked) {opt_length-=blanked;} //subtract elements that are classified as blank above
+  return opt_length;
 };
 
 $.fn.sortSelect = function(){
@@ -580,7 +617,7 @@ function display_correct_radio(display,val) {
 }
 
 function hide_big_picture() {
-  if ($('#big_picture').is(':hidden') == false) $('#big_picture').slideToggle(pageObj.speed);
+  if ( $('#big_picture').dialog('isOpen') ) $('#big_picture').dialog('close');
 }
 
 function select_blast() {
@@ -607,7 +644,8 @@ function get_seq(which_type) {
 	'args__blast_type', which_type, 
 	'args__upstream', 'args__'+seqObj.upstream,
 	'args__downstream', 'args__'+seqObj.downstream,
-	'args__rc','args__'+seqObj.rc
+	'args__rc','args__'+seqObj.rc,
+	'args__gstid','args__'+seqObj.gstid
 	],['seq_box']);
  }
  else if (chr) {
@@ -616,7 +654,8 @@ function get_seq(which_type) {
    	'args__dsid','args__'+dsid,
 	'args__blast_type', which_type, 
 	'args__start', 'args__'+seqObj.upstream,
-	'args__stop', 'args__'+seqObj.downstream
+	'args__stop', 'args__'+seqObj.downstream,
+	'args__gstid','args__'+seqObj.gstid
 	],['seq_box']);
  }
  else {
@@ -693,14 +732,27 @@ function toggleFeature(html,check) {
  }
 }
 
-function org_search(){
+function org_search(desc_search){
   if (pageObj.time){
    clearTimeout(pageObj.time);
   }
+  name = $('#org_name').val();
+  desc = $('#org_desc').val()
+  if (desc_search) {
+    if ( pageObj.prev_desc == desc ) {return;}
+    pageObj.time = setTimeout("get_orgs(['args__desc','args__'+desc], ['org_list']);",500);
+    setTimeout("pageObj.prev_desc=desc",500);
+    pageObj.prev_name="";
+   }
+  else
+   {
+    if ( pageObj.prev_name == name) {return;}
+    pageObj.time = setTimeout("get_orgs(['args__name','args__'+name], ['org_list']);",500);
+    setTimeout("pageObj.prev_name=name",500);
+    pageObj.prev_desc="";
 
-  pageObj.time = setTimeout("get_orgs(['args__name','org_name','args__desc','org_desc'], ['org_list']);",500);
-//  get_orgs(['args__name','org_name','args__desc','org_desc'], ['org_list']);
-  setTimeout("seq_type_search()",500);
+   }
+  setTimeout("seq_type_search()",600);
 }
 
 function seq_type_search() {
@@ -710,7 +762,7 @@ function seq_type_search() {
      setTimeout("seq_type_search()",500);
     }
   else if ($('#org_id').val()) {
-    get_seq_types(['org_id'],['org_seq_types']);
+    gen_dsg_menu(['args__oid', 'org_id'],['org_seq_types']);	
     show_add();
    }
   else {
@@ -719,25 +771,22 @@ function seq_type_search() {
   }
 }
 
-function search_bar(div_id){
-  if($('#'+div_id).val() == "Search") $('#'+div_id).val("").css({fontStyle: "normal"});
+/* Obselete via jQuery magick
+function search_bar(obj){
+  if($(obj).val() == "Search"){ $(obj).css({fontStyle: "normal"});}
 }
 
-function restore_search_bar(div_id){
-  if($('#'+div_id).val() == "") {
-  $('#'+div_id).val("Search").css({fontStyle: "italic"});
+function restore_search_bar(obj){
+  if($(obj).val() == "") {
   get_orgs(['args__name','org_name','args__desc','org_desc'], ['org_list']);
  }
 }
 
-function clear_box(div_id) {
- $('#'+div_id).val("");
-}
 
-function org_info(info){
+function genome_info(info){
   var xpos = pageObj.lastMouseX + 5;
   var ypos =pageObj.lastMouseY + 5;
-  var html = "<a href='#' onClick=\"$('#org_info_popup').slideToggle(pageObj.speed);\" style='float: right;'><img src='/CoGe/picts/delete.png' width='16' height='16' border='0'></a>";
+  var html = "<span onClick=\"$('#genome_info_popup').slideToggle(pageObj.speed);\" style='float: right;'><img src='/CoGe/picts/delete.png' width='16' height='16' border='0'></span>";
   html = html + info;
   var window_width = $(document).width();
   var left_padding;
@@ -748,11 +797,13 @@ function org_info(info){
   else {
     left_padding = ((window_width - info_width)/2);
   }
-  $('#org_info_popup').html(html).css({left:''+xpos,top:''+ypos}).width(info_width).slideDown(pageObj.speed);
-  if ($('#org_info_popup').height() >= $(document).height() - 40) {
-    $('#org_info_popup').css("height",''+$(document).height() - 40);
+  $('#genome_info_popup').html(html).css({left:''+xpos,top:''+ypos}).width(info_width).slideDown(pageObj.speed);
+  if ($('#genome_info_popup').height() >= $(document).height() - 40) {
+    $('#genome_info_popup').css("height",''+$(document).height() - 40);
   }
 }
+*/
+
 
 function adjust_blast_types(val){
   if(val == 1){
@@ -909,40 +960,79 @@ window.open('/CoGe/MatrixView.pl?matrix='+matrix);
 
 function clear_org_list()
  {
- $('#db_choice').empty();
+ $('#genome_choice').empty();
  counting();
  }
 
 
 function remove_selected_orgs() {
- $('#db_choice option:selected').each(function(){
+ $('#genome_choice option:selected').each(function(){
     $('#'+$(this).val()).remove();
     });
  counting();
-
  }
  
 function add_all_orgs() {
+ var ids;
+ var count =0;
  $('#org_id option').each(function(){
-    get_from_id(['args__'+$(this).val()],[add_to_list])
-    });
-  sort_db_choice();
+     ids = ids+","+$(this).val();
+     if (count == 100)
+      {
+         get_dsg_for_blast_menu(['args__orgid','args__'+ids],[add_to_list])
+         ids = "";
+         count =0;
+      }
+
+     count++;
+   });
+ get_dsg_for_blast_menu(['args__orgid','args__'+ids],[add_to_list])	
+ sort_genome_choice();
 }
 
 function add_selected_orgs() {
+ var ids;
+ var count =0;
  $('#org_id option:selected').each(function(){
-    get_from_id(['args__'+$(this).val()],[add_to_list])
+     ids = ids+","+$(this).val();
+     if (count == 100)
+      {
+         get_dsg_for_blast_menu(['args__orgid','args__'+ids],[add_to_list])
+         ids = "";
+         count =0;
+      }
+
+     count++;
     });
-  sort_db_choice();
+  get_dsg_for_blast_menu(['args__orgid','args__'+ids],[add_to_list])
+  sort_genome_choice();
 }
 
-function sort_db_choice() {
+function add_to_list(stuff){
+  var orgs = stuff.split(':::');
+  for (var i=0; i < orgs.length; i++)
+   {
+     var item = orgs[i].split('::');
+     id = item[0];
+     org = item[1];
+     if (!id && !org) {continue;}
+     var check = $('#'+id).val();
+     if (check){ continue; }
+     var html = '<option id='+id+' value='+id+' ondblclick="remove_selected_orgs();">'+org+'</option>';
+     $('#blank').remove();
+     $('#genome_choice').append(html);
+   }	
+  counting();
+}
+
+
+function sort_genome_choice() {
     if (ajax.length)
      {
-       setTimeout("sort_db_choice()",100);	
+       setTimeout("sort_genome_choice()",100);	
        return;
      }
-   $('#db_choice').append().sortSelect();
+   $('#genome_choice').append().sortSelect();
 }
 
 function toggle_hsp_column(index) {
@@ -953,15 +1043,67 @@ $('#hsp_result_table tr').each(function() {
 }
 
 
+function check_display() {
+var i = 1;
+var regex = /checked/i;
+$('#show_columns td').each(function() {
+    if (!regex.test($(this).html())){ toggle_hsp_column(i);}
+    i++;
+  });
+
+}
+
+function save_display_settings() {
+var i=1;
+var index;
+$("input.display[@type=checkbox]").each(function(){
+  if($(this)[0].checked) {
+    if (index) {index= index +","+i;}
+    else {index = i;}
+  }
+  i++;
+ });
+save_settings_cogeblast(['args__display','args__'+index],[]);
+}
+
+
+//jQuery setup for org search textboxes
+$(function() {
+	     $(".org_search_name")
+	     .focus(function() {
+	     		     //Clear search bar if 'Search' is in it or is empty (if someone refreshes)
+	     		     if( $(this).val() == 'Search' ||  $(this).val() == ''){ $(this).css({fontStyle: "normal"});
+			      $(this).val('');
+			      }
+			     org_search();
+			   })
+	    .keyup(function() {
+	    		      org_search();
+			      });
+	     $(".org_search_desc")
+	     .focus(function() {
+	     		     //Clear search bar if 'Search' is in it or is empty (if someone refreshes)
+	     		     if( $(this).val() == 'Search' ||  $(this).val() == ''){ $(this).css({fontStyle: "normal"});
+			      $(this).val('');
+			      }
+			     org_search(1);
+			   })
+	    .keyup(function() {
+	    		      org_search(1);
+			      });
+});
+
+
 </SCRIPT>
 </TMPL_IF>
 
 <TMPL_IF NAME="BLAST_FRONT_PAGE">
-<div id=big_picture title="Enlarged Image of HSP Hits" class="image_window" style="display:none;"></div>
-<div id="sequence_popup" class="image_window" style="display:none;overflow: auto;max-height: 300px;"></div>
-<div id="org_info_popup" class="image_window" style="display:none;overflow: auto;max-height: 300px;"></div>
+<div id=big_picture title="Enlarged Image of HSP Hits" class="dialog_box"></div>
+<div id="sequence_popup" class="dialog_box" title="Sequence Information"></div>
+<div id="genome_info_popup" class="dialog_box" title="Genome Information"><span class=loading>Loading. . .</span></div>
 
-<TABLE width=100%>
+
+ <TABLE width=100%>
  <TR>
   <TD>
   <div id=tab>
@@ -980,38 +1122,41 @@ $('#hsp_result_table tr').each(function() {
     </div>
   </TD>
  </TR>
- <TR>
-  <TH colspan="3">
+<TR>
+  <TH align =left colspan="3">
   <div id="cogeblast_option">
-  <a href="#" id="coge_blast_button" onClick="reset_basename();generate_basefile([],[update_basename]);blastOff();"><span>CoGe BLAST</span></a><br>
+  <span id="run_cogeblast_button" class='ui-button ui-state-default ui-corner-all'>Run GoGe Blast</span><BR><br>
+<!--  <a href="javascript:void(0)" id="coge_blast_button" onClick="reset_basename();generate_basefile([],[update_basename]);blastOff();"><span>CoGe BLAST</span></a><br>-->
    <DIV id = "co" name="slider" class="topItem">CoGe BLAST Options:</DIV>
    <DIV class="dropMenu" id="query_seqs">
    <TABLE class="list" >
        <TR valign=top>
           <TD>
-   	<DIV id="blah">Organism Name: <input type="text" size=11 onFocus="search_bar('org_name');clear_box('org_desc');restore_search_bar('org_desc');" style="font-style:italic" value="Search" name="org_name" id="org_name" onBlur="restore_search_bar('org_name')" onKeyUp='org_search();'></DIV>
-   	<DIV id="blah">Organism Description: <input type="text" size=11 onFocus="search_bar('org_desc');clear_box('org_name');restore_search_bar('org_name');" style="font-style:italic" value="Search" name="org_desc" id="org_desc" onBlur="restore_search_bar('org_desc')" onKeyUp='org_search();'></DIV>
+        <table>
+	<tr><Td>
+   	<DIV id="blah">Organism Name: <input type="text" size=11 style="font-style:italic" class="org_search_name" value="Search" name="org_name" id="org_name"></DIV>
+   	<DIV id="blah">Organism Description: <input type="text" class="org_search_desc" size=11 style="font-style:italic" value="Search" name="org_desc" id="org_desc"></DIV>
+<tr valign=top><td>
    	<DIV id="org_list"><TMPL_VAR NAME="ORG_LIST"></DIV>
    	<DIV id="org_seq_types"><TMPL_VAR NAME="ORG_SEQ_TYPES"></DIV>
-   	<input type=button value="Get Org Info" onClick="org_info('<span class=loading>Loading. . .</span>');dataset_description_for_org(['org_id', 'seq_type_id'],[org_info]);pageObj.lastMouseX=event.pageX;pageObj.lastMouseY=event.pageY;">
-   	<input type=button value="Add all listed" onClick="add_all_orgs();">
+   	<a href="javascript:void(0)" id="genome_info_button" class='ui-button ui-button-icon-left ui-state-default ui-corner-all'><span class="ui-icon ui-icon-info"></span>Get Genome Info</a>
+	<a id="add_all_listed_button" href="javascript:void(0)" class='ui-button ui-button-icon-left ui-state-default ui-corner-all'><span class="ui-icon ui-icon-plusthick"></span>Add all listed</a>
    	  </TD>
    	  <TD valign="middle" align=middle>
-<!--	  <input type="button" style="display: none" id=remove value="&larr; Remove" onClick="$('#'+$('#db_choice').val()).remove();counting();"> -->
-	  <input type="button" style="display: none" id=remove value="&larr; Remove" onClick="remove_selected_orgs();">
-   	  <input type="button" style="display: none" id=add value="Add &rarr;  " onClick="add_selected_orgs();">
+	  <a href="javascript:void(0)" onClick="remove_selected_orgs();" style="display:none" id="remove" class='ui-button ui-button-icon-left ui-state-default ui-corner-all'><span class="ui-icon ui-icon-minus"></span>Remove</a>
+	  <a href="javascript:void(0)" onClick="add_selected_orgs();" id="add" class='ui-button ui-button-icon-left ui-state-default ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Add</a>
    	  </TD>
            <TD>
-              <div id=db_title>Organism Database(s) to BLAST:</DIV>
-              <font class="small count">Database count: 0</font>
-              <DIV id=db_select><SELECT id="db_choice" SIZE="8" MULTIPLE onClick="$('#add').hide(0);$('#remove').show(0);">
+              <div style="float:left" id=db_title class=small>Genomes to BLAST: </DIV><div style="float:left;text-indent:1em;vertical-align: bottom" id=selected_genome_count class=small></div>
+              <DIV id=db_select><SELECT id="genome_choice" SIZE="8" MULTIPLE onClick="$('#add').hide(0);$('#remove').show(0);">
               <option id=blank value=null>No Database Selected</option>
               </SELECT></DIV>
               <TMPL_IF NAME="SAVE_ORG_LIST">
-	      <input type=button value="Save Org List" name="SaveSettings" id="SaveSettings" onclick="save_settings_cogeblast(['args__orgids','args__'+$('#db_choice').getLength(1), 'args__resultslimit','resultslimit'],[])">
+ <span onClick="clear_org_list();" id="clearlist" name=clearlist class='ui-button ui-button-icon-left ui-state-default ui-corner-all'><span class="ui-icon ui-icon-minusthick"></span>Clear Org List</span>
+	      <span class='ui-button ui-button-icon-left ui-state-default ui-corner-all' onclick="save_settings_cogeblast(['args__dsgids','args__'+$('#genome_choice').getLength(1), 'args__resultslimit','resultslimit'],[])"><span class="ui-icon ui-icon-disk"></span>Save Org List</span>
               </TMPL_IF>
-	      <input type=button value="Clear Org List" name="clearlist" id="clearlist" onclick="clear_org_list();">
            </TD>
+     </table>
      <td width="1" bgcolor="#99ff99"/>
      <TD valign="top">
       <TH align=left valign="top"> <u>Blast Parameters</u><br>
@@ -1210,7 +1355,7 @@ $('#hsp_result_table tr').each(function() {
  </DIV>
   </div>
    <div id="ncbiblast_option" style="display:none">
-   <a href="#" id="ncbi_blast_button" onClick="select_blast()"><span>NCBI BLAST</span></a><br>
+  <span id="" class='ui-button ui-state-default ui-corner-all' onClick="select_blast()" >NCBI Blast</span><BR><br>
    <DIV class="ncbiblast_opts">
    <DIV id = "ncbio" name="slider" class="topItem" onMouseOver="$('#ncbio').removeClass('topItem').addClass('topItemSelected');" onMouseOut="$('#ncbio').removeClass('topItemSelected').addClass('topItem');" onClick='animate_section("#ncbi_blast_opts", "slideToggle")'>NCBI BLAST Options:</DIV>
    <DIV class="dropMenu" id="ncbi_blast_opts">
@@ -1662,34 +1807,40 @@ $('#hsp_result_table tr').each(function() {
    
 <TMPL_IF NAME="RESULT_TABLE">
 <span class=species>HSP Table:</span>
-<input type = checkbox onclick="$('#show_columns').slideToggle();"><span class = "small" >Show HSP Table column display options?</span>
-    <table class = "small resultborder" id="show_columns" style="display :none">
+<!-- <input type = checkbox onclick="$('#show_columns').slideToggle();"><span class = "small" >Show HSP Table column display options?</span> -->
+<br/>
+<a href="javascript:void(0)" id="table_opts" class='ui-button ui-button-icon-left ui-state-default ui-corner-all'><span class="ui-icon ui-icon-newwin"></span>Change Viewable Columns</a>
+<div id="table_opts_dialog" class="dialog_box" title="Table Information Options">
+    <table class = "small resultborder" id="show_columns">
      <tr>
-       <td><input type = checkbox onclick="toggle_hsp_column(1);" checked>Query Sequence Name
-       <td><input type = checkbox onclick="toggle_hsp_column(2);" checked>Organism Name
-       <td><input type = checkbox onclick="toggle_hsp_column(3);" checked>Chromosome
-       <td><input type = checkbox onclick="toggle_hsp_column(4);" checked>Position
+       <td><input class="display" type = checkbox onclick="toggle_hsp_column(1);" <TMPL_VAR NAME="QND">>Query Sequence Name
+       <td><input class="display" type = checkbox onclick="toggle_hsp_column(2);" <TMPL_VAR NAME="OrgD">>Organism Name
+       <td><input class="display" type = checkbox onclick="toggle_hsp_column(3);" <TMPL_VAR NAME="ChrD">>Chromosome
+       <td><input class="display" type = checkbox onclick="toggle_hsp_column(4);" <TMPL_VAR NAME="PosD">>Position
      <tr>
-       <td><input type = checkbox onclick="toggle_hsp_column(5);" checked>HSP Number
-       <td><input type = checkbox onclick="toggle_hsp_column(6);" checked>HSP Length
-       <td><input type = checkbox onclick="toggle_hsp_column(7);" checked>Query Sequence Coverage
-       <td><input type = checkbox onclick="toggle_hsp_column(8);" checked>HSP E-value
+       <td><input class="display" type = checkbox onclick="toggle_hsp_column(5);" <TMPL_VAR NAME="NumD">>HSP Number
+       <td><input class="display" type = checkbox onclick="toggle_hsp_column(6);" <TMPL_VAR NAME="LengthD">>HSP Length
+       <td><input class="display" type = checkbox onclick="toggle_hsp_column(7);" <TMPL_VAR NAME="QSCD">>Query Sequence Coverage
+       <td><input class="display" type = checkbox onclick="toggle_hsp_column(8);" <TMPL_VAR NAME="EvalD">>HSP E-value
      <tr>
-       <td><input type = checkbox onclick="toggle_hsp_column(9);" checked>HSP Percent Identity
-       <td><input type = checkbox onclick="toggle_hsp_column(10);" checked>HSP Score
-       <td><input type = checkbox onclick="toggle_hsp_column(11);" checked>HSP Quality (query coverage * percent ID)
-       <td><input type = checkbox onclick="toggle_hsp_column(12);" checked>Closest Genomic Feature
+       <td><input class="display" type = checkbox onclick="toggle_hsp_column(9);" <TMPL_VAR NAME="PIDD">>HSP Percent Identity
+       <td><input class="display" type = checkbox onclick="toggle_hsp_column(10);" <TMPL_VAR NAME="ScoreD">>HSP Score
+       <td><input class="display" type = checkbox onclick="toggle_hsp_column(11);" <TMPL_VAR NAME="QualD">>HSP Quality (query coverage * percent ID)
+       <td><input class="display" type = checkbox onclick="toggle_hsp_column(12);" <TMPL_VAR NAME="FeatD">>Closest Genomic Feature
      <tr>
-       <td><input type = checkbox onclick="toggle_hsp_column(13);" checked>Distance to Closest Feature
-
+       <td><input class="display" type = checkbox onclick="toggle_hsp_column(13);" <TMPL_VAR NAME="DistD">>Distance to Closest Feature
+   <TMPL_IF NAME="SAVE_DISPLAY">	  
+     <TR><td><input type=button value="Save Display Settings" name="SaveSettings" id="SaveSettings" onclick="save_display_settings()">
+   </TMPL_IF>
     </table>
+</div>
  
 
 
-   <div id=table_size style="max-height: 340px;">
+   <div id=table_size>
    <div id="null"><TMPL_VAR NAME=NULLIFY></div>
    <TMPL_IF NAME="HSP_TABLE">
-   <TABLE id="hsp_result_table" cellspacing="2" class="resultborder" style="overflow: auto;">
+   <TABLE id="hsp_result_table" cellspacing="2" class="resultborder">
      <!--<caption>HSPs w/o overlapping features:</caption>-->
      <THEAD>
       <TR nowrap align=middle>
@@ -1705,11 +1856,11 @@ $('#hsp_result_table tr').each(function() {
         <TH nowrap class=header>Perc ID</TH>
         <TH nowrap class=header>Score</TH>
         <TH nowrap class=header>Quality</TH>
-        <TH class=header>Closest Genomic Feature</TH>
+        <TH class=header>Closest Genomic Feature<br><span class="small link" onclick="click_all_feat_links();$('#click_links').hide(0)">Find All</span> </TH>
         <TH nowrap class=header>Distance(bp)</TH>
        </TR>
      </THEAD>
-     <TBODY id=hsp_result_table_body style="overflow: auto;">
+     <TBODY id=hsp_result_table_body style="overflow-y: auto;overflow-x: hidden;">
      <TMPL_LOOP NAME=HSPS>
        <tr class="feat" id="<TMPL_VAR NAME=ID>" >
          <td align=right id="checkbox<TMPL_VAR NAME=CHECKBOX>"><input type=checkbox id="<TMPL_VAR NAME=CHECKBOX>" value="<TMPL_VAR NAME=CHECKBOX>"></td>
@@ -1737,15 +1888,17 @@ $('#hsp_result_table tr').each(function() {
 </TMPL_IF>
    
    <TMPL_IF NAME=CHROMOSOMES_IF>
+   <table>
        <TMPL_LOOP NAME=CHROMOSOME_LOOP>
+       <tr><Td>
+       <div <TMPL_VAR NAME="DIV_STYLE">>
          <TMPL_VAR NAME=DB_NAME>
-         <TMPL_VAR NAME=CHR_IMAGE>
-         <TMPL_IF NAME=HIT>
-         <a href='#imagewindow' onClick="enlarge_picture_window(<TMPL_VAR NAME=IMAGE_ID>);" class=small>Enlarge Picture</a>
-         </TMPL_IF>
-        <br><br>
+         <TMPL_VAR NAME=ENLARGE>
+	</div>
+        <TMPL_VAR NAME=CHR_IMAGE>
        </TMPL_LOOP>
-   </TMPL_IF>
+    </table>
+    </TMPL_IF>
    
    <TMPL_IF NAME=CHROMOSOMES_LARGE_IF>
         <TMPL_LOOP NAME=CHROMOSOME_LOOP_LARGE>
@@ -1892,11 +2045,30 @@ $('#hsp_result_table tr').each(function() {
           <form id=feature_list>
           <TMPL_VAR NAME="HSP_RESULTS">
           </form>
+<!--	  <div id="pager" class="pager">
+	  <form>
+		<img src="/CoGe/picts/tablesorter-pager-icons/first.png" class="first"/>
+		<img src="/CoGe/picts/tablesorter-pager-icons/prev.png" class="prev"/>
+		<input type="text" class="pagedisplay"/>
+		<img src="/CoGe/picts/tablesorter-pager-icons/next.png" class="next"/>
+		<img src="/CoGe/picts/tablesorter-pager-icons/last.png" class="last"/>
+		Display how many rows? 
+		<select class="pagesize">
+			<option selected="selected"  value="10">10</option>
+			<option value="20">20</option>
+			<option value="30">30</option>
+			<option  value="40">40</option>
+			<option value="9999">Show all</option>
+		</select> -->
+	</form>
+</div>
+
           <table>
             <tr valign=top>
 		<td align=left>
-       		    <input type=button id="click_links" value="Show all Features" onClick="click_all_feat_links();$('#click_links').hide(0)"> <input type=button value="Select All" onClick="$('#hsp_result_table :checkbox').attr('checked', true);">  <input type=button value="Select None" onClick="$('#hsp_result_table :checkbox').attr('checked', false);"> 
-        	    <br>
+       		    
+		    <input type=button value="Select All" onClick="$('#hsp_result_table :checkbox').attr('checked', true);">  
+		    <input type=button value="Select None" onClick="$('#hsp_result_table :checkbox').attr('checked', false);"> 
          		Do Following to Checked Features: 
           		<select name=overlap_action id=overlap_action>
            		 <option value = "gevo">Send to GEvo</option>
@@ -1908,8 +2080,8 @@ $('#hsp_result_table tr').each(function() {
           		<input type=button value="Go" onClick="overlap_checkboxes()">
             <tr valign=top>
 		<td align=left class=species>HSP count:
-		<input type = checkbox onclick="$('#hsp_count_data').slideToggle();" checked><span class = "small" >Show Table?</span>
-	        <div id="hsp_count_data"><TMPL_VAR NAME=HSP_COUNT></div>
+		<input type = checkbox onclick="$('#hsp_count_data').slideToggle();"><span class = "small" >Show Table?</span>
+	        <div id="hsp_count_data" style="display:none;"><TMPL_VAR NAME=HSP_COUNT></div>
        <tr><td colspan=2 align=left><div id=overlap_box style="display: none" valign="top" class="resultborder"></div>
  	</table>
  </div>

@@ -16,7 +16,7 @@ if (ajax.length)
     return;
    }
    var table_height = $('#featlist_body').height();
-   var max_height = 300;
+   var max_height = 400;
   if (table_height > max_height) $('#featlist_body').height(max_height);
   init_table();
 }
@@ -31,14 +31,70 @@ $(function(){
 		widgets: ['zebra'],
 		textExtraction: 'complex',
 		headers: {0: {sorter: false}},					
-		sortList: [[1,0],[2,0]],
+		sortList: [[2,0],[3,0]],
 		});
  });
 }
+function show_feature_info(featid){
+if ($('#feat_info').is(':hidden')) $('#overlap_box').slideDown(pageObj.speed);
+  generate_feat_info(['args__'+featid],['feat_info']);
+}
+
+jQuery.fn.getCheckboxes = function()
+{
+	var str = ",";
+	this.each(
+			function()
+			{
+				jQuery("input[@type=checkbox]",this).each(
+					function() {
+					  //alert(this.value);
+					  if (this.checked == true) str = str + this.id +",";
+					}
+				);
+			}
+		);
+	return str;
+};
+
+jQuery.fn.checkCheckboxes = function()
+{
+	//var returnWhat = jQuery([]);
+	this.each(
+		function()
+		{
+			jQuery("input[@type=checkbox]", this).each(
+				function()
+				{
+					this.checked = true;
+				}
+			);
+			//returnWhat = checked;
+		}
+	);
+	//returnWhat = this;
+};
+
+
+jQuery.fn.unCheckCheckboxes = function()
+{
+	//var returnWhat = jQuery([]);
+	this.each(
+		function()
+		{
+			jQuery("input[@type=checkbox]", this).each(
+				function()
+				{
+					this.checked = false;
+				}
+			).filter(":not(:checked)");
+		}
+	);
+};
 
 </SCRIPT>
 
-<div id=chr_img style="overflow: auto;max-height: 500px;">
+<div id=chr_img style="overflow: auto;max-height: 800px;">
 <table>
 <TMPL_LOOP NAME=CHROMOSOME_LOOP>
 	 <tr>
@@ -55,11 +111,13 @@ $(function(){
 <br>
 <div class="seqbackbox" style="width: 100%;height: 12px;"></div>
 <br>
-<div id=feat_table style="float: right; clear:none">
+<div id=feat_table style="float: left; clear:none">
+<form id=feature_list>
  <table id="featlist">
   <thead>
    <tr>
-    <th> </th>
+   <th> </th>
+    <th>Color</th>
     <th>Org</th>
     <th>Feature</th>
     <th>Chr</th>
@@ -69,7 +127,8 @@ $(function(){
   <tbody id="featlist_body" style="overflow: auto;">
    <TMPL_LOOP NAME=FEAT_TABLE>
     <tr>
-     <td><input type=checkbox id="<TMPL_VAR NAME=CHECKBOX>" value="<TMPL_VAR NAME=CHECKBOX>"></td>
+    <td><input type=checkbox id=check_<TMPL_VAR NAME=FID> value="<TMPL_VAR NAME=FID>"</td>
+     <td align=middle><div id=color_<TMPL_VAR NAME=FID> class="gevo_sample_color" style="background-color: <TMPL_VAR NAME=COLOR>"></td>
      <td><TMPL_VAR NAME=ORG></td>
      <td><TMPL_VAR NAME=FEAT_NAME></td>
      <td><TMPL_VAR NAME=CHR></td>
@@ -78,6 +137,19 @@ $(function(){
    </TMPL_LOOP>
   </tbody>
  </table>
+ </form>
+ Select color: 
+ <select id=color_select>
+ <option value='red'>Red</option>
+ <option value='blue'>Blue</option>
+ <option value='green'>Green</option>
+ <option value='orange'>Orange</option>
+ <option value='yellow'>Yellow</option>
+ <option value='purple'>Purple</option>
+ <option value='brown'>Brown</option>
+  <option value='gray'>Gray</option>
+  </select>
+  <input type=button value="Go" onclick=update_color_scheme();>
 </div>
 <div id=genome_img style="float: left"></div>
-<div id=feat_info style="width: 1200px;float: left;"></div>
+<div id=feat_info style="float: right;"></div>

@@ -1,20 +1,71 @@
-<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.1.js"></SCRIPT>
+<!-- <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.columnfilters.js"></SCRIPT> -->
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
 <SCRIPT language="JavaScript">
 
 $(document).ready(function(){
 		$('#feat_table').tablesorter({		
 		sortClassAsc: 'headerSortUp',		// Class name for ascending sorting action to header
 		sortClassDesc: 'headerSortDown',	// Class name for descending sorting action to header
-		headerClass: 'header',			// Class name for headers (th's)
+//		headerClass: 'header',			// Class name for headers (th's)
 		widgets: ['zebra'],
-		textExtraction: 'complex',
-		headers: {0: {sorter: false},10: {sorter: false},11: {sorter: false}},					
+		headers: {0: {sorter: false},},					
 		});
+		check_display();
+/*		$('#feat_table').columnFilters({
+			alternateRowClassNames:['even','odd'],
+			excludeColumns: [0,],
+			});
+*/
+		$("#search_bar").keyup( function() { filter_rows( $(this).val() ); });
+		$('#search_type').mouseup( function() { filter_rows( $('#search_bar').val() ); });
 });
+
+
+//set up the jquery ui
+$(function() {
+	     //substaniate dialog box	     
+	     $("#table_opts_dialog").dialog({ height: 150,
+	       				     width: 627,
+					     autoOpen: false,
+	});
+	var page_url = document.location;
+	     $("#save_form").dialog({ autoOpen: false,
+	     			      height: 283,
+				      width: 300,
+	     			      buttons: { "Cancel": function() { $(this).dialog("close"); },
+				      	        "Save": function() { 
+						add_to_user_history(['args__work_name','work_name',
+								     'args__description','description',
+								     'args__archive','args__'+1,
+								     'args__url','args__'+page_url,
+								     'args__note','note'],[]);
+						$(this).dialog("close"); }
+						}
+	});
+	     //button effects on events
+	     $('#table_opts').click(function() {
+					$('#table_opts_dialog').dialog('open');
+			});
+	     $('#history_dialog_button').click(function() {
+					$('#save_form').dialog('open');
+			});
+
+}); 
+
+//Filters Rows for search_text - Case sensitive as of now, and searches hidden columns...
+function filter_rows (search_text){
+	 if(! search_text) { $("#feat_table tr:hidden").show(0);}
+	 else if (search_text.length >= 3) {
+	 $("#feat_table_body tr:hidden").show(0);
+	 if( $('#search_type').val() == 1 ) { $("#feat_table_body tr:not(:contains('"+search_text+"'))").hide(); }
+	 else { $("#feat_table_body tr:contains('"+search_text+"')").hide(); }
+}
+         else return;
+}
 
 function feature_checkboxes(){
   var action = $('#checked_action').val();
-  var accn="";
+  var accn=",";
   $('#feat_table :checkbox').each(function(){
      if (this.checked == true) accn = accn + this.id+",";
    });
@@ -40,6 +91,9 @@ function feature_checkboxes(){
   else if (action == "msa"){
     send_to_msa(['args__'+accn],[export_url]);
   }
+  else if (action == "featlist"){
+    send_to_featlist(['args__'+accn],[export_url]);
+  }
   else {
     alert("We will get this working ... soon.");
   }
@@ -51,6 +105,7 @@ function export_url(url,num_accns) {
     alert("You have exceeded the number of features you can send to GEvo ( 10 Max ). You currently have "+num_accns+" selected. Please uncheck "+remove+" of your checked item(s).");
   }
   else {
+    url=url+';gstid='+$('#gstid').val();
     window.open(url);
   }
 }
@@ -72,9 +127,60 @@ if (ajax.length)
     return;
    }
    var fid =    $('#CDS'+num).val();
-   codon_table(['args__featid','args__'+fid],['codon_usage'+num]);
+   codon_table(['args__fid','args__'+fid],['codon_usage'+num]);
 
 }
+
+function update_table() {
+ if (ajax.length)
+  {
+    setTimeout("update_table()",100);
+    return;
+  }
+  $('#feat_table').trigger("update");	
+ }
+
+function get_all_annos(num) {
+ for (var i=1; i<=num; i++)
+  {
+   $('#anno_'+i).removeClass('link');
+   var fid = $('#fid_'+i).val();
+   get_anno(['args__fid','args__'+fid],['anno_'+i]);
+  }
+  $('#get_all_annos').remove();
+  update_table();
+}
+
+function get_all_gc(num) {
+ for (var i=1; i<=num; i++)
+  {
+   $('#gc_'+i).removeClass('link');
+   $('#at_'+i).removeClass('link');
+   var fid = $('#fid_'+i).val();
+   get_gc(['args__fid','args__'+fid],['gc_'+i,'at_'+i]);
+  }
+  $('#get_all_gc').remove();
+    update_table();
+  		
+
+}
+
+function get_all_wgc(num) {
+ for (var i=1; i<=num; i++)
+  {
+   $('#wgc_'+i).removeClass('link');
+   $('#wat_'+i).removeClass('link');
+   var fid = $('#fid_'+i).val();
+   if ($('#wgc_'+i).html())
+    {
+      get_wobble_gc(['args__fid','args__'+fid],['wgc_'+i,'wat_'+i]);
+    }
+  }
+  $('#get_all_wgc').remove();
+  update_table();
+}
+
+
 
 function toggle_column(index) {
  $('#feat_table tr').each(function() {
@@ -83,60 +189,113 @@ function toggle_column(index) {
  });
 }
 
+function check_display() {
+var i = 1;
+var regex = /checked/i;
+$('#show_columns td').each(function() {
+    if (!regex.test($(this).html())){ toggle_column(i);}
+    i++;
+  });
+
+}
+
+function check_type (type) {
+  if (!type) {type = $('#feature_type').val();}
+  $('#feat_table tr').each(function() {
+  if (type == $('td:eq(2)',this).html())
+   {
+     $('td:eq(0) input:checkbox', this).attr('checked', true);
+   }
+ });
+ 
+}
+
+function save_display_settings() {
+var i=1;
+var index;
+$("input.display[@type=checkbox]").each(function(){
+  if($(this)[0].checked) {
+    if (index) {index= index +","+i;}
+    else {index = i;}
+  }
+  i++;
+ });
+save_FeatList_settings(['args__display','args__'+index],[]);
+}
 
 </SCRIPT>
-
-<div id="j"></div>
+<a href='#' id="table_opts" class='ui-button ui-button-icon-left ui-state-default ui-corner-all'><span class="ui-icon ui-icon-newwin"></span>Change Viewable Columns</a>
+<input type=hidden id=gstid value=<TMPL_VAR NAME="GSTID">>
+<div id="table_opts_dialog" title="Table Information Options">
 <form id=feature_list>
-<input type = checkbox onclick="$('#show_columns').slideToggle();"><span class = "small" >Show table Column display options?</span>
-    <table class = "small resultborder" id="show_columns" style="display :none">
+    <table class = "small resultborder" id="show_columns">
      <tr>
-       <td><input type = checkbox onclick="toggle_column(1);" checked>Feature Name
-       <td><input type = checkbox onclick="toggle_column(2);" checked>Type
-       <td><input type = checkbox onclick="toggle_column(3);" checked>Chromosome
-       <td><input type = checkbox onclick="toggle_column(4);" checked>Start
-       <td><input type = checkbox onclick="toggle_column(5);" checked>Stop
+       <td><input class = "display" type = checkbox onclick="toggle_column(1);" <TMPL_VAR NAME="FeatNameD">>Feature Name
+       <td><input class = "display"  type = checkbox onclick="toggle_column(2);" <TMPL_VAR NAME="TypeD">>Type
+       <td><input class = "display"  type = checkbox onclick="toggle_column(3);" <TMPL_VAR NAME="ChrD">>Chromosome
+       <td><input class = "display"  type = checkbox onclick="toggle_column(4);" <TMPL_VAR NAME="StartD">>Start
+       <td><input class = "display"  type = checkbox onclick="toggle_column(5);" <TMPL_VAR NAME="StopD">>Stop
      <tr>
-       <td><input type = checkbox onclick="toggle_column(6);" checked>Strand
-       <td><input type = checkbox onclick="toggle_column(7);" checked>Lenght
-       <td><input type = checkbox onclick="toggle_column(8);" checked>Total GC%
-       <td><input type = checkbox onclick="toggle_column(9);" checked>Total AT%
-       <td><input type = checkbox onclick="toggle_column(10);" checked>Wobble Codon GC%
+       <td><input class = "display"  type = checkbox onclick="toggle_column(6);" <TMPL_VAR NAME="StrandD">>Strand
+       <td><input class = "display"  type = checkbox onclick="toggle_column(7);" <TMPL_VAR NAME="LengthD">>Length
+       <td><input class = "display"  type = checkbox onclick="toggle_column(8);" <TMPL_VAR NAME="GCD">>Total GC%
+       <td><input class = "display"  type = checkbox onclick="toggle_column(9);" <TMPL_VAR NAME="ATD">>Total AT%
+       <td><input class = "display"  type = checkbox onclick="toggle_column(10);" <TMPL_VAR NAME="WGCD">>Wobble Codon GC%
      <tr>
-       <td><input type = checkbox onclick="toggle_column(11);" checked>Wobble Codon  AT%
-       <td><input type = checkbox onclick="toggle_column(12);" checked>Organism (version)
-       <td><input type = checkbox onclick="toggle_column(13);" checked>Annotation
-       <td><input type = checkbox onclick="toggle_column(14);" checked>Other
-    </table>
+       <td><input class = "display"  type = checkbox onclick="toggle_column(11);" <TMPL_VAR NAME="WATD">>Wobble Codon  AT%
+       <td><input class = "display"  type = checkbox onclick="toggle_column(12);" <TMPL_VAR NAME="OrgD">>Organism (version)
+       <td><input class = "display"  type = checkbox onclick="toggle_column(13);" <TMPL_VAR NAME="AnnoD">>Annotation
+       <td><input class = "display"  type = checkbox onclick="toggle_column(14);" <TMPL_VAR NAME="OtherD">>Other
 
+       <TMPL_IF NAME="SAVE_DISPLAY">
+	<TR><td><input type=button value="Save Display Settings" name="SaveSettings" id="SaveSettings" onclick="save_display_settings()">
+       </TMPL_IF>
+    </table>
+</div>
+</br>
+</br>
+Filter Table Rows: 
+<input type=text id=search_bar>
+<select id=search_type>
+<option value="1">Contains</option>
+<option value="0">Does NOT contain</option>
+</select>
+<!-- <span class=small>Tip: Use "*" for wildcards, and "!" to search for not containing</span> -->
+<div class ="small"> Feature Count: <TMPL_VAR NAME="FEAT_COUNT"></div>
 <TABLE id=feat_table>
  <THEAD align=left>
   <tr>
    <TH> </TH>
-   <TH class=header>Feature Name</TH>
-   <TH class=header>Type</TH>
-   <TH class=header>Chr</TH>
-   <TH class=header>Start</TH>
-   <TH class=header>Stop</TH>
-   <TH class=header>Strand</TH>
-   <TH class=header>Length</TH>
-   <TH class=header>GC%</TH>
-   <TH class=header>AT%</TH>
-   <TH class=header>Wobble GC%</TH>
-   <TH class=header>Wobble AT%</TH>
-   <th class=header>Organism(version)</th>
-   <th>Annotation</th>
+   <TH >Feature Name</TH>
+   <TH >Type</TH>
+   <TH >Chr</TH>
+   <TH >Start</TH>
+   <TH >Stop</TH>
+   <TH >Strand</TH>
+   <TH >Length</TH>
+   <TH >GC%
+<br><span id="get_all_gc" class="link small" onclick="get_all_gc(<TMPL_VAR NAME="FEAT_COUNT">)">Get all</span>
+   </TH>
+   <TH >AT%</TH>
+   <TH >Wobble GC%
+<br><span id="get_all_wgc" class="link small" onclick="get_all_wgc(<TMPL_VAR NAME="FEAT_COUNT">)">Get all</span>
+   </TH>
+   <TH >Wobble AT%</TH>
+   <th >Organism(version)</th>
+   <th>Annotation
+<br><span id="get_all_annos" class="link small" onclick="get_all_annos(<TMPL_VAR NAME="FEAT_COUNT">)">Get all</span>
+</th>
    <th>Other Information
 <TMPL_IF NAME=SHOW_ALL_CODON_TABLES>
-<br><span id="show_all_codon" class="link small" onclick="show_all_codon_tables(<TMPL_VAR NAME="CDS_COUNT">)">Show all codon table</span>
+<br><span id="show_all_codon" class="link small" onclick="show_all_codon_tables(<TMPL_VAR NAME="CDS_COUNT">)">Get all codon tables</span>
 </TMPL_IF>
    </th>
    </tr>
  </THEAD>
- <tbody align=left valign="top">
+ <tbody align=left valign="top" id="feat_table_body">
   <TMPL_LOOP NAME=INFO>
     <TR>
-      <TD><input type=checkbox id='<TMPL_VAR NAME=FEATID>'></TD>
+      <TD><input type=checkbox id='<TMPL_VAR NAME=FEATID>'><input type=hidden id='fid_<TMPL_VAR NAME=COUNT>' value='<TMPL_VAR NAME=FEATID>'></TD>
       <TD><TMPL_VAR NAME=NAME></TD>
       <TD><TMPL_VAR NAME=TYPE></TD>
       <TD><TMPL_VAR NAME=CHR></TD>
@@ -144,10 +303,10 @@ function toggle_column(index) {
       <TD><TMPL_VAR NAME=STOP></TD>
       <TD><TMPL_VAR NAME=STRAND></TD>
       <TD><TMPL_VAR NAME=LENGTH></TD>
-      <TD><TMPL_VAR NAME=GC></TD>
-      <TD><TMPL_VAR NAME=AT></TD>
-      <TD><TMPL_VAR NAME=WGC></TD>
-      <TD><TMPL_VAR NAME=WAT></TD>
+      <TD id="gc_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#gc_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#at_<TMPL_VAR NAME=COUNT>').removeClass('link'); get_gc(['args__fid','args__<TMPL_VAR NAME=FEATID>'],['gc_<TMPL_VAR NAME=COUNT>', 'at_<TMPL_VAR NAME=COUNT>'])"><TMPL_VAR NAME=GC></TD>
+      <TD id="at_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#gc_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#at_<TMPL_VAR NAME=COUNT>').removeClass('link'); get_gc(['args__fid','args__<TMPL_VAR NAME=FEATID>'],['gc_<TMPL_VAR NAME=COUNT>', 'at_<TMPL_VAR NAME=COUNT>'])"><TMPL_VAR NAME=AT></TD>
+      <TD id="wgc_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#wgc_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#wat_<TMPL_VAR NAME=COUNT>').removeClass('link'); get_wobble_gc(['args__fid','args__<TMPL_VAR NAME=FEATID>'],['wgc_<TMPL_VAR NAME=COUNT>', 'wat_<TMPL_VAR NAME=COUNT>'])"><TMPL_VAR NAME=WGC></TD>
+      <TD id="wat_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#wgc_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#wat_<TMPL_VAR NAME=COUNT>').removeClass('link'); get_wobble_gc(['args__fid','args__<TMPL_VAR NAME=FEATID>'],['wgc_<TMPL_VAR NAME=COUNT>', 'wat_<TMPL_VAR NAME=COUNT>'])"><TMPL_VAR NAME=WAT></TD>
       <TD><TMPL_VAR NAME=ORG></TD>
       <TD><TMPL_VAR NAME=HPP></TD>
       <TD nowrap><TMPL_VAR NAME=OTHER></TD>
@@ -156,17 +315,40 @@ function toggle_column(index) {
   </tbody>
  </TABLE>
  </form>
-<input type=button value="Check All" onclick="$('#feat_table :checkbox').attr('checked', true);">
-<input type=button value="Uncheck All" onclick="$('#feat_table :checkbox').attr('checked', false);">
- <div id='gevo_button' style="float:left">
- 			Do Following to Checked Features:  
- 			<select name=checked_action id=checked_action>
-	                 <option value = "blast">Send to CoGeBlast</option>
-	                 <option value = "gevo">Send to GEvo</option>
-           		 <option value = "msa">Send to CoGeAlign</option>
-           		 <option value = "fasta">Get FASTA Sequences</option>
-           		 <option value = "featmap">Get Feature Genome Map</option>
-           		 <option value = "xls">Export to Excel</option>
-          </selected>  
-          <input type=button value="Go" onClick="feature_checkboxes()">    
+<!--<input type=button value="Check All" onclick="$('#feat_table :checkbox').attr('checked', true);">
+<input type=button value="Uncheck All" onclick="$('#feat_table :checkbox').attr('checked', false);">-->
+
+<!-- TODO - consider putting onClick declarations in javascript for simplicity -->
+<a href="javascript:void(0);" class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="$('#feat_table :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Check All</a>
+<a href="javascript:void(0);" class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="$('#feat_table :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minus"></span>Uncheck All</a>
+<a href="javascript:void(0);" class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="check_type()"><span class="ui-icon ui-icon-check"></span>Check Features of type:</a><TMPL_VAR NAME="FEAT_TYPES">
+<a href="javascript:void(0);" id="history_dialog_button" class='ui-button ui-state-default ui-corner-all ui-button-icon-left'><span class="ui-icon ui-icon-newwin"></span>Save Table</a>
+ <div>
+  Send Checked Features to:  
+   <select name=checked_action id=checked_action>
+    <option value = "blast">CoGeBlast</option>
+    <option value = "gevo">GEvo</option>
+    <option value = "msa">CoGeAlign</option>
+    <option value = "fasta">FASTA Sequences</option>
+    <option value = "featmap">Genome Map</option>
+    <option value = "xls">Excel</option>
+    <option value = "featlist">FeatList</option>
+   </select>
+<span class='ui-button ui-state-default ui-corner-all ui-button-icon-right' onclick="feature_checkboxes();"><span class="ui-icon ui-icon-extlink"></span>Go</span>  
   </div>
+
+<div id="save_form" title="Save Results">
+<table>
+<tr>
+<td>Work Name:</td>
+<td><input type=text id='work_name' value='FeatList Data'></td>
+</tr>
+<tr>
+<td>Description:</td>
+<td><input type=text id='description'></td>
+</tr>
+<tr>
+<td>Notes:</td>
+<td><textarea style="height:150px;width:350px;" id=note></textarea></td>
+</table>
+</div>
