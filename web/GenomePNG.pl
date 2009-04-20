@@ -5,6 +5,7 @@ use CGI;
 use CoGe::Graphics;
 use Data::Dumper;
 
+
 $ENV{PATH} = "";
 my $form = new CGI;
 #print STDERR $form->self_url(-full=>1),"\n";
@@ -22,6 +23,7 @@ my $simple = $form->param('simple');
 my $chr_height = $form->param('ch') || 285;
 my $feat_height = $form->param('fh') || 50;
 my $request = $form->param('request') || "get_image";
+my $gstid = $form->param('gstid');
 my @layers;
 foreach my $layer ($form->param('layers'))
   {
@@ -51,6 +53,7 @@ else
 				 start=>$start,
 				 stop=>$stop-1,
 				 ds=>$ds,
+				 gstid=>$gstid,
 				 version=>$version,
 				 org=>$org,
 				 chr=>$chr,

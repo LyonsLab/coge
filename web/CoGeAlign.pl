@@ -10,13 +10,14 @@ use CoGe::Accessory::Web;
 use HTML::Template;
 use URI::Escape;
 use Spreadsheet::WriteExcel;
-use LWP::Simple;
-use LWP::Simple::Post qw(post post_xml);
+use LWP::UserAgent;
+#use LWP::Simple;
+#use LWP::Simple::Post qw(post post_xml);
 use CoGe::Accessory::genetic_code;
 
 $ENV{PATH} = "/opt/apache/CoGe/";
 $ENV{THREADS} =8;
-use vars qw( $TEMPDIR $TEMPURL $USER $DATE $CLUSTAL $BASEFILE $coge $cogeweb $FORM);
+use vars qw( $TEMPDIR $TEMPURL $USER $DATE $CLUSTAL $BASEFILE $coge $cogeweb $FORM $NEWICKTOPS $CONVERT);
 
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
@@ -27,12 +28,16 @@ $FORM = new CGI;
 
 $coge = CoGeX->dbconnect();
 $CLUSTAL = "/usr/bin/clustalw2";
+$NEWICKTOPS = "/usr/bin/newicktops";
+$CONVERT = "/usr/local/bin/convert";
 #$CLUSTAL = "/usr/bin/clustalw-mtv";
 
 
 my $pj = new CGI::Ajax(
 		       gen_html=>\&gen_html,
 		       refresh_seq=>\&refresh_seq,
+                       sendCipres=>\&sendCipres,
+                       create_tree_image=>\&create_tree_image,
 		       run=>\&run,
 			);
 $pj->js_encode_function('escape');
@@ -62,7 +67,7 @@ sub gen_html
 	$template->param(LOGO_PNG=>"CoGeAlign-logo.png");
 	$template->param(LOGON=>1) unless $USER->user_name eq "public";
 	$template->param(DATE=>$DATE);
-	$template->param(BOX_NAME=>'CoGe: ClustalW2');
+	$template->param(BOX_NAME=>'CoGe: ClustalW 2.0.10');
 	$template->param(BODY=>$body);
 	my $prebox = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CoGeAlign.tmpl');
 	$prebox->param(RESULTS_DIV=>1);
@@ -82,10 +87,10 @@ sub gen_body
     my $feat_list = [];
     $feat_list = read_file() if $BASEFILE;#: $opts{feature_list};
     foreach my $item ($form->param('fid'))
-      {
-	push @$feat_list, $item if $item =~ /^\d+$/;
-      }
-      
+    {
+	push @$feat_list, $item;# if $item =~ /^\d+$/;
+    }
+    
     #print STDERR Dumper \@$feat_list;
     my $dsid = $form->param('dsid') if $form->param('dsid');
     my $chr = $form->param('chr') if $form->param('chr');
@@ -101,78 +106,87 @@ sub gen_body
 
     $seqs =~ s/(\sGenomic.+-\d+)?//g;
     if ($seqs)
-      {
+    {
       	my $num_seqs = $seqs =~ tr/>/>/;
-    $template->param(MAIN=>1);  	
+ 	
 	$template->param(SEQUENCE=>$seqs);
 	$template->param(FIDS=>$fid_string);
 	$template->param(codon_align=>1);
-	return $template->output;
-      }
+    }
     else
-      {
-	return "No feature ids were specified.";
-      }
+    {
+	$template->param(SEQUENCE=>"Enter Fasta Sequences here");
+    }
+    $template->param(MAIN=>1); 
+    return $template->output;
   }
   
   sub generate_sequence
   {
-  	my %opts = @_;
-    my $feat_list = $opts{feature_list};
-    return unless @$feat_list;
-    $feat_list = [map {$coge->resultset("Feature")->find($_)} @$feat_list];
-    my $seqs;
-  	foreach my $feat(@$feat_list)
-    {
-      unless ($feat)
-	{
-#	  warn "feature id $featid failed to return a valid feature object\n";
-	  next;
-	}
-	$seqs .= $feat->fasta(col=>0,prot=>0, name_only=>1, add_fid=>1);
-    }
-    return $seqs;
+      my %opts = @_;
+      my $featid_list = $opts{feature_list};
+      my $prot = $opts{prot} || 0; 
+      return unless @$featid_list;
+   #   $feat_list = [map {$coge->resultset("Feature")->find($_)} @$feat_list];
+      my $seqs;
+      foreach my $featid (@$featid_list)
+      {
+	  my ($fid, $gstidt);
+	  if ($featid =~ /_/)
+	  {
+	      ($fid, $gstidt) = split /_/, $featid;
+	  }
+	  else
+	  {
+	      #($fid, $gstidt) = ($featid, $gstid);
+	  }
+	  my ($feat) = $coge->resultset('Feature')->find($fid);
+	  next unless $feat;
+	  $seqs .= $feat->fasta(col=>0, prot=>$prot, name_only=>1, gstid=>$gstidt);
+      }
+      return $seqs;
   }
-  
-  sub refresh_seq
-  {
-	my %opts = @_;
-	my $fids = $opts{fids};
-	my $seq_type = $opts{seq_type};
-	my $protein = $seq_type =~ /dna/i ? 0 : 1;
-	my $seqs;
-	
-	foreach my $fid (split /:/,$fids)
+      
+sub refresh_seq
+{
+    my %opts = @_;
+    my $fids = $opts{fids};
+    my $seq_type = $opts{seq_type};
+    my $protein = $seq_type =~ /dna/i ? 0 : 1;
+    my $seqs;
+    
+    foreach my $fid (split /:/,$fids)
 	{
 		my ($feat) = $coge->resultset("Feature")->find($fid);
 		$seqs .= $feat->fasta(col=>0,prot=>$protein, name_only=>1, add_fid=>1);
 	}
 	 $seqs =~ s/(\sGenomic.+-\d+)?//g;
-	 return $seqs;
-  }
-  
+		     return $seqs;
+	}
+    
     sub read_file
-  {
-    my $file = "$TEMPDIR/$BASEFILE.featlist";
-    my @featlist;
-    unless (-r $file)
-      {
-	warn "unable to read file $file for feature ids\n";
+    {
+	my $file = "$TEMPDIR/$BASEFILE.featlist";
+	my @featlist;
+	unless (-r $file)
+	{
+	    warn "unable to read file $file for feature ids\n";
+	    return \@featlist;
+	}
+	open (IN, $file) || die "can't open $file for reading: $!";
+	while (<IN>)
+	{
+	    chomp;
+	    push @featlist,$_;
+	}
+	close IN;
 	return \@featlist;
-      }
-    open (IN, $file) || die "can't open $file for reading: $!";
-    while (<IN>)
-      {
-	chomp;
-	push @featlist,$_;
-      }
-    close IN;
-    return \@featlist;
-  }
-  
+    }
+
 sub run
-  {
+{
     my %opts = @_;
+   # print STDERR Dumper \@_;
     my $inseqs = $opts{seq};
     
     my $seq_type = $opts{seq_type};
@@ -184,12 +198,12 @@ sub run
     my $gen_matrix = $opts{gen_matrix};
     my $codon = 0;
     if ($seq_type eq "prot")
-      {$seq_type = "PROTEIN";}
+    {$seq_type = "PROTEIN";}
     elsif ($seq_type eq "codon")
-      {
+    {
 	$codon =1;
 	$seq_type = "PROTEIN";
-      }
+    }
     else {$seq_type = "DNA";}
     #my $num_interations = $opts{num_iterations};
     
@@ -202,12 +216,16 @@ sub run
     
     my $seq_file = $cogeweb->basefile."_clustalw.infile";
     #print STDERR $seq_file,"\n";
+
+##Check to make sure no spaces in fasta header
+   # $inseqs =~ s/\s+/_/g;
     
     open(NEW,"> $seq_file");
     print  NEW $inseqs;
     close NEW;
+   # print STDERR $seq_file;
     #print STDERR $format,"\n";
-    my $suffix = $format =~/(coge|clustal)/ ? 'aln' : $file_format{$format};
+    my $suffix = $format =~/(jalview|clustal)/ ? 'aln' : $file_format{$format};
     #print STDERR $suffix," is your suffix!\n";
     my $outfile = $cogeweb->basefile."_clustalw.".$suffix;
     my $tree_out = $TEMPURL."/".$cogeweb->basefilename."_clustalw.dnd";
@@ -216,10 +234,10 @@ sub run
     my $pre_command = "-INFILE=$seq_file";
     
     $pre_command .= " -TYPE=$seq_type";
-    if($format && $format !~/coge/i && $format !~ /clustal/i)
-      {
+    if($format && $format !~/jalview/i && $format !~ /clustal/i)
+    {
   	$pre_command .= " -OUTPUT=$format";
-      }
+    }
     $pre_command .= $seq_type=~/dna/i ? " -DNAMATRIX=$matrix" : " -MATRIX=$matrix";
     $pre_command .= " -GAPOPEN=$gap_open";
     $pre_command .= " -GAPEXT=$gap_ext";
@@ -244,55 +262,116 @@ sub run
     
     open (IN, $outfile) || die "$!";
     while (<IN>)
-      {
+    {
 	$output .= $_;
-      }
+    }
     close IN;
+
+    my $outfile_jalview = $outfile;
+    $outfile_jalview =~ s/\/opt\/apache//;
     $outfile =~ s/$TEMPDIR/\/CoGe\/tmp\//;
-    
+    $phylip_file =~ s/$TEMPDIR/\/CoGe\/tmp\//;
+    my $cipres_out = $outfile;
+    $cipres_out =~ s/\/CoGe\/tmp\/CoGeAlign\///;
+    print STDERR $cipres_out,"\n";
     my $color = $format =~ /color/ ? 1 : 0;
     my ($header_html,$seq_html, $seqs, $codon_alignment) = parse_results(clustal=>$output,num_seqs=>$num_seqs, color=>$color, codon_align=>$codon) if $format =~ /coge/i;
 #    print STDERR Dumper $codon_alignment;
-    #    my $box_template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
-    #     $box_template->param(BOX_NAME=>"ClustalW Alignment Results");
-    #     $box_template->param(BODY=>$html);
-    #     my $outhtml = $box_template->output;
+    my $box_template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
+    $box_template->param(BOX_NAME=>"ClustalW Alignment Results");
     #print STDERR $html,"\n";
     my $html = qq{<font style="font-size:24px;">CLUSTALW Alignment Results</font>};
-    if($format =~/coge/)
-      {
-	$html .= qq{<div id=max_height style="max-height:700px;overflow:auto;"><table class="resultborder"><tr><td valign="top"><div id=alignment_header style="color:black;"><pre>$header_html</pre></div></td><td valign="top"><div id=alignment_seq style="color:black;;overflow:auto;"><pre>$seq_html</pre></div></table></div>};
+    if($format =~/jalview/)
+    {
+	my $phylip_file_jalview = $phylip_file;
+	$phylip_file_jalview =~ s/http.+edu//;
+	$html .= qq{<br><applet width="140" height="35" code="jalview.bin.JalviewLite" archive="/CoGe/bin/JalView/jalviewApplet.jar"><param name="file" value="$outfile_jalview"><param name="tree" value="$phylip_file_jalview"><param name="showbutton" value="true"><param name="defaultColour" value="Clustal"></applet><br/>};
   	
-      }
-    else{
-      $output =~s/\n/<br\/>/g;
-      $html .= qq{<div align=left class=resultborder style="overflow:auto;width:700px;max-height:700px;"><br/>$output</div>};
-      
     }
-    $html .= qq{<table align=left><tr>};
-    $html .= qq{<td valign=top><table style="font-size:12px;"><tr><td>Log File:</tr><tr><td>TODO</tr><tr><td>ClustalW Raw Alignment File:</tr><tr><td><a href="$outfile" target="_blank">Download</a></tr><tr><td>ClustalW Raw Tree File:</tr><tr><td><a href="$tree_out" target="_blank">Download</a></td></table></td>};
-    my $select_menu = qq{<select id=file_types><option value=GCG>GCG<option value=GDE>GDE<option value=PHYLIP>Phylip<option value=PIR>PIR<option value=NEXUS>NEXUS</select>};
-    $html .= qq{<td valign=top><table style="font-size:16px;"><tr><td>View NJ Tree of Results:</tr><tr><td><a href="$phylip_file" target="_blank">NJ Tree</a></table></td>};
+    else{
+	$output =~s/\n/<br\/>/g;
+	$html .= qq{<div align=left class=resultborder style="overflow:auto;width:700px;max-height:700px;"><br/><pre>$output</pre></div>};
+    }
+    $html .= qq{<table width=100%><tr>};
+    $html .= qq{<td valign=top><table style="font-size:12px;" align="center" ><tr><td> ClustalW Raw Alignment File </td><td> ClustalW Raw Tree File </td><td> Send to Cipres </tr><td><a href="$outfile" target="_blank">Download</a></td><td><a href="$tree_out" target="_blank">Download</a></td><td><a href="#" onClick='sendCipres(["args__$cipres_out"],[cipres_results])'>Go!</a></tr></table></td>};
+  #  my $select_menu = qq{<select id=file_types><option value=GCG>GCG<option value=GDE>GDE<option value=PHYLIP>Phylip<option value=PIR>PIR<option value=NEXUS>NEXUS</select>};
+    $html .= qq{<td valign=top><table style="font-size:16px;"><tr><td>View NJ Tree of Results:</tr><tr><td><a href="#" onclick=create_tree_image(["args__$phylip_file"],[cipres_results])>NJ Tree</a></table></td>};
     #</tr><tr><td>Select Alt. Output File for Download:</tr><tr><td>$select_menu<input type=button value="Go">
     $html .= "</table>";
     if ($gen_matrix)
-      {
+    {
 	if ($codon)
-	  {
+	{
 	    my $matrix = gen_matrix(seqs=>$seqs, type=>'p');
 	    $html .= "<br>".$matrix if $matrix;
 	    $matrix = gen_matrix(seqs=>$codon_alignment, type=>'c');
 	    $html .= "<br>".$matrix if $matrix;
-	  }
+	}
 	else
-	  {
+	{
 	    my $matrix = gen_matrix(seqs=>$seqs, type=>$seq_type);
 	    $html .= "<br>".$matrix if $matrix;
 	  }
-      }
-    return $html;
-  }
-  
+    }
+    $box_template->param(ADJUST_BOX=>1);
+    $box_template->param(BODY=>$html);
+    my $outhtml = $box_template->output;
+    return $outhtml;
+}
+
+sub sendCipres
+{
+    my $outfile = shift;
+    my $client = LWP::UserAgent->new;
+   # print STDERR $outfile,"\n";
+    $outfile = "/CoGe/tmp/CoGeAlign/".$outfile;
+    my $check = parse_nexus_file($outfile);
+    $outfile = "http://toxic.berkeley.edu".$outfile;
+    if ($check)
+    {
+	# $outfile = 'http://code.open-bio.org/svnweb/index.cgi/bioperl/checkout/bioperl-live/trunk/t/data/Primate_mtDNA.nex';
+#	my @cipres_headers = (
+	#    'email' => 'josh.kane@berkeley.edu',
+	 #   'datafile' => "@"."$outfile",
+	  #  'analysis' => 'MP',
+	    #'tool' => 'paup',
+	   # );
+	my @cipres = $client->post('http://8ball.sdsc.edu:8888/cipres-web/restapi/job',
+				     [
+				      'email' => 'josh.kane@berkeley.edu',
+				      'datafile' => "[$outfile]",
+				      'analysis' => 'MP',
+				      'tool' => 'paup',
+				     ],
+				     'Content_Type' => 'form-data',
+	    );
+	print STDERR Dumper \@cipres,"\n";
+	return 1;#$cipres;
+    }
+}
+
+sub parse_nexus_file
+{
+    my $file=shift;
+    $file = "/opt/apache".$file;
+    my @data = [];
+    my $kill_line = 5;
+    open(IN,"+< $file") || die "Cannot open $file";
+    #print STDERR <IN>;
+    @data = <IN>;
+  #  print STDERR Dumper \@data;
+    splice(@data, 4, 1) if $data[4] =~ /symbol/i;
+   # my $info = join("\n",@data);
+   # print STDERR Dumper \@data;
+   # print STDERR $info;
+    seek(IN,0,0);
+    print IN @data;
+    truncate(IN,tell(IN));
+    close IN;
+    return 1;
+}
+
+
 sub parse_results
   {
     my %opts = @_;
@@ -685,3 +764,23 @@ sub sort_nt3
       }
     return $val;
   }
+
+sub create_tree_image
+{
+    my $treefile=shift;
+    $treefile = "/opt/apache".$treefile;
+   # print STDERR $treefile,"\n";
+    my $treebase = $treefile;
+    $treebase =~ s/\.ph$//;
+    my $treeps = $treebase.".ps";
+    my $treepng = $treebase.".png";
+   unless (-e $treepng)
+   { 
+       `$NEWICKTOPS $treefile -us`;
+       `$CONVERT $treeps $treepng`;
+       $treepng =~ s/$TEMPDIR/$TEMPURL/;
+       $treepng =~ s/CoGeAlignCoGeAlign/CoGeAlign/;
+       # print STDERR $treepng,"\n";
+   }
+    return $treepng;
+}

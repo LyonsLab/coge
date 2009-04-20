@@ -85,15 +85,18 @@ sub gen_html
 sub gen_body
   {
     my $form = shift || $FORM;
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GenomeView.tmpl');
+    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/OrganismView.tmpl');
     my $org_name = $form->param('org_name');
     my $desc = $form->param('org_desc');
     my $oid = $form->param('oid');
     my $org = $coge->resultset('Organism')->resolve($oid) if $oid;
-    $org_name = $org->name if $org;
     my $dsname = $form->param('dsname');
     my $dsid = $form->param('dsid');
     my $dsgid = $form->param('dsgid');
+    my ($dsg) = $coge->resultset('DatasetGroup')->find($dsgid) if $dsgid;
+    $org = $dsg->organism if $dsg;
+
+    $org_name = $org->name if $org;
     $org_name = "Search" unless $org_name;
     $template->param(ORG_NAME=>$org_name) if $org_name;
     $desc = "Search" unless $desc;
@@ -191,8 +194,8 @@ sub get_orgs
 #    $html .= qq{<FONT CLASS ="small">Organism count: }.scalar @opts.qq{</FONT>\n<BR>\n};
     unless (@opts) 
       {
-	$html .=  qq{<input type = hidden name="org_id" id="org_id">};
-	return $html;
+	$html .=  qq{<input type = hidden name="org_id" id="org_id">No organisms found};
+	return $html,0;
       }
 
     $html .= qq{<SELECT id="org_id" SIZE="5" MULTIPLE onChange="get_org_info_chain()" >\n};
@@ -206,6 +209,7 @@ sub get_org_info
   {
     my %opts = @_;
     my $oid = $opts{oid};
+    return " " unless $oid;
     my $org = $coge->resultset("Organism")->find($oid);
     return "Unable to find an organism for id: $oid\n" unless $org;
     my $html;# = qq{<div class="backbox small">};
@@ -245,7 +249,7 @@ sub get_dataset_groups
       }
     else
       {
-	$html .=  qq{<input type = hidden name="ds_id" id="ds_id">};
+	$html .=  qq{<input type = hidden name="dsg_id" id="dsg_id">};
       }
       return $html, scalar @opts;
     }
@@ -254,9 +258,10 @@ sub get_dataset_group_info
   {
     my %opts = @_;
     my $dsgid = $opts{dsgid};
+    return " " unless $dsgid;
     my $dsg = $coge->resultset("DatasetGroup")->find($dsgid);
     return "Unable to create dataset_group object for id: $dsgid" unless $dsg;
-    my $html;
+    my $html;# = qq{<div style="overflow:auto; max-height:78px">};
     my $total_length;
     my @gs = sort {$a->chromosome cmp $b->chromosome} $dsg->genomic_sequences;
     my $chr_num = scalar @gs;
@@ -272,15 +277,14 @@ sub get_dataset_group_info
 	$html .= qq{$chr:  $length bp<br>};
 	$count++;
       }
-    $html = qq{<div style="overflow:auto; max-height:78px">}.
-      qq{Chromosome count: $chr_num<br>}. qq{<div style="float:left;">Total length: }.
-	commify($total_length)." bp".
-	  qq{  </div><div style="float: left; text-indent: 1em;" id=datasetgroup_gc class="link" onclick="\$('#datasetgroup_gc').removeClass('link'); gen_gc_for_chromosome(['args__dsgid','dsg_id','args__gstid', 'gstid'],['datasetgroup_gc']);">  Click for percent GC content</div>}.
-	  "<br>".
-	  qq{Sequence Type: }.$dsg->genomic_sequence_type->name.qq{<input type=hidden id=gstid value=}.$dsg->genomic_sequence_type->id.qq{>}.
-	    qq{<br>}.
-	  qq{-----------<br>Chr:   (length)<br>}.
-	    $html;
+    $html = qq{<div style="overflow:auto; max-height:78px">};
+    $html .= qq{Chromosome count: $chr_num<br>}. qq{<div style="float:left;">Total length: };
+    $html .= commify($total_length)." bp";
+    $html .= qq{  </div><div style="float: left; text-indent: 1em;" id=datasetgroup_gc class="link" onclick="\$('#datasetgroup_gc').removeClass('link'); gen_gc_for_chromosome(['args__dsgid','dsg_id','args__gstid', 'gstid'],['datasetgroup_gc']);">  Click for percent GC content</div>};
+    $html .= "<br>";
+    $html .= qq{Sequence Type: }.$dsg->genomic_sequence_type->name.qq{<input type=hidden id=gstid value=}.$dsg->genomic_sequence_type->id.qq{>};
+    $html .= qq{<br>};
+    $html .= qq{-----------<br>Chr:   (length)<br>};
     $html .= "</div>";
     my $feat_string = qq{
 <div id=dsg_feature_count class="small link" onclick="get_feature_counts(['args__dsgid','dsg_id', 'args__gstid','gstid'],['feature_count_data']);" >Click for feature counts</div>};
@@ -294,13 +298,13 @@ sub get_dataset
     my $dsgid = $opts{dsgid};
     my $dsname = $opts{dsname};
     my $dsid = $opts{dsid};
+    return "<hidden id='ds_id'>",0 unless  $dsid || $dsname|| $dsgid;
     if ($dsid)
       {
 	my ($ds) = $coge->resultset('Dataset')->resolve($dsid);
 	$dsname = $ds->name;
       }
     my $html; 
-    my $html2;
     my @opts;
     if ($dsgid)
       {
@@ -325,16 +329,9 @@ sub get_dataset
 	    push @opts, $option;
 	    $orgs{$item->organism->id}=$item->organism;
 	  }
-#	my @orgs = map	{"<OPTION value=\"".$_->id."\">".$_->name." (id".$_->id.")</OPTION>"} values %orgs;
-#	$html2 .= qq{<FONT CLASS ="small">Organism count: }.scalar @orgs.qq{</FONT>\n<BR>\n};
-#	$html2 .= qq{<SELECT id="org_id" SIZE="5" MULTIPLE onChange="dataset_chain()" >\n};
-#	$html2 .= join ("\n", @orgs);
-#	$html2 .= "\n</SELECT>\n";
-#	$html2 =~ s/OPTION/OPTION SELECTED/;
       }
     if (@opts) 
       {
-#	$html = qq{<FONT CLASS ="small">Dataset count: }.scalar (@opts).qq{</FONT>\n<BR>\n};
 	$html .= qq{<SELECT id="ds_id" SIZE="5" MULTIPLE onChange="dataset_info_chain()" >\n};
 	$html .= join ("\n", @opts);
 	$html .= "\n</SELECT>\n";
@@ -344,28 +341,23 @@ sub get_dataset
       {
 	$html .=  qq{<input type = hidden name="ds_id" id="ds_id">};
       }
-    return $html, scalar @opts, $html2;
+    return $html, scalar @opts;
   }
 
 sub get_dataset_info
   {
     my $dsd = shift;
-    my $html = "";
-    unless ($dsd) # error flag for empty dataset
-    {
-    	$html .= qq{<input type="hidden" id="chr" value="">};
-    	$html .= "No genomic sequence";
-    	return $html;
-    }
+    return qq{<input type="hidden" id="chr" value="">}, " ",0 unless ($dsd); # error flag for empty dataset
 
     my $ds = $coge->resultset("Dataset")->find($dsd);
-
+    my $html = "";
     return "unable to find dataset object for id: $dsd"  unless $ds;
-    $html = "<table class=small>";
+    $html = "<table class=\"small annotation_table\">";
     my $dataset = $ds->name;
     $dataset .= ": ". $ds->description if $ds->description;
     $dataset = " <a href=\"".$ds->link."\" target=_new\>".$dataset."</a>" if $ds->link;
-    my $source_name = $ds->data_source->name .": ". $ds->data_source->description;
+    my $source_name = $ds->data_source->name ;
+    $source_name.=": ". $ds->data_source->description if $ds->data_source->description;
     my $link = $ds->data_source->link;
 
     $link = "http://".$link if ($link && $link !~ /http/);
@@ -373,7 +365,7 @@ sub get_dataset_info
     $html .= qq{<tr><td>Name: <td>$dataset}."\n";
     $html .= qq{<TR><TD>Data Source: <TD>$source_name (id}.$ds->data_source->id.qq{)}."\n";
     $html .= qq{<tr><td>Version: <td>}.$ds->version."\n";
-    $html .= qq{<tr><td>Organism:<td>}.$ds->organism->name."\n";
+    $html .= qq{<tr><td>Organism:<td class="link"><a href="OrganismView.pl?oid=}.$ds->organism->id.qq{" target=_new>}.$ds->organism->name."</a>\n";
     $html .= qq{<tr><td>Date deposited: <td>}.$ds->date."\n";
 
 
@@ -388,7 +380,8 @@ sub get_dataset_info
 	$chr{$item}{num} = $num;
 	$count++;
       }
-    my @chr = sort {$chr{$a}{num} <=> $chr{$b}{num} || $a=~/(\d+$)/ <=> $b=~/(\d+$)/ || $a cmp $b}keys %chr;
+    my @chr = scalar keys %chr > 1000 ? sort {$chr{$b}{length} <=> $chr{$a}{length}} keys %chr
+      : sort {$chr{$a}{num} <=> $chr{$b}{num} || $a cmp $b}keys %chr;
     my $length =0;
     if (@chr)
       {
@@ -396,10 +389,18 @@ sub get_dataset_info
 	$size = 5 if $size > 5;
 	my $select;
 	$select .= qq{<SELECT id="chr" size =$size onChange="dataset_chr_info_chain()" >\n};
-	$select .= join ("\n", map {"<OPTION value=\"$_\">".$_." (".commify($chr{$_}{length})." bp)</OPTION>"} @chr)."\n";
+	if (scalar @chr > 1000)
+	  {
+	    my @tmp = @chr[0..999];
+	    	    $select .= join ("\n", map {"<OPTION value=\"$_\">".$_." (".commify($chr{$_}{length})." bp)</OPTION>"} @tmp)."\n";
+	  }
+	else
+	  {
+	    $select .= join ("\n", map {"<OPTION value=\"$_\">".$_." (".commify($chr{$_}{length})." bp)</OPTION>"} @chr)."\n";
+	  }
 	$select =~ s/OPTION/OPTION SELECTED/;
 	$select .= "\n</SELECT>\n";
-#	$select .= qq{<tr><td>Total length of all chromosomes: <td><div id=ds_total_length class="link" onclick="\$('#ds_total_length').html('<span class=loading>loading. . .</span>');\$('#ds_total_length').removeClass('link'); get_total_length_for_ds(['args__dsid','ds_id'],['ds_total_length']);">Click for total length</div>} if scalar @chr>1;
+
 	$html2 .= $select;
 	map{$length += $chr{$_}{length}} @chr;
       }
@@ -412,8 +413,9 @@ sub get_dataset_info
     my $feat_string = qq{
 <div id=ds_feature_count class="small link" onclick="get_feature_counts(['args__dsid','ds_id','args__gstid', 'gstid'],['feature_count_data']);" >Click for feature counts</div>};
     $html .= $feat_string;
-
-    return $html, $html2, scalar(@chr);
+    my $chr_count = scalar (@chr);
+    $chr_count .= " <span class=small>Only 1000 largest shown</span>" if ($chr_count >1000); 
+    return $html, $html2, $chr_count;
   }
 
 sub get_dataset_chr_info
@@ -426,10 +428,12 @@ sub get_dataset_chr_info
 	}
     my $start = "'start'";
     my $stop = "'stop'";	
-    my $html .= "<table class=small>";
+    my $html .= "<table class=\"small annotation_table\">";
     my $ds = $coge->resultset("Dataset")->find($dsd);
     return $html unless $ds;
-    my $length = $ds->last_chromosome_position($chr);
+    my $length = 0;
+    $length = $ds->last_chromosome_position($chr) if $chr;
+    
     my $type = $ds->sequence_type;
     my $type_html = $type->name if $type;
     $type_html .= ": ".$type->description if $type && $type->description;
@@ -452,22 +456,23 @@ sub get_dataset_chr_info
     my $viewer;
     if ($chr)
      {
-	$viewer .= "<font class=\"oblique\">Genome Viewer Launcher</font><br>";
+	$viewer .= "<font class=\"oblique\">Genome Viewer</font><br>";
 	$viewer .= "<table class=\"small backbox\">";
 	$viewer .= "<tr><td nowrap class = \"ital\">Starting location: ";
-	$viewer .= qq{<td><input type="text" size=10 value="10000" id="x">};
+	$viewer .= qq{<td><input type="text" size=10 value="20000" id="x">};
 	my $zoom;
    	$zoom .= qq{<tr><td class = "ital">Zoom level:};
    	$zoom .= qq{<td><SELECT name = "z" id="z" size = 1>};
    	my @opts = map {"<OPTION value=\"$_\">".$_."</OPTION>"} (5..15);
    	$zoom .= join ("\n", @opts);
-   	$zoom =~ s/OPTION value="4"/OPTION SELECTED value="4"/;
+   	$zoom =~ s/OPTION value="3"/OPTION SELECTED value="3"/;
    	$zoom .= qq{</SELECT>};
-	$viewer .= qq{<tr><td class = "ital">Zoom level:<td><input type = "text" size=10 value ="4" id = "z">};
+	$viewer .= qq{<tr><td class = "ital">Zoom level:<td><input type = "text" size=10 value ="3" id = "z">};
 	#    $viewer .= $zoom;
 	$viewer .= "</table>";
 	#$viewer .= qq{<input type="hidden" id="z" value="7">};
-	$viewer .= qq{<input type="submit" value = "Launch Genome Viewer!" onClick="launch_viewer($dsd, '$chr')">};
+#	$viewer .= qq{<input type="submit" value = "Launch Genome Viewer!" onClick="launch_viewer($dsd, '$chr')">};
+	$viewer .= qq{<span class='ui-button ui-button-icon-left ui-state-default ui-corner-all' onClick="launch_viewer($dsd, '$chr')"><span class="ui-icon ui-icon-newwin"></span>Launch Genome Viewer</span>};
       }
     my $seq_grab;
     if ($chr)
@@ -475,11 +480,11 @@ sub get_dataset_chr_info
 	$seq_grab .= qq{<font class="oblique">Genomic Sequence Retrieval</font><br>};
 	$seq_grab .= qq{<table class=\"small backbox\">};
 	$seq_grab .= "<tr><td class = \"ital\">Start position: ";
-	$seq_grab .= qq{<td><input type="text" size=10 value="1000" id="start">};
+	$seq_grab .= qq{<td><input type="text" size=10 value="1" id="start">};
 	$seq_grab .= "<tr><td class = \"ital\">End position: ";
 	$seq_grab .= qq{<td><input type="text" size=10 value="100000" id="stop">};
 	$seq_grab .= qq{</table>};
-	$seq_grab .= qq{<input type="submit" value = "Get Genomic Sequence!" onClick="launch_seqview($dsd, '$chr')">};
+	$seq_grab .= qq{<span class='ui-button ui-button-icon-left ui-state-default ui-corner-all' onClick="launch_seqview($dsd, '$chr')"><span class="ui-icon ui-icon-newwin"></span>Get Sequence</span>};
 	$seq_grab .= qq{<div id="gseq"></div>};
       }
     return $html, $viewer, $seq_grab;
@@ -661,7 +666,7 @@ sub gen_gc_for_chromosome
 	map {push @ds,$_} $dsg->datasets;
       }
     return unless @ds;
-    my ($gc, $at, $n);
+    my ($gc, $at, $n) = (0,0,0);
     my @chr;
     foreach my $ds (@ds)
       {
@@ -682,7 +687,8 @@ sub gen_gc_for_chromosome
 	  }
       }
     my $total = $gc+$at+$n;
-    return "GC: ".sprintf("%.2f",100*$gc/$total)."%  AT: ".sprintf("%.2f",100*$at/$total)."%  N: ".sprintf("%.2f",100*$n/$total)."%";
+    my $results = "GC: ".sprintf("%.2f",100*$gc/$total)."%  AT: ".sprintf("%.2f",100*$at/$total)."%  N: ".sprintf("%.2f",100*$n/$total)."%" if $total;
+    return $results;
   }
 
 sub gen_gc_for_noncoding

@@ -1,4 +1,7 @@
 #! /usr/bin/perl -w
+
+#TODO -- FIX FTID SO THAT NO _ AT END OF ID NUM., EX. ID='12345_'
+
 use strict;
 use CGI;
 use CGI::Ajax;
@@ -10,16 +13,23 @@ use CoGe::Accessory::Web;
 use HTML::Template;
 use URI::Escape;
 use Spreadsheet::WriteExcel;
+use Benchmark;
+use DBIxProfiler;
 
-use vars qw( $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb $FORM);
+
+use vars qw($PAGE_NAME $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb $FORM);
+$ENV{PATH}="/opt/apache/CoGe";
 
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
+$PAGE_NAME = "FeatList.pl";
 ($USER) = CoGe::Accessory::LogUser->get_user();
 $TEMPDIR = "/opt/apache/CoGe/tmp/";
 $FORM = new CGI;
 
 $coge = CoGeX->dbconnect();
+#$coge->storage->debugobj(new DBIxProfiler());
+#$coge->storage->debug(1);
 
 my $pj = new CGI::Ajax(
 		       gen_html=>\&gen_html,
@@ -33,11 +43,22 @@ my $pj = new CGI::Ajax(
 		       gen_data=>\&gen_data,
 		       send_to_featmap=>\&send_to_featmap,
 		       send_to_msa=>\&send_to_msa,
+		       send_to_featlist=>\&send_to_featlist,
+		       get_anno=>\&get_anno,
+    get_gc=>\&get_gc,
+		       get_wobble_gc=>\&get_wobble_gc,
+		       save_FeatList_settings=>\&save_FeatList_settings,
+    add_to_user_history=>\&add_to_user_history,
 			);
 $pj->js_encode_function('escape');
+#my $t1 = new Benchmark;
 print $pj->build_html($FORM, \&gen_html);
-#print $FORM->header;
-#print gen_html();
+#print $FORM->header;print gen_html();
+#my $t2 = new Benchmark;
+#my $run_time = timestr(timediff($t2,$t1));
+#print STDERR qq{
+#Runtime:  $run_time
+#};
 
 sub gen_html
   {
@@ -53,15 +74,17 @@ sub gen_html
     $template->param(TITLE=>'Feature List Viewer');
     $template->param(HELP=>'BLAST');
    # print STDERR "user is: ",$USER,"\n";
+    add_to_user_history();
     my $name = $USER->user_name;
-        $name = $USER->first_name if $USER->first_name;
-        $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
-        $template->param(USER=>$name);
+    $name = $USER->first_name if $USER->first_name;
+    $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
+    $template->param(USER=>$name);
     $template->param(LOGO_PNG=>"FeatList-logo.png");
     $template->param(LOGON=>1) unless $USER->user_name eq "public";
     $template->param(DATE=>$DATE);
-    $template->param(BOX_NAME=>'CoGe: Blast');
+    $template->param(BOX_NAME=>'Feature List:');
     $template->param(BODY=>$body);
+    $template->param(ADJUST_BOX=>1);
     $html .= $template->output;
    }
  }
@@ -74,21 +97,55 @@ sub gen_body
     $BASEFILE = $form->param('basename');
     my $sort_by_type = $form->param('sort_type');
     my $sort_by_location = $form->param('sort_loc');
+    my $prefs = load_settings(user=>$USER, page=>$PAGE_NAME);
+    $prefs = {} unless $prefs;
+    $prefs->{display}={
+		       FeatNameD=>1,
+		       TypeD=>1,
+		       ChrD=>1,
+		       StartD=>1,
+		       StopD=>1,
+		       StrandD=>1,
+		       LengthD=>1,
+		       OrgD=>1,
+		       AnnoD=>1,
+		      } unless $prefs->{display};
+    foreach my $key (keys %{$prefs->{display}})
+      {
+	$template->param($key=>"checked");
+      }
+
+    $template->param(SAVE_DISPLAY=>1) unless $USER->user_name eq "public";
+
     my $feat_list = [];
     $feat_list = read_file() if $BASEFILE;#: $opts{feature_list};
+    #feat ids may be in the format of <fid>_<gstid>
     foreach my $item ($form->param('fid'))
       {
-	push @$feat_list, $item if $item =~ /^\d+$/;
+	push @$feat_list, $item if $item =~ /^\d+_?\d*$/;
+      }
+    foreach my $item ($form->param('featid'))
+      {
+	push @$feat_list, $item if $item =~ /^\d+_?\d*$/;
       }
     my $dsid = $form->param('dsid') if $form->param('dsid');
+    my $dsgid = $form->param('dsgid') if $form->param('dsgid');
     my $chr = $form->param('chr') if $form->param('chr');
     my $ftid = $form->param('ftid') if $form->param('ftid');
     my $start = $form->param('start') if $form->param('start');
     my $stop = $form->param('stop') if $form->param('stop');
-    push @$feat_list, @{get_fids_from_dataset(dsid=>$dsid, ftid=>$ftid, chr=>$chr, start=>$start, stop=>$stop)} if $dsid;
-    my ($table, $feat_types) = generate_table(feature_list=>$feat_list, ftid=>$ftid);
+    my $gstid = $form->param('gstid') if $form->param('gstid'); #genomic_sequence_type_id
+    $template->param('GSTID'=>$gstid) if $gstid;
+    push @$feat_list, @{get_fids(dsid=>$dsid, dsgid=>$dsgid, ftid=>$ftid, chr=>$chr, start=>$start, stop=>$stop)} if $dsid || $dsgid;
+    my ($table, $feat_types, $count) = generate_table(feature_list=>$feat_list, ftid=>$ftid, gstid=>$gstid);
     $template->param('CDS_COUNT'=>$feat_types->{CDS});
+    $template->param('FEAT_COUNT'=>$count);
     $template->param('SHOW_ALL_CODON_TABLES'=>$feat_types->{CDS}) if $feat_types->{CDS};
+
+    my $type = qq{<SELECT ID="feature_type">};
+    $type .= join ("\n", map {"<OPTION value=$_>".$_."</option>"} sort keys %$feat_types)."\n";
+    $type .= "</select>";
+    $template->param('FEAT_TYPES'=>$type);
     if ($table)
       {
 	$template->param(INFO=>$table);
@@ -100,24 +157,67 @@ sub gen_body
       }
   }
 
-sub get_fids_from_dataset
+sub add_to_user_history
+{
+    my %opts = @_;
+    if ($opts{archive})
+    {
+	$USER->add_to_works({
+	    'name'=>$opts{work_name},
+	    'archive'=>$opts{archive},
+	    'page'=>$PAGE_NAME,
+	    'parameter'=>$opts{url},
+	    'description'=>$opts{description},
+	    'note'=>$opts{note},
+	    }); 
+    }
+    else{
+	my $url = $ENV{'REQUEST_URI'};
+	$USER->add_to_works({
+	    'name'=>'FeatList-'.$DATE,
+	    'archive'=>0,
+	    'page'=>$PAGE_NAME,
+	    'parameter'=>$url,
+	    'description'=>'Feature List created on '.$DATE,
+	    });
+	
+    }
+}
+
+sub get_fids
   {
     my %opts = @_;
     my $dsid = $opts{dsid};
+    my $dsgid = $opts{dsgid};
     my $ftid = $opts{ftid};
     my $chr = $opts{chr};
     my $start = $opts{start};
     my $stop = $opts{stop};
-    my $search = {dataset_id=>$dsid};
+    my $search;
+    my @dsids;
+    push @dsids, $dsid if $dsid;
+    if ($dsgid)
+      {
+	my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	if ($dsg)
+	  {
+	    foreach my $ds ($dsg->datasets)
+	      {
+		push @dsids, $ds->id;
+	      }
+	  }
+	else
+	  {
+	    warn "unable to create dsg object for id $dsgid\n";
+	  }
+      }
+    if (@dsids)
+      {
+	$search->{-or}=[dataset_id=>[@dsids]];
+      }
+    $search->{feature_type_id}=$ftid if $ftid;
+    $search->{chromosome}=$chr if $chr;
     my $join={};
-    if ($ftid)
-      {
-	$search->{feature_type_id}=$ftid;
-      }
-    if ($chr)
-      {
-	$search->{chromosome}=$chr;
-      }
     my @ids;
     if ($start)
       {
@@ -136,14 +236,41 @@ sub generate_table
     my %opts = @_;
     my $feat_list = $opts{feature_list};
     my $ftid = $opts{ftid};
+    my $gstid = $opts{gstid};
+    $gstid = 1 unless defined $gstid;
     return unless @$feat_list;
     my @table;
     my %feat_types;
     my $count = 1;
-    $feat_list = [map {$coge->resultset("Feature")->find($_)} @$feat_list];
-    $feat_list = [sort {$a->organism->name cmp $b->organism->name || $a->type->name cmp $b->type->name || $a->chromosome cmp $b->chromosome|| $a->start <=> $b->start}@$feat_list];
-    foreach my $feat(@$feat_list)
+    my %feats;
+    foreach my $item (@$feat_list)
+      {
+	my ($fid, $gstidt);
+	if ($item =~ /_/)
+	  {
+	    ($fid, $gstidt) = split/_/, $item;
+	  }
+	else
+	  {
+	    $fid = $item;
+	    $gstidt = $gstid if $gstid;
+	  }
+	my ($feat) = $coge->resultset("Feature")->search(
+							 {'me.feature_id'=>$fid},
+							 {
+							  join =>['feature_names', 'locations', 'feature_type',{'dataset'=>{'dataset_connectors'=>{dataset_group=>'organism'}}}],
+							  prefetch=>['feature_names', 'locations', 'feature_type', {'dataset'=>{'dataset_connectors'=>{dataset_group=>'organism'}}}],
+							  }
+							);
+	next unless $feat;
+	$feats{$item} = {fid=>$fid,
+			 feat=>$feat,
+			 gstid=>$gstidt,
+			};
+      }
+    foreach my $item(sort {$feats{$a}{feat}->organism->name cmp $feats{$b}{feat}->organism->name || $feats{$a}{feat}->type->name cmp $feats{$b}{feat}->type->name || $feats{$a}{feat}->chromosome cmp $feats{$b}{feat}->chromosome|| $feats{$a}{feat}->start <=> $feats{$b}{feat}->start} keys %feats)
     {
+      my $feat = $feats{$item}{feat};
       unless ($feat)
 	{
 #	  warn "feature id $featid failed to return a valid feature object\n";
@@ -155,31 +282,31 @@ sub generate_table
 	}
       $feat_types{$feat->type->name}++;
       my $featid = $feat->id;
+      $item = $featid."_".$feats{$item}{gstid} unless $item =~/_/;
       my ($name) = $feat->names;
-      my $hpp = qq{<div id=anno_$count>}.$feat->annotation_pretty_print_html().qq{</div>};
-      #my $row_style = $count%2 ? "even" : "odd";
+      my $hpp = qq{<div id=anno_$count class="link" onclick="get_anno(['args__fid','args__$item'],['anno_$count'])">}.qq{Get Annotation}.qq{</div>};
       my $other;
       my $cds_count = $feat_types{CDS};
-      $other .= "<div class=link id=codon_usage$cds_count><DIV onclick=\" \$('#codon_usage$cds_count').removeClass('link'); gen_data(['args__loading'],['codon_usage$cds_count']); codon_table(['args__featid','args__$featid'],['codon_usage$cds_count'])\">"."Click for codon usage"."</DIV></DIV><input type=hidden id=CDS$cds_count value=$featid>" if $feat->type->name eq "CDS";
-      my ($gc, $at, $n) = $feat->gc_content;
-      $at*=100;
-      $gc*=100;
-      my ($wgc, $wat) = $feat->wobble_content;
-      $wat*=100 if $wat;
-      $wgc*=100 if $wgc;
-      
+      $other .= "<div class=link id=codon_usage$cds_count><DIV onclick=\" \$('#codon_usage$cds_count').removeClass('link'); codon_table(['args__fid','args__$item'],['codon_usage$cds_count'])\">"."Click for codon usage"."</DIV></DIV><input type=hidden id=CDS$cds_count value=$item>" if $feat->type->name eq "CDS";
+      my $gc = qq{Get GC};
+      my $at = qq{Get GC};
+      my ($wat, $wgc);
+      if ($feat->type->name eq "CDS")
+	{
+	  $wgc = qq{Get GC};
+	  $wat = qq{Get GC};
+	}
       push @table,{
-		   FEATID=>$featid,
+		   COUNT=>$count,
+		   FEATID=>$item,
 		   NAME=>$name,
 		   TYPE=>$feat->type->name,
-#		   LOC=>"chr ".$feat->chr.": ".$feat->start."-".$feat->stop." (".$feat->strand.")",
 		   CHR=>$feat->chr,
 		   STRAND=>$feat->strand,
 		   START=>$feat->start,
 		   STOP=>$feat->stop,
 		   ORG=>$feat->organism->name." (v".$feat->version.")",
 		   HPP=>$hpp, 
-#		   TABLE_ROW=>$row_style,
 		   LENGTH=>$feat->length(),
 		   OTHER=>$other,
 		   AT=>$at,
@@ -190,7 +317,8 @@ sub generate_table
 		  };
       $count++;
     }
-   return \@table, \%feat_types;
+    $count--;
+   return \@table, \%feat_types, $count;
   }
 
   sub gen_data
@@ -250,6 +378,19 @@ sub generate_table
     $url =~ s/&$//;
     return $url;
   }
+  sub send_to_featlist
+  {
+    my $accn_list = shift;
+    $accn_list =~ s/^,//;
+    $accn_list =~ s/,$//;
+    my $url = "/CoGe/FeatList.pl?";
+    foreach my $featid (split /,/,$accn_list)
+      {
+		$url .= "fid=$featid&";
+      }
+    $url =~ s/&$//;
+    return $url;
+  }
   
     sub send_to_msa
   {
@@ -261,7 +402,7 @@ sub generate_table
       {
 		$url .= "fid=$featid&";
       }
-    $url =~ s/&$//;
+$url =~ s/&$//;
     return $url;
   }
   
@@ -365,11 +506,12 @@ sub generate_excel_file
 sub codon_table
   {
     my %args = @_;
-    my $featid = $args{featid};
-
+    my $featid = $args{fid};
+    my $gstid = $args{gstid};
+    ($featid, $gstid) = split/_/, $featid if $featid =~/_/;
     return unless $featid;
     my ($feat) = $coge->resultset('Feature')->find($featid);
-    my ($codon, $code_type) = $feat->codon_frequency(counts=>1);
+    my ($codon, $code_type) = $feat->codon_frequency(counts=>1, gstid=>$gstid);
     my %aa;
     my ($code) = $feat->genetic_code;
     my $count = 0;
@@ -381,10 +523,10 @@ sub codon_table
     my $html;
     $html .= "<table><tr valign=top><td>";
     $html .= "Codon Usage: $code_type<br>";
-    my ($at, $gc) = $feat->gc_content;
+    my ($at, $gc) = $feat->gc_content(gstid=>$gstid);
     $at*=100;
     $gc*=100;
-    my ($wat, $wgc) = $feat->wobble_content;
+    my ($wat, $wgc) = $feat->wobble_content(gstid=>$gstid);
     $wat*=100;
     $wgc*=100;
     $html .= "Codon Count: $count".", GC: $at% $gc%".", Wobble GC: $wat% $wgc%";
@@ -409,5 +551,80 @@ sub protein_table
     my $html = "Amino Acid Usage";
     $html .= CoGe::Accessory::genetic_code->html_aa(data=>$aa, counts=>1);
     return $html;
+  }
+
+sub get_anno
+  {
+    my %opts = @_;
+    my $fid = $opts{fid};
+    my $gstid=$opts{gstid};
+    ($fid, $gstid) = split/_/, $fid if ($fid =~ /_/);
+    return unless $fid;
+    my ($feat) = $coge->resultset('Feature')->find($fid);
+    return "No feature for id $fid" unless $feat;
+    return $feat->annotation_pretty_print_html(gstid=>$gstid);
+  }
+
+sub get_gc
+  {
+    my %opts = @_;
+    my $fid = $opts{fid};
+    my $gstid = $opts{gstid};
+    return unless $fid;
+    ($fid, $gstid) = split/_/, $fid if ($fid =~ /_/);
+    my ($feat) = $coge->resultset('Feature')->find($fid);
+    return "No feature for id $fid" unless $feat;
+    my ($gc, $at, $n) = $feat->gc_content(gstid=>$gstid);
+    $at*=100;
+    $gc*=100;
+    return ($gc, $at);
+  }
+
+sub get_wobble_gc
+  {
+    my %opts = @_;
+    my $fid = $opts{fid};
+    my $gstid = $opts{gstid};
+    ($fid, $gstid) = split/_/, $fid if ($fid =~ /_/);
+    return unless $fid;
+    my ($feat) = $coge->resultset('Feature')->find($fid);
+    return unless $feat->type->name eq "CDS";
+    return "No feature for id $fid" unless $feat;
+    my ($wgc, $wat) = $feat->wobble_content(gstid=>$gstid);
+    $wat*=100;
+    $wgc*=100;
+    return ($wgc, $wat);
+  }
+
+
+sub save_FeatList_settings
+  {
+    my %opts = @_;
+    my $display = $opts{display};
+    my %save;
+    if ($display)
+      {
+	my %settings = (
+			1=>'FeatNameD',
+			2=>'TypeD',
+			3=>'ChrD',
+			4=>'StartD',
+			5=>'StopD',
+			6=>'StrandD',
+			7=>'LengthD',
+			8=>'GCD',
+			9=>'ATD',
+			10=>'WGCD',
+			11=>'WATD',
+			12=>'OrgD',
+			13=>'AnnoD',
+			14=>'OtherD',
+		       );
+	foreach my $index (split/,/,$display)
+	  {
+	    $save{display}{$settings{$index}}=1
+	  }
+      }
+    save_settings(opts=>\%save, user=>$USER, page=>$PAGE_NAME);
   }
 

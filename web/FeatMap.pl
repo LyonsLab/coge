@@ -45,7 +45,7 @@ sub gen_html
     unless ($USER)
       {
 	$html = login();
-      }
+      } 
     else
       {
 	my ($body) = gen_body();
@@ -74,25 +74,28 @@ sub gen_html
     my $no_values;
     my $sort_by_type = $form->param('sort_type');
     my $sort_by_location = $form->param('sort_loc');
-    my $feat_list = [];
+    my $fid_list = [];
     foreach my $item ($form->param('fid'))
       {
-	push @$feat_list, $item if $item =~ /^\d+$/;
+	push @$fid_list, $item;
       }
-    my $dsid = $form->param('dsid') if $form->param('dsid');
-    my $anticodon = $form->param('anticodon') if $form->param('anticodon');
-    my $chr = $form->param('chr') if $form->param('chr');
-    my $clade = $form->param('clade') if $form->param('clade');
-    my $ftid = $form->param('ftid') if $form->param('ftid');
-    push @$feat_list, @{get_fids_from_dataset(dsid=>$dsid, ftid=>$ftid, chr=>$chr)} if $dsid;
-    my $chromosome_data = generate_chromosome_images(feature_list=>$feat_list, ftid=>$ftid, anticodon=>$anticodon, clade=>$clade);
-    my $table = generate_table_data(feature_list=>$feat_list, ftid=>$ftid);
+#    my $dsid = $form->param('dsid') if $form->param('dsid');
+#    my $anticodon = $form->param('anticodon') if $form->param('anticodon');
+#    my $chr = $form->param('chr') if $form->param('chr');
+#    my $clade = $form->param('clade') if $form->param('clade');
+#    my $ftid = $form->param('ftid') if $form->param('ftid');
+#    push @$feat_list, @{get_fids_from_dataset(dsid=>$dsid, ftid=>$ftid, chr=>$chr)} if $dsid;
+	if(@$fid_list)
+	{ 
+    my $chromosome_data = generate_chromosome_images(feature_id_list=>$fid_list);
+    my $table = generate_table_data(feature_id_list=>$fid_list);
     if ($chromosome_data)
       {
 	$template->param(CHROMOSOME_LOOP=>$chromosome_data);
 	$template->param(FEAT_TABLE=>$table);
 	return $template->output;
       }
+    }
     else
       {
 	return "No feature ids were specified.";
@@ -102,9 +105,8 @@ sub gen_html
   sub generate_table_data
   {
   	my %opts = @_;
-    my $feat_list = $opts{feature_list};
+    my $feat_list = $opts{feature_id_list};
     #print STDERR Dumper \$feat_list;
-    my $ftid = $opts{ftid};
     return unless @$feat_list;
   	my @table;
   	$feat_list = [map {$coge->resultset("Feature")->find($_)} @$feat_list];
@@ -116,13 +118,10 @@ sub gen_html
 #	  warn "feature id $featid failed to return a valid feature object\n";
 	  next;
 	}
-	if ($ftid) 
-	{
-	  next unless $feat->type->id eq $ftid;
-	}
       my ($name) = $feat->names;
       push @table,{
-		   CHECKBOX=>$feat->id,
+		   FID=>$feat->id,
+		   COLOR=>'red',
 		   FEAT_NAME=>qq{<span class="link" title="Click for Feature Information" onclick="show_feature_info('}.$feat->id.qq{')">}.$name."</span>",
 		   LOC=>$feat->start,
 		   CHR=>$feat->chr,
@@ -131,35 +130,12 @@ sub gen_html
     }
     return \@table;
   }
-  
-  sub get_fids_from_dataset
-  {
-    my %opts = @_;
-    my $dsid = $opts{dsid};
-    my $ftid = $opts{ftid};
-    my $chr = $opts{chr};
-    my $search = {dataset_id=>$dsid};
-    my $join={};
-    if ($ftid)
-      {
-	$search->{feature_type_id}=$ftid;
-      }
-    if ($chr)
-      {
-	$search->{chromosome}=$chr;
-      }
-    my @ids = map{$_->id}$coge->resultset('Feature')->search($search);
-    return \@ids;
-  }
 
   sub generate_chromosome_images
   {
     my %opts = @_;
-    my $feat_list = $opts{feature_list};
+    my $feat_list = $opts{feature_id_list};
     #print STDERR Dumper \$feat_list;
-    my $ftid = $opts{ftid};
-    my $clade = $opts{clade};
-    my $anticodon = $opts{anticodon};
     return unless @$feat_list;
     
     $cogeweb = initialize_basefile(prog=>"FeatMap");
@@ -179,10 +155,6 @@ sub gen_html
 	  {
 	    #	  warn "feature id $featid failed to return a valid feature object\n";
 	    next;
-	  }
-	if ($ftid) 
-	  {
-	    next unless $feat->type->id eq $ftid;
 	  }
 	
 	my $org = $feat->organism->name;
@@ -220,7 +192,7 @@ sub gen_html
 					    chr=>"Chr: $chr",
 					    imagemap=>qq/class="imagemaplink" title="/.$name.qq/ (/.$feat->type->name.qq/)" onclick="show_feature_info('/.$feat->id.qq/')"/,
 					    up=>$up,
-					    color=>color_feat_by_type(feat=>$feat,anticodon=>$anticodon,clade=>$clade),
+					    #color=>color_feat_by_type(feat=>$feat),
 					   );
 	  }
       }
@@ -320,70 +292,22 @@ sub generate_feat_info
     my ($name) = $feat->names;
     my $subject_link = qq{
 Feature: $name<br>
-<a title='Click for Interactive Genome View' href = 'GeLo.pl?chr=}.$feat->chr.qq{&ds=}.$feat->dataset->id.qq{&x=}.$feat->start.qq{&z=5' target=_new border=0><img src=$sub_file border=0></a>
+<a title='Click for Interactive Genome View' href = 'GenomeView.pl?chr=}.$feat->chr.qq{&ds=}.$feat->dataset->id.qq{&x=}.$feat->start.qq{&z=5' target=_new border=0><img src=$sub_file border=0></a>
 };
     $subject_link =~ s/$TEMPDIR/$TEMPURL/;
     #print STDERR "made it this far!\n";
     return $hpp, $subject_link;
 }
 
-sub color_feat_by_type
-{
-	my %opts = @_;
-	my $feat = $opts{feat};
-	my $anticodon = $opts{anticodon};
-	my $clade = $opts{clade};
-	if ($anticodon) {
-		my $anno = join (" ", map {$_->annotation} $feat->annotations);
-        my ($anticodon) = $anno =~ /\(anticodon:\s+(\w+)\)/;
-        if ($anticodon =~ /AGA/i) {return [0,0,255];}
-        elsif ($anticodon =~ /GGA/i) {return [0,255,0];}
-		elsif ($anticodon =~ /GCT/i) {return [255,0,0];}
-		elsif ($anticodon =~ /TGA/i) {return [139,137,137];}
-		elsif ($anticodon =~ /CGA/i) {return [255,127,36];}
-		else {return [69,69,69];}
-        
-	}
-	elsif($clade)
-	{
-	my $fid = $feat->id;
-	if($fid == 4157016 || $fid == 4181732 || $fid == 4100298) {return [0,0,255];}
-	elsif ($fid == 4140192) {return [0,255,0];}
-	elsif ($fid == 4181648) {return [255,0,0];}
-	elsif ($fid == 4140158) {return [139,137,137];}
-	elsif ($fid == 4157026 || $fid == 4100322) {return [202,255,112];}
-	elsif ($fid == 4118458) {return [255,215,0];}
-	elsif ($fid == 4140080) {return [255,193,193];}
-	elsif ($fid == 4181724) {return [139,58,58];}
-	elsif ($fid == 4181644 || $fid == 4118320) {return [255,255,224];}
-	elsif ($fid == 4099894 || $fid == 4100252 || $fid == 4100336) {return [238,0,238];}
-	elsif ($fid == 4100262 || $fid == 4100168) {return [255,181,173];}
-	elsif ($fid == 4099980) {return [135,206,250];}
-	elsif ($fid == 4118318 || $fid == 4118442) {return [0,100,0];}
-	elsif ($fid == 4118336 || $fid == 4118358) {return [102,205,170];}
-	elsif ($fid == 4181618 || $fid == 4181692 || $fid == 4100260 || $fid == 4099954 || $fid == 4099962 || $fid == 4100136 || $fid == 4099922 || $fid == 4100018 || $fid == 4100014 || $fid == 4100280 || $fid == 4099904 || $fid == 4100286 || $fid == 4100182 || $fid == 4100178 || $fid == 4099916 || $fid == 4100040 || $fid == 4100126 || $fid == 4100222 || $fid == 4100200 || $fid == 4100034) {return [152,251,152];}
-	elsif ($fid == 4099924) {return [176,196,222];}
-	elsif ($fid == 4099986 || $fid == 4099982) {return [25,25,112];}
-	elsif ($fid == 4181706) {return [123,104,238];}
-	elsif ($fid == 4157038 || $fid == 4181604 || $fid == 4118342) {return [124,252,0];}
-	elsif ($fid == 4140082) {return [34,139,34];}
-	elsif ($fid == 4100026) {return [139,69,19];}
-	elsif ($fid == 4157006 || $fid == 4140086) {return [205,133,63];}
-	elsif ($fid == 4100176 || $fid == 4100158) {return [178,34,34];}
-	elsif ($fid == 4100238 || $fid == 4099908) {return [0,255,255];}
-	elsif ($fid == 4140210) {return [255,0,255];}
-	elsif ($fid == 4140124) {return [0,255,255];}
-	elsif ($fid == 4100312 || $fid == 4100002) {return [199,21,133];}
-	else {return [148,0,211];}	
-	}
-	else	{
-		my $feat_type = $feat->type->name;
-		if ($feat_type =~ /gene/i) {return [0,0,255];} #blue
-		elsif ($feat_type =~ /CDS/i) {return [0,255,0];} #green
-		elsif ($feat_type =~ /mRNA/i) {return [255,0,0];} #red
-		elsif ($feat_type =~ /tRNA/i) {return [139,137,137];} #light grey
-		elsif ($feat_type =~ /RNA/i) {return [69,69,69];} #dark grey
-		else {return [255,127,36];} #orange
-	}
-
-}
+sub generate_feat_info 
+  {
+    my $featid = shift;
+    my ($feat) = $coge->resultset("Feature")->find($featid);
+    unless (ref($feat) =~ /Feature/i)
+    {
+      return "Unable to retrieve Feature object for id: $featid";
+    }
+    my $html = qq{<a href="#check_$featid" onClick="\$('#feat_info').slideToggle(pageObj.speed);" style="float: right;"><img src='/CoGe/picts/delete.png' width='16' height='16' border='0'></a>};
+    $html .= $feat->annotation_pretty_print_html();
+    return $html;
+  }

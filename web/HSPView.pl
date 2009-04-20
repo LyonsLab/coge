@@ -98,16 +98,18 @@ sub gen_body
     $sseq =~ s/-//g;
     $template->param(QLoc=>$hsps->[0]{start}."-".$hsps->[0]{stop});
     $template->param(SLoc=>$hsps->[1]{start}."-".$hsps->[1]{stop});
-    $template->param(QIdent=>sprintf("%.1f",$hsps->[0]{match}/length($qseq)*100)."%") if $qseq;
-    $template->param(SIdent=>sprintf("%.1f",$hsps->[1]{match}/length($sseq)*100)."%") if $sseq;
-    $template->param(QSim=>sprintf("%.1f",$hsps->[0]{match}/length($qseq)*100)."%") if $qseq;
-    $template->param(SSim=>sprintf("%.1f",$hsps->[1]{match}/length($sseq)*100)."%") if $sseq;
+    my ($qmatch) = $hsps->[0]{match}=~/(\d+)/;
+    my ($smatch) = $hsps->[1]{match}=~/(\d+)/;
+    $template->param(QIdent=>sprintf("%.1f",$qmatch/length($qseq)*100)."%") if $qseq;
+    $template->param(SIdent=>sprintf("%.1f",$smatch/length($sseq)*100)."%") if $sseq;
+    $template->param(QSim=>sprintf("%.1f",$qmatch/length($qseq)*100)."%") if $qseq;
+    $template->param(SSim=>sprintf("%.1f",$smatch/length($sseq)*100)."%") if $sseq;
 #    $template->param(QSim=>sprintf("%.1f",$hsp->positive/length($qseq)*100)."%");
 #    $template->param(SSim=>sprintf("%.1f",$hsp->positive/length($sseq)*100)."%");
     $template->param(QLen=>length($qseq));
     $template->param(SLen=>length($sseq));
-    $template->param(QMis=>length($qseq)-$hsps->[0]{match}-$qgap);
-    $template->param(SMis=>length($sseq)-$hsps->[1]{match}-$sgap);
+    $template->param(QMis=>length($qseq)-$qmatch-$qgap);
+    $template->param(SMis=>length($sseq)-$smatch-$sgap);
     $template->param(strand=>$hsps->[0]{orientation});
     $template->param(eval=>$hsps->[0]{eval});
     $template->param(Match=>$hsps->[0]{match});
@@ -132,6 +134,14 @@ sub gen_body
     if ($hsps->[0]{dsid}=~/^\d+$/)
       {
 	my ($start, $stop);
+	$hsps->[0]{chr_start} =~ s/,//g;
+	$hsps->[1]{chr_start} =~ s/,//g;
+	$hsps->[0]{chr_stop} =~ s/,//g;
+	$hsps->[1]{chr_stop} =~ s/,//g;
+	$hsps->[0]{start} =~ s/,//g;
+	$hsps->[1]{start} =~ s/,//g;
+	$hsps->[0]{stop} =~ s/,//g;
+	$hsps->[1]{stop} =~ s/,//g;
 	if ($hsps->[0]{reverse_complement})
 	  {
 	    my $adj = $hsps->[0]{chr_stop} - $hsps->[0]{chr_start}+1;
@@ -173,7 +183,6 @@ sub gen_body
 	    $rc = $rc ? 0 : 1; #change orientation
 	  }
 	my $seqview = "<a class = small href=SeqView.pl?dsid=".$hsps->[1]{dsid}.";chr=".$hsps->[1]{chr}.";start=".$start.";stop=".$stop.";rc=$rc>SeqView</a>";
-#	my $seqview = "<a class = small href=SeqView.pl?dsid=".$hsps->[1]{dsid}.";chr=".$hsps->[1]{chr}.";start=".($hsps->[1]{start}+$hsps->[1]{chr_start}-1).";stop=".($hsps->[1]{stop}+$hsps->[1]{chr_start}-1).";rc=$rc>SeqView</a>";
 	$template->param(sseqview=>$seqview);
       }
     else
@@ -244,18 +253,16 @@ sub get_info_from_db
 	$split = "<br\/>" if $item->[0] =~/<br\/>/;
 	$split = "&#10;" if $item->[0] =~/&#10;/;
 	 my %data;
-	foreach my $item (split /$split/i, $item->[0])
+	foreach my $set (split /$split/i, $item->[0])
 	  {
-	    my ($tmp1, $tmp2) = split/:/,$item,2;
+	    my ($tmp1, $tmp2) = split/:/,$set,2;
 	    $tmp2 =~ s/^\s+//;
 	    $tmp2 =~ s/\s+$//;
 	    $data{$tmp1}=$tmp2;
 	  }
 	$data{HSP} =~ s/<.*?>//g;
 	$data{HSP} =~ s/^\d+\s*//;
-	my ($start, $stop, $orientation) = $data{Location} =~ /(\d+)-(\d+)\s+\(?(.*)\)?/;
-
-
+	my ($start, $stop, $orientation) = $data{Location} =~ /(.+?)-(.+?)\s+\(?(.*)\)?/;
 	$sth2->execute($item->[3]);
 	my ($dsid, $chr, $bpmin, $bpmax, $rc) =  $sth2->fetchrow_array;
 	$hsps{$item->[2]}= {
@@ -276,7 +283,6 @@ sub get_info_from_db
 			    chr=>$chr,
 			    reverse_complement=>$rc,
 		    };
-
 	$ids{$item->[1]}++;
 	$ids{$item->[2]}++;
       }

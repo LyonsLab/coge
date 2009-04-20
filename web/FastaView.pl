@@ -66,14 +66,16 @@ sub gen_html
     $template->param(DATE=>$DATE);
     $template->param(LOGO_PNG=>"FastaView-logo.png");
     $template->param(BOX_NAME=>qq{<DIV id="box_name">Sequences:</DIV>});
-    my @fids = $form->param('featid');
-    my $seqs = get_seqs(prot=>$prot, fids=>\@fids, textbox=>$textbox);
-
+    my @fids;
+    push @fids, $form->param('featid') if $form->param('featid');
+    push @fids, $form->param('fid') if $form->param('fid');
+    my $gstid = $form->param('gstid') if $form->param('gstid');
+    my $seqs = get_seqs(prot=>$prot, fids=>\@fids, textbox=>$textbox, gstid=>$gstid);
     if ($text)
       {
 	return  $seqs;
       }
-    $template->param(BODY=>gen_body(fids=>\@fids, seqs=>$seqs));
+    $template->param(BODY=>gen_body(fids=>\@fids, seqs=>$seqs, gstid=>$gstid));
     $html .= $template->output;
     }
     return $html;
@@ -86,13 +88,23 @@ sub get_seqs
     my $prot = $opts{prot};
     my $textbox = $opts{textbox};
     my $name_only = $opts{name_only};
+    my $gstid = $opts{gstid};
     my @fids = ref($fids) =~ /array/i ? @$fids : split/,/, $fids;
     my $seqs;
     foreach my $featid (@fids)
       {
-	my ($feat) = $coge->resultset('Feature')->find($featid);
+	my ($fid, $gstidt);
+	if ($featid =~ /_/)
+	  {
+	    ($fid, $gstidt) = split /_/, $featid;
+	  }
+	else
+	  {
+	    ($fid, $gstidt) = ($featid, $gstid);
+	  }
+	my ($feat) = $coge->resultset('Feature')->find($fid);
 	next unless $feat;
-	$seqs .= $feat->fasta(col=>100, prot=>$prot, name_only=>$name_only);
+	$seqs .= $feat->fasta(col=>100, prot=>$prot, name_only=>$name_only, gstid=>$gstidt);
       }
     $seqs = qq{<textarea id=seq_text name=seq_text class=backbox readonly ondblclick="this.select();" style="height: 400px; width: 750px; overflow: auto;">$seqs</textarea>} if $textbox;
     return $seqs;
@@ -103,11 +115,12 @@ sub gen_body
     my %opts = @_;
     my $seqs = $opts{seqs};
     my $fids = $opts{fids};
+    my $gstid = $opts{gstid} || 1;
     $fids = join (",", @$fids) if ref($fids) =~ /array/i;
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/FastaView.tmpl');
     $template->param(BOTTOM_BUTTONS=>1);
     $template->param(SEQ=>$seqs) if $seqs;
-    $template->param(FIDS=>qq{<input type=hidden id=fids value=$fids>});
+    $template->param(FIDS=>qq{<input type=hidden id=fids value=$fids><input type=hidden id=gstid value=$gstid>});
     return $template->output;
   }
 	

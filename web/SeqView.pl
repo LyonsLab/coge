@@ -12,6 +12,7 @@ use HTML::Template;
 use Text::Wrap qw($columns &wrap);
 use Data::Dumper;
 use POSIX;
+use DBIxProfiler;
 
 $ENV{PATH} = "/opt/apache/CoGe/";
 
@@ -25,6 +26,8 @@ $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 $FORM = new CGI;
 
 $coge = CoGeX->dbconnect();
+#$coge->storage->debugobj(new DBIxProfiler());
+#$coge->storage->debug(1);
 
 my $pj = new CGI::Ajax(
 		       gen_html=>\&gen_html,
@@ -49,7 +52,6 @@ sub gen_html
     else
      {
     my $form = $FORM;
-    my $featid = $form->param('featid');
     my $rc = $form->param('rc');
     my $pro;
     my ($title) = gen_title(protein=>$pro, rc=>$rc);
@@ -65,7 +67,6 @@ sub gen_html
     $template->param(LOGO_PNG=>"SeqView-logo.png");
     $template->param(BOX_NAME=>qq{<DIV id="box_name">$title</DIV>});
     $template->param(BODY=>gen_body());
-    $template->param(POSTBOX=>gen_foot());
     $template->param(ADJUST_BOX=>1);
     $template->param(LOGON=>1) unless $USER->user_name eq "public";
     $html .= $template->output;
@@ -77,8 +78,12 @@ sub gen_body
   {
     my $form = $FORM;
     my $featid = $form->param('featid') || 0;
+    my $gstid = $form->param('gstid') if $form->param('gstid');
+    ($featid, $gstid) = split (/_/, $featid) if ($featid =~ /_/);
+      
     my $chr = $form->param('chr');
     my $dsid = $form->param('dsid');
+    my $dsgid = $form->param('dsgid');
     my $feat_name = $form->param('featname');
     my $rc = $form->param('rc');
     my $pro = $form->param('pro');   
@@ -87,12 +92,17 @@ sub gen_body
     my $start = $form->param('start');
     my $stop = $form->param('stop');
     $stop = $start unless $stop;
-    ($start,$stop) = ($stop,$start) if $start > $stop;
+    ($start,$stop) = ($stop,$start) if $start && $stop && $start > $stop;
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SeqView.tmpl');
     $template->param(RC=>$rc);
     $template->param(JS=>1);
     $template->param(SEQ_BOX=>1);
     $template->param(ADDITION=>1);
+    $template->param(GSTID=>$gstid);
+    $template->param(DSID=>$dsid);
+    $template->param(DSGID=>$dsgid);
+    $template->param(CHR=>$chr);
+
     if ($featid)
     {
       my ($feat) = $coge->resultset('Feature')->find($featid);
@@ -104,9 +114,6 @@ sub gen_body
       $template->param(FEATID=>$featid);
       $template->param(FEATNAME=>$feat_name);
       $template->param(FEAT_INFO=>qq{<input type=button value="Get Feature Info" onClick="generate_feat_info(['args__$featid'],[display_feat_info])">});
-      $template->param(DSID=>$dsid); #to make JS happy
-      $template->param(CHR=>$chr); #to make JS happy
-
       $template->param(PROTEIN=>'Protein Sequence');
       $template->param(SIXFRAME=>0);
       $template->param(UPSTREAM=>"UPSTREAM (5'): ");
@@ -119,8 +126,6 @@ sub gen_body
     }
     else
     {
-        $template->param(DSID=>$dsid);
-    	$template->param(CHR=>$chr);
     	$template->param(FEATID=>0); #to make JS happy
     	$template->param(FEATNAME=>'null'); #to make JS happy
         #generate_gc_info(chr=>$chr,stop=>$stop,start=>$start,dsid=>$dsid);
@@ -147,7 +152,7 @@ sub gen_body
 	$start -= $upstream;
 	$stop += $downstream;
       }
-    my ($link, $types) = find_feats(dsid=>$dsid, start=>$start, stop=>$stop, chr=>$chr);
+    my ($link, $types) = find_feats(dsid=>$dsid, start=>$start, stop=>$stop, chr=>$chr, gstid=>$gstid, dsgid=>$dsgid);
 #    print STDERR $link,"\n\n";;
 
     $template->param(FEATLISTLINK=>$link);
@@ -195,12 +200,14 @@ sub get_seq
     my $rc = $opts{'rc'} || 0;
     my $chr = $opts{'chr'};
     my $dsid = $opts{'dsid'};
+    my $dsgid = $opts{'dsgid'};
     my $feat_name = $opts{'featname'};
     my $upstream = $opts{'upstream'};
     my $downstream = $opts{'downstream'};
     my $start = $opts{'start'};
     my $stop = $opts{'stop'};
     my $nowrap = $opts{'nowrap'} || 0;
+    my $gstid = $opts{gstid};
     $nowrap = 0 if $nowrap =~ /undefined/;
     if($add_to_seq){
       $start = $upstream if $upstream;
@@ -227,13 +234,15 @@ sub get_seq
 		       downstream=>$downstream,
 		       col=>$col,
 		       sep=>1,
+		       gstid=>$gstid,
 		      )
 	    :
 	      ">Unable to retrieve Feature object for id: $featid\n";
-	$seq = $rc ? color(seq=>$seq, upstream=>$downstream, downstream=>$upstream) : color(seq=>$seq, upstream=>$upstream, downstream=>$downstream);
+	
+#	$seq = $rc ? color(seq=>$seq, upstream=>$downstream, downstream=>$upstream) : color(seq=>$seq, upstream=>$upstream, downstream=>$downstream);
 	$fasta = $fasta."\n".$seq."\n";
       }
-    else
+    elsif ($dsid)
       {
 
 	my $ds = $coge->resultset('Dataset')->find($dsid);
@@ -246,53 +255,37 @@ sub get_seq
 	     prot=>$pro,
 	     rc=>$rc,
 	     col=>$col,
+	     gstid=>$gstid,
 	    )
 	      :
 		">Unable to retrieve dataset object for id: $dsid";
       }
-    return $fasta;
-  }
-  
-sub gen_foot
-  {
-    my $form = $FORM;
-    my $featid = $form->param('featid');
-    my $chr = $form->param('chr');
-    my $dsid = $form->param('dsid');
-    my $rc = $form->param('rc');
-    my $upstream = $form->param('upstream') || 0;
-    my $downstream = $form->param('downstream') || 0;
-    my $start = $form->param('start');
-    my $stop = $form->param('stop');
-    $stop = $start unless $stop;
-    my $feat = $coge->resultset('Feature')->find($featid);
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SeqView.tmpl');
-    $template->param(BOTTOM_BUTTONS=>1);
-
-    
-    if ($featid){
-      my ($feat) = $coge->resultset('Feature')->find($featid);
-      $dsid = $feat->dataset_id;
-      $chr = $feat->chromosome;
-      $start = $feat->start;
-      $stop = $feat->stop;
-    }
-    if ($rc)
+    elsif ($dsgid)
       {
-	$start -= $downstream;
-	$stop += $upstream;
+	my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	$fasta = ref ($dsg) =~ /datasetgroup/i ? 
+	  $dsg->fasta
+	    (
+	     start=>$start,
+	     stop=>$stop,
+	     chr=>$chr,
+	     prot=>$pro,
+	     rc=>$rc,
+	     col=>$col,
+	    )
+	      :
+		">Unable to retrieve dataset group object for id: $dsgid";
       }
     else
       {
-	$start -= $upstream;
-	$stop += $downstream;
+	$fasta = qq{
+>Unable to create sequence.  Options:
+};
+	$fasta.= Dumper \%opts;
       }
-    my ($link, $types) = find_feats(dsid=>$dsid, start=>$start, stop=>$stop, chr=>$chr);
-    $template->param(FEATLISTLINK=>$link);
-    $template->param(FEAT_TYPE_LIST=>$types);
-   my $html = $template->output;
-   return $html;
+    return $fasta;
   }
+  
     
 sub color
     {
@@ -358,10 +351,17 @@ sub find_feats
 	my $stop = $opts{'stop'};
 	my $chr = $opts{'chr'};
 	my $dsid = $opts{'dsid'};
-#	my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SeqView.tmpl');
+	my $gstid = $opts{'gstid'};
+	my $dsgid = $opts{dsgid};
+	if ($dsgid)
+	  {
+	    my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	    $dsid = $dsg->datasets(chr=>$chr)->id;
+	    $gstid = $dsg->type->id;
+	  }
 	my $link = qq{<input type=button value="Find Features in Sequence" onClick="featlist('FeatList.pl?};
 	my %type;
-	$link .="start=$start;stop=$stop;chr=$chr;dsid=$dsid".qq{')">};
+	$link .="start=$start;stop=$stop;chr=$chr;dsid=$dsid;gstid=$gstid".qq{')">};
 	foreach my $ft ($coge->resultset('FeatureType')->search(
 								{"features.dataset_id"=>$dsid,
 								 "features.chromosome"=>$chr},

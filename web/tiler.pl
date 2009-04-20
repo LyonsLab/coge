@@ -66,6 +66,7 @@ sub get_dir_array {
     my $xmax = delete $query_pairs{xmax};
     my $ds = delete $query_pairs{ds};
     my $tilew = $query_pairs{width};
+    my $gstid = $query_paris{gstid};
     my $MAX = int(log(1000*abs($xmax - $xmin)/$tilew)/log(10));
     my @keyvals = ('ds',sort keys %query_pairs);
     $query_pairs{xmin} = $xmin;

@@ -28,7 +28,7 @@ my $pj = new CGI::Ajax(
 			);
 $pj->js_encode_function('escape');
 print $pj->build_html($FORM, \&gen_html);
-#print gen_html();
+#print $FORM->header; gen_html();
 
 
 
@@ -53,9 +53,11 @@ sub gen_html
 
 	$template->param(LOGON=>1) unless $USER->user_name eq "public";
         $template->param(DATE=>$DATE);
-        $template->param(BOX_NAME=>generate_box_name());
+#        $template->param(BOX_NAME=>generate_box_name());
 #	$template->param(BODY_ONLOAD=>'init();');
-        $template->param(BODY=>gen_body());
+	my ($body, $org_name) = gen_body();
+        $template->param(BODY=>$body);
+        $template->param(BOX_NAME=>$org_name);
         $html .= $template->output;
       }
     #return $html;
@@ -64,29 +66,53 @@ sub gen_html
 sub gen_body
   {
     my $form = shift || $FORM;
-    my $chr = $form->param('chr');
-    my $ds = $form->param('ds');
-    my $z = $form->param('z');
-    my $loc = $form->param('x');
-    my $ver = $form->param('ver');
-    my $org = $form->param('org');
+    my $chr = $form->param('chr') if $form->param('chr');
+    my $dsid = $form->param('ds') if $form->param('ds');
+    $dsid = $form->param('dsid') if $form->param('dsid');
+    my $z = $form->param('z') if $form->param('z');
+    my $loc = $form->param('x') if $form->param('x');
+    my $ver = $form->param('ver') if $form->param('ver');
+    my $org = $form->param('org') if $form->param('org');
     my $gstid = $form->param('gstid') if $form->param('gstid');
+    my $fid = $form->param('fid') if $form->param('fid');
+    my $dsgid = $form->param('dsgid') if $form->param('dsgid');
+
     my $prefs = load_settings(user=>$USER, page=>$PAGE_NAME);
-    if ($ds)
+    my $chr_length;
+
+    if ($fid)
       {
-	my $dso = $coge->resultset('Dataset')->find($ds);
+	my $feat = $coge->resultset('Feature')->find($fid);
+	$chr = $feat->chromosome;
+	$dsid = $feat->dataset->id;
+	$loc = $feat->start;
+      }
+    if ($dsgid)
+      {
+	my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	$gstid = $dsg->type->id;
+	my ($ds) = $dsg->datasets(chr=>$chr);
+	$dsid = $ds->id;
+      }
+    if ($dsid)
+      {
+	my $dso = $coge->resultset('Dataset')->find($dsid);
 	$org = $dso->organism->name;
 	$ver = $dso->version;
+	$chr_length = $dso->last_chromosome_position($chr);
       }
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GeLo.tmpl');
+    $loc = 1 unless $loc;
+    $z=2 unless $z;
+    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GenomeView.tmpl');
     $ver = "unk" unless $ver;
     $template->param(CHR=>$chr);
     $template->param(VER=>$ver);
     $template->param(ORG=>$org);
-    $template->param(DS=>$ds);
+    $template->param(DS=>$dsid);
     $template->param(LOC=>$loc);
     $template->param(ZOOM=>$z);
     $template->param(GSTID=>$gstid);
+    $template->param(CHR_LENGTH=>$chr_length);
     $template->param(SAVE_SETTINGS=>1) unless $USER->user_name eq "public";
     $template->param(FLAT=>"checked") if $prefs->{'flat'}  && $prefs->{'flat'} eq "true";
     $template->param(EXPAND=>"checked") if $prefs->{'expand'}  && $prefs->{'expand'} eq "true";
@@ -103,7 +129,8 @@ sub gen_body
 	$template->param(uc($item)=>$show);
       }
     my $html = $template->output;
-    return $html;
+    my $org_name = "$org (v $ver), Chromosome: $chr, Dataset ID No. $dsid";
+    return $html, $org_name;
   }
 
 sub generate_box_name

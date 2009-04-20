@@ -19,8 +19,8 @@ $DOTPLOT = $DIR."/bin/dotplot.pl";
 $FORM = new CGI;
 $coge = CoGeX->dbconnect();
 
-my $org1 = $FORM->param('org1');
-my $org2 = $FORM->param('org2');
+my $dsgid1 = $FORM->param('dsg1');
+my $dsgid2 = $FORM->param('dsg2');
 my $chr1 = $FORM->param('chr1');
 my $chr2 = $FORM->param('chr2');
 my $basename = $FORM->param('base');
@@ -30,68 +30,36 @@ my $flip = $FORM->param('flip');
 my $regen = $FORM->param('regen');
 my $width = $FORM->param('width') || 600;
 my $grid = $FORM->param('grid');
+my $ksfile = $FORM->param('kf');
 $grid = 1 unless defined $grid;
 $DEBUG=1 if $FORM->param('debug');
-unless ($org1 && $org2 && $chr1 && $chr2 && $basename)
-  {
-    warn "Problem running run_dotplot.pl\n";
-  }
+exit unless ($dsgid1 && $dsgid2 && $chr1 && $chr2 && $basename);
 my ($md51, $md52, $mask1, $mask2, $type1, $type2, $blast,$params) = $basename =~/(.*?)_(.*?)\.(\d+)-(\d+)\.(\w+)-(\w+)\.(\w+)\.dag_(.*)/ ;
 
 
-($org1) = $coge->resultset('Organism')->resolve($org1);
-my @ds1 = $org1->current_datasets(type=>$mask1);
-($org2) = $coge->resultset('Organism')->resolve($org2);
-my @ds2 = $org2->current_datasets(type=>$mask2);
+my($dsg1) = $coge->resultset('DatasetGroup')->resolve($dsgid1);
+my($dsg2) = $coge->resultset('DatasetGroup')->resolve($dsgid2);
+exit unless $dsg1 && $dsg2;
 
-my %params;
-
-
-
-foreach my $ds (@ds1)
-  {
-    foreach my $chr ($ds->get_chromosomes)
-      {
-	my @tmp = split/_/,$chr; #this stuff is a hack to deal with chromosome names liek supercontig_1 which are passed in as "1" . . .
-	next unless $chr eq $chr1 || $chr1 eq $tmp[-1];
-	$chr1 = $chr if $chr ne $chr1;
-	my $last = $ds->last_chromosome_position($chr);
-	$params{1}= {dsid => $ds->id,
-		     chr_end=>$last};
-      }
-  }
-
-foreach my $ds (@ds2)
-  {
-    foreach my $chr ($ds->get_chromosomes)
-      {
-	my @tmp = split/_/,$chr;
-	next unless $chr eq $chr2 || $chr2 eq $tmp[-1];
-	$chr2 = $chr if $chr ne $chr2;
-	my $last = $ds->last_chromosome_position($chr);
-	$params{2}= {dsid => $ds->id,
-		     chr_end=>$last};
-      }
-  }
-
-my $name1 = $org1->name;
+my $name1 = $dsg1->organism->name;
 $name1 =~ s/\s+/_/g;
 $name1 =~ s/\(//g;
 $name1 =~ s/\)//g;
 $name1 =~ s/://g;
-$name1 =~ s/\///g;
-my $name2 = $org2->name;
+$name1 =~ s/;//g;
+my $name2 = $dsg2->organism->name;
 $name2 =~ s/\s+/_/g;
 $name2 =~ s/\(//g;
 $name2 =~ s/\)//g;
 $name2 =~ s/://g;
-$name2 =~ s/\///g;
+$name2 =~ s/;//g;
 my $dir = "$DIAGSDIR/$name1"."/".$name2;
 my $dag_file = $dir."/".$basename;
+$ksfile = $dir."/".$basename.".all.aligncoords.ks";
 $dag_file =~ s/\.dag_.*//;
 $dag_file .= ".dag.all";
-my $outfile = $dir."/html/".$md51."_".$chr1."-".$mask1."-".$type1."_".$md52."_".$chr2."-".$mask2."-".$type2."_".$params.".".$blast.".w$width";
-my $res = generate_dotplot(dag=>$dag_file, coords=>"$dir/$basename.all.aligncoords", qchr=>$chr1, schr=>$chr2, 'outfile'=>$outfile, 'regen_images'=>'false', flip=>$flip, regen_images=>$regen, oid1=>$org1->id, oid2=>$org2->id, width=>$width, grid=>$grid);
+my $outfile = $dir."/html/".$basename.".$chr1-$chr2.w$width";
+my $res = generate_dotplot(dag=>$dag_file, coords=>"$dir/$basename.all.aligncoords", qchr=>$chr1, schr=>$chr2, 'outfile'=>$outfile, 'regen_images'=>'false', flip=>$flip, regen_images=>$regen, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, grid=>$grid, ksfile=>$ksfile);
 if ($res)
   {
     $res=~s/$DIR/$URL/;
@@ -124,8 +92,8 @@ sub generate_dotplot
     my $dag = $opts{dag};
     my $coords = $opts{coords};
     my $outfile = $opts{outfile};
-    my $oid1 = $opts{oid1};
-    my $oid2 = $opts{oid2};
+    my $dsgid1 = $opts{dsgid1};
+    my $dsgid2 = $opts{dsgid2};
     my $qchr = $opts{qchr};
     my $schr = $opts{schr};
     my $flip = $opts{flip} || 0; 
@@ -133,13 +101,20 @@ sub generate_dotplot
     my $grid = $opts{grid} || 0; 
     $outfile .= ".flip" if $flip;
     my $regen_images = $opts{regen_images};
+    my $ksfile = $opts{ksfile};
     if (-r $outfile.".html" && !$regen_images)
       {
 #	write_log("generate dotplot: file $outfile already exists",$cogeweb->logfile);
 	return $outfile;
       }
 #    write_log("generate dotplot: running $cmd", $cogeweb->logfile);
-    my $cmd = qq{$DOTPLOT -d $dag -a $coords -b $outfile -l '' -o1 $oid1 -o2 $oid2 -w $width -lt 1 -chr1 $qchr -chr2 $schr -flip $flip -grid 1};
+    my $cmd = $DOTPLOT;
+    if ($ksfile && -r $ksfile)
+      {
+	$cmd .= qq{ -kf $ksfile};
+	$outfile .= ".ks";
+      }
+    $cmd .= qq{ -d $dag -a $coords -b $outfile -l '' -dsg1 $dsgid1 -dsg2 $dsgid2 -w $width -lt 1 -chr1 $qchr -chr2 $schr -flip $flip -grid 1};
     `$cmd`;
     return $outfile if -r $outfile.".html";
   }

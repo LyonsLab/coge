@@ -16,6 +16,7 @@ use CoGe::Graphics::Feature::NucTide;
 use CoGeX;
 use POSIX;
 use DBIxProfiler;
+use Benchmark;
 
 $ENV{PATH} = "/opt/apache2/CoGe/";
 
@@ -71,8 +72,8 @@ sub gen_data
 sub get_types
   {
     my %opts = @_;
+    my ($dsid, $gstid) = split /_/, $opts{dsid};
     my $accn = $opts{accn};
-    my $dsid = $opts{dsid};
     my $ftid = $opts{ftid};
     my $html;
     my $blank = qq{<input type="hidden" id="Type_name">-------};
@@ -87,22 +88,27 @@ sub get_types
 															      ,{join=>'feature_names'});
 
     $html .= "<font class=small>Type count: ".scalar @opts."</font>\n<BR>\n";
-    $html .= qq{<SELECT id="Type_name" SIZE="10" MULTIPLE onChange="get_anno(['args__accn','accn_select','args__type','Type_name', 'args__dsid','dsid'],[show_anno])" >\n};
+    $html .= qq{<SELECT id="Type_name" SIZE="10" MULTIPLE onChange="get_anno(['args__accn','accn_select','args__type','Type_name', 'args__dsid','dsid', 'args__gstid','args__$gstid'],[show_anno])" >\n};
     $html .= join ("\n", @opts);
     $html .= "\n</SELECT>\n";
     $html =~ s/OPTION/OPTION SELECTED/;
     return $blank unless $html =~ /OPTION/;
-    return ($html, 1);
+    return ($html, $gstid);
   }
 
 sub update_featlist
   {
-    my $accn = shift;
+    my %opts = @_;
+    my $accn = $opts{accn};
     return unless $accn;
-    my $type = shift;
-    my $featid = shift;
-    $accn .= " ($type)";
-    return $accn,$featid;
+    my $type = $opts{type};
+    my $featid = $opts{fid};
+    my $gstid = $opts{gstid};
+    my $gst = $coge->resultset('GenomicSequenceType')->find($gstid);
+    $accn .= " ($type";
+    $accn .= ", ".$gst->name if $gst;
+    $accn .=")";
+    return $accn,$featid, $gstid;
   }
   
 sub parse_for_FeatList
@@ -130,19 +136,21 @@ sub cogesearch
     my $type = $opts{type};
     my $org_id = $opts{org_id};
     my $org_name = $opts{org_name};
+    $org_name = undef if $org_name =~ /^search$/i;
     my $org_desc = $opts{org_desc};
-    my @org_ids;
-    $org_id = "all" unless $org_id;
-    if ($org_id eq "all")
-      {
-	my ($otype, $search) = ("name", $org_name) if $org_name && $org_name ne "Search";
-	($otype, $search) = ("desc", $org_desc) if $org_desc && $org_desc ne "Search";
-	@org_ids = get_orgs(id_only=>1, type=>$type, search=>$search);
-      }
-    else
-      {
-	push @org_ids, $org_id;
-      }
+    $org_desc = undef if $org_desc =~ /^search$/i;
+#    my @org_ids;
+#    $org_id = "all" unless $org_id;
+#    if (($org_name && $org_name ne "Search") || ($org_desc && $org_desc ne "Search"))
+#      {
+#	my ($otype, $search) = ("name", $org_name) if $org_name && $org_name ne "Search";
+#	($otype, $search) = ("desc", $org_desc) if $org_desc && $org_desc ne "Search";
+#	@org_ids = get_orgs(id_only=>1, type=>$type, search=>$search);
+#      }
+#    else
+#      {
+#	push @org_ids, $org_id if $org_id =~ /^\d$/;
+#      }
     my $feat_accn_wild = $opts{feat_name_wild};
     my $feat_anno_wild = $opts{feat_anno_wild};
     my $blank = qq{<input type="hidden" id="accn_select">};
@@ -160,26 +168,55 @@ sub cogesearch
     $accn = $accn."%" if $accn && ($feat_accn_wild eq "both" || $feat_accn_wild eq "right");
     $anno = "%".$anno if $anno && ($feat_anno_wild eq "both" || $feat_anno_wild eq "left");
     $anno = $anno."%" if $anno && ($feat_anno_wild eq "both" || $feat_anno_wild eq "right");
-    my $search = {'me.name'=>{like=>$accn}} if $accn;
-    $search->{annotation}={like=>$anno} if $anno;
+        my $search ={};
+    if ($accn =~ /%/)
+      {
+	$search->{'me.name'}={like=>$accn} if $accn;
+      }
+    else
+      {
+	$search->{'me.name'}=$accn if $accn;
+      }
+    if ($anno =~ /%/)
+      {
+	$search->{'annotation'}={like=>$anno} if $anno;
+      }
+    else
+      {
+	$search->{'annotation'}=$anno if $anno;
+      }
+#    $anno =~ s/%//g;
     $search->{feature_type_id}=$type if $type;
-    $search->{organism_id}{ -not_in}=[values %$restricted_orgs] if values %$restricted_orgs;
-    $search->{organism_id}{ -in}=[@org_ids] if @org_ids;
-    my $join = {'feature'=>'dataset'};
+    $search->{"organism.organism_id"}{ -not_in}=[values %$restricted_orgs] if values %$restricted_orgs;
+
+#    $search->{organism_id}{ -in}=[@org_ids] if @org_ids;
+    $search->{'organism.name'}={like=>"%".$org_name."%"} if $org_name;
+    $search->{'organism.description'}={like=>"%".$org_desc."%"} if $org_desc;
+    my $join = {'feature'=>{'dataset'=>{'dataset_connectors'=>{'dataset_group'=>'organism'}}}};
     $join->{'feature'} = ['dataset','annotations'] if $anno;
-    foreach my $name ($coge->resultset('FeatureName')->search(
-							      $search,
-							      {join=>$join,
-							       order_by=>'name ASC',
-							      },
-							     ))
+
+    #trying to get fulltext to work (and be fast!)
+#    my @names = $anno ?
+#      $coge->resultset('FeatureName')->search($search,
+#					      {join =>$join}
+#					     )->search_literal('MATCH (annotation) AGAINST(?)',$anno)
+#					       :
+#						 $coge->resultset('FeatureName')->search(
+#											 $search,
+#											 {join=>$join,
+#											  order_by=>'name ASC',
+#											 },
+#											);
+    my @names = $coge->resultset('FeatureName')->search(
+							$search,
+							{join=>$join,
+							 order_by=>'name ASC',
+							}
+							);
+    foreach my $name (@names)
       {
 	my $item = $name->name;
 	next if $seen{uc($item)};
-#	if (%{$restricted_orgs})
-#	  {
-#	    next if $restricted_orgs->{$name->feature->dataset->organism->name};
-#	  }
 	$seen{uc($item)}++;
 	push @opts, "<OPTION>$item</OPTION>"
       }
@@ -237,32 +274,56 @@ sub cogesearch_featids
     $accn = $accn."%" if $accn && ($feat_accn_wild eq "both" || $feat_accn_wild eq "right");
     $anno = "%".$anno if $anno && ($feat_anno_wild eq "both" || $feat_anno_wild eq "left");
     $anno = $anno."%" if $anno && ($feat_anno_wild eq "both" || $feat_anno_wild eq "right");
-    my $search = {'me.name'=>{like=>$accn}} if $accn;
-    $search->{annotation}={like=>$anno} if $anno;
+    my $search ={};
+    if ($accn =~ /%/)
+      {
+	$search->{'me.name'}={like=>$accn} if $accn;
+      }
+    else
+      {
+	$search->{'me.name'}=$accn if $accn;
+      }
+    if ($anno =~ /%/)
+      {
+	$search->{'annotation'}={like=>$anno} if $anno;
+      }
+    else
+      {
+	$search->{'annotation'}=$anno if $anno;
+      }
     $search->{feature_type_id}=$type if $type;
     $search->{organism_id}{ -not_in}=[values %$restricted_orgs] if values %$restricted_orgs;
     $search->{organism_id}{ -in}=[@org_ids] if @org_ids;
-    my $join = {'feature'=>'dataset'};
+    my $join = {'feature'=>{'dataset'=>{'dataset_connectors'=>'dataset_group'}}};
     $join->{'feature'} = ['dataset','annotations'] if $anno;
     foreach my $name ($coge->resultset('FeatureName')->search(
 							      $search,
-							      {join=>$join,
-							      },
-							     ))
+							      {
+							       join=>$join,
+							       prefetch=>{'feature'=>{'dataset'=>{'dataset_connectors'=>{'dataset_group'=>'genomic_sequence_type'}}}}
+							      }))
       {
-	$seen{$name->feature_id}=$name->name." (".$name->feature->type->name.")";
+	my $key = $name->feature_id."_".$name->feature->dataset->sequence_type->id;
+	$seen{$key}=$name->name." (".$name->feature->type->name;
+	$seen{$key}.= ", ".$name->feature->dataset->sequence_type->name;
+	$seen{$key}.= ")";
       }
-    return join ",", map {$_.":".$seen{$_}} keys %seen;
+    return join "||", map {$_."::".$seen{$_}} keys %seen;
   }
 
 sub get_anno
   {
     my %opts = @_;
     my $accn = $opts{accn};
+    my $featlist_choice = $opts{featlist_choice};
+    
     my $fid = $opts{fid};
-    return unless $accn || $fid;
     my $type = $opts{type};
     my $dataset_id = $opts{dsid};
+    my $gstid = $opts{gstid};
+    ($fid, $gstid) = split /_/, $featlist_choice if $featlist_choice;
+    return unless $accn || $fid;
+    
     my @feats;
     if ($accn)
       {
@@ -283,6 +344,7 @@ sub get_anno
     my $i = 0;
     foreach my $feat (@feats)
       {
+	
 	$i++;
 	my $featid = $feat->id;
 	my $chr = $feat->chr;
@@ -291,21 +353,21 @@ sub get_anno
 	my $ds = $feat->dataset->id;
 	my $x = $feat->start;
 	my $z = 4;
-	$anno .= join "\n<BR><HR><BR>\n", $feat->annotation_pretty_print_html(loc_link=>0);
+	$anno .= join "\n<BR><HR><BR>\n", $feat->annotation_pretty_print_html(loc_link=>1, gstid=>$gstid);
 	$anno .= "<table>";
 	$anno .= "<tr>";
-	$anno .= qq{<td><DIV id="dnaseq$i"><input type="button" value = "SeqView" onClick="window.open('SeqView.pl?featid=$featid&dsid=$ds&chr=$chr&featname=$accn');"></DIV>};
-	$anno .= qq{<td><DIV id="dnaseq$i"><input type="button" value = "Blast" onClick="window.open('CoGeBlast.pl?featid=$featid');"></DIV>};
-	$anno .= qq{<td><DIV id="loc$i"><input type="button" value = "GenomeView" onClick="window.open('GeLo.pl?chr=$chr&ds=$ds&x=$x&z=$z');"></DIV>};
+	$anno .= qq{<td><DIV id="dnaseq$i"><input type="button" value = "SeqView" onClick="window.open('SeqView.pl?featid=$featid&dsid=$ds&chr=$chr&featname=gstid=$gstid');"></DIV>};
+	$anno .= qq{<td><DIV id="dnaseq$i"><input type="button" value = "Blast" onClick="window.open('CoGeBlast.pl?featid=$featid;gstid=$gstid');"></DIV>};
+	$anno .= qq{<td><DIV id="loc$i"><input type="button" value = "GenomeView" onClick="window.open('GenomeView.pl?chr=$chr&ds=$ds&x=$x&z=$z;gstid=$gstid');"></DIV>};
 #	$anno .= qq{<DIV id="exp$i"><input type="button" value = "Click for expression tree" onClick="gen_data(['args__Generating expression view image'],['exp$i']);show_express(['args__}.$accn.qq{','args__}.'1'.qq{','args__}.$i.qq{'],['exp$i']);"></DIV>};
-	$anno .= qq{<td><DIV id="addfeat$featid"><input type="button" value = "Add to List" onClick="\$('#addfeat$featid').html('<i>$accn ($type) has been added to Feature List</i><br><br>');update_featlist(['args__$accn','args__$type','args__$featid'],[add_to_featlist]);"></DIV>};
+	$anno .= qq{<td><DIV id="addfeat$featid"><input type="button" value = "Add to List" onClick="\$('#addfeat$featid').html('<i>$accn ($type) has been added to Feature List</i><br><br>');update_featlist(['args__accn', 'args__$accn','args__type', 'args__$type','args__fid', 'args__$featid', 'args__gstid','args__$gstid'],[add_to_featlist]);"></DIV>} if $accn;
 	$anno .= "</table>";
-	$anno .= qq{<DIV id="gc_info$i"><input type="button" value = "GC content" onClick="gc_content(['args__featid','args__$featid'],['gc_info$i'])"></DIV>};
+#	$anno .= qq{<DIV id="gc_info$i"><input type="button" value = "GC content" onClick="gc_content(['args__featid','args__$featid'],['gc_info$i'])"></DIV>};
 	if ($feat->type->name eq "CDS")
 	  {
-	    $anno .= qq{<DIV id="codon_info$i"><input type="button" value = "Codon usage" onClick="codon_table(['args__featid','args__$featid'],['codon_info$i'])"></DIV>};
-	      $anno .= qq{<DIV id="protein_info$i"><input type="button" value = "Amino acid usage" onClick="protein_table(['args__featid','args__$featid'],['protein_info$i'])"></DIV>};
-	    $anno .= qq{<DIV id="codon_aa_align$i"><input type="button" value = "Codon/AA alignment" onClick="codon_aa_alignment(['args__featid','args__$featid'],['codon_aa_align$i'])"></DIV>};
+	    $anno .= qq{<DIV id="codon_info$i"><input type="button" value = "Codon usage" onClick="codon_table(['args__featid','args__$featid', 'args__gstid','args__$gstid'],['codon_info$i'])"></DIV>};
+	      $anno .= qq{<DIV id="protein_info$i"><input type="button" value = "Amino acid usage" onClick="protein_table(['args__featid','args__$featid', 'args__gstid','args__$gstid'],['protein_info$i'])"></DIV>};
+	    $anno .= qq{<DIV id="codon_aa_align$i"><input type="button" value = "Codon/AA alignment" onClick="codon_aa_alignment(['args__featid','args__$featid', 'args__gstid','args__$gstid'],['codon_aa_align$i'])"></DIV>};
 	  }
 	$anno = "<font class=\"annotation\">No annotations for this entry</font>" unless $anno;
       }
@@ -349,13 +411,13 @@ sub gen_html
 	$template->param(LOGON=>1) unless $USER->user_name eq "public";
 	$template->param(DATE=>$DATE);
 	$template->param(bOX_NAME=>"Feature Selection");
-	my $body = gen_body();
+        my $body = gen_body();
 	$template->param(BODY=>$body);
-	
+	$template->param(ADJUST_BOX=>1);
 	$html .= $template->output;
       }
     return $html;
-  }
+    }
 
 sub gen_body
   {
@@ -418,7 +480,11 @@ sub get_data_source_info_for_accn
       }
     my $blank = qq{<input type="hidden" id="dsid">------------};
     return $blank unless $accn;
-    my @feats = $coge->resultset('Feature')->search({'feature_names.name'=>$accn},{join=>'feature_names'});
+    my @feats = $coge->resultset('Feature')->search({'feature_names.name'=>$accn},
+						    {
+						     join=>'feature_names',
+						    'prefetch'=>{'dataset'=> ['data_source',{'dataset_connectors'=>{'dataset_group'=>['organism', 'genomic_sequence_type']}}]}
+						    });
     my %sources;
     ($USER) = CoGe::Accessory::LogUser->get_user();
     my $restricted_orgs = restricted_orgs(user=>$USER);
@@ -436,12 +502,18 @@ sub get_data_source_info_for_accn
 	my $name = $val->name;
 	my $ver = $val->version;
 	my $desc = $val->description;
-	my $sname = $val->datasource->name if $val->datasource;
+	my $sname = $val->data_source->name if $val->data_source;
 	my $ds_name = $val->name;
-	my $type = $val->sequence_type->name;
-	my $title = "$org: $ds_name ($sname, v$ver, $type)";
-	$sources{$title}{id} = $val->id;
-	$sources{$title}{v} = $ver;
+	my @gstypes = $val->sequence_type;
+	foreach my $type (@gstypes)
+	  {
+	    my $gstname = $type->name;
+	    my $title = "$org: $ds_name ($sname, v$ver, $gstname)";
+#	my $title = "$org: $ds_name (v$ver, $type)";
+	    $sources{$title}{id} = $val->id;
+	    $sources{$title}{v} = $ver;
+	    $sources{$title}{gstid}=$type->id;
+	  }
       }
     my $html;
     $html .= qq{
@@ -451,12 +523,14 @@ sub get_data_source_info_for_accn
     foreach my $title (sort { $sources{$b}{v} <=> $sources{$a}{v} || $a cmp $b } keys %sources)
       {
 	my $id = $sources{$title}{id};
-	$html .= qq{  <option value="$id" >$title\n};
+	my $gstid = $sources{$title}{gstid};
+	my $val = $id."_".$gstid;
+	$html .= qq{  <option value="$val" >$title\n};
 	$html =~ s/option/option selected/ unless $count;
 	$count++;
       }
     $html .= qq{</SELECT>\n};
-    return ("<font class=small>Dataset count: ".$count ."</font>\n<BR>\n".$html, 1);
+    return ("<font class=small>Dataset count: ".$count ."</font>\n<BR>\n".$html);
   }
 
 sub get_orgs
@@ -521,10 +595,10 @@ sub codon_table
   {
     my %opts = @_;
     my $featid = $opts{featid};
-
+    my $gstid = $opts{gstid};
     return unless $featid;
     my ($feat) = $coge->resultset('Feature')->find($featid);
-    my ($codon, $code_type) = $feat->codon_frequency(counts=>1);
+    my ($codon, $code_type) = $feat->codon_frequency(counts=>1, gstid=>$gstid);
     my %aa;
     my ($code) = $feat->genetic_code;
     foreach my $tri (keys %$code)
@@ -542,8 +616,9 @@ sub protein_table
   {
     my %opts = @_;
     my $featid = $opts{featid};
+    my $gstid = $opts{gstid};
     my ($feat) = $coge->resultset('Feature')->find($featid);
-    my $aa = $feat->aa_frequency(counts=>1);
+    my $aa = $feat->aa_frequency(counts=>1, gstid=>$gstid);
     my $html = "Amino Acid Usage";
     $html .= CoGe::Accessory::genetic_code->html_aa(data=>$aa, counts=>1);
     return $html;
@@ -553,9 +628,10 @@ sub codon_aa_alignment
   {
     my %opts = @_;
     my $featid = $opts{featid};
+    my $gstid = $opts{gstid};
     my ($feat) = $coge->resultset('Feature')->find($featid);
-    my $seq = join (" ", $feat->genomic_sequence()=~ /(...)/g);
-    my $aa = join ("   ",split //,$feat->protein_sequence());
+    my $seq = join (" ", $feat->genomic_sequence(gstid=>$gstid)=~ /(...)/g);
+    my $aa = join ("   ",split //,$feat->protein_sequence(gstid=>$gstid));
     my @seq = $seq =~ /(.{1,80})/g;
     my @aa = $aa =~ /(.{1,80})/g;
 
