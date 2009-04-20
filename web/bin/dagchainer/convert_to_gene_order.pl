@@ -5,12 +5,12 @@ use CoGeX;
 use Getopt::Long;
 use Data::Dumper;
 
-my ($DEBUG, $oid1, $oid2, $input_file, $ftid1, $ftid2);
+my ($DEBUG, $dsgid1, $dsgid2, $input_file, $ftid1, $ftid2);
 
 GetOptions(
 	   "DEBUG"=>\$DEBUG,
-	   "oid1|org1|o1=s"=>\$oid1,
-	   "oid2|org2|o2=s"=>\$oid2,
+	   "dsgid1|dsg1|d1=s"=>\$dsgid1,
+	   "dsgid2|dsg2|d2=s"=>\$dsgid2,
 	   "input|file|i|f=s"=>\$input_file,
 	   "ftid1|ft1=i"=>\$ftid1,
 	   "ftid2|ft2=i"=>\$ftid2,
@@ -18,10 +18,8 @@ GetOptions(
 
 
 my $coge = CoGeX->dbconnect();
-my ($org1) = $coge->resultset('Organism')->resolve($oid1);
-my ($org2) = $coge->resultset('Organism')->resolve($oid2);
-my $order1 = get_gene_order(org=>$org1, ftid=>$ftid1);
-my $order2 = get_gene_order(org=>$org2, ftid=>$ftid2);
+my $order1 = get_gene_order(dsgid=>$dsgid1, ftid=>$ftid1) if $ftid1 == 3;
+my $order2 = get_gene_order(dsgid=>$dsgid2, ftid=>$ftid2) if $ftid2 == 3;
 
 $order1 = get_order_from_input(file=>$input_file, set=>1) unless $order1;
 $order2 = get_order_from_input(file=>$input_file, set=>2) unless $order2;
@@ -100,29 +98,28 @@ sub get_order_from_input
 sub get_gene_order
   {
     my %opts = @_;
-    my $org = $opts{org};
+    my $dsgid = $opts{dsgid};
     my $ftid = $opts{ftid};
     $ftid = 3 unless defined $ftid; #default for CDS
     my %data;
-    foreach my $ds ($org->current_datasets())
+    my %chr;
+    foreach my $feat (sort {$a->chromosome cmp $b->chromosome || $a->start <=> $b->start} 
+		      $coge->resultset('Feature')->search(
+							  {
+							   feature_type_id=>3, 
+							   dataset_group_id=>$dsgid
+							  },{
+							     join=>[{dataset=>'dataset_connectors'},'locations','dataset'], 
+							     prefetch=>['feature_names', 'locations', 'dataset']}
+							 ))
       {
-	my %chr;
-	foreach my $feat ($coge->resultset('Feature')->search({
-							       datAset_id=>$ds->id,
-							       feature_type_id=>$ftid},
-							     {
-							      order_by=>'start desc',
-							     }))
+	$chr{$feat->chromosome}++;
+	foreach my $name($feat->names)
 	  {
-	    $chr{$feat->chromosome}++;
-	    foreach my $name($feat->names)
-	      {
-		$data{$feat->chromosome}{$name} = $chr{$feat->chromosome};
-	      }
+	    $data{$feat->chromosome}{$name} = $chr{$feat->chromosome};
 	  }
       }
     return 0 unless keys %data;
-
     return \%data;
   }
 
