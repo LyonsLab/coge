@@ -623,17 +623,6 @@ tr.ltblue {
   background-position: left;
 }
 
-.plus {
-  background-image: url(/CoGe/picts/buttons/plus.png);
-  background-repeat: no-repeat;
-  background-position: left;
-}
-
-.minus {
-  background-image: url(/CoGe/picts/buttons/minus.png);
-  background-repeat: no-repeat;
-  background-position: left;
-}
 
 #carousel {
   width: 1000px;
@@ -706,124 +695,6 @@ th.headerSortDown {
  border-bottom: 2px solid #c3c2b1;
 }
 
-#ncbi_blast_button {
-	display: block;
-  	width: 97px;
-  	height: 26px;
-	background: url(/CoGe/picts/buttons/CoGeBlast/ncbi_blast_new.png) 0 0 no-repeat;
-}
-
-#ncbi_blast_button:hover {
-	background-position: -97px 0;
-}
-
-#ncbi_blast_button:active {
-	background-position: -194px 0;
-}
-
-#ncbi_blast_button span {
-	display: none;
-}
-
-#coge_blast_button {
-	display: block;
-  	width: 100px;
-  	height: 25px;
-	background: url(/CoGe/picts/buttons/CoGeBlast/coge_blast.png) 0 0 no-repeat;
-}
-
-#coge_blast_button:hover {
-	background-position: -100px 0;
-}
-
-#coge_blast_button:active {
-	background-position: -200px 0;
-}
-
-#coge_blast_button span {
-	display: none;
-}
-
-#go_button {
-	display: block;
-  	width: 35px;
-  	height: 26px;
-	background: url(/CoGe/picts/buttons/GEvo/go_new.png) 0 0 no-repeat;
-}
-
-#go_button:hover {
-	background-position: -35px 0;
-}
-
-#go_button:active {
-	background-position: -70px 0;
-}
-
-#go_button span {
-	display: none;
-}
-
-#clear_button {
-	display: block;
-  	width: 52px;
-  	height: 26px;
-	background: url(/CoGe/picts/buttons/GEvo/clear_new.png) 0 0 no-repeat;
-}
-
-#clear_button:hover {
-	background-position: -52px 0;
-}
-
-#clear_button:active {
-	background-position: -104px 0;
-}
-
-#clear_button span {
-	display: none;
-}
-
-#add_button {
-	display: block;
-  	width: 42px;
-  	height: 26px;
-	background: url(/CoGe/picts/buttons/GEvo/add_new.png) 0 0 no-repeat;
-}
-
-#add_button:hover {
-	background-position: -42px 0;
-}
-
-#add_button:active {
-	background-position: -84px 0;
-}
-
-#add_button span {
-	display: none;
-}
-
-#remove_button {
-	display: block;
-  	width: 72px;
-  	height: 26px;
-	background: url(/CoGe/picts/buttons/GEvo/remove_new.png) 0 0 no-repeat;
-}
-
-#remove_button:hover {
-	background-position: -72px 0;
-}
-
-#remove_button:active {
-	background-position: -144px 0;
-}
-
-#remove_button span {
-	display: none;
-}
-
-/*.highlight_tablerows {
-	background-color: #ADFF2F;
-}*/
-
 .image_window {
 	background-color: #FFF;
 	position: absolute;
@@ -883,8 +754,16 @@ td.link:hover {
   width: 400px;
 }
 
-.gevo_sample_color {
+.color_chooser {
   height: 16px;
   width: 16px;
   display: block;
+  cursor: pointer;
+  border: 1px solid black;
 }
+
+.annotation_table {
+ line-height: .9em;
+ border-collapse: collapse;
+}
+
