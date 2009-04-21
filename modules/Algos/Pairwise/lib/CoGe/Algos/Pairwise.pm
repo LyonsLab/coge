@@ -5,14 +5,16 @@ use Data::Dumper;
 
 BEGIN {
     use Exporter ();
-    use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
+    use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $NWALIGN $MATRIX_FILE);
     $VERSION     = '0.1';
     @ISA         = (@ISA, qw(Exporter));
     #Give a hoot don't pollute, do not export more than needed by default
     @EXPORT      = qw();
     @EXPORT_OK   = qw();
     %EXPORT_TAGS = ();
-    __PACKAGE__->mk_accessors(qw(seqA seqB matrix gap gap_ext dpm alignA alignB));
+    __PACKAGE__->mk_accessors(qw(seqA seqB matrix gap gap_ext dpm alignA alignB nwalign));
+    $NWALIGN = "/opt/apache/CoGe/bin/nwalign/nwalign";
+    $MATRIX_FILE = "/opt/apache/CoGe/data/blast/matrix/aa/BLOSUM62";
 }
 
 #################### main pod documentation begin ###################
@@ -268,7 +270,7 @@ See Also   :
 
  Usage     : $pairwise->global_align()
  Purpose   : aligns two sequences stored in the pairwise object.  The sequences must have been previously 
-             set with $pairwise->seq1($seq) and $pairwise->seq2($seq2)
+             set with $pairwise->seqA($seq) and $pairwise->seqB($seq2)
  Returns   : an array of two strings where each string is the global sequence alignment
  Argument  : None
  Throws    : returns 0 if either sequence is not defined
@@ -283,8 +285,36 @@ See Also   :
 
 
 
-
 sub global_align
+  {
+    my $self = shift;
+    my %opts = @_;
+    
+    my $seq1 = $opts{seqA};
+    $seq1 = $self->seqA unless defined $seq1;;
+    my $seq2 = $opts{seqB};
+    $seq2 = $self->seqB unless defined $seq2;;
+    return 0 unless ($seq1 && $seq2);
+    my $gap = $opts{gap};
+    $gap = $self->gap unless defined $gap;
+    my $gap_ext = $opts{gap_ext};
+    $gap_ext = $self->gap_ext unless defined $gap_ext;
+    $gap = -10 unless defined $gap;
+    $gap_ext = -2 unless $gap_ext;
+
+    my $prog = $self->nwalign;
+    $prog = $NWALIGN unless $prog;
+    my $matrix = $opts{matrix};  #path to blast formated alignment matrix;
+    $matrix = $MATRIX_FILE unless $matrix && -r $matrix;
+    my $cmd = "$prog --matrix=$matrix --gap=$gap $seq1 $seq2";
+    open (RUN, "$cmd |");
+    my ($align1, $align2) = <RUN>;
+    close RUN;
+    return ($align1, $align2);
+  }
+
+
+sub global_align_perl
   {
     ########################
     # initialization stage #
@@ -334,10 +364,10 @@ sub global_align
 
         # calculate match score
         my $letter1 = substr($seq1, $j-1, 1);
-        my $letter2 = substr($seq2, $i-1, 1);                            
-	
-	$diagonal_score = $matrix[$i-1][$j-1]{score} + $sm->{$letter1}{$letter2};
-        
+        my $letter2 = substr($seq2, $i-1, 1);
+	my $match_score = $sm->{$letter1}{$letter2};
+	$match_score = 0 unless defined $match_score;  #some odd character?  Let's not make it hurt or add
+	$diagonal_score = $matrix[$i-1][$j-1]{score} + $match_score;
 
         # calculate gap scores
 	my $cost = $matrix[$i-1][$j]{gap} ? $GAP_EXT : $GAP;
