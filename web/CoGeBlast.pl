@@ -405,6 +405,7 @@ sub get_dsg_for_blast_menu
 	    $dsgs{$dsg->id}=$dsg;
 	  }
       }
+    %dsgs = () if ($dsgs{$dsgids});
     foreach my $dsgid (split/,/,$dsgids)
       {
 	my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
