@@ -5,8 +5,10 @@ use GD;
 use Getopt::Long;
 use CoGeX;
 use Data::Dumper;
+use DBI;
+use POSIX;
 
-use vars qw($dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ksfile $colortype $log);
+use vars qw($dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ks_db $colortype $log);
 
 
 GetOptions(
@@ -24,12 +26,16 @@ GetOptions(
 	   "basename|b=s"=>\$basename,
 	   "flip|f=i"=>\$flip,
 	   "grid|g=i"=>\$grid,
-	   "ksfile|kf=s"=>\$ksfile,
-	   "color_type|ct=s"=>\$colortype,
+	   "ksdb|ks_db=s"=>\$ks_db,
+	   "ks_color_type|ct=s"=>\$colortype,
 	   "log=s"=>\$log,
 	   );
+
 usage() if $help;
 usage() unless -r $dagfile;
+
+
+my $ks_hist = "/opt/apache/CoGe/bin/ks_histgram.pl";
 
 $basename = "test" unless $basename;
 $width = 1024 unless $width;
@@ -54,7 +60,6 @@ my $x_bp_per_pix = sprintf("%.0f", $org1length/$width);
 my $x_pix_per_bp = 1/$x_bp_per_pix;
 my $y_bp_per_pix = sprintf("%.0f", $org2length/$height);
 my $y_pix_per_bp = 1/$y_bp_per_pix;
-#print STDERR join ("\n", $width."x". $height, $org1length."x".$org2length, $x_bp_per_pix, $y_bp_per_pix, $x_pix_per_bp, $y_pix_per_bp);
 
 #Generate new graphics context and fill the background
 my $graphics_context = new GD::Image($width, $height);
@@ -62,14 +67,28 @@ my $white = $graphics_context->colorResolve(255,255,255);
 $graphics_context->fill(1,1,$white);
 
 
+if ($ks_db)
+  {
+    my $cmd = $ks_hist;
+    $cmd .= " -db $ks_db";
+    $cmd .= " -log" if $log;
+    $cmd .= " -pf $alignfile";
+    $cmd .= " -chr1 $CHR1" if defined $CHR1;
+    $cmd .= " -chr2 $CHR2" if defined $CHR2;
+    $cmd .= " -o $basename.hist.png";
+    `$cmd`;
+#    print STDERR $cmd,"\n";
+  }
+
+
 #Magic happens here.
 #Link type seems to indicate the type of tile; i.e. a 'master' (a large, all chromosome) or a blow up of a two chromosome intersection
 #draw_chromosome_grid draws either the black chomosome lines, or the light green tile lines, so its always called in addition to the draw_dots function.
 draw_chromosome_grid(gd=>$graphics_context, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, link=>$link, link_type=>$link_type, flip=>$flip, grid=>$grid);
-my $ksdata = get_ksdata(ksfile=>$ksfile, colortype=>$colortype) if $ksfile && -r $ksfile;
+my $ksdata = get_ksdata(ks_db=>$ks_db, colortype=>$colortype, chr1=>$CHR1, chr2=> $CHR2) if $ks_db && -r $ks_db;
 draw_dots(gd=>$graphics_context, file=>$dagfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, link_type => $link_type, dsgid1=>$dsgid1, dsgid2=>$dsgid2, flip=>$flip);
 my $add = 1 if $dsgid1 eq $dsgid2;
-draw_dots(gd=>$graphics_context, file=>$alignfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, color=>$graphics_context->colorResolve(0,150,0), size=>2, add_inverse=>$add, flip=>$flip, ksdata=>$ksdata, colortype=>$colortype, log=>1);
+draw_dots(gd=>$graphics_context, file=>$alignfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, color=>$graphics_context->colorResolve(0,150,0), size=>2, add_inverse=>$add, flip=>$flip, ksdata=>$ksdata, colortype=>$colortype, log=>$log);
 
 #Write out graphics context - the generated dot plot - to a .png file
 open (OUT, ">".$basename.".png") || die "$!";
@@ -77,6 +96,7 @@ binmode OUT;
 print OUT $graphics_context->png;
 close OUT;
 
+#generate_historgram of ks values if necessary
 
 #This function appears to parse dagchainer output, generated in SynMap.pl, and draw the results to the GD graphics context.
 sub draw_dots
@@ -98,15 +118,17 @@ sub draw_dots
     my $ksdata = $opts{ksdata};
     my $log = $opts{log}; #log normalize ksdata for display?
     my $colortype=$opts{colortype}; #specified which item in ksdata to color dots
-
     $colortype = "dS" unless $colortype;
     my $has_ksdata = keys %$ksdata ? 1 : 0;
-    my ($max,$min) = get_range(data=>$ksdata, colortype=>$colortype, log=>$log) if $has_ksdata;
+    my ($max,$min, $non_zero_min) = get_range(data=>$ksdata, colortype=>$colortype, log=>$log) if $has_ksdata;
     my $range = $max-$min if defined $max && defined $min;
+    my $log_range = log($max)-log($non_zero_min) if $max && $non_zero_min;
     $color = $graphics_context->colorResolve(150,150,150) unless $color;
+
     open (IN, $file) || die "$!";
     my @feats;
     my %points;
+    my @points;
     while (<IN>)
       {
 	chomp;
@@ -114,14 +136,36 @@ sub draw_dots
 	next unless $_;
 	my @line = split /\t/;
 	my $use_color = $color;
+	my $val;
 	if ($has_ksdata)
 	  {
-	    my $val = $ksdata->{$line[1]}{$line[5]}{$colortype};
-	    if (defined $val)
+	    my @item1 = split/\|\|/, $line[1];
+	    my @item2 = split/\|\|/, $line[5];
+	    $val = $ksdata->{$item1[6]}{$item2[6]}{$colortype};
+	    if (defined $val && $val=~ /\d/) 
 	      {
-		$use_color = get_color(range=>$range, max=>$max, val=>$val, log=>$log);
-#		print STDERR join ("\t", @$use_color),"\n";
+		$val = $non_zero_min if $log && $val == 0;
+		if ($log)
+		  {
+		    $val = $val-$non_zero_min;
+		    if ($val <= 0)
+		      {
+			$val = $non_zero_min;
+		      }
+		    $val = (log($val)-log($non_zero_min))/$log_range;
+		  }
+		else
+		  {
+		    $val = ($val-$min)/$range;
+		  }
+		$val = sprintf("%.4f", $val);
+		$use_color = get_color_new(val=>$val); #val is 0<=x<=1
 		$use_color = $graphics_context->colorResolve(@$use_color);
+	      }
+	    else
+	      {
+		print Dumper $ksdata->{$item1[6]}{$item2[6]};
+		$use_color = $graphics_context->colorResolve(0,0,0);
 	      }
 	  }
 	if ($flip)
@@ -155,9 +199,14 @@ sub draw_dots
 	my $midy = sprintf("%.0f",$org2->{$chr2}{start}+$ymin+abs($line[7]-$line[6])/2);
 	my $y = sprintf("%.0f",$midy*$y_pix_per_bp);
 	($x,$y) = ($y, $x) if $special;
-	$graphics_context->arc($x, $graphics_context->height-$y, $size, $size, 0, 360, $use_color);
-	$graphics_context->arc($y, $graphics_context->height-$x, $size, $size, 0, 360, $use_color) if ($add_inverse && !$CHR1 && $x ne $y);
-	$graphics_context->arc($y, $graphics_context->height-$x, $size, $size, 0, 360, $use_color) if ($add_inverse && $chr1 eq $chr2 && $x ne $y);
+
+#	$graphics_context->arc($x, $graphics_context->height-$y, $size, $size, 0, 360, $use_color);
+#	$graphics_context->arc($y, $graphics_context->height-$x, $size, $size, 0, 360, $use_color) if ($add_inverse && !$CHR1 && $x ne $y);
+#	$graphics_context->arc($y, $graphics_context->height-$x, $size, $size, 0, 360, $use_color) if ($add_inverse && $chr1 eq $chr2 && $x ne $y);
+	$val = 0 unless $val; #give it some value for later sorting
+	push @points, [ $x, $graphics_context->height-$y, $size, $size, 0, 360, $use_color, $val];
+	push @points, [ $y, $graphics_context->height-$x, $size, $size, 0, 360, $use_color, $val] if ($add_inverse && !$CHR1 && $x ne $y);
+	push @points, [ $y, $graphics_context->height-$x, $size, $size, 0, 360, $use_color, $val] if ($add_inverse && $chr1 eq $chr2 && $x ne $y);
 	if ($link_type == 1)
 	  {
 	    my @item1 = split /\|\|/, $line[1];
@@ -194,7 +243,14 @@ sub draw_dots
 	  }
       }
     close IN;
-
+    @points = sort {$b->[-1] <=> $a->[-1]} @points if ($has_ksdata);
+    foreach my $point (@points)
+      {
+	my $val = pop @$point;
+#	print STDERR join ("\t", @$point),"\n" unless defined $val;
+#	print STDERR join ("\t", @$point),"\n";
+	$graphics_context->arc(@$point);
+      }
     if ($link_type == 1)
       {
 	#Okay, now generate the HTML document that contains the click map for the image
@@ -256,8 +312,13 @@ Ergo, we rely on jQuery to detect when the DOM is fully loaded, and then run the
 	$pos .='px';
 	print OUT qq{
 </map>
-<span class=xsmall style='position: absolute;left: 0px;top: $pos;'>$org1name: $CHR1 ($org1length)</span>
-</body></html>
+<span class=xsmall style='position: absolute;left: 0px;top: $pos;'>$org1name: $CHR1 ($org1length)
+};
+	print OUT qq{
+<a class="small" href= "$img.hist.png" target=_new>Histogram of synonymous sybstitutions</a>
+} if -r $basename.".hist.png";
+	print OUT qq{
+</span></body></html>
 };
 	close OUT;
       }
@@ -316,7 +377,6 @@ sub draw_chromosome_grid
     $pv=undef;
     foreach my $chr (sort {$org2->{$a}{start}<=>$org2->{$b}{start} } keys %$org2)
       {
-#	print STDERR join ("\t", $chr, $org2->{$chr}{start},$org2->{$chr}{length}),"\n";
 	my $y = $graphics_context->height-sprintf("%.0f",$org2->{$chr}{start}*$y_pix_per_bp);
 	next if $pv && $y == $pv-1;
 	if ($grid)
@@ -364,13 +424,7 @@ Coords will be in [x,y,radius] for cricles and [x1,y1,x2,y2] (diagonal points) f
 				$tmp =~ s/XCHR/$xchr/;
 				$tmp =~ s/YCHR/$ychr/;
 				my ($y1, $y2) = @{$data{y}{$ychr}};
-#eric's attempt to fix
-#				($y2, $y1) = ($height - $y1+1, $height-$y2+3);
-#				print STDERR join ("\t", $xchr, $ychr, $x1, $y1, $x2, $y2),"\n";
-###
-
 				next if abs($y1-$y2)<3;
-#<area href='$tmp' alt="$xchr vs $ychr" title="$xchr vs $ychr" shap=rect coords="$x1, $y1, $x2, $y2">
 				print OUT qq{
 location_list[$temp_arrayindex_counter] = ['rect', [$x1, $y1, $x2, $y2], '$tmp', ''];};
 				$temp_arrayindex_counter++;
@@ -435,26 +489,24 @@ sub get_dsg_info
 sub get_ksdata
   {
     my %opts = @_;
-    my $ksfile = $opts{ksfile};
+    my $ks_db = $opts{ks_db};
     my $colortype= $opts{colortype};
     my %data;
-    return \%data unless -r $ksfile;
-    open (IN, $ksfile);
-    while (<IN>)
+    return \%data unless -r $ks_db;
+    my $select = "select * from ks_data";
+    my $dbh = DBI->connect("dbi:SQLite:dbname=$ks_db","","");
+    my $sth = $dbh->prepare($select);
+    $sth->execute();
+    while (my $data = $sth->fetchrow_arrayref)
       {
-	next if /^#/;
-	chomp;
-	my @line = split /\t/;
-	$data{$line[0]}{$line[1]} = {
-				     prot_id=>$line[2],
-				     dna_id=>$line[3],
-				     gapless_prot_id=>$line[4],
-				     gapless_dna_id=>$line[5],
-				     dN=>$line[6],
-				     dS=>$line[7],
-				    };
+	$data{$data->[1]}{$data->[2]}={
+				       dS=>$data->[3],
+				       dN=>$data->[4],
+				       'dN/dS'=>$data->[5],
+				      };
       }
-    close IN;
+    $sth->finish();
+    $dbh->disconnect();
     return \%data;
   }
 
@@ -463,24 +515,52 @@ sub get_range
     my %opts = @_;
     my $data = $opts{data};
     my $colortype = $opts{colortype};
-    my $log = $opts{log};
-    my ($max, $min);
+    my ($max, $min, $non_zero_min);
     foreach my $k1 (keys %$data)
       {
 	foreach my $k2 (keys %{$data->{$k1}})
 	  {
+	    next unless $data->{$k1}{$k2}{$colortype};
+	    $non_zero_min = $data->{$k1}{$k2}{$colortype} unless defined $non_zero_min || $data->{$k1}{$k2}{$colortype} == 0;
 	    $max = $data->{$k1}{$k2}{$colortype} unless defined $max;
 	    $min = $data->{$k1}{$k2}{$colortype} unless defined $min;
 	    $max = $data->{$k1}{$k2}{$colortype} if $data->{$k1}{$k2}{$colortype} > $max;
 	    $min = $data->{$k1}{$k2}{$colortype} if $data->{$k1}{$k2}{$colortype} < $min;
+	    $non_zero_min = $data->{$k1}{$k2}{$colortype} if $data->{$k1}{$k2}{$colortype} < $non_zero_min && $data->{$k1}{$k2}{$colortype} > 0;
 	  }
       }
-    if ($log)
+    return ($max, $min, $non_zero_min);
+  }
+
+sub get_color_new
+  {
+    my %opts = @_;
+    my $val = $opts{val};
+    return [0,0,0] unless defined $val;
+    my @colors = (
+		  [255,0,0], #red
+		  [255,126,0], #orange
+		  [255,255,0], #yellow
+		  [0,255,0], # green
+		  [0,255,255], # cyan
+		  [0,0,255], # blue
+#		  [255,0,255], #magenta
+		  [126,0,126], #purple
+		 );
+    @colors = reverse @colors;
+    my ($index1, $index2) = ((floor((scalar(@colors)-1)*$val)), ceil((scalar(@colors)-1)*$val));
+
+    my $color=[];
+    my $step = 1/(scalar (@colors)-1);
+    my $scale = $index1*$step;
+    my $dist = ($val-$scale)/($step);
+#    print join ("\t", $val, $step, $scale, $dist),"\n\t";
+    for (my $i=0; $i<=2; $i++)
       {
-	$max = sprintf("%.3f", log($max)) unless $max == 0;
-	$min = sprintf("%.3f", log($min)) unless $min == 0;
+	my $diff = ($colors[$index1][$i]-$colors[$index2][$i])*$dist;
+	push @$color, sprintf("%.0f", $colors[$index1][$i]-$diff);
       }
-    return ($max, $min);
+    return $color;
   }
 
 sub get_color
@@ -494,7 +574,7 @@ sub get_color
     $range = $max-$min unless defined $range;
     if ($log)
       {
-	$val = sprintf("%.3f", log($val)) unless $val == 0;
+#	$val = sprintf("%.3f", log($val)) unless $val == 0;
       }
     my $color =[];
     #$relative = sprintf("%.3f", 1- ($max_quality-log($hsp->quality))/($range_quality)) if $range_quality && $color_hsps eq "quality";
@@ -552,6 +632,11 @@ link_type    | lt      are image map links for chromosome blocks or points:
 flip         | f       flip axes (1 flip, 0 don't flip [DEFAULT])
 
 grid         | g       add a positional grid to dotplot
+
+ks_db        | ksdb    specify a sqlite database with synonymous/nonsynonymous data
+                       to color syntenic points
+
+ks_color_type| ct      specify the synonymous data to use (dS, dN) for coloring syntenic points
 
 help         | h       print this message
 
