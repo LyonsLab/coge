@@ -109,8 +109,8 @@ sub get_gene_order
 							   feature_type_id=>3, 
 							   dataset_group_id=>$dsgid
 							  },{
-							     join=>[{dataset=>'dataset_connectors'},'locations','dataset'], 
-							     prefetch=>['feature_names', 'locations', 'dataset']}
+							     join=>[{dataset=>'dataset_connectors'},'feature_names'], 
+							     prefetch=>['feature_names']}
 							 ))
       {
 	$chr{$feat->chromosome}++;
