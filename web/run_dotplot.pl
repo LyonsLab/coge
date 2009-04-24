@@ -30,7 +30,8 @@ my $flip = $FORM->param('flip');
 my $regen = $FORM->param('regen');
 my $width = $FORM->param('width') || 600;
 my $grid = $FORM->param('grid');
-my $ksfile = $FORM->param('kf');
+my $ksdb = $FORM->param('ksdb');
+my $log = $FORM->param('log');
 $grid = 1 unless defined $grid;
 $DEBUG=1 if $FORM->param('debug');
 exit unless ($dsgid1 && $dsgid2 && $chr1 && $chr2 && $basename);
@@ -55,11 +56,15 @@ $name2 =~ s/://g;
 $name2 =~ s/;//g;
 my $dir = "$DIAGSDIR/$name1"."/".$name2;
 my $dag_file = $dir."/".$basename;
-$ksfile = $dir."/".$basename.".all.aligncoords.ks";
+if ($ksdb)
+  {
+    ($ksdb) = $basename =~ /^(.*?CDS-CDS)/; 
+    $ksdb = $dir."/".$ksdb.".sqlite" if $ksdb; #that way it is not set if genomic sequence are compared.
+  }
 $dag_file =~ s/\.dag_.*//;
 $dag_file .= ".dag.all";
 my $outfile = $dir."/html/".$basename.".$chr1-$chr2.w$width";
-my $res = generate_dotplot(dag=>$dag_file, coords=>"$dir/$basename.all.aligncoords", qchr=>$chr1, schr=>$chr2, 'outfile'=>$outfile, 'regen_images'=>'false', flip=>$flip, regen_images=>$regen, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, grid=>$grid, ksfile=>$ksfile);
+my $res = generate_dotplot(dag=>$dag_file, coords=>"$dir/$basename.all.aligncoords", qchr=>$chr1, schr=>$chr2, 'outfile'=>$outfile, 'regen_images'=>'false', flip=>$flip, regen_images=>$regen, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, grid=>$grid, ksdb=>$ksdb, log=>$log);
 if ($res)
   {
     $res=~s/$DIR/$URL/;
@@ -101,7 +106,8 @@ sub generate_dotplot
     my $grid = $opts{grid} || 0; 
     $outfile .= ".flip" if $flip;
     my $regen_images = $opts{regen_images};
-    my $ksfile = $opts{ksfile};
+    my $ksdb = $opts{ksdb};
+    my $log = $opts{log};
     if (-r $outfile.".html" && !$regen_images)
       {
 #	write_log("generate dotplot: file $outfile already exists",$cogeweb->logfile);
@@ -109,9 +115,10 @@ sub generate_dotplot
       }
 #    write_log("generate dotplot: running $cmd", $cogeweb->logfile);
     my $cmd = $DOTPLOT;
-    if ($ksfile && -r $ksfile)
+    if ($ksdb && -r $ksdb)
       {
-	$cmd .= qq{ -kf $ksfile};
+	$cmd .= qq{ -ksdb $ksdb -ct dS};
+	$cmd .= qq{ -log 1} if $log;
 	$outfile .= ".ks";
       }
     $cmd .= qq{ -d $dag -a $coords -b $outfile -l '' -dsg1 $dsgid1 -dsg2 $dsgid2 -w $width -lt 1 -chr1 $qchr -chr2 $schr -flip $flip -grid 1};
