@@ -17,6 +17,8 @@ use File::Path;
 use Mail::Mailer;
 use Benchmark;
 use LWP::Simple;
+use DBI;
+
 $ENV{PATH} = "/opt/apache2/CoGe/";
 umask(0);
 use vars qw( $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $FORMATDB $BLAST $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $TANDEM_FINDER $FILTER_REPETITIVE_MATCHES $RUN_DAGCHAINER $FIND_NEARBY $CONVERT_TO_GENE_ORDER $DOTPLOT);
@@ -391,6 +393,7 @@ sub gen_fasta
     my $res;
     while (-e "$file.running")
       {
+	print STDERR "detecting $file.running.  Waiting. . .\n";
 	sleep 60;
       }
     if (-r $file)
@@ -441,8 +444,8 @@ sub generate_fasta
 							       feature_type_id=>3, 
 							       dataset_group_id=>$dsgid
 							      },{
-								 join=>[{dataset=>'dataset_connectors'},'locations','dataset'], 
-								 prefetch=>['feature_names', 'locations', 'dataset']}
+								 join=>[{dataset=>'dataset_connectors'}], 
+								 prefetch=>['feature_names']}
 							     ))
 	  {
 	    my ($chr) = $feat->chromosome;#=~/(\d+)/;
@@ -487,6 +490,8 @@ sub gen_blastdb
     my $res = 0;
     while (-e "$blastdb.running")
       {
+	
+	print STDERR "detecting $blastdb.running.  Waiting. . .\n";
 	sleep 60;
       }
     if (-r $blastdb.".nsq")
@@ -538,6 +543,7 @@ sub run_blast
     $prog = "blastn" unless $prog;
     while (-e "$outfile.running")
       {
+	print STDERR "detecting $outfile.running.  Waiting. . .\n";
 	sleep 60;
       }
     if (-r $outfile)
@@ -576,6 +582,7 @@ sub run_dag_tools
       my $feat_type2 = $opts{feat_type2};
       while (-e "$outfile.running")
       {
+	print STDERR "detecting $outfile.running.  Waiting. . .\n";
 	sleep 60;
       }
       unless (-r $blast && -s $blast)
@@ -614,6 +621,7 @@ sub run_tandem_finder
     my $outfile = $opts{outfile};
     while (-e "$outfile.running")
       {
+	print STDERR "detecting $outfile.running.  Waiting. . .\n";
 	sleep 60;
       }
     unless (-r $infile && -s $infile)
@@ -641,6 +649,7 @@ sub run_filter_repetitive_matches
     my $outfile = $opts{outfile};
     while (-e "$outfile.running")
       {
+	print STDERR "detecting $outfile.running.  Waiting. . .\n";
 	sleep 60;
       }
     unless (-r $infile && -s $infile)
@@ -674,6 +683,7 @@ sub run_convert_to_gene_order
     my $outfile = $infile."_geneorder";
     while (-e "$outfile.running")
       {
+	print STDERR "detecting $outfile.running.  Waiting. . .\n";
 	sleep 60;
       }
     unless (-r $infile && -s $infile)
@@ -702,6 +712,7 @@ sub replace_gene_order_with_genomic_positions
     #must convert file's coordinates back to genomic
     while (-e "$file.orig.running")
       {
+	print STDERR "detecting $file.orig.running.  Waiting. . .\n";
 	sleep 60;
       }
     if (-r "$file.orig" && -s "$file.orig")
@@ -750,6 +761,7 @@ sub run_dagchainer
     $outfile .= ".aligncoords";
     while (-e "$outfile.running")
       {
+	print STDERR "detecting $outfile.running.  Waiting. . .\n";
 	sleep 60;
       }
     unless (-r $infile && -s $infile)
@@ -782,6 +794,7 @@ sub run_find_nearby
     my $outfile = $opts{outfile};
     while (-e "$outfile.running")
       {
+	print STDERR "detecting $outfile.running.  Waiting. . .\n";
 	sleep 60;
       }
     if (-r $outfile)
@@ -797,29 +810,46 @@ sub run_find_nearby
     return 1 if -r $outfile;
   }
 
-sub gen_ks_file
+sub gen_ks_db
   {
     my %opts = @_;
     my $infile = $opts{infile};
-    my $outfile = $opts{outfile};
-    $outfile = $infile.".ks" unless $outfile;
-    while (-e "$outfile.running")
+    my ($outfile) = $infile =~ /^(.*?CDS-CDS)/;
+    return unless $outfile;
+    $outfile .= ".sqlite";
+    unless (-r $outfile)
       {
-	sleep 60;
+	my $create = qq{
+CREATE TABLE ks_data
+(
+id INTEGER PRIMARY KEY,
+fid1 integer,
+fid2 integer,
+dS varchar,
+dN varchar,
+dN_dS varchar
+)
+};
+
+	my $dbh = DBI->connect("dbi:SQLite:dbname=$outfile","","");
+	$dbh->do($create) if $create;
+	$dbh->do('create INDEX fid1 ON ks_data (fid1)');
+	$dbh->do('create INDEX fid2 ON ks_data (fid2)');
+	$dbh->disconnect;
       }
-#    if (-r $outfile)
-#      {
-#	write_log("run gen_ks_file: file $outfile already exists",$cogeweb->logfile);
-#	return $outfile;
-#      }
+    write_log("generating ks database", $cogeweb->logfile);
 
-    system "touch $outfile.running"; #track that a blast anlaysis is running for this
-    write_log("running gen_ks_file", $cogeweb->logfile);
+    my %ksdata;
+    my $select = "select * from ks_data";
+    my $dbh = DBI->connect("dbi:SQLite:dbname=$outfile","","");
+    my $sth = $dbh->prepare($select);
+    $sth->execute();
+    while (my $data = $sth->fetchrow_arrayref)
+      {
+	$ksdata{$data->[1]}{$data->[2]}=1;
+      }
+    $dbh->disconnect();
     open (IN, $infile);
-    open (OUT, ">$outfile") || die "Can't open $outfile for writing\n";;
-    print OUT "#",join ("\t", qw(SEQ1 SEQ2 PROT_ID DNA_ID GAPLESS_PROT_ID GAPLESS_DNA_ID dN dS)),"\n";
-    close OUT;
-
     my @data;
     while (<IN>)
       {
@@ -834,29 +864,51 @@ sub gen_ks_file
 	    warn "Line does not appear to contain coge feature ids:  $_\n";
 	    next;
 	  }
+	next if $ksdata{$item1[6]}{$item2[6]};
 	push @data,[$line[1],$line[5],$item1[6],$item2[6]];
       }
     close IN;
-
- #   my $pm = new Parallel::ForkManager($MAX_PROC);
+    print STDERR "generating synonymous substitution values for ".scalar @data." pairs of genes\n";
+    my $pm = new Parallel::ForkManager($MAX_PROC);
     foreach my $item (@data)
       {	
-#	$pm->start and next;
-	my ($feat1) = $coge->resultset('Feature')->find($item->[2]);
-	my ($feat2) = $coge->resultset('Feature')->find($item->[3]);
+	$pm->start and next;
+
+	my ($fid1) = $item->[2] =~ /(^\d+$)/;
+	my ($fid2) = $item->[3] =~ /(^\d+$)/;
+	my ($feat1) = $coge->resultset('Feature')->find($fid1);
+	my ($feat2) = $coge->resultset('Feature')->find($fid2);
 	my $ks = new CoGe::Algos::KsCalc();
-	$ks->tmpdir("/opt/apache/CoGe/tmp/SynMap");
 	$ks->feat1($feat1);
 	$ks->feat2($feat2);
-	my $res = $ks->KsCalc($cogeweb->basefile.".align");
-	next unless $res;
-	open (OUT, ">>$outfile") || die "Can't open $outfile for writing\n";;
-	print OUT join ("\t", $item->[0], $item->[1], $ks->prot_pid, $ks->DNA_pid, $ks->gapless_prot_pid, $ks->gapless_DNA_pid, $res->{dN}, $res->{dS}),"\n";
-	close OUT;
-	last;
-#	$pm->finish;
+	my $res = $ks->KsCalc();
+	my ($dS, $dN, $dNS);
+	if (keys %$res)
+	  {
+	    $dS = $res->{dS};
+	    $dN = $res->{dN};
+	    $dNS = $res->{'dN/dS'};
+	  }
+	my $insert = qq{
+INSERT INTO ks_data (fid1, fid2, dS, dN, dN_dS) values ($fid1, $fid2, "$dS", "$dN", "$dNS")
+};
+	my $dbh = DBI->connect("dbi:SQLite:dbname=$outfile","","");
+	my $insert_success = 0;
+	while (!$insert_success)
+	  {
+	    $insert_success = $dbh->do($insert);
+	    unless ($insert_success)
+	      {
+		print STDERR $insert;
+		sleep .1;
+	      }
+	  }
+
+	$dbh->disconnect();
+
+	$pm->finish;
       }
-#    $pm->wait_all_children();
+    $pm->wait_all_children();
 
     system "rm $outfile.running" if -r "$outfile.running";; #remove track file
     return $outfile;
@@ -933,7 +985,6 @@ sub add_GEvo_links
       }
     close IN;
     close OUT;
-#    print STDERR Dumper \%condensed;
     open (OUT,">$infile.condensed");
     foreach my $id1 (sort keys %condensed)
       {
@@ -1014,19 +1065,21 @@ sub generate_dotplot
     my $dsgid1 = $opts{dsgid1};
     my $dsgid2 = $opts{dsgid2};
     my $dagtype = $opts{dagtype};
-    my $ksfile = $opts{ksfile};
+    my $ks_db = $opts{ks_db};
     my ($basename) = $coords =~ /([^\/]*).all.aligncoords/;
     my $regen_images = $opts{regen_images}=~/true/i ? 1 : 0;
     my $width = $opts{width} || 1000;
     my $cmd = $DOTPLOT;
-    if ($ksfile && -r $ksfile)
+    #add ks_db to dotplot command if requested
+    if ($ks_db && -r $ks_db)
       {
-	$cmd .= qq{ -kf $ksfile};
+	$cmd .= qq{ -ksdb $ks_db -ct dS -log 1};
 	$outfile .= ".ks";
       }
     $cmd .= qq{ -d $dag -a $coords -b $outfile -l 'javascript:synteny_zoom("$dsgid1","$dsgid2","$basename","XCHR","YCHR")' -dsg1 $dsgid1 -dsg2 $dsgid2 -w $width -lt 2};
     while (-e "$outfile.running")
       {
+	print STDERR "detecting $outfile.running.  Waiting. . .\n";
 	sleep 60;
       }
     if (-r "$outfile.png" && !$regen_images)
@@ -1044,7 +1097,7 @@ sub generate_dotplot
 sub go
   {
     my %opts = @_;
-    my $dagchainer_D = $opts{D};
+    my $dagchainer_D= $opts{D};
     my $dagchainer_g = $opts{g};
     my $dagchainer_A = $opts{A};
     my $regen_images = $opts{regen_images};
@@ -1057,7 +1110,7 @@ sub go
     my $feat_type2 = $opts{feat_type2};
     my $dsgid1 = $opts{dsgid1};
     my $dsgid2 = $opts{dsgid2};
-    my $gen_ks = $opts{gen_ks} || 1;
+    my $gen_ks = $opts{gen_ks};
 
     my $dagchainer_type = $opts{dagchainer_type};
     $dagchainer_type = $dagchainer_type eq "true" ? "distance" : "geneorder";
@@ -1082,6 +1135,7 @@ sub go
     $synmap_link .=";dt=$dagchainer_type"; 
 
     ##generate fasta files and blastdbs
+    my $t0 = new Benchmark;
     my $pm = new Parallel::ForkManager($MAX_PROC);
     my @dsgs = ([$dsgid1, $feat_type1]);
     push @dsgs, [$dsgid2, $feat_type2] unless $dsgid1 == $dsgid2 && $feat_type1 eq $feat_type2;
@@ -1113,26 +1167,26 @@ sub go
  	return "<span class=alert>Something went wrong generating the fasta files: <a href=$log>log file</a></span>";
        }
      else{
-     	write_log("Completed fasta creation", $cogeweb->logfile);
-     	write_log("", $cogeweb->logfile);
+       write_log("Completed fasta creation", $cogeweb->logfile);
+       write_log("", $cogeweb->logfile);
      }
     
-     my ($blastdb1) = gen_blastdb(dbname=>"$dsgid1-$feat_type1", fasta=>$fasta1,org_name=>$org_name1);
-     my ($blastdb2) = gen_blastdb(dbname=>"$dsgid2-$feat_type2", fasta=>$fasta2,org_name=>$org_name2);
-     unless ($blastdb1 && $blastdb2)
-       {
+    my ($blastdb1) = gen_blastdb(dbname=>"$dsgid1-$feat_type1", fasta=>$fasta1,org_name=>$org_name1);
+    my ($blastdb2) = gen_blastdb(dbname=>"$dsgid2-$feat_type2", fasta=>$fasta2,org_name=>$org_name2);
+    unless ($blastdb1 && $blastdb2)
+      {
  	my $log = $cogeweb->logfile;
  	$log =~ s/$DIR/$URL/;
  	return "<span class=alert>Something went wrong generating the blastdb files: <a href=$log>log file</a></span>";
-       }
-     else{
-     	write_log("Completed blastdb creation", $cogeweb->logfile);
-     	write_log("", $cogeweb->logfile);
-     }
-     my $html;
-     #need to blast each org against itself for finding local dups, then to one another
-     my $tmp1 = $org_name1;
-     my $tmp2 = $org_name2;
+      }
+    else{
+      write_log("Completed blastdb creation", $cogeweb->logfile);
+      write_log("", $cogeweb->logfile);
+    }
+    my $html;
+    #need to blast each org against itself for finding local dups, then to one another
+    my $tmp1 = $org_name1;
+    my $tmp2 = $org_name2;
      foreach my $tmp ($tmp1, $tmp2)
        {
  	$tmp =~ s/\///g;
@@ -1142,8 +1196,8 @@ sub go
  	$tmp =~ s/://g;
  	$tmp =~ s/;//g;
        }
-     my $orgkey1 = $title1.$feat_type1;
-     my $orgkey2 = $title2.$feat_type2;
+     my $orgkey1 = $title1;
+     my $orgkey2 = $title2;
      my %org_dirs = (
  		    $orgkey1."_".$orgkey2=>{fasta=>$fasta1,
  					    db=>$blastdb2,
@@ -1190,8 +1244,10 @@ sub go
  	my $blast_run = run_blast(fasta=>$fasta, blastdb=>$db, outfile=>$outfile, prog=>$blast);
  	$problem=1 unless $blast_run;
        }
-     write_log("Completed blast run(s)", $cogeweb->logfile);
-     write_log("", $cogeweb->logfile);
+    write_log("Completed blast run(s)", $cogeweb->logfile);
+    write_log("", $cogeweb->logfile);
+    my $t1 = new Benchmark;
+    my $blast_time = timestr(timediff($t1,$t0));
 
 
      #Find local dups
@@ -1203,6 +1259,8 @@ sub go
      run_tandem_finder(infile=>$dag_file11,outfile=>$dup_file1);
      my $dup_file2  = $org_dirs{$orgkey2."_".$orgkey2}{dir}."/".$org_dirs{$orgkey2."_".$orgkey2}{basename}.".dups";
      run_tandem_finder(infile=>$dag_file22,outfile=>$dup_file2);
+    my $t2 = new Benchmark;
+    my $local_dup_time = timestr(timediff($t2,$t1));
 
      #prepare dag for synteny analysis
      my $dag_file12 = $org_dirs{$orgkey1."_".$orgkey2}{dir}."/".$org_dirs{$orgkey1."_".$orgkey2}{basename}.".dag";
@@ -1212,11 +1270,16 @@ sub go
      #is this an ordered gene run?
      my $dag_file12_all = $dag_file12.".all";
      $dag_file12 = run_convert_to_gene_order(infile=>$dag_file12, dsgid1=>$dsgid1, dsgid2=>$dsgid2, ft1=>$feat_type1, ft2=>$feat_type2) if $dagchainer_type eq "geneorder";
+    my $t3 = new Benchmark;
+    my $convert_to_gene_order_time = timestr(timediff($t3,$t2));
 
      #run dagchainer
      my $dagchainer_file = run_dagchainer(infile=>$dag_file12, D=>$dagchainer_D, g=>$dagchainer_g,A=>$dagchainer_A, type=>$dagchainer_type);
      write_log("Completed dagchainer run", $cogeweb->logfile);
      write_log("", $cogeweb->logfile);
+    my $t4 = new Benchmark;
+    my $run_dagchainer_time = timestr(timediff($t4,$t3));
+    my ($find_nearby_time, $gen_ks_db_time, $dotplot_time, $add_gevo_links_time);
      if (-r $dagchainer_file)
        {
  	my $tmp = $dagchainer_file; #temp file name for the final post-processed data
@@ -1228,6 +1291,8 @@ sub go
  	  }
  	#add pairs that were skipped by dagchainer
  	run_find_nearby(infile=>$dagchainer_file, dag_all_file=>$dag_file12_all, outfile=>$tmp);
+	my $t5 = new Benchmark;
+	$find_nearby_time = timestr(timediff($t5,$t4));
 
  	#generate dotplot images
  	my $org1_length =0;
@@ -1264,9 +1329,18 @@ sub go
  	$out .= "_A$dagchainer_A" if $dagchainer_A;
  	$out .= ".w$width";
  	#deactivation ks calculations due to how slow it is
- 	my $ksfile = gen_ks_file(infile=>$tmp) if $gen_ks;	
- 	$out = generate_dotplot(dag=>$dag_file12_all, coords=>$tmp, outfile=>"$out", regen_images=>$regen_images, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, dagtype=>$dagchainer_type, ksfile=>$ksfile);
+ 	my $ks_db = gen_ks_db(infile=>$tmp) if $gen_ks eq "true" || $gen_ks eq "1";
+	my $t6 = new Benchmark;
+	$gen_ks_db_time = timestr(timediff($t6,$t5));
+
+ 	$out = generate_dotplot(dag=>$dag_file12_all, coords=>$tmp, outfile=>"$out", regen_images=>$regen_images, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, dagtype=>$dagchainer_type, ks_db=>$ks_db);
+	my $hist = $out.".hist.png";
+	my $t7 = new Benchmark;
+	$dotplot_time = timestr(timediff($t7,$t6));
+
  	add_GEvo_links (infile=>$tmp, dsgid1=>$dsgid1, dsgid2=>$dsgid2);
+	my $t8 = new Benchmark;
+	$add_gevo_links_time = timestr(timediff($t8,$t7));
 
  	$tmp =~ s/$DATADIR/$URL\/data/;
  	if (-r "$out.html")
@@ -1283,6 +1357,8 @@ sub go
  	    $out =~ s/$DATADIR//;
  	    $html =~ s/master.*\.png/data\/$out.png/;
  	    warn "$out.html did not parse correctly\n" unless $html =~ /map/i;
+      $html .= "<div style='float:left'><img src='data/$out.hist.png'></div>" if -r $hist;
+
  	    $html .= qq{
  <br><span class="species small">$org_name1</span><br>
  Zoomed SynMap:
@@ -1306,7 +1382,9 @@ sub go
  <td><input type=text name=zoom_width id=zoom_width size=6 value="600">
  </table>
  };
+
  	    $html .= "<br><span class=small><a href=data/$out.png target=_new>Image File</a>";
+ 	    $html .= "<br><span class=small><a href=data/$out.hist.png target=_new>Histogram of synonymous substitutions</a>" if -r $hist;
  	    $html .= "<br><span class=small><a href=$tmp target=_new>DAGChainer syntelog file with GEvo links</a><br>";
  	    $html .= "<span class=small><a href=$tmp.condensed target=_new>Condensed syntelog file with GEvo links</a><br>";
  	  }
@@ -1324,12 +1402,13 @@ sub go
        }
      my $log = $cogeweb->logfile;
      $log =~ s/$DIR/$URL/;
-     my $tiny = get("http://tinyurl.com/create.php?url=http://".$ENV{SERVER_NAME}."/CoGe/$synmap_link");
-     ($tiny) = $tiny =~ /<b>(http:\/\/tinyurl.com\/\w+)<\/b>/;
+#     my $tiny = get("http://tinyurl.com/create.php?url=http://".$ENV{SERVER_NAME}."/CoGe/$synmap_link");
+#     ($tiny) = $tiny =~ /<b>(http:\/\/tinyurl.com\/\w+)<\/b>/;
      write_log("\nLink: $synmap_link", $cogeweb->logfile);
-     write_log("tinyurl: $tiny", $cogeweb->logfile);
+#     write_log("tinyurl: $tiny", $cogeweb->logfile);
      $html .= "<a href=$log target=_new>log</a><br>";
-     $html .= "<a href='$synmap_link' target=_new>SynMap Link: $tiny</a></span>";
+    $html .= "<a href='$synmap_link' target=_new>SynMap Link</a></span>";
+
      $html .= "<td valign=top>";
      $html .= "<div id=syn_loc1></div>";
      $html .= "<div id=syn_loc2></div>";
@@ -1341,9 +1420,21 @@ sub go
  <span class=alert>There was a problem running your analysis.  Please check the log file for details.</span><br>
  	  };
        }
-     email_results(email=>$email,html=>$html,org1=>$org_name1,org2=>$org_name2, jobtitle=>$job_title, link=>$synmap_link) if $email;
-
-     return $html;
+    email_results(email=>$email,html=>$html,org1=>$org_name1,org2=>$org_name2, jobtitle=>$job_title, link=>$synmap_link) if $email;
+    my $benchmarks = qq{
+Benchmarks:
+Blast:                    $blast_time
+Find Local Dups:          $local_dup_time
+Convert Gene Order:       $convert_to_gene_order_time
+DAGChainer:               $run_dagchainer_time
+find nearby:              $find_nearby_time
+kS calculations:          $gen_ks_db_time
+Dotplot:                  $dotplot_time
+GEvo links:               $add_gevo_links_time
+};
+    print STDERR $benchmarks;
+    write_log($benchmarks, $cogeweb->logfile);
+    return $html;
    }
 
 sub get_previous_analyses
@@ -1370,12 +1461,14 @@ sub get_previous_analyses
 
     my $dir = $tmp1."/".$tmp2;
     $dir = "$DIAGSDIR/".$dir;
+    my $sqlite =0;
     my @items;
     if (-d $dir)
       {
 	opendir (DIR, $dir);
 	while (my $file = readdir(DIR))
 	  {
+	    $sqlite = 1 if $file =~ /sqlite$/;
 	    next unless $file =~ /all\.aligncoords$/;
 	    my ($D, $g, $A) = $file =~ /D(\d+)_g(\d+)_A(\d+)/;
 	    next unless ($D && $g && $A);
@@ -1420,6 +1513,7 @@ sub get_previous_analyses
 };
       }
     $html .= "</select>";
+    $html .= "<br><span class=small>Synonymous substitution rates previously calculated</span>" if $sqlite;
     return "  Previously run parameters:<br>$html";
   }
 
@@ -1506,9 +1600,14 @@ sub get_dotplot
     my $flip = $args{flip} eq "true" ? 1 : 0;
     my $regen = $args{regen_images} eq "true" ? 1 : 0;
     my $width = $args{width};
+    my $gen_ks = $args{gen_ks};
+# base=8_8.CDS-CDS.blastn.dag_geneorder_D60_g30_A5;
+    
     $src .= ";flip=$flip" if $flip;
     $src .= ";regen=$regen" if $regen;
     $src .= ";width=$width" if $width;
+    $src .= ";ksdb=$gen_ks" if $gen_ks;
+    $src .=  ";log=1" if $gen_ks;
     my $content = get("http://".$ENV{SERVER_NAME}."/".$src);
     my ($url) = $content =~ /url=(.*?)"/is;
     my $png = $url;
