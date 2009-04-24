@@ -997,14 +997,21 @@ function add_selected_orgs() {
      ids = ids+","+$(this).val();
      if (count == 100)
       {
-         get_dsg_for_blast_menu(['args__orgid','args__'+ids],[add_to_list])
+         get_dsg_for_blast_menu(['args__orgid','args__'+ids],[add_to_list]);
          ids = "";
          count =0;
       }
 
      count++;
     });
-  get_dsg_for_blast_menu(['args__orgid','args__'+ids],[add_to_list])
+  if (count == 1)
+   {
+    get_dsg_for_blast_menu(['args__dsgid','dsgid'],[add_to_list]);
+   }
+  else
+   {
+    get_dsg_for_blast_menu(['args__orgid','args__'+ids],[add_to_list]);
+   }
   sort_genome_choice();
 }
 
