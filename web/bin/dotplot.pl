@@ -8,7 +8,7 @@ use Data::Dumper;
 use DBI;
 use POSIX;
 
-use vars qw($dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ks_db $colortype $log);
+use vars qw($dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ks_db $ks_type $log $MAX $MIN);
 
 
 GetOptions(
@@ -27,15 +27,20 @@ GetOptions(
 	   "flip|f=i"=>\$flip,
 	   "grid|g=i"=>\$grid,
 	   "ksdb|ks_db=s"=>\$ks_db,
-	   "ks_color_type|ct=s"=>\$colortype,
+	   "ks_type|kst=s"=>\$ks_type,
+	   "max=s"=>\$MAX,
+	   "min=s"=>\$MIN,
 	   "log=s"=>\$log,
 	   );
 
 usage() if $help;
 usage() unless -r $dagfile;
 
+#set a default for this, make sure it is uppercase
+$ks_type = "kS" unless $ks_type;
+$ks_type = uc($ks_type) if $ks_type;
 
-my $ks_hist = "/opt/apache/CoGe/bin/ks_histgram.pl";
+my $ks_hist = "/opt/apache/CoGe/bin/ks_histogram.pl";
 
 $basename = "test" unless $basename;
 $width = 1024 unless $width;
@@ -71,24 +76,41 @@ if ($ks_db)
   {
     my $cmd = $ks_hist;
     $cmd .= " -db $ks_db";
+    $cmd .= " -ks_type $ks_type";
     $cmd .= " -log" if $log;
     $cmd .= " -pf $alignfile";
     $cmd .= " -chr1 $CHR1" if defined $CHR1;
     $cmd .= " -chr2 $CHR2" if defined $CHR2;
-    $cmd .= " -o $basename.hist.png";
+    $cmd .= " -min $MIN" if defined $MIN;
+    $cmd .= " -max $MAX" if defined $MAX;
+    $cmd .= " -o $basename";
+    $cmd .= ".$MIN" if defined $MIN;
+    $cmd .= ".$MAX" if defined $MAX;
+    $cmd .= ".hist.png";
     `$cmd`;
-#    print STDERR $cmd,"\n";
+    print STDERR $cmd,"\n";
   }
 
+
+$basename .= ".$MIN" if defined $MIN;
+$basename .= ".$MAX" if defined $MAX;
+
+my $pairs = get_pairs(file=>$alignfile, chr1=>$CHR1, chr2=>$CHR2) if $alignfile && $ks_db && -r $alignfile && -r $ks_db;
 
 #Magic happens here.
 #Link type seems to indicate the type of tile; i.e. a 'master' (a large, all chromosome) or a blow up of a two chromosome intersection
 #draw_chromosome_grid draws either the black chomosome lines, or the light green tile lines, so its always called in addition to the draw_dots function.
 draw_chromosome_grid(gd=>$graphics_context, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, link=>$link, link_type=>$link_type, flip=>$flip, grid=>$grid);
-my $ksdata = get_ksdata(ks_db=>$ks_db, colortype=>$colortype, chr1=>$CHR1, chr2=> $CHR2) if $ks_db && -r $ks_db;
+
+#get syntenic gene pairs for ks_data (if needed)
+my $ksdata = get_ksdata(ks_db=>$ks_db, ks_type=>$ks_type, chr1=>$CHR1, chr2=> $CHR2, pairs=>$pairs) if $ks_db && -r $ks_db;
+
+#draw dots for all matches
 draw_dots(gd=>$graphics_context, file=>$dagfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, link_type => $link_type, dsgid1=>$dsgid1, dsgid2=>$dsgid2, flip=>$flip);
+
+#add syntenic gene pairs
 my $add = 1 if $dsgid1 eq $dsgid2;
-draw_dots(gd=>$graphics_context, file=>$alignfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, color=>$graphics_context->colorResolve(0,150,0), size=>2, add_inverse=>$add, flip=>$flip, ksdata=>$ksdata, colortype=>$colortype, log=>$log);
+draw_dots(gd=>$graphics_context, file=>$alignfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, color=>$graphics_context->colorResolve(0,150,0), size=>2, add_inverse=>$add, flip=>$flip, ksdata=>$ksdata, ks_type=>$ks_type, log=>$log);
 
 #Write out graphics context - the generated dot plot - to a .png file
 open (OUT, ">".$basename.".png") || die "$!";
@@ -117,12 +139,10 @@ sub draw_dots
     my $flip = $opts{flip};
     my $ksdata = $opts{ksdata};
     my $log = $opts{log}; #log normalize ksdata for display?
-    my $colortype=$opts{colortype}; #specified which item in ksdata to color dots
-    $colortype = "dS" unless $colortype;
     my $has_ksdata = keys %$ksdata ? 1 : 0;
-    my ($max,$min, $non_zero_min) = get_range(data=>$ksdata, colortype=>$colortype, log=>$log) if $has_ksdata;
-    my $range = $max-$min if defined $max && defined $min;
-    my $log_range = log($max)-log($non_zero_min) if $max && $non_zero_min;
+    #min and max will be log normalized if log flag is set
+    my ($max, $min) = get_range(data=>$ksdata, min=>$MIN, max=>$MAX, log=>$log) if $has_ksdata;
+    my $range = $max-$min if $has_ksdata;
     $color = $graphics_context->colorResolve(150,150,150) unless $color;
 
     open (IN, $file) || die "$!";
@@ -141,31 +161,36 @@ sub draw_dots
 	  {
 	    my @item1 = split/\|\|/, $line[1];
 	    my @item2 = split/\|\|/, $line[5];
-	    $val = $ksdata->{$item1[6]}{$item2[6]}{$colortype};
+	    $val = $ksdata->{$item1[6]}{$item2[6]};
 	    if (defined $val && $val=~ /\d/) 
 	      {
-		$val = $non_zero_min if $log && $val == 0;
+		my $orig_val = $val;
+		$val = $min if $log && $val == 0;
 		if ($log)
 		  {
-		    $val = $val-$non_zero_min;
 		    if ($val <= 0)
 		      {
-			$val = $non_zero_min;
+			$val = $min; #min is log10ed
 		      }
-		    $val = (log($val)-log($non_zero_min))/$log_range;
+		    else
+		      {
+			$val = (log10($val)-$min)/$range;
+		      }
 		  }
 		else
 		  {
 		    $val = ($val-$min)/$range;
 		  }
 		$val = sprintf("%.4f", $val);
-		$use_color = get_color_new(val=>$val); #val is 0<=x<=1
+		$use_color = get_color(val=>$val); #val is 0<=x<=1
 		$use_color = $graphics_context->colorResolve(@$use_color);
 	      }
 	    else
 	      {
-		print Dumper $ksdata->{$item1[6]}{$item2[6]};
-		$use_color = $graphics_context->colorResolve(0,0,0);
+		#don't have ks data -- skip drawing this dot!
+		next;
+#		print Dumper $ksdata->{$item1[6]}{$item2[6]};
+#		$use_color = $graphics_context->colorResolve(0,0,0);
 	      }
 	  }
 	if ($flip)
@@ -247,8 +272,6 @@ sub draw_dots
     foreach my $point (@points)
       {
 	my $val = pop @$point;
-#	print STDERR join ("\t", @$point),"\n" unless defined $val;
-#	print STDERR join ("\t", @$point),"\n";
 	$graphics_context->arc(@$point);
       }
     if ($link_type == 1)
@@ -310,13 +333,21 @@ Ergo, we rely on jQuery to detect when the DOM is fully loaded, and then run the
 	#Print out the nametag
 	my $pos = $graphics_context->height+45;
 	$pos .='px';
-	print OUT qq{
-</map>
-<span class=xsmall style='position: absolute;left: 0px;top: $pos;'>$org1name: $CHR1 ($org1length)
-};
-	print OUT qq{
+	print OUT qq{</map>};
+	if (-r $basename.".hist.png")
+	  {
+	    print OUT qq{
+<span style='position: absolute;left: $width; top: 45px'>
 <a class="small" href= "$img.hist.png" target=_new>Histogram of synonymous sybstitutions</a>
-} if -r $basename.".hist.png";
+<img src= "$img.hist.png" >
+</span>
+}; 
+	  }
+	print OUT qq{
+<span class=xsmall style='position: absolute;left: 0px;top: $pos;'>$org1name: $CHR1 ($org1length)
+   <a href = "$img.png" target=_new>Link to image</a>
+
+};
 	print OUT qq{
 </span></body></html>
 };
@@ -341,7 +372,6 @@ sub draw_chromosome_grid
     my $grid = $opts{grid};
     my $height = $graphics_context->height;
     my $width = $graphics_context->width;
-#    print STDERR "Image Dimensions:  $width x $height (w x h)\n";
     my $black = $graphics_context->colorResolve(0,0,0);
     my $span_color = $graphics_context->colorResolve(200,255,200);
     $graphics_context->line(0,0, $graphics_context->width, 0, $black);
@@ -490,7 +520,11 @@ sub get_ksdata
   {
     my %opts = @_;
     my $ks_db = $opts{ks_db};
-    my $colortype= $opts{colortype};
+    my $pairs = $opts{pairs};
+    my $type = $opts{ks_type};
+    my $min = $opts{min};
+    my $max = $opts{max};
+    my $log = $opts{log};
     my %data;
     return \%data unless -r $ks_db;
     my $select = "select * from ks_data";
@@ -499,14 +533,55 @@ sub get_ksdata
     $sth->execute();
     while (my $data = $sth->fetchrow_arrayref)
       {
-	$data{$data->[1]}{$data->[2]}={
-				       dS=>$data->[3],
-				       dN=>$data->[4],
-				       'dN/dS'=>$data->[5],
-				      };
+	if ($pairs)
+	  {
+	    next unless $pairs->{$data->[1]}{$data->[2]};
+	  }
+	my %item = (
+		    KS=>$data->[3],
+		    KN=>$data->[4],
+		    'KN_KS'=>$data->[5],
+		   );
+	my $val = $item{$type};
+	next unless defined $val && $val =~ /\d/;
+#	if (defined $min || defined $max)
+#	  {
+#	  }
+	$data{$data->[1]}{$data->[2]}=$val;
+	
       }
     $sth->finish();
     $dbh->disconnect();
+    return \%data;
+  }
+
+sub get_pairs
+  {
+    my %opts = @_;
+    my $file = $opts{file};
+    my $chr1 = $opts{chr1};
+    my $chr2 = $opts{chr2};
+    my %data;
+    open (IN, $file) || die $!;
+    while (<IN>)
+      {
+	chomp;
+	next if /^#/;
+	my @line = split/\t/;
+	my @item1 = split/\|\|/, $line[1];
+	my @item2 = split/\|\|/, $line[5];
+	if ($chr1)
+	  {
+	    next unless $item1[0] eq $chr1 || $item2[0] eq $chr1;
+	  }
+	if ($chr2)
+	  {
+	    next unless $item1[0] eq $chr2 || $item2[0] eq $chr2;
+	  }
+	$data{$item1[6]}{$item2[6]}=1;
+	$data{$item2[6]}{$item1[6]}=1;
+      }
+    close IN;
     return \%data;
   }
 
@@ -514,29 +589,66 @@ sub get_range
   {
     my %opts = @_;
     my $data = $opts{data};
-    my $colortype = $opts{colortype};
-    my ($max, $min, $non_zero_min);
+    my $min = $opts{min};
+    my $max = $opts{max};
+    my $log = $opts{log};
+
+    my ($set_max, $set_min, $non_zero_min);
     foreach my $k1 (keys %$data)
       {
 	foreach my $k2 (keys %{$data->{$k1}})
 	  {
-	    next unless $data->{$k1}{$k2}{$colortype};
-	    $non_zero_min = $data->{$k1}{$k2}{$colortype} unless defined $non_zero_min || $data->{$k1}{$k2}{$colortype} == 0;
-	    $max = $data->{$k1}{$k2}{$colortype} unless defined $max;
-	    $min = $data->{$k1}{$k2}{$colortype} unless defined $min;
-	    $max = $data->{$k1}{$k2}{$colortype} if $data->{$k1}{$k2}{$colortype} > $max;
-	    $min = $data->{$k1}{$k2}{$colortype} if $data->{$k1}{$k2}{$colortype} < $min;
-	    $non_zero_min = $data->{$k1}{$k2}{$colortype} if $data->{$k1}{$k2}{$colortype} < $non_zero_min && $data->{$k1}{$k2}{$colortype} > 0;
+	    next unless defined $data->{$k1}{$k2};
+	    $non_zero_min = $data->{$k1}{$k2} unless defined $non_zero_min || $data->{$k1}{$k2} == 0;
+	    $set_max = $data->{$k1}{$k2} unless defined $set_max;
+	    $set_min = $data->{$k1}{$k2} unless defined $set_min;
+	    $set_max = $data->{$k1}{$k2} if $data->{$k1}{$k2} > $set_max;
+	    $set_min = $data->{$k1}{$k2} if $data->{$k1}{$k2} < $set_min;
+	    $non_zero_min = $data->{$k1}{$k2} if $data->{$k1}{$k2} < $non_zero_min && $data->{$k1}{$k2} > 0;
 	  }
       }
-    return ($max, $min, $non_zero_min);
+    #let's minimize the data, if needed
+    if (defined $min || defined $max)
+      {
+	foreach my $k1 (keys %$data)
+	  {
+	    foreach my $k2 (keys %{$data->{$k1}})
+	      {
+		my $val = $data->{$k1}{$k2};
+		next unless defined $val;
+		if ($log)
+		  {
+		    $val = $non_zero_min if $val == 0;
+		    $val = log10($val);
+		  }
+		if ((defined $min && $val < $min) || (defined $max && $val > $max))
+		  {
+		    $data->{$k1}{$k2} = undef;
+		    delete $data->{$k1}{$k2};
+		    delete $data->{$k1} unless keys %{$data->{$k1}};
+		  }
+	      }
+	  }
+      }
+    if ($log)
+      {
+	$set_max = log10($set_max) if $set_max > 0;
+	$set_min = log10($non_zero_min) if $non_zero_min;
+      }
+    $set_max = $max if defined $max && $max < $set_max;
+    $set_min = $min if defined $min && $min > $set_min;
+    return ($set_max, $set_min);
   }
 
-sub get_color_new
+sub get_color
   {
     my %opts = @_;
     my $val = $opts{val};
-    return [0,0,0] unless defined $val;
+    unless (defined $val && $val >= 0 && $val <=1)
+      {
+	print STDERR "in sub get_color val is not [0,1]: $val\n";
+	return [0,0,0];
+      }
     my @colors = (
 		  [255,0,0], #red
 		  [255,126,0], #orange
@@ -562,33 +674,6 @@ sub get_color_new
       }
     return $color;
   }
-
-sub get_color
-  {
-    my %opts = @_;
-    my $max = $opts{max};
-    my $min = $opts{min};
-    my $range = $opts{range};
-    my $val = $opts{val};
-    my $log = $opts{log};
-    $range = $max-$min unless defined $range;
-    if ($log)
-      {
-#	$val = sprintf("%.3f", log($val)) unless $val == 0;
-      }
-    my $color =[];
-    #$relative = sprintf("%.3f", 1- ($max_quality-log($hsp->quality))/($range_quality)) if $range_quality && $color_hsps eq "quality";
-    my $relative = sprintf("%.3f", 1-($max-$val)/($range)) if $range;
-    $relative = 1 unless $relative;
-    my $other = 1-$relative;
-    my $c1 = 200;
-    $c1 = 200*($relative*2) if $relative < .5;
-    my $c2 = 200;
-    $c2 = 200*($other*2) if $other < .5;
-    $color = [$c1, $c2,0];
-    return $color;
-  }
-
 
 sub commify
   {
@@ -636,7 +721,13 @@ grid         | g       add a positional grid to dotplot
 ks_db        | ksdb    specify a sqlite database with synonymous/nonsynonymous data
                        to color syntenic points
 
-ks_color_type| ct      specify the synonymous data to use (dS, dN) for coloring syntenic points
+ks_type| kst           specify the synonymous data to use (kS, kN, kn_ks) for coloring syntenic points
+
+log                    log10 transform ks datadata (val = 0 set to minimum non-zero val)
+
+max                    max ks val cutoff
+
+min                    min ks val cutoff
 
 help         | h       print this message
 
