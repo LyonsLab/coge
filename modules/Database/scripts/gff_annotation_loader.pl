@@ -254,6 +254,8 @@ foreach my $source (keys %data)
       }
   }
 
+print "Completed working on dataset: ", $ds->name. " (".$ds->id.")\n";
+
 sub generate_ds
   {
     my %opts = @_;
