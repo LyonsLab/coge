@@ -142,7 +142,8 @@ See Also   : org()
 sub organism
   {
     my $self = shift;
-    return $self->dataset->organism();
+    my ($dsg) =  $self->dataset->dataset_groups();
+    return $dsg->organism;
   }
 
 
@@ -408,7 +409,7 @@ sub annotation_pretty_print
     $anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"Location", Values=>[$location], Type_delimit=>": ", Val_delimit=>" "));
     my $anno_type = new CoGe::Accessory::Annotation(Type=>"Name(s)");
     $anno_type->Type_delimit(": ");
-    $anno_type->Val_delimit(", ");
+    $anno_type->Val_delimit(" , ");
     foreach my $name ($self->names)
       {
 	$anno_type->add_Annot($name);
@@ -498,8 +499,8 @@ sub annotation_pretty_print_html
     my $strand = $self->strand;
     my $dataset_id = $self->dataset->id;
     my $anno_type = new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\">"."Name(s)"."</span>");
-    $anno_type->Type_delimit(":<td>");
-    $anno_type->Val_delimit(", ");
+    $anno_type->Type_delimit(": <td>");
+    $anno_type->Val_delimit(" , ");
     my $outname;
     foreach my $name ($self->names)
       {
@@ -550,7 +551,7 @@ sub annotation_pretty_print_html
 	$location .=" (".$strand.")";
 	my $featid = $self->id;
 	$anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\">Length</span>", Values=>["<span class='data5'>".$self->length." nt</span>"],Type_delimit=>":<td>", Val_delimit=>" ")) unless $minimal;
-	$location = qq{<a class="data5 link" href="$loc_link?featid=$featid&start=$start&stop=$stop&chr=$chr&dsid=$dataset_id&strand=$strand" target=_new>}.$location."</a>" if $loc_link;
+	$location = qq{<a class="data5 link" href="$loc_link?featid=$featid&start=$start&stop=$stop&chr=$chr&dsid=$dataset_id&strand=$strand&gstid=$gstid" target=_new>}.$location."</a>" if $loc_link;
 	$location = qq{<span class="data">$location</span>};
 	$anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\"><a href=\"GenomeView.pl?chr=$chr&ds=$dataset_id&x=$start&z=3&gstid=$gstid\" target=_new>Location</a></span>", Values=>[$location], Type_delimit=>":<td>", Val_delimit=>" "));
 
@@ -1293,7 +1294,7 @@ sub _process_seq
     my $start = $opts{start};
     my $code1 = $opts{code1};
     my $code2 = $opts{code2};
-    my $alter = $opts{alter};
+    my $alter = $opts{alter} || "X";
     my $codonl = $opts{codonl} || 2;
     my $seq_out;
     for (my $i = $start; $i < CORE::length ($seq); $i = $i+$codonl)
@@ -1584,6 +1585,7 @@ sub wobble_content
     my $codon_count=0;;
     my $at_count=0;
     my $gc_count=0;
+    my $n_count=0;
     for (my $i =0; $i < CORE::length($seq); $i+=3)
       {
         my $codon = substr ($seq, $i, 3);
@@ -1591,11 +1593,13 @@ sub wobble_content
         my ($wobble) = $codon =~ /(.$)/;
         $at_count++ if $wobble =~ /[at]/i;
         $gc_count++ if $wobble =~ /[gc]/i;
+        $n_count++ if $wobble =~ /[nx]/i;
       }
-    return ($gc_count, $at_count) if $counts;
+    return ($gc_count, $at_count, $n_count) if $counts;
     my $pat = sprintf("%.4f", $at_count/$codon_count) if $codon_count;
     my $pgc = sprintf("%.4f", $gc_count/$codon_count) if $codon_count;
-    return ($pgc, $pat);
+    my $pn = sprintf("%.4f", $n_count/$codon_count) if $codon_count;
+    return ($pgc, $pat, $pn);
   }
 
 
