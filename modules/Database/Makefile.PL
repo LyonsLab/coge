@@ -6,7 +6,7 @@ use ExtUtils::MakeMaker;
 WriteMakefile(
     NAME         => 'CoGeX',
     VERSION_FROM => 'lib/CoGeX.pm', # finds \$VERSION
-    AUTHOR       => ' (bcthomas@nature.berkeley.edu)',
+    AUTHOR       => ' (elyons@nature.berkeley.edu)',
     ABSTRACT     => 'CoGeX',
     PREREQ_PM    => {
                      'Test::Simple' => 0.44,
