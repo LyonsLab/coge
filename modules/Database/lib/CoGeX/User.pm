@@ -80,6 +80,8 @@ __PACKAGE__->add_columns(
 );
 __PACKAGE__->set_primary_key("user_id");
 __PACKAGE__->has_many('sessions'=>"CoGeX::UserSession",'user_id');
+__PACKAGE__->has_many('works'=>"CoGeX::Work",'user_id');
+__PACKAGE__->has_many('workflows'=>"CoGeX::Workflow",'user_id');
 
 
 
