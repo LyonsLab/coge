@@ -27,7 +27,7 @@ Type: INT, Default: "", Nullable: no, Size: 10
 C<work_id>
 Type: INT, Default: "", Nullable: no, Size: 10
 
-C<order>
+C<work_order>
 Type: INT, Default: "", Nullable: no, Size: 4
 
 C<date>
@@ -49,7 +49,7 @@ __PACKAGE__->add_columns(
   { data_type => "INT", default_value => undef, is_nullable => 0, size => 10 },
   "workflow_id",{ data_type => "INT", default_value => "", is_nullable => 0, size => 10 },
   "work_id",{ data_type => "INT", default_value => "", is_nullable => 0, size => 10 },
-  "order", { data_type => "INT", default_value => "1", is_nullable => 0, size=>4 },
+  "work_order", { data_type => "INT", default_value => "1", is_nullable => 0, size=>4 },
   "date", { data_type => "TIMESTAMP", default_value => "", is_nullable => 0 },
 );
 __PACKAGE__->set_primary_key("work_order_id");
