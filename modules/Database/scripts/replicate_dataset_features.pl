@@ -24,6 +24,7 @@ my $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 
+
 my ($ds1) = $coge->resultset('Dataset')->resolve($dsid1);
 my ($ds2) = $coge->resultset('Dataset')->resolve($dsid2);
 
@@ -32,6 +33,8 @@ unless ($ds1 && $ds2)
     print "Problem with retrieving one of the datasets.\n  Please check their names or ids.  Exiting. . .";
     exit;
   }
+
+
 
 my %chrs = map {$_,1} $ds2->get_chromosomes;
 
