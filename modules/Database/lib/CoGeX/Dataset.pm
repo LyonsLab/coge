@@ -363,13 +363,18 @@ See Also   :
 					   chromosome=>"$chr",
 					  },
 					  );
+     unless ($item)
+       {
+	 warn "Unable to find genomic_sequence object for $chr.";
+	 return;
+       }
      my $stop = $item->sequence_length();
      unless ($stop)
       {
         warn "No genomic sequence for ",$self->name," for chr $chr\n";
         return;
       }
-     $stop;
+     return $stop;
    }
 
 
@@ -553,9 +558,9 @@ sub get_chromosomes
 							 feature_type_id=>$ftid,
 							},
 							{
-							 select=>{distinct=>"chromosome"},
 							 as=>"chromosome",
-							});
+							}
+						       );
 	  }
 	else
 	  {
@@ -563,7 +568,7 @@ sub get_chromosomes
 							  {name=>"chromosome"},
 							  {
 							   join=>"feature_type",
-							   select=>{distinct=>"chromosome"},
+
 							   as=>"chromosome",
 							  },
 							 );
@@ -594,6 +599,38 @@ sub chromosomes
   {
     my $self = shift;
     $self->get_chromosomes(@_);
+  }
+    
+
+################################################ subroutine header begin ##
+
+=head2 has_chromosome
+
+ Usage     : $ds->has_chromosome(chr=>"12")
+ Purpose   : test to see if a dataset has a particular chromsome
+ Returns   : 1 if yes, 0 if no
+ Argument  : 
+ Throws    : 
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub has_chromosome
+  {
+    
+    my $self = shift;
+    my %opts = @_;
+    my $chr = $opts{chr};
+    return 1 if $self->features({"feature_type.name"=>"chromosome",
+				 "feature_name.name"=>"$chr",
+				 },
+				{join=>["feature_type", "feature_name"]}
+				);
+    return 0;
   }
     
 
