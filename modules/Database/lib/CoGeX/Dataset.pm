@@ -558,7 +558,7 @@ sub get_chromosomes
 							 feature_type_id=>$ftid,
 							},
 							{
-							 as=>"chromosome",
+#							 as=>"chromosome",
 							}
 						       );
 	  }
@@ -569,7 +569,7 @@ sub get_chromosomes
 							  {
 							   join=>"feature_type",
 
-							   as=>"chromosome",
+#							   as=>"chromosome",
 							  },
 							 );
 	  }
