@@ -8,6 +8,8 @@ use base 'DBIx::Class';
 use File::Spec::Functions;
 use Data::Dumper;
 use Text::Wrap;
+use POSIX;
+use Carp;
 
 =head1 NAME
 
@@ -120,10 +122,12 @@ sub datasets
       {
 	if ($chr)
 	  {
-	    foreach my $ds_chr ($dsc->dataset->chromosomes)
-	      {
-		return $dsc->dataset if $ds_chr eq $chr;
-	      }
+#	    foreach my $ds_chr ($dsc->dataset->chromosomes)
+#	      {
+#		print STDERR $ds_chr,"\n";
+#		return $dsc->dataset if $ds_chr eq $chr;
+		return $dsc->dataset if $dsc->dataset->has_chromosome(chr=>$chr);
+#	      }
 	  }
 	else
 	  {
@@ -160,8 +164,10 @@ sub get_genomic_sequence {
   my $strand = $opts{strand};
   my $debug = $opts{debug};
   my $str = "";
+  return if (defined $start && defined $stop && $start < 1 && $stop < 1);  #asking for sequence beyond the start
   $start = 1 unless $start;
   my $last = $self->sequence_length($chr);
+  return if ($start > $last && $stop > $last);  #asking for sequence beyond the end;
   $stop = $last unless $stop;
   $stop = $last if $stop > $last;
   $start = $last if $start > $last;
@@ -362,6 +368,11 @@ See Also   :
 					     chromosome=>"$chr",
 					    },
 					   );
+     unless ($item)
+       {
+	 print STDERR  "unable to get genomic_sequence object for chr $chr.  DatasetGroup_id ".$self->id."\n";
+	 return;
+       }
      my $stop = $item->sequence_length;
      unless ($stop)
       {
@@ -465,13 +476,7 @@ See Also   :
 sub get_chromosomes
   {
     my $self = shift;
-    my @data =  map {$_->chromosome} $self->genomic_sequences(
-					{},
-					{
-					 select=>{distinct=>"chromosome"},
-					 as=>"chromosome",
-					},
-				       );
+    my @data =  map {$_->chromosome} $self->genomic_sequences();
     return wantarray ? @data : \@data;
   }
 
