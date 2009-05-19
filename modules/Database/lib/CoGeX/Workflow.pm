@@ -53,9 +53,16 @@ __PACKAGE__->add_columns(
   "date", { data_type => "TIMESTAMP", default_value => "", is_nullable => 0 },
 );
 __PACKAGE__->set_primary_key("workflow_id");
-__PACKAGE__->has_many('work_orders'=>"CoGeX::WorkOrder","work_id");
+__PACKAGE__->has_many('work_orders'=>"CoGeX::WorkOrder","workflow_id");
 __PACKAGE__->belongs_to('user'=>"CoGeX::User","user_id");
 
+
+
+sub works
+  {
+    my @works = map {$_->work} shift->work_orders;  #awesome perlese!
+    return wantarray ? @works : \@works;
+  }
 
 
 1;
