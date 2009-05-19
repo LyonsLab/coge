@@ -59,6 +59,7 @@ unless ($ds)
     warn "unable to find or create a valid dataset entry";
     exit;
   }
+print "Working on dataset: ", $ds->name. " (".$ds->id.")\n";
 push @names, "mRNA" unless @names;
 
 warn "-go flag is not true, nothing will be added to the database.\n" unless $GO;
