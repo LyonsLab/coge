@@ -9,7 +9,7 @@ use CoGe::Accessory::GenBank::Feature;
 use CoGeX::Feature;
 use Roman;
 
-__PACKAGE__->mk_accessors qw(id locus accn seq_length moltype division date definition version gi keywords data_source dataset organism sequence srcfile dir anntoation features start stop chromosome add_gene_models _has_genes wgs wgs_scafld wgs_data strain substrain);
+__PACKAGE__->mk_accessors qw(id locus accn seq_length moltype division date definition version gi keywords data_source dataset organism sequence srcfile dir anntoation features start stop chromosome add_gene_models _has_genes wgs wgs_scafld wgs_data strain substrain genomic_sequence_type_id);
 
 
 
@@ -295,16 +295,16 @@ sub process_line
 		$val =~ s/"//g;
 		$feature{$iso} = $val;
 		#funky ways for getting chromosome info
-		if ($feature{type} eq "source" && ($iso eq "segment" || $iso eq "chromosome" || $iso eq "plasmid"))
+		if ($feature{type} && $feature{type} eq "source" && ($iso eq "segment" || $iso eq "chromosome" || $iso eq "plasmid"))
 		  {
 		    my $chr = $val;
 		    $chr = $iso ." ".$val unless $iso eq "chromosome" || $chr =~ /\s/ || $chr =~ /$iso/i;
 		    $self->chromosome($chr) unless $self->chromosome;
 		    $self->chromosome($chr) if length ($chr) > length($self->chromosome);
 		  }
-		if ($feature{type} eq "source" && $iso eq "strain") {$self->strain($val);}
-		if ($feature{type} eq "source" && $iso eq "substrain") {$self->substrain($val);}
-		if ($feature{type} eq "source" && $iso eq "sub_strain") {$self->substrain($val);}
+		if ($feature{type} && $feature{type} eq "source" && $iso eq "strain") {$self->strain($val);}
+		if ($feature{type} && $feature{type} eq "source" && $iso eq "substrain") {$self->substrain($val);}
+		if ($feature{type} && $feature{type} eq "source" && $iso eq "sub_strain") {$self->substrain($val);}
 	      }
 	    else
 	      {
@@ -330,7 +330,7 @@ sub process_line
 	  }
 	$quals{names} = [sort keys %names];
 	$feature{location} = $self->reverse_genbank_location(loc=>$feature{location}) if $rev;
-	my $strand = $feature{location} =~ /complement/i ? -1 : 1;
+	my $strand = ($feature{location} && $feature{location} =~ /complement/i) ? -1 : 1;
 	$start = $self->seq_length -$start+1 if $rev;
 	$start -= $length if $rev && $length;
 	$self->add_feature(
@@ -731,16 +731,17 @@ sub add_feature
     my %options = @_;
     my $type=$options{type} if $options{type};
     my $location=$options{location} if $options{location};
-    $self->_has_genes(1) if $type =~ /^gene$/i;
+    $self->_has_genes(1) if $type && $type =~ /^gene$/i;
     my $qualifiers = $options{qualifiers};
     $qualifiers = {} unless $qualifiers;
     $qualifiers=$qualifiers;
     my $annotation;
     $annotation =$options{annotation} if $options{annotation};
-    $annotation .= "location: ".$location if $location;
+#    $annotation .= "location: ".$location if $location;
     my$strand=$options{strand} if $options{strand};
     my $start = $options{start};
     my $length = $options{length};
+    my $force = $options{force}; #force addition of feature even if it is outside of sequence range;
     unless ($strand)
       {
 	$strand = $location=~/complement/i ? -1 : 1;
@@ -754,9 +755,9 @@ sub add_feature
 							});
     $feature->blocks($self->process_location( loc=>$feature->location, start=>$start)) if $feature->location;
     $feature->blocks([]) unless $feature->blocks;
-    return unless $feature->stop && $feature->start;
-    return if $feature->stop < 0;
-    return if $start && $start > 1 && $length && $feature->start > $length;
+    return unless $force || ($feature->stop && $feature->start);
+    return if !$force && $feature->stop < 0;
+    return if !$force && $start && $start > 1 && $length && $feature->start > $length;
     push @{$self->features}, $feature;
     return;
   }
@@ -874,6 +875,11 @@ sub process_wgs
 #	my $content = $response->content if $response->is_success;
 #	print $content;
       }
+  }
+
+sub gstid
+  {
+    shift->genomic_sequence_type_id(@_);
   }
 
 1;
