@@ -1,6 +1,7 @@
 package CoGe::Accessory::genetic_code;
 
 use strict;
+use POSIX;
 BEGIN {
     use Exporter ();
     use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $code);
@@ -1209,7 +1210,6 @@ sub html_code_table
       my $self = shift;
       my %opts = @_;
       my $data = $opts{data};
-      my $max_val = $opts{max_val};
       my $trans_table = $opts{trans_table};
       my $code = $opts{code};
       my $counts = $opts{counts};
@@ -1222,7 +1222,9 @@ sub html_code_table
 	}
       $code = $self->code($trans_table) unless $code;
       $code = $code->{code} if $code->{code};
-      ($max_val) = sort {$b <=> $a} map {$data->{$_}} keys %{$code};
+      my ($max_val) = sort {$b <=> $a} map {$data->{$_}} keys %{$code};
+      my ($min_val) = sort {$a <=> $b} map {$data->{$_}} keys %{$code};
+      my $range = $max_val-$min_val;
       my $html;
       $html .= "<table><tr><td nowrap>";
       my $count = 0;
@@ -1232,6 +1234,9 @@ sub html_code_table
 	  my $tmp = substr($codon, 0, 1);
 	  my $current_val = sprintf("%.2f",100*$data->{$codon});
 	  my $color = $self->color_by_usage(100*$max_val, $current_val);
+#	  my $rel_val = ($data->{$codon}-$min_val)/$range;
+#	  my $color = $self->get_color(val=>$rel_val);
+#	  my $color_str = join (",",@$color);
 	  my $str = "<span style=\"background-color: rgb($color, 255, $color);\" >".$codon."(".$code->{$codon}.") ".$current_val."%";
 	  $str .= " (".$counts->{$codon}.")" if $counts;
 	  $str .="</span>";
@@ -1332,6 +1337,37 @@ sub color_by_usage
     my $g = $opt*(($max - $value) / $max);
     return int($g + .5);
   }
+sub get_color
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $val = $opts{val};
+    return [0,0,0] unless defined $val;
+    return [125,125,125] if $val < 0;
+    my @colors = (
+                  [255,0,0], #red
+                  [255,126,0], #orange
+                  [255,255,0], #yellow
+                  [0,255,0], # green
+                  [0,255,255], # cyan
+                  [0,0,255], # blue
+#                 [255,0,255], #magenta
+                  [126,0,126], #purple
+                 );
+    @colors = reverse @colors;
+    my ($index1, $index2) = ((floor((scalar(@colors)-1)*$val)), ceil((scalar(@colors)-1)*$val));
+
+    my $color=[];
+    my $step = 1/(scalar (@colors)-1);
+    my $scale = $index1*$step;
+    my $dist = ($val-$scale)/($step);
+    for (my $i=0; $i<=2; $i++)
+      {
+        my $diff = ($colors[$index1][$i]-$colors[$index2][$i])*$dist;
+        push @$color, sprintf("%.0f", $colors[$index1][$i]-$diff);
+      }
+    return $color;
+  }
 
 sub sort_aa_by_gc
   {
@@ -1370,6 +1406,8 @@ sub html_aa
       }
     my $aa_sort = $self->sort_aa_by_gc(code=>$code, trans_table=>$trans_table);
     my ($max_aa) = sort {$b<=>$a} map{$data->{$_}} keys %$aa_sort;
+    my ($min_aa) = sort {$a<=>$b} map{$data->{$_}} keys %$aa_sort;
+    my $range = $max_aa-$min_aa;
     my $html;
     $html .= "<table><tr valign=top><td>" if $split_table;
     $html .= "<table>";
@@ -1377,6 +1415,9 @@ sub html_aa
     foreach (sort {$aa_sort->{$b} <=> $aa_sort->{$a} || $a cmp $b}keys %$aa_sort)
       {	
 	my $current_val = sprintf("%.2f",100*$data->{$_});
+#	my $rel_val = ($data->{$_}-$min_aa)/$range;
+#	my $color = $self->get_color(val=>$rel_val);
+#	my $color_str = join (",",@$color);
 	my $color = $self->color_by_usage(100*$max_aa,$current_val);
 	$html .= "<tr style=\"background-color: rgb($color,255,$color)\"><td nowrap>$_ (GC:".sprintf("%.0f",100*$aa_sort->{$_})."%)<td nowrap>".$current_val."%";
 	$html .= " (".$counts->{$_}.")" if $counts;
