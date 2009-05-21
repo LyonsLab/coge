@@ -94,7 +94,7 @@ sub gen_html
       }
     foreach my $feat (sort {$a->type->name cmp $b->type->name} @feats)
       {
-	
+	next if $feat->type->name eq "chromosome";
 	next if $feat->type->name =~ /^source$/;
 	my $color;
 	if ($feat->type->name eq "CDS")
