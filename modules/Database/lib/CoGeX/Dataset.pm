@@ -625,11 +625,13 @@ sub has_chromosome
     my $self = shift;
     my %opts = @_;
     my $chr = $opts{chr};
-    return 1 if $self->features({"feature_type.name"=>"chromosome",
-				 "feature_name.name"=>"$chr",
-				 },
-				{join=>["feature_type", "feature_name"]}
-				);
+    my ($res) = $self->features(
+				{"feature_type.name"=>"chromosome",
+				 "chromosome"=>"$chr",
+				},
+				{join=>["feature_type"]}
+			       );
+    return 1 if $res;
     return 0;
   }
     
