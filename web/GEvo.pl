@@ -770,6 +770,7 @@ sub run
 	$html .= "<div class=small>No alignment reports were generated</DIV>\n";
       }
     $html .= qq{<td class = small>Fasta files};
+    my $all_file = $cogeweb->basefile().".all.fasta";
     foreach my $item (@sets)
       {
 	next unless $item->{file};
@@ -777,7 +778,15 @@ sub run
 	print STDERR "basename is undefined: $basename\n" if $basename =~ /defined/i;
 	my $accn = $item->{accn};
 	$html .= "<div><font class=small><A HREF=\"$basename\" target=_new>$accn</A></font></DIV>\n";
+	my $x;
+	($x, $all_file) = check_taint($all_file);
+	my $seq_file = $item->{file};
+	($x, $seq_file) = check_taint($seq_file);
+	my $cmd = "cat ".$seq_file." >> $all_file";
+	`$cmd`;
       }
+
+    $html .= "<div><font class=small><A HREF=\"".$TEMPURL."/".basename ($all_file)."\" target=_new>all sequences</A></font></DIV>\n";
     $html .= qq{<td class = small><a href = "http://baboon.math.berkeley.edu/mavid/gaf.html">GAF</a> annotation files};
     foreach my $item (@sets)
       {
