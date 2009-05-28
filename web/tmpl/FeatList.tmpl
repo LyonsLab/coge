@@ -319,8 +319,10 @@ Filter Table Rows:
 <input type=button value="Uncheck All" onclick="$('#feat_table :checkbox').attr('checked', false);">-->
 
 <!-- TODO - consider putting onClick declarations in javascript for simplicity -->
-<a href="javascript:void(0);" class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="$('#feat_table :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Check All</a>
-<a href="javascript:void(0);" class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="$('#feat_table :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minus"></span>Uncheck All</a>
+<a href="javascript:void(0);" class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="$('#feat_table tr :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Check All</a>
+<a href="javascript:void(0);" class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="$('#feat_table tr :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minus"></span>Uncheck All</a>
+<a href="javascript:void(0);" class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="$('#feat_table tr :visible :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Check Visible</a>
+<a href="javascript:void(0);" class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="$('#feat_table tr :visible :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minus"></span>Uncheck Visible</a>
 <a href="javascript:void(0);" class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="check_type()"><span class="ui-icon ui-icon-check"></span>Check Features of type:</a><TMPL_VAR NAME="FEAT_TYPES">
 <a href="javascript:void(0);" id="history_dialog_button" class='ui-button ui-state-default ui-corner-all ui-button-icon-left'><span class="ui-icon ui-icon-newwin"></span>Save Table</a>
  <div>
