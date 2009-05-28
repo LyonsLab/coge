@@ -286,6 +286,7 @@ sub gen_body
     my $show_cns = get_opt(params=>$prefs, form=>$form, param=>'show_cns');
     $show_cns=0 unless $show_cns;
     my $show_gene_space = get_opt(params=>$prefs, form=>$form, param=>'show_gene_space');
+    my $show_contigs = get_opt(params=>$prefs, form=>$form, param=>'show_contigs');
     $show_gene_space=0 unless $show_gene_space;
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GEvo.tmpl');
     $template->param(PAD_GS=>$pad_gs);
@@ -390,6 +391,7 @@ sub run
     my $email_address = $opts{email};
     my $show_cns = $opts{show_cns};
     my $show_gene_space = $opts{show_gene_space};
+    my $show_contigs = $opts{show_contigs};
     my $skip_feat_overlap_search = $opts{skip_feat_overlap};
     my $skip_hsp_overlap_search = $opts{skip_hsp_overlap};
     my $message;
@@ -430,6 +432,9 @@ sub run
 	my $skip_seq =$opts{"skip_seq$i"};
 	next if $skip_seq;
 	my $accn = $opts{"draccn$i"};
+	#trim whitespace at ends of accn
+	$accn =~ s/^\s+// if $accn;
+	$accn =~ s/\s+$// if $accn;
 	my $featid = $opts{"featid$i"};
 	my $gstid = $opts{"gstid$i"}; #currently not used, value passed attached to featid
 	($featid, $gstid) = split (/_/, $featid) if ($featid =~ /_/);
@@ -720,6 +725,7 @@ sub run
 			     hsp_overlap_length=>$hsp_overlap_length,
 			     show_cns=>$show_cns,
 		             show_gene_space=>$show_gene_space,
+		             show_contigs=>$show_contigs,
 			     bitscore_cutoff=>$bitscore_cutoff,
 			     skip_feat_overlap_search=>$skip_feat_overlap_search,
 			     skip_hsp_overlap_search=>$skip_hsp_overlap_search,
@@ -859,6 +865,7 @@ sub generate_image
     my $hsp_overlap_length = $opts{hsp_overlap_length};
     my $show_cns = $opts{show_cns};
     my $show_gene_space = $opts{show_gene_space};
+    my $show_contigs = $opts{show_contigs};
     my $graphic = new CoGe::Graphics;
     my $gfx = new CoGe::Graphics::Chromosome;
     my $skip_feat_overlap_search = $opts{skip_feat_overlap_search};
@@ -907,7 +914,7 @@ sub generate_image
 		 skip_overlap_search=>$skip_hsp_overlap_search,
 		);
     
-    my ($feat_counts) = process_features(c=>$gfx, obj=>$gbobj, start=>$start, stop=>$stop, skip_overlap_search=>$skip_feat_overlap_search, draw_model=>$draw_model, color_overlapped_features=>$color_overlapped_features, cbc=>$show_cbc, cns=>$show_cns, gene_space=>$show_gene_space);
+    my ($feat_counts) = process_features(c=>$gfx, obj=>$gbobj, start=>$start, stop=>$stop, skip_overlap_search=>$skip_feat_overlap_search, draw_model=>$draw_model, color_overlapped_features=>$color_overlapped_features, cbc=>$show_cbc, cns=>$show_cns, gene_space=>$show_gene_space, show_contigs=>$show_contigs);
 
     return ($gfx);
   }
@@ -1105,6 +1112,8 @@ sub process_features
     my $cbc = $opts{cbc};
     my $show_cns = $opts{cns};
     my $show_gene_space = $opts{gene_space};
+    # TODO: remove the 1. here for testing.
+    my $show_contigs = $opts{show_contigs} || 1;
     my $accn = $obj->accn;
     my $track = 1;
     my %feat_counts;
@@ -1280,6 +1289,19 @@ sub process_features
 	      $c->add_feature($f);
 	      next;
 	  }
+    elsif ($show_contigs && $type =~ /contig/i)
+    {
+	      $f = CoGe::Graphics::Feature::HSP->new({start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1]});
+	      $f->color([255,0,0, 0.5]);
+	      $f->order($feat->location =~ /complement/ ? 0 : 1);
+
+	      $f->overlay(-1);
+	      $f->transparency(0.6);
+	      $f->type($type);
+	      $f->description($feat->annotation);
+	      $c->add_feature($f);
+          next;
+    }
 	else
 	  {
 #	    print STDERR "Didn't draw feature_type: ", $type,"\n";
@@ -1751,6 +1773,8 @@ sub get_obj_from_genome_db
 	my $name;
 	my @names = $f->names;
 	next if $f->type->name =~ /misc_feat/;
+	next if $f->type->name eq "chromosome";
+#	next if $f->type->name eq "contig";
 	foreach my $tmp (@names)
 	  {
 	    $name = $tmp;
@@ -2983,7 +3007,10 @@ sub dataset_search
     my $featid = $opts{featid};
     my $dsgid = $opts{dsgid};
     my $gstid = $opts{gstid};
-    print STDERR Dumper \%opts;
+    $accn =~ s/^\s+// if $accn;
+    $accn =~ s/\s+$// if $accn;
+
+#    print STDERR Dumper \%opts;
     my $feat = $coge->resultset('Feature')->find($featid) if $featid;
     $dsid = $feat->dataset->id if $feat;
     my $html;
@@ -3011,15 +3038,22 @@ sub dataset_search
 	    my $sname = $ds->data_source->name;
 	    my $ds_name = $ds->name;
 	    my $org = $ds->organism->name;
-	    my $typeid = $ds->sequence_type->id;
-	    #orig	my $title = "$org: $ds_name ($sname, v$ver, $type)";
-	    my $title = "$ds_name ($sname, v$ver)";
-	    next if $restricted_orgs->{$org};
-	    $sources{$ds->id} = {
-				 title=>$title,
-				 version=>$ver,
-				 typeid=>$typeid
-				};
+	    foreach my $seqtype ($ds->sequence_type)
+	      {
+		my $typeid = $seqtype->id if $seqtype;
+		unless ($typeid)
+		  {
+		    print STDERR "Error retrieving sequence_type object for ", $ds->name,": id ",$ds->id,"\n";
+		    next;
+		  }
+		my $title = "$ds_name ($sname, v$ver)";
+		next if $restricted_orgs->{$org};
+		$sources{$ds->id} = {
+				     title=>$title,
+				     version=>$ver,
+				     typeid=>$typeid
+				    };
+	      }
 	  }
       }
      if (keys %sources)
@@ -3063,7 +3097,7 @@ sub dataset_group_search
 	$html .= "No genome found for $dsid" if $dsid;
 	return $html,$num;
       }
-    my $html = qq{<SELECT name="dsgid$num" id="dsgid$num" onChange="feat_search(['args__accn','accn$num','args__dsid', 'dsid$num','args__dsgid', 'dsgid$num', 'args__num','args__$num', 'args__featid'],['feat$num']);">};
+    my $html = qq{<SELECT name="dsgid$num" id="dsgid$num" onChange="feat_search(['args__accn','accn$num','args__dsid', 'dsid$num','args__dsgid', 'dsgid$num', 'args__num','args__$num', 'args__featid', 'args__$featid'],['feat$num']);">};
     my $count =0;
     foreach my $dsg (sort {$b->version <=> $a->version || $a->type->id <=> $b->type->id} $ds->dataset_groups)
       {
@@ -3160,6 +3194,8 @@ sub feat_search
     my $gstid = $opts{gstid};
     my $num = $opts{num};
     my $featid = $opts{featid};
+    $accn =~ s/^\s+// if $accn;
+    $accn =~ s/\s+$// if $accn;
     unless ($gstid)
       {
 	if ($featid =~ /_/)
