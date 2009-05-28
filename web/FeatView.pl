@@ -32,6 +32,7 @@ $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 
 $FORM = new CGI;
 $ACCN = $FORM->param('accn');
+$FID = $FORM->param('fid');
 ($USER) = CoGe::Accessory::LogUser->get_user();
 
 $coge = CoGeX->dbconnect();
@@ -86,13 +87,18 @@ sub get_types
     my @opts = sort map {"<OPTION>$_</OPTION>"} grep {! $seen{$_}++} map {$_->type->name} $coge->resultset('Feature')->search(
 															      $search,
 															      ,{join=>'feature_names'});
-
-    $html .= "<font class=small>Type count: ".scalar @opts."</font>\n<BR>\n";
-    $html .= qq{<SELECT id="Type_name" SIZE="10" MULTIPLE onChange="get_anno(['args__accn','accn_select','args__type','Type_name', 'args__dsid','dsid', 'args__gstid','args__$gstid'],[show_anno])" >\n};
-    $html .= join ("\n", @opts);
-    $html .= "\n</SELECT>\n";
-    $html =~ s/OPTION/OPTION SELECTED/;
-    return $blank unless $html =~ /OPTION/;
+    if (@opts)
+      {
+	$html .= "<font class=small>Type count: ".scalar @opts."</font>\n<BR>\n";
+	
+	$html .= qq{<SELECT id="Type_name" SIZE="10" MULTIPLE onChange="get_anno(['args__accn','accn_select','args__type','Type_name', 'args__dsid','dsid', 'args__gstid','args__$gstid'],[show_anno])" >\n};
+	$html .= join ("\n", @opts);
+	$html .= "\n</SELECT>\n";
+	$html =~ s/OPTION/OPTION SELECTED/;
+      }
+    else
+      {return $blank;}
+#    return $blank unless $html =~ /OPTION/;
     return ($html, $gstid);
   }
 
@@ -133,6 +139,7 @@ sub cogesearch
     my $anno = $opts{anno};
     $anno =~ s/^\s+//;
     $anno =~ s/\s+$//;
+    my $fid = $opts{fid};
     my $type = $opts{type};
     my $org_id = $opts{org_id};
     my $org_name = $opts{org_name};
@@ -155,7 +162,7 @@ sub cogesearch
     my $feat_anno_wild = $opts{feat_anno_wild};
     my $blank = qq{<input type="hidden" id="accn_select">};
     my $weak_query = "Query needs to be better defined.";
-    if (!$accn && !$anno)
+    if (!$accn && !$anno && !$fid)
       {
 	return $weak_query.$blank unless $org_id && $type;
       }
@@ -422,7 +429,6 @@ sub gen_html
 sub gen_body
   {
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/FeatView.tmpl');
-
     $template->param(ACCN=>$ACCN);
     $template->param(FEAT_TYPE=> get_feature_types());
     $template->param(ORG_LIST=>get_orgs(type=>"none"));
