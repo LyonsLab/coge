@@ -119,8 +119,8 @@
                  OpenLayers.Bounds(-50000,-10000,1000000000,10000),
                  units     :'bp',
                  tileSize: new OpenLayers.Size(768, size),
-                 resolutions:[4096, 1024,256,64,16,4,1,0.25, 0.125, 0.0625, 0.03125, 0.015625],
-//                 resolutions:[2048, 1024,512,256,128,64,32,16,8,4,2,1, 0.5, 0.25, 0.125, 0.0625, 0.032125, 0.015625],
+//                 resolutions:[4096, 1024,256,64,16,4,1,0.25, 0.125, 0.0625, 0.03125, 0.015625],
+                 resolutions:[2048, 1024,512,256,128,64,32,16,8,4,2,1, 0.5, 0.25, 0.125, 0.0625, 0.032125, 0.015625],
                   controls: [new OpenLayers.Control.MouseDefaults()]
             });
             layers = [
@@ -129,6 +129,7 @@
                  ,{isBaseLayer:true} 
              ),
             ]
+
 
             map.addLayers(layers);
 
@@ -187,6 +188,26 @@
             map.addLayer(gene_space);
 
             genes.setVisibility(<TMPL_VAR NAME="GENES">);
+
+            if(ds == '34474' || ds == '39598'){
+                // avoid pink tiles
+                OpenLayers.IMAGE_RELOAD_ATTEMPTS = 3;
+                OpenLayers.Util.onImageLoadErrorColor = "transparent";
+
+                var bs = ['http://128.32.8.28/bs/', 'http://kosh-370-311c-001-d.pmb.berkeley.edu/bs/'];
+                var tome = ['http://128.32.8.28/salktome/', 'http://kosh-370-311c-001-d.pmb.berkeley.edu/salktome/'];
+
+                map.addLayer( new OpenLayers.Layer.Genomic( "methylation" , bs
+                              ,{'seqid': chr }
+                               ,{isBaseLayer:false} 
+                                            ));
+                map.addLayer( new OpenLayers.Layer.Genomic( "salk-tome expression" , tome
+                              ,{'seqid': chr }
+                               ,{isBaseLayer:false} 
+                                            ));
+
+
+            }
             map.addLayer(genes);
             wobble_GC_usage.setVisibility(<TMPL_VAR NAME="WOBBLEGC">);
             map.addLayer(wobble_GC_usage);
