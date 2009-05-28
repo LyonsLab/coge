@@ -27,7 +27,7 @@ my $pj = new CGI::Ajax(
 $update =0;
 $coge = new CoGeX->dbconnect;
 print $pj->build_html($FORM, \&gen_html);
-#print gen_html();
+#print $FORM->header, gen_html();
 
 
 
@@ -57,7 +57,8 @@ sub gen_html
       	$welcome .= "<span class='species small'>Organisms: ";
 	$welcome .= commify($coge->resultset('Organism')->count());
 	$welcome .= "&nbsp&nbsp&nbsp&nbsp   Nucleotides: ";
-	$welcome .= commify($coge->resultset('GenomicSequence')->count()*10000);
+	my $seq_length = $coge->resultset('GenomicSequence')->get_column('sequence_length');
+	$welcome .= commify($seq_length->sum);
 	$welcome .= "</span>";
       }
     $template->param(BOX_NAME=>$welcome);
