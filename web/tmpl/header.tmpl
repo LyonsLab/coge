@@ -14,7 +14,7 @@
 
 <!-- Implementation of jQuery UI, first line javascript, second for css  -->
 <SCRIPT language="JavaScript" type="text/javascript" src="/CoGe/js/jquery-ui-1.7.custom.min.js"></SCRIPT>
-<link rel="stylesheet" type="text/css" href="/CoGe/css/jquery-ui-1.7.custom.css" />
+<link rel="stylesheet" type="text/css" href="/CoGe/css/jquery-ui-1.7.1.custom.css" />
 
  <!--<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.bgiframe.js"></SCRIPT>-->
 <!--<SCRIPT language="JavaScript" type="text/javascript" src="/CoGe/js/jquery.dimensions1.2.js"></SCRIPT>
@@ -188,9 +188,11 @@ function add_button_states (ids) {
 }
 //}); 
 
-//initialize superfish plugin (dropdown table)
-$(function() {
-	$('ul.sf-menu').superfish();
+//initialize superfish plugin (dropdown menu)
+$(document).ready( function() {
+	$('ul.sf-menu').superfish({
+			       delay: 300,
+			      });
 });
 
 </SCRIPT>
@@ -202,13 +204,6 @@ $(function() {
 	<!-- <ul class="jd_menu jd_menu_slate" style="position: absolute;right: 0px;top: 0px;"> -->
 	<table style="float: right";>
 	 <tr>
-	 <td>
-	<TMPL_IF NAME=LOGON>
-	<span class="small species">Welcome, <TMPL_VAR NAME=USER></span> <a href="/CoGe/index.pl?logout=1" class="small">Sign-out</a>
-	<TMPL_ELSE>
-	 <a href="#" onClick=sign_in() class="small">Sign-in</a> <!-- onclick="login_popup()"  -->
-	</TMPL_IF>
-	</td>
 	<td>
 	<ul class="sf-menu" >
 	 <li><a id=home href="/CoGe/" target="_self">Home</a></li>
@@ -237,12 +232,12 @@ $(function() {
 	<li><a href='javascript:void(0)'>Preferences</a>
 	 <ul>
 	   <li><a href="/CoGe/UserPage.pl" target="_self">User Profile</a></li>
-	  <li><a href="#" target="_self">Animation</a>
+	  <li><a href="javascript:void(0)" target="_self">Animation</a>
 	    <ul class="animations">
-	      <li><a href="#" target="_self" onClick="define_animation_speed(0)">Off</a></li>
-	      <li><a href="#" target="_self" onClick="define_animation_speed(600)">&radic; Slow</a></li>
-	      <li><a href="#" target="_self" onClick="define_animation_speed(400)">Medium</a></li>
-	      <li><a href="#" target="_self" onClick="define_animation_speed(200)">Fast</a></li>
+	      <li><a href="javascript:void(0)" target="_self" onClick="define_animation_speed(0)">Off</a></li>
+	      <li><a href="javascript:void(0)" target="_self" onClick="define_animation_speed(600)">&radic; Slow</a></li>
+	      <li><a href="javascript:void(0)" target="_self" onClick="define_animation_speed(400)">Medium</a></li>
+	      <li><a href="javascript:void(0)" target="_self" onClick="define_animation_speed(200)">Fast</a></li>
 	     </ul>
 	   </li>
 	  </ul>
@@ -257,6 +252,14 @@ $(function() {
 	</ul>
 	</li>
 	</ul>
+	 <td>
+	<TMPL_IF NAME=LOGON>
+	<span class="small species">Welcome, <TMPL_VAR NAME=USER></span> <a href="/CoGe/index.pl?logout=1" class="small">Sign-out</a>
+	<TMPL_ELSE>
+	 <a href="javascript:void(0)" onClick=sign_in() class="small">Sign-in</a> <!-- onclick="login_popup()"  -->
+	</TMPL_IF>
+	</td>
+
 	</table>
 </TMPL_UNLESS>
  <TR>
