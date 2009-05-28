@@ -10,17 +10,21 @@ use Data::Dumper;
 use CGI::Ajax;
 use CoGeX;
 use Benchmark;
+use File::Path;
 
 $ENV{PATH} = "/opt/apache2/CoGe/";
 
-use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $NEATO $DOT $coge);
+use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $NEATO $DOT $coge $HISTOGRAM);
 
 # set this to 1 to print verbose messages to logs
 $DEBUG = 0;
-$TEMPDIR = "/opt/apache/CoGe/tmp";
-$TEMPURL = "/CoGe/tmp";
+$TEMPDIR = "/opt/apache/CoGe/tmp/OrganismView";
+mkpath ($TEMPDIR, 0,0777) unless -d $TEMPDIR;
+
+$TEMPURL = "/CoGe/tmp/OrganismView";
 $NEATO = "/usr/bin/neato";
 $DOT = "/usr/bin/dot";
+$HISTOGRAM = "/opt/apache/CoGe/bin/histogram.pl";
 $| = 1; # turn off buffering
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		 sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
@@ -30,6 +34,8 @@ $FORM = new CGI;
 $coge = CoGeX->dbconnect();
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
+
+
 
 my $pj = new CGI::Ajax(
 		       get_dataset_groups=>\&get_dataset_groups,
@@ -44,9 +50,11 @@ my $pj = new CGI::Ajax(
 		       get_start_stop=>\&get_start_stop,
 		       get_feature_counts => \&get_feature_counts,
 		       gen_gc_for_chromosome=> \&gen_gc_for_chromosome,
-		       gen_gc_for_noncoding=> \&gen_gc_for_noncoding,
+		       get_gc_for_noncoding=> \&get_gc_for_noncoding,
 		       gen_gc_for_feature_type =>\&gen_gc_for_feature_type,
 		       get_codon_usage=>\&get_codon_usage,
+		       get_wobble_gc=>\&get_wobble_gc,
+		       get_wobble_gc_diff=>\&get_wobble_gc_diff,
 		       get_total_length_for_ds=>\&get_total_length_for_ds,
 		      );
 $pj->JSDEBUG(0);
@@ -278,17 +286,24 @@ sub get_dataset_group_info
 	$count++;
       }
     $html = qq{<div style="overflow:auto; max-height:78px">};
-    $html .= qq{Chromosome count: $chr_num<br>}. qq{<div style="float:left;">Total length: };
-    $html .= commify($total_length)." bp";
-    $html .= qq{  </div><div style="float: left; text-indent: 1em;" id=datasetgroup_gc class="link" onclick="\$('#datasetgroup_gc').removeClass('link'); gen_gc_for_chromosome(['args__dsgid','dsg_id','args__gstid', 'gstid'],['datasetgroup_gc']);">  Click for percent GC content</div>};
-    $html .= "<br>";
-    $html .= qq{Sequence Type: }.$dsg->genomic_sequence_type->name.qq{<input type=hidden id=gstid value=}.$dsg->genomic_sequence_type->id.qq{>};
-    $html .= qq{<br>};
-    $html .= qq{-----------<br>Chr:   (length)<br>};
-    $html .= "</div>";
+    $html .= "<table class='small annotation_table'>";
+    $html .= qq{<tr><td>Chromosome count: <td>$chr_num<br>}. qq{<div style="float:left;">};
+    $html .= qq{<tr><td>Sequence Type: <td>}.$dsg->genomic_sequence_type->name.qq{<input type=hidden id=gstid value=}.$dsg->genomic_sequence_type->id.qq{>};
+    $html .= qq{<tr><td>Total length: };
+    $html .= qq{<td>}.commify($total_length)." bp";
+    my $gc = $total_length < 10000000? gen_gc_for_chromosome(dsgid=>$dsgid): 0;
+    $gc = $gc ? " -- ".$gc : qq{  </div><div style="float: left; text-indent: 1em;" id=datasetgroup_gc class="link" onclick="\$('#datasetgroup_gc').removeClass('link'); gen_gc_for_chromosome(['args__dsgid','dsg_id','args__gstid', 'gstid'],['datasetgroup_gc']);">  Click for percent GC content</div>};
+    $html .= "<td>$gc";
+
+
+    $html .= qq{
+<tr><td>Noncoding sequence:<td colspan=2><div id=dsg_noncoding_gc class="link" onclick = "gen_data(['args__loading'],['dsg_noncoding_gc']);\$('#dsg_noncoding_gc').removeClass('link');  get_gc_for_noncoding(['args__dsgid','dsg_id','args__gstid', 'gstid'],['dsg_noncoding_gc']);">Click for percent GC content</div>
+} if $total_length;
+
     my $feat_string = qq{
-<div id=dsg_feature_count class="small link" onclick="get_feature_counts(['args__dsgid','dsg_id', 'args__gstid','gstid'],['feature_count_data']);" >Click for feature counts</div>};
+<tr><td><div id=dsg_feature_count class="small link" onclick="get_feature_counts(['args__dsgid','dsg_id', 'args__gstid','gstid'],['feature_count_data']);" >Click for feature counts</div>};
     $html .= $feat_string;
+    $html .= "</table>";
     return $html;
   }
   
@@ -408,8 +423,10 @@ sub get_dataset_info
       $html2 .= qq{<input type="hidden" id="chr" value="">};
       $html2 .= "<tr><td>No chromosomes";
     }
-    $html .= "<tr><td>Total length:<td><div style=\"float: left;\">".commify($length). qq{  </div><div style="float: left; text-indent: 1em;" id=dataset_gc class="link" onclick="\$('#dataset_gc').removeClass('link'); gen_gc_for_chromosome(['args__dsid','ds_id','args__gstid', 'gstid'],['dataset_gc']);">  Click for percent GC content</div>} if $length;
-    $html .= qq{</table>};
+    $html .= "<tr><td>Total length:<td><div style=\"float: left;\">".commify($length);
+    my $gc = $length < 10000000? gen_gc_for_chromosome(dsid=>$ds->id): 0;
+    $gc = $gc ? $gc : qq{  </div><div style="float: left; text-indent: 1em;" id=dataset_gc class="link" onclick="\$('#dataset_gc').removeClass('link'); gen_gc_for_chromosome(['args__dsid','ds_id','args__gstid', 'gstid'],['dataset_gc']);">  Click for percent GC content</div>} if $length;
+    $html .= " -- ".$gc.qq{</table>};
     my $feat_string = qq{
 <div id=ds_feature_count class="small link" onclick="get_feature_counts(['args__dsid','ds_id','args__gstid', 'gstid'],['feature_count_data']);" >Click for feature counts</div>};
     $html .= $feat_string;
@@ -433,23 +450,18 @@ sub get_dataset_chr_info
     return $html unless $ds;
     my $length = 0;
     $length = $ds->last_chromosome_position($chr) if $chr;
-    
-#    my $type = $ds->sequence_type;
-#    my $type_html = $type->name if $type;
-#    $type_html .= ": ".$type->description if $type && $type->description;
-#    $type_html = "Unknown" unless $type_html;
     my $gc = $length < 10000000? gen_gc_for_chromosome(dsid=>$ds->id, chr=>$chr): 0;
-    $length = commify($length);
-    $gc = $gc ? $gc : qq{<div id=chromosome_gc class="link" onclick="\$('#chromosome_gc').removeClass('link'); gen_gc_for_chromosome(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['chromosome_gc']);">Click for percent GC content</div>};
+    $gc = $gc ? " -- ".$gc : qq{<div id=chromosome_gc class="link" onclick="\$('#chromosome_gc').removeClass('link'); gen_gc_for_chromosome(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['chromosome_gc']);">Click for percent GC content</div>};
+    $length = commify($length)." bp";
     $html .= qq{
 <tr><td class = oblique>Specifics for chromosome $chr:
 <tr><td>Nucleotides:<td>$length<td>$gc
 };
-#<tr><td>Sequence Type:<td colspan=2>$type_html
+
     $html .= qq{
-<tr><td>Noncoding sequence:<td colspan=2><div id=noncoding_gc class="link" onclick = "gen_data(['args__loading'],['noncoding_gc']);\$('#noncoding_gc').removeClass('link');  gen_gc_for_noncoding(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['noncoding_gc']);">Click for percent GC content</div>
+<tr><td>Noncoding sequence:<td colspan=2><div id=noncoding_gc class="link" onclick = "gen_data(['args__loading'],['noncoding_gc']);\$('#noncoding_gc').removeClass('link');  get_gc_for_noncoding(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['noncoding_gc']);">Click for percent GC content</div>
 } if $length;
-#    my $feat_string = get_feature_counts($dsd, $chr);
+
     $html .= "</table>";
     my $feat_string = qq{
 <div class=small id=feature_count onclick="get_feature_counts(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['feature_count_data']);" >Click for feature counts</div>};
@@ -462,18 +474,8 @@ sub get_dataset_chr_info
 	$viewer .= "<table class=\"small backbox\">";
 	$viewer .= "<tr><td nowrap class = \"ital\">Starting location: ";
 	$viewer .= qq{<td><input type="text" size=10 value="20000" id="x">};
-	my $zoom;
-   	$zoom .= qq{<tr><td class = "ital">Zoom level:};
-   	$zoom .= qq{<td><SELECT name = "z" id="z" size = 1>};
-   	my @opts = map {"<OPTION value=\"$_\">".$_."</OPTION>"} (5..15);
-   	$zoom .= join ("\n", @opts);
-   	$zoom =~ s/OPTION value="3"/OPTION SELECTED value="3"/;
-   	$zoom .= qq{</SELECT>};
-	$viewer .= qq{<tr><td class = "ital">Zoom level:<td><input type = "text" size=10 value ="3" id = "z">};
-	#    $viewer .= $zoom;
+	$viewer .= qq{<tr><td class = "ital">Zoom level:<td><input type = "text" size=10 value ="5" id = "z">};
 	$viewer .= "</table>";
-	#$viewer .= qq{<input type="hidden" id="z" value="7">};
-#	$viewer .= qq{<input type="submit" value = "Launch Genome Viewer!" onClick="launch_viewer($dsd, '$chr')">};
 	$viewer .= qq{<span class='ui-button ui-button-icon-left ui-state-default ui-corner-all' onClick="launch_viewer($dsd, '$chr')"><span class="ui-icon ui-icon-newwin"></span>Launch Genome Viewer</span>};
       }
     my $seq_grab;
@@ -563,7 +565,7 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
 	      "<td><div id=".$_."_type class=\"link small\" 
   onclick=\" \$('#".$_."_type').removeClass('link'); 
   gen_data(['args__loading'],['".$_."_type']); 
-  gen_gc_for_feature_type([$gc_args 'args__gstid','gstid','args__typeid','args__".$feats->{$_}{id}."'],['".$_."_type'])\">".'show %GC?</div>'.
+  gen_gc_for_feature_type([$gc_args 'args__gstid','gstid','args__typeid','args__".$feats->{$_}{id}."'],['".$_."_type','data1'])\">".'show %GC?</div>'.
     "<td class='small link' onclick=\"window.open('FeatList.pl?$feat_list_string"."&ftid=".$feats->{$_}{id}.";gstid=$gstid')\">Feature List?"
   } sort {$a cmp $b} keys %$feats);
 	$feat_string .= "</table>";
@@ -574,7 +576,10 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
 	$args .= "'args__dsid','ds_id'," if $dsid;
 	$args .= "'args__dsgid','dsg_id'," if $dsgid;
 	$args .= "'args__chr','chr'," if $chr;
-	$feat_string .= "<div class=\"small link\" id=codon_usage onclick=\"gen_data(['args__loading'],['codon_usage']); get_codon_usage([$args],['codon_usage'])\">"."Click for codon usage"."</div>";
+	$feat_string .= "<div class=\"small link\" id=wobble_gc onclick=\"gen_data(['args__loading'],['wobble_gc']); get_wobble_gc([$args],['wobble_gc', 'data3'])\">"."Click for codon wobble GC content"."</div>";
+	$feat_string .= "<div class=\"small link\" id=wobble_gc_diff onclick=\"gen_data(['args__loading'],['wobble_gc_diff']); get_wobble_gc_diff([$args],['wobble_gc_diff', 'data5'])\">"."Click for diff(CDS GC vs. codon wobble GC) content"."</div>";
+	$feat_string .= "<div class=\"small link\" id=codon_usage onclick=\"gen_data(['args__loading'],['data2']); get_codon_usage([$args],['data2', 'data4']); \$('#codon_usage').html(' ')\">"."Click for codon usage"."</div>";
+
       }
     $feat_string .= "None" unless keys %$feats;
     return $feat_string;
@@ -583,7 +588,7 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
 sub gen_data
   {
     my $message = shift;
-    return qq{<font class="loading">$message. . .</font>};
+    return qq{<font class="small alert">$message. . .</font>};
   }
 
 sub gen_gc_for_feature_type
@@ -598,10 +603,11 @@ sub gen_gc_for_feature_type
     my $gc = 0;
     my $at = 0;
     my $n = 0;
+    my $type = $coge->resultset('FeatureType')->find($typeid);
     my $search;
     $search = {"feature_type_id"=>$typeid};
-    $search->{chromosome}=$chr if $chr;
-
+    $search->{chromosome}=$chr if defined $chr;
+    my @data;
     my @dsids;
     push @dsids, $dsid if $dsid;
     if ($dsgid)
@@ -642,11 +648,38 @@ sub gen_gc_for_feature_type
 	    $gc+=$gc[0] if $gc[0] =~ /^\d+$/;
 	    $at+=$gc[1] if $gc[1] =~ /^\d+$/;
 	    $n+=$gc[2] if $gc[2] =~ /^\d+$/;
+	    my $total = 0;
+	    $total += $gc[0] if $gc[0];
+	    $total += $gc[1] if $gc[1];
+	    $total += $gc[2] if $gc[2];
+	    push @data, sprintf("%.2f",100*$gc[0]/$total) if $total;
 	  }
       }
     my $total = $gc+$at+$n;
     return "error" unless $total;
-    return "<div class = small>Total length: ".commify($total).", GC: ".sprintf("%.2f",100*$gc/($total))."%  AT: ".sprintf("%.2f",100*$at/($total))."%  N: ".sprintf("%.2f",100*($n)/($total))."%</div>";
+
+    my $file = $TEMPDIR."/".join ("_",@dsids);
+    $file .= "_".$chr."_" if defined $chr;
+    $file .= "_".$type->name."_gc.txt";
+    open(OUT, ">".$file);
+    print OUT "#wobble gc for dataset ids: ".join (" ", @dsids),"\n";
+    print OUT join ("\n", @data),"\n";
+    close OUT;
+    my $cmd = $HISTOGRAM;
+    $cmd .= " -f $file";
+    my $out = $file;
+    $out =~ s/txt$/png/;
+    $cmd .= " -o $out";
+    $cmd .= " -t \"".$type->name." gc content\"";
+    $cmd .= " -min 0";
+    $cmd .= " -max 100";
+    `$cmd`;
+    
+
+    my $info= "<div class = small>Total length: ".commify($total)." bp, GC: ".sprintf("%.2f",100*$gc/($total))."%  AT: ".sprintf("%.2f",100*$at/($total))."%  N: ".sprintf("%.2f",100*($n)/($total))."%</div>";
+    $out =~ s/$TEMPDIR/$TEMPURL/;
+    my $hist_img = "<img src=\"$out\">";
+    return $info, $hist_img;
   }
 
 sub gen_gc_for_chromosome
@@ -665,22 +698,23 @@ sub gen_gc_for_chromosome
     if ($dsgid)
       {
 	my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	$gstid = $dsg->type->id;
 	map {push @ds,$_} $dsg->datasets;
       }
     return unless @ds;
     my ($gc, $at, $n) = (0,0,0);
-    my @chr;
+    my %chr;
     foreach my $ds (@ds)
       {
 	if ($chr)
 	  {
-	    push @chr, $chr;
+	    $chr{$chr}=1;
 	  }
 	else
 	  {
-	    map {push @chr, $_} $ds->chromosomes;
+	    map {$chr{$_}=1} $ds->chromosomes;
 	  }
-	foreach my $chr(@chr)
+	foreach my $chr(keys %chr)
 	  {
 	    my @gc =$ds->percent_gc(chr=>$chr, seq_type=>$gstid, counts=>1);
 	    $gc+= $gc[0];
@@ -693,36 +727,103 @@ sub gen_gc_for_chromosome
     return $results;
   }
 
-sub gen_gc_for_noncoding
+sub get_gc_for_noncoding
   {
     my %args = @_;
     my $dsid = $args{dsid};
+    my $dsgid = $args{dsgid};
     my $chr = $args{chr};
-    my $gstid = $args{gstid};
-    return "no dsid specified" unless $dsid;
-    my $ds = $coge->resultset('Dataset')->find($dsid);
-    my $seq = $ds->get_genomic_sequence(chr=>$chr, seq_type=>$gstid);
-    foreach my $feat ($ds->features({chromosome=>$chr}))
+    my $gstid = $args{gstid}; #genomic sequence type id
+    return "error" unless $dsid || $dsgid;
+    my $gc = 0;
+    my $at = 0;
+    my $n = 0;
+    my $search;
+    $search = {"feature_type_id"=>3};
+    $search->{chromosome}=$chr if $chr;
+    my @data;
+    my @dsids;
+    push @dsids, $dsid if $dsid;
+    if ($dsgid)
       {
-	next unless $feat->type->name eq "CDS" ||
-	  $feat->type->name =~ "RNA";
-	foreach my $loc ($feat->locations)
+	my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	unless ($dsg)
 	  {
-	    if ($loc->stop > length $seq)
-	      {
-		print STDERR "feature ".$feat->id ." stop exceeds sequence length: ".$loc->stop." :: ".length($seq),"\n";
-	      }
-	    substr($seq, $loc->start-1,($loc->stop-$loc->start+1)) = "-"x($loc->stop-$loc->start+1);
+	    my $error =  "unable to create dsg object using id $dsgid\n";
+	    return $error;
+	  }
+	$gstid = $dsg->type->id;
+	foreach my $ds ($dsg->datasets())
+	  {
+	    push @dsids, $ds->id;
 	  }
       }
-    my $gc = $seq=~tr/GCgc/GCgc/;
-    my $at = $seq=~tr/ATat/ATat/;
-    my $n = $seq =~ tr/xnXN/xnXN/;
+    my %seqs; #let's prefetch the sequences with one call to genomic_sequence (slow for many seqs)
+    foreach my $dsidt (@dsids)
+      {
+	my $ds = $coge->resultset('Dataset')->find($dsidt);
+	unless ($ds)
+	  {
+	    warn "no dataset object found for id $dsidt\n";
+	    next;
+	  }
+	
+	if ($chr)
+	  {
+	    $seqs{$chr} = $ds->genomic_sequence(chr=>$chr, seq_type=>$gstid);
+	  }
+	else
+	  {
+	    map {$seqs{$_}= $ds->genomic_sequence(chr=>$_, seq_type=>$gstid)} $ds->chromosomes;
+	  }
+	foreach my $feat ($ds->features($search,{}))
+	  {
+	    foreach my $loc ($feat->locations)
+	      {
+		if ($loc->stop > length ($seqs{$feat->chromosome}))
+		  {
+		    print STDERR "feature ".$feat->id ." stop exceeds sequence length: ".$loc->stop." :: ".length($seqs{$feat->chromosome}),"\n";
+		  }
+		substr($seqs{$feat->chromosome}, $loc->start-1,($loc->stop-$loc->start+1)) = "-"x($loc->stop-$loc->start+1);
+	      }
+#	    push @data, sprintf("%.2f",100*$gc[0]/$total) if $total;
+	  }
+      }
+    foreach my $seq (values %seqs)
+      {
+	$gc += $seq=~tr/GCgc/GCgc/;
+	$at += $seq=~tr/ATat/ATat/;
+	$n += $seq =~ tr/xnXN/xnXN/;
+      }
     my $total = $gc+$at+$n;
     return "error" unless $total;
-    return "Total length: ".commify($total).", GC: ".sprintf("%.2f",100*$gc/($total))."%  AT: ".sprintf("%.2f",100*$at/($total))."% N: ".sprintf("%.2f",100*($n)/($total))."%";
+    return commify($total)." bp -- GC: ".sprintf("%.2f",100*$gc/($total))."%  AT: ".sprintf("%.2f",100*$at/($total))."% N: ".sprintf("%.2f",100*($n)/($total))."%";
 
+
+
+
+
+    my $file = $TEMPDIR."/".join ("_",@dsids)."_wobble_gc.txt";
+    open(OUT, ">".$file);
+    print OUT "#wobble gc for dataset ids: ".join (" ", @dsids),"\n";
+    print OUT join ("\n", @data),"\n";
+    close OUT;
+    my $cmd = $HISTOGRAM;
+    $cmd .= " -f $file";
+    my $out = $file;
+    $out =~ s/txt$/png/;
+    $cmd .= " -o $out";
+    $cmd .= " -t \"CDS wobble gc content\"";
+    $cmd .= " -min 0";
+    $cmd .= " -max 100";
+    `$cmd`;
+    my $info =  "<div class = small>Total: ".commify($total)." codons, GC: ".sprintf("%.2f",100*$gc/($total))."%  AT: ".sprintf("%.2f",100*$at/($total))."%  N: ".sprintf("%.2f",100*($n)/($total))."%</div>";
+    $out =~ s/$TEMPDIR/$TEMPURL/;
+    my $hist_img = "<img src=\"$out\">";
+
+    return $info, $hist_img;
   }
+
 sub get_codon_usage
   {
     my %args = @_;
@@ -746,6 +847,7 @@ sub get_codon_usage
 	    my $error =  "unable to create dsg object using id $dsgid\n";
 	    return $error;
 	  }
+	$gstid = $dsg->type->id;
 	foreach my $ds ($dsg->datasets())
 	  {
 	    push @dsids, $ds->id;
@@ -789,12 +891,156 @@ sub get_codon_usage
       }
     %codons = map {$_,$codons{$_}/$codon_total} keys %codons;
     %aa = map {$_,$aa{$_}/$aa_total} keys %aa;
-    my $html = "Codon Usage: $code_type";
-    $html .= CoGe::Accessory::genetic_code->html_code_table(data=>\%codons, code=>$code);
+    my $html1 = "Codon Usage: $code_type";
+    $html1 .= CoGe::Accessory::genetic_code->html_code_table(data=>\%codons, code=>$code);
     
-    $html .= "Predicted amino acid usage using $code_type";
-    $html .= CoGe::Accessory::genetic_code->html_aa(data=>\%aa);
-    return $html;
+    my $html2 .= "Predicted amino acid usage using $code_type";
+    $html2 .= CoGe::Accessory::genetic_code->html_aa(data=>\%aa);
+    return $html1, $html2;
+  }
+
+sub get_wobble_gc
+  {
+    my %args = @_;
+    my $dsid = $args{dsid};
+    my $dsgid = $args{dsgid};
+    my $chr = $args{chr};
+    my $gstid = $args{gstid}; #genomic sequence type id
+    return "error" unless $dsid || $dsgid;
+    my $gc = 0;
+    my $at = 0;
+    my $n = 0;
+    my $search;
+    $search = {"feature_type_id"=>3};
+    $search->{chromosome}=$chr if $chr;
+    my @data;
+    my @dsids;
+    push @dsids, $dsid if $dsid;
+    if ($dsgid)
+      {
+	my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	unless ($dsg)
+	  {
+	    my $error =  "unable to create dsg object using id $dsgid\n";
+	    return $error;
+	  }
+	$gstid = $dsg->type->id;
+	foreach my $ds ($dsg->datasets())
+	  {
+	    push @dsids, $ds->id;
+	  }
+      }
+    foreach my $dsidt (@dsids)
+      {
+	my $ds = $coge->resultset('Dataset')->find($dsidt);
+	unless ($ds)
+	  {
+	    warn "no dataset object found for id $dsidt\n";
+	    next;
+	  }
+	foreach my $feat ($ds->features($search,{}))
+	  {
+	    my @gc = $feat->wobble_content(counts=>1);
+	    $gc+=$gc[0] if $gc[0] && $gc[0] =~ /^\d+$/;
+	    $at+=$gc[1] if $gc[1] && $gc[1] =~ /^\d+$/;
+	    $n+=$gc[2] if $gc[2] && $gc[2] =~ /^\d+$/;
+	    my $total = 0;
+	    $total += $gc[0] if $gc[0];
+	    $total += $gc[1] if $gc[1];
+	    $total += $gc[2] if $gc[2];
+	    push @data, sprintf("%.2f",100*$gc[0]/$total) if $total;
+	  }
+      }
+    my $total = $gc+$at+$n;
+    return "error" unless $total;
+    
+    my $file = $TEMPDIR."/".join ("_",@dsids)."_wobble_gc.txt";
+    open(OUT, ">".$file);
+    print OUT "#wobble gc for dataset ids: ".join (" ", @dsids),"\n";
+    print OUT join ("\n", @data),"\n";
+    close OUT;
+    my $cmd = $HISTOGRAM;
+    $cmd .= " -f $file";
+    my $out = $file;
+    $out =~ s/txt$/png/;
+    $cmd .= " -o $out";
+    $cmd .= " -t \"CDS wobble gc content\"";
+    $cmd .= " -min 0";
+    $cmd .= " -max 100";
+    `$cmd`;
+    my $info =  "<div class = small>Total: ".commify($total)." codons, GC: ".sprintf("%.2f",100*$gc/($total))."%  AT: ".sprintf("%.2f",100*$at/($total))."%  N: ".sprintf("%.2f",100*($n)/($total))."%</div>";
+    $out =~ s/$TEMPDIR/$TEMPURL/;
+    my $hist_img = "<img src=\"$out\">";
+    return $info, $hist_img;
+  }
+
+sub get_wobble_gc_diff
+  {
+    my %args = @_;
+    my $dsid = $args{dsid};
+    my $dsgid = $args{dsgid};
+    my $chr = $args{chr};
+    my $gstid = $args{gstid}; #genomic sequence type id
+    return "error"," " unless $dsid || $dsgid;
+    my $search;
+    $search = {"feature_type_id"=>3};
+    $search->{chromosome}=$chr if $chr;
+    my @data;
+    my @dsids;
+    push @dsids, $dsid if $dsid;
+    if ($dsgid)
+      {
+	my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	unless ($dsg)
+	  {
+	    my $error =  "unable to create dsg object using id $dsgid\n";
+	    return $error;
+	  }
+	$gstid = $dsg->type->id;
+	foreach my $ds ($dsg->datasets())
+	  {
+	    push @dsids, $ds->id;
+	  }
+      }
+    foreach my $dsidt (@dsids)
+      {
+	my $ds = $coge->resultset('Dataset')->find($dsidt);
+	unless ($ds)
+	  {
+	    warn "no dataset object found for id $dsidt\n";
+	    next;
+	  }
+	foreach my $feat ($ds->features($search,{}))
+	  {
+	    my @wgc = $feat->wobble_content();
+	    my @gc = $feat->gc_content();
+	    my $diff = $gc[0]-$wgc[0] if defined $gc[0] && defined $wgc[0];
+	    push @data, sprintf("%.2f", 100*$diff) if $diff;
+	  }
+      }
+    return "error"," " unless @data;
+    my $file = $TEMPDIR."/".join ("_",@dsids)."_wobble_gc_diff.txt";
+    open(OUT, ">".$file);
+    print OUT "#wobble gc for dataset ids: ".join (" ", @dsids),"\n";
+    print OUT join ("\n", @data),"\n";
+    close OUT;
+    my $cmd = $HISTOGRAM;
+    $cmd .= " -f $file";
+    my $out = $file;
+    $out =~ s/txt$/png/;
+    $cmd .= " -o $out";
+    $cmd .= " -t \"CDS GC - wobble gc content\"";
+    `$cmd`;
+    my $sum=0;
+    map {$sum+=$_}@data;
+    my $mean = sprintf ("%.2f", $sum/scalar @data);
+    my $info = "Mean $mean%";
+    $info .= " (";
+    $info .= $mean > 0 ? "CDS" : "wobble";
+    $info .= " is more GC rich)";
+    $out =~ s/$TEMPDIR/$TEMPURL/;
+    my $hist_img = "<img src=\"$out\">";
+    return $info, $hist_img;
   }
 
 sub get_total_length_for_ds
