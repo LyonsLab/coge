@@ -26,7 +26,6 @@ $PAGE_NAME = "FeatList.pl";
 ($USER) = CoGe::Accessory::LogUser->get_user();
 $TEMPDIR = "/opt/apache/CoGe/tmp/";
 $FORM = new CGI;
-
 $coge = CoGeX->dbconnect();
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
@@ -69,23 +68,23 @@ sub gen_html
       }
     else
      {
-    my ($body) = gen_body();
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
-    $template->param(TITLE=>'Feature List Viewer');
-    $template->param(HELP=>'BLAST');
-   # print STDERR "user is: ",$USER,"\n";
-    add_to_user_history();
-    my $name = $USER->user_name;
-    $name = $USER->first_name if $USER->first_name;
-    $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
-    $template->param(USER=>$name);
-    $template->param(LOGO_PNG=>"FeatList-logo.png");
-    $template->param(LOGON=>1) unless $USER->user_name eq "public";
-    $template->param(DATE=>$DATE);
-    $template->param(BOX_NAME=>'Feature List:');
-    $template->param(BODY=>$body);
-    $template->param(ADJUST_BOX=>1);
-    $html .= $template->output;
+       my ($body) = gen_body();
+       my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
+       $template->param(TITLE=>'Feature List Viewer');
+       $template->param(HELP=>'BLAST');
+       # print STDERR "user is: ",$USER,"\n";
+       add_to_user_history() unless $USER->user_name eq "public";
+       my $name = $USER->user_name;
+       $name = $USER->first_name if $USER->first_name;
+       $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
+       $template->param(USER=>$name);
+       $template->param(LOGO_PNG=>"FeatList-logo.png");
+       $template->param(LOGON=>1) unless $USER->user_name eq "public";
+       $template->param(DATE=>$DATE);
+       $template->param(BOX_NAME=>'Feature List:');
+       $template->param(BODY=>$body);
+       $template->param(ADJUST_BOX=>1);
+       $html .= $template->output;
    }
  }
  
@@ -158,31 +157,31 @@ sub gen_body
   }
 
 sub add_to_user_history
-{
+  {
     my %opts = @_;
     if ($opts{archive})
-    {
+      {
 	$USER->add_to_works({
-	    'name'=>$opts{work_name},
-	    'archive'=>$opts{archive},
+			     'name'=>$opts{work_name},
+			     'archive'=>$opts{archive},
 	    'page'=>$PAGE_NAME,
 	    'parameter'=>$opts{url},
 	    'description'=>$opts{description},
 	    'note'=>$opts{note},
 	    }); 
-    }
+      }
     else{
-	my $url = $ENV{'REQUEST_URI'};
-	$USER->add_to_works({
-	    'name'=>'FeatList-'.$DATE,
-	    'archive'=>0,
-	    'page'=>$PAGE_NAME,
-	    'parameter'=>$url,
-	    'description'=>'Feature List created on '.$DATE,
-	    });
-	
+      my $url = $ENV{'REQUEST_URI'};
+      $USER->add_to_works({
+			   'name'=>'FeatList-'.$DATE,
+			   'archive'=>0,
+			   'page'=>$PAGE_NAME,
+			   'parameter'=>$url,
+			   'description'=>'Feature List created on '.$DATE,
+			  });
+      
     }
-}
+  }
 
 sub get_fids
   {
