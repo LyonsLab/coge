@@ -344,7 +344,7 @@ $html .= qq{<SELECT id="org_id" SIZE="8" MULTIPLE"><option id=null_org>Please se
 	$html .= "No results";
 	return $html;
       }
-    $html .= qq{<SELECT id="org_id" SIZE="8" MULTIPLE onchange="\$('#remove').hide(0);\$('#add').show(0);gen_dsg_menu(['args__oid','org_id'],['org_seq_types']);" ondblclick="add_selected_orgs();">\n};
+    $html .= qq{<SELECT id="org_id" SIZE="8" MULTIPLE onselect="show_add()" onchange="gen_dsg_menu(['args__oid','org_id'],['org_seq_types']);" ondblclick="add_selected_orgs();">\n};
     $html .= join ("\n", @opts);
     $html .= "\n</SELECT>\n";
     $html =~ s/OPTION/OPTION SELECTED/;
@@ -361,14 +361,14 @@ sub gen_dsg_menu
     foreach my $dsg (sort {$b->version <=> $a->version || $a->type->id <=> $b->type->id} $coge->resultset('DatasetGroup')->search({organism_id=>$oid},{prefetch=>['genomic_sequence_type']}))
       {
 	$dsgid = $dsg->id unless $dsgid;
-	push @dsg_menu, [$dsg->id, $dsg->type->name." (v".$dsg->version.")"];
+	push @dsg_menu, [$dsg->id, join (", ", map{$_->name} $dsg->source) .": ".$dsg->type->name." (v".$dsg->version.")"];
       }
     my $size = scalar @dsg_menu;
     $size = 5 if $size > 5;
     
 
     my $dsg_menu = qq{
-   <select id=dsgid multiple size=$size onselect="\$('#remove').hide(0);\$('#add').show(0);" ondblclick="get_dsg_for_blast_menu(['args__dsgid','dsgid'],[add_to_list]);">>
+   <select id=dsgid multiple size=$size onclick="show_add();" ondblclick="get_dsg_for_blast_menu(['args__dsgid','dsgid'],[add_to_list]);">>
 };
     foreach (@dsg_menu)
       {
@@ -717,6 +717,7 @@ sub gen_results_page
 				NumD=>1,
 				EvalD=>1,
 				QualD=>1,
+				FeatD=>1,
 			       }; 
 	   my %orgs;
 	   map {$orgs{$_->{HSP_ORG}}++} @hsp;
@@ -730,7 +731,7 @@ sub gen_results_page
 	 }
        foreach my $key (keys %{$prefs->{display}})
 	 {
-	   $template->param($key=>"checked");
+	   $template->param($key=>"checked") if $key;
 	 }
      }
      $template->param(SAVE_DISPLAY=>1) unless $USER->user_name eq "public";
@@ -1196,6 +1197,7 @@ sub get_hsp_info
     my ($ds) = $dsg->datasets(chr=>$chr);
     my $dsid = $ds->id;
 
+
     my $query_name = "<pre>".$qname."</pre>";
     $query_name = wrap('','',$query_name);
     $query_name =~ s/\n/<br>/g;
@@ -1248,7 +1250,6 @@ sub get_hsp_info
      $sub_seq = qq{<pre>$sub_seq</pre>};
      
 
-    
      my $alignment = $align;
     $alignment =~ s/ /\./g;
      $alignment = wrap('','',$alignment);
@@ -1270,7 +1271,6 @@ sub get_hsp_info
      
      my $html = $template->output;
      $template->param(HSP_IF=>0);
-     
     #get query sequence total length
     my $query = $dbh->selectall_arrayref(qq{SELECT * FROM sequence_info WHERE type = "query" AND name = "$qname"});
     my $subject = $dbh->selectall_arrayref(qq{SELECT * FROM sequence_info WHERE type = "subject" AND name = "$sname"});
