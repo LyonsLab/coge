@@ -11,6 +11,7 @@ use Benchmark;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::genetic_code;
 use Statistics::Basic::Mean;
+use POSIX;
 
 $ENV{PATH} = "/opt/apache2/CoGe/";
 
@@ -90,7 +91,20 @@ sub gen_data
     $code = $code->{code};
     my $html ="<table>";
     my ($data) = process_file(file=>$file);
-
+    my ($max, $min);
+    foreach my $c1 (keys %$data)
+      {
+	foreach my $val (values %{$data->{$c1}})
+	  {
+	    next if $val == -50;
+	    next if $val > 25;
+	    $max = $val unless defined $max;
+	    $max = $val if $val > $max;
+	    $min = $val unless defined $min;
+	    $min = $val if $val < $min;
+	  }
+      }
+    my $range = $max-$min;
     if ($data->{P})
       {
 	my $aa_sort = CoGe::Accessory::genetic_code->sort_aa_by_gc();
@@ -100,60 +114,54 @@ sub gen_data
 	foreach my $aa1 (sort {$aa_sort->{$b} <=> $aa_sort->{$a} || $a cmp $b}keys %$aa_sort)
 	  {	
 	    $html .= "<th>$aa1";
-	    #	print STDERR join ("\t",  sort {$b<=>$a} map {$data->{$aa1}{$_}} keys %aa_sort),"\n";
-	    my ($max) = sort {$b<=>$a} map {$data->{$aa1}{$_}} keys %$aa_sort;
-	    my ($min1, $min2) = sort {$a<=>$b} map {$data->{$aa1}{$_}} keys %$aa_sort; #min one will be for the stop aa, we'll skip this since it is always rediculous 
 	    my $total = 0;
 	    foreach my $aa2 (sort {$aa_sort->{$b} <=> $aa_sort->{$a} || $a cmp $b}keys %$aa_sort)
 	      {	
 		my $val = $data->{$aa1}{$aa2};
 		$total+=$val;
-		my $color;
-		if ($val >0)
-		  {
-		    $color = color_by_usage($max, $val);
-		    $html .= "<td style=\"background-color: rgb($color,255,$color)\">".$val;
-		  }
-		else
-		  {
-		    $color = color_by_usage(abs($min2), $val*-1);
-		    $html .= "<td style=\"background-color: rgb(255,$color,$color)\">".$val;
-		  }
-#		my $color = color_by_usage($max+abs($min2), $val+abs($min2));
-#		$html .= "<td style=\"background-color: rgb($color,255,$color)\">".$val;
+		my $relative_val = ($val-$min)/$range;
+		my $color = get_color(val=>$relative_val);
+		my $color_str = join (",", @$color);
+		$html .= "<td style=\"background-color: rgb($color_str)\">".$val;
+
 	      }
 	    $html .= "<td>$total<tr>";
 	  }
       }
     else
       {
-	$html .= "<tr><th><th>".join ("<th>", sort { sort_nt1(substr($a, 0, 1)) <=> sort_nt1(substr($b,0, 1)) || sort_nt2(substr($a,1,1)) <=> sort_nt2(substr($b,1,1)) || sort_nt3(substr($a,2,1)) <=> sort_nt3(substr($b,2,1)) }keys  %$data);
+	my @order = sort { sort_nt1(substr($a, 1, 1)) <=> sort_nt1(substr($b,1, 1)) || sort_nt2(substr($a,0,1)) <=> sort_nt2(substr($b,0,1)) || sort_nt3(substr($a,2,1)) <=> sort_nt3(substr($b,2,1)) }keys  %$data;
+	$html .= "<tr><th>";
+	my $col_count =0;
+	foreach my $item (@order)
+	  {
+	    $col_count ++;
+	    $html .= "<th>$item";
+	    $html .= "<td bgcolor=grey width=5px>" unless $col_count %16;
+	  }
 	$html .= "<th>Total";
 	$html .= "<tr>";
-	foreach my $aa1 (sort { sort_nt1(substr($a, 0, 1)) <=> sort_nt1(substr($b,0, 1)) || sort_nt2(substr($a,1,1)) <=> sort_nt2(substr($b,1,1)) || sort_nt3(substr($a,2,1)) <=> sort_nt3(substr($b,2,1)) }keys  %$data)
+	my $row_count =0;
+	foreach my $aa1 (@order)
 	  {
+	    $col_count = 0;
+	    $row_count++;
 	    $html .= "<th>$aa1";
-	    #	print STDERR join ("\t",  sort {$b<=>$a} map {$data->{$aa1}{$_}} keys %aa_sort),"\n";
-	    my ($max) = sort {$b<=>$a} map {$data->{$aa1}{$_}} keys %$data;
-	    my ($min1, $min2, $min3, $min4) = sort {$a<=>$b} map {$data->{$aa1}{$_}} keys %$data; #min one will be for the stop aa, we'll skip this since it is always rediculous 
 	    my $total =0;
-	    foreach my $aa2 (sort { sort_nt1(substr($a, 0, 1)) <=> sort_nt1(substr($b,0, 1)) || sort_nt2(substr($a,1,1)) <=> sort_nt2(substr($b,1,1)) || sort_nt3(substr($a,2,1)) <=> sort_nt3(substr($b,2,1)) } keys  %$data)#	    foreach my $aa2 (sort keys %$data)
+	    foreach my $aa2 (@order)
 	      {	
+		$col_count++;
 		my $val = $data->{$aa1}{$aa2};
 		$total+=$val;
-		my $color;
-		if ($val >0)
-		  {
-		    $color = color_by_usage($max, $val);
-		    $html .= "<td style=\"background-color: rgb($color,255,$color)\">".$val;
-		  }
-		else
-		  {
-		    $color = color_by_usage(abs($min4), $val*-1);
-		    $html .= "<td style=\"background-color: rgb(255,$color,$color)\">".$val;
-		  }
+		my $relative_val = ($val-$min)/$range;
+		my $color = get_color(val=>$relative_val);
+		my $color_str = join (",", @$color);
+		$html .= "<td style=\"background-color: rgb($color_str)\">".$val;
+		$html .= "<td bgcolor=grey width=5px>" unless $col_count %16;
 	      }
-	    $html .= "<td>$total<tr>";
+	    $html .= "<td>$total";
+	    $html .= "<tr bgcolor=grey width=5px><td colspan=80>" unless $row_count %16;
+	    $html .="<tr>";
 	  }
       }
     $html .= "</table>";
@@ -193,7 +201,6 @@ sub process_file
     my @head;
     my $max = 0;
     my $min = 10000;
-    print STDERR $file,"\n";
     open (IN, $file);
     while (<IN>)
       {
@@ -220,16 +227,39 @@ sub process_file
     return \%data, $max, $min;
   }
 
+sub get_color
+  {
+    my %opts = @_;
+    my $val = $opts{val};
+    return [0,0,0] unless defined $val;
+    return [125,125,125] if $val < 0;
+    return [125,125,125] if $val > 1;
+    my @colors = (
+                  [255,0,0], #red
+                  [255,126,0], #orange
+                  [255,255,0], #yellow
+                  [0,255,0], # green
+                  [0,255,255], # cyan
+                  [0,0,255], # blue
+#                 [255,0,255], #magenta
+                  [126,0,126], #purple
+                 );
+    @colors = reverse @colors;
+    my ($index1, $index2) = ((floor((scalar(@colors)-1)*$val)), ceil((scalar(@colors)-1)*$val));
 
-
-sub color_by_usage
+    my $color=[];
+    my $step = 1/(scalar (@colors)-1);
+    my $scale = $index1*$step;
+    my $dist = ($val-$scale)/($step);
+    for (my $i=0; $i<=2; $i++)
       {
-	my ($max,$value, $opt) = @_;
-	$opt = 255 unless $opt;
-	return $opt unless $max;
-	my $g = $opt*(($max - $value) / $max);
-	return int($g + .5);
+        my $diff = ($colors[$index1][$i]-$colors[$index2][$i])*$dist;
+        push @$color, sprintf("%.0f", $colors[$index1][$i]-$diff);
       }
+    return $color;
+  }
+
+
 
 sub sort_nt1
   {
@@ -237,15 +267,15 @@ sub sort_nt1
 
     $chr = substr($chr, -1,1) if length($chr)>1;
     my $val = 0;
-    if ($chr eq "G")
+    if ($chr eq "C")
       {
 	$val = 1;
       }
-    elsif ($chr eq "A")
+    elsif ($chr eq "T")
       {
 	$val = 2;
       }
-    elsif ($chr eq "T")
+    elsif ($chr eq "A")
       {
 	$val = 3;
       }
