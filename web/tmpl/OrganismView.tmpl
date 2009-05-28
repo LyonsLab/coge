@@ -38,6 +38,12 @@ function get_dataset_name_chain(val)
     $('#dsg_list').html('<hidden id=dsg_id>');
     $('#dsg_info').html(' ');
     $('#dsg_count').html(' ');
+    $('#data1').html(' ');
+    $('#data2').html(' ');
+    $('#data3').html(' ');
+    $('#data4').html(' ');
+    $('#data5').html(' ');
+    $('#data6').html(' ');
    }
  else {get_orgs([],[dataset_chain])};
 }
@@ -57,6 +63,13 @@ function dataset_group_chain(val) {
    $('#chr_info').empty();	
    $('#viewer').empty();
    $('#get_seq').empty();
+   $('#data1').html(' ');
+   $('#data2').html(' ');
+   $('#data3').html(' ');
+   $('#data4').html(' ');
+   $('#data5').html(' ');
+   $('#data6').html(' ');
+
 }
 
 function dataset_group_info_chain(val, val2) {
@@ -243,5 +256,14 @@ function changeColor(id, color) {
    <DIV style="vertical-align: top;" id="get_seq"></DIV>
   <td>
    <div id="feature_count_data"></div>
+<tr valign=top>
+  <td valign=top><div id="data1"></div>
+  <td valign=top><div id="data2"></div>
+<tr valign=top>
+  <td valign=top><div id="data3"></div>
+  <td valign=top><div id="data4"></div>
+<tr valign=top>
+  <td valign=top><div id="data5"></div>
+  <td valign=top><div id="data6"></div>
   </Table>
 
