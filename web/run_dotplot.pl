@@ -13,7 +13,7 @@ $DEBUG = 0;
 $DIR = "/opt/apache/CoGe/";
 $URL = "/CoGe/";
 $DATADIR = "$DIR/data/";
-$DIAGSDIR = "$DATADIR/diags";
+$DIAGSDIR = "$DIR/diags";
 $DOTPLOT = $DIR."/bin/dotplot.pl";
 
 $FORM = new CGI;
@@ -31,7 +31,11 @@ my $regen = $FORM->param('regen');
 my $width = $FORM->param('width') || 600;
 my $grid = $FORM->param('grid');
 my $ksdb = $FORM->param('ksdb');
+my $kstype = $FORM->param('kstype');
 my $log = $FORM->param('log');
+my $min = $FORM->param('min');
+my $max = $FORM->param('max');
+
 $grid = 1 unless defined $grid;
 $DEBUG=1 if $FORM->param('debug');
 exit unless ($dsgid1 && $dsgid2 && $chr1 && $chr2 && $basename);
@@ -56,18 +60,19 @@ $name2 =~ s/://g;
 $name2 =~ s/;//g;
 my $dir = "$DIAGSDIR/$name1"."/".$name2;
 my $dag_file = $dir."/".$basename;
-if ($ksdb)
-  {
-    ($ksdb) = $basename =~ /^(.*?CDS-CDS)/; 
-    $ksdb = $dir."/".$ksdb.".sqlite" if $ksdb; #that way it is not set if genomic sequence are compared.
-  }
+#if ($ksdb)
+#  {
+#    ($ksdb) = $basename =~ /^(.*?CDS-CDS)/; 
+#    $ksdb = $dir."/".$ksdb.".sqlite" if $ksdb; #that way it is not set if genomic sequence are compared.
+#  }
 $dag_file =~ s/\.dag_.*//;
 $dag_file .= ".dag.all";
 my $outfile = $dir."/html/".$basename.".$chr1-$chr2.w$width";
-my $res = generate_dotplot(dag=>$dag_file, coords=>"$dir/$basename.all.aligncoords", qchr=>$chr1, schr=>$chr2, 'outfile'=>$outfile, 'regen_images'=>'false', flip=>$flip, regen_images=>$regen, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, grid=>$grid, ksdb=>$ksdb, log=>$log);
+my $res = generate_dotplot(dag=>$dag_file, coords=>"$dir/$basename.all.aligncoords", qchr=>$chr1, schr=>$chr2, 'outfile'=>$outfile, 'regen_images'=>'false', flip=>$flip, regen_images=>$regen, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, grid=>$grid, ksdb=>$ksdb, kstype=>$kstype, log=>$log, min=>$min, max=>$max);
 if ($res)
   {
     $res=~s/$DIR/$URL/;
+#    print STDERR $res,"\n";
     print $res if $url_only;
     print qq{Content-Type: text/html
 
@@ -107,7 +112,10 @@ sub generate_dotplot
     $outfile .= ".flip" if $flip;
     my $regen_images = $opts{regen_images};
     my $ksdb = $opts{ksdb};
+    my $kstype = $opts{kstype};
     my $log = $opts{log};
+    my $min = $opts{min};
+    my $max = $opts{max};
     if (-r $outfile.".html" && !$regen_images)
       {
 #	write_log("generate dotplot: file $outfile already exists",$cogeweb->logfile);
@@ -117,11 +125,17 @@ sub generate_dotplot
     my $cmd = $DOTPLOT;
     if ($ksdb && -r $ksdb)
       {
-	$cmd .= qq{ -ksdb $ksdb -ct dS};
+	$cmd .= qq{ -ksdb $ksdb -kst $kstype};
 	$cmd .= qq{ -log 1} if $log;
-	$outfile .= ".ks";
-      }
+	$cmd .= qq{ -min $min} if defined $min && $min =~/\d/;
+	$cmd .= qq{ -max $max} if defined $max && $max =~/\d/;
+	$outfile .= ".$kstype";
+	      }
     $cmd .= qq{ -d $dag -a $coords -b $outfile -l '' -dsg1 $dsgid1 -dsg2 $dsgid2 -w $width -lt 1 -chr1 $qchr -chr2 $schr -flip $flip -grid 1};
     `$cmd`;
+#    print STDERR $cmd;
+    $outfile .= ".$min" if defined $min && $min =~/\d/;
+    $outfile .= ".$max" if defined $max && $max =~/\d/;
+    
     return $outfile if -r $outfile.".html";
   }
