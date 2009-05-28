@@ -28,7 +28,7 @@ $URL = "/CoGe/";
 $FORMATDB = "/usr/bin/formatdb";
 $BLAST = "nice -20 /usr/bin/blast -a 8 -K 80 -m 8 -e 0.05";
 $DATADIR = "$DIR/data/";
-$DIAGSDIR = "$DATADIR/diags";
+$DIAGSDIR = "$DIR/diags";
 $FASTADIR = $DATADIR.'/fasta/';
 $BLASTDBDIR = $DATADIR.'/blast/db/';
 $MAX_PROC=8;
@@ -246,6 +246,12 @@ sub get_orgs
     my $oid = $opts{oid};
     my $i = $opts{i};
     my @db;
+    #get rid of trailing white-space
+    $name =~ s/^\s+//g if $name;
+    $name =~ s/\s+$//g if $name;
+    $desc =~ s/^\s+//g if $desc;
+    $desc =~ s/\s+$//g if $desc;
+
     $name = "" if $name =~ /Search/; #need to clear to get full org count
     if ($oid)
       {
@@ -838,17 +844,21 @@ dN_dS varchar
 	$dbh->disconnect;
       }
     write_log("generating ks database", $cogeweb->logfile);
-
+    write_log("\tconnecting to ks database $outfile", $cogeweb->logfile);
     my %ksdata;
     my $select = "select * from ks_data";
     my $dbh = DBI->connect("dbi:SQLite:dbname=$outfile","","");
     my $sth = $dbh->prepare($select);
     $sth->execute();
+    write_log("\texecuting select all from ks database $outfile", $cogeweb->logfile);
     while (my $data = $sth->fetchrow_arrayref)
       {
-	$ksdata{$data->[1]}{$data->[2]}=1;
+	$ksdata{$data->[1]}{$data->[2]}=1;# unless $data->[3] eq "";
+	print STDERR $data->[1],"\t", $data->[2]."\n" if $data->[3] eq "";
       }
+    write_log("\tgathered data from ks database $outfile", $cogeweb->logfile);
     $dbh->disconnect();
+    write_log("\tdisconnecting from ks database $outfile", $cogeweb->logfile);
     open (IN, $infile);
     my @data;
     while (<IN>)
@@ -1066,6 +1076,7 @@ sub generate_dotplot
     my $dsgid2 = $opts{dsgid2};
     my $dagtype = $opts{dagtype};
     my $ks_db = $opts{ks_db};
+    my $ks_type = $opts{ks_type};
     my ($basename) = $coords =~ /([^\/]*).all.aligncoords/;
     my $regen_images = $opts{regen_images}=~/true/i ? 1 : 0;
     my $width = $opts{width} || 1000;
@@ -1073,10 +1084,10 @@ sub generate_dotplot
     #add ks_db to dotplot command if requested
     if ($ks_db && -r $ks_db)
       {
-	$cmd .= qq{ -ksdb $ks_db -ct dS -log 1};
-	$outfile .= ".ks";
+	$cmd .= qq{ -ksdb $ks_db -kst $ks_type -log 1};
+	$outfile .= ".$ks_type";
       }
-    $cmd .= qq{ -d $dag -a $coords -b $outfile -l 'javascript:synteny_zoom("$dsgid1","$dsgid2","$basename","XCHR","YCHR")' -dsg1 $dsgid1 -dsg2 $dsgid2 -w $width -lt 2};
+    $cmd .= qq{ -d $dag -a $coords -b $outfile -l 'javascript:synteny_zoom("$dsgid1","$dsgid2","$basename","XCHR","YCHR","$ks_db")' -dsg1 $dsgid1 -dsg2 $dsgid2 -w $width -lt 2};
     while (-e "$outfile.running")
       {
 	print STDERR "detecting $outfile.running.  Waiting. . .\n";
@@ -1110,7 +1121,7 @@ sub go
     my $feat_type2 = $opts{feat_type2};
     my $dsgid1 = $opts{dsgid1};
     my $dsgid2 = $opts{dsgid2};
-    my $gen_ks = $opts{gen_ks};
+    my $ks_type = $opts{ks_type};
 
     my $dagchainer_type = $opts{dagchainer_type};
     $dagchainer_type = $dagchainer_type eq "true" ? "distance" : "geneorder";
@@ -1329,11 +1340,11 @@ sub go
  	$out .= "_A$dagchainer_A" if $dagchainer_A;
  	$out .= ".w$width";
  	#deactivation ks calculations due to how slow it is
- 	my $ks_db = gen_ks_db(infile=>$tmp) if $gen_ks eq "true" || $gen_ks eq "1";
+ 	my $ks_db = gen_ks_db(infile=>$tmp) if $ks_type;
 	my $t6 = new Benchmark;
 	$gen_ks_db_time = timestr(timediff($t6,$t5));
 
- 	$out = generate_dotplot(dag=>$dag_file12_all, coords=>$tmp, outfile=>"$out", regen_images=>$regen_images, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, dagtype=>$dagchainer_type, ks_db=>$ks_db);
+ 	$out = generate_dotplot(dag=>$dag_file12_all, coords=>$tmp, outfile=>"$out", regen_images=>$regen_images, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, dagtype=>$dagchainer_type, ks_db=>$ks_db, ks_type=>$ks_type);
 	my $hist = $out.".hist.png";
 	my $t7 = new Benchmark;
 	$dotplot_time = timestr(timediff($t7,$t6));
@@ -1342,36 +1353,21 @@ sub go
 	my $t8 = new Benchmark;
 	$add_gevo_links_time = timestr(timediff($t8,$t7));
 
- 	$tmp =~ s/$DATADIR/$URL\/data/;
+ 	$tmp =~ s/$DIR/$URL/;
  	if (-r "$out.html")
  	  {
- 	    open (IN, "$out.html") || warn "problem opening $out.html for reading\n";
- 	    $html = "<span class='species small'>$org_name2</span><table><tr valign=top><td valign=top>";
- 	    $/ = "\n";
- 	    while (<IN>)
- 	      {
- 		next if /<\/?html>/;
- 		$html .= $_;
- 	      }
- 	    close IN;
- 	    $out =~ s/$DATADIR//;
- 	    $html =~ s/master.*\.png/data\/$out.png/;
- 	    warn "$out.html did not parse correctly\n" unless $html =~ /map/i;
-      $html .= "<div style='float:left'><img src='data/$out.hist.png'></div>" if -r $hist;
-
- 	    $html .= qq{
- <br><span class="species small">$org_name1</span><br>
+	    $html .= qq{
  Zoomed SynMap:
- <table class=species>
+ <table class=small>
  <tr>
  <td> Display Location:
  <td><select name=map_loc id=map_loc>
-  <option value="window1">New Window 1
-  <option value="window2">New Window 2
-  <option value="window3">New Window 3
   <option value="1" selected>Area 1
   <option value="2">Area 2
   <option value="3">Area 3
+  <option value="window1">New Window 1
+  <option value="window2">New Window 2
+  <option value="window3">New Window 3
  </select>
 
  <tr>
@@ -1380,11 +1376,36 @@ sub go
  <tr>
  <td>Image Width
  <td><input type=text name=zoom_width id=zoom_width size=6 value="600">
+ <tr>
+ <td>kS, kN, kN/kS cutoffs
+ <td>Min: <input type=text name=zoom_min id=zoom_min size=6 value="">
+ <td>Max: <input type=text name=zoom_max id=zoom_max size=6 value="">
  </table>
  };
 
- 	    $html .= "<br><span class=small><a href=data/$out.png target=_new>Image File</a>";
- 	    $html .= "<br><span class=small><a href=data/$out.hist.png target=_new>Histogram of synonymous substitutions</a>" if -r $hist;
+
+ 	    open (IN, "$out.html") || warn "problem opening $out.html for reading\n";
+#	    print STDERR "$out.html\n";
+ 	    $html .= "<span class='species small'>$org_name2</span><table><tr valign=top><td valign=top>";
+ 	    $/ = "\n";
+ 	    while (<IN>)
+ 	      {
+ 		next if /<\/?html>/;
+ 		$html .= $_;
+ 	      }
+ 	    close IN;
+ 	    $out =~ s/$DIR/$URL/;
+#	    print STDERR $out,"!!\n";
+ 	    $html =~ s/master.*\.png/$out.png/;
+ 	    warn "$out.html did not parse correctly\n" unless $html =~ /map/i;
+ 	    $html .= qq{
+ <br><span class="species small">$org_name1</span><br>
+};
+
+	    $html .= "<div><img src='$out.hist.png'></div>" if -r $hist;
+
+ 	    $html .= "<br><span class=small><a href=$out.png target=_new>Image File</a>";
+ 	    $html .= "<br><span class=small><a href=$out.hist.png target=_new>Histogram of synonymous substitutions</a>" if -r $hist;
  	    $html .= "<br><span class=small><a href=$tmp target=_new>DAGChainer syntelog file with GEvo links</a><br>";
  	    $html .= "<span class=small><a href=$tmp.condensed target=_new>Condensed syntelog file with GEvo links</a><br>";
  	  }
@@ -1397,7 +1418,7 @@ sub go
        {
  	my $output = $org_dirs{$org_dir}{blastfile};
  	next unless -s $output;
- 	$output =~ s/$DATADIR/$URL\/data/;
+ 	$output =~ s/$DIR/$URL/;
  	$html .= "<a href=$output target=_new>Blast results for $org_dir</a><br>";;	
        }
      my $log = $cogeweb->logfile;
@@ -1600,22 +1621,28 @@ sub get_dotplot
     my $flip = $args{flip} eq "true" ? 1 : 0;
     my $regen = $args{regen_images} eq "true" ? 1 : 0;
     my $width = $args{width};
-    my $gen_ks = $args{gen_ks};
+    my $ksdb = $args{ksdb};    
+    my $kstype = $args{kstype};
+    my $max = $args{max};
+    my $min = $args{min};
 # base=8_8.CDS-CDS.blastn.dag_geneorder_D60_g30_A5;
     
     $src .= ";flip=$flip" if $flip;
     $src .= ";regen=$regen" if $regen;
     $src .= ";width=$width" if $width;
-    $src .= ";ksdb=$gen_ks" if $gen_ks;
-    $src .=  ";log=1" if $gen_ks;
+    $src .= ";ksdb=$ksdb" if $ksdb;
+    $src .= ";kstype=$kstype" if $kstype;
+    $src .=  ";log=1" if $kstype;
+    $src .=  ";min=$min" if defined $min;
+    $src .=  ";max=$max" if defined $max;
     my $content = get("http://".$ENV{SERVER_NAME}."/".$src);
     my ($url) = $content =~ /url=(.*?)"/is;
     my $png = $url;
     $png =~ s/html$/png/;
-    $png =~ s/$URL\/data/$DATADIR/;
+    $png =~ s/$URL/$DIR/;
     my $img = GD::Image->new($png);
     my ($w,$h) = $img->getBounds();
-    $w+=100;
+    $w+=500;
     $h+=150;
     if ($loc)
       {
