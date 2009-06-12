@@ -3,7 +3,7 @@ use strict;
 use base qw(Class::Accessor);
 use Data::Dumper;
 use GD;
-
+use Carp;
 #################### main pod documentation begin ###################
 ## 
 ## 
@@ -689,8 +689,14 @@ sub gd
       {
 	$self->_initialize(%opts);
 	my ($wid, $hei) = ($self->image_width, $self->image_height);
+	unless ($wid && $hei)
+	  {
+	    carp "Warning:  image width ($wid) or height ($hei) is not defined\n"; 
+	    ($wid, $hei) = (1,1);
+	  }
 	$gd = new GD::Image($wid, $hei,[1]);
 	$self->_gd($gd);
+#	print STDERR ref ($self->_gd),"\n";
 	my $white = $self->get_color(255,255,255);
 	$gd->transparent($white);
 	$gd->interlaced('true');
