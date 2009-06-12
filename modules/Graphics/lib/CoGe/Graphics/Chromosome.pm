@@ -1571,14 +1571,16 @@ sub _draw_feature
     $feat->stop($feat->start) unless defined $feat->stop;
     my $unit = $self->_calc_unit_size;
     my $fs = $unit*($feat->start-$rb);
-    $fs = 0 if $fs < 0;
+    $fs = 0 if $fs < 0 && !$feat->force_draw;
     my $fe = $unit*($feat->end-$rb+1);
-    $fe = $w if $fe > $w;
+    $fe = $w if $fe > $w && !$feat->force_draw;
     my $fw = sprintf("%.1f",$fe - $fs)+1; #calculate the width of the feature;
     $fw = 1 if $feat->force_draw() && $fw < 1;
-    return if $fe < 0;
-    
-    return if $fw < 1; #skip drawing if less than one pix wide
+    unless ($feat->force_draw)
+      {
+	return if $fe < 0;
+	return if $fw < 1; #skip drawing if less than one pix wide
+      }
 #    return if $fw > 1000000;
     my ($xmin, $xmax, $ymin , $ymax);
 
@@ -1620,7 +1622,7 @@ sub _draw_feature
  	    $self->gd->copyMerge($newgd, $fs, $hei, 0, 0, $newgd->width, $newgd->height,100);
 	  }
       }
-    else
+    elsif ($fe > 0)
       {
 # 	#okay, we are going to need to do some fancy stuff in order to smoothly resize and paste the feature onto the main image
 # 	#1. create a blank image of the appropriate size
