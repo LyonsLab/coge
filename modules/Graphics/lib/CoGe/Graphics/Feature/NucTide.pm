@@ -36,6 +36,10 @@ BEGIN {
 "gc",
 "show_label",
 "motif",
+"at_color",
+"gc_color",
+"n_color",
+"x_color",
 );
 }
 
@@ -60,6 +64,10 @@ sub _initialize
     my $seq = $self->nt;
     my $seq_len = length($seq) if $seq;
     $self->color(255,255,255) unless $self->color();
+    $self->gc_color($GCC) unless defined $self->gc_color && ref ($self->gc_color) =~ /array/i && scalar (@{$self->gc_color}) == 3;
+    $self->at_color($ATC) unless defined $self->at_color && ref ($self->at_color) =~ /array/i && scalar (@{$self->at_color}) == 3;
+    $self->n_color($NC) unless defined $self->n_color && ref ($self->n_color) =~ /array/i && scalar (@{$self->n_color}) == 3;
+    $self->x_color($XC) unless defined $self->x_color && ref ($self->x_color) =~ /array/i && scalar (@{$self->x_color}) == 3;
     if ($self->options)
       {
 	($at) = $seq =~ tr/atrywmkhbvdATRYWMKHBVD/atrywmkhbvdATRYWMKHBVD/;
@@ -74,9 +82,9 @@ sub _initialize
 	for my $i (0..2)
 	  {
 	    my $color = 0;
-	    $color += $self->options eq "gc" ? $ATC->[$i]*$at/($seq_len)+ $GCC->[$i]*$cg/($seq_len) : $ATC->[$i]*($at+$cg) /($seq_len)  ;
-	    $color += $NC->[$i]*$n/($seq_len);
-	    $color += $XC->[$i]*$x/($seq_len);
+	    $color += $self->options eq "gc" ? $self->at_color->[$i]*$at/($seq_len)+ $self->gc_color->[$i]*$cg/($seq_len) : $self->at_color->[$i]*($at+$cg) /($seq_len)  ;
+	    $color += $self->n_color->[$i]*$n/($seq_len);
+	    $color += $self->x_color->[$i]*$x/($seq_len);
 	    $color = 255 if $color > 255; #sometimes there are multiple counts for the same NT, eg "Y"
 	    push @color, $color;
 	  }
