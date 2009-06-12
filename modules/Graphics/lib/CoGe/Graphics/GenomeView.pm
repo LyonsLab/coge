@@ -437,6 +437,7 @@ sub species
 sub chr
   {
     my ($self, $id) = @_;
+    $self->chromosomes({}) unless defined $self->chromosomes;
     $self->chromosomes($id) if $id;
     return ($self->chromosomes );
   }
@@ -502,12 +503,13 @@ sub add_feature
     my $up = $opts{'up'} || 0;
     my $imagemap = $opts{imagemap};
     my $heatmap = $opts{heatmap};
+    $self->features({}) unless $self->features;
+
     unless ($start && $end && $chr)
       {
 	warn "add_feature call failed -- must have valid start, end, and chromosome";
 	return 0;
       }
-    $self->features({}) unless $self->features;
     my $feats = $self->features();
     push @{$feats->{$chr->{name}}}, {
 				     name=>$name,
