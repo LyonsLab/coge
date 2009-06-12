@@ -55,7 +55,11 @@ sub _initialize
     my $h = $HEIGHT; #total image height 
     my $s;
     my $e;
-    $self->segments([]) unless $self->segments;
+    unless ($self->segments)
+      {
+	$self->segments([]);
+	push @{$self->segments}, [$self->start, $self->stop] if defined $self->start && defined $self->stop;
+      }
     foreach my $seg (sort {$a->[0] <=> $b->[0]} @{$self->segments})
       {
 	$s = $seg->[0] unless $s;
