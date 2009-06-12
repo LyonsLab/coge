@@ -122,6 +122,7 @@ perl(1).
 				   simple=>$simple,
 				   ch=>$chr_height,
 				   fh=>$feat_height,
+                                   gstid=>$gstid, #genoic sequence type id
 				   fids=>\@fids,
 				   fns=>\@fnames,
                                    layers=>\@layers,
@@ -167,6 +168,7 @@ sub genomic_view
     my $layers = process_layers($opts{layers});
     my $major_tick_labels = $opts{major_tick_labels} || 1;
     my $minor_tick_labels = $opts{minor_tick_labels} || -1;
+    my $gstid=$opts{gstid}; #genomic_sequence_type_id for finding the right genomic sequence
     $DEBUG = $opts{debug} || $opts{DEBUG} || 0;
     $self->DEBUG($DEBUG);
     print STDERR "Options: ".Dumper \%opts if $self->DEBUG;
@@ -259,7 +261,7 @@ sub genomic_view
       }
     my $tc = new Benchmark if $BENCHMARK;
     print STDERR "processing nucleotides\n" if $self->DEBUG;
-    $self->process_nucleotides(start=>$start, stop=>$stop, chr=>$chr, ds=>$ds, c=>$c, layers=>$layers);
+    $self->process_nucleotides(start=>$start, stop=>$stop, chr=>$chr, ds=>$ds, c=>$c, layers=>$layers, gstid=>$gstid) if $layers->{get_nt_seq};
     my $td = new Benchmark if $BENCHMARK;
     my $init_c_time = timestr(timediff($td, $tc)) if $BENCHMARK;
 
@@ -271,7 +273,7 @@ sub genomic_view
     my $t1 = new Benchmark if $BENCHMARK;
     my $taa = new Benchmark if $BENCHMARK;
     print STDERR "processing features\n" if $self->DEBUG;
-    $self->process_features(start=>$start, stop=>$c->stop, chr=>$chr, ds=>$ds, coge=>$coge, c=>$c, fids=>$fids, fnames=>$fnames, layers=>$layers) unless $simple;
+    $self->process_features(start=>$start, stop=>$c->stop, chr=>$chr, ds=>$ds, coge=>$coge, c=>$c, fids=>$fids, fnames=>$fnames, layers=>$layers, gstid=>$gstid) unless $simple;
     my $tab = new Benchmark if $BENCHMARK;
     my $feat_time = timestr(timediff($tab, $taa)) if $BENCHMARK;
     print STDERR " processing features for dsid ".$ds->name, " ", Dumper ($layers)," (",$ds->id,"):   $feat_time\n" if $BENCHMARK;
@@ -362,12 +364,18 @@ sub initialize_c
 
 sub process_nucleotides
   {
+    #layers that require nt sequence:
+    # gc
+    # nt
+    # all
+    # gbox
+    # gaga
     my $self = shift;
     my %opts = @_;
     my $start = $opts{start};
     my $stop = $opts{stop};
     my $seq = $opts{seq};
-
+    my $gstid=$opts{gstid};
     $start = 1 unless $start;
     $stop = length $seq if $seq && !$stop;
     if ($self->MAX_NT && abs ($stop-$start) > $self->MAX_NT())
@@ -384,13 +392,8 @@ sub process_nucleotides
     unless ($seq)
       {
 	return unless $ds;
-	$seq = uc($ds->get_genomic_sequence(start=>$start, end=>$stop, chr=>$chr));
+	$seq = uc($ds->get_genomic_sequence(start=>$start, end=>$stop, chr=>$chr, gstid=>$gstid));
       }
-
-#    print STDERR Dumper $layers;
-
-#    print STDERR $start,"-",$stop,"\t",$seq,"\n";
-
     my $t8 = new Benchmark if $BENCHMARK;
     my $seq_len = length $seq;
 #    my $rstop = $c->chr_end ? $c->chr_end : $c->stop;
@@ -429,8 +432,8 @@ sub process_nucleotides
     $pos = 0;
     if ($layers->{gbox})
       {
-	my $startseq = uc($ds->get_genomic_sequence(start=>$start-5, end=>$start-1, chr=>$chr));
-	my $stopseq = uc($ds->get_genomic_sequence(start=>$stop+1, end=>$stop+5, chr=>$chr));
+	my $startseq = uc($ds->get_genomic_sequence(start=>$start-5, end=>$start-1, chr=>$chr, gstid=>$gstid));
+	my $stopseq = uc($ds->get_genomic_sequence(start=>$stop+1, end=>$stop+5, chr=>$chr, gstid=>$gstid));
 	my $tmpseq = $seq;
 	$tmpseq = $startseq.$tmpseq if $startseq;
 	$tmpseq .= $stopseq if $stopseq;
@@ -510,7 +513,8 @@ sub process_features
     my $fids = $opts{fids};
     my $fnames = $opts{fnames};
     my $layers = $opts{layers};
-    return unless $layers->{all} || $layers->{features};
+    my $gstid= $opts{gstid};
+    return unless $layers->{all} || $layers->{features}; #no need to get features if no layers requiring them are requested
     $start = $c->region_start unless $start;
     $stop = $c->region_stop unless $stop;
     $start = 0 if $start < 0;
@@ -597,7 +601,7 @@ sub process_features
 	    $f->color($color);
 	    if ($layers->{features}{cbc} || $layers->{features}{cbc50})
 	      {
-		my $seq = $feat->genomic_sequence;
+		my $seq = $feat->genomic_sequence(gstid=>$gstid);
 		$f->sequence($seq);
 		$f->color_by_codon(1);
 		$f->codon_limit(50) if $layers->{features}{cbc50};
@@ -848,20 +852,20 @@ sub process_layers
        domain=>"domain",
        other=>"other",
        cns=>"cns",
-       nt=>"nt",
-       nucleotides=>"nt",
-       nucleotide=>"nt",
-       nuc=>"nt",
-       gc=>"gc",
+       nt=>"nt",  #requres nt sequence
+       nucleotides=>"nt",   #requres nt sequence
+       nucleotide=>"nt",   #requres nt sequence
+       nuc=>"nt",   #requres nt sequence
+       gc=>"gc",   #requres nt sequence
        background=>"background",
-       all=>"all",
+       all=>"all",   #requres nt sequence
        pseudogene=>"pseudogene",
        gene_space=>"gene_space",
        "local_dup"=>"local_dup",
        "local_dups"=>"local_dup",
        "tandem"=>"local_dup",
-       "gaga"=>"gaga",
-       "gbox"=>"gbox",
+       "gaga"=>"gaga",   #requres nt sequence
+       "gbox"=>"gbox",   #requres nt sequence
        "cbc"=>"cbc", #color CDS by codon
        "cbc50"=>"cbc50", #color CDS by codon
        "flat"=>"flat", #are gene models draw 'flat' or pseudo-3D?
@@ -886,6 +890,15 @@ sub process_layers
        "flat"=>1,
        "overlap_check"=>1,
       );
+    #determine of nt sequence is needed
+    my %nt = 
+      (
+       all=>1,
+       nt=>1,
+       gc=>1,
+       gaga=>1,
+       gboc=>1,
+      );
     my %layers;
     foreach my $layer (@$layers)
       {
@@ -902,6 +915,7 @@ sub process_layers
 	  {
 	    $layers{$valid_layers{$layer}}=1;
 	  }
+	$layers{get_nt_seq}=1 if ($nt{$valid_layers{$layer}}); #flag for whether nt sequence needs to be retrieved
       }
     $layers{all}=1 unless keys %layers;
     return \%layers;
