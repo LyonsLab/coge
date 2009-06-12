@@ -169,6 +169,7 @@ sub genomic_view
     my $major_tick_labels = $opts{major_tick_labels} || 1;
     my $minor_tick_labels = $opts{minor_tick_labels} || -1;
     my $gstid=$opts{gstid}; #genomic_sequence_type_id for finding the right genomic sequence
+    my $dsgid=$opts{dsgid}; #dataset_group for finding the right genomic sequence
     $DEBUG = $opts{debug} || $opts{DEBUG} || 0;
     $self->DEBUG($DEBUG);
     print STDERR "Options: ".Dumper \%opts if $self->DEBUG;
@@ -188,6 +189,19 @@ sub genomic_view
 
     ($org) = $coge->resultset('Organism')->resolve($org) if $org;
     ($ds) = $coge->resultset('Dataset')->resolve($ds) if $ds;
+    my $dsg = $coge->resultset('DatasetGroup')->find($dsgid) if $dsgid;
+    if ($ds && !$dsg)
+      {
+	foreach my $item (sort {$a->genomic_sequence_type_id <=> $b->genomic_sequence_type_id} $ds->dataset_groups)
+	  {
+	    last if $dsg;
+	    $dsg = $item if $gstid && $item->genomic_sequence_type_id == $gstid;
+	    $dsg = $item unless $gstid;
+	  }
+      }
+    ##we need a dataset group to make sure we get all the appropriate features that may be spread over multiple datasets
+
+
 
     if ($ds) #there can be additional information about a chromosome for a particular version of the organism that is not in the same data_information.  Let's go find the organism_id and version for the specified data information item.
       {
@@ -212,28 +226,6 @@ sub genomic_view
       }
     print STDERR "generating image for ds: ".$ds->name ." (".$ds->id.")\n" if $self->DEBUG;
     my $ta = new Benchmark if $BENCHMARK;
-    #we will store a list of data_information objects that are related to the current dataset
-#    my %dids; 
-#
-#    if ($org)
-#      {	
-#	foreach my $gstype ($org->genomic_sequence_types)
-#	  {
-#	    foreach my $did ( $org->current_datasets(type=>$gstype))
-#	      {
-#		my $chrpass = 0;
-#		foreach ($did->get_chromosomes)
-#		  {
-#		    $chrpass = 1 if $_ eq $chr;
-#		  }
-#		next unless $ds->version eq $did->version;
-#		$dids{$did->id} = $did if $chrpass;
-#	      }
-#	  }
-#      }
-#
-#    delete $dids{$ds->id};
-#    my @dids = values %dids;
     my $tb = new Benchmark if $BENCHMARK;
     my $finddid_time = timestr(timediff($tb, $ta))  if $BENCHMARK;
     my $last_position = $ds->last_chromosome_position($chr);
@@ -273,10 +265,13 @@ sub genomic_view
     my $t1 = new Benchmark if $BENCHMARK;
     my $taa = new Benchmark if $BENCHMARK;
     print STDERR "processing features\n" if $self->DEBUG;
-    $self->process_features(start=>$start, stop=>$c->stop, chr=>$chr, ds=>$ds, coge=>$coge, c=>$c, fids=>$fids, fnames=>$fnames, layers=>$layers, gstid=>$gstid) unless $simple;
-    my $tab = new Benchmark if $BENCHMARK;
-    my $feat_time = timestr(timediff($tab, $taa)) if $BENCHMARK;
-    print STDERR " processing features for dsid ".$ds->name, " ", Dumper ($layers)," (",$ds->id,"):   $feat_time\n" if $BENCHMARK;
+    foreach my $item ($dsg->datasets)
+      {
+	$self->process_features(start=>$start, stop=>$c->stop, chr=>$chr, ds=>$item, coge=>$coge, c=>$c, fids=>$fids, fnames=>$fnames, layers=>$layers, gstid=>$gstid) unless $simple;
+	my $tab = new Benchmark if $BENCHMARK;
+	my $feat_time = timestr(timediff($tab, $taa)) if $BENCHMARK;
+	print STDERR " processing features for dsid ".$item->name, " ", Dumper ($layers)," (",$item->id,"):   $feat_time\n" if $BENCHMARK;
+      }
     unless ($layers->{ruler} || $layers->{chromosome} || $layers->{all})
       {
 	$c->draw_ruler(0);
