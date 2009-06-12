@@ -376,6 +376,10 @@ sub process_nucleotides
     my $stop = $opts{stop};
     my $seq = $opts{seq};
     my $gstid=$opts{gstid};
+    my $at_color = $opts{at_color};
+    my $gc_color = $opts{gc_color};
+    my $n_color = $opts{n_color};
+    my $x_color = $opts{x_color};
     $start = 1 unless $start;
     $stop = length $seq if $seq && !$stop;
     if ($self->MAX_NT && abs ($stop-$start) > $self->MAX_NT())
@@ -418,6 +422,14 @@ sub process_nucleotides
 	    my $options = $layers->{gc} ? "gc" : "nt";
 	    my $f1 = CoGe::Graphics::Feature::NucTide->new({nt=>$subseq, strand=>1, start =>$pos+$start, options=>$options});
 	    my $f2 = CoGe::Graphics::Feature::NucTide->new({nt=>$rcseq, strand=>-1, start =>$pos+$start, options=>$options});
+	    $f1->at_color($at_color) if $at_color && ref ($at_color) =~ /array/i && scalar (@{$at_color}) eq 3;
+	    $f1->gc_color($gc_color) if $gc_color && ref ($gc_color) =~ /array/i && scalar (@{$gc_color}) eq 3;
+	    $f1->n_color($n_color) if $n_color && ref ($n_color) =~ /array/i && scalar (@{$n_color}) eq 3;
+	    $f1->x_color($x_color) if $x_color && ref ($x_color) =~ /array/i && scalar (@{$x_color}) eq 3;
+	    $f2->at_color($at_color) if $at_color && ref ($at_color) =~ /array/i && scalar (@{$at_color}) eq 3;
+	    $f2->gc_color($gc_color) if $gc_color && ref ($gc_color) =~ /array/i && scalar (@{$gc_color}) eq 3;
+	    $f2->n_color($n_color) if $n_color && ref ($n_color) =~ /array/i && scalar (@{$n_color}) eq 3;
+	    $f2->x_color($x_color) if $x_color && ref ($x_color) =~ /array/i && scalar (@{$x_color}) eq 3;
 	    $f1->show_label(1); 
 	    $f2->show_label(1);
 	    $f1->use_external_image(1);
