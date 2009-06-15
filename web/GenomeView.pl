@@ -25,6 +25,7 @@ my $pj = new CGI::Ajax(
 		       gen_html=>\&gen_html,
 		       grab_sequence=>\&grab_sequence,
 		       save_options=>\&save_options,
+		       get_genome_info=>\&get_genome_info,
 			);
 $pj->js_encode_function('escape');
 print $pj->build_html($FORM, \&gen_html);
@@ -100,6 +101,12 @@ sub gen_body
 	$org = $dso->organism->name;
 	$ver = $dso->version;
 	$chr_length = $dso->last_chromosome_position($chr);
+	foreach my $dsg (sort {$a->genomic_sequence_type_id <=> $b->genomic_sequence_type_id} $dso->dataset_groups)
+	  {
+	    last if $dsgid;
+	    $dsgid = $dsg->id if $gstid && $dsg->genomic_sequence_type_id == $gstid;
+	    $dsgid = $dsg->id unless $gstid;
+	  }
       }
     $loc = 1 unless $loc;
     $z=2 unless $z;
@@ -109,6 +116,7 @@ sub gen_body
     $template->param(VER=>$ver);
     $template->param(ORG=>$org);
     $template->param(DS=>$dsid);
+    $template->param(DSG=>$dsgid);
     $template->param(LOC=>$loc);
     $template->param(ZOOM=>$z);
     $template->param(GSTID=>$gstid);
@@ -160,3 +168,27 @@ sub save_options
     my $opts = Dumper \%opts;
     my $item = save_settings(opts=>$opts, user=>$USER, page=>$PAGE_NAME);
   }
+
+sub get_genome_info
+  {
+    my %opts = @_;
+    my $dsgid = $opts{dsgid};
+#    print STDERR Dumper \%opts;
+    return " " unless $dsgid;
+    my $dsg = $coge->resultset("DatasetGroup")->find($dsgid);
+    return "Unable to create dataset_group object for id: $dsgid" unless $dsg;
+    my $html = "<span class=species>Datasets:</span><br><table>";
+    $html .= "<tr><th>ID<th>Name<th>Description";
+    foreach my $ds ($dsg->datasets)
+      {
+	$html .="<tr><td>".$ds->id."<td><a href=OrganismView.pl?dsid=".$ds->id." target=_new>".$ds->name."</a><td>".$ds->description;
+      }
+    $html .= "</table>";
+    return $html;
+  }
+sub commify {
+        my $input = shift;
+        $input = reverse $input;
+        $input =~ s<(\d\d\d)(?=\d)(?!\d*\.)><$1,>g;
+        return scalar reverse $input;
+}
