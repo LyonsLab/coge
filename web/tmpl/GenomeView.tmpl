@@ -108,9 +108,11 @@
 
         var org = "<TMPL_VAR NAME=ORG>";
         var ds = '<TMPL_VAR NAME=DS>';
+        var dsg = '<TMPL_VAR NAME=DSG>';
         var loc = '<TMPL_VAR NAME=LOC>';
         var zoom = '<TMPL_VAR NAME=ZOOM>';
         var gstid = '<TMPL_VAR NAME=GSTID>';
+
 	zoom++;
         function init(){
             map = new OpenLayers.GenomeBrowser( $('#map')[0] , 
@@ -125,7 +127,7 @@
             });
             layers = [
             new OpenLayers.Layer.Genomic( "Ruler" , server
-                 ,{'ds':ds, 'gstid':gstid, 'chr':chr,layers:"background,ruler"}
+                 ,{'ds':ds,'dsg':dsg,  'gstid':gstid, 'chr':chr,layers:"background,ruler"}
                  ,{isBaseLayer:true} 
              ),
             ]
@@ -134,45 +136,45 @@
             map.addLayers(layers);
 
             gc = new OpenLayers.Layer.Genomic( "<span id='gc'>GC content</span>" , server
-                 ,{'ds':ds, 'gstid':gstid,'chr':chr,layers:"gc"}
+                 ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"gc"}
                  ,{isBaseLayer:false}
              );
             gaga = new OpenLayers.Layer.Genomic( "<span id='gaga'>GAGA content</span>" , server
-                 ,{'ds':ds, 'gstid':gstid,'chr':chr,layers:"gaga"}
+                 ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"gaga"}
                  ,{isBaseLayer:false}
              );
             gbox = new OpenLayers.Layer.Genomic( "<span id='gbox'>G-Box CACGTG</span>" , server
-                 ,{'ds':ds, 'gstid':gstid,'chr':chr,layers:"gbox"}
+                 ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"gbox"}
                  ,{isBaseLayer:false}
              );
             genes = new OpenLayers.Layer.Genomic( "<span id='gene'>Genes</span>" , server
-                 ,{'ds':ds, 'gstid':gstid,'chr':chr,layers:"pseudogene,gene,mRNA,CDS,rna,CNS",}
+                 ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"pseudogene,gene,mRNA,CDS,rna,CNS",}
                  ,{isBaseLayer:false}
              );
 	    gene_space = new OpenLayers.Layer.Genomic( "<span id='gene_space'>Gene space</span>" , server
-	                       ,{'ds':ds, 'gstid':gstid,'chr':chr,layers:"gene_space",}
+	                       ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"gene_space",}
 			                        ,{isBaseLayer:false}
 						             );
 
             wobble_GC_usage = new OpenLayers.Layer.Genomic( "<span id='wobble_GC_usage'>Wobble GC Usage</span>" , server
-                 ,{'ds':ds, 'gstid':gstid,'chr':chr,layers:"CDS,cbc"}
+                 ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"CDS,cbc"}
                  ,{isBaseLayer:false}
              );
 //            wobble_GC_usage_first_50 = new OpenLayers.Layer.Genomic( "<span id='wobble_GC_usage_first_50'>Wobble GC Usage (first 50 codons)</span>" , server
-//                 ,{'ds':ds, 'gstid':gstid,'chr':chr,layers:"CDS,cbc50"}
+//                 ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"CDS,cbc50"}
 //                 ,{isBaseLayer:false}
 //             );
             local_dup = new OpenLayers.Layer.Genomic( "<span id='local_dup'>Local Duplicates</span>" , server
-                 ,{'ds':ds, 'gstid':gstid,'chr':chr,layers:"local_dup",}
+                 ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"local_dup",}
                  ,{isBaseLayer:false}
              );
 
             prot = new OpenLayers.Layer.Genomic( "proteins" , server
-                 ,{'ds':ds, 'gstid':gstid,'chr':chr,layers:"protein"}
+                 ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"protein"}
                  ,{isBaseLayer:false}
              );
             func_domain = new OpenLayers.Layer.Genomic( "<span id='func_dom'>functional domains</span>" , server
-                 ,{'ds':ds, 'gstid':gstid,'chr':chr,layers:"domain"}
+                 ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"domain"}
                  ,{isBaseLayer:false}
              );
 	    
@@ -409,11 +411,13 @@ save_options([
 }
 
 $(document).ready(function(){
-pageObj.getseq = 3;
-$('#width').val($('#main').width());
-$('#map').css('width',$('#width').val());
-init();
-change_gene_model_type();
+  pageObj.getseq = 3;
+  $('#width').val($('#main').width());
+  $('#map').css('width',$('#width').val());
+  init();
+  change_gene_model_type();
+  $(".dialog_box").dialog({ autoOpen: false });
+
 
 });
 
@@ -452,6 +456,7 @@ Window Width: <input type=textbox class=backbox size=4 id="width" onkeypress="on
 <div style="float:left">
 <span class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="$('#set_range').show(0);$('#grab_seq').show();$('#extract_feat').hide();$('#grab_from').css('backgroundColor','FFFF66');pageObj.getseq=1;"><span class="ui-icon ui-icon-scissors"></span>Grab Sequence</span>
 <span class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="$('#set_range').show(0);$('#extract_feat').show();$('#grab_seq').hide();$('#grab_from').css('backgroundColor','FFFF66');pageObj.getseq=1;"><span class="ui-icon ui-icon-scissors"></span>Extract Features</span>
+<span class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="get_genome_info(['args__dsgid', 'args__<TMPL_VAR NAME=DSG>'],['genome_info_popup']);$('#genome_info_popup').dialog('open');"><span class="ui-icon ui-icon-newwin"></span>Genome Info</span>
 <br>
 <span id="set_range" style="display:none" > 
   <input type=text id='grab_from' value=0> to <input type=text id="grab_to" value=0> 
@@ -475,5 +480,7 @@ Window Width: <input type=textbox class=backbox size=4 id="width" onkeypress="on
     <div align="right">Flat Gene Models<input type=checkbox name=flat_models id=flat_models onclick="change_gene_model_type();" <TMPL_VAR NAME=FLAT> /></div>
     <div align="right" >Expand Overlapping Gene Models<input type=checkbox name=overlap_models id=overlap_models onclick="change_gene_model_type();" <TMPL_VAR NAME=EXPAND> /></div>
     <div id='check' style="float:right">Pop-up Annotations<input type=checkbox name="popup_anno" id="popup_anno" <TMPL_VAR NAME=POPUPANNO> /></div>
+
+<div id="genome_info_popup" class="dialog_box" title="Genome Information"><span class=loading>Loading. . .</span></div>
 
 
