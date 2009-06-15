@@ -12,12 +12,12 @@ if (ajax.length)
 
 function get_organism_name_chain(val)
 {
- get_orgs(['args__name','args__'+val], [get_org_info_chain]);	 
+ get_orgs(['args__name','args__'+val, 'args__dsgid','dsg_id'], [get_org_info_chain]);	 
 }
 
 function get_organism_desc_chain(val)
 {
- get_orgs(['args__desc','args__'+val], [get_org_info_chain]);	 
+ get_orgs(['args__desc','args__'+val, 'args__dsgid','dsg_id'], [get_org_info_chain]);	 
 }
 
 function get_org_info_chain(val, val2)
@@ -104,7 +104,7 @@ function dataset_chr_info_chain(val, val2, val3) {
  $('#viewer').empty();
  $('#get_seq').empty();
  $('#feature_count_data').empty();
- get_dataset_chr_info(['ds_id', 'chr'],[populate_dataset_chr_info]);
+ get_dataset_chr_info(['ds_id', 'chr', 'dsg_id'],[populate_dataset_chr_info]);
 }
 
 
@@ -115,20 +115,20 @@ function populate_dataset_chr_info (chr_info, viewer, get_seq){
  setup_button_states(); //get them buttons working!
 }
 
-function launch_seqview(dsid, chr)
+function launch_seqview(dsgid, chr, dsid)
  {
    start = $('#start').val();
    stop = $('#stop').val();
-   window.open("SeqView.pl?dsid="+dsid+"&chr="+chr+"&start="+start+"&stop="+stop);
+   window.open("SeqView.pl?dsgid="+dsgid+"dsid="+dsid+"&chr="+chr+"&start="+start+"&stop="+stop);
  }
 
 
-function launch_viewer (dsid, chr, gstid) {
+function launch_viewer (dsgid, chr, dsid, gstid) {
  x = $('#x').val();
  z = $('#z').val();
  if (!gstid) {gstid = $('#gstid').val();}
  if (z > 12) {z=12;}
- link =  "GenomeView.pl?z="+z+"&x="+x+"&ds="+dsid+"&chr="+chr+"&gstid="+gstid;
+ link =  "GenomeView.pl?z="+z+"&x="+x+"&dsgid="+dsgid+"&chr="+chr+"&dsid="+dsid+"&gstid="+gstid;
  window.open(link);
 }
 function timing(val){
