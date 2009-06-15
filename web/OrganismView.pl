@@ -110,7 +110,7 @@ sub gen_body
     $desc = "Search" unless $desc;
     $template->param(ORG_DESC=>$desc) if $desc;
     $org_name = "" if $org_name =~ /Search/;
-    my ($org_list, $org_count) = get_orgs(name=>$org_name, oid=>$oid);
+    my ($org_list, $org_count) = get_orgs(name=>$org_name, oid=>$oid, dsgid=>$dsgid);
     $template->param(ORG_LIST=>$org_list);
     $template->param(ORG_COUNT=>$org_count);
     #$template->param(RECENT=>get_recent_orgs());
@@ -119,9 +119,9 @@ sub gen_body
     $dsname = "Search" unless $dsname;
     $template->param(DS_NAME=>$dsname);
     $dsname = "" if $dsname =~ /Search/;
-    my ($dslist,$orglist) = get_dataset(dsname=>$dsname, dsid=>$dsid) if $dsname;
+    my ($dslist,$dscount) = get_dataset(dsname=>$dsname, dsid=>$dsid) if $dsname;
     $template->param(DS_LIST=>$dslist) if $dslist;
-    $template->param(ORG_LIST=>$orglist) if $orglist;
+    $template->param(DS_COUNT=>$dscount) if $dscount;
     my $dsginfo = "<input type=hidden id=gstid>";
     $dsginfo .= $dsgid ? "<input type=hidden id=dsg_id value=$dsgid>" : "<input type=hidden id=dsg_id>";
     $template->param(DSG_INFO=>$dsginfo);
@@ -174,8 +174,10 @@ sub get_orgs
     my $name = $opts{name};
     my $desc = $opts{desc};
     my $oid = $opts{oid};
+    my $dsgid = $opts{dsgid};
+    my $dsg = $coge->resultset('DatasetGroup')->find($dsgid) if $dsgid;
     my @db;
-    if ($name) 
+    if ($name)
       {
 	@db = $coge->resultset("Organism")->search({name=>{like=>"%".$name."%"}});
       }
@@ -195,6 +197,7 @@ sub get_orgs
 	next if $restricted_orgs->{$item->name};
 	my $option = "<OPTION value=\"".$item->id."\"";
 	$option .= " SELECTED" if $oid && $item->id == $oid;
+	$option .= " SELECTED" if $dsg && $item->id == $dsg->organism->id;
 	$option .= ">".$item->name." (id".$item->id.")</OPTION>";
 	push @opts, $option;
       }
@@ -209,7 +212,7 @@ sub get_orgs
     $html .= qq{<SELECT id="org_id" SIZE="5" MULTIPLE onChange="get_org_info_chain()" >\n};
     $html .= join ("\n", @opts);
     $html .= "\n</SELECT>\n";
-    $html =~ s/OPTION/OPTION SELECTED/;
+    $html =~ s/OPTION/OPTION SELECTED/ unless $html =~ /SELECTED/;
     return $html, scalar @opts;
   }
 
@@ -426,7 +429,8 @@ sub get_dataset_info
     $html .= "<tr><td>Total length:<td><div style=\"float: left;\">".commify($length);
     my $gc = $length < 10000000? gen_gc_for_chromosome(dsid=>$ds->id): 0;
     $gc = $gc ? $gc : qq{  </div><div style="float: left; text-indent: 1em;" id=dataset_gc class="link" onclick="\$('#dataset_gc').removeClass('link'); gen_gc_for_chromosome(['args__dsid','ds_id','args__gstid', 'gstid'],['dataset_gc']);">  Click for percent GC content</div>} if $length;
-    $html .= " -- ".$gc.qq{</table>};
+    $html .= " -- ".$gc if $gc;
+    $html .= qq{</table>};
     my $feat_string = qq{
 <div id=ds_feature_count class="small link" onclick="get_feature_counts(['args__dsid','ds_id','args__gstid', 'gstid'],['feature_count_data']);" >Click for feature counts</div>};
     $html .= $feat_string;
@@ -437,16 +441,19 @@ sub get_dataset_info
 
 sub get_dataset_chr_info
   {
-    my $dsd = shift;
+    my $dsid = shift;
     my $chr = shift;
-    unless ($dsd) # error flag for empty dataset
+    my $dsgid = shift;
+    $dsgid = 0 unless defined $dsgid;
+    $dsid = 0 unless $dsid;
+    unless ($dsid && $chr) # error flag for empty dataset
 	{
 		return "", "", "";
 	}
     my $start = "'start'";
     my $stop = "'stop'";	
     my $html .= "<table class=\"small annotation_table\">";
-    my $ds = $coge->resultset("Dataset")->find($dsd);
+    my $ds = $coge->resultset("Dataset")->find($dsid);
     return $html unless $ds;
     my $length = 0;
     $length = $ds->last_chromosome_position($chr) if $chr;
@@ -476,7 +483,7 @@ sub get_dataset_chr_info
 	$viewer .= qq{<td><input type="text" size=10 value="20000" id="x">};
 	$viewer .= qq{<tr><td class = "ital">Zoom level:<td><input type = "text" size=10 value ="5" id = "z">};
 	$viewer .= "</table>";
-	$viewer .= qq{<span class='ui-button ui-button-icon-left ui-state-default ui-corner-all' onClick="launch_viewer($dsd, '$chr')"><span class="ui-icon ui-icon-newwin"></span>Launch Genome Viewer</span>};
+	$viewer .= qq{<span class='ui-button ui-button-icon-left ui-state-default ui-corner-all' onClick="launch_viewer('$dsgid', '$chr', '$dsid')"><span class="ui-icon ui-icon-newwin"></span>Launch Genome Viewer</span>};
       }
     my $seq_grab;
     if ($chr)
@@ -488,7 +495,7 @@ sub get_dataset_chr_info
 	$seq_grab .= "<tr><td class = \"ital\">End position: ";
 	$seq_grab .= qq{<td><input type="text" size=10 value="100000" id="stop">};
 	$seq_grab .= qq{</table>};
-	$seq_grab .= qq{<span class='ui-button ui-button-icon-left ui-state-default ui-corner-all' onClick="launch_seqview($dsd, '$chr')"><span class="ui-icon ui-icon-newwin"></span>Get Sequence</span>};
+	$seq_grab .= qq{<span class='ui-button ui-button-icon-left ui-state-default ui-corner-all' onClick="launch_seqview('$dsgid', '$chr','$dsid')"><span class="ui-icon ui-icon-newwin"></span>Get Sequence</span>};
 	$seq_grab .= qq{<div id="gseq"></div>};
       }
     return $html, $viewer, $seq_grab;
@@ -890,12 +897,17 @@ sub get_codon_usage
 	  }
       }
     %codons = map {$_,$codons{$_}/$codon_total} keys %codons;
-    %aa = map {$_,$aa{$_}/$aa_total} keys %aa;
+
+    #Josh put some stuff in here so he could get raw numbers instead of percentages for aa usage. He should either make this an option or delete this code when he is done. REMIND HIM ABOUT THIS IF YOU ARE EDITING ORGVIEW!
+    %aa = $USER->user_name =~ /jkane/i ? map {$_,$aa{$_}} keys %aa : map {$_,$aa{$_}/$aa_total} keys %aa;
+    
     my $html1 = "Codon Usage: $code_type";
     $html1 .= CoGe::Accessory::genetic_code->html_code_table(data=>\%codons, code=>$code);
     
     my $html2 .= "Predicted amino acid usage using $code_type";
+    $html2 .= "<br/>Total Amino Acids: $aa_total" if $USER->user_name =~ /jkane/i;
     $html2 .= CoGe::Accessory::genetic_code->html_aa(data=>\%aa);
+    $html2 =~ s/00.00%//g if $USER->user_name =~ /jkane/i;
     return $html1, $html2;
   }
 
