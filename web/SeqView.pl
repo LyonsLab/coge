@@ -356,6 +356,7 @@ sub find_feats
 	if ($dsgid)
 	  {
 	    my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	    return unless $dsg;
 	    $dsid = $dsg->datasets(chr=>$chr)->id;
 	    $gstid = $dsg->type->id;
 	  }
