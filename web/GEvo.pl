@@ -301,6 +301,8 @@ sub gen_body
     else {$template->param(NT_COLOR_NO=>"checked");}
     if ($cbc_color) {$template->param(CBC_YES=>"checked");}
     else {$template->param(CBC_NO=>"checked");}
+    if ($show_contigs) {$template->param(SHOW_CONTIGS_YES=>"checked");}
+    else {$template->param(SHOW_CONTIGS_NO=>"checked");}
     if ($skip_feat_overlap_adjust) {$template->param(FEAT_OVERLAP_NO=>"checked");}
     else {$template->param(FEAT_OVERLAP_YES=>"checked");}
     if ($skip_hsp_overlap_adjust) {$template->param(HSP_OVERLAP_NO=>"checked");}
@@ -901,7 +903,7 @@ sub generate_image
     $gfx->skip_duplicate_features(1);
     $gfx->DEBUG(0);
     $gfx->major_tick_labels(0);
-    $graphic->process_nucleotides(c=>$gfx, seq=>$gbobj->sequence, layers=>{gc=>$show_gc, nt=>$show_nt});
+    $graphic->process_nucleotides(c=>$gfx, seq=>$gbobj->sequence, layers=>{gc=>$show_gc, nt=>$show_nt}, n_color=>[255,155,0]);
     process_hsps(
 		 c=>$gfx, 
 		 data=>$data, 
@@ -1122,7 +1124,7 @@ sub process_features
     my $show_cns = $opts{cns};
     my $show_gene_space = $opts{gene_space};
     # TODO: remove the 1. here for testing.
-    my $show_contigs = $opts{show_contigs} || 1;
+    my $show_contigs = $opts{show_contigs};
     my $accn = $obj->accn;
     my $track = 1;
     my %feat_counts;
@@ -1300,12 +1302,13 @@ sub process_features
 	  }
     elsif ($show_contigs && $type =~ /contig/i)
     {
-	      $f = CoGe::Graphics::Feature::HSP->new({start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1]});
-	      $f->color([255,0,0, 0.5]);
+	      $f = CoGe::Graphics::Feature::Block->new({start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1]});
+	      $f->_initialize();
+	      $f->color([255,0,0]);
+          #$f->bgcolor([255,255,255]);
 	      $f->order($feat->location =~ /complement/ ? 0 : 1);
 
 	      $f->overlay(-1);
-	      $f->transparency(0.6);
 	      $f->type($type);
 	      $f->description($feat->annotation);
 	      $c->add_feature($f);
@@ -2459,6 +2462,7 @@ sub gen_params
         'args__gc', 'show_gc',
         'args__nt', 'show_nt',
         'args__cbc', 'show_cbc',
+        'args__show_contigs', 'show_contigs',
 	'args__colorhsp', 'color_hsp',
 	'args__hsplabel', 'hsp_labels',
 	'args__skip_feat_overlap', 'skip_feat_overlap',
