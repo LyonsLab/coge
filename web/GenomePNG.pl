@@ -24,7 +24,8 @@ my $chr_height = $form->param('ch') || 285;
 my $feat_height = $form->param('fh') || 50;
 my $request = $form->param('request') || "get_image";
 my $gstid = $form->param('gstid');
-my $dsgid = $form->param('dsgid');
+my $dsgid = $form->param('dsg');
+#print STDERR "DSGID: $dsgid\n";
 my @layers;
 foreach my $layer ($form->param('layers'))
   {
