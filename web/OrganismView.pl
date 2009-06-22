@@ -247,7 +247,7 @@ sub get_dataset_groups
 	      $dsg->name($org->name) unless $dsg->name;
 	      $selected{$dsg->id} = " " unless $selected{$dsg->id};
 	    }
-	  @opts = map {"<OPTION value=\"".$_->id."\" ".$selected{$_->id} .">".$_->name." (v".$_->version.", id".$_->id. "): ". $_->genomic_sequence_type->name."</OPTION>"} sort {$b->version <=> $a->version || $a->name cmp $b->name} @dsg;
+	  @opts = map {"<OPTION value=\"".$_->id."\" ".$selected{$_->id} .">".$_->name." (v".$_->version.", dsgid".$_->id. "): ". $_->genomic_sequence_type->name."</OPTION>"} sort {$b->version <=> $a->version || $a->name cmp $b->name} @dsg;
 	}
       my $html;
       if (@opts) 
@@ -327,7 +327,7 @@ sub get_dataset
     if ($dsgid)
       {
 	my $dsg = $coge->resultset("DatasetGroup")->find($dsgid);
-	@opts = map {"<OPTION value=\"".$_->id."\">".$_->name. " (v".$_->version.", id".$_->id.")</OPTION>"} sort {$b->version <=> $a->version || $a->name cmp $b->name} $dsg->datasets if $dsg;
+	@opts = map {"<OPTION value=\"".$_->id."\">".$_->name. " (v".$_->version.", dsid".$_->id.")</OPTION>"} sort {$b->version <=> $a->version || $a->name cmp $b->name} $dsg->datasets if $dsg;
 
 	}
     elsif ($dsname)
