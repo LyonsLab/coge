@@ -892,6 +892,7 @@ dN_dS varchar
 	$ks->feat1($feat1);
 	$ks->feat2($feat2);
 	my $res = $ks->KsCalc();
+	$res = {} unless $res;
 	my ($dS, $dN, $dNS);
 	if (keys %$res)
 	  {
