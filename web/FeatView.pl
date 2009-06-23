@@ -6,7 +6,6 @@ use CGI::Ajax;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::genetic_code;
-use CoGe::Accessory::Restricted_orgs;
 use HTML::Template;
 use Data::Dumper;
 use CoGe::Graphics::Chromosome;
@@ -60,7 +59,7 @@ $pj->JSDEBUG(0);
 $pj->DEBUG(0);
 $pj->js_encode_function('escape');
 print $pj->build_html($FORM, \&gen_html);
-#print gen_html();
+#print $FORM->header, gen_html();
 
 
 
@@ -167,7 +166,6 @@ sub cogesearch
 	return $weak_query.$blank unless $org_id && $type;
       }
     ($USER) = CoGe::Accessory::LogUser->get_user();
-    my $restricted_orgs = restricted_orgs(user=>$USER);
     my $html;
     my %seen;
     my @opts;
@@ -194,8 +192,8 @@ sub cogesearch
       }
 #    $anno =~ s/%//g;
     $search->{feature_type_id}=$type if $type;
-    $search->{"organism.organism_id"}{ -not_in}=[values %$restricted_orgs] if values %$restricted_orgs;
-
+#    $search->{"organism.organism_id"}{ -not_in}=[values %$restricted_orgs] if values %$restricted_orgs;
+    $search->{"organism.restricted"}=0 if $USER->name =~ /public/i;
 #    $search->{organism_id}{ -in}=[@org_ids] if @org_ids;
     $search->{'organism.name'}={like=>"%".$org_name."%"} if $org_name;
     $search->{'organism.description'}={like=>"%".$org_desc."%"} if $org_desc;
@@ -273,7 +271,6 @@ sub cogesearch_featids
 	return $weak_query.$blank unless $org_id && $type;
       }
     ($USER) = CoGe::Accessory::LogUser->get_user();
-    my $restricted_orgs = restricted_orgs(user=>$USER);
     my $html;
     my %seen;
     my @opts;
@@ -299,7 +296,8 @@ sub cogesearch_featids
 	$search->{'annotation'}=$anno if $anno;
       }
     $search->{feature_type_id}=$type if $type;
-    $search->{organism_id}{ -not_in}=[values %$restricted_orgs] if values %$restricted_orgs;
+#    $search->{organism_id}{ -not_in}=[values %$restricted_orgs] if values %$restricted_orgs;
+    $search->{"organism.restricted"}=0 if $USER->name =~ /public/i;
     $search->{organism_id}{ -in}=[@org_ids] if @org_ids;
     my $join = {'feature'=>{'dataset'=>{'dataset_connectors'=>'dataset_group'}}};
     $join->{'feature'} = ['dataset','annotations'] if $anno;
@@ -493,7 +491,6 @@ sub get_data_source_info_for_accn
 						    });
     my %sources;
     ($USER) = CoGe::Accessory::LogUser->get_user();
-    my $restricted_orgs = restricted_orgs(user=>$USER);
     foreach my $feat (@feats)
       {
 	my $val = $feat->dataset;
@@ -503,7 +500,7 @@ sub get_data_source_info_for_accn
 	    next;
 	  }
 	my $org = $val->organism->name if $val->organism;
-	next if $restricted_orgs->{$org};
+	next if $USER->user_name =~ /public/i && $val->organism->restricted;
 	if (keys %org_ids) {next unless $org_ids{$val->organism->id};}
 	my $name = $val->name;
 	my $ver = $val->version;
@@ -562,11 +559,10 @@ sub get_orgs
     #my @db = $name ? $coge->resultset('Organism')->search({name=>{like=>"%".$name."%"}})
     #  : $coge->resultset('Organism')->all();
     ($USER) = CoGe::Accessory::LogUser->get_user();
-    my $restricted_orgs = restricted_orgs(user=>$USER);
     my @opts;
     foreach my $item (sort {uc($a->name) cmp uc($b->name)} @db)
       {
-	next if $restricted_orgs->{$item->name};
+	next if $USER->user_name =~ /public/i && $item->restricted;
 	push @opts, "<OPTION value=\"".$item->id."\" id=\"o".$item->id."\">".$item->name."</OPTION>";
       }
     my $html;
