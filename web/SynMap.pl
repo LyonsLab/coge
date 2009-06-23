@@ -5,7 +5,6 @@ use CGI::Carp 'fatalsToBrowser';
 use CGI::Ajax;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
-use CoGe::Accessory::Restricted_orgs;
 use CoGe::Algos::KsCalc;
 use CoGeX;
 use DBIxProfiler;
@@ -272,11 +271,10 @@ sub get_orgs
 	@db = $coge->resultset("Organism")->all;
       }
     ($USER) = CoGe::Accessory::LogUser->get_user();
-    my $restricted_orgs = restricted_orgs(user=>$USER);
     my @opts;
     foreach my $item (sort {uc($a->name) cmp uc($b->name)} @db)
       {
-	next if $restricted_orgs->{$item->name};
+	next if $USER->user_name =~ /public/i && $item->restricted;
 	my $option = "<OPTION value=\"".$item->id."\""; 
 	$option .= " selected" if $oid && $oid == $item->id;
 	$option .= ">".$item->name." (id".$item->id.")</OPTION>";
