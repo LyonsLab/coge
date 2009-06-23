@@ -14,7 +14,7 @@ This program will remove the specified organism and all related data from the Co
     exit;
   }
 
-my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
+my $connstr = 'dbi:mysql:dbname=coge;host=homer;port=3306';
 my $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 my $org = $coge->resultset('Organism')->resolve($orgid);
 
