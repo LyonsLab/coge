@@ -178,7 +178,7 @@ sub gen_body
 
       }
     $template->param(document_ready=>$db_list) if $db_list;
-    my $resultslimit = 200;
+    my $resultslimit = 100;
     $resultslimit = $prefs->{'resultslimit'} if $prefs->{'resultslimit'};
     $template->param(RESULTSLIMIT=>$resultslimit);
     $template->param(SAVE_ORG_LIST=>1) unless $USER->user_name eq "public";
