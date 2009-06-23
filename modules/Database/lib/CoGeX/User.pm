@@ -136,6 +136,12 @@ sub check_passwd
 	my $pwd = $opts{passwd} || $opts{pwd};
 	return crypt($pwd, $self->passwd) eq $self->passwd;
 }
+
+sub name
+  {
+    my $self = shift;
+    return $self->user_name(@_);
+  }
 1;
 
 
