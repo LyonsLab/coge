@@ -60,8 +60,8 @@ __PACKAGE__->add_columns(
     is_nullable => 1,
     size => 255,
   },
-  "normalized_name",
-  { data_type => "VARCHAR", default_value => "", is_nullable => 0, size => 200 },
+  "restricted",
+  { data_type => "int", default_value => "0", is_nullable => 0, size => 1 },
 );
 __PACKAGE__->set_primary_key("organism_id");
 
