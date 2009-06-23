@@ -18,7 +18,6 @@ use File::Temp;
 use File::Basename;
 use CoGe::Accessory::blast_report;
 use CoGe::Accessory::blastz_report;
-use CoGe::Accessory::Restricted_orgs;
 use CoGe::Graphics::GenomeView;
 use CoGe::Graphics;
 use CoGe::Graphics::Chromosome;
@@ -329,11 +328,10 @@ $html .= qq{<SELECT id="org_id" SIZE="8" MULTIPLE"><option id=null_org>Please se
 	return $html;
       }
     ($USER) = CoGe::Accessory::LogUser->get_user();
-    my $restricted_orgs = restricted_orgs(user=>$USER);
     my @opts;
     foreach my $item (sort {uc($a->name) cmp uc($b->name)} @db)
       {
-	next if $restricted_orgs->{$item->name};
+	next if $USER->user_name =~ /public/i && $item->restricted;
 	push @opts, "<OPTION value=\"".$item->id."\" id=\"o".$item->id."\">".$item->name."</OPTION>";
       }
     
