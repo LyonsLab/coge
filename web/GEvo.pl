@@ -12,7 +12,6 @@ use File::Temp;
 use CoGe::Accessory::GenBank;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
-use CoGe::Accessory::Restricted_orgs;
 use CoGe::Accessory::bl2seq_report;
 use CoGe::Accessory::blastz_report;
 use CoGe::Accessory::lagan_report;
@@ -3029,7 +3028,6 @@ sub dataset_search
     my $html;
     my %sources;
     ($USER) = CoGe::Accessory::LogUser->get_user();
-    my $restricted_orgs = restricted_orgs(user=>$USER);
     if ($accn)
       {
 	my $rs = $coge->resultset('Dataset')->search(
@@ -3050,7 +3048,6 @@ sub dataset_search
 	    my $desc = $ds->description;
 	    my $sname = $ds->data_source->name;
 	    my $ds_name = $ds->name;
-	    my $org = $ds->organism->name;
 	    foreach my $seqtype ($ds->sequence_type)
 	      {
 		my $typeid = $seqtype->id if $seqtype;
@@ -3060,7 +3057,7 @@ sub dataset_search
 		    next;
 		  }
 		my $title = "$ds_name ($sname, v$ver)";
-		next if $restricted_orgs->{$org};
+		next if $USER->user_name =~ /public/i && $ds->organism->restricted;
 		$sources{$ds->id} = {
 				     title=>$title,
 				     version=>$ver,
@@ -3090,7 +3087,7 @@ sub dataset_search
        }
      else
        {
-	$html .= qq{<span class=container>Accession not found for $accn.</span>} if $accn;
+	$html .= qq{<span class="small container">Accession not found for $accn</span><hidden id=dsid$num>} if $accn;
        }
     return ($html,$num, $featid);
   }
