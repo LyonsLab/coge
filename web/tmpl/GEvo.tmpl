@@ -277,12 +277,17 @@ function dataset_group_search_chain(stuff, num, featid) {
   $("#dataset"+num).html(stuff);
   dataset_group_search(['args__dsid', 'dsid'+num, 'args__dsgid', 'dsgid'+num,'args__gstid', 'gstid'+num,'args__num', 'args__'+num, 'args__featid','args__'+featid],[feat_search_chain]);
  }
+ else
+  {
+    $("#dataset"+num).html("<hidden id=dsid"+num+">");
+    $("#dataset_group"+num).html("<hidden id=dsgid"+num+">");
+    $("#feat"+num).html("<hidden id=featid"+num+">");
+  }
 }
 
 function feat_search_chain(stuff, num, featid) {
  if (stuff) {
   $("#dataset_group"+num).html(stuff);
-   dsgid = $('#dagis'+num).val();
    feat_search(['args__accn', 'accn'+num,'args__dsid', 'dsid'+num, 'args__dsgid', 'dsgid'+num, 'args__num', 'args__'+num, 'args__featid','args__'+featid],['feat'+num]);
  }
 }
