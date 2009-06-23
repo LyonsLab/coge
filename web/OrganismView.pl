@@ -4,7 +4,6 @@ use CGI;
 use CGI::Carp 'fatalsToBrowser';
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
-use CoGe::Accessory::Restricted_orgs;
 use HTML::Template;
 use Data::Dumper;
 use CGI::Ajax;
@@ -140,14 +139,13 @@ sub get_recent_orgs
 						  rows=>$limit}
 						);
     ($USER) = CoGe::Accessory::LogUser->get_user();
-    my $restricted_orgs = restricted_orgs(user=>$USER);
     my @opts;
     my %org_names;
     foreach my $item (@db)
       {
 	my $date = $item->date;
 	$date =~ s/\s.*//;
-	next if $restricted_orgs->{$item->organism->name};
+	next if $USER->user_name =~ /public/i && $item->organism->restricted;
 	next if $org_names{$item->organism->name};
 	$org_names{$item->organism->name}=1;
 	push @opts, "<OPTION value=\"".$item->organism->id."\">".$date." ".$item->organism->name." (id".$item->organism->id.") "."</OPTION>";
@@ -190,11 +188,10 @@ sub get_orgs
 	@db = $coge->resultset("Organism")->all;
       }
     ($USER) = CoGe::Accessory::LogUser->get_user();
-    my $restricted_orgs = restricted_orgs(user=>$USER);
     my @opts;
     foreach my $item (sort {uc($a->name) cmp uc($b->name)} @db)
       {
-	next if $restricted_orgs->{$item->name};
+	next if $USER->user_name =~ /public/i && $item->restricted;
 	my $option = "<OPTION value=\"".$item->id."\"";
 	$option .= " SELECTED" if $oid && $item->id == $oid;
 	$option .= " SELECTED" if $dsg && $item->id == $dsg->organism->id;
@@ -202,7 +199,6 @@ sub get_orgs
 	push @opts, $option;
       }
     my $html;
-#    $html .= qq{<FONT CLASS ="small">Organism count: }.scalar @opts.qq{</FONT>\n<BR>\n};
     unless (@opts) 
       {
 	$html .=  qq{<input type = hidden name="org_id" id="org_id">No organisms found};
@@ -334,11 +330,10 @@ sub get_dataset
       {
 	my @ds = $coge->resultset("Dataset")->search({name=>{like=>"%".$dsname."%"}});
 	($USER) = CoGe::Accessory::LogUser->get_user();
-	my $restricted_orgs = restricted_orgs(user=>$USER);
 	my %orgs;
 	foreach my $item (sort {$b->version <=> $a->version || uc($a->name) cmp uc($b->name)} @ds)
 	  {
-	    next if $restricted_orgs->{$item->organism->name};
+	    next if $USER->user_name =~ /public/i && $item->organism->restricted;
 	    my $option = "<OPTION value=\"".$item->id."\">".$item->name."(v".$item->version.", id".$item->id.")</OPTION>";
 	    if ($dsid && $dsid == $item->id)
 	      {
