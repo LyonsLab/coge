@@ -4,7 +4,6 @@ use CGI;
 use CGI::Ajax;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
-use CoGe::Accessory::Restricted_orgs;
 use HTML::Template;
 use Text::Wrap qw($columns &wrap);
 use Data::Dumper;
@@ -158,11 +157,10 @@ sub get_orgs
       {
 	my @db = $coge->resultset('Organism')->search({name=>{like=>"%".$name."%"}});
 	($USER) = CoGe::Accessory::LogUser->get_user();
-	my $restricted_orgs = restricted_orgs(user=>$USER);
 	my @opts;
 	foreach my $item (sort {uc($a->name) cmp uc($b->name)} @db)
 	  {
-	    next if $restricted_orgs->{$item->name};
+	    next if $USER->user_name =~ /public/i && $item->restricted;
 	    push @opts, "<OPTION value=\"".$item->id."\" id=\"o".$item->id."\">".$item->name."</OPTION>";
 	  }
 
