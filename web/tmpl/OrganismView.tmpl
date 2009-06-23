@@ -52,10 +52,10 @@ function get_dataset_name_chain(val)
 function dataset_group_chain(val) {
    if (val) {$('#org_info').html(val);}
    get_dataset_groups(['args__oid','org_id','args__dsgid','dsg_id'],[dataset_group_info_chain]);
-   $('#dsg_list').empty();
+   $('#dsg_list').html('<hidden id=dsg_id>');;
    $('#dsg_count').empty();	
    $('#dsg_info').empty();	
-   $('#ds_list').empty();
+   $('#ds_list').html('<hidden id=ds_id>');
    $('#ds_count').empty();	
    $('#ds_info').empty();	
    $('#chr_list').empty();
@@ -93,7 +93,18 @@ function dataset_info_chain(val, val2) {
  if (val) {$('#ds_list').html(val);}
  if (val2) {$('#ds_count').html(val2);}
  $('#ds_info').html('<span class="small alert">loading. . .</span>');
- get_dataset_info(['ds_id'],[dataset_chr_info_chain]);
+ $('#chr_list').empty();
+ $('#chr_count').empty();	
+ $('#chr_info').empty();	
+ $('#viewer').empty();
+ $('#get_seq').empty();
+ $('#data1').html(' ');
+ $('#data2').html(' ');
+ $('#data3').html(' ');
+ $('#data4').html(' ');
+ $('#data5').html(' ');
+ $('#data6').html(' ');
+get_dataset_info(['ds_id'],[dataset_chr_info_chain]);
 
 }
 
