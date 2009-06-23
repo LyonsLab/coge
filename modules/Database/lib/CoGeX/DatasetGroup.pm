@@ -719,6 +719,17 @@ sub distinct_feature_type_ids
     return wantarray ? keys %ids : [keys %ids];
   }
 
+sub source
+  {
+    my $self = shift;
+    my %sources;
+    foreach my $ds ($self->datasets)
+      {
+	$sources{$ds->data_source->id} = $ds->data_source;
+      }
+    return wantarray ? values %sources : [values %sources];
+  }
+
 =head1 BUGS
 
 
