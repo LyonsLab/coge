@@ -12,7 +12,6 @@ use CoGeX::Feature;
 use POSIX;
 use File::Temp;
 use File::Basename;
-use CoGe::Accessory::Restricted_orgs;
 use CoGe::Graphics::GenomeView;
 use CoGe::Graphics;
 use CoGe::Graphics::Chromosome;
