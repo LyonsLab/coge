@@ -71,6 +71,7 @@ sub gen_html
        my ($body) = gen_body();
        my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
        $template->param(TITLE=>'Feature List Viewer');
+       $template->param(PAGE_TITLE=>'FeatList');
        $template->param(HELP=>'BLAST');
        # print STDERR "user is: ",$USER,"\n";
        add_to_user_history() unless $USER->user_name eq "public";
