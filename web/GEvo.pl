@@ -123,6 +123,7 @@ sub gen_html
 	my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
 	$template->param(LOGO_PNG=>"GEvo-logo.png");
 	$template->param(TITLE=>'Genome Evolution Analysis');
+	$template->param(PAGE_TITLE=>'GEvo');
 	$template->param(HELP=>'GEvo');
 	my $name = $USER->user_name;
         $name = $USER->first_name if $USER->first_name;
