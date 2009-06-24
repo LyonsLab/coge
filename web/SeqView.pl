@@ -57,6 +57,7 @@ sub gen_html
     my ($title) = gen_title(protein=>$pro, rc=>$rc);
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
     $template->param(TITLE=>'Sequence Viewer');
+    $template->param(PAGE_TITLE=>'SeqView');
     $template->param(HELP=>'SeqView');
     my $name = $USER->user_name;
         $name = $USER->first_name if $USER->first_name;
