@@ -784,7 +784,7 @@ sub trans_type
   {
     my $self = shift;
     my $trans_type;
-    foreach my $feat ($self->features({feature_type_id=>3},{rows=>1}))
+    foreach my $feat ($self->features({feature_type_id=>3},{rows=>10}))
       {
 #	next unless $feat->type->name =~ /cds/i;
 	my ($code, $type) = $feat->genetic_code;
