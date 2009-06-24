@@ -162,8 +162,11 @@ sub gen_org_menu
 	$org = $coge->resultset('DatasetGroup')->find($dsgid)->organism;
 	$oid = $org->id;
       }
-    ($org) = $coge->resultset('Organism')->resolve($oid) if $oid && !$org;
-#    $name = $org->name if $org;
+    if ($USER->user_name =~ /public/i && $org->restricted)
+      {
+	 $oid = undef;
+	 $dsgid = undef;
+      }
     $name = "Search" unless $name;
     $desc = "Search" unless $desc;
     my $menu_template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SynMap.tmpl');
@@ -196,6 +199,7 @@ sub gen_dsg_menu
     my $message;
     foreach my $dsg (sort {$b->version <=> $a->version || $a->type->id <=> $b->type->id} $coge->resultset('DatasetGroup')->search({organism_id=>$oid},{prefetch=>['genomic_sequence_type']}))
       {
+#	next if $USER->user_name =~ /public/i && $dsg->organism->restricted;
 	push @dsg_menu, [$dsg->id, $dsg->type->name." (v".$dsg->version.")"];
       }
 
@@ -309,6 +313,7 @@ sub get_dataset_group_info
     my ($dsg) = $coge->resultset("DatasetGroup")->find({dataset_group_id=>$dsgid},{join=>['organism','genomic_sequences'],prefetch=>['organism','genomic_sequences']});
     return " "," "," " unless $dsg;
     my $org = $dsg->organism;
+#    next if $USER->user_name =~ /public/i && $org->restricted;
     my $orgname = $org->name;
     $orgname = "<a href=\"OrganismView.pl?oid=".$org->id."\" target=_new>$orgname</a>: ".$org->description if $org->description;
     $html_dsg_info .= qq{<div><span class="oblique">Organism:</span><span class="small">$orgname</small></div>};
@@ -1463,8 +1468,11 @@ sub get_previous_analyses
     my $oid1 = $opts{oid1};
     my $oid2 = $opts{oid2};
     return unless $oid1 && $oid2;
-    my ($org_name1) = $coge->resultset('Organism')->find($oid1)->name;
-    my ($org_name2) = $coge->resultset('Organism')->find($oid2)->name;
+    my ($org1) = $coge->resultset('Organism')->find($oid1);
+    my ($org2) = $coge->resultset('Organism')->find($oid2);
+    return if ($USER->user_name =~ /public/i && ($org1->restricted || $org2->restricted));
+    my ($org_name1) = $org1->name;
+    my ($org_name2) = $org2->name;
     ($oid1, $org_name1, $oid2, $org_name2) = ($oid2, $org_name2, $oid1, $org_name1) if ($org_name2 lt $org_name1);
 
     my $tmp1 = $org_name1;
@@ -1503,8 +1511,10 @@ sub get_previous_analyses
 			dsgid2=>$dsgid2);
 	    my $geneorder = $file =~ /geneorder/;
 	    my $dsg1 = $coge->resultset('DatasetGroup')->find($dsgid1);
+	    next unless $dsg1;
 	    my ($ds1) = $dsg1->datasets;
 	    my $dsg2 = $coge->resultset('DatasetGroup')->find($dsgid2);
+	    next unless $dsg2;
 	    my ($ds2) = $dsg2->datasets;
 	    my $name .= $dsg1->type->name." ".$type1." (".$ds1->data_source->name." v".$dsg1->version.") vs ";
 	    $name .= $dsg2->type->name." ".$type2." (".$ds2->data_source->name." v".$dsg2->version.")";
