@@ -61,8 +61,8 @@ my $pj = new CGI::Ajax(
 		       gen_dsg_menu=>\&gen_dsg_menu,
 		       %ajax,
 		      );
-#print $pj->build_html($FORM, \&gen_html);
-print "Content-Type: text/html\n\n";print gen_html($FORM);
+print $pj->build_html($FORM, \&gen_html);
+#print "Content-Type: text/html\n\n";print gen_html($FORM);
 
 
 sub gen_html
