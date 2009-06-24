@@ -70,6 +70,7 @@ sub gen_html
     my $html;
     my ($body) = gen_body();
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
+    $template->param(PAGE_TITLE=>'SynMap');
     $template->param(TITLE=>'SynMap: Powered by <a href=http://dagchainer.sourceforge.net/ target=_new>DAGChainer</a>');
     $template->param(HEAD=>qq{});
     my $name = $USER->user_name;
