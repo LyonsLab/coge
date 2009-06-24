@@ -65,7 +65,7 @@ sub gen_html
      $template->param(ADJUST_BOX=>1);
     $template->param(LOGO_PNG=>"CoGe-logo.png");
     $template->param(BODY=>gen_body());
-
+    $template->param(DEV=>1);
     my $html;
     $html .= $template->output;
     return $html;
