@@ -244,7 +244,6 @@ sub get_seq
       }
     elsif ($dsid)
       {
-
 	my $ds = $coge->resultset('Dataset')->find($dsid);
 	$fasta = ref ($ds) =~ /dataset/i ? 
 	  $ds->fasta
