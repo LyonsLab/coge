@@ -46,6 +46,7 @@ sub gen_html
 #	$template->param(HEADER_LINK=>'/CoGe/GeLo.pl');
         $template->param(LOGO_PNG=>"GenomeView-logo.png");
         $template->param(TITLE=>'Genome Viewer');
+        $template->param(PAGE_TITLE=>'Genome Viewer');
         $template->param(HELP=>'');
         my $name = $USER->user_name;
         $name = $USER->first_name if $USER->first_name;
