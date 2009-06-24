@@ -1,7 +1,7 @@
 <HTML>
 <HEAD>
 <meta http-equiv="Pragma" content="no-cache">
- <TITLE>CoGe: <TMPL_VAR NAME=TITLE></TITLE>
+ <TITLE>CoGe: <TMPL_VAR NAME=PAGE_TITLE></TITLE>
  <link rel="stylesheet" type="text/css" href="/CoGe/css/styled.css" />
 
 <TMPL_UNLESS NAME="NO_JQUERY">
@@ -270,7 +270,8 @@ $(document).ready( function() {
       <TMPL_IF NAME=LOGO_PNG><div id=home_icon><a href="/CoGe" border=0></div><img src='/CoGe/picts/<TMPL_VAR NAME=LOGO_PNG>' border=0></a></TMPL_IF>
      </TD>
      <TD>
-      <font class="title1"><TMPL_VAR NAME=TITLE></font><br><span class=alert>WARNING: THIS IS A DEVELOPMENT SERVER</span><br>Software may not work, system may be down, etc.<br>Please use <a href="http://synteny.cnr.berkeley.edu/CoGe"> our production server: synteny.cnr.berkeley.edu/CoGe</a>
+      <font class="title1"><TMPL_VAR NAME=TITLE></font>
+      <TMPL_IF NAME=DEV><br><span class=alert>WARNING: THIS IS A DEVELOPMENT SERVER</span><br>Software may not work, system may be down, etc.<br>Please use <a href="http://synteny.cnr.berkeley.edu/CoGe"> our production server: synteny.cnr.berkeley.edu/CoGe</a></TMPL_IF>
      </TD>
     </TR>
    </TABLE>
