@@ -195,7 +195,12 @@ sub get_orgs
 	my $option = "<OPTION value=\"".$item->id."\"";
 	$option .= " SELECTED" if $oid && $item->id == $oid;
 	$option .= " SELECTED" if $dsg && $item->id == $dsg->organism->id;
-	$option .= ">".$item->name." (id".$item->id.")</OPTION>";
+	my $name = $item->name;
+	if (length($name) > 50)
+	  {
+	    $name = substr($name, 0,50)."...";
+	  }
+	$option .= ">".$name." (id".$item->id.")</OPTION>";
 	push @opts, $option;
       }
     my $html;
