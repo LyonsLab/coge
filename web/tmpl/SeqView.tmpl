@@ -184,7 +184,6 @@ function redefine(rc){
 }
 
 function get_sequence(rc,pro,add){
-  //waiting('seq_text',rc);
   if (typeof pro == 'undefined'){
   pro=myObj.pro || 0;}
   else{
@@ -193,14 +192,8 @@ function get_sequence(rc,pro,add){
   rc = myObj.rc || 0;}
   else{
   myObj.rc=rc;}
-//  if (rc) {
-//    $('#rc_button').hide(0);
-//    $('#dna_button').show(0);
-//   }	
   var nowrap = myObj.nowrap;
-  //alert(rc);
   get_seq(['args__featid', 'args__'+myObj.featid, 'args__pro', 'args__'+pro, 'args__rc', 'args__'+rc, 'args__chr', 'args__'+myObj.chr, 'args__dsid', 'args__'+myObj.dsid, 'args__dsgid', 'args__'+myObj.dsgid, 'args__featname', 'args__'+myObj.featname, 'args__upstream', 'upstream', 'args__downstream', 'downstream', 'args__start', 'args__'+myObj.start,'args__stop', 'args__'+myObj.stop,'args__add', 'args__'+add, 'args__nowrap','args__'+nowrap, 'args__gstid','args__'+myObj.gstid],['seq_text']);
-  //alert($('#seq_text').html());
 }
 
 function set_nowrap(){
