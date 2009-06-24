@@ -606,6 +606,35 @@ sub fasta
     return $fasta;
   }
 
+################################################ subroutine header begin ##
+
+=head2 trans_type
+
+ Usage     : 
+
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub trans_type
+  {
+    my $self = shift;
+    foreach my $ds ($self->datasets())
+      {
+	my $type = $ds->trans_type();
+	return $type if $type;
+      }
+    return 1; #universal genetic code type;
+  }
+
 
 ################################################ subroutine header begin ##
 
