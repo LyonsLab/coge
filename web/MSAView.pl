@@ -43,6 +43,7 @@ sub gen_html
 	my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/MSAView.tmpl');
 	
 	$template->param(TITLE=>'Multiple Sequence Alignment Viewer');
+	$template->param(PAGE_TITLE=>'MSAView');
 	my $name = $USER->user_name;
         $name = $USER->first_name if $USER->first_name;
         $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
