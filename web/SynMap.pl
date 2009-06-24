@@ -61,8 +61,8 @@ my $pj = new CGI::Ajax(
 		       gen_dsg_menu=>\&gen_dsg_menu,
 		       %ajax,
 		      );
-print $pj->build_html($FORM, \&gen_html);
-#print "Content-Type: text/html\n\n";print gen_html($FORM);
+#print $pj->build_html($FORM, \&gen_html);
+print "Content-Type: text/html\n\n";print gen_html($FORM);
 
 
 sub gen_html
@@ -162,7 +162,7 @@ sub gen_org_menu
 	$org = $coge->resultset('DatasetGroup')->find($dsgid)->organism;
 	$oid = $org->id;
       }
-    if ($USER->user_name =~ /public/i && $org->restricted)
+    if ($USER->user_name =~ /public/i && $org && $org->restricted)
       {
 	 $oid = undef;
 	 $dsgid = undef;
