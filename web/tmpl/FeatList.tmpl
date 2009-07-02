@@ -105,7 +105,10 @@ function export_url(url,num_accns) {
     alert("You have exceeded the number of features you can send to GEvo ( 10 Max ). You currently have "+num_accns+" selected. Please uncheck "+remove+" of your checked item(s).");
   }
   else {
-    url=url+';gstid='+$('#gstid').val();
+    if ($('#gstid').val())
+     {
+       url=url+';gstid='+$('#gstid').val();
+     }
     window.open(url);
   }
 }
