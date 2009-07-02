@@ -639,104 +639,6 @@ sub genbank_location_string
   }
 
 
-################################################ subroutine header begin ##
-#
-#=head2 start
-#
-# Usage     : my $feat_start = $feat->start
-# Purpose   : returns the start of the feature (does not take into account the strand on which
-#             the feature is located)
-# Returns   : a string, number usually
-# Argument  : none
-# Throws    : 
-# Comments  : this simply calles $feat->locs, sorts them based on their starting position, and
-#           : returns the smallest position
-#
-#See Also   : 
-#
-#=cut
-
-################################################## subroutine header end ##
-
-
-#sub start
-#  {
-#    my $self = shift;
-#    return $self->{_start} if $self->{_start};
-#    my @loc =  $self->locations({},
-#				 {
-#				  order_by=>'start asc',
-#				 });
-#    $self->{_start}=($loc[0]->start);
-#    $self->{_stop}=($loc[-1]->stop);
-#    $self->{_strand}=($loc[0]->strand);
-#    $self->{_chromosome}=($loc[0]->chromosome);
-#    return $self->{_start};
-#  }
-
-################################################ subroutine header begin ##
-#
-#=head2 stop
-#
-# Usage     : my $feat_end = $feat->stop
-# Purpose   : returns the end of the feature (does not take into account the strand on which
-#             the feature is located)
-# Returns   : a string, number usually
-# Argument  : none
-# Throws    : 
-# Comments  : this simply calles $feat->locs, sorts them based on their ending position, and
-#           : returns the largest position
-#
-#See Also   : 
-#
-#=cut
-
-################################################## subroutine header end ##
-
-
-#sub stop
-#  {
-#    my $self = shift;
-#    return $self->{_stop} if $self->{_stop};
-#    my @loc =  $self->locations({},
-#				 {
-#				  order_by=>'stop desc',
-#				 });
-#    $self->{_start}=($loc[-1]->start);
-#    $self->{_stop}=($loc[0]->stop);
-#    $self->{_strand}=($loc[0]->strand);
-#    $self->{_chromosome}=($loc[0]->chromosome);
-#    return $self->{_stop};
-#  }
-################################################ subroutine header begin ##
-
-#=head2 chromosome
-#
-# Usage     : my $chr = $feat->chromosome
-# Purpose   : return the chromosome of the feature
-# Returns   : a string
-# Argument  : none
-# Throws    : none
-# Comments  : returns $self->locs->next->chr
-#           : 
-#
-#See Also   : 
-#
-#=cut
-
-################################################## subroutine header end ##
-
-
-#sub chromosome
-#  {
-#    my $self = shift;
-#    return $self->{_chromosome} if $self->{_chromosome};
-#    $self->start;
-#    return $self->{_chromosome};
-#  }
-#
-################################################# subroutine header begin ##
-
 =head2 chr
 
  Usage     : my $chr = $feat->chr
@@ -751,36 +653,6 @@ sub chr
     my $self = shift;
     return $self->chromosome;
   }
-
-################################################ subroutine header begin ##
-#
-#=head2 strand
-#
-# Usage     : my $strand = $feat->strand
-# Purpose   : return the chromosome strand of the feature
-# Returns   : a string (usally something like 1, -1, +, -, etc)
-# Argument  : none
-# Throws    : none
-# Comments  : returns $self->locs->next->strand
-#           : 
-#
-#See Also   : 
-#
-#=cut
-
-################################################## subroutine header end ##
-
-
-#sub strand
-#  {
-#    my $self = shift;    
-#    return $self->{_strand} if $self->{_strand};
-#    $self->start;
-#    return $self->{_strand};
-#  }
-
-
-################################################ subroutine header begin ##
 
 =head2 version
 
@@ -1608,7 +1480,7 @@ sub wobble_content
 =head2 fasta
 
  Usage     : 
- Purpose   : 
+ Purpose   : returns a fasta formated sequence for the featre
  Returns   : 
  Argument  : 
  Throws    : 
@@ -1644,8 +1516,13 @@ sub fasta
       {
 	foreach my $dsg ($self->dataset->dataset_groups)
 	  {
-	    $gst = $dsg->type if $dsg->type->id == $gstid;
+	    ($gst) = $dsg->type if $dsg->type->id == $gstid;
 	  }
+      }
+    if (!$gst)
+      {
+	($gst) = $self->sequence_type();
+	$gstid = $gst->id if $gst;
       }
     my ($pri_name) = $self->primary_name;
     my $head = ">";
@@ -1693,6 +1570,39 @@ sub fasta
 	return $head, $seq if ($sep);
       }
     return $fasta;
+  }
+
+
+################################################ subroutine header begin ##
+
+=head2 sequence_type
+
+ Usage     : 
+ Purpose   : returns the genomic_sequence_type object for the sequence
+ Returns   : wantarray -- may be more than one genomic_sequence_type sequences associated with this feature
+             looked up through dataset->dataset_group_connector->dataset_group->genomic_sequence_type
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub sequence_type
+  {
+    my $self = shift;
+    my %gst;
+    foreach my $dsg ($self->dataset->dataset_groups)
+      {
+	$gst{$dsg->genomic_sequence_type->id} = $dsg->genomic_sequence_type;
+      }
+    my @gst = values %gst;
+    return shift @gst if scalar @gst == 1; #only one result
+    return wantarray ? @gst : \@gst;
   }
 
 
