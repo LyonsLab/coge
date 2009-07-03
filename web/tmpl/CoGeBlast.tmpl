@@ -831,7 +831,7 @@ window.open('/CoGe/MatrixView.pl?matrix='+matrix);
 
  function monitor_log(log)
 {
-  var fasta = 0;
+  var fasta = "";
   var blast = 0;
   var results = 0;
   var done = 0;
@@ -1043,18 +1043,26 @@ function sort_genome_choice() {
 }
 
 function toggle_hsp_column(index) {
-$('#hsp_result_table tr').each(function() { 
-            $('td:eq('+index+')',this).toggle();
-            $('th:eq('+index+')',this).toggle();
-        });
+  show = 0;
+
+  if ($('#show_columns td:eq('+(1*index-1)+')').children()[0].checked) { show=1;}
+  if (show)
+   {
+    $('#hsp_result_table td:nth-child('+(1*index+1)+')').show();
+    $('#hsp_result_table th:nth-child('+(1*index+1)+')').show();
+   }
+  else
+   {
+    $('#hsp_result_table td:nth-child('+(1*index+1)+')').hide();
+    $('#hsp_result_table th:nth-child('+(1*index+1)+')').hide();
+   }
+    
 }
 
 
 function check_display() {
-var i = 1;
-var regex = /checked/i;
 $('#show_columns td').each(function() {
-    if (!regex.test($(this).html())){ toggle_hsp_column(i);}
+    if (!$(this).children()[0].checked){ toggle_hsp_column(i);}
     i++;
   });
 
