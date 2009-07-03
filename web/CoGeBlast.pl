@@ -343,7 +343,7 @@ $html .= qq{<SELECT id="org_id" SIZE="8" MULTIPLE"><option id=null_org>Please se
 	$html .= "No results";
 	return $html;
       }
-    $html .= qq{<SELECT id="org_id" SIZE="8" MULTIPLE onselect="show_add()" onchange="gen_dsg_menu(['args__oid','org_id'],['org_seq_types']);" ondblclick="add_selected_orgs();">\n};
+    $html .= qq{<SELECT id="org_id" SIZE="8" MULTIPLE onclick="show_add()" onchange="gen_dsg_menu(['args__oid','org_id'],['org_seq_types']);" ondblclick="add_selected_orgs();">\n};
     $html .= join ("\n", @opts);
     $html .= "\n</SELECT>\n";
     $html =~ s/OPTION/OPTION SELECTED/;
