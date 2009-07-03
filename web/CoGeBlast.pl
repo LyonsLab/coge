@@ -381,11 +381,6 @@ sub gen_dsg_menu
     $dsg_menu .= "</select>";
     my $t2 = new Benchmark;
     my $time = timestr(timediff($t2,$t1));
-#    print STDERR qq{
-#-----------------
-#sub gen_dsg_menu runtime:  $time
-#-----------------
-#};
     return ($dsg_menu);
     
   }
@@ -621,11 +616,17 @@ sub gen_results_page
 		 my $id = $hsp->number."_".$dsg->id;
 		 $click_all_links .= $id.",";
 		 my $feat_link = qq{<span class="link" onclick="fill_nearby_feats('$id','true')">Click for Closest Feature</span>};
-		 my $qname = $hsp->query_name =~ /Name: (.*), Type:/ ? $1 : $hsp->query_name;
-		 ($qname) = split /,/, $qname;
-		 $qname =~ s/^\s+//;
-		 $qname =~ s/\s+$//;
-		 $qname =~ s/,$//;
+		 
+		 my $qname = $hsp->query_name;
+		 #can we extract a CoGe name for the sequence
+		 if ($hsp->query_name =~ /Name: (.*), Type:/)
+		   {
+		     $qname =  $1; 
+		     ($qname) = split /,/, $qname;
+		     $qname =~ s/^\s+//;
+		     $qname =~ s/\s+$//;
+		     $qname =~ s/,$//;
+		   }
 		 $query_hit_count{$qname}{org}{$org}++;
 		 $query_hit_count{$qname}{orig_name} = $hsp->query_name;
 		 $query_hit_count{$qname}{color} = $hsp->{color} if $hsp->{color};
@@ -1043,14 +1044,15 @@ sub create_fasta_file
     $seq = ">seq\n".$seq unless $seq =~/>/;
     if ($seq =~ />/)
       {
-	foreach (split />/, $seq)
+	foreach (split /\n>/, $seq)
 	  {
 	    next unless $_;
 	    my ($name, $tmp) = split/\n/,$_,2;
+	    $name =~ s/^>//;
+	    next unless $tmp;
 	    $tmp =~ s/\n//g;
 	    $name =~ s/\s//g; #need to remove spaces due to how blast breaks query names at spaces or commas
 	    $seqs{$name}=length($tmp);
-	    
 	  }
       }
     write_log("creating user's fasta file",$cogeweb->logfile);
@@ -1619,7 +1621,6 @@ sub get_nearby_feats
 	$chr = $info->{schr};
       }
     my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
-#    print STDERR $dsgid, "\t", $chr,"\n";
     my $ds = $dsg->datasets(chr=>$chr);
     my $dsid = $ds->id;
     my ($start,$stop) = ($sstart,$sstop);
@@ -1896,7 +1897,6 @@ sub get_genome_info
   {
     my %opts = @_;
     my $dsgid = $opts{dsgid};
-#    print STDERR Dumper \%opts;
     return " " unless $dsgid;
     my $dsg = $coge->resultset("DatasetGroup")->find($dsgid);
     return "Unable to create dataset_group object for id: $dsgid" unless $dsg;
@@ -2117,7 +2117,6 @@ sub save_settings_cogeblast
 	  }
 	delete $prefs->{$key} unless $opts{$key};
       }
-#    print STDERR Dumper $prefs;
     my $item = save_settings(opts=>$prefs, user=>$USER, page=>$PAGE_NAME);
   }
 
