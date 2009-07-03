@@ -1044,7 +1044,7 @@ function sort_genome_choice() {
 
 function toggle_hsp_column(index) {
   show = 0;
-
+//  console.log ($('#show_columns td:eq('+(1*index-1)+')').html());
   if ($('#show_columns td:eq('+(1*index-1)+')').children()[0].checked) { show=1;}
   if (show)
    {
@@ -1061,6 +1061,7 @@ function toggle_hsp_column(index) {
 
 
 function check_display() {
+i=1;
 $('#show_columns td').each(function() {
     if (!$(this).children()[0].checked){ toggle_hsp_column(i);}
     i++;
