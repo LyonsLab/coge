@@ -433,8 +433,8 @@ $url =~ s/&$//;
 sub generate_excel_file
   {
   	my $accn_list = shift;
-    $accn_list =~ s/^,//;
-    $accn_list =~ s/,$//;
+	$accn_list =~ s/^,//;
+	$accn_list =~ s/,$//;
   	$cogeweb = initialize_basefile(prog=>"FeatList");
   	my $basename = $cogeweb->basefile;
   	my ($filename) = $basename =~ /FeatList\/(FeatList_.+)/;
@@ -457,14 +457,17 @@ sub generate_excel_file
    	 $worksheet->write(0,11,"More information");
    	 $worksheet->write(0,12,"Sequence");
    	
-   	foreach my $featid (split /,/,$accn_list)
+   	foreach my $item (split /,/,$accn_list)
 	  {
-   	   my ($feat) = $coge->resultset("Feature")->find($featid);
+	    my ($featid, $gstid) = split /_/, $item;
+	    my ($feat) = $coge->resultset("Feature")->find($featid);
+
    	   next unless $feat;
    	   my ($name) = sort $feat->names;
    	   my $app = $feat->annotation_pretty_print_html();
    	   $app =~ s/(<\/?span(\s*class=\"\w+\")?\s*>)?//ig;
-   	   my ($anno) = $app =~ /annotation: (.+)?/i;
+   	   my ($anno) = $app =~ /annotation:<td>(.+)?/i;
+#	    print STDERR $app,"\n\n", $anno,"\n\n";
    	   ($anno) = split (/<BR/, $anno);
    	   $anno =~ s/;/;\n/g;
 	   my ($at, $gc) = $feat->gc_content;
@@ -485,7 +488,8 @@ sub generate_excel_file
 	   $worksheet->write($i,9,$wat);
 	   $worksheet->write($i,10,$feat->organism->name."(v ".$feat->version.")");
 	   $worksheet->write($i,11,$anno);
-	   $worksheet->write($i,12,$feat->genomic_sequence);
+	    my $seq = $feat->genomic_sequence(gstid=>$gstid);
+	   $worksheet->write($i,12,$seq);
 	   $i++;
 	 };
    	$workbook->close() or die "Error closing file: $!";
