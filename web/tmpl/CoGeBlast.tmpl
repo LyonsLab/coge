@@ -916,12 +916,12 @@ window.open('/CoGe/MatrixView.pl?matrix='+matrix);
   if(log.match(/Results/i))
   {
   	blast += "Analysis complete!<br/>";
-  	results = "Collecting resultings . . . ";
+  	results = "Collating results. . . ";
   }
      if (log.match(/Finished/i))
     {
      results += "done!<br/>";
-     done = "Displaying results . . ."
+     done = "Displaying results.  This may take your browser some time to process the HSP table.  Please be patient."
      
      pageObj.finished = 1;
     }
@@ -933,7 +933,7 @@ window.open('/CoGe/MatrixView.pl?matrix='+matrix);
   
   if (fasta) message += "done!<br/>"+fasta;
   if (blast) message += blast;
-  if (results) message += results;
+  if (results) message = results;
   if (done) message += done;
   
 /*  if (!pageObj.finished && pageObj.nolog<8) {
@@ -1045,7 +1045,7 @@ function sort_genome_choice() {
 function toggle_hsp_column(index) {
   show = 0;
 //  console.log ($('#show_columns td:eq('+(1*index-1)+')').html());
-  if ($('#show_columns td:eq('+(1*index-1)+')').children()[0].checked) { show=1;}
+  if ($('#show_columns td:eq('+(1*index-1)+')').children()[0] && $('#show_columns td:eq('+(1*index-1)+')').children()[0].checked) { show=1;}
   if (show)
    {
     $('#hsp_result_table td:nth-child('+(1*index+1)+')').show();
