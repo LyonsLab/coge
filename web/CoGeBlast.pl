@@ -40,7 +40,7 @@ $TEMPURL = "/CoGe/tmp/CoGeBlast";
 $FORMATDB = "/usr/bin/formatdb";
 $BLAST = "/usr/bin/blast -a 8 -K 100";
 $BLASTZ = "/usr/bin/blastz";
-$RESULTSLIMIT=500;
+$RESULTSLIMIT=100;
 $MAX_PROC=8;
 
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
@@ -178,7 +178,7 @@ sub gen_body
 
       }
     $template->param(document_ready=>$db_list) if $db_list;
-    my $resultslimit = 100;
+    my $resultslimit = $RESULTSLIMIT;
     $resultslimit = $prefs->{'resultslimit'} if $prefs->{'resultslimit'};
     $template->param(RESULTSLIMIT=>$resultslimit);
     $template->param(SAVE_ORG_LIST=>1) unless $USER->user_name eq "public";
@@ -399,12 +399,15 @@ sub get_dsg_for_blast_menu
 	    $dsgs{$dsg->id}=$dsg;
 	  }
       }
-    %dsgs = () if ($dsgs{$dsgids});
-    foreach my $dsgid (split/,/,$dsgids)
+    if ($dsgids)
       {
-	my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
-	next unless $dsg;
-	$dsgs{$dsg->id}=$dsg;
+	%dsgs = () if ($dsgs{$dsgids});
+	foreach my $dsgid (split/,/,$dsgids)
+	  {
+	    my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	    next unless $dsg;
+	    $dsgs{$dsg->id}=$dsg;
+	  }
       }
     my $opts;
     foreach my $dsg (values %dsgs)
@@ -700,6 +703,9 @@ sub gen_results_page
 	     $hsp_limit_flag = 1;
 	   }
        }
+     my $total=0;
+     map {$total+=$_} values %hsp_count;
+     $hsp_count .= "<span class=\"small\">Total Number of Hits: $total</span>"; 
      $hsp_count .= "<span class=\"small alert\">All results are in the blast report.</span>" if $hsp_limit_flag;
 
      $template->param(HSP_COUNT=>$hsp_count);
