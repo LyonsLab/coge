@@ -1394,6 +1394,8 @@ sub generate_hit_image
     #find neighboring hsps
     my $sname = $hsp->{sname};
     my $qname = $hsp->{qname};
+    my $org = $hsp->{org};
+    my $schr = $hsp->{schr};
     my $statement = qq{
 select * from hsp_data where
 ((sstart <= $stop AND
@@ -1401,7 +1403,9 @@ sstart >= $start) OR
 (sstop <= $stop AND
 sstop >= $start)) AND
 sname = "$sname" AND
-qname = "$qname"
+qname = "$qname" AND
+org = "$org" AND
+schr = "$schr"
 };
     $sth = $dbh->prepare($statement);
     $sth->execute;
