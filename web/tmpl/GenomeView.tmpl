@@ -315,8 +315,7 @@
            jfetch(url,'query');
            var query_height = 1 - ($('#width').offset({scroll: false}).top / $(document).height());
            query_height *= $(document).height();
-           $('#query').css("max-height",""+query_height).show(0);
-           $('#hide_query').show(0);
+           $('#query').dialog('open');
          }
          
  function onEnter(e){
@@ -347,15 +346,14 @@ function launch_seqview(dsid, chr, gstid)
  {
    start = $('#grab_from').val();
    stop = $('#grab_to').val();
-   window.open("SeqView.pl?dsid="+dsid+"&chr="+chr+"&start="+start+"&stop="+stop+"&gstid="+gstid);
+   if (stop > 0) {window.open("SeqView.pl?dsid="+dsid+"&chr="+chr+"&start="+start+"&stop="+stop+"&gstid="+gstid);}
  }
 
 function launch_featlist(dsid, chr, gstid)
  {
    start = $('#grab_from').val();
    stop = $('#grab_to').val();
-   ftid = 0;
-   window.open("FeatList.pl?dsid="+dsid+"&chr="+chr+"&start="+start+"&stop="+stop+"&gstid="+gstid+"&ftid="+ftid);
+   if (stop > 0) {window.open("FeatList.pl?dsid="+dsid+"&chr="+chr+"&start="+start+"&stop="+stop+"&gstid="+gstid);}
  }
 
 function change_gene_model_type()
@@ -416,7 +414,7 @@ $(document).ready(function(){
   $('#map').css('width',$('#width').val());
   init();
   change_gene_model_type();
-  $(".dialog_box").dialog({ autoOpen: false });
+  $(".dialog_box").dialog({ autoOpen: false, width: 500  });
 
 
 });
@@ -440,7 +438,9 @@ $(function() {
 });
 });
 
-    </script>
+</script>
+
+
 Window Width: <input type=textbox class=backbox size=4 id="width" onkeypress="onEnter(event);" value=<TMPL_VAR NAME="width"> />px
 
 <span class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="$('#map').css('width',$('#width').val());updateZoom();"><span class="ui-icon ui-icon-arrow-2-e-w"></span>Resize</span>
@@ -451,36 +451,33 @@ Window Width: <input type=textbox class=backbox size=4 id="width" onkeypress="on
     <div id="map"></div>
     <div id='resolution'></div>
     <div id ='alert_grab'></div>
-<div id="slider"></div>
+<div id="slider" class='ui-slider ui-slider-horizontal ui-widget ui-widget-content ui-corner-all'>
+   <a class="ui-slider-handle ui-state-default ui-corner-all" href="#"><span class="ui-icon ui-icon-transferthick-e-w"></span></a>
+</div>
 
-<div style="float:left">
-<span class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="$('#set_range').show(0);$('#grab_seq').show();$('#extract_feat').hide();$('#grab_from').css('backgroundColor','FFFF66');pageObj.getseq=1;"><span class="ui-icon ui-icon-scissors"></span>Grab Sequence</span>
-<span class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="$('#set_range').show(0);$('#extract_feat').show();$('#grab_seq').hide();$('#grab_from').css('backgroundColor','FFFF66');pageObj.getseq=1;"><span class="ui-icon ui-icon-scissors"></span>Extract Features</span>
-<span class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="get_genome_info(['args__dsgid', 'args__<TMPL_VAR NAME=DSG>'],['genome_info_popup']);$('#genome_info_popup').dialog('open');"><span class="ui-icon ui-icon-newwin"></span>Genome Info</span>
 <br>
+<div style="float:left">
+ <span class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="$('#set_range').show(0);$('#grab_seq').show();$('#extract_feat').hide();$('#grab_from').css('backgroundColor','FFFF66');pageObj.getseq=1;"><span class="ui-icon ui-icon-scissors"></span>Grab Sequence</span>
+ <span class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="$('#set_range').show(0);$('#extract_feat').show();$('#grab_seq').hide();$('#grab_from').css('backgroundColor','FFFF66');pageObj.getseq=1;"><span class="ui-icon ui-icon-scissors"></span>Extract Features</span>
+ <span class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="get_genome_info(['args__dsgid', 'args__<TMPL_VAR NAME=DSG>'],['genome_info_popup']);$('#genome_info_popup').dialog('open');"><span class="ui-icon ui-icon-newwin"></span>Genome Info</span>
+ <br>
 <span id="set_range" style="display:none" > 
   <input type=text id='grab_from' value=0> to <input type=text id="grab_to" value=0> 
  </span>
  <span id="grab_seq" style="display:none" class='ui-button ui-state-default ui-corner-all' onClick="launch_seqview('<TMPL_VAR NAME=DS>','<TMPL_VAR NAME=CHR>','<TMPL_VAR NAME=GSTID>')"> View Sequence</span>
  <span id="extract_feat" style="display:none" class='ui-button ui-state-default ui-corner-all' onClick="launch_featlist('<TMPL_VAR NAME=DS>','<TMPL_VAR NAME=CHR>','<TMPL_VAR NAME=GSTID>')">Get Features</span>
- 
-
-<br>
-<span id = 'hide_query' style="display: none;" class='ui-button ui-state-default ui-corner-all' onClick="$('#query').slideToggle(pageObj.speed);$('#hide_query').hide(0);">Hide Feature Info</span>
-    <div id='query' style="overflow: auto;"></div>
 </div>
 
-<div align=right>
+<div align="right">
     <TMPL_IF NAME="SAVE_SETTINGS">
     <span align="right" class='ui-button ui-state-default ui-corner-all ui-button-icon-left' id="SaveSettings" onclick="go_save_options();"><span class="ui-icon ui-icon-disk"></span>Save Settings</span>
     </TMPL_IF>
 </div>
 
-
     <div align="right">Flat Gene Models<input type=checkbox name=flat_models id=flat_models onclick="change_gene_model_type();" <TMPL_VAR NAME=FLAT> /></div>
     <div align="right" >Expand Overlapping Gene Models<input type=checkbox name=overlap_models id=overlap_models onclick="change_gene_model_type();" <TMPL_VAR NAME=EXPAND> /></div>
     <div id='check' style="float:right">Pop-up Annotations<input type=checkbox name="popup_anno" id="popup_anno" <TMPL_VAR NAME=POPUPANNO> /></div>
-
+<div id='query' class="dialog_box" title="Features:"></div></div>
 <div id="genome_info_popup" class="dialog_box" title="Genome Information"><span class=loading>Loading. . .</span></div>
 
 
