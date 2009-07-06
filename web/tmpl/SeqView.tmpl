@@ -12,6 +12,7 @@ $('#maketable').html('<div id ="annotation" style = "overflow: auto; height: 300
     myObj = new generate_seq_obj('<TMPL_VAR NAME=DSID>','<TMPL_VAR NAME=DSGID>', '<TMPL_VAR NAME=CHR>','<TMPL_VAR NAME=GSTID>');}
 
   redefine(<TMPL_VAR NAME=RC>);
+  $(".dialog_box").dialog({ autoOpen: false, width: 500 });
 //  get_sequence(<TMPL_VAR NAME=RC>);
 });
 
@@ -192,18 +193,12 @@ function get_sequence(rc,pro,add){
   rc = myObj.rc || 0;}
   else{
   myObj.rc=rc;}
-  var nowrap = myObj.nowrap;
-  get_seq(['args__featid', 'args__'+myObj.featid, 'args__pro', 'args__'+pro, 'args__rc', 'args__'+rc, 'args__chr', 'args__'+myObj.chr, 'args__dsid', 'args__'+myObj.dsid, 'args__dsgid', 'args__'+myObj.dsgid, 'args__featname', 'args__'+myObj.featname, 'args__upstream', 'upstream', 'args__downstream', 'downstream', 'args__start', 'args__'+myObj.start,'args__stop', 'args__'+myObj.stop,'args__add', 'args__'+add, 'args__nowrap','args__'+nowrap, 'args__gstid','args__'+myObj.gstid],['seq_text']);
-}
-
-function set_nowrap(){
-	if($('#nowrap')[0].checked)
+  var wrap = 0;
+  if($('#wrap')[0].checked)
 	{
-		myObj.nowrap=1;
+	  wrap=1;
 	}
-	else{
-		myObj.nowrap=0;
-	}
+  get_seq(['args__featid', 'args__'+myObj.featid, 'args__pro', 'args__'+pro, 'args__rc', 'args__'+rc, 'args__chr', 'args__'+myObj.chr, 'args__dsid', 'args__'+myObj.dsid, 'args__dsgid', 'args__'+myObj.dsgid, 'args__featname', 'args__'+myObj.featname, 'args__upstream', 'upstream', 'args__downstream', 'downstream', 'args__start', 'args__'+myObj.start,'args__stop', 'args__'+myObj.stop,'args__add', 'args__'+add, 'args__wrap','args__'+wrap, 'args__gstid','args__'+myObj.gstid],['seq_text']);
 }
 
 function featlist (link) {
@@ -242,13 +237,14 @@ $(function(){
 	</TD>
         <td valign=top>
        <TMPL_VAR NAME=FEAT_INFO>
-       <div id=feature_info style="display:none"></div>
        <br><br>
        <TMPL_VAR NAME=GC_INFO>
        <div id=gc_info style="display:none"></div>
        </TR>
       </TABLE>
  </div>
+<div id="feature_info" class="dialog_box" title="Feature Information"></div>
+
 <div id=seq_buttons class="ui-buttonset ui-buttonset-single">
 <button id="dna_button" class="ui-button ui-state-default ui-corner-left seq_button ui-state-active" onClick="get_sequence(0,0);gen_title(['args__rc','args__0','args__pro','args__0'],['box_name']);">Genomic DNA</button>
 <button id="rc_button" class="ui-button ui-state-default seq_button" onClick="get_sequence(1,0);gen_title(['args__rc','args__1','args__pro','args__0'],['box_name']);">Reverse Complement</button>
@@ -259,7 +255,7 @@ $(function(){
        <DIV class="seqview_button dna_button" style="display: none; float: left" id="dna_button"><input type=button value="DNA Sequence" onClick="dynamic_buttons('dna_button');get_sequence(0,0);gen_title(['args__rc','args__0','args__pro','args__0'],['box_name']);"></DIV>
       <DIV class="seqview_button rc_button" style="float: left" id="rc_button"><input type=button value="Reverse Complement" onClick="dynamic_buttons('rc_button');get_sequence(1,0);gen_title(['args__rc','args__1','args__pro','args__0'],['box_name']);"></DIV>
       <DIV class="seqview_button pro_button" style="float: left" id="pro_button"><input type=button value="<TMPL_VAR NAME=PROTEIN>" onClick="dynamic_buttons('pro_button');$('#seq_text').val('Loading. . .');get_sequence(0,1);gen_title(['args__rc','args__0','args__pro','args__1','args__sixframe','args__<TMPL_VAR NAME=SIXFRAME>'],['box_name']);"></DIV> -->
- <input type=checkbox id=nowrap onclick='set_nowrap()'> Check to disable sequence wrapping
+ <input type=checkbox id=wrap checked onclick="  get_sequence(myObj.rc,myObj.pro,1);"> Wrap sequence?
 
 </TMPL_IF>
 
@@ -272,59 +268,52 @@ $(function(){
 </Table>
 </DIV>
 <table>
- <TR>
-  <TD>
+ <TR >
+  <TD  class=small>
    <TMPL_VAR NAME = "UPSTREAM">
    </td>
-   <td>
+   <td  class=small>
    <INPUT type="text" id="upstream"  onkeypress="onEnter(event);" class="backbox" value= "<TMPL_VAR NAME="UPVALUE">" size=6>
    </td>
-   <TD>
+   <TD  class=small>
    <TMPL_VAR NAME="DOWNSTREAM">
    </td>
-   <td>
+   <td  class=small>
    <INPUT type="text" id="downstream" onkeypress="onEnter(event);" class="backbox" value= "<TMPL_VAR NAME="DOWNVALUE">" size=6>
   </TD>
-  </TR>
   <TMPL_IF NAME=ADD_EXTRA>
-  <TR>
+  <TR >
   </td>
-   <TD>
-     Add Upstream:
+   <TD  class=small>
+     Add 5':
     </td>
    <td>
    <INPUT type="text" id="addup"  onkeypress="onEnter(event,1);" class="backbox" value= "<TMPL_VAR NAME="ADDUP">"  size=6>
      </td>
-     <TD >
-     Add Downstream: 
+     <TD  class=small>
+     Add 3': 
     </td>
    <td>
      <INPUT type="text" id="adddown" onkeypress="onEnter(event,1);" class="backbox" value= "<TMPL_VAR NAME="ADDDOWN">" size=6>
    </td>
-  </tr>
   </TMPL_IF>
-
-
-  <TR>
-<tr><td><input type= button value ="Redefine Sequence" id = "add_to" onClick="redefine(myObj.rc);">
+<td><span class='ui-button ui-button-icon-left ui-state-default ui-corner-all' id = "add_to" onClick="redefine(myObj.rc);"><span class="ui-icon ui-icon-arrowrefresh-1-s"></span>Redefine Sequence</span>
    <TMPL_IF NAME="FEATURE">
    <TD align>
-   <input type = button value = "Reset" id="reset" onClick="reset_updown();get_sequence();">
+   <span class='ui-button ui-button-icon-left ui-state-default ui-corner-all' id="reset" onClick="reset_updown();get_sequence();"><span class="ui-icon ui-icon-refresh"></span>Reset</span>
    </TMPL_IF>
  </TABLE>
 <table>
+     <TR>
+     <TD align=right valign="top">
+     <span class='ui-button ui-state-default ui-corner-all' id="blast_button" style="float: left" onClick="blastSeq()">CoGe Blast</span>
+     <span class='ui-button ui-state-default ui-corner-all' id="trna_button" style="float: left" onClick="AragornSeq()">Scan for tRNAs</span>
+     <span class='ui-button ui-state-default ui-corner-all' id="rnafold_button" style="float: left" onClick="RNAFold()">RNA Fold</span>
+    </TD>
+   </TR>
      <tr>
      <TD valign="top">
      <DIV id="find_feats_button" style="float:left"> <TMPL_VAR NAME=FEATLISTLINK></div> <div id="feat_type_list" style="float:left"> <TMPL_VAR NAME="FEAT_TYPE_LIST"></DIV>
-
-     </TD>
-     <TR>
-     <TD align=right valign="top">
-     <DIV id="blast_button" style="float: left" ><input type=button value="Blast Sequence" onClick="blastSeq()"></DIV>
-     <DIV id="trna_button" style="float: left" ><input type=button value="Scan Sequence for tRNAs" onClick="AragornSeq()"></DIV>
-     <DIV id="rnafold_button" style="float: left" ><input type=button value="RNA Fold" onClick="RNAFold()"></DIV>
-    </TD>
-   </TR>
 </table>
 
 </TMPL_IF>
