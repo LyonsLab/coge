@@ -114,12 +114,13 @@ sub gen_body
       $template->param(FEAT_STOP=>$feat->stop);
       $template->param(FEATID=>$featid);
       $template->param(FEATNAME=>$feat_name);
-      $template->param(FEAT_INFO=>qq{<input type=button value="Get Feature Info" onClick="generate_feat_info(['args__$featid'],[display_feat_info])">});
+#      $template->param(FEAT_INFO=>qq{<span class='ui-button ui-state-default ui-corner-all' onClick="generate_feat_info(['args__$featid'],[display_feat_info]); ">Get Feature Info</span>});
+      $template->param(FEAT_INFO=>qq{<span class='ui-button ui-state-default ui-corner-all' onClick="generate_feat_info(['args__$featid'],['feature_info']); \$('#feature_info').dialog('open');">Get Feature Info</span>});
       $template->param(PROTEIN=>'Protein Sequence');
       $template->param(SIXFRAME=>0);
-      $template->param(UPSTREAM=>"UPSTREAM (5'): ");
+      $template->param(UPSTREAM=>"Add 5': ");
       $template->param(UPVALUE=>$upstream);
-      $template->param(DOWNSTREAM=>"DOWNSTREAM (3'): ");
+      $template->param(DOWNSTREAM=>"Add 3': ");
       $template->param(DOWNVALUE=>$downstream);
       $template->param(FEATURE=>1);
       $start = $feat->start;
@@ -133,9 +134,9 @@ sub gen_body
 
 	$template->param(PROTEIN=>'Six Frame Translation');
 	$template->param(SIXFRAME=>1);
-	$template->param(UPSTREAM=>"START: ");
+	$template->param(UPSTREAM=>"Start: ");
 	$template->param(UPVALUE=>$start);
-	$template->param(DOWNSTREAM=>"STOP: ");
+	$template->param(DOWNSTREAM=>"Stop: ");
 	$template->param(DOWNVALUE=>$stop);
 	$template->param(ADD_EXTRA=>1);
 	$template->param(ADDUP=>$upstream);
@@ -158,7 +159,7 @@ sub gen_body
 
     $template->param(FEATLISTLINK=>$link);
     $template->param(FEAT_TYPE_LIST=>$types);
-    $template->param(GC_INFO=>qq{<td valign=top><input type=button value="Calculate GC Content" onClick="generate_gc_info(['seq_text','args__'+myObj.pro],[display_gc_info],'POST')">});
+    $template->param(GC_INFO=>qq{<td valign=top><span class='ui-button ui-state-default ui-corner-all'  onClick="generate_gc_info(['seq_text','args__'+myObj.pro],[display_gc_info],'POST')">Calculate GC Content</span>});
     my $html = $template->output;
     return $html;
   }
@@ -207,9 +208,9 @@ sub get_seq
     my $downstream = $opts{'downstream'};
     my $start = $opts{'start'};
     my $stop = $opts{'stop'};
-    my $nowrap = $opts{'nowrap'} || 0;
+    my $wrap = $opts{'wrap'} || 0;
     my $gstid = $opts{gstid};
-    $nowrap = 0 if $nowrap =~ /undefined/;
+    $wrap = 0 if $wrap =~ /undefined/;
     if($add_to_seq){
       $start = $upstream if $upstream;
       $stop = $downstream if $downstream;
@@ -222,7 +223,7 @@ sub get_seq
     my $strand;
     my $seq;
     my $fasta;
-    my $col= $nowrap > 0 ? 0 : 80;
+    my $col= $wrap ? 80 : 0;
 
     if ($featid)
       {
@@ -360,9 +361,9 @@ sub find_feats
 	    $dsid = $dsg->datasets(chr=>$chr)->id;
 	    $gstid = $dsg->type->id;
 	  }
-	my $link = qq{<input type=button value="Find Features in Sequence" onClick="featlist('FeatList.pl?};
+	my $link = qq{<span class='ui-button ui-state-default ui-corner-all' " onClick="featlist('FeatList.pl?};
 	my %type;
-	$link .="start=$start;stop=$stop;chr=$chr;dsid=$dsid;gstid=$gstid".qq{')">};
+	$link .="start=$start;stop=$stop;chr=$chr;dsid=$dsid;gstid=$gstid".qq{')">Extract Features: <span>};
 	foreach my $ft ($coge->resultset('FeatureType')->search(
 								{"features.dataset_id"=>$dsid,
 								 "features.chromosome"=>$chr},
@@ -390,8 +391,8 @@ sub generate_feat_info
     {
       return "Unable to retrieve Feature object for id: $featid";
     }
-    my $html = qq{<a href="#" onClick="\$('#feature_info').slideToggle(pageObj.speed);" style="float: right;"><img src='/CoGe/picts/delete.png' width='16' height='16' border='0'></a>};
-    $html .= $feat->annotation_pretty_print_html();
+#    my $html = qq{<a href="#" onClick="\$('#feature_info').slideToggle(pageObj.speed);" style="float: right;"><img src='/CoGe/picts/delete.png' width='16' height='16' border='0'></a>};
+    my $html = $feat->annotation_pretty_print_html();
     return $html;
   }
   
@@ -408,6 +409,14 @@ sub generate_gc_info
     my $at = $seq =~ tr/ATat/ATat/;
     my $pgc = sprintf("%.2f",$gc/$length*100);
     my $pat = sprintf("%.2f",$at/$length*100);
-    my $total_content = "GC: $gc (".$pgc."%)  AT: $at (".$pat."%)  total length: $length";
+    my $total_content = "GC: ".commify($gc)." (".$pgc."%)  AT: ".commify($at)." (".$pat."%)  total length: ".commify($length);
     return $total_content;    
   }
+
+sub commify {
+        my $input = shift;
+        $input = reverse $input;
+        $input =~ s<(\d\d\d)(?=\d)(?!\d*\.)><$1,>g;
+        return scalar reverse $input;
+}
+
