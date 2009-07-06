@@ -87,7 +87,8 @@ sub gen_html
 	foreach my $feat (sort {$a->type->name cmp $b->type->name} @feats)
 	  {
 	    next if $feat->type->name =~ /^source$/;
-	    $html .= "<tr><td valign='top'>".$feat->type->name."</td><td valign='top'>".(join (", ",$feat->names))."</td></tr>";
+	    next if $feat->type->name =~ /^chromosome$/;
+	    $html .= "<tr><td valign='top' class=species>".$feat->type->name."</td><td valign='top'>".(join (", ",map {"<a href=FeatView.pl?accn=$_;fid=".$feat->id." target=_new class=link>$_</a>"}$feat->names))."</a></td></tr>";
 	  }
 	$html .="</table>";
 	return $html;
