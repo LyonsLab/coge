@@ -243,12 +243,11 @@
 	function updateSliderPosition() {
 		 var pos_obj = map.getCenter();
 		 var pos = pos_obj.lon;
-		 console.log(pos);
 		 $('#slider').slider('value',pos);
 	}
 
         function mapMouseDown(e){
-        	  $('#popup').hide(0);
+//        	  $('#short_anno_popup').hide(0);
             map.lastMouseX = e.xy.x;
             map.lastMouseY = e.xy.y;
         }
@@ -261,14 +260,15 @@
                 // dont need to figure out basepairs from pixels
                 // just use the ones in the window already.
                 if(pageObj.getseq < 3)
-                {
+                 {
                     pageObj.getseq++;
                     var pos = parseInt(bp.element.innerHTML);
-        			update_grab(pos);
-        		}
-        		else{
-                	query(parseInt(bp.element.innerHTML));
-                }
+        	    update_grab(pos);
+        	 }
+        	else
+ 		 {
+                  query(parseInt(bp.element.innerHTML));
+                 }
             }
         }
         
@@ -282,26 +282,14 @@
 	  if (parseInt(bp.element.innerHTML) <= 0) return;
        var mouse_x = e.pageX;
        var mouse_y = e.pageY;
-            //alert(map.lastMouseX+","+map.lastMouseY);
-       pageObj.time = setTimeout("info_popup('"+mouse_x+","+mouse_y+"')",1000);
-     }
-     
-     function insert_query(html) {
-        $('#popup').append(html);
+       pageObj.time = setTimeout("info_popup()",100);
      }
      
      function info_popup(position_str) {
-       var position = position_str.split(",");
-       var from_left = position[0];
-       var document_width = $(window).width();
-     //alert(document_width);
-     //if (document_width <= (from_left + 150)) {from_left += document_width - (from_left+150) - 5;}
-       var from_top = position[1];
-       var html = "<a href='#' onClick=\"$('#popup').slideToggle(pageObj.speed);\" style='float: right;'><img src='/CoGe/picts/delete.png' width='16' height='16' border='0'></a>";
-       $('#popup').css({position: "absolute", top: ""+from_top, left: ""+from_left}).html(html).slideDown(pageObj.speed);
        var url = 'FeatAnno.pl?chr='+ chr + '&version='+version+'&org='+org+'&loc='
        + parseInt(bp.element.innerHTML) +'&ds='+ds+'&gstid='+gstid+'&name_only='+1;
-       jfetch(url,insert_query);
+       jfetch(url,'short_anno_popup');
+       $('#short_anno_popup').dialog('open');
      }
 	
         function updateZoom(){
@@ -312,10 +300,8 @@
            var url = 'FeatAnno.pl?chr='
            + chr + '&version='+version+'&org='+org+'&loc='
            + x+'&ds='+ds+'&gstid='+gstid; 
-           jfetch(url,'query');
-           var query_height = 1 - ($('#width').offset({scroll: false}).top / $(document).height());
-           query_height *= $(document).height();
-           $('#query').dialog('open');
+           jfetch(url,'query_popup');
+           $('#query_popup').dialog('open');
          }
          
  function onEnter(e){
@@ -347,6 +333,7 @@ function launch_seqview(dsid, chr, gstid)
    start = $('#grab_from').val();
    stop = $('#grab_to').val();
    if (stop > 0) {window.open("SeqView.pl?dsid="+dsid+"&chr="+chr+"&start="+start+"&stop="+stop+"&gstid="+gstid);}
+   else {alert("stop position is: "+stop)};
  }
 
 function launch_featlist(dsid, chr, gstid)
@@ -354,6 +341,7 @@ function launch_featlist(dsid, chr, gstid)
    start = $('#grab_from').val();
    stop = $('#grab_to').val();
    if (stop > 0) {window.open("FeatList.pl?dsid="+dsid+"&chr="+chr+"&start="+start+"&stop="+stop+"&gstid="+gstid);}
+   else {alert("stop position is: "+stop)};
  }
 
 function change_gene_model_type()
@@ -421,9 +409,7 @@ $(document).ready(function(){
 
 function moveMap(){
 	 var mypos= $('#slider').slider("value");
-	// console.log(mypos);
 	 var myzoom = map.getResolution();
-	//  console.log(myzoom);
 	 map.setCenter(OpenLayers.BasePair(mypos));
 }
 
@@ -447,7 +433,7 @@ Window Width: <input type=textbox class=backbox size=4 id="width" onkeypress="on
 <span class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="$('#map').css('width',''+$('#main').width());updateZoom();"><span class="ui-icon ui-icon-arrow-4-diag"></span>Full-Window</span>
 
     <div id="main"></div>
-    <div id="popup" class="genomeview_popup" style="display: none"></div>
+
     <div id="map"></div>
     <div id='resolution'></div>
     <div id ='alert_grab'></div>
@@ -477,7 +463,9 @@ Window Width: <input type=textbox class=backbox size=4 id="width" onkeypress="on
     <div align="right">Flat Gene Models<input type=checkbox name=flat_models id=flat_models onclick="change_gene_model_type();" <TMPL_VAR NAME=FLAT> /></div>
     <div align="right" >Expand Overlapping Gene Models<input type=checkbox name=overlap_models id=overlap_models onclick="change_gene_model_type();" <TMPL_VAR NAME=EXPAND> /></div>
     <div id='check' style="float:right">Pop-up Annotations<input type=checkbox name="popup_anno" id="popup_anno" <TMPL_VAR NAME=POPUPANNO> /></div>
-<div id='query' class="dialog_box" title="Features:"></div></div>
+
+<div id="short_anno_popup" class="dialog_box" title="Feature Quick Look:"</div>
+<div id='query_popup' class="dialog_box" title="Features:"></div></div>
 <div id="genome_info_popup" class="dialog_box" title="Genome Information"><span class=loading>Loading. . .</span></div>
 
 
