@@ -88,7 +88,7 @@ sub gen_html
 	  {
 	    next if $feat->type->name =~ /^source$/;
 	    next if $feat->type->name =~ /^chromosome$/;
-	    $html .= "<tr><td valign='top' class=species>".$feat->type->name."</td><td valign='top'>".(join (", ",map {"<a href=FeatView.pl?accn=$_;fid=".$feat->id." target=_new class=link>$_</a>"}$feat->names))."</a></td></tr>";
+	    $html .= "<tr><td valign=top class='species small'>".$feat->type->name.": </td><td valign='top'>".(join (", ",map {"<span onclick=\"window.open('FeatView.pl?accn=$_;fid=".$feat->id."');\" class='small link'>$_</span>"} $feat->names))."</td></tr>";
 	  }
 	$html .="</table>";
 	return $html;
