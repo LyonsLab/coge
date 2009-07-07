@@ -505,7 +505,7 @@ sub annotation_pretty_print_html
     foreach my $name ($self->names)
       {
 	$outname = $name unless $outname;
-	$anno_type->add_Annot("<a class=\"data5 link\" href=\"FeatView.pl?accn=".$name."\" target=_new>".$name."</a>");
+	$anno_type->add_Annot("<span class=\"data5 link\" onclick=\"window.open('FeatView.pl?accn=".$name."');\">".$name."</span>");
       }
     $anno_obj->add_Annot($anno_type);
     unless ($minimal)
@@ -551,18 +551,18 @@ sub annotation_pretty_print_html
 	$location .=" (".$strand.")";
 	my $featid = $self->id;
 	$anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\">Length</span>", Values=>["<span class='data5'>".$self->length." nt</span>"],Type_delimit=>":<td>", Val_delimit=>" ")) unless $minimal;
-	$location = qq{<a class="data5 link" href="$loc_link?featid=$featid&start=$start&stop=$stop&chr=$chr&dsid=$dataset_id&strand=$strand&gstid=$gstid" target=_new>}.$location."</a>" if $loc_link;
+	$location = qq{<span class="data5 link" onclick="window.open('$loc_link?featid=$featid&start=$start&stop=$stop&chr=$chr&dsid=$dataset_id&strand=$strand&gstid=$gstid')" >}.$location."</span>" if $loc_link;
 	$location = qq{<span class="data">$location</span>};
-	$anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\"><a href=\"GenomeView.pl?chr=$chr&ds=$dataset_id&x=$start&z=3&gstid=$gstid\" target=_new>Location</a></span>", Values=>[$location], Type_delimit=>":<td>", Val_delimit=>" "));
+	$anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\"><span onclick=\"window.open('GenomeView.pl?chr=$chr&ds=$dataset_id&x=$start&z=3&gstid=$gstid')\" >Location</span></span>", Values=>[$location], Type_delimit=>":<td>", Val_delimit=>" "));
 
 	my $ds=$self->dataset();
-	my $dataset = qq{<a class="data5 link" href = "OrganismView.pl?dsid=}.$ds->id."\" target=_new>".$ds->name;
+	my $dataset = qq{<span class="data5 link" onclick="window.open('OrganismView.pl?dsid=}.$ds->id."')\">".$ds->name;
 #	$dataset .= ": ".$ds->description if $ds->description;
-	$dataset .= "</a>";
+	$dataset .= "</span>";
 	$anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\">Dataset</span>", Values=>[$dataset], Type_delimit=>":<td>", Val_delimit=>" "));
-	my $org = qq{<a class="data5 link" href = "OrganismView.pl?oid=}.$ds->organism->id."\" target=_new>".$ds->organism->name;
+	my $org = qq{<span class="data5 link" onclick = "window.open('OrganismView.pl?oid=}.$ds->organism->id."')\">".$ds->organism->name;
 #	$org .= ": ".$ds->organism->description if $ds->organism->description;
-	$org .= "</a>";
+	$org .= "</span>";
 	
 	$anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\">Organism</span>", Values=>[$org], Type_delimit=>":<td>", Val_delimit=>" "));
 	my $gst;
