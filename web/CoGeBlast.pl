@@ -638,7 +638,7 @@ sub gen_results_page
 			     ID=>$id,
 			     QUERY_SEQ=>$qname,
 			     HSP_ORG=>$org,
-			     HSP=>qq{<span class="link" title="Click for HSP information" onclick="update_hsp_info('table_row$id');\$('#middle_column_button_hide').show(0);\$('#middle_column_button_show').hide(0);">}.$hsp->number."</span>",
+			     HSP=>qq{<span class="link" title="Click for HSP information" onclick="update_hsp_info('table_row$id');">}.$hsp->number."</span>",
 			     HSP_EVAL=>$hsp->pval,
 			     HSP_LENGTH=>$hsp->length,
 			     COVERAGE=>sprintf("%.1f",$hsp->query_coverage*100)."%",
@@ -942,11 +942,12 @@ sub generate_chromosome_images
 		elsif ($color_hsps eq "query")
 		  { $color = $query_seqs{$hsp->query_name}; }
 		else { $color = [0,200,0]; }
+		my $id = $hsp->number."_".$set->{dsg}->id;
   		$data{$org}{image}->add_feature(name=>$hsp->number,
   						start=>$hsp->sstart,
   						stop=>$hsp->sstop,
   						chr=>"Chr: $chr",
-  						imagemap=>qq/class="imagemaplink" title="HSP No. /.$hsp->number.qq/" onclick="\$('#big_picture').dialog('close');show_hsp_div();loading('image_info','Information');loading('query_image','Image');loading('subject_image','Image');get_hsp_info(['args__blastfile','args__/.$cogeweb->basefile.qq/','args__num','args__$num'],['image_info','query_image','subject_image']);"/,
+  						imagemap=>qq/class="imagemaplink" title="HSP No. /.$hsp->number.qq/" onclick="update_hsp_info('table_row$id');""/,
   						up=>$up,
   						color=>$color,
   					       );
@@ -1148,8 +1149,7 @@ sub generate_feat_info
     {
       return "Unable to retrieve Feature object for id: $featid";
     }
-    my $html = qq{<span class="link" onClick="\$('#overlap_box').slideToggle(pageObj.speed);" style="float: right;"><img src='/CoGe/picts/delete.png' width='16' height='16' border='0'></span>} unless $checkbox;
-    $html .= $feat->annotation_pretty_print_html(gstid=>$dsg->type->id);
+    my $html = $feat->annotation_pretty_print_html(gstid=>$dsg->type->id);
     return $html;
   }
 
@@ -1272,7 +1272,7 @@ sub get_hsp_info
      
      $template->param(QUERY_SEQ=>qq{<span class="small link" onclick="show_seq('$query_seq','$query_name',1,'seqObj','seqObj','}.$qstart."','".$qstop.qq{')">Query Sequence Hit</span>});
      my $rc = $strand =~ /-/ ? 1 : 0;
-     $template->param(SUB_SEQ=>qq{<a class="small" href="SeqView.pl?dsid=$dsid;chr=$chr;start=$sstart;stop=$sstop;rc=$rc;gstid=$gstid" target=_new>Subject Sequence Hit</a>});
+     $template->param(SUB_SEQ=>qq{<span class="small link" onclick="window.open('SeqView.pl?dsid=$dsid;chr=$chr;start=$sstart;stop=$sstop;rc=$rc;gstid=$gstid')" target=_new>Subject Sequence Hit</span>});
      
      $template->param(ALIGNMENT=>qq{<span class="link small" onclick="show_seq('$align_str','HSP No. $hsp_num',0,0,0,0)">Alignment</span>});
      
@@ -1850,14 +1850,13 @@ sub generate_tab_deliminated
     foreach my $accn (split /,/,$accn_list)
       {
 	next if $accn =~ /no$/;
-	my ($featid,$hsp_num,$dsid) = $accn =~ m/^(\d+)_(\d+)_(\d+)$/;
-	my $ds = $coge->resultset("Dataset")->find($dsid);
+	my ($featid,$hsp_num,$dsgid) = $accn =~ m/^(\d+)_(\d+)_(\d+)$/;
+	my $dsg = $coge->resultset("DatasetGroup")->find($dsgid);
 	my ($feat) = $coge->resultset("Feature")->find($featid);
 	
 	my ($name) = sort $feat->names;
-	my $org = $ds->organism->name;
-	
-	$sth->execute($hsp_num."_".$dsid) || die "unable to execute";
+	my $org = $dsg->organism->name;
+	$sth->execute($hsp_num."_".$dsgid) || die "unable to execute";
 	my ($pval,$pid,$score);
 	while (my $info = $sth->fetchrow_hashref())
 	  {
