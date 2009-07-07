@@ -84,11 +84,13 @@ sub gen_html
     if($name_only)
       {
 	$html = "<table>";
+	my $class = "even";
 	foreach my $feat (sort {$a->type->name cmp $b->type->name} @feats)
 	  {
 	    next if $feat->type->name =~ /^source$/;
 	    next if $feat->type->name =~ /^chromosome$/;
-	    $html .= "<tr><td valign=top class='species small'>".$feat->type->name.": </td><td valign='top'>".(join (", ",map {"<span onclick=\"window.open('FeatView.pl?accn=$_;fid=".$feat->id."');\" class='small link'>$_</span>"} $feat->names))."</td></tr>";
+	    $html .= "<tr class='small $class'><td class='title5'>".$feat->type->name.": </td><td >".(join (", ",map {"<span onclick=\"window.open('FeatView.pl?accn=$_;fid=".$feat->id."');\" class='link'>$_</span>"} $feat->names))."</td></tr>";
+	    $class = $class eq "even" ? "odd" : "even";
 	  }
 	$html .="</table>";
 	return $html;
