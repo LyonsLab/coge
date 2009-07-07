@@ -39,7 +39,7 @@ $(document).ready(function(){
 //jQuery UI opts
 $(function() {
  //substaniate dialog boxes	     
-        $(".dialog_box").dialog({ autoOpen: false });
+        $(".dialog_box").dialog({ autoOpen: false, width: 500 });
 	
 /**Button initializations**/
 	//Run CoGeBlast
@@ -94,20 +94,16 @@ function generate_seq_obj(dsid,upstream,downstream,seqview,chr,rc,featid){
 }
 
 function update_info_box(featid) {
- var table_width = $('#hsp_result_table').width();
- $('#overlap_box').width(table_width);
- if ($('#overlap_box').is(':hidden')) $('#overlap_box').slideDown(pageObj.speed);
-  generate_feat_info(['args__'+featid],['overlap_box']);
- 
+ generate_feat_info(['args__'+featid],['feature_info_popup']);
+  $('#feature_info_popup').dialog('open');
 }
 
 function update_hsp_info (featid) {
- hide_big_picture();
- show_hsp_div();
  loading('image_info','Information');
  loading('query_image','Image');
  loading('subject_image','Image');
  get_hsp_info(['args__blastfile','args__'+pageObj.basename,'args__num','args__'+featid],['image_info','query_image','subject_image']);
+ $('#result_visual_popup').dialog('open');
 }
 
 function loading(id,msg) {
@@ -115,9 +111,6 @@ function loading(id,msg) {
   $('#'+id).html(message);
 }
 
-function show_hsp_div() {
-  if( $('#result_visual').is(':hidden') ) $('#result_visual').show(0);
-}
 
 
 function counting(){
@@ -170,7 +163,10 @@ function overlap_checkboxes() {
   var action = $('#overlap_action').val();
   var accn="";
   $('#hsp_result_table :checkbox').each(function(){
-     if (this.checked == true) accn = accn + this.id+",";
+     if (this.checked == true) {
+//        fill_nearby_feats($(this).parent().parent()[0].id); // this works!
+        accn = accn + this.id+",";
+     }
    });
   if (accn == ",") {
     alert("You have not checked any features.");
@@ -257,7 +253,8 @@ function show_seq(seq,name,num,dsid,chr,start,stop, rc) {
     if (chr == "seqObj") chr = seqObj.chr;
   } 
  
-  var html = html + "<TABLE width=100%><TR><TD valign='top' align='right'>"+which_seq+" Name: </TD><TD align=justify>"+name+"</TD></TR>";
+  var html ="";
+  hmtl =  html + "<TABLE width=100%><TR><TD valign='top' align='right'>"+which_seq+" Name: </TD><TD align=justify>"+name+"</TD></TR>";
   
   //*1 to make sure js sees integer
   if (stop*1 > start*1) { 
@@ -433,8 +430,9 @@ function blastresults(html, click_all_links){
   if (table_height > max_height) $('#hsp_result_table_body').height(max_height);
   init_table();
   init_table_opts();
-  add_button_states('#table_opts');
  }
+setup_button_states();
+click_all_feat_links();
  check_display();
 
 
@@ -616,10 +614,6 @@ function display_correct_radio(display,val) {
   }
 }
 
-function hide_big_picture() {
-  if ( $('#big_picture').dialog('isOpen') ) $('#big_picture').dialog('close');
-}
-
 function select_blast() {
   var radio = get_radio('ncbi_radio','ncbi');
   get_url([radio],[ncbi_blast]);
@@ -719,19 +713,6 @@ function clear_if_no_seq(){
   }
 }
 
-function toggleFeature(html,check) {
- var size = $('#seq_box').width();
- if (html) {
-   $('#pretty_print_anno').html(html).width(size).show(pageObj.speed);
- }
- else if (check) {
-   $('#pretty_print_anno').width(size).show(pageObj.speed);
- }
- else {
-  animate_section("#pretty_print_anno", "hide");
- }
-}
-
 function org_search(desc_search){
   if (pageObj.time){
    clearTimeout(pageObj.time);
@@ -770,40 +751,6 @@ function seq_type_search() {
    $('#add').hide(0);
   }
 }
-
-/* Obselete via jQuery magick
-function search_bar(obj){
-  if($(obj).val() == "Search"){ $(obj).css({fontStyle: "normal"});}
-}
-
-function restore_search_bar(obj){
-  if($(obj).val() == "") {
-  get_orgs(['args__name','org_name','args__desc','org_desc'], ['org_list']);
- }
-}
-
-
-function genome_info(info){
-  var xpos = pageObj.lastMouseX + 5;
-  var ypos =pageObj.lastMouseY + 5;
-  var html = "<span onClick=\"$('#genome_info_popup').slideToggle(pageObj.speed);\" style='float: right;'><img src='/CoGe/picts/delete.png' width='16' height='16' border='0'></span>";
-  html = html + info;
-  var window_width = $(document).width();
-  var left_padding;
-  var info_width = 800;
-  if ((window_width - info_width) <= 0) {
-    left_padding = 4;
-  }
-  else {
-    left_padding = ((window_width - info_width)/2);
-  }
-  $('#genome_info_popup').html(html).css({left:''+xpos,top:''+ypos}).width(info_width).slideDown(pageObj.speed);
-  if ($('#genome_info_popup').height() >= $(document).height() - 40) {
-    $('#genome_info_popup').css("height",''+$(document).height() - 40);
-  }
-}
-*/
-
 
 function adjust_blast_types(val){
   if(val == 1){
@@ -1117,6 +1064,13 @@ $(function() {
 <div id=big_picture title="Enlarged Image of HSP Hits" class="dialog_box"></div>
 <div id="sequence_popup" class="dialog_box" title="Sequence Information"></div>
 <div id="genome_info_popup" class="dialog_box" title="Genome Information"><span class=loading>Loading. . .</span></div>
+<div id="feature_info_popup" class="dialog_box" title="Feature Information"><span class=loading>Loading. . .</span></div>
+ 
+<DIV id=result_visual_popup class="dialog_box"  title="HSP Information">
+        <DIV id=query_image class="hsp_image"></DIV>
+        <DIV id=subject_image class="hsp_image"></DIV>
+        <DIV id=image_info><TMPL_VAR NAME=HSP></DIV>
+</DIV>
 
 
  <TABLE width=100%>
@@ -2030,9 +1984,17 @@ $(function() {
    <DIV class="subMenu" style="display:inline;">
     <TABLE width=100%>
     <thead>
-     <th><input type=button value="Hide Genome Data" id=left_column_button_hide onClick="$('#left_column').hide(0);$('#left_column_button_hide').hide(0);$('#left_column_button_show').show(0);"><input type=button value="Show Genome Data" id=left_column_button_show style="display:none" onClick="$('#left_column').show(0);$('#left_column_button_show').hide(0);$('#left_column_button_hide').show(0);"></th>
-    <th><input type=button value="Hide HSP Data" id=middle_column_button_hide style="display:none" onClick="$('#result_visual').hide(0);$('#middle_column_button_hide').hide(0);$('#middle_column_button_show').show(0);"><input type=button value="Show HSP Data" id=middle_column_button_show style="display:none" onClick="$('#result_visual').show(0);$('#middle_column_button_show').hide(0);$('#middle_column_button_hide').show(0);"></th>
-    <th><input type=button value="Hide Table/Feature Data" id=right_column_button_hide onClick="$('#result_features').hide(0);$('#right_column_button_hide').hide(0);$('#right_column_button_show').show(0);"><input type=button value="Show Table/Feature Data" id=right_column_button_show style="display:none" onClick="$('#result_features').show(0);$('#right_column_button_show').hide(0);$('#right_column_button_hide').show(0);"></th>
+     <th>
+      <span id=left_column_button_hide class='ui-button ui-state-default ui-corner-all' onClick="$('#left_column').hide(0);$('#left_column_button_hide').hide(0);$('#left_column_button_show').show(0);">Hide Genome Data</span>
+      <span id=left_column_button_show class='ui-button ui-state-default ui-corner-all' onClick="$('#left_column').show(0);$('#left_column_button_show').hide(0);$('#left_column_button_hide').show(0);" style="display:none">Show Genome Data</span>
+
+     </th>
+    <th>
+      <span id=right_column_button_hide class='ui-button ui-state-default ui-corner-all' onClick="$('#result_features').hide(0);$('#right_column_button_hide').hide(0);$('#right_column_button_show').show(0);">Hide HSP Table</span>
+      <span id=right_column_button_show class='ui-button ui-state-default ui-corner-all' onClick="$('#result_features').show(0);$('#right_column_button_show').hide(0);$('#right_column_button_hide').show(0);" style="display:none">Show HSP Table</span>
+
+
+    </th>
     </thead>
  	<tbody>
     <TR>
@@ -2047,14 +2009,6 @@ $(function() {
      <TMPL_VAR NAME="DATA_FILES">
 
      </div>
-      </TD>
-      <TD valign="top">
-       <DIV id=result_visual valign="top" style="display: none;width:450">
-         <span class=species>HSP Graphics:</span>
-        <DIV id=query_image class="hsp_image"></DIV>
-        <DIV id=subject_image class="hsp_image"></DIV>
-        <DIV id=image_info><TMPL_VAR NAME=HSP></DIV>
-      </DIV>
       </TD>
       <TD valign="top" align=left >
        	 <DIV id=result_features align=left valign="top">
@@ -2083,8 +2037,8 @@ $(function() {
             <tr valign=top>
 		<td align=left>
        		    
-		    <input type=button value="Select All" onClick="$('#hsp_result_table :checkbox').attr('checked', true);">  
-		    <input type=button value="Select None" onClick="$('#hsp_result_table :checkbox').attr('checked', false);"> 
+		    <span class='ui-button ui-button-icon-left ui-state-default ui-corner-all' onClick="$('#hsp_result_table :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
+		    <span class='ui-button ui-button-icon-left ui-state-default ui-corner-all' onClick="$('#hsp_result_table :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
          		Do Following to Checked Features: 
           		<select name=overlap_action id=overlap_action>
            		 <option value = "gevo">Send to GEvo</option>
@@ -2092,13 +2046,12 @@ $(function() {
           		  <option value = "xls">Export to Excel</option>
            		 <option value = "tab">Tab Deliminated</option>
            		 <option value = "list">Get Feature List</option>
-			</selected>  
-          		<input type=button value="Go" onClick="overlap_checkboxes()">
+			</select>  
+                     <span class='ui-button ui-state-default ui-corner-all' onClick="overlap_checkboxes();">Go</span>
             <tr valign=top>
 		<td align=left class=species>HSP count:
 		<input type = checkbox onclick="$('#hsp_count_data').slideToggle();"><span class = "small" >Show Table?</span>
 	        <div id="hsp_count_data" style="display:none;"><TMPL_VAR NAME=HSP_COUNT></div>
-       <tr><td colspan=2 align=left><div id=overlap_box style="display: none" valign="top" class="resultborder"></div>
  	</table>
  </div>
      </TD>
