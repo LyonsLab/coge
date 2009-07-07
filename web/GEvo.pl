@@ -3101,6 +3101,7 @@ sub dataset_group_search
     my $featid = $opts{featid};
     my $dsgid = $opts{dsgid};
     my $gstid = $opts{gstid};
+    print STDERR Dumper \%opts;
     my $ds = $coge->resultset('Dataset')->find($dsid);
     unless ($ds)
       {
@@ -3112,11 +3113,11 @@ sub dataset_group_search
     my $count =0;
     foreach my $dsg (sort {$b->version <=> $a->version || $a->type->id <=> $b->type->id} $ds->dataset_groups)
       {
-	my $dsgid = $dsg->id;
+	my $dsgid_tmp = $dsg->id;
 	my $title = $dsg->name;
 	$title = $dsg->organism->name unless $title;
 	$title .= " (v". $dsg->version." ".$dsg->type->name.")";
-	$html .= "<option value = $dsgid";
+	$html .= "<option value = $dsgid_tmp";
 	$html .= " selected" if ($dsgid && $dsg->id eq $dsgid) || ($gstid && $dsg->type->id eq $gstid);
 	$html .=">$title";
 	$count++;
