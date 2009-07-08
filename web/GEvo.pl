@@ -103,7 +103,7 @@ $pj->DEBUG(0);
 #$pj->js_encode_function('escape');
 print $pj->build_html($FORM, \&gen_html);
 
-#print gen_html();
+#print $FORM->header;gen_html();
 
 sub loading
   {
@@ -170,7 +170,10 @@ sub gen_body
     my @seq_sub;
     for (my $i = 1; $i <= $num_seqs; $i++)
       {
-	my ($draccn, $pos, $chr, $fid, $dsid, $dsgid, $gstid, $mask);
+	my ($draccn, $pos, $chr, $fid, $dsid, $dsgid, $gstid, $mask, $display_order);
+	#order by which genomi regions are displayed, top to bottom
+	$display_order= $form->param("do".$i) if $form->param("do".$i);
+	$display_order = $i unless $display_order;
 	$draccn= $form->param("accn".$i) if $form->param("accn".$i);
 	$pos = $form->param("x".$i) if $form->param("x".$i);
 	$chr = $form->param("chr".$i) if $form->param("chr".$i);
@@ -215,7 +218,7 @@ sub gen_body
 			 SEQ_NUM=>$i,
 			};
 	my %opts = (
-		    SEQ_NUM=>$i,
+		    SEQ_NUM=>$display_order,
 		    REV_YES=>$revy,
 		    REV_NO=>$revn,
 		    REF_YES=>$refy,
@@ -233,7 +236,6 @@ sub gen_body
 		    ORGINFO=>$org_title,
 		    CHR=>$chr,
 		    FEATID=>$fid,
-		    
 		   );
 	if ($mask)
 	  {
@@ -243,9 +245,10 @@ sub gen_body
 	    $opts{MASK_NGENIC}= "selected" if $mask eq "non-genic";
 	  }
 	$opts{COGEPOS} = qq{<option value="cogepos$i" selected="selected">CoGe Database Position</option>} if $pos;
-	push @seq_sub, {%opts}
+	push @seq_sub, {%opts};
 	  
       }
+    @seq_sub = sort {$a->{SEQ_NUM}<=>$b->{SEQ_NUM}} @seq_sub; #sort based on seq_num
     #page preferences
     my $pad_gs = $form->param("pad_gs") if $form->param("pad_gs");
     $pad_gs = 0 unless $pad_gs;
@@ -431,6 +434,11 @@ sub run
     my $seqcount = 1;
     for (my $i = 1; $i <= $num_seqs; $i++)
       {
+	my $display_order = $opts{"display_order$i"};
+	($display_order) = $display_order =~ /(\d+)/ if $display_order;
+	$display_order = $i unless $display_order;
+
+#	my $seqcount = $display_order;
 	my $skip_seq =$opts{"skip_seq$i"};
 	next if $skip_seq;
 	my $accn = $opts{"draccn$i"};
@@ -485,6 +493,7 @@ sub run
 	$gevo_link .= ";rev$seqcount=1" if $rev;
 	$gevo_link .= ";nref$seqcount=1" unless $reference_seq;
 	$gevo_link .= ";mask$seqcount=$mask" if $mask;
+	$gevo_link .= ";do$seqcount=$display_order" if $display_order;
 	$seqcount++;
 	if ($featid || $pos)
 	  {
@@ -616,7 +625,7 @@ sub run
 			 down=>$down,
 			 spike_length=>$spike_len,
 			 reference_seq=>$reference_seq,
-			 seq_num=>$i,
+			 seq_num=>$display_order,
 			};
 	  }
 	else
@@ -624,6 +633,7 @@ sub run
 #	    push @sets, {seq_num=>$i};
 	  }
       }
+    @sets = sort {$a->{seq_num} <=> $b->{seq_num}} @sets;
     my $pm = new Parallel::ForkManager($MAX_PROC);
     foreach my $param (@coge_seqs)
       {
@@ -2383,6 +2393,7 @@ sub gen_params
       my $params;
       for (my $i = 1; $i <=$num_seqs; $i++)
       {
+	$params .= qq{'args__display_order$i', 'display_order$i',};
 	$params .= qq{'args__draccn$i', 'accn$i',};
 	$params .= qq{'args__featid$i', 'featid$i',};
 	$params .= qq{'args__drup$i', 'drup$i',};
@@ -2668,6 +2679,7 @@ sub makeurlarray #shabari:for parsing GEvo and tiny urls
     {
 	my $rec={};
 	$rec->{'accn'}=$1  if ($longurl=~/accn$i\=(.*?)\;/);
+	$rec->{'accn'}=$1  if ($longurl=~/accn$i\=(.*?)\;/);
 
 	$rec->{'pos'}=$1  if ($longurl=~/x$i\=(.*?)\;/);
 	$rec->{'type'}="position" if (defined $rec->{'pos'});
@@ -2689,10 +2701,13 @@ sub makeurlarray #shabari:for parsing GEvo and tiny urls
 	$rec->{'drdown'}=$1  if ($longurl=~/dr$i.*?\=(.*?)\;/);
 
 	$rec->{'gbstart'}=$1  if ($longurl=~/gbstart$i\=(.*?)\;/);
+	$rec->{'display_order'} = $1 if ($longurl=~/do$i\=(.*?)\;/);
+	$rec->{'display_order'} = $i unless $rec->{'display_order'};
 	push @array, $rec;
 	
 	$i++;
     }
+    @array = sort {$a->{display_order} <=> $b->{display_order} } @array;
     return (@array);
     
 }
@@ -3101,7 +3116,6 @@ sub dataset_group_search
     my $featid = $opts{featid};
     my $dsgid = $opts{dsgid};
     my $gstid = $opts{gstid};
-    print STDERR Dumper \%opts;
     my $ds = $coge->resultset('Dataset')->find($dsid);
     unless ($ds)
       {
