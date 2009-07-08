@@ -2,6 +2,8 @@
 
 <script language="javascript">
 
+$(function() {$("#pair_info").draggable();});
+
 function get_organism_chain(type,val,i)
 {
  $('#org_list').html('<input type=hidden id = "org_id"+i><font class="loading"></font>');
@@ -343,9 +345,13 @@ function synteny_zoom(dsgid1, dsgid2, basename, chr1, chr2, ksdb)
   }
 }
 
-function open_window (url, loc, width, height)
+function open_window (url, width, height)
  {
-    my_window = window.open(url,loc,'"width='+width+',height='+height+', scrollbars=1"');
+    var loc = pageObj.loc;
+    if (!loc) {loc=1;}
+    loc++;
+    pageObj.loc=loc;
+    my_window = window.open(url,"win"+loc,'"width='+width+',height='+height+', scrollbars=1"');
     my_window.resizeTo(width,height);
  }
 
