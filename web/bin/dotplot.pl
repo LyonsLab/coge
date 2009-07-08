@@ -55,9 +55,10 @@ my $org2info = get_dsg_info(dsgid=>$dsgid2, chr=>$CHR2, minsize=>$min_chr_size);
 my $org2length =0;
 map {$org2length+=$_->{length}} values %$org2info;
 
-($org1info, $org1length, $org2info, $org2length) = ($org2info, $org2length, $org1info, $org1length) if $flip;
+print STDERR ($org1info),"\n";
+($org1info, $org1length, $dsgid1, $org2info, $org2length, $dsgid2) = ($org2info, $org2length, $dsgid2, $org1info, $org1length, $dsgid1) if $flip;
 ($CHR1, $CHR2) = ($CHR2, $CHR1) if $flip && ($CHR1 || $CHR2);
-
+print STDERR ($org1info),"\n";
 my $height = sprintf("%.0f", $width*$org2length/$org1length);
 $height = $width if ($height > 10*$width) || ($height <  $width/10);
 
@@ -290,12 +291,20 @@ sub draw_dots
 <html><head>
 <link href="/CoGe/css/styled.css" type="text/css" rel="stylesheet"/>
 <SCRIPT type="text/javascript">
+
 var ajax = [];function pjx(args,fname,method) { this.target=args[1]; this.args=args[0]; method=(method)?method:'GET'; if(method=='post'){method='POST';} this.method = method; this.r=ghr(); this.url = this.getURL(fname);}function formDump(){ var all = []; var fL = document.forms.length; for(var f = 0;f<fL;f++){ var els = document.forms[f].elements; for(var e in els){ var tmp = (els[e].id != undefined)? els[e].id : els[e].name; if(typeof tmp != 'string'){continue;} if(tmp){ all[all.length]=tmp} } } return all;}function getVal(id) { if (id.constructor == Function ) { return id(); } if (typeof(id)!= 'string') { return id; } var element = document.getElementById(id); if( !element ) { for( var i=0; i<document.forms.length; i++ ){ element = document.forms[i].elements[id]; if( element ) break; } if( element && !element.type ) element = element[0]; } if(!element){ alert('ERROR: Cant find HTML element with id or name: ' + id+'. Check that an element with name or id='+id+' exists'); return 0; } if(element.type == 'select-one') { if(element.selectedIndex == -1) return; var item = element[element.selectedIndex]; return item.value || item.text; } if(element.type == 'select-multiple') { var ans = []; var k =0; for (var i=0;i<element.length;i++) { if (element[i].selected || element[i].checked ) { ans[k++]= element[i].value || element[i].text; } } return ans; } if(element.type == 'radio' || element.type == 'checkbox'){ var ans =[]; var elms = document.getElementsByTagName('input'); var endk = elms.length ; var i =0; for(var k=0;k<endk;k++){ if(elms[k].type== element.type && elms[k].checked && (elms[k].id==id||elms[k].name==id)){ ans[i++]=elms[k].value; } } return ans; } if( element.value == undefined ){ return element.innerHTML; }else{ return element.value; }}function fnsplit(arg) { var url=""; if(arg=='NO_CACHE'){return '&pjxrand='+Math.random()} if((typeof(arg)).toLowerCase() == 'object'){ for(var k in arg){ url += '&' + k + '=' + arg[k]; } }else if (arg.indexOf('__') != -1) { arga = arg.split(/__/); url += '&' + arga[0] +'='+ escape(arga[1]); } else { var res = getVal(arg) || ''; if(res.constructor != Array){ res = [res] } for(var i=0;i<res.length;i++) { url += '&args=' + escape(res[i]) + '&' + arg + '=' + escape(res[i]); } } return url;}pjx.prototype = { send2perl : function(){ var r = this.r; var dt = this.target; this.pjxInitialized(dt); var url=this.url; var postdata; if(this.method=="POST"){ var idx=url.indexOf('?'); postdata = url.substr(idx+1); url = url.substr(0,idx); } r.open(this.method,url,true); ; if(this.method=="POST"){ r.setRequestHeader("Content-Type", "application/x-www-form-urlencoded"); r.send(postdata); } if(this.method=="GET"){ r.send(null); } r.onreadystatechange = handleReturn; }, pjxInitialized : function(){}, pjxCompleted : function(){}, readyState4 : function(){ var rsp = unescape(this.r.responseText); /* the response from perl */ var splitval = '__pjx__'; /* to split text */ /* fix IE problems with undef values in an Array getting squashed*/ rsp = rsp.replace(splitval+splitval+'g',splitval+" "+splitval); var data = rsp.split(splitval); dt = this.target; if (dt.constructor != Array) { dt=[dt]; } if (data.constructor != Array) { data=[data]; } if (typeof(dt[0])!='function') { for ( var i=0; i<dt.length; i++ ) { var div = document.getElementById(dt[i]); if (div.type =='text' || div.type=='textarea' || div.type=='hidden' ) { div.value=data[i]; } else{ div.innerHTML = data[i]; } } } else if (typeof(dt[0])=='function') { dt[0].apply(this,data); } this.pjxCompleted(dt); }, getURL : function(fname) { var args = this.args; var url= 'fname=' + fname; for (var i=0;i<args.length;i++) { url=url + args[i]; } return url; }};handleReturn = function() { for( var k=0; k<ajax.length; k++ ) { if (ajax[k].r==null) { ajax.splice(k--,1); continue; } if ( ajax[k].r.readyState== 4) { ajax[k].readyState4(); ajax.splice(k--,1); continue; } }};var ghr=getghr();function getghr(){ if(typeof XMLHttpRequest != "undefined") { return function(){return new XMLHttpRequest();} } var msv= ["Msxml2.XMLHTTP.7.0", "Msxml2.XMLHTTP.6.0", "Msxml2.XMLHTTP.5.0", "Msxml2.XMLHTTP.4.0", "MSXML2.XMLHTTP.3.0", "MSXML2.XMLHTTP", "Microsoft.XMLHTTP"]; for(var j=0;j<=msv.length;j++){ try { A = new ActiveXObject(msv[j]); if(A){ return function(){return new ActiveXObject(msv[j]);} } } catch(e) { } } return false;}function jsdebug(){ var tmp = document.getElementById('pjxdebugrequest').innerHTML = "<br><pre>"; for( var i=0; i < ajax.length; i++ ) { tmp += '<a href= '+ ajax[i].url +' target=_blank>' + decodeURI(ajax[i].url) + ' </a><br>'; } document.getElementById('pjxdebugrequest').innerHTML = tmp + "</pre>";}function get_pair_info() { var args = get_pair_info.arguments; for( var i=0; i<args[0].length;i++ ) { args[0][i] = fnsplit(args[0][i]); } var l = ajax.length; ajax[l]= new pjx(args,"get_pair_info",args[2]); ajax[l].url = '/CoGe/SynMap.pl?' + ajax[l].url; ajax[l].send2perl(); ;}
 4//]]>
+
+
+
 </SCRIPT>
 <script src="/CoGe/js/jquery-1.3.2.js"></script>
 <script src="/CoGe/js/xhairs.js"></script> <!--This needs to back out farther since the HTML file is much deeper.-->
+<SCRIPT language="JavaScript" type="text/javascript" src="/CoGe/js/jquery-ui-1.7.2.custom.min.js"></SCRIPT>
+<link rel="stylesheet" type="text/css" href="/CoGe/css/jquery-ui-1.7.1.custom.css" />
 <script type="text/javascript">
+\$(function() {\$("#pair_info").draggable();});
+
 /*This array follows the following format:
 type (circle, rect), array of coords, href link, mouseover details
 Coords will be in [x,y,radius] for cricles and [x1,y1,x2,y2] (diagonal points) for rectangles*/
@@ -322,12 +331,12 @@ Ergo, we rely on jQuery to detect when the DOM is fully loaded, and then run the
 });
 </script>
 </head><body>
-<DIV id=pair_info style='position: absolute;left: 0px;top: 0px;'></DIV>
-<!---<IMG SRC="$img.png" usemap="#points" border="0" style='position: absolute;left: 0px;top:45px;'>--->
 <canvas id="myCanvas" border="0" style='position: absolute;left: 0px;top:45px;' width="12" height="12" onmousemove="trackpointer(event);" onmousedown="trackclick(event, 'yes');">
 	Your browser does not have support for Canvas.
 </canvas>	
 <span class=xsmall style='position: absolute;left: 0px;top: 45px;'>$org2name: $CHR2 ($org2length)</span>
+<DIV id=pair_info class="ui-widget-content" style='position: absolute;left: 0px;top: 0px;'></DIV>
+
 };
 
 	#Print out the nametag
@@ -346,6 +355,8 @@ Ergo, we rely on jQuery to detect when the DOM is fully loaded, and then run the
 	print OUT qq{
 <span class=xsmall style='position: absolute;left: 0px;top: $pos;'>$org1name: $CHR1 ($org1length)
    <a href = "$img.png" target=_new>Link to image</a>
+    <br>
+<span class=small>Add autogo to GEvo link?<input type=checkbox id=autogo></span>
 
 };
 	print OUT qq{
