@@ -257,7 +257,7 @@ sub draw_dots
 	      {
 		#just added the coge->ds object to $org
 		$item2[6] = "Chr: ".$item2[0]." ".commify($item2[1])." - ".commify($item2[2]);
-		my $chr = $item1[0];
+		my $chr = $item2[0];
 		$link .= qq{;dsgid2=$dsgid2;x2=$midy;chr2=$chr};
 	      }
 	    unless ($points{$x}{$y}) #cuts down on the size of the image map
