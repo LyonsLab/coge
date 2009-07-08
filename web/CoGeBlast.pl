@@ -76,6 +76,7 @@ my $pj = new CGI::Ajax(
 		       export_to_excel=>\&export_to_excel,
 		       generate_tab_deliminated=>\&generate_tab_deliminated,
 		       generate_feat_list=>\&generate_feat_list,
+		       generate_blast=>\&generate_blast,
 		       export_hsp_info=>\&export_hsp_info,
 		       export_hsp_query_fasta=>\&export_hsp_query_fasta,
 		       export_hsp_subject_fasta=>\&export_hsp_subject_fasta,
@@ -1897,6 +1898,34 @@ sub generate_feat_list
     foreach my $featid( @list)
     {
     	$url .= "fid=$featid&";
+    }
+	$url =~s/&$//;
+	return $url;
+  }
+
+sub generate_blast
+  {
+    my $accn_list = shift;
+    my $filename = shift;
+    
+    $accn_list =~ s/^,//;
+    $accn_list =~ s/,$//;
+    
+    my $url = "CoGeBlast.pl?";
+    my @list;
+    foreach my $accn (split /,/,$accn_list)
+    {
+		next if $accn =~ /no$/;
+		my ($featid, $hspnum, $dsgid) = $accn =~ m/^(\d+)_(\d+)_(\d+)$/;
+		my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+		$featid .= "_".$dsg->type->id if $dsg;
+		push @list,$featid;
+	}
+	my %seen = ();
+    @list = grep {!$seen{$_}++} @list;
+    foreach my $featid( @list)
+    {
+    	$url .= "featid=$featid&";
     }
 	$url =~s/&$//;
 	return $url;
