@@ -1367,12 +1367,11 @@ sub go
  <tr>
  <td> Display Location:
  <td><select name=map_loc id=map_loc>
-  <option value="1" selected>Area 1
+  <option value="window1" selected>New Window
+  <option value="1">Area 1
   <option value="2">Area 2
   <option value="3">Area 3
-  <option value="window1">New Window 1
-  <option value="window2">New Window 2
-  <option value="window3">New Window 3
+
  </select>
 
  <tr>
@@ -1656,7 +1655,7 @@ sub get_dotplot
     $h+=150;
     if ($loc)
       {
-	return ($url,$loc, $w, $h);
+	return ($url,$w, $h);
       }
     my $html = qq{<iframe src=$url frameborder=0 width=$w height=$h scrolling=no></iframe>};
     return $html;
