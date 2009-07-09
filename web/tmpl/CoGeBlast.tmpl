@@ -187,6 +187,9 @@ function overlap_checkboxes() {
   else if(action == "list"){
     generate_feat_list(['args__'+accn,'args__'+pageObj.basename],[export_file]);
   }
+  else if(action == "blast"){
+    generate_blast(['args__'+accn,'args__'+pageObj.basename],[export_file]);
+  }
    else if(action == "hsp"){
     export_hsp_info(['args__'+accn,'args__'+pageObj.basename],[export_file]);
   }
@@ -2046,6 +2049,7 @@ $(function() {
           		  <option value = "xls">Export to Excel</option>
            		 <option value = "tab">Tab Deliminated</option>
            		 <option value = "list">Get Feature List</option>
+           		 <option value = "blast">Send to CoGeBlast</option>
 			</select>  
                      <span class='ui-button ui-state-default ui-corner-all' onClick="overlap_checkboxes();">Go</span>
             <tr valign=top>
