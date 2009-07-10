@@ -3,6 +3,9 @@
 <script language="javascript">
 
 $(function() {$("#pair_info").draggable();});
+$(function() {$("#tabs").tabs({selected:0});});	     
+$(function() {$(".resizable").resizable();});
+
 
 function get_organism_chain(type,val,i)
 {
@@ -46,6 +49,7 @@ function handle_results(val){
  $('#log_text').hide(0);
  $('#results').show(0).html(val);
  $('#synmap_go').show();
+$(function() {$("#synmap_zoom_box").draggable();});
 }
 
 function check_previous_analyses(){
@@ -77,16 +81,15 @@ function update_params(val) {
     $('#dsgid1').attr('value',params[7]);
   }
  var type;
-//$("#state").attr("value","ME");
  $('#blast option:eq('+params[0]+')').attr('selected','selected');
  if (params[10] == 'Distance') 
   {
-   $("input[name='dagchainer_type']:nth(0)").attr("checked","checked");
+   $("input[name='dagchainer_type']:nth(1)").attr("checked","checked");
    type=" bp";
   }
  else 
   {
-   $("input[name='dagchainer_type']:nth(1)").attr("checked","checked");
+   $("input[name='dagchainer_type']:nth(0)").attr("checked","checked");
    type= " genes"
   }
  display_dagchainer_settings([params[0],params[1],params[2]],type);
@@ -98,16 +101,16 @@ function set_dagchainer_defaults(params, type) {
    {
     if ($('#dagchainer_type')[0].checked)
      {
+       params = [10,20,5];
+       type = " genes";  
+     } 
+    else
+     { 
       if (settings == 1) // for plant genomes
        { params = [24000, 120000, 3];}
       else if (settings == 2) // for microbe genomes
        { params = [1000, 2000, 3];}
        type=" bp";
-     } 
-    else
-     { 
-       params = [10,20,5];
-       type = " genes";  
      }
   }
   if (!params) {return;}
@@ -206,13 +209,11 @@ function display_dagchainer_settings(params,type) {
  
  if ($('#dagchainer_type')[0].checked)
   {
-   $('#dagchainer_distance').show(0);
-   $('#dagchainer_gene_order').hide(0);
+   $('#dagchainer_distance').hide(0);
   }
  else
   {
-   $('#dagchainer_distance').hide(0);
-   $('#dagchainer_gene_order').show(0);
+   $('#dagchainer_distance').show(0);
   }
   set_dagchainer_defaults(params, type);
 }
@@ -359,55 +360,50 @@ function open_window (url, width, height)
 <table><tr><td>
 <DIV id=log_text class="small dna" style="display:none"></DIV>
 <DIV id=results><TMPL_IF NAME=RESULTS><TMPL_VAR NAME=RESULTS><TMPL_ELSE>
-<p><span class="alert">WARNING:</span> SynMap is still in beta; this version has many known problems that will cause SynMap to crash and not return results.  We are currently working on a new version to address these issues and will update SynMap as soon as possible.  In the meanwhile, please contact Eric Lyons if you feel your analysis has a problem and would like some help.</p>
-<p><span class="alert">Please Note:</span>  SynMap is a very computationally intense, multi-step program which may take hours to complete. It is highly recommended to have your results emailed to you. Please do not repeatedly press the "Generate SynMap" button!  When run, SynMap will:
-<li class=small>Generate fasta files of all coding sequence in selected genomes
-<li class=small>Generate blastable databases of sequences
-<li class=small>Blast genomes (self-self and self-other)
-<li class=small>Find tandem duplicates in each genome (hence the self-self blast)
-<li class=small>Use DAGchainer to find syntenic regions (parameters below)
-<li class=small>Generate dotplot images and image maps with GEvo links
-<li class=small>If requested, will e-mail your results to you<br></p>
+<p><span class="alert">WARNING:</span> SynMap is still in beta and may not return results.  Please contact <a href="mailto:elyons@nature.berkeley.edu">Eric Lyons</a> if you feel your analysis has a problem and would like some help.  If available, please send him a copy of the log file</p>
+<p><span class="alert">Please Note:</span>  SynMap is a very computationally intense, multi-step program which may take hours to complete for large genomes.</p>
 <span class=species>SynMap will run faster if it has been previously run as it won't regenerate any previously made data-sets.</span>
 </TMPL_IF>
 </div>
 </table>
 
-<div>
-<input type=button id="synmap_go" value="Generate SynMap" onClick="$('#synmap_go').hide();reset_basename();generate_basefile([],[update_basename]);run_synmap();" \>
 
-<input type=button value="Clear Results" onClick="$('#results').html('');" \>
+<span style="font-size: 1em" class="ui-button ui-state-default ui-corner-all" id="synmap_go" onClick="$('#synmap_go').hide();reset_basename();generate_basefile([],[update_basename]);run_synmap();" >Generate SynMap</span>
 
-<TABLE width=100%>
-<tr><th><DIV class="topItemSelected ">Select Organisms:</DIV>
-<table class="dropMenu" width=100%>
- <TR align=left>
+<span style="font-size: 1em" class='ui-button ui-state-default ui-corner-all' onClick="$('#results').html('');" >Clear Results</span>
 
+<div id=tabs>
+
+<ul>
+ <li class=small><a href="#tab-1">Select Organisms</a></li>
+ <li class=small><a href="#tab-2">DAGChainer Options</a></li>
+ <li class=small><a href="#tab-3">SynMap Options</a></li>
+</ul>
+
+
+<div id="tab-1">
+ <table><tr valign=top>
   <TMPL_VAR NAME=ORG_MENU1>
   <TMPL_VAR NAME=ORG_MENU2>
+ </table>
+<div id=previous_analyses></div>
 
-</TABLE>
+</div> <!--close tab-1 -->
 
-<tr><th>
-<DIV class="topItemSelected "><a href =http://dagchainer.sourceforge.net/ target=_new>DAGChainer</a> Options:</DIV>
-<table>
-<tr><td>
-<table class="dropMenu">
- <TR>
-  <TD colspan=2>
-    <label>Nucleotide Distance<input id="dagchainer_type" name="dagchainer_type" type=radio value="distance" <TMPL_VAR DAG_DISTANCE_SELECT>  onCLick="display_dagchainer_settings()"></label>
+<div id="tab-2">
     <label>Relative Gene Order<input id="dagchainer_type" name="dagchainer_type" type=radio value="gene_order" <TMPL_VAR DAG_GENE_SELECT>  onCLick="display_dagchainer_settings()"></label>
+    <label>Nucleotide Distance<input id="dagchainer_type" name="dagchainer_type" type=radio value="distance" <TMPL_VAR DAG_DISTANCE_SELECT>  onCLick="display_dagchainer_settings()"></label>
+<DIV onclick="open.window('http://dagchainer.sourceforge.net/')" class="link">Download DAGChainer</DIV>
+
 
 <DIV id=dagchainer_distance>
-   <table width=100%><tr><th class='species'>Distance settings</table>
-   Default settings for:
+   <span class='species'>Default distance settings for: </span>
       <select id="dagchainer_default" onChange="set_dagchainer_defaults();">
        <option value="1">Plant
        <option value="2">Microbe
       </select>
 </div>
 
-<DIV id=dagchainer_gene_order><table width=100%><tr><th class='species'>Ordered gene settings</table></div>
  <table>
  <TR>
    <TD>
@@ -421,16 +417,11 @@ function open_window (url, width, height)
  <TR>
    <TD>Minimum number of aligned pairs (-A): 
    <TD><input type=text size=8 id="A" value=""> genes
-</table>
 
 </TABLE>
-<td valign=top><div id=previous_analyses></div>
-</TABLE>
+</div> <!-- close tab-2 -->
 
-<tr><th>
-<DIV class="topItemSelected ">SynMap Options:</DIV>
-<table class="dropMenu">
-<tr><td>
+<div id="tab-3">
 <table>
  <TR>
    <TD>Blast Algorithm:
@@ -462,14 +453,14 @@ function open_window (url, width, height)
    </select>
 <!--   <input type=checkbox name="gen_ks" id="gen_ks">-->
 </TABLE>
-</TABLE>
-</TABLE>
-</div>
+</div> <!-- close tab-3 -->
+</div> <!--close tabs div-->
 
 </TMPL_IF>
 
 <TMPL_IF NAME=ORG_MENU>
-<TD VALIGN=TOP width="50%">
+<td>
+<div class="ui-widget-content resizable" style="float: left">
 <DIV class = "oblique">Organism <TMPL_VAR NAME="NUM">: </DIV>
    <DIV>Search <span class=small>Name: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_NAME">" name = "org_name<TMPL_VAR NAME="NUM">" id="org_name<TMPL_VAR NAME="NUM">" style="font-style:italic" onFocus="search_bar('org_name<TMPL_VAR NAME="NUM">')" onKeyUp='timing("org_name<TMPL_VAR NAME="NUM">");'><span>
    Description: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_DESC">" name = "org_desc<TMPL_VAR NAME="NUM">" id="org_desc<TMPL_VAR NAME="NUM">" style="font-style:italic" onFocus="search_bar('org_desc<TMPL_VAR NAME="NUM">')" onKeyUp='timing("org_desc<TMPL_VAR NAME="NUM">");'></DIV>
@@ -490,7 +481,6 @@ function open_window (url, width, height)
          </div>
     <TR><Td colspan=3><div id="genome_message<TMPL_VAR NAME="NUM">"><TMPL_VAR NAME="GENOME_MESSAGE"></div>
      </table>
-</DIV>
 <DIV style="vertical-align: top;" id="dsg_info<TMPL_VAR NAME="NUM">"><TMPL_VAR NAME="DSG_INFO"></DIV>
-
+</div>
 </TMPL_IF>

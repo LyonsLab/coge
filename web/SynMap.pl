@@ -896,7 +896,11 @@ dN_dS varchar
 	$ks->feat1($feat1);
 	$ks->feat2($feat2);
 	my $res = $ks->KsCalc();
-	$res = {} unless $res;
+	unless ($res)
+	  {
+	    print STDERR "Failed KS calculation: $fid1\t$fid2\n";
+	    $res = {};
+	  }
 	my ($dS, $dN, $dNS);
 	if (keys %$res)
 	  {
@@ -1093,6 +1097,8 @@ sub generate_dotplot
 	$outfile .= ".$ks_type";
       }
     $cmd .= qq{ -d $dag -a $coords -b $outfile -l 'javascript:synteny_zoom("$dsgid1","$dsgid2","$basename","XCHR","YCHR","$ks_db")' -dsg1 $dsgid1 -dsg2 $dsgid2 -w $width -lt 2};
+
+
     while (-e "$outfile.running")
       {
 	print STDERR "detecting $outfile.running.  Waiting. . .\n";
@@ -1129,7 +1135,7 @@ sub go
     my $ks_type = $opts{ks_type};
 
     my $dagchainer_type = $opts{dagchainer_type};
-    $dagchainer_type = $dagchainer_type eq "true" ? "distance" : "geneorder";
+    $dagchainer_type = $dagchainer_type eq "true" ? "geneorder" : "distance";
 
     unless ($dsgid1 && $dsgid2)
       {
@@ -1220,16 +1226,16 @@ sub go
  					    basename=>$dsgid1."_".$dsgid2.".$feat_type1-$feat_type2.$blast",
  					    dir=>$DIAGSDIR."/".$tmp1."/".$tmp2,
  					   },
- 		    $orgkey1."_".$orgkey1=>{fasta=>$fasta1,
- 					    db=>$blastdb1,
- 					    basename=>$dsgid1."_".$dsgid1.".$feat_type1-$feat_type1.$blast",
- 					    dir=>$DIAGSDIR."/".$tmp1."/".$tmp1,
- 					   },
- 		    $orgkey2."_".$orgkey2=>{fasta=>$fasta2,
- 					    db=>$blastdb2,
- 					    basename=>$dsgid2."_".$dsgid2.".$feat_type2-$feat_type2.$blast",
- 					    dir=>$DIAGSDIR."/".$tmp2."/".$tmp2,
- 					   },
+#  		    $orgkey1."_".$orgkey1=>{fasta=>$fasta1,
+#  					    db=>$blastdb1,
+#  					    basename=>$dsgid1."_".$dsgid1.".$feat_type1-$feat_type1.$blast",
+#  					    dir=>$DIAGSDIR."/".$tmp1."/".$tmp1,
+#  					   },
+#  		    $orgkey2."_".$orgkey2=>{fasta=>$fasta2,
+#  					    db=>$blastdb2,
+#  					    basename=>$dsgid2."_".$dsgid2.".$feat_type2-$feat_type2.$blast",
+#  					    dir=>$DIAGSDIR."/".$tmp2."/".$tmp2,
+#  					   },
  		   );
      foreach my $org_dir (keys %org_dirs)
        {
@@ -1267,24 +1273,25 @@ sub go
 
 
      #Find local dups
-     my $dag_file11 = $org_dirs{$orgkey1."_".$orgkey1}{dir}."/".$org_dirs{$orgkey1."_".$orgkey1}{basename}.".dag";
-     $problem=1 unless (run_dag_tools(query=>"a".$dsgid1, subject=>"b".$dsgid1, blast=>$org_dirs{$orgkey1."_".$orgkey1}{blastfile}, outfile=>$dag_file11, feat_type1=>$feat_type1, feat_type1=>$feat_type1));
-     my $dag_file22 = $org_dirs{$orgkey2."_".$orgkey2}{dir}."/".$org_dirs{$orgkey2."_".$orgkey2}{basename}.".dag";
-     $problem=1 unless run_dag_tools(query=>"a".$dsgid2, subject=>"b".$dsgid2, blast=>$org_dirs{$orgkey2."_".$orgkey2}{blastfile}, outfile=>$dag_file22, feat_type1=>$feat_type2, feat_type1=>$feat_type2);
-     my $dup_file1  = $org_dirs{$orgkey1."_".$orgkey1}{dir}."/".$org_dirs{$orgkey1."_".$orgkey1}{basename}.".dups";
-     run_tandem_finder(infile=>$dag_file11,outfile=>$dup_file1);
-     my $dup_file2  = $org_dirs{$orgkey2."_".$orgkey2}{dir}."/".$org_dirs{$orgkey2."_".$orgkey2}{basename}.".dups";
-     run_tandem_finder(infile=>$dag_file22,outfile=>$dup_file2);
+#     my $dag_file11 = $org_dirs{$orgkey1."_".$orgkey1}{dir}."/".$org_dirs{$orgkey1."_".$orgkey1}{basename}.".dag";
+#     $problem=1 unless (run_dag_tools(query=>"a".$dsgid1, subject=>"b".$dsgid1, blast=>$org_dirs{$orgkey1."_".$orgkey1}{blastfile}, outfile=>$dag_file11, feat_type1=>$feat_type1, feat_type1=>$feat_type1));
+#     my $dag_file22 = $org_dirs{$orgkey2."_".$orgkey2}{dir}."/".$org_dirs{$orgkey2."_".$orgkey2}{basename}.".dag";
+#     $problem=1 unless run_dag_tools(query=>"a".$dsgid2, subject=>"b".$dsgid2, blast=>$org_dirs{$orgkey2."_".$orgkey2}{blastfile}, outfile=>$dag_file22, feat_type1=>$feat_type2, feat_type1=>$feat_type2);
+#     my $dup_file1  = $org_dirs{$orgkey1."_".$orgkey1}{dir}."/".$org_dirs{$orgkey1."_".$orgkey1}{basename}.".dups";
+#     run_tandem_finder(infile=>$dag_file11,outfile=>$dup_file1);
+#     my $dup_file2  = $org_dirs{$orgkey2."_".$orgkey2}{dir}."/".$org_dirs{$orgkey2."_".$orgkey2}{basename}.".dups";
+#     run_tandem_finder(infile=>$dag_file22,outfile=>$dup_file2);
     my $t2 = new Benchmark;
     my $local_dup_time = timestr(timediff($t2,$t1));
 
      #prepare dag for synteny analysis
      my $dag_file12 = $org_dirs{$orgkey1."_".$orgkey2}{dir}."/".$org_dirs{$orgkey1."_".$orgkey2}{basename}.".dag";
-     $problem=1 unless run_dag_tools(query=>"a".$dsgid1, subject=>"b".$dsgid2, blast=>$org_dirs{$orgkey1."_".$orgkey2}{blastfile}, outfile=>$dag_file12.".all", query_dup_file=>$dup_file1,subject_dup_file=>$dup_file2, feat_type1=>$feat_type1, feat_type2=>$feat_type2);
-     #remove repetitive matches
-     run_filter_repetitive_matches(infile=>$dag_file12.".all",outfile=>$dag_file12);
-     #is this an ordered gene run?
+#     $problem=1 unless run_dag_tools(query=>"a".$dsgid1, subject=>"b".$dsgid2, blast=>$org_dirs{$orgkey1."_".$orgkey2}{blastfile}, outfile=>$dag_file12.".all", query_dup_file=>$dup_file1,subject_dup_file=>$dup_file2, feat_type1=>$feat_type1, feat_type2=>$feat_type2);
+     $problem=1 unless run_dag_tools(query=>"a".$dsgid1, subject=>"b".$dsgid2, blast=>$org_dirs{$orgkey1."_".$orgkey2}{blastfile}, outfile=>$dag_file12.".all", feat_type1=>$feat_type1, feat_type2=>$feat_type2);
      my $dag_file12_all = $dag_file12.".all";
+     #remove repetitive matches
+     run_filter_repetitive_matches(infile=>$dag_file12_all,outfile=>$dag_file12);
+     #is this an ordered gene run?
      $dag_file12 = run_convert_to_gene_order(infile=>$dag_file12, dsgid1=>$dsgid1, dsgid2=>$dsgid2, ft1=>$feat_type1, ft2=>$feat_type2) if $dagchainer_type eq "geneorder";
     my $t3 = new Benchmark;
     my $convert_to_gene_order_time = timestr(timediff($t3,$t2));
@@ -1362,6 +1369,7 @@ sub go
  	if (-r "$out.html")
  	  {
 	    $html .= qq{
+<div class="ui-widget-content" id="synmap_zoom_box">
  Zoomed SynMap:
  <table class=small>
  <tr>
@@ -1371,26 +1379,25 @@ sub go
   <option value="1">Area 1
   <option value="2">Area 2
   <option value="3">Area 3
-
  </select>
-
  <tr>
  <td>Flip axes?
  <td><input type=checkbox id=flip>
  <tr>
  <td>Image Width
- <td><input type=text name=zoom_width id=zoom_width size=6 value="600">
+ <td><input class="backbox" type=text name=zoom_width id=zoom_width size=6 value="600">
  <tr>
- <td>kS, kN, kN/kS cutoffs
- <td>Min: <input type=text name=zoom_min id=zoom_min size=6 value="">
- <td>Max: <input type=text name=zoom_max id=zoom_max size=6 value="">
+ <td>kS, kN, kN/kS cutoffs: 
+ <td>Min: <input class="backbox" type=text name=zoom_min id=zoom_min size=6 value="">
+ <td>Max: <input class="backbox" type=text name=zoom_max id=zoom_max size=6 value="">
  </table>
+</div>
  };
 
 
  	    open (IN, "$out.html") || warn "problem opening $out.html for reading\n";
 #	    print STDERR "$out.html\n";
- 	    $html .= "<span class='species small'>$org_name2</span><table><tr valign=top><td valign=top>";
+ 	    $html .= "<span class='species small'>y-axis: $org_name2</span><table><tr valign=top><td valign=top>";
  	    $/ = "\n";
  	    while (<IN>)
  	      {
@@ -1403,7 +1410,7 @@ sub go
  	    $html =~ s/master.*\.png/$out.png/;
  	    warn "$out.html did not parse correctly\n" unless $html =~ /map/i;
  	    $html .= qq{
- <br><span class="species small">$org_name1</span><br>
+ <br><span class="species small">x-axis: $org_name1</span><br>
 };
 
 	    $html .= "<div><img src='$out.hist.png'></div>" if -r $hist;
@@ -1423,7 +1430,7 @@ sub go
  	my $output = $org_dirs{$org_dir}{blastfile};
  	next unless -s $output;
  	$output =~ s/$DIR/$URL/;
- 	$html .= "<a href=$output target=_new>Blast results for $org_dir</a><br>";;	
+ 	$html .= "<a href=$output target=_new>Blast results</a><br>";;	
        }
      my $log = $cogeweb->logfile;
      $log =~ s/$DIR/$URL/;

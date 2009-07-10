@@ -72,16 +72,6 @@ $(function() {
 					$('#genome_info_popup').dialog('open');
 			});
 });
-/*
-$(function() {
-	     $("#tab").tabs({
-	select: function(){adjust_blast_types(0);}
-});
-	     $(".coge_opts").bind('tabselect',function(){adjust_blast_types();}); 
-	     $(".ncbi_opts").bind('tabselect',function(){adjust_blast_types(1);alert('Heelo, woorld');});
-});
-*/
-
 function generate_seq_obj(dsid,upstream,downstream,seqview,chr,rc,featid){
   this.featid=featid;
   this.dsid=dsid;

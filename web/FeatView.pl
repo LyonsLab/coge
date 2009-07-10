@@ -544,17 +544,21 @@ sub get_orgs
     my $search = $opts{search};
     my $id_only = $opts{id_only};
     my @db;
+    my $count;
     if ($type && $type eq "name")
       {
 	@db = $coge->resultset("Organism")->search({name=>{like=>"%".$search."%"}});
+	$count = scalar @db;
       }
     elsif($type && $type eq "desc")
       {
 	@db = $coge->resultset("Organism")->search({description=>{like=>"%".$search."%"}});
+	$count = scalar @db;
       }
     else
       {
-	@db = $coge->resultset("Organism")->all;
+	$count = $coge->resultset("Organism")->count();
+#	@db = $coge->resultset("Organism")->all;
       }
     return map {$_->id} @db if $id_only;
     #my @db = $name ? $coge->resultset('Organism')->search({name=>{like=>"%".$name."%"}})
@@ -567,15 +571,17 @@ sub get_orgs
 	push @opts, "<OPTION value=\"".$item->id."\" id=\"o".$item->id."\">".$item->name."</OPTION>";
       }
     my $html;
-    $html .= qq{<FONT CLASS ="small" id="org_count">Organism count: }.scalar @opts.qq{</FONT>\n<BR>\n};
-    unless (@opts) 
+    $html .= qq{<FONT CLASS ="small" id="org_count">Organism count: }.$count.qq{</FONT>\n<BR>\n};
+    if ($search && !@opts) 
       {
 	$html .=  qq{<input type = hidden name="org_id" id="org_id"><br>};
 	$html .= "No results";
 	return $html;
       }
 	unshift(@opts,"<OPTION value=\"all\" id=\"all\">All Listed Organisms</OPTION>");
-    $html .= qq{<SELECT id="org_id" SIZE="8" MULTIPLE >\n};
+    my $size = scalar @opts;
+    $size = 8 if $size > 8;
+    $html .= qq{<SELECT id="org_id" SIZE="$size" MULTIPLE >\n};
     $html .= join ("\n", @opts);
     $html .= "\n</SELECT>\n";
     $html =~ s/OPTION/OPTION SELECTED/;
