@@ -55,10 +55,8 @@ my $org2info = get_dsg_info(dsgid=>$dsgid2, chr=>$CHR2, minsize=>$min_chr_size);
 my $org2length =0;
 map {$org2length+=$_->{length}} values %$org2info;
 
-print STDERR ($org1info),"\n";
 ($org1info, $org1length, $dsgid1, $org2info, $org2length, $dsgid2) = ($org2info, $org2length, $dsgid2, $org1info, $org1length, $dsgid1) if $flip;
 ($CHR1, $CHR2) = ($CHR2, $CHR1) if $flip && ($CHR1 || $CHR2);
-print STDERR ($org1info),"\n";
 my $height = sprintf("%.0f", $width*$org2length/$org1length);
 $height = $width if ($height > 10*$width) || ($height <  $width/10);
 
@@ -89,7 +87,6 @@ if ($ks_db)
     $cmd .= ".$MAX" if defined $MAX;
     $cmd .= ".hist.png";
     `$cmd`;
-    print STDERR $cmd,"\n";
   }
 
 
@@ -171,7 +168,7 @@ sub draw_dots
 		  {
 		    if ($val <= 0)
 		      {
-			$val = $min; #min is log10ed
+			$val = 0; #set to minimum color value
 		      }
 		    else
 		      {
@@ -183,6 +180,9 @@ sub draw_dots
 		    $val = ($val-$min)/$range;
 		  }
 		$val = sprintf("%.4f", $val);
+#		if ($val < 0) {
+#		  print STDERR join ("\t", $orig_val, $val, $max, $min,),"\n";
+#		}
 		$use_color = get_color(val=>$val); #val is 0<=x<=1
 		$use_color = $graphics_context->colorResolve(@$use_color);
 	      }
@@ -283,9 +283,9 @@ sub draw_dots
 	my $org1length = commify($org1->{$CHR1}->{length})." bp";
 	my $org2name = $coge->resultset('DatasetGroup')->find($dsgid2)->organism->name if $dsgid2;
 	my $org2length = commify($org2->{$CHR2}->{length})." bp";
-
+	
 	my ($img) = $basename =~ /([^\/]*$)/;
-
+	
 	#Print out the page header, Javascript
 	print OUT qq{
 <html><head>
@@ -310,19 +310,19 @@ type (circle, rect), array of coords, href link, mouseover details
 Coords will be in [x,y,radius] for cricles and [x1,y1,x2,y2] (diagonal points) for rectangles*/
 };
 
-		#Loop through the features list and print out the click map info
-		my $temp_arrayindex_counter = 0;
-		foreach my $item (@feats)
-		{
-			my ($x, $y, $f1, $f2, $link) = @$item;
-#<area shape='circle' coords='$x, $y, 2' href='$link' onMouseOver="get_pair_info(['args__$f1','args__$f2'],['pair_info']);" target='_blank' >
-			print OUT qq{
+	#Loop through the features list and print out the click map info
+	my $temp_arrayindex_counter = 0;
+	foreach my $item (@feats)
+	  {
+	    my ($x, $y, $f1, $f2, $link) = @$item;
+	    #<area shape='circle' coords='$x, $y, 2' href='$link' onMouseOver="get_pair_info(['args__$f1','args__$f2'],['pair_info']);" target='_blank' >
+	    print OUT qq{
 location_list[$temp_arrayindex_counter] = ['circle', [$x, $y, 2], '$link', 'get_pair_info(["args__$f1","args__$f2"],["pair_info"])'];};
-			$temp_arrayindex_counter++;
-		}
-
-		#Print out the canvas tag, onLoad call, and other stuff.
-		print OUT qq{
+	    $temp_arrayindex_counter++;
+	  }
+	
+	#Print out the canvas tag, onLoad call, and other stuff.
+	print OUT qq{
 		
 /*The body onLoad function in unreliable (sometimes does not run), as is simply running the loadstuff function (DOM may not be fully loaded).
 Ergo, we rely on jQuery to detect when the DOM is fully loaded, and then run the loadstuff() function.*/
@@ -334,7 +334,7 @@ Ergo, we rely on jQuery to detect when the DOM is fully loaded, and then run the
 <canvas id="myCanvas" border="0" style='position: absolute;left: 0px;top:45px;' width="12" height="12" onmousemove="trackpointer(event);" onmousedown="trackclick(event, 'yes');">
 	Your browser does not have support for Canvas.
 </canvas>	
-<span class=xsmall style='position: absolute;left: 0px;top: 45px;'>$org2name: $CHR2 ($org2length)</span>
+<span class=xsmall style='position: absolute;left: 0px;top: 45px;'>y-axis: $org2name: $CHR2 ($org2length)</span>
 <DIV id=pair_info class="ui-widget-content" style='position: absolute;left: 0px;top: 0px;'></DIV>
 
 };
@@ -353,10 +353,8 @@ Ergo, we rely on jQuery to detect when the DOM is fully loaded, and then run the
 }; 
 	  }
 	print OUT qq{
-<span class=xsmall style='position: absolute;left: 0px;top: $pos;'>$org1name: $CHR1 ($org1length)
+<span class=xsmall style='position: absolute;left: 0px;top: $pos;'>x-axis $org1name: $CHR1 ($org1length)
    <a href = "$img.png" target=_new>Link to image</a>
-    <br>
-<span class=small>Add autogo to GEvo link?<input type=checkbox id=autogo></span>
 
 };
 	print OUT qq{
@@ -615,7 +613,7 @@ sub get_range
 	    $set_min = $data->{$k1}{$k2} unless defined $set_min;
 	    $set_max = $data->{$k1}{$k2} if $data->{$k1}{$k2} > $set_max;
 	    $set_min = $data->{$k1}{$k2} if $data->{$k1}{$k2} < $set_min;
-	    $non_zero_min = $data->{$k1}{$k2} if $data->{$k1}{$k2} < $non_zero_min && $data->{$k1}{$k2} > 0;
+	    $non_zero_min = $data->{$k1}{$k2} if $non_zero_min && $data->{$k1}{$k2} < $non_zero_min && $data->{$k1}{$k2} > 0;
 	  }
       }
     #let's minimize the data, if needed
