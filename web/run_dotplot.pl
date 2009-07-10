@@ -116,11 +116,6 @@ sub generate_dotplot
     my $log = $opts{log};
     my $min = $opts{min};
     my $max = $opts{max};
-    if (-r $outfile.".html" && !$regen_images)
-      {
-#	write_log("generate dotplot: file $outfile already exists",$cogeweb->logfile);
-	return $outfile;
-      }
 #    write_log("generate dotplot: running $cmd", $cogeweb->logfile);
     my $cmd = $DOTPLOT;
     if ($ksdb && -r $ksdb)
@@ -130,10 +125,15 @@ sub generate_dotplot
 	$cmd .= qq{ -min $min} if defined $min && $min =~/\d/;
 	$cmd .= qq{ -max $max} if defined $max && $max =~/\d/;
 	$outfile .= ".$kstype";
-	      }
+      }
+    if (-r $outfile.".html" && !$regen_images)
+      {
+#	write_log("generate dotplot: file $outfile already exists",$cogeweb->logfile);
+	return $outfile;
+      }
+
     $cmd .= qq{ -d $dag -a $coords -b $outfile -l '' -dsg1 $dsgid1 -dsg2 $dsgid2 -w $width -lt 1 -chr1 $qchr -chr2 $schr -flip $flip -grid 1};
     `$cmd`;
-#    print STDERR $cmd;
     $outfile .= ".$min" if defined $min && $min =~/\d/;
     $outfile .= ".$max" if defined $max && $max =~/\d/;
     
