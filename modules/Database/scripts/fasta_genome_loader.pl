@@ -11,7 +11,7 @@ use File::Path;
 use vars qw($DEBUG $coge $GENOMIC_SEQ_LEN $GO $ERASE);
 
 
-my ($nt_file, $nt_dir, $org_name, $org_desc, $org_id, $source_name, $source_desc, $source_link, $source_id, $ds_name, $ds_desc, $ds_link, $ds_version, $ds_id, $chr, $seq_type_name, $seq_type_desc, $seq_type_id, $chr_basename, $add_chr_name, $use_fasta_header, $dsg_name, $dsg_desc, $dsg_version, $dsg_id);
+my ($nt_file, $nt_dir, $org_name, $org_desc, $org_id, $org_restricted, $source_name, $source_desc, $source_link, $source_id, $ds_name, $ds_desc, $ds_link, $ds_version, $ds_id, $chr, $seq_type_name, $seq_type_desc, $seq_type_id, $chr_basename, $add_chr_name, $use_fasta_header, $dsg_name, $dsg_desc, $dsg_version, $dsg_id);
 
 ##Example usage:
 #./fasta_genome_loader.pl -org_name "Allenigales" -source_id 24 -ds_name oldsuper2.fasta -ds_version 2 -use_fasta_header -nt ~/projects/genome/data/Selaginella_moellendorffii/pre-v2/oldsuper2.fasta
@@ -25,6 +25,7 @@ GetOptions ( "debug=s" => \$DEBUG,
 	     "org_name=s" => \$org_name,
 	     "org_desc=s" => \$org_desc,
 	     "org_id=s"   => \$org_id,
+	     "org_restricted" => \$org_restricted,#set flag to make organism restriced
 	     "source_name=s" => \$source_name, # datasource
 	     "source_desc=s" => \$source_desc,
 	     "source_link=s" => \$source_link,
@@ -68,6 +69,11 @@ $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 if ($org_name)
   {
     my $org = $coge->resultset("Organism")->find_or_create({name=>$org_name,description=>$org_desc});
+    if ($org_restricted)
+      {
+	$org->restricted(1);
+	$org->update;
+      }
     $org_id = $org->id;
   }
 
