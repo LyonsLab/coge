@@ -84,9 +84,8 @@ function get_anno_chain (val1,val2) {
 
 function show_anno (anno)
  {
- $('#anno').hide(); 
  $('#anno').html(anno);
- $('#anno').slideDown(pageObj.speed); 
+setup_button_states();
  }
 
 
@@ -269,7 +268,7 @@ function search_bar(div_id){
 
 
 </SCRIPT>
-<TABLE style="float:left" class="ui-widget-content">
+<TABLE class="ui-widget-content">
        <TR>
          <TD nowrap>
            Name:
@@ -285,7 +284,7 @@ function search_bar(div_id){
        <TR>
          <TD nowrap>
           Annotation:
-         <tD>
+         <tD nowrap>
           <input type="text" name="annosearch" id="annosearch" tabindex="1"  size="10" value="<TMPL_VAR NAME=ANNO>" onkeypress="onEnter(event);"/>
 	Add wildcard to <select id="feat_anno_wild" >
 	<option>neither</option>
@@ -315,11 +314,11 @@ function search_bar(div_id){
 
 
 
- <table id="data_table" style="display:none">
+ <table id="data_table" style="display:none" class="ui-widget-content">
  <thead align=left>
-  <th>Annotation</th>
-  <th>Datasets</th><h2></h2>
-  <th>Type</th>
+  <th>Matches</th>
+  <th>Types</th>
+  <th>Genomes</th>
  </thead>
  <tbody>
  <TR valign=top>
@@ -327,13 +326,14 @@ function search_bar(div_id){
    <DIV class="" id="accn_list"><input type="hidden" id="accn_select" ></DIV>
   </TD>
   <TD valign=top>
-   <DIV class="" id="Source"></DIV>
-  <TD valign=top>
     <DIV class="" id="FeatType"></DIV>
   </td>
+  <TD valign=top>
+   <DIV class="" id="Source"></DIV>
  </tbody>
 </TABLE>
-<DIV id="anno"></DIV>
+
+<DIV id="anno" class="ui-widget-content"></DIV>
 
 
 <div class="dialog" title="Feature List" id="feat_list">
@@ -350,5 +350,8 @@ function search_bar(div_id){
 
 </table>
     <div id=add_all_search></div>
-
 </div>
+
+<div class="dialog" id="codon_table" title="Codon Usage Table"</div>
+<div class="dialog" id="aa_table" title="Amino Acid Usage Table"</div>
+<div class="dialog" id="codon_aa_alignment" title="Amino Acid Usage Table"</div>
