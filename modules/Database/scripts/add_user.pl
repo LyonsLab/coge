@@ -23,7 +23,7 @@ $help = 1 unless ($user_name);
 
 help() if $help;
 
-my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
+my $connstr = 'dbi:mysql:dbname=coge;host=biocon.berkeley.edu;port=3306';
 my$coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 my ($user) = $coge->resultset('User')->find({user_name=>$user_name});
 if (  ref($user)=~/user/i )
