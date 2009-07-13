@@ -8,7 +8,7 @@ use Getopt::Long;
 my $dsid;
 my $dsgid;
 
-my $connstr = 'dbi:mysql:dbname=coge;host=homer;port=3306';
+my $connstr = 'dbi:mysql:dbname=coge;host=biocon.berkeley.edu;port=3306';
 my$coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 
 GetOptions ( "dsid=i"=>\$dsid,
