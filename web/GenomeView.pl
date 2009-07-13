@@ -36,33 +36,23 @@ print $pj->build_html($FORM, \&gen_html);
 sub gen_html
   {
     my $html; #=  "Content-Type: text/html\n\n";
-    unless ($USER)
-      {
-        $html .= login();
-      }
-    else
-      {
-        my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
-#	$template->param(HEADER_LINK=>'/CoGe/GeLo.pl');
-        $template->param(LOGO_PNG=>"GenomeView-logo.png");
-        $template->param(TITLE=>'Genome Viewer');
-        $template->param(PAGE_TITLE=>'Genome Viewer');
-        $template->param(HELP=>'');
-        my $name = $USER->user_name;
-        $name = $USER->first_name if $USER->first_name;
-        $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
-        $template->param(USER=>$name);
-
-	$template->param(LOGON=>1) unless $USER->user_name eq "public";
-        $template->param(DATE=>$DATE);
-#        $template->param(BOX_NAME=>generate_box_name());
-#	$template->param(BODY_ONLOAD=>'init();');
-	my ($body, $org_name) = gen_body();
-        $template->param(BODY=>$body);
-        $template->param(BOX_NAME=>$org_name);
-        $html .= $template->output;
-      }
-    #return $html;
+    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
+    $template->param(LOGO_PNG=>"GenomeView-logo.png");
+    $template->param(TITLE=>'Genome Viewer');
+    $template->param(PAGE_TITLE=>'Genome Viewer');
+    $template->param(HELP=>'');
+    my $name = $USER->user_name;
+    $name = $USER->first_name if $USER->first_name;
+    $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
+    $template->param(USER=>$name);
+    $template->param(BOX_WIDTH=>"100%");
+    $template->param(LOGON=>1) unless $USER->user_name eq "public";
+    $template->param(DATE=>$DATE);
+    my ($body, $org_name) = gen_body();
+    $template->param(BODY=>$body);
+    $template->param(BOX_NAME=>$org_name);
+    $html .= $template->output;
+    return $html;
   }
 
 sub gen_body
