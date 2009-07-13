@@ -228,6 +228,7 @@ sub get_org_info
     my $html;# = qq{<div class="backbox small">};
     $html .= $org->name."<br>";
     $html .= $org->description if $org->description;
+    $html.= "<br><span class=alert>Restricted Organism!  Authorized Use Only!</span>" if $org->restricted;
 #    $html .= "</div>";
     return $html;
   }
