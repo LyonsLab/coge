@@ -345,7 +345,7 @@ sub get_anno
 	push @feats,$coge->resultset('Feature')->find($fid);
       }
     my $anno;
-    $anno .= "<font class=small>Annotation count: ".scalar @feats."</font>\n<BR>\n" if scalar @feats;
+    $anno .= "<font class=small>Annotation count: ".scalar @feats."</font>\n<BR><hr>\n" if scalar @feats;
     my $i = 0;
     foreach my $feat (@feats)
       {
@@ -358,24 +358,23 @@ sub get_anno
 	my $ds = $feat->dataset->id;
 	my $x = $feat->start;
 	my $z = 4;
-	$anno .= join "\n<BR><HR><BR>\n", $feat->annotation_pretty_print_html(loc_link=>1, gstid=>$gstid);
-	$anno .= "<table>";
-	$anno .= "<tr>";
-	$anno .= qq{<td><DIV id="dnaseq$i"><input type="button" value = "SeqView" onClick="window.open('SeqView.pl?featid=$featid&dsid=$ds&chr=$chr&featname=gstid=$gstid');"></DIV>};
-	$anno .= qq{<td><DIV id="dnaseq$i"><input type="button" value = "Blast" onClick="window.open('CoGeBlast.pl?featid=$featid;gstid=$gstid');"></DIV>};
-	$anno .= qq{<td><DIV id="loc$i"><input type="button" value = "GenomeView" onClick="window.open('GenomeView.pl?chr=$chr&ds=$ds&x=$x&z=$z;gstid=$gstid');"></DIV>};
+	$anno .= qq{<span class="ui-button ui-state-default ui-corner-all" onClick="window.open('SeqView.pl?featid=$featid&dsid=$ds&chr=$chr&featname=gstid=$gstid');">Get Sequence</span>};
+	$anno .= qq{<span class="ui-button ui-state-default ui-corner-all" onClick="window.open('CoGeBlast.pl?featid=$featid;gstid=$gstid');">CoGeBlast</span>};
+	$anno .= qq{<span class="ui-button ui-state-default ui-corner-all" onClick="window.open('GenomeView.pl?chr=$chr&ds=$ds&x=$x&z=$z;gstid=$gstid');">Genome Browser</span>};
 #	$anno .= qq{<DIV id="exp$i"><input type="button" value = "Click for expression tree" onClick="gen_data(['args__Generating expression view image'],['exp$i']);show_express(['args__}.$accn.qq{','args__}.'1'.qq{','args__}.$i.qq{'],['exp$i']);"></DIV>};
-	$anno .= qq{<td><DIV id="addfeat$featid"><input type="button" value = "Add to List" onClick="\$('#addfeat$featid').html('<i>$accn ($type) has been added to Feature List</i><br><br>');update_featlist(['args__accn', 'args__$accn','args__type', 'args__$type','args__fid', 'args__$featid', 'args__gstid','args__$gstid'],[add_to_featlist]);"></DIV>} if $accn;
-	$anno .= "</table>";
-#	$anno .= qq{<DIV id="gc_info$i"><input type="button" value = "GC content" onClick="gc_content(['args__featid','args__$featid'],['gc_info$i'])"></DIV>};
+	$anno .= qq{<span class="ui-button ui-state-default ui-corner-all" onClick="update_featlist(['args__accn', 'args__$accn','args__type', 'args__$type','args__fid', 'args__$featid', 'args__gstid','args__$gstid'],[add_to_featlist]);\$('#feat_list').dialog('option', 'width', 500).dialog('open');">Add to list</span></DIV>} if $accn;
+
+	$anno .= join "\n<BR><HR><BR>\n", $feat->annotation_pretty_print_html(loc_link=>1, gstid=>$gstid);
 	if ($feat->type->name eq "CDS")
 	  {
-	    $anno .= qq{<DIV id="codon_info$i"><input type="button" value = "Codon usage" onClick="codon_table(['args__featid','args__$featid', 'args__gstid','args__$gstid'],['codon_info$i'])"></DIV>};
-	      $anno .= qq{<DIV id="protein_info$i"><input type="button" value = "Amino acid usage" onClick="protein_table(['args__featid','args__$featid', 'args__gstid','args__$gstid'],['protein_info$i'])"></DIV>};
-	    $anno .= qq{<DIV id="codon_aa_align$i"><input type="button" value = "Codon/AA alignment" onClick="codon_aa_alignment(['args__featid','args__$featid', 'args__gstid','args__$gstid'],['codon_aa_align$i'])"></DIV>};
+	    $anno .= "<br>";
+	    $anno .= qq{<span class="ui-button ui-state-default ui-corner-all" onClick="codon_table(['args__featid','args__$featid', 'args__gstid','args__$gstid'],['codon_table']); \$('#codon_table').dialog('option', 'width', 600).dialog('open');">Codon Usage</span>};
+	      $anno .= qq{<span class="ui-button ui-state-default ui-corner-all" onClick="protein_table(['args__featid','args__$featid', 'args__gstid','args__$gstid'],['aa_table']);\$('#aa_table').dialog('open');">Amino Acid Usage</span>};
+	    $anno .= qq{<span class="ui-button ui-state-default ui-corner-all"  onClick="codon_aa_alignment(['args__featid','args__$featid', 'args__gstid','args__$gstid'],['codon_aa_alignment']); \$('#codon_aa_alignment').dialog('option', 'width', 650).dialog('open');">Codon/AA alignment</span>};
 	  }
-	$anno = "<font class=\"annotation\">No annotations for this entry</font>" unless $anno;
+	$anno.="<br><hr>";
       }
+    $anno = "<font class=\"annotation\">No annotations for this entry</font>" unless $anno;
     return ($anno);
   }
 
@@ -419,7 +418,7 @@ sub gen_html
 	$template->param(bOX_NAME=>"Feature Selection");
         my $body = gen_body();
 	$template->param(BODY=>$body);
-	$template->param(ADJUST_BOX=>1);
+#	$template->param(ADJUST_BOX=>1);
 	$html .= $template->output;
       }
     return $html;
@@ -616,8 +615,8 @@ sub codon_table
       }
     my $html = "Codon Usage: $code_type";
     $html .= CoGe::Accessory::genetic_code->html_code_table(data=>$codon, code=>$code, counts=>1);
-    $html .= "Predicted amino acid usage for $code_type genetic code:";
-    $html .= CoGe::Accessory::genetic_code->html_aa(data=>\%aa, counts=>1);
+#    $html .= "Predicted amino acid usage for $code_type genetic code:";
+#    $html .= CoGe::Accessory::genetic_code->html_aa(data=>\%aa, counts=>1);
     return $html;
   }
 
