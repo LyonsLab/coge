@@ -14,7 +14,7 @@ This program will remove the specified dataset and all related data from the CoG
     exit;
   }
 
-my $connstr = 'dbi:mysql:dbname=coge;host=homer;port=3306';
+my $connstr = 'dbi:mysql:dbname=coge;host=biocon.berkeley.edu;port=3306';
 my $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 my ($ds) = $coge->resultset('Dataset')->resolve($dsid);
 unless ($ds)
