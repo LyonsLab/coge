@@ -8,7 +8,7 @@ use File::Spec::Functions;
 use POSIX;
 
 my $BASEDIR = "/opt/apache/CoGe/data/genomic_sequence";
-my $connstr = 'dbi:mysql:dbname=genomes_new;host=homer;port=3306';
+my $connstr = 'dbi:mysql:dbname=genomes_new;host=biocon.berkeley.edu;port=3306';
 my $coge = CoGeX->connect($connstr, 'coge', '123coge321' );
 
 foreach my $item ($coge->resultset('Dataset')->all())
