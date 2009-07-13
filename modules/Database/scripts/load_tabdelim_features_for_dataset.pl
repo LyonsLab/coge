@@ -34,7 +34,7 @@ unless ($file && -r $file && $feat_type_name)
 
 
 print "***************'go' flag is not set.  Nothing will be added to the database****************\n" unless $GO; 
-my $connstr = 'dbi:mysql:dbname=coge;host=homer;port=3306';
+my $connstr = 'dbi:mysql:dbname=coge;host=biocon.berkeley.edu;port=3306';
 my $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 
 print "Creating feature type $feat_type_name . . \n" if $DEBUG;
