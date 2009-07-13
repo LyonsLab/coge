@@ -84,7 +84,7 @@ sub gen_html
 	$template->param(DATE=>$DATE);
 	$template->param(LOGO_PNG=>"OrganismView-logo.png");
 	$template->param(BODY=>$body);
-	$template->param(ADJUST_BOX=>1);
+#	$template->param(ADJUST_BOX=>1);
 	$html .= $template->output;
       }
     return $html;
@@ -726,9 +726,9 @@ sub gen_gc_for_chromosome
 	foreach my $chr(keys %chr)
 	  {
 	    my @gc =$ds->percent_gc(chr=>$chr, seq_type=>$gstid, counts=>1);
-	    $gc+= $gc[0];
-	    $at+= $gc[1];
-	    $n+= $gc[2];
+	    $gc+= $gc[0] if $gc[0];
+	    $at+= $gc[1] if $gc[1];
+	    $n+= $gc[2] if $gc[2];
 	  }
       }
     my $total = $gc+$at+$n;
