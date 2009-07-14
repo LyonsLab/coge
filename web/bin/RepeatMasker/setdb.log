@@ -1,9 +1,0 @@
-SETDB-WashU 1.0 [04-May-2006] [linux26-i686-ILP32F64 2006-05-09T11:46:52]
-Start:  2007-07-23T13:27:37
-XDF (setdb compatibility mode) Output Database:  /opt/apache2/CoGe/bin/RepeatMasker/Libraries/20061006/homo/retrolib-wublast
- Alphabet:  NCBIstdaa(1)
-Input: "/opt/apache2/CoGe/bin/RepeatMasker/Libraries/20061006/homo/retrolib-wublast"
- No. of sequences (letters) written:  272  (1,102,034)
- Longest sequence written (in database):  9044  (9044)
-Total cpu time:  0.00u 0.00s 0.00t   Elapsed:  00:00:00
-End:  2007-07-23T13:27:37
