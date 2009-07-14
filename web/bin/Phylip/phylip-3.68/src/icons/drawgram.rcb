@@ -1,0 +1,33 @@
+Resource ICON "icons\drawgram.ico"
+
+AboutDlg DIALOG FIXED 6, 21, 300, 140
+STYLE DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+CAPTION "About Drawgram"
+FONT 8, "MS Shell Dlg"
+BEGIN
+    DEFPUSHBUTTON   "&OK", IDOK, 130, 120, 40, 14
+    LTEXT "Drawgram unrooted tree plotting program", 104, 30, 14, 250, 8
+    LTEXT "PHYLIP version 3.6 (c) Copyright 1986-2004 by the University of Washington", 105, 30, 30, 250, 8
+    LTEXT "Written by Joseph Felsenstein and Christopher A. Meacham.", 106, 30, 45, 250, 8
+    LTEXT "Additional code written by Hisashi Horino, Sean Lamont, Andrew Keefe,", 107, 30, 55, 250, 8
+    LTEXT   "Daniel Fineman, Akiko Fuseki, Doug Buxton and Michal Palczewski.", 108, 30, 65, 250, 8
+    LTEXT "Permission is granted to copy, distribute and modify this program", 109, 30, 75, 250, 8
+    LTEXT "provided that", 110, 30,85,250,8
+    LTEXT "(1) This copyright message is not removed and", 111, 30,95,250,8
+    LTEXT "(2) no fee i charged for this program.", 112, 30,105,250,8
+END
+
+GenericAppMenu MENU
+{
+   POPUP "&File"
+   {
+      MENUITEM "&Plot",                 1001
+      MENUITEM "&Change Parameters",    1002
+      MENUITEM "&Quit",                 1003
+   }
+   POPUP "&Help"
+   {
+      MENUITEM "&About",                1000
+   }
+}
+
