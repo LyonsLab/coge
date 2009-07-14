@@ -1,0 +1,123 @@
+<HEAD>
+<TITLE>NJplot</TITLE>
+</HEAD>
+<BODY BGCOLOR="#F0F0F0">
+<CENTER>
+<H1>NJplot</H1>
+NEW: NJplot plots trees in PDF and PostScript formats (not for MacOS).
+<br>NEW: NJplot allows to open several tree windows.
+</CENTER>
+<HR>
+<P>
+NJplot is a tree drawing program able to draw any phylogenetic tree expressed in the
+<a href=http://evolution.genetics.washington.edu/phylip/newicktree.html>Newick</a> phylogenetic tree format (<I>e.g.</I>, the format used by the
+PHYLIP package). NJplot is especially convenient for rooting the unrooted trees
+obtained from parsimony, distance or maximum likelihood tree-building methods.</p>
+<P>
+A screen shot of the main window of njplot is available 
+<A HREF="/binaries/njplot.gif">here</A>.
+<H3>Use of NJPlot</H3>
+Any rooting of the unrooted tree can be interactively specified using the mouse.
+NJplot also allows zooming, branch swapping, display of bootstrap scores and
+printing in the PDF format. NJplot can therefore be used as a graphical
+extension of any package of phylogenetic programs which employs the standard
+tree format for storing trees (<I>i.e.</I>, with most such packages). 
+<H3>Download NJplot</H3>
+Executables and full <A HREF="ftp://pbil.univ-lyon1.fr/pub/mol_phylogeny/njplot/njplot.tar.gz">source code</a>
+can be downloaded through our
+<A HREF="ftp://pbil.univ-lyon1.fr/pub/mol_phylogeny/njplot">FTP server</A>.
+You may also use the following table to directly access the version
+corresponding to your computer:
+<P></p>
+<center>
+<TABLE BORDER=4 CELLPADDING=8>
+
+<TR ALIGN=LEFT>
+<TD>
+<H3>
+<IMG ALIGN=BOTTOM SRC="/binaries/MacOSX_Universal_40px.gif">
+<A HREF="ftp://pbil.univ-lyon1.fr/pub/mol_phylogeny/njplot/njplot.zip">MacOS X</A>
+<br>
+<IMG ALIGN=BOTTOM SRC="/binaries/apple_logo.png">
+<A HREF="ftp://pbil.univ-lyon1.fr/pub/mol_phylogeny/njplot/njplotMAC.hqx">MacOS (8,9)</A>
+</H3>
+</TD>
+
+<TD>
+<H3>
+<IMG ALIGN=BOTTOM SRC="/binaries/linux.gif">
+<A HREF="ftp://pbil.univ-lyon1.fr/pub/mol_phylogeny/njplot/njplot.linux">Linux on PC</A>
+<br><font size=2>in case of <A HREF=#FONTPROBLEM>font problem</A></font>
+</H3>
+</TD>
+
+<TD>
+<H3>
+<IMG ALIGN=BOTTOM SRC="/binaries/win_logo.png">
+<A HREF="ftp://pbil.univ-lyon1.fr/pub/mol_phylogeny/njplot/njplotWin95.exe">MS Windows</A>
+</H3>
+</TD>
+
+<TD>
+<H2>
+<IMG ALIGN=BOTTOM SRC="/binaries/sun.gif">
+<A HREF="ftp://pbil.univ-lyon1.fr/pub/mol_phylogeny/njplot/njplot.solaris">Sun-Solaris</A>
+</H3>
+</TD>
+
+<TD>
+<H3>
+<IMG ALIGN=BOTTOM SRC="/binaries/hp.gif">
+<A HREF="ftp://pbil.univ-lyon1.fr/pub/mol_phylogeny/njplot/njplot.alpha">HP Alpha</A>
+</H3>
+</TD>
+
+</TR>
+
+</TABLE>
+
+</CENTER>
+<P>The Mac and Windows versions are self-extracting archives which include
+an example file, help information, and the unrooted program that draws
+unrooted trees. The Windows version is for any MS Windows version except 3.*.</P>
+<P>
+For unix versions, get also an 
+<A HREF="ftp://pbil.univ-lyon1.fr/pub/mol_phylogeny/njplot/test.ph">example tree file</A> and the 
+<A HREF="ftp://pbil.univ-lyon1.fr/pub/mol_phylogeny/njplot/njplot.help">on-line help file</A>.
+
+
+<p><a name=FONTPROBLEM></a></P>
+<b>Note for unix/linux users</b>: In case of problem with default fonts, the font used by menus
+and buttons can be changed through the resource mechanism:
+<br>- add to your $HOME/.Xdefaults file the single line
+<br><tt>Vibrant.systemfont : Helvetica,14,b</tt>
+<br>and activate the change by running command <tt>xrdb -merge $HOME/.Xdefaults</tt>
+<br>- you may change the font name (times, courier, fixed) and size.
+<br>- For that change to apply systemwide, create a file named Vibrant and containing the above line
+in directory /usr/X11R6/lib/X11/app-defaults or in a directory pointed to by environment variable 
+XAPPLRESDIR.
+
+
+<H3>Use as a helper application</H3>
+NJplot can be used as a standalone application or as a helper
+application when using the World Wide Web. In this case, prospective
+users must <A HREF="/help/helpers.html">configure</A> their WWW browser
+in a way to make it able to recognize the MIME-type associated to the data
+read by NJplot: <B><I>chemical/njplot</I></B>. 
+<H3>Reference</H3>
+If you use NJplot in a published work, please cite the following
+<A HREF="http://dx.doi.org/10.1016/0300-9084(96)84768-7">reference</A>:
+<DL>
+<DD>
+Perri&egrave;re, G. and Gouy, M. (1996) WWW-Query: An on-line retrieval system
+for biological sequence banks. <I>Biochimie</I>, <B>78</B>, 364-369.
+</DD>
+</DL>
+<HR>
+<ADDRESS>
+<A HREF="/comments.html">If you have problems or comments...</A>
+<P></P>
+<A HREF="/pbil.html"><IMG SRC="/binaries/home.gif"></A>
+<I>Back to PBIL home page</I>
+</ADDRESS>
+</BODY>

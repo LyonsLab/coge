@@ -1,0 +1,85 @@
+.TH NJPLOT 1 "April 10, 2001"
+.SH NAME
+njplot \- A phylogenetic tree drawing program for biologists
+newicktops \- draw phylogenetic trees into PostScript file
+.SH SYNOPSIS
+.B njplot
+.RI [ options ] " tree_file"
+.P
+.B newicktops
+.RI [ options ] " tree_file"
+.P
+.B newicktotxt
+.RI [ options ] " tree_file"
+
+.SH DESCRIPTION
+This manual page documents briefly the
+.B njplot
+command.
+.P
+The
+.B newicktops
+command does exactly the same but needs no X11 display.
+The output is rendered into a PostScript file.
+.P
+The
+.B newicktotxt
+command does exactly the same as
+.B newicktops
+but the output is rendered into a text file.
+.P
+This manual page was rewritten for the Debian GNU/Linux distribution
+because the original program does not have a manual page.
+.PP
+\fBnjplot\fP is a tree drawing program able to draw any binary or multi-branched tree expressed in
+the standard phylogenetic tree format (e.g., the format used by the PHYLIP package).
+NJplot is especially convenient for rooting the unrooted trees obtained from parsimony,
+distance or maximum likelihood tree-building methods.
+.P
+Any rooting of the unrooted tree can be interactively specified using the mouse. NJplot
+also allows zooming, branch swapping, display of bootstrap scores and saving
+in the PostScript format. 
+NJplot can therefore be used as a graphical extension of any package of
+phylogenetic program which employs the standard tree format for storing trees (i.e., with
+most such packages).
+.SH OPTIONS
+There are only the following options which only work in an x-terminal-emulator, but not in console mode:
+.TP
+.B \-h
+Prints out brief help.
+.TP
+.B \-us
+Postscript tree file prepared for US Letter paper size.
+.TP
+.B \-psonly
+No window interface, just write the PostScript tree file.
+.TP
+.B \-size n
+Font size n used for taxon names.
+.TP
+.B \-pc n
+number of pages for PostScript output.
+.TP
+.B \-psize widthxheight
+size of PostScript page expressed as WIDTHxHEIGHT.
+.TP
+.B \-lengths
+Show branch lengths if they appear in tree file.
+.TP
+.B \-boot
+Show bootstrap values if they appear in tree file.
+.TP
+.B \-notitle
+Don't include title in PostScript output.
+.SH SEE ALSO
+.BR unrooted (1).
+.br
+.SH Word-Wide-Web:
+http://pbil.univ-lyon1.fr/software/njplot.html
+.SH AUTHOR:
+.I Manolo Gouy
+.br
+e-mail: mgouy@biomserv.univ-lyon1.fr
+.PP
+This manual page was written by Dr. Guenter Bechly <gbechly@debian.org>,
+for the Debian GNU/Linux system (but may be used by others).

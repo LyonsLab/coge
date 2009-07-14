@@ -1,0 +1,52 @@
+<HEAD>
+<TITLE>Helper applications</TITLE>
+</HEAD>
+<BODY BGCOLOR="#F0F0F0">
+<CENTER>
+<H1>Helper applications for Hovergen</H1>
+</CENTER>
+<HR>
+<P>
+The version of Hovergen accessible through WWW-Query uses two helper 
+applications that allow to visualize and to handle the alignments and the
+phylogenic trees provided with this database. These applications are
+<A HREF="/software/seaview.html">SeaView</A> (for the alignments) and
+<A HREF="/software/njplot.html">NJplot</A> (for the  phylogenic trees).
+<P>
+The procedure to set up these two applications is the following:
+<OL>
+<LI><A HREF="ftp://pbil.univ-lyon1.fr/pub/mol_phylogeny">Download</A>
+the binaries corresponding to your platform.
+<P>
+<LI>Configure your Web  browser in a way to make it able to
+recognize two new MIME-types: <I><B>chemical/mase</B></I> and
+<I><B>chemical/njplot</B></I>. For instance, if you use a UNIX machine,
+modify the <CODE>.mailcap</CODE> file of your home directory by adding the
+following lines:
+<PRE>
+        chemical/mase; seaview -save clustal  %s
+        chemical/njplot; njplot %s
+</PRE>
+<LI>Then, when you will click on the hypertext links labelled
+<CODE><B>ALN</B></CODE> or <CODE><B>TREE</B></CODE>, you will access
+respectively the protein alignment and the tree of the corresponding gene
+family in Hovergen.
+</OL>
+<P>
+Seaview allows you to edit the alignment and to save it on your
+disk. Njplot allows you to root the tree and to swap the nodes.
+You can also save the tree on your local disk in PostScript
+format in a way to print it on a compatible printer.
+<P>
+Note that if you do not want to install these applications on your computer
+or if the binary corresponding to your platform is not available, you can still
+click on the <CODE><B>ALN</B></CODE> and <CODE><B>TREE</B></CODE> links. In
+this case the corresponding data will be send as text files to your Web browser.
+<P>
+<HR>
+<ADDRESS>
+<A HREF="/comments.html">If you have problems or comments...</A>
+<P>
+<A HREF="/pbil.html"><IMG SRC="/binaries/home.gif"></A>
+Back to PBIL home page
+</BODY>

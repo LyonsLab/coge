@@ -1,0 +1,46 @@
+NJPLOT is a phylogenetic tree drawing program that handles Newick tree files, that is files describing trees by the nested parentheses method (e.g. PHYLIP-built trees).
+
+Features:
+A graphical interface allows to re-root a tree anywhere and to swap
+branches.
+Bootstrap values are displayed next to internal branches.
+Branch lengths can be optionally displayed.
+Tree plots can be printed or saved to a PostScript file.
+
+Program unrooted draws trees in an unrooted, circular form.
+
+Program newicktops uses no GUI and converts a Newick file into a postscript document. 
+Usage:
+newicktops  newick-file-name
+or
+newicktops -h      (to see program options)
+The result goes to file newick-file-name.ps
+
+Program newicktotxt uses no GUI and converts a Newick file into a pure 
+text file where the tree is drawn with | and - characters.
+Usage:
+newicktotxt  newick-file-name
+or
+newicktotxt -h      (to see program options)
+The result goes to file newick-file-name.txt
+
+Program add_root reads a Newick tree file and roots it with the midpoint method,
+that is at the point that minimizes the root-to-leaves variance. It does
+no change if the input tree is already rooted.
+Usage:
+add_root newick-file-name
+The result goes to stdout.
+
+
+Please quote:
+Perriere, G. & Gouy, M. (1996) WWW-Query: an on-line retrieval system for
+biological sequence banks. Biochimie 78:364-369.
+when publishing after njplot use.
+
+ __________________________________________________________________________
+| Manolo Gouy                                                              |  
+| Laboratoire de biometrie, genetique et biologie des populations          |
+| UMR CNRS 5558                   | E-MAIL : mgouy@biomserv.univ-lyon1.fr  |
+| Universite C. Bernard - Lyon 1  | Tel    : +33 4-72-43-12-87             |
+| 69622 Villeurbanne, France      | Fax    : +33 4-78-89-27-19             |
+|_________________________________|________________________________________|

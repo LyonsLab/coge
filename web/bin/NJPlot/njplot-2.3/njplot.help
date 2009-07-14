@@ -1,0 +1,69 @@
+>>>About njplot
+
+Version: ??
+
+Written by M. Gouy (mgouy@biomserv.univ-lyon1.fr).
+
+Phylogenetic trees read from Newick formatted files can be displayed,
+re-rooted, saved, and plotted to PDF or PostScript files.
+Input trees can be with/without branch lengths, with/without bootstrap
+values, rooted or unrooted. Binary as well as multibranched trees are accepted.
+
+njplot is available at
+http://pbil.univ-lyon1.fr/software/njplot.html
+for MAC, PC under MS-Windows and several unix platforms.
+
+njplot uses the Vibrant library by J. Kans.
+Some versions of njplot use the PDFLib Lite library (http://www.pdflib.com)
+under the "Open Source Developer Exemption" of the PDFlib Lite License Agreement.
+
+>>>Menu File
+Open:  To read a tree file in the Newick format (i.e., the file format used
+for trees by Clustal, PHYLIP and other programs).
+
+Save as PDF/PostScript:  To save the tree plot in PDF/PostScript format.
+
+Save rooted/unrooted tree:  To save the tree in a file with/without its current rooting.
+
+Print:  [Mac & Windows ONLY] it does print your tree.
+
+>>>Menu Edit
+Copy:     [Mac & Windows ONLY] Copies the current tree plot to the Clipboard
+          so that the plot can be pasted to another application.
+Paste:    If the clipboard contains a parenthesized tree,
+          this tree will be plotted.
+Clear:    Clears the current plot so that new tree data can
+          be pasted.
+Find:     To search for a taxon in tree and display it in red. Enter a (partial)
+          name, case is not significant.
+Again:    Redisplay in red names matching the string entered in a previous
+          Find operation.
+>>>Menu Font
+Allows to change the font face and size used to display tree labels.
+>>>Menu Paper
+Allows to set the paper size used by the "Save as PDF" item of menu "File".
+
+Pagecount (x): sets the number of pages used by "Save as PDF".
+>>>Operations
+Full tree:     Normal tree display of entire tree
+
+New outgroup:  Allows to re-root the tree. The tree becomes displayed with
+added # signs. Clicking on any # will set descending taxa as an outgroup
+to remaining taxa.
+
+Swap nodes:    Allows to change the display order of taxa. The tree becomes 
+displayed with added # signs. Clicking on any # will swap corresponding taxa.
+
+Subtree:       Allows to zoom on part of the tree. The tree becomes 
+displayed with added # signs. Clicking on any # will limit display to 
+descending taxa. Select "Full tree" to go back to full tree display.
+
+>>>Display
+Branch lengths:   If the tree contains branch lengths, they will be displayed.
+For readability, very short lengths are not displayed.
+
+Bootstrap values: If the tree contains bootstrap values, they will be
+displayed.
+>>>Subtree up
+When a subtree is being displayed, allows to add one more node towards the
+root in the displayed tree part.
