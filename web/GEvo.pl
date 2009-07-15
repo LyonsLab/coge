@@ -844,7 +844,7 @@ Total time                                          : $total_time
 
 
 };
-    print STDERR $gevo_link,"\n";
+    print STDERR "\n",$gevo_link,"\n";
     print STDERR $bench if $BENCHMARK;
     write_log($bench, $cogeweb->logfile);
     write_log("Finished!", $cogeweb->logfile);
