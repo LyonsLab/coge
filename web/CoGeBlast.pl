@@ -138,6 +138,7 @@ sub gen_body
     my $seq = $form->param('seq');
     my $gstid = $form->param('gstid') || 1;
     my $prefs = load_settings(user=>$USER, page=>$PAGE_NAME);
+    $prefs = {} unless $prefs;
     $template->param(JAVASCRIPT=>1);
     $template->param(BLAST_FRONT_PAGE=>1);
     $template->param(UPSTREAM=>$upstream);
@@ -178,6 +179,36 @@ sub gen_body
 }
 
       }
+    #set up which columns of results will be displayed by default
+#       my $prefs = load_settings(user=>$USER, page=>$PAGE_NAME);
+       unless ($prefs->{display} && ref ($prefs->{display}) eq "HASH")
+	 {
+	   $prefs->{display} = {
+				NumD=>1,
+				EvalD=>1,
+				QualD=>1,
+				FeatD=>1,
+				ChrD=>1,
+				OrgD=>1,
+				QND=>1,
+				PosD=>1,
+			       }; 
+#	   my %orgs;
+#	   map {$orgs{$_->{HSP_ORG}}++} @hsp;
+#	   $prefs->{display}{OrgD}=1 if scalar (keys %orgs) >1;
+#	   my %qseqs;
+#	   map {$qseqs{$_->{QUERY_SEQ}}++} @hsp;
+#	   $prefs->{display}{QND}=1 if scalar (keys %qseqs) >1;
+#	   my %chrs;
+#	   map {$chrs{$_->{HSP_CHR}}++} @hsp;
+#	   $prefs->{display}{ChrD}=1 if scalar (keys %qseqs) >1;
+	 }
+       foreach my $key (keys %{$prefs->{display}})
+	 {
+	   $template->param($key=>"checked") if $key;
+	 }
+  $template->param(SAVE_DISPLAY=>1) unless $USER->user_name eq "public";
+ 
     $template->param(document_ready=>$db_list) if $db_list;
     my $resultslimit = $RESULTSLIMIT;
     $resultslimit = $prefs->{'resultslimit'} if $prefs->{'resultslimit'};
@@ -660,7 +691,7 @@ sub gen_results_page
 	 $null = "null";
        }
      my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CoGeBlast.tmpl');
-	 $template->param(RESULT_TABLE=>1);
+     $template->param(RESULT_TABLE=>1);
      # ERIC, i added this so it wouldnt fail
      $template->param(NULLIFY=>$null) if $null;
      my $hsp_limit_flag =0;
@@ -716,33 +747,8 @@ sub gen_results_page
        @hsp = sort {$a->{HSP_ORG} cmp $b->{HSP_ORG} || $a->{HSP} cmp $b->{HSP}} @hsp if @hsp;
        $template->param(HSP_TABLE=>1);
        $template->param(HSPS=>\@hsp);
-       my $prefs = load_settings(user=>$USER, page=>$PAGE_NAME);
-       $prefs = {} unless $prefs;
-       unless ($prefs->{display} && ref ($prefs->{display}) eq "HASH")
-	 {
-	   $prefs->{display} = {
-				NumD=>1,
-				EvalD=>1,
-				QualD=>1,
-				FeatD=>1,
-			       }; 
-	   my %orgs;
-	   map {$orgs{$_->{HSP_ORG}}++} @hsp;
-	   $prefs->{display}{OrgD}=1 if scalar (keys %orgs) >1;
-	   my %qseqs;
-	   map {$qseqs{$_->{QUERY_SEQ}}++} @hsp;
-	   $prefs->{display}{QND}=1 if scalar (keys %qseqs) >1;
-	   my %chrs;
-	   map {$chrs{$_->{HSP_CHR}}++} @hsp;
-	   $prefs->{display}{ChrD}=1 if scalar (keys %qseqs) >1;
-	 }
-       foreach my $key (keys %{$prefs->{display}})
-	 {
-	   $template->param($key=>"checked") if $key;
-	 }
      }
-     $template->param(SAVE_DISPLAY=>1) unless $USER->user_name eq "public";
-     my $hsp_results = $template->output;
+    my $hsp_results = $template->output;
      $template->param(HSP_TABLE=>0);
      $template->param(RESULT_TABLE=>0);
      $template->param(HSP_RESULTS=>$hsp_results);
@@ -778,7 +784,7 @@ Time to gen results:             $render_time
      write_log($benchmark, $cogeweb->logfile);
      return $outhtml, $click_all_links;
    }
-
+   
 sub gen_data_file_summary
   {
     my %opts = @_;
