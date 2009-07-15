@@ -409,7 +409,6 @@ sub run
 #	my $b = $opts{"b$i"};
 	my @tmp;
 	my ($r,$g,$b) = $rgb =~ /^rgb\(\s*(\d{1,3}),\s*(\d{1,3}),\s*(\d{1,3})\)$/;
-#	print STDERR "RGB -- $rgb $r $g $b \n\n";
 	foreach my $color ($r, $g, $b)
 	  {
 	    $color = 0 unless $color && $color =~ /^\d+$/;
@@ -845,6 +844,7 @@ Total time                                          : $total_time
 
 
 };
+    print STDERR $gevo_link,"\n";
     print STDERR $bench if $BENCHMARK;
     write_log($bench, $cogeweb->logfile);
     write_log("Finished!", $cogeweb->logfile);
