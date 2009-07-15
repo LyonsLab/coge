@@ -2626,14 +2626,24 @@ sub algorithm_list
   {
     my $program = shift;
     $program = "blastz" unless $program;
-    my @programs = sort {lc $a cmp lc $b} qw(blastn blastz CHAOS DiAlign_2 LAGAN tblastx);
-    push @programs, "-=NONE=-";
+
+    my %progs = (
+		 "blastn"=>"BlastN: Small Regions",
+		 blastz=>"BlastZ: Large Regions",
+		 "CHAOS"=>"Chaos: Fuzzy Matches",
+		 "DiAlign_2"=>"DiAlign_2: Glocal Alignemnt",
+		 "LAGAN"=>"Lagan: Global Alignment",
+		 "tblastz"=>"TBlastX: Protein Translation",
+		 "-=None=-"=>"-=None=-",
+		 );
+    my @programs = sort {lc $a cmp lc $b} keys %progs;
+#    push @programs, "-=NONE=-";
     my $html;
     foreach my $prog (@programs)
       {
-	$html .= "<option";
+	$html .= "<option value=$prog";
 	$html .= $program && $program =~ /$prog/i ? " selected>" : ">";
-	$html .= $prog."</option>\n";
+	$html .= $progs{$prog}."</option>\n";
       }
     return $html;
   }
