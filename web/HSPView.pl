@@ -143,7 +143,6 @@ sub gen_body
 	$hsps->[1]{start} =~ s/,//g;
 	$hsps->[0]{stop} =~ s/,//g;
 	$hsps->[1]{stop} =~ s/,//g;
-	print STDERR Dumper $hsps->[0];
 	$start = $hsps->[0]{start};
 	$stop = $hsps->[0]{stop};
  	if ($hsps->[0]{reverse_complement})
