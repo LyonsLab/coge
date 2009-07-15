@@ -1010,7 +1010,7 @@ $('#show_columns td').each(function() {
 function save_display_settings() {
 var i=1;
 var index;
-$("input.display[@type=checkbox]").each(function(){
+$("input.hsp_display[@type=checkbox]").each(function(){
   if($(this)[0].checked) {
     if (index) {index= index +","+i;}
     else {index = i;}
@@ -1774,22 +1774,22 @@ $(function() {
 <div id="table_opts_dialog" class="dialog_box" title="Table Information Options">
     <table class = "small resultborder" id="show_columns">
      <tr>
-       <td><input class="display" type = checkbox onclick="toggle_hsp_column(1);" <TMPL_VAR NAME="QND">>Query Sequence Name
-       <td><input class="display" type = checkbox onclick="toggle_hsp_column(2);" <TMPL_VAR NAME="OrgD">>Organism Name
-       <td><input class="display" type = checkbox onclick="toggle_hsp_column(3);" <TMPL_VAR NAME="ChrD">>Chromosome
-       <td><input class="display" type = checkbox onclick="toggle_hsp_column(4);" <TMPL_VAR NAME="PosD">>Position
+       <td><input class="hsp_display" type = checkbox onclick="toggle_hsp_column(1);" <TMPL_VAR NAME="QND">>Query Sequence Name
+       <td><input class="hsp_display" type = checkbox onclick="toggle_hsp_column(2);" <TMPL_VAR NAME="OrgD">>Organism Name
+       <td><input class="hsp_display" type = checkbox onclick="toggle_hsp_column(3);" <TMPL_VAR NAME="ChrD">>Chromosome
+       <td><input class="hsp_display" type = checkbox onclick="toggle_hsp_column(4);" <TMPL_VAR NAME="PosD">>Position
      <tr>
-       <td><input class="display" type = checkbox onclick="toggle_hsp_column(5);" <TMPL_VAR NAME="NumD">>HSP Number
-       <td><input class="display" type = checkbox onclick="toggle_hsp_column(6);" <TMPL_VAR NAME="LengthD">>HSP Length
-       <td><input class="display" type = checkbox onclick="toggle_hsp_column(7);" <TMPL_VAR NAME="QSCD">>Query Sequence Coverage
-       <td><input class="display" type = checkbox onclick="toggle_hsp_column(8);" <TMPL_VAR NAME="EvalD">>HSP E-value
+       <td><input class="hsp_display" type = checkbox onclick="toggle_hsp_column(5);" <TMPL_VAR NAME="NumD">>HSP Number
+       <td><input class="hsp_display" type = checkbox onclick="toggle_hsp_column(6);" <TMPL_VAR NAME="LengthD">>HSP Length
+       <td><input class="hsp_display" type = checkbox onclick="toggle_hsp_column(7);" <TMPL_VAR NAME="QSCD">>Query Sequence Coverage
+       <td><input class="hsp_display" type = checkbox onclick="toggle_hsp_column(8);" <TMPL_VAR NAME="EvalD">>HSP E-value
      <tr>
-       <td><input class="display" type = checkbox onclick="toggle_hsp_column(9);" <TMPL_VAR NAME="PIDD">>HSP Percent Identity
-       <td><input class="display" type = checkbox onclick="toggle_hsp_column(10);" <TMPL_VAR NAME="ScoreD">>HSP Score
-       <td><input class="display" type = checkbox onclick="toggle_hsp_column(11);" <TMPL_VAR NAME="QualD">>HSP Quality (query coverage * percent ID)
-       <td><input class="display" type = checkbox onclick="toggle_hsp_column(12);" <TMPL_VAR NAME="FeatD">>Closest Genomic Feature
+       <td><input class="hsp_display" type = checkbox onclick="toggle_hsp_column(9);" <TMPL_VAR NAME="PIDD">>HSP Percent Identity
+       <td><input class="hsp_display" type = checkbox onclick="toggle_hsp_column(10);" <TMPL_VAR NAME="ScoreD">>HSP Score
+       <td><input class="hsp_display" type = checkbox onclick="toggle_hsp_column(11);" <TMPL_VAR NAME="QualD">>HSP Quality (query coverage * percent ID)
+       <td><input class="hsp_display" type = checkbox onclick="toggle_hsp_column(12);" <TMPL_VAR NAME="FeatD">>Closest Genomic Feature
      <tr>
-       <td><input class="display" type = checkbox onclick="toggle_hsp_column(13);" <TMPL_VAR NAME="DistD">>Distance to Closest Feature
+       <td><input class="hsp_display" type = checkbox onclick="toggle_hsp_column(13);" <TMPL_VAR NAME="DistD">>Distance to Closest Feature
    <TMPL_IF NAME="SAVE_DISPLAY">	  
      <TR><td><input type=button value="Save Display Settings" name="SaveSettings" id="SaveSettings" onclick="save_display_settings()">
    </TMPL_IF>
