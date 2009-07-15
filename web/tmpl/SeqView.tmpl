@@ -165,6 +165,16 @@ function redefine(rc){
   var up;
   var down;
   myObj.rc=rc;
+  up = $('#upstream').val().replace(/,|\./g,"");
+  $('#upstream').val(up);
+  down = $('#downstream').val().replace(/,|\./g,"");
+  $('#downstream').val(down);
+  up = $('#addup').val().replace(/,|\./g,"");
+  $('#addup').val(up);
+  down = $('#adddown').val().replace(/,|\./g,"");
+  $('#adddown').val(down);
+
+
   if(! isNaN($('#addup').val())) {
    up = ($('#upstream').val()*1)-($('#addup').val()*1);
    down = ($('#downstream').val())*1+($('#adddown').val()*1);
