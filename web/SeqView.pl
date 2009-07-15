@@ -91,7 +91,11 @@ sub gen_body
     my $upstream = $form->param('upstream') || 0;
     my $downstream = $form->param('downstream') || 0;
     my $start = $form->param('start');
+    $start =~ s/,//g if $start;
+    $start =~ s/\.//g if $start;
     my $stop = $form->param('stop');
+    $stop =~ s/,//g if $stop;
+    $stop =~ s/\.//g if $stop;
     $stop = $start unless $stop;
     ($start,$stop) = ($stop,$start) if $start && $stop && $start > $stop;
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SeqView.tmpl');
