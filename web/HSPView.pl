@@ -143,18 +143,25 @@ sub gen_body
 	$hsps->[1]{start} =~ s/,//g;
 	$hsps->[0]{stop} =~ s/,//g;
 	$hsps->[1]{stop} =~ s/,//g;
-	if ($hsps->[0]{reverse_complement})
-	  {
-	    my $adj = $hsps->[0]{chr_stop} - $hsps->[0]{chr_start}+1;
-	    $start = $adj-$hsps->[0]{start}+$hsps->[0]{chr_start};
-	    $stop = $adj-$hsps->[0]{stop}+$hsps->[0]{chr_start};
-	  }
-	else
-	  {
-	    $start = $hsps->[0]{start}+$hsps->[0]{chr_start}-1;
-	    $stop = $hsps->[0]{stop}+$hsps->[0]{chr_start}-1;
-	  }
-	my $rc = $hsps->[0]{reverse_complement};
+	print STDERR Dumper $hsps->[0];
+	$start = $hsps->[0]{start};
+	$stop = $hsps->[0]{stop};
+ 	if ($hsps->[0]{reverse_complement})
+ 	  {
+	    $start++;
+	    $stop++;
+# 	    my $adj = $hsps->[0]{chr_stop} - $hsps->[0]{chr_start}+1;
+# 	    $start = $adj-$hsps->[0]{start}+$hsps->[0]{chr_start};
+# 	    $stop = $adj-$hsps->[0]{stop}+$hsps->[0]{chr_start};
+ 	  }
+ 	else
+ 	  {
+	    $start--;
+	    $stop--;
+# 	    $start = $hsps->[0]{start}+$hsps->[0]{chr_start}-1;
+# 	    $stop = $hsps->[0]{stop}+$hsps->[0]{chr_start}-1;
+ 	  }
+ 	my $rc = $hsps->[0]{reverse_complement};
 	my $seqview = "<a class = small href=SeqView.pl?dsid=".$hsps->[0]{dsid}.";chr=".$hsps->[0]{chr}.";start=".$start.";stop=".$stop.";rc=$rc>SeqView</a>";
 	$template->param(qseqview=>$seqview);
       }
@@ -167,17 +174,24 @@ sub gen_body
       {
 #	print STDERR Dumper $hsps->[1];
 	my ($start, $stop);
-	if ($hsps->[1]{reverse_complement})
-	  {
-	    my $adj = $hsps->[1]{chr_stop} - $hsps->[1]{chr_start}+1;
-	    $start = $adj-$hsps->[1]{start}+$hsps->[1]{chr_start};
-	    $stop = $adj-$hsps->[1]{stop}+$hsps->[1]{chr_start};
-	  }
-	else
-	  {
-	    $start = $hsps->[1]{start}+$hsps->[1]{chr_start}-1;
-	    $stop = $hsps->[1]{stop}+$hsps->[1]{chr_start}-1;
-	  }
+	$start = $hsps->[1]{start};
+	$stop = $hsps->[1]{stop};
+
+ 	if ($hsps->[1]{reverse_complement})
+ 	  {
+	    $start++;
+	    $stop++;
+# 	    my $adj = $hsps->[1]{chr_stop} - $hsps->[1]{chr_start}+1;
+# 	    $start = $adj-$hsps->[1]{start}+$hsps->[1]{chr_start};
+# 	    $stop = $adj-$hsps->[1]{stop}+$hsps->[1]{chr_start};
+ 	  }
+ 	else
+ 	  {
+	    $start--;
+	    $stop--;
+# 	    $start = $hsps->[1]{start}+$hsps->[1]{chr_start}-1;
+# 	    $stop = $hsps->[1]{stop}+$hsps->[1]{chr_start}-1;
+ 	  }
 	my $rc = $hsps->[1]{reverse_complement};
 	if ($hsps->[1]{orientation} =~ /-/)
 	  {
