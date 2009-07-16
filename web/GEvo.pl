@@ -3084,6 +3084,7 @@ sub dataset_search
 		  }
 		my $title = "$ds_name ($sname, v$ver)";
 		next if $USER->user_name =~ /public/i && $ds->organism->restricted;
+		next if $sources{$ds->id} && $sources{$ds->id}{typeid} < $typeid;
 		$sources{$ds->id} = {
 				     title=>$title,
 				     version=>$ver,
