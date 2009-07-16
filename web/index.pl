@@ -35,6 +35,8 @@ sub gen_html
   {
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
     $template->param(TITLE=>'A new kind of Comparative Genomics');
+    $template->param(PAGE_TITLE=>'A new kind of Comparative Genomics');
+    
     $template->param(HELP=>'CoGe');
 
     if ($FORM->param('logout') || !$USER)
