@@ -458,6 +458,30 @@ function handle_results (html,w, h, img_base, n_images, gevo_link, message) {
    {
      get_tiny_url(['args__url','args__'+gevo_link],['tiny_link']);
    }
+   
+   //Take care of Save results button
+   setup_button_states();
+   
+}
+
+function save_GEvo_results () {
+	 var link = $('#tiny_link').html();
+	  $("#save_form").dialog({ autoOpen: false,
+	     			      height: 331,
+				      width: 461,
+	     			      buttons: { "Cancel": function() { $(this).dialog("close"); },
+				      	        "Save": function() { 
+						add_to_user_history(['args__work_name','work_name',
+								     'args__description','description',
+								     'args__archive','args__'+1,
+								     'args__url','args__'+link,
+								     'args__note','note'],[]);
+						$(this).dialog("close"); }
+						}
+	})
+	.show(0)
+	.dialog('open');
+	
 }
 
 function remove_seq () {
@@ -1172,6 +1196,21 @@ function hide_skip(num){
 <table align=center><tr><td>
 <DIV id="results" ></DIV><br>
 </table>
+<div id="save_form" title="Save GEvo Results" style="display:none">
+<table>
+<tr>
+<td>Work Name:</td>
+<td><input type=text id='work_name' value='GEvo Data'></td>
+</tr>
+<tr>
+<td>Description:</td>
+<td><input type=text id='description'></td>
+</tr>
+<tr>
+<td>Notes:</td>
+<td><textarea style="height:150px;width:350px;" id=note></textarea></td>
+</table>
+</div>
 </TMPL_IF>
 
 
