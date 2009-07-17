@@ -84,20 +84,21 @@ $ajax{feat_search} = \&feat_search;
 
 
 my $pj = new CGI::Ajax(
-		       run=>\&run,
-		       loading=>\&loading,
-		       merge_previous=>\&merge_previous,
-		       add_seq=>\&add_seq,
-		       get_file=>\&get_file,
-		       gen_go_run=>\&gen_go_run,
-		       gen_hsp_colors =>\&gen_hsp_colors,
-		       save_settings_gevo=>\&save_settings_gevo,
-		       reset_settings_gevo=>\&reset_settings_gevo,
-		       check_address_validity=>\&check_address_validity,
-		       dataset_group_search=>\&dataset_group_search,
-		       get_tiny_url=>\&get_tiny_url,
-		       %ajax,
-		      );
+    run=>\&run,
+    loading=>\&loading,
+    merge_previous=>\&merge_previous,
+    add_seq=>\&add_seq,
+    get_file=>\&get_file,
+    gen_go_run=>\&gen_go_run,
+    gen_hsp_colors =>\&gen_hsp_colors,
+    save_settings_gevo=>\&save_settings_gevo,
+    reset_settings_gevo=>\&reset_settings_gevo,
+    check_address_validity=>\&check_address_validity,
+    dataset_group_search=>\&dataset_group_search,
+    get_tiny_url=>\&get_tiny_url,
+    add_to_user_history=>\&add_to_user_history,
+    %ajax,
+    );
 $pj->JSDEBUG(0);
 $pj->DEBUG(0);
 #$pj->js_encode_function('escape');
@@ -816,7 +817,8 @@ sub run
     $html .= "<div class=small><A HREF=\"$logfile\" target=_new>Log</A></DIV>\n";
     $html .= qq{<td class=small>GEvo Links};
     $html .= qq{<div id=tiny_link></div>};
-    $html .=qq{<div><a href="GEvo_direct.pl?name=$basefilename" target=_new>Results only</a></div>};
+    $html .=qq{<div><a href="GEvo_direct.pl?name=$basefilename" target=_new>Results only</a></div></td>};
+    $html .=qq{<td><a href="javascript:void(0);" id="history_dialog_button" class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onClick="save_GEvo_results()"><span class="ui-icon ui-icon-newwin"></span>Save Results</a>} unless $USER->user_name eq 'public';
 
     $html .= qq{</table>};
 
@@ -3381,3 +3383,17 @@ sub get_tiny_url
     $html .= qq{<a href=$tiny target=_new>$tiny<br>(See log file for full link)</a>};
     return $html;
   }
+
+sub add_to_user_history
+{
+    my %opts = @_;
+    my ($link) = $opts{url} =~ />(http.+)<br/;
+    $USER->add_to_works({
+	'name'=>$opts{work_name},
+	'archive'=>$opts{archive},
+	'page'=>$PAGE_NAME,
+	'parameter'=>$link,
+	'description'=>$opts{description},
+	'note'=>$opts{note},
+			}); 
+}
