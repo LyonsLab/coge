@@ -31,24 +31,24 @@ $coge = CoGeX->dbconnect();
 #$coge->storage->debug(1);
 
 my $pj = new CGI::Ajax(
-		       gen_html=>\&gen_html,
-		       gevo=>\&gevo,
-		       blast=>\&blast,
-		       get_fasta_seqs=>\&get_fasta_seqs,
-		       generate_excel_file=>\&generate_excel_file,
-		       codon_table=>\&codon_table,
-		       protein_table=>\&protein_table,
-		       gc_content=>\&gc_content,
-		       gen_data=>\&gen_data,
-		       send_to_featmap=>\&send_to_featmap,
-		       send_to_msa=>\&send_to_msa,
-		       send_to_featlist=>\&send_to_featlist,
-		       get_anno=>\&get_anno,
+    gen_html=>\&gen_html,
+    gevo=>\&gevo,
+    blast=>\&blast,
+    get_fasta_seqs=>\&get_fasta_seqs,
+    generate_excel_file=>\&generate_excel_file,
+    codon_table=>\&codon_table,
+    protein_table=>\&protein_table,
+    gc_content=>\&gc_content,
+    gen_data=>\&gen_data,
+    send_to_featmap=>\&send_to_featmap,
+    send_to_msa=>\&send_to_msa,
+    send_to_featlist=>\&send_to_featlist,
+    get_anno=>\&get_anno,
     get_gc=>\&get_gc,
-		       get_wobble_gc=>\&get_wobble_gc,
-		       save_FeatList_settings=>\&save_FeatList_settings,
+    get_wobble_gc=>\&get_wobble_gc,
+    save_FeatList_settings=>\&save_FeatList_settings,
     add_to_user_history=>\&add_to_user_history,
-			);
+    );
 $pj->js_encode_function('escape');
 #my $t1 = new Benchmark;
 print $pj->build_html($FORM, \&gen_html);
@@ -60,10 +60,10 @@ print $pj->build_html($FORM, \&gen_html);
 #};
 
 sub gen_html
-  {
+{
     my $html;    
     unless ($USER)
-      {
+    {
 	$html = login();
       }
     else
@@ -74,7 +74,7 @@ sub gen_html
        $template->param(PAGE_TITLE=>'FeatList');
        $template->param(HELP=>'BLAST');
        # print STDERR "user is: ",$USER,"\n";
-       add_to_user_history() unless $USER->user_name eq "public";
+       #add_to_user_history() unless $USER->user_name eq "public";
        my $name = $USER->user_name;
        $name = $USER->first_name if $USER->first_name;
        $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
@@ -116,6 +116,8 @@ sub gen_body
       }
 
     $template->param(SAVE_DISPLAY=>1) unless $USER->user_name eq "public";
+    #Don't show button to save list data unless valid user
+    $template->param(SAVE_DATA=>1) unless $USER->user_name eq "public";
 
     my $feat_list = [];
     $feat_list = read_file() if $BASEFILE;#: $opts{feature_list};
