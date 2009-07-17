@@ -30,8 +30,8 @@ $(function() {
 	});
 	var page_url = document.location;
 	     $("#save_form").dialog({ autoOpen: false,
-	     			      height: 283,
-				      width: 300,
+	     			      height: 331,
+				      width: 461,
 	     			      buttons: { "Cancel": function() { $(this).dialog("close"); },
 				      	        "Save": function() { 
 						add_to_user_history(['args__work_name','work_name',
@@ -336,7 +336,9 @@ Filter Table Rows:
 <a href="javascript:void(0);" class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="$('#feat_table tr :visible :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Check Visible</a>
 <a href="javascript:void(0);" class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="$('#feat_table tr :visible :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minus"></span>Uncheck Visible</a>
 <a href="javascript:void(0);" class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="check_type()"><span class="ui-icon ui-icon-check"></span>Check Features of type:</a><TMPL_VAR NAME="FEAT_TYPES">
+<TMPL_IF NAME=SAVE_DATA>
 <a href="javascript:void(0);" id="history_dialog_button" class='ui-button ui-state-default ui-corner-all ui-button-icon-left'><span class="ui-icon ui-icon-newwin"></span>Save Table</a>
+</TMPL_IF>
  <div>
   Send Checked Features to:  
    <select name=checked_action id=checked_action>
