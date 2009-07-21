@@ -301,7 +301,8 @@ var ajax = [];function pjx(args,fname,method) { this.target=args[1]; this.args=a
 <script src="/CoGe/js/jquery-1.3.2.min.js"></script>
 <script src="/CoGe/js/xhairs.js"></script> <!--This needs to back out farther since the HTML file is much deeper.-->
 <SCRIPT language="JavaScript" type="text/javascript" src="/CoGe/js/jquery-ui-1.7.2.custom.min.js"></SCRIPT>
-<link rel="stylesheet" type="text/css" href="/CoGe/css/jquery-ui-1.7.1.custom.css" />
+<link rel="stylesheet" type="text/css" href="/CoGe/css/jquery-ui-1.7.2.custom.css" />
+<link rel="stylesheet" type="text/css" href="/CoGe/css/jquery-ui-coge-supplement.css" />
 <script type="text/javascript">
 \$(function() {\$("#pair_info").draggable();});
 
