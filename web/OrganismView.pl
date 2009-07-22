@@ -52,6 +52,7 @@ my $pj = new CGI::Ajax(
 		       get_gc_for_noncoding=> \&get_gc_for_noncoding,
 		       gen_gc_for_feature_type =>\&gen_gc_for_feature_type,
 		       get_codon_usage=>\&get_codon_usage,
+		       get_aa_usage=>\&get_aa_usage,
 		       get_wobble_gc=>\&get_wobble_gc,
 		       get_wobble_gc_diff=>\&get_wobble_gc_diff,
 		       get_total_length_for_ds=>\&get_total_length_for_ds,
@@ -303,7 +304,7 @@ sub get_dataset_group_info
 
 
     $html .= qq{
-<tr><td>Noncoding sequence:<td colspan=2><div id=dsg_noncoding_gc class="link" onclick = "gen_data(['args__loading'],['dsg_noncoding_gc']);\$('#dsg_noncoding_gc').removeClass('link');  get_gc_for_noncoding(['args__dsgid','dsg_id','args__gstid', 'gstid'],['dsg_noncoding_gc']);">Click for percent GC content</div>
+<tr><td>Noncoding sequence:<td colspan=2><div id=dsg_noncoding_gc class="link" onclick = "gen_data(['args__loading...'],['dsg_noncoding_gc']);\$('#dsg_noncoding_gc').removeClass('link');  get_gc_for_noncoding(['args__dsgid','dsg_id','args__gstid', 'gstid'],['dsg_noncoding_gc']);">Click for percent GC content</div>
 } if $total_length;
 
     my $feat_string = qq{
@@ -468,7 +469,7 @@ sub get_dataset_chr_info
 };
 
     $html .= qq{
-<tr><td>Noncoding sequence:<td colspan=2><div id=noncoding_gc class="link" onclick = "gen_data(['args__loading'],['noncoding_gc']);\$('#noncoding_gc').removeClass('link');  get_gc_for_noncoding(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['noncoding_gc']);">Click for percent GC content</div>
+<tr><td>Noncoding sequence:<td colspan=2><div id=noncoding_gc class="link" onclick = "gen_data(['args__loading..'],['noncoding_gc']);\$('#noncoding_gc').removeClass('link');  get_gc_for_noncoding(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['noncoding_gc']);">Click for percent GC content</div>
 } if $length;
 
     $html .= "</table>";
@@ -572,9 +573,11 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
       "<td valign=top><div id=$_  >".$feats->{$_}{name}."</div>".
 	    "<td valign=top>".$feats->{$_}{count}.
 	      "<td><div id=".$_."_type class=\"link small\" 
-  onclick=\" \$('#".$_."_type').removeClass('link'); 
-  gen_data(['args__loading'],['".$_."_type']); 
-  gen_gc_for_feature_type([$gc_args 'args__gstid','gstid','args__typeid','args__".$feats->{$_}{id}."'],['".$_."_type','data1'])\">".'show %GC?</div>'.
+  onclick=\"
+  \$('#gc_histogram').dialog('option','title', 'Histogram of GC content for ".$feats->{$_}{name}."s');
+  \$('#gc_histogram').html('loading...');
+  \$('#gc_histogram').dialog('open');
+  gen_gc_for_feature_type([$gc_args 'args__gstid','gstid','args__typeid','args__".$feats->{$_}{id}."'],['gc_histogram'])\">".'show %GC?</div>'.
     "<td class='small link' onclick=\"window.open('FeatList.pl?$feat_list_string"."&ftid=".$feats->{$_}{id}.";gstid=$gstid')\">Feature List?"
   } sort {$a cmp $b} keys %$feats);
 	$feat_string .= "</table>";
@@ -585,9 +588,20 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
 	$args .= "'args__dsid','ds_id'," if $dsid;
 	$args .= "'args__dsgid','dsg_id'," if $dsgid;
 	$args .= "'args__chr','chr'," if $chr;
-	$feat_string .= "<div class=\"small link\" id=wobble_gc onclick=\"gen_data(['args__loading'],['wobble_gc']); get_wobble_gc([$args],['wobble_gc', 'data3'])\">"."Click for codon wobble GC content"."</div>";
-	$feat_string .= "<div class=\"small link\" id=wobble_gc_diff onclick=\"gen_data(['args__loading'],['wobble_gc_diff']); get_wobble_gc_diff([$args],['wobble_gc_diff', 'data5'])\">"."Click for diff(CDS GC vs. codon wobble GC) content"."</div>";
-	$feat_string .= "<div class=\"small link\" id=codon_usage onclick=\"gen_data(['args__loading'],['data2']); get_codon_usage([$args],['data2', 'data4']); \$('#codon_usage').html(' ')\">"."Click for codon usage"."</div>";
+	$feat_string .= "<div class=\"small link\" id=wobble_gc onclick=\"\$('#wobble_gc_histogram').html('loading...');\$('#wobble_gc_histogram').dialog('open');get_wobble_gc([$args],['wobble_gc_histogram'])\">"."Click for codon wobble GC content"."</div>";
+	$feat_string .= "<div class=\"small link\" id=wobble_gc_diff onclick=\"\$('#wobble_gc_diff_histogram').html('loading...');\$('#wobble_gc_diff_histogram').dialog('open');get_wobble_gc_diff([$args],['wobble_gc_diff_histogram'])\">"."Click for diff(CDS GC vs. codon wobble GC) content"."</div>";
+	$feat_string .= "<div class=\"small link\" id=codon_usage onclick=\"
+        \$('#codon_usage_table').html('loading...');
+        \$('#codon_usage_table').dialog('open');
+        get_codon_usage([$args],['codon_usage_table']); 
+        \">".
+        "Click for codon usage table"."</div>";
+	$feat_string .= "<div class=\"small link\" id=aa_usage onclick=\"
+        \$('#aa_usage_table').html('loading...');
+        \$('#aa_usage_table').dialog('open');
+        get_aa_usage([$args],['aa_usage_table']); 
+        \">".
+        "Click for amino acid usage table"."</div>";
 
       }
     $feat_string .= "None" unless keys %$feats;
@@ -688,7 +702,7 @@ sub gen_gc_for_feature_type
     my $info= "<div class = small>Total length: ".commify($total)." bp, GC: ".sprintf("%.2f",100*$gc/($total))."%  AT: ".sprintf("%.2f",100*$at/($total))."%  N: ".sprintf("%.2f",100*($n)/($total))."%</div>";
     $out =~ s/$TEMPDIR/$TEMPURL/;
     my $hist_img = "<img src=\"$out\">";
-    return $info, $hist_img;
+    return $info."<br>". $hist_img;
   }
 
 sub gen_gc_for_chromosome
@@ -864,6 +878,72 @@ sub get_codon_usage
       }
     my %codons;
     my $codon_total = 0;
+    my $feat_count = 0;
+    my ($code, $code_type);
+
+    foreach my $dsidt (@dsids)
+      {
+	my $ds = $coge->resultset('Dataset')->find($dsidt);
+	my %seqs; #let's prefetch the sequences with one call to genomic_sequence (slow for many seqs)
+	if ($chr)
+	  {
+	    $seqs{$chr} = $ds->genomic_sequence(chr=>$chr, seq_type=>$gstid);
+	  }
+	else
+	  {
+	    %seqs= map {$_, $ds->genomic_sequence(chr=>$_, seq_type=>$gstid)} $ds->chromosomes;
+	  }
+	foreach my $feat ($ds->features($search,{join=>"feature_type"}))
+	  {
+	    my $seq = substr($seqs{$feat->chromosome}, $feat->start-1, $feat->stop-$feat->start+1);
+	    $feat->genomic_sequence(seq=>$seq);
+	    $feat_count++;
+	    ($code, $code_type) = $feat->genetic_code() unless $code;
+	    my ($codon) = $feat->codon_frequency(counts=>1);
+	    grep {$codon_total+=$_} values %$codon;
+	    grep {$codons{$_}+=$codon->{$_}} keys %$codon;
+	    print STDERR ".($feat_count)" if !$feat_count%10;
+	  }
+      }
+    %codons = map {$_,$codons{$_}/$codon_total} keys %codons;
+
+    #Josh put some stuff in here so he could get raw numbers instead of percentages for aa usage. He should either make this an option or delete this code when he is done. REMIND HIM ABOUT THIS IF YOU ARE EDITING ORGVIEW!
+    my $html = "Codon Usage: $code_type";
+    $html .= CoGe::Accessory::genetic_code->html_code_table(data=>\%codons, code=>$code);
+    return $html
+  }
+
+sub get_aa_usage
+  {
+    my %args = @_;
+    my $dsid = $args{dsid};
+    my $chr = $args{chr};
+    my $dsgid = $args{dsgid};
+    my $gstid = $args{gstid};
+    return unless $dsid || $dsgid;
+
+    my $search;
+    $search = {"feature_type.name"=>"CDS"};
+    $search->{chromosome}=$chr if $chr;
+
+    my @dsids;
+    push @dsids, $dsid if $dsid;
+    if ($dsgid)
+      {
+	my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	unless ($dsg)
+	  {
+	    my $error =  "unable to create dsg object using id $dsgid\n";
+	    return $error;
+	  }
+	$gstid = $dsg->type->id;
+	foreach my $ds ($dsg->datasets())
+	  {
+	    push @dsids, $ds->id;
+	  }
+      }
+    my %codons;
+    my $codon_total = 0;
     my %aa;
     my $aa_total=0;
     my $feat_count = 0;
@@ -903,14 +983,15 @@ sub get_codon_usage
     #Josh put some stuff in here so he could get raw numbers instead of percentages for aa usage. He should either make this an option or delete this code when he is done. REMIND HIM ABOUT THIS IF YOU ARE EDITING ORGVIEW!
     %aa = $USER->user_name =~ /jkane/i ? map {$_,$aa{$_}} keys %aa : map {$_,$aa{$_}/$aa_total} keys %aa;
     
-    my $html1 = "Codon Usage: $code_type";
-    $html1 .= CoGe::Accessory::genetic_code->html_code_table(data=>\%codons, code=>$code);
+#    my $html1 = "Codon Usage: $code_type";
+#    $html1 .= CoGe::Accessory::genetic_code->html_code_table(data=>\%codons, code=>$code);
     
     my $html2 .= "Predicted amino acid usage using $code_type";
     $html2 .= "<br/>Total Amino Acids: $aa_total" if $USER->user_name =~ /jkane/i;
     $html2 .= CoGe::Accessory::genetic_code->html_aa(data=>\%aa);
     $html2 =~ s/00.00%//g if $USER->user_name =~ /jkane/i;
-    return $html1, $html2;
+    return $html2;
+#    return $html1, $html2;
   }
 
 sub get_wobble_gc
@@ -985,7 +1066,7 @@ sub get_wobble_gc
     my $info =  "<div class = small>Total: ".commify($total)." codons, GC: ".sprintf("%.2f",100*$gc/($total))."%  AT: ".sprintf("%.2f",100*$at/($total))."%  N: ".sprintf("%.2f",100*($n)/($total))."%</div>";
     $out =~ s/$TEMPDIR/$TEMPURL/;
     my $hist_img = "<img src=\"$out\">";
-    return $info, $hist_img;
+    return $info."<br>". $hist_img;
   }
 
 sub get_wobble_gc_diff
@@ -1054,7 +1135,7 @@ sub get_wobble_gc_diff
     $info .= " is more GC rich)";
     $out =~ s/$TEMPDIR/$TEMPURL/;
     my $hist_img = "<img src=\"$out\">";
-    return $info, $hist_img;
+    return $info."<br>". $hist_img;
   }
 
 sub get_total_length_for_ds
