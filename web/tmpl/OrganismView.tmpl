@@ -38,12 +38,6 @@ function get_dataset_name_chain(val)
     $('#dsg_list').html('<hidden id=dsg_id>');
     $('#dsg_info').html(' ');
     $('#dsg_count').html(' ');
-    $('#data1').html(' ');
-    $('#data2').html(' ');
-    $('#data3').html(' ');
-    $('#data4').html(' ');
-    $('#data5').html(' ');
-    $('#data6').html(' ');
    }
  else {get_orgs([],[dataset_chain])};
 }
@@ -63,13 +57,6 @@ function dataset_group_chain(val) {
    $('#chr_info').empty();	
    $('#viewer').empty();
    $('#get_seq').empty();
-   $('#data1').html(' ');
-   $('#data2').html(' ');
-   $('#data3').html(' ');
-   $('#data4').html(' ');
-   $('#data5').html(' ');
-   $('#data6').html(' ');
-
 }
 
 function dataset_group_info_chain(val, val2) {
@@ -98,12 +85,6 @@ function dataset_info_chain(val, val2) {
  $('#chr_info').empty();	
  $('#viewer').empty();
  $('#get_seq').empty();
- $('#data1').html(' ');
- $('#data2').html(' ');
- $('#data3').html(' ');
- $('#data4').html(' ');
- $('#data5').html(' ');
- $('#data6').html(' ');
 get_dataset_info(['ds_id'],[dataset_chr_info_chain]);
 
 }
@@ -220,7 +201,10 @@ function changeColor(id, color) {
   document.getElementById(id).style.color = color;
 }
 
-
+$(function() {
+ //substaniate dialog boxes	     
+        $(".dialog_box").dialog({ autoOpen: false, width: 500 });
+});
 </script>
 <TABLE>
    <TR><TD valign=top>
@@ -267,14 +251,10 @@ function changeColor(id, color) {
    <DIV style="vertical-align: top;" id="get_seq"></DIV>
   <td>
    <div id="feature_count_data"></div>
-<tr valign=top>
-  <td valign=top><div id="data1"></div>
-  <td valign=top><div id="data2"></div>
-<tr valign=top>
-  <td valign=top><div id="data3"></div>
-  <td valign=top><div id="data4"></div>
-<tr valign=top>
-  <td valign=top><div id="data5"></div>
-  <td valign=top><div id="data6"></div>
-  </Table>
+</Table>
 
+<div class="dialog_box" id="gc_histogram" title="GC Content Histogram"></div>
+<div class="dialog_box" id="wobble_gc_histogram" title="Wobble GC Content Histogram"></div>
+<div class="dialog_box" id="wobble_gc_diff_histogram" title="(CDS GC - wobble GC) Content Histogram"></div>
+<div class="dialog_box" id="codon_usage_table" title="Codon Usage Table"></div>
+<div class="dialog_box" id="aa_usage_table" title="Amino Acid Usage Table"></div>
