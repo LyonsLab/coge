@@ -758,7 +758,8 @@ sub run
     image_db_create_hsp_pairs();
 
     my $t4 = new Benchmark;
-    $html .= qq{<DIV id=flash_viewer></DIV>};
+    $html .= qq{<span class='ui-button ui-state-default ui-corner-all' id="set_lines" onclick="\$('#results_options').dialog('option','width',300); \$('#results_options').dialog('open');">Show Gobe Results Viewer Options</span><br>};
+    $html .= qq{<DIV id=flashcontent></DIV>};
     $html .= qq{<br><a href="http://get.adobe.com/flashplayer/" target=_new class="small">Empty results?  Try installing the latest version of Flash</a>};
     $html .= qq{<table>};
     $html .= qq{<tr valign=top><td class = small>Alignment reports};
@@ -853,7 +854,7 @@ Total time                                          : $total_time
     write_log("GEvo link: $gevo_link", $cogeweb->logfile);
 #    write_log("Tiny url: $tiny", $cogeweb->logfile);
     email_results(email=>$email_address,basefile=>$basefilename) if $email_address;
-    return $outhtml, $iw+400, $frame_height, $cogeweb->basefilename, scalar (@sets), $gevo_link, $message;
+    return $outhtml, $iw, $frame_height, $cogeweb->basefilename, scalar (@sets), $gevo_link, $message;
 
 }
 
@@ -1066,11 +1067,11 @@ INSERT INTO image_info (id, display_id, iname, title, px_width, px_height, dsid,
 	$xmax++;
 	my $anno = $feat->description;
 	#	    $anno =~ s/'|"//g;
-	$anno =~ s/'//g if $anno;
-	$anno =~ s/<br\/?>/&#10;/ig if $anno;
-	$anno =~ s/\n/&#10;/g if $anno;
-	$anno =~ s/[\[\]\(\)]/ /g if $anno;
-	$anno = " " unless $anno;
+#	$anno =~ s/'//g if $anno;
+#	$anno =~ s/<br\/?>/&#10;/ig if $anno;
+#	$anno =~ s/\n/&#10;/g if $anno;
+#	$anno =~ s/[\[\]\(\)]/ /g if $anno;
+#	$anno = " " unless $anno;
 	my $start = $feat->start;
 	my $stop = $feat->stop;
 	my $length_nt = $stop-$start+1;
@@ -1513,12 +1514,16 @@ sub process_hsps
 #	      }
 	    $f->alt(join ("-",$hsp->number,$accn1,$accn2));
 	    my ($ab_start, $ab_stop) = $reverse ? ($gbobj->stop-$stop,$gbobj->stop-$start) : ($gbobj->start+$start, $gbobj->start+$stop); #adjust hsp position to real-world coords
-	    my $desc = join ("<br/>", "HSP: ".$hsp->number. qq{  <span class="small">(}.$blast->query."-". $blast->subject.")</span>", "Location: ".commify($ab_start)."-".commify($ab_stop)." (".$hsp->strand.")","Match: ".$hsp->match." nt","Length: ".commify($hsp->length)." nt","Identity: ".$hsp->percent_id."%");
+	    my $desc = "<table><tr>";
+	    $desc .= join ("<tr>", "<td>HSP:<td>".$hsp->number. qq{  <span class="small">(}.$blast->query."-". $blast->subject.")</span>", "<td>Location:<td>".commify($ab_start)."-".commify($ab_stop)." (".$hsp->strand.")","<td>Match:<td>".$hsp->match." nt","<td>Length:<td>".commify($hsp->length)." nt","<td>Identity:<td>".$hsp->percent_id."%");
 	    
-	    $desc .= "<br/>E_val: ".$hsp->pval if $hsp->pval;
-	    $desc .= "<br/>Score: ".$hsp->score if $hsp->score;
-	    $desc .= "<br/>Sequence: ".$seq;
-	    $desc .= qq{<br/><span class="small">(cutoff: $eval_cutoff)</span>} if defined $eval_cutoff;
+	    $desc .= "<tr><td>E_val:<td>".$hsp->pval if $hsp->pval;
+	    $desc .= "<tr><td>Score:<td>".$hsp->score if $hsp->score;
+	    $desc .= "<tr><td>Aligned Sequence:<td><span style=\"white-space: nowrap\">".$seq."</span>";
+	    $seq =~ s/-//g;
+	    $desc .= "<tr><td>Sequence:<td><span style=\"white-space: nowrap\">".$seq."</span>";
+	    $desc .= qq{<tr><td>cutoff:<td>$eval_cutoff} if defined $eval_cutoff;
+	    $desc .= "</table>";
 	    $f->description($desc);
 	    if ($reverse)
 	      {
