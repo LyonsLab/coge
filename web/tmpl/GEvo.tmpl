@@ -171,7 +171,10 @@ Gobe.set_genespace= function (updown, idx, value, length, anchorlength){
 
 Gobe.handle_html= function (html) {
   $('#results_info').html(html);
-  $('#results_info').dialog('open');
+  
+  if (!html.match(/multiple hits/)) {
+   $('#results_info').dialog('open');
+  }
 };
 
 function setheight(){ 
