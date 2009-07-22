@@ -10,6 +10,7 @@ use CGI::Ajax;
 use CoGeX;
 use Benchmark;
 use File::Path;
+use Benchmark qw(:all);
 
 $ENV{PATH} = "/opt/apache2/CoGe/";
 
@@ -629,7 +630,7 @@ sub gen_gc_for_feature_type
     my $type = $coge->resultset('FeatureType')->find($typeid);
     my $search;
     $search = {"feature_type_id"=>$typeid};
-    $search->{chromosome}=$chr if defined $chr;
+    $search->{"me.chromosome"}=$chr if defined $chr;
     my @data;
     my @dsids;
     push @dsids, $dsid if $dsid;
@@ -654,6 +655,7 @@ sub gen_gc_for_feature_type
 	    warn "no dataset object found for id $dsidt\n";
 	    next;
 	  }
+	my $t1 = new Benchmark;
 	my %seqs; #let's prefetch the sequences with one call to genomic_sequence (slow for many seqs)
 	if ($chr)
 	  {
@@ -663,9 +665,42 @@ sub gen_gc_for_feature_type
 	  {
 	    %seqs= map {$_, $ds->genomic_sequence(chr=>$_, seq_type=>$gstid)} $ds->chromosomes;
 	  }
-	foreach my $feat ($ds->features($search,{}))
-	  {
+	my $t2 = new Benchmark;
+	my @feats = $ds->features($search,{join=>['locations', {'dataset'=>{'dataset_connectors'=>'dataset_group'}}],
+					   prefetch=>['locations',{'dataset'=>{'dataset_connectors'=>'dataset_group'}}],
+					  });
+#	my $unpack_str;# = join (" ", map{"x".($_->start-1)." A".($_->stop-$_->start+1)} @feats);
+#	my $pos = 0;
+#	print STDERR "Mark!\n";
+#	foreach my $feat (@feats)
+# 	  {
+# 	    $pos = $feat->start-1-$pos;
+# 	    $unpack_str .= " x$pos";
+# 	    my $dist = $feat->stop-$feat->start+1;
+# 	    $unpack_str .=" A$dist";
+# 	    print STDERR $pos,"\t";
+# 	    $pos = $feat->stop;
+# 	    print STDERR join ("\t", $pos, $feat->start, $dist),"\n";
+# 	  }
+# 	$unpack_str =~ s/^\s+//;
+# #	print STDERR "!".$unpack_str,"!\n";
+
+# 	my $i=0;
+# 	foreach my $seq (unpack($unpack_str, $seqs{$feats[0]->chromosome}))
+# 	  {
+# 	    $feats[$i]->genomic_sequence($seq);
+# 	    $i++;
+# 	  }
+ 	foreach my $feat (@feats)
+ 	  {
+
+#	    my $str = $seqs{$feat->chromosome};
+#	    my $offset = "x".($feat->start-1);
+#	    my $length = "A".($feat->stop-$feat->start+1);
+#	    my $seq = unpack("x".($feat->start-1)." A".($feat->stop-$feat->start+1), $seqs{$feat->chromosome});
+	    #reason this is slow is due to substr handling a large sequence.  Unpack is the same, but perhaps using multiple retrieves in one go will help.
 	    my $seq = substr($seqs{$feat->chromosome}, $feat->start-1, $feat->stop-$feat->start+1);
+#	    next;
 	    $feat->genomic_sequence(seq=>$seq);
 	    my @gc = $feat->gc_content(counts=>1);
 	    $gc+=$gc[0] if $gc[0] =~ /^\d+$/;
@@ -677,7 +712,20 @@ sub gen_gc_for_feature_type
 	    $total += $gc[2] if $gc[2];
 	    push @data, sprintf("%.2f",100*$gc[0]/$total) if $total;
 	  }
-      }
+	my $t3 = new Benchmark;
+	my $get_seq_time = timestr(timediff($t2,$t1));
+	my $process_seq_time = timestr(timediff($t3,$t2));
+# 	print STDERR qq{
+
+# -----------------------------------------
+# Organism View: sub gen_gc_for_feature_type
+
+#  Time to get sequence:        $get_seq_time
+#  Time to process sequence:    $process_seq_time
+# -----------------------------------------
+
+# };
+       }
     my $total = $gc+$at+$n;
     return "error" unless $total;
 
@@ -763,7 +811,7 @@ sub get_gc_for_noncoding
     my $n = 0;
     my $search;
     $search = {"feature_type_id"=>3};
-    $search->{chromosome}=$chr if $chr;
+    $search->{"me.chromosome"}=$chr if $chr;
     my @data;
     my @dsids;
     push @dsids, $dsid if $dsid;
@@ -799,7 +847,8 @@ sub get_gc_for_noncoding
 	  {
 	    map {$seqs{$_}= $ds->genomic_sequence(chr=>$_, seq_type=>$gstid)} $ds->chromosomes;
 	  }
-	foreach my $feat ($ds->features($search,{}))
+	foreach my $feat ($ds->features($search,{join=>['locations', {'dataset'=>{'dataset_connectors'=>'dataset_group'}}],
+						 prefetch=>['locations',{'dataset'=>{'dataset_connectors'=>'dataset_group'}}]}))
 	  {
 	    foreach my $loc ($feat->locations)
 	      {
@@ -858,7 +907,7 @@ sub get_codon_usage
 
     my $search;
     $search = {"feature_type.name"=>"CDS"};
-    $search->{chromosome}=$chr if $chr;
+    $search->{"me.chromosome"}=$chr if $chr;
 
     my @dsids;
     push @dsids, $dsid if $dsid;
@@ -893,7 +942,8 @@ sub get_codon_usage
 	  {
 	    %seqs= map {$_, $ds->genomic_sequence(chr=>$_, seq_type=>$gstid)} $ds->chromosomes;
 	  }
-	foreach my $feat ($ds->features($search,{join=>"feature_type"}))
+	foreach my $feat ($ds->features($search,{join=>["feature_type",'locations', {'dataset'=>{'dataset_connectors'=>'dataset_group'}}],
+						 prefetch=>['locations',{'dataset'=>{'dataset_connectors'=>'dataset_group'}}]}))
 	  {
 	    my $seq = substr($seqs{$feat->chromosome}, $feat->start-1, $feat->stop-$feat->start+1);
 	    $feat->genomic_sequence(seq=>$seq);
@@ -924,7 +974,7 @@ sub get_aa_usage
 
     my $search;
     $search = {"feature_type.name"=>"CDS"};
-    $search->{chromosome}=$chr if $chr;
+    $search->{"me.chromosome"}=$chr if $chr;
 
     my @dsids;
     push @dsids, $dsid if $dsid;
@@ -961,7 +1011,8 @@ sub get_aa_usage
 	  {
 	    %seqs= map {$_, $ds->genomic_sequence(chr=>$_, seq_type=>$gstid)} $ds->chromosomes;
 	  }
-	foreach my $feat ($ds->features($search,{join=>"feature_type"}))
+	foreach my $feat ($ds->features($search,{join=>["feature_type",'locations', {'dataset'=>{'dataset_connectors'=>'dataset_group'}}],
+						 prefetch=>['locations',{'dataset'=>{'dataset_connectors'=>'dataset_group'}}]}))
 	  {
 	    my $seq = substr($seqs{$feat->chromosome}, $feat->start-1, $feat->stop-$feat->start+1);
 	    $feat->genomic_sequence(seq=>$seq);
@@ -1007,7 +1058,7 @@ sub get_wobble_gc
     my $n = 0;
     my $search;
     $search = {"feature_type_id"=>3};
-    $search->{chromosome}=$chr if $chr;
+    $search->{"me.chromosome"}=$chr if $chr;
     my @data;
     my @dsids;
     push @dsids, $dsid if $dsid;
@@ -1033,7 +1084,9 @@ sub get_wobble_gc
 	    warn "no dataset object found for id $dsidt\n";
 	    next;
 	  }
-	foreach my $feat ($ds->features($search,{}))
+	foreach my $feat ($ds->features($search,{join=>['locations', {'dataset'=>{'dataset_connectors'=>'dataset_group'}}],
+						 prefetch=>['locations',{'dataset'=>{'dataset_connectors'=>'dataset_group'}}],
+						}))
 	  {
 	    my @gc = $feat->wobble_content(counts=>1);
 	    $gc+=$gc[0] if $gc[0] && $gc[0] =~ /^\d+$/;
@@ -1079,7 +1132,7 @@ sub get_wobble_gc_diff
     return "error"," " unless $dsid || $dsgid;
     my $search;
     $search = {"feature_type_id"=>3};
-    $search->{chromosome}=$chr if $chr;
+    $search->{"me.chromosome"}=$chr if $chr;
     my @data;
     my @dsids;
     push @dsids, $dsid if $dsid;
@@ -1105,7 +1158,9 @@ sub get_wobble_gc_diff
 	    warn "no dataset object found for id $dsidt\n";
 	    next;
 	  }
-	foreach my $feat ($ds->features($search,{}))
+	foreach my $feat ($ds->features($search,{join=>['locations', {'dataset'=>{'dataset_connectors'=>'dataset_group'}}],
+						 prefetch=>['locations',{'dataset'=>{'dataset_connectors'=>'dataset_group'}}]}
+				       ))
 	  {
 	    my @wgc = $feat->wobble_content();
 	    my @gc = $feat->gc_content();
