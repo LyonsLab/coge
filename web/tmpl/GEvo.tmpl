@@ -1,7 +1,8 @@
 <TMPL_IF NAME=SEQ_RETRIEVAL>
 
 <link rel="stylesheet" type="text/css" href="/CoGe/css/colorpicker.css" />
-<script src="/CoGe/gobe/static/swfobject/swfobject.js" ></script>
+<script src="http://ajax.googleapis.com/ajax/libs/swfobject/2.2/swfobject.js"></script>
+<script src="/CoGe/gobe/static/gobe.js" ></script>
 <script type="text/javascript" src="js/colorpicker.js"></script>
 <style type="text/css">
 	#red, #green, #blue {
@@ -127,15 +128,15 @@ function update_color_picker(color_id) {
 
 if(window.console == undefined){ console = {}; console.debug = function(){}}
 
-function set_genespace(updown, idx, value, length, anchorlength){
+//function set_genespace(updown, idx, value, length, anchorlength){
 
+Gobe.set_genespace= function (updown, idx, value, length, anchorlength){
 //  console.log(updown, idx, value, length, anchorlength);
 /* e.g.  ('up', 1, 330) becomes: byId('drup1').value = 330; */
 /* so up is the 'left', down is the 'right' bar.   */
     value = parseFloat(value);
     var eid = 'dr' + updown + idx;
     $('#'+eid).val(value);
-//    document.getElementById(eid).value = value;
     value = value*-1;
     if (value < 1) {value = 1;}
 //    if (value > length) {value = length;}
@@ -166,8 +167,12 @@ function set_genespace(updown, idx, value, length, anchorlength){
        var tmp = (anchorlength-value+1)-parseFloat($('#dirstart'+idx).val());
        $('#dirlength'+idx).val(tmp);    
      }
-}
+};
 
+Gobe.handle_html= function (html) {
+  $('#results_info').html(html);
+  $('#results_info').dialog('open');
+};
 
 function setheight(){ 
     var g = jQuery('#gobe')
@@ -447,8 +452,9 @@ function handle_results (html,w, h, img_base, n_images, gevo_link, message) {
             'img_url'  : getQueryParamValue('img_url')|| '/CoGe/tmp/GEvo/',
             'base_name': getQueryParamValue('base_name')|| img_base
         };
-    swfobject.embedSWF("/CoGe/gobe/flash/gobe.swf?<TMPL_VAR NAME="GOBE_VERSION">", "flash_viewer", width, height, "9.0.0"
-                , "/CoGe/gobe/static/swfobject/expresssinstall.swf", flashVars, params, {});
+    swfobject.embedSWF("/CoGe/gobe/flash/gobe.swf?<TMPL_VAR NAME="GOBE_VERSION">", "flashcontent", width, height, "9.0.0"
+                , "/CoGe/gobe/static/swfobject/expresssinstall.swf", flashVars, params, {}, function(){Gobe.swf=Gobe.get_movie();});
+
    }
   else
   {
@@ -461,7 +467,6 @@ function handle_results (html,w, h, img_base, n_images, gevo_link, message) {
    
    //Take care of Save results button
    setup_button_states();
-   
 }
 
 function save_GEvo_results () {
@@ -672,6 +677,18 @@ function show_skip(num){
 function hide_skip(num){
 	$('#skip_font'+num).hide(0);
 }
+
+$(function() {
+ //substaniate dialog boxes          
+        $(".dialog_box").dialog({ autoOpen: false, width: 500 });
+});
+
+function update_line_width(val)
+ {
+   val = val+(1*$('#line_width').val());
+   $('#line_width').val(val);
+   Gobe.set_linewidth($('#line_width').val());
+ }
 
 </SCRIPT>
 
@@ -1193,8 +1210,26 @@ function hide_skip(num){
 </TMPL_IF>
 
 <TMPL_IF NAME="RESULTS_DIV">
-<table align=center><tr><td>
-<DIV id="results" ></DIV><br>
+<table><tr><td>
+<DIV id="results" name="results"></DIV><br>
+<DIV id="results_info" class="dialog_box" title="GEvo Results Info"></DIV>
+<DIV id="results_options" class="dialog_box" title="GEvo Results Options">
+<span class='ui-button ui-state-default ui-corner-all' id="clear_lines" onclick="Gobe.clear()">Clear Connectors</span><br>
+
+<span class='ui-button ui-state-default ui-corner-all drawline' id="set_lines" onclick="$('.drawline').hide();$('#set_wedges').show();$('.lineopt').show();Gobe.set_connector('line')">Set connector as Lines</span>
+
+<span style="display: none" class='ui-button ui-state-default ui-corner-all' id="set_wedges" onclick="$('.drawline').show();$('#set_wedges').hide();$('.lineopt').hide();Gobe.set_connector('wedge')">Set connector as Wedges</span>
+<br>
+<div class=lineopt style="display: none">
+ <span class='small ui-state-default' id="">Line Width</span>
+ <input type=textbox size=2 class=backbox id=line_width value=3 readonly>
+ <span class='ui-button ui-state-default ui-corner-all' id="" onclick="update_line_width(1)">+</span>
+ <span class='ui-button ui-state-default ui-corner-all' id="" onclick="update_line_width(-1)">-</span>
+</div>
+
+
+
+</DIV
 </table>
 <div id="save_form" title="Save GEvo Results" style="display:none">
 <table>
