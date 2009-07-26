@@ -2638,7 +2638,7 @@ sub algorithm_list
 		 "blastn"=>"BlastN: Small Regions",
 		 blastz=>"BlastZ: Large Regions",
 		 "CHAOS"=>"Chaos: Fuzzy Matches",
-		 "DiAlign_2"=>"DiAlign_2: Glocal Alignemnt",
+		 "DiAlign_2"=>"DiAlign_2: Glocal Alignment",
 		 "LAGAN"=>"Lagan: Global Alignment",
 		 "tblastz"=>"TBlastX: Protein Translation",
 		 "-=None=-"=>"-=None=-",
