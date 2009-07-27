@@ -445,7 +445,7 @@ function handle_results (html,w, h, img_base, n_images, gevo_link, message) {
     var getQueryParamValue = swfobject.getQueryParamValue;
     var width = getQueryParamValue('w') || w; 
     var height = getQueryParamValue('h') || h; 
-    var params = {'bgcolor': '#FFFFFF'};
+    var params = {'bgcolor': '#FFFFFF', 'wmode': "opaque"};
     var flashVars = {
             'n'        : getQueryParamValue('n') || n_images,
             'freezable': getQueryParamValue('freezable') || 'false',
