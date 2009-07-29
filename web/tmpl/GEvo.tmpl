@@ -198,6 +198,11 @@ function open_all_sequence_option_menus(open) {
 }
 
 $(document).ready(function(){
+
+     // close the dialog box when the run a new analysis.
+     jQuery('#go').click(function(){
+         $('#results_info').dialog('close');
+     });
  	 check_seq_submit();
  	 autodistance_setup();
 	 autosearch_coge_names();
