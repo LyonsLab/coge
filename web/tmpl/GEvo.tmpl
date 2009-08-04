@@ -172,7 +172,7 @@ Gobe.set_genespace= function (updown, idx, value, length, anchorlength){
 Gobe.handle_html= function (html) {
   $('#results_info').html(html);
   
-  if (!html.match(/multiple hits/)) {
+  if (html && !html.match(/multiple hits/)) {
    $('#results_info').dialog('open');
   }
 };
