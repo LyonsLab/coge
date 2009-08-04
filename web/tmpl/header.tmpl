@@ -7,6 +7,7 @@
 <TMPL_UNLESS NAME="NO_JQUERY">
 <link rel="stylesheet" type="text/css" href="/CoGe/css/superfish.css" />
 
+
 <!-- This is the implementation of jquery into the header of all CoGe pages -->
  <SCRIPT language="JavaScript" type="text/javascript" src="/CoGe/js/jquery-1.3.2.min.js"></SCRIPT>
 
@@ -19,6 +20,8 @@
 
  <SCRIPT language="JavaScript" type="text/javascript" src="/CoGe/js/jquery.cookie.js"></SCRIPT>
 <SCRIPT language="JavaScript" type="text/javascript" src="/CoGe/js/superfish.js"></SCRIPT>
+<!-- The following javascript file is an addon for superfish - it is beta, so beware for bugs and updates -->
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/supersubs.js"></SCRIPT>
 <SCRIPT language="JavaScript" type="text/javascript" src="/CoGe/js/hoverIntent.js"></SCRIPT>
 </TMPL_UNLESS>
 
@@ -186,9 +189,14 @@ function add_button_states (ids) {
 
 //initialize superfish plugin (dropdown menu)
 $(document).ready( function() {
-	$('ul.sf-menu').superfish({
-			       delay: 300,
-			      });
+	$('ul.sf-menu').supersubs({ 
+            minWidth:    8,   // minimum width of sub-menus in em units 
+            maxWidth:    27,   // maximum width of sub-menus in em units 
+            extraWidth:  1     // extra width can ensure lines don't sometimes turn over 
+                               // due to slight rounding differences and font-family 
+		     }).superfish({
+	    delay: 300,
+	});
 });
 
 </SCRIPT>
