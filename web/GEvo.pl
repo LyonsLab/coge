@@ -854,7 +854,7 @@ Total time                                          : $total_time
     write_log("GEvo link: $gevo_link", $cogeweb->logfile);
 #    write_log("Tiny url: $tiny", $cogeweb->logfile);
     email_results(email=>$email_address,basefile=>$basefilename) if $email_address;
-    return $outhtml, $iw, $frame_height, $cogeweb->basefilename, scalar (@sets), $gevo_link, $message;
+    return $outhtml, $iw+5, $frame_height, $cogeweb->basefilename, scalar (@sets), $gevo_link, $message;
 
 }
 
