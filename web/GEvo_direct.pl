@@ -30,9 +30,9 @@ my $pj = new CGI::Ajax (
 
 $pj->js_encode_function('escape');
 
-print $pj->build_html($FORM, \&gen_html);
+#print $pj->build_html($FORM, \&gen_html);
 
-#print $FORM->header, gen_html();
+print $FORM->header, gen_html();
 
 
 sub gen_html
@@ -126,43 +126,45 @@ sub gen_body
       $html .= qq{<DIV id=flash_viewer></DIV>};
       my $dbname = $files{sqlite}[0];
       $html .= get_db_stuff($dbname);
-
-      $html .= qq{<table>};
-      $html .= qq{<tr valign=top><td class = small>Alignment reports};
-      my $i = 1;
-      foreach my $report (@{$files{report}})
+      unless ($html =~ /does not exist/) #check to see if results exists
 	{
-	  $report =~ s/$TMPDIR/$TMPURL/;
-	  $html .= "<div><font class=small><A HREF=\"$report\" target=_new>View alignment output $i</A></font></DIV>\n";
-	  $i++;
+	  $html .= qq{<table>};
+	  $html .= qq{<tr valign=top><td class = small>Alignment reports};
+	  my $i = 1;
+	  foreach my $report (@{$files{report}})
+	    {
+	      $report =~ s/$TMPDIR/$TMPURL/;
+	      $html .= "<div><font class=small><A HREF=\"$report\" target=_new>View alignment output $i</A></font></DIV>\n";
+	      $i++;
+	    }
+	  
+	  $html .= qq{<td class = small>Fasta files};
+	  $i=1;
+	  foreach my $item (@{$files{faa}})
+	    {
+	      $item =~ s/$TMPDIR/$TMPURL/;
+	      $html .= "<div><font class=small><A HREF=\"$item\" target=_new>Fasta file $i</A></font></DIV>\n";
+	      $i++;
+	    }
+	  
+	  $html .= qq{<td class = small><a href = "http://baboon.math.berkeley.edu/mavid/gaf.html">GAF</a> annotation files};
+	  $i=1;
+	  foreach my $item (@{$files{anno}})
+	    {
+	      $item =~ s/$TMPDIR/$TMPURL/;
+	      $html .= "<div><font class=small><A HREF=\"$item\" target=_new>Annotation file $i</A></font></DIV>\n";
+	      $i++;
+	    }
+	  $html .= qq{<td class = small>SQLite db};
+	  $dbname =~ s/$TMPDIR/$TMPURL/;
+	  $html .= "<div class=small><A HREF=\"$dbname\" target=_new>SQLite DB file</A></DIV>\n";
+	  $html .= qq{<td class = small>Log File};
+	  my $logfile = $files{log}[0];
+	  $logfile =~ s/$TMPDIR/$TMPURL/;
+	  $html .= "<div class=small><A HREF=\"$logfile\" target=_new>Log</A></DIV>\n";
+	  $html .= qq{<td class = small>GEvo Link<div class=small><a href=$tiny target=_new>$tiny<br>(See log file for full link)</a></div>};
+	  $html .= qq{</table>};
 	}
-
-      $html .= qq{<td class = small>Fasta files};
-      $i=1;
-      foreach my $item (@{$files{faa}})
-	{
-	  $item =~ s/$TMPDIR/$TMPURL/;
-	  $html .= "<div><font class=small><A HREF=\"$item\" target=_new>Fasta file $i</A></font></DIV>\n";
-	  $i++;
-	}
-      
-      $html .= qq{<td class = small><a href = "http://baboon.math.berkeley.edu/mavid/gaf.html">GAF</a> annotation files};
-      $i=1;
-      foreach my $item (@{$files{anno}})
-	{
-	  $item =~ s/$TMPDIR/$TMPURL/;
-	  $html .= "<div><font class=small><A HREF=\"$item\" target=_new>Annotation file $i</A></font></DIV>\n";
-	  $i++;
-	}
-      $html .= qq{<td class = small>SQLite db};
-      $dbname =~ s/$TMPDIR/$TMPURL/;
-      $html .= "<div class=small><A HREF=\"$dbname\" target=_new>SQLite DB file</A></DIV>\n";
-      $html .= qq{<td class = small>Log File};
-      my $logfile = $files{log}[0];
-      $logfile =~ s/$TMPDIR/$TMPURL/;
-      $html .= "<div class=small><A HREF=\"$logfile\" target=_new>Log</A></DIV>\n";
-      $html .= qq{<td class = small>GEvo Link<div class=small><a href=$tiny target=_new>$tiny<br>(See log file for full link)</a></div>};
-      $html .= qq{</table>};
       my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GEvo_direct.tmpl');
       $template->param('STUFF'=>$html);
       $template->param('WIDTH'=>$w);
@@ -179,6 +181,13 @@ sub get_db_stuff
   {
     my $dbname = shift;
     my $html;
+    unless (-r $dbname)
+      {
+	$html .= "Database file $dbname does not exist.  CoGe only stores the results from GEvo's analysis for ~24 hours, and your prior results may have been deleted.  For long term \"storage\" of your results, please copy the GEvo link, as a tinyurl, provided below the results or view the log file (a link to which is also provided below the results) which has the full GEvo url.";
+	return $html;
+      }
+
+
     $html .= qq{
 <Div class="topItem">Change image display order:</DIV>
 <div class="dropMenu">
