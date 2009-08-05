@@ -170,6 +170,7 @@ Gobe.set_genespace= function (updown, idx, value, length, anchorlength){
 };
 
 Gobe.handle_html= function (html) {
+  html = "<span class='ui-button ui-state-default ui-corner-all' id='clear_lines' onclick='Gobe.clear()'>Clear Connectors</span><br>"+html;
   $('#results_info').html(html);
   
   if (html && !html.match(/multiple hits/)) {
@@ -694,9 +695,12 @@ $(function() {
 
 function update_line_width(val)
  {
-   val = val+(1*$('#line_width').val());
-   $('#line_width').val(val);
-   Gobe.set_linewidth($('#line_width').val());
+   val = val+(1*$('#line_width_val').val());
+   if (val <1) {val =1;}
+   $('.line_width').each(function() {
+    $(this).val(val);
+   });
+   Gobe.set_linewidth($('#line_width_val').val());
  }
 
 </SCRIPT>
@@ -1222,24 +1226,8 @@ function update_line_width(val)
 <table><tr><td>
 <DIV id="results" name="results"></DIV><br>
 <DIV id="results_info" class="dialog_box" title="GEvo Results Info"></DIV>
-<DIV id="results_options" class="dialog_box" title="GEvo Results Options">
-<span class='ui-button ui-state-default ui-corner-all' id="clear_lines" onclick="Gobe.clear()">Clear Connectors</span><br>
-
-<span class='ui-button ui-state-default ui-corner-all drawline' id="set_lines" onclick="$('.drawline').hide();$('#set_wedges').show();$('.lineopt').show();Gobe.set_connector('line')">Set connector as Lines</span>
-
-<span style="display: none" class='ui-button ui-state-default ui-corner-all' id="set_wedges" onclick="$('.drawline').show();$('#set_wedges').hide();$('.lineopt').hide();Gobe.set_connector('wedge')">Set connector as Wedges</span>
-<br>
-<div class=lineopt style="display: none">
- <span class='small ui-state-default' id="">Line Width</span>
- <input type=textbox size=2 class=backbox id=line_width value=3 readonly>
- <span class='ui-button ui-state-default ui-corner-all' id="" onclick="update_line_width(1)">+</span>
- <span class='ui-button ui-state-default ui-corner-all' id="" onclick="update_line_width(-1)">-</span>
-</div>
-
-
-
-</DIV
 </table>
+
 <div id="save_form" title="Save GEvo Results" style="display:none">
 <table>
 <tr>
