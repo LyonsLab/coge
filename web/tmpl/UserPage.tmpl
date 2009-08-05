@@ -1,15 +1,9 @@
 <TMPL_IF NAME=STARTUP>
 <link rel="stylesheet" type="text/css" href="/CoGe/css/superfish-vertical.css" />
-<style type="text/css">
-	.portlet { margin: 0 1em 1em 0; max-width: 452;}
-	.portlet-header { margin: 0.3em; padding-bottom: 4px; padding-left: 0.2em; cursor:move; max-width: 452;}
-	.portlet-footer { padding-bottom: 4px; padding-left: 0.2em;}
-	.portlet-header .ui-icon { float: right; cursor: pointer;}
-	.portlet-content { padding: 0.4em; display:none;}
-	.ui-sortable-placeholder { border: 1px dotted black; visibility: visible !important; height: 50px !important; }
-	.ui-sortable-placeholder * { visibility: hidden; }
-</style>
+<link rel="stylesheet" type="text/css" href="/CoGe/css/jquery.treeTable.css" />
+
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.treeTable.js"></SCRIPT>
 <SCRIPT language="JavaScript">
 $(document).ready(function(){
 	$.ajaxSetup({
@@ -46,7 +40,7 @@ function view_work_dialog(data) {
 	 $('#work_dialog').hide(0)
 			  .html(html)
 			  .dialog({autoOpen: false,
-			  	   title: 'Viewing Work '+name,
+			  	   title: 'Viewing Work: '+name,
 				   height: 261,
 				   width: 326,
 				   close: function() { $(this).dialog('destroy'); }, 
@@ -88,15 +82,18 @@ function get_workflow_header(wf_id) {
 		data: {fname: 'generate_workflow', args: wf_id},
 		dataType: 'json',
 		success: function(data) { 
-			 		  $('#content').html(data.html).ready(function() { $('#workflow_select').val(data.wf_id);  } );;
-					  display_workflow(data.wf_id); 
+			 		  $('#content').html(data.html).ready(function() { $('#workflow_select').val(data.wf_id);  } );
+					  display_workflow(data.wf_id);
+					  $('#wf_table').treeTable({ 
+					  	initialState: "expanded",  
+					  });
 					},
 	});
 }
 
 function delete_dialog_init(wf_id,wf_name) {
 	 		 $('#delete_check').dialog({autoOpen: false,
-			  	   	    title: 'Delete Current Workflow '+wf_name,
+			  	   	    title: 'Delete Current Workflow: '+wf_name,
 					    height: 184,
 					    buttons: { "Cancel": function() { $(this).dialog("close"); },
 					    	      "Delete": function() { delete_workflow(wf_id);$(this).dialog('close') } },
@@ -108,7 +105,19 @@ function delete_dialog_init(wf_id,wf_name) {
 				   .dialog('open');
 }
 
-function display_workflow(wf_id) {
+function edit_workflow_dialog_init(wf_id,wf_name) {
+	 			 $('#workflow_editor').dialog({autoOpen: false,
+			  	   	    title: 'Edit Current Workflow: '+wf_name,
+					    height: 211,
+					    buttons: { "Cancel": function() { $(this).dialog("close"); },
+					    	      "Update": function() { $(this).dialog('close') } },
+					    width: 335,
+				   })
+				   .show(0)
+				   .dialog('open');
+}
+
+function display_workflow(wf_id,wid) {
 	 //console.log(wf_id);
 	 if ( wf_id == null || wf_id == 'undefined') { wf_id = $('#workflow_select')[0].value;}
 	// console.log(wf_id);
@@ -118,7 +127,9 @@ function display_workflow(wf_id) {
 		 $('#view_workflow').hide(0).html(html).ready(function() {
 		  /** Give Work Divs some style **/
 	 	  $(".workflow-column").sortable({
-			connectWith: '.workflow-column'
+			connectWith: '.workflow-column',
+			containment: 'parent',
+			axis: 'y'
 			});
 
 		//	$(".portlet").addClass("ui-widget ui-widget-content ui-helper-clearfix ui-corner-all")
@@ -140,6 +151,7 @@ function display_workflow(wf_id) {
 		 })
 		  .slideToggle();
 		  setup_button_states();
+		  if (wid) { $('#'+wid).siblings().children().click();}
 		},
 	});
 }
@@ -175,17 +187,19 @@ function init_works() {
 
 function init_works_table() {
 	 $('table.sort-table').tablesorter({		
-	 					sortClassAsc: 'headerSortUp',		// Class name for ascending sorting action to header
-						sortClassDesc: 'headerSortDown',	// Class name for descending sorting action to header
-//						headerClass: 'header',			// Class name for headers (th's)
+	 					cssAsc: 'headerSortUp',		// Class name for ascending sorting action to header
+						cssDesc: 'headerSortDown',	// Class name for descending sorting action to header
+//						cssHeader: 'header',			// Class name for headers (th's)
 						widgets: ['zebra'],
-						headers: {0: {sorter: false},},					
+					        headers: {4: {sorter: false},
+					      	          5: {sorter: false}, 
+						          6: {sorter: false},},					
 				 });
 	$('table.sort-table tr').mouseover( function() {$(this).addClass('highlight');})
 			        .mouseout( function() {$(this).removeClass('highlight');});
 	setup_button_states();
-	$("#search_bar").keyup( function() { filter_rows( $(this).val() ); });
-	$('#search_type').mouseup( function() { filter_rows( $('#search_bar').val() ); });
+	//$("#search_bar").keyup( function() { filter_rows( $(this).val() ); });
+	//$('#search_type').mouseup( function() { filter_rows( $('#search_bar').val() ); });
 }
 
 function update_worklist(type) {
@@ -193,7 +207,7 @@ function update_worklist(type) {
 	 if (type != 'all')
 	 { 
 	    $('table.sort-table tr').each(function() {
-	 		$('td:eq(3):not(:contains('+type+'))',this).parent().hide();
+	 		$('td:eq(2):not(:contains('+type+'))',this).parent().hide();
 	    });
 	}
 }
@@ -205,36 +219,23 @@ function create_new_workflow() {
 	});
 }
 
-function get_work_entry(edit) {
-	 var count = 0;
-	 var wid;
-	 $('table.sort-table :checkbox').each(function(){
-     	 	if (this.checked == true) {
-		   		 wid = this.id;
-				 count += 1;
-		}
-	});
-	if (count > 1) { alert("Please only select one work at a time"); return; }
-	else if(count < 1) { alert("Please choose a work first"); return;}
-	else{
-		if(edit != 1) {
+function get_work_entry(wid) {
 			$.ajax({
 				dataType: 'json',
 				data: {fname: 'view_work_entry', work_id: wid },
 				success: function(data) {view_work_dialog(data);},
 			});
-		}
-		else{
-			$.ajax({
-				dataType: 'json',
-				data: {fname: 'view_work_entry', work_id: wid, edit: 1 },
-				success: function(data) {edit_work_dialog(data);},
-			});
-		}
-	}
 }
 
-function delete_work_entry() {
+function edit_work_entry(wid) {
+	 $.ajax({
+		dataType: 'json',
+		data: {fname: 'view_work_entry', work_id: wid, edit: 1 },
+		success: function(data) {edit_work_dialog(data);},
+	});
+}
+
+function delete_work_entry_from_checkbox() {
 	 var wids = " ";
 	 $('table.sort-table :checkbox').each(function(){
      	 	if (this.checked == true) {
@@ -243,6 +244,13 @@ function delete_work_entry() {
 	});
 	$.ajax({
 			data: {fname: 'remove_work_entry', args: wids, },
+			success: function(data) {work_refresh_after_change(data);},
+		});	 
+}
+
+function delete_work_entry(wid) {
+	$.ajax({
+			data: {fname: 'remove_work_entry', args: wid, },
 			success: function(data) {work_refresh_after_change(data);},
 		});	 
 }
@@ -328,6 +336,7 @@ function filter_rows (search_text){
 <div style="float:left">
 <ul class="sf-menu sf-vertical">
   <li><a href="javascript:void(0)" onClick="get_profile()">Profile</a></li>
+<!--
   <li><a href="javascript:void(0)">Application Settings</a>
     <ul>
 	<li><a href="javascript:void(0)">OrganismView</a></li>
@@ -337,6 +346,7 @@ function filter_rows (search_text){
 	<li><a href="javascript:void(0)">GEvo</a></li>
     </ul>
   </li>
+-->
   <li><a href="javascript:void(0)">Work Flows</a>
   <ul>
 	<li><a href="javascript:void(0)" onClick="get_workflow_header()">View Workflows</a></li>
@@ -389,11 +399,11 @@ function filter_rows (search_text){
 
 <TMPL_IF NAME=WORK_TYPE_CHOICE>
 <h2>Work List</h2>
-Select type of work to view 
+Select Application Works to View:
 <select id=work_type onChange="update_worklist(this.value)">
 <option value=all>All</option>
-<option value=Yes>Archived Only</option>
-<option value=No>Non-Archived Only</option>
+<option value=FeatList>FeatList</option>
+<option value=GEvo>GEvo</option>
 </select>
 <!--
 or use custom filter:
@@ -412,28 +422,35 @@ or use custom filter:
 </div>
 <br/>
 </TMPL_IF>
-<table class=sort-table>
+<table class='sort-table tablesorter'>
 <thead>
-	<th> </th>
+<!--	<th> </th> -->
 	<th>Name</th>
 	<th>Description</th>
-	<th>Archived?</th>
+<!--	<th>Archived?</th> -->
 	<th>Tool</th>
 	<th>Date</th>
+	<th></th>
+	<th></th>
+	<th></th>
 </thead>
 <tbody id=sort-table-body>
 <TMPL_LOOP NAME=WORKS_LOOP>
 <tr>
-	<td><input type=checkbox id=<TMPL_VAR NAME=WORK_ID> value=<TMPL_VAR NAME=WORK_ID> ></td>
+<!--	<td><input type=checkbox id=<TMPL_VAR NAME=WORK_ID> value=<TMPL_VAR NAME=WORK_ID> ></td> -->
 	<td><TMPL_VAR NAME=WORK_NAME></td>
 	<td><TMPL_VAR NAME=WORK_DESC></td>
-	<td><TMPL_VAR NAME=WORK_ARCH></td>
+<!--	<td><TMPL_VAR NAME=WORK_ARCH></td> -->
 	<td><TMPL_VAR NAME=WORK_TOOL></td>
 	<td><TMPL_VAR NAME=WORK_DATE></td>
-
+	<td><TMPL_VAR NAME=WORK_VIEW></td>
+	<td><TMPL_VAR NAME=WORK_EDIT></td>
+	<td><TMPL_VAR NAME=WORK_DELETE></td>
 </tr>
 </TMPL_LOOP>
 </table>
+
+<!--
 <div class='ui-buttonset'>
 <a href="javascript:void(0);" class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="$('table.sort-table :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Check All</a>
 <a href="javascript:void(0);" class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="$('table.sort-table :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minus"></span>Uncheck All</a>
@@ -441,8 +458,10 @@ or use custom filter:
 <a href='javascript:void(0)' title='Edit Work' onClick="get_work_entry(1);" class='ui-button ui-state-default ui-button-icon-solo ui-corner-all'><span class='ui-icon ui-icon-pencil'></span></a>
 <a href='javascript:void(0)' title='Archive Work' onClick="archive_work(1)" class='ui-button ui-state-default ui-button-icon-solo ui-corner-all'><span class='ui-icon ui-icon-locked'></span></a>
 <a href='javascript:void(0)' title='Unarchive Work' onClick="archive_work(0)" class='ui-button ui-state-default ui-button-icon-solo ui-corner-all'><span class='ui-icon ui-icon-unlocked'></span></a>
-<a href='javascript:void(0)' title='Delete Work' onClick="delete_work_entry()" class='ui-button ui-state-default ui-button-icon-solo ui-corner-all'><span class='ui-icon ui-icon-trash'></span></a>
+<a href='javascript:void(0)' title='Delete Work' onClick="delete_work_entry_from_checkbox()" class='ui-button ui-state-default ui-button-icon-solo ui-corner-all'><span class='ui-icon ui-icon-trash'></span></a>
 </div>
+-->
+
 <div id=work_dialog></div>
 </TMPL_IF>
 
@@ -476,7 +495,7 @@ or use custom filter:
 	<td><TMPL_VAR NAME=WORK_DATE></tr>
      </table>
      <table>
-     <tr><td><button class='ui-button ui-state-default ui-corner-all' onClick="$('#workflow_choice').slideToggle()">Add to Workflow</button></td><td><button class='ui-button ui-state-default ui-corner-all' onClick="get_work_entry(1);$('#work_dialog').dialog('close');">Edit</button></td><td><button class='ui-button ui-state-default ui-corner-all' onClick="delete_work_entry();$('#work_dialog').dialog('close');">Delete</button></td>
+     <tr><td><button class='ui-button ui-state-default ui-corner-all' onClick="$('#workflow_choice').slideToggle()">Add to Workflow</button></td><td><button class='ui-button ui-state-default ui-corner-all' onClick="edit_work_entry(<TMPL_VAR NAME=WORK_ID>);$('#work_dialog').dialog('close');">Edit</button></td><td><button class='ui-button ui-state-default ui-corner-all' onClick="delete_work_entry(<TMPL_VAR NAME=WORK_ID>);$('#work_dialog').dialog('close');">Delete</button></td>
      </table>
 <div id='workflow_choice' style='display:none'>
 <TMPL_IF WF_EXIST>
@@ -527,6 +546,19 @@ Please select a workflow to view: <select id=workflow_select>
 <!-- Workflow Header Template -->
 <TMPL_IF NAME=WF_HEADER>
 <TMPL_IF WF_EXIST>
+<div id='workflow_table' style='float:right;padding-left:19px;'>
+<table id="wf_table">
+<thead>
+<tr>
+<th>My Workflows</th>
+</tr>
+</thead>
+<tbody>
+<TMPL_VAR NAME=WF_TABLE>
+</tbody>
+</table>
+</div>
+<div id='workflow_data' style="float:left">
 Please select a workflow to view: <select id=workflow_select onChange=display_workflow(this.value)>
 <TMPL_LOOP NAME=WF_SELECT_LOOP>
 <option value='<TMPL_VAR NAME=WF_ID>'><TMPL_VAR NAME=WF_NAME></option>
@@ -535,6 +567,7 @@ Please select a workflow to view: <select id=workflow_select onChange=display_wo
 <!-- <button class='ui-button ui-state-default ui-corner-all' id=choose_workflow_button onClick='display_workflow()'>View</button> -->
 <!-- <button class='ui-button ui-state-default ui-corner-all' id=choose_workflow_button onClick=show_workflow(['workflow_select'],[display_workflow]);>View</button> -->
 <div id=view_workflow><TMPL_VAR NAME=PRELOAD_WORKFLOW></div>
+</div>
 <TMPL_ELSE>
 <div class='ui-state-highlight ui-corner-all'>You have no workflows. Please <a href='javascript:void(0)' onClick=create_workflow([],['content'])>create</a> one </div>
 </TMPL_IF>
@@ -548,7 +581,7 @@ Please select a workflow to view: <select id=workflow_select onChange=display_wo
 <div class='small'>
 <table><tr>
 	<td><button class='ui-button ui-state-default ui-corner-all' onClick=create_new_workflow()>Create New Workflow</button></td>
-	<td><button class='ui-button ui-state-default ui-corner-all'>Edit Current Workflow</button></td>
+	<td><button class='ui-button ui-state-default ui-corner-all' onClick='edit_workflow_dialog_init(<TMPL_VAR NAME=WF_ID>,"<TMPL_VAR NAME=WF_NAME>")'>Edit Current Workflow</button></td>
 	<td><button class='ui-button ui-state-default ui-corner-all' onClick='delete_dialog_init(<TMPL_VAR NAME=WF_ID>,"<TMPL_VAR NAME=WF_NAME>")'> Delete Current Workflow </button>
 </table>
 </div>
@@ -586,6 +619,18 @@ Please select a workflow to view: <select id=workflow_select onChange=display_wo
 <TMPL_ELSE>
 Workflow <TMPL_VAR NAME=WF_NAME> contains no works. Click here to add works to this workflow.
 </TMPL_IF>
+<div id='workflow_editor' style='display:none'>
+<p>Please edit the details of your workflow</p>
+<table>
+<tr>
+<td>Workflow Name:</td>
+<td><input type=text value='<TMPL_VAR NAME=WF_NAME>' /></td>
+</tr>
+<tr>
+<td>Workflow Description:</td>
+<td><input type=text value='<TMPL_VAR NAME=WF_DESC>' /> </td>
+</table>
+</div>
 <div id=delete_check style='display:none'>
 <p>Are you sure you want to delete this workflow?</br>
 <strong>Warning:</strong> this process is irreversible.</p>
