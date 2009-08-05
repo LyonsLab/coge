@@ -372,7 +372,7 @@ function open_window (url, width, height)
 
 <span style="font-size: 1em" class='ui-button ui-state-default ui-corner-all' onClick="$('#results').html('');" >Clear Results</span>
 
-<div id=tabs>
+<div id=tabs style='margin-top: 0.5em'>
 
 <ul>
  <li class=small><a href="#tab-1">Select Organisms</a></li>
@@ -460,7 +460,7 @@ function open_window (url, width, height)
 
 <TMPL_IF NAME=ORG_MENU>
 <td>
-<div class="ui-widget-content resizable" style="float: left">
+<div class="ui-widget-content resizable" style="float: left; padding: 0.3em">
 <DIV class = "oblique">Organism <TMPL_VAR NAME="NUM">: </DIV>
    <DIV>Search <span class=small>Name: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_NAME">" name = "org_name<TMPL_VAR NAME="NUM">" id="org_name<TMPL_VAR NAME="NUM">" style="font-style:italic" onFocus="search_bar('org_name<TMPL_VAR NAME="NUM">')" onKeyUp='timing("org_name<TMPL_VAR NAME="NUM">");'><span>
    Description: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_DESC">" name = "org_desc<TMPL_VAR NAME="NUM">" id="org_desc<TMPL_VAR NAME="NUM">" style="font-style:italic" onFocus="search_bar('org_desc<TMPL_VAR NAME="NUM">')" onKeyUp='timing("org_desc<TMPL_VAR NAME="NUM">");'></DIV>
