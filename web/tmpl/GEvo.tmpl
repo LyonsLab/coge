@@ -1260,7 +1260,7 @@ function update_line_width(val)
 
 <TMPL_IF NAME="SEQ_SELECT">
 <TMPL_LOOP NAME="SEQ_SELECT_LOOP">
- <div id="seq_set<TMPL_VAR NAME="SEQ_NUM">" class=portlet>
+ <div id="seq_set<TMPL_VAR NAME="SEQ_NUM">" class=portlet style='padding: 0.3em'>
  <div class="portlet-header">
      Sequence <TMPL_VAR NAME="SEQ_NUM">:
     <select class="backbox" id="seq_submit<TMPL_VAR NAME="SEQ_NUM">" size="1" onchange='seq_submit_change(<TMPL_VAR NAME="SEQ_NUM">)'>
