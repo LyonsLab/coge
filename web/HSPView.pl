@@ -51,12 +51,14 @@ sub gen_html
     $template->param(LOGON=>1) unless $USER->user_name eq "public";
     $template->param(DATE=>$DATE);
     my $report_file = $form->param('blast_report') || $form->param('report');
+    $report_file = $TEMPDIR."/".$report_file unless $report_file =~ /$TEMPDIR/;
     my $dbfile = $form->param('db');
     if ($report_file && -r $report_file)
       {
 	my $hsp_num = $form->param('hsp_num') || $form->param('num');
+	$report_file =~ s/$TEMPDIR/$TEMPURL/;
 	$report_file =~ /([^\/]*$)/;
-        $template->param(BOX_NAME=>qq{<a href=/CoGe/tmp/$1>$1</a>}. " HSP: $hsp_num") if $1;
+        $template->param(BOX_NAME=>qq{<a href=$report_file>$1</a>}. " HSP: $hsp_num") if $1;
         $template->param(BODY=>gen_body(report_file=>$report_file, hsp_num=>$hsp_num, db_file=>$dbfile));
       }
     else
@@ -74,17 +76,12 @@ sub gen_body
     my $report_file = $opts{report_file};
     my $db_file = $opts{db_file};
     my $hsp_num = $opts{hsp_num};
-#    my $report;
-#    $report= new CoGe::Accessory::bl2seq_report({file=>$report_file}) if $report_file =~ /bl2seq/i;
-#    $report= new CoGe::Accessory::blastz_report({file=>$report_file}) if $report_file =~ /blastz/i;
-#    $report= new CoGe::Accessory::lagan_report({file=>$report_file}) if $report_file =~ /lagan/i;
-#    $report= new CoGe::Accessory::chaos_report({file=>$report_file}) if $report_file =~ /chaos/i;
-#    $report= new CoGe::Accessory::dialgn_report({file=>$report_file}) if $report_file =~ /dialign/i;
-#    print STDERR Dumper $report;
-
     my $hsps = get_info_from_db(db_file=>$db_file, hsp_num=>$hsp_num, report_file=>$report_file);
     my ($qname, $sname) = $hsps->[0]{hsp}=~ />?\(?(.*?)-(.*)\)?<?/;
-
+    $qname =~ s/\(\(/\(/g;
+    $sname =~ s/\(\(/\(/g;
+    $qname =~ s/\)\)/\)/g;
+    $sname =~ s/\)\)/\)/g;
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/HSPView.tmpl');
     $template->param(Query=>$qname);
     $template->param(Subject=>$sname);
@@ -105,8 +102,6 @@ sub gen_body
     $template->param(SIdent=>sprintf("%.1f",$smatch/length($sseq)*100)."%") if $sseq;
     $template->param(QSim=>sprintf("%.1f",$qmatch/length($qseq)*100)."%") if $qseq;
     $template->param(SSim=>sprintf("%.1f",$smatch/length($sseq)*100)."%") if $sseq;
-#    $template->param(QSim=>sprintf("%.1f",$hsp->positive/length($qseq)*100)."%");
-#    $template->param(SSim=>sprintf("%.1f",$hsp->positive/length($sseq)*100)."%");
     $template->param(QLen=>length($qseq));
     $template->param(SLen=>length($sseq));
     $template->param(QMis=>length($qseq)-$qmatch-$qgap);
@@ -125,7 +120,6 @@ sub gen_body
     my @qln = split /\n/,seqwrap($hsps->[0]{alignment},100);
     my @sln = split /\n/,seqwrap($hsps->[1]{alignment},100);
     my @aln = split /\n/,seqwrap(get_alignment($hsps->[0]{alignment},$hsps->[1]{alignment}),100);
-#    my @aln = split /\n/,seqwrap($hsp->align,100);
     my $align;
     for (my $i=0; $i<@aln; $i++)
       {
@@ -149,16 +143,11 @@ sub gen_body
  	  {
 	    $start++;
 	    $stop++;
-# 	    my $adj = $hsps->[0]{chr_stop} - $hsps->[0]{chr_start}+1;
-# 	    $start = $adj-$hsps->[0]{start}+$hsps->[0]{chr_start};
-# 	    $stop = $adj-$hsps->[0]{stop}+$hsps->[0]{chr_start};
  	  }
  	else
  	  {
 	    $start--;
 	    $stop--;
-# 	    $start = $hsps->[0]{start}+$hsps->[0]{chr_start}-1;
-# 	    $stop = $hsps->[0]{stop}+$hsps->[0]{chr_start}-1;
  	  }
  	my $rc = $hsps->[0]{reverse_complement};
 	my $seqview = "<a class = small href=SeqView.pl?dsid=".$hsps->[0]{dsid}.";chr=".$hsps->[0]{chr}.";start=".$start.";stop=".$stop.";rc=$rc>SeqView</a>";
@@ -171,7 +160,6 @@ sub gen_body
 
     if ($hsps->[1]{dsid}=~/^\d+$/)
       {
-#	print STDERR Dumper $hsps->[1];
 	my ($start, $stop);
 	$start = $hsps->[1]{start};
 	$stop = $hsps->[1]{stop};
@@ -180,16 +168,11 @@ sub gen_body
  	  {
 	    $start++;
 	    $stop++;
-# 	    my $adj = $hsps->[1]{chr_stop} - $hsps->[1]{chr_start}+1;
-# 	    $start = $adj-$hsps->[1]{start}+$hsps->[1]{chr_start};
-# 	    $stop = $adj-$hsps->[1]{stop}+$hsps->[1]{chr_start};
  	  }
  	else
  	  {
 	    $start--;
 	    $stop--;
-# 	    $start = $hsps->[1]{start}+$hsps->[1]{chr_start}-1;
-# 	    $stop = $hsps->[1]{stop}+$hsps->[1]{chr_start}-1;
  	  }
 	my $rc = $hsps->[1]{reverse_complement};
 	if ($hsps->[1]{orientation} =~ /-/)
@@ -243,7 +226,6 @@ sub seqwrap {
 sub get_info_from_db
   {
     my %opts = @_;
-
     my $db = $opts{db_file};
     my $hsp_num = $opts{hsp_num};
     my $report_file = $opts{report_file};
@@ -260,23 +242,29 @@ sub get_info_from_db
     my %ids;
     while(my $item = $sth->fetchrow_arrayref)
       {
-	my $split;
+	my %data;
+	my $split;# = "<.*?>";
 	$split = "<br>" if $item->[0] =~/<br>/;
 	$split = "\n" if $item->[0] =~/\n/;
 	$split = "\\n" if $item->[0] =~/\\n/;
 	$split = "<br\/>" if $item->[0] =~/<br\/>/;
 	$split = "&#10;" if $item->[0] =~/&#10;/;
-	 my %data;
+	$split = "<tr>" if $item->[0] =~/<tr>/i;
 	foreach my $set (split /$split/i, $item->[0])
 	  {
+	    $set =~ s/<.*?>//g;
+	    next unless $set;
 	    my ($tmp1, $tmp2) = split/:/,$set,2;
+	    next unless $tmp2;
 	    $tmp2 =~ s/^\s+//;
 	    $tmp2 =~ s/\s+$//;
 	    $data{$tmp1}=$tmp2;
 	  }
+	
 	$data{HSP} =~ s/<.*?>//g;
 	$data{HSP} =~ s/^\d+\s*//;
 	my ($start, $stop, $orientation) = $data{Location} =~ /(.+?)-(.+?)\s+\(?(.*)\)?/;
+	$orientation =~ s/\(|\)//g;
 	$sth2->execute($item->[3]);
 	my ($dsid, $chr, $bpmin, $bpmax, $rc) =  $sth2->fetchrow_array;
 	$hsps{$item->[2]}= {
@@ -284,7 +272,7 @@ sub get_info_from_db
 			    start=>$start,
 			    stop=>$stop,
 			    orientation=>$orientation,
-			    alignment=>$data{Sequence},
+			    alignment=>$data{"Aligned Sequence"},
 			    match=>$data{Match},
 			    length=>$data{Length},
 			    identity=>$data{Identity},
