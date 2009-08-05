@@ -173,7 +173,7 @@ sub gen_body
       {
 	my ($draccn, $pos, $chr, $fid, $dsid, $dsgid, $gstid, $mask, $display_order);
 	#order by which genomi regions are displayed, top to bottom
-	$display_order= $form->param("do".$i) if $form->param("do".$i);
+	$display_order;#= $form->param("do".$i) if $form->param("do".$i);
 	$display_order = $i unless $display_order;
 	$draccn= $form->param("accn".$i) if $form->param("accn".$i);
 	$pos = $form->param("x".$i) if $form->param("x".$i);
@@ -427,18 +427,19 @@ sub run
     my $form = $FORM;
     my $gevo_link = $form->url."?prog=$analysis_program";
     $gevo_link .= ";spike_len=$spike_len";
+    my @gevo_link_seqs;
     my @coge_seqs; #place to store stuff for parallel creation of sequence file from genome database
     my @sets;
     my $html;
     my $t1 = new Benchmark;
-    my $seqcount = 1;
+#    my $seqcount = 1;
     for (my $i = 1; $i <= $num_seqs; $i++)
       {
 	my $display_order = $opts{"display_order$i"};
 	($display_order) = $display_order =~ /(\d+)/ if $display_order;
 	$display_order = $i unless $display_order;
 
-#	my $seqcount = $display_order;
+	#$seqcount = $display_order;
 	my $skip_seq =$opts{"skip_seq$i"};
 	next if $skip_seq;
 	my $accn = $opts{"draccn$i"};
@@ -478,23 +479,41 @@ sub run
 	my ($file, $obj);
 	my $reference_seq =$opts{"ref_seq$i"};
 	next unless $accn || $featid || $gbaccn || $dirseq|| $pos;
-	$gevo_link .= ";accn$seqcount=".CGI::escape($accn) if $accn;
-	$gevo_link .= ";x$seqcount=".CGI::escape($pos) if $pos;
-	$gevo_link .= ";fid$seqcount=".CGI::escape($featid) if $featid;
-	$gevo_link .= ";dsid$seqcount=".CGI::escape($dsid) if $dsid;
-	$gevo_link .= ";dsgid$seqcount=".CGI::escape($dsgid) if $dsgid;
-	$gevo_link .= ";gstid$seqcount=".CGI::escape($gstid) if $gstid;
-	$gevo_link .= ";chr$seqcount=".CGI::escape($chr) if $chr;
-	$gevo_link .= ";dr$seqcount"."up=$drup" if defined $drup;
-	$gevo_link .= ";dr$seqcount"."down=$drdown" if defined $drdown;
-	$gevo_link .= ";gbaccn$seqcount=".CGI::escape($gbaccn) if $gbaccn;
-	$gevo_link .= ";gbstart$seqcount=$gbstart" if $gbstart;
-	$gevo_link .= ";gblength$seqcount=$gblength" if $gblength;
-	$gevo_link .= ";rev$seqcount=1" if $rev;
-	$gevo_link .= ";nref$seqcount=1" unless $reference_seq;
-	$gevo_link .= ";mask$seqcount=$mask" if $mask;
-	$gevo_link .= ";do$seqcount=$display_order" if $display_order;
-	$seqcount++;
+	my %gevo_link_info; 
+	$gevo_link_info{accn}=CGI::escape($accn) if $accn;
+	$gevo_link_info{x}=CGI::escape($pos) if $pos;
+	$gevo_link_info{fid}=CGI::escape($featid) if $featid;
+	$gevo_link_info{dsid}=CGI::escape($dsid) if $dsid;
+	$gevo_link_info{dsgid}=CGI::escape($dsgid) if $dsgid;
+	$gevo_link_info{gstid}=CGI::escape($gstid) if $gstid;
+	$gevo_link_info{chr}=CGI::escape($chr) if $chr;
+	$gevo_link_info{drup}=$drup if defined $drup;
+	$gevo_link_info{drdown}=$drdown if defined $drdown;
+	$gevo_link_info{gbaccn}=CGI::escape($gbaccn) if $gbaccn;
+	$gevo_link_info{gbstart}=$gbstart if $gbstart;
+	$gevo_link_info{gblength}=$gblength if $gblength;
+	$gevo_link_info{rev}=1 if $rev;
+	$gevo_link_info{nref}=1 unless $reference_seq;
+	$gevo_link_info{mask}=$mask if $mask;
+	$gevo_link_info{do}=$display_order if $display_order;
+	push @gevo_link_seqs, \%gevo_link_info;
+# 	$gevo_link .= ";accn$seqcount=".CGI::escape($accn) if $accn;
+# 	$gevo_link .= ";x$seqcount=".CGI::escape($pos) if $pos;
+# 	$gevo_link .= ";fid$seqcount=".CGI::escape($featid) if $featid;
+# 	$gevo_link .= ";dsid$seqcount=".CGI::escape($dsid) if $dsid;
+# 	$gevo_link .= ";dsgid$seqcount=".CGI::escape($dsgid) if $dsgid;
+# 	$gevo_link .= ";gstid$seqcount=".CGI::escape($gstid) if $gstid;
+# 	$gevo_link .= ";chr$seqcount=".CGI::escape($chr) if $chr;
+# 	$gevo_link .= ";dr$seqcount"."up=$drup" if defined $drup;
+# 	$gevo_link .= ";dr$seqcount"."down=$drdown" if defined $drdown;
+# 	$gevo_link .= ";gbaccn$seqcount=".CGI::escape($gbaccn) if $gbaccn;
+# 	$gevo_link .= ";gbstart$seqcount=$gbstart" if $gbstart;
+# 	$gevo_link .= ";gblength$seqcount=$gblength" if $gblength;
+# 	$gevo_link .= ";rev$seqcount=1" if $rev;
+# 	$gevo_link .= ";nref$seqcount=1" unless $reference_seq;
+# 	$gevo_link .= ";mask$seqcount=$mask" if $mask;
+# 	$gevo_link .= ";do$seqcount=$display_order" if $display_order;
+# 	$seqcount++;
 	if ($featid || $pos)
 	  {
 	    $obj = get_obj_from_genome_db( accn=>$accn, featid=>$featid, pos=>$pos, dsid=>$dsid, rev=>$rev, up=>$drup, down=>$drdown, chr=>$chr, gstid=>$gstid, mask=>$mask, dsgid=>$dsgid );
@@ -643,9 +662,30 @@ sub run
       }
     $pm->wait_all_children;
 
-    $seqcount--;
-
-    $gevo_link .= ";num_seqs=".$seqcount;
+#    $seqcount--;
+    my $i = 1;
+    foreach my $item (sort {$a->{do} <=> $b->{do}} @gevo_link_seqs)
+      {
+	$gevo_link .= ";accn$i=".$item->{accn} if $item->{accn};
+ 	$gevo_link .= ";x$i=".$item->{x} if $item->{x};
+ 	$gevo_link .= ";fid$i=".$item->{fid} if $item->{fid};
+ 	$gevo_link .= ";dsid$i=".$item->{dsid} if $item->{dsid};
+ 	$gevo_link .= ";dsgid$i=".$item->{dsgid} if $item->{dsgid};
+ 	$gevo_link .= ";gstid$i=".$item->{gstid} if $item->{gstid};
+ 	$gevo_link .= ";chr$i=".$item->{chr} if $item->{chr};
+ 	$gevo_link .= ";dr$i"."up=".$item->{drup} if defined $item->{drup};
+ 	$gevo_link .= ";dr$i"."down=".$item->{drdown} if defined $item->{drdown};
+ 	$gevo_link .= ";gbaccn$i=".$item->{gbaccn} if $item->{gbaccn};
+ 	$gevo_link .= ";gbstart$i=".$item->{gbstart} if $item->{gbstart};
+ 	$gevo_link .= ";gblength$i=".$item->{gblength} if $item->{gblength};
+ 	$gevo_link .= ";rev$i=1" if $item->{rev};
+ 	$gevo_link .= ";nref$i=1" unless $item->{nref};
+ 	$gevo_link .= ";mask$i=".$item->{mask} if $item->{mask};
+# 	$gevo_link .= ";do$i=".$item->{d} if $item->{do};
+	$i++;
+      }
+    $i--;
+    $gevo_link .= ";num_seqs=$i";
     $gevo_link .= ";hsp_overlap_limit=".$hsp_overlap_limit if defined $hsp_overlap_limit;
     $gevo_link .= ";hsp_size_limit=".$hsp_size_limit if defined $hsp_size_limit;
     unless (@sets >1)
