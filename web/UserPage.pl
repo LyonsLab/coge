@@ -57,12 +57,13 @@ sub gen_html
 	 $name = $USER->first_name if $USER->first_name;
 	 $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
 	 $template->param(USER=>$name);
-	 $template->param(TITLE=>$name.qq{'s User Settings});
+	 $template->param(TITLE=>$name.qq{'s User Settings (BETA)});
+	 $template->param(PAGE_TITLE=>$name.qq{'s User Settings (BETA)});
 	# $template->param(LOGO_PNG=>"FeatList-logo.png");
 	 $template->param(LOGON=>1) unless $USER->user_name eq "public";
 	 $template->param(DATE=>$DATE);
 	 $template->param(BODY=>gen_body());
-	 $template->param(BOX_NAME=>$name.qq{'s User Settings});
+	 $template->param(BOX_NAME=>$name.qq{'s User Settings (BETA)});
 	 $template->param(ADJUST_BOX=>1);
 	 $html .= $template->output;
      }
@@ -100,7 +101,6 @@ sub gen_body
 sub profile
 {
     my $name;
-    print STDERR "Profile hit\n\n";
     $name = $USER->first_name if $USER->first_name;
     $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
     $name = "No Name Specified" unless $name;
@@ -147,12 +147,16 @@ sub view_all_work
 	my ($date) = $work->date =~ /^(\d{4}-\d{2}-\d{2}).*/;
 	my $archive = $work->archive ? "Yes" : "No";
 	my ($tool) = $work->page =~ /(\w+)\.pl/;
-	push @works, ({WORK_NAME=>$work->name,
+	my $name_html = "<a href=javascript:void(0) onClick=get_work_entry(".$work->id.")>".$work->name."</a>";
+	push @works, ({WORK_NAME=>$name_html,
 		       WORK_DESC=>$work->description,
 		       WORK_DATE=>$date,
-		       WORK_ARCH=>$archive,
+		     # WORK_ARCH=>$archive,#Disabled until Archive issue resolved
 		       WORK_TOOL=>$tool,
-		       WORK_ID=>$work->id
+		       WORK_ID=>$work->id,
+		       WORK_VIEW=>qq{<a href='javascript:void(0)' title='View Work' onClick="get_work_entry('}.$work->id.qq{');" class='ui-button ui-state-default ui-button-icon-solo ui-corner-all'><span class='ui-icon ui-icon-info'></span></a>},
+		       WORK_EDIT=>qq{<a href='javascript:void(0)' title='Edit Work' onClick="edit_work_entry(}.$work->id.qq{);" class='ui-button ui-state-default ui-button-icon-solo ui-corner-all'><span class='ui-icon ui-icon-pencil'></span></a>},
+		       WORK_DELETE=>qq{<a href='javascript:void(0)' title='Delete Work' onClick="delete_work_entry(}.$work->id.qq{)" class='ui-button ui-state-default ui-button-icon-solo ui-corner-all'><span class='ui-icon ui-icon-trash'></span></a>},
 		      });
 	$count++;
     }
@@ -282,7 +286,7 @@ sub remove_work_entry
 
 # NOTE!!!! BIG SECURITY RISK!!! No check for malicious code here...someone
 # can plant malicious code in the note, the entry is interpetted as HTML!
-# If someone puts javascript in there, will probably be interpretted and
+# If someone puts javascript in there, will probably be interpreted and
 # run.
 sub update_work_entry
 {
@@ -362,7 +366,9 @@ sub generate_workflow
     }
     if(@workflows)
     {
+	my $wf_table = create_workflows_table();
 	$template->param(WF_EXIST=>1);
+	$template->param(WF_TABLE=>$wf_table);
 	$template->param(WF_SELECT_LOOP=>\@workflows);
 	#my $html = show_workflow($wf_id) if $wf_id;
 	#$template->param(PRELOAD_WORKFLOW=>$html) if $html;
@@ -420,6 +426,28 @@ sub show_workflow
 #    return $html;
 #}
 
+sub create_workflows_table
+{
+    my $html;
+    my $i = 1;
+    foreach my $workflow ($USER->workflows)
+    {
+	my $wf_name = $workflow->name;
+	my $wf_id = $workflow->id;
+	$html .= qq{<tr id="node-$i"><td><span class="folder" onClick='display_workflow($wf_id)' style="cursor:pointer">$wf_name</span></td></tr>};
+	my $j = 1;
+	foreach my $work ($workflow->works)
+	{
+	    my $workname = $work->name;
+	    my $wid = $work->id;
+	    $html .= qq{<tr id="node-$i-$j" class="child-of-node-$i"><td><span class="file" onClick='display_workflow($wf_id,$wid)' style="cursor:pointer">$workname</span></td></tr>};
+	    $j++;
+	}
+	$i++;
+    }
+    return $html;
+}
+
 sub create_workflow
 {
     my %opts = @_;
@@ -470,4 +498,28 @@ sub remove_workflow
 	print STDERR "Suspicious activity on account id $USER->id when trying to delete workflow entry id $workflow->id","\n";
 	return "Warning: Delete unsuccessful";
     }
+}
+
+sub edit_workflow
+{
+    my %opts = @_;
+    my $wf_name = $opts{wf_name};
+    my $wf_desc = $opts{wf_desc};
+    my $wf_id = $opts{wf_id};
+    my ($workflow) = $coge->resultset('Workflow')->search({user_id=>$USER->id,
+							   workflow_id=>$wf_id,
+							  });
+    if($workflow)
+    {
+	$workflow->name($wf_name);
+	$workflow->description($wf_desc);
+	$workflow->update;
+	return "Update of workflow information successful!";
+    }
+    else{
+	print STDERR "Suspicious activity on account id $USER->id when trying to update workflow entry id $workflow->id","\n";
+	return "Warning: Update unsuccessful";
+    }
+    
+    
 }
