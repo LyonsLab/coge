@@ -358,7 +358,7 @@ sub gen_body
     my $gobe_version = `svnversion /opt/apache/CoGe/gobe/flash`;
     $gobe_version =~ s/\n//g;;
     $template->param(GOBE_VERSION=>$gobe_version);
-    $box->param(BOX_NAME=>"Options:");
+    $box->param(BOX_NAME=>"GEvo Configuration:");
     $template->param(OPTIONS=>1);
     $template->param(ALIGNMENT_PROGRAMS=>algorithm_list($prog));
     $template->param(SAVE_SETTINGS=>gen_save_settings($num_seqs)) unless !$USER || $USER->user_name =~ /public/i;
