@@ -1573,6 +1573,7 @@ sub process_hsps
 		$start = $seq_len - $stop+1;
 		$stop = $tmp;
 	      }
+	    $report =~ s/$TEMPDIR/GEvo/;
 	    my $link = "HSPView.pl?report=$report&num=".$hsp->number."&db=".$cogeweb->basefilename.".sqlite";
 	    $link .= join ("&","&qstart=".($gbobj->start+$start-1), "qstop=".($gbobj->start+$stop-1),"qchr=".$gbobj->chromosome, "qds=". $gbobj->dataset,"qstrand=".$strand) if $gbobj->dataset;
 	    $f->link($link) if $link;
