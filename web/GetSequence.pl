@@ -53,11 +53,18 @@ unless ($dsg)
     exit;
   }
 
+unless ($dsg->sequence_length($chr))
+  {
+    print "Chromosome '$chr' does not exist for this dataset group\n";
+    print $usage;
+    exit;
+  }
 
-$start = 1 unless $start;
+
+$start = 1 unless $start && !$start =~ /^\d+$/;
 $start = 1 if $start < 1;
 $strand = 1 unless $strand;
-$stop = $dsg->last_chromosome_position($chr) unless $stop;
+$stop = $dsg->last_chromosome_position($chr) unless $stop && !$stop=~/^\d+$/;
 
 my $seq = $dsg->get_seq(chr=>$chr, start=>$start, stop=>$stop, strand=>$strand);
 if ($seq)
