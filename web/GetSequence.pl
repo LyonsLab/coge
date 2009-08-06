@@ -29,6 +29,7 @@ strand:  strand '1' or '-1' (DEFAULT = 1)
 
 };
 $dsgid =~ s/\s+//g if $dsgid;
+print $FORM->header,"\n";
 unless ($dsgid && $dsgid =~ /^\d+$/)
   {
     print "No Dataset Group Database ID specified.  Can't retrieve sequence without this!\n";
