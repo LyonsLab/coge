@@ -10,6 +10,7 @@ use Data::Dumper;
 use Text::Wrap;
 use POSIX;
 use Carp;
+use LWP::Simple;
 
 =head1 NAME
 
@@ -195,7 +196,7 @@ sub get_genomic_sequence {
       warn "Dataset group id: ".$self->id." does not have a valid sequence file: $file!\n";
       return 0;
     }
-  return $self->get_seq(db=>$file, chr=>$chr, start=>$start, stop=>$stop, strand=>$strand, debug=>$debug);
+  return $self->get_seq(chr=>$chr, start=>$start, stop=>$stop, strand=>$strand, debug=>$debug);
 }
 
 ################################################ subroutine header begin ##
@@ -225,28 +226,54 @@ sub get_seq
     my $start = $opts{start};
     my $stop = $opts{stop} || $opts{end};
     my $strand = $opts{strand};
+    my $IN = $opts{file_handle};
+    my $server = $opts{server}; #option for specifying a server for retrieving sequences if local sequences do not exist.
+    $server = "http://synteny.cnr.berkeley.edu/CoGe/GetSequence.pl" unless $server;
+
     $strand  = 1 unless defined $strand;
     ($start, $stop) = ($stop, $start) if $start && $stop && $start > $stop;
     my $file = $self->file_path;
     $file =~ s/\/[^\/]*\.faa$//;
     $file .= "/chr/$chr";
     my $seq;
-    unless (-r $file)
+    my $close = 1; #flag for determining of the filehandle is to be closed.  Set to 0 if a file_handle was passed in
+    if ($IN)
       {
-	warn "$file does not exist for get_seq to extract sequence\n";
-	return "error retrieving sequence.  $file does not exist or is not available for reading.\n";
-      }
-    open (IN, $file);
-    if ($start && $stop)
-      {
-	seek(IN, $start-1, 0);
-	read(IN, $seq, $stop-$start+1);
+	$close = 0;
       }
     else
       {
-	$seq = <IN>;
+	unless (-r $file)
+	  {
+	    #make this call a script at synteny/CoGe to retrieve the sequence.
+	    my $url = $server;
+	    $url .= "?" unless $server =~/\?$/;
+	    $url .= "dsgid=".$self->id;
+	    $url .= ";chr=".$chr if $chr;
+	    $url .= ";start=".$start if $start;
+	    $url .= ";stop=".$stop if $stop;
+	    $url .= ";strand=".$strand if $strand;
+	    
+	    warn qq{
+##############
+$file does not exist for get_seq to extract sequence.
+Going to retrieve sequence from $url
+##############
+}; #change warning to state that sequence is being retrieved remotely from the kingdom of CoGe.
+	    return get($url);
+	  }
+	open ($IN, $file);
       }
-    close (IN);
+    if ($start && $stop)
+      {
+	seek($IN, $start-1, 0);
+	read($IN, $seq, $stop-$start+1);
+      }
+    else
+      {
+	$seq = <$IN>;
+      }
+    close ($IN) if $close; #close filehand
     $seq = $self->reverse_complement($seq) if $strand =~ /-/;
     return $seq;
   }
@@ -341,9 +368,9 @@ sub genomic_sequence
 
 ################################################## subroutine header start ##
 
-=head2 last_chromsome_position
+=head2 sequence_length
 
- Usage     : my $last = $genome_seq_obj->last_chromosome_position($chr);
+ Usage     : my $last = $genome_seq_obj->sequence_length($chr);
  Purpose   : gets the last genomic sequence position for a dataset given a chromosome
  Returns   : an integer that refers to the last position in the genomic sequence refered
              to by a dataset given a chromosome
@@ -382,6 +409,11 @@ See Also   :
      return $stop;
    }
    
+
+sub last_chromosome_position
+   {
+     shift->sequence_length(@_);
+   }
    
 ################################################ subroutine header begin ##
 
