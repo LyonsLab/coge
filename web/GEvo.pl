@@ -2733,7 +2733,7 @@ sub makeurlarray #shabari:for parsing GEvo and tiny urls
     
     my @array;
     my $i=1;
-   
+   $longurl =~ s/&/;/g;
     while ($i<=$numseqs)
     {
 	my $rec={};
