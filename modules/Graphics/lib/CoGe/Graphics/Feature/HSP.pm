@@ -45,7 +45,7 @@ sub _initialize
     $self->force_label(1);
     $self->type('HSP') unless $self->type;
     $self->mag(1);
-    $self->font_size(10);
+    $self->font_size(10) unless $self->font_size;
     $self->color_matches(0) unless defined $self->color_matches();
   }
 
