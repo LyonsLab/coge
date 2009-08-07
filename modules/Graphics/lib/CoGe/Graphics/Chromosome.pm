@@ -1661,21 +1661,11 @@ sub _draw_feature
     $xmax = sprintf("%.0f",$fe);
     $ymax = sprintf("%.0f",$y+$ih-1);
     
-    my $size;
+    my $size = $feat->font_size ? $feat->font_size : $ih;
     if ($self->fill_labels && $feat->fill) {$size=$fw >= 15 ? 15 : $fw;}
-    elsif ($self->feature_labels && defined $feat->label) 
-      {
-        $size = $ih > 13 ? 13 : $ih; 
-	$size=$size/2 if $fw <$size * (length $feat->label)/1.5;
-#	print STDERR $feat->label,": $fw, $size\n";
-        $sy=$y+$ih/2-$size/2 unless $sy;
-	my $adjust = 0;
-	$adjust = $fw/10;
-#	$fs = 0 if $fs < 1;
+    $sy=$y+$ih/2-$size/2 unless $sy;
+    my $adjust = 2;
 	$fs+=$adjust unless $fs+$adjust > $self->iw;
-      }
-#    $size = $size*$feat->font_size if $size && $feat->font_size;
-    $size = $feat->font_size if $feat->font_size;
     $self->_gd_string(y=>$sy, x=>$fs, text=>$feat->label, size=>$size) if $feat->label && ( ($self->feature_labels || $self->fill_labels)&& ($fw>5 || $feat->force_label)); #don't make the string unless the feature is at least 5 pixels wide
 #    print STDERR $feat->type," ","$xmin, $ymin, $xmax, $ymax\n" if $feat->{anchor};
     $feat->image_coordinates("$xmin, $ymin, $xmax, $ymax") if defined $xmin && defined $ymin && defined $xmax && defined $ymax;
