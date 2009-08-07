@@ -1662,7 +1662,7 @@ sub get_dotplot
     $h+=150;
     if ($loc)
       {
-	return ($url,$w, $h);
+	return ($url, $loc, $w, $h);
       }
     my $html = qq{<iframe src=$url frameborder=0 width=$w height=$h scrolling=no></iframe>};
     return $html;
