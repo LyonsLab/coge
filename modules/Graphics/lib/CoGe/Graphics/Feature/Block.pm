@@ -77,7 +77,7 @@ sub _initialize
     $self->bgcolor([255,255,255]) unless $self->bgcolor;
     $self->color([255,100,255]) unless $self->bgcolor;
     $self->skip_overlap_search(0);
-    $self->font_size(1);
+#    $self->font_size(1);
     $self->block_height($BLOCK_HEIGHT) unless $self->block_height;
     $self->print_label(0) unless defined $self->print_label();
     $self->type('block');
@@ -88,8 +88,8 @@ sub _post_initialize
     my $self = shift;
     my %opts = @_;
     $self->label($self->label." (".$self->type.")") if $self->add_type && $self->type;
-    my $label_loc = $self->strand =~ /-/ ? "bot" : "top";
-    $self->label_location('bot');
+#    my $label_loc = $self->strand =~ /-/ ? "bot" : "top";
+#    $self->label_location($label_loc);
     my $gd = $self->gd;
     $gd->fill(0,0, $self->get_color($self->bgcolor));
 #    $gd->transparent($self->get_color($self->bgcolor));
