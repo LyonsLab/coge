@@ -337,6 +337,12 @@ function synteny_zoom(dsgid1, dsgid2, basename, chr1, chr2, ksdb)
  var max = $('#zoom_max').val();
  if (/window/.test(loc))
   {
+    var loc = pageObj.loc;
+    if (!loc) {loc=1;}
+    loc++;
+    pageObj.loc=loc;
+    win = window.open ('DisplayMessage.pl', 'win'+loc,'width=400,height=200,scrollbars=1');
+    win.focus();
     get_dotplot(['args__src','args__'+url, 'args__loc','args__'+loc, 'args__flip','args__'+$('#flip')[0].checked,'args__regen_images','args__'+$('#regen_images')[0].checked, 'args__width', 'args__'+width, 'args__ksdb','args__'+ksdb,'args__kstype','ks_type','args__min', 'args__'+min,'args__max', 'args__'+max],[open_window]);
   }
  else
@@ -346,12 +352,10 @@ function synteny_zoom(dsgid1, dsgid2, basename, chr1, chr2, ksdb)
   }
 }
 
-function open_window (url, width, height)
+function open_window (url, loc, width, height)
  {
-    var loc = pageObj.loc;
+    if (!loc) {loc = pageObj.loc;}
     if (!loc) {loc=1;}
-    loc++;
-    pageObj.loc=loc;
     my_window = window.open(url,"win"+loc,'"width='+width+',height='+height+', scrollbars=1"');
     my_window.resizeTo(width,height);
  }
