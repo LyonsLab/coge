@@ -190,6 +190,7 @@ sub genomic_view
     ($org) = $coge->resultset('Organism')->resolve($org) if $org;
     ($ds) = $coge->resultset('Dataset')->resolve($ds) if $ds;
     my $dsg = $coge->resultset('DatasetGroup')->find($dsgid) if $dsgid;
+#    print STDERR"!", $dsgid, "\n";#, $dsg->id,"\n";
     if ($ds && !$dsg)
       {
 	foreach my $item (sort {$a->genomic_sequence_type_id <=> $b->genomic_sequence_type_id} $ds->dataset_groups)
@@ -265,8 +266,10 @@ sub genomic_view
     my $t1 = new Benchmark if $BENCHMARK;
     my $taa = new Benchmark if $BENCHMARK;
     print STDERR "processing features\n" if $self->DEBUG;
-    foreach my $item ($dsg->datasets)
+    foreach my $item ($dsg->datasets(chr=>$chr))
+#    my $item = $ds;
       {
+#x	print STDERR $item->name,"\n";
 	$self->process_features(start=>$start, stop=>$c->stop, chr=>$chr, ds=>$item, coge=>$coge, c=>$c, fids=>$fids, fnames=>$fnames, layers=>$layers, gstid=>$gstid) unless $simple;
 	my $tab = new Benchmark if $BENCHMARK;
 	my $feat_time = timestr(timediff($tab, $taa)) if $BENCHMARK;
