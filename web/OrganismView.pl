@@ -77,6 +77,7 @@ sub gen_html
 	$template->param(TITLE=>'Organism Overview');
 	$template->param(PAGE_TITLE=>'OrgView');
 	$template->param(HEAD=>qq{});
+	$template->param(HELP=>"/wiki/index.php?title=OrganismView");
 	my $name = $USER->user_name;
         $name = $USER->first_name if $USER->first_name;
         $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
