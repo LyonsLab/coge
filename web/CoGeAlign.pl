@@ -58,7 +58,7 @@ sub gen_html
 	my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
 	$template->param(TITLE=>'ClustalW2 Alignments');
 	$template->param(PAGE_TITLE=>'Align');
-	#$template->param(HELP=>'BLAST');
+	$template->param(HELP=>'/wiki/index.php?title=CoGeAlign');
 	# print STDERR "user is: ",$USER,"\n";
 	my $name = $USER->user_name;
 	$name = $USER->first_name if $USER->first_name;
