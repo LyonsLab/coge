@@ -48,6 +48,7 @@ sub gen_html
 	
 	$template->param(TITLE=>'CoGe: Secret Projects: Code Fusion');
 	$template->param(HEAD=>qq{});
+	$template->param(HELP=>"/wiki/index.php?title=CodeFusion");
 	my $name = $USER->user_name;
         $name = $USER->first_name if $USER->first_name;
         $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
