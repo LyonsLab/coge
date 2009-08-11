@@ -125,7 +125,7 @@ sub gen_html
 	$template->param(LOGO_PNG=>"GEvo-logo.png");
 	$template->param(TITLE=>'Genome Evolution Analysis');
 	$template->param(PAGE_TITLE=>'GEvo');
-	$template->param(HELP=>'GEvo');
+	$template->param(HELP=>'/wiki/index.php?title=GEvo');
 	my $name = $USER->user_name;
         $name = $USER->first_name if $USER->first_name;
         $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
@@ -182,7 +182,6 @@ sub gen_body
 	$dsgid = $form->param('dsgid'.$i) if $form->param('dsgid'.$i);
 	$gstid = $form->param('gstid'.$i) if $form->param('gstid'.$i);
 	$mask =  $form->param('mask'.$i) if ($form->param('mask'.$i));
-#	($dsid, $dsgid, $gstid) = get_database_information(dsid=>$dsid, dsgid=>$dsgid, gstid=>$gstid);
 	$mask = undef if $mask && $mask eq "--None--";
 	if ($fid && $fid =~ /_/)
 	  {
@@ -215,7 +214,10 @@ sub gen_body
 	my $refy = "checked" if $form->param('ref'.$i);
 	my $refn = "checked" unless $refy;
 	my $org_title;
-	($org_title, $dsid, $gstid, $dsgid) =get_org_info(dsid=>$dsid, chr=>$chr, gstid=>$gstid, dsgid=> $dsgid) if $pos;
+	my $dsg_menu = qq{<input type="hidden" id="dsgid$i"};
+	$dsg_menu .= qq{value ="$dsgid"} if $dsgid;
+	$dsg_menu .= qq{>};
+	($org_title, $dsid, $gstid, $dsgid, $dsg_menu) =get_org_info(dsid=>$dsid, chr=>$chr, gstid=>$gstid, dsgid=> $dsgid, seq_num=>$i) if $pos;
 	push @seq_nums, {
 			 SEQ_NUM=>$i,
 			};
@@ -230,6 +232,7 @@ sub gen_body
 		    DRACCN=>$draccn,
 		    DSID=>$dsid,
 		    DSGID=>$dsgid,
+		    DSG_STUFF=>$dsg_menu,
 		    GSTID=>$gstid,
 		    GBACCN=>$gbaccn,
 		    GBSTART=>$gbstart,
@@ -290,6 +293,8 @@ sub gen_body
     $hsp_size_limit = 0 unless $hsp_size_limit;
     my $show_cns = get_opt(params=>$prefs, form=>$form, param=>'show_cns');
     $show_cns=0 unless $show_cns;
+    my $feat_labels = get_opt(params=>$prefs, form=>$form, param=>'feat_labels');
+    $feat_labels=0 unless $feat_labels;
     my $show_gene_space = get_opt(params=>$prefs, form=>$form, param=>'show_gene_space');
     my $show_contigs = get_opt(params=>$prefs, form=>$form, param=>'show_contigs');
     $show_gene_space=0 unless $show_gene_space;
@@ -323,6 +328,12 @@ sub gen_body
     if ($hsp_label && $hsp_label eq "staggered") {$template->param(HSP_LABELS_STAG=>"selected");}
     elsif ($hsp_label && $hsp_label eq "linear") {$template->param(HSP_LABELS_LIN=>"selected");}
     else {$template->param(HSP_LABELS_NO=>"selected");}
+    if ($feat_labels && $feat_labels eq "staggered") {$template->param(FEAT_LABELS_STAG=>"selected");}
+    elsif ($feat_labels && $feat_labels eq "linear") {$template->param(FEAT_LABELS_LIN=>"selected");}
+    else {$template->param(FEAT_LABELS_NO=>"selected");}
+
+#    if ($feat_labels) {$template->param(FEAT_LABELS_YES=>"checked");}
+#    else {$template->param(FEAT_LABELS_NO=>"checked");}
 #    if ($hsp_limit) {$template->param(HSP_LIMIT_YES=>"checked");}
 #    else {$template->param(HSP_LIMIT_NO=>"checked");}
 #    $template->param(HSP_LIMIT_NUM=>$hsp_limit_num);
@@ -381,7 +392,8 @@ sub run
     my $show_nt = $opts{nt};
     my $show_cbc = $opts{cbc};
     my $color_hsp = $opts{colorhsp};
-    my $hsp_label = $opts{hsplabel};
+    my $hsp_labels = $opts{hsplabel};
+    my $feat_labels = $opts{feat_labels};
     my $draw_model = $opts{draw_model};
     my $hsp_overlap_limit = $opts{hsp_overlap_limit};
     my $hsp_size_limit = $opts{hsp_size_limit};
@@ -401,6 +413,7 @@ sub run
     my $show_contigs = $opts{show_contigs};
     my $skip_feat_overlap_search = $opts{skip_feat_overlap};
     my $skip_hsp_overlap_search = $opts{skip_hsp_overlap};
+    my $font_size = $opts{font_size};
     my $message;
     $cogeweb = initialize_basefile(basename=>$basefilename, prog=>"GEvo");
     my @hsp_colors;
@@ -423,8 +436,8 @@ sub run
 
 
 
-    my $stagger_label = $hsp_label && $hsp_label =~ /staggered/i ? 1 : 0;
-    my $feature_labels = !$hsp_label ? 0 : 1;
+#    my $stagger_label = $hsp_label && $hsp_label =~ /staggered/i ? 1 : 0;
+#    my $feature_labels = !$hsp_label ? 0 : 1;
     my $form = $FORM;
     my $gevo_link = $form->url."?prog=$analysis_program";
     $gevo_link .= ";spike_len=$spike_len";
@@ -652,13 +665,13 @@ sub run
  	$gevo_link .= ";fid$i=".$item->{fid} if $item->{fid};
  	$gevo_link .= ";dsid$i=".$item->{dsid} if $item->{dsid};
  	$gevo_link .= ";dsgid$i=".$item->{dsgid} if $item->{dsgid};
- 	$gevo_link .= ";gstid$i=".$item->{gstid} if $item->{gstid};
+ 	$gevo_link .= ";gstid$i=".$item->{gstid} if $item->{gstid} && !$item->{dsgid};
  	$gevo_link .= ";chr$i=".$item->{chr} if $item->{chr};
  	$gevo_link .= ";dr$i"."up=".$item->{drup} if defined $item->{drup};
  	$gevo_link .= ";dr$i"."down=".$item->{drdown} if defined $item->{drdown};
  	$gevo_link .= ";gbaccn$i=".$item->{gbaccn} if $item->{gbaccn};
- 	$gevo_link .= ";gbstart$i=".$item->{gbstart} if $item->{gbstart};
- 	$gevo_link .= ";gblength$i=".$item->{gblength} if $item->{gblength};
+ 	$gevo_link .= ";gbstart$i=".$item->{gbstart} if $item->{gbaccn} && $item->{gbstart};
+ 	$gevo_link .= ";gblength$i=".$item->{gblength} if $item->{gbaccn} && $item->{gblength};
  	$gevo_link .= ";rev$i=1" if $item->{rev};
  	$gevo_link .= ";ref$i=".$item->{ref};
  	$gevo_link .= ";mask$i=".$item->{mask} if $item->{mask};
@@ -741,8 +754,8 @@ sub run
 			     show_gc=>$show_gc,
 			     show_nt=>$show_nt,
 			     show_cbc=>$show_cbc,
-			     stagger_label=>$stagger_label,
-			     feature_labels=>$feature_labels,
+			     hsp_labels=>$hsp_labels,
+			     feat_labels=>$feat_labels,
 #			     hsp_limit=>$hsp_limit,
 #			     hsp_limit_num=>$hsp_limit_num,
 			     color_hsp=>$color_hsp,
@@ -762,6 +775,7 @@ sub run
 			     bitscore_cutoff=>$bitscore_cutoff,
 			     skip_feat_overlap_search=>$skip_feat_overlap_search,
 			     skip_hsp_overlap_search=>$skip_hsp_overlap_search,
+			     font_size=>$font_size,
 			    );
 	    $gfx->generate_png(file=>$item->{png_filename});
 	    generate_image_db(set=>$item, gfx=>$gfx);
@@ -913,8 +927,8 @@ sub generate_image
     my $show_nt = $opts{show_nt};
     my $show_cbc = $opts{show_cbc};
     my $reverse_image = $opts{reverse_image};
-    my $stagger_label = $opts{stagger_label};
-    my $feature_labels = $opts{feature_labels};
+    my $hsp_labels = $opts{hsp_labels};
+    my $feat_labels = $opts{feat_labels};
 #    my $hsp_limit = $opts{hsp_limit};
 #    my $hsp_limit_num = $opts{hsp_limit_num};
     my $color_hsp = $opts{color_hsp};
@@ -935,6 +949,7 @@ sub generate_image
     my $gfx = new CoGe::Graphics::Chromosome;
     my $skip_feat_overlap_search = $opts{skip_feat_overlap_search};
     my $skip_hsp_overlap_search = $opts{skip_hsp_overlap_search};
+    my $font_size = $opts{font_size};
     $skip_hsp_overlap_search = 1 unless defined $skip_hsp_overlap_search;
     $graphic->initialize_c (
 			    c=>$gfx,
@@ -948,7 +963,7 @@ sub generate_image
 			    chr_length => length($gbobj->sequence),
 			    fill_labels=>1,
 			    minor_tick_labels=>1,
-			    feature_labels=>$feature_labels,
+			    feature_labels=>$feat_labels,
 			    draw_hi_qual=>$hiqual,
 			    padding=>$padding,
 			   );
@@ -964,7 +979,7 @@ sub generate_image
 		 accn=>$gbobj->accn, 
 		 rev=>$reverse_image, 
 		 seq_length=> length($gbobj->sequence), 
-		 stagger_label=>$stagger_label, 
+		 hsp_labels=>$hsp_labels, 
 		 #			     hsp_limit=>$hsp_limit,
 		 #			     hsp_limit_num=>$hsp_limit_num, #number of hsps for which to draw labels
 		 gbobj=>$gbobj,
@@ -977,9 +992,24 @@ sub generate_image
 		 bitscore_cutoff=>$bitscore_cutoff,
 		 color_overlapped_features=>$color_overlapped_features,
 		 skip_overlap_search=>$skip_hsp_overlap_search,
+		 font_size=>$font_size,
 		);
     
-    my ($feat_counts) = process_features(c=>$gfx, obj=>$gbobj, start=>$start, stop=>$stop, skip_overlap_search=>$skip_feat_overlap_search, draw_model=>$draw_model, color_overlapped_features=>$color_overlapped_features, cbc=>$show_cbc, cns=>$show_cns, gene_space=>$show_gene_space, show_contigs=>$show_contigs);
+    my ($feat_counts) = process_features(
+					 c=>$gfx, 
+					 obj=>$gbobj, 
+					 start=>$start, 
+					 stop=>$stop, 
+					 skip_overlap_search=>$skip_feat_overlap_search,
+					 draw_model=>$draw_model,
+					 color_overlapped_features=>$color_overlapped_features,
+					 cbc=>$show_cbc,
+					 cns=>$show_cns,
+					 gene_space=>$show_gene_space,
+					 show_contigs=>$show_contigs, 
+					 feat_labels=>$feat_labels,
+					 font_size=>$font_size
+					);
 
     return ($gfx);
   }
@@ -1179,6 +1209,8 @@ sub process_features
     my $show_gene_space = $opts{gene_space};
     # TODO: remove the 1. here for testing.
     my $show_contigs = $opts{show_contigs};
+    my $feat_labels = $opts{feat_labels};
+    my $font_size = $opts{font_size} || 13;
     my $accn = $obj->accn;
     my $track = 1;
     my %feat_counts;
@@ -1188,8 +1220,21 @@ sub process_features
 	return 0;
       }
     my %prior_feat;
-    foreach my $feat (sort {$a->start <=> $b->start} $obj->get_features())
+    my $label_location;
+    foreach my $feat (sort {$a->strand cmp $b->strand || $a->start <=> $b->start} $obj->get_features())
       {
+	if (!$label_location)
+	  {
+	    $label_location = "bot";
+	  }
+	elsif ($label_location eq "bot")
+	  {
+	    $label_location = "top";
+	  }
+	else
+	  {
+	    $label_location = "";
+	  }
 	my $anchor;
 	if ( (ref ($feat->qualifiers) =~ /hash/i && $feat->qualifiers->{type} && $feat->qualifiers->{type} eq "anchor") || $feat->type eq "anchor")
 	  {
@@ -1220,10 +1265,12 @@ sub process_features
 	    next unless $draw_model eq "full" || $draw_model eq "gene" || $anchor;
 	    $f = CoGe::Graphics::Feature::Gene->new();
 	    #$f->color([255,0,0,50]);
-        $f->color([219,219,219,50]);
+	    $f->color([219,219,219,50]);
 	    $f->order($track);
 	    $f->overlay(1);
 	    $f->mag(0.5);
+	    $f->label(join ("\t", @{$feat->qualifiers->{names}})) if $feat_labels && !$f->label && $feat->qualifiers->{names};
+	    $f->label_location($label_location) if $feat_labels && $feat_labels eq "staggered";
           }
         elsif ($type =~ /CDS/i)
           {
@@ -1243,7 +1290,7 @@ sub process_features
 		    if ($tmp =~ /^$cleaned_name\(?\d*\)?$/i)
 		      {
 			$f->color([255,255,0]) ;
-			$f->label($name);
+			$f->label($name) if $feat_labels;
 		      }
 		  }
 	      }
@@ -1291,16 +1338,16 @@ sub process_features
 	    $f->order($track);
 	    $f->overlay(2);
 	    if ($accn)
-	    {
+	      {
 		foreach my $name (@{$feat->qualifiers->{names}})
-		{
+		  {
 		    if ($accn =~ /^$name\(?\d*\)?$/i)
-		    {
+		      {
 			$f->color([255,255,0]) ;
-			$f->label($name);
-			  }
-		}
-	    }
+			$f->label($name) if $feat->labels;
+		      }
+		  }
+	      }
 	    
 	}
 	elsif ($type =~ /anchor/)
@@ -1354,25 +1401,26 @@ sub process_features
 	      $c->add_feature($f);
 	      next;
 	  }
-    elsif ($show_contigs && $type =~ /contig/i)
-    {
-	      $f = CoGe::Graphics::Feature::Block->new({start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1]});
-	      $f->_initialize();
-	      $f->color([255,0,0]);
-          #$f->bgcolor([255,255,255]);
-	      $f->order($feat->location =~ /complement/ ? 0 : 1);
-
-	      $f->overlay(-1);
-	      $f->type($type);
-	      $f->description($feat->annotation);
-	      $c->add_feature($f);
-          next;
-    }
+	elsif ($show_contigs && $type =~ /contig/i)
+	  {
+	    $f = CoGe::Graphics::Feature::Block->new({start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1]});
+	    $f->_initialize();
+	    $f->color([255,0,0]);
+	    #$f->bgcolor([255,255,255]);
+	    $f->order($feat->location =~ /complement/ ? 0 : 1);
+	    
+	    $f->overlay(-1);
+#	    $f->type($type);
+#	    $f->description($feat->annotation);
+	    $f->label(join ("\t", @{$feat->qualifiers->{names}})) if $feat->qualifiers->{names};
+#	    $c->add_feature($f);
+#	    next;
+	  }
 	else
 	  {
-#	    print STDERR "Didn't draw feature_type: ", $type,"\n";
+	    #	    print STDERR "Didn't draw feature_type: ", $type,"\n";
 	  }
-#need to create an anchor if this feature is an anchor, but not to be drawn
+	#need to create an anchor if this feature is an anchor, but not to be drawn
 	if ($anchor && !$f)
 	  {
 	    $f = CoGe::Graphics::Feature->new({type=>'anchor',start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1], strand=>1});
@@ -1388,15 +1436,18 @@ sub process_features
 	$f->color([255,0,255]) if $color_overlapped_features && $feat->qualifiers->{overlapped_hsp};
 	my $strand = 1;
  	$strand = -1 if $feat->location =~ /complement/;
-	foreach my $block (@{$feat->blocks})
+	if (ref($f) =~ /Gene/)
 	  {
-	    $block->[0] =1 unless $block->[0]; #in case $block is set to 0
-	    $f->add_segment(start=>$block->[0], stop=>$block->[1]);
-	    $f->strand($strand);
-	    print STDERR "\t", join ("-", @$block),"\n" if $DEBUG;
+	    foreach my $block (@{$feat->blocks})
+	      {
+		$block->[0] =1 unless $block->[0]; #in case $block is set to 0
+		$f->add_segment(start=>$block->[0], stop=>$block->[1]);
+		$f->strand($strand);
+		print STDERR "\t", join ("-", @$block),"\n" if $DEBUG;
+	      }
 	  }
-
 	print STDERR $name,"\n\n" if $DEBUG;
+	$f->font_size($font_size);
         $f->type($type);
 	$f->description($feat->annotation);
 	if ($feat->qualifiers->{id})
@@ -1414,7 +1465,7 @@ sub process_features
 	    $f->{anchor}=1; #illeagle creation of private variable in feature object!!!!
 	    $f->force_draw(1);
 	  }
-	$f->label(join ("\t", @{$feat->qualifiers->{names}})) if !$f->label && $feat->qualifiers->{names};
+#	$f->label(join ("\t", @{$feat->qualifiers->{names}})) if !$f->label && $feat->qualifiers->{names};
         $c->add_feature($f);
 
 	if ($prior_feat{$feat->type}{$strand})
@@ -1440,7 +1491,7 @@ sub process_hsps
     my $accn = $opts{accn};
     my $reverse = $opts{rev};
     my $seq_len = $opts{seq_length};
-    my $stagger_label = $opts{stagger_label};
+    my $hsp_labels = $opts{hsp_labels};
 #    my $hsp_limit = $opts{hsp_limit};
 #    my $hsp_limit_num = $opts{hsp_limit_num};
     my $gbobj = $opts{gbobj};
@@ -1454,6 +1505,7 @@ sub process_hsps
     my $color_overlapped_features=$opts{color_overlapped_features}; 
     my $show_hsps_with_stop_codon = $opts{show_hsps_with_stop_codon};
     my $skip_overlap_search = $opts{skip_overlap_search};
+    my $font_size = $opts{font_size} || 13;
     #to reverse hsps when using genomic sequences from CoGe, they need to be drawn on the opposite strand than where blast reports them.  This is because CoGe::Graphics has the option of reverse drawing a region.  However, the sequence fed into blast has already been reverse complemented so that the HSPs are in the correct orientation for the image.  Thus, if the image is reverse, they are drawn on the wrong strand.  This corrects for that problem.   Sorry for the convoluted logic, but it was the simplest way to substantiate this option
     my $i = 0;
     my $track = scalar @$data+1;
@@ -1551,7 +1603,7 @@ sub process_hsps
 #	      }
 #	    else
 #	      {
-		$f->label($hsp->number);
+		$f->label($hsp->number) if $hsp_labels; #add label to HSP if they are to be drawn
 #	      }
 	    $f->alt(join ("-",$hsp->number,$accn1,$accn2));
 	    my ($ab_start, $ab_stop) = $reverse ? ($gbobj->stop-$stop,$gbobj->stop-$start) : ($gbobj->start+$start, $gbobj->start+$stop); #adjust hsp position to real-world coords
@@ -1592,14 +1644,15 @@ sub process_hsps
 #    @feats = reverse @feats if $reverse;
     foreach my $f (@feats)
       {
-	next unless $f->label;
+#	next unless $f->label; #this has been commented out so that if features are labeled, but HSP are not, HSPs will still get drawn.  Not sure why this check was put into place. . .
 	$order = $f->track unless $order;
 	if ($order ne $f->track)
 	  {
 	    $order = $f->track;
 	    $label_location = "top";
 	  }
-	$f->label_location($label_location) if $stagger_label;
+	$f->label_location($label_location) if $hsp_labels && $hsp_labels eq "staggered";
+	$f->font_size($font_size);
 	$f->skip_overlap_search($skip_overlap_search);
 	$c->add_feature($f);
 #	$c->_check_overlap($f);
@@ -1726,7 +1779,6 @@ sub get_obj_from_genome_db
 	$dsid = $dsg->datasets(chr=>$chr)->id;
 	$gstid = $dsg->type->id;
       }
-
     #let's get a unique file name for this sequence
     my $seq_file = create_seq_file_name(%opts);
     my $t1 = new Benchmark;
@@ -2525,6 +2577,7 @@ sub gen_params
         'args__show_contigs', 'show_contigs',
 	'args__colorhsp', 'color_hsp',
 	'args__hsplabel', 'hsp_labels',
+	'args__feat_labels', 'feat_labels',
 	'args__skip_feat_overlap', 'skip_feat_overlap',
 	'args__skip_hsp_overlap', 'skip_hsp_overlap',
 	'args__hiqual', 'hiqual',
@@ -2540,6 +2593,7 @@ sub gen_params
         'args__hsp_overlap_length','hsp_overlap_length',
         'args__basefile','args__'+pageObj.basefile,
         'args__show_cns','show_cns',
+        'args__font_size','font_size',
         'args__show_gene_space','show_gene_space',
 
 };
@@ -2682,7 +2736,7 @@ sub algorithm_list
 		 "CHAOS"=>"Chaos: Fuzzy Matches",
 		 "DiAlign_2"=>"DiAlign_2: Glocal Alignment",
 		 "LAGAN"=>"Lagan: Global Alignment",
-		 "tblastz"=>"TBlastX: Protein Translation",
+		 "tblastx"=>"TBlastX: Protein Translation",
 		 "-=None=-"=>"-=None=-",
 		 );
     my @programs = sort {lc $a cmp lc $b} keys %progs;
@@ -2824,8 +2878,12 @@ sub add_url_seq
 	my $refn=" ";
 	my $refy="checked";
 
-	my $org_title;
-	($org_title, $dsid, $gstid, $dsgid) =get_org_info(dsid=>$dsid, chr=>$chr, gstid=>$gstid, dsgid=> $dsgid) if $pos;
+	my $org_title;	
+	my $dsg_menu = qq{<input type="hidden" id="dsgid$i"};
+	$dsg_menu .= qq{value ="$dsgid"} if $dsgid;
+	$dsg_menu .= qq{>};
+
+	($org_title, $dsid, $gstid, $dsgid) =get_org_info(dsid=>$dsid, chr=>$chr, gstid=>$gstid, dsgid=> $dsgid, seq_num=>$i) if $pos;
 	my %opts = (
 		    SEQ_NUM=>$i,
 		    REV_YES=>$revy,
@@ -2837,6 +2895,7 @@ sub add_url_seq
 		    DRACCN=>$draccn,
 		    DSID=>$dsid,
 		    DSGID=>$dsgid,
+		    DSG_STUFF=>$dsg_menu,
 		    GBACCN=>$gbaccn,
 		    GBSTART=>$gbstart,
 		    GBLENGTH=>$gblength,
@@ -2886,12 +2945,13 @@ sub add_seq
 	return ('',$MAX_SEQS, $go_run, '', $hsp_colors,qq{Exceeded max number of sequences ($MAX_SEQS)});
     }
     my @seqs = {
-	SEQ_NUM=>$num_seq,
-	REV_NO=>"checked",
-	REF_YES=>"checked",
-	DRUP=>10000,
-	DRDOWN=>10000,
-	GBSTART=>1,
+		SEQ_NUM=>$num_seq,
+		REV_NO=>"checked",
+		REF_YES=>"checked",
+		DRUP=>10000,
+		DRDOWN=>10000,
+		GBSTART=>1,
+		DSG_STUFF => qq{<input type="hidden" id="dsgid$num_seq" value="">},
     };
     
     $template->param(SEQ_SELECT=>1);
@@ -3236,6 +3296,7 @@ sub get_org_info
     my $chr = $opts{chr};
     my $dsgid = $opts{dsgid};
     my $gstid = $opts{gstid};
+    my $num = $opts{seq_num};
     my ($ds, $dsg, $gst);
     if ($dsgid)
       {
@@ -3260,15 +3321,30 @@ sub get_org_info
 	$gst = $dsg->type if $dsg;
 	$dsgid = $dsg->id if $dsg;
       }
-    $gstid = $gst->id if $gst;
     return "<span class=\"small alert\">Dataset group was not found</span>"unless $dsg;
+    my $dsg_menu = qq{<span class="small">Genome: </span><SELECT name="dsgid$num" id="dsgid$num">};
+    foreach my $item (sort {$b->version <=> $a->version || $a->type->id <=> $b->type->id} $dsg->organism->dataset_groups)
+      {
+	my $dsgid_tmp = $item->id;
+	my $title;
+	$title = $item->name." " if $item->name;
+#	$title = $dsg->organism->name unless $title;
+	$title .= "v". $item->version." ".$item->type->name;
+	$dsg_menu .= "<option value = $dsgid_tmp";
+	$dsg_menu .= " selected" if ($dsgid && $item->id eq $dsgid);
+	$dsg_menu .=">$title";
+      }
+    $dsg_menu .= "</select>";
+    $gstid = $gst->id if $gst;
+
     my $ver = $dsg->version;
     my $org = $dsg->organism->name;
     my $oid = $dsg->organism->id;
     my $type = $gst->name if $gst;
     $chr = join (", ",$dsg->get_chromosomes) unless $chr;
-    my $title = qq{<span class="species"><a href="OrganismView.pl?oid=$oid;dsgid=$dsgid" target=_new>$org $type (v$ver):</a></span> chr, $chr};
-    return ($title, $dsid, $gstid, $dsgid);
+#    my $title = qq{<span class="link"><a class="link" href="OrganismView.pl?oid=$oid;dsgid=$dsgid" target=_new>$org $type (v$ver):</a></span> chr. $chr};
+    my $title = qq{<span class="link"><a class="link" href="OrganismView.pl?oid=$oid" target=_new>$org</a></span>};
+    return ($title, $dsid, $gstid, $dsgid, $dsg_menu);
   }  
 
 sub feat_search
@@ -3413,6 +3489,7 @@ sub create_seq_file_name
     $name .= "d".$opts{down} if $opts{down};
     $name .= "g".$opts{gstid} if $opts{gstid};
     $name .= "m".$opts{mask} if $opts{mask};
+    $name .= "dsg".$opts{dsgid} if $opts{dsgid};
     return $TEMPDIR."/".$name.".faa";
   }
   
