@@ -106,7 +106,7 @@ sub gen_html
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
     $template->param(TITLE=>'CoGe BLAST Analysis');
     $template->param(PAGE_TITLE=>'BLAST');
-    $template->param(HELP=>'CoGeBlast');
+    $template->param(HELP=>'/wiki/index.php?title=CoGeBlast');
     my $name = $USER->user_name;
         $name = $USER->first_name if $USER->first_name;
         $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
