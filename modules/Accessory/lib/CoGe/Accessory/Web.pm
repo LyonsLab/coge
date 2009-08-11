@@ -303,17 +303,19 @@ sub reset_settings
 
 sub initialize_basefile
   {
+
     my ($self, %opts) = self_or_default(@_);
     my $basename = $opts{basename};
     my $prog=$opts{prog} || "CoGe";
     my $return_name = $opts{return_name};
+    my $tempdir = $opts{tempdir} || $TEMPDIR;
     if ($basename)
       {
 #	print STDERR "Have basename: $basename\n";
 	($basename) = $basename =~ /([^\/].*$)/;
 	my ($x, $cleanname) = check_taint($basename);
 	$self->basefilename($cleanname);
-	$self->basefile($TEMPDIR."/$prog/".$cleanname);
+	$self->basefile($tempdir."/$prog/".$cleanname);
 	$self->logfile($self->basefile.".log");
 	$self->sqlitefile($self->basefile.".sqlite");
       }
