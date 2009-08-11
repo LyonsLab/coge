@@ -408,6 +408,7 @@ sub gen_html
 	$template->param(LOGO_PNG=>"FeatView-logo.png");
 	$template->param(TITLE=>'Feature Viewer');
 	$template->param(PAGE_TITLE=>'FeatView');
+	$template->param(HELP=>"/wiki/index.php?title=FeatView");
 	my $name = $USER->user_name;
         $name = $USER->first_name if $USER->first_name;
         $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
