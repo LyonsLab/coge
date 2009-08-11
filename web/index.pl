@@ -37,7 +37,7 @@ sub gen_html
     $template->param(TITLE=>'A new kind of Comparative Genomics');
     $template->param(PAGE_TITLE=>'A new kind of Comparative Genomics');
     
-    $template->param(HELP=>'CoGe');
+    $template->param(HELP=>'/wiki/index.php');
 
     if ($FORM->param('logout') || !$USER)
       {
