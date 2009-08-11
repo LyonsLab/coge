@@ -194,7 +194,6 @@ sub get_genomic_sequence {
   unless (-r $file)
     {
       warn "Dataset group id: ".$self->id." does not have a valid sequence file: $file!\n";
-      return 0;
     }
   return $self->get_seq(chr=>$chr, start=>$start, stop=>$stop, strand=>$strand, debug=>$debug);
 }
