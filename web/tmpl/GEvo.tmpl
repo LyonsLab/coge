@@ -756,7 +756,9 @@ function update_line_width(val)
 
 <!--
 #REMOVED THIS FUNCTION AS I DON"T THINK IT GETS USED.  WE"LL SEE IF USERS COMPLAIN
-<span class='ui-button ui-state-default ui-corner-all ui-button-icon-left ' onClick="remove_seq()"><span class="ui-icon ui-icon-minus"></span>Remove</span> --> 
+<span class='ui-button ui-state-default ui-corner-all ui-button-icon-left ' onClick="remove_seq()"><span class="ui-icon ui-icon-minus"></span>Remove</span>
+ --> 
+
 <span class="small">Merge Previous GEvo Analysis (paste in URL): <input class="backbox" name=previous_url id=previous_url type="textbox" size=20 value=<TMPL_VAR NAME ="PANEL_URL">></span>
   <span class='ui-button ui-state-default ui-corner-all ui-button-icon-left ' 
   onClick="merge_previous(['previous_url','num_seqs'],[process_add_seq]); gen_hsp_colors(['args__num_seqs','num_seqs'],[add_hsp_colors]);"><span class="ui-icon ui-icon-plus"></span>Merge</span>
@@ -1166,14 +1168,27 @@ function update_line_width(val)
 
  <TR>
   <Td>
-<font class="small">HSP label options: </font>
+<font class="small">Label HSPs? </font>
  <td>
 <select id="hsp_labels">
-<option value="0" <TMPL_VAR NAME="HSP_LABELS_NO">>Don't draw</option>
+<option value="0" <TMPL_VAR NAME="HSP_LABELS_NO">>No</option>
 <option value="staggered" <TMPL_VAR NAME="HSP_LABELS_STAG">>Draw Staggered</option>
 <option value="linear" <TMPL_VAR NAME="HSP_LABELS_LIN">>Draw Linear</option>
 </select>
   </TD>
+ <TR>
+  <Td>
+<font class="small">Label Genomic Features?</font>
+ <td>
+<select id="feat_labels">
+<option value="0" <TMPL_VAR NAME="FEAT_LABELS_NO">>No</option>
+<option value="staggered" <TMPL_VAR NAME="FEAT_LABELS_STAG">>Draw Staggered</option>
+<option value="linear" <TMPL_VAR NAME="FEAT_LABELS_LIN">>Draw Linear</option>
+</select>
+  </TD>
+ <tr>
+  <td> Labels font size:
+  <td><input type=textbox class="backbox" size =3 value="13" id="font_size" />
  <tr>
   <td>Don't show HSPs with <input class=backbox type=textbox size=3 id="hsp_overlap_limit" value="<TMPL_VAR NAME="HSP_OVERLAP_LIMIT">"/> overlaps
  <tr>
@@ -1262,7 +1277,8 @@ function update_line_width(val)
     Display Order <input class="backbox" name=display_order<TMPL_VAR NAME ="SEQ_NUM"> id=display_order<TMPL_VAR NAME ="SEQ_NUM"> type="textbox" size=2 readonly value=<TMPL_VAR NAME ="SEQ_NUM"> >
 </div>
 <div class=partlet-content>
-   <DIV id="db<TMPL_VAR NAME="SEQ_NUM">" style="display: none;" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">
+
+<DIV id="db<TMPL_VAR NAME="SEQ_NUM">" style="display: none;" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">
 <TABLE class="small">
        <TR valign="top">
         <TD>Name:
@@ -1273,12 +1289,11 @@ function update_line_width(val)
 
 <DIV id="cogepos<TMPL_VAR NAME="SEQ_NUM">" style="display: none;" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">	
 <TABLE class="small">
-      <TR valign="top">
-       <TD>Position:
-       <TD><input class="backbox" type="text" id="pos<TMPL_VAR NAME="SEQ_NUM">" value="<TMPL_VAR NAME=POS>" size=10>
       <TR>
-       <TD>Organism:
-       <TD><TMPL_VAR NAME=ORGINFO>
+       <TD>Organism: <TMPL_VAR NAME=ORGINFO>
+      <TR valign="top">
+       <TD>Position: <input class="backbox" type="text" id="pos<TMPL_VAR NAME="SEQ_NUM">" value="<TMPL_VAR NAME=POS>" size=10>
+           Chr: <input class="backbox" type="text" id="chr<TMPL_VAR NAME="SEQ_NUM">" value="<TMPL_VAR NAME=CHR>" size=10>
 </table>
 </DIV>
 
@@ -1287,10 +1302,15 @@ function update_line_width(val)
       <tr>
        <td colspan=2>     
         <DIV id="dataset<TMPL_VAR NAME="SEQ_NUM">" nowrap><input type="hidden" id="dsid<TMPL_VAR NAME="SEQ_NUM">" value ="<TMPL_VAR NAME="DSID">"></DIV>
-        <DIV id="dataset_group<TMPL_VAR NAME="SEQ_NUM">" nowrap><input type="hidden" id="dsgid<TMPL_VAR NAME="SEQ_NUM">" value ="<TMPL_VAR NAME="DSGID">"></DIV>
+
+<!--        <DIV id="dataset_group<TMPL_VAR NAME="SEQ_NUM">" nowrap><input type="hidden" id="dsgid<TMPL_VAR NAME="SEQ_NUM">" value ="<TMPL_VAR NAME="DSGID">"></DIV> -->
+        <DIV id="dataset_group<TMPL_VAR NAME="SEQ_NUM">" nowrap><TMPL_VAR NAME="DSG_STUFF"></DIV>
+
         <DIV id="genomic_sequence_type<TMPL_VAR NAME="SEQ_NUM">" nowrap><input type="hidden" id="gstid<TMPL_VAR NAME="SEQ_NUM">" value ="<TMPL_VAR NAME="GSTID">"></DIV>
         <DIV id="feat<TMPL_VAR NAME="SEQ_NUM">"><input type="hidden" id="featid<TMPL_VAR NAME="SEQ_NUM">" value ="<TMPL_VAR NAME="FEATID">"></DIV>
-        <DIV id="chromosome<TMPL_VAR NAME="SEQ_NUM">"><input type="hidden" id="chr<TMPL_VAR NAME="SEQ_NUM">" value ="<TMPL_VAR NAME="CHR">"></DIV>
+
+<!--        <DIV id="chromosome<TMPL_VAR NAME="SEQ_NUM">"><input type="hidden" id="chr<TMPL_VAR NAME="SEQ_NUM">" value ="<TMPL_VAR NAME="CHR">"></DIV>-->
+        <DIV id="chromosome<TMPL_VAR NAME="SEQ_NUM">"><TMPL_VAR NAME="CHR_STUFF"></DIV>
 
       <TR>
        <TD><DIV class="small">Left sequence:</DIV>
