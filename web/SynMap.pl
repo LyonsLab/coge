@@ -83,6 +83,7 @@ sub gen_html
     #$template->param(ADJUST_BOX=>1);
     $template->param(LOGO_PNG=>"SynMap-logo.png");
     $template->param(BODY=>$body);
+    $template->param(HELP=>"/wiki/index.php?title=SynMap");
     $html .= $template->output;
     return $html;
   }
@@ -1004,27 +1005,31 @@ sub add_GEvo_links
       }
     close IN;
     close OUT;
-    open (OUT,">$infile.condensed");
-    foreach my $id1 (sort keys %condensed)
-      {
-	my ($fid1, $dsgid1) = split /_/, $id1;
-	my @names = $names{$fid1};
-	my $link = "http://synteny.cnr.berkeley.edu/CoGe/GEvo.pl?pad_gs=10000;fid1=$fid1;dsgid1=$dsgid1";
-	my $count =2;
-	foreach my $id2 (sort keys %{$condensed{$id1}})
-	  {
-	    my ($fid2, $dsgid2) = split/_/, $id2;
-	    $link .= ";fid$count=$fid2;dsgid$count=$dsgid2";
-	    push @names, $names{$fid2};
-	    $count++;
-	  }
-	$count--;
-	$link .= ";num_seqs=$count";
-	print OUT join ("\t", $link, "<a href=$link;autogo=1>AutoGo</a>",@names), "\n";
-      }
-    close OUT;
     my $cmd = "/bin/mv $infile.tmp $infile";
     `$cmd`;
+
+    if (keys %condensed)
+      {
+	open (OUT,">$infile.condensed");
+	foreach my $id1 (sort keys %condensed)
+	  {
+	    my ($fid1, $dsgid1) = split /_/, $id1;
+	    my @names = $names{$fid1};
+	    my $link = "http://synteny.cnr.berkeley.edu/CoGe/GEvo.pl?pad_gs=10000;fid1=$fid1;dsgid1=$dsgid1";
+	    my $count =2;
+	    foreach my $id2 (sort keys %{$condensed{$id1}})
+	      {
+		my ($fid2, $dsgid2) = split/_/, $id2;
+		$link .= ";fid$count=$fid2;dsgid$count=$dsgid2";
+		push @names, $names{$fid2};
+		$count++;
+	      }
+	    $count--;
+	    $link .= ";num_seqs=$count";
+	    print OUT join ("\t", $link, "<a href=$link;autogo=1>AutoGo</a>",@names), "\n";
+	  }
+	close OUT;
+      }
   }
 
 sub add_reverse_match#this is for when there is a self-self comparison.  DAGchainer, for some reason, is only adding one diag.  For example, if chr_14 vs chr_10 have a diag, chr_10 vs chr_14 does not.
