@@ -58,7 +58,7 @@ sub gen_html
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
     $template->param(TITLE=>'Sequence Viewer');
     $template->param(PAGE_TITLE=>'SeqView');
-    $template->param(HELP=>'SeqView');
+    $template->param(HELP=>'/wiki/index.php?title=SeqView');
     my $name = $USER->user_name;
         $name = $USER->first_name if $USER->first_name;
         $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
