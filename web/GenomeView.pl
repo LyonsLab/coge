@@ -40,7 +40,7 @@ sub gen_html
     $template->param(LOGO_PNG=>"GenomeView-logo.png");
     $template->param(TITLE=>'Genome Viewer');
     $template->param(PAGE_TITLE=>'Genome Viewer');
-    $template->param(HELP=>'');
+    $template->param(HELP=>'/wiki/index.php?title=GenomeView');
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
