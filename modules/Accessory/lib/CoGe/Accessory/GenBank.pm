@@ -31,8 +31,10 @@ sub get_genbank_from_ncbi
     my $start = $opts{start};
     my $length = $opts{length};
     my $file = $opts{file};
+    my $reload = $opts{reload}; #option to force reloading of genbank file
     $self->srcfile($file);
-    my $url = "http://www.ncbi.nlm.nih.gov/entrez/viewer.fcgi?db=nucleotide&qty=1&c_start=1&dopt=gbwithparts&send=Send&sendto=t&from=begin&to=end&extrafeatpresent=1&ef_CDD=8&ef_MGC=16&ef_HPRD=32&ef_STS=64&ef_tRNA=128&ef_microRNA=256&ef_Exon=512&list_uids=";
+#    my $url = "http://www.ncbi.nlm.nih.gov/entrez/viewer.fcgi?db=nucleotide&qty=1&c_start=1&dopt=gbwithparts&send=Send&sendto=t&from=begin&to=end&extrafeatpresent=1&ef_CDD=8&ef_MGC=16&ef_HPRD=32&ef_STS=64&ef_tRNA=128&ef_microRNA=256&ef_Exon=512&list_uids=";
+    my $url = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nucleotide&rettype=gbwithparts&retmode=text&complexity=0&id=";
     my $ua = new LWP::UserAgent;
     unless ($file)
       {
@@ -53,7 +55,7 @@ sub get_genbank_from_ncbi
     foreach my $tmp (@files)
       {
 	my ($fileloc, $accn) = @$tmp;
-	unless (-r $fileloc)
+	unless (-r $fileloc && !$reload)
 	  {
 	    $ua->mirror($url."$accn", $fileloc);
 	  }
