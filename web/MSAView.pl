@@ -44,6 +44,7 @@ sub gen_html
 	
 	$template->param(TITLE=>'Multiple Sequence Alignment Viewer');
 	$template->param(PAGE_TITLE=>'MSAView');
+	$template->param(HELP=>"/wiki/index.php?title=MSAView");
 	my $name = $USER->user_name;
         $name = $USER->first_name if $USER->first_name;
         $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
