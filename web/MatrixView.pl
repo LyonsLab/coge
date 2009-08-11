@@ -52,6 +52,7 @@ sub gen_html
 	
 	$template->param(TITLE=>'Sequence Alignment Matrix View');
 	$template->param(PAGE_TITLE=>'MatrixView');
+	$template->param(HELP=>"/wiki/index.php?title=MatrixView");
 	$template->param(HEAD=>qq{});
 	my $name = $USER->user_name;
         $name = $USER->first_name if $USER->first_name;
