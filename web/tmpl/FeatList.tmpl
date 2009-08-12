@@ -4,9 +4,9 @@
 
 $(document).ready(function(){
 		$('#feat_table').tablesorter({		
-		sortClassAsc: 'headerSortUp',		// Class name for ascending sorting action to header
-		sortClassDesc: 'headerSortDown',	// Class name for descending sorting action to header
-//		headerClass: 'header',			// Class name for headers (th's)
+		cssAsc: 'headerSortUp',		// Class name for ascending sorting action to header
+		cssDesc: 'headerSortDown',	// Class name for descending sorting action to header
+//		cssHeader: 'header',			// Class name for headers (th's)
 		widgets: ['zebra'],
 		headers: {0: {sorter: false},},					
 		});
@@ -274,7 +274,7 @@ Filter Table Rows:
 </select>
 <!-- <span class=small>Tip: Use "*" for wildcards, and "!" to search for not containing</span> -->
 <div class ="small"> Feature Count: <TMPL_VAR NAME="FEAT_COUNT"></div>
-<TABLE id=feat_table>
+<TABLE id='feat_table'>
  <THEAD align=left>
   <tr>
    <TH> </TH>
