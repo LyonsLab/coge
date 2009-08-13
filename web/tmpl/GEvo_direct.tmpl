@@ -26,6 +26,16 @@ $(function() {
         $(".dialog_box").dialog({ autoOpen: false, width: 500 });
 });
 
+Gobe.handle_html= function (html) {
+  html = "<span class='ui-button ui-state-default ui-corner-all' id='clear_lines' onclick='Gobe.clear()'>Clear Connectors</span><br>"+html;
+  $('#results_info').html(html);
+  
+  if (html && !html.match(/multiple hits/)) {
+   $('#results_info').dialog('open');
+  }
+  setup_button_states();
+};
+
 function update_line_width(val)
  {
    val = val+(1*$('#line_width_val').val());
@@ -36,19 +46,44 @@ function update_line_width(val)
    Gobe.set_linewidth($('#line_width_val').val());
  }
 
+</script>
+<!--gobe buttons-->
+<table>
+<tr>
+<td><span class='ui-button ui-state-default ui-corner-all' id="clear_lines" onclick="Gobe.clear()">Clear Connectors</span>
 
-Gobe.handle_html= function (html) {
-  html = "<span class='ui-button ui-state-default ui-corner-all' id='clear_lines' onclick='Gobe.clear()'>Clear Connectors</span><br>"+html;
-  $('#results_info').html(html);
-  
-  if (html && !html.match(/multiple hits/)) {
-   $('#results_info').dialog('open');
-  }
-};
+<td><span class='ui-button ui-state-default ui-corner-all drawline' id="set_lines" onclick="$('.drawline').hide();$('#set_wedges').show();$('.lineopt').show();Gobe.set_connector('line')">Set connector as Lines</span>
 
-$(document).ready(function(){
+<span style="display: none" class='ui-button ui-state-default ui-corner-all lineopt' id="set_wedges" onclick="$('.drawline').show();$('.lineopt').hide();Gobe.set_connector('wedge')">Set connector as Wedges</span>
 
-     
+<td><div class=lineopt style="float: left; display: none">
+ <span class='ui-button ui-state-default ui-corner-all' id="">Line Width</span>
+ <input type=textbox size=2 class="backbox line_width" id=line_width_val value=3 readonly>
+ <span class='ui-button ui-state-default ui-corner-all' id="" onclick="update_line_width(1)">+</span>
+ <span class='ui-button ui-state-default ui-corner-all' id="" onclick="update_line_width(-1)">-</span>
+</div>
+</table>
+<DIV id="flashcontent"></DIV>
+<!--gobe buttons-->
+<table>
+<tr>
+<td><span class='ui-button ui-state-default ui-corner-all' id="clear_lines" onclick="Gobe.clear()">Clear Connectors</span>
+
+<td><span class='ui-button ui-state-default ui-corner-all drawline' id="set_lines" onclick="$('.drawline').hide();$('#set_wedges').show();$('.lineopt').show();Gobe.set_connector('line')">Set connector as Lines</span>
+
+<span style="display: none" class='ui-button ui-state-default ui-corner-all lineopt' id="set_wedges" onclick="$('.drawline').show();$('.lineopt').hide();Gobe.set_connector('wedge')">Set connector as Wedges</span>
+
+<td><div class=lineopt style="float: left; display: none">
+ <span class='ui-button ui-state-default ui-corner-all' id="">Line Width</span>
+ <input type=textbox size=2 class="backbox line_width" id=line_width_val value=3 readonly>
+ <span class='ui-button ui-state-default ui-corner-all' id="" onclick="update_line_width(1)">+</span>
+ <span class='ui-button ui-state-default ui-corner-all' id="" onclick="update_line_width(-1)">-</span>
+</div>
+</table>
+
+<DIV id="results_info" class="dialog_box" title="GEvo Results Info"></DIV>
+<TMPL_VAR NAME="STUFF">
+<script language="JavaScript">     
     var getQueryParamValue = swfobject.getQueryParamValue;
     var width = getQueryParamValue('w') || <TMPL_VAR NAME="WIDTH">; 
     var height = getQueryParamValue('h') || <TMPL_VAR NAME="HEIGHT">; 
@@ -62,12 +97,8 @@ $(document).ready(function(){
             'img_url'  : getQueryParamValue('img_url')|| '/CoGe/tmp/GEvo/',
             'base_name': getQueryParamValue('base_name')|| '<TMPL_VAR NAME="BASE_NAME">'
         };
-    swfobject.embedSWF("/CoGe/gobe/flash/gobe.swf?<TMPL_VAR NAME="GOBE_VERSION">", "flash_viewer", width, height, "9.0.0"
+    swfobject.embedSWF("/CoGe/gobe/flash/gobe.swf?<TMPL_VAR NAME="GOBE_VERSION">", "flashcontent", width, height, "9.0.0"
                 , "/CoGe/gobe/static/swfobject/expresssinstall.swf", flashVars, params, {}, function(){Gobe.swf=Gobe.get_movie();});
-});
 
 </script>
 
-<DIV id="flash_viewer"></DIV>
-<DIV id="results_info" class="dialog_box" title="GEvo Results Info"></DIV>
-<TMPL_VAR NAME="STUFF">
