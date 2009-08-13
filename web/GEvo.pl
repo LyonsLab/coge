@@ -908,7 +908,7 @@ Total time                                          : $total_time
     write_log("Finished!", $cogeweb->logfile);
     write_log("GEvo link: $gevo_link", $cogeweb->logfile);
 #    write_log("Tiny url: $tiny", $cogeweb->logfile);
-    email_results(email=>$email_address,basefile=>$basefilename) if $email_address;
+    email_results(email=>$email_address,basefile=>$basefilename, full_gevo_url=>$gevo_link) if $email_address;
     return $outhtml, $iw+5, $frame_height, $cogeweb->basefilename, scalar (@sets), $gevo_link, $message;
 
 }
@@ -3442,6 +3442,7 @@ sub email_results {
 	my $email_address = $opts{email};
 	my $basefilename = $opts{basefile};
 	my $server = $ENV{HTTP_HOST};
+	my $full_gevo_url = $opts{full_gevo_url};
 	return unless $email_address =~/^[_a-zA-Z0-9-]+(\.[_a-zA-Z0-9-]+)*@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*\.(([0-9]{1,3})|([a-zA-Z]{2,3})|(aero|coop|info|museum|name))$/;
 	my $mailer = Mail::Mailer->new("sendmail");
 	$mailer->open({From	=> 'GEvo <gevo_results@synteny.cnr.berkeley.edu>',
@@ -3449,16 +3450,21 @@ sub email_results {
 		       Subject	=> 'GEvo Analysis Results Ready',
 		      })
 	  or die "Can't open: $!\n";
-	my $username = $USER->user_name;
-	my $body = qq{Dear $username,
-		
-	Thank you for using the Genome Evolution Analysis Tool! The results from your latest analysis are ready, and can be viewed here:
+	my $name = $USER->first_name;
+	$name .= " ".$USER->last_name if $USER->last_name;#user_name;
+	my $body = qq{Dear $name,
+
+Thank you for using the Genome Evolution Analysis Tool! The results from your latest analysis are ready, and can be viewed here:
 http://}.$server.qq{/CoGe/GEvo_direct.pl?name=$basefilename
 			
-Please cite any GEvo data used as:
-			
-<TODO>
-			
+To contact us or to cite CoGe please visit:
+http://synteny.cnr.berkeley.edu/wiki/index.php/Contact_Page
+
+You can use this URL for regenerating your results:
+$full_gevo_url
+
+
+
 Thank you for using the CoGe Software Package.
 	
 - The CoGe Team
