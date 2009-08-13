@@ -1,4 +1,5 @@
-<script src="/CoGe/gobe/static/swfobject/swfobject.js" ></script>
+<script src="http://ajax.googleapis.com/ajax/libs/swfobject/2.2/swfobject.js"></script>
+<script src="/CoGe/gobe/static/gobe.js" ></script>
 <script language="JavaScript">
 function prepare_update()
  {
@@ -19,25 +20,54 @@ function check_update()
  {
    if (ajax.length) {setTimeout("check_update()",200);}
  }
-</script>
 
-<TMPL_VAR NAME="STUFF">
-<DIV id="flash_viewer"></DIV>
-<SCRIPT language="JavaScript">
+$(function() {
+ //substaniate dialog boxes          
+        $(".dialog_box").dialog({ autoOpen: false, width: 500 });
+});
+
+function update_line_width(val)
+ {
+   val = val+(1*$('#line_width_val').val());
+   if (val <1) {val =1;}
+   $('.line_width').each(function() {
+    $(this).val(val);
+   });
+   Gobe.set_linewidth($('#line_width_val').val());
+ }
+
+
+Gobe.handle_html= function (html) {
+  html = "<span class='ui-button ui-state-default ui-corner-all' id='clear_lines' onclick='Gobe.clear()'>Clear Connectors</span><br>"+html;
+  $('#results_info').html(html);
+  
+  if (html && !html.match(/multiple hits/)) {
+   $('#results_info').dialog('open');
+  }
+};
+
+$(document).ready(function(){
+
+     
     var getQueryParamValue = swfobject.getQueryParamValue;
     var width = getQueryParamValue('w') || <TMPL_VAR NAME="WIDTH">; 
     var height = getQueryParamValue('h') || <TMPL_VAR NAME="HEIGHT">; 
-    var params = {'bgcolor': '#FFFFFF'};
+    var params = {'bgcolor': '#FFFFFF', 'wmode': "opaque"};
     var flashVars = {
             'n'        : getQueryParamValue('n') || <TMPL_VAR NAME="SEQ_NUM">,
             'freezable': getQueryParamValue('freezable') || 'false',
             'pad_gs'   : jQuery('#pad_gs') ? jQuery('#pad_gs').val()  : getQueryParamValue('pad_gs') || '0',
             'gsid'     : getQueryParamValue('gsid') || getQueryParamValue('genespace_id') || '0',
-            'base_url' : getQueryParamValue('base_url')|| '/CoGe/',
+            'gobe_url' : getQueryParamValue('base_url')|| '/CoGe/gobe/',
             'img_url'  : getQueryParamValue('img_url')|| '/CoGe/tmp/GEvo/',
             'base_name': getQueryParamValue('base_name')|| '<TMPL_VAR NAME="BASE_NAME">'
         };
     swfobject.embedSWF("/CoGe/gobe/flash/gobe.swf?<TMPL_VAR NAME="GOBE_VERSION">", "flash_viewer", width, height, "9.0.0"
-                , "/CoGe/gobe/static/swfobject/expresssinstall.swf", flashVars, params, {});
+                , "/CoGe/gobe/static/swfobject/expresssinstall.swf", flashVars, params, {}, function(){Gobe.swf=Gobe.get_movie();});
+});
 
 </script>
+
+<DIV id="flash_viewer"></DIV>
+<DIV id="results_info" class="dialog_box" title="GEvo Results Info"></DIV>
+<TMPL_VAR NAME="STUFF">
