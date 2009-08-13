@@ -121,9 +121,8 @@ sub gen_body
 	  $w = $x;
 	  $seq_num++;
 	}
-      $w+=400;
+      $w+=5;
       my $html;
-      $html .= qq{<DIV id=flash_viewer></DIV>};
       my $dbname = $files{sqlite}[0];
       $html .= get_db_stuff($dbname);
       unless ($html =~ /does not exist/) #check to see if results exists
@@ -162,7 +161,9 @@ sub gen_body
 	  my $logfile = $files{log}[0];
 	  $logfile =~ s/$TMPDIR/$TMPURL/;
 	  $html .= "<div class=small><A HREF=\"$logfile\" target=_new>Log</A></DIV>\n";
-	  $html .= qq{<td class = small>GEvo Link<div class=small><a href=$tiny target=_new>$tiny<br>(See log file for full link)</a></div>};
+	  $html .= qq{<td class = small>GEvo Link<div class=small>};
+	  $html .= qq{<a href=$tiny target=_new>$tiny<br>} if $tiny;
+	  $html .= qq{(See log file for full link)</a></div>};
 	  $html .= qq{</table>};
 	}
       my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GEvo_direct.tmpl');
