@@ -1,9 +1,9 @@
 <TMPL_IF NAME=SEQ_RETRIEVAL>
 
 <link rel="stylesheet" type="text/css" href="/CoGe/css/colorpicker.css" />
+<script type="text/javascript" src="js/colorpicker.js"></script>
 <script src="http://ajax.googleapis.com/ajax/libs/swfobject/2.2/swfobject.js"></script>
 <script src="/CoGe/gobe/static/gobe.js" ></script>
-<script type="text/javascript" src="js/colorpicker.js"></script>
 <style type="text/css">
 	#red, #green, #blue {
 		float: left;
@@ -177,13 +177,6 @@ Gobe.handle_html= function (html) {
    $('#results_info').dialog('open');
   }
 };
-
-function setheight(){ 
-    var g = jQuery('#gobe')
-    if(g.height() < 360){
-        g.height(360); 
-    }
-}
 
 function open_all_sequence_option_menus(open) {
    if (open)
