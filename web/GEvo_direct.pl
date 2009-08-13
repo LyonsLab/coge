@@ -48,6 +48,7 @@ sub gen_html
     $template->param(LOGON=>1) unless $USER->user_name eq "public";
     $template->param(DATE=>$DATE);
     $template->param(TITLE=>"GEvo direct:  reviewing past results.");
+    $template->param(PAGE_TITLE=>"GEvo direct");
 #    print $form->header;
 #    print STDERR $template->output;
     return $template->output;
