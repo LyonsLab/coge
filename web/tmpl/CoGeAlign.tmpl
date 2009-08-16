@@ -2,18 +2,25 @@
 $(document).ready(function(){
 	pageObj=new Object();
 	pageObj.fids = "<TMPL_VAR NAME=FIDS>";
+	setup_tabs();
 //	pageObj.gstid = "<TMPL_VAR NAME=GSTID>";
 });
 
-function update_options(type){
+function update_options(){
+	 
+	var type;
+	if ($('#seq_type_dna')[0].checked)
+           {type = 'dna';}
+        else {type='prot';}
+
 	if(type == 'dna')
 	{
 		$('#prot_matrix').hide(0);
 		$('#dna_matrix').show(0);
 		$('#gap_open').val(15);
 		$('#gap_ext').val(6.66);
-		$('#PROTEIN_results_format').hide(0);
-		$('#DNA_results_format').show(0);
+		$('#prot_results_format').hide(0);
+		$('#dna_results_format').show(0);
 	}
 	else
 	{
@@ -21,19 +28,21 @@ function update_options(type){
 		$('#prot_matrix').show(0);
 		$('#gap_open').val(10);
 		$('#gap_ext').val(0.2);
-		$('#DNA_results_format').hide(0);
-		$('#PROTEIN_results_format').show(0);
+		$('#dna_results_format').hide(0);
+		$('#prot_results_format').show(0);
 	}
-	
+        $('#seq_box').val('loading. . .');
+        refresh_seq(['args__fids','args__'+pageObj.fids,'args__seq_type','args__'+type],['seq_box']);	
 }
 
 function prepare_run(){
-//	$('#results').hide(0);
 	$('#results').html('<div class="loading dna">Running alignment. . .</div>');
 	var type;
-	
-	if($('#seq_type:checked').val()) type='DNA';
-	else type="PROTEIN";
+	if($('#seq_type_dna:checked').val()) type='dna';
+	else type="prot";
+	var gen_matrix;
+	if ($('#gen_matrix')[0].checked) {gen_matrix=1;}
+	else {gen_matrix=0;}
 	
 	var gap_open = $('#gap_open').val();
 	var gap_ext = $('#gap_ext').val();
@@ -42,29 +51,29 @@ function prepare_run(){
 	
 	var matrix;
 	
-	if(type == 'DNA') matrix = $('#dna_matrix').val();
+	if(type == 'dna') matrix = $('#dna_matrix').val();
 	else matrix = $('#prot_matrix').val();
 	
 	run([
-	'args__seq_type','seq_type',
+	'args__seq_type','args__'+type,
 	'args__gap_open','args__'+gap_open,
 	'args__gap_ext','args__'+gap_ext,
 	'args__seq','seq_box',
 	'args__matrix','args__'+matrix,
 	'args__format','args__'+format,
 	'args__iteration','args__'+iteration,
-//	'args__gen_matrix','gen_matrix',
+	'args__codon_align','codon_align',
+	'args__gen_matrix','args__'+gen_matrix,
+	'args__fids','args__'+pageObj.fids,
 	],[gather_results],['POST']);
 }
-
-function cipres_results(data) {
-	 window.open(data);
-} 
 
 function gather_results(html){
 	$('#results').html(html).show(0);
 	var size = $('.resultborder').width();
 	$('#max_height').width(size+30);
+        setup_button_states();
+
 }
 
 function clear_box(box){
@@ -74,31 +83,63 @@ function clear_box(box){
 	}	
 }
 
+
+function setup_tabs() {
+ $(function(){
+   $('#tabs').tabs({
+    selected: 0,
+   });
+ });
+}
+
 </SCRIPT>
+
+
+
+
+
+
+
+
 <TMPL_IF NAME=MAIN>
-<!--<applet width="200" height="100" code="jalview.bin.JalviewLite" archive="/CoGe/bin/JalView/jalviewApplet.jar">
-<param name="file" value="/CoGe/tmp/CoGeAlign/CoGeAlign_CkoKHUWm_clustalw.aln">
-<param name="embedded" value="true">
-</applet>-->
-<font >Sequences to be Aligned:</font>
+
+
+<span id=go style="font-size: 1em" class='ui-button ui-state-default ui-corner-all' onClick="loading([],['results']); prepare_run()">Run CoGe Align!</span>
+<div id=tabs>
+<!-- set up tabs -->
+<ul>
+  <li class=small><a href="#tabs-1">Sequence Submission</a></li>
+  <li class=small><a href="#tabs-2">Alignment Options</a></li>
+  <li class=small><a href="#tabs-3">Output Options</a></li>
+</ul>
+
+
+
+<div id="tabs-1">
 <br>
 <textarea class="backbox" type="textarea" onClick="clear_box(this)" name="seq_box" id ="seq_box" wrap=off cols=80 rows=15><TMPL_VAR NAME="SEQUENCE"></textarea>
+<TMPL_IF NAME="COGE_SEQS">
 <br>
-<input type=button value="Run Alignment" onclick="prepare_run()">
+Sequence Type:
+<label><input type=radio id=seq_type_dna checked name=seq_type value="dna" onclick="update_options();">DNA</label>
+<label><input type=radio id=seq_type_prot name=seq_type value="prot" onclick="update_options();">Protein</label>
 <br>
-Basic Alignment Options
-<div id=basic_opts>
-Sequence Type<br>
-<label><input type=radio id=seq_type checked name=seq_type value="dna" onclick="$('#seq_box').val('loading. . .');update_options('dna');refresh_seq(['args__fids','args__'+pageObj.fids,'args__seq_type','seq_type'],['seq_box']);">DNA</label>
-<label><input type=radio id=seq_type name=seq_type value="prot" onclick="$('#seq_box').val('loading. . .');update_options('prot');refresh_seq(['args__fids','args__'+pageObj.fids,'args__seq_type','seq_type'],['seq_box']);">Protein</label>
-<TMPL_IF name=codon_align><label><input type=radio id=seq_type name=seq_type value="codon" onclick="$('#seq_box').val('loading. . .');update_options('prot');refresh_seq(['args__fids','args__'+pageObj.fids,'args__seq_type','seq_type'],['seq_box']);">codon</label></TMPL_IF>
-</div>
+Generate codon alignment using protein sequences?
+<select class="backbox" name="codon_align" id="codon_align" tabindex="1" onchange="$('#seq_type_prot').attr('checked','checked');update_options();">
+     <option value=1 >Yes</option>
+     <option value=0 selected>No</option>
+</select>
 
-Advanced Alignment Options
-<div id=adv_opts>
+</TMPL_IF>
 
-Select Data Matrix: 
-<select name=dna_matrix id=dna_matrix>
+</div> <!--end div tag for tabs_1-->
+
+
+<div id="tabs-2">
+
+<table>
+<tr><Td>Select Data Matrix: 
+<td><select name=dna_matrix id=dna_matrix>
 <option value=IUB>IUB
 <option value=CLUSTALW>CLUSTALW
 </select>
@@ -109,31 +150,34 @@ Select Data Matrix:
 <option value=GONNET>GONNET
 <option value=ID>ID
 </select>
-Gap Open: <input type=text size="6" id=gap_open value="15">
-Gap Extend: <input type=text size="6" id=gap_ext value="6.66">
-Iteration: 
-<select id=iteration>
+<tr><td>Gap Open: 
+<td><input type=text size="6" id=gap_open value="15">
+<tr><td>Gap Extend: 
+<td><input type=text size="6" id=gap_ext value="6.66">
+<tr><Td>Iteration: 
+<td><select id=iteration>
 <option value=NONE>None
 <option value=TREE>Tree
 <option value=ALIGNMENT>Alignment
 </select>
+</table>
 
-</div>
-Results Options
-<div id=results_opts>
-Results Format:
-<select id=DNA_results_format>
+</div> <!--end div tag for tabs_2-->
+
+<div id="tabs-3">
+<table>
+<tr><Td>Results Format:
+<td><select id=dna_results_format>
 <!--<option value=coge_color>CoGe Color
 <option value=coge>CoGe-->
-<option value=jalview>Use Jalview
 <option value=clustal>Clustal Default
 <option value=GDE>GDE
 <option value=PHYLIP>Phylip
 <option value=PIR>PIR
 <option value=NEXUS>NEXUS
 </select>
-<select id=PROTEIN_results_format style="display:none">
-<option value=coge>CoGe
+<select id=prot_results_format style="display:none">
+<!--<option value=coge>CoGe-->
 <option value=clustal>Clustal Default
 <option value=GDE>GDE
 <option value=PHYLIP>Phylip
@@ -141,22 +185,15 @@ Results Format:
 <option value=NEXUS>NEXUS
 </select>
 </div>
-<div id=jalview_opts>
-Embed Jalview into browser (No pop-up) <input type=checkbox id=jalview_embed>
-<!--
-Default Color scheme <select id=jalview_color>
-<option value=none>None
-<option default value=clustal>Clustal
-<option value=GDE>Blosum62
-<option value=PHYLIP>% 
-<option value=PIR>PIR
-<option value=NEXUS>NEXUS
-</select>-->
-</div>
-Generate Scoring Matrix for Alignment <input type=checkbox id="gen_matrix">
+<tr><td>Generate Scoring Matrix for Alignment
+<td><input type=checkbox id="gen_matrix">
 <span class="small">(Using the method describe in Henikoff and Henikoff, 1992)</span>
+</table>
+</div> <!--end div tag for tabs_3-->
+
+
 </TMPL_IF>
 
 <TMPL_IF NAME="RESULTS_DIV">
-  <div id=results></div><br/><br/>
+ <div id=results></div><br/>
 </TMPL_IF>
