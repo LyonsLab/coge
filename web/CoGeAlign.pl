@@ -38,12 +38,12 @@ my $pj = new CGI::Ajax(
 		       refresh_seq=>\&refresh_seq,
                        sendCipres=>\&sendCipres,
                        create_tree_image=>\&create_tree_image,
+		       loading=>\&loading,
 		       run=>\&run,
 			);
 $pj->js_encode_function('escape');
 print $pj->build_html($FORM, \&gen_html);
-#print $FORM->header;
-#print gen_html();
+#print $FORM->header; gen_html();
 
 sub gen_html
   {
@@ -64,7 +64,7 @@ sub gen_html
 	$name = $USER->first_name if $USER->first_name;
 	$name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
 	$template->param(USER=>$name);
-	$template->param(ADJUST_BOX=>1);
+	$template->param(ADJUST_BOX=>0);
 	$template->param(LOGO_PNG=>"CoGeAlign-logo.png");
 	$template->param(LOGON=>1) unless $USER->user_name eq "public";
 	$template->param(DATE=>$DATE);
@@ -109,10 +109,9 @@ sub gen_body
     if ($seqs)
     {
       	my $num_seqs = $seqs =~ tr/>/>/;
- 	
+ 	$template->param(COGE_SEQS=>1);
 	$template->param(SEQUENCE=>$seqs);
 	$template->param(FIDS=>$fid_string);
-	$template->param(codon_align=>1);
     }
     else
     {
@@ -128,7 +127,6 @@ sub gen_body
       my $featid_list = $opts{feature_list};
       my $prot = $opts{prot} || 0; 
       return unless @$featid_list;
-   #   $feat_list = [map {$coge->resultset("Feature")->find($_)} @$feat_list];
       my $seqs;
       foreach my $featid (@$featid_list)
       {
@@ -139,15 +137,22 @@ sub gen_body
 	  }
 	  else
 	  {
-	      #($fid, $gstidt) = ($featid, $gstid);
 	  }
 	  my ($feat) = $coge->resultset('Feature')->find($fid);
 	  next unless $feat;
-	  $seqs .= $feat->fasta(col=>0, prot=>$prot, name_only=>1, gstid=>$gstidt);
+	  my $seq = $feat->fasta(col=>0, prot=>$prot, name_only=>1, gstid=>$gstidt);
+	  $seq =~ s/>/>fid:$fid /;
+	  $seqs .= $seq;
       }
       return $seqs;
   }
-      
+
+sub loading
+  {
+    my $message = shift || "Generating results. . .";
+    return qq{<div class="dna"><div id="loading">$message</div></div>}; 
+  }
+
 sub refresh_seq
 {
     my %opts = @_;
@@ -158,8 +163,17 @@ sub refresh_seq
     
     foreach my $fid (split /:/,$fids)
 	{
-		my ($feat) = $coge->resultset("Feature")->find($fid);
-		$seqs .= $feat->fasta(col=>0,prot=>$protein, name_only=>1, add_fid=>1);
+		my ($fidt, $gstidt);
+		if ($fid =~ /_/)
+		  {
+		    ($fidt, $gstidt) = split /_/, $fid;
+		  }
+		my ($feat) = $coge->resultset("Feature")->find($fidt);
+		next unless $feat;
+		my $seq = $feat->fasta(col=>0, prot=>$protein, name_only=>1, gstid=>$gstidt);
+		$seq =~ s/>/>fid:$fid /;
+		$seqs .= $seq;
+		#seqs .= $feat->fasta(col=>0,prot=>$protein, name_only=>1, add_fid=>1);
 	}
 	 $seqs =~ s/(\sGenomic.+-\d+)?//g;
 		     return $seqs;
@@ -197,15 +211,8 @@ sub run
     my $iteration = $opts{iteration};
     my $format = $opts{format};
     my $gen_matrix = $opts{gen_matrix};
-    my $codon = 0;
-    if ($seq_type eq "prot")
-    {$seq_type = "PROTEIN";}
-    elsif ($seq_type eq "codon")
-    {
-	$codon =1;
-	$seq_type = "PROTEIN";
-    }
-    else {$seq_type = "DNA";}
+    my $codon  = $opts{codon_align};
+    $seq_type = $seq_type =~  /prot/i ? "PROTEIN": "DNA";
     #my $num_interations = $opts{num_iterations};
     
     my $num_seqs = $inseqs =~ tr/>/>/;
@@ -235,7 +242,7 @@ sub run
     my $pre_command = "-INFILE=$seq_file";
     
     $pre_command .= " -TYPE=$seq_type";
-    if($format && $format !~/jalview/i && $format !~ /clustal/i)
+    if($format && $format !~/jalview/i && $format !~ /clustal/ii)
     {
   	$pre_command .= " -OUTPUT=$format";
     }
@@ -261,7 +268,7 @@ sub run
     
     my $output;
     
-    open (IN, $outfile) || die "$!";
+    open (IN, $outfile) || die "$! can't open $outfile for reading";
     while (<IN>)
     {
 	$output .= $_;
@@ -274,47 +281,98 @@ sub run
     $phylip_file =~ s/$TEMPDIR/\/CoGe\/tmp\//;
     my $cipres_out = $outfile;
     $cipres_out =~ s/\/CoGe\/tmp\/CoGeAlign\///;
-    print STDERR $cipres_out,"\n";
-    my $color = $format =~ /color/ ? 1 : 0;
-    my ($header_html,$seq_html, $seqs, $codon_alignment) = parse_results(clustal=>$output,num_seqs=>$num_seqs, color=>$color, codon_align=>$codon) if $format =~ /coge/i;
-#    print STDERR Dumper $codon_alignment;
+#    print STDERR $cipres_out,"\n";
+    my ($header_html,$seq_html, $seqs, $codon_alignment) = parse_results(clustal=>$output,num_seqs=>$num_seqs, codon_align=>$codon, seq_type=>$seq_type);
+    print STDERR Dumper $codon_alignment;
     my $box_template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
     $box_template->param(BOX_NAME=>"ClustalW Alignment Results");
     #print STDERR $html,"\n";
-    my $html = qq{<font style="font-size:24px;">CLUSTALW Alignment Results</font>};
-    if($format =~/jalview/)
-    {
-	my $phylip_file_jalview = $phylip_file;
-	$phylip_file_jalview =~ s/http.+edu//;
-	$html .= qq{<br><applet width="140" height="35" code="jalview.bin.JalviewLite" archive="/CoGe/bin/JalView/jalviewApplet.jar"><param name="file" value="$outfile_jalview"><param name="tree" value="$phylip_file_jalview"><param name="showbutton" value="true"><param name="defaultColour" value="Clustal"></applet><br/>};
-  	
-    }
-    else{
-	$output =~s/\n/<br\/>/g;
-	$html .= qq{<div align=left class=resultborder style="overflow:auto;width:700px;max-height:700px;"><br/><pre>$output</pre></div>};
-    }
-    $html .= qq{<table width=100%><tr>};
-    $html .= qq{<td valign=top><table style="font-size:12px;" align="center" ><tr><td> ClustalW Raw Alignment File </td><td> ClustalW Raw Tree File </td><td> Send to Cipres </tr><td><a href="$outfile" target="_blank">Download</a></td><td><a href="$tree_out" target="_blank">Download</a></td><td><a href="#" onClick='sendCipres(["args__$cipres_out"],[cipres_results])'>Go!</a></tr></table></td>};
+    my $html;
+    my $phylip_file_jalview = $phylip_file;
+    $phylip_file_jalview =~ s/http.+edu//;
+    $html .= qq{<applet width="140" height="35" code="jalview.bin.JalviewLite" archive="/CoGe/bin/JalView/jalviewApplet.jar"><param name="file" value="$outfile_jalview"><param name="tree" value="$phylip_file_jalview"><param name="showbutton" value="true"><param name="defaultColour" value="Clustal"></applet><br><a class=small href="http://www.jalview.org" target=_new>Information on JalView</a>};
+    $output =~s/\n/<br\/>/g;
+    my $tree = create_tree_image($phylip_file);
+    $html .= qq{
+<br>
+<span style="display:none" id=show_tree class='ui-button ui-state-default ui-corner-all' onClick="\$('#hide_tree').show();\$('#show_tree').hide();\$('#tree_box').show();">Show Tree</span>
+<span id=hide_tree class='ui-button ui-state-default ui-corner-all' onClick="\$('#hide_tree').hide();\$('#show_tree').show();\$('#tree_box').hide();">Hide Tree</span>
+};
+    $html .= "<div id=tree_box><img src=$tree></div>";
+
+
+    $html .= qq{
+<br>
+<span id=show_alignment class='ui-button ui-state-default ui-corner-all' onClick="\$('#hide_alignment').show();\$('#show_alignment').hide();\$('#alignment_box').show();">Show Alignment</span>
+<span  style="display:none" id=hide_alignment class='ui-button ui-state-default ui-corner-all' onClick="\$('#hide_alignment').hide();\$('#show_alignment').show();\$('#alignment_box').hide();">Hide Alignment</span>
+};
+    $html .= qq{<div id=alignment_box align=left class=resultborder style="display:none;"><br/>
+<table><tr valign=top>
+<td><pre>$header_html</pre>
+<td><pre  style= "overflow:auto;width:700px;max-height:700px;">$seq_html</pre>
+</table>
+</div>};
+    $html .= qq{
+<br>
+<span id=show_clustalw_alignment class='ui-button ui-state-default ui-corner-all' onClick="\$('#hide_clustalw_alignment').show();\$('#show_clustalw_alignment').hide();\$('#clustalw_alignment_box').show();">Show ClustalW Alignment</span>
+<span  style="display:none" id=hide_clustalw_alignment class='ui-button ui-state-default ui-corner-all' onClick="\$('#hide_clustalw_alignment').hide();\$('#show_clustalw_alignment').show();\$('#clustalw_alignment_box').hide();">Hide ClustalW Alignment</span>
+};
+
+    $html .= qq{<div id=clustalw_alignment_box align=left class=resultborder style="display:none;overflow:auto;width:700px;max-height:700px;"><br/><pre>$output</pre></div>};
+
+    $html .= qq{
+<br>
+<span id=show_fasta_alignment class='ui-button ui-state-default ui-corner-all' onClick="\$('#hide_fasta_alignment').show();\$('#show_fasta_alignment').hide();\$('#fasta_alignment_box').show();">Show Fasta Alignment</span>
+<span  style="display:none" id=hide_fasta_alignment class='ui-button ui-state-default ui-corner-all' onClick="\$('#hide_fasta_alignment').hide();\$('#show_fasta_alignment').show();\$('#fasta_alignment_box').hide();">Hide Fasta Alignment</span>
+};
+
+    my $fasta;
+    foreach my $name (keys %$seqs)
+      {
+	next if $name eq "alignment_stuff";
+	$fasta .= ">".$name."\n";
+	$fasta .= $seqs->{$name}."\n";
+      }
+    $html .= qq{<div id=fasta_alignment_box align=left class=resultborder style="display:none;overflow:auto;width:700px;max-height:700px;"><br/><pre>$fasta</pre></div>};
+
+
+
   #  my $select_menu = qq{<select id=file_types><option value=GCG>GCG<option value=GDE>GDE<option value=PHYLIP>Phylip<option value=PIR>PIR<option value=NEXUS>NEXUS</select>};
-    $html .= qq{<td valign=top><table style="font-size:16px;"><tr><td>View NJ Tree of Results:</tr><tr><td><a href="#" onclick=create_tree_image(["args__$phylip_file"],[cipres_results])>NJ Tree</a></table></td>};
+
     #</tr><tr><td>Select Alt. Output File for Download:</tr><tr><td>$select_menu<input type=button value="Go">
-    $html .= "</table>";
+#    $html .= "</table>";
     if ($gen_matrix)
     {
+    $html .= qq{
+<br>
+<span id=show_matrix class='ui-button ui-state-default ui-corner-all' onClick="\$('#hide_matrix').show();\$('#show_matrix').hide();\$('#matrix_box').show();">Show Matrix</span>
+<span  style="display:none" id=hide_matrix class='ui-button ui-state-default ui-corner-all' onClick="\$('#hide_matrix').hide();\$('#show_matrix').show();\$('#matrix_box').hide();">Hide Matrix</span>
+<div id="matrix_box" style="display:none" >
+};
+
 	if ($codon)
 	{
 	    my $matrix = gen_matrix(seqs=>$seqs, type=>'p');
-	    $html .= "<br>".$matrix if $matrix;
+	    $html .= $matrix if $matrix;
 	    $matrix = gen_matrix(seqs=>$codon_alignment, type=>'c');
 	    $html .= "<br>".$matrix if $matrix;
 	}
 	else
 	{
 	    my $matrix = gen_matrix(seqs=>$seqs, type=>$seq_type);
-	    $html .= "<br>".$matrix if $matrix;
+	    $html .= $matrix if $matrix;
 	  }
+    $html .= "</div>";
     }
-    $box_template->param(ADJUST_BOX=>1);
+
+    $html .= qq{<div class=small>Downloads:
+<br><a href="$outfile" target="_blank">ClustalW Alignment File</a>
+<br><a href="$tree_out" target="_blank">ClustalW Tree File</a>
+</div>
+};
+#<a href="#" onClick='sendCipres(["args__$cipres_out"],[cipres_results])'>Go!</a>;
+
+    $box_template->param(ADJUST_BOX=>0);
     $box_template->param(BODY=>$html);
     my $outhtml = $box_template->output;
     return $outhtml;
@@ -378,13 +436,12 @@ sub parse_results
     my %opts = @_;
     my $clustal = $opts{clustal};
     my $num_seqs = $opts{num_seqs};
-    my $color = $opts{color};
     my $codon_align = $opts{codon_align};
     my $matrix = $opts{gen_matrix};
+    my $seq_type = $opts{seq_type};
     my @lines;
     my @headers;
     my @seqs;
-    
     my $clustal_title;
     my %seqs;
     my $pad=0;
@@ -404,6 +461,7 @@ sub parse_results
 	    $pad = length $tmp;
 	  }
 	my ($name, $seq) = split /\s+/,$line,2;
+	$seq = uc($seq);
 	push @headers, $name unless $seqs{$name};
 	$seqs{$name}.= $seq;
       }
@@ -442,12 +500,21 @@ sub parse_results
 	      }
 	    
 	  }
-	if($color)
+	if (!$codon_align)
 	  {
-	    $seq =~ s/(T+)/<span style='background-color:deepskyblue'>$1<\/span>/g;
-	    $seq =~ s/(A+)/<span style='background-color:red'>$1<\/span>/g;
-	    $seq =~ s/(G+)/<span style='background-color:yellow'>$1<\/span>/g;
-	    $seq =~ s/(C+)/<span style='background-color:green'>$1<\/span>/g;
+	    if($seq_type eq "DNA")
+	      {
+		$seq =~ s/(T+)/<span style='background-color:deepskyblue'>$1<\/span>/g;
+		$seq =~ s/(A+)/<span style='background-color:red'>$1<\/span>/g;
+		$seq =~ s/(G+)/<span style='background-color:yellow'>$1<\/span>/g;
+		$seq =~ s/(C+)/<span style='background-color:green'>$1<\/span>/g;
+	      }
+	    else
+	      {
+		$seq =~ s/([HKRDESTNQ])/<span style='background-color:deepskyblue'>$1<\/span>/g;
+		$seq =~ s/([CPG])/<span style='background-color:red'>$1<\/span>/g;
+		$seq =~ s/([AILMFWYV])/<span style='background-color:green'>$1<\/span>/g;
+	      }
 	  }
 	$header_output .= $name."<br/>";
 	$seq_output .= $seq."<br/>";
