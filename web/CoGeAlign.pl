@@ -59,7 +59,6 @@ sub gen_html
 	$template->param(TITLE=>'ClustalW2 Alignments');
 	$template->param(PAGE_TITLE=>'Align');
 	$template->param(HELP=>'/wiki/index.php?title=CoGeAlign');
-	# print STDERR "user is: ",$USER,"\n";
 	my $name = $USER->user_name;
 	$name = $USER->first_name if $USER->first_name;
 	$name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
@@ -92,7 +91,6 @@ sub gen_body
 	push @$feat_list, $item;# if $item =~ /^\d+$/;
     }
     
-    #print STDERR Dumper \@$feat_list;
     my $dsid = $form->param('dsid') if $form->param('dsid');
     my $chr = $form->param('chr') if $form->param('chr');
     push @$feat_list, @{get_fids_from_dataset(dsid=>$dsid, chr=>$chr)} if $dsid;
@@ -201,7 +199,6 @@ sub refresh_seq
 sub run
 {
     my %opts = @_;
-   # print STDERR Dumper \@_;
     my $inseqs = $opts{seq};
     
     my $seq_type = $opts{seq_type};
@@ -209,8 +206,8 @@ sub run
     my $gap_open = $opts{gap_open};
     my $gap_ext = $opts{gap_ext};
     my $iteration = $opts{iteration};
-    my $format = $opts{format};
-    my $gen_matrix = $opts{gen_matrix};
+    my $format = "clustal";#$opts{format}; #set by default now
+    my $gen_matrix = 1;#$opts{gen_matrix}; #on by default now
     my $codon  = $opts{codon_align};
     $seq_type = $seq_type =~  /prot/i ? "PROTEIN": "DNA";
     #my $num_interations = $opts{num_iterations};
@@ -218,12 +215,10 @@ sub run
     my $num_seqs = $inseqs =~ tr/>/>/;
     
     my %file_format = (NEXUS=>'nxs',PHYLIP=>'phy',GDE=>'gde',PIR=>'pir');
-    #print STDERR Dumper \%file_format;
     
     $cogeweb = initialize_basefile(prog=>"CoGeAlign");
     
     my $seq_file = $cogeweb->basefile."_clustalw.infile";
-    #print STDERR $seq_file,"\n";
 
 ##Check to make sure no spaces in fasta header
    # $inseqs =~ s/\s+/_/g;
@@ -231,14 +226,10 @@ sub run
     open(NEW,"> $seq_file");
     print  NEW $inseqs;
     close NEW;
-   # print STDERR $seq_file;
-    #print STDERR $format,"\n";
     my $suffix = $format =~/(jalview|clustal)/ ? 'aln' : $file_format{$format};
-    #print STDERR $suffix," is your suffix!\n";
     my $outfile = $cogeweb->basefile."_clustalw.".$suffix;
     my $tree_out = $TEMPURL."/".$cogeweb->basefilename."_clustalw.dnd";
     my $phylip_file = $TEMPURL."/".$cogeweb->basefilename."_clustalw.ph";
-    
     my $pre_command = "-INFILE=$seq_file";
     
     $pre_command .= " -TYPE=$seq_type";
@@ -271,35 +262,57 @@ sub run
     open (IN, $outfile) || die "$! can't open $outfile for reading";
     while (<IN>)
     {
+      
 	$output .= $_;
     }
     close IN;
 
+
     my $outfile_jalview = $outfile;
     $outfile_jalview =~ s/\/opt\/apache//;
     $outfile =~ s/$TEMPDIR/\/CoGe\/tmp\//;
-    $phylip_file =~ s/$TEMPDIR/\/CoGe\/tmp\//;
+    my $name_conversion = convert_phylip_names(file=>$phylip_file, seqs=>$inseqs);
     my $cipres_out = $outfile;
     $cipres_out =~ s/\/CoGe\/tmp\/CoGeAlign\///;
 #    print STDERR $cipres_out,"\n";
-    my ($header_html,$seq_html, $seqs, $codon_alignment) = parse_results(clustal=>$output,num_seqs=>$num_seqs, codon_align=>$codon, seq_type=>$seq_type);
-    print STDERR Dumper $codon_alignment;
+    my ($header_html,$seq_html, $seqs, $codon_alignment, $clustal_alignment, $name_order) = parse_results(clustal=>$output,num_seqs=>$num_seqs, codon_align=>$codon, seq_type=>$seq_type, name_convert=>$name_conversion);
     my $box_template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
     $box_template->param(BOX_NAME=>"ClustalW Alignment Results");
     #print STDERR $html,"\n";
     my $html;
     my $phylip_file_jalview = $phylip_file;
     $phylip_file_jalview =~ s/http.+edu//;
-    $html .= qq{<applet width="140" height="35" code="jalview.bin.JalviewLite" archive="/CoGe/bin/JalView/jalviewApplet.jar"><param name="file" value="$outfile_jalview"><param name="tree" value="$phylip_file_jalview"><param name="showbutton" value="true"><param name="defaultColour" value="Clustal"></applet><br><a class=small href="http://www.jalview.org" target=_new>Information on JalView</a>};
-    $output =~s/\n/<br\/>/g;
+#    $html .= qq{<applet width="140" height="35" code="jalview.bin.JalviewLite" archive="/CoGe/bin/JalView/jalviewApplet.jar"><param name="file" value="$outfile_jalview"><param name="tree" value="$phylip_file_jalview"><param name="showbutton" value="true"><param name="defaultColour" value="Clustal"></applet><br><a class=small href="http://www.jalview.org" target=_new>Information on JalView</a>};
+    $clustal_alignment =~s/\n/<br\/>/g;
     my $tree = create_tree_image($phylip_file);
     $html .= qq{
 <br>
 <span style="display:none" id=show_tree class='ui-button ui-state-default ui-corner-all' onClick="\$('#hide_tree').show();\$('#show_tree').hide();\$('#tree_box').show();">Show Tree</span>
 <span id=hide_tree class='ui-button ui-state-default ui-corner-all' onClick="\$('#hide_tree').hide();\$('#show_tree').show();\$('#tree_box').hide();">Hide Tree</span>
 };
-    $html .= "<div id=tree_box><img src=$tree></div>";
-
+    
+    $html .= "<div id=tree_box>";
+    $html .= qq{<span class='ui-button ui-state-default ui-corner-all ' onclick="\$('#select_feats').dialog('open')">Open Feature Selection Box</span><br>} if keys %$name_conversion;
+    $html .= "<img src=$tree></div>";
+    #let's make a series of checkboxes to send sequence to featlist if possible
+    if (keys %$name_conversion)
+      {
+	my @select_feats;
+	foreach my $id (@$name_order)
+	  {
+	    my $name = $name_conversion->{$id};
+	    next unless $name;
+	    $id =~ s/fid_//;
+	    push @select_feats, {ID=>$id, NAME=>$name};
+	  }
+	if (@select_feats)
+	  {
+	    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CoGeAlign.tmpl');
+	    $template->param(FEATURE_SELECT=>1);
+	    $template->param(FEATS=>\@select_feats);
+	    $html .= $template->output;
+	  }
+      }
 
     $html .= qq{
 <br>
@@ -318,7 +331,7 @@ sub run
 <span  style="display:none" id=hide_clustalw_alignment class='ui-button ui-state-default ui-corner-all' onClick="\$('#hide_clustalw_alignment').hide();\$('#show_clustalw_alignment').show();\$('#clustalw_alignment_box').hide();">Hide ClustalW Alignment</span>
 };
 
-    $html .= qq{<div id=clustalw_alignment_box align=left class=resultborder style="display:none;overflow:auto;width:700px;max-height:700px;"><br/><pre>$output</pre></div>};
+    $html .= qq{<div id=clustalw_alignment_box align=left class=resultborder style="display:none;overflow:auto;width:700px;max-height:700px;"><br/><pre>$clustal_alignment</pre></div>};
 
     $html .= qq{
 <br>
@@ -345,9 +358,10 @@ sub run
     {
     $html .= qq{
 <br>
-<span id=show_matrix class='ui-button ui-state-default ui-corner-all' onClick="\$('#hide_matrix').show();\$('#show_matrix').hide();\$('#matrix_box').show();">Show Matrix</span>
-<span  style="display:none" id=hide_matrix class='ui-button ui-state-default ui-corner-all' onClick="\$('#hide_matrix').hide();\$('#show_matrix').show();\$('#matrix_box').hide();">Hide Matrix</span>
+<span id=show_matrix class='ui-button ui-state-default ui-corner-all' onClick="\$('#hide_matrix').show();\$('#show_matrix').hide();\$('#matrix_box').show();">Show Scoring Matrix</span>
+<span  style="display:none" id=hide_matrix class='ui-button ui-state-default ui-corner-all' onClick="\$('#hide_matrix').hide();\$('#show_matrix').show();\$('#matrix_box').hide();">Hide Scoring Matrix</span>
 <div id="matrix_box" style="display:none" >
+<span class="small">(Using the method describe in Henikoff and Henikoff, 1992)</span>
 };
 
 	if ($codon)
@@ -368,6 +382,7 @@ sub run
     $html .= qq{<div class=small>Downloads:
 <br><a href="$outfile" target="_blank">ClustalW Alignment File</a>
 <br><a href="$tree_out" target="_blank">ClustalW Tree File</a>
+<br><a href="$phylip_file" target="_blank">ClustalW Phylip File</a>
 </div>
 };
 #<a href="#" onClick='sendCipres(["args__$cipres_out"],[cipres_results])'>Go!</a>;
@@ -416,13 +431,8 @@ sub parse_nexus_file
     my @data = [];
     my $kill_line = 5;
     open(IN,"+< $file") || die "Cannot open $file";
-    #print STDERR <IN>;
     @data = <IN>;
-  #  print STDERR Dumper \@data;
     splice(@data, 4, 1) if $data[4] =~ /symbol/i;
-   # my $info = join("\n",@data);
-   # print STDERR Dumper \@data;
-   # print STDERR $info;
     seek(IN,0,0);
     print IN @data;
     truncate(IN,tell(IN));
@@ -439,6 +449,7 @@ sub parse_results
     my $codon_align = $opts{codon_align};
     my $matrix = $opts{gen_matrix};
     my $seq_type = $opts{seq_type};
+    my $names = $opts{name_convert};
     my @lines;
     my @headers;
     my @seqs;
@@ -461,10 +472,12 @@ sub parse_results
 	    $pad = length $tmp;
 	  }
 	my ($name, $seq) = split /\s+/,$line,2;
+	
 	$seq = uc($seq);
 	push @headers, $name unless $seqs{$name};
 	$seqs{$name}.= $seq;
       }
+
     my ($header_output,$seq_output);
     my %codon_alignment;
     foreach my $name (@headers)
@@ -496,7 +509,6 @@ sub parse_results
 		$seq = $prot."<br>".$dna;
 		$dna =~ s/\s//g;
 		$codon_alignment{$name}=$dna;
-		$name .= "<br>";
 	      }
 	    
 	  }
@@ -516,14 +528,33 @@ sub parse_results
 		$seq =~ s/([AILMFWYV])/<span style='background-color:green'>$1<\/span>/g;
 	      }
 	  }
-	$header_output .= $name."<br/>";
+	my $outname = $names->{$name} if $names->{$name};#convert name if possible
+	$header_output .= $outname."<br/>";
+	$header_output.="<br>" if $codon_align; #needs and extra <br>
 	$seq_output .= $seq."<br/>";
 	
       }
     $header_output .= "<br/>";
     $codon_alignment{alignment_stuff} = "  ".join ("  ", (split//,$seqs{alignment_stuff})) if $codon_align;
     $seq_output .= $codon_align ? "<pre>"."  ".join ("  ", map{$_." "}(split//,$seqs{alignment_stuff}))."</pre><br/>" : "<pre>".$seqs{alignment_stuff}."</pre><br/>";
-    return $header_output,$seq_output, \%seqs, \%codon_alignment;
+    #convert names in clustal file
+    #1 find length of logest sequence name
+    my $name_len = 0;
+    foreach my $name (values %$names)
+      {
+	$name_len = length($name) if length($name) > $name_len;
+      }
+    my $name_space=0;
+    while (my ($k, $v) = each %$names)
+      {
+	my $name = $v;
+	$name .= " "x($name_len-length($v)+1);
+	$clustal =~ s/($k\s+)/$name/g;
+	$name_space = length($1) if $1 && !$name_space;
+      }
+    my $space = "\n"." "x($name_len+1);
+    $clustal =~ s/\n {$name_space}/$space/g;
+    return $header_output,$seq_output, \%seqs, \%codon_alignment, $clustal, \@headers;
   }
 
 sub gen_matrix
@@ -607,7 +638,6 @@ sub gen_matrix
 	  {
 	    my $q = $q{$c1}{$c2} ? $q{$c1}{$c2} : $q{$c2}{$c1};
 	    next unless $q;
-#	    print STDERR $c1,"::",$c2," ",$q{$c1}{$c2}," ",$q{$c2}{$c1}," ",$q/($p{$c1}*$p{$c2}),"\n";
 	    my $denom = ($p{$c1}*$p{$c2});
 	    my $val = sprintf("%.0f",2*log($q/$denom)) if $denom;
 	    $val = 0 if $val eq "-0";
@@ -644,7 +674,6 @@ sub gen_matrix_output
 	foreach my $aa1 (sort {$aa_sort->{$b} <=> $aa_sort->{$a} || $a cmp $b}keys %$aa_sort)
 	  {	
 	    $html .= "<th>$aa1";
-	    #	print STDERR join ("\t",  sort {$b<=>$a} map {$data->{$aa1}{$_}} keys %aa_sort),"\n";
 	    my %vals;
 	    map {$vals{$_}++}  map {$data->{$aa1}{$_}} keys %$aa_sort;
 	    my ($max) = sort {$b<=>$a} keys %vals;
@@ -700,7 +729,7 @@ sub gen_matrix_output
 	    my %vals;
 	    map {$vals{$_}++}  map {$data->{$aa1}{$_}} keys %{$data->{$aa1}};
 	    my ($max) = sort {$b<=>$a} keys %vals;
-	    my ($min1, $min2) = sort {$a<=>$b} keys %vals;#	print STDERR join ("\t",  sort {$b<=>$a} map {$data->{$aa1}{$_}} keys %aa_sort),"\n";
+	    my ($min1, $min2) = sort {$a<=>$b} keys %vals;
 	    $min2 = $min1 unless $min2;
 	    my $total =0;
 	    foreach my $aa2 (sort { sort_nt1(substr($a, 0, 1)) <=> sort_nt1(substr($b,0, 1)) || sort_nt2(substr($a,1,1)) <=> sort_nt2(substr($b,1,1)) || sort_nt3(substr($a,2,1)) <=> sort_nt3(substr($b,2,1)) } @codons)#	    foreach my $aa2 (sort keys %$data)
@@ -837,18 +866,50 @@ sub create_tree_image
 {
     my $treefile=shift;
     $treefile = "/opt/apache".$treefile;
-   # print STDERR $treefile,"\n";
     my $treebase = $treefile;
     $treebase =~ s/\.ph$//;
     my $treeps = $treebase.".ps";
     my $treepng = $treebase.".png";
    unless (-e $treepng)
    { 
-       `$NEWICKTOPS $treefile -us`;
+       `$NEWICKTOPS $treefile -us -notitle`;
+       print STDERR "       $NEWICKTOPS $treefile -us\n";
        `$CONVERT $treeps $treepng`;
        $treepng =~ s/$TEMPDIR/$TEMPURL/;
        $treepng =~ s/CoGeAlignCoGeAlign/CoGeAlign/;
-       # print STDERR $treepng,"\n";
    }
     return $treepng;
 }
+
+sub convert_phylip_names
+  {
+    my %opts = @_;
+    my $file = $opts{file};
+    my $seqs = $opts{seqs};
+    $file =~ s/\/CoGe\/tmp\//$TEMPDIR/;
+    my %names;
+    foreach my $item (split /\n/, $seqs)
+      {
+	next unless $item =~ /^>(fid:\S+)/;
+	my $id = $1;
+	$item =~ s/$id\s*//;
+	$id =~ s/:/_/;
+	$item =~ s/^>//;
+	$names{$id}=$item;
+      }
+    my $output;
+    open (IN, $file) || warn "Can't open $file for reading: $!";
+    while (<IN>)
+      {
+	$output .= $_;
+      }
+    close IN;
+    while (my ($k, $v) = each %names)
+      {
+	$output =~ s/$k/$v/xsg;
+      }
+    open (OUT, ">".$file);
+    print OUT $output;
+    close OUT;
+    return \%names;
+  }
