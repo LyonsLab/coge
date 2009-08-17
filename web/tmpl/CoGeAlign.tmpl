@@ -3,7 +3,6 @@ $(document).ready(function(){
 	pageObj=new Object();
 	pageObj.fids = "<TMPL_VAR NAME=FIDS>";
 	setup_tabs();
-//	pageObj.gstid = "<TMPL_VAR NAME=GSTID>";
 });
 
 function update_options(){
@@ -40,16 +39,12 @@ function prepare_run(){
 	var type;
 	if($('#seq_type_dna:checked').val()) type='dna';
 	else type="prot";
-	var gen_matrix;
-	if ($('#gen_matrix')[0].checked) {gen_matrix=1;}
-	else {gen_matrix=0;}
 	
 	var gap_open = $('#gap_open').val();
 	var gap_ext = $('#gap_ext').val();
 	var iteration = $('#iteration').val();
-	var format = $('#'+type+'_results_format').val();
 	
-	var matrix;
+	var matrix; //for clustalw
 	
 	if(type == 'dna') matrix = $('#dna_matrix').val();
 	else matrix = $('#prot_matrix').val();
@@ -60,10 +55,8 @@ function prepare_run(){
 	'args__gap_ext','args__'+gap_ext,
 	'args__seq','seq_box',
 	'args__matrix','args__'+matrix,
-	'args__format','args__'+format,
 	'args__iteration','args__'+iteration,
 	'args__codon_align','codon_align',
-	'args__gen_matrix','args__'+gen_matrix,
 	'args__fids','args__'+pageObj.fids,
 	],[gather_results],['POST']);
 }
@@ -73,6 +66,7 @@ function gather_results(html){
 	var size = $('.resultborder').width();
 	$('#max_height').width(size+30);
         setup_button_states();
+	$("#select_feats").dialog({height: 250, width: 400, autoOpen: false});
 
 }
 
@@ -92,6 +86,20 @@ function setup_tabs() {
  });
 }
 
+function feature_checkboxes(){
+  var accn="";
+  $('#select_feats :checkbox').each(function(){
+     if (this.checked == true) accn = accn + ";fid="+this.id;
+   });
+  if (!accn) {
+    alert("You have not checked any features.");
+    return;
+  }
+  window.open('FeatList.pl?'+accn);
+}
+
+
+
 </SCRIPT>
 
 
@@ -110,7 +118,7 @@ function setup_tabs() {
 <ul>
   <li class=small><a href="#tabs-1">Sequence Submission</a></li>
   <li class=small><a href="#tabs-2">Alignment Options</a></li>
-  <li class=small><a href="#tabs-3">Output Options</a></li>
+<!--  <li class=small><a href="#tabs-3">Output Options</a></li>-->
 </ul>
 
 
@@ -164,12 +172,11 @@ Generate codon alignment using protein sequences?
 
 </div> <!--end div tag for tabs_2-->
 
+<!--
 <div id="tabs-3">
 <table>
 <tr><Td>Results Format:
 <td><select id=dna_results_format>
-<!--<option value=coge_color>CoGe Color
-<option value=coge>CoGe-->
 <option value=clustal>Clustal Default
 <option value=GDE>GDE
 <option value=PHYLIP>Phylip
@@ -177,7 +184,6 @@ Generate codon alignment using protein sequences?
 <option value=NEXUS>NEXUS
 </select>
 <select id=prot_results_format style="display:none">
-<!--<option value=coge>CoGe-->
 <option value=clustal>Clustal Default
 <option value=GDE>GDE
 <option value=PHYLIP>Phylip
@@ -189,11 +195,22 @@ Generate codon alignment using protein sequences?
 <td><input type=checkbox id="gen_matrix">
 <span class="small">(Using the method describe in Henikoff and Henikoff, 1992)</span>
 </table>
-</div> <!--end div tag for tabs_3-->
-
+</div>-->
 
 </TMPL_IF>
 
 <TMPL_IF NAME="RESULTS_DIV">
  <div id=results></div><br/>
+</TMPL_IF>
+
+<TMPL_IF NAME=FEATURE_SELECT>
+<span class='ui-button ui-state-default ui-corner-all ' onclick="$('#select_feats').dialog('open')">Open Feature Selection Box</span>
+<div class="backbox dialog" id="select_feats" title="Select features:"><div class=small>
+ <TMPL_LOOP NAME=FEATS>
+  <input type=checkbox id=<TMPL_VAR NAME=ID>><TMPL_VAR NAME=NAME><br>
+ </TMPL_LOOP>
+</div>
+Send Checked Features to <span class='ui-button ui-state-default ui-corner-all ui-button-icon-right' onclick="feature_checkboxes();"><span class="ui-icon ui-icon-extlink"></span>FeatList</span><br>
+<span class='ui-button ui-state-default ui-corner-all' onclick="$('#select_feats :checkbox').attr('checked', false);">Uncheck All</span>
+</div>
 </TMPL_IF>
