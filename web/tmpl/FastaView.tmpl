@@ -3,8 +3,8 @@
 function update_seqs(prot, text)
  {
   var name_only = 0;
-
   if ($('#name_only')[0].checked) {name_only = 1};
+  pageObj.prot=prot;
   if (prot)
    {
     if (text)
@@ -33,6 +33,25 @@ function update_seqs(prot, text)
    }
  }
 
+function post_to_target () {
+ seq = $('#seq_text').val().replace(/\n/g,"\r");
+ console.log(seq);
+ var url;
+ if (pageObj.prot) {url="http://target.iplantcollaborative.org/v3.3_TATE_protein_CoGe_start.php"}
+ else {url = "http://target.iplantcollaborative.org/v3.3_TATE_dna_CoGe_start.php";} 
+ var myForm = document.createElement("form");
+ myForm.method="post" ;
+ myForm.action=url;
+ var myInput = document.createElement("input");
+ myInput.setAttribute("name", "coge_query");
+ myInput.setAttribute("value",seq);
+ myForm.appendChild(myInput);
+ document.body.appendChild(myForm);
+ myForm.submit();
+ document.body.removeChild(myForm);
+}
+
+
 $(document).ready(function()
   {
 //   update_seqs(<TMPL_VAR NAME=PROT>);
@@ -54,14 +73,16 @@ $(document).ready(function()
   <DIV id="dynamic_button">
   <TABLE>
    <TR>
-   <td><input type=button id="prot_button" value="Protein Sequence" onclick="update_seqs(1)">
-   <td><input type=button id="dna_button" value="DNA Sequence" onclick="update_seqs(0)">
-   <td><input type=button id="prot_text_button" value="Plain Text" onclick="update_seqs(1,1)">
-   <td><input type=button id="dna_text_button" value="Plain Text" onclick="update_seqs(0,1)">
-   <td><input type=button id="blast_button" value="CoGe Blast" onclick="window.open('CoGeBlast.pl?featid='+$('#fids').val())">
+   <td><span class='ui-button ui-state-default ui-corner-all'id="prot_button" onclick="update_seqs(1)">Protein Sequence</span>
+   <td><span class='ui-button ui-state-default ui-corner-all'id="dna_button" onclick="update_seqs(0)">DNA Sequence</span>
+   <td><span class='ui-button ui-state-default ui-corner-all'id="prot_text_button" onclick="update_seqs(1,1)">Plain Text</span>
+   <td><span class='ui-button ui-state-default ui-corner-all'id="dna_text_button" onclick="update_seqs(0,1)"> Plain Text</span>
+   <td><span class='ui-button ui-state-default ui-corner-all'id="blast_button"onclick="window.open('CoGeBlast.pl?featid='+$('#fids').val())">CoGe Blast</span> 
+  </TABLE><br>
+   Off site tools:<br>
+    <span class="link" onclick ="window.open('http://target.iplantcollaborative.org/');"> Tree Analysis of Related Genes and Transposons</span>
+   <span onClick="post_to_target();" class='ui-button ui-state-default ui-corner-all'>Send to TARGeT</span>
 
-   </TR>
-  </TABLE>
   </DIV>
 
 </TMPL_IF>
