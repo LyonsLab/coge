@@ -609,7 +609,6 @@ tr.ltblue {
 }
 
 .dna {
-  float: left;
   width: 300px;
   height: 182px;
   background-image: url(/CoGe/picts/animations/DNA_orbit_animated_small-side.gif);
@@ -807,3 +806,27 @@ td.link:hover {
 }
 
 /***End user profile portlet ui***/
+
+dt {
+   float: left;
+   clear: left;
+   width: 165px;
+   color: #006400;
+   /*font-style: oblique;
+   font-weight: bold;*/
+   padding-left: 20px;
+   padding-bottom: 5px;
+   
+}
+
+dd {
+   float: left;
+   color: black;
+   padding-bottom: 5px;
+}
+
+.profile-title {
+   border-bottom: 1px solid #AAAAAA;
+   background: transparent none repeat scroll 0 0;
+   color: black;
+}
