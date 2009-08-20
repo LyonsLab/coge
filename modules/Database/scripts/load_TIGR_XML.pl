@@ -1,4 +1,4 @@
-#!/usr/bin/perl 
+#!/usr/bin/perl -w
 
 ## Written by Eric Lyons, UC Berkeley 2004
 ## Contact:  elyons@nature.berkeley.edu
@@ -15,6 +15,7 @@ use Data::Dumper;
 use DBI;
 use Carp;
 use CoGeX;
+use File::Path;
 
 
 #use CoGe::Genome;
@@ -36,24 +37,25 @@ GetOptions('file|f=s'=>\$file,
 	   'data_source_link|dsl|ds_link=s' => \$data_source_link,
 	   'data_source_id|dsid=s' => \$data_source_id,
 	   'dataset_name|din|di_name=s' => \$dataset_name,
-	   'dataset_desc|did|di_desc=s' => \$dataset_desc,
+	   'dataset_desc|di_desc=s' => \$dataset_desc,
 	   'dataset_link|dil|di_link=s' => \$dataset_link,
 	   'dataset_id|did=s'=>\$dataset_id,
 	   'add_genomic_seq' => \$add_genomic_seq,
 	   'go'=>\$GO,
 	  );
 
-$org_name = "Arabidopsis thaliana" unless $org_name;
-$org_desc = "" unless $org_desc;
-$data_source_name = "TAIR" unless $data_source_name;
-$data_source_desc = "The Arabidopsis Information Resource" unless $data_source_desc;
-$data_source_link = "www.arabidopsis.org" unless $data_source_link;
-($dataset_name) = $file=~ /([^\/]*$)/ unless $dataset_name;
-$dataset_desc = "TAIR Version $dataset_version Chromosome $chromo, TIGR XML format" unless $dataset_desc;
-$dataset_link = "ftp://ftp.arabidopsis.org/home/tair/Genes/TAIR8_genome_release/Tair8_XML/" unless $dataset_link;
+my $formatdb =  "/usr/bin/formatdb -p F -o T"; #path to blast's formatdb program
 
+#$org_name = "Arabidopsis thaliana" unless $org_name;
+#$org_desc = "" unless $org_desc;
+$org_id=1 unless $org_id;
+#$data_source_name = "TAIR" unless $data_source_name;
+#$data_source_desc = "The Arabidopsis Information Resource" unless $data_source_desc;
+#$data_source_link = "www.arabidopsis.org" unless $data_source_link;
+$data_source_id = 1 unless $data_source_id;
+$add_genomic_seq = 1 unless defined $add_genomic_seq;  #on my default
 
-unless (-r $file || -d $dir)
+unless (($file && -r $file) || ($dir || -d $dir))
   {
     $help = 1;
     print "WARNING: You need a valid XML file.\n";
@@ -66,19 +68,34 @@ unless ($dataset_version)
   }
 
 
-my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
-my $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
-
-
-my $genomic_seq_len = 10000;
-
 show_help() if $help; 
+
+my $connstr = 'dbi:mysql:dbname=coge;host=biocon;port=3306';
+$coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
+
+my $data_source = get_data_source(name=>$data_source_name, desc=>$data_source_desc, link=>$data_source_link, id=>$data_source_id);
+
+#my $organism = process_header ($xml->{PSEUDOCHROMOSOME}{ASSEMBLY}{HEADER}) if $xml->{PSEUDOCHROMOSOME}{ASSEMBLY}{HEADER};
+#    $organism = get_organism() unless $organism;
+
+my $dsg; #storage for coge dataset group object
+$dsg= generate_dsg(version=>$dataset_version, org_id=>$org_id, gst_id=>1);
 
 my @files = process_dir($dir) if $dir;
 push @files, $file if $file;
 foreach my $item (@files)
   {
+    ($dataset_name) = $item=~ /([^\/]*$)/;# unless $dataset_name;
+    print $dataset_name,"\n";
     process_file($item);
+  }
+
+if ($GO && $dsg)
+  {
+    print "Creating blastable database\n";
+    my $cmd = $formatdb." -i ".$dsg->file_path;
+    print "\tFormatdb running $cmd\n";
+    `$cmd`;
   }
 
 sub process_dir
@@ -98,14 +115,14 @@ sub process_file
     my $file = shift;
     print "Processing $file.\n";
     my $xml = XMLin($file);
-    my $organism = process_header ($xml->{PSEUDOCHROMOSOME}{ASSEMBLY}{HEADER}) if $xml->{PSEUDOCHROMOSOME}{ASSEMBLY}{HEADER};
-    $organism = get_organism() unless $organism;
-    my $data_source = get_data_source(name=>$data_source_name, desc=>$data_source_desc, link=>$data_source_link, id=>$data_source_id);
     my $chr;
     $chr = $xml->{PSEUDOCHROMOSOME}{ASSEMBLY}{CHROMOSOME} if $xml->{PSEUDOCHROMOSOME}{ASSEMBLY}{CHROMOSOME};
     $chr = $xml->{ASSEMBLY}{ASMBL_ID}{CLONE_NAME} if !$chr && $xml->{ASSEMBLY}{ASMBL_ID}{CLONE_NAME};
     $chr= $chromo if $chromo;
     $chr =~ s/^0+//; #remove those preceeding 0
+    $dataset_desc = "TAIR Version $dataset_version Chromosome $chr, TIGR XML format";
+    $dataset_link = "ftp://ftp.arabidopsis.org/home/tair/Genes/TAIR".$dataset_version."_genome_release/Tair".$dataset_version."9_XML/";
+
 #    print Dumper $xml;
     print "\tChr: $chr\n";
     my $pwd = `pwd`;
@@ -122,7 +139,6 @@ sub process_file
 							    name                => $dataset_name,
 							    description         => $dataset_desc,
 							    link                => $dataset_link,
-							    organism_id         => $organism->id,
 							    data_source_id      => $data_source->id(),
 							    version             => $dataset_version,
 							   })  if $GO && !$dataset;
@@ -130,7 +146,12 @@ sub process_file
 
     my $seq = $xml->{PSEUDOCHROMOSOME}{ASSEMBLY}{ASSEMBLY_SEQUENCE} if $xml->{PSEUDOCHROMOSOME}{ASSEMBLY}{ASSEMBLY_SEQUENCE};
     $seq = $xml->{ASSEMBLY}{ASSEMBLY_SEQUENCE} if $xml->{ASSEMBLY}{ASSEMBLY_SEQUENCE};
-    load_genomic_sequence($seq, $genomic_seq_len, $dataset, $chr) if $add_genomic_seq && $seq;
+    load_genomic_sequence(
+			  seq=>$seq,
+			  ds=>$dataset,
+			  chr=>$chr,
+			  dsg=>$dsg,
+			 ) if $add_genomic_seq && $seq;
 
 #    print Dumper $xml;
     my $gene_list = $xml->{PSEUDOCHROMOSOME}{ASSEMBLY}{GENE_LIST} ? $xml->{PSEUDOCHROMOSOME}{ASSEMBLY}{GENE_LIST} : $xml->{ASSEMBLY}{GENE_LIST};
@@ -218,8 +239,11 @@ sub process_genes
 			    $anno{$item->{GENE_INFO}{COM_NAME}{content}}=1;
 			  }
 			my $prot_seq = $model->{PROTEIN_SEQUENCE};
-			$prot_seq =~ s/\*$//;
-			$gene = "pseudogene" if $prot_seq =~ /\*/; #found that genes with nonsense mutations were not labeled as pseudogenes in some datasets
+			if ($prot_seq)
+			  {
+			    $prot_seq =~ s/\*$//;
+			    $gene = "pseudogene" if $prot_seq =~ /\*/; #found that genes with nonsense mutations were not labeled as pseudogenes in some datasets
+			  }
 			my $strand = $item->{COORDSET}{END5} < $item->{COORDSET}{END3} ? 1 : -1;
 			$locs{$gene} = [[$item->{COORDSET}{END5}, $item->{COORDSET}{END3}, $strand, $chr]];
 			
@@ -313,6 +337,7 @@ sub process_genes
     print "Types processed:";
     print Dumper (\%count);
   }
+
 sub load_info
     {
       my %opts = @_;
@@ -498,6 +523,68 @@ sub create_feature
 
 sub load_genomic_sequence
   {
+    my %opts = @_;
+    my $seq = $opts{seq};
+    my $chr = $opts{chr};
+    my $ds = $opts{ds};
+    my $dsg = $opts{dsg};
+    return unless $dsg;
+    my $seqlen = length $seq;
+    print "Loading genomic sequence ($seqlen nt)\n";# if $DEBUG;
+    $seq =~ s/\s//g;
+    $seq =~ s/\n//g;
+    $dsg->add_to_genomic_sequences({sequence_length=>$seqlen,
+				    chromosome=>$chr,
+				   }) if $GO;
+    my $path = $dsg->file_path;
+    $path =~ s/\/[^\/]*$/\//;
+    mkpath($path);
+    mkpath($path."/chr");
+    #append sequence ot master file for dataset group
+    open (OUT, ">>".$path."/".$dsg->id.".faa");
+    my $head = $chr =~ /^\d+$/ ? ">gi" : ">lcl";
+    $head .= "|".$chr;
+    print OUT "$head\n$seq\n";
+    close OUT;
+    #create individual file for chromosome
+    open (OUT, ">".$path."/chr/$chr");
+    print OUT $seq;
+    close OUT;
+    #must add a feature of type chromosome to the dataset so the dataset "knows" its chromosomes
+    my $feat_type = $coge->resultset('FeatureType')->find_or_create({name=>"chromosome"});
+    my $feat = $ds->add_to_features(
+				    {
+				     feature_type_id     => $feat_type->id,
+				     chromosome=> $chr,
+				     strand=>1,
+				     start=>1,
+				     stop=>$seqlen,
+				    }
+				   ) if $GO;
+    my $location = $feat->add_to_locations(
+					   {
+					    start      => 1,
+					    stop       => $seqlen,
+					    strand     => 1,
+					    chromosome => $chr
+					   }) if $GO;
+    my $feat_name = $feat->add_to_feature_names({
+						 name       => $chr,
+						}) if $GO;
+    
+    if ($GO)
+      {
+	my $load = 1;
+	foreach my $dsc ($dsg->dataset_connectors) #check to see if there is a prior link to the dataset -- this will happen when loading whole genome shotgun sequence
+	  {
+	    $load = 0 if $dsc->dataset_id == $ds->id;
+	  }
+	$dsg->add_to_dataset_connectors({dataset_id=>$ds->id}) if $load;
+      }
+  }
+
+sub load_genomic_sequence_old
+  {
     my ($seq, $len, $dataset, $chr) = @_;
     $seq =~ s/\n//g;
     $seq =~ s/\r//g;
@@ -598,6 +685,33 @@ sub gen_locus
       }
   }
 
+sub generate_dsg
+  {
+    my %opts = @_;
+    my $name = $opts{name};
+    my $desc = $opts{desc};
+    my $version = $opts{version};
+    my $org_id = $opts{org_id};
+    my $gst_id = $opts{gst_id};
+    my $dsg_id = $opts{dsg_id};
+    my $dsg = $dsg_id ? $coge->resultset('DatasetGroup')->find($dsg_id) : 
+      $coge->resultset('DatasetGroup')->create({name=>$name,
+					       description=>$desc,
+					       version=>$version,
+					       organism_id=>$org_id,
+					       genomic_sequence_type_id=>$gst_id,
+					      }) if $GO;
+    return unless $dsg;
+    unless ($dsg->file_path)
+      {
+	my $path = "/opt/apache/CoGe/data/genomic_sequence/".$dsg->get_path."/".$dsg->id.".faa";
+	print "Path to sequence: ", $path,"\n";
+	$dsg->file_path($path);
+	$dsg->update;
+      }
+    return $dsg;
+  }
+
 sub show_help
   {
     print qq{
@@ -615,7 +729,7 @@ Options:
 
 --file           Name of XML file to parse and load
 
---verbose|v      Verbose mode, prints out more messages of data loading process
+--version|v      Version of dataset
 
 --help|h         Prints out this help page
 
