@@ -62,7 +62,7 @@
 	   border: 1px solid #92905D;
 	   border-collapse: collapse;
 	   line-height: 1;
-	   margin: 1em auto;
+	   /*margin: 1em auto;*/
 }
 
 .treeTable thead tr th {
