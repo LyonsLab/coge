@@ -35,7 +35,6 @@ function update_seqs(prot, text)
 
 function post_to_target () {
  seq = $('#seq_text').val().replace(/\n/g,"\r");
- console.log(seq);
  var url;
  if (pageObj.prot) {url="http://target.iplantcollaborative.org/v3.3_TATE_protein_CoGe_start.php"}
  else {url = "http://target.iplantcollaborative.org/v3.3_TATE_dna_CoGe_start.php";} 
