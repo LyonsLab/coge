@@ -333,7 +333,7 @@ function filter_rows (search_text){
 </TMPL_IF>
 
 <TMPL_IF NAME=MAIN>
-<div style="float:left">
+<div style="float:left; width:160px">
 <ul class="sf-menu sf-vertical">
   <li><a href="javascript:void(0)" onClick="get_profile()">Profile</a></li>
 <!--
@@ -360,45 +360,32 @@ function filter_rows (search_text){
 </TMPL_IF>
 
 <TMPL_IF NAME=PROFILE>
-<table>
-	<tr>
-		<td>User Name</td>
-		<td><TMPL_VAR NAME=USER_NAME></td>
-	</tr>
-	<tr>
-		<td>Real Name</td>
-		<td><TMPL_VAR NAME=REAL_NAME></td>
-	</tr>
-	<tr>
-		<td>E-mail Address</td>
-		<td><TMPL_VAR NAME=EMAIL></td>
-	</tr>
-	<tr>
-		<td>Title</td>
-		<td><TMPL_VAR NAME=DESC></td>
-	</tr>
-	<tr>
-		<td>Institute</td>
-		<td><TMPL_VAR NAME=INSTITUTE></td>
-	</tr>
-	<tr>
-		<td>Website</td>
-		<td><TMPL_VAR NAME=WEBSITE></td>
-	</tr>
-	<tr>
-		<td>My CoGe Groups</td>
-		<td><TMPL_VAR NAME=GROUPS></td>
+<span style="color: black;font-weight: bold;"><TMPL_VAR NAME=REAL_NAME>'s Profile</span>
+<dl style="clear:both;font-size:13px; margin-top: 2;">
+<div class="expt">
+	<dt >User Name</dt>
+	<dd><TMPL_VAR NAME=USER_NAME></dd>
+	<dt>Real Name</dt>
+	<dd><TMPL_VAR NAME=REAL_NAME></dd>
+	<dt>E-mail Address</dt>
+	<dd><TMPL_VAR NAME=EMAIL></dd>
+	<dt>Title</dt>
+	<dd><TMPL_VAR NAME=DESC></dd>
+	<dt>Institute</dt>
+	<dd><TMPL_VAR NAME=INSTITUTE></dd>
+	<dt>Website</dt>
+	<dd><TMPL_VAR NAME=WEBSITE></dd>
+	<dt>My CoGe Groups</dt>
+	<dd><TMPL_VAR NAME=GROUPS></dd>
 		<!-- Should probably have a loop here for all groups -->
-	</tr>
-	<tr>
-		<td>My Research Interests</td>
-		<td><TMPL_VAR NAME=RESEARCH></td>
-	</tr>
-</table>
+	<dt>My Research Interests</dt>
+	<dd><TMPL_VAR NAME=RESEARCH></dd>
+</div>
+</dl>
 </TMPL_IF>
 
 <TMPL_IF NAME=WORK_TYPE_CHOICE>
-<h2>Work List</h2>
+<h3 class="profile-title">My Work Entries</h3>
 Select Application Works to View:
 <select id=work_type onChange="update_worklist(this.value)">
 <option value=all>All</option>
