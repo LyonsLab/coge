@@ -1,45 +1,68 @@
+#!/usr/bin/perl -w
+
 use strict;
 use Data::Dumper;
 use CoGeX;
+use Getopt::Long;
 
+my ($coge, $fasta_name, $name_re, @datasets, $debug);
 
-my $connstr = 'dbi:mysql:genomes:biocon:3306';
-my $s = CoGeX->connect($connstr, 'bpederse', 'brent_cnr');
+GetOptions(
+	   "fasta_name=s" => \$fasta_name,
+	   "name_search|name_re|name|n=s"=>\$name_re,
+	   "dataset|ds=s"=>\@datasets,
+	   "debug" => \$debug,
+	   );
 
-if(scalar(@ARGV) < 3){
-    print "send in organism, reg-exp for-name, and datasets\n";
-    print "$0 org name_re [datasets]\n";
+#if(scalar(@ARGV) < 3){
+  unless (@datasets)
+  {
+#    print "send in organism, reg-exp for-name, and datasets\n";
+#    print "$0 org name_re [datasets]\n";
+    print qq{
+Welcome t0 $0
+
+Usage:  $0 -dataset 24 -dataset NC_000001  -name_search regex_search -fasta_name output.faa
+
+Options:
+
+ -dataset | -ds                        Datasets to retrieve, either by name or by database id
+
+ -name_search | -name_re | -name | -n  OPTIONAL: Regular expression to search for specific feature names
+
+ -fasta_name                           OPTIONAL:  create a fasta file of the sequences
+
+ -debug                                OPTIONAL:  print debugging messages
+
+};
     exit();
-}
+  }
 
-
-my $organism = shift;
-my $name_re = shift;
-my $datasets = \@ARGV;
+$coge = CoGeX->dbconnect();
 
 # gt sketch -seqid 1 -addintrons yes -start 1000 -style default.style -force -end 70000  out.png grape.gff3
 
-my $chrs = get_locs($datasets);
-my $schrs = get_sequence($datasets);
+my $chrs = get_locs(\@datasets);
+my $schrs = get_sequence(ds=>\@datasets, file_name=>$fasta_name) if $fasta_name;
 
 foreach my $k (keys %$chrs){
     if (! $schrs->{$k}){
-        print STDERR "NOTFOUND in seqs:" . $k . "\n";
+        print STDERR "NOTFOUND in seqs:" . $k . "\n" if $debug;
     }
 }
 foreach my $k (keys %$schrs){
     if (! $chrs->{$k}){
-        print STDERR "NOTFOUND in locs:" . $k . "\n";
+        print STDERR "NOTFOUND in locs:" . $k . "\n" if $debug;
     }
 }
 
 sub get_locs {
-    my $SEP = "\t";
-    my $datasets = shift;
 
+    my $datasets = shift;
+    my $SEP = "\t";
     my %chrs;
     foreach my $ds (@$datasets){
-        my $dso = $s->resultset('Dataset')->resolve($ds);
+        my $dso = $coge->resultset('Dataset')->resolve($ds);
         foreach my $chr ($dso->get_chromosomes){
             $chrs{$chr} = $dso->last_chromosome_position($chr);
         }
@@ -50,13 +73,13 @@ sub get_locs {
     foreach my $chr (@chrs){
         print "##sequence-region $chr 1 " . $chrs{$chr} . "\n";
     }
-    my %names = {};
-    my %fids = {};
+    my %names = ();
+    my %fids = ();
     foreach my $chr (@chrs){
-        my %seen = {};
+        my %seen = ();
         #if ($i++ > 2){ print STDERR "*" x 1000 . "\nENDING EARLY";  last; }
         
-        my $gene_rs = $s->resultset('Feature')->search( {
+        my $gene_rs = $coge->resultset('Feature')->search( {
                   'me.dataset_id' => { 'IN' => $datasets },
                   'me.chromosome' => $chr,
                   'feature_type.name'  =>  'gene' 
@@ -67,7 +90,7 @@ sub get_locs {
 
         #gff: chr  organization feature_type  start stop strand . name
         my %chrs;
-        print STDERR "dataset_ids: " . join(",", @$datasets) . ";  chr: $chr\n";
+        print STDERR "dataset_ids: " . join(",", @$datasets) . ";  chr: $chr\n" if $debug;
         while(my $g = $gene_rs->next()){
             if ($fids{$g->feature_id}){ next; }
             $fids{$g->feature_id} = 1;
@@ -81,8 +104,8 @@ sub get_locs {
             my $gene_name;
             if (scalar(@gene_names) == 0){
                 $gene_name = $g->feature_names()->next()->name;
-                print STDERR "not from re:" . $gene_name . "\n";
-                print STDERR $name_re . "\n";
+                print STDERR "not from re:" . $gene_name . "\n" if $debug;
+                print STDERR $name_re . "\n" if $debug;
             }
             else {
                 foreach my $name (@gene_names){
@@ -95,7 +118,7 @@ sub get_locs {
             }
             if(!$gene_name || $names{$gene_name} ) { next; }
 
-            my $mrna_rs = $s->resultset('Feature')->search( {
+            my $mrna_rs = $coge->resultset('Feature')->search( {
                   'me.dataset_id' => { 'IN' => $datasets },
                   'me.chromosome' => $chr,
                   'feature_names.name' => $gene_name,
@@ -145,7 +168,7 @@ sub get_locs {
 
             #print join("\t", ($chr, 'ucb', 'mRNA', $mrna->start, $mrna->stop, ".", $strand, ".", $attrs)) . "\n";
             $chrs{$g->chr} = 1;
-            my $sub_rs = $s->resultset('Feature')->search( {
+            my $sub_rs = $coge->resultset('Feature')->search( {
                   'me.dataset_id' => { 'IN' => $datasets },
                   'feature_names.name'  =>  $gene_name
                   , 'feature_type.name'  =>  { 'NOT IN' => ['gene', 'mRNA'] }
@@ -172,10 +195,13 @@ sub get_locs {
 
 
 sub get_sequence {
-    open(FA, ">", $organism . ".fasta");
+  my %opts = @_;
+  my $datasets = $opts{ds};
+  my $file_name = $opts{file_name};
+  open(FA, ">", $file_name);
     my %chrs;
     foreach my $ds (@$datasets){
-        my $ds = $s->resultset('Dataset')->resolve($ds);
+        my $ds = $coge->resultset('Dataset')->resolve($ds);
         my %seen;
         foreach my $chr ($ds->get_chromosomes){
             # TODO: this will break with contigs.
