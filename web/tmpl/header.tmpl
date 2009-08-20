@@ -205,10 +205,8 @@ $(document).ready( function() {
 <div id=signin_popup class="image_window" style="display:none"></div>
 <TABLE width = 100%>
 <TMPL_UNLESS NAME=MENU>
-  
-	<table style="float: right";>
-	 <tr>
-	<td>
+  <div style="float:right">
+    <div style="float:right;margin-right: 73px;">
 	<ul class="sf-menu" >
 	 <li><a id=home href="/CoGe/" target="_self">Home</a></li>
 	 <li><a href='javascript:void(0)'>Applications</a>
@@ -257,15 +255,15 @@ $(document).ready( function() {
 	</ul>
 	</li>
 	</ul>
-	 <td>
+    </div>
+    <div style="float:right; padding: 4 10 0 0;">
 	<TMPL_IF NAME=LOGON>
 	<span class="small species">Welcome, <TMPL_VAR NAME=USER></span> <a href="/CoGe/index.pl?logout=1" class="small">Sign-out</a>
 	<TMPL_ELSE>
 	 <a href="javascript:void(0)" onClick=sign_in() class="small">Sign-in</a> <!-- onclick="login_popup()"  -->
 	</TMPL_IF>
-	</td>
-
-	</table>
+    </div>
+    
 </TMPL_UNLESS>
  <TR>
   <TD>
