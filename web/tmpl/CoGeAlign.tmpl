@@ -1,6 +1,7 @@
+<TMPL_IF NAME=JAVASCRIPT>
+
 <SCRIPT language="JavaScript">
 $(document).ready(function(){
-	pageObj=new Object();
 	pageObj.fids = "<TMPL_VAR NAME=FIDS>";
 	setup_tabs();
 });
@@ -101,7 +102,7 @@ function feature_checkboxes(){
 
 
 </SCRIPT>
-
+</TMPL_IF>
 
 
 
