@@ -1858,13 +1858,13 @@ sub get_obj_from_genome_db
 	  {
 	    print STDERR "Error retrieving sequence: ".join ("\t", $ds->name,$start, $stop, $chr, $gstid),"\n";
 	  }
+	$seq = CoGeX::Feature->reverse_complement($seq) if $rev;
       }
     if ($stop-$start+1 > length($seq))
       {
 	my $len = length($seq);
 	$stop = $start+$len-1;
       }
-    $seq = CoGeX::Feature->reverse_complement($seq) if $rev;
     my $t3 = new Benchmark;
     my $gst = $coge->resultset('GenomicSequenceType')->find($gstid);
     my $obj= new CoGe::Accessory::GenBank({
