@@ -2783,6 +2783,7 @@ sub getlongurl #shabari:for parsing GEvo and tiny urls
 sub makeurlarray #shabari:for parsing GEvo and tiny urls
 {   
     my ($numseqs,$longurl)=@_;
+    $numseqs = 2 unless $numseqs;
     my %hash;
     
     my @array;
