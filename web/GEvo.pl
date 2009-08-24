@@ -183,6 +183,7 @@ sub gen_body
 	$gstid = $form->param('gstid'.$i) if $form->param('gstid'.$i);
 	$mask =  $form->param('mask'.$i) if ($form->param('mask'.$i));
 	$mask = undef if $mask && $mask eq "--None--";
+	$mask = "non-cds" if $form->param('maskncs'.$i);#backwards compatibility
 	if ($fid && $fid =~ /_/)
 	  {
 	    ($fid, $gstid) = split /_/, $fid;
