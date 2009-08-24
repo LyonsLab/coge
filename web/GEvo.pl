@@ -269,7 +269,7 @@ sub gen_body
     my $gc_color = get_opt(params=>$prefs, form=>$form, param=>'gc');
     $gc_color = 0 unless $gc_color;
     my $nt_color = get_opt(params=>$prefs, form=>$form, param=>'nt');
-    $nt_color = 1 unless $nt_color;
+    $nt_color = 1 unless defined $nt_color;
     my $cbc_color = get_opt(params=>$prefs, form=>$form, param=>'cbc');
     $cbc_color = 0 unless $cbc_color;
     my $skip_feat_overlap_adjust = get_opt(params=>$prefs, form=>$form, param=>'skip_feat_overlap');
