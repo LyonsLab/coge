@@ -280,7 +280,7 @@ sub gen_body
     $hiqual = 0 unless $hiqual;
     my $color_hsp = get_opt(params=>$prefs, form=>$form, param=>'colorhsp');
     $color_hsp = 0 unless $color_hsp;
-    my $hsp_label = get_opt(params=>$prefs, form=>$form, param=>'hsplabel');
+    my $hsp_label = get_opt(params=>$prefs, form=>$form, param=>'hsp_labels');
     $hsp_label = undef unless defined $hsp_label;
 #    my $hsp_limit = get_opt(params=>$prefs, form=>$form, param=>'hsplim');
 #    $hsp_limit = 0 unless $hsp_limit;
@@ -355,9 +355,7 @@ sub gen_body
 
     #generate the hsp color option
     my ($hsp_colors, $num_colors) = gen_hsp_colors(num_seqs=>$num_seqs, prefs=>$prefs);
-    my $html;
     my $spike_len = $form->param('spike_len') ? $form->param('spike_len') : 0; 
-
     $template->param(SPIKE_LEN=>$spike_len);
     $template->param(SEQ_RETRIEVAL=>1);
     $template->param(NUM_SEQS=>$num_seqs);
@@ -375,9 +373,8 @@ sub gen_body
     $template->param(ALIGNMENT_PROGRAMS=>algorithm_list($prog));
     $template->param(SAVE_SETTINGS=>gen_save_settings($num_seqs)) unless !$USER || $USER->user_name =~ /public/i;
     $box->param(BODY=>$template->output);
-    
   
-    
+    my $html;
     $html .= $box->output;
     return $html;
   }
@@ -393,7 +390,7 @@ sub run
     my $show_nt = $opts{nt};
     my $show_cbc = $opts{cbc};
     my $color_hsp = $opts{colorhsp};
-    my $hsp_labels = $opts{hsplabel};
+    my $hsp_labels = $opts{hsp_labels};
     my $feat_labels = $opts{feat_labels};
     my $draw_model = $opts{draw_model};
     my $hsp_overlap_limit = $opts{hsp_overlap_limit};
@@ -816,7 +813,7 @@ sub run
     $gobe_buttons .= "</table>";
     $html .= $gobe_buttons;
     $html .= qq{<DIV id=flashcontent></DIV>};
-    $html .= qq{<br><a href="http://synteny.cnr.berkeley.edu/wiki/index.php/Gobe" class=small style="color: red">Click here for help!</a>  <a href="http://get.adobe.com/flashplayer/" target=_new class="small">No results?  Try installing the latest version of Flash</a>};
+    $html .= qq{<br><a href="http://synteny.cnr.berkeley.edu/wiki/index.php/Gobe" class=small style="color: red" target=_new>Click here for help!</a>  <a href="http://get.adobe.com/flashplayer/" target=_new class="small">No results?  Try installing the latest version of Flash</a>};
     $html .= $gobe_buttons;
     $html .= qq{<table>};
     $html .= qq{<tr valign=top><td class = small>Alignment reports};
@@ -2577,7 +2574,7 @@ sub gen_params
         'args__cbc', 'show_cbc',
         'args__show_contigs', 'show_contigs',
 	'args__colorhsp', 'color_hsp',
-	'args__hsplabel', 'hsp_labels',
+	'args__hsp_labels', 'hsp_labels',
 	'args__feat_labels', 'feat_labels',
 	'args__skip_feat_overlap', 'skip_feat_overlap',
 	'args__skip_hsp_overlap', 'skip_hsp_overlap',
