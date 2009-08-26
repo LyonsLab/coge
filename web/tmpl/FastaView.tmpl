@@ -54,7 +54,18 @@ function post_to_target () {
 
 $(document).ready(function()
   {
-//   update_seqs(<TMPL_VAR NAME=PROT>);
+    prot = <TMPL_VAR NAME=PROT>;
+    pageObj.prot=prot; 
+    if (prot)
+     {
+      $('#prot_button').hide();
+      $('#dna_text_button').hide();
+     }
+    else
+     {
+      $('#prot_text_button').hide();
+      $('#dna_button').hide();
+     }
   });
 </script>
 
