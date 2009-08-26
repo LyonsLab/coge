@@ -739,7 +739,7 @@ sub run
 	next unless $obj->sequence;
 	if ($obj)
 	  {
-	    write_log("generating image ($count/".scalar @sets.")for ".$obj->accn, $cogeweb->logfile);
+	    write_log("generating image ($count/".scalar @sets.")for ".$obj->accn.": ".$item->{png_filename}, $cogeweb->logfile);
 	    $count++;
 	    my ($gfx) = 
 	      generate_image(
@@ -863,6 +863,12 @@ sub run
 	my $accn = $item->{accn};
 	$html .= "<div><font class=small><A HREF=\"$basename\" target=_new>$accn</A></font></DIV>\n";
      }
+    $html .= qq{<td class = small>Image Files};
+    foreach my $item (@sets)
+      {
+	my $png = $TEMPURL."/".basename($item->{png_filename});
+	$html .= qq{<br><a href ="$png" target=_new>Image file for }.$item->{obj}->accn."</a>";
+      }
     $html .= qq{<td class = small>SQLite db};
     my $dbname = $TEMPURL."/".basename($cogeweb->sqlitefile);
     
