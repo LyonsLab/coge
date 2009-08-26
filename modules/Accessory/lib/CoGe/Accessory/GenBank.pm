@@ -9,7 +9,7 @@ use CoGe::Accessory::GenBank::Feature;
 use CoGeX::Feature;
 use Roman;
 
-__PACKAGE__->mk_accessors qw(id locus accn seq_length moltype division date definition version gi keywords data_source dataset organism sequence srcfile dir anntoation features start stop chromosome add_gene_models _has_genes wgs wgs_scafld wgs_data strain substrain genomic_sequence_type_id);
+__PACKAGE__->mk_accessors qw(id locus accn seq_length moltype division date definition version gi keywords data_source dataset organism sequence srcfile dir anntoation features start stop chromosome add_gene_models _has_genes wgs wgs_scafld wgs_data strain substrain genomic_sequence_type_id debug no_wgs);
 
 
 
@@ -27,6 +27,7 @@ sub get_genbank_from_ncbi
     my $self = shift;
     my %opts = @_;
     my $id = $opts{accn};
+    print STDERR "fetching from NCBI: $id\n" if $self->debug();
     my $rev = $opts{rev};
     my $start = $opts{start};
     my $length = $opts{length};
@@ -43,21 +44,35 @@ sub get_genbank_from_ncbi
       }
 
     my @files = ([$file,$id]);
-    if ($id =~ /^NZ_\w\w\w\w00000000/i)
-      {
-	#we have shotgun sequence.  There is inconsistencies with how these can be stored.  Often there accession NZ_XXXX00000000 and XXXX00000000 are both available.  Sometimes one of these accessions has a more useful sequence by either having annotations, or having better contig assembly.  We'll try to figure that out!
-	my $tmp = $file;
-	$tmp =~ s/NZ_//i;
-	my $tmpid = $id;
-	$tmpid =~ s/NZ_//i;
-	push @files, [$tmp, $tmpid];
-      }
+#    if ($id =~ /^NZ_\w\w\w\w00000000/i)
+#      {
+	#we have shotgun sequence.  There are inconsistencies with how these can be stored.  Often there accession NZ_XXXX00000000 and XXXX00000000 are both available.  Sometimes one of these accessions has a more useful sequence by either having annotations, or having better contig assembly.  We'll try to figure that out!
+#	my $tmp = $file;
+#	$tmp =~ s/NZ_//i;
+#	my $tmpid = $id;
+#	$tmpid =~ s/NZ_//i;
+#	push @files, [$tmp, $tmpid];
+#      }
+#    print Dumper \@files;
     foreach my $tmp (@files)
       {
 	my ($fileloc, $accn) = @$tmp;
 	unless (-r $fileloc && !$reload)
 	  {
-	    $ua->mirror($url."$accn", $fileloc);
+	    my $response = $ua->get($url."$accn");
+	    my $entry = $response->content;
+
+	    while (!$entry || $entry =~ /temporarily unavailable/)
+	      {
+
+		print STDERR "Warning: $url".$accn." failed\nFetching from NCBI yielding 'temporarily unavailable'\nRetrying\n";
+		sleep 10;
+		$response = $ua->get($url."$accn");
+		$entry = $response->content;
+	      }
+	    open (OUT, ">".$fileloc) || die "Can't open $fileloc for writing: $!";
+	    print OUT $entry;
+	    close OUT;
 	  }
       }
     if (@files == 1)
@@ -69,6 +84,7 @@ sub get_genbank_from_ncbi
       {
 	my ($fileloc, $accn) = @$tmp;
 	my $gb = $self->new();
+	$gb->debug($self->debug) if $self->debug;
 	$gb->srcfile($fileloc);
 	$gb->parse_genbank_file(file=>$fileloc, rev=>$rev, start=>$start, length=>$length);
 	push @gbs, $gb;
@@ -101,6 +117,7 @@ sub parse_genbank_file
     my $self = shift;
     my %opts = @_;
     my $file = $opts{file};
+    print STDERR "parsing $file\n" if $self->debug;
     my $rev = $opts{rev};
     my $start = $opts{start};
     my $length = $opts{length};
@@ -228,7 +245,7 @@ sub process_line
       }
     elsif ( $line =~ /^DEFINITION\s+(.*)/ ) {
       $self->definition($1);
-      if ($self->definition() =~ /(linkage group \w+),?/i || $self->definition =~ /chromosome ([^,]*),?/ || $self->definition =~ /(plasmid[^,]*),?/i || $self->definition =~ /(extrachromosomal[^,]*),?/i || $self->definition =~ /(scaffold[^,]*),?/i || $self->definition =~ /(segment[^,]*),?/i || $self->definition =~ /\s(part [^,]*),?/i|| $self->definition =~ /\s(clone [^,]*),?/i)
+      if ($self->definition() =~ /(linkage group \w+),?/i || $self->definition =~ /chromosome ([^,]*),?/ || $self->definition =~ /(plasmid[^,]*),?/i || $self->definition =~ /(extrachromosomal[^,]*),?/i || $self->definition =~ /(scaffold[^,]*),?/i || $self->definition =~ /(segment[^,]*),?/i || $self->definition =~ /\s(part [^,]*),?/i|| $self->definition =~ /\s(clone [^,]*),?/i || $self->definition =~ /(mitochondrion)/i || $self->definition =~ /(chloroplast)/i || $self->definition =~ /(apicoplast)/i|| $self->definition =~ /(plastid)/i)
 	{
 	  my $tmp = $1;
 	  $tmp =~ s/clone/contig/;
@@ -269,7 +286,17 @@ sub process_line
       }
     elsif ($line =~ /^WGS_SCAFLD\s+(.*)/)
       {
-	$self->wgs_scafld($1);
+	if ($self->wgs_scafld && $self->wgs_scafld ne $1)
+	  {
+	    
+	    my $prev = $self->wgs_scafld;
+	    $prev.=",".$1;
+	    $self->wgs_scafld($prev);
+	  }
+	else
+	  {
+	    $self->wgs_scafld($1);
+	  }
       }
     elsif ( $feature_flag ) 
       {
@@ -838,30 +865,34 @@ sub accession
 sub process_wgs
   {
     my $self = shift;
+    return if $self->no_wgs;
     my $wgs = $self->wgs;
     $wgs = $self->wgs_scafld if $self->wgs_scafld; #this is a better assembly
     return unless $wgs;
     my @ids;
-    if ($wgs =~/-/)
+    foreach my $item (split/,/,$wgs)
       {
-	my ($id1, $id2) = split /-/, $wgs;
-	my ($head) = $id1=~/^(\D+)/;
-	my ($num1) = $id1=~/(\d+)/;
-	my ($num2) = $id2=~/(\d+)/;
-	my $num_len = length($num1);
-	for (my $i=$num1; $i<=$num2; $i++)
+	if ($item =~/-/)
 	  {
-	    my $num = $i;
-	    while (length ($num) < $num_len)
+	    my ($id1, $id2) = split /-/, $item;
+	    my ($head) = $id1=~/^(\D+)/;
+	    my ($num1) = $id1=~/(\d+)/;
+	    my ($num2) = $id2=~/(\d+)/;
+	    my $num_len = length($num1);
+	    for (my $i=$num1; $i<=$num2; $i++)
 	      {
-		$num = "0".$num;
+		my $num = $i;
+		while (length ($num) < $num_len)
+		  {
+		    $num = "0".$num;
+		  }
+		push @ids, $head.$num;
 	      }
-	    push @ids, $head.$num;
 	  }
-      }
-    else
-      {
-	push @ids, $wgs;
+	else
+	  {
+	    push @ids, $item;
+	  }
       }
     $self->wgs_data([]) unless $self->wgs_data();
     my $file = $self->srcfile;
@@ -869,13 +900,10 @@ sub process_wgs
     foreach my $id(@ids)
       {
 	my $gb = $self->new;
+	$gb->debug($self->debug) if $self->debug;
+	$gb->no_wgs(1); #don't recursively get wgs data
 	$gb->get_genbank_from_ncbi(accn=>$id, file=>$file.$id.".gbk");
 	push @{$self->wgs_data},$gb;
-#	my $url = "http://www.ncbi.nlm.nih.gov/entrez/viewer.fcgi?view=gbwithparts&val=".$id;
-#	my $ua = new LWP::UserAgent;
-#	my $response = $ua->get($url);
-#	my $content = $response->content if $response->is_success;
-#	print $content;
       }
   }
 
