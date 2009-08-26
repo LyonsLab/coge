@@ -49,36 +49,35 @@ sub gen_html
       }
     else
      {
-    my $form = $FORM;
-    my $rc = $form->param('rc');
-    my $prot = $form->param('prot');
-    my $text = $form->param('text');
-    my $textbox = $text ? 0 : 1;
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
-    $template->param(TITLE=>'Fasta Viewer');
-    $template->param(PAGE_TITLE=>'FastaView');
-    $template->param(HELP=>'/wiki/index.php?title=FastaView');
-    my $name = $USER->user_name;
-        $name = $USER->first_name if $USER->first_name;
-        $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
-        $template->param(USER=>$name);
-
-    $template->param(LOGON=>1) unless $USER->user_name eq "public";
-    $template->param(DATE=>$DATE);
-    $template->param(LOGO_PNG=>"FastaView-logo.png");
-    $template->param(BOX_NAME=>qq{<DIV id="box_name">Sequences:</DIV>});
-    my @fids;
-    push @fids, $form->param('featid') if $form->param('featid');
-    push @fids, $form->param('fid') if $form->param('fid');
-    my $gstid = $form->param('gstid') if $form->param('gstid');
-    my $seqs = get_seqs(prot=>$prot, fids=>\@fids, textbox=>$textbox, gstid=>$gstid);
-    if ($text)
-      {
-	return  $seqs;
-      }
-    $template->param(BODY=>gen_body(fids=>\@fids, seqs=>$seqs, gstid=>$gstid));
-    $html .= $template->output;
-    }
+       my $form = $FORM;
+       my $prot = $form->param('prot');
+       my $text = $form->param('text');
+       my $textbox = $text ? 0 : 1;
+       my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
+       $template->param(TITLE=>'Fasta Viewer');
+       $template->param(PAGE_TITLE=>'FastaView');
+       $template->param(HELP=>'/wiki/index.php?title=FastaView');
+       my $name = $USER->user_name;
+       $name = $USER->first_name if $USER->first_name;
+       $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
+       $template->param(USER=>$name);
+       
+       $template->param(LOGON=>1) unless $USER->user_name eq "public";
+       $template->param(DATE=>$DATE);
+       $template->param(LOGO_PNG=>"FastaView-logo.png");
+       $template->param(BOX_NAME=>qq{<DIV id="box_name">Sequences:</DIV>});
+       my @fids;
+       push @fids, $form->param('featid') if $form->param('featid');
+       push @fids, $form->param('fid') if $form->param('fid');
+       my $gstid = $form->param('gstid') if $form->param('gstid');
+       my $seqs = get_seqs(prot=>$prot, fids=>\@fids, textbox=>$textbox, gstid=>$gstid);
+       if ($text)
+	 {
+	   return  $seqs;
+	 }
+       $template->param(BODY=>gen_body(fids=>\@fids, seqs=>$seqs, gstid=>$gstid, prot=>$prot));
+       $html .= $template->output;
+     }
     return $html;
   }
 
@@ -117,11 +116,13 @@ sub gen_body
     my $seqs = $opts{seqs};
     my $fids = $opts{fids};
     my $gstid = $opts{gstid} || 1;
+    my $prot = $opts{prot} || 0;
     $fids = join (",", @$fids) if ref($fids) =~ /array/i;
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/FastaView.tmpl');
     $template->param(BOTTOM_BUTTONS=>1);
     $template->param(SEQ=>$seqs) if $seqs;
     $template->param(FIDS=>qq{<input type=hidden id=fids value=$fids><input type=hidden id=gstid value=$gstid>});
+    $template->param(PROT=>$prot);
     return $template->output;
   }
 	
