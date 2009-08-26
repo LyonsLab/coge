@@ -19,7 +19,6 @@ use DBIxProfiler;
 
 use vars qw($PAGE_NAME $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb $FORM);
 $ENV{PATH}="/opt/apache/CoGe";
-
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
 $PAGE_NAME = "FeatList.pl";
@@ -414,7 +413,7 @@ $url =~ s/&$//;
     my $accn_list = shift;
     $accn_list =~ s/^,//;
     $accn_list =~ s/,$//;
-    my $url = "/CoGe/CoGeBlast.pl?featid=$accn_list";
+    my $url = "/CoGe/CoGeBlast.pl?fid=$accn_list";
     return $url;
   }
   
@@ -426,7 +425,7 @@ $url =~ s/&$//;
     my $url = "FastaView.pl?";
     foreach my $featid (split /,/,$accn_list)
     {
-		$url .= "featid=$featid&";
+		$url .= "fid=$featid&";
 	}
 	$url =~s/&$//;
 	return $url;
