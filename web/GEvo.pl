@@ -867,7 +867,7 @@ sub run
     foreach my $item (@sets)
       {
 	my $png = $TEMPURL."/".basename($item->{png_filename});
-	$html .= qq{<br><a href ="$png" target=_new>Image file for }.$item->{obj}->accn."</a>";
+	$html .= qq{<br><a href ="$png" target=_new>}.$item->{obj}->accn."</a>";
       }
     $html .= qq{<td class = small>SQLite db};
     my $dbname = $TEMPURL."/".basename($cogeweb->sqlitefile);
