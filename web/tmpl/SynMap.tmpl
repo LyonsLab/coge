@@ -203,7 +203,13 @@ $(document).ready(function(){
   }
   ajax_wait("check_previous_analyses();"); 
     <TMPL_VAR NAME=DISPLAY_DAGCHAINER_SETTINGS>
+ var autogo = <TMPL_VAR NAME=AUTOGO>;
+ if (autogo) {
+    generate_basefile([],[update_basename]);
+    run_synmap();
+    }
  });
+
 
 function display_dagchainer_settings(params,type) {
  
@@ -450,10 +456,10 @@ function open_window (url, loc, width, height)
  <TR>
    <TD>Calculate substitution rates for syntenic protein coding gene pairs (slow)?
    <select name="ks_type" id = "ks_type">
-     <option value = 0 selected>--None--</option>
-     <option value = ks >Synonymous (kS)</option>
-     <option value = kn >Non-synonymous (kN)</option>
-     <option value = kn_ks >kN/kS</option>
+     <option value = 0 <TMPL_VAR NAME=KS0> >--None--</option>
+     <option value = ks <TMPL_VAR NAME=KS1> >Synonymous (kS)</option>
+     <option value = kn <TMPL_VAR NAME=KS2> >Non-synonymous (kN)</option>
+     <option value = kn_ks <TMPL_VAR NAME=KS3> >kN/kS</option>
    </select>
 <!--   <input type=checkbox name="gen_ks" id="gen_ks">-->
 </TABLE>
