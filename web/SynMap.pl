@@ -127,7 +127,10 @@ sub gen_body
 	$display_dagchainer_settings = qq{display_dagchainer_settings();};
       }
     $template->param('DISPLAY_DAGCHAINER_SETTINGS'=>$display_dagchainer_settings);
-    
+    #will the program automatically run?
+    my $autogo = $FORM->param('autogo');
+    $autogo = 0 unless defined $autogo;
+    $template->param(AUTOGO=>$autogo);
     #populate organism menus
     for (my $i=1; $i<=2;$i++)
       {
@@ -136,7 +139,26 @@ sub gen_body
 	my $org_menu = gen_org_menu(dsgid=>$dsgid, num=>$i, feattype_param=>$feattype_param);
 	$template->param("ORG_MENU".$i=>$org_menu);
       }
-
+    #set ks for coloring syntenic dots
+    if ($FORM->param('ks'))
+      {
+	if ($FORM->param('ks') eq 1)
+	{
+	  $template->param(KS1=>"selected");
+	}
+	elsif ($FORM->param('ks') eq 2)
+	{
+	  $template->param(KS2=>"selected");
+	}
+	elsif ($FORM->param('ks') eq 3)
+	{
+	  $template->param(KS3=>"selected");
+	}
+      }
+    else
+      {
+	$template->param(KS0=>"selected");
+      }
 
     my $file = $form->param('file');
     if($file)
@@ -1160,7 +1182,14 @@ sub go
     $feat_type2 = $feat_type2 == 2 ? "genomic" : "CDS";
 
     $synmap_link .=";dt=$dagchainer_type"; 
-
+    if ($ks_type)
+      {
+	my $num;
+	if ($ks_type eq "ks") {$num=1;}
+	elsif ($ks_type eq "kn") {$num=2;}
+	elsif ($ks_type eq "kn_ks") {$num=3;}
+	$synmap_link .= ";ks=$num";
+      };
     ##generate fasta files and blastdbs
     my $t0 = new Benchmark;
     my $pm = new Parallel::ForkManager($MAX_PROC);
