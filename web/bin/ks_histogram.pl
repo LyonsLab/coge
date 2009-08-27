@@ -180,7 +180,8 @@ sub get_color
     my @colors = (
 		  [255,0,0], #red
 		  [255,126,0], #orange
-		  [255,255,0], #yellow
+#		  [255,255,0], #yellow
+		  [200,200,0], #yellow
 		  [0,255,0], # green
 		  [0,255,255], # cyan
 		  [0,0,255], # blue
