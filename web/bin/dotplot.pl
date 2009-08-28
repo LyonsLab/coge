@@ -348,7 +348,7 @@ Ergo, we rely on jQuery to detect when the DOM is fully loaded, and then run the
 	  {
 	    print OUT qq{
 <span style='position: absolute;left: $width; top: 45px'>
-<a class="small" href= "$img.hist.png" target=_new>Histogram of synonymous sybstitutions</a>
+<a class="small" href= "$img.hist.png" target=_new>Histogram of synonymous substitutions</a>
 <img src= "$img.hist.png" >
 </span>
 }; 
