@@ -304,11 +304,11 @@ sub generate_table
 		   TYPE=>$feat->type->name,
 		   CHR=>$feat->chr,
 		   STRAND=>$feat->strand,
-		   START=>$feat->start,
-		   STOP=>$feat->stop,
+		   START=>commify($feat->start),
+		   STOP=>commify($feat->stop),
 		   ORG=>$feat->organism->name." (v".$feat->version.")",
 		   HPP=>$hpp, 
-		   LENGTH=>$feat->length(),
+		   LENGTH=>commify($feat->length()),
 		   OTHER=>$other,
 		   AT=>$at,
 		   GC=>$gc,
@@ -633,3 +633,9 @@ sub save_FeatList_settings
     save_settings(opts=>\%save, user=>$USER, page=>$PAGE_NAME);
   }
 
+sub commify 
+    {
+      my $text = reverse $_[0];
+      $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
+      return scalar reverse $text;
+    }
