@@ -660,14 +660,29 @@ sub get_color
 	return [0,0,0];
       }
     my @colors = (
-		  [255,0,0], #red
+		  [255,255,0], #yellow
+		  [170,170,0], #yellow
+		  [100,100,0], # green
+		  [200,200,0], # green
+		  [0,200,0], # green
+		  [0,100,100], # green
+		  [0,200,200], # cyan
+		  [0,0,200], # blue
+		  [100,0,100], #purple
+		  [200,0,200], #magenta
+		  [200,0,0], #red
+		  [100,0,0], #red
+		  [200,100,0], #orange
 		  [255,126,0], #orange
-		  [200,200,0], #yellow
-		  [0,255,0], # green
-		  [0,255,255], # cyan
-		  [0,0,255], # blue
+
+#		  [200,200,0], #yellow
+#		  [0,255,0], # green
+#		  [0,200,200], # cyan
+#		  [0,0,255], # blue
 #		  [255,0,255], #magenta
-		  [126,0,126], #purple
+#		  [126,0,126], #purple
+#		  [255,0,0], #red
+#		  [255,126,0], #orange
 		 );
     @colors = reverse @colors;
     my ($index1, $index2) = ((floor((scalar(@colors)-1)*$val)), ceil((scalar(@colors)-1)*$val));
