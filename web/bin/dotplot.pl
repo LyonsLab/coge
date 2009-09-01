@@ -8,12 +8,12 @@ use Data::Dumper;
 use DBI;
 use POSIX;
 
-use vars qw($dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ks_db $ks_type $log $MAX $MIN);
+use vars qw($dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ks_db $ks_type $log $MAX $MIN $assemble);
 
 
 GetOptions(
-	   "dagfile|d=s"=>\$dagfile,
-	   "alignfile|a=s"=>\$alignfile,
+	   "dagfile|d=s"=>\$dagfile, #all dots
+	   "alignfile|a=s"=>\$alignfile, #syntenic dots
 	   "width|w=i"=>\$width,
 	   "link|l=s"=>\$link,
 	   "link_type|lt=i"=>\$link_type,
@@ -31,7 +31,9 @@ GetOptions(
 	   "max=s"=>\$MAX,
 	   "min=s"=>\$MIN,
 	   "log=s"=>\$log,
+	   "assemble=s"=>\$assemble,
 	   );
+print STDERR "Running dotplot\n";
 
 usage() if $help;
 usage() unless -r $dagfile;
@@ -48,13 +50,14 @@ $width = 1024 unless $width;
 $coge = CoGeX->dbconnect();
 
 
-my $org1info = get_dsg_info(dsgid=>$dsgid1, chr=>$CHR1, minsize=>$min_chr_size);
+
+my ($org1_order, $org2_order) = parse_syn_blocks($alignfile) if $assemble;
+my $org1info = get_dsg_info(dsgid=>$dsgid1, chr=>$CHR1, minsize=>$min_chr_size, order=>$org1_order);
 my $org1length =0;
 map {$org1length+=$_->{length}} values %$org1info;
-my $org2info = get_dsg_info(dsgid=>$dsgid2, chr=>$CHR2, minsize=>$min_chr_size);
+my $org2info = get_dsg_info(dsgid=>$dsgid2, chr=>$CHR2, minsize=>$min_chr_size, order=>$org2_order);
 my $org2length =0;
 map {$org2length+=$_->{length}} values %$org2info;
-
 ($org1info, $org1length, $dsgid1, $org2info, $org2length, $dsgid2) = ($org2info, $org2length, $dsgid2, $org1info, $org1length, $dsgid1) if $flip;
 ($CHR1, $CHR2) = ($CHR2, $CHR1) if $flip && ($CHR1 || $CHR2);
 my $height = sprintf("%.0f", $width*$org2length/$org1length);
@@ -219,10 +222,13 @@ sub draw_dots
 
 	next unless $org1->{$chr1} && $org2->{$chr2}; #sometimes there will be data that is skipped, e.g. where chromosome="random";
 	my ($xmin) = sort ($line[2], $line[3]);
-	my $midx = sprintf("%.0f",$org1->{$chr1}{start}+$xmin+abs($line[3]-$line[2])/2);
-	my $x = sprintf("%.0f",$midx*$x_pix_per_bp);
 	my ($ymin) = sort ($line[6], $line[7]);
-	my $midy = sprintf("%.0f",$org2->{$chr2}{start}+$ymin+abs($line[7]-$line[6])/2);
+	my $midx = $org1->{$chr1}{rev}? sprintf("%.0f",$org1->{$chr1}{start}+$org1->{$chr1}{length}-($xmin+abs($line[3]-$line[2])/2)): sprintf("%.0f",$org1->{$chr1}{start}+$xmin+abs($line[3]-$line[2])/2);
+
+	my $midy = $org2->{$chr2}{rev}? sprintf("%.0f",$org2->{$chr2}{start}+$org2->{$chr2}{length}-($ymin+abs($line[7]-$line[6])/2)): sprintf("%.0f",$org2->{$chr2}{start}+$ymin+abs($line[7]-$line[6])/2);
+
+
+	my $x = sprintf("%.0f",$midx*$x_pix_per_bp);
 	my $y = sprintf("%.0f",$midy*$y_pix_per_bp);
 	($x,$y) = ($y, $x) if $special;
 
@@ -383,6 +389,7 @@ sub draw_chromosome_grid
     my $height = $graphics_context->height;
     my $width = $graphics_context->width;
     my $black = $graphics_context->colorResolve(0,0,0);
+    my $red = $graphics_context->colorResolve(255,0,0);
     my $span_color = $graphics_context->colorResolve(200,255,200);
     $graphics_context->line(0,0, $graphics_context->width, 0, $black);
     $graphics_context->line(0, $graphics_context->height-1, $graphics_context->width, $graphics_context->height-1, $black);
@@ -407,7 +414,8 @@ sub draw_chromosome_grid
 	      }
 	  }
 	$graphics_context->line($x, 0, $x, $graphics_context->height, $black);					#Draw black line
-	$graphics_context->string(gdSmallFont, $x+2, $graphics_context->height-15, $chr, $black);		#Draws name of chromosome
+	my $str_color = $org1->{$chr}{rev} ? $red : $black;
+	$graphics_context->string(gdSmallFont, $x+2, $graphics_context->height-15, $chr, $str_color);		#Draws name of chromosome
 	$data{x}{$pchr}=[$pv,$x] if $pchr;
 	$pchr=$chr;
 	$pv = $x+1;
@@ -431,7 +439,8 @@ sub draw_chromosome_grid
 	  }
 
 	$graphics_context->line(0, $y, $graphics_context->width, $y, $black);
-	$graphics_context->string(gdSmallFont, 2, $y-15, $chr, $black);
+	my $str_color = $org2->{$chr}{rev} ? $red : $black;
+	$graphics_context->string(gdSmallFont, 2, $y-15, $chr, $str_color);
 	$data{y}{$pchr}=[$y, $pv] if $pchr;
 	$pchr = $chr;
 	$pv =$y+1;
@@ -497,7 +506,10 @@ sub get_dsg_info
     my $dsgid = $opts{dsgid};
     my $chr = $opts{chr};
     my $minsize = $opts{minsize};
+    my $order = $opts{order};
+
     my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+
     unless ($dsg)
       {
 	warn "No dataset group found with dbid $dsgid\n";
@@ -516,14 +528,152 @@ sub get_dsg_info
 	  }
 	$data{$gs->chromosome}{length}=$last;
       }
+    #chromosomes sorted by length.  Longest first.
+    my %rev;#store chromosomes to be reversed in display
+    my @ordered;
+    if ($order)
+      {
+	my %seen;
+	foreach my $item (@$order)
+	  {
+	    my $chr = $item->{chr};
+	    push @ordered, $chr;
+	    $rev{$chr}=1 if $item->{rev};
+	    $seen{$chr}=1;
+	  }
+	foreach my $chr (sort {$data{$b}{length} <=> $data{$a}{length} } keys %data) #get any that were not in @$order
+	  {
+	    push @ordered, $chr unless $seen{$chr};
+	  }
+      }
+    else
+      {
+	@ordered = sort {$data{$b}{length} <=> $data{$a}{length} } keys %data;
+      }
     my $pos = 1;
-    foreach my $item (sort {$data{$b}{length} <=> $data{$a}{length} } keys %data )
+    foreach my $item (@ordered)
       {
 	$data{$item}{start} = $pos;
 	$pos += $data{$item}{length};
+	$data{$item}{rev}=1 if $rev{$item};
       }
 		      
     return \%data;
+  }
+
+
+#this sub is used to try to get a build order of contigs for WGS data against a reference genome
+#given a set of scaffolds, it will order them such that make an ordered syntenic path along the reference genome
+sub parse_syn_blocks
+  {
+    my $file = shift;
+    my $blocks1=[];
+    my $blocks2=[];
+    open (IN, $file) || die "Can't open $file for reading: $!";
+    $/ = "\n##";
+    while (<IN>) #get blocks
+      {
+	next unless $_;
+	s/##//g;
+	my ($block1, $block2) = process_syn_block($_);
+	push @$blocks1 , $block1;
+	push @$blocks2 , $block2;
+      }
+    close IN;
+    $/="\n";
+    #which organism has more pieces (aka chromosomes, contigs, etc.)  we are going to assemble the one with more pieces
+#    print Dumper \@blocks;
+    my $chrs1={};
+    my $chrs2={};
+    map {$chrs1->{$_->{name}}++} @$blocks1;
+    map {$chrs2->{$_->{name}}++} @$blocks2;
+    #blocks1 will contain fewer chromosomes; blocks2 will be ordered by it.
+    my $switched =keys %$chrs1 > keys %$chrs2 ? 1 : 0;
+    if ($switched)
+      {
+	($blocks1, $blocks2) = ($blocks2, $blocks1);
+	($chrs1, $chrs2) = ($chrs2, $chrs1);
+      }
+
+    my $ordered1 =[]; #storage for ordered chromosomes
+    my $ordered2 =[]; #storage for ordered chromosomes
+    foreach my $chr1 (keys %$chrs1)
+      {
+	push @$ordered1, {chr=>$chr1};
+	my @blocks;
+	for (my $i=0; $i< @$blocks1; $i++)
+	  {
+	    my ($block1, $block2) = ($blocks1->[$i],$blocks2->[$i]);
+	    next if $block1->{name} ne $chr1;
+	    push @blocks, $block2;
+	  }
+	#Need to check if a given chromosome in @blocks occurs more than once.  This will happen if there is a segmental duplication, or something along those lines.
+	my %block_check;
+	foreach my $block (@blocks)
+	  {
+	    if ($block_check{$block->{name}})
+	      {
+		$block_check{$block->{name}}=$block if $block->{score} > $block_check{$block->{name}}{score}; #higher score wins
+	      }
+	    else
+	      {
+		$block_check{$block->{name}}=$block;
+	      }
+	  }
+	@blocks = values %block_check;#create the non-redundant set
+	#print out the blocks in order.  Note ones that are in reverse orientation
+	foreach my $block (sort {$a->{match_start} <=> $b->{match_start} }@blocks)
+	  {
+	    push @$ordered2, {chr=>$block->{name}, rev=>$block->{rev}};
+	  }
+      }
+    ($ordered1, $ordered2) = ($ordered2, $ordered1) if $switched;
+    return $ordered1, $ordered2;
+  }
+
+sub process_syn_block
+  {
+    my $block = shift;
+    my ($head, @block) = split/\n/, $block;
+    my ($seq1, $seq2, $block_num, $score, $num_pairs) = 
+      $head =~ /alignment\s+(\S+) vs\. (\S+) .*? #(\d+)\s+score = (\S+).*?pairs: (\d+)/;
+    my $rev = $head =~/reverse/ ? 1 : 0;
+    my ($seq1_start, $seq1_stop, $seq2_start, $seq2_stop);
+    foreach my $item (@block)
+      {
+	chomp $item;
+	next unless $item;
+	my @item = split /\t/, $item;
+	$seq1_start = $item[2] unless $seq1_start;
+	$seq1_stop = $item[3] unless $seq1_stop;
+	$seq2_start = $item[6] unless $seq2_start;
+	$seq2_stop = $item[7] unless $seq2_stop;
+	$seq1_start = $item[2] if $item[2] < $seq1_start;
+	$seq1_stop = $item[3] if $item[3] > $seq1_stop;
+	$seq2_start = $item[6] if $item[6] < $seq2_start;
+	$seq2_stop = $item[7] if $item[7] > $seq2_stop;
+      }
+    $seq1 =~ s/.*?_//;
+    $seq2 =~ s/.*?_//;
+    my %seq1 = (
+		name=>$seq1,
+		start=>$seq1_start,
+		stop=>$seq1_stop,
+		match_start=>$seq2_start,
+		match_stop=>$seq2_stop,
+		score=>$score,
+		rev=>$rev,
+		);
+    my %seq2 = (
+		name=>$seq2,
+		start=>$seq2_start,
+		stop=>$seq2_stop,
+		match_start=>$seq1_start,
+		match_stop=>$seq1_stop,
+		score=>$score,
+		rev=>$rev,
+		);
+    return \%seq1, \%seq2;
   }
 
 sub get_ksdata
@@ -753,6 +903,9 @@ log                    log10 transform ks datadata (val = 0 set to minimum non-z
 max                    max ks val cutoff
 
 min                    min ks val cutoff
+
+assemble               if set to 1, output will try to be assembled based on syntenic thread
+                       General assumption is aligning a WGS genome sequence to a reference genome
 
 help         | h       print this message
 
