@@ -41,7 +41,7 @@ if(!pageObj.basename)
   pageObj.nolog=1;
   setTimeout("monitor_log()", 5000);
   
-go(['args__D','D','args__g','g','args__A','A','args__blast','blast', 'args__feat_type1','feat_type1', 'args__feat_type2','feat_type2','args__dsgid1','dsgid1', 'args__dsgid2','dsgid2','args__jobtitle','jobtitle','args__basename','args__'+pageObj.basename,'args__email','email','args__regen_images','args__'+$('#regen_images')[0].checked, 'args__width', 'args__'+$('#master_width').val(), 'args__dagchainer_type','args__'+$('#dagchainer_type')[0].checked, 'args__ks_type','ks_type'],[handle_results]);
+go(['args__D','D','args__g','g','args__A','A','args__blast','blast', 'args__feat_type1','feat_type1', 'args__feat_type2','feat_type2','args__dsgid1','dsgid1', 'args__dsgid2','dsgid2','args__jobtitle','jobtitle','args__basename','args__'+pageObj.basename,'args__email','email','args__regen_images','args__'+$('#regen_images')[0].checked, 'args__width', 'args__'+$('#master_width').val(), 'args__dagchainer_type','args__'+$('#dagchainer_type')[0].checked, 'args__ks_type','ks_type', 'args__assemble','assemble'],[handle_results]);
 ajax_wait("check_previous_analyses();");
 }
 
@@ -464,6 +464,10 @@ function open_window (url, loc, width, height)
      <option value = kn <TMPL_VAR NAME=KS2> >Non-synonymous (kN)</option>
      <option value = kn_ks <TMPL_VAR NAME=KS3> >kN/kS</option>
    </select>
+  <TR>
+    <TD>Order contigs by best syntenic path?
+   <input type=checkbox name="assemble" id="assemble"><br>
+   <span class=small>This option assumes that one of the organisms is the reference genome, and the other is a whole genome shotgun sequence with contig level assembly</span>
 <!--   <input type=checkbox name="gen_ks" id="gen_ks">-->
 </TABLE>
 </div> <!-- close tab-3 -->
