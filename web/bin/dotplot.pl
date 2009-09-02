@@ -33,7 +33,6 @@ GetOptions(
 	   "log=s"=>\$log,
 	   "assemble=s"=>\$assemble,
 	   );
-print STDERR "Running dotplot\n";
 
 usage() if $help;
 usage() unless -r $dagfile;
@@ -557,7 +556,6 @@ sub get_dsg_info
 	$pos += $data{$item}{length};
 	$data{$item}{rev}=1 if $rev{$item};
       }
-		      
     return \%data;
   }
 
@@ -585,8 +583,20 @@ sub parse_syn_blocks
 #    print Dumper \@blocks;
     my $chrs1={};
     my $chrs2={};
-    map {$chrs1->{$_->{name}}++} @$blocks1;
-    map {$chrs2->{$_->{name}}++} @$blocks2;
+    foreach my $item (@$blocks1)
+      {
+	$chrs1->{$item->{name}}{count}++;
+	$chrs1->{$item->{name}}{score}+=$item->{score};
+      }
+    foreach my $item (@$blocks2)
+      {
+	$chrs2->{$item->{name}}{count}++;
+	$chrs2->{$item->{name}}{score}+=$item->{score};
+      }
+#    map {$chrs1->{$_->{name}}++} @$blocks1;
+#    map {$chrs2->{$_->{name}}++} @$blocks2;
+
+
     #blocks1 will contain fewer chromosomes; blocks2 will be ordered by it.
     my $switched =keys %$chrs1 > keys %$chrs2 ? 1 : 0;
     if ($switched)
@@ -597,7 +607,8 @@ sub parse_syn_blocks
 
     my $ordered1 =[]; #storage for ordered chromosomes
     my $ordered2 =[]; #storage for ordered chromosomes
-    foreach my $chr1 (keys %$chrs1)
+    my %seen;
+    foreach my $chr1 (sort{$chrs1->{$b}{score} <=> $chrs1->{$a}{score}} keys %$chrs1)
       {
 	push @$ordered1, {chr=>$chr1};
 	my @blocks;
@@ -624,7 +635,9 @@ sub parse_syn_blocks
 	#print out the blocks in order.  Note ones that are in reverse orientation
 	foreach my $block (sort {$a->{match_start} <=> $b->{match_start} }@blocks)
 	  {
+	    next if $seen{$block->{name}};
 	    push @$ordered2, {chr=>$block->{name}, rev=>$block->{rev}};
+	    $seen{$block->{name}}=1;
 	  }
       }
     ($ordered1, $ordered2) = ($ordered2, $ordered1) if $switched;
