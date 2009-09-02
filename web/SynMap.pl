@@ -1116,15 +1116,18 @@ sub generate_dotplot
     my ($basename) = $coords =~ /([^\/]*).all.aligncoords/;
     my $regen_images = $opts{regen_images}=~/true/i ? 1 : 0;
     my $width = $opts{width} || 1000;
+    my $assemble = $opts{assemble};
     my $cmd = $DOTPLOT;
     #add ks_db to dotplot command if requested
+    $outfile.= ".ass" if $assemble;
     if ($ks_db && -r $ks_db)
       {
 	$cmd .= qq{ -ksdb $ks_db -kst $ks_type -log 1};
 	$outfile .= ".$ks_type";
       }
-    $cmd .= qq{ -d $dag -a $coords -b $outfile -l 'javascript:synteny_zoom("$dsgid1","$dsgid2","$basename","XCHR","YCHR","$ks_db")' -dsg1 $dsgid1 -dsg2 $dsgid2 -w $width -lt 2};
 
+    $cmd .= qq{ -d $dag -a $coords -b $outfile -l 'javascript:synteny_zoom("$dsgid1","$dsgid2","$basename","XCHR","YCHR","$ks_db")' -dsg1 $dsgid1 -dsg2 $dsgid2 -w $width -lt 2};
+    $cmd .= qq{ -assemble 1} if $assemble;
 
     while (-e "$outfile.running")
       {
@@ -1160,6 +1163,7 @@ sub go
     my $dsgid1 = $opts{dsgid1};
     my $dsgid2 = $opts{dsgid2};
     my $ks_type = $opts{ks_type};
+    my $assemble = $opts{assemble}; #flag to send to dotplot.pl to try to order contigs by syntenic path through a reference genome
 
     my $dagchainer_type = $opts{dagchainer_type};
     $dagchainer_type = $dagchainer_type eq "true" ? "geneorder" : "distance";
@@ -1390,7 +1394,7 @@ sub go
 	my $t6 = new Benchmark;
 	$gen_ks_db_time = timestr(timediff($t6,$t5));
 
- 	$out = generate_dotplot(dag=>$dag_file12_all, coords=>$tmp, outfile=>"$out", regen_images=>$regen_images, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, dagtype=>$dagchainer_type, ks_db=>$ks_db, ks_type=>$ks_type);
+ 	$out = generate_dotplot(dag=>$dag_file12_all, coords=>$tmp, outfile=>"$out", regen_images=>$regen_images, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, dagtype=>$dagchainer_type, ks_db=>$ks_db, ks_type=>$ks_type, assemble=>$assemble);
 	my $hist = $out.".hist.png";
 	my $t7 = new Benchmark;
 	$dotplot_time = timestr(timediff($t7,$t6));
