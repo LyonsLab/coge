@@ -1,4 +1,4 @@
-package CoGeX::GenomicSequence;
+package CoGeX::GenomicSequenceInfo;
 
 # Created by DBIx::Class::Schema::Loader v0.03009 @ 2006-12-01 18:13:38
 
@@ -48,7 +48,7 @@ Relates to a record in the C<CoGeX::DatasetGroup> object via C<dataset_group_id>
 
 
 __PACKAGE__->load_components("PK::Auto", "Core");
-__PACKAGE__->table("genomic_sequence");
+__PACKAGE__->table("genomic_sequence_info");
 __PACKAGE__->add_columns(
   "genomic_sequence_id",
   { data_type => "INT", default_value => 1, is_nullable => 0, size => 11 },
