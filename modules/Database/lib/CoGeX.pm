@@ -20,6 +20,8 @@ use vars qw($DEFAULT_CONNECTION_STRING $DEFAULT_NAME $DEFAULT_PASSWD);
 #$DEFAULT_CONNECTION_STRING = 'dbi:mysql:dbname=genomes;host=biocon.berkeley.edu;port=3306';
 #$DEFAULT_CONNECTION_STRING = 'dbi:mysql:dbname=genomes;host=homer.cnr.berkeley.edu;port=3306';
 $DEFAULT_CONNECTION_STRING = 'dbi:mysql:dbname=coge;host=biocon.berkeley.edu;port=3306';
+
+#$DEFAULT_CONNECTION_STRING = 'dbi:mysql:dbname=coge;host=homer.cnr.berkeley.edu;port=3306';
 $DEFAULT_NAME = "coge";
 $DEFAULT_PASSWD = "123coge321";
 
