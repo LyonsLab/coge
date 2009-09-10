@@ -281,6 +281,8 @@ sub gen_body
     $hiqual = 0 unless $hiqual;
     my $color_hsp = get_opt(params=>$prefs, form=>$form, param=>'colorhsp');
     $color_hsp = 0 unless $color_hsp;
+    my $color_feat = get_opt(params=>$prefs, form=>$form, param=>'colorfeat');
+    $color_feat = 0 unless $color_feat;
     my $hsp_label = get_opt(params=>$prefs, form=>$form, param=>'hsp_labels');
     $hsp_label = undef unless defined $hsp_label;
 #    my $hsp_limit = get_opt(params=>$prefs, form=>$form, param=>'hsplim');
@@ -324,6 +326,8 @@ sub gen_body
     else {$template->param(HIQUAL_NO=>"checked");}
     if ($color_hsp) {$template->param(COLOR_HSP_YES=>"checked");}
     else {$template->param(COLOR_HSP_NO=>"checked");}
+    if ($color_feat) {$template->param(COLOR_FEAT_YES=>"checked");}
+    else {$template->param(COLOR_FEAT_NO=>"checked");}
     if ($show_cns) {$template->param(SHOW_CNS_YES=>"checked");}
     else {$template->param(SHOW_CNS_NO=>"checked");}
     if ($show_gene_space) {$template->param(SHOW_GENESPACE_YES=>"checked");}
@@ -391,7 +395,7 @@ sub run
     my $show_gc = $opts{gc};
     my $show_nt = $opts{nt};
     my $show_cbc = $opts{cbc};
-    my $color_hsp = $opts{colorhsp};
+    my $color_hsp = $opts{color_hsp};
     my $hsp_labels = $opts{hsp_labels};
     my $feat_labels = $opts{feat_labels};
     my $draw_model = $opts{draw_model};
