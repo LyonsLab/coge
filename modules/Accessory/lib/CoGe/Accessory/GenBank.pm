@@ -9,7 +9,7 @@ use CoGe::Accessory::GenBank::Feature;
 use CoGeX::Feature;
 use Roman;
 
-__PACKAGE__->mk_accessors qw(id locus accn seq_length moltype division date definition version gi keywords data_source dataset organism sequence srcfile dir anntoation features start stop chromosome add_gene_models _has_genes wgs wgs_scafld wgs_data strain substrain genomic_sequence_type_id debug no_wgs);
+__PACKAGE__->mk_accessors qw(id locus accn seq_length moltype division date definition version gi keywords data_source dataset organism sequence srcfile dir anntoation features start stop chromosome add_gene_models _has_genes wgs wgs_scafld wgs_data strain substrain genomic_sequence_type_id debug no_wgs requested_id);
 
 
 
@@ -33,6 +33,10 @@ sub get_genbank_from_ncbi
     my $length = $opts{length};
     my $file = $opts{file};
     my $reload = $opts{reload}; #option to force reloading of genbank file
+    $id = $self->requested_id unless $id;
+    $file = $self->srcfile unless $file;
+
+    $self->requested_id($id);
     $self->srcfile($file);
 #    my $url = "http://www.ncbi.nlm.nih.gov/entrez/viewer.fcgi?db=nucleotide&qty=1&c_start=1&dopt=gbwithparts&send=Send&sendto=t&from=begin&to=end&extrafeatpresent=1&ef_CDD=8&ef_MGC=16&ef_HPRD=32&ef_STS=64&ef_tRNA=128&ef_microRNA=256&ef_Exon=512&list_uids=";
     my $url = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nucleotide&rettype=gbwithparts&retmode=text&complexity=0&id=";
@@ -60,12 +64,13 @@ sub get_genbank_from_ncbi
 	unless (-r $fileloc && !$reload)
 	  {
 	    my $response = $ua->get($url."$accn");
+	    
 	    my $entry = $response->content;
-
-	    while (!$entry || $entry =~ /temporarily unavailable/)
+	    $entry = "" unless $response->is_success();
+	    while (!$entry || $entry =~ /(temporarily unavailable)/ || $entry=~ /([^sequencing ]error.*?)<?/i)
 	      {
 
-		print STDERR "Warning: $url".$accn." failed\nFetching from NCBI yielding 'temporarily unavailable'\nRetrying\n";
+		print STDERR "Warning: $url".$accn." failed\nFetching from NCBI yielding '$1'\nRetrying\n";
 		sleep 10;
 		$response = $ua->get($url."$accn");
 		$entry = $response->content;
