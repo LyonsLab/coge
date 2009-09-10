@@ -136,6 +136,7 @@ sub gen_body
 	  }
 	  else
 	  {
+	    $fid = $featid;
 	  }
 	  my ($feat) = $coge->resultset('Feature')->find($fid);
 	  next unless $feat;
