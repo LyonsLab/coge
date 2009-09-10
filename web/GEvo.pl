@@ -279,7 +279,7 @@ sub gen_body
     $skip_hsp_overlap_adjust = 1 unless defined $skip_hsp_overlap_adjust;
     my $hiqual = get_opt(params=>$prefs, form=>$form, param=>'hiqual');
     $hiqual = 0 unless $hiqual;
-    my $color_hsp = get_opt(params=>$prefs, form=>$form, param=>'colorhsp');
+    my $color_hsp = get_opt(params=>$prefs, form=>$form, param=>'color_hsp');
     $color_hsp = 0 unless $color_hsp;
     my $color_feat = get_opt(params=>$prefs, form=>$form, param=>'colorfeat');
     $color_feat = 0 unless $color_feat;
