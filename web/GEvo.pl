@@ -2585,7 +2585,7 @@ sub gen_params
         'args__nt', 'show_nt',
         'args__cbc', 'show_cbc',
         'args__show_contigs', 'show_contigs',
-	'args__colorhsp', 'color_hsp',
+	'args__color_hsp', 'color_hsp',
 	'args__hsp_labels', 'hsp_labels',
 	'args__feat_labels', 'feat_labels',
 	'args__skip_feat_overlap', 'skip_feat_overlap',
