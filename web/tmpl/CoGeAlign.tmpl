@@ -4,7 +4,24 @@
 $(document).ready(function(){
 	pageObj.fids = "<TMPL_VAR NAME=FIDS>";
 	setup_tabs();
+	update_options();
+	var autogo = <TMPL_VAR NAME=AUTOGO>;
+         if (autogo) {
+          loading([],['results']); 
+	  ajax_wait("prepare_run();");
+	  }
+    
+ 
 });
+
+function ajax_wait (val){
+if (ajax.length)
+   {
+    setTimeout("ajax_wait("+'"'+val+'"'+")",100);
+    return;
+   }
+  eval(val);
+}
 
 function update_options(){
 	 
@@ -130,13 +147,13 @@ function feature_checkboxes(){
 <TMPL_IF NAME="COGE_SEQS">
 <br>
 Sequence Type:
-<label><input type=radio id=seq_type_dna checked name=seq_type value="dna" onclick="update_options();">DNA</label>
-<label><input type=radio id=seq_type_prot name=seq_type value="prot" onclick="update_options();">Protein</label>
+<label><input type=radio id=seq_type_dna  name=seq_type value="dna" onclick="update_options();"  <TMPL_VAR NAME="DNA_ALIGN"> >DNA</label>
+<label><input type=radio id=seq_type_prot name=seq_type value="prot" onclick="update_options();" <TMPL_VAR NAME="PROTEIN_ALIGN"> >Protein</label>
 <br>
 Generate codon alignment using protein sequences?
 <select class="backbox" name="codon_align" id="codon_align" tabindex="1" onchange="$('#seq_type_prot').attr('checked','checked');update_options();">
-     <option value=1 >Yes</option>
-     <option value=0 selected>No</option>
+     <option value=1 <TMPL_VAR NAME="CODON_ALIGN_YES"> >Yes</option>
+     <option value=0 <TMPL_VAR NAME="CODON_ALIGN_NO">  >No</option>
 </select>
 
 </TMPL_IF>
