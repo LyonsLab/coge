@@ -80,11 +80,10 @@ sub gen_body
   {
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CoGeAlign.tmpl');
     $template->param(JAVASCRIPT=>1);
+    $template->param(MAIN=>1);
     my $form = $FORM;
     my $no_values;
     $BASEFILE = $form->param('basename');
-    my $sort_by_type = $form->param('sort_type');
-    my $sort_by_location = $form->param('sort_loc');
     my $feat_list = [];
     $feat_list = read_file() if $BASEFILE;#: $opts{feature_list};
     foreach my $item ($form->param('fid'))
@@ -94,6 +93,25 @@ sub gen_body
     
     my $dsid = $form->param('dsid') if $form->param('dsid');
     my $chr = $form->param('chr') if $form->param('chr');
+    my $align = $form->param('align');
+    my $autogo = $form->param('autogo');
+    $autogo = 0 unless $autogo;
+    if ($align eq "codon") 
+      {
+	$template->param('CODON_ALIGN_YES'=>"selected");
+	$template->param('PROTEIN_ALIGN'=>"checked");
+      }
+    elsif ($align eq "protein")
+      {
+	$template->param('PROTEIN_ALIGN'=>"checked");
+	$template->param('CODON_ALIGN_NO'=>"selected");
+      }
+    else
+      {
+	$template->param('DNA_ALIGN'=>"checked");
+	$template->param('CODON_ALIGN_NO'=>"selected");
+      }
+    $template->param('AUTOGO'=>$autogo);
     push @$feat_list, @{get_fids_from_dataset(dsid=>$dsid, chr=>$chr)} if $dsid;
     
     my $seqs = generate_sequence(feature_list=>$feat_list);
@@ -116,7 +134,8 @@ sub gen_body
     {
 	$template->param(SEQUENCE=>"Enter Fasta Sequences here");
     }
-    $template->param(MAIN=>1); 
+
+
     return $template->output;
   }
   
@@ -141,7 +160,7 @@ sub gen_body
 	  my ($feat) = $coge->resultset('Feature')->find($fid);
 	  next unless $feat;
 	  my $seq = $feat->fasta(col=>0, prot=>$prot, name_only=>1, gstid=>$gstidt);
-	  $seq =~ s/>/>fid:$fid /;
+	  $seq =~ s/>/>fid:$fid /g;
 	  $seqs .= $seq;
       }
       return $seqs;
@@ -168,10 +187,14 @@ sub refresh_seq
 		  {
 		    ($fidt, $gstidt) = split /_/, $fid;
 		  }
+		else
+		  {
+		    $fidt = $fid;
+		  }
 		my ($feat) = $coge->resultset("Feature")->find($fidt);
 		next unless $feat;
 		my $seq = $feat->fasta(col=>0, prot=>$protein, name_only=>1, gstid=>$gstidt);
-		$seq =~ s/>/>fid:$fid /;
+		$seq =~ s/>/>fid:$fid /g;
 		$seqs .= $seq;
 		#seqs .= $feat->fasta(col=>0,prot=>$protein, name_only=>1, add_fid=>1);
 	}
@@ -318,10 +341,10 @@ sub run
 
     $html .= qq{
 <br>
-<span id=show_alignment class='ui-button ui-state-default ui-corner-all' onClick="\$('#hide_alignment').show();\$('#show_alignment').hide();\$('#alignment_box').show();">Show Alignment</span>
-<span  style="display:none" id=hide_alignment class='ui-button ui-state-default ui-corner-all' onClick="\$('#hide_alignment').hide();\$('#show_alignment').show();\$('#alignment_box').hide();">Hide Alignment</span>
+<span style="display:none" id=show_alignment class='ui-button ui-state-default ui-corner-all' onClick="\$('#hide_alignment').show();\$('#show_alignment').hide();\$('#alignment_box').show();">Show Alignment</span>
+<span  id=hide_alignment class='ui-button ui-state-default ui-corner-all' onClick="\$('#hide_alignment').hide();\$('#show_alignment').show();\$('#alignment_box').hide();">Hide Alignment</span>
 };
-    $html .= qq{<div id=alignment_box align=left class=resultborder style="display:none;"><br/>
+    $html .= qq{<div id=alignment_box align=left class=resultborder "><br/>
 <table><tr valign=top>
 <td><pre>$header_html</pre>
 <td><pre  style= "overflow:auto;width:700px;max-height:700px;">$seq_html</pre>
