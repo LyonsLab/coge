@@ -1213,6 +1213,7 @@ sub html_code_table
       my $trans_table = $opts{trans_table};
       my $code = $opts{code};
       my $counts = $opts{counts};
+      my $two_colors = $opts{two_colors};
       my $total_codon_count =0;
       if ($counts)
 	{
@@ -1231,13 +1232,36 @@ sub html_code_table
       my $codon_set_total =0;
       foreach my $codon (sort { $self->sort_nt1(substr($a, 0, 1)) <=> $self->sort_nt1(substr($b,0, 1)) || $self->sort_nt2(substr($a,1,1)) <=> $self->sort_nt2(substr($b,1,1)) || $self->sort_nt3(substr($a,2,1)) <=> $self->sort_nt3(substr($b,2,1)) } keys %{$code})
 	{
-	  my $tmp = substr($codon, 0, 1);
-	  my $current_val = sprintf("%.2f",100*$data->{$codon});
-	  my $color = $self->color_by_usage(100*$max_val, $current_val);
+	  my $color_str;
+	  my $current_val = $data->{$codon} =~ /\d/ ? sprintf("%.2f",100*$data->{$codon}) : $data->{$codon};
+	  if ($current_val =~ /^\d/)
+	    {
+	      if ($two_colors)
+		{
+		  #fade to white at 100
+		  #color green if above 100
+		  if ($current_val > 100)
+		    {
+		      my $color = sprintf("%.0f", 255-255*($current_val-100)/($max_val*100-100));
+		      $color_str = "rgb($color, 255, $color);";
+		    }
+		  #color red if below 100;
+		  else
+		    {
+		      my $color = sprintf("%.0f", 255*$current_val/100);
+		      $color_str = "rgb(255, $color, $color);";
+		    }
+		}
+	      else
+		{
+		  my $color = $self->color_by_usage(100*$max_val, $current_val);
+		  $color_str = "rgb($color, 255, $color);";
+		}
+	    }
 #	  my $rel_val = ($data->{$codon}-$min_val)/$range;
 #	  my $color = $self->get_color(val=>$rel_val);
 #	  my $color_str = join (",",@$color);
-	  my $str = "<span style=\"background-color: rgb($color, 255, $color);\" >".$codon."(".$code->{$codon}.") ".$current_val."%";
+	  my $str = "<span style=\"background-color: $color_str\" >".$codon."(".$code->{$codon}.") ".$current_val."%";
 	  $str .= " (".$counts->{$codon}.")" if $counts;
 	  $str .="</span>";
 	  unless ($count % 4)
@@ -1337,6 +1361,7 @@ sub color_by_usage
     my $g = $opt*(($max - $value) / $max);
     return int($g + .5);
   }
+
 sub get_color
   {
     my $self = shift;
@@ -1397,6 +1422,7 @@ sub html_aa
     my $split_table =$opts{split};
     $code = $self->code($trans_table) unless $code;    my $data = $opts{data};
     my $counts = $opts{counts};
+    my $two_colors = $opts{two_colors};
     if ($counts)
       {
 	$counts = $data;
@@ -1405,21 +1431,46 @@ sub html_aa
 	$data = {map {$_,$counts->{$_}/$total} keys %$counts};
       }
     my $aa_sort = $self->sort_aa_by_gc(code=>$code, trans_table=>$trans_table);
-    my ($max_aa) = sort {$b<=>$a} map{$data->{$_}} keys %$aa_sort;
-    my ($min_aa) = sort {$a<=>$b} map{$data->{$_}} keys %$aa_sort;
-    my $range = $max_aa-$min_aa;
+    my ($max_val) = sort {$b<=>$a} map{$data->{$_}} keys %$aa_sort;
+    my ($min_val) = sort {$a<=>$b} map{$data->{$_}} keys %$aa_sort;
+    my $range = $max_val-$min_val;
     my $html;
     $html .= "<table><tr valign=top><td>" if $split_table;
     $html .= "<table>";
     my $total = 0;
     foreach (sort {$aa_sort->{$b} <=> $aa_sort->{$a} || $a cmp $b}keys %$aa_sort)
       {	
-	my $current_val = sprintf("%.2f",100*$data->{$_});
-#	my $rel_val = ($data->{$_}-$min_aa)/$range;
+	my $color_str;
+	my $current_val = $data->{$_} =~ /\d/ ? sprintf("%.2f",100*$data->{$_}) : $data->{$_};#sprintf("%.2f",100*$data->{$_});
+	if ($current_val =~ /^\d/)
+	    {
+	      if ($two_colors)
+		{
+		  #fade to white at 100
+		  #color green if above 100
+		  if ($current_val > 100)
+		    {
+		      my $color = sprintf("%.0f", 255-255*($current_val-100)/($max_val*100-100));
+		      $color_str = "rgb($color, 255, $color);";
+		    }
+		  #color red if below 100;
+		  else
+		    {
+		      my $color = sprintf("%.0f", 255*$current_val/100);
+		      $color_str = "rgb(255, $color, $color);";
+		    }
+		}
+	      else
+		{
+		  my $color = $self->color_by_usage(100*$max_val, $current_val);
+		  $color_str = "rgb($color, 255, $color);";
+		}
+	    }
+	#	my $rel_val = ($data->{$_}-$min_aa)/$range;
 #	my $color = $self->get_color(val=>$rel_val);
 #	my $color_str = join (",",@$color);
-	my $color = $self->color_by_usage(100*$max_aa,$current_val);
-	$html .= "<tr style=\"background-color: rgb($color,255,$color)\"><td nowrap>$_ (GC:".sprintf("%.0f",100*$aa_sort->{$_})."%)<td nowrap>".$current_val."%";
+#	my $color = $self->color_by_usage(100*$max_aa,$current_val);
+	$html .= "<tr style=\"background-color: $color_str\"><td nowrap>$_ (GC:".sprintf("%.0f",100*$aa_sort->{$_})."%)<td nowrap>".$current_val."%";
 	$html .= " (".$counts->{$_}.")" if $counts;
 	$total++;
 	$html .= "</table><td><table>" if $split_table && $total == 10;
