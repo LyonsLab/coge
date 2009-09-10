@@ -258,6 +258,7 @@ sub gen_body
     #page preferences
     my $pad_gs = $form->param("pad_gs") if $form->param("pad_gs");
     $pad_gs = 0 unless $pad_gs;
+    my $apply_all = get_opt(params=>$prefs, form=>$form, param=>'apply_all');
     my $prog = get_opt(params=>$prefs, form=>$form, param=>'prog');
     $prog = "blastz" unless $prog;
     my $image_width = get_opt(params=>$prefs, form=>$form, param=>'iw');
@@ -301,6 +302,7 @@ sub gen_body
     $show_gene_space=0 unless $show_gene_space;
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GEvo.tmpl');
     $template->param(PAD_GS=>$pad_gs);
+    $template->param(APPLY_ALL=>$apply_all);
     $template->param(IMAGE_WIDTH=>$image_width);
     $template->param(FEAT_HEIGHT=>$feature_height);
     $template->param(PADDING=>$padding);
