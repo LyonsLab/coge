@@ -1452,11 +1452,14 @@ sub go
 };
 
 	    $html .= "<div><img src='$out.hist.png'></div>" if -r $hist;
-
- 	    $html .= "<br><span class=small><a href=$out.png target=_new>Image File</a>";
- 	    $html .= "<br><span class=small><a href=$out.hist.png target=_new>Histogram of synonymous substitutions</a>" if -r $hist;
- 	    $html .= "<br><span class=small><a href=$tmp target=_new>DAGChainer syntelog file with GEvo links</a><br>";
- 	    $html .= "<span class=small><a href=$tmp.condensed target=_new>Condensed syntelog file with GEvo links</a><br>";
+	    $html .= "Links and Downloads:";
+	    
+ 	    $html .= "<br><a class=small href=$out.png target=_new>Image File</a>";
+ 	    $html .= "<br><a class=small href=$out.hist.png target=_new>Histogram of synonymous substitutions</a>" if -r $hist;
+ 	    $html .= "<br><a class=small href=$tmp target=_new>DAGChainer syntelog file with GEvo links</a>";
+ 	    $html .= "<br><a class=small href=$tmp.condensed target=_new>Condensed syntelog file with GEvo links</a>";
+	    $html .= "<br>".qq{<span class="small link" id="" onClick="window.open('bin/SynMap/order_contigs_to_chromosome.pl?f=$tmp');" >Generate Assembled Genomic Sequence</span>} if $assemble;
+	    $html .= "<br>"
  	  }
        }
      else
@@ -1468,7 +1471,7 @@ sub go
  	my $output = $org_dirs{$org_dir}{blastfile};
  	next unless -s $output;
  	$output =~ s/$DIR/$URL/;
- 	$html .= "<a href=$output target=_new>Blast results</a><br>";;	
+ 	$html .= "<a class=small href=$output target=_new>Blast results</a><br>";;	
        }
      my $log = $cogeweb->logfile;
      $log =~ s/$DIR/$URL/;
@@ -1476,8 +1479,8 @@ sub go
 #     ($tiny) = $tiny =~ /<b>(http:\/\/tinyurl.com\/\w+)<\/b>/;
      write_log("\nLink: $synmap_link", $cogeweb->logfile);
 #     write_log("tinyurl: $tiny", $cogeweb->logfile);
-     $html .= "<a href=$log target=_new>log</a><br>";
-    $html .= "<a href='$synmap_link' target=_new>SynMap Link</a></span>";
+     $html .= "<a class=small href=$log target=_new>log</a><br>";
+    $html .= "<a class=small href='$synmap_link' target=_new>SynMap Link</a>";
 
      $html .= "<td valign=top>";
      $html .= "<div id=syn_loc1></div>";
