@@ -8,6 +8,7 @@ use Data::Dumper;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use CoGeX;
+use DBI;
 $ENV{PATH} = "/opt/apache2/CoGe/";
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 
@@ -86,6 +87,7 @@ sub gen_body
 	my ($ds) = $dsg->datasets(chr=>$chr);
 	$dsid = $ds->id;
       }
+    my @feat_types;
     if ($dsid)
       {
 	my $dso = $coge->resultset('Dataset')->find($dsid);
@@ -98,10 +100,40 @@ sub gen_body
 	    $dsgid = $dsg->id if $gstid && $dsg->genomic_sequence_type_id == $gstid;
 	    $dsgid = $dsg->id unless $gstid;
 	  }
+	my $query = qq{select distinct(feature_type_id) from feature where dataset_id = $dsid};
+	my $dbh = DBI->connect($coge->db_connection_string,$coge->db_name,$coge->db_passwd);
+	my $sth = $dbh->prepare($query);
+	$sth->execute;
+	while (my $row = $sth->fetchrow_arrayref)
+	  {
+	    my $ftid = $row->[0];
+	    push @feat_types, $coge->resultset('FeatureType')->find($ftid);
+	  }
       }
     $loc = 1 unless $loc;
     $z=2 unless $z;
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GenomeView.tmpl');
+    #set layers
+    foreach my $ft (@feat_types)
+      {
+	if ($ft->name eq "gene_space")
+	  {
+	    $template->param(GENE_SPACE_LAYER=>1);
+	  }
+	elsif ($ft->name =~ /duplicate/i)
+	  {
+	    $template->param(LOCAL_DUP_LAYER=>1);
+	  }
+	elsif ($ft->name =~ /domain/i)
+	  {
+	    $template->param(FUNC_DOMAIN_LAYER=>1);
+	  }
+	elsif ($ft->name =~ /repeat/i)
+	  {
+	    $template->param(REPEATS_LAYER=>1);
+	  }
+      }
+
     $ver = "unk" unless $ver;
     $template->param(CHR=>$chr);
     $template->param(VER=>$ver);
@@ -120,7 +152,7 @@ sub gen_body
 			gc=>'true',
 			genes=>'true',
 		       );
-    foreach my $item (qw (gc gaga gbox genes wobblegc wobble50gc localdup funcdomain prot))
+    foreach my $item (qw (gc gaga gbox genes wobblegc wobble50gc localdup funcdomain prot repeats other))
       {
 	my $show = $prefs->{$item};
 	$show = $default_true{$item} unless $show;
