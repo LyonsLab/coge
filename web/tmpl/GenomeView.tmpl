@@ -65,6 +65,13 @@
          //   background-color: white;
              color:orange;
         }
+        #repeats {
+         //   background-color: white;
+             color:orange;
+        #other {
+         //   background-color: white;
+             color:orange;
+        }
     </style>
 <!--    <script src = "http://openlayers.org/api/2.6/OpenLayers.js"></script>-->
 
@@ -173,8 +180,16 @@
                  ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"protein"}
                  ,{isBaseLayer:false}
              );
-            func_domain = new OpenLayers.Layer.Genomic( "<span id='func_dom'>functional domains</span>" , server
+            func_domain = new OpenLayers.Layer.Genomic( "<span id='func_dom'>Functional Domains</span>" , server
                  ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"domain"}
+                 ,{isBaseLayer:false}
+             );
+            repeats = new OpenLayers.Layer.Genomic( "<span id='repeats'>Repeat Regions</span>" , server
+                 ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"repeat"}
+                 ,{isBaseLayer:false}
+            );
+            other = new OpenLayers.Layer.Genomic( "<span id='repeats'>Other Features</span>" , server
+                 ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"other"}
                  ,{isBaseLayer:false}
              );
 	    
@@ -186,8 +201,6 @@
             map.addLayer(gaga);
             gbox.setVisibility(<TMPL_VAR NAME="GBOX">);
             map.addLayer(gbox);
-	    gene_space.setVisibility(<TMPL_VAR NAME="Gene_Space">);
-            map.addLayer(gene_space);
 
             genes.setVisibility(<TMPL_VAR NAME="GENES">);
 
@@ -215,10 +228,30 @@
             map.addLayer(wobble_GC_usage);
 //            wobble_GC_usage_first_50.setVisibility(<TMPL_VAR NAME="WOBBLE50GC">);
 //            map.addLayer(wobble_GC_usage_first_50);
+
+	    <TMPL_IF NAME="GENE_SPACE_LAYER">
+	    gene_space.setVisibility(<TMPL_VAR NAME="Gene_Space">);
+            map.addLayer(gene_space);
+            </TMPL_IF>
+
+	    <TMPL_IF NAME="LOCAL_DUP_LAYER">
             local_dup.setVisibility(<TMPL_VAR NAME="LOCALDUP">);
             map.addLayer(local_dup);
+            </TMPL_IF>
+
+	    <TMPL_IF NAME="FUNC_DOMAIN_LAYER">
             func_domain.setVisibility(<TMPL_VAR NAME="FUNCDOMAIN">);
             map.addLayer(func_domain);
+            </TMPL_IF>
+
+	    <TMPL_IF NAME="REPEATS_LAYER">	
+            repeats.setVisibility(<TMPL_VAR NAME="REPEATS">);
+            map.addLayer(repeats);
+            </TMPL_IF>
+
+            other.setVisibility(<TMPL_VAR NAME="OTHER">);
+            map.addLayer(other);
+
             prot.setVisibility(<TMPL_VAR NAME="PROT">);
             map.addLayer(prot);
             /*                                          zoomLevel */
