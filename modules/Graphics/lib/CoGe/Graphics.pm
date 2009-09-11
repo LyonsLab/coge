@@ -12,6 +12,7 @@ use CoGe::Graphics::Feature::Exon_motifs;
 use CoGe::Graphics::Feature::AminoAcid;
 use CoGe::Graphics::Feature::Domain;
 use CoGe::Graphics::Feature::Block;
+use CoGe::Graphics::Feature::Outline;
 use CoGeX;
 use Data::Dumper;
 use Benchmark;
@@ -430,6 +431,8 @@ sub process_nucleotides
 	    $f2->x_color($x_color) if $x_color && ref ($x_color) =~ /array/i && scalar (@{$x_color}) eq 3;
 	    $f1->show_label(1); 
 	    $f2->show_label(1);
+	    $f1->font_size(13);
+	    $f2->font_size(13);
 	    $f1->use_external_image(1);
 	    $f2->use_external_image(1);
 	    $c->add_feature($f1) if $f1;
@@ -569,7 +572,7 @@ sub process_features
     my ($anno_type_group) = $coge->resultset('AnnotationTypeGroup')->find_or_create({name=>"Local Dup"});
     my ($parent_type) = $coge->resultset('AnnotationType')->find_or_create({name=>"Parent", annotation_type_group_id=>$anno_type_group->id});
     my ($daughter_type) = $coge->resultset('AnnotationType')->find_or_create({name=>"Daughter", annotation_type_group_id=>$anno_type_group->id});
-    foreach my $feat (values %feats)
+    feat: foreach my $feat (values %feats)
       {
 	my $tf4a = new Benchmark if $BENCHMARK;
         my @f;
@@ -648,6 +651,15 @@ sub process_features
 	    $f->overlay(1);
 	    push @f, $f;
           }
+        elsif (($layers->{features}{repeat} || $layers->{all}) && $feat->type->name =~ /repeat/i)
+          {
+	    my $f = CoGe::Graphics::Feature::Outline->new();
+	    $f->order(1);
+	    $f->overlay(1);
+	    my $color = [0, 0, 255];
+	    $f->color($color);
+	    push @f, $f;
+          }
 	elsif (($layers->{features}{cns} || $layers->{all}) && $feat->type->name =~ /CNS/i)
           {
 	    my $f = CoGe::Graphics::Feature::Block->new();
@@ -667,14 +679,20 @@ sub process_features
 	    $f->color($color);
 	    push @f, $f;
 	}
-	elsif ($feat->type->name =~ /source/i)
+	elsif ($feat->type->name =~ /source/i || $feat->type->name =~ /chromosome/i)
 	  {
 	    next;
 	  }
 	elsif ($layers->{features}{other} || $layers->{all})
 	  {
+	    my @not_other = qw(rna gene cds functional repeat CNS gene_space peptide protein);
+	    foreach my $item (@not_other)
+	      {
+		next feat if $feat->type->name =~ /$item/i;
+	      }
+
 	    my $f = CoGe::Graphics::Feature::Block->new();
-	    $f->order(3);
+	    $f->order(2);
 	    my $color = [ 255, 100, 0];
 	    $f->color($color);
 	    push @f, $f;
@@ -881,6 +899,10 @@ sub process_layers
        "flat"=>"flat", #are gene models draw 'flat' or pseudo-3D?
        "olc"=>"overlap_check", #are features checked for overlap when drawing image?
        "overlap_check"=>"overlap_check",
+       "repeats"=>"repeat",
+       "repeat"=>"repeat",
+       "repeat_region"=>"repeat",
+       
       );
     my %features = 
       (
@@ -899,6 +921,7 @@ sub process_layers
        gene_space=>1,
        "flat"=>1,
        "overlap_check"=>1,
+       "repeat"=>1,
       );
     #determine of nt sequence is needed
     my %nt = 
