@@ -17,6 +17,7 @@ lib/CoGe/Graphics/Feature/Exon_motifs.pm
 lib/CoGe/Graphics/Feature/AminoAcid.pm
 lib/CoGe/Graphics/Feature/Domain.pm
 lib/CoGe/Graphics/Feature/Block.pm
+lib/CoGe/Graphics/Feature/Outline.pm
 lib/CoGe/Graphics/Feature/HSP.pm
 t/001_load.t
 t/002_load.t
