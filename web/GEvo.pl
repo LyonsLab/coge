@@ -29,6 +29,7 @@ use CoGe::Graphics::Feature::AminoAcid;
 use CoGe::Graphics::Feature::Domain;
 use CoGe::Graphics::Feature::HSP;
 use CoGe::Graphics::Feature::Block;
+use CoGe::Graphics::Feature::Outline;
 #use CoGe::Graphics::Feature::Line;
 use CoGeX;
 use CoGeX::Feature;
@@ -1304,6 +1305,7 @@ sub process_features
 		      }
 		  }
 	      }
+
 	    if ($cbc)
               {
                 #my $seq = $feat->genomic_sequence;
@@ -1330,6 +1332,15 @@ sub process_features
 	    
 		
           }
+        if ($type =~ /repeat/i)
+          {
+	    next unless $draw_model eq "full";
+	    $f = CoGe::Graphics::Feature::Outline->new({start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1]});
+	    $f->color([0,0,255]);
+	    $f->order($track);
+	    $f->overlay(1);
+          }
+
         elsif ($type =~ /mrna/i)
 	{
 	    next unless $draw_model eq "full" || $draw_model eq "mRNA";
@@ -1915,7 +1926,8 @@ sub get_obj_from_genome_db
 	  }
 	unless (@names)
 	  {
-	    next;
+#	    next;
+	    push @names, "No Name Feature: ".$f->type->name,"\n";
 	    print STDERR "Feature has no Name.  Db Id: ",$f->id,"\n" unless $f->type->name =~ /misc/;
 
 	  }
