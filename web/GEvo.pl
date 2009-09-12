@@ -1338,7 +1338,7 @@ sub process_features
 	    $f = CoGe::Graphics::Feature::Outline->new({start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1]});
 	    $f->color([0,0,255]);
 	    $f->order($track);
-	    $f->overlay(1);
+	    $f->overlay(4);
           }
 
         elsif ($type =~ /mrna/i)
