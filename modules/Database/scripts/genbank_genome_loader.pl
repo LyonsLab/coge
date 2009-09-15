@@ -1,17 +1,17 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 
 use strict;
 use CoGe::Accessory::GenBank;
 use LWP::Simple;
-use Roman;
 use Data::Dumper;
 use Getopt::Long;
 use CoGeX;
+use File::Path;
+
 
 # variables
-my ($DEBUG, $GO, $ERASE, $DELETED, $autoupdate, @files, $dir, @accns, $tmpdir, $help, $chromosome, $ds_link, $test, $annotation_check);
-my $genomic_seq_len = 10000; 		# length to break up genomic sequence
-my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
+my ($DEBUG, $GO, $ERASE,$autoupdate,@accns, $tmpdir, $help, $user_chr, $ds_link, $test);
+my $connstr = 'dbi:mysql:dbname=coge;host=biocon.berkeley.edu;port=3306';
 my $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
@@ -24,83 +24,116 @@ GetOptions (
 	    "debug" 			=> \$DEBUG,
 	    "go"    			=> \$GO,
 	    "erase|e"  		=> \$ERASE, 
-	    "file|f=s" 		=> \@files,
-	    "dir|d=s"  		=> \$dir,
 	    "accn|a=s"			=> \@accns,
 	    "temp_dir|td=s"	=> \$tmpdir,
 	    "help|h"			=> \$help,
-	    "chromosome|chr=s"=>\$chromosome,
+	    "user_chr|chr=s"=>\$user_chr,
 	    "dataset_link=s"=>\$ds_link,
-	    "annotation_check|ac"=>\$annotation_check,
 	    "test"=>\$test, #to add the name test to dataset name for testing purposes
 	    "autoupdate"=>\$autoupdate,
 	   );
-$chromosome = 1 unless $chromosome;
+$user_chr = 1 unless $user_chr;
 $tmpdir = "/tmp/gb" unless $tmpdir;	# set default directory to /tmp
+
+mkpath ($tmpdir) unless -d $tmpdir;
 $DEBUG = 0 unless defined $DEBUG;   # set to 1 to enable debug printing
 $GO = 0 unless defined $GO; 		# set to 1 to actually make db calls (instead of testing)
 $ERASE = 0 unless defined $ERASE;
-$DELETED = 0 if $ERASE;
 $autoupdate = 0 unless $autoupdate;
-#my $ERASE = 0; 					# set to 1 to clear the database of entries created for $dataset
-#my @files = @ARGV;
-help () if $help;
 
-# read in each file into a GBFile object
-# if the directory is given, process from dir
-# if accns is given, process by accns and take precedence over directory
-#push @files, process_dir($dir) if $dir;
-#push @files, process_accns(@accns) if scalar @accns;
+my $formatdb =  "/usr/bin/formatdb -p F -o T"; #path to blast's formatdb program
+my %dsg;
+#my $ERASE = 0; 					# set to 1 to clear the database of entries created for $dataset
+help () if $help;
 
 print "Go = $GO \n" if $DEBUG;
 
-# loop through all the files in input
-my $increment_chr_version =0;
-my $file_count =0;
-my $orig_chr;
 
-foreach my $accn (@accns)
+my $data_source = get_data_source(); #for NCBI
+
+# loop through all the accessions
+my %previous_datasets; #storage for previously loaded accessions
+my $dsg; #storage for coge dataset_group_obj
+my %dsg_update;#storage for previous dataset groups that had a dataset deleted and needs to be reloaded
+accn: foreach my $accn (@accns)
   {
-    print "Processing accn $accn... \n";
-    my $UPDATE = $autoupdate; #flag for updating a dataset if something went wrong with it.
-    $file_count++;
-    # open our input data file...
+    print "Working on $accn...";
+    my $previous = check_accn($accn);
+    foreach my $item (@$previous)
+      {
+	if (!$item->{version_diff} && !$item->{length_diff})
+	  {
+#	    push @previous_datasets, $item->{ds};
+	    $previous_datasets{$item->{ds}->id} = $item->{ds};
+	    print "previously loaded\n";
+	    next accn;
+	  }
+	elsif (!$item->{version_diff} && $item->{length_diff})
+	  {
+	    print "Detected a difference in total genomic length between CoGe (".$item->{coge_length}.") and NCBI(".$item->{ncbi_length}.").  Would you like to delete and reload? (y/n)";
+	    my $ans = <STDIN> unless $autoupdate;
+	    if ($autoupdate || $ans =~ /y/i)
+	      {
+	       print "Autoupdate flag set to true.  Automatically reloading dataset.\n" if $autoupdate;
+		my $ds = $item->{ds};
+		foreach my $item ($ds->dataset_groups)
+		  {
+		    $dsg_update{$item->id}{dsg}=$item;
+		    push @{$dsg_update{$item->id}{accn}}, $accn;
+#		    delete_dataset_group($item);
+		  }
+		$ds->delete;
+	      }
+	    else 
+	      {
+		$previous_datasets{$item->{ds}->id} = $item->{ds};
+		next accn;
+	      }
+	  }
+      }
+    if ($ERASE)
+      {
+	print "skipping loading due to ERASE flag being set\n";
+	next;
+      }
+
     my $genbank = new CoGe::Accessory::GenBank();
-    $genbank->get_genbank_from_ncbi(file=> "$tmpdir/$accn.gbk", accn=>$accn);
-    # remove path from file name
-#    my ($file) = $longfile=~ /([^\/]*$)/;
-#    chomp $file;
+    $genbank->debug(1);
+    $genbank->get_genbank_from_ncbi(file=> "$tmpdir/$accn.gbk", accn=>$accn,);
     my $EXIT =0;
-    
-    my ($organism, $data_source, $dataset);
-    my $ds_count = 0;
+    my $chromosome;
+    $chromosome = $user_chr if $user_chr;
     if ($genbank->chromosome)
       {
 	$chromosome = $genbank->chromosome ;
+	print "#"x20,"\n";
+	print $genbank->data_source();
+	print "GBChr:  $chromosome\n";
+	print "#"x20,"\n";
       }
-    else
-      {
-	$chromosome = $orig_chr if $orig_chr;
-	$chromosome = $orig_chr.".".$ds_count if ($orig_chr && $orig_chr eq $chromosome);
-	$orig_chr = $chromosome unless defined $orig_chr;
-	$chromosome = $orig_chr.".".$file_count if $increment_chr_version;
-      }
+    $chromosome =~ s/chromosome//i;
+    $chromosome =~ s/chr//i;
     $chromosome =~ s/^\s+//;
     $chromosome =~ s/\s+$//;
     $chromosome =~ s/\s+/_/g;
-    $ds_count++;
-    print "Working on genbank ".$genbank->accession,", chromosome $chromosome","\n";
-    unless ($organism && $data_source)
+    $chromosome =~ s/\.0$//;
+    print "\tchromosome: $chromosome","\n";
+    my ($organism, $dataset);
+    unless ($organism)
       {
 	($organism) = get_organism($genbank);
 	if ($organism)
 	  {
 	    print "Organism info:";
 	    print "\t",$organism->id,": ";
-	    print "\t",$organism->name,": ";
+	    print "\t",$organism->name,"\n";
 	    print "\t",$organism->description,"\n";
 	  }
-	$data_source = get_data_source();
+	else
+	  {
+	    print "WARNING:  Unable to retrieve an organism object for $accn.  Probably a problem with the genbank object file parsing\n" unless !$GO;
+	    next if $GO;
+	  }
       }
     my $dataset_desc = "LOCUS: "     . $genbank->locus();
     $dataset_desc   .= ", ACCESSION: " . $genbank->accession();
@@ -110,97 +143,72 @@ foreach my $accn (@accns)
     my $name = $genbank->accession;
     $name .= ".gbk" unless $name =~ /gbk$/;
     $name .= ".test" if $test;
-    my @dataset_test = $coge->resultset('Dataset')->search(
-							   {
-							    name => $name,
-							    version=>$genbank->version,
-							    description         => $dataset_desc,
-							    organism_id         => $organism->id,
-							    data_source_id      => $data_source->id(),
-							   });
-    # loop through results and see if we have any matches
-    foreach my $test (@dataset_test)
-      {
-	    # test to see if match
-	    if (($test->name == $accn || $test->name == $genbank->accession) && $test->version == $genbank->version)
-	      {
-		# stop executing if a match is found
-		print "Genome is already inserted in the database...\n";
-		foreach my $chr ($test->chromosomes)
-		  {
-		    my $wgs =  scalar@{$genbank->wgs_data()};
-		    if (($chr ne $chromosome) && !$wgs) #wgs is funky due to nested genbank files, each used as a contig_
-		      {
-			print "WARNING:  chromosome in genbank file does not match chromosome in database:  old: $chr vs. new: $chromosome\n";
-			#update genomic_sequence chromosomes
-			unless ($UPDATE)
-			  {
-			    print "Would you like to update this dataset (y/n)?  ";
-			    my $ans = <STDIN>;
-			    $UPDATE = $ans =~ /y/i;
-			  }
-			if ($UPDATE)
-			  {
-			    print "Updating $accn's dataset, features, locations, and genomic sequence to new chromosome\n";
-			    foreach my $gs ($test->genomic_sequences)
-			      {
-				$gs->chromosome($chromosome);
-				$gs->update if $GO;
-			      }
-			    foreach my $feat ($test->features)
-			      {
-				$feat->chromosome($chromosome);
-				$feat->update if $GO;
-				foreach my $loc ($feat->locations)
-				  {
-				    $loc->chromosome($chromosome);
-				    $loc->update if $GO;
-				  }
-			      }
-			  }
-		      }
-		    $EXIT = 1;
-		  }
-		
-		# if match and erase flag is set, erase the entry
-		if ($ERASE)
-		  {
-		    print "Clearing database of entries associated with ".$test->name." (version ".$test->version.")...";
-		    $test->delete();
-		    print "Deleted!\n";
-		    $DELETED = 1;
-		    next;
-		  }
-	      }
-	  }
-	
-	# if delete is set but nothing has been deleted
-	if ($ERASE && !$DELETED)
-	  {
-	    $EXIT = 1;
-	    print "No match found. Nothing deleted.\n";
-	  }
-	next if $EXIT;
-	
-	# actually create a dataset object if 
-	$ds_link = "http://www.ncbi.nlm.nih.gov/entrez/viewer.fcgi?db=nucleotide&dopt=gbwithparts&list_uids=".$accn unless $ds_link;
-	$dataset = $coge->resultset('Dataset')->find_or_create(
-							       {
-								name                => $name,
-								description         => $dataset_desc,
-								link                => $ds_link,
-								organism_id         => $organism->id,
-								data_source_id      => $data_source->id(),
-								version             => $genbank->version,
-							       })  if $GO;
-	
-    
-	### Main Feature Processing Loop ###
-    
+    # actually create a dataset object if 
+    $ds_link = "http://www.ncbi.nlm.nih.gov/entrez/viewer.fcgi?db=nucleotide&dopt=gbwithparts&list_uids=".$accn unless $ds_link;
+    $dataset = $coge->resultset('Dataset')->create(
+						   {
+						    name                => $name,
+						    description         => $dataset_desc,
+						    link                => $ds_link,
+						    data_source_id      => $data_source->id(),
+						    version             => $genbank->version,
+						   })  if $GO;
+    ### Main Feature Processing Loop ###
     my @gbs;
     if (@{$genbank->wgs_data})
       {
-	@gbs = @{$genbank->wgs_data};
+	entry: foreach my $entry (@{$genbank->wgs_data})
+	  {
+	    my $accn = $entry->accession;
+	    while (!$accn)
+	      {
+
+		$entry->get_genbank_from_ncbi(reload=>1);
+		print "#"x20,"\n";
+		print "Warning.  Didn't not retrieve a valid accession for entry.\n";
+		print "Requested id: ".$entry->requested_id."\n";
+		print "Trying to retrieve valid entry.\n";
+		print "#"x20,"\n";
+		$accn=$entry->accession;
+	      }
+	    print "Checking WGS $accn...";
+	    my $previous = check_accn($accn);
+	    foreach my $item (@$previous)
+	      {
+		if (!$item->{version_diff} && !$item->{length_diff})
+		  {
+		    $previous_datasets{$item->{ds}->id} = $item->{ds};
+		    print "previously loaded\n";
+		    next entry;
+		  }
+		elsif (!$item->{version_diff} && $item->{length_diff})
+		  {
+		    print "Detected a difference in total genomic length between CoGe (".$item->{coge_length}.") and NCBI(".$item->{ncbi_length}.").  Would you like to delete and reload? (y/n)";
+		    my $ans = <STDIN> unless $autoupdate;
+		    if ($autoupdate || $ans =~ /y/i)
+		      {
+			print "Autoupdate flag set to true.  Automatically reloading dataset.\n" if $autoupdate;
+			my $ds = $item->{ds};
+			my $dsg_flag;
+			foreach my $item ($ds->dataset_groups)
+			  {
+			    delete_dataset_group($item);
+			  }
+			$ds->delete unless $dsg_flag;
+		      }
+		    else {
+		      $previous_datasets{$item->{ds}->id} = $item->{ds};
+		      next entry;
+		    }
+		  }
+		else
+		  {
+		    print "not present.  Will be loaded.\n";
+		  }
+	      }
+	    push @gbs, $entry;
+	  }
+#	@gbs = @{$genbank->wgs_data};
 	
       }
     else
@@ -222,7 +230,9 @@ foreach my $accn (@accns)
 	      }
 	    if ($feature->type() =~ /source/i)
 	      {
-		next;
+		#change source to chromosome
+		$feature->type('chromosome');
+#		next;
 	      }
 	    my $feat_type = $coge->resultset('FeatureType')->find_or_create({ name => $feature->type() })  if $GO;
 	    # create a db_feature for to link this feature with the dataset table
@@ -236,13 +246,13 @@ foreach my $accn (@accns)
 							       stop=>$stop,
 							      }) if $GO;
 	    # expect first feature to be the source feature!
-	    if ($feature->type() =~ /source/i) #source is now skipped.
+	    if ($feature->type() =~ /chromosome/i) 
 	      {
-		# generate name based on organism name and chromosome
+		# generate name based on chromosome
 		my $feat_name = $coge->resultset('FeatureName')->create(
 									{
-									 name => $organism->name,
-									 description => "Chromosome " . $chromosome,
+									 name => $chromosome,
+#									 description => "Chromosome " . $chromosome,
 									 feature_id  => $db_feature->id
 									}) if $GO;
 		# generate name for accession
@@ -274,15 +284,16 @@ foreach my $accn (@accns)
 	    $loc_string =~ s/order//;
 	    $loc_string =~ s/\(|\)//g;
 	    
-	    # loop through the locations
+	    # loop through the locatons
 	    foreach my $loc (split /,/,$loc_string)
 	      {
 		$loc =~ s/<|>//g;
 		my ($start, $stop) = split /\.\./, $loc;
+		$stop = $start unless $stop;
 		$start =~ s/\^.*//;
 		$stop =~ s/\^.*//;
-		$stop = $start unless $stop;
-		die "problem with start $start or stop $stop\n" unless $start =~ /^\d+$/ && $stop =~ /^\d+$/;
+
+		die "problem with $accn start $start or stop $stop\n" unless $start =~ /^\d+$/ && $stop =~ /^\d+$/;
 		my $location = $db_feature->add_to_locations(
 							     {
 							      start      => $start,
@@ -430,111 +441,160 @@ foreach my $accn (@accns)
 								  }) if $GO;
 	      }
 	  }
-	print "Processing Genomic Sequence. . .\n" unless $EXIT;
-	load_genomic_sequence(len=> $genomic_seq_len, ds=>$dataset, seq=>$entry->sequence, chr=>$chromosome);
-      }
-    print "completed parsing $accn!\n" if $DEBUG;
+	$dsg = generate_dsg(version=>$version, org_id=>$organism->id, gst_id=>1) if $organism && !$dsg; #gst_id 1 is for unmasked sequence data
+	load_genomic_sequence(dsg=>$dsg, seq=>$entry->sequence, chr=>$chromosome);
+	if ($GO)
+	  {
+	    my $load = 1;
+	    foreach my $dsc ($dsg->dataset_connectors) #check to see if there is a prior link to the dataset -- this will happen when loading whole genome shotgun sequence
+	      {
+		$load = 0 if $dsc->dataset_id == $dataset->id;
+	      }
+	    $dsg->add_to_dataset_connectors({dataset_id=>$dataset->id}) if $load;
+	    if ($dataset->version > $dsg->version)
+	      {
+		$dsg->version($dataset->version);
+		$dsg->update;
+	      }
+	  }
+
+	#format blastable db
     
-    # cleanup
-    #	$organism->delete() if $GO;
+      }
+    print "completed parsing $accn!\n";# if $DEBUG;
   }
+#need to add previous datasets if new dataset was added with a new dataset group
+if ($GO)
+  {
+  
+    if ($dsg && keys %previous_datasets)
+      {
+	my $ver; #need a higher version number than previous
+	foreach my $ds (values %previous_datasets)
+	  {
+	    if ($dsg->dataset_connectors({dataset_id=>$ds->id}))
+		{
+		  my $name = $ds->name;
+		  print "$name has been previously added to this dataset group.  Skipping\n";
+		  next;
+		}
+	    foreach my $item ($ds->dataset_groups)
+	      {
+		$ver = $item->version unless $ver;
+		$ver = $item->version if $item->version > $ver;
+	      }
+	    foreach my $chr($ds->chromosomes)
+	      {
+		load_genomic_sequence(dsg=>$dsg, seq=>$ds->genomic_sequence(chr=>$chr), chr=>$chr);
+	      }
+	    $dsg->add_to_dataset_connectors({dataset_id=>$ds->id});
+	  }
+	#incement and update dsg version if new version number is higher
+	$ver++;
+	if ($ver > $dsg->version)
+	  {
+	    $dsg->version($ver);
+	    $dsg->update();
+	  }
+      }
+  }
+
+if (keys %dsg_update)
+  {
+    foreach my $item (values %dsg_update)
+      {
+	my $dsg = $item->{dsg};
+	print "#"x20,"\n";
+	print "Dataset Group ".$dsg->name." (".$dsg->id.") had a dataset deleted.  You will need to remove or update this dataset group.\n";
+	print "accessions that were deleted and reloaded:\n";
+	foreach my $accn (@{$item->{accn}})
+	  {
+	    print "\t", $accn,"\n";
+#	    my $previous = check_accn($accn);
+#	    my ($ds) = sort {$b->version<=>$a->version} @$previous;
+#	    $dsg->add_to_dataset_connectors({dataset_id=>$ds->id});
+	  }
+	if ($autoupdate)
+	  {
+	    print "Autoupdate flag has been set to true.  This Dataset_group is being deleted from the database.\n";
+	    delete_dataset_group($dsg);
+	  }
+	print "#"x20,"\n";
+      }
+  }
+
+if ($GO && $dsg)
+  {
+    print "Creating blastable database\n";
+    my $cmd = $formatdb." -i ".$dsg->file_path;
+    print "\tFormatdb running $cmd\n";
+    `$cmd`;
+  }
+
+
+if ($ERASE)
+  {
+    print "You are going to erase data!  Press any key to continue.  Control-c to abort!\n";
+    <STDIN>;
+    
+    my %dsgs;
+    $dsgs{$dsg->id}=$dsg if $dsg;
+    foreach my $ds (values %previous_datasets)
+      {
+	my $dsg_flag;
+	foreach my $item ($ds->dataset_groups)
+	  {
+	    $dsg_flag=1;
+	    $dsgs{$item->id}=$item;
+	  }
+	$ds->delete unless $dsg_flag;
+      }
+    foreach my $item (values %dsgs)
+      {
+	delete_dataset_group($item);
+      }
+  }
+
 
 sub load_genomic_sequence
   {
     my %opts = @_;
     my $seq = $opts{seq};
-    my $len = $opts{len};
     my $chr = $opts{chr};
-    my $ds = $opts{ds};
+#    my $ds = $opts{ds};
+    my $dsg = $opts{dsg};
+    return unless $dsg;
     my $seqlen = length $seq;
-    print "Loading genomic sequence ($seqlen nt)\n" if $DEBUG;
+    if (my ($item) = $dsg->genomic_sequences({chromosome=>$chr}))
+	{
+	  my $prev_length = $item->sequence_length;
+	  print "$chr has previously beed added to this dataset_group.  Previous length: $prev_length.  Currently length: $seqlen.  Skipping.\n";
+	  return;
+	}
+    print "Loading genomic sequence ($seqlen nt)\n";# if $DEBUG;
     $seq =~ s/\s//g;
     $seq =~ s/\n//g;
-    my $i = 0;
-    while ($i < $seqlen)
-      {
-	my $str = substr($seq,$i,$len);
-	my $start = $i+1;
-	my $stop = $i + length $str;
-	$ds->add_to_genomic_sequences({start => $start,
-				      stop => $stop,
-				      chromosome => $chr,
-				      sequence_data => $str,
-				     }) if $GO;
-	$i += $len;
-      }
+    $dsg->add_to_genomic_sequences({sequence_length=>$seqlen,
+				    chromosome=>$chr,
+				   }) if $GO;
+    my $path = $dsg->file_path;
+    $path =~ s/\/[^\/]*$/\//;
+    mkpath($path);
+    mkpath($path."/chr");
+    #append sequence ot master file for dataset group
+    open (OUT, ">>".$path."/".$dsg->id.".faa");
+    my $head = $chr =~ /^\d+$/ ? ">gi" : ">lcl";
+    $head .= "|".$chr;
+    print OUT "$head\n$seq\n";
+    close OUT;
+    #create individual file for chromosome
+    open (OUT, ">".$path."/chr/$chr");
+    print OUT $seq;
+    close OUT;
+    #must add a feature of type chromosome to the dataset so the dataset "knows" its chromosomes
+#    my $feat = get_feature(type=>"chromosome", name=>"chromosome $chr", ds=>$ds, chr=>$chr, start=>1, stop=>length($seq));
+#    add_location(chr=>$chr, start=>1, stop=>length($seq), feat=>$feat, strand=>1);
   }
-
-sub process_dir
-{
-	my $dir = shift;
-	my @files;
-	opendir (DIR, $dir) || die "Can't open $dir for reading: $!";
-	while (my $f = readdir(DIR))
-	{
-		next if -d "$dir/$f";
-		push @files, "$dir/$f" if -r "$dir/$f";
-	}
-	return @files;
-}
-
-sub get_genbank_from_ncbi
-{
-	my $accn = shift;
-	my $url = "http://www.ncbi.nlm.nih.gov/entrez/viewer.fcgi?db=nucleotide&qty=1&c_start=1&dopt=gbwithparts&send=Send&sendto=t&from=begin&to=end&extrafeatpresent=1&ef_CDD=8&ef_MGC=16&ef_HPRD=32&ef_STS=64&ef_tRNA=128&ef_microRNA=256&list_uids=$accn";
-	print "Fetching sequence for $accn from $url\n . . .\n" if $DEBUG;
-	my $content = get ($url);
-	my $message = $content ? "Have content for $accn.\n" : "Did not get a sequence for $accn\n";
-	print "$message" if $DEBUG;
-	
-	return $content;
-}
-
-sub process_accns
-{
-	my @accns = @_;
-	my @files;
-	id: foreach my $id (@accns)
-	{
-#	  $id =~ s/NZ_//; #remove this from Whole Shotgun Sequence as the entry without this may have more assembly (for whatever reason)
-	  my $found = 0;
-	  print "Searching for $id. . .";
-	  foreach my $ds ($coge->resultset('Dataset')->search(name=>"$id.gbk"))
-	    {
-	      print "Found: ", $ds->name,": ",$ds->description,"\n";
-	      $found =1;
-	      next;
-	    }
-	  next id if $found &! $ERASE;
-	  mkdir ($tmpdir) unless -d $tmpdir;
-	  my $file = "$tmpdir/$id.gbk";
-	  unless (-r $file)
-	    {
-	      print "getting $id from ncbi\n";
-	      my $gb = get_genbank_from_ncbi($id);
-	      unless ($gb)
-		{
-		  warn "no content was generated for accession $id.  Skipping.\n";
-		  next;
-		}
-	      open (OUT, ">$file") || die "can't open $file: $!";
-	      print OUT $gb;
-	      close OUT;
-	    }
-	  push @files, $file;
-	}
-	return wantarray ? @files : \@files;
-}
-
-sub help
-{
-	print qq
-	{
-		Welcome to $0!  This program loads genbank entries into the CoGe genomes database
-
-		Options:
-	};
-}
 
 sub get_feature_location
   {
@@ -549,13 +609,13 @@ sub get_feature_location
     foreach my $loc (split /,/,$loc_string)
       {
 	my ($start, $stop) = split /\.\./, $loc;
+	$stop = $start unless $stop;
 	($start) = $start =~ /(\d+)/;
 	($stop) = $stop =~ /(\d+)/;
 	$start =~ s/\^.*//;
 	$stop =~ s/\^.*//;
-	$stop = $start unless $stop;
 	$rstart = $start unless $rstart;
-	$rstop = $stop unless $stop;
+	$rstop = $stop unless $rstop;
 	$rstart = $start if $start < $rstart;
 	$rstop = $stop if $stop > $rstop;
       }
@@ -566,17 +626,87 @@ sub get_organism
 {
   my ($entry) = shift;
   my $name = $entry->data_source();
+  if ($entry->strain)
+    {
+      my $strain = $entry->strain;
+      $strain =~ s/\(/;/g;
+      $strain =~ s/\)//g;
+      $strain =~ s/strain://g;
+      $strain =~ s/\\//g;
+      $strain =~ s/=/;/g;
+      $name =~ s/strain//;
+      $name =~ s/\sstr\.?\s/ /;
+      my @strains = split /;/,$strain;
+      my @parse_strains;
+      foreach (sort @strains)
+	{
+	  s/str\.\s//;
+	  s/^\s+//;
+	  s/\s+$//;
+	  next unless $_;
+	  $name =~ s/$_//;
+	  push @parse_strains, $_;
+	}
+      $name =~ s/\s\s+/ /g;
+      $name =~ s/\s+$//;
+      my $add = join ("; ", sort @parse_strains);
+      $name .= " strain" unless $add =~ /strain/;
+      $name .= " $add";
+    }
+  if ($entry->substrain)
+    {
+      my $sstrain = $entry->substrain;
+      $sstrain =~ s/\(/\\\(/g;
+      $sstrain =~ s/\)/\\\)/g;
+      $sstrain =~ s/substrain://g;
+      $name =~ s/\ssubstr\.?\s/ /;
+      $sstrain =~ s/\\//g;
+      $sstrain =~ s/=/;/g;
+      my @sstrains = split /;/,$sstrain;
+      my @parse_sstrains;
+      foreach (sort @sstrains)
+	{
+	  s/substr\.\s//;
+	  s/^\s+//;
+	  s/\s+$//;
+	  next unless $_;
+	  $name =~ s/$_//;
+	  push @parse_sstrains, $_;
+	}
+      $name =~ s/\s\s+/ /g;
+      $name =~ s/\s+$//;
+      my $add = join ("; ", sort @parse_sstrains);
+      $name .= " substrain" unless $add =~ /substrain/;
+      $name .= " $add";
+    }
   $name =~ s/'//g;
+  $name =~ s/\(\s*\)//g;
+  $name =~ s/\s\s+/ /g;
+  $name =~ s/^\s+//;
+  $name =~ s/\s+$//;
 #  print $name,"\n";
 #  print $entry->organism,"\n";
-  my $org = $coge->resultset('Organism')->find({name=>$name});
+  my $desc = $entry->organism();
+  $desc =~ s/^.*?::\s*//;
+  $desc =~ s/\.$//;
+  print qq{
+Organism Information from Genbank Entry:
+  $name
+  $desc
+} if $DEBUG;
+  my $org = $coge->resultset('Organism')->find({name=>$name, description=>$desc});
   unless ($org)
     {
+      unless ($name)
+	{
+	  print "WARNING: ", $entry->accession, " has no organism name\n";
+	  return;
+	}
       $org = $coge->resultset('Organism')->find_or_create(
 							  {
 							   name=>$name,
-							   description=>$entry->organism()
-							  }) if $GO;
+							   description=>$desc,
+							  }) if $GO && $name;
     }
   return $org;
 }
@@ -588,5 +718,113 @@ sub get_data_source
 						      description=>"National Center for Biotechnology Information",
 						      link=>'www.ncbi.nih.gov'
 						     });
+}
+
+sub generate_dsg
+  {
+    my %opts = @_;
+    my $name = $opts{name};
+    my $desc = $opts{desc};
+    my $version = $opts{version};
+    my $org_id = $opts{org_id};
+    my $gst_id = $opts{gst_id};
+    my $dsg_id = $opts{dsg_id};
+    my $dsg = $dsg_id ? $coge->resultset('DatasetGroup')->find($dsg_id) : 
+      $coge->resultset('DatasetGroup')->create({name=>$name,
+					       description=>$desc,
+					       version=>$version,
+					       organism_id=>$org_id,
+					       genomic_sequence_type_id=>$gst_id,
+					      }) if $GO;
+    return unless $dsg;
+    unless ($dsg->file_path)
+      {
+	my $path = "/opt/apache/CoGe/data/genomic_sequence/".$dsg->get_path."/".$dsg->id.".faa";
+	print "Path to sequence: ", $path,"\n";
+	$dsg->file_path($path);
+	$dsg->update;
+      }
+    return $dsg;
+  }
+
+
+
+sub check_accn
+  {
+    my $accn = shift;
+    my $gi = get_gi($accn);
+    print "gi|".$gi."...";
+    my $summary = get_gi_summary($gi);
+#    print $summary,"\n";
+    my ($version) = $summary =~ /gi\|\d+\|ref\|.*?\.(\d+)\|/i;
+    my ($length) = $summary =~ /<Item Name="Length" Type="Integer">(\d+)<\/Item>/i;
+    my ($taxaid) = $summary =~ /<Item Name="TaxId" Type="Integer">(\d+)<\/Item>/i;
+
+    my @results;
+    foreach my $ds ($coge->resultset('Dataset')->search({name=>$accn.".gbk"}))
+      {
+	my $version_diff = $ds->version eq $version ? 0 : 1;
+	my $length_diff;
+	my $cogelength;
+
+	foreach my $feat ($ds->features({"feature_type.name"=>"chromosome"},
+					{"join"=>"feature_type"},
+					))
+	  {
+	    $cogelength += $feat->length;
+	  }
+	$length_diff = $cogelength eq $length ? 0 : 1;
+	push @results, {ds=>$ds, 
+			version_diff=>$version_diff,
+			length_diff=>$length_diff,
+			coge_length =>$cogelength,
+			ncbi_length => $length,
+			
+		       };
+      }
+    return \@results;
+  }
+
+sub delete_dataset_group
+  {
+    my $dsg = shift;
+    my $path = $dsg->file_path;
+    $path =~ s/[^\/]*$//;
+    my $cmd = "rm -rf $path";
+    print "Removing genomic sequence:  running: $cmd";
+    `$cmd`;
+    print "Deleting dataset group: ".$dsg->name,"\n";
+    $dsg->delete();
+  }
+
+###NCBI eutils stuff
+
+sub get_gi
+  {
+    my $accn = shift;
+    my $esearch = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=nucleotide&term=";
+    my $result = get($esearch."$accn");
+    my ($id) = $result =~ /<id>(.*?)<\/id>/i;
+    return $id;
+  }
+
+sub get_gi_summary
+  {
+    my $gi = shift;
+    my $esummary = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=nucleotide&rettype=gbwithparts&retmode=text&complexity=0&id=";
+    my $result = get($esummary.$gi);
+    return $result;
+  }
+
+
+
+sub help
+{
+	print qq
+	{
+		Welcome to $0!  This program loads genbank entries into the CoGe genomes database
+
+		Options:
+	};
 }
 
