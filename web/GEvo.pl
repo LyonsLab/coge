@@ -1168,7 +1168,7 @@ INSERT INTO image_data (name, type, xmin, xmax, ymin, ymax, bpmin,bpmax,image_id
 };
 	my $try =1;
 	my $run_statement =  $dbh->do($statement);
-	unless ($run_statement || $try > 5)
+	unless ($run_statement || $try > 20)
 	  {
 	    sleep(1);
 	    $run_statement = $dbh->do($statement);
