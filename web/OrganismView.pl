@@ -451,7 +451,7 @@ sub get_dataset_chr_info
     my $dsgid = shift;
     $dsgid = 0 unless defined $dsgid;
     $dsid = 0 unless $dsid;
-    unless ($dsid && $chr) # error flag for empty dataset
+    unless ($dsid && defined $chr) # error flag for empty dataset
 	{
 		return "", "", "";
 	}
@@ -461,7 +461,7 @@ sub get_dataset_chr_info
     my $ds = $coge->resultset("Dataset")->find($dsid);
     return $html unless $ds;
     my $length = 0;
-    $length = $ds->last_chromosome_position($chr) if $chr;
+    $length = $ds->last_chromosome_position($chr) if defined $chr;
     my $gc = $length < 10000000? gen_gc_for_chromosome(dsid=>$ds->id, chr=>$chr): 0;
     $gc = $gc ? " -- ".$gc : qq{<div id=chromosome_gc class="link" onclick="\$('#chromosome_gc').removeClass('link'); gen_gc_for_chromosome(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['chromosome_gc']);">Click for percent GC content</div>};
     $length = commify($length)." bp";
@@ -480,7 +480,7 @@ sub get_dataset_chr_info
     $html .= "$feat_string";
 
     my $viewer;
-    if ($chr)
+    if (defined $chr)
      {
 	$viewer .= "<font class=\"oblique\">Genome Viewer</font><br>";
 	$viewer .= "<table class=\"small backbox\">";
@@ -491,7 +491,7 @@ sub get_dataset_chr_info
 	$viewer .= qq{<span class='ui-button ui-button-icon-left ui-state-default ui-corner-all' onClick="launch_viewer('$dsgid', '$chr', '$dsid')"><span class="ui-icon ui-icon-newwin"></span>Launch Genome Viewer</span>};
       }
     my $seq_grab;
-    if ($chr)
+    if (defined $chr)
       {
 	$seq_grab .= qq{<font class="oblique">Genomic Sequence Retrieval</font><br>};
 	$seq_grab .= qq{<table class=\"small backbox\">};
@@ -525,11 +525,11 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
   JOIN feature_type ft using (feature_type_id)
  WHERE dataset_id = $dsid
 };
-	$query .= qq{AND chromosome = '$chr'} if $chr;
+	$query .= qq{AND chromosome = '$chr'} if defined $chr;
 	$query.= qq{
   GROUP BY ft.name
 };
-	$name .= " chromosome $chr" if $chr;
+	$name .= " chromosome $chr" if defined $chr;
       }
     elsif ($dsgid)
       {
@@ -566,9 +566,9 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
     my $gc_args;
     $gc_args .= qq{'args__dsid','ds_id',} if $dsid;
     $gc_args .= qq{'args__dsgid','dsg_id',} if $dsgid;
-    $gc_args .= qq{'args__chr','chr',} if $chr;
+    $gc_args .= qq{'args__chr','chr',} if defined $chr;
     my $feat_list_string = $dsid ? "dsid=$dsid" : "dsgid=$dsgid";
-    $feat_list_string .= ";chr=$chr" if $chr;
+    $feat_list_string .= ";chr=$chr" if defined $chr;
     my $feat_string .= qq{<div class=oblique>Features for $name</div>};
     $feat_string .= qq{<table class = " backbox small">};
     $feat_string .= "<tr valign=top>". join ("\n<tr valign=top>",map {
@@ -589,7 +589,7 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
 	my $args;
 	$args .= "'args__dsid','ds_id'," if $dsid;
 	$args .= "'args__dsgid','dsg_id'," if $dsgid;
-	$args .= "'args__chr','chr'," if $chr;
+	$args .= "'args__chr','chr'," if defined $chr;
 	$feat_string .= "<div class=\"small link\" id=wobble_gc onclick=\"\$('#wobble_gc_histogram').html('loading...');\$('#wobble_gc_histogram').dialog('open');get_wobble_gc([$args],['wobble_gc_histogram'])\">"."Click for codon wobble GC content"."</div>";
 	$feat_string .= "<div class=\"small link\" id=wobble_gc_diff onclick=\"\$('#wobble_gc_diff_histogram').html('loading...');\$('#wobble_gc_diff_histogram').dialog('open');get_wobble_gc_diff([$args],['wobble_gc_diff_histogram'])\">"."Click for diff(CDS GC vs. codon wobble GC) content"."</div>";
 	$feat_string .= "<div class=\"small link\" id=codon_usage onclick=\"
@@ -658,7 +658,7 @@ sub gen_gc_for_feature_type
 	  }
 	my $t1 = new Benchmark;
 	my %seqs; #let's prefetch the sequences with one call to genomic_sequence (slow for many seqs)
-	if ($chr)
+	if (defined $chr)
 	  {
 	    $seqs{$chr} = $ds->genomic_sequence(chr=>$chr, seq_type=>$gstid);
 	  }
@@ -778,7 +778,7 @@ sub gen_gc_for_chromosome
     my %chr;
     foreach my $ds (@ds)
       {
-	if ($chr)
+	if (defined $chr)
 	  {
 	    $chr{$chr}=1;
 	  }
@@ -812,7 +812,7 @@ sub get_gc_for_noncoding
     my $n = 0;
     my $search;
     $search = {"feature_type_id"=>3};
-    $search->{"me.chromosome"}=$chr if $chr;
+    $search->{"me.chromosome"}=$chr if defined $chr;
     my @data;
     my @dsids;
     push @dsids, $dsid if $dsid;
@@ -840,7 +840,7 @@ sub get_gc_for_noncoding
 	    next;
 	  }
 	
-	if ($chr)
+	if (defined $chr)
 	  {
 	    $seqs{$chr} = $ds->genomic_sequence(chr=>$chr, seq_type=>$gstid);
 	  }
@@ -908,7 +908,7 @@ sub get_codon_usage
 
     my $search;
     $search = {"feature_type.name"=>"CDS"};
-    $search->{"me.chromosome"}=$chr if $chr;
+    $search->{"me.chromosome"}=$chr if defined $chr;
 
     my @dsids;
     push @dsids, $dsid if $dsid;
@@ -935,7 +935,7 @@ sub get_codon_usage
       {
 	my $ds = $coge->resultset('Dataset')->find($dsidt);
 	my %seqs; #let's prefetch the sequences with one call to genomic_sequence (slow for many seqs)
-	if ($chr)
+	if (defined $chr)
 	  {
 	    $seqs{$chr} = $ds->genomic_sequence(chr=>$chr, seq_type=>$gstid);
 	  }
@@ -975,7 +975,7 @@ sub get_aa_usage
 
     my $search;
     $search = {"feature_type.name"=>"CDS"};
-    $search->{"me.chromosome"}=$chr if $chr;
+    $search->{"me.chromosome"}=$chr if defined $chr;
 
     my @dsids;
     push @dsids, $dsid if $dsid;
@@ -1004,7 +1004,7 @@ sub get_aa_usage
       {
 	my $ds = $coge->resultset('Dataset')->find($dsidt);
 	my %seqs; #let's prefetch the sequences with one call to genomic_sequence (slow for many seqs)
-	if ($chr)
+	if (defined $chr)
 	  {
 	    $seqs{$chr} = $ds->genomic_sequence(chr=>$chr, seq_type=>$gstid);
 	  }
@@ -1059,7 +1059,7 @@ sub get_wobble_gc
     my $n = 0;
     my $search;
     $search = {"feature_type_id"=>3};
-    $search->{"me.chromosome"}=$chr if $chr;
+    $search->{"me.chromosome"}=$chr if defined $chr;
     my @data;
     my @dsids;
     push @dsids, $dsid if $dsid;
@@ -1133,7 +1133,7 @@ sub get_wobble_gc_diff
     return "error"," " unless $dsid || $dsgid;
     my $search;
     $search = {"feature_type_id"=>3};
-    $search->{"me.chromosome"}=$chr if $chr;
+    $search->{"me.chromosome"}=$chr if defined $chr;
     my @data;
     my @dsids;
     push @dsids, $dsid if $dsid;
