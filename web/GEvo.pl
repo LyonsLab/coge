@@ -3353,6 +3353,7 @@ sub get_org_info
 	$title = $item->name." " if $item->name;
 #	$title = $dsg->organism->name unless $title;
 	$title .= "v". $item->version." ".$item->type->name;
+	$title .= " (dsgid".$item->id.")";
 	$dsg_menu .= "<option value = $dsgid_tmp";
 	$dsg_menu .= " selected" if ($dsgid && $item->id eq $dsgid);
 	$dsg_menu .=">$title";
