@@ -117,11 +117,12 @@ sub datasets
   {
     my $self = shift;
     my %opts = @_;
-    my $chr = $opts{chr} || $opts{chromosome};
+    my $chr = $opts{chr};
+    $chr = $opts{chromosome} unless defined $chr;
     my @ds;
     foreach my $dsc ($self->dataset_connectors())
       {
-	if ($chr)
+	if (defined $chr)
 	  {
 #	    foreach my $ds_chr ($dsc->dataset->chromosomes)
 #	      {
@@ -161,23 +162,23 @@ sub get_genomic_sequence {
   my %opts = @_;
   my $start = $opts{start} || $opts{begin};
   my $stop = $opts{stop} || $opts{end};
-  my $chr = $opts{chr} || $opts{chromosome};
+  my $chr = $opts{chr};
+  $chr = $opts{chromosome} unless defined $chr;
+  $chr = "1" unless defined $chr;
   my $strand = $opts{strand};
   my $debug = $opts{debug};
   my $str = "";
   return if (defined $start && defined $stop && $start < 1 && $stop < 1);  #asking for sequence beyond the start
   $start = 1 unless $start;
   my $last = $self->sequence_length($chr);
-  return if ($start > $last && $stop > $last);  #asking for sequence beyond the end;
   $stop = $last unless $stop;
   $stop = $last if $stop > $last;
   $start = $last if $start > $last;
-
+  return if ($start > $last && $stop > $last);  #asking for sequence beyond the end;
   return if $start > $last && $stop > $last; #outside of chromosome
   return if $start < 1 && $stop < 1;
   if (defined $start && defined $stop)
     {
-      $chr = "1" unless defined $chr;
       $start = 1 if $start < 1;
       $stop = $start unless $stop;
       return undef unless ($start =~ /^\d+$/ and  $stop =~ /^\d+$/);
@@ -220,7 +221,8 @@ sub get_seq
   {
     my $self = shift;
     my %opts = @_;
-    my $chr = $opts{chr} || $opts{chromosome}; # chr 
+    my $chr = $opts{chr};
+    $chr = $opts{chromosome} unless defined $chr;
     my $debug = $opts{debug};
     my $start = $opts{start};
     my $stop = $opts{stop} || $opts{end};
@@ -248,7 +250,7 @@ sub get_seq
 	    my $url = $server;
 	    $url .= "?" unless $server =~/\?$/;
 	    $url .= "dsgid=".$self->id;
-	    $url .= ";chr=".$chr if $chr;
+	    $url .= ";chr=".$chr if defined $chr;
 	    $url .= ";start=".$start if $start;
 	    $url .= ";stop=".$stop if $stop;
 	    $url .= ";strand=".$strand if $strand;
@@ -285,7 +287,9 @@ sub get_seq_fastacmd #using fastacmd to get the sequence
 #    print STDERR Dumper \%opts;
     my $fastacmd = $opts{fastacmd} || '/usr/bin/fastacmd';
     my $blastdb = $opts{blastdb} || $opts{db};
-    my $seqid   = $opts{seqid} || $opts{chr} || $opts{chromosome}; # chr 
+    my $seqid   = $opts{seqid};
+    $seqid = $opts{chr} unless defined $seqid;
+    $seqid = $opts{chromosome} unless defined $seqid; # chr 
     ($seqid) = $seqid =~ /^(.*)$/; #make taint happy
     my $debug = $opts{debug};
     my $start = $opts{start};
@@ -388,7 +392,7 @@ See Also   :
    {
      my $self = shift;
      my $chr = shift;
-     return unless $chr;
+     return unless defined $chr;
      my ($item) =  $self->genomic_sequences(
 					    {
 					     chromosome=>"$chr",
