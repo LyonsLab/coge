@@ -117,7 +117,7 @@ sub dataset_groups
     my @dsgs;
     foreach my $dsc($self->dataset_connectors())
       {
-	if ($chr)
+	if (defined $chr)
 	  {
 	    my %chrs = map {$_,1} $dsc->dataset_group->chromosomes;
 	    next unless $chrs{$chr};
@@ -231,7 +231,8 @@ sub get_genomic_sequence
     my %opts = @_;
     my $start = $opts{start} || $opts{begin};
     my $stop = $opts{stop} || $opts{end};
-    my $chr = $opts{chr} || $opts{chromosome};
+    my $chr = $opts{chr};
+    $chr = $opts{chromosome} unless defined $chr;
     my $strand = $opts{strand};
     my $seq_type = $opts{seq_type} || $opts{gstid};
     my $debug = $opts{debug};
@@ -356,7 +357,7 @@ See Also   :
    {
      my $self = shift;
      my $chr = shift;
-     return unless $chr;
+     return unless defined $chr;
      my ($dsg) = $self->dataset_groups;
      my ($item) =  $dsg->genomic_sequences(
 					  {
