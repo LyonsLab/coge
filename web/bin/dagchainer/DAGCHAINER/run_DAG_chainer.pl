@@ -348,7 +348,6 @@ sub parse_input_file {
 		#	 || 
 		#	 ($mol_2 eq "10_319" && $mol_1 eq "18_68") 
 		#	 ) { next;}
-		
 		if ($e_value < 1e-250) {
 			## can't take logs of 0
 			$e_value = 1e-250;
