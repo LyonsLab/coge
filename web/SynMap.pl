@@ -1327,8 +1327,17 @@ sub go
 #     $problem=1 unless run_dag_tools(query=>"a".$dsgid1, subject=>"b".$dsgid2, blast=>$org_dirs{$orgkey1."_".$orgkey2}{blastfile}, outfile=>$dag_file12.".all", query_dup_file=>$dup_file1,subject_dup_file=>$dup_file2, feat_type1=>$feat_type1, feat_type2=>$feat_type2);
      $problem=1 unless run_dag_tools(query=>"a".$dsgid1, subject=>"b".$dsgid2, blast=>$org_dirs{$orgkey1."_".$orgkey2}{blastfile}, outfile=>$dag_file12.".all", feat_type1=>$feat_type1, feat_type2=>$feat_type2);
      my $dag_file12_all = $dag_file12.".all";
-     #remove repetitive matches
-     run_filter_repetitive_matches(infile=>$dag_file12_all,outfile=>$dag_file12);
+
+    #remove repetitive matches
+    run_filter_repetitive_matches(infile=>$dag_file12_all,outfile=>$dag_file12);
+    #this step will fail if the dag_file_all is larger than the system memory limit.  If this file does not exist, let's send a warning to the log file and continue with the analysis using the dag_all file
+    unless (-r $dag_file12 && -s $dag_file12)
+      {
+	$dag_file12 = $dag_file12_all 
+	write_log("WARNING:  sub run_filter_repetitive matches failed.  Perhaps due to Out of Memory error.  Proceeding without this step!", $cogeweb->logfile);
+      }
+    #############
+
      #is this an ordered gene run?
      $dag_file12 = run_convert_to_gene_order(infile=>$dag_file12, dsgid1=>$dsgid1, dsgid2=>$dsgid2, ft1=>$feat_type1, ft2=>$feat_type2) if $dagchainer_type eq "geneorder";
     my $t3 = new Benchmark;
