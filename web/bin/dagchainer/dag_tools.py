@@ -102,7 +102,7 @@ def blast_to_dag(blast_file, query, subject, qdups, sdups, get_chr=get_chr, cond
             line[1] = line[1]+"||"+slocs[0]+"||"+slocs[1]
         print "\t".join([
              qorg + qchr, line[0] + "||" + line[2], qlocs[0], qlocs[1]
-            ,sorg + schr, line[1] + "||" + line[2], slocs[0], slocs[1]])
+            ,sorg + schr, line[1] + "||" + line[2], slocs[0], slocs[1], line[10]])
 
     if qdups:
         print >>sys.stderr, "removed %i dups from query  " % n_qdups
