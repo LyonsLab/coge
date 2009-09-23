@@ -19,7 +19,7 @@ GetOptions(
 
 my $coge = CoGeX->dbconnect();
 my $order1 = get_gene_order(dsgid=>$dsgid1, ftid=>$ftid1) if $ftid1 == 3;
-my $order2 = get_gene_order(dsgid=>$dsgid2, ftid=>$ftid2) if $ftid2 == 3;
+my $order2 = $dsgid1 == $dsgid2 && $ftid1 == $ftid2 ? $order1 : get_gene_order(dsgid=>$dsgid2, ftid=>$ftid2) if $ftid2 == 3;
 
 $order1 = get_order_from_input(file=>$input_file, set=>1) unless $order1;
 $order2 = get_order_from_input(file=>$input_file, set=>2) unless $order2;
