@@ -39,7 +39,7 @@ my $max = $FORM->param('max');
 $grid = 1 unless defined $grid;
 $DEBUG=1 if $FORM->param('debug');
 exit unless ($dsgid1 && $dsgid2 && $chr1 && $chr2 && $basename);
-my ($md51, $md52, $mask1, $mask2, $type1, $type2, $blast,$params) = $basename =~/(.*?)_(.*?)\.(\d+)-(\d+)\.(\w+)-(\w+)\.(\w+)\.dag_(.*)/ ;
+my ($md51, $md52, $mask1, $mask2, $type1, $type2, $blast,$params) = $basename =~/(.*?)_(.*?)\.(\d+)-(\d+)\.(\w+)-(\w+)\.(\w+)\.dag\.?a?l?l?_(.*)/ ;
 
 
 my($dsg1) = $coge->resultset('DatasetGroup')->resolve($dsgid1);
@@ -65,7 +65,7 @@ my $dag_file = $dir."/".$basename;
 #    ($ksdb) = $basename =~ /^(.*?CDS-CDS)/; 
 #    $ksdb = $dir."/".$ksdb.".sqlite" if $ksdb; #that way it is not set if genomic sequence are compared.
 #  }
-$dag_file =~ s/\.dag_.*//;
+$dag_file =~ s/\.dag_?.*//;
 $dag_file .= ".dag.all";
 my $outfile = $dir."/html/".$basename.".$chr1-$chr2.w$width";
 my $res = generate_dotplot(dag=>$dag_file, coords=>"$dir/$basename.all.aligncoords", qchr=>$chr1, schr=>$chr2, 'outfile'=>$outfile, 'regen_images'=>'false', flip=>$flip, regen_images=>$regen, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, grid=>$grid, ksdb=>$ksdb, kstype=>$kstype, log=>$log, min=>$min, max=>$max);
@@ -133,6 +133,7 @@ sub generate_dotplot
       }
 
     $cmd .= qq{ -d $dag -a $coords -b $outfile -l '' -dsg1 $dsgid1 -dsg2 $dsgid2 -w $width -lt 1 -chr1 $qchr -chr2 $schr -flip $flip -grid 1};
+    print STDERR "Running: ",$cmd,"\n" if $DEBUG;
     `$cmd`;
     $outfile .= ".$min" if defined $min && $min =~/\d/;
     $outfile .= ".$max" if defined $max && $max =~/\d/;
