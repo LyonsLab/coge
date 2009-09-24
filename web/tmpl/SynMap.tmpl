@@ -76,7 +76,7 @@ function update_params(val) {
  var params;
  if (val)
    {
-     var params = val.split('_');
+     params = val.split('_');
    }
  else
    {
@@ -415,7 +415,6 @@ function open_window (url, loc, width, height)
   <TMPL_VAR NAME=ORG_MENU1>
   <TMPL_VAR NAME=ORG_MENU2>
  </table>
-<div id=previous_analyses></div>
 
 </div> <!--close tab-1 -->
 
@@ -488,6 +487,10 @@ function open_window (url, loc, width, height)
 </TABLE>
 </div> <!-- close tab-3 -->
 </div> <!--close tabs div-->
+Previously run parameters:
+<span id="hide_previous" class='show_prev_button ui-button ui-state-default ui-corner-all' onClick="$('#previous_analyses').toggle(); $('.show_prev_button').toggle();">Hide</span>
+<span id="show_previous" style="display:none" class='show_prev_button ui-button ui-state-default ui-corner-all' onClick="$('#previous_analyses').toggle(); $('.show_prev_button').toggle();">Show</span>
+<div id=previous_analyses></div>
 
 </TMPL_IF>
 
