@@ -92,15 +92,7 @@ login(['uname', 'pwd','url'],[place_cookie]);
 
 <div id=summary style="display:none;z-index: 1000;" class="image_window"></div>
 <div id=main style="display: none" align=center>
-<!--<span class="alert">PLEASE NOTE:</span><br>
-We have developed a new comparative genomics tools called SynMap which
-allows you to compare two genomes to identify regions of synteny.
-This tool is considered to be beta-software (in other words, its works
-most of the time, but your mileage may vary.)  If you come across any
-problems with it, please e-mail Eric Lyons
-(elyons@nature.berkeley.edu) with
-a description or screenshot of the analysis parameters.  He will fix the problem
-as soon as possible.-->
+
 <TMPL_IF NAME="INTRO">
 <div style="width: 600px"><div><a href="/CoGe/GEvo.pl?prog=blastz;accn1=at1g07300;fid1=4091274;dsid1=556;chr1=1;dr1up=20000;dr1down=20000;gbstart1=1;gblength1=772;accn2=at2g29640;fid2=4113333;dsid2=557;chr2=2;dr2up=20000;dr2down=20000;gbstart2=1;rev2=1;num_seqs=2;autogo=1"><img src="/CoGe/picts/gevo-synteny.png" width=500px border=0 ></a></div><div align = center class="small species"><a href="/CoGe/GEvo.pl?prog=blastz;accn1=at1g07300;fid1=4091274;dsid1=556;chr1=1;dr1up=20000;dr1down=20000;gbstart1=1;gblength1=772;accn2=at2g29640;fid2=4113333;dsid2=557;chr2=2;dr2up=20000;dr2down=20000;gbstart2=1;rev2=1;num_seqs=2;autogo=1">GEvo analysis</a> of syntenic regions of Arabidopsis derived from its most recent genome duplication event.</div><p align=center>CoGe is a comparative genomics platform designed to allow easy access to genomic data from any organism and provide analysis tools for finding and comparing homologous sequences from multiple genomic regions.  If you are new to CoGe, we recommend visiting <a href="http://synteny.cnr.berkeley.edu/wiki/index.php/CoGepedia:Current_events">CoGePedia</a></p>
 </div>
