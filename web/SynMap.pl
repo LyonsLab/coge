@@ -478,7 +478,8 @@ sub generate_fasta
 							       dataset_group_id=>$dsgid
 							      },{
 								 join=>[{dataset=>'dataset_connectors'}], 
-								 prefetch=>['feature_names']}
+								 prefetch=>['feature_names']
+								}
 							     ))
 	  {
 	    my ($chr) = $feat->chromosome;#=~/(\d+)/;
@@ -492,6 +493,8 @@ sub generate_fasta
 	    my $title = join ("||",$chr, $feat->start, $feat->stop, $name, $feat->strand, $type, $feat->id);
 	    my $seq = $feat->genomic_sequence(dsgid=>$dsg);
 	    next unless $seq;
+	    #skip sequences that are only 'x' | 'n';
+	    next unless $seq =~ /[^x|n]/i;
 	    print OUT ">".$title."\n";
 	    print OUT $seq,"\n";
 	  }
