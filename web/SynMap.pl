@@ -1609,7 +1609,7 @@ sub get_previous_analyses
 #       }
 #     $html .= "</select>";
     my $prev_table = qq{<table id=prev_table class="small resultborder">};
-    $prev_table .= qq{<THEAD><TR><TH>}.join ("<TH>", qw(ORG1 GENOME1 TYPE1 ORG2 GENOME2 TYPE2 ALGO AVE_DIST MAX_DIST MIN_PAIRS))."</THEAD><TBODY>\n";
+    $prev_table .= qq{<THEAD><TR><TH>}.join ("<TH>", qw(Org1 Genome1 Type1 Org2 Genome2 Type2 Alog Ave_Dist Max_Dist Min_Pairs))."</THEAD><TBODY>\n";
     foreach my $item (@items)
       {
 	my $val = join ("_",$item->{g},$item->{D},$item->{A}, $oid1, $item->{dsgid1}, $item->{type1},$oid2, $item->{dsgid2}, $item->{type2}, $item->{blast}, $item->{dagtype});
@@ -1622,7 +1622,7 @@ sub get_previous_analyses
     $html .= $prev_table;
     $html .= "<br><span class=small>Synonymous substitution rates previously calculated</span>" if $sqlite;
     
-    return "  Previously run parameters:<br>$html";
+    return "$html";
   }
 
 sub get_pair_info
