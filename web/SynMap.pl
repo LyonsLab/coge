@@ -1333,7 +1333,7 @@ sub go
     #this step will fail if the dag_file_all is larger than the system memory limit.  If this file does not exist, let's send a warning to the log file and continue with the analysis using the dag_all file
     unless (-r $dag_file12 && -s $dag_file12)
       {
-	$dag_file12 = $dag_file12_all 
+	$dag_file12 = $dag_file12_all;
 	write_log("WARNING:  sub run_filter_repetitive matches failed.  Perhaps due to Out of Memory error.  Proceeding without this step!", $cogeweb->logfile);
       }
     #############
@@ -1702,6 +1702,7 @@ sub get_dotplot
     $src .=  ";min=$min" if defined $min;
     $src .=  ";max=$max" if defined $max;
     my $content = get("http://".$ENV{SERVER_NAME}."/".$src);
+    
     my ($url) = $content =~ /url=(.*?)"/is;
     my $png = $url;
     $png =~ s/html$/png/;
