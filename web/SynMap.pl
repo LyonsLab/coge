@@ -1576,6 +1576,10 @@ sub get_previous_analyses
 	    my $dsg2 = $coge->resultset('DatasetGroup')->find($dsgid2);
 	    next unless $dsg2;
 	    my ($ds2) = $dsg2->datasets;
+	    $data{dsg1}=$dsg1;
+	    $data{dsg2}=$dsg2;
+	    $data{ds1}=$ds1;
+	    $data{ds2}=$ds2;
 	    my $name .= $dsg1->type->name." ".$type1." (".$ds1->data_source->name." v".$dsg1->version.") vs ";
 	    $name .= $dsg2->type->name." ".$type2." (".$ds2->data_source->name." v".$dsg2->version.")";
 	    $data{name} = $name;
@@ -1590,20 +1594,34 @@ sub get_previous_analyses
     return unless @items;
     my $size = scalar @items;
     $size = 8 if $size > 8;
-    my $html = qq{
-<select id="prev_params" size=4 multiple onChange="update_params();">
-};
-    foreach (sort {$a->{g}<=>$b->{g} } @items)
+    my $html;
+#     my $html = qq{
+# <select id="prev_params" size=4 multiple onChange="update_params();">
+# };
+#     foreach (sort {$a->{g}<=>$b->{g} } @items)
+#       {
+# 	my $blast = $_->{blast} =~ /^blastn$/i ? 0 : 1;
+# 	my $val = join ("_",$_->{g},$_->{D},$_->{A}, $oid1, $_->{dsgid1}, $_->{type1},$oid2, $_->{dsgid2}, $_->{type2}, $blast, $_->{dagtype});
+# 	my $name =$_->{name}.": ".$_->{blast}.", ".$_->{dagtype}.", g".$_->{g}." D".$_->{D}." A".$_->{A};
+# 	$html .= qq{
+#  <option value="$val">$name
+# };
+#       }
+#     $html .= "</select>";
+    my $prev_table = qq{<table id=prev_table class="small resultborder">};
+    $prev_table .= qq{<THEAD><TR><TH>}.join ("<TH>", qw(ORG1 GENOME1 TYPE1 ORG2 GENOME2 TYPE2 ALGO AVE_DIST MAX_DIST MIN_PAIRS))."</THEAD><TBODY>\n";
+    foreach my $item (@items)
       {
-	my $blast = $_->{blast} =~ /^blastn$/i ? 0 : 1;
-	my $val = join ("_",$_->{g},$_->{D},$_->{A}, $oid1, $_->{dsgid1}, $_->{type1},$oid2, $_->{dsgid2}, $_->{type2}, $blast, $_->{dagtype});
-	my $name =$_->{name}.": ".$_->{blast}.", ".$_->{dagtype}.", g".$_->{g}." D".$_->{D}." A".$_->{A};
-	$html .= qq{
- <option value="$val">$name
-};
+	my $val = join ("_",$item->{g},$item->{D},$item->{A}, $oid1, $item->{dsgid1}, $item->{type1},$oid2, $item->{dsgid2}, $item->{type2}, $item->{blast}, $item->{dagtype});
+	$prev_table .= qq{<TR class=feat onclick="update_params('$val')"><td>};
+	$prev_table .= join ("<td>", $item->{dsg1}->organism->name, $item->{ds1}->data_source->name." (".$item->{dsg1}->version.")", $item->{dsg1}->type->name,
+			     $item->{dsg2}->organism->name, $item->{ds2}->data_source->name." (".$item->{dsg2}->version.")", $item->{dsg2}->type->name,
+			     $item->{blast}, $item->{g}, $item->{D}, $item->{A})."\n";
       }
-    $html .= "</select>";
+    $prev_table .= qq{</TBODY></table>};
+    $html .= $prev_table;
     $html .= "<br><span class=small>Synonymous substitution rates previously calculated</span>" if $sqlite;
+    
     return "  Previously run parameters:<br>$html";
   }
 
