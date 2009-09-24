@@ -294,20 +294,24 @@ sub get_dataset_group_info
 	$html .= qq{$chr:  $length bp<br>};
 	$count++;
       }
-    $html = qq{<div style="overflow:auto; max-height:78px">};
+    $html = qq{<div>};
     $html .= "<table class='small annotation_table'>";
-    $html .= qq{<tr><td>Chromosome count: <td>$chr_num<br>}. qq{<div style="float:left;">};
-    $html .= qq{<tr><td>Sequence Type: <td>}.$dsg->genomic_sequence_type->name.qq{<input type=hidden id=gstid value=}.$dsg->genomic_sequence_type->id.qq{>};
+    $html .= qq{<tr><td>Chromosome count: <td>$chr_num};
+    my $gstid = $dsg->genomic_sequence_type->id;
+    $html .= qq{<tr><td>Sequence type: <td>}.$dsg->genomic_sequence_type->name.qq{ (gstid$gstid)<input type=hidden id=gstid value=}.$gstid.qq{>};
     $html .= qq{<tr><td>Total length: };
-    $html .= qq{<td>}.commify($total_length)." bp";
+    $html .= qq{<td><div style="float: left;"> }.commify($total_length)." bp</div>";
     my $gc = $total_length < 10000000? gen_gc_for_chromosome(dsgid=>$dsgid): 0;
-    $gc = $gc ? " -- ".$gc : qq{  </div><div style="float: left; text-indent: 1em;" id=datasetgroup_gc class="link" onclick="\$('#datasetgroup_gc').removeClass('link'); gen_gc_for_chromosome(['args__dsgid','dsg_id','args__gstid', 'gstid'],['datasetgroup_gc']);">  Click for percent GC content</div>};
-    $html .= "<td>$gc";
+    $gc = $gc ? $gc : qq{  <div style="float: left; text-indent: 1em;" id=datasetgroup_gc class="link" onclick="\$('#datasetgroup_gc').removeClass('link'); gen_gc_for_chromosome(['args__dsgid','dsg_id','args__gstid', 'gstid'],['datasetgroup_gc']);">  Click for percent GC content</div>};
+    $html .= "$gc";
 
 
     $html .= qq{
-<tr><td>Noncoding sequence:<td colspan=2><div id=dsg_noncoding_gc class="link" onclick = "gen_data(['args__loading...'],['dsg_noncoding_gc']);\$('#dsg_noncoding_gc').removeClass('link');  get_gc_for_noncoding(['args__dsgid','dsg_id','args__gstid', 'gstid'],['dsg_noncoding_gc']);">Click for percent GC content</div>
+<tr><td>Noncoding sequence:<td><div id=dsg_noncoding_gc class="link" onclick = "gen_data(['args__loading...'],['dsg_noncoding_gc']);\$('#dsg_noncoding_gc').removeClass('link');  get_gc_for_noncoding(['args__dsgid','dsg_id','args__gstid', 'gstid'],['dsg_noncoding_gc']);">Click for percent GC content</div>
 } if $total_length;
+    my $seq_file = $dsg->file_path;
+    $seq_file =~ s/\/opt\/apache2?//i;
+    $html .= qq{<TR><TD colspan=2><div class=link onclick="window.open('$seq_file')">Download sequence in Fasta format</div>};
 
     my $feat_string = qq{
 <tr><td><div id=dsg_feature_count class="small link" onclick="get_feature_counts(['args__dsgid','dsg_id', 'args__gstid','gstid'],['feature_count_data']);" >Click for feature counts</div>};
@@ -431,10 +435,10 @@ sub get_dataset_info
       $html2 .= qq{<input type="hidden" id="chr" value="">};
       $html2 .= "<tr><td>No chromosomes";
     }
-    $html .= "<tr><td>Total length:<td><div style=\"float: left;\">".commify($length);
+    $html .= "<tr><td>Total length:<td><div style=\"float: left;\">".commify($length)." bp";
     my $gc = $length < 10000000? gen_gc_for_chromosome(dsid=>$ds->id): 0;
     $gc = $gc ? $gc : qq{  </div><div style="float: left; text-indent: 1em;" id=dataset_gc class="link" onclick="\$('#dataset_gc').removeClass('link'); gen_gc_for_chromosome(['args__dsid','ds_id','args__gstid', 'gstid'],['dataset_gc']);">  Click for percent GC content</div>} if $length;
-    $html .= " -- ".$gc if $gc;
+    $html .= $gc if $gc;
     $html .= qq{</table>};
     my $feat_string = qq{
 <div id=ds_feature_count class="small link" onclick="get_feature_counts(['args__dsid','ds_id','args__gstid', 'gstid'],['feature_count_data']);" >Click for feature counts</div>};
@@ -463,7 +467,7 @@ sub get_dataset_chr_info
     my $length = 0;
     $length = $ds->last_chromosome_position($chr) if defined $chr;
     my $gc = $length < 10000000? gen_gc_for_chromosome(dsid=>$ds->id, chr=>$chr): 0;
-    $gc = $gc ? " -- ".$gc : qq{<div id=chromosome_gc class="link" onclick="\$('#chromosome_gc').removeClass('link'); gen_gc_for_chromosome(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['chromosome_gc']);">Click for percent GC content</div>};
+    $gc = $gc ? " -- ".$gc : qq{<div style="float: left; text-indent: 1em;" id=chromosome_gc class="link" onclick="\$('#chromosome_gc').removeClass('link'); gen_gc_for_chromosome(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['chromosome_gc']);">Click for percent GC content</div>};
     $length = commify($length)." bp";
     $html .= qq{
 <tr><td class = oblique>Specifics for chromosome $chr:
