@@ -1520,6 +1520,7 @@ GEvo links:               $add_gevo_links_time
 };
     print STDERR $benchmarks;
     write_log($benchmarks, $cogeweb->logfile);
+    $html =~ s/<script src="\/CoGe\/js\/jquery-1.3.2.js"><\/script>//g; #need to remove this from the output from dotplot -- otherwise it over-loads the stuff in the web-page already. This can mess up other loaded js such as tablesoter
     return $html;
    }
 
@@ -1625,7 +1626,6 @@ sub get_previous_analyses
     $prev_table .= qq{</TBODY></table>};
     $html .= $prev_table;
     $html .= "<br><span class=small>Synonymous substitution rates previously calculated</span>" if $sqlite;
-    
     return "$html";
   }
 
