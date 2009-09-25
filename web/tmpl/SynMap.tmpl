@@ -9,7 +9,7 @@ function init_table() {
 		sortClassDesc: 'headerSortDown',	// Class name for descending sorting action to header
 		headerClass: 'header',			// Class name for headers (th's)
 		widgets: ['zebra'],
-		textExtraction: 'complex',
+		textExtraction: 'complex'
 		});
 };
 
@@ -53,7 +53,6 @@ if(!pageObj.basename)
   setTimeout("monitor_log()", 5000);
   
 go(['args__D','D','args__g','g','args__A','A','args__blast','blast', 'args__feat_type1','feat_type1', 'args__feat_type2','feat_type2','args__dsgid1','dsgid1', 'args__dsgid2','dsgid2','args__jobtitle','jobtitle','args__basename','args__'+pageObj.basename,'args__email','email','args__regen_images','args__'+$('#regen_images')[0].checked, 'args__width', 'args__'+$('#master_width').val(), 'args__dagchainer_type','args__'+$('#dagchainer_type')[0].checked, 'args__ks_type','ks_type', 'args__assemble','assemble'],[handle_results]);
-ajax_wait("check_previous_analyses();");
 }
 
 function handle_results(val){
@@ -61,6 +60,8 @@ function handle_results(val){
  $('#results').show(0).html(val);
  $('#synmap_go').show();
 $(function() {$("#synmap_zoom_box").draggable();});
+// ajax_wait("check_previous_analyses();");
+
 }
 
 function check_previous_analyses(){
