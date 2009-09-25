@@ -361,7 +361,8 @@ sub get_dataset_group_info
     $html_dsg_info .= "<span class=small>";
     my ($ds) = $dsg->datasets;
     my $link = $ds->data_source->link;
-    $link = "http://".$link unless $link =~ /^http/;
+    $link = "synteny.cnr.berkeley.edu/CoGe/" unless $link;
+    $link = "http://".$link unless $link && $link =~ /^http/;
     $html_dsg_info .= "Source:  <a href=".$link." target=_new>".$ds->data_source->name."</a><br>";
     #$html_dsg_info .= $dsg->chr_info(summary=>1);
     $html_dsg_info .= "Chromosome count: $chr_count<br>";
@@ -1583,6 +1584,8 @@ sub get_previous_analyses
 	    my $name .= $dsg1->type->name." ".$type1." (".$ds1->data_source->name." v".$dsg1->version.") vs ";
 	    $name .= $dsg2->type->name." ".$type2." (".$ds2->data_source->name." v".$dsg2->version.")";
 	    $data{name} = $name;
+	    $data{type_name1} = $type1;
+	    $data{type_name2} = $type2;
 	    $type1 = $type1 eq "CDS" ? 1 : 2; 
 	    $type2 = $type2 eq "CDS" ? 1 : 2; 
 	    $data{type1} = $type1;
@@ -1609,13 +1612,14 @@ sub get_previous_analyses
 #       }
 #     $html .= "</select>";
     my $prev_table = qq{<table id=prev_table class="small resultborder">};
-    $prev_table .= qq{<THEAD><TR><TH>}.join ("<TH>", qw(Org1 Genome1 Type1 Org2 Genome2 Type2 Algo Ave_Dist Max_Dist Min_Pairs))."</THEAD><TBODY>\n";
+    $prev_table .= qq{<THEAD><TR><TH>}.join ("<TH>", qw(Org1 Genome1 Genome_Type1 Sequence_Type1 Org2 Genome2 Genome_Type2 Sequence_type2 Algo Ave_Dist Max_Dist Min_Pairs))."</THEAD><TBODY>\n";
     foreach my $item (@items)
       {
 	my $val = join ("_",$item->{g},$item->{D},$item->{A}, $oid1, $item->{dsgid1}, $item->{type1},$oid2, $item->{dsgid2}, $item->{type2}, $item->{blast}, $item->{dagtype});
 	$prev_table .= qq{<TR class=feat onclick="update_params('$val')"><td>};
-	$prev_table .= join ("<td>", $item->{dsg1}->organism->name, $item->{ds1}->data_source->name." (".$item->{dsg1}->version.")", $item->{dsg1}->type->name,
-			     $item->{dsg2}->organism->name, $item->{ds2}->data_source->name." (".$item->{dsg2}->version.")", $item->{dsg2}->type->name,
+	$prev_table .= join ("<td>", 
+			     $item->{dsg1}->organism->name, $item->{ds1}->data_source->name." (".$item->{dsg1}->version.")", $item->{dsg1}->type->name, $item->{type_name1},
+			     $item->{dsg2}->organism->name, $item->{ds2}->data_source->name." (".$item->{dsg2}->version.")", $item->{dsg2}->type->name, $item->{type_name2},
 			     $item->{blast}, $item->{g}, $item->{D}, $item->{A})."\n";
       }
     $prev_table .= qq{</TBODY></table>};
