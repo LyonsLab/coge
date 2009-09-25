@@ -7,11 +7,11 @@ function init_table() {
  $("#prev_table").tablesorter({		
 		sortClassAsc: 'headerSortUp',		// Class name for ascending sorting action to header
 		sortClassDesc: 'headerSortDown',	// Class name for descending sorting action to header
-		headerClass: 'header',			// Class name for headers (th's)
+		headerClass: 'header',		// Class name for headers (th's)
 		widgets: ['zebra'],
 		textExtraction: 'complex'
 		});
-};
+ }
 
 $(function() {$("#pair_info").draggable();});
 $(function() {$("#tabs").tabs({selected:0});});	     
@@ -59,9 +59,8 @@ function handle_results(val){
  $('#log_text').hide(0);
  $('#results').show(0).html(val);
  $('#synmap_go').show();
-$(function() {$("#synmap_zoom_box").draggable();});
-// ajax_wait("check_previous_analyses();");
-
+ $(function() {$("#synmap_zoom_box").draggable();});
+ ajax_wait("check_previous_analyses();");
 }
 
 function check_previous_analyses(){
