@@ -223,6 +223,8 @@ sub get_seq
     my %opts = @_;
     my $chr = $opts{chr};
     $chr = $opts{chromosome} unless defined $chr;
+    $chr =~ s/gi\|//;
+    $chr =~ s/lcl\|//;
     my $debug = $opts{debug};
     my $start = $opts{start};
     my $stop = $opts{stop} || $opts{end};
@@ -261,7 +263,20 @@ $file does not exist for get_seq to extract sequence.
 Going to retrieve sequence from $url
 ##############
 }; #change warning to state that sequence is being retrieved remotely from the kingdom of CoGe.
-	    return get($url);
+	    if ($ENV{SERVER_NAME} eq "synteny.cnr.berkeley.edu")
+	      {
+		warn qq{
+##############
+MAJOR ERROR:  $file does not exist!
+This sequence file does not exist on the sequence server.  Please check the source of the sequence!
+##############
+	      };
+		return (0);
+	      }
+	    else
+	      {
+		return get($url);
+	      }
 	  }
 	open ($IN, $file);
       }
