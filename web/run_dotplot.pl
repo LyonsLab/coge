@@ -126,7 +126,10 @@ sub generate_dotplot
 	$cmd .= qq{ -max $max} if defined $max && $max =~/\d/;
 	$outfile .= ".$kstype";
       }
-    if (-r $outfile.".html" && !$regen_images)
+    my $tmp = $outfile;
+    $tmp .= ".$min" if defined $min && $min =~/\d/;
+    $tmp .= ".$max" if defined $max && $max =~/\d/;
+    if (-r $tmp.".html" && !$regen_images)
       {
 #	write_log("generate dotplot: file $outfile already exists",$cogeweb->logfile);
 	return $outfile;
