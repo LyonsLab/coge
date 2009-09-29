@@ -20,7 +20,7 @@ Welcome t0 $0
 
 Usage:  $0 -dataset 24 -dataset NC_000001  -name_search regex_search -fasta_name output.faa
     or for multiple datasets
-        $0 -ds 40504 -ds 40500 -ds 40495 -ds 40499 -ds 40503 -fasta_name arabidopsis_v9.fasta -name_re 'AT\dG\d{5}$' > arabidopsis_v9.gff
+        $0 -ds 40504 -ds 40500 -ds 40495 -ds 40499 -ds 40503 -fasta_name arabidopsis_v9.fasta -name_re 'AT\\dG\\d{5}\$' > arabidopsis_v9.gff
 
 Options:
 
