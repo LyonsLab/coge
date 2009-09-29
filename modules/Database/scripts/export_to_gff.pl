@@ -13,16 +13,14 @@ GetOptions(
 	   "dataset|ds=s"=>\@datasets,
 	   "debug" => \$debug,
 	   );
-
-#if(scalar(@ARGV) < 3){
   unless (@datasets)
   {
-#    print "send in organism, reg-exp for-name, and datasets\n";
-#    print "$0 org name_re [datasets]\n";
-    print qq{
+    print qq#
 Welcome t0 $0
 
 Usage:  $0 -dataset 24 -dataset NC_000001  -name_search regex_search -fasta_name output.faa
+    or for multiple datasets
+        $0 -ds 40504 -ds 40500 -ds 40495 -ds 40499 -ds 40503 -fasta_name arabidopsis_v9.fasta -name_re 'AT\dG\d{5}$' > arabidopsis_v9.gff
 
 Options:
 
@@ -34,8 +32,7 @@ Options:
 
  -debug                                OPTIONAL:  print debugging messages
 
-};
-    exit();
+#;
   }
 
 $coge = CoGeX->dbconnect();
