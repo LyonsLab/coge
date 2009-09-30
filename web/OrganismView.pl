@@ -623,12 +623,13 @@ sub gen_data
 
 sub get_gc_for_feature_type
   {
-    my %args = @_;
-    my $dsid = $args{dsid};
-    my $dsgid = $args{dsgid};
-    my $chr = $args{chr};
-    my $typeid = $args{typeid};
-    my $gstid = $args{gstid}; #genomic sequence type id
+    my %opts = @_;
+    my $dsid = $opts{dsid};
+    my $dsgid = $opts{dsgid};
+    my $chr = $opts{chr};
+    my $typeid = $opts{typeid};
+    my $gstid = $opts{gstid};#genomic sequence type id
+    my $min = $opts{min};
     return unless $dsid || $dsgid;
     my $gc = 0;
     my $at = 0;
@@ -761,11 +762,11 @@ sub get_gc_for_feature_type
 
 sub get_gc_for_chromosome
   {
-    my %args = @_;
-    my $dsid = $args{dsid};
-    my $chr = $args{chr};
-    my $gstid = $args{gstid};
-    my $dsgid = $args{dsgid};
+    my %opts = @_;
+    my $dsid = $opts{dsid};
+    my $chr = $opts{chr};
+    my $gstid = $opts{gstid};
+    my $dsgid = $opts{dsgid};
     my @ds;
     if ($dsid)
       {
@@ -806,11 +807,11 @@ sub get_gc_for_chromosome
 
 sub get_gc_for_noncoding
   {
-    my %args = @_;
-    my $dsid = $args{dsid};
-    my $dsgid = $args{dsgid};
-    my $chr = $args{chr};
-    my $gstid = $args{gstid}; #genomic sequence type id
+    my %opts = @_;
+    my $dsid = $opts{dsid};
+    my $dsgid = $opts{dsgid};
+    my $chr = $opts{chr};
+    my $gstid = $opts{gstid}; #genomic sequence type id
     return "error" unless $dsid || $dsgid;
     my $gc = 0;
     my $at = 0;
@@ -904,11 +905,11 @@ sub get_gc_for_noncoding
 
 sub get_codon_usage
   {
-    my %args = @_;
-    my $dsid = $args{dsid};
-    my $chr = $args{chr};
-    my $dsgid = $args{dsgid};
-    my $gstid = $args{gstid};
+    my %opts = @_;
+    my $dsid = $opts{dsid};
+    my $chr = $opts{chr};
+    my $dsgid = $opts{dsgid};
+    my $gstid = $opts{gstid};
     return unless $dsid || $dsgid;
 
     my $search;
@@ -971,11 +972,11 @@ sub get_codon_usage
 
 sub get_aa_usage
   {
-    my %args = @_;
-    my $dsid = $args{dsid};
-    my $chr = $args{chr};
-    my $dsgid = $args{dsgid};
-    my $gstid = $args{gstid};
+    my %opts = @_;
+    my $dsid = $opts{dsid};
+    my $chr = $opts{chr};
+    my $dsgid = $opts{dsgid};
+    my $gstid = $opts{gstid};
     return unless $dsid || $dsgid;
 
     my $search;
@@ -1053,11 +1054,11 @@ sub get_aa_usage
 
 sub get_wobble_gc
   {
-    my %args = @_;
-    my $dsid = $args{dsid};
-    my $dsgid = $args{dsgid};
-    my $chr = $args{chr};
-    my $gstid = $args{gstid}; #genomic sequence type id
+    my %opts = @_;
+    my $dsid = $opts{dsid};
+    my $dsgid = $opts{dsgid};
+    my $chr = $opts{chr};
+    my $gstid = $opts{gstid}; #genomic sequence type id
     return "error" unless $dsid || $dsgid;
     my $gc = 0;
     my $at = 0;
@@ -1130,11 +1131,11 @@ sub get_wobble_gc
 
 sub get_wobble_gc_diff
   {
-    my %args = @_;
-    my $dsid = $args{dsid};
-    my $dsgid = $args{dsgid};
-    my $chr = $args{chr};
-    my $gstid = $args{gstid}; #genomic sequence type id
+    my %opts = @_;
+    my $dsid = $opts{dsid};
+    my $dsgid = $opts{dsgid};
+    my $chr = $opts{chr};
+    my $gstid = $opts{gstid}; #genomic sequence type id
     return "error"," " unless $dsid || $dsgid;
     my $search;
     $search = {"feature_type_id"=>3};
