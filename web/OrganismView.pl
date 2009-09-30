@@ -15,7 +15,7 @@ use Statistics::Basic::Mean;
 
 $ENV{PATH} = "/opt/apache2/CoGe/";
 
-use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $NEATO $DOT $coge $HISTOGRAM);
+use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $NEATO $DOT $coge $HISTOGRAM %FUNCTION);
 
 # set this to 1 to print verbose messages to logs
 $DEBUG = 0;
@@ -38,7 +38,8 @@ $coge = CoGeX->dbconnect();
 
 
 
-my $pj = new CGI::Ajax(
+#my $pj = new CGI::Ajax(
+%FUNCTION = (
 		       get_dataset_groups=>\&get_dataset_groups,
 		       get_dataset_group_info=>\&get_dataset_group_info,
 		       get_dataset => \&get_dataset,
@@ -59,10 +60,39 @@ my $pj = new CGI::Ajax(
 		       get_wobble_gc_diff=>\&get_wobble_gc_diff,
 		       get_total_length_for_ds=>\&get_total_length_for_ds,
 		      );
+my $pj = new CGI::Ajax(%FUNCTION);
 $pj->JSDEBUG(0);
 $pj->DEBUG(0);
-print $pj->build_html($FORM, \&gen_html);
+if ($FORM->param('jquery_ajax'))
+  {
+    dispatch();
+  }
+else
+  {
+    print $pj->build_html($FORM, \&gen_html);
+  }
 #print "Content-Type: text/html\n\n";print gen_html($FORM);
+
+sub dispatch
+{
+    my %args = $FORM->Vars;
+    my $fname = $args{'fname'};
+    if($fname)
+    {
+	#my %args = $cgi->Vars;
+	#print STDERR Dumper \%args;
+	if($args{args}){
+	    my @args_list = split( /,/, $args{args} );
+	    print $FORM->header, $FUNCTION{$fname}->(@args_list);
+       	}
+	else{
+	    print $FORM->header, $FUNCTION{$fname}->(%args);
+	}
+    }
+#    else{
+#	print $FORM->header, gen_html();
+#    }
+}
 
 sub gen_html
   {
@@ -566,12 +596,10 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
 			   name=>$row->[1],
 			  };
       }
-    #    my $feats = $ds->get_feature_type_count(chr=>$chr);
-
     my $gc_args;
-    $gc_args .= qq{'args__dsid','ds_id',} if $dsid;
-    $gc_args .= qq{'args__dsgid','dsg_id',} if $dsgid;
-    $gc_args .= qq{'args__chr','chr',} if defined $chr;
+    $gc_args = "chr: '$chr'," if defined $chr;
+    $gc_args .= "dsid: $dsid," if $dsid; #set a var so that histograms are only calculated for the dataset and not hte dataset_group
+    $gc_args .= "typeid: ";
     my $feat_list_string = $dsid ? "dsid=$dsid" : "dsgid=$dsgid";
     $feat_list_string .= ";chr=$chr" if defined $chr;
     my $feat_string .= qq{<div class=oblique>Features for $name</div>};
@@ -582,9 +610,11 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
 	      "<td><div id=".$_."_type class=\"link small\" 
   onclick=\"
   \$('#gc_histogram').dialog('option','title', 'Histogram of GC content for ".$feats->{$_}{name}."s');
-  \$('#gc_histogram').html('loading...');
-  \$('#gc_histogram').dialog('open');
-  get_gc_for_feature_type([$gc_args 'args__gstid','gstid','args__typeid','args__".$feats->{$_}{id}."'],['gc_histogram'])\">".'show %GC?</div>'.
+  \$('#gc_histogram').dialog('open');".
+  "get_feat_gc({$gc_args".$feats->{$_}{id}."})\">"
+    .'show %GC?</div>'.
+
+
     "<td class='small link' onclick=\"window.open('FeatList.pl?$feat_list_string"."&ftid=".$feats->{$_}{id}.";gstid=$gstid')\">Feature List?"
   } sort {$a cmp $b} keys %$feats);
 	$feat_string .= "</table>";
@@ -629,18 +659,22 @@ sub get_gc_for_feature_type
     my $chr = $opts{chr};
     my $typeid = $opts{typeid};
     my $gstid = $opts{gstid};#genomic sequence type id
-    my $min = $opts{min};
+    my $min = $opts{min}; #limit results with gc values greater than $min;
+    my $max = $opts{max}; #limit results with gc values smaller than $max;
+    $min = undef if $min eq "undefined";
+    $max = undef if $max eq "undefined";
+    $chr = undef if $chr eq "undefined";
+    $dsid = undef if $dsid eq "undefined";
+    $typeid = 1 if $typeid eq "undefined";
     return unless $dsid || $dsgid;
     my $gc = 0;
     my $at = 0;
     my $n = 0;
     my $type = $coge->resultset('FeatureType')->find($typeid);
-    my $search;
-    $search = {"feature_type_id"=>$typeid};
-    $search->{"me.chromosome"}=$chr if defined $chr;
     my @data;
+    my @fids; #storage for fids that passed.  To be sent to FeatList
     my @dsids;
-    push @dsids, $dsid if $dsid;
+    push @dsids, $1 if $dsid =~ /(\d+)/;
     if ($dsgid)
       {
 	my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
@@ -649,11 +683,18 @@ sub get_gc_for_feature_type
 	    my $error =  "unable to create dsg object using id $dsgid\n";
 	    return $error;
 	  }
-	foreach my $ds ($dsg->datasets())
+	$gstid = $dsg->type->id;
+	if (!$dsid)
 	  {
-	    push @dsids, $ds->id;
+	    foreach my $ds ($dsg->datasets())
+	      {
+		push @dsids, $ds->id;
+	      }
 	  }
       }
+    my $search;
+    $search = {"feature_type_id"=>$typeid};
+    $search->{"me.chromosome"}=$chr if defined $chr;
     foreach my $dsidt (@dsids)
       {
 	my $ds = $coge->resultset('Dataset')->find($dsidt);
@@ -676,40 +717,13 @@ sub get_gc_for_feature_type
 	my @feats = $ds->features($search,{join=>['locations', {'dataset'=>{'dataset_connectors'=>'dataset_group'}}],
 					   prefetch=>['locations',{'dataset'=>{'dataset_connectors'=>'dataset_group'}}],
 					  });
-#	my $unpack_str;# = join (" ", map{"x".($_->start-1)." A".($_->stop-$_->start+1)} @feats);
-#	my $pos = 0;
-#	print STDERR "Mark!\n";
-#	foreach my $feat (@feats)
-# 	  {
-# 	    $pos = $feat->start-1-$pos;
-# 	    $unpack_str .= " x$pos";
-# 	    my $dist = $feat->stop-$feat->start+1;
-# 	    $unpack_str .=" A$dist";
-# 	    print STDERR $pos,"\t";
-# 	    $pos = $feat->stop;
-# 	    print STDERR join ("\t", $pos, $feat->start, $dist),"\n";
-# 	  }
-# 	$unpack_str =~ s/^\s+//;
-# #	print STDERR "!".$unpack_str,"!\n";
-
-# 	my $i=0;
-# 	foreach my $seq (unpack($unpack_str, $seqs{$feats[0]->chromosome}))
-# 	  {
-# 	    $feats[$i]->genomic_sequence($seq);
-# 	    $i++;
-# 	  }
  	foreach my $feat (@feats)
  	  {
-
-#	    my $str = $seqs{$feat->chromosome};
-#	    my $offset = "x".($feat->start-1);
-#	    my $length = "A".($feat->stop-$feat->start+1);
-#	    my $seq = unpack("x".($feat->start-1)." A".($feat->stop-$feat->start+1), $seqs{$feat->chromosome});
-	    #reason this is slow is due to substr handling a large sequence.  Unpack is the same, but perhaps using multiple retrieves in one go will help.
 	    my $seq = substr($seqs{$feat->chromosome}, $feat->start-1, $feat->stop-$feat->start+1);
-#	    next;
+
 	    $feat->genomic_sequence(seq=>$seq);
 	    my @gc = $feat->gc_content(counts=>1);
+	    
 	    $gc+=$gc[0] if $gc[0] =~ /^\d+$/;
 	    $at+=$gc[1] if $gc[1] =~ /^\d+$/;
 	    $n+=$gc[2] if $gc[2] =~ /^\d+$/;
@@ -717,27 +731,28 @@ sub get_gc_for_feature_type
 	    $total += $gc[0] if $gc[0];
 	    $total += $gc[1] if $gc[1];
 	    $total += $gc[2] if $gc[2];
-	    push @data, sprintf("%.2f",100*$gc[0]/$total) if $total;
+	    my $perc_gc = 100*$gc[0]/$total if $total;
+	    next unless $perc_gc; #skip if no values
+	    next if defined $min && $min =~/\d+/ && $perc_gc < $min; #check for limits
+	    next if defined $max && $max =~/\d+/ && $perc_gc > $max; #check for limits
+	    push @data, sprintf("%.2f",$perc_gc);
+	    push @fids, $feat->id."_".$gstid;
 	  }
 	my $t3 = new Benchmark;
 	my $get_seq_time = timestr(timediff($t2,$t1));
 	my $process_seq_time = timestr(timediff($t3,$t2));
-# 	print STDERR qq{
-
-# -----------------------------------------
-# Organism View: sub get_gc_for_feature_type
-
-#  Time to get sequence:        $get_seq_time
-#  Time to process sequence:    $process_seq_time
-# -----------------------------------------
-
-# };
        }
     my $total = $gc+$at+$n;
     return "error" unless $total;
 
     my $file = $TEMPDIR."/".join ("_",@dsids);
+    #perl -T flag
+    ($min) = $min =~ /(.*)/ if defined $min;
+    ($max) = $max =~ /(.*)/ if defined $max;
+    ($chr) = $chr =~ /(.*)/ if defined $chr;
     $file .= "_".$chr."_" if defined $chr;
+    $file .= "_min".$min if defined $min;
+    $file .= "_max".$max if defined $max;
     $file .= "_".$type->name."_gc.txt";
     open(OUT, ">".$file);
     print OUT "#wobble gc for dataset ids: ".join (" ", @dsids),"\n";
@@ -755,9 +770,34 @@ sub get_gc_for_feature_type
     
 
     my $info= "<div class = small>Total length: ".commify($total)." bp, GC: ".sprintf("%.2f",100*$gc/($total))."%  AT: ".sprintf("%.2f",100*$at/($total))."%  N: ".sprintf("%.2f",100*($n)/($total))."%</div>";
+    if ($min || $max)
+      {
+	$min = 0 unless defined $min;
+	$max = 100 unless defined $max;
+	$info .= qq{<div class=small style="color: red;">Limits set:  MIN: $min  MAX: $max</div>
+} 
+  }
+    my $stuff = join "::",@fids;
+    $info .= qq{<div class="link small" onclick="window.open('FeatList.pl?fid=$stuff')">Open FeatList of Features</div>};
+    my $args;
+    $min = 0 unless defined $min && $min =~/\d+/;
+    $max = 100 unless defined $max && $max =~/\d+/;
+    $info .= qq{<div class="small">
+Min: <input type="text" size="3" id="feat_gc_min" value="$min">
+Max: <input type=text size=3 id=feat_gc_max value=$max>
+</div>};
+    $args .= qq{'args__dsid','args__$dsid',} if $dsid;
+    $args .= qq{'args__dsgid','args__$dsgid',} if $dsgid;
+    $args .= qq{'args__chr','args__$chr',} if defined $chr;
+    $args .= qq{'args__gstid','args__$gstid',} if defined $gstid;
+    $args .= qq{'args__typeid','args__$typeid',} if defined $typeid;
+    $args .= qq{'args__min','feat_gc_min',};
+    $args .= qq{'args__max','feat_gc_max'};
+    $info .= qq{<div class="link small" onclick="get_feat_gc({typeid: '$typeid', chr: '$chr'})">Regen</div>};
+
     $out =~ s/$TEMPDIR/$TEMPURL/;
-    my $hist_img = "<img src=\"$out\">";
-    return $info."<br>". $hist_img;
+    $info .= "<br><img src=\"$out\">";
+    return $info;
   }
 
 sub get_gc_for_chromosome
