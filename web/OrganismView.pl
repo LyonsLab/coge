@@ -11,6 +11,7 @@ use CoGeX;
 use Benchmark;
 use File::Path;
 use Benchmark qw(:all);
+use Statistics::Basic::Mean;
 
 $ENV{PATH} = "/opt/apache2/CoGe/";
 
@@ -49,9 +50,9 @@ my $pj = new CGI::Ajax(
 		       get_recent_orgs=>\&get_recent_orgs,
 		       get_start_stop=>\&get_start_stop,
 		       get_feature_counts => \&get_feature_counts,
-		       gen_gc_for_chromosome=> \&gen_gc_for_chromosome,
+		       get_gc_for_chromosome=> \&get_gc_for_chromosome,
 		       get_gc_for_noncoding=> \&get_gc_for_noncoding,
-		       gen_gc_for_feature_type =>\&gen_gc_for_feature_type,
+		       get_gc_for_feature_type =>\&get_gc_for_feature_type,
 		       get_codon_usage=>\&get_codon_usage,
 		       get_aa_usage=>\&get_aa_usage,
 		       get_wobble_gc=>\&get_wobble_gc,
@@ -301,8 +302,8 @@ sub get_dataset_group_info
     $html .= qq{<tr><td>Sequence type: <td>}.$dsg->genomic_sequence_type->name.qq{ (gstid$gstid)<input type=hidden id=gstid value=}.$gstid.qq{>};
     $html .= qq{<tr><td>Total length: };
     $html .= qq{<td><div style="float: left;"> }.commify($total_length)." bp</div>";
-    my $gc = $total_length < 10000000? gen_gc_for_chromosome(dsgid=>$dsgid): 0;
-    $gc = $gc ? $gc : qq{  <div style="float: left; text-indent: 1em;" id=datasetgroup_gc class="link" onclick="\$('#datasetgroup_gc').removeClass('link'); gen_gc_for_chromosome(['args__dsgid','dsg_id','args__gstid', 'gstid'],['datasetgroup_gc']);">  Click for percent GC content</div>};
+    my $gc = $total_length < 10000000? get_gc_for_chromosome(dsgid=>$dsgid): 0;
+    $gc = $gc ? $gc : qq{  <div style="float: left; text-indent: 1em;" id=datasetgroup_gc class="link" onclick="\$('#datasetgroup_gc').removeClass('link'); get_gc_for_chromosome(['args__dsgid','dsg_id','args__gstid', 'gstid'],['datasetgroup_gc']);">  Click for percent GC content</div>};
     $html .= "$gc";
 
 
@@ -436,8 +437,8 @@ sub get_dataset_info
       $html2 .= "<tr><td>No chromosomes";
     }
     $html .= "<tr><td>Total length:<td><div style=\"float: left;\">".commify($length)." bp";
-    my $gc = $length < 10000000? gen_gc_for_chromosome(dsid=>$ds->id): 0;
-    $gc = $gc ? $gc : qq{  </div><div style="float: left; text-indent: 1em;" id=dataset_gc class="link" onclick="\$('#dataset_gc').removeClass('link'); gen_gc_for_chromosome(['args__dsid','ds_id','args__gstid', 'gstid'],['dataset_gc']);">  Click for percent GC content</div>} if $length;
+    my $gc = $length < 10000000? get_gc_for_chromosome(dsid=>$ds->id): 0;
+    $gc = $gc ? $gc : qq{  </div><div style="float: left; text-indent: 1em;" id=dataset_gc class="link" onclick="\$('#dataset_gc').removeClass('link'); get_gc_for_chromosome(['args__dsid','ds_id','args__gstid', 'gstid'],['dataset_gc']);">  Click for percent GC content</div>} if $length;
     $html .= $gc if $gc;
     $html .= qq{</table>};
     my $feat_string = qq{
@@ -466,8 +467,8 @@ sub get_dataset_chr_info
     return $html unless $ds;
     my $length = 0;
     $length = $ds->last_chromosome_position($chr) if defined $chr;
-    my $gc = $length < 10000000? gen_gc_for_chromosome(dsid=>$ds->id, chr=>$chr): 0;
-    $gc = $gc ? " -- ".$gc : qq{<div style="float: left; text-indent: 1em;" id=chromosome_gc class="link" onclick="\$('#chromosome_gc').removeClass('link'); gen_gc_for_chromosome(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['chromosome_gc']);">Click for percent GC content</div>};
+    my $gc = $length < 10000000? get_gc_for_chromosome(dsid=>$ds->id, chr=>$chr): 0;
+    $gc = $gc ? " -- ".$gc : qq{<div style="float: left; text-indent: 1em;" id=chromosome_gc class="link" onclick="\$('#chromosome_gc').removeClass('link'); get_gc_for_chromosome(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['chromosome_gc']);">Click for percent GC content</div>};
     $length = commify($length)." bp";
     $html .= qq{
 <tr><td class = oblique>Specifics for chromosome $chr:
@@ -583,7 +584,7 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
   \$('#gc_histogram').dialog('option','title', 'Histogram of GC content for ".$feats->{$_}{name}."s');
   \$('#gc_histogram').html('loading...');
   \$('#gc_histogram').dialog('open');
-  gen_gc_for_feature_type([$gc_args 'args__gstid','gstid','args__typeid','args__".$feats->{$_}{id}."'],['gc_histogram'])\">".'show %GC?</div>'.
+  get_gc_for_feature_type([$gc_args 'args__gstid','gstid','args__typeid','args__".$feats->{$_}{id}."'],['gc_histogram'])\">".'show %GC?</div>'.
     "<td class='small link' onclick=\"window.open('FeatList.pl?$feat_list_string"."&ftid=".$feats->{$_}{id}.";gstid=$gstid')\">Feature List?"
   } sort {$a cmp $b} keys %$feats);
 	$feat_string .= "</table>";
@@ -620,7 +621,7 @@ sub gen_data
     return qq{<font class="small alert">$message. . .</font>};
   }
 
-sub gen_gc_for_feature_type
+sub get_gc_for_feature_type
   {
     my %args = @_;
     my $dsid = $args{dsid};
@@ -723,7 +724,7 @@ sub gen_gc_for_feature_type
 # 	print STDERR qq{
 
 # -----------------------------------------
-# Organism View: sub gen_gc_for_feature_type
+# Organism View: sub get_gc_for_feature_type
 
 #  Time to get sequence:        $get_seq_time
 #  Time to process sequence:    $process_seq_time
@@ -758,7 +759,7 @@ sub gen_gc_for_feature_type
     return $info."<br>". $hist_img;
   }
 
-sub gen_gc_for_chromosome
+sub get_gc_for_chromosome
   {
     my %args = @_;
     my $dsid = $args{dsid};
@@ -894,7 +895,7 @@ sub get_gc_for_noncoding
     $cmd .= " -min 0";
     $cmd .= " -max 100";
     `$cmd`;
-    my $info =  "<div class = small>Total: ".commify($total)." codons, GC: ".sprintf("%.2f",100*$gc/($total))."%  AT: ".sprintf("%.2f",100*$at/($total))."%  N: ".sprintf("%.2f",100*($n)/($total))."%</div>";
+    my $info =  "<div class = small>Total: ".commify($total)." codons.  Mean GC: ".sprintf("%.2f",100*$gc/($total))."%  AT: ".sprintf("%.2f",100*$at/($total))."%  N: ".sprintf("%.2f",100*($n)/($total))."%</div>";
     $out =~ s/$TEMPDIR/$TEMPURL/;
     my $hist_img = "<img src=\"$out\">";
 
@@ -1121,7 +1122,7 @@ sub get_wobble_gc
     $cmd .= " -min 0";
     $cmd .= " -max 100";
     `$cmd`;
-    my $info =  "<div class = small>Total: ".commify($total)." codons, GC: ".sprintf("%.2f",100*$gc/($total))."%  AT: ".sprintf("%.2f",100*$at/($total))."%  N: ".sprintf("%.2f",100*($n)/($total))."%</div>";
+    my $info =  "<div class = small>Total: ".commify($total)." codons.  Mean GC: ".sprintf("%.2f",100*$gc/($total))."%  AT: ".sprintf("%.2f",100*$at/($total))."%  N: ".sprintf("%.2f",100*($n)/($total))."%</div>";
     $out =~ s/$TEMPDIR/$TEMPURL/;
     my $hist_img = "<img src=\"$out\">";
     return $info."<br>". $hist_img;
