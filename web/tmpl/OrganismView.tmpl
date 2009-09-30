@@ -182,10 +182,45 @@ $(document).ready(function(){
     } else { dataset_info_chain();}
      
   }
-  
-//  if ($('#ds_list').val())
-//   {timing(0);}  
+
+  //set up jquery ajax
+  $.ajaxSetup({
+                type: "GET",
+                url: "/CoGe/OrganismView.pl",
+                //dataType: "html",
+                cache: false,
+        });
+
  });
+
+//ajax function call
+
+function get_feat_gc(opts){
+ if (!opts){opts={};}
+ chr = opts.chr;
+ typeid = opts.typeid;
+ min = $('#feat_gc_min').val();
+ max = $('#feat_gc_max').val();
+ dsid = opts.dsid;
+ dsgid = $('#dsg_id').val();
+  
+ $.ajax({
+   data: {
+	  jquery_ajax: 1,
+          fname: 'get_gc_for_feature_type',
+	  dsid: dsid,
+	  dsgid: dsgid,
+	  typeid: typeid,
+	  chr: chr,
+	  min: min,
+	  max: max,
+         },
+   success: function(data) {$('#gc_histogram').html(data);}
+ });
+ $('#gc_histogram').html('loading. . .');
+
+}
+
 
 function search_bar(div_id){
   if($('#'+div_id).val() == "Search") $('#'+div_id).val("").css({fontStyle: "normal"});
@@ -253,7 +288,7 @@ $(function() {
    <div id="feature_count_data"></div>
 </Table>
 
-<div class="dialog_box" id="gc_histogram" title="GC Content Histogram"></div>
+<div class="dialog_box" id="gc_histogram" title="GC Content Histogram"><input type=hidden id=feat_gc_min></div>
 <div class="dialog_box" id="wobble_gc_histogram" title="Wobble GC Content Histogram"></div>
 <div class="dialog_box" id="wobble_gc_diff_histogram" title="(CDS GC - wobble GC) Content Histogram"></div>
 <div class="dialog_box" id="codon_usage_table" title="Codon Usage Table"></div>
