@@ -123,11 +123,17 @@ sub gen_body
     #feat ids may be in the format of <fid>_<gstid>
     foreach my $item ($form->param('fid'))
       {
-	push @$feat_list, $item if $item =~ /^\d+_?\d*$/;
+	foreach my $item2 (split/::/, $item)
+	  {
+	    push @$feat_list, $item2 if $item2 =~ /^\d+_?\d*$/;
+	  }
       }
     foreach my $item ($form->param('featid'))
       {
-	push @$feat_list, $item if $item =~ /^\d+_?\d*$/;
+	foreach my $item2 (split/::/, $item)
+	  {
+	    push @$feat_list, $item2 if $item2 =~ /^\d+_?\d*$/;
+	  }
       }
     my $dsid = $form->param('dsid') if $form->param('dsid');
     my $dsgid = $form->param('dsgid') if $form->param('dsgid');
