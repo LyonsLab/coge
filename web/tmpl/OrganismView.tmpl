@@ -201,6 +201,7 @@ function get_feat_gc(opts){
  typeid = opts.typeid;
  min = $('#feat_gc_min').val();
  max = $('#feat_gc_max').val();
+ hist_type = $('#feat_hist_type').val();
  dsid = opts.dsid;
  dsgid = $('#dsg_id').val();
   
@@ -214,6 +215,7 @@ function get_feat_gc(opts){
 	  chr: chr,
 	  min: min,
 	  max: max,
+	  hist_type: hist_type,
          },
    success: function(data) {$('#gc_histogram').html(data);}
  });
@@ -288,8 +290,8 @@ $(function() {
    <div id="feature_count_data"></div>
 </Table>
 
-<div class="dialog_box" id="gc_histogram" title="GC Content Histogram"><input type=hidden id=feat_gc_min></div>
-<div class="dialog_box" id="wobble_gc_histogram" title="Wobble GC Content Histogram"></div>
+<div class="dialog_box" id="gc_histogram" title="Histogram of GC Content"><input type=hidden id=feat_gc_min></div>
+<div class="dialog_box" id="wobble_gc_histogram" title="Histogram of Wobble GC Content for CDS"></div>
 <div class="dialog_box" id="wobble_gc_diff_histogram" title="(CDS GC - wobble GC) Content Histogram"></div>
 <div class="dialog_box" id="codon_usage_table" title="Codon Usage Table"></div>
 <div class="dialog_box" id="aa_usage_table" title="Amino Acid Usage Table"></div>
