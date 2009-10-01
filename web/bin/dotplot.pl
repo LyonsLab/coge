@@ -34,6 +34,7 @@ GetOptions(
 	   "assemble=s"=>\$assemble,
 	   );
 
+
 usage() if $help;
 usage() unless -r $dagfile;
 
