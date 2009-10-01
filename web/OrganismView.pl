@@ -661,10 +661,13 @@ sub get_gc_for_feature_type
     my $gstid = $opts{gstid};#genomic sequence type id
     my $min = $opts{min}; #limit results with gc values greater than $min;
     my $max = $opts{max}; #limit results with gc values smaller than $max;
-    $min = undef if $min eq "undefined";
-    $max = undef if $max eq "undefined";
-    $chr = undef if $chr eq "undefined";
-    $dsid = undef if $dsid eq "undefined";
+    my $hist_type = $opts{hist_type};
+    $hist_type = "counts" unless $hist_type;
+    $min = undef if $min && $min eq "undefined";
+    $max = undef if $max && $max eq "undefined";
+    $chr = undef if $chr && $chr eq "undefined";
+    $dsid = undef if $dsid && $dsid eq "undefined";
+    $hist_type = undef if $hist_type && $hist_type eq "undefined";
     $typeid = 1 if $typeid eq "undefined";
     return unless $dsid || $dsgid;
     my $gc = 0;
@@ -674,7 +677,7 @@ sub get_gc_for_feature_type
     my @data;
     my @fids; #storage for fids that passed.  To be sent to FeatList
     my @dsids;
-    push @dsids, $1 if $dsid =~ /(\d+)/;
+    push @dsids, $1 if $dsid && $dsid =~ /(\d+)/;
     if ($dsgid)
       {
 	my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
@@ -753,6 +756,7 @@ sub get_gc_for_feature_type
     $file .= "_".$chr."_" if defined $chr;
     $file .= "_min".$min if defined $min;
     $file .= "_max".$max if defined $max;
+    $file .= "_$hist_type" if $hist_type;
     $file .= "_".$type->name."_gc.txt";
     open(OUT, ">".$file);
     print OUT "#wobble gc for dataset ids: ".join (" ", @dsids),"\n";
@@ -766,35 +770,39 @@ sub get_gc_for_feature_type
     $cmd .= " -t \"".$type->name." gc content\"";
     $cmd .= " -min 0";
     $cmd .= " -max 100";
+    $cmd .= " -ht $hist_type" if $hist_type;
     `$cmd`;
     
 
-    my $info= "<div class = small>Total length: ".commify($total)." bp, GC: ".sprintf("%.2f",100*$gc/($total))."%  AT: ".sprintf("%.2f",100*$at/($total))."%  N: ".sprintf("%.2f",100*($n)/($total))."%</div>";
+    $min = 0 unless defined $min && $min =~/\d+/;
+    $max = 100 unless defined $max && $max =~/\d+/;
+    my $info;
+$info .= qq{<div class="small">
+Min: <input type="text" size="3" id="feat_gc_min" value="$min">
+Max: <input type=text size=3 id=feat_gc_max value=$max>
+Type: <select id=feat_hist_type>
+<option value ="counts">Counts</option>
+<option value = "percentage">Percentage</option>
+</select>
+};
+    $info =~ s/>Per/ selected>Per/ if $hist_type =~/per/;
+    my $gc_args;
+    $gc_args = "chr: '$chr'," if defined $chr;
+    $gc_args .= "dsid: $dsid," if $dsid; #set a var so that histograms are only calculated for the dataset and not hte dataset_group
+    $gc_args .= "typeid: '$typeid'";
+    $info .= qq{<span class="link" onclick="get_feat_gc({$gc_args})">Regenerate histogram</span>};
+    $info .= "</div>";
+    $info .= "<div class = small>Total length: ".commify($total)." bp, GC: ".sprintf("%.2f",100*$gc/($total))."%  AT: ".sprintf("%.2f",100*$at/($total))."%  N: ".sprintf("%.2f",100*($n)/($total))."%</div>";
     if ($min || $max)
       {
 	$min = 0 unless defined $min;
 	$max = 100 unless defined $max;
 	$info .= qq{<div class=small style="color: red;">Limits set:  MIN: $min  MAX: $max</div>
 } 
-  }
+      }
     my $stuff = join "::",@fids;
     $info .= qq{<div class="link small" onclick="window.open('FeatList.pl?fid=$stuff')">Open FeatList of Features</div>};
-    my $args;
-    $min = 0 unless defined $min && $min =~/\d+/;
-    $max = 100 unless defined $max && $max =~/\d+/;
-    $info .= qq{<div class="small">
-Min: <input type="text" size="3" id="feat_gc_min" value="$min">
-Max: <input type=text size=3 id=feat_gc_max value=$max>
-</div>};
-    $args .= qq{'args__dsid','args__$dsid',} if $dsid;
-    $args .= qq{'args__dsgid','args__$dsgid',} if $dsgid;
-    $args .= qq{'args__chr','args__$chr',} if defined $chr;
-    $args .= qq{'args__gstid','args__$gstid',} if defined $gstid;
-    $args .= qq{'args__typeid','args__$typeid',} if defined $typeid;
-    $args .= qq{'args__min','feat_gc_min',};
-    $args .= qq{'args__max','feat_gc_max'};
-    $info .= qq{<div class="link small" onclick="get_feat_gc({typeid: '$typeid', chr: '$chr'})">Regen</div>};
-
+    
     $out =~ s/$TEMPDIR/$TEMPURL/;
     $info .= "<br><img src=\"$out\">";
     return $info;
@@ -1099,6 +1107,9 @@ sub get_wobble_gc
     my $dsgid = $opts{dsgid};
     my $chr = $opts{chr};
     my $gstid = $opts{gstid}; #genomic sequence type id
+    my $min = $opts{min}; #limit results with gc values greater than $min;
+    my $max = $opts{max}; #limit results with gc values smaller than $max;
+    my $hist_type = $opts{hist_type};
     return "error" unless $dsid || $dsgid;
     my $gc = 0;
     my $at = 0;
@@ -1107,6 +1118,7 @@ sub get_wobble_gc
     $search = {"feature_type_id"=>3};
     $search->{"me.chromosome"}=$chr if defined $chr;
     my @data;
+    my @fids;
     my @dsids;
     push @dsids, $dsid if $dsid;
     if ($dsgid)
@@ -1143,13 +1155,27 @@ sub get_wobble_gc
 	    $total += $gc[0] if $gc[0];
 	    $total += $gc[1] if $gc[1];
 	    $total += $gc[2] if $gc[2];
-	    push @data, sprintf("%.2f",100*$gc[0]/$total) if $total;
+	    my $perc_gc = 100*$gc[0]/$total if $total;
+	    next unless $perc_gc; #skip if no values
+	    next if defined $min && $min =~/\d+/ && $perc_gc < $min; #check for limits
+	    next if defined $max && $max =~/\d+/ && $perc_gc > $max; #check for limits
+	    push @data, sprintf("%.2f",$perc_gc);
+	    push @fids, $feat->id."_".$gstid;
+	    #push @data, sprintf("%.2f",100*$gc[0]/$total) if $total;
 	  }
       }
     my $total = $gc+$at+$n;
     return "error" unless $total;
     
-    my $file = $TEMPDIR."/".join ("_",@dsids)."_wobble_gc.txt";
+    my $file = $TEMPDIR."/".join ("_",@dsids);#."_wobble_gc.txt";
+    ($min) = $min =~ /(.*)/ if defined $min;
+    ($max) = $max =~ /(.*)/ if defined $max;
+    ($chr) = $chr =~ /(.*)/ if defined $chr;
+    $file .= "_".$chr."_" if defined $chr;
+    $file .= "_min".$min if defined $min;
+    $file .= "_max".$max if defined $max;
+    $file .= "_$hist_type" if $hist_type;
+    $file .= "_wobble_gc.txt";
     open(OUT, ">".$file);
     print OUT "#wobble gc for dataset ids: ".join (" ", @dsids),"\n";
     print OUT join ("\n", @data),"\n";
@@ -1162,8 +1188,41 @@ sub get_wobble_gc
     $cmd .= " -t \"CDS wobble gc content\"";
     $cmd .= " -min 0";
     $cmd .= " -max 100";
-    `$cmd`;
-    my $info =  "<div class = small>Total: ".commify($total)." codons.  Mean GC: ".sprintf("%.2f",100*$gc/($total))."%  AT: ".sprintf("%.2f",100*$at/($total))."%  N: ".sprintf("%.2f",100*($n)/($total))."%</div>";
+    $cmd .= " -ht $hist_type" if $hist_type;
+     `$cmd`;
+    $min = 0 unless defined $min && $min =~/\d+/;
+    $max = 100 unless defined $max && $max =~/\d+/;
+    my $info;
+    $info .= qq{<div class="small">
+Min: <input type="text" size="3" id="wobble_gc_min" value="$min">
+Max: <input type=text size=3 id=wobble_gc_max value=$max>
+Type: <select id=wobble_hist_type>
+<option value ="counts">Counts</option>
+<option value = "percentage">Percentage</option>
+</select>
+};
+    $info =~ s/>Per/ selected>Per/ if $hist_type =~/per/;
+    my $args;
+    $args .= "'args__dsid','ds_id'," if $dsid;
+    $args .= "'args__dsgid','dsg_id'," if $dsgid;
+    $args .= "'args__chr','chr'," if defined $chr;
+    $args .= "'args__min','wobble_gc_min',";
+    $args .= "'args__max','wobble_gc_max',";
+    $args .= "'args__max','wobble_gc_max',";
+    $args .= "'args__hist_type', 'wobble_hist_type',";
+    $info .= qq{<span class="link" onclick="get_wobble_gc([$args],['wobble_gc_histogram']);\$('#wobble_gc_histogram').html('loading...');">Regenerate histogram</span>};
+    $info .= "</div>";
+
+    $info .=  "<div class = small>Total: ".commify($total)." codons.  Mean GC: ".sprintf("%.2f",100*$gc/($total))."%  AT: ".sprintf("%.2f",100*$at/($total))."%  N: ".sprintf("%.2f",100*($n)/($total))."%</div>";
+    if ($min || $max)
+      {
+	$min = 0 unless defined $min;
+	$max = 100 unless defined $max;
+	$info .= qq{<div class=small style="color: red;">Limits set:  MIN: $min  MAX: $max</div>
+} 
+  }
+    my $stuff = join "::",@fids;
+    $info .= qq{<div class="link small" onclick="window.open('FeatList.pl?fid=$stuff')">Open FeatList of Features</div>};
     $out =~ s/$TEMPDIR/$TEMPURL/;
     my $hist_img = "<img src=\"$out\">";
     return $info."<br>". $hist_img;
