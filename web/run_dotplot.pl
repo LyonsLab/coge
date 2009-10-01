@@ -47,12 +47,14 @@ my($dsg2) = $coge->resultset('DatasetGroup')->resolve($dsgid2);
 exit unless $dsg1 && $dsg2;
 
 my $name1 = $dsg1->organism->name;
+$name1  =~ s/\///g;
 $name1 =~ s/\s+/_/g;
 $name1 =~ s/\(//g;
 $name1 =~ s/\)//g;
 $name1 =~ s/://g;
 $name1 =~ s/;//g;
 my $name2 = $dsg2->organism->name;
+$name2  =~ s/\///g;
 $name2 =~ s/\s+/_/g;
 $name2 =~ s/\(//g;
 $name2 =~ s/\)//g;
