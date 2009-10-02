@@ -1162,12 +1162,13 @@ INSERT INTO image_info (id, display_id, iname, title, px_width, px_height, dsid,
 	$type = "anchor" if $feat->{anchor};
 	my $bpmin = $set->{obj}->start+$start-1;
 	my $bpmax = $set->{obj}->start+$stop-1;
-
+	$anno =~ s/'//g; #need to remove these or the sql will get messed up
 	$statement = qq{
 INSERT INTO image_data (name, type, xmin, xmax, ymin, ymax, bpmin,bpmax,image_id, image_track,pair_id, link, annotation, color) values ("$name", "$type", $xmin, $xmax, $ymin, $ymax, $bpmin, $bpmax,$image_id, "$image_track",$pair_id, '$link', '$anno', '$color')
 };
 	my $try =1;
 	my $run_statement =  $dbh->do($statement);
+	print STDERR $statement,"\n" unless $run_statement;
 	unless ($run_statement || $try > 20)
 	  {
 	    sleep(1);
@@ -1478,7 +1479,7 @@ sub process_features
 	elsif ($feat->qualifiers->{names})
 	  {
 	    my $names = $feat->qualifiers->{names};
-	    $f->link("FeatView.pl?accn=".$names->[0]) if ref($names) =~ /array/i;
+	    $f->link("FeatView.pl?accn=".$names->[0]) if ref($names) =~ /array/i && $names->[0];
 	  }
 	$f->skip_overlap_search($skip_overlap_search);
 	if ($anchor)
