@@ -32,36 +32,32 @@ $width = 500 unless $width;
 $height = 500 unless $height;
 
 my $pairs = get_pairs(file=>$pair_file, chr1=>$chr1, chr2=>$chr2) if $pair_file && -r $pair_file;
-my $data = get_ksdata(ks_db=>$ks_db, type=>$ks_type, pairs=>$pairs);
-
+my ($data) = get_ksdata(ks_db=>$ks_db, type=>$ks_type, pairs=>$pairs);
 my $x_title = "substitution rate for $ks_type";
-if ($log)
+$x_title = "log10() ".$x_title if $log;
+
+my @data;
+my ($val_max, $val_min, $non_zero_min) = range( $data);
+foreach my $val (@$data)
   {
-    my ($max, $min, $non_zero_min) = range( $data);
-#    print STDERR join ("\t", $min, $max),"\n";
-    my @data;
-    foreach my $val (@$data)
+    my $tmp = $val;
+    if ($log)
       {
-	$val = $non_zero_min if ($val == 0);
-	push @data, log10($val);
+	$tmp = $non_zero_min if ($val == 0);
+	$tmp = log10($tmp);
       }
-    $x_title = "log10() ".$x_title;
-    $data = \@data;
-  }
-#check data if necessary
-if (defined $min || defined $max)
-  {
-    my @data;
-    foreach my $val (@$data)
-      {
-	next if defined $min && $val < $min;
-	next if defined $max && $val > $max;
-	push @data, $val;
-      }
-    $data = \@data;
+    next if defined $min && $tmp < $min;
+    next if defined $max && $tmp > $max;
+    push @data, $tmp;
   }
 
 
+
+my $mean =0;
+map {$mean+=$_} @data;
+$mean = sprintf("%.4f",$mean/scalar(@data));
+@data = sort {$a<=>$b} @data;
+my $median = sprintf("%.4f",$data[floor(scalar(@data/2))]);
 
 my $hist = new GD::Graph::histogram($width, $height);
 my $bins = GD::Graph::histogram::_histogram_bins($data, 100);
@@ -76,13 +72,16 @@ foreach my $color (@$colors)
     push @color_names, $name;
     $count++;
   }
+my $title = "Mean: $mean" if defined $mean;
+$title .= " Median: $median" if defined $median;
 $hist->set(histogram_bins=>100,
 	   x_label_skip=>5,
 	   y_label =>'counts',
 	   x_label=>$x_title,
 	   cycle_clrs=>1,
 	   y_long_ticks=>1,
-	   y_tick_number=>10
+	   y_tick_number=>10,
+	   title=>$title,
 	  );
 $hist->set(dclrs=>[@color_names]) if scalar @color_names;
 $hist->set_x_label_font("/usr/lib/perl5/site_perl/CoGe/fonts/arial.ttf",8);
@@ -90,7 +89,7 @@ $hist->set_y_label_font("/usr/lib/perl5/site_perl/CoGe/fonts/arial.ttf",8);
 $hist->set_x_axis_font("/usr/lib/perl5/site_perl/CoGe/fonts/arial.ttf",8);
 $hist->set_y_axis_font("/usr/lib/perl5/site_perl/CoGe/fonts/arial.ttf",8);
 $hist->set_values_font("/usr/lib/perl5/site_perl/CoGe/fonts/arial.ttf",8);
-my $gd = $hist->plot(data=>$data);
+my $gd = $hist->plot(data=>\@data);
 if ($outfile)
   {
     $outfile .= ".png" unless $outfile =~ /png$/;
@@ -148,6 +147,7 @@ sub get_ksdata
 	push @data, $data{$type} if $data{$type};
       }
     $sth->finish();
+    undef $sth;
     $dbh->disconnect();
     return \@data;
   }
