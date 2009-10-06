@@ -8,7 +8,7 @@ use DBI;
 use Getopt::Long;
 use POSIX;
 
-use vars qw($help $outfile $width $height $log $max $min $file $x_title $hist_type);
+use vars qw($help $outfile $width $height $log $max $min $file $x_title $hist_type $calc_mean);
 
 GetOptions(
 	   "out|o=s"=>\$outfile,
@@ -21,6 +21,7 @@ GetOptions(
 	   "file|f=s"=>\$file,
 	   "title|t=s"=>\$x_title,
 	   "hist_type|ht=s"=>\$hist_type,
+	   "mean"=>\$calc_mean,
 	   );
 $hist_type = "count" unless $hist_type && $hist_type eq "percentage";
 usage() if $help;
@@ -29,7 +30,13 @@ $width = 500 unless $width;
 $height = 500 unless $height;
 
 my $data = get_data(file=>$file);
-
+my $mean;
+if ($calc_mean)
+  {
+    $mean = 0;
+    map {$mean+=$_} @$data;
+    $mean = $mean/scalar(@$data);
+  }
 if ($log)
   {
     my ($max, $min, $non_zero_min) = range( $data);
@@ -71,6 +78,8 @@ foreach my $color (@$colors)
     push @color_names, $name;
     $count++;
   }
+my $title= "Mean: $mean" if defined $mean;
+
 $hist->set(histogram_bins=>100,
 	   x_label_skip=>5,
 	   y_label =>$hist_type,
@@ -79,6 +88,7 @@ $hist->set(histogram_bins=>100,
 	   y_long_ticks=>1,
 	   y_tick_number=>10,
 	   histogram_type=>$hist_type,
+	   title=>$title,
 	  );
 $hist->set(dclrs=>[@color_names]) if scalar @color_names;
 $hist->set_x_label_font("/usr/lib/perl5/site_perl/CoGe/fonts/arial.ttf",8);
@@ -241,9 +251,11 @@ Options:
 
 -max                   Maximum value for data
 
+-mean                  flag to calculate the mean of the values
+
+-hist_type |  ht       Histogram of data counts or distribution of percentages.  Values: count percentage.  Default: count 
+
 -help     |    h       print this message
-
-
 
 };
     exit;
