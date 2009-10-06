@@ -82,20 +82,23 @@ function update_params(val) {
    {
      params = $('#prev_params').val()[0].split('_');;
    }
+
+ var cmd;
  if ($('#org_id1').val() == params[3])
   {
-    $('#feat_type1').attr('value', params[5]);
-    $('#feat_type2').attr('value', params[8]);
+    cmd = "$('#feat_type1').attr('value', '"+params[5]+"');$('#feat_type2').attr('value', '"+params[8]+"');";
     $('#dsgid1').attr('value',params[4]);
     $('#dsgid2').attr('value',params[7]);
   }
  else
   {
-    $('#feat_type2').attr('value', params[5]);
-    $('#feat_type1').attr('value', params[8]);
+    cmd = "$('#feat_type2').attr('value', '"+params[5]+"');$('#feat_type1').attr('value', '"+params[8]+"');";
     $('#dsgid2').attr('value',params[4]);
     $('#dsgid1').attr('value',params[7]);
   }
+ get_dataset_group_info(['args__dsgid','dsgid1','args__org_num','args__1'],['dsg_info1', 'feattype_menu1','genome_message1']);
+ get_dataset_group_info(['args__dsgid','dsgid2','args__org_num','args__2'],['dsg_info2', 'feattype_menu2','genome_message2']);
+ ajax_wait(cmd);
  var type;
  $('#blast option:eq('+params[0]+')').attr('selected','selected');
  if (params[10] == 'Distance') 
