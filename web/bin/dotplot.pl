@@ -609,6 +609,7 @@ sub parse_syn_blocks
     my $ordered1 =[]; #storage for ordered chromosomes
     my $ordered2 =[]; #storage for ordered chromosomes
     my %seen;
+    #sort blocks for chr1 so that the highest scoring ones are first
     foreach my $chr1 (sort{$chrs1->{$b}{score} <=> $chrs1->{$a}{score}} keys %$chrs1)
       {
 	push @$ordered1, {chr=>$chr1};
