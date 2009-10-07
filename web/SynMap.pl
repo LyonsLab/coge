@@ -856,6 +856,7 @@ sub gen_ks_db
     $outfile .= ".sqlite";
     unless (-r $outfile)
       {
+	write_log("initializing ks database", $cogeweb->logfile);
 	my $create = qq{
 CREATE TABLE ks_data
 (
@@ -874,22 +875,7 @@ dN_dS varchar
 	$dbh->do('create INDEX fid2 ON ks_data (fid2)');
 	$dbh->disconnect;
       }
-    write_log("generating ks database", $cogeweb->logfile);
-    write_log("\tconnecting to ks database $outfile", $cogeweb->logfile);
-    my %ksdata;
-    my $select = "select * from ks_data";
-    my $dbh = DBI->connect("dbi:SQLite:dbname=$outfile","","");
-    my $sth = $dbh->prepare($select);
-    $sth->execute();
-    write_log("\texecuting select all from ks database $outfile", $cogeweb->logfile);
-    while (my $data = $sth->fetchrow_arrayref)
-      {
-	$ksdata{$data->[1]}{$data->[2]}=1;# unless $data->[3] eq "";
-	print STDERR $data->[1],"\t", $data->[2]."\n" if $data->[3] eq "";
-      }
-    write_log("\tgathered data from ks database $outfile", $cogeweb->logfile);
-    $dbh->disconnect();
-    write_log("\tdisconnecting from ks database $outfile", $cogeweb->logfile);
+    my $ksdata = get_ks_data(db_file=>$outfile);
     open (IN, $infile);
     my @data;
     while (<IN>)
@@ -905,7 +891,7 @@ dN_dS varchar
 	    warn "Line does not appear to contain coge feature ids:  $_\n";
 	    next;
 	  }
-	next if $ksdata{$item1[6]}{$item2[6]};
+	next if $ksdata->{$item1[6]}{$item2[6]};
 	push @data,[$line[1],$line[5],$item1[6],$item2[6]];
       }
     close IN;
@@ -949,7 +935,7 @@ INSERT INTO ks_data (fid1, fid2, dS, dN, dN_dS) values ($fid1, $fid2, "$dS", "$d
 		sleep .1;
 	      }
 	  }
-
+	
 	$dbh->disconnect();
 
 	$pm->finish;
@@ -958,6 +944,38 @@ INSERT INTO ks_data (fid1, fid2, dS, dN, dN_dS) values ($fid1, $fid2, "$dS", "$d
 
     system "rm $outfile.running" if -r "$outfile.running";; #remove track file
     return $outfile;
+  }
+
+sub get_ks_data
+  {
+    my %opts = @_;
+    my $db_file = $opts{db_file};
+    my %ksdata;
+    unless (-r $db_file)
+      {
+	return \%ksdata;
+      }
+    write_log("\tconnecting to ks database $db_file", $cogeweb->logfile);
+    my $select = "select * from ks_data";
+    my $dbh = DBI->connect("dbi:SQLite:dbname=$db_file","","");
+    my $sth = $dbh->prepare($select);
+    $sth->execute();
+    write_log("\texecuting select all from ks database $db_file", $cogeweb->logfile);
+    while (my $data = $sth->fetchrow_arrayref)
+      {
+	$ksdata{$data->[1]}{$data->[2]}=$data->[3] ? {
+					 dS=>$data->[3],
+					 dN=>$data->[4],
+					 'dN/dS'=>$data->[5]
+					}: {};# unless $data->[3] eq "";
+	print STDERR $data->[1],"\t", $data->[2]."\n" if $data->[3] eq "";
+      }
+    write_log("\tgathered data from ks database $db_file", $cogeweb->logfile);
+    $sth->finish;
+    undef $sth;
+    $dbh->disconnect();
+    write_log("\tdisconnecting from ks database $db_file", $cogeweb->logfile);
+    return \%ksdata;
   }
 
 sub add_GEvo_links
@@ -970,9 +988,10 @@ sub add_GEvo_links
     open (OUT,">$infile.tmp");
     my %condensed;
     my %names;
+    my $previously_generated =0;
     while (<IN>)
       {
-	my $prev_link =0;
+	last if $previously_generated;
 	chomp;
 	if (/^#/)
 	  {
@@ -981,9 +1000,7 @@ sub add_GEvo_links
 	  }
 	if (/GEvo/)
 	  {
-	    s/toxic/synteny.cnr/;
-#	    print OUT $_,"\n";
-	    $prev_link =1;
+	    $previously_generated = 1;
 	  }
 	s/^\s+//;
 	next unless $_;
@@ -1026,15 +1043,21 @@ sub add_GEvo_links
 	  }
 #	accn1=".$feat1[3]."&fid1=".$feat1[6]."&accn2=".$feat2[3]."&fid2=".$feat2[6] if $feat1[3] && $feat1[6] && $feat2[3] && $feat2[6];
 	print OUT $_;
-	print OUT "\t",$link if $link && !$prev_link;
+	print OUT "\t",$link;
 	print OUT "\n";
       }
     close IN;
     close OUT;
-    my $cmd = "/bin/mv $infile.tmp $infile";
-    `$cmd`;
-
-    if (keys %condensed)
+    if ($previously_generated)
+      {
+	`rm $infile.tmp`;
+      }
+    else
+      {
+	my $cmd = "/bin/mv $infile.tmp $infile";
+	`$cmd`;
+      }
+    if (keys %condensed && !(-r "$infile.condensed"))
       {
 	open (OUT,">$infile.condensed");
 	foreach my $id1 (sort keys %condensed)
@@ -1057,6 +1080,83 @@ sub add_GEvo_links
 	close OUT;
       }
   }
+
+sub gen_ks_blocks_file
+    {
+      my %opts = @_;
+      my $infile = $opts{infile};
+      my ($dbfile) = $infile =~ /^(.*?CDS-CDS)/;
+      my $outfile = $infile.".ks";
+      return $outfile if -r $outfile;
+      my $ksdata = get_ks_data(db_file=>$dbfile.'.sqlite');
+      open (IN, $infile);
+      open (OUT, ">".$outfile);
+      print OUT "#This file contains synonymous rate values in the first two columns:\n";
+      print OUT join ("\t", "#kS", "kN"),"\n";
+      my @block;
+      my $block_title;
+      while(<IN>)
+	{
+	  if (/^##/)
+	    {
+	      my $output = process_block(ksdata=>$ksdata, block=>\@block, header=>$block_title) if $block_title;
+	      print OUT $output;
+	      @block=();
+	      $block_title = $_;
+	      #beginning of a block;
+	    }
+	  else
+	    {
+	      push @block, $_;
+	    }
+	}
+      close IN;
+      my $output = process_block(ksdata=>$ksdata, block=>\@block, header=>$block_title) if $block_title;
+      print OUT $output;
+      close OUT;
+      return $outfile;
+    }
+
+sub process_block
+   {
+     my %opts = @_;
+     my $ksdata = $opts{ksdata};
+     my $block = $opts{block};
+     my $header = $opts{header};
+     my $output;
+     my @ks;
+     my @kn;
+     foreach my $item (@$block)
+       {
+	 my @line = split /\t/, $item;
+	 my @seq1 = split/\|\|/,$line[1];
+	 my @seq2 = split/\|\|/,$line[5];
+	 my $ks = $ksdata->{$seq1[6]}{$seq2[6]};
+	 if ($ks->{dS})
+	   {
+	     unshift @line, $ks->{dS};
+	     unshift @line, $ks->{dN};
+	     push @ks, $ks->{dS};
+	     push @kn, $ks->{dN};
+	   }
+	 else
+	   {
+	     unshift @line, "undef";
+	     unshift @line, "undef";
+	   }
+	 $output .= join "\t", @line;
+       }
+     my $mean_ks = 0;
+     map {$mean_ks+=$_}@ks;
+     $mean_ks = sprintf("%.4f", $mean_ks/scalar@ks);
+     my $mean_kn = 0;
+     map {$mean_kn+=$_}@kn;
+     $mean_kn = sprintf("%.4f", $mean_kn/scalar@kn);
+     chomp $header;
+     $header .= "  Mean kS:  $mean_ks\tMean kN: $mean_kn\n";
+     return $header.$output;
+   }
+
 
 sub add_reverse_match#this is for when there is a self-self comparison.  DAGchainer, for some reason, is only adding one diag.  For example, if chr_14 vs chr_10 have a diag, chr_10 vs chr_14 does not.
   {
@@ -1415,7 +1515,7 @@ sub go
  	add_GEvo_links (infile=>$tmp, dsgid1=>$dsgid1, dsgid2=>$dsgid2);
 	my $t8 = new Benchmark;
 	$add_gevo_links_time = timestr(timediff($t8,$t7));
-
+	my $ks_blocks_file = gen_ks_blocks_file(infile=>$tmp) if $ks_type;
  	$tmp =~ s/$DIR/$URL/;
  	if (-r "$out.html")
  	  {
@@ -1464,13 +1564,16 @@ sub go
  <br><span class="species small">x-axis: $org_name1</span><br>
 };
 
-	    $html .= "<div><img src='$out.hist.png'></div>" if -r $hist;
+	    $html .= "<div class=small>Histogram of $ks_type values.<br><img src='$out.hist.png'></div>" if -r $hist;
 	    $html .= "Links and Downloads:";
 	    
  	    $html .= "<br><a class=small href=$out.png target=_new>Image File</a>";
  	    $html .= "<br><a class=small href=$out.hist.png target=_new>Histogram of synonymous substitutions</a>" if -r $hist;
  	    $html .= "<br><a class=small href=$tmp target=_new>DAGChainer syntelog file with GEvo links</a>";
  	    $html .= "<br><a class=small href=$tmp.condensed target=_new>Condensed syntelog file with GEvo links</a>";
+	    $ks_blocks_file =~ s/$DIR/$URL/;
+ 	    $html .= "<br><a class=small href=$ks_blocks_file target=_new>Syntelog file with synonymous/nonsynonymous rate values</a>" if $ks_blocks_file;
+	    
 	    $html .= "<br>".qq{<span class="small link" id="" onClick="window.open('bin/SynMap/order_contigs_to_chromosome.pl?f=$tmp');" >Generate Assembled Genomic Sequence</span>} if $assemble;
 	    $html .= "<br>"
  	  }
@@ -1651,7 +1754,7 @@ sub get_pair_info
   }
 
   
-  sub check_address_validity {
+sub check_address_validity {
 	my $address = shift;
 	return 'valid' unless $address;
 	my $validity = $address =~/^[_a-zA-Z0-9-]+(\.[_a-zA-Z0-9-]+)*@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*\.(([0-9]{1,3})|([a-zA-Z]{2,3})|(aero|coop|info|museum|name))$/ ? 'valid' : 'invalid';
