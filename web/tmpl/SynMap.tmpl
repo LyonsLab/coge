@@ -25,6 +25,7 @@ function get_organism_chain(type,val,i)
  else if (type == 'desc') {get_orgs(['args__desc','args__'+val,'args__i','args__'+i], ['org_list'+i]);}
  $('#dsg_info'+i).html('<div class="loading dna_small small">loading. . .</div>');
  ajax_wait("gen_dsg_menu(['args__oid','org_id"+i+"', 'args__num','args__"+i+"'],['dsg_menu"+i+"', 'genome_message"+i+"']);");
+// gen_dsg_menu(['args__oid','org_id"+i+"', 'args__num','args__"+i+"'],['dsg_menu"+i+"', 'genome_message"+i+"']);
  ajax_wait("check_previous_analyses();");   
  ajax_wait("get_dataset_group_info(['args__dsgid','dsgid"+i+"','args__org_num','args__"+i+"'],['dsg_info"+i+"','feattype_menu"+i+"','genome_message"+i+"']);");
 }
@@ -58,7 +59,6 @@ go(['args__D','D','args__g','g','args__A','A','args__blast','blast', 'args__feat
 function handle_results(val){
  $('#log_text').hide(0);
  $('#results').show(0).html(val);
- $('#synmap_go').show();
  $(function() {$("#synmap_zoom_box").draggable();});
  ajax_wait("check_previous_analyses();");
 }
@@ -140,12 +140,12 @@ function set_dagchainer_defaults(params, type) {
  }
 
 function ajax_wait (val){
-if (ajax.length)
+ if (ajax.length)
    {
     setTimeout("ajax_wait("+'"'+val+'"'+")",100);
     return;
    }
-  eval(val);
+ eval(val);
 }
 
 function timing(val, val2){
@@ -400,7 +400,7 @@ function open_window (url, loc, width, height)
 </table>
 
 
-<span style="font-size: 1em" class="ui-button ui-state-default ui-corner-all" id="synmap_go" onClick="$('#synmap_go').hide();reset_basename();generate_basefile([],[update_basename]);run_synmap();" >Generate SynMap</span>
+<span style="font-size: 1em" class="ui-button ui-state-default ui-corner-all" id="synmap_go" onClick="reset_basename();generate_basefile([],[update_basename]);run_synmap();" >Generate SynMap</span>
 
 <span style="font-size: 1em" class='ui-button ui-state-default ui-corner-all' onClick="$('#results').html('');" >Clear Results</span>
 
