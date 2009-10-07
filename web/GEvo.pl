@@ -1366,7 +1366,7 @@ sub process_features
 		    if ($accn =~ /^$name\(?\d*\)?$/i)
 		      {
 			$f->color([255,255,0]) ;
-			$f->label($name) if $feat->labels;
+			$f->label($name) if $feat_labels;
 		      }
 		  }
 	      }
