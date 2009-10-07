@@ -726,6 +726,7 @@ sub get_ksdata
 	
       }
     $sth->finish();
+    undef $sth;
     $dbh->disconnect();
     return \%data;
   }
