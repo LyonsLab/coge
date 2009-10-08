@@ -1111,7 +1111,7 @@ sub generate_image_db
     my $statement = qq{
 INSERT INTO image_info (id, display_id, iname, title, px_width, px_height, dsid, chromosome, bpmin, bpmax, reverse_complement) values ($image_id, $image_id, "$image", "$title", $width, $height, "$dsid", "$chr", $image_start, $image_stop, $rc)
 };
-    print STDERR $statement unless $dbh->do($statement);
+    print STDERR $cogeweb->sqlitefile, "\n", $statement unless $dbh->do($statement);
     foreach my $feat ($gfx->get_feats)
       {
 	if ($feat->fill)
@@ -1168,7 +1168,7 @@ INSERT INTO image_data (name, type, xmin, xmax, ymin, ymax, bpmin,bpmax,image_id
 };
 	my $try =1;
 	my $run_statement =  $dbh->do($statement);
-	print STDERR $statement,"\n" unless $run_statement;
+	print STDERR $cogeweb->sqlitefile,"\n",$statement,"\n" unless $run_statement;
 	unless ($run_statement || $try > 20)
 	  {
 	    sleep(1);
@@ -1929,7 +1929,7 @@ sub get_obj_from_genome_db
 	  {
 #	    next;
 	    push @names, "No Name Feature: ".$f->type->name,"\n";
-	    print STDERR "Feature has no Name.  Db Id: ",$f->id,"\n" unless $f->type->name =~ /misc/;
+#	    print STDERR "Feature has no Name.  Db Id: ",$f->id,"\n" unless $f->type->name =~ /misc/;
 
 	  }
 	$name = $accn unless $name;
