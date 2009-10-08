@@ -159,6 +159,15 @@ sub gen_body
       {
 	$template->param(KS0=>"selected");
       }
+    #set axis metric for dotplot
+    if ($FORM->param('am') && $FORM->param('am')=~/g/i)
+      {
+	$template->param('AXIS_METRIC_GENE'=>'selected');
+      }
+    else
+      {
+	$template->param('AXIS_METRIC_NT'=>'selected');
+      }
 
     my $file = $form->param('file');
     if($file)
@@ -1153,7 +1162,7 @@ sub process_block
      $mean_kn = sprintf("%.4f", $mean_kn/scalar@kn);
      chomp $header;
      $header .= "  Mean kS:  $mean_ks\tMean kN: $mean_kn\n";
-     $header .= join ("\t", qw(#kS kN a<db_dataset_group_id>_<chr> chr1||start1||stop1||name1||strand1||type1||db_feature_id1||percent_id1 start1 stop1 b<db_dataset_group_id>_<chr> chr2||start2||stop2||name2||strand2||type2||db_feature_id2||percent_id2 start2 stop2 eval ??? GEVO_link))."\n";
+     $header .= join ("\t", "#kS",qw(kN a<db_dataset_group_id>_<chr> chr1||start1||stop1||name1||strand1||type1||db_feature_id1||percent_id1 start1 stop1 b<db_dataset_group_id>_<chr> chr2||start2||stop2||name2||strand2||type2||db_feature_id2||percent_id2 start2 stop2 eval ??? GEVO_link))."\n";
      return $header.$output;
    }
 
@@ -1221,18 +1230,22 @@ sub generate_dotplot
     my $regen_images = $opts{regen_images}=~/true/i ? 1 : 0;
     my $width = $opts{width} || 1000;
     my $assemble = $opts{assemble};
+    my $metric = $opts{metric};
     my $cmd = $DOTPLOT;
     #add ks_db to dotplot command if requested
     $outfile.= ".ass" if $assemble;
+    $outfile.= ".gene" if $metric =~ /gene/i;
     if ($ks_db && -r $ks_db)
       {
 	$cmd .= qq{ -ksdb $ks_db -kst $ks_type -log 1};
 	$outfile .= ".$ks_type";
       }
 
-    $cmd .= qq{ -d $dag -a $coords -b $outfile -l 'javascript:synteny_zoom("$dsgid1","$dsgid2","$basename","XCHR","YCHR","$ks_db")' -dsg1 $dsgid1 -dsg2 $dsgid2 -w $width -lt 2};
+    $cmd .= qq{ -d $dag -a $coords -b $outfile -l 'javascript:synteny_zoom("$dsgid1","$dsgid2","$basename","XCHR","YCHR"};
+    $cmd .= qq{,"$ks_db"} if $ks_db;
+    $cmd .= qq{)' -dsg1 $dsgid1 -dsg2 $dsgid2 -w $width -lt 2};
     $cmd .= qq{ -assemble 1} if $assemble;
-
+    $cmd .= qq{ -am $metric} if $metric;
     while (-e "$outfile.running")
       {
 	print STDERR "detecting $outfile.running.  Waiting. . .\n";
@@ -1267,8 +1280,8 @@ sub go
     my $dsgid1 = $opts{dsgid1};
     my $dsgid2 = $opts{dsgid2};
     my $ks_type = $opts{ks_type};
-    my $assemble = $opts{assemble}; #flag to send to dotplot.pl to try to order contigs by syntenic path through a reference genome
-
+    my $assemble =$opts{assemble}=~/true/i ? 1 : 0;
+    my $axis_metric = $opts{axis_metric};
     my $dagchainer_type = $opts{dagchainer_type};
     $dagchainer_type = $dagchainer_type eq "true" ? "geneorder" : "distance";
 
@@ -1298,6 +1311,7 @@ sub go
 	elsif ($ks_type eq "kn_ks") {$num=3;}
 	$synmap_link .= ";ks=$num";
       };
+    $synmap_link.=";am=g" if $axis_metric && $axis_metric =~/g/i;
     ##generate fasta files and blastdbs
     my $t0 = new Benchmark;
     my $pm = new Parallel::ForkManager($MAX_PROC);
@@ -1507,7 +1521,7 @@ sub go
 	my $t6 = new Benchmark;
 	$gen_ks_db_time = timestr(timediff($t6,$t5));
 
- 	$out = generate_dotplot(dag=>$dag_file12_all, coords=>$tmp, outfile=>"$out", regen_images=>$regen_images, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, dagtype=>$dagchainer_type, ks_db=>$ks_db, ks_type=>$ks_type, assemble=>$assemble);
+ 	$out = generate_dotplot(dag=>$dag_file12_all, coords=>$tmp, outfile=>"$out", regen_images=>$regen_images, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, dagtype=>$dagchainer_type, ks_db=>$ks_db, ks_type=>$ks_type, assemble=>$assemble, metric=>$axis_metric);
 	my $hist = $out.".hist.png";
 	my $t7 = new Benchmark;
 	$dotplot_time = timestr(timediff($t7,$t6));
@@ -1548,6 +1562,8 @@ sub go
 
  	    open (IN, "$out.html") || warn "problem opening $out.html for reading\n";
 #	    print STDERR "$out.html\n";
+	    $axis_metric = $axis_metric=~/g/ ? "genes" : "nucleotides";
+	    $html .= "<span class='small'>Axis metrics are in $axis_metric</span><br>";
  	    $html .= "<span class='species small'>y-axis: $org_name2</span><table><tr valign=top><td valign=top>";
  	    $/ = "\n";
  	    while (<IN>)
@@ -1563,16 +1579,16 @@ sub go
  	    $html .= qq{
  <br><span class="species small">x-axis: $org_name1</span><br>
 };
-
+	    $html .= "<span class='small'>Axis metrics are in $axis_metric</span><br>";
 	    $html .= "<div class=small>Histogram of $ks_type values.<br><img src='$out.hist.png'></div>" if -r $hist;
 	    $html .= "Links and Downloads:";
 	    
- 	    $html .= "<br><a class=small href=$out.png target=_new>Image File</a>";
- 	    $html .= "<br><a class=small href=$out.hist.png target=_new>Histogram of synonymous substitutions</a>" if -r $hist;
- 	    $html .= "<br><a class=small href=$tmp target=_new>DAGChainer syntelog file with GEvo links</a>";
- 	    $html .= "<br><a class=small href=$tmp.condensed target=_new>Condensed syntelog file with GEvo links</a>";
-	    $ks_blocks_file =~ s/$DIR/$URL/;
- 	    $html .= "<br><a class=small href=$ks_blocks_file target=_new>Syntelog file with synonymous/nonsynonymous rate values</a>" if $ks_blocks_file;
+ 	    $html .= "<br><span class='small link' onclick=window.open('$out.png')>Image File</span>";
+ 	    $html .= "<br><span class='small link' onclick=window.open('$out.hist.png')>Histogram of synonymous substitutions</span>" if -r $hist;
+ 	    $html .= "<br><span class='small link' onclick=window.open('$tmp')>DAGChainer syntelog file with GEvo links</span>";
+ 	    $html .= "<br><span class='small link' onclick=window.open('$tmp.condensed')>Condensed syntelog file with GEvo links</span>";
+	    $ks_blocks_file =~ s/$DIR/$URL/ if $ks_blocks_file;
+ 	    $html .= "<br><span class='small link' onclick=$ks_blocks_file target=_new>Syntelog file with synonymous/nonsynonymous rate values</span>" if $ks_blocks_file;
 	    
 	    $html .= "<br>".qq{<span class="small link" id="" onClick="window.open('bin/SynMap/order_contigs_to_chromosome.pl?f=$tmp');" >Generate Assembled Genomic Sequence</span>} if $assemble;
 	    $html .= "<br>"
@@ -1587,16 +1603,13 @@ sub go
  	my $output = $org_dirs{$org_dir}{blastfile};
  	next unless -s $output;
  	$output =~ s/$DIR/$URL/;
- 	$html .= "<a class=small href=$output target=_new>Blast results</a><br>";;	
+ 	$html .= "<span class='link small' onclick=window.open('$output')>Blast results</span><br>";	
        }
      my $log = $cogeweb->logfile;
      $log =~ s/$DIR/$URL/;
-#     my $tiny = get("http://tinyurl.com/create.php?url=http://".$ENV{SERVER_NAME}."/CoGe/$synmap_link");
-#     ($tiny) = $tiny =~ /<b>(http:\/\/tinyurl.com\/\w+)<\/b>/;
      write_log("\nLink: $synmap_link", $cogeweb->logfile);
-#     write_log("tinyurl: $tiny", $cogeweb->logfile);
-     $html .= "<a class=small href=$log target=_new>log</a><br>";
-    $html .= "<a class=small href='$synmap_link' target=_new>SynMap Link</a>";
+    $html .= "<span class='small link' onclick=window.open('$log')>log</span><br>";
+    $html .= "<span class='small link' onclick=window.open('$synmap_link')>SynMap Link</span>";
 
      $html .= "<td valign=top>";
      $html .= "<div id=syn_loc1></div>";
@@ -1809,16 +1822,18 @@ Thank you for using the CoGe Software Package.
 
 sub get_dotplot
   {
-    my %args = @_;
-    my $src = $args{src};
-    my $loc = $args{loc};
-    my $flip = $args{flip} eq "true" ? 1 : 0;
-    my $regen = $args{regen_images} eq "true" ? 1 : 0;
-    my $width = $args{width};
-    my $ksdb = $args{ksdb};    
-    my $kstype = $args{kstype};
-    my $max = $args{max};
-    my $min = $args{min};
+    my %opts = @_;
+    my $src = $opts{src};
+    my $loc = $opts{loc};
+    my $flip = $opts{flip} eq "true" ? 1 : 0;
+    my $regen = $opts{regen_images} eq "true" ? 1 : 0;
+    my $width = $opts{width};
+    my $ksdb = $opts{ksdb};    
+    my $kstype = $opts{kstype};
+    my $metric = $opts{am}; #axis metrix
+    my $max = $opts{max};
+    my $min = $opts{min};
+
 # base=8_8.CDS-CDS.blastn.dag_geneorder_D60_g30_A5;
     
     $src .= ";flip=$flip" if $flip;
@@ -1829,6 +1844,7 @@ sub get_dotplot
     $src .=  ";log=1" if $kstype;
     $src .=  ";min=$min" if defined $min;
     $src .=  ";max=$max" if defined $max;
+    $src .=  ";am=$metric" if defined $metric;
     my $content = get("http://".$ENV{SERVER_NAME}."/".$src);
     
     my ($url) = $content =~ /url=(.*?)"/is;
