@@ -794,6 +794,10 @@ sub run
     my $sth = $dbh->prepare($query);
     $sth->execute;
     my ($frame_height) = $sth->fetchrow_array;
+    $sth->finish();
+    undef $sth;
+    $dbh->disconnect();
+    undef $dbh;
     my $t3_5 = new Benchmark;
     image_db_create_hsp_pairs();
 
@@ -1081,6 +1085,7 @@ px_height integer
     $dbh->do('CREATE INDEX id ON image_info (id)');
     system "chmod +rw $dbfile";
     $dbh->disconnect();
+    undef $dbh;
   }
 
 sub generate_image_db
@@ -1177,6 +1182,7 @@ INSERT INTO image_data (name, type, xmin, xmax, ymin, ymax, bpmin,bpmax,image_id
 	  }
       }
     $dbh->disconnect();
+    undef $dbh;
   }
 
 sub image_db_create_hsp_pairs
@@ -1202,6 +1208,7 @@ sub image_db_create_hsp_pairs
 	$dbh->do($statement);
       }
     $dbh->disconnect();
+    undef $dbh;
   }
 
 
