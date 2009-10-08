@@ -1092,7 +1092,6 @@ sub gen_ks_blocks_file
       open (IN, $infile);
       open (OUT, ">".$outfile);
       print OUT "#This file contains synonymous rate values in the first two columns:\n";
-      print OUT join ("\t", "#kS", "kN"),"\n";
       my @block;
       my $block_title;
       while(<IN>)
@@ -1100,7 +1099,7 @@ sub gen_ks_blocks_file
 	  if (/^##/)
 	    {
 	      my $output = process_block(ksdata=>$ksdata, block=>\@block, header=>$block_title) if $block_title;
-	      print OUT $output;
+	      print OUT $output if $output;
 	      @block=();
 	      $block_title = $_;
 	      #beginning of a block;
@@ -1154,6 +1153,7 @@ sub process_block
      $mean_kn = sprintf("%.4f", $mean_kn/scalar@kn);
      chomp $header;
      $header .= "  Mean kS:  $mean_ks\tMean kN: $mean_kn\n";
+     $header .= join ("\t", qw(#kS kN a<db_dataset_group_id>_<chr> chr1||start1||stop1||name1||strand1||type1||db_feature_id1||percent_id1 start1 stop1 b<db_dataset_group_id>_<chr> chr2||start2||stop2||name2||strand2||type2||db_feature_id2||percent_id2 start2 stop2 eval ??? GEVO_link))."\n";
      return $header.$output;
    }
 
