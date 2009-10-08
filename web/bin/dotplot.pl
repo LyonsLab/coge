@@ -4,11 +4,12 @@ use strict;
 use GD;
 use Getopt::Long;
 use CoGeX;
+use DBI;
 use Data::Dumper;
 use DBI;
 use POSIX;
 
-use vars qw($dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ks_db $ks_type $log $MAX $MIN $assemble);
+use vars qw($dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ks_db $ks_type $log $MAX $MIN $assemble $axis_metric);
 
 
 GetOptions(
@@ -32,6 +33,7 @@ GetOptions(
 	   "min=s"=>\$MIN,
 	   "log=s"=>\$log,
 	   "assemble=s"=>\$assemble,
+	   "axis_metrix|am=s"=>\$axis_metric,
 	   );
 
 
@@ -51,18 +53,17 @@ $coge = CoGeX->dbconnect();
 
 
 
-my ($org1_order, $org2_order) = parse_syn_blocks($alignfile) if $assemble;
-my $org1info = get_dsg_info(dsgid=>$dsgid1, chr=>$CHR1, minsize=>$min_chr_size, order=>$org1_order);
+my ($org1_order, $org2_order) = parse_syn_blocks(file=>$alignfile) if $assemble;
+my $org1info = get_dsg_info(dsgid=>$dsgid1, chr=>$CHR1, minsize=>$min_chr_size, order=>$org1_order, metric=>$axis_metric);
 my $org1length =0;
 map {$org1length+=$_->{length}} values %$org1info;
-my $org2info = get_dsg_info(dsgid=>$dsgid2, chr=>$CHR2, minsize=>$min_chr_size, order=>$org2_order);
+my $org2info = get_dsg_info(dsgid=>$dsgid2, chr=>$CHR2, minsize=>$min_chr_size, order=>$org2_order, metric=>$axis_metric);
 my $org2length =0;
 map {$org2length+=$_->{length}} values %$org2info;
 ($org1info, $org1length, $dsgid1, $org2info, $org2length, $dsgid2) = ($org2info, $org2length, $dsgid2, $org1info, $org1length, $dsgid1) if $flip;
 ($CHR1, $CHR2) = ($CHR2, $CHR1) if $flip && ($CHR1 || $CHR2);
 my $height = sprintf("%.0f", $width*$org2length/$org1length);
-$height = $width if ($height > 10*$width) || ($height <  $width/10);
-
+$height = $width if ($height > 20*$width) || ($height <  $width/20);
 my $x_bp_per_pix = sprintf("%.0f", $org1length/$width);
 my $x_pix_per_bp = 1/$x_bp_per_pix;
 my $y_bp_per_pix = sprintf("%.0f", $org2length/$height);
@@ -89,7 +90,7 @@ if ($ks_db)
     $cmd .= ".$MIN" if defined $MIN;
     $cmd .= ".$MAX" if defined $MAX;
     $cmd .= ".hist.png";
-    `$cmd`;
+    `$cmd &`;
   }
 
 
@@ -107,11 +108,11 @@ draw_chromosome_grid(gd=>$graphics_context, org1=>$org1info, org2=>$org2info, x_
 my $ksdata = get_ksdata(ks_db=>$ks_db, ks_type=>$ks_type, chr1=>$CHR1, chr2=> $CHR2, pairs=>$pairs) if $ks_db && -r $ks_db;
 
 #draw dots for all matches
-draw_dots(gd=>$graphics_context, file=>$dagfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, link_type => $link_type, dsgid1=>$dsgid1, dsgid2=>$dsgid2, flip=>$flip);
+draw_dots(gd=>$graphics_context, file=>$dagfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, link_type => $link_type, dsgid1=>$dsgid1, dsgid2=>$dsgid2, flip=>$flip, metric=>$axis_metric);
 
 #add syntenic gene pairs
 my $add = 1 if $dsgid1 eq $dsgid2;
-draw_dots(gd=>$graphics_context, file=>$alignfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, color=>$graphics_context->colorResolve(0,150,0), size=>2, add_inverse=>$add, flip=>$flip, ksdata=>$ksdata, ks_type=>$ks_type, log=>$log);
+draw_dots(gd=>$graphics_context, file=>$alignfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, color=>$graphics_context->colorResolve(0,150,0), size=>2, add_inverse=>$add, flip=>$flip, ksdata=>$ksdata, ks_type=>$ks_type, log=>$log, metric=>$axis_metric);
 
 #Write out graphics context - the generated dot plot - to a .png file
 open (OUT, ">".$basename.".png") || die "$!";
@@ -140,6 +141,7 @@ sub draw_dots
     my $flip = $opts{flip};
     my $ksdata = $opts{ksdata};
     my $log = $opts{log}; #log normalize ksdata for display?
+    my $metric= $opts{metric};
     my $has_ksdata = keys %$ksdata ? 1 : 0;
     #min and max will be log normalized if log flag is set
     my ($max, $min) = get_range(data=>$ksdata, min=>$MIN, max=>$MAX, log=>$log) if $has_ksdata;
@@ -158,11 +160,13 @@ sub draw_dots
 	my @line = split /\t/;
 	my $use_color = $color;
 	my $val;
+	my @item1 = split/\|\|/, $line[1];
+	my @item2 = split/\|\|/, $line[5];
+	my $fid1 = $item1[6];
+	my $fid2 = $item2[6];
 	if ($has_ksdata)
 	  {
-	    my @item1 = split/\|\|/, $line[1];
-	    my @item2 = split/\|\|/, $line[5];
-	    $val = $ksdata->{$item1[6]}{$item2[6]};
+	    $val = $ksdata->{$fid1}{$fid2};
 	    if (defined $val && $val=~ /\d/) 
 	      {
 		my $orig_val = $val;
@@ -183,9 +187,6 @@ sub draw_dots
 		    $val = ($val-$min)/$range;
 		  }
 		$val = sprintf("%.4f", $val);
-#		if ($val < 0) {
-#		  print STDERR join ("\t", $orig_val, $val, $max, $min,),"\n";
-#		}
 		$use_color = get_color(val=>$val); #val is 0<=x<=1
 		$use_color = $graphics_context->colorResolve(@$use_color);
 	      }
@@ -202,10 +203,11 @@ sub draw_dots
 	    my @tmp = @line[0..3];
 	    @line[0..3] = @line[4..7];
 	    @line[4..7] = @tmp;
+	    ($fid1, $fid2) = ($fid2, $fid1);
 	  }
 	my ($a, $chr1) = split /_/,$line[0],2;
 	my ($b, $chr2) = split /_/,$line[4],2;
-	my $special = 0; #stupid variable name so that if we a viewing a single chr to single chr comparison within the same organism, this will make collinear matches appear on the inverse section 
+	my $special = 0; #stupid variable name so that if we are viewing a single chr to single chr comparison within the same organism, this will make collinear matches appear on the inverse section 
 	if ($CHR1 && $CHR2)
 	  {
 	    if ($add_inverse && $CHR1 eq $chr2 && $CHR2 eq $chr1)
@@ -221,11 +223,28 @@ sub draw_dots
 	  }
 
 	next unless $org1->{$chr1} && $org2->{$chr2}; #sometimes there will be data that is skipped, e.g. where chromosome="random";
-	my ($xmin) = sort ($line[2], $line[3]);
-	my ($ymin) = sort ($line[6], $line[7]);
-	my $midx = $org1->{$chr1}{rev}? sprintf("%.0f",$org1->{$chr1}{start}+$org1->{$chr1}{length}-($xmin+abs($line[3]-$line[2])/2)): sprintf("%.0f",$org1->{$chr1}{start}+$xmin+abs($line[3]-$line[2])/2);
+	my ($xmin, $ymin);
+	my ($midx, $midy);
+	if ($metric && $metric =~ /gene/i )
+	  {
+	    next unless $fid1 && $fid2;
+	    next unless $org1->{$chr1} && $org1->{$chr1}{gene} ;
+	    next unless $org2->{$chr2} && $org2->{$chr2}{gene} ;
+	    $xmin = $org1->{$chr1}{gene}{$fid1};
+	    $ymin = $org2->{$chr2}{gene}{$fid2};
+	    next unless $xmin && $ymin;
+	    $midx = $org1->{$chr1}{rev}? sprintf("%.0f",$org1->{$chr1}{start}+$org1->{$chr1}{length}-($xmin)): sprintf("%.0f",$org1->{$chr1}{start}+$xmin);
+	    $midy = $org2->{$chr2}{rev}? sprintf("%.0f",$org2->{$chr2}{start}+$org2->{$chr2}{length}-($ymin)): sprintf("%.0f",$org2->{$chr2}{start}+$ymin);
 
-	my $midy = $org2->{$chr2}{rev}? sprintf("%.0f",$org2->{$chr2}{start}+$org2->{$chr2}{length}-($ymin+abs($line[7]-$line[6])/2)): sprintf("%.0f",$org2->{$chr2}{start}+$ymin+abs($line[7]-$line[6])/2);
+	  }
+	else #using nucleotides
+	  {
+	    ($xmin) = sort ($line[2], $line[3]);
+	    ($ymin) = sort ($line[6], $line[7]);
+	    $midx = $org1->{$chr1}{rev}? sprintf("%.0f",$org1->{$chr1}{start}+$org1->{$chr1}{length}-($xmin+abs($line[3]-$line[2])/2)): sprintf("%.0f",$org1->{$chr1}{start}+$xmin+abs($line[3]-$line[2])/2);
+	    $midy = $org2->{$chr2}{rev}? sprintf("%.0f",$org2->{$chr2}{start}+$org2->{$chr2}{length}-($ymin+abs($line[7]-$line[6])/2)): sprintf("%.0f",$org2->{$chr2}{start}+$ymin+abs($line[7]-$line[6])/2);
+
+	  }
 
 
 	my $x = sprintf("%.0f",$midx*$x_pix_per_bp);
@@ -241,13 +260,11 @@ sub draw_dots
 	push @points, [ $y, $graphics_context->height-$x, $size, $size, 0, 360, $use_color, $val] if ($add_inverse && $chr1 eq $chr2 && $x ne $y);
 	if ($link_type == 1)
 	  {
-	    my @item1 = split /\|\|/, $line[1];
-	    my @item2 = split /\|\|/, $line[5];
 	    #working here.  Need to build a GEvo link using datasets/chr/position if dealing with genomic data.
 	    my $link = qq{/CoGe/GEvo.pl?drup1=50000&drdown1=50000&drup2=50000&drdown2=50000};
-	    if ($item1[6])
+	    if ($fid1)
 	      {
-		$link .= qq{;fid1=$item1[6]};
+		$link .= qq{;fid1=$fid1};
 	      }
 	    else
 	      {
@@ -256,9 +273,9 @@ sub draw_dots
 		my $chr = $item1[0];
 		$link .= qq{;dsgid1=$dsgid1;x1=$midx;chr1=$chr};
 	      }
-	    if ($item2[6])
+	    if ($fid2)
 	      {
-		$link .= qq{;fid2=$item2[6]};
+		$link .= qq{;fid2=$fid2};
 	      }
 	    else
 	      {
@@ -507,6 +524,7 @@ sub get_dsg_info
     my $chr = $opts{chr};
     my $minsize = $opts{minsize};
     my $order = $opts{order};
+    my $metric=$opts{metric};
 
     my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
 
@@ -516,27 +534,76 @@ sub get_dsg_info
 	return;
       }
     my %data;
-    foreach my $gs ($dsg->genomic_sequences)
+    if ($metric && $metric =~ /gene/i)
       {
-	next if $gs->chromosome =~ /random/i;
-	next if $chr && $chr ne $gs->chromosome;
-	my $last = $gs->sequence_length;
-	next if $minsize && $minsize > $last;
-	if ($data{$gs->chromosome})
+	my $dbh = DBI->connect($coge->db_connection_string,$coge->db_name,$coge->db_passwd);
+	foreach my $gs ($dsg->genomic_sequences)
 	  {
-	    warn "Duplicate chromosome:".$gs->chromosome."\n";
+	    next if $gs->chromosome =~ /random/i;
+	    next if $chr && $chr ne $gs->chromosome;
+	    my $tmp_chr = $gs->chromosome;
+	    my $query = qq{
+SELECT count(distinct(feature_id))
+  FROM feature
+  JOIN dataset_connector dc using (dataset_id)
+ WHERE dataset_group_id = $dsgid
+   AND feature_type_id = 3
+   AND feature.chromosome = '$tmp_chr'
+
+};
+	    my ($res) = $dbh->selectrow_array($query);
+	    next unless $res || $res==1;
+	    if ($data{$gs->chromosome})
+	      {
+		warn "Duplicate chromosome:".$gs->chromosome."\n";
+	      }
+	    $data{$gs->chromosome}{length}=$res;
+	    #get gene order
+	    $query = qq{
+SELECT feature_id
+  FROM feature
+  JOIN dataset_connector dc using (dataset_id)
+ WHERE dataset_group_id = $dsgid
+   AND feature_type_id = 3
+   AND feature.chromosome = '$tmp_chr'
+ ORDER BY feature.start
+
+};
+	    my $sth = $dbh->prepare($query);
+	    $sth->execute();
+	    my $i = 1;
+	    while( my $row =$sth->fetchrow_arrayref)
+	      {
+		$data{$gs->chromosome}{gene}{$row->[0]}=$i;
+		$i++;
+	      }
 	  }
-	$data{$gs->chromosome}{length}=$last;
+	
       }
-    #chromosomes sorted by length.  Longest first.
+    else
+      {
+	foreach my $gs ($dsg->genomic_sequences)
+	  {
+	    next if $gs->chromosome =~ /random/i;
+	    next if $chr && $chr ne $gs->chromosome;
+	    my $last = $gs->sequence_length;
+	    next if $minsize && $minsize > $last;
+	    if ($data{$gs->chromosome})
+	      {
+		warn "Duplicate chromosome:".$gs->chromosome."\n";
+	      }
+	    $data{$gs->chromosome}{length}=$last;
+	  }
+      }
     my %rev;#store chromosomes to be reversed in display
     my @ordered;
-    if ($order)
+    if ($order) #chromsomes have a prespecified order
       {
 	my %seen;
 	foreach my $item (@$order)
 	  {
 	    my $chr = $item->{chr};
+	    next unless $data{$chr};
 	    push @ordered, $chr;
 	    $rev{$chr}=1 if $item->{rev};
 	    $seen{$chr}=1;
@@ -546,7 +613,7 @@ sub get_dsg_info
 	    push @ordered, $chr unless $seen{$chr};
 	  }
       }
-    else
+    else     #chromosomes sorted by length.  Longest first.
       {
 	@ordered = sort {$data{$b}{length} <=> $data{$a}{length} } keys %data;
       }
@@ -565,7 +632,8 @@ sub get_dsg_info
 #given a set of scaffolds, it will order them such that make an ordered syntenic path along the reference genome
 sub parse_syn_blocks
   {
-    my $file = shift;
+    my %opts = @_;
+    my $file = $opts{file};
     my $blocks1=[];
     my $blocks2=[];
     open (IN, $file) || die "Can't open $file for reading: $!";
@@ -690,6 +758,8 @@ sub process_syn_block
 		);
     return \%seq1, \%seq2;
   }
+
+
 
 sub get_ksdata
   {
@@ -922,6 +992,8 @@ min                    min ks val cutoff
 
 assemble               if set to 1, output will try to be assembled based on syntenic thread
                        General assumption is aligning a WGS genome sequence to a reference genome
+
+axis_metric  | am      metic (units) for dotplot axes:  nucleotides or genes.  Default: nucleotide distances
 
 help         | h       print this message
 
