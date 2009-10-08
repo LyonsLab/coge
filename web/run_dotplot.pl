@@ -35,6 +35,7 @@ my $kstype = $FORM->param('kstype');
 my $log = $FORM->param('log');
 my $min = $FORM->param('min');
 my $max = $FORM->param('max');
+my $metric = $FORM->param('am');
 
 $grid = 1 unless defined $grid;
 $DEBUG=1 if $FORM->param('debug');
@@ -70,7 +71,7 @@ my $dag_file = $dir."/".$basename;
 $dag_file =~ s/\.dag_?.*//;
 $dag_file .= ".dag.all";
 my $outfile = $dir."/html/".$basename.".$chr1-$chr2.w$width";
-my $res = generate_dotplot(dag=>$dag_file, coords=>"$dir/$basename.all.aligncoords", qchr=>$chr1, schr=>$chr2, 'outfile'=>$outfile, 'regen_images'=>'false', flip=>$flip, regen_images=>$regen, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, grid=>$grid, ksdb=>$ksdb, kstype=>$kstype, log=>$log, min=>$min, max=>$max);
+my $res = generate_dotplot(dag=>$dag_file, coords=>"$dir/$basename.all.aligncoords", qchr=>$chr1, schr=>$chr2, 'outfile'=>$outfile, 'regen_images'=>'false', flip=>$flip, regen_images=>$regen, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, grid=>$grid, ksdb=>$ksdb, kstype=>$kstype, log=>$log, min=>$min, max=>$max, metric=>$metric);
 if ($res)
   {
     $res=~s/$DIR/$URL/;
@@ -118,6 +119,7 @@ sub generate_dotplot
     my $log = $opts{log};
     my $min = $opts{min};
     my $max = $opts{max};
+    my $metric= $opts{metric};
 #    write_log("generate dotplot: running $cmd", $cogeweb->logfile);
     my $cmd = $DOTPLOT;
     if ($ksdb && -r $ksdb)
@@ -128,9 +130,11 @@ sub generate_dotplot
 	$cmd .= qq{ -max $max} if defined $max && $max =~/\d/;
 	$outfile .= ".$kstype";
       }
+    $outfile .= ".gene" if $metric =~ /gene/i;
     my $tmp = $outfile;
     $tmp .= ".$min" if defined $min && $min =~/\d/;
     $tmp .= ".$max" if defined $max && $max =~/\d/;
+    
     if (-r $tmp.".html" && !$regen_images)
       {
 #	write_log("generate dotplot: file $outfile already exists",$cogeweb->logfile);
@@ -138,6 +142,7 @@ sub generate_dotplot
       }
 
     $cmd .= qq{ -d $dag -a $coords -b $outfile -l '' -dsg1 $dsgid1 -dsg2 $dsgid2 -w $width -lt 1 -chr1 $qchr -chr2 $schr -flip $flip -grid 1};
+    $cmd .= qq { -am $metric} if $metric;
     print STDERR "Running: ",$cmd,"\n" if $DEBUG;
     `$cmd`;
     $outfile .= ".$min" if defined $min && $min =~/\d/;
