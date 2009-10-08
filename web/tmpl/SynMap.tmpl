@@ -1,4 +1,4 @@
-<TMPL_IF NAME=MAIN>
+ <TMPL_IF NAME=MAIN>
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
 
 <script language="javascript">
@@ -386,13 +386,18 @@ function open_window (url, loc, width, height)
  }
 
 </script>
-<table><tr><td>
+<table class=backbox><tr><td>
 <DIV id=log_text class="small dna" style="display:none"></DIV>
 <DIV id=results><TMPL_IF NAME=RESULTS><TMPL_VAR NAME=RESULTS><TMPL_ELSE>
-<p><span class="alert">WARNING:</span> SynMap is still in beta and may not return results.  Please contact <a href="mailto:elyons@berkeley.edu">Eric Lyons</a> if you feel your analysis has a problem and would like some help.  If available, please send him a copy of the log file<br>
-<span class="alert">Please Note:</span>  SynMap is a very computationally intense, multi-step program which may take hours to complete for large genomes.<br>
-<span class=species>SynMap will run faster if it has been previously run as it won't regenerate any previously made data-sets.</span></p>
-<a href="SynMap.pl?dsgid1=3068;dsgid2=8;D=20;g=10;A=5;w=0;b=1;ft1=1;ft2=1;dt=geneorder;ks=1;autogo=1">Click here for an example analysis between <i>Arabidopsis thaliana</i> and <i>Arabidopsis lyrata</i>.</a><br><span class=small>(Note that syntenic gene pairs are colored by synonymous mutations (kS))</span>
+<div style="clear: both;"> </div>
+<span class="alert" style="float:left; margin-right: 5px; ">Please Note:</span>  
+<div style="float: left">SynMap is a very computationally intense, multi-step program which may take hours to complete for large genomes.<br>If available, select previously run parameter-sets for your organisms to see results instantly.</div>
+
+
+<div style="clear: both;"> </div>
+<hr>
+<span class="alert" style="float: left; margin-right: 5px;">Get Started:</span> 
+<div style="float: left"><div class="link" onclick=window.open("SynMap.pl?dsgid1=3068;dsgid2=8;D=20;g=10;A=5;w=0;b=1;ft1=1;ft2=1;dt=geneorder;ks=1;autogo=1")>Click here for an example analysis between <i>Arabidopsis thaliana</i> and <i>Arabidopsis lyrata</i>.</div><span class=small>(Note that syntenic gene pairs are colored by synonymous mutations (kS))</span><div class="link" onclick=window.open("http://synteny.cnr.berkeley.edu/wiki/index.php/SynMap#Example_Results")>Click here for an explaination of the results.</div ></div>
 
 
 </TMPL_IF>
@@ -424,16 +429,14 @@ function open_window (url, loc, width, height)
 <div id="tab-2">
     <label>Relative Gene Order<input id="dagchainer_type" name="dagchainer_type" type=radio value="gene_order" <TMPL_VAR DAG_GENE_SELECT>  onCLick="display_dagchainer_settings()"></label>
     <label>Nucleotide Distance<input id="dagchainer_type" name="dagchainer_type" type=radio value="distance" <TMPL_VAR DAG_DISTANCE_SELECT>  onCLick="display_dagchainer_settings()"></label>
-<DIV onclick="open.window('http://dagchainer.sourceforge.net/')" class="link">Download DAGChainer</DIV>
 
 
-<DIV id=dagchainer_distance>
-   <span class='species'>Default distance settings for: </span>
+   <span id=dagchainer_distance>Default distance settings for:
       <select id="dagchainer_default" onChange="set_dagchainer_defaults();">
        <option value="1">Plant
        <option value="2">Microbe
       </select>
-</div>
+    </span>
 
  <table>
  <TR>
@@ -450,6 +453,8 @@ function open_window (url, loc, width, height)
    <TD><input type=text size=8 id="A" value=""> genes
 
 </TABLE>
+<DIV onclick="window.open('http://dagchainer.sourceforge.net/')" class="link small">Download DAGChainer</DIV>
+
 </div> <!-- close tab-2 -->
 
 <div id="tab-3">
@@ -461,19 +466,11 @@ function open_window (url, loc, width, height)
         <OPTION VALUE="2" <TMPL_VAR NAME="TBLASTX_SELECT">">TBlastX
        </select>
    </td>
-  <TR>
-   <td>E-mail results? <input type=checkbox id=check_email onclick="toggle_email_field()"></td>
-		<td><div class=email_box style="display:none;">Your E-mail Address: <input type=text id=email onBlur='address_validity_check()'>
-		<br>
-		<font id=email_error class="small" style="display: none; color: red;">You have supplied an invalid e-mail address.</font></div></td>
-		<td><div class=email_box style="display:none;">Job Title:</div></td>
-		<td><div class=email_box style="display:none;"><input type=text id=jobtitle> <input type=button value="Use Org Names" onClick="fill_jobtitle()"></div></td>
-
- <tr>
-   <td>Master image width (0 == dynamic)  <input type=text name=master_width id=master_width size=6 value="<TMPL_VAR NAME="MWIDTH">">
  <TR>
    <TD>Regenerate dotplot images?
    <input type=checkbox name="regen_images" id="regen_images">
+ <tr>
+   <td>Master image width (0 == dynamic)  <input type=text name=master_width id=master_width size=6 value="<TMPL_VAR NAME="MWIDTH">">
  <TR>
    <TD>Calculate substitution rates for syntenic protein coding gene pairs (slow)?
    <select name="ks_type" id = "ks_type">
@@ -484,17 +481,25 @@ function open_window (url, loc, width, height)
    </select>
   <TR>
     <TD>Order contigs by best syntenic path?
-   <input type=checkbox name="assemble" id="assemble"><br>
-   <span class=small>This option assumes that one of the organisms is the reference genome, and the other is a whole genome shotgun sequence with contig level assembly</span>
-<!--   <input type=checkbox name="gen_ks" id="gen_ks">-->
+   <input type=checkbox name="assemble" id="assemble" onclick="$('#assemble_info').toggle();"><br>
+   <span class=small id='assemble_info' style="display: none; color: red;">This option assumes that one of the organisms is the reference genome, and the other is a whole genome shotgun sequence with contig level assembly.   The genome with fewer chromosomes/contigs will automatically be used as the reference genome.</span>
+  <TR>
+   <td>E-mail results? <input type=checkbox id=check_email onclick="toggle_email_field()">
+		<div class="email_box small" style="display:none;"><table class="backbox"><tr><td>Your E-mail Address: <td><input type=text id=email onBlur='address_validity_check()'>
+		
+		<font id=email_error class="small" style="display: none; color: red;">You have supplied an invalid e-mail address.</font></div>
+		<tr><td><div class=email_box style="display:none;">Job Title:
+		<td><input type=text id=jobtitle> <span class='ui-button ui-state-default ui-corner-all' onClick="fill_jobtitle()">Use Org Names</span></div>
+		</table>
+
 </TABLE>
 </div> <!-- close tab-3 -->
 </div> <!--close tabs div-->
 Previously run parameters: 
-<span id="hide_previous" class='show_prev_button ui-button ui-state-default ui-corner-all' onClick="$('#previous_analyses').toggle(); $('.show_prev_button').toggle();">Hide</span>
-<span id="show_previous" style="display:none" class='show_prev_button ui-button ui-state-default ui-corner-all' onClick="$('#previous_analyses').toggle(); $('.show_prev_button').toggle();">Show</span>
-<div class=small>(Clicking on row automatically selects and sets SynMap genomes and parameters.)</div>
-<div id=previous_analyses></div>
+<span id="hide_previous" class='show_prev_button ui-button ui-state-default ui-corner-all' onClick="$('.previous_analyses').toggle(); $('.show_prev_button').toggle();">Hide</span>
+<span id="show_previous" style="display:none" class='show_prev_button ui-button ui-state-default ui-corner-all' onClick="$('.previous_analyses').toggle(); $('.show_prev_button').toggle();">Show</span>
+<div class="small previous_analyses">(Clicking on row automatically selects and sets SynMap genomes and parameters.)</div>
+<div id=previous_analyses class="previous_analyses"></div>
 
 </TMPL_IF>
 
