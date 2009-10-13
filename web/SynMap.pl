@@ -127,6 +127,7 @@ sub gen_body
 	$display_dagchainer_settings = qq{display_dagchainer_settings();};
       }
     $template->param('DISPLAY_DAGCHAINER_SETTINGS'=>$display_dagchainer_settings);
+    $template->param('MIN_CHR_SIZE'=>$FORM->param('mcs')) if $FORM->param('mcs');
     #will the program automatically run?
     my $autogo = $FORM->param('autogo');
     $autogo = 0 unless defined $autogo;
@@ -970,15 +971,25 @@ sub get_ks_data
     my $sth = $dbh->prepare($select);
     $sth->execute();
     write_log("\texecuting select all from ks database $db_file", $cogeweb->logfile);
+    my $total =0;
+    my $no_data=0;
     while (my $data = $sth->fetchrow_arrayref)
       {
+	$total++;
+	if ($data->[3] eq "")
+	  {
+	    $no_data++;
+#	    print STDERR $data->[1],"\t", $data->[2]."\n";
+	  }
+
 	$ksdata{$data->[1]}{$data->[2]}=$data->[3] ? {
 					 dS=>$data->[3],
 					 dN=>$data->[4],
 					 'dN/dS'=>$data->[5]
 					}: {};# unless $data->[3] eq "";
-	print STDERR $data->[1],"\t", $data->[2]."\n" if $data->[3] eq "";
       }
+    print STDERR $no_data ." of ". $total." gene pairs had no ks data\n";
+
     write_log("\tgathered data from ks database $db_file", $cogeweb->logfile);
     $sth->finish;
     undef $sth;
@@ -1231,10 +1242,11 @@ sub generate_dotplot
     my $width = $opts{width} || 1000;
     my $assemble = $opts{assemble};
     my $metric = $opts{metric};
-    my $cmd = $DOTPLOT;
+    my $min_chr_size = $opts{min_chr_size};    my $cmd = $DOTPLOT;
     #add ks_db to dotplot command if requested
     $outfile.= ".ass" if $assemble;
     $outfile.= ".gene" if $metric =~ /gene/i;
+    $outfile.= ".mcs$min_chr_size" if $min_chr_size;
     if ($ks_db && -r $ks_db)
       {
 	$cmd .= qq{ -ksdb $ks_db -kst $ks_type -log 1};
@@ -1246,6 +1258,7 @@ sub generate_dotplot
     $cmd .= qq{)' -dsg1 $dsgid1 -dsg2 $dsgid2 -w $width -lt 2};
     $cmd .= qq{ -assemble 1} if $assemble;
     $cmd .= qq{ -am $metric} if $metric;
+    $cmd .= qq{ -mcs $min_chr_size} if $min_chr_size;
     while (-e "$outfile.running")
       {
 	print STDERR "detecting $outfile.running.  Waiting. . .\n";
@@ -1282,6 +1295,7 @@ sub go
     my $ks_type = $opts{ks_type};
     my $assemble =$opts{assemble}=~/true/i ? 1 : 0;
     my $axis_metric = $opts{axis_metric};
+    my $min_chr_size = $opts{min_chr_size};
     my $dagchainer_type = $opts{dagchainer_type};
     $dagchainer_type = $dagchainer_type eq "true" ? "geneorder" : "distance";
 
@@ -1297,6 +1311,8 @@ sub go
       }
     $cogeweb = initialize_basefile(basename=>$basename, prog=>"SynMap");
     my $synmap_link = "SynMap.pl?dsgid1=$dsgid1;dsgid2=$dsgid2;D=$dagchainer_D;g=$dagchainer_g;A=$dagchainer_A;w=$width;b=$blast;ft1=$feat_type1;ft2=$feat_type2";
+    $synmap_link .= ";mcs=$min_chr_size" if $min_chr_size;
+
     $email = 0 if check_address_validity($email) eq 'invalid';
     $blast = $blast == 2 ? "tblastx" : "blastn";
     $feat_type1 = $feat_type1 == 2 ? "genomic" : "CDS";
@@ -1521,7 +1537,7 @@ sub go
 	my $t6 = new Benchmark;
 	$gen_ks_db_time = timestr(timediff($t6,$t5));
 
- 	$out = generate_dotplot(dag=>$dag_file12_all, coords=>$tmp, outfile=>"$out", regen_images=>$regen_images, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, dagtype=>$dagchainer_type, ks_db=>$ks_db, ks_type=>$ks_type, assemble=>$assemble, metric=>$axis_metric);
+ 	$out = generate_dotplot(dag=>$dag_file12_all, coords=>$tmp, outfile=>"$out", regen_images=>$regen_images, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, dagtype=>$dagchainer_type, ks_db=>$ks_db, ks_type=>$ks_type, assemble=>$assemble, metric=>$axis_metric, min_chr_size=>$min_chr_size);
 	my $hist = $out.".hist.png";
 	my $t7 = new Benchmark;
 	$dotplot_time = timestr(timediff($t7,$t6));
@@ -1729,7 +1745,7 @@ sub get_previous_analyses
 #       }
 #     $html .= "</select>";
     my $prev_table = qq{<table id=prev_table class="small resultborder">};
-    $prev_table .= qq{<THEAD><TR><TH>}.join ("<TH>", qw(Org1 Genome1 Genome_Type1 Sequence_Type1 Org2 Genome2 Genome_Type2 Sequence_type2 Algo Ave_Dist Max_Dist Min_Pairs))."</THEAD><TBODY>\n";
+    $prev_table .= qq{<THEAD><TR><TH>}.join ("<TH>", qw(Org1 Genome1 Genome_Type1 Sequence_Type1 Org2 Genome2 Genome_Type2 Sequence_type2 Algo DAG_Type Ave_Dist Max_Dist Min_Pairs))."</THEAD><TBODY>\n";
     foreach my $item (@items)
       {
 	my $val = join ("_",$item->{g},$item->{D},$item->{A}, $oid1, $item->{dsgid1}, $item->{type1},$oid2, $item->{dsgid2}, $item->{type2}, $item->{blast}, $item->{dagtype});
@@ -1737,7 +1753,7 @@ sub get_previous_analyses
 	$prev_table .= join ("<td>", 
 			     $item->{dsg1}->organism->name, $item->{ds1}->data_source->name." (".$item->{dsg1}->version.")", $item->{dsg1}->type->name, $item->{type_name1},
 			     $item->{dsg2}->organism->name, $item->{ds2}->data_source->name." (".$item->{dsg2}->version.")", $item->{dsg2}->type->name, $item->{type_name2},
-			     $item->{blast}, $item->{g}, $item->{D}, $item->{A})."\n";
+			     $item->{blast}, $item->{dagtype}, $item->{g}, $item->{D}, $item->{A})."\n";
       }
     $prev_table .= qq{</TBODY></table>};
     $html .= $prev_table;
