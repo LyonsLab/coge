@@ -246,7 +246,6 @@ sub get_genomic_sequence
     $seq_type_id = 1 unless $seq_type_id && $seq_type_id =~ /^\d+$/;
     foreach my $tmp_dsg ($self->groups)
       {
-	print STDERR $tmp_dsg->organism->name,"\n";
 	if ( ($dsgid && $tmp_dsg->id == $dsgid) || ($seq_type_id && $tmp_dsg->genomic_sequence_type->id == $seq_type_id) )
 	  {
 	    return $tmp_dsg->genomic_sequence(start=>$start, stop=>$stop, chr=>$chr, strand=>$strand, debug=>$debug);
