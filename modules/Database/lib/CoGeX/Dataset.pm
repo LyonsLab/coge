@@ -253,7 +253,7 @@ sub get_genomic_sequence
 	  }
       }
     #hmm didn't return -- perhaps the seq_type_id was off.  Go ahead and see if anything can be returned
-    carp "In Dataset.pm, sub get_genomic_sequence.  Did not return sequence from a dataset_group with a matching sequence_type_id.  Going to try to return some sequence from any dataset_group.\n";
+#    carp "In Dataset.pm, sub get_genomic_sequence.  Did not return sequence from a dataset_group with a matching sequence_type_id.  Going to try to return some sequence from any dataset_group.\n";
     ($dsg) = $self->groups;
     return $dsg->genomic_sequence(start=>$start, stop=>$stop, chr=>$chr, strand=>$strand, debug=>$debug);
   }
