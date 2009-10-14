@@ -89,6 +89,7 @@ my $genomes = get_NCBI_genomes();
 my $prog = '/home/elyons/projects/CoGeX/scripts/genbank_genome_loader.pl';
 $prog .= " -autoupdate" if $autoupdate;
 
+my @skipped; #array to hold commands that had skipped reloading.  Will be printed out at end of program for user to manually go through;
 foreach my $item (@$genomes)
   {
     sleep 1;
@@ -102,7 +103,7 @@ foreach my $item (@$genomes)
 	foreach my $org (@{$item->{orgs}})
 	  {
 	    my $organelle_found=0;
-	    foreach my $check (@subgenome_names)
+	    foreach my $check (@subgenome_names, "whole genome shotgun sequencing project")
 	      {
 		if ($org =~ /$check/)
 		  {
@@ -138,16 +139,20 @@ foreach my $item (@$genomes)
 	#$run .= " -chr '$cols[2]'" if $cols[2];
 	$run .= " -td '/tmp/gb/'";
 	$run .= " -go";
+	$run .= " -autoskip";
 	print "\n",$run,"\n";
 	my $previously_loaded = 0;
+	my $skipped = 0;
 #	next;
 	open (IN, $run." |");
 	while (<IN>)
 	  {
 	    $previously_loaded =1 if /previously loaded/;
+	    $skipped=1 if /skipping/;
 	    print $_;
 	  }
 	close IN;
+	push @skipped, $run if $skipped;
 	if ($pause && !$previously_loaded)
 	  {
 	    print "Paused:  press enter to continue\n";
@@ -157,7 +162,11 @@ foreach my $item (@$genomes)
       }
   }
 $pm->wait_all_children;
-
+if (@skipped)
+  {
+    print "Commands that had automatially skipped datasets:\n";
+    print join ("\n", @skipped),"\n";
+  }
 
 sub process_orgs
   {
