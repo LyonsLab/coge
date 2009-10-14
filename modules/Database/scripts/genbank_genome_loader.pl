@@ -10,7 +10,7 @@ use File::Path;
 
 
 # variables
-my ($DEBUG, $GO, $ERASE,$autoupdate,@accns, $tmpdir, $help, $user_chr, $ds_link, $test);
+my ($DEBUG, $GO, $ERASE,$autoupdate, $autoskip, @accns, $tmpdir, $help, $user_chr, $ds_link, $test);
 my $connstr = 'dbi:mysql:dbname=coge;host=biocon.berkeley.edu;port=3306';
 my $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 #$coge->storage->debugobj(new DBIxProfiler());
@@ -30,7 +30,8 @@ GetOptions (
 	    "user_chr|chr=s"=>\$user_chr,
 	    "dataset_link=s"=>\$ds_link,
 	    "test"=>\$test, #to add the name test to dataset name for testing purposes
-	    "autoupdate"=>\$autoupdate,
+	    "autoupdate"=>\$autoupdate, #automatically say 'yes' to any question about proceeding
+	    "autoskip"=>\$autoskip, #automatically say 'no' to any question about proceeding
 	   );
 $user_chr = 1 unless $user_chr;
 $tmpdir = "/tmp/gb" unless $tmpdir;	# set default directory to /tmp
@@ -40,6 +41,7 @@ $DEBUG = 0 unless defined $DEBUG;   # set to 1 to enable debug printing
 $GO = 0 unless defined $GO; 		# set to 1 to actually make db calls (instead of testing)
 $ERASE = 0 unless defined $ERASE;
 $autoupdate = 0 unless $autoupdate;
+$autoskip = 0 unless $autoskip;
 
 my $formatdb =  "/usr/bin/formatdb -p F -o T"; #path to blast's formatdb program
 my %dsg;
@@ -71,10 +73,13 @@ accn: foreach my $accn (@accns)
 	elsif (!$item->{version_diff} && $item->{length_diff})
 	  {
 	    print "Detected a difference in total genomic length between CoGe (".$item->{coge_length}.") and NCBI(".$item->{ncbi_length}.").  Would you like to delete and reload? (y/n)";
-	    my $ans = <STDIN> unless $autoupdate;
-	    if ($autoupdate || $ans =~ /y/i)
+	    my $ans = <STDIN> unless $autoupdate || $autoskip;
+	    $ans = "y" if $autoupdate;
+	    print "Autoupdate flag set to true.  Automatically reloading dataset.\n" if $autoupdate;
+	    print "Autoskip flag set to true.  Automatically skipping reloading dataset.\n" if $autoskip;
+	    if ($ans =~ /y/i)
 	      {
-	       print "Autoupdate flag set to true.  Automatically reloading dataset.\n" if $autoupdate;
+
 		my $ds = $item->{ds};
 		foreach my $item ($ds->dataset_groups)
 		  {
@@ -160,6 +165,7 @@ accn: foreach my $accn (@accns)
 	entry: foreach my $entry (@{$genbank->wgs_data})
 	  {
 	    my $accn = $entry->accession;
+	    my $try = 1;
 	    while (!$accn)
 	      {
 
@@ -170,6 +176,12 @@ accn: foreach my $accn (@accns)
 		print "Trying to retrieve valid entry.\n";
 		print "#"x20,"\n";
 		$accn=$entry->accession;
+		$try++;
+		if ($try >= 10)
+		  {
+		    print "Giving up!  Skipping ".$entry->requested_id." after $try trys.\n";
+		    next entry;
+		  }
 	      }
 	    print "Checking WGS $accn...";
 	    my $previous = check_accn($accn);
@@ -184,10 +196,12 @@ accn: foreach my $accn (@accns)
 		elsif (!$item->{version_diff} && $item->{length_diff})
 		  {
 		    print "Detected a difference in total genomic length between CoGe (".$item->{coge_length}.") and NCBI(".$item->{ncbi_length}.").  Would you like to delete and reload? (y/n)";
-		    my $ans = <STDIN> unless $autoupdate;
-		    if ($autoupdate || $ans =~ /y/i)
+		    my $ans = <STDIN> unless $autoupdate || $autoskip;
+		    $ans = "y" if $autoupdate;
+		    print "Autoupdate flag set to true.  Automatically reloading dataset.\n" if $autoupdate;
+		    print "Autoskip flag set to true.  Automatically skipping reloading dataset.\n" if $autoskip;
+		    if ($ans =~ /y/i)
 		      {
-			print "Autoupdate flag set to true.  Automatically reloading dataset.\n" if $autoupdate;
 			my $ds = $item->{ds};
 			my $dsg_flag;
 			foreach my $item ($ds->dataset_groups)
@@ -221,6 +235,7 @@ accn: foreach my $accn (@accns)
 	print "Processing features for ".$entry->accession."...\n" unless $EXIT;
 	foreach my $feature (@{$entry->features()})
 	  {
+	    sleep 0.1; #need to put the brakes on for our db on RAID5
 	    # search the db for that feature
 	    unless ($feature->type())
 	      {
@@ -466,13 +481,13 @@ accn: foreach my $accn (@accns)
 #need to add previous datasets if new dataset was added with a new dataset group
 if ($GO)
   {
-  
     if ($dsg && keys %previous_datasets)
       {
 	my $ver; #need a higher version number than previous
 	foreach my $ds (values %previous_datasets)
 	  {
-	    if ($dsg->dataset_connectors({dataset_id=>$ds->id}))
+	    my ($test) = $dsg->dataset_connectors({dataset_id=>$ds->id});
+	    if ($test)
 		{
 		  my $name = $ds->name;
 		  print "$name has been previously added to this dataset group.  Skipping\n";
