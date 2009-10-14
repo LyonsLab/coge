@@ -160,6 +160,8 @@ See Also   :
 sub get_genomic_sequence {
   my $self = shift;
   my %opts = @_;
+#  print STDERR "DatasetGroup: sub get_genomic_sequence\n";
+#  print STDERR Dumper \%opts;
   my $start = $opts{start} || $opts{begin};
   my $stop = $opts{stop} || $opts{end};
   my $chr = $opts{chr};
@@ -221,6 +223,7 @@ sub get_seq
   {
     my $self = shift;
     my %opts = @_;
+#    print STDERR Dumper \%opts;
     my $chr = $opts{chr};
     $chr = $opts{chromosome} unless defined $chr;
     $chr =~ s/gi\|//;
@@ -291,6 +294,13 @@ This sequence file does not exist on the sequence server.  Please check the sour
       }
     close ($IN) if $close; #close filehand
     $seq = $self->reverse_complement($seq) if $strand =~ /-/;
+#    if (length ($seq) ne abs($stop-$start+1))
+#      {
+#	print STDERR "Warning from DatasetGroup sub get_seq!  Sequence retrieved is not the same than sequence requested!\n";
+#	print STDERR "Length of sequence: ", length($seq),"\n";
+#	print STDERR "Requested: $start - $stop (", ($stop-$start+1),")\n";
+#	  
+#      }
     return $seq;
   }
 
