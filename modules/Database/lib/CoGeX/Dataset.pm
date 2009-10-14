@@ -229,6 +229,8 @@ sub get_genomic_sequence
   {
     my $self = shift;
     my %opts = @_;
+#    print STDERR "Dataset: sub get_genomic_sequence\n";
+#    print STDERR Dumper \%opts;
     my $start = $opts{start} || $opts{begin};
     my $stop = $opts{stop} || $opts{end};
     my $chr = $opts{chr};
@@ -237,21 +239,21 @@ sub get_genomic_sequence
     my $seq_type = $opts{seq_type} || $opts{gstid};
     my $debug = $opts{debug};
     my $dsgid = $opts{dsgid};
-    my ($dsg) = $dsgid if ref ($dsgid) =~ /DatasetGroup/;
+    my $dsg; 
+    $dsg = $dsgid if $dsgid && ref ($dsgid) =~ /DatasetGroup/;
     return $dsg->genomic_sequence(start=>$start, stop=>$stop, chr=>$chr, strand=>$strand, debug=>$debug) if $dsg;
-
     my $seq_type_id = ref($seq_type) =~ /GenomicSequenceType/i ? $seq_type->id : $seq_type;
     $seq_type_id = 1 unless $seq_type_id && $seq_type_id =~ /^\d+$/;
-    foreach $dsg ($self->groups)
+    foreach my $tmp_dsg ($self->groups)
       {
-	if ( ($dsgid && $dsg->id == $dsgid) || ($seq_type_id && $dsg->genomic_sequence_type->id == $seq_type_id) )
+	print STDERR $tmp_dsg->organism->name,"\n";
+	if ( ($dsgid && $tmp_dsg->id == $dsgid) || ($seq_type_id && $tmp_dsg->genomic_sequence_type->id == $seq_type_id) )
 	  {
-	    return $dsg->genomic_sequence(start=>$start, stop=>$stop, chr=>$chr, strand=>$strand, debug=>$debug);
+	    return $tmp_dsg->genomic_sequence(start=>$start, stop=>$stop, chr=>$chr, strand=>$strand, debug=>$debug);
 	  }
       }
     #hmm didn't return -- perhaps the seq_type_id was off.  Go ahead and see if anything can be returned
     carp "In Dataset.pm, sub get_genomic_sequence.  Did not return sequence from a dataset_group with a matching sequence_type_id.  Going to try to return some sequence from any dataset_group.\n";
-    print STDERR Dumper \%opts;
     ($dsg) = $self->groups;
     return $dsg->genomic_sequence(start=>$start, stop=>$stop, chr=>$chr, strand=>$strand, debug=>$debug);
   }
