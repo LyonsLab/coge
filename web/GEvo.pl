@@ -924,7 +924,8 @@ Total time                                          : $total_time
     write_log("GEvo link: $gevo_link", $cogeweb->logfile);
 #    write_log("Tiny url: $tiny", $cogeweb->logfile);
     email_results(email=>$email_address,basefile=>$basefilename, full_gevo_url=>$gevo_link) if $email_address;
-    return $outhtml, $iw+5, $frame_height, $cogeweb->basefilename, scalar (@sets), $gevo_link, $message;
+    $iw +=10; #extra padding to make it easier to grab slider bars
+    return $outhtml, $iw, $frame_height, $cogeweb->basefilename, scalar (@sets), $gevo_link, $message;
 
 }
 
@@ -1113,6 +1114,7 @@ sub generate_image_db
     my $image_stop = $set->{obj}->stop;
     my $image_id = $set->{seq_num};
     my $rc = $set->{rev};
+    $rc = 0 unless defined $rc;
     my $statement = qq{
 INSERT INTO image_info (id, display_id, iname, title, px_width, px_height, dsid, chromosome, bpmin, bpmax, reverse_complement) values ($image_id, $image_id, "$image", "$title", $width, $height, "$dsid", "$chr", $image_start, $image_stop, $rc)
 };
