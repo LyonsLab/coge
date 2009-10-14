@@ -93,7 +93,7 @@ __PACKAGE__->belongs_to("feature_type" => "CoGeX::FeatureType", 'feature_type_id
 __PACKAGE__->belongs_to("dataset" => "CoGeX::Dataset", 'dataset_id');
 
 
-__PACKAGE__->mk_accessors('_genomic_sequence'); #place to store the feature's genomic sequence with no up and down stream stuff
+__PACKAGE__->mk_accessors('_genomic_sequence', 'gst', 'dsg'); #_genomic_sequence =>place to store the feature's genomic sequence with no up and down stream stuff
 
 
 ################################################ subroutine header begin ##
@@ -712,7 +712,6 @@ sub genomic_sequence {
   my @sequences;
   my %locs = map {($_->start,$_->stop)}$self->locations() ;#in case a mistake happened when loading locations and there are multiple ones with the same start
   my @locs = map {[$_, $locs{$_}]} sort {$a <=> $b} keys %locs;
-  my ($strand) = map{$_->strand} $self->locations;
   ($up,$down) = ($down, $up) if ($self->strand =~/-/); #must switch these if we are on the - strand;
   if ($up)
     {
@@ -730,7 +729,6 @@ sub genomic_sequence {
   my $stop = $locs[-1][1];
   my $full_seq = $seq ? $seq : $dataset->get_genomic_sequence(
 							      chromosome=>$chr,
-							      skip_length_check=>1,
 							      start=>$start,
 							      stop=>$stop,
 							      debug=>$debug,
@@ -743,11 +741,15 @@ sub genomic_sequence {
 	{
 	  if ($loc->[0]-$start+$loc->[1]-$loc->[0]+1 > CORE::length ($full_seq))
 	    {
-	      print STDERR "Error in feature->genomic_sequence, location is outside of retrieved sequence: \n";
+	      print "#"x20,"\n";
+	      print STDERR "Error in feature->genomic_sequence, Sequence retrieved is smaller than the length of the exon being parsed! \n";
+	      print STDERR "Organism: ", $self->organism->name,"\n";
+	      print STDERR "Dataset: ", $self->dataset->name,"\n";
 	      use Data::Dumper;
-	      print STDERR Dumper \@locs;
-	      print STDERR CORE::length ($full_seq),"\n";
-	      print STDERR Dumper {
+	      print STDERR "Locations data-structure: ", Dumper \@locs;
+	      print STDERR "Retrieved sequence lenght: ", CORE::length ($full_seq),"\n";
+	      print STDERR $full_seq,"\n";
+	      print STDERR "Feature object information: ",Dumper {
 		chromosome=>$chr,
 		  skip_length_check=>1,
 		    start=>$start,
@@ -755,11 +757,12 @@ sub genomic_sequence {
 			dataset=>$dataset->id,
 			  feature=>$self->id,
 			};
+	      print "#"x20,"\n";
 	    }
 	  
 	  my $sub_seq = substr($full_seq, $loc->[0] - $start, $loc->[1] - $loc->[0] + 1);
 	  next unless $sub_seq;
-	  if ($strand == -1){
+	  if ($self->strand == -1){
 	    unshift @sequences, $self->reverse_complement($sub_seq);
 	  }else{
 	    push @sequences, $sub_seq;
