@@ -490,7 +490,7 @@ function open_window (url, loc, width, height)
    </select>
   <TR>
     <TD>Order contigs by best syntenic path?
-   <input type=checkbox name="assemble" id="assemble" onclick="$('#assemble_info').toggle();"><br>
+   <input type=checkbox name="assemble" id="assemble" onclick="$('#assemble_info').toggle();" <TMPL_VAR NAME=SYNTENIC_PATH>><br>
    <span class=small id='assemble_info' style="display: none; color: red;">This option assumes that one of the organisms is the reference genome, and the other is a whole genome shotgun sequence with contig level assembly.   The genome with fewer chromosomes/contigs will automatically be used as the reference genome.</span>
   <TR>
    <td>E-mail results? <input type=checkbox id=check_email onclick="toggle_email_field()">
