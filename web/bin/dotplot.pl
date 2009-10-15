@@ -580,20 +580,18 @@ SELECT feature_id
 	  }
 	
       }
-    else
+    foreach my $gs ($dsg->genomic_sequences)
       {
-	foreach my $gs ($dsg->genomic_sequences)
+	next if $gs->chromosome =~ /random/i;
+	next if $chr && $chr ne $gs->chromosome;
+	my $last = $gs->sequence_length;
+	next if $minsize && $minsize > $last;
+	if ($data{$gs->chromosome})
 	  {
-	    next if $gs->chromosome =~ /random/i;
-	    next if $chr && $chr ne $gs->chromosome;
-	    my $last = $gs->sequence_length;
-	    next if $minsize && $minsize > $last;
-	    if ($data{$gs->chromosome})
-	      {
-		warn "Duplicate chromosome:".$gs->chromosome."\n";
-	      }
-	    $data{$gs->chromosome}{length}=$last;
+	    warn "Duplicate chromosome:".$gs->chromosome."\n" unless $metric && $metric =~ /gene/i;
 	  }
+	$data{$gs->chromosome}{length}=$last unless $metric && $metric =~ /gene/i;
+	$data{$gs->chromosome}{chr_length} = $last if $data{$gs->chromosome};;
       }
     my %rev;#store chromosomes to be reversed in display
     my @ordered;
@@ -608,14 +606,14 @@ SELECT feature_id
 	    $rev{$chr}=1 if $item->{rev};
 	    $seen{$chr}=1;
 	  }
-	foreach my $chr (sort {$data{$b}{length} <=> $data{$a}{length} } keys %data) #get any that were not in @$order
+	foreach my $chr (sort {$data{$b}{chr_length} <=> $data{$a}{chr_length} } keys %data) #get any that were not in @$order
 	  {
 	    push @ordered, $chr unless $seen{$chr};
 	  }
       }
     else     #chromosomes sorted by length.  Longest first.
       {
-	@ordered = sort {$data{$b}{length} <=> $data{$a}{length} } keys %data;
+	@ordered = sort {$data{$b}{chr_length} <=> $data{$a}{chr_length} } keys %data;
       }
     my $pos = 1;
     foreach my $item (@ordered)
@@ -813,9 +811,11 @@ sub get_pairs
       {
 	chomp;
 	next if /^#/;
+	next unless $_;
 	my @line = split/\t/;
 	my @item1 = split/\|\|/, $line[1];
 	my @item2 = split/\|\|/, $line[5];
+	next unless $item1[6] && $item2[6];
 	if ($chr1)
 	  {
 	    next unless $item1[0] eq $chr1 || $item2[0] eq $chr1;
@@ -897,8 +897,6 @@ sub get_color
       }
     my @colors = (
 		  [255,255,0], #yellow
-		  [170,170,0], #yellow
-		  [100,100,0], # green
 		  [200,200,0], # green
 		  [0,200,0], # green
 		  [0,100,100], # green
