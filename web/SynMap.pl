@@ -169,7 +169,7 @@ sub gen_body
       {
 	$template->param('AXIS_METRIC_NT'=>'selected');
       }
-
+    $template->param('SYNTENIC_PATH'=>"checked") if $FORM->param('sp');
     my $file = $form->param('file');
     if($file)
     {
@@ -234,7 +234,7 @@ sub gen_dsg_menu
     foreach my $dsg (sort {$b->version <=> $a->version || $a->type->id <=> $b->type->id} $coge->resultset('DatasetGroup')->search({organism_id=>$oid},{prefetch=>['genomic_sequence_type']}))
       {
 #	next if $USER->user_name =~ /public/i && $dsg->organism->restricted;
-	push @dsg_menu, [$dsg->id, $dsg->type->name." (v".$dsg->version.")"];
+	push @dsg_menu, [$dsg->id, $dsg->type->name." (v".$dsg->version.",id".$dsg->id.")"];
       }
 
     my $dsg_menu = qq{
@@ -924,7 +924,7 @@ dN_dS varchar
 	    print STDERR "Failed KS calculation: $fid1\t$fid2\n";
 	    $res = {};
 	  }
-	my ($dS, $dN, $dNS);
+	my ($dS, $dN, $dNS) =( "","","");
 	if (keys %$res)
 	  {
 	    $dS = $res->{dS};
@@ -979,7 +979,8 @@ sub get_ks_data
 	if ($data->[3] eq "")
 	  {
 	    $no_data++;
-#	    print STDERR $data->[1],"\t", $data->[2]."\n";
+	    print STDERR $data->[1],"\t", $data->[2]."\n";
+#	    next; #uncomment to force recalculation of missing data
 	  }
 
 	$ksdata{$data->[1]}{$data->[2]}=$data->[3] ? {
@@ -1312,7 +1313,7 @@ sub go
     $cogeweb = initialize_basefile(basename=>$basename, prog=>"SynMap");
     my $synmap_link = "SynMap.pl?dsgid1=$dsgid1;dsgid2=$dsgid2;D=$dagchainer_D;g=$dagchainer_g;A=$dagchainer_A;w=$width;b=$blast;ft1=$feat_type1;ft2=$feat_type2";
     $synmap_link .= ";mcs=$min_chr_size" if $min_chr_size;
-
+    $synmap_link .= ";sp=1" if $assemble;
     $email = 0 if check_address_validity($email) eq 'invalid';
     $blast = $blast == 2 ? "tblastx" : "blastn";
     $feat_type1 = $feat_type1 == 2 ? "genomic" : "CDS";
