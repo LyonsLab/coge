@@ -179,8 +179,6 @@ sub get_color
     return [0,0,0] unless defined $val;
     my @colors = (
 		  [255,255,0], #yellow
-		  [170,170,0], #yellow
-		  [100,100,0], # green
 		  [200,200,0], # green
 		  [0,200,0], # green
 		  [0,100,100], # green
@@ -221,6 +219,7 @@ sub get_pairs
       {
 	chomp;
 	next if /^#/;
+	next unless $_;
 	my @line = split/\t/;
 	my @item1 = split/\|\|/, $line[1];
 	my @item2 = split/\|\|/, $line[5];
