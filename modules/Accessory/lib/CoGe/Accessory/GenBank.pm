@@ -67,9 +67,9 @@ sub get_genbank_from_ncbi
 	    
 	    my $entry = $response->content;
 	    $entry = "" unless $response->is_success();
-	    while (!$entry || $entry =~ /(temporarily unavailable)/ || $entry=~ /([^sequencing ]error.*?)<?/i)
+	    try_loop: while (!$entry || $entry =~ /(temporarily unavailable)/i || $entry=~/error/i)
 	      {
-
+		last try_loop if $entry =~ /^LOCUS/;
 		print STDERR "Warning: $url".$accn." failed\nFetching from NCBI yielding '$1'\nRetrying\n";
 		sleep 10;
 		$response = $ua->get($url."$accn");
