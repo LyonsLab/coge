@@ -54,10 +54,12 @@ $coge = CoGeX->dbconnect();
 
 
 my ($org1_order, $org2_order) = parse_syn_blocks(file=>$alignfile) if $assemble;
-my $org1info = get_dsg_info(dsgid=>$dsgid1, chr=>$CHR1, minsize=>$min_chr_size, order=>$org1_order, metric=>$axis_metric);
+
+my $skip_non_ordered = $assemble == 2 ? 1 : 0;
+my $org1info = get_dsg_info(dsgid=>$dsgid1, chr=>$CHR1, minsize=>$min_chr_size, order=>$org1_order, metric=>$axis_metric, skip_non_ordered=>$skip_non_ordered);
 my $org1length =0;
 map {$org1length+=$_->{length}} values %$org1info;
-my $org2info = get_dsg_info(dsgid=>$dsgid2, chr=>$CHR2, minsize=>$min_chr_size, order=>$org2_order, metric=>$axis_metric);
+my $org2info = get_dsg_info(dsgid=>$dsgid2, chr=>$CHR2, minsize=>$min_chr_size, order=>$org2_order, metric=>$axis_metric, skip_non_ordered=>$skip_non_ordered);
 my $org2length =0;
 map {$org2length+=$_->{length}} values %$org2info;
 ($org1info, $org1length, $dsgid1, $org2info, $org2length, $dsgid2) = ($org2info, $org2length, $dsgid2, $org1info, $org1length, $dsgid1) if $flip;
@@ -524,6 +526,7 @@ sub get_dsg_info
     my $chr = $opts{chr};
     my $minsize = $opts{minsize};
     my $order = $opts{order};
+    my $skip_non_ordered = $opts{skip_non_ordered};
     my $metric=$opts{metric};
 
     my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
@@ -608,7 +611,15 @@ SELECT feature_id
 	  }
 	foreach my $chr (sort {$data{$b}{chr_length} <=> $data{$a}{chr_length} } keys %data) #get any that were not in @$order
 	  {
-	    push @ordered, $chr unless $seen{$chr};
+	    next if $seen{$chr};
+	    if ($skip_non_ordered)
+	      {
+		delete $data{$chr};
+	      }
+	    else
+	      {
+		push @ordered, $chr;
+	      }
 	  }
       }
     else     #chromosomes sorted by length.  Longest first.
@@ -990,6 +1001,8 @@ min                    min ks val cutoff
 
 assemble               if set to 1, output will try to be assembled based on syntenic thread
                        General assumption is aligning a WGS genome sequence to a reference genome
+                       
+                       if set to 2, will not add any pieces that are not syntenic
 
 axis_metric  | am      metic (units) for dotplot axes:  nucleotides or genes.  Default: nucleotide distances
 
