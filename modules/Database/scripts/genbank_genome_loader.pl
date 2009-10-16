@@ -77,7 +77,7 @@ accn: foreach my $accn (@accns)
 	    $ans = "y" if $autoupdate;
 	    print "Autoupdate flag set to true.  Automatically reloading dataset.\n" if $autoupdate;
 	    print "Autoskip flag set to true.  Automatically skipping reloading dataset.\n" if $autoskip;
-	    if ($ans =~ /y/i)
+	    if ($ans && $ans =~ /y/i)
 	      {
 
 		my $ds = $item->{ds};
@@ -200,7 +200,7 @@ accn: foreach my $accn (@accns)
 		    $ans = "y" if $autoupdate;
 		    print "Autoupdate flag set to true.  Automatically reloading dataset.\n" if $autoupdate;
 		    print "Autoskip flag set to true.  Automatically skipping reloading dataset.\n" if $autoskip;
-		    if ($ans =~ /y/i)
+		    if ($ans && $ans =~ /y/i)
 		      {
 			my $ds = $item->{ds};
 			my $dsg_flag;
