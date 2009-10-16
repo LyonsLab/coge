@@ -71,7 +71,7 @@ sub gen_html
     my ($body) = gen_body();
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
     $template->param(PAGE_TITLE=>'SynMap');
-    $template->param(TITLE=>'SynMap: Powered by <a href=http://dagchainer.sourceforge.net/ target=_new>DAGChainer</a>');
+    $template->param(TITLE=>'SynMap: Whole Genome Syntenic Dotplots');
     $template->param(HEAD=>qq{});
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
@@ -170,6 +170,7 @@ sub gen_body
 	$template->param('AXIS_METRIC_NT'=>'selected');
       }
     $template->param('SYNTENIC_PATH'=>"checked") if $FORM->param('sp');
+    $template->param('SHOW_NON_SYN'=>"checked") if $FORM->param('sp') && $FORM->param('sp') eq "2";
     my $file = $form->param('file');
     if($file)
     {
@@ -1260,6 +1261,7 @@ sub generate_dotplot
     my $min_chr_size = $opts{min_chr_size};    my $cmd = $DOTPLOT;
     #add ks_db to dotplot command if requested
     $outfile.= ".ass" if $assemble;
+    $outfile.= "2" if $assemble eq "2";
     $outfile.= ".gene" if $metric =~ /gene/i;
     $outfile.= ".mcs$min_chr_size" if $min_chr_size;
     if ($ks_db && -r $ks_db)
@@ -1271,7 +1273,7 @@ sub generate_dotplot
     $cmd .= qq{ -d $dag -a $coords -b $outfile -l 'javascript:synteny_zoom("$dsgid1","$dsgid2","$basename","XCHR","YCHR"};
     $cmd .= qq{,"$ks_db"} if $ks_db;
     $cmd .= qq{)' -dsg1 $dsgid1 -dsg2 $dsgid2 -w $width -lt 2};
-    $cmd .= qq{ -assemble 1} if $assemble;
+    $cmd .= qq{ -assemble $assemble} if $assemble;
     $cmd .= qq{ -am $metric} if $metric;
     $cmd .= qq{ -mcs $min_chr_size} if $min_chr_size;
     while (-e "$outfile.running")
@@ -1309,6 +1311,7 @@ sub go
     my $dsgid2 = $opts{dsgid2};
     my $ks_type = $opts{ks_type};
     my $assemble =$opts{assemble}=~/true/i ? 1 : 0;
+    $assemble = 2 if $assemble && $opts{show_non_syn}=~/true/i;
     my $axis_metric = $opts{axis_metric};
     my $min_chr_size = $opts{min_chr_size};
     my $dagchainer_type = $opts{dagchainer_type};
@@ -1327,7 +1330,7 @@ sub go
     $cogeweb = initialize_basefile(basename=>$basename, prog=>"SynMap");
     my $synmap_link = "SynMap.pl?dsgid1=$dsgid1;dsgid2=$dsgid2;D=$dagchainer_D;g=$dagchainer_g;A=$dagchainer_A;w=$width;b=$blast;ft1=$feat_type1;ft2=$feat_type2";
     $synmap_link .= ";mcs=$min_chr_size" if $min_chr_size;
-    $synmap_link .= ";sp=1" if $assemble;
+    $synmap_link .= ";sp=$assemble" if $assemble;
     $email = 0 if check_address_validity($email) eq 'invalid';
     $blast = $blast == 2 ? "tblastx" : "blastn";
     $feat_type1 = $feat_type1 == 2 ? "genomic" : "CDS";
