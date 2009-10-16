@@ -245,9 +245,14 @@ $(function() {
 </script>
 <TABLE>
    <TR><TD valign=top>
-   <DIV style="">Organism Name: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_NAME">" name = "org_name" id="org_name" style="font-style:italic" onFocus="search_bar('org_name')" onKeyUp='timing("org_name");'></DIV>
-   <DIV>Organism Description: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_DESC">" name = "org_desc" id="org_desc" style="font-style:italic" onFocus="search_bar('org_desc')" onKeyUp='timing("org_desc");'></DIV>
-   <DIV id="blah">Dataset Name: <input type="text" size=10 value="<TMPL_VAR NAME="DS_NAME">" name = "ds_name" style="font-style:italic" id="ds_name" onFocus="search_bar('ds_name')" onKeyUp='timing("ds_name");' ></DIV>
+    <table>
+     <tr>
+       <td>Organism Name:<td><input type="text" size=15 value="<TMPL_VAR NAME="ORG_NAME">" name = "org_name" id="org_name" style="font-style:italic" onFocus="search_bar('org_name')" onKeyUp='timing("org_name");'><span class='ui-button ui-state-default ui-corner-all' onClick="timing('org_name');"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
+     <tr>
+       <td>Organism Description:<td><input type="text" size=15 value="<TMPL_VAR NAME="ORG_DESC">" name = "org_desc" id="org_desc" style="font-style:italic" onFocus="search_bar('org_desc')" onKeyUp='timing("org_desc");'><span class='ui-button ui-state-default ui-corner-all' onClick="timing('org_desc');"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
+     <tr>
+       <td>Dataset Name:<td><input type="text" size=15 value="<TMPL_VAR NAME="DS_NAME">" name = "ds_name" style="font-style:italic" id="ds_name" onFocus="search_bar('ds_name')" onKeyUp='timing("ds_name");' ><span class='ui-button ui-state-default ui-corner-all' onClick="timing('ds_name');"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
+   </table>
   <tr><td>
    <span class = "oblique">Organisms: </span><span class=small id=org_count><TMPL_VAR NAME="ORG_COUNT"></span> 
    <DIV id="org_list"><TMPL_VAR NAME="ORG_LIST"></DIV>
