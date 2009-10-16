@@ -10,7 +10,7 @@ use File::Path;
 
 
 # variables
-my ($DEBUG, $GO, $ERASE,$autoupdate, $autoskip, @accns, $tmpdir, $help, $user_chr, $ds_link, $test);
+my ($DEBUG, $GO, $ERASE,$autoupdate, $autoskip, @accns, $tmpdir, $help, $user_chr, $ds_link, $delete_src_file, $test);
 my $connstr = 'dbi:mysql:dbname=coge;host=biocon.berkeley.edu;port=3306';
 my $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 #$coge->storage->debugobj(new DBIxProfiler());
@@ -32,6 +32,7 @@ GetOptions (
 	    "test"=>\$test, #to add the name test to dataset name for testing purposes
 	    "autoupdate"=>\$autoupdate, #automatically say 'yes' to any question about proceeding
 	    "autoskip"=>\$autoskip, #automatically say 'no' to any question about proceeding
+	    "delete_src_file"=>\$delete_src_file,
 	   );
 $user_chr = 1 unless $user_chr;
 $tmpdir = "/tmp/gb" unless $tmpdir;	# set default directory to /tmp
@@ -474,9 +475,14 @@ accn: foreach my $accn (@accns)
 	  }
 
 	#format blastable db
-    
       }
     print "completed parsing $accn!\n";# if $DEBUG;
+    if ($delete_src_file)
+      {
+	print "Deleting genbank src file: ".$genbank->srcfile."\n";
+	my $cmd = "rm ".$genbank->srcfile;
+	`$cmd`;
+      }
   }
 #need to add previous datasets if new dataset was added with a new dataset group
 if ($GO)
@@ -545,6 +551,7 @@ if ($GO && $dsg)
     print "\tFormatdb running $cmd\n";
     `$cmd`;
   }
+
 
 
 if ($ERASE)
@@ -770,7 +777,6 @@ sub check_accn
     my $gi = get_gi($accn);
     print "gi|".$gi."...";
     my $summary = get_gi_summary($gi);
-#    print $summary,"\n";
     my ($version) = $summary =~ /gi\|\d+\|ref\|.*?\.(\d+)\|/i;
     my ($length) = $summary =~ /<Item Name="Length" Type="Integer">(\d+)<\/Item>/i;
     my ($taxaid) = $summary =~ /<Item Name="TaxId" Type="Integer">(\d+)<\/Item>/i;
