@@ -53,7 +53,7 @@ if(!pageObj.basename)
   pageObj.nolog=1;
   setTimeout("monitor_log()", 5000);
   
-go(['args__D','D','args__g','g','args__A','A','args__blast','blast', 'args__feat_type1','feat_type1', 'args__feat_type2','feat_type2','args__dsgid1','dsgid1', 'args__dsgid2','dsgid2','args__jobtitle','jobtitle','args__basename','args__'+pageObj.basename,'args__email','email','args__regen_images','args__'+$('#regen_images')[0].checked, 'args__width', 'args__'+$('#master_width').val(), 'args__dagchainer_type','args__'+$('#dagchainer_type')[0].checked, 'args__ks_type','ks_type', 'args__assemble','args__'+$('#assemble')[0].checked, 'args__axis_metric','axis_metric', 'args__min_chr_size', 'min_chr_size'],[handle_results]);
+go(['args__D','D','args__g','g','args__A','A','args__blast','blast', 'args__feat_type1','feat_type1', 'args__feat_type2','feat_type2','args__dsgid1','dsgid1', 'args__dsgid2','dsgid2','args__jobtitle','jobtitle','args__basename','args__'+pageObj.basename,'args__email','email','args__regen_images','args__'+$('#regen_images')[0].checked, 'args__width', 'args__'+$('#master_width').val(), 'args__dagchainer_type','args__'+$('#dagchainer_type')[0].checked, 'args__ks_type','ks_type', 'args__assemble','args__'+$('#assemble')[0].checked, 'args__axis_metric','axis_metric', 'args__min_chr_size', 'min_chr_size', 'args__show_non_syn','args__'+$('#show_non_syn')[0].checked],[handle_results]);
 }
 
 function handle_results(val){
@@ -227,6 +227,10 @@ $(document).ready(function(){
     generate_basefile([],[update_basename]);
     run_synmap();
     }
+ if ($('#assemble')[0].checked)
+  {
+   $('#assemble_info').toggle();
+  }
  });
 
 
@@ -491,7 +495,9 @@ function open_window (url, loc, width, height)
   <TR>
     <TD>Order contigs by best syntenic path?
    <input type=checkbox name="assemble" id="assemble" onclick="$('#assemble_info').toggle();" <TMPL_VAR NAME=SYNTENIC_PATH>><br>
-   <span class=small id='assemble_info' style="display: none; color: red;">This option assumes that one of the organisms is the reference genome, and the other is a whole genome shotgun sequence with contig level assembly.   The genome with fewer chromosomes/contigs will automatically be used as the reference genome.</span>
+   <span class=small id='assemble_info' style="display: none; color: red;">
+    <li>This option assumes that one of the organisms is the reference genome, and the other is a whole genome shotgun sequence with contig level assembly.   The genome with fewer chromosomes/contigs will automatically be used as the reference genome.
+    <li>Don't show contigs without synteny?<input type=checkbox name="show_non_syn" id="show_non_syn" <TMPL_VAR NAME=SHOW_NON_SYN>><span><br>
   <TR>
    <td>E-mail results? <input type=checkbox id=check_email onclick="toggle_email_field()">
 		<div class="email_box small" style="display:none;"><table class="backbox"><tr><td>Your E-mail Address: <td><input type=text id=email onBlur='address_validity_check()'>
