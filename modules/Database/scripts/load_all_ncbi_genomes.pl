@@ -140,6 +140,7 @@ foreach my $item (@$genomes)
 	$run .= " -td '/tmp/gb/'";
 	$run .= " -go";
 	$run .= " -autoskip";
+	$run .= " -delete_src_file";
 	print "\n",$run,"\n";
 	my $previously_loaded = 0;
 	my $skipped = 0;
