@@ -1167,11 +1167,25 @@ sub process_block
 	 $output .= join "\t", @line;
        }
      my $mean_ks = 0;
-     map {$mean_ks+=$_}@ks;
-     $mean_ks = sprintf("%.4f", $mean_ks/scalar@ks);
+     if (scalar @ks)
+       {
+	 map {$mean_ks+=$_}@ks;
+	 $mean_ks = sprintf("%.4f", $mean_ks/scalar@ks);
+       }
+     else
+       {
+	 $mean_ks = "NA";
+       }
      my $mean_kn = 0;
-     map {$mean_kn+=$_}@kn;
-     $mean_kn = sprintf("%.4f", $mean_kn/scalar@kn);
+     if (scalar @kn)
+       {
+	 map {$mean_kn+=$_}@kn;
+	 $mean_kn = sprintf("%.4f", $mean_kn/scalar@kn);
+       }
+     else
+       {
+	 $mean_kn = "NA";
+       }
      chomp $header;
      $header .= "  Mean kS:  $mean_ks\tMean kN: $mean_kn\n";
      $header .= join ("\t", "#kS",qw(kN a<db_dataset_group_id>_<chr> chr1||start1||stop1||name1||strand1||type1||db_feature_id1||percent_id1 start1 stop1 b<db_dataset_group_id>_<chr> chr2||start2||stop2||name2||strand2||type2||db_feature_id2||percent_id2 start2 stop2 eval ??? GEVO_link))."\n";
