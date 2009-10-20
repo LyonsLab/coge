@@ -20,7 +20,7 @@ use DBI;
 
 $ENV{PATH} = "/opt/apache2/CoGe/";
 umask(0);
-use vars qw( $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $FORMATDB $BLAST $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $TANDEM_FINDER $FILTER_REPETITIVE_MATCHES $RUN_DAGCHAINER $FIND_NEARBY $CONVERT_TO_GENE_ORDER $DOTPLOT);
+use vars qw( $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $FORMATDB $BLAST $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $TANDEM_FINDER $FILTER_REPETITIVE_MATCHES $RUN_DAGCHAINER $FIND_NEARBY $CONVERT_TO_GENE_ORDER $DOTPLOT $NWALIGN_SERVER);
 $DEBUG = 0;
 $DIR = "/opt/apache/CoGe/";
 $URL = "/CoGe/";
@@ -39,6 +39,7 @@ $RUN_DAGCHAINER = $DIR."/bin/dagchainer/DAGCHAINER/run_DAG_chainer.pl -E 0.05 -s
 $FIND_NEARBY = $DIR."/bin/dagchainer/find_nearby.py -d 200000";
 $DOTPLOT = $DIR."/bin/dotplot.pl";#Eric gives up waiting for new and improved to really work, and writes his own.
 $CONVERT_TO_GENE_ORDER = $DIR."/bin/dagchainer/convert_to_gene_order.pl";  #this needs to be implemented
+$NWALIGN_SERVER = $DIR."/bin/nwserver.py";
 $| = 1; # turn off buffering
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
                  sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
@@ -907,19 +908,23 @@ dN_dS varchar
       }
     close IN;
     print STDERR "generating synonymous substitution values for ".scalar @data." pairs of genes\n";
+    my $ports = initialize_nwalign_servers(start_port=>3000, procs=>$MAX_PROC);
     my $pm = new Parallel::ForkManager($MAX_PROC);
+    my $i =0;
     foreach my $item (@data)
       {	
+	$i++;
+	$i = 0 if $i == $MAX_PROC;
 	$pm->start and next;
-
 	my ($fid1) = $item->[2] =~ /(^\d+$)/;
 	my ($fid2) = $item->[3] =~ /(^\d+$)/;
 	my ($feat1) = $coge->resultset('Feature')->find($fid1);
 	my ($feat2) = $coge->resultset('Feature')->find($fid2);
 	my $ks = new CoGe::Algos::KsCalc();
+	$ks->nwalign_server_port($ports->[$i]);
 	$ks->feat1($feat1);
 	$ks->feat2($feat2);
-	my $res = $ks->KsCalc();
+	my $res = $ks->KsCalc(); #send in port number?
 	unless ($res)
 	  {
 	    print STDERR "Failed KS calculation: $fid1\t$fid2\n";
@@ -955,6 +960,22 @@ INSERT INTO ks_data (fid1, fid2, dS, dN, dN_dS) values ($fid1, $fid2, "$dS", "$d
 
     system "rm $outfile.running" if -r "$outfile.running";; #remove track file
     return $outfile;
+  }
+
+sub initialize_nwalign_servers
+  {
+    my %opts = @_;
+    my $start_port = $opts{start_port};
+    my $procs = $opts{procs};
+    my @ports;
+    for (1..$procs)
+      {
+	system("python $NWALIGN_SERVER $start_port &");
+	push @ports, $start_port;
+	$start_port++;
+      }
+    sleep 1; #let them get started;
+    return \@ports;
   }
 
 sub get_ks_data
