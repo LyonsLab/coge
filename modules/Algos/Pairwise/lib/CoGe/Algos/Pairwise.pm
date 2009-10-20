@@ -2,6 +2,8 @@ package CoGe::Algos::Pairwise;
 use strict;
 use base 'Class::Accessor';
 use Data::Dumper;
+use IO::Socket;
+
 
 BEGIN {
     use Exporter ();
@@ -12,8 +14,9 @@ BEGIN {
     @EXPORT      = qw();
     @EXPORT_OK   = qw();
     %EXPORT_TAGS = ();
-    __PACKAGE__->mk_accessors(qw(seqA seqB matrix gap gap_ext dpm alignA alignB nwalign));
-    $NWALIGN = "/opt/apache/CoGe/bin/nwalign/nwalign";
+    __PACKAGE__->mk_accessors(qw(seqA seqB matrix gap gap_ext dpm alignA alignB nwalign nwalign_server_port));
+    $NWALIGN = "/usr/bin/nwalign";
+
     $MATRIX_FILE = "/opt/apache/CoGe/data/blast/matrix/aa/BLOSUM62";
 }
 
@@ -301,18 +304,34 @@ sub global_align
     $gap_ext = $self->gap_ext unless defined $gap_ext;
     $gap = -10 unless defined $gap;
     $gap_ext = -2 unless $gap_ext;
-
-    my $prog = $self->nwalign;
-    $prog = $NWALIGN unless $prog;
     my $matrix = $opts{matrix};  #path to blast formated alignment matrix;
     $matrix = $MATRIX_FILE unless $matrix && -r $matrix;
-    my $cmd = "$prog --matrix=$matrix --gap=$gap $seq1 $seq2";
-    open (RUN, "$cmd |");
-    my ($align1, $align2) = <RUN>;
-    close RUN;
+
+    my ($align1, $align2);
+    if ($self->nwalign_server_port)
+      {
+	my $sock = IO::Socket::INET->new(
+					 PeerAddr => 'localhost:'.$self->nwalign_server_port,
+					) or die "Can't bind: $@\n";
+	my $cmd = " --matrix $matrix --gap $gap_ext --gap_init $gap $seq1 $seq2";
+	print $sock $cmd;
+	my $res;
+	$sock->recv($res, 128000);
+	($align1, $align2) = split/\s+/, $res, 2;
+      }
+    else
+      {
+	my $prog = $self->nwalign;
+	$prog = $NWALIGN unless $prog;
+	my $cmd = "$prog --matrix=$matrix --gap=$gap_ext --gap_init=$gap $seq1 $seq2";
+	open (RUN, "$cmd |");
+	($align1, $align2) = <RUN>;
+	close RUN;
+      }
+    $align1 =~ s/\n//;
+    $align2 =~ s/\n//;
     return ($align1, $align2);
   }
-
 
 sub global_align_perl
   {
