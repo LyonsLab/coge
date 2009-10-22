@@ -1704,7 +1704,7 @@ sub process_hsps
       {
 	foreach my $f (@feats)
 	  {
-	    if ($f->_overlap >=$hsp_overlap_limit)
+	    if ($f->_overlap >= $hsp_overlap_limit)
 	      {
 		$c->delete_feature($f);
 	      }
