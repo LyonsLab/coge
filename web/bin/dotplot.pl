@@ -728,20 +728,29 @@ sub process_syn_block
       $head =~ /alignment\s+(\S+) vs\. (\S+) .*? #(\d+)\s+score = (\S+).*?pairs: (\d+)/;
     my $rev = $head =~/reverse/ ? 1 : 0;
     my ($seq1_start, $seq1_stop, $seq2_start, $seq2_stop);
+    #absolute start and stop can give rise to problems if the ends actually hit something far away from the rest of the sytnenic pairs.  Calculating the "mean" position will circumvent this problem
+    my @start1;
+    my @stop1;
+    my @start2;
+    my @stop2;
     foreach my $item (@block)
       {
 	chomp $item;
 	next unless $item;
 	my @item = split /\t/, $item;
-	$seq1_start = $item[2] unless $seq1_start;
-	$seq1_stop = $item[3] unless $seq1_stop;
-	$seq2_start = $item[6] unless $seq2_start;
-	$seq2_stop = $item[7] unless $seq2_stop;
-	$seq1_start = $item[2] if $item[2] < $seq1_start;
-	$seq1_stop = $item[3] if $item[3] > $seq1_stop;
-	$seq2_start = $item[6] if $item[6] < $seq2_start;
-	$seq2_stop = $item[7] if $item[7] > $seq2_stop;
+	push @start1, $item[2];
+	push @stop1, $item[3];
+	push @start2, $item[6];
+	push @stop2, $item[7];
       }
+    map {$seq1_start+=$_} @start1;
+    map {$seq1_stop+=$_} @stop1;
+    map {$seq2_start+=$_} @start2;
+    map {$seq2_stop+=$_} @stop2;
+    $seq1_start = $seq1_start/scalar(@start1);
+    $seq1_stop = $seq1_stop/scalar(@stop1);
+    $seq2_start = $seq2_start/scalar(@start2);
+    $seq2_stop = $seq2_stop/scalar(@stop2);
     $seq1 =~ s/.*?_//;
     $seq2 =~ s/.*?_//;
     my %seq1 = (
