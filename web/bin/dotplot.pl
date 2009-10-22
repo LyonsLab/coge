@@ -55,7 +55,7 @@ $coge = CoGeX->dbconnect();
 
 my ($org1_order, $org2_order) = parse_syn_blocks(file=>$alignfile) if $assemble;
 
-my $skip_non_ordered = $assemble == 2 ? 1 : 0;
+my $skip_non_ordered = $assemble && $assemble == 2 ? 1 : 0;
 my $org1info = get_dsg_info(dsgid=>$dsgid1, chr=>$CHR1, minsize=>$min_chr_size, order=>$org1_order, metric=>$axis_metric, skip_non_ordered=>$skip_non_ordered);
 my $org1length =0;
 map {$org1length+=$_->{length}} values %$org1info;
@@ -663,17 +663,14 @@ sub parse_syn_blocks
     my $chrs2={};
     foreach my $item (@$blocks1)
       {
-	$chrs1->{$item->{name}}{count}++;
-	$chrs1->{$item->{name}}{score}+=$item->{score};
+	$chrs1->{$item->{name}}{$item->{match}}{count}++;
+	$chrs1->{$item->{name}}{$item->{match}}{score}+=$item->{score};
       }
     foreach my $item (@$blocks2)
       {
-	$chrs2->{$item->{name}}{count}++;
-	$chrs2->{$item->{name}}{score}+=$item->{score};
+	$chrs2->{$item->{name}}{$item->{match}}{count}++;
+	$chrs2->{$item->{name}}{$item->{match}}{score}+=$item->{score};
       }
-#    map {$chrs1->{$_->{name}}++} @$blocks1;
-#    map {$chrs2->{$_->{name}}++} @$blocks2;
-
 
     #blocks1 will contain fewer chromosomes; blocks2 will be ordered by it.
     my $switched =keys %$chrs1 > keys %$chrs2 ? 1 : 0;
@@ -755,6 +752,7 @@ sub process_syn_block
 		match_stop=>$seq2_stop,
 		score=>$score,
 		rev=>$rev,
+		match=>$seq2,
 		);
     my %seq2 = (
 		name=>$seq2,
@@ -764,6 +762,7 @@ sub process_syn_block
 		match_stop=>$seq1_stop,
 		score=>$score,
 		rev=>$rev,
+		match=>$seq1,
 		);
     return \%seq1, \%seq2;
   }
