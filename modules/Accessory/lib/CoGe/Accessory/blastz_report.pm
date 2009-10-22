@@ -489,7 +489,7 @@ sub parse_alignment
       }
     $hsp->strand($strand);
     $hsp->eval("N/A");
-    my $len = $hsp->query_stop-$hsp->query_start > $hsp->subject_stop-$hsp->subject_start ? $hsp->query_stop-$hsp->query_start : $hsp->subject_stop-$hsp->subject_start;
+    my $len = $hsp->query_stop-$hsp->query_start > $hsp->subject_stop-$hsp->subject_start ? $hsp->query_stop-$hsp->query_start+1 : $hsp->subject_stop-$hsp->subject_start+1;
     $hsp->length($len);
     my $pid =0;
     my $total=0;
