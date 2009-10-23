@@ -114,7 +114,7 @@ draw_dots(gd=>$graphics_context, file=>$dagfile, org1=>$org1info, org2=>$org2inf
 
 #add syntenic gene pairs
 my $add = 1 if $dsgid1 eq $dsgid2;
-draw_dots(gd=>$graphics_context, file=>$alignfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, color=>$graphics_context->colorResolve(0,150,0), size=>2, add_inverse=>$add, flip=>$flip, ksdata=>$ksdata, ks_type=>$ks_type, log=>$log, metric=>$axis_metric);
+draw_dots(gd=>$graphics_context, file=>$alignfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, color=>$graphics_context->colorResolve(0,150,0), rev_color=>$graphics_context->colorResolve(200,0,0), size=>2, add_inverse=>$add, flip=>$flip, ksdata=>$ksdata, ks_type=>$ks_type, log=>$log, metric=>$axis_metric);
 
 #Write out graphics context - the generated dot plot - to a .png file
 open (OUT, ">".$basename.".png") || die "$!";
@@ -136,6 +136,7 @@ sub draw_dots
     my $y_pix_per_bp=$opts{y_pix_per_bp};
     my $size = $opts{size} || 1;
     my $color = $opts{color};
+    my $rev_color = $opts{rev_color};
     my $add_inverse = $opts{add_inverse};
     my $link_type = $opts{link_type} || 0;
     my $dsgid1 = $opts{dsgid1};
@@ -149,7 +150,7 @@ sub draw_dots
     my ($max, $min) = get_range(data=>$ksdata, min=>$MIN, max=>$MAX, log=>$log) if $has_ksdata;
     my $range = $max-$min if $has_ksdata;
     $color = $graphics_context->colorResolve(150,150,150) unless $color;
-
+    $rev_color = $color unless $rev_color;
     open (IN, $file) || die "$!";
     my @feats;
     my %points;
@@ -160,12 +161,13 @@ sub draw_dots
 	next if /^#/;
 	next unless $_;
 	my @line = split /\t/;
-	my $use_color = $color;
 	my $val;
 	my @item1 = split/\|\|/, $line[1];
 	my @item2 = split/\|\|/, $line[5];
 	my $fid1 = $item1[6];
 	my $fid2 = $item2[6];
+	my $use_color = $item1[4] eq $item2[4]? $color : $rev_color;
+
 	if ($has_ksdata)
 	  {
 	    $val = $ksdata->{$fid1}{$fid2};
@@ -711,6 +713,7 @@ sub parse_syn_blocks
 	#print out the blocks in order.  Note ones that are in reverse orientation
 	foreach my $block (sort {$a->{match_start} <=> $b->{match_start} }@blocks)
 	  {
+#	    print $block->{name},"\t", $block->{match_start},"\n";
 	    next if $seen{$block->{name}};
 	    push @$ordered2, {chr=>$block->{name}, rev=>$block->{rev}};
 	    $seen{$block->{name}}=1;
@@ -743,6 +746,20 @@ sub process_syn_block
 	push @start2, $item[6];
 	push @stop2, $item[7];
       }
+    #remove the ends;
+    @start1 = sort {$a<=>$b} @start1;
+    @stop1 = sort {$a<=>$b} @stop1;
+    @start2 = sort {$a<=>$b} @start2;
+    @stop2 = sort {$a<=>$b} @stop2;
+    shift @start1 if scalar(@start1) >3;
+    pop @start1 if scalar(@start1) >2;
+    shift @stop1 if scalar(@stop1) >3;
+    pop @stop1  if scalar(@stop1) >2;
+    shift @start2 if scalar(@start2) >3;
+    pop @start2 if scalar(@start2) >2;
+    shift @stop2 if scalar(@stop2) >3;
+    pop @stop2  if scalar(@stop2) >2;
+
     map {$seq1_start+=$_} @start1;
     map {$seq1_stop+=$_} @stop1;
     map {$seq2_start+=$_} @start2;
