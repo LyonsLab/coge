@@ -824,7 +824,7 @@ sub run
     $gobe_buttons .= "</table>";
     $html .= $gobe_buttons;
     $html .= qq{<DIV id=flashcontent></DIV>};
-    $html .= qq{<br><a href="http://synteny.cnr.berkeley.edu/wiki/index.php/Gobe" class=small style="color: red" target=_new>Click here for help!</a>  <a href="http://get.adobe.com/flashplayer/" target=_new class="small">No results?  Try installing the latest version of Flash</a>};
+    $html .= qq{<br><a href="http://synteny.cnr.berkeley.edu/wiki/index.php/Gobe" class=small style="color: red" target=_new>Click here for help!</a>  <a href="http://get.adobe.com/flashplayer/" target=_new class="small">No results?  Rerun by pressing "Run GEvo Analysis!" again.  Still no results? Try installing the latest version of Flash</a>.};
     $html .= $gobe_buttons;
     $html .= qq{<table>};
     $html .= qq{<tr valign=top><td class = small>Alignment reports};
