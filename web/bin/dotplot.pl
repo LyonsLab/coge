@@ -166,7 +166,15 @@ sub draw_dots
 	my @item2 = split/\|\|/, $line[5];
 	my $fid1 = $item1[6];
 	my $fid2 = $item2[6];
-	my $use_color = $item1[4] eq $item2[4]? $color : $rev_color;
+	my $use_color;
+	if ($item1[4] && $item2[4])
+	  {
+	    $use_color = $item1[4] eq $item2[4]? $color : $rev_color;
+	  }
+	else
+	  {
+	    $use_color = $color;
+	  }
 
 	if ($has_ksdata)
 	  {
@@ -306,9 +314,21 @@ sub draw_dots
       {
 	#Okay, now generate the HTML document that contains the click map for the image
 	open (OUT, ">".$basename.".html") || die "$!";
-	my $org1name = $coge->resultset('DatasetGroup')->find($dsgid1)->organism->name if $dsgid1;
+	my ($org1name, $org2name);
+	if ($dsgid1)
+	  {
+	    my $dsg = $coge->resultset('DatasetGroup')->find($dsgid1);
+	    $org1name = $dsg->organism->name." (v".$dsg->version.")";
+	  }
+	if ($dsgid2)
+	  {
+	    my $dsg = $coge->resultset('DatasetGroup')->find($dsgid2);
+	    $org2name = $dsg->organism->name." (v".$dsg->version.")";
+	  }
+	
+#	my $org1name = $coge->resultset('DatasetGroup')->find($dsgid1)->organism->name if $dsgid1;
 	my $org1length = commify($org1->{$CHR1}->{length})." bp";
-	my $org2name = $coge->resultset('DatasetGroup')->find($dsgid2)->organism->name if $dsgid2;
+#	my $org2name = $coge->resultset('DatasetGroup')->find($dsgid2)->organism->name if $dsgid2;
 	my $org2length = commify($org2->{$CHR2}->{length})." bp";
 	
 	my ($img) = $basename =~ /([^\/]*$)/;
