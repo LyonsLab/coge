@@ -1605,7 +1605,7 @@ sub go
  <td><input type=checkbox id=flip>
  <tr>
  <td>Image Width
- <td><input class="backbox" type=text name=zoom_width id=zoom_width size=6 value="600">
+ <td><input class="backbox" type=text name=zoom_width id=zoom_width size=6 value="800">
  <tr>
  <td>kS, kN, kN/kS cutoffs: 
  <td>Min: <input class="backbox" type=text name=zoom_min id=zoom_min size=6 value="">
