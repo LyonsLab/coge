@@ -487,7 +487,7 @@ sub generate_fasta
 	foreach my $feat (sort {$a->chromosome cmp $b->chromosome || $a->start <=> $b->start} 
 			  $coge->resultset('Feature')->search(
 							      {
-							       feature_type_id=>3, 
+							       feature_type_id=>[3, 4, 7],
 							       dataset_group_id=>$dsgid
 							      },{
 								 join=>[{dataset=>'dataset_connectors'}], 
@@ -503,7 +503,7 @@ sub generate_fasta
 		last unless $name =~ /\s/;
 	      }
 	    $name =~ s/\s+/_/g;
-	    my $title = join ("||",$chr, $feat->start, $feat->stop, $name, $feat->strand, $type, $feat->id);
+	    my $title = join ("||",$chr, $feat->start, $feat->stop, $name, $feat->strand, $feat->type->name, $feat->id);
 	    my $seq = $feat->genomic_sequence(dsgid=>$dsg);
 	    next unless $seq;
 	    #skip sequences that are only 'x' | 'n';
