@@ -1619,7 +1619,11 @@ sub go
 #	    print STDERR "$out.html\n";
 	    $axis_metric = $axis_metric=~/g/ ? "genes" : "nucleotides";
 	    $html .= "<span class='small'>Axis metrics are in $axis_metric</span><br>";
- 	    $html .= "<span class='species small'>y-axis: $org_name2</span><table><tr valign=top><td valign=top>";
+	    #add version of dataset_group to organism names
+	    $org_name1 .= " (v".$dsg1->version.")";
+	    $org_name2 .= " (v".$dsg2->version.")";
+
+ 	    $html .= "<span class='species small'>y-axis organism: $org_name2</span><table><tr valign=top><td valign=top>";
  	    $/ = "\n";
  	    while (<IN>)
  	      {
