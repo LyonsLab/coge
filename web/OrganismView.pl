@@ -263,6 +263,7 @@ sub get_org_info
     $html .= $org->name."<br>";
     $html .= $org->description if $org->description;
     $html.= "<br><span class=alert>Restricted Organism!  Authorized Use Only!</span>" if $org->restricted;
+    $html .= "<br><a href='OrganismView.pl?oid=$oid' target=_new>OrganismView link</a>";
 #    $html .= "</div>";
     return $html;
   }
@@ -347,6 +348,7 @@ sub get_dataset_group_info
     my $feat_string = qq{
 <tr><td><div id=dsg_feature_count class="small link" onclick="get_feature_counts(['args__dsgid','dsg_id', 'args__gstid','gstid'],['feature_count_data']);" >Click for feature counts</div>};
     $html .= $feat_string;
+    $html .= "<tr><td><a href='OrganismView.pl?dsgid=$dsgid' target=_new>OrganismView link</a>";
     $html .= "</table>";
     return $html;
   }
@@ -474,6 +476,8 @@ sub get_dataset_info
     my $feat_string = qq{
 <div id=ds_feature_count class="small link" onclick="get_feature_counts(['args__dsid','ds_id','args__gstid', 'gstid'],['feature_count_data']);" >Click for feature counts</div>};
     $html .= $feat_string;
+    $html .= "<div><a href='OrganismView.pl?dsid=$dsd' target=_new>OrganismView link</a></div>";
+
     my $chr_count = scalar (@chr);
     $chr_count .= " <span class=small>Only 1000 largest shown</span>" if ($chr_count >1000); 
     return $html, $html2, $chr_count;
