@@ -134,6 +134,7 @@ sub gen_body
     my $upstream = $form->param('upstream') || 0;
     my $downstream = $form->param('downstream') || 0;
     my $dsid = $form->param('dsid') || 0;
+    my $dsgid = $form->param('dsgid') || 0;
     my $rc = $form->param('rc') || 0;
     my $seq = $form->param('seq');
     my $gstid = $form->param('gstid') || 1;
@@ -144,6 +145,7 @@ sub gen_body
     $template->param(UPSTREAM=>$upstream);
     $template->param(DOWNSTREAM=>$downstream);
     $template->param(DSID=>$dsid);
+    $template->param(DSGID=>$dsgid);
     $template->param(ORG_LIST=>get_orgs());
     $template->param(RC=>$rc);
     $template->param(FEATID=>$featid);
@@ -222,6 +224,7 @@ sub get_sequence
     my %opts = @_;
     my $fids = $opts{fid};
     my $dsid = $opts{dsid};
+    my $dsgid = $opts{dsgid};
     my $chr = $opts{chr};
     my $start = $opts{start};
     my $stop = $opts{stop};
@@ -259,7 +262,7 @@ sub get_sequence
 		  ">Unable to retrieve Feature object for id: $fid\n";
 	  }
       }
-    else
+    elsif ($dsid)
       {
 	my $ds = $coge->resultset('Dataset')->find($dsid);
 	$fasta = ref ($ds) =~ /dataset/i ? 
@@ -274,6 +277,21 @@ sub get_sequence
 	    )
 	      :
 		">Unable to retrieve dataset object for id: $dsid";
+      }
+    elsif ($dsgid)
+      {
+	my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	$fasta = ref ($dsg) =~ /datasetgroup/i ? 
+	  $dsg->fasta
+	    (
+	     start=>$start,
+	     stop=>$stop,
+	     chr=>$chr,
+	     prot=>$prot,
+	     rc=>$rc,
+	    )
+	      :
+		">Unable to retrieve dataset group object for id: $dsgid";
       }
     return $fasta
   }
