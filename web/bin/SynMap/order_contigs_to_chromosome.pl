@@ -169,6 +169,7 @@ sub process_syn_block
 	chomp $item;
 	next unless $item;
 	my @item = split /\t/, $item;
+	next unless ($item[2] && $item[3] && $item[6] && $item[7]);
 	push @start1, $item[2];
 	push @stop1, $item[3];
 	push @start2, $item[6];
