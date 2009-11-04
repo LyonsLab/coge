@@ -85,6 +85,7 @@ function get_blast_info(){
 
 function blastSeq() {
  dsid = myObj.dsid || 0;
+ dsgid = myObj.dsgid || 0;
  chr=myObj.chr || 0;
  featid=myObj.featid || 0;
  gstid = myObj.gstid || 1;
@@ -95,9 +96,13 @@ function blastSeq() {
    rc = 1;}
  if (featid) {
  window.open('CoGeBlast.pl?featid='+featid+'&upstream='+up+'&downstream='+down+'&rc='+rc+'&gstid='+gstid);}
- else {
+ else if (dsid) {
  window.open('CoGeBlast.pl?chr='+chr+'&upstream='+up+'&downstream='+down+'&dsid='+dsid+'&rc='+rc+'&gstid='+gstid);
  }
+ else if (dsgid) {
+ window.open('CoGeBlast.pl?chr='+chr+'&upstream='+up+'&downstream='+down+'&dsgid='+dsgid+'&rc='+rc+'&gstid='+gstid);
+ }
+ 
 }
 
 function RNAFold() {
