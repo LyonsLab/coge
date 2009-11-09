@@ -40,7 +40,7 @@ sub process_file
     my $self = shift;
     my $file = shift || $self->file;
     my @hsps;
-    
+    return $self unless $file;
     open (IN, $file) || warn "can't open $file for reading: $!";
     my $data = join ("", <IN>);
     close IN;
