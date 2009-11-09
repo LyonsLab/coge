@@ -41,12 +41,12 @@ sub process_file
     my $file = shift || $self->file;
     my @hsps;
     
-    open (IN, $file) || die "can't open $file for reading: $!";
+    open (IN, $file) || warn "can't open $file for reading: $!";
     my $data = join ("", <IN>);
     close IN;
     my $header;
     my $hsps = [];
-    return $self if $data =~ /no hits found/i;
+    return $self if !$data || $data =~ /no hits found/i;
     ($header, $data) = $data =~ /^(.*?Length.*?\d+)\s+(Score.*$)/sx;
     $self->_parseHeader($header);
     return $self unless $data;  #no data?
