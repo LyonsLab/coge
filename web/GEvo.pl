@@ -1566,7 +1566,6 @@ sub process_hsps
 	  }
 	my ($accna, $accnb) = $accn1 eq $accn ? ($accn1,$accn2) : ($accn2,$accn1);
 	
-
 	foreach my $hsp (@{$blast->hsps})
 	  {
 	    next if defined $eval_cutoff && $hsp->eval > $eval_cutoff;
@@ -2071,7 +2070,9 @@ sub run_bl2seq {
 	}
       else
 	{
-	  push @$item, "no results from blasting ".$item->[1]." and ".$item->[2];
+	  my $blastreport = new CoGe::Accessory::bl2seq_report();
+	  push @$item, $blastreport;
+	  write_log("WARNING:  no results from blasting ".$item->[1]." and ".$item->[2].".  Possible error\n", $cogeweb->logfile);
 	}
     }
   return( \@reports );
