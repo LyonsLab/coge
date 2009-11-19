@@ -1279,7 +1279,9 @@ sub generate_dotplot
     my $width = $opts{width} || 1000;
     my $assemble = $opts{assemble};
     my $metric = $opts{metric};
-    my $min_chr_size = $opts{min_chr_size};    my $cmd = $DOTPLOT;
+    my $min_chr_size = $opts{min_chr_size};
+    my $just_check = $opts{just_check}; #option to just check if the outfile already exists
+    my $cmd = $DOTPLOT;
     #add ks_db to dotplot command if requested
     $outfile.= ".ass" if $assemble;
     $outfile.= "2" if $assemble eq "2";
@@ -1290,7 +1292,7 @@ sub generate_dotplot
 	$cmd .= qq{ -ksdb $ks_db -kst $ks_type -log 1};
 	$outfile .= ".$ks_type";
       }
-
+    return $outfile if $just_check &&-r "$outfile.html";
     $cmd .= qq{ -d $dag -a $coords -b $outfile -l 'javascript:synteny_zoom("$dsgid1","$dsgid2","$basename","XCHR","YCHR"};
     $cmd .= qq{,"$ks_db"} if $ks_db;
     $cmd .= qq{)' -dsg1 $dsgid1 -dsg2 $dsgid2 -w $width -lt 2};
@@ -1577,6 +1579,8 @@ sub go
 	$gen_ks_db_time = timestr(timediff($t6,$t5));
 
  	$out = generate_dotplot(dag=>$dag_file12_all, coords=>$tmp, outfile=>"$out", regen_images=>$regen_images, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, dagtype=>$dagchainer_type, ks_db=>$ks_db, ks_type=>$ks_type, assemble=>$assemble, metric=>$axis_metric, min_chr_size=>$min_chr_size);
+
+
 	my $hist = $out.".hist.png";
 	my $t7 = new Benchmark;
 	$dotplot_time = timestr(timediff($t7,$t6));
@@ -1647,7 +1651,7 @@ sub go
  	    $html .= "<br><span class='small link' onclick=window.open('$tmp')>DAGChainer syntelog file with GEvo links</span>";
  	    $html .= "<br><span class='small link' onclick=window.open('$tmp.condensed')>Condensed syntelog file with GEvo links</span>";
 	    $ks_blocks_file =~ s/$DIR/$URL/ if $ks_blocks_file;
- 	    $html .= "<br><span class='small link' onclick=$ks_blocks_file target=_new>Syntelog file with synonymous/nonsynonymous rate values</span>" if $ks_blocks_file;
+ 	    $html .= "<br><span class='small link' onclick=window.open('$ks_blocks_file') target=_new>Syntelog file with synonymous/nonsynonymous rate values</span>" if $ks_blocks_file;
 	    
 	    $html .= "<br>".qq{<span class="small link" id="" onClick="window.open('bin/SynMap/order_contigs_to_chromosome.pl?f=$tmp');" >Generate Assembled Genomic Sequence</span>} if $assemble;
 	    $html .= "<br>"
