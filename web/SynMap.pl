@@ -866,6 +866,7 @@ sub gen_ks_db
     my ($outfile) = $infile =~ /^(.*?CDS-CDS)/;
     return unless $outfile;
     $outfile .= ".sqlite";
+    write_log("Generating ks data.", $cogeweb->logfile);
     unless (-r $outfile)
       {
 	write_log("initializing ks database", $cogeweb->logfile);
@@ -959,6 +960,7 @@ INSERT INTO ks_data (fid1, fid2, dS, dN, dN_dS) values ($fid1, $fid2, "$dS", "$d
     $pm->wait_all_children();
 
     system "rm $outfile.running" if -r "$outfile.running";; #remove track file
+    write_log("Completed generating ks data.", $cogeweb->logfile);
     return $outfile;
   }
 
