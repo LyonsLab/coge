@@ -317,11 +317,12 @@ function reset_basename(){
   var blastdb = 0;
   var dag = 0;
   var converting=0;
+  var ks = 0;
   var results = 0;
   var match;
   pageObj.finished = 0;
   if (log) {
-  
+   console.log(log);
   if(log.match(/fasta file/i)) fasta="Generating fasta files . . . ";
   if(log.match(/Completed fasta creation/i)) {
   	fasta += "done!<br/>";
@@ -340,6 +341,16 @@ function reset_basename(){
   	results = "Generating images . . . ";
   	pageObj.finished = 1;
   }
+  if(log.match(/Generating ks data/i)) {
+  	ks = "Calculating synonymous changes (may take a while) . . . ";
+        results = 0;
+  	pageObj.finished = 1;
+  }
+  if(ks && log.match(/Completed generating ks data/i)) {
+  	ks += "done!<br/>";
+  	results = "Generating images . . . ";
+  	pageObj.finished = 1;
+  }
  }
   
 
@@ -350,6 +361,7 @@ function reset_basename(){
   if (blastdb) message += blastdb;
   if (blast) message += blast;
   if (dag) message += dag;
+  if (ks) message += ks;
   if (results) message += results;
   
   if (!pageObj.finished && pageObj.nolog<8) {setTimeout("read_log(['args__logfile', 'args__'+pageObj.basename, 'args__prog','args__SynMap'], [monitor_log])",5000);}
