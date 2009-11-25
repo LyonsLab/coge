@@ -508,11 +508,12 @@ sub get_data_source_info_for_accn
 	my $desc = $val->description;
 	my $sname = $val->data_source->name if $val->data_source;
 	my $ds_name = $val->name;
+	my $dsid = $val->id;
 	my @gstypes = $val->sequence_type;
 	foreach my $type (@gstypes)
 	  {
 	    my $gstname = $type->name;
-	    my $title = "$org: $ds_name ($sname, v$ver, $gstname)";
+	    my $title = "$org: $ds_name ($dsid, $sname, v$ver, $gstname)";
 #	my $title = "$org: $ds_name (v$ver, $type)";
 	    $sources{$title}{id} = $val->id;
 	    $sources{$title}{v} = $ver;
