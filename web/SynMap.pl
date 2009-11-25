@@ -1178,8 +1178,8 @@ sub process_block
 	 my $ks = $ksdata->{$seq1[6]}{$seq2[6]};
 	 if ($ks->{dS})
 	   {
-	     unshift @line, $ks->{dS};
 	     unshift @line, $ks->{dN};
+	     unshift @line, $ks->{dS};
 	     push @ks, $ks->{dS};
 	     push @kn, $ks->{dN};
 	   }
