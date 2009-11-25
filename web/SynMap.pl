@@ -921,22 +921,28 @@ dN_dS varchar
 	my ($fid2) = $item->[3] =~ /(^\d+$)/;
 	my ($feat1) = $coge->resultset('Feature')->find($fid1);
 	my ($feat2) = $coge->resultset('Feature')->find($fid2);
+	my $max_res;
 	my $ks = new CoGe::Algos::KsCalc();
 	$ks->nwalign_server_port($ports->[$i]);
 	$ks->feat1($feat1);
 	$ks->feat2($feat2);
-	my $res = $ks->KsCalc(); #send in port number?
-	unless ($res)
+	for (1..5)
+	  {
+	    my $res = $ks->KsCalc(); #send in port number?
+	    $max_res = $res unless $max_res;
+	    $max_res = $res if $res->{dS} < $max_res->{dS};
+	  }
+	unless ($max_res)
 	  {
 	    print STDERR "Failed KS calculation: $fid1\t$fid2\n";
-	    $res = {};
+	    $max_res = {};
 	  }
 	my ($dS, $dN, $dNS) =( "","","");
-	if (keys %$res)
+	if (keys %$max_res)
 	  {
-	    $dS = $res->{dS};
-	    $dN = $res->{dN};
-	    $dNS = $res->{'dN/dS'};
+	    $dS = $max_res->{dS};
+	    $dN = $max_res->{dN};
+	    $dNS = $max_res->{'dN/dS'};
 	  }
 	my $insert = qq{
 INSERT INTO ks_data (fid1, fid2, dS, dN, dN_dS) values ($fid1, $fid2, "$dS", "$dN", "$dNS")
