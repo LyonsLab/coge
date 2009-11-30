@@ -33,24 +33,6 @@ $(document).ready(function(){
   <TMPL_VAR NAME=READY>
 });
 
-window.onload=(
-	function() {
-
-$('#carousel').Carousel(
-		{
-			itemWidth: 227,
-			itemHeight: 75,
-			itemMinWidth: 40,
-			items: 'a',
-			reflections: 0,
-			rotationSpeed: 0.4,
-			slowOnHover: true,
-			reflections: 0,
-
-		}
-	);	
-}
-);
 
 
 function timing(num,stop){
@@ -93,62 +75,7 @@ login(['uname', 'pwd','url'],[place_cookie]);
 <TMPL_IF NAME="INTRO">
 <div style="width: 600px"><div><a href="/CoGe/GEvo.pl?prog=blastz;accn1=at1g07300;fid1=4091274;dsid1=556;chr1=1;dr1up=20000;dr1down=20000;gbstart1=1;gblength1=772;accn2=at2g29640;fid2=4113333;dsid2=557;chr2=2;dr2up=20000;dr2down=20000;gbstart2=1;rev2=1;num_seqs=2;autogo=1"><img src="/CoGe/picts/gevo-synteny.png" width=500px border=0 ></a></div><div align = center class="small species"><a href="/CoGe/GEvo.pl?prog=blastz;accn1=at1g07300;fid1=4091274;dsid1=556;chr1=1;dr1up=20000;dr1down=20000;gbstart1=1;gblength1=772;accn2=at2g29640;fid2=4113333;dsid2=557;chr2=2;dr2up=20000;dr2down=20000;gbstart2=1;rev2=1;num_seqs=2;autogo=1">GEvo analysis</a> of syntenic regions of Arabidopsis derived from its most recent genome duplication event.</div><p align=center>CoGe is a comparative genomics platform designed to allow easy access to genomic data from any organism and provide analysis tools for finding and comparing homologous sequences from multiple genomic regions.  If you are new to CoGe, we recommend visiting <a href="http://synteny.cnr.berkeley.edu/wiki/index.php/">CoGePedia</a></p>
 </div>
-</TMPL_IF>
 
-
-<TMPL_IF NAME=ANIMATE>
-<TABLE>
-  <TR>
-    <TD align=center>
-    	<div id="carousel">
-		<a href="/CoGe/GEvo.pl" onmouseover="timing(5)" onmouseout="timing(5,1)" onclick="timing(5,1)" title="GEvo"><img src="/CoGe/picts/carousel/GEvo-logo.png" width="100%" border=0/></a>
-		<a href="/CoGe/FeatView.pl" onmouseover="timing(3)" onmouseout="timing(3,1)" onclick="timing(3,1)" title="FeatView"><img src="/CoGe/picts/carousel/FeatView-logo.png" width="100%" border=0/></a>
-<!--		<a href="/CoGe/MSAView.pl" onmouseover="timing(3)" onmouseout="timing(3,1)" onclick="timing(3,1)" title="MSAView"><img src="/CoGe/picts/carousel/MSAView-logo.png" width="100%" border=0/></a>
-		<a href="/CoGe/TreeView.pl" onmouseover="timing(4)" onmouseout="timing(4,1)" onclick="timing(4,1)" title="TreeView"><img src="/CoGe/picts/carousel/TreeView-logo.png" width="100%" border=0/></a>
--->		<a href="/CoGe/OrganismView.pl" onmouseover="timing(1)" onmouseout="timing(1,1)" onclick="timing(1,1)" title="OrganismView"><img src="/CoGe/picts/carousel/OrganismView-logo.png" width="100%" border=0/></a>
-		<a href="/CoGe/CoGeBlast.pl" onmouseover="timing(2)" onmouseout="timing(2,1)" onclick="timing(2,1)" title="CoGeBlast"><img src="/CoGe/picts/CoGeBlast-logo.png" width="100%" border=0/></a>
-<!--		<a href="/CoGe/docs/help/CoGe" onmouseover="timing(7)" onmouseout="timing(7,1)" onclick="timing(7,1)" title="CoGe FAQ"><img src="/CoGe/picts/carousel/FAQ-logo.png" width="100%" border=0/></a>-->
-		<a href="/CoGe/SynMap.pl" onmouseover="timing(4)" onmouseout="timing(4,1)" onclick="timing(4,1)" title="SynMap"><img src="/CoGe/picts/SynMap-logo.png" width="100%" border=0/></a>
-
-	</div>
-    </TD>
-  </TR>
-	  <TR>
-    <TD>
-      <TMPL_LOOP NAME=ACTIONS>
-      <DIV id="page_info<TMPL_VAR NAME=ID>" class="page_info dropMenu" style="display: none">
-    <TABLE width=100%>
-    <TR>
-    <TD valign="top">
-    <TABLE>
-      <TR>
-        <TD align=left>
-          <TMPL_VAR NAME=LOGO>
-        </TD>
-        <TD>
-          <TMPL_VAR NAME=ACTION>
-        </TD>
-      </TR>
-    </TABLE>
-    <TABLE>
-      <TR>
-        <TD>
-          <TMPL_VAR NAME=DESC>
-        </TD>
-      </TR>
-    </TABLE>
-    </TD>
-    <td width=5px>
-    <TD><TMPL_VAR NAME=SCREENSHOT></TD>
-    </TR>
-    </TABLE></DIV></TMPL_LOOP>
-    </TD>
-  </TR>
-</TABLE>
-<a href="/awstats/awstats.pl?config=CoGe" target=_new class="small" style="text-align: center;">CoGe's usage stats</a>
-</TMPL_IF>
-
-<TMPL_IF NAME=DISABLE>
 <TABLE class="basic" width=600px>
  <TR>
   <TH>
@@ -201,8 +128,6 @@ login(['uname', 'pwd','url'],[place_cookie]);
 <input type="hidden" id="url" value="<TMPL_VAR NAME="url">">
 <input type="submit" value="Log on" id="Login" onClick="login(['uname', 'pwd','url'],[place_cookie])">
 <input type="submit" value="cancel" id="Login" onClick="login(['args__public', 'args__none','url'],[place_cookie])">
-<input type="checkbox" id="disable_animations" value=1><font class=small>Check to Disable CoGe Animations (Recommended for Older Computers)</font><br>
-<!--<div class=small>Use "public login" if you don't have a registered CoGe account.</div>-->
 </DIV>
 
 </TMPL_IF>
