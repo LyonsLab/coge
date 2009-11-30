@@ -1217,8 +1217,8 @@ sub process_block
 	 $mean_kn = "NA";
        }
      chomp $header;
-     $header .= "  Mean kS:  $mean_ks\tMean kN: $mean_kn\n";
-     $header .= join ("\t", "#kS",qw(kN a<db_dataset_group_id>_<chr> chr1||start1||stop1||name1||strand1||type1||db_feature_id1||percent_id1 start1 stop1 b<db_dataset_group_id>_<chr> chr2||start2||stop2||name2||strand2||type2||db_feature_id2||percent_id2 start2 stop2 eval ??? GEVO_link))."\n";
+     $header .= "  Mean Ks:  $mean_ks\tMean Kn: $mean_kn\n";
+     $header .= join ("\t", "#Ks",qw(Kn a<db_dataset_group_id>_<chr> chr1||start1||stop1||name1||strand1||type1||db_feature_id1||percent_id1 start1 stop1 b<db_dataset_group_id>_<chr> chr2||start2||stop2||name2||strand2||type2||db_feature_id2||percent_id2 start2 stop2 eval ??? GEVO_link))."\n";
      return $header.$output;
    }
 
@@ -1619,7 +1619,7 @@ sub go
  <td>Image Width
  <td><input class="backbox" type=text name=zoom_width id=zoom_width size=6 value="800">
  <tr>
- <td>kS, kN, kN/kS cutoffs: 
+ <td>Ks, Kn, Kn/Ks cutoffs: 
  <td>Min: <input class="backbox" type=text name=zoom_min id=zoom_min size=6 value="">
  <td>Max: <input class="backbox" type=text name=zoom_max id=zoom_max size=6 value="">
  </table>
@@ -1701,7 +1701,7 @@ Find Local Dups:          $local_dup_time
 Convert Gene Order:       $convert_to_gene_order_time
 DAGChainer:               $run_dagchainer_time
 find nearby:              $find_nearby_time
-kS calculations:          $gen_ks_db_time
+Ks calculations:          $gen_ks_db_time
 Dotplot:                  $dotplot_time
 GEvo links:               $add_gevo_links_time
 };
