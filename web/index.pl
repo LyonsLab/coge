@@ -86,26 +86,13 @@ sub gen_body
       }
     elsif ($USER && !$FORM->param('logout') && !$FORM->param('login'))
       {
-	if ($disable)
-	  {
-	    $tmpl->param(DISABLE=>1);
-	    $tmpl->param(ACTIONS=>[map {{ACTION=>$_->{ACTION}, DESC=>$_->{DESC}}} sort {$a->{ID} <=> $b->{ID}}@{actions()}  ]);
-	  }
-	else
-	  {
-	    $tmpl->param(ANIMATE=>1);
-	    $tmpl->param(ACTIONS=>actions());
-	  }
+	$tmpl->param(ACTIONS=>[map {{ACTION=>$_->{ACTION}, DESC=>$_->{DESC}}} sort {$a->{ID} <=> $b->{ID}}@{actions()}  ]);
 	$tmpl->param('INTRO'=>1);
 	$tmpl->param('NSF'=>1);
       }
-#     else
-#       {
-# 	$tmpl->param(LOGIN=>1);
- 	my $url = $FORM->param('url') if $FORM->param('url');
- 	$url =~ s/:::/;/g if $url;
- 	$tmpl->param(url=>$url);
-#       }
+    my $url = $FORM->param('url') if $FORM->param('url');
+    $url =~ s/:::/;/g if $url;
+    $tmpl->param(url=>$url);
 
     if ($FORM->param('logout'))
       {
