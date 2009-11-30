@@ -5,18 +5,7 @@ function place_cookie(valid, cookie, url)
     if (valid == 'true') 
      {
        document.cookie = cookie;
-       if ($('#disable_animations')[0].checked) $.cookie('anim_speed',0);
-       if (url)
-        {
-         if ((url.match(/index/)) && ($('#disable_animations')[0].checked)) url += "?disable=1";
-         window.location = url;
-        }
-       else {
-        if ($('#disable_animations')[0].checked){
-          window.location = "index.pl?disable=1";}
-        else{
-          window.location.reload;}
-        }
+       window.location = url;
      }
     else
      {
