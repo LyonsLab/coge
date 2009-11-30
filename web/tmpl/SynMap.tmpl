@@ -414,7 +414,7 @@ function open_window (url, loc, width, height)
 <div style="clear: both;"> </div>
 <hr>
 <span class="alert" style="float: left; margin-right: 5px;">Get Started:</span> 
-<div style="float: left"><div class="link" onclick=window.open("SynMap.pl?dsgid1=3068;dsgid2=8;D=20;g=10;A=5;w=0;b=1;ft1=1;ft2=1;dt=geneorder;ks=1;autogo=1")>Click here for an example analysis between <i>Arabidopsis thaliana</i> and <i>Arabidopsis lyrata</i>.</div><span class=small>(Note that syntenic gene pairs are colored by synonymous mutations (kS))</span><div class="link" onclick=window.open("http://synteny.cnr.berkeley.edu/wiki/index.php/SynMap#Example_Results")>Click here for an explaination of the results.</div ></div>
+<div style="float: left"><div class="link" onclick=window.open("SynMap.pl?dsgid1=3068;dsgid2=8;D=20;g=10;A=5;w=0;b=1;ft1=1;ft2=1;dt=geneorder;ks=1;autogo=1")>Click here for an example analysis between <i>Arabidopsis thaliana</i> and <i>Arabidopsis lyrata</i>.</div><span class=small>(Note that syntenic gene pairs are colored by synonymous mutations (Ks))</span><div class="link" onclick=window.open("http://synteny.cnr.berkeley.edu/wiki/index.php/SynMap#Example_Results")>Click here for an explaination of the results.</div ></div>
 
 
 </TMPL_IF>
@@ -500,9 +500,9 @@ function open_window (url, loc, width, height)
    <TD>Calculate substitution rates for syntenic protein coding gene pairs and color syntenic dots accordingly (slow)?
    <select name="ks_type" id = "ks_type">
      <option value = 0 <TMPL_VAR NAME=KS0> >--None--</option>
-     <option value = ks <TMPL_VAR NAME=KS1> >Synonymous (kS)</option>
-     <option value = kn <TMPL_VAR NAME=KS2> >Non-synonymous (kN)</option>
-     <option value = kn_ks <TMPL_VAR NAME=KS3> >kN/kS</option>
+     <option value = ks <TMPL_VAR NAME=KS1> >Synonymous (Ks)</option>
+     <option value = kn <TMPL_VAR NAME=KS2> >Non-synonymous (Kn)</option>
+     <option value = kn_ks <TMPL_VAR NAME=KS3> >Kn/Ks</option>
    </select>
   <TR>
     <TD>Order contigs by best syntenic path?
