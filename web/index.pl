@@ -10,7 +10,6 @@ use Data::Dumper;
 use CoGe::Accessory::LogUser;
 use Digest::MD5 qw(md5_base64);
 use CoGeX;
-
 use vars qw($USER $FORM $DATE $update $coge);
 
 $ENV{PATH} = "/opt/apache/CoGe";
