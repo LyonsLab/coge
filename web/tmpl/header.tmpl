@@ -225,12 +225,9 @@ $(document).ready( function() {
 	</li>
 	<li><a href='javascript:void(0)'>Downloads</a>
 	 <ul>	   
-	  <li><a href="/CoGe/docs/help/Precomputed_menus_and_lists/CoGe_menus.html" target="_self">Syntenic gene sets</a></li>
-	  <li><a href="/CoGe/docs/help/Code/Code.html" target="_self">CoGe Source Code</a></li>
+	  <li><a href="/wiki/index.php/Syntenic_gene_sets" target="_self">Syntenic gene sets</a></li>
+	  <li><a href="/wiki/index.php/Source_code" target="_self">CoGe Source Code</a></li>
 
-<!--	  <li><a href="#" target="_self">My Page</a></li>
-	  <li><a href="#" target="_self">Contacts</a></li>
-	  <li><a href="#" target="_self">Saved Results</a></li>-->
 	 </ul>
 	</li>
 	<li><a href='javascript:void(0)'>Preferences</a>
@@ -272,10 +269,10 @@ $(document).ready( function() {
    <TABLE>
     <TR>
      <TD>
-      <TMPL_IF NAME=LOGO_PNG><div id=home_icon><a href="/CoGe" border=0></div><img src='/CoGe/picts/<TMPL_VAR NAME=LOGO_PNG>' border=0></a></TMPL_IF>
+      <TMPL_IF NAME=LOGO_PNG><div id=home_icon><a href="<TMPL_VAR NAME=HELP>" border=0></div><img src='/CoGe/picts/<TMPL_VAR NAME=LOGO_PNG>' border=0></a></TMPL_IF>
      </TD>
      <TD>
-      <font class="title1"><TMPL_VAR NAME=TITLE></font>
+      <font class="title1" onclick=window.open("<TMPL_VAR NAME=HELP>")><TMPL_VAR NAME=TITLE></font>
       <TMPL_IF NAME=DEV><br><span class=alert>WARNING: THIS IS A DEVELOPMENT SERVER</span><br>Software may not work, system may be down, etc.<br>Please use <a href="http://synteny.cnr.berkeley.edu/CoGe"> our production server: synteny.cnr.berkeley.edu/CoGe</a></TMPL_IF>
      </TD>
     </TR>
@@ -284,19 +281,6 @@ $(document).ready( function() {
   </TR>
 </TABLE>
 
-  <!-- <TD align=left> -->
-  <!-- <TMPL_VAR NAME=LOGON> -->
-  
-  <!--<TD align=right>
-   <TABLE>
-    <TR>
-     <TD align=right><TMPL_IF NAME="CLOSE"><INPUT type = 'button' value= 'Close Window' onClick='window.close()'></TMPL_IF>
-     </TD>
-     <TD align=right><TMPL_IF NAME="HELP"><a href="./docs/help/<TMPL_VAR NAME=HELP>"><img src="./picts/help-logo.png" border=0></a></TMPL_IF>
-     </TD>
-   </TR>
-  </TABLE>
-  </TD>-->
 <noscript>
 Welcome to CoGe -- a new system for a new kind of comparative genomics.  CoGe is designed for easily visualizing, comparing, and understanding the evolution, struture and dynamics of genomes.
 
