@@ -38,6 +38,8 @@ BEGIN {
 sub start
   {
     my $self = shift;
+    my $val = shift;
+    if ($val) {$self->segments->[0][0] = $val;}
     return unless $self->segments;
     return $self->segments->[0][0];
   }
@@ -45,6 +47,8 @@ sub start
 sub stop
   {
     my $self = shift;
+    my $val = shift;
+    if ($val) {$self->segments->[-1][-1] = $val;}
     return unless $self->segments;
     return $self->segments->[-1][-1];
   }
