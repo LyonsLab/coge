@@ -209,7 +209,7 @@ $(document).ready( function() {
 <div id=signin_popup class="image_window" style="display:none"></div>
 <TABLE width = 100%>
 <TMPL_UNLESS NAME=MENU>
-  <div style="float:right">
+  <div style="float:right"><!-- open A -->
     <div style="float:right;margin-right: 73px;">
 	<ul class="sf-menu" >
 	 <li><a id=home href="/CoGe/" target="_self">Home</a></li>
@@ -264,6 +264,7 @@ $(document).ready( function() {
 	 <a href="javascript:void(0)" onClick=sign_in() class="small">Sign-in</a> <!-- onclick="login_popup()"  -->
 	</TMPL_IF>
     </div>
+</div><!-- CLOSE A -->
     
 </TMPL_UNLESS>
  <TR>
@@ -271,7 +272,7 @@ $(document).ready( function() {
    <TABLE>
     <TR>
      <TD>
-      <TMPL_IF NAME=LOGO_PNG><div id=home_icon><a href="<TMPL_VAR NAME=HELP>" border=0></div><img src='/CoGe/picts/<TMPL_VAR NAME=LOGO_PNG>' border=0></a></TMPL_IF>
+      <TMPL_IF NAME=LOGO_PNG><div id=home_icon><a href="<TMPL_VAR NAME=HELP>" border=0><img src='/CoGe/picts/<TMPL_VAR NAME=LOGO_PNG>' border=0></a></div></TMPL_IF>
      </TD>
      <TD>
       <font class="title1" onclick=window.open("<TMPL_VAR NAME=HELP>")><TMPL_VAR NAME=TITLE></font>
