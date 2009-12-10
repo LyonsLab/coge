@@ -16,6 +16,7 @@ lib/Coge/Accessory/lagan_report.pm
 lib/Coge/Accessory/dialign_report.pm
 lib/Coge/Accessory/dialign_report/anchors.pm
 lib/Coge/Accessory/chaos_report.pm
+lib/Coge/Accessory/GenomeThreader_report.pm
 lib/Coge/Accessory/blastz_report.pm
 lib/Coge/Accessory/blastz_report/seq.pm
 lib/Coge/Accessory/blastz_report/segment.pm
