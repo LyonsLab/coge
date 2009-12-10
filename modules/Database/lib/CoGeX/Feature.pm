@@ -1539,7 +1539,7 @@ sub fasta
 	$head .= $self->dataset->organism->name."(v".$self->version;
 	$head .= ", ".$gst->name if $gst;
 	$head .= ")".", Name: ".(join (", ", $self->names)).", Type: ".$self->type->name.", Feature Location: (Chr: ".$self->chromosome.", ".$self->genbank_location_string.")";
-	$head .= "fid:".$self->id." ".$head if $add_fid;
+	$head .= "fid:".$self->id if $add_fid;
 	$head .= " +up: $upstream" if $upstream;
 	$head .= " +down: $downstream" if $downstream;
 	$head .= " (reverse complement)" if $rc;
