@@ -104,7 +104,7 @@ sub get_seqs
 	  }
 	my ($feat) = $coge->resultset('Feature')->find($fid);
 	next unless $feat;
-	$seqs .= $feat->fasta(col=>100, prot=>$prot, name_only=>$name_only, gstid=>$gstidt);
+	$seqs .= $feat->fasta(col=>80, prot=>$prot, name_only=>$name_only, gstid=>$gstidt);
       }
     $seqs = qq{<textarea id=seq_text name=seq_text class=backbox readonly ondblclick="this.select();" style="height: 400px; width: 750px; overflow: auto;">$seqs</textarea>} if $textbox;
     return $seqs;
