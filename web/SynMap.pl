@@ -31,11 +31,12 @@ $DIAGSDIR = "$DIR/diags";
 $FASTADIR = $DATADIR.'/fasta/';
 $BLASTDBDIR = $DATADIR.'/blast/db/';
 $MAX_PROC=8;
-$PYTHON = "/usr/bin/python";
+$PYTHON = "/usr/bin/python2.5";
 $DAG_TOOL = $DIR."/bin/dagchainer/dag_tools.py";
 $TANDEM_FINDER = $DIR."/bin/dagchainer/tandems.py -d 5 -s -r"; #-d option is the distance (in genes) between dups -- not sure if the -s and -r options are needed -- they create dups files based on the input file name
 $FILTER_REPETITIVE_MATCHES = $DIR."/bin/dagchainer/filter_repetitive_matches.pl 200000"; #filters multiple matches to the same accession within the "window size", here set to 80000 nt
-$RUN_DAGCHAINER = $DIR."/bin/dagchainer/DAGCHAINER/run_DAG_chainer.pl -E 0.05 -s";
+#$RUN_DAGCHAINER = $DIR."/bin/dagchainer/DAGCHAINER/run_DAG_chainer.pl -E 0.05 -s";
+$RUN_DAGCHAINER = $DIR."/bin/dagchainer_bp/dag_chainer.py -E 0.05";
 $FIND_NEARBY = $DIR."/bin/dagchainer/find_nearby.py -d 200000";
 $DOTPLOT = $DIR."/bin/dotplot.pl";#Eric gives up waiting for new and improved to really work, and writes his own.
 $CONVERT_TO_GENE_ORDER = $DIR."/bin/dagchainer/convert_to_gene_order.pl";  #this needs to be implemented
@@ -823,14 +824,15 @@ sub run_dagchainer
 	write_log("run dagchainer: file $outfile already exists",$cogeweb->logfile);
 	return $outfile;
       }
-    my $cmd = "$RUN_DAGCHAINER -i $infile";
+    my $cmd = "$PYTHON $RUN_DAGCHAINER -i $infile";
     $cmd .= " -D $D" if $D;
     $cmd .= " -g $g" if $g;
     $cmd .= " -A $A" if $A;
+    $cmd .= " > $outfile";
     system "touch $outfile.running"; #track that a blast anlaysis is running for this
     write_log("run dagchainer: running $cmd", $cogeweb->logfile);
     `$cmd`;
-    `mv $infile.aligncoords $outfile`;
+#    `mv $infile.aligncoords $outfile`;
     system "rm $outfile.running" if -r "$outfile.running";; #remove track file
     return $outfile
   }
