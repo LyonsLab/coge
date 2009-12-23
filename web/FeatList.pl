@@ -439,30 +439,32 @@ $url =~ s/&$//;
   
 sub generate_excel_file
   {
-  	my $accn_list = shift;
-	$accn_list =~ s/^,//;
-	$accn_list =~ s/,$//;
-  	$cogeweb = initialize_basefile(prog=>"FeatList");
-  	my $basename = $cogeweb->basefile;
-  	my ($filename) = $basename =~ /FeatList\/(FeatList_.+)/;
-  	my $workbook = Spreadsheet::WriteExcel->new("$TEMPDIR/Excel_$filename.xls");
+    my $accn_list = shift;
+    $accn_list =~ s/^,//;
+    $accn_list =~ s/,$//;
+    $cogeweb = initialize_basefile(prog=>"FeatList");
+    my $basename = $cogeweb->basefile;
+    my ($filename) = $basename =~ /FeatList\/(FeatList_.+)/;
+    my $workbook = Spreadsheet::WriteExcel->new("$TEMPDIR/Excel_$filename.xls");
     $workbook->set_tempdir("$TEMPDIR");
     my $worksheet = $workbook->add_worksheet();
     my $i = 1;
        	 
-   	 $worksheet->write(0,0,"Feature Name");
-   	 $worksheet->write(0,1,"Type");
-   	 $worksheet->write(0,2,"Location");
-   	 $worksheet->write(0,3,"Strand");
-   	 $worksheet->write(0,4,"Chromosome");
-   	 $worksheet->write(0,5,"Length");
-   	 $worksheet->write(0,6,"Percent GC");
-   	 $worksheet->write(0,7,"Percent AT");
-   	 $worksheet->write(0,8,"Percent Wobble GC");
-   	 $worksheet->write(0,9,"Percent Wobble AT");
-   	 $worksheet->write(0,10,"Organism (version)");
-   	 $worksheet->write(0,11,"More information");
-   	 $worksheet->write(0,12,"Sequence");
+    $worksheet->write(0,0,"Feature Name");
+    $worksheet->write(0,1,"Type");
+    $worksheet->write(0,2,"Location");
+    $worksheet->write(0,3,"Strand");
+    $worksheet->write(0,4,"Chromosome");
+    $worksheet->write(0,5,"Length");
+    $worksheet->write(0,6,"Percent GC");
+    $worksheet->write(0,7,"Percent AT");
+    $worksheet->write(0,8,"Percent Wobble GC");
+    $worksheet->write(0,9,"Percent Wobble AT");
+    $worksheet->write(0,10,"Organism (version)");
+    $worksheet->write(0,11,"More information");
+    $worksheet->write(0,12,"Link");
+    $worksheet->write(0,13,"Sequence DNA");
+    $worksheet->write(0,14,"Sequence Protein");
    	
    	foreach my $item (split /,/,$accn_list)
 	  {
@@ -471,12 +473,11 @@ sub generate_excel_file
 
    	   next unless $feat;
    	   my ($name) = sort $feat->names;
-   	   my $app = $feat->annotation_pretty_print_html();
+   	   my $app = $feat->annotation_pretty_print();
    	   $app =~ s/(<\/?span(\s*class=\"\w+\")?\s*>)?//ig;
-   	   my ($anno) = $app =~ /annotation:<td>(.+)?/i;
-#	    print STDERR $app,"\n\n", $anno,"\n\n";
-   	   ($anno) = split (/<BR/, $anno);
-   	   $anno =~ s/;/;\n/g;
+#   	   my ($anno) = $app =~ /annotation:<td>(.+)?/i;
+#   	   ($anno) = split (/<BR/, $anno);
+#   	   $anno =~ s/;/;\n/g;
 	   my ($at, $gc) = $feat->gc_content;
 	   $at*=100;
 	   $gc*=100;
@@ -494,9 +495,18 @@ sub generate_excel_file
 	   $worksheet->write($i,8,$wgc);
 	   $worksheet->write($i,9,$wat);
 	   $worksheet->write($i,10,$feat->organism->name."(v ".$feat->version.")");
-	   $worksheet->write($i,11,$anno);
+	   $worksheet->write($i,11,$app);
+	    if (my ($geneid) = $app =~ /geneid.*?(\d+)/i)
+	      {
+		my $link = "http://www.ncbi.nlm.nih.gov/sites/entrez?db=gene&cmd=Retrieve&dopt=full_report&list_uids=".$geneid;
+		$worksheet->write($i,12, $link);
+	      }
 	    my $seq = $feat->genomic_sequence(gstid=>$gstid);
-	   $worksheet->write($i,12,$seq);
+	   $worksheet->write($i,13,$seq);
+	    if ($feat->type->name eq "CDS")
+	      {
+		$worksheet->write($i,14,$feat->protein_sequence());
+	      }
 	   $i++;
 	 };
    	$workbook->close() or die "Error closing file: $!";
