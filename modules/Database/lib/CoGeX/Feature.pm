@@ -488,7 +488,7 @@ sub annotation_pretty_print_html
     my $gstid = $opts{gstid};
     $gstid = 1 unless defined $gstid;
     my $skip_GC = $opts{skip_GC};
-    $loc_link = "SeqView.pl" unless defined $loc_link;
+    $loc_link = "FastaView.pl" unless defined $loc_link;
     my $anno_obj = new CoGe::Accessory::Annotation(Type=>"anno");
     $anno_obj->Val_delimit("<BR/>");
     $anno_obj->Add_type(0);
@@ -551,7 +551,8 @@ sub annotation_pretty_print_html
 	$location .=" (".$strand.")";
 	my $featid = $self->id;
 	$anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\">Length</span>", Values=>["<span class='data5'>".$self->length." nt</span>"],Type_delimit=>":<td>", Val_delimit=>" ")) unless $minimal;
-	$location = qq{<span class="data5 link" onclick="window.open('$loc_link?featid=$featid&start=$start&stop=$stop&chr=$chr&dsid=$dataset_id&strand=$strand&gstid=$gstid')" >}.$location."</span>" if $loc_link;
+#	$location = qq{<span class="data5 link" onclick="window.open('$loc_link?featid=$featid&start=$start&stop=$stop&chr=$chr&dsid=$dataset_id&strand=$strand&gstid=$gstid')" >}.$location."</span>" if $loc_link;
+	$location = qq{<span class="data5 link" onclick="window.open('$loc_link?featid=$featid&gstid=$gstid')" >}.$location."</span>" if $loc_link;
 	$location = qq{<span class="data">$location</span>};
 	$anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5 link\"><span onclick=\"window.open('GenomeView.pl?chr=$chr&ds=$dataset_id&x=$start&z=3&gstid=$gstid')\" >Location</span></span>", Values=>[$location], Type_delimit=>":<td>", Val_delimit=>" "));
 
