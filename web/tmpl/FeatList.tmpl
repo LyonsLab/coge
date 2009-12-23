@@ -105,7 +105,8 @@ function export_url(url,num_accns) {
     alert("You have exceeded the number of features you can send to GEvo ( 10 Max ). You currently have "+num_accns+" selected. Please uncheck "+remove+" of your checked item(s).");
   }
   else {
-    if ($('#gstid').val())
+    var regex = /xls$/;
+    if ($('#gstid').val() && !regex.test(url))
      {
        url=url+';gstid='+$('#gstid').val();
      }
