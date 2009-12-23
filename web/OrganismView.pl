@@ -334,7 +334,7 @@ sub get_dataset_group_info
     $html .= qq{<tr><td>Total length: </td></tr>};
     $html .= qq{<td><div style="float: left;"> }.commify($total_length)." bp </div></td></tr>";
     my $gc = $total_length < 10000000? get_gc_for_chromosome(dsgid=>$dsgid): 0;
-    $gc = $gc ? $gc : qq{  <div style="float: left; text-indent: 1em;" id=datasetgroup_gc class="link" onclick="\$('#datasetgroup_gc').removeClass('link'); get_gc_for_chromosome(['args__dsgid','dsg_id','args__gstid', 'gstid'],['datasetgroup_gc']);">  Click for percent GC content</div>};
+    $gc = $gc ? $gc : qq{  <div style="float: left; text-indent: 1em;" id=datasetgroup_gc class="link" onclick="\$('#datasetgroup_gc').removeClass('link'); get_gc_for_chromosome(['args__dsgid','dsg_id','args__gstid', 'gstid'],['datasetgroup_gc']);">  Click for percent GC content</div><br/>};
     $html .= "$gc";
 
 
@@ -346,7 +346,7 @@ sub get_dataset_group_info
     $html .= qq{<TR><TD colspan=2><a class=link href='$seq_file' target="_new">Download sequence in Fasta format</a></td></tr>};
 
     my $feat_string = qq{
-<tr><td><div id=dsg_feature_count class="small link" onclick="get_feature_counts(['args__dsgid','dsg_id', 'args__gstid','gstid'],['feature_count_data']);" >Click for feature counts</div>};
+<tr><td><div id=dsg_feature_count class="small link" onclick="get_feature_counts(['args__dsgid','dsg_id', 'args__gstid','gstid'],['feature_count_data']);" >Click for Features</div>};
     $html .= $feat_string;
     $html .= "<tr><td><a href='OrganismView.pl?dsgid=$dsgid' target=_new>OrganismView link</a></td></tr>";
     $html .= "</table>";
@@ -474,7 +474,7 @@ sub get_dataset_info
     $html .= $gc if $gc;
     $html .= qq{</table>};
     my $feat_string = qq{
-<div id=ds_feature_count class="small link" onclick="get_feature_counts(['args__dsid','ds_id','args__gstid', 'gstid'],['feature_count_data']);" >Click for feature counts</div>};
+<div id=ds_feature_count class="small link" onclick="get_feature_counts(['args__dsid','ds_id','args__gstid', 'gstid'],['feature_count_data']);" >Click for Features</div>};
     $html .= $feat_string;
     $html .= "<div><a href='OrganismView.pl?dsid=$dsd' target=_new>OrganismView link</a></div>";
 
@@ -515,7 +515,7 @@ sub get_dataset_chr_info
 
     $html .= "</table>";
     my $feat_string = qq{
-<div class=small id=feature_count onclick="get_feature_counts(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['feature_count_data']);" >Click for feature counts</div>};
+<div class=small id=feature_count onclick="get_feature_counts(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['feature_count_data']);" >Click for Features</div>};
     $html .= "$feat_string";
 
     my $viewer;
