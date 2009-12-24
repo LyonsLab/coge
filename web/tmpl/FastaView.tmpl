@@ -17,6 +17,7 @@ function update_seqs(prot, text)
     $('#prot_text_button').show();
     $('#dna_button').show();
     $('#dna_text_button').hide();
+    $('.prot_option').show();
    }
   else
    {
@@ -30,6 +31,7 @@ function update_seqs(prot, text)
     $('#prot_text_button').hide();
     $('#dna_button').hide();
     $('#dna_text_button').show();
+    $('.prot_option').hide();
    }
  }
 
@@ -51,6 +53,24 @@ function post_to_target () {
  document.body.removeChild(myForm);
 }
 
+function post_to_prosite () {
+ var seq = $('#seq_text').val();
+ var seqs=seq.split("\n");
+ seqs.shift();
+ seq = seqs.join("\n");
+ var url = "http://ca.expasy.org/cgi-bin/prosite/PSScan.cgi";
+ var myForm = document.createElement("form");
+ myForm.method="post" ;
+ myForm.action=url;
+ var myInput = document.createElement("input");
+ myInput.name="seq";
+ myInput.value=seq;
+ myForm.appendChild(myInput);
+ document.body.appendChild(myForm);
+ myForm.submit();
+ document.body.removeChild(myForm);
+}
+
 
 $(document).ready(function()
   {
@@ -60,11 +80,15 @@ $(document).ready(function()
      {
       $('#prot_button').hide();
       $('#dna_text_button').hide();
+      $('.prot_option').show();
+      $('.dna_option').hide();
      }
     else
      {
       $('#prot_text_button').hide();
       $('#dna_button').hide();
+      $('.prot_option').hide(); 
+      $('.dna_option').show();
      }
   });
 </script>
@@ -92,8 +116,12 @@ $(document).ready(function()
   </TABLE><br>
    Off site tools:<br>
     <span class="link" onclick ="window.open('http://target.iplantcollaborative.org/');"> Tree Analysis of Related Genes and Transposons</span>
-   <span onClick="post_to_target();" class='ui-button ui-state-default ui-corner-all'>Send to TARGeT</span>
-
+   <span onClick="post_to_target();" class='ui-button ui-state-default ui-corner-all'>Send to TARGeT</span> <br>
+   <div class="prot_option">
+   Scan for protein domains at <span class=link onclick="window.open('http://www.expasy.ch/prosite/')">ProSite</span>.  <span class=alert>Warning:</span>  this option works for only one protein sequence <span onClick="post_to_prosite();" class='ui-button ui-state-default ui-corner-all'>Send to ProSite</span>
+   </div>
+   <div class="prot_option">
+   </DIV>
   </DIV>
 
 </TMPL_IF>
