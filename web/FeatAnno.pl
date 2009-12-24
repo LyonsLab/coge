@@ -120,7 +120,7 @@ sub gen_html
 	  {
 	    $color = "#FFDDBB";
 	  }
-	$html .= "<table bgcolor=$color width=100%><tr><td>".$feat->annotation_pretty_print_html(loc_link=>"SeqView.pl", gstid=>$gstid);
+	$html .= "<table bgcolor=$color width=100%><tr><td>".$feat->annotation_pretty_print_html(gstid=>$gstid);
 	$html .= qq{<font class="title4">Type: </font>};
 	$html .= qq{<font class="data">}.$feat->type->name."</font>\n";
 	$html .= qq{</table>};
