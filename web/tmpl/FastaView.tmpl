@@ -44,6 +44,7 @@ function post_to_target () {
  var myForm = document.createElement("form");
  myForm.method="post" ;
  myForm.action=url;
+ myForm.setAttribute("target", "_blank");
  var myInput = document.createElement("input");
  myInput.setAttribute("name", "coge_query");
  myInput.setAttribute("value",seq);
@@ -62,9 +63,11 @@ function post_to_prosite () {
  var myForm = document.createElement("form");
  myForm.method="post" ;
  myForm.action=url;
+ myForm.setAttribute("target", "_blank");
  var myInput = document.createElement("input");
  myInput.name="seq";
  myInput.value=seq;
+ 
  myForm.appendChild(myInput);
  document.body.appendChild(myForm);
  myForm.submit();
