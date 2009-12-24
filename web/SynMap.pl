@@ -237,7 +237,10 @@ sub gen_dsg_menu
     foreach my $dsg (sort {$b->version <=> $a->version || $a->type->id <=> $b->type->id} $coge->resultset('DatasetGroup')->search({organism_id=>$oid},{prefetch=>['genomic_sequence_type']}))
       {
 #	next if $USER->user_name =~ /public/i && $dsg->organism->restricted;
-	push @dsg_menu, [$dsg->id, $dsg->type->name." (v".$dsg->version.",id".$dsg->id.")"];
+	my $name;
+	$name .= $dsg->name.": " if $dsg->name;
+	$name .= $dsg->type->name." (v".$dsg->version.",id".$dsg->id.")";
+	push @dsg_menu, [$dsg->id, $name];
       }
 
     my $dsg_menu = qq{
@@ -353,8 +356,8 @@ sub get_dataset_group_info
 #    next if $USER->user_name =~ /public/i && $org->restricted;
     my $orgname = $org->name;
     $orgname = "<a href=\"OrganismView.pl?oid=".$org->id."\" target=_new>$orgname</a>: ".$org->description if $org->description;
-    $html_dsg_info .= qq{<div><span class="oblique">Organism:</span><span class="small">$orgname</small></div>};
-    $html_dsg_info .= qq{<div><span class="oblique link" onclick=window.open('OrganismView.pl?dsgid=$dsgid')>Genome Information: </span><br>};
+    $html_dsg_info .= qq{<div><span>Organism: </span><span class="small">$orgname</small></div>};
+    $html_dsg_info .= qq{<div><span class="link" onclick=window.open('OrganismView.pl?dsgid=$dsgid')>Genome Information: </span><br>};
     my $i =0;
     my $chr_length=0;
     my $chr_count =0;
@@ -376,6 +379,8 @@ sub get_dataset_group_info
     my $link = $ds->data_source->link;
     $link = "synteny.cnr.berkeley.edu/CoGe/" unless $link;
     $link = "http://".$link unless $link && $link =~ /^http/;
+    $html_dsg_info .= "Name: ".$dsg->name."<br>" if $dsg->name; 
+    $html_dsg_info .= "Description: ".$dsg->description."<br>" if $dsg->description; 
     $html_dsg_info .= "Source:  <a href=".$link." target=_new>".$ds->data_source->name."</a><br>";
     #$html_dsg_info .= $dsg->chr_info(summary=>1);
     $html_dsg_info .= "Chromosome count: $chr_count<br>";
