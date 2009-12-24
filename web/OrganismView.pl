@@ -328,14 +328,16 @@ sub get_dataset_group_info
       }
     $html = qq{<div>};
     $html .= "<table class='small annotation_table'>";
+    $html .= qq{<tr><td>Name:</td>}.$dsg->name.qq{</td></tr>} if $dsg->name;
+    $html .= qq{<tr><td>Description:</td>}.$dsg->description.qq{</td></tr>} if $dsg->description;
     $html .= qq{<tr><td>Chromosome count: <td>$chr_num</td></tr>};
     my $gstid = $dsg->genomic_sequence_type->id;
     $html .= qq{<tr><td>Sequence type: <td>}.$dsg->genomic_sequence_type->name.qq{ (gstid$gstid)<input type=hidden id=gstid value=}.$gstid.qq{></td></tr>};
-    $html .= qq{<tr><td>Total length: </td></tr>};
-    $html .= qq{<td><div style="float: left;"> }.commify($total_length)." bp </div></td></tr>";
+    $html .= qq{<tr><td>Length: </td>};
+    $html .= qq{<td><div style="float: left;"> }.commify($total_length)." bp </div>";
     my $gc = $total_length < 10000000? get_gc_for_chromosome(dsgid=>$dsgid): 0;
     $gc = $gc ? $gc : qq{  <div style="float: left; text-indent: 1em;" id=datasetgroup_gc class="link" onclick="\$('#datasetgroup_gc').removeClass('link'); get_gc_for_chromosome(['args__dsgid','dsg_id','args__gstid', 'gstid'],['datasetgroup_gc']);">  Click for percent GC content</div><br/>};
-    $html .= "$gc";
+    $html .= "$gc</td></tr>";
 
 
     $html .= qq{
@@ -502,7 +504,7 @@ sub get_dataset_chr_info
     my $length = 0;
     $length = $ds->last_chromosome_position($chr) if defined $chr;
     my $gc = $length < 10000000? get_gc_for_chromosome(dsid=>$ds->id, chr=>$chr): 0;
-    $gc = $gc ? " -- ".$gc : qq{<div style="float: left; text-indent: 1em;" id=chromosome_gc class="link" onclick="\$('#chromosome_gc').removeClass('link'); get_gc_for_chromosome(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['chromosome_gc']);">Click for percent GC content</div>};
+    $gc = $gc ? $gc : qq{<div style="float: left; text-indent: 1em;" id=chromosome_gc class="link" onclick="\$('#chromosome_gc').removeClass('link'); get_gc_for_chromosome(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['chromosome_gc']);">Click for percent GC content</div>};
     $length = commify($length)." bp ";
     $html .= qq{
 <tr><td class = oblique>Specifics for chromosome $chr:
@@ -853,7 +855,7 @@ sub get_gc_for_chromosome
 	  }
       }
     my $total = $gc+$at+$n;
-    my $results = " -- GC: ".sprintf("%.2f",100*$gc/$total)."%  AT: ".sprintf("%.2f",100*$at/$total)."%  N: ".sprintf("%.2f",100*$n/$total)."%" if $total;
+    my $results = "&nbsp(GC: ".sprintf("%.2f",100*$gc/$total)."%  AT: ".sprintf("%.2f",100*$at/$total)."%  N: ".sprintf("%.2f",100*$n/$total)."%)" if $total;
     return $results;
   }
 
@@ -928,7 +930,7 @@ sub get_gc_for_noncoding
       }
     my $total = $gc+$at+$n;
     return "error" unless $total;
-    return commify($total)." bp -- GC: ".sprintf("%.2f",100*$gc/($total))."%  AT: ".sprintf("%.2f",100*$at/($total))."% N: ".sprintf("%.2f",100*($n)/($total))."%";
+    return commify($total)." bp (GC: ".sprintf("%.2f",100*$gc/($total))."%  AT: ".sprintf("%.2f",100*$at/($total))."% N: ".sprintf("%.2f",100*($n)/($total))."%)";
 
 
 
