@@ -848,13 +848,15 @@ sub get_gc_for_chromosome
 	  }
 	foreach my $chr(keys %chr)
 	  {
-	    my @gc =$ds->percent_gc(chr=>$chr, seq_type=>$gstid, counts=>1);
+	    my @gc =$ds->percent_gc(chr=>$chr, seq_type=>$gstid, count=>1);
 	    $gc+= $gc[0] if $gc[0];
 	    $at+= $gc[1] if $gc[1];
 	    $n+= $gc[2] if $gc[2];
 	  }
       }
     my $total = $gc+$at+$n;
+    return "error" unless $total;
+    print STDERR join ("\t", "chromosome", $total, $gc, $at, $n),"\n";
     my $results = "&nbsp(GC: ".sprintf("%.2f",100*$gc/$total)."%  AT: ".sprintf("%.2f",100*$at/$total)."%  N: ".sprintf("%.2f",100*$n/$total)."%)" if $total;
     return $results;
   }
@@ -930,7 +932,8 @@ sub get_gc_for_noncoding
       }
     my $total = $gc+$at+$n;
     return "error" unless $total;
-    return commify($total)." bp (GC: ".sprintf("%.2f",100*$gc/($total))."%  AT: ".sprintf("%.2f",100*$at/($total))."% N: ".sprintf("%.2f",100*($n)/($total))."%)";
+    print STDERR join ("\t", $total, $gc, $at, $n),"\n";
+    return commify($total)." bp"."&nbsp(GC: ".sprintf("%.2f",100*$gc/($total))."%  AT: ".sprintf("%.2f",100*$at/($total))."% N: ".sprintf("%.2f",100*$n/($total))."%)";
 
 
 
