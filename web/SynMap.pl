@@ -20,7 +20,7 @@ use DBI;
 
 $ENV{PATH} = "/opt/apache2/CoGe/";
 umask(0);
-use vars qw( $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $FORMATDB $BLAST $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $TANDEM_FINDER $FILTER_REPETITIVE_MATCHES $RUN_DAGCHAINER $FIND_NEARBY $CONVERT_TO_GENE_ORDER $DOTPLOT $NWALIGN_SERVER);
+use vars qw( $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $FORMATDB $BLAST $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $TANDEM_FINDER $FILTER_REPETITIVE_MATCHES $RUN_DAGCHAINER $FIND_NEARBY $CONVERT_TO_GENE_ORDER $DOTPLOT $NWALIGN);
 $DEBUG = 0;
 $DIR = "/opt/apache/CoGe/";
 $URL = "/CoGe/";
@@ -40,7 +40,8 @@ $RUN_DAGCHAINER = $DIR."/bin/dagchainer_bp/dag_chainer.py -E 0.05";
 $FIND_NEARBY = $DIR."/bin/dagchainer/find_nearby.py -d 200000";
 $DOTPLOT = $DIR."/bin/dotplot.pl";#Eric gives up waiting for new and improved to really work, and writes his own.
 $CONVERT_TO_GENE_ORDER = $DIR."/bin/dagchainer/convert_to_gene_order.pl";  #this needs to be implemented
-$NWALIGN_SERVER = $DIR."/bin/nwserver.py";
+#$NWALIGN = $DIR."/bin/nwalign-0.3.0/bin/nwalign";
+$NWALIGN = "/usr/bin/nwalign";
 $| = 1; # turn off buffering
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
                  sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
@@ -985,7 +986,7 @@ sub initialize_nwalign_servers
     my @ports;
     for (1..$procs)
       {
-	system("python $NWALIGN_SERVER $start_port &");
+	system("$NWALIGN --server $start_port &");
 	push @ports, $start_port;
 	$start_port++;
       }
