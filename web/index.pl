@@ -115,14 +115,14 @@ sub actions
 		    ID=>5,
 		    LOGO=>qq{<a href="./GEvo.pl"><img src="/CoGe/picts/carousel/GEvo-logo.png" width="227" height="75" border="0"></a>},
 		    ACTION=>qq{<a href="./GEvo.pl">GEvo</a>},
-		    DESC => qq{Compare sequences and genomic regions to discover patterns of genome evolution.},
+		    DESC => qq{Compare sequences and genomic regions to discover patterns of genome evolution.  <a href ="GEvo.pl?prog=blastz;accn1=at1g07300;fid1=4091274;dsid1=556;chr1=1;dr1up=20000;dr1down=20000;gbstart1=1;gblength1=772;accn2=at2g29640;fid2=4113333;dsid2=557;chr2=2;dr2up=20000;dr2down=20000;gbstart2=1;rev2=1;num_seqs=2;autogo=1" target=_new>Example.</a>},
 		    SCREENSHOT=>qq{<a href="./GEvo.pl"><img src="/CoGe/picts/preview/GEvo.png"border="0"></a>},
 		   },
 		   {
 		    ID=>3,
 		    LOGO=>qq{<a href="./FeatView.pl"><img src="/CoGe/picts/carousel/FeatView-logo.png" width="227" height="75" border="0"></a>},
 		    ACTION=>qq{<a href="./FeatView.pl">FeatView</a>},
-		    DESC => qq{Find and display information about a genomic feature (e.g. gene).},
+		    DESC => qq{Find and display information about a genomic feature (e.g. gene). <a href = "FeatView.pl?accn=at1g07300" target=_new>Example.</a>},
 		    SCREENSHOT=>qq{<a href="./FeatView.pl"><img src="/CoGe/picts/preview/FeatView.png" width="400" height="241" border="0"></a>},
 		   },
 # 		   {
@@ -143,7 +143,7 @@ sub actions
 		    ID=>1,
 		    LOGO => qq{<a href="./OrganismView.pl"><img src="/CoGe/picts/carousel/OrganismView-logo.png" width="227" height="75" border="0"></a>},
 		    ACTION => qq{<a href="./OrganismView.pl">OrganismView</a>},
-		    DESC   => qq{Search for organisms, get an overview of their genomic make-up, and visualize them using a dynamic, interactive genome browser.},
+		    DESC   => qq{Search for organisms, get an overview of their genomic make-up, and visualize them using a dynamic, interactive genome browser. <a href="OrganismView.pl?org_name=k12" target=_new>Example.</a>},
 		    SCREENSHOT => qq{<img src="/CoGe/picts/preview/OrganismView.png" border="0"></a>},
 		   },
 		   {
@@ -164,7 +164,7 @@ sub actions
 		    ID=>4,
 		    LOGO=>qq{<a href="./SynMap.pl"><img src="/CoGe/picts/SynMap-logo.png"  border="0"></a>},
 		    ACTION=>qq{<a href="./SynMap.pl">SynMap</a>},
-		    DESC => qq{Compare any two genomes to identify regions of synteny.  (Powered by <a href=http://dagchainer.sourceforge.net/ target=_new>DAGChainer</a>)},
+		    DESC => qq{Compare any two genomes to identify regions of synteny.  <a href="SynMap.pl?dsgid1=3068;dsgid2=8;D=20;g=10;A=5;w=0;b=1;ft1=1;ft2=1;dt=geneorder;ks=1;autogo=1" target=_mew>Example.</a>  <span class=small>(Powered by <a href=http://dagchainer.sourceforge.net/ target=_new>DAGChainer</a></span>)},
 		    SCREENSHOT=>qq{<a href="./SynMap.pl"><img src="/CoGe/picts/preview/SynMap.png" border="0" width="400" height="320"></a>},
 		   },
 
