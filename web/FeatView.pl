@@ -364,7 +364,7 @@ sub get_anno
 #	$anno .= qq{<DIV id="exp$i"><input type="button" value = "Click for expression tree" onClick="gen_data(['args__Generating expression view image'],['exp$i']);show_express(['args__}.$accn.qq{','args__}.'1'.qq{','args__}.$i.qq{'],['exp$i']);"></DIV>};
 	$anno .= qq{<span class="ui-button ui-state-default ui-corner-all" onClick="update_featlist(['args__accn', 'args__$accn','args__type', 'args__$type','args__fid', 'args__$featid', 'args__gstid','args__$gstid'],[add_to_featlist]);\$('#feat_list').dialog('option', 'width', 500).dialog('open');">Add to list</span></DIV>} if $accn;
 
-	$anno .= join "\n<BR><HR><BR>\n", $feat->annotation_pretty_print_html(loc_link=>1, gstid=>$gstid);
+	$anno .= join "\n<BR><HR><BR>\n", $feat->annotation_pretty_print_html( gstid=>$gstid);
 	if ($feat->type->name eq "CDS")
 	  {
 	    $anno .= "<br>";
