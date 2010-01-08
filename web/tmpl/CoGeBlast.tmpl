@@ -648,6 +648,7 @@ function get_seq(which_type) {
 	],['seq_box']);
  }
  else {
+  $('#seq_box').val('');
   return;
  }
 }
@@ -1114,7 +1115,7 @@ $(function() {
 <TR>
   <TH align =left colspan="3">
   <div id="cogeblast_option">
-  <span id="run_cogeblast_button" style="font-size: 1em" class='ui-button ui-state-default ui-corner-all'>Run GoGe Blast</span><BR><br>
+  <span id="run_cogeblast_button" style="font-size: 1em" class='ui-button ui-state-default ui-corner-all'>Run CoGe Blast</span><BR><br>
 <!--  <a href="javascript:void(0)" id="coge_blast_button" onClick="reset_basename();generate_basefile([],[update_basename]);blastOff();"><span>CoGe BLAST</span></a><br>-->
    <DIV id = "co" name="slider" class="topItem">CoGe BLAST Options:</DIV>
    <DIV class="dropMenu" id="query_seqs">
