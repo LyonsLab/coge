@@ -106,7 +106,7 @@ sub get_gene_order
     foreach my $feat (sort {$a->chromosome cmp $b->chromosome || $a->start <=> $b->start} 
 		      $coge->resultset('Feature')->search(
 							  {
-							   feature_type_id=>3, 
+							   feature_type_id=>[3,4,7], 
 							   dataset_group_id=>$dsgid
 							  },{
 							     join=>[{dataset=>'dataset_connectors'},'feature_names'], 
