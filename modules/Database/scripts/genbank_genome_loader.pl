@@ -184,7 +184,7 @@ accn: foreach my $accn (@accns)
 		    next entry;
 		  }
 	      }
-	    print "Checking WGS $accn...";
+	    print "\tChecking WGS $accn...\n";
 	    my $previous = check_accn($accn);
 	    foreach my $item (@$previous)
 	      {
@@ -701,6 +701,7 @@ sub get_organism
       $name .= " substrain" unless $add =~ /substrain/;
       $name .= " $add";
     }
+  return unless $name;
   $name =~ s/'//g;
   $name =~ s/\(\s*\)//g;
   $name =~ s/\s\s+/ /g;
