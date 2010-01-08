@@ -334,8 +334,13 @@ sub initialize_basefile
 #    print STDERR "Basename: ",$self->basefilename,"\n";
 #    print STDERR "sqlitefile: ",$self->sqlitefile,"\n";
 #    print STDERR "Basefile: ",$self->basefile,"\n";
-
-    if ($return_name)
+    
+    if (-r $self->logfile && ! $basename)
+      {
+	print STDERR "in Web.pm sub initialize_basefile.  Logfile ".$self->logfile." already exist.  Possible problem.  Regenerating basefile.\n";
+	return $self->initialize_basefile(%opts);
+      }
+    elsif ($return_name)
       {
 	return $self->basefilename;
       }
