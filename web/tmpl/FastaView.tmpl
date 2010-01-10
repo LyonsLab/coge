@@ -72,6 +72,23 @@ function post_to_prosite () {
  document.body.removeChild(myForm);
 }
 
+function post_to_phylogeny_fr () {
+ var seq = $('#seq_text').val();
+ seq = seq.replace(/\*/g,"");
+ var url = "http://www.phylogeny.fr/version2_cgi/simple_phylogeny.cgi";
+ var myForm = document.createElement("FORM");
+ myForm.method="post" ;
+ myForm.action=url;
+ myForm.setAttribute("target", "_blank");
+ var myInput = document.createElement("textarea");
+ myInput.name="task_data_input";
+ myInput.value=seq;
+ myForm.appendChild(myInput);
+ document.body.appendChild(myForm);
+ myForm.submit();
+ document.body.removeChild(myForm);
+
+}
 
 $(document).ready(function()
   {
@@ -115,15 +132,26 @@ $(document).ready(function()
    <td><span class='ui-button ui-state-default ui-corner-all'id="dna_text_button" onclick="update_seqs(0,1)"> Plain Text</span>
    <td><span class='ui-button ui-state-default ui-corner-all'id="blast_button"onclick="window.open('CoGeBlast.pl?featid='+$('#fids').val())">CoGe Blast</span> 
   </TABLE><br>
-   Off site tools:<br>
-    <span class="link" onclick ="window.open('http://target.iplantcollaborative.org/');"> Tree Analysis of Related Genes and Transposons</span>
-   <span onClick="post_to_target();" class='ui-button ui-state-default ui-corner-all'>Send to TARGeT</span> <br>
-   <div class="prot_option">
-   Scan for protein domains at <span class=link onclick="window.open('http://www.expasy.ch/prosite/')">ProSite</span>.  <span class=alert>Warning:</span>  this option works for only one protein sequence <span onClick="post_to_prosite();" class='ui-button ui-state-default ui-corner-all'>Send to ProSite</span>
+
+  Off site tools:<br>
+<!-- ALL SEQUENCES -->
+    <table>
+    <tr align=top>
+    <td><span onClick="post_to_target();" class='ui-button ui-state-default ui-corner-all'>TARGeT</span>
+    <td><span class="link" onclick ="window.open('http://target.iplantcollaborative.org/');"> Tree Analysis of Related Genes and Transposons</span><br>
+    <tr align=top>
+    <td><span onClick="post_to_phylogeny_fr();" class='ui-button ui-state-default ui-corner-all'>Phylogeny.fr</span>
+    <td>One click phylogeny at <a href="http://www.phylogeny.fr" target=_new>Phylogeny.fr</a>
+    </table>
+<!-- PROTEIN SEQUENCES ONLY -->
+  <div class="prot_option">
+   <table>
+    <tr align=top>
+    <td><span onClick="post_to_prosite();" class='ui-button ui-state-default ui-corner-all'>ProSite</span>
+    <td>Scan for protein domains at <span class=link onclick="window.open('http://www.expasy.ch/prosite/')">ProSite</span>.  
+  </table>
    </div>
-   <div class="prot_option">
-   </DIV>
-  </DIV>
+ </DIV>
 
 </TMPL_IF>
 
