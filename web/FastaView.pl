@@ -106,7 +106,7 @@ sub get_seqs
 	next unless $feat;
 	$seqs .= $feat->fasta(col=>80, prot=>$prot, name_only=>$name_only, gstid=>$gstidt);
       }
-    $seqs = qq{<textarea id=seq_text name=seq_text class=backbox readonly ondblclick="this.select();" style="height: 400px; width: 750px; overflow: auto;">$seqs</textarea>} if $textbox;
+    $seqs = qq{<textarea id=seq_text name=seq_text class=backbox ondblclick="this.select();" style="height: 400px; width: 750px; overflow: auto;">$seqs</textarea>} if $textbox;
     return $seqs;
   }
 
