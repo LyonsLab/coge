@@ -358,7 +358,7 @@ sub get_anno
 	my $ds = $feat->dataset->id;
 	my $x = $feat->start;
 	my $z = 4;
-	$anno .= qq{<span class="ui-button ui-state-default ui-corner-all" onClick="window.open('SeqView.pl?featid=$featid&dsid=$ds&chr=$chr&featname=gstid=$gstid');">Get Sequence</span>};
+	$anno .= qq{<span class="ui-button ui-state-default ui-corner-all" onClick="window.open('FastaView.pl?featid=$featid&gstid=$gstid');">Get Sequence</span>};
 	$anno .= qq{<span class="ui-button ui-state-default ui-corner-all" onClick="window.open('CoGeBlast.pl?featid=$featid;gstid=$gstid');">CoGeBlast</span>};
 	$anno .= qq{<span class="ui-button ui-state-default ui-corner-all" onClick="window.open('GenomeView.pl?chr=$chr&ds=$ds&x=$x&z=$z;gstid=$gstid');">Genome Browser</span>};
 #	$anno .= qq{<DIV id="exp$i"><input type="button" value = "Click for expression tree" onClick="gen_data(['args__Generating expression view image'],['exp$i']);show_express(['args__}.$accn.qq{','args__}.'1'.qq{','args__}.$i.qq{'],['exp$i']);"></DIV>};
