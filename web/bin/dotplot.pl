@@ -668,11 +668,11 @@ sub parse_syn_blocks
     my $blocks1=[];
     my $blocks2=[];
     open (IN, $file) || die "Can't open $file for reading: $!";
-    $/ = "\n##";
+    $/ = "\n#";
     while (<IN>) #get blocks
       {
 	next unless $_;
-	s/##//g;
+	s/#//g;
 	my ($block1, $block2) = process_syn_block($_);
 	push @$blocks1 , $block1;
 	push @$blocks2 , $block2;
@@ -747,9 +747,10 @@ sub process_syn_block
   {
     my $block = shift;
     my ($head, @block) = split/\n/, $block;
-    my ($seq1, $seq2, $block_num, $score, $num_pairs) = 
-      $head =~ /alignment\s+(\S+) vs\. (\S+) .*? #(\d+)\s+score = (\S+).*?pairs: (\d+)/;
-    my $rev = $head =~/reverse/ ? 1 : 0;
+    my ($block_num, $score, $seq1, $seq2, $strand, $num_pairs) = 
+      split/\t/, $head;
+#      $head =~ /alignment\s+(\S+) vs\. (\S+) .*? #(\d+)\s+score = (\S+).*?pairs: (\d+)/;
+    my $rev = $strand =~/r/ ? 1 : 0;
     my ($seq1_start, $seq1_stop, $seq2_start, $seq2_stop);
     #absolute start and stop can give rise to problems if the ends actually hit something far away from the rest of the sytnenic pairs.  Calculating the "mean" position will circumvent this problem
     my @start1;
