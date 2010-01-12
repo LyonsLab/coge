@@ -78,7 +78,9 @@ while (<>)
     next if $line[2] eq "clone";
 #    next if $line[2] eq "mRNA";
     next if $line[2] eq "intron";
-    my $chr = $line[0];
+    next if $line[2] eq "chromosome";
+    my $chr;
+    $chr = $line[0];
     $chr =~ s/chromosome//i;
     $chr =~ s/chr//i;
     $chr =~ s/^_//i;
