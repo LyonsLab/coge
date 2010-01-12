@@ -317,13 +317,13 @@ sub generate_ds
 	return;
       }
     my $ds = $ds_id ? $coge->resultset('Dataset')->find($ds_id) :
-      $coge->resultset('Dataset')->find_or_create({
-						   name                => $ds_name,
-						   description         => $ds_desc,
-						   link                => $ds_link, 
-						   data_source_id      => $source_id,
-						   version=>$ds_version,
-						  })  if $GO;
+      $coge->resultset('Dataset')->create({
+					   name                => $ds_name,
+					   description         => $ds_desc,
+					   link                => $ds_link, 
+					   data_source_id      => $source_id,
+					   version=>$ds_version,
+					  })  if $GO;
     return $ds;
 
   }
@@ -338,12 +338,12 @@ sub generate_dsg
     my $gst_id = $opts{gst_id};
     my $dsg_id = $opts{dsg_id};
     my $dsg = $dsg_id ? $coge->resultset('DatasetGroup')->find($dsg_id) : 
-      $coge->resultset('DatasetGroup')->find_or_create(name=>$name,
-						       description=>$desc,
-						       version=>$version,
-						       organism_id=>$org_id,
-						       genomic_sequence_type_id=>$gst_id,
-						       ) if $GO;
+      $coge->resultset('DatasetGroup')->create({name=>$name,
+						description=>$desc,
+						version=>$version,
+						organism_id=>$org_id,
+						genomic_sequence_type_id=>$gst_id,
+					       }) if $GO;
     return unless $dsg;
     unless ($dsg->file_path)
       {
