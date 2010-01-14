@@ -139,7 +139,7 @@ sub gen_body
     my $dsgid = $form->param('dsgid') if $form->param('dsgid');
     my $chr = $form->param('chr') if $form->param('chr');
     my $ftid = $form->param('ftid') if $form->param('ftid');
-    my $start = $form->param('start') if $form->param('start');
+    my $start = $form->param('start') if defined $form->param('start');
     my $stop = $form->param('stop') if $form->param('stop');
     my $gstid = $form->param('gstid') if $form->param('gstid'); #genomic_sequence_type_id
     $template->param('GSTID'=>$gstid) if $gstid;
@@ -226,7 +226,7 @@ sub get_fids
     $search->{chromosome}=$chr if $chr;
     my $join={};
     my @ids;
-    if ($start)
+    if (defined $start)
       {
 	@ids = map{$_->id} $coge->get_features_in_region(dataset=>$dsid, chr=>$chr, start=>$start, stop=>$stop);
       }
