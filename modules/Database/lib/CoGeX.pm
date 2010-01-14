@@ -156,7 +156,7 @@ sub get_features_in_region
     my $self = shift;
     my %opts = @_;
     my $start = $opts{'start'} || $opts{'START'} || $opts{begin} || $opts{BEGIN};
-    $start = 0 unless $start;
+    my $start = 1 unless $start;
     my $stop = $opts{'stop'} || $opts{STOP} || $opts{end} || $opts{END};
     $stop = $start unless defined $stop;
     my $chr = $opts{chr} || $opts{CHR} || $opts{chromosome} || $opts{CHROMOSOME};
