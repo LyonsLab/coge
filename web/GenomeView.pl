@@ -64,52 +64,57 @@ sub gen_body
     $dsid = $form->param('dsid') if $form->param('dsid');
     my $z = $form->param('z') if $form->param('z');
     my $loc = $form->param('x') if $form->param('x');
-    my $ver = $form->param('ver') if $form->param('ver');
-    my $org = $form->param('org') if $form->param('org');
     my $gstid = $form->param('gstid') if $form->param('gstid');
     my $fid = $form->param('fid') if $form->param('fid');
     my $dsgid = $form->param('dsgid') if $form->param('dsgid');
 
     my $prefs = load_settings(user=>$USER, page=>$PAGE_NAME);
-    my $chr_length;
-
+    my ($ds, $dsg, $gst);
     if ($fid)
       {
 	my $feat = $coge->resultset('Feature')->find($fid);
 	$chr = $feat->chromosome;
-	$dsid = $feat->dataset->id;
+	$ds = $feat->dataset;
 	$loc = $feat->start;
       }
     if ($dsgid)
       {
-	my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
-	$gstid = $dsg->type->id;
-	my ($ds) = $dsg->datasets(chr=>$chr);
-	$dsid = $ds->id;
+	$dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	$gst = $dsg->type;
+	($ds) = $dsg->datasets(chr=>$chr);
       }
-    my @feat_types;
+    
     if ($dsid)
       {
-	my $dso = $coge->resultset('Dataset')->find($dsid);
-	$org = $dso->organism->name;
-	$ver = $dso->version;
-	$chr_length = $dso->last_chromosome_position($chr);
-	foreach my $dsg (sort {$a->genomic_sequence_type_id <=> $b->genomic_sequence_type_id} $dso->dataset_groups)
+	$ds = $coge->resultset('Dataset')->find($dsid);
+      }
+    unless ($dsg)
+      {
+	foreach my $dsgt (sort {$a->genomic_sequence_type_id <=> $b->genomic_sequence_type_id} $ds->dataset_groups)
 	  {
 	    last if $dsgid;
-	    $dsgid = $dsg->id if $gstid && $dsg->genomic_sequence_type_id == $gstid;
-	    $dsgid = $dsg->id unless $gstid;
+	    $dsg = $dsgt if $gstid && $dsgt->genomic_sequence_type_id == $gstid;
+	    $dsg = $dsgt;
 	  }
-	my $query = qq{select distinct(feature_type_id) from feature where dataset_id = $dsid};
-	my $dbh = DBI->connect($coge->db_connection_string,$coge->db_name,$coge->db_passwd);
-	my $sth = $dbh->prepare($query);
-	$sth->execute;
-	while (my $row = $sth->fetchrow_arrayref)
+      }
+    $gst = $dsg->type;
+    $dsid = $ds->id;
+    $dsgid = $dsg->id;
+    $gstid = $gst->id;
+    my $ver = $dsg->version;
+    my $org = $ds->organism->name;
+    my $chr_length = $ds->last_chromosome_position($chr);
+
+    my @feat_types;
+    my $query = qq{select distinct(feature_type_id) from feature where dataset_id = $dsid};
+    my $dbh = DBI->connect($coge->db_connection_string,$coge->db_name,$coge->db_passwd);
+    my $sth = $dbh->prepare($query);
+    $sth->execute;
+    while (my $row = $sth->fetchrow_arrayref)
 	  {
 	    my $ftid = $row->[0];
 	    push @feat_types, $coge->resultset('FeatureType')->find($ftid);
 	  }
-      }
     $loc = 1 unless $loc;
     $z=2 unless $z;
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GenomeView.tmpl');
@@ -134,7 +139,6 @@ sub gen_body
 	  }
       }
 
-    $ver = "unk" unless $ver;
     $template->param(CHR=>$chr);
     $template->param(VER=>$ver);
     $template->param(ORG=>$org);
@@ -160,7 +164,10 @@ sub gen_body
 	$template->param(uc($item)=>$show);
       }
     my $html = $template->output;
-    my $org_name = "$org (v $ver), Chromosome: $chr, Dataset ID No. $dsid";
+    my $org_name = "<span class=link onclick=window.open('OrganismView.pl?dsgid=$dsgid')>$org (v$ver),";
+    $org_name .= " ".$dsg->name if $dsg->name;
+    $org_name .= ": ".$dsg->description if $dsg->description;
+    $org_name.= " Chromosome: $chr ".$gst->name." (dsgid$dsgid dsid$dsid</span>)";
     return $html, $org_name;
   }
 
