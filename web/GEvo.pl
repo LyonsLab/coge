@@ -16,6 +16,7 @@ use CoGe::Accessory::bl2seq_report;
 use CoGe::Accessory::blastz_report;
 use CoGe::Accessory::lagan_report;
 use CoGe::Accessory::chaos_report;
+use CoGe::Accessory::GenomeThreader_report;
 use CoGe::Accessory::dialign_report;
 use CoGe::Accessory::dialign_report::anchors;
 use CoGe::Graphics;
@@ -51,12 +52,13 @@ delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 $ENV{'LAGAN_DIR'} = '/opt/apache/CoGe/bin/lagan/';
 #for dialign
 $ENV{'DIALIGN2_DIR'} = '/opt/apache/CoGe/bin/dialign2_dir/';
-use vars qw( $PAGE_NAME $DATE $DEBUG $BL2SEQ $BLASTZ $LAGAN $CHAOS $DIALIGN $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge $NUM_SEQS $MAX_SEQS $MAX_PROC);
+use vars qw( $PAGE_NAME $DATE $DEBUG $BL2SEQ $BLASTZ $LAGAN $CHAOS $DIALIGN $GENOMETHREADER $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge $NUM_SEQS $MAX_SEQS $MAX_PROC);
 $PAGE_NAME = "GEvo.pl";
 $BL2SEQ = "/usr/bin/bl2seq ";
 $BLASTZ = "/usr/bin/blastz ";
 $LAGAN = "/opt/apache/CoGe/bin/lagan/lagan.pl";
 $CHAOS = "/opt/apache/CoGe/bin/lagan/chaos_coge";
+$GENOMETHREADER = "/opt/apache/CoGe/bin/gth";
 $DIALIGN = "/opt/apache/CoGe/bin/dialign2_dir/dialign2-2_coge";
 $TEMPDIR = "/opt/apache/CoGe/tmp/GEvo";
 $TEMPURL = "/CoGe/tmp/GEvo";
@@ -149,9 +151,10 @@ sub gen_body
   {
     my $form = $FORM;
     my $prefs = load_settings(user=>$USER, page=>$PAGE_NAME);
-    my $num_seqs = get_opt(params=>$prefs, form=>$form, param=>'num_seqs');
+    my $num_seqs;
+    $num_seqs = $form->param('num_seqs');#= get_opt(params=>$prefs, form=>$form, param=>'num_seqs');
     $num_seqs = $NUM_SEQS unless defined $num_seqs;
-    $MAX_SEQS = 10 if $form->param('override');
+    $MAX_SEQS = 20 if $form->param('override');
     my $message;
     if (! ($num_seqs =~ /^\d+$/) )
       {
@@ -420,6 +423,8 @@ sub run
     my $skip_hsp_overlap_search = $opts{skip_hsp_overlap};
     my $font_size = $opts{font_size};
     my $message;
+    my $gen_prot_sequence =0; #flag for generating fasta file of protein_sequence;
+    $gen_prot_sequence = 1 if $analysis_program eq "GenomeThreader";
     $cogeweb = initialize_basefile(basename=>$basefilename, prog=>"GEvo");
     my @hsp_colors;
     for (my $i = 1; $i <= num_colors($num_seqs); $i++)
@@ -516,7 +521,7 @@ sub run
 	push @gevo_link_seqs, \%gevo_link_info;
 	if ($featid || $pos)
 	  {
-	    $obj = get_obj_from_genome_db( accn=>$accn, featid=>$featid, pos=>$pos, dsid=>$dsid, rev=>$rev, up=>$drup, down=>$drdown, chr=>$chr, gstid=>$gstid, mask=>$mask, dsgid=>$dsgid );
+	    $obj = get_obj_from_genome_db( accn=>$accn, featid=>$featid, pos=>$pos, dsid=>$dsid, rev=>$rev, up=>$drup, down=>$drdown, chr=>$chr, gstid=>$gstid, mask=>$mask, dsgid=>$dsgid, gen_prot_sequence=>$gen_prot_sequence );
 	    if ($obj)
 	      {
 		#going to generalize this in parallel after all sequences to be retrieved from coge's db are specified.
@@ -714,6 +719,10 @@ sub run
     elsif ($analysis_program eq "DiAlign_2")
       {
 	($analysis_reports, $analysis_program,$message) = run_dialign (sets=>\@sets, params=>$param_string, parser_opts=>$parser_opts);
+      }
+    elsif ($analysis_program eq "GenomeThreader")
+      {
+	($analysis_reports) = run_genomethreader (sets=>\@sets, params=>$param_string, parser_opts=>$parser_opts);
       }
     elsif($analysis_program eq "blastn" || $analysis_program eq "tblastx")
       {
@@ -1121,6 +1130,7 @@ INSERT INTO image_info (id, display_id, iname, title, px_width, px_height, dsid,
     print STDERR $cogeweb->sqlitefile, "\n", $statement unless $dbh->do($statement);
     foreach my $feat ($gfx->get_feats)
       {
+	print STDERR Dumper $feat unless $feat->color;
 	if ($feat->fill)
 	  {
 	    next unless $feat->{"anchor"} || $feat->type eq "anchor";
@@ -1565,7 +1575,7 @@ sub process_hsps
 	    next;
 	  }
 	my ($accna, $accnb) = $accn1 eq $accn ? ($accn1,$accn2) : ($accn2,$accn1);
-	
+	my %feats;
 	foreach my $hsp (@{$blast->hsps})
 	  {
 	    next if defined $eval_cutoff && $hsp->eval > $eval_cutoff;
@@ -1597,13 +1607,13 @@ sub process_hsps
 		$stop = $hsp->se;
 		$seq = $hsp->salign;
 	      }
+	    next unless $start && $stop;
 	    if ($stop < $start)
 	      {
 		my $tmp = $start;
 		$start = $stop;
 		$stop = $tmp;
 	      }
-	    print STDERR "\t",$hsp->number,": $start-$stop\n" if $DEBUG;
 	    my $strand = $hsp->strand =~ /-/ ? "-1" : 1;
 	    #find features in gbobj that overlap hsp
  	    if ($color_overlapped_features && (($hsp->qe-$hsp->qb+1)>=$hsp_overlap_length || ($hsp->se-$hsp->sb+1)>=$hsp_overlap_length))
@@ -1622,11 +1632,41 @@ sub process_hsps
  		  }
  	      }
 
-	    my $f = CoGe::Graphics::Feature::HSP->new({start=>$start, stop=>$stop});
+	    my $f; 
+	    if ($hsp->link_as_gene)
+	      {
+		$f = $feats{$hsp->number} ? $feats{$hsp->number} : CoGe::Graphics::Feature::Gene->new({type=>'HSP', no_3D=>1, overlay=>2});
+		$feats{$hsp->number} = $f;
+		$f->add_segment(start=>$start, stop=>$stop);
+		#add base arrow for looks
+		if ($feats{$hsp->number."base"})
+		  {
+		    my $base_arrow = $feats{$hsp->number."base"};
+		    $base_arrow->start($start) if $start < $base_arrow->start;
+		    $base_arrow->stop($stop) if $stop > $base_arrow->stop;
+		  }
+		else
+		  {
+		    my $base_arrow = CoGe::Graphics::Feature::Gene->new({no_3D=>1, overlay=>1, order=>$track, strand=>$hsp->strand});
+		    $base_arrow->add_segment(start=>$start, stop=>$stop);
+		    $base_arrow->mag(0.5);
+		    $base_arrow->description('this is just for looks');
+		    $base_arrow->type("base_arrow");
+		    $base_arrow->color([200,200,200]);
+		    #$c->add_feature($base_arrow);
+		    push @feats, $base_arrow;
+		    $feats{$hsp->number."base"} =$base_arrow;
+		  }
+	      }
+	    else
+	      {
+		$f = CoGe::Graphics::Feature::HSP->new({start=>$start, stop=>$stop});
+	      }
+
 	    $f->color($color);
 	    $f->order($track);
 	    $f->strand($strand);
-	    $f->color_matches($color_hsp);
+	    $f->color_matches($color_hsp) if ref($f) =~/HSP/;
 #	    if ($hsp_limit)
 #	      {
 #		$f->label($hsp->number) if $hsp->number <= $hsp_limit_num;
@@ -1638,13 +1678,26 @@ sub process_hsps
 	    $f->alt(join ("-",$hsp->number,$accn1,$accn2));
 	    my ($ab_start, $ab_stop) = $reverse ? ($gbobj->stop-$stop,$gbobj->stop-$start) : ($gbobj->start+$start, $gbobj->start+$stop); #adjust hsp position to real-world coords
 	    my $desc = "<table><tr>";
-	    $desc .= join ("<tr>", "<td>HSP:<td>".$hsp->number. qq{  <span class="small">(}.$blast->query."-". $blast->subject.")</span>", "<td>Location:<td>".commify($ab_start)."-".commify($ab_stop)." (".$hsp->strand.")","<td>Match:<td>".$hsp->match." nt","<td>Length:<td>".commify($hsp->length)." nt","<td>Identity:<td>".$hsp->percent_id."%");
+	    $desc .= "<tr>"."<td>HSP:<td>".$hsp->number if $hsp->number;
+	    if ($blast->query)
+	      {
+		$desc .= qq{  <span class="small">(};
+		$desc .= $blast->query;
+		$desc .= "-";
+		$desc .= $blast->subject;
+		$desc .= ")</span>";
+	      }
+	    $desc .= "<tr><td>Location:<td>".commify($ab_start)."-".commify($ab_stop)." (".$hsp->strand.")" if $ab_start && $ab_stop && $hsp->strand;
+	    $desc .="<tr><td>Match:<td>".$hsp->match." nt" if $hsp->match;
+	    $desc .="<tr><td>Length:<td>".commify($hsp->length)." nt" if $hsp->length;
+	    $desc .= "<tr><td>Identity:<td>".$hsp->percent_id."%" if $hsp->percent_id;
 	    
 	    $desc .= "<tr><td>E_val:<td>".$hsp->pval if $hsp->pval;
 	    $desc .= "<tr><td>Score:<td>".$hsp->score if $hsp->score;
-	    $desc .= "<tr><td>Aligned Sequence:<td><span style=\"white-space: nowrap\">".$seq."</span>";
-	    $seq =~ s/-//g;
-	    $desc .= "<tr><td>Sequence:<td><span style=\"white-space: nowrap\">".$seq."</span>";
+	    $desc .= "<tr><td>Aligned Sequence:<td><span style=\"white-space: nowrap\">".$seq."</span>" if $seq;
+	    $seq =~ s/-//g if $seq;
+	    $desc .= "<tr><td>Sequence:<td><span style=\"white-space: nowrap\">".$seq."</span>" if $seq;
+	    $desc .= "<tr><td valign=top>Alignment: <td><pre>".$hsp->alignment."</pre>" unless $seq;
 	    $desc .= qq{<tr><td>cutoff:<td>$eval_cutoff} if defined $eval_cutoff;
 	    $desc .= "</table>";
 	    $f->description($desc);
@@ -1659,7 +1712,7 @@ sub process_hsps
 	    my $link = "HSPView.pl?report=$report&num=".$hsp->number."&db=".$cogeweb->basefilename.".sqlite";
 	    $link .= join ("&","&qstart=".($gbobj->start+$start-1), "qstop=".($gbobj->start+$stop-1),"qchr=".$gbobj->chromosome, "qds=". $gbobj->dataset,"qstrand=".$strand) if $gbobj->dataset;
 	    $f->link($link) if $link;
-	    $f->alignment($hsp->alignment);
+#	    $f->alignment($hsp->alignment);
 	    push @feats, $f;
 
 	    print STDERR $hsp->number,"-", $hsp->strand, $track,":", $strand,"\n" if $DEBUG;
@@ -1668,6 +1721,7 @@ sub process_hsps
 	$i++;
 	$track--;
       }
+    
     my $label_location = "top";
     my $order;
     @feats = sort{$a->strand cmp $b->strand || $a->track <=> $b->track || $a->start <=> $b->start} @feats;
@@ -1721,6 +1775,21 @@ sub process_hsps
 	    $message.= "\t".$overlap_count{$type}."/".$feat_count{$type} ." $type ($percent_overlap%) with overlapping HSPs.\n";
 	  }
 	write_log($message, $cogeweb->logfile) if $message;
+      }
+  }
+
+sub find_hsp_info #sub for retrieving hsp info when there is no query information
+  {
+    my %opts = @_;
+    my $hsp = $opts{hsp};
+    my $start = $opts{start}; #genomic region start position
+    my $stop = $opts{stop}; #genomic region stop position
+    if ($hsp->query_name =~ /fid:(\d+)/) #we have a feature id in the query name -- HSP was generated by a feature sequence and not a genomic region!
+      {
+	my $fid = $1;
+	my $feat = $coge->resultset('Feature')->find($fid);
+	$hsp->query_start($feat->start-$start+1);
+	$hsp->query_stop($feat->stop-$start+1);
       }
   }
 
@@ -1803,6 +1872,7 @@ sub get_obj_from_genome_db
     my $gstid = $opts{gstid}; #genomic sequence type database id
     my $mask = $opts{mask}; #need this to check for seq file
     my $dsgid = $opts{dsgid}; #dataset group id
+    my $gen_prot_sequence = $opts{gen_prot_sequence} || 0; #are we generating a protein sequence file too?
     if ($dsgid)
       {
 	my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
@@ -1921,6 +1991,7 @@ sub get_obj_from_genome_db
     $feats{$feat->id}=$feat if $feat;
 
     my $t5 = new Benchmark;
+    my $prot_sequence;
     foreach my $f (values %feats)
       {
 	my $name;
@@ -1961,6 +2032,10 @@ sub get_obj_from_genome_db
 			   annotation=>$anno,
 			   force=>1, #force loading of anchor in case it is outside of specified sequence range
 			  );
+	if ($gen_prot_sequence && $f->type->name eq "CDS")
+	  {
+	    $prot_sequence .= $f->fasta(prot=>1, col=>0, add_fid=>1);
+	  }
       }
     if ($pos)
       {
@@ -1973,6 +2048,17 @@ sub get_obj_from_genome_db
 				      },
 			  force=>1, #force loading of anchor in case it is outside of specified sequence range
 			 );
+      }
+    if ($gen_prot_sequence)
+      {
+	my $prot_file = $seq_file.".prot";
+	my $tmp;
+	($tmp, $prot_file) = check_taint($prot_file);
+
+	open (OUT, ">$prot_file");
+	print OUT $prot_sequence if $prot_sequence;
+	close OUT;
+	$obj->other_stuff($prot_file);
       }
     if ($new_seq)
       {
@@ -2394,6 +2480,83 @@ sub run_dialign
     return (\@reports,$program_ran,$error_message);
   }
   
+
+sub run_genomethreader
+  {
+    my %opts = @_;
+    my $sets = $opts{sets};
+    my $params = $opts{params};
+    my $parser_opts = $opts{parser_opts};
+    my $matrix = $opts{parser_opts}{matrix} || "/opt/apache/CoGe/data/blast/matrix/aa/BLOSUM62";
+    my @reports;
+    my $total_runs = number_of_runs($sets)*2; #need to run this in both directions for each genomic and protein sequence
+    my $count = 1;
+    my $pm = new Parallel::ForkManager($MAX_PROC);
+    for (my $i=0; $i<scalar @$sets; $i++)
+      {
+	for (my $j=0; $j<scalar @$sets; $j++)
+	  {#need to run this in both directions using each as the genome and protein sequence
+	    next unless $j > $i;
+	    my $seqfile1 = $sets->[$i]->{file};
+	    my $protfile1 = $sets->[$i]->{obj}->other_stuff;
+	    my $seqfile2 = $sets->[$j]->{file};
+	    my $protfile2 = $sets->[$j]->{obj}->other_stuff;
+	    next unless -r $seqfile1 && -r $seqfile2; #make sure these files exist
+	    next unless $sets->[$i]{reference_seq} || $sets->[$j]{reference_seq};
+	    my ($accn1, $accn2) = ($sets->[$i]{accn}, $sets->[$j]{accn});
+#	    foreach my $item ({genomic=>$seqfile1, protein=>$protfile2},{genomic=>$seqfile2, protein=>$protfile1})
+	    foreach my $item ({genomic=>$seqfile2, protein=>$protfile1})
+	      {
+		my ($tempfile) = $cogeweb->basefile."_".($sets->[$i]->{seq_num})."-".($sets->[$j]->{seq_num}).".genomethreader$count";
+		my $command = $GENOMETHREADER;
+		$command .= " -genomic ".$item->{genomic};
+		$command .= " -protein ". $item->{protein};
+		$command .= " -scorematrix $matrix";
+		$command .= " ".$params if $params;
+		my $x = "";
+		($x,$command) = check_taint( $command );
+		if ( $DEBUG ) {
+		  print STDERR "About to execute...\n $command\n";
+		}
+		unless ($x)
+		  {
+		    next;
+		  }
+		$command .= " > ".$tempfile;
+		write_log("running ($count/$total_runs) ".$command, $cogeweb->logfile);
+		#time for execution
+		`$command`;
+		system "chmod +rw $tempfile";
+		my $report = new CoGe::Accessory::GenomeThreader_report({file=>$tempfile, %$parser_opts}) if -r $tempfile;
+		#queries are protein sequences. need to convert their positions to relative genomic coordinates
+		#is the query a protein sequence?  if so, the query name should contain the fid tag
+		foreach my $hsp (@{$report->hsps})
+		  {
+		    if ($hsp->query_name =~ /fid/)
+		      {
+			find_hsp_info(hsp=>$hsp, start=>$sets->[$i]->{obj}->start, stop=>$sets->[$i]->{obj}->stop);
+		      }
+		  }
+	    
+
+		my @tmp = ($tempfile, $accn1, $accn2);
+		if ($report)
+		  {
+		    push @tmp, $report
+		  }
+		else
+		  {
+		    push @tmp, "no results from comparing $accn1 and $accn2 with LAGAN";
+		  }
+		push @reports, \@tmp;
+		$count++;
+	      }
+	  }
+	$pm->wait_all_children;
+      }
+    return \@reports;
+  }
+
 sub get_substr
   {
     my %opts = @_;
@@ -2770,6 +2933,7 @@ sub algorithm_list
 		 "DiAlign_2"=>"DiAlign_2: Glocal Alignment",
 		 "LAGAN"=>"Lagan: Global Alignment",
 		 "tblastx"=>"TBlastX: Protein Translation",
+		 "GenomeThreader"=>"GenomeThreader - Spliced Gene Alignments",
 		 "-=None=-"=>"-=None=-",
 		 );
     my @programs = sort {lc $a cmp lc $b} keys %progs;
@@ -3323,6 +3487,7 @@ sub get_opt
     return $opt;
       
   }
+
 sub get_org_info
   {
     my %opts = @_;
@@ -3355,7 +3520,7 @@ sub get_org_info
 	$gst = $dsg->type if $dsg;
 	$dsgid = $dsg->id if $dsg;
       }
-    return "<span class=\"small alert\">Dataset group was not found</span>"unless $dsg;
+    return "<span class=\"small alert\">Dataset group was not found</span>".qq{<input type="hidden" id="dsgid$num">} unless $dsg;
     my $dsg_menu = qq{<span class="small">Genome: </span><SELECT name="dsgid$num" id="dsgid$num">};
     foreach my $item (sort {$b->version <=> $a->version || $a->type->id <=> $b->type->id} $dsg->organism->dataset_groups)
       {
