@@ -228,6 +228,7 @@ sub get_fids
     my @ids;
     if (defined $start)
       {
+
 	@ids = map{$_->id} $coge->get_features_in_region(dataset=>$dsid, chr=>$chr, start=>$start, stop=>$stop);
       }
     else
