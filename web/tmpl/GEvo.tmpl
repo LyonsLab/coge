@@ -431,6 +431,10 @@ else if (alignment == 'blastn')
   animate_section("#blast_options", "slideDown");
   animate_section(".blastn_options", "slideDown");
  }
+else if (alignment == 'GenomeThreader')
+ {
+  animate_section("#GenomeThreader_options", "slideDown");
+ }
 
  }
 
@@ -1026,6 +1030,12 @@ function update_line_width(val)
 <b>Note</b>: Using Translation Increases CDS Alignment Accuracy at Cost of Speed - Not Recommended for Sequences > 10 kb
 </DIV>
 
+<div id="GenomeThreader_options" class="small algo_options" style="display: none">
+ <table class="small"><tr>
+  <td><a class="link" href="http://www.genomethreader.org/" taget=_new>Genome Threader</a> will find splice alignments of protein sequences to a genomic sequence.</td>
+ </table>
+</div>
+
 
 <TABLE class="small anchor algo_options" style="display: none">
  <TR align=left>
@@ -1048,6 +1058,7 @@ function update_line_width(val)
   <td>Minimum HSP length for finding overlapped features:
   <td><input class="backbox" type="text" name="hsp_overlap_length" id="hsp_overlap_length" tabindex="1" size="5" value="50"/></TD>
  </table>
+
 </div> <!-- end tabs-2 div -->
 
 
