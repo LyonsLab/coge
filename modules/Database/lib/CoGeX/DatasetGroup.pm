@@ -695,6 +695,7 @@ sub gff
     $output .= "##".$self->organism->name; 
     $output .= ": ".$self->organism->description if $self->organism->description;
     $output .= " (v".$self->version.", dsgid".$self->id.")\n";
+    print $output if $print;
     foreach my $ds ($self->datasets)
       {
 	$output .= $ds->gff(name_re=>$name_re, debug=>$debug, print=>$print);
