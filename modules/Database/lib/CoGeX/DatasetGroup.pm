@@ -668,6 +668,43 @@ sub fasta
 
 ################################################ subroutine header begin ##
 
+=head2 gff
+
+ Usage     : $dsg->gff(print=>1)
+ Purpose   : generating a gff file for a dataset_group from all the datasets it contains
+ Returns   : a string
+ Argument  : name_re     =>    regular expression for only displaying features containing a name that matches
+             print       =>    print the gff file as the lines are retrieved
+ Throws    : 
+ Comments  : 
+
+See Also   : dataset->gff
+
+=cut
+
+################################################## subroutine header end ##
+
+sub gff
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $name_re = $opts{name_re};
+    my $debug = $opts{debug};
+    my $print = $opts{print};
+    my $output; #store the goodies
+    $output .= "##".$self->organism->name; 
+    $output .= ": ".$self->organism->description if $self->organism->description;
+    $output .= " (v".$self->version.", dsgid".$self->id.")\n";
+    foreach my $ds ($self->datasets)
+      {
+	$output .= $ds->gff(name_re=>$name_re, debug=>$debug, print=>$print);
+      }
+    return $output;
+  }
+
+
+################################################ subroutine header begin ##
+
 =head2 trans_type
 
  Usage     : 
