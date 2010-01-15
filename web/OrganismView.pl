@@ -339,14 +339,13 @@ sub get_dataset_group_info
     $gc = $gc ? $gc : qq{  <div style="float: left; text-indent: 1em;" id=datasetgroup_gc class="link" onclick="\$('#datasetgroup_gc').removeClass('link'); get_gc_for_chromosome(['args__dsgid','dsg_id','args__gstid', 'gstid'],['datasetgroup_gc']);">  Click for percent GC content</div><br/>};
     $html .= "$gc</td></tr>";
 
-
     $html .= qq{
 <tr><td>Noncoding sequence:<td><div id=dsg_noncoding_gc class="link" onclick = "gen_data(['args__loading...'],['dsg_noncoding_gc']);\$('#dsg_noncoding_gc').removeClass('link');  get_gc_for_noncoding(['args__dsgid','dsg_id','args__gstid', 'gstid'],['dsg_noncoding_gc']);">Click for percent GC content</div></td></tr> 
 } if $total_length;
     my $seq_file = $dsg->file_path;
     $seq_file =~ s/\/opt\/apache2?//i;
     $html .= qq{<TR><TD colspan=2><a class=link href='$seq_file' target="_new">Download sequence in Fasta format</a></td></tr>};
-
+    $html .= qq{<tr><td colspan=2><a href='coge_gff.pl?dsgid=$dsgid' target=_new>Download GFF file</a></td></tr>};
     my $feat_string = qq{
 <tr><td><div id=dsg_feature_count class="small link" onclick="get_feature_counts(['args__dsgid','dsg_id', 'args__gstid','gstid'],['feature_count_data']);" >Click for Features</div>};
     $html .= $feat_string;
@@ -856,7 +855,6 @@ sub get_gc_for_chromosome
       }
     my $total = $gc+$at+$n;
     return "error" unless $total;
-    print STDERR join ("\t", "chromosome", $total, $gc, $at, $n),"\n";
     my $results = "&nbsp(GC: ".sprintf("%.2f",100*$gc/$total)."%  AT: ".sprintf("%.2f",100*$at/$total)."%  N: ".sprintf("%.2f",100*$n/$total)."%)" if $total;
     return $results;
   }
@@ -932,7 +930,6 @@ sub get_gc_for_noncoding
       }
     my $total = $gc+$at+$n;
     return "error" unless $total;
-    print STDERR join ("\t", $total, $gc, $at, $n),"\n";
     return commify($total)." bp"."&nbsp(GC: ".sprintf("%.2f",100*$gc/($total))."%  AT: ".sprintf("%.2f",100*$at/($total))."% N: ".sprintf("%.2f",100*$n/($total))."%)";
 
 
