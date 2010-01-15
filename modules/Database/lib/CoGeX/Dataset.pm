@@ -835,7 +835,16 @@ sub gff
 	  my ($names) = join (",", @feat_names);
 	  my $attrs = "ID=$count";
 	  $attrs .= ";Name=$names" if $names;
-	  my $annos =join (",", map {$_->annotation_type->name.": ".$_->annotation} $feat->annotations);
+	  my @annos;
+	  foreach my $anno ($feat->annotations)
+	    {
+	      next unless defined $anno->annotation;
+	      my $tmp;
+	      $tmp .= $anno->annotation_type->name.": " if $anno->annotation_type && $anno->annotation_type->name;
+	      $tmp .= $anno->annotation;
+	      push @annos, $tmp;
+	    }
+	  my $annos = join (",", @annos);
 	  my $gstr = join("\t", ($chr, 'coge', $feat->feature_type->name, $feat->start, $feat->stop, ".", $strand, ".", $attrs));
 	  $gstr .= ";Note=$annos" if $annos;
 	  if($seen{$gstr}){ next; }
@@ -864,8 +873,17 @@ sub gff
 	    my $mrna_names = join (",", $f->names);
 	    my $mrna_attrs = "Parent=$parent";
 	    $mrna_attrs .= ";Name=$mrna_names" if $mrna_names;
-	    my $mrna_annos =join (",", map {$_->annotation_type->name.": ".$_->annotation} $f->annotations);
-	    foreach my $loc ($f->locations()){
+	    my @tannos;
+	    foreach my $anno ($f->annotations)
+	      {
+		next unless defined $anno->annotation;
+		my $tmp;
+		$tmp .= $anno->annotation_type->name.": " if $anno->annotation_type && $anno->annotation_type->name;
+		$tmp .= $anno->annotation;
+		push @tannos, $tmp;
+	      }
+	    my $mrna_annos = join (",", @tannos);
+	    foreach my $loc ($f->locations({},{'order_by'=>'start'})){
 	      next if $loc->start > $feat->stop || $loc->stop < $feat->start; #outside of genes boundaries;  Have to count it as something else
 	      my $gstr = join("\t", ($f->chr, 'coge', $f->feature_type->name, $loc->start, $loc->stop, ".", $strand, ".", $mrna_attrs));
 	      $gstr.=";Note=$mrna_annos" if $mrna_annos;
@@ -893,8 +911,17 @@ sub gff
 	    my $other_names = join (",", $f->names);
 	    my $other_attrs = "Parent=$parent";
 	    $other_attrs .= ";Name=$other_names" if $other_names;
-	    my $other_annos =join (",", map {$_->annotation_type->name.": ".$_->annotation} $f->annotations);
-	    foreach my $loc ($f->locations()){
+	    my @tannos;
+	    foreach my $anno ($f->annotations)
+	      {
+		next unless $anno->annotation;
+		my $tmp;
+		$tmp .= $anno->annotation_type->name.": " if $anno->annotation_type && $anno->annotation_type->name;
+		$tmp .= $anno->annotation;
+		push @tannos, $tmp;
+	      }
+	    my $other_annos = join (",", @tannos);
+	    foreach my $loc ($f->locations({},{'order_by'=>'start'})){
 	      next if $loc->start > $feat->stop || $loc->stop < $feat->start; #outside of genes boundaries;  Have to count it as something else
 	      my $gstr = join("\t", ($f->chr, 'coge', $f->feature_type->name, $loc->start, $loc->stop, ".", $strand, ".", $other_attrs));
 	      $gstr.=";Note=$other_annos" if $other_annos;
