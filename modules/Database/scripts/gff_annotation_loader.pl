@@ -60,13 +60,19 @@ unless ($ds)
     exit;
   }
 print "Working on dataset: ", $ds->name. " (".$ds->id.")\n";
+#some defaults to check for in names and annotations
 push @names, "mRNA" unless @names;
+push @anno_names, "Description";
+push @anno_names, "biotype";
+
+my %anno_names = map {$_,1} @anno_names if @anno_names;
+my %check_names = map {$_,1} @names;
+my %skip_types = map {$_,1} @skip_types;
 
 warn "-go flag is not true, nothing will be added to the database.\n" unless $GO;
 my %data;
 my %annos;
 my %feat_types; #store feature type objects
-my %anno_names = map {$_,1} @anno_names if @anno_names;
 my ($anno_type) = $coge->resultset('AnnotationType')->search({name=>"note"}); #generic annotation type
 my $prev_type;
 while (<>)
@@ -92,48 +98,23 @@ while (<>)
       {
 	my $tmp;
 	$item =~ s/"//g;
+	$item =~ s/^\s+//;
+	$item =~ s/\s+$//;
 	my ($type, $info) = $item =~ /=/ ? split (/=/,$item,2) : (split / /,$item,2);
-	foreach my $test (@skip_types)
+	next if $skip_types{$type};
+	if ($check_names{$type})
 	  {
-	    next if $type eq $test;
-	  }
-	if ($info)
-	  {
-	    foreach my $namecheck (@names)
+	    $names{$info} =1;
+	    $name = $info unless $name;
+	    if ($info =~ /\.\d+$/)
 	      {
-		$type = "name" if $type eq $namecheck;
-	      }
-	    if ($type eq "name")
-	      {
-		$tmp = $info;
-	      }
-	    next if $type eq "exonNumber";
-	    next if $type eq "transcriptId";
-	    next if $type eq "proteinId";
-	    next if $tmp && $tmp =~ /intron/i;
-	    next if $tmp && $tmp =~ /exon/i;
-	    next if $tmp && $tmp =~ /cds/i;
-	    next if $tmp && $tmp =~ /utr/i;
-	    $name = $tmp unless $name;
-	    #	$name .="_".$line[1] if $add_type_to_name && $name && $name !~ /$line[1]$/;
-	    $names{$tmp}=1 if $tmp;
-	    $annos{$name}{$info}=1 if $type eq "Description";
-	    print join ("\t",@line),"\n" if ($type eq "biotype" && !$name);
-	    $annos{$name}{$info}=1 if $type eq "biotype";
-#	    print join ("\t", $name, $info, $type),"\n";
-	    $annos{$name}{"$type: $info"}=1 if $anno_names{$type};
-	    if ($tmp && $tmp =~ /\.\d$/)
-	      {
+		my $tmp = $info;
 		$tmp =~ s/\.\d$//;
-		$names{$tmp}=1 if $tmp;
+		$names{$tmp}=1;
 	      }
-	  }
-	else
-	  {
-	    $name = $type;
-	    $names{$name} =1;
 	  }
 	next unless $name; #No name, don't know what to do!
+	$annos{$name}{"$type: $info"}=1 if $anno_names{$type};
       }
     next unless $name; #No name, don't know what to do!
     my $strand = $line[6] =~ /-/ ? -1 :1;
@@ -243,13 +224,13 @@ foreach my $source (keys %data)
 							     name=>$tmp,
 							     #				   feature_id=>$featid,
 							    }) if $GO ;
-	      }
-	    if ($DEBUG && $annos{$name})
-	      {
-		foreach my $anno (keys %{$annos{$name}})
+		if ($annos{$tmp})
 		  {
-		    print "Adding annotation $anno\n" if $DEBUG;
-		    my $annoo = $feat->add_to_annotations({annotation=>$anno, annotation_type_id => $anno_type->id}) if $GO && $anno;
+		    foreach my $anno (keys %{$annos{$tmp}})
+		      {
+			print "Adding annotation $anno\n" if $DEBUG;
+			my $annoo = $feat->add_to_annotations({annotation=>$anno, annotation_type_id => $anno_type->id}) if $GO && $anno;
+		      }
 		  }
 	      }
 	  }
