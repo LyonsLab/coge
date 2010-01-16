@@ -306,9 +306,10 @@ sub get_genomes_for_genomeprj
       my $gid = shift;
       my $elink = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/elink.fcgi?db=genome&dbfrom=genomeprj&id=";
       my $entry = get($elink."$gid");
+      my @ids;
+      return \@ids unless $entry;
       my $xml = XMLin($entry);
       my $items = ref ($xml->{LinkSet}{LinkSetDb}{Link}) =~ /array/i ? [@{$xml->{LinkSet}{LinkSetDb}{Link}}] : [$xml->{LinkSet}{LinkSetDb}{Link}];
-      my @ids;
       foreach my $item (@$items)
 	{
 	  my $id = $item->{Id};
