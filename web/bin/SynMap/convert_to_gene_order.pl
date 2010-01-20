@@ -24,6 +24,7 @@ my $order2 = $dsgid1 == $dsgid2 && $ftid1 == $ftid2 ? $order1 : get_gene_order(d
 $order1 = get_order_from_input(file=>$input_file, set=>1) unless $order1;
 $order2 = get_order_from_input(file=>$input_file, set=>2) unless $order2;
 #print Dumper $order1, $order2;
+my %seen;
 open (IN, $input_file);
 while (<IN>)
   {
@@ -58,7 +59,8 @@ while (<IN>)
 	$line[7] = $order2->{$item2[0]}{$item2[1]}{$item2[2]};
 	$line[7] = $order2->{$item2[0]}{$item2[2]}{$item2[1]} unless $line[7];
       }
-    print join "\t", @line,"\n";
+    print join "\t", @line,"\n" unless $seen{$line[2]}{$line[6]};
+    $seen{$line[2]}{$line[6]}=1;
   }
 close IN;
 
