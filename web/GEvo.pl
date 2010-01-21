@@ -86,28 +86,58 @@ $ajax{dataset_search} = \&dataset_search; #override this method from Accessory::
 $ajax{feat_search} = \&feat_search; 
 
 
-my $pj = new CGI::Ajax(
-    run=>\&run,
-    loading=>\&loading,
-    merge_previous=>\&merge_previous,
-    add_seq=>\&add_seq,
-    get_file=>\&get_file,
-    gen_go_run=>\&gen_go_run,
-    gen_hsp_colors =>\&gen_hsp_colors,
-    save_settings_gevo=>\&save_settings_gevo,
-    reset_settings_gevo=>\&reset_settings_gevo,
-    check_address_validity=>\&check_address_validity,
-    dataset_group_search=>\&dataset_group_search,
-    get_tiny_url=>\&get_tiny_url,
-    add_to_user_history=>\&add_to_user_history,
-    %ajax,
+my %FUNCTION=(
+	      run=>\&run,
+	      loading=>\&loading,
+	      merge_previous=>\&merge_previous,
+	      add_seq=>\&add_seq,
+	      get_file=>\&get_file,
+	      gen_go_run=>\&gen_go_run,
+	      gen_hsp_colors =>\&gen_hsp_colors,
+	      save_settings_gevo=>\&save_settings_gevo,
+	      reset_settings_gevo=>\&reset_settings_gevo,
+	      check_address_validity=>\&check_address_validity,
+	      dataset_group_search=>\&dataset_group_search,
+	      get_tiny_url=>\&get_tiny_url,
+	      add_to_user_history=>\&add_to_user_history,
+	      get_image_info => \&get_image_info,
+	      %ajax,
     );
+my $pj = new CGI::Ajax(%FUNCTION);
 $pj->JSDEBUG(0);
 $pj->DEBUG(0);
 #$pj->js_encode_function('escape');
-print $pj->build_html($FORM, \&gen_html);
+if ($FORM->param('jquery_ajax'))
+  {
+    dispatch();
+  }
+else
+  {
+    print $pj->build_html($FORM, \&gen_html);
+  }
+#print $pj->build_html($FORM, \&gen_html);
 
 #print $FORM->header;gen_html();
+sub dispatch
+{
+    my %args = $FORM->Vars;
+    my $fname = $args{'fname'};
+    if($fname)
+    {
+        #my %args = $cgi->Vars;
+        #print STDERR Dumper \%args;
+        if($args{args}){
+            my @args_list = split( /,/, $args{args} );
+            print $FORM->header, $FUNCTION{$fname}->(@args_list);
+        }
+        else{
+            print $FORM->header, $FUNCTION{$fname}->(%args);
+        }
+    }
+#    else{
+#       print $FORM->header, gen_html();
+#    }
+}
 
 sub loading
   {
@@ -489,7 +519,7 @@ sub run
 	my $gbstart = $opts{"gbstart$i"};
 	$gbstart = 1 unless defined $gbstart;
 	my $gblength = $opts{"gblength$i"};
-
+	$gblength =~ s/\s+//g;
 	my $dirseq = $opts{"dirseq$i"};
 	my $dirstart = $opts{"dirstart$i"};
 	my $dirlength = $opts{"dirlength$i"};
@@ -542,10 +572,11 @@ sub run
  	    if ($obj)
 	      {
 		#add an anchor
+		my $anchor_stop = $dirlength ?  $dirlength : length($obj->sequence)-$dirstart+1;
 		$obj->add_feature(
 				  type=>"direct sequence submission",
 #				  location=>(1-$dirstart*2+1)."..".(1-$dirstart*2+1),
-				  location=>(1-$dirstart+1)."..".(length($obj->sequence)-$dirstart+1),
+				  location=>(1-$dirstart+1)."..".$anchor_stop,
 
 				  strand=>1,
 				  qualifiers=>{
@@ -596,9 +627,10 @@ sub run
 	    if ($obj->accn)
 	      {
 		#add an anchor
+		my $anchor_stop = $gblength ?  $gblength : length($obj->sequence)-$gbstart+1;
 		$obj->add_feature(
 				  type=>"genbank entry",
-				  location=>(1-$gbstart+1)."..".(length($obj->sequence)-$dirstart+1),
+				  location=>(1-$gbstart+1)."..".$anchor_stop,
 				  strand=>1,
 				  qualifiers=>{
 					       type=>"anchor",
@@ -3727,3 +3759,15 @@ sub add_to_user_history
 	'note'=>$opts{note},
 			}); 
 }
+sub get_image_info
+  {
+    my %opts = @_;
+    my $idx = $opts{id};
+    my $basefilename = $opts{basename};
+    return ("no opts specified") unless ($idx && $basefilename);
+    $cogeweb = initialize_basefile(basename=>$basefilename, prog=>"GEvo"); 
+    my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
+    my $query = qq{select * from image_info where id = $idx;};
+    my ($id, $display_id, $name, $title, $px_witdth, $bpmin, $bpmax, $dsid, $chromosome, $rc, $px_height) = $dbh->selectrow_array($query);
+    return ("$bpmin||$bpmax");
+  }
