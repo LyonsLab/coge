@@ -119,8 +119,6 @@
         var loc = '<TMPL_VAR NAME=LOC>';
         var zoom = '<TMPL_VAR NAME=ZOOM>';
         var gstid = '<TMPL_VAR NAME=GSTID>';
-
-	zoom++;
         function init(){
             map = new OpenLayers.GenomeBrowser( $('#map')[0] , 
             {   
@@ -129,7 +127,7 @@
                  units     :'bp',
                  tileSize: new OpenLayers.Size(768, size),
 //                 resolutions:[4096, 1024,256,64,16,4,1,0.25, 0.125, 0.0625, 0.03125, 0.015625],
-                 resolutions:[4096, 2048, 1024,512,256,128,64,32,16,8,4,2,1, 0.5, 0.25, 0.125, 0.0625, 0.032125, 0.015625],
+                 resolutions:[4096, 2048, 1024,512,256,128,64,32,16,8,4,2,1, 0.5, 0.25, 0.125, 0.0625, 0.032125, 0.015625, 0.011711875],
                   controls: [new OpenLayers.Control.MouseDefaults()]
             });
             layers = [
