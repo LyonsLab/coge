@@ -115,12 +115,11 @@ function launch_seqview(dsgid, chr, dsid)
  }
 
 
-function launch_viewer (dsgid, chr, dsid, gstid) {
+function launch_viewer (dsgid, chr) {
  x = $('#x').val();
  z = $('#z').val();
- if (!gstid) {gstid = $('#gstid').val();}
  if (z > 12) {z=12;}
- link =  "GenomeView.pl?z="+z+"&x="+x+"&dsgid="+dsgid+"&chr="+chr+"&dsid="+dsid+"&gstid="+gstid;
+ link =  "GenomeView.pl?z="+z+"&x="+x+"&dsgid="+dsgid+"&chr="+chr;
  window.open(link);
 }
 function timing(val){
