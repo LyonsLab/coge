@@ -110,7 +110,6 @@ function color_dialog_setter(me) {
 	 rgb = rgb.replace(/^rgb\((.+)\)$/,'$1')
 	 var myArray = new Array;
 	 myArray=rgb.split(",");
-	// console.log(myArray);
 	 $("#swatch").css("background-color", "rgb("+myArray[0]+","+myArray[1]+","+myArray[2]+")");
 	 $("#red").slider("value", myArray[0]);
          $("#green").slider("value", myArray[1]);
@@ -139,8 +138,6 @@ Gobe.set_genespace= function (updown, idx, value, length, anchorlength){
     $('#'+eid).val(value);
     value = value*-1;
     if (value < 1) {value = 1;}
-//    if (value > length) {value = length;}
-
     if (updown == "up") 
      {
       var orig_gbstart = parseFloat($('#gbstart'+idx).val());
@@ -161,13 +158,32 @@ Gobe.set_genespace= function (updown, idx, value, length, anchorlength){
      }
     else if (updown == "down")
      {
-       var tmp = (anchorlength-value+1)-parseFloat($('#gbstart'+idx).val());
-       if (tmp > length){tmp=length;}
-       $('#gblength'+idx).val(tmp);
+
+       gblength = length-value-($('#gbstart'+idx).val()-pageObj.orig_gbstarts[idx]);
+       $('#gblength'+idx).val(gblength);
+
        var tmp = (anchorlength-value+1)-parseFloat($('#dirstart'+idx).val());
-       $('#dirlength'+idx).val(tmp);    
+       dirlength = length-value-($('#dirstart'+idx).val()-pageObj.orig_dirstarts[idx]);
+       $('#dirlength'+idx).val(dirlength);    
      }
 };
+
+function return_image_info (id) {
+  //this function is not used.  Here to test using jquery.ajax calls
+  pos="test";
+  $.ajax({
+    data: {
+           async: false,
+    	   jquery_ajax: 1,
+	   fname: 'get_image_info', 
+           id: id, 
+           basename: pageObj.basefile
+	  },
+    success: function (pos) {
+           console.log(pos);
+       }
+  });
+ }
 
 Gobe.handle_html= function (html) {
   html = "<span class='ui-button ui-state-default ui-corner-all' id='clear_lines' onclick='Gobe.clear()'>Clear Connectors</span><br>"+html;
@@ -206,6 +222,11 @@ $(document).ready(function(){
  	 if(window.location.toString().indexOf('autogo') != -1){
      	  jQuery('#go').trigger('click');
  	 }
+   $.ajaxSetup({
+     type: "GET",
+     url: "/CoGe/GEvo.pl",
+     cache: false,
+   });
 set_up_tabs();
 set_up_sort();
  });
@@ -460,7 +481,13 @@ function handle_results (html,w, h, img_base, n_images, gevo_link, message) {
         };
     swfobject.embedSWF("/CoGe/gobe/flash/gobe.swf?<TMPL_VAR NAME="GOBE_VERSION">", "flashcontent", width, height, "9.0.0"
                 , "/CoGe/gobe/static/swfobject/expresssinstall.swf", flashVars, params, {}, function(){Gobe.swf=Gobe.get_movie();});
-
+    for (i=1;i<=$('#num_seqs').val();i++)
+     {
+      if (!pageObj.orig_gbstarts) {pageObj.orig_gbstarts=[];}
+      pageObj.orig_gbstarts[i]=$('#gbstart'+i).val();
+      if (!pageObj.orig_dirstarts) {pageObj.orig_dirstarts=[];}
+      pageObj.orig_dirstarts[i]=$('#dirstart'+i).val();
+     }
    }
   else
   {
