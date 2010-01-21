@@ -62,7 +62,7 @@ sub gen_body
     my $chr = $form->param('chr') if $form->param('chr');
     my $dsid = $form->param('ds') if $form->param('ds');
     $dsid = $form->param('dsid') if $form->param('dsid');
-    my $z = $form->param('z') if $form->param('z');
+    my $z = $form->param('z') if defined ($form->param('z'));
     my $loc = $form->param('x') if $form->param('x');
     my $gstid = $form->param('gstid') if $form->param('gstid');
     my $fid = $form->param('fid') if $form->param('fid');
@@ -116,7 +116,8 @@ sub gen_body
 	    push @feat_types, $coge->resultset('FeatureType')->find($ftid);
 	  }
     $loc = 1 unless $loc;
-    $z=2 unless $z;
+    $z=5 unless defined $z;
+    $z = 0 if $z < 0;
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GenomeView.tmpl');
     #set layers
     foreach my $ft (@feat_types)
