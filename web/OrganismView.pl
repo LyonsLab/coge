@@ -526,9 +526,9 @@ sub get_dataset_chr_info
 	$viewer .= "<table class=\"small backbox\">";
 	$viewer .= "<tr><td nowrap class = \"ital\">Starting location: ";
 	$viewer .= qq{<td><input type="text" size=10 value="20000" id="x">};
-	$viewer .= qq{<tr><td class = "ital">Zoom level:<td><input type = "text" size=10 value ="5" id = "z">};
+	$viewer .= qq{<tr><td class = "ital">Zoom level:<td><input type = "text" size=10 value ="6" id = "z">};
 	$viewer .= "</table>";
-	$viewer .= qq{<span class='ui-button ui-button-icon-left ui-state-default ui-corner-all' onClick="launch_viewer('$dsgid', '$chr', '$dsid')"><span class="ui-icon ui-icon-newwin"></span>Launch Genome Viewer</span>};
+	$viewer .= qq{<span class='ui-button ui-button-icon-left ui-state-default ui-corner-all' onClick="launch_viewer('$dsgid', '$chr')"><span class="ui-icon ui-icon-newwin"></span>Launch Genome Viewer</span>};
       }
     my $seq_grab;
     if (defined $chr)
