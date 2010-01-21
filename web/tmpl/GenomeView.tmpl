@@ -203,6 +203,17 @@
             map.addLayer(gbox);
 
             genes.setVisibility(<TMPL_VAR NAME="GENES">);
+            /*
+            if(ds == '582'){
+                OpenLayers.IMAGE_RELOAD_ATTEMPTS = 3;
+                OpenLayers.Util.onImageLoadErrorColor = "transparent";
+                var bs = ['http://128.32.8.28/rice_count/', 'http://kosh-370-311c-001-d.pmb.berkeley.edu/rice_count/'];
+                map.addLayer( new OpenLayers.Layer.Genomic( "copy count" , bs
+                              ,{'seqid': chr }
+                               ,{isBaseLayer:false} 
+                                            ));
+
+            }*/
 
             if(ds == '34474' || ds == '39598'){
                 // avoid pink tiles
