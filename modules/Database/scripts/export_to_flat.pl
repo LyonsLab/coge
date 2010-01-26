@@ -5,26 +5,24 @@ use Data::Dumper;
 use CoGeX;
 use Getopt::Long;
 
-my ($coge, $fasta_name, $name_re, @datasets, $debug);
+my ($coge, $fasta_name, $name_re, @datasets, $debug, $dataset_group);
 
 GetOptions(
 	   "fasta_name=s" => \$fasta_name,
 	   "name_re=s"=>\$name_re,
-	   "dataset|ds=s"=>\@datasets,
+	   "dataset_group|dsg=s"=>\$dataset_group,
 	   "debug" => \$debug,
 	   );
-  unless (@datasets)
+  unless ($dataset_group)
   {
     print qq#
 Welcome t0 $0
 
-Usage:  $0 -dataset 24 -dataset NC_000001  -name_search regex_search -fasta_name output.faa
-    or for multiple datasets
-        $0 -ds 40504 -ds 40500 -ds 40495 -ds 40499 -ds 40503 -fasta_name arabidopsis_v9.fasta -name_re 'AT\\dG\\d{5}\$' > arabidopsis_v9.gff
+Usage:  $0 perl export_to_flat.pl -dsg 8120 -fasta_name brachy_v1.fasta > brachy_v1.gff
 
 Options:
 
- -dataset | -ds                        Datasets to retrieve, either by name or by database id
+ -dataset_group | -dsg                 Datasets to retrieve, either by name or by database id
  -name_re                          -n  OPTIONAL: Regular expression to search for specific feature names
  -fasta_name                           OPTIONAL:  create a fasta file of the sequences
  -debug                                OPTIONAL:  print debugging messages
@@ -35,6 +33,8 @@ Options:
 my $connstr = 'dbi:mysql:coge:homer:3306';
 $coge = CoGeX->connect($connstr, 'cnssys', 'CnS');
 
+my $DSG = $coge->resultset('DatasetGroup')->resolve($dataset_group);
+@datasets = map { $_->dataset_id } $DSG->datasets;
 
 my $chrs = get_locs(\@datasets);
 my $schrs = get_sequence(ds=>\@datasets, file_name=>$fasta_name) if $fasta_name;
