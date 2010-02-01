@@ -75,6 +75,7 @@ use strict;
 use Carp;
 use Cwd;
 use base qw(Class::Accessor);
+use Data::Dumper;
 
 =head2 Default Values
 
@@ -205,11 +206,11 @@ INCOMPLETE DOCUMENTATION OF ALL METHODS
 
 BEGIN 
   { 
-    use vars qw($VERSION @ISA %VALIDVALUES $MINNAMELEN $PROGRAMNAME $PROGRAM);
+    use vars qw($VERSION @ISA %VALIDVALUES $MINNAMELEN $CODEML);
     $VERSION = '0.1';
-    __PACKAGE__->mk_accessors(qw(program_name program_dir executable save_tempfiles outfile_name tempdir alignment tree branchLengths error_string results));
+    __PACKAGE__->mk_accessors(qw(codeml results debug tree alignment));
     $MINNAMELEN = 25;
-    $PROGRAMNAME = 'codeml' . ($^O =~ /mswin/i ?'.exe':'');
+    $CODEML = '/opt/apache/CoGe/bin/codeml/codeml-coge /opt/apache/CoGe/bin/codeml/codeml.ctl' . ($^O =~ /mswin/i ?'.exe':'');
     # valid values for parameters, the default one is always
     # the first one in the array
     # much of the documentation here is lifted directly from the codeml.ctl
@@ -313,50 +314,17 @@ BEGIN
 		     );
 }
 
-=head2 program_name
-
- Title   : program_name
- Usage   : $factory->program_name()
- Function: holds the program name
- Returns:  string
- Args    : None
-
-=cut
-
-#sub program_name {
-#        return 'codeml';
-#}
-
-=head2 program_dir
-
- Title   : program_dir
- Usage   : ->program_dir()
- Function: returns the program directory, obtiained from ENV variable.
- Returns:  string
- Args    :
-
-=cut
-
-#sub program_dir {
-#        return Bio::Root::IO->catfile($ENV{PAMLDIR}) if $ENV{PAMLDIR};
-#}
-
-
 =head2 new
 
  Title   : new
  Usage   : my $obj = new CoGe::Algos::Codeml();
  Function: Builds a new CoGe::Algos::Codeml object 
  Returns : CoGe::Algos::Codeml
- Args    : -alignment => alignment file
-           -save_tempfiles => boolean to save the generated tempfiles and
-                              NOT cleanup after onesself (default FALSE)
-           -tree => tree file
-           -branchlengths => 0: ignore any branch lengths found on the tree
+ Args    : alignment => alignment file
+           tree => tree file
+           branchlengths => 0: ignore any branch lengths found on the tree
                              1: use as initial values
                              2: fix branch lengths
-           -params => a hashref of PAML parameters (all passed to set_parameter)
-           -executable => where the codeml executable resides
 
 See also: L<Bio::Tree::TreeI>, L<Bio::Align::AlignI>
 
@@ -365,30 +333,15 @@ See also: L<Bio::Tree::TreeI>, L<Bio::Align::AlignI>
 sub new {
   my($class,@args) = @_;
   my $self = $class->SUPER::new();
-
-  $self->program_name('codeml');
-  $self->program_dir('/opt/apache/CoGe/bin/');
-  $self->tempdir('/tmp');
+  my %opts = @args;
+  my $align = $opts{alin} || $opts{alignment};
+  my $tree = $opts{tree};
+  $self->codeml($CODEML);
   $self->{'_branchLengths'} = 0;
-  $self->outfile_name('mlc');
-  my ($aln, $tree, $st, $params, $exe, 
-      $ubl) = $self->_rearrange([qw(ALIGNMENT TREE SAVE_TEMPFILES 
-				    PARAMS EXECUTABLE BRANCHLENGTHS)],
-				    @args);
-  defined $aln && $self->alignment($aln);
-  defined $tree && $self->tree($tree);
-  defined $st  && $self->save_tempfiles($st);
-  $exe = $self->program_dir.$self->program_name unless $exe;
-  defined $exe && $self->executable($exe);
 
-  $self->set_default_parameters();
-  if( defined $params ) {
-      if( ref($params) !~ /HASH/i ) { 
-	  warn("Must provide a valid hash ref for parameter -FLAGS");
-      } else {
-	  map { $self->set_parameter($_, $$params{$_}) } keys %$params;
-      }
-  }
+  $self->alignment($align) if $align;
+  $self->tree($align) if $tree;
+
   return $self;
 }
 
@@ -406,62 +359,35 @@ sub new {
 =cut
 
 sub run {
-   my ($self,$aln,$tree) = @_;
-   unless ( $self->save_tempfiles ) {
-       # brush so we don't get plaque buildup ;)
-#       $self->cleanup();
-   }
+  my ($self,$aln,$tree) = @_;
    $tree = $self->tree unless $tree;
    $aln  = $self->alignment unless $aln;
    if( ! $aln ) { 
        warn("must have supplied a valid aligment file in order to run codeml");
        return 0;
    }
-   my ($tmpdir) = $self->tempdir();
    # now let's print the codeml.ctl file.
    # many of the these programs are finicky about what the filename is 
    # and won't even run without the properly named file.  Ack
-   
-   my $codeml_ctl = "$tmpdir/codeml.ctl";
-   open(CODEML, ">$codeml_ctl") or $self->croak("cannot open $codeml_ctl for writing");
-   print CODEML "seqfile = $aln\n";
-
-
-   if( $tree ) {
-       print CODEML "treefile = $tree\n";
-   }
-   my $outfile = $self->outfile_name;
-   print CODEML "outfile = $outfile\n" if $outfile;
-   my %params = $self->get_parameters;
-   while( my ($param,$val) = each %params ) {
-       print CODEML "$param = $val\n";
-   }
-   close(CODEML);
-   {
-       my $cwd = cwd();
-       my $exit_status;
-       chdir($tmpdir);
-       my $codemlexe = $self->executable();
-       $self->croak("unable to find or run executable for 'codeml'") unless $codemlexe && -e $codemlexe && -x _;
-       if( $self->{'_branchLengths'} ) { 
-	   open(RUN, "echo $self->{'_branchLengths'} | $codemlexe |") or $self->croak("Cannot open exe $codemlexe");
-       } else {
-	   open(RUN, "$codemlexe |") or $self->croak("Cannot open exe $codemlexe");
-       }
-       my @output = <RUN>;
-       $exit_status = close(RUN);
-       $self->error_string(join('',@output));
-       if( (grep { /\berr(or)?: /io } @output)  || !$exit_status) {
-	   warn("There was an error - see error_string for the program output:". $self->error_string,"\n");
-       }
-       chdir($cwd);
-   }
-   $self->parse_output();
-   unless ( $self->save_tempfiles ) {
-      unlink("$codeml_ctl");
-#      $self->cleanup();
-   }
-}
+  my $exit_status;
+  my $cmd = "echo '$aln' | ".$self->codeml()." 2>/dev/null";
+#  $self->croak("unable to find or run executable for 'codeml': $cmd") unless $cmd && -e $cmd && -x _;
+  #       if( $self->{'_branchLengths'} ) { 
+  #	   open(RUN, "echo $self->{'_branchLengths'} | $cmd |") or $self->croak("Cannot open exe $codemlexe");
+  #       } else {
+#  $cmd = "echo '$aln' ". $cmd;
+  print STDERR "running $cmd \n" if $self->debug;
+  ($cmd) = $cmd=~/^(.*)$/xs;
+  open(RUN, "$cmd |") or $self->croak("Cannot open exe $cmd ");
+#       }
+  my @output = <RUN>;
+  $exit_status = close(RUN);
+#  $self->error_string(join('',@output));
+#  if( (grep { /\berr(or)?: /io } @output)  || !$exit_status) {
+#    warn("There was an error - see error_string for the program output:". $self->error_string,"\n");
+#  }
+  $self->parse_output(join ("",@output));
+ }
 
 
 
@@ -479,25 +405,24 @@ sub run {
 sub parse_output
   {
     my $self = shift;
-    my $file = $self->tempdir."/".$self->outfile_name();
-    unless (-r $file)
-      {
-	carp ("can't read codeml output file $file");
-	return 0;
-      }
+    my $results = shift;
+    return unless $results;
     my %data;
-    open (IN, $file) || die "can't open $file for reading: $!";;
-    while (<IN>)
+    foreach (split/\n/, $results)
       {
 	chomp;
-	next unless /(dN\/dS)=\s*(\S+)\s+(dN)=\s*(\S+)\s+(dS)=\s*(\S+)/;
-	%data = ($1=>$2,
-		 $3=>$4,
-		 $5=>$6,
+	next unless $_;
+	my @line = split/\s+/;
+	next unless $line[1] eq '2' && $line[2] eq '1'; 
+	%data = (
+		 "N"=>$line[3],
+		 "S"=>$line[4],
+		 "dN"=>$line[5],
+		 "dS"=>$line[6],
+		 "dN/dS"=>$line[7],
 		);
 	$self->results(\%data);
       }
-    close IN
   }
 
 
@@ -661,147 +586,5 @@ sub no_param_checks{
     return $self->{'no_param_checks'} || 0;
 }
 
-
-=head2 save_tempfiles
-
- Title   : save_tempfiles
- Usage   : $obj->save_tempfiles($newval)
- Function: 
- Returns : value of save_tempfiles
- Args    : newvalue (optional)
-
-
-=cut
-
-=head2 outfile_name
-
- Title   : outfile_name
- Usage   : my $outfile = $codeml->outfile_name();
- Function: Get/Set the name of the output file for this run
-           (if you wanted to do something special)
- Returns : string
- Args    : [optional] string to set value to
-
-
-=cut
-
-
-=head2 tempdir
-
- Title   : tempdir
- Usage   : my $tmpdir = $self->tempdir();
- Function: Retrieve a temporary directory name (which is created)
- Returns : string which is the name of the temporary directory
- Args    : none
-
-
-=cut
-
-=head2 cleanup
-
- Title   : cleanup
- Usage   : $codeml->cleanup();
- Function: Will cleanup the tempdir directory after a PAML run
- Returns : none
- Args    : none
-
-=cut
-
-sub cleanup
-  {
-    my $self = shift;
-    my $tmpdir = $self->tmpdir;
-    `rm $tmpdir/*`;
-  }
-
-
-=head2 _rearrange
-
- Usage     : $object->_rearrange( array_ref, list_of_arguments)
- Purpose   : Rearranges named parameters to requested order.
- Example   : $self->_rearrange([qw(SEQUENCE ID DESC)],@param);
-           : Where @param = (-sequence => $s,
-           :                    -desc     => $d,
-           :                    -id       => $i);
- Returns   : @params - an array of parameters in the requested order.
-           : The above example would return ($s, $i, $d).
-           : Unspecified parameters will return undef. For example, if
-           :        @param = (-sequence => $s);
-           : the above _rearrange call would return ($s, undef, undef)
- Argument  : $order : a reference to an array which describes the desired
-           :          order of the named parameters.
-           : @param : an array of parameters, either as a list (in
-           :          which case the function simply returns the list),
-           :          or as an associative array with hyphenated tags
-           :          (in which case the function sorts the values 
-           :          according to @{$order} and returns that new array.)
-           :          The tags can be upper, lower, or mixed case
-           :          but they must start with a hyphen (at least the
-           :          first one should be hyphenated.)
- Source    : This function was taken from CGI.pm, written by Dr. Lincoln
-           : Stein, and adapted for use in Bio::Seq by Richard Resnick and
-           : then adapted for use in Bio::Root::Object.pm by Steve Chervitz,
-           : then migrated into Bio::Root::RootI.pm by Ewan Birney.
- Comments  :
-           : Uppercase tags are the norm, 
-           : (SAC)
-           : This method may not be appropriate for method calls that are
-           : within in an inner loop if efficiency is a concern.
-           :
-           : Parameters can be specified using any of these formats:
-           :  @param = (-name=>'me', -color=>'blue');
-           :  @param = (-NAME=>'me', -COLOR=>'blue');
-           :  @param = (-Name=>'me', -Color=>'blue');
-           :  @param = ('me', 'blue');
-           : A leading hyphenated argument is used by this function to 
-           : indicate that named parameters are being used.
-           : Therefore, the ('me', 'blue') list will be returned as-is.
-           :
-           : Note that Perl will confuse unquoted, hyphenated tags as 
-           : function calls if there is a function of the same name 
-           : in the current namespace:
-           :    -name => 'foo' is interpreted as -&name => 'foo'
-           :
-           : For ultimate safety, put single quotes around the tag:
-           :    ('-name'=>'me', '-color' =>'blue');
-           : This can be a bit cumbersome and I find not as readable
-           : as using all uppercase, which is also fairly safe:
-           :    (-NAME=>'me', -COLOR =>'blue');
-           :
-           : Personal note (SAC): I have found all uppercase tags to
-           : be more managable: it involves less single-quoting,
-           : the key names stand out better, and there are no method naming 
-           : conflicts.
-           : The drawbacks are that it's not as easy to type as lowercase,
-           : and lots of uppercase can be hard to read.
-           :
-           : Regardless of the style, it greatly helps to line
-           : the parameters up vertically for long/complex lists.
-
-=cut
-
-sub _rearrange {
-    my $dummy = shift;
-    my $order = shift;
-
-    return @_ unless (substr($_[0]||'',0,1) eq '-');
-    push @_,undef unless $#_ %2;
-    my %param;
-    while( @_ ) {
-        (my $key = shift) =~ tr/a-z\055/A-Z/d; #deletes all dashes!
-        $param{$key} = shift;
-    }
-    map { $_ = uc($_) } @$order; # for bug #1343, but is there perf hit here?
-    return @param{@$order};
-}
-
-
-sub DESTROY {
-    my $self= shift;
-    unless ( $self->save_tempfiles ) {
-#	$self->cleanup();
-    }
-#    $self->SUPER::DESTROY();
-}
 
 1;
