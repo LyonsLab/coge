@@ -313,7 +313,7 @@ sub global_align
 	my $sock = IO::Socket::INET->new(
 					 PeerAddr => 'localhost:'.$self->nwalign_server_port,
 					) or die "Can't bind: $@\n";
-	my $cmd = " --matrix $matrix --gap $gap_ext --gap_init $gap $seq1 $seq2";
+	my $cmd = " --matrix $matrix --gap_extend $gap_ext --gap_open $gap $seq1 $seq2";
 	print $sock $cmd;
 	my $res;
 	$sock->recv($res, 128000);
@@ -323,7 +323,7 @@ sub global_align
       {
 	my $prog = $self->nwalign;
 	$prog = $NWALIGN unless $prog;
-	my $cmd = "$prog --matrix=$matrix --gap=$gap_ext --gap_init=$gap $seq1 $seq2";
+	my $cmd = "$prog --matrix=$matrix --gap_extend=$gap_ext --gap_open=$gap $seq1 $seq2";
 	open (RUN, "$cmd |");
 	($align1, $align2) = <RUN>;
 	close RUN;
