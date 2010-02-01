@@ -16,7 +16,7 @@ BEGIN {
     @EXPORT      = qw();
     @EXPORT_OK   = qw();
     %EXPORT_TAGS = ();
-    __PACKAGE__->mk_accessors(qw(gdb version name1 name2 prot1 prot2 palign1 palign2 dna1 dna2 dalign1 dalign2 gaplessP1 gaplessP2 gaplessD1 gaplessD2 results gapless_prot_pid gapless_DNA_pid prot_pid DNA_pid feat1 feat2 benchmark));
+    __PACKAGE__->mk_accessors(qw(version name1 name2 prot1 prot2 palign1 palign2 dna1 dna2 dalign1 dalign2 gaplessP1 gaplessP2 gaplessD1 gaplessD2 results gapless_prot_pid gapless_DNA_pid prot_pid DNA_pid feat1 feat2 benchmark tmpdir));
 }
 
 
@@ -35,9 +35,9 @@ CoGe::Algos::KsCalc - CoGe::Algos::KsCalc
 
   my $ks = CoGe::Algos::KsCalc->new ();
 
-  $ks->version(6);
-  $ks->name1("at1g01380");
-  $ks->name2("at4g01060");
+
+  $ks->feat1($coge_feat1);  #a CoGeX::Feature object of type CDS
+  $ks->feat2($coge_feat2);  #a CoGeX::Feature object of type CDS
   
   my $res = $ks->KsCalc("seq.align");
   print "Ka = ", $res->{'dN'},"\n";
@@ -140,7 +140,6 @@ sub new
 =head2 Class::Accessor functions
 
 This is a list of the Class::Accessor functions and the information they hold:
-gdb              CoGeX object
 version          Version of the data source to limit search when finding sequences
                  for sequence names.  This is in the data_information table of
                  the genomes database
@@ -172,8 +171,8 @@ feat2            Storage for CoGeX feature object for feature 2
 =head2 init
 
  Usage     : $self->init (called by new)
- Purpose   : create and set default parameters.  Currently, creates a 
-             CoGeX object and sets it with $self->gdb
+ Purpose   : create and set default parameters.  Currently, sets tmpdir to /tmp/
+
  Returns   : none
  Argument  : none
  Throws    : none
@@ -190,8 +189,7 @@ See Also   :
 sub init
   {
     my $self = shift;
-    $self->gdb(CoGeX->dbconnect());
-    die "Can't create genome database base object: ".ref($self->gdb()) unless ref($self->gdb()) =~ /CoGeX/;
+    $self->tmpdir("/tmp/");
   }
 
 #################### subroutine header begin ####################
@@ -220,6 +218,7 @@ sub palign
     return 0 unless $self->_check_seqs();
     $self->seqA($self->prot1);
     $self->seqB($self->prot2);
+    
     my ($align1, $align2) = $self->global_align();
     $self->palign1($align1);
     $self->palign2($align2);
@@ -389,6 +388,10 @@ sub calc_pid
     unless (length ($seq1) == length ($seq2))
       {
 	print STDERR "sequences are of different lengths.  Percent identity calculation may be incorrect.\n";
+#	print STDERR join ("\t", $self->feat1->names),"\n" if $self->feat1->names;
+#	print STDERR $seq1,"\n\n";
+#	print STDERR join ("\t", $self->feat2->names),"\n" if $self->feat2->names;
+#	print STDERR $seq2,"\n\n"
       }
     my @seq1 = split //, $seq1;
     my @seq2 = split //, $seq2;
@@ -396,8 +399,9 @@ sub calc_pid
     my $id = 0;
     for (my $i = 0; $i < scalar @seq1; $i++)
       {
-	$id++ if $seq1[$i] eq $seq2[$i];
 	$total++ unless $seq1[$i] eq "-";
+	next unless $seq2[$i];
+	$id++ if $seq1[$i] eq $seq2[$i];
       }
     return $id/$total*100;
   }
@@ -429,7 +433,6 @@ See Also   :
 sub KsCalc
   {
     my $self = shift;
-    my $file = shift;
     my $t1 = new Benchmark if $self->benchmark;
     my $tmp = $self->palign(); #returns 0 if fails
     my $t2 = new Benchmark if $self->benchmark;
@@ -438,15 +441,10 @@ sub KsCalc
 	carp ("Problem running alignment");
 	return 0;
       }
-    
-    open (OUT, ">$file") || croak ("can't open alignment file $file for writing: $!");
-    print OUT $self->phylip_align;
-    close OUT;
-    my $cml = new CoGe::Algos::Codeml(-alignment=>$file);
+    my $cml = new CoGe::Algos::Codeml(alignment=>$self->phylip_align);
     $cml->run();
     my $t3 = new Benchmark  if $self->benchmark;
     $self->results($cml->results);
-    delete $self->results->{"dN/dS"};
     if ($self->benchmark)
       {
 	my $align_time = timestr(timediff($t2,$t1));
@@ -459,79 +457,6 @@ Time to codeml:    $codeml_time
 
     return $self->results;
 
-  }
-
-#################### subroutine header begin ####################
-
-=head2 get_prot_seq_by_name
-
- Usage     : $self->get_prot_seq_my_name($name)
- Purpose   : gets the array of protein sequences returned by 
-             CoGe::Genome->get_prot_seq_by_feat_name
- Returns   : array of strings (protein sequences)
- Argument  : string, name of protein sequence to retrieve
- Throws    : none
- Comment   : uses $self->version to limit search
-           : This routine is used internally
-
-See Also   : 
-
-=cut
-
-#################### subroutine header end ####################
-
-sub get_prot_seq_by_name
-  {
-    my $self = shift;
-    my $name = shift;
-#    return $self->gdb->get_prot_seq_by_feat_name(name=>$name,
-#						 version=>$self->version);
-    my $feat;
-    my $search = {name=>$name};
-    $search->{version} = $self->version if $self->version;
-    foreach my $item ($self->gdb->resultset('FeatureName')->search($search,{}))
-      {
-	my $tfeat = $item->feature;
-	next unless $tfeat->type->name eq "CDS";
-	$feat = $tfeat unless $feat;
-	if ($self->version)
-	  {
-	    $feat = $tfeat if $tfeat->dataset->version eq $self->version;
-	  }
-	else
-	  {
-	    $feat = $tfeat if $tfeat->dataset->version > $feat->dataset->version;
-	  }
-      }
-    return $feat->protein_sequence();
-  }
-
-#################### subroutine header begin ####################
-
-=head2 get_coding_seq_by_name
-
- Usage     : $self->get_coding_seq_by_name($name)
- Purpose   : gets the array of dna sequences returned by 
-             CoGe::Genome->get_genomic_seq_by_feat_name_and_type_name
- Returns   : array of strings (dna sequences)
- Argument  : string ($name)
- Throws    : none
- Comment   : use $self->version to limit search
-           : This routine is used internally
-
-See Also   : 
-
-=cut
-
-#################### subroutine header end ####################
-
-sub get_coding_seq_by_name
-  {
-    my $self = shift;
-    my $name = shift;
-    return $self->gdb->get_genomic_seq_by_feat_name_and_type_name(name=>$name,
-								  type=>"CDS",
-								  version=>$self->version);
   }
 
 #################### subroutine header begin ####################
@@ -609,29 +534,36 @@ sub _check_seqs
 	warn "problem with feat2:  not defined or not a CoGeX::Feature object or Feature object is not of feature_type->name 'CDS'\n";
 	return 0;
       }
-    my ($seq) = $self->feat1->protein_sequence;
-    $self->prot1($seq) if $seq;
-    ($seq) = $self->feat2->protein_sequence;
-    $self->prot2($seq) if $seq;
-    ($seq) = $self->feat1->genomic_sequence;
-    $self->dna1($seq) if $seq;
-    ($seq) = $self->feat2->genomic_sequence;
-    $self->dna2($seq) if $seq;
+    my ($p1) = $self->feat1->protein_sequence;
+    my ($p2) = $self->feat2->protein_sequence;
+    my $d1 = $self->feat1->genomic_sequence;
+    my $d2 = $self->feat2->genomic_sequence;
+    $p1 =~ s/\s+//g;
+    $p2 =~ s/\s+//g;
+    if ($p1 =~ /\*$/)
+      {
+	$p1 =~ s/\*$//;#remove stop character
+	$d1 =~ s/...$//; #remove stop codon
+	
+      }
+    if ($p2 =~ /\*$/)
+      {
+	$p2 =~ s/\*$//;#remove stop character
+	$d2 =~ s/...$//; #remove stop codon
+      }
+    #somtimes the stop aa "*" is not present while the stop codon is
+    $d1 =~ s/...$// if (length ($d1) == (3*length($p1))+3);
+    $d2 =~ s/...$// if (length ($d2) == (3*length($p2))+3);
+
+    $self->prot1($p1) if $p1;
+    $self->prot2($p2) if $p2;
+    $self->dna1(uc($d1)) if $d1;
+    $self->dna2(uc($d2)) if $d2;
     my ($name) = $self->feat1->names();
     $self->name1($name);
     ($name) = $self->feat2->names();
     $self->name2($name);
 
-#    my ($seq) = $self->get_prot_seq_by_name($self->name1); #returns an array with longest seq first
-#    $seq =~ s/\*//g;
-#    $self->prot1($seq) if $self->name1;
-#    ($seq) = $self->get_prot_seq_by_name($self->name2); #returns an array with longest seq first
-#    $seq =~ s/\*//g;
-#    $self->prot2($seq) if $self->name2;
-#    ($seq) = $self->get_coding_seq_by_name($self->name1);
-#    $self->dna1($seq) if $self->name1;
-#    ($seq) = $self->get_coding_seq_by_name($self->name2);
-#    $self->dna2($seq) if $self->name2;
     return ($self->prot1 && $self->prot2 && $self->dna1 && $self->dna2) ? 1 : 0;
   }
 
@@ -690,13 +622,16 @@ sub _generate_gapless
       }
   }
 
-1;
 
 sub _generate_DNA_alignment
   {
     my $self = shift;
     my @prot1 = split //, $self->palign1;
     my @prot2 = split //, $self->palign2;
+    if(length($self->palign1) ne length($self->palign2))
+      {
+	warn "in sub _generate_DNA_alignment.  protein sequence alignments are not of equal length!\n";
+      }
     my ($d1p, $d2p) = (0,0);
     foreach my $ppos (0..$#prot1)
       {
@@ -734,5 +669,8 @@ sub _generate_DNA_alignment
       }
     return ($self->dalign1(), $self->dalign2());
   }
+
+1;
+
 # The preceding line will help the module return a true value
 
