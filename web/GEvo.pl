@@ -52,7 +52,7 @@ delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 $ENV{'LAGAN_DIR'} = '/opt/apache/CoGe/bin/lagan/';
 #for dialign
 $ENV{'DIALIGN2_DIR'} = '/opt/apache/CoGe/bin/dialign2_dir/';
-use vars qw( $PAGE_NAME $DATE $DEBUG $BL2SEQ $BLASTZ $LAGAN $CHAOS $DIALIGN $GENOMETHREADER $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge $NUM_SEQS $MAX_SEQS $MAX_PROC);
+use vars qw( $PAGE_NAME $DATE $DEBUG $BL2SEQ $BLASTZ $LAGAN $CHAOS $DIALIGN $GENOMETHREADER $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge $NUM_SEQS $MAX_SEQS $MAX_PROC %FUNCTION);
 $PAGE_NAME = "GEvo.pl";
 $BL2SEQ = "/usr/bin/bl2seq ";
 $BLASTZ = "/usr/bin/blastz ";
@@ -86,7 +86,7 @@ $ajax{dataset_search} = \&dataset_search; #override this method from Accessory::
 $ajax{feat_search} = \&feat_search; 
 
 
-my %FUNCTION=(
+%FUNCTION=(
 	      run=>\&run,
 	      loading=>\&loading,
 	      merge_previous=>\&merge_previous,
@@ -551,7 +551,7 @@ sub run
 	push @gevo_link_seqs, \%gevo_link_info;
 	if ($featid || $pos)
 	  {
-	    $obj = get_obj_from_genome_db( accn=>$accn, featid=>$featid, pos=>$pos, dsid=>$dsid, rev=>$rev, up=>$drup, down=>$drdown, chr=>$chr, gstid=>$gstid, mask=>$mask, dsgid=>$dsgid, gen_prot_sequence=>$gen_prot_sequence );
+	    my ($obj, $error) = get_obj_from_genome_db( accn=>$accn, featid=>$featid, pos=>$pos, dsid=>$dsid, rev=>$rev, up=>$drup, down=>$drdown, chr=>$chr, gstid=>$gstid, mask=>$mask, dsgid=>$dsgid, gen_prot_sequence=>$gen_prot_sequence );
 	    if ($obj)
 	      {
 		#going to generalize this in parallel after all sequences to be retrieved from coge's db are specified.
@@ -563,6 +563,7 @@ sub run
 	    else
 	      {
 		$message .=  "Unable to generate sequence for sequence $i.  (Skipped.)\n";
+		$message .=  " Error message: $error\n" if $error;
 	      }
 	  }
  	elsif ($dirseq )
@@ -1905,10 +1906,13 @@ sub get_obj_from_genome_db
     my $mask = $opts{mask}; #need this to check for seq file
     my $dsgid = $opts{dsgid}; #dataset group id
     my $gen_prot_sequence = $opts{gen_prot_sequence} || 0; #are we generating a protein sequence file too?
+    my $message;
     if ($dsgid)
       {
 	my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
-	$dsid = $dsg->datasets(chr=>$chr)->id;
+	my ($ds) = $dsg->datasets(chr=>$chr);
+	return ("","Chromosome '$chr' not found for this genome") unless $ds;
+	$dsid = $ds->id;
 	$gstid = $dsg->type->id;
       }
     #let's get a unique file name for this sequence
