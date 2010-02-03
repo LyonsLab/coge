@@ -842,6 +842,7 @@ sub gff
 	      my $tmp;
 	      $tmp .= $anno->annotation_type->name.": " if $anno->annotation_type && $anno->annotation_type->name;
 	      $tmp .= $anno->annotation;
+	      $tmp =~ s/;//g;
 	      push @annos, $tmp;
 	    }
 	  my $annos = join (",", @annos);
@@ -880,6 +881,7 @@ sub gff
 		my $tmp;
 		$tmp .= $anno->annotation_type->name.": " if $anno->annotation_type && $anno->annotation_type->name;
 		$tmp .= $anno->annotation;
+		$tmp =~ s/;//g;
 		push @tannos, $tmp;
 	      }
 	    my $mrna_annos = join (",", @tannos);
@@ -918,6 +920,7 @@ sub gff
 		my $tmp;
 		$tmp .= $anno->annotation_type->name.": " if $anno->annotation_type && $anno->annotation_type->name;
 		$tmp .= $anno->annotation;
+		$tmp =~ s/;//g;
 		push @tannos, $tmp;
 	      }
 	    my $other_annos = join (",", @tannos);
