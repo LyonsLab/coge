@@ -93,7 +93,11 @@ sub gen_body
 	foreach my $dsgt (sort {$a->genomic_sequence_type_id <=> $b->genomic_sequence_type_id} $ds->dataset_groups)
 	  {
 	    last if $dsgid;
-	    $dsg = $dsgt if $gstid && $dsgt->genomic_sequence_type_id == $gstid;
+	    if ($gstid && $dsgt->genomic_sequence_type_id == $gstid)
+	      {
+		$dsg = $dsgt;
+		last;
+	      }
 	    $dsg = $dsgt;
 	  }
       }
