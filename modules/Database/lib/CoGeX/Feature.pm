@@ -528,7 +528,11 @@ sub annotation_pretty_print_html
 	    my $anno_type = new CoGe::Accessory::Annotation(Type=>$anno_name);
 	    $anno_type->Val_delimit(", ");
 	    $anno_type->Type_delimit(" ");
-	    $anno_type->add_Annot("<span class=\"data5\">".$anno->annotation."</span>") if $anno->annotation;
+#	    my $annotation = $anno->annotation;
+	    my $annotation = "<span class=\"data5";
+	    $annotation .= qq{ link" onclick="window.open('}.$anno->link.qq{')} if $anno->link;
+	    $annotation .="\">".$anno->annotation."</span>";
+	    $anno_type->add_Annot($annotation) if $anno->annotation;
 	    if (ref ($group) =~ /group/i)
 	      {
 		my $anno_g = new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\">".$group->name."</span>");
@@ -554,7 +558,7 @@ sub annotation_pretty_print_html
 #	$location = qq{<span class="data5 link" onclick="window.open('$loc_link?featid=$featid&start=$start&stop=$stop&chr=$chr&dsid=$dataset_id&strand=$strand&gstid=$gstid')" >}.$location."</span>" if $loc_link;
 	$location = qq{<span class="data5 link" onclick="window.open('$loc_link?featid=$featid&gstid=$gstid')" >}.$location."</span>" if $loc_link;
 	$location = qq{<span class="data">$location</span>};
-	$anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5 link\"><span onclick=\"window.open('GenomeView.pl?chr=$chr&ds=$dataset_id&x=$start&z=3&gstid=$gstid')\" >Location</span></span>", Values=>[$location], Type_delimit=>":<td>", Val_delimit=>" "));
+	$anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5 link\"><span onclick=\"window.open('GenomeView.pl?chr=$chr&ds=$dataset_id&x=$start&z=5&gstid=$gstid')\" >Location</span></span>", Values=>[$location], Type_delimit=>":<td>", Val_delimit=>" "));
 
 	my $ds=$self->dataset();
 	my $dataset = qq{<span class="data5 link" onclick="window.open('OrganismView.pl?dsid=}.$ds->id."')\">".$ds->name;
