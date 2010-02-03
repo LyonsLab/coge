@@ -56,6 +56,8 @@ __PACKAGE__->add_columns(
   { data_type => "INT", default_value => 0, is_nullable => 0, size => 11 },
   "annotation_type_id",
   { data_type => "INT", default_value => 0, is_nullable => 0, size => 11 },
+  "link",
+  { data_type => "VARCHAR", default_value => "", is_nullable => 1, size => 1024 },
 );
 __PACKAGE__->set_primary_key("annotation_id");
 
