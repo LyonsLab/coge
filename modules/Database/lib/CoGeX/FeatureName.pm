@@ -70,6 +70,7 @@ __PACKAGE__->add_columns(
 );
 __PACKAGE__->set_primary_key("feature_name_id");
 __PACKAGE__->belongs_to("feature" => "CoGeX::Feature", "feature_id");
+__PACKAGE__->has_one("annotation" => "CoGeX::Annotation", {'foreign.feature_id'=>'self.feature_id'});
 
 
 
