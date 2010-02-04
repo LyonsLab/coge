@@ -13,6 +13,7 @@ use CoGe::Graphics::Feature::AminoAcid;
 use CoGe::Graphics::Feature::Domain;
 use CoGe::Graphics::Feature::Block;
 use CoGe::Graphics::Feature::Outline;
+use CoGe::Graphics::Feature::Link;
 use CoGeX;
 use DBIxProfiler;
 use Data::Dumper;
@@ -605,14 +606,16 @@ sub process_features
 	elsif (($layers->{features}{gevo_link} || $layers->{all}))
           {
 	    next unless $coge->resultset('Annotation')->count({feature_id=>$feat->id, annotation_type_id=>$gevo_link_type->id});
-	    my $f = CoGe::Graphics::Feature::Gene->new();
-	    $f->color([200, 200,100,50]);
-	    $f->add_segment(start=>$feat->start, stop=>$feat->stop);
-	    $f->strand($feat->strand);
+	    my $f = CoGe::Graphics::Feature::Link->new();
+	    $f->color([50, 200,200,50]);
+	    foreach my $loc ($feat->locs)
+	      {
+		$f->add_segment(start=>$loc->start, stop=>$loc->stop);
+		$f->strand($loc->strand);
+	      }
 	    $f->order(2);
 	    $f->overlay(1);
 	    $f->mag(.6);
-	    $f->no_3D(1) if $layers->{features}{flat};
 	    push @f, $f;
           }
         elsif (($layers->{features}{cds} || $layers->{all}) && $feat->type->name =~ /CDS/i)
