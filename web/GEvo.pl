@@ -551,7 +551,8 @@ sub run
 	push @gevo_link_seqs, \%gevo_link_info;
 	if ($featid || $pos)
 	  {
-	    my ($obj, $error) = get_obj_from_genome_db( accn=>$accn, featid=>$featid, pos=>$pos, dsid=>$dsid, rev=>$rev, up=>$drup, down=>$drdown, chr=>$chr, gstid=>$gstid, mask=>$mask, dsgid=>$dsgid, gen_prot_sequence=>$gen_prot_sequence );
+	    my $error;
+	    ($obj, $error) = get_obj_from_genome_db( accn=>$accn, featid=>$featid, pos=>$pos, dsid=>$dsid, rev=>$rev, up=>$drup, down=>$drdown, chr=>$chr, gstid=>$gstid, mask=>$mask, dsgid=>$dsgid, gen_prot_sequence=>$gen_prot_sequence );
 	    if ($obj)
 	      {
 		#going to generalize this in parallel after all sequences to be retrieved from coge's db are specified.
@@ -1923,7 +1924,7 @@ sub get_obj_from_genome_db
     unless (ref ($feat)=~ /feature/i || ($pos && $dsid))
       {
 	write_log("Can't find valid feature database entry for id=$featid", $cogeweb->logfile);
-	return;
+	return("","Can;t find valid feature database entry for id $featid");
       }
     my $t2 = new Benchmark;
     my $start = 0;
@@ -1962,7 +1963,7 @@ sub get_obj_from_genome_db
       }
 
     my $ds = $coge->resultset('Dataset')->find($dsid) if $dsid;
-    return unless $ds;
+    return ("", "unable able to find dataset for id $dsid") unless $ds;
     $accn = $ds->organism->name ." v". $ds->version." chr ".$chr unless $accn;
     if (-r $seq_file)
       {
