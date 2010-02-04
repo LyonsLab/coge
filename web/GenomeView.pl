@@ -143,6 +143,13 @@ sub gen_body
 	    $template->param(REPEATS_LAYER=>1);
 	  }
       }
+    my ($anno_type) = $coge->resultset('AnnotationType')->search({name=>"gevo link"});
+    my ($anno) = $coge->resultset('Annotation')->count({'feature.dataset_id'=>$dsid,'me.annotation_type_id'=>$anno_type->id},{join=>'feature',limit=>1});
+    if ($anno)
+      {
+	$template->param(GEVO_LINK_LAYER=>1);
+      }
+
 
     $template->param(CHR=>$chr);
     $template->param(VER=>$ver);
@@ -161,7 +168,7 @@ sub gen_body
 			gc=>'true',
 			genes=>'true',
 		       );
-    foreach my $item (qw (gc gaga gbox genes wobblegc wobble50gc localdup funcdomain prot repeats other))
+    foreach my $item (qw (gc gaga gbox genes wobblegc wobble50gc localdup funcdomain prot repeats other gevo_link))
       {
 	my $show = $prefs->{$item};
 	$show = $default_true{$item} unless $show;
