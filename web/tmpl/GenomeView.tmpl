@@ -1,7 +1,6 @@
 	
     <style type="text/css">
         #map {
-            width: ;
             height: 330;
             border: 1px solid black;
         }
@@ -18,31 +17,25 @@
 	background-color: yellow;
 	color:black;
 	}
-	
+
+	#GEvo_links {
+	color:yellow;
+	}
+
 	#gene {
             background-color: white;
             color:grey;
         }
         #local_dup {
-//            background-color: cyan;
             color:cyan;
         }
-/*        #pseudogene {
-            background-color: orange;
-            color:white;
-        }
-        #mrna {
-            background-color: blue;
-            color:white;
-        }
-        #cds {
-            background-color: green;
-            color:white;
-        }
-*/
         #gc {
             background-color: white;
              color:green;
+	}
+        #cg {
+            background-color: green;
+             color:white;
 	}
 	#gaga {
 	    background-color: white;
@@ -56,25 +49,16 @@
 	    background-color: white;
 	    color: purple;
         }
-/*	#wobble_GC_usage_first_50 {
-	    background-color: white;
-	    color: purple;
-        }
-*/   
         #func_dom {
-         //   background-color: white;
              color:orange;
         }
         #repeats {
-         //   background-color: white;
              color:orange;
+        }
         #other {
-         //   background-color: white;
              color:orange;
         }
     </style>
-<!--    <script src = "http://openlayers.org/api/2.6/OpenLayers.js"></script>-->
-
     <script src="js/OpenLayers.js"></script>
     <script src="js/Genomic.js"></script>
     <script src="js/opengenes.js"></script>
@@ -126,7 +110,6 @@
                  OpenLayers.Bounds(-50000,-10000,1000000000,10000),
                  units     :'bp',
                  tileSize: new OpenLayers.Size(768, size),
-//                 resolutions:[4096, 1024,256,64,16,4,1,0.25, 0.125, 0.0625, 0.03125, 0.015625],
                  resolutions:[4096, 2048, 1024,512,256,128,64,32,16,8,4,2,1, 0.5, 0.25, 0.125, 0.0625, 0.032125, 0.015625, 0.011711875],
                   controls: [new OpenLayers.Control.MouseDefaults()]
             });
@@ -140,53 +123,57 @@
 
             map.addLayers(layers);
 
-            gc = new OpenLayers.Layer.Genomic( "<span id='gc'>GC content</span>" , server
+            gc = new OpenLayers.Layer.Genomic( "<span id='cg'>GC content</span>" , server
                  ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"gc"}
                  ,{isBaseLayer:false}
              );
-            gaga = new OpenLayers.Layer.Genomic( "<span id='gaga'>GAGA content</span>" , server
+            gaga = new OpenLayers.Layer.Genomic( "<span id='cg'>GAGA content</span>" , server
                  ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"gaga"}
                  ,{isBaseLayer:false}
              );
-            gbox = new OpenLayers.Layer.Genomic( "<span id='gbox'>G-Box CACGTG</span>" , server
+            gbox = new OpenLayers.Layer.Genomic( "<span id='cg'>G-Box CACGTG</span>" , server
                  ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"gbox"}
                  ,{isBaseLayer:false}
              );
-            genes = new OpenLayers.Layer.Genomic( "<span id='gene'>Genes</span>" , server
+            genes = new OpenLayers.Layer.Genomic( "<span id='gc'>Genes</span>" , server
                  ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"pseudogene,gene,mRNA,CDS,rna,CNS",}
                  ,{isBaseLayer:false}
              );
-	    gene_space = new OpenLayers.Layer.Genomic( "<span id='gene_space'>Gene space</span>" , server
+            GEvo_link = new OpenLayers.Layer.Genomic( "<span id='gc'>GEvo link for syntelogs</span>" , server
+                 ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"GEvo_link",}
+                 ,{isBaseLayer:false}
+             );
+	    gene_space = new OpenLayers.Layer.Genomic( "<span id='gc'>Gene space</span>" , server
 	                       ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"gene_space",}
 			                        ,{isBaseLayer:false}
 						             );
 
-            wobble_GC_usage = new OpenLayers.Layer.Genomic( "<span id='wobble_GC_usage'>Wobble GC Usage</span>" , server
+            wobble_GC_usage = new OpenLayers.Layer.Genomic( "<span id='gc'>Wobble GC Usage</span>" , server
                  ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"CDS,cbc"}
                  ,{isBaseLayer:false}
              );
-//            wobble_GC_usage_first_50 = new OpenLayers.Layer.Genomic( "<span id='wobble_GC_usage_first_50'>Wobble GC Usage (first 50 codons)</span>" , server
-//                 ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"CDS,cbc50"}
-//                 ,{isBaseLayer:false}
-//             );
-            local_dup = new OpenLayers.Layer.Genomic( "<span id='local_dup'>Local Duplicates</span>" , server
+            wobble_GC_usage_first_50 = new OpenLayers.Layer.Genomic( "<span id='gc'>Wobble GC Usage (first 50 codons)</span>" , server
+                 ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"CDS,cbc50"}
+                 ,{isBaseLayer:false}
+             );
+            local_dup = new OpenLayers.Layer.Genomic( "<span id='gc'>Local Duplicates</span>" , server
                  ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"local_dup",}
                  ,{isBaseLayer:false}
              );
 
-            prot = new OpenLayers.Layer.Genomic( "proteins" , server
+            prot = new OpenLayers.Layer.Genomic( "<span id='gc'>proteins</span>" , server
                  ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"protein"}
                  ,{isBaseLayer:false}
              );
-            func_domain = new OpenLayers.Layer.Genomic( "<span id='func_dom'>Functional Domains</span>" , server
+            func_domain = new OpenLayers.Layer.Genomic( "<span id='gc'>Functional Domains</span>" , server
                  ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"domain"}
                  ,{isBaseLayer:false}
              );
-            repeats = new OpenLayers.Layer.Genomic( "<span id='repeats'>Repeat Regions</span>" , server
+            repeats = new OpenLayers.Layer.Genomic( "<span id='gc'>Repeat Regions</span>" , server
                  ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"repeat"}
                  ,{isBaseLayer:false}
             );
-            other = new OpenLayers.Layer.Genomic( "<span id='repeats'>Other Features</span>" , server
+            other = new OpenLayers.Layer.Genomic( "<span id='gc'>Other Features</span>" , server
                  ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"other"}
                  ,{isBaseLayer:false}
              );
@@ -201,42 +188,18 @@
             map.addLayer(gbox);
 
             genes.setVisibility(<TMPL_VAR NAME="GENES">);
-            /*
-            if(ds == '582'){
-                OpenLayers.IMAGE_RELOAD_ATTEMPTS = 3;
-                OpenLayers.Util.onImageLoadErrorColor = "transparent";
-                var bs = ['http://128.32.8.28/rice_count/', 'http://kosh-370-311c-001-d.pmb.berkeley.edu/rice_count/'];
-                map.addLayer( new OpenLayers.Layer.Genomic( "copy count" , bs
-                              ,{'seqid': chr }
-                               ,{isBaseLayer:false} 
-                                            ));
-
-            }*/
-
-            if(ds == '34474' || ds == '39598'){
-                // avoid pink tiles
-                OpenLayers.IMAGE_RELOAD_ATTEMPTS = 3;
-                OpenLayers.Util.onImageLoadErrorColor = "transparent";
-
-                var bs = ['http://128.32.8.28/bs/', 'http://kosh-370-311c-001-d.pmb.berkeley.edu/bs/'];
-                var tome = ['http://128.32.8.28/salktome/', 'http://kosh-370-311c-001-d.pmb.berkeley.edu/salktome/'];
-
-                map.addLayer( new OpenLayers.Layer.Genomic( "methylation" , bs
-                              ,{'seqid': chr }
-                               ,{isBaseLayer:false} 
-                                            ));
-                map.addLayer( new OpenLayers.Layer.Genomic( "salk-tome expression" , tome
-                              ,{'seqid': chr }
-                               ,{isBaseLayer:false} 
-                                            ));
-
-
-            }
             map.addLayer(genes);
+
+ 	    <TMPL_IF NAME="GEVO_LINK_LAYER">
+            local_dup.setVisibility(<TMPL_VAR NAME="GEVO_LINK">);
+            map.addLayer(GEvo_link);
+            </TMPL_IF>
+
             wobble_GC_usage.setVisibility(<TMPL_VAR NAME="WOBBLEGC">);
             map.addLayer(wobble_GC_usage);
-//            wobble_GC_usage_first_50.setVisibility(<TMPL_VAR NAME="WOBBLE50GC">);
-//            map.addLayer(wobble_GC_usage_first_50);
+
+            wobble_GC_usage_first_50.setVisibility(<TMPL_VAR NAME="WOBBLE50GC">);
+            map.addLayer(wobble_GC_usage_first_50);
 
 	    <TMPL_IF NAME="GENE_SPACE_LAYER">
 	    gene_space.setVisibility(<TMPL_VAR NAME="Gene_Space">);
@@ -279,6 +242,41 @@
             map.events.register('mouseout',map,mapMouseOut);
 	    map.events.register('drag',map,updateSliderPosition);
 	    map.zoomOut();
+
+
+	    /*CUSTOMIZATION FOR SPECIFIC DATASETS*/
+            /*
+            if(ds == '582'){
+                OpenLayers.IMAGE_RELOAD_ATTEMPTS = 3;
+                OpenLayers.Util.onImageLoadErrorColor = "transparent";
+                var bs = ['http://128.32.8.28/rice_count/', 'http://kosh-370-311c-001-d.pmb.berkeley.edu/rice_count/'];
+                map.addLayer( new OpenLayers.Layer.Genomic( "copy count" , bs
+                              ,{'seqid': chr }
+                               ,{isBaseLayer:false} 
+                                            ));
+
+            }*/
+
+            if(ds == '34474' || ds == '39598'){
+                // avoid pink tiles
+                OpenLayers.IMAGE_RELOAD_ATTEMPTS = 3;
+                OpenLayers.Util.onImageLoadErrorColor = "transparent";
+
+                var bs = ['http://128.32.8.28/bs/', 'http://kosh-370-311c-001-d.pmb.berkeley.edu/bs/'];
+                var tome = ['http://128.32.8.28/salktome/', 'http://kosh-370-311c-001-d.pmb.berkeley.edu/salktome/'];
+
+                map.addLayer( new OpenLayers.Layer.Genomic( "methylation" , bs
+                              ,{'seqid': chr }
+                               ,{isBaseLayer:false} 
+                                            ));
+                map.addLayer( new OpenLayers.Layer.Genomic( "salk-tome expression" , tome
+                              ,{'seqid': chr }
+                               ,{isBaseLayer:false} 
+                                            ));
+
+
+            }
+
 
         }
 	
@@ -342,6 +340,7 @@
            var url = 'FeatAnno.pl?chr='
            + chr + '&version='+version+'&org='+org+'&loc='
            + x+'&ds='+ds+'&gstid='+gstid; 
+	   $('#query_popup').html(' ');
            jfetch(url,'query_popup');
            $('#query_popup').dialog('open');
          }
