@@ -145,20 +145,6 @@ sub cogesearch
     $org_name = undef if $org_name =~ /^search$/i;
     my $org_desc = $opts{org_desc};
     $org_desc = undef if $org_desc =~ /^search$/i;
-#    my @org_ids;
-#    $org_id = "all" unless $org_id;
-#    if (($org_name && $org_name ne "Search") || ($org_desc && $org_desc ne "Search"))
-#      {
-#	my ($otype, $search) = ("name", $org_name) if $org_name && $org_name ne "Search";
-#	($otype, $search) = ("desc", $org_desc) if $org_desc && $org_desc ne "Search";
-#	@org_ids = get_orgs(id_only=>1, type=>$type, search=>$search);
-#      }
-#    else
-#      {
-#	push @org_ids, $org_id if $org_id =~ /^\d$/;
-#      }
-    my $feat_accn_wild = $opts{feat_name_wild};
-    my $feat_anno_wild = $opts{feat_anno_wild};
     my $blank = qq{<input type="hidden" id="accn_select">};
     my $weak_query = "Query needs to be better defined.";
     if (!$accn && !$anno && !$fid)
@@ -168,56 +154,23 @@ sub cogesearch
     ($USER) = CoGe::Accessory::LogUser->get_user();
     my $html;
     my %seen;
-    my @opts;
-    $accn = "%".$accn if $accn && ($feat_accn_wild eq "both" || $feat_accn_wild eq "left");
-    $accn = $accn."%" if $accn && ($feat_accn_wild eq "both" || $feat_accn_wild eq "right");
-    $anno = "%".$anno if $anno && ($feat_anno_wild eq "both" || $feat_anno_wild eq "left");
-    $anno = $anno."%" if $anno && ($feat_anno_wild eq "both" || $feat_anno_wild eq "right");
-        my $search ={};
-    if ($accn =~ /%/)
-      {
-	$search->{'me.name'}={like=>$accn} if $accn;
-      }
-    else
-      {
-	$search->{'me.name'}=$accn if $accn;
-      }
-    if ($anno =~ /%/)
-      {
-	$search->{'annotation'}={like=>$anno} if $anno;
-      }
-    else
-      {
-	$search->{'annotation'}=$anno if $anno;
-      }
-#    $anno =~ s/%//g;
+    my $search ={};
     $search->{feature_type_id}=$type if $type;
-#    $search->{"organism.organism_id"}{ -not_in}=[values %$restricted_orgs] if values %$restricted_orgs;
     $search->{"organism.restricted"}=0 if $USER->name =~ /public/i;
-#    $search->{organism_id}{ -in}=[@org_ids] if @org_ids;
     $search->{'organism.name'}={like=>"%".$org_name."%"} if $org_name;
     $search->{'organism.description'}={like=>"%".$org_desc."%"} if $org_desc;
-    my $join = {'feature'=>{'dataset'=>{'dataset_connectors'=>{'dataset_group'=>'organism'}}}};
-    $join->{'feature'} = ['dataset','annotations'] if $anno;
-
-    #trying to get fulltext to work (and be fast!)
-#    my @names = $anno ?
-#      $coge->resultset('FeatureName')->search($search,
-#					      {join =>$join}
-#					     )->search_literal('MATCH (annotation) AGAINST(?)',$anno)
-#					       :
-#						 $coge->resultset('FeatureName')->search(
-#											 $search,
-#											 {join=>$join,
-#											  order_by=>'name ASC',
-#											 },
-#											);
-    my @names = $coge->resultset('FeatureName')->search(
-							$search,
-							{join=>$join,
-							 order_by=>'name ASC',
-							}
-							);
+    my $join = {join=>['annotation',{'feature'=>{'dataset'=>{'dataset_connectors'=>{'dataset_group'=>'organism'}}}}]};
+    #trying to get fulltext to work (and be fast!)    
+    my @names;
+    if($accn)
+      {
+	push @names , $coge->resultset('FeatureName')->search($search,$join)->search_literal('MATCH(me.name) AGAINST (?)',$accn);
+      }
+    if ($anno)
+      {
+	push @names, $coge->resultset('FeatureName')->search($search,$join)->search_literal('MATCH(annotation) AGAINST (?)',$anno);
+      }
+    my @opts;
     foreach my $name (@names)
       {
 	my $item = $name->name;
