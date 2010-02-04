@@ -14,6 +14,7 @@ use CoGe::Graphics::Feature::Domain;
 use CoGe::Graphics::Feature::Block;
 use CoGe::Graphics::Feature::Outline;
 use CoGeX;
+use DBIxProfiler;
 use Data::Dumper;
 use Benchmark;
 use Carp;
@@ -184,7 +185,7 @@ sub genomic_view
 
     #CoGe objects that we will need
     my $coge = CoGeX->dbconnect();
-    #$coge->storage->debugobj(new DBIxProfiler());
+#    $coge->storage->debugobj(new DBIxProfiler());
 #    $coge->storage->debug(1);
     my $c = new CoGe::Graphics::Chromosome;
 
@@ -535,11 +536,6 @@ sub process_features
     my $tf2 = new Benchmark if $BENCHMARK;
     my $tf3 = new Benchmark if $BENCHMARK;
     my @cds_feats;
-#    if (defined $self->MAX_FEATURES && $feat_count > $self->MAX_FEATURES)
-#      {
-#	warn "exceeded maximum number of features ",$self->MAX_FEATURES(),". ($feat_count requested)\nskipping.\n";
-#	return;
-#      }
 
     my @feats = $coge->get_features_in_region(start=>$start, end=>$stop, dataset=>$ds->id, chr=>$chr);
     my @tmp1;
@@ -551,16 +547,14 @@ sub process_features
     my $research =0;
     my ($tmpfeat) = sort {$a->start <=> $b->start} @feats;
 #    print STDERR "$start - $stop\n";
-    if ($tmpfeat->start < $start)
+    if ($c->overlap_adjustment && $tmpfeat->start < $start)
       {
-#	@tmp1 = $coge->get_features_in_region(start=>$feats[0]->start, end=>$start, dataset=>$ds->id, chr=>$chr);
 	$start = $tmpfeat->start;
 	$research=1;
       }
     ($tmpfeat) = sort {$b->stop <=> $a->stop} @feats;
-    if ($tmpfeat->stop > $stop)
+    if ($c->overlap_adjustment && $tmpfeat->stop > $stop)
       {
-#	@tmp2 = $coge->get_features_in_region(start=>$stop, end=>$feats[-1]->stop, dataset=>$ds->id, chr=>$chr);
 	$stop = $tmpfeat->stop;
 	$research=1;
       }
@@ -572,6 +566,7 @@ sub process_features
     my ($anno_type_group) = $coge->resultset('AnnotationTypeGroup')->find_or_create({name=>"Local Dup"});
     my ($parent_type) = $coge->resultset('AnnotationType')->find_or_create({name=>"Parent", annotation_type_group_id=>$anno_type_group->id});
     my ($daughter_type) = $coge->resultset('AnnotationType')->find_or_create({name=>"Daughter", annotation_type_group_id=>$anno_type_group->id});
+    my ($gevo_link_type) = $coge->resultset('AnnotationType')->find_or_create({name=>"GEvo link"});
     feat: foreach my $feat (values %feats)
       {
 	my $tf4a = new Benchmark if $BENCHMARK;
@@ -604,6 +599,19 @@ sub process_features
 	    $f->order(1);
 	    $f->overlay(1);
 	    $f->mag(0.5);
+	    $f->no_3D(1) if $layers->{features}{flat};
+	    push @f, $f;
+          }
+	elsif (($layers->{features}{gevo_link} || $layers->{all}))
+          {
+	    next unless $coge->resultset('Annotation')->count({feature_id=>$feat->id, annotation_type_id=>$gevo_link_type->id});
+	    my $f = CoGe::Graphics::Feature::Gene->new();
+	    $f->color([200, 200,100,50]);
+	    $f->add_segment(start=>$feat->start, stop=>$feat->stop);
+	    $f->strand($feat->strand);
+	    $f->order(2);
+	    $f->overlay(1);
+	    $f->mag(.6);
 	    $f->no_3D(1) if $layers->{features}{flat};
 	    push @f, $f;
           }
@@ -648,7 +656,7 @@ sub process_features
           {
 	    my $f = CoGe::Graphics::Feature::Domain->new();
 	    $f->order(2);
-	    $f->overlay(1);
+	    $f->overlay(2);
 	    push @f, $f;
           }
         elsif (($layers->{features}{repeat} || $layers->{all}) && $feat->type->name =~ /repeat/i)
@@ -693,6 +701,7 @@ sub process_features
 
 	    my $f = CoGe::Graphics::Feature::Block->new();
 	    $f->order(2);
+	    $f->overlay(3);
 	    my $color = [ 255, 100, 0];
 	    $f->color($color);
 	    push @f, $f;
@@ -902,7 +911,7 @@ sub process_layers
        "repeats"=>"repeat",
        "repeat"=>"repeat",
        "repeat_region"=>"repeat",
-       
+       "gevo_link"=>"gevo_link",
       );
     my %features = 
       (
@@ -922,6 +931,7 @@ sub process_layers
        "flat"=>1,
        "overlap_check"=>1,
        "repeat"=>1,
+       "gevo_link"=>1,
       );
     #determine of nt sequence is needed
     my %nt = 
