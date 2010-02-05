@@ -338,18 +338,16 @@ function search_bar(div_id){
 
 
 <div class="dialog" title="Feature List" id="feat_list">
-  <table><tr><Td>
     <span class="small count">Feature Count: 0</span><br>
               <SELECT id="featlist_choice" SIZE="10" MULTIPLE onchange="get_anno(['args__featlist_choice','featlist_choice'],[show_anno])">
               <option id=blank value=null>No Feature Selected</option>
               </SELECT>
-<td>
+ <br>
     <span class="ui-button ui-state-default ui-corner-all" id=send onClick="send_to_FeatList()">Create Feature List</span><br><br>
-    <span class="ui-button ui-state-default ui-corner-all" id=add_all onClick="$('#add_all').hide();$('#add_all_search').html('<img src=./picts/animations/DNA_orbit_animated_small_third.gif >'); cogesearch_featids(['args__accn','accn', 'args__anno','annosearch','args__type','type', 'args__org_id','org_id', 'args__feat_name_wild','feat_name_wild', 'args__feat_anno_wild', 'feat_anno_wild','args__org_name','org_name','args__org_desc','org_desc'],[add_all]);">Add All Features</SPAN><br><br>
+    <span class="ui-button ui-state-default ui-corner-all" id=add_all onClick="$('#add_all').hide();$('#add_all_search').html('<img src=./picts/animations/DNA_orbit_animated_small_third.gif >'); cogesearch_featids(['args__accn','accn', 'args__anno','annosearch','args__type','type', 'args__org_id','org_id','args__org_name','org_name','args__org_desc','org_desc'],[add_all]);">Add All Features</SPAN><br><br>
       <span class="ui-button ui-state-default ui-corner-all" id=remove onClick="$('#'+$('#featlist_choice').val()).remove();counting();">Remove</span><br><br>
     <span class="ui-button ui-state-default ui-corner-all" id=clear onClick="clear_feat_list()">Clear</span><br>
 
-</table>
     <div id=add_all_search></div>
 </div>
 
