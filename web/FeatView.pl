@@ -194,7 +194,6 @@ sub cogesearch
 sub cogesearch_featids
   {
     my %opts = @_;
-    print STDERR Dumper \%opts;
     my $accn = $opts{accn};
     $accn =~ s/^\s+//;
     $accn =~ s/\s+$//;
