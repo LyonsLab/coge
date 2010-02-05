@@ -451,7 +451,11 @@ $(document).ready(function(){
 
 function moveMap(){
 	 var mypos= $('#slider').slider("value");
-	 var myzoom = map.getResolution();
+	 map.setCenter(OpenLayers.BasePair(mypos));
+}
+
+function panMap(){
+	 var mypos= $('#slider').slider("value");
 	 map.panTo(OpenLayers.BasePair(mypos));
 }
 
@@ -462,7 +466,8 @@ $(function() {
 		max: <TMPL_VAR NAME="CHR_LENGTH">, 
 		value: <TMPL_VAR NAME="LOC">, 
 		slide: moveMap,
-		change: moveMap
+		change: panMap,
+		stop: panMap
 });
 });
 
