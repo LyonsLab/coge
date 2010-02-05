@@ -104,6 +104,7 @@
         var zoom = '<TMPL_VAR NAME=ZOOM>';
         var gstid = '<TMPL_VAR NAME=GSTID>';
         function init(){
+	    OpenLayers.Layer.Genomic.prototype.buffer = 1;
             map = new OpenLayers.GenomeBrowser( $('#map')[0] , 
             {   
                  maxExtent: new
@@ -240,7 +241,7 @@
             map.events.register('mouseup',map,mapMouseUp);
             map.events.register('mousemove',map,mapMouseMove);
             map.events.register('mouseout',map,mapMouseOut);
-	    map.events.register('drag',map,updateSliderPosition);
+	    map.events.register('moveend',map,updateSliderPosition);
 	    map.zoomOut();
 
 
@@ -451,7 +452,7 @@ $(document).ready(function(){
 function moveMap(){
 	 var mypos= $('#slider').slider("value");
 	 var myzoom = map.getResolution();
-	 map.setCenter(OpenLayers.BasePair(mypos));
+	 map.panTo(OpenLayers.BasePair(mypos));
 }
 
 //instantiates slider tool
