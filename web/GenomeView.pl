@@ -67,7 +67,7 @@ sub gen_body
     my $gstid = $form->param('gstid') if $form->param('gstid');
     my $fid = $form->param('fid') if $form->param('fid');
     my $dsgid = $form->param('dsgid') if $form->param('dsgid');
-
+    my $show_legend = $form->param('sl') if $form->param('sl');
     my $prefs = load_settings(user=>$USER, page=>$PAGE_NAME);
     my ($ds, $dsg, $gst);
     if ($fid)
@@ -164,6 +164,7 @@ sub gen_body
     $template->param(FLAT=>"checked") if $prefs->{'flat'}  && $prefs->{'flat'} eq "true";
     $template->param(EXPAND=>"checked") if $prefs->{'expand'}  && $prefs->{'expand'} eq "true";
     $template->param(POPUPANNO=>"checked") if $prefs->{'popupanno'}  && $prefs->{'popupanno'} eq "true";
+    $template->param(SHOW_LEGEND=>1) if $show_legend;
     my %default_true = (
 			gc=>'true',
 			genes=>'true',
