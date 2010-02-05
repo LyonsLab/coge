@@ -190,7 +190,60 @@ sub cogesearch
     return $blank."No results found\n" unless $html =~ /OPTION/;
     return $html;
   }
+
 sub cogesearch_featids
+  {
+    my %opts = @_;
+    print STDERR Dumper \%opts;
+    my $accn = $opts{accn};
+    $accn =~ s/^\s+//;
+    $accn =~ s/\s+$//;
+    my $anno = $opts{anno};
+    $anno =~ s/^\s+//;
+    $anno =~ s/\s+$//;
+    my $fid = $opts{fid};
+    my $type = $opts{type};
+    my $org_id = $opts{org_id};
+    my $org_name = $opts{org_name};
+    $org_name = undef if $org_name =~ /^search$/i;
+    my $org_desc = $opts{org_desc};
+    $org_desc = undef if $org_desc =~ /^search$/i;
+    my $blank = qq{<input type="hidden" id="accn_select">};
+    my $weak_query = "Query needs to be better defined.";
+    if (!$accn && !$anno && !$fid)
+      {
+	return;
+      }
+    ($USER) = CoGe::Accessory::LogUser->get_user();
+    my %seen;
+    my $search ={};
+    $search->{feature_type_id}=$type if $type;
+    $search->{"organism.restricted"}=0 if $USER->name =~ /public/i;
+    $search->{'organism.name'}={like=>"%".$org_name."%"} if $org_name;
+    $search->{'organism.description'}={like=>"%".$org_desc."%"} if $org_desc;
+    my $join = {join=>['annotation',{'feature'=>{'dataset'=>{'dataset_connectors'=>{'dataset_group'=>'organism'}}}}]};
+    #trying to get fulltext to work (and be fast!)    
+    my @names;
+    if($accn)
+      {
+	push @names , $coge->resultset('FeatureName')->search($search,$join)->search_literal('MATCH(me.name) AGAINST (?)',$accn);
+      }
+    if ($anno)
+      {
+	push @names, $coge->resultset('FeatureName')->search($search,$join)->search_literal('MATCH(annotation) AGAINST (?)',$anno);
+      }
+    my @opts;
+    foreach my $name (@names)
+      {
+	my $key = $name->feature_id."_".$name->feature->dataset->sequence_type->id;
+	$seen{$key}=$name->name." (".$name->feature->type->name;
+	$seen{$key}.= ", ".$name->feature->dataset->sequence_type->name;
+	$seen{$key}.= ")";
+      }
+    return join "||", map {$_."::".$seen{$_}} keys %seen;
+  }
+
+sub cogesearch_featids_old
   {
     my %opts = @_;
     my $accn = $opts{accn};
@@ -202,7 +255,9 @@ sub cogesearch_featids
     my $type = $opts{type};
     my $org_id = $opts{org_id};
     my $org_name = $opts{org_name};
+    $org_name = undef if $org_name =~ /^search$/i;
     my $org_desc = $opts{org_desc};
+    $org_desc = undef if $org_desc =~ /^search$/i;
     my @org_ids;
     $org_id = "all" unless $org_id;
     if ($org_id eq "all")
