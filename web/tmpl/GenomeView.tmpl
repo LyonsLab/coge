@@ -486,7 +486,7 @@ Window Width: <input type=textbox class=backbox size=4 id="width" onkeypress="on
 <div style="float:left">
  <span class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="$('#set_range').show(0);$('#grab_seq').show();$('#extract_feat').hide();$('#grab_from').css('backgroundColor','FFFF66');pageObj.getseq=1;"><span class="ui-icon ui-icon-scissors"></span>Grab Sequence</span>
  <span class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="$('#set_range').show(0);$('#extract_feat').show();$('#grab_seq').hide();$('#grab_from').css('backgroundColor','FFFF66');pageObj.getseq=1;"><span class="ui-icon ui-icon-scissors"></span>Extract Features</span>
- <span class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="get_genome_info(['args__dsgid', 'args__<TMPL_VAR NAME=DSG>'],['genome_info_popup']);$('#genome_info_popup').dialog('open');"><span class="ui-icon ui-icon-newwin"></span>Genome Info</span>
+ <span class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="$('#genome_info_popup').html('Loading. . .');get_genome_info(['args__dsgid', 'args__<TMPL_VAR NAME=DSG>'],['genome_info_popup']);$('#genome_info_popup').dialog('open');"><span class="ui-icon ui-icon-newwin"></span>Genome Info</span>
  <br>
 <span id="set_range" style="display:none" > 
   <input type=text id='grab_from' value=0> to <input type=text id="grab_to" value=0> 
@@ -507,9 +507,12 @@ Window Width: <input type=textbox class=backbox size=4 id="width" onkeypress="on
 
 <div id="short_anno_popup" class="dialog_box" title="Feature Quick Look:"</div>
 <div id='query_popup' class="dialog_box" title="Features:"></div></div>
-<div id="genome_info_popup" class="dialog_box" title="Genome Information"><span class=loading>Loading. . .</span></div>
+<div id="genome_info_popup" class="dialog_box" title="Genome Information"></div>
 
 <span class="legend ui-button ui-state-default ui-corner-all" onclick="$('.legend').toggle()">Show Legend</span>
 <span class="legend ui-button ui-state-default ui-corner-all" style="display:none" onclick="$('.legend').toggle()">Hide Legend</span>
-<div class="legend" style="display:none"><img height=50% width=50% src="/CoGe/picts/GenomeView-legend.png"><br><span class="link" onclick="window.open('/wiki/index.php?title=GenomeView')">More information?</span><div>
+<div class="legend" style="display:none"><img height=50% width=50% src="/CoGe/picts/GenomeView-legend.png">
+<br>
+<span class="link" onclick="window.open('/wiki/index.php?title=GenomeView_examples')">Click here for more information understanding GenomeView graphics.</span></div>
+<span class="ui-button ui-state-default ui-corner-all" onclick="window.open('/wiki/index.php?title=GenomeView')">More help</span>
 
