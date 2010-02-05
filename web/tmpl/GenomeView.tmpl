@@ -444,7 +444,7 @@ $(document).ready(function(){
   init();
   change_gene_model_type();
   $(".dialog_box").dialog({ autoOpen: false, width: 500  });
-
+  <TMPL_IF NAME="SHOW_LEGEND">$('.legend').toggle()</TMPL_IF>
 
 });
 
