@@ -9,11 +9,11 @@ use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use CoGeX;
 use DBI;
+use Data::Dumper;
 $ENV{PATH} = "/opt/apache2/CoGe/";
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 
 use vars qw( $PAGE_NAME $DATE $DEBUG $USER $FORM $coge);
-
 $PAGE_NAME="GenomeView.pl";
 $DEBUG = 0;
 $FORM = new CGI;
@@ -165,6 +165,11 @@ sub gen_body
     $template->param(EXPAND=>"checked") if $prefs->{'expand'}  && $prefs->{'expand'} eq "true";
     $template->param(POPUPANNO=>"checked") if $prefs->{'popupanno'}  && $prefs->{'popupanno'} eq "true";
     $template->param(SHOW_LEGEND=>1) if $show_legend;
+    #stuff for people coming from maizegdb
+    if ($ENV{HTTP_REFERED}=~/maizegdb/)
+      {
+	$template->param(MAIZEGDB=>1);
+      }
     my %default_true = (
 			gc=>'true',
 			genes=>'true',
