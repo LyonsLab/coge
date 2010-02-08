@@ -166,7 +166,7 @@ sub gen_body
     $template->param(POPUPANNO=>"checked") if $prefs->{'popupanno'}  && $prefs->{'popupanno'} eq "true";
     $template->param(SHOW_LEGEND=>1) if $show_legend;
     #stuff for people coming from maizegdb
-    if ($ENV{HTTP_REFERED}=~/maizegdb/)
+    if ($ENV{HTTP_REFERER}=~/maizegdb/)
       {
 	$template->param(MAIZEGDB=>1);
       }
