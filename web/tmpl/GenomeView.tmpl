@@ -445,7 +445,8 @@ $(document).ready(function(){
   init();
   change_gene_model_type();
   $(".dialog_box").dialog({ autoOpen: false, width: 500  });
-  <TMPL_IF NAME="SHOW_LEGEND">$('.legend').toggle()</TMPL_IF>
+  <TMPL_IF NAME="SHOW_LEGEND">$('.legend').toggle();</TMPL_IF>
+  <TMPL_IF NAME="MAIZEGDB">$('#maizegdb_popup').dialog('open');</TMPL_IF>
 
 });
 
@@ -523,7 +524,6 @@ Window Width: <input type=textbox class=backbox size=4 id="width" onkeypress="on
 <span class="legend ui-button ui-state-default ui-corner-all" style="display:none" onclick="$('.legend').toggle()">Hide Legend</span>
  <div class="legend" style="display:none">
  <TMPL_IF NAME="MAIZEGDB"> 
- <script type="text/javascript">$('#maizegdb_popup').dialog('open');</script>
  <span class="ui-button ui-state-default ui-corner-all" onclick="$('#maizegdb_popup').dialog('open')">Maize Researcher Information</span>
  </TMPL_IF>
  <img width=600px src="/CoGe/picts/GenomeView-legend.png">
