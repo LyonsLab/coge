@@ -514,14 +514,17 @@ Window Width: <input type=textbox class=backbox size=4 id="width" onkeypress="on
 <div id="short_anno_popup" class="dialog_box" title="Feature Quick Look:"</div>
 <div id='query_popup' class="dialog_box" title="Features:"></div></div>
 <div id="genome_info_popup" class="dialog_box" title="Genome Information"></div>
+<div id="maizegdb_popup" class="dialog_box" title="Welcome Maize Genome Researcher">
+   <li>For more information on how MaizeGDB and CoGe work together: <span class="link" onclick=window.open('http://synteny.cnr.berkeley.edu/wiki/index.php/MaizeGDB_and_CoGe')>MaizeGDB-CoGe</span>
+   <li>For more information on how Maize-Sorhgum comparative genomics using CoGe: <span class="link" onclick=window.open('http://synteny.cnr.berkeley.edu/wiki/index.php/Maize_Sorghum_Syntenic_dotplot')>Maize-Sorghum and CoGe</span>
+</div>
 
 <span class="legend ui-button ui-state-default ui-corner-all" onclick="$('.legend').toggle()">Show Legend</span>
 <span class="legend ui-button ui-state-default ui-corner-all" style="display:none" onclick="$('.legend').toggle()">Hide Legend</span>
  <div class="legend" style="display:none">
- <TMPL_IF NAME="MAIZEGDB">
-  Welcome Maize Genome Researcher!<br>
-  <li>For more information on how MaizeGDB and CoGe work together: <span class="link" onclick=window.open('http://synteny.cnr.berkeley.edu/wiki/index.php/MaizeGDB_and_CoGe')>MaizeGDB-CoGe</span>
-  <li>For more information on how Maize-Sorhgum comparative genomics using CoGe: <span class="link" onclick=window.open('http://synteny.cnr.berkeley.edu/wiki/index.php/Maize_Sorghum_Syntenic_dotplot')>Maize-Sorghum and CoGe</span>
+ <TMPL_IF NAME="MAIZEGDB"> 
+ <script type="text/javascript">$('#maizegdb_popup').dialog('open');</script>
+ <span class="ui-button ui-state-default ui-corner-all" onclick="$('#maizegdb_popup').dialog('open')">Maize Researcher Information</span>
  </TMPL_IF>
  <img width=600px src="/CoGe/picts/GenomeView-legend.png">
   <br>
