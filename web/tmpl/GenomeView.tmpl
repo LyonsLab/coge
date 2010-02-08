@@ -467,7 +467,7 @@ $(function() {
 		value: <TMPL_VAR NAME="LOC">, 
 		slide: moveMap,
 		change: panMap,
-		stop: panMap
+		stop: panMap,
 });
 });
 
@@ -517,8 +517,22 @@ Window Width: <input type=textbox class=backbox size=4 id="width" onkeypress="on
 
 <span class="legend ui-button ui-state-default ui-corner-all" onclick="$('.legend').toggle()">Show Legend</span>
 <span class="legend ui-button ui-state-default ui-corner-all" style="display:none" onclick="$('.legend').toggle()">Hide Legend</span>
-<div class="legend" style="display:none"><img height=50% width=50% src="/CoGe/picts/GenomeView-legend.png">
-<br>
-<span class="link" onclick="window.open('/wiki/index.php?title=GenomeView_examples')">Click here for more information understanding GenomeView graphics.</span></div>
-<span class="ui-button ui-state-default ui-corner-all" onclick="window.open('/wiki/index.php?title=GenomeView')">More help</span>
+ <div class="legend" style="display:none">
+ <TMPL_IF NAME="MAIZEGDB">
+  Welcome Maize Genome Researcher!<br>
+  <li>For more information on how MaizeGDB and CoGe work together: <span class="link" onclick=window.open('http://synteny.cnr.berkeley.edu/wiki/index.php/MaizeGDB_and_CoGe')>MaizeGDB-CoGe</span>
+  <li>For more information on how Maize-Sorhgum comparative genomics using CoGe: <span class="link" onclick=window.open('http://synteny.cnr.berkeley.edu/wiki/index.php/Maize_Sorghum_Syntenic_dotplot')>Maize-Sorghum and CoGe</span>
+ </TMPL_IF>
+ <img width=600px src="/CoGe/picts/GenomeView-legend.png">
+  <br>
+ <TMPL_IF NAME="MAIZEGDB">
+  <img width=600px src="/CoGe/picts/GenomeView_GEvo-links.png">
+  <br>
+  <span class=small>GenomeView showing glyphs for links to GEvo. These glyphs are blue "links" and are displayed when a genomic feature has a link to GEvo for syntenic analysis of syntelogs.</span>
+  <br>
+ </TMPL_IF>
+</div>
+ <span class="ui-button ui-state-default ui-corner-all" onclick="window.open('/wiki/index.php?title=GenomeView_examples')">More Legend Information</span>
+
+<span class="ui-button ui-state-default ui-corner-all" onclick="window.open('/wiki/index.php?title=GenomeView')">More GenomeView Help</span>
 
