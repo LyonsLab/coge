@@ -169,6 +169,7 @@ sub gen_body
     if ($ENV{HTTP_REFERER}=~/maizegdb/)
       {
 	$template->param(MAIZEGDB=>1);
+	$template->param(EXPAND=>"checked");
       }
     my %default_true = (
 			gc=>'true',
