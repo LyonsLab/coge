@@ -525,6 +525,7 @@ sub annotation_pretty_print_html
 	      {
 		$anno_name = "<tr><td nowrap='true'><span class=\"title5\">". $anno_name."</span>";
 	      }
+	    $anno_name = "<span class=\"coge link\">".$anno_name."</span>" if $anno->link;
 	    my $anno_type = new CoGe::Accessory::Annotation(Type=>$anno_name);
 	    $anno_type->Val_delimit(", ");
 	    $anno_type->Type_delimit(" ");
