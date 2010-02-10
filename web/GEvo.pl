@@ -1454,6 +1454,7 @@ sub process_features
 	    $f->type($type);
 	    #$f->force_draw(1);
 	    $f->description($feat->annotation);
+#	    $f->alignment($feat->alignment);
 	    $c->add_feature($f);
 	    next;
 	  }
@@ -1746,7 +1747,7 @@ sub process_hsps
 	    my $link = "HSPView.pl?report=$report&num=".$hsp->number."&db=".$cogeweb->basefilename.".sqlite";
 	    $link .= join ("&","&qstart=".($gbobj->start+$start-1), "qstop=".($gbobj->start+$stop-1),"qchr=".$gbobj->chromosome, "qds=". $gbobj->dataset,"qstrand=".$strand) if $gbobj->dataset;
 	    $f->link($link) if $link;
-#	    $f->alignment($hsp->alignment);
+	    $f->alignment($hsp->alignment) if $hsp->alignment;
 	    push @feats, $f;
 
 	    print STDERR $hsp->number,"-", $hsp->strand, $track,":", $strand,"\n" if $DEBUG;
