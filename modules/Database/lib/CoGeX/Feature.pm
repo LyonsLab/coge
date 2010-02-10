@@ -510,7 +510,7 @@ sub annotation_pretty_print_html
     $anno_obj->add_Annot($anno_type);
     unless ($minimal)
       {
-	foreach my $anno (sort {$b->type->name cmp $a->type->name} $self->annos({},{prefetch=>{annotation_type=>'annotation_type_group'}}))
+	foreach my $anno (sort {uc($a->type->name) cmp uc($b->type->name)} $self->annos({},{prefetch=>{annotation_type=>'annotation_type_group'}}))
 	  {
 	    my $type = $anno->type();
 	    my $group = $type->group();
@@ -523,11 +523,17 @@ sub annotation_pretty_print_html
 	      }
 	    else
 	      {
-		$anno_name = "<tr><td nowrap='true'><span class=\"title5\">". $anno_name."</span>";
+		if ($anno->link)
+		  {
+		    $anno_name = "<tr><td nowrap='true'><span class=\"coge_link\">".$anno_name."</span>";
+		  }
+		else
+		  {
+		    $anno_name = "<tr><td nowrap='true'><span class=\"title5\">". $anno_name."</span>";
+		  }
 	      }
-	    $anno_name = "<span class=\"coge_link\">".$anno_name."</span>" if $anno->link;
 	    my $anno_type = new CoGe::Accessory::Annotation(Type=>$anno_name);
-	    $anno_type->Val_delimit(", ");
+	    $anno_type->Val_delimit("<br>");
 	    $anno_type->Type_delimit(" ");
 #	    my $annotation = $anno->annotation;
 	    my $annotation = "<span class=\"data5";
