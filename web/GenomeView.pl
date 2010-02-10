@@ -64,6 +64,7 @@ sub gen_body
     $dsid = $form->param('dsid') if $form->param('dsid');
     my $z = $form->param('z') if defined ($form->param('z'));
     my $loc = $form->param('x') if $form->param('x');
+    $loc =~ s/,|\.//g; #remove commas and points if present
     my $gstid = $form->param('gstid') if $form->param('gstid');
     my $fid = $form->param('fid') if $form->param('fid');
     my $dsgid = $form->param('dsgid') if $form->param('dsgid');
