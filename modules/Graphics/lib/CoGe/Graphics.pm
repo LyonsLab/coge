@@ -564,7 +564,7 @@ sub process_features
     my %feats = map {$_->id, $_} @feats;
     my $tf4 = new Benchmark if $BENCHMARK;
     #let's find and color local duplications
-    my ($anno_type_group) = $coge->resultset('AnnotationTypeGroup')->find_or_create({name=>"Local Dup"});
+    my ($anno_type_group) = $coge->resultset('AnnotationTypeGroup')->find_or_create({name=>"Tandem duplicates"});
     my ($parent_type) = $coge->resultset('AnnotationType')->find_or_create({name=>"Parent", annotation_type_group_id=>$anno_type_group->id});
     my ($daughter_type) = $coge->resultset('AnnotationType')->find_or_create({name=>"Daughter", annotation_type_group_id=>$anno_type_group->id});
     my ($gevo_link_type) = $coge->resultset('AnnotationType')->find_or_create({name=>"GEvo link"});
