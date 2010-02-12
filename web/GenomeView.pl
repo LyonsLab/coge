@@ -28,9 +28,9 @@ my $pj = new CGI::Ajax(
 		       save_options=>\&save_options,
 		       get_genome_info=>\&get_genome_info,
 			);
-$pj->js_encode_function('escape');
+#$pj->js_encode_function('escape');
 print $pj->build_html($FORM, \&gen_html);
-#print $FORM->header; gen_html();
+print $FORM->header; gen_html();
 
 
 
@@ -150,8 +150,13 @@ sub gen_body
       {
 	$template->param(GEVO_LINK_LAYER=>1);
       }
-
-
+    my ($tandem_dup) = $coge->resultset('AnnotationTypeGroup')->search({name=>"Tandem duplicates"});
+    if ($tandem_dup)
+      {
+	my ($anno) = $coge->resultset('Annotation')->count({'feature.dataset_id'=>$dsid,'annotation_type.annotation_type_group_id'=>$tandem_dup->id},{join=>['feature','annotation_type'], limit=>1});
+	$template->param(LOCAL_DUP_LAYER=>1) if $anno;
+      }
+    
     $template->param(CHR=>$chr);
     $template->param(VER=>$ver);
     $template->param(ORG=>$org);
