@@ -85,6 +85,7 @@ sub get_locs {
             $fids{$g->feature_id} = 1;
             my @gene_names;
             if($name_re){
+                print STDERR $name_re . "\n";
                 @gene_names = grep { $_->name =~ /$name_re/i } $g->feature_names(); 
             }
             else {
@@ -179,7 +180,11 @@ sub get_locs {
                 print $gstr . "\n";
                 next;
             } 
-            print STDERR "BAD $gene_name\t" . $g->type->name . "\t" . $ftype . "\n";
+            # just a gene, no mRNA or CDS
+            #print STDERR "BAD $gene_name\t" . $g->type->name . "\t" . $ftype . "\n";
+            my $gstr = join("\t", ($index, $chr, $clean_name, $g->start, $g->stop, $strand));
+            $gstr .= "\t" . $g->type->name . "\t" . $g->start . "," . $g->stop;
+            print $gstr . "\n";
         }
     }
     return \%chrs;
