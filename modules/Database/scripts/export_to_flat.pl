@@ -135,6 +135,9 @@ sub get_locs {
                 $fids{$f->feature_id} = 1;
                 $has_cds = 1;
                 foreach my $loc ($f->locations()){
+                    my $l = scalar(@locs);
+                    # dont add exons repeatedly.
+                    if ($l > 0 && $locs[$l - 2] == $loc->start && $locs[$l - 1] == $loc->stop){ next; }
                     push(@locs, $loc->start);
                     push(@locs, $loc->stop);
                 }
@@ -163,6 +166,9 @@ sub get_locs {
                 $fids{$f->feature_id} = 1;
                 $ftype = $f->type->name;
                 foreach my $loc ($f->locations()){
+                    my $l = scalar(@locs);
+                    # dont add exons repeatedly.
+                    if ($l > 0 && $locs[$l - 2] == $loc->start && $locs[$l - 1] == $loc->stop){ next; }
                     push(@locs, $loc->start);
                     push(@locs, $loc->stop);
                 }
