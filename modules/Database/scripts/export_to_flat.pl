@@ -85,7 +85,6 @@ sub get_locs {
             $fids{$g->feature_id} = 1;
             my @gene_names;
             if($name_re){
-                print STDERR $name_re . "\n";
                 @gene_names = grep { $_->name =~ /$name_re/i } $g->feature_names(); 
             }
             else {
