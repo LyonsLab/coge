@@ -567,7 +567,7 @@ sub process_features
     my ($tandem_type_group) = $coge->resultset('AnnotationTypeGroup')->search({name=>"Tandem duplicates"});
 #    my ($parent_type) = $coge->resultset('AnnotationType')->search({name=>"Parent", annotation_type_group_id=>$anno_type_group->id});
 #    my ($daughter_type) = $coge->resultset('AnnotationType')->search({name=>"Daughter", annotation_type_group_id=>$anno_type_group->id});
-    my ($gevo_link_type) = $coge->resultset('AnnotationType')->search({name=>"GEvo link"});
+    my ($gevo_link_group) = $coge->resultset('AnnotationTypeGroup')->search({name=>"GEvo link"});
     feat: foreach my $feat (values %feats)
       {
 	my $tf4a = new Benchmark if $BENCHMARK;
@@ -605,7 +605,8 @@ sub process_features
           }
 	elsif (($layers->{features}{gevo_link} || $layers->{all}))
           {
-	    next unless $coge->resultset('Annotation')->count({feature_id=>$feat->id, annotation_type_id=>$gevo_link_type->id});
+	    #next unless $coge->resultset('Annotation')->count({feature_id=>$feat->id, annotation_type_id=>$gevo_link_type->id});
+	    next unless $coge->resultset('Annotation')->count({feature_id=>$feat->id, annotation_type_group_id=>$gevo_link_group->id}, {join=>'annotation_type'} );
 	    my $f = CoGe::Graphics::Feature::Link->new();
 	    $f->color([50, 200,200,50]);
 	    foreach my $loc ($feat->locs)
