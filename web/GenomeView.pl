@@ -144,16 +144,18 @@ sub gen_body
 	    $template->param(REPEATS_LAYER=>1);
 	  }
       }
-    my ($anno_type) = $coge->resultset('AnnotationType')->search({name=>"gevo link"});
-    my ($anno) = $coge->resultset('Annotation')->count({'feature.dataset_id'=>$dsid,'me.annotation_type_id'=>$anno_type->id},{join=>'feature',limit=>1});
-    if ($anno)
+    my ($gevo_group) = $coge->resultset('AnnotationTypeGroup')->search({name=>"gevo link"});
+    if ($gevo_group)
       {
-	$template->param(GEVO_LINK_LAYER=>1);
+	my ($anno) = $coge->resultset('Annotation')->count({'feature.dataset_id'=>$dsid,'annotation_type.annotation_type_group_id'=>$gevo_group->id},{join=>['feature','annotation_type'],limit=>1});
+	$template->param(GEVO_LINK_LAYER=>1) if ($anno);
       }
-    my ($tandem_dup) = $coge->resultset('AnnotationTypeGroup')->search({name=>"Tandem duplicates"});
-    if ($tandem_dup)
+
+
+    my ($tandem_group) = $coge->resultset('AnnotationTypeGroup')->search({name=>"Tandem duplicates"});
+    if ($tandem_group)
       {
-	my ($anno) = $coge->resultset('Annotation')->count({'feature.dataset_id'=>$dsid,'annotation_type.annotation_type_group_id'=>$tandem_dup->id},{join=>['feature','annotation_type'], limit=>1});
+	my ($anno) = $coge->resultset('Annotation')->count({'feature.dataset_id'=>$dsid,'annotation_type.annotation_type_group_id'=>$tandem_group->id},{join=>['feature','annotation_type'], limit=>1});
 	$template->param(LOCAL_DUP_LAYER=>1) if $anno;
       }
     
