@@ -9,7 +9,7 @@ use Data::Dumper;
 use DBI;
 use POSIX;
 
-use vars qw($dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ks_db $ks_type $log $MAX $MIN $assemble $axis_metric);
+use vars qw($dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ks_db $ks_type $log $MAX $MIN $assemble $axis_metric $color_type);
 
 
 GetOptions(
@@ -28,7 +28,9 @@ GetOptions(
 	   "flip|f=i"=>\$flip,
 	   "grid|g=i"=>\$grid,
 	   "ksdb|ks_db=s"=>\$ks_db,
-	   "ks_type|kst=s"=>\$ks_type,
+	   "ks_type|kst=s"=>\$ks_type, 
+	   "color_diags_type|cdt=s"=>\$color_type, #how to color diagonals
+	                                         #NOTE this is trumped by ksdb and the diag dots will be colored according to ks_type
 	   "max=s"=>\$MAX,
 	   "min=s"=>\$MIN,
 	   "log=s"=>\$log,
@@ -112,9 +114,31 @@ my $ksdata = get_ksdata(ks_db=>$ks_db, ks_type=>$ks_type, chr1=>$CHR1, chr2=> $C
 #draw dots for all matches
 draw_dots(gd=>$graphics_context, file=>$dagfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, link_type => $link_type, dsgid1=>$dsgid1, dsgid2=>$dsgid2, flip=>$flip, metric=>$axis_metric);
 
+
+#color_scheme
+my @colors;
+if ($color_type && $color_type eq "inv")
+  {
+    push @colors, $graphics_context->colorResolve(0,150,0); #forward green
+    push @colors, $graphics_context->colorResolve(0,0,150); #reverse red
+  }
+elsif ($color_type && $color_type eq "diag")
+  {
+    push @colors, $graphics_context->colorResolve(150,0,0);
+    push @colors, $graphics_context->colorResolve(0,150,0);
+    push @colors, $graphics_context->colorResolve(0,0,150);
+    push @colors, $graphics_context->colorResolve(150,150,0);
+    push @colors, $graphics_context->colorResolve(150,0,150);
+    push @colors, $graphics_context->colorResolve(0,150,150);
+  }
+else
+  {
+    push @colors, $graphics_context->colorResolve(0,150,0);
+  }
+
 #add syntenic gene pairs
 my $add = 1 if $dsgid1 eq $dsgid2;
-draw_dots(gd=>$graphics_context, file=>$alignfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, color=>$graphics_context->colorResolve(0,150,0), rev_color=>$graphics_context->colorResolve(200,0,0), size=>2, add_inverse=>$add, flip=>$flip, ksdata=>$ksdata, ks_type=>$ks_type, log=>$log, metric=>$axis_metric);
+draw_dots(gd=>$graphics_context, file=>$alignfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, size=>2, add_inverse=>$add, flip=>$flip, ksdata=>$ksdata, ks_type=>$ks_type, log=>$log, metric=>$axis_metric, colors=>\@colors, color_type=>$color_type);
 
 #Write out graphics context - the generated dot plot - to a .png file
 open (OUT, ">".$basename.".png") || die "$!";
@@ -135,8 +159,7 @@ sub draw_dots
     my $x_pix_per_bp=$opts{x_pix_per_bp};
     my $y_pix_per_bp=$opts{y_pix_per_bp};
     my $size = $opts{size} || 1;
-    my $color = $opts{color};
-    my $rev_color = $opts{rev_color};
+    my $colors = $opts{colors};
     my $add_inverse = $opts{add_inverse};
     my $link_type = $opts{link_type} || 0;
     my $dsgid1 = $opts{dsgid1};
@@ -145,19 +168,30 @@ sub draw_dots
     my $ksdata = $opts{ksdata};
     my $log = $opts{log}; #log normalize ksdata for display?
     my $metric= $opts{metric};
+    my $color_type = $opts{color_type};
     my $has_ksdata = keys %$ksdata ? 1 : 0;
     #min and max will be log normalized if log flag is set
     my ($max, $min) = get_range(data=>$ksdata, min=>$MIN, max=>$MAX, log=>$log) if $has_ksdata;
     my $range = $max-$min if $has_ksdata;
-    $color = $graphics_context->colorResolve(150,150,150) unless $color;
-    $rev_color = $color unless $rev_color;
+    my $default_color = $graphics_context->colorResolve(150,150,150);
+    $colors = [$default_color] unless ref($colors) =~ /array/i && @$colors;
     open (IN, $file) || die "$!";
+    my $use_color;
+    $use_color = $colors->[0] unless $color_type;
+    my $color_index=0;
+
     my @feats;
     my %points;
     my @points;
     while (<IN>)
       {
 	chomp;
+	if (/^#/ && $color_type && $color_type eq "diag")
+	  {
+	    $use_color = $colors->[$color_index];
+	    $color_index++;
+	    $color_index = 0 if $color_index >= @$colors;
+	  }
 	next if /^#/;
 	next unless $_;
 	my @line = split /\t/;
@@ -166,14 +200,10 @@ sub draw_dots
 	my @item2 = split/\|\|/, $line[5];
 	my $fid1 = $item1[6];
 	my $fid2 = $item2[6];
-	my $use_color;
-	if ($item1[4] && $item2[4])
+
+	if ($color_type && $color_type eq "inv" && $item1[4] && $item2[4])
 	  {
-	    $use_color = $item1[4] eq $item2[4]? $color : $rev_color;
-	  }
-	else
-	  {
-	    $use_color = $color;
+	    $use_color = $item1[4] eq $item2[4]? $colors->[0] : $colors->[1];
 	  }
 
 	if ($has_ksdata)
@@ -722,7 +752,7 @@ sub parse_syn_blocks
 	  {
 	    if ($block_check{$block->{name}})
 	      {
-		$block_check{$block->{name}}=$block if $block->{score} > $block_check{$block->{name}}{score}; #higher score wins
+		$block_check{$block->{name}}=$block if $block->{num_pairs} > $block_check{$block->{name}}{num_pairs}; #more pairs
 	      }
 	    else
 	      {
@@ -747,9 +777,10 @@ sub process_syn_block
   {
     my $block = shift;
     my ($head, @block) = split/\n/, $block;
-    my ($block_num, $score, $seq1, $seq2, $strand, $num_pairs) = 
+    my ($block_num, $score, $seq1, $seq2, $strand) = 
       split/\t/, $head;
     my $rev = $strand =~/r/ ? 1 : 0;
+
     my ($seq1_start, $seq1_stop, $seq2_start, $seq2_stop);
     #absolute start and stop can give rise to problems if the ends actually hit something far away from the rest of the sytnenic pairs.  Calculating the "mean" position will circumvent this problem
     my @start1;
@@ -766,6 +797,8 @@ sub process_syn_block
 	push @start2, $item[6];
 	push @stop2, $item[7];
       }
+    my $num_pairs = scalar @start1;
+    print join ("\t", $seq2,$strand,$rev,$num_pairs),"\n";
     #remove the ends;
     @start1 = sort {$a<=>$b} @start1;
     @stop1 = sort {$a<=>$b} @stop1;
@@ -799,6 +832,7 @@ sub process_syn_block
 		score=>$score,
 		rev=>$rev,
 		match=>$seq2,
+		num_pairs=>$num_pairs,
 		);
     my %seq2 = (
 		name=>$seq2,
@@ -809,6 +843,7 @@ sub process_syn_block
 		score=>$score,
 		rev=>$rev,
 		match=>$seq1,
+		num_pairs=>$num_pairs,
 		);
     return \%seq1, \%seq2;
   }
@@ -1037,6 +1072,12 @@ ks_db        | ksdb    specify a sqlite database with synonymous/nonsynonymous d
                        to color syntenic points
 
 ks_type| kst           specify the synonymous data to use (kS, kN, kn_ks) for coloring syntenic points
+
+color_diags_type|cdt   specify how the diagonals are to be colored.
+                       inv == colored by inversions
+                       diag == colored by diagonals
+                       --none-- == all diags are colored the same
+                       NOTE:  this option is superceded by ks_db if that is specified
 
 log                    log10 transform ks datadata (val = 0 set to minimum non-zero val)
 
