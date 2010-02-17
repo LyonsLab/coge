@@ -9,7 +9,7 @@ use Data::Dumper;
 use DBI;
 use POSIX;
 
-use vars qw($dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ks_db $ks_type $log $MAX $MIN $assemble $axis_metric $color_type);
+use vars qw($dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ks_db $ks_type $log $MAX $MIN $assemble $axis_metric $color_type $box_diags);
 
 
 GetOptions(
@@ -36,6 +36,7 @@ GetOptions(
 	   "log=s"=>\$log,
 	   "assemble=s"=>\$assemble,
 	   "axis_metrix|am=s"=>\$axis_metric,
+	   "box_diags|bd=i"=>\$box_diags,
 	   );
 
 
@@ -115,6 +116,8 @@ my $ksdata = get_ksdata(ks_db=>$ks_db, ks_type=>$ks_type, chr1=>$CHR1, chr2=> $C
 draw_dots(gd=>$graphics_context, file=>$dagfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, link_type => $link_type, dsgid1=>$dsgid1, dsgid2=>$dsgid2, flip=>$flip, metric=>$axis_metric);
 
 
+
+
 #color_scheme
 my @colors;
 if ($color_type && $color_type eq "inv")
@@ -138,7 +141,9 @@ else
 
 #add syntenic gene pairs
 my $add = 1 if $dsgid1 eq $dsgid2;
-draw_dots(gd=>$graphics_context, file=>$alignfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, size=>2, add_inverse=>$add, flip=>$flip, ksdata=>$ksdata, ks_type=>$ks_type, log=>$log, metric=>$axis_metric, colors=>\@colors, color_type=>$color_type);
+my $box_coords = draw_dots(gd=>$graphics_context, file=>$alignfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, size=>2, add_inverse=>$add, flip=>$flip, ksdata=>$ksdata, ks_type=>$ks_type, log=>$log, metric=>$axis_metric, colors=>\@colors, color_type=>$color_type);
+
+draw_boxes(gd=>$graphics_context, boxes=>$box_coords) if $box_diags && $box_coords && @$box_coords;
 
 #Write out graphics context - the generated dot plot - to a .png file
 open (OUT, ">".$basename.".png") || die "$!";
@@ -175,7 +180,7 @@ sub draw_dots
     my $range = $max-$min if $has_ksdata;
     my $default_color = $graphics_context->colorResolve(150,150,150);
     $colors = [$default_color] unless ref($colors) =~ /array/i && @$colors;
-    open (IN, $file) || die "$!";
+    open (IN, $file) || die "Can't open $file: $!";
     my $use_color;
     $use_color = $colors->[0] unless $color_type;
     my $color_index=0;
@@ -183,6 +188,8 @@ sub draw_dots
     my @feats;
     my %points;
     my @points;
+    my @boxes;
+    my ($min_x, $min_y, $max_x, $max_y);
     while (<IN>)
       {
 	chomp;
@@ -191,6 +198,14 @@ sub draw_dots
 	    $use_color = $colors->[$color_index];
 	    $color_index++;
 	    $color_index = 0 if $color_index >= @$colors;
+	  }
+	if (/^#/)
+	  {
+	    push @boxes,[$min_x-1, $min_y-1, $max_x+1, $max_y+1] if defined $min_x && defined $min_y && defined $max_x && defined $max_y;
+	    $min_x= undef;
+	    $min_y= undef;
+	    $max_x= undef;
+	    $max_y= undef;
 	  }
 	next if /^#/;
 	next unless $_;
@@ -297,9 +312,20 @@ sub draw_dots
 #	$graphics_context->arc($y, $graphics_context->height-$x, $size, $size, 0, 360, $use_color) if ($add_inverse && !$CHR1 && $x ne $y);
 #	$graphics_context->arc($y, $graphics_context->height-$x, $size, $size, 0, 360, $use_color) if ($add_inverse && $chr1 eq $chr2 && $x ne $y);
 	$val = 0 unless $val; #give it some value for later sorting
-	push @points, [ $x, $graphics_context->height-$y, $size, $size, 0, 360, $use_color, $val];
-	push @points, [ $y, $graphics_context->height-$x, $size, $size, 0, 360, $use_color, $val] if ($add_inverse && !$CHR1 && $x ne $y);
-	push @points, [ $y, $graphics_context->height-$x, $size, $size, 0, 360, $use_color, $val] if ($add_inverse && $chr1 eq $chr2 && $x ne $y);
+	my $y_real = $graphics_context->height-$y;
+	push @points, [ $x, $y_real, $size, $size, 0, 360, $use_color, $val];
+	$min_x = $x unless $min_x;
+	$min_x = $x if $x < $min_x;
+	$min_y = $y_real unless $min_y;
+	$min_y = $y_real if $y_real < $min_y;
+	$max_x = $x unless $max_x;
+	$max_x = $x if $x > $max_x;
+	$max_y = $y_real unless $max_y;
+	$max_y = $y_real if $y_real > $max_y;
+
+	$y_real = $graphics_context->height-$x;
+	push @points, [ $y, $y_real, $size, $size, 0, 360, $use_color, $val] if ($add_inverse && !$CHR1 && $x ne $y);
+	push @points, [ $y, $y_real, $size, $size, 0, 360, $use_color, $val] if ($add_inverse && $chr1 eq $chr2 && $x ne $y);
 	if ($link_type == 1)
 	  {
 	    #working here.  Need to build a GEvo link using datasets/chr/position if dealing with genomic data.
@@ -334,6 +360,7 @@ sub draw_dots
 	  }
       }
     close IN;
+    push @boxes,[$min_x-1, $min_y-1, $max_x+1, $max_y+1] if defined $min_x && defined $min_y && defined $max_x && defined $max_y;
     @points = sort {$b->[-1] <=> $a->[-1]} @points if ($has_ksdata);
     foreach my $point (@points)
       {
@@ -441,7 +468,7 @@ Ergo, we rely on jQuery to detect when the DOM is fully loaded, and then run the
 	close OUT;
       }
 
-
+    return \@boxes;
   }
 
 #This method draws the grid lines indicating cromosome locations, and write out the click map to the HTML file.
@@ -1025,6 +1052,18 @@ sub get_color
     return $color;
   }
 
+sub draw_boxes
+  {
+    my %opts = @_;
+    my $gd = $opts{gd};
+    my $boxes = $opts{boxes};
+    my $color = $gd->colorAllocate(255,200,255);
+    foreach my $box (@$boxes)
+      {
+	$gd->rectangle (@$box, $color);
+      }
+
+  }
 sub commify
   {
     my $text = reverse $_[0];
