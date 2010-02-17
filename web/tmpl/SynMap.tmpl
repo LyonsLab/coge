@@ -1,4 +1,4 @@
- <TMPL_IF NAME=MAIN>
+<TMPL_IF NAME=MAIN>
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
 
 <script language="javascript">
@@ -53,7 +53,7 @@ if(!pageObj.basename)
   pageObj.nolog=1;
   setTimeout("monitor_log()", 5000);
   
-go(['args__D','D','args__g','g','args__A','A','args__blast','blast', 'args__feat_type1','feat_type1', 'args__feat_type2','feat_type2','args__dsgid1','dsgid1', 'args__dsgid2','dsgid2','args__jobtitle','jobtitle','args__basename','args__'+pageObj.basename,'args__email','email','args__regen_images','args__'+$('#regen_images')[0].checked, 'args__width', 'args__'+$('#master_width').val(), 'args__dagchainer_type','args__'+$('#dagchainer_type')[0].checked, 'args__ks_type','ks_type', 'args__assemble','args__'+$('#assemble')[0].checked, 'args__axis_metric','axis_metric', 'args__min_chr_size', 'min_chr_size', 'args__show_non_syn','args__'+$('#show_non_syn')[0].checked],[handle_results]);
+go(['args__c','c','args__D','D','args__g','g','args__A','A','args__gm','gm','args__Dm','Dm','args__blast','blast', 'args__feat_type1','feat_type1', 'args__feat_type2','feat_type2','args__dsgid1','dsgid1', 'args__dsgid2','dsgid2','args__jobtitle','jobtitle','args__basename','args__'+pageObj.basename,'args__email','email','args__regen_images','args__'+$('#regen_images')[0].checked, 'args__width', 'args__'+$('#master_width').val(), 'args__dagchainer_type','args__'+$('#dagchainer_type')[0].checked, 'args__ks_type','ks_type', 'args__assemble','args__'+$('#assemble')[0].checked, 'args__axis_metric','axis_metric', 'args__min_chr_size', 'min_chr_size', 'args__show_non_syn','args__'+$('#show_non_syn')[0].checked, 'args__color_type','color_type'],[handle_results]);
 }
 
 function handle_results(val){
@@ -84,24 +84,24 @@ function update_params(val) {
    }
 
  var cmd;
- if ($('#org_id1').val() == params[3])
+ if ($('#org_id1').val() == params[5])
   {
-    cmd = "$('#feat_type1').attr('value', '"+params[5]+"');$('#feat_type2').attr('value', '"+params[8]+"');";
-    $('#dsgid1').attr('value',params[4]);
-    $('#dsgid2').attr('value',params[7]);
+    cmd = "$('#feat_type1').attr('value', '"+params[7]+"');$('#feat_type2').attr('value', '"+params[10]+"');";
+    $('#dsgid1').attr('value',params[6]);
+    $('#dsgid2').attr('value',params[9]);
   }
  else
   {
-    cmd = "$('#feat_type2').attr('value', '"+params[5]+"');$('#feat_type1').attr('value', '"+params[8]+"');";
-    $('#dsgid2').attr('value',params[4]);
-    $('#dsgid1').attr('value',params[7]);
+    cmd = "$('#feat_type2').attr('value', '"+params[7]+"');$('#feat_type1').attr('value', '"+params[10]+"');";
+    $('#dsgid2').attr('value',params[6]);
+    $('#dsgid1').attr('value',params[9]);
   }
  get_dataset_group_info(['args__dsgid','dsgid1','args__org_num','args__1'],['dsg_info1', 'feattype_menu1','genome_message1']);
  get_dataset_group_info(['args__dsgid','dsgid2','args__org_num','args__2'],['dsg_info2', 'feattype_menu2','genome_message2']);
  ajax_wait(cmd);
  var type;
  $('#blast option:eq('+params[0]+')').attr('selected','selected');
- if (params[10] == 'Distance') 
+ if (params[12] == 'Distance') 
   {
    $("input[name='dagchainer_type']:nth(1)").attr("checked","checked");
    type=" bp";
@@ -111,7 +111,8 @@ function update_params(val) {
    $("input[name='dagchainer_type']:nth(0)").attr("checked","checked");
    type= " genes"
   }
- display_dagchainer_settings([params[0],params[1],params[2]],type);
+ display_dagchainer_settings([params[0],params[1],params[2], params[3],params[4]],type);
+ $('#c').val(params[13]);
 }
 
 function set_dagchainer_defaults(params, type) {
@@ -120,15 +121,15 @@ function set_dagchainer_defaults(params, type) {
    {
     if ($('#dagchainer_type')[0].checked)
      {
-       params = [10,20,5];
+       params = [10,20,5,40,80];
        type = " genes";  
      } 
     else
      { 
       if (settings == 1) // for plant genomes
-       { params = [24000, 120000, 3];}
+       { params = [24000, 120000, 3, 96000,480000];}
       else if (settings == 2) // for microbe genomes
-       { params = [1000, 2000, 3];}
+       { params = [1000, 2000, 3, 4000, 8000];}
        type=" bp";
      }
   }
@@ -136,6 +137,10 @@ function set_dagchainer_defaults(params, type) {
   $('#g').val(params[0]);
   $('#D').val(params[1]);
   $('#A').val(params[2]);
+  if (typeof(params[3]) == 'undefined') { params[3] = 4*params[0];}
+  if (typeof(params[4]) == 'undefined') { params[4] = 4*params[1];}
+  $('#gm').val(params[3]);
+  $('#Dm').val(params[4]);
   $('.distance_type').html(type);
  }
 
@@ -429,8 +434,8 @@ function open_window (url, loc, width, height)
 
 <ul>
  <li class=small><a href="#tab-1">Select Organisms</a></li>
- <li class=small><a href="#tab-2">DAGChainer Options</a></li>
- <li class=small><a href="#tab-3">SynMap Options</a></li>
+ <li class=small><a href="#tab-2">Analysis Options</a></li>
+ <li class=small><a href="#tab-3">Display Options</a></li>
 </ul>
 
 
@@ -443,8 +448,21 @@ function open_window (url, loc, width, height)
 </div> <!--close tab-1 -->
 
 <div id="tab-2">
+<table id=algo_table>
+ <tr class="odd">
+   <td style="color:#009900">Blast Algorithm:
+   <td><select id="blast" name="blast">
+        <OPTION VALUE="1" <TMPL_VAR NAME="BLASTN_SELECT">">BlastN
+        <OPTION VALUE="2" <TMPL_VAR NAME="TBLASTX_SELECT">">TBlastX
+       </select>
+ <tr class="even">
+   <td style="color:#009900">Filter Repetitive Matches:
+   <td>Expected number of hits per sequence <input type=text size=2 id="c" value="<TMPL_VAR NAME="CVALUE">">
+  <tr valign=top class="odd">
+  <td style="color:#009900">DAGChainer Options:
+  <td>
     <label>Relative Gene Order<input id="dagchainer_type" name="dagchainer_type" type=radio value="gene_order" <TMPL_VAR DAG_GENE_SELECT>  onCLick="display_dagchainer_settings()"></label>
-    <label>Nucleotide Distance<input id="dagchainer_type" name="dagchainer_type" type=radio value="distance" <TMPL_VAR DAG_DISTANCE_SELECT>  onCLick="display_dagchainer_settings()"></label>
+    <label>Nucleotide Distance<input id="dagchainer_type" name="dagchainer_type" type=radio value="distance" <TMPL_VAR DAG_DISTANCE_SELECT>  onCLick="display_dagchainer_settings()"></label><span class=small>We recommend using "Relative Gene Order"</span>
 
 
    <span id=dagchainer_distance>Default distance settings for:
@@ -467,24 +485,52 @@ function open_window (url, loc, width, height)
  <TR>
    <TD>Minimum number of aligned pairs (-A): 
    <TD><input type=text size=8 id="A" value=""> genes
-
 </TABLE>
-<DIV onclick="window.open('http://dagchainer.sourceforge.net/')" class="link small">Download DAGChainer</DIV>
 
+
+<tr valign=top class="even">
+  <td style="color:#009900">Merge Syntenic Blocks:
+  <td>These settings will merge neighboring syntenic blocks.  Set to 0 to turn off.
+ <table>
+ <TR>
+   <TD>
+   <TD>
+ <TR>
+   <TD>Average distance expected between syntenic blocks (-gm):
+   <TD><input type=text size=8 id="gm" value=""><span class=distance_type></span>
+ <TR>
+   <TD>Maximum distance between two blocks (-Dm): 
+   <TD><input type=text size=8 id="Dm" value=""><span class=distance_type></span>
+</TABLE>
+
+<tr valign=top class="odd">
+<td style="color:#009900">CodeML
+<td>Calculate syntenic CDS pairs and color dots: 
+  <select name="ks_type" id = "ks_type">
+     <option value = 0 <TMPL_VAR NAME=KS0> >--None--</option>
+     <option value = ks <TMPL_VAR NAME=KS1> >Synonymous (Ks)</option>
+     <option value = kn <TMPL_VAR NAME=KS2> >Non-synonymous (Kn)</option>
+     <option value = kn_ks <TMPL_VAR NAME=KS3> >Kn/Ks</option>
+   </select> substitution rates <span style="color:red">(SLOW)</span>
+   <br>
+   <span class=small style="color:red">&nbsp;&nbsp;&nbsp;&nbsp; Only applicable to protein coding sequences (CDS vs. CDS)</span> 
+</table>
 </div> <!-- close tab-2 -->
 
 <div id="tab-3">
 <table>
  <TR>
-   <TD>Blast Algorithm:
-   <select id="blast" name="blast">
-        <OPTION VALUE="1" <TMPL_VAR NAME="BLASTN_SELECT">">BlastN
-        <OPTION VALUE="2" <TMPL_VAR NAME="TBLASTX_SELECT">">TBlastX
-       </select>
-   </td>
- <TR>
    <TD>Regenerate dotplot images?
    <input type=checkbox name="regen_images" id="regen_images">
+ <tr>
+   <td>Color diagonals by: 
+   <select name=color_type id=color_type>
+     <option value = 0 <TMPL_VAR NAME=COLOR_TYPE_NONE> > Single color </option>
+     <option value = inv <TMPL_VAR NAME=COLOR_TYPE_INV> > Inversions </option>
+     <option value = diag <TMPL_VAR NAME=COLOR_TYPE_DIAG> > Diagonals </option>
+   </select>
+   <br>
+   <span class=small style="color:red">&nbsp;&nbsp;&nbsp;&nbsp;Synonymous rates will supercede this option.</span> 
  <tr>
   <td>Dotplot axis metric:
   <select name="axis_metric" id = "axis_metric">
@@ -495,14 +541,6 @@ function open_window (url, loc, width, height)
    <td>Master image width (0 == dynamic)  <input type=text name=master_width id=master_width size=6 value="<TMPL_VAR NAME="MWIDTH">">
  <tr>
    <td>Minimum chromosome size:   <input type=text name=min_chr_size id=min_chr_size size=6 value="<TMPL_VAR NAME="MIN_CHR_SIZE">">
- <TR>
-   <TD>Calculate substitution rates for syntenic protein coding gene pairs and color syntenic dots accordingly (slow)?
-   <select name="ks_type" id = "ks_type">
-     <option value = 0 <TMPL_VAR NAME=KS0> >--None--</option>
-     <option value = ks <TMPL_VAR NAME=KS1> >Synonymous (Ks)</option>
-     <option value = kn <TMPL_VAR NAME=KS2> >Non-synonymous (Kn)</option>
-     <option value = kn_ks <TMPL_VAR NAME=KS3> >Kn/Ks</option>
-   </select>
   <TR>
     <TD>Order contigs by best syntenic path?
    <input type=checkbox name="assemble" id="assemble" onclick="$('#assemble_info').toggle();" <TMPL_VAR NAME=SYNTENIC_PATH>><br>
