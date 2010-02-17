@@ -30,7 +30,7 @@ my $pj = new CGI::Ajax(
 			);
 #$pj->js_encode_function('escape');
 print $pj->build_html($FORM, \&gen_html);
-print $FORM->header; gen_html();
+#print $FORM->header; gen_html();
 
 
 
@@ -64,7 +64,7 @@ sub gen_body
     $dsid = $form->param('dsid') if $form->param('dsid');
     my $z = $form->param('z') if defined ($form->param('z'));
     my $loc = $form->param('x') if $form->param('x');
-    $loc =~ s/,|\.//g; #remove commas and points if present
+    $loc =~ s/,|\.//g if $loc; #remove commas and points if present
     my $gstid = $form->param('gstid') if $form->param('gstid');
     my $fid = $form->param('fid') if $form->param('fid');
     my $dsgid = $form->param('dsgid') if $form->param('dsgid');
@@ -174,7 +174,7 @@ sub gen_body
     $template->param(POPUPANNO=>"checked") if $prefs->{'popupanno'}  && $prefs->{'popupanno'} eq "true";
     $template->param(SHOW_LEGEND=>1) if $show_legend;
     #stuff for people coming from maizegdb
-    if ($ENV{HTTP_REFERER}=~/maizegdb/)
+    if ($ENV{HTTP_REFERER} && $ENV{HTTP_REFERER}=~/maizegdb/)
       {
 	$template->param(MAIZEGDB=>1);
 	$template->param(EXPAND=>"checked");
