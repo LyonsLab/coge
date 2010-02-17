@@ -194,6 +194,7 @@ sub gen_body
 	$template->param('AXIS_METRIC_NT'=>'selected');
       }
     $template->param('SYNTENIC_PATH'=>"checked") if $FORM->param('sp');
+    $template->param('BOX_DIAGS'=>"checked") if $FORM->param('bd');
     $template->param('SHOW_NON_SYN'=>"checked") if $FORM->param('sp') && $FORM->param('sp') eq "2";
     my $file = $form->param('file');
     if($file)
@@ -1347,6 +1348,7 @@ sub generate_dotplot
     my $min_chr_size = $opts{min_chr_size};
     my $color_type = $opts{color_type};
     my $just_check = $opts{just_check}; #option to just check if the outfile already exists
+    my $box_diags = $opts{box_diags};
     my $cmd = $DOTPLOT;
     #add ks_db to dotplot command if requested
     $outfile.= ".ass" if $assemble;
@@ -1358,6 +1360,7 @@ sub generate_dotplot
 	$cmd .= qq{ -ksdb $ks_db -kst $ks_type -log 1};
 	$outfile .= ".$ks_type";
       }
+    $outfile .= ".box" if $box_diags;
     return $outfile if $just_check &&-r "$outfile.html";
     $cmd .= qq{ -d $dag -a $coords -b $outfile -l 'javascript:synteny_zoom("$dsgid1","$dsgid2","$basename","XCHR","YCHR"};
     $cmd .= qq{,"$ks_db"} if $ks_db;
@@ -1366,6 +1369,7 @@ sub generate_dotplot
     $cmd .= qq{ -am $metric} if $metric;
     $cmd .= qq{ -mcs $min_chr_size} if $min_chr_size;
     $cmd .= qq{ -cdt $color_type} if $color_type;
+    $cmd .= qq{ -bd 1} if $box_diags;
     while (-e "$outfile.running")
       {
 	print STDERR "detecting $outfile.running.  Waiting. . .\n";
@@ -1409,6 +1413,8 @@ sub go
     my $min_chr_size = $opts{min_chr_size};
     my $dagchainer_type = $opts{dagchainer_type};
     my $color_type = $opts{color_type};
+    my $box_diags = $opts{box_diags};
+    $box_diags = $box_diags eq "true" ? 1 : 0;
     $dagchainer_type = $dagchainer_type eq "true" ? "geneorder" : "distance";
 
     unless ($dsgid1 && $dsgid2)
@@ -1423,6 +1429,7 @@ sub go
       }
     $cogeweb = initialize_basefile(basename=>$basename, prog=>"SynMap");
     my $synmap_link = "SynMap.pl?dsgid1=$dsgid1;dsgid2=$dsgid2;c=$repeat_filter_cvalue;D=$dagchainer_D;g=$dagchainer_g;A=$dagchainer_A;Dm=$dagchainer_Dm;gm=$dagchainer_gm;w=$width;b=$blast;ft1=$feat_type1;ft2=$feat_type2";
+    $synmap_link .= ";bd=$box_diags" if $box_diags;
     $synmap_link .= ";mcs=$min_chr_size" if $min_chr_size;
     $synmap_link .= ";sp=$assemble" if $assemble;
     $email = 0 if check_address_validity($email) eq 'invalid';
@@ -1652,7 +1659,7 @@ sub go
 	my $t6 = new Benchmark;
 	$gen_ks_db_time = timestr(timediff($t6,$t5));
 
- 	$out = generate_dotplot(dag=>$dag_file12_all, coords=>$tmp, outfile=>"$out", regen_images=>$regen_images, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, dagtype=>$dagchainer_type, ks_db=>$ks_db, ks_type=>$ks_type, assemble=>$assemble, metric=>$axis_metric, min_chr_size=>$min_chr_size, color_type=>$color_type);
+ 	$out = generate_dotplot(dag=>$dag_file12_all, coords=>$tmp, outfile=>"$out", regen_images=>$regen_images, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, dagtype=>$dagchainer_type, ks_db=>$ks_db, ks_type=>$ks_type, assemble=>$assemble, metric=>$axis_metric, min_chr_size=>$min_chr_size, color_type=>$color_type, box_diags=>$box_diags);
 # 	$out = generate_dotplot(dag=>$dag_file12_all, coords=>$dagchainer_file, outfile=>"$out", regen_images=>$regen_images, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, dagtype=>$dagchainer_type, ks_db=>$ks_db, ks_type=>$ks_type, assemble=>$assemble, metric=>$axis_metric, min_chr_size=>$min_chr_size);
 
 
