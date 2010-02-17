@@ -53,7 +53,7 @@ if(!pageObj.basename)
   pageObj.nolog=1;
   setTimeout("monitor_log()", 5000);
   
-go(['args__c','c','args__D','D','args__g','g','args__A','A','args__gm','gm','args__Dm','Dm','args__blast','blast', 'args__feat_type1','feat_type1', 'args__feat_type2','feat_type2','args__dsgid1','dsgid1', 'args__dsgid2','dsgid2','args__jobtitle','jobtitle','args__basename','args__'+pageObj.basename,'args__email','email','args__regen_images','args__'+$('#regen_images')[0].checked, 'args__width', 'args__'+$('#master_width').val(), 'args__dagchainer_type','args__'+$('#dagchainer_type')[0].checked, 'args__ks_type','ks_type', 'args__assemble','args__'+$('#assemble')[0].checked, 'args__axis_metric','axis_metric', 'args__min_chr_size', 'min_chr_size', 'args__show_non_syn','args__'+$('#show_non_syn')[0].checked, 'args__color_type','color_type'],[handle_results]);
+go(['args__c','c','args__D','D','args__g','g','args__A','A','args__gm','gm','args__Dm','Dm','args__blast','blast', 'args__feat_type1','feat_type1', 'args__feat_type2','feat_type2','args__dsgid1','dsgid1', 'args__dsgid2','dsgid2','args__jobtitle','jobtitle','args__basename','args__'+pageObj.basename,'args__email','email','args__regen_images','args__'+$('#regen_images')[0].checked, 'args__width', 'args__'+$('#master_width').val(), 'args__dagchainer_type','args__'+$('#dagchainer_type')[0].checked, 'args__ks_type','ks_type', 'args__assemble','args__'+$('#assemble')[0].checked, 'args__axis_metric','axis_metric', 'args__min_chr_size', 'min_chr_size', 'args__show_non_syn','args__'+$('#show_non_syn')[0].checked, 'args__color_type','color_type', 'args__box_diags', 'args__'+$('#box_diags')[0].checked],[handle_results] );
 }
 
 function handle_results(val){
@@ -236,6 +236,7 @@ $(document).ready(function(){
   {
    $('#assemble_info').toggle();
   }
+  $(".options tr:even").addClass("even");
  });
 
 
@@ -448,14 +449,15 @@ function open_window (url, loc, width, height)
 </div> <!--close tab-1 -->
 
 <div id="tab-2">
-<table id=algo_table>
- <tr class="odd">
+
+<table id=algo_table  class="options">
+ <tr>
    <td style="color:#009900">Blast Algorithm:
    <td><select id="blast" name="blast">
         <OPTION VALUE="1" <TMPL_VAR NAME="BLASTN_SELECT">">BlastN
         <OPTION VALUE="2" <TMPL_VAR NAME="TBLASTX_SELECT">">TBlastX
        </select>
- <tr class="even">
+ <tr>
    <td style="color:#009900">Filter Repetitive Matches:
    <td>Expected number of hits per sequence <input type=text size=2 id="c" value="<TMPL_VAR NAME="CVALUE">">
   <tr valign=top class="odd">
@@ -488,22 +490,19 @@ function open_window (url, loc, width, height)
 </TABLE>
 
 
-<tr valign=top class="even">
+<tr valign=top>
   <td style="color:#009900">Merge Syntenic Blocks:
   <td>These settings will merge neighboring syntenic blocks.  Set to 0 to turn off.
  <table>
- <TR>
-   <TD>
-   <TD>
- <TR>
-   <TD>Average distance expected between syntenic blocks (-gm):
-   <TD><input type=text size=8 id="gm" value=""><span class=distance_type></span>
- <TR>
-   <TD>Maximum distance between two blocks (-Dm): 
-   <TD><input type=text size=8 id="Dm" value=""><span class=distance_type></span>
-</TABLE>
+   <TR>
+     <TD>Average distance expected between syntenic blocks (-gm):
+     <TD><input type=text size=8 id="gm" value=""><span class=distance_type></span>
+   <TR>
+     <TD>Maximum distance between two blocks (-Dm): 
+     <TD><input type=text size=8 id="Dm" value=""><span class=distance_type></span>
+ </TABLE>
 
-<tr valign=top class="odd">
+<tr valign=top>
 <td style="color:#009900">CodeML
 <td>Calculate syntenic CDS pairs and color dots: 
   <select name="ks_type" id = "ks_type">
@@ -518,7 +517,7 @@ function open_window (url, loc, width, height)
 </div> <!-- close tab-2 -->
 
 <div id="tab-3">
-<table>
+<table class="options">
  <TR>
    <TD>Regenerate dotplot images?
    <input type=checkbox name="regen_images" id="regen_images">
@@ -531,6 +530,9 @@ function open_window (url, loc, width, height)
    </select>
    <br>
    <span class=small style="color:red">&nbsp;&nbsp;&nbsp;&nbsp;Synonymous rates will supercede this option.</span> 
+ <tr>
+   <td>Draw boxes around syntenic regions?
+   <input type=checkbox name="box_diags" id="box_diags" <TMPL_VAR NAME=BOX_DIAGS> >
  <tr>
   <td>Dotplot axis metric:
   <select name="axis_metric" id = "axis_metric">
