@@ -20,7 +20,7 @@ use DBI;
 
 $ENV{PATH} = "/opt/apache2/CoGe/";
 umask(0);
-use vars qw( $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $FORMATDB $BLAST $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $TANDEM_FINDER $FILTER_REPETITIVE_MATCHES $RUN_DAGCHAINER $FIND_NEARBY $CONVERT_TO_GENE_ORDER $DOTPLOT $NWALIGN);
+use vars qw( $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $FORMATDB $BLAST $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $TANDEM_FINDER $RUN_DAGCHAINER $EVAL_ADJUST $FIND_NEARBY $CONVERT_TO_GENE_ORDER $DOTPLOT $NWALIGN);
 $DEBUG = 0;
 $DIR = "/opt/apache/CoGe/";
 $URL = "/CoGe/";
@@ -32,14 +32,18 @@ $FASTADIR = $DATADIR.'/fasta/';
 $BLASTDBDIR = $DATADIR.'/blast/db/';
 $MAX_PROC=8;
 $PYTHON = "/usr/bin/python2.5";
-$DAG_TOOL = $DIR."/bin/dagchainer/dag_tools.py";
+$DAG_TOOL = $DIR."/bin/SynMap/dag_tools.py";
 $TANDEM_FINDER = $DIR."/bin/dagchainer/tandems.py -d 5 -s -r"; #-d option is the distance (in genes) between dups -- not sure if the -s and -r options are needed -- they create dups files based on the input file name
-$FILTER_REPETITIVE_MATCHES = $DIR."/bin/dagchainer/filter_repetitive_matches.pl 200000"; #filters multiple matches to the same accession within the "window size", here set to 80000 nt
 #$RUN_DAGCHAINER = $DIR."/bin/dagchainer/DAGCHAINER/run_DAG_chainer.pl -E 0.05 -s";
-$RUN_DAGCHAINER = $DIR."/bin/dagchainer_bp/dag_chainer.py -E 0.05";
-$FIND_NEARBY = $DIR."/bin/dagchainer/find_nearby.py -d 200000";
-$DOTPLOT = $DIR."/bin/dotplot.pl";#Eric gives up waiting for new and improved to really work, and writes his own.
-$CONVERT_TO_GENE_ORDER = $DIR."/bin/dagchainer/convert_to_gene_order.pl";  #this needs to be implemented
+$RUN_DAGCHAINER = $DIR."/bin/dagchainer_bp/dag_chainer.py";
+$EVAL_ADJUST = $DIR."/bin/dagchainer_bp/dagtools/evalue_adjust.py";
+
+$FIND_NEARBY = $DIR."/bin/dagchainer_bp/dagtools/find_nearby.py -d 20"; #the parameter here is for nucleotide distances -- will need to make dynamic when gene order is selected -- 5 perhaps?
+
+
+$DOTPLOT = $DIR."/bin/dotplot.pl";
+
+$CONVERT_TO_GENE_ORDER = $DIR."/bin/SynMap/convert_to_gene_order.pl";
 #$NWALIGN = $DIR."/bin/nwalign-0.3.0/bin/nwalign";
 $NWALIGN = "/usr/bin/nwalign";
 $| = 1; # turn off buffering
@@ -107,7 +111,7 @@ sub gen_body
       {
 	$template->param(BLASTN_SELECT=>"selected");
       }
-    my ($D, $g, $A, $dt) = ($FORM->param('D'),$FORM->param('g'),$FORM->param('A'), $FORM->param('dt'));
+    my ($D, $g, $A, $Dm, $gm, $dt, $cvalue) = ($FORM->param('D'),$FORM->param('g'),$FORM->param('A'), $FORM->param('Dm'),$FORM->param('gm'),$FORM->param('dt'), $FORM->param('c'));
     my $display_dagchainer_settings;
     if ($D && $g && $A && $dt) 
       {
@@ -122,13 +126,15 @@ sub gen_body
 	    $type = " bp";
 	    $template->param('DAG_DISTANCE_SELECT'=>'checked');
 	  }
-	$display_dagchainer_settings = qq{display_dagchainer_settings([$g,$D,$A],'$type');};
+	$display_dagchainer_settings = qq{display_dagchainer_settings([$g,$D,$A, $gm, $Dm],'$type');};
       }
     else
       {
 	$template->param('DAG_GENE_SELECT'=>'checked');
 	$display_dagchainer_settings = qq{display_dagchainer_settings();};
       }
+    $cvalue = 4 unless defined $cvalue;
+    $template->param('CVALUE'=>$cvalue);
     $template->param('DISPLAY_DAGCHAINER_SETTINGS'=>$display_dagchainer_settings);
     $template->param('MIN_CHR_SIZE'=>$FORM->param('mcs')) if $FORM->param('mcs');
     #will the program automatically run?
@@ -164,6 +170,21 @@ sub gen_body
 	$template->param(KS0=>"selected");
       }
     #set axis metric for dotplot
+    if ($FORM->param('ct'))
+      {
+	if ($FORM->param('ct') eq "inv")
+	  {
+	    $template->param('COLOR_TYPE_INV'=>'selected');
+	  }
+	elsif ($FORM->param('ct') eq "diag")
+	  {
+	    $template->param('COLOR_TYPE_DIAG'=>'selected');
+	  }
+      }
+    else 
+      {
+	$template->param('COLOR_TYPE_NONE'=>'selected');
+      }
     if ($FORM->param('am') && $FORM->param('am')=~/g/i)
       {
 	$template->param('AXIS_METRIC_GENE'=>'selected');
@@ -698,11 +719,13 @@ sub run_tandem_finder
     return 1 if -r $outfile;
   }
 
-sub run_filter_repetitive_matches
-  {
+sub run_adjust_dagchainer_evals
+    {
     my %opts = @_;
     my $infile = $opts{infile};
     my $outfile = $opts{outfile};
+    my $cvalue = $opts{cvalue};
+    $cvalue = 4 unless defined $cvalue;
     while (-e "$outfile.running")
       {
 	print STDERR "detecting $outfile.running.  Waiting. . .\n";
@@ -710,21 +733,28 @@ sub run_filter_repetitive_matches
       }
     unless (-r $infile && -s $infile)
 	{
-	  write_log("WARNING:   Cannot filter repetitive matches! DAGChainer input file ($infile) contains no data!" ,$cogeweb->logfile);
+	  write_log("WARNING:   Cannot adjust dagchainer evals! DAGChainer input file ($infile) contains no data!" ,$cogeweb->logfile);
 	  return 0;
 	}
     if (-r $outfile)
       {
-	write_log("run_filter_repetitive+_matches: file $outfile already exists",$cogeweb->logfile);
+	write_log("run_adjust_dagchainer_evals: file $outfile already exists",$cogeweb->logfile);
 	return 1;
       }
-    my $cmd = "$FILTER_REPETITIVE_MATCHES < $infile > $outfile";
+    my $cmd = "$PYTHON $EVAL_ADJUST -c $cvalue $infile > $outfile";
+    #There is a parameter that can be passed into this to filter repetitive sequences more or less stringently:
+    # -c   2 gets rid of more stuff; 10 gets rid of less stuff; default is 4
+    #consider making this a parameter than can be adjusted from SynMap -- will need to actually play with this value to see how it works
+    #if implemented, this will require re-naming all the files to account for this parameter
+    #and updating the auto-SynMap link generator for redoing an analysis
+
     system "touch $outfile.running"; #track that a blast anlaysis is running for this
-    write_log("run_filter_repetitive_matches: running $cmd", $cogeweb->logfile);
+    write_log("run_adjust_dagchainer_evals: running $cmd", $cogeweb->logfile);
     `$cmd`;
     system "rm $outfile.running" if -r "$outfile.running";; #remove track file
     return 1 if -r $outfile;
-  }
+
+    }
 
 sub run_convert_to_gene_order
   {
@@ -749,7 +779,7 @@ sub run_convert_to_gene_order
 	}
     if (-r $outfile)
       {
-	write_log("run_filter_repetitive+_matches: file $outfile already exists",$cogeweb->logfile);
+	write_log("run_convert_to_gene_order: file $outfile already exists",$cogeweb->logfile);
 	return $outfile;
       }
     my $cmd = $CONVERT_TO_GENE_ORDER ." -i $infile -dsg1 $dsgid1 -dsg2 $dsgid2 -ft1 $ftid1 -ft2 $ftid2  > $outfile";
@@ -773,7 +803,7 @@ sub replace_gene_order_with_genomic_positions
       }
     if (-r "$file.orig" && -s "$file.orig")
       {
-	write_log("  no cnoversion for $file back to genomic coordinates needed, convered file exists", $cogeweb->logfile);
+	write_log("  no conversion for $file back to genomic coordinates needed, convered file exists", $cogeweb->logfile);
 	return;
       }
     system "touch $file.orig.running"; #track that a blast anlaysis is running for this
@@ -807,17 +837,22 @@ sub run_dagchainer
   {
     my %opts = @_;
     my $infile = $opts{infile};
-    my $D = $opts{D}; #distance allowed between two matches in basepairs
-    my $g = $opts{g}; #length of a gap in bp (ave distance expected between two syntenic genes)
+    my $D = $opts{D}; #maximum distance allowed between two matches
+    my $g = $opts{g}; #length of a gap (average distance expected between two syntenic genes)
     my $A = $opts{A}; #Minium number of Aligned Pairs 
+    my $Dm = $opts{Dm}; #maximum distance between sytnenic blocks for merging syntenic blocks
+    my $gm = $opts{gm}; #average distance between sytnenic blocks for merging syntenic blocks
+
     my $outfile = $infile;
     $outfile .= "_D$D" if $D;
     $outfile .= "_g$g" if $g;
     $outfile .= "_A$A" if $A;
+    $outfile .= "_Dm$Dm" if defined $Dm;
+    $outfile .= "_gm$gm" if defined $gm;
     $outfile .= ".aligncoords";
-    while (-e "$outfile.running")
+    while (-e "$outfile.merge.running")
       {
-	print STDERR "detecting $outfile.running.  Waiting. . .\n";
+	print STDERR "detecting $outfile.merge.running.  Waiting. . .\n";
 	sleep 60;
       }
     unless (-r $infile && -s $infile)
@@ -825,22 +860,34 @@ sub run_dagchainer
 	  write_log("WARNING:   Cannot run DAGChainer! DAGChainer input file ($infile) contains no data!" ,$cogeweb->logfile);
 	  return 0;
 	}
-    if (-r $outfile)
+    if (-r $outfile.".merge")
       {
-	write_log("run dagchainer: file $outfile already exists",$cogeweb->logfile);
-	return $outfile;
+	write_log("run dagchainer: file $outfile.merge already exists",$cogeweb->logfile);
+	return $outfile.".merge";
       }
-    my $cmd = "$PYTHON $RUN_DAGCHAINER -i $infile";
-    $cmd .= " -D $D" if $D;
-    $cmd .= " -g $g" if $g;
-    $cmd .= " -A $A" if $A;
-    $cmd .= " > $outfile";
-    system "touch $outfile.running"; #track that a blast anlaysis is running for this
+    my $cmd = "$PYTHON $RUN_DAGCHAINER -E 0.05 -i $infile";
+    $cmd .= " -D $D" if defined $D;
+    $cmd .= " -g $g" if defined $g;
+    $cmd .= " -A $A" if defined $A;
+    $cmd .= " --Dm $Dm" if defined $Dm; 
+    $cmd .= " --gm $gm" if defined $gm; 
+    $cmd .= " --merge $outfile";
+
+    ###MERGING OF DIAGONALS FUNCTION
+    # --merge $outfile     #this will automatically cause the merging of diagonals to happen.  $outfile will be created and $outfile.merge (which is the inappropriately named merge of diagonals file.
+    # --gm  average distance between diagonals
+    # --Dm  max distance between diagonals
+    ##Both of these parameters' default values is 4x -g and -D respectively.
+
+    #
+
+
+    system "touch $outfile.merge.running"; #track that a blast anlaysis is running for this
     write_log("run dagchainer: running $cmd", $cogeweb->logfile);
     `$cmd`;
 #    `mv $infile.aligncoords $outfile`;
-    system "rm $outfile.running" if -r "$outfile.running";; #remove track file
-    return $outfile
+    system "rm $outfile.merge.running" if -r "$outfile.merge.running";; #remove track file
+    return $outfile.".merge";
   }
 
 sub run_find_nearby
@@ -912,6 +959,7 @@ dN_dS varchar
 	    warn "Line does not appear to contain coge feature ids:  $_\n";
 	    next;
 	  }
+	next unless $item1[5] eq "CDS" && $item2[5] eq "CDS";
 	next if $ksdata->{$item1[6]}{$item2[6]};
 	push @data,[$line[1],$line[5],$item1[6],$item2[6]];
       }
@@ -931,6 +979,7 @@ dN_dS varchar
 	my ($feat2) = $coge->resultset('Feature')->find($fid2);
 	my $max_res;
 	my $ks = new CoGe::Algos::KsCalc();
+#	print STDERR "running KsCalc on $fid1 $fid2\n";
 	$ks->nwalign_server_port($ports->[$i]);
 	$ks->feat1($feat1);
 	$ks->feat2($feat2);
@@ -938,7 +987,7 @@ dN_dS varchar
 	  {
 	    my $res = $ks->KsCalc(); #send in port number?
 	    $max_res = $res unless $max_res;
-	    $max_res = $res if $res->{dS} < $max_res->{dS};
+	    $max_res = $res if $res->{dS} && $max_res->{dS} && $res->{dS} < $max_res->{dS};
 	  }
 	unless ($max_res)
 	  {
@@ -1290,12 +1339,13 @@ sub generate_dotplot
     my $dagtype = $opts{dagtype};
     my $ks_db = $opts{ks_db};
     my $ks_type = $opts{ks_type};
-    my ($basename) = $coords =~ /([^\/]*).all.aligncoords/;
+    my ($basename) = $coords =~ /([^\/]*aligncoords.*)/;#.all.aligncoords/;
     my $regen_images = $opts{regen_images}=~/true/i ? 1 : 0;
     my $width = $opts{width} || 1000;
     my $assemble = $opts{assemble};
     my $metric = $opts{metric};
     my $min_chr_size = $opts{min_chr_size};
+    my $color_type = $opts{color_type};
     my $just_check = $opts{just_check}; #option to just check if the outfile already exists
     my $cmd = $DOTPLOT;
     #add ks_db to dotplot command if requested
@@ -1315,6 +1365,7 @@ sub generate_dotplot
     $cmd .= qq{ -assemble $assemble} if $assemble;
     $cmd .= qq{ -am $metric} if $metric;
     $cmd .= qq{ -mcs $min_chr_size} if $min_chr_size;
+    $cmd .= qq{ -cdt $color_type} if $color_type;
     while (-e "$outfile.running")
       {
 	print STDERR "detecting $outfile.running.  Waiting. . .\n";
@@ -1338,6 +1389,9 @@ sub go
     my $dagchainer_D= $opts{D};
     my $dagchainer_g = $opts{g};
     my $dagchainer_A = $opts{A};
+    my $dagchainer_Dm=$opts{Dm};
+    my $dagchainer_gm=$opts{gm};
+    my $repeat_filter_cvalue = $opts{c};  #parameter to be passed to run_adjust_dagchainer_evals
     my $regen_images = $opts{regen_images};
     my $email = $opts{email};
     my $job_title = $opts{jobtitle};
@@ -1354,6 +1408,7 @@ sub go
     my $axis_metric = $opts{axis_metric};
     my $min_chr_size = $opts{min_chr_size};
     my $dagchainer_type = $opts{dagchainer_type};
+    my $color_type = $opts{color_type};
     $dagchainer_type = $dagchainer_type eq "true" ? "geneorder" : "distance";
 
     unless ($dsgid1 && $dsgid2)
@@ -1367,7 +1422,7 @@ sub go
 	return "<span class=alert>Problem generating dataset group objects for ids:  $dsgid1, $dsgid2.</span>";
       }
     $cogeweb = initialize_basefile(basename=>$basename, prog=>"SynMap");
-    my $synmap_link = "SynMap.pl?dsgid1=$dsgid1;dsgid2=$dsgid2;D=$dagchainer_D;g=$dagchainer_g;A=$dagchainer_A;w=$width;b=$blast;ft1=$feat_type1;ft2=$feat_type2";
+    my $synmap_link = "SynMap.pl?dsgid1=$dsgid1;dsgid2=$dsgid2;c=$repeat_filter_cvalue;D=$dagchainer_D;g=$dagchainer_g;A=$dagchainer_A;Dm=$dagchainer_Dm;gm=$dagchainer_gm;w=$width;b=$blast;ft1=$feat_type1;ft2=$feat_type2";
     $synmap_link .= ";mcs=$min_chr_size" if $min_chr_size;
     $synmap_link .= ";sp=$assemble" if $assemble;
     $email = 0 if check_address_validity($email) eq 'invalid';
@@ -1385,6 +1440,7 @@ sub go
 	$synmap_link .= ";ks=$num";
       };
     $synmap_link.=";am=g" if $axis_metric && $axis_metric =~/g/i;
+    $synmap_link.=";ct=$color_type" if $color_type;
     ##generate fasta files and blastdbs
     my $t0 = new Benchmark;
     my $pm = new Parallel::ForkManager($MAX_PROC);
@@ -1500,60 +1556,58 @@ sub go
     my $t1 = new Benchmark;
     my $blast_time = timestr(timediff($t1,$t0));
 
-
-     #Find local dups
-#     my $dag_file11 = $org_dirs{$orgkey1."_".$orgkey1}{dir}."/".$org_dirs{$orgkey1."_".$orgkey1}{basename}.".dag";
-#     $problem=1 unless (run_dag_tools(query=>"a".$dsgid1, subject=>"b".$dsgid1, blast=>$org_dirs{$orgkey1."_".$orgkey1}{blastfile}, outfile=>$dag_file11, feat_type1=>$feat_type1, feat_type1=>$feat_type1));
-#     my $dag_file22 = $org_dirs{$orgkey2."_".$orgkey2}{dir}."/".$org_dirs{$orgkey2."_".$orgkey2}{basename}.".dag";
-#     $problem=1 unless run_dag_tools(query=>"a".$dsgid2, subject=>"b".$dsgid2, blast=>$org_dirs{$orgkey2."_".$orgkey2}{blastfile}, outfile=>$dag_file22, feat_type1=>$feat_type2, feat_type1=>$feat_type2);
-#     my $dup_file1  = $org_dirs{$orgkey1."_".$orgkey1}{dir}."/".$org_dirs{$orgkey1."_".$orgkey1}{basename}.".dups";
-#     run_tandem_finder(infile=>$dag_file11,outfile=>$dup_file1);
-#     my $dup_file2  = $org_dirs{$orgkey2."_".$orgkey2}{dir}."/".$org_dirs{$orgkey2."_".$orgkey2}{basename}.".dups";
-#     run_tandem_finder(infile=>$dag_file22,outfile=>$dup_file2);
+    #local dup finder was removed. . .may need to add back from previous version of synmap
     my $t2 = new Benchmark;
     my $local_dup_time = timestr(timediff($t2,$t1));
 
-     #prepare dag for synteny analysis
-     my $dag_file12 = $org_dirs{$orgkey1."_".$orgkey2}{dir}."/".$org_dirs{$orgkey1."_".$orgkey2}{basename}.".dag";
-#     $problem=1 unless run_dag_tools(query=>"a".$dsgid1, subject=>"b".$dsgid2, blast=>$org_dirs{$orgkey1."_".$orgkey2}{blastfile}, outfile=>$dag_file12.".all", query_dup_file=>$dup_file1,subject_dup_file=>$dup_file2, feat_type1=>$feat_type1, feat_type2=>$feat_type2);
-     $problem=1 unless run_dag_tools(query=>"a".$dsgid1, subject=>"b".$dsgid2, blast=>$org_dirs{$orgkey1."_".$orgkey2}{blastfile}, outfile=>$dag_file12.".all", feat_type1=>$feat_type1, feat_type2=>$feat_type2);
-     my $dag_file12_all = $dag_file12.".all";
+    #prepare dag for synteny analysis
+    my $dag_file12 = $org_dirs{$orgkey1."_".$orgkey2}{dir}."/".$org_dirs{$orgkey1."_".$orgkey2}{basename}.".dag";#."_c".$repeat_filter_cvalue.".dag";
+    my $dag_file12_all = $dag_file12.".all";
+    $problem=1 unless run_dag_tools(query=>"a".$dsgid1, subject=>"b".$dsgid2, blast=>$org_dirs{$orgkey1."_".$orgkey2}{blastfile}, outfile=>$dag_file12_all, feat_type1=>$feat_type1, feat_type2=>$feat_type2);
+    my $t2_5 = new Benchmark;
+    my $dag_tool_time = timestr(timediff($t2_5,$t2));
 
-    #remove repetitive matches
-    run_filter_repetitive_matches(infile=>$dag_file12_all,outfile=>$dag_file12);
+    #is this an ordered gene run?
+    my $dag_file12_all_geneorder = run_convert_to_gene_order(infile=>$dag_file12_all, dsgid1=>$dsgid1, dsgid2=>$dsgid2, ft1=>$feat_type1, ft2=>$feat_type2) if $dagchainer_type eq "geneorder";
+    my $t3 = new Benchmark;
+    my $convert_to_gene_order_time = timestr(timediff($t3,$t2_5));
+    my $all_file = $dagchainer_type eq "geneorder" ? $dag_file12_all_geneorder : $dag_file12_all;
+    $dag_file12 .= "_geneorder" if $dagchainer_type eq "geneorder";
+    #B Pedersen's program for automatically adjusting the evals in the dag file to remove bias from local gene duplicates and transposons
+    $dag_file12.="_c".$repeat_filter_cvalue;
+    run_adjust_dagchainer_evals(infile=>$all_file,outfile=>$dag_file12, cvalue=>$repeat_filter_cvalue);
+
+    my $t3_5 = new Benchmark;
     #this step will fail if the dag_file_all is larger than the system memory limit.  If this file does not exist, let's send a warning to the log file and continue with the analysis using the dag_all file
     unless (-r $dag_file12 && -s $dag_file12)
       {
-	$dag_file12 = $dag_file12_all;
-	write_log("WARNING:  sub run_filter_repetitive matches failed.  Perhaps due to Out of Memory error.  Proceeding without this step!", $cogeweb->logfile);
+	$dag_file12 = $all_file;
+	write_log("WARNING:  sub run_adjust_dagchainer_evals failed.  Perhaps due to Out of Memory error.  Proceeding without this step!", $cogeweb->logfile);
       }
+    my $run_adjust_eval_time = timestr(timediff($t3_5, $t3));
     #############
 
-     #is this an ordered gene run?
-     $dag_file12 = run_convert_to_gene_order(infile=>$dag_file12, dsgid1=>$dsgid1, dsgid2=>$dsgid2, ft1=>$feat_type1, ft2=>$feat_type2) if $dagchainer_type eq "geneorder";
-    my $t3 = new Benchmark;
-    my $convert_to_gene_order_time = timestr(timediff($t3,$t2));
-
      #run dagchainer
-     my $dagchainer_file = run_dagchainer(infile=>$dag_file12, D=>$dagchainer_D, g=>$dagchainer_g,A=>$dagchainer_A, type=>$dagchainer_type);
+     my $dagchainer_file = run_dagchainer(infile=>$dag_file12, D=>$dagchainer_D, g=>$dagchainer_g,A=>$dagchainer_A, type=>$dagchainer_type, Dm=>$dagchainer_Dm, gm=>$dagchainer_gm);
      write_log("Completed dagchainer run", $cogeweb->logfile);
      write_log("", $cogeweb->logfile);
     my $t4 = new Benchmark;
-    my $run_dagchainer_time = timestr(timediff($t4,$t3));
+    my $run_dagchainer_time = timestr(timediff($t4,$t3_5));
     my ($find_nearby_time, $gen_ks_db_time, $dotplot_time, $add_gevo_links_time);
-     if (-r $dagchainer_file)
-       {
+    if (-r $dagchainer_file)
+      {
  	my $tmp = $dagchainer_file; #temp file name for the final post-processed data
  	$tmp =~ s/aligncoords/all\.aligncoords/;
+ 	#add pairs that were skipped by dagchainer
+ 	run_find_nearby(infile=>$dagchainer_file, dag_all_file=>$all_file, outfile=>$tmp);
+	my $t5 = new Benchmark;
+	$find_nearby_time = timestr(timediff($t5,$t4));
  	#convert to genomic coordinates if gene order was used
  	if ($dagchainer_type eq "geneorder")
  	  {
- 	    replace_gene_order_with_genomic_positions(file=>$dagchainer_file);
+ 	    replace_gene_order_with_genomic_positions(file=>$tmp);
+# 	    replace_gene_order_with_genomic_positions(file=>$dag_file12_all);
  	  }
- 	#add pairs that were skipped by dagchainer
- 	run_find_nearby(infile=>$dagchainer_file, dag_all_file=>$dag_file12_all, outfile=>$tmp);
-	my $t5 = new Benchmark;
-	$find_nearby_time = timestr(timediff($t5,$t4));
 
  	#generate dotplot images
  	my $org1_length =0;
@@ -1585,16 +1639,21 @@ sub go
  	mkpath ($out,0,0777) unless -d $out;
  	$out .="master_".$org_dirs{$orgkey1."_".$orgkey2}{basename};
  	$out .= "_$dagchainer_type";
+ 	$out .= "_c$repeat_filter_cvalue" if $repeat_filter_cvalue;
  	$out .= "_D$dagchainer_D" if $dagchainer_D;
  	$out .= "_g$dagchainer_g" if $dagchainer_g;
  	$out .= "_A$dagchainer_A" if $dagchainer_A;
+ 	$out .= "_Dm$dagchainer_Dm" if defined $dagchainer_Dm;
+ 	$out .= "_gm$dagchainer_gm" if defined $dagchainer_gm;
+	$out .= "_ct$color_type" if defined $color_type;
  	$out .= ".w$width";
  	#deactivation ks calculations due to how slow it is
  	my $ks_db = gen_ks_db(infile=>$tmp) if $ks_type;
 	my $t6 = new Benchmark;
 	$gen_ks_db_time = timestr(timediff($t6,$t5));
 
- 	$out = generate_dotplot(dag=>$dag_file12_all, coords=>$tmp, outfile=>"$out", regen_images=>$regen_images, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, dagtype=>$dagchainer_type, ks_db=>$ks_db, ks_type=>$ks_type, assemble=>$assemble, metric=>$axis_metric, min_chr_size=>$min_chr_size);
+ 	$out = generate_dotplot(dag=>$dag_file12_all, coords=>$tmp, outfile=>"$out", regen_images=>$regen_images, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, dagtype=>$dagchainer_type, ks_db=>$ks_db, ks_type=>$ks_type, assemble=>$assemble, metric=>$axis_metric, min_chr_size=>$min_chr_size, color_type=>$color_type);
+# 	$out = generate_dotplot(dag=>$dag_file12_all, coords=>$dagchainer_file, outfile=>"$out", regen_images=>$regen_images, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, dagtype=>$dagchainer_type, ks_db=>$ks_db, ks_type=>$ks_type, assemble=>$assemble, metric=>$axis_metric, min_chr_size=>$min_chr_size);
 
 
 	my $hist = $out.".hist.png";
@@ -1706,7 +1765,9 @@ sub go
 Benchmarks:
 Blast:                    $blast_time
 Find Local Dups:          $local_dup_time
+Dag tools time:           $dag_tool_time
 Convert Gene Order:       $convert_to_gene_order_time
+Adjust eval time          $run_adjust_eval_time
 DAGChainer:               $run_dagchainer_time
 find nearby:              $find_nearby_time
 Ks calculations:          $gen_ks_db_time
@@ -1754,15 +1815,23 @@ sub get_previous_analyses
 	while (my $file = readdir(DIR))
 	  {
 	    $sqlite = 1 if $file =~ /sqlite$/;
-	    next unless $file =~ /all\.aligncoords$/;
+	    next unless $file =~ /all\.aligncoords\.merge$/;
+
 	    my ($D, $g, $A) = $file =~ /D(\d+)_g(\d+)_A(\d+)/;
+	    my ($Dm, $gm) = $file =~ /Dm(\d+)_gm(\d+)/;
 	    next unless ($D && $g && $A);
+
 	    my $blast = $file =~ /blastn/ ? "BlastN" : "TBlastX";
 	    my ($dsgid1, $dsgid2, $type1, $type2) = $file =~ /^(\d+)_(\d+)\.(\w+)-(\w+)/;
+	    my ($repeat_filter) = $file =~ /_c(\d+)/; 
 	    next unless ($dsgid1 && $dsgid2 && $type1 && $type2);
-	    my %data = (D=>$D,
+	    my %data = (
+			repeat_filter=>$repeat_filter,
+			D=>$D,
 			g=>$g,
 			A=>$A,
+			Dm=>$Dm,
+			gm=>$gm,
 			blast=>$blast,
 			dsgid1=>$dsgid1,
 			dsgid2=>$dsgid2);
@@ -1777,9 +1846,16 @@ sub get_previous_analyses
 	    $data{dsg2}=$dsg2;
 	    $data{ds1}=$ds1;
 	    $data{ds2}=$ds2;
-	    my $name .= $dsg1->type->name." ".$type1." (".$ds1->data_source->name." v".$dsg1->version.") vs ";
-	    $name .= $dsg2->type->name." ".$type2." (".$ds2->data_source->name." v".$dsg2->version.")";
-	    $data{name} = $name;
+	    my $genome1;
+	    $genome1 .= $dsg1->name if $dsg1->name;
+	    $genome1 .= ": " if $genome1;
+	    $genome1 .= $ds1->data_source->name." (".$dsg1->version.")";
+	    my $genome2;
+	    $genome2 .= $dsg2->name if $dsg2->name;
+	    $genome2 .= ": " if $genome2;
+	    $genome2 .= $ds2->data_source->name." (".$dsg2->version.")";
+	    $data{genome1}=$genome1;
+	    $data{genome2}=$genome2;
 	    $data{type_name1} = $type1;
 	    $data{type_name2} = $type2;
 	    $type1 = $type1 eq "CDS" ? 1 : 2; 
@@ -1794,29 +1870,16 @@ sub get_previous_analyses
     my $size = scalar @items;
     $size = 8 if $size > 8;
     my $html;
-#     my $html = qq{
-# <select id="prev_params" size=4 multiple onChange="update_params();">
-# };
-#     foreach (sort {$a->{g}<=>$b->{g} } @items)
-#       {
-# 	my $blast = $_->{blast} =~ /^blastn$/i ? 0 : 1;
-# 	my $val = join ("_",$_->{g},$_->{D},$_->{A}, $oid1, $_->{dsgid1}, $_->{type1},$oid2, $_->{dsgid2}, $_->{type2}, $blast, $_->{dagtype});
-# 	my $name =$_->{name}.": ".$_->{blast}.", ".$_->{dagtype}.", g".$_->{g}." D".$_->{D}." A".$_->{A};
-# 	$html .= qq{
-#  <option value="$val">$name
-# };
-#       }
-#     $html .= "</select>";
     my $prev_table = qq{<table id=prev_table class="small resultborder">};
-    $prev_table .= qq{<THEAD><TR><TH>}.join ("<TH>", qw(Org1 Genome1 Genome_Type1 Sequence_Type1 Org2 Genome2 Genome_Type2 Sequence_type2 Algo DAG_Type Ave_Dist Max_Dist Min_Pairs))."</THEAD><TBODY>\n";
+    $prev_table .= qq{<THEAD><TR><TH>}.join ("<TH>", qw(Org1 Genome1 Genome%20Type1 Sequence%20Type1 Org2 Genome2 Genome%20Type2 Sequence%20type2 Algo DAG%20Type Repeat%20Filter Ave%20Dist(g) Max%20Dist(D) Min%20Pairs(A)  Merge%20Ave%20Dist(gm) Merge%20Max%20Dist(Dm)))."</THEAD><TBODY>\n";
     foreach my $item (@items)
       {
-	my $val = join ("_",$item->{g},$item->{D},$item->{A}, $oid1, $item->{dsgid1}, $item->{type1},$oid2, $item->{dsgid2}, $item->{type2}, $item->{blast}, $item->{dagtype});
-	$prev_table .= qq{<TR class=feat onclick="update_params('$val')"><td>};
+	my $val = join ("_",$item->{g},$item->{D},$item->{A},$item->{gm},$item->{Dm}, $oid1, $item->{dsgid1}, $item->{type1},$oid2, $item->{dsgid2}, $item->{type2}, $item->{blast}, $item->{dagtype}, $item->{repeat_filter});
+	$prev_table .= qq{<TR class=feat onclick="update_params('$val')" align=center><td>};
 	$prev_table .= join ("<td>", 
-			     $item->{dsg1}->organism->name, $item->{ds1}->data_source->name." (".$item->{dsg1}->version.")", $item->{dsg1}->type->name, $item->{type_name1},
-			     $item->{dsg2}->organism->name, $item->{ds2}->data_source->name." (".$item->{dsg2}->version.")", $item->{dsg2}->type->name, $item->{type_name2},
-			     $item->{blast}, $item->{dagtype}, $item->{g}, $item->{D}, $item->{A})."\n";
+			     $item->{dsg1}->organism->name, $item->{genome1}, $item->{dsg1}->type->name, $item->{type_name1},
+			     $item->{dsg2}->organism->name, $item->{genome2}, $item->{dsg2}->type->name, $item->{type_name2},
+			     $item->{blast}, $item->{dagtype}, $item->{repeat_filter},$item->{g}, $item->{D}, $item->{A}, $item->{gm}, $item->{Dm})."\n";
       }
     $prev_table .= qq{</TBODY></table>};
     $html .= $prev_table;
