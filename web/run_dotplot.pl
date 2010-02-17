@@ -9,7 +9,7 @@ $ENV{PATH} = "/opt/apache2/CoGe/";
 umask(0);
 use vars qw( $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $DATADIR $DIAGSDIR $DOTPLOT);
 
-$DEBUG = 0;
+$DEBUG = 1;
 $DIR = "/opt/apache/CoGe/";
 $URL = "/CoGe/";
 $DATADIR = "$DIR/data/";
@@ -71,7 +71,8 @@ my $dag_file = $dir."/".$basename;
 $dag_file =~ s/\.dag_?.*//;
 $dag_file .= ".dag.all";
 my $outfile = $dir."/html/".$basename.".$chr1-$chr2.w$width";
-my $res = generate_dotplot(dag=>$dag_file, coords=>"$dir/$basename.all.aligncoords", qchr=>$chr1, schr=>$chr2, 'outfile'=>$outfile, 'regen_images'=>'false', flip=>$flip, regen_images=>$regen, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, grid=>$grid, ksdb=>$ksdb, kstype=>$kstype, log=>$log, min=>$min, max=>$max, metric=>$metric);
+#my $res = generate_dotplot(dag=>$dag_file, coords=>"$dir/$basename.all.aligncoords", qchr=>$chr1, schr=>$chr2, 'outfile'=>$outfile, 'regen_images'=>'false', flip=>$flip, regen_images=>$regen, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, grid=>$grid, ksdb=>$ksdb, kstype=>$kstype, log=>$log, min=>$min, max=>$max, metric=>$metric);
+my $res = generate_dotplot(dag=>$dag_file, coords=>"$dir/$basename", qchr=>$chr1, schr=>$chr2, 'outfile'=>$outfile, 'regen_images'=>'false', flip=>$flip, regen_images=>$regen, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, grid=>$grid, ksdb=>$ksdb, kstype=>$kstype, log=>$log, min=>$min, max=>$max, metric=>$metric);
 if ($res)
   {
     $res=~s/$DIR/$URL/;
