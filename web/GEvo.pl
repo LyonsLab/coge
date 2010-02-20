@@ -456,6 +456,7 @@ sub run
     my $gen_prot_sequence =0; #flag for generating fasta file of protein_sequence;
     $gen_prot_sequence = 1 if $analysis_program eq "GenomeThreader";
     $cogeweb = initialize_basefile(basename=>$basefilename, prog=>"GEvo");
+    print STDERR "Running GEvo:  basefile:  $basefilename\n";
     my @hsp_colors;
     for (my $i = 1; $i <= num_colors($num_seqs); $i++)
       {
