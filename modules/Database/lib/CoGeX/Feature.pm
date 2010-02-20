@@ -516,10 +516,12 @@ sub annotation_pretty_print_html
 	    my $group = $type->group();
 	    my $anno_name = $type->name;
 	    $anno_name .= ", ".$type->description if $type->description;
-	    if (ref($group) =~ /group/i)
+	    if (ref($group) =~ /group/i && !($type->name eq $group->name) )
 	      {
-		$anno_name .= ":" unless $anno_name =~/:$/;
-		$anno_name = "<span class=\"title5\">". $anno_name."</span>";
+		  {
+		    $anno_name .= ":" unless $anno_name =~/:$/;
+		    $anno_name = "<span class=\"title5\">". $anno_name."</span>";
+		  }
 	      }
 	    else
 	      {
@@ -540,9 +542,10 @@ sub annotation_pretty_print_html
 	    $annotation .= qq{ link" onclick="window.open('}.$anno->link.qq{')} if $anno->link;
 	    $annotation .="\">".$anno->annotation."</span>";
 	    $anno_type->add_Annot($annotation) if $anno->annotation;
-	    if (ref ($group) =~ /group/i)
+	    if (ref ($group) =~ /group/i && !($type->name eq $group->name) )
 	      {
-		my $anno_g = new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\">".$group->name."</span>");
+		my $class = $anno->link ? "coge_link" : "title5";
+		my $anno_g = new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"$class\">".$group->name."</span>");
 		$anno_g->add_Annot($anno_type);
 		$anno_g->Type_delimit(":<td>");
 		$anno_g->Val_delimit(", ");
@@ -753,7 +756,7 @@ sub genomic_sequence {
 	{
 	  if ($loc->[0]-$start+$loc->[1]-$loc->[0]+1 > CORE::length ($full_seq))
 	    {
-	      print "#"x20,"\n";
+	      print STDERR "#"x20,"\n";
 	      print STDERR "Error in feature->genomic_sequence, Sequence retrieved is smaller than the length of the exon being parsed! \n";
 	      print STDERR "Organism: ", $self->organism->name,"\n";
 	      print STDERR "Dataset: ", $self->dataset->name,"\n";
@@ -769,7 +772,7 @@ sub genomic_sequence {
 			dataset=>$dataset->id,
 			  feature=>$self->id,
 			};
-	      print "#"x20,"\n";
+	      print STDERR "#"x20,"\n";
 	    }
 	  
 	  my $sub_seq = substr($full_seq, $loc->[0] - $start, $loc->[1] - $loc->[0] + 1);
