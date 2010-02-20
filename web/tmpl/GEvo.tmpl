@@ -461,8 +461,9 @@ else if (alignment == 'GenomeThreader')
 
 
 
-function handle_results (html,w, h, img_base, n_images, gevo_link, message) {
+function handle_results (html,w, h, img_base, n_images, gevo_link, basefilename, message) {
  alert_message(message);
+ populate_page_obj(basefilename);
  if (n_images >1)
    {
     $('#results').html(html);
@@ -747,7 +748,7 @@ function update_line_width(val)
 </tr>
 </table>
 </div>
-<span id=go style="font-size: 1em" class='ui-button ui-state-default ui-corner-all' onClick="set_display_order(); loading([],['results']); initialize_basefile(['args__prog','args__GEvo', 'args__return_name','args__1'],[populate_page_obj]); go_run();">Run GEvo Analysis!</span>
+<span id=go style="font-size: 1em" class='ui-button ui-state-default ui-corner-all' onClick="set_display_order(); loading([],['results']); go_run();">Run GEvo Analysis!</span>
 <table>
 
 <tr align left>
