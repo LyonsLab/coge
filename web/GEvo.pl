@@ -441,7 +441,7 @@ sub run
     my $show_hsps_with_stop_codon = $opts{showallhsps};
     my $padding = $opts{padding};
     my ($analysis_program, $param_string, $parser_opts) = get_algorithm_options(%opts);
-    my $basefilename = $opts{basefile};
+#    my $basefilename = $opts{basefile};
     my $pad_gs = $opts{pad_gs} || 0;
     my $color_overlapped_features = $opts{color_overlapped_features};
     my $hsp_overlap_length = $opts{hsp_overlap_length};
@@ -455,8 +455,11 @@ sub run
     my $message;
     my $gen_prot_sequence =0; #flag for generating fasta file of protein_sequence;
     $gen_prot_sequence = 1 if $analysis_program eq "GenomeThreader";
-    $cogeweb = initialize_basefile(basename=>$basefilename, prog=>"GEvo");
+#    $cogeweb = initialize_basefile(basename=>$basefilename, prog=>"GEvo");
+    $cogeweb = initialize_basefile(prog=>"GEvo");
+    my $basefilename = $cogeweb->basefilename;
     print STDERR "Running GEvo:  basefile:  $basefilename\n";
+    write_log("Beginning GEvo analysis.  Basefilename: $basefilename", $cogeweb->logfile);
     my @hsp_colors;
     for (my $i = 1; $i <= num_colors($num_seqs); $i++)
       {
@@ -730,7 +733,7 @@ sub run
     unless (@sets >1)
       {
 	$message .= "Problem retrieving information.  Please check submissions.\n";
-	return '', '', '', '',0,'',$message;
+	return '', '', '', '',0,'','',$message;
       }
     my $t2 = new Benchmark;
     # set up output page
@@ -969,7 +972,7 @@ Total time                                          : $total_time
 #    write_log("Tiny url: $tiny", $cogeweb->logfile);
     email_results(email=>$email_address,basefile=>$basefilename, full_gevo_url=>$gevo_link) if $email_address;
     $iw +=10; #extra padding to make it easier to grab slider bars
-    return $outhtml, $iw, $frame_height, $cogeweb->basefilename, scalar (@sets), $gevo_link, $message;
+    return $outhtml, $iw, $frame_height, $cogeweb->basefilename, scalar (@sets), $gevo_link, $basefilename, $message;
 
 }
 
