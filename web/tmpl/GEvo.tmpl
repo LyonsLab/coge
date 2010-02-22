@@ -667,7 +667,7 @@ function monitor_log(log)
   }
   else
   {
-   message = "There has been no update on your results during the first "+pageObj.waittime/1000+ "seconds of your analysis.  An error may have occured.  You can check your logfile at <a href='tmp/GEvo/"+pageObj.basefile+".log' target=_new>this link</a> which may help you determin what went wrong, or send it to CoGe's adminstrator for debugging.  In the meanwhile, we suggest that you either wait a bit longer to see if the analsysi completes, and if not rerun your analysis.  If you have submitting very large regions for anlaysis (e.g. several megabases), please try a smaller region for analsyis.";
+   message = "There has been no update on your results during the first "+pageObj.waittime/1000+ "seconds of your analysis.  An error may have occured.  You can check your logfile at <a href='tmp/GEvo/"+pageObj.basefile+".log' target=_new>this link</a> which may help you determine what went wrong, or send it to CoGe's adminstrator for debugging.  In the meanwhile, we suggest that you either wait a bit longer to see if the analsysi completes, and if not rerun your analysis.  If you have submitting very large regions for anlaysis (e.g. several megabases), please try a smaller region for analsyis.";
   }
   if (message) $('#loading').html("<div class=small>"+message+'</div>');
 }
