@@ -18,9 +18,10 @@ use Benchmark;
 use LWP::Simple;
 use DBI;
 
-$ENV{PATH} = "/opt/apache2/CoGe/";
+
+$ENV{PATH} = "/opt/apache2/CoGe:/opt/apache2/CoGe/bin:/opt/apache2/CoGe/bin/SynMap";
 umask(0);
-use vars qw( $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $FORMATDB $BLAST $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $TANDEM_FINDER $RUN_DAGCHAINER $EVAL_ADJUST $FIND_NEARBY $CONVERT_TO_GENE_ORDER $DOTPLOT $NWALIGN);
+use vars qw( $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $FORMATDB $BLAST $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $TANDEM_FINDER $RUN_DAGCHAINER $EVAL_ADJUST $FIND_NEARBY $CONVERT_TO_GENE_ORDER $DOTPLOT $NWALIGN $QUOTA_ALIGN $QUOTA_ALIGN_CONVERT);
 $DEBUG = 0;
 $DIR = "/opt/apache/CoGe/";
 $URL = "/CoGe/";
@@ -40,6 +41,9 @@ $EVAL_ADJUST = $DIR."/bin/dagchainer_bp/dagtools/evalue_adjust.py";
 
 $FIND_NEARBY = $DIR."/bin/dagchainer_bp/dagtools/find_nearby.py -d 20"; #the parameter here is for nucleotide distances -- will need to make dynamic when gene order is selected -- 5 perhaps?
 
+#programs to run Haibao Tang's quota_align program for merging diagonals and mapping coverage
+$QUOTA_ALIGN = $DIR."/bin/quota-alignment/quota_align.py"; #the program
+$QUOTA_ALIGN_CONVERT = $DIR."/bin/quota-alignment/cluster_utils.py"; #convert dag output to quota_align input
 
 $DOTPLOT = $DIR."/bin/dotplot.pl";
 
@@ -257,6 +261,7 @@ sub gen_dsg_menu
     my $dsgid = $opts{dsgid};
     my @dsg_menu;
     my $message;
+    my $org_name;
     foreach my $dsg (sort {$b->version <=> $a->version || $a->type->id <=> $b->type->id} $coge->resultset('DatasetGroup')->search({organism_id=>$oid},{prefetch=>['genomic_sequence_type']}))
       {
 #	next if $USER->user_name =~ /public/i && $dsg->organism->restricted;
@@ -264,6 +269,7 @@ sub gen_dsg_menu
 	$name .= $dsg->name.": " if $dsg->name;
 	$name .= $dsg->type->name." (v".$dsg->version.",id".$dsg->id.")";
 	push @dsg_menu, [$dsg->id, $name];
+	$org_name = $dsg->organism->name unless $org_name;
       }
 
     my $dsg_menu = qq{
@@ -453,7 +459,7 @@ sub get_dataset_group_info
     $feattype_menu .= "</select>";
     $message = "<span class='small alert'>No Coding Sequence in Genome</span>" unless $has_cds;
 
-    return $html_dsg_info, $feattype_menu, $message;
+    return $html_dsg_info, $feattype_menu, $message, $;
   }
 
 sub gen_fasta
@@ -843,15 +849,29 @@ sub run_dagchainer
     my $A = $opts{A}; #Minium number of Aligned Pairs 
     my $Dm = $opts{Dm}; #maximum distance between sytnenic blocks for merging syntenic blocks
     my $gm = $opts{gm}; #average distance between sytnenic blocks for merging syntenic blocks
+    my $merge = $opts{merge}; #flag to use the merge function of this algo;
+
+    unless ($merge) #turn off merging options unless $merge is set to true
+      {
+	$Dm =0;
+	$gm =0;
+      }
 
     my $outfile = $infile;
     $outfile .= "_D$D" if $D;
     $outfile .= "_g$g" if $g;
     $outfile .= "_A$A" if $A;
-    $outfile .= "_Dm$Dm" if defined $Dm;
-    $outfile .= "_gm$gm" if defined $gm;
+    $outfile .= "_Dm$Dm" if $Dm;
+    $outfile .= "_gm$gm" if $gm;
     $outfile .= ".aligncoords";
-    while (-e "$outfile.merge.running")
+    $outfile .= ".ma2.dag" if $Dm && $gm;
+    my $running_file = $outfile;
+    $running_file .= ".dag.merge" if $Dm && $gm;
+    $running_file .= ".running";
+    my $return_file = $outfile;
+    $return_file .= ".merge" if $Dm && $gm; #created by $RUN_DAGCHAINER if merge option is true
+
+    while (-e "$running_file")
       {
 	print STDERR "detecting $outfile.merge.running.  Waiting. . .\n";
 	sleep 60;
@@ -861,19 +881,26 @@ sub run_dagchainer
 	  write_log("WARNING:   Cannot run DAGChainer! DAGChainer input file ($infile) contains no data!" ,$cogeweb->logfile);
 	  return 0;
 	}
-    if (-r $outfile.".merge")
+    if (-r $return_file)
       {
-	write_log("run dagchainer: file $outfile.merge already exists",$cogeweb->logfile);
-	return $outfile.".merge";
+	write_log("run dagchainer: file $return_file already exists",$cogeweb->logfile);
+	return $return_file;
       }
     my $cmd = "$PYTHON $RUN_DAGCHAINER -E 0.05 -i $infile";
     $cmd .= " -D $D" if defined $D;
     $cmd .= " -g $g" if defined $g;
     $cmd .= " -A $A" if defined $A;
-    $cmd .= " --Dm $Dm" if defined $Dm; 
-    $cmd .= " --gm $gm" if defined $gm; 
-    $cmd .= " --merge $outfile";
+    $cmd .= " --Dm $Dm" if $Dm; 
+    $cmd .= " --gm $gm" if $gm; 
 
+    if ($Dm && $gm)
+      {
+	$cmd .= " --merge $outfile";
+      }
+    else
+      {
+	$cmd .= " > $outfile";
+      }
     ###MERGING OF DIAGONALS FUNCTION
     # --merge $outfile     #this will automatically cause the merging of diagonals to happen.  $outfile will be created and $outfile.merge (which is the inappropriately named merge of diagonals file.
     # --gm  average distance between diagonals
@@ -883,12 +910,108 @@ sub run_dagchainer
     #
 
 
-    system "touch $outfile.merge.running"; #track that a blast anlaysis is running for this
+    system "touch $running_file"; #track that a blast anlaysis is running for this
     write_log("run dagchainer: running $cmd", $cogeweb->logfile);
     `$cmd`;
 #    `mv $infile.aligncoords $outfile`;
-    system "rm $outfile.merge.running" if -r "$outfile.merge.running";; #remove track file
-    return $outfile.".merge";
+    system "rm $running_file" if -r "$running_file";; #remove track file
+    return $return_file;
+  }
+
+sub run_quota_align_merge
+  {
+    my %opts = @_;
+    my $infile = $opts{infile};
+    my $max_dist = $opts{max_dist};
+
+    my $returnfile = $infile.".Dm".$max_dist."ma1.qa_merge"; #ma stands for merge algo
+    return $returnfile if -r $returnfile;
+    #convert to quota-align format
+    my $cmd = $QUOTA_ALIGN_CONVERT." --dag $infile $infile.qa";
+    write_log("Converting dag output to quota_align format: $cmd", $cogeweb->logfile);
+    `$cmd`;
+    $cmd = $QUOTA_ALIGN ." -n $max_dist --merge $infile.qa";
+    write_log("Running quota_align to merge diagonals:  $cmd", $cogeweb->logfile);
+    `$cmd`;
+    if (-r "$infile.qa.merged")
+      {
+	my %data;
+	open (IN, $infile);
+	while (<IN>)
+	  {
+	    next if /^#/;
+	    my @line = split/\t/;
+	    $data{join ("_", $line[0], $line[2],$line[4],$line[6])} = $_;
+	  }
+	close IN;
+	open (OUT, ">$returnfile");
+	open (IN, "$infile.qa.merged");
+	while (<IN>)
+	  {
+	    if (/^#/)
+	      {
+		print OUT $_;
+	      }
+	    else
+	      {
+		chomp;
+		my @line = split /\t/;
+		print OUT $data{join ("_", $line[0], $line[1], $line[2], $line[3])};
+	      }
+	  }
+	close IN;
+	close OUT;
+      }
+    return "$returnfile";
+  }
+
+sub run_quota_align_coverage
+  {
+    my %opts = @_;
+    my $infile = $opts{infile};
+    my $org1 = $opts{org1}; #ratio of org1
+    my $org2 = $opts{org2}; #ratio of org2
+    my $overlap_dist = $opts{overlap_dist};
+#    print STDERR Dumper \%opts;
+    my $returnfile = $infile.".qac".$org1."-".$org2."-".$overlap_dist.".qa_filtered"; #ma stands for merge algo
+    return $returnfile if -r $returnfile;
+    #convert to quota-align format
+    my $cmd = $QUOTA_ALIGN_CONVERT." --dag $infile $infile.qa";
+    write_log("Converting dag output to quota_align format: $cmd", $cogeweb->logfile);
+    `$cmd`;
+    $cmd = $QUOTA_ALIGN ." -n $overlap_dist --quota $org1:$org2 $infile.qa";
+    write_log("Running quota_align to find syntenic coverage:  $cmd", $cogeweb->logfile);
+    `$cmd`;
+    if (-r "$infile.qa.filtered")
+      {
+	my %data;
+	open (IN, $infile);
+	while (<IN>)
+	  {
+	    next if /^#/;
+	    my @line = split/\t/;
+	    $data{join ("_", $line[0], $line[2],$line[4],$line[6])} = $_;
+	  }
+	close IN;
+	open (OUT, ">$returnfile");
+	open (IN, "$infile.qa.filtered");
+	while (<IN>)
+	  {
+	    if (/^#/)
+	      {
+		print OUT $_;
+	      }
+	    else
+	      {
+		chomp;
+		my @line = split /\t/;
+		print OUT $data{join ("_", $line[0], $line[1], $line[2], $line[3])};
+	      }
+	  }
+	close IN;
+	close OUT;
+      }
+    return "$returnfile";
   }
 
 sub run_find_nearby
@@ -984,12 +1107,12 @@ dN_dS varchar
 	$ks->nwalign_server_port($ports->[$i]);
 	$ks->feat1($feat1);
 	$ks->feat2($feat2);
-	for (1..5)
-	  {
+#	for (1..5)
+#	  {
 	    my $res = $ks->KsCalc(); #send in port number?
 	    $max_res = $res unless $max_res;
 	    $max_res = $res if $res->{dS} && $max_res->{dS} && $res->{dS} < $max_res->{dS};
-	  }
+#	  }
 	unless ($max_res)
 	  {
 	    print STDERR "Failed KS calculation: $fid1\t$fid2\n";
@@ -1393,8 +1516,10 @@ sub go
     my $dagchainer_D= $opts{D};
     my $dagchainer_g = $opts{g};
     my $dagchainer_A = $opts{A};
-    my $dagchainer_Dm=$opts{Dm};
-    my $dagchainer_gm=$opts{gm};
+    my $Dm=$opts{Dm};
+    my $gm=$opts{gm};
+    ($Dm) = $Dm =~ /(\d+)/;
+    ($gm) = $gm =~ /(\d+)/;
     my $repeat_filter_cvalue = $opts{c};  #parameter to be passed to run_adjust_dagchainer_evals
     my $regen_images = $opts{regen_images};
     my $email = $opts{email};
@@ -1414,6 +1539,14 @@ sub go
     my $dagchainer_type = $opts{dagchainer_type};
     my $color_type = $opts{color_type};
     my $box_diags = $opts{box_diags};
+    my $merge_algo = $opts{merge_algo}; #is there a merging function?
+
+    #options for finding syntenic depth coverage by quota align (Bao's algo)
+    my $depth_algo = $opts{depth_algo};
+    my $depth_org_1_ratio = $opts{depth_org_1_ratio};
+    my $depth_org_2_ratio = $opts{depth_org_2_ratio};
+    my $depth_overlap = $opts{depth_overlap};
+
     $box_diags = $box_diags eq "true" ? 1 : 0;
     $dagchainer_type = $dagchainer_type eq "true" ? "geneorder" : "distance";
 
@@ -1428,7 +1561,7 @@ sub go
 	return "<span class=alert>Problem generating dataset group objects for ids:  $dsgid1, $dsgid2.</span>";
       }
     $cogeweb = initialize_basefile(basename=>$basename, prog=>"SynMap");
-    my $synmap_link = "SynMap.pl?dsgid1=$dsgid1;dsgid2=$dsgid2;c=$repeat_filter_cvalue;D=$dagchainer_D;g=$dagchainer_g;A=$dagchainer_A;Dm=$dagchainer_Dm;gm=$dagchainer_gm;w=$width;b=$blast;ft1=$feat_type1;ft2=$feat_type2";
+    my $synmap_link = "SynMap.pl?dsgid1=$dsgid1;dsgid2=$dsgid2;c=$repeat_filter_cvalue;D=$dagchainer_D;g=$dagchainer_g;A=$dagchainer_A;Dm=$Dm;gm=$gm;w=$width;b=$blast;ft1=$feat_type1;ft2=$feat_type2";
     $synmap_link .= ";bd=$box_diags" if $box_diags;
     $synmap_link .= ";mcs=$min_chr_size" if $min_chr_size;
     $synmap_link .= ";sp=$assemble" if $assemble;
@@ -1470,10 +1603,10 @@ sub go
     my ($fasta2,$org_name2, $title2);
     ($fasta1,$org_name1, $title1) = gen_fasta(dsgid=>$dsgid1, feat_type=>$feat_type1);
     ($fasta2,$org_name2, $title2) = gen_fasta(dsgid=>$dsgid2, feat_type=>$feat_type2);
-    ($dsgid1, $org_name1,$fasta1,$feat_type1, $dsgid2,
-    $org_name2,$fasta2, $feat_type2) = ($dsgid2,
-    $org_name2,$fasta2, $feat_type2, $dsgid1,
-    $org_name1,$fasta1, $feat_type1) if ($org_name2 lt $org_name1);
+    ($dsgid1, $org_name1,$fasta1,$feat_type1, $depth_org_1_ratio, $dsgid2,
+    $org_name2,$fasta2, $feat_type2, $depth_org_2_ratio) = ($dsgid2,
+    $org_name2,$fasta2, $feat_type2, $depth_org_2_ratio, $dsgid1,
+    $org_name1,$fasta1, $feat_type1, $depth_org_1_ratio) if ($org_name2 lt $org_name1);
      unless ($fasta1 && $fasta2)
        {
  	my $log = $cogeweb->logfile;
@@ -1595,20 +1728,30 @@ sub go
     #############
 
      #run dagchainer
-     my $dagchainer_file = run_dagchainer(infile=>$dag_file12, D=>$dagchainer_D, g=>$dagchainer_g,A=>$dagchainer_A, type=>$dagchainer_type, Dm=>$dagchainer_Dm, gm=>$dagchainer_gm);
-     write_log("Completed dagchainer run", $cogeweb->logfile);
-     write_log("", $cogeweb->logfile);
+    my $dag_merge = 1 if $merge_algo == 2; #this is for using dagchainer's merge function;
+    my $dagchainer_file = run_dagchainer(infile=>$dag_file12, D=>$dagchainer_D, g=>$dagchainer_g,A=>$dagchainer_A, type=>$dagchainer_type, Dm=>$Dm, gm=>$gm, merge=>$dag_merge);
+    write_log("Completed dagchainer run", $cogeweb->logfile);
+    write_log("", $cogeweb->logfile);
     my $t4 = new Benchmark;
     my $run_dagchainer_time = timestr(timediff($t4,$t3_5));
     my ($find_nearby_time, $gen_ks_db_time, $dotplot_time, $add_gevo_links_time);
     if (-r $dagchainer_file)
       {
+
+	$dagchainer_file = run_quota_align_merge(infile=>$dagchainer_file, max_dist=>$Dm) if $merge_algo == 1;#id 1 is to specify quota align as a merge algo
+
  	my $tmp = $dagchainer_file; #temp file name for the final post-processed data
  	$tmp =~ s/aligncoords/all\.aligncoords/;
  	#add pairs that were skipped by dagchainer
+
  	run_find_nearby(infile=>$dagchainer_file, dag_all_file=>$all_file, outfile=>$tmp);
 	my $t5 = new Benchmark;
 	$find_nearby_time = timestr(timediff($t5,$t4));
+
+	$dagchainer_file = run_quota_align_coverage(infile=>$dagchainer_file, org1=>$depth_org_1_ratio, org2=>$depth_org_2_ratio, overlap_dist=>$depth_overlap ) if $depth_algo == 1;#id 1 is to specify quota align
+
+
+	$tmp = $dagchainer_file;
  	#convert to genomic coordinates if gene order was used
  	if ($dagchainer_type eq "geneorder")
  	  {
@@ -1644,14 +1787,17 @@ sub go
  	my $slead = "b";
  	my $out = $org_dirs{$orgkey1."_".$orgkey2}{dir}."/html/";
  	mkpath ($out,0,0777) unless -d $out;
- 	$out .="master_".$org_dirs{$orgkey1."_".$orgkey2}{basename};
- 	$out .= "_$dagchainer_type";
- 	$out .= "_c$repeat_filter_cvalue" if $repeat_filter_cvalue;
- 	$out .= "_D$dagchainer_D" if $dagchainer_D;
- 	$out .= "_g$dagchainer_g" if $dagchainer_g;
- 	$out .= "_A$dagchainer_A" if $dagchainer_A;
- 	$out .= "_Dm$dagchainer_Dm" if defined $dagchainer_Dm;
- 	$out .= "_gm$dagchainer_gm" if defined $dagchainer_gm;
+	$out .= "master_";
+	my ($base) = $dagchainer_file =~ /([^\/]*$)/;
+	$out .= $base;
+# 	$out .="master_".$org_dirs{$orgkey1."_".$orgkey2}{basename};
+# 	$out .= "_$dagchainer_type";
+# 	$out .= "_c$repeat_filter_cvalue" if $repeat_filter_cvalue;
+# 	$out .= "_D$dagchainer_D" if $dagchainer_D;
+# 	$out .= "_g$dagchainer_g" if $dagchainer_g;
+# 	$out .= "_A$dagchainer_A" if $dagchainer_A;
+# 	$out .= "_Dm$Dm" if defined $Dm;
+# 	$out .= "_gm$gm" if defined $gm;
 	$out .= "_ct$color_type" if defined $color_type;
  	$out .= ".w$width";
  	#deactivation ks calculations due to how slow it is
@@ -1822,10 +1968,30 @@ sub get_previous_analyses
 	while (my $file = readdir(DIR))
 	  {
 	    $sqlite = 1 if $file =~ /sqlite$/;
-	    next unless $file =~ /all\.aligncoords\.merge$/;
+	    next unless $file =~ /all\.aligncoords/;#$/\.merge$/;
 
 	    my ($D, $g, $A) = $file =~ /D(\d+)_g(\d+)_A(\d+)/;
-	    my ($Dm, $gm) = $file =~ /Dm(\d+)_gm(\d+)/;
+	    my ($Dm) = $file =~ /Dm(\d+)/;
+	    my ($gm) = $file =~ /gm(\d+)/;
+	    my ($ma) = $file =~ /ma(\d+)/;
+	    $Dm = " " unless defined $Dm;
+	    $gm = " " unless defined $gm;
+	    $ma = 0 unless $ma;
+	    my $merge_algo;
+	    $merge_algo = "DAGChainer" if $ma && $ma ==2;
+	    if ($ma && $ma ==1)
+	      {
+		$merge_algo = "Quota Align";
+		$gm= " ";
+	      }
+	    unless ($ma)
+	      {
+		$merge_algo = "--none--";
+		$gm= " ";
+		$Dm= " ";
+	      }
+#	    $Dm = 0 unless $Dm;
+#	    $gm = 0 unless $gm;
 	    next unless ($D && $g && $A);
 
 	    my $blast = $file =~ /blastn/ ? "BlastN" : "TBlastX";
@@ -1839,6 +2005,8 @@ sub get_previous_analyses
 			A=>$A,
 			Dm=>$Dm,
 			gm=>$gm,
+			ma=>$ma,
+			merge_algo=>$merge_algo,
 			blast=>$blast,
 			dsgid1=>$dsgid1,
 			dsgid2=>$dsgid2);
@@ -1878,15 +2046,15 @@ sub get_previous_analyses
     $size = 8 if $size > 8;
     my $html;
     my $prev_table = qq{<table id=prev_table class="small resultborder">};
-    $prev_table .= qq{<THEAD><TR><TH>}.join ("<TH>", qw(Org1 Genome1 Genome%20Type1 Sequence%20Type1 Org2 Genome2 Genome%20Type2 Sequence%20type2 Algo DAG%20Type Repeat%20Filter Ave%20Dist(g) Max%20Dist(D) Min%20Pairs(A)  Merge%20Ave%20Dist(gm) Merge%20Max%20Dist(Dm)))."</THEAD><TBODY>\n";
+    $prev_table .= qq{<THEAD><TR><TH>}.join ("<TH>", qw(Org1 Genome1 Genome%20Type1 Sequence%20Type1 Org2 Genome2 Genome%20Type2 Sequence%20type2 Algo DAG%20Type Repeat%20Filter Ave%20Dist(g) Max%20Dist(D) Min%20Pairs(A)  Merge%20Algo Merge%20Ave%20Dist(gm) Merge%20Max%20Dist(Dm)))."</THEAD><TBODY>\n";
     foreach my $item (@items)
       {
-	my $val = join ("_",$item->{g},$item->{D},$item->{A},$item->{gm},$item->{Dm}, $oid1, $item->{dsgid1}, $item->{type1},$oid2, $item->{dsgid2}, $item->{type2}, $item->{blast}, $item->{dagtype}, $item->{repeat_filter});
+	my $val = join ("_",$item->{g},$item->{D},$item->{A},$item->{gm},$item->{Dm}, $oid1, $item->{dsgid1}, $item->{type1},$oid2, $item->{dsgid2}, $item->{type2}, $item->{blast}, $item->{dagtype}, $item->{repeat_filter}, $item->{ma});
 	$prev_table .= qq{<TR class=feat onclick="update_params('$val')" align=center><td>};
 	$prev_table .= join ("<td>", 
 			     $item->{dsg1}->organism->name, $item->{genome1}, $item->{dsg1}->type->name, $item->{type_name1},
 			     $item->{dsg2}->organism->name, $item->{genome2}, $item->{dsg2}->type->name, $item->{type_name2},
-			     $item->{blast}, $item->{dagtype}, $item->{repeat_filter},$item->{g}, $item->{D}, $item->{A}, $item->{gm}, $item->{Dm})."\n";
+			     $item->{blast}, $item->{dagtype}, $item->{repeat_filter},$item->{g}, $item->{D}, $item->{A}, $item->{merge_algo}, $item->{gm}, $item->{Dm})."\n";
       }
     $prev_table .= qq{</TBODY></table>};
     $html .= $prev_table;
