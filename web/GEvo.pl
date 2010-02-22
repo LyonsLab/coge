@@ -441,7 +441,6 @@ sub run
     my $show_hsps_with_stop_codon = $opts{showallhsps};
     my $padding = $opts{padding};
     my ($analysis_program, $param_string, $parser_opts) = get_algorithm_options(%opts);
-#    my $basefilename = $opts{basefile};
     my $pad_gs = $opts{pad_gs} || 0;
     my $color_overlapped_features = $opts{color_overlapped_features};
     my $hsp_overlap_length = $opts{hsp_overlap_length};
@@ -455,9 +454,12 @@ sub run
     my $message;
     my $gen_prot_sequence =0; #flag for generating fasta file of protein_sequence;
     $gen_prot_sequence = 1 if $analysis_program eq "GenomeThreader";
-#    $cogeweb = initialize_basefile(basename=>$basefilename, prog=>"GEvo");
-    $cogeweb = initialize_basefile(prog=>"GEvo");
-    my $basefilename = $cogeweb->basefilename;
+    my $basefilename = $opts{basefile};
+    $cogeweb = initialize_basefile(basename=>$basefilename, prog=>"GEvo");
+###### working on basefile name initialization problems
+#    $cogeweb = initialize_basefile(prog=>"GEvo");
+#    my $basefilename = $cogeweb->basefilename;
+######
     print STDERR "Running GEvo:  basefile:  $basefilename\n";
     write_log("Beginning GEvo analysis.  Basefilename: $basefilename", $cogeweb->logfile);
     my @hsp_colors;
