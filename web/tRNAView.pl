@@ -58,6 +58,7 @@ sub gen_html
      {
     my ($body) = gen_body();
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
+    $template->param(PAGE_TITLE=>"tRNAView");
     $template->param(TITLE=>'CoGe tRNA and tmRNA Search Tool');
     $template->param(HELP=>'/wiki/index.php?title=tRNAView');
    # print STDERR "user is: ",$USER,"\n";
