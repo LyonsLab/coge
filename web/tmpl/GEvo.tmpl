@@ -236,7 +236,7 @@ set_up_sort();
 
 function populate_page_obj(basefile)
  {
-  if (!basefile) {alert (basefile);}
+  if (!basefile) {basefile = rand()}
   pageObj.basefile = basefile;
   pageObj.nolog = 0;
   pageObj.waittime = 1000;
@@ -730,6 +730,12 @@ function update_line_width(val)
    Gobe.set_linewidth($('#line_width_val').val());
  }
 
+function rand ()
+{
+  return ( Math.floor ( Math.random ( ) * 99999999 + 1 ) );
+}
+
+
 </SCRIPT>
 
 <div id="go_run"><TMPL_VAR NAME="GO_RUN"></div>
@@ -751,7 +757,7 @@ function update_line_width(val)
 </tr>
 </table>
 </div>
-<span id=go style="font-size: 1em" class='ui-button ui-state-default ui-corner-all' onClick="set_display_order(); loading([],['results']); go_run();">Run GEvo Analysis!</span>
+<span id=go style="font-size: 1em" class='ui-button ui-state-default ui-corner-all' onClick="populate_page_obj(); set_display_order(); loading([],['results']); go_run();">Run GEvo Analysis!</span>
 <table>
 
 <tr align left>
