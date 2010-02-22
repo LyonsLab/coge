@@ -81,7 +81,7 @@ sub gen_html
   
   sub gen_body
   {
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/tRNA.tmpl');
+    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/tRNAView.tmpl');
     my $form = $FORM;
     my $featid = join (",",$form->param('featid'), $form->param('fid')) || 0;
     my $chr = $form->param('chr') || 0;
