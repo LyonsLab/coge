@@ -457,8 +457,11 @@ sub run
     my $basefilename = $opts{basefile};
     $cogeweb = initialize_basefile(basename=>$basefilename, prog=>"GEvo");
 ###### working on basefile name initialization problems
-#    $cogeweb = initialize_basefile(prog=>"GEvo");
-#    my $basefilename = $cogeweb->basefilename;
+    if (!$basefilename || $basefilename eq "undefined")
+      {
+	$cogeweb = initialize_basefile(prog=>"GEvo");
+	$basefilename = $cogeweb->basefilename;
+      }
 ######
     print STDERR "Running GEvo:  basefile:  $basefilename\n";
     write_log("Beginning GEvo analysis.  Basefilename: $basefilename", $cogeweb->logfile);
