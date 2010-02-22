@@ -40,7 +40,7 @@ print $pj->build_html($FORM, \&gen_html);
 sub gen_html
   {
     my $html;
-    unless ($USER && $USER->user_name  !~/public/i)
+    unless ($USER)
       {
 	$html = login();
       }
@@ -58,8 +58,6 @@ sub gen_html
         $name = $USER->first_name if $USER->first_name;
         $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
         $template->param(USER=>$name);
-
-	$template->param(LOGON=>1) unless $USER->user_name eq "public";
 	$template->param(DATE=>$DATE);
 	$template->param(LOGO_PNG=>"MatrixView-logo.png");
 	$template->param(BODY=>$body);
