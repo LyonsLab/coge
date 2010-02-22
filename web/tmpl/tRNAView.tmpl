@@ -32,6 +32,7 @@ function restore_search_bar(div_id){
 }
 
 function run_search(input){
+	$('#results').html('<center><span class=small style="text-align: center">Scanning for tRNAs. . .</span></center>');
 	var orgid = $('#org_id').val();
 	var search_type = $('#search_type').val();
 	var gcode = $('#gcode').val();
