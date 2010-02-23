@@ -544,12 +544,12 @@ function depth_algo_check()
      <TD><input type=text size=8 id="Dm" value=""><span class=distance_type></span>
  </TABLE>
 
-<tr valign=top>
+<tr valign=top style="display:none">
   <td style="color:#009900">Syntenic Depth
   <td>Algorithm: 
        <select id="depth_algo" name="depth_algo" onchange="depth_algo_check()">
         <OPTION VALUE="0"> --None--
-        <OPTION VALUE="1" <TMPL_VAR NAME="QUOTA_MERGE_SELECT">">Quota Align
+        <OPTION VALUE="1" <TMPL_VAR NAME="QUOTA_ALIGN_SELECT">">Quota Align
        </select> <br>
        <div id=depth_options style="display:none">
         Ratio of coverage depth: 
