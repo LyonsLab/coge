@@ -943,6 +943,21 @@ sub run
     $html .= qq{<div id=tiny_link></div>};
     $html .=qq{<div><a href="GEvo_direct.pl?name=$basefilename" target=_new>Results only</a></div></td>};
 
+    my (@ncbi_links);
+    foreach my $item (@sets)
+      {
+	if ($item->{'obj'}->ncbi_link)
+	  {
+	    my $ncbi_link = $item->{'obj'}->ncbi_link;
+	    push @ncbi_links, qq{<div class="link small" onclick="window.open('$ncbi_link')">}.$item->{'obj'}->accn."</div>";
+	  }
+      }
+    if (@ncbi_links)
+      {
+	$html .= qq{<td class=small>NCBI links\n};
+	$html .= join ("\n", @ncbi_links);
+      }
+
     $html .= qq{</table>};
 
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
