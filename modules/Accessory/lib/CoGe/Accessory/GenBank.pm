@@ -9,7 +9,7 @@ use CoGe::Accessory::GenBank::Feature;
 use CoGeX::Feature;
 use Roman;
 
-__PACKAGE__->mk_accessors qw(id locus accn seq_length moltype division date definition version gi keywords data_source dataset organism sequence srcfile dir anntoation features start stop chromosome add_gene_models _has_genes wgs wgs_scafld wgs_data strain substrain genomic_sequence_type_id debug no_wgs requested_id other_stuff);
+__PACKAGE__->mk_accessors qw(id locus accn seq_length moltype division date definition version gi keywords data_source dataset organism sequence srcfile dir anntoation features start stop chromosome add_gene_models _has_genes wgs wgs_scafld wgs_data strain substrain genomic_sequence_type_id debug no_wgs requested_id other_stuff ncbi_link);
 
 
 
@@ -41,6 +41,7 @@ sub get_genbank_from_ncbi
 #    my $url = "http://www.ncbi.nlm.nih.gov/entrez/viewer.fcgi?db=nucleotide&qty=1&c_start=1&dopt=gbwithparts&send=Send&sendto=t&from=begin&to=end&extrafeatpresent=1&ef_CDD=8&ef_MGC=16&ef_HPRD=32&ef_STS=64&ef_tRNA=128&ef_microRNA=256&ef_Exon=512&list_uids=";
     my $url = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nucleotide&rettype=gbwithparts&retmode=text&complexity=0&id=";
     my $ua = new LWP::UserAgent;
+    $self->ncbi_link("http://www.ncbi.nlm.nih.gov/nuccore/$id");
     unless ($file)
       {
 	print STDERR "must specify a file where the gb file exists or where it will be written using file=>$file!\n";
