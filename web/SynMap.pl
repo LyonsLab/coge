@@ -197,6 +197,12 @@ sub gen_body
       {
 	$template->param('AXIS_METRIC_NT'=>'selected');
       }
+    #merge diags algorithm
+    if ($FORM->param('ma'))
+      {
+	$template->param(QUOTA_MERGE_SELECT=>'selected') if $FORM->param('ma') eq "1";
+	$template->param(DAG_MERGE_SELECT=>'selected') if $FORM->param('ma') eq "2";
+      }
     $template->param('SYNTENIC_PATH'=>"checked") if $FORM->param('sp');
     $template->param('BOX_DIAGS'=>"checked") if $FORM->param('bd');
     $template->param('SHOW_NON_SYN'=>"checked") if $FORM->param('sp') && $FORM->param('sp') eq "2";
@@ -1565,6 +1571,7 @@ sub go
     $synmap_link .= ";bd=$box_diags" if $box_diags;
     $synmap_link .= ";mcs=$min_chr_size" if $min_chr_size;
     $synmap_link .= ";sp=$assemble" if $assemble;
+    $synmap_link .= ";ma=$merge_algo" if $merge_algo;
     $email = 0 if check_address_validity($email) eq 'invalid';
     $blast = $blast == 2 ? "tblastx" : "blastn";
     $feat_type1 = $feat_type1 == 2 ? "genomic" : "CDS";
