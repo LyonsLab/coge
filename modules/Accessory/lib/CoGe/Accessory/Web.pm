@@ -225,7 +225,7 @@ sub check_filename_taint {
 sub check_taint {
   my $v = shift;
   return 1 unless $v;
-  if ($v =~ /^([-\w._=\s+\/]+)$/) {
+  if ($v =~ /^([-\w\._=\s+\/,]+)$/) {
     $v = $1;
     # $v now untainted
     return(1,$v);
