@@ -203,6 +203,24 @@ sub gen_body
 	$template->param(QUOTA_MERGE_SELECT=>'selected') if $FORM->param('ma') eq "1";
 	$template->param(DAG_MERGE_SELECT=>'selected') if $FORM->param('ma') eq "2";
       }
+    if ($FORM->param('da'))
+      {
+	if ($FORM->param('da') eq "1")
+	  {
+	    $template->param(QUOTA_ALIGN_SELECT=>'selected');
+	  }
+      }
+    my $depth_org_1_ratio = 1;
+    $depth_org_1_ratio = $FORM->param('do1') if $FORM->param('do1');
+    $template->param(DEPTH_ORG_1_RATIO=>$depth_org_1_ratio);
+    my $depth_org_2_ratio = 1;
+    $depth_org_2_ratio = $FORM->param('do2') if $FORM->param('do2');
+    $template->param(DEPTH_ORG_2_RATIO=>$depth_org_2_ratio);
+    my $depth_overlap = 40;
+    $depth_overlap = $FORM->param('do') if $FORM->param('do');
+    $template->param(DEPTH_OVERLAP=>$depth_overlap);
+
+
     $template->param('SYNTENIC_PATH'=>"checked") if $FORM->param('sp');
     $template->param('BOX_DIAGS'=>"checked") if $FORM->param('bd');
     $template->param('SHOW_NON_SYN'=>"checked") if $FORM->param('sp') && $FORM->param('sp') eq "2";
@@ -874,6 +892,7 @@ sub run_dagchainer
     my $running_file = $outfile;
     $running_file .= ".dag.merge" if $Dm && $gm;
     $running_file .= ".running";
+    my $merged_file = $outfile.".merge";
     my $return_file = $outfile;
     $return_file .= ".merge" if $Dm && $gm; #created by $RUN_DAGCHAINER if merge option is true
 
@@ -890,7 +909,7 @@ sub run_dagchainer
     if (-r $return_file)
       {
 	write_log("run dagchainer: file $return_file already exists",$cogeweb->logfile);
-	return $return_file;
+	return ($outfile, $merged_file);
       }
     my $cmd = "$PYTHON $RUN_DAGCHAINER -E 0.05 -i $infile";
     $cmd .= " -D $D" if defined $D;
@@ -921,7 +940,7 @@ sub run_dagchainer
     `$cmd`;
 #    `mv $infile.aligncoords $outfile`;
     system "rm $running_file" if -r "$running_file";; #remove track file
-    return $return_file;
+    return ($outfile, $merged_file);
   }
 
 sub run_quota_align_merge
@@ -930,7 +949,7 @@ sub run_quota_align_merge
     my $infile = $opts{infile};
     my $max_dist = $opts{max_dist};
 
-    my $returnfile = $infile.".Dm".$max_dist."ma1.qa_merge"; #ma stands for merge algo
+    my $returnfile = $infile.".Dm".$max_dist.".ma1"; #ma stands for merge algo
     return $returnfile if -r $returnfile;
     #convert to quota-align format
     my $cmd = $QUOTA_ALIGN_CONVERT." --dag $infile $infile.qa";
@@ -1196,7 +1215,7 @@ sub get_ks_data
 	if ($data->[3] eq "")
 	  {
 	    $no_data++;
-	    print STDERR $data->[1],"\t", $data->[2]."\n";
+#	    print STDERR $data->[1],"\t", $data->[2]."\n";
 #	    next; #uncomment to force recalculation of missing data
 	  }
 
@@ -1207,7 +1226,6 @@ sub get_ks_data
 					}: {};# unless $data->[3] eq "";
       }
     print STDERR $no_data ." of ". $total." gene pairs had no ks data\n";
-
     write_log("\tgathered data from ks database $db_file", $cogeweb->logfile);
     $sth->finish;
     undef $sth;
@@ -1334,7 +1352,7 @@ sub gen_ks_blocks_file
       my $block_title;
       while(<IN>)
 	{
-	  if (/^##/)
+	  if (/^#/)
 	    {
 	      my $output = process_block(ksdata=>$ksdata, block=>\@block, header=>$block_title) if $block_title;
 	      print OUT $output if $output;
@@ -1519,6 +1537,11 @@ sub generate_dotplot
 sub go
   {
     my %opts = @_;
+    foreach my $k (keys %opts)
+      {
+	$opts{$k} =~ s/^\s+//;
+	$opts{$k} =~ s/\s+$//;
+      }
     my $dagchainer_D= $opts{D};
     my $dagchainer_g = $opts{g};
     my $dagchainer_A = $opts{A};
@@ -1553,6 +1576,7 @@ sub go
     my $depth_org_2_ratio = $opts{depth_org_2_ratio};
     my $depth_overlap = $opts{depth_overlap};
 
+
     $box_diags = $box_diags eq "true" ? 1 : 0;
     $dagchainer_type = $dagchainer_type eq "true" ? "geneorder" : "distance";
 
@@ -1572,6 +1596,11 @@ sub go
     $synmap_link .= ";mcs=$min_chr_size" if $min_chr_size;
     $synmap_link .= ";sp=$assemble" if $assemble;
     $synmap_link .= ";ma=$merge_algo" if $merge_algo;
+    $synmap_link .= ";da=$depth_algo" if $depth_algo;
+    $synmap_link .= ";do1=$depth_org_1_ratio" if $depth_org_1_ratio;
+    $synmap_link .= ";do2=$depth_org_2_ratio" if $depth_org_2_ratio;
+    $synmap_link .= ";do=$depth_overlap" if $depth_overlap;
+
     $email = 0 if check_address_validity($email) eq 'invalid';
     $blast = $blast == 2 ? "tblastx" : "blastn";
     $feat_type1 = $feat_type1 == 2 ? "genomic" : "CDS";
@@ -1736,34 +1765,40 @@ sub go
 
      #run dagchainer
     my $dag_merge = 1 if $merge_algo == 2; #this is for using dagchainer's merge function;
-    my $dagchainer_file = run_dagchainer(infile=>$dag_file12, D=>$dagchainer_D, g=>$dagchainer_g,A=>$dagchainer_A, type=>$dagchainer_type, Dm=>$Dm, gm=>$gm, merge=>$dag_merge);
+    my ($dagchainer_file, $merged_dagchainer_file) = run_dagchainer(infile=>$dag_file12, D=>$dagchainer_D, g=>$dagchainer_g,A=>$dagchainer_A, type=>$dagchainer_type, Dm=>$Dm, gm=>$gm, merge=>$dag_merge);
+    
     write_log("Completed dagchainer run", $cogeweb->logfile);
     write_log("", $cogeweb->logfile);
     my $t4 = new Benchmark;
     my $run_dagchainer_time = timestr(timediff($t4,$t3_5));
     my ($find_nearby_time, $gen_ks_db_time, $dotplot_time, $add_gevo_links_time);
+    my $final_results_files;
     if (-r $dagchainer_file)
       {
 
-	$dagchainer_file = run_quota_align_merge(infile=>$dagchainer_file, max_dist=>$Dm) if $merge_algo == 1;#id 1 is to specify quota align as a merge algo
+	$merged_dagchainer_file = run_quota_align_merge(infile=>$dagchainer_file, max_dist=>$Dm) if $merge_algo == 1;#id 1 is to specify quota align as a merge algo
 
- 	my $tmp = $dagchainer_file; #temp file name for the final post-processed data
- 	$tmp =~ s/aligncoords/all\.aligncoords/;
+ 	my $post_dagchainer_file = -r $merged_dagchainer_file ? $merged_dagchainer_file : $dagchainer_file; #temp file name for the final post-processed data
+	my $post_dagchainer_file_w_nearby = $post_dagchainer_file;
+ 	$post_dagchainer_file_w_nearby =~ s/aligncoords/all\.aligncoords/;
  	#add pairs that were skipped by dagchainer
+ 	run_find_nearby(infile=>$post_dagchainer_file, dag_all_file=>$all_file, outfile=>$post_dagchainer_file_w_nearby);
 
- 	run_find_nearby(infile=>$dagchainer_file, dag_all_file=>$all_file, outfile=>$tmp);
 	my $t5 = new Benchmark;
 	$find_nearby_time = timestr(timediff($t5,$t4));
 
-	$dagchainer_file = run_quota_align_coverage(infile=>$dagchainer_file, org1=>$depth_org_1_ratio, org2=>$depth_org_2_ratio, overlap_dist=>$depth_overlap ) if $depth_algo == 1;#id 1 is to specify quota align
+	#currently skipping this till I figure out the rest of the files.
+	my $quota_align_coverage = run_quota_align_coverage(infile=>$post_dagchainer_file_w_nearby, org1=>$depth_org_1_ratio, org2=>$depth_org_2_ratio, overlap_dist=>$depth_overlap ) if $depth_algo == 1;#id 1 is to specify quota align
+	my $final_dagchainer_file = -r $quota_align_coverage ? $quota_align_coverage : $post_dagchainer_file_w_nearby;
+
+	my $ks_blocks_file = gen_ks_blocks_file(infile=>$final_dagchainer_file) if $ks_type;
 
 
-	$tmp = $dagchainer_file;
+	my $tmp = $dagchainer_file;
  	#convert to genomic coordinates if gene order was used
  	if ($dagchainer_type eq "geneorder")
  	  {
- 	    replace_gene_order_with_genomic_positions(file=>$tmp);
-# 	    replace_gene_order_with_genomic_positions(file=>$dag_file12_all);
+ 	    replace_gene_order_with_genomic_positions(file=>$final_dagchainer_file);
  	  }
 
  	#generate dotplot images
@@ -1795,35 +1830,24 @@ sub go
  	my $out = $org_dirs{$orgkey1."_".$orgkey2}{dir}."/html/";
  	mkpath ($out,0,0777) unless -d $out;
 	$out .= "master_";
-	my ($base) = $dagchainer_file =~ /([^\/]*$)/;
+	my ($base) = $final_dagchainer_file =~ /([^\/]*$)/;
 	$out .= $base;
-# 	$out .="master_".$org_dirs{$orgkey1."_".$orgkey2}{basename};
-# 	$out .= "_$dagchainer_type";
-# 	$out .= "_c$repeat_filter_cvalue" if $repeat_filter_cvalue;
-# 	$out .= "_D$dagchainer_D" if $dagchainer_D;
-# 	$out .= "_g$dagchainer_g" if $dagchainer_g;
-# 	$out .= "_A$dagchainer_A" if $dagchainer_A;
-# 	$out .= "_Dm$Dm" if defined $Dm;
-# 	$out .= "_gm$gm" if defined $gm;
 	$out .= "_ct$color_type" if defined $color_type;
  	$out .= ".w$width";
  	#deactivation ks calculations due to how slow it is
- 	my $ks_db = gen_ks_db(infile=>$tmp) if $ks_type;
+ 	my $ks_db = gen_ks_db(infile=>$final_dagchainer_file) if $ks_type;
 	my $t6 = new Benchmark;
 	$gen_ks_db_time = timestr(timediff($t6,$t5));
 
- 	$out = generate_dotplot(dag=>$dag_file12_all, coords=>$tmp, outfile=>"$out", regen_images=>$regen_images, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, dagtype=>$dagchainer_type, ks_db=>$ks_db, ks_type=>$ks_type, assemble=>$assemble, metric=>$axis_metric, min_chr_size=>$min_chr_size, color_type=>$color_type, box_diags=>$box_diags);
-# 	$out = generate_dotplot(dag=>$dag_file12_all, coords=>$dagchainer_file, outfile=>"$out", regen_images=>$regen_images, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, dagtype=>$dagchainer_type, ks_db=>$ks_db, ks_type=>$ks_type, assemble=>$assemble, metric=>$axis_metric, min_chr_size=>$min_chr_size);
-
+ 	$out = generate_dotplot(dag=>$dag_file12_all, coords=>$final_dagchainer_file, outfile=>"$out", regen_images=>$regen_images, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, dagtype=>$dagchainer_type, ks_db=>$ks_db, ks_type=>$ks_type, assemble=>$assemble, metric=>$axis_metric, min_chr_size=>$min_chr_size, color_type=>$color_type, box_diags=>$box_diags);
 
 	my $hist = $out.".hist.png";
 	my $t7 = new Benchmark;
 	$dotplot_time = timestr(timediff($t7,$t6));
 
- 	add_GEvo_links (infile=>$tmp, dsgid1=>$dsgid1, dsgid2=>$dsgid2);
+ 	add_GEvo_links (infile=>$final_dagchainer_file, dsgid1=>$dsgid1, dsgid2=>$dsgid2);
 	my $t8 = new Benchmark;
 	$add_gevo_links_time = timestr(timediff($t8,$t7));
-	my $ks_blocks_file = gen_ks_blocks_file(infile=>$tmp) if $ks_type;
  	$tmp =~ s/$DIR/$URL/;
  	if (-r "$out.html")
  	  {
@@ -1831,14 +1855,6 @@ sub go
 <div class="ui-widget-content" id="synmap_zoom_box">
  Zoomed SynMap:
  <table class=small>
- <tr>
- <td> Display Location:
- <td><select name=map_loc id=map_loc>
-  <option value="window1" selected>New Window
-  <option value="1">Area 1
-  <option value="2">Area 2
-  <option value="3">Area 3
- </select>
  <tr>
  <td>Flip axes?
  <td><input type=checkbox id=flip>
@@ -1862,7 +1878,7 @@ sub go
 	    $org_name1 .= " (v".$dsg1->version.")";
 	    $org_name2 .= " (v".$dsg2->version.")";
 
- 	    $html .= "<span class='species small'>y-axis organism: $org_name2</span><table><tr valign=top><td valign=top>";
+ 	    $html .= "<span class='species small'>y-axis organism: $org_name2</span><br>";
  	    $/ = "\n";
  	    while (<IN>)
  	      {
@@ -1878,42 +1894,103 @@ sub go
  <br><span class="species small">x-axis: $org_name1</span><br>
 };
 	    $html .= "<span class='small'>Axis metrics are in $axis_metric</span><br>";
-	    $html .= "<div class=small>Histogram of $ks_type values.<br><img src='$out.hist.png'></div>" if -r $hist;
-	    $html .= "Links and Downloads:";
-	    
  	    $html .= "<br><span class='small link' onclick=window.open('$out.png')>Image File</span>";
- 	    $html .= "<br><span class='small link' onclick=window.open('$out.hist.png')>Histogram of synonymous substitutions</span>" if -r $hist;
- 	    $html .= "<br><span class='small link' onclick=window.open('$tmp')>DAGChainer syntelog file with GEvo links</span>";
- 	    $html .= "<br><span class='small link' onclick=window.open('$tmp.condensed')>Condensed syntelog file with GEvo links</span>";
-	    $ks_blocks_file =~ s/$DIR/$URL/ if $ks_blocks_file;
- 	    $html .= "<br><span class='small link' onclick=window.open('$ks_blocks_file') target=_new>Syntelog file with synonymous/nonsynonymous rate values</span>" if $ks_blocks_file;
-	    
-	    $html .= "<br>".qq{<span class="small link" id="" onClick="window.open('bin/SynMap/order_contigs_to_chromosome.pl?f=$tmp');" >Generate Assembled Genomic Sequence</span>} if $assemble;
-	    $html .= "<br>"
- 	  }
-       }
-     else
-       {
- 	$problem=1
-       }
-     foreach my $org_dir (keys %org_dirs)
-       {
- 	my $output = $org_dirs{$org_dir}{blastfile};
- 	next unless -s $output;
- 	$output =~ s/$DIR/$URL/;
- 	$html .= "<span class='link small' onclick=window.open('$output')>Blast results</span><br>";	
-       }
-     my $log = $cogeweb->logfile;
-     $log =~ s/$DIR/$URL/;
-     write_log("\nLink: $synmap_link", $cogeweb->logfile);
-    $html .= "<span class='small link' onclick=window.open('$log')>log</span><br>";
-    $html .= "<span class='small link' onclick=window.open('$synmap_link')>SynMap Link</span>";
+	    $html .= "<div class='small link onclick=window.open('$out.hist.png')>Histogram of $ks_type values.<br><img src='$out.hist.png'></div>" if -r $hist;
 
-     $html .= "<td valign=top>";
-     $html .= "<div id=syn_loc1></div>";
-     $html .= "<div id=syn_loc2></div>";
-     $html .= "<div id=syn_loc3></div>";
-     $html .= "</table>";
+	    my $log = $cogeweb->logfile;
+	    $log =~ s/$DIR/$URL/;
+	    $html .= "<span class='small link' onclick=window.open('$log')>Analysis Log (id: $basename)</span><br>";
+
+
+
+	    $html .= "Links and Downloads:";
+	    $html .= qq{<table class="small backbox">};
+	    $html .= qq{<TR valign=top><td>Homolog search<td>Diagonals<td>Results};
+	    $html .= qq{<tr valign=top><td>};
+#	    $html .= qq{<span class='small link' onclick=window.open('')></span>};
+	    $fasta1 =~ s/$DIR/$URL/;
+	    $html .= qq{<span class='small link' onclick=window.open('$fasta1')>Fasta file for $org_name1: $feat_type1</span><br>};
+	    $fasta2 =~ s/$DIR/$URL/;
+	    $html .= qq{<span class='small link' onclick=window.open('$fasta2')>Fasta file for $org_name2: $feat_type2</span><br>};
+	    
+	    foreach my $org_dir (keys %org_dirs)
+	      {
+		my $output = $org_dirs{$org_dir}{blastfile};
+		next unless -s $output;
+		$output =~ s/$DIR/$URL/;
+		$html .= "<span class='link small' onclick=window.open('$output')>Blast results</span><br>";	
+	      }
+	    $html .= "<td>";
+	    $dag_file12_all =~ s/$DIR/$URL/;
+	    $html .= qq{<span class='small link' onclick=window.open('$dag_file12_all')>DAGChainer Initial Input file</span><br>};    
+	    if (-r $dag_file12_all_geneorder)
+	      {
+		$dag_file12_all_geneorder =~ s/$DIR/$URL/;
+		$html .= qq{<span class='small link' onclick=window.open('$dag_file12_all_geneorder')>DAGChainer Input file converted to gene order</span><br>};
+	      }
+	    $dag_file12 =~ s/$DIR/$URL/;
+	    $html .= qq{<span class='small link' onclick=window.open('$dag_file12')>DAGChainer Input file post repetivive matches filter</span><br>};
+
+	    $html .= "<td>";
+
+	    $dagchainer_file =~ s/$DIR/$URL/;
+	    $html .= qq{<span class='small link' onclick=window.open('$dagchainer_file')>DAGChainer output</span><br>};
+	    if (-r $merged_dagchainer_file)
+	      {
+		$merged_dagchainer_file =~ s/$DIR/$URL/;
+		$html .= qq{<span class='small link' onclick=window.open('$merged_dagchainer_file')>Merged DAGChainer output</span><br>};
+	      }
+	    if (-r $post_dagchainer_file_w_nearby.".orig")
+	      {
+		$post_dagchainer_file_w_nearby =~ s/$DIR/$URL/;
+		$html .= qq{<span class='small link' onclick=window.open('$post_dagchainer_file_w_nearby.orig')>Results with nearby genes added</span><br>};
+		$html .= qq{<span class='small link' onclick=window.open('$post_dagchainer_file_w_nearby')>Results converted back to genomic coordinates</span>};
+	      }
+	    else
+	      {
+		$post_dagchainer_file_w_nearby =~ s/$DIR/$URL/;
+		$html .= qq{<span class='small link' onclick=window.open('$post_dagchainer_file_w_nearby')>Results with nearby genes added</span>};
+	      }
+
+#	    $dagchainer_file =~ s/$DIR/$URL/;
+#	    $html .= "<br><span class='small link' onclick=window.open('$dagchainer_file')>DAGChainer syntelog file with GEvo links</span>";
+	    if (-r $quota_align_coverage)
+	      {
+		$quota_align_coverage =~ s/$DIR/$URL/;
+		$html .= qq{<br><span class='small link' onclick=window.open('$quota_align_coverage')>Quota Alignment output</span>};
+	      }
+
+
+	    if ($ks_blocks_file)
+	      {
+		$ks_blocks_file =~ s/$DIR/$URL/;
+		$html .= "<br><span class='small link' onclick=window.open('$ks_blocks_file') target=_new>Results with synonymous/nonsynonymous rate values</span>" if $ks_blocks_file;
+	      }
+	    $html .= "<br><span class='small link' onclick=window.open('$post_dagchainer_file_w_nearby.condensed')>Condensed syntelog file with GEvo links</span>";
+
+	    $html .="<tr><td>";
+
+	    write_log("\nLink to regenerate analysis: $synmap_link", $cogeweb->logfile);
+	    $html .= "<a href='$synmap_link' class='small link' target=_new_synmap>--> Regenerate this analysis link <--</a>";
+	    $html .= "<br>".qq{<span class="small link" id="" onClick="window.open('bin/SynMap/order_contigs_to_chromosome.pl?f=$dagchainer_file');" >Generate Assembled Genomic Sequence</span>} if $assemble;
+	    $html .= qq{</table>};
+
+
+	  }
+      }
+    else
+       {
+ 	$problem=1;
+	my $log = $cogeweb->logfile;
+	$log =~ s/$DIR/$URL/;
+	$html .= "<span class='small link' onclick=window.open('$log')>Analysis Log (id: $basename)</span><br>";
+
+       }
+    ##print out all the datafiles created
+
+   $html .= "<br>";
+      
+    
      if ($problem)
        {
  	$html .= qq{
@@ -2054,9 +2131,12 @@ sub get_previous_analyses
     my $html;
     my $prev_table = qq{<table id=prev_table class="small resultborder">};
     $prev_table .= qq{<THEAD><TR><TH>}.join ("<TH>", qw(Org1 Genome1 Genome%20Type1 Sequence%20Type1 Org2 Genome2 Genome%20Type2 Sequence%20type2 Algo DAG%20Type Repeat%20Filter Ave%20Dist(g) Max%20Dist(D) Min%20Pairs(A)  Merge%20Algo Merge%20Ave%20Dist(gm) Merge%20Max%20Dist(Dm)))."</THEAD><TBODY>\n";
+    my %seen;
     foreach my $item (@items)
       {
 	my $val = join ("_",$item->{g},$item->{D},$item->{A},$item->{gm},$item->{Dm}, $oid1, $item->{dsgid1}, $item->{type1},$oid2, $item->{dsgid2}, $item->{type2}, $item->{blast}, $item->{dagtype}, $item->{repeat_filter}, $item->{ma});
+	next if $seen{$val};
+	$seen{$val}=1;
 	$prev_table .= qq{<TR class=feat onclick="update_params('$val')" align=center><td>};
 	$prev_table .= join ("<td>", 
 			     $item->{dsg1}->organism->name, $item->{genome1}, $item->{dsg1}->type->name, $item->{type_name1},
