@@ -244,6 +244,7 @@ $(document).ready(function(){
   }
   $(".options tr:even").addClass("even");
   merge_select_check();
+  depth_algo_check();	
  $('#depth_org_1').html($('#org_id1 option:selected').html());
  $('#depth_org_2').html($('#org_id2 option:selected').html());
 
@@ -544,7 +545,7 @@ function depth_algo_check()
      <TD><input type=text size=8 id="Dm" value=""><span class=distance_type></span>
  </TABLE>
 
-<tr valign=top style="display:none">
+<tr valign=top>
   <td style="color:#009900">Syntenic Depth
   <td>Algorithm: 
        <select id="depth_algo" name="depth_algo" onchange="depth_algo_check()">
@@ -554,11 +555,11 @@ function depth_algo_check()
        <div id=depth_options style="display:none">
         Ratio of coverage depth: 
         <span style="color:#009900" id=depth_org_1></span>
-        <input type=text size=2 id="depth_org_1_ratio" value="1">
+        <input type=text size=2 id="depth_org_1_ratio" value="<TMPL_VAR NAME="DEPTH_ORG_1_RATIO">">
          -to-
-        <input type=text size=2 id="depth_org_2_ratio" value="1">
+        <input type=text size=2 id="depth_org_2_ratio" value="<TMPL_VAR NAME="DEPTH_ORG_2_RATIO">">
         <span style="color:#009900" id=depth_org_2></span><br>
-        Overlap distance: <input type=text size=8 id="depth_overlap" value="40">
+        Overlap distance: <input type=text size=8 id="depth_overlap" value="<TMPL_VAR NAME="DEPTH_OVERLAP"> ">
        </div>
 
 
