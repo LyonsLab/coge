@@ -1933,10 +1933,12 @@ sub get_obj_from_genome_db
     my $dsgid = $opts{dsgid}; #dataset group id
     my $gen_prot_sequence = $opts{gen_prot_sequence} || 0; #are we generating a protein sequence file too?
     my $message;
+    my $dsg;
+    my $ds;
     if ($dsgid)
       {
-	my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
-	my ($ds) = $dsg->datasets(chr=>$chr);
+	$dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	($ds) = $dsg->datasets(chr=>$chr);
 	return ("","Chromosome '$chr' not found for this genome") unless $ds;
 	$dsid = $ds->id;
 	$gstid = $dsg->type->id;
@@ -1987,9 +1989,10 @@ sub get_obj_from_genome_db
 	$start = 1 if $start < 1;
       }
 
-    my $ds = $coge->resultset('Dataset')->find($dsid) if $dsid;
+    $ds = $coge->resultset('Dataset')->find($dsid) if $dsid && !$ds;
     return ("", "unable able to find dataset for id $dsid") unless $ds;
-    $accn = $ds->organism->name ." v". $ds->version." chr ".$chr unless $accn;
+    $accn = $dsg->name if !$accn && $dsg;
+    $accn = $ds->name if !$accn && $ds;
     if (-r $seq_file)
       {
 	$/="\n";
@@ -2038,7 +2041,7 @@ sub get_obj_from_genome_db
 					   chromosome=>$chr,
 					   start=>$start,
 					   stop=>$stop,
-					   organism=>$ds->organism->name()."(v".$ds->version.", ".$gst->name.")",
+					   organism=>$ds->organism->name()."(".$ds->data_source->name." v".$ds->version.", ".$gst->name.")",
 					   seq_length=>length($seq),
 					   genomic_sequence_type_id=>$gstid,
 					   srcfile=>$seq_file,
