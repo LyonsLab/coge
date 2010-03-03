@@ -410,7 +410,11 @@ sub gen_dsg_menu
     foreach my $dsg (sort {$b->version <=> $a->version || $a->type->id <=> $b->type->id} $coge->resultset('DatasetGroup')->search({organism_id=>$oid},{prefetch=>['genomic_sequence_type']}))
       {
 	$dsgid = $dsg->id unless $dsgid;
-	push @dsg_menu, [$dsg->id, join (", ", map{$_->name} $dsg->source) .": ".$dsg->type->name." (v".$dsg->version.")"];
+	my $name = join (", ", map{$_->name} $dsg->source) .": ";
+	$name .= $dsg->name ? $dsg->name : $dsg->datasets->[0]->name;
+	$name .= ", ";
+	$name .= $dsg->type->name." (v".$dsg->version.")";
+	push @dsg_menu, [$dsg->id, $name];
       }
     my $size = scalar @dsg_menu;
     $size = 5 if $size > 5;
