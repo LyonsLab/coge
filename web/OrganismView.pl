@@ -261,7 +261,15 @@ sub get_org_info
     return "Unable to find an organism for id: $oid\n" unless $org;
     my $html;# = qq{<div class="backbox small">};
     $html .= $org->name."<br>";
-    $html .= $org->description if $org->description;
+    if ($org->description)
+      {
+	foreach my $item (split/;/, $org->description)
+	  {
+	    $item =~ s/^\s+//;
+	    $item =~ s/\s+$//;
+	    $html .= "<a href=/CoGe/OrganismView.pl?org_desc=$item>$item</a>;"
+	  }
+      }
     $html.= "<br><span class=alert>Restricted Organism!  Authorized Use Only!</span>" if $org->restricted;
     $html .= "<br><a href='OrganismView.pl?oid=$oid' target=_new>OrganismView link</a>";
 #    $html .= "</div>";
