@@ -21,7 +21,7 @@ use DBI;
 
 $ENV{PATH} = "/opt/apache2/CoGe:/opt/apache2/CoGe/bin:/opt/apache2/CoGe/bin/SynMap";
 umask(0);
-use vars qw( $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $FORMATDB $BLAST $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $TANDEM_FINDER $RUN_DAGCHAINER $EVAL_ADJUST $FIND_NEARBY $DOTPLOT $NWALIGN $QUOTA_ALIGN $QUOTA_ALIGN_CONVERT);
+use vars qw( $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $FORMATDB $BLAST $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $TANDEM_FINDER $RUN_DAGCHAINER $EVAL_ADJUST $FIND_NEARBY $DOTPLOT $NWALIGN $QUOTA_ALIGN $CLUSTER_UTILS);
 $DEBUG = 0;
 $DIR = "/opt/apache/CoGe/";
 $URL = "/CoGe/";
@@ -43,7 +43,7 @@ $FIND_NEARBY = $DIR."/bin/dagchainer_bp/dagtools/find_nearby.py -d 20"; #the par
 
 #programs to run Haibao Tang's quota_align program for merging diagonals and mapping coverage
 $QUOTA_ALIGN = $DIR."/bin/quota-alignment/quota_align.py"; #the program
-$QUOTA_ALIGN_CONVERT = $DIR."/bin/quota-alignment/cluster_utils.py"; #convert dag output to quota_align input
+$CLUSTER_UTILS = $DIR."/bin/quota-alignment/cluster_utils.py"; #convert dag output to quota_align input
 
 $DOTPLOT = $DIR."/bin/dotplot.pl";
 
@@ -977,7 +977,7 @@ sub run_quota_align_merge
     my $returnfile = $infile.".Dm".$max_dist.".ma1"; #ma stands for merge algo
     return $returnfile if -r $returnfile;
     #convert to quota-align format
-    my $cmd = $QUOTA_ALIGN_CONVERT." --format=dag --log_evalue $infile $infile.qa";
+    my $cmd = $CLUSTER_UTILS." --format=dag --log_evalue $infile $infile.qa";
     write_log("Converting dag output to quota_align format: $cmd", $cogeweb->logfile);
     `$cmd`;
     $cmd = $QUOTA_ALIGN ." --Dm=$max_dist --merge $infile.qa";
@@ -1032,7 +1032,7 @@ sub run_quota_align_coverage
       }
     else
       {
-	my $cmd = $QUOTA_ALIGN_CONVERT." --format=dag --log_evalue $infile $infile.qa";
+	my $cmd = $CLUSTER_UTILS." --format=dag --log_evalue $infile $infile.qa";
 	write_log("Converting dag output to quota_align format: $cmd", $cogeweb->logfile);
 	`$cmd`;
       }
@@ -1076,6 +1076,35 @@ sub run_quota_align_coverage
 	close OUT;
       }
     return "$returnfile";
+  }
+
+
+sub generate_grimm_input
+  {
+    my %opts = @_;
+    my $infile = $opts{infile};
+    my $cmd = $CLUSTER_UTILS." --format=dag --log_evalue $infile $infile.qa";
+    write_log("Converting dag output to quota_align format: $cmd", $cogeweb->logfile);
+    `$cmd`;
+    $cmd = $CLUSTER_UTILS . " --print_grimm $infile.qa";
+    write_log("running  cluster_utils to generating grimm input: $cmd", $cogeweb->logfile);
+    my $output;
+    open (IN, "$cmd |");    
+    while (<IN>)
+      {
+	$output .= $_;
+      }
+    close IN;
+    my @seqs;
+    foreach my $item (split /\n>/, $output)
+      {
+	$item =~ s/>//g;
+	my ($name, $seq) = split/\n/,$item, 2;
+	$seq =~ s/\n$//;
+	push @seqs, $seq;
+      }
+
+    return \@seqs;
   }
 
 sub run_find_nearby
@@ -1827,8 +1856,13 @@ sub go
 	my $t5 = new Benchmark;
 	$find_nearby_time = timestr(timediff($t5,$t4));
 
-	#currently skipping this till I figure out the rest of the files.
-	my $quota_align_coverage = run_quota_align_coverage(infile=>$post_dagchainer_file_w_nearby, org1=>$depth_org_1_ratio, org2=>$depth_org_2_ratio, overlap_dist=>$depth_overlap ) if $depth_algo == 1;#id 1 is to specify quota align
+	my $quota_align_coverage;
+	my $grimm_stuff;
+	if ($depth_algo == 1)#id 1 is to specify quota align
+	  {
+	    $quota_align_coverage = run_quota_align_coverage(infile=>$post_dagchainer_file_w_nearby, org1=>$depth_org_1_ratio, org2=>$depth_org_2_ratio, overlap_dist=>$depth_overlap );
+	    $grimm_stuff = generate_grimm_input(infile=>$quota_align_coverage);
+	  }
 	my $final_dagchainer_file = $quota_align_coverage && -r $quota_align_coverage ? $quota_align_coverage : $post_dagchainer_file_w_nearby;
 
  	#convert to genomic coordinates if gene order was used
@@ -2007,10 +2041,20 @@ sub go
 
 	    $html .="<tr><td>";
 
-	    write_log("\nLink to regenerate analysis: $synmap_link", $cogeweb->logfile);
-	    $html .= "<a href='$synmap_link' class='small link' target=_new_synmap>--> Regenerate this analysis link <--</a>";
 	    $html .= "<br>".qq{<span class="small link" id="" onClick="window.open('bin/SynMap/order_contigs_to_chromosome.pl?f=$dagchainer_file');" >Generate Assembled Genomic Sequence</span>} if $assemble;
 	    $html .= qq{</table>};
+	    write_log("\nLink to regenerate analysis: $synmap_link", $cogeweb->logfile);
+	    $html .= "<a href='$synmap_link' class='link' target=_new_synmap>--> Regenerate this analysis link <--</a>";
+	    if ($grimm_stuff)
+	      {
+		my $seq1 = ">$org_name1||".$grimm_stuff->[0];
+		my $seq2 = ">$org_name2||".$grimm_stuff->[1];
+		$html .= qq
+		  {
+<br>
+<span class="ui-button ui-state-default ui-corner-all" onclick="post_to_grimm('$seq1','$seq2')"> Rearrangement Analysis</span> <a class="small" href=http://grimm.ucsd.edu/GRIMM/index.html target=_new>(Powered by GRIMM!)</span>
+};
+	      }
 
 
 	  }
