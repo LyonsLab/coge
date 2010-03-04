@@ -452,6 +452,7 @@ function post_to_grimm(seq1, seq2)
    myForm.method="post" ;
    myForm.action=url;
    myForm.setAttribute("target", "_blank");
+   myForm.setAttribute("name", "genomeForm");
    var myInput = document.createElement("textarea");
    myInput.name="genome1";
    myInput.value=seq1;
