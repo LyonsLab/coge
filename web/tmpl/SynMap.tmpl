@@ -443,6 +443,29 @@ function depth_algo_check()
     }
  }
 
+function post_to_grimm(seq1, seq2)
+ {
+   seq1 = seq1.replace(/\|\|/g,"\n");
+   seq2 = seq2.replace(/\|\|/g,"\n");
+   var url = "http://nbcr.sdsc.edu/GRIMM/grimm.cgi#report";
+   var myForm = document.createElement("FORM");
+   myForm.method="post" ;
+   myForm.action=url;
+   myForm.setAttribute("target", "_blank");
+   var myInput = document.createElement("textarea");
+   myInput.name="genome1";
+   myInput.value=seq1;
+   myForm.appendChild(myInput);
+   document.body.appendChild(myForm);
+   var myInput = document.createElement("textarea");
+   myInput.name="genome2";
+   myInput.value=seq2;
+   myForm.appendChild(myInput);
+   document.body.appendChild(myForm);
+   myForm.submit("action");
+   document.body.removeChild(myForm);
+ }
+
 </script>
 <table class=backbox><tr><td>
 <DIV id=log_text class="small dna" style="display:none"></DIV>
