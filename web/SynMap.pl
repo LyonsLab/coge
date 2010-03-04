@@ -21,7 +21,7 @@ use DBI;
 
 $ENV{PATH} = "/opt/apache2/CoGe:/opt/apache2/CoGe/bin:/opt/apache2/CoGe/bin/SynMap";
 umask(0);
-use vars qw( $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $FORMATDB $BLAST $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $TANDEM_FINDER $RUN_DAGCHAINER $EVAL_ADJUST $FIND_NEARBY $CONVERT_TO_GENE_ORDER $DOTPLOT $NWALIGN $QUOTA_ALIGN $QUOTA_ALIGN_CONVERT);
+use vars qw( $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $FORMATDB $BLAST $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $TANDEM_FINDER $RUN_DAGCHAINER $EVAL_ADJUST $FIND_NEARBY $DOTPLOT $NWALIGN $QUOTA_ALIGN $QUOTA_ALIGN_CONVERT);
 $DEBUG = 0;
 $DIR = "/opt/apache/CoGe/";
 $URL = "/CoGe/";
@@ -47,7 +47,7 @@ $QUOTA_ALIGN_CONVERT = $DIR."/bin/quota-alignment/cluster_utils.py"; #convert da
 
 $DOTPLOT = $DIR."/bin/dotplot.pl";
 
-$CONVERT_TO_GENE_ORDER = $DIR."/bin/SynMap/convert_to_gene_order.pl";
+#$CONVERT_TO_GENE_ORDER = $DIR."/bin/SynMap/convert_to_gene_order.pl";
 #$NWALIGN = $DIR."/bin/nwalign-0.3.0/bin/nwalign";
 $NWALIGN = "/usr/bin/nwalign";
 $| = 1; # turn off buffering
@@ -494,7 +494,7 @@ sub gen_fasta
     my $write_log = $opts{write_log} || 0;
     my ($org_name, $title);
     ($org_name, $title) = gen_org_name(dsgid=>$dsgid, feat_type=>$feat_type, write_log=>$write_log);
-    my $file = $FASTADIR."/$dsgid-$feat_type.fasta";
+    my $file = $FASTADIR."/$dsgid-$feat_type.new.fasta";
     my $res;
     while (-e "$file.running")
       {
@@ -539,10 +539,11 @@ sub generate_fasta
     my ($dsg) = $coge->resultset('DatasetGroup')->search({"me.dataset_group_id"=>$dsgid},{join=>'genomic_sequences',prefetch=>'genomic_sequences'});
 
     $file = $FASTADIR."/$file" unless $file =~ /$FASTADIR/;
-    write_log("creating fasta file.", $cogeweb->logfile);
+    write_log("creating fasta file", $cogeweb->logfile);
     open (OUT, ">$file") || die "Can't open $file for writing: $!";;
     if ($type eq "CDS")
       {
+	my $count = 1;
 	foreach my $feat (sort {$a->chromosome cmp $b->chromosome || $a->start <=> $b->start} 
 			  $coge->resultset('Feature')->search(
 							      {
@@ -562,13 +563,14 @@ sub generate_fasta
 		last unless $name =~ /\s/;
 	      }
 	    $name =~ s/\s+/_/g;
-	    my $title = join ("||",$chr, $feat->start, $feat->stop, $name, $feat->strand, $feat->type->name, $feat->id);
+	    my $title = join ("||",$chr, $feat->start, $feat->stop, $name, $feat->strand, $feat->type->name, $feat->id, $count);
 	    my $seq = $feat->genomic_sequence(dsgid=>$dsg);
 	    next unless $seq;
 	    #skip sequences that are only 'x' | 'n';
 	    next unless $seq =~ /[^x|n]/i;
 	    print OUT ">".$title."\n";
 	    print OUT $seq,"\n";
+	    $count++;
 	  }
       }
     else
@@ -787,6 +789,7 @@ sub run_adjust_dagchainer_evals
 
     }
 
+
 sub run_convert_to_gene_order
   {
     my %opts = @_;
@@ -797,7 +800,7 @@ sub run_convert_to_gene_order
     my $ft2 = $opts{ft2};
     my $ftid1 = $ft1 eq "CDS" ? 3 : 0; #set feat type id to 3 if CDS
     my $ftid2 = $ft2 eq "CDS" ? 3 : 0; #set feat type id to 3 if CDS
-    my $outfile = $infile."_geneorder";
+    my $outfile = $infile.".go";
     while (-e "$outfile.running")
       {
 	print STDERR "detecting $outfile.running.  Waiting. . .\n";
@@ -813,36 +816,58 @@ sub run_convert_to_gene_order
 	write_log("run_convert_to_gene_order: file $outfile already exists",$cogeweb->logfile);
 	return $outfile;
       }
-    my $cmd = $CONVERT_TO_GENE_ORDER ." -i $infile -dsg1 $dsgid1 -dsg2 $dsgid2 -ft1 $ftid1 -ft2 $ftid2  > $outfile";
     system "touch $outfile.running"; #track that a blast anlaysis is running for this
-    write_log("run_convert_to_gene_order: running $cmd", $cogeweb->logfile);
-    `$cmd`;
-    write_log("Completed conversion!", $cogeweb->logfile);
+    open (OUT, ">$outfile");
+    open (IN, $infile);
+    while (<IN>)
+      {
+	chomp;
+	if (/^#/)
+	  {
+	    print OUT $_,"\n";
+	    next;
+	  }
+	my @line = split/\t/;
+	my @item1 = split/\|\|/,$line[1];
+	my @item2 = split /\|\|/, $line[5];
+	$line[2] = $item1[7];
+	$line[3] = $item1[7];
+	$line[6] = $item2[7];
+	$line[7] = $item2[7];
+	print OUT join ("\t", @line),"\n";
+      }
+    close IN;
+    close OUT;
+
+    write_log("running coversion to gene order for $infile", $cogeweb->logfile);
+    write_log("Completed conversion of gene order to file $outfile", $cogeweb->logfile);
     system "rm $outfile.running" if -r "$outfile.running";; #remove track filereturn $outfile;
     return $outfile;
   }
+
 
 sub replace_gene_order_with_genomic_positions
   {
     my %opts = @_;
     my $file = $opts{file};
+    my $outfile = $opts{outfile};
     #must convert file's coordinates back to genomic
-    while (-e "$file.orig.running")
+    while (-e "$outfile.running")
       {
-	print STDERR "detecting $file.orig.running.  Waiting. . .\n";
+	print STDERR "detecting $outfile.running.  Waiting. . .\n";
 	sleep 60;
       }
-    if (-r "$file.orig" && -s "$file.orig")
+    if (-r "$outfile" && -s "$outfile")
       {
-	write_log("  no conversion for $file back to genomic coordinates needed, convered file exists", $cogeweb->logfile);
+	write_log("  no conversion for $file back to genomic coordinates needed, convered file, $outfile,  exists", $cogeweb->logfile);
 	return;
       }
-    system "touch $file.orig.running"; #track that a blast anlaysis is running for this
-    write_log("  converting $file back to genomic coordinates", $cogeweb->logfile);
-    `mv $file $file.orig`;
+    system "touch $outfile.running"; #track that a blast anlaysis is running for this
+    write_log("  converting $file back to genomic coordinates, $outfile", $cogeweb->logfile);
+#    `mv $file $file.orig`;
     $/="\n"; #just in case
-    open (IN,  "$file.orig");
-    open (OUT, ">$file");
+    open (IN,  "$file");
+    open (OUT, ">$outfile");
     while (<IN>)
       {
 	if (/^#/){print OUT $_; next;}
@@ -861,7 +886,7 @@ sub replace_gene_order_with_genomic_positions
       }
     close IN;
     close OUT;
-    system "rm $file.orig.running" if -r "$file.orig.running"; 
+    system "rm $outfile.running" if -r "$outfile.running"; 
   }
 
 sub run_dagchainer
@@ -952,10 +977,10 @@ sub run_quota_align_merge
     my $returnfile = $infile.".Dm".$max_dist.".ma1"; #ma stands for merge algo
     return $returnfile if -r $returnfile;
     #convert to quota-align format
-    my $cmd = $QUOTA_ALIGN_CONVERT." --dag $infile $infile.qa";
+    my $cmd = $QUOTA_ALIGN_CONVERT." --format=dag --log_evalue $infile $infile.qa";
     write_log("Converting dag output to quota_align format: $cmd", $cogeweb->logfile);
     `$cmd`;
-    $cmd = $QUOTA_ALIGN ." -n $max_dist --merge $infile.qa";
+    $cmd = $QUOTA_ALIGN ." --Dm=$max_dist --merge $infile.qa";
     write_log("Running quota_align to merge diagonals:  $cmd", $cogeweb->logfile);
     `$cmd`;
     if (-r "$infile.qa.merged")
@@ -998,16 +1023,30 @@ sub run_quota_align_coverage
     my $org2 = $opts{org2}; #ratio of org2
     my $overlap_dist = $opts{overlap_dist};
 #    print STDERR Dumper \%opts;
-    my $returnfile = $infile.".qac".$org1."-".$org2."-".$overlap_dist.".qa_filtered"; #ma stands for merge algo
+    my $returnfile = $infile.".qac".$org1.".".$org2.".".$overlap_dist; #ma stands for merge algo
     return $returnfile if -r $returnfile;
     #convert to quota-align format
-    my $cmd = $QUOTA_ALIGN_CONVERT." --dag $infile $infile.qa";
-    write_log("Converting dag output to quota_align format: $cmd", $cogeweb->logfile);
-    `$cmd`;
-    $cmd = $QUOTA_ALIGN ." -n $overlap_dist --quota $org1:$org2 $infile.qa";
-    write_log("Running quota_align to find syntenic coverage:  $cmd", $cogeweb->logfile);
-    `$cmd`;
-    if (-r "$infile.qa.filtered")
+    if (-r "$infile.qa")
+      {
+	write_log("Dag output file already converted to quota_align input: $infile.qa");
+      }
+    else
+      {
+	my $cmd = $QUOTA_ALIGN_CONVERT." --format=dag --log_evalue $infile $infile.qa";
+	write_log("Converting dag output to quota_align format: $cmd", $cogeweb->logfile);
+	`$cmd`;
+      }
+    if (-r "$returnfile.tmp")
+      {
+	write_log("Quota_align syntenic coverage parameters already run$infile.qa");
+      }
+    else
+      {
+	my $cmd = $QUOTA_ALIGN ." --Nm=$overlap_dist --quota=$org1:$org2 $infile.qa > $returnfile.tmp";
+	write_log("Running quota_align to find syntenic coverage:  $cmd", $cogeweb->logfile);
+	`$cmd`;
+      }
+    if (-r "$returnfile.tmp")
       {
 	my %data;
 	open (IN, $infile);
@@ -1019,7 +1058,7 @@ sub run_quota_align_coverage
 	  }
 	close IN;
 	open (OUT, ">$returnfile");
-	open (IN, "$infile.qa.filtered");
+	open (IN, "$returnfile.tmp");
 	while (<IN>)
 	  {
 	    if (/^#/)
@@ -1782,24 +1821,23 @@ sub go
 	my $post_dagchainer_file_w_nearby = $post_dagchainer_file;
  	$post_dagchainer_file_w_nearby =~ s/aligncoords/all\.aligncoords/;
  	#add pairs that were skipped by dagchainer
- 	run_find_nearby(infile=>$post_dagchainer_file, dag_all_file=>$all_file, outfile=>$post_dagchainer_file_w_nearby);
+	$post_dagchainer_file_w_nearby = $post_dagchainer_file;
+# 	run_find_nearby(infile=>$post_dagchainer_file, dag_all_file=>$all_file, outfile=>$post_dagchainer_file_w_nearby);
 
 	my $t5 = new Benchmark;
 	$find_nearby_time = timestr(timediff($t5,$t4));
 
 	#currently skipping this till I figure out the rest of the files.
 	my $quota_align_coverage = run_quota_align_coverage(infile=>$post_dagchainer_file_w_nearby, org1=>$depth_org_1_ratio, org2=>$depth_org_2_ratio, overlap_dist=>$depth_overlap ) if $depth_algo == 1;#id 1 is to specify quota align
-	my $final_dagchainer_file = -r $quota_align_coverage ? $quota_align_coverage : $post_dagchainer_file_w_nearby;
+	my $final_dagchainer_file = $quota_align_coverage && -r $quota_align_coverage ? $quota_align_coverage : $post_dagchainer_file_w_nearby;
 
-	my $ks_blocks_file = gen_ks_blocks_file(infile=>$final_dagchainer_file) if $ks_type;
-
-
-	my $tmp = $dagchainer_file;
  	#convert to genomic coordinates if gene order was used
  	if ($dagchainer_type eq "geneorder")
  	  {
- 	    replace_gene_order_with_genomic_positions(file=>$final_dagchainer_file);
+ 	    replace_gene_order_with_genomic_positions(file=>$final_dagchainer_file, outfile=>$final_dagchainer_file.".gcoords");
+	    $final_dagchainer_file = $final_dagchainer_file.".gcoords";
  	  }
+	my $ks_blocks_file = gen_ks_blocks_file(infile=>$final_dagchainer_file) if $ks_type;
 
  	#generate dotplot images
  	my $org1_length =0;
@@ -1848,7 +1886,6 @@ sub go
  	add_GEvo_links (infile=>$final_dagchainer_file, dsgid1=>$dsgid1, dsgid2=>$dsgid2);
 	my $t8 = new Benchmark;
 	$add_gevo_links_time = timestr(timediff($t8,$t7));
- 	$tmp =~ s/$DIR/$URL/;
  	if (-r "$out.html")
  	  {
 	    $html .= qq{
@@ -1894,7 +1931,7 @@ sub go
  <br><span class="species small">x-axis: $org_name1</span><br>
 };
 	    $html .= "<span class='small'>Axis metrics are in $axis_metric</span><br>";
- 	    $html .= "<br><span class='small link' onclick=window.open('$out.png')>Image File</span>";
+ 	    $html .= "<br><span class='small link' onclick=window.open('$out.png')>Image File</span><br>";
 	    $html .= "<div class='small link onclick=window.open('$out.hist.png')>Histogram of $ks_type values.<br><img src='$out.hist.png'></div>" if -r $hist;
 
 	    my $log = $cogeweb->logfile;
