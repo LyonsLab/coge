@@ -1699,7 +1699,7 @@ sub go
 
 	my ($fasta,$org_name) = gen_fasta(dsgid=>$dsgid, feat_type=>$feat_type, write_log=>1);
 
-	gen_blastdb(dbname=>"$dsgid-$feat_type",fasta=>$fasta,org_name=>$org_name);
+	gen_blastdb(dbname=>"$dsgid-$feat_type-new",fasta=>$fasta,org_name=>$org_name);
 	$pm->finish;
       }
     $pm->wait_all_children();
@@ -1722,8 +1722,8 @@ sub go
        write_log("", $cogeweb->logfile);
      }
     
-    my ($blastdb1) = gen_blastdb(dbname=>"$dsgid1-$feat_type1", fasta=>$fasta1,org_name=>$org_name1);
-    my ($blastdb2) = gen_blastdb(dbname=>"$dsgid2-$feat_type2", fasta=>$fasta2,org_name=>$org_name2);
+    my ($blastdb1) = gen_blastdb(dbname=>"$dsgid1-$feat_type1-new", fasta=>$fasta1,org_name=>$org_name1);
+    my ($blastdb2) = gen_blastdb(dbname=>"$dsgid2-$feat_type2-new", fasta=>$fasta2,org_name=>$org_name2);
     unless ($blastdb1 && $blastdb2)
       {
  	my $log = $cogeweb->logfile;
@@ -1816,7 +1816,7 @@ sub go
     my $t3 = new Benchmark;
     my $convert_to_gene_order_time = timestr(timediff($t3,$t2_5));
     my $all_file = $dagchainer_type eq "geneorder" ? $dag_file12_all_geneorder : $dag_file12_all;
-    $dag_file12 .= "_geneorder" if $dagchainer_type eq "geneorder";
+    $dag_file12 .= ".go" if $dagchainer_type eq "geneorder";
     #B Pedersen's program for automatically adjusting the evals in the dag file to remove bias from local gene duplicates and transposons
     $dag_file12.="_c".$repeat_filter_cvalue;
     run_adjust_dagchainer_evals(infile=>$all_file,outfile=>$dag_file12, cvalue=>$repeat_filter_cvalue);
@@ -2048,11 +2048,13 @@ sub go
 	    if ($grimm_stuff)
 	      {
 		my $seq1 = ">$org_name1||".$grimm_stuff->[0];
+		$seq1 =~ s/\n/\|\|/g;
 		my $seq2 = ">$org_name2||".$grimm_stuff->[1];
+		$seq2 =~ s/\n/\|\|/g;
 		$html .= qq
 		  {
 <br>
-<span class="ui-button ui-state-default ui-corner-all" onclick="post_to_grimm('$seq1','$seq2')"> Rearrangement Analysis</span> <a class="small" href=http://grimm.ucsd.edu/GRIMM/index.html target=_new>(Powered by GRIMM!)</span>
+<span class="ui-button ui-state-default ui-corner-all" id = "grimm_link" onclick="post_to_grimm('$seq1','$seq2')" > Rearrangement Analysis</span> <a class="small" href=http://grimm.ucsd.edu/GRIMM/index.html target=_new>(Powered by GRIMM!)</a>
 };
 	      }
 
