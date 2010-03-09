@@ -12,7 +12,6 @@ use DBI;
 use Data::Dumper;
 $ENV{PATH} = "/opt/apache2/CoGe/";
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
-
 use vars qw( $PAGE_NAME $DATE $DEBUG $USER $FORM $coge);
 $PAGE_NAME="GenomeView.pl";
 $DEBUG = 0;
