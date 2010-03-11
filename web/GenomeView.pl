@@ -142,6 +142,10 @@ sub gen_body
 	  {
 	    $template->param(REPEATS_LAYER=>1);
 	  }
+	elsif ($ft->name =~ /transposable/i)
+	  {
+	    $template->param(TE_LAYER=>1);
+	  }
       }
     my ($gevo_group) = $coge->resultset('AnnotationTypeGroup')->search({name=>"gevo link"});
     if ($gevo_group)
