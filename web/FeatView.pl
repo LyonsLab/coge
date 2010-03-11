@@ -159,7 +159,9 @@ sub cogesearch
     $search->{"organism.restricted"}=0 if $USER->name =~ /public/i;
     $search->{'organism.name'}={like=>"%".$org_name."%"} if $org_name;
     $search->{'organism.description'}={like=>"%".$org_desc."%"} if $org_desc;
-    my $join = {join=>['annotation',{'feature'=>{'dataset'=>{'dataset_connectors'=>{'dataset_group'=>'organism'}}}}]};
+    my $join = {join=>[{'feature'=>{'dataset'=>{'dataset_connectors'=>{'dataset_group'=>'organism'}}}}]};
+    push @{$join->{join}}, 'annotation' if $anno;#=>['annotation',]};
+
     #trying to get fulltext to work (and be fast!)    
     my @names;
     if($accn)
@@ -220,7 +222,8 @@ sub cogesearch_featids
     $search->{"organism.restricted"}=0 if $USER->name =~ /public/i;
     $search->{'organism.name'}={like=>"%".$org_name."%"} if $org_name;
     $search->{'organism.description'}={like=>"%".$org_desc."%"} if $org_desc;
-    my $join = {join=>['annotation',{'feature'=>{'dataset'=>{'dataset_connectors'=>{'dataset_group'=>'organism'}}}}]};
+    my $join = {join=>[{'feature'=>{'dataset'=>{'dataset_connectors'=>{'dataset_group'=>'organism'}}}}]};
+    push @{$join->{join}}, 'annotation' if $anno;#=>['annotation',]};
     #trying to get fulltext to work (and be fast!)    
     my @names;
     if($accn)
