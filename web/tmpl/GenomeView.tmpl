@@ -135,6 +135,10 @@
                  ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"pseudogene,gene,mRNA,CDS,rna,CNS",}
                  ,{isBaseLayer:false}
              );
+            transposable = new OpenLayers.Layer.Genomic( "<span id='gc'>Transposable Elements</span>" , server
+                 ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"transposable",}
+                 ,{isBaseLayer:false}
+             );
             GEvo_link = new OpenLayers.Layer.Genomic( "<span id='gc'>GEvo link for syntelogs</span>" , server
                  ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"GEvo_link",}
                  ,{isBaseLayer:false}
@@ -189,6 +193,11 @@
  	    <TMPL_IF NAME="GEVO_LINK_LAYER">
             local_dup.setVisibility(<TMPL_VAR NAME="GEVO_LINK">);
             map.addLayer(GEvo_link);
+            </TMPL_IF>
+
+ 	    <TMPL_IF NAME="TE_LAYER">
+            local_dup.setVisibility(<TMPL_VAR NAME="TE">);
+            map.addLayer(transposable);
             </TMPL_IF>
 
             wobble_GC_usage.setVisibility(<TMPL_VAR NAME="WOBBLEGC">);
