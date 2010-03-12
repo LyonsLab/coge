@@ -1,7 +1,7 @@
 Quota synteny alignment
 =========================
 
-:Author: Haibao Tang (tanghaibao)
+:Author: Haibao Tang (`tanghaibao <http://github.com/tanghaibao>`_), Brent Pedersen (`brentp <http://github.com/brentp>`_)
 :Email: tanghaibao@gmail.com
 :License: BSD
 
@@ -28,7 +28,7 @@ Installation
 
     git clone http://github.com/tanghaibao/quota-alignment.git 
 
-Required dependencies:
+**Required dependencies**
 
 - Python version >=2.6
 
@@ -41,7 +41,7 @@ Required dependencies:
     make
     sudo make install
 
-Optional dependencies:
+**Optional dependencies**
 
 - `SCIP <http://scip.zib.de/download.shtml>`_ faster integer programming solver, choose the binary (32-bit, 64-bit) that fits your machine and choose the one linked with CLP (for fast speed), note that in order to run SCIP, `LAPACK <http://www.netlib.org/lapack/>`_ needs to be installed too. Please put executable ``scip`` on the ``PATH``::
 
@@ -53,50 +53,35 @@ Optional dependencies:
     sudo cp scip-1.2.0.linux.x86_64.gnu.opt.clp /usr/local/bin/scip
     sudo chmod +x !$
 
-- `bx-python <http://bitbucket.org/james_taylor/bx-python/wiki/Home>`_ package, this is only required when user wants to analyze ``.maf`` formatted data::
+- `bx-python <http://bitbucket.org/james_taylor/bx-python/wiki/Home>`_ package, this is only required when user wants to analyze ``.maf`` formatted data (use ``maf_utils.py``)::
 
     easy_install bx-python
 
-
-Usage
------
-``quota_align.py`` only works on ``.qa`` format, but the script ``cluster_utils.py`` can convert a few formats (including ``.raw``, ``.dag`` and ``.maf``) to ``.qa`` format. Look at sample input (in the ``data/`` folder), and change your file accordingly. Mostly I recommend the ``.qa`` format, which include a list of *anchor points*::
-
-    ###
-    chr1 pos1 chr3 pos2 score
-    ###
-    chr1 pos1 chr2 pos2 score
-    chr1 pos1 chr2 pos2 score
-
-Each anchor point correspond to a BLAST match. Note that the symbol ``#`` separates each *cluster*, which contains one or more anchor points. Anchor points within the same cluster must be on the same chromosome pair. If you have no idea what cluster each anchor point belongs and don't plan to use a third-party chainer, you can specify the format to be ``.raw``.
-
-The utility script ``cluster_utils.py`` can be used for converting various formats to the ``.qa`` format, it can also print out the integer sequences (representing block ids) for downstream `GRIMM <http://grimm.ucsd.edu/GRIMM/>`_ rearrangment analysis (use ``--print_grimm`` option).
-
-Run ``quota_align.py`` or ``cluster_utils.py`` for all possible options. 
+- `BCBio <http://github.com/chapmanb/bcbb/tree/master/gff/BCBio/>`_ package, this is only required when user wants to convert ``.gff`` file to ``.bed`` format, see section `Pre- and post-processing`_.
 
 
 Cookbook
---------
-The default package comes with the test data for case 1 and 2 in ``run.sh``. More test data set can be downloaded `here <http://chibba.agtec.uga.edu/duplication/data/quota-align-test.tar.gz>`_. Unpack into the folder, and execute ``run.sh``.
+-------------------------
+Default package comes with the test data for case 1 and 2 in ``run.sh``. More test data set can be downloaded `here <http://chibba.agtec.uga.edu/duplication/data/quota-align-test.tar.gz>`_. Unpack into the folder, and execute ``run.sh``.
 
 BLAST anchors chaining and quota-based screening
 ::::::::::::::::::::::::::::::::::::::::::::::::::::
-First you need to figure out a way to convert the BLAST result into the following format (called ``.raw`` format)::
+First you need to figure out a way to convert the BLAST result into the following format (called ``.raw`` format), see section `Pre- and post-processing`_::
 
     1       6       1       4848    1e-12 
     1       7       1       4847    2e-10 
     1       8       1       4847    0 
     1       9       1       4846    3e-14 
 
-Where the five columns correspond to chr1, pos1, chr2, pos2, and E-value. Then you can convert the format (called ``.raw`` format) to the ``.qa`` format as required::
+Where the five columns correspond to ``chr1``, ``pos1``, ``chr2``, ``pos2``, and ``E-value``. Then you can convert the format (called ``.raw`` format) to the ``.qa`` format as required::
 
     cluster_utils.py --format=raw --log_evalue maize_sorghum.raw maize_sorghum.qa
 
-``--log_evalue`` changes the E-value to ``max(int(-log10(E-value)),50)`` for score, so that all the BLAST anchors score in the range 0-50.
+``--log_evalue`` changes the E-value to ``min(int(-log10(E-value)),50)`` for score, so that all the BLAST anchors score in the range 0-50.
 
 Then we can do something like::
 
-    quota_align.py --merge --Dm=20 --quota=2:1 maize_sorghum.qa 
+    quota_align.py --merge --Dm=20 --min_size=5 --quota=2:1 maize_sorghum.qa 
 
 ``--merge`` asks for chaining, and the distance cutoff ``--Dm=20`` for extending the chain; ``--quota=2:1`` turns on the quota-based screening (and asks for two-to-one match, in this case, lineage specific WGD in maize genome, make every **2** maize region matching **1** sorghum region).
 
@@ -114,7 +99,7 @@ Then you want to do the chaining and the screening in one step::
 
 Finally you can get the screened ``.maf`` file by doing::
 
-    maf_utils athaliana_lyrata.qa athaliana_lyrata.maf
+    maf_utils.py athaliana_lyrata.qa athaliana_lyrata.maf
 
 Your final screened ``.maf`` file is called ``athaliana_lyrata.maf.filtered``. Hint: you can compare the original and filtered ``.maf`` using Miller lab's `Gmaj <http://globin.cse.psu.edu/dist/gmaj/>`_ tool.
 
@@ -123,9 +108,9 @@ Find quota-screened paralogous blocks
 First we need to figure out how to get the input data. See the last two sections for preparing data from BLAST and BLASTZ. Then we can do something like the following::
 
     cluster_utils.py --format=raw grape_grape.raw grape_grape.qa
-    quota_align.py --merge --Dm=20 --self --quota=2:2 grape_grape.qa
+    quota_align.py --merge --Dm=20 --min_size=5 --self --quota=2:2 grape_grape.qa
 
-The reason for setting up ``--quota=2:2`` is because grape has `pale-hexaploidy event <http://www.nature.com/nature/journal/v449/n7161/full/nature06148.html>`_. Therefore many regions will have 3 copies, but we need to remove the self match. Therefore we should do ``2:2`` instead. ``--self`` option must be turned on for finding paralogous blocks. The reason for that is in the self-matching case, the constraints on the union of the constraints on **both** axis, rather than on each axis separately. 
+The reason for setting up ``--quota=2:2`` is because grape has `paleo-hexaploidy event <http://www.nature.com/nature/journal/v449/n7161/full/nature06148.html>`_. Therefore many regions will have 3 copies, but we need to remove the self match. Therefore we should do ``2:2`` instead. ``--self`` option must be turned on for finding paralogous blocks. The reason for that is in the self-matching case, the constraints on the union of the constraints on **both** axis, rather than on each axis separately. 
 
 For a lineage that has tetraploidy event (genome doubling), using the example of brachypodium (which has undergone an ancient tetraploidy), we can do::
 
@@ -161,6 +146,44 @@ The script will print this::
     -42 43 56 57 -58 -59 60 -61$
 
 This is the input format for Glenn Tesler's `GRIMM <http://grimm.ucsd.edu/GRIMM/>`_ software. You can either run it locally or on their `website <http://nbcr.sdsc.edu/GRIMM/grimm.cgi>`_.
+
+
+Pre- and post-processing
+------------------------------------
+There are a few utility scripts included in ``scripts/`` folder.
+
+GFF to BED 
+::::::::::::::::::::
+Most annotation groups provide ``.gff`` file (see `gff format <http://genome.ucsc.edu/FAQ/FAQformat.html#format3>`_) for the annotation of gene models. I often convert the ``.gff`` file to a simpler ``.bed`` format (see `bed format <http://genome.ucsc.edu/FAQ/FAQformat.html#format1>`_). You can do the following to create the ``.bed`` file (``gt`` module required)::
+
+    gff_to_bed.py athaliana.gff >athaliana.bed
+
+This will get protein-coding models and put these in the ``.bed`` format. ``.bed`` format is required for doing BLAST filtering, see below.
+
+BLAST filtering
+::::::::::::::::::::
+The integer programming solver cannot solve large problem instance (say >60000 variables), this mostly will not happen if we filter our anchors carefully (removing redundant and weak anchors). To filter the BLAST results before chaining, using the ``blast_to_raw.py`` shipped in this package. Say you have BLAST file (tabular format) ready. You need to do::
+
+    blast_to_raw.py athaliana_grape.blastp --qbed=athaliana.bed --sbed=grape.bed --tandem_Nmax=20 --cscore=.5
+
+This will convert the BLAST file into the ``.raw`` formatted file that ``quota_align.py`` can understand. For your convenience, several BLAST filters are also implemented in ``blast_to_raw.py``. Notice these BLAST filters are **optional**.
+
+- Remove local dups (``--tandem_Nmax=20`` will group the local dups that are within 20 gene distance). When this option is on, ``blast_to_raw.py`` will write new ``.nolocaldups.bed`` file, these will substitute your original ``.bed`` file from now on.
+- Retain top N hits (``--top_N=10`` will keep only the top 10 hits)
+- Use the cscore filtering (``--cscore=.5`` will keep only the hits that have a good score). See reference for cscore in the supplementary of `sea anemone paper <http://www.sciencemag.org/cgi/content/abstract/317/5834/86>`_. C-score between gene A and B is defined::
+
+    cscore(A, B) = score(A, B)/max(best score of A, best score of B)
+
+Plot dot plot
+:::::::::::::::::::::
+To visualize the ``quota-align.py`` result, all you need is the ``.qa.filtered`` result, and two ``.bed`` file (**remember if you have removed local dups above, make sure you use the ``.nolocaldups.bed``**). As an example::
+
+    qa_plot.py --qbed=athaliana.nolocaldups.bed --sbed=grape.nolocaldups.bed athaliana_grape.qa.filtered 
+
+This will generate a dot plot that you can stare to spot any problem. Below is an example of athaliana-grape dot plot when quota of ``4:1`` is enforced (meaning that there are expected ``4`` athaliana regions mapping to ``1`` grape region).
+
+.. image:: http://lh5.ggpht.com/_srvRoIok9Xs/S5alO5d7USI/AAAAAAAAA1s/Vba14ZyAQuU/s800/athaliana_grape.qa.png 
+    :alt: sample dotplot
 
 
 Reference
