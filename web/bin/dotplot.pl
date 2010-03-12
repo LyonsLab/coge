@@ -69,7 +69,6 @@ map {$org2length+=$_->{length}} values %$org2info;
 ($CHR1, $CHR2) = ($CHR2, $CHR1) if $flip && ($CHR1 || $CHR2);
 my $height = sprintf("%.0f", $width*$org2length/$org1length);
 $height = $width if ($height > 20*$width) || ($height <  $width/20);
-print STDERR join ("\t", $org1length, $width, $org1length/$width),"\n";
 my $x_bp_per_pix = $org1length/$width; #sprintf("%.0f", $org1length/$width);
 #$x_bp_per_pix = 1 if $x_bp_per_pix < 1;
 my $x_pix_per_bp = 1/$x_bp_per_pix;
@@ -502,12 +501,12 @@ sub draw_chromosome_grid
     my $pv;
     foreach my $chr (sort {$org1->{$a}{start}<=>$org1->{$b}{start} } keys %$org1)
       {
-	my $x = sprintf("%.0f",$org1->{$chr}{start}*$x_pix_per_bp);
+	my $x = $org1->{$chr}{start}*$x_pix_per_bp;
 	next if $pv && $x == $pv-1;
 	if ($grid)
 	  {
 	    my $tmp = $x;
-	    my $span = sprintf("%.0f",($org1->{$chr}{length}/10*$x_pix_per_bp));
+	    my $span = $org1->{$chr}{length}/10*$x_pix_per_bp;
 	    for (1..9)
 	      {
 		$tmp+=$span;
@@ -526,12 +525,12 @@ sub draw_chromosome_grid
     $pv=undef;
     foreach my $chr (sort {$org2->{$a}{start}<=>$org2->{$b}{start} } keys %$org2)
       {
-	my $y = $graphics_context->height-sprintf("%.0f",$org2->{$chr}{start}*$y_pix_per_bp);
+	my $y = $graphics_context->height-$org2->{$chr}{start}*$y_pix_per_bp;
 	next if $pv && $y == $pv-1;
 	if ($grid)
 	  {
 	    my $tmp = $y;
-	    my $span = sprintf("%.0f",($org2->{$chr}{length}/10*$y_pix_per_bp));
+	    my $span = $org2->{$chr}{length}/10*$y_pix_per_bp;
 	    for (1..9)
 	      {
 		$tmp-=$span;
