@@ -227,6 +227,12 @@ sub gen_body
 	  {
 	    my $feat = $coge->resultset('Feature')->find($fid);
 	    ($draccn) = $feat->primary_name if $feat;
+	    unless ($draccn) #no name!  This is a problem
+	      {
+		$pos = $feat->start;
+		$chr = $feat->chromosome;
+		$dsid = $feat->dataset_id;
+	      }
 	  }
 	my $drup = $form->param('dr'.$i.'up') if defined $form->param('dr'.$i.'up');
 	my $drdown = $form->param('dr'.$i.'down') if defined $form->param('dr'.$i.'down');
