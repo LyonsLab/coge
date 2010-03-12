@@ -21,12 +21,15 @@ use DBI;
 
 $ENV{PATH} = "/opt/apache2/CoGe:/opt/apache2/CoGe/bin:/opt/apache2/CoGe/bin/SynMap";
 umask(0);
-use vars qw( $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $FORMATDB $BLAST $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $TANDEM_FINDER $RUN_DAGCHAINER $EVAL_ADJUST $FIND_NEARBY $DOTPLOT $NWALIGN $QUOTA_ALIGN $CLUSTER_UTILS);
+use vars qw( $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $FORMATDB $BLAST $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $TANDEM_FINDER $RUN_DAGCHAINER $EVAL_ADJUST $FIND_NEARBY $DOTPLOT $NWALIGN $QUOTA_ALIGN $CLUSTER_UTILS $BLAST2RAW $BASE_URL);
+
+
 $DEBUG = 0;
+$BASE_URL="http://synteny.cnr.berkeley.edu/CoGe/";
 $DIR = "/opt/apache/CoGe/";
 $URL = "/CoGe/";
 $FORMATDB = "/usr/bin/formatdb";
-$BLAST = "nice -20 /usr/bin/blast -a 8 -K 80 -m 8 -e 0.001";
+$BLAST = "nice -20 /usr/bin/blast -a 8 -K 80 -m 8 -e 0.0001";
 $DATADIR = "$DIR/data/";
 $DIAGSDIR = "$DIR/diags";
 $FASTADIR = $DATADIR.'/fasta/';
@@ -44,7 +47,7 @@ $FIND_NEARBY = $DIR."/bin/dagchainer_bp/dagtools/find_nearby.py -d 20"; #the par
 #programs to run Haibao Tang's quota_align program for merging diagonals and mapping coverage
 $QUOTA_ALIGN = $DIR."/bin/quota-alignment/quota_align.py"; #the program
 $CLUSTER_UTILS = $DIR."/bin/quota-alignment/cluster_utils.py"; #convert dag output to quota_align input
-
+$BLAST2RAW = $DIR."/bin/quota-alignment/scripts/blast_to_raw.py"; #find local duplicates
 $DOTPLOT = $DIR."/bin/dotplot.pl";
 
 #$CONVERT_TO_GENE_ORDER = $DIR."/bin/SynMap/convert_to_gene_order.pl";
@@ -430,7 +433,7 @@ sub get_dataset_group_info
     $html_dsg_info .= "<span class=small>";
     my ($ds) = $dsg->datasets;
     my $link = $ds->data_source->link;
-    $link = "synteny.cnr.berkeley.edu/CoGe/" unless $link;
+    $link = $BASE_URL unless $link;
     $link = "http://".$link unless $link && $link =~ /^http/;
     $html_dsg_info .= "Name: ".$dsg->name."<br>" if $dsg->name; 
     $html_dsg_info .= "Description: ".$dsg->description."<br>" if $dsg->description; 
@@ -679,6 +682,110 @@ sub run_blast
 	    return 0;
       }
     return 1 if -r $outfile;
+  }
+
+
+sub blast2bed
+  {
+    my %opts = @_;
+    my $infile = $opts{infile};
+    my $outfile1 = $opts{outfile1};
+    my $outfile2 = $opts{outfile2};
+    return if -r $outfile1 && -s $outfile1 && -r $outfile2 && -s $outfile2;
+    open (OUT1, ">$outfile1");
+    open (OUT2, ">$outfile2");
+    open (IN, $infile);
+    my %seen1;
+    my %seen2;
+    while (<IN>)
+      {
+	chomp;
+	next unless $_;
+	my @line = split/\t/;
+	my @item1 = split/\|\|/, $line[0];
+	my @item2 = split/\|\|/, $line[1];
+	#genomic comparisons won't have starts and stops in the name file, replace those with the actual hits
+	$item1[1] = $line[6] unless defined $item1[1];
+	$item1[2] = $line[7] unless defined $item1[2];
+	$item2[1] = $line[8] unless defined $item2[1];
+	$item2[2] = $line[9] unless defined $item2[2];
+	print OUT1 join ("\t", $item1[0], $item1[1], $item1[2], $line[0]),"\n" unless $seen1{$line[0]};
+	print OUT2 join ("\t", $item2[0], $item2[1], $item2[2], $line[1]),"\n" unless $seen2{$line[1]};
+	$seen1{$line[0]} =1;
+	$seen2{$line[1]} =1;
+      }
+    close IN;
+    close OUT1;
+    close OUT2;
+  }
+
+sub run_blast2raw
+  {
+    my %opts = @_;
+    my $blastfile = $opts{blastfile};
+    my $bedfile1 = $opts{bedfile1};
+    my $bedfile2 = $opts{bedfile2};
+    my $outfile = $opts{outfile};
+    if (-r $outfile && -s $outfile)
+      {
+	write_log("Filtered blast file found where tandem dups have been removed: $outfile", $cogeweb->logfile);
+	return $outfile;
+      }
+    my $tandem_distance = $opts{tandem_distance};
+    $tandem_distance = 10 unless defined $tandem_distance;
+    my $cmd = $BLAST2RAW." $blastfile --qbed $bedfile1 --sbed $bedfile2 --tandem_Nmax $tandem_distance > $outfile";
+    write_log("finding and removing local duplications", $cogeweb->logfile);
+    write_log("running $cmd" ,$cogeweb->logfile);
+    `$cmd`;
+    return $outfile;
+  }
+
+sub process_local_dups_file
+  {
+    my %opts = @_;
+    my $infile = $opts{infile};
+    my $outfile = $opts{outfile};
+    if (-r $outfile && -s $outfile)
+      {
+	write_log("Processed tandem duplicate file found: $outfile", $cogeweb->logfile);
+	return $outfile;
+      }
+    
+    return unless -r $infile;
+    write_log("Adding coge links to tandem duplication file.  Infile $infile : Outfile $outfile", $cogeweb->logfile);
+    open (IN, $infile);
+    open (OUT, ">$outfile");
+    print OUT "#", join ("\t", "FeatList_link", "GEvo_link", "FastaView_link", "chr||start||stop||name||strand||type||database_id||gene_order"),"\n";
+    while (<IN>)
+      {
+	chomp;
+	next unless $_;
+	my @line = split /\t/;
+	my %fids;
+	foreach (@line)
+	  {
+	    my @item = split /\|\|/;
+	    next unless $item[6];
+	    $fids{$item[6]}=1
+	  }
+	next unless keys %fids;
+	my $featlist = $BASE_URL."FeatList.pl?";
+	map {$featlist.="fid=$_;"} keys %fids;
+	my $fastaview = $BASE_URL."FastaView.pl?";
+	map {$fastaview.="fid=$_;"} keys %fids;
+	my $gevo = $BASE_URL."GEvo.pl?";
+	my $count =1;
+	foreach my $id (keys %fids)
+	  {
+	    $gevo.="fid$count=$id;";
+	    $count++;
+	  }
+	$gevo .= "num_seqs=".scalar keys %fids;
+	print OUT join ("\t", $featlist, $gevo, $fastaview, @line),"\n";
+      }
+    close OUT;
+    close IN;
+    return $outfile;
   }
 
 sub run_dag_tools
@@ -1331,7 +1438,7 @@ sub add_GEvo_links
 	my @line = split/\t/;
 	my @feat1 = split/\|\|/,$line[1];
 	my @feat2 = split/\|\|/,$line[5];
-	my $link = "http://synteny.cnr.berkeley.edu/CoGe/GEvo.pl?";
+	my $link = $BASE_URL."GEvo.pl?";
 	my ($fid1, $fid2);
 	if ($feat1[6])
 	  {
@@ -1388,7 +1495,7 @@ sub add_GEvo_links
 	  {
 	    my ($fid1, $dsgid1) = split /_/, $id1;
 	    my @names = $names{$fid1};
-	    my $link = "http://synteny.cnr.berkeley.edu/CoGe/GEvo.pl?pad_gs=10000;fid1=$fid1;dsgid1=$dsgid1";
+	    my $link = $BASE_URL."GEvo.pl?pad_gs=10000;fid1=$fid1;dsgid1=$dsgid1";
 	    my $count =2;
 	    foreach my $id2 (sort keys %{$condensed{$id1}})
 	      {
@@ -1410,6 +1517,7 @@ sub gen_ks_blocks_file
       my %opts = @_;
       my $infile = $opts{infile};
       my ($dbfile) = $infile =~ /^(.*?CDS-CDS)/;
+      return unless $dbfile;
       my $outfile = $infile.".ks";
       return $outfile if -r $outfile;
       my $ksdata = get_ks_data(db_file=>$dbfile.'.sqlite');
@@ -1800,14 +1908,23 @@ sub go
     my $t1 = new Benchmark;
     my $blast_time = timestr(timediff($t1,$t0));
 
-    #local dup finder was removed. . .may need to add back from previous version of synmap
+    #local dup finder
     my $t2 = new Benchmark;
+    my $raw_blastfile = $org_dirs{$orgkey1."_".$orgkey2}{blastfile};
+    my $bedfile1 = $raw_blastfile.".q.bed";
+    my $bedfile2 = $raw_blastfile.".s.bed";
+    blast2bed(infile=>$raw_blastfile, outfile1=>$bedfile1, outfile2=>$bedfile2);
+    my $filtered_blastfile = $raw_blastfile.".filtered";
+    run_blast2raw(blastfile=>$raw_blastfile, bedfile1=>$bedfile1, bedfile2=>$bedfile2, outfile=>$filtered_blastfile);
+
     my $local_dup_time = timestr(timediff($t2,$t1));
+
+    
 
     #prepare dag for synteny analysis
     my $dag_file12 = $org_dirs{$orgkey1."_".$orgkey2}{dir}."/".$org_dirs{$orgkey1."_".$orgkey2}{basename}.".dag";#."_c".$repeat_filter_cvalue.".dag";
     my $dag_file12_all = $dag_file12.".all";
-    $problem=1 unless run_dag_tools(query=>"a".$dsgid1, subject=>"b".$dsgid2, blast=>$org_dirs{$orgkey1."_".$orgkey2}{blastfile}, outfile=>$dag_file12_all, feat_type1=>$feat_type1, feat_type2=>$feat_type2);
+    $problem=1 unless run_dag_tools(query=>"a".$dsgid1, subject=>"b".$dsgid2, blast=>$filtered_blastfile, outfile=>$dag_file12_all, feat_type1=>$feat_type1, feat_type2=>$feat_type2);
     my $t2_5 = new Benchmark;
     my $dag_tool_time = timestr(timediff($t2_5,$t2));
 
@@ -1984,13 +2101,25 @@ sub go
 	    $fasta2 =~ s/$DIR/$URL/;
 	    $html .= qq{<span class='small link' onclick=window.open('$fasta2')>Fasta file for $org_name2: $feat_type2</span><br>};
 	    
-	    foreach my $org_dir (keys %org_dirs)
-	      {
-		my $output = $org_dirs{$org_dir}{blastfile};
-		next unless -s $output;
-		$output =~ s/$DIR/$URL/;
-		$html .= "<span class='link small' onclick=window.open('$output')>Blast results</span><br>";	
-	      }
+#	    foreach my $org_dir (keys %org_dirs)
+#	      {
+#		my $output = $org_dirs{$org_dir}{blastfile};
+#		next unless -s $output;
+#		$output =~ s/$DIR/$URL/;
+#		$html .= "<span class='link small' onclick=window.open('$output')>Blast results</span><br>";	
+#	      }
+	    my $org1_localdups = process_local_dups_file(infile=>$raw_blastfile.".q.localdups", outfile=>$raw_blastfile.".q.tandems");
+	    my $org2_localdups = process_local_dups_file(infile=>$raw_blastfile.".s.localdups", outfile=>$raw_blastfile.".s.tandems");
+
+	    $raw_blastfile =~ s/$DIR/$URL/;
+	    $html .= "<span class='link small' onclick=window.open('$raw_blastfile')>Unfiltered Blast results</span><br>";	
+	    $filtered_blastfile =~ s/$DIR/$URL/;
+	    $html .= "<span class='link small' onclick=window.open('$filtered_blastfile')>Filtered Blast results (no tandem duplicates)</span><br>";	
+	    $org1_localdups =~ s/$DIR/$URL/;
+	    $html .= "<span class='link small' onclick=window.open('$org1_localdups')>Tandem Duplicates for $org_name1</span><br>";	
+	    $org2_localdups =~ s/$DIR/$URL/;
+	    $html .= "<span class='link small' onclick=window.open('$org2_localdups')>Tandem Duplicates for $org_name2</span><br>";	
+
 	    $html .= "<td>";
 	    $dag_file12_all =~ s/$DIR/$URL/;
 	    $html .= qq{<span class='small link' onclick=window.open('$dag_file12_all')>DAGChainer Initial Input file</span><br>};    
@@ -2025,7 +2154,7 @@ sub go
 
 #	    $dagchainer_file =~ s/$DIR/$URL/;
 #	    $html .= "<br><span class='small link' onclick=window.open('$dagchainer_file')>DAGChainer syntelog file with GEvo links</span>";
-	    if (-r $quota_align_coverage)
+	    if ($quota_align_coverage && -r $quota_align_coverage)
 	      {
 		$quota_align_coverage =~ s/$DIR/$URL/;
 		$html .= qq{<br><span class='small link' onclick=window.open('$quota_align_coverage')>Quota Alignment output</span>};
@@ -2135,8 +2264,7 @@ sub get_previous_analyses
 	while (my $file = readdir(DIR))
 	  {
 	    $sqlite = 1 if $file =~ /sqlite$/;
-	    next unless $file =~ /all\.aligncoords/;#$/\.merge$/;
-
+	    next unless $file =~ /\.aligncoords/;#$/\.merge$/;
 	    my ($D, $g, $A) = $file =~ /D(\d+)_g(\d+)_A(\d+)/;
 	    my ($Dm) = $file =~ /Dm(\d+)/;
 	    my ($gm) = $file =~ /gm(\d+)/;
@@ -2177,7 +2305,7 @@ sub get_previous_analyses
 			blast=>$blast,
 			dsgid1=>$dsgid1,
 			dsgid2=>$dsgid2);
-	    my $geneorder = $file =~ /geneorder/;
+	    my $geneorder = $file =~ /\.go/;
 	    my $dsg1 = $coge->resultset('DatasetGroup')->find($dsgid1);
 	    next unless $dsg1;
 	    my ($ds1) = $dsg1->datasets;
@@ -2207,13 +2335,14 @@ sub get_previous_analyses
 	    $data{dagtype} = $geneorder ? "Ordered genes" : "Distance";
 	    push @items, \%data;
 	  }
+	closedir (DIR);
       }
     return unless @items;
     my $size = scalar @items;
     $size = 8 if $size > 8;
     my $html;
     my $prev_table = qq{<table id=prev_table class="small resultborder">};
-    $prev_table .= qq{<THEAD><TR><TH>}.join ("<TH>", qw(Org1 Genome1 Genome%20Type1 Sequence%20Type1 Org2 Genome2 Genome%20Type2 Sequence%20type2 Algo DAG%20Type Repeat%20Filter Ave%20Dist(g) Max%20Dist(D) Min%20Pairs(A)  Merge%20Algo Merge%20Ave%20Dist(gm) Merge%20Max%20Dist(Dm)))."</THEAD><TBODY>\n";
+    $prev_table .= qq{<THEAD><TR><TH>}.join ("<TH>", qw(Org1 Genome1 Genome%20Type1 Sequence%20Type1 Org2 Genome2 Genome%20Type2 Sequence%20type2 Algo Dist20Type Repeat%20Filter Ave%20Dist(g) Max%20Dist(D) Min%20Pairs(A)  Merge%20Algo Merge%20Ave%20Dist(gm) Merge%20Max%20Dist(Dm)))."</THEAD><TBODY>\n";
     my %seen;
     foreach my $item (@items)
       {
