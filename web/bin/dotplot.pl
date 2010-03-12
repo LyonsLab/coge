@@ -70,8 +70,10 @@ map {$org2length+=$_->{length}} values %$org2info;
 my $height = sprintf("%.0f", $width*$org2length/$org1length);
 $height = $width if ($height > 20*$width) || ($height <  $width/20);
 my $x_bp_per_pix = sprintf("%.0f", $org1length/$width);
+$x_bp_per_pix = 1 if $x_bp_per_pix < 1;
 my $x_pix_per_bp = 1/$x_bp_per_pix;
 my $y_bp_per_pix = sprintf("%.0f", $org2length/$height);
+$y_bp_per_pix = 1 if $y_bp_per_pix < 1;
 my $y_pix_per_bp = 1/$y_bp_per_pix;
 
 #Generate new graphics context and fill the background
