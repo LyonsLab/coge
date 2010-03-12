@@ -19,7 +19,7 @@ from box_utils import get_1D_overlap, get_2D_overlap
 from lp_solvers import GLPKSolver, SCIPSolver
 
 
-def merge_clusters(chain, clusters, Dmax=0):
+def merge_clusters(chain, clusters, Dmax=0, min_size=0):
     """
     Due to the problem of chaining, some chains might overlap each other
     these need to be merged 
@@ -33,9 +33,11 @@ def merge_clusters(chain, clusters, Dmax=0):
         merged_mother = min(mergeable)
         g = (clusters[x] for x in mergeable)
         merged_cluster = itertools.chain(*g)
+        merged_cluster = list(set(merged_cluster))
 
-        clusters[merged_mother] = list(set(merged_cluster))
-        merged_chain.append(merged_mother)
+        clusters[merged_mother] = merged_cluster
+        if len(merged_cluster) >= min_size:
+            merged_chain.append(merged_mother)
 
     # maintain the x-sort
     [cluster.sort() for cluster in clusters]
@@ -159,9 +161,13 @@ if __name__ == '__main__':
                     "[default: %default]")
     merge_group.add_option("--Dm", dest="Dmax", 
             type="int", default=0,
-            help="merge blocks that are close to each other within distance cutoff"\
+            help="merge blocks that are close to each other within distance cutoff "\
                     "(cutoff for `block merging`) "\
                     "[default: %default units (gene or bp dist)] ")
+    merge_group.add_option("--min_size", dest="min_size",
+            type="int", default=1,
+            help="keep blocks that contain more than certain number of anchors "\
+                    "[default: %default anchor points] ")
     parser.add_option_group(merge_group)
 
     quota_group = OptionGroup(parser, "Quota mapping function")
@@ -219,7 +225,7 @@ if __name__ == '__main__':
 
     self_match = options.self_match
 
-    clusters = read_clusters(qa_file, self_match=self_match)
+    clusters = read_clusters(qa_file)
     for cluster in clusters:
         assert len(cluster) > 0
 
@@ -228,7 +234,7 @@ if __name__ == '__main__':
     # below runs `block merging`
     if options.merge: 
         chain = range(len(clusters))
-        chain = merge_clusters(chain, clusters, Dmax=options.Dmax)
+        chain = merge_clusters(chain, clusters, Dmax=options.Dmax, min_size=options.min_size)
 
         merged_qa_file = qa_file + ".merged"
         fw = file(merged_qa_file, "w")
@@ -252,7 +258,7 @@ if __name__ == '__main__':
 
     write_clusters(fw, sorted(clusters))
 
-    filtered_len_x, filtered_len_y = calc_coverage(clusters, self_match)
+    filtered_len_x, filtered_len_y = calc_coverage(clusters, self_match=self_match)
     if self_match:
         print >>sys.stderr, "coverage: %.1f%% (self-match)" % \
                 (filtered_len_x*100./total_len_x)
