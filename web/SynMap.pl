@@ -289,20 +289,35 @@ sub gen_dsg_menu
     my @dsg_menu;
     my $message;
     my $org_name;
-    foreach my $dsg (sort {$b->version <=> $a->version || $a->type->id <=> $b->type->id} $coge->resultset('DatasetGroup')->search({organism_id=>$oid},{prefetch=>['genomic_sequence_type']}))
+    foreach my $dsg ($coge->resultset('DatasetGroup')->search({organism_id=>$oid},{prefetch=>['genomic_sequence_type']}))
       {
 #	next if $USER->user_name =~ /public/i && $dsg->organism->restricted;
 	my $name;
 	$name .= $dsg->name.": " if $dsg->name;
 	$name .= $dsg->type->name." (v".$dsg->version.",id".$dsg->id.")";
-	push @dsg_menu, [$dsg->id, $name];
 	$org_name = $dsg->organism->name unless $org_name;
+	my $has_cds;
+	foreach my $ft ($coge->resultset('FeatureType')->search(
+								{
+								 dataset_group_id=>$dsg->id,
+								 'me.feature_type_id'=>3},
+								{
+								 join =>{features=>{dataset=>'dataset_connectors'}},
+								 rows=>1,
+								}
+							       )
+		       )
+	  {
+	    $has_cds = 1;
+	  }
+	push @dsg_menu, [$dsg->id, $name, $dsg, $has_cds];
+
       }
 
     my $dsg_menu = qq{
    <select id=dsgid$num onChange="\$('#dsg_info$num').html('<div class=dna_small class=loading class=small>loading. . .</div>'); get_dataset_group_info(['args__dsgid','dsgid$num','args__org_num','args__$num'],['dsg_info$num', 'feattype_menu$num','genome_message$num'])">
 };
-    foreach (@dsg_menu)
+    foreach (sort {$b->[2]->version <=> $a->[2]->version || $a->[2]->type->id <=> $b->[2]->type->id || $b->[3] <=> $a->[3]} @dsg_menu)
       {
 	my ($numt, $name) = @$_;
 	my $selected = " selected" if $dsgid && $numt == $dsgid;
