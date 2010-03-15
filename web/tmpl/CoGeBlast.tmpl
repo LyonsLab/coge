@@ -25,6 +25,7 @@ $(document).ready(function(){
   else{
     seqObj = new Object();
   }
+  
    get_seq('coge_radio');
   pageObj.waittime=1000;
    <TMPL_VAR NAME="document_ready">
@@ -621,12 +622,12 @@ function get_radio(which_type,val){
 }
 
 function get_seq(which_type) {
- $('#seq_box').val('loading. . .');
  dsid = seqObj.dsid;
  dsgid = seqObj.dsgid;
  featid = seqObj.featid;
  chr = seqObj.chr;
  if (featid) {
+   $('#seq_box').val('loading. . .');
    get_sequence([
 	'args__fid','args__'+featid,
 	'args__blast_type', which_type, 
@@ -637,6 +638,7 @@ function get_seq(which_type) {
 	],['seq_box']);
  }
  else if (chr) {
+   $('#seq_box').val('loading. . .');
    get_sequence([
 	'args__chr','args__'+chr,
    	'args__dsid','args__'+dsid,
@@ -648,8 +650,8 @@ function get_seq(which_type) {
 	],['seq_box']);
  }
  else {
-  $('#seq_box').val('');
-  return;
+//  $('#seq_box').val('');
+//  return;
  }
 }
 
