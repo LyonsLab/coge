@@ -1099,13 +1099,13 @@ sub run_quota_align_merge
     my $returnfile = $infile.".Dm".$max_dist.".ma1"; #ma stands for merge algo
     return $returnfile if -r $returnfile;
     #convert to quota-align format
-    my $cmd = $CLUSTER_UTILS." --format=dag --log_evalue $infile $infile.qa";
+    my $cmd = $CLUSTER_UTILS." --format=dag --log_evalue $infile $infile.Dm$max_dist.qa";
     write_log("Converting dag output to quota_align format: $cmd", $cogeweb->logfile);
     `$cmd`;
-    $cmd = $QUOTA_ALIGN ." --Dm=$max_dist --merge $infile.qa";
+    $cmd = $QUOTA_ALIGN ." --Dm=$max_dist --merge $infile.Dm$max_dist.qa";
     write_log("Running quota_align to merge diagonals:  $cmd", $cogeweb->logfile);
     `$cmd`;
-    if (-r "$infile.qa.merged")
+    if (-r "$infile.Dm$max_dist.qa.merged")
       {
 	my %data;
 	open (IN, $infile);
@@ -1117,7 +1117,7 @@ sub run_quota_align_merge
 	  }
 	close IN;
 	open (OUT, ">$returnfile");
-	open (IN, "$infile.qa.merged");
+	open (IN, "$infile.Dm$max_dist.qa.merged");
 	while (<IN>)
 	  {
 	    if (/^#/)
