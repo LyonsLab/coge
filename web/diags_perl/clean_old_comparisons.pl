@@ -45,6 +45,7 @@ sub process_file
       my $dir = $opts{dir};
       my $file = $opts{file};
       if ($file !~ /\.blast$/ && $file !~ /\.sqlite$/)
+#      if ($file !~ /\.sqlite$/)
 	{
 	  print "deleting $dir/$file\n";
 	  `rm -f $dir/$file`;
