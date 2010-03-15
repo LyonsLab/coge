@@ -161,6 +161,11 @@ sub gen_body
     }
     elsif($seq)
       {
+	unless ($seq =~ />/)
+	  {
+	    $columns =80;
+	    $seq = wrap("","",$seq);
+	  }
 	$template->param(SEQVIEW=>0);
         $template->param(SEQUENCE=>$seq);
     
