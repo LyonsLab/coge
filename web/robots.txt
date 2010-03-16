@@ -1,0 +1,8 @@
+User-agent: *
+Disallow: /CoGe/tmp/
+Disallow: /CoGe/diags/
+Disallow: /CoGe/diags_perl/
+Disallow: /CoGe/scripts/
+Disallow: /CoGe/data/
+Disallow: /CoGe/bin/
+Disallow: /CoGe/old/
