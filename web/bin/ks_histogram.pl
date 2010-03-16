@@ -57,6 +57,7 @@ my $mean =0;
 map {$mean+=$_} @data;
 $mean = sprintf("%.4f",$mean/scalar(@data));
 @data = sort {$a<=>$b} @data;
+
 my $median = sprintf("%.4f",$data[floor(scalar(@data/2))]);
 
 my $hist = new GD::Graph::histogram($width, $height);
