@@ -176,6 +176,7 @@ sub draw_dots
     my $log = $opts{log}; #log normalize ksdata for display?
     my $metric= $opts{metric};
     my $color_type = $opts{color_type};
+    my $ks_type = $opts{ks_type};
     my $has_ksdata = keys %$ksdata ? 1 : 0;
     #min and max will be log normalized if log flag is set
     my ($max, $min) = get_range(data=>$ksdata, min=>$MIN, max=>$MAX, log=>$log) if $has_ksdata;
@@ -363,7 +364,18 @@ sub draw_dots
       }
     close IN;
     push @boxes,[$min_x-1, $min_y-1, $max_x+1, $max_y+1] if defined $min_x && defined $min_y && defined $max_x && defined $max_y;
-    @points = sort {$b->[-1] <=> $a->[-1]} @points if ($has_ksdata);
+#@data = $ks_type && $ks_type eq "KN" ? sort {$b<=>$a} @data : sort {$a<=>$b} @data;
+    if ($has_ksdata)
+      {
+	if ($ks_type && $ks_type eq "KN")
+	  {
+	    @points = sort {$a->[-1] <=> $b->[-1]} @points;
+	  }
+	else
+	  {
+	    @points = sort {$b->[-1] <=> $a->[-1]} @points;
+	  }
+      }
     foreach my $point (@points)
       {
 	my $val = pop @$point;
