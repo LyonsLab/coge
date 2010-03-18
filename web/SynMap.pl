@@ -710,8 +710,8 @@ sub blast2bed
     open (OUT1, ">$outfile1");
     open (OUT2, ">$outfile2");
     open (IN, $infile);
-    my %seen1;
-    my %seen2;
+    my %seen1 = ();
+    my %seen2 = ();
     while (<IN>)
       {
 	chomp;
