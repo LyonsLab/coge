@@ -499,6 +499,8 @@ function handle_results (html,w, h, img_base, n_images, gevo_link, basefilename,
   }
   if (gevo_link)
    {
+    
+     gevo_link = gevo_link.replace(/__/g,':::')
      get_tiny_url(['args__url','args__'+gevo_link],['tiny_link']);
    }
    
