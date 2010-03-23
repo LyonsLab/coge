@@ -54,7 +54,7 @@ sub get_sizes {
     my $i=0;
     my $s = "";
     for ($i=0;$i<$n; $i += 2){
-        $s .= ($locs_ref->[$i + 1] - $locs_ref->[$i]) . ","
+        $s .= ($locs_ref->[$i + 1] - $locs_ref->[$i] + 1) . ","
     }
     chop $s;
     return $s;
@@ -64,7 +64,7 @@ sub get_starts {
     my $start = shift;
     my $s = "";
     for (my $i=0;$i<scalar(@{$locs_ref}); $i += 2){
-        $s .= ($locs_ref->[$i] - $start) . ","
+        $s .= ($locs_ref->[$i] - $start)  . ","
     }
     chop $s;
     return $s
@@ -163,55 +163,44 @@ sub get_locs {
                 }
             }
 
-
+            my @data;
             $chrs{$g->chr} = 1;
             if (scalar(@locs) != 0){
-                my @data = ($chr, $g->start, $g->stop, $clean_name, $g->stop - $g->start, $strand, ".", ".", ".", scalar(@locs)/2);
-                push(@data, get_sizes(\@locs));
-                push(@data, get_starts(\@locs, $g->start));
-                my $gstr = join("\t", @data);
-                #$gstr .= "\tCDS\t" . join(",", @locs);
-                print $gstr . "\n";
-                next;
+                @data = ($chr, $g->start - 1, $g->stop, $clean_name, $g->stop - $g->start, $strand, ".", ".", ".", scalar(@locs)/2);
             } 
-            my $sub_rs = $coge->resultset('Feature')->search( {
-                  'me.dataset_id' => { 'IN' => $datasets },
-                  'feature_names.name'  =>  $gene_name
-                  , 'feature_type.name'  =>  { 'NOT IN' => ['gene', 'mRNA', 'CDS'] }
-                } , { 
-                   'join'               => [ 'feature_names'],
-                   'prefetch'           => [ 'feature_type', 'locations'] 
-                  ,'order_by'           => [ 'me.chromosome', 'me.start']
-                });
+            else {
+                my $sub_rs = $coge->resultset('Feature')->search( {
+                      'me.dataset_id' => { 'IN' => $datasets },
+                      'feature_names.name'  =>  $gene_name
+                      , 'feature_type.name'  =>  { 'NOT IN' => ['gene', 'mRNA', 'CDS'] }
+                    } , { 
+                       'join'               => [ 'feature_names'],
+                       'prefetch'           => [ 'feature_type', 'locations'] 
+                      ,'order_by'           => [ 'me.chromosome', 'me.start']
+                    });
 
-            undef @locs;
-            my $ftype;
-            while(my $f = $sub_rs->next()){
-                if($fids{$f->feature_id}){ next; }
-                $fids{$f->feature_id} = 1;
-                $ftype = $f->type->name;
-                foreach my $loc ($f->locations()){
-                    my $l = scalar(@locs);
-                    # dont add exons repeatedly.
-                    if ($l > 0 && $locs[$l - 2] == $loc->start && $locs[$l - 1] == $loc->stop){ next; }
-                    push(@locs, $loc->start);
-                    push(@locs, $loc->stop);
+                undef @locs;
+                my $ftype;
+                while(my $f = $sub_rs->next()){
+                    if($fids{$f->feature_id}){ next; }
+                    $fids{$f->feature_id} = 1;
+                    $ftype = $f->type->name;
+                    foreach my $loc ($f->locations()){
+                        my $l = scalar(@locs);
+                        # dont add exons repeatedly.
+                        if ($l > 0 && $locs[$l - 2] == $loc->start && $locs[$l - 1] == $loc->stop){ next; }
+                        push(@locs, $loc->start);
+                        push(@locs, $loc->stop);
+                    }
                 }
-            }
-            if ($ftype){
-                my @data = ($chr, $g->start, $g->stop, $clean_name, $g->stop - $g->start, $strand, ".", ".", ".", scalar(@locs)/2);
-                push(@data, get_sizes(\@locs));
-                push(@data, get_starts(\@locs, $g->start));
-                my $gstr = join("\t", @data);
-                print $gstr . "\n";
-                next;
+                @data = ($chr, $g->start - 1, $g->stop, $clean_name, $g->stop - $g->start, $strand, ".", ".", "."); #, scalar(@locs)/2);
+                push(@data, $ftype ? scalar(@locs)/2 : 1);
             } 
-            # just a gene, no mRNA or CDS
-            #print STDERR "BAD $gene_name\t" . $g->type->name . "\t" . $ftype . "\n";
-            if (scalar(@locs) > 0){ print STDERR "FIX"; exit(1); }
-            my @data = ($chr, $g->start, $g->stop, $clean_name, $g->stop - $g->start, $strand, ".", ".", ".", 1);
-            push(@data, get_sizes([$g->start, $g->stop]));
-            push(@data, get_starts([$g->start, $g->stop], $g->start));
+            if (scalar(@locs) == 0){
+                @locs = ($g->start, $g->stop);
+            }
+            push(@data, get_sizes(\@locs));
+            push(@data, get_starts(\@locs, $g->start));
             my $gstr = join("\t", @data);
             print $gstr . "\n";
         }
