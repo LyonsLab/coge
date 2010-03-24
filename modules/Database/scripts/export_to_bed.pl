@@ -154,18 +154,7 @@ sub get_locs {
                 $fids{$f->feature_id} = 1;
                 $has_cds = 1;
                 foreach my $loc ($f->locations({},{order_by=>['me.start']})){
-                    my $l = scalar(@locs);
-                    # dont add exons repeatedly.
-                    if ($l > 0 && $locs[$l - 2] == $loc->start && $locs[$l - 1] == $loc->stop){ next; }
-
-                    # merge overlapping / alternative splicings.
-                    if ($l > 0 && $loc->start <= $locs[$l - 1]){
-                        $locs[$l - 1] = $loc->stop; 
-                    }
-                    else {
-                        push(@locs, $loc->start);
-                        push(@locs, $loc->stop);
-                    }
+                    @locs = @{add_sorted_locs(\@locs, $loc)};
                 }
             }
 
@@ -178,7 +167,7 @@ sub get_locs {
                 my $sub_rs = $coge->resultset('Feature')->search( {
                       'me.dataset_id' => { 'IN' => $datasets },
                       'feature_names.name'  =>  $gene_name
-                      , 'feature_type.name'  =>  { 'NOT IN' => ['gene', 'mRNA', 'CDS'] }
+                      , 'feature_type.name'  =>  { 'NOT IN' => ['gene', 'mRNA', 'CDS', 'intron'] }
                     } , { 
                        'join'               => [ 'feature_names'],
                        'prefetch'           => [ 'feature_type', 'locations'] 
@@ -192,28 +181,18 @@ sub get_locs {
                     $fids{$f->feature_id} = 1;
                     $ftype = $f->type->name;
                     foreach my $loc ($f->locations({},{order_by=>['me.start']})){
-                        my $l = scalar(@locs);
-                        # dont add exons repeatedly.
-                        if ($l > 0 && $locs[$l - 2] == $loc->start && $locs[$l - 1] == $loc->stop){ next; }
-                        # merge overlapping / alternative splicings.
-                        if ($l > 0 && $loc->start <= $locs[$l - 1]){
-                            $locs[$l - 1] = $loc->stop; 
-                        }
-                        else {
-                            push(@locs, $loc->start);
-                            push(@locs, $loc->stop);
-                        }
+                        @locs = @{add_sorted_locs(\@locs, $loc)};
                     }
                 }
+
                 @data = ($chr, $g->start - 1, $g->stop, $clean_name, $g->stop - $g->start, $strand, ".", ".", "."); #, scalar(@locs)/2);
                 push(@data, $ftype ? scalar(@locs)/2 : 1);
             } 
             if (scalar(@locs) == 0){
                 @locs = ($g->start, $g->stop);
             }
-            my $start = $g->start;
-            sort(@locs);
-            if($locs[0] < $start){ $start = $locs[0]; }
+            my $start = $g->start < $locs[0] ? $g->start : $locs[0];
+            $data[1] = $start - 1;
             push(@data, get_sizes(\@locs));
             push(@data, get_starts(\@locs, $start));
             my $gstr = join("\t", @data);
@@ -223,6 +202,33 @@ sub get_locs {
     return \%chrs;
 }
 
+sub add_sorted_locs {
+    my $loc_ref = shift;
+    my @locs = @{$loc_ref};
+    my $loc = shift;
+    my $l = scalar(@locs);
+    # dont add exons repeatedly.
+    if ($l > 0 && $locs[$l - 2] == $loc->start && $locs[$l - 1] == $loc->stop){ return \@locs; }
+    # merge overlapping / alternative splicings.
+    my $added = 0;
+    for(my $i =1; $i < $l; $i += 2){
+        if ($loc->start <= $locs[$i] && $loc->stop >= $locs[$i]){
+            $locs[$i] = $loc->stop;    
+            $added = 1;
+        }
+        if ($loc->start <= $locs[$i - 1] && $loc->stop >= $locs[$i - 1]){
+            $locs[$i - 1] = $loc->start;
+            $added = 1;
+        }
+        if ($added) { last; }
+    }       
+    if(! $added) {
+        push(@locs, $loc->start);
+        push(@locs, $loc->stop);
+    }
+    @locs = sort { $a <=> $b } @locs;
+    return \@locs; 
+}
 
 sub get_sequence {
   my %opts = @_;
