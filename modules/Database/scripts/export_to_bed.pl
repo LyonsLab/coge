@@ -86,7 +86,6 @@ sub get_locs {
     my %fids = ();
     my $index = 0;
 
-    print "#seqid\tstart\tend\taccn\tscore\tstrand\tthick_start\tthick_end\trgb\tblock_count\tblock_sizes\tblock_starts\n";
     foreach my $chr (@chrs){
         my %seen = ();
         my $gene_rs = $coge->resultset('Feature')->search( {
@@ -158,8 +157,15 @@ sub get_locs {
                     my $l = scalar(@locs);
                     # dont add exons repeatedly.
                     if ($l > 0 && $locs[$l - 2] == $loc->start && $locs[$l - 1] == $loc->stop){ next; }
-                    push(@locs, $loc->start);
-                    push(@locs, $loc->stop);
+
+                    # merge overlapping / alternative splicings.
+                    if ($loc->start <= $locs[$l - 1]){
+                        $locs[$l - 1] = $loc->stop; 
+                    }
+                    else {
+                        push(@locs, $loc->start);
+                        push(@locs, $loc->stop);
+                    }
                 }
             }
 
@@ -189,8 +195,14 @@ sub get_locs {
                         my $l = scalar(@locs);
                         # dont add exons repeatedly.
                         if ($l > 0 && $locs[$l - 2] == $loc->start && $locs[$l - 1] == $loc->stop){ next; }
-                        push(@locs, $loc->start);
-                        push(@locs, $loc->stop);
+                        # merge overlapping / alternative splicings.
+                        if ($loc->start <= $locs[$l - 1]){
+                            $locs[$l - 1] = $loc->stop; 
+                        }
+                        else {
+                            push(@locs, $loc->start);
+                            push(@locs, $loc->stop);
+                        }
                     }
                 }
                 @data = ($chr, $g->start - 1, $g->stop, $clean_name, $g->stop - $g->start, $strand, ".", ".", "."); #, scalar(@locs)/2);
