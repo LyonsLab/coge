@@ -153,7 +153,7 @@ sub get_locs {
                 if($fids{$f->feature_id}){ next; }
                 $fids{$f->feature_id} = 1;
                 $has_cds = 1;
-                foreach my $loc ($f->locations()){
+                foreach my $loc ($f->locations({},{order_by=>['me.start']})){
                     my $l = scalar(@locs);
                     # dont add exons repeatedly.
                     if ($l > 0 && $locs[$l - 2] == $loc->start && $locs[$l - 1] == $loc->stop){ next; }
@@ -191,7 +191,7 @@ sub get_locs {
                     if($fids{$f->feature_id}){ next; }
                     $fids{$f->feature_id} = 1;
                     $ftype = $f->type->name;
-                    foreach my $loc ($f->locations()){
+                    foreach my $loc ($f->locations({},{order_by=>['me.start']})){
                         my $l = scalar(@locs);
                         # dont add exons repeatedly.
                         if ($l > 0 && $locs[$l - 2] == $loc->start && $locs[$l - 1] == $loc->stop){ next; }
@@ -211,8 +211,11 @@ sub get_locs {
             if (scalar(@locs) == 0){
                 @locs = ($g->start, $g->stop);
             }
+            my $start = $g->start;
+            sort(@locs);
+            if($locs[0] < $start){ $start = $locs[0]; }
             push(@data, get_sizes(\@locs));
-            push(@data, get_starts(\@locs, $g->start));
+            push(@data, get_starts(\@locs, $start));
             my $gstr = join("\t", @data);
             print $gstr . "\n";
         }
