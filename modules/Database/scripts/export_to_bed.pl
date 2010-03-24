@@ -159,7 +159,7 @@ sub get_locs {
                     if ($l > 0 && $locs[$l - 2] == $loc->start && $locs[$l - 1] == $loc->stop){ next; }
 
                     # merge overlapping / alternative splicings.
-                    if ($loc->start <= $locs[$l - 1]){
+                    if ($l > 0 && $loc->start <= $locs[$l - 1]){
                         $locs[$l - 1] = $loc->stop; 
                     }
                     else {
@@ -196,7 +196,7 @@ sub get_locs {
                         # dont add exons repeatedly.
                         if ($l > 0 && $locs[$l - 2] == $loc->start && $locs[$l - 1] == $loc->stop){ next; }
                         # merge overlapping / alternative splicings.
-                        if ($loc->start <= $locs[$l - 1]){
+                        if ($l > 0 && $loc->start <= $locs[$l - 1]){
                             $locs[$l - 1] = $loc->stop; 
                         }
                         else {
