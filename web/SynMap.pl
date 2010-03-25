@@ -21,7 +21,7 @@ use DBI;
 
 $ENV{PATH} = "/opt/apache2/CoGe:/opt/apache2/CoGe/bin:/opt/apache2/CoGe/bin/SynMap";
 umask(0);
-use vars qw( $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $FORMATDB $BLAST $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $TANDEM_FINDER $RUN_DAGCHAINER $EVAL_ADJUST $FIND_NEARBY $DOTPLOT $NWALIGN $QUOTA_ALIGN $CLUSTER_UTILS $BLAST2RAW $BASE_URL);
+use vars qw( $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $FORMATDB $BLAST $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $TANDEM_FINDER $RUN_DAGCHAINER $EVAL_ADJUST $FIND_NEARBY $DOTPLOT $NWALIGN $QUOTA_ALIGN $CLUSTER_UTILS $BLAST2RAW $BASE_URL $BLAST2BED);
 
 
 $DEBUG = 0;
@@ -37,6 +37,7 @@ $BLASTDBDIR = $DATADIR.'/blast/db/';
 $MAX_PROC=8;
 $PYTHON = "/usr/bin/python2.5";
 $DAG_TOOL = $DIR."/bin/SynMap/dag_tools.py";
+$BLAST2BED = $DIR."/bin/SynMap/blast2bed.pl";
 $TANDEM_FINDER = $DIR."/bin/dagchainer/tandems.py -d 5 -s -r"; #-d option is the distance (in genes) between dups -- not sure if the -s and -r options are needed -- they create dups files based on the input file name
 #$RUN_DAGCHAINER = $DIR."/bin/dagchainer/DAGCHAINER/run_DAG_chainer.pl -E 0.05 -s";
 $RUN_DAGCHAINER = $DIR."/bin/dagchainer_bp/dag_chainer.py";
@@ -701,6 +702,22 @@ sub run_blast
 
 
 sub blast2bed
+  {
+    my %opts = @_;
+    my $infile = $opts{infile};
+    my $outfile1 = $opts{outfile1};
+    my $outfile2 = $opts{outfile2};
+    if (-r $outfile1 && -s $outfile1 && -r $outfile2 && -s $outfile2)
+      {
+	write_log(".bed files $outfile1 and $outfile2 already exist." ,$cogeweb->logfile);
+	return;
+      }
+    my $cmd = $BLAST2BED ." -infile $infile -outfile1 $outfile1 -outfile2 $outfile2";
+    write_log("Creating bed files: $cmd", $cogeweb->logfile);
+    `$cmd`;
+  }
+
+sub blast2bed_old
   {
     my %opts = @_;
     my $infile = $opts{infile};
