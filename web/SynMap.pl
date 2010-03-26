@@ -717,40 +717,6 @@ sub blast2bed
     `$cmd`;
   }
 
-sub blast2bed_old
-  {
-    my %opts = @_;
-    my $infile = $opts{infile};
-    my $outfile1 = $opts{outfile1};
-    my $outfile2 = $opts{outfile2};
-    return if -r $outfile1 && -s $outfile1 && -r $outfile2 && -s $outfile2;
-    open (OUT1, ">$outfile1");
-    open (OUT2, ">$outfile2");
-    open (IN, $infile);
-    my %seen1 = ();
-    my %seen2 = ();
-    while (<IN>)
-      {
-	chomp;
-	next unless $_;
-	my @line = split/\t/;
-	my @item1 = split/\|\|/, $line[0];
-	my @item2 = split/\|\|/, $line[1];
-	#genomic comparisons won't have starts and stops in the name file, replace those with the actual hits
-	$item1[1] = $line[6] unless defined $item1[1];
-	$item1[2] = $line[7] unless defined $item1[2];
-	$item2[1] = $line[8] unless defined $item2[1];
-	$item2[2] = $line[9] unless defined $item2[2];
-	print OUT1 join ("\t", $item1[0], $item1[1], $item1[2], $line[0]),"\n" unless $seen1{$line[0]};
-	print OUT2 join ("\t", $item2[0], $item2[1], $item2[2], $line[1]),"\n" unless $seen2{$line[1]};
-	$seen1{$line[0]} =1;
-	$seen2{$line[1]} =1;
-      }
-    close IN;
-    close OUT1;
-    close OUT2;
-  }
-
 sub run_blast2raw
   {
     my %opts = @_;
@@ -937,8 +903,9 @@ sub run_convert_to_gene_order
     my $dsgid2 = $opts{dsgid2};
     my $ft1 = $opts{ft1};
     my $ft2 = $opts{ft2};
-    my $ftid1 = $ft1 eq "CDS" ? 3 : 0; #set feat type id to 3 if CDS
-    my $ftid2 = $ft2 eq "CDS" ? 3 : 0; #set feat type id to 3 if CDS
+    my $genomic_flag = 0;
+    my %genomic_order;
+
     my $outfile = $infile.".go";
     while (-e "$outfile.running")
       {
@@ -955,6 +922,52 @@ sub run_convert_to_gene_order
 	write_log("run_convert_to_gene_order: file $outfile already exists",$cogeweb->logfile);
 	return $outfile;
       }
+
+    if ($ft1 eq "genomic" || $ft2 eq "genomic")
+      {
+	#we need to process genomic names differently!
+	$genomic_flag=1;
+	open (IN, $infile);
+	while (<IN>)
+	  {
+	    #get positions;
+	    chomp;
+	    next if (/^#/);
+	    my @line = split/\t/;
+	    my @item1 = split/\|\|/,$line[1];
+	    my @item2 = split /\|\|/, $line[5];
+	    $genomic_order{1}{$line[0]}{$line[1]}{start}=$line[2] if $ft1 eq "genomic";
+	    $genomic_order{2}{$line[4]}{$line[5]}{start}=$line[6] if $ft2 eq "genomic";
+	  }
+	close IN;
+	if ($ft1 eq "genomic")
+	  {
+	    #sort positions
+	    foreach my $chr (keys %{$genomic_order{1}})
+	      {
+		my $i = 1;
+		foreach my $item (sort { $a->{start} <=> $b->{start} } values %{$genomic_order{1}{$chr}})
+		  {
+		    $item->{order}=$i;
+		    $i++;
+		  }
+	      }
+	  }
+	if ($ft2 eq "genomic")
+	  {
+	    #sort positions
+	    foreach my $chr (keys %{$genomic_order{2}})
+	      {
+		my $i = 1;
+		foreach my $item (sort { $a->{start} <=> $b->{start} } values %{$genomic_order{2}{$chr}})
+		  {
+		    $item->{order}=$i;
+		    $i++;
+		  }
+	      }
+	  }
+      }
+
     system "touch $outfile.running"; #track that a blast anlaysis is running for this
     open (OUT, ">$outfile");
     open (IN, $infile);
@@ -967,12 +980,30 @@ sub run_convert_to_gene_order
 	    next;
 	  }
 	my @line = split/\t/;
-	my @item1 = split/\|\|/,$line[1];
-	my @item2 = split /\|\|/, $line[5];
-	$line[2] = $item1[7];
-	$line[3] = $item1[7];
-	$line[6] = $item2[7];
-	$line[7] = $item2[7];
+
+
+	if ($ft1 eq "genomic")
+	  {
+	    $line[2] = $genomic_order{1}{$line[0]}{$line[1]}{order};
+	    $line[3] = $genomic_order{1}{$line[0]}{$line[1]}{order};
+	  }
+	else
+	  {
+	    my @item1 = split/\|\|/,$line[1];
+	    $line[2] = $item1[7];
+	    $line[3] = $item1[7];
+	  }
+	if ($ft2 eq "genomic")
+	  {
+	    $line[6] = $genomic_order{2}{$line[4]}{$line[5]}{order};
+	    $line[7] = $genomic_order{2}{$line[4]}{$line[5]}{order};
+	  }
+	else
+	  {
+	    my @item2 = split /\|\|/, $line[5];
+	    $line[6] = $item2[7];
+	    $line[7] = $item2[7];
+	  }
 	print OUT join ("\t", @line),"\n";
       }
     close IN;
