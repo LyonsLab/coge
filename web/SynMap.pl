@@ -341,10 +341,10 @@ sub gen_dsg_menu
 
 sub read_file
   {
-  	my $file = shift;
-
-	my $html;
-	open (IN, "/opt/apache/CoGe/tmp/SynMap/".$file) || die "can't open $file for reading: $!";
+    my $file = shift;
+    
+    my $html;
+    open (IN, "/opt/apache/CoGe/tmp/SynMap/".$file) || die "can't open $file for reading: $!";
     while (<IN>)
       {
 		$html .= $_;
@@ -751,6 +751,7 @@ sub process_local_dups_file
     
     return unless -r $infile;
     write_log("Adding coge links to tandem duplication file.  Infile $infile : Outfile $outfile", $cogeweb->logfile);
+    $/="\n";
     open (IN, $infile);
     open (OUT, ">$outfile");
     print OUT "#", join ("\t", "FeatList_link", "GEvo_link", "FastaView_link", "chr||start||stop||name||strand||type||database_id||gene_order"),"\n";
@@ -905,7 +906,7 @@ sub run_convert_to_gene_order
     my $ft2 = $opts{ft2};
     my $genomic_flag = 0;
     my %genomic_order;
-
+    $/="\n";
     my $outfile = $infile.".go";
     while (-e "$outfile.running")
       {
@@ -1156,6 +1157,7 @@ sub run_quota_align_merge
     if (-r "$infile.Dm$max_dist.qa.merged")
       {
 	my %data;
+	$/="\n";
 	open (IN, $infile);
 	while (<IN>)
 	  {
@@ -1219,6 +1221,7 @@ sub run_quota_align_coverage
     if (-r "$returnfile.tmp")
       {
 	my %data;
+	$/="\n";
 	open (IN, $infile);
 	while (<IN>)
 	  {
@@ -1331,6 +1334,7 @@ dN_dS varchar
 	$dbh->disconnect;
       }
     my $ksdata = get_ks_data(db_file=>$outfile);
+    $/="\n";
     open (IN, $infile);
     my @data;
     while (<IN>)
@@ -1478,6 +1482,7 @@ sub add_GEvo_links
     my $infile = $opts{infile};
     my $dsgid1 = $opts{dsgid1};
     my $dsgid2 = $opts{dsgid2};
+    $/="\n";
     open (IN, $infile);
     open (OUT,">$infile.tmp");
     my %condensed;
@@ -1584,6 +1589,7 @@ sub gen_ks_blocks_file
       my $outfile = $infile.".ks";
       return $outfile if -r $outfile;
       my $ksdata = get_ks_data(db_file=>$dbfile.'.sqlite');
+      $/="\n";
       open (IN, $infile);
       open (OUT, ">".$outfile);
       print OUT "#This file contains synonymous rate values in the first two columns:\n";
@@ -1671,6 +1677,7 @@ sub add_reverse_match#this is for when there is a self-self comparison.  DAGchai
   {
     my %opts = @_;
     my $infile = $opts{infile};
+    $/="\n";
     open (IN, $infile);
     my $stuff;
     my $skip =0;
@@ -2120,7 +2127,7 @@ sub go
 </div>
  };
 
-
+	    $/="\n";
  	    open (IN, "$out.html") || warn "problem opening $out.html for reading\n";
 #	    print STDERR "$out.html\n";
 	    $axis_metric = $axis_metric=~/g/ ? "genes" : "nucleotides";
