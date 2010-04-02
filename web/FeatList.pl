@@ -30,23 +30,24 @@ $coge = CoGeX->dbconnect();
 #$coge->storage->debug(1);
 
 my $pj = new CGI::Ajax(
-    gen_html=>\&gen_html,
-    gevo=>\&gevo,
-    blast=>\&blast,
-    get_fasta_seqs=>\&get_fasta_seqs,
-    generate_excel_file=>\&generate_excel_file,
-    codon_table=>\&codon_table,
-    protein_table=>\&protein_table,
-    gc_content=>\&gc_content,
-    gen_data=>\&gen_data,
-    send_to_featmap=>\&send_to_featmap,
-    send_to_msa=>\&send_to_msa,
-    send_to_featlist=>\&send_to_featlist,
-    get_anno=>\&get_anno,
-    get_gc=>\&get_gc,
-    get_wobble_gc=>\&get_wobble_gc,
-    save_FeatList_settings=>\&save_FeatList_settings,
-    add_to_user_history=>\&add_to_user_history,
+		       gen_html=>\&gen_html,
+		       gevo=>\&gevo,
+		       blast=>\&blast,
+		       get_fasta_seqs=>\&get_fasta_seqs,
+		       generate_excel_file=>\&generate_excel_file,
+		       codon_table=>\&codon_table,
+		       protein_table=>\&protein_table,
+		       gc_content=>\&gc_content,
+		       gen_data=>\&gen_data,
+		       send_to_featmap=>\&send_to_featmap,
+		       send_to_msa=>\&send_to_msa,
+		       send_to_featlist=>\&send_to_featlist,
+		       get_anno=>\&get_anno,
+		       get_gc=>\&get_gc,
+		       get_wobble_gc=>\&get_wobble_gc,
+		       save_FeatList_settings=>\&save_FeatList_settings,
+		       add_to_user_history=>\&add_to_user_history,
+		       export_CDSEvo=>\&export_CDSEvo,
     );
 $pj->js_encode_function('escape');
 #my $t1 = new Benchmark;
@@ -431,12 +432,33 @@ $url =~ s/&$//;
     $accn_list =~ s/,$//;
     my $url = "FastaView.pl?";
     foreach my $featid (split /,/,$accn_list)
-    {
-		$url .= "fid=$featid&";
-	}
-	$url =~s/&$//;
-	return $url;
+      {
+	$url .= "fid=$featid&";
+      }
+    $url =~s/&$//;
+    return $url;
   }
+
+  sub export_CDSEvo
+    {
+      my $accn_list = shift;
+      $accn_list =~ s/^,//;
+      $accn_list =~ s/,$//;
+      my $url = "CDSEvo.pl?fid=";
+      my @list;
+      foreach my $accn (split /,/,$accn_list)
+	{
+	  next if $accn =~ /no$/;
+	  my ($featid, $hspnum, $dsgid) = $accn =~ m/^(\d+)_(\d+)?_?(\d+)?$/;
+	  push @list,$featid;
+	}
+      my %seen = ();
+      @list = grep {!$seen{$_}++} @list;
+      $url .= join ("::", @list);
+      $url =~s/&$//;
+      return $url;
+    }
+  
   
 sub generate_excel_file
   {
