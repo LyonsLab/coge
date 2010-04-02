@@ -57,7 +57,7 @@ sub gen_html
     $template->param(DATE=>$DATE);
     $template->param(BOX_NAME=>'');
     $template->param(BODY=>$body);
-    $template->param(ADJUST_BOX=>1);
+    $template->param(ADJUST_BOX=>0);
     $html .= $template->output;
 
     return $html;
