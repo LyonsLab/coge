@@ -73,6 +73,7 @@ my $pj = new CGI::Ajax(
 		       overlap_feats_parse=>\&overlap_feats_parse,
 		       get_nearby_feats=>\&get_nearby_feats,
 		       export_fasta_file=>\&export_fasta_file,
+		       export_CDSEvo=>\&export_CDSEvo,
 		       export_to_excel=>\&export_to_excel,
 		       generate_tab_deliminated=>\&generate_tab_deliminated,
 		       generate_feat_list=>\&generate_feat_list,
@@ -1734,6 +1735,28 @@ order by abs((start + stop)/2 - $mid) LIMIT 10
   }
 
 
+sub export_CDSEvo
+  {
+    my $accn_list = shift;
+    $accn_list =~ s/^,//;
+    $accn_list =~ s/,$//;
+    my $url = "CDSEvo.pl?fid=";
+    my @list;
+    foreach my $accn (split /,/,$accn_list)
+      {
+	next if $accn =~ /no$/;
+	my ($featid, $hspnum, $dsgid) = $accn =~ m/^(\d+)_(\d+)_(\d+)$/;
+#	my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+#	$featid .= "_".$dsg->type->id if $dsg;
+	push @list,$featid;
+      }
+    my %seen = ();
+    @list = grep {!$seen{$_}++} @list;
+    $url .= join ("::", @list);
+    $url =~s/&$//;
+    return $url;
+  }
+  
 sub export_fasta_file
   {
     my $accn_list = shift;
