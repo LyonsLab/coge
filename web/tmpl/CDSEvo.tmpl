@@ -12,14 +12,10 @@ $(document).ready(function(){
 		widgets: ['zebra'],
 		headers: {0: {sorter: false},},					
 		});
-		check_display();
-/*		$('#feat_table').columnFilters({
-			alternateRowClassNames:['even','odd'],
-			excludeColumns: [0,],
-			});
-*/
 		$("#search_bar").keyup( function() { filter_rows( $(this).val() ); });
 		$('#search_type').mouseup( function() { filter_rows( $('#search_bar').val() ); });
+		if ($('#accn').val() ) {run_mama();}
+		if ($('#anno').val() ) {run_mama();}
 });
 
 
@@ -135,7 +131,7 @@ $('#results').html('<img src=./picts/animations/DNA_orbit_animated_small_third.g
         <td><span class="ui-button ui-state-default ui-corner-all" onclick="run_mama()">Search</span>
 </TABLE>
 
-<div id='results'></div>
+<div id='results'><TMPL_VAR NAME="RESULTS"></div>
 
 </TMPL_IF>
 
