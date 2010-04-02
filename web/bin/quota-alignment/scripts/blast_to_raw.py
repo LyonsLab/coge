@@ -5,7 +5,6 @@
 %prog blast_file --qbed query.bed --sbed subject.bed
 
 accepts .bed format: <http://genome.ucsc.edu/FAQ/FAQformat.html#format1>
-or .flat format: <http://github.com/brentp/flatfeature/>
 and a blast file.
 
 local dup filter:
@@ -27,7 +26,7 @@ import collections
 import itertools
 
 from math import log10
-from bed_utils import Bed
+from bed_utils import Bed, BlastLine, get_order
 sys.path.insert(0, op.join(op.dirname(__file__), ".."))
 from grouper import Grouper
 
@@ -45,42 +44,8 @@ def gene_name(st):
     return st.rsplit(".", 1)[0]
 
 
-class BlastLine(object):
-    __slots__ = ('query', 'subject', 'pctid', 'hitlen', 'nmismatch', 'ngaps', \
-                 'qstart', 'qstop', 'sstart', 'sstop', 'evalue', 'score', \
-                 'qseqid', 'sseqid', 'qi', 'si')
- 
-    def __init__(self, sline):
-        args = sline.split("\t")
-        self.query = args[0]
-        self.subject = args[1]
-        self.pctid = float(args[2])
-        self.hitlen = int(args[3])
-        self.nmismatch = int(args[4])
-        self.ngaps = int(args[5])
-        self.qstart = int(args[6])
-        self.qstop = int(args[7])
-        self.sstart = int(args[8])
-        self.sstop = int(args[9])
-        self.evalue = float(args[10])
-        self.score = float(args[11])
- 
-    def __repr__(self):
-        return "BlastLine('%s' to '%s', eval=%.3f, score=%.1f)" % \
-                (self.query, self.subject, self.evalue, self.score)
-
-    def __str__(self):
-        return "\t".join(map(str, [getattr(self, attr) \
-                for attr in BlastLine.__slots__][:-4]))
-
-
-# get the gene order given a Bed or Flat object
-get_order = lambda bed: dict((f['accn'], (i, f)) for (i, f) in enumerate(bed))
-
-
 def main(blast_file, options):
 
-    is_flat_fmt = options.qbed.endswith(".flat")
     qbed_file, sbed_file = options.qbed, options.sbed
 
     # is this a self-self blast?
@@ -93,13 +58,8 @@ def main(blast_file, options):
     cscore = options.cscore
 
     print >>sys.stderr, "read annotation files %s and %s" % (qbed_file, sbed_file)
-    if is_flat_fmt:
-        from flatfeature import Flat
-        qbed = Flat(qbed_file)
-        sbed = Flat(sbed_file)
-    else:
-        qbed = Bed(qbed_file)
-        sbed = Bed(sbed_file)
+    qbed = Bed(qbed_file)
+    sbed = Bed(sbed_file)
 
     qorder = get_order(qbed) 
     sorder = get_order(sbed) 
@@ -115,6 +75,8 @@ def main(blast_file, options):
     seen = set() 
     for b in blasts:
         query, subject = b.query, b.subject
+        #if options.strip_names:
+        #    query, subject = gene_name(query), gene_name(subject)
         if query not in qorder or subject not in sorder: continue
         qi, q = qorder[query]
         si, s = sorder[subject]
@@ -155,9 +117,9 @@ def main(blast_file, options):
             sdups_to_mother = write_localdups(sdups_fh, standems, sbed)
 
         # write out new .bed after tandem removal
-        write_new_bed(qbed, qdups_to_mother, is_flat_fmt=is_flat_fmt)
+        write_new_bed(qbed, qdups_to_mother)
         if not is_self:
-            write_new_bed(sbed, sdups_to_mother, is_flat_fmt=is_flat_fmt)
+            write_new_bed(sbed, sdups_to_mother)
         
         before_filter = len(filtered_blasts)
         filtered_blasts = list(filter_tandem(filtered_blasts, \
@@ -168,13 +130,8 @@ def main(blast_file, options):
         qnew_name = "%s.nolocaldups%s" % op.splitext(qbed.filename)
         snew_name = "%s.nolocaldups%s" % op.splitext(sbed.filename)
 
-        if is_flat_fmt:
-            from flatfeature import Flat
-            qbed_new = Flat(qnew_name)
-            sbed_new = Flat(snew_name)
-        else:
-            qbed_new = Bed(qnew_name)
-            sbed_new = Bed(snew_name)
+        qbed_new = Bed(qnew_name)
+        sbed_new = Bed(snew_name)
 
         qorder = get_order(qbed_new) 
         sorder = get_order(sbed_new) 
@@ -207,7 +164,7 @@ def write_localdups(dups_fh, tandems, bed):
     for group in tandems:
         rows = [bed[i] for i in group]
         # within the tandem groups, genes are sorted with decreasing size
-        rows.sort(key=lambda a: abs(a['end'] - a['start']), reverse=True)
+        rows.sort(key=lambda a: (-abs(a['end'] - a['start']), a['accn']))
         tandem_groups.append([row['accn'] for row in rows])
 
     dups_to_mother = {}
@@ -219,18 +176,14 @@ def write_localdups(dups_fh, tandems, bed):
     return dups_to_mother
 
 
-def write_new_bed(bed, children, is_flat_fmt=False):
+def write_new_bed(bed, children):
     # generate local dup removed annotation files
     out_name = "%s.nolocaldups%s" % op.splitext(bed.filename)
     print >>sys.stderr, "write tandem-filtered bed file %s" % out_name
     fh = open(out_name, "w")
     for i, row in enumerate(bed):
         if row['accn'] in children: continue
-        if is_flat_fmt:
-            if i == 0: print >>fh, "\t".join(Flat.names)
-            print >>fh, Flat.row_string(row)
-        else:
-            print >>fh, row
+        print >>fh, row
     fh.close()
 
 
@@ -324,9 +277,11 @@ if __name__ == "__main__":
 
     parser = optparse.OptionParser(__doc__)
     parser.add_option("--qbed", dest="qbed", 
-            help="path to qbed or qflat")
+            help="path to qbed")
     parser.add_option("--sbed", dest="sbed", 
-            help="path to sbed or sflat")
+            help="path to sbed")
+    parser.add_option("--no_strip_names", dest="strip_names", action="store_false", default=True,
+            help="do not strip alternative splicing (e.g. At5g06540.1 -> At5g06540)")
 
     filter_group = optparse.OptionGroup(parser, "BLAST filters")
     filter_group.add_option("--tandem_Nmax", dest="tandem_Nmax", type="int", default=None, 
