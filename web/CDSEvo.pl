@@ -68,6 +68,23 @@ sub gen_body
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CDSEvo.tmpl');
     my $form = $FORM;
     $template->param(INITIALIZE=>1);
+    $template->param(ACCN=>$form->param('accn')) if $form->param('accn');
+    $template->param(ANNO=>$form->param('anno')) if $form->param('anno');
+    if ( $form->param('fid'))# || $form->param('accn') || $form->param('oid') || $form->param('anno') )
+      {
+	my @fids;
+	foreach my $item ($form->param('fid') || $form->param('oid'))
+	  {
+	    push @fids, split(/::/, $item);
+	  }
+	my $res = go(
+		     fids=>\@fids,
+		     #			       accn=>$form->param('accn'),
+		     #			       anno=>$form->param('anno'),
+		     org_id=>$form->param('oid'),
+		    );
+	$template->param(RESULTS=>$res);
+      }
     my $html = $template->output;
     return $html;
   }
@@ -130,13 +147,14 @@ sub go{
   my $org_id = $opts{org_id};
   my $org_name = $opts{org_name};
   my $org_desc = $opts{org_desc};
-  my ($data, $feats) = get_features(accn=>$accn, anno=>$anno, org_id=>$org_id, org_name=>$org_name, org_desc=>$org_desc);
+  my $fids = $opts{fids};
+  my ($data, $feats) = get_features(accn=>$accn, anno=>$anno, org_id=>$org_id, org_name=>$org_name, org_desc=>$org_desc, fids=>$fids);
   return $data unless ref ($data) =~ /hash/i;
 
   my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CDSEvo.tmpl');
   $template->param(RESULTS=>1);
   my $aa_sort = CoGe::Accessory::genetic_code->sort_aa_by_gc();
-  my $table_head = "<th>".join ("<th>", "GC% (org count)", map {$_."% (".$data->{$_}{bin_count}.")" } sort keys %$data);
+  my $table_head = "<th>".join ("<th>", "GC% (org count)", map {$_."% (".$data->{$_}{bin_count}.")" } sort {$a<=>$b}keys %$data);
   $template->param(GC_HEAD=>$table_head);
   my $max_aa = 0;
   my $min_aa = 100;
@@ -153,7 +171,7 @@ sub go{
       my @row;
       next if $aa eq "*";
       push @row, "<td>$aa (GC:".sprintf("%.0f",100*$aa_sort->{$aa})."%)";
-      foreach my $bin (sort keys %$data)
+      foreach my $bin (sort {$a<=>$b} keys %$data)
 	{
 	  my $aa_val = sprintf("%.2f",100*$data->{$bin}{data}{$aa});
 	  my $rel_val = ($data->{$bin}{data}{$aa}-$min_aa) / ($max_aa-$min_aa);
@@ -177,11 +195,11 @@ sub get_features
     my $org_id = $opts{org_id};
     my $org_name = $opts{org_name};
     my $org_desc = $opts{org_desc};
-    my $fid = $opts{fid};
-    $org_name = undef if $org_name =~ /search/i;
-    $org_desc = undef if $org_desc =~ /search/i;
+    my $fids = $opts{fids};
+    $org_name = undef if $org_name && $org_name =~ /search/i;
+    $org_desc = undef if $org_desc && $org_desc =~ /search/i;
    my $weak_query = "Query needs to be better defined.";
-    if (!$accn && !$anno && !$fid)
+    if (!$accn && !$anno && !$fids)
       {
         return $weak_query unless $org_id;
       }
@@ -202,6 +220,17 @@ sub get_features
 
 
     my %feats;
+    if ($fids)
+      {
+	foreach my $fid (@$fids)
+	  {
+	    next unless $fid;
+	    my $feat = $coge->resultset('Feature')->find($fid);
+	    next unless $feat;
+	    next unless $feat->feature_type_id == 3;
+	    $feats{$feat->id} = $feat;
+	  }
+      }
     if($accn)
       {
         map {$feats{$_->feature->id}= $_->feature} $coge->resultset('FeatureName')->search($search,$join)->search_literal('MATCH(me.name) AGAINST (?)',$accn);
