@@ -168,6 +168,9 @@ function overlap_checkboxes() {
   else if (action == "fasta"){
     export_fasta_file(['args__'+accn,'args__'+pageObj.basename],[export_file]);
   }
+  else if (action == "phylo"){
+    export_fasta_file(['args__'+accn,'args__'+pageObj.basename],[export_file]);
+  }
   else if (action == "xls"){
     export_to_excel(['args__'+accn,'args__'+pageObj.basename],[export_file]);
   }
@@ -183,6 +186,9 @@ function overlap_checkboxes() {
    else if(action == "hsp"){
     export_hsp_info(['args__'+accn,'args__'+pageObj.basename],[export_file]);
   }
+  else if (action == "CDSEvo") {
+    export_CDSEvo(['args__'+accn,'args__'+pageObj.basename],[export_file]);
+   }
   else {
     alert("We will get this working ... soon.");
   }
@@ -2043,14 +2049,16 @@ $(function() {
        		    
 		    <span class='ui-button ui-button-icon-left ui-state-default ui-corner-all' onClick="$('#hsp_result_table :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
 		    <span class='ui-button ui-button-icon-left ui-state-default ui-corner-all' onClick="$('#hsp_result_table :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
-         		Do Following to Checked Features: 
+         		Send Checked Features to: 
           		<select name=overlap_action id=overlap_action>
-           		 <option value = "gevo">Send to GEvo</option>
-           		 <option value = "fasta">Create FASTA File</option>
-          		  <option value = "xls">Export to Excel</option>
-           		 <option value = "tab">Tab Deliminated</option>
-           		 <option value = "list">Get Feature List</option>
-           		 <option value = "blast">Send to CoGeBlast</option>
+           		 <option value = "gevo">GEvo</option>
+           		 <option value = "fasta">Fasta View</option>
+          		  <option value = "xls">Excel File </option>
+           		 <option value = "tab">Tab Delimited FIle</option>
+           		 <option value = "list">Feature List</option>
+           		 <option value = "blast">CoGeBlast</option>
+           		 <option value = "phylo">Phylogenetics</option>
+           		 <option value = "CDSEvo">CDS Evolution</option>
 			</select>  
                      <span class='ui-button ui-state-default ui-corner-all' onClick="overlap_checkboxes();">Go</span>
             <tr valign=top>
