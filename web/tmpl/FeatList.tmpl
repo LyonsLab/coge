@@ -79,6 +79,9 @@ function feature_checkboxes(){
   else if (action == "fasta"){
     get_fasta_seqs(['args__'+accn],[export_url]);
   }
+  else if (action == "CDSEvo"){
+    export_CDSEvo(['args__'+accn],[export_url]);
+  }
   else if (action == "xls"){
     $('#retrieve_message').html('Retrieving data');
     generate_excel_file(['args__'+accn],[export_url]);
@@ -353,6 +356,7 @@ Filter Table Rows:
     <option value = "featmap">Genome Map</option>
     <option value = "xls">Excel</option>
     <option value = "featlist">FeatList</option>
+    <option value = "CDSEvo">CDS Evolution</option>
    </select>
 <span class='ui-button ui-state-default ui-corner-all ui-button-icon-right' onclick="feature_checkboxes();"><span class="ui-icon ui-icon-extlink"></span>Go</span><span id=retrieve_message class=alert></span>  
   </div>
