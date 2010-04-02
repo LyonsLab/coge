@@ -88,7 +88,7 @@ __PACKAGE__->add_columns(
 
 __PACKAGE__->set_primary_key("dataset_id");
 __PACKAGE__->has_many("features" => "CoGeX::Feature", 'dataset_id');
-__PACKAGE__->has_many("dataset_connectors" => "CoGeX::DatasetConnector", 'dataset_id');
+__PACKAGE__->has_many("dataset_connectors" => "CoGeX::DatasetConnector", 'dataset_id', {join_type=>undef});
 __PACKAGE__->belongs_to("data_source" => "CoGeX::DataSource", 'data_source_id');
 
 
