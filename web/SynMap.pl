@@ -2038,7 +2038,7 @@ sub go
  	$post_dagchainer_file_w_nearby =~ s/aligncoords/all\.aligncoords/;
  	#add pairs that were skipped by dagchainer
 	$post_dagchainer_file_w_nearby = $post_dagchainer_file;
-# 	run_find_nearby(infile=>$post_dagchainer_file, dag_all_file=>$all_file, outfile=>$post_dagchainer_file_w_nearby);
+# 	run_find_nearby(infile=>$post_dagchainer_file, dag_all_file=>$all_file, outfile=>$post_dagchainer_file_w_nearby); #program is not working correctly.
 
 	my $t5 = new Benchmark;
 	$find_nearby_time = timestr(timediff($t5,$t4));
@@ -2204,39 +2204,55 @@ sub go
 	    $html .= "<td>";
 
 	    $dagchainer_file =~ s/$DIR/$URL/;
-	    $html .= qq{<span class='small link' onclick=window.open('$dagchainer_file')>DAGChainer output</span><br>};
+	    $html .= qq{<span class='small link' onclick=window.open('$dagchainer_file')>DAGChainer output</span>};
 	    if (-r $merged_dagchainer_file)
 	      {
 		$merged_dagchainer_file =~ s/$DIR/$URL/;
-		$html .= qq{<span class='small link' onclick=window.open('$merged_dagchainer_file')>Merged DAGChainer output</span><br>};
-	      }
-	    if (-r $post_dagchainer_file_w_nearby.".orig")
-	      {
-		$post_dagchainer_file_w_nearby =~ s/$DIR/$URL/;
-		$html .= qq{<span class='small link' onclick=window.open('$post_dagchainer_file_w_nearby.orig')>Results with nearby genes added</span><br>};
-		$html .= qq{<span class='small link' onclick=window.open('$post_dagchainer_file_w_nearby')>Results converted back to genomic coordinates</span>};
-	      }
-	    else
-	      {
-		$post_dagchainer_file_w_nearby =~ s/$DIR/$URL/;
-		$html .= qq{<span class='small link' onclick=window.open('$post_dagchainer_file_w_nearby')>Results with nearby genes added</span>};
+		$html .= qq{<br><span class='small link' onclick=window.open('$merged_dagchainer_file')>Merged DAGChainer output</span>};
 	      }
 
-#	    $dagchainer_file =~ s/$DIR/$URL/;
-#	    $html .= "<br><span class='small link' onclick=window.open('$dagchainer_file')>DAGChainer syntelog file with GEvo links</span>";
+
+#	    $final_dagchainer_file =~ s/$DIR/$URL/;
+#	    if ($final_dagchainer_file=~/gcoords/)
+#	      {
+#		$post_dagchainer_file_w_nearby =~ s/$DIR/$URL/;
+#		$html .= qq{<span class='small link' onclick=window.open('$post_dagchainer_file_w_nearby')>Results with nearby genes added</span><br>};
+#		$html .= qq{<span class='small link' onclick=window.open('$post_dagchainer_file_w_nearby')>Results converted back to genomic coordinates</span>};
+#	      }
+#	    else
+#	      {
+#		$post_dagchainer_file_w_nearby =~ s/$DIR/$URL/;
+#		$html .= qq{<span class='small link' onclick=window.open('$post_dagchainer_file_w_nearby')>Results with nearby genes added</span>};
+#	      }
+
+	    $dagchainer_file =~ s/$DIR/$URL/;
+	    $html .= "<br><span class='small link' onclick=window.open('$dagchainer_file')>DAGChainer syntelog file</span>";
 	    if ($quota_align_coverage && -r $quota_align_coverage)
 	      {
 		$quota_align_coverage =~ s/$DIR/$URL/;
 		$html .= qq{<br><span class='small link' onclick=window.open('$quota_align_coverage')>Quota Alignment output</span>};
 	      }
 
-
+	    if ($final_dagchainer_file=~/gcoords/)
+	      {
+		my $tmp= $final_dagchainer_file;
+		$tmp =~ s/$DIR/$URL/;
+		$tmp =~ s/\.gcoords//;
+		
+#		$html .= qq{<br><span class='small link' onclick=window.open('$tmp')>DAGChainer output in gene coordinates</span>};
+		$html .= qq{<br><span class='small link' onclick=window.open('$tmp.gcoords')>DAGChainer output in genomic coordinates</span>};
+#		$html .= qq{<span class='small link' onclick=window.open('$post_dagchainer_file_w_nearby')>Results converted back to genomic coordinates</span>};
+	      }
+	    
 	    if ($ks_blocks_file)
 	      {
 		$ks_blocks_file =~ s/$DIR/$URL/;
 		$html .= "<br><span class='small link' onclick=window.open('$ks_blocks_file') target=_new>Results with synonymous/nonsynonymous rate values</span>" if $ks_blocks_file;
 	      }
-	    $html .= "<br><span class='small link' onclick=window.open('$post_dagchainer_file_w_nearby.condensed')>Condensed syntelog file with GEvo links</span>";
+	    my $final_file = $final_dagchainer_file;
+	    $final_file =~ s/$DIR/$URL/;
+	    $html .= "<br><span class='small link' onclick=window.open('$final_file')>Final syntenic gene-set output with GEvo links</span>";
+	    $html .= "<br><span class='small link' onclick=window.open('$final_file.condensed')>Condensed syntelog file with GEvo links</span>" if -r "$final_dagchainer_file.condensed";
 
 	    $html .="<tr><td>";
 
