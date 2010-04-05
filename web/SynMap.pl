@@ -2519,6 +2519,7 @@ sub get_dotplot
     my $metric = $opts{am}; #axis metrix
     my $max = $opts{max};
     my $min = $opts{min};
+    my $color_type = $opts{ct};
     my $box_diags = $opts{bd};
     $box_diags = $box_diags eq "true" ? 1 : 0;
 # base=8_8.CDS-CDS.blastn.dag_geneorder_D60_g30_A5;
@@ -2532,6 +2533,7 @@ sub get_dotplot
     $src .=  ";min=$min" if defined $min;
     $src .=  ";max=$max" if defined $max;
     $src .=  ";am=$metric" if defined $metric;
+    $src .=  ";ct=$color_type" if $color_type;
     $src .= ";bd=$box_diags" if $box_diags;
     my $content = get("http://".$ENV{SERVER_NAME}."/".$src);
     
