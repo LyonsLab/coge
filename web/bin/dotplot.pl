@@ -1071,7 +1071,7 @@ sub draw_boxes
     my %opts = @_;
     my $gd = $opts{gd};
     my $boxes = $opts{boxes};
-    my $color = $gd->colorAllocate(255,200,255);
+    my $color = $gd->colorAllocate(0,0,0);
     foreach my $box (@$boxes)
       {
 	$gd->rectangle (@$box, $color);
