@@ -79,6 +79,7 @@ my $y_pix_per_bp = 1/$y_bp_per_pix;
 #Generate new graphics context and fill the background
 my $graphics_context = new GD::Image($width, $height);
 my $white = $graphics_context->colorResolve(255,255,255);
+my $black = $graphics_context->colorResolve(0,0,0);
 $graphics_context->fill(1,1,$white);
 
 
@@ -121,6 +122,7 @@ draw_dots(gd=>$graphics_context, file=>$dagfile, org1=>$org1info, org2=>$org2inf
 
 
 #color_scheme
+
 my @colors;
 if ($color_type && $color_type eq "inv")
   {
@@ -500,7 +502,6 @@ sub draw_chromosome_grid
     my $grid = $opts{grid};
     my $height = $graphics_context->height;
     my $width = $graphics_context->width;
-    my $black = $graphics_context->colorResolve(0,0,0);
     my $red = $graphics_context->colorResolve(255,0,0);
     my $span_color = $graphics_context->colorResolve(200,255,200);
     $graphics_context->line(0,0, $graphics_context->width, 0, $black);
@@ -1071,10 +1072,10 @@ sub draw_boxes
     my %opts = @_;
     my $gd = $opts{gd};
     my $boxes = $opts{boxes};
-    my $color = $gd->colorAllocate(0,0,0);
+#    my $color = $gd->colorAllocate(0,0,0);
     foreach my $box (@$boxes)
       {
-	$gd->rectangle (@$box, $color);
+	$gd->rectangle (@$box, $black);
       }
 
   }
