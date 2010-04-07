@@ -1149,8 +1149,8 @@ $(function() {
               <DIV id=db_select><SELECT id="genome_choice" SIZE="8" MULTIPLE onClick="$('#add').hide(0);$('#remove').show(0);">
               <option id=blank value=null>No Database Selected</option>
               </SELECT></DIV>
+	       <span onClick="clear_org_list();" id="clearlist" name=clearlist class='ui-button ui-button-icon-left ui-state-default ui-corner-all'><span class="ui-icon ui-icon-minusthick"></span>Clear Org List</span>
               <TMPL_IF NAME="SAVE_ORG_LIST">
- <span onClick="clear_org_list();" id="clearlist" name=clearlist class='ui-button ui-button-icon-left ui-state-default ui-corner-all'><span class="ui-icon ui-icon-minusthick"></span>Clear Org List</span>
 	      <span class='ui-button ui-button-icon-left ui-state-default ui-corner-all' onclick="save_settings_cogeblast(['args__dsgids','args__'+$('#genome_choice').getLength(1), 'args__resultslimit','resultslimit'],[])"><span class="ui-icon ui-icon-disk"></span>Save Org List</span>
               </TMPL_IF>
            </TD>
