@@ -186,8 +186,8 @@ function overlap_checkboxes() {
    else if(action == "hsp"){
     export_hsp_info(['args__'+accn,'args__'+pageObj.basename],[export_file]);
   }
-  else if (action == "CDSEvo") {
-    export_CDSEvo(['args__'+accn,'args__'+pageObj.basename],[export_file]);
+  else if (action == "CodeOn") {
+    export_CodeOn(['args__'+accn,'args__'+pageObj.basename],[export_file]);
    }
   else {
     alert("We will get this working ... soon.");
@@ -2058,7 +2058,7 @@ $(function() {
            		 <option value = "list">Feature List</option>
            		 <option value = "blast">CoGeBlast</option>
            		 <option value = "phylo">Phylogenetics</option>
-           		 <option value = "CDSEvo">CDS Evolution</option>
+           		 <option value = "CodeOn">Coding Evolution</option>
 			</select>  
                      <span class='ui-button ui-state-default ui-corner-all' onClick="overlap_checkboxes();">Go</span>
             <tr valign=top>
