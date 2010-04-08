@@ -87,6 +87,7 @@ __PACKAGE__->add_columns(
     is_nullable => 0,
     size => 255,
   },
+  "restricted",  { data_type => "int", default_value => "0", is_nullable => 0, size => 1 },
 );
 
 __PACKAGE__->set_primary_key("dataset_group_id");
