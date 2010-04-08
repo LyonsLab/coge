@@ -260,6 +260,7 @@ sub get_org_info
     my $org = $coge->resultset("Organism")->find($oid);
     return "Unable to find an organism for id: $oid\n" unless $org;
     my $html;# = qq{<div class="backbox small">};
+    $html.= "<span class=alert>Restricted Organism!  Authorized Use Only!</span><br>" if $org->restricted;
     $html .= $org->name."<br>";
     if ($org->description)
       {
@@ -270,7 +271,6 @@ sub get_org_info
 	    $html .= "<a href=/CoGe/OrganismView.pl?org_desc=$item>$item</a>;"
 	  }
       }
-    $html.= "<br><span class=alert>Restricted Organism!  Authorized Use Only!</span>" if $org->restricted;
     $html .= "<br><a href='OrganismView.pl?oid=$oid' target=_new>OrganismView link</a>";
 #    $html .= "</div>";
     return $html;
@@ -287,7 +287,11 @@ sub get_dataset_groups
       $selected{$dsgid} = "SELECTED" if $dsgid;
       if ($org)
 	{
-	  my @dsg = $org->dataset_groups;
+	  my @dsg;
+	  foreach my $dsg ($org->dataset_groups)
+	    {
+	      push @dsg, $dsg unless $USER->user_name =~ /public/i && $dsg->restricted;
+	    }
 	  foreach my $dsg (@dsg)
 	    {
 	      $dsg->name($org->name) unless $dsg->name;
@@ -319,6 +323,7 @@ sub get_dataset_group_info
     my $dsg = $coge->resultset("DatasetGroup")->find($dsgid);
     return "Unable to create dataset_group object for id: $dsgid" unless $dsg;
     my $html;# = qq{<div style="overflow:auto; max-height:78px">};
+    $html.= "<span class=alert>Restricted Genome!  Authorized Use Only!</span><br>" if $dsg->restricted;
     my $total_length;
     my @gs = sort {$a->chromosome cmp $b->chromosome} $dsg->genomic_sequences;
     my $chr_num = scalar @gs;
@@ -330,11 +335,11 @@ sub get_dataset_group_info
 	my $chr = $gs->chromosome;
 	my $length = $gs->sequence_length;
 	$total_length += $length;
-	$length = commify($length);
-	$html .= qq{$chr:  $length bp<br>};
+#	$length = commify($length);
+#	$html .= qq{$chr:  $length bp<br>};
 	$count++;
       }
-    $html = qq{<div>};
+    $html .= qq{<div>};
     $html .= "<table class='small annotation_table'>";
     $html .= qq{<tr><td>Name:</td>}.$dsg->name.qq{</td></tr>} if $dsg->name;
     $html .= qq{<tr><td>Description:</td>}.$dsg->description.qq{</td></tr>} if $dsg->description;
@@ -421,7 +426,8 @@ sub get_dataset_info
     my $ds = $coge->resultset("Dataset")->find($dsd);
     my $html = "";
     return "unable to find dataset object for id: $dsd"  unless $ds;
-    $html = "<table class=\"small annotation_table\">";
+    $html .= "<span class=alert>Restricted Dataset!  Authorized Use Only!</span><br>" if $ds->restricted;
+    $html .= "<table class=\"small annotation_table\">";
     my $dataset = $ds->name;
     $dataset .= ": ". $ds->description if $ds->description;
     $dataset = " <a href=\"".$ds->link."\" target=_new\>".$dataset."</a>" if $ds->link;
