@@ -46,13 +46,13 @@ sub gen_html
     my ($body) = gen_body();
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
     $template->param(TITLE=>'Coding Sequence Evolution');
-    $template->param(PAGE_TITLE=>'CDSEvo');
-    $template->param(HELP=>'/wiki/index.php?title=CDSEvo');
+    $template->param(PAGE_TITLE=>'CodeOn');
+    $template->param(HELP=>'/wiki/index.php?title=CodeOn');
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
     $template->param(USER=>$name);
-    $template->param(LOGO_PNG=>"CDSEvo-logo.png");
+    $template->param(LOGO_PNG=>"CodeOn-logo.png");
     $template->param(LOGON=>1) unless $USER->user_name eq "public";
     $template->param(DATE=>$DATE);
     $template->param(BOX_NAME=>'');
@@ -65,7 +65,7 @@ sub gen_html
  
 sub gen_body
   {
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CDSEvo.tmpl');
+    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CodeOn.tmpl');
     my $form = $FORM;
     $template->param(INITIALIZE=>1);
     $template->param(ACCN=>$form->param('accn')) if $form->param('accn');
@@ -151,7 +151,7 @@ sub go{
   my ($data, $feats) = get_features(accn=>$accn, anno=>$anno, org_id=>$org_id, org_name=>$org_name, org_desc=>$org_desc, fids=>$fids);
   return $data unless ref ($data) =~ /hash/i;
 
-  my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CDSEvo.tmpl');
+  my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CodeOn.tmpl');
   $template->param(RESULTS=>1);
   my $aa_sort = CoGe::Accessory::genetic_code->sort_aa_by_gc();
   my $table_head = "<th>".join ("<th>", "GC% (org count)", map {$_."% (".$data->{$_}{bin_count}.")" } sort {$a<=>$b}keys %$data);
