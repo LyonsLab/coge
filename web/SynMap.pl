@@ -292,7 +292,7 @@ sub gen_dsg_menu
     my $org_name;
     foreach my $dsg ($coge->resultset('DatasetGroup')->search({organism_id=>$oid},{prefetch=>['genomic_sequence_type']}))
       {
-#	next if $USER->user_name =~ /public/i && $dsg->organism->restricted;
+	next if $USER->user_name =~ /public/i && $dsg->restricted;
 	my $name;
 	$name .= $dsg->name.": " if $dsg->name;
 	$name .= $dsg->type->name." (v".$dsg->version.",id".$dsg->id.")";
