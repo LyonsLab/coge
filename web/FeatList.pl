@@ -47,7 +47,7 @@ my $pj = new CGI::Ajax(
 		       get_wobble_gc=>\&get_wobble_gc,
 		       save_FeatList_settings=>\&save_FeatList_settings,
 		       add_to_user_history=>\&add_to_user_history,
-		       export_CDSEvo=>\&export_CDSEvo,
+		       export_CodeOn=>\&export_CodeOn,
     );
 $pj->js_encode_function('escape');
 #my $t1 = new Benchmark;
@@ -439,12 +439,12 @@ $url =~ s/&$//;
     return $url;
   }
 
-  sub export_CDSEvo
+  sub export_CodeOn
     {
       my $accn_list = shift;
       $accn_list =~ s/^,//;
       $accn_list =~ s/,$//;
-      my $url = "CDSEvo.pl?fid=";
+      my $url = "CodeOn.pl?fid=";
       my @list;
       foreach my $accn (split /,/,$accn_list)
 	{
