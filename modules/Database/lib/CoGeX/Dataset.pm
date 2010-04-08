@@ -84,6 +84,7 @@ __PACKAGE__->add_columns(
   },
   "date",
   { data_type => "DATETIME", default_value => "", is_nullable => 0, size => 19 },
+  "restricted",  { data_type => "int", default_value => "0", is_nullable => 0, size => 1 },
 );
 
 __PACKAGE__->set_primary_key("dataset_id");
