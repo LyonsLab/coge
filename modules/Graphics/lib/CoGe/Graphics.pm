@@ -603,6 +603,21 @@ sub process_features
 	    $f->no_3D(1) if $layers->{features}{flat};
 	    push @f, $f;
           }
+        elsif (($layers->{features}{transposable} || $layers->{all}) && $feat->type->name =~ /transposable/i)
+          {
+	    my $f = CoGe::Graphics::Feature::Gene->new();
+	    $f->color([200,0,100]);
+	    foreach my $loc ($feat->locs)
+	      {
+		$f->add_segment(start=>$loc->start, stop=>$loc->stop);
+		$f->strand($loc->strand);
+	      }
+	    $f->order(1);
+	    $f->overlay(1);
+	    $f->mag(0.75);
+	    $f->no_3D(1) if $layers->{features}{flat};
+	    push @f, $f;
+          }
 	elsif (($layers->{features}{gevo_link} || $layers->{all}))
           {
 	    #next unless $coge->resultset('Annotation')->count({feature_id=>$feat->id, annotation_type_id=>$gevo_link_type->id});
@@ -916,6 +931,8 @@ sub process_layers
        "repeat"=>"repeat",
        "repeat_region"=>"repeat",
        "gevo_link"=>"gevo_link",
+       "TE"=>"transposable",
+       "transposable"=>"transposable",
       );
     my %features = 
       (
@@ -936,6 +953,7 @@ sub process_layers
        "overlap_check"=>1,
        "repeat"=>1,
        "gevo_link"=>1,
+       "transposable"=>1,
       );
     #determine of nt sequence is needed
     my %nt = 
