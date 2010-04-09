@@ -3426,7 +3426,7 @@ sub dataset_search
     $accn =~ s/^\s+// if $accn;
     $accn =~ s/\s+$// if $accn;
 
-#    print STDERR Dumper \%opts;
+    print STDERR Dumper \%opts;
     my $feat = $coge->resultset('Feature')->find($featid) if $featid;
     $dsid = $feat->dataset->id if $feat;
     my $html;
@@ -3463,6 +3463,13 @@ sub dataset_search
 		my $title = "$ds_name ($sname, v$ver)";
 		next if $USER->user_name =~ /public/i && $ds->organism->restricted;
 		next if $sources{$ds->id} && $sources{$ds->id}{typeid} < $typeid;
+		if ($dsgid && ! $dsid)
+		  {
+		    foreach my $item ($ds->dataset_groups)
+		      {
+			$dsid = $ds->id if $dsgid == $item->id;
+		      }
+		  }
 		$sources{$ds->id} = {
 				     title=>$title,
 				     version=>$ver,
@@ -3483,7 +3490,7 @@ sub dataset_search
  	  {
  	    my $val = $sources{$id}{title};
  	    $html  .= qq{  <option value="$id"};
-	    $html .= qq{ selected } if $dsid && $id == $dsid;
+	    $html .= qq{ selected } if ($dsid && $id == $dsid);
 	    $html .= qq{>$val\n};
  	  }
  	$html .= qq{</SELECT>\n};
