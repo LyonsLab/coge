@@ -32,6 +32,7 @@ BEGIN {
 "sequence",#store the sequence
 "color_by_codon",#flag for coloring CDS by codon
 "codon_limit",#number of codons to evaluate (5')
+"alignment",
 );
 }
 
