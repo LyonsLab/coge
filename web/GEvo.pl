@@ -3033,7 +3033,7 @@ sub merge_previous #shabari:for parsing GEvo and tiny urls
 sub parse_url #shabari:for parsing GEvo and tiny urls
 {
     my $url=shift;
-    $url =getlongurl($url) if ($url=~/.*tinyurl.*/);
+    $url =getlongurl($url) if ($url=~/.*tinyurl.*/ || $url =~ /\/r\//);
     my ($numseqs) = $url=~/num_seqs\=(\d+)/;
     my @array=&makeurlarray($numseqs,$url);
     return ($numseqs,\@array);
