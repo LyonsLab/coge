@@ -34,7 +34,7 @@ sub print_sequence
     my $seq;
     foreach my $item (@$chrs)
       {
-	my ($dsgid, $chr) = split/_/, $item->{chr};
+	my ($dsgid, $chr) = split/_/, $item->{chr},2;
 	$dsgid =~ s/^\D//;
 	my $dsg = $dsg{$dsgid};
 	$dsg = $coge->resultset('DatasetGroup')->find($dsgid) unless $dsg;
@@ -90,7 +90,6 @@ sub parse_syn_blocks
     close IN;
     $/="\n";
     #which organism has more pieces (aka chromosomes, contigs, etc.)  we are going to assemble the one with more pieces
-#    print Dumper \@blocks;
     my $chrs1={};
     my $chrs2={};
     foreach my $item (@$blocks1)
