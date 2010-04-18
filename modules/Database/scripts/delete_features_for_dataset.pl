@@ -3,7 +3,7 @@ use strict;
 use Getopt::Long;
 use CoGeX;
 
-my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
+my $connstr = 'dbi:mysql:dbname=coge;host=biocon;port=3306';
 my$coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
