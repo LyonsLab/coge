@@ -501,7 +501,7 @@ sub resolve : ResultSet {
     my $self = shift;
     my $info = shift;
     return $info if ref($info) =~ /Dataset/i;
-    return $self->find($info) if $info =~ /^\d+$/;
+    return $self->find($info) if $info && $info =~ /^\d+$/;
     return $self->search({ 'name' => { '-like' => '%' . $info . '%'}},
 			 ,{});
   }
@@ -572,7 +572,6 @@ sub get_chromosomes
 							  {
 							   join=>"feature_type",
 
-#							   as=>"chromosome",
 							  },
 							 );
 	  }

@@ -121,7 +121,7 @@ sub get_locs {
             my $type = $g->feature_type->name;
             my $start = $g->start;
             my $end = $g->stop;
-            print "$type,$start,$end,$strand,$chr,$gene_name\n";
+            print "$chr,$type,$start,$end,$strand,$gene_name\n";
         }
     }
 }

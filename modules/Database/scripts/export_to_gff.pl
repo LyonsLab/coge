@@ -35,7 +35,10 @@ Options:
 #;
   }
 
-$coge = CoGeX->dbconnect();
+#$coge = CoGeX->dbconnect();
+my $connstr = 'dbi:mysql:coge:homer:3306';
+$coge = CoGeX->connect($connstr, 'cnssys', 'CnS');
+
 
 # gt sketch -seqid 1 -addintrons yes -start 1000 -style default.style -force -end 70000  out.png grape.gff3
 

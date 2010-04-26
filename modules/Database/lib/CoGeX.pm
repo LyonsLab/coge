@@ -12,7 +12,7 @@ $VERSION = 0.01;
 use base 'DBIx::Class::Schema';
 use base qw(Class::Accessor);
 
-__PACKAGE__->load_classes;
+__PACKAGE__->load_classes();
 __PACKAGE__->mk_accessors(qw(db_connection_string db_name db_passwd));
 
 

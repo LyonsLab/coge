@@ -219,6 +219,59 @@ See Also   :
 
 ################################################## subroutine header end ##
 
+sub get_seq
+  {
+    my $self = shift;
+    my %opts = @_;
+
+    # maybe make this part into a separte method?
+    # get_file_for_chr() ?
+    my $file = $self->file_path;
+    $file =~ s/\/[^\/]*\.faa$//;
+    my $chr = $opts{chr} || $opts{chromosome}; # chr 
+    $file .= "/chr/$chr";
+
+    my $IN = $opts{file_handle};
+
+
+    my $close = 1;
+    if ($IN){
+        $close = 0; # dont close if they sent in a reference.
+    }
+    else {
+        unless (-r $file) {
+            warn "$file does not exist for get_seq to extract sequence\n";
+            return "error retrieving sequence.  $file does not exist or is not available for reading.\n";
+        }
+        open($IN, $file);
+    }
+
+
+    my $debug = $opts{debug};
+    my $start = $opts{start};
+    my $stop = $opts{stop} || $opts{end};
+    my $strand = $opts{strand};
+    $strand  = 1 unless defined $strand;
+    ($start, $stop) = ($stop, $start) if $start && $stop && $start > $stop;
+    my $seq;
+
+    if ($start && $stop)
+      {
+	seek($IN, $start-1, 0);
+	read($IN, $seq, $stop-$start+1);
+      }
+    else
+      {
+	$seq = <$IN>;
+      }
+
+    if($close){
+        close ($IN);
+    }
+
+    $seq = $self->reverse_complement($seq) if $strand =~ /-/;
+    return $seq;
+  }
 
 sub get_seq
   {
