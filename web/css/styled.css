@@ -1,6 +1,5 @@
 BODY { 
   font-family: Arial, Geneva, Times, fixed;
-  color: #000099;
   background: #FFFFFF;
 }
 
@@ -133,23 +132,19 @@ a:hover {
 .xsmall { 
   font-family: fixed;
   font-size: x-small;
-  color: #009900;
 }
 
 .small { 
   font-family: fixed;
   font-size: small;
-  color: #000099;
 }
 
 .medium { 
   font-size: medium;
-  color: #009900;
 }
 
 .large { 
   font-size: large;
-  color: #009900;
 }
 
 .error { 
@@ -164,19 +159,16 @@ a:hover {
 
 .ital { 
   font-style: italic;
-  color: #000099;
 }
 
 .oblique { 
   font-style: oblique;
-  color: #009900;
 }
 
 .oblique_bold { 
   font-style: oblique;
   font-weight: bold;
   font-size: large;
-  color: #009900;
 }
 
 .annotation { 
@@ -189,7 +181,6 @@ a:hover {
 .backbox {
  color: #000099;
  background: #F7FFF7; 
- border:2px solid #CCFFCC;
 }
 
 .seqbackbox
