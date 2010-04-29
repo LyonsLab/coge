@@ -21,7 +21,7 @@ use DBI;
 
 $ENV{PATH} = "/opt/apache2/CoGe:/opt/apache2/CoGe/bin:/opt/apache2/CoGe/bin/SynMap";
 umask(0);
-use vars qw( $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $FORMATDB $BLAST $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $TANDEM_FINDER $RUN_DAGCHAINER $EVAL_ADJUST $FIND_NEARBY $DOTPLOT $NWALIGN $QUOTA_ALIGN $CLUSTER_UTILS $BLAST2RAW $BASE_URL $BLAST2BED);
+use vars qw( $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $FORMATDB $BLAST $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $PYTHON26 $TANDEM_FINDER $RUN_DAGCHAINER $EVAL_ADJUST $FIND_NEARBY $DOTPLOT $NWALIGN $QUOTA_ALIGN $CLUSTER_UTILS $BLAST2RAW $BASE_URL $BLAST2BED $SYNTENY_SCORE);
 
 
 $DEBUG = 0;
@@ -36,6 +36,7 @@ $FASTADIR = $DATADIR.'/fasta/';
 $BLASTDBDIR = $DATADIR.'/blast/db/';
 $MAX_PROC=8;
 $PYTHON = "/usr/bin/python2.5";
+$PYTHON26 = "/usr/local/bin/python";
 $DAG_TOOL = $DIR."/bin/SynMap/dag_tools.py";
 $BLAST2BED = $DIR."/bin/SynMap/blast2bed.pl";
 $TANDEM_FINDER = $DIR."/bin/dagchainer/tandems.py -d 5 -s -r"; #-d option is the distance (in genes) between dups -- not sure if the -s and -r options are needed -- they create dups files based on the input file name
@@ -49,6 +50,8 @@ $FIND_NEARBY = $DIR."/bin/dagchainer_bp/dagtools/find_nearby.py -d 20"; #the par
 $QUOTA_ALIGN = $DIR."/bin/quota-alignment/quota_align.py"; #the program
 $CLUSTER_UTILS = $DIR."/bin/quota-alignment/cluster_utils.py"; #convert dag output to quota_align input
 $BLAST2RAW = $DIR."/bin/quota-alignment/scripts/blast_to_raw.py"; #find local duplicates
+$SYNTENY_SCORE = $DIR."/bin/quota-alignment/scripts/synteny_score.py";
+
 $DOTPLOT = $DIR."/bin/dotplot.pl";
 
 #$CONVERT_TO_GENE_ORDER = $DIR."/bin/SynMap/convert_to_gene_order.pl";
@@ -86,7 +89,7 @@ sub gen_html
     my ($body) = gen_body();
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
     $template->param(PAGE_TITLE=>'SynMap');
-    $template->param(TITLE=>'SynMap: Whole Genome Syntenic Dotplots');
+    $template->param(TITLE=>'Whole Genome Syntenic Dotplots');
     $template->param(HEAD=>qq{});
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
@@ -737,6 +740,29 @@ sub run_blast2raw
     `$cmd`;
     return $outfile;
   }
+
+sub run_synteny_score
+   {
+     my %opts = @_;
+     my $blastfile = $opts{blastfile};
+     my $bedfile1 = $opts{bedfile1};
+     my $bedfile2 = $opts{bedfile2};
+     my $outfile = $opts{outfile};
+
+     my $window_size = 40;
+     my $cutoff = .1;
+     my $scoring_function = "collinear";
+     
+     $outfile .= "_".$window_size."_".$cutoff."_".$scoring_function.".db";
+     return $outfile if -r $outfile && -s $outfile;
+     my $cmd = $SYNTENY_SCORE ." $blastfile --qbed $bedfile1 --sbed $bedfile2 --window $window_size --cutoff $cutoff --scoring $scoring_function --sqlite $outfile";
+     
+     write_log("Synteny Score:  running $cmd", $cogeweb->logfile);
+     system("$PYTHON26 $cmd &");
+     return $outfile;
+#python /opt/apache/CoGe/bin/quota-alignment/scripts/synteny_score.py 3068_8.CDS-CDS.blastn.blast.filtered --qbed 3068_8.blastn.blast.q.bed --sbed 3068_8.CDS-CDS.blastn.blast.s.bed --sqlite 3068_8.CDS-CDS.db --window $window_size --cutoff $cutoff
+   }
+
 
 sub process_local_dups_file
   {
@@ -1567,7 +1593,7 @@ sub add_GEvo_links
 	    my $count =2;
 	    foreach my $id2 (sort keys %{$condensed{$id1}})
 	      {
-		my ($fid2, $dsgid2) = split/_/, $id2;
+		my ($fid2, $dsgid2) = split/_/, $id2,2;
 		$link .= ";fid$count=$fid2;dsgid$count=$dsgid2";
 		push @names, $names{$fid2};
 		$count++;
@@ -1986,7 +2012,7 @@ sub go
     blast2bed(infile=>$raw_blastfile, outfile1=>$bedfile1, outfile2=>$bedfile2);
     my $filtered_blastfile = $raw_blastfile.".filtered";
     run_blast2raw(blastfile=>$raw_blastfile, bedfile1=>$bedfile1, bedfile2=>$bedfile2, outfile=>$filtered_blastfile);
-
+    my $synteny_score_db = run_synteny_score (blastfile=>$filtered_blastfile, bedfile1=>$bedfile1, bedfile2=>$bedfile2, outfile=>$org_dirs{$orgkey1."_".$orgkey2}{dir}."/".$dsgid1."_".$dsgid2.".$feat_type1-$feat_type2");
     my $local_dup_time = timestr(timediff($t2,$t1));
 
     
@@ -2110,7 +2136,7 @@ sub go
  	if (-r "$out.html")
  	  {
 	    $html .= qq{
-<div class="ui-widget-content" id="synmap_zoom_box">
+<div class="ui-widget-content ui-corner-all" id="synmap_zoom_box" style="float:left">
  Zoomed SynMap:
  <table class=small>
  <tr>
@@ -2125,6 +2151,7 @@ sub go
  <td>Max: <input class="backbox" type=text name=zoom_max id=zoom_max size=6 value="">
  </table>
 </div>
+<div style="clear: both;"> </div>
  };
 
 	    $/="\n";
@@ -2153,7 +2180,7 @@ sub go
 };
 	    $html .= "<span class='small'>Axis metrics are in $axis_metric</span><br>";
  	    $html .= "<br><span class='small link' onclick=window.open('$out.png')>Image File</span><br>";
-	    $html .= "<div class='small link onclick=window.open('$out.hist.png')>Histogram of $ks_type values.<br><img src='$out.hist.png'></div>" if -r $hist;
+	    $html .= "<div class='small link ui-widget-content ui-corner-all' style='float:left' onclick=window.open('$out.hist.png')>Histogram of $ks_type values.<br><img src='$out.hist.png'></div><div style='clear: both;'> </div>" if -r $hist;
 
 	    my $log = $cogeweb->logfile;
 	    $log =~ s/$DIR/$URL/;
@@ -2162,7 +2189,7 @@ sub go
 
 
 	    $html .= "Links and Downloads:";
-	    $html .= qq{<table class="small backbox">};
+	    $html .= qq{<table class="small ui-widget-content ui-corner-all">};
 	    $html .= qq{<TR valign=top><td>Homolog search<td>Diagonals<td>Results};
 	    $html .= qq{<tr valign=top><td>};
 #	    $html .= qq{<span class='small link' onclick=window.open('')></span>};
@@ -2269,7 +2296,7 @@ sub go
 		$html .= qq
 		  {
 <br>
-<span class="ui-button ui-state-default ui-corner-all" id = "grimm_link" onclick="post_to_grimm('$seq1','$seq2')" > Rearrangement Analysis</span> <a class="small" href=http://grimm.ucsd.edu/GRIMM/index.html target=_new>(Powered by GRIMM!)</a>
+<span class="ui-button ui-corner-all" id = "grimm_link" onclick="post_to_grimm('$seq1','$seq2')" > Rearrangement Analysis</span> <a class="small" href=http://grimm.ucsd.edu/GRIMM/index.html target=_new>(Powered by GRIMM!)</a>
 };
 	      }
 
