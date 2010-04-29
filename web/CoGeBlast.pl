@@ -105,7 +105,7 @@ sub gen_html
      {
     my ($body) = gen_body();
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
-    $template->param(TITLE=>'CoGe BLAST Analysis');
+#    $template->param(TITLE=>'CoGe BLAST Analysis');
     $template->param(PAGE_TITLE=>'BLAST');
     $template->param(HELP=>'/wiki/index.php?title=CoGeBlast');
     my $name = $USER->user_name;
@@ -724,7 +724,7 @@ sub gen_results_page
      $template->param(NULLIFY=>$null) if $null;
      my $hsp_limit_flag =0;
      my $hsp_count;
-     $hsp_count .= qq{<table class="small resultborder"><tr><th>Query Seq<th>}.join "<th>", sort keys %hsp_count;
+     $hsp_count .= qq{<table class="small ui-widget-content ui-corner-all"><tr><th>Query Seq<th>}.join "<th>", sort keys %hsp_count;
      my $class = "even";
      foreach my $query (sort keys %query_hit_count)
        {
