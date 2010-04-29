@@ -55,7 +55,7 @@ sub gen_html
     my $welcome = "Welcome to CoGe!&nbsp&nbsp&nbsp";
     unless ($update)
       {
-      	$welcome .= "<span class='species small'>Organisms: ";
+      	$welcome .= "<span class='small'>Organisms: ";
 	$welcome .= commify($coge->resultset('Organism')->count());
 	$welcome .= "&nbsp&nbsp&nbsp&nbsp   Genomes: ";
 	$welcome .= commify($coge->resultset('DatasetGroup')->count());
@@ -86,7 +86,7 @@ sub gen_body
       }
     elsif ($USER && !$FORM->param('logout') && !$FORM->param('login'))
       {
-	$tmpl->param(ACTIONS=>[map {{ACTION=>$_->{ACTION}, DESC=>$_->{DESC}}} sort {$a->{ID} <=> $b->{ID}}@{actions()}  ]);
+	$tmpl->param(ACTIONS=>[map {{ACTION=>$_->{NAME}, DESC=>$_->{DESC}, LINK=>$_->{LINK}}} sort {$a->{ID} <=> $b->{ID}}@{actions()}  ]);
 	$tmpl->param('INTRO'=>1);
 	$tmpl->param('NSF'=>1);
       }
@@ -115,15 +115,19 @@ sub actions
 		    ID=>5,
 		    LOGO=>qq{<a href="./GEvo.pl"><img src="/CoGe/picts/carousel/GEvo-logo.png" width="227" height="75" border="0"></a>},
 		    ACTION=>qq{<a href="./GEvo.pl">GEvo</a>},
+		    LINK=>qq{./GEvo.pl},
 		    DESC => qq{Compare sequences and genomic regions to discover patterns of genome evolution.  <a href ="GEvo.pl?prog=blastz;accn1=at1g07300;fid1=4091274;dsid1=556;chr1=1;dr1up=20000;dr1down=20000;gbstart1=1;gblength1=772;accn2=at2g29640;fid2=4113333;dsid2=557;chr2=2;dr2up=20000;dr2down=20000;gbstart2=1;rev2=1;num_seqs=2;autogo=1" target=_new>Example.</a>},
 		    SCREENSHOT=>qq{<a href="./GEvo.pl"><img src="/CoGe/picts/preview/GEvo.png"border="0"></a>},
+		    NAME=>"GEvo: High-resolution sequence analysis of genomic regions",
 		   },
 		   {
 		    ID=>3,
 		    LOGO=>qq{<a href="./FeatView.pl"><img src="/CoGe/picts/carousel/FeatView-logo.png" width="227" height="75" border="0"></a>},
 		    ACTION=>qq{<a href="./FeatView.pl">FeatView</a>},
+		    LINK=>qq{./FeatView.pl},
 		    DESC => qq{Find and display information about a genomic feature (e.g. gene). <a href = "FeatView.pl?accn=at1g07300" target=_new>Example.</a>},
 		    SCREENSHOT=>qq{<a href="./FeatView.pl"><img src="/CoGe/picts/preview/FeatView.png" width="400" height="241" border="0"></a>},
+		    NAME=>qq{FeatView: Searching for genomic features by name},
 		   },
 # 		   {
 # 		    ID=>3,
@@ -143,15 +147,19 @@ sub actions
 		    ID=>1,
 		    LOGO => qq{<a href="./OrganismView.pl"><img src="/CoGe/picts/carousel/OrganismView-logo.png" width="227" height="75" border="0"></a>},
 		    ACTION => qq{<a href="./OrganismView.pl">OrganismView</a>},
+		    LINK=>qq{./OrganismView.pl},
 		    DESC   => qq{Search for organisms, get an overview of their genomic make-up, and visualize them using a dynamic, interactive genome browser. <a href="OrganismView.pl?org_name=k12" target=_new>Example.</a>},
 		    SCREENSHOT => qq{<img src="/CoGe/picts/preview/OrganismView.png" border="0"></a>},
+		    NAME=>qq{OrganismView:  Search for organisms and perform analyses on their genomes },
 		   },
 		   {
 		    ID => 2,
 		    LOGO => qq{<a href="./CoGeBlast.pl"><img src="/CoGe/picts/carousel/CoGeBlast-logo.png" width="227" height="75" border="0"></a>},
 		    ACTION => qq{<a href="./CoGeBlast.pl">CoGeBlast</a>},
+		    LINK=>qq{./CoGeBlast.pl},
 		    DESC   => qq{Blast sequences against any number of organisms in CoGe.},
 		    SCREENSHOT => qq{<a href="./CoGeBlast.pl"><img src="/CoGe/picts/preview/Blast.png" width="400" height="241" border="0"></a>},
+		    NAME=>qq{CoGeBlast:  Blast sequences against any number of genomes of your choosing},
 		   },
 # 		   {
 # 		    ID => 7,
@@ -164,8 +172,10 @@ sub actions
 		    ID=>4,
 		    LOGO=>qq{<a href="./SynMap.pl"><img src="/CoGe/picts/SynMap-logo.png"  border="0"></a>},
 		    ACTION=>qq{<a href="./SynMap.pl">SynMap</a>},
+		    LINK=>qq{./SynMap.pl},
 		    DESC => qq{Compare any two genomes to identify regions of synteny.  <a href="SynMap.pl?dsgid1=3068;dsgid2=8;D=20;g=10;A=5;w=0;b=1;ft1=1;ft2=1;dt=geneorder;ks=1;autogo=1" target=_mew>Example.</a>  <span class=small>(Powered by <a href=http://dagchainer.sourceforge.net/ target=_new>DAGChainer</a></span>)},
 		    SCREENSHOT=>qq{<a href="./SynMap.pl"><img src="/CoGe/picts/preview/SynMap.png" border="0" width="400" height="320"></a>},
+		    NAME=>qq{SynMap:  Whole genome syntenic dotplot anlayses},
 		   },
 
 		  );
