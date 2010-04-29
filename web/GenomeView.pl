@@ -38,14 +38,14 @@ sub gen_html
     my $html; #=  "Content-Type: text/html\n\n";
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
     $template->param(LOGO_PNG=>"GenomeView-logo.png");
-    $template->param(TITLE=>'Genome Viewer');
+#    $template->param(TITLE=>'Genome Viewer');
     $template->param(PAGE_TITLE=>'Genome Viewer');
     $template->param(HELP=>'/wiki/index.php?title=GenomeView');
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
     $template->param(USER=>$name);
-    $template->param(BOX_WIDTH=>"100%");
+#    $template->param(BOX_WIDTH=>"100%");
     $template->param(LOGON=>1) unless $USER->user_name eq "public";
     $template->param(DATE=>$DATE);
     my ($body, $org_name) = gen_body();
@@ -197,21 +197,9 @@ sub gen_body
     my $org_name = "<span class=link onclick=window.open('OrganismView.pl?dsgid=$dsgid')>$org (v$ver),";
     $org_name .= " ".$dsg->name if $dsg->name;
     $org_name .= ": ".$dsg->description if $dsg->description;
-    $org_name.= " Chromosome: $chr ".$gst->name." (dsgid$dsgid dsid$dsid</span>)";
+    $org_name.= " Chromosome: $chr ".$gst->name." (dsgid$dsgid dsid$dsid)</span>";
     return $html, $org_name;
   }
-
-sub generate_box_name
-{
-  my $form = shift || $FORM;
-  my $ds = $form->param('ds');
-  my $chr = $form->param('chr');
-  my $dso = $coge->resultset('Dataset')->find($ds);
-  my $org = $dso->organism->name;
-  my $ver = $dso->version;
-  my $title = "$org (v $ver), Chromosome: $chr, Dataset ID No. $ds";
-  return $title;
-}
 
 sub grab_sequence
   {
