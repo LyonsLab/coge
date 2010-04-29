@@ -52,9 +52,10 @@ sub gen_html
        my $form = $FORM;
        my $prot = $form->param('prot');
        my $text = $form->param('text');
+       my $name_only = $form->param('no');
        my $textbox = $text ? 0 : 1;
        my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
-       $template->param(TITLE=>'Fasta Viewer');
+#       $template->param(TITLE=>'Fasta Viewer');
        $template->param(PAGE_TITLE=>'FastaView');
        $template->param(HELP=>'/wiki/index.php?title=FastaView');
        my $name = $USER->user_name;
@@ -70,7 +71,8 @@ sub gen_html
        push @fids, $form->param('featid') if $form->param('featid');
        push @fids, $form->param('fid') if $form->param('fid');
        my $gstid = $form->param('gstid') if $form->param('gstid');
-       my $seqs = get_seqs(prot=>$prot, fids=>\@fids, textbox=>$textbox, gstid=>$gstid);
+
+       my $seqs = get_seqs(prot=>$prot, fids=>\@fids, textbox=>$textbox, gstid=>$gstid, name_only=>$name_only);
        if ($text)
 	 {
 	   return  $seqs;
@@ -106,7 +108,7 @@ sub get_seqs
 	next unless $feat;
 	$seqs .= $feat->fasta(col=>80, prot=>$prot, name_only=>$name_only, gstid=>$gstidt);
       }
-    $seqs = qq{<textarea id=seq_text name=seq_text class=backbox ondblclick="this.select();" style="height: 400px; width: 750px; overflow: auto;">$seqs</textarea>} if $textbox;
+    $seqs = qq{<textarea id=seq_text name=seq_text class="ui-widget-content ui-corner-all backbox" ondblclick="this.select();" style="height: 400px; width: 750px; overflow: auto;">$seqs</textarea>} if $textbox;
     return $seqs;
   }
 
