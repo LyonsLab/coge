@@ -368,19 +368,19 @@ sub get_anno
 	my $ds = $feat->dataset->id;
 	my $x = $feat->start;
 	my $z = 4;
-	$anno .= qq{<span class="ui-button ui-state-default ui-corner-all" onClick="window.open('FastaView.pl?featid=$featid&gstid=$gstid');">Get Sequence</span>};
-	$anno .= qq{<span class="ui-button ui-state-default ui-corner-all" onClick="window.open('CoGeBlast.pl?featid=$featid;gstid=$gstid');">CoGeBlast</span>};
-	$anno .= qq{<span class="ui-button ui-state-default ui-corner-all" onClick="window.open('GenomeView.pl?chr=$chr&ds=$ds&x=$x&z=$z;gstid=$gstid');">Genome Browser</span>};
+	$anno .= qq{<span class="ui-button ui-corner-all" onClick="window.open('FastaView.pl?featid=$featid&gstid=$gstid');">Get Sequence</span>};
+	$anno .= qq{<span class="ui-button ui-corner-all" onClick="window.open('CoGeBlast.pl?featid=$featid;gstid=$gstid');">CoGeBlast</span>};
+	$anno .= qq{<span class="ui-button ui-corner-all" onClick="window.open('GenomeView.pl?chr=$chr&ds=$ds&x=$x&z=$z;gstid=$gstid');">Genome Browser</span>};
 #	$anno .= qq{<DIV id="exp$i"><input type="button" value = "Click for expression tree" onClick="gen_data(['args__Generating expression view image'],['exp$i']);show_express(['args__}.$accn.qq{','args__}.'1'.qq{','args__}.$i.qq{'],['exp$i']);"></DIV>};
-	$anno .= qq{<span class="ui-button ui-state-default ui-corner-all" onClick="update_featlist(['args__accn', 'args__$accn','args__type', 'args__$type','args__fid', 'args__$featid', 'args__gstid','args__$gstid'],[add_to_featlist]);\$('#feat_list').dialog('option', 'width', 500).dialog('open');">Add to list</span></DIV>} if $accn;
+	$anno .= qq{<span class="ui-button ui-corner-all" onClick="update_featlist(['args__accn', 'args__$accn','args__type', 'args__$type','args__fid', 'args__$featid', 'args__gstid','args__$gstid'],[add_to_featlist]);\$('#feat_list').dialog('option', 'width', 500).dialog('open');">Add to list</span></DIV>} if $accn;
 
 	$anno .= join "\n<BR><HR><BR>\n", $feat->annotation_pretty_print_html( gstid=>$gstid);
 	if ($feat->type->name eq "CDS")
 	  {
 	    $anno .= "<br>";
-	    $anno .= qq{<span class="ui-button ui-state-default ui-corner-all" onClick="codon_table(['args__featid','args__$featid', 'args__gstid','args__$gstid'],['codon_table']); \$('#codon_table').dialog('option', 'width', 600).dialog('open');">Codon Usage</span>};
-	      $anno .= qq{<span class="ui-button ui-state-default ui-corner-all" onClick="protein_table(['args__featid','args__$featid', 'args__gstid','args__$gstid'],['aa_table']);\$('#aa_table').dialog('open');">Amino Acid Usage</span>};
-	    $anno .= qq{<span class="ui-button ui-state-default ui-corner-all"  onClick="codon_aa_alignment(['args__featid','args__$featid', 'args__gstid','args__$gstid'],['codon_aa_alignment']); \$('#codon_aa_alignment').dialog('option', 'width', 650).dialog('open');">Codon/AA alignment</span>};
+	    $anno .= qq{<span class="ui-button ui-corner-all" onClick="codon_table(['args__featid','args__$featid', 'args__gstid','args__$gstid'],['codon_table']); \$('#codon_table').dialog('option', 'width', 600).dialog('open');">Codon Usage</span>};
+	      $anno .= qq{<span class="ui-button ui-corner-all" onClick="protein_table(['args__featid','args__$featid', 'args__gstid','args__$gstid'],['aa_table']);\$('#aa_table').dialog('open');">Amino Acid Usage</span>};
+	    $anno .= qq{<span class="ui-button ui-corner-all"  onClick="codon_aa_alignment(['args__featid','args__$featid', 'args__gstid','args__$gstid'],['codon_aa_alignment']); \$('#codon_aa_alignment').dialog('option', 'width', 650).dialog('open');">Codon/AA alignment</span>};
 	  }
 	$anno.="<br><hr>";
       }
@@ -416,7 +416,7 @@ sub gen_html
       {
 	my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
 	$template->param(LOGO_PNG=>"FeatView-logo.png");
-	$template->param(TITLE=>'Feature Viewer');
+#$template->param(TITLE=>'Feature Viewer');
 	$template->param(PAGE_TITLE=>'FeatView');
 	$template->param(HELP=>"/wiki/index.php?title=FeatView");
 	my $name = $USER->user_name;
@@ -426,7 +426,7 @@ sub gen_html
 
 	$template->param(LOGON=>1) unless $USER->user_name eq "public";
 	$template->param(DATE=>$DATE);
-	$template->param(bOX_NAME=>"Feature Selection");
+	$template->param(BOX_NAME=>"Feature Selection");
         my $body = gen_body();
 	$template->param(BODY=>$body);
 #	$template->param(ADJUST_BOX=>1);
