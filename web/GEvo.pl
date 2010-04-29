@@ -475,8 +475,6 @@ sub run
     for (my $i = 1; $i <= num_colors($num_seqs); $i++)
       {
 	my $rgb = $opts{"rgb$i"};
-#	my $g = $opts{"g$i"};
-#	my $b = $opts{"b$i"};
 	my @tmp;
 	my ($r,$g,$b) = $rgb =~ /^rgb\(\s*(\d{1,3}),\s*(\d{1,3}),\s*(\d{1,3})\)$/;
 	foreach my $color ($r, $g, $b)
@@ -488,14 +486,24 @@ sub run
 	  }
 	push @hsp_colors,\@tmp;
       }
-
-
-
 #    my $stagger_label = $hsp_label && $hsp_label =~ /staggered/i ? 1 : 0;
 #    my $feature_labels = !$hsp_label ? 0 : 1;
     my $form = $FORM;
     my $gevo_link = $form->url."?prog=$analysis_program";
+    $gevo_link .= ";show_cns=1" if $show_cns;
+    $gevo_link .= ";show_gene_space=1" if $show_gene_space;
+    $gevo_link .= ";show_contigs=1" if $show_contigs;
+    $gevo_link .= ";iw=$iw";
+    $gevo_link .= ";fh=$feat_h";
+    $gevo_link .= ";padding=$padding";
+    $gevo_link .= ";gc=$show_gc" if $show_gc;
+    $gevo_link .= ";color_hsp=1" if $color_hsp;
+    $gevo_link .= ";colorfeat=1" if $color_overlapped_features;
+    $gevo_link .= ";nt=$show_nt";
+    $gevo_link .= ";cbc=$show_cbc";
     $gevo_link .= ";spike_len=$spike_len";
+    $gevo_link .= ";skip_feat_overlap=$skip_feat_overlap_search";
+    $gevo_link .= ";skip_hsp_overlap=$skip_hsp_overlap_search";
     my @gevo_link_seqs;
     my @coge_seqs; #place to store stuff for parallel creation of sequence file from genome database
     my @sets;
@@ -865,20 +873,20 @@ sub run
     my $gobe_buttons= qq{
 <table>
 <tr>
-<td><span class='ui-button ui-state-default ui-corner-all' id="clear_lines" onclick="Gobe.clear()">Clear Connectors</span>
+<td><span class='ui-button ui-corner-all' id="clear_lines" onclick="Gobe.clear()">Clear Connectors</span>
 
-<td><span class='ui-button ui-state-default ui-corner-all drawline' id="set_lines" onclick="\$('.drawline').hide();\$('#set_wedges').show();\$('.lineopt').show();Gobe.set_connector('line')">Set connector as Lines</span>
+<td><span class='ui-button ui-corner-all drawline' id="set_lines" onclick="\$('.drawline').hide();\$('#set_wedges').show();\$('.lineopt').show();Gobe.set_connector('line')">Set connector as Lines</span>
 
-<span style="display: none" class='ui-button ui-state-default ui-corner-all lineopt' id="set_wedges" onclick="\$('.drawline').show();\$('.lineopt').hide();Gobe.set_connector('wedge')">Set connector as Wedges</span>
+<span style="display: none" class='ui-button ui-corner-all lineopt' id="set_wedges" onclick="\$('.drawline').show();\$('.lineopt').hide();Gobe.set_connector('wedge')">Set connector as Wedges</span>
 
 <td><div class=lineopt style="float: left; display: none">
- <span class='ui-button ui-state-default ui-corner-all' id="">Line Width</span>
+ <span class='ui-button ui-corner-all' id="">Line Width</span>
  <input type=textbox size=2 class="backbox line_width" id=line_width_val value=3 readonly>
- <span class='ui-button ui-state-default ui-corner-all' id="" onclick="update_line_width(1)">+</span>
- <span class='ui-button ui-state-default ui-corner-all' id="" onclick="update_line_width(-1)">-</span>
+ <span class='ui-button ui-corner-all' id="" onclick="update_line_width(1)">+</span>
+ <span class='ui-button ui-corner-all' id="" onclick="update_line_width(-1)">-</span>
 </div>
 };
-    $gobe_buttons .=qq{<td><a href="javascript:void(0);" id="history_dialog_button" class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onClick="save_GEvo_results()"><span class="ui-icon ui-icon-newwin"></span>Save Results</a>} unless $USER->user_name eq 'public';
+    $gobe_buttons .=qq{<td><a href="javascript:void(0);" id="history_dialog_button" class='ui-button ui-corner-all ui-button-icon-left' onClick="save_GEvo_results()"><span class="ui-icon ui-icon-newwin"></span>Save Results</a>} unless $USER->user_name eq 'public';
     $gobe_buttons .= "</table>";
     $html .= $gobe_buttons;
     $html .= qq{<DIV id=flashcontent></DIV>};
@@ -1354,6 +1362,15 @@ sub process_features
 	    $f->overlay(1);
 	    $f->mag(0.5);
           }
+        if ($type =~ /gene prediction/i)
+          {
+	    next unless $draw_model eq "full";
+	    $f = CoGe::Graphics::Feature::Gene->new();
+	    $f->color([50,50,255,100]);
+	    $f->order($track);
+	    $f->overlay(1);
+	    $f->mag(1);
+          }
 
         elsif ($type =~ /Gene$/i)
           {
@@ -1473,18 +1490,27 @@ sub process_features
 	  }
 	elsif ($show_cns && $type =~ /cns/i)
 	  {
-	    $f = CoGe::Graphics::Feature::HSP->new({start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1]});
-	    $f->color([204,0,204]);
+	    my $strand = 1;
+	    $strand = -1 if $feat->location =~ /complement/;
+
+	    $f = CoGe::Graphics::Feature::HSP->new({start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1], strand=>$strand});
+	    if ($strand == 1)
+	      {
+		$f->color([99,0,99]);
+	      }
+	    else 
+	      {
+		$f->color([0,99,99]);
+	      }
 
 	    my $order = 1;
-	    $order = 0 if $feat->location =~ /complement/;
+#	    $order = 0 if $feat->location =~ /complement/;
 
 	    $f->order($order);
-	    $f->overlay(-1);
+	    $f->overlay(10);
 	    $f->type($type);
-	    #$f->force_draw(1);
+	    $f->force_draw(1);
 	    $f->description($feat->annotation);
-#	    $f->alignment($feat->alignment);
 	    $c->add_feature($f);
 	    next;
 	  }
@@ -1542,6 +1568,7 @@ sub process_features
 	$f->color([255,0,255]) if $color_overlapped_features && $feat->qualifiers->{overlapped_hsp};
 	my $strand = 1;
  	$strand = -1 if $feat->location =~ /complement/;
+	$strand = $f->strand if $f->strand;
 	if (ref($f) =~ /Gene/)
 	  {
 	    foreach my $block (@{$feat->blocks})
@@ -1849,12 +1876,26 @@ sub find_hsp_info #sub for retrieving hsp info when there is no query informatio
     my $hsp = $opts{hsp};
     my $start = $opts{start}; #genomic region start position
     my $stop = $opts{stop}; #genomic region stop position
+    my $rev = $opts{rev};  #do we need to conver for a reverse complement?
     if ($hsp->query_name =~ /fid:(\d+)/) #we have a feature id in the query name -- HSP was generated by a feature sequence and not a genomic region!
       {
 	my $fid = $1;
 	my $feat = $coge->resultset('Feature')->find($fid);
-	$hsp->query_start($feat->start-$start+1);
-	$hsp->query_stop($feat->stop-$start+1);
+	my ($new_start, $new_stop);
+	if ($rev)
+	  {
+	    $new_start = ($stop-$start+1)-($feat->start-$start+1);
+	    $new_stop = ($stop-$start+1)-($feat->stop-$start+1);
+	    print STDERR ($new_stop, "\t",$new_start,"\n");
+	    $hsp->strand($hsp->strand*-1); #need to switch strands of HSP is sequence is reverse complemented
+	  }
+	else
+	  {
+	    $new_start = $feat->start-$start+1;
+	    $new_stop = $feat->stop-$start+1;
+	  }
+	$hsp->query_start($new_start);
+	$hsp->query_stop($new_stop);
       }
   }
 
@@ -2125,7 +2166,6 @@ sub get_obj_from_genome_db
 	my $prot_file = $seq_file.".prot";
 	my $tmp;
 	($tmp, $prot_file) = check_taint($prot_file);
-
 	open (OUT, ">$prot_file");
 	print OUT $prot_sequence if $prot_sequence;
 	close OUT;
@@ -2605,7 +2645,7 @@ sub run_genomethreader
 		  {
 		    if ($hsp->query_name =~ /fid/)
 		      {
-			find_hsp_info(hsp=>$hsp, start=>$sets->[$i]->{obj}->start, stop=>$sets->[$i]->{obj}->stop);
+			find_hsp_info(hsp=>$hsp, start=>$sets->[$i]->{obj}->start, stop=>$sets->[$i]->{obj}->stop, rev => $sets->[$i]->{rev});
 		      }
 		  }
 	    
@@ -3035,6 +3075,7 @@ sub parse_url #shabari:for parsing GEvo and tiny urls
     my $url=shift;
     $url =getlongurl($url) if ($url=~/.*tinyurl.*/ || $url =~ /\/r\//);
     my ($numseqs) = $url=~/num_seqs\=(\d+)/;
+
     my @array=&makeurlarray($numseqs,$url);
     return ($numseqs,\@array);
 }
@@ -3426,7 +3467,6 @@ sub dataset_search
     $accn =~ s/^\s+// if $accn;
     $accn =~ s/\s+$// if $accn;
 
-    print STDERR Dumper \%opts;
     my $feat = $coge->resultset('Feature')->find($featid) if $featid;
     $dsid = $feat->dataset->id if $feat;
     my $html;
