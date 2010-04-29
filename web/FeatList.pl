@@ -28,7 +28,7 @@ $FORM = new CGI;
 $coge = CoGeX->dbconnect();
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
-
+print STDERR Dumper \%ENV;
 my $pj = new CGI::Ajax(
 		       gen_html=>\&gen_html,
 		       gevo=>\&gevo,
@@ -70,7 +70,7 @@ sub gen_html
      {
        my ($body) = gen_body();
        my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
-       $template->param(TITLE=>'Feature List Viewer');
+#       $template->param(TITLE=>'Feature List Viewer');
        $template->param(PAGE_TITLE=>'FeatList');
        $template->param(HELP=>'/wiki/index.php?title=FeatList');
        # print STDERR "user is: ",$USER,"\n";
@@ -82,7 +82,10 @@ sub gen_html
        $template->param(LOGO_PNG=>"FeatList-logo.png");
        $template->param(LOGON=>1) unless $USER->user_name eq "public";
        $template->param(DATE=>$DATE);
-       $template->param(BOX_NAME=>'Feature List:');
+       my $list_name = $FORM->param('list_name') || $FORM->param('ln');
+       my $box_name = "Feature List:";
+       $box_name .= " $list_name" if $list_name;
+       $template->param(BOX_NAME=>$box_name);
        $template->param(BODY=>$body);
        $template->param(ADJUST_BOX=>1);
        $html .= $template->output;
@@ -168,19 +171,20 @@ sub gen_body
 sub add_to_user_history
   {
     my %opts = @_;
+    my $url = $ENV{'REQUEST_URI'};
     if ($opts{archive})
       {
 	$USER->add_to_works({
 			     'name'=>$opts{work_name},
 			     'archive'=>$opts{archive},
 	    'page'=>$PAGE_NAME,
-	    'parameter'=>$opts{url},
+	    'parameter'=>$url,
 	    'description'=>$opts{description},
 	    'note'=>$opts{note},
 	    }); 
       }
     else{
-      my $url = $ENV{'REQUEST_URI'};
+      
       $USER->add_to_works({
 			   'name'=>'FeatList-'.$DATE,
 			   'archive'=>0,
