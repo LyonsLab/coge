@@ -56,7 +56,7 @@ sub gen_html
     my $pro;
     my ($title) = gen_title(protein=>$pro, rc=>$rc);
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
-    $template->param(TITLE=>'Sequence Viewer');
+#    $template->param(TITLE=>'Sequence Viewer');
     $template->param(PAGE_TITLE=>'SeqView');
     $template->param(HELP=>'/wiki/index.php?title=SeqView');
     my $name = $USER->user_name;
@@ -118,8 +118,8 @@ sub gen_body
       $template->param(FEAT_STOP=>$feat->stop);
       $template->param(FEATID=>$featid);
       $template->param(FEATNAME=>$feat_name);
-#      $template->param(FEAT_INFO=>qq{<span class='ui-button ui-state-default ui-corner-all' onClick="generate_feat_info(['args__$featid'],[display_feat_info]); ">Get Feature Info</span>});
-      $template->param(FEAT_INFO=>qq{<span class='ui-button ui-state-default ui-corner-all' onClick="generate_feat_info(['args__$featid'],['feature_info']); \$('#feature_info').dialog('open');">Get Feature Info</span>});
+#      $template->param(FEAT_INFO=>qq{<span class='ui-button ui-corner-all' onClick="generate_feat_info(['args__$featid'],[display_feat_info]); ">Get Feature Info</span>});
+      $template->param(FEAT_INFO=>qq{<span class='ui-button ui-corner-all' onClick="generate_feat_info(['args__$featid'],['feature_info']); \$('#feature_info').dialog('open');">Get Feature Info</span>});
       $template->param(PROTEIN=>'Protein Sequence');
       $template->param(SIXFRAME=>0);
       $template->param(UPSTREAM=>"Add 5': ");
@@ -163,7 +163,7 @@ sub gen_body
 
     $template->param(FEATLISTLINK=>$link);
     $template->param(FEAT_TYPE_LIST=>$types);
-    $template->param(GC_INFO=>qq{<td valign=top><span class='ui-button ui-state-default ui-corner-all'  onClick="generate_gc_info(['seq_text','args__'+myObj.pro],[display_gc_info],'POST')">Calculate GC Content</span>});
+    $template->param(GC_INFO=>qq{<td valign=top><span class='ui-button ui-corner-all'  onClick="generate_gc_info(['seq_text','args__'+myObj.pro],[display_gc_info],'POST')">Calculate GC Content</span>});
     my $html = $template->output;
     return $html;
   }
@@ -365,7 +365,7 @@ sub find_feats
 	    $dsid = $dsg->datasets(chr=>$chr)->id;
 	    $gstid = $dsg->type->id;
 	  }
-	my $link = qq{<span class='ui-button ui-state-default ui-corner-all' " onClick="featlist('FeatList.pl?};
+	my $link = qq{<span class='ui-button ui-corner-all' " onClick="featlist('FeatList.pl?};
 	my %type;
 	$link .="start=$start;stop=$stop;chr=$chr;dsid=$dsid;gstid=$gstid".qq{')">Extract Features: <span>};
 	foreach my $ft ($coge->resultset('FeatureType')->search(
