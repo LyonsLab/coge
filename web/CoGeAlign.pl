@@ -312,12 +312,12 @@ sub run
     my $tree = create_tree_image($phylip_file);
     $html .= qq{
 <br>
-<span style="display:none" id=show_tree class='ui-button ui-state-default ui-corner-all' onClick="\$('#hide_tree').show();\$('#show_tree').hide();\$('#tree_box').show();">Show Tree</span>
-<span id=hide_tree class='ui-button ui-state-default ui-corner-all' onClick="\$('#hide_tree').hide();\$('#show_tree').show();\$('#tree_box').hide();">Hide Tree</span>
+<span style="display:none" id=show_tree class='ui-button ui-corner-all' onClick="\$('#hide_tree').show();\$('#show_tree').hide();\$('#tree_box').show();">Show Tree</span>
+<span id=hide_tree class='ui-button ui-corner-all' onClick="\$('#hide_tree').hide();\$('#show_tree').show();\$('#tree_box').hide();">Hide Tree</span>
 };
     
     $html .= "<div id=tree_box>";
-    $html .= qq{<span class='ui-button ui-state-default ui-corner-all ' onclick="\$('#select_feats').dialog('open')">Open Feature Selection Box</span><br>} if keys %$name_conversion;
+    $html .= qq{<span class='ui-button ui-corner-all ' onclick="\$('#select_feats').dialog('open')">Open Feature Selection Box</span><br>} if keys %$name_conversion;
     $html .= "<img src=$tree></div>";
     #let's make a series of checkboxes to send sequence to featlist if possible
     if (keys %$name_conversion)
@@ -341,8 +341,8 @@ sub run
 
     $html .= qq{
 <br>
-<span style="display:none" id=show_alignment class='ui-button ui-state-default ui-corner-all' onClick="\$('#hide_alignment').show();\$('#show_alignment').hide();\$('#alignment_box').show();">Show Alignment</span>
-<span  id=hide_alignment class='ui-button ui-state-default ui-corner-all' onClick="\$('#hide_alignment').hide();\$('#show_alignment').show();\$('#alignment_box').hide();">Hide Alignment</span>
+<span style="display:none" id=show_alignment class='ui-button ui-corner-all' onClick="\$('#hide_alignment').show();\$('#show_alignment').hide();\$('#alignment_box').show();">Show Alignment</span>
+<span  id=hide_alignment class='ui-button ui-corner-all' onClick="\$('#hide_alignment').hide();\$('#show_alignment').show();\$('#alignment_box').hide();">Hide Alignment</span>
 };
     $html .= qq{<div id=alignment_box align=left class=resultborder "><br/>
 <table><tr valign=top>
@@ -352,16 +352,16 @@ sub run
 </div>};
     $html .= qq{
 <br>
-<span id=show_clustalw_alignment class='ui-button ui-state-default ui-corner-all' onClick="\$('#hide_clustalw_alignment').show();\$('#show_clustalw_alignment').hide();\$('#clustalw_alignment_box').show();">Show ClustalW Alignment</span>
-<span  style="display:none" id=hide_clustalw_alignment class='ui-button ui-state-default ui-corner-all' onClick="\$('#hide_clustalw_alignment').hide();\$('#show_clustalw_alignment').show();\$('#clustalw_alignment_box').hide();">Hide ClustalW Alignment</span>
+<span id=show_clustalw_alignment class='ui-button ui-corner-all' onClick="\$('#hide_clustalw_alignment').show();\$('#show_clustalw_alignment').hide();\$('#clustalw_alignment_box').show();">Show ClustalW Alignment</span>
+<span  style="display:none" id=hide_clustalw_alignment class='ui-button ui-corner-all' onClick="\$('#hide_clustalw_alignment').hide();\$('#show_clustalw_alignment').show();\$('#clustalw_alignment_box').hide();">Hide ClustalW Alignment</span>
 };
 
     $html .= qq{<div id=clustalw_alignment_box align=left class=resultborder style="display:none;overflow:auto;width:700px;max-height:700px;"><br/><pre>$clustal_alignment</pre></div>};
 
     $html .= qq{
 <br>
-<span id=show_fasta_alignment class='ui-button ui-state-default ui-corner-all' onClick="\$('#hide_fasta_alignment').show();\$('#show_fasta_alignment').hide();\$('#fasta_alignment_box').show();">Show Fasta Alignment</span>
-<span  style="display:none" id=hide_fasta_alignment class='ui-button ui-state-default ui-corner-all' onClick="\$('#hide_fasta_alignment').hide();\$('#show_fasta_alignment').show();\$('#fasta_alignment_box').hide();">Hide Fasta Alignment</span>
+<span id=show_fasta_alignment class='ui-button ui-corner-all' onClick="\$('#hide_fasta_alignment').show();\$('#show_fasta_alignment').hide();\$('#fasta_alignment_box').show();">Show Fasta Alignment</span>
+<span  style="display:none" id=hide_fasta_alignment class='ui-button ui-corner-all' onClick="\$('#hide_fasta_alignment').hide();\$('#show_fasta_alignment').show();\$('#fasta_alignment_box').hide();">Hide Fasta Alignment</span>
 };
 
     my $fasta;
@@ -383,8 +383,8 @@ sub run
     {
     $html .= qq{
 <br>
-<span id=show_matrix class='ui-button ui-state-default ui-corner-all' onClick="\$('#hide_matrix').show();\$('#show_matrix').hide();\$('#matrix_box').show();">Show Scoring Matrix</span>
-<span  style="display:none" id=hide_matrix class='ui-button ui-state-default ui-corner-all' onClick="\$('#hide_matrix').hide();\$('#show_matrix').show();\$('#matrix_box').hide();">Hide Scoring Matrix</span>
+<span id=show_matrix class='ui-button ui-corner-all' onClick="\$('#hide_matrix').show();\$('#show_matrix').hide();\$('#matrix_box').show();">Show Scoring Matrix</span>
+<span  style="display:none" id=hide_matrix class='ui-button ui-corner-all' onClick="\$('#hide_matrix').hide();\$('#show_matrix').show();\$('#matrix_box').hide();">Hide Scoring Matrix</span>
 <div id="matrix_box" style="display:none" >
 <span class="small">(Using the method describe in Henikoff and Henikoff, 1992)</span>
 };
