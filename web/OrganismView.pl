@@ -105,7 +105,7 @@ sub gen_html
       {
 	my ($body, $seq_names, $seqs) = gen_body();
 	my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
-	$template->param(TITLE=>'Organism Overview');
+#	$template->param(TITLE=>'Organism Overview');
 	$template->param(PAGE_TITLE=>'OrgView');
 	$template->param(HEAD=>qq{});
 	$template->param(HELP=>"/wiki/index.php?title=OrganismView");
@@ -193,7 +193,7 @@ sub get_recent_orgs
 	return $html;
       }
 
-    $html .= qq{<SELECT id="recent_org_id" SIZE="5" MULTIPLE onChange="recent_dataset_chain()" >\n};
+    $html .= qq{<SELECT class="ui-widget-content ui-corner-all" id="recent_org_id" SIZE="5" MULTIPLE onChange="recent_dataset_chain()" >\n};
     $html .= join ("\n", @opts);
     $html .= "\n</SELECT>\n";
     $html =~ s/OPTION/OPTION SELECTED/;
@@ -245,7 +245,7 @@ sub get_orgs
 	return $html,0;
       }
 
-    $html .= qq{<SELECT id="org_id" SIZE="5" MULTIPLE onChange="get_org_info_chain()" >\n};
+    $html .= qq{<SELECT class="ui-widget-content ui-corner-all" id="org_id" SIZE="5" MULTIPLE onChange="get_org_info_chain()" >\n};
     $html .= join ("\n", @opts);
     $html .= "\n</SELECT>\n";
     $html =~ s/OPTION/OPTION SELECTED/ unless $html =~ /SELECTED/;
@@ -303,7 +303,7 @@ sub get_dataset_groups
       if (@opts) 
       {
 #	$html = qq{<FONT CLASS ="small">Dataset group count: }.scalar (@opts).qq{</FONT>\n<BR>\n};
-	$html .= qq{<SELECT id="dsg_id" SIZE="5" MULTIPLE onChange="get_dataset_group_info(['args__dsgid','dsg_id'],[dataset_chain]);" >\n};
+	$html .= qq{<SELECT class="ui-widget-content ui-corner-all" id="dsg_id" SIZE="5" MULTIPLE onChange="get_dataset_group_info(['args__dsgid','dsg_id'],[dataset_chain]);" >\n};
 	$html .= join ("\n", @opts);
 	$html .= "\n</SELECT>\n";
 	$html =~ s/OPTION/OPTION SELECTED/ unless $html =~ /SELECTED/i;
@@ -406,7 +406,7 @@ sub get_dataset
       }
     if (@opts) 
       {
-	$html .= qq{<SELECT id="ds_id" SIZE="5" MULTIPLE onChange="dataset_info_chain()" >\n};
+	$html .= qq{<SELECT class="ui-widget-content ui-corner-all" id="ds_id" SIZE="5" MULTIPLE onChange="dataset_info_chain()" >\n};
 	$html .= join ("\n", @opts);
 	$html .= "\n</SELECT>\n";
 	$html =~ s/OPTION/OPTION SELECTED/ unless $dsid;
@@ -463,7 +463,7 @@ sub get_dataset_info
 	my $size = scalar @chr;
 	$size = 5 if $size > 5;
 	my $select;
-	$select .= qq{<SELECT id="chr" size =$size onChange="dataset_chr_info_chain()" >\n};
+	$select .= qq{<SELECT class="ui-widget-content ui-corner-all" id="chr" size =$size onChange="dataset_chr_info_chain()" >\n};
 	if (scalar @chr > 1000)
 	  {
 	    my @tmp = @chr[0..999];
@@ -520,7 +520,7 @@ sub get_dataset_chr_info
     $gc = $gc ? $gc : qq{<div style="float: left; text-indent: 1em;" id=chromosome_gc class="link" onclick="\$('#chromosome_gc').removeClass('link'); get_gc_for_chromosome(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['chromosome_gc']);">Click for percent GC content</div>};
     $length = commify($length)." bp ";
     $html .= qq{
-<tr><td class = oblique>Specifics for chromosome $chr:
+<tr><td>Specifics for chromosome $chr:
 <tr><td>Nucleotides:<td>$length<td>$gc
 };
 
@@ -536,26 +536,27 @@ sub get_dataset_chr_info
     my $viewer;
     if (defined $chr)
      {
-	$viewer .= "<font class=\"oblique\">Genome Viewer</font><br>";
-	$viewer .= "<table class=\"small backbox\">";
-	$viewer .= "<tr><td nowrap class = \"ital\">Starting location: ";
+	$viewer .= "<font>Genome Viewer</font><br>";
+	$viewer .= "<table class=\"small ui-corner-all ui-widget-content\">";
+	$viewer .= "<tr><td nowrap>Starting location: ";
 	$viewer .= qq{<td><input type="text" size=10 value="20000" id="x">};
-	$viewer .= qq{<tr><td class = "ital">Zoom level:<td><input type = "text" size=10 value ="6" id = "z">};
+	$viewer .= qq{<tr><td >Zoom level:<td><input type = "text" size=10 value ="6" id = "z">};
+	$viewer .= qq{<tr><td colspan=2><span style="font-size:1em" class='ui-button ui-button-icon-left ui-corner-all' onClick="launch_viewer('$dsgid', '$chr')"><span class="ui-icon ui-icon-newwin"></span>Launch Genome Viewer</span>};
 	$viewer .= "</table>";
-	$viewer .= qq{<span class='ui-button ui-button-icon-left ui-state-default ui-corner-all' onClick="launch_viewer('$dsgid', '$chr')"><span class="ui-icon ui-icon-newwin"></span>Launch Genome Viewer</span>};
+
       }
     my $seq_grab;
     if (defined $chr)
       {
-	$seq_grab .= qq{<font class="oblique">Genomic Sequence Retrieval</font><br>};
-	$seq_grab .= qq{<table class=\"small backbox\">};
-	$seq_grab .= "<tr><td class = \"ital\">Start position: ";
+	$seq_grab .= qq{<font>Genomic Sequence Retrieval</font><br>};
+	$seq_grab .= qq{<table class=\"small ui-corner-all ui-widget-content\">};
+	$seq_grab .= "<tr><td>Start position: ";
 	$seq_grab .= qq{<td><input type="text" size=10 value="1" id="start">};
-	$seq_grab .= "<tr><td class = \"ital\">End position: ";
+	$seq_grab .= "<tr><td>End position: ";
 	$seq_grab .= qq{<td><input type="text" size=10 value="100000" id="stop">};
+	$seq_grab .= qq{<tr><td colspan=2><span style="font-size:1em" class='ui-button ui-button-icon-left ui-corner-all' onClick="launch_seqview('$dsgid', '$chr','$dsid')"><span class="ui-icon ui-icon-newwin"></span>Get Sequence</span>};
 	$seq_grab .= qq{</table>};
-	$seq_grab .= qq{<span class='ui-button ui-button-icon-left ui-state-default ui-corner-all' onClick="launch_seqview('$dsgid', '$chr','$dsid')"><span class="ui-icon ui-icon-newwin"></span>Get Sequence</span>};
-	$seq_grab .= qq{<div id="gseq"></div>};
+
       }
     return $html, $viewer, $seq_grab;
   }
@@ -621,10 +622,11 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
     $gc_args .= "typeid: ";
     my $feat_list_string = $dsid ? "dsid=$dsid" : "dsgid=$dsgid";
     $feat_list_string .= ";chr=$chr" if defined $chr;
-    my $feat_string .= qq{<div class=oblique>Features for $name</div>};
-    $feat_string .= qq{<table class = " backbox small">};
+    my $feat_string .= qq{<div>Features for $name</div>};
+    $feat_string .= qq{<div class = " ui-corner-all ui-widget-content small">};
+    $feat_string .= qq{<table class=small>};
     $feat_string .= "<tr valign=top>". join ("\n<tr valign=top>",map {
-      "<td valign=top><div id=$_  >".$feats->{$_}{name}."</div>".
+      "<td valign=top><div id=$_  >".$feats->{$_}{name}." (ftid".$feats->{$_}{id}.")</div>".
 	    "<td valign=top>".$feats->{$_}{count}.
 	      "<td><div id=".$_."_type class=\"link small\" 
   onclick=\"
@@ -660,6 +662,7 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
         "Click for amino acid usage table"."</div>";
 
       }
+    $feat_string ."</div>";
     $feat_string .= "None" unless keys %$feats;
     return $feat_string;
   }
