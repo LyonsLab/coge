@@ -154,9 +154,9 @@ sub view_all_work
 		     # WORK_ARCH=>$archive,#Disabled until Archive issue resolved
 		       WORK_TOOL=>$tool,
 		       WORK_ID=>$work->id,
-		       WORK_VIEW=>qq{<a href='javascript:void(0)' title='View Work' onClick="get_work_entry('}.$work->id.qq{');" class='ui-button ui-state-default ui-button-icon-solo ui-corner-all'><span class='ui-icon ui-icon-info'></span></a>},
-		       WORK_EDIT=>qq{<a href='javascript:void(0)' title='Edit Work' onClick="edit_work_entry(}.$work->id.qq{);" class='ui-button ui-state-default ui-button-icon-solo ui-corner-all'><span class='ui-icon ui-icon-pencil'></span></a>},
-		       WORK_DELETE=>qq{<a href='javascript:void(0)' title='Delete Work' onClick="delete_work_entry(}.$work->id.qq{)" class='ui-button ui-state-default ui-button-icon-solo ui-corner-all'><span class='ui-icon ui-icon-trash'></span></a>},
+		       WORK_VIEW=>qq{<a href='javascript:void(0)' title='View Work' onClick="get_work_entry('}.$work->id.qq{');" class='ui-button ui-button-icon-solo ui-corner-all'><span class='ui-icon ui-icon-info'></span></a>},
+		       WORK_EDIT=>qq{<a href='javascript:void(0)' title='Edit Work' onClick="edit_work_entry(}.$work->id.qq{);" class='ui-button ui-button-icon-solo ui-corner-all'><span class='ui-icon ui-icon-pencil'></span></a>},
+		       WORK_DELETE=>qq{<a href='javascript:void(0)' title='Delete Work' onClick="delete_work_entry(}.$work->id.qq{)" class='ui-button ui-button-icon-solo ui-corner-all'><span class='ui-icon ui-icon-trash'></span></a>},
 		      });
 	$count++;
     }
@@ -181,7 +181,7 @@ sub view_work_entry
     $template->param(WORK_NAME=>$work->name);
     $template->param(WORK_ID=>$work->id);
     $template->param(WORK_DESC=>$work->description);
-    $template->param(WORK_PARAM=>$work->parameter);
+    $template->param(WORK_PARAM=>$work->parameter.";ln=".$work->name);
     $template->param(WORK_APP=>$app);
 
     my $note = $work->note;
