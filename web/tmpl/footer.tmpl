@@ -1,9 +1,20 @@
 <br>
 <HR>
 <DIV>
-<font class = "small">Currently logged in as: <TMPL_VAR NAME=USER> </font><font class="xsmall"><TMPL_VAR NAME=DATE> <a href=index.pl?logout=1 id=logout style="display:none">Log Out</a></font>
+<TMPL_IF NAME=LOGON>
+	<span class=small>Currently logged in as, <TMPL_VAR NAME=USER>  <a href="/CoGe/index.pl?logout=1" class="small">Sign-out</a></span>
+	<TMPL_ELSE>
+	 <a href="javascript:void(0)" onClick=sign_in() class="small">Sign-in</a>
+	</TMPL_IF>
+    </span>
+<br><span class="xsmall">Date: <TMPL_VAR NAME=DATE> </span>
+
 </DIV>
+
+
 <font class = "small"><span style="color: red;">Warning:</span>  This site uses <a href="http://en.wikipedia.org/wiki/Ajax_(programming)">AJAX</a>.  Don't press your browser's back button!</font>
+
+
 <script type="text/javascript">
 var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
 document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));

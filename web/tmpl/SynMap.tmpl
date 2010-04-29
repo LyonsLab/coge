@@ -469,7 +469,7 @@ function post_to_grimm(seq1, seq2)
  }
 
 </script>
-<table class=backbox><tr><td>
+<table class="ui-widget-content ui-corner-all"><tr><td>
 <DIV id=log_text class="small dna" style="display:none"></DIV>
 <DIV id=results><TMPL_IF NAME=RESULTS><TMPL_VAR NAME=RESULTS><TMPL_ELSE>
 <div style="clear: both;"> </div>
@@ -488,9 +488,9 @@ function post_to_grimm(seq1, seq2)
 </table>
 
 
-<span style="font-size: 1em" class="ui-button ui-state-default ui-corner-all" id="synmap_go" onClick="jQuery('html, body').animate({scrollTop: 0}, 2000); reset_basename();generate_basefile([],[update_basename]);run_synmap();" >Generate SynMap</span>
+<span style="font-size: 1em" class="ui-button ui-button-go ui-corner-all" id="synmap_go" onClick="jQuery('html, body').animate({scrollTop: 0}, 2000); reset_basename();generate_basefile([],[update_basename]);run_synmap();" >Generate SynMap</span>
 
-<span style="font-size: 1em" class='ui-button ui-state-default ui-corner-all' onClick="$('#results').html('');" >Clear Results</span>
+<span style="font-size: 0.8em" class='ui-button ui-corner-all' onClick="$('#results').html('');" >Clear Results</span>
 
 <div id=tabs style='margin-top: 0.5em'>
 
@@ -511,7 +511,7 @@ function post_to_grimm(seq1, seq2)
 
 <div id="tab-2">
 
-<table id=algo_table  class="options">
+<table id=algo_table  class="options ui-corner-all ui-widget-content">
  <tr>
    <td style="color:#009900">Blast Algorithm:
    <td><select id="blast" name="blast">
@@ -603,7 +603,7 @@ function post_to_grimm(seq1, seq2)
 </div> <!-- close tab-2 -->
 
 <div id="tab-3">
-<table class="options">
+<table class="options ui-widget-content ui-corner-all">
  <TR>
    <TD>Regenerate dotplot images?
    <input type=checkbox name="regen_images" id="regen_images">
@@ -641,15 +641,15 @@ function post_to_grimm(seq1, seq2)
 		
 		<font id=email_error class="small" style="display: none; color: red;">You have supplied an invalid e-mail address.</font></div>
 		<tr><td><div class=email_box style="display:none;">Job Title:
-		<td><input type=text id=jobtitle> <span class='ui-button ui-state-default ui-corner-all' onClick="fill_jobtitle()">Use Org Names</span></div>
+		<td><input type=text id=jobtitle> <span class='ui-button ui-corner-all' onClick="fill_jobtitle()">Use Org Names</span></div>
 		</table>
 
 </TABLE>
 </div> <!-- close tab-3 -->
 </div> <!--close tabs div-->
 Previously run parameters: 
-<span id="hide_previous" class='show_prev_button ui-button ui-state-default ui-corner-all' onClick="$('.previous_analyses').toggle(); $('.show_prev_button').toggle();">Hide</span>
-<span id="show_previous" style="display:none" class='show_prev_button ui-button ui-state-default ui-corner-all' onClick="$('.previous_analyses').toggle(); $('.show_prev_button').toggle();">Show</span>
+<span id="hide_previous" class='show_prev_button ui-button ui-corner-all' onClick="$('.previous_analyses').toggle(); $('.show_prev_button').toggle();">Hide</span>
+<span id="show_previous" style="display:none" class='show_prev_button ui-button ui-corner-all' onClick="$('.previous_analyses').toggle(); $('.show_prev_button').toggle();">Show</span>
 <div class="small previous_analyses">(Clicking on row automatically selects and sets SynMap genomes and parameters.)</div>
 <div id=previous_analyses class="previous_analyses"></div>
 
@@ -657,10 +657,10 @@ Previously run parameters:
 
 <TMPL_IF NAME=ORG_MENU>
 <td>
-<div class="ui-widget-content resizable" style="float: left; padding: 0.3em">
-<DIV class = "oblique">Organism <TMPL_VAR NAME="NUM"> Search: </DIV>
-   <DIV><span class=small>Name: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_NAME">" name = "org_name<TMPL_VAR NAME="NUM">" id="org_name<TMPL_VAR NAME="NUM">" style="font-style:italic" onFocus="search_bar('org_name<TMPL_VAR NAME="NUM">')" onKeyUp='timing("org_name<TMPL_VAR NAME="NUM">");'><span><span class='ui-button ui-state-default ui-corner-all' onClick="timing('org_name<TMPL_VAR NAME="NUM">');"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
-   Description: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_DESC">" name = "org_desc<TMPL_VAR NAME="NUM">" id="org_desc<TMPL_VAR NAME="NUM">" style="font-style:italic" onFocus="search_bar('org_desc<TMPL_VAR NAME="NUM">')" onKeyUp='timing("org_desc<TMPL_VAR NAME="NUM">");'><span class='ui-button ui-state-default ui-corner-all' onClick="timing('org_desc<TMPL_VAR NAME="NUM">');"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
+<div class="ui-widget-content ui-corner-all resizable" style="float: left; padding: 0.3em">
+<DIV>Organism <TMPL_VAR NAME="NUM"> Search: </DIV>
+   <DIV><span class=small>Name: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_NAME">" name = "org_name<TMPL_VAR NAME="NUM">" id="org_name<TMPL_VAR NAME="NUM">" style="font-style:italic" onFocus="search_bar('org_name<TMPL_VAR NAME="NUM">')" onKeyUp='timing("org_name<TMPL_VAR NAME="NUM">");'><span><span class='ui-button ui-corner-all' onClick="timing('org_name<TMPL_VAR NAME="NUM">');"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
+   Description: <input type="text" size=10 value="<TMPL_VAR NAME="ORG_DESC">" name = "org_desc<TMPL_VAR NAME="NUM">" id="org_desc<TMPL_VAR NAME="NUM">" style="font-style:italic" onFocus="search_bar('org_desc<TMPL_VAR NAME="NUM">')" onKeyUp='timing("org_desc<TMPL_VAR NAME="NUM">");'><span class='ui-button ui-corner-all' onClick="timing('org_desc<TMPL_VAR NAME="NUM">');"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
 </DIV>
    <DIV id="org_list<TMPL_VAR NAME="NUM">"><TMPL_VAR NAME="ORG_LIST"></DIV>
    <Table><Tr>

@@ -109,7 +109,7 @@ $('#results').html('<img src=./picts/animations/DNA_orbit_animated_small_third.g
 
 </SCRIPT>
 
-<TABLE class="ui-widget-content">
+<TABLE class="ui-widget-content ui-corner-all">
        <TR>
          <TD nowrap>
            Name:
@@ -128,7 +128,7 @@ $('#results').html('<img src=./picts/animations/DNA_orbit_animated_small_third.g
          Description: <input type="text" size=11 value="Search" name = "org_desc" id="org_desc" style="font-style:italic" onFocus="search_bar('org_desc')" onKeyUp='timing("org_desc");'>
           <DIV id="org_list"><TMPL_VAR NAME="ORG_LIST"><input type=hidden id='org_id'></DIV>
         <tr>
-        <td><span class="ui-button ui-state-default ui-corner-all" onclick="run_mama()">Search</span>
+        <td><span class="ui-button ui-corner-all" onclick="run_mama()">Search</span>
 </TABLE>
 
 <div id='results'><TMPL_VAR NAME="RESULTS"></div>
@@ -137,8 +137,8 @@ $('#results').html('<img src=./picts/animations/DNA_orbit_animated_small_third.g
 
 <TMPL_IF NAME=RESULTS>
 <div class ="small"> Feature Count: <TMPL_VAR NAME="FEAT_COUNT"></div>
-<span class="ui-button ui-state-default ui-corner-all" onclick="window.open('<TMPL_VAR NAME=FEATLISTLINK>')">Generate Feature List</span><br>
-<TABLE id='gc_table'>
+<span class="ui-button ui-corner-all" onclick="window.open('<TMPL_VAR NAME=FEATLISTLINK>')">Generate Feature List</span><br>
+<TABLE id='gc_table' class="ui-widget-content ui-corner-all">
  <THEAD align=left>
    <tr><TMPL_VAR NAME=GC_HEAD>
  </THEAD>

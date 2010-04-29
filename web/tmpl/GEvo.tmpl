@@ -115,7 +115,7 @@ function color_dialog_setter(me) {
          $("#green").slider("value", myArray[1]);
          $("#blue").slider("value", myArray[2]);
 	 var color_id = $(me).attr("id");
-	 var html = "<button class='ui-button ui-state-default ui-corner-all' onClick=update_color_picker('"+color_id+"');$('#color_dialog').dialog('close');>OK</button> <button class='ui-button ui-state-default ui-corner-all' onClick=$('#color_dialog').dialog('close');>Cancel</button>";
+	 var html = "<button class='ui-button ui-corner-all' onClick=update_color_picker('"+color_id+"');$('#color_dialog').dialog('close');>OK</button> <button class='ui-button ui-corner-all' onClick=$('#color_dialog').dialog('close');>Cancel</button>";
 	 $('#hsp_buttons').html(html);
 	 $('#color_dialog').dialog('open');
 }
@@ -186,7 +186,7 @@ function return_image_info (id) {
  }
 
 Gobe.handle_html= function (html) {
-  html = "<span class='ui-button ui-state-default ui-corner-all' id='clear_lines' onclick='Gobe.clear()'>Clear Connectors</span><br>"+html;
+  html = "<span class='ui-button ui-corner-all' id='clear_lines' onclick='Gobe.clear()'>Clear Connectors</span><br>"+html;
   $('#results_info').html(html);
   
   if (html && !html.match(/multiple hits/)) {
@@ -388,7 +388,7 @@ else if (dialign_anchor_program == 'bl2seq'){
   var info = "Match Score = "+$('#blast_match').val()+"&#10;Mismatch Penalty = "+$('#blast_mismatch').val()+"&#10;Gap Open Penalty = "+$('#blast_gapopen').val()+"&#10;Gap Extension Penalty = "+$('#blast_gapextend').val()+"&#10;Word Size = "+$('#blast_wordsize').val()+"&#10;Filter query sequence = "+$('#blast_filter').val()+"&#10;Expect value = "+$('#blast_eval').val()+"&#10;Other Blast Parameters = "+$('#blastparams').val();}
 else{
   var info = "Word size = "+$('#blastz_wordsize').val()+"&#10;Gap start penalty = "+$('#blastz_gap_start').val()+"&#10;Gap extend penalty = "+$('#blastz_gap_extension').val()+"&#10;Chaining = "+$('#blastz_chaining').val()+"&#10;Score threshold = "+$('#blastz_threshold').val()+"&#10;Mask threshold = "+$('#blastz_mask').val()+"&#10;Other blastz parameters = "+$('#blastz_params').val();}
-var html = 'You are running '+dialign_anchor_program+' with the following options:<br/><textarea readonly rows=8 cols=24 class="backbox" name="anchor_info" id="anchor_info" tabindex="1">'+info+'</textarea><br/><i>If you wish to alter these options, please do so by selecting '+dialign_anchor_program+' from the drop-down menu to the left, and changing these options.</i>';
+var html = 'You are running '+dialign_anchor_program+' with the following options:<br/><textarea readonly rows=8 cols=24 name="anchor_info" id="anchor_info" tabindex="1">'+info+'</textarea><br/><i>If you wish to alter these options, please do so by selecting '+dialign_anchor_program+' from the drop-down menu to the left, and changing these options.</i>';
 $('#anchor_options').html(html);
 animate_section(".anchor", "fadeIn");
 
@@ -759,7 +759,7 @@ function rand ()
 </tr>
 </table>
 </div>
-<span id=go style="font-size: 1em" class='ui-button ui-state-default ui-corner-all' onClick="populate_page_obj(); set_display_order(); loading([],['results']); go_run();">Run GEvo Analysis!</span>
+<span id=go style="font-size: 1em" class='ui-button ui-button-go ui-corner-all' onClick="populate_page_obj(); set_display_order(); loading([],['results']); go_run();">Run GEvo Analysis!</span>
 <table>
 
 <tr align left>
@@ -785,17 +785,17 @@ function rand ()
 </ul>
 
 <div id="tabs-1">
-<input class="backbox" name=num_seqs id=num_seqs type="hidden"readonly value=<TMPL_VAR NAME ="NUM_SEQS">>
-  <span class='ui-button ui-state-default ui-corner-all ui-button-icon-left ' 
+<input name=num_seqs id=num_seqs type="hidden"readonly value=<TMPL_VAR NAME ="NUM_SEQS">>
+  <span class='ui-button ui-corner-all ui-button-icon-left ' 
   onClick="add_seq(['num_seqs'],[process_add_seq]);  $('#new_drseq').remove;"><span class="ui-icon ui-icon-plus"></span>Add Sequence</span>
 
 <!--
 #REMOVED THIS FUNCTION AS I DON"T THINK IT GETS USED.  WE"LL SEE IF USERS COMPLAIN
-<span class='ui-button ui-state-default ui-corner-all ui-button-icon-left ' onClick="remove_seq()"><span class="ui-icon ui-icon-minus"></span>Remove</span>
+<span class='ui-button ui-corner-all ui-button-icon-left ' onClick="remove_seq()"><span class="ui-icon ui-icon-minus"></span>Remove</span>
  --> 
 
-<span class="small">Merge Previous GEvo Analysis (paste in URL): <input class="backbox" name=previous_url id=previous_url type="textbox" size=20 value=<TMPL_VAR NAME ="PANEL_URL">></span>
-  <span class='ui-button ui-state-default ui-corner-all ui-button-icon-left ' 
+<span class="small">Merge Previous GEvo Analysis (paste in URL): <input name=previous_url id=previous_url type="textbox" size=20 value=<TMPL_VAR NAME ="PANEL_URL">></span>
+  <span class='ui-button ui-corner-all ui-button-icon-left ' 
   onClick="merge_previous(['previous_url','num_seqs'],[process_add_seq]); gen_hsp_colors(['args__num_seqs','num_seqs'],[add_hsp_colors]);"><span class="ui-icon ui-icon-plus"></span>Merge</span>
  <br>
 <span class="small">Change order by dragging boxes</span>
@@ -804,10 +804,10 @@ function rand ()
           <TMPL_VAR NAME="SEQ_SUB">
    </div>
    <tr><td>
-     <span class="ui-button ui-state-default ui-corner-all ui-button-icon-left" id="open_all_sequence_open_menus" onclick="open_all_sequence_option_menus(1);"><span class="ui-icon ui-icon-plus"></span>Open all sequence option menus</span>
-    <span class="ui-button ui-state-default ui-corner-all ui-button-icon-left" style="display: none" id="close_all_sequence_open_menus" onclick="open_all_sequence_option_menus(0);"><span class="ui-icon ui-icon-minus"></span>Close all sequence option menus</span>
-     <span class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="walk(1)"><span class="ui-icon ui-icon-arrowthick-1-w"></span>Walk all sequences left</span>
-       <span class='ui-button ui-state-default ui-corner-all ui-button-icon-right' onclick="walk(-1)"><span class="ui-icon ui-icon-arrowthick-1-e"></span>Walk all sequences right</span>
+     <span class="ui-button ui-corner-all ui-button-icon-left" id="open_all_sequence_open_menus" onclick="open_all_sequence_option_menus(1);"><span class="ui-icon ui-icon-plus"></span>Open all sequence option menus</span>
+    <span class="ui-button ui-corner-all ui-button-icon-left" style="display: none" id="close_all_sequence_open_menus" onclick="open_all_sequence_option_menus(0);"><span class="ui-icon ui-icon-minus"></span>Close all sequence option menus</span>
+     <span class='ui-button ui-corner-all ui-button-icon-left' onclick="walk(1)"><span class="ui-icon ui-icon-arrowthick-1-w"></span>Walk all sequences left</span>
+       <span class='ui-button ui-corner-all ui-button-icon-right' onclick="walk(-1)"><span class="ui-icon ui-icon-arrowthick-1-e"></span>Walk all sequences right</span>
 
      <div class=small>
 <!--     Apply distance to all CoGe submissions?<input type="checkbox" name="apply_all" id="apply_all" value="0" />-->
@@ -828,7 +828,7 @@ function rand ()
   <TR>
   <Td>Alignment Algorithm: </TD>
   <TD class=small>
-  <select class="backbox" id="alignment_program" size="1" onchange='check_alignment_program()'>
+  <select id="alignment_program" size="1" onchange='check_alignment_program()'>
        <TMPL_VAR NAME=ALIGNMENT_PROGRAMS>
       </select>
    </TD>
@@ -844,28 +844,28 @@ function rand ()
 
  <TR class="blastn_options">
   <TD>Match Score (-r): </TD>
-  <TD><input class="backbox" type="text" name="blast_match" id="blast_match" tabindex="1" size="3" value="1" /></TD>
+  <TD><input type="text" name="blast_match" id="blast_match" tabindex="1" size="3" value="1" /></TD>
  </TR>    
  <TR class="blastn_options">
   <TD>Mismatch Penalty (-q): </TD>
-  <TD><input class="backbox" type="text" name="blast_mismatch" id="blast_mismatch" tabindex="1" size="3" value="-2" /></TD>
+  <TD><input  type="text" name="blast_mismatch" id="blast_mismatch" tabindex="1" size="3" value="-2" /></TD>
  </TR> 
  <TR>
   <TD>Gap Open Penalty (-G): </TD>
-  <TD><input class="backbox" type="text" name="blast_gapopen" id="blast_gapopen" tabindex="1" size="3" value="5" /></TD>
+  <TD><input  type="text" name="blast_gapopen" id="blast_gapopen" tabindex="1" size="3" value="5" /></TD>
  </TR>    
  <TR>
   <TD>Gap Extension Penalty (-E): </TD>
-  <TD><input class="backbox" type="text" name="blast_gapextend" id="blast_gapextend" tabindex="1" size="3" value="2" /></TD>
+  <TD><input  type="text" name="blast_gapextend" id="blast_gapextend" tabindex="1" size="3" value="2" /></TD>
  </TR>    
   <TR>
   <TD>Word Size (-W):</TD>
-  <TD><input class="backbox" type="text" name="blast_wordsize" id="blast_wordsize" tabindex="1" size="3" value="7" /></TD>
+  <TD><input  type="text" name="blast_wordsize" id="blast_wordsize" tabindex="1" size="3" value="7" /></TD>
  </TR>
  <TR>
   <TD>Filter query sequence (DUST/SEG) (-F): </TD>
   <TD>
-    <select class="backbox" name="blast_filter" id="blast_filter" tabindex="1" >
+    <select  name="blast_filter" id="blast_filter" tabindex="1" >
      <option value="T" >Yes</option>
      <option value="F" selected>No</option>
     </select>
@@ -873,18 +873,18 @@ function rand ()
  </TR>    
  <TR>
   <TD>Expectation value (-e): </TD>
-  <TD><input class="backbox" type="text" name="blast_eval" id="blast_eval" tabindex="1" size="4" value="30" /></TD>
+  <TD><input  type="text" name="blast_eval" id="blast_eval" tabindex="1" size="4" value="30" /></TD>
  </TR>
  <TR>
       <TD>Other Blast Parameters: </TD>
-  <TD><input class="backbox" type="text" name="blastparams" id="blastparams" tabindex="1" size="10"/></TD>
+  <TD><input  type="text" name="blastparams" id="blastparams" tabindex="1" size="10"/></TD>
  </TR>
 </TABLE>
 </DIV>
 
 
  <DIV id="tblastx_options" class="small algo_options" style="display: none">
- <font class="small">Hide HSPs with stop codons in a coding sequence?<label><input class="backbox" type="radio" name="show_hsps_with_stop_codon" id="show_hsps_with_stop_codon" tabindex="1" value="1" />Yes</label><label><input class="backbox" type="radio" name="show_hsps_with_stop_codon" id="show_hsps_with_stop_codon" tabindex="1" value="0" checked />No</label></font>
+ <font class="small">Hide HSPs with stop codons in a coding sequence?<label><input  type="radio" name="show_hsps_with_stop_codon" id="show_hsps_with_stop_codon" tabindex="1" value="1" />Yes</label><label><input  type="radio" name="show_hsps_with_stop_codon" id="show_hsps_with_stop_codon" tabindex="1" value="0" checked />No</label></font>
 <br>Note: Word size limited to 3 for tblastx
 </DIV> 
 
@@ -893,35 +893,35 @@ function rand ()
 <table class = small>
    <TR>
   <TD>Word size: </TD>
-  <TD><input class="backbox" type="text" name="chaos_word_length" id="chaos_word_length" tabindex="1" size="3" value="8" /></TD>
+  <TD><input  type="text" name="chaos_word_length" id="chaos_word_length" tabindex="1" size="3" value="8" /></TD>
  </TR>    
  <TR>
   <TD>Score cutoff: </TD>
-  <TD><input class="backbox" type="text" name="chaos_score_cutoff" id="chaos_score_cutoff" tabindex="1" size="3" value="25" /></TD>
+  <TD><input  type="text" name="chaos_score_cutoff" id="chaos_score_cutoff" tabindex="1" size="3" value="25" /></TD>
  </TR>    
  <TR>
   <TD>Rescore cutoff: </TD>
-  <TD><input class="backbox" type="text" name="chaos_rescore_cutoff" id="chaos_rescore_cutoff" tabindex="1" size="3" value="250" /></TD>
+  <TD><input  type="text" name="chaos_rescore_cutoff" id="chaos_rescore_cutoff" tabindex="1" size="3" value="250" /></TD>
  </TR>    
  <TR>
   <TD>Lookback distance:<br><font class=small>(length between seed alignments for chaining)</font></TD>
-  <TD><input class="backbox" type="text" name="chaos_lookback" id="chaos_lookback" tabindex="1" size="3" value="20" /></TD>
+  <TD><input  type="text" name="chaos_lookback" id="chaos_lookback" tabindex="1" size="3" value="20" /></TD>
  </TR>    
  <TR>
   <TD>Maximum gap length between seeds for chaining: </TD>
-  <TD><input class="backbox" type="text" name="chaos_gap_length" id="chaos_gap_length" tabindex="1" size="3" value="5" /></TD>
+  <TD><input  type="text" name="chaos_gap_length" id="chaos_gap_length" tabindex="1" size="3" value="5" /></TD>
  </TR>    
  <TR>
   <TD>Gap start penality: </TD>
-  <TD><input class="backbox" type="text" name="chaos_gap_start" id="chaos_gap_start" tabindex="1" size="3" value="0" /></TD>
+  <TD><input  type="text" name="chaos_gap_start" id="chaos_gap_start" tabindex="1" size="3" value="0" /></TD>
  </TR>    
  <TR>
   <TD>Gap extend penality: </TD>
-  <TD><input class="backbox" type="text" name="chaos_gap_extension" id="chaos_gap_extension" tabindex="1" size="3" value="-1" /></TD>
+  <TD><input  type="text" name="chaos_gap_extension" id="chaos_gap_extension" tabindex="1" size="3" value="-1" /></TD>
  </TR>    
   <TR>
   <TD>Other CHAOS parameters: </TD>
-  <TD><input class="backbox" type="text" name="chaos_params" id="chaos_params" tabindex="1" size="10" /></TD>
+  <TD><input  type="text" name="chaos_params" id="chaos_params" tabindex="1" size="10" /></TD>
  </TR>         
 
 </table>
@@ -934,7 +934,7 @@ function rand ()
   <td>(set to 0 to turn off):
   <tr align=left class=small>
   <td><li>Spike sequence length:
-  <td><input type="text" size="3" class="backbox" id="spike" onkeyup="check_spike();" value=<TMPL_VAR NAME=SPIKE_LEN>> nucleotides
+  <td><input type="text" size="3"  id="spike" onkeyup="check_spike();" value=<TMPL_VAR NAME=SPIKE_LEN>> nucleotides
    </TR>
   </table>
  </DIV>
@@ -945,19 +945,19 @@ function rand ()
 <table class = small>
    <TR>
   <TD>Word size: </TD>
-  <TD><input class="backbox" type="text" name="blastz_wordsize" id="blastz_wordsize" tabindex="1" size="4" value="8" /></TD>
+  <TD><input  type="text" name="blastz_wordsize" id="blastz_wordsize" tabindex="1" size="4" value="8" /></TD>
  </TR>    
 <TR>
   <TD>Gap start penality: </TD>
-  <TD><input class="backbox" type="text" name="blastz_gap_start" id="blastz_gap_start" tabindex="1" size="4" value="400" /></TD>
+  <TD><input  type="text" name="blastz_gap_start" id="blastz_gap_start" tabindex="1" size="4" value="400" /></TD>
  </TR>    
  <TR>
   <TD>Gap extend penality: </TD>
-  <TD><input class="backbox" type="text" name="blastz_gap_extension" id="blastz_gap_extension" tabindex="1" size="4" value="30" /></TD>
+  <TD><input  type="text" name="blastz_gap_extension" id="blastz_gap_extension" tabindex="1" size="4" value="30" /></TD>
  </TR>    
  <TR>
   <TD>Chaining: </TD>
-  <TD><select class="backbox" id="blastz_chaining" tabindex="1" />
+  <TD><select  id="blastz_chaining" tabindex="1" />
       <option value=0>no chaining</option>
       <option value=1>just output chain</option>
       <option value=2>chain and extend</option>
@@ -966,17 +966,17 @@ function rand ()
  </TR>    
  <TR>
   <TD>Score threshold: </TD>
-  <TD><input class="backbox" type="text" name="blastz_threshold" id="blastz_threshold" tabindex="1" size="4" value="3000" /></TD>
+  <TD><input  type="text" name="blastz_threshold" id="blastz_threshold" tabindex="1" size="4" value="3000" /></TD>
  </TR>    
  <TR>
   <TD>Mask threshold: </TD>
-  <TD><input class="backbox" type="text" name="blastz_mask" id="blastz_mask" tabindex="1" size="4" value="0" /></TD>
+  <TD><input  type="text" name="blastz_mask" id="blastz_mask" tabindex="1" size="4" value="0" /></TD>
  </TR>    
 
 
   <TR>
   <TD>Other Blastz parameters: </TD>
-  <TD><input class="backbox" type="text" name="blastz_params" id="blastz_params" tabindex="1" size="10" /></TD>
+  <TD><input  type="text" name="blastz_params" id="blastz_params" tabindex="1" size="10" /></TD>
  </TR>         
 
 </table>
@@ -988,19 +988,19 @@ function rand ()
    <Table class=small>    
   <TR>
   <TD>Min HSP Length: </TD>
-  <TD><input class="backbox" type="text" name="lagan_min_length" id="lagan_min_length" tabindex="1" size="3" value="21" /></TD>
+  <TD><input  type="text" name="lagan_min_length" id="lagan_min_length" tabindex="1" size="3" value="21" /></TD>
  </TR>    
  <TR>
   <TD>Max Contiguous Gaps in HSPs: </TD>
-  <TD><input class="backbox" type="text" name="lagan_max_gap" id="lagan_max_gap" tabindex="1" size="3" value="3" /></TD>
+  <TD><input  type="text" name="lagan_max_gap" id="lagan_max_gap" tabindex="1" size="3" value="3" /></TD>
  </TR>    
  <TR>
   <TD>Min Percent Identity: </TD>
-  <TD><input class="backbox" type="text" name="lagan_percent_id" id="lagan_percent_id" tabindex="1" size="3" value="70" /></TD>
+  <TD><input  type="text" name="lagan_percent_id" id="lagan_percent_id" tabindex="1" size="3" value="70" /></TD>
  </TR>    
  <TR>
   <TD>Other LAGAN Parameters: </TD>
-  <TD><input class="backbox" type="text" name="lagan_params" id="lagan_params" tabindex="1" size="10" /></TD>
+  <TD><input  type="text" name="lagan_params" id="lagan_params" tabindex="1" size="10" /></TD>
  </TR>         
 
 </TABLE>
@@ -1010,7 +1010,7 @@ function rand ()
    <Table class=small>    
   <TR>
    <TD>Use Anchored Alignment: </TD>
-   <TD><select class="backbox" id="dialign_use_anchor" size="1" onchange="check_dialign_anchor_program();">
+   <TD><select  id="dialign_use_anchor" size="1" onchange="check_dialign_anchor_program();">
        <option value="1">Use Anchored Search</option>
        <option value="0" selected>Do NOT use Anchored Search</option>
       </select> 
@@ -1018,19 +1018,19 @@ function rand ()
   </TR>
   <TR>
   <TD>Min Alignment Score: </TD>
-  <TD><input class="backbox" type="text" name="dialign_min_score" id="dialign_min_score" tabindex="1" size="3" value="1" /></TD>
+  <TD><input  type="text" name="dialign_min_score" id="dialign_min_score" tabindex="1" size="3" value="1" /></TD>
  </TR>    
  <TR>
   <TD>Max Contiguous Low Score Alignments in HSPs: </TD>
-  <TD><input class="backbox" type="text" name="dialign_max_gap" id="dialign_max_gap" tabindex="1" size="3" value="4" /></TD>
+  <TD><input  type="text" name="dialign_max_gap" id="dialign_max_gap" tabindex="1" size="3" value="4" /></TD>
  </TR> 
  <TR>
   <TD>Split HSPs on Different Alignment Scores: </TD>
-  <TD><input class="backbox" type="radio" name="dialign_split_score" id="dialign_split_score" tabindex="1" value="1" />Yes</label><label><input class="backbox" type="radio" name="dialign_split_score" id="dialign_split_score" tabindex="1" value="0" checked />No</label></TD>
+  <TD><input  type="radio" name="dialign_split_score" id="dialign_split_score" tabindex="1" value="1" />Yes</label><label><input  type="radio" name="dialign_split_score" id="dialign_split_score" tabindex="1" value="0" checked />No</label></TD>
  </TR>
  <TR>
   <TD>Aligment Method: </TD>
-  <TD><select class="backbox" id="dialign_method" size="1" onchange="$('#dialign_params').val($('#dialign_method').val())">
+  <TD><select  id="dialign_method" size="1" onchange="$('#dialign_params').val($('#dialign_method').val())">
        <option value="-n ">Short Sequence Alignment, No Translation</option>
        <option value="-nt -cs -ma ">Short Sequence Alignment with Translation</option>
        <option value="-ds -n -thr 2 -lmax 30 ">Long Sequence Alignment</option>
@@ -1039,7 +1039,7 @@ function rand ()
   </TR>
   <TR>
   <TD>Use Motif in Alignment: </TD>
-  <TD><input class="backbox" type="radio" name="dialign_motif" id="dialign_motif" tabindex="1" value="1" onClick="$('#dialign_motif_options').show();" />Yes</label><label><input class="backbox" type="radio" name="dialign_motif" id="dialign_motif" tabindex="1" value="0" onClick="$('#dialign_motif_options').hide()" checked />No</label></TD>
+  <TD><input  type="radio" name="dialign_motif" id="dialign_motif" tabindex="1" value="1" onClick="$('#dialign_motif_options').show();" />Yes</label><label><input  type="radio" name="dialign_motif" id="dialign_motif" tabindex="1" value="0" onClick="$('#dialign_motif_options').hide()" checked />No</label></TD>
  </TR>
  </TABLE>
   </DIV>
@@ -1047,15 +1047,15 @@ function rand ()
  <Table class=small>  
  <TR>
  <TD align=right> Motif:  </TD>
-  <TD><input class="backbox" type="text" name="dialign_motif_motif" id="dialign_motif_motif" tabindex="1" size="5" /></TD>
+  <TD><input  type="text" name="dialign_motif_motif" id="dialign_motif_motif" tabindex="1" size="5" /></TD>
  </TR>
  <TR>
  <TD align=right> Weighting Factor: </TD>
-  <TD><input class="backbox" type="text" name="dialign_motif_weight" id="dialign_motif_weight" tabindex="1" size="5" /></TD>
+  <TD><input  type="text" name="dialign_motif_weight" id="dialign_motif_weight" tabindex="1" size="5" /></TD>
  </TR>
  <TR>
  <TD align=right> Distance Penalty:  </TD>
-  <TD><input class="backbox" type="text" name="dialign_motif_penalty" id="dialign_motif_penalty" tabindex="1" size="5" /></TD>
+  <TD><input  type="text" name="dialign_motif_penalty" id="dialign_motif_penalty" tabindex="1" size="5" /></TD>
  </TR>
  </TABLE>
  </DIV>
@@ -1063,7 +1063,7 @@ function rand ()
  <Table class=small>
  <TR>
   <TD>Other DiAlign Parameters: </TD>
-  <TD><input class="backbox" type="text" name="dialign_params" id="dialign_params" tabindex="1" size="20"  value="-n"/></TD>
+  <TD><input  type="text" name="dialign_params" id="dialign_params" tabindex="1" size="20"  value="-n"/></TD>
  </TR>         
 </TABLE>
 <b>Note</b>: Using Translation Increases CDS Alignment Accuracy at Cost of Speed - Not Recommended for Sequences > 10 kb
@@ -1079,7 +1079,7 @@ function rand ()
 <TABLE class="small anchor algo_options" style="display: none">
  <TR align=left>
   <TH>Select Anchor Program: 
-  <select class="backbox" id="dialign_anchor_program" size="1" onchange='check_dialign_anchor_program()'>
+  <select  id="dialign_anchor_program" size="1" onchange='check_dialign_anchor_program()'>
        <option value="blastz">blastz</option>
        <option value="bl2seq">bl2seq</option>
        <option value="CHAOS" selected>CHAOS</option>
@@ -1091,11 +1091,11 @@ function rand ()
    <DIV id="anchor_options" class="anchor small algo_options"></DIV>
  </TABLE>
 
- <span style="color: #000099">Other options:</span>
+ <span>Other options:</span>
  <Table>
  <tr class="small">
   <td>Minimum HSP length for finding overlapped features:
-  <td><input class="backbox" type="text" name="hsp_overlap_length" id="hsp_overlap_length" tabindex="1" size="5" value="50"/></TD>
+  <td><input  type="text" name="hsp_overlap_length" id="hsp_overlap_length" tabindex="1" size="5" value="50"/></TD>
  </table>
 
 </div> <!-- end tabs-2 div -->
@@ -1114,7 +1114,7 @@ function rand ()
   </TD>
   <TD>
     <DIV class="small">
-	<input class="backbox" type="text" name="iw" id="iw" tabindex="1"  size="10" value="<TMPL_VAR NAME="IMAGE_WIDTH">" />
+	<input  type="text" name="iw" id="iw" tabindex="1"  size="10" value="<TMPL_VAR NAME="IMAGE_WIDTH">" />
     </DIV>
   </TD>
  </TR>
@@ -1126,7 +1126,7 @@ function rand ()
   </Td>
   <TD>
     <DIV class="small">
-	<input class="backbox" type="text" name="feat_h" id="feat_h" tabindex="1"  size="10" value="<TMPL_VAR NAME="FEAT_HEIGHT">" />
+	<input  type="text" name="feat_h" id="feat_h" tabindex="1"  size="10" value="<TMPL_VAR NAME="FEAT_HEIGHT">" />
     </DIV>
   </TD>
 
@@ -1139,7 +1139,7 @@ function rand ()
   </Td>
   <TD>
     <DIV class="small">
-	<input class="backbox" type="text" name="padding" id="padding" tabindex="1"  size="10" value="<TMPL_VAR NAME="PADDING">" />
+	<input  type="text" name="padding" id="padding" tabindex="1"  size="10" value="<TMPL_VAR NAME="PADDING">" />
     </DIV>
   </TD>
 
@@ -1148,50 +1148,50 @@ function rand ()
   <Td>
 <font class="small">Color <span style="color:#009900;">GC</span> content green? (SLOW)</font>
   <td>
-<label class="small"><input class="backbox" type="radio" name="show_gc" id="show_gc" tabindex="1" value="1" <TMPL_VAR NAME="GC_COLOR_YES"> />Yes</label>
-<label class=small><input class="backbox" type="radio" name="show_gc" id="show_gc" tabindex="1" value="0" <TMPL_VAR NAME="GC_COLOR_NO"> />No</label>
+<label class="small"><input  type="radio" name="show_gc" id="show_gc" tabindex="1" value="1" <TMPL_VAR NAME="GC_COLOR_YES"> />Yes</label>
+<label class=small><input  type="radio" name="show_gc" id="show_gc" tabindex="1" value="0" <TMPL_VAR NAME="GC_COLOR_NO"> />No</label>
   </TD>
  <TR>
   <Td>
 <font class="small">Color <span style="color:#FF66FF;">masked</span> and <span style="color:#FF9900;">unsequenced</span> NTs?</font>
   <td>
-<label class="small"><input class="backbox" type="radio" name="show_nt" id="show_nt" tabindex="1" value="1" <TMPL_VAR NAME="NT_COLOR_YES">/>Yes</label>
-<label class=small><input class="backbox" type="radio" name="show_nt" id="show_nt" tabindex="1" value="0" <TMPL_VAR NAME="NT_COLOR_NO">/>No</label>
+<label class="small"><input  type="radio" name="show_nt" id="show_nt" tabindex="1" value="1" <TMPL_VAR NAME="NT_COLOR_YES">/>Yes</label>
+<label class=small><input  type="radio" name="show_nt" id="show_nt" tabindex="1" value="0" <TMPL_VAR NAME="NT_COLOR_NO">/>No</label>
   </TD>
  <TR>
   <Td>
 <font class="small">Color wobble codon GC content:</font>
   <td>
-<label class="small"><input class="backbox" type="radio" name="show_cbc" id="show_cbc" tabindex="1" value="1" <TMPL_VAR NAME="CBC_YES"> />Yes</label>
-<label class=small><input class="backbox" type="radio" name="show_cbc" id="show_cbc" tabindex="1" value="0" <TMPL_VAR NAME="CBC_NO"> />No</label>
+<label class="small"><input  type="radio" name="show_cbc" id="show_cbc" tabindex="1" value="1" <TMPL_VAR NAME="CBC_YES"> />Yes</label>
+<label class=small><input  type="radio" name="show_cbc" id="show_cbc" tabindex="1" value="0" <TMPL_VAR NAME="CBC_NO"> />No</label>
   </TD>
  <TR>
   <Td>
 <font class="small">Color contigs <span style="color:#FF0000">red</span>:</font>
   <td>
-<label class="small"><input class="backbox" type="radio" name="show_contigs" id="show_contigs" tabindex="1" value="1" <TMPL_VAR NAME="SHOW_CONTIGS_YES"> />Yes</label>
-<label class=small><input class="backbox" type="radio" name="show_contigs" id="show_contigs" tabindex="1" value="0" <TMPL_VAR NAME="SHOW_CONTIGS_NO"> />No</label>
+<label class="small"><input  type="radio" name="show_contigs" id="show_contigs" tabindex="1" value="1" <TMPL_VAR NAME="SHOW_CONTIGS_YES"> />Yes</label>
+<label class=small><input  type="radio" name="show_contigs" id="show_contigs" tabindex="1" value="0" <TMPL_VAR NAME="SHOW_CONTIGS_NO"> />No</label>
   </TD>
  <TR>
   <Td>
 <font class="small">Auto adjust overlapping features? </font>
   <td>
-  <label class="small"><input class="backbox" type="radio" name="skip_feat_overlap" id="skip_feat_overlap" tabindex="1" value="0" <TMPL_VAR NAME="FEAT_OVERLAP_YES">/>Yes</label>
-  <label class="small"><input class="backbox" type="radio" name="skip_feat_overlap" id="skip_feat_overlap" tabindex="1" value="1" <TMPL_VAR NAME="FEAT_OVERLAP_NO"> />No</label>
+  <label class="small"><input  type="radio" name="skip_feat_overlap" id="skip_feat_overlap" tabindex="1" value="0" <TMPL_VAR NAME="FEAT_OVERLAP_YES">/>Yes</label>
+  <label class="small"><input  type="radio" name="skip_feat_overlap" id="skip_feat_overlap" tabindex="1" value="1" <TMPL_VAR NAME="FEAT_OVERLAP_NO"> />No</label>
   </TD>
  <TR>
   <Td>
 <font class="small">Auto adjust overlapping HSPs (SLOW)? </font>
   <td>
-  <label class="small"><input class="backbox" type="radio" name="skip_hsp_overlap" id="skip_hsp_overlap" tabindex="1" value="0" <TMPL_VAR NAME="HSP_OVERLAP_YES">/>Yes</label>
-  <label class="small"><input class="backbox" type="radio" name="skip_hsp_overlap" id="skip_hsp_overlap" tabindex="1" value="1" <TMPL_VAR NAME="HSP_OVERLAP_NO"> />No</label>
+  <label class="small"><input  type="radio" name="skip_hsp_overlap" id="skip_hsp_overlap" tabindex="1" value="0" <TMPL_VAR NAME="HSP_OVERLAP_YES">/>Yes</label>
+  <label class="small"><input  type="radio" name="skip_hsp_overlap" id="skip_hsp_overlap" tabindex="1" value="1" <TMPL_VAR NAME="HSP_OVERLAP_NO"> />No</label>
   </TD>
  <TR>
   <TD>
   <font class="small">Draw high-quality images? (SLOW) </font>
   <td>
-  <label class="small"><input class="backbox" type="radio" name="hiqual" id="hiqual" tabindex="1" value="1" <TMPL_VAR NAME="HIQUAL_YES">/>Yes</label>
-  <label class="small"><input class="backbox" type="radio" name="hiqual" id="hiqual" tabindex="1" value="0" <TMPL_VAR NAME="HIQUAL_NO"> />No</label>
+  <label class="small"><input  type="radio" name="hiqual" id="hiqual" tabindex="1" value="1" <TMPL_VAR NAME="HIQUAL_YES">/>Yes</label>
+  <label class="small"><input  type="radio" name="hiqual" id="hiqual" tabindex="1" value="0" <TMPL_VAR NAME="HIQUAL_NO"> />No</label>
  </TR>
 </TABLE>
 </div>
@@ -1200,14 +1200,14 @@ function rand ()
  <TR>
   <td>Color features overlapped by HSPs?
  <td>
- <label class=small><input class="backbox" type="radio" name="color_overlapped_features" id="color_overlapped_features" tabindex="1" value="1" <TMPL_VAR NAME="COLOR_FEAT_YES">/>Yes</label>
- <label class=small><input class="backbox" type="radio" name="color_overlapped_features" id="color_overlapped_features" tabindex="1" value="0" <TMPL_VAR NAME="COLOR_FEAT_NO"> />No</label>
+ <label class=small><input  type="radio" name="color_overlapped_features" id="color_overlapped_features" tabindex="1" value="1" <TMPL_VAR NAME="COLOR_FEAT_YES">/>Yes</label>
+ <label class=small><input  type="radio" name="color_overlapped_features" id="color_overlapped_features" tabindex="1" value="0" <TMPL_VAR NAME="COLOR_FEAT_NO"> />No</label>
  <TR>
   <Td>
 <font class="small">Color matches in HSPs?</font>
  <td>
- <label class=small><input class="backbox" type="radio" name="color_hsp" id="color_hsp" tabindex="1" value="1" <TMPL_VAR NAME="COLOR_HSP_YES">/>Yes</label>
- <label class=small><input class="backbox" type="radio" name="color_hsp" id="color_hsp" tabindex="1" value="0" <TMPL_VAR NAME="COLOR_HSP_NO"> />No</label>
+ <label class=small><input  type="radio" name="color_hsp" id="color_hsp" tabindex="1" value="1" <TMPL_VAR NAME="COLOR_HSP_YES">/>Yes</label>
+ <label class=small><input  type="radio" name="color_hsp" id="color_hsp" tabindex="1" value="0" <TMPL_VAR NAME="COLOR_HSP_NO"> />No</label>
 
  <TR>
   <Td>
@@ -1231,11 +1231,11 @@ function rand ()
   </TD>
  <tr>
   <td> Labels font size:
-  <td><input type=textbox class="backbox" size =3 value="13" id="font_size" />
+  <td><input type=textbox  size =3 value="13" id="font_size" />
  <tr>
-  <td>Don't show HSPs with <input class=backbox type=textbox size=3 id="hsp_overlap_limit" value="<TMPL_VAR NAME="HSP_OVERLAP_LIMIT">"/> overlaps
+  <td>Don't show HSPs with <input type=textbox size=3 id="hsp_overlap_limit" value="<TMPL_VAR NAME="HSP_OVERLAP_LIMIT">"/> overlaps
  <tr>
-  <td colspan=2>Don't show HSPs that are shorter than <input class=backbox type=textbox size=3 id="hsp_size_limit" value="<TMPL_VAR NAME="HSP_SIZE_LIMIT">"/> nt. <span class="small">(0 means no limit)</span>
+  <td colspan=2>Don't show HSPs that are shorter than <input type=textbox size=3 id="hsp_size_limit" value="<TMPL_VAR NAME="HSP_SIZE_LIMIT">"/> nt. <span class="small">(0 means no limit)</span>
  <Tr>
   <td>Draw:
   <select id="draw_model">
@@ -1250,15 +1250,15 @@ function rand ()
   <TD>
   <font class="small">Show pre-annotated CNSs?</font>
   <td>
-  <label class="small"><input class="backbox" type="radio" name="show_cns" id="show_cns" tabindex="1" value="1" <TMPL_VAR NAME="SHOW_CNS_YES">/>Yes</label>
-  <label class="small"><input class="backbox" type="radio" name="show_cns" id="show_cns" tabindex="1" value="0" <TMPL_VAR NAME="SHOW_CNS_NO"> />No</label>
+  <label class="small"><input  type="radio" name="show_cns" id="show_cns" tabindex="1" value="1" <TMPL_VAR NAME="SHOW_CNS_YES">/>Yes</label>
+  <label class="small"><input  type="radio" name="show_cns" id="show_cns" tabindex="1" value="0" <TMPL_VAR NAME="SHOW_CNS_NO"> />No</label>
 
  <TR>
   <TD>
   <font class="small">Show pre-annotated Gene spaces?</font>
   <td>
-  <label class="small"><input class="backbox" type="radio" name="show_gene_space" id="show_gene_space" tabindex="1" value="1" <TMPL_VAR NAME="SHOW_GENESPACE_YES">/>Yes</label>
-  <label class="small"><input class="backbox" type="radio" name="show_gene_space" id="show_gene_space" tabindex="1" value="0" <TMPL_VAR NAME="SHOW_GENESPACE_NO"> />No</label>
+  <label class="small"><input  type="radio" name="show_gene_space" id="show_gene_space" tabindex="1" value="1" <TMPL_VAR NAME="SHOW_GENESPACE_YES">/>Yes</label>
+  <label class="small"><input  type="radio" name="show_gene_space" id="show_gene_space" tabindex="1" value="0" <TMPL_VAR NAME="SHOW_GENESPACE_NO"> />No</label>
 
 
 
@@ -1271,8 +1271,8 @@ function rand ()
 </div>
 <tr><td>
 <TMPL_IF NAME=SAVE_SETTINGS>
-<span class='ui-button ui-state-default ui-corner-all ui-button-icon-left' id="SaveSettings" onclick="<TMPL_VAR NAME="SAVE_SETTINGS">"><span class="ui-icon ui-icon-disk"></span>Save Settings</span>
-<span class='ui-button ui-state-default ui-corner-all ui-button-icon-left' id="ResetSettings" onclick="reset_settings_gevo([],[]); window.location.reload()"><span class="ui-icon ui-icon-arrowrefresh-1-s"></span>Reset Settings </span>
+<span class='ui-button ui-corner-all ui-button-icon-left' id="SaveSettings" onclick="<TMPL_VAR NAME="SAVE_SETTINGS">"><span class="ui-icon ui-icon-disk"></span>Save Settings</span>
+<span class='ui-button ui-corner-all ui-button-icon-left' id="ResetSettings" onclick="reset_settings_gevo([],[]); window.location.reload()"><span class="ui-icon ui-icon-arrowrefresh-1-s"></span>Reset Settings </span>
 </TMPL_IF>
 </table>
 </div> <!--end div for tabs-3 div -->
@@ -1309,7 +1309,7 @@ function rand ()
  <div id="seq_set<TMPL_VAR NAME="SEQ_NUM">" class=portlet style='padding: 0.3em'>
  <div class="portlet-header">
      Sequence <TMPL_VAR NAME="SEQ_NUM">:
-    <select class="backbox" id="seq_submit<TMPL_VAR NAME="SEQ_NUM">" size="1" onchange='seq_submit_change(<TMPL_VAR NAME="SEQ_NUM">)'>
+    <select id="seq_submit<TMPL_VAR NAME="SEQ_NUM">" size="1" onchange='seq_submit_change(<TMPL_VAR NAME="SEQ_NUM">)'>
 
      <TMPL_VAR NAME=COGEPOS>
      <option value="db<TMPL_VAR NAME="SEQ_NUM">">CoGe Database Name</option>
@@ -1317,7 +1317,7 @@ function rand ()
      <option value="dir<TMPL_VAR NAME="SEQ_NUM">">Direct Submission</option>
 
     </select>
-    Display Order <input class="backbox" name=display_order<TMPL_VAR NAME ="SEQ_NUM"> id=display_order<TMPL_VAR NAME ="SEQ_NUM"> type="textbox" size=2 readonly value=<TMPL_VAR NAME ="SEQ_NUM"> >
+    Display Order <input  name=display_order<TMPL_VAR NAME ="SEQ_NUM"> id=display_order<TMPL_VAR NAME ="SEQ_NUM"> type="textbox" size=2 readonly value=<TMPL_VAR NAME ="SEQ_NUM"> >
 </div>
 <div class=partlet-content>
 
@@ -1325,7 +1325,7 @@ function rand ()
 <TABLE class="small">
        <TR valign="top">
         <TD>Name:
-        <TD align=left><input class="backbox" type="text" name="accn<TMPL_VAR NAME="SEQ_NUM">" id="accn<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="20" onBlur="dataset_search(['args__accn','accn<TMPL_VAR NAME="SEQ_NUM">','args__num', 'args__<TMPL_VAR NAME="SEQ_NUM">', 'args__dsid', 'args__<TMPL_VAR NAME="DSID">', 'args__dsgid', 'args__<TMPL_VAR NAME="DSGID">', 'args__gstid', 'args__<TMPL_VAR NAME="GSTID">'],[dataset_group_search_chain])" value="<TMPL_VAR NAME=DRACCN>" />
+        <TD align=left><input  type="text" name="accn<TMPL_VAR NAME="SEQ_NUM">" id="accn<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="20" onBlur="dataset_search(['args__accn','accn<TMPL_VAR NAME="SEQ_NUM">','args__num', 'args__<TMPL_VAR NAME="SEQ_NUM">', 'args__dsid', 'args__<TMPL_VAR NAME="DSID">', 'args__dsgid', 'args__<TMPL_VAR NAME="DSGID">', 'args__gstid', 'args__<TMPL_VAR NAME="GSTID">'],[dataset_group_search_chain])" value="<TMPL_VAR NAME=DRACCN>" />
 </table>
 </DIV>      
 
@@ -1335,8 +1335,8 @@ function rand ()
       <TR>
        <TD>Organism: <TMPL_VAR NAME=ORGINFO>
       <TR valign="top">
-       <TD>Position: <input class="backbox" type="text" id="pos<TMPL_VAR NAME="SEQ_NUM">" value="<TMPL_VAR NAME=POS>" size=10>
-           Chr: <input class="backbox" type="text" id="chr<TMPL_VAR NAME="SEQ_NUM">" value="<TMPL_VAR NAME=CHR>" size=10>
+       <TD>Position: <input  type="text" id="pos<TMPL_VAR NAME="SEQ_NUM">" value="<TMPL_VAR NAME=POS>" size=10>
+           Chr: <input  type="text" id="chr<TMPL_VAR NAME="SEQ_NUM">" value="<TMPL_VAR NAME=CHR>" size=10>
 </table>
 </DIV>
 
@@ -1357,10 +1357,10 @@ function rand ()
 
       <TR>
        <TD><DIV class="small">Left sequence:</DIV>
-       <TD><DIV  id="up<TMPL_VAR NAME="SEQ_NUM">" ><input class="location backbox" type="text" name="drup<TMPL_VAR NAME="SEQ_NUM">" id="drup<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10" value="<TMPL_VAR NAME=DRUP>" /> </DIV>
+       <TD><DIV  id="up<TMPL_VAR NAME="SEQ_NUM">" ><input class="location" type="text" name="drup<TMPL_VAR NAME="SEQ_NUM">" id="drup<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10" value="<TMPL_VAR NAME=DRUP>" /> </DIV>
       <TR>
        <TD><DIV class="small">Right sequence:</DIV>
-       <TD><DIV  id="down<TMPL_VAR NAME="SEQ_NUM">"><input class="location backbox" type="text" name="drdown<TMPL_VAR NAME="SEQ_NUM">" id="drdown<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10"  value="<TMPL_VAR NAME=DRDOWN>" /></DIV>
+       <TD><DIV  id="down<TMPL_VAR NAME="SEQ_NUM">"><input class="location" type="text" name="drdown<TMPL_VAR NAME="SEQ_NUM">" id="drdown<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10"  value="<TMPL_VAR NAME=DRDOWN>" /></DIV>
    <tr>
     <TD class=small><div class="link" id="get_seq<TMPL_VAR NAME=SEQ_NUM>" onclick="get_seq(<TMPL_VAR NAME=SEQ_NUM>)">Get Sequence</div>
     <TD class=small><div class="link" id="get_seq<TMPL_VAR NAME=SEQ_NUM>" onclick="genome_view(<TMPL_VAR NAME=SEQ_NUM>)">Genome View</div>
@@ -1373,13 +1373,13 @@ function rand ()
 <TABLE class="small">
        <TR valign="top">
         <TD>Accession:
-        <TD><input class="backbox" type="text" name="gbaccn<TMPL_VAR NAME="SEQ_NUM">" id="gbaccn<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="10" value="<TMPL_VAR NAME=GBACCN>" />
+        <TD><input  type="text" name="gbaccn<TMPL_VAR NAME="SEQ_NUM">" id="gbaccn<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="10" value="<TMPL_VAR NAME=GBACCN>" />
       <TR>
 	<TD><DIV class="small">Start Position:</DIV>
-      	<TD><input class="backbox" type="text" name="gbstart<TMPL_VAR NAME="SEQ_NUM">" id="gbstart<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10" value="<TMPL_VAR NAME=GBSTART>" /></TD>
+      	<TD><input  type="text" name="gbstart<TMPL_VAR NAME="SEQ_NUM">" id="gbstart<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10" value="<TMPL_VAR NAME=GBSTART>" /></TD>
       <TR>
        <TD><DIV class="small">Sequence Length:</DIV>
-       <TD><input class="backbox" type="text" name="gblength<TMPL_VAR NAME="SEQ_NUM">" id="gblength<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10"  value="<TMPL_VAR NAME=GBLENGTH>"/>
+       <TD><input  type="text" name="gblength<TMPL_VAR NAME="SEQ_NUM">" id="gblength<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10"  value="<TMPL_VAR NAME=GBLENGTH>"/>
 </TABLE>
 </DIV>
 
@@ -1387,9 +1387,9 @@ function rand ()
 <TABLE class="small">
       <TR valign="top">
       <TD>       
-     Paste fasta or genbank format sequence below:<BR> <textarea class="backbox" name="dirseq<TMPL_VAR NAME="SEQ_NUM">" id="dirseq<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  rows="5" cols="30"></textarea><BR>
-     <font class="small">Start: <input class="backbox" type="text" name="dirstart<TMPL_VAR NAME="SEQ_NUM">" id="dirstart<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="5" value="1" /></font>
-     <font class="small">Length: <input class="backbox" type="text" name="dirlength<TMPL_VAR NAME="SEQ_NUM">" id="dirlength<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="5" value=""  /></font><br>
+     Paste fasta or genbank format sequence below:<BR> <textarea  name="dirseq<TMPL_VAR NAME="SEQ_NUM">" id="dirseq<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  rows="5" cols="30"></textarea><BR>
+     <font class="small">Start: <input  type="text" name="dirstart<TMPL_VAR NAME="SEQ_NUM">" id="dirstart<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="5" value="1" /></font>
+     <font class="small">Length: <input  type="text" name="dirlength<TMPL_VAR NAME="SEQ_NUM">" id="dirlength<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="5" value=""  /></font><br>
 </table>
 </DIV>
 
@@ -1398,27 +1398,27 @@ function rand ()
 <tr><td>
 <div id=skip_font<TMPL_VAR NAME="SEQ_NUM"> style="color: red;display:none"> Sequence Skipped</div>
 
-   <span id="seqopts<TMPL_VAR NAME="SEQ_NUM">" class="small ui-button ui-state-default ui-corner-all ui-button-toggle" onClick='$(".sequence_options<TMPL_VAR NAME="SEQ_NUM">").slideToggle();'>Sequence <TMPL_VAR NAME="SEQ_NUM"> Options</span>
+   <span id="seqopts<TMPL_VAR NAME="SEQ_NUM">" class="small ui-button ui-corner-all ui-button-toggle" onClick='$(".sequence_options<TMPL_VAR NAME="SEQ_NUM">").slideToggle();'>Sequence <TMPL_VAR NAME="SEQ_NUM"> Options</span>
    <Table class="small sequence_options<TMPL_VAR NAME="SEQ_NUM">" style="display: none;">
  <TR align=left>
   <Td>
    Skip Sequence:
 </td>
   <TD>
-	<label><input class="backbox" onClick=show_skip(<TMPL_VAR NAME="SEQ_NUM">) type="radio" name="skip_seq<TMPL_VAR NAME=SEQ_NUM>" id="skip_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="1" />Yes</label>
-	<label><input class="backbox" onClick=hide_skip(<TMPL_VAR NAME="SEQ_NUM">) type="radio" name="skip_seq<TMPL_VAR NAME=SEQ_NUM>" id="skip_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="0" checked/>No</label><br>
+	<label><input  onClick=show_skip(<TMPL_VAR NAME="SEQ_NUM">) type="radio" name="skip_seq<TMPL_VAR NAME=SEQ_NUM>" id="skip_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="1" />Yes</label>
+	<label><input  onClick=hide_skip(<TMPL_VAR NAME="SEQ_NUM">) type="radio" name="skip_seq<TMPL_VAR NAME=SEQ_NUM>" id="skip_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="0" checked/>No</label><br>
  </tr>
 <TR align=left>
   <Td>
    Reference Sequence:
 </td>
   <TD>
-	<label><input class="backbox" type="radio" name="ref_seq<TMPL_VAR NAME=SEQ_NUM>" id="ref_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="1" <TMPL_VAR NAME=REF_YES> />Yes</label>
-	<label><input class="backbox" type="radio" name="ref_seq<TMPL_VAR NAME=SEQ_NUM>" id="ref_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="0" <TMPL_VAR NAME=REF_NO> />No</label><br>
+	<label><input  type="radio" name="ref_seq<TMPL_VAR NAME=SEQ_NUM>" id="ref_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="1" <TMPL_VAR NAME=REF_YES> />Yes</label>
+	<label><input  type="radio" name="ref_seq<TMPL_VAR NAME=SEQ_NUM>" id="ref_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="0" <TMPL_VAR NAME=REF_NO> />No</label><br>
   </tr>
   <TR nowrap>
 	<TD>Reverse complement: 
-	<td nowrap><label><input class="backbox" type="radio" name="rev<TMPL_VAR NAME="SEQ_NUM">" id="rev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="1" <TMPL_VAR NAME=REV_YES> onclick='rev_locs("<TMPL_VAR NAME="SEQ_NUM">")' />Yes</label>&nbsp<label><input class="backbox" type="radio" name="rev<TMPL_VAR NAME="SEQ_NUM">" id="rev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="0" <TMPL_VAR NAME=REV_NO> onclick='rev_locs("<TMPL_VAR NAME="SEQ_NUM">")' />No</label>
+	<td nowrap><label><input  type="radio" name="rev<TMPL_VAR NAME="SEQ_NUM">" id="rev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="1" <TMPL_VAR NAME=REV_YES> onclick='rev_locs("<TMPL_VAR NAME="SEQ_NUM">")' />Yes</label>&nbsp<label><input  type="radio" name="rev<TMPL_VAR NAME="SEQ_NUM">" id="rev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="0" <TMPL_VAR NAME=REV_NO> onclick='rev_locs("<TMPL_VAR NAME="SEQ_NUM">")' />No</label>
 </tr>
  <TR align=left>
   <Td>
@@ -1465,8 +1465,8 @@ function rand ()
 <TMPL_LOOP NAME="REF_SEQ">
 <div id="refseq<TMPL_VAR NAME=SEQ_NUM>">
 <font class ="small">Sequence <TMPL_VAR NAME=SEQ_NUM>: 
-<label><input class="backbox" type="radio" name="ref_seq<TMPL_VAR NAME=SEQ_NUM>" id="ref_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="1" checked />On</label>
-<label><input class="backbox" type="radio" name="ref_seq<TMPL_VAR NAME=SEQ_NUM>" id="ref_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="0" />Off</label><br>
+<label><input  type="radio" name="ref_seq<TMPL_VAR NAME=SEQ_NUM>" id="ref_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="1" checked />On</label>
+<label><input  type="radio" name="ref_seq<TMPL_VAR NAME=SEQ_NUM>" id="ref_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="0" />Off</label><br>
 </div>
 </TMPL_LOOP>
 <div id="new_refseq"></div>

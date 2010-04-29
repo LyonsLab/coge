@@ -243,11 +243,11 @@ save_FeatList_settings(['args__display','args__'+index],[]);
 }
 
 </SCRIPT>
-<a href='#' id="table_opts" class='ui-button ui-button-icon-left ui-state-default ui-corner-all'><span class="ui-icon ui-icon-newwin"></span>Change Viewable Columns</a>
+<span href='#' id="table_opts" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-newwin"></span>Change Viewable Columns</span>
 <input type=hidden id=gstid value=<TMPL_VAR NAME="GSTID">>
 <div id="table_opts_dialog" title="Table Information Options">
 <form id=feature_list>
-    <table class = "small resultborder" id="show_columns">
+    <table  class="ui-widget-content ui-corner-all small" id="show_columns">
      <tr>
        <td><input class = "display" type = checkbox onclick="toggle_column(1);" <TMPL_VAR NAME="FeatNameD">>Feature Name
        <td><input class = "display"  type = checkbox onclick="toggle_column(2);" <TMPL_VAR NAME="TypeD">>Type
@@ -267,7 +267,8 @@ save_FeatList_settings(['args__display','args__'+index],[]);
        <td><input class = "display"  type = checkbox onclick="toggle_column(14);" <TMPL_VAR NAME="OtherD">>Other
 
        <TMPL_IF NAME="SAVE_DISPLAY">
-	<TR><td><input type=button value="Save Display Settings" name="SaveSettings" id="SaveSettings" onclick="save_display_settings()">
+	<TR><td>
+<span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="save_display_settings()"><span class="ui-icon ui-icon-check"></span>Save Display Settings</span>
        </TMPL_IF>
     </table>
 </div>
@@ -281,7 +282,7 @@ Filter Table Rows:
 </select>
 <!-- <span class=small>Tip: Use "*" for wildcards, and "!" to search for not containing</span> -->
 <div class ="small"> Feature Count: <TMPL_VAR NAME="FEAT_COUNT"></div>
-<TABLE id='feat_table'>
+<TABLE id='feat_table' class="ui-widget-content ui-corner-all">
  <THEAD align=left>
   <tr>
    <TH> </TH>
@@ -338,13 +339,13 @@ Filter Table Rows:
 <input type=button value="Uncheck All" onclick="$('#feat_table :checkbox').attr('checked', false);">-->
 
 <!-- TODO - consider putting onClick declarations in javascript for simplicity -->
-<a href="javascript:void(0);" class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="$('#feat_table tr :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Check All</a>
-<a href="javascript:void(0);" class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="$('#feat_table tr :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minus"></span>Uncheck All</a>
-<a href="javascript:void(0);" class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="$('#feat_table tr :visible :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Check Visible</a>
-<a href="javascript:void(0);" class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="$('#feat_table tr :visible :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minus"></span>Uncheck Visible</a>
-<a href="javascript:void(0);" class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="check_type()"><span class="ui-icon ui-icon-check"></span>Check Features of type:</a><TMPL_VAR NAME="FEAT_TYPES">
+<span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#feat_table tr :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Check All</span>
+<span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#feat_table tr :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minus"></span>Uncheck All</span>
+<span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#feat_table tr :visible :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Check Visible</span>
+<span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#feat_table tr :visible :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minus"></span>Uncheck Visible</span>
+<span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="check_type()"><span class="ui-icon ui-icon-check"></span>Check Features of type:</span><TMPL_VAR NAME="FEAT_TYPES">
 <TMPL_IF NAME=SAVE_DATA>
-<a href="javascript:void(0);" id="history_dialog_button" class='ui-button ui-state-default ui-corner-all ui-button-icon-left'><span class="ui-icon ui-icon-newwin"></span>Save Table</a>
+<span href="javascript:void(0);" id="history_dialog_button" class='ui-button ui-corner-all ui-button-icon-left'><span class="ui-icon ui-icon-newwin"></span>Save Table</span>
 </TMPL_IF>
  <div>
   Send Checked Features to:  
@@ -358,11 +359,11 @@ Filter Table Rows:
     <option value = "featlist">FeatList</option>
     <option value = "CodeOn">Coding Evolution</option>
    </select>
-<span class='ui-button ui-state-default ui-corner-all ui-button-icon-right' onclick="feature_checkboxes();"><span class="ui-icon ui-icon-extlink"></span>Go</span><span id=retrieve_message class=alert></span>  
+<span class='ui-button ui-corner-all ui-button-icon-right' onclick="feature_checkboxes();"><span class="ui-icon ui-icon-extlink"></span>Go</span><span id=retrieve_message class=alert></span>  
   </div>
 
 <div id="save_form" title="Save Results">
-<table>
+<table class="ui-widget-content ui-corner-all">
 <tr>
 <td>Work Name:</td>
 <td><input type=text id='work_name' value='FeatList Data'></td>

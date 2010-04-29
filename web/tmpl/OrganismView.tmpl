@@ -244,43 +244,43 @@ $(function() {
 </script>
 <TABLE>
    <TR><TD valign=top>
-    <table>
+    <table class="ui-widget-content ui-corner-all">
      <tr>
-       <td>Organism Name:<td><input type="text" size=15 value="<TMPL_VAR NAME="ORG_NAME">" name = "org_name" id="org_name" style="font-style:italic" onFocus="search_bar('org_name')" onKeyUp='timing("org_name");'><span class='ui-button ui-state-default ui-corner-all' onClick="timing('org_name');"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
+       <td>Organism Name:<td><input type="text" size=15 value="<TMPL_VAR NAME="ORG_NAME">" name = "org_name" id="org_name" style="font-style:italic" onFocus="search_bar('org_name')" onKeyUp='timing("org_name");'><span class='ui-button ui-corner-all' onClick="timing('org_name');"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
      <tr>
-       <td>Organism Description:<td><input type="text" size=15 value="<TMPL_VAR NAME="ORG_DESC">" name = "org_desc" id="org_desc" style="font-style:italic" onFocus="search_bar('org_desc')" onKeyUp='timing("org_desc");'><span class='ui-button ui-state-default ui-corner-all' onClick="timing('org_desc');"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
+       <td>Organism Description:<td><input type="text" size=15 value="<TMPL_VAR NAME="ORG_DESC">" name = "org_desc" id="org_desc" style="font-style:italic" onFocus="search_bar('org_desc')" onKeyUp='timing("org_desc");'><span class='ui-button ui-corner-all' onClick="timing('org_desc');"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
      <tr>
-       <td>Dataset Name:<td><input type="text" size=15 value="<TMPL_VAR NAME="DS_NAME">" name = "ds_name" style="font-style:italic" id="ds_name" onFocus="search_bar('ds_name')" onKeyUp='timing("ds_name");' ><span class='ui-button ui-state-default ui-corner-all' onClick="timing('ds_name');"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
+       <td>Dataset Name:<td><input type="text" size=15 value="<TMPL_VAR NAME="DS_NAME">" name = "ds_name" style="font-style:italic" id="ds_name" onFocus="search_bar('ds_name')" onKeyUp='timing("ds_name");' ><span class='ui-button ui-corner-all' onClick="timing('ds_name');"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
    </table>
   <tr><td>
-   <span class = "oblique">Organisms: </span><span class=small id=org_count><TMPL_VAR NAME="ORG_COUNT"></span> 
+   <span>Organisms: </span><span class=small id=org_count><TMPL_VAR NAME="ORG_COUNT"></span> 
    <DIV id="org_list"><TMPL_VAR NAME="ORG_LIST"></DIV>
    
    <td valign=top>
-   <DIV class = "oblique">Organism information</DIV>
-   <div id=org_info class = "small backbox" ></div>
+   <DIV>Organism information</DIV>
+   <div id=org_info class = "small ui-corner-all ui-widget-content" ></div>
   <tr valign=top>
   <td>
-  <span class = "oblique">Genomes: </span><span class=small id=dsg_count><TMPL_VAR NAME="DSG_COUNT"></span> 
+  <span>Genomes: </span><span class=small id=dsg_count><TMPL_VAR NAME="DSG_COUNT"></span> 
   <DIV style="vertical-align: top;" id ="dsg_list"><TMPL_VAR NAME="DSG_LIST"></DIV>
   <TD valign=top>
-   <DIV class = "oblique">Genome information</DIV>
-   <DIV id="dsg_info" class = "small backbox"><TMPL_VAR NAME="DSG_INFO"></DIV>
+   <DIV>Genome information</DIV>
+   <DIV id="dsg_info" class = "small ui-corner-all ui-widget-content"><TMPL_VAR NAME="DSG_INFO"></DIV>
 
   <tr  valign=top>
   <td>
-   <span class = "oblique">Datasets: </span><span class=small id=ds_count><TMPL_VAR NAME="DS_COUNT"></span> 
+   <span>Datasets: </span><span class=small id=ds_count><TMPL_VAR NAME="DS_COUNT"></span> 
    <DIV style="vertical-align: top;" id="ds_list"><TMPL_VAR NAME="DS_LIST"></DIV>
   <TD valign=top>
-   <DIV class = "oblique">Dataset information</DIV>
-   <DIV id="ds_info" class = "small backbox" ><TMPL_VAR NAME="DS_INFO"></DIV>
+   <DIV>Dataset information</DIV>
+   <DIV id="ds_info" class = "small ui-corner-all ui-widget-content" ><TMPL_VAR NAME="DS_INFO"></DIV>
   <tr  valign=top>
   <td>
-   <span class = "oblique">Chromosomes: </span><span class=small id=chr_count><TMPL_VAR NAME="CHR_COUNT"></span> 
+   <span>Chromosomes: </span><span class=small id=chr_count><TMPL_VAR NAME="CHR_COUNT"></span> 
    <DIV style="vertical-align: top;" id="chr_list"><TMPL_VAR NAME="CHR_LIST"></DIV>
   <TD valign=top>
-   <DIV class = "oblique">Chromosome information</DIV>
-   <DIV id="chr_info" class = "small backbox" ><TMPL_VAR NAME="CHR_INFO"></DIV>
+   <DIV>Chromosome information</DIV>
+   <DIV id="chr_info" class = "small ui-corner-all ui-widget-content" ><TMPL_VAR NAME="CHR_INFO"></DIV>
 
 <!--   <td valign=top>
    Organisms With Recently Added Datasets:

@@ -10,7 +10,7 @@ function update_seqs(prot, text)
    {
     if (text)
      {
-       var url=window.location+";prot=1;text=1";
+       var url=window.location+";prot=1;text=1;no="+name_only;
        window.location =url;
      }
     get_seqs(['args__fids','fids', 'args__textbox','args__1','args__prot','args__1','args__name_only','args__'+name_only, 'args__gstid','gstid'],['seq']);
@@ -24,7 +24,7 @@ function update_seqs(prot, text)
    {
     if (text)
      {
-       var url=window.location+";text=1";
+       var url=window.location+";text=1;no="+name_only;
        window.location =url;
      }
     get_seqs(['args__fids','fids', 'args__textbox','args__1','args__prot','args__0','args__name_only','args__'+name_only, 'args__gstid','gstid'],['seq']);
@@ -126,28 +126,28 @@ $(document).ready(function()
   <DIV id="dynamic_button">
   <TABLE>
    <TR>
-   <td><span class='ui-button ui-state-default ui-corner-all'id="prot_button" onclick="update_seqs(1)">Protein Sequence</span>
-   <td><span class='ui-button ui-state-default ui-corner-all'id="dna_button" onclick="update_seqs(0)">DNA Sequence</span>
-   <td><span class='ui-button ui-state-default ui-corner-all'id="prot_text_button" onclick="update_seqs(1,1)">Plain Text</span>
-   <td><span class='ui-button ui-state-default ui-corner-all'id="dna_text_button" onclick="update_seqs(0,1)"> Plain Text</span>
-   <td><span class='ui-button ui-state-default ui-corner-all'id="blast_button"onclick="window.open('CoGeBlast.pl?featid='+$('#fids').val())">CoGe Blast</span> 
+   <td><span class='ui-button ui-corner-all'id="prot_button" onclick="update_seqs(1)">Protein Sequence</span>
+   <td><span class='ui-button ui-corner-all'id="dna_button" onclick="update_seqs(0)">DNA Sequence</span>
+   <td><span class='ui-button ui-corner-all'id="prot_text_button" onclick="update_seqs(1,1)">Plain Text</span>
+   <td><span class='ui-button ui-corner-all'id="dna_text_button" onclick="update_seqs(0,1)"> Plain Text</span>
+   <td><span class='ui-button ui-corner-all'id="blast_button"onclick="window.open('CoGeBlast.pl?featid='+$('#fids').val())">CoGe Blast</span> 
   </TABLE><br>
 
   Off site tools:<br>
 <!-- ALL SEQUENCES -->
-    <table>
+    <table class="ui-widget-content ui-corner-all">
     <tr align=top>
-    <td><span onClick="post_to_target();" class='ui-button ui-state-default ui-corner-all'>TARGeT</span>
+    <td><span onClick="post_to_target();" class='ui-button ui-corner-all'>TARGeT</span>
     <td><span class="link" onclick ="window.open('http://target.iplantcollaborative.org/');"> Tree Analysis of Related Genes and Transposons</span><br>
     <tr align=top>
-    <td><span onClick="post_to_phylogeny_fr();" class='ui-button ui-state-default ui-corner-all'>Phylogeny.fr</span>
+    <td><span onClick="post_to_phylogeny_fr();" class='ui-button ui-corner-all'>Phylogeny.fr</span>
     <td>One click phylogeny at <a href="http://www.phylogeny.fr" target=_new>Phylogeny.fr</a>
     </table>
 <!-- PROTEIN SEQUENCES ONLY -->
   <div class="prot_option">
    <table>
     <tr align=top>
-    <td><span onClick="post_to_prosite();" class='ui-button ui-state-default ui-corner-all'>ProSite</span>
+    <td><span onClick="post_to_prosite();" class='ui-button ui-corner-all'>ProSite</span>
     <td>Scan for protein domains at <span class=link onclick="window.open('http://www.expasy.ch/prosite/')">ProSite</span>.  
   </table>
    </div>

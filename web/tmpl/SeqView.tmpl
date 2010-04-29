@@ -265,9 +265,9 @@ $(function(){
 <div id="feature_info" class="dialog_box" title="Feature Information"></div>
 
 <div id=seq_buttons class="ui-buttonset ui-buttonset-single">
-<button id="dna_button" class="ui-button ui-state-default ui-corner-left seq_button ui-state-active" onClick="get_sequence(0,0);gen_title(['args__rc','args__0','args__pro','args__0'],['box_name']);">Genomic DNA</button>
-<button id="rc_button" class="ui-button ui-state-default seq_button" onClick="get_sequence(1,0);gen_title(['args__rc','args__1','args__pro','args__0'],['box_name']);">Reverse Complement</button>
-<button id="pro_button" class="ui-button ui-state-default ui-corner-right seq_button" onClick="$('#seq_text').val('Loading. . .');get_sequence(0,1);gen_title(['args__rc','args__0','args__pro','args__1','args__sixframe','args__<TMPL_VAR NAME=SIXFRAME>'],['box_name']);">Protein (Translated)</button>
+<button id="dna_button" class="ui-button ui-corner-left seq_button ui-state-active" onClick="get_sequence(0,0);gen_title(['args__rc','args__0','args__pro','args__0'],['box_name']);">Genomic DNA</button>
+<button id="rc_button" class="ui-button seq_button" onClick="get_sequence(1,0);gen_title(['args__rc','args__1','args__pro','args__0'],['box_name']);">Reverse Complement</button>
+<button id="pro_button" class="ui-button ui-corner-right seq_button" onClick="$('#seq_text').val('Loading. . .');get_sequence(0,1);gen_title(['args__rc','args__0','args__pro','args__1','args__sixframe','args__<TMPL_VAR NAME=SIXFRAME>'],['box_name']);">Protein (Translated)</button>
 </div>
 
 <!--
@@ -316,18 +316,18 @@ $(function(){
      <INPUT type="text" id="adddown" onkeypress="onEnter(event,1);" class="backbox" value= "<TMPL_VAR NAME="ADDDOWN">" size=6>
    </td>
   </TMPL_IF>
-<td><span class='ui-button ui-button-icon-left ui-state-default ui-corner-all' id = "add_to" onClick="redefine(myObj.rc);"><span class="ui-icon ui-icon-arrowrefresh-1-s"></span>Redefine Sequence</span>
+<td><span class='ui-button ui-button-icon-left ui-corner-all' id = "add_to" onClick="redefine(myObj.rc);"><span class="ui-icon ui-icon-arrowrefresh-1-s"></span>Redefine Sequence</span>
    <TMPL_IF NAME="FEATURE">
    <TD align>
-   <span class='ui-button ui-button-icon-left ui-state-default ui-corner-all' id="reset" onClick="reset_updown();get_sequence();"><span class="ui-icon ui-icon-refresh"></span>Reset</span>
+   <span class='ui-button ui-button-icon-left ui-corner-all' id="reset" onClick="reset_updown();get_sequence();"><span class="ui-icon ui-icon-refresh"></span>Reset</span>
    </TMPL_IF>
  </TABLE>
 <table>
      <TR>
      <TD align=right valign="top">
-     <span class='ui-button ui-state-default ui-corner-all' id="blast_button" style="float: left" onClick="blastSeq()">CoGe Blast</span>
-     <span class='ui-button ui-state-default ui-corner-all' id="trna_button" style="float: left" onClick="AragornSeq()">Scan for tRNAs</span>
-     <span class='ui-button ui-state-default ui-corner-all' id="rnafold_button" style="float: left" onClick="RNAFold()">RNA Fold</span>
+     <span class='ui-button ui-corner-all' id="blast_button" style="float: left" onClick="blastSeq()">CoGe Blast</span>
+     <span class='ui-button ui-corner-all' id="trna_button" style="float: left" onClick="AragornSeq()">Scan for tRNAs</span>
+     <span class='ui-button ui-corner-all' id="rnafold_button" style="float: left" onClick="RNAFold()">RNA Fold</span>
     </TD>
    </TR>
      <tr>

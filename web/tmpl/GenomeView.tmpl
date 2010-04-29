@@ -482,12 +482,12 @@ $(function() {
 
 Window Width: <input type=textbox class=backbox size=4 id="width" onkeypress="onEnter(event);" value=<TMPL_VAR NAME="width"> />px
 
-<span class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="$('#map').css('width',$('#width').val());updateZoom();"><span class="ui-icon ui-icon-arrow-2-e-w"></span>Resize</span>
-<span class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="$('#map').css('width',''+$('#main').width());updateZoom();"><span class="ui-icon ui-icon-arrow-4-diag"></span>Full-Window</span>
+<span class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#map').css('width',$('#width').val());updateZoom();"><span class="ui-icon ui-icon-arrow-2-e-w"></span>Resize</span>
+<span class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#map').css('width',''+$('#main').width());updateZoom();"><span class="ui-icon ui-icon-arrow-4-diag"></span>Full-Window</span>
 
     <div id="main"></div>
 
-    <div id="map"></div>
+    <div id="map"  style="background-color:#FFFFFF"></div>
     <div id='resolution'></div>
     <div id ='alert_grab'></div>
 <div id="slider" class='ui-slider ui-slider-horizontal ui-widget ui-widget-content ui-corner-all'>
@@ -496,20 +496,20 @@ Window Width: <input type=textbox class=backbox size=4 id="width" onkeypress="on
 
 <br>
 <div style="float:left">
- <span class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="$('#set_range').show(0);$('#grab_seq').show();$('#extract_feat').hide();$('#grab_from').css('backgroundColor','FFFF66');pageObj.getseq=1;"><span class="ui-icon ui-icon-scissors"></span>Grab Sequence</span>
- <span class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="$('#set_range').show(0);$('#extract_feat').show();$('#grab_seq').hide();$('#grab_from').css('backgroundColor','FFFF66');pageObj.getseq=1;"><span class="ui-icon ui-icon-scissors"></span>Extract Features</span>
- <span class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="$('#genome_info_popup').html('Loading. . .');get_genome_info(['args__dsgid', 'args__<TMPL_VAR NAME=DSG>'],['genome_info_popup']);$('#genome_info_popup').dialog('open');"><span class="ui-icon ui-icon-newwin"></span>Genome Info</span>
+ <span class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#set_range').show(0);$('#grab_seq').show();$('#extract_feat').hide();$('#grab_from').css('backgroundColor','FFFF66');pageObj.getseq=1;"><span class="ui-icon ui-icon-scissors"></span>Grab Sequence</span>
+ <span class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#set_range').show(0);$('#extract_feat').show();$('#grab_seq').hide();$('#grab_from').css('backgroundColor','FFFF66');pageObj.getseq=1;"><span class="ui-icon ui-icon-scissors"></span>Extract Features</span>
+ <span class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#genome_info_popup').html('Loading. . .');get_genome_info(['args__dsgid', 'args__<TMPL_VAR NAME=DSG>'],['genome_info_popup']);$('#genome_info_popup').dialog('open');"><span class="ui-icon ui-icon-newwin"></span>Genome Info</span>
  <br>
 <span id="set_range" style="display:none" > 
   <input type=text id='grab_from' value=0> to <input type=text id="grab_to" value=0> 
  </span>
- <span id="grab_seq" style="display:none" class='ui-button ui-state-default ui-corner-all' onClick="launch_seqview('<TMPL_VAR NAME=DS>','<TMPL_VAR NAME=CHR>','<TMPL_VAR NAME=GSTID>')"> View Sequence</span>
- <span id="extract_feat" style="display:none" class='ui-button ui-state-default ui-corner-all' onClick="launch_featlist('<TMPL_VAR NAME=DS>','<TMPL_VAR NAME=CHR>','<TMPL_VAR NAME=GSTID>')">Get Features</span>
+ <span id="grab_seq" style="display:none" class='ui-button ui-corner-all' onClick="launch_seqview('<TMPL_VAR NAME=DS>','<TMPL_VAR NAME=CHR>','<TMPL_VAR NAME=GSTID>')"> View Sequence</span>
+ <span id="extract_feat" style="display:none" class='ui-button ui-corner-all' onClick="launch_featlist('<TMPL_VAR NAME=DS>','<TMPL_VAR NAME=CHR>','<TMPL_VAR NAME=GSTID>')">Get Features</span>
 </div>
 
 <div align="right">
     <TMPL_IF NAME="SAVE_SETTINGS">
-    <span align="right" class='ui-button ui-state-default ui-corner-all ui-button-icon-left' id="SaveSettings" onclick="go_save_options();"><span class="ui-icon ui-icon-disk"></span>Save Settings</span>
+    <span align="right" class='ui-button ui-corner-all ui-button-icon-left' id="SaveSettings" onclick="go_save_options();"><span class="ui-icon ui-icon-disk"></span>Save Settings</span>
     </TMPL_IF>
 </div>
 
@@ -532,11 +532,11 @@ If this is your first time visiting, you may find these documents helpful:<br>
    <li>For more information on how Maize-Sorhgum comparative genomics using CoGe: <span class="link" onclick=window.open('http://synteny.cnr.berkeley.edu/wiki/index.php/Maize_Sorghum_Syntenic_dotplot')>Maize-Sorghum and CoGe</span>
 </div>
 
-<span class="legend ui-button ui-state-default ui-corner-all" onclick="$('.legend').toggle()">Show Legend</span>
-<span class="legend ui-button ui-state-default ui-corner-all" style="display:none" onclick="$('.legend').toggle()">Hide Legend</span>
+<span class="legend ui-button ui-corner-all" onclick="$('.legend').toggle()">Show Legend</span>
+<span class="legend ui-button ui-corner-all" style="display:none" onclick="$('.legend').toggle()">Hide Legend</span>
  <div class="legend" style="display:none">
  <TMPL_IF NAME="MAIZEGDB"> 
- <span class="ui-button ui-state-default ui-corner-all" onclick="$('#maizegdb_popup').dialog('open')">Maize Researcher Information</span><br>
+ <span class="ui-button ui-corner-all" onclick="$('#maizegdb_popup').dialog('open')">Maize Researcher Information</span><br>
  </TMPL_IF>
  <img width=600px src="/CoGe/picts/GenomeView-legend.png">
   <br>
@@ -547,7 +547,7 @@ If this is your first time visiting, you may find these documents helpful:<br>
   <br>
  </TMPL_IF>
 </div>
- <span class="ui-button ui-state-default ui-corner-all" onclick="window.open('/wiki/index.php?title=GenomeView_examples')">More Legend Information</span>
+ <span class="ui-button ui-corner-all" onclick="window.open('/wiki/index.php?title=GenomeView_examples')">More Legend Information</span>
 
-<span class="ui-button ui-state-default ui-corner-all" onclick="window.open('/wiki/index.php?title=GenomeView')">More GenomeView Help</span>
+<span class="ui-button ui-corner-all" onclick="window.open('/wiki/index.php?title=GenomeView')">More GenomeView Help</span>
 

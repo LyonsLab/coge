@@ -18,7 +18,11 @@ $(document).ready(function(){
 function get_profile() {
 	 $.ajax({
 		data: {fname: 'profile'},
-		success: function(data) { $('#content').html(data);}
+		success: function(data) { $('#content').html(data);	 
+			 $("#profile tr:even").addClass('even');
+	 		 $("#profile tr:odd").addClass('odd');
+//			 $("#profile td:odd").add('');
+			 }
 	});
 }
 
@@ -41,8 +45,8 @@ function view_work_dialog(data) {
 			  .html(html)
 			  .dialog({autoOpen: false,
 			  	   title: 'Viewing Work: '+name,
-				   height: 261,
-				   width: 326,
+				   height: 500,
+				   width: 500,
 				   close: function() { $(this).dialog('destroy'); }, 
 			  })
 			  .show(0)
@@ -333,7 +337,9 @@ function filter_rows (search_text){
 </TMPL_IF>
 
 <TMPL_IF NAME=MAIN>
-<div style="float:left; width:160px">
+<table><tr valign=top><td>
+<div style="float:left; width:160px" class="ui-widget-content ui-corner-all">
+
 <ul class="sf-menu sf-vertical">
   <li><a href="javascript:void(0)" onClick="get_profile()">Profile</a></li>
 <!--
@@ -356,31 +362,33 @@ function filter_rows (search_text){
   <li><a href="javascript:void(0)" onClick="init_works()">Work History</a></li>
 </ul>
 </div>
-<div id=content style="float:right"></div>
+<td>
+<div id=content class="ui-widget-content ui-corner-all" style="float:right"></div>
+</table>
 </TMPL_IF>
 
 <TMPL_IF NAME=PROFILE>
 <span style="color: black;font-weight: bold;"><TMPL_VAR NAME=REAL_NAME>'s Profile</span>
 <dl style="clear:both;font-size:13px; margin-top: 2;">
-<div class="expt">
-	<dt >User Name</dt>
-	<dd><TMPL_VAR NAME=USER_NAME></dd>
-	<dt>Real Name</dt>
-	<dd><TMPL_VAR NAME=REAL_NAME></dd>
-	<dt>E-mail Address</dt>
-	<dd><TMPL_VAR NAME=EMAIL></dd>
-	<dt>Title</dt>
-	<dd><TMPL_VAR NAME=DESC></dd>
-	<dt>Institute</dt>
-	<dd><TMPL_VAR NAME=INSTITUTE></dd>
-	<dt>Website</dt>
-	<dd><TMPL_VAR NAME=WEBSITE></dd>
-	<dt>My CoGe Groups</dt>
-	<dd><TMPL_VAR NAME=GROUPS></dd>
+<table id="profile" class="expt" border=0 class=small>
+	<tr><td>User Name</td>
+	<td><TMPL_VAR NAME=USER_NAME></td>
+	<tr><td>Real Name</td>
+	<td><TMPL_VAR NAME=REAL_NAME></td>
+	<tr><td>E-mail Atdress</td>
+	<td><TMPL_VAR NAME=EMAIL></td>
+	<tr><td>Title</td>
+	<td><TMPL_VAR NAME=DESC></td>
+	<tr><td>Institute</td>
+	<td><TMPL_VAR NAME=INSTITUTE></td>
+	<tr><td>Website</td>
+	<td><TMPL_VAR NAME=WEBSITE></td>
+	<tr><td>My CoGe Groups</td>
+	<td><TMPL_VAR NAME=GROUPS></td>
 		<!-- Should probably have a loop here for all groups -->
-	<dt>My Research Interests</dt>
-	<dd><TMPL_VAR NAME=RESEARCH></dd>
-</div>
+	<tr><td>My Research Interests</td>
+	<td><TMPL_VAR NAME=RESEARCH></td>
+</table>
 </dl>
 </TMPL_IF>
 
@@ -439,13 +447,13 @@ or use custom filter:
 
 <!--
 <div class='ui-buttonset'>
-<a href="javascript:void(0);" class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="$('table.sort-table :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Check All</a>
-<a href="javascript:void(0);" class='ui-button ui-state-default ui-corner-all ui-button-icon-left' onclick="$('table.sort-table :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minus"></span>Uncheck All</a>
-<a href='javascript:void(0)' title='View Work' onClick="get_work_entry();" class='ui-button ui-state-default ui-button-icon-solo ui-corner-all'><span class='ui-icon ui-icon-info'></span></a>
-<a href='javascript:void(0)' title='Edit Work' onClick="get_work_entry(1);" class='ui-button ui-state-default ui-button-icon-solo ui-corner-all'><span class='ui-icon ui-icon-pencil'></span></a>
-<a href='javascript:void(0)' title='Archive Work' onClick="archive_work(1)" class='ui-button ui-state-default ui-button-icon-solo ui-corner-all'><span class='ui-icon ui-icon-locked'></span></a>
-<a href='javascript:void(0)' title='Unarchive Work' onClick="archive_work(0)" class='ui-button ui-state-default ui-button-icon-solo ui-corner-all'><span class='ui-icon ui-icon-unlocked'></span></a>
-<a href='javascript:void(0)' title='Delete Work' onClick="delete_work_entry_from_checkbox()" class='ui-button ui-state-default ui-button-icon-solo ui-corner-all'><span class='ui-icon ui-icon-trash'></span></a>
+<a href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="$('table.sort-table :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Check All</a>
+<a href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="$('table.sort-table :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minus"></span>Uncheck All</a>
+<a href='javascript:void(0)' title='View Work' onClick="get_work_entry();" class='ui-button ui-button-icon-solo ui-corner-all'><span class='ui-icon ui-icon-info'></span></a>
+<a href='javascript:void(0)' title='Edit Work' onClick="get_work_entry(1);" class='ui-button ui-button-icon-solo ui-corner-all'><span class='ui-icon ui-icon-pencil'></span></a>
+<a href='javascript:void(0)' title='Archive Work' onClick="archive_work(1)" class='ui-button ui-button-icon-solo ui-corner-all'><span class='ui-icon ui-icon-locked'></span></a>
+<a href='javascript:void(0)' title='Unarchive Work' onClick="archive_work(0)" class='ui-button ui-button-icon-solo ui-corner-all'><span class='ui-icon ui-icon-unlocked'></span></a>
+<a href='javascript:void(0)' title='Delete Work' onClick="delete_work_entry_from_checkbox()" class='ui-button ui-button-icon-solo ui-corner-all'><span class='ui-icon ui-icon-trash'></span></a>
 </div>
 -->
 
@@ -482,7 +490,7 @@ or use custom filter:
 	<td><TMPL_VAR NAME=WORK_DATE></tr>
      </table>
      <table>
-     <tr><td><button class='ui-button ui-state-default ui-corner-all' onClick="$('#workflow_choice').slideToggle()">Add to Notebook</button></td><td><button class='ui-button ui-state-default ui-corner-all' onClick="edit_work_entry(<TMPL_VAR NAME=WORK_ID>);$('#work_dialog').dialog('close');">Edit</button></td><td><button class='ui-button ui-state-default ui-corner-all' onClick="delete_work_entry(<TMPL_VAR NAME=WORK_ID>);$('#work_dialog').dialog('close');">Delete</button></td>
+     <tr><td><button class='ui-button ui-corner-all' onClick="$('#workflow_choice').slideToggle()">Add to Notebook</button></td><td><button class='ui-button ui-corner-all' onClick="edit_work_entry(<TMPL_VAR NAME=WORK_ID>);$('#work_dialog').dialog('close');">Edit</button></td><td><button class='ui-button ui-corner-all' onClick="delete_work_entry(<TMPL_VAR NAME=WORK_ID>);$('#work_dialog').dialog('close');">Delete</button></td>
      </table>
 <div id='workflow_choice' style='display:none'>
 <TMPL_IF WF_EXIST>
@@ -491,7 +499,7 @@ Please select a notebook to view: <select id=workflow_select>
 <option value='<TMPL_VAR NAME=WF_ID>'><TMPL_VAR NAME=WF_NAME></option>
 </TMPL_LOOP>
 </select>
-<button class='ui-button ui-state-default ui-corner-all' id=choose_workflow_button onClick=add_work_entry(<TMPL_VAR NAME=WORK_ID>)>Add</button>
+<button class='ui-button ui-corner-all' id=choose_workflow_button onClick=add_work_entry(<TMPL_VAR NAME=WORK_ID>)>Add</button>
 <TMPL_ELSE>
 <div class='ui-state-highlight ui-corner-all'>You have no notebooks. Please <a href="javascript:void(0)" onClick="create_new_workflow()">create</a> one </div>
 </TMPL_IF>
@@ -522,8 +530,8 @@ Please select a notebook to view: <select id=workflow_select>
 	<td><TMPL_VAR NAME=WORK_DATE></tr>
      </table>
      <div style="float:right">
-<!--      <button class='ui-button ui-state-default ui-corner-all' onClick="update_work(<TMPL_VAR NAME=WORK_ID>);$('#work_dialog').dialog('close')">Save</button>
-      <button class='ui-button ui-state-default ui-corner-all' onClick="$('#work_dialog').dialog('close');">Cancel</button> -->
+<!--      <button class='ui-button ui-corner-all' onClick="update_work(<TMPL_VAR NAME=WORK_ID>);$('#work_dialog').dialog('close')">Save</button>
+      <button class='ui-button ui-corner-all' onClick="$('#work_dialog').dialog('close');">Cancel</button> -->
 </div>
 </TMPL_IF>
 
@@ -551,8 +559,8 @@ Please select a notebook to view: <select id=workflow_select onChange=display_wo
 <option value='<TMPL_VAR NAME=WF_ID>'><TMPL_VAR NAME=WF_NAME></option>
 </TMPL_LOOP>
 </select>
-<!-- <button class='ui-button ui-state-default ui-corner-all' id=choose_workflow_button onClick='display_workflow()'>View</button> -->
-<!-- <button class='ui-button ui-state-default ui-corner-all' id=choose_workflow_button onClick=show_workflow(['workflow_select'],[display_workflow]);>View</button> -->
+<!-- <button class='ui-button ui-corner-all' id=choose_workflow_button onClick='display_workflow()'>View</button> -->
+<!-- <button class='ui-button ui-corner-all' id=choose_workflow_button onClick=show_workflow(['workflow_select'],[display_workflow]);>View</button> -->
 <div id=view_workflow><TMPL_VAR NAME=PRELOAD_WORKFLOW></div>
 </div>
 <TMPL_ELSE>
@@ -568,9 +576,9 @@ Please select a notebook to view: <select id=workflow_select onChange=display_wo
 <p>Created on <TMPL_VAR NAME=WF_DATE></p>
 <div class='small'>
 <table><tr>
-	<td><button class='ui-button ui-state-default ui-corner-all' onClick=create_new_workflow()>Create New Workflow</button></td>
-	<td><button class='ui-button ui-state-default ui-corner-all' onClick='edit_workflow_dialog_init(<TMPL_VAR NAME=WF_ID>,"<TMPL_VAR NAME=WF_NAME>")'>Edit Current Workflow</button></td>
-	<td><button class='ui-button ui-state-default ui-corner-all' onClick='delete_dialog_init(<TMPL_VAR NAME=WF_ID>,"<TMPL_VAR NAME=WF_NAME>")'> Delete Current Workflow </button>
+	<td><button class='ui-button ui-corner-all' onClick=create_new_workflow()>Create New Notebook</button></td>
+	<td><button class='ui-button ui-corner-all' onClick='edit_workflow_dialog_init(<TMPL_VAR NAME=WF_ID>,"<TMPL_VAR NAME=WF_NAME>")'>Edit Current Notebook</button></td>
+	<td><button class='ui-button ui-corner-all' onClick='delete_dialog_init(<TMPL_VAR NAME=WF_ID>,"<TMPL_VAR NAME=WF_NAME>")'> Delete Current Notebook </button>
 </table>
 </div>
 <br/>
@@ -596,9 +604,9 @@ Please select a notebook to view: <select id=workflow_select onChange=display_wo
 	<td><TMPL_VAR NAME=WORK_DATE></tr>
      </table>
 <div class='portlet-footer ui-buttonset' style="float:right">
-<!--<a href='javascript:void(0)' title='View Work' onClick="see_work_entry(<TMPL_VAR NAME=WORK_ID>);" class='ui-button ui-state-default ui-button-icon-solo ui-corner-all'><span class='ui-icon ui-icon-info'></span></a>-->
-<a href='javascript:void(0)' title='Edit Work' onClick="see_work_entry(<TMPL_VAR NAME=WORK_ID>,1,<TMPL_VAR NAME=WF_ID>);" class='ui-button ui-state-default ui-button-icon-solo ui-corner-all'><span class='ui-icon ui-icon-pencil'></span></a>
-<a href='javascript:void(0)' title='Delete Work' onClick="delete_work_from_workflow(<TMPL_VAR NAME=WORK_ID>,<TMPL_VAR NAME=WF_ID>)" class='ui-button ui-state-default ui-button-icon-solo ui-corner-all'><span class='ui-icon ui-icon-trash'></span></a>
+<!--<a href='javascript:void(0)' title='View Work' onClick="see_work_entry(<TMPL_VAR NAME=WORK_ID>);" class='ui-button ui-button-icon-solo ui-corner-all'><span class='ui-icon ui-icon-info'></span></a>-->
+<a href='javascript:void(0)' title='Edit Work' onClick="see_work_entry(<TMPL_VAR NAME=WORK_ID>,1,<TMPL_VAR NAME=WF_ID>);" class='ui-button ui-button-icon-solo ui-corner-all'><span class='ui-icon ui-icon-pencil'></span></a>
+<a href='javascript:void(0)' title='Delete Work' onClick="delete_work_from_workflow(<TMPL_VAR NAME=WORK_ID>,<TMPL_VAR NAME=WF_ID>)" class='ui-button ui-button-icon-solo ui-corner-all'><span class='ui-icon ui-icon-trash'></span></a>
 </div>
 </div>
 </div>
@@ -623,8 +631,8 @@ Notebook <TMPL_VAR NAME=WF_NAME> contains no works. Click here to add works to t
 <p>Are you sure you want to delete this notebook?</br>
 <strong>Warning:</strong> this process is irreversible.</p>
 <!--
-<button class='ui-button ui-state-default ui-corner-all' style='float:right' onClick=$(this).dialog('close')>Cancel</button>
-<button class='ui-button ui-state-default ui-corner-all' style='float:right' onClick="delete_workflow(<TMPL_VAR NAME=WF_ID>);$('#delete_check').dialog('close');">Delete</button> -->
+<button class='ui-button ui-corner-all' style='float:right' onClick=$(this).dialog('close')>Cancel</button>
+<button class='ui-button ui-corner-all' style='float:right' onClick="delete_workflow(<TMPL_VAR NAME=WF_ID>);$('#delete_check').dialog('close');">Delete</button> -->
 </div>
 <div id=work_dialog></div>
 </TMPL_IF>
@@ -659,7 +667,7 @@ Please fill out the following details for your new notebook:<br/>
 <td><input type=text id=workflow_desc></td>
 </tr>
 </table>
-<button class='ui-button ui-state-default ui-corner-all' onClick=check_new_workflow();>Create!</button>
+<button class='ui-button ui-corner-all' onClick=check_new_workflow();>Create!</button>
 </TMPL_IF>
 </TMPL_IF>
 

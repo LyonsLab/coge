@@ -27,7 +27,7 @@ $(function() {
 });
 
 Gobe.handle_html= function (html) {
-  html = "<span class='ui-button ui-state-default ui-corner-all' id='clear_lines' onclick='Gobe.clear()'>Clear Connectors</span><br>"+html;
+  html = "<span class='ui-button ui-corner-all' id='clear_lines' onclick='Gobe.clear()'>Clear Connectors</span><br>"+html;
   $('#results_info').html(html);
   
   if (html && !html.match(/multiple hits/)) {
@@ -50,34 +50,34 @@ function update_line_width(val)
 <!--gobe buttons-->
 <table>
 <tr>
-<td><span class='ui-button ui-state-default ui-corner-all' id="clear_lines" onclick="Gobe.clear()">Clear Connectors</span>
+<td><span class='ui-button ui-corner-all' id="clear_lines" onclick="Gobe.clear()">Clear Connectors</span>
 
-<td><span class='ui-button ui-state-default ui-corner-all drawline' id="set_lines" onclick="$('.drawline').hide();$('#set_wedges').show();$('.lineopt').show();Gobe.set_connector('line')">Set connector as Lines</span>
+<td><span class='ui-button ui-corner-all drawline' id="set_lines" onclick="$('.drawline').hide();$('#set_wedges').show();$('.lineopt').show();Gobe.set_connector('line')">Set connector as Lines</span>
 
-<span style="display: none" class='ui-button ui-state-default ui-corner-all lineopt' id="set_wedges" onclick="$('.drawline').show();$('.lineopt').hide();Gobe.set_connector('wedge')">Set connector as Wedges</span>
+<span style="display: none" class='ui-button ui-corner-all lineopt' id="set_wedges" onclick="$('.drawline').show();$('.lineopt').hide();Gobe.set_connector('wedge')">Set connector as Wedges</span>
 
 <td><div class=lineopt style="float: left; display: none">
- <span class='ui-button ui-state-default ui-corner-all' id="">Line Width</span>
+ <span class='ui-button ui-corner-all' id="">Line Width</span>
  <input type=textbox size=2 class="backbox line_width" id=line_width_val value=3 readonly>
- <span class='ui-button ui-state-default ui-corner-all' id="" onclick="update_line_width(1)">+</span>
- <span class='ui-button ui-state-default ui-corner-all' id="" onclick="update_line_width(-1)">-</span>
+ <span class='ui-button ui-corner-all' id="" onclick="update_line_width(1)">+</span>
+ <span class='ui-button ui-corner-all' id="" onclick="update_line_width(-1)">-</span>
 </div>
 </table>
 <DIV id="flashcontent"></DIV>
 <!--gobe buttons-->
 <table>
 <tr>
-<td><span class='ui-button ui-state-default ui-corner-all' id="clear_lines" onclick="Gobe.clear()">Clear Connectors</span>
+<td><span class='ui-button ui-corner-all' id="clear_lines" onclick="Gobe.clear()">Clear Connectors</span>
 
-<td><span class='ui-button ui-state-default ui-corner-all drawline' id="set_lines" onclick="$('.drawline').hide();$('#set_wedges').show();$('.lineopt').show();Gobe.set_connector('line')">Set connector as Lines</span>
+<td><span class='ui-button ui-corner-all drawline' id="set_lines" onclick="$('.drawline').hide();$('#set_wedges').show();$('.lineopt').show();Gobe.set_connector('line')">Set connector as Lines</span>
 
-<span style="display: none" class='ui-button ui-state-default ui-corner-all lineopt' id="set_wedges" onclick="$('.drawline').show();$('.lineopt').hide();Gobe.set_connector('wedge')">Set connector as Wedges</span>
+<span style="display: none" class='ui-button ui-corner-all lineopt' id="set_wedges" onclick="$('.drawline').show();$('.lineopt').hide();Gobe.set_connector('wedge')">Set connector as Wedges</span>
 
 <td><div class=lineopt style="float: left; display: none">
- <span class='ui-button ui-state-default ui-corner-all' id="">Line Width</span>
+ <span class='ui-button ui-corner-all' id="">Line Width</span>
  <input type=textbox size=2 class="backbox line_width" id=line_width_val value=3 readonly>
- <span class='ui-button ui-state-default ui-corner-all' id="" onclick="update_line_width(1)">+</span>
- <span class='ui-button ui-state-default ui-corner-all' id="" onclick="update_line_width(-1)">-</span>
+ <span class='ui-button ui-corner-all' id="" onclick="update_line_width(1)">+</span>
+ <span class='ui-button ui-corner-all' id="" onclick="update_line_width(-1)">-</span>
 </div>
 </table>
 
