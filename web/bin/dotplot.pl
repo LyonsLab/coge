@@ -39,7 +39,6 @@ GetOptions(
 	   "box_diags|bd=i"=>\$box_diags,
 	   );
 
-
 usage() if $help;
 usage() unless -r $dagfile;
 
@@ -145,7 +144,10 @@ else
 
 #add syntenic gene pairs
 my $add = 1 if $dsgid1 eq $dsgid2;
-my $box_coords = draw_dots(gd=>$graphics_context, file=>$alignfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, size=>2, add_inverse=>$add, flip=>$flip, ksdata=>$ksdata, ks_type=>$ks_type, log=>$log, metric=>$axis_metric, colors=>\@colors, color_type=>$color_type);
+my $size = 2;
+$size = 5 if $x_pix_per_bp >5;
+$size = 5 if $y_pix_per_bp >5;
+my $box_coords = draw_dots(gd=>$graphics_context, file=>$alignfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, size=>$size, add_inverse=>$add, flip=>$flip, ksdata=>$ksdata, ks_type=>$ks_type, log=>$log, metric=>$axis_metric, colors=>\@colors, color_type=>$color_type);
 
 draw_boxes(gd=>$graphics_context, boxes=>$box_coords) if $box_diags && $box_coords && @$box_coords;
 
@@ -312,11 +314,12 @@ sub draw_dots
 	my $x = sprintf("%.0f",$midx*$x_pix_per_bp);
 	my $y = sprintf("%.0f",$midy*$y_pix_per_bp);
 	($x,$y) = ($y, $x) if $special;
-
 #	$graphics_context->arc($x, $graphics_context->height-$y, $size, $size, 0, 360, $use_color);
 #	$graphics_context->arc($y, $graphics_context->height-$x, $size, $size, 0, 360, $use_color) if ($add_inverse && !$CHR1 && $x ne $y);
 #	$graphics_context->arc($y, $graphics_context->height-$x, $size, $size, 0, 360, $use_color) if ($add_inverse && $chr1 eq $chr2 && $x ne $y);
 	$val = 0 unless $val; #give it some value for later sorting
+	$x=$width-ceil($size/2) if $x >= $width;
+
 	my $y_real = $graphics_context->height-$y;
 	push @points, [ $x, $y_real, $size, $size, 0, 360, $use_color, $val];
 	$min_x = $x unless $min_x;
@@ -381,7 +384,7 @@ sub draw_dots
     foreach my $point (@points)
       {
 	my $val = pop @$point;
-	$graphics_context->arc(@$point);
+	$graphics_context->filledArc(@$point);
       }
     if ($link_type == 1)
       {
@@ -723,7 +726,7 @@ SELECT feature_id
     my $pos = 1;
     foreach my $item (@ordered)
       {
-	$data{$item}{start} = $pos;
+	$data{$item}{start} = $pos-1;
 	$pos += $data{$item}{length};
 	$data{$item}{rev}=1 if $rev{$item};
       }
