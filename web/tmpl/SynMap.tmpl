@@ -480,7 +480,7 @@ function post_to_grimm(seq1, seq2)
 <div style="clear: both;"> </div>
 <hr>
 <span class="alert" style="float: left; margin-right: 5px;">Get Started:</span> 
-<div style="float: left"><div class="link" onclick=window.open("SynMap.pl?dsgid1=3068;dsgid2=8;D=20;g=10;A=5;w=0;b=1;ft1=1;ft2=1;dt=geneorder;ks=1;autogo=1")>Click here for an example analysis between <i>Arabidopsis thaliana</i> and <i>Arabidopsis lyrata</i>.</div><span class=small>(Note that syntenic gene pairs are colored by synonymous mutations (Ks))</span><div class="link" onclick=window.open("http://synteny.cnr.berkeley.edu/wiki/index.php/SynMap#Example_Results")>Click here for an explaination of the results.</div ></div>
+<div style="float: left"><div class="link" onclick=window.open("SynMap.pl?dsgid1=3068;dsgid2=8;D=20;g=10;A=5;w=0;b=1;ft1=1;ft2=1;dt=geneorder;ks=1;autogo=1")>Click here for an example analysis between <i>Arabidopsis thaliana</i> and <i>Arabidopsis lyrata</i>.</div><span class=small>(Note that syntenic gene pairs are colored by synonymous mutations (Ks))</span><div class="link" onclick=window.open("http://genomevolution.org/wiki/index.php/SynMap#Example_Results")>Click here for an explaination of the results.</div ></div>
 
 
 </TMPL_IF>
@@ -515,8 +515,8 @@ function post_to_grimm(seq1, seq2)
  <tr>
    <td style="color:#009900">Blast Algorithm:
    <td><select id="blast" name="blast">
-        <OPTION VALUE="1" <TMPL_VAR NAME="BLASTN_SELECT">">BlastN
-        <OPTION VALUE="2" <TMPL_VAR NAME="TBLASTX_SELECT">">TBlastX
+        <OPTION VALUE="1" <TMPL_VAR NAME="BLASTN_SELECT">>BlastN
+        <OPTION VALUE="2" <TMPL_VAR NAME="TBLASTX_SELECT">>TBlastX
        </select>
  <tr>
    <td style="color:#009900">Filter Repetitive Matches:
@@ -557,8 +557,8 @@ function post_to_grimm(seq1, seq2)
    Algorithm: 
        <select id="merge_algo" name="merge_algo" onchange="merge_select_check()">
         <OPTION VALUE="0"> --None--
-        <OPTION VALUE="1" <TMPL_VAR NAME="QUOTA_MERGE_SELECT">">Quota Align Merge
-        <OPTION VALUE="2" <TMPL_VAR NAME="DAG_MERGE_SELECT">">Interative DAGChainer
+        <OPTION VALUE="1" <TMPL_VAR NAME="QUOTA_MERGE_SELECT">>Quota Align Merge
+        <OPTION VALUE="2" <TMPL_VAR NAME="DAG_MERGE_SELECT">>Interative DAGChainer
        </select> <br>
  <span class=small>These settings will merge neighboring syntenic blocks.  We recommend "Quota Align".</span>
  <table id="merge_algo_options">
@@ -575,7 +575,7 @@ function post_to_grimm(seq1, seq2)
   <td>Algorithm: 
        <select id="depth_algo" name="depth_algo" onchange="depth_algo_check()">
         <OPTION VALUE="0"> --None--
-        <OPTION VALUE="1" <TMPL_VAR NAME="QUOTA_ALIGN_SELECT">">Quota Align
+        <OPTION VALUE="1" <TMPL_VAR NAME="QUOTA_ALIGN_SELECT">>Quota Align
        </select> <br>
        <div id=depth_options style="display:none">
         Ratio of coverage depth: 
