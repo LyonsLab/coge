@@ -38,28 +38,6 @@ get_locs(\@datasets);
 my $schrs = get_sequence(ds=>\@datasets, file_name=>$fasta_name) if $fasta_name;
 
 
-sub get_sizes {
-    my $locs_ref = shift;
-    my $n = scalar(@{$locs_ref});
-    my $i=0;
-    my $s = "";
-    for ($i=0;$i<$n; $i += 2){
-        $s .= ($locs_ref->[$i + 1] - $locs_ref->[$i] + 1) . ","
-    }
-    chop $s;
-    return $s;
-}
-sub get_starts {
-    my $locs_ref = shift;
-    my $start = shift;
-    my $s = "";
-    for (my $i=0;$i<scalar(@{$locs_ref}); $i += 2){
-        $s .= ($locs_ref->[$i] - $start)  . ","
-    }
-    chop $s;
-    return $s
-}
-
 sub get_name {
     my $g = shift;
     my $name_re = shift;
@@ -96,7 +74,6 @@ sub get_locs {
     my @chrs = sort { $a cmp $b } keys %chrs;
     my %names = ();
     my %fids = ();
-    my $i = 0;
 
     foreach my $chr (@chrs){
         my $rs = $coge->resultset('Feature')->search( {
@@ -112,46 +89,19 @@ sub get_locs {
         while(my $g = $rs->next()){
             if ($fids{$g->feature_id}){ next; }
             $fids{$g->feature_id} = 1;
+            my $ftype = $g->feature_type->name;
             my $gene_name = get_name($g, $name_re);
-            my $key = $g->start . "|". $g->stop . "|". $g->feature_type->name;
-            if ($seen{$key}){ next; }
-            $seen{$key} = 1;
-            $i += 1;
             my $strand = $g->strand == 1 ? '+' : '-';
-            my $type = $g->feature_type->name;
-            my $start = $g->start;
-            my $end = $g->stop;
-            print "$chr,$type,$start,$end,$strand,$gene_name\n";
+            foreach my $loc ($g->locations()){
+                my $start = $loc->start;
+                my $end = $loc->stop;
+                my $key = $start . "|". $end . "|". $ftype;
+                if ($seen{$key}){ next; }
+                $seen{$key} = 1;
+                print "$chr,$ftype,$start,$end,$strand,$gene_name\n";
+            }
         }
     }
-}
-
-sub add_sorted_locs {
-    my $loc_ref = shift;
-    my @locs = @{$loc_ref};
-    my $loc = shift;
-    my $l = scalar(@locs);
-    # dont add exons repeatedly.
-    if ($l > 0 && $locs[$l - 2] == $loc->start && $locs[$l - 1] == $loc->stop){ return \@locs; }
-    # merge overlapping / alternative splicings.
-    my $added = 0;
-    for(my $i =1; $i < $l; $i += 2){
-        if ($loc->start <= $locs[$i] && $loc->stop >= $locs[$i]){
-            $locs[$i] = $loc->stop;
-            $added = 1;
-        }
-        if ($loc->start <= $locs[$i - 1] && $loc->stop >= $locs[$i - 1]){
-            $locs[$i - 1] = $loc->start;
-            $added = 1;
-        }
-        if ($added) { last; }
-    }
-    if(! $added) {
-        push(@locs, $loc->start);
-        push(@locs, $loc->stop);
-    }
-    @locs = sort { $a <=> $b } @locs;
-    return \@locs;
 }
 
 sub get_sequence {
