@@ -144,7 +144,7 @@ else
 
 #add syntenic gene pairs
 my $add = 1 if $dsgid1 eq $dsgid2;
-my $size = 3;
+my $size = 2;
 $size = 5 if $x_pix_per_bp >5;
 $size = 5 if $y_pix_per_bp >5;
 my $box_coords = draw_dots(gd=>$graphics_context, file=>$alignfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, size=>$size, add_inverse=>$add, flip=>$flip, ksdata=>$ksdata, ks_type=>$ks_type, log=>$log, metric=>$axis_metric, colors=>\@colors, color_type=>$color_type);
@@ -169,7 +169,7 @@ sub draw_dots
     my $org2 = $opts{org2};
     my $x_pix_per_bp=$opts{x_pix_per_bp};
     my $y_pix_per_bp=$opts{y_pix_per_bp};
-    my $size = $opts{size} || 2;
+    my $size = $opts{size} || 1;
     my $colors = $opts{colors};
     my $add_inverse = $opts{add_inverse};
     my $link_type = $opts{link_type} || 0;
