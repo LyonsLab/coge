@@ -144,7 +144,7 @@ else
 
 #add syntenic gene pairs
 my $add = 1 if $dsgid1 eq $dsgid2;
-my $size = 2;
+my $size = 3;
 $size = 5 if $x_pix_per_bp >5;
 $size = 5 if $y_pix_per_bp >5;
 my $box_coords = draw_dots(gd=>$graphics_context, file=>$alignfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, size=>$size, add_inverse=>$add, flip=>$flip, ksdata=>$ksdata, ks_type=>$ks_type, log=>$log, metric=>$axis_metric, colors=>\@colors, color_type=>$color_type);
@@ -169,7 +169,7 @@ sub draw_dots
     my $org2 = $opts{org2};
     my $x_pix_per_bp=$opts{x_pix_per_bp};
     my $y_pix_per_bp=$opts{y_pix_per_bp};
-    my $size = $opts{size} || 1;
+    my $size = $opts{size} || 2;
     my $colors = $opts{colors};
     my $add_inverse = $opts{add_inverse};
     my $link_type = $opts{link_type} || 0;
@@ -222,7 +222,6 @@ sub draw_dots
 	my @item2 = split/\|\|/, $line[5];
 	my $fid1 = $item1[6];
 	my $fid2 = $item2[6];
-
 	if ($color_type && $color_type eq "inv" && $item1[4] && $item2[4])
 	  {
 	    $use_color = $item1[4] eq $item2[4]? $colors->[0] : $colors->[1];
@@ -314,12 +313,8 @@ sub draw_dots
 	my $x = sprintf("%.0f",$midx*$x_pix_per_bp);
 	my $y = sprintf("%.0f",$midy*$y_pix_per_bp);
 	($x,$y) = ($y, $x) if $special;
-#	$graphics_context->arc($x, $graphics_context->height-$y, $size, $size, 0, 360, $use_color);
-#	$graphics_context->arc($y, $graphics_context->height-$x, $size, $size, 0, 360, $use_color) if ($add_inverse && !$CHR1 && $x ne $y);
-#	$graphics_context->arc($y, $graphics_context->height-$x, $size, $size, 0, 360, $use_color) if ($add_inverse && $chr1 eq $chr2 && $x ne $y);
 	$val = 0 unless $val; #give it some value for later sorting
 	$x=$width-ceil($size/2) if $x >= $width;
-
 	my $y_real = $graphics_context->height-$y;
 	push @points, [ $x, $y_real, $size, $size, 0, 360, $use_color, $val];
 	$min_x = $x unless $min_x;
@@ -332,6 +327,8 @@ sub draw_dots
 	$max_y = $y_real if $y_real > $max_y;
 
 	$y_real = $graphics_context->height-$x;
+	$use_color = $colors->[0] unless $use_color; #default val just in case
+#	print STDERR $use_color,"\n";
 	push @points, [ $y, $y_real, $size, $size, 0, 360, $use_color, $val] if ($add_inverse && !$CHR1 && $x ne $y);
 	push @points, [ $y, $y_real, $size, $size, 0, 360, $use_color, $val] if ($add_inverse && $chr1 eq $chr2 && $x ne $y);
 	if ($link_type == 1)
@@ -384,7 +381,15 @@ sub draw_dots
     foreach my $point (@points)
       {
 	my $val = pop @$point;
-	$graphics_context->filledArc(@$point);
+#	print STDERR join ("\t", @$point), "!","\n";
+	if ($size > 3)
+	  {
+	    $graphics_context->filledArc(@$point);
+	  }
+	else
+	  {
+	    $graphics_context->arc(@$point);
+	  }
       }
     if ($link_type == 1)
       {
