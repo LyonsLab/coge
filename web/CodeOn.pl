@@ -4,7 +4,7 @@ use strict;
 use CGI;
 use CGI::Ajax;
 use CoGeX;
-use CoGeX::Feature;
+use CoGeX::Result::Feature;
 use Data::Dumper;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
