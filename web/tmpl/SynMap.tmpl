@@ -63,7 +63,9 @@ function handle_results(val){
  $('#log_text').hide(0);
  $('#results').show(0).html(val);
  $(function() {$("#synmap_zoom_box").draggable();});
+ setup_button_states();
  ajax_wait("check_previous_analyses();");
+ 
 }
 
 function check_previous_analyses(){
