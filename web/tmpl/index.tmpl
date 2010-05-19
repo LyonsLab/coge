@@ -23,7 +23,7 @@ function delete_cookie()  {
 $(document).ready(function(){
   $('#uname').focus();
   pageObj = new Object();
-  pageObj.index=Math.floor(Math.random()*10);
+  pageObj.index=0;//Math.floor(Math.random()*20);
   cross_fade();
   <TMPL_VAR NAME=READY>
 });
@@ -58,28 +58,31 @@ function cross_fade() {
  var pause_time = 10000;
  var fade_time = 3000;
  var image = new Array(
-   ["500px-3440_3441.CDS-CDS.blastn.dag_geneorder_D20_g10_A5.1-1.w800.png", "Shewanella baltica strains syntenic dotplot showing an x-alignment","X-alignment"],
    ["500px-SynPlot-Chr1-At-v-Al.png","Syntenic dotplot of Arabidopsis thaliana versus Arabidopsis lyrata with synonymous mutations","Syntenic_comparison_of_Arabidopsis_thaliana_and_Arabidopsis_lyrata"],
+   ["GenomeView-MG1655.png", "Visualizing a prophage insertion in E. coli K12 MG1655 by differences in genome structure", "Horizontal_Gene_Transfer"],
+   ["Os-Sb-CNS-rich.png", "Syntenic MYB with many conserved non-coding-sequences(CNSs).  Purple were computationally predicted; pink with lines are emperically determined for proofing.", "CNS-rich_grass_MYB_gene"],
+   ["600px-Maize-sorghum-cns.png", "Identifying fractionation and conserved non-coding sequences in maize and sorghum", "Maize_Sorghum_Syntenic_dotplot"],
+   ["gevo-synteny.png", "High-resolution sequence analysis of syntenic regions of Arabidopsis derived from its most recent genome duplication event.", "Syntenic_comparison_of_Arabidopsis_thaliana_and_Arabidopsis_lyrata"],
+   ["500px-3440_3441.CDS-CDS.blastn.dag_geneorder_D20_g10_A5.1-1.w800.png", "Shewanella baltica strains syntenic dotplot showing an x-alignment","X-alignment"],
    ["800px-Master_3068_8.CDS-CDS.blastn_geneorder_D20_g10_A5.w2000.ks.png","Syntenic dotplot of Arabidopsis thaliana vs lyrata","Syntenic_comparison_of_Arabidopsis_thaliana_and_Arabidopsis_lyrata"],
    ["Master_2361_2360.CDS-CDS.blastn_geneorder_D20_g10_A5.w500.png","Acidovorax syntenic dotplot showing an x-alignment","X-alignment"],
    ["600px-System_framework.png","CoGe's open-ended interconnected analysis network","CoGe_system_arcitecture"],
    ["600px-Syntenic_dotplot_medicago_truncatula_v2_vs_v3.png","Comparison of new and old genome assemblies of Medicago truncatula","Syntenic_dotplot_medicago_truncatula_version_3_versus_version_2"],
+   ["800px-GenomeView_GEvo-links.png", "Visualizing variation in GC content and links for syntenic gene analyses", "GenomeView_examples#GEvo_Links"],
+
+   ["500px-Reconstructingchromosomes.png", "Reconstruting maize chromosomes through syntenic dotplot comparisons to sorghum", "Splitting_maize_genome"],
    ["Grapevine-peach_K2_historgram.png","Historgram of synonymous mutation values between grape and peach","Syntenic_dotplot_of_peach_versus_grape"],
    ["k12-CDS-aa-usage.png","E. coli's amino acid usage as a function of CDS GC content","CodeOn"],
    ["600px-Plasmodium-codon-substitution-matirx.png", "Codon substitution matrix of two Plasmodia species","Plasmodia_comparative_genomics"],
-   ["Plasmodium_knowlesi_cds_gc_content_histogram.png", "GC content distribution for all protein sequences of a Plasmodium species","Plasmodia_comparative_genomics"],
    ["800px-Human-mouse-tandem-gene-duplication.png","Human-mouse syntenic comparison showing a conserved tandem gene cluster","Local_Gene_Duplication"],
    ["600px-SynPlot-Chr1-At-v-Al.png", "Synonymous mutation histogram of syntenic genes between two species of Arabidopsis showing orthologous pairs and those derived from a shared whole genome duplication event","Syntenic_comparison_of_Arabidopsis_thaliana_and_Arabidopsis_lyrata"],
    ["600px-CoGeBlast-At1g02120-eval.png", "CoGeBlast evaluating potential homologous hits", "Phylogenetics_in_CoGe#Evaluate_potential_homologs_in_CoGeBlast_and_select_the_.22good.22_ones"],
-   ["600px-Phylogeny_fr_PhyML.png","Linking to phylogeny.fr for one-click phylogenetics","Phylogenetics_in_CoGe#Send_sequences_to_phylogeny.fr"],
-   ["500px-Reconstructingchromosomes.png", "Reconstruting maize chromosomes through syntenic dotplot comparisons to sorghum", "Splitting_maize_genome"],
+   ["Plasmodium_knowlesi_cds_gc_content_histogram.png", "GC content distribution for all protein sequences of a Plasmodium species","Plasmodia_comparative_genomics"],
    ["FeatMap-screenshot.png", "Identifying genomic distributions of gene families", "GenomeMap"],
    ["GEvo-ecoli-insertion-direct-repeats.png", "Identifying direct repeats flanking an insertion in E. coli", " Analysis_of_variations_found_in_genomes_of_Escherichia_coli_strain_K12_DH10B_and_strain_B_REL606_using_SynMap_and_GEvo_analysis#High-resolution_GEvo_analysis_of_an_insertion:_finding_direct_sequence_repeats"],
    ["800px-GeLo-nucleotides.png", "Visualizing individual nucleotides with GenomeView", "GenomeView_examples#Chromosome_Background"],
-   ["800px-GenomeView_GEvo-links.png", "Visualizing variation in GC content and links for syntenic gene analyses", "GenomeView_examples#GEvo_Links"],
-   ["600px-Maize-sorghum-cns.png", "Identifying fractionation and conserved non-coding sequences in maize and sorghum", "Maize_Sorghum_Syntenic_dotplot"],
-   ["gevo-synteny.png", "High-resolution sequence analysis of syntenic regions of Arabidopsis derived from its most recent genome duplication event.", "Syntenic_comparison_of_Arabidopsis_thaliana_and_Arabidopsis_lyrata"],
-   ["GenomeView-MG1655.png", "Visualizing a prophage insertion in E. coli K12 MG1655 by differences in genome structure", "Horizontal_Gene_Transfer"]
+   ["600px-Phylogeny_fr_PhyML.png","Linking to phylogeny.fr for one-click phylogenetics","Phylogenetics_in_CoGe#Send_sequences_to_phylogeny.fr"]
+
 
    
 
@@ -90,7 +93,7 @@ function cross_fade() {
   newStuff="<div onclick=window.open('"+link+"')><img style='width: 400px; height: 225px' src='./picts/home_page/"+image[index][0]+"'><br><div style='width:400; text-align:center'>"+image[index][1]+"</div></div>";
   setTimeout("$('#crossfade').html(newStuff)", fade_time);
   $('#crossfade').fadeIn(fade_time);
-  index=Math.floor(Math.random()*image.length);
+  index++;//=Math.floor(Math.random()*image.length);
 
   if (index == image.length) {index=0};
   pageObj.index=index;  
