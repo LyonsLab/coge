@@ -40,18 +40,24 @@ content="LFIw-oo_UpW85cg_ONvoPuH1IpWYjlfmipsWhOvo1kk" />
 <TMPL_VAR NAME=JAVASCRIPT>
 <SCRIPT language="JavaScript">
 
+
+
+
 jQuery(document).ready(function(){ 
   pageObj = new Object();
-  if (jQuery.browser.msie)browserAlert();
+  if (jQuery.browser.msie) {browserAlert()};
   setup_button_states();
+//  if (jQuery.browser.msie == false) {$('#main_alert').html(" ")};
 });
 
 /*
 jQuery(function(){
 });*/
+
 function browserAlert()
 {
- alert('Unfortunately, CoGe has been designed to work with the FireFox browser and may not function appropriately with your browser.  Please use FireFox, which can be downloaded from http://www.mozilla.com/en-US/firefox/');
+ $('#main_alert').html('IE is not supported.  Please use FireFox: http://www.mozilla.com/en-US/firefox/');
+ alert('IE is not supported.  Please use FireFox: http://www.mozilla.com/en-US/firefox/');
 }
 
 /*
@@ -174,12 +180,12 @@ $(document).ready( function() {
             extraWidth:  1     // extra width can ensure lines don't sometimes turn over 
                                // due to slight rounding differences and font-family 
 		     }).superfish({
-	    delay: 300,
+	    delay: 300
 	});
 });
 
 </SCRIPT>
-
+<div id=main_alert style="color: red; font-size: 2em;"></div>
 <div id=signin_popup class="image_window" style="display:none"></div>
 <TMPL_UNLESS NAME=MENU>
   <div style="float:right"><!-- open A -->
@@ -232,7 +238,7 @@ $(document).ready( function() {
 </div><!-- CLOSE A -->
 </TMPL_UNLESS>
 
-<div><TMPL_IF NAME=LOGO_PNG><img style="vertical-align: bottom;" onclick="window.open(<TMPL_VAR NAME=HELP>)" src='/CoGe/picts/<TMPL_VAR NAME=LOGO_PNG>' border=0></TMPL_IF>
+<div><TMPL_IF NAME=LOGO_PNG><img style="vertical-align: bottom;" onclick="window.open('<TMPL_VAR NAME=HELP>')" src='/CoGe/picts/<TMPL_VAR NAME=LOGO_PNG>' border=0></TMPL_IF>
       <span style="vertical-align: bottom; font-size: 1.5em")><TMPL_VAR NAME=TITLE></span>
 </div>
       <TMPL_IF NAME=DEV><br><span class=alert>WARNING: THIS IS A DEVELOPMENT SERVER</span><br>Software may not work, system may be down, etc.<br>Please use <a href="http://genomevolution.org/CoGe"> our production server: genomevolution.org/CoGe</a></TMPL_IF>
