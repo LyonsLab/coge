@@ -33,7 +33,7 @@ use CoGe::Graphics::Feature::Block;
 use CoGe::Graphics::Feature::Outline;
 #use CoGe::Graphics::Feature::Line;
 use CoGeX;
-use CoGeX::Feature;
+use CoGeX::Result::Feature;
 use DBIxProfiler;
 use DBI;
 use LWP::Simple;
@@ -156,7 +156,7 @@ sub gen_html
       {
 	my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
 	$template->param(LOGO_PNG=>"GEvo-logo.png");
-	$template->param(TITLE=>'Genome Evolution Analysis');
+	$template->param(TITLE=>'Genome Evolution Analysis (powered by <a href="http://github.com/brentp/gobe/">gobe</a>)');
 	$template->param(PAGE_TITLE=>'GEvo');
 	$template->param(HELP=>'/wiki/index.php?title=GEvo');
 	my $name = $USER->user_name;
@@ -890,7 +890,7 @@ sub run
     $gobe_buttons .= "</table>";
     $html .= $gobe_buttons;
     $html .= qq{<DIV id=flashcontent></DIV>};
-    $html .= qq{<br><a href="http://synteny.cnr.berkeley.edu/wiki/index.php/Gobe" class=small style="color: red" target=_new>Click here for help!</a>  <a href="http://get.adobe.com/flashplayer/" target=_new class="small">No results?  Rerun by pressing "Run GEvo Analysis!" again.  Still no results? Try installing the latest version of Flash</a>.};
+    $html .= qq{<br><a href="http://genomevolution.org/wiki/index.php/Gobe" class=small style="color: red" target=_new>Click here for help!</a>  <a href="http://get.adobe.com/flashplayer/" target=_new class="small">No results?  Rerun by pressing "Run GEvo Analysis!" again.  Still no results? Try installing the latest version of Flash</a>.};
     $html .= $gobe_buttons;
     $html .= qq{<table>};
     $html .= qq{<tr valign=top><td class = small>Alignment reports};
@@ -1959,7 +1959,7 @@ sub generate_obj_from_seq
       }
     if ($rc)
       {
-	$obj->sequence(CoGeX::Feature->reverse_complement($obj->sequence));
+	$obj->sequence(CoGeX::Result::Feature->reverse_complement($obj->sequence));
       }
     return $obj
   }
@@ -2070,7 +2070,7 @@ sub get_obj_from_genome_db
 	  {
 	    print STDERR "Error retrieving sequence: ".join ("\t", $ds->name,$start, $stop, $chr, $gstid),"\n";
 	  }
-	$seq = CoGeX::Feature->reverse_complement($seq) if $rev;
+	$seq = CoGeX::Result::Feature->reverse_complement($seq) if $rev;
       }
     if ($stop-$start+1 > length($seq))
       {
@@ -2732,7 +2732,7 @@ sub get_bit_score_cutoff
     my $seq_length = $opts{seq_length};
     my $match = $opts{match};
     my $mismatch = $opts{mismatch};
-    my $feat = new CoGeX::Feature;
+    my $feat = new CoGeX::Result::Feature;
     my $bs = $feat->blast_bit_score(match=>$match, mismatch=>$mismatch, seq_length=>$seq_length);
     return $bs;
   }
@@ -3763,7 +3763,7 @@ sub email_results {
 	my $full_gevo_url = $opts{full_gevo_url};
 	return unless $email_address =~/^[_a-zA-Z0-9-]+(\.[_a-zA-Z0-9-]+)*@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*\.(([0-9]{1,3})|([a-zA-Z]{2,3})|(aero|coop|info|museum|name))$/;
 	my $mailer = Mail::Mailer->new("sendmail");
-	$mailer->open({From	=> 'GEvo <gevo_results@synteny.cnr.berkeley.edu>',
+	$mailer->open({From	=> 'GEvo <gevo_results@genomevolution.org>',
 		       To	=> $email_address,
 		       Subject	=> 'GEvo Analysis Results Ready',
 		      })
@@ -3776,7 +3776,7 @@ Thank you for using the Genome Evolution Analysis Tool! The results from your la
 http://}.$server.qq{/CoGe/GEvo_direct.pl?name=$basefilename
 			
 To contact us or to cite CoGe please visit:
-http://synteny.cnr.berkeley.edu/wiki/index.php/Contact_Page
+http://genomevolution.org/wiki/index.php/Contact_Page
 
 You can use this URL for regenerating your results:
 $full_gevo_url
