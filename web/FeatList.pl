@@ -6,7 +6,7 @@ use strict;
 use CGI;
 use CGI::Ajax;
 use CoGeX;
-use CoGeX::Feature;
+use CoGeX::Result::Feature;
 use Data::Dumper;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
@@ -511,7 +511,7 @@ sub generate_excel_file
 	   my ($wat, $wgc) = $feat->wobble_content;
 	   $wat*=100;
 	   $wgc*=100;
-	   $worksheet->write($i,0,"http://synteny.cnr.berkeley.edu/CoGe/FeatView.pl?accn=$name",$name);
+	   $worksheet->write($i,0,"http://genomevolution.org/CoGe/FeatView.pl?accn=$name",$name);
 	   $worksheet->write($i,1,$feat->type->name);
 	   $worksheet->write($i,2,$feat->start."-".$feat->stop);
 	   $worksheet->write($i,3,$feat->strand);
