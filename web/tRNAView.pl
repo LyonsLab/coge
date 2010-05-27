@@ -502,7 +502,7 @@ sub get_genome_fasta
 	$url .= "\nExcel File Aragorn Output: $excel_url" if $excel_url;
 	
 	my $mailer = Mail::Mailer->new("sendmail");
-	$mailer->open({From	=> 'CoGE <coge_results@synteny.cnr.berkeley.edu>',
+	$mailer->open({From	=> 'CoGE <coge_results@genomevolution.org>',
 		       To	=> $email_address,
 		       Subject	=> 'Aragorn Search Results',
 		      })
