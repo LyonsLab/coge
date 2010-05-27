@@ -6,7 +6,7 @@ use Data::Dumper;
 use LWP::UserAgent;
 use base qw(Class::Accessor);
 use CoGe::Accessory::GenBank::Feature;
-use CoGeX::Feature;
+use CoGeX::Result::Feature;
 use Roman;
 
 __PACKAGE__->mk_accessors qw(id locus accn seq_length moltype division date definition version gi keywords data_source dataset organism sequence srcfile dir anntoation features start stop chromosome add_gene_models _has_genes wgs wgs_scafld wgs_data strain substrain genomic_sequence_type_id debug no_wgs requested_id other_stuff ncbi_link);
@@ -188,7 +188,7 @@ sub parse_genbank_file
 	  {
 	    if ($line =~ /^\/\//)
 	      {
-		$working_line = CoGeX::Feature->reverse_complement($working_line) if $rev;
+		$working_line = CoGeX::Result::Feature->reverse_complement($working_line) if $rev;
 		$self->sequence($working_line);
 		$seq_flag = 0;
 		next;
@@ -542,7 +542,7 @@ sub parse_genbank
 	  $self->data_source($source);
 	  $self->organism($organism);
 	  $self->definition($definition);
-	  $sequence = CoGeX::Feature->reverse_complement($sequence) if $rev;
+	  $sequence = CoGeX::Result::Feature->reverse_complement($sequence) if $rev;
 	  $self->sequence( $sequence );
 	  foreach my $feat (@features)
 	    {
