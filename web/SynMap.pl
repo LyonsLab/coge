@@ -25,7 +25,7 @@ use vars qw( $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $FORMATDB $BLAST 
 
 
 $DEBUG = 0;
-$BASE_URL="http://synteny.cnr.berkeley.edu/CoGe/";
+$BASE_URL="http://genomevolution.org/CoGe/";
 $DIR = "/opt/apache/CoGe/";
 $URL = "/CoGe/";
 $FORMATDB = "/usr/bin/formatdb";
@@ -2012,7 +2012,10 @@ sub go
     blast2bed(infile=>$raw_blastfile, outfile1=>$bedfile1, outfile2=>$bedfile2);
     my $filtered_blastfile = $raw_blastfile.".filtered";
     run_blast2raw(blastfile=>$raw_blastfile, bedfile1=>$bedfile1, bedfile2=>$bedfile2, outfile=>$filtered_blastfile);
-    my $synteny_score_db = run_synteny_score (blastfile=>$filtered_blastfile, bedfile1=>$bedfile1, bedfile2=>$bedfile2, outfile=>$org_dirs{$orgkey1."_".$orgkey2}{dir}."/".$dsgid1."_".$dsgid2.".$feat_type1-$feat_type2");
+    print STDERR $filtered_blastfile,"\n";
+    $filtered_blastfile = $raw_blastfile unless -r $filtered_blastfile && -s $filtered_blastfile;
+    print STDERR $filtered_blastfile,"\n";
+#    my $synteny_score_db = run_synteny_score (blastfile=>$filtered_blastfile, bedfile1=>$bedfile1, bedfile2=>$bedfile2, outfile=>$org_dirs{$orgkey1."_".$orgkey2}{dir}."/".$dsgid1."_".$dsgid2.".$feat_type1-$feat_type2"); #needed to comment out as the bed files and blast files have changed in SynFind
     my $local_dup_time = timestr(timediff($t2,$t1));
 
     
@@ -2286,7 +2289,8 @@ sub go
 	    $html .= "<br>".qq{<span class="small link" id="" onClick="window.open('bin/SynMap/order_contigs_to_chromosome.pl?f=$dagchainer_file');" >Generate Assembled Genomic Sequence</span>} if $assemble;
 	    $html .= qq{</table>};
 	    write_log("\nLink to regenerate analysis: $synmap_link", $cogeweb->logfile);
-	    $html .= "<a href='$synmap_link' class='link' target=_new_synmap>--> Regenerate this analysis link <--</a>";
+	    my $tiny_link = get_tiny_link(url=>$synmap_link);
+	    $html .= "<a href='$tiny_link' class='ui-button ui-corner-all' target=_new_synmap>Regenerate this analysis: $tiny_link</a>";
 	    if ($grimm_stuff)
 	      {
 		my $seq1 = ">$org_name1||".$grimm_stuff->[0];
@@ -2299,7 +2303,7 @@ sub go
 <span class="ui-button ui-corner-all" id = "grimm_link" onclick="post_to_grimm('$seq1','$seq2')" > Rearrangement Analysis</span> <a class="small" href=http://grimm.ucsd.edu/GRIMM/index.html target=_new>(Powered by GRIMM!)</a>
 };
 	      }
-
+	    $html.="<br>";
 
 	  }
       }
@@ -2526,7 +2530,7 @@ sub email_results {
 	my $url = "http://".$server."/CoGe/SynMap.pl?file=".$file;
 	
 	my $mailer = Mail::Mailer->new("sendmail");
-	$mailer->open({From	=> 'CoGE <coge_results@synteny.cnr.berkeley.edu>',
+	$mailer->open({From	=> 'CoGE <coge_results@genomevolution.org>',
 		       To	=> $email_address,
 		       Subject	=> $subject,
 		      })
@@ -2601,4 +2605,23 @@ sub commify
     my $text = reverse $_[0];
     $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
     return scalar reverse $text;
+  }
+
+sub get_tiny_link
+  {
+    my %opts = @_;
+    my $url = $opts{url};
+    unless ($url =~ /http/)
+      {
+	my $server = $ENV{SERVER_NAME};
+	$url = "http://".$server."/$URL/".$url;
+      }
+    $url =~ s/:::/__/g;
+    my $html;
+    my $tiny = get("http://genomevolution.org/r/yourls-api.php?signature=d57f67d3d9&action=shorturl&format=simple&url=$url");
+    unless ($tiny)
+      {
+        return "Unable to produce tiny url from server";
+      }
+    return $tiny;
   }
