@@ -8,7 +8,7 @@ use HTML::Template;
 use Data::Dumper;
 use URI::Escape;
 use CoGeX;
-use CoGeX::Feature;
+use CoGeX::Result::Feature;
 use POSIX;
 use File::Temp;
 use File::Basename;
