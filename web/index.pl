@@ -33,7 +33,7 @@ print $pj->build_html($FORM, \&gen_html);
 sub gen_html
   {
     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
-    $template->param(TITLE=>'The Suite for Comparative Genomics');
+    $template->param(TITLE=>'The Place to Compare Genomes');
     $template->param(PAGE_TITLE=>'ANKoCG');
     
     $template->param(HELP=>'/wiki/index.php');
@@ -88,7 +88,7 @@ sub gen_body
       {
 	$tmpl->param(ACTIONS=>[map {{ACTION=>$_->{NAME}, DESC=>$_->{DESC}, LINK=>$_->{LINK}}} sort {$a->{ID} <=> $b->{ID}}@{actions()}  ]);
 	$tmpl->param('INTRO'=>1);
-	$tmpl->param('NSF'=>1);
+	$tmpl->param('CREDITS'=>1);
       }
     my $url = $FORM->param('url') if $FORM->param('url');
     $url =~ s/:::/;/g if $url;
