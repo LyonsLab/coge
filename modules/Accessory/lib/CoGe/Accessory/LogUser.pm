@@ -4,7 +4,7 @@ use strict;
 use CGI::Cookie;
 use Data::Dumper;
 use CoGeX;
-use CoGeX::User;
+use CoGeX::Result::User;
 
 use vars qw($cookie_name $coge);
 
@@ -25,7 +25,7 @@ sub get_user
       }
     unless ($user)
       {
-	$user = new CoGeX::User;
+	$user = new CoGeX::Result::User;
 	$user->user_name("public");
       }
     return ($user);
