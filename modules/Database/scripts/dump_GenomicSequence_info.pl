@@ -4,7 +4,7 @@ use strict;
 use Data::Dumper;
 use CoGeX;
 
-my $connstr = 'dbi:mysql:dbname=genomes_new;host=homer;port=3306';
+my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
 my $coge = CoGeX->connect($connstr, 'coge', '123coge321' );
 
 print "#";

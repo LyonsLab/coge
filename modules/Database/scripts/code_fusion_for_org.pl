@@ -6,6 +6,8 @@ use CoGeX;
 use Getopt::Long;
 use DBIxProfiler;
 use DBI;
+use Parallel::ForkManager;
+use Statistics::Basic::Mean;
 
 my ($help, @orgids, $version, $type, $chr, $DEBUG, $length, $org_search, $sqlite);
 
@@ -19,17 +21,18 @@ GetOptions ("h|help" =>  \$help,
 	    "org_search|os=s" =>\$org_search,
             );
 
-my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
-my $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
+
+my $MAX_PROC = 10;
+my $coge = CoGeX->dbconnect;
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 $type = "CDS" unless $type;
 my $aragorn = "/home/elyons/bin//aragorn";
-my $db = "/home/elyons/projects/code_fusion/data/code_usage/code_usage.sqlite"; 
+#my $db = "/home/elyons/projects/code_fusion/data/code_usage/code_usage.sqlite"; 
+my $db = "/tmp/code_fusion.sqlite";
 my $init = -r $db ? 0 : 1;
-$sqlite = DBI->connect("dbi:SQLite:dbname=$db","","");
-
-
+#$sqlite = DBI->connect("dbi:SQLite:dbname=$db","","");
+$sqlite = db();
 my @aa = qw(R H K D E S T N Q C G P A I L M F W Y V);
 my @codons = gen_codon_table();
 init_sqlite() if $init;
@@ -39,7 +42,7 @@ init_sqlite() if $init;
 print STDERR "length limit $length\n" if $DEBUG && $length;
 
 $| =1;
-print join ("\t", qw (GROUP TYPE NAME LENGTH CDS_COUNT SYS_1 SYS_2), (map {$_, $_."%"} sort @aa), (map {$_, $_."%"} sort @codons), (map {"t".$_, "t".$_."%"} sort @codons), (map {$_, $_."%"} qw(GC AT) ) ),"\n";
+print join ("\t", qw (GROUP TYPE NAME COGE_ID LENGTH GENOME_GC GENOME_AT CDS_COUNT AVE_CDS_SIZE SYS_1 SYS_2), (map {$_, $_."%"} sort @aa), (map {$_, $_."%"} sort @codons), (map {"t".$_, "t".$_."%"} sort @codons), (map {$_, $_."%"} qw(GC AT wobble_GC wobble_AT) ) ),"\n";
 my @orgs;
 unless (@orgids)
   {
@@ -57,20 +60,26 @@ else
       }
   }
 
+my $pm = new Parallel::ForkManager($MAX_PROC);
 foreach my $org (@orgs)
   {
     if ($org_search) {next unless $org->name =~ /$org_search/i || $org->description =~ /$org_search/i};
     my $oname = $org->name;
     $oname .= ": ".$org->description if $org->description;
+    my $org_id = $org->id;
     my $statement = qq{
-SELECT * FROM code_usage where name = "$oname";
+SELECT * FROM code_usage where coge_id = "$org_id";
 };
+    my $sqlite =db();
     my $ary_ref  = $sqlite->selectall_arrayref($statement);
+    $sqlite->disconnect;
     if (@$ary_ref)
       {
 	warn "data for $oname exists.  skipping. . .\n";
 	next;
       }
+    $pm->start and next if $MAX_PROC;
+
 #    print $oname,"\n";
 #    next;
 
@@ -87,24 +96,36 @@ SELECT * FROM code_usage where name = "$oname";
     my $trna_count = 0;
     my $at = 0;
     my $gc = 0;
+    my $wat = 0; #counts for wobble at/gc
+    my $wgc = 0;
+    my $genome_at = 0;
+    my $genome_gc = 0;
+    my @cds_size;
 #    foreach my $ds ($coge->resultset('Dataset')->search($search))
-    foreach my $ds ($coge->get_current_datasets_for_org(org=>$org->id))
+    foreach my $ds ($org->current_datasets)
       {
 #	next unless $ds->id == "6002";
-	print STDERR "working on ",$oname,": ",$ds->name,"\n" if $DEBUG;
+	print STDERR "working on ",$oname,": ",$ds->name,"\n";# if $DEBUG;
 	my $total_length =0;
 	foreach my $chr ($ds->get_chromosomes)
 	  {
+	    next if $length && $total_length > $length;
 	    my $last = $ds->last_chromosome_position($chr);
 	    $total_length += $last;
 	    $org_length += $last;
+	    my ($tgc, $tat) = $ds->percent_gc(count=>1);
+	    $genome_at+=$tat;
+	    $genome_gc+=$tgc;
 	  }
 	print STDERR "Checking length:  limit: $length, total length $total_length\n"  if $DEBUG && $length;
 	next unless $total_length;
 	next if $length && $total_length > $length;
 	#tRNA stuff
-	my $file = gen_fasta($ds);
+	my $file = $org->id.".fasta";
+	gen_fasta(file=>$file, ds=> $ds);
 	my $trna_data = run_aragorn($file);
+	unlink($file);
+
 #	print join ("\n", map{$_."=>".$trna_data->{$_}} sort keys %$trna_data);
 	foreach my $c (keys %trna_codon_usage)
 	  {
@@ -144,6 +165,10 @@ SELECT * FROM code_usage where name = "$oname";
 	      }
 	    $gc+= $gc_at[0] if $gc_at[0] && $gc_at[0] =~ /^\d+$/;
 	    $at+= $gc_at[1] if $gc_at[1] && $gc_at[1] =~ /^\d+$/;
+	    my @wobble_gc_at = $feat->wobble_content(counts=>1);
+	    $wgc+= $wobble_gc_at[0] if $wobble_gc_at[0] && $wobble_gc_at[0] =~ /^\d+$/;
+	    $wat+= $wobble_gc_at[1] if $wobble_gc_at[1] && $wobble_gc_at[1] =~ /^\d+$/;
+	    push @cds_size, $feat->length;
 	    print STDERR "." if ($cds_count%10 == 0 && $DEBUG);
 	  }
 	print STDERR "finished!\n" if $DEBUG;
@@ -154,17 +179,17 @@ SELECT * FROM code_usage where name = "$oname";
 	print STDERR $oname ." has no sequence\n" if $DEBUG;
 	next;
       }
-
     my $aa_total =0;
     map {$aa_total+=$aa_usage{$_}} sort @aa;
     my $codon_total =0;
     map {$codon_total+=$codon_usage{$_}} sort @codons;
     my $nt_total = $at+$gc;
+    my $ave_cds_size = Statistics::Basic::Mean->new(\@cds_size)->query;
     my $insert = "INSERT INTO code_usage (";
-    $insert .= join (",", qw(clade type name length cds_count sys1_perc sys2_perc),(map{$_,$_."_perc"} sort @aa, sort @codons), (map {"t".$_,"t".$_."_perc"} sort @codons), (map {$_,$_."_perc"} qw(GC AT) ) );
+    $insert .= join (",", qw(clade type name coge_id length cds_count ave_cds_size sys1_perc sys2_perc),(map{$_,$_."_perc"} sort @aa, sort @codons), (map {"t".$_,"t".$_."_perc"} sort @codons), (map {$_,$_."_perc"} qw(GC AT wobble_GC wobble_AT genome_GC genome_AT) ) );
     $insert .= ") values (";
-    print join ("\t", $group, $otype, $oname, $org_length, $cds_count);
-    $insert .= '"'.join ('", "', $group, $otype, $oname, $org_length, $cds_count).'"';
+    print join ("\t", $group, $otype, $oname, $org->id, $org_length, $cds_count, $ave_cds_size);
+    $insert .= '"'.join ('", "', $group, $otype, $oname, $org->id, $org_length, $cds_count, $ave_cds_size).'"';
     if ($sys1 || $sys2)
       {
 	print "\t",join ("\t", map {sprintf("%.4f", $_)} $sys1/($sys1+$sys2), $sys2/($sys1+$sys2));
@@ -206,10 +231,28 @@ SELECT * FROM code_usage where name = "$oname";
 	print "\t0\t0"x scalar@codons;
 	$insert .= qq{, "0", "0"} x scalar@codons;
       }
-    print "\t",join ("\t", (map {$_, sprintf("%.4f",$_/$nt_total)} $gc, $at)),"\n";
-    $insert .= ', "'.join ('", "', (map {$_, sprintf("%.2f",100*$_/$nt_total)} $gc, $at)).'")';
+    print "\t",join ("\t", (map {$_, sprintf("%.4f",$_/$nt_total)} $gc, $at));
+    $insert .= ', "'.join ('", "', (map {$_, sprintf("%.2f",100*$_/$nt_total)} $gc, $at)).'"';
+    print "\t", join ("\t", ($wgc, $wat));
+    print "\t", join ("\t", ($genome_gc, $genome_at));
+    print "\n";
+    if ($wgc || $wat)
+      {
+	$insert .= ', "'.join ('", "', (map {$_, sprintf("%.2f",100*$_/($wgc+$wat))} $wgc, $wat)).'"';
+      }
+    else
+      {
+	$insert .= qq{, "N/A", "N/A", "N/A", "N/A"};
+      }
+    $insert .= ', "'.join ('", "', (map {$_, sprintf("%.2f",100*$_/($org_length))} $genome_gc, $genome_at)).'"';
+
+    $insert .= ')';#end insert statement
+    $sqlite = db();
     print STDERR $insert unless $sqlite->do($insert);
+    $sqlite->disconnect;
+    $pm->finish if $MAX_PROC;
   }
+$pm->wait_all_children() if $MAX_PROC;
 
 sub get_group
   {
@@ -321,10 +364,12 @@ sub gen_codon_table
 
 sub gen_fasta
   {
-    my $ds = shift;
+    my %opts = @_;
+    my $ds = $opts{ds};
+    my $file = $opts{file};
 #    my $title = join (", ", join (", ", map {"chr:".$_." v:".$ds->version." ds:".$ds->id} $ds->get_chromosomes));
 #    my $md5 = md5_hex($title);
-    my $file = "tmp.fasta";
+#    my $file = "tmp.fasta";
     open (OUT, ">$file") || die "Can't open $file for writing: $!";;
     foreach my $chr (sort $ds->get_chromosomes)
       {
@@ -373,16 +418,25 @@ id INTEGER PRIMARY KEY AUTOINCREMENT,
 clade varchar(255),
 type varchar(255),
 name varchar(1024),
+coge_id integer(10),
 length varchar,
 cds_count varchar,
+ave_cds_size,
 sys1_perc varchar(255),
 sys2_perc varchar(255),
 };
-    $create .= join (" varchar(255),\n", (map{$_,$_."_perc"} sort @aa, sort @codons), (map {"t".$_,"t".$_."_perc"} sort @codons), (map {$_,$_."_perc"} qw(GC AT) ) )." varchar(255)\n";
+    $create .= join (" varchar(255),\n", (map{$_,$_."_perc"} sort @aa, sort @codons), (map {"t".$_,"t".$_."_perc"} sort @codons), (map {$_,$_."_perc"} qw(GC AT wobble_GC wobble_AT genome_GC genome_AT) ) )." varchar(255)\n";
     $create .= ")";
 #    print $create;
     $sqlite->do($create); 
   }
+
+sub db
+ {
+   return DBI->connect("dbi:SQLite:dbname=$db","","");
+
+
+ }
 
 sub populate_sqlite
  {

@@ -3,30 +3,46 @@
 use strict;
 use CoGeX;
 use Data::Dumper;
+use Getopt::Long;
 
+my ($dsid1, $dsid2, $ftid);
 
-my $dsid1 = shift;
-my $dsid2 = shift;
+GetOptions(
+	   "dsid1=i"=>\$dsid1,
+	   "dsid2=i"=>\$dsid2,
+	   "ftid=i"=>\$ftid,
+	   );
 
 unless ($dsid1 && $dsid2)
   {
     print qq{
 Usage:
-$0 <dataset id 1> <dataset id 2>
+$0 -dsid1 <dataset id 1> -ds1d2 <dataset id 2> 
 
 This program will copy the features from dataset 1 to dataset 2.
+
+Options:
+
+ -dsid1              database dataset id for the dataset from which features are copied
+
+ -dsid2              database dataset id for the dataset to which features are copied
+
+ -ftid               OPTIONAL:  feature type id for the features to be copied. This is useful if, for example,
+                                only "chromosome" (ftid 301) features are to be copied.  If left undefined, all
+                                features will be copied.
 };
     exit;
   }
 
-my $connstr = 'dbi:mysql:dbname=genomes;host=biocon;port=3306';
+my $connstr = 'dbi:mysql:dbname=coge;host=biocon;port=3306';
 my $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 
 
-my ($ds1) = $coge->resultset('Dataset')->resolve($dsid1);
-my ($ds2) = $coge->resultset('Dataset')->resolve($dsid2);
+my ($ds1) = $coge->resultset('Dataset')->find($dsid1);
+my ($ds2) = $coge->resultset('Dataset')->find($dsid2);
+
 
 unless ($ds1 && $ds2)
   {
@@ -36,26 +52,18 @@ unless ($ds1 && $ds2)
 
 
 
-my %chrs = map {$_,1} $ds2->get_chromosomes;
-
-foreach my $feat1 ($ds1->features)
+my $search = {feature_type_id=>$ftid} if $ftid;
+foreach my $feat1 ($ds1->features($search))
   {
+    sleep (.3);
     my $chr = $feat1->chromosome;
-    $chr =~ s/chr// unless $chrs{$chr};
-    unless ($chrs{$chr})
-      {
-	print "Chromosome $chr is not loaded for dataset ".$ds2->name.".  Skipping this feature\n";
-	next;
-      }
     my $feat2 = $ds2->add_to_features(
 #    print Dumper
 				      {feature_type_id=>$feat1->type->id,
 				       start=>$feat1->start,
 				       stop=>$feat1->stop,
 				       strand=>$feat1->strand,
-#				       chromosome=>$feat1->chromosome,
 				       chromosome=>$chr,
-#				      };
 				      });
     foreach my $name($feat1->feature_names)
       {

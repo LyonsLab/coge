@@ -18,13 +18,18 @@ GetOptions (
 	    "autoupdate"=>\$autoupdate,
 	    );
 $forks = 1 unless defined $forks;
-
+my @skipped; #array to hold commands that had skipped reloading.  Will be printed out at end of program for user to manually go through;
 
 #print Dumper get_genomes_for_genomeprj(116);
 #exit;
 
 
-# for understanding accession nomeclature from NCBI see http://www.ncbi.nlm.nih.gov/RefSeq/key.html#accessions
+# for understanding accession nomeclature from NCBI see:
+# all: http://www.ncbi.nlm.nih.gov/Sequin/acc.html
+# refseq: http://www.ncbi.nlm.nih.gov/RefSeq/key.html
+
+
+#accessions
 # genbank genlist.cgi type codes:
 # 0 == Chromosomes and plasmids (NC_)
 # 1 == Chromosomes (NC_)
@@ -85,22 +90,31 @@ my $pm = new Parallel::ForkManager($forks);
 
 my $genomes = get_NCBI_genomes();
 
-
-my $prog = '/home/elyons/projects/CoGeX/scripts/genbank_genome_loader.pl';
-$prog .= " -autoupdate" if $autoupdate;
-
-my @skipped; #array to hold commands that had skipped reloading.  Will be printed out at end of program for user to manually go through;
-foreach my $item (@$genomes)
+if (@skipped)
   {
-    sleep 1;
+    print "Commands that had automatially skipped datasets:\n";
+    print join ("\n", @skipped),"\n";
+  }
+
+
+exit();
+
+
+
+sub process_genome_and_load
+  {
+    my %opts = @_;
+    my $genome = $opts{genome};
+    my $prog = '/home/elyons/projects/CoGeX/scripts/genbank_genome_loader.pl';
+    $prog .= " -autoupdate" if $autoupdate;
     #need to break apart organelle genomes from nuclear genomes
     my @tmp; #temp place to store genomes in case some need to be processed separately in addition to the whole genome.  Such as is the case with mitochondria, chloroplasts, plastids.
-    if (@{$item->{orgs}} > 1) #don't need to check if there is only one item for the genome
+    if (@{$genome->{orgs}} > 1) #don't need to check if there is only one genome for the organism
       {
 	my @subgenome_names = qw(mitochondrion mitochondrial chloroplast apicoplast plastid);
 	my $i=0; #array index;
-	my %no_organelles= (org=>[], accns=>[], gids=>[]); #storage for genomes without organelles
-	foreach my $org (@{$item->{orgs}})
+	my %no_organelles= (org=>[], accns=>[]); #storage for genomes without organelles
+	foreach my $org (@{$genome->{orgs}})
 	  {
 	    my $organelle_found=0;
 	    foreach my $check (@subgenome_names, "whole genome shotgun sequencing project")
@@ -111,16 +125,14 @@ foreach my $item (@$genomes)
 		    #add organelle as separate genome
 		    push @tmp, {
 				org=>[$org],
-				accns=>[$item->{accns}[$i]],
-				gids=>[$item->{gids}[$i]],
+				accns=>[$genome->{accns}[$i]],
 			       };
 		  }
 	      }
 	    unless ($organelle_found)
 	      {
 		push @{$no_organelles{org}}, $org;
-		push @{$no_organelles{accns}}, $item->{accns}[$i];
-		push @{$no_organelles{gids}}, $item->{gids}[$i];
+		push @{$no_organelles{accns}}, $genome->{accns}[$i];
 	      }
 	    $i++;
 	  }
@@ -128,13 +140,12 @@ foreach my $item (@$genomes)
       }
     else #only one genome
       {
-	push @tmp, $item;
+	push @tmp, $genome;
       }
 
     foreach my $genome (@tmp)
       {
 	#	$pm->start and next;
-	print Dumper $genome;
 	my $run = $prog." -accn ".join (" -accn ", @{$genome->{accns}});
 	#$run .= " -chr '$cols[2]'" if $cols[2];
 	$run .= " -td '/tmp/gb/'";
@@ -162,13 +173,6 @@ foreach my $item (@$genomes)
 	#	$pm->finish;
       }
   }
-$pm->wait_all_children;
-if (@skipped)
-  {
-    print "Commands that had automatially skipped datasets:\n";
-    print join ("\n", @skipped),"\n";
-  }
-
 sub process_orgs
   {
     my $data = shift;
@@ -224,38 +228,10 @@ sub get_project
   }
 
 
-sub get_NCBI_genomes_old
-  {
-    my $url = "ftp://ftp.ncbi.nih.gov/genomes/genomeprj/gp.xml";
-    my $file = "/home/elyons/tmp/gb_genomes.xml";
-    getstore ($url, $file) unless -r $file && -A $file > 2; #get the file if older than 2 days
-    my $gpxml;
-    open (IN, $file);
-    while (<IN>)
-      {
-	$gpxml .= $_;
-      }
-    $gpxml =~ s/<\?xml.*?>//;
-    $gpxml =~ s/<!DOCTYPE.*?>//;
-    $gpxml=~s/gp://g;
-    my %genomes;
-    my $count = 0;
-    while ($gpxml =~ /ProjectID>(\d+)<\/ProjectID>/g)
-      {
-	my $gid = $1;
-#	print $gid,"\n";
-	my ($accns, $orgs) = get_genome_accns($gid);
-	$genomes{$gid} = {accns=>$accns, orgs=>$orgs};# if @$accns;
-	$count++;
-#	last if $count == 100;
-      }
-    return \%genomes;
-  }
-
 sub get_NCBI_genomes
   {
     my $esearchgenomeprj = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=genomeprj&term=all%5Bfilter%5D&retmax=999999"; #genomeprj let's me assemble genomes when there are multiple assemblies (no viruses)
-    my $esearchgenome = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=genomeprj&term=all%5Bfilter%5D&retmax=999999"; #get all genome ids
+    my $esearchgenome = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=genome&term=all%5Bfilter%5D&retmax=999999"; #get all genome ids
     my @genomes;
 
 
@@ -267,6 +243,7 @@ sub get_NCBI_genomes
       {
 #	last if $i == 2000;
 	my $gpid = $1;
+	print "working on $gpid\n";
 	my $gids = get_genomes_for_genomeprj($gpid); #metagenomes, etc won't have genomes. . . 
 	my @gids;
 	foreach my $gid (@$gids)
@@ -275,8 +252,60 @@ sub get_NCBI_genomes
 	    $projects{$gid}=$gpid;
 	    push @gids, $gid;
 	  }
-	push @genomes, {gids=>\@gids,
-		       gpid=>$gpid} if @gids;
+	if (@gids)
+	  {
+	    next; #this is temp to test other routine
+	    my $gids = join ",", @gids;
+	    my ($accns, $orgs) = get_genome_accns($gids);
+	    my $res = {gids=>\@gids,
+		       gpid=>$gpid,
+		       accns=>$accns,
+		       orgs=>$orgs};
+	    process_genome_and_load(genome=>$res);
+#	    push @genomes, $res;
+	  }
+	else
+	  {
+	    my $ncids = get_nuccore_for_genome_project($gpid);
+	    unless (@$ncids)
+	      {
+		print "\tunable to get genome or nuccore for genome project id $gpid\n";
+		next;
+		#trying to figure someway out to get the data.
+		get_all_genome_prj_links($gpid);
+		foreach my $id (@$ncids)
+		  {
+		    print "\tfetching nuccore for genome project $id\n";
+		    get_nuccore_for_genome_project($id);
+		  }
+	      }
+#	    my %accns;
+	    my %orgs;
+	    foreach my $ncid (@$ncids)
+	      {
+		my ($accns) = get_accns_for_nuccore($ncid);
+		my ($org) = get_organism_for_nuccore($ncid);
+		foreach my $accn (@$accns)
+		  {
+		    $orgs{$org}{$accn}=1;
+		  }
+	      }
+	    foreach my $org (keys %orgs)
+	      {
+		my $res = {gids=>\@gids,
+			   gpid=>$gpid,
+			   ncids=>$ncids,
+			   accns=>[keys %{$orgs{$org}}],
+			   orgs=>[$org]
+			  };
+		
+		print Dumper $res;
+		<STDIN>;
+		process_genome_and_load(genome=>$res);
+	      }
+#	    push @genomes, $res;
+#	    print "\n";
+	  }
 	$i++;
       }
     #get genomes
@@ -292,24 +321,36 @@ sub get_NCBI_genomes
     foreach my $genome (@genomes)
       {
 #	last if $i ==50;
-	my $gids = join ",", @{$genome->{gids}};
-	my ($accns, $orgs) = get_genome_accns($gids);
-	$genome->{accns}=$accns;
-	$genome->{orgs}=$orgs;# if @$accns;
+
+#	my $gids = join ",", @{$genome->{gids}};
+#	my ($accns, $orgs) = get_genome_accns($gids);
+#	$genome->{accns}=$accns;
+#	$genome->{orgs}=$orgs;# if @$accns;
 	$i++;
       }
     return \@genomes;
   }
 
+sub get_all_genome_prj_links
+    {
+      my $id = shift;
+      my $url = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/elink.fcgi?db=all&dbfrom=genomeprj&retmode=text&id=";
+      my $entry = get ($url.$id);
+#      print $entry;
+    }
+
 sub get_genomes_for_genomeprj
     {
       my $gid = shift;
-      my $elink = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/elink.fcgi?db=genome&dbfrom=genomeprj&id=";
-      my $entry = get($elink."$gid");
+      my $elink = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/elink.fcgi?db=genome&dbfrom=genomeprj&id=$gid";
+      print "running get_genomes_for_genomeprj: $elink\n";
+      my $entry = get($elink);
       my @ids;
       return \@ids unless $entry;
       my $xml = XMLin($entry);
+#      print $entry;
       my $items = ref ($xml->{LinkSet}{LinkSetDb}{Link}) =~ /array/i ? [@{$xml->{LinkSet}{LinkSetDb}{Link}}] : [$xml->{LinkSet}{LinkSetDb}{Link}];
+      
       foreach my $item (@$items)
 	{
 	  my $id = $item->{Id};
@@ -321,6 +362,7 @@ sub get_genomes_for_genomeprj
 sub get_genome_accns
     {
       my $gid = shift;
+      print "running get_genomes_accns\n";
       my $esumg = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=genome&retmode=text&complexity=0&id=";
       my $item = get($esumg.$gid);
       my @accns;
@@ -331,11 +373,53 @@ sub get_genome_accns
 	}
       while ($item=~ /<Item Name="Title" Type="String">(.*?)<\/Item>/g)
 	{
-	  print STDERR $1,"\n";
 	  push @orgs, $1;
 	}
+#      print "successfully got accessions:\n";
+#      print "\t", join ("\t", @orgs),"\n";
+#      print "\t", join ("\t", @accns),"\n";
       return \@accns, \@orgs;
     }
+
+sub get_nuccore_for_genome_project
+   {
+     my $gpid = shift;
+     my $elink = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/elink.fcgi?db=nuccore&dbfrom=genomeprj&id=$gpid";
+     print "running get_nuccore_for_genome_project: $elink\n";
+     my $entry = get($elink);
+     my @ids;
+     return \@ids unless $entry;
+     my $xml = XMLin($entry);
+     my $items = ref ($xml->{LinkSet}{LinkSetDb}{Link}) =~ /array/i ? [@{$xml->{LinkSet}{LinkSetDb}{Link}}] : [$xml->{LinkSet}{LinkSetDb}{Link}];
+     foreach my $item (@$items)
+       {
+	 my $id = $item->{Id};
+	 push @ids, $id if $id;
+       }
+     return \@ids;
+   }
+
+sub get_accns_for_nuccore
+   {
+     my $id = shift;
+     
+     my $esumg = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=nuccore&retmode=text&complexity=0&id=$id";
+     print "running get_accns_for_nuccor: $esumg\n";
+     my $item = get($esumg);
+#     print $item;
+     my @accns;
+     my @orgs;
+     while ($item=~ /<Item Name="Caption" Type="String">(.*?)<\/Item>/g)
+       {
+	 push @accns, $1;
+       }
+     while ($item=~ /<Item Name="Title" Type="String">(.*?)<\/Item>/g)
+       {
+#	 print $1,"\n";
+	 push @orgs, $1;
+	}
+     return \@accns, \@orgs;
+   }
 
 sub get_genome_project_id_for_accn
    {
@@ -351,4 +435,21 @@ sub get_genome_project_id_for_accn
 	 $gid = $1 if $1 ne $id;
        }
      return $gid;
+   }
+
+sub get_organism_for_nuccore
+   {
+     my $nc = shift;
+     my $elink = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/elink.fcgi?dbfrom=nuccore&db=taxonomy&id=$nc";
+     print "running get_nuccore_for_genome_project: $elink\n";
+     my $entry = get($elink);
+     return unless $entry;
+     my $xml = XMLin($entry);
+     my $items = ref ($xml->{LinkSet}{LinkSetDb}{Link}) =~ /array/i ? [@{$xml->{LinkSet}{LinkSetDb}{Link}}] : [$xml->{LinkSet}{LinkSetDb}{Link}];
+     my $esummary = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=taxonomy&retmode=text&complexity=0&id=".$items->[0]{Id};
+     print "running get_nuccore_for_genome_project: $esummary\n";
+     my $entry2 = get($esummary);
+     my $org_name;
+     ($org_name) = $entry2=~ /<Item Name="ScientificName" Type="String">(.*?)<\/Item>/;
+     return $org_name;
    }

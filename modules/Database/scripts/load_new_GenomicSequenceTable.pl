@@ -4,7 +4,7 @@ use strict;
 use Data::Dumper;
 use CoGeX;
 
-my $connstr = 'dbi:mysql:dbname=genomes_new;host=homer;port=3306';
+my $connstr = 'dbi:mysql:dbname=genomes_new;host=biocon.berkeley.edu;port=3306';
 my $coge = CoGeX->connect($connstr, 'elyons', 'eagle7' );
 
 my $file = "/home/elyons/projects/CoGeX/tmp/new_genomic_sequence_table_data.txt";

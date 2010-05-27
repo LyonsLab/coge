@@ -16,7 +16,7 @@ my $MAX_CHR = 99999;
 
 
 my %options;
-getopt("otdcm", \%options);
+getopt("otdcml", \%options);
 
 
 my %ds_hash = (
@@ -29,6 +29,7 @@ print STDERR $organism;
 my $use_contigs = $options{c} or 0;
 my ($org) = $s->resultset('Organism')->resolve($organism);
 my $datasets;
+my $chr_size_limit = $options{l};
 if($options{m}){
     print STDERR "getting masked...\n";
     my ($genomic_sequence_type) = $s->resultset('GenomicSequenceType')->resolve('masked');

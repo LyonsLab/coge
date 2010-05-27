@@ -51,7 +51,7 @@ GetOptions ( "debug=s" => \$DEBUG,
 
 $DEBUG = 1 unless defined $DEBUG; # set to '1' to get updates on what's going on
 $GO = 1 unless defined $GO; #set to 1 to actually make db calls.
-
+print STDERR "Running $0\n";
 
 my $formatdb =  "/usr/bin/formatdb -p F -o T"; #path to blast's formatdb program
 
@@ -138,6 +138,8 @@ if ($ERASE)
   }
 
 process_nt (file=>$nt_file, ds=>$ds, dsg=>$dsg, dir=>$nt_dir, chr=>$chr) if $nt_file || $nt_dir;
+print "dataset_id: ".$ds->id,"\n";
+print "dataset_group_id: ".$dsg->id,"\n";
 
 
 
