@@ -1878,7 +1878,7 @@ sub export_to_excel
 	 $worksheet->write($i,6,$eval);
 	 $worksheet->write($i,7,$pid);
 	 $worksheet->write($i,8,$score);
-	  $worksheet->write($i,9,"http://synteny.cnr.berkeley.edu/CoGe/FeatView.pl?accn=$name",$name);
+	  $worksheet->write($i,9,"http://genomevolution.org/CoGe/FeatView.pl?accn=$name",$name);
 	  $worksheet->write($i,10,$distance);
 	}
    	 
