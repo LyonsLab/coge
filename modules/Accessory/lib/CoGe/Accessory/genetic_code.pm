@@ -1227,7 +1227,7 @@ sub html_code_table
       my ($min_val) = sort {$a <=> $b} map {$data->{$_}} keys %{$code};
       my $range = $max_val-$min_val;
       my $html;
-      $html .= "<table><tr><td nowrap>";
+      $html .= "<table class='ui-widget-content ui-corner-all'><tr><td nowrap>";
       my $count = 0;
       my $codon_set_total =0;
       foreach my $codon (sort { $self->sort_nt1(substr($a, 0, 1)) <=> $self->sort_nt1(substr($b,0, 1)) || $self->sort_nt2(substr($a,1,1)) <=> $self->sort_nt2(substr($b,1,1)) || $self->sort_nt3(substr($a,2,1)) <=> $self->sort_nt3(substr($b,2,1)) } keys %{$code})
@@ -1435,8 +1435,8 @@ sub html_aa
     my ($min_val) = sort {$a<=>$b} map{$data->{$_}} keys %$aa_sort;
     my $range = $max_val-$min_val;
     my $html;
-    $html .= "<table><tr valign=top><td>" if $split_table;
-    $html .= "<table>";
+    $html .= "<table class='ui-widget-content ui-corner-all'><tr valign=top><td>" if $split_table;
+    $html .= "<table class='ui-widget-content ui-corner-all'>";
     my $total = 0;
     foreach (sort {$aa_sort->{$b} <=> $aa_sort->{$a} || $a cmp $b}keys %$aa_sort)
       {	
@@ -1473,7 +1473,7 @@ sub html_aa
 	$html .= "<tr style=\"background-color: $color_str\"><td nowrap>$_ (GC:".sprintf("%.0f",100*$aa_sort->{$_})."%)<td nowrap>".$current_val."%";
 	$html .= " (".$counts->{$_}.")" if $counts;
 	$total++;
-	$html .= "</table><td><table>" if $split_table && $total == 10;
+	$html .= "</table><td><table class='ui-widget-content ui-corner-all'>" if $split_table && $total == 10;
       }
     $html .= "</table>";
     $html .= "</table>" if $split_table;
