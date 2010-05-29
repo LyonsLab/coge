@@ -11,11 +11,15 @@ import os.path as op
 import itertools
 import sys
 
-from bed_utils import Bed, Raw
+from bed_utils import Bed, RawLine
 
-def qa_to_pairs(qa, qbed, sbed):
+def qa_to_pairs(qa_file, qbed, sbed):
 
-    for s in qa:
+    for line in open(qa_file):
+        if line[0] == "#":
+            print line,
+            continue
+        s = RawLine(line)
         query = qbed[s.pos_a].accn
         subject = sbed[s.pos_b].accn
         print "\t".join((query, subject))
@@ -27,9 +31,9 @@ if __name__ == "__main__":
 
     parser = optparse.OptionParser(__doc__)
     parser.add_option("--qbed", dest="qbed",
-            help="path to qbed or qflat")
+            help="path to qbed")
     parser.add_option("--sbed", dest="sbed",
-            help="path to sbed or sflat")
+            help="path to sbed")
 
     (options, args) = parser.parse_args()
 
@@ -40,7 +44,6 @@ if __name__ == "__main__":
     sbed = Bed(options.sbed)
 
     qa_file = args[0]
-    qa = Raw(qa_file)
 
-    qa_to_pairs(qa, qbed, sbed)
+    qa_to_pairs(qa_file, qbed, sbed)
 

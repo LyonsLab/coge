@@ -28,18 +28,18 @@ class BedLine(object):
         return getattr(self, key)
 
 
-class Bed(list):
+class Bed(object):
 
     def __init__(self, filename):
         self.filename = filename
-        beds = []
+        self.beds = []
         for line in open(filename):
             if line[0] == "#": continue
             if line.startswith('track'): continue
-            beds.append(BedLine(line))
+            self.beds.append(BedLine(line))
 
-        self.seqids = sorted(set(b.seqid for b in beds))
-        self.beds = sorted(beds, key=lambda a: (a.seqid, a.start, a.accn))
+        self.seqids = sorted(set(b.seqid for b in self.beds))
+        self.beds.sort(key=lambda a: (a.seqid, a.start, a.accn))
 
     def __getitem__(self, i):
         return self.beds[i]
@@ -50,6 +50,12 @@ class Bed(list):
     def __iter__(self):
         for b in self.beds:
             yield b
+
+    def get_order(self):
+        return dict((f.accn, (i, f)) for (i, f) in enumerate(self))
+
+    def get_simple_bed(self):
+        return [(b.seqid, i) for (i, b) in enumerate(self)]
 
 
 class RawLine(object):
@@ -75,18 +81,9 @@ class Raw(list):
 
     def __init__(self, filename):
         self.filename = filename
-        raws = []
         for line in open(filename):
             if line[0] == "#": continue
-            raws.append(RawLine(line))
-        self.raws = raws
-
-    def __len__(self):
-        return len(self.raws)
-
-    def __iter__(self):
-        for b in self.raws:
-            yield b
+            self.append(RawLine(line))
 
 
 class BlastLine(object):

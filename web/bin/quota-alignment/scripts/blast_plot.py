@@ -2,9 +2,9 @@
 # -*- coding: UTF-8 -*-
 
 """
-%prog qa_file --qbed query.bed --sbed subject.bed
+%prog blast_file --qbed query.bed --sbed subject.bed
 
-visualize the qa_file in a dotplot
+visualize the blast_file in a dotplot
 """
 
 import os.path as op
@@ -12,9 +12,8 @@ import itertools
 import sys
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
-from matplotlib.patches import Rectangle
 
-from bed_utils import Bed, Raw
+from bed_utils import Bed, BlastLine
 
 
 def get_breaks(bed):
@@ -26,37 +25,33 @@ def get_breaks(bed):
         yield seqid, ranks[0][1], ranks[-1][1]
 
 
-def draw_box(fp, ax, color="b"):
-    fp.seek(0)
-    row = fp.readline()
-    while row:
-        row = fp.readline()
-        xrect, yrect = [], []
-        while row and row[0]!="#":
-            ca, a, cb, b, score = row.split()
-            xrect.append(int(a)), yrect.append(int(b))
-            row = fp.readline()
-        xmin, xmax, ymin, ymax = min(xrect), max(xrect), \
-                                min(yrect), max(yrect)
-        ax.add_patch(Rectangle((xmin, ymin), xmax-xmin, ymax-ymin,\
-                                ec=color, fill=False, lw=.2))
+def dotplot(blast_file, qbed, sbed, image_name):
 
+    blast_fh = file(blast_file)
+    blasts = [BlastLine(line) for line in blast_fh]
+    seen = set()
 
-def dotplot(qa_file, qbed, sbed, image_name):
+    qorder = qbed.get_order()
+    sorder = sbed.get_order()
 
-    qa = Raw(qa_file)
-    qa_fh = file(qa_file)
+    data = []
+    for b in blasts:
+        query, subject = b.query, b.subject
+        if query not in qorder or subject not in sorder: continue
+        key = query, subject
+        if key in seen: continue
+        seen.add(key)
+
+        qi, q = qorder[query]
+        si, s = sorder[subject]
+        data.append((qi, si))
 
     fig = plt.figure(1,(8,8))
     root = fig.add_axes([0,0,1,1]) # the whole canvas
     ax = fig.add_axes([.1,.1,.8,.8]) # the dot plot
 
-    # the boxes surrounding each cluster
-    draw_box(qa_fh, ax)
-
-    data = [(b.pos_a, b.pos_b) for b in qa]
     x, y = zip(*data)
-    ax.scatter(x, y, c='k', s=.1, lw=0, alpha=.9)
+    ax.scatter(x, y, c='k', s=.05, lw=0, alpha=.9)
 
     xlim = (0, len(qbed))
     ylim = (0, len(sbed))
@@ -88,6 +83,7 @@ def dotplot(qa_file, qbed, sbed, image_name):
     # i always like the latex font
     _ = lambda x: r"$\rm{%s}$" % x.replace("_", " ").replace(" ", r"\ ")
     to_ax_label = lambda fname: _(op.basename(fname).split(".")[0])
+
     # add genome names
     ax.set_xlabel(to_ax_label(qbed.filename))
     ax.set_ylabel(to_ax_label(sbed.filename))
@@ -101,7 +97,7 @@ def dotplot(qa_file, qbed, sbed, image_name):
 
     root.set_axis_off()
     print >>sys.stderr, "print image to %s" % image_name
-    plt.savefig(image_name, dpi=600)
+    plt.savefig(image_name, dpi=1000)
 
 
 if __name__ == "__main__":
@@ -122,8 +118,8 @@ if __name__ == "__main__":
     qbed = Bed(options.qbed)
     sbed = Bed(options.sbed)
 
-    qa_file = args[0]
+    blast_file = args[0]
 
-    image_name = op.splitext(qa_file)[0] + ".png"
-    dotplot(qa_file, qbed, sbed, image_name)
+    image_name = op.splitext(blast_file)[0] + ".png"
+    dotplot(blast_file, qbed, sbed, image_name)
 
