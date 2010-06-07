@@ -28,10 +28,10 @@ Options:
 #;
   }
 
-my $connstr = 'dbi:mysql:coge:homer:3306';
-$coge = CoGeX->connect($connstr, 'cnssys', 'CnS');
-
+my $connstr = 'dbi:mysql:coge:biocon.berkeley.edu:3306';
+$coge = CoGeX->connect($connstr, 'cnssys', '123coge321');
 my $DSG = $coge->resultset('DatasetGroup')->resolve($dataset_group);
+print STDERR $DSG . "\n";
 @datasets = map { $_->dataset_id } $DSG->datasets;
 
 my $chrs = get_locs(\@datasets);
@@ -91,6 +91,7 @@ sub get_locs {
         my $gene_rs = $coge->resultset('Feature')->search( {
                   'me.dataset_id' => { 'IN' => $datasets },
                   'me.chromosome' => $chr,
+                  # NOTE: should probably check for pseudogenes as well!!
                   'feature_type.name'  =>  'gene' 
                 } , { 
                    'prefetch'           => [ 'feature_type', 'feature_names'] 
