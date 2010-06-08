@@ -26,6 +26,7 @@ Options:
  -fasta_name                           OPTIONAL:  create a fasta file of the sequences
 
 #;
+    exit;
   }
 
 my $connstr = 'dbi:mysql:coge:biocon.berkeley.edu:3306';
@@ -92,7 +93,8 @@ sub get_locs {
                   'me.dataset_id' => { 'IN' => $datasets },
                   'me.chromosome' => $chr,
                   # NOTE: should probably check for pseudogenes as well!!
-                  'feature_type.name'  =>  'gene' 
+                  'feature_type.name'  =>  { 'IN' => ['gene', 'pseudogene', 
+                                                      'transposon'] }
                 } , { 
                    'prefetch'           => [ 'feature_type', 'feature_names'] 
                   ,'order_by'           => [ 'me.start']
@@ -168,7 +170,7 @@ sub get_locs {
                 my $sub_rs = $coge->resultset('Feature')->search( {
                       'me.dataset_id' => { 'IN' => $datasets },
                       'feature_names.name'  =>  $gene_name
-                      , 'feature_type.name'  =>  { 'NOT IN' => ['gene', 'mRNA', 'CDS', 'intron'] }
+                      , 'feature_type.name'  =>  { 'NOT IN' => ['gene', 'CDS', 'intron'] }
                     } , { 
                        'join'               => [ 'feature_names'],
                        'prefetch'           => [ 'feature_type', 'locations'] 
@@ -214,7 +216,7 @@ sub add_sorted_locs {
     my $added = 0;
     for(my $i =1; $i < $l; $i += 2){
         if ($loc->start <= $locs[$i] && $loc->stop >= $locs[$i]){
-            $locs[$i] = $loc->stop;    
+            $locs[$i] = $loc->stop;
             $added = 1;
         }
         if ($loc->start <= $locs[$i - 1] && $loc->stop >= $locs[$i - 1]){
