@@ -170,7 +170,7 @@ BEGIN {
     $RULER_COLOR = [200,200,255]; #color for measurement ruler
     $TICK_COLOR = [0,0,255]; #color for ticks on measurement ruler
     $RULER_HEIGHT = 20; #height (in pixels) of the ruler
-    $FONTTT = "/usr/lib/perl5/site_perl/CoGe/fonts/arial.ttf"; #path to true-type font
+    $FONTTT = "/usr/lib/perl5/CoGe/fonts/arial.ttf"; #path to true-type font /usr/lib/perl5/CoGe/fonts/arial.ttf
     $FONT = GD::Font->MediumBold; #default GD font
     $FEATURE_HEIGHT = 20; #the height of a feature in pixels
     __PACKAGE__->mk_accessors(
