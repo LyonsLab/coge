@@ -20,5 +20,8 @@ lib/CoGe/Graphics/Feature/Block.pm
 lib/CoGe/Graphics/Feature/Outline.pm
 lib/CoGe/Graphics/Feature/HSP.pm
 lib/CoGe/Graphics/Feature/Link.pm
+lib/CoGe/Graphics/Feature/Circle.pm
+lib/CoGe/Graphics/Feature/Diamond.pm
+lib/CoGe/Graphics/Feature/Flag.pm
 t/001_load.t
 t/002_load.t
