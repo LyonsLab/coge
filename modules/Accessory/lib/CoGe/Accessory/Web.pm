@@ -1,5 +1,7 @@
 package CoGe::Accessory::Web;
 
+
+
 use strict;
 use CoGeX;
 use Data::Dumper;
@@ -11,20 +13,46 @@ use File::Basename;
 use File::Temp;
 
 BEGIN {
-    use Exporter ();
-    use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $Q $cogex $TEMPDIR);
+  use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK $Q $cogex $TEMPDIR $BASEDIR);
+    require Exporter;
+
+    $BASEDIR="/opt/apache/CoGe/";
     $VERSION     = 0.1;
-    $TEMPDIR = "/opt/apache/CoGe/tmp";
+    $TEMPDIR = $BASEDIR."tmp";
     @ISA         = (@ISA, qw (Exporter));
+
     #Give a hoot don't pollute, do not export more than needed by default
-    @EXPORT      = qw (login write_log read_log check_taint check_filename_taint save_settings load_settings reset_settings initialize_basefile);
-    @EXPORT_OK   = qw ();
-    %EXPORT_TAGS = ();
+    @EXPORT      = qw ();#qw (login write_log read_log check_taint check_filename_taint save_settings load_settings reset_settings initialize_basefile);
     $cogex = CoGeX->dbconnect();
 #    $cogex->storage->debugobj(new DBIxProfiler());
 #    $cogex->storage->debug(1);
-    __PACKAGE__->mk_accessors qw(restricted_orgs basefilename basefile logfile sqlitefile);
- }
+    __PACKAGE__->mk_accessors qw(restricted_orgs basefilename basefile logfile sqlitefile); 
+  
+}
+
+sub get_defaults
+  {
+    my ($self, $param_file) = self_or_default(@_);
+    $param_file = $BASEDIR."coge.conf" unless defined $param_file;
+    unless (-r $param_file)
+      {
+	print STDERR qq{Either no parameter file specified or unable to read paramer file ($param_file).
+A valid parameter file must be specified or very little will work!};
+	return 0;
+      }
+    open (IN, $param_file);
+    my %items;
+    while (<IN>)
+      {
+	chomp;
+	next if /^#/;
+	next unless $_;
+	my ($name, $path) = split /\s+/,$_,2;
+	$items{$name}=$path;
+      }
+    close IN;
+    return \%items;
+  }
 
 sub dataset_search_for_feat_name
   {
@@ -214,7 +242,7 @@ sub read_log
 sub check_filename_taint {
   my $v = shift;
   return 1 unless $v;
-  if ($v =~ /^([A-Za-z0-9\-\.=\/_]*)$/) {
+  if ($v =~ /^([A-Za-z0-9\-\.=\/_#]*)$/) {
     my $v1 = $1;
     return($v1);
   } else {
@@ -225,7 +253,7 @@ sub check_filename_taint {
 sub check_taint {
   my $v = shift;
   return 1 unless $v;
-  if ($v =~ /^([-\w\._=\s+\/,]+)$/) {
+  if ($v =~ /^([-\w\._=\s+\/,#\]\['"]+)$/) {
     $v = $1;
     # $v now untainted
     return(1,$v);
