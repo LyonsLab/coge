@@ -3,21 +3,23 @@ use strict;
 use base 'Class::Accessor';
 use Data::Dumper;
 use IO::Socket;
+use CoGe::Accessory::Web;
 
 
 BEGIN {
     use Exporter ();
-    use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $NWALIGN $MATRIX_FILE);
+    use vars qw($P $VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $NWALIGN $MATRIX_FILE);
     $VERSION     = '0.1';
+  $P = CoGe::Accessory::Web::get_defaults();
     @ISA         = (@ISA, qw(Exporter));
     #Give a hoot don't pollute, do not export more than needed by default
     @EXPORT      = qw();
     @EXPORT_OK   = qw();
     %EXPORT_TAGS = ();
     __PACKAGE__->mk_accessors(qw(seqA seqB matrix gap gap_ext dpm alignA alignB nwalign nwalign_server_port));
-    $NWALIGN = "/usr/bin/nwalign";
+    $NWALIGN = $P->{NWALIGN};
 
-    $MATRIX_FILE = "/opt/apache/CoGe/data/blast/matrix/aa/BLOSUM62";
+    $MATRIX_FILE = $P->{BLASTMATRIX}."aa/BLOSUM62";
 }
 
 #################### main pod documentation begin ###################
