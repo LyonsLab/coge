@@ -34,17 +34,28 @@ def transposed(data):
 
 
 def get_flanker(group, query):
+    """
+    >>> get_flanker([(370, 15184), (372, 15178), (373, 15176), (400, 15193)],  385)
+    ((373, 15176), (400, 15193), True)
+
+    >>> get_flanker([(124, 13639), (137, 13625)], 138)
+    ((137, 13625), (137, 13625), False)
+    """
     group.sort()
+    #print >>sys.stderr, group, query
     pos = bisect_left(group, (query, 0))
     left_flanker = group[0] if pos==0 else group[pos-1]
-    right_flanker = group[-1] if pos==len(group) else group[pos] 
+    right_flanker = group[-1] if pos == len(group) else group[pos]
     # pick the closest flanker
     if abs(query - left_flanker[0]) < abs(query - right_flanker[0]):
-        flanker = left_flanker
+        flanker, other = left_flanker, right_flanker
     else:
-        flanker = right_flanker
+        flanker, other = right_flanker, left_flanker
 
-    return flanker 
+    flanked = not (pos==0 or pos == len(group) or flanker == query)
+    #print >>sys.stderr, flanker, flanked, "\n\n"
+
+    return flanker, other, flanked
 
 
 def find_synteny_region(query, sbed, data, window, cutoff, colinear=False):
@@ -68,8 +79,7 @@ def find_synteny_region(query, sbed, data, window, cutoff, colinear=False):
     #print list(g)
 
     for group in sorted(g):
-        
-        qflanker, syntelog = get_flanker(group, query)
+        (qflanker, syntelog), (far_flanker, far_syntelog), flanked = get_flanker(group, query)
 
         # run a mini-dagchainer here, take the direction that gives us most anchors 
         if colinear:
@@ -92,7 +102,7 @@ def find_synteny_region(query, sbed, data, window, cutoff, colinear=False):
         if qflanker==query: 
             gray = "S"
         else:
-            gray = "G"
+            gray = "G" if not flanked else "F"
             score -= 1 # slight penalty for not finding syntelog
 
         if score < cutoff: continue
@@ -100,7 +110,7 @@ def find_synteny_region(query, sbed, data, window, cutoff, colinear=False):
         # y-boundary of the block
         left, right = group[0][1], group[-1][1]
         # this characterizes a syntenic region (left, right). syntelog is -1 if it's a gray gene
-        syn_region = (syntelog, left, right, gray, orientation, score)
+        syn_region = (syntelog, far_syntelog, left, right, gray, orientation, score)
         regions.append(syn_region)
 
     return sorted(regions, key=lambda x: -x[-1]) # decreasing synteny score
@@ -112,15 +122,17 @@ def batch_query(qbed, sbed, all_data, options, c=None, transpose=False):
     window = options.window / 2
     sqlite = options.sqlite
     colinear = (options.scoring=="collinear")
+    qnote, snote = options.qnote, options.snote
 
-    # process all genes present in the bed file 
-    if transpose: 
+    # process all genes present in the bed file
+    if transpose:
         all_data = transposed(all_data)
         qbed, sbed = sbed, qbed
+        qnote, snote = snote, qnote
 
     all_data.sort()
     simple_bed = lambda x: (sbed[x].seqid, sbed[x].start)
-    
+
     for seqid, ranks in itertools.groupby(qbed.get_simple_bed(), key=lambda x: x[0]):
         ranks = [x[1] for x in ranks]
         for r in ranks:
@@ -130,9 +142,8 @@ def batch_query(qbed, sbed, all_data, options, c=None, transpose=False):
             rmax_pos = bisect_left(all_data, (rmax, 0))
             data = all_data[rmin_pos:rmax_pos]
             regions = find_synteny_region(r, sbed, data, window, cutoff, colinear=colinear)
-            #if not regions:
-            #    print "%s\t%s" % (qbed[r].accn, "\t".join(["na"]*5))
-            for syntelog, left, right, gray, orientation, score in regions:
+            #if not regions: print "%s\t%s" % (qbed[r].accn, "\t".join(["na"]*5))
+            for syntelog, far_syntelog, left, right, gray, orientation, score in regions:
                 query = qbed[r].accn
 
                 left_chr, left_pos = simple_bed(left)
@@ -145,10 +156,12 @@ def batch_query(qbed, sbed, all_data, options, c=None, transpose=False):
                 right_dist = abs(anchor_pos - right_pos) if anchor_chr==right_chr else 0
                 flank_dist = (max(left_dist, right_dist) / 10000 + 1) * 10000
 
-                query, anchor = int(query), int(anchor)
-                data = (query, anchor, gray, score, flank_dist, orientation)
+                far_syntelog = sbed[far_syntelog].accn
+
+                left_pos, right_pos = sorted((left_pos, right_pos))
+                data = [query, anchor, gray, score, flank_dist, orientation, far_syntelog]
                 if sqlite:
-                    c.execute("insert into synteny values (?,?,?,?,?,?)", data)
+                    c.execute("insert into synteny values (?,?,?,?,?,?,?,?)", data[:6]+[qnote,snote])
                 else:
                     print "\t".join(map(str, data))
 
@@ -184,8 +197,8 @@ def main(blast_file, options):
         conn = sqlite3.connect(options.sqlite)
         c = conn.cursor()
         c.execute("drop table if exists synteny")
-        #c.execute("create table synteny (query text, anchor text, gray varchar(1), score integer, dr integer, orientation varchar(1))")
-        c.execute("create table synteny (query integer, anchor integer, gray varchar(1), score integer, dr integer, orientation varchar(1))")
+        c.execute("create table synteny (query text, anchor text, gray varchar(1), score integer, dr integer, "
+                "orientation varchar(1), qnote text, snote text)")
 
     batch_query(qbed, sbed, all_data, options, c=c, transpose=False)
     batch_query(qbed, sbed, all_data, options, c=c, transpose=True)
@@ -204,8 +217,14 @@ if __name__ == '__main__':
             help="path to qbed")
     parser.add_option("--sbed", dest="sbed",
             help="path to sbed")
-    parser.add_option("--sqlite", dest="sqlite", default=None,
+
+    coge_group = optparse.OptionGroup(parser, "CoGe-specific options")
+    coge_group.add_option("--sqlite", dest="sqlite", default=None,
             help="write sqlite database")
+    coge_group.add_option("--qnote", dest="qnote", default="null",
+            help="query dataset group id")
+    coge_group.add_option("--snote", dest="snote", default="null",
+            help="subject dataset group id")
 
     params_group = optparse.OptionGroup(parser, "Synteny parameters")
     params_group.add_option("--window", dest="window", type="int", default=40,
@@ -216,6 +235,7 @@ if __name__ == '__main__':
     params_group.add_option("--scoring", dest="scoring", choices=supported_scoring, default="collinear",
             help="scoring scheme, must be one of " + str(supported_scoring) +" [default: %default]")
 
+    parser.add_option_group(coge_group)
     parser.add_option_group(params_group)
 
     (options, blast_files) = parser.parse_args()
