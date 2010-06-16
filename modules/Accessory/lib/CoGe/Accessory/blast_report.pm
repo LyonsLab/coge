@@ -42,7 +42,7 @@ sub process_file
     my $file = shift || $self->file;
     my $limit = shift || $self->limit;
     my @hsps;
-    
+    return $self unless $file;
     open (IN, $file) || die "can't open $file for reading: $!";
     my $header;
     my $hsps = [];
@@ -96,7 +96,7 @@ sub _parseQuery
   {
     my $self = shift;
     my $data = shift;
-    my ($query, $length) = $data =~/Query=(.*?)\((\S+)\s*letters\)/s;
+    my ($query, $length) = $data =~/Query=(.*?)\nLength=(\d+)/sx;
     return unless $query;
     $query =~ s/\n/ /gs;
     $query =~ s/ +/ /gs;
@@ -111,7 +111,7 @@ sub _parseSubject
   {
     my $self = shift;
     my $data = shift;
-    my ($subject, $length) = $data =~ />(.*?)Length = (\S+)/s;
+    my ($subject, $length) = $data =~ />(.*?)\nLength=(\S+)/sx;
     return unless $subject;
     $subject =~ s/\n//g;
     $subject =~ s/ +/ /g;
@@ -129,21 +129,21 @@ sub _processHSP {
 	my $query_length = $opts{query_length};
 	my $subject_length = $opts{subject_length};
 	my $info;
-	($info,$data) = split /Query:/, $data,2;
-	$data = "Query:".$data;
+	($info,$data) = split /Query/, $data,2;
+	$data = "Query".$data;
 #	print STDERR $info,"\n!!!\n",$data,"\nXXXXX\n";
 
 	############################
 	# get and parse scorelines #
 	############################
 	my ($score, $bits,$p) = $info =~
-		/Score =\s+(\S+) bits \((\d+)\), Expect.* += +(\S+)/;
+		/Score =\s*(\S+) bits\s\((\d+)\),\s+Expect.*\s*=\s*(\S+)/;
 	$p =~ s/,//g;
 	my ($match, $length) = $info =~ /Identities = (\d+)\/(\d+)/;
 	my ($positive) = $info =~ /Positives = (\d+)/;
 	$positive = $match if not defined $positive;
 	my $strand = "";
-	if ($info =~ /Strand = (\S+) \/ (\S+)/)
+	if ($info =~ /Strand=(\S+)\/(\S+)/)
 	  {
 	    my ($strandtop, $strandbot) = ($1, $2);
 	    if ( defined $strandtop and $strandtop eq "Plus" ) { $strand = "+" }
@@ -181,8 +181,8 @@ sub _processHSP {
 	my (@QL, @SL, @AS) = (); # for better memory management
 	for(my $i=0;$i<@hspline;$i+=3) {
 		#warn $hspline[$i], $hspline[$i+2];
-	  next unless $hspline[$i] =~ /^Query:/;
-		$hspline[$i]   =~ /^Query:\s+(\d+)\s*(\S+)\s+(\d+)/;
+	  next unless $hspline[$i] =~ /^Query/;
+		$hspline[$i]   =~ /^Query\s+(\d+)\s*(\S+)\s+(\d+)/;
 		$ql = $2; 
 		$qb = $1 unless $qb; 
 		$qe = $3;
@@ -191,7 +191,7 @@ sub _processHSP {
 		$as = substr($hspline[$i+1], $offset, CORE::length($ql))
 			if $hspline[$i+1];
 		
-		$hspline[$i+2] =~ /^Sbjct:\s+(\d+)\s*(\S+)\s+(\d+)/;
+		$hspline[$i+2] =~ /^Sbjct\s+(\d+)\s*(\S+)\s+(\d+)/;
 		$sl = $2; $sb = $1 unless $sb; $se = $3;
 		
 		push @QL, $ql; push @SL, $sl; push @AS, $as;
