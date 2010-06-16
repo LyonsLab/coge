@@ -73,7 +73,6 @@ my @color_names;
 foreach my $color (@$colors)
   {
     my $name = "c$count"; 
-    
     $hist->add_colour($name=>$color);
     push @color_names, $name;
     $count++;
