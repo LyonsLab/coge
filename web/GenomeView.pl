@@ -10,9 +10,11 @@ use CoGe::Accessory::Web;
 use CoGeX;
 use DBI;
 use Data::Dumper;
-$ENV{PATH} = "/opt/apache2/CoGe/";
+
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
-use vars qw( $PAGE_NAME $DATE $DEBUG $USER $FORM $coge);
+use vars qw($P $PAGE_NAME $DATE $DEBUG $USER $FORM $coge);
+$P = CoGe::Accessory::Web::get_defaults();
+$ENV{PATH} = $P->{COGEDIR};
 $PAGE_NAME="GenomeView.pl";
 $DEBUG = 0;
 $FORM = new CGI;
@@ -36,7 +38,7 @@ print $pj->build_html($FORM, \&gen_html);
 sub gen_html
   {
     my $html; #=  "Content-Type: text/html\n\n";
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
+    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
     $template->param(LOGO_PNG=>"GenomeView-logo.png");
 #    $template->param(TITLE=>'Genome Viewer');
     $template->param(PAGE_TITLE=>'Genome Viewer');
@@ -68,7 +70,7 @@ sub gen_body
     my $fid = $form->param('fid') if $form->param('fid');
     my $dsgid = $form->param('dsgid') if $form->param('dsgid');
     my $show_legend = $form->param('sl') if $form->param('sl');
-    my $prefs = load_settings(user=>$USER, page=>$PAGE_NAME);
+    my $prefs =CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME);
     my ($ds, $dsg, $gst);
     if ($fid)
       {
@@ -122,7 +124,7 @@ sub gen_body
     $loc = 1 unless $loc;
     $z=5 unless defined $z;
     $z = 0 if $z < 0;
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GenomeView.tmpl');
+    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'GenomeView.tmpl');
     #set layers
     foreach my $ft (@feat_types)
       {
@@ -214,7 +216,7 @@ sub save_options
   {
     my %opts = @_;
     my $opts = Dumper \%opts;
-    my $item = save_settings(opts=>$opts, user=>$USER, page=>$PAGE_NAME);
+    my $item =CoGe::Accessory::Web::save_settings(opts=>$opts, user=>$USER, page=>$PAGE_NAME);
   }
 
 sub get_genome_info

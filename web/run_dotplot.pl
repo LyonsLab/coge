@@ -4,17 +4,18 @@ use strict;
 use CGI;
 use CoGeX;
 use Data::Dumper;
+use CoGe::Accessory::Web;
 
-$ENV{PATH} = "/opt/apache2/CoGe/";
 umask(0);
-use vars qw( $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $DATADIR $DIAGSDIR $DOTPLOT);
-
+use vars qw($P $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $DATADIR $DIAGSDIR $DOTPLOT);
+$P = CoGe::Accessory::Web::get_defaults();
+$ENV{PATH} = $P->{COGEDIR};
 $DEBUG = 1;
-$DIR = "/opt/apache/CoGe/";
-$URL = "/CoGe/";
-$DATADIR = "$DIR/data/";
-$DIAGSDIR = "$DIR/diags";
-$DOTPLOT = $DIR."/bin/dotplot.pl";
+$DIR = $P->{COGEDIR};
+$URL = $P->{URL};
+$DATADIR = $P->{DATADIR};
+$DIAGSDIR = $P->{DIAGSDIR};
+$DOTPLOT = $P->{DOTPLOT};
 
 $FORM = new CGI;
 $coge = CoGeX->dbconnect();
@@ -125,7 +126,7 @@ sub generate_dotplot
     my $metric= $opts{metric};
     my $box_diags = $opts{box_diags};
     my $color_type = $opts{color_type};
-#    write_log("generate dotplot: running $cmd", $cogeweb->logfile);
+#   CoGe::Accessory::Web::write_log("generate dotplot: running $cmd", $cogeweb->logfile);
     my $cmd = $DOTPLOT;
     if ($ksdb && -r $ksdb)
       {
@@ -144,16 +145,18 @@ sub generate_dotplot
     $tmp .= ".$max" if defined $max && $max =~/\d/;
     if (-r $tmp.".html" && !$regen_images)
       {
-#	write_log("generate dotplot: file $outfile already exists",$cogeweb->logfile);
+#CoGe::Accessory::Web::write_log("generate dotplot: file $outfile already exists",$cogeweb->logfile);
 	return $outfile;
       }
 
-    $cmd .= qq{ -d $dag -a $coords -b $outfile -l '' -dsg1 $dsgid1 -dsg2 $dsgid2 -w $width -lt 1 -chr1 $qchr -chr2 $schr -flip $flip -grid 1};
+    $cmd .= qq{ -d $dag -a $coords -b $outfile -dsg1 $dsgid1 -dsg2 $dsgid2 -w $width -lt 1 -chr1 $qchr -chr2 $schr -flip $flip -grid 1};
     $cmd .= qq { -am $metric} if $metric;
     $cmd .= qq { -cdt $color_type} if $color_type;
     $cmd .= qq{ -bd 1} if $box_diags;
     print STDERR "Running: ",$cmd,"\n" if $DEBUG;
-    `$cmd`;
+    my $x;
+    ($x, $cmd) = CoGe::Accessory::Web::check_taint($cmd);
+    `$cmd` if $cmd;
     $outfile .= ".$min" if defined $min && $min =~/\d/;
     $outfile .= ".$max" if defined $max && $max =~/\d/;
     

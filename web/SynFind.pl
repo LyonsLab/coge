@@ -17,33 +17,42 @@ use LWP::Simple;
 
 #example URL: http://toxic.berkeley.edu/CoGe/SynFind.pl?fid=34519245;qdsgid=3;dsgid=4241,6872,7084,7094,7111
 
-$ENV{PATH} = "/opt/apache/CoGe/";
-$ENV{BLASTDB}="/opt/apache/CoGe/data/blast/db/";
-$ENV{BLASTMAT}="/opt/apache/CoGe/data/blast/matrix/";
-use vars qw( $PAGE_NAME $DIR $URL $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $BEDDIR $FORMATDB $BLAST $BLASTZ $CONVERT_BLAST $BLAST2BED $BLAST2RAW $SYNTENY_SCORE $DATASETGROUP2BED $PYTHON26 $FORM $USER $DATE $coge $cogeweb $RESULTSLIMIT $MAX_PROC $connstr);
+use vars qw($P $PAGE_NAME $DIR $URL $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $BEDDIR $FORMATDB $BLAST $BLASTN $LASTZ $CONVERT_BLAST $BLAST2BED $BLAST2RAW $SYNTENY_SCORE $DATASETGROUP2BED $PYTHON26 $FORM $USER $DATE $coge $cogeweb $RESULTSLIMIT $MAX_PROC $connstr);
 #refresh again?
+$P = CoGe::Accessory::Web::get_defaults();
+$ENV{PATH} = $P->{COGEDIR};
+$TEMPDIR = $P->{TEMPDIR}."SynFind";
+$TEMPURL = $P->{TEMPURL}."SynFind";
+
+$ENV{BLASTDB}=$P->{BLASTDB};
+$ENV{BLASTMAT}=$P->{BLASTMATRIX};
 $PAGE_NAME = "SynFind.pl";
-$DIR = "/opt/apache/CoGe";
-$URL = "/CoGe/";
-$TEMPDIR = "$DIR/tmp/SynFind";
-$DATADIR = "$DIR/data";
-$DIAGSDIR = "$DIR/diags";
+$DIR = $P->{COGEDIR};
+$URL = $P->{URL};
+$DATADIR = $P->{DATADIR};
+$DIAGSDIR = $P->{DIAGSDIR};
 
-$FASTADIR = $DATADIR.'/fasta/';
-$BLASTDBDIR = $DATADIR.'/blast/db/';
-$BEDDIR = $DATADIR.'/bed/';
+$FASTADIR = $P->{FASTADIR};
+$BLASTDBDIR = $P->{BLASTDB};
+$BEDDIR = $P->{BEDDIR};
 
-$TEMPURL = "/CoGe/tmp/SynFind";
-$FORMATDB = "/usr/bin/formatdb";
-$BLAST = "nice -20 /usr/bin/blast -a 8 -K 80 -m 8 -e 0.0001";
-$BLASTZ = "/usr/bin/blastz";
-$CONVERT_BLAST = $DIR."/bin/convert_long_blast_to_short_blast_names.pl";
-$BLAST2BED = $DIR."/bin/SynMap/blast2bed.pl";
-$BLAST2RAW = $DIR."/bin/quota-alignment/scripts/blast_to_raw.py"; #find local duplicates
-$SYNTENY_SCORE = $DIR."/bin/quota-alignment/scripts/synteny_score.py";
-$PYTHON26 = "/usr/local/bin/python";
-$DATASETGROUP2BED = $DIR."/bin/dataset_group_2_bed.pl";
-$MAX_PROC=8;
+
+$FORMATDB = $P->{FORMATDB};
+$MAX_PROC=$P->{MAX_PROC};
+$BLAST = "nice -20 ".$P->{BLAST}." -a $MAX_PROC -K 80 -m 8 -e 0.0001";
+$LASTZ = $P->{PYTHON} ." ". $P->{MULTI_LASTZ} ." -A $MAX_PROC --path=".$P->{LASTZ};
+my $blast_options = " -num_threads $MAX_PROC -evalue 0.0001 -outfmt 6 -task dc-megablast";
+#$TBLASTX = $P->{TBLASTX}. $blast_options;
+$BLASTN = $P->{BLASTN}. $blast_options;
+
+
+$CONVERT_BLAST = $P->{CONVERT_BLAST};
+$BLAST2BED = $P->{BlAST2BED};
+$BLAST2RAW = $P->{BLAST2RAW};
+$SYNTENY_SCORE = $P->{SYNTENY_SCORE};
+$PYTHON26 = $P->{PYTHON};
+$DATASETGROUP2BED = $P->{DATASETGROUP2BED};
+
 
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
@@ -66,6 +75,7 @@ my $pj = new CGI::Ajax(
 		       get_genome_info=>\&get_genome_info,
 		       get_dsg_for_search_menu=>\&get_dsg_for_search_menu,
 		       generate_basefile=>\&generate_basefile,
+		       save_orglist_synfind=>\&save_orglist_synfind,
 
 		       go=>\&go_synfind,
 
@@ -95,7 +105,7 @@ sub gen_html
       {
 	my $html;
 	my ($body) = gen_body();
-	my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
+	my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
 	$template->param(TITLE=>'Identify all syntenic regions across any set of genomes');
 	$template->param(PAGE_TITLE=>'SynFind');
 	$template->param(HELP=>'/wiki/index.php?title=SynFind');
@@ -110,7 +120,7 @@ sub gen_html
 	#    $template->param(BOX_NAME=>'SynFind Settings');
 	$template->param(ADJUST_BOX=>1);
 	$template->param(BODY=>$body);
-	my $prebox = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SynFind.tmpl');
+	my $prebox = HTML::Template->new(filename=>$P->{TMPLDIR}.'SynFind.tmpl');
 	$prebox->param(RESULTS_DIV=>1);
 	$template->param(PREBOX=>$prebox->output);
 	$html .= $template->output;
@@ -120,7 +130,7 @@ sub gen_html
 
 sub gen_body
   {
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SynFind.tmpl');
+    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'SynFind.tmpl');
     my $form = $FORM;
     $template->param(JAVASCRIPT=>1);
     $template->param(FRONT_PAGE=>1);
@@ -133,6 +143,7 @@ sub gen_body
 #    $template->param(FEAT_TYPE=> get_feature_types());
     $template->param(ORG_LIST_FEAT=>get_orgs_feat(type=>"none"));
     my $doc_ready;
+    my $prefs = CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME);
     if ($form->param('dsgid'))
       {
 	foreach my $item ($form->param('dsgid'))
@@ -144,6 +155,16 @@ sub gen_body
   add_to_list('$id');
 };
 	      }
+	  }
+      }
+    elsif ($prefs->{dsgids})
+      {
+	foreach my $dsgid(split/,/, $prefs->{dsgids})
+	  {
+	    my $id = get_dsg_for_search_menu(dsgid=>$dsgid);
+	    $doc_ready .= qq{
+  add_to_list('$id');
+};
 	  }
       }
     if (my $fid = $form->param('fid'))
@@ -168,12 +189,13 @@ sub gen_body
 	$template->param(FEAT_DSGID=>qq{<input type=hidden id=feat_dsgid value=$qdsgid>}) if $qdsgid;
       }
     $template->param(DOCUMENT_READY=>$doc_ready) if $doc_ready;
+    $template->param(SAVE_ORG_LIST=>1) unless $USER->user_name eq "public";
     return $template->output;
   }
   
 sub generate_basefile
     {
-      $cogeweb = initialize_basefile(prog=>"SynFind");
+      $cogeweb = CoGe::Accessory::Web::initialize_basefile(prog=>"SynFind");
       return $cogeweb->basefilename;
     }
 
@@ -233,10 +255,12 @@ sub gen_dsg_menu
     my @dsg_menu;
     foreach my $dsg (sort {$b->version <=> $a->version || $a->type->id <=> $b->type->id} $coge->resultset('DatasetGroup')->search({organism_id=>$oid},{prefetch=>['genomic_sequence_type']}))
       {
-	$dsgid = $dsg->id unless $dsgid;
+	$dsgid=$dsg->id unless $dsgid;
 	my $name = join (", ", map{$_->name} $dsg->source) .": ";
 	$name .= $dsg->name.", " if $dsg->name;# : $dsg->datasets->[0]->name;
-	$name .=  "v".$dsg->version." ".$dsg->type->name;
+	$name .=  "v".$dsg->version." ".$dsg->type->name." ".commify($dsg->length)."nt";
+	my $has_cds = has_cds($dsg->id);
+	$name .= " NO CDS ANNOTATIONS.  CAN'T BE USED." unless $has_cds;
 	push @dsg_menu, [$dsg->id, $name];
       }
     my $size = scalar @dsg_menu;
@@ -287,7 +311,9 @@ sub get_genome_info
     my ($ds) = $dsg->datasets;
     my $link = $ds->data_source->link;
     $link = "http://".$link unless $link =~ /^http/;
-    $html = "Source:  <a class = 'link' href=".$link." target=_new>".$ds->data_source->name."</a><br>".
+    $html = 
+      qq{<span class='link' onclick="window.open('OrganismView.pl?dsgid=}.$dsgid.qq{')">View in OrganismView</span><br>}.
+      "Source:  <a class = 'link' href=".$link." target=_new>".$ds->data_source->name."</a><br>".
       qq{Chromosome count: $chr_num<br>}. qq{<div style="float:left;">Total length: }.
 	commify($total_length)." bp".
 	  "<br>".
@@ -327,8 +353,9 @@ sub get_dsg_for_search_menu
       {
 	my ($ds) = $dsg->datasets;
 	$opts .= ":::" if $opts;
-	$opts .= $dsg->id."::".$dsg->organism->name." (".$ds->data_source->name." ".$dsg->type->name." v".$dsg->version.")";
-	
+	next unless has_cds($dsg->id);  #skip if it has no CDS annotations
+	my $item = $dsg->id."::".$dsg->organism->name." (".$ds->data_source->name." ".$dsg->type->name." v".$dsg->version.")";
+	$opts .= $item;
       }
     return $opts;
   }
@@ -651,7 +678,7 @@ sub go_synfind
     $scoring_function = "collinear" unless defined $scoring_function;
 
     my $synfind_link = "SynFind.pl?fid=$fid;qdsgid=$source_dsgid;dsgid=$dsgids;ws=$window_size;co=$cutoff;sf=$scoring_function";
-    $cogeweb = initialize_basefile(basename=>$basename, prog=>"SynFind");
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$basename, prog=>"SynFind");
     #need to blast source_dsg against each dsgids
     my @blast_results;
     my $html;
@@ -666,7 +693,13 @@ sub go_synfind
 	($dsgid) = $dsgid =~ /(\d+)/;
 	my $has_cds = has_cds($dsgid);
 	my $feat_type = $has_cds ? "CDS" : "genomic";
-	push @dsgids, [$dsgid, $feat_type] if $dsgid;
+	push @dsgids, [$dsgid, $feat_type] if $dsgid && $has_cds;
+	if (!$has_cds)
+	  {
+	    my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	    CoGe::Accessory::Web::write_log("#WARNING:#", $cogeweb->logfile);
+	    CoGe::Accessory::Web::write_log($dsg->organism->name." does not have CDS sequences.  Can't process in SynFind.\n", $cogeweb->logfile);
+	  }
       }
     
     my $pm = new Parallel::ForkManager($MAX_PROC);
@@ -717,11 +750,12 @@ sub go_synfind
 	    $tmp =~ s/\)//g;
 	    $tmp =~ s/://g;
 	    $tmp =~ s/;//g;
+	    $tmp =~ s/#/_/g;
 	  }
 	my $basedir = $DIAGSDIR."/".$org1."/".$org2;
  	mkpath ($basedir,0,0777) unless -d $basedir;
 	my $basename = $dsgid1."_".$dsgid2.".".$feat_type1."-".$feat_type2;
-	my $blastfile = $basedir."/".$basename.".blastn.blast";
+	my $blastfile = $basedir."/".$basename.".lastz";
 	my $bedfile1 = $BEDDIR.$dsgid1.".bed";
 	my $bedfile2 = $BEDDIR.$dsgid2.".bed";
 	$target->{synteny_score_db} = $basedir."/".$basename."_".$window_size."_".$cutoff."_".$scoring_function.".db";
@@ -732,8 +766,11 @@ sub go_synfind
 	$target->{filtered_blastfile}=$target->{converted_blastfile}.".filtered";
 	$target->{bedfile1}=$bedfile1;
 	$target->{bedfile2}=$bedfile2;
+	$target->{dsgid1}=$dsgid1;
+	$target->{dsgid2}=$dsgid2;
 	$target->{query_fasta}=$fasta1; #need to determine the correct query/target order so output is compatibable with SynMap
 	$target->{target_db} = $db2;#need to determine the correct query/target order so output is compatibable with SynMap
+	$target->{target_fasta}=$fasta2;
       }
     
     #blast and conquer
@@ -741,20 +778,22 @@ sub go_synfind
       {
 	$pm->start and next;
 	my $blastfile = $target->{blastfile};
-	my $success = run_blast(fasta=> $target->{query_fasta}, blastdb=>$target->{target_db}, outfile=>$blastfile);
-	write_log("failed blast run for ".$blastfile, $cogeweb->logfile) unless $success;
+#	my $success = run_blast(fasta=> $target->{query_fasta}, blastdb=>$target->{target_db}, outfile=>$blastfile); #for blast with blastable databases
+	my $success = run_blast(fasta=> $target->{query_fasta}, blastdb=>$target->{target_fasta}, outfile=>$blastfile); #for lastz with sequence databases
+	CoGe::Accessory::Web::write_log("failed blast run for ".$blastfile, $cogeweb->logfile) unless $success;
 	
 	$blastfile = run_convert_blast(infile=>$blastfile, outfile=>$target->{converted_blastfile});
 #	blast2bed(infile=>$blastfile, outfile1=>$target->{bedfile1}, outfile2=>$target->{bedfile2});
 	run_blast2raw(blastfile=>$blastfile, bedfile1=>$target->{bedfile1}, bedfile2=>$target->{bedfile2}, outfile=>$target->{filtered_blastfile});
-	run_synteny_score(blastfile=>$target->{filtered_blastfile}, bedfile1=>$target->{bedfile1}, bedfile2=>$target->{bedfile2}, outfile=>$target->{synteny_score_db}, window_size=>$window_size, cutoff=>$cutoff, scoring_function=>$scoring_function);
+	run_synteny_score(blastfile=>$target->{filtered_blastfile}, bedfile1=>$target->{bedfile1}, bedfile2=>$target->{bedfile2}, outfile=>$target->{synteny_score_db}, window_size=>$window_size, cutoff=>$cutoff, scoring_function=>$scoring_function, dsgid1=>$target->{dsgid1}, dsgid2=>$target->{dsgid2});
 	$pm->finish;
       }
     $pm->wait_all_children;
     my ($gevo_link, $matches) = gen_gevo_link (fid=>$fid, dbs=>[ map {$_->{synteny_score_db}} @target_info], window_size=>$window_size);
 
     my $tiny_gevo_link = get_tiny_link(url=>$gevo_link);
-    write_log("#TINY GEVO LINK: $tiny_gevo_link", $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("#TINY GEVO LINK: $tiny_gevo_link", $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("Finished!", $cogeweb->logfile);
     $html .= "<br><a style='font-size: 1em' href='$tiny_gevo_link' class='ui-button ui-corner-all' target=_new_gevo>Compare and visualize region in GEvo: $tiny_gevo_link</a>";
 
     #make table of results
@@ -773,10 +812,11 @@ sub go_synfind
     $html .= qq{</tr></THEAD><TBODY>};
     my $synmap_link = "SynMap.pl?autogo=1;dsgid1=$source_dsgid;dsgid2=";
     my @res;
+    my %open_all_synmap;
     foreach my $item ([$fid, "query"], @$matches)
       {
-	my ($fid, $match_type, $synteny_score) = @$item;
-	my $feat = $coge->resultset('Feature')->find($fid);
+	my ($tfid, $match_type, $synteny_score) = @$item;
+	my $feat = $coge->resultset('Feature')->find($tfid);
 	my $dsg;
 	foreach my $dsgt ($feat->dataset_groups)
 	  {
@@ -788,32 +828,50 @@ sub go_synfind
 	      }
 	  }
 	$html .= qq{<tr><td>};
-	$match_type = "syntelog" if $match_type eq "S";
-	$match_type = "proxy for region" if $match_type eq "G";
+	my $name;
+	if ($match_type eq "S")
+	  {
+	    $match_type = "syntelog";
+	    ($name) = $feat->names;
+	  }
+	elsif ($match_type eq "query")
+	  {
+	    ($name) = $feat->names;
+	  }
+	else
+	  {
+	    $match_type = "proxy for region";
+	    $name = "pos ".$feat->start;
+	  }
 	$synteny_score = "0" unless defined $synteny_score;
-	my ($name) = $feat->names;
 	my $dsg_name;
 	$dsg_name = $dsg->name.": " if $dsg->name;
 	$dsg_name .= " (v".$dsg->version." ". $dsg->type->name.")";
+	my $synmap_open_link = qq{window.open("}.$synmap_link.$dsg->id.";fid1=$fid;fid2=$tfid".qq{");};
+	$open_all_synmap{$synmap_open_link}=1;
 	$html .= join ("<td>",
 		       $feat->organism->name,
 		       $dsg_name,
 		       $match_type, 
-		       qq{<span class='link' onclick='update_info_box("$fid}."_".$dsg->id.qq{")'>}.$name."</span>",
+		       qq{<span class='link' onclick='update_info_box("$tfid}."_".$dsg->id.qq{")'>}.$name."</span>",
 		       $feat->chromosome,
 		       $synteny_score,
-		       qq{<span class="link" onclick='window.open("}.$synmap_link.$dsg->id.qq{")'>Dotplot</span>},
+		       qq{<span class="link" onclick='$synmap_open_link'>Dotplot</span>},
 		       );
       }
     $html .= "</tbody></table>";
 
     my $featlist_link = gen_featlist_link(fids=>[$fid, map {$_->[0]} @$matches]);
-    my $master_list_link = $synfind_link .";get_master=1";
-    $html .= "<a onclick=window.open('$master_list_link') class='ui-button ui-corner-all' target=_new_synfind>Generate master gene set table</a><br>";
     my $tiny_synfind_link = get_tiny_link(url=>$synfind_link);
     $html .= "<a href='$tiny_synfind_link' class='ui-button ui-corner-all' target=_new_synfind>Regenerate this analysis: $tiny_synfind_link</a>";
-    write_log("#SYNFIND LINK $synfind_link", $cogeweb->logfile);
-    write_log("#TINY SYNFIND LINK $tiny_synfind_link", $cogeweb->logfile);
+    my $open_all_synmap = join ("\n", keys %open_all_synmap);
+    $html .= qq{<a onclick='$open_all_synmap' class='ui-button ui-corner-all'>Generate all dotplots</a>};
+    my $master_list_link = $synfind_link .";get_master=1";
+    $html .= "<a onclick=window.open('$master_list_link') class='ui-button ui-corner-all' target=_new_synfind>Generate master gene set table</a>";
+    $master_list_link.=";limit=1";
+    $html .= "<a onclick=window.open('$master_list_link') class='ui-button ui-corner-all' target=_new_synfind>Generate master gene set table (top one syntenlog per organism)</a>";
+    CoGe::Accessory::Web::write_log("#SYNFIND LINK $synfind_link", $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("#TINY SYNFIND LINK $tiny_synfind_link", $cogeweb->logfile);
     my $log_file = $cogeweb->logfile;
     $log_file =~ s/$TEMPDIR/$TEMPURL/;
     $html .= qq{<Br><a href=$log_file target=_new class="small">Log File</a>};
@@ -853,7 +911,7 @@ sub gen_fasta
     ($org_name, $title) = gen_org_name(dsgid=>$dsgid, feat_type=>$feat_type, write_log=>$write_log);
     my $file = $FASTADIR."/$dsgid-$feat_type.new.fasta";
     my $res;
-    write_log("#FASTA#", $cogeweb->logfile) if $write_log;
+    CoGe::Accessory::Web::write_log("#FASTA#", $cogeweb->logfile) if $write_log;
     while (-e "$file.running")
       {
 	print STDERR "detected $file.running.  Waiting. . .\n";
@@ -861,7 +919,7 @@ sub gen_fasta
       }
     if (-r $file)
       {
-	write_log("fasta file for *".$org_name."* ($file) exists", $cogeweb->logfile) if $write_log;
+	CoGe::Accessory::Web::write_log("fasta file for *".$org_name."* ($file) exists", $cogeweb->logfile) if $write_log;
 	$res = 1;
       }
     else
@@ -870,7 +928,7 @@ sub gen_fasta
 	$res = generate_fasta(dsgid=>$dsgid, file=>$file, type=>$feat_type) unless -r $file;
 	system "rm $file.running" if -r "$file.running"; #remove track file
       }
-    write_log("", $cogeweb->logfile) if $write_log;
+    CoGe::Accessory::Web::write_log("", $cogeweb->logfile) if $write_log;
     return $file, $org_name, $title if $res;
     return 0;
   }
@@ -885,9 +943,9 @@ sub gen_org_name
     my $org_name = $dsg->organism->name;
     my $title = $org_name ." (v".$dsg->version.", dsgid".$dsgid.")".$feat_type;
     $title =~ s/(`|')//g;
-    write_log("#INITIALIZING#", $cogeweb->logfile) if $write_log;
-    write_log("ORGANISM: ".$title, $cogeweb->logfile) if $write_log;
-    write_log("", $cogeweb->logfile) if $write_log;
+    CoGe::Accessory::Web::write_log("#INITIALIZING#", $cogeweb->logfile) if $write_log;
+    CoGe::Accessory::Web::write_log("ORGANISM: ".$title, $cogeweb->logfile) if $write_log;
+    CoGe::Accessory::Web::write_log("", $cogeweb->logfile) if $write_log;
     return ($org_name, $title);
   }
 
@@ -900,7 +958,7 @@ sub generate_fasta
 
     my ($dsg) = $coge->resultset('DatasetGroup')->search({"me.dataset_group_id"=>$dsgid},{join=>'genomic_sequences',prefetch=>'genomic_sequences'});
     $file = $FASTADIR."/$file" unless $file =~ /$FASTADIR/;
-    write_log("creating fasta file", $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("creating fasta file", $cogeweb->logfile);
     open (OUT, ">$file") || die "Can't open $file for writing: $!";;
     if ($type eq "CDS")
       {
@@ -947,7 +1005,7 @@ sub generate_fasta
       }
     close OUT;
     return 1 if -r $file;
-    write_log("Error with fasta file creation", $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("Error with fasta file creation", $cogeweb->logfile);
     return 0;
   }
 
@@ -960,7 +1018,7 @@ sub gen_blastdb
     my $write_log = $opts{write_log} || 0;
     my $blastdb = "$BLASTDBDIR/$dbname";
     my $res = 0;
-    write_log("#BLASTDB#", $cogeweb->logfile) if $write_log;
+    CoGe::Accessory::Web::write_log("#BLASTDB#", $cogeweb->logfile) if $write_log;
     while (-e "$blastdb.running")
       {
 	
@@ -969,7 +1027,7 @@ sub gen_blastdb
       }
     if (-r $blastdb.".nsq")
       {
-	write_log("blastdb file for *".$org_name."* ($dbname) exists", $cogeweb->logfile) if $write_log;
+	CoGe::Accessory::Web::write_log("blastdb file for *".$org_name."* ($dbname) exists", $cogeweb->logfile) if $write_log;
 	$res = 1;
       }
     else
@@ -978,7 +1036,7 @@ sub gen_blastdb
 	$res = generate_blast_db(fasta=>$fasta, blastdb=>$blastdb, org=>$org_name, write_log=>$write_log);
 	system "rm $blastdb.running" if -r "$blastdb.running"; #remove track file
       }
-    write_log("", $cogeweb->logfile) if $write_log;
+   CoGe::Accessory::Web::write_log("", $cogeweb->logfile) if $write_log;
     return $blastdb if $res;
     return 0;
   }
@@ -995,11 +1053,11 @@ sub generate_blast_db
     $command .= " -i '$fasta'";
     $command .= " -t '$org'";
     $command .= " -n '$blastdb'";
-    write_log("creating blastdb for *".$org."* ($blastdb)",$cogeweb->logfile) if $write_log;
+    CoGe::Accessory::Web::write_log("creating blastdb for *".$org."* ($blastdb)",$cogeweb->logfile) if $write_log;
     `$command`;
-    write_log($command, $cogeweb->logfile) if $write_log;
+    CoGe::Accessory::Web::write_log($command, $cogeweb->logfile) if $write_log;
     return 1 if -r "$blastdb.nsq";
-    write_log("error creating blastdb for $org ($blastdb)",$cogeweb->logfile) if $write_log;
+    CoGe::Accessory::Web::write_log("error creating blastdb for $org ($blastdb)",$cogeweb->logfile) if $write_log;
     return 0;
   }
   
@@ -1011,7 +1069,7 @@ sub run_blast
     my $outfile = $opts{outfile};
     my $prog = $opts{prog};
     $prog = "blastn" unless $prog;
-    write_log("#RUN BLAST#", $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("#RUN BLAST#", $cogeweb->logfile);
     while (-e "$outfile.running")
       {
 	print STDERR "detecting $outfile.running.  Waiting. . .\n";
@@ -1021,28 +1079,29 @@ sub run_blast
       {
 	unless (-s $outfile)
 	  {
-	    write_log("WARNING: Blast output file ($outfile) contains no data!" ,$cogeweb->logfile);
-	    write_log("", $cogeweb->logfile);
+	    CoGe::Accessory::Web::write_log("WARNING: Blast output file ($outfile) contains no data!" ,$cogeweb->logfile);
+	    CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
 	    return 0;
 	  }
-	write_log("blastfile $outfile already exists",$cogeweb->logfile);
-	write_log("", $cogeweb->logfile);
+	CoGe::Accessory::Web::write_log("blastfile $outfile already exists",$cogeweb->logfile);
+	CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
 	return 1;
       }
-    my $pre_command = "$BLAST -p $prog -o $outfile -i $fasta -d $blastdb";
+#    my $pre_command = "$BLASTN -out $outfile -query $fasta -db $blastdb";
+    my $pre_command .= "$LASTZ -i $fasta -d $blastdb -o $outfile";
     my $x;
     system "touch $outfile.running"; #track that a blast anlaysis is running for this
-    ($x, $pre_command) = check_taint($pre_command);
-    write_log("running $pre_command" ,$cogeweb->logfile);
+    ($x, $pre_command) =CoGe::Accessory::Web::check_taint($pre_command);
+    CoGe::Accessory::Web::write_log("running $pre_command" ,$cogeweb->logfile);
     `$pre_command`;
     system "rm $outfile.running" if -r "$outfile.running"; #remove track file
     unless (-s $outfile)
       {
-	    write_log("WARNING: Problem running $pre_command command.  Blast output file contains no data!" ,$cogeweb->logfile);
-	    write_log("", $cogeweb->logfile);
-	    return 0;
+	CoGe::Accessory::Web::write_log("WARNING: Problem running $pre_command command.  Blast output file contains no data!" ,$cogeweb->logfile);
+	CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
+	return 0;
       }
-    write_log("", $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
     return 1 if -r $outfile;
   }
 
@@ -1052,17 +1111,17 @@ sub make_bed
       my %opts = @_;
       my $dsgid = $opts{dsgid};
       my $outfile = $opts{outfile};
-      write_log("#BED FILES#", $cogeweb->logfile);
+      CoGe::Accessory::Web::write_log("#BED FILES#", $cogeweb->logfile);
       my $cmd = $DATASETGROUP2BED." $dsgid > $outfile";
       if (-r $outfile && -s $outfile)
 	{
-	  write_log("bed file $outfile already exists", $cogeweb->logfile);
-	  write_log("", $cogeweb->logfile);
+	  CoGe::Accessory::Web::write_log("bed file $outfile already exists", $cogeweb->logfile);
+	  CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
 	  return $outfile;
 	}
-      write_log("Creating bedfiles: $cmd", $cogeweb->logfile);
+      CoGe::Accessory::Web::write_log("Creating bedfiles: $cmd", $cogeweb->logfile);
       `$cmd`;
-      write_log("", $cogeweb->logfile);
+      CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
       return $outfile;
     }
 
@@ -1072,15 +1131,15 @@ sub blast2bed
     my $infile = $opts{infile};
     my $outfile1 = $opts{outfile1};
     my $outfile2 = $opts{outfile2};
-    write_log("#BLAST 2 BED#", $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("#BLAST 2 BED#", $cogeweb->logfile);
     if (-r $outfile1 && -s $outfile1 && -r $outfile2 && -s $outfile2)
       {
-	write_log(".bed files $outfile1 and $outfile2 already exist." ,$cogeweb->logfile);
+	CoGe::Accessory::Web::write_log(".bed files $outfile1 and $outfile2 already exist." ,$cogeweb->logfile);
 	return;
       }
     my $cmd = $BLAST2BED ." -infile $infile -outfile1 $outfile1 -outfile2 $outfile2";
-    write_log("Creating bed files: $cmd", $cogeweb->logfile);
-    write_log("", $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("Creating bed files: $cmd", $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
     `$cmd`;
   }
 
@@ -1089,16 +1148,16 @@ sub run_convert_blast
     my %opts = @_;
     my $infile = $opts{infile};
     my $outfile = $opts{outfile};
-   write_log("#CONVERT BLAST#", $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("#CONVERT BLAST#", $cogeweb->logfile);
     my $cmd = $CONVERT_BLAST." < $infile > $outfile";
     if (-r $outfile && -s $outfile)
       {
-	write_log ("converted blast file with short names exists: $outfile", $cogeweb->logfile);
+	CoGe::Accessory::Web::write_log ("converted blast file with short names exists: $outfile", $cogeweb->logfile);
 	return $outfile;
       }
-    write_log("convering blast file to short names: $cmd", $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("convering blast file to short names: $cmd", $cogeweb->logfile);
     `$cmd`;
-    write_log("", $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
     return $outfile;
   }
 
@@ -1109,18 +1168,18 @@ sub run_blast2raw
     my $bedfile1 = $opts{bedfile1};
     my $bedfile2 = $opts{bedfile2};
     my $outfile = $opts{outfile};
-    write_log("#BLAST 2 RAW#", $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("#BLAST 2 RAW#", $cogeweb->logfile);
     if (-r $outfile && -s $outfile)
       {
-	write_log("Filtered blast file found where tandem dups have been removed: $outfile", $cogeweb->logfile);
+	CoGe::Accessory::Web::write_log("Filtered blast file found where tandem dups have been removed: $outfile", $cogeweb->logfile);
 	return $outfile;
       }
     my $tandem_distance = $opts{tandem_distance};
     $tandem_distance = 10 unless defined $tandem_distance;
     my $cmd = $BLAST2RAW." $blastfile --qbed $bedfile1 --sbed $bedfile2 --tandem_Nmax $tandem_distance > $outfile";
-    write_log("BLAST2RAW (finding and removing local duplications): running $cmd" ,$cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("BLAST2RAW (finding and removing local duplications): running $cmd" ,$cogeweb->logfile);
     `$cmd`;
-    write_log("", $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
     return $outfile;
   }
 
@@ -1135,7 +1194,9 @@ sub run_synteny_score
      my $cutoff = $opts{cutoff};
      my $outfile = $opts{outfile};
      my $scoring_function = $opts{scoring_function};
-     write_log("#SYNTENY SCORE#", $cogeweb->logfile);
+     my $dsgid1 = $opts{dsgid1};
+     my $dsgid2 = $opts{dsgid2};
+     CoGe::Accessory::Web::write_log("#SYNTENY SCORE#", $cogeweb->logfile);
      while (-e "$outfile.running")
        {
 	 print STDERR "detected $outfile.running.  Waiting. . .\n";
@@ -1143,20 +1204,20 @@ sub run_synteny_score
        }
      if (-r $outfile && -s $outfile)
        {
-	 write_log("synteny_score database ($outfile) exists", $cogeweb->logfile);
-	 write_log("", $cogeweb->logfile);
+	 CoGe::Accessory::Web::write_log("synteny_score database ($outfile) exists", $cogeweb->logfile);
+	 CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
 	 return $outfile;
        }
      else
        {
 	 system "touch $outfile.running"; #track that a blast anlaysis is running for this
        }
-     my $cmd = $SYNTENY_SCORE ." $blastfile --qbed $bedfile1 --sbed $bedfile2 --window $window_size --cutoff $cutoff --scoring $scoring_function --sqlite $outfile";
+     my $cmd = $SYNTENY_SCORE ." $blastfile --qbed $bedfile1 --sbed $bedfile2 --window $window_size --cutoff $cutoff --scoring $scoring_function --qnote $dsgid1 --snote $dsgid2 --sqlite $outfile";
      
-     write_log("Synteny Score:  running $cmd", $cogeweb->logfile);
+     CoGe::Accessory::Web::write_log("Synteny Score:  running $cmd", $cogeweb->logfile);
      system("$PYTHON26 $cmd");
      system "rm $outfile.running" if -r "$outfile.running"; #remove track file
-     write_log("", $cogeweb->logfile);
+     CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
      return $outfile;
    }
 
@@ -1169,66 +1230,11 @@ sub gen_gevo_link
 
     return "no feature id specified" unless $fid;
     #determine distance of $window_size/2 genes up and down from query feature
-    my $feat = $coge->resultset('Feature')->find($fid);
-
-    my $count = 0;
-    my %seen;
-    my $last_item;
-    item: foreach my $item ($coge->resultset('Feature')->search({
-							   dataset_id=>$feat->dataset_id,
-							   feature_type_id=>3,
-							   chromosome=>$feat->chromosome,
-							   start => {'>', $feat->stop }
-							  },
-							 {
-#							  join =>'feature_names',
-#							  prefetch =>'feature_names',
-							  order_by=>'start ASC',
-							  limit=>$window_size, #search for more than we need as some are alternative spliced transcripts.
-							 }))
-      {
-	foreach my $name ($item->names)
-	  {
-	    next item if $seen{$name};
-	    $seen{$name}=1;
-	  }
-	$last_item = $item;
-	$count++;
-	last if $count >= $window_size/2;
-      }
-    my $down = $last_item->stop - $feat->stop;
-    $down = 10000 if $down < 0;
-    $count = 0;
-    %seen = ();
-    item: foreach my $item ($coge->resultset('Feature')->search({
-							   dataset_id=>$feat->dataset_id,
-							   feature_type_id=>3,
-							   chromosome=>$feat->chromosome,
-							   start => {'<', $feat->start }
-							  },
-							 {
-#							  join =>'feature_names',
-#							  prefetch =>'feature_names',
-							  order_by=>'start DESC',
-							  limit=>$window_size, #search for more than we need as some are alternative spliced transcripts.
-							 }))
-      {
-	foreach my $name ($item->names)
-	  {
-	    next item if $seen{$name};
-	    $seen{$name}=1;
-	  }
-	$last_item = $item;
-	$count++;
-	last if $count >= $window_size/2;
-      }
-    my $up = $feat->start-$last_item->start;
-    $up = 10000 if $up < 0;
-
+    my ($up, $down) = get_neighboring_region(fid=>$fid, window_size=>$window_size);
 
     my $link = "GEvo.pl?fid1=$fid;dr1up=$up;dr1down=$down";
     my @matched_fids;
-    $count =2;
+    my $count =2;
     my %seen_fids;
     foreach my $db (@$dbs)
       {
@@ -1254,7 +1260,7 @@ sub gen_gevo_link
       }
     $count--;
     $link .= ";num_seqs=$count;autogo=1";
-    write_log("#GEVO LINK: $link", $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("#GEVO LINK: $link", $cogeweb->logfile);
     return $link, \@matched_fids;
   }
 
@@ -1320,6 +1326,7 @@ sub get_master_syn_sets
     my $cutoff=$form->param('co');
     my $scoring_function=$form->param('sf');
     my $qdsgid = $form->param('qdsgid');
+    my $limit = $form->param('limit'); #limit the number of syntelogs returned per organism searched
     my $qdsg = $coge->resultset('DatasetGroup')->find($qdsgid);
     my %qdsids = map {$_->id, 1} $qdsg->datasets; 
     my @dsgs;
@@ -1334,7 +1341,7 @@ sub get_master_syn_sets
     $header .=join ("_", map {$_->id} ($qdsg, @dsgs));
     $header .= ".txt\n\n";
     print $header;
-    
+
     my %data;
     foreach my $dsg (@dsgs)
       {
@@ -1348,6 +1355,7 @@ sub get_master_syn_sets
 	    $tmp =~ s/\)//g;
 	    $tmp =~ s/://g;
 	    $tmp =~ s/;//g;
+	    $tmp =~ s/#/_/g;
 	  }
 	my $dsgid1 = $qdsg->id;
 	my $dsgid2 = $dsg->id;
@@ -1358,18 +1366,174 @@ sub get_master_syn_sets
 my $dbh = DBI->connect("dbi:SQLite:dbname=$db","","");
 	my $query = "SELECT * FROM synteny";
 	my $sth = $dbh->prepare($query);
+	unless ($sth)
+	  {
+	    print STDERR qq{Problem connecting to $db\n};
+	    next;
+	  }
 	$sth->execute();
 	while (my @data = $sth->fetchrow_array)
 	  {
-	    my $id = shift @data;
-	    my $feat = $coge->resultset('Feature')->find($id);
-	    next unless $qdsids{$feat->dataset->id};
-	    push @{$data{$id}}, \@data;
+	    next unless $data[6] == $qdsgid;
+	    my $id = $data[0];
+	    my $sdsgid = $data[7];
+	    
+	    push @{$data{$id}{$sdsgid}},\@data;
 	  }
       }
+
+    print "#",join ("\t", map{$_->organism->name} $qdsg, sort {$a->organism->name cmp $b->organism->name} @dsgs). "\tGEvo link","\n";
     foreach my $id (sort keys %data)
       {
-	print join ("\t", $id, scalar @{$data{$id}}),"\n";
+	my $link = "http://genomevolution.org/CoGe/GEvo.pl?";
+	my @data = ([[0,$id, "S",100000]], map{$data{$id}{$_->id}} sort {$a->organism->name cmp $b->organism->name} @dsgs);
+	my @names;
+	my $count =1;
+	my $max;
+	foreach my $set (@data)
+	  {
+	    unless ($set)
+	      {
+		push @names, "-";
+		next;
+	      }
+	    my $name;
+	    my $limit_count =0;
+	    foreach my $data (sort {$b->[3] <=> $a->[3]} @$set) #sort by synteny score
+	      {
+		if ($limit)
+		  {
+		    last if $limit_count >= $limit;
+		  }
+		my $fid = $data->[1];
+		unless ($fid)
+		  {
+		    $name .= "-,";
+		    next;
+		  }
+
+		if ($count == 1)
+		  {
+		    #		my ($up, $down) = get_neighboring_region(fid=>$fid, window_size=>$window_size);
+		    #		$link .= ";dr$count"."up=".$up;
+		    #		$link .= ";dr$count"."down=".$down
+		  }
+		else
+		  {
+		    $link .= ";ref$count=0"; 
+		    $link .= ";dr$count"."up=".$data->[4];
+		    $link .= ";dr$count"."down=".$data->[4];
+		    $max = $data->[4] unless $max;
+		    $max = $data->[4] if $max < $data->[4];
+		    if ($data->[5] =~ /-/)
+		      {
+			$link .= ";rev$count"."=1";
+		      }
+		  }
+		if ($data->[2] eq "S")
+		  {
+		    my $rs = $coge->resultset('FeatureName');
+		    $rs->result_class('DBIx::Class::ResultClass::HashRefInflator');
+		    my ($name_hash) = sort {$b->{primary_name} <=> $a->{primary_name} || $a->{name} cmp $b->{name}} $rs->search({feature_id=>$fid});
+		
+		    $name .= $name_hash->{name}.",";
+		    $link .= ";fid$count=$fid";
+		  }
+		else
+		  {
+		    $name .= "proxy".",";
+		    my $rs = $coge->resultset('Feature');
+		    $rs->result_class('DBIx::Class::ResultClass::HashRefInflator');
+		    my ($feat_hash) = $rs->find($fid);
+		    $link .=";x$count=".$feat_hash->{start}.";chr$count=".$feat_hash->{chromosome}.";dsgid$count=".$data->[7];
+		  }
+		$limit_count++;
+		$count++;
+	      }
+	    $name =~ s/,$//; #trim training ','
+	    push @names, $name;
+	  }
+	#this is a short cut for specifying the dr up/down of query sequence.  Much faster than looking it up in the database
+	$link .= ";dr1up=".$max;
+	$link .= ";dr1down=".$max;
+	$count--;
+	$link .=";num_seqs=$count;autogo=1";
+	print join ("\t", @names, $link),"\n";
       }
     exit;
   }
+
+sub save_orglist_synfind
+   {
+     my %opts = @_;
+     my $dsgids = $opts{dsgids};
+     my $prefs = CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME);
+     $prefs->{dsgids} = $dsgids;
+     my $item =CoGe::Accessory::Web::save_settings(opts=>$prefs, user=>$USER, page=>$PAGE_NAME);
+   }
+
+sub get_neighboring_region
+   {
+     my %opts = @_;
+     my $fid = $opts{fid};
+     my $window_size = $opts{window_size};
+     return "no feature id specified" unless $fid;
+         #determine distance of $window_size/2 genes up and down from query feature
+    my $feat = $coge->resultset('Feature')->find($fid);
+
+    my $count = 0;
+    my %seen;
+    my $last_item;
+    item: foreach my $item ($coge->resultset('Feature')->search({
+							   dataset_id=>$feat->dataset_id,
+							   feature_type_id=>3,
+							   chromosome=>$feat->chromosome,
+							   start => {'>', $feat->stop }
+							  },
+							 {
+#							  join =>'feature_names',
+#							  prefetch =>'feature_names',
+							  order_by=>'start ASC',
+							  limit=>$window_size, #search for more than we need as some are alternative spliced transcripts.
+							 }))
+      {
+	foreach my $name ($item->names)
+	  {
+	    next item if $seen{$name};
+	    $seen{$name}=1;
+	  }
+	$last_item = $item;
+	$count++;
+	last if $count >= $window_size/2;
+      }
+    my $down = $last_item->stop - $feat->stop;
+    $down = 10000 if $down < 0;
+    $count = 0;
+    %seen = ();
+    item: foreach my $item ($coge->resultset('Feature')->search({
+							   dataset_id=>$feat->dataset_id,
+							   feature_type_id=>3,
+							   chromosome=>$feat->chromosome,
+							   start => {'<', $feat->start }
+							  },
+							 {
+#							  join =>'feature_names',
+							  prefetch =>'feature_names',
+							  order_by=>'start DESC',
+							  limit=>$window_size, #search for more than we need as some are alternative spliced transcripts.
+							 }))
+      {
+	foreach my $name ($item->names)
+	  {
+	    next item if $seen{$name};
+	    $seen{$name}=1;
+	  }
+	$last_item = $item;
+	$count++;
+	last if $count >= $window_size/2;
+      }
+    my $up = $feat->start-$last_item->start;
+    $up = 10000 if $up < 0;
+    return ($up, $down);
+
+   }

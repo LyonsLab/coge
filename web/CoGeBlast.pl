@@ -26,22 +26,32 @@ use Spreadsheet::WriteExcel;
 use Benchmark qw(:all);
 use Parallel::ForkManager;
 
-$ENV{PATH} = "/opt/apache/CoGe/";
-$ENV{BLASTDB}="/opt/apache/CoGe/data/blast/db/";
-$ENV{BLASTMAT}="/opt/apache/CoGe/data/blast/matrix/";
-use vars qw( $PAGE_NAME $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $FORMATDB $BLAST $BLASTZ $FORM $USER $DATE $coge $cogeweb $RESULTSLIMIT $MAX_PROC $connstr);
+
+use vars qw($P $PAGE_NAME $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $FORMATDB $BLAST $TBLASTN $BLASTN $BLASTZ $FORM $USER $DATE $coge $cogeweb $RESULTSLIMIT $MAX_PROC $connstr);
+
+$P = CoGe::Accessory::Web::get_defaults();
+$ENV{PATH} = $P->{COGEDIR};
+$ENV{BLASTDB}=$P->{BLASTDB};
+$ENV{BLASTMAT}=$P->{BLASTMATRIX};
+
+
 #refresh again?
 $PAGE_NAME = "CoGeBlast.pl";
-$TEMPDIR = "/opt/apache/CoGe/tmp/CoGeBlast";
-$DATADIR = "/opt/apache/CoGe/data/";
-$FASTADIR = $DATADIR.'/fasta/';
-$BLASTDBDIR = $DATADIR.'/blast/db/';
-$TEMPURL = "/CoGe/tmp/CoGeBlast";
-$FORMATDB = "/usr/bin/formatdb";
-$BLAST = "/usr/bin/blast -a 8 -K 100";
-$BLASTZ = "/usr/bin/blastz";
+$TEMPDIR = $P->{TEMPDIR}."CoGeBlast";
+$TEMPURL = $P->{TEMPURL}."CoGeBlast";
+$DATADIR = $P->{DATADIR};
+$FASTADIR = $P->{FASTADIR};
+$BLASTDBDIR = $P->{BLASTDB};
+$FORMATDB = $P->{FORMATDB};
+$MAX_PROC=$P->{MAX_PROC};
+$BLAST = $P->{BLAST}." -a $MAX_PROC";
+
+$TBLASTN = $P->{TBLASTN}. " -num_threads $MAX_PROC";
+$BLASTN = $P->{BLASTN}. " -num_threads $MAX_PROC -task dc-megablast";
+
+$BLASTZ = $P->{LASTZ};
 $RESULTSLIMIT=100;
-$MAX_PROC=8;
+
 
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
@@ -90,8 +100,7 @@ my $pj = new CGI::Ajax(
 		      );
 $pj->js_encode_function('escape');
 print $pj->build_html($FORM, \&gen_html);
-#print $FORM->header;
-#print gen_html();
+#print $FORM->header; print gen_html();
 
 
 sub gen_html
@@ -104,7 +113,7 @@ sub gen_html
     else
      {
     my ($body) = gen_body();
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
+    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
 #    $template->param(TITLE=>'CoGe BLAST Analysis');
     $template->param(PAGE_TITLE=>'BLAST');
     $template->param(HELP=>'/wiki/index.php?title=CoGeBlast');
@@ -119,7 +128,7 @@ sub gen_html
     $template->param(BOX_NAME=>'CoGeBlast Settings');
     $template->param(ADJUST_BOX=>1);
     $template->param(BODY=>$body);
-    my $prebox = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CoGeBlast.tmpl');
+    my $prebox = HTML::Template->new(filename=>$P->{TMPLDIR}.'CoGeBlast.tmpl');
 	$prebox->param(RESULTS_DIV=>1);
 	$template->param(PREBOX=>$prebox->output);
     $html .= $template->output;
@@ -128,7 +137,7 @@ sub gen_html
 
 sub gen_body
   {
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CoGeBlast.tmpl');
+    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'CoGeBlast.tmpl');
     my $form = $FORM;
     my $featid = join (",",$form->param('featid'), $form->param('fid')) || 0;
     my $chr = $form->param('chr') || 0;
@@ -139,7 +148,7 @@ sub gen_body
     my $rc = $form->param('rc') || 0;
     my $seq = $form->param('seq');
     my $gstid = $form->param('gstid') || 1;
-    my $prefs = load_settings(user=>$USER, page=>$PAGE_NAME);
+    my $prefs = CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME);
     $prefs = {} unless $prefs;
     $template->param(JAVASCRIPT=>1);
     $template->param(BLAST_FRONT_PAGE=>1);
@@ -188,7 +197,7 @@ sub gen_body
 
       }
     #set up which columns of results will be displayed by default
-#       my $prefs = load_settings(user=>$USER, page=>$PAGE_NAME);
+#       my $prefs = CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME);
        unless ($prefs->{display} && ref ($prefs->{display}) eq "HASH")
 	 {
 	   $prefs->{display} = {
@@ -327,7 +336,7 @@ sub blast_param
     my $translate = $opts{translate};
     my $version = $opts{version};
     my $pro;
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CoGeBlast.tmpl');
+    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'CoGeBlast.tmpl');
     if ($seq_type =~ "blast_type_n") {
       if($version && $version =~ /coge_radio/) {$template->param(BLAST_NU=>1);}
       else {$template->param(NCBI_BLAST_NU=>1);}        
@@ -350,7 +359,7 @@ sub blast_param
 sub database_param
   {
     my $program = shift || "blastn";
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CoGeBlast.tmpl');
+    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'CoGeBlast.tmpl');
     if ($program eq "blastn")
       {$template->param(NU_DB=>1);}
     elsif (($program eq "blastp") || ($program eq "blastx"))
@@ -417,9 +426,12 @@ sub gen_dsg_menu
       {
 	$dsgid = $dsg->id unless $dsgid;
 	my $name = join (", ", map{$_->name} $dsg->source) .": ";
-	$name .= $dsg->name ? $dsg->name : $dsg->datasets->[0]->name;
-	$name .= ", ";
-	$name .= $dsg->type->name." (v".$dsg->version.")";
+#	$name .= $dsg->name ? $dsg->name : $dsg->datasets->[0]->name;
+#	$name .= ", ";
+#	$name .= $dsg->type->name." (v".$dsg->version.") ".commify($dsg->length)."nt";
+	$name .= $dsg->name.", " if $dsg->name;# : $dsg->datasets->[0]->name;
+	$name .=  "v".$dsg->version." ".$dsg->type->name." ".commify($dsg->length)."nt";
+
 	push @dsg_menu, [$dsg->id, $name];
       }
     my $size = scalar @dsg_menu;
@@ -482,7 +494,7 @@ sub get_dsg_for_blast_menu
 
 sub generate_basefile
 {
-	$cogeweb = initialize_basefile(prog=>"CoGeBlast");
+	$cogeweb = CoGe::Accessory::Web::initialize_basefile(prog=>"CoGeBlast");
 	return $cogeweb->basefilename;
 }
 
@@ -494,6 +506,7 @@ sub blast_search
     my $expect = $opts{expect};
     my $job_title = $opts{job_title};
     my $wordsize = $opts{wordsize};
+    $wordsize=11 if $program eq "blastn";
     my $comp = $opts{comp};
     my $matrix = $opts{matrix};
     my $gapcost = $opts{gapcost};
@@ -501,7 +514,7 @@ sub blast_search
     my $filter_query = $opts{filter_query};
     my $resultslimit = $opts{resultslimit} || $RESULTSLIMIT;
     my $basename = $opts{basename};
-	$cogeweb = initialize_basefile(basename=>$basename, prog=>"CoGeBlast");
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$basename, prog=>"CoGeBlast");
 	
     #blastz params
     my $zwordsize = $opts{zwordsize};
@@ -533,7 +546,7 @@ sub blast_search
 	$opts .= " O=" .$zgap_start if defined $zgap_start;
 	$opts .= " E=" .$zgap_extension if defined $zgap_extension;
 	my $tmp;
-	($tmp, $opts) = check_taint($opts);
+	($tmp, $opts) =CoGe::Accessory::Web::check_taint($opts);
       }
     else
       {
@@ -541,23 +554,37 @@ sub blast_search
 	if ($gapcost =~/^(\d+)\s+(\d+)/) {($exist,$extent) = ($1,$2);}
 	
 	if ($match_score=~/^(\d+)\,(-\d+)/) {($nuc_penalty,$nuc_reward) = ($2,$1);}
-	$pre_command = "$BLAST -p $program -i $fasta_file";
-	if ($program =~ /^blastn$/i)
-	  {
-	    $pre_command .= " -q $nuc_penalty -r $nuc_reward";
-	  }
-	else
-	  {
-	    $pre_command .= " -M $matrix";
-	  }
-	$pre_command .=" -W $wordsize";
-	$pre_command .= " -G $exist -E $extent" if $exist && $extent;
-	$pre_command .= " -e $expect";
-	$pre_command .= " -C $comp" if $program =~ /tblastn/i;
-	$pre_command .= " -F F " unless $filter_query;
+	$pre_command = $program =~ /tblastn/i ? $TBLASTN." -comp_based_stats 1 -matrix $matrix" : $BLASTN." -penalty $nuc_penalty -reward $nuc_reward -dust no";
+	$pre_command .= " -query $fasta_file";
+	$pre_command .= " -gapopen $exist -gapextend $extent" if $exist && $extent;
+	$pre_command .= " -word_size $wordsize";
+	$pre_command .= " -evalue $expect";
+
+#	if ($program eq "blastn")
+#	  {
+#	    $pre_command = "$BLAST -p $program -i $fasta_file";
+	   # if ($program =~ /^blastn$/i)
+	   #   {
+#		$pre_command .= ;
+	    #  }
+	    #else
+	    #  {
+#		$pre_command .= " -M $matrix";
+	    #  }
+	    
+#	    $pre_command .= " -G $exist -E $extent" if $exist && $extent;
+#	    $pre_command .= " -e $expect";
+#	    $pre_command .= " -C $comp" if $program =~ /tblastn/i;
+#	    $pre_command .= " -F F " unless $filter_query;
+#	  }
+#	elsif ($program eq "tblastn")
+#	  {
+#	    $pre_command = "$TBLASTN -query $fasta_file -word_size $wordsize -comp_based_stats 1";
+#	    
+#	  }
       }
     my $x;
-    ($x, $pre_command) = check_taint($pre_command);
+    ($x, $pre_command) =CoGe::Accessory::Web::check_taint($pre_command);
     my @results;
     my $count =1;
     my $t2 = new Benchmark;
@@ -575,7 +602,8 @@ sub blast_search
 	  }
 	else
 	  {
-	    $command = $pre_command." -d $db";
+	    $command = $pre_command;
+	    $command .= " -db $db";
 	    $outfile = $cogeweb->basefile."-$count.blast";
 	  }
 	push @results, {
@@ -593,9 +621,9 @@ sub blast_search
 	my $command = $item->{command};
 	my $organism_name = $item->{organism};
 	my $outfile = $item->{file};
-	write_log("*$organism_name* running $command" ,$cogeweb->logfile);
+CoGe::Accessory::Web::write_log("*$organism_name* running $command" ,$cogeweb->logfile);
 	`$command > $outfile`;
-	write_log("*$organism_name* blast analysis complete",$cogeweb->logfile);
+CoGe::Accessory::Web::write_log("*$organism_name* blast analysis complete",$cogeweb->logfile);
 	$pm->finish;
       }
     $pm->wait_all_children;
@@ -614,10 +642,10 @@ sub blast_search
 	$item->{link}=$file;
       }
     my $t3 = new Benchmark;
-    write_log("Initializing sqlite database",$cogeweb->logfile);
+   CoGe::Accessory::Web::write_log("Initializing sqlite database",$cogeweb->logfile);
     initialize_sqlite();
     my $t4 = new Benchmark;
-    write_log("Generating Results",$cogeweb->logfile);
+   CoGe::Accessory::Web::write_log("Generating Results",$cogeweb->logfile);
     my ($html,$click_all_links) = gen_results_page(results=>\@results,width=>$width,resultslimit=>$resultslimit,prog=>$program, color_hsps => $color_hsps,  query_seqs_info=>$query_seqs_info,);
     my $t5 = new Benchmark;
     my $init_time = timestr(timediff($t2,$t1));
@@ -630,9 +658,9 @@ Time to blast:                   $blast_time
 Time to initialize sqlite:       $dbinit_time
 Time to generate results page:   $resultpage_time
 };
-      write_log("$benchmark" ,$cogeweb->logfile);
+     CoGe::Accessory::Web::write_log("$benchmark" ,$cogeweb->logfile);
 
-    write_log("Finished!", $cogeweb->logfile);
+   CoGe::Accessory::Web::write_log("Finished!", $cogeweb->logfile);
     return $html, $click_all_links;
   }
  
@@ -718,7 +746,7 @@ sub gen_results_page
        {
 	 $null = "null";
        }
-     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CoGeBlast.tmpl');
+     my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'CoGeBlast.tmpl');
      $template->param(RESULT_TABLE=>1);
      # ERIC, i added this so it wouldnt fail
      $template->param(NULLIFY=>$null) if $null;
@@ -796,7 +824,7 @@ sub gen_results_page
      $template->param(BLAST_RESULTS=>1);
      $template->param(DATA_FILES=>gen_data_file_summary(prog=>$prog, results=>$results));
      my $html = $template->output;
-     my $box_template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
+     my $box_template = HTML::Template->new(filename=>$P->{TMPLDIR}.'box.tmpl');
      $box_template->param(BOX_NAME=>"CoGeBlast Results");
      $box_template->param(BODY=>$html);
      my $outhtml = $box_template->output;
@@ -809,7 +837,7 @@ Time to gen tables:              $table_time
 Time to gen images:              $figure_time
 Time to gen results:             $render_time
 };
-     write_log($benchmark, $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log($benchmark, $cogeweb->logfile);
      return $outhtml, $click_all_links;
    }
    
@@ -1013,13 +1041,13 @@ sub generate_chromosome_images
 	      {
 		my $x;
 		$large_image_file = $cogeweb->basefile."_".$hsp_type."_$count"."_large.png";
-		($x, $large_image_file) = check_taint($large_image_file);
+		($x, $large_image_file) =CoGe::Accessory::Web::check_taint($large_image_file);
 		$image_file = $cogeweb->basefile."_".$hsp_type."_$count.png";
-		($x, $image_file) = check_taint($image_file);
+		($x, $image_file) =CoGe::Accessory::Web::check_taint($image_file);
 		$data{$org}{image}->generate_png(filename=>$image_file);
 		$image_map = $data{$org}{image}->generate_imagemap(mapname=>$cogeweb->basefilename."_".$count);
 		my $map_file = $cogeweb->basefile."_$count.$hsp_type.map";
-		($x, $map_file) = check_taint($map_file);
+		($x, $map_file) =CoGe::Accessory::Web::check_taint($map_file);
 		open (MAP, ">$map_file");
 		print MAP $image_map;
 		close MAP;
@@ -1028,7 +1056,7 @@ sub generate_chromosome_images
 		$data{$org}{image}->generate_png(filename=>$large_image_file);
 		$image_map_large = $data{$org}{image}->generate_imagemap(mapname=>$cogeweb->basefilename."_".$count."_large");
 		$map_file = $cogeweb->basefile."_$count.$hsp_type.large.map";
-		($x, $map_file) = check_taint($map_file);
+		($x, $map_file) =CoGe::Accessory::Web::check_taint($map_file);
 		open (MAP, ">$map_file");
 		print MAP $image_map_large;
 		close MAP;
@@ -1041,8 +1069,8 @@ sub generate_chromosome_images
 		$image_map = get_map($cogeweb->basefile."_$count.$hsp_type.map");
 		$large_image_file = $data{$org}{image}."_$count"."_large.png";
 		$image_map_large = get_map($cogeweb->basefile."_$count.$hsp_type.large.map");
-		($x, $image_file) = check_taint($image_file);
-		($x, $large_image_file) = check_taint($large_image_file);
+		($x, $image_file) =CoGe::Accessory::Web::check_taint($image_file);
+		($x, $large_image_file) =CoGe::Accessory::Web::check_taint($large_image_file);
 	      }
 	    
 	    $image_file =~ s/$TEMPDIR/$TEMPURL/;
@@ -1097,7 +1125,7 @@ sub create_fasta_file
 	    $seqs{$name}=length($tmp);
 	  }
       }
-    write_log("creating user's fasta file",$cogeweb->logfile);
+   CoGe::Accessory::Web::write_log("creating user's fasta file",$cogeweb->logfile);
     open(NEW,"> ".$cogeweb->basefile.".fasta");
     print NEW $seq;
     close NEW;
@@ -1134,7 +1162,7 @@ sub generate_fasta
     my $dslist = $opts{dslist};
     my $file = $opts{file};
     $file = $FASTADIR."/$file" unless $file =~ /$FASTADIR/;
-    write_log("creating fasta file.", $cogeweb->logfile);
+   CoGe::Accessory::Web::write_log("creating fasta file.", $cogeweb->logfile);
     open (OUT, ">$file") || die "Can't open $file for writing: $!";;
     foreach my $ds (@$dslist)
       {
@@ -1142,15 +1170,15 @@ sub generate_fasta
 	  {
 	    my $title =  $ds->organism->name." (v". $ds->version.") "."chromosome: $chr".", CoGe database id: ".$ds->id;
 	    $title =~ s/^>+/>/;
-	    write_log("adding sequence $title", $cogeweb->logfile);
+	   CoGe::Accessory::Web::write_log("adding sequence $title", $cogeweb->logfile);
 	    print OUT ">".$title."\n";
 	    print OUT $ds->get_genomic_sequence(chr=>$chr),"\n";
 	  }
       }
     close OUT;
-    write_log("Completed fasta creation", $cogeweb->logfile);
+   CoGe::Accessory::Web::write_log("Completed fasta creation", $cogeweb->logfile);
     return 1 if -r $file;
-    write_log("Error with fasta file creation", $cogeweb->logfile);
+   CoGe::Accessory::Web::write_log("Error with fasta file creation", $cogeweb->logfile);
     return 0;
   }
 
@@ -1164,10 +1192,10 @@ sub generate_blast_db
     $command .= " -i '$fasta'";
     $command .= " -t '$org'";
     $command .= " -n '$blastdb'";
-    write_log("creating blastdb for $org ($blastdb)",$cogeweb->logfile);
+   CoGe::Accessory::Web::write_log("creating blastdb for $org ($blastdb)",$cogeweb->logfile);
     `$command`;
     return 1 if -r "$blastdb.nsq";
-    write_log("error creating blastdb for $org ($blastdb)",$cogeweb->logfile);
+   CoGe::Accessory::Web::write_log("error creating blastdb for $org ($blastdb)",$cogeweb->logfile);
     return 0;
   }
 
@@ -1194,7 +1222,7 @@ sub get_hsp_info
     my $hsp_id = $opts{num};
     my $filename = $opts{blastfile};
     $filename =~ s/$TEMPDIR//;
-    $cogeweb = initialize_basefile(basename=>$filename, prog=>"CoGeBlast");
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$filename, prog=>"CoGeBlast");
     my $dbfile = $cogeweb->sqlitefile;
     my $dbh = DBI->connect("dbi:SQLite:dbname=$dbfile","","");
     
@@ -1266,7 +1294,7 @@ sub get_hsp_info
 		   HSP_LENGTH=>$length,
 		   HSP_CHR=>$chr,
     		  });
-     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CoGeBlast.tmpl');
+     my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'CoGeBlast.tmpl');
      $template->param(HSP_IF=>1);
      $template->param(HSP_NUM=>$hsp_num);
      $template->param(HSP_QS=>\@table1);
@@ -1340,7 +1368,7 @@ sub generate_overview_image
      my @set = split/\n/, `ls $TEMPDIR/$basename*.blast`;
      my @reports;
      my $count = 1;
-     $cogeweb = initialize_basefile(basename=>$basename,prog=>"CoGeBlast");
+     $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$basename,prog=>"CoGeBlast");
      foreach my $blast (@set){
        my $report = new CoGe::Accessory::blast_report({file=>$blast});
        my ($org_name) = $report->hsps->[$count-1]->subject_name =~ /^\s*(.*?)\s*\(/;
@@ -1349,7 +1377,7 @@ sub generate_overview_image
      }
      my $image_filename = $cogeweb->basefile."_".$type;
      my ($chromosome_data, $chromosome_data_large) = generate_chromosome_images(results=>\@reports,hsp_type=>$type,large_width=>$image_width,filename=>$image_filename);
-     my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CoGeBlast.tmpl');
+     my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'CoGeBlast.tmpl');
      $template->param(CHROMOSOMES_IF=>1);
      $template->param(CHROMOSOME_LOOP=>$chromosome_data);
      my $chromosome_element = $template->output;
@@ -1647,7 +1675,7 @@ sub get_nearby_feats
     my %opts = @_;
     my $hsp_id = $opts{num};
     my $filename = $opts{basefile};
-    $cogeweb = initialize_basefile(basename=>$filename, prog=>"CoGeBlast");
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$filename, prog=>"CoGeBlast");
     my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
     $hsp_id =~ s/^table_row// if $hsp_id =~ /table_row/;
     $hsp_id =~ s/^\d+_// if $hsp_id =~ tr/_/_/ > 1;
@@ -1786,7 +1814,7 @@ sub export_to_excel
   {
     my $accn_list = shift;
     my $filename = shift;
-    $cogeweb = initialize_basefile(basename=>$filename, prog=>"CoGeBlast");
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$filename, prog=>"CoGeBlast");
     my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
     my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data WHERE name = ?});
 
@@ -1894,7 +1922,7 @@ sub generate_tab_deliminated
   {
     my $accn_list = shift;
     my $filename = shift;
-    my $cogeweb = initialize_basefile(basename=>$filename, prog=>"CoGeBlast");
+    my $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$filename, prog=>"CoGeBlast");
     my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
     
     my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data WHERE name = ?});
@@ -2035,7 +2063,7 @@ sub export_hsp_info
 {
     my $accn = shift;
     my $filename = shift;
-    my $cogeweb = initialize_basefile(basename=>$filename, prog=>"CoGeBlast");
+    my $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$filename, prog=>"CoGeBlast");
     my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
     
     my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data ORDER BY org,hsp_num});
@@ -2086,7 +2114,7 @@ sub export_hsp_info
 sub export_hsp_query_fasta
 {
     my $filename = shift;
-    my $cogeweb = initialize_basefile(basename=>$filename, prog=>"CoGeBlast");
+    my $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$filename, prog=>"CoGeBlast");
     my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
 
     my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data});
@@ -2114,7 +2142,7 @@ sub export_hsp_subject_fasta
   {
     my $filename = shift;
     my $dna = 1 if shift;
-    my $cogeweb = initialize_basefile(basename=>$filename, prog=>"CoGeBlast");
+    my $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$filename, prog=>"CoGeBlast");
     my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
 
     my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data});
@@ -2142,7 +2170,7 @@ sub export_hsp_subject_fasta
 sub export_alignment_file
 {
     my $filename = shift;
-    my $cogeweb = initialize_basefile(basename=>$filename, prog=>"CoGeBlast");
+    my $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$filename, prog=>"CoGeBlast");
     my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
     
     my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data ORDER BY org,hsp_num});
@@ -2178,7 +2206,7 @@ sub export_alignment_file
 sub save_settings_cogeblast
   {
     my %opts = @_;
-    my $prefs = load_settings(user=>$USER, page=>$PAGE_NAME);
+    my $prefs = CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME);
     delete $prefs->{display} unless ref($prefs->{display}) eq "HASH";
     foreach my $key (keys %opts)
       {
@@ -2211,11 +2239,11 @@ sub save_settings_cogeblast
 	  }
 	delete $prefs->{$key} unless $opts{$key};
       }
-    my $item = save_settings(opts=>$prefs, user=>$USER, page=>$PAGE_NAME);
+    my $item =CoGe::Accessory::Web::save_settings(opts=>$prefs, user=>$USER, page=>$PAGE_NAME);
   }
 
 sub color_pallet
-{
+  {
     my %opts = @_;
     my $start = $opts{start} || [20,200,20];
     my $offset = $opts{offset} || 75;
@@ -2254,8 +2282,8 @@ sub color_pallet
 	}
 	$temp = [map {$_-25} @$temp] unless ($i%6) || $i < 3;
 	
-    }
+      }
     print STDERR map {join ("\t", @$_)."\n"} @colors;
     return wantarray ? @colors : \@colors;
-}
+  }
 

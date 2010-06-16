@@ -13,19 +13,20 @@ use File::Path;
 use Benchmark qw(:all);
 use Statistics::Basic::Mean;
 
-$ENV{PATH} = "/opt/apache2/CoGe/";
 
-use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $NEATO $DOT $coge $HISTOGRAM %FUNCTION);
+use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $coge $HISTOGRAM %FUNCTION $P);
+$P = CoGe::Accessory::Web::get_defaults();
+$ENV{PATH} = $P->{COGEDIR};
 
 # set this to 1 to print verbose messages to logs
 $DEBUG = 0;
-$TEMPDIR = "/opt/apache/CoGe/tmp/OrganismView";
+$TEMPDIR = $P->{TEMPDIR}."OrgView";
+$TEMPURL = $P->{TEMPURL}."OrgView";
+
 mkpath ($TEMPDIR, 0,0777) unless -d $TEMPDIR;
 
-$TEMPURL = "/CoGe/tmp/OrganismView";
-$NEATO = "/usr/bin/neato";
-$DOT = "/usr/bin/dot";
-$HISTOGRAM = "/opt/apache/CoGe/bin/histogram.pl";
+$HISTOGRAM = $P->{HISTOGRAM};
+
 $| = 1; # turn off buffering
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		 sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
@@ -104,7 +105,7 @@ sub gen_html
     else
       {
 	my ($body, $seq_names, $seqs) = gen_body();
-	my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
+	my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
 #	$template->param(TITLE=>'Organism Overview');
 	$template->param(PAGE_TITLE=>'OrgView');
 	$template->param(HEAD=>qq{});
@@ -127,7 +128,7 @@ sub gen_html
 sub gen_body
   {
     my $form = shift || $FORM;
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/OrganismView.tmpl');
+    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'OrganismView.tmpl');
     my $org_name = $form->param('org_name');
     my $desc = $form->param('org_desc');
     my $oid = $form->param('oid');
@@ -662,7 +663,7 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
         "Click for amino acid usage table"."</div>";
 
       }
-    $feat_string ."</div>";
+    $feat_string .="</div>";
     $feat_string .= "None" unless keys %$feats;
     return $feat_string;
   }
@@ -794,7 +795,7 @@ sub get_gc_for_feature_type
     $cmd .= " -max 100";
     $cmd .= " -ht $hist_type" if $hist_type;
     `$cmd`;
-    
+
 
     $min = 0 unless defined $min && $min =~/\d+/;
     $max = 100 unless defined $max && $max =~/\d+/;

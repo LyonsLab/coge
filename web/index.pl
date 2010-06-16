@@ -8,11 +8,14 @@ use CGI::Ajax;
 use HTML::Template;
 use Data::Dumper;
 use CoGe::Accessory::LogUser;
+use CoGe::Accessory::Web;
 use Digest::MD5 qw(md5_base64);
 use CoGeX;
-use vars qw($USER $FORM $DATE $update $coge);
+use vars qw($P $USER $FORM $DATE $URL $update $coge);
 
-$ENV{PATH} = "/opt/apache/CoGe";
+$P = CoGe::Accessory::Web::get_defaults();
+$ENV{PATH} = $P->{COGEDIR};
+$URL = $P->{URL};
 $FORM = new CGI;
 ($USER) = CoGe::Accessory::LogUser->get_user();
 #print STDERR Dumper $USER->user_name;
@@ -32,7 +35,7 @@ print $pj->build_html($FORM, \&gen_html);
 
 sub gen_html
   {
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
+    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
     $template->param(TITLE=>'The Place to Compare Genomes');
     $template->param(PAGE_TITLE=>'ANKoCG');
     
@@ -76,7 +79,7 @@ sub gen_html
 
 sub gen_body
   {
-    my $tmpl = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/index.tmpl');
+    my $tmpl = HTML::Template->new(filename=>$P->{TMPLDIR}.'index.tmpl');
     my $html;
     my $disable = 1;
     $disable = 0 if $FORM->param('wheel');
@@ -92,6 +95,7 @@ sub gen_body
       }
     my $url = $FORM->param('url') if $FORM->param('url');
     $url =~ s/:::/;/g if $url;
+    $url = $URL.$url unless $url =~ /$URL/;
     $tmpl->param(url=>$url);
 
     if ($FORM->param('logout'))

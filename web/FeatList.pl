@@ -17,18 +17,22 @@ use Benchmark;
 use DBIxProfiler;
 
 
-use vars qw($PAGE_NAME $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb $FORM);
-$ENV{PATH}="/opt/apache/CoGe";
+use vars qw($P $PAGE_NAME $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb $FORM);
+$P = CoGe::Accessory::Web::get_defaults();
+$ENV{PATH} = $P->{COGEDIR};
+
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
 $PAGE_NAME = "FeatList.pl";
 ($USER) = CoGe::Accessory::LogUser->get_user();
-$TEMPDIR = "/opt/apache/CoGe/tmp/";
+$TEMPDIR = $P->{TEMPDIR};
 $FORM = new CGI;
 $coge = CoGeX->dbconnect();
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
-print STDERR Dumper \%ENV;
+
+$SIG{'__WARN__'} = sub { }; #silence warnings
+
 my $pj = new CGI::Ajax(
 		       gen_html=>\&gen_html,
 		       gevo=>\&gevo,
@@ -69,7 +73,7 @@ sub gen_html
     else
      {
        my ($body) = gen_body();
-       my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
+       my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
 #       $template->param(TITLE=>'Feature List Viewer');
        $template->param(PAGE_TITLE=>'FeatList');
        $template->param(HELP=>'/wiki/index.php?title=FeatList');
@@ -94,13 +98,13 @@ sub gen_html
  
 sub gen_body
   {
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/FeatList.tmpl');
+    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'FeatList.tmpl');
     my $form = $FORM;
     my $no_values;
     $BASEFILE = $form->param('basename');
     my $sort_by_type = $form->param('sort_type');
     my $sort_by_location = $form->param('sort_loc');
-    my $prefs = load_settings(user=>$USER, page=>$PAGE_NAME);
+    my $prefs =CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME);
     $prefs = {} unless $prefs;
     $prefs->{display}={
 		       FeatNameD=>1,
@@ -268,7 +272,7 @@ sub generate_table
 	    $fid = $item;
 	    $gstidt = $gstid if $gstid;
 	  }
-	my ($feat) = $coge->resultset("Feature")->search(
+	my ($feat) = $coge->resultset("Feature")->find(
 							 {'me.feature_id'=>$fid},
 							 {
 							  join =>['feature_names', 'locations', 'feature_type',{'dataset'=>{'dataset_connectors'=>{dataset_group=>'organism'}}}],
@@ -373,7 +377,7 @@ sub generate_table
 		$count ++;
       }
     $count--;
-    return ("alert",$count) if $count > 10;
+    return ("alert",$count) if $count > 20;
     $url .= "num_seqs=$count";
     return $url;
   }
@@ -469,7 +473,7 @@ sub generate_excel_file
     my $accn_list = shift;
     $accn_list =~ s/^,//;
     $accn_list =~ s/,$//;
-    $cogeweb = initialize_basefile(prog=>"FeatList");
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(prog=>"FeatList");
     my $basename = $cogeweb->basefile;
     my ($filename) = $basename =~ /FeatList\/(FeatList_.+)/;
     my $workbook = Spreadsheet::WriteExcel->new("$TEMPDIR/Excel_$filename.xls");
@@ -673,7 +677,7 @@ sub save_FeatList_settings
 	    $save{display}{$settings{$index}}=1
 	  }
       }
-    save_settings(opts=>\%save, user=>$USER, page=>$PAGE_NAME);
+   CoGe::Accessory::Web::save_settings(opts=>\%save, user=>$USER, page=>$PAGE_NAME);
   }
 
 sub commify 

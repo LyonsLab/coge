@@ -11,7 +11,8 @@ use HTML::Template;
 use URI::Escape;
 use Data::Dumper;
 
-use vars qw($PAGE_NAME $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb $cgi %FUNCTION);
+use vars qw($P $PAGE_NAME $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb $cgi %FUNCTION);
+$P = CoGe::Accessory::Web::get_defaults();
 
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
@@ -46,11 +47,11 @@ sub gen_html
     my $html;    
     unless ($USER && $USER->user_name ne 'public')
       {
-	$html = login();
+	$html = CoGe::Accessory::Web::login();
       }
     else
      {
-	 my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
+	 my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
 	 $template->param(HELP=>'USER');
 	 # print STDERR "user is: ",$USER,"\n";
 	 my $name = $USER->user_name;
@@ -92,7 +93,7 @@ sub dispatch
 
 sub gen_body
   {
-      my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/UserPage.tmpl');
+      my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'UserPage.tmpl');
       $template->param(STARTUP=>1);
       $template->param(MAIN=>1);
       return $template->output;
@@ -104,7 +105,7 @@ sub profile
     $name = $USER->first_name if $USER->first_name;
     $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
     $name = "No Name Specified" unless $name;
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/UserPage.tmpl');
+    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'UserPage.tmpl');
     $template->param(PROFILE=>1);
     $template->param(USER_NAME=>$USER->user_name);
     $template->param(REAL_NAME=>$name);
@@ -115,7 +116,7 @@ sub profile
 
 sub generate_worklist_header
 {
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/UserPage.tmpl');
+    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'UserPage.tmpl');
     $template->param(WORK_TYPE_CHOICE=>1);
     my $content = view_all_work();
     my $html = $template->output; 
@@ -131,7 +132,7 @@ sub view_all_work
     my $message = $opts{message};
     my @works;
     my $count=0;
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/UserPage.tmpl');
+    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'UserPage.tmpl');
     $template->param(WORK_LIST=>1);
     if($message)
     {
@@ -170,7 +171,7 @@ sub view_work_entry
     my %opts = @_;
     my $work_id = $opts{'work_id'};
     my $edit = $opts{'edit'};
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/UserPage.tmpl');
+    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'UserPage.tmpl');
     if($edit) {$template->param(WORK_EDIT=>1); }
     else {$template->param(WORK_VIEW=>1);}
     my ($work) = $coge->resultset("Work")->search({work_id=>$work_id,
@@ -356,7 +357,7 @@ sub generate_workflow
 {
     my $wf_id=shift;
     my $count = 0;
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/UserPage.tmpl');
+    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'UserPage.tmpl');
     my @workflows;
     foreach my $workflow ($USER->workflows)
     {
@@ -385,7 +386,7 @@ sub show_workflow
     #print STDERR $wf_id,"\n";
     my $html;
     my @works;
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/UserPage.tmpl');
+    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'UserPage.tmpl');
     $template->param(WF_CONTENT=>1);
     my ($workflow) = $coge->resultset("Workflow")->search({workflow_id=>$wf_id,
 							   user_id=>$USER->id,
@@ -411,7 +412,7 @@ sub show_workflow
 #sub refresh_work_in_workflow
 #{
 #    my $work_id = shift;
-#    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/UserPage.tmpl');
+#    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'UserPage.tmpl');
 #    my ($tool) = $work->page =~ /(\w+)\.pl/;
 #    my ($work) = $coge->resultset('Work')->search({user_id=>$USER->id,
 #						   work_id=>$work_id,
@@ -453,7 +454,7 @@ sub create_workflow
     my %opts = @_;
     #print STDERR Dumper \%opts;
     my $html;
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/UserPage.tmpl');
+    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'UserPage.tmpl');
     $template->param(WF_CREATE=>1);
     if ($opts{name} && $opts{desc})
     {

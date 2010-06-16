@@ -7,15 +7,17 @@ use Data::Dumper;
 use CoGeX;
 use DBIxProfiler;
 use CoGe::Accessory::LogUser;
+use CoGe::Accessory::Web;
 #use CoGeX;
-$ENV{PATH} = "/opt/apache/CoGe/";
 
-use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $FID $DS $CHR $LOC $ORG $VERSION $START $STOP $NAME_ONLY $coge $GSTID);
+use vars qw($P $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $FID $DS $CHR $LOC $ORG $VERSION $START $STOP $NAME_ONLY $coge $GSTID);
+$P = CoGe::Accessory::Web::get_defaults();
+$ENV{PATH} = $P->{COGEDIR};
+$TEMPDIR = $P->{TEMPDIR};
+$TEMPURL = $P->{TEMPURL};
 
 # set this to 1 to print verbose messages to logs
 $DEBUG = 0;
-$TEMPDIR = "/opt/apache/CoGe/tmp";
-$TEMPURL = "/CoGe/tmp";
 $| = 1; # turn off buffering
 ($USER) = CoGe::Accessory::LogUser->get_user();
 $FORM = new CGI;

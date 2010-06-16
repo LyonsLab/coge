@@ -3,7 +3,6 @@
 use strict;
 use CGI;
 
-$ENV{PATH} = "/opt/apache2/CoGe/";
 
 my $FORM = new CGI;
 

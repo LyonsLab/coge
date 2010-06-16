@@ -13,14 +13,15 @@ use POSIX;
 use DBIxProfiler;
 use Benchmark;
 
-$ENV{PATH} = "/opt/apache2/CoGe/";
 
-use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $ACCN $FID $coge);
+use vars qw($P $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $ACCN $FID $coge);
+$P = CoGe::Accessory::Web::get_defaults();
+$ENV{PATH} = $P->{COGEDIR};
 
 # set this to 1 to print verbose messages to logs
 $DEBUG = 0;
-$TEMPDIR = "/opt/apache/CoGe/tmp";
-$TEMPURL = "/CoGe/tmp";
+$TEMPDIR = $P->{TEMPDIR};
+$TEMPURL = $P->{TEMPURL};
 $| = 1; # turn off buffering
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		 sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
@@ -410,7 +411,7 @@ sub gen_html
       }
     else
       {
-	my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
+	my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
 	$template->param(LOGO_PNG=>"FeatView-logo.png");
 #$template->param(TITLE=>'Feature Viewer');
 	$template->param(PAGE_TITLE=>'FeatView');
@@ -433,7 +434,7 @@ sub gen_html
 
 sub gen_body
   {
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/FeatView.tmpl');
+    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'FeatView.tmpl');
     $template->param(ACCN=>$ACCN);
     $template->param(FEAT_TYPE=> get_feature_types());
     $template->param(ORG_LIST=>get_orgs(type=>"none"));

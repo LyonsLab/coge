@@ -4,7 +4,7 @@ use warnings;
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
 use CoGeX;
-$ENV{PATH} = "/opt/apache/CoGe/";
+
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 
 my $FORM = new CGI;

@@ -9,6 +9,7 @@ use HTML::Template;
 use Data::Dumper;
 use File::Basename;
 use File::Temp;
+use File::Path;
 use CoGe::Accessory::GenBank;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
@@ -46,23 +47,34 @@ use Digest::MD5 qw(md5_hex);
 use GD;
 # for security purposes
 
-$ENV{PATH} = "/opt/apache/CoGe/";
+
+
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
-#for chaos
-$ENV{'LAGAN_DIR'} = '/opt/apache/CoGe/bin/lagan/';
-#for dialign
-$ENV{'DIALIGN2_DIR'} = '/opt/apache/CoGe/bin/dialign2_dir/';
-use vars qw( $PAGE_NAME $DATE $DEBUG $BL2SEQ $BLASTZ $LAGAN $CHAOS $DIALIGN $GENOMETHREADER $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge $NUM_SEQS $MAX_SEQS $MAX_PROC %FUNCTION);
+use vars qw($P $PAGE_NAME $DATE $DEBUG $BL2SEQ $BLASTZ $LAGAN $CHAOS $DIALIGN $GENOMETHREADER $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge $NUM_SEQS $MAX_SEQS $MAX_PROC %FUNCTION);
+$P = CoGe::Accessory::Web::get_defaults();
+$ENV{PATH} = $P->{COGEDIR};
+
+#print Dumper $P;
 $PAGE_NAME = "GEvo.pl";
-$BL2SEQ = "/usr/bin/bl2seq ";
-$BLASTZ = "/usr/bin/blastz ";
-$LAGAN = "/opt/apache/CoGe/bin/lagan/lagan.pl";
-$CHAOS = "/opt/apache/CoGe/bin/lagan/chaos_coge";
-$GENOMETHREADER = "/opt/apache/CoGe/bin/gth";
-$DIALIGN = "/opt/apache/CoGe/bin/dialign2_dir/dialign2-2_coge";
-$TEMPDIR = "/opt/apache/CoGe/tmp/GEvo";
-$TEMPURL = "/CoGe/tmp/GEvo";
-$MAX_PROC=8;
+$BL2SEQ = $P->{BL2SEQ};
+$BLASTZ = $P->{LASTZ};
+$LAGAN = $P->{LAGAN};
+$CHAOS = $P->{CHAOS};
+$GENOMETHREADER = $P->{GENOMETHREADER};
+$DIALIGN = $P->{DIALIGN};
+$TEMPDIR = $P->{TEMPDIR}."GEvo";
+$TEMPURL = $P->{TEMPURL}."GEvo";
+mkpath ($TEMPDIR, 0,0777) unless -d $TEMPDIR;
+$MAX_PROC= $P->{MAX_PROC};
+#for chaos
+$ENV{'LAGAN_DIR'} = $P->{LAGANDIR};
+#for dialign
+$ENV{'DIALIGN2_DIR'} = $P->{DIALIGN2_DIR};
+
+mkpath ($TEMPDIR, 0,0777) unless -d $TEMPDIR;
+
+
+
 # set this to 1 to print verbose messages to logs
 $DEBUG = 0;
 $BENCHMARK = 1;
@@ -94,7 +106,7 @@ $ajax{feat_search} = \&feat_search;
 	      get_file=>\&get_file,
 	      gen_go_run=>\&gen_go_run,
 	      gen_hsp_colors =>\&gen_hsp_colors,
-	      save_settings_gevo=>\&save_settings_gevo,
+	   save_settings_gevo=>\&save_settings_gevo,
 	      reset_settings_gevo=>\&reset_settings_gevo,
 	      check_address_validity=>\&check_address_validity,
 	      dataset_group_search=>\&dataset_group_search,
@@ -118,6 +130,7 @@ else
 #print $pj->build_html($FORM, \&gen_html);
 
 #print $FORM->header;gen_html();
+
 sub dispatch
 {
     my %args = $FORM->Vars;
@@ -154,7 +167,7 @@ sub gen_html
       }
     else
       {
-	my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
+	my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
 	$template->param(LOGO_PNG=>"GEvo-logo.png");
 	$template->param(TITLE=>'Genome Evolution Analysis (powered by <a href="http://github.com/brentp/gobe/">gobe</a>)');
 	$template->param(PAGE_TITLE=>'GEvo');
@@ -168,7 +181,7 @@ sub gen_html
 	$template->param(DATE=>$DATE);
 	$template->param(NO_BOX=>1);
 	$template->param(BODY=>gen_body());
-	my $prebox = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GEvo.tmpl');
+	my $prebox = HTML::Template->new(filename=>$P->{TMPLDIR}.'GEvo.tmpl');
 	$prebox->param(RESULTS_DIV=>1);
 	$template->param(PREBOX=>$prebox->output);
 	$template->param(ADJUST_BOX=>1);
@@ -180,11 +193,11 @@ sub gen_html
 sub gen_body
   {
     my $form = $FORM;
-    my $prefs = load_settings(user=>$USER, page=>$PAGE_NAME);
+    my $prefs = CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME);
     my $num_seqs;
     $num_seqs = $form->param('num_seqs');#= get_opt(params=>$prefs, form=>$form, param=>'num_seqs');
     $num_seqs = $NUM_SEQS unless defined $num_seqs;
-    $MAX_SEQS = 20 if $form->param('override');
+#    $MAX_SEQS = 20 if $form->param('override');
     my $message;
     if (! ($num_seqs =~ /^\d+$/) )
       {
@@ -305,8 +318,10 @@ sub gen_body
     $image_width = 1000 unless $image_width;
     my $feature_height = get_opt(params=>$prefs, form=>$form, param=>'fh');
     $feature_height = 20 unless $feature_height;
+    $feature_height = 10 if $num_seqs > 6;
     my $padding  = get_opt(params=>$prefs, form=>$form, param=>'padding');
     $padding = 2 unless defined $padding;
+    $padding =1 if $feature_height <=10;
     my $gc_color = get_opt(params=>$prefs, form=>$form, param=>'gc');
     $gc_color = 0 unless $gc_color;
     my $nt_color = get_opt(params=>$prefs, form=>$form, param=>'nt');
@@ -342,7 +357,7 @@ sub gen_body
     my $show_gene_space = get_opt(params=>$prefs, form=>$form, param=>'show_gene_space');
     my $show_contigs = get_opt(params=>$prefs, form=>$form, param=>'show_contigs');
     $show_gene_space=0 unless $show_gene_space;
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GEvo.tmpl');
+    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'GEvo.tmpl');
     $template->param(PAD_GS=>$pad_gs);
     $template->param(APPLY_ALL=>$apply_all);
     $template->param(IMAGE_WIDTH=>$image_width);
@@ -392,7 +407,7 @@ sub gen_body
     #elsif ($draw_model eq "Gene_space") {$template->param(DRAW_MODEL_GENE_SPACE=>"selected");}
     else {$template->param(DRAW_MODEL_NO=>"selected");}
 
-    my $box = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
+    my $box = HTML::Template->new(filename=>$P->{TMPLDIR}.'box.tmpl');
     #generate sequence submission selector
     $template->param(SEQ_SELECT=>1);
     $template->param(SEQ_SELECT_LOOP=>\@seq_sub);
@@ -411,7 +426,8 @@ sub gen_body
     $template->param(SEQ_SUB=>$seq_submission);
     $template->param(HSP_COLOR=>$hsp_colors);
     $template->param(GO_RUN=>gen_go_run($num_seqs));
-    my $gobe_version = `svnversion /opt/apache/CoGe/gobe/flash`;
+    my $cmd = "/usr/bin/svnversion ".$P->{COGEDIR}."gobe/flash";
+    my $gobe_version = `$cmd`;
     $gobe_version =~ s/\n//g;;
     $template->param(GOBE_VERSION=>$gobe_version);
     $box->param(BOX_NAME=>"GEvo Configuration:");
@@ -461,16 +477,16 @@ sub run
     my $gen_prot_sequence =0; #flag for generating fasta file of protein_sequence;
     $gen_prot_sequence = 1 if $analysis_program eq "GenomeThreader";
     my $basefilename = $opts{basefile};
-    $cogeweb = initialize_basefile(basename=>$basefilename, prog=>"GEvo");
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$basefilename, prog=>"GEvo");
 ###### working on basefile name initialization problems
     if (!$basefilename || $basefilename eq "undefined")
       {
-	$cogeweb = initialize_basefile(prog=>"GEvo");
+	$cogeweb = CoGe::Accessory::Web::initialize_basefile(prog=>"GEvo");
 	$basefilename = $cogeweb->basefilename;
       }
 ######
     print STDERR "Running GEvo:  basefile:  $basefilename\n";
-    write_log("Beginning GEvo analysis.  Basefilename: $basefilename", $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("Beginning GEvo analysis.  Basefilename: $basefilename", $cogeweb->logfile);
     my @hsp_colors;
     for (my $i = 1; $i <= num_colors($num_seqs); $i++)
       {
@@ -787,7 +803,7 @@ sub run
       }
     
     $analysis_reports = [] unless ref($analysis_reports) =~ /ARRAY/i;
-    write_log($message, $cogeweb->logfile) if $message;
+    CoGe::Accessory::Web::write_log($message, $cogeweb->logfile) if $message;
    #sets => array or data for blast
    #blast_reports => array of arrays (report, accn1, accn2, parsed data)
     my $t3 = new Benchmark;
@@ -799,7 +815,7 @@ sub run
       {
 	my $obj = $item->{obj};
 	my $filename = $cogeweb->basefile."_".$item->{seq_num}.".png";
-	$filename = check_filename_taint($filename);
+	$filename = CoGe::Accessory::Web::check_filename_taint($filename);
 	$item->{png_filename}=$filename;
 	my $image = basename($filename);
 	$item->{image}=$image;
@@ -812,7 +828,7 @@ sub run
 	next unless $obj->sequence;
 	if ($obj)
 	  {
-	    write_log("generating image ($count/".scalar @sets.")for ".$obj->accn.": ".$item->{png_filename}, $cogeweb->logfile);
+	    CoGe::Accessory::Web::write_log("generating image ($count/".scalar @sets.")for ".$obj->accn.": ".$item->{png_filename}, $cogeweb->logfile);
 	    $count++;
 	    my ($gfx) = 
 	      generate_image(
@@ -895,7 +911,7 @@ sub run
     $html .= qq{<table>};
     $html .= qq{<tr valign=top><td class = small>Alignment reports};
 #    my $stats_file = $cogeweb->basefile."_stats.txt";
-#    $stats_file = check_filename_taint($stats_file);
+#    $stats_file = CoGe::Accessory::Web::check_filename_taint($stats_file);
 
     if ($analysis_reports && @$analysis_reports)
       {
@@ -923,9 +939,9 @@ sub run
 	my $accn = $item->{accn};
 	$html .= "<div><font class=small><A HREF=\"$basename\" target=_new>$accn</A></font></DIV>\n";
 	my $x;
-	($x, $all_file) = check_taint($all_file);
+	($x, $all_file) = CoGe::Accessory::Web::check_taint($all_file);
 	my $seq_file = $item->{file};
-	($x, $seq_file) = check_taint($seq_file);
+	($x, $seq_file) = CoGe::Accessory::Web::check_taint($seq_file);
 	my $cmd = "cat ".$seq_file." >> $all_file";
 	`$cmd`;
       }
@@ -974,7 +990,7 @@ sub run
 
     $html .= qq{</table>};
 
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
+    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'box.tmpl');
     my $results_name = "Results: $analysis_program";
     $results_name .= qq{ <span class="small">(spike sequence filter length: $spike_len)</span>} if $spike_len;
     $template->param(BOX_NAME=>$results_name);
@@ -1000,10 +1016,10 @@ Total time                                          : $total_time
 };
     print STDERR "\n",$gevo_link,"\n";
     print STDERR $bench if $BENCHMARK;
-    write_log($bench, $cogeweb->logfile);
-    write_log("Finished!", $cogeweb->logfile);
-    write_log("GEvo link: $gevo_link", $cogeweb->logfile);
-#    write_log("Tiny url: $tiny", $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log($bench, $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("Finished!", $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("GEvo link: $gevo_link", $cogeweb->logfile);
+#    CoGe::Accessory::Web::write_log("Tiny url: $tiny", $cogeweb->logfile);
     email_results(email=>$email_address,basefile=>$basefilename, full_gevo_url=>$gevo_link) if $email_address;
     $iw +=10; #extra padding to make it easier to grab slider bars
     return $outhtml, $iw, $frame_height, $cogeweb->basefilename, scalar (@sets), $gevo_link, $basefilename, $message;
@@ -1866,7 +1882,7 @@ sub process_hsps
 	    my $percent_overlap = 100*sprintf("%.4f", $overlap_count{$type}/$feat_count{$type});
 	    $message.= "\t".$overlap_count{$type}."/".$feat_count{$type} ." $type ($percent_overlap%) with overlapping HSPs.\n";
 	  }
-	write_log($message, $cogeweb->logfile) if $message;
+	CoGe::Accessory::Web::write_log($message, $cogeweb->logfile) if $message;
       }
   }
 
@@ -1997,7 +2013,7 @@ sub get_obj_from_genome_db
     my $new_seq =0;  #flag for whether we got the seq from the database or a previously generated file;
     unless (ref ($feat)=~ /feature/i || ($pos && $dsid))
       {
-	write_log("Can't find valid feature database entry for id=$featid", $cogeweb->logfile);
+	CoGe::Accessory::Web::write_log("Can't find valid feature database entry for id=$featid", $cogeweb->logfile);
 	return("","Can;t find valid feature database entry for id $featid");
       }
     my $t2 = new Benchmark;
@@ -2057,7 +2073,7 @@ sub get_obj_from_genome_db
       {
 	($chr) = $ds->get_chromosomes unless $chr;
 	my $tmp;
-	($tmp, $seq_file) = check_taint($seq_file);
+	($tmp, $seq_file) = CoGe::Accessory::Web::check_taint($seq_file);
 	unlink ($seq_file);
 	$seq = $ds->get_genomic_sequence(
 					 start => $start,
@@ -2165,7 +2181,7 @@ sub get_obj_from_genome_db
       {
 	my $prot_file = $seq_file.".prot";
 	my $tmp;
-	($tmp, $prot_file) = check_taint($prot_file);
+	($tmp, $prot_file) = CoGe::Accessory::Web::check_taint($prot_file);
 	open (OUT, ">$prot_file");
 	print OUT $prot_sequence if $prot_sequence;
 	close OUT;
@@ -2236,11 +2252,11 @@ sub run_bl2seq {
 	  
 	  
 	  # format the bl2seq command
-	  $command .= "-p $program -o $tempfile ";
-	  $command .= "-i $seqfile1 -j $seqfile2";
+	  $command .= " -p $program -o $tempfile";
+	  $command .= " -i $seqfile1 -j $seqfile2";
 	  $command .= " " . $blast_params;
 	  my $x = "";
-	  ($x,$command) = check_taint( $command );
+	  ($x,$command) = CoGe::Accessory::Web::check_taint( $command );
 	  if ( $DEBUG ) {
 	    print STDERR "About to execute...\n $command\n";
 	  }
@@ -2249,7 +2265,7 @@ sub run_bl2seq {
 	      next;
 	    }
 	  # execute the command
-	  write_log("running ($count/$total_runs) ".$command, $cogeweb->logfile);
+	  CoGe::Accessory::Web::write_log("running ($count/$total_runs) ".$command, $cogeweb->logfile);
 	  `$command`;
 	  system "chmod +rw $tempfile";
 	  $pm->finish;
@@ -2269,7 +2285,7 @@ sub run_bl2seq {
 	{
 	  my $blastreport = new CoGe::Accessory::bl2seq_report();
 	  push @$item, $blastreport;
-	  write_log("WARNING:  no results from blasting ".$item->[1]." and ".$item->[2].".  Possible error\n", $cogeweb->logfile);
+	  CoGe::Accessory::Web::write_log("WARNING:  no results from blasting ".$item->[1]." and ".$item->[2].".  Possible error\n", $cogeweb->logfile);
 	}
     }
   return( \@reports );
@@ -2301,10 +2317,10 @@ sub run_blastz
 	    push @reports, [$tempfile, $accn1, $accn2];
 	    $pm->start and next;
 	    my $command = $BLASTZ;
-	    $command .= " $seqfile1 $seqfile2";
+	    $command .= " $seqfile1"."[unmask] $seqfile2"."[unmask]";
 	    $command .= " ".$params if $params;
 	    my $x = "";
-	    ($x,$command) = check_taint( $command );
+	    ($x,$command) = CoGe::Accessory::Web::check_taint( $command );
 	    if ( $DEBUG ) {
 	      print STDERR "About to execute...\n $command\n";
 	    }
@@ -2314,7 +2330,7 @@ sub run_blastz
 	      }
 	    $command .= " > ".$tempfile;
 	    	  # execute the command
-	    write_log("running ($count/$total_runs) ".$command, $cogeweb->logfile);
+	    CoGe::Accessory::Web::write_log("running ($count/$total_runs) ".$command, $cogeweb->logfile);
 	    `$command`;
 	    system "chmod +rw $tempfile";
 	    $pm->finish;
@@ -2364,7 +2380,7 @@ sub run_lagan
 	    $command .= " -mfa";
 	    $command .= " ".$params if $params;
 	    my $x = "";
-	    ($x,$command) = check_taint( $command );
+	    ($x,$command) = CoGe::Accessory::Web::check_taint( $command );
 	    if ( $DEBUG ) {
 	      print STDERR "About to execute...\n $command\n";
 	    }
@@ -2373,7 +2389,7 @@ sub run_lagan
 		next;
 	      }
 	    $command .= " > ".$tempfile;
-	    write_log("running ($count/$total_runs) ".$command, $cogeweb->logfile);
+	    CoGe::Accessory::Web::write_log("running ($count/$total_runs) ".$command, $cogeweb->logfile);
 	    #time for execution
 	    `$command`;
 	    system "chmod +rw $tempfile";
@@ -2420,7 +2436,7 @@ sub run_chaos
 	    
 	    $command .= " ".$params if $params;
 	    my $x = "";
-	    ($x,$command) = check_taint( $command );
+	    ($x,$command) = CoGe::Accessory::Web::check_taint( $command );
 	    if ( $DEBUG ) {
 	      print STDERR "About to execute...\n $command\n";
 	    }
@@ -2429,7 +2445,7 @@ sub run_chaos
 		next;
 	      }
 	    $command .= " > ".$tempfile;
-	    write_log("running ($count/$total_runs) ".$command, $cogeweb->logfile);
+	    CoGe::Accessory::Web::write_log("running ($count/$total_runs) ".$command, $cogeweb->logfile);
 	    #time for execution
 	    `$command`;
 	    system "chmod +rw $tempfile";
@@ -2517,13 +2533,13 @@ sub run_dialign
 		{
 		   $anchor_prog = $BLASTZ;
 		}
-		my ($x,$dialign_opts) = check_taint( $params);
+		my ($x,$dialign_opts) = CoGe::Accessory::Web::check_taint( $params);
 		$program_ran .= " using anchors from ".$parser_opts->{anchor_params}{prog};
 		unless ($x)
 		  {
 		    next;
 		  }
-		my ($y,$anchor_opts) = check_taint($parser_opts->{anchor_params}{param_string});
+		my ($y,$anchor_opts) = CoGe::Accessory::Web::check_taint($parser_opts->{anchor_params}{param_string});
 		unless ($y)
 		  {
 		    next;
@@ -2550,8 +2566,8 @@ sub run_dialign
 		next unless -r $seqfile1 && -r $seqfile2; #make sure these files exist
 		#put two fasta files into one for dialign
 		my $tmp;
-		($tmp, $seqfile1) = check_taint($seqfile1);
-		($tmp, $seqfile2) = check_taint($seqfile2);
+		($tmp, $seqfile1) = CoGe::Accessory::Web::check_taint($seqfile1);
+		($tmp, $seqfile2) = CoGe::Accessory::Web::check_taint($seqfile2);
 		`cat $seqfile1 > $seqfile`;
 		`cat $seqfile2 >> $seqfile`;
 		next unless $sets->[$i]{reference_seq} || $sets->[$j]{reference_seq};
@@ -2561,7 +2577,7 @@ sub run_dialign
 		$command .= " -fn ".$tempfile;
 		$command .= " $seqfile";
 		my $x = "";
-		($x,$command) = check_taint( $command );
+		($x,$command) = CoGe::Accessory::Web::check_taint( $command );
 		if ( $DEBUG ) {
 		  print STDERR "About to execute...\n $command\n";
 		}
@@ -2570,7 +2586,7 @@ sub run_dialign
 		    next;
 		  }
 		#time for execution
-		write_log("running ($count/$total_runs) ".$command, $cogeweb->logfile);
+		CoGe::Accessory::Web::write_log("running ($count/$total_runs) ".$command, $cogeweb->logfile);
 		`$command`;
 		system "chmod +rw $tempfile";
 		$report = new CoGe::Accessory::dialign_report({file=>$tempfile, %$parser_opts}) if -r $tempfile;
@@ -2598,7 +2614,7 @@ sub run_genomethreader
     my $sets = $opts{sets};
     my $params = $opts{params};
     my $parser_opts = $opts{parser_opts};
-    my $matrix = $opts{parser_opts}{matrix} || "/opt/apache/CoGe/data/blast/matrix/aa/BLOSUM62";
+    my $matrix = $opts{parser_opts}{matrix} || $P->{BLASTMATRIX}."aa/BLOSUM62";
     my @reports;
     my $total_runs = number_of_runs($sets)*2; #need to run this in both directions for each genomic and protein sequence
     my $count = 1;
@@ -2625,7 +2641,7 @@ sub run_genomethreader
 		$command .= " -scorematrix $matrix";
 		$command .= " ".$params if $params;
 		my $x = "";
-		($x,$command) = check_taint( $command );
+		($x,$command) = CoGe::Accessory::Web::check_taint( $command );
 		if ( $DEBUG ) {
 		  print STDERR "About to execute...\n $command\n";
 		}
@@ -2634,7 +2650,7 @@ sub run_genomethreader
 		    next;
 		  }
 		$command .= " > ".$tempfile;
-		write_log("running ($count/$total_runs) ".$command, $cogeweb->logfile);
+		CoGe::Accessory::Web::write_log("running ($count/$total_runs) ".$command, $cogeweb->logfile);
 		#time for execution
 		`$command`;
 		system "chmod +rw $tempfile";
@@ -2663,7 +2679,7 @@ sub run_genomethreader
 		$count++;
 	      }
 	  }
-	$pm->wait_all_children;
+#	$pm->wait_all_children;
       }
     return \@reports;
   }
@@ -2700,7 +2716,7 @@ sub write_fasta
     my ($seq) = uc($gbobj->sequence());
     if (-r $fullname && !$force)
       {
-	write_log("sequence file $fullname already exists.", $cogeweb->logfile);
+	CoGe::Accessory::Web::write_log("sequence file $fullname already exists.", $cogeweb->logfile);
 	return $fullname;
       }
     my $hdr = $gbobj->get_headerfasta( );
@@ -2716,13 +2732,13 @@ sub write_fasta
     $seq = $gbobj->mask_ngene( $seq ) if ( $mask &&  $mask eq "non-genic" );
     $seq = substr($seq, $start-1, $stop-$start+1);
     $gbobj->sequence($seq); #replace objects sequence with modified sequence
-    ($fullname) = check_filename_taint( $fullname );
+    ($fullname) = CoGe::Accessory::Web::check_filename_taint( $fullname );
     open(OUT, ">$fullname") or die "Couldn't open $fullname!: $!\n";
     print OUT "$hdr\n";
     print OUT $seq,"\n";
     close(OUT);
     system "chmod +rw $fullname";
-    write_log("Created sequence file $fullname", $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("Created sequence file $fullname", $cogeweb->logfile);
     return($fullname);
   }
 
@@ -2946,8 +2962,8 @@ sub gen_hsp_colors
   {
     my %opts = @_;
     my $num_seqs = $opts{num_seqs} || $NUM_SEQS;
-    my $prefs = $opts{prefs} || load_settings(user=>$USER, page=>$PAGE_NAME);
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GEvo.tmpl');
+    my $prefs = $opts{prefs} || CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME);
+    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'GEvo.tmpl');
     my $hsp_colors;
     my @colors = color_pallet(num_seqs=>$num_seqs, prefs=>$prefs);
     $template->param(HSP_COLOR_FORM=>1);
@@ -2975,7 +2991,7 @@ sub color_pallet
     my $start = $opts{start} || [255,100,100];
     my $offset = $opts{offset} || 50;
     my $num_seqs = $opts{num_seqs} || $NUM_SEQS;
-    my $prefs = $opts{prefs} || load_settings(user=>$USER, page=>$PAGE_NAME);
+    my $prefs = $opts{prefs} || CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME);
     $prefs = {} unless $prefs;
     $start = [$prefs->{r1}, $prefs->{g1}, $prefs->{b1}] if defined $prefs->{r1} && defined $prefs->{g1} && defined $prefs->{b1};
 
@@ -3039,9 +3055,9 @@ sub algorithm_list
 
     my %progs = (
 		 "blastn"=>"BlastN: Small Regions",
-		 blastz=>"BlastZ: Large Regions",
+		 blastz=>"(B)LastZ: Large Regions",
 		 "CHAOS"=>"Chaos: Fuzzy Matches",
-		 "DiAlign_2"=>"DiAlign_2: Glocal Alignment",
+#		 "DiAlign_2"=>"DiAlign_2: Glocal Alignment",
 		 "LAGAN"=>"Lagan: Global Alignment",
 		 "tblastx"=>"TBlastX: Protein Translation",
 		 "GenomeThreader"=>"GenomeThreader - Spliced Gene Alignments",
@@ -3142,11 +3158,11 @@ sub add_url_seq
     my $old_num = $opts{old_num};
     my $data = $opts{data};
     
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GEvo.tmpl');
+    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'GEvo.tmpl');
     
     my $total_num=$new_num+$old_num;
     
-    my $prefs = load_settings(user=>$USER, page=>$PAGE_NAME);
+    my $prefs = CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME);
     
     my $message;
     my @seq_nums;
@@ -3246,7 +3262,7 @@ sub add_seq
     my $num_seq = shift;
     $num_seq ++;
     
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GEvo.tmpl');
+    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'GEvo.tmpl');
     my $hsp_colors;
     if ($num_seq > $MAX_SEQS)
     {
@@ -3353,12 +3369,12 @@ sub get_algorithm_options
     #build blast param string
     $blast_wordsize = 3 if ($analysis_program eq "tlastx" && $blast_wordsize > 3);
     $blast_string = " -W " . $blast_wordsize if defined $blast_wordsize;
-    $blast_string .= " -G " . $blast_gapopen if defined $blast_gapopen;
-    $blast_string .= " -E " . $blast_gapextend if defined $blast_gapextend;
-    $blast_string .= " -q " . $blast_mismatch if defined $blast_mismatch;
-    $blast_string .= " -r " . $blast_match if defined $blast_match;
+    $blast_string .= " -G " . $blast_gapopen if defined $blast_gapopen && $analysis_program eq "blastn";
+    $blast_string .= " -E " . $blast_gapextend if defined $blast_gapextend && $analysis_program eq "blastn";
+    $blast_string .= " -q " . $blast_mismatch if defined $blast_mismatch  && $analysis_program eq "blastn";
+    $blast_string .= " -r " . $blast_match if defined $blast_match && $analysis_program eq "blastn";
     $blast_string .= " -e " . $blast_eval if defined $blast_eval;
-    $blast_string .= " -F " . $blast_filter if defined $blast_filter;
+    $blast_string .= " -F " . $blast_filter if defined $blast_filter && $analysis_program eq "blastn";
     $blast_string .= " "    . $blast_params if defined $blast_params;
     #build lagan param string
     $lagan_string = $lagan_params;
@@ -3426,7 +3442,7 @@ sub get_algorithm_options
       {
 	$param_string = $chaos_string;
       }
-    my ($x, $clean_param_string) = check_taint($param_string);
+    my ($x, $clean_param_string) = CoGe::Accessory::Web::check_taint($param_string);
     unless ($x)
       {
 	print STDERR "user ".$USER->user_name."'s param_string: $param_string was tainted!\n";
@@ -3582,7 +3598,7 @@ sub save_settings_gevo
   {
     my %opts = @_;
     my $opts = Dumper \%opts;
-    my $item = save_settings(opts=>$opts, user=>$USER, page=>$PAGE_NAME);
+    my $item =CoGe::Accessory::Web::save_settings(opts=>$opts, user=>$USER, page=>$PAGE_NAME);
   }
 
 sub reset_settings_gevo
@@ -3851,7 +3867,7 @@ sub get_image_info
     my $idx = $opts{id};
     my $basefilename = $opts{basename};
     return ("no opts specified") unless ($idx && $basefilename);
-    $cogeweb = initialize_basefile(basename=>$basefilename, prog=>"GEvo"); 
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$basefilename, prog=>"GEvo"); 
     my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
     my $query = qq{select * from image_info where id = $idx;};
     my ($id, $display_id, $name, $title, $px_witdth, $bpmin, $bpmax, $dsid, $chromosome, $rc, $px_height) = $dbh->selectrow_array($query);

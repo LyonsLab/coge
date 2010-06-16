@@ -13,15 +13,16 @@ use CoGe::Accessory::genetic_code;
 use Statistics::Basic::Mean;
 use POSIX;
 
-$ENV{PATH} = "/opt/apache2/CoGe/";
 
-use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $MATRIXDIR $USER $FORM $coge $connstr);
+use vars qw($P $DATE $DEBUG $TEMPDIR $TEMPURL $MATRIXDIR $USER $FORM $coge $connstr);
 
 # set this to 1 to print verbose messages to logs
+$P = CoGe::Accessory::Web::get_defaults();
+$ENV{PATH} = $P->{COGEDIR};
 $DEBUG = 0;
-$TEMPDIR = "/opt/apache2/CoGe/tmp";
-$TEMPURL = "/CoGe/tmp";
-$MATRIXDIR = "/opt/apache2/CoGe/data/blast/matrix/aa/";
+$TEMPDIR = $P->{TEMPDIR};
+$TEMPURL = $P->{TEMPURL};
+$MATRIXDIR = $P->{BLASTMATRIX}."aa/";
 $| = 1; # turn off buffering
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		 sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
@@ -48,7 +49,7 @@ sub gen_html
       {
 	my ($body) = gen_body();
 	
-	my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
+	my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
 	
 	$template->param(TITLE=>'Sequence Alignment Matrix View');
 	$template->param(PAGE_TITLE=>'MatrixView');
@@ -70,7 +71,7 @@ sub gen_body
     {
       my $form = shift || $FORM;
       my $matrix = $form->param('matrix');
-      my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/MatrixView.tmpl');
+      my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'MatrixView.tmpl');
       my $matrices = process_dir(matrix=>$matrix);
       $template->param(MATRICES=>$matrices);
       my $data = gen_data(file=>$matrix);

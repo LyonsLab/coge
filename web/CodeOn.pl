@@ -18,13 +18,16 @@ use Statistics::Basic::Mean;
 use POSIX;
 
 
-use vars qw($PAGE_NAME $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb $FORM);
-$ENV{PATH}="/opt/apache/CoGe";
+use vars qw($P $PAGE_NAME $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb $FORM);
+
+$P = CoGe::Accessory::Web::get_defaults();
+$ENV{PATH} = $P->{COGEDIR};
+
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
-$PAGE_NAME = "FeatAAEvo.pl";
+$PAGE_NAME = "CodeOn.pl";
 ($USER) = CoGe::Accessory::LogUser->get_user();
-$TEMPDIR = "/opt/apache/CoGe/tmp/";
+$TEMPDIR = $P->{TEMPDIR};
 $FORM = new CGI;
 $coge = CoGeX->dbconnect();
 #$coge->storage->debugobj(new DBIxProfiler());
@@ -44,7 +47,7 @@ sub gen_html
 {
     my $html;    
     my ($body) = gen_body();
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
+    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
     $template->param(TITLE=>'Coding Sequence Evolution');
     $template->param(PAGE_TITLE=>'CodeOn');
     $template->param(HELP=>'/wiki/index.php?title=CodeOn');
@@ -65,7 +68,7 @@ sub gen_html
  
 sub gen_body
   {
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CodeOn.tmpl');
+    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'CodeOn.tmpl');
     my $form = $FORM;
     $template->param(INITIALIZE=>1);
     $template->param(ACCN=>$form->param('accn')) if $form->param('accn');
@@ -151,7 +154,7 @@ sub go{
   my ($data, $feats) = get_features(accn=>$accn, anno=>$anno, org_id=>$org_id, org_name=>$org_name, org_desc=>$org_desc, fids=>$fids);
   return $data unless ref ($data) =~ /hash/i;
 
-  my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CodeOn.tmpl');
+  my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'CodeOn.tmpl');
   $template->param(RESULTS=>1);
   my $aa_sort = CoGe::Accessory::genetic_code->sort_aa_by_gc();
   my $table_head = "<th>".join ("<th>", "GC% (org count)", map {$_."% (".$data->{$_}{bin_count}.")" } sort {$a<=>$b}keys %$data);

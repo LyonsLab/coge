@@ -14,12 +14,14 @@ use Data::Dumper;
 use POSIX;
 use DBIxProfiler;
 
-$ENV{PATH} = "/opt/apache/CoGe/";
 
-use vars qw( $TEMPDIR $TEMPURL $FORM $USER $DATE $coge);
+use vars qw($P $TEMPDIR $TEMPURL $FORM $USER $DATE $coge);
 
-$TEMPDIR = "/opt/apache/CoGe/tmp";
-$TEMPURL = "/CoGe/tmp";
+$P = CoGe::Accessory::Web::get_defaults();
+$ENV{PATH} = $P->{COGEDIR};
+
+$TEMPDIR = $P->{TEMPDIR};
+$TEMPURL = $P->{TEMPURL};
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
 ($USER) = CoGe::Accessory::LogUser->get_user();
@@ -55,7 +57,7 @@ sub gen_html
     my $rc = $form->param('rc');
     my $pro;
     my ($title) = gen_title(protein=>$pro, rc=>$rc);
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
+    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
 #    $template->param(TITLE=>'Sequence Viewer');
     $template->param(PAGE_TITLE=>'SeqView');
     $template->param(HELP=>'/wiki/index.php?title=SeqView');
@@ -78,7 +80,7 @@ sub gen_html
 sub gen_body
   {
     my $form = $FORM;
-    my $featid = $form->param('featid') || 0;
+    my $featid = $form->param('featid') || $form->param('fid') ||0;
     my $gstid = $form->param('gstid') if $form->param('gstid');
     ($featid, $gstid) = split (/_/, $featid) if ($featid =~ /_/);
       
@@ -98,7 +100,7 @@ sub gen_body
     $stop =~ s/\.//g if $stop;
     $stop = $start unless $stop;
     ($start,$stop) = ($stop,$start) if $start && $stop && $start > $stop;
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/SeqView.tmpl');
+    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'SeqView.tmpl');
     $template->param(RC=>$rc);
     $template->param(JS=>1);
     $template->param(SEQ_BOX=>1);

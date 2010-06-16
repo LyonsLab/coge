@@ -10,12 +10,14 @@ use Text::Wrap qw($columns &wrap);
 use Data::Dumper;
 use POSIX;
 
-$ENV{PATH} = "/opt/apache/CoGe/";
 
-use vars qw( $TEMPDIR $TEMPURL $FORM $USER $DATE $coge);
 
-$TEMPDIR = "/opt/apache/CoGe/tmp";
-$TEMPURL = "/CoGe/tmp";
+use vars qw($P $TEMPDIR $TEMPURL $FORM $USER $DATE $coge);
+$P = CoGe::Accessory::Web::get_defaults();
+$ENV{PATH} = $P->{COGEDIR};
+
+$TEMPDIR = $P->{TEMPDIR};
+$TEMPURL = $P->{TEMPURL};
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
 ($USER) = CoGe::Accessory::LogUser->get_user();
@@ -53,8 +55,10 @@ sub gen_html
        my $prot = $form->param('prot');
        my $text = $form->param('text');
        my $name_only = $form->param('no');
+       my $upstream = $form->param('up') || 0;
+       my $downstream = $form->param('down') || 0;
        my $textbox = $text ? 0 : 1;
-       my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
+       my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
 #       $template->param(TITLE=>'Fasta Viewer');
        $template->param(PAGE_TITLE=>'FastaView');
        $template->param(HELP=>'/wiki/index.php?title=FastaView');
@@ -72,12 +76,12 @@ sub gen_html
        push @fids, $form->param('fid') if $form->param('fid');
        my $gstid = $form->param('gstid') if $form->param('gstid');
 
-       my $seqs = get_seqs(prot=>$prot, fids=>\@fids, textbox=>$textbox, gstid=>$gstid, name_only=>$name_only);
+       my $seqs = get_seqs(prot=>$prot, fids=>\@fids, textbox=>$textbox, gstid=>$gstid, name_only=>$name_only, upstream=>$upstream, downstream=>$downstream);
        if ($text)
 	 {
 	   return  $seqs;
 	 }
-       $template->param(BODY=>gen_body(fids=>\@fids, seqs=>$seqs, gstid=>$gstid, prot=>$prot));
+       $template->param(BODY=>gen_body(fids=>\@fids, seqs=>$seqs, gstid=>$gstid, prot=>$prot, up=>$upstream, down=>$downstream));
        $html .= $template->output;
      }
     return $html;
@@ -91,6 +95,9 @@ sub get_seqs
     my $textbox = $opts{textbox};
     my $name_only = $opts{name_only};
     my $gstid = $opts{gstid};
+    my $upstream = $opts{upstream};
+    my $downstream = $opts{downstream};
+    print STDERR Dumper \%opts;
     my @fids = ref($fids) =~ /array/i ? @$fids : split/,/, $fids;
     my $seqs;
     foreach my $featid (@fids)
@@ -106,7 +113,7 @@ sub get_seqs
 	  }
 	my ($feat) = $coge->resultset('Feature')->find($fid);
 	next unless $feat;
-	$seqs .= $feat->fasta(col=>80, prot=>$prot, name_only=>$name_only, gstid=>$gstidt);
+	$seqs .= $feat->fasta(col=>80, prot=>$prot, name_only=>$name_only, gstid=>$gstidt, upstream=>$upstream, downstream=>$downstream);
       }
     $seqs = qq{<textarea id=seq_text name=seq_text class="ui-widget-content ui-corner-all backbox" ondblclick="this.select();" style="height: 400px; width: 750px; overflow: auto;">$seqs</textarea>} if $textbox;
     return $seqs;
@@ -119,12 +126,16 @@ sub gen_body
     my $fids = $opts{fids};
     my $gstid = $opts{gstid} || 1;
     my $prot = $opts{prot} || 0;
+    my $up = $opts{up} || 0;
+    my $down = $opts{down} || 0;
     $fids = join (",", @$fids) if ref($fids) =~ /array/i;
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/FastaView.tmpl');
+    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'FastaView.tmpl');
     $template->param(BOTTOM_BUTTONS=>1);
     $template->param(SEQ=>$seqs) if $seqs;
     $template->param(FIDS=>qq{<input type=hidden id=fids value=$fids><input type=hidden id=gstid value=$gstid>});
     $template->param(PROT=>$prot);
+    $template->param(UP=>$up);
+    $template->param(DOWN=>$down);
     return $template->output;
   }
 	

@@ -4,9 +4,14 @@ use strict;
 use CGI;
 use CoGe::Graphics;
 use Data::Dumper;
+use CoGe::Accessory::Web;
 
 
 $ENV{PATH} = "";
+use vars qw($P);
+
+$P = CoGe::Accessory::Web::get_defaults();
+
 my $form = new CGI;
 #print STDERR $form->self_url(-full=>1),"\n";
 my $gfx = new CoGe::Graphics;
@@ -41,7 +46,7 @@ if ($request eq "get_annotation")
     my $html;
     my $opts = "org=$org chr=$chr x=$start";
     $opts .= " version=$version" if $version;
-    open (IN, "/opt/apache/CoGe/FeatAnno.pl $opts |");
+    open (IN, $P->{COGEDIR}."FeatAnno.pl $opts |");
     while (<IN>)
       {
         print $_;

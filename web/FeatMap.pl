@@ -15,12 +15,15 @@ use File::Basename;
 use CoGe::Graphics::GenomeView;
 use CoGe::Graphics;
 use CoGe::Graphics::Chromosome;
+use File::Path;
+use vars qw($P $TEMPDIR $TEMPURL $FORM $USER $DATE $coge $cogeweb );
 
-use vars qw( $TEMPDIR $TEMPURL $FORM $USER $DATE $coge $cogeweb );
+$P = CoGe::Accessory::Web::get_defaults();
+$ENV{PATH} = $P->{COGEDIR};
+$TEMPDIR = $P->{TEMPDIR}."FeatMap";
+$TEMPURL = $P->{TEMPURL}."FeatMap";
+mkpath($TEMPDIR, 0,0777) unless -d $TEMPDIR;
 
-
-$TEMPDIR = "/opt/apache/CoGe/tmp/FeatMap";
-$TEMPURL = "/CoGe/tmp/FeatMap";
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
 ($USER) = CoGe::Accessory::LogUser->get_user();
@@ -34,8 +37,7 @@ my $pj = new CGI::Ajax(
 		      );
 $pj->js_encode_function('escape');
 print $pj->build_html($FORM, \&gen_html);
-#print $FORM->header;
-#print gen_html();
+#print $FORM->header;print gen_html();
 
 
 sub gen_html
@@ -48,7 +50,7 @@ sub gen_html
     else
       {
 	my ($body) = gen_body();
-	my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
+	my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
 	$template->param(TITLE=>'Feature Map');
 	$template->param(PAGE_TITLE=>'FeatMap');
 	$template->param(HELP=>'/wiki/index.php?title=FeatMap');
@@ -69,7 +71,7 @@ sub gen_html
   
   sub gen_body
   {
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/FeatMap.tmpl');
+    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'FeatMap.tmpl');
     my $form = $FORM;
     my $no_values;
     my $sort_by_type = $form->param('sort_type');
@@ -138,7 +140,7 @@ sub gen_html
     #print STDERR Dumper \$feat_list;
     return unless @$feat_list;
     
-    $cogeweb = initialize_basefile(prog=>"FeatMap");
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(prog=>"FeatMap");
     my $width = $opts{width} || 1200;
     my $image_filename = $cogeweb->basefile;
     my $height = ($width / 16) <= 64 ? ($width / 16) : 64;
@@ -207,7 +209,7 @@ sub gen_html
 	      {
 		my $x;
 		$image_file = $cogeweb->basefile."_$count.png";
-		($x, $image_file) = check_taint($image_file);
+		($x, $image_file) =CoGe::Accessory::Web::check_taint($image_file);
 		
 		$data{$org}{image}->image_width($width);
 		$data{$org}{image}->chromosome_height($height);
@@ -215,7 +217,7 @@ sub gen_html
 		$data{$org}{image}->generate_png(filename=>$image_file);
 		$image_map = $data{$org}{image}->generate_imagemap(mapname=>$cogeweb->basefilename."_".$count);
 		my $map_file = $cogeweb->basefile."_$count.map";
-		($x, $map_file) = check_taint($map_file);
+		($x, $map_file) =CoGe::Accessory::Web::check_taint($map_file);
 		open (MAP, ">$map_file");
 		print MAP $image_map;
 		close MAP;
@@ -226,7 +228,7 @@ sub gen_html
 		$image_file = $data{$org}{image}."_$count.png";
 		$image_map = get_map($cogeweb->basefile."_$count.map");
 		#print STDERR $image_map_large,"\n";
-		($x, $image_file) = check_taint($image_file);
+		($x, $image_file) =CoGe::Accessory::Web::check_taint($image_file);
 	      }
 	    
 	    $image_file =~ s/$TEMPDIR/$TEMPURL/;

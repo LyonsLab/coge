@@ -8,14 +8,16 @@ use CoGe::Accessory::Web;
 use HTML::Template;
 use Data::Dumper;
 
-$ENV{PATH} = "/opt/apache2/CoGe/";
 
-use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM);
+
+use vars qw($P $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM);
+$P = CoGe::Accessory::Web::get_defaults();
+$ENV{PATH} = $P->{COGEDIR};
 
 # set this to 1 to print verbose messages to logs
 $DEBUG = 0;
-$TEMPDIR = "/opt/apache/CoGe/tmp";
-$TEMPURL = "/CoGe/tmp";
+$TEMPDIR = $P->{TEMPDIR};
+$TEMPURL = $P->{TEMPURL};
 $| = 1; # turn off buffering
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		 sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
@@ -27,8 +29,8 @@ my $pj = new CGI::Ajax(
 		      );
 $pj->JSDEBUG(0);
 $pj->DEBUG(0);
-print $pj->build_html($FORM, \&gen_html);
-#print "Content-Type: text/html\n\n". gen_html();
+#print $pj->build_html($FORM, \&gen_html);
+print "Content-Type: text/html\n\n". gen_html();
 
 sub gen_html
   {
@@ -40,7 +42,7 @@ sub gen_html
     else
       {
 	my ($body, $seq_names, $seqs) = gen_body();
-	my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/MSAView.tmpl');
+	my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'MSAView.tmpl');
 	
 	$template->param(TITLE=>'Multiple Sequence Alignment Viewer');
 	$template->param(PAGE_TITLE=>'MSAView');

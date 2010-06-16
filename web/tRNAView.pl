@@ -16,16 +16,20 @@ use File::Temp;
 use File::Basename;
 use Spreadsheet::WriteExcel;
 use Mail::Mailer;
+use File::Path;
 
-$ENV{PATH} = "/opt/apache/CoGe/";
+use vars qw($P $ARAGORN $FASTADIR $DATADIR $TEMPDIR $TEMPURL $DATE $USER $FORM $coge $cogeweb);
 
-use vars qw( $ARAGORN $FASTADIR $DATADIR $TEMPDIR $TEMPURL $DATE $USER $FORM $coge $cogeweb);
+$P = CoGe::Accessory::Web::get_defaults();
+$ENV{PATH} = $P->{COGEDIR};
 
-$TEMPDIR = "/opt/apache/CoGe/tmp/tRNA";
-$TEMPURL = "/CoGe/tmp/tRNA";
-$DATADIR = "/opt/apache/CoGe/data/";
-$FASTADIR = $DATADIR.'/fasta/';
-$ARAGORN = "/opt/apache/CoGe/bin/aragorn1.2";
+$TEMPDIR = $P->{TEMPDIR}."tRNA";
+mkpath ($TEMPDIR,0,0777) unless -d $TEMPDIR;
+$TEMPURL = $P->{TEMPURL}."tRNA";
+$DATADIR = $P->{DATADIR};
+$FASTADIR = $P->{FASTADIR};
+
+$ARAGORN = $P->{ARAGORN};
 
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
@@ -57,7 +61,7 @@ sub gen_html
     else
      {
     my ($body) = gen_body();
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
+    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
     $template->param(PAGE_TITLE=>"tRNAView");
     $template->param(TITLE=>'CoGe tRNA and tmRNA Search Tool');
     $template->param(HELP=>'/wiki/index.php?title=tRNAView');
@@ -73,7 +77,7 @@ sub gen_html
     $template->param(BOX_NAME=>'Aragorn Search Settings');
     $template->param(ADJUST_BOX=>1);
     $template->param(BODY=>$body);
-	my $prebox = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CoGeAlign.tmpl');
+	my $prebox = HTML::Template->new(filename=>$P->{TMPLDIR}.'CoGeAlign.tmpl');
 	$prebox->param(RESULTS_DIV=>1);
 	$template->param(PREBOX=>$prebox->output);
     $html .= $template->output;
@@ -82,7 +86,7 @@ sub gen_html
   
   sub gen_body
   {
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/tRNAView.tmpl');
+    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'tRNAView.tmpl');
     my $form = $FORM;
     my $featid = join (",",$form->param('featid'), $form->param('fid')) || 0;
     my $chr = $form->param('chr') || 0;
@@ -200,7 +204,7 @@ sub run_aragorn
 	my $email = $opts{email};
 	my $seq = $opts{seq};
 	
-	$cogeweb = initialize_basefile(prog=>"tRNA");
+	$cogeweb = CoGe::Accessory::Web::initialize_basefile(prog=>"tRNA");
     my $outfile = $cogeweb->basefile."_aragorn.output";
     
 	my $fasta_file = $seq !~ /undefined/ ? make_fasta_file($seq) : get_genome_fasta($orgid);
@@ -214,7 +218,7 @@ sub run_aragorn
 	
 	$precommand .= "-o $outfile $fasta_file";
 	 my $x;
-    ($x, $precommand) = check_taint($precommand);
+    ($x, $precommand) =CoGe::Accessory::Web::check_taint($precommand);
 	
 	my $command = "$ARAGORN $precommand";
 	
@@ -442,7 +446,7 @@ sub get_genome_fasta
     my $res;
     if (-r $file)
       {
-	#write_log("*$org_name* fasta file ($md5) exists", $cogeweb->logfile);
+	CoGe::Accessory::Web::write_log("*$org_name* fasta file ($md5) exists", $cogeweb->logfile);
 	$res = 1;
       }
     else
@@ -460,7 +464,7 @@ sub get_genome_fasta
     my $dslist = $opts{dslist};
     my $file = $opts{file};
     $file = $FASTADIR."/$file" unless $file =~ /$FASTADIR/;
-    #write_log("creating fasta file.", $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("creating fasta file.", $cogeweb->logfile);
     open (OUT, ">$file") || die "Can't open $file for writing: $!";;
     foreach my $ds (@$dslist)
       {
@@ -468,15 +472,15 @@ sub get_genome_fasta
 	  {
 	    my $title =  $ds->organism->name." (v". $ds->version.") "."chromosome: $chr".", CoGe database id: ".$ds->id;
 	    $title =~ s/^>+/>/;
-	    #write_log("adding sequence $title", $cogeweb->logfile);
+	    CoGe::Accessory::Web::write_log("adding sequence $title", $cogeweb->logfile);
 	    print OUT ">".$title."\n";
 	    print OUT $ds->get_genomic_sequence(chr=>$chr),"\n";
 	  }
       }
     close OUT;
-    #write_log("Completed fasta creation", $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("Completed fasta creation", $cogeweb->logfile);
     return 1 if -r $file;
-    #write_log("Error with fasta file creation", $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("Error with fasta file creation", $cogeweb->logfile);
     return 0;
   }
   

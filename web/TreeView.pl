@@ -9,17 +9,21 @@ use HTML::Template;
 use Data::Dumper;
 use Bio::TreeIO;
 use File::Temp;
+use File::Path;
 
-$ENV{PATH} = "/opt/apache2/CoGe/";
 
-use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $NEATO $DOT);
+use vars qw($P $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $NEATO $DOT);
+$P = CoGe::Accessory::Web::get_defaults();
+$ENV{PATH} = $P->{COGEDIR};
 
 # set this to 1 to print verbose messages to logs
 $DEBUG = 0;
-$TEMPDIR = "/opt/apache/CoGe/tmp";
-$TEMPURL = "/CoGe/tmp";
-$NEATO = "/opt/apache/CoGe/bin/neato";
-$DOT = "/opt/apache/CoGe/bin/dot";
+$TEMPDIR = $P->{TEMPDIR}."TreeView";
+$TEMPURL = $P->{TEMPURL}."TreeView";
+mkpath ($TEMPDIR, 0,0777) unless -d $TEMPDIR;
+
+$NEATO = $P->{NEATO};
+$DOT = $P->{DOT};
 $| = 1; # turn off buffering
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		 sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
@@ -47,7 +51,7 @@ sub gen_html
     else
       {
 	my ($body, $seq_names, $seqs) = gen_body();
-	my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
+	my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
 	
 	$template->param(TITLE=>'Phylogenetic Tree Viewer');
 
@@ -90,11 +94,11 @@ sub gen_body
 #    print STDERR $content,"\n";
 
 #    $content =1;
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/TreeView.tmpl');
+    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'TreeView.tmpl');
     $template->param(FRONT_PAGE => 1) unless $content;
     if ($content)
       {
-	my $cogeweb = initialize_basefile(prog=>"TreeView");
+	my $cogeweb = CoGe::Accessory::Web::initialize_basefile(prog=>"TreeView");
 	my $basefile = $cogeweb->basefile;
 	my ($tree, $dot, $img, $imgmap) = generate_tree(content=>$content, basefile=>$basefile, zoom=>$zoom);
 	$img =~ s/$TEMPDIR/$TEMPURL/;

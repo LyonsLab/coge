@@ -5,7 +5,6 @@ use strict;
 use CGI;
 use CoGe::Accessory::LogUser;
 
-$ENV{PATH} = "/opt/apache2/CoGe/";
 
 
 my $coge = CoGeX->dbconnect();

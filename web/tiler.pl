@@ -5,15 +5,14 @@ use File::Spec::Functions;
 use File::Path;
 use LWP::Simple;
 use Data::Dumper;
+use CoGe::Accessory::Web;
 
 $ENV{'PATH'} = '';
-use vars qw($IMGURL $BASEDIR);
+use vars qw($P $IMGURL $BASEDIR);
+$P = CoGe::Accessory::Web::get_defaults();
 $IMGURL = 'http://'.$ENV{SERVER_NAME}.'/CoGe/GenomePNG.pl?';
 # where to start the caching
-$BASEDIR = "/opt/apache/CoGe/data/image_cache/";
-#$BASEDIR = "/home/apache/_cache_/";
-#$ENV{QUERY_STRING} = shift @ARGV;
-#print STDERR $ENV{QUERY_STRING},"\n";
+$BASEDIR = $P->{IMAGE_CACHE};
 if (! -e $BASEDIR ){ mkdir($BASEDIR);  }
 if (! -e $BASEDIR ){ warn "unable to find and create $BASEDIR";exit;}
 print "Content-type: image/png; mode=24bit\n\n";
@@ -41,11 +40,10 @@ if(!-e $fn){
 {
 local( *IMG,$/ ); 
 my $mesg = "cant open $fn\nmake sure _cache_ dir is web writeable\n";
-open( IMG,"<", $fn) or warn "cant open $mesg\n"; binmode IMG;
+open( IMG,"<", $fn) or warn "$mesg: $!"; binmode IMG;
 print <IMG>; close(IMG);
 }
 
-#system 'chmod -R 777 /opt/apache/CoGe/_cache_/*';
 
 ##################################################
 # Use %ENV to find where in directory structure

@@ -9,12 +9,13 @@ use Data::Dumper;
 use DBI;
 
 # for security purposes
-$ENV{PATH} = "/opt/apache2/CoGe/";
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 
-use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM);
-$TEMPDIR = "/opt/apache/CoGe/tmp";
-$TEMPURL = "/CoGe/tmp";
+use vars qw($P $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM);
+$P = CoGe::Accessory::Web::get_defaults();
+$ENV{PATH} = $P->{COGEDIR};
+$TEMPDIR = $P->{TEMPDIR};
+$TEMPURL = $P->{TEMPURL};
 # set this to 1 to print verbose messages to logs
 $DEBUG = 0;
 
@@ -39,7 +40,7 @@ print gen_html();
 sub gen_html
   {
     my $form = shift || $FORM;
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
+    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
     $template->param(LOGO_PNG=>"HSPView-logo.png");
     $template->param(TITLE=>'HSP Viewer');
     $template->param(PAGE_TITLE=>'HSPView');
@@ -83,7 +84,7 @@ sub gen_body
     $sname =~ s/\(\(/\(/g;
     $qname =~ s/\)\)/\)/g;
     $sname =~ s/\)\)/\)/g;
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/HSPView.tmpl');
+    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'HSPView.tmpl');
     $template->param(Query=>$qname);
     $template->param(Subject=>$sname);
     my $qgap = $hsps->[0]{alignment} =~ tr/-/-/;

@@ -14,29 +14,34 @@ use LWP::UserAgent;
 #use LWP::Simple;
 #use LWP::Simple::Post qw(post post_xml);
 use CoGe::Accessory::genetic_code;
+use File::Path;
 
-$ENV{PATH} = "/opt/apache/CoGe/";
-$ENV{THREADS} =8;
-use vars qw( $TEMPDIR $TEMPURL $USER $DATE $CLUSTAL $BASEFILE $coge $cogeweb $FORM $NEWICKTOPS $CONVERT);
+use vars qw($P $TEMPDIR $TEMPURL $USER $DATE $CLUSTAL $BASEFILE $coge $cogeweb $FORM $NEWICKTOPS $CONVERT $MAX_PROC);
+$P = CoGe::Accessory::Web::get_defaults();
+$ENV{PATH} = $P->{COGEDIR};
+$MAX_PROC=$P->{MAX_PROC};
+$ENV{THREADS} =$MAX_PROC;
 
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
 ($USER) = CoGe::Accessory::LogUser->get_user();
-$TEMPDIR = "/opt/apache/CoGe/tmp/";
-$TEMPURL = "/CoGe/tmp/CoGeAlign";
+$TEMPDIR = $P->{TEMPDIR}."CoGeAlign";
+$TEMPURL = $P->{TEMPURL}."CoGeAlign";
+mkpath ($TEMPDIR,0,0777) unless -d $TEMPDIR;
+
 $FORM = new CGI;
 
 $coge = CoGeX->dbconnect();
-$CLUSTAL = "/usr/bin/clustalw2";
-$NEWICKTOPS = "/usr/bin/newicktops";
-$CONVERT = "/usr/local/bin/convert";
+
+$CLUSTAL = $P->{CLUSTALW};
+$NEWICKTOPS = $P->{NEWICKTOPS};
+$CONVERT = $P->{CONVERT};
 #$CLUSTAL = "/usr/bin/clustalw-mtv";
 
 
 my $pj = new CGI::Ajax(
 		       gen_html=>\&gen_html,
 		       refresh_seq=>\&refresh_seq,
-                       sendCipres=>\&sendCipres,
                        create_tree_image=>\&create_tree_image,
 		       loading=>\&loading,
 		       run=>\&run,
@@ -55,7 +60,7 @@ sub gen_html
     else
       {
 	my ($body) = gen_body();
-	my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
+	my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
 	$template->param(TITLE=>'ClustalW2 Alignments');
 	$template->param(PAGE_TITLE=>'Align');
 	$template->param(HELP=>'/wiki/index.php?title=CoGeAlign');
@@ -69,7 +74,7 @@ sub gen_html
 	$template->param(DATE=>$DATE);
 	$template->param(BOX_NAME=>'CoGe: ClustalW 2.0.10');
 	$template->param(BODY=>$body);
-	my $prebox = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CoGeAlign.tmpl');
+	my $prebox = HTML::Template->new(filename=>$P->{TMPLDIR}.'CoGeAlign.tmpl');
 	$prebox->param(RESULTS_DIV=>1);
 	$template->param(PREBOX=>$prebox->output);
 	$html .= $template->output;
@@ -78,7 +83,7 @@ sub gen_html
   
 sub gen_body
   {
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CoGeAlign.tmpl');
+    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'CoGeAlign.tmpl');
     $template->param(JAVASCRIPT=>1);
     $template->param(MAIN=>1);
     my $form = $FORM;
@@ -241,7 +246,7 @@ sub run
     
     my %file_format = (NEXUS=>'nxs',PHYLIP=>'phy',GDE=>'gde',PIR=>'pir');
     
-    $cogeweb = initialize_basefile(prog=>"CoGeAlign");
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(prog=>"CoGeAlign");
     
     my $seq_file = $cogeweb->basefile."_clustalw.infile";
 
@@ -271,7 +276,7 @@ sub run
     
     
     my $x;
-    ($x, $pre_command) = check_taint($pre_command);
+    ($x, $pre_command) =CoGe::Accessory::Web::check_taint($pre_command);
     
     my $command = "$CLUSTAL $pre_command";
     
@@ -294,20 +299,17 @@ sub run
 
 
     my $outfile_jalview = $outfile;
-    $outfile_jalview =~ s/\/opt\/apache//;
-    $outfile =~ s/$TEMPDIR/\/CoGe\/tmp\//;
+    $outfile_jalview =~ s/$TEMPDIR/$TEMPURL/;
     my $name_conversion = convert_phylip_names(file=>$phylip_file, seqs=>$inseqs);
-    my $cipres_out = $outfile;
-    $cipres_out =~ s/\/CoGe\/tmp\/CoGeAlign\///;
-#    print STDERR $cipres_out,"\n";
     my ($header_html,$seq_html, $seqs, $codon_alignment, $clustal_alignment, $name_order) = parse_results(clustal=>$output,num_seqs=>$num_seqs, codon_align=>$codon, seq_type=>$seq_type, name_convert=>$name_conversion);
-    my $box_template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
+    my $box_template = HTML::Template->new(filename=>$P->{TMPLDIR}.'box.tmpl');
     $box_template->param(BOX_NAME=>"ClustalW Alignment Results");
     #print STDERR $html,"\n";
     my $html;
     my $phylip_file_jalview = $phylip_file;
     $phylip_file_jalview =~ s/http.+edu//;
-    $html .= qq{<applet width="140" height="35" code="jalview.bin.JalviewLite" archive="/CoGe/bin/JalView/jalviewApplet.jar"><param name="file" value="$outfile_jalview"><param name="tree" value="$phylip_file_jalview"><param name="showbutton" value="true"><param name="defaultColour" value="Clustal"></applet><br><a class=small href="http://www.jalview.org" target=_new>Information on JalView</a>};
+    #jalview screws up jquery for some reason
+#    $html .= qq{<applet width="140" height="35" code="jalview.bin.JalviewLite" archive="/CoGe/bin/JalView/jalviewApplet.jar"><param name="file" value="$outfile_jalview"><param name="tree" value="$phylip_file_jalview"><param name="showbutton" value="true"><param name="defaultColour" value="Clustal"></applet><br><a class=small href="http://www.jalview.org" target=_new>Information on JalView</a>};
     $clustal_alignment =~s/\n/<br\/>/g;
     my $tree = create_tree_image($phylip_file);
     $html .= qq{
@@ -328,11 +330,11 @@ sub run
 	    my $name = $name_conversion->{$id};
 	    next unless $name;
 	    $id =~ s/fid_//;
-	    push @select_feats, {ID=>$id, NAME=>$name};
+	    push @select_feats, {ID=>$id, NAME=>$name." ($id)"};
 	  }
 	if (@select_feats)
 	  {
-	    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/CoGeAlign.tmpl');
+	    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'CoGeAlign.tmpl');
 	    $template->param(FEATURE_SELECT=>1);
 	    $template->param(FEATS=>\@select_feats);
 	    $html .= $template->output;
@@ -410,61 +412,12 @@ sub run
 <br><a href="$phylip_file" target="_blank">ClustalW Phylip File</a>
 </div>
 };
-#<a href="#" onClick='sendCipres(["args__$cipres_out"],[cipres_results])'>Go!</a>;
 
     $box_template->param(ADJUST_BOX=>0);
     $box_template->param(BODY=>$html);
     my $outhtml = $box_template->output;
     return $outhtml;
 }
-
-sub sendCipres
-{
-    my $outfile = shift;
-    my $client = LWP::UserAgent->new;
-   # print STDERR $outfile,"\n";
-    $outfile = "/CoGe/tmp/CoGeAlign/".$outfile;
-    my $check = parse_nexus_file($outfile);
-    $outfile = "http://toxic.berkeley.edu".$outfile;
-    if ($check)
-    {
-	# $outfile = 'http://code.open-bio.org/svnweb/index.cgi/bioperl/checkout/bioperl-live/trunk/t/data/Primate_mtDNA.nex';
-#	my @cipres_headers = (
-	#    'email' => 'josh.kane@berkeley.edu',
-	 #   'datafile' => "@"."$outfile",
-	  #  'analysis' => 'MP',
-	    #'tool' => 'paup',
-	   # );
-	my @cipres = $client->post('http://8ball.sdsc.edu:8888/cipres-web/restapi/job',
-				     [
-				      'email' => 'josh.kane@berkeley.edu',
-				      'datafile' => "[$outfile]",
-				      'analysis' => 'MP',
-				      'tool' => 'paup',
-				     ],
-				     'Content_Type' => 'form-data',
-	    );
-	print STDERR Dumper \@cipres,"\n";
-	return 1;#$cipres;
-    }
-}
-
-sub parse_nexus_file
-{
-    my $file=shift;
-    $file = "/opt/apache".$file;
-    my @data = [];
-    my $kill_line = 5;
-    open(IN,"+< $file") || die "Cannot open $file";
-    @data = <IN>;
-    splice(@data, 4, 1) if $data[4] =~ /symbol/i;
-    seek(IN,0,0);
-    print IN @data;
-    truncate(IN,tell(IN));
-    close IN;
-    return 1;
-}
-
 
 sub parse_results
   {
@@ -890,7 +843,7 @@ sub sort_nt3
 sub create_tree_image
 {
     my $treefile=shift;
-    $treefile = "/opt/apache".$treefile;
+    $treefile =~ s/$TEMPURL/$TEMPDIR/;
     my $treebase = $treefile;
     $treebase =~ s/\.ph$//;
     my $treeps = $treebase.".ps";
@@ -911,7 +864,7 @@ sub convert_phylip_names
     my %opts = @_;
     my $file = $opts{file};
     my $seqs = $opts{seqs};
-    $file =~ s/\/CoGe\/tmp\//$TEMPDIR/;
+    $file =~ s/$TEMPURL/$TEMPDIR/;
     my %names;
     foreach my $item (split /\n/, $seqs)
       {
