@@ -1,0 +1,16 @@
+changed fchaos.c:
+
+in sub readSubstMatrix
+
+  sprintf (line, "%s/%s", "/opt/apache/CoGe/bin/lagan", filename);
+
+
+in lagan.pl
+
+added $ENV{LAGAN_DIR} = '/opt/apache/CoGe/bin/lagan64-bit/';
+added $tempdir for where temporary files are created.  Lots of them.  Copy and use this script.
+
+in rechaos.pl
+
+added $ENV{LAGAN_DIR} = '/opt/apache/CoGe/bin/lagan64-bit/';
+

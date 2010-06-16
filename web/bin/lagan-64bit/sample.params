@@ -1,0 +1,59 @@
+# This is a comment
+# The first thing in the file must be the Multi-FASTA file
+
+sample.fasta
+
+# The rest of the parameters can be in any order.
+# Compound parameters must be on one line.
+
+
+# Base sequence MUST appear before sequence pairs
+
+# Optional base sequence (default is the first sequence in file).
+sample1
+
+# Optional pairs
+sample1 sample2
+sample1 sample3
+sample2 sample3
+
+
+# MLAGAN parameters
+# preceded by "-"
+
+# Phylogenetic tree specification (required). 
+#-tree "(...)"
+
+-tree "((sample1 sample2) sample3)"
+
+# Lazy evaluation... 
+#-lazy
+
+# Nested Iterative Refinement
+#-nested
+
+# Turning on post-alignment Iterative Refinement
+#-postir
+
+# VISTA parameters (defaults)
+# preceded by "--"
+
+# ALIGN REGION MIN (75), REGION MAX (100), MIN (50)
+#--regmin 75
+#--regmax 100
+#--min 50
+
+# BASES (10000)
+#--bases 10000
+
+# TICK DISTANCE (2000)
+#--tickdist 1000
+
+# RESOLUTION (25)
+#--resolution 25
+
+# WINDOW (70)
+#--window 70
+
+# NUM WINDOWS (4)
+#--numwindows 4
