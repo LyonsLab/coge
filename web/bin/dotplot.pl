@@ -9,7 +9,7 @@ use Data::Dumper;
 use DBI;
 use POSIX;
 
-use vars qw($dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ks_db $ks_type $log $MAX $MIN $assemble $axis_metric $color_type $box_diags);
+use vars qw($dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ks_db $ks_type $log $MAX $MIN $assemble $axis_metric $color_type $box_diags $fid1 $fid2 $selfself);
 
 
 GetOptions(
@@ -37,7 +37,12 @@ GetOptions(
 	   "assemble=s"=>\$assemble,
 	   "axis_metrix|am=s"=>\$axis_metric,
 	   "box_diags|bd=i"=>\$box_diags,
+	   "fid1|f1=i"=>\$fid1,
+	   "fid2|f2=i"=>\$fid2,
+	   "selfself" => \$selfself, #draw diag for self self comparison
 	   );
+$selfself = 1 unless defined $selfself;
+
 
 usage() if $help;
 usage() unless -r $dagfile;
@@ -79,6 +84,9 @@ my $y_pix_per_bp = 1/$y_bp_per_pix;
 my $graphics_context = new GD::Image($width, $height);
 my $white = $graphics_context->colorResolve(255,255,255);
 my $black = $graphics_context->colorResolve(0,0,0);
+my $green = $graphics_context->colorResolve(0,150,0);
+my $alert_color = $graphics_context->colorResolve(255,0,0);
+
 $graphics_context->fill(1,1,$white);
 
 
@@ -109,19 +117,18 @@ my $pairs = get_pairs(file=>$alignfile, chr1=>$CHR1, chr2=>$CHR2) if $alignfile 
 #Magic happens here.
 #Link type seems to indicate the type of tile; i.e. a 'master' (a large, all chromosome) or a blow up of a two chromosome intersection
 #draw_chromosome_grid draws either the black chomosome lines, or the light green tile lines, so its always called in addition to the draw_dots function.
-draw_chromosome_grid(gd=>$graphics_context, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, link=>$link, link_type=>$link_type, flip=>$flip, grid=>$grid);
+draw_chromosome_grid(gd=>$graphics_context, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, link=>$link, link_type=>$link_type, flip=>$flip, grid=>$grid);#, dsgid1=>$dsgid1, dsgid2=>$dsgid2, selfself=>$selfself);
 
 #get syntenic gene pairs for ks_data (if needed)
 my $ksdata = get_ksdata(ks_db=>$ks_db, ks_type=>$ks_type, chr1=>$CHR1, chr2=> $CHR2, pairs=>$pairs) if $ks_db && -r $ks_db;
 
 #draw dots for all matches
-draw_dots(gd=>$graphics_context, file=>$dagfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, link_type => $link_type, dsgid1=>$dsgid1, dsgid2=>$dsgid2, flip=>$flip, metric=>$axis_metric);
+draw_dots(gd=>$graphics_context, file=>$dagfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, link_type => $link_type, dsgid1=>$dsgid1, dsgid2=>$dsgid2, flip=>$flip, metric=>$axis_metric, fid1=>$fid1, fid2=>$fid2);
 
 
 
 
 #color_scheme
-
 my @colors;
 if ($color_type && $color_type eq "inv")
   {
@@ -150,6 +157,12 @@ $size = 5 if $y_pix_per_bp >5;
 my $box_coords = draw_dots(gd=>$graphics_context, file=>$alignfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, size=>$size, add_inverse=>$add, flip=>$flip, ksdata=>$ksdata, ks_type=>$ks_type, log=>$log, metric=>$axis_metric, colors=>\@colors, color_type=>$color_type);
 
 draw_boxes(gd=>$graphics_context, boxes=>$box_coords) if $box_diags && $box_coords && @$box_coords;
+#draw self-self line?
+if ($selfself && ($dsgid1 == $dsgid2))
+  {
+    $graphics_context->line(0,$height,$width, 0, $green);
+  }
+
 
 #Write out graphics context - the generated dot plot - to a .png file
 open (OUT, ">".$basename.".png") || die "$!";
@@ -181,6 +194,12 @@ sub draw_dots
     my $metric= $opts{metric};
     my $color_type = $opts{color_type};
     my $ks_type = $opts{ks_type};
+    my $fid1 = $opts{fid1};
+    my $fid2 = $opts{fid2};
+    #easier lookup, can scale to more pairs in the future
+    my %fids;
+    $fids{$fid1}=1 if $fid1;
+    $fids{$fid2}=1 if $fid2;
     my $has_ksdata = keys %$ksdata ? 1 : 0;
     #min and max will be log normalized if log flag is set
     my ($max, $min) = get_range(data=>$ksdata, min=>$MIN, max=>$MAX, log=>$log) if $has_ksdata;
@@ -199,10 +218,12 @@ sub draw_dots
     my ($min_x, $min_y, $max_x, $max_y);
     while (<IN>)
       {
+	my $tuse_color = $use_color;
+	my $tsize = $size; #might want to dynmaically change the size of the dot.  Reset to default after each line
 	chomp;
 	if (/^#/ && $color_type && $color_type eq "diag")
 	  {
-	    $use_color = $colors->[$color_index];
+	    $tuse_color = $colors->[$color_index];
 	    $color_index++;
 	    $color_index = 0 if $color_index >= @$colors;
 	  }
@@ -224,7 +245,12 @@ sub draw_dots
 	my $fid2 = $item2[6];
 	if ($color_type && $color_type eq "inv" && $item1[4] && $item2[4])
 	  {
-	    $use_color = $item1[4] eq $item2[4]? $colors->[0] : $colors->[1];
+	    $tuse_color = $item1[4] eq $item2[4]? $colors->[0] : $colors->[1];
+	  }
+	if ($fids{$fid1} && $fids{$fid2})
+	  {
+	    $tsize = 10;
+	    $tuse_color = $alert_color;
 	  }
 
 	if ($has_ksdata)
@@ -250,15 +276,15 @@ sub draw_dots
 		    $val = ($val-$min)/$range;
 		  }
 		$val = sprintf("%.4f", $val);
-		$use_color = get_color(val=>$val); #val is 0<=x<=1
-		$use_color = $graphics_context->colorResolve(@$use_color);
+		$tuse_color = get_color(val=>$val); #val is 0<=x<=1
+		$tuse_color = $graphics_context->colorResolve(@$tuse_color);
 	      }
 	    else
 	      {
 		#don't have ks data -- skip drawing this dot!
 		next;
 #		print Dumper $ksdata->{$item1[6]}{$item2[6]};
-#		$use_color = $graphics_context->colorResolve(0,0,0);
+#		$tuse_color = $graphics_context->colorResolve(0,0,0);
 	      }
 	  }
 	if ($flip)
@@ -314,9 +340,9 @@ sub draw_dots
 	my $y = sprintf("%.0f",$midy*$y_pix_per_bp);
 	($x,$y) = ($y, $x) if $special;
 	$val = 0 unless $val; #give it some value for later sorting
-	$x=$width-ceil($size/2) if $x >= $width;
+	$x=$width-ceil($tsize/2) if $x >= $width;
 	my $y_real = $graphics_context->height-$y;
-	push @points, [ $x, $y_real, $size, $size, 0, 360, $use_color, $val];
+	push @points, [ $x, $y_real, $tsize, $tsize, 0, 360, $tuse_color, $val];
 	$min_x = $x unless $min_x;
 	$min_x = $x if $x < $min_x;
 	$min_y = $y_real unless $min_y;
@@ -327,10 +353,10 @@ sub draw_dots
 	$max_y = $y_real if $y_real > $max_y;
 
 	$y_real = $graphics_context->height-$x;
-	$use_color = $colors->[0] unless $use_color; #default val just in case
-#	print STDERR $use_color,"\n";
-	push @points, [ $y, $y_real, $size, $size, 0, 360, $use_color, $val] if ($add_inverse && !$CHR1 && $x ne $y);
-	push @points, [ $y, $y_real, $size, $size, 0, 360, $use_color, $val] if ($add_inverse && $chr1 eq $chr2 && $x ne $y);
+	$tuse_color = $colors->[0] unless $tuse_color; #default val just in case
+#	print STDERR $tuse_color,"\n";
+	push @points, [ $y, $y_real, $tsize, $tsize, 0, 360, $tuse_color, $val] if ($add_inverse && !$CHR1 && $x ne $y);
+	push @points, [ $y, $y_real, $tsize, $tsize, 0, 360, $tuse_color, $val] if ($add_inverse && $chr1 eq $chr2 && $x ne $y);
 	if ($link_type == 1)
 	  {
 	    #working here.  Need to build a GEvo link using datasets/chr/position if dealing with genomic data.
@@ -382,7 +408,8 @@ sub draw_dots
       {
 	my $val = pop @$point;
 #	print STDERR join ("\t", @$point), "!","\n";
-	if ($size > 3)
+	my $tsize = $point->[2];
+	if ($tsize > 3)
 	  {
 	    $graphics_context->filledArc(@$point);
 	  }
