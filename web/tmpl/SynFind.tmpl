@@ -210,7 +210,7 @@ function seq_type_search() {
 	  {
 	    blast_program = log.match(/(blastz)/);
 	  }
-  	blast="Running "+blast_program[1]+" algorithm . . . <br/>";
+  	blast="Running blast algorithm . . . <br/>";
   	
   	match=log.match(/\*(.+)\*\sblast\sanalysis\scomplete/g);
   	if(match)
@@ -636,13 +636,15 @@ $(function(){
 	  <span onClick="add_selected_orgs();" id="add" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Add</span>
    	  </TD>
            <TD>
-              <div style="float:left" id=db_title class=small>Genomes to search: </DIV><div style="float:left;text-indent:1em;vertical-align: bottom" id=selected_genome_count class=small></div>
+              <div style="float:left" id=db_title class=small>Genomes to search: </DIV><div style="float:left;text-indent:1em;vertical-align: bottom" id=selected_genome_count class=small> </div>
+
               <DIV id=db_select><SELECT id="genome_choice" SIZE="8" MULTIPLE onClick="$('#add').hide(0);$('#remove').show(0);">
               <option id=blank value=null>No Database Selected</option>
               </SELECT></DIV>
- <span onClick="clear_org_list();" id="clearlist" name=clearlist class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-minusthick"></span>Clear Org List</span>
+	       <span onClick="clear_org_list();" id="clearlist" name=clearlist class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-minusthick"></span>Clear Org List</span>
+	       <span class='small ui-button ui-corner-all' onclick="sort_genome_choice()">Sort</span> 
               <TMPL_IF NAME="SAVE_ORG_LIST">
-	      <span class='ui-button ui-button-icon-left ui-corner-all' onclick="save_settings_cogesearch(['args__dsgids','args__'+$('#genome_choice').getLength(1), 'args__resultslimit','resultslimit'],[])"><span class="ui-icon ui-icon-disk"></span>Save Org List</span>
+	      <span class='ui-button ui-button-icon-left ui-corner-all' onclick="save_orglist_synfind(['args__dsgids','args__'+$('#genome_choice').getLength(1)],[])"><span class="ui-icon ui-icon-disk"></span>Save Org List</span>
               </TMPL_IF>
            </TD>
      </table>
