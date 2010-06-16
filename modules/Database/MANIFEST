@@ -35,3 +35,10 @@ lib/CoGeX/Result/WebPreferences.pm
 lib/CoGeX/Result/Work.pm
 lib/CoGeX/Result/WorkOrder.pm
 lib/CoGeX/Result/Workflow.pm
+
+lib/CoGeX/ResultSet/Annotation.pm
+lib/CoGeX/ResultSet/DatasetGroup.pm
+lib/CoGeX/ResultSet/Dataset.pm
+lib/CoGeX/ResultSet/FeatureName.pm
+lib/CoGeX/ResultSet/GenomicSequenceType.pm
+lib/CoGeX/ResultSet/Organism.pm
