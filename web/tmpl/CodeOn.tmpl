@@ -136,7 +136,7 @@ $('#results').html('<img src=./picts/animations/DNA_orbit_animated_small_third.g
 </TMPL_IF>
 
 <TMPL_IF NAME=RESULTS>
-<div class ="small"> Feature Count: <TMPL_VAR NAME="FEAT_COUNT"></div>
+<TMPL_IF NAME="FEAT_COUNT"><div class ="small"> Feature Count: <TMPL_VAR NAME="FEAT_COUNT"></div></TMPL_IF>
 <span class="ui-button ui-corner-all" onclick="window.open('<TMPL_VAR NAME=FEATLISTLINK>')">Generate Feature List</span><br>
 <TABLE id='gc_table' class="ui-widget-content ui-corner-all">
  <THEAD align=left>
