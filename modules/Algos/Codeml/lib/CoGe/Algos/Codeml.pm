@@ -48,7 +48,7 @@ creating temp files all over the place.
 
 =head1 CURRENT AUTHOR - Eric Lyons
 
-Email elyons (@t) nature.berkeley.edu
+Email elyons (@t) berkeley.edu
 
 =head1 ORIGINAL AUTHOR - Jason Stajich
 
@@ -76,6 +76,7 @@ use Carp;
 use Cwd;
 use base qw(Class::Accessor);
 use Data::Dumper;
+use CoGe::Accessory::Web;
 
 =head2 Default Values
 
@@ -206,11 +207,13 @@ INCOMPLETE DOCUMENTATION OF ALL METHODS
 
 BEGIN 
   { 
-    use vars qw($VERSION @ISA %VALIDVALUES $MINNAMELEN $CODEML);
+    use vars qw($P $VERSION @ISA %VALIDVALUES $MINNAMELEN $CODEML);
+    $P = CoGe::Accessory::Web::get_defaults();
+
     $VERSION = '0.1';
     __PACKAGE__->mk_accessors(qw(codeml results debug tree alignment));
     $MINNAMELEN = 25;
-    $CODEML = '/opt/apache/CoGe/bin/codeml/codeml-coge /opt/apache/CoGe/bin/codeml/codeml.ctl' . ($^O =~ /mswin/i ?'.exe':'');
+    $CODEML = $P->{CODEML}." ". $P->{CODEMLCTL} . ($^O =~ /mswin/i ?'.exe':'');
     # valid values for parameters, the default one is always
     # the first one in the array
     # much of the documentation here is lifted directly from the codeml.ctl
