@@ -56,7 +56,7 @@ if(!pageObj.basename)
   pageObj.nolog=1;
   setTimeout("monitor_log()", 5000);
   
-go(['args__c','c','args__D','D','args__g','g','args__A','A','args__gm','gm','args__Dm','Dm','args__blast','blast', 'args__feat_type1','feat_type1', 'args__feat_type2','feat_type2','args__dsgid1','dsgid1', 'args__dsgid2','dsgid2','args__jobtitle','jobtitle','args__basename','args__'+pageObj.basename,'args__email','email','args__regen_images','args__'+$('#regen_images')[0].checked, 'args__width', 'args__'+$('#master_width').val(), 'args__dagchainer_type','args__'+$('#dagchainer_type')[0].checked, 'args__ks_type','ks_type', 'args__assemble','args__'+$('#assemble')[0].checked, 'args__axis_metric','axis_metric', 'args__min_chr_size', 'min_chr_size', 'args__show_non_syn','args__'+$('#show_non_syn')[0].checked, 'args__color_type','color_type', 'args__box_diags', 'args__'+$('#box_diags')[0].checked, 'args__merge_algo','merge_algo', 'args__depth_algo', 'depth_algo', 'args__depth_org_1_ratio', 'depth_org_1_ratio', 'args__depth_org_2_ratio', 'depth_org_2_ratio', 'args__depth_overlap', 'depth_overlap'],[handle_results] );
+go(['args__c','c','args__D','D','args__g','g','args__A','A','args__gm','gm','args__Dm','Dm','args__blast','blast', 'args__feat_type1','feat_type1', 'args__feat_type2','feat_type2','args__dsgid1','dsgid1', 'args__dsgid2','dsgid2','args__jobtitle','jobtitle','args__basename','args__'+pageObj.basename,'args__email','email','args__regen_images','args__'+$('#regen_images')[0].checked, 'args__width', 'args__'+$('#master_width').val(), 'args__dagchainer_type','args__'+$('#dagchainer_type')[0].checked, 'args__ks_type','ks_type', 'args__assemble','args__'+$('#assemble')[0].checked, 'args__axis_metric','axis_metric', 'args__min_chr_size', 'min_chr_size', 'args__show_non_syn','args__'+$('#show_non_syn')[0].checked, 'args__color_type','color_type', 'args__box_diags', 'args__'+$('#box_diags')[0].checked, 'args__merge_algo','merge_algo', 'args__depth_algo', 'depth_algo', 'args__depth_org_1_ratio', 'depth_org_1_ratio', 'args__depth_org_2_ratio', 'depth_org_2_ratio', 'args__depth_overlap', 'depth_overlap', 'args__fid1','args__'+pageObj.fid1, 'args__fid2','args__'+pageObj.fid2],[handle_results] );
 }
 
 function handle_results(val){
@@ -105,7 +105,7 @@ function update_params(val) {
  get_dataset_group_info(['args__dsgid','dsgid2','args__org_num','args__2'],['dsg_info2', 'feattype_menu2','genome_message2']);
  ajax_wait(cmd);
  var type;
- $('#blast option:eq('+params[0]+')').attr('selected','selected');
+ $('#blast option:eq('+params[11]+')').attr('selected','selected');
  $('#merge_algo option:eq('+params[14]+')').attr('selected','selected');
  if (params[12] == 'Distance') 
   {
@@ -249,7 +249,8 @@ $(document).ready(function(){
   depth_algo_check();	
  $('#depth_org_1').html($('#org_id1 option:selected').html());
  $('#depth_org_2').html($('#org_id2 option:selected').html());
-
+ pageObj.fid1=<TMPL_VAR NAME=FID1>;
+ pageObj.fid2=<TMPL_VAR NAME=FID2>;
  });
 
 
@@ -517,8 +518,11 @@ function post_to_grimm(seq1, seq2)
  <tr>
    <td style="color:#009900">Blast Algorithm:
    <td><select id="blast" name="blast">
-        <OPTION VALUE="1" <TMPL_VAR NAME="BLASTN_SELECT">>BlastN
-        <OPTION VALUE="2" <TMPL_VAR NAME="TBLASTX_SELECT">>TBlastX
+        <OPTION VALUE="0" <TMPL_VAR NAME="MEGA_SELECT">>MegaBlast
+        <OPTION VALUE="1" <TMPL_VAR NAME="DCMEGA_SELECT">>Discontinuous MegaBlast
+        <OPTION VALUE="2" <TMPL_VAR NAME="BLASTN_SELECT">>BlastN
+        <OPTION VALUE="3" <TMPL_VAR NAME="TBLASTX_SELECT">>TBlastX
+	<OPTION VALUE="4" <TMPL_VAR NAME="LASTZ_SELECT">>(B)lastZ
        </select>
  <tr>
    <td style="color:#009900">Filter Repetitive Matches:
