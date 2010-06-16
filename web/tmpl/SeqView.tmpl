@@ -251,7 +251,7 @@ $(function(){
       <TABLE>
        <TR>
         <TD>
-        <textarea id=seq_text name=seq_text class=backbox readonly ondblclick="this.select();" style="height: 400px; width: 750px; overflow: auto;"></textarea>
+        <textarea id=seq_text name=seq_text readonly ondblclick="this.select();" class="ui-widget-content ui-corner-all backbox" style="height: 400px; width: 750px; overflow: auto;"></textarea>
         <br>
 	</TD>
         <td valign=top>
@@ -292,13 +292,13 @@ $(function(){
    <TMPL_VAR NAME = "UPSTREAM">
    </td>
    <td  class=small>
-   <INPUT type="text" id="upstream"  onkeypress="onEnter(event);" class="backbox" value= "<TMPL_VAR NAME="UPVALUE">" size=6>
+   <INPUT type="text" id="upstream"  onkeypress="onEnter(event);" value= "<TMPL_VAR NAME="UPVALUE">" size=6>
    </td>
    <TD  class=small>
    <TMPL_VAR NAME="DOWNSTREAM">
    </td>
    <td  class=small>
-   <INPUT type="text" id="downstream" onkeypress="onEnter(event);" class="backbox" value= "<TMPL_VAR NAME="DOWNVALUE">" size=6>
+   <INPUT type="text" id="downstream" onkeypress="onEnter(event);" value= "<TMPL_VAR NAME="DOWNVALUE">" size=6>
   </TD>
   <TMPL_IF NAME=ADD_EXTRA>
   <TR >
@@ -307,13 +307,13 @@ $(function(){
      Add 5':
     </td>
    <td>
-   <INPUT type="text" id="addup"  onkeypress="onEnter(event,1);" class="backbox" value= "<TMPL_VAR NAME="ADDUP">"  size=6>
+   <INPUT type="text" id="addup"  onkeypress="onEnter(event,1);" value= "<TMPL_VAR NAME="ADDUP">"  size=6>
      </td>
      <TD  class=small>
      Add 3': 
     </td>
    <td>
-     <INPUT type="text" id="adddown" onkeypress="onEnter(event,1);" class="backbox" value= "<TMPL_VAR NAME="ADDDOWN">" size=6>
+     <INPUT type="text" id="adddown" onkeypress="onEnter(event,1);" value= "<TMPL_VAR NAME="ADDDOWN">" size=6>
    </td>
   </TMPL_IF>
 <td><span class='ui-button ui-button-icon-left ui-corner-all' id = "add_to" onClick="redefine(myObj.rc);"><span class="ui-icon ui-icon-arrowrefresh-1-s"></span>Redefine Sequence</span>
