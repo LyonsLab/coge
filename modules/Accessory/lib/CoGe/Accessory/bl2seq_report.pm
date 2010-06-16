@@ -154,19 +154,19 @@ sub _processHSP {
 	my $self = shift;
 	my $data = shift;
 	my $info;
-	($info,$data) = split /Query:/, $data,2;
-	$data = "Query:".$data;
+	($info,$data) = split /Query/, $data,2;
+	$data = "Query".$data;
 	############################
 	# get and parse scorelines #
 	############################
 	my ($score, $bits,$p) = $info =~
-		/Score =\s+(\S+) bits \((\d+)\), Expect.* += +(\S+)/;
+		/Score =\s+(\S+) bits \((\d+)\),\s+Expect.* += +(\S+)/;
 	$p =~ s/,//g;
 	my ($match, $length) = $info =~ /Identities = (\d+)\/(\d+)/;
 	my ($positive) = $info =~ /Positives = (\d+)/;
 	$positive = $match if not defined $positive;
 	my $strand = "";
-	if ($info =~ /Strand = (\S+) \/ (\S+)/)
+	if ($info =~ /Strand=(\S+)\/(\S+)/)
 	  {
 	    my ($strandtop, $strandbot) = ($1, $2);
 	    if ( defined $strandtop and $strandtop eq "Plus" ) { $strand = "+" }
@@ -206,14 +206,14 @@ sub _processHSP {
 			
 	for(my $i=0;$i<@hspline;$i+=3) {
 		#warn $hspline[$i], $hspline[$i+2];
-		$hspline[$i]   =~ /^Query:\s+(\d+)\s*(\S+)\s+(\d+)/;
+		$hspline[$i]   =~ /^Query\s+(\d+)\s*(\S+)\s+(\d+)/;
 		$ql = $2; $qb = $1 unless $qb; $qe = $3;
 		
 		my $offset = index($hspline[$i], $ql);
 		$as = substr($hspline[$i+1], $offset, CORE::length($ql))
 			if $hspline[$i+1];
 		
-		$hspline[$i+2] =~ /^Sbjct:\s+(\d+)\s*(\S+)\s+(\d+)/;
+		$hspline[$i+2] =~ /^Sbjct\s+(\d+)\s*(\S+)\s+(\d+)/;
 		$sl = $2; $sb = $1 unless $sb; $se = $3;
 		
 		push @QL, $ql; push @SL, $sl; push @AS, $as;
