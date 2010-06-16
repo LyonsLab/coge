@@ -105,6 +105,7 @@ function setup_tabs() {
 }
 
 function feature_checkboxes(){
+
   var accn="";
   $('#select_feats :checkbox').each(function(){
      if (this.checked == true) accn = accn + ";fid="+this.id;
@@ -130,7 +131,7 @@ function feature_checkboxes(){
 <TMPL_IF NAME=MAIN>
 
 
-<span id=go style="font-size: 1em" class='ui-button ui-corner-all' onClick="loading([],['results']); prepare_run()">Run CoGe Align!</span>
+<span id=go style="font-size: 1em" class='ui-button ui-button-go ui-corner-all' onClick="loading([],['results']); prepare_run()">Run CoGe Align!</span>
 <div id=tabs>
 <!-- set up tabs -->
 <ul>
