@@ -16,7 +16,7 @@ BEGIN {
     @EXPORT      = qw();
     @EXPORT_OK   = qw();
     %EXPORT_TAGS = ();
-    __PACKAGE__->mk_accessors(qw(version name1 name2 prot1 prot2 palign1 palign2 dna1 dna2 dalign1 dalign2 gaplessP1 gaplessP2 gaplessD1 gaplessD2 results gapless_prot_pid gapless_DNA_pid prot_pid DNA_pid feat1 feat2 benchmark tmpdir));
+    __PACKAGE__->mk_accessors(qw(version name1 name2 prot1 prot2 palign1 palign2 dna1 dna2 dalign1 dalign2 gaplessP1 gaplessP2 gaplessD1 gaplessD2 results gapless_prot_pid gapless_DNA_pid prot_pid DNA_pid feat1 feat2 benchmark tmpdir debug));
 }
 
 
@@ -387,7 +387,7 @@ sub calc_pid
       }
     unless (length ($seq1) == length ($seq2))
       {
-	print STDERR "sequences are of different lengths.  Percent identity calculation may be incorrect.\n";
+	print STDERR "sequences are of different lengths.  Percent identity calculation may be incorrect.\n" if $self->debug;
 #	print STDERR join ("\t", $self->feat1->names),"\n" if $self->feat1->names;
 #	print STDERR $seq1,"\n\n";
 #	print STDERR join ("\t", $self->feat2->names),"\n" if $self->feat2->names;
