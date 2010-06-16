@@ -5,6 +5,10 @@ function update_seqs(prot, text)
   $('#seq_text').val("loading . . .");
   var name_only = 0;
   if ($('#name_only')[0].checked) {name_only = 1};
+  var upstream = 0;
+  var downstream =0;
+  if ($('#upstream').val()) {upstream=$('#upstream').val()};
+  if ($('#downstream').val()) {downstream=$('#downstream').val()};
   pageObj.prot=prot;
   if (prot)
    {
@@ -17,6 +21,7 @@ function update_seqs(prot, text)
     $('#prot_button').hide();
     $('#prot_text_button').show();
     $('#dna_button').show();
+    $('#add_seq').hide();
     $('#dna_text_button').hide();
     $('.prot_option').show();
    }
@@ -24,13 +29,14 @@ function update_seqs(prot, text)
    {
     if (text)
      {
-       var url=window.location+";text=1;no="+name_only;
+       var url=window.location+";text=1;no="+name_only+";up="+upstream+";down="+downstream;
        window.location =url;
      }
-    get_seqs(['args__fids','fids', 'args__textbox','args__1','args__prot','args__0','args__name_only','args__'+name_only, 'args__gstid','gstid'],['seq']);
+ get_seqs(['args__fids','fids', 'args__textbox','args__1','args__prot','args__0','args__name_only','args__'+name_only, 'args__gstid','gstid', 'args__upstream','args__'+upstream, 'args__downstream','args__'+downstream],['seq']);
     $('#prot_button').show();
     $('#prot_text_button').hide();
     $('#dna_button').hide();
+    $('#add_seq').show();
     $('#dna_text_button').show();
     $('.prot_option').hide();
    }
@@ -131,7 +137,14 @@ $(document).ready(function()
    <td><span class='ui-button ui-corner-all'id="prot_text_button" onclick="update_seqs(1,1)">Plain Text</span>
    <td><span class='ui-button ui-corner-all'id="dna_text_button" onclick="update_seqs(0,1)"> Plain Text</span>
    <td><span class='ui-button ui-corner-all'id="blast_button"onclick="window.open('CoGeBlast.pl?featid='+$('#fids').val())">CoGe Blast</span> 
-  </TABLE><br>
+ </TR>
+  </TABLE>
+<span id=add_seq class=small>
+  Add Upstream (5'): <INPUT type="text" id="upstream" value= "<TMPL_VAR NAME="UP">" size=6>
+  Add Downstream (3'): <INPUT type="text" id="downstream" value="<TMPL_VAR NAME="DOWN">" size=6>
+  <span class='ui-button ui-corner-all'id="dna_text_button" onclick="update_seqs(0)">Add Seq</span>
+  </span>
+<br>
 
   Off site tools:<br>
 <!-- ALL SEQUENCES -->
