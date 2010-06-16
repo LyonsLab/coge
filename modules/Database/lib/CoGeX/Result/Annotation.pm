@@ -5,7 +5,8 @@ package CoGeX::Result::Annotation;
 use strict;
 use warnings;
 
-use base 'DBIx::Class';
+use base 'DBIx::Class::Core';
+use CoGeX::ResultSet::Annotation;
 
 =head1 NAME
 
@@ -45,7 +46,6 @@ Belongs to CCoGeX::Result::Feature> via C<feature_id>
 
 =cut
 
-__PACKAGE__->load_components("PK::Auto", "ResultSetManager", "Core");
 __PACKAGE__->table("annotation");
 __PACKAGE__->add_columns(
   "annotation_id",
@@ -66,41 +66,6 @@ __PACKAGE__->belongs_to( feature => 'CoGeX::Result::Feature', 'feature_id');
 __PACKAGE__->has_one("feature_name" => "CoGeX::Result::FeatureName", {'foreign.feature_id'=>'self.feature_id'});
 
 
-################################################ subroutine header begin ##
-
-=head2 esearch
-
- Usage     : 
- Purpose   : Returns not only annotaion data, but related annotaion type and annotation type group.
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : Extended SEARCH
- 
- 
-See Also   : 
-
-=cut
-
-################################################## subroutine header end ##
-
-sub esearch : ResultSet
-{
-	my $self = shift;
-	my $join = $_[1]{'join'};
-	
-	map { push(@$join, $_ ) } ('annotation_type');
-
-	my $prefetch = $_[1]{'prefetch'};
-	map { push(@$prefetch, $_ ) }
-	     ('annotation_type',
-	          { 'annotation_type' => 'annotation_type_group' }
-	     );
-
-	$_[1]{'join'} = $join;
-	$_[1]{'prefetch'} = $prefetch;
-	return $self->search( @_ );
-}
 
 
 ################################################ subroutine header begin ##

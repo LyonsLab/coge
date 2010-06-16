@@ -5,7 +5,7 @@ package CoGeX::Result::AnnotationType;
 use strict;
 use warnings;
 
-use base 'DBIx::Class';
+use base 'DBIx::Class::Core';
 
 =head1 NAME
 
@@ -42,7 +42,6 @@ Has many CCoGeX::Result::Annotation> via C<annotation_type_id>
 
 =cut
 
-__PACKAGE__->load_components("PK::Auto", "Core");
 __PACKAGE__->table("annotation_type");
 __PACKAGE__->add_columns(
   "annotation_type_id",

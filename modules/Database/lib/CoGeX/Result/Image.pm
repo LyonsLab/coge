@@ -5,7 +5,7 @@ package CoGeX::Result::Image;
 use strict;
 use warnings;
 
-use base 'DBIx::Class';
+use base 'DBIx::Class::Core';
 
 =head1 NAME
 
@@ -44,7 +44,6 @@ Blob containing image data.
 =cut
 
 
-__PACKAGE__->load_components("PK::Auto", "Core");
 __PACKAGE__->table("image");
 __PACKAGE__->add_columns(
   "image_id",

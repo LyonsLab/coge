@@ -5,8 +5,8 @@ package CoGeX::Result::FeatureName;
 use strict;
 use warnings;
 
-use base 'DBIx::Class';
-
+use base 'DBIx::Class::Core';
+use CoGeX::ResultSet::FeatureName;
 =head1 NAME
 
 CoGeX::FeatureName
@@ -49,7 +49,6 @@ Relates to CCoGeX::Result::Feature> via C<feature_id>; one-to-one relationship.
 
 =cut
 
-__PACKAGE__->load_components("PK::Auto", "ResultSetManager", "Core");
 __PACKAGE__->table("feature_name");
 __PACKAGE__->add_columns(
   "feature_name_id",
@@ -74,41 +73,6 @@ __PACKAGE__->has_one("annotation" => "CoGeX::Result::Annotation", {'foreign.feat
 
 
 
-################################################ subroutine header begin ##
-
-=head2 esearch
-
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-           : 
-
-See Also   : 
-
-=cut
-
-################################################## subroutine header end ##
-
-sub esearch : ResultSet {
-    my $self = shift;
-    my $join = $_[1]{'join'};
-    my $prefetch = $_[1]{'prefetch'};
-
-    map { push(@$prefetch, $_ ) } 
-        ({ 'feature' => ['locations','feature_type'] });
-
-
-    $_[1]{'join'} = $join;
-    $_[1]{'prefetch'} = $prefetch;
-    my $rs = $self->search(
-         @_
-    );
-    return $rs;
-
-}
 
 1;
 

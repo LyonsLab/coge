@@ -5,7 +5,7 @@ package CoGeX::Result::GenomicSequence;
 use strict;
 use warnings;
 
-use base 'DBIx::Class';
+use base 'DBIx::Class::Core';
 
 =head1 NAME
 
@@ -47,7 +47,6 @@ Relates to a record in the CCoGeX::Result::DatasetGroup> object via C<dataset_gr
 =cut
 
 
-__PACKAGE__->load_components("PK::Auto", "Core");
 __PACKAGE__->table("genomic_sequence");
 __PACKAGE__->add_columns(
   "genomic_sequence_id",

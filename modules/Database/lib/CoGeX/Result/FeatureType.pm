@@ -5,7 +5,7 @@ package CoGeX::Result::FeatureType;
 use strict;
 use warnings;
 
-use base 'DBIx::Class';
+use base 'DBIx::Class::Core';
 
 =head1 NAME
 
@@ -41,7 +41,6 @@ Relates to CCoGeX::Result::Feature> via C<feature_type_id> in a one-to-many rela
 
 =cut
 
-__PACKAGE__->load_components("PK::Auto", "Core");
 __PACKAGE__->table("feature_type");
 __PACKAGE__->add_columns(
   "feature_type_id",

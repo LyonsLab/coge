@@ -5,7 +5,7 @@ package CoGeX::Result::Workflow;
 use strict;
 use warnings;
 
-use base 'DBIx::Class';
+use base 'DBIx::Class::Core';
 
 =head1 NAME
 
@@ -42,7 +42,6 @@ Type: TIMESTAMP, Default: "time created", Nullable: no,
 
 =cut
 
-__PACKAGE__->load_components("PK::Auto", "Core");
 __PACKAGE__->table("workflow");
 __PACKAGE__->add_columns(
   "workflow_id",

@@ -5,7 +5,7 @@ package CoGeX::Result::DatasetConnector;
 use strict;
 use warnings;
 
-use base 'DBIx::Class';
+use base 'DBIx::Class::Core';
 
 =head1 NAME
 
@@ -45,7 +45,6 @@ Belongs to CCoGeX::Result::Dataset> via C<dataset_id>
 
 =cut
 
-__PACKAGE__->load_components("PK::Auto", "Core");
 __PACKAGE__->table("dataset_connector");
 __PACKAGE__->add_columns(
   "dataset_connector_id",

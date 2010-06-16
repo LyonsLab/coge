@@ -5,7 +5,7 @@ package CoGeX::Result::Location;
 use strict;
 use warnings;
 
-use base 'DBIx::Class';
+use base 'DBIx::Class::Core';
 
 =head1 NAME
 
@@ -56,7 +56,6 @@ Belongs to CCoGeX::Result::Feature> via C<feature_id>
 =cut
 
 
-__PACKAGE__->load_components("PK::Auto", "Core");
 __PACKAGE__->table("location");
 __PACKAGE__->add_columns(
   "location_id",

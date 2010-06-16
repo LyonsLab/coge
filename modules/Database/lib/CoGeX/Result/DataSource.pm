@@ -5,7 +5,7 @@ package CoGeX::Result::DataSource;
 use strict;
 use warnings;
 
-use base 'DBIx::Class';
+use base 'DBIx::Class::Core';
 
 =head1 NAME
 
@@ -47,7 +47,6 @@ Relates to CCoGeX::Result::Dataset> via C<data_source_id>, one-to-many relations
 
 =cut
 
-__PACKAGE__->load_components("PK::Auto", "Core");
 __PACKAGE__->table("data_source");
 __PACKAGE__->add_columns(
   "data_source_id",

@@ -5,7 +5,7 @@ package CoGeX::Result::FeatureListConnector;
 use strict;
 use warnings;
 
-use base 'DBIx::Class';
+use base 'DBIx::Class::Core';
 
 =head1 NAME
 
@@ -41,7 +41,6 @@ Type: VARCHAR, Default: undef, Nullable: yes, Size: 1024
 
 =cut
 
-__PACKAGE__->load_components("PK::Auto", "Core");
 __PACKAGE__->table("feature_list_connector");
 __PACKAGE__->add_columns(
   "feature_list_connector_id",

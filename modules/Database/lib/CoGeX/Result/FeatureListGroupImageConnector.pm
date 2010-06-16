@@ -5,7 +5,7 @@ package CoGeX::Result::FeatureListGroupImageConnector;
 use strict;
 use warnings;
 
-use base 'DBIx::Class';
+use base 'DBIx::Class::Core';
 
 =head1 NAME
 
@@ -36,7 +36,6 @@ Type: INT, Default: "", Nullable: no, Size: 10
 
 =cut
 
-__PACKAGE__->load_components("PK::Auto", "Core");
 __PACKAGE__->table("feature_list_group_image_connector");
 __PACKAGE__->add_columns(
   "feature_list_group_image_connector_id",

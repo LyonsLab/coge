@@ -5,7 +5,7 @@ package CoGeX::Result::User;
 use strict;
 use warnings;
 
-use base 'DBIx::Class';
+use base 'DBIx::Class::Core';
 
 =head1 NAME
 
@@ -50,7 +50,6 @@ Has many CCoGeX::Result::UserSession> via C<user_id>
 
 =cut
 
-__PACKAGE__->load_components("PK::Auto", "Core");
 __PACKAGE__->table("user");
 __PACKAGE__->add_columns(
   "user_id",

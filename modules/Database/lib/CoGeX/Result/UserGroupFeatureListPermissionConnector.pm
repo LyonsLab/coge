@@ -5,7 +5,7 @@ package CoGeX::Result::UserGroupFeatureListPermissionConnector;
 use strict;
 use warnings;
 
-use base 'DBIx::Class';
+use base 'DBIx::Class::Core';
 
 =head1 NAME
 
@@ -38,7 +38,6 @@ Type: INT, Default: "", Nullable: no, Size: 10
 
 =cut
 
-__PACKAGE__->load_components("PK::Auto", "Core");
 __PACKAGE__->table("user_group_feature_list_permission_connector");
 __PACKAGE__->add_columns(
   "user_group_feature_list_permission_connector_id",  { data_type => "INT", default_value => undef, is_nullable => 0, size => 10 },

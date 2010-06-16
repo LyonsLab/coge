@@ -5,7 +5,7 @@ package CoGeX::Result::AnnotationTypeGroup;
 use strict;
 use warnings;
 
-use base 'DBIx::Class';
+use base 'DBIx::Class::Core';
 
 =head1 NAME
 
@@ -42,7 +42,6 @@ Relates to CCoGeX::Result::AnnotationType> via C<annotation_type_group_id>; has 
 
 =cut
 
-__PACKAGE__->load_components("PK::Auto", "Core");
 __PACKAGE__->table("annotation_type_group");
 __PACKAGE__->add_columns(
   "annotation_type_group_id",

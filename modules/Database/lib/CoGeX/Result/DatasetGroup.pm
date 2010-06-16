@@ -4,7 +4,8 @@ package CoGeX::Result::DatasetGroup;
 
 use strict;
 use warnings;
-use base 'DBIx::Class';
+use base 'DBIx::Class::Core';
+use CoGeX::ResultSet::DatasetGroup;
 use File::Spec::Functions;
 use Data::Dumper;
 use Text::Wrap;
@@ -59,7 +60,6 @@ Has many CCoGeX::Result::GenomicSequence> via C<dataset_group_id>
 
 =cut
 
-__PACKAGE__->load_components("PK::Auto", "ResultSetManager", "Core");
 __PACKAGE__->table("dataset_group");
 __PACKAGE__->add_columns(
   "dataset_group_id",{ data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
@@ -493,33 +493,6 @@ sub type
 
 ################################################ subroutine header begin ##
 
-=head2 resolve
-
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-
-See Also   : 
-
-=cut
-
-################################################## subroutine header end ##
-
-sub resolve : ResultSet {
-    my $self = shift;
-    my $info = shift;
-    return $info if ref($info) =~ /Dataset/i;
-    return $self->find($info) if $info =~ /^\d+$/;
-    return $self->search({ 'name' => { '-like' => '%' . $info . '%'}},
-			 ,{});
-  }
-
-
-################################################ subroutine header begin ##
-
 =head2 get_chromosomes
 
  Usage     : 
@@ -833,7 +806,30 @@ sub chr_info
 	  qq{-----------<br>Chr:   (length)<br>}.$chr_list unless $summary;
     return $html;
   }
+################################################ subroutine header begin ##
 
+=head2 length
+
+ Usage     : $self->length
+ Purpose   : get total length of sequence in dataset group
+ Returns   : number
+ Argument  : 
+ Throws    : 
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub length
+    {
+      my $self = shift;
+      my $total_length =0;
+      map {$total_length += $_->sequence_length} $self->genomic_sequences;
+      return $total_length;
+    }
 sub commify
     {
       my $self = shift;

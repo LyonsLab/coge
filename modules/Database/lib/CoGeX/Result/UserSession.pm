@@ -40,7 +40,6 @@ Belongs to CCoGeX::Result::User> via C<user_id>
 
 =cut
 
-#__PACKAGE__->load_components("PK::Auto", "Core");
 __PACKAGE__->table("user_session");
 __PACKAGE__->add_columns(
   "user_session_id",#  { data_type => "INT", default_value => undef, is_nullable => 0, size => 10 },

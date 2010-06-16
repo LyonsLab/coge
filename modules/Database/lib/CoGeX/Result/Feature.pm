@@ -2,7 +2,7 @@ package CoGeX::Result::Feature;
 
 use strict;
 use warnings;
-use base 'DBIx::Class';
+use base 'DBIx::Class::Core';
 use CoGe::Accessory::genetic_code;
 use Text::Wrap;
 use Data::Dumper;
@@ -59,7 +59,6 @@ Has many CCoGeX::Result::Sequence> via C<feature_id>
 
 =cut
 
-__PACKAGE__->load_components("PK::Auto", "ResultSetManager", "Core");
 __PACKAGE__->table("feature");
 __PACKAGE__->add_columns(
   "feature_id",{ data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },

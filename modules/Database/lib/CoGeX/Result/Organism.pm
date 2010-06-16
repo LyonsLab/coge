@@ -4,8 +4,8 @@ package CoGeX::Result::Organism;
 
 use strict;
 use warnings;
-
-use base 'DBIx::Class';
+use CoGeX::ResultSet::Organism;
+use base 'DBIx::Class::Core';
 
 =head1 NAME
 
@@ -46,7 +46,6 @@ Relates to CCoGeX::Result::DatasetGroup> via C<organism_id>, in a one-to-many re
 
 =cut
 
-__PACKAGE__->load_components("PK::Auto", "ResultSetManager", "Core");
 __PACKAGE__->table("organism");
 __PACKAGE__->add_columns(
   "organism_id",
@@ -66,36 +65,6 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key("organism_id");
 
 __PACKAGE__->has_many("dataset_groups" => "CoGeX::Result::DatasetGroup", 'organism_id');
-
-
-################################################ subroutine header begin ##
-
-=head2 resolve
-
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-           : 
-
-See Also   : 
-
-=cut
-
-################################################## subroutine header end ##
-
-sub resolve : ResultSet {
-    my $self = shift;
-    my $info = shift;
-    return $info if ref($info) =~ /Organism/;
-    return $self->find($info) if $info =~ /^\d+$/;
-    return $self->search({
-			  'name' => { '-like' => '%' . $info . '%'}, 
-			 }
-			 ,{});
-}
 
 
 ################################################ subroutine header begin ##

@@ -6,8 +6,9 @@ use strict;
 use warnings;
 use Data::Dumper;
 use POSIX;
-use base 'DBIx::Class';
-#use CoGeX::Feature;
+use base 'DBIx::Class::Core';
+use CoGeX::Result::Feature;
+use CoGeX::ResultSet::Dataset;
 use Text::Wrap;
 use Carp;
 
@@ -55,8 +56,8 @@ Has many CCoGeX::Result::DatasetConnector> via C<dataset_id>
 
 =cut
 
-__PACKAGE__->load_components("PK::Auto", "ResultSetManager", "Core");
 __PACKAGE__->table("dataset");
+__PACKAGE__->resultset_class("CoGeX::ResultSet::Dataset");
 __PACKAGE__->add_columns(
   "dataset_id",{ data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
   "data_source_id",{ data_type => "INT", default_value => 0, is_nullable => 0, size => 11 },
@@ -482,33 +483,6 @@ sub genomic_sequence_type
 
 ################################################ subroutine header begin ##
 
-=head2 resolve
-
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-
-See Also   : 
-
-=cut
-
-################################################## subroutine header end ##
-
-sub resolve : ResultSet {
-    my $self = shift;
-    my $info = shift;
-    return $info if ref($info) =~ /Dataset/i;
-    return $self->find($info) if $info =~ /^\d+$/;
-    return $self->search({ 'name' => { '-like' => '%' . $info . '%'}},
-			 ,{});
-  }
-
-
-################################################ subroutine header begin ##
-
 =head2 get_chromosomes
 
  Usage     : 
@@ -746,7 +720,7 @@ sub fasta
     if ($prot)
       {
 	my $trans_type = $self->trans_type;
-	my $feat = new CoGeX::Feature;
+	my $feat = new CoGeX::Result::Feature;
 	my ($seqs, $type) = $feat->frame6_trans(seq=>$seq, trans_type=>$trans_type, gstid=>$gstid);
 	foreach my $frame (sort {length($a) <=> length($b) || $a cmp $b} keys %$seqs)
 	  {
@@ -815,7 +789,8 @@ sub gff
 				      'me.chromosome' => $chr,
 				     } , 
 				     { 
-				      'prefetch'           => [ 'feature_type', 'feature_names'],
+				      'prefetch'           => [ 'feature_type', 'feature_names', {'annotations' => 'annotation_type'}],
+
 				      'order_by'           => [ 'me.start', 'me.feature_type_id'] #go by order in genome, then make sure that genes (feature_type_id == 1) is first
 				     }
 				   );
@@ -840,8 +815,9 @@ sub gff
 	  foreach my $anno ($feat->annotations)
 	    {
 	      next unless defined $anno->annotation;
+	      my $anno_type = $anno->annotation_type;
 	      my $tmp;
-	      $tmp .= $anno->annotation_type->name.": " if $anno->annotation_type && $anno->annotation_type->name;
+	      $tmp .= $anno_type->name.": " if $anno_type && $anno_type->name;
 	      $tmp .= $anno->annotation;
 	      $tmp =~ s/;//g;
 	      push @annos, $tmp;

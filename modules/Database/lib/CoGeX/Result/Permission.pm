@@ -5,7 +5,7 @@ package CoGeX::Result::Permission;
 use strict;
 use warnings;
 
-use base 'DBIx::Class';
+use base 'DBIx::Class::Core';
 
 =head1 NAME
 
@@ -37,7 +37,6 @@ Type: VARCHAR, Default: undef, Nullable: yes, Size: 255
 =cut
 
 
-__PACKAGE__->load_components("PK::Auto", "Core");
 __PACKAGE__->table("permission");
 __PACKAGE__->add_columns(
   "permission_id",

@@ -5,7 +5,7 @@ package CoGeX::Result::Sequence;
 use strict;
 use warnings;
 
-use base 'DBIx::Class';
+use base 'DBIx::Class::Core';
 
 =head1 NAME
 
@@ -47,7 +47,6 @@ Relates to CCoGeX::Result::SequenceType> via C<sequence_type_id>, one-to-one rel
 
 =cut
 
-__PACKAGE__->load_components("PK::Auto", "Core");
 __PACKAGE__->table("sequence");
 __PACKAGE__->add_columns(
   "sequence_id",
