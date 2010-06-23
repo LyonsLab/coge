@@ -169,13 +169,15 @@ sub gen_body
       }
     if (my $fid = $form->param('fid'))
       {
+	my ($fid, $seq_type_id) = split/_/, $fid;
+	$seq_type_id = 1 unless $seq_type_id;
 	my $qdsgid = $form->param('qdsgid');
 	unless ($qdsgid)
 	  {
 	    my $feat = $coge->resultset('Feature')->find ($fid);
 	    foreach my $dsg ($feat->dataset_groups)
 	      {
-		if ($dsg->type->id eq 1)  #find the unmasked version of the data
+		if ($dsg->type->id eq $seq_type_id)  #find the unmasked version of the data
 		  {
 		    $qdsgid = $dsg->id;
 		    last;
@@ -410,7 +412,7 @@ sub cogefeatsearch
     $org_name = undef if $org_name =~ /^search$/i;
     my $org_desc = $opts{org_desc};
     $org_desc = undef if $org_desc =~ /^search$/i;
-    my $blank = qq{<input type="hidden" id="accn_select">};
+    my $blank = qq{<input type="hidden" id="accn_select"><input type="hidden" id="feat_dsgid">};
     my $weak_query = "Query needs to be better defined.";
     if (!$accn && !$anno && !$fid)
       {
@@ -704,7 +706,10 @@ sub go_synfind
     
     my $pm = new Parallel::ForkManager($MAX_PROC);
     #Generate fasta files and blastdbs
-    foreach my $item ([$source_dsgid, $source_type], @dsgids)
+    my @to_process;
+    push @to_process, [$source_dsgid, $source_type] if $source_dsgid;
+    push @to_process, @dsgids;
+    foreach my $item (@to_process)
       {
 	$pm->start and next;
 	my ($dsgid, $feat_type) = @$item;
@@ -717,7 +722,7 @@ sub go_synfind
     $pm->wait_all_children();
     #Generate fasta files and blastdbs
     my @target_info; #store all the stuff about a genome
-    foreach my $item ([$source_dsgid, $source_type],@dsgids)
+    foreach my $item (@to_process)
       {
 	my ($dsgid, $feat_type) = @$item;
 	my ($fasta,$org_name) = gen_fasta(dsgid=>$dsgid, feat_type=>$feat_type, write_log=>0);
@@ -730,7 +735,7 @@ sub go_synfind
 			    blastdb=>$blastdb,
 			   };
       }
-    my $query_info = shift @target_info; #query is the first item on this list.
+    my $query_info = shift @target_info if $source_dsgid; #query is the first item on this list.
     #need to create blastfile name.  Must be alphabetized on query and target names.
     foreach my $target (@target_info)
       {
