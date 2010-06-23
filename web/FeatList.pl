@@ -17,10 +17,10 @@ use Benchmark;
 use DBIxProfiler;
 
 
-use vars qw($P $PAGE_NAME $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb $FORM);
+use vars qw($P $PAGE_NAME $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb $FORM $URL);
 $P = CoGe::Accessory::Web::get_defaults();
 $ENV{PATH} = $P->{COGEDIR};
-
+$URL = $P->{URL};
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
 $PAGE_NAME = "FeatList.pl";
@@ -46,6 +46,7 @@ my $pj = new CGI::Ajax(
 		       send_to_featmap=>\&send_to_featmap,
 		       send_to_msa=>\&send_to_msa,
 		       send_to_featlist=>\&send_to_featlist,
+		       send_to_SynFind=>\&send_to_SynFind,
 		       get_anno=>\&get_anno,
 		       get_gc=>\&get_gc,
 		       get_wobble_gc=>\&get_wobble_gc,
@@ -368,7 +369,7 @@ sub generate_table
     my $accn_list = shift;
     $accn_list =~ s/^,//;
     $accn_list =~ s/,$//;
-    my $url = "/CoGe/GEvo.pl?";
+    my $url = $URL."GEvo.pl?";
     my $count = 1;
     #print STDERR $url,"\n";
     foreach my $featid (split /,/,$accn_list)
@@ -382,12 +383,22 @@ sub generate_table
     return $url;
   }
   
+sub send_to_SynFind
+  {
+    my $accn_list = shift;
+    $accn_list =~ s/^,//;
+    $accn_list =~ s/,$//;
+    my ($fid) = split/,/, $accn_list;
+    my $url = $URL."SynFind.pl?fid=$fid";
+    return $url;
+  }
+  
   sub send_to_featmap
   {
     my $accn_list = shift;
     $accn_list =~ s/^,//;
     $accn_list =~ s/,$//;
-    my $url = "/CoGe/FeatMap.pl?";
+    my $url = $URL."FeatMap.pl?";
     foreach my $featid (split /,/,$accn_list)
       {
 		$url .= "fid=$featid&";
@@ -400,7 +411,7 @@ sub generate_table
     my $accn_list = shift;
     $accn_list =~ s/^,//;
     $accn_list =~ s/,$//;
-    my $url = "/CoGe/FeatList.pl?";
+    my $url = $URL."FeatList.pl?";
     foreach my $featid (split /,/,$accn_list)
       {
 		$url .= "fid=$featid&";
@@ -414,7 +425,7 @@ sub generate_table
     my $accn_list = shift;
     $accn_list =~ s/^,//;
     $accn_list =~ s/,$//;
-    my $url = "/CoGe/CoGeAlign.pl?";
+    my $url = $URL."CoGeAlign.pl?";
     foreach my $featid (split /,/,$accn_list)
       {
 		$url .= "fid=$featid&";
@@ -429,7 +440,7 @@ $url =~ s/&$//;
     my $accn_list = shift;
     $accn_list =~ s/^,//;
     $accn_list =~ s/,$//;
-    my $url = "/CoGe/CoGeBlast.pl?fid=$accn_list";
+    my $url = $URL."CoGeBlast.pl?fid=$accn_list";
     return $url;
   }
   
