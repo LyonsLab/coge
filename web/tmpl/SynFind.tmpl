@@ -495,13 +495,21 @@ function go_cogefeatsearch () {
 }
 
 function source_search_chain (val) {
- if (val) {$('#accn_list').html(val);$('#accn_list').show()}
- source_search(['args__accn','accn_select', 'args__org_id','org_id_feat','args__org_name','org_name_feat','args__org_desc','org_desc_feat'], [get_types_chain]);
+ if (val) {
+   $('#accn_list').html(val);
+   $('#accn_list').show();
+   source_search(['args__accn','accn_select', 'args__org_id','org_id_feat','args__org_name','org_name_feat','args__org_desc','org_desc_feat'], [get_types_chain]);
+  }
+ else {
+   $('#fid').html('');
+   $('#fid').html('');
+  }
 }
 
 function get_types_chain (val1) {
  if (val1) {$('#Source').html(val1);$('#Source').show();}
- get_types(['args__accn','accn_select', 'args__dsgid','feat_dsgid'],[get_anno_chain]);	
+ if ($('feat_dsgid').val()) {get_types(['args__accn','accn_select', 'args__dsgid','feat_dsgid'],[get_anno_chain]);}
+ else {$('#anno').html('');  $('#data_table').hide(0);}
 }
 
 function get_anno_chain (val1,dsgid) {	
