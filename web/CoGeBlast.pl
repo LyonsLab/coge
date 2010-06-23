@@ -1939,7 +1939,7 @@ sub generate_tab_deliminated
 	my $dsg = $coge->resultset("DatasetGroup")->find($dsgid);
 	my ($feat) = $coge->resultset("Feature")->find($featid);
 	
-	my ($name) = sort $feat->names;
+	my ($name) = $feat->names;
 	my $org = $dsg->organism->name;
 	$sth->execute($hsp_num."_".$dsgid) || die "unable to execute";
 	my ($pval,$pid,$score);
