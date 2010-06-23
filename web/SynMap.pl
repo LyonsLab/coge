@@ -580,6 +580,11 @@ sub gen_fasta
     ($org_name, $title) = gen_org_name(dsgid=>$dsgid, feat_type=>$feat_type,write_log=>$write_log);
     my $file = $FASTADIR."/$dsgid-$feat_type.new.fasta";
     my $res;
+    if ($write_log)
+      {
+	CoGe::Accessory::Web::write_log("#"x20,$cogeweb->logfile);
+	CoGe::Accessory::Web::write_log("Generating $feat_type fasta sequence for ".$org_name, $cogeweb->logfile);
+      }
     while (-e "$file.running")
       {
 	print STDERR "detecting $file.running.  Waiting. . .\n";
@@ -587,7 +592,7 @@ sub gen_fasta
       }
     if (-r $file)
       {
-CoGe::Accessory::Web::write_log("fasta file for *".$org_name."* ($file) exists", $cogeweb->logfile);
+	CoGe::Accessory::Web::write_log("Fasta file for *".$org_name."* ($file) exists", $cogeweb->logfile) if $write_log;
 	$res = 1;
       }
     else
@@ -596,6 +601,7 @@ CoGe::Accessory::Web::write_log("fasta file for *".$org_name."* ($file) exists",
 	$res = generate_fasta(dsgid=>$dsgid, file=>$file, type=>$feat_type) unless -r $file;
 	system "rm $file.running" if -r "$file.running"; #remove track file
       }
+    CoGe::Accessory::Web::write_log("#"x(20)."\n",$cogeweb->logfile) if $write_log;
     return $file, $org_name, $title if $res;
     return 0;
   }
@@ -608,9 +614,15 @@ sub gen_org_name
     my $write_log = $opts{write_log} || 0;
     my ($dsg) = $coge->resultset('DatasetGroup')->search({dataset_group_id=>$dsgid}, {join=>'organism',prefetch=>'organism'});
     my $org_name = $dsg->organism->name;
-    my $title = $org_name ." (v".$dsg->version.", dsgid".$dsgid.")".$feat_type;
+    my $title = $org_name ." (v".$dsg->version.", dsgid".$dsgid.") ".$feat_type;
     $title =~ s/(`|')//g;
-   CoGe::Accessory::Web::write_log("ORGANISM: ".$title, $cogeweb->logfile) if CoGe::Accessory::Web::write_log;
+    if ($write_log)
+      {
+	CoGe::Accessory::Web::write_log("#"x(20), $cogeweb->logfile);
+	CoGe::Accessory::Web::write_log("Generating organism name:", $cogeweb->logfile);
+	CoGe::Accessory::Web::write_log($title, $cogeweb->logfile);
+	CoGe::Accessory::Web::write_log("#"x(20)."\n", $cogeweb->logfile);
+      }
     return ($org_name, $title);
   }
 
@@ -623,12 +635,14 @@ sub generate_fasta
     my ($dsg) = $coge->resultset('DatasetGroup')->search({"me.dataset_group_id"=>$dsgid},{join=>'genomic_sequences',prefetch=>'genomic_sequences'});
 
     $file = $FASTADIR."/$file" unless $file =~ /$FASTADIR/;
-   CoGe::Accessory::Web::write_log("creating fasta file", $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("Creating fasta file:", $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log($file, $cogeweb->logfile);
+    
     open (OUT, ">$file") || die "Can't open $file for writing: $!";;
     if ($type eq "CDS")
       {
 	my $count = 1;
-	foreach my $feat (sort {$a->chromosome cmp $b->chromosome || $a->start <=> $b->start} 
+	my @feats = sort {$a->chromosome cmp $b->chromosome || $a->start <=> $b->start} 
 			  $coge->resultset('Feature')->search(
 							      {
 							       feature_type_id=>[3, 4, 7],
@@ -637,7 +651,9 @@ sub generate_fasta
 								 join=>[{dataset=>'dataset_connectors'}], 
 								 prefetch=>['feature_names']
 								}
-							     ))
+							     );
+	CoGe::Accessory::Web::write_log("Getting sequence for ".scalar (@feats)." features of types CDS, tRNA, and rRNA.", $cogeweb->logfile);
+	foreach my $feat (@feats)
 	  {
 	    my ($chr) = $feat->chromosome;#=~/(\d+)/;
 	    my $name;
@@ -659,7 +675,10 @@ sub generate_fasta
       }
     else
       {
-	foreach my $chr (sort $dsg->get_chromosomes)
+
+	my @chr = sort $dsg->get_chromosomes;
+	CoGe::Accessory::Web::write_log("Getting sequence for ".scalar (@chr). " chromosomes (genome sequence)", $cogeweb->logfile);
+	foreach my $chr (@chr)
 	  {
 	    #		my $title = join ("||",$chr, 1, $ds->last_chromosome_position($chr), "Chr_$chr",1, "genomic", "N/A");
 	    my $seq = $dsg->get_genomic_sequence(chr=>$chr);
@@ -670,7 +689,7 @@ sub generate_fasta
       }
     close OUT;
     return 1 if -r $file;
-   CoGe::Accessory::Web::write_log("Error with fasta file creation", $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("Error with fasta file creation", $cogeweb->logfile);
     return 0;
   }
 
@@ -680,8 +699,11 @@ sub gen_blastdb
     my $dbname = $opts{dbname};
     my $fasta = $opts{fasta};
     my $org_name = $opts{org_name};
+    my $write_log = $opts{write_log} || 0;
     my $blastdb = "$BLASTDBDIR/$dbname";
     my $res = 0;
+
+    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile) if $write_log;
     while (-e "$blastdb.running")
       {
 	
@@ -690,15 +712,17 @@ sub gen_blastdb
       }
     if (-r $blastdb.".nsq")
       {
-CoGe::Accessory::Web::write_log("blastdb file for *".$org_name."* ($dbname) exists", $cogeweb->logfile);
+	CoGe::Accessory::Web::write_log("blastdb file for ".$org_name." already exists", $cogeweb->logfile) if $write_log;
 	$res = 1;
       }
     else
       {
 	system "touch $blastdb.running"; #track that a blast anlaysis is running for this
-	$res = generate_blast_db(fasta=>$fasta, blastdb=>$blastdb, org=>$org_name);
+	$res = generate_blast_db(fasta=>$fasta, blastdb=>$blastdb, org=>$org_name, write_log=>$write_log);
 	system "rm $blastdb.running" if -r "$blastdb.running"; #remove track file
       }
+    CoGe::Accessory::Web::write_log("blastdb file: $blastdb", $cogeweb->logfile) if $write_log;
+    CoGe::Accessory::Web::write_log("#"x(20)."\n",$cogeweb->logfile) if $write_log;
     return $blastdb if $res;
     return 0;
   }
@@ -710,14 +734,15 @@ sub generate_blast_db
     my $blastdb = $opts{blastdb};
 #    my $title= $opts{title};
     my $org= $opts{org};
+    my $write_log = $opts{write_log};
     my $command = $FORMATDB." -p F";
     $command .= " -i '$fasta'";
     $command .= " -t '$org'";
     $command .= " -n '$blastdb'";
-   CoGe::Accessory::Web::write_log("creating blastdb for *".$org."* ($blastdb): $command",$cogeweb->logfile);
+   CoGe::Accessory::Web::write_log("creating blastdb for *".$org."* ($blastdb): $command",$cogeweb->logfile) if $write_log;
     `$command`;
     return 1 if -r "$blastdb.nsq";
-   CoGe::Accessory::Web::write_log("error creating blastdb for $org ($blastdb)",$cogeweb->logfile);
+   CoGe::Accessory::Web::write_log("error creating blastdb for $org ($blastdb)",$cogeweb->logfile) if $write_log;
     return 0;
   }
   
@@ -747,7 +772,7 @@ sub run_blast
 	   CoGe::Accessory::Web::write_log("WARNING: Blast output file ($outfile) contains no data!" ,$cogeweb->logfile);
 	    return 0;
 	  }
-CoGe::Accessory::Web::write_log("blastfile $outfile already exists",$cogeweb->logfile);
+	CoGe::Accessory::Web::write_log("blastfile $outfile already exists",$cogeweb->logfile);
 	return 1;
       }
     my $pre_command = $ALGO_LOOKUP->{$prog}{algo};#$prog =~ /tblastx/i ? $TBLASTX : $BLASTN;
@@ -1986,7 +2011,7 @@ sub go
 
 	my ($fasta,$org_name) = gen_fasta(dsgid=>$dsgid, feat_type=>$feat_type,write_log=>1);
 
-	gen_blastdb(dbname=>"$dsgid-$feat_type-new",fasta=>$fasta,org_name=>$org_name);
+	gen_blastdb(dbname=>"$dsgid-$feat_type-new",fasta=>$fasta,org_name=>$org_name, write_log=>1);
 	$pm->finish;
       }
     $pm->wait_all_children();
@@ -1998,16 +2023,18 @@ sub go
     $org_name2,$fasta2, $feat_type2, $depth_org_2_ratio) = ($dsgid2,
     $org_name2,$fasta2, $feat_type2, $depth_org_2_ratio, $dsgid1,
     $org_name1,$fasta1, $feat_type1, $depth_org_1_ratio) if ($org_name2 lt $org_name1);
-     unless ($fasta1 && $fasta2)
+    unless ($fasta1 && $fasta2)
        {
  	my $log = $cogeweb->logfile;
  	$log =~ s/$DIR/$URL/;
  	return "<span class=alert>Something went wrong generating the fasta files: <a href=$log>log file</a></span>";
        }
-     else{
-      CoGe::Accessory::Web::write_log("Completed fasta creation", $cogeweb->logfile);
-      CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
-     }
+    else
+      {
+	CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
+	CoGe::Accessory::Web::write_log("Fasta creation passed final check.", $cogeweb->logfile);
+	CoGe::Accessory::Web::write_log("#"x(20)."\n",$cogeweb->logfile);
+      }
     
     my ($blastdb1) = gen_blastdb(dbname=>"$dsgid1-$feat_type1-new", fasta=>$fasta1,org_name=>$org_name1); #this really isn't used, but might as well make it just in case
     my ($blastdb2) = gen_blastdb(dbname=>"$dsgid2-$feat_type2-new", fasta=>$fasta2,org_name=>$org_name2);
@@ -2019,10 +2046,12 @@ sub go
  	$log =~ s/$DIR/$URL/;
  	return "<span class=alert>Something went wrong generating the blastdb files: <a href=$log>log file</a></span>";
       }
-    else{
-     CoGe::Accessory::Web::write_log("Completed blastdb creation", $cogeweb->logfile);
-     CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
-    }
+    else
+      {
+	CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
+	CoGe::Accessory::Web::write_log("BlastDB creation passed final check.", $cogeweb->logfile);
+	CoGe::Accessory::Web::write_log("#"x(20)."\n",$cogeweb->logfile);
+      }
     my $html;
     #need to blast each org against itself for finding local dups, then to one another
     my $tmp1 = $org_name1;
