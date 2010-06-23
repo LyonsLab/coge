@@ -97,7 +97,7 @@ sub get_seqs
     my $gstid = $opts{gstid};
     my $upstream = $opts{upstream};
     my $downstream = $opts{downstream};
-    print STDERR Dumper \%opts;
+    #print STDERR Dumper \%opts;
     my @fids = ref($fids) =~ /array/i ? @$fids : split/,/, $fids;
     my $seqs;
     foreach my $featid (@fids)
