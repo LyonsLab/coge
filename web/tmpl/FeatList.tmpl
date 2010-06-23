@@ -70,7 +70,7 @@ function feature_checkboxes(){
      if (this.checked == true) accn = accn + this.id+",";
    });
   if (accn == ",") {
-    alert("You have not checked any features.");
+    alert("Danger Will Robinson!\n1D-10T error!  You have not checked any features.");
     return;
   }
   if(action == "gevo") {
@@ -98,15 +98,20 @@ function feature_checkboxes(){
   else if (action == "featlist"){
     send_to_featlist(['args__'+accn],[export_url]);
   }
+  else if (action == "SynFind"){
+    send_to_SynFind(['args__'+accn],[export_url]);
+  }
   else {
     alert("We will get this working ... soon.");
   }
 }
 
+
+
 function export_url(url,num_accns) {
   if (url == "alert") {
-    var remove = num_accns - 10;
-    alert("You have exceeded the number of features you can send to GEvo ( 10 Max ). You currently have "+num_accns+" selected. Please uncheck "+remove+" of your checked item(s).");
+    var remove = num_accns - 20;
+    alert("You have exceeded the number of features you can send to GEvo ( 20 Max ). You currently have "+num_accns+" selected. Please uncheck "+remove+" of your checked item(s).");
   }
   else {
     var regex = /xls$/;
@@ -119,6 +124,7 @@ function export_url(url,num_accns) {
   $('#retrieve_message').html(' ');
   
 }
+
 
 function show_all_codon_tables(num) {
  for (var i=1; i<=num; i++)
@@ -358,6 +364,7 @@ Filter Table Rows:
     <option value = "xls">Excel</option>
     <option value = "featlist">FeatList</option>
     <option value = "CodeOn">Coding Evolution</option>
+    <option value = "SynFind">SynFind</option>
    </select>
 <span class='ui-button ui-corner-all ui-button-icon-right' onclick="feature_checkboxes();"><span class="ui-icon ui-icon-extlink"></span>Go</span><span id=retrieve_message class=alert></span>  
   </div>
