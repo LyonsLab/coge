@@ -58,6 +58,7 @@ $ENV{PATH} = $P->{COGEDIR};
 $PAGE_NAME = "GEvo.pl";
 $BL2SEQ = $P->{BL2SEQ};
 $BLASTZ = $P->{LASTZ};
+$BLASTZ .= " --ambiguous=iupac";
 $LAGAN = $P->{LAGAN};
 $CHAOS = $P->{CHAOS};
 $GENOMETHREADER = $P->{GENOMETHREADER};
@@ -485,7 +486,7 @@ sub run
 	$basefilename = $cogeweb->basefilename;
       }
 ######
-    print STDERR "Running GEvo:  basefile:  $basefilename\n";
+#    print STDERR "Running GEvo:  basefile:  $basefilename\n";
     CoGe::Accessory::Web::write_log("Beginning GEvo analysis.  Basefilename: $basefilename", $cogeweb->logfile);
     my @hsp_colors;
     for (my $i = 1; $i <= num_colors($num_seqs); $i++)
@@ -1015,7 +1016,8 @@ Total time                                          : $total_time
 
 };
     print STDERR "\n",$gevo_link,"\n";
-    print STDERR $bench if $BENCHMARK;
+#    print STDERR $bench if $BENCHMARK;
+    print STDERR "GEvo run time: $total_time\n";
     CoGe::Accessory::Web::write_log($bench, $cogeweb->logfile);
     CoGe::Accessory::Web::write_log("Finished!", $cogeweb->logfile);
     CoGe::Accessory::Web::write_log("GEvo link: $gevo_link", $cogeweb->logfile);
