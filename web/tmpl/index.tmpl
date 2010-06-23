@@ -93,7 +93,7 @@ function cross_fade() {
   newStuff="<div onclick=window.open('"+link+"')><img style='width: 400px; height: 225px' src='./picts/home_page/"+image[index][0]+"'><br><div style='width:400; text-align:center'>"+image[index][1]+"</div></div>";
   setTimeout("$('#crossfade').html(newStuff)", fade_time);
   $('#crossfade').fadeIn(fade_time);
-  index++;//=Math.floor(Math.random()*image.length);
+  index=Math.floor(Math.random()*image.length);
 
   if (index == image.length) {index=0};
   pageObj.index=index;  
@@ -127,18 +127,19 @@ What is CoGe?<br>
 </div>
 </div>
 
-<div style="float:right">
-If you are new to CoGe:<br>
+<div style="float:left; width:50px">&nbsp</div>
+<div style="float:left">
+New to CoGe?<br>
 <div id="accordion2" style="font-size: 0.7em">
-    <h3 onclick=window.open("http://genomevolution.org/wiki/index.php/New_to_CoGe")><a href="http://genomevolution.org/wiki/index.php/New_to_CoGe">Visit CoGe's getting started page</a></h3>
+    <h3 onclick=window.open("http://genomevolution.org/wiki/index.php/New_to_CoGe")><a href="http://genomevolution.org/wiki/index.php/New_to_CoGe">How to get started</a></h3>
     <div></div>
-    <h3 onclick=window.open("http://genomevolution.org/wiki/index.php/Tutorials")><a href="http://genomevolution.org/wiki/index.php/Tutorials">Read or watch tutorials</a></h3>
+    <h3 onclick=window.open("http://genomevolution.org/wiki/index.php/Tutorials")><a href="http://genomevolution.org/wiki/index.php/Tutorials">Tutorials</a></h3>
     <div></div>
-    <h3 onclick=window.open("http://genomevolution.org/wiki")><a href="http://genomevolution.org/wiki">Get some background information at CoGePedia</a></h3>
+    <h3 onclick=window.open("http://genomevolution.org/wiki")><a href="http://genomevolution.org/wiki">CoGePedia docs</a></h3>
     <DIV></div>
-    <h3 onclick=window.open("http://genomevolution/wiki/index.php/FAQs")><a href="http://genomevolution.org/wiki/index.php/FAQs">Read CoGe's FAQs</a></h3>
+    <h3 onclick=window.open("http://genomevolution/wiki/index.php/FAQs")><a href="http://genomevolution.org/wiki/index.php/FAQs">FAQs</a></h3>
     <div></div>
-<h3 onclick=window.open("http://genomevolution/wiki/index.php/CoGepedia:Current_events")><a href="http://genomevolution.org/wiki/index.php/CoGepedia:Current_events">News about CoGe</a></h3>
+<h3 onclick=window.open("http://genomevolution/wiki/index.php/CoGepedia:Current_events")><a href="http://genomevolution.org/wiki/index.php/CoGepedia:Current_events">Latest News</a></h3>
     <div></div>
 </div>
 </div>
@@ -147,14 +148,22 @@ If you are new to CoGe:<br>
 <hr>
 CoGe's Entrance Tools:<br>
 <div style="font-size: .6em; width: 500px">CoGe's unqiue system architecture provides many <a ref="http://genomevolution.org/wiki/index.php/Documentation#Web_Application_Documentation">interconnected tools</a> to create <a ref="http://genomevolution.org/wiki/index.php/Open-ended_Analysis_Network">open-ended analysis networks</a>.  While there is no defined place to start an anlysis on CoGe, here are the common tools used to begin an analysis:</div>
-<div id="accordion3" style="font-size: 0.7em; width: 500px; float: left">
+<div style="font-size: 0.7em; width: 500px; float: left">
+<div id="accordion3">
    <TMPL_LOOP NAME=ACTIONS>
     <h3 onclick=window.open("<TMPL_VAR NAME=LINK>")><a href="#"><TMPL_VAR NAME=ACTION></a></h3>
     <div><TMPL_VAR NAME=DESC></div>
    </TMPL_LOOP>
 </div>
+<div style="text-align: center">
+ <hr>
+ <a href="http://www.nsf.gov" target= "_new"><img src="./picts/nsf-logo.gif" border=0 width = 100px></a>
+ <img src="./picts/uc_seal.gif" border=0 width=100px>
+</div>
+</div>
+<div style="float:left; width:50px">&nbsp</div>
 
-<div id=crossfade style="float: right;"></div>
+<div id=crossfade style="float: left;"></div>
 <div style="clear: both;"> </div>
 
 
@@ -180,7 +189,7 @@ CoGe's Entrance Tools:<br>
 </TMPL_IF>
 
 <TMPL_IF NAME=CREDITS>
-<div align=center>
+<div align=left>
 <a href="http://www.nsf.gov" target= "_new"><img src="./picts/nsf-logo.gif" border=0 width = 100px></a>
 <img src="./picts/uc_seal.gif" border=0 width=100px>
 <br><a href="/awstats/awstats.pl?config=CoGe" target=_new class="small" style="text-align: center;">CoGe's usage stats</a>
