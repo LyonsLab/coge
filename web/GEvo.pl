@@ -1015,9 +1015,9 @@ Total time                                          : $total_time
 
 
 };
-    print STDERR "\n",$gevo_link,"\n";
+#    print STDERR "\n",$gevo_link,"\n";
 #    print STDERR $bench if $BENCHMARK;
-    print STDERR "GEvo run time: $total_time\n";
+#    print STDERR "GEvo run time: $total_time\n";
     CoGe::Accessory::Web::write_log($bench, $cogeweb->logfile);
     CoGe::Accessory::Web::write_log("Finished!", $cogeweb->logfile);
     CoGe::Accessory::Web::write_log("GEvo link: $gevo_link", $cogeweb->logfile);
