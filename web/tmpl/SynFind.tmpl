@@ -502,14 +502,15 @@ function source_search_chain (val) {
   }
  else {
    $('#fid').html('');
-   $('#fid').html('');
   }
 }
 
 function get_types_chain (val1) {
  if (val1) {$('#Source').html(val1);$('#Source').show();}
- if ($('feat_dsgid').val()) {get_types(['args__accn','accn_select', 'args__dsgid','feat_dsgid'],[get_anno_chain]);}
- else {$('#anno').html('');  $('#data_table').hide(0);}
+// if ($('feat_dsgid').val()) {
+get_types(['args__accn','accn_select', 'args__dsgid','feat_dsgid'],[get_anno_chain]);
+//}
+// else {$('#anno').html('');  $('#data_table').hide(0);}
 }
 
 function get_anno_chain (val1,dsgid) {	
