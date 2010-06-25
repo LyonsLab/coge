@@ -189,8 +189,10 @@ Gobe.handle_html= function (html) {
   html = "<span class='ui-button ui-corner-all' id='clear_lines' onclick='Gobe.clear()'>Clear Connectors</span><br>"+html;
   $('#results_info').html(html);
   
-  if (html && !html.match(/multiple hits/)) {
+  if ( !$('#results_info').dialog('isOpen') && html && !html.match(/multiple hits/) ) {
+
    $('#results_info').dialog('open');
+   $('#results_info').dialog('option', 'position', 'right');
   }
 };
 
@@ -472,6 +474,7 @@ function handle_results (html,w, h, img_base, n_images, gevo_link, basefilename,
     $('#results').html(html);
     var getQueryParamValue = swfobject.getQueryParamValue;
     var width = getQueryParamValue('w') || w; 
+    pageObj.width=width;
     var height = getQueryParamValue('h') || h; 
     var params = {'bgcolor': '#FFFFFF', 'wmode': "opaque"};
     var flashVars = {
