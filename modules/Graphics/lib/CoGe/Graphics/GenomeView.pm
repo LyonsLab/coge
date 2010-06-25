@@ -110,9 +110,9 @@ LICENSE file included with this module.
 
 __PACKAGE__->mk_accessors(qw(organism chromosomes features image_width image_height legend_height _default_feature_color _gd _color_set color_band_flag legend chromosome_height show_count draw_ends max_count));
 
-my $DEFAULT_COLOR = [255,0,0];
+my $DEFAULT_COLOR = [255,100,100];
 my $FONT = GD::Font->MediumBold;
-my $FONTTT="/usr/lib/perl5/site_perl/CoGe/fonts/arial.ttf";
+my $FONTTT="/usr/lib/perl5/CoGe/fonts/arial.ttf";
 
 
 sub generate_imagemap
@@ -390,8 +390,8 @@ sub draw_features
 	   my $h = $up? sprintf("%.0f",$height+$height/1.3) : sprintf("%.0f",0-$height/1.3+$font_size);
 	   if ($self->show_count)
 	     {
-	       $gd->stringFT($black, $FONTTT, $font_size+4, 0, sprintf("%.0f",$x1-$height/5), $y+$h, $count) unless $count == 1;
-	       $gd->stringFT($white, $FONTTT, $font_size, 0, sprintf("%.0f",$x1-$height/5+2), $y+$h-2, $count) unless $count == 1;
+	       $gd->stringFT($white, $FONTTT, $font_size+6, 0, sprintf("%.0f",$x1-$height/5), $y+$h, $count) unless $count == 1;
+	       $gd->stringFT($black, $FONTTT, $font_size+3, 0, sprintf("%.0f",$x1-$height/5+1), $y+$h-1, $count) unless $count == 1;
 	     }
 	   if ($color_band_flag)
 	     {
