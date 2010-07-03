@@ -170,7 +170,7 @@ sub gen_html
       {
 	my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
 	$template->param(LOGO_PNG=>"GEvo-logo.png");
-	$template->param(TITLE=>'Genome Evolution Analysis (powered by <a href="http://github.com/brentp/gobe/">gobe</a>)');
+	$template->param(TITLE=>'Genome Evolution Analysis');
 	$template->param(PAGE_TITLE=>'GEvo');
 	$template->param(HELP=>'/wiki/index.php?title=GEvo');
 	my $name = $USER->user_name;
