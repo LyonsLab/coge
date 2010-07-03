@@ -46,49 +46,58 @@ my $base_url = "http://www.ncbi.nlm.nih.gov/genomes/genlist.cgi?";
 #taxid type
 my @taxids =(
 #	     [2157, 9], #archaea, get WGS
-	     [2,    9], #bacteria, get WGS
-#	     [2759, 0], #euks, not ready for WGS -- lots of data with minimal annotations.  Will get there though!
+#	     [2,    9], #bacteria, get WGS
+	     [2759, 0], #euks, not ready for WGS -- lots of data with minimal annotations.  Will get there though!
 #	     [10239,9], #viruses, phages, 
 #	     [12884,9], #viroids
 	    );
 
 my $pm = new Parallel::ForkManager($forks);
-# foreach my $item (@taxids)
-#   {
-#     my ($id, $type) = @$item;
-#     my $url = $base_url."type=$type"."&taxid=$id";
-#     print "Fetching $url\n";
-#     my $content =get($url);
-#     my @tables = split /<\/table>/, $content;
-#     my @rows = split /<tr>/,$tables[8];
-#     my %data;
-#     foreach my $row (@rows)
-#       {
-
-# 	next unless $row =~/^<td>/;
-# 	$row =~ s/\n|\r//g;
-# 	my @cols = split /<td.*?>/, $row;
-# 	foreach my $item (@cols)
-# 	  {
-# 	    $item =~ s/<.*?>//g;
-# 	  }
-# 	next unless $cols[3];
-# 	next if $cols[3] =~ /accession/;
-# 	$cols[2] =~ s/&nbsp;//g;
-# 	$cols[2] =~ s/chromosome//i;
-# 	$cols[2] =~ s/chr//i;
-# 	$cols[2] =~ s/^\s+//;
-# 	$cols[2] =~ s/\s+$//;
-# 	$cols[2] = undef if $cols[2] && ($cols[2] eq " " || $cols[2] =~ /nbsp/);
-# 	$cols[2] = "unknown" unless $cols[2];
-# 	#$data{organism}{chromosome} = [accns]
-# 	push @{$data{$cols[1]}{$cols[2]}}, $cols[3];
-
-#       }
-
-#     my $orgs = process_orgs(\%data);
-
-my $genomes = get_NCBI_genomes();
+foreach my $item (@taxids)
+  {
+    my ($id, $type) = @$item;
+    my $url = $base_url."type=$type"."&taxid=$id";
+    print "Fetching $url\n";
+    my $content =get($url);
+    my @tables = split /<\/table>/, $content;
+    my @rows = split /<tr>/,$tables[8];
+    my %data;
+    foreach my $row (@rows)
+      {
+	
+ 	next unless $row =~/^<td>/;
+ 	$row =~ s/\n|\r//g;
+ 	my @cols = split /<td.*?>/, $row;
+ 	foreach my $item (@cols)
+ 	  {
+ 	    $item =~ s/<.*?>//g;
+ 	  }
+ 	next unless $cols[3];
+ 	next if $cols[3] =~ /accession/;
+ 	$cols[2] =~ s/&nbsp;//g;
+ 	$cols[2] =~ s/chromosome//i;
+ 	$cols[2] =~ s/chr//i;
+ 	$cols[2] =~ s/^\s+//;
+ 	$cols[2] =~ s/\s+$//;
+ 	$cols[2] = undef if $cols[2] && ($cols[2] eq " " || $cols[2] =~ /nbsp/);
+ 	$cols[2] = "unknown" unless $cols[2];
+ 	#$data{organism}{chromosome} = [accns]
+ 	push @{$data{$cols[1]}{$cols[2]}}, $cols[3];
+	
+      }
+#    print Dumper \%data;
+    my $orgs = process_orgs(\%data);
+#    print Dumper $orgs;
+    foreach my $org (keys %$orgs)
+      {
+	foreach my $proj (keys %{$orgs->{$org}})
+	  {
+	    my @accns = map {$_->{accn}} @{$orgs->{$org}{$proj}};
+	    process_genome_and_load(genome=>{orgs=>[$org],accns=>[@accns]});
+	  }
+      }
+  }
+#my $genomes = get_NCBI_genomes();
 
 if (@skipped)
   {
@@ -179,16 +188,19 @@ sub process_orgs
     my %orgs;
     foreach my $org(keys %$data)
       {
+	my $check = 0;
 	foreach my $chr (keys %{$data->{$org}})
 	  {
-	    if (scalar @{$data->{$org}{$chr}} > 1 )
+	    if (scalar @{$data->{$org}{$chr}} > 1 || $check)
 	      {
-		print Dumper $data->{$org}{$chr},"\n";
+#		print Dumper $data->{$org}{$chr},"\n";
 		foreach my $accn (@{$data->{$org}{$chr}})
 		  {
-		    my $project_id = get_project($accn);
+		    my $project_id_hash = get_project($accn);
+		    my $project_id = $project_id_hash->{$accn};
 		    push @{$orgs{$org}{$project_id}}, {accn=>$accn};
 		  }
+		$check =1;
 	      }
 	    else
 	      {
@@ -199,11 +211,10 @@ sub process_orgs
     return \%orgs;
   }
 
-sub get_project
-  {
+sub get_project  {
     my $accn = shift;
     $accn = join ",", @$accn if ref ($accn) =~ /array/i;
-    my $summary_url = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nucleotide&rettype=gbwithparts&retmode=text&complexity=3&id=";
+    my $summary_url = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nucleotide&rettype=gb&retmode=text&complexity=3&id=";
     my $url = $summary_url.$accn;
 #    print $url,"\n";
     my $summary = get($url);
@@ -214,14 +225,15 @@ sub get_project
     unless ($summary)
       {
 	print "Error getting $url\n";
-	next;
+#	next;
       }
 	  
     my %data;
-    while ($summary =~/ACCESSION\s+(\S+).*?DBLINK\s+Project:(\d+)/gxs)
+#    while ($summary =~/ACCESSION\s+(\S+).*?DBLINK\s+Project:(\d+)/gxs)
+#    print $summary if $accn eq "AC_000167";
+    while ($summary =~ /DBLINK\s+Project:(\d+)/g)
       {
-	$data{$1} = $2;
-
+	$data{$accn} = $1;
       }
 #    print scalar keys %data,"\n";
     return \%data;
@@ -254,7 +266,7 @@ sub get_NCBI_genomes
 	  }
 	if (@gids)
 	  {
-	    next; #this is temp to test other routine
+#	    next; #this is temp to test other routine
 	    my $gids = join ",", @gids;
 	    my ($accns, $orgs) = get_genome_accns($gids);
 	    my $res = {gids=>\@gids,
@@ -266,6 +278,7 @@ sub get_NCBI_genomes
 	  }
 	else
 	  {
+	    next;
 	    my $ncids = get_nuccore_for_genome_project($gpid);
 	    unless (@$ncids)
 	      {
