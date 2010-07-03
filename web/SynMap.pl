@@ -143,7 +143,7 @@ sub gen_html
     my ($body) = gen_body();
     my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
     $template->param(PAGE_TITLE=>'SynMap');
-    $template->param(TITLE=>'Whole Genome Syntenic Dotplots');
+    $template->param(TITLE=>'Whole Genome Synteny');
     $template->param(HEAD=>qq{});
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
