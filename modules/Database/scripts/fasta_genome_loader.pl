@@ -59,8 +59,8 @@ my $formatdb =  "/usr/bin/formatdb -p F -o T"; #path to blast's formatdb program
 
 
 
-my $connstr = 'dbi:mysql:dbname=coge;host=biocon.berkeley.edu;port=3306';
-$coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
+my $connstr = 'dbi:mysql:dbname=coge;host=localhost;port=3306';
+$coge = CoGeX->connect($connstr, 'elyons', 'eagle7' );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 
