@@ -25,6 +25,7 @@ $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 my $pj = new CGI::Ajax(
 		       gen_html=>\&gen_html,
 		       login=>\&login,
+		       get_latest_genomes=>\&get_latest_genomes,
 		      );
 $update =0;
 $coge = new CoGeX->dbconnect;
@@ -214,6 +215,55 @@ sub login
 	return ('false',undef, $url);
       }
   }
+
+sub get_latest_genomes
+  {
+    my %opts = @_;
+    my $limit = $opts{limit} || 20;
+    my @db = $coge->resultset("DatasetGroup")->search({},
+						      {
+						       distinct=>"organism.name",
+						       join=>"organism",
+						       prefetch=>"organism",
+						       order_by=>"dataset_group_id desc",
+						       rows=>$limit,
+						      }
+						);
+    ($USER) = CoGe::Accessory::LogUser->get_user();
+    my $html = "<table class=small>";
+    $html .= "<tr><th>".join("<th>",qw(Link Organism  &nbsp Length &nbsp Related));
+    my @opts;
+    my %org_names;
+    foreach my $dsg (@db)
+      {
+	next if $USER->user_name =~ /public/i && $dsg->organism->restricted;
+	next if $org_names{$dsg->organism->name};
+	$org_names{$dsg->organism->name}=1;
+	my $orgview_link = "OrganismView.pl?oid=".$dsg->organism->id;
+	my $entry = qq{<tr>};
+	$entry .= qq{<td><span class='ui-button ui-corner-all' onClick="window.open('$orgview_link')"><span class="ui-icon ui-icon-link"></span>&nbsp&nbsp</span>};
+	$entry .= qq{<td><span class="link" onclick=window.open('$orgview_link')>};
+	my $name = $dsg->organism->name;
+	$name = substr($name,0,40)."..." if length($name) > 40;
+	$entry.=$name;
+	$entry .= qq{</span>};
+
+#	$entry .= ": ".$dsg->name if $dsg->name;
+	$entry .= "<td>(v".$dsg->version.")&nbsp";
+	$entry .= "<td>".commify($dsg->length)."<td>nt";
+	my @desc = split/;/,$dsg->organism->description;
+	while ($desc[0] && !$desc[-1]) {pop @desc;}
+	$desc[-1] =~ s/^\s+//;
+	$desc[-1] =~ s/\s+$//;
+	my $orgview_search = "OrganismView.pl?org_desc=".$desc[-1];
+	$entry .= qq{<td><span class="link" onclick="window.open('$orgview_search')">Search</span>};
+	$entry .= qq{</tr>};
+	push @opts, $entry;#, "<OPTION value=\"".$item->organism->id."\">".$date." ".$item->organism->name." (id".$item->organism->id.") "."</OPTION>";
+      }
+    $html .= join "\n", @opts;
+    $html .= "</table>";
+    return $html;
+    }
 
 sub commify 
     {
