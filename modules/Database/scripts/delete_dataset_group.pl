@@ -4,7 +4,7 @@ use strict;
 use CoGeX;
 use Getopt::Long;
 
-my $connstr = 'dbi:mysql:dbname=coge;host=biocon.berkeley.edu;port=3306';
+my $connstr = 'dbi:mysql:dbname=coge;host=synteny.cnr.berkeley.edu;port=3306';
 my $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 my ($dsgid, $delete_seqs);
 
