@@ -101,6 +101,12 @@ function cross_fade() {
 
 }
 
+function handle_latest_genome_list(list) {
+$('#latest_genomes').html(list);
+setup_button_states();
+
+}
+
 
 </SCRIPT>
 
@@ -137,9 +143,9 @@ New to CoGe?<br>
     <div></div>
     <h3 onclick=window.open("http://genomevolution.org/wiki")><a href="http://genomevolution.org/wiki">CoGePedia docs</a></h3>
     <DIV></div>
-    <h3 onclick=window.open("http://genomevolution/wiki/index.php/FAQs")><a href="http://genomevolution.org/wiki/index.php/FAQs">FAQs</a></h3>
+    <h3 onclick=window.open("http://genomevolution.org/wiki/index.php/FAQs")><a href="http://genomevolution.org/wiki/index.php/FAQs">FAQs</a></h3>
     <div></div>
-<h3 onclick=window.open("http://genomevolution/wiki/index.php/CoGepedia:Current_events")><a href="http://genomevolution.org/wiki/index.php/CoGepedia:Current_events">Latest News</a></h3>
+<h3 onclick=window.open("http://genomevolution.org/wiki/index.php/CoGepedia:Current_events")><a href="http://genomevolution.org/wiki/index.php/CoGepedia:Current_events">Latest News</a></h3>
     <div></div>
 </div>
 </div>
@@ -155,6 +161,14 @@ CoGe's Entrance Tools:<br>
     <div><TMPL_VAR NAME=DESC></div>
    </TMPL_LOOP>
 </div>
+<div id="accordion4">
+   <h3 onclick="get_latest_genomes(['args__limit','limit'],[handle_latest_genome_list]);"><a href="#">Latest Genomes</a></h3>
+   <div style="height: 100px">
+Number returned: <input id=limit class=backbox type=textbox size=3 value=20><span class='ui-button ui-corner-all' onClick="$('#latest_genomes').html('loading. . .');get_latest_genomes(['args__limit','limit'],[handle_latest_genome_list])">Go</span>
+     <div id=latest_genomes></div>
+   </div>
+</div>
+
 <div style="text-align: center">
  <hr>
  <a href="http://www.nsf.gov" target= "_new"><img src="./picts/nsf-logo.gif" border=0 width = 100px></a>
