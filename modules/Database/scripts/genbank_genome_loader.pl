@@ -11,7 +11,7 @@ use File::Path;
 
 # variables
 my ($DEBUG, $GO, $ERASE,$autoupdate, $autoskip, @accns, $tmpdir, $help, $user_chr, $ds_link, $delete_src_file, $test, $auto_increment_chr, $base_chr_name, $accn_file);
-my $connstr = 'dbi:mysql:dbname=coge;host=biocon.berkeley.edu;port=3306';
+my $connstr = 'dbi:mysql:dbname=coge;host=synteny.cnr.berkeley.edu;port=3306';
 my $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
@@ -80,15 +80,16 @@ if ($accn_file && -r $accn_file)
 
 accn: foreach my $accn (@accns)
   {
-    print "Working on $accn...";
+    print "Working on $accn...\n";
     my $previous = check_accn($accn);
     foreach my $item (@$previous)
       {
+	
 	if (!$item->{version_diff} && !$item->{length_diff})
 	  {
 #	    push @previous_datasets, $item->{ds};
 	    $previous_datasets{$item->{ds}->id} = $item->{ds};
-	    print "previously loaded\n";
+	    print "\tpreviously loaded\n";
 	    next accn;
 	  }
 	elsif (!$item->{version_diff} && $item->{length_diff})
@@ -798,14 +799,17 @@ sub check_accn
   {
     my $accn = shift;
     my $gi = get_gi($accn);
-    print "gi|".$gi."...";
+#    print "gi|".$gi."...";
     my $summary = get_gi_summary($gi);
-    my ($version) = $summary =~ /gi\|\d+\|ref\|.*?\.(\d+)\|/i;
+    my ($version) = $summary =~ /ref\|.*?\.(\d+)\|/i;
+#    print "version: $version\n";
+    $version =1 unless $version;
     my ($length) = $summary =~ /<Item Name="Length" Type="Integer">(\d+)<\/Item>/i;
     my ($taxaid) = $summary =~ /<Item Name="TaxId" Type="Integer">(\d+)<\/Item>/i;
 
     my @results;
-    foreach my $ds ($coge->resultset('Dataset')->search({name=>$accn.".gbk"}))
+    my %tmp;
+    foreach my $ds ($coge->resultset('Dataset')->search({name=>$accn.".gbk", version=>$version}))
       {
 	my $version_diff = $ds->version eq $version ? 0 : 1;
 	my $length_diff;
@@ -855,7 +859,7 @@ sub get_gi
 sub get_gi_summary
   {
     my $gi = shift;
-    my $esummary = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=nucleotide&rettype=gbwithparts&retmode=text&complexity=0&id=";
+    my $esummary = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=nucleotide&rettype=gb&retmode=text&complexity=0&id=";
     my $result = get($esummary.$gi);
     return $result;
   }
