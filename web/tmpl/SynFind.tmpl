@@ -358,9 +358,10 @@ $(function() {
 	     $(".org_search_name")
 	     .focus(function() {
 	     		     //Clear search bar if 'Search' is in it or is empty (if someone refreshes)
-	     		     if( $(this).val() == 'Search' ||  $(this).val() == ''){ $(this).css({fontStyle: "normal"});
+	     		     if( $(this).val() == 'Search' ||  $(this).val() == ''){ 
 			      $(this).val('');
 			      }
+			     $(this).css({fontStyle: "normal"});
 			     org_search();
 			   })
 	    .keyup(function() {
@@ -369,9 +370,10 @@ $(function() {
 	     $(".org_search_desc")
 	     .focus(function() {
 	     		     //Clear search bar if 'Search' is in it or is empty (if someone refreshes)
-	     		     if( $(this).val() == 'Search' ||  $(this).val() == ''){ $(this).css({fontStyle: "normal"});
-			      $(this).val('');
+	     		     if( $(this).val() == 'Search' ||  $(this).val() == ''){
+			        $(this).val('');
 			      }
+			     $(this).css({fontStyle: "normal"});
 			     org_search(1);
 			   })
 	    .keyup(function() {
