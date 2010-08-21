@@ -143,6 +143,7 @@ sub gen_body
 #    $template->param(FEAT_TYPE=> get_feature_types());
     $template->param(ORG_LIST_FEAT=>get_orgs_feat(type=>"none"));
     my $doc_ready;
+    $doc_ready .= qq{search_chain(1);\n};
     my $prefs = CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME);
     if ($form->param('dsgid'))
       {
@@ -500,16 +501,20 @@ sub get_anno
     foreach my $feat (@feats)
       {
 	$i++;
-	my $featid = $feat->id;
-	my $chr = $feat->chr;
-	my $rc = 0;
-	my $pro = 0;
-	my $ds = $feat->dataset->id;
-	my $x = $feat->start;
-	my $z = 4;
-	$anno .= qq{<span class="ui-button ui-corner-all" onClick="window.open('FastaView.pl?featid=$featid&gstid=$gstid');">Get Sequence</span>};
-	$anno .= qq{<span class="ui-button ui-corner-all" onClick="window.open('CoGeBlast.pl?featid=$featid;gstid=$gstid');">CoGeBlast</span>};
-	$anno .= qq{<span class="ui-button ui-corner-all" onClick="window.open('GenomeView.pl?chr=$chr&ds=$ds&x=$x&z=$z;gstid=$gstid');">Genome Browser</span>};
+#	my $featid = $feat->id;
+#	my $chr = $feat->chr;
+#	my $rc = 0;
+#	my $pro = 0;
+#	my $ds = $feat->dataset->id;
+#	my $x = $feat->start;
+#	my $z = 4;
+#	$anno .= qq{<span class="ui-button ui-corner-all" onClick="window.open('FastaView.pl?featid=$featid&gstid=$gstid');">Get Sequence</span>};
+#	$anno .= qq{<span class="ui-button ui-corner-all" onClick="window.open('CoGeBlast.pl?featid=$featid;gstid=$gstid');">CoGeBlast</span>};
+#	$anno .= qq{<span class="ui-button ui-corner-all" onClick="window.open('GenomeView.pl?chr=$chr&ds=$ds&x=$x&z=$z;gstid=$gstid');">Genome Browser</span>};
+	foreach my $item (split/;/, $feat->organism->description)
+	  {
+	    $anno .= qq{<span class=link onclick="\$('#org_desc').val('$item').focus()">$item</span>;};
+	  }
 	$anno .= join "\n<BR><HR><BR>\n", $feat->annotation_pretty_print_html( gstid=>$gstid);
       }
     $anno = "<font class=\"annotation\">No annotations for this entry</font>" unless $anno;
