@@ -143,7 +143,7 @@ sub gen_body
 #    $template->param(FEAT_TYPE=> get_feature_types());
     $template->param(ORG_LIST_FEAT=>get_orgs_feat(type=>"none"));
     my $doc_ready;
-    $doc_ready .= qq{search_chain(1);\n};
+    $doc_ready .= qq{search_chain(1);\n} if $accn;
     my $prefs = CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME);
     if ($form->param('dsgid'))
       {
