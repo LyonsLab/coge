@@ -268,7 +268,8 @@ function display_dagchainer_settings(params,type) {
 }
 
 function search_bar(div_id){
-  if($('#'+div_id).val() == "Search") $('#'+div_id).val("").css({fontStyle: "normal"});
+  if ($('#'+div_id).val() == "Search") $('#'+div_id).val("");
+  if ($('#'+div_id).val() != "Search") $('#'+div_id).css({fontStyle: "normal"});
 }
 
 function restore_search_bar(div_id){
