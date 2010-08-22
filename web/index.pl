@@ -231,7 +231,7 @@ sub get_latest_genomes
 						);
     ($USER) = CoGe::Accessory::LogUser->get_user();
     my $html = "<table class=small>";
-    $html .= "<tr><th>".join("<th>",qw(Link Organism  &nbsp Length &nbsp Related));
+    $html .= "<tr><th>".join("<th>",qw(Organism  &nbsp Length&nbsp(nt) &nbsp Related Link ));
     my @opts;
     my %org_names;
     foreach my $dsg (@db)
@@ -241,7 +241,8 @@ sub get_latest_genomes
 	$org_names{$dsg->organism->name}=1;
 	my $orgview_link = "OrganismView.pl?oid=".$dsg->organism->id;
 	my $entry = qq{<tr>};
-	$entry .= qq{<td><span class='ui-button ui-corner-all' onClick="window.open('$orgview_link')"><span class="ui-icon ui-icon-link"></span>&nbsp&nbsp</span>};
+#	$entry .= qq{<td><span class='ui-button ui-corner-all' onClick="window.open('$orgview_link')"><span class="ui-icon ui-icon-link"></span>&nbsp&nbsp</span>};
+
 	$entry .= qq{<td><span class="link" onclick=window.open('$orgview_link')>};
 	my $name = $dsg->organism->name;
 	$name = substr($name,0,40)."..." if length($name) > 40;
@@ -250,13 +251,21 @@ sub get_latest_genomes
 
 #	$entry .= ": ".$dsg->name if $dsg->name;
 	$entry .= "<td>(v".$dsg->version.")&nbsp";
-	$entry .= "<td>".commify($dsg->length)."<td>nt";
+	$entry .= "<td align=right>".commify($dsg->length)."<td>";
 	my @desc = split/;/,$dsg->organism->description;
 	while ($desc[0] && !$desc[-1]) {pop @desc;}
 	$desc[-1] =~ s/^\s+//;
 	$desc[-1] =~ s/\s+$//;
 	my $orgview_search = "OrganismView.pl?org_desc=".$desc[-1];
 	$entry .= qq{<td><span class="link" onclick="window.open('$orgview_search')">Search</span>};
+	$entry .= qq{<td>};
+	$entry .= qq{<img onClick="window.open('$orgview_link')" src = "picts/other/CoGe-icon.png" title="CoGe" class=link>};
+
+	my $search_term = $dsg->organism->name;
+	$entry .= qq{<img onclick="window.open('http://www.ncbi.nlm.nih.gov/taxonomy?term=$search_term')" src = "picts/other/NCBI-icon.png" title="NCBI" class=link>};
+	$entry .= qq{<img onclick="window.open('http://en.wikipedia.org/w/index.php?title=Special%3ASearch&search=$search_term')" src = "picts/other/wikipedia-icon.png" title="Wikipedia" class=link>};
+	$search_term =~ s/\s+/\+/g;
+	$entry .= qq{<img onclick="window.open('http://www.google.com/search?q=$search_term')" src="picts/other/google-icon.png" title="Google" class=link>};
 	$entry .= qq{</tr>};
 	push @opts, $entry;#, "<OPTION value=\"".$item->organism->id."\">".$date." ".$item->organism->name." (id".$item->organism->id.") "."</OPTION>";
       }
