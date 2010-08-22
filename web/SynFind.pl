@@ -1516,11 +1516,12 @@ sub get_neighboring_region
 	$count++;
 	last if $count >= $window_size/2;
       }
-    my $down = $last_item->stop - $feat->stop;
-    $down = 10000 if $down < 0;
-    $count = 0;
-    %seen = ();
-    item: foreach my $item ($coge->resultset('Feature')->search({
+     my $down = $last_item->stop - $feat->stop if $last_item && $feat;
+     $down = 10000 unless defined $down;
+     $down = 10000 if $down < 0;
+     $count = 0;
+     %seen = ();
+   item: foreach my $item ($coge->resultset('Feature')->search({
 							   dataset_id=>$feat->dataset_id,
 							   feature_type_id=>3,
 							   chromosome=>$feat->chromosome,
@@ -1542,8 +1543,8 @@ sub get_neighboring_region
 	$count++;
 	last if $count >= $window_size/2;
       }
-    my $up = $feat->start-$last_item->start;
-    $up = 10000 if $up < 0;
-    return ($up, $down);
-
+     my $up = $feat->start-$last_item->start if $feat && $last_item;
+     $up = 10000 unless defined $up;
+     $up = 10000 if $up < 0;
+     return ($up, $down);
    }
