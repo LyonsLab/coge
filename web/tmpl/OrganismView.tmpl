@@ -168,7 +168,7 @@ function timing(val){
 $(document).ready(function(){
   if($('#org_name').val() && $('#org_name').val() != "Search") {
     $('#org_name').css({fontStyle: "normal"});
-    timing('org_name');
+    if($('#org_list').html()) {get_org_info(['args__oid','org_id'],[dataset_group_chain]);} else {timing('org_name')};
   }  
   if($('#org_desc').val() && $('#org_desc').val() != "Search") {
     $('#org_desc').css({fontStyle: "normal"});
