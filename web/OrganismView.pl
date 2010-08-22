@@ -262,10 +262,14 @@ sub get_org_info
     return "Unable to find an organism for id: $oid\n" unless $org;
     my $html;# = qq{<div class="backbox small">};
     $html.= "<span class=alert>Restricted Organism!  Authorized Use Only!</span><br>" if $org->restricted;
-    $html .= $org->name;
-    $html .= "<br>";
+    $html .= qq{<table class='small annotation_table'>};
+    $html .= qq{<tr><td>Name:};
+    $html .= qq{<td>}.$org->name;
+
     if ($org->description)
       {
+	$html .= qq{<tr><td>Description:<td>};
+
 	foreach my $item (split/;/, $org->description)
 	  {
 	    $item =~ s/^\s+//;
@@ -273,14 +277,14 @@ sub get_org_info
 	    $html .= "<a href=/CoGe/OrganismView.pl?org_desc=$item>$item</a>;"
 	  }
       }
-    $html .= "<br><a href='OrganismView.pl?oid=$oid' target=_new>OrganismView link</a><br>";
-    $html .= "Search: ";
+    $html .= "<tr><td>Link:<td><a href='OrganismView.pl?oid=$oid' target=_new>OrganismView</a>";
+    $html .= "<tr><Td>Search:<td>";
     my $search_term = $org->name;
     $html .= qq{<img onclick="window.open('http://www.ncbi.nlm.nih.gov/taxonomy?term=$search_term')" src = "picts/other/NCBI-icon.png" title="NCBI" class=link>&nbsp};
     $html .= qq{<img onclick="window.open('http://en.wikipedia.org/w/index.php?title=Special%3ASearch&search=$search_term')" src = "picts/other/wikipedia-icon.png" title="Wikipedia" class=link>&nbsp};
     $search_term =~ s/\s+/\+/g;
     $html .= qq{<img onclick="window.open('http://www.google.com/search?q=$search_term')" src="picts/other/google-icon.png" title="Google" class=link>};
-
+    $html .= "</table>";
 #    $html .= "</div>";
     return $html;
   }
