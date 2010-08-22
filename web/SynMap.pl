@@ -432,7 +432,7 @@ sub get_orgs
     $desc =~ s/^\s+//g if $desc;
     $desc =~ s/\s+$//g if $desc;
 
-    $name = "" if $name =~ /Search/; #need to clear to get full org count
+    $name = "" if $name && $name =~ /Search/; #need to clear to get full org count
     if ($oid)
       {
 	my $org = $coge->resultset("Organism")->find($oid);
@@ -492,8 +492,14 @@ sub get_dataset_group_info
     my $org = $dsg->organism;
 #    next if $USER->user_name =~ /public/i && $org->restricted;
     my $orgname = $org->name;
-    $orgname = "<a href=\"OrganismView.pl?oid=".$org->id."\" target=_new>$orgname</a>: ".$org->description if $org->description;
-    $html_dsg_info .= qq{<div><span>Organism: </span><span class="small">$orgname</small></div>};
+    $orgname = "<a href=\"OrganismView.pl?oid=".$org->id."\" target=_new>$orgname</a>";
+    my $org_desc;
+    if ($org->description)
+      {
+	$org_desc = join ("; ", map{ qq{<span class=link onclick="\$('#org_desc}.qq{$org_num').val('$_').focus();search_bar('org_desc$org_num'); timing('org_desc$org_num')">$_</span>} } split/\s*;\s*/, $org->description);
+      }
+    $html_dsg_info .= qq{<div><span>Organism: </span><span class="small">$orgname</span></div>};
+    $html_dsg_info .= qq{<div><span>Description:</span><span class="small">$org_desc</span></div>};
     $html_dsg_info .= qq{<div><span class="link" onclick=window.open('OrganismView.pl?dsgid=$dsgid')>Genome Information: </span><br>};
     my $i =0;
     my $chr_length=0;
