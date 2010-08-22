@@ -69,6 +69,7 @@ map {$org1length+=$_->{length}} values %$org1info;
 my $org2info = get_dsg_info(dsgid=>$dsgid2, chr=>$CHR2, minsize=>$min_chr_size, order=>$org2_order, metric=>$axis_metric, skip_non_ordered=>$skip_non_ordered);
 my $org2length =0;
 map {$org2length+=$_->{length}} values %$org2info;
+
 ($org1info, $org1length, $dsgid1, $org2info, $org2length, $dsgid2) = ($org2info, $org2length, $dsgid2, $org1info, $org1length, $dsgid1) if $flip;
 ($CHR1, $CHR2) = ($CHR2, $CHR1) if $flip && ($CHR1 || $CHR2);
 my $height = sprintf("%.0f", $width*$org2length/$org1length);
