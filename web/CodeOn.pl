@@ -73,18 +73,19 @@ sub gen_body
     $template->param(INITIALIZE=>1);
     $template->param(ACCN=>$form->param('accn')) if $form->param('accn');
     $template->param(ANNO=>$form->param('anno')) if $form->param('anno');
-    if ( $form->param('fid'))# || $form->param('accn') || $form->param('oid') || $form->param('anno') )
+    my @fids;
+    @fids = map{split/::/, $_} $form->param('fid');
+    my @oids;
+    @oids = map{split/::/, $_} $form->param('oid');
+    my @dsgids;
+    @dsgids = map{split/::/, $_} $form->param('dsgid');
+    
+    if (@fids || @oids || @dsgids)
       {
-	my @fids;
-	foreach my $item ($form->param('fid') || $form->param('oid'))
-	  {
-	    push @fids, split(/::/, $item);
-	  }
 	my $res = go(
 		     fids=>\@fids,
-		     #			       accn=>$form->param('accn'),
-		     #			       anno=>$form->param('anno'),
-		     org_id=>$form->param('oid'),
+		     oids=>\@oids,
+		     dsgids=>\@dsgids,
 		    );
 	$template->param(RESULTS=>$res);
       }
@@ -147,17 +148,27 @@ sub go{
   my %opts = @_;
   my $accn = $opts{accn};
   my $anno = $opts{anno};
-  my $org_id = $opts{org_id};
   my $org_name = $opts{org_name};
   my $org_desc = $opts{org_desc};
+  my $oids = $opts{oids};
   my $fids = $opts{fids};
-  my ($data, $feats) = get_features(accn=>$accn, anno=>$anno, org_id=>$org_id, org_name=>$org_name, org_desc=>$org_desc, fids=>$fids);
+  my $dsgids = $opts{dsgids};
+  my $oid = $opts{oid}; #scalar
+
+  $fids = [] unless defined $fids;
+  $oids = [] unless defined $oids;
+  $dsgids = [] unless defined $dsgids;
+  
+  push @$oids, $oid if $oid;
+
+
+  my ($data, $feats, $dsgs) = get_features(accn=>$accn, anno=>$anno, oids=>$oids, org_name=>$org_name, org_desc=>$org_desc, fids=>$fids, dsgids=>$dsgids);
   return $data unless ref ($data) =~ /hash/i;
 
   my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'CodeOn.tmpl');
   $template->param(RESULTS=>1);
   my $aa_sort = CoGe::Accessory::genetic_code->sort_aa_by_gc();
-  my $table_head = "<th>".join ("<th>", "GC% (org count)", map {$_."% (".$data->{$_}{bin_count}.")" } sort {$a<=>$b}keys %$data);
+  my $table_head = "<th>".join ("<th>", "GC% (feat count)", map {$_."% (".$data->{$_}{bin_count}.")" } sort {$a<=>$b}keys %$data);
   $template->param(GC_HEAD=>$table_head);
   my $max_aa = 0;
   my $min_aa = 100;
@@ -165,6 +176,7 @@ sub go{
     {
       next if $aa eq "*";
       my (@tmp) = map {$data->{$_}{data}{$aa}} sort {$data->{$b}{data}{$aa} <=> $data->{$a}{data}{$aa}} keys %$data;
+      next unless defined $tmp[0];
       $max_aa = $tmp[0] if $tmp[0] > $max_aa;
       $min_aa = $tmp[-1] if $tmp[-1] < $min_aa;
     }
@@ -184,9 +196,17 @@ sub go{
       push @rows, {RESULTS_ROW=>join ("\n",@row)};
     }
   my $featlistlink = "/CoGe/FeatList.pl?fid=".join ("::",keys %$feats);
+  my $dsg_info;
+  if (keys %$dsgs)
+    {
+      $dsg_info = qq{<span class=small>};
+      $dsg_info .= join ("<br>",map { qq{<span class=link onclick="window.open('OrganismView.pl?dsgid=$_')">}.$dsgs->{$_}->organism->name." (v".$dsgs->{$_}->version.qq{)</span>} } sort {$dsgs->{$a}->organism->name cmp $dsgs->{$b}->organism->name }keys %$dsgs);
+      $dsg_info .= "</span>";
+    }
   $template->param(FEAT_COUNT=>scalar(keys %$feats));
   $template->param(INFO=>\@rows);
   $template->param(FEATLISTLINK=>$featlistlink);
+  $template->param('GENOME_INFO'=>$dsg_info) if $dsg_info;
   return $template->output;
 }
 
@@ -195,45 +215,75 @@ sub get_features
     my %opts = @_;
     my $accn = $opts{accn};
     my $anno = $opts{anno};
-    my $org_id = $opts{org_id};
     my $org_name = $opts{org_name};
     my $org_desc = $opts{org_desc};
-    my $fids = $opts{fids};
+    my $fids = $opts{fids}; #array ref
+    my $oids = $opts{oids}; #array ref
+    my $dsgids = $opts{dsgids}; #array ref
+
+    $fids = [] unless defined $fids;
+    $oids = [] unless defined $oids;
+    $dsgids = [] unless defined $dsgids;
+
+
+
     $org_name = undef if $org_name && $org_name =~ /search/i;
     $org_desc = undef if $org_desc && $org_desc =~ /search/i;
-   my $weak_query = "Query needs to be better defined.";
-    if (!$accn && !$anno && !$fids)
+    my $weak_query = "Query needs to be better defined.";
+    if (!$accn && !$anno && !$fids && !$org_name && !$org_desc && !$oids && !$dsgids)
       {
-        return $weak_query unless $org_id;
+        return $weak_query;
       }
     ($USER) = CoGe::Accessory::LogUser->get_user();
 
     my $search ={};
     $search->{feature_type_id}=3;
     $search->{"organism.restricted"}=0 if $USER->name =~ /public/i;
-    $search->{'dataset_group.organism_id'}=$org_id if $org_id;
-    unless ($org_id)
-      {
+    $search->{'dataset_group.organism_id'}={IN=>$oids} if $oids && @$oids;
+#    unless ($org_id)
+#      {
 	$search->{'organism.name'}={like=>"%".$org_name."%"} if $org_name;
 	$search->{'organism.description'}={like=>"%".$org_desc."%"} if $org_desc;
-      }
+#      }
     my $join = {join=>[{feature=>{'dataset'=>{'dataset_connectors'=>{'dataset_group'=>'organism'}}}}]};
 #    push @{$join->{join}}, 'annotations' if $anno;#=>['annotation',]};
 #    push @{$join->{join}}, 'feature_names' if $accn;#=>['annotation',]};
 
 
     my %feats;
+    my %orgs;
+    my %dsgs;
+
     if ($fids)
       {
 	foreach my $fid (@$fids)
 	  {
-	    next unless $fid;
-	    my $feat = $coge->resultset('Feature')->find($fid);
-	    next unless $feat;
-	    next unless $feat->feature_type_id == 3;
-	    $feats{$feat->id} = $feat;
+	    next unless $fid && $fid =~ /^\d+$/;
+	    $feats{$fid}=1;
+#	    my $feat = $coge->resultset('Feature')->find($fid);
+#	    next unless $feat;
+#	    next unless $feat->feature_type_id == 3;
+#	    $feats{$feat->id} = $feat;
 	  }
       }
+    if ($oids)
+      {
+	foreach my $oid (@$oids)
+	  {
+	    next unless $oid && $oid =~ /^\d+$/;
+	    $orgs{$oid}=1;
+	  }
+      }
+    if ($dsgids)
+      {
+	foreach my $dsgid (@$dsgids)
+	  {
+	    next unless $dsgid && $dsgid =~ /^\d+$/;
+	    $dsgs{$dsgid}=1;
+	  }
+      }
+
+
     if($accn)
       {
         map {$feats{$_->feature->id}= $_->feature} $coge->resultset('FeatureName')->search($search,$join)->search_literal('MATCH(me.name) AGAINST (?)',$accn);
@@ -242,32 +292,39 @@ sub get_features
       {
 	map {$feats{$_->feature->id}= $_->feature} $coge->resultset('Annotation')->search($search,$join)->search_literal('MATCH(annotation) AGAINST (?)',$anno);
       }
-    unless ($accn || $anno)
-      { #org only
-	my @org_ids;
-	$org_id = "all" unless $org_id;
-	if ($org_id eq "all")
+
+    if ($oids && @$oids && $oids->[0] eq "all")
+      {
+	my ($otype, $search) = ("name", $org_name) if $org_name && $org_name ne "Search";
+	($otype, $search) = ("desc", $org_desc) if $org_desc && $org_desc ne "Search";
+	my @org_ids = get_orgs(id_only=>1, type=>$otype, search=>$search);
+	map {$orgs{$_}=1} @org_ids;
+      }
+
+    foreach my $oid (keys %orgs)
+      {
+	my $org = $coge->resultset('Organism')->find($oid);
+	next unless $org;
+	foreach my $dsg ($org->dataset_groups)
 	  {
-	    my ($otype, $search) = ("name", $org_name) if $org_name && $org_name ne "Search";
-	    ($otype, $search) = ("desc", $org_desc) if $org_desc && $org_desc ne "Search";
-	    @org_ids = get_orgs(id_only=>1, type=>$otype, search=>$search);
+	    $dsgs{$dsg->id}=$dsg;
 	  }
-	else
+      }
+    
+    foreach my $dsgid (keys %dsgs)
+      {
+	my $dsg = $dsgs{$dsgid} eq "1" ? $coge->resultset('DatasetGroup')->find($dsgid) : $dsgs{$dsgid};
+	next unless $dsg;
+	$dsgs{$dsgid}=$dsg;
+	foreach my $ds($dsg->datasets)
 	  {
-	    push @org_ids, $org_id;
+	    map{$feats{$_->id}=$_} $ds->features({feature_type_id=>3});
 	  }
-	foreach my $oid (@org_ids)
-	  {
-	    my $org = $coge->resultset('Organism')->find($oid);
-	    next unless $org;
-	    foreach my $dsg ($org->dataset_groups)
-	      {
-		foreach my $ds ($dsg->datasets)
-		  {
-		    map{$feats{$_->id}=$_} $ds->features({feature_type_id=>3});
-		  }
-	      }
-	  }
+      }
+
+    foreach my $fid (keys %feats)
+      {
+	$feats{$fid} = $coge->resultset('Feature')->find($fid) if $feats{$fid} eq "1";
       }
 
     my %data;
@@ -320,8 +377,8 @@ sub get_features
 	map {$hash->{$_}=$hash->{$_}/$total} keys %$hash;
 	map {$total+=$hash->{$_}} keys %$hash;
       }
-  
-    return \%return_data, \%feats;
+    
+    return \%return_data, \%feats, \%dsgs;
   }
 
 sub commify
