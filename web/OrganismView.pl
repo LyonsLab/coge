@@ -274,7 +274,7 @@ sub get_org_info
 	  {
 	    $item =~ s/^\s+//;
 	    $item =~ s/\s+$//;
-	    $html .= "<a href=/CoGe/OrganismView.pl?org_desc=$item>$item</a>;"
+	    $html .= "<a href=OrganismView.pl?org_desc=$item>$item</a>;"
 	  }
       }
     $html .= "<tr><td>Links:<td><a href='OrganismView.pl?oid=$oid' target=_new>OrganismView</a>&nbsp<a href='CodeOn.pl?oid=$oid' target=_new>CodeOn</a>";
