@@ -116,7 +116,7 @@ sub update_featlist
 sub parse_for_FeatList
   {
 	my $featlist = shift;
-	my $url = "/CoGe/FeatList.pl?";
+	my $url = "FeatList.pl?";
 	foreach my $featid (split /,/,$featlist)
 	{
 		next unless $featid;
