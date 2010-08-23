@@ -1395,7 +1395,7 @@ my $dbh = DBI->connect("dbi:SQLite:dbname=$db","","");
     print "#",join ("\t", map{$_->organism->name} $qdsg, sort {$a->organism->name cmp $b->organism->name} @dsgs). "\tGEvo link","\n";
     foreach my $id (sort keys %data)
       {
-	my $link = "http://genomevolution.org/CoGe/GEvo.pl?";
+	my $link = $P->{server}."GEvo.pl?";
 	my @data = ([[0,$id, "S",100000]], map{$data{$id}{$_->id}} sort {$a->organism->name cmp $b->organism->name} @dsgs);
 	my @names;
 	my $count =1;
