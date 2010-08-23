@@ -2145,7 +2145,7 @@ sub get_obj_from_genome_db
 	print STDERR $name,"\n" if $DEBUG;
 	print STDERR "\t", $f->genbank_location_string(),"\n" if $DEBUG;
 	print STDERR "\t", $f->genbank_location_string(recalibrate=>$start),"\n\n" if $DEBUG;
-	my $anno = "http://$ENV{SERVER_NAME}/CoGe/FeatAnno.pl?fid=".$f->id.";gstid=".$gstid;
+	my $anno = $P->{SERVER}."FeatAnno.pl?fid=".$f->id.";gstid=".$gstid;
 	my $location = $f->genbank_location_string(recalibrate=>$start);
 	$location = $obj->reverse_genbank_location(loc=>$location, ) if $rev;
 	print STDERR $name, "\t",$f->type->name ,"\t",$location,"\n" if $DEBUG;
@@ -3777,7 +3777,7 @@ sub email_results {
 	my %opts = @_;
 	my $email_address = $opts{email};
 	my $basefilename = $opts{basefile};
-	my $server = $ENV{HTTP_HOST};
+	my $server = $P->{SERVER};
 	my $full_gevo_url = $opts{full_gevo_url};
 	return unless $email_address =~/^[_a-zA-Z0-9-]+(\.[_a-zA-Z0-9-]+)*@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*\.(([0-9]{1,3})|([a-zA-Z]{2,3})|(aero|coop|info|museum|name))$/;
 	my $mailer = Mail::Mailer->new("sendmail");
@@ -3791,7 +3791,7 @@ sub email_results {
 	my $body = qq{Dear $name,
 
 Thank you for using the Genome Evolution Analysis Tool! The results from your latest analysis are ready, and can be viewed here:
-http://}.$server.qq{/CoGe/GEvo_direct.pl?name=$basefilename
+http://}.$server.qq{/GEvo_direct.pl?name=$basefilename
 			
 To contact us or to cite CoGe please visit:
 http://genomevolution.org/wiki/index.php/Contact_Page
