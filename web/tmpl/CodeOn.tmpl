@@ -102,7 +102,7 @@ function search_bar(div_id){
 
 function run_mama () {
 $('#results').html('<img src=./picts/animations/DNA_orbit_animated_small_third.gif >');
- go(['args__accn','accn', 'args__anno','annosearch', 'args__org_id','org_id', 'args__org_name','org_name','args__org_desc','org_desc'],['results']);
+ go(['args__accn','accn', 'args__anno','annosearch', 'args__oid','org_id', 'args__org_name','org_name','args__org_desc','org_desc'],['results']);
 }
 
 
@@ -150,4 +150,5 @@ $('#results').html('<img src=./picts/animations/DNA_orbit_animated_small_third.g
    </TMPL_LOOP>
   </tbody>
  </TABLE>
+ <TMPL_VAR NAME=GENOME_INFO>
 </TMPL_IF>
