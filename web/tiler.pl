@@ -10,7 +10,9 @@ use CoGe::Accessory::Web;
 $ENV{'PATH'} = '';
 use vars qw($P $IMGURL $BASEDIR);
 $P = CoGe::Accessory::Web::get_defaults();
-$IMGURL = 'http://'.$ENV{SERVER_NAME}.'/CoGe/GenomePNG.pl?';
+my ($path) = $ENV{SCRIPT_NAME} =~ /^(.*?)[^\/]*$/;
+
+$IMGURL = 'http://'.$ENV{SERVER_NAME}.$path.'GenomePNG.pl?';
 # where to start the caching
 $BASEDIR = $P->{IMAGE_CACHE};
 if (! -e $BASEDIR ){ mkdir($BASEDIR);  }
