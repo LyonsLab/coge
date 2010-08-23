@@ -2626,7 +2626,7 @@ sub get_pair_info
 	    next;
 	  }
 	my $feat = $coge->resultset('Feature')->find($fid);
-	my $anno = "Name: ".join (", ",map {"<a class=\"data link\" href=\"/CoGe/FeatView.pl?accn=".$_."\" target=_new>".$_."</a>"} $feat->names);
+	my $anno = "Name: ".join (", ",map {"<a class=\"data link\" href=\"FeatView.pl?accn=".$_."\" target=_new>".$_."</a>"} $feat->names);
 	my $location = "Chr ".$feat->chromosome." ";
 	$location .= commify($feat->start)." - ".commify($feat->stop);
 #	$location .=" (".$feat->strand.")";
@@ -2662,9 +2662,9 @@ sub email_results {
     
     ($file) = $file =~/SynMap\/(.+\.data)/;
     
-	my $server = $ENV{HTTP_HOST};
+	my $server = $ENV{SERVER_NAME}.$ENV{SCRIPT_NAME};
 	
-	my $url = "http://".$server."/CoGe/SynMap.pl?file=".$file;
+	my $url = "http://".$server."?file=".$file;
 	
 	my $mailer = Mail::Mailer->new("sendmail");
 	$mailer->open({From	=> 'CoGE <coge_results@genomevolution.org>',
