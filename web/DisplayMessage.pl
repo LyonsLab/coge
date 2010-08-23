@@ -2,16 +2,18 @@
 
 use strict;
 use CGI;
-
+use CoGe::Accessory::Web;
 
 my $FORM = new CGI;
+my $P = CoGe::Accessory::Web::get_defaults();
+my $server = $P->{SERVER};
 
 my $text = $FORM->param('text');
 $text = qq{<div style="
   float: left;
   width: 300px;
   height: 182px;
-  background-image: url(/CoGe/picts/animations/DNA_orbit_animated_small-side.gif);
+  background-image: url($server/picts/animations/DNA_orbit_animated_small-side.gif);
 ">
 <span style="
   font-style: oblique;
