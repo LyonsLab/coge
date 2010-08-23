@@ -195,7 +195,7 @@ sub go{
 	}
       push @rows, {RESULTS_ROW=>join ("\n",@row)};
     }
-  my $featlistlink = "/CoGe/FeatList.pl?fid=".join ("::",keys %$feats);
+  my $featlistlink = "FeatList.pl?fid=".join ("::",keys %$feats);
   my $dsg_info;
   if (keys %$dsgs)
     {
