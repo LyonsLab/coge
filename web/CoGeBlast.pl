@@ -1504,7 +1504,7 @@ sub overlap_feats_parse #Send to GEvo
     $accn_list =~ s/,$//;
     my @list;
      my @no_feats;
-    my $url = "/CoGe/GEvo.pl?";
+    my $url = "GEvo.pl?";
     my ($chr,$dsgid,$loc);
     my $count = 1;
     foreach my $featid (split /,/,$accn_list)
@@ -1906,7 +1906,7 @@ sub export_to_excel
 	 $worksheet->write($i,6,$eval);
 	 $worksheet->write($i,7,$pid);
 	 $worksheet->write($i,8,$score);
-	  $worksheet->write($i,9,"http://genomevolution.org/CoGe/FeatView.pl?accn=$name",$name);
+	  $worksheet->write($i,9,$P->{SERVER}."FeatView.pl?accn=$name",$name);
 	  $worksheet->write($i,10,$distance);
 	}
    	 
