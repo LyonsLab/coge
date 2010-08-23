@@ -309,7 +309,7 @@ sub generate_feat_info
     {
       return "Unable to retrieve Feature object for id: $featid";
     }
-    my $html = qq{<a href="#check_$featid" onClick="\$('#feat_info').slideToggle(pageObj.speed);" style="float: right;"><img src='/CoGe/picts/delete.png' width='16' height='16' border='0'></a>};
+    my $html = qq{<a href="#check_$featid" onClick="\$('#feat_info').slideToggle(pageObj.speed);" style="float: right;"><img src='picts/delete.png' width='16' height='16' border='0'></a>};
     $html .= $feat->annotation_pretty_print_html();
     return $html;
   }
