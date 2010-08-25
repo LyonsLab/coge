@@ -176,29 +176,28 @@ sub gen_body
 sub add_to_user_history
   {
     my %opts = @_;
-    my $url = $ENV{'REQUEST_URI'};
+    my $url_params = $ENV{'QUERY_STRING'};
     if ($opts{archive})
       {
 	$USER->add_to_works({
 			     'name'=>$opts{work_name},
 			     'archive'=>$opts{archive},
-	    'page'=>$PAGE_NAME,
-	    'parameter'=>$url,
-	    'description'=>$opts{description},
-	    'note'=>$opts{note},
-	    }); 
+			     'page'=>$PAGE_NAME,
+			     'parameter'=>$PAGE_NAME."?".$url_params,
+			     'description'=>$opts{description},
+			     'note'=>$opts{note},
+			    }); 
       }
-    else{
-      
-      $USER->add_to_works({
-			   'name'=>'FeatList-'.$DATE,
-			   'archive'=>0,
-			   'page'=>$PAGE_NAME,
-			   'parameter'=>$url,
-			   'description'=>'Feature List created on '.$DATE,
-			  });
-      
-    }
+    else
+      {
+	$USER->add_to_works({
+			     'name'=>'FeatList-'.$DATE,
+			     'archive'=>0,
+			     'page'=>$PAGE_NAME,
+			     'parameter'=>$PAGE_NAME."?".$url_params,
+			     'description'=>'Feature List created on '.$DATE,
+			    });
+      }
   }
 
 sub get_fids
