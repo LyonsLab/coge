@@ -98,7 +98,7 @@ sub gen_body
     if ($url)
      {
         $url =~ s/:::/;/g if $url;
-        $url = $URL.$url unless $url =~ /$URL/;
+#        $url = $URL.$url unless $url =~ /$URL/;
         $tmpl->param(url=>$url);
      }
     if ($FORM->param('logout'))
