@@ -1903,7 +1903,7 @@ sub generate_dotplot
       }
     if (-r "$outfile.png" && !$regen_images)
       {
-CoGe::Accessory::Web::write_log("generate dotplot: file $outfile already exists",$cogeweb->logfile);
+	CoGe::Accessory::Web::write_log("generate dotplot: file $outfile already exists",$cogeweb->logfile);
 	return $outfile;
       }
     system "touch $outfile.running"; #track that a blast anlaysis is running for this
@@ -2178,6 +2178,7 @@ CoGe::Accessory::Web::write_log("WARNING:  sub run_adjust_dagchainer_evals faile
     my $run_dagchainer_time = timestr(timediff($t4,$t3_5));
     my ($find_nearby_time, $gen_ks_db_time, $dotplot_time, $add_gevo_links_time);
     my $final_results_files;
+    my $tiny_link;
     if (-r $dagchainer_file)
       {
 
@@ -2412,7 +2413,7 @@ CoGe::Accessory::Web::write_log("WARNING:  sub run_adjust_dagchainer_evals faile
 	    $html .= "<br>".qq{<span class="small link" id="" onClick="window.open('bin/SynMap/order_contigs_to_chromosome.pl?f=$dagchainer_file');" >Generate Assembled Genomic Sequence</span>} if $assemble;
 	    $html .= qq{</table>};
 	   CoGe::Accessory::Web::write_log("\nLink to regenerate analysis: $synmap_link", $cogeweb->logfile);
-	    my $tiny_link = get_tiny_link(url=>$synmap_link);
+	    $tiny_link = get_tiny_link(url=>$synmap_link);
 	    $html .= "<a href='$tiny_link' class='ui-button ui-corner-all' target=_new_synmap>Regenerate this analysis: $tiny_link</a>";
 	    if ($grimm_stuff)
 	      {
@@ -2449,7 +2450,7 @@ CoGe::Accessory::Web::write_log("WARNING:  sub run_adjust_dagchainer_evals faile
  <span class=alert>There was a problem running your analysis.  Please check the log file for details.</span><br>
  	  };
        }
-    email_results(email=>$email,html=>$html,org1=>$org_name1,org2=>$org_name2, jobtitle=>$job_title, link=>$synmap_link) if $email;
+    email_results(email=>$email,html=>$html,org1=>$org_name1,org2=>$org_name2, jobtitle=>$job_title, link=>$tiny_link) if $email;
     my $benchmarks = qq{
 
 $org_name1 versus $org_name2
@@ -2647,27 +2648,27 @@ sub check_address_validity {
 sub email_results {
 	my %opts = @_;
 	my $email_address = $opts{email};
-	my $html = $opts{html};
+#	my $html = $opts{html};
 	my $org_name1 = $opts{org1};
 	my $org_name2 = $opts{org2};
 	my $job_title = $opts{jobtitle};
-
+	my $link = $opts{link};
 	my $file = $cogeweb->basefile."_results.data";
-    open(NEW,"> $file") || die "Cannot Save $!\n";
-    print NEW $html;
-    close NEW;
+#    open(NEW,"> $file") || die "Cannot Save $!\n";
+#    print NEW $html;
+#    close NEW;
     
-    my $subject = "SynMap Results";
-    $subject .= ": $job_title" if $job_title;
+	my $subject = "CoGe's SynMap Results are ready";
+	$subject .= ": $job_title" if $job_title;
     
-    ($file) = $file =~/SynMap\/(.+\.data)/;
+#    ($file) = $file =~/SynMap\/(.+\.data)/;
     
-	my $server = $ENV{SERVER_NAME}.$ENV{SCRIPT_NAME};
+	my $server = $P.$ENV{SCRIPT_NAME};
 	
 	my $url = "http://".$server."?file=".$file;
 	
 	my $mailer = Mail::Mailer->new("sendmail");
-	$mailer->open({From	=> 'CoGE <coge_results@genomevolution.org>',
+	$mailer->open({From	=> 'CoGe <coge_results@genomevolution.org>',
 		       To	=> $email_address,
 		       Subject	=> $subject,
 		      })
@@ -2677,9 +2678,9 @@ sub email_results {
     $username .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
 	my $body = qq{Dear $username,
 		
-Thank you for using SynMap! The results from your latest analysis between $org_name1 and $org_name2 are ready, and can be viewed here:
+Thank you for using SynMap! The results from your latest analysis between $org_name1 and $org_name2 are ready.  To view your results, follow this link and press "Generate SynMap":
 	
-$url
+$link
 
 Thank you for using the CoGe Software Package.
 	
@@ -2693,7 +2694,7 @@ Thank you for using the CoGe Software Package.
 sub get_dotplot
   {
     my %opts = @_;
-    my $src = $opts{src};
+    my $url = $opts{url};
     my $loc = $opts{loc};
     my $flip = $opts{flip} eq "true" ? 1 : 0;
     my $regen = $opts{regen_images} eq "true" ? 1 : 0;
@@ -2707,21 +2708,21 @@ sub get_dotplot
     my $box_diags = $opts{bd};
     $box_diags = $box_diags eq "true" ? 1 : 0;
 # base=8_8.CDS-CDS.blastn.dag_geneorder_D60_g30_A5;
-    
-    $src .= ";flip=$flip" if $flip;
-    $src .= ";regen=$regen" if $regen;
-    $src .= ";width=$width" if $width;
-    $src .= ";ksdb=$ksdb" if $ksdb;
-    $src .= ";kstype=$kstype" if $kstype;
-    $src .=  ";log=1" if $kstype;
-    $src .=  ";min=$min" if defined $min;
-    $src .=  ";max=$max" if defined $max;
-    $src .=  ";am=$metric" if defined $metric;
-    $src .=  ";ct=$color_type" if $color_type;
-    $src .= ";bd=$box_diags" if $box_diags;
-    my $content = get("http://".$ENV{SERVER_NAME}."/".$src);
-    
-    my ($url) = $content =~ /url=(.*?)"/is;
+
+    $url = $P->{SERVER}."run_dotplot.pl?".$url;
+    $url .= ";flip=$flip" if $flip;
+    $url .= ";regen=$regen" if $regen;
+    $url .= ";width=$width" if $width;
+    $url .= ";ksdb=$ksdb" if $ksdb;
+    $url .= ";kstype=$kstype" if $kstype;
+    $url .=  ";log=1" if $kstype;
+    $url .=  ";min=$min" if defined $min;
+    $url .=  ";max=$max" if defined $max;
+    $url .=  ";am=$metric" if defined $metric;
+    $url .=  ";ct=$color_type" if $color_type;
+    $url .= ";bd=$box_diags" if $box_diags;
+    my $content = get($url);
+    ($url) = $content =~ /url=(.*?)"/is;
     my $png = $url;
     $png =~ s/html$/png/;
     $png =~ s/$URL/$DIR/;
