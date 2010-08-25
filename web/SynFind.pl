@@ -897,7 +897,7 @@ sub get_tiny_link
     $url =~ s/:::/__/g;
     unless ($url =~ /http/)
       {
-	my $server = $ENV{SERVER_NAME};
+	my $server = $P->{SERVER};
 	$url = "http://".$server."/$URL/".$url;
       }
     my $html;
