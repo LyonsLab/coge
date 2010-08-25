@@ -4,13 +4,15 @@ use strict;
 use GD;
 use Getopt::Long;
 use CoGeX;
+use CoGe::Accessory::Web;
 use DBI;
 use Data::Dumper;
 use DBI;
 use POSIX;
 
-use vars qw($dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ks_db $ks_type $log $MAX $MIN $assemble $axis_metric $color_type $box_diags $fid1 $fid2 $selfself);
+use vars qw($P $dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ks_db $ks_type $log $MAX $MIN $assemble $axis_metric $color_type $box_diags $fid1 $fid2 $selfself);
 
+$P = CoGe::Accessory::Web::get_defaults();
 
 GetOptions(
 	   "dagfile|d=s"=>\$dagfile, #all dots
@@ -51,7 +53,7 @@ usage() unless -r $dagfile;
 $ks_type = "kS" unless $ks_type;
 $ks_type = uc($ks_type) if $ks_type;
 
-my $ks_hist = "/opt/apache/CoGe/bin/ks_histogram.pl";
+my $ks_hist = $P->{KS_HISTOGRAM};
 
 $basename = "test" unless $basename;
 $width = 1024 unless $width;
