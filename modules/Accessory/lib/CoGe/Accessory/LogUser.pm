@@ -38,7 +38,7 @@ sub gen_cookie
     my $session = $opts{session} || 0;
     my $exp = $opts{exp} || "+12M";
     my %params = (-name=>$cookie_name,
-		 -path=>"/CoGe");
+		 -path=>"/");
 
     $params{-expires} = $exp if $exp;
     $params{-values}={session=>$session} if $session;
