@@ -8,32 +8,32 @@
 <meta name="google-site-verification"
 content="LFIw-oo_UpW85cg_ONvoPuH1IpWYjlfmipsWhOvo1kk" />
 <TMPL_UNLESS NAME="NO_JQUERY">
-<link rel="stylesheet" type="text/css" href="/CoGe/css/superfish.css" />
+<link rel="stylesheet" type="text/css" href="css/superfish.css" />
 
 
 <!-- This is the implementation of jquery into the header of all CoGe pages -->
- <SCRIPT language="JavaScript" type="text/javascript" src="/CoGe/js/jquery-1.3.2.min.js"></SCRIPT>
+ <SCRIPT language="JavaScript" type="text/javascript" src="js/jquery-1.3.2.min.js"></SCRIPT>
 
 <!-- Implementation of jQuery UI, first line javascript, second for css  -->
-<SCRIPT language="JavaScript" type="text/javascript" src="/CoGe/js/jquery-ui-1.7.2.custom.min.js"></SCRIPT>
+<SCRIPT language="JavaScript" type="text/javascript" src="js/jquery-ui-1.7.2.custom.min.js"></SCRIPT>
 
-<link rel="stylesheet" type="text/css" href="/CoGe/css/jquery-ui-1.7.2.custom.css" />
-<link rel="stylesheet" type="text/css" href="/CoGe/css/jquery-ui-coge-supplement.css" />
+<link rel="stylesheet" type="text/css" href="css/jquery-ui-1.7.2.custom.css" />
+<link rel="stylesheet" type="text/css" href="css/jquery-ui-coge-supplement.css" />
 
- <SCRIPT language="JavaScript" type="text/javascript" src="/CoGe/js/jquery.cookie.js"></SCRIPT>
-<SCRIPT language="JavaScript" type="text/javascript" src="/CoGe/js/superfish.js"></SCRIPT>
+ <SCRIPT language="JavaScript" type="text/javascript" src="js/jquery.cookie.js"></SCRIPT>
+<SCRIPT language="JavaScript" type="text/javascript" src="js/superfish.js"></SCRIPT>
 <!-- The following javascript file is an addon for superfish - it is beta, so beware for bugs and updates -->
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/supersubs.js"></SCRIPT>
-<SCRIPT language="JavaScript" type="text/javascript" src="/CoGe/js/hoverIntent.js"></SCRIPT>
+<SCRIPT language="JavaScript" type="text/javascript" src="js/hoverIntent.js"></SCRIPT>
 
 </TMPL_UNLESS>
-<link rel="stylesheet" type="text/css" href="/CoGe/css/styled.css" />
+<link rel="stylesheet" type="text/css" href="css/styled.css" />
 
 
  <TMPL_VAR NAME=HEAD>
 
  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
- <link rel="shortcut icon" href="/CoGe/picts/urlicon/favicon.ico">
+ <link rel="shortcut icon" href="picts/urlicon/favicon.ico">
 </HEAD>
 
 <BODY <TMPL_VAR NAME="BODY_ONLOAD">>
@@ -101,7 +101,7 @@ function sign_in(){
 	my_url = my_url.replace(/http.+CoGe\//,"");
 	my_url = my_url.replace(/#$/,"");
 	my_url = my_url.replace(/;/g,":::");
-	window.location = "/CoGe/index.pl?login=1"+my_url;
+	window.location = "index.pl?login=1"+my_url;
 }
 	
 function animate_section(name, style, speedy, show) {
@@ -191,17 +191,17 @@ $(document).ready( function() {
   <div style="float:right"><!-- open A -->
     <div style="float:right;margin-right: 73px;">
 	<ul class="sf-menu" >
-	 <li><a id=home href="/CoGe/" target="_self">Home</a></li>
+	 <li><a id=home href="" target="_self">Home</a></li>
 	 <li><a href='javascript:void(0)'>Applications</a>
 	  <ul>
-	  <li><a href="/CoGe/OrganismView.pl" target="_self">OrganismView</a></li>
-	  <li><a href="/CoGe/CoGeBlast.pl" target="_self">CoGeBlast</a></li>
-	  <li><a href="/CoGe/FeatView.pl" target="_self">FeatView</a></li>
-	  <li><a href="/CoGe/SynMap.pl" target="_self">SynMap</a></li>
-	  <li><a href="/CoGe/GEvo.pl" target="_self">GEvo</a></li>
+	  <li><a href="OrganismView.pl" target="_self">OrganismView</a></li>
+	  <li><a href="CoGeBlast.pl" target="_self">CoGeBlast</a></li>
+	  <li><a href="FeatView.pl" target="_self">FeatView</a></li>
+	  <li><a href="SynMap.pl" target="_self">SynMap</a></li>
+	  <li><a href="GEvo.pl" target="_self">GEvo</a></li>
 
-<!--	  <li><a href="/CoGe/MSAView.pl" target="_self">MSAView</a></li>
-	  <li><a href="/CoGe/TreeView.pl" target="_self">TreeView</a></li>-->
+<!--	  <li><a href="MSAView.pl" target="_self">MSAView</a></li>
+	  <li><a href="TreeView.pl" target="_self">TreeView</a></li>-->
       </ul>
 	</li>
 	<li><a href='javascript:void(0)'>Downloads</a>
@@ -212,7 +212,7 @@ $(document).ready( function() {
 	 </ul>
 	</li>	<li><a href='javascript:void(0)'>Preferences</a>
 	 <ul>
-	   <li><a href="/CoGe/UserPage.pl" target="_self">User Profile</a></li>
+	   <li><a href="UserPage.pl" target="_self">User Profile</a></li>
 <!--	  <li><a href="javascript:void(0)" target="_self">Animation</a>
 	    <ul class="animations">
 	      <li><a href="javascript:void(0)" target="_self" onClick="define_animation_speed(0)">Off</a></li>
@@ -238,7 +238,7 @@ $(document).ready( function() {
 </div><!-- CLOSE A -->
 </TMPL_UNLESS>
 
-<div><TMPL_IF NAME=LOGO_PNG><img style="vertical-align: bottom;" onclick="window.open('<TMPL_VAR NAME=HELP>')" src='/CoGe/picts/<TMPL_VAR NAME=LOGO_PNG>' border=0></TMPL_IF>
+<div><TMPL_IF NAME=LOGO_PNG><img style="vertical-align: bottom;" onclick="window.open('<TMPL_VAR NAME=HELP>')" src='picts/<TMPL_VAR NAME=LOGO_PNG>' border=0></TMPL_IF>
       <span style="vertical-align: bottom; font-size: 1.5em")><TMPL_VAR NAME=TITLE></span>
 </div>
       <TMPL_IF NAME=DEV><br><span class=alert>WARNING: THIS IS A DEVELOPMENT SERVER</span><br>Software may not work, system may be down, etc.<br>Please use <a href="http://genomevolution.org/CoGe"> our production server: genomevolution.org/CoGe</a></TMPL_IF>
