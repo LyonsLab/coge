@@ -27,7 +27,7 @@ use Benchmark qw(:all);
 use Parallel::ForkManager;
 
 
-use vars qw($P $PAGE_NAME $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $FORMATDB $BLAST $TBLASTN $BLASTN $BLASTZ $FORM $USER $DATE $coge $cogeweb $RESULTSLIMIT $MAX_PROC $connstr);
+use vars qw($P $PAGE_NAME $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $FORMATDB $BLAST $TBLASTN $BLASTN $MEGABLAST $DCMEGABLAST $BLASTZ $FORM $USER $DATE $coge $cogeweb $RESULTSLIMIT $MAX_PROC $connstr);
 
 $P = CoGe::Accessory::Web::get_defaults();
 $ENV{PATH} = $P->{COGEDIR};
@@ -47,7 +47,9 @@ $MAX_PROC=$P->{MAX_PROC};
 $BLAST = $P->{BLAST}." -a $MAX_PROC";
 
 $TBLASTN = $P->{TBLASTN}. " -num_threads $MAX_PROC";
-$BLASTN = $P->{BLASTN}. " -num_threads $MAX_PROC -task dc-megablast";
+$BLASTN = $P->{BLASTN}. " -num_threads $MAX_PROC -task blastn";
+$DCMEGABLAST = $P->{BLASTN}. " -num_threads $MAX_PROC -task dc-megablast";
+$MEGABLAST = $P->{BLASTN}. " -num_threads $MAX_PROC -task megablast";
 
 $BLASTZ = $P->{LASTZ};
 $RESULTSLIMIT=100;
