@@ -276,7 +276,7 @@ function get_params(){
  var program = $('#'+radio).val();
  
  var gapcost;
- if (program == "blastn")
+ if (program == "blastn" || program == 'mega' || program == 'dcmega')
   { 
     var num1 = match_mismatch.substr(0,1);
     var num2 = match_mismatch.substr(2);
@@ -663,7 +663,7 @@ function blast_param_on_select(which_type,val) {
  $('#blast_parameters').hide();
  $('#blastz_parameters').hide();
 
- if (program == 'blastz')
+ if (program == 'lastz')
   {
   $('#blastz_parameters').toggle();
   }
@@ -680,7 +680,14 @@ function blast_param_on_select(which_type,val) {
   }
   else {
    blast_param(['args__version','args__'+which_type],[animate_params]);
-   $('#word_size').val(8);
+    if (program == "dcmega")
+     {
+      $('#word_size').val(11);
+     }
+    else
+     {
+      $('#word_size').val(8);
+     }
   }
  }
 }
@@ -842,7 +849,7 @@ window.open('/CoGe/MatrixView.pl?matrix='+matrix);
   	var blast_program = log.match(/-p\s(\w+)\s/);
 	if (!blast_program)
 	  {
-	    blast_program = log.match(/(blastz)/);
+	    blast_program = log.match(/(lastz)/);
 	  }
   	blast="Running blast algorithm . . . <br/>";
   	
@@ -881,11 +888,6 @@ window.open('/CoGe/MatrixView.pl?matrix='+matrix);
   if (results) message = results;
   if (done) message += done;
   
-/*  if (!pageObj.finished && pageObj.nolog<8) {
-  setTimeout("read_log(['args__logfile', 'args__'+pageObj.basename, 'args__prog','args__CoGeBlast'], [monitor_log])",1000);
-  }
-*/
-//  if (ajax.length) {setTimeout("read_log(['args__logfile', 'args__'+pageObj.basename, 'args__prog','args__GEvo'], [monitor_log])",1000);}
   if (!pageObj.finished && pageObj.nolog<8)
   {
     var waittime = pageObj.waittime;
@@ -893,12 +895,6 @@ window.open('/CoGe/MatrixView.pl?matrix='+matrix);
     message+="<br/>Next progress check in "+waittime/1000+" seconds.";
     setTimeout("read_log(['args__logfile', 'args__'+pageObj.basename, 'args__prog','args__CoGeBlast'], [monitor_log])",waittime);
   }
-/*
-  else
-  {
-   message = "There has been no update on your results during the first "+pageObj.waittime/1000+ "seconds of your analysis.  An error may have occured.  You can check your logfile at <a href='tmp/GEvo/"+pageObj.basename+".log' target=_new>this link</a> which may help you determin what went wrong, or send it to CoGe's adminstrator for debugging.  In the meanwhile, we suggest that you either wait a bit longer to see if the analsysi completes, and if not rerun your analysis.  If you have submitting very large regions for anlaysis (e.g. several megabases), please try a smaller region for analsyis.";
-  }
-  */
   if (message) $('#log_text').html("<div class='small'>"+message+'</div>');
 }
 
@@ -1552,7 +1548,9 @@ $(function() {
             <optgroup label="--- Select BLAST Type ---">
             <option value = "blastn"> blastn
             <option value = "tblastx"> tblastx
-            <option value = "blastz"> blastz
+            <option value = "lastz"> (b)lastz
+            <option value = "mega"> megablast
+            <option value = "dcmega"> discontinuous megablast
            </optgroup>
            </select>
            <br>
