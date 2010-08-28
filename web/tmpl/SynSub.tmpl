@@ -1,0 +1,12 @@
+<table class='ui-widget ui-corner-all ui-widget-content small'>
+<tr><th align=left>Organism Name:<th class=link onclick="window.open('OrganismView.pl?dsgid=<TMPL_VAR NAME=DSGID1>')"><TMPL_VAR NAME=ORG1_NAME><th class=link onclick="window.open('OrganismView.pl?dsgid=<TMPL_VAR NAME=DSGID2>')"><TMPL_VAR NAME=ORG2_NAME>
+<tr><th align=left>Genome Length:<td align=right><TMPL_VAR NAME=ORG1_LENGTH><td align=right><TMPL_VAR NAME=ORG2_LENGTH>
+<tr><th align=left>Genome GC content:<td align=right><TMPL_VAR NAME=ORG1_GC>%<td align=right><TMPL_VAR NAME=ORG2_GC>%
+<tr><th align=left>CDS GC content:<td align=right><TMPL_VAR NAME=ORG1_GC_CDS>%<td align=right><TMPL_VAR NAME=ORG2_GC_CDS>%
+<tr><th align=left>Wobble GC content:<td align=right><TMPL_VAR NAME=ORG1_GC_WOBBLE>%<td align=right><TMPL_VAR NAME=ORG2_GC_WOBBLE>%
+<tr><th align=left>Links:<td colspan=2><TMPL_VAR NAME=LINKS>
+</table>
+
+<DIV id=matrices class="small">
+<TMPL_VAR NAME=MATRIX>
+</DIV>
