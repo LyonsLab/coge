@@ -1488,7 +1488,7 @@ DNA_align_2
     print STDERR "generating synonymous substitution values for ".scalar @data." pairs of genes\n";
     my $MAX_RUNS = $MAX_PROC;
     my $ports = initialize_nwalign_servers(start_port=>3000, procs=>$MAX_RUNS);
-    my $pm = new Parallel::ForkManager($MAX_RUNS);
+    my $pm = new Parallel::ForkManager($MAX_RUNS*2);
     my $i =0;
     foreach my $item (@data)
       {	
