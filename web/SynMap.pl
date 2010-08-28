@@ -1449,7 +1449,11 @@ fid1 integer,
 fid2 integer,
 dS varchar,
 dN varchar,
-dN_dS varchar
+dN_dS varchar,
+protein_align_1,
+protein_align_2,
+DNA_align_1,
+DNA_align_2
 )
 };
 
@@ -1519,8 +1523,13 @@ dN_dS varchar
 	    $dN = $max_res->{dN};
 	    $dNS = $max_res->{'dN/dS'};
 	  }
+	#alignments
+	my $dalign1 = $ks->dalign1; #DNA sequence 1
+	my $dalign2 = $ks->dalign2; #DNA sequence 2
+	my $palign1 = $ks->palign1; #PROTEIN sequence 1
+	my $palign2 = $ks->palign2; #PROTEIN sequence 2
 	my $insert = qq{
-INSERT INTO ks_data (fid1, fid2, dS, dN, dN_dS) values ($fid1, $fid2, "$dS", "$dN", "$dNS")
+INSERT INTO ks_data (fid1, fid2, dS, dN, dN_dS, protein_align_1, protein_align_2, DNA_align_1, DNA_align_2) values ($fid1, $fid2, "$dS", "$dN", "$dNS", "$palign1", "$palign2", "$dalign1", "$dalign2")
 };
 	my $dbh = DBI->connect("dbi:SQLite:dbname=$outfile","","");
 	my $insert_success = 0;
@@ -2325,13 +2334,6 @@ CoGe::Accessory::Web::write_log("WARNING:  sub run_adjust_dagchainer_evals faile
 	    $fasta2 =~ s/$DIR/$URL/;
 	    $html .= qq{<span class='small link' onclick=window.open('$fasta2')>Fasta file for $org_name2: $feat_type2</span><br>};
 	    
-#	    foreach my $org_dir (keys %org_dirs)
-#	      {
-#		my $output = $org_dirs{$org_dir}{blastfile};
-#		next unless -s $output;
-#		$output =~ s/$DIR/$URL/;
-#		$html .= "<span class='link small' onclick=window.open('$output')>Blast results</span><br>";	
-#	      }
 	    my $org1_localdups = process_local_dups_file(infile=>$raw_blastfile.".q.localdups", outfile=>$raw_blastfile.".q.tandems");
 	    my $org2_localdups = process_local_dups_file(infile=>$raw_blastfile.".s.localdups", outfile=>$raw_blastfile.".s.tandems");
 
@@ -2414,7 +2416,11 @@ CoGe::Accessory::Web::write_log("WARNING:  sub run_adjust_dagchainer_evals faile
 	    $html .= qq{</table>};
 	   CoGe::Accessory::Web::write_log("\nLink to regenerate analysis: $synmap_link", $cogeweb->logfile);
 	    $tiny_link = get_tiny_link(url=>$synmap_link);
-	    $html .= "<a href='$tiny_link' class='ui-button ui-corner-all' target=_new_synmap>Regenerate this analysis: $tiny_link</a>";
+	    $html .= "<a href='$tiny_link' class='ui-button ui-corner-all' style='color: #000000' target=_new_synmap>Regenerate this analysis: $tiny_link</a>";
+	    if ($ks_type)
+	      {
+		$html .= qq{<span  class='ui-button ui-corner-all' onclick="window.open('SynSub.pl?dsgid1=$dsgid1;dsgid2=$dsgid2')">Generate Substitution Matrix of Syntelogs</span>};
+	      }
 	    if ($grimm_stuff)
 	      {
 		my $seq1 = ">$org_name1||".$grimm_stuff->[0];
