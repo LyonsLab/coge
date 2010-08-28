@@ -381,7 +381,7 @@ sub run {
 #  $cmd = "echo '$aln' ". $cmd;
   print STDERR "running $cmd \n" if $self->debug;
   ($cmd) = $cmd=~/^(.*)$/xs;
-  open(RUN, "$cmd |") or $self->croak("Cannot open exe $cmd ");
+  open(RUN, "$cmd |") or $self->carp("Cannot open exe $cmd ");
 #       }
   my @output = <RUN>;
   $exit_status = close(RUN);
