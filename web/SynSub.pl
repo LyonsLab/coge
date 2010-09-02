@@ -73,8 +73,10 @@ sub gen_body
     return "Need two dsgids to run." unless $dsgid1 && $dsgid2;
     my ($dsg1) = $coge->resultset('DatasetGroup')->find($dsgid1);
     my ($dsg2) = $coge->resultset('DatasetGroup')->find($dsgid2);
+
+    my $color_type = $form->param('ct'); #color type for matrices output
+
     #get gc content of genomes
-      
     unless ($dsg1 && $dsg2)
       {
 	return "<span class=alert>Problem generating dataset group objects for ids:  $dsgid1, $dsgid2.</span>";
@@ -123,21 +125,27 @@ sub gen_body
     $template->param('ORG2_GC_WOBBLE'=>$org2_percent_gc_wobble);
     my $synmap_link = "SynMap.pl?dsgid1=$dsgid1;dsgid2=$dsgid2;ks=1;autogo=1";
     $synmap_link = qq{<a href='$synmap_link' class='ui-button ui-corner-all' style='color: #000000' target=_new_synmap>SynMap</a>};
-    $template->param(LINKS=>$synmap_link);
+    my $synsub_link = "SynSub.pl?dsgid1=$dsgid1;dsgid2=$dsgid2;ct=";
+    $synsub_link = 
+      qq{<a href='$synsub_link}.'rain'.qq{' class='ui-button ui-corner-all' style='color: #000000' target=_new_synmap>Rainbown SynSub</a>}. 
+      qq{<a href='$synsub_link}.'RYB'.qq{' class='ui-button ui-corner-all' style='color: #000000' target=_new_synmap>RYB SynSub</a>};
+
+
+    $template->param(LINKS=>$synmap_link.$synsub_link);
     my $html;
     $html .= "<table class='ui-widget ui-corner-all ui-widget-content small'><tr>";
     $html .= "<td>Scores normalized to protein frequences of $org_name1<br>";
-    $html .= gen_matrix_output_html(matrix=>$prot_matrix1, log=>0, type=>"protein", org1=>$org_name1, org2=>$org_name2, org1_counts=>$org1_prot_counts);
-    $html .= "<td width=3px>";
+    $html .= gen_matrix_output_html(matrix=>$prot_matrix1, log=>0, type=>"protein", org1=>$org_name1, org2=>$org_name2, org1_counts=>$org1_prot_counts, color_type=>$color_type);
+    $html .= "<td width=1px>";
     $html .= "<td>Scores normalized to protein frequences of $org_name2<br>";
-    $html .= gen_matrix_output_html(matrix=>$prot_matrix2, log=>0, type=>"protein", org1=>$org_name1, org2=>$org_name2, org1_counts=>$org2_prot_counts);
+    $html .= gen_matrix_output_html(matrix=>$prot_matrix2, log=>0, type=>"protein", org1=>$org_name1, org2=>$org_name2, org1_counts=>$org2_prot_counts, color_type=>$color_type);
     $html .= "</table>";
     $html .= "<hr>";
     $html .= "Scores normalized to codon frequences of $org_name1<br>";
-    $html .= gen_matrix_output_html(matrix=>$dna_matrix1, log=>0, type=>"codon", org1=>$org_name1, org2=>$org_name2, org1_counts=>$org1_dna_counts);
+    $html .= gen_matrix_output_html(matrix=>$dna_matrix1, log=>0, type=>"codon", org1=>$org_name1, org2=>$org_name2, org1_counts=>$org1_dna_counts, color_type=>$color_type);
     $html.="<hr>";
     $html .= "Scores normalized to codon frequences of $org_name2<br>";
-    $html .= gen_matrix_output_html(matrix=>$dna_matrix2, log=>0, type=>"codon", org1=>$org_name1, org2=>$org_name2, org1_counts=>$org2_dna_counts);
+    $html .= gen_matrix_output_html(matrix=>$dna_matrix2, log=>0, type=>"codon", org1=>$org_name1, org2=>$org_name2, org1_counts=>$org2_dna_counts, color_type=>$color_type);
     $html.="<hr>";
     $template->param(MATRIX=>$html);
     return $template->output;
@@ -169,6 +177,7 @@ sub get_counts
     my $org2_wobble_total=0;
 
     my $dbh = DBI->connect("dbi:SQLite:dbname=$sqlite","","");
+    print STDERR $sqlite,"\n";
     my $select = qq{SELECT protein_align_1, protein_align_2, DNA_align_1, DNA_align_2 FROM ks_data};
     my $sth = $dbh->prepare($select);
     $sth->execute;
@@ -323,23 +332,10 @@ sub gen_matrix_output_html
     my $org2 = $opts{org2};
     my $org1_counts = $opts{org1_counts};
     my $org2_counts = $opts{org2_counts};
+    my $color_type = $opts{color_type};
     my $code = CoGe::Accessory::genetic_code->code;
     $code = $code->{code};
     my $html;
-    $html .="<table class='ui-widget ui-corner-all ui-widget-content small'>";
-    my ($max, $min);
-    foreach my $c1 (keys %$data)
-      {
-	foreach my $val (values %{$data->{$c1}})
-	  {
-	    $val = $log ? log10($val) : $val;
-	    $max = $val unless defined $max;
-	    $max = $val if $val > $max;
-	    $min = $val unless defined $min;
-	    $min = $val if $val < $min;
-	  }
-      }
-    my $range = $max-$min;
     my @order;
     if ($type =~ /c/i)
       {
@@ -362,6 +358,27 @@ sub gen_matrix_output_html
 	my $aa_sort = CoGe::Accessory::genetic_code->sort_aa_by_gc();
 	@order = sort {$aa_sort->{$b} <=> $aa_sort->{$a} || $a cmp $b}keys %$aa_sort;
       }
+
+#    my %check = map {$_=>1} @order;  #used to remove data that will not be displayed.  
+    
+    #some entries will not be used and need to be skipped.  Examples are amino acid "X" and nucleotide "N" for unknowns
+    my ($min, $max);
+    foreach my $c1 (@order)
+      {
+	foreach my $c2 (@order)
+	  {
+	    my $val = $data->{$c1}{$c2};
+	    next unless defined $val;
+	    $val = $log ? log10($val) : $val;
+	    $max = $val unless defined $max;
+	    $max = $val if $val > $max;
+	    $min = $val unless defined $min;
+	    $min = $val if $val < $min;
+	  }
+      }
+    my $range = $max-$min;
+
+
     #fill in items without values
     foreach my $c1 (@order)
       {
@@ -372,7 +389,7 @@ sub gen_matrix_output_html
       }
 
 
-
+    $html .=qq{<table class='ui-widget ui-corner-all ui-widget-content small' style='border-collapse: collapse;'>};
     $html .= "<tr><th>";
     my $col_count =0;
     foreach my $item (@order)
@@ -380,7 +397,7 @@ sub gen_matrix_output_html
 	$col_count ++;
 	$html .= "<th>$item";
 	$html .= "<br>"."(".$code->{$item}.")" if $code->{$item};
-	$html .= "<td bgcolor=grey width=3px>" unless $col_count %16 || $type =~ /p/;
+	$html .= "<td bgcolor=grey width=1px>" unless $col_count %16 || $type =~ /p/;
       }
     $html .= "<th>Total";
     $html .= "<tr>";
@@ -401,16 +418,17 @@ sub gen_matrix_output_html
 	    
 	    my $relative_val = $val =~ /\d/ ? ($val-$min)/$range : $val;
 	    $val = sprintf("%.1f", $val) if $val =~ /\d/;
-	    my $color = get_color(val=>$relative_val);
+	    my $color = get_color(val=>$relative_val, type=>$color_type);
 	    my $color_str = join (",", @$color);
 	    my $font_color = "#000000";
-	    $font_color = "#AAAAAA" if $color->[0] <= 126 && $color->[1] <= 100 && $color->[2] >= 126;
+	    $font_color = "#AAAAAA" if $color->[0] <= 85 && $color->[1] <= 85 && $color->[2] <= 150;
+	    $font_color = "#AAAAAA" if $color->[0] <= 100 && $color->[1] <= 50;
 	    $html .= "<td style=\"background-color: rgb($color_str); color: $font_color\">".$val;#." ".$code->{$aa1}."-".$code->{$aa2};
-	    $html .= "<td bgcolor=grey width=3px>" unless $col_count %16 || $type =~ /p/;
+	    $html .= "<td bgcolor=grey width=1px>" unless $col_count %16 || $type =~ /p/;
 	  }
 	$html .= "<td align=right>";
 	$html .= $org1_counts->{$aa1} ? commify($org1_counts->{$aa1}) : 0;
-	$html .= "<tr bgcolor=grey width=3px><td colspan=80>" unless $row_count %16 || $type =~ /p/;
+	$html .= "<tr bgcolor=grey width=1px><td colspan=80>" unless $row_count %16 || $type =~ /p/;
 	$html .="<tr>";
       }
 #    $html .= "<th>Total";
@@ -432,18 +450,24 @@ sub get_color
   {
     my %opts = @_;
     my $val = $opts{val};
+    my $type = $opts{type};
     return [0,0,0] unless defined $val;
-    return [125,125,125] if $val !~ /\d/;
-    my @colors = (
+    return [200,200,200] if $val !~ /\d/;
+    my @rainbow = (
                   [255,0,0], #red
-                  [255,126,0], #orange
                   [255,255,0], #yellow
                   [0,255,0], # green
                   [0,255,255], # cyan
+		  [220,0,220], #magenta
                   [0,0,255], # blue
-#                 [255,0,255], #magenta
-                  [126,0,126], #purple
                  );
+    my @red_yellow_blue = (
+                  [255,0,0], #red
+                  [220,220,20], #yellow
+                  [0,0,150], # blue
+                 );
+    my @colors;
+    @colors = $type =~ /rain/ ? @rainbow : @red_yellow_blue;
     @colors = reverse @colors;
     my ($index1, $index2) = ((floor((scalar(@colors)-1)*$val)), ceil((scalar(@colors)-1)*$val));
 
