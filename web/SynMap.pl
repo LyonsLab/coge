@@ -502,36 +502,39 @@ sub get_dataset_group_info
     $html_dsg_info .= qq{<div><span>Description:</span><span class="small">$org_desc</span></div>};
     $html_dsg_info .= qq{<div><span class="link" onclick=window.open('OrganismView.pl?dsgid=$dsgid')>Genome Information: </span><br>};
     my $i =0;
-    my $chr_length=0;
-    my $chr_count =0;
-    my $plasmid =0;
-    my $contig = 0;
-    my $scaffold = 0;
-    my @gs = $dsg->genomic_sequences;
 
-    foreach my $gs (@gs)
-      {
-	$chr_length += $gs->sequence_length;
-	$chr_count++;
-	$plasmid =1 if $gs->chromosome =~ /plasmid/i;
-	$contig =1 if $gs->chromosome =~ /contig/i;
-	$scaffold =1 if $gs->chromosome =~ /scaffold/i;
-      }
-    $html_dsg_info .= "<span class=small>";
+    my ($percent_gc, $chr_length, $chr_count, $plasmid, $contig, $scaffold) = get_gc_dsg($dsg);
+    # my $chr_length=0;
+    # my $chr_count =0;
+    # my $plasmid =0;
+    # my $contig = 0;
+    # my $scaffold = 0;
+    # my @gs = $dsg->genomic_sequences;
+    # foreach my $gs (@gs)
+    #   {
+    # 	$chr_length += $gs->sequence_length;
+    # 	$chr_count++;
+    # 	$plasmid =1 if $gs->chromosome =~ /plasmid/i;
+    # 	$contig =1 if $gs->chromosome =~ /contig/i;
+    # 	$scaffold =1 if $gs->chromosome =~ /scaffold/i;
+    #   }
+#    $html_dsg_info .= "<span class=small>";
     my ($ds) = $dsg->datasets;
     my $link = $ds->data_source->link;
     $link = $BASE_URL unless $link;
     $link = "http://".$link unless $link && $link =~ /^http/;
-    $html_dsg_info .= "Name: ".$dsg->name."<br>" if $dsg->name; 
-    $html_dsg_info .= "Description: ".$dsg->description."<br>" if $dsg->description; 
-    $html_dsg_info .= "Source:  <a href=".$link." target=_new>".$ds->data_source->name."</a><br>";
+    $html_dsg_info .= qq{<table class=small>};
+    $html_dsg_info .= "<tr><td>Name: <td>".$dsg->name if $dsg->name; 
+    $html_dsg_info .= "<tr><td>Description: <td>".$dsg->description if $dsg->description; 
+    $html_dsg_info .= "<tr><td>Source:  <td><a href=".$link." target=_new>".$ds->data_source->name."</a>";
     #$html_dsg_info .= $dsg->chr_info(summary=>1);
-    $html_dsg_info .= "Chromosome count: $chr_count<br>";
-    $html_dsg_info .= "Total length: ".commify($chr_length);
-    $html_dsg_info .= "<br>Contains plasmid" if $plasmid;
-    $html_dsg_info .= "<br>Contains contigs" if $contig;
-    $html_dsg_info .= "<br>Contains scaffolds" if $scaffold;
-    $html_dsg_info .= "</span>";
+    $html_dsg_info .= "<tr>Chromosome count: <td>$chr_count";
+    $html_dsg_info .= "<tr><td>Percent GC: <td>$percent_gc%";
+    $html_dsg_info .= "<tr><td>Total length: <td>".$chr_length;
+    $html_dsg_info .= "<tr><td>Contains plasmid" if $plasmid;
+    $html_dsg_info .= "<tr><td>Contains contigs" if $contig;
+    $html_dsg_info .= "<tr><td>Contains scaffolds" if $scaffold;
+    $html_dsg_info .= "</table>";
     my $t2 = new Benchmark;
     my $time = timestr(timediff($t2,$t1));
 #    print STDERR qq{
@@ -2621,6 +2624,31 @@ sub get_previous_analyses
     $html .= "<br><span class=small>Synonymous substitution rates previously calculated</span>" if $sqlite;
     return "$html";
   }
+
+sub get_gc_dsg
+  {
+    my $dsg = shift;
+    my $length =0;
+    my $chr_count = 0;
+    my $gc_total=0;
+    my $plasmid =0;
+    my $contig = 0;
+    my $scaffold = 0;
+    foreach my $chr ($dsg->chromosomes)
+      {
+	$chr_count++;
+	my ($gc, $at, $n) = $dsg->percent_gc(count=>1, chr=>$chr);
+	$gc_total+=$gc;
+	$length += ($gc+$at+$n);
+	$plasmid =1 if $chr =~ /plasmid/i;
+	$contig =1 if $chr =~ /contig/i;
+	$scaffold =1 if $chr =~ /scaffold/i;
+
+      }
+    my $percent_gc = sprintf("%.2f",100*$gc_total/$length);
+    return $percent_gc, commify($length), $chr_count, $plasmid, $contig, $scaffold;
+  }
+
 
 sub get_pair_info
   {
