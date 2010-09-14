@@ -528,8 +528,8 @@ sub get_dataset_group_info
     $html_dsg_info .= "<tr><td>Description: <td>".$dsg->description if $dsg->description; 
     $html_dsg_info .= "<tr><td>Source:  <td><a href=".$link." target=_new>".$ds->data_source->name."</a>";
     #$html_dsg_info .= $dsg->chr_info(summary=>1);
-    $html_dsg_info .= "<tr>Chromosome count: <td>$chr_count";
-    $html_dsg_info .= "<tr><td>Percent GC: <td>$percent_gc%";
+    $html_dsg_info .= "<tr><td>Chromosome count: <td>".commify($chr_count);
+    $html_dsg_info .= "<tr><td>Percent GC: <td>$percent_gc%" if defined $percent_gc;
     $html_dsg_info .= "<tr><td>Total length: <td>".$chr_length;
     $html_dsg_info .= "<tr><td>Contains plasmid" if $plasmid;
     $html_dsg_info .= "<tr><td>Contains contigs" if $contig;
@@ -2634,18 +2634,20 @@ sub get_gc_dsg
     my $plasmid =0;
     my $contig = 0;
     my $scaffold = 0;
-    foreach my $chr ($dsg->chromosomes)
+    my @gs = $dsg->genomic_sequences;
+    map {$length+=$_->sequence_length} @gs;
+    foreach my $chr (map {$_->chromosome} @gs)
       {
 	$chr_count++;
-	my ($gc, $at, $n) = $dsg->percent_gc(count=>1, chr=>$chr);
+	my ($gc, $at, $n) = $dsg->percent_gc(count=>1, chr=>$chr) if $length < 100000000 && scalar @gs < 1000;
 	$gc_total+=$gc;
-	$length += ($gc+$at+$n);
+#	$length += ($gc+$at+$n);
 	$plasmid =1 if $chr =~ /plasmid/i;
 	$contig =1 if $chr =~ /contig/i;
 	$scaffold =1 if $chr =~ /scaffold/i;
 
       }
-    my $percent_gc = sprintf("%.2f",100*$gc_total/$length);
+    my $percent_gc = sprintf("%.2f",100*$gc_total/$length) if $gc_total;
     return $percent_gc, commify($length), $chr_count, $plasmid, $contig, $scaffold;
   }
 
