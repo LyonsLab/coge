@@ -898,7 +898,8 @@ sub get_tiny_link
     unless ($url =~ /http/)
       {
 	my $server = $P->{SERVER};
-	$url = "http://".$server."/$URL/".$url;
+    #$url = "http://".$server."/$URL/".$url;
+	$url = "http://".$server.$url;
       }
     my $html;
     my $tiny = get("http://genomevolution.org/r/yourls-api.php?signature=d57f67d3d9&action=shorturl&format=simple&url=$url");
