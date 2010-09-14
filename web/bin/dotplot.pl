@@ -1066,7 +1066,7 @@ sub get_color
 	print STDERR "in sub get_color val is not [0,1]: $val\n";
 	return [0,0,0];
       }
-    my @colors = (
+    my @colors_orig = (
 		  [255,255,0], #yellow
 		  [200,200,0], # green
 		  [0,200,0], # green
@@ -1089,6 +1089,22 @@ sub get_color
 #		  [255,0,0], #red
 #		  [255,126,0], #orange
 		 );
+    my @rainbow = (
+                  [255,0,0], #red
+                  [255,255,0], #yellow
+                  [0,255,0], # green
+                  [0,255,255], # cyan
+		  [220,0,220], #magenta
+                  [0,0,255], # blue
+                 );
+    my @red_yellow_blue = (
+                  [0,0,150], # blue
+                  [220,220,20], #yellow
+                  [255,0,0], #red
+                 );
+#    my @colors = @colors_orig;
+    my @colors = @rainbow;
+ #   my @colors = @red_yellow_blue;
     @colors = reverse @colors;
     my ($index1, $index2) = ((floor((scalar(@colors)-1)*$val)), ceil((scalar(@colors)-1)*$val));
 
