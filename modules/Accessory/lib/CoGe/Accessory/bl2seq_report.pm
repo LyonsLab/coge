@@ -4,7 +4,6 @@ use strict;
 use warnings;
 use CoGe::Accessory::parse_report::HSP;
 use base qw(Class::Accessor);
-
 use Data::Dumper;
 
 
@@ -41,6 +40,7 @@ sub process_file
     my $file = shift || $self->file;
     my @hsps;
     return $self unless $file;
+    $self->file($file);
     open (IN, $file) || warn "can't open $file for reading: $!";
     my $data = join ("", <IN>);
     close IN;
@@ -87,6 +87,7 @@ sub _parseHeader
     my $header = shift;
     return unless $header;
     my ($query, $subject) = $header =~ /^(.*letters\))\s+(.*)$/s;
+    warn "Problem parsing header from file: ".$self->file."\n";
     if ($query =~ /Query=\s+(.+)/)
       { 
 	my $qname = $1;
@@ -140,7 +141,6 @@ sub _fastForward {
 	}
 	my $FH = $self->{FH};
 	while(<$FH>) {
-#	  print STDERR $_;
 		if ($_ =~ /^Lambda/) {
 			$self->{LASTLINE} = $_;
 			$self->{REPORT_DONE} = 1;
