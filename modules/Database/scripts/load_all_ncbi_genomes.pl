@@ -47,7 +47,7 @@ my $base_url = "http://www.ncbi.nlm.nih.gov/genomes/genlist.cgi?";
 my @taxids =(
 #	     [2157, 9], #archaea, get WGS
 #	     [2,    9], #bacteria, get WGS
-	     [2759, 0], #euks, not ready for WGS -- lots of data with minimal annotations.  Will get there though!
+#	     [2759, 0], #euks, not ready for WGS -- lots of data with minimal annotations.  Will get there though!
 #	     [10239,9], #viruses, phages, 
 #	     [12884,9], #viroids
 	    );
@@ -97,7 +97,7 @@ foreach my $item (@taxids)
 	  }
       }
   }
-#my $genomes = get_NCBI_genomes();
+my $genomes = get_NCBI_genomes();
 
 if (@skipped)
   {
@@ -198,6 +198,7 @@ sub process_orgs
 		  {
 		    my $project_id_hash = get_project($accn);
 		    my $project_id = $project_id_hash->{$accn};
+		    next unless $project_id;
 		    push @{$orgs{$org}{$project_id}}, {accn=>$accn};
 		  }
 		$check =1;
