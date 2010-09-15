@@ -343,7 +343,9 @@ sub initialize_basefile
 	($basename) = $basename =~ /([^\/].*$)/;
 	my ($x, $cleanname) = check_taint($basename);
 	$self->basefilename($cleanname);
-	$self->basefile($tempdir."/$prog/".$cleanname);
+	my $basefile = $tempdir."/$prog/".$cleanname;
+	$basefile =~ s/\/\/+/\//g;
+	$self->basefile($basefile);
 	$self->logfile($self->basefile.".log");
 	$self->sqlitefile($self->basefile.".sqlite");
       }
