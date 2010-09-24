@@ -2031,33 +2031,31 @@ sub get_genome_info
     return " " unless $dsgid;
     my $dsg = $coge->resultset("DatasetGroup")->find($dsgid);
     return "Unable to create dataset_group object for id: $dsgid" unless $dsg;
-    my $html;# = qq{<div style="overflow:auto; max-height:78px">};
-    my $total_length;
+    my $html = qq{<table class=small>};# = qq{<div style="overflow:auto; max-height:78px">};
+    $html .= "Name: ".$dsg->organism->name."<br>";
+    $html .= "Description: ". join ("; ", map { qq{<span class=link onclick="\$('#org_desc').val('$_').focus();">$_</span>}} split /;\s+/, $dsg->organism->description)."<br>" if $dsg->organism->description;
+
     my @gs = sort {$a->chromosome cmp $b->chromosome} $dsg->genomic_sequences;
     my $chr_num = scalar @gs;
-    
-#    $html .=qq{<table class=small ><tr class=small valign=top>};
-    my $count =0;
+    my $total_length;
+    map {$total_length+=$_->sequence_length} @gs;
+    my ($ds) = $dsg->datasets;
+    my $link = $ds->data_source->link;
+    $link = "http://".$link unless $link =~ /^http/;    
+    $html .= "Source:  <a class = 'link' href=".$link." target=_new>".$ds->data_source->name."</a><br>".
+      qq{Chromosome count: $chr_num<br>}. 
+	qq{<div style="float:left;">Total length: }. commify($total_length)." bp".
+	  "<br>".
+	  qq{Sequence Type: }.$dsg->genomic_sequence_type->name.qq{<input type=hidden id=gstid value=}.$dsg->genomic_sequence_type->id.qq{>}."<br>----------<br>";
+
     foreach my $gs (@gs)
       {
 	my $chr = $gs->chromosome;
 	my $length = $gs->sequence_length;
-	$total_length += $length;
 	$length = commify($length);
 	$html .= qq{$chr:  $length bp<br>};
-	$count++;
       }
-    my ($ds) = $dsg->datasets;
-    my $link = $ds->data_source->link;
-    $link = "http://".$link unless $link =~ /^http/;
-    $html = "Source:  <a class = 'link' href=".$link." target=_new>".$ds->data_source->name."</a><br>".
-      qq{Chromosome count: $chr_num<br>}. qq{<div style="float:left;">Total length: }.
-	commify($total_length)." bp".
-	  "<br>".
-	  qq{Sequence Type: }.$dsg->genomic_sequence_type->name.qq{<input type=hidden id=gstid value=}.$dsg->genomic_sequence_type->id.qq{>}.
-	    qq{<br>}.
-	  qq{-----------<br>Chr:   (length)<br>}.
-	    $html;
+    $html .= "</table>";
     return $html;
   }
 
