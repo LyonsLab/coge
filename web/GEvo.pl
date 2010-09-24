@@ -3748,7 +3748,7 @@ sub feat_search
   };
 	foreach my $feat (@feats)
 	  {
-	    my $loc = "(".$feat->type->name.") Chr:".$feat->locations->next->chromosome." ".$feat->start."-".$feat->stop;
+	    my $loc = "(".$feat->type->name.") Chr:".$feat->locations->next->chromosome." ".commify($feat->start)."-".commify($feat->stop);
 	    $loc =~ s/(complement)|(join)//g;
 	    my $fid = $feat->id;
 	    $fid .= "_".$gstid if $gstid;
