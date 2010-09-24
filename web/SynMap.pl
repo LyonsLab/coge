@@ -2640,7 +2640,7 @@ sub get_gc_dsg
       {
 	$chr_count++;
 	my ($gc, $at, $n) = $dsg->percent_gc(count=>1, chr=>$chr) if $length < 100000000 && scalar @gs < 1000;
-	$gc_total+=$gc;
+	$gc_total+=$gc if $gc;
 #	$length += ($gc+$at+$n);
 	$plasmid =1 if $chr =~ /plasmid/i;
 	$contig =1 if $chr =~ /contig/i;
