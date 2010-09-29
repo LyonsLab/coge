@@ -229,6 +229,7 @@ sub draw_dots
 	    $tuse_color = $colors->[$color_index];
 	    $color_index++;
 	    $color_index = 0 if $color_index >= @$colors;
+	    $use_color = $tuse_color;
 	  }
 	if (/^#/)
 	  {
@@ -238,6 +239,7 @@ sub draw_dots
 	    $max_x= undef;
 	    $max_y= undef;
 	  }
+
 	next if /^#/;
 	next unless $_;
 	my @line = split /\t/;
@@ -357,8 +359,7 @@ sub draw_dots
 
 	$y_real = $graphics_context->height-$x;
 	$tuse_color = $colors->[0] unless $tuse_color; #default val just in case
-#	print STDERR $tuse_color,"\n";
-	push @points, [ $y, $y_real, $tsize, $tsize, 0, 360, $tuse_color, $val] if ($add_inverse && !$CHR1 && $x ne $y);
+ 	push @points, [ $y, $y_real, $tsize, $tsize, 0, 360, $tuse_color, $val] if ($add_inverse && !$CHR1 && $x ne $y);
 	push @points, [ $y, $y_real, $tsize, $tsize, 0, 360, $tuse_color, $val] if ($add_inverse && $chr1 eq $chr2 && $x ne $y);
 	if ($link_type == 1)
 	  {
@@ -410,7 +411,6 @@ sub draw_dots
     foreach my $point (@points)
       {
 	my $val = pop @$point;
-#	print STDERR join ("\t", @$point), "!","\n";
 	my $tsize = $point->[2];
 	if ($tsize > 3)
 	  {
