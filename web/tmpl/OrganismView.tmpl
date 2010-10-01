@@ -1,3 +1,4 @@
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
 <script language="javascript">
 
 function ajax_wait (val){
@@ -9,6 +10,11 @@ if (ajax.length)
   eval(val);
 }
 
+function open_aa_usage_table (html)
+{
+ $('#aa_usage_table').html(html);
+ $('#aa_table').tablesorter(); 
+}
 
 function get_organism_name_chain(val)
 {
