@@ -12,6 +12,7 @@ use Benchmark;
 use File::Path;
 use Benchmark qw(:all);
 use Statistics::Basic::Mean;
+no warnings 'redefine';
 
 
 use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $coge $HISTOGRAM %FUNCTION $P);
@@ -686,7 +687,7 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
 	$feat_string .= "<div class=\"small link\" id=aa_usage onclick=\"
         \$('#aa_usage_table').html('loading...');
         \$('#aa_usage_table').dialog('open');
-        get_aa_usage([$args],['aa_usage_table']); 
+        get_aa_usage([$args],[open_aa_usage_table]); 
         \">".
         "Click for amino acid usage table"."</div>";
 
