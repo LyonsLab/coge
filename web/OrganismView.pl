@@ -1146,7 +1146,7 @@ sub get_aa_usage
     
     my $html2 .= "Predicted amino acid usage using $code_type";
     $html2 .= "<br/>Total Amino Acids: $aa_total" if $USER->user_name =~ /jkane/i;
-    $html2 .= CoGe::Accessory::genetic_code->html_aa(data=>\%aa);
+    $html2 .= CoGe::Accessory::genetic_code->html_aa_new(data=>\%aa);
     $html2 =~ s/00.00%//g if $USER->user_name =~ /jkane/i;
     return $html2;
 #    return $html1, $html2;
