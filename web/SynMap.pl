@@ -17,6 +17,7 @@ use Mail::Mailer;
 use Benchmark;
 use LWP::Simple;
 use DBI;
+no warnings 'redefine';
 
 
 

@@ -13,6 +13,7 @@ use Text::Wrap qw($columns &wrap);
 use Data::Dumper;
 use POSIX;
 use DBIxProfiler;
+no warnings 'redefine';
 
 
 use vars qw($P $TEMPDIR $TEMPURL $FORM $USER $DATE $coge);

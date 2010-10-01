@@ -6,6 +6,7 @@ use File::Path;
 use LWP::Simple;
 use Data::Dumper;
 use CoGe::Accessory::Web;
+no warnings 'redefine';
 
 $ENV{'PATH'} = '';
 use vars qw($P $IMGURL $BASEDIR);

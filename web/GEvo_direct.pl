@@ -10,6 +10,7 @@ use CoGe::Accessory::Web;
 use CGI::Ajax;
 use DBI;
 use File::Path;
+no warnings 'redefine';
 
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 

@@ -12,6 +12,7 @@ use CoGe::Accessory::Web;
 use CoGe::Accessory::genetic_code;
 use Statistics::Basic::Mean;
 use File::Path;
+no warnings 'redefine';
 
 
 use vars qw($P $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $coge $connstr);

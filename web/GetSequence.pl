@@ -4,6 +4,7 @@ use warnings;
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
 use CoGeX;
+no warnings 'redefine';
 
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 

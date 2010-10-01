@@ -15,6 +15,7 @@ use LWP::UserAgent;
 #use LWP::Simple::Post qw(post post_xml);
 use CoGe::Accessory::genetic_code;
 use File::Path;
+no warnings 'redefine';
 
 use vars qw($P $TEMPDIR $TEMPURL $USER $DATE $CLUSTAL $BASEFILE $coge $cogeweb $FORM $NEWICKTOPS $CONVERT $MAX_PROC);
 $P = CoGe::Accessory::Web::get_defaults();

@@ -5,6 +5,7 @@ use CGI;
 use CoGe::Graphics;
 use Data::Dumper;
 use CoGe::Accessory::Web;
+no warnings 'redefine';
 
 
 $ENV{PATH} = "";

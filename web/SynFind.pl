@@ -14,6 +14,7 @@ use Benchmark qw(:all);
 use Parallel::ForkManager;
 use DBI;
 use LWP::Simple;
+no warnings 'redefine';
 
 #example URL: http://toxic.berkeley.edu/CoGe/SynFind.pl?fid=34519245;qdsgid=3;dsgid=4241,6872,7084,7094,7111
 

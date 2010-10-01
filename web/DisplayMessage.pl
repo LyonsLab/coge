@@ -3,6 +3,7 @@
 use strict;
 use CGI;
 use CoGe::Accessory::Web;
+no warnings 'redefine';
 
 my $FORM = new CGI;
 my $P = CoGe::Accessory::Web::get_defaults();

@@ -10,7 +10,7 @@ use CoGe::Accessory::Web;
 use CoGeX;
 use DBI;
 use Data::Dumper;
-use warnings FATAL => 'all', NONFATAL => 'redefine';
+no warnings 'redefine';
 
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 use vars qw($P $PAGE_NAME $DATE $DEBUG $USER $FORM $coge);

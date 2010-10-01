@@ -45,6 +45,7 @@ use Benchmark qw(:all);
 use Mail::Mailer;# ("mail);
 use Digest::MD5 qw(md5_hex);
 use GD;
+no warnings 'redefine';
 # for security purposes
 
 

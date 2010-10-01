@@ -13,6 +13,7 @@ use CoGe::Accessory::genetic_code;
 use File::Path;
 use DBI;
 use POSIX;
+no warnings 'redefine';
 
 
 use vars qw($P $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $DIAGSDIR $coge);

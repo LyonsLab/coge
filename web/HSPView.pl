@@ -7,6 +7,7 @@ use CoGe::Accessory::LogUser;
 use HTML::Template;
 use Data::Dumper;
 use DBI;
+no warnings 'redefine';
 
 # for security purposes
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };

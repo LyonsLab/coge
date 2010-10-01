@@ -10,6 +10,7 @@ use CoGeX;
 use HTML::Template;
 use URI::Escape;
 use Data::Dumper;
+no warnings 'redefine';
 
 use vars qw($P $PAGE_NAME $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb $cgi %FUNCTION);
 $P = CoGe::Accessory::Web::get_defaults();

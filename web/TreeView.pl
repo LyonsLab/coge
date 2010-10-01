@@ -10,6 +10,7 @@ use Data::Dumper;
 use Bio::TreeIO;
 use File::Temp;
 use File::Path;
+no warnings 'redefine';
 
 
 use vars qw($P $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $NEATO $DOT);

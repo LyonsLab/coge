@@ -16,6 +16,7 @@ use CoGe::Graphics::GenomeView;
 use CoGe::Graphics;
 use CoGe::Graphics::Chromosome;
 use File::Path;
+no warnings 'redefine';
 use vars qw($P $TEMPDIR $TEMPURL $FORM $USER $DATE $coge $cogeweb );
 
 $P = CoGe::Accessory::Web::get_defaults();

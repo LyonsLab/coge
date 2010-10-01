@@ -8,6 +8,7 @@ use CoGeX;
 use DBIxProfiler;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
+no warnings 'redefine';
 #use CoGeX;
 
 use vars qw($P $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $FID $coge);

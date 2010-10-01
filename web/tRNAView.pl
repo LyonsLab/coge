@@ -17,6 +17,7 @@ use File::Basename;
 use Spreadsheet::WriteExcel;
 use Mail::Mailer;
 use File::Path;
+no warnings 'redefine';
 
 use vars qw($P $ARAGORN $FASTADIR $DATADIR $TEMPDIR $TEMPURL $DATE $USER $FORM $coge $cogeweb);
 

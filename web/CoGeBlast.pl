@@ -25,6 +25,7 @@ use CoGe::Graphics::Feature::HSP;
 use Spreadsheet::WriteExcel;
 use Benchmark qw(:all);
 use Parallel::ForkManager;
+no warnings 'redefine';
 
 
 use vars qw($P $PAGE_NAME $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $FORMATDB $BLAST_PROGS $FORM $USER $DATE $coge $cogeweb $RESULTSLIMIT $MAX_PROC $connstr);

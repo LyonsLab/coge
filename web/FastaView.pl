@@ -9,6 +9,7 @@ use HTML::Template;
 use Text::Wrap qw($columns &wrap);
 use Data::Dumper;
 use POSIX;
+no warnings 'redefine';
 
 
 

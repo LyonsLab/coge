@@ -5,6 +5,7 @@ use strict;
 use CGI;
 use CoGe::Accessory::LogUser;
 
+no warnings 'redefine';
 
 
 my $coge = CoGeX->dbconnect();

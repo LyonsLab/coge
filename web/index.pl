@@ -11,6 +11,7 @@ use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use Digest::MD5 qw(md5_base64);
 use CoGeX;
+no warnings 'redefine';
 use vars qw($P $USER $FORM $DATE $URL $update $coge);
 
 $P = CoGe::Accessory::Web::get_defaults();

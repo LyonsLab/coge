@@ -12,6 +12,7 @@ use CoGeX;
 use POSIX;
 use DBIxProfiler;
 use Benchmark;
+no warnings 'redefine';
 
 
 use vars qw($P $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $ACCN $FID $coge);

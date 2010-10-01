@@ -16,7 +16,7 @@ use DBIxProfiler;
 use CoGe::Accessory::genetic_code;
 use Statistics::Basic::Mean;
 use POSIX;
-
+no warnings 'redefine';
 
 use vars qw($P $PAGE_NAME $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb $FORM);
 

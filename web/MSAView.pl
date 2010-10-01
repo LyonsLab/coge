@@ -7,6 +7,7 @@ use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use HTML::Template;
 use Data::Dumper;
+no warnings 'redefine';
 
 
 

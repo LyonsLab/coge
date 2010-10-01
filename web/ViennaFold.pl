@@ -6,6 +6,8 @@ use strict;
 use CGI;
 use LWP::Simple;
 use CoGeX;
+no warnings 'redefine';
+
 
 my $coge = CoGeX->dbconnect();
 my $form = new CGI;

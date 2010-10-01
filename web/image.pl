@@ -5,6 +5,7 @@ use CGI;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use CoGeX;
+no warnings 'redefine';
 
 use vars qw($P $DATE $DEBUG $USER $FORM $coge);
 $P = CoGe::Accessory::Web::get_defaults();

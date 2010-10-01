@@ -5,6 +5,7 @@ use CGI;
 use CoGeX;
 use Data::Dumper;
 use CoGe::Accessory::Web;
+no warnings 'redefine';
 
 umask(0);
 use vars qw($P $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $DATADIR $DIAGSDIR $DOTPLOT);

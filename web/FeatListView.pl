@@ -8,6 +8,7 @@ use Data::Dumper;
 use CGI::Ajax;
 use CoGe::Graphics;
 use File::Temp;
+no warnings 'redefine';
 
 $ENV{PATH} = "/opt/apache/CoGe/";
 
