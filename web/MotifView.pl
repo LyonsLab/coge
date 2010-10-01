@@ -9,6 +9,7 @@ use HTML::Template;
 use Data::Dumper;
 use File::Basename;
 use File::Temp;
+use File::Path;
 use CoGe::Accessory::GenBank;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
@@ -53,31 +54,33 @@ use GD::Simple;
 
 # for security purposes
 
-$ENV{PATH} = "/opt/apache/CoGe/";
+#$ENV{PATH} = "/opt/apache/CoGe/";
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
-#for chaos
-$ENV{'LAGAN_DIR'} = '/opt/apache/CoGe/bin/lagan/';
-#for dialign
-$ENV{'DIALIGN2_DIR'} = '/opt/apache/CoGe/bin/dialign2_dir/';
-use vars qw( $PAGE_NAME $DATE $DEBUG $BL2SEQ $BLASTZ $LAGAN $CHAOS $DIALIGN $GENOMETHREADER $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge $NUM_SEQS $MAX_SEQS $MAX_PROC);
+
+use vars qw( $P $PAGE_NAME $DATE $DEBUG $BL2SEQ $BLASTZ $LAGAN $CHAOS $DIALIGN $GENOMETHREADER $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge $NUM_SEQS $MAX_SEQS $MAX_PROC %FUNCTION);
+$P=CoGe::Accessory::Web::get_defaults();
+$ENV{PATH}=$P->{COGEDIR};
+
 $PAGE_NAME = "MotifView.pl";
-$BL2SEQ = "/usr/bin/bl2seq ";
-$BLASTZ = "/usr/bin/blastz ";
-$LAGAN = "/opt/apache/CoGe/bin/lagan/lagan.pl";
-$CHAOS = "/opt/apache/CoGe/bin/lagan/chaos_coge";
-$GENOMETHREADER = "/opt/apache/CoGe/bin/gth";
-$DIALIGN = "/opt/apache/CoGe/bin/dialign2_dir/dialign2-2_coge";
+$BL2SEQ = $P->{BL2SEQ};
+$BLASTZ = $P->{LASTZ};
+$BLASTZ.="--ambiguous=iupac";
+$LAGAN = $P->{LAGAN};
+$CHAOS = $P->{CHAOS};
+$GENOMETHREADER = $P->{GENOMETHREADER};
+$DIALIGN = $P->{DIALIGN};
 
 $TEMPDIR = "/tmp/shabari/MotifView";
-#$TEMPDIR = "/opt/apache/CoGe/tmp/GEvo";
 $TEMPURL = "/CoGe/tmp/MotifView";
-#$TEMPDIR = "/opt/apache/CoGe/tmp/GEvo";
+$TEMPURL = $P->{TEMPURL}."MotifView";
+$TEMPDIR = $P->{TEMPDIR}."MotifView";
+mkpath ($TEMPDIR, 0,0777) unless -d $TEMPDIR;
 
 $MAX_PROC=8;
 # set this to 1 to print verbose messages to logs
 $DEBUG = 0;
 $BENCHMARK = 1;
-$NUM_SEQS = 2; #SHABARI EDIT
+$NUM_SEQS = 5; #SHABARI EDIT
 $MAX_SEQS = 21;
 $| = 1; # turn off buffering 
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
@@ -97,13 +100,13 @@ $ajax{dataset_search} = \&dataset_search; #override this method from Accessory::
 $ajax{feat_search} = \&feat_search; 
 
 
-my $pj = new CGI::Ajax(
+%FUNCTION = (
     run=>\&run,
     loading=>\&loading,
     merge_previous=>\&merge_previous,
     add_seq=>\&add_seq,
     get_file=>\&get_file,
-    gen_go_run=>\&gen_go_run,
+    gen_go_run=>\&gen_go_run,    
     gen_hsp_colors =>\&gen_hsp_colors,
     save_settings_gevo=>\&save_settings_gevo,
     reset_settings_gevo=>\&reset_settings_gevo,
@@ -114,14 +117,42 @@ my $pj = new CGI::Ajax(
     %ajax,
     );
 
-
+my $pj=new CGI::Ajax(%FUNCTION);
 
 $pj->JSDEBUG(0);
 $pj->DEBUG(0);
 #$pj->js_encode_function('escape');
-print $pj->build_html($FORM, \&gen_html);
+if ($FORM->param('jquery_ajax'))
+{
+    dispatch();
+}
+else
+{
+    print $pj->build_html($FORM, \&gen_html);    
+}
 
 #print $FORM->header;gen_html();
+
+sub dispatch
+{
+    my %args = $FORM->Vars;
+    my $fname = $args{'fname'};
+    if($fname)
+    {
+        #my %args = $cgi->Vars;
+        #print STDERR Dumper \%args;
+        if($args{args}){
+            my @args_list = split( /,/, $args{args} );
+            print $FORM->header, $FUNCTION{$fname}->(@args_list);
+        }
+        else{
+            print $FORM->header, $FUNCTION{$fname}->(%args);
+        }
+    }
+#    else{
+#       print $FORM->header, gen_html();
+#    }
+}
 
 sub loading
   {
@@ -278,7 +309,7 @@ sub gen_body
     $pad_gs = 0 unless $pad_gs;
     my $apply_all = get_opt(params=>$prefs, form=>$form, param=>'apply_all');
     my $prog = get_opt(params=>$prefs, form=>$form, param=>'prog');
-    $prog = "None" unless $prog;
+    $prog = "blastz" unless $prog;
     my $image_width = get_opt(params=>$prefs, form=>$form, param=>'iw');
     $image_width = 1000 unless $image_width;
     my $feature_height = get_opt(params=>$prefs, form=>$form, param=>'fh');
@@ -486,7 +517,22 @@ sub run
 #    my $feature_labels = !$hsp_label ? 0 : 1;
     my $form = $FORM;
     my $gevo_link = $form->url."?prog=$analysis_program";
+    $gevo_link .= ";show_cns=1" if $show_cns;
+    $gevo_link .= ";show_cns=1" if $show_cns;
+    $gevo_link .= ";show_gene_space=1" if $show_gene_space;
+    $gevo_link .= ";show_contigs=1" if $show_contigs;
+    $gevo_link .= ";iw=$iw";
+    $gevo_link .= ";fh=$feat_h";
+    $gevo_link .= ";padding=$padding";
+    $gevo_link .= ";gc=$show_gc" if $show_gc;
+    $gevo_link .= ";color_hsp=1" if $color_hsp;
+    $gevo_link .= ";colorfeat=1" if $color_overlapped_features;
+    $gevo_link .= ";nt=$show_nt";
+    $gevo_link .= ";cbc=$show_cbc";      
     $gevo_link .= ";spike_len=$spike_len";
+    $gevo_link .= ";skip_feat_overlap=$skip_feat_overlap_search";
+    $gevo_link .= ";skip_hsp_overlap=$skip_hsp_overlap_search";
+    
     my @gevo_link_seqs;
     my @coge_seqs; #place to store stuff for parallel creation of sequence file from genome database
     my @sets;
@@ -914,9 +960,7 @@ sub run
     ###Motif Results Box
     my $motifresultsbox="<table>";
     $html.=$motifresultsbox;
-	
-
-   
+	   
     for my $motif(keys %$motifhash)    
       {
 	my @details;
@@ -1563,9 +1607,9 @@ INSERT INTO image_info (id, display_id, iname, title, px_width, px_height, dsid,
 	#}
 	
 	
-	
-	#generate link
-	my $link = $feat->link;
+	   
+	   #generate link
+	   my $link = $feat->link;
 	$link = " " unless $feat->link;
 	$link =~ s/'//g if $link;
 	
@@ -1709,9 +1753,20 @@ sub image_db_create_hsp_pairs
 	    $f->overlay(1);
 	    $f->mag(0.5);
           }
-
+	
+	if ($type =~ /gene prediction/i)
+	{
+	    next unless $draw_model eq "full";
+	    $f = CoGe::Graphics::Feature::Gene->new();
+	    $f->color([50,50,255,100]);
+	    $f->order($track);
+	    $f->overlay(1);
+	    $f->mag(1);
+	}
+	
+	
         elsif ($type =~ /Gene$/i)
-          {
+	{
 	    next unless $draw_model eq "full" || $draw_model eq "gene" || $anchor;
 	    $f = CoGe::Graphics::Feature::Gene->new();
 	    #$f->color([255,0,0,50]);
@@ -1721,9 +1776,9 @@ sub image_db_create_hsp_pairs
 	    $f->mag(0.5);
 	    $f->label(join ("\t", @{$feat->qualifiers->{names}})) if $feat_labels && !$f->label && $feat->qualifiers->{names};
 	    $f->label_location($label_location) if $feat_labels && $feat_labels eq "staggered";
-          }
+	}
         elsif ($type =~ /CDS/i)
-          {
+	{
 	    next unless $draw_model eq "full" || $draw_model eq "CDS";
 	    $f = CoGe::Graphics::Feature::Gene->new();
 	    $f->color([0,255,0, 50]);
@@ -1731,22 +1786,22 @@ sub image_db_create_hsp_pairs
 	    $f->overlay(3);
 	    if ($accn)
 	      {
-		foreach my $name (@{$feat->qualifiers->{names}})
+		  foreach my $name (@{$feat->qualifiers->{names}})
 		  {
-		    my $cleaned_name = $name;
-		    $cleaned_name =~ s/[\(\)]//g;
-		    my $tmp = $accn;
-		    $tmp =~ s/\*\*\d+\*\*$//;
-		    if ($tmp =~ /^$cleaned_name\(?\d*\)?$/i)
+		      my $cleaned_name = $name;
+		      $cleaned_name =~ s/[\(\)]//g;
+		      my $tmp = $accn;
+		      $tmp =~ s/\*\*\d+\*\*$//;
+		      if ($tmp =~ /^$cleaned_name\(?\d*\)?$/i)
 		      {
-			$f->color([255,255,0]) ;
-			$f->label($name) if $feat_labels;
+			  $f->color([255,255,0]) ;
+			  $f->label($name) if $feat_labels;
 		      }
 		  }
 	      }
-
+	    
 	    if ($cbc)
-              {
+	    {
                 #my $seq = $feat->genomic_sequence;
                 #$f->sequence($seq);
                 my $seq;
@@ -1828,30 +1883,40 @@ sub image_db_create_hsp_pairs
 	  }
 	elsif ($show_cns && $type =~ /cns/i)
 	  {
-	    $f = CoGe::Graphics::Feature::HSP->new({start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1]});
-	    $f->color([204,0,204]);
-
-	    my $order = 1;
-	    $order = 0 if $feat->location =~ /complement/;
-
-	    $f->order($order);
-	    $f->overlay(-1);
-	    $f->type($type);
-	    #$f->force_draw(1);
-	    $f->description($feat->annotation);
-	    $c->add_feature($f);
+	      my $strand = 1;
+	      
+	      $strand = -1 if $feat->location =~ /complement/;
+	      $f = CoGe::Graphics::Feature::HSP->new({start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1]});
+	      #$f->color([204,0,204]);
+	      if ($strand == 1)
+	      {
+		  $f->color([99,0,99]);
+	      }
+	      else 
+	      {
+		  $f->color([0,99,99]);
+	      }
+	      my $order = 1;
+	      $order = 0 if $feat->location =~ /complement/;
+	      
+	      $f->order($order);
+	      $f->overlay(-1);
+	      $f->type($type);
+	      #$f->force_draw(1);
+	      $f->description($feat->annotation);
+	      $c->add_feature($f);
 	    next;
 	  }
 	elsif ($show_gene_space && $type =~ /gene_space/i)
 	{
-	      $f = CoGe::Graphics::Feature::HSP->new({start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1]});
-	      #$f = CoGe::Graphics::Feature::Line->new({start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1]});
-	     
-	      $f->color([255,255,102]);
-
-	      my $order = 1;
-	      $order = 0 if $feat->location =~ /complement/;
-	     
+	    $f = CoGe::Graphics::Feature::HSP->new({start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1]});
+	    #$f = CoGe::Graphics::Feature::Line->new({start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1]});
+	    
+	    $f->color([255,255,102]);
+	    
+	    my $order = 1;
+	    $order = 0 if $feat->location =~ /complement/;
+	    
 	      $f->order($order);
 	     
 	      $f->overlay(-2);
@@ -2130,7 +2195,7 @@ sub image_db_create_hsp_pairs
 		$start = $seq_len - $stop+1;
 		$stop = $tmp;
 	      }
-	    $report =~ s/$TEMPDIR/GEvo/;
+	    $report =~ s/$TEMPDIR/MotifView/;
 	    my $link = "HSPView.pl?report=$report&num=".$hsp->number."&db=".$cogeweb->basefilename.".sqlite";
 	    $link .= join ("&","&qstart=".($gbobj->start+$start-1), "qstop=".($gbobj->start+$stop-1),"qchr=".$gbobj->chromosome, "qds=". $gbobj->dataset,"qstrand=".$strand) if $gbobj->dataset;
 	    $f->link($link) if $link;
@@ -2206,12 +2271,28 @@ sub find_hsp_info #sub for retrieving hsp info when there is no query informatio
     my $hsp = $opts{hsp};
     my $start = $opts{start}; #genomic region start position
     my $stop = $opts{stop}; #genomic region stop position
+    my $rev = $opts{rev};
     if ($hsp->query_name =~ /fid:(\d+)/) #we have a feature id in the query name -- HSP was generated by a feature sequence and not a genomic region!
       {
 	my $fid = $1;
 	my $feat = $coge->resultset('Feature')->find($fid);
-	$hsp->query_start($feat->start-$start+1);
-	$hsp->query_stop($feat->stop-$start+1);
+	my ($new_start, $new_stop);
+	if ($rev)
+	{
+	    $new_start = ($stop-$start+1)-($feat->start-$start+1);
+	    $new_stop = ($stop-$start+1)-($feat->stop-$start+1);
+	    print STDERR ($new_stop, "\t",$new_start,"\n");
+	    $hsp->strand($hsp->strand*-1); #need to switch st
+	}
+	else
+	{
+	    $new_start = $feat->start-$start+1;
+	    $new_stop = $feat->stop-$start+1;
+	}
+	$hsp->query_start($new_start);
+	$hsp->query_stop($new_stop);
+	#$hsp->query_start($feat->start-$start+1);
+	#$hsp->query_stop($feat->stop-$start+1);
       }
   }
 
@@ -2547,7 +2628,7 @@ sub run_bl2seq {
 	  
 	  
 	  # format the bl2seq command
-	  $command .= "-p $program -o $tempfile ";
+	  $command .= " -p $program -o $tempfile ";
 	  $command .= "-i $seqfile1 -j $seqfile2";
 	  $command .= " " . $blast_params;
 	  my $x = "";
@@ -3504,18 +3585,17 @@ sub num_colors
 sub algorithm_list
   {
     my $program = shift;
-    $program = "None" unless $program;
+    $program = "blastn" unless $program;
   
-
     my %progs = (
-	         "None"=>"-=None=-",
-		 "blastn"=>"BlastN: Small Regions",
-		 "blastz"=>"BlastZ: Large Regions",
-		 "CHAOS"=>"Chaos: Fuzzy Matches",
-		 "DiAlign_2"=>"DiAlign_2: Glocal Alignment",
-		 "LAGAN"=>"Lagan: Global Alignment",
-		 "tblastx"=>"TBlastX: Protein Translation",
-		 "GenomeThreader"=>"GenomeThreader - Spliced Gene Alignments",
+	"None"=>"-=None=-",
+	"blastn"=>"BlastN: Small Regions",
+	"blastz"=>"BlastZ: Large Regions",
+	"CHAOS"=>"Chaos: Fuzzy Matches",
+	"DiAlign_2"=>"DiAlign_2: Glocal Alignment",
+	"LAGAN"=>"Lagan: Global Alignment",
+	"tblastx"=>"TBlastX: Protein Translation",
+	"GenomeThreader"=>"GenomeThreader - Spliced Gene Alignments",
 		 );
     #my @programs = sort {lc $a cmp lc $b} keys %progs;
     my @programs = keys %progs;
@@ -4473,4 +4553,16 @@ sub add_to_user_history
 	'description'=>$opts{description},
 	'note'=>$opts{note},
 			}); 
+}
+sub get_image_info
+{
+    my %opts = @_;
+    my $idx = $opts{id};
+    my $basefilename = $opts{basename};
+    return ("no opts specified") unless ($idx && $basefilename);
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$basefilename, prog=>"GEvo");
+    my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
+    my $query = qq{select * from image_info where id = $idx;};
+    my ($id, $display_id, $name, $title, $px_witdth, $bpmin, $bpmax, $dsid, $chromosome, $rc, $px_height) = $dbh->selectrow_array($query);
+    return ("$bpmin||$bpmax");
 }
