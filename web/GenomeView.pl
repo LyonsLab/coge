@@ -10,6 +10,7 @@ use CoGe::Accessory::Web;
 use CoGeX;
 use DBI;
 use Data::Dumper;
+use warnings FATAL => 'all', NONFATAL => 'redefine';
 
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 use vars qw($P $PAGE_NAME $DATE $DEBUG $USER $FORM $coge);
@@ -60,17 +61,18 @@ sub gen_html
 sub gen_body
   {
     my $form = shift || $FORM;
-    my $chr = $form->param('chr') if $form->param('chr');
-    my $dsid = $form->param('ds') if $form->param('ds');
+    my ($chr, $dsid, $z, $loc, $gstid, $fid, $dsgid, $show_legend, $prefs);
+    $chr = $form->param('chr') if $form->param('chr');
+    $dsid = $form->param('ds') if $form->param('ds');
     $dsid = $form->param('dsid') if $form->param('dsid');
-    my $z = $form->param('z') if defined ($form->param('z'));
-    my $loc = $form->param('x') if $form->param('x');
+    $z = $form->param('z') if defined ($form->param('z'));
+    $loc = $form->param('x') if $form->param('x');
     $loc =~ s/,|\.//g if $loc; #remove commas and points if present
-    my $gstid = $form->param('gstid') if $form->param('gstid');
-    my $fid = $form->param('fid') if $form->param('fid');
-    my $dsgid = $form->param('dsgid') if $form->param('dsgid');
-    my $show_legend = $form->param('sl') if $form->param('sl');
-    my $prefs =CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME);
+    $gstid = $form->param('gstid') if $form->param('gstid');
+    $fid = $form->param('fid') if $form->param('fid');
+    $dsgid = $form->param('dsgid') if $form->param('dsgid');
+    $show_legend = $form->param('sl') if $form->param('sl');
+    $prefs =CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME);
     my ($ds, $dsg, $gst);
     if ($fid)
       {
@@ -84,6 +86,7 @@ sub gen_body
 	$dsg = $coge->resultset('DatasetGroup')->find($dsgid);
 	$gst = $dsg->type;
 	($ds) = $dsg->datasets(chr=>$chr);
+	my @ds = $dsg->datasets();
       }
     
     if ($dsid)
@@ -223,7 +226,6 @@ sub get_genome_info
   {
     my %opts = @_;
     my $dsgid = $opts{dsgid};
-#    print STDERR Dumper \%opts;
     return " " unless $dsgid;
     my $dsg = $coge->resultset("DatasetGroup")->find($dsgid);
     return "Unable to create dataset_group object for id: $dsgid" unless $dsg;
