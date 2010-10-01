@@ -4,7 +4,7 @@ use strict;
 use POSIX;
 BEGIN {
     use Exporter ();
-    use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $code);
+    use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $code $aa_info);
     $VERSION     = 0.1;
     @ISA         = (@ISA, qw (Exporter));
     #Give a hoot don't pollute, do not export more than needed by default
@@ -1186,6 +1186,197 @@ BEGIN {
 					     }
 				  }
 	    };
+    $aa_info = {
+		"*"=>{
+		     name=>"Stop",
+		     "3-letter"=>"Stop",
+		     "1-letter"=>"*",
+		     energy=>"*",
+		     polarity=>"*",
+		     "charge_ph7.4"=>"*",
+		     "hydropathy"=>"*"
+		    },
+		"A"=>{
+		     name=>"Alanine",
+		     "3-letter"=>"Ala",
+		     "1-letter"=>"A",
+		     energy=>"11.7",
+		     polarity=>"nonpolar",
+		     "charge_ph7.4"=>"neutral",
+		     "hydropathy"=>"1.8"
+		    },
+		"R"=>{
+		     name=>"Arginine",
+		     "3-letter"=>"Arg",
+		     "1-letter"=>"R",
+		     energy=>"27.3",
+		     polarity=>"polar",
+		     "charge_ph7.4"=>"positive",
+		     "hydropathy"=>"-4.5"
+		    },
+		"N"=>{
+		     name=>"Asparagine",
+		     "3-letter"=>"Asn",
+		     "1-letter"=>"N",
+		     energy=>"14.7",
+		     polarity=>"polar",
+		     "charge_ph7.4"=>"neutral",
+		     "hydropathy"=>"-3.5"
+		    },
+		"D"=>{
+		     name=>"Aspartate",
+		     "3-letter"=>"Asp",
+		     "1-letter"=>"D",
+		     energy=>"12.7",
+		     polarity=>"polar",
+		     "charge_ph7.4"=>"negative",
+		     "hydropathy"=>"-3.5"
+		    },
+		"C"=>{
+		     name=>"Cysteine",
+		     "3-letter"=>"Cys",
+		     "1-letter"=>"C",
+		     energy=>"24.7",
+		     polarity=>"nonpolar",
+		     "charge_ph7.4"=>"neutral",
+		     "hydropathy"=>"2.5"
+		    },
+		"E"=>{
+		     name=>"Glutamate",
+		     "3-letter"=>"Glu",
+		     "1-letter"=>"E",
+		     energy=>"15.3",
+		     polarity=>"polar",
+		     "charge_ph7.4"=>"negative",
+		     "hydropathy"=>"-3.5"
+		    },
+		"Q"=>{
+		     name=>"Glutamine",
+		     "3-letter"=>"Gln",
+		     "1-letter"=>"Q",
+		     energy=>"16.3",
+		     polarity=>"polar",
+		     "charge_ph7.4"=>"neutral",
+		     "hydropathy"=>"-3.5"
+		    },
+		"G"=>{
+		     name=>"Glycine",
+		     "3-letter"=>"Gly",
+		     "1-letter"=>"G",
+		     energy=>"11.7",
+		     polarity=>"nonpolar",
+		     "charge_ph7.4"=>"neutral",
+		     "hydropathy"=>"-0.4"
+		    },
+		"H"=>{
+		     name=>"Histidine",
+		     "3-letter"=>"His",
+		     "1-letter"=>"H",
+		     energy=>"38.3",
+		     polarity=>"polar",
+		     "charge_ph7.4"=>'10% pos/90% neut',
+		     "hydropathy"=>"-3.2"
+		    },
+		"I"=>{
+		     name=>"Isoleucine",
+		     "3-letter"=>"Ile",
+		     "1-letter"=>"I",
+		     energy=>"32.3",
+		     polarity=>"nonpolar",
+		     "charge_ph7.4"=>"neutral",
+		     "hydropathy"=>"4.5"
+		    },
+		"L"=>{
+		     name=>"Leucine",
+		     "3-letter"=>"Leu",
+		     "1-letter"=>"L",
+		     energy=>"27.3",
+		     polarity=>"nonpolar",
+		     "charge_ph7.4"=>"neutral",
+		     "hydropathy"=>"3.8"
+		    },
+		"K"=>{
+		     name=>"Lysine",
+		     "3-letter"=>"Lys",
+		     "1-letter"=>"K",
+		     energy=>"30.3",
+		     polarity=>"polar",
+		     "charge_ph7.4"=>"positive",
+		     "hydropathy"=>"-3.9"
+		    },
+		"M"=>{
+		     name=>"Methionine",
+		     "3-letter"=>"Met",
+		     "1-letter"=>"M",
+		     energy=>"34.3",
+		     polarity=>"nonpolar",
+		     "charge_ph7.4"=>"neutral",
+		     "hydropathy"=>"1.9"
+		    },
+		"F"=>{
+		     name=>"Phenylalanine",
+		     "3-letter"=>"Phe",
+		     "1-letter"=>"F",
+		     energy=>"52.0",
+		     polarity=>"nonpolar",
+		     "charge_ph7.4"=>"neutral",
+		     "hydropathy"=>"2.8"
+		    },
+		"P"=>{
+		     name=>"Proline",
+		     "3-letter"=>"Pro",
+		     "1-letter"=>"P",
+		     energy=>"20.3",
+		     polarity=>"nonpolar",
+		     "charge_ph7.4"=>"neutral",
+		     "hydropathy"=>"-1.6"
+		    },
+		"S"=>{
+		     name=>"Serine",
+		     "3-letter"=>"Ser",
+		     "1-letter"=>"S",
+		     energy=>"11.7",
+		     polarity=>"polar",
+		     "charge_ph7.4"=>"neutral",
+		     "hydropathy"=>"-0.8"
+		    },
+		"T"=>{
+		     name=>"Threonine",
+		     "3-letter"=>"Thr",
+		     "1-letter"=>"T",
+		     energy=>"18.7",
+		     polarity=>"polar",
+		     "charge_ph7.4"=>"neutral",
+		     "hydropathy"=>"-0.7"
+		    },
+		"W"=>{
+		     name=>"Tryptophan",
+		     "3-letter"=>"Trp",
+		     "1-letter"=>"W",
+		     energy=>"74.3",
+		     polarity=>"nonpolar",
+		     "charge_ph7.4"=>"neutral",
+		     "hydropathy"=>"-0.9"
+		    },
+		"Y"=>{
+		     name=>"Tyrosine",
+		     "3-letter"=>"Tyr",
+		     "1-letter"=>"Y",
+		     energy=>"50.0",
+		     polarity=>"polar",
+		     "charge_ph7.4"=>"neutral",
+		     "hydropathy"=>"-1.3"
+		    },
+		"V"=>{
+		     name=>"Valine",
+		     "3-letter"=>"Val",
+		     "1-letter"=>"V",
+		     energy=>"23.3",
+		     polarity=>"nonpolar",
+		     "charge_ph7.4"=>"neutral",
+		     "hydropathy"=>"4.2"
+		    },
+	       }
   }
 
 sub code
@@ -1352,6 +1543,7 @@ sub sort_nt3
     return $val;
   }
 
+
 sub color_by_usage
   {
     my $self = shift;
@@ -1411,6 +1603,89 @@ sub sort_aa_by_gc
       }
     %aa_sort = map {$_,($aa_sort{$_}{GC}/($aa_sort{$_}{AT}+$aa_sort{$_}{GC}))} keys %aa_sort;
     return \%aa_sort;
+  }
+
+sub html_aa_new
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $trans_table = $opts{trans_table};
+    my $code = $opts{code};
+    $code = $self->code($trans_table) unless $code;
+    my $data = $opts{data};
+    my $counts = $opts{counts};
+    my $two_colors = $opts{two_colors};
+    if ($counts)
+      {
+	$counts = $data;
+	my $total = 0;
+	grep {$total+=$_} values %$counts;
+	$data = {map {$_,$counts->{$_}/$total} keys %$counts};
+      }
+    my $aa_sort = $self->sort_aa_by_gc(code=>$code, trans_table=>$trans_table);
+    my ($max_val) = sort {$b<=>$a} map{$data->{$_}} keys %$aa_sort;
+    my ($min_val) = sort {$a<=>$b} map{$data->{$_}} keys %$aa_sort;
+    my $range = $max_val-$min_val;
+    my $html;
+    $html .= qq{<table id="aa_table" class='ui-widget-content ui-corner-all'><Thead><tr>
+ <th>AA</th>
+ <th>Polarity</th>
+ <th>Charge pH7.4</th>
+ <th>Hydropathy</th>
+ <th>\%GC</th>
+ <th>ATP Costs</th>
+ <TH>\%Usage</th>
+ </tr></THEAD>
+<tbody align=left valign="top" id="aa_table_body">
+};
+    my $total = 0;
+    foreach (sort {$aa_sort->{$b} <=> $aa_sort->{$a} || $a cmp $b}keys %$aa_sort)
+      {	
+	my $color_str;
+	my $current_val = $data->{$_} =~ /\d/ ? sprintf("%.2f",100*$data->{$_}) : $data->{$_};#sprintf("%.2f",100*$data->{$_});
+	if ($current_val =~ /^\d/)
+	    {
+	      if ($two_colors)
+		{
+		  #fade to white at 100
+		  #color green if above 100
+		  if ($current_val > 100)
+		    {
+		      my $color = sprintf("%.0f", 255-255*($current_val-100)/($max_val*100-100));
+		      $color_str = "rgb($color, 255, $color);";
+		    }
+		  #color red if below 100;
+		  else
+		    {
+		      my $color = sprintf("%.0f", 255*$current_val/100);
+		      $color_str = "rgb(255, $color, $color);";
+		    }
+		}
+	      else
+		{
+		  my $color = $self->color_by_usage(100*$max_val, $current_val);
+		  $color_str = "rgb($color, 255, $color);";
+		}
+	    }
+	#	my $rel_val = ($data->{$_}-$min_aa)/$range;
+#	my $color = $self->get_color(val=>$rel_val);
+#	my $color_str = join (",",@$color);
+#	my $color = $self->color_by_usage(100*$max_aa,$current_val);
+	$html .= qq{<tr style="background-color: $color_str">}.
+ "<td nowrap>$_". " (".$aa_info->{$_}{"3-letter"}.")".
+  qq{<td nowrap>}.$aa_info->{$_}{"polarity"}.qq{</td>}.
+  qq{<td nowrap>}.$aa_info->{$_}{"charge_ph7.4"}.qq{</td>}.
+  qq{<td nowrap>}.$aa_info->{$_}{"hydropathy"}.qq{</td>}.
+  "<td nowrap>".sprintf("%.0f",100*$aa_sort->{$_})."%".qq{</td>}.
+  qq{<td nowrap>}.$aa_info->{$_}{"energy"}.qq{</td>}.
+  "<td nowrap>".$current_val."%";
+	$html .= " (".$counts->{$_}.")" if $counts;
+        $html .= qq{</td>};
+	$total++;
+        $html .= qq{</tr>};
+      }
+    $html .= "</tbody></table>";
+    return $html;
   }
 
 sub html_aa
