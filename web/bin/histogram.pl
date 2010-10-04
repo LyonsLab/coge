@@ -2,7 +2,7 @@
 
 use strict;
 use GD;
-use GD::Graph::histogram;
+use CoGe::Accessory::histogram;
 use Data::Dumper;
 use DBI;
 use Getopt::Long;
@@ -65,8 +65,8 @@ if (defined $min || defined $max)
 
 
 
-my $hist = new GD::Graph::histogram($width, $height);
-my $bins = GD::Graph::histogram::_histogram_bins($data, 100);
+my $hist = new CoGe::Accessory::histogram($width, $height);
+my $bins = CoGe::Accessory::histogram::_histogram_bins($data, 100);
 my $colors = gen_color_list($bins);
 my $count=0;
 my @color_names;
