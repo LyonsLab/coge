@@ -23,7 +23,7 @@ use GD::Graph::bars;
 use GD::Graph::Data;
 use Data::Dumper;
 
-@GD::Graph::histogram::ISA = qw(GD::Graph::bars);
+@CoGe::Accessory::histogram::ISA = qw(GD::Graph::bars);
 
 my %Defaults = (
 	histogram_bins => undef,
