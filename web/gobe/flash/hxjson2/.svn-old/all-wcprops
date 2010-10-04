@@ -1,0 +1,41 @@
+K 25
+svn:wc:ra_dav:version-url
+V 37
+/svn/!svn/ver/177/trunk/flash/hxjson2
+END
+JSONTokenizer.hx
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/177/trunk/flash/hxjson2/JSONTokenizer.hx
+END
+JSON.hx
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/svn/!svn/ver/177/trunk/flash/hxjson2/JSON.hx
+END
+JSONEncoder.hx
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/!svn/ver/177/trunk/flash/hxjson2/JSONEncoder.hx
+END
+JSONToken.hx
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/!svn/ver/177/trunk/flash/hxjson2/JSONToken.hx
+END
+JSONParseError.hx
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/177/trunk/flash/hxjson2/JSONParseError.hx
+END
+JSONDecoder.hx
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/!svn/ver/177/trunk/flash/hxjson2/JSONDecoder.hx
+END
