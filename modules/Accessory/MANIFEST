@@ -23,4 +23,5 @@ lib/Coge/Accessory/blastz_report/segment.pm
 lib/Coge/Accessory/GenBank.pm
 lib/Coge/Accessory/GenBank/Feature.pm
 lib/Coge/Accessory/genetic_code.pm
+lib/Coge/Accessory/histogram.pm
 t/001_load.t
