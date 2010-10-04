@@ -1,0 +1,51 @@
+<html>
+<head>
+    <script src="http://ajax.googleapis.com/ajax/libs/swfobject/2.2/swfobject.js"></script>
+    <script src="static/gobe.js"></script>
+<script>
+/* e.g.  ('up', 1, 330) becomes: byId('drup1').value = 330; */
+/* so up is the 'left', down is the 'right' bar.   */
+
+</script>
+</head>
+<body>
+<input  name="drup1" id="drup1" size="10" value="10000" type="text">
+<input  name="drdown1" id="drdown1"  size="10" value="10000" type="text">
+<input  name="drup2" id="drup2" size="10" value="10000" type="text">
+<input  name="drdown2" id="drdown2" size="10" value="10000" type="text">
+<input  name="drup3" id="drup3" size="10" value="10000" type="text">
+<input  name="drdown3" id="drdown3" size="10" value="10000" type="text">
+<input  name="pad_gs" id="pad_gs" size="10" value="5000" type="text">
+
+
+<input type="submit" onclick="Gobe.clear()" value="Clear" />
+
+    <div id="flashcontent" name="flashcontent" style="z-index=0;position:absolute">
+        <strong>You need to install <a href="http://www.adobe.com/shockwave/download/download.cgi?P1_Prod_Version=ShockwaveFlash">Flash Player</a> (or turn it back on in your browser settings).</strong>
+    </div>
+    <div id="querybox"></div>
+            
+
+    <script type="text/javascript">
+        // <![CDATA[
+        var getQueryParamValue = swfobject.getQueryParamValue;
+        var width = getQueryParamValue('w') || "1010"; 
+        var height = getQueryParamValue('h') || "700"; 
+        var params = {'bgcolor': '#FFFFFF'};
+        var flashVars = {
+        	'n'        : getQueryParamValue('n') || 3,
+            'pad_gs'   : getQueryParamValue('pad_gs') || '10000', 
+            'gsid'     : getQueryParamValue('gsid') || getQueryParamValue('genespace_id') || '0',
+            'gobe_url' : getQueryParamValue('gobe_url')|| '/gobe/',
+            'img_url'  : getQueryParamValue('img_url')|| '/gobe/tmp/',
+            'base_name': getQueryParamValue('base_name')|| 'GEvo_WxUonWBr'
+        };
+        swfobject.embedSWF("flash/gobe.swf", "flashcontent", width, height, "9.0.0"
+                , "static/swfobject/expresssinstall.swf", flashVars, params, {}, function(){
+                        Gobe.swf = Gobe.get_movie();
+                });
+                
+        // ]]>
+    </script>
+</body>
+</html>

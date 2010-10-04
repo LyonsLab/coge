@@ -1,0 +1,22 @@
+Created sequence file /opt/apache/CoGe/tmp/GEvo/f20193225ds35171c1u50000d50000g1.faa
+Created sequence file /opt/apache/CoGe/tmp/GEvo/f20216540ds35172r1c2u50000d50000g1.faa
+Created sequence file /opt/apache/CoGe/tmp/GEvo/f4579325ds563csupercontig_112u50000d50000g1.faa
+running (1/3) /usr/bin/blastz  /opt/apache/CoGe/tmp/GEvo/f20193225ds35171c1u50000d50000g1.faa /opt/apache/CoGe/tmp/GEvo/f20216540ds35172r1c2u50000d50000g1.faa  W=8 K=3000 O=400 E=30 > /opt/apache/CoGe/tmp/GEvo/GEvo_WxUonWBr_1-2.blastz
+running (2/3) /usr/bin/blastz  /opt/apache/CoGe/tmp/GEvo/f20193225ds35171c1u50000d50000g1.faa /opt/apache/CoGe/tmp/GEvo/f4579325ds563csupercontig_112u50000d50000g1.faa  W=8 K=3000 O=400 E=30 > /opt/apache/CoGe/tmp/GEvo/GEvo_WxUonWBr_1-3.blastz
+running (3/3) /usr/bin/blastz  /opt/apache/CoGe/tmp/GEvo/f20216540ds35172r1c2u50000d50000g1.faa /opt/apache/CoGe/tmp/GEvo/f4579325ds563csupercontig_112u50000d50000g1.faa  W=8 K=3000 O=400 E=30 > /opt/apache/CoGe/tmp/GEvo/GEvo_WxUonWBr_2-3.blastz
+generating image (1/3)for AT1G07300
+generating image (1/3)for AT2G29640
+generating image (1/3)for EVM prediction supercontig_112.50
+
+GEvo Benchmark: 2009-07-15 10:11:59
+  Time to get sequence                              :  3 wallclock secs ( 1.24 usr  0.01 sys +  0.01 cusr  0.05 csys =  1.31 CPU)
+  Time to run blastz                     :  1 wallclock secs ( 0.40 usr  0.00 sys +  2.14 cusr  0.28 csys =  2.82 CPU)
+  Time to generate images, maps, and sqlite database:  3 wallclock secs ( 0.01 usr  0.01 sys +  2.65 cusr  0.23 csys =  2.90 CPU)
+  Time to find and update sqlite database for HSPs  :  0 wallclock secs ( 0.01 usr +  0.02 sys =  0.03 CPU)
+  Time to process html                              :  0 wallclock secs ( 0.04 usr  0.01 sys +  0.00 cusr  0.02 csys =  0.07 CPU)
+Total time                                          :  7 wallclock secs ( 1.70 usr  0.05 sys +  4.80 cusr  0.58 csys =  7.13 CPU)
+
+
+
+Finished!
+GEvo link: http://synteny.cnr.berkeley.edu/CoGe/GEvo.pl?prog=blastz;spike_len=0;accn1=AT1G07300;fid1=20193225;dsid1=35171;dsgid1=8;gstid1=1;chr1=1;dr1up=50000;dr1down=50000;gbstart1=1;do1=1;accn2=AT2G29640;fid2=20216540;dsid2=35172;dsgid2=8;gstid2=1;chr2=2;dr2up=50000;dr2down=50000;gbstart2=1;rev2=1;do2=2;accn3=EVM%20prediction%20supercontig_112.50;fid3=4579325;dsid3=563;dsgid3=18;gstid3=1;chr3=supercontig_112;dr3up=50000;dr3down=50000;gbstart3=1;do3=3;num_seqs=3;hsp_overlap_limit=0;hsp_size_limit=0
