@@ -30,7 +30,7 @@ blastz_score_to_ncbi_bits = lambda bz_score: bz_score * 0.0205
 
 def blastz_score_to_ncbi_expectation(bz_score):
     bits = blastz_score_to_ncbi_bits(bz_score)
-    log_prob = -bits * 0.301029996
+    log_prob = -bits * 0.693147181 
     # this number looks like.. human genome?
     return 3.0e9 * math.exp(log_prob)
 
@@ -51,12 +51,12 @@ def lastz_to_blast(row):
             start1, end1, start2, end2, evalue, score))
 
 
-def lastz(k, n, bfasta_fn, out_fh, lock, lastz_path):
-    lastz_bin = "lastz" if lastz_path is None else lastz_path
+def lastz(k, n, bfasta_fn, out_fh, lock, lastz_path, extra):
+    lastz_bin = lastz_path or "lastz" 
 
     lastz_cmd = "%s --format=general-:%s --ambiguous=iupac %s[multiple,unmask,nameparse=darkspace]"\
-            " %s[unmask,nameparse=darkspace,subsample=%d/%d]"
-    lastz_cmd %= (lastz_bin, lastz_fields, bfasta_fn, afasta_fn, k, n)
+            " %s[unmask,nameparse=darkspace,subsample=%d/%d] %s"
+    lastz_cmd %= (lastz_bin, lastz_fields, bfasta_fn, afasta_fn, k, n, extra)
 
     proc = Popen(lastz_cmd, bufsize=1, stdout=PIPE, shell=True)
 
@@ -70,16 +70,19 @@ def lastz(k, n, bfasta_fn, out_fh, lock, lastz_path):
     logging.debug("job <%d> finished" % proc.pid)
 
 
-def main(options, afasta_fn, bfasta_fn, out_fh):
+def main(options, afasta_fn, bfasta_fn, out_fh, extra):
 
     lastz_path = options.lastz_path
-    cpus = min(options.cpus, cpu_count())
+    # split on query so check query fasta sequence number
+    afasta_num = sum(1 for x in open(afasta_fn) if x[0]=='>')
+    cpus = min(options.cpus, cpu_count(), afasta_num)
     logging.debug("Dispatch job to %d cpus" % cpus)
 
     processes = []
     lock = Lock()
     for k in xrange(cpus):
-        pi = Process(target=lastz, args=(k+1, cpus, bfasta_fn, out_fh, lock, lastz_path))
+        pi = Process(target=lastz, args=(k+1, cpus, bfasta_fn, out_fh, lock,
+            lastz_path, extra))
         pi.start()
         processes.append(pi)
 
@@ -102,6 +105,8 @@ if __name__ == '__main__':
             help="parallelize job to multiple cpus [default: %default]")
     parser.add_option("--path", dest="lastz_path", default=None,
             help="specify LASTZ path")
+    parser.add_option("--lastz-params", dest="extra", default="",
+            help="pass in LASTZ parameter string (please quote the string)")
 
     (options, args) = parser.parse_args()
 
@@ -118,5 +123,5 @@ if __name__ == '__main__':
     if not all((afasta_fn, bfasta_fn)):
         sys.exit(parser.print_help())
 
-    main(options, afasta_fn, bfasta_fn, out_fh)
+    main(options, afasta_fn, bfasta_fn, out_fh, options.extra)
 
