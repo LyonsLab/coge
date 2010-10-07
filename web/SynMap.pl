@@ -1996,7 +1996,6 @@ sub go
 
     #will non-syntenic dots be shown?
     my $snsd = $opts{show_non_syn_dots}=~/true/i ? 1 : 0;
-    print STDERR "SNSD: $snsd\t".$opts{show_non_syn_dots}."\n";
     my $algo_name = $ALGO_LOOKUP->{$blast}{displayname};
 
     $box_diags = $box_diags eq "true" ? 1 : 0;
