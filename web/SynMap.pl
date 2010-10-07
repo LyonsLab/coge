@@ -839,7 +839,7 @@ CoGe::Accessory::Web::write_log("Filtered blast file found where tandem dups hav
       }
     my $tandem_distance = $opts{tandem_distance};
     $tandem_distance = 10 unless defined $tandem_distance;
-    my $cmd = $BLAST2RAW." $blastfile --qbed $bedfile1 --sbed $bedfile2 --tandem_Nmax $tandem_distance > $outfile";
+    my $cmd = $BLAST2RAW." $blastfile --localdups --qbed $bedfile1 --sbed $bedfile2 --tandem_Nmax $tandem_distance > $outfile";
    CoGe::Accessory::Web::write_log("finding and removing local duplications", $cogeweb->logfile);
    CoGe::Accessory::Web::write_log("running $cmd" ,$cogeweb->logfile);
     `$cmd`;
@@ -1989,7 +1989,9 @@ sub go
 	return "<span class=alert>Problem generating dataset group objects for ids:  $dsgid1, $dsgid2.</span>";
       }
     $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$basename, prog=>"SynMap");
-    my $synmap_link = "SynMap.pl?dsgid1=$dsgid1;dsgid2=$dsgid2;c=$repeat_filter_cvalue;D=$dagchainer_D;g=$dagchainer_g;A=$dagchainer_A;Dm=$Dm;gm=$gm;w=$width;b=$blast;ft1=$feat_type1;ft2=$feat_type2";
+    my $synmap_link = "SynMap.pl?dsgid1=$dsgid1;dsgid2=$dsgid2;c=$repeat_filter_cvalue;D=$dagchainer_D;g=$dagchainer_g;A=$dagchainer_A;w=$width;b=$blast;ft1=$feat_type1;ft2=$feat_type2";
+    $synmap_link .= ";Dm=$Dm" if defined $Dm;
+    $synmap_link .= ";gm=$gm" if defined $gm;
     $synmap_link .= ";bd=$box_diags" if $box_diags;
     $synmap_link .= ";mcs=$min_chr_size" if $min_chr_size;
     $synmap_link .= ";sp=$assemble" if $assemble;
@@ -2146,9 +2148,8 @@ sub go
     blast2bed(infile=>$raw_blastfile, outfile1=>$bedfile1, outfile2=>$bedfile2);
     my $filtered_blastfile = $raw_blastfile.".filtered";
     run_blast2raw(blastfile=>$raw_blastfile, bedfile1=>$bedfile1, bedfile2=>$bedfile2, outfile=>$filtered_blastfile);
-    print STDERR $filtered_blastfile,"\n";
     $filtered_blastfile = $raw_blastfile unless -r $filtered_blastfile && -s $filtered_blastfile;
-    print STDERR $filtered_blastfile,"\n";
+
 #    my $synteny_score_db = run_synteny_score (blastfile=>$filtered_blastfile, bedfile1=>$bedfile1, bedfile2=>$bedfile2, outfile=>$org_dirs{$orgkey1."_".$orgkey2}{dir}."/".$dsgid1."_".$dsgid2.".$feat_type1-$feat_type2"); #needed to comment out as the bed files and blast files have changed in SynFind
     my $local_dup_time = timestr(timediff($t2,$t1));
 
@@ -2337,7 +2338,6 @@ CoGe::Accessory::Web::write_log("WARNING:  sub run_adjust_dagchainer_evals faile
 	    $html .= qq{<span class='small link' onclick=window.open('$fasta1')>Fasta file for $org_name1: $feat_type1</span><br>};
 	    $fasta2 =~ s/$DIR/$URL/;
 	    $html .= qq{<span class='small link' onclick=window.open('$fasta2')>Fasta file for $org_name2: $feat_type2</span><br>};
-	    
 	    my $org1_localdups = process_local_dups_file(infile=>$raw_blastfile.".q.localdups", outfile=>$raw_blastfile.".q.tandems");
 	    my $org2_localdups = process_local_dups_file(infile=>$raw_blastfile.".s.localdups", outfile=>$raw_blastfile.".s.tandems");
 
