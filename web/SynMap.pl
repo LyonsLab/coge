@@ -178,7 +178,15 @@ sub gen_body
       {
 	$template->param($ALGO_LOOKUP->{4}{opt}=>"selected");
       }
-    my ($D, $g, $A, $Dm, $gm, $dt, $cvalue) = ($FORM->param('D'),$FORM->param('g'),$FORM->param('A'), $FORM->param('Dm'),$FORM->param('gm'),$FORM->param('dt'), $FORM->param('c'));
+    my ($D, $g, $A, $Dm, $gm, $dt, $cvalue);
+    $D = $FORM->param('D');
+    $g = $FORM->param('g');
+    $A = $FORM->param('A');
+    $Dm = $FORM->param('Dm');
+    $gm = $FORM->param('gm');
+    $dt = $FORM->param('dt');
+    $cvalue = $FORM->param('c'); #different c value than the one for cytology.  But if you get that, you probably shouldn't be reading this code
+
     my $display_dagchainer_settings;
     if ($D && $g && $A && $dt) 
       {
@@ -193,7 +201,7 @@ sub gen_body
 	    $type = " bp";
 	    $template->param('DAG_DISTANCE_SELECT'=>'checked');
 	  }
-	$display_dagchainer_settings = qq{display_dagchainer_settings([$g,$D,$A, $gm, $Dm],'$type');};
+	$display_dagchainer_settings = qq{display_dagchainer_settings([$g,$D,$A, '$gm', $Dm],'$type');};
       }
     else
       {
@@ -1511,7 +1519,6 @@ DNA_align_2
 	my ($feat2) = $coge->resultset('Feature')->find($fid2);
 	my $max_res;
 	my $ks = new CoGe::Algos::KsCalc();
-#	print STDERR "running KsCalc on $fid1 $fid2\n";
 	$ks->nwalign_server_port($ports->[$i]);
 	$ks->feat1($feat1);
 	$ks->feat2($feat2);
@@ -1523,7 +1530,6 @@ DNA_align_2
 #	  }
 	unless ($max_res)
 	  {
-#	    print STDERR "Failed KS calculation: $fid1\t$fid2\n";
 	    $max_res = {};
 	  }
 	my ($dS, $dN, $dNS) =( "","","");
@@ -1603,7 +1609,6 @@ sub get_ks_data
 	if ($data->[3] eq "")
 	  {
 	    $no_data++;
-#	    print STDERR $data->[1],"\t", $data->[2]."\n";
 #	    next; #uncomment to force recalculation of missing data
 	  }
 
