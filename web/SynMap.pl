@@ -236,6 +236,12 @@ sub gen_body
       {
 	$template->param(KS0=>"selected");
       }
+
+    #show non syntenic dots:  on by default
+    my $snsd = 1;
+    $snsd = $FORM->param('snsd') if (defined $FORM->param('snsd'));
+    $template->param('SHOW_NON_SYN_DOTS'=>'checked') if $snsd;
+
     #set axis metric for dotplot
     if ($FORM->param('ct'))
       {
@@ -1884,6 +1890,8 @@ sub generate_dotplot
     my $box_diags = $opts{box_diags};
     my $fid1 = $opts{fid1}; #fids for highlighting gene pair in dotplot
     my $fid2 = $opts{fid2};
+    my $snsd = $opts{snsd}; #option for showing non syntenic (grey) dots in dotplot
+
     my $cmd = $DOTPLOT;
     #add ks_db to dotplot command if requested
     $outfile.= ".ass" if $assemble;
@@ -1898,8 +1906,21 @@ sub generate_dotplot
 	$outfile .= ".$ks_type";
       }
     $outfile .= ".box" if $box_diags;
+    #are non-syntenic dots being displayed
+    if ($snsd)
+      {
+	$cmd .= qq{ -d $dag};
+      }
+    else
+      {
+	$outfile .= ".nsd"; #no syntenic dots, yes, nomicalture is confusing.
+      }
+
     return $outfile if $just_check &&-r "$outfile.html";
-    $cmd .= qq{ -d $dag -a $coords -b $outfile -l 'javascript:synteny_zoom("$dsgid1","$dsgid2","$basename","XCHR","YCHR"};
+
+
+    $cmd .= qq{ -a $coords};
+    $cmd .= qq{ -b $outfile -l 'javascript:synteny_zoom("$dsgid1","$dsgid2","$basename","XCHR","YCHR"};
     $cmd .= qq{,"$ks_db"} if $ks_db;
     $cmd .= qq{)' -dsg1 $dsgid1 -dsg2 $dsgid2 -w $width -lt 2};
     $cmd .= qq{ -assemble $assemble} if $assemble;
@@ -1973,6 +1994,9 @@ sub go
     my $fid1 = $opts{fid1};
     my $fid2 = $opts{fid2};
 
+    #will non-syntenic dots be shown?
+    my $snsd = $opts{show_non_syn_dots}=~/true/i ? 1 : 0;
+    print STDERR "SNSD: $snsd\t".$opts{show_non_syn_dots}."\n";
     my $algo_name = $ALGO_LOOKUP->{$blast}{displayname};
 
     $box_diags = $box_diags eq "true" ? 1 : 0;
@@ -1992,6 +2016,8 @@ sub go
     my $synmap_link = "SynMap.pl?dsgid1=$dsgid1;dsgid2=$dsgid2;c=$repeat_filter_cvalue;D=$dagchainer_D;g=$dagchainer_g;A=$dagchainer_A;w=$width;b=$blast;ft1=$feat_type1;ft2=$feat_type2";
     $synmap_link .= ";Dm=$Dm" if defined $Dm;
     $synmap_link .= ";gm=$gm" if defined $gm;
+    $synmap_link .= ";snsd=$snsd";
+
     $synmap_link .= ";bd=$box_diags" if $box_diags;
     $synmap_link .= ";mcs=$min_chr_size" if $min_chr_size;
     $synmap_link .= ";sp=$assemble" if $assemble;
@@ -2263,7 +2289,7 @@ CoGe::Accessory::Web::write_log("WARNING:  sub run_adjust_dagchainer_evals faile
 	my $t6 = new Benchmark;
 	$gen_ks_db_time = timestr(timediff($t6,$t5));
 
- 	$out = generate_dotplot(dag=>$dag_file12_all, coords=>$final_dagchainer_file, outfile=>"$out", regen_images=>$regen_images, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, dagtype=>$dagchainer_type, ks_db=>$ks_db, ks_type=>$ks_type, assemble=>$assemble, metric=>$axis_metric, min_chr_size=>$min_chr_size, color_type=>$color_type, box_diags=>$box_diags, fid1=>$fid1, fid2=>$fid2);
+ 	$out = generate_dotplot(dag=>$dag_file12_all, coords=>$final_dagchainer_file, outfile=>"$out", regen_images=>$regen_images, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, dagtype=>$dagchainer_type, ks_db=>$ks_db, ks_type=>$ks_type, assemble=>$assemble, metric=>$axis_metric, min_chr_size=>$min_chr_size, color_type=>$color_type, box_diags=>$box_diags, fid1=>$fid1, fid2=>$fid2, snsd=>$snsd);
 
 	my $hist = $out.".hist.png";
 	my $t7 = new Benchmark;
