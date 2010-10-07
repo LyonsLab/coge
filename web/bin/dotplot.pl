@@ -252,7 +252,7 @@ sub draw_dots
 	  {
 	    $tuse_color = $item1[4] eq $item2[4]? $colors->[0] : $colors->[1];
 	  }
-	if ($fids{$fid1} && $fids{$fid2})
+	if ($fid1 && $fid2 && $fids{$fid1} && $fids{$fid2})
 	  {
 	    $tsize = 10;
 	    $tuse_color = $alert_color;
