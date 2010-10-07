@@ -47,7 +47,12 @@ $selfself = 1 unless defined $selfself;
 
 
 usage() if $help;
-usage() unless -r $dagfile;
+usage() unless -r $dagfile || -r $alignfile;
+
+if ($dagfile and ! -r $dagfile)
+  {
+    warn "dagfile specified but not present or readable: $!";
+  }
 
 #set a default for this, make sure it is uppercase
 $ks_type = "kS" unless $ks_type;
@@ -126,7 +131,7 @@ draw_chromosome_grid(gd=>$graphics_context, org1=>$org1info, org2=>$org2info, x_
 my $ksdata = get_ksdata(ks_db=>$ks_db, ks_type=>$ks_type, chr1=>$CHR1, chr2=> $CHR2, pairs=>$pairs) if $ks_db && -r $ks_db;
 
 #draw dots for all matches
-draw_dots(gd=>$graphics_context, file=>$dagfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, link_type => $link_type, dsgid1=>$dsgid1, dsgid2=>$dsgid2, flip=>$flip, metric=>$axis_metric, fid1=>$fid1, fid2=>$fid2);
+draw_dots(gd=>$graphics_context, file=>$dagfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, link_type => $link_type, dsgid1=>$dsgid1, dsgid2=>$dsgid2, flip=>$flip, metric=>$axis_metric, fid1=>$fid1, fid2=>$fid2) if -r $dagfile;
 
 
 
