@@ -310,7 +310,7 @@ sub run
     my $phylip_file_jalview = $phylip_file;
     $phylip_file_jalview =~ s/http.+edu//;
     #jalview screws up jquery for some reason
-#    $html .= qq{<applet width="140" height="35" code="jalview.bin.JalviewLite" archive="/CoGe/bin/JalView/jalviewApplet.jar"><param name="file" value="$outfile_jalview"><param name="tree" value="$phylip_file_jalview"><param name="showbutton" value="true"><param name="defaultColour" value="Clustal"></applet><br><a class=small href="http://www.jalview.org" target=_new>Information on JalView</a>};
+    $html .= qq{<applet width="140" height="35" code="jalview.bin.JalviewLite" archive="/CoGe/bin/JalView/jalviewApplet.jar"><param name="file" value="$outfile_jalview"><param name="tree" value="$phylip_file_jalview"><param name="showbutton" value="true"><param name="defaultColour" value="Clustal"></applet><br><a class=small href="http://www.jalview.org" target=_new>Information on JalView</a>};
     $clustal_alignment =~s/\n/<br\/>/g;
     my $tree = create_tree_image($phylip_file);
     $html .= qq{
