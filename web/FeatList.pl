@@ -177,14 +177,15 @@ sub gen_body
 sub add_to_user_history
   {
     my %opts = @_;
-    my $url_params = $ENV{'QUERY_STRING'};
+#    my $url_params = $ENV{'QUERY_STRING'};
+    my $url = $opts{url};
     if ($opts{archive})
       {
 	$USER->add_to_works({
 			     'name'=>$opts{work_name},
 			     'archive'=>$opts{archive},
 			     'page'=>$PAGE_NAME,
-			     'parameter'=>$PAGE_NAME."?".$url_params,
+			     'parameter'=>$url,
 			     'description'=>$opts{description},
 			     'note'=>$opts{note},
 			    }); 
@@ -195,10 +196,11 @@ sub add_to_user_history
 			     'name'=>'FeatList-'.$DATE,
 			     'archive'=>0,
 			     'page'=>$PAGE_NAME,
-			     'parameter'=>$PAGE_NAME."?".$url_params,
+			     'parameter'=>$url,
 			     'description'=>'Feature List created on '.$DATE,
 			    });
       }
+    return();
   }
 
 sub get_fids
