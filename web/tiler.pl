@@ -13,8 +13,10 @@ use vars qw($P $IMGURL $BASEDIR);
 $P = CoGe::Accessory::Web::get_defaults();
 
 $IMGURL = $P->{SERVER}.'GenomePNG.pl?';
+my $x;
 # where to start the caching
 $BASEDIR = $P->{IMAGE_CACHE};
+($x,$BASEDIR) = CoGe::Accessory::Web::check_taint( $BASEDIR );
 if (! -e $BASEDIR ){ mkdir($BASEDIR);  }
 if (! -e $BASEDIR ){ warn "unable to find and create $BASEDIR";exit;}
 print "Content-type: image/png; mode=24bit\n\n";
@@ -22,6 +24,7 @@ print "Content-type: image/png; mode=24bit\n\n";
 my $basedir = [split(/[\\\/]/,$BASEDIR)];
 
 my ($dir) = get_dir_array();
+
 my $reldir = catfile(@$dir) . '.png';
 my $basepath = catfile(@$basedir);
 
@@ -96,5 +99,12 @@ sub get_dir_array {
         push(@dir,$key . '__' . $first);
         map { push(@dir,$_) } @vals;
     }
-    return \@dir; 
+    my $x;
+    my @tested;
+    foreach my $item (@dir)
+      {
+	($x,$item) = CoGe::Accessory::Web::check_taint( $item );
+	push @tested, $item if $x;
+      }
+    return \@tested; 
 }
