@@ -944,7 +944,7 @@ sub run
 	($x, $all_file) = CoGe::Accessory::Web::check_taint($all_file);
 	my $seq_file = $item->{file};
 	($x, $seq_file) = CoGe::Accessory::Web::check_taint($seq_file);
-	my $cmd = "cat ".$seq_file." >> $all_file";
+	my $cmd = "/bin/cat ".$seq_file." >> $all_file";
 	`$cmd`;
       }
 
@@ -1184,7 +1184,7 @@ px_height integer
 #TODO: make sure to populate the bpmin and pbmax and image width!!!!!!!!!!!!!!!!!
     $dbh->do($create);
     $dbh->do('CREATE INDEX id ON image_info (id)');
-    system "chmod +rw $dbfile";
+    system "/bin/chmod +rw $dbfile";
     $dbh->disconnect();
     undef $dbh;
   }
@@ -2270,7 +2270,7 @@ sub run_bl2seq {
 	  # execute the command
 	  CoGe::Accessory::Web::write_log("running ($count/$total_runs) ".$command, $cogeweb->logfile);
 	  `$command`;
-	  system "chmod +rw $tempfile";
+	  system "/bin/chmod +rw $tempfile";
 	  $pm->finish;
 	}
     }
@@ -2335,7 +2335,7 @@ sub run_blastz
 	    	  # execute the command
 	    CoGe::Accessory::Web::write_log("running ($count/$total_runs) ".$command, $cogeweb->logfile);
 	    `$command`;
-	    system "chmod +rw $tempfile";
+	    system "/bin/chmod +rw $tempfile";
 	    $pm->finish;
 	  }
       }
@@ -2395,7 +2395,7 @@ sub run_lagan
 	    CoGe::Accessory::Web::write_log("running ($count/$total_runs) ".$command, $cogeweb->logfile);
 	    #time for execution
 	    `$command`;
-	    system "chmod +rw $tempfile";
+	    system "/bin/chmod +rw $tempfile";
 	    my $report = new CoGe::Accessory::lagan_report({file=>$tempfile, %$parser_opts}) if -r $tempfile;
 	    my @tmp = ($tempfile, $accn1, $accn2);
 	    if ($report)
@@ -2451,7 +2451,7 @@ sub run_chaos
 	    CoGe::Accessory::Web::write_log("running ($count/$total_runs) ".$command, $cogeweb->logfile);
 	    #time for execution
 	    `$command`;
-	    system "chmod +rw $tempfile";
+	    system "/bin/chmod +rw $tempfile";
 	    my $report = new CoGe::Accessory::chaos_report({file=>$tempfile, %$parser_opts}) if -r $tempfile;
 	    my @tmp = ($tempfile, $accn1, $accn2);
 	    if ($report)
@@ -2591,7 +2591,7 @@ sub run_dialign
 		#time for execution
 		CoGe::Accessory::Web::write_log("running ($count/$total_runs) ".$command, $cogeweb->logfile);
 		`$command`;
-		system "chmod +rw $tempfile";
+		system "/bin/chmod +rw $tempfile";
 		$report = new CoGe::Accessory::dialign_report({file=>$tempfile, %$parser_opts}) if -r $tempfile;
 	      }
 	    my @tmp = ($tempfile, $accn1, $accn2);
@@ -2656,7 +2656,7 @@ sub run_genomethreader
 		CoGe::Accessory::Web::write_log("running ($count/$total_runs) ".$command, $cogeweb->logfile);
 		#time for execution
 		`$command`;
-		system "chmod +rw $tempfile";
+		system "/bin/chmod +rw $tempfile";
 		my $report = new CoGe::Accessory::GenomeThreader_report({file=>$tempfile, %$parser_opts}) if -r $tempfile;
 		#queries are protein sequences. need to convert their positions to relative genomic coordinates
 		#is the query a protein sequence?  if so, the query name should contain the fid tag
@@ -2740,7 +2740,7 @@ sub write_fasta
     print OUT "$hdr\n";
     print OUT $seq,"\n";
     close(OUT);
-    system "chmod +rw $fullname";
+    system "/bin/chmod +rw $fullname";
     CoGe::Accessory::Web::write_log("Created sequence file $fullname", $cogeweb->logfile);
     return($fullname);
   }
