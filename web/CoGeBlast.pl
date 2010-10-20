@@ -1,4 +1,7 @@
 #! /usr/bin/perl -w
+
+no warnings ('redefine');
+
 use strict;
 use CGI;
 use CGI::Ajax;
@@ -25,7 +28,6 @@ use CoGe::Graphics::Feature::HSP;
 use Spreadsheet::WriteExcel;
 use Benchmark qw(:all);
 use Parallel::ForkManager;
-no warnings 'redefine';
 
 
 use vars qw($P $PAGE_NAME $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $FORMATDB $BLAST_PROGS $FORM $USER $DATE $coge $cogeweb $RESULTSLIMIT $MAX_PROC $connstr);
@@ -1619,7 +1621,7 @@ schr text
   CREATE INDEX type ON sequence_info (type)
   };
       $dbh->do($index);
-    system "chmod +rw $dbfile";
+    system "/bin/chmod +rw $dbfile";
   }
   
 sub populate_sqlite
