@@ -72,6 +72,7 @@ my ($org1_order, $org2_order) = parse_syn_blocks(file=>$alignfile) if $assemble;
 my $skip_non_ordered = $assemble && $assemble == 2 ? 1 : 0;
 my $org1info = get_dsg_info(dsgid=>$dsgid1, chr=>$CHR1, minsize=>$min_chr_size, order=>$org1_order, metric=>$axis_metric, skip_non_ordered=>$skip_non_ordered);
 my $org1length =0;
+#print STDERR Dumper $org1info;
 map {$org1length+=$_->{length}} values %$org1info;
 my $org2info = get_dsg_info(dsgid=>$dsgid2, chr=>$CHR2, minsize=>$min_chr_size, order=>$org2_order, metric=>$axis_metric, skip_non_ordered=>$skip_non_ordered);
 my $org2length =0;
@@ -665,9 +666,7 @@ sub get_dsg_info
     my $order = $opts{order};
     my $skip_non_ordered = $opts{skip_non_ordered};
     my $metric=$opts{metric};
-
     my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
-
     unless ($dsg)
       {
 	warn "No dataset group found with dbid $dsgid\n";
@@ -798,15 +797,19 @@ sub parse_syn_blocks
 #    print Dumper \@blocks;
     my $chrs1={};
     my $chrs2={};
+    my $chrs1_scores={};
+    my $chrs2_scores={};
     foreach my $item (@$blocks1)
       {
 	$chrs1->{$item->{name}}{$item->{match}}{count}++;
 	$chrs1->{$item->{name}}{$item->{match}}{score}+=$item->{score};
+	$chrs1_scores->{$item->{name}}+=$item->{score};
       }
     foreach my $item (@$blocks2)
       {
 	$chrs2->{$item->{name}}{$item->{match}}{count}++;
 	$chrs2->{$item->{name}}{$item->{match}}{score}+=$item->{score};
+	$chrs2_scores->{$item->{name}}+=$item->{score};
       }
 
     #blocks1 will contain fewer chromosomes; blocks2 will be ordered by it.
@@ -815,13 +818,14 @@ sub parse_syn_blocks
       {
 	($blocks1, $blocks2) = ($blocks2, $blocks1);
 	($chrs1, $chrs2) = ($chrs2, $chrs1);
+	($chrs1_scores, $chrs2_scores) = ($chrs2_scores, $chrs1_scores);
       }
 
     my $ordered1 =[]; #storage for ordered chromosomes
     my $ordered2 =[]; #storage for ordered chromosomes
     my %seen;
     #sort blocks for chr1 so that the highest scoring ones are first
-    foreach my $chr1 (sort{$chrs1->{$b}{score} <=> $chrs1->{$a}{score}} keys %$chrs1)
+    foreach my $chr1 (sort{$chrs1_scores->{$b} <=> $chrs1_scores->{$a}} keys %$chrs1_scores)
       {
 	push @$ordered1, {chr=>$chr1};
 	my @blocks;
@@ -883,7 +887,6 @@ sub process_syn_block
 	push @stop2, $item[7];
       }
     my $num_pairs = scalar @start1;
-    print join ("\t", $seq2,$strand,$rev,$num_pairs),"\n";
     #remove the ends;
     @start1 = sort {$a<=>$b} @start1;
     @stop1 = sort {$a<=>$b} @stop1;
