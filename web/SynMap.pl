@@ -250,6 +250,10 @@ sub gen_body
     $snsd = $FORM->param('snsd') if (defined $FORM->param('snsd'));
     $template->param('SHOW_NON_SYN_DOTS'=>'checked') if $snsd;
 
+    #are the axes flipped?
+    my $flip = 0;
+    $flip = $FORM->param('flip') if (defined $FORM->param('flip'));
+    $template->param('FLIP'=>'checked') if $flip;
     #set axis metric for dotplot
     if ($FORM->param('ct'))
       {
@@ -811,7 +815,7 @@ sub run_blast
     my $x;
     system "touch $outfile.running"; #track that a blast anlaysis is running for this
     ($x, $pre_command) =CoGe::Accessory::Web::check_taint($pre_command);
-   CoGe::Accessory::Web::write_log("running $pre_command" ,$cogeweb->logfile);
+   CoGe::Accessory::Web::write_log("running:\n\t$pre_command" ,$cogeweb->logfile);
     `$pre_command`;
     system "rm $outfile.running" if -r "$outfile.running"; #remove track file
     unless (-s $outfile)
@@ -855,7 +859,7 @@ CoGe::Accessory::Web::write_log("Filtered blast file found where tandem dups hav
     $tandem_distance = 10 unless defined $tandem_distance;
     my $cmd = $BLAST2RAW." $blastfile --localdups --qbed $bedfile1 --sbed $bedfile2 --tandem_Nmax $tandem_distance > $outfile";
    CoGe::Accessory::Web::write_log("finding and removing local duplications", $cogeweb->logfile);
-   CoGe::Accessory::Web::write_log("running $cmd" ,$cogeweb->logfile);
+   CoGe::Accessory::Web::write_log("running:\n\t$cmd" ,$cogeweb->logfile);
     `$cmd`;
     return $outfile;
   }
@@ -876,7 +880,7 @@ sub run_synteny_score
      return $outfile if -r $outfile && -s $outfile;
      my $cmd = $SYNTENY_SCORE ." $blastfile --qbed $bedfile1 --sbed $bedfile2 --window $window_size --cutoff $cutoff --scoring $scoring_function --sqlite $outfile";
      
-    CoGe::Accessory::Web::write_log("Synteny Score:  running $cmd", $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("Synteny Score:  running:\n\t$cmd", $cogeweb->logfile);
      system("$PYTHON26 $cmd &");
      return $outfile;
 #python /opt/apache/CoGe/bin/quota-alignment/scripts/synteny_score.py 3068_8.CDS-CDS.blastn.blast.filtered --qbed 3068_8.blastn.blast.q.bed --sbed 3068_8.CDS-CDS.blastn.blast.s.bed --sqlite 3068_8.CDS-CDS.db --window $window_size --cutoff $cutoff
@@ -964,7 +968,7 @@ CoGe::Accessory::Web::write_log("run dag_tools: file $outfile already exists",$c
       $cmd .= " --subject_dups $subject_dup_file" if $subject_dup_file;
       $cmd .=  " > $outfile";
       system "touch $outfile.running"; #track that a blast anlaysis is running for this
-     CoGe::Accessory::Web::write_log("run dag_tools: running $cmd",$cogeweb->logfile);
+     CoGe::Accessory::Web::write_log("run dag_tools: running\n\t$cmd",$cogeweb->logfile);
       `$cmd`;
       system "rm $outfile.running" if -r "$outfile.running"; #remove track file
       unless (-s $outfile)
@@ -997,7 +1001,7 @@ CoGe::Accessory::Web::write_log("run_tandem_filter: file $outfile already exists
       }
     my $cmd = "$PYTHON $TANDEM_FINDER -i $infile > $outfile";
     system "touch $outfile.running"; #track that a blast anlaysis is running for this
-   CoGe::Accessory::Web::write_log("run_tandem_filter: running $cmd", $cogeweb->logfile);
+   CoGe::Accessory::Web::write_log("run_tandem_filter: running\n\t$cmd", $cogeweb->logfile);
     `$cmd`;
     system "rm $outfile.running" if -r "$outfile.running"; #remove track file
     return 1 if -r $outfile;
@@ -1033,7 +1037,7 @@ CoGe::Accessory::Web::write_log("run_adjust_dagchainer_evals: file $outfile alre
     #and updating the auto-SynMap link generator for redoing an analysis
 
     system "touch $outfile.running"; #track that a blast anlaysis is running for this
-   CoGe::Accessory::Web::write_log("run_adjust_dagchainer_evals: running $cmd", $cogeweb->logfile);
+   CoGe::Accessory::Web::write_log("run_adjust_dagchainer_evals: running\n\t$cmd", $cogeweb->logfile);
     `$cmd`;
     system "rm $outfile.running" if -r "$outfile.running";; #remove track file
     return 1 if -r $outfile;
@@ -1277,7 +1281,7 @@ CoGe::Accessory::Web::write_log("run dagchainer: file $return_file already exist
 
 
     system "touch $running_file"; #track that a blast anlaysis is running for this
-   CoGe::Accessory::Web::write_log("run dagchainer: running $cmd", $cogeweb->logfile);
+   CoGe::Accessory::Web::write_log("run dagchainer: running\n\t$cmd", $cogeweb->logfile);
     `$cmd`;
 #    `mv $infile.aligncoords $outfile`;
     system "rm $running_file" if -r "$running_file";; #remove track file
@@ -1297,7 +1301,7 @@ sub run_quota_align_merge
    CoGe::Accessory::Web::write_log("Converting dag output to quota_align format: $cmd", $cogeweb->logfile);
     `$cmd`;
     $cmd = $QUOTA_ALIGN ." --Dm=$max_dist --merge $infile.Dm$max_dist.qa";
-   CoGe::Accessory::Web::write_log("Running quota_align to merge diagonals:  $cmd", $cogeweb->logfile);
+   CoGe::Accessory::Web::write_log("Running quota_align to merge diagonals:\n\t$cmd", $cogeweb->logfile);
     `$cmd`;
     if (-r "$infile.Dm$max_dist.qa.merged")
       {
@@ -1359,7 +1363,7 @@ CoGe::Accessory::Web::write_log("Quota_align syntenic coverage parameters alread
     else
       {
 	my $cmd = $QUOTA_ALIGN ." --Nm=$overlap_dist --quota=$org1:$org2 $infile.qa > $returnfile.tmp";
-CoGe::Accessory::Web::write_log("Running quota_align to find syntenic coverage:  $cmd", $cogeweb->logfile);
+CoGe::Accessory::Web::write_log("Running quota_align to find syntenic coverage:\n\t$cmd", $cogeweb->logfile);
 	`$cmd`;
       }
     if (-r "$returnfile.tmp")
@@ -1404,7 +1408,7 @@ sub generate_grimm_input
    CoGe::Accessory::Web::write_log("Converting dag output to quota_align format: $cmd", $cogeweb->logfile);
     `$cmd`;
     $cmd = $CLUSTER_UTILS . " --print_grimm $infile.qa";
-   CoGe::Accessory::Web::write_log("running  cluster_utils to generating grimm input: $cmd", $cogeweb->logfile);
+   CoGe::Accessory::Web::write_log("running  cluster_utils to generating grimm input:\n\t$cmd", $cogeweb->logfile);
     my $output;
     open (IN, "$cmd |");    
     while (<IN>)
@@ -1442,7 +1446,7 @@ CoGe::Accessory::Web::write_log("run find_nearby: file $outfile already exists",
       }
     my $cmd = "$PYTHON $FIND_NEARBY --diags=$infile --all=$dag_all_file > $outfile";
     system "touch $outfile.running"; #track that a blast anlaysis is running for this
-   CoGe::Accessory::Web::write_log("run find_nearby: running $cmd", $cogeweb->logfile);
+   CoGe::Accessory::Web::write_log("run find_nearby: running\n\t$cmd", $cogeweb->logfile);
     `$cmd`;
     system "rm $outfile.running" if -r "$outfile.running";; #remove track file
     return 1 if -r $outfile;
@@ -1455,7 +1459,7 @@ sub gen_ks_db
     my ($outfile) = $infile =~ /^(.*?CDS-CDS)/;
     return unless $outfile;
     $outfile .= ".sqlite";
-   CoGe::Accessory::Web::write_log("Generating ks data.", $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("Generating ks data.", $cogeweb->logfile);
     unless (-r $outfile)
       {
 CoGe::Accessory::Web::write_log("initializing ks database", $cogeweb->logfile);
@@ -1896,6 +1900,7 @@ sub generate_dotplot
     my $fid1 = $opts{fid1}; #fids for highlighting gene pair in dotplot
     my $fid2 = $opts{fid2};
     my $snsd = $opts{snsd}; #option for showing non syntenic (grey) dots in dotplot
+    my $flip = $opts{flip}; #flip axis
 
     my $cmd = $DOTPLOT;
     #add ks_db to dotplot command if requested
@@ -1911,6 +1916,7 @@ sub generate_dotplot
 	$outfile .= ".$ks_type";
       }
     $outfile .= ".box" if $box_diags;
+    $outfile .= ".flip" if $flip;
     #are non-syntenic dots being displayed
     if ($snsd)
       {
@@ -1925,7 +1931,8 @@ sub generate_dotplot
 
 
     $cmd .= qq{ -a $coords};
-    $cmd .= qq{ -b $outfile -l 'javascript:synteny_zoom("$dsgid1","$dsgid2","$basename","XCHR","YCHR"};
+    $cmd .= qq{ -b $outfile -l 'javascript:synteny_zoom("$dsgid1","$dsgid2","$basename",};
+    $cmd .= $flip ? qq{"YCHR","XCHR"}:qq{"XCHR","YCHR"};
     $cmd .= qq{,"$ks_db"} if $ks_db;
     $cmd .= qq{)' -dsg1 $dsgid1 -dsg2 $dsgid2 -w $width -lt 2};
     $cmd .= qq{ -assemble $assemble} if $assemble;
@@ -1935,6 +1942,7 @@ sub generate_dotplot
     $cmd .= qq{ -bd 1} if $box_diags;
     $cmd .= qq{ -fid1 $fid1} if $fid1;
     $cmd .= qq{ -fid2 $fid2} if $fid2;
+    $cmd .= qq{ -f 1} if $flip;
     while (-e "$outfile.running")
       {
 	print STDERR "detecting $outfile.running.  Waiting. . .\n";
@@ -1946,7 +1954,7 @@ sub generate_dotplot
 	return $outfile;
       }
     system "touch $outfile.running"; #track that a blast anlaysis is running for this
-   CoGe::Accessory::Web::write_log("generate dotplot: running $cmd", $cogeweb->logfile);
+   CoGe::Accessory::Web::write_log("generate dotplot: running\n\t$cmd", $cogeweb->logfile);
     system "rm $outfile.running" if -r "$outfile.running";; #remove track file
     `$cmd`;
     return $outfile if -r "$outfile.html";
@@ -2003,6 +2011,10 @@ sub go
     my $snsd = $opts{show_non_syn_dots}=~/true/i ? 1 : 0;
     my $algo_name = $ALGO_LOOKUP->{$blast}{displayname};
 
+    #will the axis be flipped?
+    my $flip = $opts{flip};
+    $flip = $flip =~ /true/i ? 1 : 0;
+
     $box_diags = $box_diags eq "true" ? 1 : 0;
     $dagchainer_type = $dagchainer_type eq "true" ? "geneorder" : "distance";
 
@@ -2030,6 +2042,7 @@ sub go
     $synmap_link .= ";do1=$depth_org_1_ratio" if $depth_org_1_ratio;
     $synmap_link .= ";do2=$depth_org_2_ratio" if $depth_org_2_ratio;
     $synmap_link .= ";do=$depth_overlap" if $depth_overlap;
+    $synmap_link .= ";flip=1" if $flip;
 
     $email = 0 if check_address_validity($email) eq 'invalid';
 
@@ -2151,6 +2164,8 @@ sub go
  	my $fasta = $org_dirs{$key}{fasta};
  	my $db = $org_dirs{$key}{db};
  	my $outfile = $org_dirs{$key}{blastfile};
+	CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
+	CoGe::Accessory::Web::write_log("Running ".$ALGO_LOOKUP->{$blast}{displayname}, $cogeweb->logfile);
  	run_blast(fasta=>$fasta, blastdb=>$db, outfile=>$outfile, prog=>$blast);# unless -r $outfile;
  	$pm->finish;
        }
@@ -2165,8 +2180,9 @@ sub go
  	my $blast_run = run_blast(fasta=>$fasta, blastdb=>$db, outfile=>$outfile, prog=>$blast);
  	$problem=1 unless $blast_run;
        }
-   CoGe::Accessory::Web::write_log("Completed blast run(s)", $cogeweb->logfile);
-   CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("Completed blast run(s)", $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
     my $t1 = new Benchmark;
     my $blast_time = timestr(timediff($t1,$t0));
 
@@ -2175,9 +2191,17 @@ sub go
     my $raw_blastfile = $org_dirs{$orgkey1."_".$orgkey2}{blastfile};
     my $bedfile1 = $raw_blastfile.".q.bed";
     my $bedfile2 = $raw_blastfile.".s.bed";
+    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("Creating .bed files",$cogeweb->logfile);
     blast2bed(infile=>$raw_blastfile, outfile1=>$bedfile1, outfile2=>$bedfile2);
+    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("",$cogeweb->logfile);
     my $filtered_blastfile = $raw_blastfile.".filtered";
+    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("Filtering results of tandem duplicates",$cogeweb->logfile);    
     run_blast2raw(blastfile=>$raw_blastfile, bedfile1=>$bedfile1, bedfile2=>$bedfile2, outfile=>$filtered_blastfile);
+    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("",$cogeweb->logfile);
     $filtered_blastfile = $raw_blastfile unless -r $filtered_blastfile && -s $filtered_blastfile;
 
 #    my $synteny_score_db = run_synteny_score (blastfile=>$filtered_blastfile, bedfile1=>$bedfile1, bedfile2=>$bedfile2, outfile=>$org_dirs{$orgkey1."_".$orgkey2}{dir}."/".$dsgid1."_".$dsgid2.".$feat_type1-$feat_type2"); #needed to comment out as the bed files and blast files have changed in SynFind
@@ -2188,19 +2212,35 @@ sub go
     #prepare dag for synteny analysis
     my $dag_file12 = $org_dirs{$orgkey1."_".$orgkey2}{dir}."/".$org_dirs{$orgkey1."_".$orgkey2}{basename}.".dag";#."_c".$repeat_filter_cvalue.".dag";
     my $dag_file12_all = $dag_file12.".all";
+    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("Converting blast file to dagchainer input file",$cogeweb->logfile);
     $problem=1 unless run_dag_tools(query=>"a".$dsgid1, subject=>"b".$dsgid2, blast=>$filtered_blastfile, outfile=>$dag_file12_all, feat_type1=>$feat_type1, feat_type2=>$feat_type2);
+    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("",$cogeweb->logfile);
     my $t2_5 = new Benchmark;
     my $dag_tool_time = timestr(timediff($t2_5,$t2));
 
     #is this an ordered gene run?
-    my $dag_file12_all_geneorder = run_convert_to_gene_order(infile=>$dag_file12_all, dsgid1=>$dsgid1, dsgid2=>$dsgid2, ft1=>$feat_type1, ft2=>$feat_type2) if $dagchainer_type eq "geneorder";
+    my $dag_file12_all_geneorder;
+    if ($dagchainer_type eq "geneorder")
+      {
+	CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
+	CoGe::Accessory::Web::write_log("Converting dagchainer input into gene order coordinates",$cogeweb->logfile);
+	$dag_file12_all_geneorder = run_convert_to_gene_order(infile=>$dag_file12_all, dsgid1=>$dsgid1, dsgid2=>$dsgid2, ft1=>$feat_type1, ft2=>$feat_type2);
+	CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
+	CoGe::Accessory::Web::write_log("",$cogeweb->logfile);
+      }
     my $t3 = new Benchmark;
     my $convert_to_gene_order_time = timestr(timediff($t3,$t2_5));
     my $all_file = $dagchainer_type eq "geneorder" ? $dag_file12_all_geneorder : $dag_file12_all;
     $dag_file12 .= ".go" if $dagchainer_type eq "geneorder";
     #B Pedersen's program for automatically adjusting the evals in the dag file to remove bias from local gene duplicates and transposons
     $dag_file12.="_c".$repeat_filter_cvalue;
+    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("Adjusting evalue of blast hits to correct for repeat sequences",$cogeweb->logfile);
     run_adjust_dagchainer_evals(infile=>$all_file,outfile=>$dag_file12, cvalue=>$repeat_filter_cvalue);
+    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("",$cogeweb->logfile);
 
     my $t3_5 = new Benchmark;
     #this step will fail if the dag_file_all is larger than the system memory limit.  If this file does not exist, let's send a warning to the log file and continue with the analysis using the dag_all file
@@ -2214,10 +2254,14 @@ CoGe::Accessory::Web::write_log("WARNING:  sub run_adjust_dagchainer_evals faile
 
      #run dagchainer
     my $dag_merge = 1 if $merge_algo == 2; #this is for using dagchainer's merge function;
+    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("Running DagChainer",$cogeweb->logfile);
     my ($dagchainer_file, $merged_dagchainer_file) = run_dagchainer(infile=>$dag_file12, D=>$dagchainer_D, g=>$dagchainer_g,A=>$dagchainer_A, type=>$dagchainer_type, Dm=>$Dm, gm=>$gm, merge=>$dag_merge);
+    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("",$cogeweb->logfile);
     
-   CoGe::Accessory::Web::write_log("Completed dagchainer run", $cogeweb->logfile);
-   CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("Completed dagchainer run", $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
     my $t4 = new Benchmark;
     my $run_dagchainer_time = timestr(timediff($t4,$t3_5));
     my ($find_nearby_time, $gen_ks_db_time, $dotplot_time, $add_gevo_links_time);
@@ -2225,9 +2269,14 @@ CoGe::Accessory::Web::write_log("WARNING:  sub run_adjust_dagchainer_evals faile
     my $tiny_link;
     if (-r $dagchainer_file)
       {
-
-	$merged_dagchainer_file = run_quota_align_merge(infile=>$dagchainer_file, max_dist=>$Dm) if $merge_algo == 1;#id 1 is to specify quota align as a merge algo
-
+	if ($merge_algo == 1)#id 1 is to specify quota align as a merge algo
+	  {
+	    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
+	    CoGe::Accessory::Web::write_log("Merging Syntenic Blocks",$cogeweb->logfile);
+	    $merged_dagchainer_file = run_quota_align_merge(infile=>$dagchainer_file, max_dist=>$Dm);
+	    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
+	    CoGe::Accessory::Web::write_log("",$cogeweb->logfile);
+	  }
  	my $post_dagchainer_file = -r $merged_dagchainer_file ? $merged_dagchainer_file : $dagchainer_file; #temp file name for the final post-processed data
 	my $post_dagchainer_file_w_nearby = $post_dagchainer_file;
  	$post_dagchainer_file_w_nearby =~ s/aligncoords/all\.aligncoords/;
@@ -2242,19 +2291,35 @@ CoGe::Accessory::Web::write_log("WARNING:  sub run_adjust_dagchainer_evals faile
 	my $grimm_stuff;
 	if ($depth_algo == 1)#id 1 is to specify quota align
 	  {
+	    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
+	    CoGe::Accessory::Web::write_log("Running Quota Align",$cogeweb->logfile);
 	    $quota_align_coverage = run_quota_align_coverage(infile=>$post_dagchainer_file_w_nearby, org1=>$depth_org_1_ratio, org2=>$depth_org_2_ratio, overlap_dist=>$depth_overlap );
 	    $grimm_stuff = generate_grimm_input(infile=>$quota_align_coverage);
+	    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
+	    CoGe::Accessory::Web::write_log("",$cogeweb->logfile);
 	  }
 	my $final_dagchainer_file = $quota_align_coverage && -r $quota_align_coverage ? $quota_align_coverage : $post_dagchainer_file_w_nearby;
 
  	#convert to genomic coordinates if gene order was used
  	if ($dagchainer_type eq "geneorder")
  	  {
+	    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
+	    CoGe::Accessory::Web::write_log("Converting gene order coordinates back to genomic coordinates",$cogeweb->logfile);
  	    replace_gene_order_with_genomic_positions(file=>$final_dagchainer_file, outfile=>$final_dagchainer_file.".gcoords");
+	    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
+	    CoGe::Accessory::Web::write_log("",$cogeweb->logfile);
+
 	    $final_dagchainer_file = $final_dagchainer_file.".gcoords";
  	  }
-	my $ks_blocks_file = gen_ks_blocks_file(infile=>$final_dagchainer_file) if $ks_type;
-
+	my $ks_blocks_file;
+	if ($ks_type)
+	  {
+	    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
+	    CoGe::Accessory::Web::write_log("Generate Ks Blocks File",$cogeweb->logfile);
+	    $ks_blocks_file = gen_ks_blocks_file(infile=>$final_dagchainer_file);
+	    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
+	    CoGe::Accessory::Web::write_log("",$cogeweb->logfile);
+	  }
  	#generate dotplot images
  	my $org1_length =0;
  	my $org2_length =0;
@@ -2289,17 +2354,32 @@ CoGe::Accessory::Web::write_log("WARNING:  sub run_adjust_dagchainer_evals faile
 	$out .= "_ct$color_type" if defined $color_type;
  	$out .= ".w$width";
  	#deactivation ks calculations due to how slow it is
- 	my $ks_db = gen_ks_db(infile=>$final_dagchainer_file) if $ks_type;
+	my $ks_db;
+	if ($ks_type)
+	  {
+	    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
+	    CoGe::Accessory::Web::write_log("Running CodeML for synonymous/nonsynonmous rate calculations",$cogeweb->logfile);
+	    $ks_db = gen_ks_db(infile=>$final_dagchainer_file);
+	    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
+	    CoGe::Accessory::Web::write_log("",$cogeweb->logfile);
+
+	  }
 	my $t6 = new Benchmark;
 	$gen_ks_db_time = timestr(timediff($t6,$t5));
-
- 	$out = generate_dotplot(dag=>$dag_file12_all, coords=>$final_dagchainer_file, outfile=>"$out", regen_images=>$regen_images, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, dagtype=>$dagchainer_type, ks_db=>$ks_db, ks_type=>$ks_type, assemble=>$assemble, metric=>$axis_metric, min_chr_size=>$min_chr_size, color_type=>$color_type, box_diags=>$box_diags, fid1=>$fid1, fid2=>$fid2, snsd=>$snsd);
+	CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
+	CoGe::Accessory::Web::write_log("Generating dotplot",$cogeweb->logfile);
+ 	$out = generate_dotplot(dag=>$dag_file12_all, coords=>$final_dagchainer_file, outfile=>"$out", regen_images=>$regen_images, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, dagtype=>$dagchainer_type, ks_db=>$ks_db, ks_type=>$ks_type, assemble=>$assemble, metric=>$axis_metric, min_chr_size=>$min_chr_size, color_type=>$color_type, box_diags=>$box_diags, fid1=>$fid1, fid2=>$fid2, snsd=>$snsd, flip=>$flip);
+	CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
+	CoGe::Accessory::Web::write_log("",$cogeweb->logfile);
 
 	my $hist = $out.".hist.png";
 	my $t7 = new Benchmark;
 	$dotplot_time = timestr(timediff($t7,$t6));
-
+	CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
+	CoGe::Accessory::Web::write_log("Adding GEvo links to final output files",$cogeweb->logfile);
  	add_GEvo_links (infile=>$final_dagchainer_file, dsgid1=>$dsgid1, dsgid2=>$dsgid2);
+	CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
+	CoGe::Accessory::Web::write_log("",$cogeweb->logfile);
 	my $t8 = new Benchmark;
 	$add_gevo_links_time = timestr(timediff($t8,$t7));
  	if (-r "$out.html")
@@ -2308,9 +2388,6 @@ CoGe::Accessory::Web::write_log("WARNING:  sub run_adjust_dagchainer_evals faile
 <div class="ui-widget-content ui-corner-all" id="synmap_zoom_box" style="float:left">
  Zoomed SynMap:
  <table class=small>
- <tr>
- <td>Flip axes?
- <td><input type=checkbox id=flip>
  <tr>
  <td>Image Width
  <td><input class="backbox" type=text name=zoom_width id=zoom_width size=6 value="800">
@@ -2342,8 +2419,7 @@ CoGe::Accessory::Web::write_log("WARNING:  sub run_adjust_dagchainer_evals faile
  	    close IN;
  	    $out =~ s/$DIR/$URL/;
 #	    print STDERR $out,"!!\n";
- 	    $html =~ s/master.*\.png/$out.png/;
- 	    warn "$out.html did not parse correctly\n" unless $html =~ /map/i;
+ 	    $html =~ s/master.*\.png/$out.png/; 	    warn "$out.html did not parse correctly\n" unless $html =~ /map/i;
  	    $html .= qq{
  <br><span class="species small">x-axis: $org_name1</span><br>
 };
@@ -2368,8 +2444,12 @@ CoGe::Accessory::Web::write_log("WARNING:  sub run_adjust_dagchainer_evals faile
 	    $html .= qq{<span class='small link' onclick=window.open('$fasta1')>Fasta file for $org_name1: $feat_type1</span><br>};
 	    $fasta2 =~ s/$DIR/$URL/;
 	    $html .= qq{<span class='small link' onclick=window.open('$fasta2')>Fasta file for $org_name2: $feat_type2</span><br>};
+	    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
+	    CoGe::Accessory::Web::write_log("Processing Tandem Duplicate File",$cogeweb->logfile);
 	    my $org1_localdups = process_local_dups_file(infile=>$raw_blastfile.".q.localdups", outfile=>$raw_blastfile.".q.tandems");
 	    my $org2_localdups = process_local_dups_file(infile=>$raw_blastfile.".s.localdups", outfile=>$raw_blastfile.".s.tandems");
+	    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
+	    CoGe::Accessory::Web::write_log("",$cogeweb->logfile);
 
 	    $raw_blastfile =~ s/$DIR/$URL/;
 	    $html .= "<span class='link small' onclick=window.open('$raw_blastfile')>Unfiltered $algo_name results</span><br>";	
@@ -2437,7 +2517,7 @@ CoGe::Accessory::Web::write_log("WARNING:  sub run_adjust_dagchainer_evals faile
 	    if ($ks_blocks_file)
 	      {
 		$ks_blocks_file =~ s/$DIR/$URL/;
-		$html .= "<br><span class='small link' onclick=window.open('$ks_blocks_file') target=_new>Results with synonymous/nonsynonymous rate values</span>" if $ks_blocks_file;
+		$html .= "<br><span class='small link' onclick=window.open('$ks_blocks_file') target=_new>Results with synonymous/nonsynonymous rate values</span>";
 	      }
 	    my $final_file = $final_dagchainer_file;
 	    $final_file =~ s/$DIR/$URL/;
@@ -2448,7 +2528,13 @@ CoGe::Accessory::Web::write_log("WARNING:  sub run_adjust_dagchainer_evals faile
 
 	    $html .= "<br>".qq{<span class="small link" id="" onClick="window.open('bin/SynMap/order_contigs_to_chromosome.pl?f=$dagchainer_file');" >Generate Assembled Genomic Sequence</span>} if $assemble;
 	    $html .= qq{</table>};
-	   CoGe::Accessory::Web::write_log("\nLink to regenerate analysis: $synmap_link", $cogeweb->logfile);
+
+	    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
+	    CoGe::Accessory::Web::write_log("Link to Regenerate Analysis",$cogeweb->logfile);
+	    CoGe::Accessory::Web::write_log("$synmap_link", $cogeweb->logfile);
+	    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
+	    CoGe::Accessory::Web::write_log("",$cogeweb->logfile);
+
 	    $tiny_link = get_tiny_link(url=>$synmap_link);
 	    $html .= "<a href='$tiny_link' class='ui-button ui-corner-all' style='color: #000000' target=_new_synmap>Regenerate this analysis: $tiny_link</a>";
 	    if ($ks_type)
@@ -2492,7 +2578,6 @@ CoGe::Accessory::Web::write_log("WARNING:  sub run_adjust_dagchainer_evals faile
        }
     email_results(email=>$email,html=>$html,org1=>$org_name1,org2=>$org_name2, jobtitle=>$job_title, link=>$tiny_link) if $email;
     my $benchmarks = qq{
-
 $org_name1 versus $org_name2
 Benchmarks:
 $algo_name:                    $blast_time
@@ -2505,10 +2590,13 @@ find nearby:              $find_nearby_time
 Ks calculations:          $gen_ks_db_time
 Dotplot:                  $dotplot_time
 GEvo links:               $add_gevo_links_time
-
 };
     print STDERR $benchmarks;
-   CoGe::Accessory::Web::write_log($benchmarks, $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("Benchmark",$cogeweb->logfile);
+    CoGe::Accessory::Web::write_log($benchmarks, $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("",$cogeweb->logfile);
     $html =~ s/<script src="\/CoGe\/js\/jquery-1.3.2.js"><\/script>//g; #need to remove this from the output from dotplot -- otherwise it over-loads the stuff in the web-page already. This can mess up other loaded js such as tablesoter
     return $html;
    }
