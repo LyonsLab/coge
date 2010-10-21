@@ -1087,7 +1087,7 @@ sub protein_sequence {
 	{
 	  next unless $v;
 	  push @seqs, $v;
-	  if (($v =~ /^M/ && $v =~ /\*$/))
+	  if (($v =~ /^M/ || $v =~ /^L/ )&& $v =~ /\*$/) #need the L for some microbial start positions
 	    {
 	      next if $v =~ /\*\w/;
 	      $found = $k;
