@@ -1416,6 +1416,7 @@ sub process_features
 		  {
 		    my $cleaned_name = $name;
 		    $cleaned_name =~ s/[\(\)]//g;
+		    $cleaned_name =~ s/[\|]/\\\|/g;
 		    my $tmp = $accn;
 		    $tmp =~ s/\*\*\d+\*\*$//;
 		    if ($tmp =~ /^$cleaned_name\(?\d*\)?$/i)
