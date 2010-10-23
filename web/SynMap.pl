@@ -184,6 +184,7 @@ sub gen_body
     $A = $FORM->param('A');
     $Dm = $FORM->param('Dm');
     $gm = $FORM->param('gm');
+    $gm = 40 unless defined $gm;
     $dt = $FORM->param('dt');
     $cvalue = $FORM->param('c'); #different c value than the one for cytology.  But if you get that, you probably shouldn't be reading this code
 
@@ -245,6 +246,11 @@ sub gen_body
 	$template->param(KS0=>"selected");
       }
 
+    #set color_scheme
+    my $cs = 1;
+    $cs = $FORM->param('cs') if defined $FORM->param('cs');
+    $template->param("CS".$cs=>"selected");
+
     #show non syntenic dots:  on by default
     my $snsd = 1;
     $snsd = $FORM->param('snsd') if (defined $FORM->param('snsd'));
@@ -254,6 +260,12 @@ sub gen_body
     my $flip = 0;
     $flip = $FORM->param('flip') if (defined $FORM->param('flip'));
     $template->param('FLIP'=>'checked') if $flip;
+
+    #are the chromosomes labeled?
+    my $clabel = 1;
+    $clabel = $FORM->param('cl') if (defined $FORM->param('cl'));
+    $template->param('CHR_LABEL'=>'checked') if $clabel;
+
     #set axis metric for dotplot
     if ($FORM->param('ct'))
       {
@@ -1901,7 +1913,8 @@ sub generate_dotplot
     my $fid2 = $opts{fid2};
     my $snsd = $opts{snsd}; #option for showing non syntenic (grey) dots in dotplot
     my $flip = $opts{flip}; #flip axis
-
+    my $clabel = $opts{clabel}; #label chromosomes
+    my $color_scheme = $opts{color_scheme}; #color_scheme for dotplot
     my $cmd = $DOTPLOT;
     #add ks_db to dotplot command if requested
     $outfile.= ".ass" if $assemble;
@@ -1917,6 +1930,9 @@ sub generate_dotplot
       }
     $outfile .= ".box" if $box_diags;
     $outfile .= ".flip" if $flip;
+    $outfile .= ".c0" if $clabel eq 0;
+    $outfile.= ".cs$color_scheme" if defined $color_scheme;
+
     #are non-syntenic dots being displayed
     if ($snsd)
       {
@@ -1943,6 +1959,8 @@ sub generate_dotplot
     $cmd .= qq{ -fid1 $fid1} if $fid1;
     $cmd .= qq{ -fid2 $fid2} if $fid2;
     $cmd .= qq{ -f 1} if $flip;
+    $cmd .= qq{ -labels 0} if $clabel eq 0;
+    $cmd .= qq{ -color_scheme $color_scheme} if defined $color_scheme;
     while (-e "$outfile.running")
       {
 	print STDERR "detecting $outfile.running.  Waiting. . .\n";
@@ -2015,6 +2033,12 @@ sub go
     my $flip = $opts{flip};
     $flip = $flip =~ /true/i ? 1 : 0;
 
+    #are axes labeled?
+    my $clabel = $opts{clabel};
+    $clabel = $clabel =~ /true/i ? 1 : 0;
+
+    my $color_scheme = $opts{color_scheme};
+
     $box_diags = $box_diags eq "true" ? 1 : 0;
     $dagchainer_type = $dagchainer_type eq "true" ? "geneorder" : "distance";
 
@@ -2043,6 +2067,8 @@ sub go
     $synmap_link .= ";do2=$depth_org_2_ratio" if $depth_org_2_ratio;
     $synmap_link .= ";do=$depth_overlap" if $depth_overlap;
     $synmap_link .= ";flip=1" if $flip;
+    $synmap_link .= ";cs=$color_scheme";
+    $synmap_link .= ";cl=0" if $clabel eq "0";
 
     $email = 0 if check_address_validity($email) eq 'invalid';
 
@@ -2368,7 +2394,7 @@ CoGe::Accessory::Web::write_log("WARNING:  sub run_adjust_dagchainer_evals faile
 	$gen_ks_db_time = timestr(timediff($t6,$t5));
 	CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
 	CoGe::Accessory::Web::write_log("Generating dotplot",$cogeweb->logfile);
- 	$out = generate_dotplot(dag=>$dag_file12_all, coords=>$final_dagchainer_file, outfile=>"$out", regen_images=>$regen_images, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, dagtype=>$dagchainer_type, ks_db=>$ks_db, ks_type=>$ks_type, assemble=>$assemble, metric=>$axis_metric, min_chr_size=>$min_chr_size, color_type=>$color_type, box_diags=>$box_diags, fid1=>$fid1, fid2=>$fid2, snsd=>$snsd, flip=>$flip);
+ 	$out = generate_dotplot(dag=>$dag_file12_all, coords=>$final_dagchainer_file, outfile=>"$out", regen_images=>$regen_images, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, dagtype=>$dagchainer_type, ks_db=>$ks_db, ks_type=>$ks_type, assemble=>$assemble, metric=>$axis_metric, min_chr_size=>$min_chr_size, color_type=>$color_type, box_diags=>$box_diags, fid1=>$fid1, fid2=>$fid2, snsd=>$snsd, flip=>$flip, clabel=>$clabel, color_scheme=>$color_scheme);
 	CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
 	CoGe::Accessory::Web::write_log("",$cogeweb->logfile);
 
@@ -2725,18 +2751,30 @@ sub get_previous_analyses
     $size = 8 if $size > 8;
     my $html;
     my $prev_table = qq{<table id=prev_table class="small resultborder">};
-    $prev_table .= qq{<THEAD><TR><TH>}.join ("<TH>", qw(Org1 Genome1 Genome%20Type1 Sequence%20Type1 Org2 Genome2 Genome%20Type2 Sequence%20type2 Algo Dist20Type Repeat%20Filter Ave%20Dist(g) Max%20Dist(D) Min%20Pairs(A)  Merge%20Algo Merge%20Ave%20Dist(gm) Merge%20Max%20Dist(Dm)))."</THEAD><TBODY>\n";
+    $prev_table .= qq{<THEAD><TR><TH>}.join ("<TH>", qw(Org1 Genome1 Genome%20Type1 Sequence%20Type1 Org2 Genome2 Genome%20Type2 Sequence%20type2 Algo Dist%20Type Repeat%20Filter Ave%20Dist(g) Max%20Dist(D) Min%20Pairs(A)))."</THEAD><TBODY>\n";
     my %seen;
-    foreach my $item (@items)
+    foreach my $item (sort {$b->{dsgid1} <=> $a->{dsgid1} || $b->{dsgid2} <=> $a->{dsgid2} }@items)
       {
-	my $val = join ("_",$item->{g},$item->{D},$item->{A},$item->{gm},$item->{Dm}, $oid1, $item->{dsgid1}, $item->{type1},$oid2, $item->{dsgid2}, $item->{type2}, $item->{select_val}, $item->{dagtype}, $item->{repeat_filter}, $item->{ma});
+	my $val = join ("_",
+			$item->{g},
+			$item->{D},
+			$item->{A},
+			$oid1,
+			$item->{dsgid1},
+			$item->{type1},
+			$oid2,
+			$item->{dsgid2},
+			$item->{type2},
+			$item->{select_val},
+			$item->{dagtype},
+			$item->{repeat_filter});
 	next if $seen{$val};
 	$seen{$val}=1;
 	$prev_table .= qq{<TR class=feat onclick="update_params('$val')" align=center><td>};
 	$prev_table .= join ("<td>", 
 			     $item->{dsg1}->organism->name, $item->{genome1}, $item->{dsg1}->type->name, $item->{type_name1},
 			     $item->{dsg2}->organism->name, $item->{genome2}, $item->{dsg2}->type->name, $item->{type_name2},
-			     $item->{blast}, $item->{dagtype}, $item->{repeat_filter},$item->{g}, $item->{D}, $item->{A}, $item->{merge_algo}, $item->{gm}, $item->{Dm})."\n";
+			     $item->{blast}, $item->{dagtype}, $item->{repeat_filter},$item->{g}, $item->{D}, $item->{A})."\n";
       }
     $prev_table .= qq{</TBODY></table>};
     $html .= $prev_table;
@@ -2861,6 +2899,7 @@ sub get_dotplot
     my $min = $opts{min};
     my $color_type = $opts{ct};
     my $box_diags = $opts{bd};
+    my $color_scheme = $opts{color_scheme};
     $box_diags = $box_diags eq "true" ? 1 : 0;
 # base=8_8.CDS-CDS.blastn.dag_geneorder_D60_g30_A5;
 
@@ -2876,6 +2915,7 @@ sub get_dotplot
     $url .=  ";am=$metric" if defined $metric;
     $url .=  ";ct=$color_type" if $color_type;
     $url .= ";bd=$box_diags" if $box_diags;
+    $url .= ";cs=$color_scheme" if defined $color_scheme;
     my $content = get($url);
     ($url) = $content =~ /url=(.*?)"/is;
     my $png = $url;
