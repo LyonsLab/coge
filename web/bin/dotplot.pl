@@ -10,7 +10,7 @@ use Data::Dumper;
 use DBI;
 use POSIX;
 
-use vars qw($P $dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ks_db $ks_type $log $MAX $MIN $assemble $axis_metric $color_type $box_diags $fid1 $fid2 $selfself);
+use vars qw($P $dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ks_db $ks_type $log $MAX $MIN $assemble $axis_metric $color_type $box_diags $fid1 $fid2 $selfself $labels $color_scheme);
 
 $P = CoGe::Accessory::Web::get_defaults();
 
@@ -42,14 +42,17 @@ GetOptions(
 	   "fid1|f1=i"=>\$fid1,
 	   "fid2|f2=i"=>\$fid2,
 	   "selfself" => \$selfself, #draw diag for self self comparison
+	   "labels=s" => \$labels, #do we draw labels for chromosomes, on my default
+	   "color_scheme=s"=>\$color_scheme,
 	   );
 $selfself = 1 unless defined $selfself;
+$labels = 1 unless defined $labels;
 
 
 usage() if $help;
-usage() unless -r $dagfile || -r $alignfile;
+usage() unless (defined $dagfile &&-r $dagfile) || -r $alignfile;
 
-if ($dagfile and ! -r $dagfile)
+if (defined $dagfile and ! -r $dagfile)
   {
     warn "dagfile specified but not present or readable: $!";
   }
@@ -110,6 +113,7 @@ if ($ks_db)
     $cmd .= " -chr2 $CHR2" if defined $CHR2;
     $cmd .= " -min $MIN" if defined $MIN;
     $cmd .= " -max $MAX" if defined $MAX;
+    $cmd .= " -color_scheme $color_scheme" if defined $color_scheme;
     $cmd .= " -o $basename";
     $cmd .= ".$MIN" if defined $MIN;
     $cmd .= ".$MAX" if defined $MAX;
@@ -132,7 +136,7 @@ draw_chromosome_grid(gd=>$graphics_context, org1=>$org1info, org2=>$org2info, x_
 my $ksdata = get_ksdata(ks_db=>$ks_db, ks_type=>$ks_type, chr1=>$CHR1, chr2=> $CHR2, pairs=>$pairs) if $ks_db && -r $ks_db;
 
 #draw dots for all matches
-draw_dots(gd=>$graphics_context, file=>$dagfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, link_type => $link_type, dsgid1=>$dsgid1, dsgid2=>$dsgid2, flip=>$flip, metric=>$axis_metric, fid1=>$fid1, fid2=>$fid2) if -r $dagfile;
+draw_dots(gd=>$graphics_context, file=>$dagfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, link_type => $link_type, dsgid1=>$dsgid1, dsgid2=>$dsgid2, flip=>$flip, metric=>$axis_metric, fid1=>$fid1, fid2=>$fid2) if defined $dagfile && -r $dagfile;
 
 
 
@@ -163,7 +167,7 @@ my $add = 1 if $dsgid1 eq $dsgid2;
 my $size = 2;
 $size = 5 if $x_pix_per_bp >5;
 $size = 5 if $y_pix_per_bp >5;
-my $box_coords = draw_dots(gd=>$graphics_context, file=>$alignfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, size=>$size, add_inverse=>$add, flip=>$flip, ksdata=>$ksdata, ks_type=>$ks_type, log=>$log, metric=>$axis_metric, colors=>\@colors, color_type=>$color_type);
+my $box_coords = draw_dots(gd=>$graphics_context, file=>$alignfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, size=>$size, add_inverse=>$add, flip=>$flip, ksdata=>$ksdata, ks_type=>$ks_type, log=>$log, metric=>$axis_metric, colors=>\@colors, color_type=>$color_type, color_scheme=>$color_scheme);
 
 draw_boxes(gd=>$graphics_context, boxes=>$box_coords) if $box_diags && $box_coords && @$box_coords;
 #draw self-self line?
@@ -205,6 +209,8 @@ sub draw_dots
     my $ks_type = $opts{ks_type};
     my $fid1 = $opts{fid1};
     my $fid2 = $opts{fid2};
+    my $color_scheme = $opts{color_scheme}; #color pattern for Ks/Kn caluclations
+
     #easier lookup, can scale to more pairs in the future
     my %fids;
     $fids{$fid1}=1 if $fid1;
@@ -287,7 +293,7 @@ sub draw_dots
 		    $val = ($val-$min)/$range;
 		  }
 		$val = sprintf("%.4f", $val);
-		$tuse_color = get_color(val=>$val); #val is 0<=x<=1
+		$tuse_color = get_color(val=>$val, color_scheme=>$color_scheme); #val is 0<=x<=1
 		$tuse_color = $graphics_context->colorResolve(@$tuse_color);
 	      }
 	    else
@@ -572,7 +578,7 @@ sub draw_chromosome_grid
 	  }
 	$graphics_context->line($x, 0, $x, $graphics_context->height, $black);					#Draw black line
 	my $str_color = $org1->{$chr}{rev} ? $red : $black;
-	$graphics_context->string(gdSmallFont, $x+2, $graphics_context->height-15, $chr, $str_color);		#Draws name of chromosome
+	$graphics_context->string(gdSmallFont, $x+2, $graphics_context->height-15, $chr, $str_color) if $labels;		#Draws name of chromosome
 	$data{x}{$pchr}=[$pv,$x] if $pchr;
 	$pchr=$chr;
 	$pv = $x+1;
@@ -597,7 +603,7 @@ sub draw_chromosome_grid
 
 	$graphics_context->line(0, $y, $graphics_context->width, $y, $black);
 	my $str_color = $org2->{$chr}{rev} ? $red : $black;
-	$graphics_context->string(gdSmallFont, 2, $y-15, $chr, $str_color);
+	$graphics_context->string(gdSmallFont, 2, $y-15, $chr, $str_color) if $labels;
 	$data{y}{$pchr}=[$y, $pv] if $pchr;
 	$pchr = $chr;
 	$pv =$y+1;
@@ -1069,50 +1075,53 @@ sub get_color
   {
     my %opts = @_;
     my $val = $opts{val};
+    my $color_scheme = $opts{color_scheme};
+    $color_scheme=1 unless defined $color_scheme;
     unless (defined $val && $val >= 0 && $val <=1)
       {
 	print STDERR "in sub get_color val is not [0,1]: $val\n";
 	return [0,0,0];
       }
-    my @colors_orig = (
-		  [255,255,0], #yellow
-		  [200,200,0], # green
-		  [0,200,0], # green
-		  [0,100,100], # green
-		  [0,200,200], # cyan
-		  [0,0,200], # blue
-		  [100,0,100], #purple
-		  [200,0,200], #magenta
-		  [200,0,0], #red
-		  [100,0,0], #red
-		  [200,100,0], #orange
-		  [255,126,0], #orange
-
-#		  [200,200,0], #yellow
-#		  [0,255,0], # green
-#		  [0,200,200], # cyan
-#		  [0,0,255], # blue
-#		  [255,0,255], #magenta
-#		  [126,0,126], #purple
-#		  [255,0,0], #red
-#		  [255,126,0], #orange
-		 );
-    my @rainbow = (
-                  [255,0,0], #red
-                  [255,255,0], #yellow
-                  [0,255,0], # green
-                  [0,255,255], # cyan
-		  [220,0,220], #magenta
-                  [0,0,255], # blue
-                 );
-    my @red_yellow_blue = (
-                  [0,0,150], # blue
-                  [220,220,20], #yellow
-                  [255,0,0], #red
-                 );
-#    my @colors = @colors_orig;
-    my @colors = @rainbow;
- #   my @colors = @red_yellow_blue;
+    my $schemes = [
+		   [
+		    [255,255,0], #yellow
+		    [200,200,0], # green
+		    [0,200,0], # green
+		    [0,100,100], # green
+		    [0,200,200], # cyan
+		    [0,0,200], # blue
+		    [100,0,100], #purple
+		    [200,0,200], #magenta
+		    [200,0,0], #red
+		    [100,0,0], #red
+		    [200,100,0], #orange
+		    [255,126,0], #orange
+		    ],
+		   [
+		    [255,0,0], #red
+		    [255,255,0], #yellow
+		    [0,255,0], # green
+		    [0,255,255], # cyan
+		    [220,0,220], #magenta
+		    [0,0,255], # blue
+		   ],
+		   [
+		    [0,0,150], # blue
+		    [220,220,20], #yellow
+		    [255,0,0], #red
+		   ],
+		   [
+		    [0,200,0], # green
+		    [0,0,200], # blue
+		    [220,220,20], #yellow
+		    [255,0,0], #red
+		   ],
+		   [
+		    [255,0,0], # red
+		    [0,0,0], #black
+		   ]
+		  ];
+    my @colors = @{$schemes->[$color_scheme]};
     @colors = reverse @colors;
     my ($index1, $index2) = ((floor((scalar(@colors)-1)*$val)), ceil((scalar(@colors)-1)*$val));
 
