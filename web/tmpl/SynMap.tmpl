@@ -56,7 +56,7 @@ if(!pageObj.basename)
   pageObj.nolog=1;
   setTimeout("monitor_log()", 5000);
   
-go(['args__c','c','args__D','D','args__g','g','args__A','A','args__gm','gm','args__Dm','Dm','args__blast','blast', 'args__feat_type1','feat_type1', 'args__feat_type2','feat_type2','args__dsgid1','dsgid1', 'args__dsgid2','dsgid2','args__jobtitle','jobtitle','args__basename','args__'+pageObj.basename,'args__email','email','args__regen_images','args__'+$('#regen_images')[0].checked, 'args__width', 'args__'+$('#master_width').val(), 'args__dagchainer_type','args__'+$('#dagchainer_type')[0].checked, 'args__ks_type','ks_type', 'args__assemble','args__'+$('#assemble')[0].checked, 'args__axis_metric','axis_metric', 'args__min_chr_size', 'min_chr_size', 'args__show_non_syn','args__'+$('#show_non_syn')[0].checked, 'args__color_type','color_type', 'args__box_diags', 'args__'+$('#box_diags')[0].checked, 'args__merge_algo','merge_algo', 'args__depth_algo', 'depth_algo', 'args__depth_org_1_ratio', 'depth_org_1_ratio', 'args__depth_org_2_ratio', 'depth_org_2_ratio', 'args__depth_overlap', 'depth_overlap', 'args__fid1','args__'+pageObj.fid1, 'args__fid2','args__'+pageObj.fid2, 'args__show_non_syn_dots','args__'+$('#show_non_syn_dots')[0].checked,'args__flip','args__'+$('#flip')[0].checked],[handle_results] );
+go(['args__c','c','args__D','D','args__g','g','args__A','A','args__gm','gm','args__Dm','Dm','args__blast','blast', 'args__feat_type1','feat_type1', 'args__feat_type2','feat_type2','args__dsgid1','dsgid1', 'args__dsgid2','dsgid2','args__jobtitle','jobtitle','args__basename','args__'+pageObj.basename,'args__email','email','args__regen_images','args__'+$('#regen_images')[0].checked, 'args__width', 'args__'+$('#master_width').val(), 'args__dagchainer_type','args__'+$('#dagchainer_type')[0].checked, 'args__ks_type','ks_type', 'args__assemble','args__'+$('#assemble')[0].checked, 'args__axis_metric','axis_metric', 'args__min_chr_size', 'min_chr_size', 'args__show_non_syn','args__'+$('#show_non_syn')[0].checked, 'args__color_type','color_type', 'args__box_diags', 'args__'+$('#box_diags')[0].checked, 'args__merge_algo','merge_algo', 'args__depth_algo', 'depth_algo', 'args__depth_org_1_ratio', 'depth_org_1_ratio', 'args__depth_org_2_ratio', 'depth_org_2_ratio', 'args__depth_overlap', 'depth_overlap', 'args__fid1','args__'+pageObj.fid1, 'args__fid2','args__'+pageObj.fid2, 'args__show_non_syn_dots','args__'+$('#show_non_syn_dots')[0].checked,'args__flip','args__'+$('#flip')[0].checked,'args__clabel','args__'+$('#clabel')[0].checked,'args__color_scheme','color_scheme'],[handle_results] );
 }
 
 function handle_results(val){
@@ -89,25 +89,24 @@ function update_params(val) {
    }
 
  var cmd;
- if ($('#org_id1').val() == params[5])
+ if ($('#org_id1').val() == params[3])
   {
-    cmd = "$('#feat_type1').attr('value', '"+params[7]+"');$('#feat_type2').attr('value', '"+params[10]+"');";
-    $('#dsgid1').attr('value',params[6]);
-    $('#dsgid2').attr('value',params[9]);
+    cmd = "$('#feat_type1').attr('value', '"+params[5]+"');$('#feat_type2').attr('value', '"+params[8]+"');";
+    $('#dsgid1').attr('value',params[4]);
+    $('#dsgid2').attr('value',params[7]);
   }
  else
   {
-    cmd = "$('#feat_type2').attr('value', '"+params[7]+"');$('#feat_type1').attr('value', '"+params[10]+"');";
-    $('#dsgid2').attr('value',params[6]);
-    $('#dsgid1').attr('value',params[9]);
+    cmd = "$('#feat_type2').attr('value', '"+params[5]+"');$('#feat_type1').attr('value', '"+params[8]+"');";
+    $('#dsgid2').attr('value',params[4]);
+    $('#dsgid1').attr('value',params[7]);
   }
  get_dataset_group_info(['args__dsgid','dsgid1','args__org_num','args__1'],['dsg_info1', 'feattype_menu1','genome_message1']);
  get_dataset_group_info(['args__dsgid','dsgid2','args__org_num','args__2'],['dsg_info2', 'feattype_menu2','genome_message2']);
  ajax_wait(cmd);
  var type;
- $('#blast option:eq('+params[11]+')').attr('selected','selected');
- $('#merge_algo option:eq('+params[14]+')').attr('selected','selected');
- if (params[12] == 'Distance') 
+ $('#blast option:eq('+params[9]+')').attr('selected','selected');
+ if (params[10] == 'Distance') 
   {
    $("input[name='dagchainer_type']:nth(1)").attr("checked","checked");
    type=" bp";
@@ -115,10 +114,10 @@ function update_params(val) {
  else 
   {
    $("input[name='dagchainer_type']:nth(0)").attr("checked","checked");
-   type= " genes"
+   type= " genes";
   }
- display_dagchainer_settings([params[0],params[1],params[2], params[3],params[4]],type);
- $('#c').val(params[13]);
+ display_dagchainer_settings([params[0],params[1],params[2]],type);
+ $('#c').val(params[11]);
  merge_select_check();
  depth_algo_check();
 }
@@ -405,7 +404,7 @@ function synteny_zoom(dsgid1, dsgid2, basename, chr1, chr2, ksdb)
     pageObj.loc=loc;
     win = window.open ('DisplayMessage.pl', 'win'+loc,'width=400,height=200,scrollbars=1');
     win.focus();
-    get_dotplot(['args__url','args__'+url, 'args__loc','args__'+loc, 'args__flip','args__'+$('#flip')[0].checked,'args__regen_images','args__'+$('#regen_images')[0].checked, 'args__width', 'args__'+width, 'args__ksdb','args__'+ksdb,'args__kstype','ks_type','args__min', 'args__'+min,'args__max', 'args__'+max, 'args__am', 'args__'+am, 'args__ct','args__'+ct, 'args__bd', 'args__'+$('#box_diags')[0].checked],[open_window]);
+    get_dotplot(['args__url','args__'+url, 'args__loc','args__'+loc, 'args__flip','args__'+$('#flip')[0].checked,'args__regen_images','args__'+$('#regen_images')[0].checked, 'args__width', 'args__'+width, 'args__ksdb','args__'+ksdb,'args__kstype','ks_type','args__min', 'args__'+min,'args__max', 'args__'+max, 'args__am', 'args__'+am, 'args__ct','args__'+ct, 'args__bd', 'args__'+$('#box_diags')[0].checked, 'args__color_scheme','color_scheme'],[open_window]);
 
 }
 
@@ -606,6 +605,15 @@ function post_to_grimm(seq1, seq2)
      <option value = kn_ks <TMPL_VAR NAME=KS3> >Kn/Ks</option>
    </select> substitution rates <span style="color:red">(SLOW)</span>
    <br>
+    Color scheme:
+     <select name="color_scheme" id = "color_scheme">
+      <option value = 0 <TMPL_VAR NAME=CS0> >Rainbow 1</option>
+      <option value = 1 <TMPL_VAR NAME=CS1> >Rainbow 2</option>
+      <option value = 2 <TMPL_VAR NAME=CS2> >RYB</option>
+      <option value = 3 <TMPL_VAR NAME=CS3> >RYBG</option>
+      <option value = 4 <TMPL_VAR NAME=CS4> >Black-Red</option>
+    </select>
+   <br>
    <span class=small style="color:red">&nbsp;&nbsp;&nbsp;&nbsp; Only applicable to protein coding sequences (CDS vs. CDS)</span> 
 </table>
 </div> <!-- close tab-2 -->
@@ -614,15 +622,21 @@ function post_to_grimm(seq1, seq2)
 <table class="options ui-widget-content ui-corner-all">
  <TR>
    <TD>Regenerate dotplot images?
-   <input type=checkbox name="regen_images" id="regen_images">
- <TR>
-   <TD>Flip axes?
-   <input type=checkbox name="flip" id="flip" <TMPL_VAR NAME=FLIP> >
+   <td><input type=checkbox name="regen_images" id="regen_images">
  <TR>
    <TD>Show non-syntenic matches (grey dots)?
-   <input type=checkbox name="show_non_syn_dots" id="show_non_syn_dots" <TMPL_VAR NAME=SHOW_NON_SYN_DOTS> >
+   <td><input type=checkbox name="show_non_syn_dots" id="show_non_syn_dots" <TMPL_VAR NAME=SHOW_NON_SYN_DOTS> >
  <tr>
-   <td>Color diagonals by: 
+   <td>Draw boxes around syntenic regions?
+   <td><input type=checkbox name="box_diags" id="box_diags" <TMPL_VAR NAME=BOX_DIAGS> >
+<tr>
+   <td>Label Chromosomes?
+   <td><input type=checkbox name="clabel" id="clabel" <TMPL_VAR NAME=CHR_LABEL> >
+ <TR>
+   <TD>Flip axes?
+   <td><input type=checkbox name="flip" id="flip" <TMPL_VAR NAME=FLIP> >
+ <tr>
+   <td colspan=2>Color diagonals by: 
    <select name=color_type id=color_type>
      <option value = 0 <TMPL_VAR NAME=COLOR_TYPE_NONE> > Single color </option>
      <option value = inv <TMPL_VAR NAME=COLOR_TYPE_INV> > Inversions </option>
@@ -631,26 +645,25 @@ function post_to_grimm(seq1, seq2)
    <br>
    <span class=small style="color:red">&nbsp;&nbsp;&nbsp;&nbsp;Synonymous rates will supercede this option.</span> 
  <tr>
-   <td>Draw boxes around syntenic regions?
-   <input type=checkbox name="box_diags" id="box_diags" <TMPL_VAR NAME=BOX_DIAGS> >
- <tr>
-  <td>Dotplot axis metric:
+  <td colspan=2>Dotplot axis metric:
   <select name="axis_metric" id = "axis_metric">
    <option value = "nt" <TMPL_VAR NAME=AXIS_METRIC_NT>>Nucleotides</option>
    <option value = "gene" <TMPL_VAR NAME=AXIS_METRIC_GENE>>Genes</option>
   </select>
  <tr>
-   <td>Master image width (0 == dynamic)  <input type=text name=master_width id=master_width size=6 value="<TMPL_VAR NAME="MWIDTH">">
+   <td>Master image width (0 == dynamic)  
+   <td><input type=text name=master_width id=master_width size=6 value="<TMPL_VAR NAME="MWIDTH">">
  <tr>
-   <td>Minimum chromosome size:   <input type=text name=min_chr_size id=min_chr_size size=6 value="<TMPL_VAR NAME="MIN_CHR_SIZE">">
+   <td>Minimum chromosome size:   
+   <Td><input type=text name=min_chr_size id=min_chr_size size=6 value="<TMPL_VAR NAME="MIN_CHR_SIZE">">
   <TR>
-    <TD>Order contigs by best syntenic path?
+    <TD colspan=2>Order contigs by best syntenic path?
    <input type=checkbox name="assemble" id="assemble" onclick="$('#assemble_info').toggle();" <TMPL_VAR NAME=SYNTENIC_PATH>><br>
    <span class=small id='assemble_info' style="display: none; color: red;">
     <li>This option assumes that one of the organisms is the reference genome, and the other is a whole genome shotgun sequence with contig level assembly.   The genome with fewer chromosomes/contigs will automatically be used as the reference genome.
     <li>Don't show contigs without synteny?<input type=checkbox name="show_non_syn" id="show_non_syn" <TMPL_VAR NAME=SHOW_NON_SYN>><span><br>
   <TR>
-   <td>E-mail results? <input type=checkbox id=check_email onclick="toggle_email_field()">
+   <td colspan=2>E-mail results? <input type=checkbox id=check_email onclick="toggle_email_field()">
 		<div class="email_box small" style="display:none;"><table class="backbox"><tr><td>Your E-mail Address: <td><input type=text id=email onBlur='address_validity_check()'>
 		
 		<font id=email_error class="small" style="display: none; color: red;">You have supplied an invalid e-mail address.</font></div>
