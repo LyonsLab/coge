@@ -7,7 +7,7 @@ use Data::Dumper;
 use DBI;
 use Getopt::Long;
 use POSIX;
-use vars qw($help $ks_db $ks_type $outfile $width $height $log $pair_file $chr1 $chr2 $max $min);
+use vars qw($help $ks_db $ks_type $outfile $width $height $log $pair_file $chr1 $chr2 $max $min $color_scheme);
 
 GetOptions(
 	   "ks_db|db=s"=>\$ks_db,
@@ -22,6 +22,7 @@ GetOptions(
 	   "chr2|c2=s"=>\$chr2,
 	   "max=s"=>\$max,
 	   "min=s"=>\$min,
+	   "color_scheme=s"=>\$color_scheme,
 	   );
 
 usage() if $help;
@@ -62,7 +63,7 @@ my $median = sprintf("%.4f",$data[floor(scalar(@data/2))]);
 
 my $hist = new CoGe::Accessory::histogram($width, $height);
 my $bins = CoGe::Accessory::histogram::_histogram_bins($data, 100);
-my $colors = gen_color_list($bins);
+my $colors = gen_color_list(bins=>$bins, color_scheme=>$color_scheme);
 my $count=0;
 my @color_names;
 foreach my $color (@$colors)
@@ -108,14 +109,16 @@ else
 
 sub gen_color_list
   {
-    my $bins = shift;
+    my %opts = @_;
+    my $bins = $opts{bins};
+    my $color_scheme = $opts{color_scheme};
     my $range = $bins->[-1][0]-$bins->[0][0];
     return unless $range;
     my @colors;
     foreach my $item (@$bins)
       {
 	my $val = sprintf("%.4f", ($item->[0]-$bins->[0][0])/$range);
-	push @colors, get_color(val=>$val);
+	push @colors, get_color(val=>$val, color_scheme=>$color_scheme);
       }
     return \@colors;
   }
@@ -177,37 +180,49 @@ sub get_color
   {
     my %opts = @_;
     my $val = $opts{val};
+    my $color_scheme = $opts{color_scheme};
+    $color_scheme=1 unless defined $color_scheme;
     return [0,0,0] unless defined $val;
-    my @colors_orig = (
-		  [255,255,0], #yellow
-		  [200,200,0], # green
-		  [0,200,0], # green
-		  [0,100,100], # green
-		  [0,200,200], # cyan
-		  [0,0,200], # blue
-		  [100,0,100], #purple
-		  [200,0,200], #magenta
-		  [200,0,0], #red
-		  [100,0,0], #red
-		  [200,100,0], #orange
-		  [255,126,0], #orange
-		 );
-     my @rainbow = (
-                  [255,0,0], #red
-                  [255,255,0], #yellow
-                  [0,255,0], # green
-                  [0,255,255], # cyan
-		  [220,0,220], #magenta
-                  [0,0,255], # blue
-                 );
-    my @red_yellow_blue = (
-                  [0,0,150], # blue
-                  [220,220,20], #yellow
-                  [255,0,0], #red
-                 );
-#    my @colors = @colors_orig;
-    my @colors = @rainbow;
-#    my @colors = @red_yellow_blue;
+   my $schemes = [
+		   [
+		    [255,255,0], #yellow
+		    [200,200,0], # green
+		    [0,200,0], # green
+		    [0,100,100], # green
+		    [0,200,200], # cyan
+		    [0,0,200], # blue
+		    [100,0,100], #purple
+		    [200,0,200], #magenta
+		    [200,0,0], #red
+		    [100,0,0], #red
+		    [200,100,0], #orange
+		    [255,126,0], #orange
+		    ],
+		   [
+		    [255,0,0], #red
+		    [255,255,0], #yellow
+		    [0,255,0], # green
+		    [0,255,255], # cyan
+		    [220,0,220], #magenta
+		    [0,0,255], # blue
+		   ],
+		   [
+		    [0,0,150], # blue
+		    [220,220,20], #yellow
+		    [255,0,0], #red
+		   ],
+		   [
+		    [0,200,0], # green
+		    [0,0,200], # blue
+		    [220,220,20], #yellow
+		    [255,0,0], #red
+		   ],
+		   [
+		    [255,0,0], # red
+		    [0,0,0], #black
+		   ]
+		  ];
+    my @colors = @{$schemes->[$color_scheme]};
     @colors = reverse @colors;
     my ($index1, $index2) = ((floor((scalar(@colors)-1)*$val)), ceil((scalar(@colors)-1)*$val));
 
