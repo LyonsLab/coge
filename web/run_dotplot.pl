@@ -40,6 +40,7 @@ my $max = $FORM->param('max');
 my $metric = $FORM->param('am');
 my $box_diags = $FORM->param('bd');
 my $color_type = $FORM->param('ct');
+my $color_scheme = $FORM->param('cs');
 $box_diags = 1 if $box_diags && $box_diags eq "true";
 $grid = 1 unless defined $grid;
 $DEBUG=1 if $FORM->param('debug');
@@ -76,7 +77,7 @@ $dag_file =~ s/\.dag_?.*//;
 $dag_file .= ".dag.all";
 my $outfile = $dir."/html/".$basename.".$chr1-$chr2.w$width";
 #my $res = generate_dotplot(dag=>$dag_file, coords=>"$dir/$basename.all.aligncoords", qchr=>$chr1, schr=>$chr2, 'outfile'=>$outfile, 'regen_images'=>'false', flip=>$flip, regen_images=>$regen, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, grid=>$grid, ksdb=>$ksdb, kstype=>$kstype, log=>$log, min=>$min, max=>$max, metric=>$metric);
-my $res = generate_dotplot(dag=>$dag_file, coords=>"$dir/$basename", qchr=>$chr1, schr=>$chr2, 'outfile'=>$outfile, 'regen_images'=>'false', flip=>$flip, regen_images=>$regen, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, grid=>$grid, ksdb=>$ksdb, kstype=>$kstype, log=>$log, min=>$min, max=>$max, metric=>$metric, box_diags=>$box_diags, color_type=>$color_type);
+my $res = generate_dotplot(dag=>$dag_file, coords=>"$dir/$basename", qchr=>$chr1, schr=>$chr2, 'outfile'=>$outfile, 'regen_images'=>'false', flip=>$flip, regen_images=>$regen, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, grid=>$grid, ksdb=>$ksdb, kstype=>$kstype, log=>$log, min=>$min, max=>$max, metric=>$metric, box_diags=>$box_diags, color_type=>$color_type, color_scheme=>$color_scheme);
 if ($res)
   {
     $res=~s/$DIR/$URL/;
@@ -127,6 +128,7 @@ sub generate_dotplot
     my $metric= $opts{metric};
     my $box_diags = $opts{box_diags};
     my $color_type = $opts{color_type};
+    my $color_scheme = $opts{color_scheme};
 #   CoGe::Accessory::Web::write_log("generate dotplot: running $cmd", $cogeweb->logfile);
     my $cmd = $DOTPLOT;
     if ($ksdb && -r $ksdb)
@@ -139,7 +141,8 @@ sub generate_dotplot
       }
     $outfile .= ".gene" if $metric =~ /gene/i;
     $outfile .= ".box" if $box_diags;
-    $outfile .= ".ct_$color_type" if $color_type;
+    $outfile .= ".ct$color_type" if $color_type;
+    $outfile .= ".cs$color_scheme" if defined $color_scheme;
 
     my $tmp = $outfile;
     $tmp .= ".$min" if defined $min && $min =~/\d/;
@@ -154,6 +157,7 @@ sub generate_dotplot
     $cmd .= qq { -am $metric} if $metric;
     $cmd .= qq { -cdt $color_type} if $color_type;
     $cmd .= qq{ -bd 1} if $box_diags;
+    $cmd .= qq{ -color_scheme $color_scheme} if defined $color_scheme;
     print STDERR "Running: ",$cmd,"\n" if $DEBUG;
     my $x;
     ($x, $cmd) = CoGe::Accessory::Web::check_taint($cmd);
