@@ -2434,20 +2434,46 @@ CoGe::Accessory::Web::write_log("WARNING:  sub run_adjust_dagchainer_evals faile
 	    #add version of dataset_group to organism names
 	    $org_name1 .= " (v".$dsg1->version.")";
 	    $org_name2 .= " (v".$dsg2->version.")";
+	    $html .= qq{<table><tr><td>};
+	    my $y_lab = "$out.y.png";
+	    my $x_lab = "$out.x.png";
+ 	    $out =~ s/$DIR/$URL/;
+#	    print STDERR $y_lab,"\n";
+	    if (-r $y_lab)
+	      {
+		$y_lab =~ s/$DIR/$URL/;
+		$html .= qq
+		  {
+<div><img src="$y_lab"></div><td>
+};
 
+	      }
+	      
  	    $html .= "<span class='species small'>y-axis organism: $org_name2</span><br>";
  	    $/ = "\n";
+	    my $tmp;
  	    while (<IN>)
  	      {
  		next if /<\/?html>/;
- 		$html .= $_;
+ 		$tmp .= $_;
  	      }
  	    close IN;
- 	    $out =~ s/$DIR/$URL/;
 #	    print STDERR $out,"!!\n";
- 	    $html =~ s/master.*\.png/$out.png/; 	    warn "$out.html did not parse correctly\n" unless $html =~ /map/i;
+ 	    $tmp =~ s/master.*\.png/$out.png/;
+	    warn "$out.html did not parse correctly\n" unless $tmp =~ /map/i;
+	    $html .= $tmp;
+	    #check for x-axis label
+	    if (-r $x_lab)
+	      {
+		$x_lab =~ s/$DIR/$URL/;
+		$html .= qq
+		  {
+<br><img src="$x_lab">
+};
+	      }
+
  	    $html .= qq{
- <br><span class="species small">x-axis: $org_name1</span><br>
+ <br><span class="species small">x-axis: $org_name1</span></table>
 };
 	    $html .= "<span class='small'>Axis metrics are in $axis_metric</span><br>";
 	    $html .="<span class='small'>Algorithm:  ".$algo_name."</span><br>";
