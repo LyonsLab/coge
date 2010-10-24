@@ -10,7 +10,7 @@ use Data::Dumper;
 use DBI;
 use POSIX;
 
-use vars qw($P $dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ks_db $ks_type $log $MAX $MIN $assemble $axis_metric $color_type $box_diags $fid1 $fid2 $selfself $labels $color_scheme);
+use vars qw($P $dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ks_db $ks_type $log $MAX $MIN $assemble $axis_metric $color_type $box_diags $fid1 $fid2 $selfself $labels $color_scheme $font);
 
 $P = CoGe::Accessory::Web::get_defaults();
 
@@ -44,10 +44,11 @@ GetOptions(
 	   "selfself" => \$selfself, #draw diag for self self comparison
 	   "labels=s" => \$labels, #do we draw labels for chromosomes, on my default
 	   "color_scheme=s"=>\$color_scheme,
+	   "font=s"=>\$font,
 	   );
 $selfself = 1 unless defined $selfself;
 $labels = 1 unless defined $labels;
-
+$font = $P->{FONT} unless $font && -r $font;
 
 usage() if $help;
 usage() unless (defined $dagfile &&-r $dagfile) || -r $alignfile;
@@ -96,6 +97,7 @@ my $y_pix_per_bp = 1/$y_bp_per_pix;
 my $graphics_context = new GD::Image($width, $height);
 my $white = $graphics_context->colorResolve(255,255,255);
 my $black = $graphics_context->colorResolve(0,0,0);
+my $red = $graphics_context->colorResolve(255,0,0);
 my $green = $graphics_context->colorResolve(0,150,0);
 my $alert_color = $graphics_context->colorResolve(255,0,0);
 
@@ -130,7 +132,10 @@ my $pairs = get_pairs(file=>$alignfile, chr1=>$CHR1, chr2=>$CHR2) if $alignfile 
 #Magic happens here.
 #Link type seems to indicate the type of tile; i.e. a 'master' (a large, all chromosome) or a blow up of a two chromosome intersection
 #draw_chromosome_grid draws either the black chomosome lines, or the light green tile lines, so its always called in addition to the draw_dots function.
-draw_chromosome_grid(gd=>$graphics_context, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, link=>$link, link_type=>$link_type, flip=>$flip, grid=>$grid);#, dsgid1=>$dsgid1, dsgid2=>$dsgid2, selfself=>$selfself);
+my $coords = draw_chromosome_grid(gd=>$graphics_context, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, link=>$link, link_type=>$link_type, flip=>$flip, grid=>$grid);#, dsgid1=>$dsgid1, dsgid2=>$dsgid2, selfself=>$selfself);
+my $x_labels_gd = draw_x_labels(coords=>$coords, axis=>'x');
+my $y_labels_gd = draw_y_labels(coords=>$coords, axis=>'y');
+
 
 #get syntenic gene pairs for ks_data (if needed)
 my $ksdata = get_ksdata(ks_db=>$ks_db, ks_type=>$ks_type, chr1=>$CHR1, chr2=> $CHR2, pairs=>$pairs) if $ks_db && -r $ks_db;
@@ -181,6 +186,18 @@ if ($selfself && ($dsgid1 == $dsgid2))
 open (OUT, ">".$basename.".png") || die "$!";
 binmode OUT;
 print OUT $graphics_context->png;
+close OUT;
+
+#Write out graphics context - the generated x axis - to a .png file
+open (OUT, ">".$basename.".x.png") || die "$!";
+binmode OUT;
+print OUT $x_labels_gd->png;
+close OUT;
+
+#Write out graphics context - the generated y axis - to a .png file
+open (OUT, ">".$basename.".y.png") || die "$!";
+binmode OUT;
+print OUT $y_labels_gd->png;
 close OUT;
 
 #generate_historgram of ks values if necessary
@@ -493,6 +510,7 @@ location_list[$temp_arrayindex_counter] = ['circle', [$x, $y, 2], '$link', 'get_
 	  }
 	
 	#Print out the canvas tag, onLoad call, and other stuff.
+	my $y = $y_labels_gd->width."px";
 	print OUT qq{
 		
 /*The body onLoad function in unreliable (sometimes does not run), as is simply running the loadstuff function (DOM may not be fully loaded).
@@ -502,10 +520,11 @@ Ergo, we rely on jQuery to detect when the DOM is fully loaded, and then run the
 });
 </script>
 </head><body>
-<canvas id="myCanvas" border="0" style='position: absolute;left: 0px;top:45px;' width="12" height="12" onmousemove="trackpointer(event);" onmousedown="trackclick(event, 'yes');">
+<image src="$img.y.png" style='position: absolute;left:0px; top:45px;'>
+<canvas id="myCanvas" border="0" style='position: absolute;left: $y;top:45px;' width="12" height="12" onmousemove="trackpointer(event);" onmousedown="trackclick(event, 'yes');">
 	Your browser does not have support for Canvas.
 </canvas>	
-<span class=xsmall style='position: absolute;left: 0px;top: 45px;'>y-axis: $org2name: $CHR2 ($org2length)</span>
+<span class=xsmall style='position: absolute;left: $y;top: 45px;'>y-axis: $org2name: $CHR2 ($org2length)</span>
 <DIV id=pair_info class="ui-widget-content" style='position: absolute;left: 0px;top: 0px;'></DIV>
 
 };
@@ -514,17 +533,20 @@ Ergo, we rely on jQuery to detect when the DOM is fully loaded, and then run the
 	my $pos = $graphics_context->height+45;
 	$pos .='px';
 	print OUT qq{</map>};
+	my $hist_width = $width+$y_labels_gd->width;
+	$hist_width .="px";
 	if (-r $basename.".hist.png")
 	  {
 	    print OUT qq{
-<span style='position: absolute;left: $width; top: 45px'>
+<span style='position: absolute;left: $hist_width; top: 45px'>
 <a class="small" href= "$img.hist.png" target=_new>Histogram of synonymous substitutions</a>
 <img src= "$img.hist.png" >
 </span>
 }; 
 	  }
 	print OUT qq{
-<span class=xsmall style='position: absolute;left: 0px;top: $pos;'>x-axis $org1name: $CHR1 ($org1length)
+
+<span class=xsmall style='position: absolute;left: 0px;top: $pos;'><img src=$img.x.png><br>x-axis $org1name: $CHR1 ($org1length)
    <a href = "$img.png" target=_new>Link to image</a>
 
 };
@@ -552,7 +574,6 @@ sub draw_chromosome_grid
     my $grid = $opts{grid};
     my $height = $graphics_context->height;
     my $width = $graphics_context->width;
-    my $red = $graphics_context->colorResolve(255,0,0);
     my $span_color = $graphics_context->colorResolve(200,255,200);
     $graphics_context->line(0,0, $graphics_context->width, 0, $black);
     $graphics_context->line(0, $graphics_context->height-1, $graphics_context->width, $graphics_context->height-1, $black);
@@ -562,6 +583,9 @@ sub draw_chromosome_grid
     my %data;
     my $pchr;
     my $pv;
+    my @x_label_coords;
+    my @y_label_coords;
+    my $str_color;
     foreach my $chr (sort {$org1->{$a}{start}<=>$org1->{$b}{start} } keys %$org1)
       {
 	my $x = $org1->{$chr}{start}*$x_pix_per_bp;
@@ -577,13 +601,23 @@ sub draw_chromosome_grid
 	      }
 	  }
 	$graphics_context->line($x, 0, $x, $graphics_context->height, $black);					#Draw black line
-	my $str_color = $org1->{$chr}{rev} ? $red : $black;
-	$graphics_context->string(gdSmallFont, $x+2, $graphics_context->height-15, $chr, $str_color) if $labels;		#Draws name of chromosome
-	$data{x}{$pchr}=[$pv,$x] if $pchr;
+	$str_color = $org1->{$chr}{rev} ? $red : $black;
+#	if ($labels)
+	  # {#Draws name of chromosome
+	  #   if (-r $font)
+	  #     {
+	  # 	$graphics_context->stringFT($str_color, $font, 12, 0, $x+2, $graphics_context->height-15,$chr);
+	  #     }
+	  #   else
+	  #     {
+	  # 	$graphics_context->string(gdSmallFont, $x+2, $graphics_context->height-15, $chr, $str_color);
+	  #     }
+	  # }
+	$data{x}{$pchr}=[$pv,$x, $str_color] if $pchr;
 	$pchr=$chr;
 	$pv = $x+1;
       }
-    $data{x}{$pchr}=[$pv,$graphics_context->width];
+    $data{x}{$pchr}=[$pv,$graphics_context->width, $str_color];
     $pchr = undef;
     $pv=undef;
     foreach my $chr (sort {$org2->{$a}{start}<=>$org2->{$b}{start} } keys %$org2)
@@ -602,13 +636,13 @@ sub draw_chromosome_grid
 	  }
 
 	$graphics_context->line(0, $y, $graphics_context->width, $y, $black);
-	my $str_color = $org2->{$chr}{rev} ? $red : $black;
-	$graphics_context->string(gdSmallFont, 2, $y-15, $chr, $str_color) if $labels;
-	$data{y}{$pchr}=[$y, $pv] if $pchr;
+	$str_color = $org2->{$chr}{rev} ? $red : $black;
+#	$graphics_context->string(gdSmallFont, 2, $y-15, $chr, $str_color) if $labels;
+	$data{y}{$pchr}=[$y, $pv, $str_color] if $pchr;
 	$pchr = $chr;
 	$pv =$y+1;
       }
-    $data{y}{$pchr}=[0,$pv-1];
+    $data{y}{$pchr}=[0,$pv-1, $str_color];
     
     if ($link_type == 2)
 	{
@@ -655,12 +689,108 @@ location_list[$temp_arrayindex_counter] = ['rect', [$x1, $y1, $x2, $y2], '$tmp',
 
 
 		#Print out the HTML footer.
-	print OUT qq{
+		my $pos = $graphics_context->height+45;
+		print OUT qq{
 </map>
 </body></html>
 };
-	close OUT;
+		close OUT;
       }
+    return \%data;
+  }
+
+sub draw_x_labels
+  {
+    my %opts=@_;
+    my $coords = $opts{coords};
+    my $axis = $opts{axis};
+    my $gd = $opts{gd};
+    unless ($gd)
+      {
+	#calculate size of figure by legends sizes
+	my ($x, $y) = (0,0);
+	foreach my $chr (keys %{$coords->{$axis}})
+	  {
+	    my ($start, $stop, $color) = @{$coords->{$axis}{$chr}};
+	    my $tx = ($stop-$start)/2;
+	    my $fsize = $tx>12 ? 12 : $tx;
+	    $x = $stop if $stop > $x;
+	    $fsize = 4 if $fsize < 4;
+	    my @bounds = GD::Image->stringFT($color, $font, $fsize, 45, $x, 0 , $chr);
+	    my $ty = ($bounds[1]-$bounds[5]);
+	    $y = $ty if $ty > $y;
+	  }
+	$gd = new GD::Image($x, $y+5);
+	my $white = $gd->colorResolve(255,255,255);
+	my $black = $gd->colorResolve(0,0,0);
+	my $red = $gd->colorResolve(255,0,0);
+	my $green = $gd->colorResolve(0,150,0);
+	my $alert_color = $gd->colorResolve(255,0,0);
+      }
+    foreach my $chr (keys %{$coords->{$axis}})
+      {
+	my ($start, $stop, $color) = @{$coords->{$axis}{$chr}};
+	my $x = ($stop-$start)/2;
+	my $fsize = $x>12 ? 12 : $x;
+	$fsize = 4 if $fsize < 4;
+	$x+=$start;
+	if (-r $font)
+	  {
+	    $gd->stringFT($color, $font, $fsize, 45, $x, $gd->height-5 , $chr);
+	  }
+	else
+	  {
+	    $gd->string(gdSmallFont, $start, $gd->height-15, $chr, $color);
+	  }
+      }
+    return $gd;
+  }
+
+sub draw_y_labels
+  {
+    my %opts=@_;
+    my $coords = $opts{coords};
+    my $axis = $opts{axis};
+    my $gd = $opts{gd};
+    unless ($gd)
+      {
+	#calculate size of figure by legends sizes
+	my ($x, $y) = (0,0);
+	foreach my $chr (keys %{$coords->{$axis}})
+	  {
+	    my ($start, $stop, $color) = @{$coords->{$axis}{$chr}};
+	    my $ty = ($stop-$start)/2;
+	    my $fsize = $ty>12 ? 12 : $ty;
+	    $y = $stop if $stop > $y;
+	    $fsize = 4 if $fsize < 4;
+	    my @bounds = GD::Image->stringFT($color, $font, $fsize, 45, 0, 0 , $chr);
+	    my $tx = ($bounds[2]-$bounds[6]);
+	    $x = $tx if $tx > $x;
+	  }
+	$gd = new GD::Image($x, $y+5);
+	my $white = $gd->colorResolve(255,255,255);
+	my $black = $gd->colorResolve(0,0,0);
+	my $red = $gd->colorResolve(255,0,0);
+	my $green = $gd->colorResolve(0,150,0);
+	my $alert_color = $gd->colorResolve(255,0,0);
+      }
+    foreach my $chr (keys %{$coords->{$axis}})
+      {
+	my ($start, $stop, $color) = @{$coords->{$axis}{$chr}};
+	my $y = ($stop-$start)/2;
+	my $fsize = $y>12 ? 12 : $y;
+	$fsize = 4 if $fsize < 4;
+	$y+=$start;
+	if (-r $font)
+	  {
+	    $gd->stringFT($color, $font, $fsize, 45, 0+10, $y , $chr);
+	  }
+	else
+	  {
+	    $gd->string(gdSmallFont, 0, $y, $chr, $color);
+	  }
+      }
+    return $gd;
   }
 
 sub get_dsg_info
