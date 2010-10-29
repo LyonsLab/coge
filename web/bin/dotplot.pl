@@ -133,8 +133,8 @@ my $pairs = get_pairs(file=>$alignfile, chr1=>$CHR1, chr2=>$CHR2) if $alignfile 
 #Link type seems to indicate the type of tile; i.e. a 'master' (a large, all chromosome) or a blow up of a two chromosome intersection
 #draw_chromosome_grid draws either the black chomosome lines, or the light green tile lines, so its always called in addition to the draw_dots function.
 my $coords = draw_chromosome_grid(gd=>$graphics_context, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, link=>$link, link_type=>$link_type, flip=>$flip, grid=>$grid);#, dsgid1=>$dsgid1, dsgid2=>$dsgid2, selfself=>$selfself);
-my $x_labels_gd = draw_x_labels(coords=>$coords, axis=>'x');
-my $y_labels_gd = draw_y_labels(coords=>$coords, axis=>'y');
+my $x_labels_gd = draw_x_labels(coords=>$coords, axis=>'x') if $labels;
+my $y_labels_gd = draw_y_labels(coords=>$coords, axis=>'y') if $labels;
 
 
 #get syntenic gene pairs for ks_data (if needed)
