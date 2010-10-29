@@ -165,6 +165,7 @@ sub gen_body
   {
     my $form = shift || $FORM;
     my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'SynMap.tmpl');
+
     $template->param(MAIN=>1);
     
     my $master_width = $FORM->param('w') || 0;
@@ -252,7 +253,7 @@ sub gen_body
     $template->param("CS".$cs=>"selected");
 
     #show non syntenic dots:  on by default
-    my $snsd = 1;
+    my $snsd = 0;
     $snsd = $FORM->param('snsd') if (defined $FORM->param('snsd'));
     $template->param('SHOW_NON_SYN_DOTS'=>'checked') if $snsd;
 
