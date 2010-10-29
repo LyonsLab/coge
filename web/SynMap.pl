@@ -640,7 +640,7 @@ sub gen_fasta
       {
 	system "touch $file.running"; #track that a blast anlaysis is running for this
 	$res = generate_fasta(dsgid=>$dsgid, file=>$file, type=>$feat_type) unless -r $file;
-	system "rm $file.running" if -r "$file.running"; #remove track file
+	system "/bin/rm $file.running" if -r "$file.running"; #remove track file
       }
     CoGe::Accessory::Web::write_log("#"x(20)."\n",$cogeweb->logfile) if $write_log;
     return $file, $org_name, $title if $res;
@@ -760,7 +760,7 @@ sub gen_blastdb
       {
 	system "touch $blastdb.running"; #track that a blast anlaysis is running for this
 	$res = generate_blast_db(fasta=>$fasta, blastdb=>$blastdb, org=>$org_name, write_log=>$write_log);
-	system "rm $blastdb.running" if -r "$blastdb.running"; #remove track file
+	system "/bin/rm $blastdb.running" if -r "$blastdb.running"; #remove track file
       }
     CoGe::Accessory::Web::write_log("blastdb file: $blastdb", $cogeweb->logfile) if $write_log;
     CoGe::Accessory::Web::write_log("#"x(20)."\n",$cogeweb->logfile) if $write_log;
@@ -830,7 +830,7 @@ sub run_blast
     ($x, $pre_command) =CoGe::Accessory::Web::check_taint($pre_command);
    CoGe::Accessory::Web::write_log("running:\n\t$pre_command" ,$cogeweb->logfile);
     `$pre_command`;
-    system "rm $outfile.running" if -r "$outfile.running"; #remove track file
+    system "/bin/rm $outfile.running" if -r "$outfile.running"; #remove track file
     unless (-s $outfile)
       {
 	   CoGe::Accessory::Web::write_log("WARNING: Problem running $pre_command command.  Blast output file contains no data!" ,$cogeweb->logfile);
@@ -980,10 +980,10 @@ CoGe::Accessory::Web::write_log("run dag_tools: file $outfile already exists",$c
       $cmd .= " --query_dups $query_dup_file" if $query_dup_file;
       $cmd .= " --subject_dups $subject_dup_file" if $subject_dup_file;
       $cmd .=  " > $outfile";
-      system "touch $outfile.running"; #track that a blast anlaysis is running for this
+      system "/usr/bin/touch $outfile.running"; #track that a blast anlaysis is running for this
      CoGe::Accessory::Web::write_log("run dag_tools: running\n\t$cmd",$cogeweb->logfile);
       `$cmd`;
-      system "rm $outfile.running" if -r "$outfile.running"; #remove track file
+      system "/bin/rm $outfile.running" if -r "$outfile.running"; #remove track file
       unless (-s $outfile)
 	{
 	 CoGe::Accessory::Web::write_log("WARNING: DAGChainer input file ($outfile) contains no data!" ,$cogeweb->logfile);
@@ -1013,10 +1013,10 @@ CoGe::Accessory::Web::write_log("run_tandem_filter: file $outfile already exists
 	return 1;
       }
     my $cmd = "$PYTHON $TANDEM_FINDER -i $infile > $outfile";
-    system "touch $outfile.running"; #track that a blast anlaysis is running for this
+    system "/usr/bin/touch $outfile.running"; #track that a blast anlaysis is running for this
    CoGe::Accessory::Web::write_log("run_tandem_filter: running\n\t$cmd", $cogeweb->logfile);
     `$cmd`;
-    system "rm $outfile.running" if -r "$outfile.running"; #remove track file
+    system "/bin/rm $outfile.running" if -r "$outfile.running"; #remove track file
     return 1 if -r $outfile;
   }
 
@@ -1049,10 +1049,10 @@ CoGe::Accessory::Web::write_log("run_adjust_dagchainer_evals: file $outfile alre
     #if implemented, this will require re-naming all the files to account for this parameter
     #and updating the auto-SynMap link generator for redoing an analysis
 
-    system "touch $outfile.running"; #track that a blast anlaysis is running for this
+    system "/usr/bin/touch $outfile.running"; #track that a blast anlaysis is running for this
    CoGe::Accessory::Web::write_log("run_adjust_dagchainer_evals: running\n\t$cmd", $cogeweb->logfile);
     `$cmd`;
-    system "rm $outfile.running" if -r "$outfile.running";; #remove track file
+    system "/bin/rm $outfile.running" if -r "$outfile.running";; #remove track file
     return 1 if -r $outfile;
 
     }
@@ -1131,7 +1131,7 @@ CoGe::Accessory::Web::write_log("run_convert_to_gene_order: file $outfile alread
 	  }
       }
 
-    system "touch $outfile.running"; #track that a blast anlaysis is running for this
+    system "/usr/bin/touch $outfile.running"; #track that a blast anlaysis is running for this
     open (OUT, ">$outfile");
     open (IN, $infile);
     while (<IN>)
@@ -1174,7 +1174,7 @@ CoGe::Accessory::Web::write_log("run_convert_to_gene_order: file $outfile alread
 
    CoGe::Accessory::Web::write_log("running coversion to gene order for $infile", $cogeweb->logfile);
    CoGe::Accessory::Web::write_log("Completed conversion of gene order to file $outfile", $cogeweb->logfile);
-    system "rm $outfile.running" if -r "$outfile.running";; #remove track filereturn $outfile;
+    system "/bin/rm $outfile.running" if -r "$outfile.running";; #remove track filereturn $outfile;
     return $outfile;
   }
 
@@ -1195,7 +1195,7 @@ sub replace_gene_order_with_genomic_positions
 CoGe::Accessory::Web::write_log("  no conversion for $file back to genomic coordinates needed, convered file, $outfile,  exists", $cogeweb->logfile);
 	return;
       }
-    system "touch $outfile.running"; #track that a blast anlaysis is running for this
+    system "/usr/bin/touch $outfile.running"; #track that a blast anlaysis is running for this
    CoGe::Accessory::Web::write_log("  converting $file back to genomic coordinates, $outfile", $cogeweb->logfile);
 #    `mv $file $file.orig`;
     $/="\n"; #just in case
@@ -1219,7 +1219,7 @@ CoGe::Accessory::Web::write_log("  no conversion for $file back to genomic coord
       }
     close IN;
     close OUT;
-    system "rm $outfile.running" if -r "$outfile.running"; 
+    system "/bin/rm $outfile.running" if -r "$outfile.running"; 
   }
 
 sub run_dagchainer
@@ -1293,11 +1293,11 @@ CoGe::Accessory::Web::write_log("run dagchainer: file $return_file already exist
     #
 
 
-    system "touch $running_file"; #track that a blast anlaysis is running for this
+    system "/usr/bin/touch $running_file"; #track that a blast anlaysis is running for this
    CoGe::Accessory::Web::write_log("run dagchainer: running\n\t$cmd", $cogeweb->logfile);
     `$cmd`;
 #    `mv $infile.aligncoords $outfile`;
-    system "rm $running_file" if -r "$running_file";; #remove track file
+    system "/bin/rm $running_file" if -r "$running_file";; #remove track file
     return ($outfile, $merged_file);
   }
 
@@ -1458,10 +1458,10 @@ CoGe::Accessory::Web::write_log("run find_nearby: file $outfile already exists",
 	return 1;
       }
     my $cmd = "$PYTHON $FIND_NEARBY --diags=$infile --all=$dag_all_file > $outfile";
-    system "touch $outfile.running"; #track that a blast anlaysis is running for this
+    system "/usr/bin/touch $outfile.running"; #track that a blast anlaysis is running for this
    CoGe::Accessory::Web::write_log("run find_nearby: running\n\t$cmd", $cogeweb->logfile);
     `$cmd`;
-    system "rm $outfile.running" if -r "$outfile.running";; #remove track file
+    system "/bin/rm $outfile.running" if -r "$outfile.running";; #remove track file
     return 1 if -r $outfile;
   }
 
@@ -1582,7 +1582,7 @@ INSERT INTO ks_data (fid1, fid2, dS, dN, dN_dS, protein_align_1, protein_align_2
       }
     $pm->wait_all_children();
 
-    system "rm $outfile.running" if -r "$outfile.running";; #remove track file
+    system "/bin/rm $outfile.running" if -r "$outfile.running";; #remove track file
    CoGe::Accessory::Web::write_log("Completed generating ks data.", $cogeweb->logfile);
     return $outfile;
   }
@@ -1972,9 +1972,9 @@ sub generate_dotplot
 	CoGe::Accessory::Web::write_log("generate dotplot: file $outfile already exists",$cogeweb->logfile);
 	return $outfile;
       }
-    system "touch $outfile.running"; #track that a blast anlaysis is running for this
+    system "/usr/bin/touch $outfile.running"; #track that a blast anlaysis is running for this
    CoGe::Accessory::Web::write_log("generate dotplot: running\n\t$cmd", $cogeweb->logfile);
-    system "rm $outfile.running" if -r "$outfile.running";; #remove track file
+    system "/bin/rm $outfile.running" if -r "$outfile.running";; #remove track file
     `$cmd`;
     return $outfile if -r "$outfile.html";
   }
