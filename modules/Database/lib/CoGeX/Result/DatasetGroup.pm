@@ -686,13 +686,18 @@ sub gff
     my $print = $opts{print};
     my $annos = $opts{annos};
     my $output; #store the goodies
-    $output .= "##".$self->organism->name; 
-    $output .= ": ".$self->organism->description if $self->organism->description;
-    $output .= " (v".$self->version.", dsgid".$self->id.")\n";
+    $output .= "##gff-version\t3\n"; 
+    $output .= "##Generate by CoGe\n";
+    $output .= "##Organism name: ".$self->organism->name."\n"; 
+    $output .= "##Organism desc: ".$self->organism->description."\n" if $self->organism->description;
+    $output .= "##Version: ".$self->version."\n";
+    $output .= "##CoGe DatasetGroup ID (dsgid): ".$self->id."\n";
+    $output .= "##\n";
+    $output .= "##\n";
     print $output if $print;
     foreach my $ds ($self->datasets)
       {
-	$output .= $ds->gff(name_re=>$name_re, debug=>$debug, print=>$print, annos=>$annos);
+	$output .= $ds->gff(name_re=>$name_re, debug=>$debug, print=>$print, annos=>$annos, no_gff_head=>1);
       }
     return $output;
   }
