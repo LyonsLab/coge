@@ -749,6 +749,7 @@ sub fasta
              print       =>    print the gff file as the lines are retrieved
              annos       =>    print annotations as well (takes longer)
              debug       =>    prints some debugging stuff
+             no_gff_head =>    won't print "gff-version 3".  Used when this function is called by DatasetGroup->gff(); (default 0)
  Throws    : 
  Comments  : 
 
@@ -767,14 +768,16 @@ sub gff
     my $debug = $opts{debug};
     my $print = $opts{print};
     my $annos = $opts{annos}; 
+    my $no_gff_head = $opts{no_gff_head};
     my $output; #store the goodies
     my %chrs;
     foreach my $chr ($self->get_chromosomes){
       $chrs{$chr} = $self->last_chromosome_position($chr);
     }
     my @chrs = sort { $a cmp $b } keys %chrs;
-    my $tmp = "##gff-version\t3\n";
-    $output.=  $tmp;
+    my $tmp;
+    $tmp = "##gff-version\t3\n" unless $no_gff_head;
+    $output.=  $tmp if $tmp;
     print $tmp if $print;
     foreach my $chr (@chrs){
       $tmp = "##sequence-region $chr 1 " . $chrs{$chr} . "\n";
@@ -830,7 +833,7 @@ sub gff
 		}
 	      $anno_stuff = join (",", @annos);
 	    }
-	  my $gstr = join("\t", ($chr, 'coge', $feat->feature_type->name, $feat->start, $feat->stop, ".", $strand, ".", $attrs));
+	  my $gstr = join("\t", ($chr, 'CoGe', $feat->feature_type->name, $feat->start, $feat->stop, ".", $strand, ".", $attrs));
 	  $gstr .= ";Note=$anno_stuff" if $anno_stuff;
 	  if($seen{$gstr}){ next; }
 	  $seen{$gstr} = 1;
@@ -874,7 +877,7 @@ sub gff
 	    my $mrna_annos = join (",", @tannos);
 	    foreach my $loc ($f->locations({},{'order_by'=>'start'})){
 	      next if $loc->start > $feat->stop || $loc->stop < $feat->start; #outside of genes boundaries;  Have to count it as something else
-	      my $gstr = join("\t", ($f->chr, 'coge', $f->feature_type->name, $loc->start, $loc->stop, ".", $strand, ".", $mrna_attrs));
+	      my $gstr = join("\t", ($f->chr, 'CoGe', $f->feature_type->name, $loc->start, $loc->stop, ".", $strand, ".", $mrna_attrs));
 	      $gstr.=";Note=$mrna_annos" if $mrna_annos;
 	      if($seen{$gstr}){ next; }
 	      $seen{$gstr} = 1;
@@ -916,7 +919,7 @@ sub gff
 	    my $other_annos = join (",", @tannos);
 	    foreach my $loc ($f->locations({},{'order_by'=>'start'})){
 	      next if $loc->start > $feat->stop || $loc->stop < $feat->start; #outside of genes boundaries;  Have to count it as something else
-	      my $gstr = join("\t", ($f->chr, 'coge', $f->feature_type->name, $loc->start, $loc->stop, ".", $strand, ".", $other_attrs));
+	      my $gstr = join("\t", ($f->chr, 'CoGe', $f->feature_type->name, $loc->start, $loc->stop, ".", $strand, ".", $other_attrs));
 	      $gstr.=";Note=$other_annos" if $other_annos;
 	      
 	      if($seen{$gstr}){ next; }
