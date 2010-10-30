@@ -747,6 +747,7 @@ sub fasta
  Returns   : a string
  Argument  : name_re     =>    regular expression for only displaying features containing a name that matches
              print       =>    print the gff file as the lines are retrieved
+             annos       =>    print annotations as well (takes longer)
              debug       =>    prints some debugging stuff
  Throws    : 
  Comments  : 
@@ -765,8 +766,8 @@ sub gff
     my $name_re = $opts{name_re};
     my $debug = $opts{debug};
     my $print = $opts{print};
+    my $annos = $opts{annos}; 
     my $output; #store the goodies
-
     my %chrs;
     foreach my $chr ($self->get_chromosomes){
       $chrs{$chr} = $self->last_chromosome_position($chr);
@@ -783,13 +784,15 @@ sub gff
     my %fids = ();
     my $count=0;
     my %types;
+    my $prefetch = [ 'feature_type', 'feature_names'];
+    push @$prefetch, {'annotations' => 'annotation_type'} if $annos;
     foreach my $chr (@chrs){
         my %seen = ();
         my $feat_rs = $self->features( {
 				      'me.chromosome' => $chr,
 				     } , 
 				     { 
-				      'prefetch'           => [ 'feature_type', 'feature_names', {'annotations' => 'annotation_type'}],
+				      'prefetch'           => $prefetch,
 
 				      'order_by'           => [ 'me.start', 'me.feature_type_id'] #go by order in genome, then make sure that genes (feature_type_id == 1) is first
 				     }
@@ -811,20 +814,24 @@ sub gff
 	  my ($names) = join (",", @feat_names);
 	  my $attrs = "ID=$count";
 	  $attrs .= ";Name=$names" if $names;
-	  my @annos;
-	  foreach my $anno ($feat->annotations)
+	  my $anno_stuff;
+	  if ($annos)
 	    {
-	      next unless defined $anno->annotation;
-	      my $anno_type = $anno->annotation_type;
-	      my $tmp;
-	      $tmp .= $anno_type->name.": " if $anno_type && $anno_type->name;
-	      $tmp .= $anno->annotation;
-	      $tmp =~ s/;//g;
-	      push @annos, $tmp;
+	      my @annos;
+	      foreach my $anno ($feat->annotations)
+		{
+		  next unless defined $anno->annotation;
+		  my $anno_type = $anno->annotation_type;
+		  my $tmp;
+		  $tmp .= $anno_type->name.": " if $anno_type && $anno_type->name;
+		  $tmp .= $anno->annotation;
+		  $tmp =~ s/;//g;
+		  push @annos, $tmp;
+		}
+	      $anno_stuff = join (",", @annos);
 	    }
-	  my $annos = join (",", @annos);
 	  my $gstr = join("\t", ($chr, 'coge', $feat->feature_type->name, $feat->start, $feat->stop, ".", $strand, ".", $attrs));
-	  $gstr .= ";Note=$annos" if $annos;
+	  $gstr .= ";Note=$anno_stuff" if $anno_stuff;
 	  if($seen{$gstr}){ next; }
 	  $seen{$gstr} = 1;
 	  $tmp = $gstr . "\n";
@@ -852,14 +859,17 @@ sub gff
 	    my $mrna_attrs = "Parent=$parent";
 	    $mrna_attrs .= ";Name=$mrna_names" if $mrna_names;
 	    my @tannos;
-	    foreach my $anno ($f->annotations)
+	    if ($annos)
 	      {
-		next unless defined $anno->annotation;
-		my $tmp;
-		$tmp .= $anno->annotation_type->name.": " if $anno->annotation_type && $anno->annotation_type->name;
-		$tmp .= $anno->annotation;
-		$tmp =~ s/;//g;
-		push @tannos, $tmp;
+		foreach my $anno ($f->annotations)
+		  {
+		    next unless defined $anno->annotation;
+		    my $tmp;
+		    $tmp .= $anno->annotation_type->name.": " if $anno->annotation_type && $anno->annotation_type->name;
+		    $tmp .= $anno->annotation;
+		    $tmp =~ s/;//g;
+		    push @tannos, $tmp;
+		  }
 	      }
 	    my $mrna_annos = join (",", @tannos);
 	    foreach my $loc ($f->locations({},{'order_by'=>'start'})){
@@ -891,14 +901,17 @@ sub gff
 	    my $other_attrs = "Parent=$parent";
 	    $other_attrs .= ";Name=$other_names" if $other_names;
 	    my @tannos;
-	    foreach my $anno ($f->annotations)
+	    if ($annos)
 	      {
-		next unless $anno->annotation;
-		my $tmp;
-		$tmp .= $anno->annotation_type->name.": " if $anno->annotation_type && $anno->annotation_type->name;
-		$tmp .= $anno->annotation;
-		$tmp =~ s/;//g;
-		push @tannos, $tmp;
+		foreach my $anno ($f->annotations)
+		  {
+		    next unless $anno->annotation;
+		    my $tmp;
+		    $tmp .= $anno->annotation_type->name.": " if $anno->annotation_type && $anno->annotation_type->name;
+		    $tmp .= $anno->annotation;
+		    $tmp =~ s/;//g;
+		    push @tannos, $tmp;
+		  }
 	      }
 	    my $other_annos = join (",", @tannos);
 	    foreach my $loc ($f->locations({},{'order_by'=>'start'})){
