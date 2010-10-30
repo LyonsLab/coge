@@ -581,6 +581,14 @@ sub percent_gc
  Purpose   : 
  Returns   : 
  Argument  : 
+            col      =>   number of sequence characters per line (default 100)
+            chr_name =>   fasta header contains only the chromosome name (default 0)
+            start    =>  start position (default 1)
+            stop     =>  stop position  (default $self->sequence_legnth($chr)
+            chr      =>  chromosome for which to get sequence (default:  whatever $self->get_chromosomes gets first)
+            rc       =>  generate the reverse complement (default: 0)
+            prot     =>  translate to protein, will do 6 frame automatically if it is not in a proper reading frame (default: 0)
+
  Throws    : 
  Comments  : 
 
@@ -599,6 +607,7 @@ sub fasta
     $col = $opts{column} unless defined $col;
     $col = $opts{wrap} unless defined $col;
     $col = 100 unless defined $col;
+    my $chr_name = $opts{chr_name}; #makes header contain only chromosome name
     my $chr = $opts{chr};
     ($chr) = $self->get_chromosomes unless defined $chr;
     my $strand = $opts{strand} || 1;
@@ -610,10 +619,18 @@ sub fasta
     $strand = -1 if $rc;
     my $seq = $self->genomic_sequence(start=>$start, stop=>$stop, chr=>$chr);
     $stop = $start + length($seq)-1 if $stop > $start+length($seq)-1;
-    my $head = ">".$self->organism->name." (";
-    $head .= $self->name if $self->name;
-    $head .= ", ".$self->description if $self->description;
-    $head .= ", v".$self->version.")".", Location: ".$start."-".$stop." (length: ".($stop-$start+1)."), Chromosome: ".$chr.", Strand: ".$strand;
+    my $head;
+    if ($chr_name)
+      {
+	$head .= ">".$chr;
+      }
+    else
+      {
+	$head .= ">".$self->organism->name;
+	$head .= $self->name if $self->name;
+	$head .= ", ".$self->description if $self->description;
+	$head .= " (v".$self->version.")".", Location: ".$start."-".$stop." (length: ".($stop-$start+1)."), Chromosome: ".$chr.", Strand: ".$strand;
+      }
 
     $Text::Wrap::columns=$col;
     my $fasta;
