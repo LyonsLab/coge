@@ -236,7 +236,7 @@ sub get_seq
     my $strand = $opts{strand};
     my $IN = $opts{file_handle};
     my $server = $opts{server}; #option for specifying a server for retrieving sequences if local sequences do not exist.
-    $server = "http://synteny.cnr.berkeley.edu/CoGe/GetSequence.pl" unless $server;
+    $server = "http://genomevolution.org/CoGe/GetSequence.pl" unless $server;
 
     $strand  = 1 unless defined $strand;
     ($start, $stop) = ($stop, $start) if $start && $stop && $start > $stop;
@@ -650,6 +650,7 @@ sub fasta
  Returns   : a string
  Argument  : name_re     =>    regular expression for only displaying features containing a name that matches
              print       =>    print the gff file as the lines are retrieved
+             annos       =>    print annotations as well (takes longer)
  Throws    : 
  Comments  : 
 
@@ -666,6 +667,7 @@ sub gff
     my $name_re = $opts{name_re};
     my $debug = $opts{debug};
     my $print = $opts{print};
+    my $annos = $opts{annos};
     my $output; #store the goodies
     $output .= "##".$self->organism->name; 
     $output .= ": ".$self->organism->description if $self->organism->description;
@@ -673,7 +675,7 @@ sub gff
     print $output if $print;
     foreach my $ds ($self->datasets)
       {
-	$output .= $ds->gff(name_re=>$name_re, debug=>$debug, print=>$print);
+	$output .= $ds->gff(name_re=>$name_re, debug=>$debug, print=>$print, annos=>$annos);
       }
     return $output;
   }
