@@ -374,15 +374,17 @@ sub get_dataset_group_info
     $html .= qq{<TR><TD>Download:</td>};
     $html .= qq{<td>};
     $html .= qq{<a class=link href='$seq_file' target="_new">Fasta Sequences</a>};
-    $html .= qq{&nbsp&nbsp};
-    $html .= qq{<a href='coge_gff.pl?dsgid=$dsgid' target=_new>GFF Annotations</a>};
+    $html .= qq{&nbsp|&nbsp};
+    $html .= qq{<a href='coge_gff.pl?dsgid=$dsgid' target=_new>GFF Names Only</a>};
+    $html .= qq{&nbsp|&nbsp};
+    $html .= qq{<a href='coge_gff.pl?dsgid=$dsgid;annos=1' target=_new>GFF Names and Annotations</a>};
     $html .= qq{</td></tr>};
 
     $html .= "<tr><td>Links:</td>";
     $html .= qq{<td>};
     $html .= "<a href='OrganismView.pl?dsgid=$dsgid' target=_new>OrganismView</a>&nbsp<a href='CodeOn.pl?dsgid=$dsgid' target=_new>CodeOn</a>";
     $html .= qq{&nbsp&nbsp};
-    $html .= "<a href='SynMap.pl?dsgid1=$dsgid;dsgid2=$dsgid' target=_new>SynMap</a>";
+    $html .= qq{<span class='link' onclick="window.open('SynMap.pl?dsgid1=$dsgid;dsgid2=$dsgid');">SynMap</span>};
     $html .= "</td></tr>";
 
 
