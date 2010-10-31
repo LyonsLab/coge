@@ -817,6 +817,7 @@ sub gff
 	  my ($names) = join (",", @feat_names);
 	  my $attrs = "ID=$count";
 	  $attrs .= ";Name=$names" if $names;
+	  $attrs .= ";CoGe_fid=".$feat->id;
 	  my $anno_stuff;
 	  if ($annos)
 	    {
@@ -837,7 +838,7 @@ sub gff
 	  $gstr .= ";Note=$anno_stuff" if $anno_stuff;
 	  if($seen{$gstr}){ next; }
 	  $seen{$gstr} = 1;
-	  $tmp = $gstr . "\n";
+	  $tmp = $gstr . ";\n";
 	  $output .= $tmp;
 	  print $tmp if $print;
 	  $types{$feat->feature_type->name}++;
@@ -861,6 +862,7 @@ sub gff
 	    my $mrna_names = join (",", $f->names);
 	    my $mrna_attrs = "Parent=$parent";
 	    $mrna_attrs .= ";Name=$mrna_names" if $mrna_names;
+	    $mrna_attrs .= ";CoGe_fid=".$f->id;
 	    my @tannos;
 	    if ($annos)
 	      {
@@ -881,7 +883,7 @@ sub gff
 	      $gstr.=";Note=$mrna_annos" if $mrna_annos;
 	      if($seen{$gstr}){ next; }
 	      $seen{$gstr} = 1;
-	      $tmp = $gstr . "\n";
+	      $tmp = $gstr . ";\n";
 	      $output .= $tmp;
 	      print $tmp if $print;
 	      $fids{$f->feature_id} = 1; #feat_id has been used;
@@ -903,6 +905,7 @@ sub gff
 	    my $other_names = join (",", $f->names);
 	    my $other_attrs = "Parent=$parent";
 	    $other_attrs .= ";Name=$other_names" if $other_names;
+	    $other_attrs .= ";CoGe_fid=".$f->id;
 	    my @tannos;
 	    if ($annos)
 	      {
@@ -924,7 +927,7 @@ sub gff
 	      
 	      if($seen{$gstr}){ next; }
 	      $seen{$gstr} = 1;
-	      $tmp = $gstr . "\n";
+	      $tmp = $gstr . ";\n";
 	      $output .= $tmp;
 	      print $tmp if $print;
 	      $fids{$f->feature_id} = 1; #feat_id has been used;
