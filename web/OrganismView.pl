@@ -278,7 +278,7 @@ sub get_org_info
 	    $html .= "<a href=OrganismView.pl?org_desc=$item>$item</a>;"
 	  }
       }
-    $html .= "<tr><td>Links:<td><a href='OrganismView.pl?oid=$oid' target=_new>OrganismView</a>&nbsp<a href='CodeOn.pl?oid=$oid' target=_new>CodeOn</a>";
+    $html .= "<tr><td>Links:<td><a href='OrganismView.pl?oid=$oid' target=_new>OrganismView</a>&nbsp|&nbsp<a href='CodeOn.pl?oid=$oid' target=_new>CodeOn</a>";
     $html .= "<tr><Td>Search:<td>";
     my $search_term = $org->name;
     $html .= qq{<img onclick="window.open('http://www.ncbi.nlm.nih.gov/taxonomy?term=$search_term')" src = "picts/other/NCBI-icon.png" title="NCBI" class=link>&nbsp};
@@ -382,8 +382,8 @@ sub get_dataset_group_info
 
     $html .= "<tr><td>Links:</td>";
     $html .= qq{<td>};
-    $html .= "<a href='OrganismView.pl?dsgid=$dsgid' target=_new>OrganismView</a>&nbsp<a href='CodeOn.pl?dsgid=$dsgid' target=_new>CodeOn</a>";
-    $html .= qq{&nbsp&nbsp};
+    $html .= "<a href='OrganismView.pl?dsgid=$dsgid' target=_new>OrganismView</a>&nbsp|&nbsp<a href='CodeOn.pl?dsgid=$dsgid' target=_new>CodeOn</a>";
+    $html .= qq{&nbsp|&nbsp};
     $html .= qq{<span class='link' onclick="window.open('SynMap.pl?dsgid1=$dsgid;dsgid2=$dsgid');">SynMap</span>};
     $html .= "</td></tr>";
 
