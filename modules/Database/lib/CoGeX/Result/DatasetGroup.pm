@@ -854,6 +854,35 @@ sub length
       map {$total_length += $_->sequence_length} $self->genomic_sequences;
       return $total_length;
     }
+
+################################################ subroutine header begin ##
+
+=head2 features
+
+ Usage     : $self->features
+ Purpose   : run through associated datasets and get their features
+ Returns   : array of feature objects
+ Argument  : 
+ Throws    : 
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub features
+    {
+      my $self = shift;
+      my $opts;
+      my @feats;
+      foreach my $ds ($self->datasets)
+	{
+	  push @feats, $ds->features($opts);
+	}
+      return wantarray ? @feats : \@feats;
+    }
 sub commify
     {
       my $self = shift;
