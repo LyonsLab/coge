@@ -12,6 +12,8 @@ my $coge = CoGeX->dbconnect();
 my $FORM = new CGI;
 my $dsgid = $FORM->param('dsgid');
 my $dsid = $FORM->param('dsid');
+my $annos = 0;
+$annos = $FORM->param('annos');
 my ($USER) = CoGe::Accessory::LogUser->get_user();
 
 my $item;
@@ -46,4 +48,4 @@ $header .= $org;
 $header .= $id;
 $header .=".gff\n\n";
 print $header;
-$item->gff(print=>1);
+$item->gff(print=>1, names=>$annos);
