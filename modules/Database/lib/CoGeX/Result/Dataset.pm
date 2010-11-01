@@ -1015,4 +1015,16 @@ sub distinct_feature_type_ids
     return wantarray ? @ids : \@ids;
   }
 
+sub translation_type
+  {
+    my $self = shift;
+    foreach my $feat ($self->features({'annotation_type_id'=>10973},{join=>'annotations'}))
+      {
+	foreach my $anno ($feat->annotations({annotation_type_id=>10973}))
+	  {
+	    return $anno->annotation;
+	  }
+      }
+  }
+
 1;
