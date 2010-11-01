@@ -875,14 +875,24 @@ See Also   :
 sub features
     {
       my $self = shift;
-      my $opts;
       my @feats;
       foreach my $ds ($self->datasets)
 	{
-	  push @feats, $ds->features($opts);
+	  my @tmp = $ds->features(@_);
+	  push @feats, @tmp;
 	}
       return wantarray ? @feats : \@feats;
     }
+
+sub translation_type
+  {
+    my $self = shift;
+    foreach my $ds ($self->datasets)
+      {
+	my $trans_type = $ds->translation_type;
+	return $trans_type if $trans_type;
+      }
+  }
 sub commify
     {
       my $self = shift;
