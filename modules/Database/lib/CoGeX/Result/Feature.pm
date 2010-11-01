@@ -93,7 +93,7 @@ __PACKAGE__->belongs_to("feature_type" => "CoGeX::Result::FeatureType", 'feature
 __PACKAGE__->belongs_to("dataset" => "CoGeX::Result::Dataset", 'dataset_id');
 
 
-__PACKAGE__->mk_accessors('_genomic_sequence', 'gst', 'dsg'); #_genomic_sequence =>place to store the feature's genomic sequence with no up and down stream stuff
+__PACKAGE__->mk_accessors('_genomic_sequence', 'gst', 'dsg', 'trans_type'); #_genomic_sequence =>place to store the feature's genomic sequence with no up and down stream stuff
 
 
 ################################################ subroutine header begin ##
@@ -1169,16 +1169,39 @@ sub genetic_code
     my $self = shift;
     my %opts = @_;
     my $trans_type = $opts{trans_type};
+    $trans_type = $self->trans_type unless $trans_type;
     unless ($trans_type)
       {
-	foreach my $anno ($self->annotations)
+	foreach my $anno ($self->annotations({"annotation_type.name"=>"transl_table"},{join=>"annotation_type"}))
 	  {
-	    next unless $anno->annotation_type;
-	    next unless $anno->annotation_type->name eq "transl_table";
 	    $trans_type = $anno->annotation;
 	  }
       }
-    $trans_type = 1 unless $trans_type;
+
+    unless ($trans_type)
+      {
+	my $org_name = $self->organism->name;
+	my $org_desc = $self->organism->description;
+	$trans_type = 4 if $org_desc =~ /Mycoplasma/;
+	$trans_type = 11 if $org_desc =~ /Bacteria/;
+	$trans_type = 11 if $org_name =~ /plastid/i || $org_name =~ /chloroplast/i ;
+	$trans_type = 15 if $org_desc =~ /Blepharisma/;
+	$trans_type = 6 if $org_desc =~ /Ciliate/;
+	$trans_type = 6 if $org_desc =~ /Dasycladacean/;
+	$trans_type = 6 if $org_desc =~ /Hexamitidae/;
+	$trans_type = 10 if $org_desc =~ /Euploitid/;
+	$trans_type = 22 if $org_desc =~ /Scenedesmus/ && $org_name =~ /mitochondri/i;
+	$trans_type = 9 if $org_desc =~ /Echinodermata/ && $org_name =~ /mitochondri/i;
+	$trans_type = 2 if $org_desc =~ /Vertebra/ && $org_name =~ /mitochondri/i;
+	$trans_type = 5 if $org_desc !~ /Vertebra/ && $org_desc =~ /Metazoa/ && $org_name =~ /mitochondri/;
+	$trans_type = 13 if $org_desc =~ /Ascidiacea/ && $org_name =~ /mitochondri/i;
+	$trans_type = 13 if $org_desc =~ /Thraustochytrium/ && $org_name =~ /mitochondri/i;
+	$trans_type = 16 if $org_desc =~ /Chlorophyta/ && $org_name =~ /mitochondri/i;
+	$trans_type = 21 if $org_desc =~ /Trematoda/ && $org_name =~ /mitochondri/i;
+	$trans_type = 3 if $org_desc =~ /Fungi/ && $org_name =~ /mitochondri/i;
+	$trans_type = 1 unless $trans_type;
+      }
+    $self->trans_type($trans_type);
     my $code = code($trans_type);
     return ($code->{code}, $code->{name});
   }
