@@ -48,4 +48,4 @@ $header .= $org;
 $header .= $id;
 $header .=".gff\n\n";
 print $header;
-$item->gff(print=>1, names=>$annos);
+$item->gff(print=>1, annos=>$annos);
