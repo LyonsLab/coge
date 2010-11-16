@@ -440,6 +440,11 @@ sub gen_body
     $template->param(ACCN=>$ACCN);
     $template->param(FEAT_TYPE=> get_feature_types());
     $template->param(ORG_LIST=>get_orgs(type=>"none"));
+    if ($FID)
+      {
+	my $anno = get_anno(fid=>$FID);
+	$template->param(FID_ANNO=>$anno);
+      }
     my $html = $template->output;
     return $html;
   }
