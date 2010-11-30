@@ -2338,15 +2338,6 @@ CoGe::Accessory::Web::write_log("WARNING:  sub run_adjust_dagchainer_evals faile
 
 	    $final_dagchainer_file = $final_dagchainer_file.".gcoords";
  	  }
-	my $ks_blocks_file;
-	if ($ks_type)
-	  {
-	    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
-	    CoGe::Accessory::Web::write_log("Generate Ks Blocks File",$cogeweb->logfile);
-	    $ks_blocks_file = gen_ks_blocks_file(infile=>$final_dagchainer_file);
-	    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
-	    CoGe::Accessory::Web::write_log("",$cogeweb->logfile);
-	  }
  	#generate dotplot images
  	my $org1_length =0;
  	my $org2_length =0;
@@ -2382,11 +2373,18 @@ CoGe::Accessory::Web::write_log("WARNING:  sub run_adjust_dagchainer_evals faile
  	$out .= ".w$width";
  	#deactivation ks calculations due to how slow it is
 	my $ks_db;
+	my $ks_blocks_file;
 	if ($ks_type)
 	  {
 	    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
 	    CoGe::Accessory::Web::write_log("Running CodeML for synonymous/nonsynonmous rate calculations",$cogeweb->logfile);
 	    $ks_db = gen_ks_db(infile=>$final_dagchainer_file);
+	    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
+	    CoGe::Accessory::Web::write_log("",$cogeweb->logfile);
+
+	    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
+	    CoGe::Accessory::Web::write_log("Generate Ks Blocks File",$cogeweb->logfile);
+	    $ks_blocks_file = gen_ks_blocks_file(infile=>$final_dagchainer_file);
 	    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
 	    CoGe::Accessory::Web::write_log("",$cogeweb->logfile);
 
