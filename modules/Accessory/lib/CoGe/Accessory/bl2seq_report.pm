@@ -86,8 +86,9 @@ sub _parseHeader
     my ($self) = shift;
     my $header = shift;
     return unless $header;
-    my ($query, $subject) = $header =~ /^(.*letters\))\s+(.*)$/s;
-    warn "Problem parsing header from file: ".$self->file."\n";
+    $header =~ s/.*Query/Query/s;
+    my ($query, $subject) = split/\n\n+/,$header;#=~ /^(.*letters\))\s+(.*)$/s;
+    warn "Problem parsing header from file: ".$self->file."\n header:\n$header\n" unless $query && $subject;
     if ($query =~ /Query=\s+(.+)/)
       { 
 	my $qname = $1;
@@ -98,7 +99,7 @@ sub _parseHeader
 	warn "problem parsing bl2seq report query name from $query\n";
 	$self->query("UNKNOWN");
       }
-    if ($query =~ /\((.*)\s+letters\)/)
+    if ($query =~ /Length=\s*(\d+)/)
       {
 	my $qlength = $1;
 	$self->qlength($qlength);
@@ -108,7 +109,7 @@ sub _parseHeader
 	warn "problem parsing bl2seq report query length from $query\n";
 	$self->qlength("ERROR");
       }
-    if ($subject =~ />(.*)/)
+    if ($subject =~ /Subject=\s+(.+)/)
       {
 	my $sname = $1;
 	$self->subject($sname);
@@ -118,7 +119,7 @@ sub _parseHeader
 	warn "problem parsing bl2seq report subject name from $subject\n";
 	$self->subject("UNKNOWN");
       }
-    if ($subject =~ /Length =\s+(\d+)/i)
+    if ($subject =~ /Length=\s*(\d+)/i)
       {
 	my $slength = $1;
 	$self->slength($slength);
