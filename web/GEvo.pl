@@ -865,6 +865,7 @@ sub run
 			     skip_feat_overlap_search=>$skip_feat_overlap_search,
 			     skip_hsp_overlap_search=>$skip_hsp_overlap_search,
 			     font_size=>$font_size,
+			     analysis_program=>$analysis_program,
 			    );
 	    $gfx->generate_png(file=>$item->{png_filename});
 	    generate_image_db(set=>$item, gfx=>$gfx);
@@ -1066,6 +1067,7 @@ sub generate_image
     my $skip_feat_overlap_search = $opts{skip_feat_overlap_search};
     my $skip_hsp_overlap_search = $opts{skip_hsp_overlap_search};
     my $font_size = $opts{font_size};
+    my $analysis_program = $opts{analysis_program};
     $skip_hsp_overlap_search = 1 unless defined $skip_hsp_overlap_search;
     $graphic->initialize_c (
 			    c=>$gfx,
@@ -1109,6 +1111,7 @@ sub generate_image
 		 color_overlapped_features=>$color_overlapped_features,
 		 skip_overlap_search=>$skip_hsp_overlap_search,
 		 font_size=>$font_size,
+		 analysis_program=>$analysis_program,
 		);
     
     my ($feat_counts) = process_features(
@@ -1124,7 +1127,7 @@ sub generate_image
 					 gene_space=>$show_gene_space,
 					 show_contigs=>$show_contigs, 
 					 feat_labels=>$feat_labels,
-					 font_size=>$font_size
+					 font_size=>$font_size,
 					);
 
     return ($gfx);
@@ -1659,6 +1662,9 @@ sub process_hsps
     my $show_hsps_with_stop_codon = $opts{show_hsps_with_stop_codon};
     my $skip_overlap_search = $opts{skip_overlap_search};
     my $font_size = $opts{font_size} || 13;
+    my $analysis_program = $opts{analysis_program};
+
+    my $seq_type = $analysis_program =~ /tblastx/i ? " aa" : " nt";
     #to reverse hsps when using genomic sequences from CoGe, they need to be drawn on the opposite strand than where blast reports them.  This is because CoGe::Graphics has the option of reverse drawing a region.  However, the sequence fed into blast has already been reverse complemented so that the HSPs are in the correct orientation for the image.  Thus, if the image is reverse, they are drawn on the wrong strand.  This corrects for that problem.   Sorry for the convoluted logic, but it was the simplest way to substantiate this option
     my $i = 0;
     my $track = scalar @$data+1;
@@ -1800,8 +1806,8 @@ sub process_hsps
 		$desc .= ")</span>";
 	      }
 	    $desc .= "<tr><td>Location:<td>".commify($ab_start)."-".commify($ab_stop)." (".$hsp->strand.")" if $ab_start && $ab_stop && $hsp->strand;
-	    $desc .="<tr><td>Match:<td>".$hsp->match." nt" if $hsp->match;
-	    $desc .="<tr><td>Length:<td>".commify($hsp->length)." nt" if $hsp->length;
+	    $desc .="<tr><td>Match:<td>".$hsp->match.$seq_type;
+	    $desc .="<tr><td>Length:<td>".commify($hsp->length).$seq_type if $hsp->length;
 	    $desc .= "<tr><td>Identity:<td>".$hsp->percent_id."%" if $hsp->percent_id;
 	    
 	    $desc .= "<tr><td>E_val:<td>".$hsp->pval if $hsp->pval;
