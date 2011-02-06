@@ -1806,7 +1806,7 @@ sub process_hsps
 		$desc .= ")</span>";
 	      }
 	    $desc .= "<tr><td>Location:<td>".commify($ab_start)."-".commify($ab_stop)." (".$hsp->strand.")" if $ab_start && $ab_stop && $hsp->strand;
-	    $desc .="<tr><td>Match:<td>".$hsp->match.$seq_type;
+	    $desc .="<tr><td>Match:<td>".$hsp->match.$seq_type if $hsp->match;
 	    $desc .="<tr><td>Length:<td>".commify($hsp->length).$seq_type if $hsp->length;
 	    $desc .= "<tr><td>Identity:<td>".$hsp->percent_id."%" if $hsp->percent_id;
 	    
