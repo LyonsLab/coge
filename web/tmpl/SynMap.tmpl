@@ -335,26 +335,48 @@ function reset_basename(){
   var fasta = 0;
   var blast = 0;
   var blastdb = 0;
+  var bed = 0;
+  var tandem = 0;
+  var converting1 =0;
+  var evalue = 0;
   var dag = 0;
-  var converting=0;
+  var converting2=0;
   var ks = 0;
   var results = 0;
   var match;
   pageObj.finished = 0;
   if (log) {
-  if(log.match(/fasta file/i)) fasta="Generating fasta files . . . ";
-  if(log.match(/Completed fasta creation/i)) {
+  if(log.match(/fasta sequence/i)) fasta="Generating fasta files . . . ";
+  if(log.match(/Fasta creation passed/i)) {
   	fasta += "done!<br/>";
   	blastdb = "Generating blastable databases . . . ";
   }
-  if(log.match(/Completed blastdb creation/i)) {
+  if(log.match(/BlastDB creation passed/i)) {
   	blastdb += "done!<br/>";
-  	blast = "Running blast . . . ";
+  	blast = "Running genome comparison . . . ";
   }
    if(log.match(/Completed blast run/i)) {
   	blast += "done!<br/>";
+	bed = "Creating .bed files . . .";
+  }
+   if(log.match(/Filtering results of tandem/i)) {
+  	bed += "done!<br/>";  
+  	tandem = "Filtering tandem dups . . . ";
+  }
+   if(log.match(/Converting blast file to dagchainer input/i)) {
+  	tandem += "done!<br/>";  
+  	converting1 = "Formatting for DagChainer . . . ";
+  }
+   if(log.match(/Adjusting evalue/i)) {
+  	converting1 += "done!<br/>";  
+  	evalue = "Adjusting e-values . . . ";
+  }
+
+   if(log.match(/Running DagChainer/i)) {
+  	evalue += "done!<br/>";  
   	dag = "Running DAGChainer . . . ";
   }
+
   if(log.match(/Completed dagchainer run/i)) {
   	dag += "done!<br/>";
   	results = "Generating images . . . ";
@@ -379,6 +401,10 @@ function reset_basename(){
   if (fasta) message += "done!<br/>"+fasta;
   if (blastdb) message += blastdb;
   if (blast) message += blast;
+  if (bed) message += bed;
+  if (tandem) message += tandem;
+  if (converting1) message += converting1;
+  if (evalue) message += evalue;
   if (dag) message += dag;
   if (ks) message += ks;
   if (results) message += results;
