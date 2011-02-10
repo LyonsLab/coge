@@ -2204,7 +2204,7 @@ sub go
  	my $fasta = $org_dirs{$key}{fasta};
  	my $db = $org_dirs{$key}{db};
  	my $outfile = $org_dirs{$key}{blastfile};
- 	my $blast_run = run_blast(fasta=>$fasta, blastdb=>$db, outfile=>$outfile, prog=>$blast);
+ 	my $blast_run = run_blast(fasta=>$fasta, blastdb=>$db, outfile=>$outfile, prog=>$blast, ft1=>$feat_type1, ft2=>$feat_type2);
  	$problem=1 unless $blast_run;
        }
     CoGe::Accessory::Web::write_log("Completed blast run(s)", $cogeweb->logfile);
