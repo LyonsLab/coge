@@ -14,7 +14,7 @@
 #define VER_NUM "0.932"
 #define BLOSUM_FILE "blosum62s.txt"
 #define BLOSUM_FILE_SIZE 24
-#define NUC_FILE "nucmatrix.txt"
+#define NUC_FILE "/opt/apache/CoGe/bin/lagan-64bit/nucmatrix.txt"
 #define NUC_FILE_SIZE 6
 
 #define MAX2(x,y)   ( (x) >= (y) ? (x) : (y) )
@@ -605,7 +605,7 @@ void readSubstMatrix (char *filename, int size){
   char line[1024], *symbs;
   int i, j;
 
-  sprintf (line, "%s/%s", "/opt/apache/CoGe/bin/lagan", filename);
+  sprintf (line, filename);
   file = fopen (line, "r"); assert (file);
   
   for (i = 0; i < 256; i++){
