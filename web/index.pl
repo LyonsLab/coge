@@ -67,6 +67,11 @@ sub gen_html
 	$welcome .= "&nbsp&nbsp&nbsp&nbsp   Nucleotides: ";
 	my $seq_length = $coge->resultset('GenomicSequence')->get_column('sequence_length');
 	$welcome .= commify($seq_length->sum);
+	$welcome .= "&nbsp&nbsp&nbsp&nbsp   Genomic Features: ";
+	$welcome .= commify($coge->resultset('Feature')->count());
+	$welcome .= "&nbsp&nbsp&nbsp&nbsp   Annotations: ";
+	$welcome .= commify($coge->resultset('Annotation')->count());
+
 	$welcome .= "</span>";
       }
     $template->param(BOX_NAME=>$welcome);
