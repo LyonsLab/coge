@@ -722,6 +722,7 @@ sub process_location
       $locline =~ s/\s+//g;                   #remove leading spaces
       $locline =~ s/complement\((.*)\)/$1/g;  #forget about "complement"
       $locline =~ s/join\((.*)\)/$1/g;        #forget about "join"
+      $locline =~ s/order\((.*)\)/$1/g;        #forget about "order"
       $locline =~ s/[<>]//g;                  #forget about "<" or ">"
       if ( $locline =~ /,/ ) 
 	{
