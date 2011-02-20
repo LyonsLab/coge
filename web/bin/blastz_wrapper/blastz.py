@@ -11,7 +11,7 @@ import os
 import sys
 import math
 import logging
-logging.basicConfig(level=logging.ERROR)
+logging.basicConfig(level=logging.DEBUG)
 
 from subprocess import Popen, PIPE
 from multiprocessing import Process, cpu_count, Lock
@@ -21,7 +21,7 @@ blast_fields = "query,subject,pctid,hitlen,nmismatch,ngaps,"\
         "qstart,qstop,sstart,sstop,evalue,score"
 
 lastz_fields = "name2,name1,identity,nmismatch,ngap,"\
-        "start2,end2,start1,end1,score"
+        "start2+,end2+,start1,end1,score"
 
 # conversion between blastz and ncbi is taken from Kent src
 # src/lib/blastOut.c
@@ -54,7 +54,8 @@ def lastz_to_blast(row):
 def lastz(k, n, bfasta_fn, out_fh, lock, lastz_path, extra):
     lastz_bin = lastz_path or "lastz" 
 
-    lastz_cmd = "%s --format=general-:%s --ambiguous=iupac %s[multiple,unmask,nameparse=darkspace]"\
+    lastz_cmd = "%s --format=general-:%s "\
+            "--ambiguous=iupac %s[multiple,unmask,nameparse=darkspace]"\
             " %s[unmask,nameparse=darkspace,subsample=%d/%d] %s"
     lastz_cmd %= (lastz_bin, lastz_fields, bfasta_fn, afasta_fn, k, n, extra)
 
@@ -124,4 +125,5 @@ if __name__ == '__main__':
         sys.exit(parser.print_help())
 
     main(options, afasta_fn, bfasta_fn, out_fh, options.extra)
+
 
