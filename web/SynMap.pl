@@ -614,7 +614,7 @@ sub gen_fasta
       }
     else
       {
-	$file = $FASTADIR."/$dsgid-$feat_type.new.fasta";
+	$file = $FASTADIR."/$dsgid-$feat_type.fasta";
       }
     my $res;
     if ($write_log)
@@ -2070,7 +2070,6 @@ sub go
 
     $email = 0 if check_address_validity($email) eq 'invalid';
 
-#    $blast = $blast == 2 ? "tblastx" : "blastn";
     $feat_type1 = $feat_type1 == 2 ? "genomic" : "CDS";
     $feat_type2 = $feat_type2 == 2 ? "genomic" : "CDS";
 
@@ -2099,7 +2098,7 @@ sub go
 
 	my ($fasta,$org_name) = gen_fasta(dsgid=>$dsgid, feat_type=>$feat_type,write_log=>1);
 
-	gen_blastdb(dbname=>"$dsgid-$feat_type-new",fasta=>$fasta,org_name=>$org_name, write_log=>1);
+#	gen_blastdb(dbname=>"$dsgid-$feat_type",fasta=>$fasta,org_name=>$org_name, write_log=>1) unless $ALGO_LOOKUP->{$blast}{filename}=~/lastz/; #don't need to do this for lastz
 	$pm->finish;
       }
     $pm->wait_all_children();
@@ -2124,11 +2123,18 @@ sub go
 	CoGe::Accessory::Web::write_log("#"x(20)."\n",$cogeweb->logfile);
       }
     
-    my ($blastdb1) = gen_blastdb(dbname=>"$dsgid1-$feat_type1-new", fasta=>$fasta1,org_name=>$org_name1); #this really isn't used, but might as well make it just in case
-    my ($blastdb2) = gen_blastdb(dbname=>"$dsgid2-$feat_type2-new", fasta=>$fasta2,org_name=>$org_name2);
+    my ($blastdb);
+    if ($ALGO_LOOKUP->{$blast}{filename}=~/lastz/)
+      {
+	$blastdb = $fasta2;
+      }
+    else
+      {
+	$blastdb = gen_blastdb(dbname=>"$dsgid2-$feat_type2", fasta=>$fasta2,org_name=>$org_name2);
+      }
     #need to convert the blastdb to a fasta file if the algo used is blastz
-    $blastdb2 = $fasta2 if ($ALGO_LOOKUP->{$blast}{filename}=~/lastz/);
-    unless ($blastdb1 && $blastdb2)
+
+    unless ($blastdb)
       {
  	my $log = $cogeweb->logfile;
  	$log =~ s/$DIR/$URL/;
@@ -2158,20 +2164,10 @@ sub go
      my $orgkey2 = $title2;
      my %org_dirs = (
  		    $orgkey1."_".$orgkey2=>{fasta=>$fasta1,
- 					    db=>$blastdb2,
+ 					    db=>$blastdb,
  					    basename=>$dsgid1."_".$dsgid2.".$feat_type1-$feat_type2.".$ALGO_LOOKUP->{$blast}{filename},
  					    dir=>$DIAGSDIR."/".$tmp1."/".$tmp2,
  					   },
-#  		    $orgkey1."_".$orgkey1=>{fasta=>$fasta1,
-#  					    db=>$blastdb1,
-#  					    basename=>$dsgid1."_".$dsgid1.".$feat_type1-$feat_type1.$blast",
-#  					    dir=>$DIAGSDIR."/".$tmp1."/".$tmp1,
-#  					   },
-#  		    $orgkey2."_".$orgkey2=>{fasta=>$fasta2,
-#  					    db=>$blastdb2,
-#  					    basename=>$dsgid2."_".$dsgid2.".$feat_type2-$feat_type2.$blast",
-#  					    dir=>$DIAGSDIR."/".$tmp2."/".$tmp2,
-#  					   },
  		   );
      foreach my $org_dir (keys %org_dirs)
        {
