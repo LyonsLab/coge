@@ -83,14 +83,22 @@ sub convert_blast_genomic_names
 	    $ori2 = $line[8] > $line[9] ? -1 : 1;
 #	    print STDERR $ori2,"!\n";
 	  }
-	#working here on determining orientation of genomic blast hits to add into file.  Needs to set equal (1,1) or (-1,-1) if in the same orientation
-#	 /opt/apache/CoGe//bin/SynMap/blast2bed.pl -infile /opt/apache/CoGe//diags/Zea_mays_maize_corn/Zea_mays_maize_corn/8082_9106.CDS-genomic.blastn.blast -outfile1 /opt/apache/CoGe//diags/Zea_mays_maize_corn/Zea_mays_maize_corn/8082_9106.CDS-genomic.blastn.blast.q.bed -outfile2 /opt/apache/CoGe//diags/Zea_mays_maize_corn/Zea_mays_maize_corn/8082_9106.CDS-genomic.blastn.blast.s.bed
-#	$ori2 = $item2[4] unless $ori2;
-#	print STDERR $ori1, "\t", $ori2,"\n";
 	my $ori = $ori1 eq $ori2 ? 1 : -1;
-#	print $ori,"\n";
-	$item1[3] = "genomic_hit" unless $item1[3];
-	$item2[3] = "genomic_hit" unless $item2[3];
+	#for genomic sequences -- needto add genomic_hit and remove 'gi|' or 'lcl|' from begining of fasta header name
+	unless ($item1[3])
+	  {
+	    $item1[3] = "genomic_hit";
+	    $item1[0] =~ s/^gi\|//;
+	    $item1[0] =~ s/^lcl\|//;
+	  }
+	unless ($item2[3])
+	  {
+	    $item2[3] = "genomic_hit";
+	    $item2[0] =~ s/^gi\|//;
+	    $item2[0] =~ s/^lcl\|//;
+	  }
+	
+#	$item2[3] = "genomic_hit" unless $item2[3];
 	unless ($item1[4])
 	  {
 	    $ori1 = $ori eq 1 ? $ori2 : $ori2*-1;
@@ -110,5 +118,6 @@ sub convert_blast_genomic_names
 	print OUT join "\t", @line,"\n";
 		$count++;
       }
-    `mv $infile.tmp $infile`;
+    `/bin/mv $infile $infile.orig`;
+    `/bin/mv $infile.tmp $infile`;
   }
