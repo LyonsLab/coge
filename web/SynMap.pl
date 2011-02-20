@@ -25,9 +25,10 @@ umask(0);
 use vars qw($P $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $FORMATDB $BLAST $TBLASTX $BLASTN $LASTZ $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $PYTHON26 $TANDEM_FINDER $RUN_DAGCHAINER $EVAL_ADJUST $FIND_NEARBY $DOTPLOT $NWALIGN $QUOTA_ALIGN $CLUSTER_UTILS $BLAST2RAW $BASE_URL $BLAST2BED $SYNTENY_SCORE $TEMPDIR $TEMPURL $ALGO_LOOKUP);
 
 $P = CoGe::Accessory::Web::get_defaults();
-$ENV{PATH} = join ":", ($P->{COGEDIR}, $P->{BINDIR}, $P->{BINDIR}."SynMap");
+$ENV{PATH} = join ":", ($P->{COGEDIR}, $P->{BINDIR}, $P->{BINDIR}."SynMap", "/usr/bin","/usr/local/bin");
 $ENV{BLASTDB}=$P->{BLASTDB};
 $ENV{BLASTMAT}=$P->{BLASTMATRIX};
+$ENV{PYTHONPATH} = "/opt/apache/CoGe/bin/dagchainer_bp";
 
 $DEBUG = 0;
 $BASE_URL=$P->{SERVER};
@@ -536,21 +537,6 @@ sub get_dataset_group_info
     my $i =0;
 
     my ($percent_gc, $chr_length, $chr_count, $plasmid, $contig, $scaffold) = get_gc_dsg($dsg);
-    # my $chr_length=0;
-    # my $chr_count =0;
-    # my $plasmid =0;
-    # my $contig = 0;
-    # my $scaffold = 0;
-    # my @gs = $dsg->genomic_sequences;
-    # foreach my $gs (@gs)
-    #   {
-    # 	$chr_length += $gs->sequence_length;
-    # 	$chr_count++;
-    # 	$plasmid =1 if $gs->chromosome =~ /plasmid/i;
-    # 	$contig =1 if $gs->chromosome =~ /contig/i;
-    # 	$scaffold =1 if $gs->chromosome =~ /scaffold/i;
-    #   }
-#    $html_dsg_info .= "<span class=small>";
     my ($ds) = $dsg->datasets;
     my $link = $ds->data_source->link;
     $link = $BASE_URL unless $link;
@@ -619,11 +605,22 @@ sub gen_fasta
     my $write_log = $opts{write_log} || 0;
     my ($org_name, $title);
     ($org_name, $title) = gen_org_name(dsgid=>$dsgid, feat_type=>$feat_type,write_log=>$write_log);
-    my $file = $FASTADIR."/$dsgid-$feat_type.new.fasta";
+    #we already have genomic sequences
+    my $file;
+    if ($feat_type eq "genomic")
+      {
+	my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	$file = $dsg->file_path;
+      }
+    else
+      {
+	$file = $FASTADIR."/$dsgid-$feat_type.new.fasta";
+      }
     my $res;
     if ($write_log)
       {
 	CoGe::Accessory::Web::write_log("#"x20,$cogeweb->logfile);
+	CoGe::Accessory::Web::write_log("Generating fasta file:", $cogeweb->logfile);
 	CoGe::Accessory::Web::write_log("Generating $feat_type fasta sequence for ".$org_name, $cogeweb->logfile);
       }
     while (-e "$file.running")
@@ -719,14 +716,14 @@ sub generate_fasta
 
 	my @chr = sort $dsg->get_chromosomes;
 	CoGe::Accessory::Web::write_log("Getting sequence for ".scalar (@chr). " chromosomes (genome sequence)", $cogeweb->logfile);
-	foreach my $chr (@chr)
-	  {
-	    #		my $title = join ("||",$chr, 1, $ds->last_chromosome_position($chr), "Chr_$chr",1, "genomic", "N/A");
-	    my $seq = $dsg->get_genomic_sequence(chr=>$chr);
-	    next unless $seq;
-	    print OUT ">".$chr."\n";
-	    print OUT $seq,"\n";
-	  }
+	$file = $dsg->file_path;
+#	foreach my $chr (@chr)
+#	  {
+#	    my $seq = $dsg->get_genomic_sequence(chr=>$chr);
+#	    next unless $seq;
+#	    print OUT ">".$chr."\n";
+#	    print OUT $seq,"\n";
+#	  }
       }
     close OUT;
     return 1 if -r $file;
@@ -745,6 +742,7 @@ sub gen_blastdb
     my $res = 0;
 
     CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile) if $write_log;
+    CoGe::Accessory::Web::write_log("Generating BlastDB file", $cogeweb->logfile);
     while (-e "$blastdb.running")
       {
 	
@@ -1312,7 +1310,6 @@ sub run_quota_align_merge
     #convert to quota-align format
     my $cmd = $CLUSTER_UTILS." --format=dag --log_evalue $infile $infile.Dm$max_dist.qa";
    CoGe::Accessory::Web::write_log("Converting dag output to quota_align format: $cmd", $cogeweb->logfile);
-    `$cmd`;
     $cmd = $QUOTA_ALIGN ." --Dm=$max_dist --merge $infile.Dm$max_dist.qa";
    CoGe::Accessory::Web::write_log("Running quota_align to merge diagonals:\n\t$cmd", $cogeweb->logfile);
     `$cmd`;
@@ -2192,6 +2189,7 @@ sub go
  	my $db = $org_dirs{$key}{db};
  	my $outfile = $org_dirs{$key}{blastfile};
 	CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
+	CoGe::Accessory::Web::write_log("Runing genome comparison", $cogeweb->logfile);
 	CoGe::Accessory::Web::write_log("Running ".$ALGO_LOOKUP->{$blast}{displayname}, $cogeweb->logfile);
  	run_blast(fasta=>$fasta, blastdb=>$db, outfile=>$outfile, prog=>$blast);# unless -r $outfile;
  	$pm->finish;
@@ -2793,6 +2791,7 @@ sub get_previous_analyses
 			$item->{select_val},
 			$item->{dagtype},
 			$item->{repeat_filter});
+	
 	next if $seen{$val};
 	$seen{$val}=1;
 	$prev_table .= qq{<TR class=feat onclick="update_params('$val')" align=center><td>};
