@@ -22,7 +22,7 @@ no warnings 'redefine';
 
 
 umask(0);
-use vars qw($P $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $FORMATDB $BLAST $TBLASTX $BLASTN $LASTZ $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $PYTHON26 $TANDEM_FINDER $RUN_DAGCHAINER $EVAL_ADJUST $FIND_NEARBY $DOTPLOT $NWALIGN $QUOTA_ALIGN $CLUSTER_UTILS $BLAST2RAW $BASE_URL $BLAST2BED $SYNTENY_SCORE $TEMPDIR $TEMPURL $ALGO_LOOKUP);
+use vars qw($P $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $FORMATDB $BLAST $TBLASTX $BLASTN $LASTZ $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $PYTHON26 $TANDEM_FINDER $RUN_DAGCHAINER $EVAL_ADJUST $FIND_NEARBY $DOTPLOT $NWALIGN $QUOTA_ALIGN $CLUSTER_UTILS $BLAST2RAW $BASE_URL $BLAST2BED $SYNTENY_SCORE $TEMPDIR $TEMPURL $ALGO_LOOKUP $GZIP $GUNZIP);
 
 $P = CoGe::Accessory::Web::get_defaults();
 $ENV{PATH} = join ":", ($P->{COGEDIR}, $P->{BINDIR}, $P->{BINDIR}."SynMap", "/usr/bin","/usr/local/bin");
@@ -43,6 +43,8 @@ my $blast_options = " -num_threads $MAX_PROC -evalue 0.0001 -outfmt 6";
 $TBLASTX = $P->{TBLASTX}. $blast_options;
 $BLASTN = $P->{BLASTN}. $blast_options;
 $LASTZ = $P->{PYTHON} ." ". $P->{MULTI_LASTZ} ." -A $MAX_PROC --path=".$P->{LASTZ};
+$GZIP = $P->{GZIP};
+$GUNZIP = $P->{GUNZIP};
 
 #in the web form, each sequence search algorithm has a unique number.  This table identifies those and adds appropriate options
 $ALGO_LOOKUP = {
@@ -804,9 +806,9 @@ sub run_blast
 	print STDERR "detecting $outfile.running.  Waiting. . .\n";
 	sleep 60;
       }
-    if (-r $outfile)
+    if (-r $outfile || -r "$outfile.gz")
       {
-	unless (-s $outfile)
+	unless (-s $outfile || -s "$outfile.gz")
 	  {
 	   CoGe::Accessory::Web::write_log("WARNING: Blast output file ($outfile) contains no data!" ,$cogeweb->logfile);
 	    return 0;
@@ -849,6 +851,7 @@ sub blast2bed
 CoGe::Accessory::Web::write_log(".bed files $outfile1 and $outfile2 already exist." ,$cogeweb->logfile);
 	return;
       }
+    gunzip("$infile.gz") if -r "$infile.gz";
     my $cmd = $BLAST2BED ." -infile $infile -outfile1 $outfile1 -outfile2 $outfile2";
    CoGe::Accessory::Web::write_log("Creating bed files: $cmd", $cogeweb->logfile);
     `$cmd`;
@@ -2496,6 +2499,9 @@ CoGe::Accessory::Web::write_log("WARNING:  sub run_adjust_dagchainer_evals faile
 	    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
 	    CoGe::Accessory::Web::write_log("",$cogeweb->logfile);
 
+	    #compress raw_blastfile;
+	    $raw_blastfile = gzip($raw_blastfile);
+
 	    $raw_blastfile =~ s/$DIR/$URL/;
 	    $html .= "<span class='link small' onclick=window.open('$raw_blastfile')>Unfiltered $algo_name results</span><br>";	
 	    $filtered_blastfile =~ s/$DIR/$URL/;
@@ -2978,3 +2984,22 @@ sub get_tiny_link
       }
     return $tiny;
   }
+
+sub gzip
+    {
+      my $file = shift;
+      return $file if $file =~ /\.gz$/;
+      `$GZIP $file`;
+      my $tmp = $file.".gz";
+      return -r $tmp ? $tmp : $file;
+    }
+
+sub gunzip
+    {
+      my $file = shift;
+      return $file unless $file =~ /\.gz$/;
+      `$GUNZIP $file`;
+      my $tmp = $file;
+      $tmp =~ s/\.gz$//;
+      return -r $tmp ? $tmp : $file;
+    }
