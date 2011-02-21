@@ -846,7 +846,8 @@ sub blast2bed
     my $infile = $opts{infile};
     my $outfile1 = $opts{outfile1};
     my $outfile2 = $opts{outfile2};
-    if (-r $outfile1 && -s $outfile1 && -r $outfile2 && -s $outfile2)
+    if ( (-r $outfile1 && -s $outfile1 && -r $outfile2 && -s $outfile2 ) ||
+     (-r "$outfile1.gz" && -s "$outfile1.gz" && -r "$outfile2.gz" && -s "$outfile2.gz" ) )
       {
 CoGe::Accessory::Web::write_log(".bed files $outfile1 and $outfile2 already exist." ,$cogeweb->logfile);
 	return;
@@ -864,11 +865,15 @@ sub run_blast2raw
     my $bedfile1 = $opts{bedfile1};
     my $bedfile2 = $opts{bedfile2};
     my $outfile = $opts{outfile};
-    if (-r $outfile && -s $outfile)
+    if ((-r $outfile && -s $outfile) || (-r "$outfile.gz" && -s "$outfile.gz"))
       {
 CoGe::Accessory::Web::write_log("Filtered blast file found where tandem dups have been removed: $outfile", $cogeweb->logfile);
 	return $outfile;
       }
+    gunzip("$blastfile.gz") if -r "$blastfile.gz";
+    gunzip("$bedfile1.gz") if -r "$bedfile1.gz";
+    gunzip("$bedfile2.gz") if -r "$bedfile2.gz";
+
     my $tandem_distance = $opts{tandem_distance};
     $tandem_distance = 10 unless defined $tandem_distance;
     my $cmd = $BLAST2RAW." $blastfile --localdups --qbed $bedfile1 --sbed $bedfile2 --tandem_Nmax $tandem_distance > $outfile";
@@ -906,12 +911,12 @@ sub process_local_dups_file
     my %opts = @_;
     my $infile = $opts{infile};
     my $outfile = $opts{outfile};
-    if (-r $outfile && -s $outfile)
+    if ( (-r $outfile && -s $outfile) || (-r $outfile.".gz" && -s $outfile.".gz") )
       {
 CoGe::Accessory::Web::write_log("Processed tandem duplicate file found: $outfile", $cogeweb->logfile);
 	return $outfile;
       }
-    
+    gunzip($infile.".gz") if -r $infile.".gz";
     return unless -r $infile;
    CoGe::Accessory::Web::write_log("Adding coge links to tandem duplication file.  Infile $infile : Outfile $outfile", $cogeweb->logfile);
     $/="\n";
@@ -947,6 +952,9 @@ CoGe::Accessory::Web::write_log("Processed tandem duplicate file found: $outfile
       }
     close OUT;
     close IN;
+    `/bin/rm $infile`;
+    $infile=~s/localdups/nolocaldups.bed/;
+    `/bin/rm $infile`;
     return $outfile;
   }
 
@@ -964,16 +972,17 @@ sub run_dag_tools
 	print STDERR "detecting $outfile.running.  Waiting. . .\n";
 	sleep 60;
       }
+      if (-r $outfile || -r $outfile.".gz")
+      {
+CoGe::Accessory::Web::write_log("run dag_tools: file $outfile already exists",$cogeweb->logfile);
+	return 1;
+      }
+      gunzip("$blast.gz") if -r "$blast.gz";
       unless (-r $blast && -s $blast)
 	{
 	 CoGe::Accessory::Web::write_log("WARNING:   Cannot create input file for DAGChainer! Blast output file ($blast) contains no data!" ,$cogeweb->logfile);
 	  return 0;
 	}
-      if (-r $outfile)
-      {
-CoGe::Accessory::Web::write_log("run dag_tools: file $outfile already exists",$cogeweb->logfile);
-	return 1;
-      }
       my $query_dup_file= $opts{query_dup_files};
       my $subject_dup_file= $opts{subject_dup_files};
       my $cmd = "$PYTHON $DAG_TOOL -q \"$query\" -s \"$subject\" -b $blast";
@@ -1033,16 +1042,17 @@ sub run_adjust_dagchainer_evals
 	print STDERR "detecting $outfile.running.  Waiting. . .\n";
 	sleep 60;
       }
+    if (-r $outfile || -r $outfile.".gz")
+      {
+CoGe::Accessory::Web::write_log("run_adjust_dagchainer_evals: file $outfile already exists",$cogeweb->logfile);
+	return 1;
+      }
+    gunzip ($infile.".gz") if -r $infile.".gz";
     unless (-r $infile && -s $infile)
 	{
 	 CoGe::Accessory::Web::write_log("WARNING:   Cannot adjust dagchainer evals! DAGChainer input file ($infile) contains no data!" ,$cogeweb->logfile);
 	  return 0;
 	}
-    if (-r $outfile)
-      {
-CoGe::Accessory::Web::write_log("run_adjust_dagchainer_evals: file $outfile already exists",$cogeweb->logfile);
-	return 1;
-      }
     my $cmd = "$PYTHON $EVAL_ADJUST -c $cvalue $infile > $outfile";
     #There is a parameter that can be passed into this to filter repetitive sequences more or less stringently:
     # -c   2 gets rid of more stuff; 10 gets rid of less stuff; default is 4
@@ -1076,16 +1086,17 @@ sub run_convert_to_gene_order
 	print STDERR "detecting $outfile.running.  Waiting. . .\n";
 	sleep 60;
       }
+    if (-r $outfile || -r $outfile.".gz")
+      {
+CoGe::Accessory::Web::write_log("run_convert_to_gene_order: file $outfile already exists",$cogeweb->logfile);
+	return $outfile;
+      }
+    gunzip($infile.".gz") if -r $infile.".gz";
     unless (-r $infile && -s $infile)
 	{
 	 CoGe::Accessory::Web::write_log("WARNING:   Cannot convert to gene order! DAGChainer input file ($infile) contains no data!" ,$cogeweb->logfile);
 	  return 0;
 	}
-    if (-r $outfile)
-      {
-CoGe::Accessory::Web::write_log("run_convert_to_gene_order: file $outfile already exists",$cogeweb->logfile);
-	return $outfile;
-      }
 
     if ($ft1 eq "genomic" || $ft2 eq "genomic")
       {
@@ -1191,7 +1202,7 @@ sub replace_gene_order_with_genomic_positions
 	print STDERR "detecting $outfile.running.  Waiting. . .\n";
 	sleep 60;
       }
-    if (-r "$outfile" && -s "$outfile")
+    if ((-r "$outfile" && -s "$outfile") || (-r "$outfile.gz" && -s "$outfile.gz"))
       {
 CoGe::Accessory::Web::write_log("  no conversion for $file back to genomic coordinates needed, convered file, $outfile,  exists", $cogeweb->logfile);
 	return;
@@ -1200,6 +1211,7 @@ CoGe::Accessory::Web::write_log("  no conversion for $file back to genomic coord
    CoGe::Accessory::Web::write_log("  converting $file back to genomic coordinates, $outfile", $cogeweb->logfile);
 #    `mv $file $file.orig`;
     $/="\n"; #just in case
+    gunzip($file.".gz") if -r $file.".gz";
     open (IN,  "$file");
     open (OUT, ">$outfile");
     while (<IN>)
@@ -1260,16 +1272,18 @@ sub run_dagchainer
 	print STDERR "detecting $outfile.merge.running.  Waiting. . .\n";
 	sleep 60;
       }
-    unless (-r $infile && -s $infile)
-      {
-	 CoGe::Accessory::Web::write_log("WARNING:   Cannot run DAGChainer! DAGChainer input file ($infile) contains no data!" ,$cogeweb->logfile);
-	  return 0;
-	}
-    if (-r $return_file)
+    if (-r $return_file || -r $return_file.".gz")
       {
 CoGe::Accessory::Web::write_log("run dagchainer: file $return_file already exists",$cogeweb->logfile);
 	return ($outfile, $merged_file);
       }
+    gunzip($infile.".gz") if -r $infile.".gz";
+
+    unless (-r $infile && -s $infile)
+      {
+	 CoGe::Accessory::Web::write_log("WARNING:   Cannot run DAGChainer! DAGChainer input file ($infile) contains no data!" ,$cogeweb->logfile);
+	  return 0;
+       }
     my $cmd = "$PYTHON $RUN_DAGCHAINER -E 0.05 -i $infile";
     $cmd .= " -D $D" if defined $D;
     $cmd .= " -g $g" if defined $g;
@@ -1309,12 +1323,14 @@ sub run_quota_align_merge
     my $max_dist = $opts{max_dist};
 
     my $returnfile = $infile.".Dm".$max_dist.".ma1"; #ma stands for merge algo
-    return $returnfile if -r $returnfile;
+    return $returnfile if -r $returnfile || -f $returnfile.".gz";
     #convert to quota-align format
+    gunzip($infile.".gz") if -r $infile.".gz";
     my $cmd = $CLUSTER_UTILS." --format=dag --log_evalue $infile $infile.Dm$max_dist.qa";
    CoGe::Accessory::Web::write_log("Converting dag output to quota_align format: $cmd", $cogeweb->logfile);
     $cmd = $QUOTA_ALIGN ." --Dm=$max_dist --merge $infile.Dm$max_dist.qa";
    CoGe::Accessory::Web::write_log("Running quota_align to merge diagonals:\n\t$cmd", $cogeweb->logfile);
+    
     `$cmd`;
     if (-r "$infile.Dm$max_dist.qa.merged")
       {
@@ -1357,7 +1373,9 @@ sub run_quota_align_coverage
     my $org2 = $opts{org2}; #ratio of org2
     my $overlap_dist = $opts{overlap_dist};
     my $returnfile = $infile.".qac".$org1.".".$org2.".".$overlap_dist; #ma stands for merge algo
-    return $returnfile if -r $returnfile;
+    return $returnfile if -r $returnfile || -r $returnfile.".gz";
+    gunzip($infile.".gz") if -r $infile.".gz";
+    gunzip($infile.".qa.gz") if -r $infile.".qa.gz";
     #convert to quota-align format
     if (-r "$infile.qa")
       {
@@ -1500,6 +1518,7 @@ DNA_align_2
       }
     my $ksdata = get_ks_data(db_file=>$outfile);
     $/="\n";
+    gunzip($infile.".gz") if -r $infile.".gz";
     open (IN, $infile);
     my @data;
     while (<IN>)
@@ -1651,6 +1670,8 @@ sub add_GEvo_links
     my $dsgid1 = $opts{dsgid1};
     my $dsgid2 = $opts{dsgid2};
     $/="\n";
+    return if (-r "$infile.condensed" || -r "$infile.condensed.gz"); #check this
+    gunzip($infile.".gz") if -r $infile.".gz";
     open (IN, $infile);
     open (OUT,">$infile.tmp");
     my %condensed;
@@ -1717,14 +1738,14 @@ sub add_GEvo_links
     close OUT;
     if ($previously_generated)
       {
-	`rm $infile.tmp`;
+	`/bin/rm $infile.tmp` if -r "$infile.tmp";
       }
     else
       {
 	my $cmd = "/bin/mv $infile.tmp $infile";
 	`$cmd`;
       }
-    if (keys %condensed && !(-r "$infile.condensed"))
+    if (keys %condensed && !(-r "$infile.condensed" || -r "$infile.condensed.gz"))
       {
 	open (OUT,">$infile.condensed");
 	foreach my $id1 (sort keys %condensed)
@@ -1946,7 +1967,8 @@ sub generate_dotplot
 
     return $outfile if $just_check &&-r "$outfile.html";
 
-
+    gunzip($coords.".gz") if -r "$coords.gz";
+    gunzip($dag.".gz") if -r "$dag.gz";
     $cmd .= qq{ -a $coords};
     $cmd .= qq{ -b $outfile -l 'javascript:synteny_zoom("$dsgid1","$dsgid2","$basename",};
     $cmd .= $flip ? qq{"YCHR","XCHR"}:qq{"XCHR","YCHR"};
@@ -2226,7 +2248,7 @@ sub go
     run_blast2raw(blastfile=>$raw_blastfile, bedfile1=>$bedfile1, bedfile2=>$bedfile2, outfile=>$filtered_blastfile);
     CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
     CoGe::Accessory::Web::write_log("",$cogeweb->logfile);
-    $filtered_blastfile = $raw_blastfile unless -r $filtered_blastfile && -s $filtered_blastfile;
+    $filtered_blastfile = $raw_blastfile unless (-r $filtered_blastfile && -s $filtered_blastfile) || (-r "$filtered_blastfile.gz" && -s "$filtered_blastfile.gz");
 
 #    my $synteny_score_db = run_synteny_score (blastfile=>$filtered_blastfile, bedfile1=>$bedfile1, bedfile2=>$bedfile2, outfile=>$org_dirs{$orgkey1."_".$orgkey2}{dir}."/".$dsgid1."_".$dsgid2.".$feat_type1-$feat_type2"); #needed to comment out as the bed files and blast files have changed in SynFind
     my $local_dup_time = timestr(timediff($t2,$t1));
@@ -2268,10 +2290,10 @@ sub go
 
     my $t3_5 = new Benchmark;
     #this step will fail if the dag_file_all is larger than the system memory limit.  If this file does not exist, let's send a warning to the log file and continue with the analysis using the dag_all file
-    unless (-r $dag_file12 && -s $dag_file12)
+    unless ((-r $dag_file12 && -s $dag_file12) || (-r $dag_file12.".gz" && -s $dag_file12.".gz") )
       {
 	$dag_file12 = $all_file;
-CoGe::Accessory::Web::write_log("WARNING:  sub run_adjust_dagchainer_evals failed.  Perhaps due to Out of Memory error.  Proceeding without this step!", $cogeweb->logfile);
+	CoGe::Accessory::Web::write_log("WARNING:  sub run_adjust_dagchainer_evals failed.  Perhaps due to Out of Memory error.  Proceeding without this step!", $cogeweb->logfile);
       }
     my $run_adjust_eval_time = timestr(timediff($t3_5, $t3));
     #############
@@ -2291,7 +2313,7 @@ CoGe::Accessory::Web::write_log("WARNING:  sub run_adjust_dagchainer_evals faile
     my ($find_nearby_time, $gen_ks_db_time, $dotplot_time, $add_gevo_links_time);
     my $final_results_files;
     my $tiny_link;
-    if (-r $dagchainer_file)
+    if (-r $dagchainer_file || -r $dagchainer_file.".gz")
       {
 	if ($merge_algo == 1)#id 1 is to specify quota align as a merge algo
 	  {
@@ -2301,7 +2323,7 @@ CoGe::Accessory::Web::write_log("WARNING:  sub run_adjust_dagchainer_evals faile
 	    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
 	    CoGe::Accessory::Web::write_log("",$cogeweb->logfile);
 	  }
- 	my $post_dagchainer_file = -r $merged_dagchainer_file ? $merged_dagchainer_file : $dagchainer_file; #temp file name for the final post-processed data
+ 	my $post_dagchainer_file = -r $merged_dagchainer_file ||-r $merged_dagchainer_file.".gz" ? $merged_dagchainer_file : $dagchainer_file; #temp file name for the final post-processed data
 	my $post_dagchainer_file_w_nearby = $post_dagchainer_file;
  	$post_dagchainer_file_w_nearby =~ s/aligncoords/all\.aligncoords/;
  	#add pairs that were skipped by dagchainer
@@ -2322,7 +2344,7 @@ CoGe::Accessory::Web::write_log("WARNING:  sub run_adjust_dagchainer_evals faile
 	    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
 	    CoGe::Accessory::Web::write_log("",$cogeweb->logfile);
 	  }
-	my $final_dagchainer_file = $quota_align_coverage && -r $quota_align_coverage ? $quota_align_coverage : $post_dagchainer_file_w_nearby;
+	my $final_dagchainer_file = $quota_align_coverage && (-r $quota_align_coverage || -r $quota_align_coverage.".gz") ? $quota_align_coverage : $post_dagchainer_file_w_nearby;
 
  	#convert to genomic coordinates if gene order was used
  	if ($dagchainer_type eq "geneorder")
@@ -2498,12 +2520,25 @@ CoGe::Accessory::Web::write_log("WARNING:  sub run_adjust_dagchainer_evals faile
 	    my $org2_localdups = process_local_dups_file(infile=>$raw_blastfile.".s.localdups", outfile=>$raw_blastfile.".s.tandems");
 	    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
 	    CoGe::Accessory::Web::write_log("",$cogeweb->logfile);
+	    
+	    my $dagchainer_file_qa = $dagchainer_file.".qa";
+	    my $final_dagchainer_file_condensed = $final_dagchainer_file.".condensed";
+	    my $file_list = [\$raw_blastfile, \$filtered_blastfile, \$bedfile1, \$bedfile2, \$org1_localdups, \$org2_localdups, \$dag_file12_all, \$dag_file12_all_geneorder, \$dag_file12, \$dagchainer_file, \$dagchainer_file_qa, \$final_dagchainer_file, \$final_dagchainer_file_condensed];
+	    foreach my $item (@$file_list)
+	      {
+		$pm->start and next;
+		$$item = gzip($$item);
+		$pm->finish;
+	      }
+	    $pm->wait_all_children();
 
-	    #compress raw_blastfile;
-	    $raw_blastfile = gzip($raw_blastfile);
-
+	    foreach my $item (@$file_list)
+	      {
+		$$item = gzip($$item);
+	      }
 	    $raw_blastfile =~ s/$DIR/$URL/;
 	    $html .= "<span class='link small' onclick=window.open('$raw_blastfile')>Unfiltered $algo_name results</span><br>";	
+
 	    $filtered_blastfile =~ s/$DIR/$URL/;
 	    $html .= "<span class='link small' onclick=window.open('$filtered_blastfile')>Filtered $algo_name results (no tandem duplicates)</span><br>";	
 	    $org1_localdups =~ s/$DIR/$URL/;
@@ -2514,7 +2549,7 @@ CoGe::Accessory::Web::write_log("WARNING:  sub run_adjust_dagchainer_evals faile
 	    $html .= "<td>";
 	    $dag_file12_all =~ s/$DIR/$URL/;
 	    $html .= qq{<span class='small link' onclick=window.open('$dag_file12_all')>DAGChainer Initial Input file</span><br>};    
-	    if (-r $dag_file12_all_geneorder)
+	    if ($dag_file12_all_geneorder && -r $dag_file12_all_geneorder)
 	      {
 		$dag_file12_all_geneorder =~ s/$DIR/$URL/;
 		$html .= qq{<span class='small link' onclick=window.open('$dag_file12_all_geneorder')>DAGChainer Input file converted to gene order</span><br>};
@@ -2573,8 +2608,11 @@ CoGe::Accessory::Web::write_log("WARNING:  sub run_adjust_dagchainer_evals faile
 	    my $final_file = $final_dagchainer_file;
 	    $final_file =~ s/$DIR/$URL/;
 	    $html .= "<br><span class='small link' onclick=window.open('$final_file')>Final syntenic gene-set output with GEvo links</span>";
-	    $html .= "<br><span class='small link' onclick=window.open('$final_file.condensed')>Condensed syntelog file with GEvo links</span>" if -r "$final_dagchainer_file.condensed";
-
+	    if (-r $final_dagchainer_file_condensed)
+	      {
+		$final_dagchainer_file_condensed =~ s/$DIR/$URL/;
+		$html .= "<br><span class='small link' onclick=window.open('$final_dagchainer_file_condensed')>Condensed syntelog file with GEvo links</span>";
+	      }
 	    $html .="<tr><td>";
 
 	    $html .= "<br>".qq{<span class="small link" id="" onClick="window.open('bin/SynMap/order_contigs_to_chromosome.pl?f=$dagchainer_file');" >Generate Assembled Genomic Sequence</span>} if $assemble;
@@ -2988,8 +3026,10 @@ sub get_tiny_link
 sub gzip
     {
       my $file = shift;
+      return $file unless $file;
       return $file if $file =~ /\.gz$/;
-      `$GZIP $file`;
+      return $file.".gz" if -r "$file.gz";
+      `$GZIP $file` if -r $file;
       my $tmp = $file.".gz";
       return -r $tmp ? $tmp : $file;
     }
@@ -2997,8 +3037,9 @@ sub gzip
 sub gunzip
     {
       my $file = shift;
+      return $file unless $file;
       return $file unless $file =~ /\.gz$/;
-      `$GUNZIP $file`;
+      `$GUNZIP $file` if -r $file;
       my $tmp = $file;
       $tmp =~ s/\.gz$//;
       return -r $tmp ? $tmp : $file;
