@@ -10,7 +10,7 @@ use Data::Dumper;
 use DBI;
 use POSIX;
 
-use vars qw($P $dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ks_db $ks_type $log $MAX $MIN $assemble $axis_metric $color_type $box_diags $fid1 $fid2 $selfself $labels $color_scheme $font);
+use vars qw($P $dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ks_db $ks_type $log $MAX $MIN $assemble $axis_metric $color_type $box_diags $fid1 $fid2 $selfself $labels $color_scheme $font $GZIP $GUNZIP);
 
 $P = CoGe::Accessory::Web::get_defaults();
 
@@ -49,6 +49,12 @@ GetOptions(
 $selfself = 1 unless defined $selfself;
 $labels = 1 unless defined $labels;
 $font = $P->{FONT} unless $font && -r $font;
+$GZIP = $P->{GZIP};
+$GUNZIP = $P->{GUNZIP};
+
+gunzip ($dagfile.".gz") if defined $dagfile && -r $dagfile.".gz";
+gunzip ($alignfile.".gz") if defined $alignfile && -r $alignfile.".gz";
+
 
 usage() if $help;
 usage() unless (defined $dagfile &&-r $dagfile) || -r $alignfile;
@@ -57,6 +63,9 @@ if (defined $dagfile and ! -r $dagfile)
   {
     warn "dagfile specified but not present or readable: $!";
   }
+
+$dagfile = gunzip($dagfile) if $dagfile =~ /\.gz$/;
+$alignfile = gunzip($alignfile) if $alignfile =~ /\.gz$/;
 
 #set a default for this, make sure it is uppercase
 $ks_type = "kS" unless $ks_type;
@@ -200,6 +209,8 @@ binmode OUT;
 print OUT $y_labels_gd->png;
 close OUT;
 
+gzip($dagfile) if $dagfile && -r $dagfile;
+gzip($alignfile) if $alignfile && -r $alignfile;
 #generate_historgram of ks values if necessary
 
 #This function appears to parse dagchainer output, generated in SynMap.pl, and draw the results to the GD graphics context.
@@ -1386,3 +1397,25 @@ help         | h       print this message
 };
     exit;
   }
+
+sub gzip
+    {
+      my $file = shift;
+      return $file unless $file;
+      return $file if $file =~ /\.gz$/;
+      return $file.".gz" if -r "$file.gz";
+      `$GZIP $file` if -r $file;
+      my $tmp = $file.".gz";
+      return -r $tmp ? $tmp : $file;
+    }
+
+sub gunzip
+    {
+      my $file = shift;
+      return $file unless $file;
+      return $file unless $file =~ /\.gz$/;
+      `$GUNZIP $file` if -r $file;
+      my $tmp = $file;
+      $tmp =~ s/\.gz$//;
+      return -r $tmp ? $tmp : $file;
+    }
