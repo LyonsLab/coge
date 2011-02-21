@@ -6,9 +6,14 @@ use Getopt::Long;
 use CoGeX;
 use Text::Wrap;
 use CGI;
+use CoGe::Accessory::Web;
 
-use vars qw($synfile $coge $DEBUG $join $FORM);
+use vars qw($synfile $coge $DEBUG $join $FORM $P $GZIP $GUNZIP);
 
+
+$P = CoGe::Accessory::Web::get_defaults();
+$GZIP = $P->{GZIP};
+$GUNZIP = $P->{GUNZIP};
 GetOptions (
 	    "debug"=>\$DEBUG,
 	    "file|f=s"=>\$synfile, # file_name.aligncoords from SynMap
@@ -73,8 +78,7 @@ sub print_sequence
 sub parse_syn_blocks
   {
     my $file = shift;
-
-
+    $file = gunzip($file) if $file =~ /.gz$/;
     my $blocks1=[];
     my $blocks2=[];
     open (IN, $file) || die "Can't open $file for reading: $!";
@@ -147,6 +151,7 @@ sub parse_syn_blocks
 	    $seen{$block->{name}}=1;
 	  }
       }
+    gzip($file);
     return $ordered2;
 #    ($ordered1, $ordered2) = ($ordered2, $ordered1) if $switched;
 #    return $ordered1, $ordered2;
@@ -217,3 +222,25 @@ sub process_syn_block
 		);
     return \%seq1, \%seq2;
   }
+
+sub gzip
+    {
+      my $file = shift;
+      return $file unless $file;
+      return $file if $file =~ /\.gz$/;
+      return $file.".gz" if -r "$file.gz";
+      `$GZIP $file` if -r $file;
+      my $tmp = $file.".gz";
+      return -r $tmp ? $tmp : $file;
+    }
+
+sub gunzip
+    {
+      my $file = shift;
+      return $file unless $file;
+      return $file unless $file =~ /\.gz$/;
+      `$GUNZIP $file` if -r $file;
+      my $tmp = $file;
+      $tmp =~ s/\.gz$//;
+      return -r $tmp ? $tmp : $file;
+    }
