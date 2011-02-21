@@ -1321,17 +1321,18 @@ sub run_quota_align_merge
     my %opts = @_;
     my $infile = $opts{infile};
     my $max_dist = $opts{max_dist};
-
     my $returnfile = $infile.".Dm".$max_dist.".ma1"; #ma stands for merge algo
     return $returnfile if -r $returnfile || -f $returnfile.".gz";
     #convert to quota-align format
     gunzip($infile.".gz") if -r $infile.".gz";
     my $cmd = $CLUSTER_UTILS." --format=dag --log_evalue $infile $infile.Dm$max_dist.qa";
+    `$cmd`;
    CoGe::Accessory::Web::write_log("Converting dag output to quota_align format: $cmd", $cogeweb->logfile);
     $cmd = $QUOTA_ALIGN ." --Dm=$max_dist --merge $infile.Dm$max_dist.qa";
    CoGe::Accessory::Web::write_log("Running quota_align to merge diagonals:\n\t$cmd", $cogeweb->logfile);
-    
+    gunzip ("$infile.Dm$max_dist.qa.gz") if -r "$infile.Dm$max_dist.qa.gz";
     `$cmd`;
+    gunzip ("$infile.Dm$max_dist.qa.merged.gz") if -r "$infile.Dm$max_dist.qa.merged.gz";
     if (-r "$infile.Dm$max_dist.qa.merged")
       {
 	my %data;
@@ -1362,6 +1363,7 @@ sub run_quota_align_merge
 	close IN;
 	close OUT;
       }
+    print STDERR "Finished merge\n";
     return "$returnfile";
   }
 
@@ -1387,9 +1389,11 @@ CoGe::Accessory::Web::write_log("Dag output file already converted to quota_alig
 CoGe::Accessory::Web::write_log("Converting dag output to quota_align format: $cmd", $cogeweb->logfile);
 	`$cmd`;
       }
-    if (-r "$returnfile.tmp")
+    if (-r "$returnfile.tmp" || -r "$returnfile.tmp.gz")
       {
-CoGe::Accessory::Web::write_log("Quota_align syntenic coverage parameters already run$infile.qa");
+	CoGe::Accessory::Web::write_log("Quota_align syntenic coverage parameters already run$infile.qa");
+	gunzip("$returnfile.tmp.gz") if -r "$returnfile.tmp.gz";
+
       }
     else
       {
@@ -1773,6 +1777,7 @@ sub gen_ks_blocks_file
     {
       my %opts = @_;
       my $infile = $opts{infile};
+      gunzip($infile.".gz") if -r $infile.".gz";
       my ($dbfile) = $infile =~ /^(.*?CDS-CDS)/;
       return unless $dbfile;
       my $outfile = $infile.".ks";
@@ -2521,9 +2526,14 @@ sub go
 	    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
 	    CoGe::Accessory::Web::write_log("",$cogeweb->logfile);
 	    
-	    my $dagchainer_file_qa = $dagchainer_file.".qa";
 	    my $final_dagchainer_file_condensed = $final_dagchainer_file.".condensed";
-	    my $file_list = [\$raw_blastfile, \$filtered_blastfile, \$bedfile1, \$bedfile2, \$org1_localdups, \$org2_localdups, \$dag_file12_all, \$dag_file12_all_geneorder, \$dag_file12, \$dagchainer_file, \$dagchainer_file_qa, \$final_dagchainer_file, \$final_dagchainer_file_condensed];
+	    my $qa_file = $merged_dagchainer_file;
+	    $qa_file =~ s/\.ma\d$/\.qa/;
+	    my $qa_merged_file = $qa_file.".merged";
+	    my $qa_coverage_tmp = $quota_align_coverage.".tmp";
+	    my $qa_coverage_qa = $quota_align_coverage.".qa";
+
+	    my $file_list = [\$raw_blastfile, \$filtered_blastfile, \$bedfile1, \$bedfile2, \$org1_localdups, \$org2_localdups, \$dag_file12_all, \$dag_file12_all_geneorder, \$dag_file12, \$dagchainer_file, \$final_dagchainer_file, \$final_dagchainer_file_condensed, \$merged_dagchainer_file,\$qa_file, \$qa_merged_file, \$ks_blocks_file, \$quota_align_coverage, \$qa_coverage_qa];
 	    foreach my $item (@$file_list)
 	      {
 		$pm->start and next;
