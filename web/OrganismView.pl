@@ -42,26 +42,26 @@ $coge = CoGeX->dbconnect();
 
 #my $pj = new CGI::Ajax(
 %FUNCTION = (
-		       get_dataset_groups=>\&get_dataset_groups,
-		       get_dataset_group_info=>\&get_dataset_group_info,
-		       get_dataset => \&get_dataset,
-		       get_dataset_info => \&get_dataset_info,
-		       get_dataset_chr_info => \&get_dataset_chr_info,
-		       gen_data => \&gen_data,
-		       get_orgs => \&get_orgs,
-		       get_org_info=>\&get_org_info,
-		       get_recent_orgs=>\&get_recent_orgs,
-		       get_start_stop=>\&get_start_stop,
-		       get_feature_counts => \&get_feature_counts,
-		       get_gc_for_chromosome=> \&get_gc_for_chromosome,
-		       get_gc_for_noncoding=> \&get_gc_for_noncoding,
-		       get_gc_for_feature_type =>\&get_gc_for_feature_type,
-		       get_codon_usage=>\&get_codon_usage,
-		       get_aa_usage=>\&get_aa_usage,
-		       get_wobble_gc=>\&get_wobble_gc,
-		       get_wobble_gc_diff=>\&get_wobble_gc_diff,
-		       get_total_length_for_ds=>\&get_total_length_for_ds,
-		      );
+	     get_dataset_groups=>\&get_dataset_groups,
+	     get_dataset_group_info=>\&get_dataset_group_info,
+	     get_dataset => \&get_dataset,
+	     get_dataset_info => \&get_dataset_info,
+	     get_dataset_chr_info => \&get_dataset_chr_info,
+	     gen_data => \&gen_data,
+	     get_orgs => \&get_orgs,
+	     get_org_info=>\&get_org_info,
+	     get_recent_orgs=>\&get_recent_orgs,
+	     get_start_stop=>\&get_start_stop,
+	     get_feature_counts => \&get_feature_counts,
+	     get_gc_for_chromosome=> \&get_gc_for_chromosome,
+	     get_gc_for_noncoding=> \&get_gc_for_noncoding,
+	     get_gc_for_feature_type =>\&get_gc_for_feature_type,
+	     get_codon_usage=>\&get_codon_usage,
+	     get_aa_usage=>\&get_aa_usage,
+	     get_wobble_gc=>\&get_wobble_gc,
+	     get_wobble_gc_diff=>\&get_wobble_gc_diff,
+	     get_total_length_for_ds=>\&get_total_length_for_ds,
+	    );
 my $pj = new CGI::Ajax(%FUNCTION);
 $pj->JSDEBUG(0);
 $pj->DEBUG(0);
@@ -251,8 +251,10 @@ sub get_orgs
     $html .= join ("\n", @opts);
     $html .= "\n</SELECT>\n";
     $html =~ s/OPTION/OPTION SELECTED/ unless $html =~ /SELECTED/;
+    $html .= qq{<br><span class='link small' onclick="window.open('get_org_list.pl?name=$name;desc=$desc;oid=$oid;dsgid=$dsgid');">Download Organism List</span>};
     return $html, scalar @opts;
   }
+
 
 sub get_org_info
   {
