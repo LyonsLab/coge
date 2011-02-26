@@ -1615,6 +1615,8 @@ sub html_aa_new
     my $data = $opts{data};
     my $counts = $opts{counts};
     my $two_colors = $opts{two_colors};
+    my $table_name = $opts{table_name};
+    $table_name = "aa_table" unless $table_name;
     if ($counts)
       {
 	$counts = $data;
@@ -1627,7 +1629,7 @@ sub html_aa_new
     my ($min_val) = sort {$a<=>$b} map{$data->{$_}} keys %$aa_sort;
     my $range = $max_val-$min_val;
     my $html;
-    $html .= qq{<table id="aa_table" class='ui-widget-content ui-corner-all'><Thead><tr>
+    $html .= qq{<table id="$table_name" class='ui-widget-content ui-corner-all'><Thead><tr>
  <th>AA</th>
  <th>Polarity</th>
  <th>Charge pH7.4</th>
