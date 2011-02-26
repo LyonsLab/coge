@@ -270,6 +270,18 @@ sub gen_body
     $clabel = $FORM->param('cl') if (defined $FORM->param('cl'));
     $template->param('CHR_LABEL'=>'checked') if $clabel;
 
+    #what is the sort for chromosome display?
+    my $chr_sort_order = "S";
+    $chr_sort_order = $FORM->param('cso') if (defined $FORM->param('cso'));
+    if ($chr_sort_order == "N")
+      {
+	$template->param('CHR_SORT_NAME'=>'selected');
+      }
+    elsif ($chr_sort_order == "S")
+      {
+	$template->param('CHR_SORT_SIZE'=>'selected');
+      }
+    
     #set axis metric for dotplot
     if ($FORM->param('ct'))
       {
@@ -1363,7 +1375,6 @@ sub run_quota_align_merge
 	close IN;
 	close OUT;
       }
-    print STDERR "Finished merge\n";
     return "$returnfile";
   }
 
@@ -1543,7 +1554,6 @@ DNA_align_2
 	push @data,[$line[1],$line[5],$item1[6],$item2[6]];
       }
     close IN;
-    print STDERR "generating synonymous substitution values for ".scalar @data." pairs of genes\n";
     my $MAX_RUNS = $MAX_PROC;
     my $ports = initialize_nwalign_servers(start_port=>3000, procs=>$MAX_RUNS);
     my $pm = new Parallel::ForkManager($MAX_RUNS*2);
@@ -1658,7 +1668,6 @@ sub get_ks_data
 					 'dN/dS'=>$data->[5]
 					}: {};# unless $data->[3] eq "";
       }
-    print STDERR $no_data ." of ". $total." gene pairs had no ks data\n";
    CoGe::Accessory::Web::write_log("\tgathered data from ks database $db_file", $cogeweb->logfile);
     $sth->finish;
     undef $sth;
@@ -1942,6 +1951,8 @@ sub generate_dotplot
     my $flip = $opts{flip}; #flip axis
     my $clabel = $opts{clabel}; #label chromosomes
     my $color_scheme = $opts{color_scheme}; #color_scheme for dotplot
+    my $chr_sort_order = $opts{chr_sort_order}; #sort order of chromosomes in dotplot
+
     my $cmd = $DOTPLOT;
     #add ks_db to dotplot command if requested
     $outfile.= ".ass" if $assemble;
@@ -1959,6 +1970,7 @@ sub generate_dotplot
     $outfile .= ".flip" if $flip;
     $outfile .= ".c0" if $clabel eq 0;
     $outfile.= ".cs$color_scheme" if defined $color_scheme;
+    $outfile.= ".cso$chr_sort_order" if defined $chr_sort_order;
 
     #are non-syntenic dots being displayed
     if ($snsd)
@@ -1989,6 +2001,7 @@ sub generate_dotplot
     $cmd .= qq{ -f 1} if $flip;
     $cmd .= qq{ -labels 0} if $clabel eq 0;
     $cmd .= qq{ -color_scheme $color_scheme} if defined $color_scheme;
+    $cmd .= qq{ -chr_sort_order $chr_sort_order} if defined $chr_sort_order;
     while (-e "$outfile.running")
       {
 	print STDERR "detecting $outfile.running.  Waiting. . .\n";
@@ -2040,7 +2053,6 @@ sub go
     my $min_chr_size = $opts{min_chr_size};
     my $dagchainer_type = $opts{dagchainer_type};
     my $color_type = $opts{color_type};
-    my $box_diags = $opts{box_diags};
     my $merge_algo = $opts{merge_algo}; #is there a merging function?
 
     #options for finding syntenic depth coverage by quota align (Bao's algo)
@@ -2064,10 +2076,17 @@ sub go
     #are axes labeled?
     my $clabel = $opts{clabel};
     $clabel = $clabel =~ /true/i ? 1 : 0;
-
+    
+    #which color scheme for ks/kn dots?
     my $color_scheme = $opts{color_scheme};
 
+    #draw a box around identified diagonals?
+    my $box_diags = $opts{box_diags};
     $box_diags = $box_diags eq "true" ? 1 : 0;
+
+    #how are the chromosomes to be sorted?
+    my $chr_sort_order = $opts{chr_sort_order};
+
     $dagchainer_type = $dagchainer_type eq "true" ? "geneorder" : "distance";
 
     unless ($dsgid1 && $dsgid2)
@@ -2097,6 +2116,7 @@ sub go
     $synmap_link .= ";flip=1" if $flip;
     $synmap_link .= ";cs=$color_scheme";
     $synmap_link .= ";cl=0" if $clabel eq "0";
+    $synmap_link .= ";cso=$chr_sort_order" if $chr_sort_order;
 
     $email = 0 if check_address_validity($email) eq 'invalid';
 
@@ -2417,7 +2437,7 @@ sub go
 	$gen_ks_db_time = timestr(timediff($t6,$t5));
 	CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
 	CoGe::Accessory::Web::write_log("Generating dotplot",$cogeweb->logfile);
- 	$out = generate_dotplot(dag=>$dag_file12_all, coords=>$final_dagchainer_file, outfile=>"$out", regen_images=>$regen_images, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, dagtype=>$dagchainer_type, ks_db=>$ks_db, ks_type=>$ks_type, assemble=>$assemble, metric=>$axis_metric, min_chr_size=>$min_chr_size, color_type=>$color_type, box_diags=>$box_diags, fid1=>$fid1, fid2=>$fid2, snsd=>$snsd, flip=>$flip, clabel=>$clabel, color_scheme=>$color_scheme);
+ 	$out = generate_dotplot(dag=>$dag_file12_all, coords=>$final_dagchainer_file, outfile=>"$out", regen_images=>$regen_images, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, dagtype=>$dagchainer_type, ks_db=>$ks_db, ks_type=>$ks_type, assemble=>$assemble, metric=>$axis_metric, min_chr_size=>$min_chr_size, color_type=>$color_type, box_diags=>$box_diags, fid1=>$fid1, fid2=>$fid2, snsd=>$snsd, flip=>$flip, clabel=>$clabel, color_scheme=>$color_scheme, chr_sort_order=>$chr_sort_order);
 	CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
 	CoGe::Accessory::Web::write_log("",$cogeweb->logfile);
 
@@ -2451,7 +2471,6 @@ sub go
 
 	    $/="\n";
  	    open (IN, "$out.html") || warn "problem opening $out.html for reading\n";
-#	    print STDERR "$out.html\n";
 	    $axis_metric = $axis_metric=~/g/ ? "genes" : "nucleotides";
 	    $html .= "<span class='small'>Axis metrics are in $axis_metric</span><br>";
 	    #add version of dataset_group to organism names
@@ -2461,7 +2480,6 @@ sub go
 	    my $y_lab = "$out.y.png";
 	    my $x_lab = "$out.x.png";
  	    $out =~ s/$DIR/$URL/;
-#	    print STDERR $y_lab,"\n";
 	    if (-r $y_lab)
 	      {
 		$y_lab =~ s/$DIR/$URL/;
@@ -2481,7 +2499,6 @@ sub go
  		$tmp .= $_;
  	      }
  	    close IN;
-#	    print STDERR $out,"!!\n";
  	    $tmp =~ s/master.*\.png/$out.png/;
 	    warn "$out.html did not parse correctly\n" unless $tmp =~ /map/i;
 	    $html .= $tmp;
@@ -2530,8 +2547,8 @@ sub go
 	    my $qa_file = $merged_dagchainer_file;
 	    $qa_file =~ s/\.ma\d$/\.qa/;
 	    my $qa_merged_file = $qa_file.".merged";
-	    my $qa_coverage_tmp = $quota_align_coverage.".tmp";
-	    my $qa_coverage_qa = $quota_align_coverage.".qa";
+	    my $qa_coverage_tmp = $quota_align_coverage.".tmp" if $quota_align_coverage;
+	    my $qa_coverage_qa = $quota_align_coverage.".qa" if $quota_align_coverage;
 
 	    my $file_list = [\$raw_blastfile, \$filtered_blastfile, \$bedfile1, \$bedfile2, \$org1_localdups, \$org2_localdups, \$dag_file12_all, \$dag_file12_all_geneorder, \$dag_file12, \$dagchainer_file, \$final_dagchainer_file, \$final_dagchainer_file_condensed, \$merged_dagchainer_file,\$qa_file, \$qa_merged_file, \$ks_blocks_file, \$quota_align_coverage, \$qa_coverage_qa];
 	    foreach my $item (@$file_list)
@@ -2690,7 +2707,7 @@ Ks calculations:          $gen_ks_db_time
 Dotplot:                  $dotplot_time
 GEvo links:               $add_gevo_links_time
 };
-    print STDERR $benchmarks;
+#    print STDERR $benchmarks;
     CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
     CoGe::Accessory::Web::write_log("Benchmark",$cogeweb->logfile);
     CoGe::Accessory::Web::write_log($benchmarks, $cogeweb->logfile);
