@@ -273,11 +273,11 @@ sub gen_body
     #what is the sort for chromosome display?
     my $chr_sort_order = "S";
     $chr_sort_order = $FORM->param('cso') if (defined $FORM->param('cso'));
-    if ($chr_sort_order == "N")
+    if ($chr_sort_order =~ /N/i)
       {
 	$template->param('CHR_SORT_NAME'=>'selected');
       }
-    elsif ($chr_sort_order == "S")
+    elsif ($chr_sort_order =~ /S/i)
       {
 	$template->param('CHR_SORT_SIZE'=>'selected');
       }
