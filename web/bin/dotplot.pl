@@ -926,7 +926,20 @@ SELECT feature_id
 	#how to sort chromosomes for diplay?
 	if ($chr_sort_order =~ /^n/i) #sorting by name
 	  {
-	    @ordered = sort {$a cmp $b } keys %data;
+	    my @numbered;
+	    my @lettered;
+	    foreach my $chr (keys %data)
+	      {
+		if ($chr =~ /^\d+$/)
+		  {
+		    push @numbered, $chr;
+		  }
+		else
+		  {
+		    push @lettered, $chr;
+		  }
+	      }
+	    @ordered = ( (sort {$a <=> $b } @numbered), (sort { $a cmp $b } @lettered));
 	  }
 	elsif ($chr_sort_order =~ /^s/i) #sorting by size
 	  {
