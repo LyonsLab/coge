@@ -10,7 +10,7 @@ use Data::Dumper;
 use DBI;
 use POSIX;
 
-use vars qw($P $dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ks_db $ks_type $log $MAX $MIN $assemble $axis_metric $color_type $box_diags $fid1 $fid2 $selfself $labels $color_scheme $font $GZIP $GUNZIP);
+use vars qw($P $dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ks_db $ks_type $log $MAX $MIN $assemble $axis_metric $color_type $box_diags $fid1 $fid2 $selfself $labels $color_scheme $chr_sort_order $font $GZIP $GUNZIP);
 
 $P = CoGe::Accessory::Web::get_defaults();
 
@@ -45,9 +45,11 @@ GetOptions(
 	   "labels=s" => \$labels, #do we draw labels for chromosomes, on my default
 	   "color_scheme=s"=>\$color_scheme,
 	   "font=s"=>\$font,
+	   "chr_sort_order|cso=s"=>\$chr_sort_order,#display sort order for chromosomes, "Name|N" || "Size|S";
 	   );
 $selfself = 1 unless defined $selfself;
 $labels = 1 unless defined $labels;
+$chr_sort_order = "size" unless defined $chr_sort_order;
 $font = $P->{FONT} unless $font && -r $font;
 $GZIP = $P->{GZIP};
 $GUNZIP = $P->{GUNZIP};
@@ -64,7 +66,7 @@ if (defined $dagfile and ! -r $dagfile)
     warn "dagfile specified but not present or readable: $!";
   }
 
-$dagfile = gunzip($dagfile) if $dagfile =~ /\.gz$/;
+$dagfile = gunzip($dagfile) if $dagfile && $dagfile =~ /\.gz$/;
 $alignfile = gunzip($alignfile) if $alignfile =~ /\.gz$/;
 
 #set a default for this, make sure it is uppercase
@@ -83,11 +85,11 @@ $coge = CoGeX->dbconnect();
 my ($org1_order, $org2_order) = parse_syn_blocks(file=>$alignfile) if $assemble;
 
 my $skip_non_ordered = $assemble && $assemble == 2 ? 1 : 0;
-my $org1info = get_dsg_info(dsgid=>$dsgid1, chr=>$CHR1, minsize=>$min_chr_size, order=>$org1_order, metric=>$axis_metric, skip_non_ordered=>$skip_non_ordered);
+my $org1info = get_dsg_info(dsgid=>$dsgid1, chr=>$CHR1, minsize=>$min_chr_size, order=>$org1_order, metric=>$axis_metric, skip_non_ordered=>$skip_non_ordered, chr_sort_order=>$chr_sort_order);
 my $org1length =0;
 #print STDERR Dumper $org1info;
 map {$org1length+=$_->{length}} values %$org1info;
-my $org2info = get_dsg_info(dsgid=>$dsgid2, chr=>$CHR2, minsize=>$min_chr_size, order=>$org2_order, metric=>$axis_metric, skip_non_ordered=>$skip_non_ordered);
+my $org2info = get_dsg_info(dsgid=>$dsgid2, chr=>$CHR2, minsize=>$min_chr_size, order=>$org2_order, metric=>$axis_metric, skip_non_ordered=>$skip_non_ordered, chr_sort_order=>$chr_sort_order);
 my $org2length =0;
 map {$org2length+=$_->{length}} values %$org2info;
 
@@ -813,7 +815,9 @@ sub get_dsg_info
     my $order = $opts{order};
     my $skip_non_ordered = $opts{skip_non_ordered};
     my $metric=$opts{metric};
+    my $chr_sort_order = $opts{chr_sort_order};
     my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+
     unless ($dsg)
       {
 	warn "No dataset group found with dbid $dsgid\n";
@@ -892,8 +896,20 @@ SELECT feature_id
 	    $rev{$chr}=1 if $item->{rev};
 	    $seen{$chr}=1;
 	  }
-	foreach my $chr (sort {$data{$b}{chr_length} <=> $data{$a}{chr_length} } keys %data) #get any that were not in @$order
+	my @chr; 
+	#get any that were not in @$order
+	#how to sort chromosomes for diplay?
+	if ($chr_sort_order =~ /^n/i) #sorting by name
 	  {
+	    @chr = sort {$a cmp $b } keys %data;
+	  }
+	elsif ($chr_sort_order =~ /^s/i) #sorting by size
+	  {
+	    @chr = sort {$data{$b}{chr_length} <=> $data{$a}{chr_length} } keys %data; 
+	  }
+	foreach my $chr (@chr)
+	  {
+	    print STDERR $chr,"\n";
 	    next if $seen{$chr};
 	    if ($skip_non_ordered)
 	      {
@@ -905,9 +921,17 @@ SELECT feature_id
 	      }
 	  }
       }
-    else     #chromosomes sorted by length.  Longest first.
+    else     #no predefined order 
       {
-	@ordered = sort {$data{$b}{chr_length} <=> $data{$a}{chr_length} } keys %data;
+	#how to sort chromosomes for diplay?
+	if ($chr_sort_order =~ /^n/i) #sorting by name
+	  {
+	    @ordered = sort {$a cmp $b } keys %data;
+	  }
+	elsif ($chr_sort_order =~ /^s/i) #sorting by size
+	  {
+	    @ordered = sort {$data{$b}{chr_length} <=> $data{$a}{chr_length} } keys %data; 
+	  }
       }
     my $pos = 1;
     foreach my $item (@ordered)
