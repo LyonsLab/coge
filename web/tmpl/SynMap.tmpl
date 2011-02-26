@@ -56,7 +56,7 @@ if(!pageObj.basename)
   pageObj.nolog=1;
   setTimeout("monitor_log()", 5000);
   
-go(['args__c','c','args__D','D','args__g','g','args__A','A','args__gm','gm','args__Dm','Dm','args__blast','blast', 'args__feat_type1','feat_type1', 'args__feat_type2','feat_type2','args__dsgid1','dsgid1', 'args__dsgid2','dsgid2','args__jobtitle','jobtitle','args__basename','args__'+pageObj.basename,'args__email','email','args__regen_images','args__'+$('#regen_images')[0].checked, 'args__width', 'args__'+$('#master_width').val(), 'args__dagchainer_type','args__'+$('#dagchainer_type')[0].checked, 'args__ks_type','ks_type', 'args__assemble','args__'+$('#assemble')[0].checked, 'args__axis_metric','axis_metric', 'args__min_chr_size', 'min_chr_size', 'args__show_non_syn','args__'+$('#show_non_syn')[0].checked, 'args__color_type','color_type', 'args__box_diags', 'args__'+$('#box_diags')[0].checked, 'args__merge_algo','merge_algo', 'args__depth_algo', 'depth_algo', 'args__depth_org_1_ratio', 'depth_org_1_ratio', 'args__depth_org_2_ratio', 'depth_org_2_ratio', 'args__depth_overlap', 'depth_overlap', 'args__fid1','args__'+pageObj.fid1, 'args__fid2','args__'+pageObj.fid2, 'args__show_non_syn_dots','args__'+$('#show_non_syn_dots')[0].checked,'args__flip','args__'+$('#flip')[0].checked,'args__clabel','args__'+$('#clabel')[0].checked,'args__color_scheme','color_scheme'],[handle_results] );
+go(['args__c','c','args__D','D','args__g','g','args__A','A','args__gm','gm','args__Dm','Dm','args__blast','blast', 'args__feat_type1','feat_type1', 'args__feat_type2','feat_type2','args__dsgid1','dsgid1', 'args__dsgid2','dsgid2','args__jobtitle','jobtitle','args__basename','args__'+pageObj.basename,'args__email','email','args__regen_images','args__'+$('#regen_images')[0].checked, 'args__width', 'args__'+$('#master_width').val(), 'args__dagchainer_type','args__'+$('#dagchainer_type')[0].checked, 'args__ks_type','ks_type', 'args__assemble','args__'+$('#assemble')[0].checked, 'args__axis_metric','axis_metric', 'args__min_chr_size', 'min_chr_size', 'args__show_non_syn','args__'+$('#show_non_syn')[0].checked, 'args__color_type','color_type', 'args__box_diags', 'args__'+$('#box_diags')[0].checked, 'args__merge_algo','merge_algo', 'args__depth_algo', 'depth_algo', 'args__depth_org_1_ratio', 'depth_org_1_ratio', 'args__depth_org_2_ratio', 'depth_org_2_ratio', 'args__depth_overlap', 'depth_overlap', 'args__fid1','args__'+pageObj.fid1, 'args__fid2','args__'+pageObj.fid2, 'args__show_non_syn_dots','args__'+$('#show_non_syn_dots')[0].checked,'args__flip','args__'+$('#flip')[0].checked,'args__clabel','args__'+$('#clabel')[0].checked,'args__color_scheme','color_scheme', 'args__chr_sort_order','chr_sort_order'],[handle_results] );
 }
 
 function handle_results(val){
@@ -657,14 +657,21 @@ function post_to_grimm(seq1, seq2)
  <tr>
    <td>Draw boxes around syntenic regions?
    <td><input type=checkbox name="box_diags" id="box_diags" <TMPL_VAR NAME=BOX_DIAGS> >
-<tr>
+ <tr>
    <td>Label Chromosomes?
    <td><input type=checkbox name="clabel" id="clabel" <TMPL_VAR NAME=CHR_LABEL> >
+ <tr>
+  <td>Sort Chromosomes by:
+  <td><select name="chr_sort_order" id="chr_sort_order">
+       <option value = N <TMPL_VAR NAME=CHR_SORT_NAME> > Name </option>
+       <option value = S <TMPL_VAR NAME=CHR_SORT_SIZE> > Size </option>
+      </select>
  <TR>
    <TD>Flip axes?
    <td><input type=checkbox name="flip" id="flip" <TMPL_VAR NAME=FLIP> >
  <tr>
-   <td colspan=2>Color diagonals by: 
+   <td>Color diagonals by: 
+   <td>
    <select name=color_type id=color_type>
      <option value = 0 <TMPL_VAR NAME=COLOR_TYPE_NONE> > Single color </option>
      <option value = inv <TMPL_VAR NAME=COLOR_TYPE_INV> > Inversions </option>
