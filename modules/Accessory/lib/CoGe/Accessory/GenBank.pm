@@ -68,13 +68,17 @@ sub get_genbank_from_ncbi
 	    
 	    my $entry = $response->content;
 	    $entry = "" unless $response->is_success();
+	    my $tries = 10;
+	    my $count=0;
 	    try_loop: while (!$entry || $entry =~ /(temporarily unavailable)/i || $entry=~/error/i)
 	      {
 		last try_loop if $entry =~ /^LOCUS/;
+		last if $count >= $tries;
 		print STDERR "Warning: $url".$accn." failed\nFetching from NCBI yielding '$1'\nRetrying\n";
 		sleep 10;
 		$response = $ua->get($url."$accn");
 		$entry = $response->content;
+		$count++;
 	      }
 	    open (OUT, ">".$fileloc) || die "Can't open $fileloc for writing: $!";
 	    print OUT $entry;
