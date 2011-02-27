@@ -693,13 +693,15 @@ function post_to_grimm(seq1, seq2)
    <td>Minimum chromosome size:   
    <Td><input type=text name=min_chr_size id=min_chr_size size=6 value="<TMPL_VAR NAME="MIN_CHR_SIZE">">
   <TR>
-    <TD colspan=2>Order contigs by best syntenic path?
+    <TD>Order contigs by best syntenic path?
+    <td>
    <input type=checkbox name="assemble" id="assemble" onclick="$('#assemble_info').toggle();" <TMPL_VAR NAME=SYNTENIC_PATH>><br>
    <span class=small id='assemble_info' style="display: none; color: red;">
     <li>This option assumes that one of the organisms is the reference genome, and the other is a whole genome shotgun sequence with contig level assembly.   The genome with fewer chromosomes/contigs will automatically be used as the reference genome.
     <li>Don't show contigs without synteny?<input type=checkbox name="show_non_syn" id="show_non_syn" <TMPL_VAR NAME=SHOW_NON_SYN>><span><br>
   <TR>
-   <td colspan=2>E-mail results? <input type=checkbox id=check_email onclick="toggle_email_field()">
+   <td>E-mail results? 
+   <td><input type=checkbox id=check_email onclick="toggle_email_field()">
 		<div class="email_box small" style="display:none;"><table class="backbox"><tr><td>Your E-mail Address: <td><input type=text id=email onBlur='address_validity_check()'>
 		
 		<font id=email_error class="small" style="display: none; color: red;">You have supplied an invalid e-mail address.</font></div>
