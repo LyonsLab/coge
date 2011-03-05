@@ -18,13 +18,13 @@ no warnings 'redefine';
 
 #example URL: http://toxic.berkeley.edu/CoGe/SynFind.pl?fid=34519245;qdsgid=3;dsgid=4241,6872,7084,7094,7111
 
-use vars qw($P $PAGE_NAME $DIR $URL $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $BEDDIR $FORMATDB $BLAST $BLASTN $LASTZ $CONVERT_BLAST $BLAST2BED $BLAST2RAW $SYNTENY_SCORE $DATASETGROUP2BED $PYTHON26 $FORM $USER $DATE $coge $cogeweb $RESULTSLIMIT $MAX_PROC $connstr);
+use vars qw($P $PAGE_NAME $DIR $URL $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $BEDDIR $FORMATDB $BLAST $BLASTN $LASTZ $CONVERT_BLAST $BLAST2BED $BLAST2RAW $SYNTENY_SCORE $DATASETGROUP2BED $PYTHON26 $FORM $USER $DATE $coge $cogeweb $RESULTSLIMIT $MAX_PROC $SERVER $connstr);
 #refresh again?
 $P = CoGe::Accessory::Web::get_defaults();
 $ENV{PATH} = $P->{COGEDIR};
 $TEMPDIR = $P->{TEMPDIR}."SynFind";
 $TEMPURL = $P->{TEMPURL}."SynFind";
-
+$SERVER = $P->{SERVER};
 $ENV{BLASTDB}=$P->{BLASTDB};
 $ENV{BLASTMAT}=$P->{BLASTMATRIX};
 $PAGE_NAME = "SynFind.pl";
@@ -898,9 +898,7 @@ sub get_tiny_link
     $url =~ s/:::/__/g;
     unless ($url =~ /http/)
       {
-	my $server = $P->{SERVER};
-    #$url = "http://".$server."/$URL/".$url;
-	$url = "http://".$server.$url;
+	$url = "http://".$SERVER.$url;
       }
     my $html;
     my $tiny = get("http://genomevolution.org/r/yourls-api.php?signature=d57f67d3d9&action=shorturl&format=simple&url=$url");
@@ -1243,8 +1241,7 @@ sub gen_gevo_link
     return "no feature id specified" unless $fid;
     #determine distance of $window_size/2 genes up and down from query feature
     my ($up, $down) = get_neighboring_region(fid=>$fid, window_size=>$window_size);
-
-    my $link = "GEvo.pl?fid1=$fid;dr1up=$up;dr1down=$down";
+    my $link = "$SERVER/GEvo.pl?fid1=$fid;dr1up=$up;dr1down=$down";
     my @matched_fids;
     my $count =2;
     my %seen_fids;
@@ -1280,7 +1277,7 @@ sub gen_featlist_link
   {
     my %opts = @_;
     my $fids = $opts{fids};
-    my $link = "FeatList.pl?fid=".join (";fid=", @$fids);
+    my $link = "$SERVER/FeatList.pl?fid=".join (";fid=", @$fids);
     return $link;
   }
 
@@ -1397,7 +1394,7 @@ my $dbh = DBI->connect("dbi:SQLite:dbname=$db","","");
     print "#",join ("\t", map{$_->organism->name} $qdsg, sort {$a->organism->name cmp $b->organism->name} @dsgs). "\tGEvo link","\n";
     foreach my $id (sort keys %data)
       {
-	my $link = $P->{server}."GEvo.pl?";
+	my $link = $SERVER."/GEvo.pl?";
 	my @data = ([[0,$id, "S",100000]], map{$data{$id}{$_->id}} sort {$a->organism->name cmp $b->organism->name} @dsgs);
 	my @names;
 	my $count =1;
