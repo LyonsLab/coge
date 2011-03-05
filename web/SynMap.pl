@@ -22,7 +22,7 @@ no warnings 'redefine';
 
 
 umask(0);
-use vars qw($P $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $FORMATDB $BLAST $TBLASTX $BLASTN $LASTZ $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $PYTHON26 $TANDEM_FINDER $RUN_DAGCHAINER $EVAL_ADJUST $FIND_NEARBY $DOTPLOT $NWALIGN $QUOTA_ALIGN $CLUSTER_UTILS $BLAST2RAW $BASE_URL $BLAST2BED $SYNTENY_SCORE $TEMPDIR $TEMPURL $ALGO_LOOKUP $GZIP $GUNZIP);
+use vars qw($P $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $FORMATDB $BLAST $TBLASTX $BLASTN $BLASTP $LASTZ $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $PYTHON26 $TANDEM_FINDER $RUN_DAGCHAINER $EVAL_ADJUST $FIND_NEARBY $DOTPLOT $NWALIGN $QUOTA_ALIGN $CLUSTER_UTILS $BLAST2RAW $BASE_URL $BLAST2BED $SYNTENY_SCORE $TEMPDIR $TEMPURL $ALGO_LOOKUP $GZIP $GUNZIP);
 
 $P = CoGe::Accessory::Web::get_defaults();
 $ENV{PATH} = join ":", ($P->{COGEDIR}, $P->{BINDIR}, $P->{BINDIR}."SynMap", "/usr/bin","/usr/local/bin");
@@ -38,10 +38,11 @@ $TEMPDIR = $P->{TEMPDIR}."SynMap";
 $TEMPURL = $P->{TEMPURL}."SynMap";
 $FORMATDB = $P->{FORMATDB};
 $MAX_PROC=$P->{MAX_PROC};
-$BLAST = "nice -20 ". $P->{BLAST}. " -a ".$MAX_PROC." -K 80 -m 8 -e 0.0001";
+$BLAST = $P->{BLAST}. " -a ".$MAX_PROC." -K 80 -m 8 -e 0.0001";
 my $blast_options = " -num_threads $MAX_PROC -evalue 0.0001 -outfmt 6";
 $TBLASTX = $P->{TBLASTX}. $blast_options;
 $BLASTN = $P->{BLASTN}. $blast_options;
+$BLASTP = $P->{BLASTP}. $blast_options;
 $LASTZ = $P->{PYTHON} ." ". $P->{MULTI_LASTZ} ." -A $MAX_PROC --path=".$P->{LASTZ};
 $GZIP = $P->{GZIP};
 $GUNZIP = $P->{GUNZIP};
@@ -82,6 +83,13 @@ $ALGO_LOOKUP = {
 		     filename=>"lastz",
 		     displayname=>"(B)lastZ",
 		     html_select_val=>4,
+		    },
+		5=> {
+		     algo=>$BLASTP." -task blastp", #blastn
+		     opt=>"BLASTP_SELECT",
+		     filename=>"blastp",
+		     displayname=>"BlastP",
+		     html_select_val=>5,
 		    },
 };
 
@@ -691,7 +699,7 @@ sub generate_fasta
     CoGe::Accessory::Web::write_log($file, $cogeweb->logfile);
     
     open (OUT, ">$file") || die "Can't open $file for writing: $!";;
-    if ($type eq "CDS")
+    if ($type eq "CDS" || $type eq "protein")
       {
 	my $count = 1;
 	my @feats = sort {$a->chromosome cmp $b->chromosome || $a->start <=> $b->start} 
@@ -716,13 +724,28 @@ sub generate_fasta
 	      }
 	    $name =~ s/\s+/_/g;
 	    my $title = join ("||",$chr, $feat->start, $feat->stop, $name, $feat->strand, $feat->type->name, $feat->id, $count);
-	    my $seq = $feat->genomic_sequence(dsgid=>$dsg);
-	    next unless $seq;
-	    #skip sequences that are only 'x' | 'n';
-	    next unless $seq =~ /[^x|n]/i;
-	    print OUT ">".$title."\n";
-	    print OUT $seq,"\n";
-	    $count++;
+	    if ($type eq "CDS")
+	      {
+		my $seq = $feat->genomic_sequence(dsgid=>$dsg->id);
+		next unless $seq;
+		#skip sequences that are only 'x' | 'n';
+		next unless $seq =~ /^[^x|n]+$/i;
+		print OUT ">".$title."\n";
+		print OUT $seq,"\n";
+		$count++;
+	      }
+	    elsif ($type eq "protein")
+	      {
+		next unless $feat->feature_type_id ==3;
+		my (@seqs) = $feat->protein_sequence(dsgid=>$dsg->id);
+		next unless scalar @seqs;
+		next if scalar @seqs > 1; #didn't find the correct reading frame;
+		next unless $seqs[0] =~ /^[^x]+$/i;
+		$title = ">".$title."\n";
+#		print OUT $title, join ($title, @seqs),"\n";
+		print OUT $title, $seqs[0],"\n";
+		$count++;
+	      }
 	  }
       }
     else
@@ -751,6 +774,7 @@ sub gen_blastdb
     my $dbname = $opts{dbname};
     my $fasta = $opts{fasta};
     my $org_name = $opts{org_name};
+    my $type = $opts{type};
     my $write_log = $opts{write_log} || 0;
     my $blastdb = "$BLASTDBDIR/$dbname";
     my $res = 0;
@@ -763,7 +787,7 @@ sub gen_blastdb
 	print STDERR "detecting $blastdb.running.  Waiting. . .\n";
 	sleep 60;
       }
-    if (-r $blastdb.".nsq")
+    if (-r $blastdb.".nsq" || -r $blastdb.".psq")
       {
 	CoGe::Accessory::Web::write_log("blastdb file for ".$org_name." already exists", $cogeweb->logfile) if $write_log;
 	$res = 1;
@@ -771,7 +795,7 @@ sub gen_blastdb
     else
       {
 	system "touch $blastdb.running"; #track that a blast anlaysis is running for this
-	$res = generate_blast_db(fasta=>$fasta, blastdb=>$blastdb, org=>$org_name, write_log=>$write_log);
+	$res = generate_blast_db(fasta=>$fasta, blastdb=>$blastdb, org=>$org_name, write_log=>$write_log, type=>$type);
 	system "/bin/rm $blastdb.running" if -r "$blastdb.running"; #remove track file
       }
     CoGe::Accessory::Web::write_log("blastdb file: $blastdb", $cogeweb->logfile) if $write_log;
@@ -784,11 +808,14 @@ sub generate_blast_db
   {
     my %opts = @_;
     my $fasta = $opts{fasta};
+    my $type = $opts{type};
+#    exit if $fasta =~ /protein/;
     my $blastdb = $opts{blastdb};
 #    my $title= $opts{title};
     my $org= $opts{org};
     my $write_log = $opts{write_log};
-    my $command = $FORMATDB." -p F";
+    my $command = $FORMATDB;
+    $command.= $type eq "protein" ? " -p T" : " -p F";
     $command .= " -i '$fasta'";
     $command .= " -t '$org'";
     $command .= " -n '$blastdb'";
@@ -1503,6 +1530,7 @@ sub gen_ks_db
     my %opts = @_;
     my $infile = $opts{infile};
     my ($outfile) = $infile =~ /^(.*?CDS-CDS)/;
+    ($outfile) = $infile =~ /^(.*?protein-protein)/ unless $outfile;
     return unless $outfile;
     $outfile .= ".sqlite";
     CoGe::Accessory::Web::write_log("Generating ks data.", $cogeweb->logfile);
@@ -2044,6 +2072,8 @@ sub go
 
     my $feat_type1 = $opts{feat_type1};
     my $feat_type2 = $opts{feat_type2};
+
+
     my $dsgid1 = $opts{dsgid1};
     my $dsgid2 = $opts{dsgid2};
     my $ks_type = $opts{ks_type};
@@ -2122,6 +2152,8 @@ sub go
 
     $feat_type1 = $feat_type1 == 2 ? "genomic" : "CDS";
     $feat_type2 = $feat_type2 == 2 ? "genomic" : "CDS";
+    $feat_type1 = "protein" if $blast == 5 && $feat_type1 eq "CDS"; #blastp time
+    $feat_type2 = "protein" if $blast == 5 && $feat_type2 eq "CDS"; #blastp time
 
     $synmap_link .=";dt=$dagchainer_type"; 
     if ($ks_type)
@@ -2180,7 +2212,7 @@ sub go
       }
     else
       {
-	$blastdb = gen_blastdb(dbname=>"$dsgid2-$feat_type2", fasta=>$fasta2,org_name=>$org_name2);
+	$blastdb = gen_blastdb(dbname=>"$dsgid2-$feat_type2", fasta=>$fasta2,org_name=>$org_name2, type=>$feat_type2);
       }
     #need to convert the blastdb to a fasta file if the algo used is blastz
 
@@ -2789,6 +2821,8 @@ sub get_previous_analyses
 		  }
 	      }
 	    my ($dsgid1, $dsgid2, $type1, $type2) = $file =~ /^(\d+)_(\d+)\.(\w+)-(\w+)/;
+	    $type1 = "CDS" if $type1 eq "protein";
+	    $type2 = "CDS" if $type2 eq "protein";
 	    my ($repeat_filter) = $file =~ /_c(\d+)/; 
 	    next unless ($dsgid1 && $dsgid2 && $type1 && $type2);
 	    my %data = (
