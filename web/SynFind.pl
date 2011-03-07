@@ -919,7 +919,7 @@ sub gen_fasta
     my $write_log = $opts{write_log} || 0;
     my ($org_name, $title);
     ($org_name, $title) = gen_org_name(dsgid=>$dsgid, feat_type=>$feat_type, write_log=>$write_log);
-    my $file = $FASTADIR."/$dsgid-$feat_type.new.fasta";
+    my $file = $FASTADIR."/$dsgid-$feat_type.fasta";
     my $res;
     CoGe::Accessory::Web::write_log("#FASTA#", $cogeweb->logfile) if $write_log;
     while (-e "$file.running")
