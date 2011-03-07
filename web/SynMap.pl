@@ -129,7 +129,7 @@ $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 $FORM = new CGI;
 ($USER) = CoGe::Accessory::LogUser->get_user();
 my %ajax = CoGe::Accessory::Web::ajax_func();
-
+#$ajax{read_log}=\&read_log_test;
 $coge = CoGeX->dbconnect();
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
@@ -147,6 +147,26 @@ my $pj = new CGI::Ajax(
 		      );
 print $pj->build_html($FORM, \&gen_html);
 #print "Content-Type: text/html\n\n";print gen_html($FORM);
+
+
+sub read_log_test
+  {
+    my %args = @_;
+    my $logfile = $args{logfile};
+    my $prog = $args{prog};
+    return unless $logfile;
+    $logfile .= ".log" unless $logfile =~ /log$/;
+    $logfile = $TEMPDIR."/$logfile" unless $logfile =~ /^$TEMPDIR/;
+    return unless -r $logfile;
+    my $str;
+    open (IN, $logfile);
+    while (<IN>)
+      {
+        $str .= $_;
+      }
+    close IN;
+    return $str;
+  }
 
 
 sub gen_html
@@ -234,7 +254,8 @@ sub gen_body
       {
 	my $dsgid = $form->param('dsgid'.$i) || 0;
 	my $feattype_param = $FORM->param('ft'.$i) if $FORM->param('ft'.$i);
-	my $org_menu = gen_org_menu(dsgid=>$dsgid, num=>$i, feattype_param=>$feattype_param);
+	my $name = $FORM->param('name'.$i) if $FORM->param('name'.$i);
+	my $org_menu = gen_org_menu(dsgid=>$dsgid, num=>$i, feattype_param=>$feattype_param, name=>$name);
 	$template->param("ORG_MENU".$i=>$org_menu);
       }
     #set ks for coloring syntenic dots
@@ -821,7 +842,14 @@ sub generate_blast_db
     $command .= " -n '$blastdb'";
    CoGe::Accessory::Web::write_log("creating blastdb for *".$org."* ($blastdb): $command",$cogeweb->logfile) if $write_log;
     `$command`;
-    return 1 if -r "$blastdb.nsq";
+    if ($type eq "protein")
+      {
+	return 1 if -r $blastdb.".psq";
+      }
+    else 
+      {
+	return 1 if -r "$blastdb.nsq";
+      }
    CoGe::Accessory::Web::write_log("error creating blastdb for $org ($blastdb)",$cogeweb->logfile) if $write_log;
     return 0;
   }
