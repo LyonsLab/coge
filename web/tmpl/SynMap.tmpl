@@ -42,10 +42,25 @@ function get_dataset_group_info_chain(i)
  ajax_wait("get_dataset_group_info(['args__dsgid','dsgid"+i+"','args__org_num','args__"+i+"'],['dsg_info"+i+"','feattype_menu"+i+"','genome_message"+i+"']);");
 }
 
-	
+function rand ()
+{
+  return ( Math.floor ( Math.random ( ) * 99999999 + 1 ) );
+}
+
+function populate_page_obj(basefile)
+ {
+  if (!basefile) {basefile = "SynMap_"+rand(); }
+  pageObj.basename = basefile;
+  pageObj.nolog = 0;
+  pageObj.waittime = 1000;
+ }
+
+
+
 
 function run_synmap(){
- generate_basefile([],[update_basename]);   
+//  generate_basefile([],[update_basename]);   
+populate_page_obj(); 
  if(!pageObj.basename) 
   {
   	setTimeout("run_synmap()", 100);
@@ -58,12 +73,12 @@ function run_synmap(){
   }
  else
   {
-   jQuery('html, body').animate({scrollTop: 0}, 2000); 
-   reset_basename();
+   jQuery('html, body').animate({scrollTop: 0}, 1000); 
    $('#results').hide(0);  	
+   $('#log_text').html('Beginning run...');
    $('#log_text').show(0);
    pageObj.nolog=1;
-   setTimeout("monitor_log()", 5000);
+   setTimeout("read_log(['args__logfile', 'args__'+pageObj.basename, 'args__prog','args__SynMap'], [monitor_log])",pageObj.waittime);
    go(['args__c','c','args__D','D','args__g','g','args__A','A','args__gm','gm','args__Dm','Dm','args__blast','blast', 'args__feat_type1','feat_type1', 'args__feat_type2','feat_type2','args__dsgid1','dsgid1', 'args__dsgid2','dsgid2','args__jobtitle','jobtitle','args__basename','args__'+pageObj.basename,'args__email','email','args__regen_images','args__'+$('#regen_images')[0].checked, 'args__width', 'args__'+$('#master_width').val(), 'args__dagchainer_type','args__'+$('#dagchainer_type')[0].checked, 'args__ks_type','ks_type', 'args__assemble','args__'+$('#assemble')[0].checked, 'args__axis_metric','axis_metric', 'args__min_chr_size', 'min_chr_size', 'args__show_non_syn','args__'+$('#show_non_syn')[0].checked, 'args__color_type','color_type', 'args__box_diags', 'args__'+$('#box_diags')[0].checked, 'args__merge_algo','merge_algo', 'args__depth_algo', 'depth_algo', 'args__depth_org_1_ratio', 'depth_org_1_ratio', 'args__depth_org_2_ratio', 'depth_org_2_ratio', 'args__depth_overlap', 'depth_overlap', 'args__fid1','args__'+pageObj.fid1, 'args__fid2','args__'+pageObj.fid2, 'args__show_non_syn_dots','args__'+$('#show_non_syn_dots')[0].checked,'args__flip','args__'+$('#flip')[0].checked,'args__clabel','args__'+$('#clabel')[0].checked,'args__color_scheme','color_scheme', 'args__chr_sort_order','chr_sort_order'],[handle_results] );
  }
 }
@@ -245,7 +260,7 @@ $(document).ready(function(){
     <TMPL_VAR NAME=DISPLAY_DAGCHAINER_SETTINGS>
  var autogo = <TMPL_VAR NAME=AUTOGO>;
  if (autogo) {
-    generate_basefile([],[update_basename]);
+//    generate_basefile([],[update_basename]);
     run_synmap();
     }
  if ($('#assemble')[0].checked)
@@ -340,7 +355,8 @@ function reset_basename(){
 }
  function monitor_log(log)
 {
-
+//  console.log(log);
+  pageObj.waittime=pageObj.waittime*1.25;
   var fasta = 0;
   var blast = 0;
   var blastdb = 0;
@@ -394,7 +410,7 @@ function reset_basename(){
   if(log.match(/Generating ks data/i)) {
   	ks = "Calculating synonymous changes (may take a while) . . . ";
         results = 0;
-  	pageObj.finished = 1;
+  	pageObj.finished = 0;
   }
   if(ks && log.match(/Completed generating ks data/i)) {
   	ks += "done!<br/>";
@@ -418,7 +434,11 @@ function reset_basename(){
   if (ks) message += ks;
   if (results) message += results;
   
-  if (!pageObj.finished && pageObj.nolog<8) {setTimeout("read_log(['args__logfile', 'args__'+pageObj.basename, 'args__prog','args__SynMap'], [monitor_log])",5000);}
+  if (!pageObj.finished && pageObj.nolog<8) {
+    var waittime = pageObj.waittime;
+    message+="<br/><br/>Next progress check in "+Math.floor(waittime/1000)+" seconds.";
+    setTimeout("read_log(['args__logfile', 'args__'+pageObj.basename, 'args__prog','args__SynMap'], [monitor_log])",pageObj.waittime);
+  }
   
   if (message) $('#log_text').html(message);
 }
