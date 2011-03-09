@@ -259,8 +259,6 @@ accn: foreach my $accn (@accns)
 	print "Processing features for ".$entry->accession."...\n" unless $EXIT;
 	foreach my $feature (@{$entry->features()})
 	  {
-	    sleep 0.1; #need to put the brakes on for our db on RAID5
-	    # search the db for that feature
 	    unless ($feature->type())
 	      {
 		print "Feature has no feature type name \$feature->type():\n";
@@ -505,6 +503,7 @@ accn: foreach my $accn (@accns)
 	print "Deleting genbank src file: ".$genbank->srcfile."\n";
 	my $cmd = "rm ".$genbank->srcfile;
 	`$cmd`;
+	`rm /tmp/gb/*`;
       }
   }
 #need to add previous datasets if new dataset was added with a new dataset group
