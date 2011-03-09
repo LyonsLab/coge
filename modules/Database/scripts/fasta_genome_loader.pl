@@ -11,7 +11,7 @@ use File::Path;
 use vars qw($DEBUG $coge $GENOMIC_SEQ_LEN $GO $ERASE);
 
 
-my ($nt_file, $nt_dir, $org_name, $org_desc, $org_id, $org_restricted, $source_name, $source_desc, $source_link, $source_id, $ds_name, $ds_desc, $ds_link, $ds_version, $ds_id, $chr, $seq_type_name, $seq_type_desc, $seq_type_id, $chr_basename, $add_chr_name, $use_fasta_header, $dsg_name, $dsg_desc, $dsg_version, $dsg_id);
+my ($nt_file, $nt_dir, $org_name, $org_desc, $org_id, $org_restricted, $source_name, $source_desc, $source_link, $source_id, $ds_name, $ds_desc, $ds_link, $ds_version, $ds_id, $chr, $seq_type_name, $seq_type_desc, $seq_type_id, $chr_basename, $add_chr_name, $use_fasta_header, $dsg_name, $dsg_desc, $dsg_version, $dsg_id, $dsg_restricted);
 
 ##Example usage:
 #./fasta_genome_loader.pl -org_name "Allenigales" -source_id 24 -ds_name oldsuper2.fasta -ds_version 2 -use_fasta_header -nt ~/projects/genome/data/Selaginella_moellendorffii/pre-v2/oldsuper2.fasta
@@ -39,6 +39,7 @@ GetOptions ( "debug=s" => \$DEBUG,
 	     "dsg_desc=s" => \$dsg_desc,
 	     "dsg_version=s" => \$dsg_version,
 	     "dsg_id=s"=>\$dsg_id,
+	     "dsg_restricted=i"=>\$dsg_restricted,
 
 	     "chr=s"=>\$chr,
 	     "seq_type_name=s" => \$seq_type_name,
@@ -51,6 +52,7 @@ GetOptions ( "debug=s" => \$DEBUG,
 
 $DEBUG = 1 unless defined $DEBUG; # set to '1' to get updates on what's going on
 $GO = 1 unless defined $GO; #set to 1 to actually make db calls.
+$ds_name = $nt_file unless $ds_name;
 print STDERR "Running $0\n";
 
 my $formatdb =  "/usr/bin/formatdb -p F -o T"; #path to blast's formatdb program
@@ -122,6 +124,7 @@ my $dsg = generate_dsg(name=>$dsg_name,
 		       dsg_id=>$dsg_id,
 		       org_id=>$org_id,
 		       gst_id=>$seq_type_id,
+		       dsg_restricted=>$dsg_restricted,
 		       );
 #link dataset and dataset_group
 
@@ -339,12 +342,14 @@ sub generate_dsg
     my $org_id = $opts{org_id};
     my $gst_id = $opts{gst_id};
     my $dsg_id = $opts{dsg_id};
+    my $dsg_restricted = $opts{dsg_restricted} || 0;
     my $dsg = $dsg_id ? $coge->resultset('DatasetGroup')->find($dsg_id) : 
       $coge->resultset('DatasetGroup')->create({name=>$name,
 						description=>$desc,
 						version=>$version,
 						organism_id=>$org_id,
 						genomic_sequence_type_id=>$gst_id,
+						restricted=>$dsg_restricted,
 					       }) if $GO;
     return unless $dsg;
     unless ($dsg->file_path)
