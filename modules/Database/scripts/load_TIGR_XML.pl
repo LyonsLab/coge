@@ -70,8 +70,8 @@ unless ($dataset_version)
 
 show_help() if $help; 
 
-my $connstr = 'dbi:mysql:dbname=coge;host=biocon;port=3306';
-$coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
+my $connstr = 'dbi:mysql:dbname=coge;host=localhost;port=3306';
+$coge = CoGeX->connect($connstr, 'elyons', 'eagle7' );
 
 my $data_source = get_data_source(name=>$data_source_name, desc=>$data_source_desc, link=>$data_source_link, id=>$data_source_id);
 
@@ -79,7 +79,7 @@ my $data_source = get_data_source(name=>$data_source_name, desc=>$data_source_de
 #    $organism = get_organism() unless $organism;
 
 my $dsg; #storage for coge dataset group object
-$dsg= generate_dsg(version=>$dataset_version, org_id=>$org_id, gst_id=>1);
+$dsg = generate_dsg(version=>$dataset_version, org_id=>$org_id, gst_id=>1);
 
 my @files = process_dir($dir) if $dir;
 push @files, $file if $file;
