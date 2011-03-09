@@ -3117,6 +3117,8 @@ sub gzip
       my $file = shift;
       return $file unless $file;
       return $file if $file =~ /\.gz$/;
+      return $file unless -r $file;
+      return $file.".gz" unless -r $file.".gz";
       return $file.".gz" if -r "$file.gz";
       `$GZIP $file` if -r $file;
       my $tmp = $file.".gz";
@@ -3127,6 +3129,7 @@ sub gunzip
     {
       my $file = shift;
       return $file unless $file;
+      return $file unless -r $file;
       return $file unless $file =~ /\.gz$/;
       `$GUNZIP $file` if -r $file;
       my $tmp = $file;
