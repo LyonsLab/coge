@@ -1505,6 +1505,8 @@ sub generate_grimm_input
   {
     my %opts = @_;
     my $infile = $opts{infile};
+    gunzip($infile.".gz") if -r $infile.".gz";
+    gunzip($infile.".qa.gz") if -r $infile.".qa.gz";
     my $cmd = $CLUSTER_UTILS." --format=dag --log_evalue $infile $infile.qa";
    CoGe::Accessory::Web::write_log("Converting dag output to quota_align format: $cmd", $cogeweb->logfile);
     `$cmd`;
@@ -2678,12 +2680,13 @@ sub go
 
 	    if ($final_dagchainer_file=~/gcoords/)
 	      {
-		my $tmp= $final_dagchainer_file;
-		$tmp =~ s/$DIR/$URL/;
-		$tmp =~ s/\.gcoords//;
+#		print STDERR $final_dagchainer_file,"\n";
+#		my $tmp= $final_dagchainer_file;
+		$final_dagchainer_file =~ s/$DIR/$URL/;
+#		$tmp =~ s/\.gcoords//;
 		
 #		$html .= qq{<br><span class='small link' onclick=window.open('$tmp')>DAGChainer output in gene coordinates</span>};
-		$html .= qq{<br><span class='small link' onclick=window.open('$tmp.gcoords')>DAGChainer output in genomic coordinates</span>};
+		$html .= qq{<br><span class='small link' onclick=window.open('$final_dagchainer_file')>DAGChainer output in genomic coordinates</span>};
 #		$html .= qq{<span class='small link' onclick=window.open('$post_dagchainer_file_w_nearby')>Results converted back to genomic coordinates</span>};
 	      }
 	    
@@ -3116,10 +3119,9 @@ sub gzip
     {
       my $file = shift;
       return $file unless $file;
-      return $file if $file =~ /\.gz$/;
-      return $file unless -r $file;
-      return $file.".gz" unless -r $file.".gz";
       return $file.".gz" if -r "$file.gz";
+      return $file unless -r $file;
+      return $file if $file =~ /\.gz$/;
       `$GZIP $file` if -r $file;
       my $tmp = $file.".gz";
       return -r $tmp ? $tmp : $file;
