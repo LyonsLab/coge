@@ -2669,9 +2669,6 @@ sub go
 #		$post_dagchainer_file_w_nearby =~ s/$DIR/$URL/;
 #		$html .= qq{<span class='small link' onclick=window.open('$post_dagchainer_file_w_nearby')>Results with nearby genes added</span>};
 #	      }
-
-	    $dagchainer_file =~ s/$DIR/$URL/;
-	    $html .= "<br><span class='small link' onclick=window.open('$dagchainer_file')>DAGChainer syntelog file</span>";
 	    if ($quota_align_coverage && -r $quota_align_coverage)
 	      {
 		$quota_align_coverage =~ s/$DIR/$URL/;
