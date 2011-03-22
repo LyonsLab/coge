@@ -11,7 +11,7 @@ use File::Path;
 use vars qw($DEBUG $coge $GENOMIC_SEQ_LEN $GO $ERASE);
 
 
-my ($nt_file, $nt_dir, $org_name, $org_desc, $org_id, $org_restricted, $source_name, $source_desc, $source_link, $source_id, $ds_name, $ds_desc, $ds_link, $ds_version, $ds_id, $chr, $seq_type_name, $seq_type_desc, $seq_type_id, $chr_basename, $add_chr_name, $use_fasta_header, $dsg_name, $dsg_desc, $dsg_version, $dsg_id, $dsg_restricted);
+my ($nt_file, $nt_dir, $org_name, $org_desc, $org_id, $org_restricted, $source_name, $source_desc, $source_link, $source_id, $ds_name, $ds_desc, $ds_link, $ds_version, $ds_id, $chr, $seq_type_name, $seq_type_desc, $seq_type_id, $chr_basename, $add_chr_name, $use_fasta_header, $dsg_name, $dsg_desc, $dsg_version, $dsg_id, $restricted);
 
 ##Example usage:
 #./fasta_genome_loader.pl -org_name "Allenigales" -source_id 24 -ds_name oldsuper2.fasta -ds_version 2 -use_fasta_header -nt ~/projects/genome/data/Selaginella_moellendorffii/pre-v2/oldsuper2.fasta
@@ -39,7 +39,7 @@ GetOptions ( "debug=s" => \$DEBUG,
 	     "dsg_desc=s" => \$dsg_desc,
 	     "dsg_version=s" => \$dsg_version,
 	     "dsg_id=s"=>\$dsg_id,
-	     "dsg_restricted=i"=>\$dsg_restricted,
+	     "restricted=i"=>\$restricted,
 
 	     "chr=s"=>\$chr,
 	     "seq_type_name=s" => \$seq_type_name,
@@ -108,6 +108,7 @@ my $ds = generate_ds(ds_name => $ds_name,
 		     ds_version => $ds_version,
 		     ds_id =>$ds_id,
 		     source_id=>$source_id,
+		     restricted=>$restricted,
 		    );
 
 unless ($ds)
@@ -124,7 +125,7 @@ my $dsg = generate_dsg(name=>$dsg_name,
 		       dsg_id=>$dsg_id,
 		       org_id=>$org_id,
 		       gst_id=>$seq_type_id,
-		       dsg_restricted=>$dsg_restricted,
+		       restricted=>$restricted,
 		       );
 #link dataset and dataset_group
 
@@ -316,6 +317,7 @@ sub generate_ds
     my $ds_version = $opts{ds_version};
     my $ds_id = $opts{ds_id};
     my $source_id = $opts{source_id};
+    my $restriced = $opts{restricted};
     unless ($ds_name || $ds_id)
       {
 	warn "no dataset name or database id specified\n";
@@ -327,6 +329,7 @@ sub generate_ds
 					   description         => $ds_desc,
 					   link                => $ds_link, 
 					   data_source_id      => $source_id,
+					   restricted          => $restricted,
 					   version=>$ds_version,
 					  })  if $GO;
     return $ds;
@@ -342,14 +345,14 @@ sub generate_dsg
     my $org_id = $opts{org_id};
     my $gst_id = $opts{gst_id};
     my $dsg_id = $opts{dsg_id};
-    my $dsg_restricted = $opts{dsg_restricted} || 0;
+    my $restricted = $opts{restricted} || 0;
     my $dsg = $dsg_id ? $coge->resultset('DatasetGroup')->find($dsg_id) : 
       $coge->resultset('DatasetGroup')->create({name=>$name,
 						description=>$desc,
 						version=>$version,
 						organism_id=>$org_id,
 						genomic_sequence_type_id=>$gst_id,
-						restricted=>$dsg_restricted,
+						restricted=>$restricted,
 					       }) if $GO;
     return unless $dsg;
     unless ($dsg->file_path)
