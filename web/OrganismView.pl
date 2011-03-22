@@ -364,7 +364,7 @@ sub get_dataset_group_info
     $html .= qq{<tr><td>Sequence type: <td>}.$dsg->genomic_sequence_type->name.qq{ (gstid$gstid)<input type=hidden id=gstid value=}.$gstid.qq{></td></tr>};
     $html .= qq{<tr><td>Length: </td>};
     $html .= qq{<td><div style="float: left;"> }.commify($total_length)." bp </div>";
-    my $gc = $total_length < 10000000? get_gc_for_chromosome(dsgid=>$dsgid): 0;
+    my $gc = $total_length < 10000000 && $chr_num < 500 ? get_gc_for_chromosome(dsgid=>$dsgid): 0;
     $gc = $gc ? $gc : qq{  <div style="float: left; text-indent: 1em;" id=datasetgroup_gc class="link" onclick="\$('#datasetgroup_gc').removeClass('link'); get_gc_for_chromosome(['args__dsgid','dsg_id','args__gstid', 'gstid'],['datasetgroup_gc']);">  Click for percent GC content</div><br/>};
     $html .= "$gc</td></tr>";
 
@@ -513,8 +513,10 @@ sub get_dataset_info
       $html2 .= qq{<input type="hidden" id="chr" value="">};
       $html2 .= "<tr><td>No chromosomes";
     }
+    my $chr_num = scalar @chr;
+    $html .= "<tr><td>Chromosome count:<td><div style=\"float: left;\">".commify($chr_num);
     $html .= "<tr><td>Total length:<td><div style=\"float: left;\">".commify($length)." bp ";
-    my $gc = $length < 10000000? get_gc_for_chromosome(dsid=>$ds->id): 0;
+    my $gc = $length < 10000000 && $chr_num < 500 ? get_gc_for_chromosome(dsid=>$ds->id): 0;
     $gc = $gc ? $gc : qq{  </div><div style="float: left; text-indent: 1em;" id=dataset_gc class="link" onclick="\$('#dataset_gc').removeClass('link'); get_gc_for_chromosome(['args__dsid','ds_id','args__gstid', 'gstid'],['dataset_gc']);">  Click for percent GC content</div>} if $length;
     $html .= $gc if $gc;
     $html .= qq{<tr><td>Links:</td>};
