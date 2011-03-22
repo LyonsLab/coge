@@ -4,7 +4,7 @@ use CoGeX;
 
 my $connstr = 'dbi:mysql:dbname=coge;host=biocon.berkeley.edu;port=3306';
 my $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
-my $GO =1;
+my $GO =0;
 my $dsid = shift;
 unless ($dsid)
   {
