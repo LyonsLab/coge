@@ -35,29 +35,30 @@ $FID = $FORM->param('fid');
 $coge = CoGeX->dbconnect();
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
-my $pj = new CGI::Ajax(
-		       db_lookup=>\&db_lookup,
-		       source_search=>\&get_data_source_info_for_accn,
-		       get_types=>\&get_types,
-		       cogesearch=>\&cogesearch,
-		       cogesearch_featids=>\&cogesearch_featids,
-		       get_anno=>\&get_anno,
-		       show_express=>\&show_express,
-		       gen_data=>\&gen_data,
-		       get_feature_types=>\&get_feature_types,
-		       codon_table=>\&codon_table,
-		       protein_table=>\&protein_table,
-		       gc_content=>\&gc_content,
-		       update_featlist=>\&update_featlist,
-		       parse_for_FeatList=>\&parse_for_FeatList,
-		       get_orgs=>\&get_orgs,
-		       codon_aa_alignment=>\&codon_aa_alignment,
-		      );
+my %FUNCTION = (
+		db_lookup=>\&db_lookup,
+		source_search=>\&get_data_source_info_for_accn,
+		get_types=>\&get_types,
+		cogesearch=>\&cogesearch,
+		cogesearch_featids=>\&cogesearch_featids,
+		get_anno=>\&get_anno,
+		show_express=>\&show_express,
+		gen_data=>\&gen_data,
+		get_feature_types=>\&get_feature_types,
+		codon_table=>\&codon_table,
+		protein_table=>\&protein_table,
+		gc_content=>\&gc_content,
+		update_featlist=>\&update_featlist,
+		parse_for_FeatList=>\&parse_for_FeatList,
+		get_orgs=>\&get_orgs,
+		codon_aa_alignment=>\&codon_aa_alignment,
+		);
+my $pj = new CGI::Ajax(%FUNCTION);
 $pj->JSDEBUG(0);
 $pj->DEBUG(0);
-$pj->js_encode_function('escape');
+#$pj->js_encode_function('escape');
 print $pj->build_html($FORM, \&gen_html);
-#print $FORM->header, gen_html();
+#print $FORM->header, "HERE!\n",gen_html();
 
 
 
@@ -407,30 +408,24 @@ sub show_express
 sub gen_html
   {
     my $html;
-    unless ($USER)
-      {
-	$html = login();
-      }
-    else
-      {
-	my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
-	$template->param(LOGO_PNG=>"FeatView-logo.png");
-#$template->param(TITLE=>'Feature Viewer');
-	$template->param(PAGE_TITLE=>'FeatView');
-	$template->param(HELP=>"/wiki/index.php?title=FeatView");
-	my $name = $USER->user_name;
-        $name = $USER->first_name if $USER->first_name;
-        $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
-        $template->param(USER=>$name);
-
-	$template->param(LOGON=>1) unless $USER->user_name eq "public";
-	$template->param(DATE=>$DATE);
-	$template->param(BOX_NAME=>"Feature Selection");
-        my $body = gen_body();
-	$template->param(BODY=>$body);
-#	$template->param(ADJUST_BOX=>1);
-	$html .= $template->output;
-      }
+    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
+    $template->param(LOGO_PNG=>"FeatView-logo.png");
+    #$template->param(TITLE=>'Feature Viewer');
+    $template->param(PAGE_TITLE=>'FeatView');
+    $template->param(HELP=>"/wiki/index.php?title=FeatView");
+    my $name = $USER->user_name;
+    $name = $USER->first_name if $USER->first_name;
+    $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
+    $template->param(USER=>$name);
+    
+    $template->param(LOGON=>1) unless $USER->user_name eq "public";
+    $template->param(DATE=>$DATE);
+    $template->param(BOX_NAME=>"Feature Selection");
+    my $body = gen_body();
+    $template->param(BODY=>$body);
+    #	$template->param(ADJUST_BOX=>1);
+    $html .= $template->output;
+#    print STDERR $html;
     return $html;
     }
 
