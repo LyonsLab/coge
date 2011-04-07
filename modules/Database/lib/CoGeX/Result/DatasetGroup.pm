@@ -268,7 +268,7 @@ $file does not exist for get_seq to extract sequence.
 Going to retrieve sequence from $url
 ##############
 }; #change warning to state that sequence is being retrieved remotely from the kingdom of CoGe.
-	    if ($ENV{SERVER_NAME} && $ENV{SERVER_NAME} eq "synteny.cnr.berkeley.edu")
+	    if ($ENV{SERVER_NAME} && ($ENV{SERVER_NAME} eq "synteny.cnr.berkeley.edu" || $ENV{SERVER_NAME} eq "genomevolution.org") )
 	      {
 		warn qq{
 ##############
