@@ -45,11 +45,11 @@ my @skipped; #array to hold commands that had skipped reloading.  Will be printe
 my $base_url = "http://www.ncbi.nlm.nih.gov/genomes/genlist.cgi?";
 #taxid type
 my @taxids =(
-#	     [2157, 9], #archaea, get WGS
-#	     [2,    9], #bacteria, get WGS
-#	     [2759, 0], #euks, not ready for WGS -- lots of data with minimal annotations.  Will get there though!
-#	     [10239,9], #viruses, phages, 
-#	     [12884,9], #viroids
+	     [2157, 9], #archaea, get WGS
+	     [2,    9], #bacteria, get WGS
+	     [2759, 9], #euks, not ready for WGS -- lots of data with minimal annotations.  Will get there though!
+	     [10239,9], #viruses, phages, 
+	     [12884,9], #viroids
 	    );
 
 my $pm = new Parallel::ForkManager($forks);
@@ -57,7 +57,7 @@ foreach my $item (@taxids)
   {
     my ($id, $type) = @$item;
     my $url = $base_url."type=$type"."&taxid=$id";
-    print "Fetching $url\n";
+    print "Fetching NCBI Genomes List from HTTP: $url\n";
     my $content =get($url);
     my @tables = split /<\/table>/, $content;
     my @rows = split /<tr>/,$tables[8];
@@ -97,7 +97,7 @@ foreach my $item (@taxids)
 	  }
       }
   }
-my $genomes = get_NCBI_genomes();
+#my $genomes = get_NCBI_genomes();
 
 if (@skipped)
   {
@@ -257,6 +257,8 @@ sub get_NCBI_genomes
 #	last if $i == 2000;
 	my $gpid = $1;
 	print "working on $gpid\n";
+	print get("http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=genomeprj&retmode=text&complexity=0&id=$gpid");
+	
 	my $gids = get_genomes_for_genomeprj($gpid); #metagenomes, etc won't have genomes. . . 
 	my @gids;
 	foreach my $gid (@$gids)
@@ -279,7 +281,8 @@ sub get_NCBI_genomes
 	  }
 	else
 	  {
-	    next;
+#	    next;
+	    $gpid = 38683;
 	    my $ncids = get_nuccore_for_genome_project($gpid);
 	    unless (@$ncids)
 	      {
