@@ -437,6 +437,7 @@ sub gen_dsg_menu
 	my $has_cds;
 	if ($USER->user_name =~ /public/i && $dsg->restricted)
 	  {
+	    next unless $dsgid && $dsg->id == $dsgid;
 	    $name = "Restricted";
 	  }
 	else
@@ -2879,9 +2880,11 @@ sub get_previous_analyses
 	    my $geneorder = $file =~ /\.go/;
 	    my $dsg1 = $coge->resultset('DatasetGroup')->find($dsgid1);
 	    next unless $dsg1;
+	    next if ($USER->user_name =~ /public/i && $dsg1->restricted);
 	    my ($ds1) = $dsg1->datasets;
 	    my $dsg2 = $coge->resultset('DatasetGroup')->find($dsgid2);
 	    next unless $dsg2;
+	    next if ($USER->user_name =~ /public/i && $dsg2->restricted);
 	    my ($ds2) = $dsg2->datasets;
 	    $data{dsg1}=$dsg1;
 	    $data{dsg2}=$dsg2;
