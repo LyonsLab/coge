@@ -433,24 +433,30 @@ sub gen_dsg_menu
     my $org_name;
     foreach my $dsg ($coge->resultset('DatasetGroup')->search({organism_id=>$oid},{prefetch=>['genomic_sequence_type']}))
       {
-	next if $USER->user_name =~ /public/i && $dsg->restricted;
 	my $name;
-	$name .= $dsg->name.": " if $dsg->name;
-	$name .= $dsg->type->name." (v".$dsg->version.",id".$dsg->id.")";
-	$org_name = $dsg->organism->name unless $org_name;
 	my $has_cds;
-	foreach my $ft ($coge->resultset('FeatureType')->search(
-								{
-								 dataset_group_id=>$dsg->id,
-								 'me.feature_type_id'=>3},
-								{
-								 join =>{features=>{dataset=>'dataset_connectors'}},
-								 rows=>1,
-								}
-							       )
-		       )
+	if ($USER->user_name =~ /public/i && $dsg->restricted)
 	  {
-	    $has_cds = 1;
+	    $name = "Restricted";
+	  }
+	else
+	  {
+	    $name .= $dsg->name.": " if $dsg->name;
+	    $name .= $dsg->type->name." (v".$dsg->version.",id".$dsg->id.")";
+	    $org_name = $dsg->organism->name unless $org_name;
+	    foreach my $ft ($coge->resultset('FeatureType')->search(
+								    {
+								     dataset_group_id=>$dsg->id,
+								     'me.feature_type_id'=>3},
+								    {
+								     join =>{features=>{dataset=>'dataset_connectors'}},
+								     rows=>1,
+								    }
+								   )
+			   )
+	      {
+		$has_cds = 1;
+	      }
 	  }
 	push @dsg_menu, [$dsg->id, $name, $dsg, $has_cds];
 
@@ -464,6 +470,7 @@ sub gen_dsg_menu
 	my ($numt, $name) = @$_;
 	my $selected = " selected" if $dsgid && $numt == $dsgid;
 	$selected = " " unless $selected;
+	$numt = 0 if $name eq "Restricted";
 	$dsg_menu .= qq{
    <OPTION VALUE=$numt $selected>$name</option>
 };
@@ -566,7 +573,6 @@ sub get_dataset_group_info
     my ($dsg) = $coge->resultset("DatasetGroup")->find({dataset_group_id=>$dsgid},{join=>['organism','genomic_sequences'],prefetch=>['organism','genomic_sequences']});
     return " "," "," " unless $dsg;
     my $org = $dsg->organism;
-#    next if $USER->user_name =~ /public/i && $org->restricted;
     my $orgname = $org->name;
     $orgname = "<a href=\"OrganismView.pl?oid=".$org->id."\" target=_new>$orgname</a>";
     my $org_desc;
@@ -596,6 +602,10 @@ sub get_dataset_group_info
     $html_dsg_info .= "<tr><td>Contains contigs" if $contig;
     $html_dsg_info .= "<tr><td>Contains scaffolds" if $scaffold;
     $html_dsg_info .= "</table>";
+    if ($USER->user_name =~ /public/i && $dsg->restricted)
+      {
+	$html_dsg_info = "Restricted";
+      }
     my $t2 = new Benchmark;
     my $time = timestr(timediff($t2,$t1));
 #    print STDERR qq{
