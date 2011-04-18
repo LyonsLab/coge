@@ -557,6 +557,8 @@ sub run
 	$drdown += $pad_gs;
 	my $pos = $opts{"pos$i"};
 	my $gbaccn = $opts{"gbaccn$i"};
+	$gbaccn =~ s/^\s+//g;
+	$gbaccn =~ s/\s+$//g;
 	my $gbstart = $opts{"gbstart$i"};
 	$gbstart = 1 unless defined $gbstart;
 	my $gblength = $opts{"gblength$i"};
@@ -652,6 +654,8 @@ sub run
 	    my $got = 0;
 	    my $try = 0;
 	    my ($tmp) = $gbaccn =~/(.*)/;
+	    $tmp =~ s/^\s+//;
+	    $tmp =~ s/\s+$//;
 	    my $gbfile = $TEMPDIR."/".uc($tmp).".gbk";
 	    $obj = new CoGe::Accessory::GenBank;
 	    while (!$got && $try < 5)
