@@ -930,7 +930,7 @@ SELECT feature_id
 	    my @lettered;
 	    foreach my $chr (keys %data)
 	      {
-		if ($chr =~ /^\d+$/)
+		if ($chr =~ /^\d+/)
 		  {
 		    push @numbered, $chr;
 		  }
@@ -939,7 +939,7 @@ SELECT feature_id
 		    push @lettered, $chr;
 		  }
 	      }
-	    @ordered = ( (sort {$a <=> $b } @numbered), (sort { $a cmp $b } @lettered));
+	    @ordered = ( (sort {chr_sort($a) <=> chr_sort($b) } @numbered), (sort { $a cmp $b } @lettered));
 	  }
 	elsif ($chr_sort_order =~ /^s/i) #sorting by size
 	  {
@@ -956,6 +956,15 @@ SELECT feature_id
     return \%data;
   }
 
+sub chr_sort
+    {
+      my $item = shift;
+      if ($item =~ /^(\d+[\.,]?\d*)(.*)/)
+	{
+	  return $1.".".ord ($2);
+	}
+      return $item;
+    }
 
 #this sub is used to try to get a build order of contigs for WGS data against a reference genome
 #given a set of scaffolds, it will order them such that make an ordered syntenic path along the reference genome
