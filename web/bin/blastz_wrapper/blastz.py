@@ -61,14 +61,14 @@ def lastz(k, n, bfasta_fn, out_fh, lock, lastz_path, extra):
 
     proc = Popen(lastz_cmd, bufsize=1, stdout=PIPE, shell=True)
 
-    logging.debug("job <%d> started: %s" % (proc.pid, lastz_cmd))
+    #logging.debug("job <%d> started: %s" % (proc.pid, lastz_cmd))
     for row in proc.stdout:
         brow = lastz_to_blast(row)
         lock.acquire()
         print >>out_fh, brow
         out_fh.flush()
         lock.release()
-    logging.debug("job <%d> finished" % proc.pid)
+    #logging.debug("job <%d> finished" % proc.pid)
 
 
 def main(options, afasta_fn, bfasta_fn, out_fh, extra):
@@ -77,7 +77,7 @@ def main(options, afasta_fn, bfasta_fn, out_fh, extra):
     # split on query so check query fasta sequence number
     afasta_num = sum(1 for x in open(afasta_fn) if x[0]=='>')
     cpus = min(options.cpus, cpu_count(), afasta_num)
-    logging.debug("Dispatch job to %d cpus" % cpus)
+    #logging.debug("Dispatch job to %d cpus" % cpus)
 
     processes = []
     lock = Lock()
