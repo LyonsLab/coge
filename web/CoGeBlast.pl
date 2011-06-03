@@ -513,7 +513,7 @@ sub blast_search
     my $expect = $opts{expect};
     my $job_title = $opts{job_title};
     my $wordsize = $opts{wordsize};
-    $wordsize=11 if $program eq "blastn";
+#    $wordsize=11 if $program eq "blastn";
     my $comp = $opts{comp};
     my $matrix = $opts{matrix};
     my $gapcost = $opts{gapcost};
