@@ -5,6 +5,7 @@ use GD;
 use Getopt::Long;
 use CoGeX;
 use CoGe::Accessory::Web;
+use CoGe::Accessory::SynMap_report;
 use DBI;
 use Data::Dumper;
 use DBI;
@@ -79,10 +80,10 @@ $basename = "test" unless $basename;
 $width = 1024 unless $width;
 
 $coge = CoGeX->dbconnect();
+my $synmap_report = new CoGe::Accessory::SynMap_report;
 
 
-
-my ($org1_order, $org2_order) = parse_syn_blocks(file=>$alignfile) if $assemble;
+my ($org1_order, $org2_order) = $synmap_report->parse_syn_blocks(file=>$alignfile) if $assemble;
 
 my $skip_non_ordered = $assemble && $assemble == 2 ? 1 : 0;
 my $org1info = get_dsg_info(dsgid=>$dsgid1, chr=>$CHR1, minsize=>$min_chr_size, order=>$org1_order, metric=>$axis_metric, skip_non_ordered=>$skip_non_ordered, chr_sort_order=>$chr_sort_order);
@@ -909,7 +910,6 @@ SELECT feature_id
 	  }
 	foreach my $chr (@chr)
 	  {
-	    print STDERR $chr,"\n";
 	    next if $seen{$chr};
 	    if ($skip_non_ordered)
 	      {
@@ -965,171 +965,6 @@ sub chr_sort
 	}
       return $item;
     }
-
-#this sub is used to try to get a build order of contigs for WGS data against a reference genome
-#given a set of scaffolds, it will order them such that make an ordered syntenic path along the reference genome
-sub parse_syn_blocks
-  {
-    my %opts = @_;
-    my $file = $opts{file};
-    my $blocks1=[];
-    my $blocks2=[];
-    open (IN, $file) || die "Can't open $file for reading: $!";
-    $/ = "\n#";
-    while (<IN>) #get blocks
-      {
-	next unless $_;
-	s/#//g;
-	my ($block1, $block2) = process_syn_block($_);
-	push @$blocks1 , $block1;
-	push @$blocks2 , $block2;
-      }
-    close IN;
-    $/="\n";
-    #which organism has more pieces (aka chromosomes, contigs, etc.)  we are going to assemble the one with more pieces
-#    print Dumper \@blocks;
-    my $chrs1={};
-    my $chrs2={};
-    my $chrs1_scores={};
-    my $chrs2_scores={};
-    foreach my $item (@$blocks1)
-      {
-	$chrs1->{$item->{name}}{$item->{match}}{count}++;
-	$chrs1->{$item->{name}}{$item->{match}}{score}+=$item->{score};
-	$chrs1_scores->{$item->{name}}+=$item->{score};
-      }
-    foreach my $item (@$blocks2)
-      {
-	$chrs2->{$item->{name}}{$item->{match}}{count}++;
-	$chrs2->{$item->{name}}{$item->{match}}{score}+=$item->{score};
-	$chrs2_scores->{$item->{name}}+=$item->{score};
-      }
-
-    #blocks1 will contain fewer chromosomes; blocks2 will be ordered by it.
-    my $switched =keys %$chrs1 > keys %$chrs2 ? 1 : 0;
-    if ($switched)
-      {
-	($blocks1, $blocks2) = ($blocks2, $blocks1);
-	($chrs1, $chrs2) = ($chrs2, $chrs1);
-	($chrs1_scores, $chrs2_scores) = ($chrs2_scores, $chrs1_scores);
-      }
-
-    my $ordered1 =[]; #storage for ordered chromosomes
-    my $ordered2 =[]; #storage for ordered chromosomes
-    my %seen;
-    #sort blocks for chr1 so that the highest scoring ones are first
-    foreach my $chr1 (sort{$chrs1_scores->{$b} <=> $chrs1_scores->{$a}} keys %$chrs1_scores)
-      {
-	push @$ordered1, {chr=>$chr1};
-	my @blocks;
-	for (my $i=0; $i< @$blocks1; $i++)
-	  {
-	    my ($block1, $block2) = ($blocks1->[$i],$blocks2->[$i]);
-	    next if $block1->{name} ne $chr1;
-	    push @blocks, $block2;
-	  }
-	#Need to check if a given chromosome in @blocks occurs more than once.  This will happen if there is a segmental duplication, or something along those lines.
-	my %block_check;
-	foreach my $block (@blocks)
-	  {
-	    if ($block_check{$block->{name}})
-	      {
-		$block_check{$block->{name}}=$block if $block->{num_pairs} > $block_check{$block->{name}}{num_pairs}; #more pairs
-	      }
-	    else
-	      {
-		$block_check{$block->{name}}=$block;
-	      }
-	  }
-	@blocks = values %block_check;#create the non-redundant set
-	#print out the blocks in order.  Note ones that are in reverse orientation
-	foreach my $block (sort {$a->{match_start} <=> $b->{match_start} }@blocks)
-	  {
-#	    print $block->{name},"\t", $block->{match_start},"\n";
-	    next if $seen{$block->{name}};
-	    push @$ordered2, {chr=>$block->{name}, rev=>$block->{rev}};
-	    $seen{$block->{name}}=1;
-	  }
-      }
-    ($ordered1, $ordered2) = ($ordered2, $ordered1) if $switched;
-    return $ordered1, $ordered2;
-  }
-
-sub process_syn_block
-  {
-    my $block = shift;
-    my ($head, @block) = split/\n/, $block;
-    my ($block_num, $score, $seq1, $seq2, $strand) = 
-      split/\t/, $head;
-    my $rev = $strand =~/r/ ? 1 : 0;
-
-    my ($seq1_start, $seq1_stop, $seq2_start, $seq2_stop);
-    #absolute start and stop can give rise to problems if the ends actually hit something far away from the rest of the sytnenic pairs.  Calculating the "mean" position will circumvent this problem
-    my @start1;
-    my @stop1;
-    my @start2;
-    my @stop2;
-    foreach my $item (@block)
-      {
-	chomp $item;
-	next unless $item;
-	my @item = split /\t/, $item;
-	push @start1, $item[2];
-	push @stop1, $item[3];
-	push @start2, $item[6];
-	push @stop2, $item[7];
-      }
-    my $num_pairs = scalar @start1;
-    #remove the ends;
-    @start1 = sort {$a<=>$b} @start1;
-    @stop1 = sort {$a<=>$b} @stop1;
-    @start2 = sort {$a<=>$b} @start2;
-    @stop2 = sort {$a<=>$b} @stop2;
-    shift @start1 if scalar(@start1) >3;
-    pop @start1 if scalar(@start1) >2;
-    shift @stop1 if scalar(@stop1) >3;
-    pop @stop1  if scalar(@stop1) >2;
-    shift @start2 if scalar(@start2) >3;
-    pop @start2 if scalar(@start2) >2;
-    shift @stop2 if scalar(@stop2) >3;
-    pop @stop2  if scalar(@stop2) >2;
-
-    map {$seq1_start+=$_} @start1;
-    map {$seq1_stop+=$_} @stop1;
-    map {$seq2_start+=$_} @start2;
-    map {$seq2_stop+=$_} @stop2;
-    $seq1_start = $seq1_start/scalar(@start1);
-    $seq1_stop = $seq1_stop/scalar(@stop1);
-    $seq2_start = $seq2_start/scalar(@start2);
-    $seq2_stop = $seq2_stop/scalar(@stop2);
-    $seq1 =~ s/.*?_//;
-    $seq2 =~ s/.*?_//;
-    my %seq1 = (
-		name=>$seq1,
-		start=>$seq1_start,
-		stop=>$seq1_stop,
-		match_start=>$seq2_start,
-		match_stop=>$seq2_stop,
-		score=>$score,
-		rev=>$rev,
-		match=>$seq2,
-		num_pairs=>$num_pairs,
-		);
-    my %seq2 = (
-		name=>$seq2,
-		start=>$seq2_start,
-		stop=>$seq2_stop,
-		match_start=>$seq1_start,
-		match_stop=>$seq1_stop,
-		score=>$score,
-		rev=>$rev,
-		match=>$seq1,
-		num_pairs=>$num_pairs,
-		);
-    return \%seq1, \%seq2;
-  }
-
-
 
 sub get_ksdata
   {
