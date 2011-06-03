@@ -241,22 +241,23 @@ sub get_genomic_sequence
     my $seq_type = $opts{seq_type} || $opts{gstid};
     my $debug = $opts{debug};
     my $dsgid = $opts{dsgid};
+    my $server = $opts{server};  #server from which to retrieve genomic sequence if not stored on local machine.  Web retrieval from CoGe/GetSequence.pl
     my $dsg; 
     $dsg = $dsgid if $dsgid && ref ($dsgid) =~ /DatasetGroup/;
-    return $dsg->genomic_sequence(start=>$start, stop=>$stop, chr=>$chr, strand=>$strand, debug=>$debug) if $dsg;
+    return $dsg->genomic_sequence(start=>$start, stop=>$stop, chr=>$chr, strand=>$strand, debug=>$debug, server=>$server) if $dsg;
     my $seq_type_id = ref($seq_type) =~ /GenomicSequenceType/i ? $seq_type->id : $seq_type;
     $seq_type_id = 1 unless $seq_type_id && $seq_type_id =~ /^\d+$/;
     foreach my $tmp_dsg ($self->groups)
       {
 	if ( ($dsgid && $tmp_dsg->id == $dsgid) || ($seq_type_id && $tmp_dsg->genomic_sequence_type->id == $seq_type_id) )
 	  {
-	    return $tmp_dsg->genomic_sequence(start=>$start, stop=>$stop, chr=>$chr, strand=>$strand, debug=>$debug);
+	    return $tmp_dsg->genomic_sequence(start=>$start, stop=>$stop, chr=>$chr, strand=>$strand, debug=>$debug, server=>$server);
 	  }
       }
     #hmm didn't return -- perhaps the seq_type_id was off.  Go ahead and see if anything can be returned
 #    carp "In Dataset.pm, sub get_genomic_sequence.  Did not return sequence from a dataset_group with a matching sequence_type_id.  Going to try to return some sequence from any dataset_group.\n";
     ($dsg) = $self->groups;
-    return $dsg->genomic_sequence(start=>$start, stop=>$stop, chr=>$chr, strand=>$strand, debug=>$debug);
+    return $dsg->genomic_sequence(start=>$start, stop=>$stop, chr=>$chr, strand=>$strand, debug=>$debug, server=>$server);
   }
 
 

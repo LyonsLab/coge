@@ -236,8 +236,8 @@ sub get_seq
     my $strand = $opts{strand};
     my $IN = $opts{file_handle};
     my $server = $opts{server}; #option for specifying a server for retrieving sequences if local sequences do not exist.
-    $server = "http://genomevolution.org/CoGe/GetSequence.pl" unless $server;
-
+    $server = "http://genomevolution.org" unless $server;
+    $server .= "/CoGe/GetSequence.pl" unless $server =~ /coge\/GetSequence\.pl/i;
     $strand  = 1 unless defined $strand;
     ($start, $stop) = ($stop, $start) if $start && $stop && $start > $stop;
     my $file = $self->file_path;

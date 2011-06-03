@@ -742,6 +742,7 @@ sub genomic_sequence {
   my $gstid = $opts{gstid};
   my $seq = $opts{seq};
   my $dsgid = $opts{dsgid};
+  my $server = $opts{server}; #used for passing in server name from which to retrieve sequence from web-script CoGe/GetSequence.pl  
   #have a full sequence? -- pass it in and the locations will be parsed out of it!
   if (!$up && !$down && $self->_genomic_sequence)
     {
@@ -774,6 +775,7 @@ sub genomic_sequence {
 							      debug=>$debug,
 							      gstid=>$gstid,
 							      dsgid=>$dsgid,
+							      server=>$server,
 							     );
   if ($full_seq)
     {
