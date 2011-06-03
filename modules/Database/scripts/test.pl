@@ -9,11 +9,8 @@ use Data::Dumper;
 my $coge = CoGeX->dbconnect;
 
 
-my $dsg = $coge->resultset('DatasetGroup')->find(7948);
-
-my ($test) = $dsg->dataset_connectors({dataset_id=>5037});
-if ($test)
+foreach my $org ($coge->resultset('Organism')->all)
   {
-    print Dumper $test;
+    print $org->name,"\n";
   }
-		 
+
