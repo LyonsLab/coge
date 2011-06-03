@@ -2893,11 +2893,11 @@ sub get_previous_analyses
 	    my $genome1;
 	    $genome1 .= $dsg1->name if $dsg1->name;
 	    $genome1 .= ": " if $genome1;
-	    $genome1 .= $ds1->data_source->name." (".$dsg1->version.")";
+	    $genome1 .= $ds1->data_source->name;
 	    my $genome2;
 	    $genome2 .= $dsg2->name if $dsg2->name;
 	    $genome2 .= ": " if $genome2;
-	    $genome2 .= $ds2->data_source->name." (".$dsg2->version.")";
+	    $genome2 .= $ds2->data_source->name;
 	    $data{genome1}=$genome1;
 	    $data{genome2}=$genome2;
 	    $data{type_name1} = $type1;
@@ -2916,7 +2916,7 @@ sub get_previous_analyses
     $size = 8 if $size > 8;
     my $html;
     my $prev_table = qq{<table id=prev_table class="small resultborder">};
-    $prev_table .= qq{<THEAD><TR><TH>}.join ("<TH>", qw(Org1 Genome1 Genome%20Type1 Sequence%20Type1 Org2 Genome2 Genome%20Type2 Sequence%20type2 Algo Dist%20Type Repeat%20Filter Ave%20Dist(g) Max%20Dist(D) Min%20Pairs(A)))."</THEAD><TBODY>\n";
+    $prev_table .= qq{<THEAD><TR><TH>}.join ("<TH>", qw(Org1 Genome1 Ver1 Genome%20Type1 Sequence%20Type1 Org2 Genome2 Ver2 Genome%20Type2 Sequence%20type2 Algo Dist%20Type Repeat%20Filter Ave%20Dist(g) Max%20Dist(D) Min%20Pairs(A)))."</THEAD><TBODY>\n";
     my %seen;
     foreach my $item (sort {$b->{dsgid1} <=> $a->{dsgid1} || $b->{dsgid2} <=> $a->{dsgid2} }@items)
       {
@@ -2937,9 +2937,13 @@ sub get_previous_analyses
 	next if $seen{$val};
 	$seen{$val}=1;
 	$prev_table .= qq{<TR class=feat onclick="update_params('$val')" align=center><td>};
+	my $ver1 = $item->{dsg1}->version;
+	$ver1 = "0".$ver1 if $ver1 =~ /^\./;
+	my $ver2 = $item->{dsg2}->version;
+	$ver2 = "0".$ver2 if $ver2 =~ /^\./;
 	$prev_table .= join ("<td>", 
-			     $item->{dsg1}->organism->name, $item->{genome1}, $item->{dsg1}->type->name, $item->{type_name1},
-			     $item->{dsg2}->organism->name, $item->{genome2}, $item->{dsg2}->type->name, $item->{type_name2},
+			     $item->{dsg1}->organism->name, $item->{genome1}, $ver1, $item->{dsg1}->type->name, $item->{type_name1},
+			     $item->{dsg2}->organism->name, $item->{genome2}, $ver2, $item->{dsg2}->type->name, $item->{type_name2},
 			     $item->{blast}, $item->{dagtype}, $item->{repeat_filter},$item->{g}, $item->{D}, $item->{A})."\n";
       }
     $prev_table .= qq{</TBODY></table>};
