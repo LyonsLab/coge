@@ -121,7 +121,7 @@ sub parse_syn_blocks
 	#print out the blocks in order.  Note ones that are in reverse orientation
 	foreach my $block (sort {$a->{match_start} <=> $b->{match_start} }@blocks)
 	  {
-	    push @$ordered2, {chr=>$block->{name}, rev=>$block->{rev}, match=>$block->{match}};
+	    push @$ordered2, {chr=>$block->{name}, rev=>$block->{rev}, match=>$block->{match}, dsgid=>$block->{dsgid}};
 	  }
       }
     ($ordered1, $ordered2) = ($ordered2, $ordered1) if $switched;
@@ -147,6 +147,8 @@ sub process_syn_block
     my @start2;
     my @stop2;
     my $identity=0; #arbitrary place to add a numeric that sums the percent identities.  This value may be used to try to break a tie if a block matches two places with an equal score
+    my $dsgid1;
+    my $dsgid2;
     foreach my $item (@block)
       {
 	chomp $item;
@@ -158,6 +160,13 @@ sub process_syn_block
 	push @stop2, $item[7];
 	my @match = split /\|\|/,$item[1];
 	$identity+=$match[8] if $match[8];
+	unless ($dsgid1)
+	  {
+	    ($dsgid1) = split /_/, $item[0];
+	    $dsgid1 =~ s/^a//;
+	    ($dsgid2) = split /_/, $item[4];
+	    $dsgid2 =~ s/^b//;
+	  }
       }
     my $num_pairs = scalar @start1;
     #remove the ends;
@@ -195,6 +204,7 @@ sub process_syn_block
 		match=>$seq2,
 		num_pairs=>$num_pairs,
 		identity_sum=>$identity,
+		dsgid=>$dsgid1,
 		);
     my %seq2 = (
 		name=>$seq2,
@@ -207,6 +217,7 @@ sub process_syn_block
 		match=>$seq1,
 		num_pairs=>$num_pairs,
 		identity_sum=>$identity,
+		dsgid=>$dsgid2
 		);
     return \%seq1, \%seq2;
   }
