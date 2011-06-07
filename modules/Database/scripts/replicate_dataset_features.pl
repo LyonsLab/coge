@@ -34,8 +34,8 @@ Options:
     exit;
   }
 
-my $connstr = 'dbi:mysql:dbname=coge;host=biocon;port=3306';
-my $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
+my $connstr = 'dbi:mysql:dbname=coge;host=genomevolution.org;port=3306';
+my $coge = CoGeX->connect($connstr, 'elyons', 'eagle7' );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 
@@ -55,7 +55,7 @@ unless ($ds1 && $ds2)
 my $search = {feature_type_id=>$ftid} if $ftid;
 foreach my $feat1 ($ds1->features($search))
   {
-    sleep (.3);
+#    sleep (.3);
     my $chr = $feat1->chromosome;
     my $feat2 = $ds2->add_to_features(
 #    print Dumper
