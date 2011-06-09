@@ -1798,7 +1798,7 @@ sub process_hsps
 		$f->label($hsp->number) if $hsp_labels; #add label to HSP if they are to be drawn
 #	      }
 	    $f->alt(join ("-",$hsp->number,$accn1,$accn2));
-	    my ($ab_start, $ab_stop) = $reverse ? ($gbobj->stop-$stop,$gbobj->stop-$start) : ($gbobj->start+$start, $gbobj->start+$stop); #adjust hsp position to real-world coords
+	    my ($ab_start, $ab_stop) = $reverse ? ($gbobj->stop-$stop+1,$gbobj->stop-$start+1) : ($gbobj->start+$start-1, $gbobj->start+$stop-1); #adjust hsp position to real-world coords
 	    my $desc = "<table><tr>";
 	    $desc .= "<tr>"."<td>HSP:<td>".$hsp->number if $hsp->number;
 	    if ($blast->query)
