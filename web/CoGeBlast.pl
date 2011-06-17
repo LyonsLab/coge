@@ -154,6 +154,7 @@ sub gen_body
     my $rc = $form->param('rc') || 0;
     my $seq = $form->param('seq');
     my $gstid = $form->param('gstid') || 1;
+    my $dsgid = $form->param('dsgid') || 0;
     my $prefs = CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME);
     $prefs = {} unless $prefs;
     $template->param(JAVASCRIPT=>1);
@@ -201,6 +202,13 @@ sub gen_body
         add_to_list('$id');
 }
 
+      }
+    if ($dsgid)
+      {
+	my $id = get_dsg_for_blast_menu(dsgid=>$dsgid);
+	$db_list .= qq{
+        add_to_list('$id');
+}
       }
     #set up which columns of results will be displayed by default
 #       my $prefs = CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME);
