@@ -387,6 +387,8 @@ sub get_dataset_group_info
     $html .= "<a href='OrganismView.pl?dsgid=$dsgid' target=_new>OrganismView</a>&nbsp|&nbsp<a href='CodeOn.pl?dsgid=$dsgid' target=_new>CodeOn</a>";
     $html .= qq{&nbsp|&nbsp};
     $html .= qq{<span class='link' onclick="window.open('SynMap.pl?dsgid1=$dsgid;dsgid2=$dsgid');">SynMap</span>};
+    $html .= qq{&nbsp|&nbsp};
+    $html .= qq{<span class='link' onclick="window.open('CoGeBlast.pl?dsgid=$dsgid');">CoGeBlast</span>};
     $html .= "</td></tr>";
 
 
