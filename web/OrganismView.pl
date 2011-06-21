@@ -251,7 +251,12 @@ sub get_orgs
     $html .= join ("\n", @opts);
     $html .= "\n</SELECT>\n";
     $html =~ s/OPTION/OPTION SELECTED/ unless $html =~ /SELECTED/;
-    $html .= qq{<br><span class='link small' onclick="window.open('get_org_list.pl?name=$name;desc=$desc;oid=$oid;dsgid=$dsgid');">Download Organism List</span>};
+    my $opts;
+    $opts .= "name=$name;" if $name;
+    $opts .= "desc=$desc;" if $desc;
+    $opts .= "oid=$oid;" if $oid;
+    $opts .= "dsgid=$dsgid;" if $dsgid;
+    $html .= qq{<br><span class='link small' onclick="window.open('get_org_list.pl?$opts');">Download Organism List</span>};
     return $html, scalar @opts;
   }
 
@@ -355,8 +360,8 @@ sub get_dataset_group_info
 #	$html .= qq{$chr:  $length bp<br>};
 	$count++;
       }
-    $html .= qq{<div>};
-    $html .= "<table class='small annotation_table'>";
+    $html .= qq{<table>};
+    $html .= "<tr valign=top><td><table class='small annotation_table'>";
     $html .= qq{<tr><td>Name:</td><td>}.$dsg->name.qq{</td></tr>} if $dsg->name;
     $html .= qq{<tr><td>Description:</td><td>}.$dsg->description.qq{</td></tr>} if $dsg->description;
     $html .= qq{<tr><td>Chromosome count: <td>$chr_num</td></tr>};
@@ -393,9 +398,11 @@ sub get_dataset_group_info
 
 
     my $feat_string = qq{
-<tr><td><div id=dsg_feature_count class="small link" onclick="get_feature_counts(['args__dsgid','dsg_id', 'args__gstid','gstid'],['feature_count_data']);" >Click for Features</div>};
+<tr><td><div id=dsg_feature_count class="small link" onclick="get_feature_counts(['args__dsgid','dsg_id', 'args__gstid','gstid'],['dsg_features']);" >Click for Features</div>};
     $html .= $feat_string;
-    $html .= "</table>";
+    $html .= "</table></td>";
+    $html .= qq{<td id=dsg_features></td>};
+
     return $html;
   }
   
@@ -459,7 +466,8 @@ sub get_dataset_info
     my $html = "";
     return "unable to find dataset object for id: $dsd"  unless $ds;
     $html .= "<span class=alert>Restricted Dataset!  Authorized Use Only!</span><br>" if $ds->restricted;
-    $html .= "<table class=\"small annotation_table\">";
+    $html .= "<table>";
+    $html .= "<tr valign=top><td><table class=\"small annotation_table\">";
     my $dataset = $ds->name;
     $dataset .= ": ". $ds->description if $ds->description;
     $dataset = " <a href=\"".$ds->link."\" target=_new\>".$dataset."</a>" if $ds->link;
@@ -519,16 +527,18 @@ sub get_dataset_info
     $html .= "<tr><td>Chromosome count:<td><div style=\"float: left;\">".commify($chr_num);
     $html .= "<tr><td>Total length:<td><div style=\"float: left;\">".commify($length)." bp ";
     my $gc = $length < 10000000 && $chr_num < 500 ? get_gc_for_chromosome(dsid=>$ds->id): 0;
-    $gc = $gc ? $gc : qq{  </div><div style="float: left; text-indent: 1em;" id=dataset_gc class="link" onclick="\$('#dataset_gc').removeClass('link'); get_gc_for_chromosome(['args__dsid','ds_id','args__gstid', 'gstid'],['dataset_gc']);">  Click for percent GC content</div>} if $length;
+    $gc = $gc ? $gc : qq{  </div><div style="float: left; text-indent: 1em;" id=dataset_gc class="link" onclick="\$('#dataset_gc').removeClass('link'); get_gc_for_chromosome(['args__dsid','ds_id','args__gstid', 'gstid'],['dataset_gc']);">Click for percent GC content</div>} if $length;
     $html .= $gc if $gc;
     $html .= qq{<tr><td>Links:</td>};
     $html .= "<td>";
     $html .= "<a href='OrganismView.pl?dsid=$dsd' target=_new>OrganismView</a>";
     $html .= qq{</td></tr>};
-    $html .= qq{</table>};
     my $feat_string = qq{
-<div id=ds_feature_count class="small link" onclick="get_feature_counts(['args__dsid','ds_id','args__gstid', 'gstid'],['feature_count_data']);" >Click for Features</div>};
+<tr><td><div id=ds_feature_count class="small link" onclick="get_feature_counts(['args__dsid','ds_id','args__gstid', 'gstid'],['ds_features']);" >Click for Features</div></td></tr>};
     $html .= $feat_string;
+
+    $html .= qq{</table></td>};
+    $html .= qq{<td id=ds_features></td>};
 
 
     my $chr_count = scalar (@chr);
@@ -548,8 +558,9 @@ sub get_dataset_chr_info
 		return "", "", "";
 	}
     my $start = "'start'";
-    my $stop = "'stop'";	
-    my $html .= "<table class=\"small annotation_table\">";
+    my $stop = "'stop'";
+    my $html .= "<table>";
+    $html .= "<tr valign=top><td><table class=\"small annotation_table\">";
     my $ds = $coge->resultset("Dataset")->find($dsid);
     return $html unless $ds;
     my $length = 0;
@@ -566,11 +577,13 @@ sub get_dataset_chr_info
 <tr><td>Noncoding sequence:<td colspan=2><div id=noncoding_gc class="link" onclick = "gen_data(['args__loading..'],['noncoding_gc']);\$('#noncoding_gc').removeClass('link');  get_gc_for_noncoding(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['noncoding_gc']);">Click for percent GC content</div>
 } if $length;
 
-    $html .= "</table>";
-    my $feat_string = qq{
-<div class=small id=feature_count onclick="get_feature_counts(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['feature_count_data']);" >Click for Features</div>};
-    $html .= "$feat_string";
 
+    my $feat_string = qq{
+<tr><td><div class=small id=feature_count onclick="get_feature_counts(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['chr_features']);" >Click for Features</div></td></tr>};
+
+    $html .= $feat_string;
+    $html .= "</table></td>";
+    $html .= qq{<td id=chr_features></td>};
     my $viewer;
     if (defined $chr)
      {
@@ -660,7 +673,7 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
     $gc_args .= "typeid: ";
     my $feat_list_string = $dsid ? "dsid=$dsid" : "dsgid=$dsgid";
     $feat_list_string .= ";chr=$chr" if defined $chr;
-    my $feat_string .= qq{<div>Features for $name</div>};
+    my $feat_string;# .= qq{<div>Features for $name</div>};
     $feat_string .= qq{<div class = " ui-corner-all ui-widget-content small">};
     $feat_string .= qq{<table class=small>};
     $feat_string .= "<tr valign=top>". join ("\n<tr valign=top>",map {
