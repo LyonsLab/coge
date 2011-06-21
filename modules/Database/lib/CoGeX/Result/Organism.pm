@@ -66,6 +66,29 @@ __PACKAGE__->set_primary_key("organism_id");
 
 __PACKAGE__->has_many("dataset_groups" => "CoGeX::Result::DatasetGroup", 'organism_id');
 
+################################################ subroutine header begin ##
+
+=head2 genomes
+
+ Usage     : $org->genomes
+ Purpose   : alias for $org->dataset_groups (defined through database relationship)
+ Returns   : dataset_group objects
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+
+sub genomes
+  {
+    return shift->dataset_groups;
+  }
 
 ################################################ subroutine header begin ##
 
