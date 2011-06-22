@@ -76,7 +76,7 @@ sub gen_body
     my ($dsg2) = $coge->resultset('DatasetGroup')->find($dsgid2);
 
     my $color_type = $form->param('ct'); #color type for matrices output
-
+    $color_type = "RYB" unless $color_type;
     #get gc content of genomes
     unless ($dsg1 && $dsg2)
       {
