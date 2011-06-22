@@ -398,7 +398,7 @@ sub get_dataset_group_info
 
 
     my $feat_string = qq{
-<tr><td><div id=dsg_feature_count class="small link" onclick="get_feature_counts(['args__dsgid','dsg_id', 'args__gstid','gstid'],['dsg_features']);" >Click for Features</div>};
+<tr><td><div id=dsg_feature_count class="small link" onclick="gen_data(['args__loading...'],['dsg_features']); get_feature_counts(['args__dsgid','dsg_id', 'args__gstid','gstid'],['dsg_features']);" >Click for Features</div>};
     $html .= $feat_string;
     $html .= "</table></td>";
     $html .= qq{<td id=dsg_features></td>};
@@ -534,7 +534,7 @@ sub get_dataset_info
     $html .= "<a href='OrganismView.pl?dsid=$dsd' target=_new>OrganismView</a>";
     $html .= qq{</td></tr>};
     my $feat_string = qq{
-<tr><td><div id=ds_feature_count class="small link" onclick="get_feature_counts(['args__dsid','ds_id','args__gstid', 'gstid'],['ds_features']);" >Click for Features</div></td></tr>};
+<tr><td><div id=ds_feature_count class="small link" onclick="gen_data(['args__loading...'],['ds_features']);get_feature_counts(['args__dsid','ds_id','args__gstid', 'gstid'],['ds_features']);" >Click for Features</div></td></tr>};
     $html .= $feat_string;
 
     $html .= qq{</table></td>};
@@ -579,7 +579,7 @@ sub get_dataset_chr_info
 
 
     my $feat_string = qq{
-<tr><td><div class=small id=feature_count onclick="get_feature_counts(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['chr_features']);" >Click for Features</div></td></tr>};
+<tr><td><div class=small id=feature_count onclick="gen_data(['args__loading...'],['chr_features']);get_feature_counts(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['chr_features']);" >Click for Features</div></td></tr>};
 
     $html .= $feat_string;
     $html .= "</table></td>";
