@@ -154,7 +154,6 @@ sub gen_body
     my $rc = $form->param('rc') || 0;
     my $seq = $form->param('seq');
     my $gstid = $form->param('gstid') || 1;
-    my $dsgid = $form->param('dsgid') || 0;
     my $prefs = CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME);
     $prefs = {} unless $prefs;
     $template->param(JAVASCRIPT=>1);
