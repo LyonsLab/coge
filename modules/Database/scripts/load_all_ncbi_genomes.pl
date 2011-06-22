@@ -114,7 +114,7 @@ sub process_genome_and_load
   {
     my %opts = @_;
     my $genome = $opts{genome};
-    my $prog = '/home/elyons/projects/CoGeX/scripts/genbank_genome_loader.pl';
+    my $prog = '/home/elyons/projects/CoGeX/scripts/load_genomes_n_stuff/genbank_genome_loader.pl';
     $prog .= " -autoupdate" if $autoupdate;
     #need to break apart organelle genomes from nuclear genomes
     my @tmp; #temp place to store genomes in case some need to be processed separately in addition to the whole genome.  Such as is the case with mitochondria, chloroplasts, plastids.
