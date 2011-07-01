@@ -35,7 +35,7 @@ print qq{Content-Type: text/plain
 
 };
 #print "<pre>";
-process_sequence($chr2);
+process_sequence($chr1);
 #print "</pre>";
 
 sub process_sequence
