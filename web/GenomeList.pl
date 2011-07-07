@@ -132,6 +132,7 @@ sub gen_body
     $prefs->{display}={
 		       NameD=>1,
 		       DescD=>1,
+		       TypeD=>1,
 		       VerD=>1,
 		       ChrCountD=>1,
 		       LengthD=>1,
@@ -223,12 +224,14 @@ sub generate_table
 	my @chr = $dsg->chromosomes;
 	my $chr = scalar @chr;
 	my $length = $dsg->length;
+	my $type = $dsg->type->name;
 	push @table,{
 		     COUNT=>$count,
 		     DSGID=>$dsgid,
 		     NAME=>$name,
 		     DESC=>$desc,
 		     VER=>$dsg->version,
+		     TYPE=>$type,
 		     CHR_COUNT=>commify($chr),
 		     LENGTH=>commify($length),
 		    };
