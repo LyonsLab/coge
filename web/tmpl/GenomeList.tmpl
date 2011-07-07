@@ -408,19 +408,20 @@ save_FeatList_settings(['args__display','args__'+index],[]);
      <tr>
        <td><input class = "display" type = checkbox onclick="toggle_column(1);" <TMPL_VAR NAME="NameD">>Name
        <td><input class = "display"  type = checkbox onclick="toggle_column(2);" <TMPL_VAR NAME="DescD">>Description
-       <td><input class = "display"  type = checkbox onclick="toggle_column(3);" <TMPL_VAR NAME="VerD">>Version
-       <td><input class = "display"  type = checkbox onclick="toggle_column(4);" <TMPL_VAR NAME="ChrCountD">>Chromosome Count
+       <td><input class = "display"  type = checkbox onclick="toggle_column(3);" <TMPL_VAR NAME="TypeD">>Sequence Type
+       <td><input class = "display"  type = checkbox onclick="toggle_column(4);" <TMPL_VAR NAME="VerD">>Version
+       <td><input class = "display"  type = checkbox onclick="toggle_column(5);" <TMPL_VAR NAME="ChrCountD">>Chromosome Count
       <tr>
-       <td><input class = "display"  type = checkbox onclick="toggle_column(5);" <TMPL_VAR NAME="LengthD">>Length
-       <td><input class = "display"  type = checkbox onclick="toggle_column(6);" <TMPL_VAR NAME="GCD">>GC%
-       <td><input class = "display"  type = checkbox onclick="toggle_column(7);" <TMPL_VAR NAME="ATD">>AT%
-       <td><input class = "display"  type = checkbox onclick="toggle_column(8);" <TMPL_VAR NAME="ND">>N|X%
-       <td><input class = "display"  type = checkbox onclick="toggle_column(9);" <TMPL_VAR NAME="FeatD">>Feature Counts
+       <td><input class = "display"  type = checkbox onclick="toggle_column(6);" <TMPL_VAR NAME="LengthD">>Length
+       <td><input class = "display"  type = checkbox onclick="toggle_column(7);" <TMPL_VAR NAME="GCD">>GC%
+       <td><input class = "display"  type = checkbox onclick="toggle_column(8);" <TMPL_VAR NAME="ATD">>AT%
+       <td><input class = "display"  type = checkbox onclick="toggle_column(9);" <TMPL_VAR NAME="ND">>N|X%
+       <td><input class = "display"  type = checkbox onclick="toggle_column(10);" <TMPL_VAR NAME="FeatD">>Feature Counts
       <tr>
-       <td><input class = "display"  type = checkbox onclick="toggle_column(10);" <TMPL_VAR NAME="AAD">>Amino Acid Usage
-       <td><input class = "display"  type = checkbox onclick="toggle_column(11);" <TMPL_VAR NAME="CodonD">>Codon Usage
-       <td><input class = "display"  type = checkbox onclick="toggle_column(12);" <TMPL_VAR NAME="CDSGCHistD">>CDS GC Histogram
-       <td><input class = "display"  type = checkbox onclick="toggle_column(13);" <TMPL_VAR NAME="CDSWGCHistD">>CDS Wobble GC Histogram
+       <td><input class = "display"  type = checkbox onclick="toggle_column(11);" <TMPL_VAR NAME="AAD">>Amino Acid Usage
+       <td><input class = "display"  type = checkbox onclick="toggle_column(12);" <TMPL_VAR NAME="CodonD">>Codon Usage
+       <td><input class = "display"  type = checkbox onclick="toggle_column(13);" <TMPL_VAR NAME="CDSGCHistD">>CDS GC Histogram
+       <td><input class = "display"  type = checkbox onclick="toggle_column(14);" <TMPL_VAR NAME="CDSWGCHistD">>CDS Wobble GC Histogram
 
        <TMPL_IF NAME="SAVE_DISPLAY">
 	<TR><td>
@@ -444,6 +445,7 @@ Filter Table Rows:
    <TH> </TH>
    <TH >Genome Name</TH>
    <TH >Description</TH>
+   <TH >Sequence Type</TH>
    <TH >Version</TH>
    <TH >Chr Count</TH>
    <TH >Length (bp)</TH>
@@ -473,6 +475,7 @@ Filter Table Rows:
       <TD><input type=checkbox id='<TMPL_VAR NAME=DSGID>'><input type=hidden id='dsgid_<TMPL_VAR NAME=COUNT>' value='<TMPL_VAR NAME=DSGID>'></TD>
       <TD><span class=link onclick=window.open('OrganismView.pl?dsgid=<TMPL_VAR NAME=DSGID>')> <TMPL_VAR NAME=NAME></span></TD>
       <TD><TMPL_VAR NAME=DESC></TD>
+      <TD><TMPL_VAR NAME=TYPE></TD>
       <TD align=center><TMPL_VAR NAME=VER></TD>
       <TD align=center><TMPL_VAR NAME=CHR_COUNT></TD>
       <TD align=right><TMPL_VAR NAME=LENGTH></TD>
