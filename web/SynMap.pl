@@ -571,7 +571,8 @@ sub get_dataset_group_info
     $feattype = 1 unless defined $feattype;
     return " "," "," " unless $dsgid;
     my $html_dsg_info; 
-    my ($dsg) = $coge->resultset("DatasetGroup")->find({dataset_group_id=>$dsgid},{join=>['organism','genomic_sequences'],prefetch=>['organism','genomic_sequences']});
+    #my ($dsg) = $coge->resultset("DatasetGroup")->find({dataset_group_id=>$dsgid},{join=>['organism','genomic_sequences'],prefetch=>['organism','genomic_sequences']});
+    my ($dsg) = $coge->resultset("DatasetGroup")->find({dataset_group_id=>$dsgid},{join=>'organism',prefetch=>'organism'});
     return " "," "," " unless $dsg;
     my $org = $dsg->organism;
     my $orgname = $org->name;
@@ -2961,21 +2962,32 @@ sub get_gc_dsg
     my $plasmid =0;
     my $contig = 0;
     my $scaffold = 0;
-    my @gs = $dsg->genomic_sequences;
-    map {$length+=$_->sequence_length} @gs;
-    foreach my $chr (map {$_->chromosome} @gs)
+    my $rs = $coge->resultset('GenomicSequence')->search(
+      {dataset_group_id=>$dsg->id},
       {
-	$chr_count++;
-	my ($gc, $at, $n) = $dsg->percent_gc(count=>1, chr=>$chr) if $length < 100000000 && scalar @gs < 1000;
-	$gc_total+=$gc if $gc;
-#	$length += ($gc+$at+$n);
-	$plasmid =1 if $chr =~ /plasmid/i;
-	$contig =1 if $chr =~ /contig/i;
-	$scaffold =1 if $chr =~ /scaffold/i;
-
+       select => [ { sum => 'sequence_length' } ],
+       as     => [ 'total_length' ], # remember this 'as' is for DBIx::Class::ResultSet not SQL
       }
+    );
+    $length = $rs->first->get_column('total_length');
+    $chr_count = $dsg->genomic_sequences->count(); 
+    if ($chr_count < 1000)
+      {
+	my @gs = $dsg->genomic_sequences;
+	foreach my $chr (map {$_->chromosome} @gs)
+	  {
+	    my ($gc, $at, $n) = $dsg->percent_gc(count=>1, chr=>$chr) if $length < 100000000 && scalar @gs < 1000;
+	    $gc_total+=$gc if $gc;
+	    $plasmid =1 if $chr =~ /plasmid/i;
+	    $contig =1 if $chr =~ /contig/i;
+	    $scaffold =1 if $chr =~ /scaffold/i;
+	  }
+      }
+    else {
+      $contig=1;
+    }
     my $percent_gc = sprintf("%.2f",100*$gc_total/$length) if $gc_total;
-    return $percent_gc, commify($length), $chr_count, $plasmid, $contig, $scaffold;
+    return $percent_gc, commify($length), commify($chr_count), $plasmid, $contig, $scaffold;
   }
 
 
