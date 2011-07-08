@@ -330,6 +330,14 @@ function search_bar(div_id){
 <DIV id="anno" class="ui-widget-content ui-corner-all"><TMPL_VAR NAME="FID_ANNO"></DIV>
 
 
+
+
+<div class="dialog" id="codon_table" title="Codon Usage Table"></div>
+<div class="dialog" id="aa_table" title="Amino Acid Usage Table"></div>
+<div class="dialog" id="codon_aa_alignment" title="Amino Acid Usage Table"></div>
+
+
+
 <div class="dialog" title="Feature List" id="feat_list">
     <span class="small count">Feature Count: 0</span><br>
               <SELECT id="featlist_choice" SIZE="10" MULTIPLE onchange="get_anno(['args__featlist_choice','featlist_choice'],[show_anno])">
@@ -344,7 +352,3 @@ function search_bar(div_id){
 
     <div id=add_all_search></div>
 </div>
-
-<div class="dialog" id="codon_table" title="Codon Usage Table"></div>
-<div class="dialog" id="aa_table" title="Amino Acid Usage Table"></div>
-<div class="dialog" id="codon_aa_alignment" title="Amino Acid Usage Table"></div>
