@@ -505,52 +505,31 @@ sub get_chromosomes
     my %opts = @_;
     my $ftid = $opts{ftid}; #feature_type_id for feature_type of name "chromosome";
     my $length = $opts{length}; #opts to return length of chromosomes as well
+    my $limit = $opts{limit}; #opt to set the number of chromosomes to return, sorted by size
     my @data;
     #this query is faster if the feature_type_id of feature_type "chromosome" is known.
     #features of this type refer to the entire stored sequence which may be a fully
     # assembled chromosome, or a contig, supercontig, bac, etc.
-    if ($length)
+    my $search = {};
+    my $search_type = {order_by=>{-desc=>'stop'}};
+    if ($ftid)
       {
-	if ($ftid)
-	  {
-	    @data = $self->features({
-				     feature_type_id=>$ftid,
-				    },
-				   );
-	  }
-	else
-	  {
-	    @data =  $self->features(
-				     {name=>"chromosome"},
-				     {
-				      join=>"feature_type",
-				     },
-				    );
-	  }
+	$search->{feature_type_id}=$ftid;
       }
     else
       {
-	if ($ftid)
-	  {
-	    @data = map{$_->chromosome} $self->features({
-							 feature_type_id=>$ftid,
-							},
-							{
-#							 as=>"chromosome",
-							}
-						       );
-	  }
-	else
-	  {
-	    @data =  map {$_->chromosome} $self->features(
-							  {name=>"chromosome"},
-							  {
-							   join=>"feature_type",
+	$search->{name}="chromosome";
+	$search_type->{join}= "feature_type";
+      }
 
-#							   as=>"chromosome",
-							  },
-							 );
-	  }
+    $search_type->{rows}=$limit if $limit;
+    if ($length)
+      {
+	@data =  $self->features($search, $search_type);
+      }
+    else
+      {
+	@data = map{$_->chromosome} $self->features($search, $search_type);
       }
     return wantarray ? @data : \@data;
   }
