@@ -61,6 +61,9 @@ $coge = CoGeX->dbconnect();
 	     get_wobble_gc=>\&get_wobble_gc,
 	     get_wobble_gc_diff=>\&get_wobble_gc_diff,
 	     get_total_length_for_ds=>\&get_total_length_for_ds,
+	     update_genomelist=>\&update_genomelist,
+	     parse_for_GenoList=>\&parse_for_GenoList,
+		 get_genome_list_for_org=>\&get_genome_list_for_org,
 	    );
 my $pj = new CGI::Ajax(%FUNCTION);
 $pj->JSDEBUG(0);
@@ -96,6 +99,19 @@ sub dispatch
 #    }
 }
 
+sub parse_for_GenoList
+  {
+	my $genomelist = shift;
+	my $url = "GenomeList.pl?";
+	foreach my $genomeid (split /,/,$genomelist)
+	{
+		next unless $genomeid;
+		$url .="dsgid=$genomeid&";
+	}
+	$url =~ s/&$//;
+	return $url;
+ }
+
 sub gen_html
   {
     my $html;
@@ -115,7 +131,7 @@ sub gen_html
         $name = $USER->first_name if $USER->first_name;
         $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
         $template->param(USER=>$name);
-
+	$template->param(BOX_NAME=>"Genome List");
 	$template->param(LOGON=>1) unless $USER->user_name eq "public";
 	$template->param(DATE=>$DATE);
 	$template->param(LOGO_PNG=>"OrganismView-logo.png");
@@ -261,6 +277,19 @@ sub get_orgs
   }
 
 
+sub update_genomelist
+{
+	my %opts = @_;
+	my $genome_id   = $opts{genomeid};
+	return unless $genome_id;
+	my $dsg = $coge->resultset("DatasetGroup")->find($genome_id);
+	my $genome_name;
+	$genome_name = $dsg->name;
+	$genome_name = $dsg->organism->name unless $genome_name;
+	$genome_name .= " (v". $dsg->version.")";
+	return $genome_name,$genome_id;
+}
+
 sub get_org_info
   {
     my %opts = @_;
@@ -297,6 +326,29 @@ sub get_org_info
     return $html;
   }
 
+sub get_genome_list_for_org
+{
+	my %opts = @_;
+    my $oid = $opts{oid};
+	my $org = $coge->resultset("Organism")->find($oid);
+	my @opts;
+	 if ($org)
+	{
+	  my @dsg;
+	  foreach my $dsg ($org->dataset_groups)
+	    {
+	      push @dsg, $dsg unless $USER->user_name =~ /public/i && $dsg->restricted;
+	    }
+	  foreach my $dsg (@dsg)
+	    {
+	      $dsg->name($org->name) unless $dsg->name;
+	    }
+	  @opts = map {$_->id."%".$_->name." (v".$_->version.", dsgid".$_->id. "): ". $_->genomic_sequence_type->name} sort {$b->version <=> $a->version || $a->type->id <=> $b->type->id || $a->name cmp $b->name || $b->id cmp $a->id} @dsg;
+	}
+	my $res = join ("&", @opts); 
+	return $res;
+}
+
 sub get_dataset_groups
     {
       my %opts = @_;
@@ -326,7 +378,7 @@ sub get_dataset_groups
 #	$html = qq{<FONT CLASS ="small">Dataset group count: }.scalar (@opts).qq{</FONT>\n<BR>\n};
 	$html .= qq{<SELECT class="ui-widget-content ui-corner-all" id="dsg_id" SIZE="5" MULTIPLE onChange="get_dataset_group_info(['args__dsgid','dsg_id'],[dataset_chain]);" >\n};
 	$html .= join ("\n", @opts);
-	$html .= "\n</SELECT>\n";
+	$html .= qq{\n</SELECT><br/><br/>	<span class="ui-button ui-corner-all" id=all onClick="add_all_genomes(); ">Add all</span><br/>\n};
 	$html =~ s/OPTION/OPTION SELECTED/ unless $html =~ /SELECTED/i;
       }
     else
@@ -390,13 +442,15 @@ sub get_dataset_group_info
     $html .= qq{<span class='link' onclick="window.open('CoGeBlast.pl?dsgid=$dsgid');">CoGeBlast</span>};
     $html .= "</td></tr>";
 
-
+	
+	
     my $feat_string = qq{
 <tr><td><div id=dsg_feature_count class="small link" onclick="gen_data(['args__loading...'],['dsg_features']); get_feature_counts(['args__dsgid','dsg_id', 'args__gstid','gstid'],['dsg_features']);" >Click for Features</div>};
     $html .= $feat_string;
+    $html .= qq{<tr><td><div><span class="ui-button ui-corner-all" onClick="update_genomelist(['args__genomeid','args__$dsgid'],[add_to_genomelist]);\$('#geno_list').dialog('option', 'width', 500).dialog('open');">Add to list</span></div></td></tr>} ;
     $html .= "</table></td>";
     $html .= qq{<td id=dsg_features></td>};
-
+    $html .= "</table>";
     return $html;
   }
   
@@ -454,6 +508,7 @@ sub get_dataset
 sub get_dataset_info
   {
     my $dsd = shift;
+    my $chr_num_limit = 500;
     return qq{<input type="hidden" id="chr" value="">}, " ",0 unless ($dsd); # error flag for empty dataset
 
     my $ds = $coge->resultset("Dataset")->find($dsd);
@@ -494,7 +549,7 @@ sub get_dataset_info
 
     #working here.  Need to deal with large number of chromosomes (e.g. > 1000.  Perl object creation is killing performance)
     my %chr;
-    map{$chr{$_->chromosome}={length=>$_->stop}} ($ds->get_chromosomes(ftid=>301, length=>1)); #the chromosome feature type in coge is 301
+    map{$chr{$_->chromosome}={length=>$_->stop}} ($ds->get_chromosomes(ftid=>301, length=>1, limit=>$chr_num_limit)); #the chromosome feature type in coge is 301
     my $count = 100000;
     foreach my $item (sort keys %chr)
       {
@@ -503,7 +558,7 @@ sub get_dataset_info
 	$chr{$item}{num} = $num;
 	$count++;
       }
-    my @chr = scalar keys %chr > 500 ? sort {$chr{$b}{length} <=> $chr{$a}{length}} keys %chr
+    my @chr = $chr_num > $chr_num_limit ? sort {$chr{$b}{length} <=> $chr{$a}{length}} keys %chr
       : sort {$chr{$a}{num} <=> $chr{$b}{num} || $a cmp $b}keys %chr;
     my $length =0;
     if (@chr)
@@ -512,15 +567,7 @@ sub get_dataset_info
 	$size = 5 if $size > 5;
 	my $select;
 	$select .= qq{<SELECT class="ui-widget-content ui-corner-all" id="chr" size =$size onChange="dataset_chr_info_chain()" >\n};
-	if (scalar @chr > 500)
-	  {
-	    my @tmp = @chr[0..499];
-	    	    $select .= join ("\n", map {"<OPTION value=\"$_\">".$_." (".commify($chr{$_}{length})." bp)</OPTION>"} @tmp)."\n";
-	  }
-	else
-	  {
-	    $select .= join ("\n", map {"<OPTION value=\"$_\">".$_." (".commify($chr{$_}{length})." bp)</OPTION>"} @chr)."\n";
-	  }
+	$select .= join ("\n", map {"<OPTION value=\"$_\">".$_." (".commify($chr{$_}{length})." bp)</OPTION>"} @chr)."\n";
 	$select =~ s/OPTION/OPTION SELECTED/;
 	$select .= "\n</SELECT>\n";
 
@@ -533,8 +580,8 @@ sub get_dataset_info
     }
     $html .= "<tr><td>Chromosome count:<td><div style=\"float: left;\">".commify($chr_num);
     $html .= "<tr><td>Total length:<td><div style=\"float: left;\">".commify($total_length)." bp ";
-    my $gc = $length < 10000000 && $chr_num < 500 ? get_gc_for_chromosome(dsid=>$ds->id): 0;
-    $gc = $gc ? $gc : qq{  </div><div style="float: left; text-indent: 1em;" id=dataset_gc class="link" onclick="\$('#dataset_gc').removeClass('link'); get_gc_for_chromosome(['args__dsid','ds_id','args__gstid', 'gstid'],['dataset_gc']);">Click for percent GC content</div>} if $length;
+    my $gc = $length < 10000000 && $chr_num < $chr_num_limit ? get_gc_for_chromosome(dsid=>$ds->id): 0;
+    $gc = $gc ? $gc : qq{  </div><div style="float: left; text-indent: 1em;" id=dataset_gc class="link" onclick="\$('#dataset_gc').removeClass('link'); get_gc_for_chromosome(['args__dsid','ds_id','args__gstid', 'gstid'],['dataset_gc']);">  Click for percent GC content</div>} if $length;
     $html .= $gc if $gc;
     $html .= qq{<tr><td>Links:</td>};
     $html .= "<td>";
@@ -546,10 +593,10 @@ sub get_dataset_info
 
     $html .= qq{</table></td>};
     $html .= qq{<td id=ds_features></td>};
+    $html .= qq{</table>};
 
-
-    my $chr_count = scalar (@chr);
-    $chr_count .= " <span class=small>Only 500 largest shown</span>" if ($chr_count >500); 
+    my $chr_count = $chr_num;
+    $chr_count .= " <span class=alert>Only $chr_num_limit largest listed</span>" if ($chr_count >$chr_num_limit); 
     return $html, $html2, $chr_count;
   }
 
@@ -584,13 +631,13 @@ sub get_dataset_chr_info
 <tr><td>Noncoding sequence:<td colspan=2><div id=noncoding_gc class="link" onclick = "gen_data(['args__loading..'],['noncoding_gc']);\$('#noncoding_gc').removeClass('link');  get_gc_for_noncoding(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['noncoding_gc']);">Click for percent GC content</div>
 } if $length;
 
-
     my $feat_string = qq{
 <tr><td><div class=small id=feature_count onclick="gen_data(['args__loading...'],['chr_features']);get_feature_counts(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['chr_features']);" >Click for Features</div></td></tr>};
 
     $html .= $feat_string;
     $html .= "</table></td>";
     $html .= qq{<td id=chr_features></td>};
+    $html .= qq{</table>};
     my $viewer;
     if (defined $chr)
      {
@@ -887,6 +934,8 @@ Type: <select id=feat_hist_type>
     $info .= "<br><img src=\"$out\">";
     return $info;
   }
+
+
 
 sub get_gc_for_chromosome
   {
