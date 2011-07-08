@@ -1,6 +1,10 @@
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
 <script language="javascript">
 
+$(function() {
+ $(".dialog").dialog({ autoOpen: false} );
+ });
+
 function ajax_wait (val){
 if (ajax.length)
    {
@@ -9,12 +13,128 @@ if (ajax.length)
    }
   eval(val);
 }
+$.fn.getLength = function(val){
+  var opt_length;
+  var blastable;
+  this.each(
+        function()
+        {
+                var opts = this.options;
+                opt_length = opts.length;
+                if (opt_length == 0) {return opt_length;}
+                blastable = opts[0].id;
+                if (val){
+                  for(var i=1;i<opts.length;i++)
+                  {
+                        blastable += ","+opts[i].id;
+                        //need to chopoff last comma
+                  }
+                }
+        }
+  );
+  if(val) return blastable;
+  else return opt_length;
+};
+
+function send_to_GenoList(){
+  var check = $('#genomelist_choice').getLength();
+  if(($('#blank').val())||(check==0)){
+    alert('You have not selected any Genomes to examine. You must select at least one.');
+    return;
+  }
+  var genolist = $('#genomelist_choice').getLength(1);
+  parse_for_GenoList(['args__'+genolist],[send_to_url]);
+}
+
+function add_all_genomes(){
+	$('#dsg_id option').each(function(){
+		add_to_genomelist_nowarn($(this).text(),$(this).attr("value"));
+	});
+	$('#geno_list').dialog('option', 'width', 500).dialog('open');
+}
+
+
+function send_to_url(url){
+  window.open(url);
+}
+
+function add_to_genomelist_nowarn(genome_name,gstid)
+{
+	var check = $('#'+gstid).val();
+	  if (check){
+	   
+	   return;
+	  }else{
+	  var html = '<option id='+gstid+' value='+gstid+ ' >'+genome_name+'</option>';
+	  //alert(html);
+	  $('#blank').remove();
+	  $('#genomelist_choice').append(html);
+	  counting();
+	}
+}
+
+function add_to_genomelist(genome_name,gstid)
+{
+	var check = $('#'+gstid).val();
+	  if (check){
+	   alert('You have already added '+genome_name+'.');
+	   return;
+	  }
+	  var html = '<option id='+gstid+' value='+gstid+ ' >'+genome_name+'</option>';
+	  //alert(html);
+	  $('#blank').remove();
+	  $('#genomelist_choice').append(html);
+	  counting();
+	
+}
 
 function open_aa_usage_table (html)
 {
  $('#aa_usage_table').html(html);
  $('#aa_table').tablesorter(); 
 }
+
+
+function clear_genome_list(){
+	var listlength = $('#genomelist_choice')[0].length;
+	for(var i=0; i < listlength; i++)
+	{
+		$('#'+$('#genomelist_choice')[0][0].id).remove();
+	}
+	counting();
+}
+
+function counting(){
+	var count=0;
+	if($('#blank').val()){ count =0;} 
+	else { count = $('#genomelist_choice')[0].length;}
+	if(count==0) { $('#genomelist_choice').html('<option id=blank value=null>No genome selected</option>') ; }
+	$('#count').html('Genome Count:'+count);
+}
+
+function add_all_org(){
+	$("#org_id option").each(function(){
+		 get_genome_list_for_org(['args__oid','args__'+$(this).attr('value')],[add_all_genomes_from_org]);
+	});
+	
+}
+
+
+function add_all_genomes_from_org(val){
+	if(val.length>0){
+		
+		var genomes = val.split("&");
+		var i=0;
+		for(i=0; i < genomes.length;i++){
+			var genome = genomes[i].split('%');
+			if(genome.length>1){
+				add_to_genomelist_nowarn(genome[1],genome[0]);
+			}
+		}
+		
+	}
+}
+
 
 function get_organism_name_chain(val)
 {
@@ -261,7 +381,7 @@ $(function() {
   <tr><td>
    <span>Organisms: </span><span class=small id=org_count><TMPL_VAR NAME="ORG_COUNT"></span> 
    <DIV id="org_list"><TMPL_VAR NAME="ORG_LIST"></DIV>
-   
+   <span class="ui-button ui-corner-all" id=allorg onClick="add_all_org();$('#geno_list').dialog('option', 'width', 500).dialog('open');">Add all</span><br>
    <td valign=top>
    <DIV>Organism information</DIV>
    <div id=org_info class = "small ui-corner-all ui-widget-content" ></div>
@@ -272,7 +392,7 @@ $(function() {
   <TD valign=top>
    <DIV>Genome information</DIV>
    <DIV id="dsg_info" class = "small ui-corner-all ui-widget-content"><TMPL_VAR NAME="DSG_INFO"></DIV>
-
+	
   <tr  valign=top>
   <td>
    <span>Datasets: </span><span class=small id=ds_count><TMPL_VAR NAME="DS_COUNT"></span> 
@@ -287,6 +407,9 @@ $(function() {
   <TD valign=top>
    <DIV>Chromosome information</DIV>
    <DIV id="chr_info" class = "small ui-corner-all ui-widget-content" ><TMPL_VAR NAME="CHR_INFO"></DIV>
+  <tr valign=top>
+	<td>
+  <DIV id="gn_list"  ><TMPL_VAR NAME="GN_LIST"></DIV>
 
 <!--   <td valign=top>
    Organisms With Recently Added Datasets:
@@ -298,8 +421,28 @@ $(function() {
    <DIV style="vertical-align: top; float: left;" id="get_seq"></DIV>
 </Table>
 
+
+
+
+
 <div class="dialog_box" id="gc_histogram" title="Histogram of GC Content"><input type=hidden id=feat_gc_min></div>
 <div class="dialog_box" id="wobble_gc_histogram" title="Histogram of Wobble GC Content for CDS"></div>
 <div class="dialog_box" id="wobble_gc_diff_histogram" title="(CDS GC - wobble GC) Content Histogram"></div>
 <div class="dialog_box" id="codon_usage_table" title="Codon Usage Table"></div>
 <div class="dialog_box" id="aa_usage_table" title="Amino Acid Usage Table"></div>
+
+
+
+<div class="dialog" title="Genome List" id="geno_list">
+    <span id=count class="small count">Genome Count: 0</span><br>
+             <select id="genomelist_choice" SIZE="10" MULTIPLE >
+              <option id=blank value=null>No Genome Selected</option>
+              </select>
+ <br>
+    <span class="ui-button ui-corner-all" id=send onClick="$('#genomelist_choice').sortSelect()">Sort List Alphabetically</span><br><br>
+    <span class="ui-button ui-corner-all" id=send onClick="send_to_GenoList()">Create Genome List</span><br><br>
+      <span class="ui-button ui-corner-all" id=remove onClick="$('#'+$('#genomelist_choice').val()).remove();counting();">Remove</span><br><br>
+    <span class="ui-button ui-corner-all" id=clear onClick="clear_genome_list()">Clear</span><br>
+
+    <div id=add_all_search></div>
+</div>
