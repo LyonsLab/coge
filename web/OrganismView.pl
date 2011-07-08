@@ -345,21 +345,15 @@ sub get_dataset_group_info
     return "Unable to create dataset_group object for id: $dsgid" unless $dsg;
     my $html;# = qq{<div style="overflow:auto; max-height:78px">};
     $html.= "<span class=alert>Restricted Genome!  Authorized Use Only!</span><br>" if $dsg->restricted;
-    my $total_length;
-    my @gs = sort {$a->chromosome cmp $b->chromosome} $dsg->genomic_sequences;
-    my $chr_num = scalar @gs;
-    
-#    $html .=qq{<table class=small ><tr class=small valign=top>};
-    my $count =0;
-    foreach my $gs (@gs)
+    my $rs = $coge->resultset('GenomicSequence')->search(
+      {dataset_group_id=>$dsg->id},
       {
-	my $chr = $gs->chromosome;
-	my $length = $gs->sequence_length;
-	$total_length += $length;
-#	$length = commify($length);
-#	$html .= qq{$chr:  $length bp<br>};
-	$count++;
+       select => [ { sum => 'sequence_length' } ],
+       as     => [ 'total_length' ], # remember this 'as' is for DBIx::Class::ResultSet not SQL
       }
+    );
+    my $total_length = $rs->first->get_column('total_length');
+    my $chr_num = $dsg->genomic_sequences->count(); 
     $html .= qq{<table>};
     $html .= "<tr valign=top><td><table class='small annotation_table'>";
     $html .= qq{<tr><td>Name:</td><td>}.$dsg->name.qq{</td></tr>} if $dsg->name;
@@ -485,6 +479,20 @@ sub get_dataset_info
 
 
     my $html2;
+    my $rs = $coge->resultset('Feature')->search(
+						 {
+						  dataset_id=>$ds->id,
+						  feature_type_id=>301,
+						 },
+						 {
+						  select => [ { sum => 'stop' } ],
+						  as     => [ 'total_length' ], # remember this 'as' is for DBIx::Class::ResultSet not SQL
+						 }
+						);
+    my $total_length = $rs->first->get_column('total_length');
+    my $chr_num = $ds->features->count({feature_type_id=>301}); 
+
+    #working here.  Need to deal with large number of chromosomes (e.g. > 1000.  Perl object creation is killing performance)
     my %chr;
     map{$chr{$_->chromosome}={length=>$_->stop}} ($ds->get_chromosomes(ftid=>301, length=>1)); #the chromosome feature type in coge is 301
     my $count = 100000;
@@ -495,7 +503,7 @@ sub get_dataset_info
 	$chr{$item}{num} = $num;
 	$count++;
       }
-    my @chr = scalar keys %chr > 1000 ? sort {$chr{$b}{length} <=> $chr{$a}{length}} keys %chr
+    my @chr = scalar keys %chr > 500 ? sort {$chr{$b}{length} <=> $chr{$a}{length}} keys %chr
       : sort {$chr{$a}{num} <=> $chr{$b}{num} || $a cmp $b}keys %chr;
     my $length =0;
     if (@chr)
@@ -504,9 +512,9 @@ sub get_dataset_info
 	$size = 5 if $size > 5;
 	my $select;
 	$select .= qq{<SELECT class="ui-widget-content ui-corner-all" id="chr" size =$size onChange="dataset_chr_info_chain()" >\n};
-	if (scalar @chr > 1000)
+	if (scalar @chr > 500)
 	  {
-	    my @tmp = @chr[0..999];
+	    my @tmp = @chr[0..499];
 	    	    $select .= join ("\n", map {"<OPTION value=\"$_\">".$_." (".commify($chr{$_}{length})." bp)</OPTION>"} @tmp)."\n";
 	  }
 	else
@@ -523,9 +531,8 @@ sub get_dataset_info
       $html2 .= qq{<input type="hidden" id="chr" value="">};
       $html2 .= "<tr><td>No chromosomes";
     }
-    my $chr_num = scalar @chr;
     $html .= "<tr><td>Chromosome count:<td><div style=\"float: left;\">".commify($chr_num);
-    $html .= "<tr><td>Total length:<td><div style=\"float: left;\">".commify($length)." bp ";
+    $html .= "<tr><td>Total length:<td><div style=\"float: left;\">".commify($total_length)." bp ";
     my $gc = $length < 10000000 && $chr_num < 500 ? get_gc_for_chromosome(dsid=>$ds->id): 0;
     $gc = $gc ? $gc : qq{  </div><div style="float: left; text-indent: 1em;" id=dataset_gc class="link" onclick="\$('#dataset_gc').removeClass('link'); get_gc_for_chromosome(['args__dsid','ds_id','args__gstid', 'gstid'],['dataset_gc']);">Click for percent GC content</div>} if $length;
     $html .= $gc if $gc;
@@ -542,7 +549,7 @@ sub get_dataset_info
 
 
     my $chr_count = scalar (@chr);
-    $chr_count .= " <span class=small>Only 1000 largest shown</span>" if ($chr_count >1000); 
+    $chr_count .= " <span class=small>Only 500 largest shown</span>" if ($chr_count >500); 
     return $html, $html2, $chr_count;
   }
 
