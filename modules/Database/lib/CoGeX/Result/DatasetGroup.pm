@@ -830,7 +830,7 @@ sub chr_info
 	  qq{-----------<br>Chr:   (length)<br>}.$chr_list unless $summary;
     return $html;
   }
-################################################ subroutine header begin ##
+ ############################################### subroutine header begin ##
 
 =head2 length
 
@@ -850,9 +850,39 @@ See Also   :
 sub length
     {
       my $self = shift;
-      my $total_length =0;
-      map {$total_length += $_->sequence_length} $self->genomic_sequences;
+      my $rs = $self->genomic_sequences(
+					{},
+					{
+					 select => [ { sum => 'sequence_length' } ],
+					 as     => [ 'total_length' ], # remember this 'as' is for DBIx::Class::ResultSet not SQL
+					}
+				       );
+      my $total_length = $rs->first->get_column('total_length');
       return $total_length;
+    }
+
+
+
+############################################### subroutine header begin ##
+
+=head2 chromosome_count
+
+ Usage     : $self->chromosome_count
+ Purpose   : get count of chromosomes in the dataset group
+ Returns   : number
+ Argument  : 
+ Throws    : 
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub chromosome_count
+    {
+      return shift->genomic_sequences->count();
     }
 
 ################################################ subroutine header begin ##
