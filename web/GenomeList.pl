@@ -221,8 +221,7 @@ sub generate_table
 	my $name = $dsg->name ? $dsg->name : $dsg->organism->name;
 	my $desc = $dsg->description ? $dsg->description : join("; ", map { qq{<span class=link onclick=window.open('OrganismView.pl?org_desc=$_')>$_</span>} } split /;\s*/, $dsg->organism->description);
 	
-	my @chr = $dsg->chromosomes;
-	my $chr = scalar @chr;
+	my $chr_count = $dsg->chromosome_count;
 	my $length = $dsg->length;
 	my $type = $dsg->type->name;
 	push @table,{
@@ -232,7 +231,7 @@ sub generate_table
 		     DESC=>$desc,
 		     VER=>$dsg->version,
 		     TYPE=>$type,
-		     CHR_COUNT=>commify($chr),
+		     CHR_COUNT=>commify($chr_count),
 		     LENGTH=>commify($length),
 		    };
 	$count++;
