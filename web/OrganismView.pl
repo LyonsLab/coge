@@ -18,6 +18,7 @@ no warnings 'redefine';
 use vars qw( $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $coge $HISTOGRAM %FUNCTION $P);
 $P = CoGe::Accessory::Web::get_defaults();
 $ENV{PATH} = $P->{COGEDIR};
+$ENV{irodsEnvFile} = "/var/www/.irods/.irodsEnv";
 
 # set this to 1 to print verbose messages to logs
 $DEBUG = 0;
@@ -64,6 +65,7 @@ $coge = CoGeX->dbconnect();
 	     update_genomelist=>\&update_genomelist,
 	     parse_for_GenoList=>\&parse_for_GenoList,
 		 get_genome_list_for_org=>\&get_genome_list_for_org,
+		add_to_irods=>\&add_to_irods,
 	    );
 my $pj = new CGI::Ajax(%FUNCTION);
 $pj->JSDEBUG(0);
@@ -388,6 +390,29 @@ sub get_dataset_groups
       return $html, scalar @opts;
     }
 
+sub add_to_irods
+  {
+    my %opts = @_;
+    my $dsgid = $opts{dsgid};
+    my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+    my $add_to_irods_bin = $P->{BINDIR}."/irods/add_to_irods.pl";
+    my $cmd = $add_to_irods_bin." -file ".$dsg->file_path;
+    my $new_name = $dsg->organism->name." ".$dsg->id.".faa";
+    $cmd .= " -new_name '$new_name'";
+    $cmd .= " -dir collections";
+    $cmd .= " -tag 'organism=".$dsg->organism->name."'";
+    $cmd .= " -tag version=".$dsg->version;
+    $cmd .= " -tag 'sequence_type=".$dsg->sequence_type->name."'";
+    my ($ds) = $dsg->datasets;
+    $cmd .= " -tag 'source_name=".$ds->name."'";
+    $cmd .= " -tag 'source_link=".$ds->link."'" if $ds->link;
+    $cmd .= " -tag 'imported_from=CoGe: http://genomevolution.org/CoGe/OrganismView.pl?dsgid=$dsgid'";
+    system($cmd);
+    print STDERR $cmd;
+    #return $cmd;
+    return "Complete!"
+  }
+
 sub get_dataset_group_info
   {
     my %opts = @_;
@@ -397,15 +422,9 @@ sub get_dataset_group_info
     return "Unable to create dataset_group object for id: $dsgid" unless $dsg;
     my $html;# = qq{<div style="overflow:auto; max-height:78px">};
     $html.= "<span class=alert>Restricted Genome!  Authorized Use Only!</span><br>" if $dsg->restricted;
-    my $rs = $coge->resultset('GenomicSequence')->search(
-      {dataset_group_id=>$dsg->id},
-      {
-       select => [ { sum => 'sequence_length' } ],
-       as     => [ 'total_length' ], # remember this 'as' is for DBIx::Class::ResultSet not SQL
-      }
-    );
-    my $total_length = $rs->first->get_column('total_length');
-    my $chr_num = $dsg->genomic_sequences->count(); 
+    my $total_length = $dsg->length;
+#    my $chr_num = $dsg->genomic_sequences->count(); 
+    my $chr_num = $dsg->chromosome_count();
     $html .= qq{<table>};
     $html .= "<tr valign=top><td><table class='small annotation_table'>";
     $html .= qq{<tr><td>Name:</td><td>}.$dsg->name.qq{</td></tr>} if $dsg->name;
@@ -440,6 +459,8 @@ sub get_dataset_group_info
     $html .= qq{<span class='link' onclick="window.open('SynMap.pl?dsgid1=$dsgid;dsgid2=$dsgid');">SynMap</span>};
     $html .= qq{&nbsp|&nbsp};
     $html .= qq{<span class='link' onclick="window.open('CoGeBlast.pl?dsgid=$dsgid');">CoGeBlast</span>};
+    $html .= qq{&nbsp|&nbsp};
+    $html .= qq{<span id=irods class='link' onclick="gen_data(['args__loading...'],['irods']);add_to_irods(['args__dsgid','args__$dsgid'],['irods']);">Send To iPlant Data Store</span>};
     $html .= "</td></tr>";
 
 	
