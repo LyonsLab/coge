@@ -3656,21 +3656,24 @@ sub get_org_info
     elsif ($dsid)
       {
 	my $ds = $coge->resultset('Dataset')->find($dsid);
-	foreach my $item ($ds->dataset_groups(chr=>$chr))
-	  {
-	    if ($gstid)
+        if ($ds)
+          {
+	    foreach my $item ($ds->dataset_groups(chr=>$chr))
 	      {
-		$dsg = $item if $item->type->id eq $gstid;
+	        if ($gstid)
+	          {
+		    $dsg = $item if $item->type->id eq $gstid;
+	          }
+	        else
+	          {
+		    $dsg = $item;
+		    last;
+	          }
 	      }
-	    else
-	      {
-		$dsg = $item;
-		last;
-	      }
-	  }
-	$gst = $dsg->type if $dsg;
-	$dsgid = $dsg->id if $dsg;
-      }
+	    $gst = $dsg->type if $dsg;
+	    $dsgid = $dsg->id if $dsg;
+         } 
+     }
     return "<span class=\"small alert\">Dataset group was not found</span>".qq{<input type="hidden" id="dsgid$num">} unless $dsg;
     my $dsg_menu = qq{<span class="small">Genome: </span><SELECT name="dsgid$num" id="dsgid$num">};
     foreach my $item (sort {$b->version <=> $a->version || $a->type->id <=> $b->type->id} $dsg->organism->dataset_groups)
