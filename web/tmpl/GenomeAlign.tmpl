@@ -1,0 +1,167 @@
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></SCRIPT>
+<SCRIPT language="JavaScript">
+
+$(document).ready(function(){
+	$('#genome_table').tablesorter({		
+		cssAsc: 'headerSortUp',		// Class name for ascending sorting action to header
+		cssDesc: 'headerSortDown',	// Class name for descending sorting action to header
+	//	cssHeader: 'header',			// Class name for headers (th's)
+		widgets: ['zebra'],
+		headers: {0: {sorter: false},},					
+	});
+	$.ajaxSetup({
+	               type: "POST",
+	               url: "/CoGe/GenomeAlign.pl",
+	               //dataType: "html",
+	               cache: false,
+	});
+	$("#tabs").tabs();
+
+});
+
+
+//set up the jquery ui
+
+function genome_checkboxes(){
+  var action = $('#checked_action').val();
+  var accn=",";
+  $('#genome_table :checkbox').each(function(){
+    if (this.checked == true) accn = accn + this.id+",";
+  });
+  if (accn == ",") {
+   alert("Danger Will Robinson!\n1D-10T error!  You have not checked any genomes.");
+   return;
+  }
+  run_alignment(accn);
+}
+
+function run_alignment(dsgids) {
+	 var basename = pageObj.basename;
+	 $.ajax({
+            data: {
+                   jquery_ajax: 1,
+		   dsgids: dsgids,
+		   basename: basename,
+                   fname: 'run_alignment'
+                  },
+           success : function results(stuff) {$('#results').html(stuff);}
+	});
+
+}
+
+function readlog() {
+	 var basename = pageObj.basename;
+	 $.ajax({
+            data: {
+                   jquery_ajax: 1,
+		   logfile: basename,
+		   prog: 'GenomeAlign',
+                   fname: 'read_log'
+                  },
+            success : monitor_log
+	});
+
+}
+
+
+function monitor_log (log)
+{
+  pageObj.finished =0;
+  if (log.match(/root alignment length/))
+   {
+     pageObj.finished=1;
+   }
+   log.replace(/\n/g,"<br>\\n");
+  var waittime = pageObj.waittime;
+  pageObj.waittime = waittime*2;
+  var message = log;
+  message = message+"<br>Next check in "+waittime/1000+" seconds.";
+  if (pageObj.finished)
+   {
+    $('#results').html("<div class=small>"+message+"</div>");
+   }
+  else
+   {
+     $('#results').html("<div class=small>"+message+"</div>");
+     setTimeout("readlog(pageObj.logfile)", waittime);
+   }
+}
+
+function populate_page_obj(basename)
+ {
+  if (!basename) {basename = rand()}
+  pageObj.basename = basename;
+  pageObj.nolog = 0;
+  pageObj.waittime = 1000;
+ }
+
+function rand ()
+{
+  return ( Math.floor ( Math.random ( ) * 99999999 + 1 ) );
+}
+
+</SCRIPT>
+  <div id=results></div>
+  <div id=tabs style='margin-top: 0.5em'>
+   <ul>
+     <li class="small">
+        <a href="#tab1">
+        <span>Configure Analysis</span>
+	</a>
+     </li>
+     <li class="small">
+        <a href="#tab2">
+        <span>Genome List</span>
+	</a>
+     </li>
+  </ul>
+
+
+ <div id="tab1">
+ </div> <!--close tab 1-->
+ <div id="tab2">
+	<div class ="small"> Genome Count: <TMPL_VAR NAME="GENOME_COUNT"> <div class="link" onclick=window.open('<TMPL_VAR NAME="GENOMELIST_LINK">');>Generate Genome List</div></div>
+	<TABLE id='genome_table' class="ui-widget-content ui-corner-all">
+	<THEAD align=left>
+	 <tr>
+	  <TH> </TH>
+	  <TH >Genome Name</TH>
+	  <TH >Description</TH>
+	  <TH >Sequence Type</TH>
+	  <TH >Version</TH>
+	  <TH >ChrCount</TH>
+	  <TH >Length (bp)</TH>
+	</th>
+	  </tr>
+	</THEAD>
+	<tbody align=left valign="top" id="genome_table_body" class=small>
+	 <TMPL_LOOP NAME=INFO>
+	   <TR>
+	     <TD><input type=checkbox checked id='<TMPL_VAR NAME=DSGID>'><input type=hidden id='dsgid_<TMPL_VAR NAME=COUNT>' value='<TMPL_VAR NAME=DSGID>'></TD>
+	     <TD><span class=link onclick=window.open('OrganismView.pl?dsgid=<TMPL_VAR NAME=DSGID>')> <TMPL_VAR NAME=NAME></span></TD>
+	     <TD><TMPL_VAR NAME=DESC></TD>
+	     <TD><TMPL_VAR NAME=TYPE></TD>
+	     <TD align=center><TMPL_VAR NAME=VER></TD>
+	     <TD align=center><TMPL_VAR NAME=CHR_COUNT></TD>
+	     <TD align=right><TMPL_VAR NAME=LENGTH></TD>
+
+	   </TR>
+	  </TMPL_LOOP>
+	 </tbody>
+	</TABLE>
+	</form>
+
+	<span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#genome_table tr :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Check All</span>
+	<span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#genome_table tr :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minus"></span>Uncheck All</span>
+
+ </div> <!--close tab 2-->
+</div> <!--close all tabs-->
+ <span style="font-size: 1em" class='ui-button ui-corner-all ui-button-go ' onclick="
+
+  populate_page_obj();
+  $('#results').html('<div class=small>Initializing alignment run. . .</div>');
+  genome_checkboxes();setTimeout('readlog()',2000);
+
+">Run Alignment</span><span id=retrieve_message class=alert></span> 
+
