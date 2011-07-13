@@ -1,12 +1,12 @@
-<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
-<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></SCRIPT>
-<SCRIPT language="JavaScript">
+	<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
+	<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></SCRIPT>
+	<SCRIPT language="JavaScript">
 
-$(document).ready(function(){
+	$(document).ready(function(){
 		$('#genome_table').tablesorter({		
 		cssAsc: 'headerSortUp',		// Class name for ascending sorting action to header
 		cssDesc: 'headerSortDown',	// Class name for descending sorting action to header
-//		cssHeader: 'header',			// Class name for headers (th's)
+	//	cssHeader: 'header',			// Class name for headers (th's)
 		widgets: ['zebra'],
 		headers: {0: {sorter: false},},					
 		});
@@ -19,18 +19,18 @@ $(document).ready(function(){
 		$("#search_bar").keyup( function() { filter_rows( $(this).val() ); });
 		$('#search_type').mouseup( function() { filter_rows( $('#search_bar').val() ); });
 
- $.ajaxSetup({
-                type: "GET",
-                url: "/CoGe/GenomeList.pl",
-                //dataType: "html",
-                cache: false,
-        });
+	$.ajaxSetup({
+	               type: "GET",
+	               url: "/CoGe/GenomeList.pl",
+	               //dataType: "html",
+	               cache: false,
+	       });
 
-});
+	});
 
 
-//set up the jquery ui
-$(function() {
+	//set up the jquery ui
+	$(function() {
 	     //substaniate dialog box	     
 	     $("#table_opts_dialog").dialog({ height: 150,
 	       				     width: 627,
@@ -58,481 +58,602 @@ $(function() {
 					$('#save_form').dialog('open');
 			});
 
-}); 
+	}); 
 
-//Filters Rows for search_text - Case sensitive as of now, and searches hidden columns...
-function filter_rows (search_text){
-	 if(! search_text) { $("#genome_table tr:hidden").show(0);}
-	 else if (search_text.length >= 3) {
-	 $("#genome_table_body tr:hidden").show(0);
-	 if( $('#search_type').val() == 1 ) { $("#genome_table_body tr:not(:contains('"+search_text+"'))").hide(); }
-	 else { $("#genome_table_body tr:contains('"+search_text+"')").hide(); }
-}
-         else return;
-}
+	//Filters Rows for search_text - Case sensitive as of now, and searches hidden columns...
+	function filter_rows (search_text){
+	  if(! search_text) { $("#genome_table tr:hidden").show(0);}
+	  else if (search_text.length >= 3) {
+	    $("#genome_table_body tr:hidden").show(0);
+	    if( $('#search_type').val() == 1 ) { $("#genome_table_body tr:not(:contains('"+search_text+"'))").hide(); }
+	    else { $("#genome_table_body tr:contains('"+search_text+"')").hide(); }
+	  }
+	  else return;
+	}
 
-function feature_checkboxes(){
-  var action = $('#checked_action').val();
-  var accn=",";
-  $('#genome_table :checkbox').each(function(){
-     if (this.checked == true) accn = accn + this.id+",";
-   });
-  if (accn == ",") {
-    alert("Danger Will Robinson!\n1D-10T error!  You have not checked any features.");
-    return;
-  }
-  if(action == "gevo") {
-    gevo(['args__'+accn],[export_url]);
-  }
-  else if (action == "fasta"){
-    get_fasta_seqs(['args__'+accn],[export_url]);
-  }
-  else if (action == "CodeOn"){
-    export_CodeOn(['args__'+accn],[export_url]);
-  }
-  else if (action == "xls"){
-    $('#retrieve_message').html('Retrieving data');
-    generate_excel_file(['args__'+accn],[export_url]);
-  }
-  else if (action == "blast"){
-    blast(['args__'+accn],[export_url]);
-  }
-  else if (action == "featmap"){
-  	send_to_featmap(['args__'+accn],[export_url]);
-  }
-  else if (action == "msa"){
-    send_to_msa(['args__'+accn],[export_url]);
-  }
-  else if (action == "featlist"){
-    send_to_featlist(['args__'+accn],[export_url]);
-  }
-  else if (action == "SynFind"){
-    send_to_SynFind(['args__'+accn],[export_url]);
-  }
-  else {
-    alert("We will get this working ... soon.");
-  }
-}
+	function feature_checkboxes(){
+	 var action = $('#checked_action').val();
+	 var accn=",";
+	 $('#genome_table :checkbox').each(function(){
+	    if (this.checked == true) accn = accn + this.id+",";
+	  });
+	 if (accn == ",") {
+	   alert("Danger Will Robinson!\n1D-10T error!  You have not checked any genomes.");
+	   return;
+	 }
+	 if (action == "fasta"){
+	   $('#retrieve_message').html('Retrieving data');
+	   $.ajax({
+	    data: {
+	 	   jquery_ajax: 1,
+	           fname: 'get_fasta_seqs',
+	    	   accn: accn
+	          },
+	    success : export_url
+	   });
+	 }
+	 else if (action == "xls"){
+	   $('#retrieve_message').html('Retrieving data');
+	   
+	   $.ajax({
+	    data: {
+	 	    jquery_ajax: 1,
+	           fname: 'generate_excel_file',
+	    	   accn: accn
+	          },
+	    success : export_url
+	  });
+	 }
+	 else if (action == "csv"){
+	   $('#retrieve_message').html('Retrieving data');
+	   
+	   $.ajax({
+	    data: {
+	 	    jquery_ajax: 1,
+	           fname: 'generate_csv_file',
+	    	   accn: accn
+	          },
+	    success : export_url
+	  });
+	 }
+	 else if (action == "blast"){
+	   $('#retrieve_message').html('Loading CoGeBlast');
+	   $.ajax({
+	    data: {
+	 	   jquery_ajax: 1,
+	           fname: 'send_to_CoGeBlast',
+	    	   accn: accn
+	          },
+	    success : export_url
+	  });
+	 }
+	 else if (action == "synfind"){
+	   $('#retrieve_message').html('Loading SynFind');
+	   $.ajax({
+	    data: {
+	 	   jquery_ajax: 1,
+	           fname: 'send_to_SynFind',
+	    	   accn: accn
+	          },
+	    success : export_url
+	  });
+	 }
+	 else if (action == "align"){
+	   $('#retrieve_message').html('Loading GenomeAlign');
+	   $.ajax({
+	    data: {
+	 	   jquery_ajax: 1,
+	           fname: 'send_to_msa',
+	    	   accn: accn
+	          },
+	    success : export_url
+	  });
+	 }
+	 else {
+	   alert("We will get this working ... soon.");
+	 }
+	}
 
 
 
-function export_url(url,num_accns) {
-  if (url == "alert") {
-    var remove = num_accns - 20;
-    alert("You have exceeded the number of features you can send to GEvo ( 20 Max ). You currently have "+num_accns+" selected. Please uncheck "+remove+" of your checked item(s).");
-  }
-  else {
-    var regex = /xls$/;
-    if ($('#gstid').val() && !regex.test(url))
-     {
-       url=url+';gstid='+$('#gstid').val();
-     }
-    window.open(url);
-  }
-  $('#retrieve_message').html(' ');
-  
-}
+	function export_url(url,num_accns) {
+	 if (url == "alert") {
+	   var remove = num_accns - 20;
+	   alert("You have exceeded the number of features you can send to GEvo ( 20 Max ). You currently have "+num_accns+" selected. Please uncheck "+remove+" of your checked item(s).");
+	 }
+	 else {
+	   var regex = /xls$/;
+	   if ($('#gstid').val() && !regex.test(url))
+	    {
+	      url=url+';gstid='+$('#gstid').val();
+	    }
+	   window.open(url);
+	 }
+	 $('#retrieve_message').html(' ');
+
+	}
 
 
-function show_all_codon_tables(num) {
- for (var i=1; i<=num; i++)
-  {
-   $('#codon_usage'+i).removeClass('link');
-   gen_data(['args__loading'],['codon_usage'+i]);
-   get_codon_table(i);
-  }
-  $('#show_all_codon').remove();
-}
+	function show_all_codon_tables(num) {
+	for (var i=1; i<=num; i++)
+	 {
+	  $('#codon_usage_'+i).removeClass('link');
+	  $('#codon_usage_'+i).html('<span class=alert>loading...</span>');
+	  var dsgid = $('#dsgid_'+i).val();
+	  run_get_codon_usage({dsgid: dsgid, divid: 'codon_usage_'+i});
+	 }
+	 $('#show_all_codon').remove();
+	}
+	
+	function get_all_wobble_hist(num){
+		for (var i=1; i<=num; i++)
+		 {
+		$('#cds_wgc_hist_'+i).removeClass('link');
+		  $('#cds_wgc_hist_'+i).html('<span class=alert>loading...</span>');
+		  var dsgid = $('#dsgid_'+i).val();
+		  get_cds_wgc_hist({dsgid: dsgid, divid: 'cds_wgc_hist_'+i});
+		 }
+		 $('#get_all_wcg').remove();
+	}
+	
+	function get_all_gc_hist(num){
+		for (var i=1; i<=num; i++)
+		 {
+		$('#cds_gc_hist_'+i).removeClass('link');
+		  $('#cds_gc_hist_'+i).html('<span class=alert>loading...</span>');
+		  var dsgid = $('#dsgid_'+i).val();
+		  get_cds_gc_hist({dsgid: dsgid, divid: 'cds_gc_hist_'+i});
+		 }
+		 $('#get_all_cg').remove();
+	}
+	
 
-function update_table() {
- if (ajax.length)
-  {
-    setTimeout("update_table()",100);
-    return;
-  }
-  $('#genome_table').trigger("update");	
- }
+	function update_table() {
+	if (ajax.length)
+	 {
+	   setTimeout("update_table()",100);
+	   return;
+	 }
+	 $('#genome_table').trigger("update");	
+	}
 
 
 
 
-function get_codon_table (num) {
-if (ajax.length)
-   {
-    setTimeout("get_codon_table("+num+")",100);
-    return;
-   }
-   var fid =    $('#CDS'+num).val();
-   codon_table(['args__fid','args__'+fid],['codon_usage'+num]);
+	function get_codon_table (num) {
+	if (ajax.length)
+	  {
+	   setTimeout("get_codon_table("+num+")",100);
+	   return;
+	  }
+	  var fid =    $('#CDS'+num).val();
+	  codon_table(['args__fid','args__'+fid],['codon_usage'+num]);
 
-}
+	}
 
-function get_all_gc(num) {
- for (var i=1; i<=num; i++)
-  {
-   $('#gc_'+i).removeClass('link');
-   $('#gc_'+i).html('<span class=alert>loading...</span>');
-   $('#at_'+i).removeClass('link');
-   $('#at_'+i).html('<span class=alert>loading...</span>');
-   $('#n_'+i).removeClass('link');
-   $('#n_'+i).html('<span class=alert>loading...</span>');
-   var dsgid = $('#dsgid_'+i).val();
-   run_get_gc({dsgid: dsgid, divid1: 'gc_'+i, divid2: 'at_'+i, divid3: 'n_'+i});
-  }
-  $('#get_all_gc').remove();
-    update_table();
- }
+	function get_all_gc(num) {
+	for (var i=1; i<=num; i++)
+	 {
+	  $('#gc_'+i).removeClass('link');
+	  $('#gc_'+i).html('<span class=alert>loading...</span>');
+	  $('#at_'+i).removeClass('link');
+	  $('#at_'+i).html('<span class=alert>loading...</span>');
+	  $('#n_'+i).removeClass('link');
+	  $('#n_'+i).html('<span class=alert>loading...</span>');
+	  var dsgid = $('#dsgid_'+i).val();
+	  run_get_gc({dsgid: dsgid, divid1: 'gc_'+i, divid2: 'at_'+i, divid3: 'n_'+i});
+	 }
+	 $('#get_all_gc').remove();
+	   update_table();
+	}
 
-function run_get_codon_usage(opts){
-   if (!opts){opts={};}
-   dsgid = opts.dsgid;
-   divid = opts.divid;
+	function run_get_codon_usage(opts){
+	  if (!opts){opts={};}
+	  dsgid = opts.dsgid;
+	  divid = opts.divid;
 
-   // create a new closure who's scope does *not*
-   // include the `divid` value so that callback will 
-   // not clobber the `divid` variable 
-   var create_callback = function(divid) {
-       var local_divid = divid;
-       return function (data) {
-           $('#'+local_divid).html(data);
-       };
-   };
+	  // create a new closure who's scope does *not*
+	  // include the `divid` value so that callback will 
+	  // not clobber the `divid` variable 
+	  var create_callback = function(divid) {
+	      var local_divid = divid;
+	      return function (data) {
+	          $('#'+local_divid).html(data);
+	      };
+	  };
 
-   $.ajax({
-     data: {
-  	    jquery_ajax: 1,
-            fname: 'get_gc',
+	  $.ajax({
+	    data: {
+	 	    jquery_ajax: 1,
+	           fname: 'get_codon_usage',
 	    dsgid: dsgid,
-           },
-     success : create_callback(divid)
-   });
-}
+	          },
+	    success : create_callback(divid)
+	  });
+	}
+
+	function blast (dsgids) {
+	$.ajax({
+	  data: {
+	   jquery_ajax: 1,
+	   fname: 'blast',
+	   accn_list: dsgids
+	 },
+	  success : create_callback(divid)
+	});
+	}
 
 
-function get_all_gc(num) {
- for (var i=1; i<=num; i++)
-  {
-   $('#gc_'+i).removeClass('link');
-   $('#gc_'+i).html('<span class=alert>loading...</span>');
-   $('#at_'+i).removeClass('link');
-   $('#at_'+i).html('<span class=alert>loading...</span>');
-   $('#n_'+i).removeClass('link');
-   $('#n_'+i).html('<span class=alert>loading...</span>');
-   var dsgid = $('#dsgid_'+i).val();
-   run_get_gc({dsgid: dsgid, divid1: 'gc_'+i, divid2: 'at_'+i, divid3: 'n_'+i});
-  }
-  $('#get_all_gc').remove();
-    update_table();
- }
+	function get_all_gc(num) {
+	for (var i=1; i<=num; i++)
+	 {
+	  $('#gc_'+i).removeClass('link');
+	  $('#gc_'+i).html('<span class=alert>loading...</span>');
+	  $('#at_'+i).removeClass('link');
+	  $('#at_'+i).html('<span class=alert>loading...</span>');
+	  $('#n_'+i).removeClass('link');
+	  $('#n_'+i).html('<span class=alert>loading...</span>');
+	  var dsgid = $('#dsgid_'+i).val();
+	  run_get_gc({dsgid: dsgid, divid1: 'gc_'+i, divid2: 'at_'+i, divid3: 'n_'+i});
+	 }
+	 $('#get_all_gc').remove();
+	   update_table();
+	}
 
-function run_get_gc(opts){
-   if (!opts){opts={};}
-   dsgid = opts.dsgid;
-   divid1 = opts.divid1;
-   divid2 = opts.divid2;
-   divid3 = opts.divid3;
+	function run_get_gc(opts){
+	  if (!opts){opts={};}
+	  dsgid = opts.dsgid;
+	  divid1 = opts.divid1;
+	  divid2 = opts.divid2;
+	  divid3 = opts.divid3;
 
-   // create a new closure who's scope does *not*
-   // include the `divid` value so that callback will 
-   // not clobber the `divid` variable 
-   var create_callback = function(divid1, divid2, divid3) {
-       var local_divid1 = divid1;
-       var local_divid2 = divid2;
-       var local_divid3 = divid3;
-       return function (data) {
-           items = data.split('_');
-           $('#'+local_divid1).html(items[0]);
-           $('#'+local_divid2).html(items[1]);
-           $('#'+local_divid3).html(items[2]);
-       };
-   };
+	  // create a new closure who's scope does *not*
+	  // include the `divid` value so that callback will 
+	  // not clobber the `divid` variable 
+	  var create_callback = function(divid1, divid2, divid3) {
+	      var local_divid1 = divid1;
+	      var local_divid2 = divid2;
+	      var local_divid3 = divid3;
+	      return function (data) {
+	          items = data.split('_');
+	          $('#'+local_divid1).html(items[0]);
+	          $('#'+local_divid2).html(items[1]);
+	          $('#'+local_divid3).html(items[2]);
+	      };
+	  };
 
-   $.ajax({
-     data: {
-  	    jquery_ajax: 1,
-            fname: 'get_gc',
+	  $.ajax({
+	    data: {
+	 	    jquery_ajax: 1,
+	       fname: 'get_gc',
+	    dsgid: dsgid 
+	          },
+	    success : create_callback(divid1, divid2, divid3)
+	  });
+	}
+
+	function get_all_feat_counts(num) {
+	for (var i=1; i<=num; i++)
+	 {
+	  $('#feat_counts_'+i).removeClass('link');
+	  $('#feat_counts_'+i).html('<span class=alert>loading...</span>');
+	  var dsgid = $('#dsgid_'+i).val();
+	  run_get_feat_counts({dsgid: dsgid, divid: 'feat_counts_'+i});
+	 }
+	 $('#get_all_feat_counts').remove();
+	 update_table();	
+	}
+
+	function run_get_feat_counts(opts){
+	  if (!opts){opts={};}
+	  dsgid = opts.dsgid;
+	  divid = opts.divid;
+
+	  // create a new closure who's scope does *not*
+	  // include the `divid` value so that callback will 
+	  // not clobber the `divid` variable 
+	  var create_callback = function(divid) {
+	      var local_divid = divid;
+	      return function (data) {
+	          $('#'+local_divid).html(data);
+	      };
+	  };
+
+	  $.ajax({
+	    data: {
+	 	    jquery_ajax: 1,
+	           fname: 'get_feature_counts',
 	    dsgid: dsgid,
-           },
-     success : create_callback(divid1, divid2, divid3)
-   });
-}
-
-function get_all_feat_counts(num) {
- for (var i=1; i<=num; i++)
-  {
-   $('#feat_counts_'+i).removeClass('link');
-   $('#feat_counts_'+i).html('<span class=alert>loading...</span>');
-   var dsgid = $('#dsgid_'+i).val();
-   run_get_feat_counts({dsgid: dsgid, divid: 'feat_counts_'+i});
-  }
-  $('#get_all_feat_counts').remove();
-  update_table();	
- }
-
-function run_get_feat_counts(opts){
-   if (!opts){opts={};}
-   dsgid = opts.dsgid;
-   divid = opts.divid;
-
-   // create a new closure who's scope does *not*
-   // include the `divid` value so that callback will 
-   // not clobber the `divid` variable 
-   var create_callback = function(divid) {
-       var local_divid = divid;
-       return function (data) {
-           $('#'+local_divid).html(data);
-       };
-   };
-
-   $.ajax({
-     data: {
-  	    jquery_ajax: 1,
-            fname: 'get_feature_counts',
-	    dsgid: dsgid,
-           },
-     success : create_callback(divid)
-   });
+	          },
+	    success : create_callback(divid)
+	  });
 
 
- }
+	}
+
+	function get_cds_wgc_hist(opts){
+	if (!opts){opts={};}
+	   dsgid = opts.dsgid;
+	   divid = opts.divid;
+
+		var create_callback = function(divid) {
+		       var local_divid = divid;
+		       return function (data) {
+		           $('#'+local_divid).html(data);
+		       };
+		   };
+		$.ajax({
+		     data: {
+		  	    jquery_ajax: 1,
+		            fname: 'cds_wgc_hist',
+			    	dsgid: dsgid,
+		           },
+		     success : create_callback(divid)
+		   });
+	}
 
 
-function get_all_aa_usage(num) {
- for (var i=1; i<=num; i++)
-  {
-   $('#aa_usage_'+i).removeClass('link');
-   $('#aa_usage_'+i).html('<span class=alert>loading...</span>');
-   dsgid = $('#dsgid_'+i).val();
-   table_name = 'aa_table'+i;
-   run_get_aa_usage({dsgid: dsgid, table_name: table_name, divid: 'aa_usage_'+i});
-  }
-  $('#get_all_aa_usage').remove();
-  update_table();	
- }
+	function get_cds_gc_hist(opts){
+	if (!opts){opts={};}
+	   dsgid = opts.dsgid;
+	   divid = opts.divid;
 
-function run_get_aa_usage(opts){
-   if (!opts){opts={};}
-   dsgid = opts.dsgid;
-   table_name = opts.table_name;
-   divid = opts.divid;
+		var create_callback = function(divid) {
+		       var local_divid = divid;
+		       return function (data) {
+		           $('#'+local_divid).html(data);
+		       };
+		   };
+		$.ajax({
+		     data: {
+		  	    jquery_ajax: 1,
+		            fname: 'get_gc_for_feature_type',
+			    	dsgid: dsgid,
+				    typeid: 3,
+		           },
+		     success : create_callback(divid)
+		   });
+	}
 
-   // create a new closure who's scope does *not*
-   // include the `divid` value so that callback will 
-   // not clobber the `divid` variable 
-   var create_callback = function(divid) {
-       var local_divid = divid;
-       var local_table_name = table_name;
-       return function (data) {
-           $('#'+local_divid).html(data);
+	function get_all_aa_usage(num) {
+	for (var i=1; i<=num; i++)
+	 {
+	  $('#aa_usage_'+i).removeClass('link');
+	  $('#aa_usage_'+i).html('<span class=alert>loading...</span>');
+	  dsgid = $('#dsgid_'+i).val();
+	  table_name = 'aa_table'+i;
+	  run_get_aa_usage({dsgid: dsgid, table_name: table_name, divid: 'aa_usage_'+i});
+	 }
+	 $('#get_all_aa_usage').remove();
+	 update_table();	
+	}
+
+	function run_get_aa_usage(opts){
+	  if (!opts){opts={};}
+	  dsgid = opts.dsgid;
+	  table_name = opts.table_name;
+	  divid = opts.divid;
+
+	  // create a new closure who's scope does *not*
+	  // include the `divid` value so that callback will 
+	  // not clobber the `divid` variable 
+	  var create_callback = function(divid) {
+	      var local_divid = divid;
+	      var local_table_name = table_name;
+	      return function (data) {
+	          $('#'+local_divid).html(data);
 	   $('#'+local_table_name).tablesorter();
-       };
-   };
+	      };
+	  };
 
-   $.ajax({
-     data: {
-  	    jquery_ajax: 1,
-            fname: 'get_aa_usage',
+	  $.ajax({
+	    data: {
+	 	    jquery_ajax: 1,
+	           fname: 'get_aa_usage',
 	    dsgid: dsgid,
 	    table_name: table_name,
-           },
-     //success: function(data) {
-     // var callbackid = divid;
-     // console.log(callbackid);
-     // $('#'+callbackid).html(callbackid+" "+data);
-     //}
-     success : create_callback(divid)
-   });
+	          },
+	    //success: function(data) {
+	    // var callbackid = divid;
+	    // console.log(callbackid);
+	    // $('#'+callbackid).html(callbackid+" "+data);
+	    //}
+	    success : create_callback(divid)
+	  });
 
 
- }
+	}
 
 
 
 
-function toggle_column(index) {
- show = 0;
+	function toggle_column(index) {
+	show = 0;
 
-  if ($('#genome_list td:eq('+(1*index-1)+')').children()[0].checked) { show=1;}
-  if (show)
-   {
-    $('#genome_table td:nth-child('+(1*index+1)+')').show();
-    $('#genome_table th:nth-child('+(1*index+1)+')').show();
-   }
-  else
-   {
-    $('#genome_table td:nth-child('+(1*index+1)+')').hide();
-    $('#genome_table th:nth-child('+(1*index+1)+')').hide();
-   }
-    
-}
+	 if ($('#genome_list td:eq('+(1*index-1)+')').children()[0].checked) { show=1;}
+	 if (show)
+	  {
+	   $('#genome_table td:nth-child('+(1*index+1)+')').show();
+	   $('#genome_table th:nth-child('+(1*index+1)+')').show();
+	  }
+	 else
+	  {
+	   $('#genome_table td:nth-child('+(1*index+1)+')').hide();
+	   $('#genome_table th:nth-child('+(1*index+1)+')').hide();
+	  }
+  
+	}
 
-function check_display() {
-var i = 1;
-$('#show_columns td').each(function() {
-    if (!$(this).children()[0].checked){ toggle_column(i);}
-    i++;
-  });
+	function check_display() {
+	var i = 1;
+	$('#show_columns td').each(function() {
+	   if (!$(this).children()[0].checked){ toggle_column(i);}
+	   i++;
+	 });
 
-}
+	}
 
-function check_type (type) {
-  if (!type) {type = $('#feature_type').val();}
-  $('#genome_table tr').each(function() {
-  if (type == $('td:eq(2)',this).html())
-   {
-     $('td:eq(0) input:checkbox', this).attr('checked', true);
-   }
- });
- 
-}
+	function check_type (type) {
+	 if (!type) {type = $('#feature_type').val();}
+	 $('#genome_table tr').each(function() {
+	 if (type == $('td:eq(2)',this).html())
+	  {
+	    $('td:eq(0) input:checkbox', this).attr('checked', true);
+	  }
+	});
 
-function save_display_settings() {
-var i=1;
-var index;
-$("input.display[@type=checkbox]").each(function(){
-  if($(this)[0].checked) {
-    if (index) {index= index +","+i;}
-    else {index = i;}
-  }
-  i++;
- });
-save_FeatList_settings(['args__display','args__'+index],[]);
-}
+	}
 
-</SCRIPT>
-<span href='#' id="table_opts" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-newwin"></span>Change Viewable Columns</span>
-<input type=hidden id=gstid value=<TMPL_VAR NAME="GSTID">>
-<div id="table_opts_dialog" title="Table Information Options">
-<form id=genome_list>
-    <table  class="ui-widget-content ui-corner-all small" id="show_columns">
-     <tr>
-       <td><input class = "display" type = checkbox onclick="toggle_column(1);" <TMPL_VAR NAME="NameD">>Name
-       <td><input class = "display"  type = checkbox onclick="toggle_column(2);" <TMPL_VAR NAME="DescD">>Description
-       <td><input class = "display"  type = checkbox onclick="toggle_column(3);" <TMPL_VAR NAME="TypeD">>Sequence Type
-       <td><input class = "display"  type = checkbox onclick="toggle_column(4);" <TMPL_VAR NAME="VerD">>Version
-       <td><input class = "display"  type = checkbox onclick="toggle_column(5);" <TMPL_VAR NAME="ChrCountD">>Chromosome Count
-      <tr>
-       <td><input class = "display"  type = checkbox onclick="toggle_column(6);" <TMPL_VAR NAME="LengthD">>Length
-       <td><input class = "display"  type = checkbox onclick="toggle_column(7);" <TMPL_VAR NAME="GCD">>GC%
-       <td><input class = "display"  type = checkbox onclick="toggle_column(8);" <TMPL_VAR NAME="ATD">>AT%
-       <td><input class = "display"  type = checkbox onclick="toggle_column(9);" <TMPL_VAR NAME="ND">>N|X%
-       <td><input class = "display"  type = checkbox onclick="toggle_column(10);" <TMPL_VAR NAME="FeatD">>Feature Counts
-      <tr>
-       <td><input class = "display"  type = checkbox onclick="toggle_column(11);" <TMPL_VAR NAME="AAD">>Amino Acid Usage
-       <td><input class = "display"  type = checkbox onclick="toggle_column(12);" <TMPL_VAR NAME="CodonD">>Codon Usage
-       <td><input class = "display"  type = checkbox onclick="toggle_column(13);" <TMPL_VAR NAME="CDSGCHistD">>CDS GC Histogram
-       <td><input class = "display"  type = checkbox onclick="toggle_column(14);" <TMPL_VAR NAME="CDSWGCHistD">>CDS Wobble GC Histogram
+	function save_display_settings() {
+	var i=1;
+	var index;
+	$("input.display[@type=checkbox]").each(function(){
+	 if($(this)[0].checked) {
+	   if (index) {index= index +","+i;}
+	   else {index = i;}
+	 }
+	 i++;
+	});
+	save_FeatList_settings(['args__display','args__'+index],[]);
+	}
 
-       <TMPL_IF NAME="SAVE_DISPLAY">
+	</SCRIPT>
+	<span href='#' id="table_opts" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-newwin"></span>Change Viewable Columns</span>
+	<input type=hidden id=gstid value=<TMPL_VAR NAME="GSTID">>
+	<div id="table_opts_dialog" title="Table Information Options">
+	<form id=genome_list>
+	   <table  class="ui-widget-content ui-corner-all small" id="show_columns">
+	    <tr>
+	      <td><input class = "display" type = checkbox onclick="toggle_column(1);" <TMPL_VAR NAME="NameD">>Name
+	      <td><input class = "display"  type = checkbox onclick="toggle_column(2);" <TMPL_VAR NAME="DescD">>Description
+	      <td><input class = "display"  type = checkbox onclick="toggle_column(3);" <TMPL_VAR NAME="SourceD">>Source
+	      <td><input class = "display"  type = checkbox onclick="toggle_column(4);" <TMPL_VAR NAME="ProvenanceD">>Provenance
+	      <td><input class = "display"  type = checkbox onclick="toggle_column(5);" <TMPL_VAR NAME="TypeD">>Sequence Type
+	      <td><input class = "display"  type = checkbox onclick="toggle_column(6);" <TMPL_VAR NAME="VerD">>Version
+	      <td><input class = "display"  type = checkbox onclick="toggle_column(7);" <TMPL_VAR NAME="ChrCountD">>Chromosome Count
+	     <tr>
+	      <td><input class = "display"  type = checkbox onclick="toggle_column(8);" <TMPL_VAR NAME="LengthD">>Length
+	      <td><input class = "display"  type = checkbox onclick="toggle_column(9);" <TMPL_VAR NAME="GCD">>GC%
+	      <td><input class = "display"  type = checkbox onclick="toggle_column(10);" <TMPL_VAR NAME="ATD">>AT%
+	      <td><input class = "display"  type = checkbox onclick="toggle_column(11);" <TMPL_VAR NAME="ND">>N|X%
+	      <td><input class = "display"  type = checkbox onclick="toggle_column(12);" <TMPL_VAR NAME="FeatD">>Feature Counts
+	     <tr>
+	      <td><input class = "display"  type = checkbox onclick="toggle_column(13);" <TMPL_VAR NAME="AAD">>Amino Acid Usage
+	      <td><input class = "display"  type = checkbox onclick="toggle_column(14);" <TMPL_VAR NAME="CodonD">>Codon Usage
+	      <td><input class = "display"  type = checkbox onclick="toggle_column(15);" <TMPL_VAR NAME="CDSGCHistD">>CDS GC Histogram
+	      <td><input class = "display"  type = checkbox onclick="toggle_column(16);" <TMPL_VAR NAME="CDSWGCHistD">>CDS Wobble GC Histogram
+
+	      <TMPL_IF NAME="SAVE_DISPLAY">
 	<TR><td>
-<span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="save_display_settings()"><span class="ui-icon ui-icon-check"></span>Save Display Settings</span>
-       </TMPL_IF>
-    </table>
-</div>
-</br>
-</br>
-Filter Table Rows: 
-<input type=text id=search_bar>
-<select id=search_type>
-<option value="1">Contains</option>
-<option value="0">Does NOT contain</option>
-</select>
-<!-- <span class=small>Tip: Use "*" for wildcards, and "!" to search for not containing</span> -->
-<div class ="small"> Genome Count: <TMPL_VAR NAME="GENOME_COUNT"></div>
-<TABLE id='genome_table' class="ui-widget-content ui-corner-all">
- <THEAD align=left>
-  <tr>
-   <TH> </TH>
-   <TH >Genome Name</TH>
-   <TH >Description</TH>
-   <TH >Sequence Type</TH>
-   <TH >Version</TH>
-   <TH >Chr Count</TH>
-   <TH >Length (bp)</TH>
-   <TH >GC%
-<br><span id="get_all_gc" class="link small" onclick="get_all_gc(<TMPL_VAR NAME="GENOME_COUNT">)">Get all</span>
-   </TH>
-   <TH >AT%</TH>
-   <TH >N|X%</TH>
-   <TH >Feature Counts
-<br><span id="get_all_feat_counts" class="link small" onclick="get_all_feat_counts(<TMPL_VAR NAME="GENOME_COUNT">)">Get all</span>
-   </TH>
-   <TH >Amino Acid Usage
-<br><span id="get_all_aa_usage" class="link small" onclick="get_all_aa_usage(<TMPL_VAR NAME="GENOME_COUNT">)">Get all</span>
-   </TH>
-   <th >Codon Usage
-<br><span id="show_all_codon" class="link small" onclick="show_all_codon_tables()">Get all codon tables</span>
-   </th>
-   <th >CDS GC Histogram</th>
-   <th >CDS Wobble GC Historgram
-<br><span id="get_all_annos" class="link small" onclick="get_all_annos(<TMPL_VAR NAME="GENOME_COUNT">)">Get all</span>
-</th>
-   </tr>
- </THEAD>
- <tbody align=left valign="top" id="genome_table_body" class=small>
-  <TMPL_LOOP NAME=INFO>
-    <TR>
-      <TD><input type=checkbox id='<TMPL_VAR NAME=DSGID>'><input type=hidden id='dsgid_<TMPL_VAR NAME=COUNT>' value='<TMPL_VAR NAME=DSGID>'></TD>
-      <TD><span class=link onclick=window.open('OrganismView.pl?dsgid=<TMPL_VAR NAME=DSGID>')> <TMPL_VAR NAME=NAME></span></TD>
-      <TD><TMPL_VAR NAME=DESC></TD>
-      <TD><TMPL_VAR NAME=TYPE></TD>
-      <TD align=center><TMPL_VAR NAME=VER></TD>
-      <TD align=center><TMPL_VAR NAME=CHR_COUNT></TD>
-      <TD align=right><TMPL_VAR NAME=LENGTH></TD>
-      <TD align=right id="gc_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#gc_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#at_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#n_<TMPL_VAR NAME=COUNT>').removeClass('link'); run_get_gc({dsgid: <TMPL_VAR NAME=DSGID>,divid1: 'gc_<TMPL_VAR NAME=COUNT>', divid2: 'at_<TMPL_VAR NAME=COUNT>', divid3: 'n_<TMPL_VAR NAME=COUNT>'})">Get GC</TD>
-      <TD align=right id="at_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#gc_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#at_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#n_<TMPL_VAR NAME=COUNT>').removeClass('link'); run_get_gc({dsgid: <TMPL_VAR NAME=DSGID>,divid1: 'gc_<TMPL_VAR NAME=COUNT>', divid2: 'at_<TMPL_VAR NAME=COUNT>', divid3: 'n_<TMPL_VAR NAME=COUNT>'})">Get AT</TD>
-      <TD align=right id="n_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#gc_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#at_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#n_<TMPL_VAR NAME=COUNT>').removeClass('link'); run_get_gc({dsgid: <TMPL_VAR NAME=DSGID>,divid1: 'gc_<TMPL_VAR NAME=COUNT>', divid2: 'at_<TMPL_VAR NAME=COUNT>', divid3: 'n_<TMPL_VAR NAME=COUNT>'})">Get N</TD>
-      <TD align=left id="feat_counts_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#feat_counts_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#feat_counts_<TMPL_VAR NAME=COUNT>').removeClass('link'); run_get_feat_counts({dsgid: <TMPL_VAR NAME=DSGID>, divid: 'feat_counts_<TMPL_VAR NAME=COUNT>'})">Count Features</TD>
-      <TD align=left id="aa_usage_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#aa_usage_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#aa_usage_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#aa_usage_<TMPL_VAR NAME=COUNT>').html('<span class=alert>loading...</span>'); run_get_aa_usage({dsgid: '<TMPL_VAR NAME=DSGID>',divid: 'aa_usage_<TMPL_VAR NAME=COUNT>', table_name: 'aa_table<TMPL_VAR NAME=COUNT>'})">Amino Acid Usage</TD>
-      <TD align=left id="codon_usage_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#codon_usage_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#codon_usage_<TMPL_VAR NAME=COUNT>').removeClass('link'); run_get_codon_usage({dsgid:,<TMPL_VAR NAME=DSGID>, divid:, 'codon_usage_<TMPL_VAR NAME=COUNT>'})">Codon Usage</TD>
-      <TD align=right id="cds_gc_hist_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#cds_gc_hist_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#cds_gc_hist_<TMPL_VAR NAME=COUNT>').removeClass('link'); get_cds_gc_hist(['args__dsgid','args__<TMPL_VAR NAME=DSGID>'],['cds_gc_hist_<TMPL_VAR NAME=COUNT>'])"><TMPL_VAR NAME=CDS_GC_HIST></TD>
-      <TD align=right id="cds_wgc_hist_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#cds_wgc_hist_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#cds_wgc_hist_<TMPL_VAR NAME=COUNT>').removeClass('link'); get_cds_wgc_hist(['args__dsgid','args__<TMPL_VAR NAME=DSGID>'],['cds_wgc_hist_<TMPL_VAR NAME=COUNT>'])"><TMPL_VAR NAME=CDS_WGC_HIST></TD>
+	<span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="save_display_settings()"><span class="ui-icon ui-icon-check"></span>Save Display Settings</span>
+	      </TMPL_IF>
+	   </table>
+	</div>
+	</br>
+	</br>
+	Filter Table Rows: 
+	<input type=text id=search_bar>
+	<select id=search_type>
+	<option value="1">Contains</option>
+	<option value="0">Does NOT contain</option>
+	</select>
+	<!-- <span class=small>Tip: Use "*" for wildcards, and "!" to search for not containing</span> -->
+	<div class ="small"> Genome Count: <TMPL_VAR NAME="GENOME_COUNT"></div>
+	<TABLE id='genome_table' class="ui-widget-content ui-corner-all">
+	<THEAD align=left>
+	 <tr>
+	  <TH> </TH>
+	  <TH >Genome Name</TH>
+	  <TH >Description</TH>
+	  <TH >Source</TH>
+	  <TH >Provenance</TH>
+	  <TH >Sequence Type</TH>
+	  <TH >Version</TH>
+	  <TH >Chr Count</TH>
+	  <TH >Length (bp)</TH>
+	  <TH >GC%
+	<br><span id="get_all_gc" class="link small" onclick="get_all_gc(<TMPL_VAR NAME="GENOME_COUNT">)">Get all</span>
+	  </TH>
+	  <TH >AT%</TH>
+	  <TH >N|X%</TH>
+	  <TH >Feature Counts
+	<br><span id="get_all_feat_counts" class="link small" onclick="get_all_feat_counts(<TMPL_VAR NAME="GENOME_COUNT">)">Get all</span>
+	  </TH>
+	  <TH >Amino Acid Usage
+	<br><span id="get_all_aa_usage" class="link small" onclick="get_all_aa_usage(<TMPL_VAR NAME="GENOME_COUNT">)">Get all</span>
+	  </TH>
+	  <th >Codon Usage
+	<br><span id="show_all_codon" class="link small" onclick="show_all_codon_tables(<TMPL_VAR NAME="GENOME_COUNT">)">Get all codon tables</span>
+	  </th>
+	  <th >CDS GC Histogram
+		<br><span id="get_all_gc" class="link small" onclick="get_all_gc_hist(<TMPL_VAR NAME="GENOME_COUNT">)">Get all </span></th>
+	  <th >CDS Wobble GC Historgram
+	<br><span id="get_all_wcg" class="link small" onclick="get_all_wobble_hist(<TMPL_VAR NAME="GENOME_COUNT">)">Get all</span>
+	</th>
+	  </tr>
+	</THEAD>
+	<tbody align=left valign="top" id="genome_table_body" class=small>
+	 <TMPL_LOOP NAME=INFO>
+	   <TR>
+	     <TD><input type=checkbox checked id='<TMPL_VAR NAME=DSGID>'><input type=hidden id='dsgid_<TMPL_VAR NAME=COUNT>' value='<TMPL_VAR NAME=DSGID>'></TD>
+	     <TD><span class=link onclick=window.open('OrganismView.pl?dsgid=<TMPL_VAR NAME=DSGID>')> <TMPL_VAR NAME=NAME></span></TD>
+	     <TD><TMPL_VAR NAME=DESC></TD>
+	     <TD><TMPL_VAR NAME=SOURCE></TD>
+	     <TD><TMPL_VAR NAME=PROVENANCE></TD>
+	     <TD><TMPL_VAR NAME=TYPE></TD>
+	     <TD align=center><TMPL_VAR NAME=VER></TD>
+	     <TD align=center><TMPL_VAR NAME=CHR_COUNT></TD>
+	     <TD align=right><TMPL_VAR NAME=LENGTH></TD>
+	     <TD align=right id="gc_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#gc_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#at_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#n_<TMPL_VAR NAME=COUNT>').removeClass('link'); run_get_gc({dsgid: <TMPL_VAR NAME=DSGID>,divid1: 'gc_<TMPL_VAR NAME=COUNT>', divid2: 'at_<TMPL_VAR NAME=COUNT>', divid3: 'n_<TMPL_VAR NAME=COUNT>'})">Get GC</TD>
+	     <TD align=right id="at_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#gc_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#at_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#n_<TMPL_VAR NAME=COUNT>').removeClass('link'); run_get_gc({dsgid: <TMPL_VAR NAME=DSGID>,divid1: 'gc_<TMPL_VAR NAME=COUNT>', divid2: 'at_<TMPL_VAR NAME=COUNT>', divid3: 'n_<TMPL_VAR NAME=COUNT>'})">Get AT</TD>
+	     <TD align=right id="n_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#gc_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#at_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#n_<TMPL_VAR NAME=COUNT>').removeClass('link'); run_get_gc({dsgid: <TMPL_VAR NAME=DSGID>,divid1: 'gc_<TMPL_VAR NAME=COUNT>', divid2: 'at_<TMPL_VAR NAME=COUNT>', divid3: 'n_<TMPL_VAR NAME=COUNT>'})">Get N</TD>
+	     <TD align=left id="feat_counts_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#feat_counts_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#feat_counts_<TMPL_VAR NAME=COUNT>').removeClass('link'); run_get_feat_counts({dsgid: <TMPL_VAR NAME=DSGID>, divid: 'feat_counts_<TMPL_VAR NAME=COUNT>'})">Count Features</TD>
+	     <TD align=left id="aa_usage_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#aa_usage_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#aa_usage_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#aa_usage_<TMPL_VAR NAME=COUNT>').html('<span class=alert>loading...</span>'); run_get_aa_usage({dsgid: '<TMPL_VAR NAME=DSGID>',divid: 'aa_usage_<TMPL_VAR NAME=COUNT>', table_name: 'aa_table<TMPL_VAR NAME=COUNT>'})">Amino Acid Usage</TD>
+	     <TD align=left id="codon_usage_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#codon_usage_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#codon_usage_<TMPL_VAR NAME=COUNT>').removeClass('link'); run_get_codon_usage({dsgid:<TMPL_VAR NAME=DSGID>, divid: 'codon_usage_<TMPL_VAR NAME=COUNT>'})">Codon Usage</TD>
+	     <TD align=right id="cds_gc_hist_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#cds_gc_hist_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#cds_gc_hist_<TMPL_VAR NAME=COUNT>').removeClass('link'); get_cds_gc_hist({dsgid: '<TMPL_VAR NAME=DSGID>',divid: 'cds_gc_hist_<TMPL_VAR NAME=COUNT>'})">View Histogram</TD>
+	     <TD align=right id="cds_wgc_hist_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#cds_wgc_hist_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#cds_wgc_hist_<TMPL_VAR NAME=COUNT>').removeClass('link'); get_cds_wgc_hist({dsgid: '<TMPL_VAR NAME=DSGID>' ,divid: 'cds_wgc_hist_<TMPL_VAR NAME=COUNT>'})">View Histogram</TD>
 
-    </TR>
-   </TMPL_LOOP>
-  </tbody>
- </TABLE>
- </form>
-<!--<input type=button value="Check All" onclick="$('#genome_table :checkbox').attr('checked', true);">
-<input type=button value="Uncheck All" onclick="$('#genome_table :checkbox').attr('checked', false);">-->
+	   </TR>
+	  </TMPL_LOOP>
+	 </tbody>
+	</TABLE>
+	</form>
+	<!--<input type=button value="Check All" onclick="$('#genome_table :checkbox').attr('checked', true);">
+	<input type=button value="Uncheck All" onclick="$('#genome_table :checkbox').attr('checked', false);">-->
 
-<!-- TODO - consider putting onClick declarations in javascript for simplicity -->
-<span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#genome_table tr :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Check All</span>
-<span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#genome_table tr :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minus"></span>Uncheck All</span>
-<span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#genome_table tr :visible :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Check Visible</span>
-<span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#genome_table tr :visible :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minus"></span>Uncheck Visible</span>
-<span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="check_type()"><span class="ui-icon ui-icon-check"></span>Check Features of type:</span><TMPL_VAR NAME="FEAT_TYPES">
-<TMPL_IF NAME=SAVE_DATA>
-<span href="javascript:void(0);" id="history_dialog_button" class='ui-button ui-corner-all ui-button-icon-left'><span class="ui-icon ui-icon-newwin"></span>Save Table</span>
-</TMPL_IF>
- <div>
-  Send Checked Features to:  
-   <select name=checked_action id=checked_action>
-    <option value = "blast">CoGeBlast</option>
-    <option value = "gevo">GEvo</option>
-    <option value = "msa">CoGeAlign</option>
-    <option value = "fasta">FASTA Sequences</option>
-    <option value = "featmap">Genome Map</option>
-    <option value = "xls">Excel</option>
-    <option value = "featlist">FeatList</option>
-    <option value = "CodeOn">Coding Evolution</option>
-    <option value = "SynFind">SynFind</option>
-   </select>
-<span class='ui-button ui-corner-all ui-button-icon-right' onclick="feature_checkboxes();"><span class="ui-icon ui-icon-extlink"></span>Go</span><span id=retrieve_message class=alert></span>  
-  </div>
+	<!-- TODO - consider putting onClick declarations in javascript for simplicity -->
+	<span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#genome_table tr :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Check All</span>
+	<span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#genome_table tr :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minus"></span>Uncheck All</span>
+	<span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#genome_table tr :visible :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Check Visible</span>
+	<span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#genome_table tr :visible :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minus"></span>Uncheck Visible</span>
+	<TMPL_IF NAME=SAVE_DATA>
+	<span href="javascript:void(0);" id="history_dialog_button" class='ui-button ui-corner-all ui-button-icon-left'><span class="ui-icon ui-icon-newwin"></span>Save Table</span>
+	</TMPL_IF>
+	<div>
+	 Send Selected Genomes to:  
+	  <select name=checked_action id=checked_action>
+	   <option value = "fasta">FASTA Sequences</option>
+	   <option value = "csv">Export CSV</option>
+	   <option value = "xls">Export XLS</option>
+	   <option value = "align">GenomeAlign</option>
+	   <option value = "blast">CoGeBlast</option>
+	   <option value = "synfind">SynFind</option>
+	  </select>
+	<span class='ui-button ui-corner-all ui-button-icon-right  ui-button-go' onclick="feature_checkboxes();"><span class="ui-icon ui-icon-extlink"></span>Go</span><span id=retrieve_message class=alert></span>  
+	 </div>
 
-<div id="save_form" title="Save Results">
-<table class="ui-widget-content ui-corner-all">
-<tr>
-<td>Work Name:</td>
-<td><input type=text id='work_name' value='FeatList Data'></td>
-</tr>
-<tr>
-<td>Description:</td>
-<td><input type=text id='description'></td>
-</tr>
-<tr>
-<td>Notes:</td>
-<td><textarea style="height:150px;width:350px;" id=note></textarea></td>
-</table>
-</div>
+	<div id="save_form" title="Save Results">
+	<table class="ui-widget-content ui-corner-all">
+	<tr>
+	<td>Work Name:</td>
+	<td><input type=text id='work_name' value='FeatList Data'></td>
+	</tr>
+	<tr>
+	<td>Description:</td>
+	<td><input type=text id='description'></td>
+	</tr>
+	<tr>
+	<td>Notes:</td>
+	<td><textarea style="height:150px;width:350px;" id=note></textarea></td>
+	</table>
+	</div>
