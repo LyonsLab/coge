@@ -17,15 +17,17 @@ use DBIxProfiler;
 no warnings 'redefine';
 
 
-use vars qw($P $PAGE_NAME $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb $FORM $URL);
+use vars qw($P $PAGE_NAME $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb $FORM $URL $HISTOGRAM $TEMPURL);
 $P = CoGe::Accessory::Web::get_defaults();
 $ENV{PATH} = $P->{COGEDIR};
 $URL = $P->{URL};
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
 $PAGE_NAME = "FeatList.pl";
+$HISTOGRAM = $P->{HISTOGRAM};	
 ($USER) = CoGe::Accessory::LogUser->get_user();
-$TEMPDIR = $P->{TEMPDIR};
+$TEMPDIR = $P->{TEMPDIR}."GenomeList/";
+$TEMPURL = $P->{TEMPURL}."GenomeList/";
 $FORM = new CGI;
 $coge = CoGeX->dbconnect();
 #$coge->storage->debugobj(new DBIxProfiler());
@@ -41,23 +43,20 @@ my %FUNCTION = (
 		get_gc=>\&get_gc,
 		get_aa_usage=>\&get_aa_usage,
 		get_codon_usage=>\&get_codon_usage,
-
-		       gevo=>\&gevo,
-		       blast=>\&blast,
-		       get_fasta_seqs=>\&get_fasta_seqs,
-		       generate_excel_file=>\&generate_excel_file,
-		       protein_table=>\&protein_table,
-		       gc_content=>\&gc_content,
-		       gen_data=>\&gen_data,
-		       send_to_featmap=>\&send_to_featmap,
-		       send_to_msa=>\&send_to_msa,
-		       send_to_featlist=>\&send_to_featlist,
-		       send_to_SynFind=>\&send_to_SynFind,
-		       get_anno=>\&get_anno,
-		       get_wobble_gc=>\&get_wobble_gc,
-		       save_FeatList_settings=>\&save_FeatList_settings,
-		       add_to_user_history=>\&add_to_user_history,
-		       export_CodeOn=>\&export_CodeOn,
+	 	get_fasta_seqs=>\&get_fasta_seqs,
+	 	generate_excel_file=>\&generate_excel_file,
+	 	generate_csv_file=>\&generate_csv_file,
+	 	gc_content=>\&gc_content,
+	 	gen_data=>\&gen_data,
+	 	send_to_msa=>\&send_to_msa,
+	 	send_to_SynFind=>\&send_to_SynFind,
+	 	send_to_CoGeBlast=>\&send_to_CoGeBlast,
+	 	send_to_SynFind=>\&send_to_SynFind,
+	 	get_wobble_gc=>\&get_wobble_gc,
+	 	save_FeatList_settings=>\&save_FeatList_settings,
+	 	add_to_user_history=>\&add_to_user_history,
+		cds_wgc_hist=>\&cds_wgc_hist,
+		get_gc_for_feature_type=>\&get_gc_for_feature_type,
     );
 #my $pj = new CGI::Ajax(%FUNCTION);
 #$pj->js_encode_function('escape');
@@ -119,6 +118,301 @@ sub gen_html
    }
  }
  
+
+
+
+
+sub cds_wgc_hist
+  {
+    my %opts = @_;
+    my $dsid = $opts{dsid};
+    my $dsgid = $opts{dsgid};
+    my $chr = $opts{chr};
+    my $gstid = $opts{gstid}; #genomic sequence type id
+    my $min = $opts{min}; #limit results with gc values greater than $min;
+    my $max = $opts{max}; #limit results with gc values smaller than $max;
+    my $hist_type = $opts{hist_type};
+    return "error" unless $dsid || $dsgid;
+    my $gc = 0;
+    my $at = 0;
+    my $n = 0;
+    my $search;
+    $search = {"feature_type_id"=>3};
+    $search->{"me.chromosome"}=$chr if defined $chr;
+    my @data;
+    my @fids;
+    my @dsids;
+    push @dsids, $dsid if $dsid;
+    if ($dsgid)
+      {
+	my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	unless ($dsg)
+	  {
+	    my $error =  "unable to create dsg object using id $dsgid\n";
+	    return $error;
+	  }
+	$gstid = $dsg->type->id;
+	foreach my $ds ($dsg->datasets())
+	  {
+	    push @dsids, $ds->id;
+	  }
+      }
+    foreach my $dsidt (@dsids)
+      {
+	my $ds = $coge->resultset('Dataset')->find($dsidt);
+	unless ($ds)
+	  {
+	    warn "no dataset object found for id $dsidt\n";
+	    next;
+	  }
+	foreach my $feat ($ds->features($search,{join=>['locations', {'dataset'=>{'dataset_connectors'=>'dataset_group'}}],
+						 prefetch=>['locations',{'dataset'=>{'dataset_connectors'=>'dataset_group'}}],
+						}))
+	  {
+	    my @gc = $feat->wobble_content(counts=>1);
+	    $gc+=$gc[0] if $gc[0] && $gc[0] =~ /^\d+$/;
+	    $at+=$gc[1] if $gc[1] && $gc[1] =~ /^\d+$/;
+	    $n+=$gc[2] if $gc[2] && $gc[2] =~ /^\d+$/;
+	    my $total = 0;
+	    $total += $gc[0] if $gc[0];
+	    $total += $gc[1] if $gc[1];
+	    $total += $gc[2] if $gc[2];
+	    my $perc_gc = 100*$gc[0]/$total if $total;
+	    next unless $perc_gc; #skip if no values
+	    next if defined $min && $min =~/\d+/ && $perc_gc < $min; #check for limits
+	    next if defined $max && $max =~/\d+/ && $perc_gc > $max; #check for limits
+	    push @data, sprintf("%.2f",$perc_gc);
+	    push @fids, $feat->id."_".$gstid;
+	    #push @data, sprintf("%.2f",100*$gc[0]/$total) if $total;
+	  }
+      }
+    my $total = $gc+$at+$n;
+    return "error" unless $total;
+    
+    my $file = $TEMPDIR."/".join ("_",@dsids);#."_wobble_gc.txt";
+    ($min) = $min =~ /(.*)/ if defined $min;
+    ($max) = $max =~ /(.*)/ if defined $max;
+    ($chr) = $chr =~ /(.*)/ if defined $chr;
+    $file .= "_".$chr."_" if defined $chr;
+    $file .= "_min".$min if defined $min;
+    $file .= "_max".$max if defined $max;
+    $file .= "_$hist_type" if $hist_type;
+    $file .= "_wobble_gc.txt";
+    my $out = $file;
+    $out =~ s/txt$/png/;
+    unless (-r $out)
+      {
+	open(OUT, ">".$file);
+	print OUT "#wobble gc for dataset ids: ".join (" ", @dsids),"\n";
+	print OUT join ("\n", @data),"\n";
+	close OUT;
+	my $cmd = $HISTOGRAM;
+	$cmd .= " -f $file";
+	$cmd .= " -o $out";
+	$cmd .= " -t \"CDS wobble gc content\"";
+	$cmd .= " -min 0";
+	$cmd .= " -max 100";
+	$cmd .= " -ht $hist_type" if $hist_type;
+	`$cmd`;
+      }
+    $min = 0 unless defined $min && $min =~/\d+/;
+    $max = 100 unless defined $max && $max =~/\d+/;
+    my $info;
+    $info .= qq{<div class="small">
+Min: <input type="text" size="3" id="wobble_gc_min" value="$min">
+Max: <input type=text size=3 id=wobble_gc_max value=$max>
+Type: <select id=wobble_hist_type>
+<option value ="counts">Counts</option>
+<option value = "percentage">Percentage</option>
+</select>
+};
+    $info =~ s/>Per/ selected>Per/ if $hist_type =~/per/;
+    my $args;
+    $args .= "'args__dsid','ds_id'," if $dsid;
+    $args .= "'args__dsgid','dsg_id'," if $dsgid;
+    $args .= "'args__chr','chr'," if defined $chr;
+    $args .= "'args__min','wobble_gc_min',";
+    $args .= "'args__max','wobble_gc_max',";
+    $args .= "'args__max','wobble_gc_max',";
+    $args .= "'args__hist_type', 'wobble_hist_type',";
+    $info .= qq{<span class="link" onclick="get_wobble_gc([$args],['wobble_gc_histogram']);\$('#wobble_gc_histogram').html('loading...');">Regenerate histogram</span>};
+    $info .= "</div>";
+
+    $info .=  "<div class = small>Total: ".commify($total)." codons.  Mean GC: ".sprintf("%.2f",100*$gc/($total))."%  AT: ".sprintf("%.2f",100*$at/($total))."%  N: ".sprintf("%.2f",100*($n)/($total))."%</div>";
+    if ($min || $max)
+      {
+	$min = 0 unless defined $min;
+	$max = 100 unless defined $max;
+	$info .= qq{<div class=small style="color: red;">Limits set:  MIN: $min  MAX: $max</div>
+} 
+  }
+    my $stuff = join "::",@fids;
+    $info .= qq{<div class="link small" onclick="window.open('FeatList.pl?fid=$stuff')">Open FeatList of Features</div>};
+    $out =~ s/$TEMPDIR/$TEMPURL/;
+    my $hist_img = "<img src=\"$out\">";
+    return $info."<br>". $hist_img;
+  }
+
+sub get_gc_for_feature_type
+  {
+    my %opts = @_;
+    my $dsid = $opts{dsid};
+    my $dsgid = $opts{dsgid};
+    my $chr = $opts{chr};
+    my $typeid = $opts{typeid};
+    my $gstid = $opts{gstid};#genomic sequence type id
+    my $min = $opts{min}; #limit results with gc values greater than $min;
+    my $max = $opts{max}; #limit results with gc values smaller than $max;
+    my $hist_type = $opts{hist_type};
+    $hist_type = "counts" unless $hist_type;
+    $min = undef if $min && $min eq "undefined";
+    $max = undef if $max && $max eq "undefined";
+    $chr = undef if $chr && $chr eq "undefined";
+    $dsid = undef if $dsid && $dsid eq "undefined";
+    $hist_type = undef if $hist_type && $hist_type eq "undefined";
+    $typeid = 1 if $typeid eq "undefined";
+    return unless $dsid || $dsgid;
+    my $gc = 0;
+    my $at = 0;
+    my $n = 0;
+    my $type = $coge->resultset('FeatureType')->find($typeid);
+    my @data;
+    my @fids; #storage for fids that passed.  To be sent to FeatList
+    my @dsids;
+    push @dsids, $1 if $dsid && $dsid =~ /(\d+)/;
+    if ($dsgid)
+      {
+	my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	unless ($dsg)
+	  {
+	    my $error =  "unable to create dsg object using id $dsgid\n";
+	    return $error;
+	  }
+	$gstid = $dsg->type->id;
+	if (!$dsid)
+	  {
+	    foreach my $ds ($dsg->datasets())
+	      {
+		push @dsids, $ds->id;
+	      }
+	  }
+      }
+    my $search;
+    $search = {"feature_type_id"=>$typeid};
+    $search->{"me.chromosome"}=$chr if defined $chr;
+    foreach my $dsidt (@dsids)
+      {
+	my $ds = $coge->resultset('Dataset')->find($dsidt);
+	unless ($ds)
+	  {
+	    warn "no dataset object found for id $dsidt\n";
+	    next;
+	  }
+	my $t1 = new Benchmark;
+	my %seqs; #let's prefetch the sequences with one call to genomic_sequence (slow for many seqs)
+	if (defined $chr)
+	  {
+	    $seqs{$chr} = $ds->genomic_sequence(chr=>$chr, seq_type=>$gstid);
+	  }
+	else
+	  {
+	    %seqs= map {$_, $ds->genomic_sequence(chr=>$_, seq_type=>$gstid)} $ds->chromosomes;
+	  }
+	my $t2 = new Benchmark;
+	my @feats = $ds->features($search,{join=>['locations', {'dataset'=>{'dataset_connectors'=>'dataset_group'}}],
+					   prefetch=>['locations',{'dataset'=>{'dataset_connectors'=>'dataset_group'}}],
+					  });
+ 	foreach my $feat (@feats)
+ 	  {
+	    my $seq = substr($seqs{$feat->chromosome}, $feat->start-1, $feat->stop-$feat->start+1);
+
+	    $feat->genomic_sequence(seq=>$seq);
+	    my @gc = $feat->gc_content(counts=>1);
+
+	    $gc+=$gc[0] if $gc[0] =~ /^\d+$/;
+	    $at+=$gc[1] if $gc[1] =~ /^\d+$/;
+	    $n+=$gc[2] if $gc[2] =~ /^\d+$/;
+	    my $total = 0;
+	    $total += $gc[0] if $gc[0];
+	    $total += $gc[1] if $gc[1];
+	    $total += $gc[2] if $gc[2];
+	    my $perc_gc = 100*$gc[0]/$total if $total;
+	    next unless $perc_gc; #skip if no values
+	    next if defined $min && $min =~/\d+/ && $perc_gc < $min; #check for limits
+	    next if defined $max && $max =~/\d+/ && $perc_gc > $max; #check for limits
+	    push @data, sprintf("%.2f",$perc_gc);
+	    push @fids, $feat->id."_".$gstid;
+	  }
+	my $t3 = new Benchmark;
+	my $get_seq_time = timestr(timediff($t2,$t1));
+	my $process_seq_time = timestr(timediff($t3,$t2));
+       }
+    my $total = $gc+$at+$n;
+    return "error" unless $total;
+
+    my $file = $TEMPDIR."/".join ("_",@dsids);
+    #perl -T flag
+    ($min) = $min =~ /(.*)/ if defined $min;
+    ($max) = $max =~ /(.*)/ if defined $max;
+    ($chr) = $chr =~ /(.*)/ if defined $chr;
+    $file .= "_".$chr."_" if defined $chr;
+    $file .= "_min".$min if defined $min;
+    $file .= "_max".$max if defined $max;
+    $file .= "_$hist_type" if $hist_type;
+    $file .= "_".$type->name."_gc.txt";
+    my $out = $file;
+    $out =~ s/txt$/png/;
+    unless (-r $out)
+      {
+	open(OUT, ">".$file);
+	print OUT "#wobble gc for dataset ids: ".join (" ", @dsids),"\n";
+	print OUT join ("\n", @data),"\n";
+	close OUT;
+	my $cmd = $HISTOGRAM;
+	$cmd .= " -f $file";
+	$cmd .= " -o $out";
+	$cmd .= " -t \"".$type->name." gc content\"";
+	$cmd .= " -min 0";
+	$cmd .= " -max 100";
+	$cmd .= " -ht $hist_type" if $hist_type;
+	`$cmd`;
+      }
+	
+    $min = 0 unless defined $min && $min =~/\d+/;
+    $max = 100 unless defined $max && $max =~/\d+/;
+    my $info;
+    $info .= qq{<div class="small">
+Min: <input type="text" size="3" id="feat_gc_min" value="$min">
+Max: <input type=text size=3 id=feat_gc_max value=$max>
+Type: <select id=feat_hist_type>
+<option value ="counts">Counts</option>
+<option value = "percentage">Percentage</option>
+</select>
+};
+    $info =~ s/>Per/ selected>Per/ if $hist_type =~/per/;
+    my $gc_args;
+    $gc_args = "chr: '$chr'," if defined $chr;
+    $gc_args .= "dsid: $dsid," if $dsid; #set a var so that histograms are only calculated for the dataset and not hte dataset_group
+    $gc_args .= "typeid: '$typeid'";
+    $info .= qq{<span class="link" onclick="get_feat_gc({$gc_args})">Regenerate histogram</span>};
+    $info .= "</div>";
+    $info .= "<div class = small>Total length: ".commify($total)." bp, GC: ".sprintf("%.2f",100*$gc/($total))."%  AT: ".sprintf("%.2f",100*$at/($total))."%  N: ".sprintf("%.2f",100*($n)/($total))."%</div>";
+    if ($min || $max)
+      {
+	$min = 0 unless defined $min;
+	$max = 100 unless defined $max;
+	$info .= qq{<div class=small style="color: red;">Limits set:  MIN: $min  MAX: $max</div>
+} 
+      }
+    my $stuff = join "::",@fids;
+    $info .= qq{<div class="link small" onclick="window.open('FeatList.pl?fid=$stuff')">Open FeatList of Features</div>};
+    
+    $out =~ s/$TEMPDIR/$TEMPURL/;
+    $info .= "<br><img src=\"$out\">";
+    return $info;
+  }
+
+
 sub gen_body
   {
     my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'GenomeList.tmpl');
@@ -133,6 +427,8 @@ sub gen_body
 		       NameD=>1,
 		       DescD=>1,
 		       TypeD=>1,
+		       SourceD=>1,
+		       ProvenanceD=>1,
 		       VerD=>1,
 		       ChrCountD=>1,
 		       LengthD=>1,
@@ -224,15 +520,33 @@ sub generate_table
 	my $chr_count = $dsg->chromosome_count;
 	my $length = $dsg->length;
 	my $type = $dsg->type->name;
+	my ($ds_source) = $dsg->source;
+	my $source = $ds_source->name;
+	my $source_link = $ds_source->link;
+	$source_link = "http://".$source_link unless !$source_link || $source_link =~ /http/;
+	$source = qq{<span class=link onclick="window.open('}.$source_link.qq{')">$source</span>}if $source_link;
+	my $provenance;
+	foreach my $ds ($dsg->datasets)
+	  {
+	    my $item = $ds->name;
+	    my $link = $ds->link;
+	    $link = "http://".$link unless !$link || $link =~ /http/;
+	    $item = qq{<span class=link onclick="window.open('}.$link.qq{')">$item</span>}if $link;
+	    $provenance .= $item."<br>";
+	  }
+	$provenance =~ s/<br>$//;
 	push @table,{
 		     COUNT=>$count,
 		     DSGID=>$dsgid,
 		     NAME=>$name,
 		     DESC=>$desc,
+		     SOURCE=>$source,
+		     PROVENANCE=>$provenance,
 		     VER=>$dsg->version,
 		     TYPE=>$type,
 		     CHR_COUNT=>commify($chr_count),
 		     LENGTH=>commify($length),
+		
 		    };
 	$count++;
       }
@@ -335,167 +649,163 @@ sub send_to_SynFind
     return $url;
   }
   
-  sub send_to_featmap
+  
+sub send_to_msa
   {
-    my $accn_list = shift;
+    my %opts = @_;
+    my $accn_list = $opts{accn};;
     $accn_list =~ s/^,//;
     $accn_list =~ s/,$//;
-    my $url = $URL."FeatMap.pl?";
-    foreach my $featid (split /,/,$accn_list)
-      {
-		$url .= "fid=$featid&";
-      }
-    $url =~ s/&$//;
-    return $url;
-  }
-  sub send_to_featlist
-  {
-    my $accn_list = shift;
-    $accn_list =~ s/^,//;
-    $accn_list =~ s/,$//;
-    my $url = $URL."FeatList.pl?";
-    foreach my $featid (split /,/,$accn_list)
-      {
-		$url .= "fid=$featid&";
-      }
+    my $url = $URL."GenomeAlign.pl?dsgid=$accn_list";
     $url =~ s/&$//;
     return $url;
   }
   
-    sub send_to_msa
+  
+sub send_to_CoGeBlast #send to cogeblast
   {
-    my $accn_list = shift;
+    my %opts = @_;
+    my $accn_list = $opts{accn};
     $accn_list =~ s/^,//;
     $accn_list =~ s/,$//;
-    my $url = $URL."CoGeAlign.pl?";
-    foreach my $featid (split /,/,$accn_list)
-      {
-		$url .= "fid=$featid&";
-      }
-$url =~ s/&$//;
+    my $url = $URL."CoGeBlast.pl?dsgid=$accn_list";
     return $url;
   }
   
-  
-  sub blast #send to cogeblast
-    {
-    my $accn_list = shift;
+sub send_to_SynFind #send to cogeblast
+  {
+    my %opts = @_;
+    my $accn_list = $opts{accn};
     $accn_list =~ s/^,//;
     $accn_list =~ s/,$//;
-    my $url = $URL."CoGeBlast.pl?fid=$accn_list";
+    my $url = $URL."SynFind.pl?dsgid=$accn_list";
     return $url;
   }
   
   sub get_fasta_seqs
   {
-    my $accn_list = shift;
+    my %opts = @_;
+    my $accn_list = $opts{accn};
+    
     $accn_list =~ s/^,//;
     $accn_list =~ s/,$//;
-    my $url = "FastaView.pl?";
-    foreach my $featid (split /,/,$accn_list)
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(prog=>"GenomeList");
+    my $basename = $cogeweb->basefilename;
+    my $file = $TEMPDIR."$basename.faa";
+    open (OUT, ">$file");
+    foreach my $dsgid (split /,/,$accn_list)
       {
-	$url .= "fid=$featid&";
+	next unless $dsgid;
+	my ($dsg) = $coge->resultset('DatasetGroup')->find($dsgid);
+	next unless $dsg;
+	print OUT $dsg->fasta;
       }
-    $url =~s/&$//;
-    return $url;
+    close OUT;
+    $file =~ s/$TEMPDIR/$TEMPURL/;
+    return $file;
   }
 
-  sub export_CodeOn
-    {
-      my $accn_list = shift;
-      $accn_list =~ s/^,//;
-      $accn_list =~ s/,$//;
-      my $url = "CodeOn.pl?fid=";
-      my @list;
-      foreach my $accn (split /,/,$accn_list)
-	{
-	  next if $accn =~ /no$/;
-	  my ($featid, $hspnum, $dsgid) = $accn =~ m/^(\d+)_(\d+)?_?(\d+)?$/;
-	  push @list,$featid;
-	}
-      my %seen = ();
-      @list = grep {!$seen{$_}++} @list;
-      $url .= join ("::", @list);
-      $url =~s/&$//;
-      return $url;
-    }
-  
-  
 sub generate_excel_file
   {
-    my $accn_list = shift;
+    my %args = @_;
+    my $accn_list = $args{accn};
     $accn_list =~ s/^,//;
     $accn_list =~ s/,$//;
-    $cogeweb = CoGe::Accessory::Web::initialize_basefile(prog=>"FeatList");
-    my $basename = $cogeweb->basefile;
-    my ($filename) = $basename =~ /FeatList\/(FeatList_.+)/;
-    my $workbook = Spreadsheet::WriteExcel->new("$TEMPDIR/Excel_$filename.xls");
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(prog=>"GenomeList");
+    my $basename = $cogeweb->basefilename;
+    my $file = "$TEMPDIR/Excel_$basename.xls";
+    my $workbook = Spreadsheet::WriteExcel->new($file);
     $workbook->set_tempdir("$TEMPDIR");
     my $worksheet = $workbook->add_worksheet();
     my $i = 1;
-       	 
-    $worksheet->write(0,0,"Feature Name");
-    $worksheet->write(0,1,"Type");
-    $worksheet->write(0,2,"Location");
-    $worksheet->write(0,3,"Strand");
-    $worksheet->write(0,4,"Chromosome");
-    $worksheet->write(0,5,"Length");
-    $worksheet->write(0,6,"Percent GC");
-    $worksheet->write(0,7,"Percent AT");
-    $worksheet->write(0,8,"Percent Wobble GC");
-    $worksheet->write(0,9,"Percent Wobble AT");
-    $worksheet->write(0,10,"Organism (version)");
-    $worksheet->write(0,11,"More information");
-    $worksheet->write(0,12,"Link");
-    $worksheet->write(0,13,"Sequence DNA");
-    $worksheet->write(0,14,"Sequence Protein");
+    
+    $worksheet->write(0,0,"Name");
+    $worksheet->write(0,1,"Description");
+    $worksheet->write(0,2,"Source");
+    $worksheet->write(0,3,"Provenance");
+    $worksheet->write(0,4,"Sequence Type");
+    $worksheet->write(0,5,"Chr Count");
+    $worksheet->write(0,6,"Length (bp)");
+    $worksheet->write(0,7,"Percent GC");
+    $worksheet->write(0,8,"Percent AT");
+    $worksheet->write(0,9,"Percent N|X");
+    $worksheet->write(0,10,"OrganismView Link");
+	
+    
    	
-   	foreach my $item (split /,/,$accn_list)
-	  {
-	    my ($featid, $gstid) = split /_/, $item;
-	    my ($feat) = $coge->resultset("Feature")->find($featid);
-
-   	   next unless $feat;
-   	   my ($name) = sort $feat->names;
-   	   my $app = $feat->annotation_pretty_print();
-   	   $app =~ s/(<\/?span(\s*class=\"\w+\")?\s*>)?//ig;
-#   	   my ($anno) = $app =~ /annotation:<td>(.+)?/i;
-#   	   ($anno) = split (/<BR/, $anno);
-#   	   $anno =~ s/;/;\n/g;
-	   my ($at, $gc) = $feat->gc_content;
-	   $at*=100;
-	   $gc*=100;
-	   my ($wat, $wgc) = $feat->wobble_content;
-	   $wat*=100;
-	   $wgc*=100;
-	   $worksheet->write($i,0,$P->{SERVER}."FeatView.pl?accn=$name",$name);
-	   $worksheet->write($i,1,$feat->type->name);
-	   $worksheet->write($i,2,$feat->start."-".$feat->stop);
-	   $worksheet->write($i,3,$feat->strand);
-	   $worksheet->write($i,4,$feat->chr);
-	   $worksheet->write($i,5,$feat->length);
-	   $worksheet->write($i,6,$gc);
-	   $worksheet->write($i,7,$at);
-	   $worksheet->write($i,8,$wgc);
-	   $worksheet->write($i,9,$wat);
-	   $worksheet->write($i,10,$feat->organism->name."(v ".$feat->version.")");
-	   $worksheet->write($i,11,$app);
-	    if (my ($geneid) = $app =~ /geneid.*?(\d+)/i)
-	      {
-		my $link = "http://www.ncbi.nlm.nih.gov/sites/entrez?db=gene&cmd=Retrieve&dopt=full_report&list_uids=".$geneid;
-		$worksheet->write($i,12, $link);
-	      }
-	    my $seq = $feat->genomic_sequence(gstid=>$gstid);
-	   $worksheet->write($i,13,$seq);
-	    if ($feat->type->name eq "CDS")
-	      {
-		$worksheet->write($i,14,$feat->protein_sequence());
-	      }
-	   $i++;
-	 };
-   	$workbook->close() or die "Error closing file: $!";
-   	return "tmp/Excel_$filename.xls";
-      }
+    foreach my $dsgid (split /,/,$accn_list)
+      {
+	
+	my ($dsg) = $coge->resultset("DatasetGroup")->find($dsgid);
+	
+	next unless $dsg;
+	my $name = $dsg->name ? $dsg->name : $dsg->organism->name;
+	my $desc = $dsg->description ? $dsg->description :  $dsg->organism->description;
+	my ($ds_source) = $dsg->source;
+	my $source = $ds_source->name;
+	my $provenance = join (" ", map {$_->name} $dsg->datasets);
+	my $length = $dsg->length;
+	my $chr_count = $dsg->chromosome_count;
+	my $type = $dsg->type->name;
+	my ($gc, $at, $n) = $dsg->percent_gc();
+	$at*=100;
+	$gc*=100;
+	#my ($wgc, $wat) = $dsg->wobble_content;
+	#$wat*=100;
+	#$wgc*=100;
+	
+	$worksheet->write($i,0,$name);
+	$worksheet->write($i,1,$desc);
+	$worksheet->write($i,2,$source);
+	$worksheet->write($i,3,$provenance);
+	$worksheet->write($i,4,$type);
+	$worksheet->write($i,5,$chr_count);
+	$worksheet->write($i,6,$length);
+	$worksheet->write($i,7,$gc.'%');
+	$worksheet->write($i,8,$at.'%');
+	$worksheet->write($i,9,$n.'%');
+	$worksheet->write($i,10,$P->{SERVER}.'OrganismView.pl?dsgid='.$dsgid);
+	
+	$i++;
+      };
+    $workbook->close() or die "Error closing file: $!";
+    $file =~ s/$TEMPDIR/$TEMPURL/;
+    return $file;
+  }
+  sub generate_csv_file
+  {
+    my %args = @_;
+    my $accn_list = $args{accn};
+    print STDERR $accn_list,"\n\n";
+    $accn_list =~ s/^,//;
+    $accn_list =~ s/,$//;
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(prog=>"GenomeList");
+    my $basename = $cogeweb->basefilename;
+    my $file = "$TEMPDIR/$basename.csv";
+    open (OUT, ">$file");
+    print OUT join ("\t", "Name", "Description","Source","Provenance","Sequence Type","Chr Count","Length (bp)","Percent GC","Percent AT","Percent N|X","OrganismView Link"),"\n";
+    foreach my $dsgid (split /,/,$accn_list)
+      {
+	next unless $dsgid;
+	my ($dsg) = $coge->resultset("DatasetGroup")->find($dsgid);	
+	next unless $dsg;
+	my $name = $dsg->name ? $dsg->name : $dsg->organism->name;
+	my $desc = $dsg->description ? $dsg->description :  $dsg->organism->description;
+	my ($ds_source) = $dsg->source;
+	my $source = $ds_source->name;
+	my $provenance = join ("||", map {$_->name} $dsg->datasets);
+	my $chr_count = $dsg->chromosome_count;
+	my $length = $dsg->length;
+	my $type = $dsg->type->name;
+	my ($gc, $at, $n) = $dsg->percent_gc();
+	$at*=100;
+	$gc*=100;
+	print OUT join ("\t", $name,$desc,$source, $provenance,$type,$chr_count,$length,$gc,$at,$n,$P->{SERVER}.'OrganismView.pl?dsgid='.$dsgid),"\n";
+      };
+    close OUT;
+    $file =~ s/$TEMPDIR/$TEMPURL/;
+    return $file;
+  }
   
 sub gc_content
   {
@@ -649,28 +959,7 @@ sub codon_table
     return $html;
   }
 
-sub protein_table
-  {
-    my %args = @_;
-    my $featid = $args{featid};
-    my ($feat) = $coge->resultset('Feature')->find($featid);
-    my $aa = $feat->aa_frequency(counts=>1);
-    my $html = "Amino Acid Usage";
-    $html .= CoGe::Accessory::genetic_code->html_aa(data=>$aa, counts=>1);
-    return $html;
-  }
 
-sub get_anno
-  {
-    my %opts = @_;
-    my $fid = $opts{fid};
-    my $gstid=$opts{gstid};
-    ($fid, $gstid) = split/_/, $fid if ($fid =~ /_/);
-    return unless $fid;
-    my ($feat) = $coge->resultset('Feature')->find($fid);
-    return "No feature for id $fid" unless $feat;
-    return $feat->annotation_pretty_print_html(gstid=>$gstid);
-  }
 
 sub get_gc
   {
