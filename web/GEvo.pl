@@ -3651,7 +3651,7 @@ sub get_org_info
     if ($dsgid)
       {
 	$dsg = $coge->resultset('DatasetGroup')->find($dsgid);
-	$gst = $dsg->type;
+	$gst = $dsg->type if $dsg;
       }
     elsif ($dsid)
       {
