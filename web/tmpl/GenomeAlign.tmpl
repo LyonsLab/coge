@@ -17,6 +17,7 @@ $(document).ready(function(){
 	               cache: false,
 	});
 	$("#tabs").tabs();
+	pageObj.tempurl = '<TMPL_VAR NAME="TEMPURL">';
 
 });
 
@@ -24,6 +25,7 @@ $(document).ready(function(){
 //set up the jquery ui
 
 function genome_checkboxes(){
+  $('#results').html('<div id=monitor class="dna small" style="height:400px;width:800px;overflow:scroll;">Initializing alignment run. . .</div>');
   var action = $('#checked_action').val();
   var accn=",";
   $('#genome_table :checkbox').each(function(){
@@ -38,6 +40,7 @@ function genome_checkboxes(){
 
 function run_alignment(dsgids) {
 	 var basename = pageObj.basename;
+//	 var algo = $('#algo').value();
 	 $.ajax({
             data: {
                    jquery_ajax: 1,
@@ -72,18 +75,16 @@ function monitor_log (log)
    {
      pageObj.finished=1;
    }
-   log.replace(/\n/g,"<br>\\n");
   var waittime = pageObj.waittime;
   pageObj.waittime = waittime*2;
-  var message = log;
-  message = message+"<br>Next check in "+waittime/1000+" seconds.";
-  if (pageObj.finished)
+  var logfile = pageObj.tempurl+pageObj.basename+".log";
+  var message = "Log file: <span class=link onclick=window.open('"+logfile+"');>Link to file</span><br>";
+  message = message+"<br>Next updtae in "+waittime/1000+" seconds.<br><br>";
+  message = message+"Log contents:<br><br>";
+  message = message+log.replace(/\n/g,"<br>");
+  if (!pageObj.finished)
    {
-    $('#results').html("<div class=small>"+message+"</div>");
-   }
-  else
-   {
-     $('#results').html("<div class=small>"+message+"</div>");
+     $('#monitor').html(message);
      setTimeout("readlog(pageObj.logfile)", waittime);
    }
 }
@@ -102,7 +103,7 @@ function rand ()
 }
 
 </SCRIPT>
-  <div id=results></div>
+  <div id=results class="ui-widget-content ui-corner-all"></div>
   <div id=tabs style='margin-top: 0.5em'>
    <ul>
      <li class="small">
@@ -160,7 +161,6 @@ function rand ()
  <span style="font-size: 1em" class='ui-button ui-corner-all ui-button-go ' onclick="
 
   populate_page_obj();
-  $('#results').html('<div class=small>Initializing alignment run. . .</div>');
   genome_checkboxes();setTimeout('readlog()',2000);
 
 ">Run Alignment</span><span id=retrieve_message class=alert></span> 
