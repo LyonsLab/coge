@@ -25,8 +25,8 @@ $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
 $PAGE_NAME = "GenomeAlign.pl";
 ($USER) = CoGe::Accessory::LogUser->get_user();
-$TEMPDIR = $P->{TEMPDIR}."GenomeAlign";
-$TEMPURL = $P->{TEMPURL}."GenomeAlign";
+$TEMPDIR = $P->{TEMPDIR}."GenomeAlign/";
+$TEMPURL = $P->{TEMPURL}."GenomeAlign/";
 $FORM = new CGI;
 $MAUVE = $P->{MAUVE};
 $COGE_MAUVE = $P->{COGE_MAUVE};
@@ -115,6 +115,7 @@ sub gen_body
     my $sort_by_location = $form->param('sort_loc');
     my $prefs =CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME);
     $prefs = {} unless $prefs;
+    $template->param('TEMPURL'=>$TEMPURL);
     my $dsgids = [];
     $dsgids = read_file() if $BASEFILE;#: $opts{feature_list};
 
@@ -188,11 +189,13 @@ sub run_alignment
     CoGe::Accessory::Web::write_log("Running $cmd", $cogeweb->logfile);
     my $output;
     open (CMD, "$cmd |");
+    open (OUT, ">".$cogeweb->logfile);
     while (<CMD>)
       {
-	$output .= $_;
+	print OUT $_;
       }
     close CMD;
+    close OUT;
     CoGe::Accessory::Web::write_log("########", $cogeweb->logfile);
     CoGe::Accessory::Web::write_log("LOG FROM $COGE_MAUVE", $cogeweb->logfile);
     CoGe::Accessory::Web::write_log("########", $cogeweb->logfile);
@@ -203,6 +206,7 @@ sub run_alignment
     $logfile =~ s/$TEMPDIR/$TEMPURL/;
     my $html;
     $html .= qq{
+<div>Results:</div>
 <div><a target=_new href=$outfile>Alignment File</a></div>
 <div><a target=_new href=$logfile>Log File</a></div>
 };
