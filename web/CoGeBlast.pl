@@ -702,7 +702,7 @@ sub gen_results_page
      my @hsp;
 
      my $t1 = new Benchmark;
-     my ($chromosome_data, $chromosome_data_large) = generate_chromosome_images(results=>$results,large_width=>$width,, resultslimit=>$resultslimit, color_hsps => $color_hsps);
+     my ($chromosome_data, $chromosome_data_large, $genomelist_link) = generate_chromosome_images(results=>$results,large_width=>$width,, resultslimit=>$resultslimit, color_hsps => $color_hsps);
      my $t2 = new Benchmark;
 
      my $t0 = new Benchmark;
@@ -829,6 +829,7 @@ sub gen_results_page
      $template->param(RESULT_TABLE=>0);
      $template->param(HSP_RESULTS=>$hsp_results);
      $template->param(CHROMOSOMES_IF=>1);
+     $template->param(GENOMELIST_LINK=>$genomelist_link);
      $template->param(CHROMOSOME_LOOP=>$chromosome_data);
      my $chromosome_element = $template->output;
      $template->param(CHROMOSOMES_IF=>0);
@@ -997,6 +998,7 @@ sub generate_chromosome_images
 		$data{$org}{image} =new CoGe::Graphics::GenomeView({color_band_flag=>1, image_width=>$width, chromosome_height=>$height}) unless $data{$org}{image};
 		$data{$org}{large_image} =new CoGe::Graphics::GenomeView({color_band_flag=>1, image_width=>$large_width, chromosome_height=>$large_height}) unless $data{$org}{large_image};
 		my $dsg = $set->{dsg};
+		$data{$org}{dsg}=$dsg;
 		#add chromosome to graphic
 		unless ($data{$org}{chr}{$chr})
 		  {
@@ -1049,6 +1051,7 @@ sub generate_chromosome_images
       }
 
     my $count = 1;
+    my @dsgids;
     foreach my $org (sort keys %data)
     {
 	if ($data{$org}{image})
@@ -1095,10 +1098,12 @@ sub generate_chromosome_images
 	    
 	    $image_file =~ s/$TEMPDIR/$TEMPURL/;
 	    $large_image_file =~ s/$TEMPDIR/$TEMPURL/;
-	    my $blast_link = "<a class =\"small\" href=".$data{$org}{file}. " target=_new>$org</a> ";
+	    my $blast_link;
+	    $blast_link .= qq{<span class =\"small link\" onclick="window.open('OrganismView.pl?dsgid=}.$data{$org}{dsg}->id. qq{')">$org</span><br>};
+	    $blast_link .= "<a class =\"small\" href=".$data{$org}{file}. " target=_new>Blast Report</a> ";
 	    $blast_link .= $data{$org}{extra} if $data{$org}{extra};
 	    $blast_link .= "<br>";
-	    
+	    push @dsgids, $data{$org}{dsg}->id;
 	    push @large_data,  {DB_NAME_LARGE=>$blast_link, CHR_IMAGE_LARGE=>"<img src=$large_image_file ismap usemap='#".$cogeweb->basefilename."_"."$count"."_large' border=0>$image_map_large",IMAGE_ID_LARGE=>$count,};
 	    push @data,  {DB_NAME=>$blast_link, CHR_IMAGE=>"<img style=\"position:relative; z-index=1;\" src=$image_file ismap usemap='#".$cogeweb->basefilename."_"."$count' border=0>$image_map",ENLARGE=>"<a href='#' onClick='enlarge_picture_window($count);' class='small large_image'>Enlarge</a>"};#, DIV_STYLE=>'style="position:absolute;"'};
 	    
@@ -1109,9 +1114,9 @@ sub generate_chromosome_images
 	    push @no_data,  {DB_NAME=>"<a href=".$data{$org}{file}. " target=_new>No Hits: $org</a>", DIV_STYLE=>'class="small"'};
 	  }
       }
+     my $genomelist_link = "GenomeList.pl?".join (";", map{"dsgid=$_"} @dsgids);
 
-
-    return [@data,@no_data], \@large_data;
+    return [@data,@no_data], \@large_data, $genomelist_link;
   }
 
 sub get_map
