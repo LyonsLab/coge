@@ -14,8 +14,8 @@ GetOptions (
             "dsgid=i@" => \$dsgids,
 	    "go=s"    => \$GO,
 	    "out_file|aln_file=s" =>\$out_file,
-	    "mauve_bin" => \$mauve_bin,
-	    "mauve_sub_matrix" => \$mauve_sub_matrix,
+	    "mauve_bin=s" => \$mauve_bin,
+	    "mauve_sub_matrix=s" => \$mauve_sub_matrix,
            );
 $mauve_bin = "/home/elyons/src/mauve_2.3.1/linux-x64/progressiveMauve" unless $mauve_bin;
 unless (-r $mauve_bin)
