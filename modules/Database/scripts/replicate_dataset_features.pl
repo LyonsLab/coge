@@ -5,12 +5,13 @@ use CoGeX;
 use Data::Dumper;
 use Getopt::Long;
 
-my ($dsid1, $dsid2, $ftid);
+my ($dsid1, $dsid2, $ftid, @skip_ftids);
 
 GetOptions(
 	   "dsid1=i"=>\$dsid1,
 	   "dsid2=i"=>\$dsid2,
 	   "ftid=i"=>\$ftid,
+	   "skip_ftid=i"=>\@skip_ftids,
 	   );
 
 unless ($dsid1 && $dsid2)
@@ -30,6 +31,8 @@ Options:
  -ftid               OPTIONAL:  feature type id for the features to be copied. This is useful if, for example,
                                 only "chromosome" (ftid 301) features are to be copied.  If left undefined, all
                                 features will be copied.
+
+-skip_ftid          OPTION:  skip features of a particular type.  E.g. chromosomes
 };
     exit;
   }
@@ -53,8 +56,12 @@ unless ($ds1 && $ds2)
 
 
 my $search = {feature_type_id=>$ftid} if $ftid;
+my %skip_ids = map{$_=>1} @skip_ftids;
+
+
 foreach my $feat1 ($ds1->features($search))
   {
+    next if $skip_ids{$feat1->type->id};
 #    sleep (.3);
     my $chr = $feat1->chromosome;
     my $feat2 = $ds2->add_to_features(
