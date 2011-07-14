@@ -562,12 +562,29 @@ sub percent_gc
     my $self = shift;
     my %opts = @_;
     my $count = $opts{count};
-    my $seq = $self->genomic_sequence(%opts);
-    my $length = length $seq;
+    my $sent_chr = $opts{chr};
+    my @chr;
+    push @chr, $sent_chr if $sent_chr;
+    my $gc = 0;
+    my $at = 0;
+    my $n = 0;
+    my $length = 0;
+    unless ($sent_chr)
+      {
+	foreach my $chr ($self->get_chromosomes)
+	  {
+	    push @chr, $chr;
+	  }
+      }
+    foreach my $chr (@chr)
+      {
+	my $seq = $self->genomic_sequence(chr=>$chr);
+	$length += length $seq;
+	$gc += $seq =~ tr/GCgc/GCgc/;
+	$at += $seq =~ tr/ATat/ATat/;
+	$n  += $seq =~ tr/nNxX/nNxX/;
+      }
     return unless $length;
-    my ($gc) = $seq =~ tr/GCgc/GCgc/;
-    my ($at) = $seq =~ tr/ATat/ATat/;
-    my ($n) = $seq =~ tr/nNxX/nNxX/;
     return ($gc,$at, $n) if $count;
     return sprintf("%.4f", $gc/$length),sprintf("%.4f", $at/$length),sprintf("%.4f", $n/$length);
   }
