@@ -515,7 +515,7 @@ sub generate_table
       {
 	my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
 	my $name = $dsg->name ? $dsg->name : $dsg->organism->name;
-	my $desc = $dsg->description ? $dsg->description : join("; ", map { qq{<span class=link onclick=window.open('OrganismView.pl?org_desc=$_')>$_</span>} } split /;\s*/, $dsg->organism->description);
+	my $desc = join("; ", map { qq{<span class=link onclick=window.open('OrganismView.pl?org_desc=$_')>$_</span>} } split /;\s*/, $dsg->organism->description);
 	
 	my $chr_count = $dsg->chromosome_count;
 	my $length = $dsg->length;
@@ -776,7 +776,6 @@ sub generate_excel_file
   {
     my %args = @_;
     my $accn_list = $args{accn};
-    print STDERR $accn_list,"\n\n";
     $accn_list =~ s/^,//;
     $accn_list =~ s/,$//;
     $cogeweb = CoGe::Accessory::Web::initialize_basefile(prog=>"GenomeList");
