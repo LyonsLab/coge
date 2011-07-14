@@ -1600,8 +1600,8 @@ sub fasta
     my $head = ">";
     if ($name_only)
       {
-	$head = "fid:".$self->id." ".$head if $add_fid;
 	$head .= $pri_name;
+	$head .= " fid:".$self->id if $add_fid;
       }
     else
       {
