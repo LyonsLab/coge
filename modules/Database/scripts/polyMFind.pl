@@ -215,7 +215,7 @@ sub process_alignment_block
       {
 	$item =~ s/>//g;
 	my ($name, $seq) = split /\n/, $item, 2;
-	my ($genome, $start, $stop, $dsgid) = $name =~ /(\d+):(\d+)-(\d+).*\/(\d+)\.faa/;
+	my ($genome, $start, $stop, $dsgid) = $name =~ /(\d+):(\d+)-(\d+).*?\/?(\d+)\.faa/;
 	unless ($dsgs->{$genome})
 	  {
 	    my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
