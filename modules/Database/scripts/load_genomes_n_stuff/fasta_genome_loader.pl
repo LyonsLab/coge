@@ -258,7 +258,7 @@ sub process_nt_file
 	($chrtmp) = $name=~/^(\S+)/ unless $chrtmp || $add_chr_name;
 	$chrtmp = $name unless defined $chrtmp;
 	$chrtmp =~ s/chromosome//;
-	$chrtmp =~ s/chr//;
+	$chrtmp =~ s/^chr//;
 	$chrtmp =~ s/^0+//;
 	$chrtmp =~ s/^_+//;
 	$chrtmp =~ s/^\s//;
