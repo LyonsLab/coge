@@ -607,6 +607,7 @@ tr.ltblue {
   width: 300px;
   height: 182px;
   background-image: url(/CoGe/picts/animations/DNA_orbit_animated_small-side.gif);
+  background-repeat: no-repeat;
 }
 
 .dna_small {
