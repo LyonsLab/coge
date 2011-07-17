@@ -4,6 +4,7 @@ use CGI;
 use CGI::Carp 'fatalsToBrowser';
 use CGI::Ajax;
 use CoGe::Accessory::LogUser;
+use CoGe::Accessory::Web;
 use HTML::Template;
 use Data::Dumper;
 use DBI;
