@@ -72,6 +72,12 @@ __PACKAGE__->set_primary_key("data_source_id");
 
 
 __PACKAGE__->has_many('datasets'=>"CoGeX::Result::Dataset", "data_source_id");
+
+sub desc
+  {
+    shift->description(@_);
+  }
+
 1;
 
 
