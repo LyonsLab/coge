@@ -73,7 +73,7 @@ sub gen_body
       open (CMD, "/bin/ls $TEMPDIR/$name"."* |");
       while (<CMD>)
 	{
-	  my $touch = "touch $_";
+	  my $touch = "/usr/bin/touch $_";
 	  my $x;
 	  ($x, $touch) =CoGe::Accessory::Web::check_taint($touch);
 	  `$touch`;
