@@ -22,14 +22,22 @@ $FORM = new CGI;
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
 ($USER) = CoGe::Accessory::LogUser->get_user();
-$coge = CoGeX->dbconnect();
+
+my $DBNAME = $P->{DBNAME};
+my $DBHOST = $P->{DBHOST};
+my $DBPORT = $P->{DBPORT};
+my $DBUSER = $P->{DBUSER};
+my $DBPASS = $P->{DBPASS};
+my $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
+$coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
+#$coge=CoGeX->dbconnect();
 
 my $pj = new CGI::Ajax(
 		       gen_html=>\&gen_html,
 		       grab_sequence=>\&grab_sequence,
 		       save_options=>\&save_options,
 		       get_genome_info=>\&get_genome_info,
-			);
+		      );
 #$pj->js_encode_function('escape');
 print $pj->build_html($FORM, \&gen_html);
 #print $FORM->header; gen_html();
@@ -116,7 +124,7 @@ sub gen_body
 
     my @feat_types;
     my $query = qq{select distinct(feature_type_id) from feature where dataset_id = $dsid};
-    my $dbh = DBI->connect($coge->db_connection_string,$coge->db_name,$coge->db_passwd);
+    my $dbh = DBI->connect($connstr,$DBUSER,$DBPASS);
     my $sth = $dbh->prepare($query);
     $sth->execute;
     while (my $row = $sth->fetchrow_arrayref)
