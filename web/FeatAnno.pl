@@ -35,8 +35,13 @@ $ORG = $FORM->param('org') || $FORM->param('organism');
 $VERSION = $FORM->param('version') || $FORM->param('ver');
 $NAME_ONLY = $FORM->param('name_only') || 0;
 $GSTID = $FORM->param('gstid'); #genomic_sequence_type_id
-
-$coge = CoGeX->dbconnect();
+my $DBNAME = $P->{DBNAME};
+my $DBHOST = $P->{DBHOST};
+my $DBPORT = $P->{DBPORT};
+my $DBUSER = $P->{DBUSER};
+my $DBPASS = $P->{DBPASS};
+my $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
+$coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 
