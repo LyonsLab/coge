@@ -62,7 +62,10 @@ __PACKAGE__->has_many("features"=>"CoGeX::Result::Feature","feature_type_id");
 
 1;
 
-
+sub desc
+{
+  return shift->description(@_);
+}
 
 =head1 BUGS
 
