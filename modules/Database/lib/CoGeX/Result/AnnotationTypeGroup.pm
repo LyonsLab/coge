@@ -60,6 +60,11 @@ __PACKAGE__->set_primary_key("annotation_type_group_id");
 
 __PACKAGE__->has_many("annotation_types" => "CoGeX::Result::AnnotationType", 'annotation_type_group_id');
 
+sub desc
+  {
+    shift->description(@_);
+  }
+
 1;
 
 
