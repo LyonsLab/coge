@@ -98,6 +98,11 @@ __PACKAGE__->belongs_to("organism" => "CoGeX::Result::Organism", 'organism_id');
 __PACKAGE__->belongs_to("genomic_sequence_type" => "CoGeX::Result::GenomicSequenceType", 'genomic_sequence_type_id');
 
 
+sub desc
+  {
+    return shift->description(@_);
+  }
+
 ################################################ subroutine header begin ##
 
 =head2 datasets
