@@ -4,12 +4,21 @@ use warnings;
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
 use CoGeX;
+use CoGe::Accessory::Web;
 no warnings 'redefine';
 
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 
+my $P = CoGe::Accessory::Web::get_defaults();
 my $FORM = new CGI;
-my  $coge = CoGeX->dbconnect();
+
+my $DBNAME = $P->{DBNAME};
+my $DBHOST = $P->{DBHOST};
+my $DBPORT = $P->{DBPORT};
+my $DBUSER = $P->{DBUSER};
+my $DBPASS = $P->{DBPASS};
+my $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
+my $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 
 my $chr = $FORM->param('chr');
 my $start = $FORM->param('start');
