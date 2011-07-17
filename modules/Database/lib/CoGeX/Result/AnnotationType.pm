@@ -88,6 +88,11 @@ sub group
     shift->annotation_type_group(@_);
   }
 
+sub desc
+    {
+      shift->description(@_);
+    }
+
 1;
 
 
