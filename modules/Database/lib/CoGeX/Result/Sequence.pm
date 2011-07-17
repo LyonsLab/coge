@@ -69,6 +69,10 @@ __PACKAGE__->set_primary_key("sequence_id");
 __PACKAGE__->belongs_to("feature" => "CoGeX::Result::Feature", 'feature_id');
 __PACKAGE__->belongs_to("sequence_type" => "CoGeX::Result::SequenceType", 'sequence_type_id');
 
+sub type
+  {
+    shift->sequence_type(@_);
+  }
 
 
 ################################################ subroutine header begin ##
@@ -232,6 +236,7 @@ sub get_genomic_locations
       }
     return wantarray ? @locs : \@locs;
   }
+
 
 
 
