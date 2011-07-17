@@ -29,7 +29,13 @@ my $pj = new CGI::Ajax(
 		       get_latest_genomes=>\&get_latest_genomes,
 		      );
 $update =0;
-$coge = new CoGeX->dbconnect;
+my $DBNAME = $P->{DBNAME};
+my $DBHOST = $P->{DBHOST};
+my $DBPORT = $P->{DBPORT};
+my $DBUSER = $P->{DBUSER};
+my $DBPASS = $P->{DBPASS};
+my $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
+$coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 print $pj->build_html($FORM, \&gen_html);
 #print $FORM->header, gen_html();
 
@@ -198,7 +204,6 @@ sub actions
 sub login
   {
     my ($name, $pwd, $url) = @_;
-    my $coge = CoGeX->dbconnect();
     my ($u) = $coge->resultset('User')->search({user_name=>$name});
     my $pwdc = $u->check_passwd(pwd=>$pwd) if $u;
     $url = $FORM->param('url') unless $url;
