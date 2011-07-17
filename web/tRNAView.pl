@@ -38,7 +38,15 @@ $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 $FORM = new CGI;
 my %ajax = CoGe::Accessory::Web::ajax_func();
 
-$coge = CoGeX->dbconnect();
+my $DBNAME = $P->{DBNAME};
+my $DBHOST = $P->{DBHOST};
+my $DBPORT = $P->{DBPORT};
+my $DBUSER = $P->{DBUSER};
+my $DBPASS = $P->{DBPASS};
+my $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
+$coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
+#$coge->storage->debugobj(new DBIxProfiler());
+#$coge->storage->debug(1);
 
 my $pj = new CGI::Ajax(
 		       gen_html=>\&gen_html,
