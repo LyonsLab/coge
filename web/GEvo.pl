@@ -91,7 +91,13 @@ $CGI::POST_MAX= 60 * 1024 * 1024; # 24MB
 $CGI::DISABLE_UPLOADS = 0; 
 ($USER) = CoGe::Accessory::LogUser->get_user();
 
-$coge = CoGeX->dbconnect();
+my $DBNAME = $P->{DBNAME};
+my $DBHOST = $P->{DBHOST};
+my $DBPORT = $P->{DBPORT};
+my $DBUSER = $P->{DBUSER};
+my $DBPASS = $P->{DBPASS};
+my $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
+$coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 
@@ -2408,6 +2414,7 @@ sub run_lagan
 	    $command .= " > ".$tempfile;
 	    CoGe::Accessory::Web::write_log("running ($count/$total_runs) ".$command, $cogeweb->logfile);
 	    #time for execution
+#	    print STDERR "running $command\n";
 	    `$command`;
 	    system "/bin/chmod +rw $tempfile";
 	    my $report = new CoGe::Accessory::lagan_report({file=>$tempfile, %$parser_opts}) if -r $tempfile;
