@@ -17,7 +17,7 @@ no warnings 'redefine';
 
 
 use vars qw($P $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $DIAGSDIR $coge);
-$P = CoGe::Accessory::Web::get_defaults();
+$P = CoGe::Accessory::Web::get_defaults('coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 $DIAGSDIR = $P->{DIAGSDIR};
 

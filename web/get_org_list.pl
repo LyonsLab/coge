@@ -8,7 +8,7 @@ use CoGe::Accessory::Web;
 no warnings 'redefine';
 
 
-my $P = CoGe::Accessory::Web::get_defaults();
+my $P = CoGe::Accessory::Web::get_defaults('coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 
 my $DBNAME = $P->{DBNAME};

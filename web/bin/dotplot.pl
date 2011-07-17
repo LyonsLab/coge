@@ -13,7 +13,7 @@ use POSIX;
 
 use vars qw($P $dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ks_db $ks_type $log $MAX $MIN $assemble $axis_metric $color_type $box_diags $fid1 $fid2 $selfself $labels $color_scheme $chr_sort_order $font $GZIP $GUNZIP);
 
-$P = CoGe::Accessory::Web::get_defaults();
+$P = CoGe::Accessory::Web::get_defaults('coge.conf');
 
 GetOptions(
 	   "dagfile|d=s"=>\$dagfile, #all dots

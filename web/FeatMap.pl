@@ -19,7 +19,7 @@ use File::Path;
 no warnings 'redefine';
 use vars qw($P $TEMPDIR $TEMPURL $FORM $USER $DATE $coge $cogeweb );
 
-$P = CoGe::Accessory::Web::get_defaults();
+$P = CoGe::Accessory::Web::get_defaults('coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 $TEMPDIR = $P->{TEMPDIR}."FeatMap";
 $TEMPURL = $P->{TEMPURL}."FeatMap";

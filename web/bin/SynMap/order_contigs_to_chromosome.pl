@@ -12,7 +12,7 @@ use CoGe::Accessory::SynMap_report;
 use vars qw($synfile $coge $DEBUG $join $FORM $P $GZIP $GUNZIP);
 
 
-$P = CoGe::Accessory::Web::get_defaults();
+$P = CoGe::Accessory::Web::get_defaults('coge.conf');
 $GZIP = $P->{GZIP};
 $GUNZIP = $P->{GUNZIP};
 GetOptions (

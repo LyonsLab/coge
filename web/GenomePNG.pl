@@ -11,7 +11,7 @@ no warnings 'redefine';
 $ENV{PATH} = "";
 use vars qw($P);
 
-$P = CoGe::Accessory::Web::get_defaults();
+$P = CoGe::Accessory::Web::get_defaults('coge.conf');
 
 my $form = new CGI;
 #print STDERR $form->self_url(-full=>1),"\n";

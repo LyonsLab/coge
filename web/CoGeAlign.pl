@@ -18,7 +18,7 @@ use File::Path;
 no warnings 'redefine';
 
 use vars qw($P $TEMPDIR $TEMPURL $USER $DATE $CLUSTAL $BASEFILE $coge $cogeweb $FORM $NEWICKTOPS $CONVERT $MAX_PROC);
-$P = CoGe::Accessory::Web::get_defaults();
+$P = CoGe::Accessory::Web::get_defaults('coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 $MAX_PROC=$P->{MAX_PROC};
 $ENV{THREADS} =$MAX_PROC;

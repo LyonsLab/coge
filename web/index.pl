@@ -14,7 +14,7 @@ use CoGeX;
 no warnings 'redefine';
 use vars qw($P $USER $FORM $DATE $URL $update $coge);
 
-$P = CoGe::Accessory::Web::get_defaults();
+$P = CoGe::Accessory::Web::get_defaults('coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 $URL = $P->{URL};
 $FORM = new CGI;

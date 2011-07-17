@@ -9,7 +9,7 @@ no warnings 'redefine';
 
 umask(0);
 use vars qw($P $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $DATADIR $DIAGSDIR $DOTPLOT);
-$P = CoGe::Accessory::Web::get_defaults();
+$P = CoGe::Accessory::Web::get_defaults('coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 $DEBUG = 1;
 $DIR = $P->{COGEDIR};

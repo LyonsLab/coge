@@ -18,7 +18,7 @@ no warnings 'redefine';
 use vars qw($P $DATE $DEBUG $TEMPDIR $TEMPURL $MATRIXDIR $USER $FORM $coge $connstr);
 
 # set this to 1 to print verbose messages to logs
-$P = CoGe::Accessory::Web::get_defaults();
+$P = CoGe::Accessory::Web::get_defaults('coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 $DEBUG = 0;
 $TEMPDIR = $P->{TEMPDIR};

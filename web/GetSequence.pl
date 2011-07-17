@@ -9,7 +9,7 @@ no warnings 'redefine';
 
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 
-my $P = CoGe::Accessory::Web::get_defaults();
+my $P = CoGe::Accessory::Web::get_defaults('coge.conf');
 my $FORM = new CGI;
 
 my $DBNAME = $P->{DBNAME};

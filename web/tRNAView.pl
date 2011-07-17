@@ -21,7 +21,7 @@ no warnings 'redefine';
 
 use vars qw($P $ARAGORN $FASTADIR $DATADIR $TEMPDIR $TEMPURL $DATE $USER $FORM $coge $cogeweb);
 
-$P = CoGe::Accessory::Web::get_defaults();
+$P = CoGe::Accessory::Web::get_defaults('coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 
 $TEMPDIR = $P->{TEMPDIR}."tRNA";

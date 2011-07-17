@@ -18,7 +18,7 @@ GetOptions(
 	  );
 
 
-my $P = CoGe::Accessory::Web::get_defaults();
+my $P = CoGe::Accessory::Web::get_defaults('coge.conf');
 my $DBNAME = $P->{DBNAME};
 my $DBHOST = $P->{DBHOST};
 my $DBPORT = $P->{DBPORT};

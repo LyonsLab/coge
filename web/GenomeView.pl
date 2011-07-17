@@ -14,7 +14,7 @@ no warnings 'redefine';
 
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 use vars qw($P $PAGE_NAME $DATE $DEBUG $USER $FORM $coge);
-$P = CoGe::Accessory::Web::get_defaults();
+$P = CoGe::Accessory::Web::get_defaults('coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 $PAGE_NAME="GenomeView.pl";
 $DEBUG = 0;

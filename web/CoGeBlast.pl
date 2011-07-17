@@ -32,7 +32,7 @@ use Parallel::ForkManager;
 
 use vars qw($P $PAGE_NAME $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $FORMATDB $BLAST_PROGS $FORM $USER $DATE $coge $cogeweb $RESULTSLIMIT $MAX_PROC $connstr);
 
-$P = CoGe::Accessory::Web::get_defaults();
+$P = CoGe::Accessory::Web::get_defaults('coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 $ENV{BLASTDB}=$P->{BLASTDB};
 $ENV{BLASTMAT}=$P->{BLASTMATRIX};

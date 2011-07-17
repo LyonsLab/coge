@@ -14,7 +14,7 @@ no warnings 'redefine';
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 
 use vars qw($P $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM);
-$P = CoGe::Accessory::Web::get_defaults();
+$P = CoGe::Accessory::Web::get_defaults('coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 $TEMPDIR = $P->{TEMPDIR};
 $TEMPURL = $P->{TEMPURL};

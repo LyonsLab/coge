@@ -18,7 +18,7 @@ no warnings 'redefine';
 
 
 use vars qw($P $PAGE_NAME $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb $FORM $URL $HISTOGRAM $TEMPURL);
-$P = CoGe::Accessory::Web::get_defaults();
+$P = CoGe::Accessory::Web::get_defaults('coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 $URL = $P->{URL};
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",

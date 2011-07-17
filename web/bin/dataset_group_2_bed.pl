@@ -17,7 +17,7 @@ Will generate a dump of all features for a dataset_group in bed format
     exit;
   }
 
-my $P = CoGe::Accessory::Web::get_defaults();
+my $P = CoGe::Accessory::Web::get_defaults('coge.conf');
 my $DBNAME = $P->{DBNAME};
 my $DBHOST = $P->{DBHOST};
 my $DBPORT = $P->{DBPORT};

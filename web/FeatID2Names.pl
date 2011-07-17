@@ -12,7 +12,7 @@ no warnings 'redefine';
 #use CoGeX;
 
 use vars qw($P $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $FID $coge);
-$P = CoGe::Accessory::Web::get_defaults();
+$P = CoGe::Accessory::Web::get_defaults('coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 $TEMPDIR = $P->{TEMPDIR};
 $TEMPURL = $P->{TEMPURL};
