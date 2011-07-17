@@ -6,10 +6,20 @@ use strict;
 use CGI;
 use LWP::Simple;
 use CoGeX;
+use CoGe::Accessory::Web;
 no warnings 'redefine';
+my $P = CoGe::Accessory::Web::get_defaults();
+$ENV{PATH} = $P->{COGEDIR};
+my $DBNAME = $P->{DBNAME};
+my $DBHOST = $P->{DBHOST};
+my $DBPORT = $P->{DBPORT};
+my $DBUSER = $P->{DBUSER};
+my $DBPASS = $P->{DBPASS};
+my $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
+my $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
+#$coge->storage->debugobj(new DBIxProfiler());
+#$coge->storage->debug(1);
 
-
-my $coge = CoGeX->dbconnect();
 my $form = new CGI;
 
 my $base = 'http://rna.tbi.univie.ac.at/';
