@@ -64,8 +64,13 @@ $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 ($USER) = CoGe::Accessory::LogUser->get_user();
 $FORM = new CGI;
 my %ajax = CoGe::Accessory::Web::ajax_func();
-
-$coge = CoGeX->dbconnect();
+my $DBNAME = $P->{DBNAME};
+my $DBHOST = $P->{DBHOST};
+my $DBPORT = $P->{DBPORT};
+my $DBUSER = $P->{DBUSER};
+my $DBPASS = $P->{DBPASS};
+my $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
+$coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 
@@ -1725,8 +1730,7 @@ sub get_nearby_feats
     my @feat;
     my $count = 0;
     my $mid = ($stop+$start)/2;
-    my $coge = CoGeX->dbconnect();
-    my $cogedb = DBI->connect($coge->db_connection_string,$coge->db_name,$coge->db_passwd);
+    my $cogedb = DBI->connect($connstr,$DBUSER,$DBPASS);
     my $query =qq!
 
 select * from (
