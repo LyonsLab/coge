@@ -29,7 +29,13 @@ $HISTOGRAM = $P->{HISTOGRAM};
 $TEMPDIR = $P->{TEMPDIR}."GenomeList/";
 $TEMPURL = $P->{TEMPURL}."GenomeList/";
 $FORM = new CGI;
-$coge = CoGeX->dbconnect();
+my $DBNAME = $P->{DBNAME};
+my $DBHOST = $P->{DBHOST};
+my $DBPORT = $P->{DBPORT};
+my $DBUSER = $P->{DBUSER};
+my $DBPASS = $P->{DBPASS};
+my $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
+$coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 
@@ -500,7 +506,7 @@ sub add_to_user_history
 			     'description'=>'Feature List created on '.$DATE,
 			    });
       }
-    return();
+    return $opts{work_name};
   }
 
 
@@ -569,8 +575,7 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
   GROUP BY ft.name
 
 };
-    my $coge = CoGeX->dbconnect();
-    my $dbh = DBI->connect($coge->db_connection_string,$coge->db_name,$coge->db_passwd);
+    my $dbh = DBI->connect($connstr,$DBUSER,$DBPASS);
     my $sth = $dbh->prepare($query);
     $sth->execute;
     my $feats = {};
