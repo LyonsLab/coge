@@ -357,6 +357,7 @@ See Also   :
 ################################################## subroutine header end ##
 
 
+
  sub last_chromosome_position
    {
      my $self = shift;
@@ -434,6 +435,80 @@ See Also   :
 =cut
 
 ################################################## subroutine header end ##
+################################################## subroutine header end ##
+
+sub total_length
+    {
+      my $self = shift;
+      my %opts = @_;
+      my $ftid = $opts{ftid};
+      my $search;
+      my $join = {
+		  select => [ { sum => 'stop' } ],
+		  as     => [ 'total_length' ], # remember this 'as' is for DBIx::Class::ResultSet not SQL
+		 };
+      if ($ftid)
+	{
+	  $search = {'feature_type_id'=>$ftid};
+	}
+      else
+	{
+	  $search ={'name'=>'chromosome'};
+	  $join->{join}='feature_type';
+	}
+      
+      my $rs = $self->features(
+			       $search,
+			       $join
+			      );
+      my $total_length = $rs->first->get_column('total_length');
+      return $total_length;
+    }
+
+
+
+############################################### subroutine header begin ##
+
+=head2 chromosome_count
+
+ Usage     : $self->chromosome_count
+ Purpose   : get count of chromosomes in the dataset group
+ Returns   : number
+ Argument  : 
+ Throws    : 
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub chromosome_count
+    {
+      my $self = shift;
+      my %opts = @_;
+      my $ftid = $opts{ftid};
+      my $search;
+      my $join; 
+      if ($ftid)
+	{
+	  $search = {'feature_type_id'=>$ftid};
+	}
+      else
+	{
+	  $search ={'name'=>'chromosome'};
+	  $join->{join}='feature_type';
+	}
+      
+      my $count = $self->features(
+			       $search,
+			       $join
+			      )->count;
+      return $count;
+    }
+
+################################################ subroutine header begin ##
 
 sub sequence_type
   {
