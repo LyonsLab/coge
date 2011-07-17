@@ -555,18 +555,8 @@ sub get_dataset_info
 
 
     my $html2;
-    my $rs = $coge->resultset('Feature')->search(
-						 {
-						  dataset_id=>$ds->id,
-						  feature_type_id=>301,
-						 },
-						 {
-						  select => [ { sum => 'stop' } ],
-						  as     => [ 'total_length' ], # remember this 'as' is for DBIx::Class::ResultSet not SQL
-						 }
-						);
-    my $total_length = $rs->first->get_column('total_length');
-    my $chr_num = $ds->features->count({feature_type_id=>301}); 
+    my $total_length = $ds->total_length(ftid=>301);
+    my $chr_num = $ds->chromosome_count(ftid=>301);
 
     #working here.  Need to deal with large number of chromosomes (e.g. > 1000.  Perl object creation is killing performance)
     my %chr;
@@ -581,7 +571,6 @@ sub get_dataset_info
       }
     my @chr = $chr_num > $chr_num_limit ? sort {$chr{$b}{length} <=> $chr{$a}{length}} keys %chr
       : sort {$chr{$a}{num} <=> $chr{$b}{num} || $a cmp $b}keys %chr;
-    my $length =0;
     if (@chr)
       {
 	my $size = scalar @chr;
@@ -593,7 +582,6 @@ sub get_dataset_info
 	$select .= "\n</SELECT>\n";
 
 	$html2 .= $select;
-	map{$length += $chr{$_}{length}} @chr;
       }
     else {
       $html2 .= qq{<input type="hidden" id="chr" value="">};
@@ -601,8 +589,8 @@ sub get_dataset_info
     }
     $html .= "<tr><td>Chromosome count:<td><div style=\"float: left;\">".commify($chr_num);
     $html .= "<tr><td>Total length:<td><div style=\"float: left;\">".commify($total_length)." bp ";
-    my $gc = $length < 10000000 && $chr_num < $chr_num_limit ? get_gc_for_chromosome(dsid=>$ds->id): 0;
-    $gc = $gc ? $gc : qq{  </div><div style="float: left; text-indent: 1em;" id=dataset_gc class="link" onclick="\$('#dataset_gc').removeClass('link'); get_gc_for_chromosome(['args__dsid','ds_id','args__gstid', 'gstid'],['dataset_gc']);">  Click for percent GC content</div>} if $length;
+    my $gc = $total_length < 10000000 && $chr_num < $chr_num_limit ? get_gc_for_chromosome(dsid=>$ds->id): 0;
+    $gc = $gc ? $gc : qq{  </div><div style="float: left; text-indent: 1em;" id=dataset_gc class="link" onclick="\$('#dataset_gc').removeClass('link'); get_gc_for_chromosome(['args__dsid','ds_id','args__gstid', 'gstid'],['dataset_gc']);">  Click for percent GC content</div>} if $total_length;
     $html .= $gc if $gc;
     $html .= qq{<tr><td>Links:</td>};
     $html .= "<td>";
