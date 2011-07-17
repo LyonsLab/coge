@@ -205,8 +205,17 @@ See Also   :
 
 sub datasource
   {
-    print STDERR "You are using an alias for data_source\n";
     shift->data_source(@_);
+  }
+
+sub source
+  {
+    shift->data_source(@_);
+  }
+
+sub desc
+  {
+    shift->description(@_);
   }
 
 
