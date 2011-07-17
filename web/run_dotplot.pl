@@ -19,7 +19,14 @@ $DIAGSDIR = $P->{DIAGSDIR};
 $DOTPLOT = $P->{DOTPLOT};
 
 $FORM = new CGI;
-$coge = CoGeX->dbconnect();
+my $DBNAME = $P->{DBNAME};
+my $DBHOST = $P->{DBHOST};
+my $DBPORT = $P->{DBPORT};
+my $DBUSER = $P->{DBUSER};
+my $DBPASS = $P->{DBPASS};
+my $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
+$coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
+
 
 my $dsgid1 = $FORM->param('dsg1');
 my $dsgid2 = $FORM->param('dsg2');
