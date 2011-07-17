@@ -130,7 +130,13 @@ $FORM = new CGI;
 ($USER) = CoGe::Accessory::LogUser->get_user();
 my %ajax = CoGe::Accessory::Web::ajax_func();
 #$ajax{read_log}=\&read_log_test;
-$coge = CoGeX->dbconnect();
+my $DBNAME = $P->{DBNAME};
+my $DBHOST = $P->{DBHOST};
+my $DBPORT = $P->{DBPORT};
+my $DBUSER = $P->{DBUSER};
+my $DBPASS = $P->{DBPASS};
+my $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
+$coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 my $pj = new CGI::Ajax(
@@ -3002,7 +3008,7 @@ sub get_pair_info
 	    next;
 	  }
 	my $feat = $coge->resultset('Feature')->find($fid);
-	my $anno = "Name: ".join (", ",map {"<a class=\"data link\" href=\"FeatView.pl?accn=".$_."\" target=_new>".$_."</a>"} $feat->names);
+	my $anno = "Name: ".join (", ",map {"<a class=\"data link\" href=\"$URL/FeatView.pl?accn=".$_."\" target=_new>".$_."</a>"} $feat->names);
 	my $location = "Chr ".$feat->chromosome." ";
 	$location .= commify($feat->start)." - ".commify($feat->stop);
 #	$location .=" (".$feat->strand.")";
