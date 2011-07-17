@@ -62,6 +62,11 @@ __PACKAGE__->set_primary_key("sequence_type_id");
 
 __PACKAGE__->has_many( 'sequences' => "CoGeX::Result::Sequence", 'sequence_type_id');
 
+sub desc
+  {
+    shift->description(@_);
+  }
+
 1;
 
 
