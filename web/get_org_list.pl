@@ -11,7 +11,13 @@ no warnings 'redefine';
 my $P = CoGe::Accessory::Web::get_defaults();
 $ENV{PATH} = $P->{COGEDIR};
 
-my $coge = CoGeX->dbconnect();
+my $DBNAME = $P->{DBNAME};
+my $DBHOST = $P->{DBHOST};
+my $DBPORT = $P->{DBPORT};
+my $DBUSER = $P->{DBUSER};
+my $DBPASS = $P->{DBPASS};
+my $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
+my $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 my $FORM = new CGI;
 my $dsgid = $FORM->param('dsgid');
 my $oid = $FORM->param('oid');
