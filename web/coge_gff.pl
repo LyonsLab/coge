@@ -1,14 +1,20 @@
 #!/usr/bin/perl -w
 
 use CoGeX;
+use CoGe::Accessory::Web;
 use strict;
 use CGI;
 use CoGe::Accessory::LogUser;
 
 no warnings 'redefine';
-
-
-my $coge = CoGeX->dbconnect();
+my $P = CoGe::Accessory::Web::get_defaults();
+my $DBNAME = $P->{DBNAME};
+my $DBHOST = $P->{DBHOST};
+my $DBPORT = $P->{DBPORT};
+my $DBUSER = $P->{DBUSER};
+my $DBPASS = $P->{DBPASS};
+my $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
+my $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 my $FORM = new CGI;
 my $dsgid = $FORM->param('dsgid');
 my $dsid = $FORM->param('dsid');
