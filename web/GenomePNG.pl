@@ -5,6 +5,7 @@ use CGI;
 use CoGe::Graphics;
 use Data::Dumper;
 use CoGe::Accessory::Web;
+use CoGeX;
 no warnings 'redefine';
 
 
@@ -31,6 +32,16 @@ my $feat_height = $form->param('fh') || 50;
 my $request = $form->param('request') || "get_image";
 my $gstid = $form->param('gstid');
 my $dsgid = $form->param('dsg');
+
+my $DBNAME = $P->{DBNAME};
+my $DBHOST = $P->{DBHOST};
+my $DBPORT = $P->{DBPORT};
+my $DBUSER = $P->{DBUSER};
+my $DBPASS = $P->{DBPASS};
+my $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
+my $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
+#$coge->storage->debugobj(new DBIxProfiler());
+#$coge->storage->debug(1);
 #print STDERR "DSGID: $dsgid\n";
 my @layers;
 foreach my $layer ($form->param('layers'))
@@ -78,5 +89,6 @@ else
 				 DEBUG=>0,
 				 major_tick_labels=>1,
 				 minor_tick_labels=>-1,
+				 coge=>$coge,
 				);
   }
