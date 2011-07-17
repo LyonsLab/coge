@@ -35,7 +35,14 @@ $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 
 $FORM = new CGI;
 ($USER) = CoGe::Accessory::LogUser->get_user();
-$coge = CoGeX->dbconnect();
+
+my $DBNAME = $P->{DBNAME};
+my $DBHOST = $P->{DBHOST};
+my $DBPORT = $P->{DBPORT};
+my $DBUSER = $P->{DBUSER};
+my $DBPASS = $P->{DBPASS};
+my $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
+$coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 
@@ -716,8 +723,7 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
 };
       }
 
-    my $coge = CoGeX->dbconnect();
-    my $dbh = DBI->connect($coge->db_connection_string,$coge->db_name,$coge->db_passwd);
+    my $dbh = DBI->connect($connstr,$DBUSER,$DBPASS);
     my $sth = $dbh->prepare($query);
     $sth->execute;
     my $feats = {};
