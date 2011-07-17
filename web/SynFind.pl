@@ -60,8 +60,13 @@ $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 ($USER) = CoGe::Accessory::LogUser->get_user();
 $FORM = new CGI;
 my %ajax = CoGe::Accessory::Web::ajax_func();
-
-$coge = CoGeX->dbconnect();
+my $DBNAME = $P->{DBNAME};
+my $DBHOST = $P->{DBHOST};
+my $DBPORT = $P->{DBPORT};
+my $DBUSER = $P->{DBUSER};
+my $DBPASS = $P->{DBPASS};
+my $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
+$coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 
@@ -934,9 +939,9 @@ sub gen_fasta
       }
     else
       {
-	system "touch $file.running"; #track that a blast anlaysis is running for this
+	system "/usr/bin/touch $file.running"; #track that a blast anlaysis is running for this
 	$res = generate_fasta(dsgid=>$dsgid, file=>$file, type=>$feat_type) unless -r $file;
-	system "rm $file.running" if -r "$file.running"; #remove track file
+	system "/bin/rm $file.running" if -r "$file.running"; #remove track file
       }
     CoGe::Accessory::Web::write_log("", $cogeweb->logfile) if $write_log;
     return $file, $org_name, $title if $res;
@@ -1042,9 +1047,9 @@ sub gen_blastdb
       }
     else
       {
-	system "touch $blastdb.running"; #track that a blast anlaysis is running for this
+	system "/usr/bin/touch $blastdb.running"; #track that a blast anlaysis is running for this
 	$res = generate_blast_db(fasta=>$fasta, blastdb=>$blastdb, org=>$org_name, write_log=>$write_log);
-	system "rm $blastdb.running" if -r "$blastdb.running"; #remove track file
+	system "/bin/rm $blastdb.running" if -r "$blastdb.running"; #remove track file
       }
    CoGe::Accessory::Web::write_log("", $cogeweb->logfile) if $write_log;
     return $blastdb if $res;
@@ -1100,11 +1105,11 @@ sub run_blast
 #    my $pre_command = "$BLASTN -out $outfile -query $fasta -db $blastdb";
     my $pre_command .= "$LASTZ -i $fasta -d $blastdb -o $outfile";
     my $x;
-    system "touch $outfile.running"; #track that a blast anlaysis is running for this
+    system "/usr/bin/touch $outfile.running"; #track that a blast anlaysis is running for this
     ($x, $pre_command) =CoGe::Accessory::Web::check_taint($pre_command);
     CoGe::Accessory::Web::write_log("running $pre_command" ,$cogeweb->logfile);
     `$pre_command`;
-    system "rm $outfile.running" if -r "$outfile.running"; #remove track file
+    system "/bin/rm $outfile.running" if -r "$outfile.running"; #remove track file
     unless (-s $outfile)
       {
 	CoGe::Accessory::Web::write_log("WARNING: Problem running $pre_command command.  Blast output file contains no data!" ,$cogeweb->logfile);
@@ -1147,7 +1152,7 @@ sub blast2bed
 	CoGe::Accessory::Web::write_log(".bed files $outfile1 and $outfile2 already exist." ,$cogeweb->logfile);
 	return;
       }
-    my $cmd = $BLAST2BED ." -infile $infile -outfile1 $outfile1 -outfile2 $outfile2";
+    my $cmd = $PYTHON26." ".$BLAST2BED ." -infile $infile -outfile1 $outfile1 -outfile2 $outfile2";
     CoGe::Accessory::Web::write_log("Creating bed files: $cmd", $cogeweb->logfile);
     CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
     `$cmd`;
@@ -1186,7 +1191,7 @@ sub run_blast2raw
       }
     my $tandem_distance = $opts{tandem_distance};
     $tandem_distance = 10 unless defined $tandem_distance;
-    my $cmd = $BLAST2RAW." $blastfile --qbed $bedfile1 --sbed $bedfile2 --tandem_Nmax $tandem_distance > $outfile";
+    my $cmd = $PYTHON26." ".$BLAST2RAW." $blastfile --qbed $bedfile1 --sbed $bedfile2 --tandem_Nmax $tandem_distance > $outfile";
     CoGe::Accessory::Web::write_log("BLAST2RAW (finding and removing local duplications): running $cmd" ,$cogeweb->logfile);
     `$cmd`;
     CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
@@ -1220,13 +1225,13 @@ sub run_synteny_score
        }
      else
        {
-	 system "touch $outfile.running"; #track that a blast anlaysis is running for this
+	 system "/usr/bin/touch $outfile.running"; #track that a blast anlaysis is running for this
        }
      my $cmd = $SYNTENY_SCORE ." $blastfile --qbed $bedfile1 --sbed $bedfile2 --window $window_size --cutoff $cutoff --scoring $scoring_function --qnote $dsgid1 --snote $dsgid2 --sqlite $outfile";
      
      CoGe::Accessory::Web::write_log("Synteny Score:  running $cmd", $cogeweb->logfile);
      system("$PYTHON26 $cmd");
-     system "rm $outfile.running" if -r "$outfile.running"; #remove track file
+     system "/bin/rm $outfile.running" if -r "$outfile.running"; #remove track file
      CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
      return $outfile;
    }
