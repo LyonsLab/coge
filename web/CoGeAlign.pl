@@ -31,8 +31,13 @@ $TEMPURL = $P->{TEMPURL}."CoGeAlign";
 mkpath ($TEMPDIR,0,0777) unless -d $TEMPDIR;
 
 $FORM = new CGI;
-
-$coge = CoGeX->dbconnect();
+my $DBNAME = $P->{DBNAME};
+my $DBHOST = $P->{DBHOST};
+my $DBPORT = $P->{DBPORT};
+my $DBUSER = $P->{DBUSER};
+my $DBPASS = $P->{DBPASS};
+my $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
+$coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 
 $CLUSTAL = $P->{CLUSTALW};
 $NEWICKTOPS = $P->{NEWICKTOPS};
