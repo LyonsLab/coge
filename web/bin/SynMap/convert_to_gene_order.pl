@@ -2,6 +2,7 @@
 
 use strict;
 use CoGeX;
+use CoGe::Accessory::Web;
 use Getopt::Long;
 use Data::Dumper;
 
@@ -17,7 +18,15 @@ GetOptions(
 	  );
 
 
-my $coge = CoGeX->dbconnect();
+my $P = CoGe::Accessory::Web::get_defaults();
+my $DBNAME = $P->{DBNAME};
+my $DBHOST = $P->{DBHOST};
+my $DBPORT = $P->{DBPORT};
+my $DBUSER = $P->{DBUSER};
+my $DBPASS = $P->{DBPASS};
+my $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
+my $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
+
 my $order1 = get_gene_order(dsgid=>$dsgid1, ftid=>$ftid1) if $ftid1 == 3;
 my $order2 = $dsgid1 == $dsgid2 && $ftid1 == $ftid2 ? $order1 : get_gene_order(dsgid=>$dsgid2, ftid=>$ftid2) if $ftid2 == 3;
 
