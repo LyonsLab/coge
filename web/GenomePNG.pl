@@ -53,6 +53,7 @@ foreach my $layer ($form->param('layers'))
   }
 my @fids = $form->param('fid'); #used to highlight special features by their database id
 my @fnames = $form->param('fn'); #used to highlight special features by their name
+
 if ($request eq "get_annotation")
   {
     my $html;
