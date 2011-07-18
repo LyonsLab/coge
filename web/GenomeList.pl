@@ -14,6 +14,7 @@ use URI::Escape;
 use Spreadsheet::WriteExcel;
 use Benchmark;
 use DBIxProfiler;
+use File::Path;
 no warnings 'redefine';
 
 
@@ -27,6 +28,7 @@ $PAGE_NAME = "GenomeList.pl";
 $HISTOGRAM = $P->{HISTOGRAM};	
 ($USER) = CoGe::Accessory::LogUser->get_user();
 $TEMPDIR = $P->{TEMPDIR}."GenomeList/";
+mkpath ($TEMPDIR, 0,0777) unless -d $TEMPDIR;
 $TEMPURL = $P->{TEMPURL}."GenomeList/";
 $FORM = new CGI;
 my $DBNAME = $P->{DBNAME};
@@ -138,7 +140,7 @@ sub cds_wgc_hist
     my $min = $opts{min}; #limit results with gc values greater than $min;
     my $max = $opts{max}; #limit results with gc values smaller than $max;
     my $hist_type = $opts{hist_type};
-    return "error" unless $dsid || $dsgid;
+    return "Error: No dsid or dsgid passed." unless $dsid || $dsgid;
     my $gc = 0;
     my $at = 0;
     my $n = 0;
