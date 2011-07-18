@@ -261,7 +261,7 @@ function show_seq(seq,name,num,dsid,chr,start,stop, rc) {
   //check to see if SeqView is an option, then display link
   var regex = /^\d+$/;
   if (regex.test(dsid) && dsid != 0 && which_seq == "Subject") {
-    var seqview = "/CoGe/SeqView.pl?dsid="+dsid+"&chr="+chr+"&start="+start+"&stop="+stop+"&rc="+rc;
+    var seqview = "SeqView.pl?dsid="+dsid+"&chr="+chr+"&start="+start+"&stop="+stop+"&rc="+rc;
     $('#sequence_popup').dialog('option','buttons',{"View Sequence in SeqView": function() { window.open(seqview); }});
   }
   $('#sequence_popup').html(html).dialog('open');
@@ -778,7 +778,7 @@ function adjust_blast_types(val){
 
 function matrix_view (){
 var matrix = $('#matrix').val();
-window.open('/CoGe/MatrixView.pl?matrix='+matrix);
+window.open('MatrixView.pl?matrix='+matrix);
 }
 
  function monitor_log(log)
@@ -1989,11 +1989,11 @@ $(function() {
           </form>
 <!--	  <div id="pager" class="pager">
 	  <form>
-		<img src="/CoGe/picts/tablesorter-pager-icons/first.png" class="first"/>
-		<img src="/CoGe/picts/tablesorter-pager-icons/prev.png" class="prev"/>
+		<img src="./picts/tablesorter-pager-icons/first.png" class="first"/>
+		<img src="./picts/tablesorter-pager-icons/prev.png" class="prev"/>
 		<input type="text" class="pagedisplay"/>
-		<img src="/CoGe/picts/tablesorter-pager-icons/next.png" class="next"/>
-		<img src="/CoGe/picts/tablesorter-pager-icons/last.png" class="last"/>
+		<img src="./picts/tablesorter-pager-icons/next.png" class="next"/>
+		<img src="./picts/tablesorter-pager-icons/last.png" class="last"/>
 		Display how many rows? 
 		<select class="pagesize">
 			<option selected="selected"  value="10">10</option>
