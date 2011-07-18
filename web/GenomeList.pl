@@ -23,7 +23,7 @@ $ENV{PATH} = $P->{COGEDIR};
 $URL = $P->{URL};
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
-$PAGE_NAME = "FeatList.pl";
+$PAGE_NAME = "GenomeList.pl";
 $HISTOGRAM = $P->{HISTOGRAM};	
 ($USER) = CoGe::Accessory::LogUser->get_user();
 $TEMPDIR = $P->{TEMPDIR}."GenomeList/";
