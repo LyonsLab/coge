@@ -19,6 +19,7 @@ use Digest::MD5 qw(md5_hex);
 use DBIxProfiler;
 use File::Temp;
 use File::Basename;
+use File::Path;
 use CoGe::Accessory::blast_report;
 use CoGe::Accessory::blastz_report;
 use CoGe::Graphics::GenomeView;
@@ -41,6 +42,7 @@ $ENV{BLASTMAT}=$P->{BLASTMATRIX};
 #refresh again?
 $PAGE_NAME = "CoGeBlast.pl";
 $TEMPDIR = $P->{TEMPDIR}."CoGeBlast";
+mkpath ($TEMPDIR, 0,0777) unless -d $TEMPDIR;
 $TEMPURL = $P->{TEMPURL}."CoGeBlast";
 $DATADIR = $P->{DATADIR};
 $FASTADIR = $P->{FASTADIR};
