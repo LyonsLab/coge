@@ -981,7 +981,7 @@ sub generate_fasta
 	foreach my $feat (sort {$a->chromosome cmp $b->chromosome || $a->start <=> $b->start} 
 			  $coge->resultset('Feature')->search(
 							      {
-							       feature_type_id=>[3, 4, 7],
+							       feature_type_id=>[3, 5, 8],
 							       dataset_group_id=>$dsgid
 							      },{
 								 join=>[{dataset=>'dataset_connectors'}], 
