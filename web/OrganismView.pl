@@ -562,12 +562,12 @@ sub get_dataset_info
 
 
     my $html2;
-    my $total_length = $ds->total_length(ftid=>301);
-    my $chr_num = $ds->chromosome_count(ftid=>301);
+    my $total_length = $ds->total_length(ftid=>4);
+    my $chr_num = $ds->chromosome_count(ftid=>4);
 
     #working here.  Need to deal with large number of chromosomes (e.g. > 1000.  Perl object creation is killing performance)
     my %chr;
-    map{$chr{$_->chromosome}={length=>$_->stop}} ($ds->get_chromosomes(ftid=>301, length=>1, limit=>$chr_num_limit)); #the chromosome feature type in coge is 301
+    map{$chr{$_->chromosome}={length=>$_->stop}} ($ds->get_chromosomes(ftid=>4, length=>1, limit=>$chr_num_limit)); #the chromosome feature type in coge is 301
     my $count = 100000;
     foreach my $item (sort keys %chr)
       {
