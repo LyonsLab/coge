@@ -36,18 +36,32 @@
 	       				     width: 627,
 					     autoOpen: false,
 	});
-	var page_url = document.location;
+	
 	     $("#save_form").dialog({ autoOpen: false,
 	     			      height: 331,
 				      width: 461,
 	     			      buttons: { "Cancel": function() { $(this).dialog("close"); },
 				      	        "Save": function() { 
-						add_to_user_history(['args__work_name','work_name',
-								     'args__description','description',
-								     'args__archive','args__'+1,
-								     'args__url','args__'+page_url,
-								     'args__note','note'],[]);
-						$(this).dialog("close"); }
+									
+									
+									$.ajax({
+									    data: {
+									 	    jquery_ajax: 1,
+											fname: 'add_to_user_history',
+									           work_name: $('#work_name').val(),
+									   		   description: $('#description').val(),
+											   url: document.location.href,
+											   note: $('#note').val(),
+											   archive: 1,
+											   tool: 'Genome list'
+									          },
+									    success: function(val){
+										 
+										}
+									  });
+									
+									$(this).dialog("close"); 
+						}
 						}
 	});
 	     //button effects on events
@@ -55,6 +69,7 @@
 					$('#table_opts_dialog').dialog('open');
 			});
 	     $('#history_dialog_button').click(function() {
+				
 					$('#save_form').dialog('open');
 			});
 
@@ -266,7 +281,7 @@
 	    data: {
 	 	    jquery_ajax: 1,
 	           fname: 'get_codon_usage',
-	    dsgid: dsgid,
+	   		   dsgid: dsgid,
 	          },
 	    success : create_callback(divid)
 	  });
@@ -646,7 +661,7 @@
 	<table class="ui-widget-content ui-corner-all">
 	<tr>
 	<td>Work Name:</td>
-	<td><input type=text id='work_name' value='FeatList Data'></td>
+	<td><input type=text id='work_name' value='GenomeList Data'></td>
 	</tr>
 	<tr>
 	<td>Description:</td>
