@@ -18,8 +18,8 @@ use DBIxProfiler;
 no warnings 'redefine';
 
 
-use vars qw($P $PAGE_NAME $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb $FORM $URL);
-$P = CoGe::Accessory::Web::get_defaults('coge.conf');
+use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb $FORM $URL);
+$P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 $URL = $P->{URL};
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
@@ -28,12 +28,12 @@ $PAGE_NAME = "FeatList.pl";
 ($USER) = CoGe::Accessory::LogUser->get_user();
 $TEMPDIR = $P->{TEMPDIR};
 $FORM = new CGI;
-my $DBNAME = $P->{DBNAME};
-my $DBHOST = $P->{DBHOST};
-my $DBPORT = $P->{DBPORT};
-my $DBUSER = $P->{DBUSER};
-my $DBPASS = $P->{DBPASS};
-my $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
+$DBNAME = $P->{DBNAME};
+$DBHOST = $P->{DBHOST};
+$DBPORT = $P->{DBPORT};
+$DBUSER = $P->{DBUSER};
+$DBPASS = $P->{DBPASS};
+$connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
 $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 
 #$coge->storage->debugobj(new DBIxProfiler());
@@ -140,14 +140,14 @@ sub gen_body
     #feat ids may be in the format of <fid>_<gstid>
     foreach my $item ($form->param('fid'))
       {
-	foreach my $item2 (split/::/, $item)
+	foreach my $item2 (split/(::)|(,)/, $item)
 	  {
 	    push @$feat_list, $item2 if $item2 =~ /^\d+_?\d*$/;
 	  }
       }
     foreach my $item ($form->param('featid'))
       {
-	foreach my $item2 (split/::/, $item)
+	foreach my $item2 (split/(::)|(,)/, $item)
 	  {
 	    push @$feat_list, $item2 if $item2 =~ /^\d+_?\d*$/;
 	  }
