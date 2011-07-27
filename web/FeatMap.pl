@@ -17,9 +17,9 @@ use CoGe::Graphics;
 use CoGe::Graphics::Chromosome;
 use File::Path;
 no warnings 'redefine';
-use vars qw($P $TEMPDIR $TEMPURL $FORM $USER $DATE $coge $cogeweb );
+use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $TEMPDIR $TEMPURL $FORM $USER $DATE $coge $cogeweb );
 
-$P = CoGe::Accessory::Web::get_defaults('coge.conf');
+$P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 $TEMPDIR = $P->{TEMPDIR}."FeatMap";
 $TEMPURL = $P->{TEMPURL}."FeatMap";
@@ -29,12 +29,12 @@ $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
 ($USER) = CoGe::Accessory::LogUser->get_user();
 $FORM = new CGI;
-my $DBNAME = $P->{DBNAME};
-my $DBHOST = $P->{DBHOST};
-my $DBPORT = $P->{DBPORT};
-my $DBUSER = $P->{DBUSER};
-my $DBPASS = $P->{DBPASS};
-my $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
+$DBNAME = $P->{DBNAME};
+$DBHOST = $P->{DBHOST};
+$DBPORT = $P->{DBPORT};
+$DBUSER = $P->{DBUSER};
+$DBPASS = $P->{DBPASS};
+$connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
 $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 
 my $pj = new CGI::Ajax(
