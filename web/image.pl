@@ -7,8 +7,8 @@ use CoGe::Accessory::Web;
 use CoGeX;
 no warnings 'redefine';
 
-use vars qw($P $DATE $DEBUG $USER $FORM $coge);
-$P = CoGe::Accessory::Web::get_defaults('coge.conf');
+use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $USER $FORM $coge);
+$P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 
 # set this to 1 to print verbose messages to logs
@@ -19,12 +19,12 @@ $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 
 $FORM = new CGI;
 ($USER) = CoGe::Accessory::LogUser->get_user();
-my $DBNAME = $P->{DBNAME};
-my $DBHOST = $P->{DBHOST};
-my $DBPORT = $P->{DBPORT};
-my $DBUSER = $P->{DBUSER};
-my $DBPASS = $P->{DBPASS};
-my $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
+$DBNAME = $P->{DBNAME};
+$DBHOST = $P->{DBHOST};
+$DBPORT = $P->{DBPORT};
+$DBUSER = $P->{DBUSER};
+$DBPASS = $P->{DBPASS};
+$connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
 $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 
 my $id = $FORM->param('id');
