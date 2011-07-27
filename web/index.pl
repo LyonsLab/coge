@@ -12,9 +12,9 @@ use CoGe::Accessory::Web;
 use Digest::MD5 qw(md5_base64);
 use CoGeX;
 no warnings 'redefine';
-use vars qw($P $USER $FORM $DATE $URL $update $coge);
+use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $USER $FORM $DATE $URL $update $coge);
 
-$P = CoGe::Accessory::Web::get_defaults('coge.conf');
+$P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 $URL = $P->{URL};
 $FORM = new CGI;
@@ -29,12 +29,12 @@ my $pj = new CGI::Ajax(
 		       get_latest_genomes=>\&get_latest_genomes,
 		      );
 $update =0;
-my $DBNAME = $P->{DBNAME};
-my $DBHOST = $P->{DBHOST};
-my $DBPORT = $P->{DBPORT};
-my $DBUSER = $P->{DBUSER};
-my $DBPASS = $P->{DBPASS};
-my $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
+$DBNAME = $P->{DBNAME};
+$DBHOST = $P->{DBHOST};
+$DBPORT = $P->{DBPORT};
+$DBUSER = $P->{DBUSER};
+$DBPASS = $P->{DBPASS};
+$connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
 $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 print $pj->build_html($FORM, \&gen_html);
 #print $FORM->header, gen_html();
