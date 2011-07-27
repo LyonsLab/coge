@@ -173,6 +173,12 @@ sub genomic_view
     my $minor_tick_labels = $opts{minor_tick_labels} || -1;
     my $gstid=$opts{gstid}; #genomic_sequence_type_id for finding the right genomic sequence
     my $dsgid=$opts{dsgid}; #dataset_group for finding the right genomic sequence
+    my $coge = $opts{coge}; #database connector object
+    unless ($coge)
+      {
+	print STDERR "Need to pass in a coge database object!\n";
+	return;
+      }
     $DEBUG = $opts{debug} || $opts{DEBUG} || 0;
     $self->DEBUG($DEBUG);
     print STDERR "Options: ".Dumper \%opts if $self->DEBUG;
@@ -185,9 +191,6 @@ sub genomic_view
     my $t0 = new Benchmark if $BENCHMARK;
 
     #CoGe objects that we will need
-    my $coge = CoGeX->dbconnect();
-#    $coge->storage->debugobj(new DBIxProfiler());
-#    $coge->storage->debug(1);
     my $c = new CoGe::Graphics::Chromosome;
 
     ($org) = $coge->resultset('Organism')->resolve($org) if $org;
