@@ -13,8 +13,8 @@ no warnings 'redefine';
 # for security purposes
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 
-use vars qw($P $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM);
-$P = CoGe::Accessory::Web::get_defaults('coge.conf');
+use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM);
+$P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 $TEMPDIR = $P->{TEMPDIR};
 $TEMPURL = $P->{TEMPURL};
