@@ -13,8 +13,8 @@ no warnings 'redefine';
 
 
 
-use vars qw($P $TEMPDIR $TEMPURL $FORM $USER $DATE $coge);
-$P = CoGe::Accessory::Web::get_defaults('coge.conf');
+use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $TEMPDIR $TEMPURL $FORM $USER $DATE $coge);
+$P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 
 $TEMPDIR = $P->{TEMPDIR};
@@ -23,12 +23,12 @@ $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
 ($USER) = CoGe::Accessory::LogUser->get_user();
 $FORM = new CGI;
-my $DBNAME = $P->{DBNAME};
-my $DBHOST = $P->{DBHOST};
-my $DBPORT = $P->{DBPORT};
-my $DBUSER = $P->{DBUSER};
-my $DBPASS = $P->{DBPASS};
-my $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
+$DBNAME = $P->{DBNAME};
+$DBHOST = $P->{DBHOST};
+$DBPORT = $P->{DBPORT};
+$DBUSER = $P->{DBUSER};
+$DBPASS = $P->{DBPASS};
+$connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
 $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 
 my $pj = new CGI::Ajax(
@@ -106,9 +106,11 @@ sub get_seqs
     #print STDERR Dumper \%opts;
     my @fids = ref($fids) =~ /array/i ? @$fids : split/,/, $fids;
     my $seqs;
-    foreach my $featid (@fids)
+    foreach my $item (@fids)
       {
-	my ($fid, $gstidt);
+        foreach my $featid (split /,/, $item)
+          {
+		my ($fid, $gstidt);
 	if ($featid =~ /_/)
 	  {
 	    ($fid, $gstidt) = split /_/, $featid;
@@ -120,6 +122,7 @@ sub get_seqs
 	my ($feat) = $coge->resultset('Feature')->find($fid);
 	next unless $feat;
 	$seqs .= $feat->fasta(col=>80, prot=>$prot, name_only=>$name_only, gstid=>$gstidt, upstream=>$upstream, downstream=>$downstream);
+         }
       }
     $seqs = qq{<textarea id=seq_text name=seq_text class="ui-widget-content ui-corner-all backbox" ondblclick="this.select();" style="height: 400px; width: 750px; overflow: auto;">$seqs</textarea>} if $textbox;
     return $seqs;
