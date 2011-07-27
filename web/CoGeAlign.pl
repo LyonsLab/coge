@@ -17,8 +17,8 @@ use CoGe::Accessory::genetic_code;
 use File::Path;
 no warnings 'redefine';
 
-use vars qw($P $TEMPDIR $TEMPURL $USER $DATE $CLUSTAL $BASEFILE $coge $cogeweb $FORM $NEWICKTOPS $CONVERT $MAX_PROC);
-$P = CoGe::Accessory::Web::get_defaults('coge.conf');
+use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $TEMPDIR $TEMPURL $USER $DATE $CLUSTAL $BASEFILE $coge $cogeweb $FORM $NEWICKTOPS $CONVERT $MAX_PROC);
+$P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 $MAX_PROC=$P->{MAX_PROC};
 $ENV{THREADS} =$MAX_PROC;
@@ -31,12 +31,12 @@ $TEMPURL = $P->{TEMPURL}."CoGeAlign";
 mkpath ($TEMPDIR,0,0777) unless -d $TEMPDIR;
 
 $FORM = new CGI;
-my $DBNAME = $P->{DBNAME};
-my $DBHOST = $P->{DBHOST};
-my $DBPORT = $P->{DBPORT};
-my $DBUSER = $P->{DBUSER};
-my $DBPASS = $P->{DBPASS};
-my $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
+$DBNAME = $P->{DBNAME};
+$DBHOST = $P->{DBHOST};
+$DBPORT = $P->{DBPORT};
+$DBUSER = $P->{DBUSER};
+$DBPASS = $P->{DBPASS};
+$connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
 $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 
 $CLUSTAL = $P->{CLUSTALW};
