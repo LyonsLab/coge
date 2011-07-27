@@ -9,8 +9,8 @@ use CoGe::Accessory::Web;
 no warnings 'redefine';
 
 $ENV{'PATH'} = '';
-use vars qw($P $IMGURL $BASEDIR);
-$P = CoGe::Accessory::Web::get_defaults('coge.conf');
+use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $IMGURL $BASEDIR);
+$P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 
 $IMGURL = $P->{SERVER}.'GenomePNG.pl?';
 my $x;
