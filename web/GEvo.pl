@@ -692,6 +692,7 @@ sub run
 	    my $got = 0;
 	    my $try = 0;
 	    my ($tmp) = $gbaccn =~/(.*)/;
+	    print STDERR "GBACCN: $gbaccn\n";
 	    $tmp =~ s/^\s+//;
 	    $tmp =~ s/\s+$//;
 	    my $gbfile = $TEMPDIR."/".uc($tmp).".gbk";
@@ -702,7 +703,7 @@ sub run
 		  {
 		    unlink $gbfile;
 		  }
-		my ($res, $error) = $obj->get_genbank_from_ncbi(file=>$gbfile,accn=>$tmp, rev=>$rev, start=>$gbstart, length=>$gblength);
+		my ($res, $error) = $obj->get_genbank_from_ncbi(file=>$gbfile,accn=>$tmp, rev=>$rev, start=>$gbstart, length=>$gblength, retmax=>1, complexity=>1);
 		$message .= $error."\n" unless $res;
 		$got = 1 if $obj->accn;
 		$try++;
