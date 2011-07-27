@@ -415,6 +415,36 @@ sub gen_body
     #elsif ($draw_model eq "Gene_space") {$template->param(DRAW_MODEL_GENE_SPACE=>"selected");}
     else {$template->param(DRAW_MODEL_NO=>"selected");}
 
+    #set algorithm parameters
+    my $bnW = 7;
+    $bnW = $form->param('bnW') if defined $form->param('bnW');
+    $template->param(BLAST_WORDSIZE=>$bnW);
+    my $bnG = 5;
+    $bnG = $form->param('bnG') if defined $form->param('bnG');
+    $template->param(BLAST_GAPOPEN=>$bnG);
+    my $bnE = 2;
+    $bnE = $form->param('bnE') if defined $form->param('bnE');
+    $template->param(BLAST_GAPEXT=>$bnE);
+    my $bnq = -2;
+    $bnq = $form->param('bnq') if defined $form->param('bnq');
+    $template->param(BLAST_MISMATCH=>$bnq);
+    my $bnr = 1;
+    $bnr = $form->param('bnr') if defined $form->param('bnr');
+    $template->param(BLAST_MATCH=>$bnr);
+    my $bne = 30;
+    $bne = $form->param('bne') if defined $form->param('bne');
+    $template->param(BLAST_EVAL=>$bne);
+    my $bnF = "F";
+    $bnF = $form->param('bnF') if defined $form->param('bnF');
+    if ($bnF eq "F")
+      {
+	$template->param(BLAST_FILTER_NO=>"checked");
+      }
+    else
+      {
+	$template->param(BLAST_FILTER_YES=>"checked");
+      }
+
     my $box = HTML::Template->new(filename=>$P->{TMPLDIR}.'box.tmpl');
     #generate sequence submission selector
     $template->param(SEQ_SELECT=>1);
@@ -424,7 +454,8 @@ sub gen_body
 
     #generate the hsp color option
     my ($hsp_colors, $num_colors) = gen_hsp_colors(num_seqs=>$num_seqs, prefs=>$prefs);
-    my $spike_len = $form->param('spike_len') ? $form->param('spike_len') : 0; 
+    my $spike_len = 15;
+    $spike_len = $form->param('spike_len') if defined $form->param('spike_len');
     $template->param(SPIKE_LEN=>$spike_len);
     $template->param(SEQ_RETRIEVAL=>1);
     $template->param(NUM_SEQS=>$num_seqs);
@@ -470,7 +501,7 @@ sub run
 #    my $hsp_limit_num = $opts{hsplimnum};
     my $show_hsps_with_stop_codon = $opts{showallhsps};
     my $padding = $opts{padding};
-    my ($analysis_program, $param_string, $parser_opts) = get_algorithm_options(%opts);
+    my ($analysis_program, $param_string, $parser_opts, $add_gevo_link) = get_algorithm_options(%opts);
     my $pad_gs = $opts{pad_gs} || 0;
     my $color_overlapped_features = $opts{color_overlapped_features};
     my $hsp_overlap_length = $opts{hsp_overlap_length};
@@ -528,6 +559,7 @@ sub run
     $gevo_link .= ";spike_len=$spike_len";
     $gevo_link .= ";skip_feat_overlap=$skip_feat_overlap_search";
     $gevo_link .= ";skip_hsp_overlap=$skip_hsp_overlap_search";
+    $gevo_link .= $add_gevo_link;
     my @gevo_link_seqs;
     my @coge_seqs; #place to store stuff for parallel creation of sequence file from genome database
     my @sets;
@@ -3381,7 +3413,7 @@ sub get_algorithm_options
     my $chaos_gap_extension = $opts{chaos_gap_extension};
     my $chaos_params = $opts{chaos_params};
 
-    my ($blastz_string, $blast_string, $lagan_string, $dialign_string, $chaos_string);
+    my ($blastz_string, $blastz_link, $blast_string, $blast_link, $lagan_string, $dialign_string, $chaos_string);
     #build blastz param string
     $blastz_string = " W=" .$blastz_wordsize if $blastz_wordsize;
     $blastz_string .= " C=" .$blastz_chaining if $blastz_chaining;
@@ -3390,6 +3422,12 @@ sub get_algorithm_options
     $blastz_string .= " O=" .$blastz_gap_start if $blastz_gap_start;
     $blastz_string .= " E=" .$blastz_gap_extension if $blastz_gap_extension;
     $blastz_string .= " " .$blastz_params if $blastz_params;
+    $blastz_link = ";bzW=" .$blastz_wordsize if $blastz_wordsize;
+    $blastz_link .= ";bzC=" .$blastz_chaining if $blastz_chaining;
+    $blastz_link .= ";bzK=" .$blastz_threshold if $blastz_threshold;
+    $blastz_link .= ";bzM=" .$blastz_mask if $blastz_mask;
+    $blastz_link .= ";bzO=" .$blastz_gap_start if $blastz_gap_start;
+    $blastz_link .= ";bzE=" .$blastz_gap_extension if $blastz_gap_extension;
     #build blast param string
     $blast_wordsize = 3 if ($analysis_program eq "tlastx" && $blast_wordsize > 3);
     $blast_string = " -W " . $blast_wordsize if defined $blast_wordsize;
@@ -3400,6 +3438,13 @@ sub get_algorithm_options
     $blast_string .= " -e " . $blast_eval if defined $blast_eval;
     $blast_string .= " -F " . $blast_filter if defined $blast_filter && $analysis_program eq "blastn";
     $blast_string .= " "    . $blast_params if defined $blast_params;
+    $blast_link = ";bnW=" . $blast_wordsize if defined $blast_wordsize;
+    $blast_link .= ";bnG=" . $blast_gapopen if defined $blast_gapopen && $analysis_program eq "blastn";
+    $blast_link .= ";bnE=" . $blast_gapextend if defined $blast_gapextend && $analysis_program eq "blastn";
+    $blast_link .= ";bnq=" . $blast_mismatch if defined $blast_mismatch  && $analysis_program eq "blastn";
+    $blast_link .= ";bnr=" . $blast_match if defined $blast_match && $analysis_program eq "blastn";
+    $blast_link .= ";bne=" . $blast_eval if defined $blast_eval;
+    $blast_link .= ";bnF=" . $blast_filter if defined $blast_filter && $analysis_program eq "blastn";
     #build lagan param string
     $lagan_string = $lagan_params;
     #build dialign param string
@@ -3421,15 +3466,18 @@ sub get_algorithm_options
 
     #stuff to be returned
     my $param_string;  #param string to be passed to command line for program execution
+    my $link_string; #params for GEvo link
     my %parser_options; #params used to set the parser object -- key is accessor method, value is value
 
     if ($analysis_program eq "blastz")
       {
 	$param_string = $blastz_string;
+	$link_string = $blastz_link;
       }
     elsif ($analysis_program =~ /blast/i) #match blastn and tblastx
       {
 	$param_string = $blast_string;
+	$link_string = $blast_link;
       }
     elsif ($analysis_program eq "LAGAN")
       {
@@ -3471,7 +3519,7 @@ sub get_algorithm_options
       {
 	print STDERR "user ".$USER->user_name."'s param_string: $param_string was tainted!\n";
       }
-    return ($analysis_program, $clean_param_string, \%parser_options);
+    return ($analysis_program, $clean_param_string, \%parser_options, $link_string);
   }
 
 sub number_of_runs
