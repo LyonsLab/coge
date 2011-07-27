@@ -22,9 +22,9 @@ no warnings 'redefine';
 
 
 umask(0);
-use vars qw($P $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $FORMATDB $BLAST $TBLASTX $BLASTN $BLASTP $LASTZ $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $PYTHON26 $TANDEM_FINDER $RUN_DAGCHAINER $EVAL_ADJUST $FIND_NEARBY $DOTPLOT $NWALIGN $QUOTA_ALIGN $CLUSTER_UTILS $BLAST2RAW $BASE_URL $BLAST2BED $SYNTENY_SCORE $TEMPDIR $TEMPURL $ALGO_LOOKUP $GZIP $GUNZIP);
+use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $FORMATDB $BLAST $TBLASTX $BLASTN $BLASTP $LASTZ $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $PYTHON26 $TANDEM_FINDER $RUN_DAGCHAINER $EVAL_ADJUST $FIND_NEARBY $DOTPLOT $NWALIGN $QUOTA_ALIGN $CLUSTER_UTILS $BLAST2RAW $BASE_URL $BLAST2BED $SYNTENY_SCORE $TEMPDIR $TEMPURL $ALGO_LOOKUP $GZIP $GUNZIP);
 
-$P = CoGe::Accessory::Web::get_defaults('coge.conf');
+$P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = join ":", ($P->{COGEDIR}, $P->{BINDIR}, $P->{BINDIR}."SynMap", "/usr/bin","/usr/local/bin");
 $ENV{BLASTDB}=$P->{BLASTDB};
 $ENV{BLASTMAT}=$P->{BLASTMATRIX};
@@ -130,12 +130,12 @@ $FORM = new CGI;
 ($USER) = CoGe::Accessory::LogUser->get_user();
 my %ajax = CoGe::Accessory::Web::ajax_func();
 #$ajax{read_log}=\&read_log_test;
-my $DBNAME = $P->{DBNAME};
-my $DBHOST = $P->{DBHOST};
-my $DBPORT = $P->{DBPORT};
-my $DBUSER = $P->{DBUSER};
-my $DBPASS = $P->{DBPASS};
-my $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
+$DBNAME = $P->{DBNAME};
+$DBHOST = $P->{DBHOST};
+$DBPORT = $P->{DBPORT};
+$DBUSER = $P->{DBUSER};
+$DBPASS = $P->{DBPASS};
+$connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
 $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
@@ -1768,7 +1768,6 @@ sub add_GEvo_links
     my $previously_generated =0;
     while (<IN>)
       {
-	last if $previously_generated;
 	chomp;
 	if (/^#/)
 	  {
@@ -1836,23 +1835,54 @@ sub add_GEvo_links
       }
     if (keys %condensed && !(-r "$infile.condensed" || -r "$infile.condensed.gz"))
       {
+	#take into account transitivity
+	foreach my $id1 (keys %condensed)
+	  {
+	    foreach my $id2 (keys %{$condensed{$id1}})
+	      {
+		foreach my $id3 (keys %{$condensed{$id2}})
+		  {
+		    next if $id1 eq $id2;
+		    $condensed{$id1}{$id3}=1;
+		  }
+	      }
+	  }
+
 	open (OUT,">$infile.condensed");
-	foreach my $id1 (sort keys %condensed)
+	print OUT join ("\t", qw(COUNT GEVO MASKED_GEVO FASTA_LINK GENE_LIST GENE_NAMES)),"\n";
+	my %seen;
+	foreach my $id1  (sort { scalar(keys %{$condensed{$b}} ) <=> scalar(keys %{$condensed{$a}} ) } keys %condensed)
 	  {
 	    my ($fid1, $dsgid1) = split /_/, $id1;
+	    next if $seen{$fid1};
+	    $seen{$fid1}=1;
 	    my @names = $names{$fid1};
-	    my $link = $BASE_URL."GEvo.pl?pad_gs=10000;fid1=$fid1;dsgid1=$dsgid1";
+	    my $gevo_link = $BASE_URL."GEvo.pl?fid1=$fid1;dsgid1=$dsgid1";
+	    my $fids = "fid=$fid1";
 	    my $count =2;
 	    foreach my $id2 (sort keys %{$condensed{$id1}})
 	      {
 		my ($fid2, $dsgid2) = split/_/, $id2,2;
-		$link .= ";fid$count=$fid2;dsgid$count=$dsgid2";
+		next if $fid1 == $fid2;
+		$seen{$fid2}=1;
+		$gevo_link .= ";fid$count=$fid2;dsgid$count=$dsgid2";
+		$fids .= ",$fid2";
 		push @names, $names{$fid2};
 		$count++;
 	      }
 	    $count--;
-	    $link .= ";num_seqs=$count";
-	    print OUT join ("\t", $link, "<a href=$link;autogo=1>AutoGo</a>",@names), "\n";
+	    $gevo_link .= ";num_seqs=$count";
+	    my $gevo_link2 = $gevo_link;
+	    $gevo_link .= ";pad_gs=20000";
+	    for my $i (1..$count) 
+	      {
+		$gevo_link2 .= ";mask$i=non-cds";
+	      }
+	    $gevo_link2 .= ";pad_gs=200000";
+	    $gevo_link2 .= ";autogo=1";
+	    my $fasta_link = $BASE_URL."FastaView.pl?$fids";
+	    my $featlist_link = $BASE_URL."FeatList.pl?$fids";
+	    print OUT join ("\t", $count, $gevo_link, $gevo_link2,$fasta_link, $featlist_link, @names), "\n";
 	  }
 	close OUT;
       }
