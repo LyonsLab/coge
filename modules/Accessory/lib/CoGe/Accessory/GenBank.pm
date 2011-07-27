@@ -33,13 +33,20 @@ sub get_genbank_from_ncbi
     my $length = $opts{length};
     my $file = $opts{file};
     my $reload = $opts{reload}; #option to force reloading of genbank file
+    my $retmax = $opts{retmax}; #number of sequences to return
+    my $complexity = $opts{complexity}; #what to return from genbank
+    $complexity = 0 unless defined $complexity;
     $id = $self->requested_id unless $id;
     $file = $self->srcfile unless $file;
 
     $self->requested_id($id);
     $self->srcfile($file);
 #    my $url = "http://www.ncbi.nlm.nih.gov/entrez/viewer.fcgi?db=nucleotide&qty=1&c_start=1&dopt=gbwithparts&send=Send&sendto=t&from=begin&to=end&extrafeatpresent=1&ef_CDD=8&ef_MGC=16&ef_HPRD=32&ef_STS=64&ef_tRNA=128&ef_microRNA=256&ef_Exon=512&list_uids=";
-    my $url = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nucleotide&rettype=gbwithparts&retmode=text&complexity=0&id=";
+    my $url = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nucleotide&rettype=gbwithparts&retmode=text";
+    $url .= "&complexity=$complexity";
+    $url .= "&retmax=$retmax" if $retmax;
+    $url .="&id=";
+    print STDERR $url.$id,"\n";
     my $ua = new LWP::UserAgent;
     $self->ncbi_link("http://www.ncbi.nlm.nih.gov/nuccore/$id");
     unless ($file)
