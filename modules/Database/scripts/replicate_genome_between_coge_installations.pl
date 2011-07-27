@@ -4,11 +4,16 @@ use strict;
 use CoGeX;
 use Data::Dumper;
 use Getopt::Long;
+use File::Path;
 
-my ($dsgid);
 
+my ($dsgid, $new_seq_dir);
+
+
+#./replicate_genome_between_coge_installations.pl -dsgid 1149 -sd /opt/apache/Oryza_CoGe/data/genomic_sequence/
 GetOptions(
 	   "dsgid=i"=>\$dsgid,
+	   "sequence_dir|sd=s"=>\$new_seq_dir,
 	   );
 
 unless ($dsgid)
@@ -18,12 +23,13 @@ unless ($dsgid)
 
 my $connstr1 = 'dbi:mysql:dbname=coge;host=localhost;port=3306';
 my $connstr2 = 'dbi:mysql:dbname=oryza_coge;host=localhost;port=3306';
-my $coge1 = CoGeX->connect($connstr1, 'elyons', 'eagle7' );
-my $coge2 = CoGeX->connect($connstr2, 'elyons', 'eagle7' );
+my $coge1 = CoGeX->connect($connstr1, 'coge', '123coge321' );
+my $coge2 = CoGeX->connect($connstr2, 'oryza_coge', '123oryza321' );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 
 my $dsg = $coge1->resultset('DatasetGroup')->find($dsgid);
+
 
 
 unless ($dsg)
@@ -38,15 +44,16 @@ my $org = $coge2->resultset('Organism')->find_or_create({name=>$dsg->organism->n
 							 description=>$dsg->organism->description});
 print "Finding or creating genomic sequence type object\n";
 my $gst = $coge2->resultset('GenomicSequenceType')->find_or_create({name=>$dsg->type->name,
-								    description=>$dsg->type->name});
+								    description=>$dsg->type->description});
 print "Replicating dataset_group_object\n";
 my $new_dsg = $org->add_to_dataset_groups({name=>$dsg->name,
 					   description=>$dsg->desc,
 					   version=>$dsg->version,
 					   organism_id => $org->id,
 					   genomic_sequence_type_id=>$gst->id,
-					   file_path=>$dsg->file_path
 					  });
+replicate_sequences(dsg1=>$dsg, dsg2=>$new_dsg);
+    
 foreach my $gs ($dsg->genomic_sequences)
   {
     $new_dsg->add_to_genomic_sequences({
@@ -157,6 +164,43 @@ print "Link:\n";
 print "\t"."http://genomevolution.org/CoGe/GenomeView.pl?dsgid=".$new_dsg->id."\n";
 
 
+sub replicate_sequences
+  {
+    my %opts = @_;
+    my $dsg1 = $opts{dsg1};
+    my $dsg2 = $opts{dsg2};
+
+    print "Replicating sequence data\n";
+    my $seq_path = $dsg1->file_path;
+    $seq_path =~ s/[^\/]*$//;
+    my $new_path = $dsg2->get_path;
+    $new_path = $new_seq_dir."/".$new_path;
+    mkpath $new_path;
+    print "\tOld path: ".$seq_path,"\n";
+    print "\tNew path: ".$new_path,"\n";
+    `cp -r $seq_path/* $new_path`;
+
+    my $dsgid1 = $dsg1->id;
+    my $dsgid2 = $dsg2->id;
+    opendir (DIR, $new_path);
+    while (my $item = readdir(DIR))
+      {
+	next unless $item =~ /$dsgid1/;
+	print $item,"\n";
+	my $new_name = $item;
+	$new_name =~ s/$dsgid1/$dsgid2/;
+	my $cmd = "mv $new_path/$item $new_path/$new_name";
+	print "\t".$cmd,"\n";
+	`$cmd`;
+      }
+    closedir DIR;
+    $new_path .= "/".$dsg2->id.".faa";
+    $dsg2->file_path($new_path);
+    $dsg2->update;
+    
+  }
+
+
 sub help
   {
     print qq{
@@ -168,6 +212,12 @@ This program generates a copy of a coge dataset_group (genome).  The genomic seq
 Options:
 
  -dsgid              coge database dataset_group
+
+ -sequence_dir | sd  directory to which sequence directory is replicated
+
+Example:
+
+ ./replicate_genome_between_coge_installations.pl -sd /opt/apache/Oryza_CoGe/data/genomic_sequence/ -dsgid 1149 
 
 };
     exit;
