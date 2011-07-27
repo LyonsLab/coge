@@ -15,10 +15,10 @@ use POSIX;
 no warnings 'redefine';
 
 
-use vars qw($P $DATE $DEBUG $TEMPDIR $TEMPURL $MATRIXDIR $USER $FORM $coge $connstr);
+use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $TEMPDIR $TEMPURL $MATRIXDIR $USER $FORM $coge $connstr);
 
 # set this to 1 to print verbose messages to logs
-$P = CoGe::Accessory::Web::get_defaults('coge.conf');
+$P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 $DEBUG = 0;
 $TEMPDIR = $P->{TEMPDIR};
