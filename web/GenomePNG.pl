@@ -10,9 +10,9 @@ no warnings 'redefine';
 
 
 $ENV{PATH} = "";
-use vars qw($P);
+use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr);
 
-$P = CoGe::Accessory::Web::get_defaults('coge.conf');
+$P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 
 my $form = new CGI;
 #print STDERR $form->self_url(-full=>1),"\n";
@@ -33,12 +33,12 @@ my $request = $form->param('request') || "get_image";
 my $gstid = $form->param('gstid');
 my $dsgid = $form->param('dsg');
 
-my $DBNAME = $P->{DBNAME};
-my $DBHOST = $P->{DBHOST};
-my $DBPORT = $P->{DBPORT};
-my $DBUSER = $P->{DBUSER};
-my $DBPASS = $P->{DBPASS};
-my $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
+$DBNAME = $P->{DBNAME};
+$DBHOST = $P->{DBHOST};
+$DBPORT = $P->{DBPORT};
+$DBUSER = $P->{DBUSER};
+$DBPASS = $P->{DBPASS};
+$connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
 my $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
