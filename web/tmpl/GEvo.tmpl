@@ -949,32 +949,32 @@ function rand ()
 <table class = small>
    <TR>
   <TD>Word size: </TD>
-  <TD><input  type="text" name="blastz_wordsize" id="blastz_wordsize" tabindex="1" size="4" value="8" /></TD>
+  <TD><input  type="text" name="blastz_wordsize" id="blastz_wordsize" tabindex="1" size="4" value="<TMPL_VAR NAME=BLASTZ_WORDSIZE>" /></TD>
  </TR>    
 <TR>
   <TD>Gap start penality: </TD>
-  <TD><input  type="text" name="blastz_gap_start" id="blastz_gap_start" tabindex="1" size="4" value="400" /></TD>
+  <TD><input  type="text" name="blastz_gap_start" id="blastz_gap_start" tabindex="1" size="4" value="<TMPL_VAR NAME=BLASTZ_GAPSTART>" /></TD>
  </TR>    
  <TR>
   <TD>Gap extend penality: </TD>
-  <TD><input  type="text" name="blastz_gap_extension" id="blastz_gap_extension" tabindex="1" size="4" value="30" /></TD>
+  <TD><input  type="text" name="blastz_gap_extension" id="blastz_gap_extension" tabindex="1" size="4" value="<TMPL_VAR NAME=BLASTZ_GAPEXT>" /></TD>
  </TR>    
  <TR>
   <TD>Chaining: </TD>
   <TD><select  id="blastz_chaining" tabindex="1" />
-      <option value=0>no chaining</option>
-      <option value=1>just output chain</option>
-      <option value=2>chain and extend</option>
-      <option value=3>just output HSPs</option>
+      <option value=0 <TMPL_VAR NAME=BLASTZ_CHAIN_NO> >no chaining</option>
+      <option value=1 <TMPL_VAR NAME=BLASTZ_CHAIN_OUT> >just output chain</option>
+      <option value=2 <TMPL_VAR NAME=BLASTZ_CHAIN_EXT> >chain and extend</option>
+      <option value=3 <TMPL_VAR NAME=BLASTZ_CHAIN_HSP> >just output HSPs</option>
       </select></TD>
  </TR>    
  <TR>
   <TD>Score threshold: </TD>
-  <TD><input  type="text" name="blastz_threshold" id="blastz_threshold" tabindex="1" size="4" value="3000" /></TD>
+  <TD><input  type="text" name="blastz_threshold" id="blastz_threshold" tabindex="1" size="4" value="<TMPL_VAR NAME=BLASTZ_SCORETHRESH>" /></TD>
  </TR>    
  <TR>
   <TD>Mask threshold: </TD>
-  <TD><input  type="text" name="blastz_mask" id="blastz_mask" tabindex="1" size="4" value="0" /></TD>
+  <TD><input  type="text" name="blastz_mask" id="blastz_mask" tabindex="1" size="4" value="<TMPL_VAR NAME=BLASTZ_MASKTHRESH>" /></TD>
  </TR>    
 
 
