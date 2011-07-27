@@ -15,7 +15,7 @@ no warnings 'redefine';
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 
 use vars qw ($P $FORM $USER $DATE $TEMPDIR $TEMPURL);
-$P = CoGe::Accessory::Web::get_defaults('coge.conf');
+$P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 
 $FORM = new CGI;
