@@ -444,6 +444,39 @@ sub gen_body
       {
 	$template->param(BLAST_FILTER_YES=>"checked");
       }
+    my $bzW = 8;
+    $bzW = $form->param('bzW') if defined $form->param('bzW');
+    $template->param(BLASTZ_WORDSIZE=>$bzW);
+    my $bzO = 400;
+    $bzO = $form->param('bzO') if defined $form->param('bzO');
+    $template->param(BLASTZ_GAPSTART=>$bzO);
+    my $bzE = 30;
+    $bzE = $form->param('bzE') if defined $form->param('bzE');
+    $template->param(BLASTZ_GAPEXT=>$bzE);
+    my $bzK = 3000;
+    $bzK = $form->param('bzK') if defined $form->param('bzK');
+    $template->param(BLASTZ_SCORETHRESH=>$bzK);
+    my $bzM = 0;
+    $bzM = $form->param('bzM') if defined $form->param('bzM');
+    $template->param(BLASTZ_MASKTHRESH=>$bzM);
+    my $bzC = "0";
+    $bzC = $form->param('bzC') if defined $form->param('bzC');
+    if ($bzC == 0)
+      {
+	$template->param(BLASTZ_CHAIN_NO=>"selected");
+      }
+    elsif ($bzC == 1)
+      {
+	$template->param(BLASTZ_CHAIN_OUT=>"selected");
+      }
+    elsif ($bzC == 2)
+      {
+	$template->param(BLASTZ_CHAIN_EXT=>"selected");
+      }
+    elsif ($bzC == 3)
+      {
+	$template->param(BLASTZ_CHAIN_HSP=>"selected");
+      }
 
     my $box = HTML::Template->new(filename=>$P->{TMPLDIR}.'box.tmpl');
     #generate sequence submission selector
