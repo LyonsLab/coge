@@ -59,6 +59,7 @@ my %FUNCTION = (
 	 	send_to_msa=>\&send_to_msa,
 	 	send_to_SynFind=>\&send_to_SynFind,
 	 	send_to_CoGeBlast=>\&send_to_CoGeBlast,
+	 	send_to_GenomeList=>\&send_to_GenomeList,
 	 	send_to_SynFind=>\&send_to_SynFind,
 	 	get_wobble_gc=>\&get_wobble_gc,
 	 	save_FeatList_settings=>\&save_FeatList_settings,
@@ -679,7 +680,17 @@ sub send_to_CoGeBlast #send to cogeblast
     return $url;
   }
   
-sub send_to_SynFind #send to cogeblast
+sub send_to_GenomeList #send to GenomeList
+  {
+    my %opts = @_;
+    my $accn_list = $opts{accn};
+    $accn_list =~ s/^,//;
+    $accn_list =~ s/,$//;
+    my $url = $URL."GenomeList.pl?dsgid=$accn_list";
+    return $url;
+  }
+  
+sub send_to_SynFind #send to SynFind
   {
     my %opts = @_;
     my $accn_list = $opts{accn};
@@ -789,7 +800,7 @@ sub generate_excel_file
     my $basename = $cogeweb->basefilename;
     my $file = "$TEMPDIR/$basename.csv";
     open (OUT, ">$file");
-    print OUT join ("\t", "Name", "Description","Source","Provenance","Sequence Type","Chr Count","Length (bp)","Percent GC","Percent AT","Percent N|X","OrganismView Link"),"\n";
+    print OUT join ("\t", "COGE_DSG_ID", "Name", "Description","Source","Provenance","Sequence Type","Chr Count","Length (bp)","Percent GC","Percent AT","Percent N|X","OrganismView Link"),"\n";
     foreach my $dsgid (split /,/,$accn_list)
       {
 	next unless $dsgid;
@@ -806,7 +817,7 @@ sub generate_excel_file
 	my ($gc, $at, $n) = $dsg->percent_gc();
 	$at*=100;
 	$gc*=100;
-	print OUT join ("\t", $name,$desc,$source, $provenance,$type,$chr_count,$length,$gc,$at,$n,$P->{SERVER}.'OrganismView.pl?dsgid='.$dsgid),"\n";
+	print OUT join ("\t", $dsgid, $name,$desc,$source, $provenance,$type,$chr_count,$length,$gc,$at,$n,$P->{SERVER}.'OrganismView.pl?dsgid='.$dsgid),"\n";
       };
     close OUT;
     $file =~ s/$TEMPDIR/$TEMPURL/;
