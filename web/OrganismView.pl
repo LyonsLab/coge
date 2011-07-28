@@ -111,13 +111,7 @@ sub dispatch
 sub parse_for_GenoList
   {
 	my $genomelist = shift;
-	my $url = "GenomeList.pl?";
-	foreach my $genomeid (split /,/,$genomelist)
-	{
-		next unless $genomeid;
-		$url .="dsgid=$genomeid&";
-	}
-	$url =~ s/&$//;
+	my $url = "GenomeList.pl?dsgid=$genomelist";
 	return $url;
  }
 
