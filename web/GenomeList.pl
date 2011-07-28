@@ -18,9 +18,10 @@ use File::Path;
 no warnings 'redefine';
 
 
-use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb $FORM $URL $HISTOGRAM $TEMPURL);
+use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME $TEMPDIR $USER $DATE $BASEFILE $COGEDIR $coge $cogeweb $FORM $URL $HISTOGRAM $TEMPURL);
 $P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
+$COGEDIR = $P->{COGEDIR};
 $URL = $P->{URL};
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
@@ -529,6 +530,9 @@ sub generate_table
 	my $chr_count = $dsg->chromosome_count;
 	my $length = $dsg->length;
 	my $type = $dsg->type->name;
+	my $file = $dsg->file_path;
+	$file =~ s/$COGEDIR/$URL/;
+	$type = $type."<br><a href=$file target=_seq>Fasta</a><br><a href=coge_gff.pl?dsgid=$dsgid;annos=1 target=_anno>GFF File</a>";
 	my ($ds_source) = $dsg->source;
 	my $source = $ds_source->name;
 	my $source_link = $ds_source->link;
@@ -800,7 +804,7 @@ sub generate_excel_file
     my $basename = $cogeweb->basefilename;
     my $file = "$TEMPDIR/$basename.csv";
     open (OUT, ">$file");
-    print OUT join ("\t", "COGE_DSG_ID", "Name", "Description","Source","Provenance","Sequence Type","Chr Count","Length (bp)","Percent GC","Percent AT","Percent N|X","OrganismView Link"),"\n";
+    print OUT join ("\t", "CoGe Genome ID", "Name", "Description","Source","Provenance","Sequence Type","Chr Count","Length (bp)","Percent GC","Percent AT","Percent N|X","OrganismView Link"),"\n";
     foreach my $dsgid (split /,/,$accn_list)
       {
 	next unless $dsgid;
