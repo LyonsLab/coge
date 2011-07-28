@@ -11,6 +11,7 @@ use CGI;
 use DBIxProfiler;
 use File::Basename;
 use File::Temp;
+use LWP::Simple;
 
 BEGIN {
   use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK $Q $cogex $TEMPDIR $BASEDIR);
@@ -205,6 +206,24 @@ sub ajax_func
        initialize_basefile=>\&initialize_basefile,
       );
   }
+
+
+sub get_tiny_link
+  {
+    my %opts = @_;
+    my $url = $opts{url};
+    print STDERR $url,"\n";
+    $url =~ s/:::/__/g;
+    my $html;
+    my $tiny = get("http://genomevolution.org/r/yourls-api.php?signature=d57f67d3d9&action=shorturl&format=simple&url=$url");
+    unless ($tiny)
+      {
+        return "Unable to produce tiny url from server";
+      }
+    return $tiny;
+  }
+
+
 
 sub write_log
   {
