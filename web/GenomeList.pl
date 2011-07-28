@@ -118,9 +118,12 @@ sub gen_html
        $template->param(LOGO_PNG=>"GenomeList-logo.png");
        $template->param(LOGON=>1) unless $USER->user_name eq "public";
        $template->param(DATE=>$DATE);
+       my $link = "http://".$ENV{SERVER_NAME}.$ENV{REQUEST_URI};
+       $link = CoGe::Accessory::Web::get_tiny_link(url=>$link);
+       my $box_name = "Genome List: ";
        my $list_name = $FORM->param('list_name') || $FORM->param('ln');
-       my $box_name = "Genome List:";
        $box_name .= " $list_name" if $list_name;
+       $box_name .= "<span class=link onclick=window.open('$link');>$link</span>";
        $template->param(BOX_NAME=>$box_name);
        $template->param(BODY=>$body);
        $template->param(ADJUST_BOX=>1);
