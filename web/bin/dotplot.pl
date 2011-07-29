@@ -11,9 +11,9 @@ use Data::Dumper;
 use DBI;
 use POSIX;
 
-use vars qw($P $dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ks_db $ks_type $log $MAX $MIN $assemble $axis_metric $color_type $box_diags $fid1 $fid2 $selfself $labels $color_scheme $chr_sort_order $font $GZIP $GUNZIP);
+use vars qw($P $dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ks_db $ks_type $log $MAX $MIN $assemble $axis_metric $color_type $box_diags $fid1 $fid2 $selfself $labels $color_scheme $chr_sort_order $font $GZIP $GUNZIP $conffile);
 
-$P = CoGe::Accessory::Web::get_defaults('coge.conf');
+
 
 GetOptions(
 	   "dagfile|d=s"=>\$dagfile, #all dots
@@ -47,10 +47,13 @@ GetOptions(
 	   "color_scheme=s"=>\$color_scheme,
 	   "font=s"=>\$font,
 	   "chr_sort_order|cso=s"=>\$chr_sort_order,#display sort order for chromosomes, "Name|N" || "Size|S";
+	   "config_file|cf=s"=>\$conffile,
 	   );
 $selfself = 1 unless defined $selfself;
 $labels = 1 unless defined $labels;
 $chr_sort_order = "size" unless defined $chr_sort_order;
+
+$P = CoGe::Accessory::Web::get_defaults($conffile);
 $font = $P->{FONT} unless $font && -r $font;
 $GZIP = $P->{GZIP};
 $GUNZIP = $P->{GUNZIP};
@@ -407,7 +410,7 @@ sub draw_dots
 
 	$y_real = $graphics_context->height-$x;
 	$tuse_color = $colors->[0] unless $tuse_color; #default val just in case
- 	push @points, [ $y, $y_real, $tsize, $tsize, 0, 360, $tuse_color, $val] if ($add_inverse && !$CHR1 && $x ne $y);
+	push @points, [ $y, $y_real, $tsize, $tsize, 0, 360, $tuse_color, $val] if ($add_inverse && !$CHR1 && $x ne $y);
 	push @points, [ $y, $y_real, $tsize, $tsize, 0, 360, $tuse_color, $val] if ($add_inverse && $chr1 eq $chr2 && $x ne $y);
 	if ($link_type == 1)
 	  {
