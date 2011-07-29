@@ -37,7 +37,6 @@ use CoGeX;
 use CoGeX::Result::Feature;
 use DBIxProfiler;
 use DBI;
-use LWP::Simple;
 use Parallel::ForkManager;
 use Statistics::Basic;
 use Benchmark qw(:all);
@@ -3946,14 +3945,8 @@ sub get_tiny_url
   {
     my %opts = @_;
     my $url = $opts{url};
-    $url =~ s/:::/__/g;
-    my $html;
-    my $tiny = get("http://genomevolution.org/r/yourls-api.php?signature=d57f67d3d9&action=shorturl&format=simple&url=$url");
-    unless ($tiny)
-      {
-	return "Unable to produce tiny url from server";
-      }
-    $html .= qq{<a href=$tiny target=_new>$tiny<br>(See log file for full link)</a>};
+    my $tiny = CoGe::Accessory::Web::get_tiny_link(url=>$url);
+    my $html .= qq{<a href=$tiny target=_new>$tiny<br>(See log file for full link)</a>};
     return $html;
   }
 
