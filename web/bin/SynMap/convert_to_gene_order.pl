@@ -6,7 +6,7 @@ use CoGe::Accessory::Web;
 use Getopt::Long;
 use Data::Dumper;
 
-my ($DEBUG, $dsgid1, $dsgid2, $input_file, $ftid1, $ftid2);
+my ($DEBUG, $dsgid1, $dsgid2, $input_file, $ftid1, $ftid2, $conffile);
 
 GetOptions(
 	   "DEBUG"=>\$DEBUG,
@@ -15,10 +15,11 @@ GetOptions(
 	   "input|file|i|f=s"=>\$input_file,
 	   "ftid1|ft1=i"=>\$ftid1,
 	   "ftid2|ft2=i"=>\$ftid2,
+	   "config_file|cf=s"=>\$conffile,
 	  );
 
 
-my $P = CoGe::Accessory::Web::get_defaults('coge.conf');
+my $P = CoGe::Accessory::Web::get_defaults($conffile);
 my $DBNAME = $P->{DBNAME};
 my $DBHOST = $P->{DBHOST};
 my $DBPORT = $P->{DBPORT};
