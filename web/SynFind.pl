@@ -13,7 +13,6 @@ use File::Path;
 use Benchmark qw(:all);
 use Parallel::ForkManager;
 use DBI;
-use LWP::Simple;
 no warnings 'redefine';
 
 #example URL: http://toxic.berkeley.edu/CoGe/SynFind.pl?fid=34519245;qdsgid=3;dsgid=4241,6872,7084,7094,7111
@@ -690,7 +689,7 @@ sub go_synfind
     $cutoff= 0.1 unless defined $cutoff;
     $scoring_function = "collinear" unless defined $scoring_function;
 
-    my $synfind_link = "SynFind.pl?fid=$fid;qdsgid=$source_dsgid;dsgid=$dsgids;ws=$window_size;co=$cutoff;sf=$scoring_function";
+    my $synfind_link = $SERVER."SynFind.pl?fid=$fid;qdsgid=$source_dsgid;dsgid=$dsgids;ws=$window_size;co=$cutoff;sf=$scoring_function";
     $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$basename, prog=>"SynFind");
     #need to blast source_dsg against each dsgids
     my @blast_results;
@@ -807,7 +806,7 @@ sub go_synfind
     $pm->wait_all_children;
     my ($gevo_link, $matches) = gen_gevo_link (fid=>$fid, dbs=>[ map {$_->{synteny_score_db}} @target_info], window_size=>$window_size);
 
-    my $tiny_gevo_link = get_tiny_link(url=>$gevo_link);
+    my $tiny_gevo_link = CoGe::Accessory::Web::get_tiny_link(url=>$gevo_link);
     CoGe::Accessory::Web::write_log("#TINY GEVO LINK: $tiny_gevo_link", $cogeweb->logfile);
     CoGe::Accessory::Web::write_log("Finished!", $cogeweb->logfile);
     $html .= "<br><a style='font-size: 1em' href='$tiny_gevo_link' class='ui-button ui-corner-all' target=_new_gevo>Compare and visualize region in GEvo: $tiny_gevo_link</a>";
@@ -878,7 +877,7 @@ sub go_synfind
     $html .= "</tbody></table>";
 
     my $featlist_link = gen_featlist_link(fids=>[$fid, map {$_->[0]} @$matches]);
-    my $tiny_synfind_link = get_tiny_link(url=>$synfind_link);
+    my $tiny_synfind_link = CoGe::Accessory::Web::get_tiny_link(url=>$synfind_link);
     $html .= "<a href='$tiny_synfind_link' class='ui-button ui-corner-all' target=_new_synfind>Regenerate this analysis: $tiny_synfind_link</a>";
     my $open_all_synmap = join ("\n", keys %open_all_synmap);
     $html .= qq{<a onclick='$open_all_synmap' class='ui-button ui-corner-all'>Generate all dotplots</a>};
@@ -893,25 +892,6 @@ sub go_synfind
     $html .= qq{<Br><a href=$log_file target=_new class="small">Log File</a>};
 
     return $html;
-  }
-
-
-sub get_tiny_link
-  {
-    my %opts = @_;
-    my $url = $opts{url};
-    $url =~ s/:::/__/g;
-    unless ($url =~ /http/)
-      {
-	$url = "http://".$SERVER.$url;
-      }
-    my $html;
-    my $tiny = get("http://genomevolution.org/r/yourls-api.php?signature=d57f67d3d9&action=shorturl&format=simple&url=$url");
-    unless ($tiny)
-      {
-        return "Unable to produce tiny url from server";
-      }
-    return $tiny;
   }
 
 
