@@ -10,19 +10,19 @@ use CoGeX;
 use DBIxProfiler;
 use Data::Dumper;
 use HTML::Template;
+use LWP::Simple;
 use Parallel::ForkManager;
 use GD;
 use File::Path;
 use Mail::Mailer;
 use Benchmark;
-use LWP::Simple;
 use DBI;
 no warnings 'redefine';
 
 
 
 umask(0);
-use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $FORMATDB $BLAST $TBLASTX $BLASTN $BLASTP $LASTZ $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $PYTHON26 $TANDEM_FINDER $RUN_DAGCHAINER $EVAL_ADJUST $FIND_NEARBY $DOTPLOT $NWALIGN $QUOTA_ALIGN $CLUSTER_UTILS $BLAST2RAW $BASE_URL $BLAST2BED $SYNTENY_SCORE $TEMPDIR $TEMPURL $ALGO_LOOKUP $GZIP $GUNZIP);
+use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $DIR $URL $SERVER $USER $FORM $coge $cogeweb $FORMATDB $BLAST $TBLASTX $BLASTN $BLASTP $LASTZ $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $PYTHON26 $TANDEM_FINDER $RUN_DAGCHAINER $EVAL_ADJUST $FIND_NEARBY $DOTPLOT $NWALIGN $QUOTA_ALIGN $CLUSTER_UTILS $BLAST2RAW $BASE_URL $BLAST2BED $SYNTENY_SCORE $TEMPDIR $TEMPURL $ALGO_LOOKUP $GZIP $GUNZIP);
 
 $P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = join ":", ($P->{COGEDIR}, $P->{BINDIR}, $P->{BINDIR}."SynMap", "/usr/bin","/usr/local/bin");
@@ -34,6 +34,7 @@ $DEBUG = 0;
 $BASE_URL=$P->{SERVER};
 $DIR = $P->{COGEDIR};
 $URL = $P->{URL};
+$SERVER = $P->{SERVER};
 $TEMPDIR = $P->{TEMPDIR}."SynMap";
 $TEMPURL = $P->{TEMPURL}."SynMap";
 $FORMATDB = $P->{FORMATDB};
@@ -118,7 +119,7 @@ $CLUSTER_UTILS = $P->{CLUSTER_UTILS}; #convert dag output to quota_align input
 $BLAST2RAW = $P->{BLAST2RAW}; #find local duplicates
 $SYNTENY_SCORE = $P->{SYNTENY_SCORE};
 
-$DOTPLOT = $P->{DOTPLOT};
+$DOTPLOT = $P->{DOTPLOT}." -cf ".$ENV{HOME}.'coge.conf';
 
 #$CONVERT_TO_GENE_ORDER = $DIR."/bin/SynMap/convert_to_gene_order.pl";
 #$NWALIGN = $DIR."/bin/nwalign-0.3.0/bin/nwalign";
@@ -2208,7 +2209,7 @@ sub go
 	return "<span class=alert>Problem generating dataset group objects for ids:  $dsgid1, $dsgid2.</span>";
       }
     $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$basename, prog=>"SynMap");
-    my $synmap_link = "SynMap.pl?dsgid1=$dsgid1;dsgid2=$dsgid2;c=$repeat_filter_cvalue;D=$dagchainer_D;g=$dagchainer_g;A=$dagchainer_A;w=$width;b=$blast;ft1=$feat_type1;ft2=$feat_type2;autogo=1";
+    my $synmap_link = $SERVER."SynMap.pl?dsgid1=$dsgid1;dsgid2=$dsgid2;c=$repeat_filter_cvalue;D=$dagchainer_D;g=$dagchainer_g;A=$dagchainer_A;w=$width;b=$blast;ft1=$feat_type1;ft2=$feat_type2;autogo=1";
     $synmap_link .= ";Dm=$Dm" if defined $Dm;
     $synmap_link .= ";gm=$gm" if defined $gm;
     $synmap_link .= ";snsd=$snsd";
@@ -2759,7 +2760,7 @@ sub go
 	    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
 	    CoGe::Accessory::Web::write_log("",$cogeweb->logfile);
 
-	    $tiny_link = get_tiny_link(url=>$synmap_link);
+	    $tiny_link = CoGe::Accessory::Web::get_tiny_link(url=>$synmap_link);
 	    $html .= "<a href='$tiny_link' class='ui-button ui-corner-all' style='color: #000000' target=_new_synmap>Regenerate this analysis: $tiny_link</a>";
 	    if ($ks_type)
 	      {
@@ -3156,25 +3157,6 @@ sub commify
     my $text = reverse $_[0];
     $text =~ s/(\d\d\d)(?=\d)(?!\d*\.)/$1,/g;
     return scalar reverse $text;
-  }
-
-sub get_tiny_link
-  {
-    my %opts = @_;
-    my $url = $opts{url};
-    unless ($url =~ /http/)
-      {
-	my $server = $ENV{SERVER_NAME};
-	$url = "http://".$server."/$URL/".$url;
-      }
-    $url =~ s/:::/__/g;
-    my $html;
-    my $tiny = get("http://genomevolution.org/r/yourls-api.php?signature=d57f67d3d9&action=shorturl&format=simple&url=$url");
-    unless ($tiny)
-      {
-        return "Unable to produce tiny url from server";
-      }
-    return $tiny;
   }
 
 sub gzip
