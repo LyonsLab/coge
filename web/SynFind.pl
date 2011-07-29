@@ -51,7 +51,7 @@ $BLAST2BED = $P->{BlAST2BED};
 $BLAST2RAW = $P->{BLAST2RAW};
 $SYNTENY_SCORE = $P->{SYNTENY_SCORE};
 $PYTHON26 = $P->{PYTHON};
-$DATASETGROUP2BED = $P->{DATASETGROUP2BED};
+$DATASETGROUP2BED = $P->{DATASETGROUP2BED} ." -cf ".$ENV{HOME}.'coge.conf';
 
 
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
@@ -1107,7 +1107,7 @@ sub make_bed
       my $dsgid = $opts{dsgid};
       my $outfile = $opts{outfile};
       CoGe::Accessory::Web::write_log("#BED FILES#", $cogeweb->logfile);
-      my $cmd = $DATASETGROUP2BED." $dsgid > $outfile";
+      my $cmd = $DATASETGROUP2BED." -dsgid $dsgid > $outfile";
       if (-r $outfile && -s $outfile)
 	{
 	  CoGe::Accessory::Web::write_log("bed file $outfile already exists", $cogeweb->logfile);
