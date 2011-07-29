@@ -9,21 +9,24 @@ use CGI;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::SynMap_report;
 
-use vars qw($synfile $coge $DEBUG $join $FORM $P $GZIP $GUNZIP);
+use vars qw($synfile $coge $DEBUG $join $FORM $P $GZIP $GUNZIP $conffile);
 
 
-$P = CoGe::Accessory::Web::get_defaults('coge.conf');
-$GZIP = $P->{GZIP};
-$GUNZIP = $P->{GUNZIP};
 GetOptions (
 	    "debug"=>\$DEBUG,
 	    "file|f=s"=>\$synfile, # file_name.aligncoords from SynMap
 	    "join=i"=>\$join, #is the output sequence going to be joined together using "N"s for gaps.  Set to a number to be true, and whatever number it is will be the number of N's used to join sequence.  
+	   "config_file|cf=s"=>\$conffile,
 	   );
 $FORM = new CGI;
 $synfile = "/opt/apache/".$FORM->param('f') if $FORM->param('f');
 
 $join = 100 unless defined $join;
+$conffile = $ENV{HOME}."coge.conf" unless -r $conffile;
+$P = CoGe::Accessory::Web::get_defaults($conffile);
+$GZIP = $P->{GZIP};
+$GUNZIP = $P->{GUNZIP};
+
 my $DBNAME = $P->{DBNAME};
 my $DBHOST = $P->{DBHOST};
 my $DBPORT = $P->{DBPORT};
@@ -36,6 +39,7 @@ my $synmap_report = new CoGe::Accessory::SynMap_report;
 $synfile = gunzip($synfile);
 my ($chr1, $chr2) = $synmap_report->parse_syn_blocks(file=>$synfile);
 gzip($synfile);
+($chr1, $chr2) = ($chr2, $chr1) if scalar keys %{$chr1->[0]} < scalar keys %{$chr2->[0]};
 #print $FORM->header;
 print qq{Content-Type: text/plain
 
@@ -58,6 +62,11 @@ sub process_sequence
 	my $chr = $item->{chr};
 	my $out_chr = $item->{match};
 	my $dsgid = $item->{dsgid};
+	unless ($dsgid)
+	 {
+	  print "Error!  Problem generating sequence.  No genome id specified!";
+          return;
+         }
 	my $dsg = $dsg{$dsgid};
 	$dsg = $coge->resultset('DatasetGroup')->find($dsgid) unless $dsg;
 	$dsg{$dsg->id} = $dsg;
