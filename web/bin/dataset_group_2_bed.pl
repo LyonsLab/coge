@@ -4,9 +4,14 @@ use strict;
 use CoGeX;
 use Data::Dumper;
 use CoGe::Accessory::Web;
+use Getopt::Long;
 
 
-my $dsgid = shift;
+use vars qw($dsgid $conffile);
+GetOptions(
+	   "dsgid=i"=>\$dsgid,
+	   "config_file|cf=s"=>\$conffile,
+	  );
 
 unless ( $dsgid )
   {
@@ -17,7 +22,7 @@ Will generate a dump of all features for a dataset_group in bed format
     exit;
   }
 
-my $P = CoGe::Accessory::Web::get_defaults('coge.conf');
+my $P = CoGe::Accessory::Web::get_defaults($conffile);
 my $DBNAME = $P->{DBNAME};
 my $DBHOST = $P->{DBHOST};
 my $DBPORT = $P->{DBPORT};
