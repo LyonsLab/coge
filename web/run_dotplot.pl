@@ -16,7 +16,7 @@ $DIR = $P->{COGEDIR};
 $URL = $P->{URL};
 $DATADIR = $P->{DATADIR};
 $DIAGSDIR = $P->{DIAGSDIR};
-$DOTPLOT = $P->{DOTPLOT};
+$DOTPLOT = $P->{DOTPLOT}." -cf ".$ENV{HOME}.'coge.conf';
 
 $FORM = new CGI;
 $DBNAME = $P->{DBNAME};
