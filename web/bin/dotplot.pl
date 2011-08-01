@@ -87,7 +87,8 @@ my $DBPORT = $P->{DBPORT};
 my $DBUSER = $P->{DBUSER};
 my $DBPASS = $P->{DBPASS};
 my $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
-$coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
+$coge = CoGeX->dbconnect(db_connection_str=>$connstr, db_name=>$DBUSER, db_passwd=>$DBPASS );
+
 my $synmap_report = new CoGe::Accessory::SynMap_report;
 
 
