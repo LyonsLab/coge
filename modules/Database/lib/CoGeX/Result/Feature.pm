@@ -1096,6 +1096,23 @@ sub protein_sequence {
 	      $found = $k;
 	    }
 	}
+      unless ($found)
+	{
+	  #okay, perhaps the stop position wasn't added.  Let's see if we have one and only one sequence with no stops
+	  my $count=0;
+	  foreach my $seq (@seqs)
+	    {
+	      unless ($seq =~/\*/)
+		{
+		  $count++;
+		  $found = $seq;
+		}
+	    }
+	  #return if we have one sequence
+	  return $found if $count == 1;
+	  #otherwise, return them all
+	  $found = 0;
+	}
       if ($found)
 	{
 	  return $seqs->{$found};
