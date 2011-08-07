@@ -430,7 +430,7 @@ sub get_dataset_group_info
     $html .= "<tr valign=top><td><table class='small annotation_table'>";
     $html .= qq{<tr><td>Name:</td><td>}.$dsg->name.qq{</td></tr>} if $dsg->name;
     $html .= qq{<tr><td>Description:</td><td>}.$dsg->description.qq{</td></tr>} if $dsg->description;
-    $html .= qq{<tr><td>Chromosome count: <td>$chr_num</td></tr>};
+    $html .= qq{<tr><td>Chromosome count: <td>}.commify($chr_num).qq{</td></tr>};
     my $gstid = $dsg->genomic_sequence_type->id;
     $html .= qq{<tr><td>Sequence type: <td>}.$dsg->genomic_sequence_type->name.qq{ (gstid$gstid)<input type=hidden id=gstid value=}.$gstid.qq{></td></tr>};
     $html .= qq{<tr><td>Length: </td>};
