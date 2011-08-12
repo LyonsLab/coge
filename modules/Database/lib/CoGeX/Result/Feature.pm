@@ -1098,10 +1098,11 @@ sub protein_sequence {
 	}
       unless ($found)
 	{
-	  #okay, perhaps the stop position wasn't added.  Let's see if we have one and only one sequence with no stops
+	  #okay, perhaps the stop position wasn't added or the start M was masked.  Let's see if we have one and only one sequence with no stops
 	  my $count=0;
 	  foreach my $seq (@seqs)
 	    {
+	      $seq=~ s/\*$//;#trim trailling stops if present
 	      unless ($seq =~/\*/)
 		{
 		  $count++;
