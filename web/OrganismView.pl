@@ -436,7 +436,7 @@ sub get_dataset_group_info
     $html .= qq{<tr><td>Length: </td>};
     $html .= qq{<td><div style="float: left;"> }.commify($total_length)." bp </div>";
     my $gc = $total_length < 10000000 && $chr_num < 500 ? get_gc_for_chromosome(dsgid=>$dsgid): 0;
-    $gc = $gc ? $gc : qq{  <div style="float: left; text-indent: 1em;" id=datasetgroup_gc class="link" onclick="\$('#datasetgroup_gc').removeClass('link'); get_gc_for_chromosome(['args__dsgid','dsg_id','args__gstid', 'gstid'],['datasetgroup_gc']);">  Click for percent GC content</div><br/>};
+    $gc = $gc ? $gc : qq{  <div style="float: left; text-indent: 1em;" id=datasetgroup_gc class="link" onclick="gen_data(['args__loading...'],['datasetgroup_gc']);\$('#datasetgroup_gc').removeClass('link'); get_gc_for_chromosome(['args__dsgid','dsg_id','args__gstid', 'gstid'],['datasetgroup_gc']);">  Click for percent GC content</div><br/>};
     $html .= "$gc</td></tr>";
 
     $html .= qq{
@@ -591,7 +591,7 @@ sub get_dataset_info
     $html .= "<tr><td>Chromosome count:<td><div style=\"float: left;\">".commify($chr_num);
     $html .= "<tr><td>Total length:<td><div style=\"float: left;\">".commify($total_length)." bp ";
     my $gc = $total_length < 10000000 && $chr_num < $chr_num_limit ? get_gc_for_chromosome(dsid=>$ds->id): 0;
-    $gc = $gc ? $gc : qq{  </div><div style="float: left; text-indent: 1em;" id=dataset_gc class="link" onclick="\$('#dataset_gc').removeClass('link'); get_gc_for_chromosome(['args__dsid','ds_id','args__gstid', 'gstid'],['dataset_gc']);">  Click for percent GC content</div>} if $total_length;
+    $gc = $gc ? $gc : qq{  </div><div style="float: left; text-indent: 1em;" id=dataset_gc class="link" onclick="gen_data(['args__loading...'],['dataset_gc']);\$('#dataset_gc').removeClass('link'); get_gc_for_chromosome(['args__dsid','ds_id','args__gstid', 'gstid'],['dataset_gc']);">  Click for percent GC content</div>} if $total_length;
     $html .= $gc if $gc;
     $html .= qq{<tr><td>Links:</td>};
     $html .= "<td>";
@@ -638,7 +638,7 @@ sub get_dataset_chr_info
 };
 
     $html .= qq{
-<tr><td>Noncoding sequence:<td colspan=2><div id=noncoding_gc class="link" onclick = "gen_data(['args__loading..'],['noncoding_gc']);\$('#noncoding_gc').removeClass('link');  get_gc_for_noncoding(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['noncoding_gc']);">Click for percent GC content</div>
+<tr><td>Noncoding sequence:<td colspan=2><div id=noncoding_gc class="link" onclick = "gen_data(['args__loading...'],['noncoding_gc']);\$('#noncoding_gc').removeClass('link');  get_gc_for_noncoding(['args__dsid','ds_id','args__chr','chr','args__gstid', 'gstid'],['noncoding_gc']);">Click for percent GC content</div>
 } if $length;
 
     my $feat_string = qq{
@@ -784,7 +784,7 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
 sub gen_data
   {
     my $message = shift;
-    return qq{<font class="small alert">$message. . .</font>};
+    return qq{<font class="small alert">$message</font>};
   }
 
 sub get_gc_for_feature_type
