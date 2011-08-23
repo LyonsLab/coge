@@ -8,6 +8,7 @@ use Text::Wrap;
 use CGI;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::SynMap_report;
+use IO::Compress::Gzip;
 
 use vars qw($synfile $coge $DEBUG $join $FORM $P $GZIP $GUNZIP $conffile);
 
@@ -40,8 +41,11 @@ $synfile = gunzip($synfile);
 my ($chr1, $chr2) = $synmap_report->parse_syn_blocks(file=>$synfile);
 gzip($synfile);
 ($chr1, $chr2) = ($chr2, $chr1) if scalar keys %{$chr1->[0]} < scalar keys %{$chr2->[0]};
+my $fn = "pseudoassembly.fa";
 #print $FORM->header;
-print qq{Content-Type: text/plain
+#print qq{Content-Type: text/plain
+print qq{Content-Type: application/force-download
+Content-Disposition: attachemet; filename="$fn"
 
 };
 #print "<pre>";
