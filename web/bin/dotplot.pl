@@ -271,6 +271,7 @@ sub draw_dots
     my @points;
     my @boxes;
     my ($min_x, $min_y, $max_x, $max_y);
+    my $count = 0;
     while (<IN>)
       {
 	my $tuse_color = $use_color;
@@ -338,6 +339,7 @@ sub draw_dots
 	      }
 	    else
 	      {
+#		print STDERR "Skipping due to no ks data for dot: $fid1 $fid2\n";
 		#don't have ks data -- skip drawing this dot!
 		next;
 #		print Dumper $ksdata->{$item1[6]}{$item2[6]};
@@ -445,6 +447,7 @@ sub draw_dots
 		$points{$x}{$y}=1;
 	      }
 	  }
+	$count++;
       }
     close IN;
     push @boxes,[$min_x-1, $min_y-1, $max_x+1, $max_y+1] if defined $min_x && defined $min_y && defined $max_x && defined $max_y;
@@ -994,7 +997,11 @@ sub get_ksdata
       {
 	if ($pairs)
 	  {
-	    next unless $pairs->{$data->[1]}{$data->[2]};
+	    unless ($pairs->{$data->[1]}{$data->[2]})
+	      {
+		print STDERR "ks pair is not in pairs list\n";
+		next;
+	      }
 	  }
 	my %item = (
 		    KS=>$data->[3],
