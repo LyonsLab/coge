@@ -604,6 +604,8 @@ sub get_dataset_group_info
     $html_dsg_info .= "<tr><td>Description: <td>".$dsg->description if $dsg->description; 
     $html_dsg_info .= "<tr><td>Source:  <td><a href=".$link." target=_new>".$ds->data_source->name."</a>";
     #$html_dsg_info .= $dsg->chr_info(summary=>1);
+    $html_dsg_info .= "<tr><td>Dataset: <td>".$ds->name;
+    $html_dsg_info .= ": ".$ds->description if $ds->description,"\n";
     $html_dsg_info .= "<tr><td>Chromosome count: <td>".commify($chr_count);
     $html_dsg_info .= "<tr><td>Percent GC: <td>$percent_gc%" if defined $percent_gc;
     $html_dsg_info .= "<tr><td>Total length: <td>".$chr_length;
@@ -1671,6 +1673,7 @@ DNA_align_2
 	my $dalign2 = $ks->dalign2; #DNA sequence 2
 	my $palign1 = $ks->palign1; #PROTEIN sequence 1
 	my $palign2 = $ks->palign2; #PROTEIN sequence 2
+
 	my $insert = qq{
 INSERT INTO ks_data (fid1, fid2, dS, dN, dN_dS, protein_align_1, protein_align_2, DNA_align_1, DNA_align_2) values ($fid1, $fid2, "$dS", "$dN", "$dNS", "$palign1", "$palign2", "$dalign1", "$dalign2")
 };
