@@ -1853,6 +1853,7 @@ sub add_GEvo_links
 		  {
 		    next if $id1 eq $id2;
 		    $condensed{$id1}{$id3}=1;
+		    $condensed{$id3}{$id1}=1;
 		  }
 	      }
 	  }
