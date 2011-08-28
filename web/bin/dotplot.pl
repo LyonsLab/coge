@@ -11,7 +11,7 @@ use Data::Dumper;
 use DBI;
 use POSIX;
 
-use vars qw($P $dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ks_db $ks_type $log $MAX $MIN $assemble $axis_metric $color_type $box_diags $fid1 $fid2 $selfself $labels $color_scheme $chr_sort_order $font $GZIP $GUNZIP $conffile);
+use vars qw($P $dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ks_db $ks_type $log $MAX $MIN $assemble $axis_metric $color_type $box_diags $fid1 $fid2 $selfself $labels $color_scheme $chr_sort_order $font $GZIP $GUNZIP $conffile $skip_random);
 
 
 
@@ -48,7 +48,9 @@ GetOptions(
 	   "font=s"=>\$font,
 	   "chr_sort_order|cso=s"=>\$chr_sort_order,#display sort order for chromosomes, "Name|N" || "Size|S";
 	   "config_file|cf=s"=>\$conffile,
+	   "skip_random|sr=i"=>\$skip_random, #flag or skipping chromosome containing the wod 'random' in their name
 	   );
+print STDERR $skip_random,"\n";
 $selfself = 1 unless defined $selfself;
 $labels = 1 unless defined $labels;
 $chr_sort_order = "size" unless defined $chr_sort_order;
@@ -95,11 +97,11 @@ my $synmap_report = new CoGe::Accessory::SynMap_report;
 my ($org1_order, $org2_order) = $synmap_report->parse_syn_blocks(file=>$alignfile) if $assemble;
 
 my $skip_non_ordered = $assemble && $assemble == 2 ? 1 : 0;
-my $org1info = get_dsg_info(dsgid=>$dsgid1, chr=>$CHR1, minsize=>$min_chr_size, order=>$org1_order, metric=>$axis_metric, skip_non_ordered=>$skip_non_ordered, chr_sort_order=>$chr_sort_order);
+my $org1info = get_dsg_info(dsgid=>$dsgid1, chr=>$CHR1, minsize=>$min_chr_size, order=>$org1_order, metric=>$axis_metric, skip_non_ordered=>$skip_non_ordered, chr_sort_order=>$chr_sort_order, skip_random=>$skip_random);
 my $org1length =0;
 #print STDERR Dumper $org1info;
 map {$org1length+=$_->{length}} values %$org1info;
-my $org2info = get_dsg_info(dsgid=>$dsgid2, chr=>$CHR2, minsize=>$min_chr_size, order=>$org2_order, metric=>$axis_metric, skip_non_ordered=>$skip_non_ordered, chr_sort_order=>$chr_sort_order);
+my $org2info = get_dsg_info(dsgid=>$dsgid2, chr=>$CHR2, minsize=>$min_chr_size, order=>$org2_order, metric=>$axis_metric, skip_non_ordered=>$skip_non_ordered, chr_sort_order=>$chr_sort_order, skip_random=>$skip_random);
 my $org2length =0;
 map {$org2length+=$_->{length}} values %$org2info;
 
@@ -829,8 +831,8 @@ sub get_dsg_info
     my $skip_non_ordered = $opts{skip_non_ordered};
     my $metric=$opts{metric};
     my $chr_sort_order = $opts{chr_sort_order};
+    my $skip_random = $opts{skip_random}; #skip "random" chromosome where sequences are added ad hoc
     my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
-
     unless ($dsg)
       {
 	warn "No dataset group found with dbid $dsgid\n";
@@ -842,7 +844,7 @@ sub get_dsg_info
 	my $dbh = DBI->connect($coge->db_connection_string,$coge->db_name,$coge->db_passwd);
 	foreach my $gs ($dsg->genomic_sequences)
 	  {
-	    next if $gs->chromosome =~ /random/i;
+	    next if $gs->chromosome =~ /random/i && $skip_random;
 	    next if $chr && $chr ne $gs->chromosome;
 	    my $tmp_chr = $gs->chromosome;
 	    my $query = qq{
@@ -885,7 +887,7 @@ SELECT feature_id
       }
     foreach my $gs ($dsg->genomic_sequences)
       {
-	next if $gs->chromosome =~ /random/i;
+	next if $gs->chromosome =~ /random/i && $skip_random;
 	next if $chr && $chr ne $gs->chromosome;
 	my $last = $gs->sequence_length;
 	next if $minsize && $minsize > $last;
@@ -1288,6 +1290,8 @@ assemble               if set to 1, output will try to be assembled based on syn
                        if set to 2, will not add any pieces that are not syntenic
 
 axis_metric  | am      metic (units) for dotplot axes:  nucleotides or genes.  Default: nucleotide distances
+
+skip_random | sr       flag for skipping chromomses with the word "random" in their name
 
 help         | h       print this message
 
