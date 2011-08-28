@@ -306,6 +306,11 @@ sub gen_body
     $clabel = $FORM->param('cl') if (defined $FORM->param('cl'));
     $template->param('CHR_LABEL'=>'checked') if $clabel;
 
+    #are the chromosomes labeled?
+    my $skip_rand = 1;
+    $skip_rand = $FORM->param('sr') if (defined $FORM->param('sr'));
+    $template->param('SKIP_RAND'=>'checked') if $skip_rand;
+
     #what is the sort for chromosome display?
     my $chr_sort_order = "S";
     $chr_sort_order = $FORM->param('cso') if (defined $FORM->param('cso'));
@@ -605,7 +610,7 @@ sub get_dataset_group_info
     $html_dsg_info .= "<tr><td>Source:  <td><a href=".$link." target=_new>".$ds->data_source->name."</a>";
     #$html_dsg_info .= $dsg->chr_info(summary=>1);
     $html_dsg_info .= "<tr><td>Dataset: <td>".$ds->name;
-    $html_dsg_info .= ": ".$ds->description if $ds->description,"\n";
+    $html_dsg_info .= ": ".$ds->description if $ds->description;
     $html_dsg_info .= "<tr><td>Chromosome count: <td>".commify($chr_count);
     $html_dsg_info .= "<tr><td>Percent GC: <td>$percent_gc%" if defined $percent_gc;
     $html_dsg_info .= "<tr><td>Total length: <td>".$chr_length;
@@ -2060,6 +2065,7 @@ sub generate_dotplot
     my $snsd = $opts{snsd}; #option for showing non syntenic (grey) dots in dotplot
     my $flip = $opts{flip}; #flip axis
     my $clabel = $opts{clabel}; #label chromosomes
+    my $skip_rand = $opts{skip_rand};
     my $color_scheme = $opts{color_scheme}; #color_scheme for dotplot
     my $chr_sort_order = $opts{chr_sort_order}; #sort order of chromosomes in dotplot
 
@@ -2079,6 +2085,7 @@ sub generate_dotplot
     $outfile .= ".box" if $box_diags;
     $outfile .= ".flip" if $flip;
     $outfile .= ".c0" if $clabel eq 0;
+    $outfile .= ".sr" if $skip_rand;
     $outfile.= ".cs$color_scheme" if defined $color_scheme;
     $outfile.= ".cso$chr_sort_order" if defined $chr_sort_order;
 
@@ -2110,6 +2117,7 @@ sub generate_dotplot
     $cmd .= qq{ -fid2 $fid2} if $fid2;
     $cmd .= qq{ -f 1} if $flip;
     $cmd .= qq{ -labels 0} if $clabel eq 0;
+    $cmd .= qq{ -sr 1} if $skip_rand;
     $cmd .= qq{ -color_scheme $color_scheme} if defined $color_scheme;
     $cmd .= qq{ -chr_sort_order $chr_sort_order} if defined $chr_sort_order;
     while (-e "$outfile.running")
@@ -2189,6 +2197,10 @@ sub go
     my $clabel = $opts{clabel};
     $clabel = $clabel =~ /true/i ? 1 : 0;
     
+    #are random chr skipped
+    my $skip_rand = $opts{skip_rand};
+    $skip_rand = $skip_rand =~ /true/i ? 1 : 0;
+
     #which color scheme for ks/kn dots?
     my $color_scheme = $opts{color_scheme};
 
@@ -2228,6 +2240,7 @@ sub go
     $synmap_link .= ";flip=1" if $flip;
     $synmap_link .= ";cs=$color_scheme";
     $synmap_link .= ";cl=0" if $clabel eq "0";
+    $synmap_link .= ";sr=$skip_rand" if defined $skip_rand;
     $synmap_link .= ";cso=$chr_sort_order" if $chr_sort_order;
 
     $email = 0 if check_address_validity($email) eq 'invalid';
@@ -2551,7 +2564,7 @@ sub go
 	$gen_ks_db_time = timestr(timediff($t6,$t5));
 	CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
 	CoGe::Accessory::Web::write_log("Generating dotplot",$cogeweb->logfile);
- 	$out = generate_dotplot(dag=>$dag_file12_all, coords=>$final_dagchainer_file, outfile=>"$out", regen_images=>$regen_images, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, dagtype=>$dagchainer_type, ks_db=>$ks_db, ks_type=>$ks_type, assemble=>$assemble, metric=>$axis_metric, min_chr_size=>$min_chr_size, color_type=>$color_type, box_diags=>$box_diags, fid1=>$fid1, fid2=>$fid2, snsd=>$snsd, flip=>$flip, clabel=>$clabel, color_scheme=>$color_scheme, chr_sort_order=>$chr_sort_order);
+ 	$out = generate_dotplot(dag=>$dag_file12_all, coords=>$final_dagchainer_file, outfile=>"$out", regen_images=>$regen_images, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, dagtype=>$dagchainer_type, ks_db=>$ks_db, ks_type=>$ks_type, assemble=>$assemble, metric=>$axis_metric, min_chr_size=>$min_chr_size, color_type=>$color_type, box_diags=>$box_diags, fid1=>$fid1, fid2=>$fid2, snsd=>$snsd, flip=>$flip, clabel=>$clabel, skip_rand=>$skip_rand, color_scheme=>$color_scheme, chr_sort_order=>$chr_sort_order);
 	CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
 	CoGe::Accessory::Web::write_log("",$cogeweb->logfile);
 
