@@ -3,19 +3,18 @@ package CoGe::Accessory::LogUser;
 use strict;
 use CGI::Cookie;
 use Data::Dumper;
-use CoGeX;
 use CoGeX::Result::User;
 
-use vars qw($cookie_name $coge);
 
-$cookie_name = "CoGe";
-$coge = CoGeX->dbconnect();
 sub get_user
   {
     my $self = shift;
+    my %opts = @_;
+    my $cookie_name = $opts{cookie_name};
+    my $coge = $opts{coge};
     my %cookies = fetch CGI::Cookie;
     my ($user, $uid, $session);# = "Public";
-    if (ref $cookies{$cookie_name})
+    if ($cookie_name && ref $cookies{$cookie_name})
       {
 	my %session = $cookies{$cookie_name}->value;
 
@@ -37,6 +36,7 @@ sub gen_cookie
     my %opts = @_;
     my $session = $opts{session} || 0;
     my $exp = $opts{exp} || "+12M";
+    my $cookie_name = $opts{cookie_name};
     my %params = (-name=>$cookie_name,
 		 -path=>"/");
 
