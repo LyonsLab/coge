@@ -7,15 +7,15 @@ use CoGeX;
 use POSIX;
 use LWP::Simple;
 
-use vars qw($DEBUG $file $coge $INSTRAIN);
+use vars qw($DEBUG $file $coge $INSTRAIN $homo_threshold);
 
 GetOptions(
 	   "file|f=s"=>\$file,
 	   "debug"=>\$DEBUG,
 	   "instrain=s"=>\$INSTRAIN, #name of specific strain for which polymorphisms are tracked
+	   "homopolyer_theshold|ht=i"=>\$homo_threshold, #the minimum lenght of a homopolymer before it is scored.
 	   );
-
-
+$homo_threshold = 5 unless defined $homo_threshold;
 
 ###COMMENTING OUT AND REPLACING###
 #dsgids == sequence_order in alignment file => coge database ids
@@ -173,7 +173,7 @@ print "<br><h3>False positive score calculations</h3>";
 print qq{
 <p><b>Total false positive score</b> is the sum of "homopolymer false positive score" + "multiple hit false positive score".</p>
 
-<p><b>Homopolmer false positive score</b> = length of homopolymer.  Note: only calculated for homopolymers with a length greater than or equal to 5.
+<p><b>Homopolmer false positive score</b> = length of homopolymer.  Note: only calculated for homopolymers with a length greater than or equal to $homo_threshold.
 <p> 454 sequencing chemistry has a known problem with sequencing homopolymers (http://www.broadinstitute.org/crd/wiki/index.php/Homopolymer).  When a single nucleotide indel polymorphism is detected, this metric helps determine whether it may be due to this type of sequencing problem.  Be aware that if a strand-slippage mutagen is used (e.g. an intercalator such as Ethidium Bromide), such polymorphisms may be real.</p>
 
 <p><b>Multiple hit false positive score</b> = number of unique polymorphisms occurring within the same gene in a strain.  If multiple strains have different number of polymorphisms in the same gene, the greatest value is used.
@@ -592,7 +592,7 @@ sub gen_alignment
 	  $skip_homopolymer_check =1 if $chr eq "-" && length ($run) > 1; #in an insertion or deletion. Can't do this check
 
 	  next if $chr eq "-"; #this sequence has an insert polymorphism
-	  next unless $len >= 5; #only sore if homopolymer is 5 nt or longer
+	  next unless $len >= $homo_threshold; #only sore if homopolymer is $homo_threshold nt or longer.  $homo_threshold is a global var
 	  $score =$len unless $score && $score > $len;
 	}
       $skip_homopolymer_check =1 unless $types{"-"}; #need at least one gap, otherwise just a SNP
@@ -835,7 +835,7 @@ sub process_synmorphs
 	next unless scalar @{$counts{$k}} == 1; #only going to process if a single strain is present
       }
     my $in_strain=0;
-    foreach my $strain (map {$dsgs->{$_}{name}} @{$counts{$k}})
+    foreach my $strain (map {$dsgs->{$_}{id}} @{$counts{$k}})
       {
 	if ($INSTRAIN) #is this a strain specific run?
 	  {
