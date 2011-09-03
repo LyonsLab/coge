@@ -50,7 +50,6 @@ GetOptions(
 	   "config_file|cf=s"=>\$conffile,
 	   "skip_random|sr=i"=>\$skip_random, #flag or skipping chromosome containing the wod 'random' in their name
 	   );
-print STDERR $skip_random,"\n";
 $selfself = 1 unless defined $selfself;
 $labels = 1 unless defined $labels;
 $chr_sort_order = "size" unless defined $chr_sort_order;
@@ -844,7 +843,7 @@ sub get_dsg_info
 	my $dbh = DBI->connect($coge->db_connection_string,$coge->db_name,$coge->db_passwd);
 	foreach my $gs ($dsg->genomic_sequences)
 	  {
-	    next if $gs->chromosome =~ /random/i && $skip_random;
+	    next if ($gs->chromosome =~ /random/i || $gs->chromosome =~ /unknown/i) && $skip_random;
 	    next if $chr && $chr ne $gs->chromosome;
 	    my $tmp_chr = $gs->chromosome;
 	    my $query = qq{
@@ -887,7 +886,7 @@ SELECT feature_id
       }
     foreach my $gs ($dsg->genomic_sequences)
       {
-	next if $gs->chromosome =~ /random/i && $skip_random;
+	next if ($gs->chromosome =~ /random/i || $gs->chromosome =~ /unknown/i) && $skip_random;
 	next if $chr && $chr ne $gs->chromosome;
 	my $last = $gs->sequence_length;
 	next if $minsize && $minsize > $last;
