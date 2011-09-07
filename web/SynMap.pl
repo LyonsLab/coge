@@ -22,7 +22,7 @@ no warnings 'redefine';
 
 
 umask(0);
-use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $DIR $URL $SERVER $USER $FORM $coge $cogeweb $FORMATDB $BLAST $TBLASTX $BLASTN $BLASTP $LASTZ $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $PYTHON26 $TANDEM_FINDER $RUN_DAGCHAINER $EVAL_ADJUST $FIND_NEARBY $DOTPLOT $NWALIGN $QUOTA_ALIGN $CLUSTER_UTILS $BLAST2RAW $BASE_URL $BLAST2BED $SYNTENY_SCORE $TEMPDIR $TEMPURL $ALGO_LOOKUP $GZIP $GUNZIP);
+use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $DIR $URL $SERVER $USER $FORM $coge $cogeweb $FORMATDB $BLAST $TBLASTX $BLASTN $BLASTP $LASTZ $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $PYTHON26 $TANDEM_FINDER $RUN_DAGCHAINER $EVAL_ADJUST $FIND_NEARBY $DOTPLOT $SVG_DOTPLOT $NWALIGN $QUOTA_ALIGN $CLUSTER_UTILS $BLAST2RAW $BASE_URL $BLAST2BED $SYNTENY_SCORE $TEMPDIR $TEMPURL $ALGO_LOOKUP $GZIP $GUNZIP);
 
 $P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = join ":", ($P->{COGEDIR}, $P->{BINDIR}, $P->{BINDIR}."SynMap", "/usr/bin","/usr/local/bin");
@@ -120,7 +120,7 @@ $BLAST2RAW = $P->{BLAST2RAW}; #find local duplicates
 $SYNTENY_SCORE = $P->{SYNTENY_SCORE};
 
 $DOTPLOT = $P->{DOTPLOT}." -cf ".$ENV{HOME}.'coge.conf';
-
+$SVG_DOTPLOT = $P->{SVG_DOTPLOT};
 #$CONVERT_TO_GENE_ORDER = $DIR."/bin/SynMap/convert_to_gene_order.pl";
 #$NWALIGN = $DIR."/bin/nwalign-0.3.0/bin/nwalign";
 $NWALIGN = $P->{NWALIGN};
@@ -1936,6 +1936,35 @@ sub gen_ks_blocks_file
       return $outfile;
     }
 
+sub gen_svg_file
+  {
+    my %opts =@_;
+    my $infile = $opts{infile};
+    gunzip($infile);
+    my $outfile = $opts{outfile};
+    my $flip = $opts{flip};
+    my $xname = $opts{xname};
+    my $yname = $opts{yname};
+
+    $outfile = $infile unless $outfile;
+    #/opt/apache/CoGe/bin/SynMap/dotplot.py --dag_file 3068_11022.CDS-CDS.lastz.dag.go_c4_D20_g10_A5.aligncoords.qac1.1.40.gcoords.ks --output my
+#    if (-r $infile.".svg")
+      {
+	CoGe::Accessory::Web::write_log("generate svg dotplot: file exists: $infile.svg",$cogeweb->logfile);    
+      }
+ #   else
+      {
+	my $cmd = $SVG_DOTPLOT. " --dag_file $infile";
+	$cmd .= " --flip" if $flip;
+	$cmd .= " --xhead '$xname'" if $xname;
+	$cmd .= " --yhead '$yname'" if $yname;
+	$cmd .= " --output $infile";
+	CoGe::Accessory::Web::write_log("generate svg dotplot: $cmd",$cogeweb->logfile);    
+	`$cmd`;
+      }
+    return $infile.".svg";
+  }
+
 sub process_block
    {
      my %opts = @_;
@@ -2546,6 +2575,7 @@ sub go
  	#deactivation ks calculations due to how slow it is
 	my $ks_db;
 	my $ks_blocks_file;
+	my $svg_file;
 	if ($ks_type)
 	  {
 	    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
@@ -2557,6 +2587,12 @@ sub go
 	    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
 	    CoGe::Accessory::Web::write_log("Generate Ks Blocks File",$cogeweb->logfile);
 	    $ks_blocks_file = gen_ks_blocks_file(infile=>$final_dagchainer_file);
+	    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
+	    CoGe::Accessory::Web::write_log("",$cogeweb->logfile);
+
+	    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
+	    CoGe::Accessory::Web::write_log("Generate SVG File",$cogeweb->logfile);
+	    $svg_file = gen_svg_file(infile=>$ks_blocks_file, flip=>$flip, xname=>$org_name1, yname=>$org_name2);
 	    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
 	    CoGe::Accessory::Web::write_log("",$cogeweb->logfile);
 
@@ -2766,6 +2802,12 @@ sub go
 		$final_dagchainer_file_condensed =~ s/$DIR/$URL/;
 		$html .= "<br><span class='small link' onclick=window.open('$final_dagchainer_file_condensed')>Condensed syntelog file with GEvo links</span>";
 	      }
+	    if (-r $svg_file)
+	      {
+		$svg_file =~ s/$DIR/$URL/;
+		$html .= "<br><span class='small link' onclick=window.open('$svg_file')>SVG Version of Syntenic Dotplot</span>";
+	      }
+
 	    $html .="<tr><td>";
 
 	    $html .= "<br>".qq{<span class="small link" id="" onClick="window.open('bin/SynMap/order_contigs_to_chromosome.pl?f=$dagchainer_file');" >Generate Assembled Genomic Sequence</span>} if $assemble;
