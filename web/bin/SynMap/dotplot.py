@@ -316,8 +316,8 @@ dots = draw_dots(dag_file,xgenes,ygenes,xchrs,ychrs)
 myimage = s.SVG('svg')
 myimage.append(dots)
 myimage.append(boxes)
-myimage.save('temp.svg')
-fh = open('temp.svg')
+myimage.save(opts.out+".tmp")
+fh = open(opts.out+".tmp")
 fh2 = open(opts.out + '.svg','w')
 for x in fh:
 	if x[:4] == '<svg':
@@ -350,4 +350,4 @@ for x in fh:
 		fh2.write(x3)
 	else:
 		fh2.write(x)
-os.remove('temp.svg')
+os.remove(opts.out+".tmp")
