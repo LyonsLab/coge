@@ -45,6 +45,7 @@ my $log = $FORM->param('log');
 my $min = $FORM->param('min');
 my $max = $FORM->param('max');
 my $metric = $FORM->param('am');
+my $relationship = $FORM->param('ar');
 my $box_diags = $FORM->param('bd');
 my $color_type = $FORM->param('ct');
 my $color_scheme = $FORM->param('cs');
@@ -82,9 +83,17 @@ my $dag_file = $dir."/".$basename;
 #  }
 $dag_file =~ s/\.dag_?.*//;
 $dag_file .= ".dag.all";
-my $outfile = $dir."/html/".$basename.".$chr1-$chr2.w$width";
+my $outfile;
+$outfile = ".$chr1-$chr2.w$width";
+$outfile  =~ s/\///g;
+$outfile =~ s/\s+/_/g;
+$outfile =~ s/\(//g;
+$outfile =~ s/\)//g;
+$outfile =~ s/://g;
+$outfile =~ s/;//g;
+$outfile = $dir."/html/".$basename.$outfile;
 #my $res = generate_dotplot(dag=>$dag_file, coords=>"$dir/$basename.all.aligncoords", qchr=>$chr1, schr=>$chr2, 'outfile'=>$outfile, 'regen_images'=>'false', flip=>$flip, regen_images=>$regen, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, grid=>$grid, ksdb=>$ksdb, kstype=>$kstype, log=>$log, min=>$min, max=>$max, metric=>$metric);
-my $res = generate_dotplot(dag=>$dag_file, coords=>"$dir/$basename", qchr=>$chr1, schr=>$chr2, 'outfile'=>$outfile, 'regen_images'=>'false', flip=>$flip, regen_images=>$regen, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, grid=>$grid, ksdb=>$ksdb, kstype=>$kstype, log=>$log, min=>$min, max=>$max, metric=>$metric, box_diags=>$box_diags, color_type=>$color_type, color_scheme=>$color_scheme);
+my $res = generate_dotplot(dag=>$dag_file, coords=>"$dir/$basename", qchr=>$chr1, schr=>$chr2, 'outfile'=>$outfile, 'regen_images'=>'false', flip=>$flip, regen_images=>$regen, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, grid=>$grid, ksdb=>$ksdb, kstype=>$kstype, log=>$log, min=>$min, max=>$max, metric=>$metric, relationship=>$relationship, box_diags=>$box_diags, color_type=>$color_type, color_scheme=>$color_scheme);
 if ($res)
   {
     $res=~s/$DIR/$URL/;
@@ -133,6 +142,7 @@ sub generate_dotplot
     my $min = $opts{min};
     my $max = $opts{max};
     my $metric= $opts{metric};
+    my $relationship=$opts{relationship};
     my $box_diags = $opts{box_diags};
     my $color_type = $opts{color_type};
     my $color_scheme = $opts{color_scheme};
@@ -147,6 +157,7 @@ sub generate_dotplot
 	$outfile .= ".$kstype";
       }
     $outfile .= ".gene" if $metric =~ /gene/i;
+    $outfile .= ".s" if $relationship =~ /s/i;
     $outfile .= ".box" if $box_diags;
     $outfile .= ".ct$color_type" if $color_type;
     $outfile .= ".cs$color_scheme" if defined $color_scheme;
@@ -160,8 +171,9 @@ sub generate_dotplot
 	return $outfile;
       }
 
-    $cmd .= qq{ -d $dag -a $coords -b $outfile -dsg1 $dsgid1 -dsg2 $dsgid2 -w $width -lt 1 -chr1 $qchr -chr2 $schr -flip $flip -grid 1};
+    $cmd .= qq{ -d $dag -a "$coords" -b "$outfile" -dsg1 $dsgid1 -dsg2 $dsgid2 -w $width -lt 1 -chr1 "$qchr" -chr2 "$schr" -flip $flip -grid 1};
     $cmd .= qq { -am $metric} if $metric;
+    $cmd .= qq { -fb} if $relationship && $relationship =~/s/i;
     $cmd .= qq { -cdt $color_type} if $color_type;
     $cmd .= qq{ -bd 1} if $box_diags;
     $cmd .= qq{ -color_scheme $color_scheme} if defined $color_scheme;
