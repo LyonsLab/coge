@@ -11,7 +11,7 @@ use Data::Dumper;
 use DBI;
 use POSIX;
 
-use vars qw($P $dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ks_db $ks_type $log $MAX $MIN $assemble $axis_metric $color_type $box_diags $fid1 $fid2 $selfself $labels $color_scheme $chr_sort_order $font $GZIP $GUNZIP $conffile $skip_random);
+use vars qw($P $dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ks_db $ks_type $log $MAX $MIN $assemble $axis_metric $color_type $box_diags $fid1 $fid2 $selfself $labels $color_scheme $chr_sort_order $font $GZIP $GUNZIP $conffile $skip_random $force_box);
 
 
 
@@ -49,6 +49,7 @@ GetOptions(
 	   "chr_sort_order|cso=s"=>\$chr_sort_order,#display sort order for chromosomes, "Name|N" || "Size|S";
 	   "config_file|cf=s"=>\$conffile,
 	   "skip_random|sr=i"=>\$skip_random, #flag or skipping chromosome containing the wod 'random' in their name
+	   "force_box|fb" => \$force_box, #flag to make dotplot dimensions a box instead of relative on genomic content
 	   );
 $selfself = 1 unless defined $selfself;
 $labels = 1 unless defined $labels;
@@ -107,7 +108,7 @@ map {$org2length+=$_->{length}} values %$org2info;
 ($org1info, $org1length, $dsgid1, $org2info, $org2length, $dsgid2) = ($org2info, $org2length, $dsgid2, $org1info, $org1length, $dsgid1) if $flip;
 ($CHR1, $CHR2) = ($CHR2, $CHR1) if $flip && ($CHR1 || $CHR2);
 my $height = sprintf("%.0f", $width*$org2length/$org1length);
-$height = $width if ($height > 20*$width) || ($height <  $width/20);
+$height = $width if ($height > 20*$width) || ($height <  $width/20) || $force_box;
 my $x_bp_per_pix = $org1length/$width; #sprintf("%.0f", $org1length/$width);
 #$x_bp_per_pix = 1 if $x_bp_per_pix < 1;
 my $x_pix_per_bp = 1/$x_bp_per_pix;
