@@ -481,7 +481,7 @@ sub draw_dots
     if ($link_type == 1)
       {
 	#Okay, now generate the HTML document that contains the click map for the image
-	open (OUT, ">".$basename.".html") || die "$!";
+	open (OUT, ">".$basename.".html") || die "$basename.html\n$!";
 	my ($org1name, $org2name);
 	if ($dsgid1)
 	  {
