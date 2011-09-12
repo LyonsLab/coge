@@ -263,12 +263,13 @@ if __name__ == '__main__':
 
     filtered_len_x, filtered_len_y = calc_coverage(clusters, self_match=self_match)
     if self_match:
-        print >>sys.stderr, "coverage: %.1f%% (self-match)" % \
+#        print >>sys.stderr, "coverage: %.1f%% (self-match)" % \
+        print "#coverage: %.1f%% (self-match)" % \
                 (filtered_len_x*100./total_len_x)
     else:
-        print >>sys.stderr, "genome X coverage: %.1f%%" % \
+        print "#genome X coverage: %.1f%%" % \
                 (filtered_len_x*100./total_len_x)
-        print >>sys.stderr, "genome Y coverage: %.1f%%" % \
+        print "#genome Y coverage: %.1f%%" % \
                 (filtered_len_y*100./total_len_y)
 
 
