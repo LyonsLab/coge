@@ -347,6 +347,15 @@ sub gen_body
       {
 	$template->param('AXIS_METRIC_NT'=>'selected');
       }
+    #axis relationship:  will dotplot be forced into a square?
+    if ($FORM->param('ar') && $FORM->param('ar')=~/s/i)
+      {
+	$template->param('AXIS_RELATIONSHIP_S'=>'selected');
+      }
+    else
+      {
+	$template->param('AXIS_RELATIONSHIP_R'=>'selected');
+      }
     #merge diags algorithm
     if ($FORM->param('ma'))
       {
@@ -2086,6 +2095,7 @@ sub generate_dotplot
     my $width = $opts{width} || 1000;
     my $assemble = $opts{assemble};
     my $metric = $opts{metric};
+    my $relationship = $opts{relationship};
     my $min_chr_size = $opts{min_chr_size};
     my $color_type = $opts{color_type};
     my $just_check = $opts{just_check}; #option to just check if the outfile already exists
@@ -2104,6 +2114,7 @@ sub generate_dotplot
     $outfile.= ".ass" if $assemble;
     $outfile.= "2" if $assemble eq "2";
     $outfile.= ".gene" if $metric =~ /gene/i;
+    $outfile.= ".s" if $relationship =~ /s/i;
     $outfile.= ".mcs$min_chr_size" if $min_chr_size;
     $outfile.= ".$fid1" if $fid1;
     $outfile.= ".$fid2" if $fid2;
@@ -2140,6 +2151,7 @@ sub generate_dotplot
     $cmd .= qq{)' -dsg1 $dsgid1 -dsg2 $dsgid2 -w $width -lt 2};
     $cmd .= qq{ -assemble $assemble} if $assemble;
     $cmd .= qq{ -am $metric} if $metric;
+    $cmd .= qq{ -fb} if $relationship && $relationship =~ /s/;
     $cmd .= qq{ -mcs $min_chr_size} if $min_chr_size;
     $cmd .= qq{ -cdt $color_type} if $color_type;
     $cmd .= qq{ -bd 1} if $box_diags;
@@ -2200,6 +2212,7 @@ sub go
     my $assemble =$opts{assemble}=~/true/i ? 1 : 0;
     $assemble = 2 if $assemble && $opts{show_non_syn}=~/true/i;
     my $axis_metric = $opts{axis_metric};
+    my $axis_relationship = $opts{axis_relationship};
     my $min_chr_size = $opts{min_chr_size};
     my $dagchainer_type = $opts{dagchainer_type};
     my $color_type = $opts{color_type};
@@ -2290,6 +2303,7 @@ sub go
 	$synmap_link .= ";ks=$num";
       };
     $synmap_link.=";am=g" if $axis_metric && $axis_metric =~/g/i;
+    $synmap_link.=";ar=s" if $axis_relationship && $axis_relationship =~/s/i;
     $synmap_link.=";ct=$color_type" if $color_type;
     ##generate fasta files and blastdbs
     my $t0 = new Benchmark;
@@ -2601,7 +2615,7 @@ sub go
 	$gen_ks_db_time = timestr(timediff($t6,$t5));
 	CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
 	CoGe::Accessory::Web::write_log("Generating dotplot",$cogeweb->logfile);
- 	$out = generate_dotplot(dag=>$dag_file12_all, coords=>$final_dagchainer_file, outfile=>"$out", regen_images=>$regen_images, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, dagtype=>$dagchainer_type, ks_db=>$ks_db, ks_type=>$ks_type, assemble=>$assemble, metric=>$axis_metric, min_chr_size=>$min_chr_size, color_type=>$color_type, box_diags=>$box_diags, fid1=>$fid1, fid2=>$fid2, snsd=>$snsd, flip=>$flip, clabel=>$clabel, skip_rand=>$skip_rand, color_scheme=>$color_scheme, chr_sort_order=>$chr_sort_order);
+ 	$out = generate_dotplot(dag=>$dag_file12_all, coords=>$final_dagchainer_file, outfile=>"$out", regen_images=>$regen_images, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, dagtype=>$dagchainer_type, ks_db=>$ks_db, ks_type=>$ks_type, assemble=>$assemble, metric=>$axis_metric, , relationship=>$axis_relationship, min_chr_size=>$min_chr_size, color_type=>$color_type, box_diags=>$box_diags, fid1=>$fid1, fid2=>$fid2, snsd=>$snsd, flip=>$flip, clabel=>$clabel, skip_rand=>$skip_rand, color_scheme=>$color_scheme, chr_sort_order=>$chr_sort_order);
 	CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
 	CoGe::Accessory::Web::write_log("",$cogeweb->logfile);
 
@@ -3173,6 +3187,7 @@ sub get_dotplot
     my $ksdb = $opts{ksdb};    
     my $kstype = $opts{kstype};
     my $metric = $opts{am}; #axis metrix
+    my $relationship = $opts{ar}; #axis relationship
     my $max = $opts{max};
     my $min = $opts{min};
     my $color_type = $opts{ct};
@@ -3191,6 +3206,7 @@ sub get_dotplot
     $url .=  ";min=$min" if defined $min;
     $url .=  ";max=$max" if defined $max;
     $url .=  ";am=$metric" if defined $metric;
+    $url .=  ";ar=$relationship" if defined $relationship;
     $url .=  ";ct=$color_type" if $color_type;
     $url .= ";bd=$box_diags" if $box_diags;
     $url .= ";cs=$color_scheme" if defined $color_scheme;
