@@ -1480,27 +1480,31 @@ sub run_quota_align_coverage
     gunzip($infile.".gz") if -r $infile.".gz";
     gunzip($infile.".qa.gz") if -r $infile.".qa.gz";
     #convert to quota-align format
+    my $cov_cmd = $CLUSTER_UTILS." --format=dag --log_evalue $infile $infile.qa";
+    my $qa_cmd = $QUOTA_ALIGN ." --Nm=$overlap_dist --quota=$org1:$org2 $infile.qa > $returnfile.tmp";
+
+    CoGe::Accessory::Web::write_log("Convert command: $cov_cmd", $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("Quota Align command: $qa_cmd", $cogeweb->logfile);
     if (-r "$infile.qa")
       {
-CoGe::Accessory::Web::write_log("Dag output file already converted to quota_align input: $infile.qa");
+	CoGe::Accessory::Web::write_log("Dag output file already converted to quota_align input: $infile.qa", $cogeweb->logfile);
       }
     else
       {
-	my $cmd = $CLUSTER_UTILS." --format=dag --log_evalue $infile $infile.qa";
-CoGe::Accessory::Web::write_log("Converting dag output to quota_align format: $cmd", $cogeweb->logfile);
-	`$cmd`;
+	CoGe::Accessory::Web::write_log("Converting dag output to quota_align format.", $cogeweb->logfile);
+	`$cov_cmd`;
       }
+
     if (-r "$returnfile.tmp" || -r "$returnfile.tmp.gz")
       {
-	CoGe::Accessory::Web::write_log("Quota_align syntenic coverage parameters already run$infile.qa");
+	CoGe::Accessory::Web::write_log("Quota_align syntenic coverage parameters already run: $returnfile.tmp");
 	gunzip("$returnfile.tmp.gz") if -r "$returnfile.tmp.gz";
 
       }
     else
       {
-	my $cmd = $QUOTA_ALIGN ." --Nm=$overlap_dist --quota=$org1:$org2 $infile.qa > $returnfile.tmp";
-CoGe::Accessory::Web::write_log("Running quota_align to find syntenic coverage:\n\t$cmd", $cogeweb->logfile);
-	`$cmd`;
+	CoGe::Accessory::Web::write_log("Running quota_align to find syntenic coverage.", $cogeweb->logfile);
+	my $qa_output = `$qa_cmd`;
       }
     if (-r "$returnfile.tmp")
       {
@@ -1543,7 +1547,8 @@ sub generate_grimm_input
     gunzip($infile.".gz") if -r $infile.".gz";
     gunzip($infile.".qa.gz") if -r $infile.".qa.gz";
     my $cmd = $CLUSTER_UTILS." --format=dag --log_evalue $infile $infile.qa";
-   CoGe::Accessory::Web::write_log("Converting dag output to quota_align format: $cmd", $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("\nGenerating input data for GRIMM", $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("Converting dag output to quota_align format: $cmd", $cogeweb->logfile);
     `$cmd`;
     $cmd = $CLUSTER_UTILS . " --print_grimm $infile.qa";
    CoGe::Accessory::Web::write_log("running  cluster_utils to generating grimm input:\n\t$cmd", $cogeweb->logfile);
@@ -2788,7 +2793,7 @@ sub go
 	    if ($quota_align_coverage && -r $quota_align_coverage)
 	      {
 		$quota_align_coverage =~ s/$DIR/$URL/;
-		$html .= qq{<br><span class='small link' onclick=window.open('$quota_align_coverage')>Quota Alignment output</span>};
+		$html .= qq{<br><span class='small link' onclick=window.open('$quota_align_coverage')>Quota Alignment Results</span>};
 	      }
 
 	    if ($final_dagchainer_file=~/gcoords/)
