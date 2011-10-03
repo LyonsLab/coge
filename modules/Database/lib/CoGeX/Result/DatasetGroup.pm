@@ -96,12 +96,82 @@ __PACKAGE__->has_many("dataset_connectors" => "CoGeX::Result::DatasetConnector",
 __PACKAGE__->has_many("genomic_sequences" => "CoGeX::Result::GenomicSequence", 'dataset_group_id');
 __PACKAGE__->belongs_to("organism" => "CoGeX::Result::Organism", 'organism_id');
 __PACKAGE__->belongs_to("genomic_sequence_type" => "CoGeX::Result::GenomicSequenceType", 'genomic_sequence_type_id');
-
+__PACKAGE__->has_many("user_group_data_connectors"=>"CoGeX::Result::UserGroupDataConnector","dataset_group_id");
 
 sub desc
   {
     return shift->description(@_);
   }
+
+
+################################################ subroutine header begin ##
+
+=head2 groups
+
+ Usage     : 
+ Purpose   : Returns the set of groups a user belongs to
+ Returns   : Array of Groups
+ Argument  : None
+ Throws    : None
+ Comments  : 
+
+
+
+=cut
+
+################################################## subroutine header end ##
+
+
+#sub groups{
+
+#	my $self = shift;
+
+#	my $group_data_connectors = $self->group_data_connectors();
+
+#	my @user_groups = ();
+
+#	foreach $group_data_connector ($user_group_connectors){
+
+#		my $user_group = $group_data_connector->user_group();
+#		push(@user_groups,$user_group);
+#	}
+
+#	return (@user_groups);
+#}
+
+
+################################################ subroutine header begin ##
+
+=head2 user_groups
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub user_groups(){
+
+    my $self = shift;
+
+    my @groups =();
+
+    foreach my $user_group_data_connector ($self->user_group_data_connectors()){
+        push (@groups,$user_group_data_connector->user_group());
+    }
+
+    return @groups;
+}
+
+
+
 
 ################################################ subroutine header begin ##
 

@@ -7,7 +7,7 @@ use warnings;
 use Data::Dumper;
 use POSIX;
 use base 'DBIx::Class::Core';
-use CoGeX::Result::Feature;
+#use CoGeX::Result::Feature; #need to figure this out and uncomment.  Going to case a lot of problems.
 use CoGeX::ResultSet::Dataset;
 use Text::Wrap;
 use Carp;
@@ -90,7 +90,8 @@ __PACKAGE__->add_columns(
 
 __PACKAGE__->set_primary_key("dataset_id");
 __PACKAGE__->has_many("features" => "CoGeX::Result::Feature", 'dataset_id');
-__PACKAGE__->has_many("dataset_connectors" => "CoGeX::Result::DatasetConnector", 'dataset_id', {join_type=>undef});
+__PACKAGE__->has_many("dataset_connectors" => "CoGeX::Result::DatasetConnector", 'dataset_id');
+__PACKAGE__->has_many("user_group_data_connectors" => "CoGeX::Result::UserGroupDataConnector", 'dataset_id');
 __PACKAGE__->belongs_to("data_source" => "CoGeX::Result::DataSource", 'data_source_id');
 
 
@@ -1091,4 +1092,37 @@ sub translation_type
       }
   }
 
+################################################ subroutine header begin ##
+
+=head2 reverse_complement
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub user_groups{
+
+    my $self = shift;
+
+    my @groups =();
+
+    foreach my $user_group_data_connector ($self->user_group_data_connectors()){
+	push (@groups,$user_group_data_connector->user_group());
+    }
+
+    return @groups;
+}
+
+
 1;
+
+

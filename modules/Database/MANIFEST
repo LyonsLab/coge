@@ -27,7 +27,6 @@ lib/CoGeX/Result/UserGroup.pm
 lib/CoGeX/Result/FeatureListConnector.pm
 lib/CoGeX/Result/UserGroupConnector.pm
 lib/CoGeX/Result/FeatureListGroup.pm
-lib/CoGeX/Result/UserGroupFeatureListPermissionConnector.pm
 lib/CoGeX/Result/FeatureListGroupImageConnector.pm
 lib/CoGeX/Result/UserSession.pm
 lib/CoGeX/Result/FeatureName.pm
@@ -35,6 +34,10 @@ lib/CoGeX/Result/WebPreferences.pm
 lib/CoGeX/Result/Work.pm
 lib/CoGeX/Result/WorkOrder.pm
 lib/CoGeX/Result/Workflow.pm
+lib/CoGeX/Result/Role.pm
+lib/CoGeX/Result/UserGroupConnector.pm
+lib/CoGeX/Result/RolePermissionConnector.pm
+lib/CoGeX/Result/GroupDataConnector.pm
 
 lib/CoGeX/ResultSet/Annotation.pm
 lib/CoGeX/ResultSet/DatasetGroup.pm

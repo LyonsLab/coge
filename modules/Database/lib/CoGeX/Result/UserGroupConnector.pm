@@ -1,74 +1,57 @@
 package CoGeX::Result::UserGroupConnector;
 
-# Created by DBIx::Class::Schema::Loader v0.03009 @ 2006-12-01 18:13:38
+# Created by DBIx::Class::Schema::Loader
+# DO NOT MODIFY THE FIRST PART OF THIS FILE
 
 use strict;
 use warnings;
 
 use base 'DBIx::Class::Core';
 
+
 =head1 NAME
 
-CoGeX::UserGroupConnector
-
-=head1 SYNOPSIS
-
-This object uses the DBIx::Class to define an interface to the C<user_group_connector> table in the CoGe database.
-
-=head1 DESCRIPTION
-
-
-Has columns:
-C<user_group_connector_id> (Primary Key)
-Type: INT, Default: undef, Nullable: no, Size: 10
-
-C<user_id>
-Type: INT, Default: "", Nullable: no, Size: 10
-
-C<user_group_id>
-Type: INT, Default: "", Nullable: no, Size: 10
-
-
-=head1 USAGE
-
-  use CoGeX;
-
-=head1 METHODS
+My::Schema::Result::UserGroupConnector
 
 =cut
 
 __PACKAGE__->table("user_group_connector");
-__PACKAGE__->add_columns(
-  "user_group_connector_id",  { data_type => "INT", default_value => undef, is_nullable => 0, size => 10 },
-  "user_id",  { data_type => "INT", default_value => "", is_nullable => 0, size => 10 },
-  "user_group_id",  { data_type => "INT", default_value => "", is_nullable => 0, size => 10 },
-);
-__PACKAGE__->set_primary_key("user_group_connector_id");
 
-1;
+=head1 ACCESSORS
 
+=head2 user_group_connector_id
 
+  data_type: 'integer'
+  is_auto_increment: 1
+  is_nullable: 0
 
-=head1 BUGS
+=head2 user_id
 
+  data_type: 'integer'
+  is_nullable: 0
 
-=head1 SUPPORT
+=head2 user_group_id
 
-
-=head1 AUTHORS
-
- Eric Lyons
- Brent Pedersen
-
-=head1 COPYRIGHT
-
-This program is free software; you can redistribute
-it and/or modify it under the same terms as Perl itself.
-
-The full text of the license can be found in the
-LICENSE file included with this module.
-
-
-=head1 SEE ALSO
+  data_type: 'integer'
+  is_nullable: 0
 
 =cut
+
+__PACKAGE__->add_columns(
+  "user_group_connector_id",
+  { data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
+  "user_id",
+  { data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
+  "user_group_id",
+  { data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
+);
+__PACKAGE__->set_primary_key("user_group_connector_id");
+__PACKAGE__->belongs_to("user"=>"CoGeX::Result::User",'user_id');
+__PACKAGE__->belongs_to("user_group"=>"CoGeX::Result::UserGroup",'user_group_id');
+
+# Created by DBIx::Class::Schema::Loader v0.07002 @ 2011-08-29 09:28:12
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:jJtMi2o83OBM+TjWpDuQsw
+
+
+# You can replace this text with custom content, and it will be preserved on regeneration
+1;

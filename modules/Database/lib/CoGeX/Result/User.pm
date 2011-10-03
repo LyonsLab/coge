@@ -6,7 +6,7 @@ use strict;
 use warnings;
 
 use base 'DBIx::Class::Core';
-
+use Data::Dumper;
 =head1 NAME
 
 CoGeX::User
@@ -81,7 +81,7 @@ __PACKAGE__->set_primary_key("user_id");
 __PACKAGE__->has_many('sessions'=>"CoGeX::Result::UserSession",'user_id');
 __PACKAGE__->has_many('works'=>"CoGeX::Result::Work",'user_id');
 __PACKAGE__->has_many('workflows'=>"CoGeX::Result::Workflow",'user_id');
-
+__PACKAGE__->has_many('user_group_connectors'=>"CoGeX::Result::UserGroupConnector",'user_id');
 
 
 ################################################ subroutine header begin ##
@@ -143,12 +143,118 @@ sub name
   }
 1;
 
+################################################ subroutine header begin ##
 
+=head2 user_groups
+
+ Usage     : 
+ Purpose   : Returns the set of groups a user belongs to
+ Returns   : Array of Groups
+ Argument  : None
+ Throws    : None
+ Comments  : 
+
+
+
+=cut
+
+################################################## subroutine header end ##
+
+
+sub user_groups{
+	
+
+	my $self = shift;
+	
+	
+	my @user_groups = ();
+	
+	foreach my $user_group_connector ($self->user_group_connectors()){
+	    push (@user_groups,$user_group_connector->group());
+	}
+	
+	return (@user_groups);
+}
+
+
+
+
+################################################ subroutine header begin ##
+
+=head2 add_to_group
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : Group Name
+ Throws    : None
+ Comments  : 
+
+
+
+=cut
+
+################################################## subroutine header end ##
+
+
+sub add_to_group(){
+
+
+    my $self = shift;
+
+    my %opts = @_;
+    my $coge = $opts{coge};
+    my $group_name = $opts{group_name};
+    
+    my $group = $coge->ResultSet('UserGroup')->find({name=>$group_name});
+
+    if($group){
+	
+	
+
+    }
+
+}
 
 =head1 BUGS
 
 
+
+
+################################################ subroutine header begin ##
+
+=head2 private_genomes
+
+ Usage     : 
+ Purpose   : Returns the set of private genomes a user has access to
+ Returns   : Array of datasets
+ Argument  : None
+ Throws    : None
+ Comments  : 
+
+
+
+=cut
+
+################################################## subroutine header end ##
+
+
+sub private_genomes{
+	
+	my $self = shift;
+	my @private_genomes= ();
+	foreach my $group ($self->groups()){
+	    push(@private_genomes,$group->private_genomes());
+	}
+	
+	    return @private_genomes;
+}
+
+
 =head1 SUPPORT
+
+
+
 
 
 =head1 AUTHORS

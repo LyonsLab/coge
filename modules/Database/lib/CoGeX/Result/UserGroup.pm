@@ -40,18 +40,21 @@ Type: VARCHAR, Default: undef, Nullable: yes, Size: 255
 
 __PACKAGE__->table("user_group");
 __PACKAGE__->add_columns(
-  "user_group_id",  { data_type => "INT", default_value => undef, is_nullable => 0, size => 10 },
-  "name",  { data_type => "VARCHAR", default_value => "", is_nullable => 0, size => 50 },
-  "description",
-  {
-    data_type => "VARCHAR",
-    default_value => undef,
-    is_nullable => 1,
-    size => 255,
-  },
+			 "user_group_id",  { data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
+			 "name",  { data_type => "VARCHAR", default_value => "", is_nullable => 0, size => 250 },
+			 "description",
+			 {
+			  data_type => "TEXT",
+			  default_value => undef,
+			  is_nullable => 1,
+			  size => 255,
+			 },
+			 "role_id",  { data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
 );
 __PACKAGE__->set_primary_key("user_group_id");
-
+__PACKAGE__->has_many('user_group_connectors'=>"CoGeX::Result::UserGroupConnector",'user_group_id');
+__PACKAGE__->has_many('group_data_connectors'=>"CoGeX::Result::UserGroupDataConnector",'user_group_id');
+__PACKAGE__->belongs_to('role'=>"CoGeX::Result::Role",'role_id');
 1;
 
 
@@ -77,5 +80,40 @@ LICENSE file included with this module.
 
 
 =head1 SEE ALSO
+
+################################################ subroutine header begin ##
+
+=head2 private genomes
+
+ Usage     : 
+ Purpose   : Returns the set of genomes associated with a group
+ Returns   : Array of Groups
+ Argument  : None
+ Throws    : None
+ Comments  : 
+
+
+
+=cut
+
+################################################## subroutine header end ##
+
+
+sub private_genomes(){
+
+    my $self = shift;
+    my @private_genomes=();
+
+    foreach my $group_dataset ($self->group_data_conectors()){
+	push(@private_genomes,$group_dataset->genome());
+    }
+
+    return @private_genomes;
+}
+
+
+
+
+
 
 =cut

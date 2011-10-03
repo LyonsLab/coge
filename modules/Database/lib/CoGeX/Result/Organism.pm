@@ -90,6 +90,36 @@ sub genomes
     return shift->dataset_groups;
   }
 
+
+################################################ subroutine header begin ##
+
+=head2 public genomes
+
+ Usage     : 
+ Purpose   : 
+ Returns   : 
+ Argument  : 
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+
+sub public_genomes
+{
+	
+	return shift->dataset_groups({restricted=>0});
+	
+}
+
+
+
+
 ################################################ subroutine header begin ##
 
 =head2 current_genome
