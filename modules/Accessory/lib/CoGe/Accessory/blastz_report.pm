@@ -1,5 +1,5 @@
 package CoGe::Accessory::blastz_report;
-
+ 
 use strict;
 use POSIX;
 use CoGe::Accessory::blastz_report::seq;

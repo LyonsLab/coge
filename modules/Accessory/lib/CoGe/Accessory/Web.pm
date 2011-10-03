@@ -12,6 +12,10 @@ use DBIxProfiler;
 use File::Basename;
 use File::Temp;
 use LWP::Simple qw(!get !head !getprint !getstore !mirror);
+use LWP::UserAgent; 
+use HTTP::Request;
+use XML::Simple;
+use CoGe::Accessory::LogUser;
 
 BEGIN {
   use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK $Q $cogex $TEMPDIR $BASEDIR);
@@ -173,29 +177,90 @@ sub self_or_default { #from CGI.pm
     return wantarray ? @_ : $Q;
 }
 
-sub login
-  {
-    my $form = new CGI;
-    my $url = "index.pl?url=".$form->url(-relative=>1, -query=>1);
+sub login_cas{
+	
+	my ($ticket,$this_url) = @_;
+	
+	
+	
+	my $ua = new LWP::UserAgent;
+
+	my $request = '<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"><SOAP-ENV:Header/><SOAP-ENV:Body><samlp:Request xmlns:samlp="urn:oasis:names:tc:SAML:1.0:protocol"  MajorVersion="1" MinorVersion="1" RequestID="_192.168.167.84.1024506224022"  IssueInstant="2010-05-13T16:43:48.099Z"><samlp:AssertionArtifact>'.$ticket.'</samlp:AssertionArtifact></samlp:Request></SOAP-ENV:Body></SOAP-ENV:Envelope>';
+
+	
+	my $request_ua = HTTP::Request->new(POST => 'https://auth.iplantcollaborative.org/cas/samlValidate?TARGET='.$this_url);
+	$request_ua->content($request);
+	$request_ua->content_type("text/xml; charset=utf-8");
+	my $response = $ua->request($request_ua);
+	
+	
+	print STDERR 'https://auth.iplantcollaborative.org/cas/samlValidate?TARGET='.$this_url.'\n';
+	my $result =$response->content;
+
+	
+	my $name;
+	my $fname;
+	my $lname;
+	my $email;
+	
+	if($result){
+		print STDERR $result;
+		($name,$fname,$lname,$email) = parse_saml_response($result);
+	}
+
+	
+	
+	
+	
+}
+
+sub parse_saml_response{
+	
+	my $response = $_[0];
+	
+	if($response =~ m/samlp:Success/){
+		
+		my $ref = XMLin($response);
+		
+		
+		my $user_id = $ref->{'SOAP-ENV:Body'}->{Response}->{Assertion}->{AttributeStatement}->{Subject}->{NameIdentifier};
+		my $user_lname = $ref->{'SOAP-ENV:Body'}->{Response}->{Assertion}->{AttributeStatement}->{Attribute}->[0]->{AttributeValue};
+		my $user_fname = $ref->{'SOAP-ENV:Body'}->{Response}->{Assertion}->{AttributeStatement}->{Attribute}->[2]->{AttributeValue};
+		my $user_email = $ref->{'SOAP-ENV:Body'}->{Response}->{Assertion}->{AttributeStatement}->{Attribute}->[1]->{AttributeValue};
+		print STDERR $user_id.'   '.$user_fname.'   '.$user_lname.'  '.$user_email;
+		
+		return ($user_id,$user_fname,$user_lname,$user_email);
+	}else{
+		return ('public','none','none','none');
+	}
+	
+	
+}
+
+
+#sub login
+ # {
+ #   my $form = new CGI;
+#    my $url = "index.pl?url=".$form->url(-relative=>1, -query=>1);
 #    print STDERR $url;
-    $url =~ s/&|;/:::/g;
-    my $html1 = qq{
-<SCRIPT language="JavaScript">
-window.location=$url;
-</SCRIPT>
-};
-    my $html = qq{
-<html>
-<head>
-<title>CoGe:  the best program of its kind, ever.</title>
-<meta http-equiv="REFRESH" content="1;url=$url"></HEAD>
-<BODY>
-You are not logged in.  You will be redirected to <a href = $url>here</a> in one second.
-</BODY>
-</HTML>
-};
-    return $html;
-  }
+#    $url =~ s/&|;/:::/g;
+#    my $html1 = qq{
+#<SCRIPT language="JavaScript">
+##window.location=$url;
+#</SCRIPT>
+#};
+#    my $html = qq{
+#<html>
+#<head>
+#<title>CoGe:  the best program of its kind, ever.</title>
+#<meta http-equiv="REFRESH" content="1;url=$url"></HEAD>
+#<BODY>
+#You are not logged in.  You will be redirected to <a href = $url>here</a> in one second.
+##</BODY>
+#</HTML>
+#};
+#    return $html;
+#  }
 
 sub ajax_func
   {
