@@ -40,9 +40,9 @@ $DBUSER = $P->{DBUSER};
 $DBPASS = $P->{DBPASS};
 $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
 my $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
-#$coge->storage->debugobj(new DBIxProfiler());
-#$coge->storage->debug(1);
-#print STDERR "DSGID: $dsgid\n";
+
+
+
 my @layers;
 foreach my $layer ($form->param('layers'))
   {

@@ -8,6 +8,7 @@ use HTML::Template;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use CGI::Ajax;
+use Digest::MD5 qw(md5_base64);
 use DBI;
 use File::Path;
 no warnings 'redefine';

@@ -8,12 +8,10 @@ function place_cookie(valid, cookie, url)
     if (valid == 'true') 
      {
        document.cookie = cookie;
-       window.location = url;
+     //  window.location = url;
+	alert('valid');
      }
-    else
-     {
-	$('#message').html('<font class="error">Invalid login</font>');       
-     }
+   
   }
 
 function delete_cookie()  {
@@ -39,6 +37,13 @@ svg.circle(75, 75, 50,
 
 }
 
+<TMPL_IF NAME="LOGINX">
+	window.onload = function(){
+			login(['args__ticket','args__<TMPL_VAR NAME="TICKET_T">'],[place_cookie]);
+	}
+
+</TMPL_IF>
+
 
 $(function() {		$("#accordion").accordion({collapsible:true, active: false});	});
 $(function() {		$("#accordion2").accordion({collapsible:true, active: false, disabled:true});	});
@@ -49,7 +54,7 @@ function onEnter(e){
   if (!e){ 
    var e = window.event;}
   if(e.which == 13){
-login(['uname', 'pwd','url'],[place_cookie]);
+//	login([<TMPL_VAR NAME="TICKET_T">],[place_cookie]);
  }
 }
 
@@ -122,7 +127,7 @@ What is CoGe?<br>
     <h3><a href="#">CoGe is a comparative genomics platform for all genomes across all domains of life in any state of assembly</a></h3>
     <div><img class ="ui-corner-all ui-widget-content" style="width: 80%" src=./picts/home_page/OrganismView-search.png><br>Searching for organisms with "proteo" in their taxonomic description.<br><span class=link onclick="window.open('OrganismView.pl?org_desc=proteo')">Open this search in OrganismView</span></div>
     <h3><a href="#">CoGe allows you to easily find and analyze genomic data from any organism</a></h3>
-    <div><img class ="ui-corner-all ui-widget-content" style="width: 80%" src=./picts/home_page/GenomeView-MG1655.png><br>Visualizing a prophage insertion in E. coli K12 MG1655 by differences in genome structure and GC3 content.<br><span class=link onclick="window.open('GenomeView.pl?z=7&x=570000&dsgid=4242&chr=1')">Visualize this genomic region in GenomeView</span></div>
+    <div><img class ="ui-corner-all ui-widget-content" style="width: 80%" src=./picts/home_page/GenomeView-MG1655.png><br>Visualizing a prophage insertion in E. coli K12 MG1655 by differences in genome structure and GC3 content.<br><span class=link onclick="window.open('GenomeView.pl?z=7&x=570000&dsgid=1&chr=1')">Visualize this genomic region in GenomeView</span></div>
     <h3><a href="#">CoGe provides analysis tools for finding and comparing homologous sequences from any set of organisms</a></h3>
     <div><img class ="ui-corner-all ui-widget-content" style="width: 80%" src=./picts/home_page/600px-CoGeBlast-At1g02120-eval.png><br>Using CoGeBlast to find and evaluate potential homologous hits.<br><span class="link" onclick="window.open('CoGeBlast.pl')">Open CoGeBlast</span></div>
     <h3><a href="#">CoGe allows you to find syntenic regions from between or within any organism</a></h3>
@@ -153,7 +158,7 @@ New to CoGe?<br>
 <div style="clear: both;"> </div>
 <hr>
 CoGe's Entrance Tools:<br>
-<div style="font-size: .6em; width: 500px">CoGe's unqiue system architecture provides many <a ref="http://genomevolution.org/wiki/index.php/Documentation#Web_Application_Documentation">interconnected tools</a> to create <a ref="http://genomevolution.org/wiki/index.php/Open-ended_Analysis_Network">open-ended analysis networks</a>.  While there is no defined place to start an anlysis on CoGe, here are the common tools used to begin an analysis:</div>
+<div style="font-size: .6em; width: 500px">CoGe's unique system architecture provides many <a ref="http://genomevolution.org/wiki/index.php/Documentation#Web_Application_Documentation">interconnected tools</a> to create <a ref="http://genomevolution.org/wiki/index.php/Open-ended_Analysis_Network">open-ended analysis networks</a>.  While there is no defined place to start an anlysis on CoGe, here are the common tools used to begin an analysis:</div>
 <div style="font-size: 0.7em; width: 500px; float: left">
 <div id="accordion3">
    <TMPL_LOOP NAME=ACTIONS>
@@ -168,17 +173,11 @@ Number returned: <input id=limit class=backbox type=textbox size=3 value=20><spa
      <div id=latest_genomes></div>
    </div>
 </div>
-
-<div style="text-align: center">
- <hr>
- <a href="http://www.nsf.gov" target= "_new"><img src="./picts/nsf-logo.gif" border=0 width = 100px></a>
- <img src="./picts/uc_seal.gif" border=0 width=100px><br>
- <a href="http://iplantcollaborative.org" target="_new"><img src="./picts/IPL_logo_1C_small.gif" border = 0 height = 70px></a> 
-</div>
 </div>
 <div style="float:left; width:50px">&nbsp</div>
 
 <div id=crossfade style="float: left;"></div>
+
 <div style="clear: both;"> </div>
 
 

@@ -25,7 +25,7 @@ $ENV{THREADS} =$MAX_PROC;
 
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
-($USER) = CoGe::Accessory::LogUser->get_user();
+
 $TEMPDIR = $P->{TEMPDIR}."CoGeAlign";
 $TEMPURL = $P->{TEMPURL}."CoGeAlign";
 mkpath ($TEMPDIR,0,0777) unless -d $TEMPDIR;
@@ -38,6 +38,45 @@ $DBUSER = $P->{DBUSER};
 $DBPASS = $P->{DBPASS};
 $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
 $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
+
+($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>'cogec',coge=>$coge);
+
+if($FORM->param('ticket') && $USER->user_name eq "public"){
+
+	my  @values = split(/'?'/,$FORM->url());
+
+	
+	my 	($name,$fname,$lname,$email,$login_url) = CoGe::Accessory::Web::login_cas($FORM->param('ticket') ,$values[0]);
+
+
+
+	if($name){
+		my ($valid,$cookie,$urlx) = login(name=>$name,url=>$login_url);
+		
+		if($valid eq 'true'){
+			print STDERR 'valid';
+		}else{
+				
+				my $new_row = $coge->resultset('User')->create({user_name=>$name,first_name=>$fname,last_name=>$lname,email=>$email});
+				$new_row->insert;
+				print STDERR 'not valid';
+				($valid,$cookie,$urlx) = login(name=>$name, url=>$login_url);
+		}
+		
+		print STDERR $cookie;
+		print "Set-Cookie: $cookie\n";
+		
+	}
+	$FORM->delete_all();
+	
+	
+
+
+	($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>'cogec',coge=>$coge);
+	print 'Location:'.$FORM->redirect($login_url);
+	print STDERR "***".$USER->user_name;
+}
+
 
 $CLUSTAL = $P->{CLUSTALW};
 $NEWICKTOPS = $P->{NEWICKTOPS};

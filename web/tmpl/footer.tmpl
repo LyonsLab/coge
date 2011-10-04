@@ -4,7 +4,7 @@
 <TMPL_IF NAME=LOGON>
 	<span class=small>Currently logged in as, <TMPL_VAR NAME=USER>  <a href="index.pl?logout=1" class="small">Sign-out</a></span>
 	<TMPL_ELSE>
-	 <a href="javascript:void(0)" onClick=sign_in() class="small">Sign-in</a>
+	 <a href="javascript:void(0)" onClick="login_cas();return true;" class="small">Sign-in</a>
 	</TMPL_IF>
     </span>
 <br><span class="xsmall">Date: <TMPL_VAR NAME=DATE> </span>
@@ -16,6 +16,13 @@
 
 
 <script type="text/javascript">
+
+function login_cas(){
+	document.location.href='http://auth.iplantcollaborative.org/cas/loginPost?service='+document.location.href;
+	
+	 return true;
+}
+
 var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
 document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
 </script>

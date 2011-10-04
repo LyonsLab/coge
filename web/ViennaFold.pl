@@ -6,6 +6,7 @@ use strict;
 use CGI;
 use LWP::Simple;
 use CoGeX;
+use Digest::MD5 qw(md5_base64);
 use CoGe::Accessory::Web;
 no warnings 'redefine';
 my $P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');

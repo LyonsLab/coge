@@ -11,6 +11,7 @@ use CoGe::Accessory::Web;
 use HTML::Template;
 use URI::Escape;
 use Spreadsheet::WriteExcel;
+use Digest::MD5 qw(md5_base64);
 use Benchmark;
 use DBIxProfiler;
 use CoGe::Accessory::genetic_code;

@@ -1,5 +1,7 @@
 #!/usr/bin/perl -w
 
+use AuthCAS;
+
 use strict;
 use CGI;
 use CGI::Cookie;
@@ -11,6 +13,11 @@ use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use Digest::MD5 qw(md5_base64);
 use CoGeX;
+use CGI::Log;
+use LWP::UserAgent; 
+use HTTP::Request;
+use XML::Simple;
+
 no warnings 'redefine';
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $USER $FORM $DATE $URL $update $coge);
 
@@ -18,7 +25,7 @@ $P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 $URL = $P->{URL};
 $FORM = new CGI;
-($USER) = CoGe::Accessory::LogUser->get_user();
+print STDERR $ENV{HOME};
 #print STDERR Dumper $USER->user_name;
 
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
@@ -34,15 +41,62 @@ $DBHOST = $P->{DBHOST};
 $DBPORT = $P->{DBPORT};
 $DBUSER = $P->{DBUSER};
 $DBPASS = $P->{DBPASS};
+
+print STDERR "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT.' '.$DBUSER;
+
 $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
 $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
-print $pj->build_html($FORM, \&gen_html);
-#print $FORM->header, gen_html();
 
+($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>'cogec',coge=>$coge);
+
+if($FORM->param('ticket') && $USER->user_name eq "public"){
+
+	my  @values = split(/'?'/,$FORM->url());
+
+	
+	my 	($name,$fname,$lname,$email,$login_url) = CoGe::Accessory::Web::login_cas($FORM->param('ticket') ,$values[0]);
+
+
+
+	if($name){
+		my ($valid,$cookie,$urlx) = login(name=>$name,url=>$login_url);
+		
+		if($valid eq 'true'){
+			print STDERR 'valid';
+		}else{
+				
+				my $new_row = $coge->resultset('User')->create({user_name=>$name,first_name=>$fname,last_name=>$lname,email=>$email});
+				$new_row->insert;
+				print STDERR 'not valid';
+				($valid,$cookie,$urlx) = login(name=>$name, url=>$login_url);
+		}
+		
+		
+		print "Set-Cookie: $cookie\n";
+		
+	}
+	print STDERR $login_url;
+	print 'Location:'.$FORM->redirect($login_url);
+
+	($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>'cogec',coge=>$coge);
+
+	print STDERR "***".$USER->user_name;
+	
+	$USER->user_groups();
+}
+
+
+print $FORM->header, gen_html();
+
+
+
+#print $pj->build_html($FORM, \&gen_html);
 
 
 sub gen_html
   {
+
+	
     my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
     $template->param(TITLE=>'The Place to <span style="color: #119911">Co</span>mpare <span style="color: #119911">Ge</span>nomes');
     $template->param(PAGE_TITLE=>'ANKoCG');
@@ -87,15 +141,21 @@ sub gen_html
     #$template->param(DEV=>1);
     my $html;
     $html .= $template->output;
+	
+	
+	
     return $html;
   }
 
 sub gen_body
   {
+	
+
     my $tmpl = HTML::Template->new(filename=>$P->{TMPLDIR}.'index.tmpl');
     my $html;
     my $disable = 1;
     $disable = 0 if $FORM->param('wheel');
+	
     if ($update)
       {
 	$tmpl->param(update=>1);
@@ -114,18 +174,37 @@ sub gen_body
         $tmpl->param(url=>$url);
      }
     if ($FORM->param('logout'))
-      {
-	my $session = md5_base64($USER->user_name.$ENV{REMOTE_ADDR});
-	$session =~ s/\+/1/g;
-	($session) = $coge->resultset('UserSession')->find({session=>$session});
-	$session->delete if $session;
-	$tmpl->param(READY=>"delete_cookie();");
-	$tmpl->param(LOGIN=>1);
-      }
-    $tmpl->param(LOGIN=>1) if $FORM->param('login');
-    $html .= $tmpl->output;
+    {
+			my $url ='http://coge.iplantcollaborative.org/coge_ray/';
+			my %cookies = fetch CGI::Cookie;
+			if(ref $cookies{'cogec'}){
+				
+				my %session = $cookies{'cogec'}->value;
+
+			    $url = $session{url};
+
+				print STDERR "....->  " .$url;
+			}
+			my $session = md5_base64($USER->user_name.$ENV{REMOTE_ADDR});
+			$session =~ s/\+/1/g;
+			($session) = $coge->resultset('UserSession')->find({session=>$session});
+			$session->delete if $session;
+			$tmpl->param(READY=>"delete_cookie();");
+		#	$FORM->redirect("https://auth.iplantcollaborative.org/cas/logout?service=".$url."&gateway=1");
+		#	$FORM->redirect("https://auth.iplantcollaborative.org/cas/logout?service=".$url."&gateway=1");
+			print "Location: ".$FORM->redirect("https://auth.iplantcollaborative.org/cas/logout?service=".$url."&gateway=1");
+    }else{
+    	$tmpl->param(LOGIN=>1) if $FORM->param('login');
+    	$html .= $tmpl->output;
+   	}
+
+	
     return $html;
   }
+
+
+
+
 
 sub actions
   {
@@ -203,28 +282,30 @@ sub actions
 
 sub login
   {
-    my ($name, $pwd, $url) = @_;
+	#$my $self= shift;
+	
+	my %opts=@_;
+    my $name = $opts{name};
+	my $url = $opts{url} ;
     my ($u) = $coge->resultset('User')->search({user_name=>$name});
-    my $pwdc = $u->check_passwd(pwd=>$pwd) if $u;
-    $url = $FORM->param('url') unless $url;
-    $url = $FORM->url() unless $url;
-    if ($pwdc)
-      {
-	my $session = md5_base64($name.$ENV{REMOTE_ADDR});
-	$session =~ s/\+/1/g;
-	my $sid = $coge->log_user(user=>$u,session=>$session);
-	my $c = CoGe::Accessory::LogUser->gen_cookie(session=>$session);
-	return ('true', $c, $url );
-      }
-    elsif ($name =~ /^public$/i)
-      {
-	my $c = CoGe::Accessory::LogUser->gen_cookie(session=>"public");
-	return ('true', $c,  $url);
-      }
-    else
-      {
-	return ('false',undef, $url);
-      }
+
+   if ($u)
+    {
+
+     my $session = md5_base64($name.$ENV{REMOTE_ADDR});
+      $session =~ s/\+/1/g;
+      my $sid = $coge->log_user(user=>$u,session=>$session);
+	 
+      my $c = CoGe::Accessory::LogUser->gen_cookie(session=>$session,cookie_name=>'cogec',url=>$url);
+  	
+      return ('true', $c, $url );
+    }
+   else 
+    {
+    	my $c = CoGe::Accessory::LogUser->gen_cookie(session=>"public");
+    	return ('false', $c,  $url);
+    }
+   
   }
 
 sub get_latest_genomes
@@ -240,7 +321,7 @@ sub get_latest_genomes
 						       rows=>$limit,
 						      }
 						);
-    ($USER) = CoGe::Accessory::LogUser->get_user();
+  #  ($USER) = CoGe::Accessory::LogUser->get_user();
     my $html = "<table class=small>";
     $html .= "<tr><th>".join("<th>",qw(Organism  &nbsp Length&nbsp(nt) &nbsp Related Link ));
     my @opts;

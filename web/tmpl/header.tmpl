@@ -61,40 +61,7 @@ function browserAlert()
  alert('IE is not supported.  Please use FireFox: http://www.mozilla.com/en-US/firefox/');
 }
 
-/*
-//Login related functions
 
-function login_popup(){
-
-var html = "<DIV class=large>Please log on: <font class='small'>(You will need make sure to set <a href='http://www.mozilla.com/firefox/'>Firefox</a> accept <a href='http://en.wikipedia.org/wiki/HTTP_cookie'>cookies</a>)</font></div>";
-html = html+"<TABLE class='basic'><TR><TD>User Name:<TD><input class='backbox' type='text' name='uname' id='uname' size='10' onkeypress='onEnter(event);'>";
-html = html+"<TR><TD>Password:<TD><input class='backbox' type='password' name='pwd' id='pwd' size='10' onkeypress='onEnter(event);'></TABLE>";
-html = html+"<input type='hidden' id='url' value='<TMPL_VAR NAME=url>'><input type='submit' value='Log on' id='Login' onClick=login(['uname', 'pwd','url'],[place_cookie])><input type='submit' value='Cancel' id='Login' onClick=$('#signin_popup').hide(0);login(['args__public', 'args__none','url'],[place_cookie])>";
-
-var pos = {};
-
-$('#home').offset({ scroll: false }, pos);
-//alert(pos.top);
-var Top = pos.top+50;
-var Left = pos.left-200;
-
-
-$('#signin_popup').html(html).css({position: "absolute", top:''+Top, left:''+Left}).show(0);
-
-}
-
-function onEnter(e){
-  if (!e){ 
-   var e = window.event;}
-  if(e.which == 13){
-login(['uname', 'pwd','url'],[place_cookie]);
- }
-}
-
-
-
-//end of login related functions
-*/
 
 function sign_in(){
 	var my_url = "&url=";
