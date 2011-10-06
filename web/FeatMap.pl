@@ -213,7 +213,7 @@ sub gen_html
     #print STDERR Dumper \$feat_list;
     return unless @$feat_list;
     
-    $cogeweb = CoGe::Accessory::Web::initialize_basefile(prog=>"FeatMap");
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(tempdir=>$TEMPDIR);
     my $width = $opts{width} || 1200;
     my $image_filename = $cogeweb->basefile;
     my $height = ($width / 16) <= 64 ? ($width / 16) : 64;
