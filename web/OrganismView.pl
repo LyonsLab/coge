@@ -17,7 +17,7 @@ no warnings 'redefine';
 
 
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $coge $HISTOGRAM %FUNCTION $P);
-$P = CoGe::Accessory::Web::get_defaults("/opt/apache/coge_ray/coge.conf");
+$P = CoGe::Accessory::Web::get_defaults("./coge.conf");
 $ENV{PATH} = $P->{COGEDIR};
 $ENV{irodsEnvFile} = "/var/www/.irods/.irodsEnv";
 
@@ -48,8 +48,6 @@ $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 #$coge->storage->debug(1);
 
 ($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>'cogec',coge=>$coge);
-
-print STDERR $USER->user_name;
 
 if($FORM->param('ticket') && $USER->user_name eq "public"){
 
@@ -333,12 +331,12 @@ sub get_orgs
     $html .= join ("\n", @opts);
     $html .= "\n</SELECT>\n";
     $html =~ s/OPTION/OPTION SELECTED/ unless $html =~ /SELECTED/;
-    my $opts;
+    my $opts = "?";
     $opts .= "name=$name;" if $name;
     $opts .= "desc=$desc;" if $desc;
     $opts .= "oid=$oid;" if $oid;
     $opts .= "dsgid=$dsgid;" if $dsgid;
-    $html .= qq{<br><span class='link small' onclick="window.open('get_org_list.pl?$opts');">Download Organism List</span>};
+    $html .= qq{<br><span class='link small' onclick="window.open('get_org_list.pl$opts');">Download Organism List</span>};
     return $html, scalar @opts;
   }
 
