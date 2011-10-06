@@ -551,7 +551,7 @@ sub generate_excel_file
     my $accn_list = shift;
     $accn_list =~ s/^,//;
     $accn_list =~ s/,$//;
-    $cogeweb = CoGe::Accessory::Web::initialize_basefile(prog=>"FeatList");
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(tempdir=>$TEMPDIR);
     my $basename = $cogeweb->basefile;
     my ($filename) = $basename =~ /FeatList\/(FeatList_.+)/;
     my $workbook = Spreadsheet::WriteExcel->new("$TEMPDIR/Excel_$filename.xls");
