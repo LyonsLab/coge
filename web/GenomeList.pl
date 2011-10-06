@@ -779,7 +779,7 @@ sub send_to_SynFind #send to SynFind
     
     $accn_list =~ s/^,//;
     $accn_list =~ s/,$//;
-    $cogeweb = CoGe::Accessory::Web::initialize_basefile(prog=>"GenomeList");
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(tempdir=>$TEMPDIR);
     my $basename = $cogeweb->basefilename;
     my $file = $TEMPDIR."$basename.faa";
     open (OUT, ">$file");
@@ -801,7 +801,7 @@ sub generate_excel_file
     my $accn_list = $args{accn};
     $accn_list =~ s/^,//;
     $accn_list =~ s/,$//;
-    $cogeweb = CoGe::Accessory::Web::initialize_basefile(prog=>"GenomeList");
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(tempdir=>$TEMPDIR);
     my $basename = $cogeweb->basefilename;
     my $file = "$TEMPDIR/Excel_$basename.xls";
     my $workbook = Spreadsheet::WriteExcel->new($file);
@@ -868,7 +868,7 @@ sub generate_excel_file
     my $accn_list = $args{accn};
     $accn_list =~ s/^,//;
     $accn_list =~ s/,$//;
-    $cogeweb = CoGe::Accessory::Web::initialize_basefile(prog=>"GenomeList");
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(tempdir=>$TEMPDIR);
     my $basename = $cogeweb->basefilename;
     my $file = "$TEMPDIR/$basename.csv";
     open (OUT, ">$file");
