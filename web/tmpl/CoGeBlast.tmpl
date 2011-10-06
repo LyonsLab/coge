@@ -26,6 +26,7 @@ $(document).ready(function(){
   
    get_seq('coge_radio');
   pageObj.waittime=1000;
+  pageObj.tempdir="<TMPL_VAR NAME=TEMPDIR>";
    <TMPL_VAR NAME="document_ready">
 });
 
@@ -893,7 +894,7 @@ window.open('MatrixView.pl?matrix='+matrix);
     var waittime = pageObj.waittime;
     pageObj.waittime = pageObj.waittime*2;
     message+="<br/>Next progress check in "+waittime/1000+" seconds.";
-    setTimeout("read_log(['args__logfile', 'args__'+pageObj.basename, 'args__prog','args__CoGeBlast'], [monitor_log])",waittime);
+    setTimeout("read_log(['args__logfile', 'args__'+pageObj.basename, 'args__tempdir', 'args__'+pageObj.tempdir], [monitor_log])",waittime);
   }
   if (message) $('#log_text').html("<div class='small'>"+message+'</div>');
 }
