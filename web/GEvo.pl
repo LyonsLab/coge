@@ -233,32 +233,25 @@ sub loading
 sub gen_html
   {
     my $html;# =  "Content-Type: text/html\n\n";
-    unless ($USER)
-      {
-	$html = login();
-      }
-    else
-      {
-	my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
-	$template->param(LOGO_PNG=>"GEvo-logo.png");
-	$template->param(TITLE=>'Genome Evolution Analysis');
-	$template->param(PAGE_TITLE=>'GEvo');
-	$template->param(HELP=>'/wiki/index.php?title=GEvo');
-	my $name = $USER->user_name;
-        $name = $USER->first_name if $USER->first_name;
-        $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
-        $template->param(USER=>$name);
-
-	$template->param(LOGON=>1) unless $USER->user_name eq "public";
-	$template->param(DATE=>$DATE);
-	$template->param(NO_BOX=>1);
-	$template->param(BODY=>gen_body());
-	my $prebox = HTML::Template->new(filename=>$P->{TMPLDIR}.'GEvo.tmpl');
-	$prebox->param(RESULTS_DIV=>1);
-	$template->param(PREBOX=>$prebox->output);
-	$template->param(ADJUST_BOX=>1);
-	$html .= $template->output;
-      }
+    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
+    $template->param(LOGO_PNG=>"GEvo-logo.png");
+    $template->param(TITLE=>'Genome Evolution Analysis');
+    $template->param(PAGE_TITLE=>'GEvo');
+    $template->param(HELP=>'/wiki/index.php?title=GEvo');
+    my $name = $USER->user_name;
+    $name = $USER->first_name if $USER->first_name;
+    $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
+    $template->param(USER=>$name);
+    
+    $template->param(LOGON=>1) unless $USER->user_name eq "public";
+    $template->param(DATE=>$DATE);
+    $template->param(NO_BOX=>1);
+    $template->param(BODY=>gen_body());
+    my $prebox = HTML::Template->new(filename=>$P->{TMPLDIR}.'GEvo.tmpl');
+    $prebox->param(RESULTS_DIV=>1);
+    $template->param(PREBOX=>$prebox->output);
+    $template->param(ADJUST_BOX=>1);
+    $html .= $template->output;
     return $html;
   }
 
@@ -570,6 +563,8 @@ sub gen_body
     $template->param(OPTIONS=>1);
     $template->param(ALIGNMENT_PROGRAMS=>algorithm_list($prog));
     $template->param(SAVE_SETTINGS=>gen_save_settings($num_seqs)) unless !$USER || $USER->user_name =~ /public/i;
+    $template->param('TEMPDIR'=>$TEMPDIR);
+
     $box->param(BODY=>$template->output);
   
     my $html;
@@ -613,11 +608,11 @@ sub run
     my $gen_prot_sequence =0; #flag for generating fasta file of protein_sequence;
     $gen_prot_sequence = 1 if $analysis_program eq "GenomeThreader";
     my $basefilename = $opts{basefile};
-    $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$basefilename, prog=>"GEvo");
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$basefilename, tempdir=>$TEMPDIR);
 ###### working on basefile name initialization problems
     if (!$basefilename || $basefilename eq "undefined")
       {
-	$cogeweb = CoGe::Accessory::Web::initialize_basefile(prog=>"GEvo");
+	$cogeweb = CoGe::Accessory::Web::initialize_basefile(tempdir=>$TEMPDIR);
 	$basefilename = $cogeweb->basefilename;
       }
 ######
@@ -4034,7 +4029,7 @@ sub get_image_info
     my $idx = $opts{id};
     my $basefilename = $opts{basename};
     return ("no opts specified") unless ($idx && $basefilename);
-    $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$basefilename, prog=>"GEvo"); 
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$basefilename, tempdir=>$TEMPDIR); 
     my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
     my $query = qq{select * from image_info where id = $idx;};
     my ($id, $display_id, $name, $title, $px_witdth, $bpmin, $bpmax, $dsid, $chromosome, $rc, $px_height) = $dbh->selectrow_array($query);
