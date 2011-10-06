@@ -104,7 +104,7 @@ sub private_genomes(){
     my $self = shift;
     my @private_genomes=();
 
-    foreach my $group_dataset ($self->group_data_conectors()){
+    foreach my $group_dataset ($self->group_data_connectors()){
 	push(@private_genomes,$group_dataset->genome());
     }
 

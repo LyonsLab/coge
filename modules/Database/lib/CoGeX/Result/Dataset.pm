@@ -1109,7 +1109,7 @@ See Also   :
 
 ################################################## subroutine header end ##
 
-sub user_groups{
+sub user_groups(){
 
     my $self = shift;
 
@@ -1121,7 +1121,6 @@ sub user_groups{
 
     return @groups;
 }
-
 
 1;
 

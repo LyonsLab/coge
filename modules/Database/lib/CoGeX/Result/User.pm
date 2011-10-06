@@ -170,7 +170,7 @@ sub user_groups{
 	my @user_groups = ();
 	
 	foreach my $user_group_connector ($self->user_group_connectors()){
-	    push (@user_groups,$user_group_connector->group());
+	    push (@user_groups,$user_group_connector->user_group());
 	}
 	
 	return (@user_groups);
@@ -243,12 +243,56 @@ sub private_genomes{
 	
 	my $self = shift;
 	my @private_genomes= ();
-	foreach my $group ($self->groups()){
+	foreach my $group ($self->user_groups()){
 	    push(@private_genomes,$group->private_genomes());
 	}
 	
 	    return @private_genomes;
 }
+
+
+
+################################################ subroutine header begin ##
+
+=head2 has_access_to_genome
+
+ Usage     : 
+ Purpose   : Returns the set of private genomes a user has access to
+ Returns   : Array of datasets
+ Argument  : None
+ Throws    : None
+ Comments  : 
+
+
+
+=cut
+
+################################################## subroutine header end ##
+
+sub has_access_to_genome{
+	
+	my $self = shift @_;
+	
+	my %opts = @_;
+	
+	my $dsg = $opts{genome};
+	
+	my @genomes = $self->private_genomes();
+	print $dsg->dataset_group_id;
+	my @found=();
+	
+	foreach my $genome(@genomes){
+
+	    if($dsg->dataset_group_id==$genome->dataset_group_id){
+		return 1;
+	    }
+	}
+	return 0;
+
+	
+	
+}
+
 
 
 =head1 SUPPORT
