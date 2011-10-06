@@ -314,6 +314,7 @@ sub gen_body
   $template->param(SAVE_DISPLAY=>1) unless $USER->user_name eq "public";
  
     $template->param(document_ready=>$db_list) if $db_list;
+    $template->param(TEMPDIR=>$TEMPDIR);
     my $resultslimit = $RESULTSLIMIT;
     $resultslimit = $prefs->{'resultslimit'} if $prefs->{'resultslimit'};
     $template->param(RESULTSLIMIT=>$resultslimit);
@@ -480,6 +481,7 @@ sub get_orgs
 $html .= qq{<SELECT id="org_id" SIZE="8" MULTIPLE"><option id=null_org>Please search</option></SELECT><input type=hidden id=gstid>\n};
 	return $html;
       }
+   
     ($USER) = CoGe::Accessory::LogUser->get_user();
     my @opts;
     foreach my $item (sort {uc($a->name) cmp uc($b->name)} @db)
@@ -582,7 +584,7 @@ sub get_dsg_for_blast_menu
 
   sub generate_basefile
     {
-      $cogeweb = CoGe::Accessory::Web::initialize_basefile(prog=>"CoGeBlast", tempdir=>$P->{TEMPDIR});
+      $cogeweb = CoGe::Accessory::Web::initialize_basefile(tempdir=>$TEMPDIR);
       return $cogeweb->basefilename;
     }
 
@@ -602,7 +604,7 @@ sub blast_search
     my $filter_query = $opts{filter_query};
     my $resultslimit = $opts{resultslimit} || $RESULTSLIMIT;
     my $basename = $opts{basename};
-    $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$basename, prog=>"CoGeBlast", tempdir=>$P->{TEMPDIR});
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$basename, tempdir=>$TEMPDIR);
 	
     #blastz params
     my $zwordsize = $opts{zwordsize};
@@ -1321,7 +1323,7 @@ sub get_hsp_info
     my $hsp_id = $opts{num};
     my $filename = $opts{blastfile};
     $filename =~ s/$TEMPDIR//;
-    $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$filename, prog=>"CoGeBlast", tempdir=>$P->{TEMPDIR});
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$filename, tempdir=>$TEMPDIR);
     my $dbfile = $cogeweb->sqlitefile;
     my $dbh = DBI->connect("dbi:SQLite:dbname=$dbfile","","");
     
@@ -1467,7 +1469,7 @@ sub generate_overview_image
      my @set = split/\n/, `ls $TEMPDIR/$basename*.blast`;
      my @reports;
      my $count = 1;
-     $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$basename,prog=>"CoGeBlast", tempdir=>$P->{TEMPDIR});
+     $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$basename, tempdir=>$TEMPDIR);
      foreach my $blast (@set){
        my $report = new CoGe::Accessory::blast_report({file=>$blast});
        my ($org_name) = $report->hsps->[$count-1]->subject_name =~ /^\s*(.*?)\s*\(/;
@@ -1774,7 +1776,7 @@ sub get_nearby_feats
     my %opts = @_;
     my $hsp_id = $opts{num};
     my $filename = $opts{basefile};
-    $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$filename, prog=>"CoGeBlast", tempdir=>$P->{TEMPDIR});
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$filename, tempdir=>$TEMPDIR);
     my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
     $hsp_id =~ s/^table_row// if $hsp_id =~ /table_row/;
     $hsp_id =~ s/^\d+_// if $hsp_id =~ tr/_/_/ > 1;
@@ -1912,7 +1914,7 @@ sub export_to_excel
   {
     my $accn_list = shift;
     my $filename = shift;
-    $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$filename, prog=>"CoGeBlast", tempdir=>$P->{TEMPDIR});
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$filename, tempdir=>$TEMPDIR);
     my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
     my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data WHERE name = ?});
 
@@ -2020,7 +2022,7 @@ sub generate_tab_deliminated
   {
     my $accn_list = shift;
     my $filename = shift;
-    my $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$filename, prog=>"CoGeBlast", tempdir=>$P->{TEMPDIR});
+    my $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$filename, tempdir=>$TEMPDIR);
     my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
     
     my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data WHERE name = ?});
@@ -2159,7 +2161,7 @@ sub export_hsp_info
 {
     my $accn = shift;
     my $filename = shift;
-    my $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$filename, prog=>"CoGeBlast", tempdir=>$P->{TEMPDIR});
+    my $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$filename, tempdir=>$TEMPDIR);
     my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
     
     my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data ORDER BY org,hsp_num});
@@ -2210,7 +2212,7 @@ sub export_hsp_info
 sub export_hsp_query_fasta
 {
     my $filename = shift;
-    my $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$filename, prog=>"CoGeBlast", tempdir=>$P->{TEMPDIR});
+    my $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$filename, tempdir=>$TEMPDIR);
     my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
 
     my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data});
@@ -2238,7 +2240,7 @@ sub export_hsp_subject_fasta
   {
     my $filename = shift;
     my $dna = 1 if shift;
-    my $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$filename, prog=>"CoGeBlast", tempdir=>$P->{TEMPDIR});
+    my $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$filename, tempdir=>$TEMPDIR);
     my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
 
     my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data});
@@ -2266,7 +2268,7 @@ sub export_hsp_subject_fasta
 sub export_alignment_file
 {
     my $filename = shift;
-    my $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$filename, prog=>"CoGeBlast", tempdir=>$P->{TEMPDIR});
+    my $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$filename, tempdir=>$TEMPDIR);
     my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
     
     my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data ORDER BY org,hsp_num});
