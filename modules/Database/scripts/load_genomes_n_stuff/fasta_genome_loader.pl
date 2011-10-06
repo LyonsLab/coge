@@ -11,7 +11,7 @@ use File::Path;
 use vars qw($DEBUG $coge $GENOMIC_SEQ_LEN $GO $ERASE);
 
 
-my ($nt_file, $nt_dir, $org_name, $org_desc, $org_id, $org_restricted, $source_name, $source_desc, $source_link, $source_id, $ds_name, $ds_desc, $ds_link, $ds_version, $ds_id, $chr, $seq_type_name, $seq_type_desc, $seq_type_id, $chr_basename, $add_chr_name, $use_fasta_header, $dsg_name, $dsg_desc, $dsg_version, $dsg_id, $restricted);
+my ($nt_file, $nt_dir, $org_name, $org_desc, $org_id, $org_restricted, $source_name, $source_desc, $source_link, $source_id, $ds_name, $ds_desc, $ds_link, $ds_version, $ds_id, $chr, $seq_type_name, $seq_type_desc, $seq_type_id, $chr_basename, $add_chr_name, $use_fasta_header, $dsg_name, $dsg_desc, $dsg_version, $dsg_id, $restricted, $db, $user, $pass);
 
 ##Example usage:
 #./fasta_genome_loader.pl -org_name "Allenigales" -source_id 24 -ds_name oldsuper2.fasta -ds_version 2 -use_fasta_header -nt ~/projects/genome/data/Selaginella_moellendorffii/pre-v2/oldsuper2.fasta
@@ -47,7 +47,10 @@ GetOptions ( "debug=s" => \$DEBUG,
 	     "seq_type_id=i"=>\$seq_type_id, # masked50 == id 2
 	     "chr_basename=s"=>\$chr_basename,
 	     "add_chr_name=s"=>\$add_chr_name,
-	     "use_fasta_header"=>\$use_fasta_header
+	     "use_fasta_header"=>\$use_fasta_header,
+	     "database|db=s"=>\$db,
+	    "user|u=s"=>\$user,
+	    "password|pw=s"=>\$pass,
 	   );
 
 $DEBUG = 1 unless defined $DEBUG; # set to '1' to get updates on what's going on
@@ -62,8 +65,8 @@ my $formatdb =  "/usr/bin/formatdb -p F -o T"; #path to blast's formatdb program
 
 
 
-my $connstr = 'dbi:mysql:dbname=coge;host=localhost;port=3306';
-$coge = CoGeX->connect($connstr, 'elyons', 'eagle7' );
+my $connstr = 'dbi:mysql:dbname=$db;host=localhost;port=3306';
+$coge = CoGeX->connect($connstr, $user, $pass );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 
@@ -257,10 +260,12 @@ sub process_nt_file
 	$chrtmp = $name if $use_fasta_header;
 	($chrtmp) = $name=~/^(\S+)/ unless $chrtmp || $add_chr_name;
 	$chrtmp = $name unless defined $chrtmp;
+	$chrtmp =~ s/^lcl\|//;
 	$chrtmp =~ s/chromosome//;
 	$chrtmp =~ s/^chr//;
 	$chrtmp =~ s/^0+//;
 	$chrtmp =~ s/^_+//;
+	$chrtmp =~ s/\s+/ /;
 	$chrtmp =~ s/^\s//;
 	$chrtmp =~ s/\s$//;
 	$chrtmp =0 unless $chrtmp;
