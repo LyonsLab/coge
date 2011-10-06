@@ -1,9 +1,9 @@
 <TMPL_IF NAME=SEQ_RETRIEVAL>
 
-<link rel="stylesheet" type="text/css" href="/CoGe/css/colorpicker.css" />
+<link rel="stylesheet" type="text/css" href="./css/colorpicker.css" />
 <script type="text/javascript" src="js/colorpicker.js"></script>
 <script src="http://ajax.googleapis.com/ajax/libs/swfobject/2.2/swfobject.js"></script>
-<script src="/CoGe/gobe/static/gobe.js" ></script>
+<script src="./gobe/static/gobe.js" ></script>
 <style type="text/css">
 	#red, #green, #blue {
 		float: left;
@@ -226,14 +226,14 @@ $(document).ready(function(){
  	 }
    $.ajaxSetup({
      type: "GET",
-     url: "/CoGe/GEvo.pl",
+     url: "GEvo.pl",
      cache: false,
    });
 set_up_tabs();
 set_up_sort();
   pageObj.nolog = 0;
   pageObj.waittime = 1000;
-
+  pageObj.tempdir="<TMPL_VAR NAME=TEMPDIR>";
  });
 
 function populate_page_obj(basefile)
@@ -483,12 +483,12 @@ function handle_results (html,w, h, img_base, n_images, gevo_link, basefilename,
             'freezable': getQueryParamValue('freezable') || 'false',
             'pad_gs'   : jQuery('#pad_gs') ? jQuery('#pad_gs').val()  : getQueryParamValue('pad_gs') || '0',
             'gsid'     : getQueryParamValue('gsid') || getQueryParamValue('genespace_id') || '0',
-            'gobe_url' : getQueryParamValue('base_url')|| '/CoGe/gobe/',
-            'img_url'  : getQueryParamValue('img_url')|| '/CoGe/tmp/GEvo/',
+            'gobe_url' : getQueryParamValue('base_url')|| './gobe/',
+            'img_url'  : getQueryParamValue('img_url')|| './tmp/GEvo/',
             'base_name': getQueryParamValue('base_name')|| img_base
         };
-    swfobject.embedSWF("/CoGe/gobe/flash/gobe.swf?<TMPL_VAR NAME="GOBE_VERSION">", "flashcontent", width, height, "9.0.0"
-                , "/CoGe/gobe/static/swfobject/expresssinstall.swf", flashVars, params, {}, function(){Gobe.swf=Gobe.get_movie();});
+    swfobject.embedSWF("./gobe/flash/gobe.swf?<TMPL_VAR NAME="GOBE_VERSION">", "flashcontent", width, height, "9.0.0"
+                , "./gobe/static/swfobject/expresssinstall.swf", flashVars, params, {}, function(){Gobe.swf=Gobe.get_movie();});
     for (i=1;i<=$('#num_seqs').val();i++)
      {
       if (!pageObj.orig_gbstarts) {pageObj.orig_gbstarts=[];}
@@ -669,7 +669,7 @@ function monitor_log(log)
     var waittime = pageObj.waittime;
     pageObj.waittime = pageObj.waittime*2;
     message+="<br/>Next progress check in "+waittime/1000+" seconds.";
-    if (ajax.length) {setTimeout("read_log(['args__logfile', 'args__'+pageObj.basefile, 'args__prog','args__GEvo'], [monitor_log])", waittime);}
+    if (ajax.length) {setTimeout("read_log(['args__logfile', 'args__'+pageObj.basefile, 'args__tempdir', 'args__'+pageObj.tempdir], [monitor_log])",waittime);}
   }
   else
   {
