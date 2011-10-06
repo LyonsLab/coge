@@ -6,6 +6,7 @@
 $(document).ready(function(){
   $("#tabs").tabs();
   <TMPL_VAR NAME="DOCUMENT_READY">
+  pageObj.tempdir="<TMPL_VAR NAME=TEMPDIR>";
 });
 
 //jQuery UI opts
@@ -257,7 +258,8 @@ function seq_type_search() {
     var waittime = pageObj.waittime;
     pageObj.waittime = pageObj.waittime*2;
     message+="<br/>Next progress check in "+waittime/1000+" seconds.";
-    setTimeout("read_log(['args__logfile', 'args__'+pageObj.basename, 'args__prog','args__SynFind'], [monitor_log])",waittime);
+    setTimeout("read_log(['args__logfile', 'args__'+pageObj.basename, 'args__tempdir', 'args__'+pageObj.tempdir], [monitor_log])",pageObj.waittime);
+//    setTimeout("read_log(['args__logfile', 'args__'+pageObj.basename, 'args__prog','args__SynFind'], [monitor_log])",waittime);
   }
 /*
   else
