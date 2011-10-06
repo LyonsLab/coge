@@ -253,7 +253,7 @@ sub run_alignment
     my %opts = @_;
     my $dsgids = $opts{dsgids};
     my $basename = $opts{basename};
-    $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$basename, prog=>"GenomeAlign");
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$basename, tempdir=>$TEMPDIR);
 
     $dsgids =~ s/^,+//;
     $dsgids =~ s/,+$//;
