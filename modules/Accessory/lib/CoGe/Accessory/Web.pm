@@ -194,7 +194,7 @@ sub login_cas{
 	my $response = $ua->request($request_ua);
 	
 	
-	print STDERR 'https://auth.iplantcollaborative.org/cas/samlValidate?TARGET='.$this_url.'\n';
+#	print STDERR 'https://auth.iplantcollaborative.org/cas/samlValidate?TARGET='.$this_url.'\n';
 	my $result =$response->content;
 
 	
@@ -204,7 +204,7 @@ sub login_cas{
 	my $email;
 	
 	if($result){
-		print STDERR $result;
+#		print STDERR $result;
 		($name,$fname,$lname,$email) = parse_saml_response($result);
 	}
 
@@ -227,7 +227,7 @@ sub parse_saml_response{
 		my $user_lname = $ref->{'SOAP-ENV:Body'}->{Response}->{Assertion}->{AttributeStatement}->{Attribute}->[0]->{AttributeValue};
 		my $user_fname = $ref->{'SOAP-ENV:Body'}->{Response}->{Assertion}->{AttributeStatement}->{Attribute}->[2]->{AttributeValue};
 		my $user_email = $ref->{'SOAP-ENV:Body'}->{Response}->{Assertion}->{AttributeStatement}->{Attribute}->[1]->{AttributeValue};
-		print STDERR $user_id.'   '.$user_fname.'   '.$user_lname.'  '.$user_email;
+#		print STDERR $user_id.'   '.$user_fname.'   '.$user_lname.'  '.$user_email;
 		
 		return ($user_id,$user_fname,$user_lname,$user_email);
 	}else{
@@ -307,10 +307,15 @@ sub read_log
     my %args = @_;
     my $logfile = $args{logfile};
     my $prog = $args{prog};
-#    print STDERR "Checking logfile $logfile\n";
+    my $tempdir = $args{tempdir};
+    $tempdir = $TEMPDIR unless $tempdir;
     return unless $logfile;
     $logfile .= ".log" unless $logfile =~ /log$/;
-    $logfile = $TEMPDIR."/$prog/$logfile" unless $logfile =~ /^$TEMPDIR/;
+    unless ($logfile =~ /^$tempdir/)
+      {
+	$logfile = "$prog/".$logfile if $prog;
+	$logfile = "$tempdir/".$logfile;
+      }
     return unless -r $logfile;
     my $str;
     open (IN, $logfile);
