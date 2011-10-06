@@ -257,12 +257,13 @@ sub gen_body
       }
     $template->param(DOCUMENT_READY=>$doc_ready) if $doc_ready;
     $template->param(SAVE_ORG_LIST=>1) unless $USER->user_name eq "public";
+    $template->param(TEMPDIR=>$TEMPDIR);
     return $template->output;
   }
   
 sub generate_basefile
     {
-      $cogeweb = CoGe::Accessory::Web::initialize_basefile(prog=>"SynFind");
+      $cogeweb = CoGe::Accessory::Web::initialize_basefile(tempdir=>$TEMPDIR);
       return $cogeweb->basefilename;
     }
 
@@ -749,7 +750,7 @@ sub go_synfind
     $scoring_function = "collinear" unless defined $scoring_function;
 
     my $synfind_link = $SERVER."SynFind.pl?fid=$fid;qdsgid=$source_dsgid;dsgid=$dsgids;ws=$window_size;co=$cutoff;sf=$scoring_function";
-    $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$basename, prog=>"SynFind");
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>tempdir=>$TEMPDIR);
     #need to blast source_dsg against each dsgids
     my @blast_results;
     my $html;
