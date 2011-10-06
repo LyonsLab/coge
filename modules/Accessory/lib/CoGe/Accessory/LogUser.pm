@@ -5,12 +5,6 @@ use CGI::Cookie;
 use Data::Dumper;
 use CoGeX::Result::User;
 
-
-<<<<<<< .mine
-$cookie_name = "cogec";
-
-=======
->>>>>>> .r847
 sub get_user
   {
     my $self = shift;
