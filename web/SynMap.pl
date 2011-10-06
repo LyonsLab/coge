@@ -954,7 +954,7 @@ sub generate_blast_db
   
   sub generate_basefile
 {
-	$cogeweb = CoGe::Accessory::Web::initialize_basefile(prog=>"SynMap", tempdir=>$P->{TEMPDIR});
+	$cogeweb = CoGe::Accessory::Web::initialize_basefile(tempdir=>$TEMPDIR);
 	return $cogeweb->basefilename;
 }
 
@@ -2334,7 +2334,7 @@ sub go
       {
 	return "<span class=alert>Problem generating dataset group objects for ids:  $dsgid1, $dsgid2.</span>";
       }
-    $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$basename, prog=>"SynMap", tempdir=>$P->{TEMPDIR});
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$basename, tempdir=>$TEMPDIR);
     my $synmap_link = $SERVER."SynMap.pl?dsgid1=$dsgid1;dsgid2=$dsgid2;c=$repeat_filter_cvalue;D=$dagchainer_D;g=$dagchainer_g;A=$dagchainer_A;w=$width;b=$blast;ft1=$feat_type1;ft2=$feat_type2;autogo=1";
     $synmap_link .= ";Dm=$Dm" if defined $Dm;
     $synmap_link .= ";gm=$gm" if defined $gm;
