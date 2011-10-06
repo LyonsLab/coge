@@ -291,8 +291,7 @@ sub run
     
     my %file_format = (NEXUS=>'nxs',PHYLIP=>'phy',GDE=>'gde',PIR=>'pir');
     
-    $cogeweb = CoGe::Accessory::Web::initialize_basefile(prog=>"CoGeAlign");
-    
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(prog=>"CoGeAlign", tempdir=>$TEMPDIR);
     my $seq_file = $cogeweb->basefile."_clustalw.infile";
 
 ##Check to make sure no spaces in fasta header
