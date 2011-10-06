@@ -4,22 +4,23 @@ use strict;
 use CoGeX;
 use Getopt::Long;
 
-my $connstr = 'dbi:mysql:dbname=coge;host=synteny.cnr.berkeley.edu;port=3306';
-my $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
-my ($dsgid, $delete_seqs);
+my ($dsgid, $delete_seqs, $db, $user, $pass);
 
 GetOptions (
 	    "dsgid=i"=>\$dsgid,
-	    "delete_seqs"=>\$delete_seqs
+	    "delete_seqs"=>\$delete_seqs,
+	    "database|db=s"=>\$db,
+	    "user|u=s"=>\$user,
+	    "password|pw=s"=>\$pass,
 	    );
 
 
-unless ($dsgid)
+unless ($dsgid && $db && $user && $pass)
   {
     print qq{
 welcome to $0
 
-Usage:  $0 -dsgid <database id for dataset group> -delete_seqs
+Usage:  $0 -dsgid <database id for dataset group> -delete_seqs -db <database name> -u <database user name> -pw <database password>
 
 This will delete the database entry for the dataset group, associated entries in the database_connector table, and the datasets if the datasets do not belong to another dataset group!  
 
@@ -27,6 +28,10 @@ To delete the genomic sequences associted with the dataset group, add flag -dele
   };
     exit;
   }
+
+my $connstr = "dbi:mysql:dbname=$db;host=localhost;port=3306";
+my $coge = CoGeX->connect($connstr, $user, $pass );
+
 
 
 my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
