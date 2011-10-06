@@ -9,12 +9,10 @@ except ImportError:
 import simplejson
 import urllib
 
-TMPDIR = "/opt/apache/CoGe/tmp/GEvo/"
+TMPDIR = "../tmp/GEvo/"
 if not os.path.exists(TMPDIR):
-    TMPDIR = os.path.join(os.path.dirname(__file__), "tmp")
+    TMPDIR = os.path.join(os.path.dirname(__file__), TMPDIR)
 DBTMPL = os.path.join(TMPDIR, "%s.sqlite")
-
-
 
 def getdb(dbname):
     db = sqlite3.connect(DBTMPL % dbname)
