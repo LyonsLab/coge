@@ -458,6 +458,7 @@ sub gen_body
     my $fid2 = 0;
     $fid2 = $FORM->param('fid2') if $FORM->param('fid2');
     $template->param('FID2'=>$fid2);
+    $template->param('TEMPDIR'=>$TEMPDIR);
     return $template->output;
   }
   
@@ -953,7 +954,7 @@ sub generate_blast_db
   
   sub generate_basefile
 {
-	$cogeweb = CoGe::Accessory::Web::initialize_basefile(prog=>"SynMap");
+	$cogeweb = CoGe::Accessory::Web::initialize_basefile(prog=>"SynMap", tempdir=>$P->{TEMPDIR});
 	return $cogeweb->basefilename;
 }
 
@@ -993,7 +994,7 @@ sub run_blast
     system "touch $outfile.running"; #track that a blast anlaysis is running for this
     ($x, $pre_command) =CoGe::Accessory::Web::check_taint($pre_command);
    CoGe::Accessory::Web::write_log("running:\n\t$pre_command" ,$cogeweb->logfile);
-    `/usr/bin/nice --adjustment=19 $pre_command`;
+    `/usr/bin/nice --adjustment=39 $pre_command`;
     system "/bin/rm $outfile.running" if -r "$outfile.running"; #remove track file
     unless (-s $outfile)
       {
@@ -2333,7 +2334,7 @@ sub go
       {
 	return "<span class=alert>Problem generating dataset group objects for ids:  $dsgid1, $dsgid2.</span>";
       }
-    $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$basename, prog=>"SynMap");
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$basename, prog=>"SynMap", tempdir=>$P->{TEMPDIR});
     my $synmap_link = $SERVER."SynMap.pl?dsgid1=$dsgid1;dsgid2=$dsgid2;c=$repeat_filter_cvalue;D=$dagchainer_D;g=$dagchainer_g;A=$dagchainer_A;w=$width;b=$blast;ft1=$feat_type1;ft2=$feat_type2;autogo=1";
     $synmap_link .= ";Dm=$Dm" if defined $Dm;
     $synmap_link .= ";gm=$gm" if defined $gm;
@@ -2473,7 +2474,7 @@ sub go
  	my $db = $org_dirs{$key}{db};
  	my $outfile = $org_dirs{$key}{blastfile};
 	CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
-	CoGe::Accessory::Web::write_log("Runing genome comparison", $cogeweb->logfile);
+	CoGe::Accessory::Web::write_log("Running genome comparison", $cogeweb->logfile);
 	CoGe::Accessory::Web::write_log("Running ".$ALGO_LOOKUP->{$blast}{displayname}, $cogeweb->logfile);
  	run_blast(fasta=>$fasta, blastdb=>$db, outfile=>$outfile, prog=>$blast);# unless -r $outfile;
  	$pm->finish;
