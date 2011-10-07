@@ -271,7 +271,7 @@ sub run_aragorn
 	my $email = $opts{email};
 	my $seq = $opts{seq};
 	
-	$cogeweb = CoGe::Accessory::Web::initialize_basefile(prog=>"tRNA");
+	$cogeweb = CoGe::Accessory::Web::initialize_basefile(tempdir=>$TEMPDIR);
     my $outfile = $cogeweb->basefile."_aragorn.output";
     
 	my $fasta_file = $seq !~ /undefined/ ? make_fasta_file($seq) : get_genome_fasta($orgid);
