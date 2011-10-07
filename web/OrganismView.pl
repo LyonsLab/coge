@@ -74,7 +74,7 @@ if($FORM->param('ticket') && $USER->user_name eq "public"){
 	
 	($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>'cogec',coge=>$coge);
 	print 'Location:'.$FORM->redirect($login_url);
-	print STDERR "***".$USER->user_name;
+	
 }
 
 
@@ -140,8 +140,6 @@ sub dispatch
 
 sub login
   {
-	#$my $self= shift;
-
 	my %opts=@_;
     my $name = $opts{name};
 	my $url = $opts{url} ;
@@ -182,6 +180,7 @@ sub gen_html
       }
     else
       {
+	
 	my ($body, $seq_names, $seqs) = gen_body();
 	my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
 #	$template->param(TITLE=>'Organism Overview');
@@ -541,8 +540,8 @@ sub get_dataset_group_info
     $html .= qq{<span class='link' onclick="window.open('SynMap.pl?dsgid1=$dsgid;dsgid2=$dsgid');">SynMap</span>};
     $html .= qq{&nbsp|&nbsp};
     $html .= qq{<span class='link' onclick="window.open('CoGeBlast.pl?dsgid=$dsgid');">CoGeBlast</span>};
-#    $html .= qq{&nbsp|&nbsp};
-#    $html .= qq{<span id=irods class='link' onclick="gen_data(['args__loading...'],['irods']);add_to_irods(['args__dsgid','args__$dsgid'],['irods']);">Send To iPlant Data Store</span>};
+    $html .= qq{&nbsp|&nbsp};
+    $html .= qq{<span id=irods class='link' onclick="gen_data(['args__loading...'],['irods']);add_to_irods(['args__dsgid','args__$dsgid'],['irods']);">Send To iPlant Data Store</span>};
     $html .= "</td></tr>";
 
 	

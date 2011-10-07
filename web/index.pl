@@ -14,9 +14,8 @@ use CoGe::Accessory::Web;
 use Digest::MD5 qw(md5_base64);
 use CoGeX;
 use CGI::Log;
-use LWP::UserAgent; 
-use HTTP::Request;
-use XML::Simple;
+
+
 
 no warnings 'redefine';
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $USER $FORM $DATE $URL $update $coge);
@@ -95,8 +94,6 @@ print $FORM->header, gen_html();
 
 sub gen_html
   {
-
-	
     my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
     $template->param(TITLE=>'The Place to <span style="color: #119911">Co</span>mpare <span style="color: #119911">Ge</span>nomes');
     $template->param(PAGE_TITLE=>'ANKoCG');
@@ -175,7 +172,7 @@ sub gen_body
      }
     if ($FORM->param('logout'))
     {
-			my $url ='http://coge.iplantcollaborative.org/coge_ray/';
+			my $url ='http://coge.iplantcollaborative.org/coge/';
 			my %cookies = fetch CGI::Cookie;
 			if(ref $cookies{'cogec'}){
 				
@@ -197,6 +194,10 @@ sub gen_body
     	$tmpl->param(LOGIN=>1) if $FORM->param('login');
     	$html .= $tmpl->output;
    	}
+
+	
+
+   
 
 	
     return $html;
@@ -282,6 +283,7 @@ sub actions
 
 sub login
   {
+
 	#$my $self= shift;
 	
 	my %opts=@_;
@@ -306,6 +308,7 @@ sub login
     	return ('false', $c,  $url);
     }
    
+
   }
 
 sub get_latest_genomes
