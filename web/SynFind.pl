@@ -750,7 +750,7 @@ sub go_synfind
     $scoring_function = "collinear" unless defined $scoring_function;
 
     my $synfind_link = $SERVER."SynFind.pl?fid=$fid;qdsgid=$source_dsgid;dsgid=$dsgids;ws=$window_size;co=$cutoff;sf=$scoring_function";
-    $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>tempdir=>$TEMPDIR);
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(tempdir=>$TEMPDIR);
     #need to blast source_dsg against each dsgids
     my @blast_results;
     my $html;
