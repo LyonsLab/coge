@@ -160,7 +160,7 @@ sub gen_body
     $template->param(FRONT_PAGE => 1) unless $content;
     if ($content)
       {
-	my $cogeweb = CoGe::Accessory::Web::initialize_basefile(prog=>"TreeView");
+	my $cogeweb = CoGe::Accessory::Web::initialize_basefile(tempdir=>$TEMPDIR);
 	my $basefile = $cogeweb->basefile;
 	my ($tree, $dot, $img, $imgmap) = generate_tree(content=>$content, basefile=>$basefile, zoom=>$zoom);
 	$img =~ s/$TEMPDIR/$TEMPURL/;
