@@ -513,7 +513,7 @@ sub gen_dsg_menu
     my @dsg_menu;
     foreach my $dsg (sort {$b->version <=> $a->version || $a->type->id <=> $b->type->id} $coge->resultset('DatasetGroup')->search({organism_id=>$oid},{prefetch=>['genomic_sequence_type']}))
       {
-	next if $USER->user_name =~ /public/i && $dsg->restricted;
+	next if $dsg->restricted && !$USER->has_access_to_genome(genome=>$dsg);
 	$dsgid = $dsg->id unless $dsgid;
 	my $name = join (", ", map{$_->name} $dsg->source) .": ";
 #	$name .= $dsg->name ? $dsg->name : $dsg->datasets->[0]->name;

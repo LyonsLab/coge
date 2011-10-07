@@ -328,7 +328,7 @@ sub get_latest_genomes
     my %org_names;
     foreach my $dsg (@db)
       {
-	next if $USER->user_name =~ /public/i && $dsg->organism->restricted;
+	next if $dsg->organism->restricted && $USER->has_access_to_genome(genome=>$dsg);
 	next if $org_names{$dsg->organism->name};
 	$org_names{$dsg->organism->name}=1;
 	my $orgview_link = "OrganismView.pl?oid=".$dsg->organism->id;

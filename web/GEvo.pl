@@ -3682,7 +3682,7 @@ sub dataset_search
 		    next;
 		  }
 		my $title = "$ds_name ($sname, v$ver)";
-		next if $USER->user_name =~ /public/i && ($ds->organism->restricted || $ds->restricted || $ds->groups->[0]->restricted);
+		next if $USER->has_access_to_genome(genome=>$ds->groups->[0]) && ($ds->organism->restricted || $ds->restricted || $ds->groups->[0]->restricted);
 		next if $sources{$ds->id} && $sources{$ds->id}{typeid} < $typeid;
 		if ($dsgid && ! $dsid)
 		  {

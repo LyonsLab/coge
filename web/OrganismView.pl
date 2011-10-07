@@ -291,6 +291,11 @@ sub get_orgs
     my $oid = $opts{oid};
     my $dsgid = $opts{dsgid};
     my $dsg = $coge->resultset('DatasetGroup')->find($dsgid) if $dsgid;
+    if($dsg){
+	if(!$USER->has_access_to_genome($dsg)){
+	    $dsg=undef;
+	}
+    }
     my @db;
     if ($name)
       {
@@ -392,25 +397,32 @@ sub get_org_info
 
 sub get_genome_list_for_org
 {
-	my %opts = @_;
-    my $oid = $opts{oid};
-	my $org = $coge->resultset("Organism")->find($oid);
-	my @opts;
-	 if ($org)
+  my %opts = @_;
+  my $oid = $opts{oid};
+  my $org = $coge->resultset("Organism")->find($oid);
+  my @opts;
+  if ($org)
+    {
+      my @dsg;
+      foreach my $dsg ($org->dataset_groups)
 	{
-	  my @dsg;
-	  foreach my $dsg ($org->dataset_groups)
+	  if (!$dsg->restricted)
 	    {
-	      push @dsg, $dsg unless $USER->user_name =~ /public/i && $dsg->restricted;
+	      push @dsg, $dsg;
 	    }
-	  foreach my $dsg (@dsg)
-	    {
-	      $dsg->name($org->name) unless $dsg->name;
+	  elsif($dsg->restricted && $USER->has_access_to_genome(genome=>$dsg)){
+	    push @dsg, $dsg
 	    }
-	  @opts = map {$_->id."%".$_->name." (v".$_->version.", dsgid".$_->id. "): ". $_->genomic_sequence_type->name} sort {$b->version <=> $a->version || $a->type->id <=> $b->type->id || $a->name cmp $b->name || $b->id cmp $a->id} @dsg;
+	  
 	}
-	my $res = join ("&", @opts); 
-	return $res;
+      foreach my $dsg (@dsg)
+	{
+	  $dsg->name($org->name) unless $dsg->name;
+	}
+      @opts = map {$_->id."%".$_->name." (v".$_->version.", dsgid".$_->id. "): ". $_->genomic_sequence_type->name} sort {$b->version <=> $a->version || $a->type->id <=> $b->type->id || $a->name cmp $b->name || $b->id cmp $a->id} @dsg;
+    }
+  my $res = join ("&", @opts); 
+  return $res;
 }
 
 sub get_dataset_groups
@@ -427,7 +439,15 @@ sub get_dataset_groups
 	  my @dsg;
 	  foreach my $dsg ($org->dataset_groups)
 	    {
-	      push @dsg, $dsg unless $USER->user_name =~ /public/i && $dsg->restricted;
+	      if(!$dsg->restricted)
+		{
+		  push @dsg, $dsg;
+		}
+	      elsif ($dsg->restricted && $USER->has_access_to_genome(genome=>$dsg)){
+		push @dsg, $dsg
+	      }
+
+#	      push @dsg, $dsg unless $USER->user_name =~ /public/i && $dsg->restricted;
 	    }
 	  foreach my $dsg (@dsg)
 	    {
