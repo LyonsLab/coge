@@ -270,27 +270,17 @@ sub private_genomes{
 ################################################## subroutine header end ##
 
 sub has_access_to_genome{
-	
-	my $self = shift @_;
-	
-	my %opts = @_;
-	
-	my $dsg = $opts{genome};
-	
-	my @genomes = $self->private_genomes();
-	print $dsg->dataset_group_id;
-	my @found=();
-	
-	foreach my $genome(@genomes){
-
-	    if($dsg->dataset_group_id==$genome->dataset_group_id){
-		return 1;
-	    }
-	}
-	return 0;
-
-	
-	
+  my $self = shift @_;
+  my %opts = @_;
+  my $dsg = $opts{genome};
+  return 0 unless $dsg;
+  my $dsgid = $dsg =~ /^\d+$/ ? $dsg : $dsg->id;
+  foreach my $genome($self->private_genomes()){
+    if($dsgid==$genome->dataset_group_id){
+      return 1;
+    }
+  }
+  return 0;
 }
 
 
