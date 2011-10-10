@@ -2230,6 +2230,7 @@ sub generate_dotplot
     $cmd .= qq{ -sr 1} if $skip_rand;
     $cmd .= qq{ -color_scheme $color_scheme} if defined $color_scheme;
     $cmd .= qq{ -chr_sort_order $chr_sort_order} if defined $chr_sort_order;
+#    $cmd .= qq{ -cf }.$ENV{HOME}. 'coge.conf'; #config file for getting defaults for coge server installation
     while (-e "$outfile.running")
       {
 	print STDERR "detecting $outfile.running.  Waiting. . .\n";
@@ -2243,6 +2244,7 @@ sub generate_dotplot
     system "/usr/bin/touch $outfile.running"; #track that a blast anlaysis is running for this
    CoGe::Accessory::Web::write_log("generate dotplot: running\n\t$cmd", $cogeweb->logfile);
     system "/bin/rm $outfile.running" if -r "$outfile.running";; #remove track file
+    print STDERR $cmd,"\n";
     `$cmd`;
     return $outfile if -r "$outfile.html";
   }
@@ -2328,8 +2330,10 @@ sub go
       {
 	return "<span class=alert>You must select two genomes.</span>"
       }
+    
     my ($dsg1) = $coge->resultset('DatasetGroup')->find($dsgid1);
     my ($dsg2) = $coge->resultset('DatasetGroup')->find($dsgid2);
+    
     unless ($dsg1 && $dsg2)
       {
 	return "<span class=alert>Problem generating dataset group objects for ids:  $dsgid1, $dsgid2.</span>";
@@ -2438,6 +2442,7 @@ sub go
     my $html;
     #need to blast each org against itself for finding local dups, then to one another
     my $tmp1 = $org_name1;
+
     my $tmp2 = $org_name2;
      foreach my $tmp ($tmp1, $tmp2)
        {
@@ -2577,6 +2582,7 @@ sub go
     my ($find_nearby_time, $gen_ks_db_time, $dotplot_time, $add_gevo_links_time);
     my $final_results_files;
     my $tiny_link;
+
     if (-r $dagchainer_file || -r $dagchainer_file.".gz")
       {
 	if ($merge_algo == 1)#id 1 is to specify quota align as a merge algo
@@ -2608,6 +2614,7 @@ sub go
 	    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
 	    CoGe::Accessory::Web::write_log("",$cogeweb->logfile);
 	  }
+
 	my $final_dagchainer_file = $quota_align_coverage && (-r $quota_align_coverage || -r $quota_align_coverage.".gz") ? $quota_align_coverage : $post_dagchainer_file_w_nearby;
 
  	#convert to genomic coordinates if gene order was used
@@ -2636,6 +2643,7 @@ sub go
 	    $chr2_count++;
 	    $org2_length+=$gs->sequence_length;
 	  }
+
  	my $test = $org1_length > $org2_length ? $org1_length : $org2_length;
  	unless ($width)
  	  {
@@ -2658,6 +2666,7 @@ sub go
 	my $ks_db;
 	my $ks_blocks_file;
 	my $svg_file;
+
 	if ($ks_type)
 	  {
 	    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
@@ -2679,6 +2688,7 @@ sub go
 	    CoGe::Accessory::Web::write_log("",$cogeweb->logfile);
 
 	  }
+
 	my $t6 = new Benchmark;
 	$gen_ks_db_time = timestr(timediff($t6,$t5));
 	CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
@@ -2697,6 +2707,7 @@ sub go
 	CoGe::Accessory::Web::write_log("",$cogeweb->logfile);
 	my $t8 = new Benchmark;
 	$add_gevo_links_time = timestr(timediff($t8,$t7));
+
  	if (-r "$out.html")
  	  {
 	    $html .= qq{
