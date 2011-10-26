@@ -2902,8 +2902,8 @@ sub go
 	      }
 
 	    $html .="<tr><td>";
-
-	    $html .= "<br>".qq{<span class="small link" id="" onClick="window.open('bin/SynMap/order_contigs_to_chromosome.pl?f=$dagchainer_file');" >Generate Assembled Genomic Sequence</span>} if $assemble;
+	    my $conffile = $ENV{HOME}.'coge.conf';
+	    $html .= "<br>".qq{<span class="small link" id="" onClick="window.open('bin/SynMap/order_contigs_to_chromosome.pl?f=$dagchainer_file&cf=$conffile');" >Generate Assembled Genomic Sequence</span>} if $assemble;
 	    $html .= qq{</table>};
 
 	    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
@@ -3070,11 +3070,11 @@ sub get_previous_analyses
 	    my $geneorder = $file =~ /\.go/;
 	    my $dsg1 = $coge->resultset('DatasetGroup')->find($dsgid1);
 	    next unless $dsg1;
-	    next if ($dsg1->restricted && $USER->has_access_to_genome(genome=>$dsg));
+	    next if ($dsg1->restricted && $USER->has_access_to_genome(genome=>$dsg1));
 	    my ($ds1) = $dsg1->datasets;
 	    my $dsg2 = $coge->resultset('DatasetGroup')->find($dsgid2);
 	    next unless $dsg2;
-	    next if ($dsg2->restricted && $USER->has_access_to_genome(genome=>$dsg));
+	    next if ($dsg2->restricted && $USER->has_access_to_genome(genome=>$dsg2));
 	    my ($ds2) = $dsg2->datasets;
 	    $data{dsg1}=$dsg1;
 	    $data{dsg2}=$dsg2;
