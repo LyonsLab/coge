@@ -61,8 +61,8 @@ $GZIP = $P->{GZIP};
 $GUNZIP = $P->{GUNZIP};
 $URL = $P->{URL};
 
-gunzip ($dagfile) if defined $dagfile && (-r $dagfile.".gz" || -r $dagfile);
-gunzip ($alignfile) if defined $alignfile && ( -r $alignfile.".gz" || -r $dagfile);
+$dagfile = gunzip ($dagfile) if defined $dagfile && (-r $dagfile.".gz" || -r $dagfile);
+$alignfile = gunzip ($alignfile) if defined $alignfile && ( -r $alignfile.".gz" || -r $alignfile);
 
 
 usage() if $help;
