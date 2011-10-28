@@ -61,8 +61,8 @@ $GZIP = $P->{GZIP};
 $GUNZIP = $P->{GUNZIP};
 $URL = $P->{URL};
 
-gunzip ($dagfile.".gz") if defined $dagfile && -r $dagfile.".gz";
-gunzip ($alignfile.".gz") if defined $alignfile && -r $alignfile.".gz";
+gunzip ($dagfile) if defined $dagfile && (-r $dagfile.".gz" || -r $dagfile);
+gunzip ($alignfile) if defined $alignfile && ( -r $alignfile.".gz" || -r $dagfile);
 
 
 usage() if $help;
@@ -122,6 +122,7 @@ my $y_pix_per_bp = 1/$y_bp_per_pix;
 my $graphics_context = new GD::Image($width, $height);
 my $white = $graphics_context->colorResolve(255,255,255);
 my $black = $graphics_context->colorResolve(0,0,0);
+my $grey = $graphics_context->colorResolve(125,125,125);
 my $red = $graphics_context->colorResolve(255,0,0);
 my $green = $graphics_context->colorResolve(0,150,0);
 my $alert_color = $graphics_context->colorResolve(255,0,0);
@@ -157,7 +158,7 @@ my $pairs = get_pairs(file=>$alignfile, chr1=>$CHR1, chr2=>$CHR2) if $alignfile 
 #Magic happens here.
 #Link type seems to indicate the type of tile; i.e. a 'master' (a large, all chromosome) or a blow up of a two chromosome intersection
 #draw_chromosome_grid draws either the black chomosome lines, or the light green tile lines, so its always called in addition to the draw_dots function.
-my $coords = draw_chromosome_grid(gd=>$graphics_context, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, link=>$link, link_type=>$link_type, flip=>$flip, grid=>$grid);#, dsgid1=>$dsgid1, dsgid2=>$dsgid2, selfself=>$selfself);
+my $coords = draw_chromosome_grid(gd=>$graphics_context, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, link=>$link, link_type=>$link_type, flip=>$flip, grid=>$grid, color=>$grey);#, dsgid1=>$dsgid1, dsgid2=>$dsgid2, selfself=>$selfself);
 my $x_labels_gd = draw_x_labels(coords=>$coords, axis=>'x') if $labels;
 my $y_labels_gd = draw_y_labels(coords=>$coords, axis=>'y') if $labels;
 
@@ -265,7 +266,7 @@ sub draw_dots
     my $range = $max-$min if $has_ksdata;
     my $default_color = $graphics_context->colorResolve(150,150,150);
     $colors = [$default_color] unless ref($colors) =~ /array/i && @$colors;
-    open (IN, $file) || die "Can't open $file: $!";
+    open (IN, $file) || die "Can't open $file: $!"; #this is where the problem lies!
     my $use_color;
     $use_color = $colors->[0] unless $color_type;
     my $color_index=0;
@@ -602,6 +603,8 @@ sub draw_chromosome_grid
     my $link = $opts{link};
     my $link_type = $opts{link_type};
     my $grid = $opts{grid};
+    my $color = $opts{color};
+    $color = $black unless $color;
     my $height = $graphics_context->height;
     my $width = $graphics_context->width;
     my $span_color = $graphics_context->colorResolve(200,255,200);
@@ -630,7 +633,7 @@ sub draw_chromosome_grid
 		$graphics_context->line($tmp, 0, $tmp, $graphics_context->height, $span_color);		#Draw green lines?
 	      }
 	  }
-	$graphics_context->line($x, 0, $x, $graphics_context->height, $black);					#Draw black line
+	$graphics_context->line($x, 0, $x, $graphics_context->height, $color);					#Draw black line
 	$str_color = $org1->{$chr}{rev} ? $red : $black;
 #	if ($labels)
 	  # {#Draws name of chromosome
@@ -665,7 +668,7 @@ sub draw_chromosome_grid
 	      }
 	  }
 
-	$graphics_context->line(0, $y, $graphics_context->width, $y, $black);
+	$graphics_context->line(0, $y, $graphics_context->width, $y, $color);
 	$str_color = $org2->{$chr}{rev} ? $red : $black;
 #	$graphics_context->string(gdSmallFont, 2, $y-15, $chr, $str_color) if $labels;
 	$data{y}{$pchr}=[$y, $pv, $str_color] if $pchr;
@@ -1317,6 +1320,7 @@ sub gunzip
     {
       my $file = shift;
       return $file unless $file;
+      $file .= ".gz" if -r $file."gz";
       return $file unless $file =~ /\.gz$/;
       `$GUNZIP $file` if -r $file;
       my $tmp = $file;
