@@ -2905,7 +2905,10 @@ sub go
 	    $html .="<tr><td>";
 	    my $conffile = $ENV{HOME}.'coge.conf';
 	    $dagchainer_file =~ s/^$URL/$DIR/;
-	    $html .= "<br>".qq{<span class="small link" id="" onClick="window.open('bin/SynMap/order_contigs_to_chromosome.pl?f=$dagchainer_file&cf=$conffile');" >Generate Assembled Genomic Sequence</span>} if $assemble;
+	    $tiny_link = CoGe::Accessory::Web::get_tiny_link(url=>$synmap_link);
+	    $html .= "<br>".qq{<span class="small link" id="" onClick="window.open('bin/SynMap/order_contigs_to_chromosome.pl?f=$dagchainer_file&cf=$conffile;l=$tiny_link');" >Generate Assembled Genomic Sequence</span>} if $assemble;
+	    print STDERR $dagchainer_file,"\n";
+	    print STDERR $conffile,"\n";
 	    $html .= qq{</table>};
 
 	    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
@@ -2914,7 +2917,6 @@ sub go
 	    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
 	    CoGe::Accessory::Web::write_log("",$cogeweb->logfile);
 
-	    $tiny_link = CoGe::Accessory::Web::get_tiny_link(url=>$synmap_link);
 	    $html .= "<a href='$tiny_link' class='ui-button ui-corner-all' style='color: #000000' target=_new_synmap>Regenerate this analysis: $tiny_link</a>";
 	    if ($ks_type)
 	      {
