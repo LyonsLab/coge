@@ -20,8 +20,10 @@ GetOptions (
 	   "config_file|cf=s"=>\$conffile,
 	   );
 $FORM = new CGI;
-$synfile = "/opt/apache/".$FORM->param('f') if $FORM->param('f');
-
+$synfile = $FORM->param('f') if $FORM->param('f');
+$conffile = $FORM->param('cf') if $FORM->param('cf');
+print STDERR $synfile,"\n";
+print STDERR $conffile,"\n";
 $join = 100 unless defined $join;
 $conffile = $ENV{HOME}."coge.conf" unless -r $conffile;
 $P = CoGe::Accessory::Web::get_defaults($conffile);
@@ -61,6 +63,7 @@ sub process_sequence
     my %in_chrs; #seen chromosomes coming in, need to use this to identify those pieces that weren't used and to be lumped under "unknown"
     my $seq; #sequence to process and dump
     my $header; #header for sequence;
+    my $agp_file; #store the assembly information in an AGP file: http://www.ncbi.nlm.nih.gov/projects/genome/assembly/agp/AGP_Specification.shtml
     foreach my $item (@$chrs)
       {
 	my $chr = $item->{chr};
