@@ -99,6 +99,7 @@ $ALGO_LOOKUP = {
 $DATADIR = $P->{DATADIR};
 $DIAGSDIR = $P->{DIAGSDIR};
 $FASTADIR = $P->{FASTADIR};
+print STDERR $FASTADIR,"\n";
 mkpath($FASTADIR,1,0777);
 $BLASTDBDIR = $P->{BLASTDB};
 
@@ -2903,6 +2904,7 @@ sub go
 
 	    $html .="<tr><td>";
 	    my $conffile = $ENV{HOME}.'coge.conf';
+	    $dagchainer_file =~ s/^$URL/$DIR/;
 	    $html .= "<br>".qq{<span class="small link" id="" onClick="window.open('bin/SynMap/order_contigs_to_chromosome.pl?f=$dagchainer_file&cf=$conffile');" >Generate Assembled Genomic Sequence</span>} if $assemble;
 	    $html .= qq{</table>};
 
