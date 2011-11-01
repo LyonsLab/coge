@@ -45,6 +45,7 @@ use Benchmark qw(:all);
 use Mail::Mailer;# ("mail);
 use Digest::MD5 qw(md5_hex);
 use GD;
+use LWP::Simple; #needed for the merge URL function in GEvo
 no warnings 'redefine';
 # for security purposes
 
