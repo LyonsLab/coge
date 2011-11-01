@@ -98,7 +98,6 @@ $DBUSER = $P->{DBUSER};
 $DBPASS = $P->{DBPASS};
 $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
 $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
-
 ($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>'cogec',coge=>$coge);
 
 if($FORM->param('ticket') && $USER->user_name eq "public"){
@@ -3681,8 +3680,12 @@ sub dataset_search
 		    print STDERR "Error retrieving sequence_type object for ", $ds->name,": id ",$ds->id,"\n";
 		    next;
 		  }
-		my $title = "$ds_name ($sname, v$ver)";
-		next if $USER->has_access_to_genome(genome=>$ds->groups->[0]) && ($ds->organism->restricted || $ds->restricted || $ds->groups->[0]->restricted);
+		my $title = "$ds_name ($sname, v$ver, dsid".$ds->id.")";
+		
+		if ($ds->restricted || $ds->groups->[0]->restricted)
+		  {
+		    next unless $USER->has_access_to_genome(genome=>$ds->groups->[0]) && ($ds->organism->restricted || $ds->restricted || $ds->groups->[0]->restricted);
+		  }
 		next if $sources{$ds->id} && $sources{$ds->id}{typeid} < $typeid;
 		if ($dsgid && ! $dsid)
 		  {
@@ -3699,6 +3702,7 @@ sub dataset_search
 	      }
 	  }
       }
+
      if (keys %sources)
        {
 # 	$html .= qq{
