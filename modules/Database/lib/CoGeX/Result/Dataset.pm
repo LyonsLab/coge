@@ -131,6 +131,7 @@ sub dataset_groups
   }
 
 
+
 ################################################ subroutine header begin ##
 
 =head2 groups
@@ -149,6 +150,29 @@ See Also   :
 ################################################## subroutine header end ##
 
 sub groups
+  {
+    shift->dataset_groups(@_);
+  }
+
+
+################################################ subroutine header begin ##
+
+=head2 genomes
+
+ Usage     : 
+ Purpose   : alias for dataset_groups
+ Returns   : 
+ Argument  : 
+ Throws    :
+ Comments  : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub genomes
   {
     shift->dataset_groups(@_);
   }
