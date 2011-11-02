@@ -353,6 +353,13 @@ sub gen_body
     $cs = $FORM->param('cs') if defined $FORM->param('cs');
     $template->param("CS".$cs=>"selected");
 
+    #set codeml min and max
+    my $codeml_min;
+    $codeml_min = $FORM->param('cmin') if defined $FORM->param('cmin');
+    my $codeml_max;
+    $codeml_max = $FORM->param('cmax') if defined $FORM->param('cmax');
+    $template->param('CODEML_MIN'=>$codeml_min) if defined $codeml_min;
+    $template->param('CODEML_MAX'=>$codeml_max) if defined $codeml_max;
     #show non syntenic dots:  on by default
     my $snsd = 0;
     $snsd = $FORM->param('snsd') if (defined $FORM->param('snsd'));
@@ -2176,6 +2183,9 @@ sub generate_dotplot
     my $skip_rand = $opts{skip_rand};
     my $color_scheme = $opts{color_scheme}; #color_scheme for dotplot
     my $chr_sort_order = $opts{chr_sort_order}; #sort order of chromosomes in dotplot
+    my $codeml_min = $opts{codeml_min};
+    my $codeml_max = $opts{codeml_max};
+
 
     my $cmd = $DOTPLOT;
     #add ks_db to dotplot command if requested
@@ -2197,7 +2207,8 @@ sub generate_dotplot
     $outfile .= ".sr" if $skip_rand;
     $outfile.= ".cs$color_scheme" if defined $color_scheme;
     $outfile.= ".cso$chr_sort_order" if defined $chr_sort_order;
-
+    $outfile.= ".min$codeml_min" if defined $codeml_min;
+    $outfile.= ".max$codeml_max" if defined $codeml_max;
     #are non-syntenic dots being displayed
     if ($snsd)
       {
@@ -2230,6 +2241,8 @@ sub generate_dotplot
     $cmd .= qq{ -sr 1} if $skip_rand;
     $cmd .= qq{ -color_scheme $color_scheme} if defined $color_scheme;
     $cmd .= qq{ -chr_sort_order $chr_sort_order} if defined $chr_sort_order;
+    $cmd .= qq{ -min $codeml_min} if defined $codeml_min;
+    $cmd .= qq{ -max $codeml_max} if defined $codeml_max;
 #    $cmd .= qq{ -cf }.$ENV{HOME}. 'coge.conf'; #config file for getting defaults for coge server installation
     while (-e "$outfile.running")
       {
@@ -2244,7 +2257,6 @@ sub generate_dotplot
     system "/usr/bin/touch $outfile.running"; #track that a blast anlaysis is running for this
    CoGe::Accessory::Web::write_log("generate dotplot: running\n\t$cmd", $cogeweb->logfile);
     system "/bin/rm $outfile.running" if -r "$outfile.running";; #remove track file
-    print STDERR $cmd,"\n";
     `$cmd`;
     return $outfile if -r "$outfile.html";
   }
@@ -2317,6 +2329,11 @@ sub go
     #which color scheme for ks/kn dots?
     my $color_scheme = $opts{color_scheme};
 
+    #codeml min and max calues
+    my $codeml_min = $opts{codeml_min};
+    $codeml_min = undef unless $codeml_min=~/\d/ && $codeml_min=~/^-?\d*.?\d*$/;
+    my $codeml_max = $opts{codeml_max};
+    $codeml_max = undef unless $codeml_max=~/\d/ && $codeml_max=~/^-?\d*.?\d*$/;
     #draw a box around identified diagonals?
     my $box_diags = $opts{box_diags};
     $box_diags = $box_diags eq "true" ? 1 : 0;
@@ -2354,6 +2371,8 @@ sub go
     $synmap_link .= ";do=$depth_overlap" if $depth_overlap;
     $synmap_link .= ";flip=1" if $flip;
     $synmap_link .= ";cs=$color_scheme";
+    $synmap_link .= ";cmin=$codeml_min" if defined $codeml_min;#$codeml_min=~/\d/ && $codeml_min=~/^\d*.?\d*$/;
+    $synmap_link .= ";cmax=$codeml_max" if defined $codeml_max;#$codeml_max=~/\d/ && $codeml_max=~/^\d*.?\d*$/;
     $synmap_link .= ";cl=0" if $clabel eq "0";
     $synmap_link .= ";sr=$skip_rand" if defined $skip_rand;
     $synmap_link .= ";cso=$chr_sort_order" if $chr_sort_order;
@@ -2693,7 +2712,7 @@ sub go
 	$gen_ks_db_time = timestr(timediff($t6,$t5));
 	CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
 	CoGe::Accessory::Web::write_log("Generating dotplot",$cogeweb->logfile);
- 	$out = generate_dotplot(dag=>$dag_file12_all, coords=>$final_dagchainer_file, outfile=>"$out", regen_images=>$regen_images, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, dagtype=>$dagchainer_type, ks_db=>$ks_db, ks_type=>$ks_type, assemble=>$assemble, metric=>$axis_metric, , relationship=>$axis_relationship, min_chr_size=>$min_chr_size, color_type=>$color_type, box_diags=>$box_diags, fid1=>$fid1, fid2=>$fid2, snsd=>$snsd, flip=>$flip, clabel=>$clabel, skip_rand=>$skip_rand, color_scheme=>$color_scheme, chr_sort_order=>$chr_sort_order);
+ 	$out = generate_dotplot(dag=>$dag_file12_all, coords=>$final_dagchainer_file, outfile=>"$out", regen_images=>$regen_images, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, dagtype=>$dagchainer_type, ks_db=>$ks_db, ks_type=>$ks_type, assemble=>$assemble, metric=>$axis_metric, , relationship=>$axis_relationship, min_chr_size=>$min_chr_size, color_type=>$color_type, box_diags=>$box_diags, fid1=>$fid1, fid2=>$fid2, snsd=>$snsd, flip=>$flip, clabel=>$clabel, skip_rand=>$skip_rand, color_scheme=>$color_scheme, chr_sort_order=>$chr_sort_order, codeml_min=>$codeml_min, codeml_max=>$codeml_max);
 	CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
 	CoGe::Accessory::Web::write_log("",$cogeweb->logfile);
 
@@ -2719,8 +2738,12 @@ sub go
  <td><input class="backbox" type=text name=zoom_width id=zoom_width size=6 value="800">
  <tr>
  <td>Ks, Kn, Kn/Ks cutoffs: 
- <td>Min: <input class="backbox" type=text name=zoom_min id=zoom_min size=6 value="">
- <td>Max: <input class="backbox" type=text name=zoom_max id=zoom_max size=6 value="">
+ <td>Min: <input class="backbox" type=text name=zoom_min id=zoom_min size=6 value="};
+	    $html .= $codeml_min if defined $codeml_min;
+	    $html .=qq{">
+ <td>Max: <input class="backbox" type=text name=zoom_max id=zoom_max size=6 value="};
+	    $html .= $codeml_max if defined $codeml_max;
+	    $html .= qq{">
  </table>
 </div>
 <div style="clear: both;"> </div>
@@ -2906,8 +2929,6 @@ sub go
 	    $dagchainer_file =~ s/^$URL/$DIR/;
 	    $tiny_link = CoGe::Accessory::Web::get_tiny_link(url=>$synmap_link);
 	    $html .= "<br>".qq{<span class="small link" id="" onClick="window.open('bin/SynMap/order_contigs_to_chromosome.pl?f=$dagchainer_file&cf=$conffile;l=$tiny_link');" >Generate Assembled Genomic Sequence</span>} if $assemble;
-	    print STDERR $dagchainer_file,"\n";
-	    print STDERR $conffile,"\n";
 	    $html .= qq{</table>};
 
 	    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
