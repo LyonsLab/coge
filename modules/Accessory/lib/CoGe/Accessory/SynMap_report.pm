@@ -46,6 +46,8 @@ sub parse_syn_blocks
     my $chrs2={};
     my $chrs1_scores={};
     my $chrs2_scores={};
+    my $dsgid1;
+    my $dsgid2;
     #need to assign a block to the highest scoring matching chromosomes
 
     foreach my $item (sort {$a->{name} cmp $b->{name} || $a->{match} cmp $b->{match} || $a->{score} <=> $b->{score} || $a->{identity_sum} <=> $b->{identity_sum}} @$blocks1)
@@ -54,12 +56,14 @@ sub parse_syn_blocks
 	$chrs1->{$item->{name}}{$item->{match}}{count}++;
 	$chrs1->{$item->{name}}{$item->{match}}{score}+=$item->{score};
 	$chrs1_scores->{$item->{name}}+=$item->{score};
+	$dsgid1 = $item->{dsgid};
       }
     foreach my $item (@$blocks2)
       {
 	$chrs2->{$item->{name}}{$item->{match}}{count}++;
 	$chrs2->{$item->{name}}{$item->{match}}{score}+=$item->{score};
 	$chrs2_scores->{$item->{name}}+=$item->{score};
+	$dsgid2 = $item->{dsgid};
       }
     #blocks1 will contain fewer chromosomes; blocks2 will be ordered by it.
     my $switched =keys %$chrs1 > keys %$chrs2 ? 1 : 0;
@@ -68,9 +72,8 @@ sub parse_syn_blocks
 	($blocks1, $blocks2) = ($blocks2, $blocks1);
 	($chrs1, $chrs2) = ($chrs2, $chrs1);
 	($chrs1_scores, $chrs2_scores) = ($chrs2_scores, $chrs1_scores);
+	($dsgid1,$dsgid2)= ($dsgid2, $dsgid1);
       }
-
-
     #need to use only the highest scoring blocks in set2 to take into account duplications
     my %best_blocks2;
     foreach my $block (@$blocks2)
@@ -127,7 +130,7 @@ sub parse_syn_blocks
     ($ordered1, $ordered2) = ($ordered2, $ordered1) if $switched;
     $self->org1_ordered($ordered1);
     $self->org2_ordered($ordered2);
-    return $ordered1, $ordered2;
+    return $ordered1, $ordered2, $dsgid1, $dsgid2;
   }
 
 
