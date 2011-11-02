@@ -422,16 +422,17 @@ sub initialize_basefile
 
     my ($self, %opts) = self_or_default(@_);
     my $basename = $opts{basename};
-    my $prog=$opts{prog} || "CoGe";
+    my $prog=$opts{prog};
     my $return_name = $opts{return_name};
     my $tempdir = $opts{tempdir} || $TEMPDIR;
+    $tempdir .= "/".$prog if $prog;
     if ($basename)
       {
 #	print STDERR "Have basename: $basename\n";
 	($basename) = $basename =~ /([^\/].*$)/;
 	my ($x, $cleanname) = check_taint($basename);
 	$self->basefilename($cleanname);
-	my $basefile = $tempdir."/$prog/".$cleanname;
+	my $basefile = $tempdir."/".$cleanname;
 	$basefile =~ s/\/\/+/\//g;
 	$self->basefile($basefile);
 	$self->logfile($self->basefile.".log");
@@ -439,9 +440,10 @@ sub initialize_basefile
       }
     else
       {
-	mkdir "$TEMPDIR/$prog",0777 unless -d "$TEMPDIR/$prog";
+	mkdir "$tempdir",0777 unless -d "$tempdir";
+	$prog = "CoGe" unless $prog;
 	my $file = new File::Temp ( TEMPLATE=>$prog.'_XXXXXXXX',
-				    DIR=>"$TEMPDIR/$prog/",
+				    DIR=>"$TEMPDIR/",
 				    #SUFFIX=>'.png',
 				    UNLINK=>1);
 	$self->basefile($file->filename);
