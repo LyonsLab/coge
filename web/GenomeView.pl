@@ -199,6 +199,8 @@ sub gen_body
     $z=5 unless defined $z;
     $z = 0 if $z < 0;
     my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'GenomeView.tmpl');
+    #set tiler program
+    $template->param(TILE_SERVER=>$P->{SERVER}."tiler.pl?");
     #set layers
     foreach my $ft (@feat_types)
       {
