@@ -64,7 +64,6 @@ $URL = $P->{URL};
 $dagfile = gunzip ($dagfile) if defined $dagfile && (-r $dagfile.".gz" || -r $dagfile);
 $alignfile = gunzip ($alignfile) if defined $alignfile && ( -r $alignfile.".gz" || -r $alignfile);
 
-
 usage() if $help;
 usage() unless (defined $dagfile &&-r $dagfile) || -r $alignfile;
 
@@ -1320,7 +1319,7 @@ sub gunzip
     {
       my $file = shift;
       return $file unless $file;
-      $file .= ".gz" if -r $file."gz";
+      $file .= ".gz" if -r $file.".gz";
       return $file unless $file =~ /\.gz$/;
       `$GUNZIP $file` if -r $file;
       my $tmp = $file;
