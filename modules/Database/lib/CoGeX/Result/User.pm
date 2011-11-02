@@ -165,6 +165,7 @@ sub user_groups{
 	
 
 	my $self = shift;
+	return unless $self->id;
 	
 	
 	my @user_groups = ();
@@ -242,6 +243,7 @@ sub add_to_group(){
 sub private_genomes{
 	
 	my $self = shift;
+	return unless $self->id;
 	my @private_genomes= ();
 	foreach my $group ($self->user_groups()){
 	    push(@private_genomes,$group->private_genomes());
