@@ -199,8 +199,8 @@ sub get_color
 		    [255,126,0], #orange
 		    ],
 		   [
-		    [255,0,0], #red
 		    [255,255,0], #yellow
+		    [255,0,0], #red
 		    [0,255,0], # green
 		    [0,255,255], # cyan
 		    [220,0,220], #magenta
@@ -289,7 +289,23 @@ sub get_color
 		    [220,0,220], #magenta
 		    [0,0,255], # blue
 		   ],
-		  ];
+		  [
+		   [0,255,255], # blue
+		   [255,0,0], #orange
+		   [0,255,255], # blue
+		   [255,0,0], #orange
+		   [0,255,255], # blue
+		   [255,0,0], #orange
+		  ],
+		  [
+		   [0,0,255], # blue
+		   [255,99,33], #orange
+		   [0,0,255], # blue
+		   [255,99,33], #orange
+		   [0,0,255], # blue
+		   [255,99,33], #orange
+		  ],
+		 ];
     my @colors = @{$schemes->[$color_scheme]};
     @colors = reverse @colors;
     my ($index1, $index2) = ((floor((scalar(@colors)-1)*$val)), ceil((scalar(@colors)-1)*$val));
