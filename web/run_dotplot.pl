@@ -11,7 +11,7 @@ umask(0);
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $DATADIR $DIAGSDIR $DOTPLOT);
 $P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
-$DEBUG = 1;
+$DEBUG = 0;
 $DIR = $P->{COGEDIR};
 $URL = $P->{URL};
 $DATADIR = $P->{DATADIR};
@@ -161,6 +161,8 @@ sub generate_dotplot
     $outfile .= ".box" if $box_diags;
     $outfile .= ".ct$color_type" if $color_type;
     $outfile .= ".cs$color_scheme" if defined $color_scheme;
+    $outfile .= ".$min" if defined $min && $min =~/\d/;
+    $outfile .= ".$max" if defined $max && $max =~/\d/;
 
     my $tmp = $outfile;
     $tmp .= ".$min" if defined $min && $min =~/\d/;
@@ -180,9 +182,7 @@ sub generate_dotplot
     print STDERR "Running: ",$cmd,"\n" if $DEBUG;
     my $x;
     ($x, $cmd) = CoGe::Accessory::Web::check_taint($cmd);
+    #($cmd) = $cmd =~ /(.*)/;
     `$cmd` if $cmd;
-    $outfile .= ".$min" if defined $min && $min =~/\d/;
-    $outfile .= ".$max" if defined $max && $max =~/\d/;
-    
     return $outfile if -r $outfile.".html";
   }
