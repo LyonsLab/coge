@@ -142,15 +142,15 @@ if ($ks_db)
     $cmd .= " -max $MAX" if defined $MAX;
     $cmd .= " -color_scheme $color_scheme" if defined $color_scheme;
     $cmd .= " -o $basename";
-    $cmd .= ".$MIN" if defined $MIN;
-    $cmd .= ".$MAX" if defined $MAX;
+#    $cmd .= ".$MIN" if defined $MIN;
+#    $cmd .= ".$MAX" if defined $MAX;
     $cmd .= ".hist.png";
     `$cmd &`;
   }
 
 
-$basename .= ".$MIN" if defined $MIN;
-$basename .= ".$MAX" if defined $MAX;
+#$basename .= ".$MIN" if defined $MIN;
+#$basename .= ".$MAX" if defined $MAX;
 
 my $pairs = get_pairs(file=>$alignfile, chr1=>$CHR1, chr2=>$CHR2) if $alignfile && $ks_db && -r $alignfile && -r $ks_db;
 
@@ -1006,7 +1006,7 @@ sub get_ksdata
 	  {
 	    unless ($pairs->{$data->[1]}{$data->[2]})
 	      {
-		print STDERR "ks pair is not in pairs list\n";
+#		print STDERR "ks pair is not in pairs list\n";
 		next;
 	      }
 	  }
@@ -1194,6 +1194,40 @@ sub get_color
 		    [0,0,255], # blue
 		    [255,0,0], #red
 		    [255,255,0], #yellow
+		    [0,255,0], # green
+		    [0,255,255], # cyan
+		    [220,0,220], #magenta
+		    [0,0,255], # blue
+		   ],
+		   [
+		    [255,0,0], #red
+		    [255,155,0], #yellow
+		    [0,255,0], # green
+		    [0,255,255], # cyan
+		    [220,0,220], #magenta
+		    [0,0,255], # blue
+		    [255,0,0], #red
+		    [255,155,0], #yellow
+		    [0,255,0], # green
+		    [0,255,255], # cyan
+		    [220,0,220], #magenta
+		    [0,0,255], # blue
+		   ],
+		   [
+		    [255,0,0], #red
+		    [255,155,0], #yellow
+		    [0,255,0], # green
+		    [0,255,255], # cyan
+		    [220,0,220], #magenta
+		    [0,0,255], # blue
+		    [255,0,0], #red
+		    [255,155,0], #yellow
+		    [0,255,0], # green
+		    [0,255,255], # cyan
+		    [220,0,220], #magenta
+		    [0,0,255], # blue
+		    [255,0,0], #red
+		    [255,155,0], #yellow
 		    [0,255,0], # green
 		    [0,255,255], # cyan
 		    [220,0,220], #magenta
