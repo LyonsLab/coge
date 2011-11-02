@@ -48,7 +48,6 @@ $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 #$coge->storage->debug(1);
 
 ($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>'cogec',coge=>$coge);
-
 if($FORM->param('ticket') && $USER->user_name eq "public"){
 
 	my  @values = split(/'?'/,$FORM->url());
@@ -261,7 +260,7 @@ sub get_recent_orgs
 		$i++;
 	my $date = $item->date;
 	$date =~ s/\s.*//;
-	next if $USER->user_name =~ /public/i && $item->organism->restricted;
+	#next if $USER->user_name =~ /public/i && $item->organism->restricted;
 	next if $org_names{$item->organism->name};
 	$org_names{$item->organism->name}=1;
 	push @opts, "<OPTION value=\"".$item->organism->id."\">".$date." ".$item->organism->name." (id".$item->organism->id.") "."</OPTION>";
@@ -290,7 +289,7 @@ sub get_orgs
     my $oid = $opts{oid};
     my $dsgid = $opts{dsgid};
     my $dsg = $coge->resultset('DatasetGroup')->find($dsgid) if $dsgid;
-    if($dsg){
+    if($dsg && $dsg->restricted){
 	if(!$USER->has_access_to_genome($dsg)){
 	    $dsg=undef;
 	}
@@ -312,7 +311,7 @@ sub get_orgs
     my @opts;
     foreach my $item (sort {uc($a->name) cmp uc($b->name)} @db)
       {
-	next if $USER->user_name =~ /public/i && $item->restricted;
+	#next if $USER->user_name =~ /public/i && $item->restricted;
 	my $option = "<OPTION value=\"".$item->id."\"";
 	$option .= " SELECTED" if $oid && $item->id == $oid;
 	$option .= " SELECTED" if $dsg && $item->id == $dsg->organism->id;
@@ -583,7 +582,7 @@ sub get_dataset
 	my %orgs;
 	foreach my $item (sort {$b->version <=> $a->version || uc($a->name) cmp uc($b->name)} @ds)
 	  {
-	    next if $USER->user_name =~ /public/i && $item->organism->restricted;
+	    #next if $USER->user_name =~ /public/i && $item->organism->restricted;
 	    my $option = "<OPTION value=\"".$item->id."\">".$item->name."(v".$item->version.", id".$item->id.")</OPTION>";
 	    if ($dsid && $dsid == $item->id)
 	      {
