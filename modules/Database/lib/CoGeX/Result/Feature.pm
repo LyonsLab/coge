@@ -1086,6 +1086,10 @@ sub protein_sequence {
       #check to see if we can find the best translation
       my $found=0;
       my @seqs;
+      #let's test to see if the first sequence contains no stop codons (except at end).  If that is true, return it
+      my $test_seq = $seqs->{1};
+      $test_seq =~ s/\*$//; #trim trailing stop codon if present;
+      return $test_seq unless $test_seq =~ /\*/;
       while (my ($k, $v) = each %$seqs)
 	{
 	  next unless $v;
