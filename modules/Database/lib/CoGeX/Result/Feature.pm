@@ -523,6 +523,7 @@ sub annotation_pretty_print_html
     my $chr = $self->chr;
     my $strand = $self->strand;
     my $dataset_id = $self->dataset->id;
+    my $fid = $self->id;
     my $anno_type = new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\">"."Name(s)"."</span>");
     $anno_type->Type_delimit(": <td>");
     $anno_type->Val_delimit(" , ");
@@ -535,6 +536,21 @@ sub annotation_pretty_print_html
     $anno_obj->add_Annot($anno_type);
     unless ($minimal)
       {
+	#add links to CoGe
+	my $anno_type = new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\">"."CoGe Links"."</span>");
+	$anno_type->Type_delimit(": <td> ");
+	$anno_type->Val_delimit(" , ");
+
+	my @links = (
+		     "<span class='data5 link' onclick =\"window.open('CoGeBlast.pl?fid=$fid')\">CoGeBlast</span>",
+		     "<span class='data5 link' onclick =\"window.open('FastaView.pl?fid=$fid')\">Fasta</span>",
+		     "<span class='data5 link' onclick =\"window.open('GenomeView.pl?chr=$chr&ds=$dataset_id&x=$start&z=5&gstid=$gstid')\">GenomeView</span>",
+		    );
+	foreach my $item (@links)
+	  {
+	    $anno_type->add_Annot($item);
+	  }
+	$anno_obj->add_Annot($anno_type);
 	foreach my $anno (sort {uc($a->type->name) cmp uc($b->type->name)} $self->annos({},{prefetch=>{annotation_type=>'annotation_type_group'}}))
 	  {
 	    my $type = $anno->type();
