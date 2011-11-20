@@ -545,6 +545,7 @@ sub annotation_pretty_print_html
 		     "<span class='data5 link' onclick =\"window.open('CoGeBlast.pl?fid=$fid')\">CoGeBlast</span>",
 		     "<span class='data5 link' onclick =\"window.open('FastaView.pl?fid=$fid')\">Fasta</span>",
 		     "<span class='data5 link' onclick =\"window.open('GenomeView.pl?chr=$chr&ds=$dataset_id&x=$start&z=5&gstid=$gstid')\">GenomeView</span>",
+		     "<span class='data5 link' onclick =\"window.open('SynFind.pl?fid=$fid')\">SynFind</span>",
 		    );
 	foreach my $item (@links)
 	  {
