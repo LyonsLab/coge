@@ -104,7 +104,6 @@ sub run_load_genome
     $prog .= " -delete_src_file";
     my $run = $prog." -accn ".join (" -accn ", @$accns);
     print $run,"\n";
-    return;
     open (IN, $run." |");
     while (<IN>)
       {
