@@ -391,6 +391,7 @@ accn: foreach my $accn (@accns)
 		  }
 		elsif ($anno =~ /translation/i) # this needs to be entered into the sequence table
 		  {
+                    next; #skip this.  Protein sequences are translated on the fly from DNA sequence
 		    my $seq_type = $coge->resultset('SequenceType')->find_or_create(
 										    {
 										     name        => "protein",
