@@ -10,7 +10,7 @@ use File::Path;
 
 
 # variables
-my ($DEBUG, $GO, $ERASE,$autoupdate, $autoskip, @accns, $tmpdir, $help, $user_chr, $ds_link, $delete_src_file, $test, $auto_increment_chr, $base_chr_name, $accn_file);
+my ($DEBUG, $GO, $ERASE,$autoupdate, $autoskip, @accns, $tmpdir, $help, $user_chr, $ds_link, $delete_src_file, $test, $auto_increment_chr, $base_chr_name, $accn_file, $max_entries);
 my $connstr = 'dbi:mysql:dbname=coge;host=synteny.cnr.berkeley.edu;port=3306';
 my $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
 #$coge->storage->debugobj(new DBIxProfiler());
@@ -36,6 +36,7 @@ GetOptions (
 	    "delete_src_file"=>\$delete_src_file,
 	    "auto_increment_chr"=>\$auto_increment_chr,
 	    "accn_file|af=s"=>\$accn_file,
+	    "max_entries=i"=>\$max_entries,
 	   );
 $user_chr = 1 unless $user_chr;
 $tmpdir = "/tmp/gb" unless $tmpdir;	# set default directory to /tmp
@@ -126,7 +127,13 @@ accn: foreach my $accn (@accns)
 
     my $genbank = new CoGe::Accessory::GenBank();
     $genbank->debug(1);
+    $genbank->max_entries($max_entries) if $max_entries;
     $genbank->get_genbank_from_ncbi(file=> "$tmpdir/$accn.gbk", accn=>$accn,);
+    if (!$genbank->sequence && !@{$genbank->wgs_data})
+      {
+	print "Skipping sequence.  No sequence or wgs data\n";
+	next;
+      }
     my $EXIT =0;
     my $chromosome;
     $chromosome = $user_chr if $user_chr;
@@ -504,7 +511,7 @@ accn: foreach my $accn (@accns)
 	print "Deleting genbank src file: ".$genbank->srcfile."\n";
 	my $cmd = "rm ".$genbank->srcfile;
 	`$cmd`;
-	`rm /tmp/gb/*`;
+#	`rm /tmp/gb/*`;
       }
   }
 #need to add previous datasets if new dataset was added with a new dataset group
