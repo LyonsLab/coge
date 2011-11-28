@@ -9,7 +9,7 @@ use CoGe::Accessory::GenBank::Feature;
 use CoGeX::Result::Feature;
 use Roman;
 
-__PACKAGE__->mk_accessors qw(id locus accn seq_length moltype division date definition version gi keywords data_source dataset organism sequence srcfile dir anntoation features start stop chromosome add_gene_models _has_genes wgs wgs_scafld wgs_data strain substrain genomic_sequence_type_id debug no_wgs requested_id other_stuff ncbi_link);
+__PACKAGE__->mk_accessors qw(id locus accn seq_length moltype division date definition version gi keywords data_source dataset organism sequence srcfile dir anntoation features start stop chromosome add_gene_models _has_genes wgs wgs_scafld wgs_data strain substrain genomic_sequence_type_id debug no_wgs requested_id other_stuff ncbi_link max_entries entries_count);
 
 
 
@@ -915,6 +915,15 @@ sub process_wgs
     $self->wgs_data([]) unless $self->wgs_data();
     my $file = $self->srcfile;
     $file =~ s/[^\/]*$//;
+    print "Have WGS:  ".scalar(@ids)." entries\n";
+    $self->entries_count(scalar(@ids));
+    if ($self->max_entries && scalar(@ids) > $self->max_entries)
+      {
+	print "Exceeded maximum entries for recursive processing.\n";
+	print "Max: ".$self->max_entries,"\n";
+	print "Have ".scalar(@ids),"\n";
+	return;
+      }
     foreach my $id(@ids)
       {
 	my $gb = $self->new;
