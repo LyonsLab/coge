@@ -24,7 +24,6 @@ $P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 $URL = $P->{URL};
 $FORM = new CGI;
-print STDERR $ENV{HOME};
 #print STDERR Dumper $USER->user_name;
 
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
@@ -85,11 +84,11 @@ if($FORM->param('ticket') && $USER->user_name eq "public"){
 }
 
 
-print $FORM->header, gen_html();
+#print $FORM->header, gen_html();
 
 
 
-#print $pj->build_html($FORM, \&gen_html);
+print $pj->build_html($FORM, \&gen_html);
 
 
 sub gen_html
