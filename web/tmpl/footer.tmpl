@@ -30,7 +30,8 @@ document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.
 $(document).ready(function(){
 	var user = "<TMPL_VAR NAME=USER>";
 	if(user.match(/public/i)) {return;}
-	else {$('#logout').show(0);}
+	else {$('#logout').show(0);
+	}
 });
 
 //var pageTracker = _gat._getTracker("UA-3802985-2");
