@@ -31,6 +31,27 @@
 </style>
 
 <SCRIPT language="JavaScript">
+function animate_section(name, style, speedy, show) {
+  if (show) {alert (name+"::"+style)}
+  if (speedy == undefined) speedy = pageObj.speed;
+  //alert('speedy is '+speedy);
+  if (!style) style = "toggle";
+  if (!speedy) {
+    if ((style == "show") || style == "slideDown" || style == "fadeIn") {jQuery(name).show();}
+    else if ((style == "hide") || style == "slideUp" || style == "fadeOut") {jQuery(name).hide();}
+    else {jQuery(name).toggle();}
+   }
+  else if (style == "toggle") {jQuery(name).toggle(speedy);}
+  else if (style == "hide") {jQuery(name).hide(speedy);}
+  else if (style == "show") {jQuery(name).show(speedy);}
+  else if (style == "slideToggle") {jQuery(name).slideToggle(speedy);}
+  else if (style == "slideUp") {jQuery(name).slideUp(speedy);}
+  else if (style == "slideDown") {jQuery(name).slideDown(speedy);}
+  else if (style == "fadeIn") {jQuery(name).fadeIn(speedy);}
+  else if (style == "fadeOut") {jQuery(name).fadeOut(speedy);}
+  return speedy;
+ }
+
 
 function set_up_tabs() {
  $(function(){
