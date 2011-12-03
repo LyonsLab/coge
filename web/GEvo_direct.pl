@@ -15,7 +15,7 @@ no warnings 'redefine';
 
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 
-use vars qw ($P $FORM $USER $DATE $TEMPDIR $TEMPURL);
+use vars qw ($P $FORM $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $USER $DATE $TEMPDIR $TEMPURL $COOKIE_NAME $coge);
 $P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 
@@ -24,10 +24,20 @@ $TEMPDIR = $P->{TEMPDIR}."GEvo";
 $TEMPURL = $P->{TEMPURL}."GEvo";
 mkpath ($TEMPDIR, 0,0777) unless -d $TEMPDIR;
 
-($USER) = CoGe::Accessory::LogUser->get_user();
+
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		 sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
+$DBNAME = $P->{DBNAME};
+$DBHOST = $P->{DBHOST};
+$DBPORT = $P->{DBPORT};
+$DBUSER = $P->{DBUSER};
+$DBPASS = $P->{DBPASS};
+$connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
+$coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );$COOKIE_NAME = $P->{COOKIE_NAME};
 
+my ($cas_ticket) =$FORM->param('ticket');
+CoGe::Accessory::Web->login_cas(ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
+($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge);
 
 my $pj = new CGI::Ajax (
 			gen_html => \&gen_html,
@@ -43,20 +53,17 @@ print $FORM->header, gen_html();
 
 sub gen_html
   {
-#    my $form = $FORM;
     my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
     $template->param(BODY=>gen_body());
     my $name = $USER->user_name;
-        $name = $USER->first_name if $USER->first_name;
-        $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
-        $template->param(USER=>$name);
+    $name = $USER->first_name if $USER->first_name;
+    $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
+    $template->param(USER=>$name);
     $template->param(HELP=>"/wiki/index.php?title=GEvo_direct");
     $template->param(LOGON=>1) unless $USER->user_name eq "public";
     $template->param(DATE=>$DATE);
     $template->param(TITLE=>"GEvo direct:  reviewing past results.");
     $template->param(PAGE_TITLE=>"GEvo direct");
-#    print $form->header;
-#    print STDERR $template->output;
     return $template->output;
   }
 

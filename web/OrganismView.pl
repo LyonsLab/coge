@@ -16,7 +16,7 @@ use Statistics::Basic::Mean;
 no warnings 'redefine';
 
 
-use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $coge $HISTOGRAM %FUNCTION $P);
+use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $coge $HISTOGRAM %FUNCTION $P $COOKIE_NAME);
 $P = CoGe::Accessory::Web::get_defaults("./coge.conf");
 $ENV{PATH} = $P->{COGEDIR};
 $ENV{irodsEnvFile} = "/var/www/.irods/.irodsEnv";
@@ -47,35 +47,11 @@ $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 
-($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>'cogec',coge=>$coge);
-if($FORM->param('ticket') && $USER->user_name eq "public"){
+$COOKIE_NAME = $P->{COOKIE_NAME};
 
-	my  @values = split(/'?'/,$FORM->url());
-		
-	my 	($name,$fname,$lname,$email,$login_url) = CoGe::Accessory::Web::login_cas($FORM->param('ticket') ,$values[0]);
-
-	if($name){
-		my ($valid,$cookie,$urlx) = login(name=>$name,url=>$login_url);
-		
-		if($valid eq 'true'){
-			print STDERR 'valid';
-		}else{				
-				my $new_row = $coge->resultset('User')->create({user_name=>$name,first_name=>$fname,last_name=>$lname,email=>$email});
-				$new_row->insert;
-				print STDERR 'not valid';
-				($valid,$cookie,$urlx) = login(name=>$name, url=>$login_url);
-		}
-		print STDERR $cookie;
-		print "Set-Cookie: $cookie\n";
-		
-	}
-	$FORM->delete_all();
-	
-	($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>'cogec',coge=>$coge);
-	print 'Location:'.$FORM->redirect($login_url);
-	
-}
-
+my ($cas_ticket) =$FORM->param('ticket');
+CoGe::Accessory::Web->login_cas(ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
+($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge);
 
 #my $pj = new CGI::Ajax(
 %FUNCTION = (
@@ -137,32 +113,6 @@ sub dispatch
 #    }
 }
 
-sub login
-  {
-	my %opts=@_;
-    my $name = $opts{name};
-	my $url = $opts{url} ;
-    my ($u) = $coge->resultset('User')->search({user_name=>$name});
-
-   if ($u)
-    {
-
-     my $session = md5_base64($name.$ENV{REMOTE_ADDR});
-      $session =~ s/\+/1/g;
-      my $sid = $coge->log_user(user=>$u,session=>$session);
-
-      my $c = CoGe::Accessory::LogUser->gen_cookie(session=>$session,cookie_name=>'cogec',url=>$url);
-
-      return ('true', $c, $url );
-    }
-   else 
-    {
-    	my $c = CoGe::Accessory::LogUser->gen_cookie(session=>"public",cookie_name=>'cogec',url=>'');
-    	return ('false', $c,  $url);
-    }
-
-  }
-
 sub parse_for_GenoList
   {
 	my $genomelist = shift;
@@ -173,31 +123,23 @@ sub parse_for_GenoList
 sub gen_html
   {
     my $html;
-    unless ($USER)
-      {
-	$html = login();
-      }
-    else
-      {
-	
-	my ($body, $seq_names, $seqs) = gen_body();
-	my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
-#	$template->param(TITLE=>'Organism Overview');
-	$template->param(PAGE_TITLE=>'OrgView');
-	$template->param(HEAD=>qq{});
-	$template->param(HELP=>"/wiki/index.php?title=OrganismView");
-	my $name = $USER->user_name;
-        $name = $USER->first_name if $USER->first_name;
-        $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
-        $template->param(USER=>$name);
-	$template->param(BOX_NAME=>"Search for organisms and genomes");
-	$template->param(LOGON=>1) unless $USER->user_name eq "public";
-	$template->param(DATE=>$DATE);
-	$template->param(LOGO_PNG=>"OrganismView-logo.png");
-	$template->param(BODY=>$body);
-#	$template->param(ADJUST_BOX=>1);
-	$html .= $template->output;
-      }
+    my ($body, $seq_names, $seqs) = gen_body();
+    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
+    #	$template->param(TITLE=>'Organism Overview');
+    $template->param(PAGE_TITLE=>'OrgView');
+    $template->param(HEAD=>qq{});
+    $template->param(HELP=>"/wiki/index.php?title=OrganismView");
+    my $name = $USER->user_name;
+    $name = $USER->first_name if $USER->first_name;
+    $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
+    $template->param(USER=>$name);
+    $template->param(BOX_NAME=>"Search for organisms and genomes");
+    $template->param(LOGON=>1) unless $USER->user_name eq "public";
+    $template->param(DATE=>$DATE);
+    $template->param(LOGO_PNG=>"OrganismView-logo.png");
+    $template->param(BODY=>$body);
+    #	$template->param(ADJUST_BOX=>1);
+    $html .= $template->output;
     return $html;
   }
 

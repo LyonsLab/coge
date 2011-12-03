@@ -17,7 +17,7 @@ use CoGe::Accessory::genetic_code;
 use File::Path;
 no warnings 'redefine';
 
-use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $TEMPDIR $TEMPURL $USER $DATE $CLUSTAL $BASEFILE $coge $cogeweb $FORM $NEWICKTOPS $CONVERT $MAX_PROC);
+use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $TEMPDIR $TEMPURL $USER $DATE $CLUSTAL $BASEFILE $coge $cogeweb $FORM $NEWICKTOPS $CONVERT $MAX_PROC $COOKIE_NAME);
 $P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 $MAX_PROC=$P->{MAX_PROC};
@@ -39,43 +39,11 @@ $DBPASS = $P->{DBPASS};
 $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
 $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 
-($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>'cogec',coge=>$coge);
+$COOKIE_NAME = $P->{COOKIE_NAME};
 
-if($FORM->param('ticket') && $USER->user_name eq "public"){
-
-	my  @values = split(/'?'/,$FORM->url());
-
-	
-	my 	($name,$fname,$lname,$email,$login_url) = CoGe::Accessory::Web::login_cas($FORM->param('ticket') ,$values[0]);
-
-
-
-	if($name){
-		my ($valid,$cookie,$urlx) = login(name=>$name,url=>$login_url);
-		
-		if($valid eq 'true'){
-			print STDERR 'valid';
-		}else{
-				
-				my $new_row = $coge->resultset('User')->create({user_name=>$name,first_name=>$fname,last_name=>$lname,email=>$email});
-				$new_row->insert;
-				print STDERR 'not valid';
-				($valid,$cookie,$urlx) = login(name=>$name, url=>$login_url);
-		}
-		
-		print STDERR $cookie;
-		print "Set-Cookie: $cookie\n";
-		
-	}
-	$FORM->delete_all();
-	
-	
-
-
-	($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>'cogec',coge=>$coge);
-	print 'Location:'.$FORM->redirect($login_url);
-	print STDERR "***".$USER->user_name;
-}
+my ($cas_ticket) =$FORM->param('ticket');
+CoGe::Accessory::Web->login_cas(ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
+($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge);
 
 
 $CLUSTAL = $P->{CLUSTALW};
@@ -98,32 +66,25 @@ print $pj->build_html($FORM, \&gen_html);
 sub gen_html
   {
     my $html;    
-    unless ($USER)
-      {
-	$html = login();
-      }
-    else
-      {
-	my ($body) = gen_body();
-	my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
-	$template->param(TITLE=>'ClustalW2 Alignments');
-	$template->param(PAGE_TITLE=>'Align');
-	$template->param(HELP=>'/wiki/index.php?title=CoGeAlign');
-	my $name = $USER->user_name;
-	$name = $USER->first_name if $USER->first_name;
-	$name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
-	$template->param(USER=>$name);
-	$template->param(ADJUST_BOX=>0);
-	$template->param(LOGO_PNG=>"CoGeAlign-logo.png");
-	$template->param(LOGON=>1) unless $USER->user_name eq "public";
-	$template->param(DATE=>$DATE);
-	$template->param(BOX_NAME=>'CoGe: ClustalW 2.0.10');
-	$template->param(BODY=>$body);
-	my $prebox = HTML::Template->new(filename=>$P->{TMPLDIR}.'CoGeAlign.tmpl');
-	$prebox->param(RESULTS_DIV=>1);
-	$template->param(PREBOX=>$prebox->output);
-	$html .= $template->output;
-      }
+    my ($body) = gen_body();
+    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
+    $template->param(TITLE=>'ClustalW2 Alignments');
+    $template->param(PAGE_TITLE=>'Align');
+    $template->param(HELP=>'/wiki/index.php?title=CoGeAlign');
+    my $name = $USER->user_name;
+    $name = $USER->first_name if $USER->first_name;
+    $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
+    $template->param(USER=>$name);
+    $template->param(ADJUST_BOX=>0);
+    $template->param(LOGO_PNG=>"CoGeAlign-logo.png");
+    $template->param(LOGON=>1) unless $USER->user_name eq "public";
+    $template->param(DATE=>$DATE);
+    $template->param(BOX_NAME=>'CoGe: ClustalW 2.0.10');
+    $template->param(BODY=>$body);
+    my $prebox = HTML::Template->new(filename=>$P->{TMPLDIR}.'CoGeAlign.tmpl');
+    $prebox->param(RESULTS_DIV=>1);
+    $template->param(PREBOX=>$prebox->output);
+    $html .= $template->output;
   }
   
 sub gen_body

@@ -13,13 +13,13 @@ use URI::Escape;
 use Data::Dumper;
 no warnings 'redefine';
 
-use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb $cgi %FUNCTION);
+use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb $cgi %FUNCTION $COOKIE_NAME $FORM);
 $P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
 ($USER) = CoGe::Accessory::LogUser->get_user();
-$cgi = new CGI;
+$FORM = new CGI;
 
 $DBNAME = $P->{DBNAME};
 $DBHOST = $P->{DBHOST};
@@ -28,6 +28,12 @@ $DBUSER = $P->{DBUSER};
 $DBPASS = $P->{DBPASS};
 $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
 $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
+
+$COOKIE_NAME = $P->{COOKIE_NAME};
+
+my ($cas_ticket) =$FORM->param('ticket');
+CoGe::Accessory::Web->login_cas(ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
+($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge);
 
 #my $pj = new CGI::Ajax(
 %FUNCTION = (
@@ -54,49 +60,42 @@ dispatch();
 sub gen_html
   {
     my $html;    
-    unless ($USER && $USER->user_name ne 'public')
-      {
-	$html = CoGe::Accessory::Web::login();
-      }
-    else
-     {
-	 my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
-	 $template->param(HELP=>'USER');
-	 # print STDERR "user is: ",$USER,"\n";
-	 my $name = $USER->user_name;
-	 $name = $USER->first_name if $USER->first_name;
-	 $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
-	 $template->param(USER=>$name);
-	 $template->param(TITLE=>$name.qq{'s User Settings (BETA)});
-	 $template->param(PAGE_TITLE=>$name.qq{'s User Settings (BETA)});
-	# $template->param(LOGO_PNG=>"FeatList-logo.png");
-	 $template->param(LOGON=>1) unless $USER->user_name eq "public";
-	 $template->param(DATE=>$DATE);
-	 $template->param(BODY=>gen_body());
-	 $template->param(BOX_NAME=>$name.qq{'s User Settings (BETA)});
-	 $template->param(ADJUST_BOX=>1);
-	 $html .= $template->output;
-     }
+    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
+    $template->param(HELP=>'USER');
+    # print STDERR "user is: ",$USER,"\n";
+    my $name = $USER->user_name;
+    $name = $USER->first_name if $USER->first_name;
+    $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
+    $template->param(USER=>$name);
+    $template->param(TITLE=>$name.qq{'s User Settings (BETA)});
+    $template->param(PAGE_TITLE=>$name.qq{'s User Settings (BETA)});
+    # $template->param(LOGO_PNG=>"FeatList-logo.png");
+    $template->param(LOGON=>1) unless $USER->user_name eq "public";
+    $template->param(DATE=>$DATE);
+    $template->param(BODY=>gen_body());
+    $template->param(BOX_NAME=>$name.qq{'s User Settings (BETA)});
+    $template->param(ADJUST_BOX=>1);
+    $html .= $template->output;
   }
 
 sub dispatch
 {
-    my %args = $cgi->Vars;
+    my %args = $FORM->Vars;
     my $fname = $args{'fname'};
     if($fname)
     {
-	#my %args = $cgi->Vars;
+	#my %args = $FORM->Vars;
 	#print STDERR Dumper \%args;
 	if($args{args}){
 	    my @args_list = split( /,/, $args{args} );
-	    print $cgi->header, $FUNCTION{$fname}->(@args_list);
+	    print $FORM->header, $FUNCTION{$fname}->(@args_list);
        	}
 	else{
-	    print $cgi->header, $FUNCTION{$fname}->(%args);
+	    print $FORM->header, $FUNCTION{$fname}->(%args);
 	}
     }
     else{
-	print $cgi->header, gen_html();
+	print $FORM->header, gen_html();
     }
 }
 

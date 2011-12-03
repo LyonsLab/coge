@@ -14,7 +14,7 @@ no warnings 'redefine';
 # for security purposes
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 
-use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM);
+use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $COOKIE_NAME $coge);
 $P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 $TEMPDIR = $P->{TEMPDIR};
@@ -38,40 +38,14 @@ $DBPASS = $P->{DBPASS};
 $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
 $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 
+$COOKIE_NAME = $P->{COOKIE_NAME};
 
-($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>'cogec',coge=>$coge);
-
-if($FORM->param('ticket') && $USER->user_name eq "public"){
-
-	my  @values = split(/'?'/,$FORM->url());
-		
-	my 	($name,$fname,$lname,$email,$login_url) = CoGe::Accessory::Web::login_cas($FORM->param('ticket') ,$values[0]);
-
-	if($name){
-		my ($valid,$cookie,$urlx) = login(name=>$name,url=>$login_url);
-		
-		if($valid eq 'true'){
-			print STDERR 'valid';
-		}else{				
-				my $new_row = $coge->resultset('User')->create({user_name=>$name,first_name=>$fname,last_name=>$lname,email=>$email});
-				$new_row->insert;
-				print STDERR 'not valid';
-				($valid,$cookie,$urlx) = login(name=>$name, url=>$login_url);
-		}
-		print STDERR $cookie;
-		print "Set-Cookie: $cookie\n";
-		
-	}
-	$FORM->delete_all();
-	
-	($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>'cogec',coge=>$coge);
-	print 'Location:'.$FORM->redirect($login_url);
-	print STDERR "***".$USER->user_name;
-}
-
+my ($cas_ticket) =$FORM->param('ticket');
+CoGe::Accessory::Web->login_cas(ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
+($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge);
 
 my $pj = new CGI::Ajax(
-		       go=>\&gen_html,
+		       gen_html=>\&gen_html,
 		      );
 $pj->JSDEBUG(0);
 $pj->DEBUG(0);
@@ -80,34 +54,6 @@ $pj->js_encode_function('escape');
 #print $pj->build_html($FORM, \&gen_html);
 print "Content-Type: text/html\n\n";
 print gen_html();
-
-sub login
-  {
-	#$my $self= shift;
-
-	my %opts=@_;
-    my $name = $opts{name};
-	my $url = $opts{url} ;
-    my ($u) = $coge->resultset('User')->search({user_name=>$name});
-
-   if ($u)
-    {
-
-     my $session = md5_base64($name.$ENV{REMOTE_ADDR});
-      $session =~ s/\+/1/g;
-      my $sid = $coge->log_user(user=>$u,session=>$session);
-
-      my $c = CoGe::Accessory::LogUser->gen_cookie(session=>$session,cookie_name=>'cogec',url=>$url);
-
-      return ('true', $c, $url );
-    }
-   else 
-    {
-    	my $c = CoGe::Accessory::LogUser->gen_cookie(session=>"public");
-    	return ('false', $c,  $url);
-    }
-
-  }
 
 sub gen_html
   {

@@ -19,7 +19,7 @@ use Statistics::Basic::Mean;
 use POSIX;
 no warnings 'redefine';
 
-use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb $FORM);
+use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb $FORM $COOKIE_NAME);
 
 $P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
@@ -27,7 +27,6 @@ $ENV{PATH} = $P->{COGEDIR};
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
 $PAGE_NAME = "CodeOn.pl";
-($USER) = CoGe::Accessory::LogUser->get_user();
 $TEMPDIR = $P->{TEMPDIR};
 $FORM = new CGI;
 $DBNAME = $P->{DBNAME};
@@ -37,6 +36,13 @@ $DBUSER = $P->{DBUSER};
 $DBPASS = $P->{DBPASS};
 $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
 $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
+
+$COOKIE_NAME = $P->{COOKIE_NAME};
+
+my ($cas_ticket) =$FORM->param('ticket');
+CoGe::Accessory::Web->login_cas(ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
+($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge);
+
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 
@@ -126,7 +132,7 @@ sub get_orgs
     return map {$_->id} @db if $id_only;
     #my @db = $name ? $coge->resultset('Organism')->search({name=>{like=>"%".$name."%"}})
     #  : $coge->resultset('Organism')->all();
-    ($USER) = CoGe::Accessory::LogUser->get_user();
+#    ($USER) = CoGe::Accessory::LogUser->get_user();
     my @opts;
     foreach my $item (sort {uc($a->name) cmp uc($b->name)} @db)
       {
@@ -241,7 +247,7 @@ sub get_features
       {
         return $weak_query;
       }
-    ($USER) = CoGe::Accessory::LogUser->get_user();
+#    ($USER) = CoGe::Accessory::LogUser->get_user();
 
     my $search ={};
     $search->{feature_type_id}=3;

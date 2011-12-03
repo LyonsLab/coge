@@ -11,7 +11,7 @@ use CoGe::Accessory::Web;
 no warnings 'redefine';
 #use CoGeX;
 
-use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $FID $coge);
+use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $FID $coge $COOKIE_NAME);
 $P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 $TEMPDIR = $P->{TEMPDIR};

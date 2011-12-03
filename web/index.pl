@@ -18,7 +18,7 @@ use CGI::Log;
 
 
 no warnings 'redefine';
-use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $USER $FORM $DATE $URL $update $coge);
+use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $USER $FORM $DATE $URL $update $coge $COOKIE_NAME);
 
 $P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
@@ -30,64 +30,27 @@ $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		 sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
 my $pj = new CGI::Ajax(
 		       gen_html=>\&gen_html,
-		       login=>\&login,
 		       get_latest_genomes=>\&get_latest_genomes,
 		      );
 $update =0;
+
 $DBNAME = $P->{DBNAME};
 $DBHOST = $P->{DBHOST};
 $DBPORT = $P->{DBPORT};
 $DBUSER = $P->{DBUSER};
 $DBPASS = $P->{DBPASS};
-
-print STDERR "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT.' '.$DBUSER;
-
 $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
 $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 
-($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>'cogec',coge=>$coge);
+$COOKIE_NAME = $P->{COOKIE_NAME};
 
-if($FORM->param('ticket') && $USER->user_name eq "public"){
-
-	my  @values = split(/'?'/,$FORM->url());
-
-	
-	my 	($name,$fname,$lname,$email,$login_url) = CoGe::Accessory::Web::login_cas($FORM->param('ticket') ,$values[0]);
-
-
-
-	if($name){
-		my ($valid,$cookie,$urlx) = login(name=>$name,url=>$login_url);
-		
-		if($valid eq 'true'){
-			print STDERR 'valid';
-		}else{
-				
-				my $new_row = $coge->resultset('User')->create({user_name=>$name,first_name=>$fname,last_name=>$lname,email=>$email});
-				$new_row->insert;
-				print STDERR 'not valid';
-				($valid,$cookie,$urlx) = login(name=>$name, url=>$login_url);
-		}
-		
-		
-		print "Set-Cookie: $cookie\n";
-		
-	}
-	print STDERR $login_url;
-	print 'Location:'.$FORM->redirect($login_url);
-
-	($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>'cogec',coge=>$coge);
-
-	print STDERR "***".$USER->user_name;
-	
-	$USER->user_groups();
-}
-
+my ($cas_ticket) =$FORM->param('ticket');
+CoGe::Accessory::Web->login_cas(ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
+($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge);
+#logout is only called through this program!  All logouts from other pages are redirected to this page
+CoGe::Accessory::Web->logout_cas(cookie_name=>$COOKIE_NAME, coge=>$coge, user=>$USER, form=>$FORM) if $FORM->param('logout');
 
 #print $FORM->header, gen_html();
-
-
-
 print $pj->build_html($FORM, \&gen_html);
 
 
@@ -96,22 +59,12 @@ sub gen_html
     my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
     $template->param(TITLE=>'The Place to <span style="color: #119911">Co</span>mpare <span style="color: #119911">Ge</span>nomes');
     $template->param(PAGE_TITLE=>'ANKoCG');
-    
     $template->param(HELP=>'/wiki/index.php');
-
-    if ($FORM->param('logout') || !$USER)
-      {
-	$template->param(USER=>"public");
-      }
-    else
-      {
-	my $name = $USER->user_name;
-	$name = $USER->first_name if $USER->first_name;
-	$name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
-	$template->param(USER=>$name);
-	$template->param(LOGON=>1) unless $USER->user_name eq "public";
-
-      }
+    my $name = $USER->user_name;
+    $name = $USER->first_name if $USER->first_name;
+    $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
+    $template->param(USER=>$name);
+    $template->param(LOGON=>1) unless $USER->user_name eq "public";
     $template->param(DATE=>$DATE);
     my $welcome = "Welcome to CoGe!&nbsp&nbsp&nbsp";
     unless ($update)
@@ -145,13 +98,8 @@ sub gen_html
 
 sub gen_body
   {
-	
-
     my $tmpl = HTML::Template->new(filename=>$P->{TMPLDIR}.'index.tmpl');
     my $html;
-    my $disable = 1;
-    $disable = 0 if $FORM->param('wheel');
-	
     if ($update)
       {
 	$tmpl->param(update=>1);
@@ -160,45 +108,14 @@ sub gen_body
       {
 	$tmpl->param(ACTIONS=>[map {{ACTION=>$_->{NAME}, DESC=>$_->{DESC}, LINK=>$_->{LINK}}} sort {$a->{ID} <=> $b->{ID}}@{actions()}  ]);
 	$tmpl->param('INTRO'=>1);
-	#$tmpl->param('CREDITS'=>1);
       }
     my $url = $FORM->param('url') if $FORM->param('url');
     if ($url)
      {
         $url =~ s/:::/;/g if $url;
-#        $url = $URL.$url unless $url =~ /$URL/;
         $tmpl->param(url=>$url);
      }
-    if ($FORM->param('logout'))
-    {
-			my $url ='http://coge.iplantcollaborative.org/coge/';
-			my %cookies = fetch CGI::Cookie;
-			if(ref $cookies{'cogec'}){
-				
-				my %session = $cookies{'cogec'}->value;
-
-			    $url = $session{url};
-
-				print STDERR "....->  " .$url;
-			}
-			my $session = md5_base64($USER->user_name.$ENV{REMOTE_ADDR});
-			$session =~ s/\+/1/g;
-			($session) = $coge->resultset('UserSession')->find({session=>$session});
-			$session->delete if $session;
-			$tmpl->param(READY=>"delete_cookie();");
-		#	$FORM->redirect("https://auth.iplantcollaborative.org/cas/logout?service=".$url."&gateway=1");
-		#	$FORM->redirect("https://auth.iplantcollaborative.org/cas/logout?service=".$url."&gateway=1");
-			print "Location: ".$FORM->redirect("https://auth.iplantcollaborative.org/cas/logout?service=".$url."&gateway=1");
-    }else{
-    	$tmpl->param(LOGIN=>1) if $FORM->param('login');
-    	$html .= $tmpl->output;
-   	}
-
-	
-
-   
-
-	
+    $html .= $tmpl->output;
     return $html;
   }
 
@@ -278,36 +195,6 @@ sub actions
 
 		  );
     return \@actions;
-  }
-
-sub login
-  {
-
-	#$my $self= shift;
-	
-	my %opts=@_;
-    my $name = $opts{name};
-	my $url = $opts{url} ;
-    my ($u) = $coge->resultset('User')->search({user_name=>$name});
-
-   if ($u)
-    {
-
-     my $session = md5_base64($name.$ENV{REMOTE_ADDR});
-      $session =~ s/\+/1/g;
-      my $sid = $coge->log_user(user=>$u,session=>$session);
-	 
-      my $c = CoGe::Accessory::LogUser->gen_cookie(session=>$session,cookie_name=>'cogec',url=>$url);
-  	
-      return ('true', $c, $url );
-    }
-   else 
-    {
-    	my $c = CoGe::Accessory::LogUser->gen_cookie(session=>"public");
-    	return ('false', $c,  $url);
-    }
-   
-
   }
 
 sub get_latest_genomes
