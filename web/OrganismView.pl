@@ -345,16 +345,14 @@ sub get_genome_list_for_org
       my @dsg;
       foreach my $dsg ($org->dataset_groups)
 	{
-	  next if $dsg->restricted && !$USER->has_access_to_genom($dsg);
-	}
-      foreach my $dsg (@dsg)
-	{
+	  next if $dsg->restricted && !$USER->has_access_to_genome($dsg);
 	  $dsg->name($org->name) unless $dsg->name;
+    	  push @dsg, $dsg;
 	}
-      @opts = map {$_->id."%".$_->name." (v".$_->version.", dsgid".$_->id. "): ". $_->genomic_sequence_type->name} sort {$b->version <=> $a->version || $a->type->id <=> $b->type->id || $a->name cmp $b->name || $b->id cmp $a->id} @dsg;
+      @opts = map {$_->id."%%".$_->name." (v".$_->version.", dsgid".$_->id. "): ". $_->genomic_sequence_type->name} sort {$b->version <=> $a->version || $a->type->id <=> $b->type->id || $a->name cmp $b->name || $b->id cmp $a->id} @dsg;
     }
-  my $res = join ("&", @opts); 
-  return $res;
+
+  my $res = join ("&&", @opts);
 }
 
 sub get_dataset_groups
