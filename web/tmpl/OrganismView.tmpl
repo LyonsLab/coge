@@ -123,10 +123,10 @@ function add_all_org(){
 function add_all_genomes_from_org(val){
 	if(val.length>0){
 		
-		var genomes = val.split("&");
+		var genomes = val.split("&&");
 		var i=0;
 		for(i=0; i < genomes.length;i++){
-			var genome = genomes[i].split('%');
+			var genome = genomes[i].split('%%');
 			if(genome.length>1){
 				add_to_genomelist_nowarn(genome[1],genome[0]);
 			}
