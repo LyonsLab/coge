@@ -48,7 +48,9 @@ jQuery(document).ready(function(){
   pageObj = new Object();
   if (jQuery.browser.msie) {browserAlert()};
   setup_button_states();
-//  if (jQuery.browser.msie == false) {$('#main_alert').html(" ")};
+  <TMPL_IF NAME=DELETE_COOKIE>
+  $.cookie('<TMPL_VAR NAME=COOKIE_NAME>','',-1);	
+  </TMPL_IF>
 });
 
 /*
@@ -60,38 +62,6 @@ function browserAlert()
  $('#main_alert').html('IE is not supported.  Please use FireFox: http://www.mozilla.com/en-US/firefox/');
  alert('IE is not supported.  Please use FireFox: http://www.mozilla.com/en-US/firefox/');
 }
-
-
-
-function sign_in(){
-	var my_url = "&url=";
-	my_url = my_url+location.href;
-	my_url = my_url.replace(/http.+CoGe\//,"");
-	my_url = my_url.replace(/#$/,"");
-	my_url = my_url.replace(/;/g,":::");
-	window.location = "index.pl?login=1"+my_url;
-}
-	
-function animate_section(name, style, speedy, show) {
-  if (show) {alert (name+"::"+style)}
-  if (speedy == undefined) speedy = pageObj.speed;
-  //alert('speedy is '+speedy);
-  if (!style) style = "toggle";
-  if (!speedy) {
-    if ((style == "show") || style == "slideDown" || style == "fadeIn") {jQuery(name).show();}
-    else if ((style == "hide") || style == "slideUp" || style == "fadeOut") {jQuery(name).hide();}
-    else {jQuery(name).toggle();}
-   }
-  else if (style == "toggle") {jQuery(name).toggle(speedy);}
-  else if (style == "hide") {jQuery(name).hide(speedy);}
-  else if (style == "show") {jQuery(name).show(speedy);}
-  else if (style == "slideToggle") {jQuery(name).slideToggle(speedy);}
-  else if (style == "slideUp") {jQuery(name).slideUp(speedy);}
-  else if (style == "slideDown") {jQuery(name).slideDown(speedy);}
-  else if (style == "fadeIn") {jQuery(name).fadeIn(speedy);}
-  else if (style == "fadeOut") {jQuery(name).fadeOut(speedy);}
-  return speedy;
- }
 
 
 //set up the jquery ui button behavior
