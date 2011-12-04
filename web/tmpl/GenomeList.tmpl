@@ -266,8 +266,10 @@
 	  $('#at_'+i).html('<span class=alert>loading...</span>');
 	  $('#n_'+i).removeClass('link');
 	  $('#n_'+i).html('<span class=alert>loading...</span>');
+	  $('#x_'+i).removeClass('link');
+	  $('#x_'+i).html('<span class=alert>loading...</span>');
 	  var dsgid = $('#dsgid_'+i).val();
-	  run_get_gc({dsgid: dsgid, divid1: 'gc_'+i, divid2: 'at_'+i, divid3: 'n_'+i});
+	  run_get_gc({dsgid: dsgid, divid1: 'gc_'+i, divid2: 'at_'+i, divid3: 'n_'+i, divid4: 'x_'+i});
 	 }
 	 $('#get_all_gc').remove();
 	   update_table();
@@ -319,8 +321,10 @@
 	  $('#at_'+i).html('<span class=alert>loading...</span>');
 	  $('#n_'+i).removeClass('link');
 	  $('#n_'+i).html('<span class=alert>loading...</span>');
+	  $('#x_'+i).removeClass('link');
+	  $('#x_'+i).html('<span class=alert>loading...</span>');
 	  var dsgid = $('#dsgid_'+i).val();
-	  run_get_gc({dsgid: dsgid, divid1: 'gc_'+i, divid2: 'at_'+i, divid3: 'n_'+i});
+	  run_get_gc({dsgid: dsgid, divid1: 'gc_'+i, divid2: 'at_'+i, divid3: 'n_'+i, divid4: 'x_'+i});
 	 }
 	 $('#get_all_gc').remove();
 	   update_table();
@@ -332,19 +336,22 @@
 	  divid1 = opts.divid1;
 	  divid2 = opts.divid2;
 	  divid3 = opts.divid3;
+	  divid4 = opts.divid4;
 
 	  // create a new closure who's scope does *not*
 	  // include the `divid` value so that callback will 
 	  // not clobber the `divid` variable 
-	  var create_callback = function(divid1, divid2, divid3) {
+	  var create_callback = function(divid1, divid2, divid3, divid4) {
 	      var local_divid1 = divid1;
 	      var local_divid2 = divid2;
 	      var local_divid3 = divid3;
+	      var local_divid4 = divid4;
 	      return function (data) {
 	          items = data.split('_');
 	          $('#'+local_divid1).html(items[0]);
 	          $('#'+local_divid2).html(items[1]);
 	          $('#'+local_divid3).html(items[2]);
+	          $('#'+local_divid4).html(items[3]);
 	      };
 	  };
 
@@ -354,7 +361,7 @@
 	       	    fname: 'get_gc',
 	    	    dsgid: dsgid 
 	          },
-	    success : create_callback(divid1, divid2, divid3)
+	    success : create_callback(divid1, divid2, divid3, divid4)
 	  });
 	}
 
@@ -561,13 +568,14 @@
 	      <td><input class = "display"  type = checkbox onclick="toggle_column(8);" <TMPL_VAR NAME="LengthD">>Length
 	      <td><input class = "display"  type = checkbox onclick="toggle_column(9);" <TMPL_VAR NAME="GCD">>GC%
 	      <td><input class = "display"  type = checkbox onclick="toggle_column(10);" <TMPL_VAR NAME="ATD">>AT%
-	      <td><input class = "display"  type = checkbox onclick="toggle_column(11);" <TMPL_VAR NAME="ND">>N|X%
-	      <td><input class = "display"  type = checkbox onclick="toggle_column(12);" <TMPL_VAR NAME="FeatD">>Feature Counts
+	      <td><input class = "display"  type = checkbox onclick="toggle_column(11);" <TMPL_VAR NAME="ND">>N%
+	      <td><input class = "display"  type = checkbox onclick="toggle_column(12);" <TMPL_VAR NAME="ND">>X%
+	      <td><input class = "display"  type = checkbox onclick="toggle_column(13);" <TMPL_VAR NAME="FeatD">>Feature Counts
 	     <tr>
-	      <td><input class = "display"  type = checkbox onclick="toggle_column(13);" <TMPL_VAR NAME="AAD">>Amino Acid Usage
-	      <td><input class = "display"  type = checkbox onclick="toggle_column(14);" <TMPL_VAR NAME="CodonD">>Codon Usage
-	      <td><input class = "display"  type = checkbox onclick="toggle_column(15);" <TMPL_VAR NAME="CDSGCHistD">>CDS GC Histogram
-	      <td><input class = "display"  type = checkbox onclick="toggle_column(16);" <TMPL_VAR NAME="CDSWGCHistD">>CDS Wobble GC Histogram
+	      <td><input class = "display"  type = checkbox onclick="toggle_column(14);" <TMPL_VAR NAME="AAD">>Amino Acid Usage
+	      <td><input class = "display"  type = checkbox onclick="toggle_column(15);" <TMPL_VAR NAME="CodonD">>Codon Usage
+	      <td><input class = "display"  type = checkbox onclick="toggle_column(16);" <TMPL_VAR NAME="CDSGCHistD">>CDS GC Histogram
+	      <td><input class = "display"  type = checkbox onclick="toggle_column(17);" <TMPL_VAR NAME="CDSWGCHistD">>CDS Wobble GC Histogram
 
 	      <TMPL_IF NAME="SAVE_DISPLAY">
 	<TR><td>
@@ -601,7 +609,8 @@
 	<br><span id="get_all_gc" class="link small" onclick="get_all_gc(<TMPL_VAR NAME="GENOME_COUNT">)">Get all</span>
 	  </TH>
 	  <TH >AT%</TH>
-	  <TH >N|X%</TH>
+	  <TH >N%</TH>
+	  <TH >X%</TH>
 	  <TH >Feature Counts
 	<br><span id="get_all_feat_counts" class="link small" onclick="get_all_feat_counts(<TMPL_VAR NAME="GENOME_COUNT">)">Get all</span>
 	  </TH>
@@ -612,9 +621,9 @@
 	<br><span id="show_all_codon" class="link small" onclick="show_all_codon_tables(<TMPL_VAR NAME="GENOME_COUNT">)">Get all codon tables</span>
 	  </th>
 	  <th >CDS GC Histogram
-		<br><span id="get_all_gc" class="link small" onclick="get_all_gc_hist(<TMPL_VAR NAME="GENOME_COUNT">)">Get all </span></th>
+		<br><span id="get_all_cg" class="link small" onclick="get_all_gc_hist(<TMPL_VAR NAME="GENOME_COUNT">)">Get all </span></th>
 	  <th >CDS Wobble GC Historgram
-	<br><span id="get_all_wcg" class="link small" onclick="get_all_wobble_hist(<TMPL_VAR NAME="GENOME_COUNT">)">Get all</span>
+	        <br><span id="get_all_wcg" class="link small" onclick="get_all_wobble_hist(<TMPL_VAR NAME="GENOME_COUNT">)">Get all</span>
 	</th>
 	  </tr>
 	</THEAD>
@@ -630,9 +639,10 @@
 	     <TD align=center><TMPL_VAR NAME=VER></TD>
 	     <TD align=center><TMPL_VAR NAME=CHR_COUNT></TD>
 	     <TD align=right><TMPL_VAR NAME=LENGTH></TD>
-	     <TD align=right id="gc_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#gc_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#at_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#n_<TMPL_VAR NAME=COUNT>').removeClass('link'); run_get_gc({dsgid: <TMPL_VAR NAME=DSGID>,divid1: 'gc_<TMPL_VAR NAME=COUNT>', divid2: 'at_<TMPL_VAR NAME=COUNT>', divid3: 'n_<TMPL_VAR NAME=COUNT>'})">Get GC</TD>
-	     <TD align=right id="at_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#gc_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#at_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#n_<TMPL_VAR NAME=COUNT>').removeClass('link'); run_get_gc({dsgid: <TMPL_VAR NAME=DSGID>,divid1: 'gc_<TMPL_VAR NAME=COUNT>', divid2: 'at_<TMPL_VAR NAME=COUNT>', divid3: 'n_<TMPL_VAR NAME=COUNT>'})">Get AT</TD>
-	     <TD align=right id="n_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#gc_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#at_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#n_<TMPL_VAR NAME=COUNT>').removeClass('link'); run_get_gc({dsgid: <TMPL_VAR NAME=DSGID>,divid1: 'gc_<TMPL_VAR NAME=COUNT>', divid2: 'at_<TMPL_VAR NAME=COUNT>', divid3: 'n_<TMPL_VAR NAME=COUNT>'})">Get N</TD>
+	     <TD align=right id="gc_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#gc_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#at_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#n_<TMPL_VAR NAME=COUNT>').removeClass('link'); run_get_gc({dsgid: <TMPL_VAR NAME=DSGID>,divid1: 'gc_<TMPL_VAR NAME=COUNT>', divid2: 'at_<TMPL_VAR NAME=COUNT>', divid3: 'n_<TMPL_VAR NAME=COUNT>', divid4: 'x_<TMPL_VAR NAME=COUNT>'})">Get GC</TD>
+	     <TD align=right id="at_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#gc_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#at_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#n_<TMPL_VAR NAME=COUNT>').removeClass('link'); run_get_gc({dsgid: <TMPL_VAR NAME=DSGID>,divid1: 'gc_<TMPL_VAR NAME=COUNT>', divid2: 'at_<TMPL_VAR NAME=COUNT>', divid3: 'n_<TMPL_VAR NAME=COUNT>', divid4: 'x_<TMPL_VAR NAME=COUNT>'})">Get AT</TD>
+	     <TD align=right id="n_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#gc_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#at_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#n_<TMPL_VAR NAME=COUNT>').removeClass('link'); run_get_gc({dsgid: <TMPL_VAR NAME=DSGID>,divid1: 'gc_<TMPL_VAR NAME=COUNT>', divid2: 'at_<TMPL_VAR NAME=COUNT>', divid3: 'n_<TMPL_VAR NAME=COUNT>', divid4: 'x_<TMPL_VAR NAME=COUNT>'})">Get N</TD>
+	     <TD align=right id="x_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#gc_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#at_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#n_<TMPL_VAR NAME=COUNT>').removeClass('link'); run_get_gc({dsgid: <TMPL_VAR NAME=DSGID>,divid1: 'gc_<TMPL_VAR NAME=COUNT>', divid2: 'at_<TMPL_VAR NAME=COUNT>', divid3: 'n_<TMPL_VAR NAME=COUNT>', divid4: 'x_<TMPL_VAR NAME=COUNT>'})">Get X</TD>
 	     <TD align=left id="feat_counts_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#feat_counts_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#feat_counts_<TMPL_VAR NAME=COUNT>').removeClass('link'); run_get_feat_counts({dsgid: <TMPL_VAR NAME=DSGID>, divid: 'feat_counts_<TMPL_VAR NAME=COUNT>'})">Count Features</TD>
 	     <TD align=left id="aa_usage_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#aa_usage_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#aa_usage_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#aa_usage_<TMPL_VAR NAME=COUNT>').html('<span class=alert>loading...</span>'); run_get_aa_usage({dsgid: '<TMPL_VAR NAME=DSGID>',divid: 'aa_usage_<TMPL_VAR NAME=COUNT>', table_name: 'aa_table<TMPL_VAR NAME=COUNT>'})">Amino Acid Usage</TD>
 	     <TD align=left id="codon_usage_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#codon_usage_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#codon_usage_<TMPL_VAR NAME=COUNT>').removeClass('link'); run_get_codon_usage({dsgid:<TMPL_VAR NAME=DSGID>, divid: 'codon_usage_<TMPL_VAR NAME=COUNT>'})">Codon Usage</TD>
