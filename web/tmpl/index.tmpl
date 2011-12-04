@@ -3,27 +3,11 @@
 <!--<script type="text/javascript" src="js/jquery.svganim.pack.js">-->
 <SCRIPT language="JavaScript">
 
-function place_cookie(valid, cookie, url)
-  {
-    if (valid == 'true') 
-     {
-       document.cookie = cookie;
-     //  window.location = url;
-	alert('valid');
-     }
-   
-  }
-
-function delete_cookie()  {
-      $.cookie('CoGe','',{path: '/CoGe', expires: -1});
-  }
-
 $(document).ready(function(){
   $('#uname').focus();
   pageObj = new Object();
   pageObj.index=0;//Math.floor(Math.random()*20);
   cross_fade();
-  <TMPL_VAR NAME=READY>
 });
 
 //$('#nav').svg({onLoad: drawIntro}); 
@@ -37,26 +21,11 @@ svg.circle(75, 75, 50,
 
 }
 
-<TMPL_IF NAME="LOGINX">
-	window.onload = function(){
-			login(['args__ticket','args__<TMPL_VAR NAME="TICKET_T">'],[place_cookie]);
-	}
-
-</TMPL_IF>
-
 
 $(function() {		$("#accordion").accordion({collapsible:true, active: false});	});
 $(function() {		$("#accordion2").accordion({collapsible:true, active: false, disabled:true});	});
 $(function() {		$("#accordion3").accordion({collapsible:true, active: false, disabled:true});	});
 $(function() {		$("#accordion4").accordion({collapsible:true, active: false});	});
-
-function onEnter(e){
-  if (!e){ 
-   var e = window.event;}
-  if(e.which == 13){
-//	login([<TMPL_VAR NAME="TICKET_T">],[place_cookie]);
- }
-}
 
 function cross_fade() {
 
@@ -181,33 +150,6 @@ Number returned: <input id=limit class=backbox type=textbox size=3 value=20><spa
 <div style="clear: both;"> </div>
 
 
-</TMPL_IF>
-
-<TMPL_IF NAME="LOGIN">
-<DIV align=left>
-<DIV id="message"><TMPL_VAR NAME="MESSAGE"></DIV>
-<DIV class=large>Please log on: <font class="small">(You will need make sure to set <a href="http://www.mozilla.com/firefox/">your browser</a> to accept <a href="http://en.wikipedia.org/wiki/HTTP_cookie">cookies</a>)</font></div>
-<TABLE class="basic">
- <TR>
-  <TD>User Name:
-  <TD><input class="backbox" type="text" name="uname" id="uname" size="10" onkeypress="onEnter(event);">
- <TR>
-  <TD>Password:
-  <TD><input class="backbox" type="password" name="pwd" id="pwd" size="10" onkeypress="onEnter(event);">
-</TABLE>
-<input type="hidden" id="url" value="<TMPL_VAR NAME="url">">
-<input type="submit" value="Log on" id="Login" onClick="login(['uname', 'pwd','url'],[place_cookie])">
-<input type="submit" value="cancel" id="Login" onClick="login(['args__public', 'args__none','url'],[place_cookie])">
-</DIV>
-
-</TMPL_IF>
-
-<TMPL_IF NAME=CREDITS>
-<div align=left>
-<a href="http://www.nsf.gov" target= "_new"><img src="./picts/nsf-logo.gif" border=0 width = 100px></a>
-<img src="./picts/uc_seal.gif" border=0 width=100px>
-<br><a href="/awstats/awstats.pl?config=CoGe" target=_new class="small" style="text-align: center;">CoGe's usage stats</a>
-</div>
 </TMPL_IF>
 
 <TMPL_IF NAME=UPDATE>
