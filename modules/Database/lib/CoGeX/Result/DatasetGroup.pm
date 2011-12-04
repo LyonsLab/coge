@@ -643,6 +643,7 @@ sub percent_gc
     my $gc = 0;
     my $at = 0;
     my $n = 0;
+    my $c = 0;
     my $length = 0;
     unless ($sent_chr)
       {
@@ -657,11 +658,12 @@ sub percent_gc
 	$length += length $seq;
 	$gc += $seq =~ tr/GCgc/GCgc/;
 	$at += $seq =~ tr/ATat/ATat/;
-	$n  += $seq =~ tr/nNxX/nNxX/;
+	$n  += $seq =~ tr/nN/nN/;
+	$x  += $seq =~ tr/xX/xX/;
       }
     return unless $length;
-    return ($gc,$at, $n) if $count;
-    return sprintf("%.4f", $gc/$length),sprintf("%.4f", $at/$length),sprintf("%.4f", $n/$length);
+    return ($gc,$at, $n, $x) if $count;
+    return sprintf("%.4f", $gc/$length),sprintf("%.4f", $at/$length),sprintf("%.4f", $n/$length),sprintf("%.4f", $x/$length);
   }
 
 
