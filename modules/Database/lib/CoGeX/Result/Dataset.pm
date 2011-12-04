@@ -730,9 +730,10 @@ sub percent_gc
     return unless $length;
     my ($gc) = $seq =~ tr/GCgc/GCgc/;
     my ($at) = $seq =~ tr/ATat/ATat/;
-    my ($n) = $seq =~ tr/nNxX/nNxX/;
-    return ($gc,$at, $n) if $count;
-    return sprintf("%.4f", $gc/$length),sprintf("%.4f", $at/$length),,sprintf("%.4f", $n/$length);
+    my ($n) = $seq =~ tr/nN/nN/;
+    my ($x) = $seq =~ tr/xX/xX/;
+    return ($gc,$at, $n, $x) if $count;
+    return sprintf("%.4f", $gc/$length),sprintf("%.4f", $at/$length),sprintf("%.4f", $n/$length),sprintf("%.4f", $x/$length);
   }
 
 
