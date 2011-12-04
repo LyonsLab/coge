@@ -217,7 +217,6 @@ sub add_to_group(){
 
 }
 
-=head1 BUGS
 
 
 
@@ -228,7 +227,7 @@ sub add_to_group(){
 
  Usage     : 
  Purpose   : Returns the set of private genomes a user has access to
- Returns   : Array of datasets
+ Returns   : Array of dataset_groupss
  Argument  : None
  Throws    : None
  Comments  : 
@@ -249,7 +248,7 @@ sub private_genomes{
 	    push(@private_genomes,$group->private_genomes());
 	}
 	
-	    return @private_genomes;
+	    return wantarray ? @private_genomes: \@private_genomes;
 }
 
 
@@ -259,8 +258,8 @@ sub private_genomes{
 =head2 has_access_to_genome
 
  Usage     : 
- Purpose   : Returns the set of private genomes a user has access to
- Returns   : Array of datasets
+ Purpose   : checks to see if a user has access to a genome (dataset_group)
+ Returns   : 1/0
  Argument  : None
  Throws    : None
  Comments  : 
@@ -278,13 +277,77 @@ sub has_access_to_genome{
   return 0 unless $dsg;
   my $dsgid = $dsg =~ /^\d+$/ ? $dsg : $dsg->id;
   foreach my $genome($self->private_genomes()){
-    if($dsgid==$genome->dataset_group_id){
+    if($dsgid==$genome->id){
       return 1;
     }
   }
   return 0;
 }
 
+################################################ subroutine header begin ##
+
+=head2 private_datasets
+
+ Usage     : 
+ Purpose   : Returns the set of private datasets a user has access to
+ Returns   : Array of datasets
+ Argument  : None
+ Throws    : None
+ Comments  : 
+
+
+
+=cut
+
+################################################## subroutine header end ##
+
+
+sub private_datasets{
+	
+	my $self = shift;
+	return unless $self->id;
+	my @private_datasets= ();
+	foreach my $group ($self->user_groups()){
+	    push(@private_datasets,$group->private_datasets());
+	}
+	
+	    return wantarray ? @private_datasets: \@private_datasets;
+}
+
+
+
+################################################ subroutine header begin ##
+
+=head2 has_access_to_dataset
+
+ Usage     : 
+ Purpose   : checks to see if a user has access to a dataset
+ Returns   : 1/0
+ Argument  : None
+ Throws    : None
+ Comments  : 
+
+
+
+=cut
+
+################################################## subroutine header end ##
+
+sub has_access_to_dataset{
+  my $self = shift @_;
+  my %opts = @_;
+  my $ds = $opts{dataset};
+  return 0 unless $ds;
+  my $dsid = $ds =~ /^\d+$/ ? $ds : $ds->id;
+  foreach my $ds($self->private_datasets()){
+    if($dsid==$ds->id){
+      return 1;
+    }
+  }
+  return 0;
+}
+
+=head1 BUGS
 
 
 =head1 SUPPORT
