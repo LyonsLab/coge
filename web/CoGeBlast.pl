@@ -2311,7 +2311,7 @@ sub color_pallet
 	$temp = [map {$_-25} @$temp] unless ($i%6) || $i < 3;
 	
       }
-    print STDERR map {join ("\t", @$_)."\n"} @colors;
+    #print STDERR map {join ("\t", @$_)."\n"} @colors;
     return wantarray ? @colors : \@colors;
   }
 
