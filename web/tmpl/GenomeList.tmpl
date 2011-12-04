@@ -235,7 +235,7 @@
 	
 
 	function update_table() {
-	if (ajax.length)
+	if ($.active)
 	 {
 	   setTimeout("update_table()",100);
 	   return;
@@ -247,7 +247,7 @@
 
 
 	function get_codon_table (num) {
-	if (ajax.length)
+	if ($.active)
 	  {
 	   setTimeout("get_codon_table("+num+")",100);
 	   return;
