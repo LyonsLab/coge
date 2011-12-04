@@ -118,6 +118,7 @@ sub get_seqs
 	  }
 	my ($feat) = $coge->resultset('Feature')->find($fid);
 	next unless $feat;
+	next if $feat->dataset->restricted && !$USER->has_access_to_dataset($feat->dataset);
 	$seqs .= $feat->fasta(col=>80, prot=>$prot, name_only=>$name_only, gstid=>$gstidt, upstream=>$upstream, downstream=>$downstream);
          }
       }

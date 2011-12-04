@@ -133,6 +133,7 @@ sub gen_html
 	foreach my $fid (split /,/, $fids)
 	  {
 	    my $feat = $coge->resultset('Feature')->find($fid);
+	    next if $feat->dataset->restricted && !$USER->has_access_to_dataset($feat->dataset);
 	    $fasta .= ref($feat) =~ /Feature/i ?
 	      $feat->fasta(
 			   rc=>$rc,
@@ -171,7 +172,6 @@ sub get_orgs
 	my @opts;
 	foreach my $item (sort {uc($a->name) cmp uc($b->name)} @db)
 	  {
-	    next if $USER->user_name =~ /public/i && $item->restricted;
 	    push @opts, "<OPTION value=\"".$item->id."\" id=\"o".$item->id."\">".$item->name."</OPTION>";
 	  }
 
@@ -474,6 +474,7 @@ sub get_genome_fasta
     open (OUT, ">$file") || die "Can't open $file for writing: $!";;
     foreach my $ds (@$dslist)
       {
+	next if $ds->restricted && !$USER->has_access_to_dataset($ds);
 	foreach my $chr (sort $ds->get_chromosomes)
 	  {
 	    my $title =  $ds->organism->name." (v". $ds->version.") "."chromosome: $chr".", CoGe database id: ".$ds->id;

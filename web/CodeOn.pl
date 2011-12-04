@@ -136,7 +136,6 @@ sub get_orgs
     my @opts;
     foreach my $item (sort {uc($a->name) cmp uc($b->name)} @db)
       {
-        next if $USER->user_name =~ /public/i && $item->restricted;
         push @opts, "<OPTION value=\"".$item->id."\" id=\"o".$item->id."\">".$item->name."</OPTION>";
       }
     my $html;
@@ -251,7 +250,6 @@ sub get_features
 
     my $search ={};
     $search->{feature_type_id}=3;
-    $search->{"organism.restricted"}=0 if $USER->name =~ /public/i;
     $search->{'dataset_group.organism_id'}={IN=>$oids} if $oids && @$oids;
 #    unless ($org_id)
 #      {
@@ -320,6 +318,7 @@ sub get_features
 	next unless $org;
 	foreach my $dsg ($org->dataset_groups)
 	  {
+            next if $dsg->restricted && !$USER->has_access_to_genome($dsg);
 	    $dsgs{$dsg->id}=$dsg;
 	  }
       }

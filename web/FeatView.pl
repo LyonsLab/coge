@@ -164,7 +164,6 @@ sub cogesearch
     my %seen;
     my $search ={};
     $search->{feature_type_id}=$type if $type;
-    $search->{"organism.restricted"}=0 if $USER->name =~ /public/i;
     $search->{'organism.name'}={like=>"%".$org_name."%"} if $org_name;
     $search->{'organism.description'}={like=>"%".$org_desc."%"} if $org_desc;
     my $join = {join=>[{'feature'=>{'dataset'=>{'dataset_connectors'=>{'dataset_group'=>'organism'}}}}]};
@@ -223,11 +222,9 @@ sub cogesearch_featids
       {
 	return;
       }
-    ($USER) = CoGe::Accessory::LogUser->get_user();
     my %seen;
     my $search ={};
     $search->{feature_type_id}=$type if $type;
-    $search->{"organism.restricted"}=0 if $USER->name =~ /public/i;
     $search->{'organism.name'}={like=>"%".$org_name."%"} if $org_name;
     $search->{'organism.description'}={like=>"%".$org_desc."%"} if $org_desc;
     my $join = {join=>[{'feature'=>{'dataset'=>{'dataset_connectors'=>{'dataset_group'=>'organism'}}}}]};
@@ -288,7 +285,6 @@ sub cogesearch_featids_old
       {
 	return $weak_query.$blank unless $org_id && $type;
       }
-    ($USER) = CoGe::Accessory::LogUser->get_user();
     my $html;
     my %seen;
     my @opts;
@@ -314,8 +310,6 @@ sub cogesearch_featids_old
 	$search->{'annotation'}=$anno if $anno;
       }
     $search->{feature_type_id}=$type if $type;
-#    $search->{organism_id}{ -not_in}=[values %$restricted_orgs] if values %$restricted_orgs;
-    $search->{"organism.restricted"}=0 if $USER->name =~ /public/i;
     $search->{organism_id}{ -in}=[@org_ids] if @org_ids;
     my $join = {'feature'=>{'dataset'=>{'dataset_connectors'=>'dataset_group'}}};
     $join->{'feature'} = ['dataset','annotations'] if $anno;
@@ -366,8 +360,8 @@ sub get_anno
     $anno .= "<font class=small>Annotation count: ".scalar @feats."</font>\n<BR><hr>\n" if scalar @feats;
     my $i = 0;
     foreach my $feat (@feats)
-      {
-	
+      {	
+	next if ($feat->dataset->restricted && !$USER->has_access_to_dataset($feat->dataset));	
 	$i++;
 	my $featid = $feat->id;
 	my $chr = $feat->chr;
@@ -509,17 +503,16 @@ sub get_data_source_info_for_accn
 						    'prefetch'=>{'dataset'=> ['data_source',{'dataset_connectors'=>{'dataset_group'=>['organism', 'genomic_sequence_type']}}]}
 						    });
     my %sources;
-    ($USER) = CoGe::Accessory::LogUser->get_user();
     foreach my $feat (@feats)
       {
 	my $val = $feat->dataset;
+	next if $val->restricted && !$USER->has_access_to_dataset($val);
 	unless ($val)
 	  {
 	    warn "error with feature: ".$feat->id ." for name $accn\n";
 	    next;
 	  }
 	my $org = $val->organism->name if $val->organism;
-	next if $USER->user_name =~ /public/i && $val->organism->restricted;
 	if (keys %org_ids) {next unless $org_ids{$val->organism->id};}
 	my $name = $val->name;
 	my $ver = $val->version;
@@ -582,11 +575,9 @@ sub get_orgs
     return map {$_->id} @db if $id_only;
     #my @db = $name ? $coge->resultset('Organism')->search({name=>{like=>"%".$name."%"}})
     #  : $coge->resultset('Organism')->all();
-    ($USER) = CoGe::Accessory::LogUser->get_user();
     my @opts;
     foreach my $item (sort {uc($a->name) cmp uc($b->name)} @db)
       {
-	next if $USER->user_name =~ /public/i && $item->restricted;
 	push @opts, "<OPTION value=\"".$item->id."\" id=\"o".$item->id."\">".$item->name."</OPTION>";
       }
     my $html;

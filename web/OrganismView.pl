@@ -253,7 +253,6 @@ sub get_orgs
     my @opts;
     foreach my $item (sort {uc($a->name) cmp uc($b->name)} @db)
       {
-	#next if $USER->user_name =~ /public/i && $item->restricted;
 	my $option = "<OPTION value=\"".$item->id."\"";
 	$option .= " SELECTED" if $oid && $item->id == $oid;
 	$option .= " SELECTED" if $dsg && $item->id == $dsg->organism->id;
@@ -346,14 +345,7 @@ sub get_genome_list_for_org
       my @dsg;
       foreach my $dsg ($org->dataset_groups)
 	{
-	  if (!$dsg->restricted)
-	    {
-	      push @dsg, $dsg;
-	    }
-	  elsif($dsg->restricted && $USER->has_access_to_genome(genome=>$dsg)){
-	    push @dsg, $dsg
-	    }
-	  
+	  next if $dsg->restricted && !$USER->has_access_to_genom($dsg);
 	}
       foreach my $dsg (@dsg)
 	{
@@ -379,15 +371,8 @@ sub get_dataset_groups
 	  my @dsg;
 	  foreach my $dsg ($org->dataset_groups)
 	    {
-	      if(!$dsg->restricted)
-		{
-		  push @dsg, $dsg;
-		}
-	      elsif ($dsg->restricted && $USER->has_access_to_genome(genome=>$dsg)){
-		push @dsg, $dsg
-	      }
-
-#	      push @dsg, $dsg unless $USER->user_name =~ /public/i && $dsg->restricted;
+	      next if $dsg->restricted && !$USER->has_access_to_genome($dsg);
+	      push @dsg, $dsg
 	    }
 	  foreach my $dsg (@dsg)
 	    {
@@ -524,7 +509,7 @@ sub get_dataset
 	my %orgs;
 	foreach my $item (sort {$b->version <=> $a->version || uc($a->name) cmp uc($b->name)} @ds)
 	  {
-	    #next if $USER->user_name =~ /public/i && $item->organism->restricted;
+	    next if $item->restricted && !$USER->has_access_to_dataset($item);
 	    my $option = "<OPTION value=\"".$item->id."\">".$item->name."(v".$item->version.", id".$item->id.")</OPTION>";
 	    if ($dsid && $dsid == $item->id)
 	      {

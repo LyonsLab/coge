@@ -417,7 +417,6 @@ $html .= qq{<SELECT id="org_id" SIZE="8" MULTIPLE"><option id=null_org>Please se
     my @opts;
     foreach my $item (sort {uc($a->name) cmp uc($b->name)} @db)
       {
-	next if $USER->user_name =~ /public/i && $item->restricted;
 	push @opts, "<OPTION value=\"".$item->id."\" id=\"o".$item->id."\">".$item->name."</OPTION>";
       }
     
@@ -444,7 +443,7 @@ sub gen_dsg_menu
     my @dsg_menu;
     foreach my $dsg (sort {$b->version <=> $a->version || $a->type->id <=> $b->type->id} $coge->resultset('DatasetGroup')->search({organism_id=>$oid},{prefetch=>['genomic_sequence_type']}))
       {
-	next if $dsg->restricted && !$USER->has_access_to_genome(genome=>$dsg);
+	next if $dsg->restricted && !$USER->has_access_to_genome($dsg);
 	$dsgid = $dsg->id unless $dsgid;
 	my $name = join (", ", map{$_->name} $dsg->source) .": ";
 #	$name .= $dsg->name ? $dsg->name : $dsg->datasets->[0]->name;

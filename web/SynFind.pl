@@ -233,7 +233,6 @@ $html .= qq{<SELECT id="org_id" SIZE="8" MULTIPLE"><option id=null_org>Please se
     my @opts;
     foreach my $item (sort {uc($a->name) cmp uc($b->name)} @db)
       {
-	next if $USER->user_name =~ /public/i && $item->restricted;
 	push @opts, "<OPTION value=\"".$item->id."\" id=\"o".$item->id."\">".$item->name."</OPTION>";
       }
     
@@ -260,10 +259,11 @@ sub gen_dsg_menu
     my @dsg_menu;
     foreach my $dsg (sort {$b->version <=> $a->version || $a->type->id <=> $b->type->id} $coge->resultset('DatasetGroup')->search({organism_id=>$oid},{prefetch=>['genomic_sequence_type']}))
       {
+	next if $dsg->restricted && !$USER->has_access_to_genome($dsg);
 	$dsgid=$dsg->id unless $dsgid;
 	my $name = join (", ", map{$_->name} $dsg->source) .": ";
 	$name .= $dsg->name.", " if $dsg->name;# : $dsg->datasets->[0]->name;
-	$name .=  "v".$dsg->version." ".$dsg->type->name." ".commify($dsg->length)."nt";
+	$name .=  "v".$dsg->version." ".$dsg->type->name." ".commify($dsg->length)."nt"." (dsgid".$dsg->id.")";
 	my $has_cds = has_cds($dsg->id);
 	$name .= " NO CDS ANNOTATIONS.  CAN'T BE USED." unless $has_cds;
 	push @dsg_menu, [$dsg->id, $name];
@@ -425,7 +425,6 @@ sub cogefeatsearch
     my %seen;
     my $search ={};
     $search->{feature_type_id}=3;#$type if $type;
-    $search->{"organism.restricted"}=0 if $USER->name =~ /public/i;
     $search->{'organism.name'}={like=>"%".$org_name."%"} if $org_name;
     $search->{'organism.description'}={like=>"%".$org_desc."%"} if $org_desc;
     my $join = {join=>[{'feature'=>{'dataset'=>{'dataset_connectors'=>{'dataset_group'=>'organism'}}}}]};
@@ -479,6 +478,7 @@ sub get_anno
 							       "dataset_connectors.dataset_group_id"=>$dsgid
 							      },{join=>['feature_names',{'dataset'=>'dataset_connectors'} ]}))
 	  {
+	    next if $feat->dataset->restricted && !$USER->has_access_to_dataset($feat->dataset);
 	    push @feats, $feat if ($feat->type->name eq $type);
 	  }
       }
@@ -501,6 +501,7 @@ sub get_anno
     my $gstid = $dsg->type->id;
     foreach my $feat (@feats)
       {
+	next if $feat->dataset->restricted && !$USER->has_access_to_dataset($feat->dataset);
 	$i++;
 #	my $featid = $feat->id;
 #	my $chr = $feat->chr;
@@ -551,7 +552,6 @@ sub get_orgs_feat
     my @opts;
     foreach my $item (sort {uc($a->name) cmp uc($b->name)} @db)
       {
-	next if $USER->user_name =~ /public/i && $item->restricted;
 	push @opts, "<OPTION value=\"".$item->id."\" id=\"o".$item->id."\">".$item->name."</OPTION>";
       }
     my $html;
@@ -601,10 +601,11 @@ sub get_data_source_info_for_accn
     my %sources;
     foreach my $feat (@feats)
       {
+	next if $feat->dataset->restricted && !$USER->has_access_to_dataset($feat->dataset);
 	foreach my $dsg ($feat->dataset->dataset_groups)
 	  {
+	    next if $dsg->restricted && !$USER->has_access_to_genome($dsg);
 	    my $org = $dsg->organism->name if $dsg->organism;
-	    next if $USER->user_name =~ /public/i && $dsg->organism->restricted;
 	    if (keys %org_ids) {next unless $org_ids{$dsg->organism->id};}
 	    my $name = $dsg->name;
 	    my $ver = $dsg->version;

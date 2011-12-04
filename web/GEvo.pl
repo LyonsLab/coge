@@ -3609,6 +3609,7 @@ sub dataset_search
 						    );
 	while (my $ds = $rs->next())
 	  {
+	    next if $ds->restricted && !$USER->has_access_to_dataset($ds);
 	    my $ver = $ds->version;
 	    my $desc = $ds->description;
 	    my $sname = $ds->data_source->name;
@@ -3623,10 +3624,6 @@ sub dataset_search
 		  }
 		my $title = "$ds_name ($sname, v$ver, dsid".$ds->id.")";
 		
-		if ($ds->restricted || $ds->groups->[0]->restricted)
-		  {
-		    next unless $USER->has_access_to_genome(genome=>$ds->groups->[0]) && ($ds->organism->restricted || $ds->restricted || $ds->groups->[0]->restricted);
-		  }
 		next if $sources{$ds->id} && $sources{$ds->id}{typeid} < $typeid;
 		if ($dsgid && ! $dsid)
 		  {
