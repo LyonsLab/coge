@@ -38,6 +38,9 @@ lib/CoGeX/Result/Role.pm
 lib/CoGeX/Result/UserGroupConnector.pm
 lib/CoGeX/Result/RolePermissionConnector.pm
 lib/CoGeX/Result/GroupDataConnector.pm
+lib/CoGeX/Result/RolePermissionConnector.pm
+lib/CoGeX/Result/UserGroupDataConnector.pm
+lib/CoGeX/Result/Role.pm
 
 lib/CoGeX/ResultSet/Annotation.pm
 lib/CoGeX/ResultSet/DatasetGroup.pm
