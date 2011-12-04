@@ -986,11 +986,12 @@ sub get_gc
     return "No dataset group id" unless $dsgid;
     my ($dsg) = $coge->resultset('DatasetGroup')->find($dsgid);
     return "No dsg object for id $dsgid" unless $dsg;
-    my ($gc, $at, $n) = $dsg->percent_gc();
+    my ($gc, $at, $n, $x) = $dsg->percent_gc();
     $at*=100;
     $gc*=100;
     $n *=100;
-    return ($gc."_".$at."_".$n);
+    $x *=100;
+    return ($gc."_".$at."_".$n."_".$x);
   }
 
 sub get_wobble_gc
