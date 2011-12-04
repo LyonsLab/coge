@@ -8,6 +8,7 @@ use Data::Dumper;
 use base 'Class::Accessor';
 use CGI::Carp('fatalsToBrowser');
 use CGI;
+use CGI::Cookie;
 use DBIxProfiler;
 use File::Basename;
 use File::Temp;
@@ -16,6 +17,7 @@ use LWP::UserAgent;
 use HTTP::Request;
 use XML::Simple;
 use CoGe::Accessory::LogUser;
+use Digest::MD5 qw(md5_base64);
 
 BEGIN {
   use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK $Q $cogex $TEMPDIR $BASEDIR);
@@ -177,41 +179,63 @@ sub self_or_default { #from CGI.pm
     return wantarray ? @_ : $Q;
 }
 
+sub logout_cas {
+  my $self = shift;
+  my %opts = @_;
+  my $cookie_name = $opts{cookie_name};
+  my $coge = $opts{coge};
+  my $user = $opts{user};
+  my $form = $opts{form}; #CGI form for calling page
+  my $url = $opts{this_url};
+  my $cas_url ='http://coge.iplantcollaborative.org/coge/';
+  my %cookies = fetch CGI::Cookie;
+  $url = $form->url() unless $url;
+  my $session = md5_base64($user->user_name.$ENV{REMOTE_ADDR});
+  $session =~ s/\+/1/g;
+  ($session) = $coge->resultset('UserSession')->find({session=>$session});
+  $session->delete if $session;
+  print "Location: ".$form->redirect("https://auth.iplantcollaborative.org/cas/logout?service=".$url."&gateway=1");
+}
+
 sub login_cas{
-	
-	my ($ticket,$this_url) = @_;
-	
-	
-	
-	my $ua = new LWP::UserAgent;
+  my $self = shift;
+  my %opts = @_;
+  my $ticket = $opts{ticket}; #cas ticket from iPlant
+  my $this_url = $opts{this_url}; #not sure what this does
+  my $coge = $opts{coge}; #coge object
+#  print STDERR Dumper \%opts;
+  my $ua = new LWP::UserAgent;
 
-	my $request = '<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"><SOAP-ENV:Header/><SOAP-ENV:Body><samlp:Request xmlns:samlp="urn:oasis:names:tc:SAML:1.0:protocol"  MajorVersion="1" MinorVersion="1" RequestID="_192.168.167.84.1024506224022"  IssueInstant="2010-05-13T16:43:48.099Z"><samlp:AssertionArtifact>'.$ticket.'</samlp:AssertionArtifact></samlp:Request></SOAP-ENV:Body></SOAP-ENV:Envelope>';
-
-	
-	my $request_ua = HTTP::Request->new(POST => 'https://auth.iplantcollaborative.org/cas/samlValidate?TARGET='.$this_url);
-	$request_ua->content($request);
-	$request_ua->content_type("text/xml; charset=utf-8");
-	my $response = $ua->request($request_ua);
-	
-	
-#	print STDERR 'https://auth.iplantcollaborative.org/cas/samlValidate?TARGET='.$this_url.'\n';
-	my $result =$response->content;
-
-	
-	my $name;
-	my $fname;
-	my $lname;
-	my $email;
-	
-	if($result){
-#		print STDERR $result;
-		($name,$fname,$lname,$email) = parse_saml_response($result);
-	}
-
-	
-	
-	
-	
+  my $request = '<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"><SOAP-ENV:Header/><SOAP-ENV:Body><samlp:Request xmlns:samlp="urn:oasis:names:tc:SAML:1.0:protocol"  MajorVersion="1" MinorVersion="1" RequestID="_192.168.167.84.1024506224022"  IssueInstant="2010-05-13T16:43:48.099Z"><samlp:AssertionArtifact>'.$ticket.'</samlp:AssertionArtifact></samlp:Request></SOAP-ENV:Body></SOAP-ENV:Envelope>';
+  
+  my $request_ua = HTTP::Request->new(POST => 'https://auth.iplantcollaborative.org/cas/samlValidate?TARGET='.$this_url);
+  $request_ua->content($request);
+  $request_ua->content_type("text/xml; charset=utf-8");
+  my $response = $ua->request($request_ua);
+  my $result =$response->content;
+  my $uname;
+  my $fname;
+  my $lname;
+  my $email;
+  if($result){
+    ($uname,$fname,$lname,$email) = parse_saml_response($result);
+  }
+  return unless $uname; #not logged in.  Return
+  my $coge_user;
+  ($coge_user) = $coge->resultset('User')->search({user_name=>$uname});
+  unless ($coge_user)
+    {
+      $coge_user =  $coge->resultset('User')->create({user_name=>$uname,first_name=>$fname,last_name=>$lname,email=>$email, description=>"validated by iPlant"}); #do we have a valid user in the database, if not create
+      $coge_user->insert;
+    }
+  #create a session ID for the user and log
+  my $session = md5_base64($uname.$ENV{REMOTE_ADDR});
+  $session =~ s/\+/1/g;
+  my $sid = $coge->log_user(user=>$coge_user,session=>$session);
+  #gen and set the web cookie, yum!
+  my $c = CoGe::Accessory::LogUser->gen_cookie(session=>$session,cookie_name=>'cogec');
+  print "Set-Cookie: $c\n";
+  return $coge_user;
 }
 
 sub parse_saml_response{
@@ -230,43 +254,28 @@ sub parse_saml_response{
 #		print STDERR $user_id.'   '.$user_fname.'   '.$user_lname.'  '.$user_email;
 		
 		return ($user_id,$user_fname,$user_lname,$user_email);
-	}else{
-		return ('public','none','none','none');
 	}
-	
-	
+	#else{
+#		return ('public','none','none','none');
+#	}
 }
 
-
-#sub login
- # {
- #   my $form = new CGI;
-#    my $url = "index.pl?url=".$form->url(-relative=>1, -query=>1);
-#    print STDERR $url;
-#    $url =~ s/&|;/:::/g;
-#    my $html1 = qq{
-#<SCRIPT language="JavaScript">
-##window.location=$url;
-#</SCRIPT>
-#};
-#    my $html = qq{
-#<html>
-#<head>
-#<title>CoGe:  the best program of its kind, ever.</title>
-#<meta http-equiv="REFRESH" content="1;url=$url"></HEAD>
-#<BODY>
-#You are not logged in.  You will be redirected to <a href = $url>here</a> in one second.
-##</BODY>
-#</HTML>
-#};
-#    return $html;
-#  }
-
+sub login 
+  {
+    my %opts = @_;
+    my $coge = $opts{coge};
+    my $uname = $opts{uname};
+    my $fname = $opts{fname};
+    my $lname = $opts{lname};
+    my $email = $opts{email};
+    my $url = $opts{url};
+    
+  }
+	   
 sub ajax_func
   {
     return 
       (
-       login=>\&login,
        read_log=>\&read_log,
        initialize_basefile=>\&initialize_basefile,
       );
@@ -443,7 +452,7 @@ sub initialize_basefile
 	mkdir "$tempdir",0777 unless -d "$tempdir";
 	$prog = "CoGe" unless $prog;
 	my $file = new File::Temp ( TEMPLATE=>$prog.'_XXXXXXXX',
-				    DIR=>"$TEMPDIR/",
+				    DIR=>"$tempdir/",
 				    #SUFFIX=>'.png',
 				    UNLINK=>1);
 	$self->basefile($file->filename);
