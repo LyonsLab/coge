@@ -970,7 +970,7 @@ sub get_gc_for_chromosome
 	map {push @ds,$_} $dsg->datasets;
       }
     return unless @ds;
-    my ($gc, $at, $n) = (0,0,0);
+    my ($gc, $at, $n, $x) = (0,0,0,0);
     my %chr;
     foreach my $ds (@ds)
       {
@@ -988,11 +988,12 @@ sub get_gc_for_chromosome
 	    $gc+= $gc[0] if $gc[0];
 	    $at+= $gc[1] if $gc[1];
 	    $n+= $gc[2] if $gc[2];
+	    $x+= $gc[3] if $gc[3];
 	  }
       }
-    my $total = $gc+$at+$n;
+    my $total = $gc+$at+$n+$x;
     return "error" unless $total;
-    my $results = "&nbsp(GC: ".sprintf("%.2f",100*$gc/$total)."%  AT: ".sprintf("%.2f",100*$at/$total)."%  N: ".sprintf("%.2f",100*$n/$total)."%)" if $total;
+    my $results = "&nbsp(GC: ".sprintf("%.2f",100*$gc/$total)."%  AT: ".sprintf("%.2f",100*$at/$total)."%  N: ".sprintf("%.2f",100*$n/$total)."%  X: ".sprintf("%.2f",100*$x/$total)."%)" if $total;
     return $results;
   }
 
@@ -1007,6 +1008,7 @@ sub get_gc_for_noncoding
     my $gc = 0;
     my $at = 0;
     my $n = 0;
+    my $x = 0;
     my $search;
     $search = {"feature_type_id"=>3};
     $search->{"me.chromosome"}=$chr if defined $chr;
@@ -1063,11 +1065,12 @@ sub get_gc_for_noncoding
       {
 	$gc += $seq=~tr/GCgc/GCgc/;
 	$at += $seq=~tr/ATat/ATat/;
-	$n += $seq =~ tr/xnXN/xnXN/;
+	$n += $seq =~ tr/nN/nN/;
+	$x += $seq =~ tr/xX/xX/;
       }
-    my $total = $gc+$at+$n;
+    my $total = $gc+$at+$n+$x;
     return "error" unless $total;
-    return commify($total)." bp"."&nbsp(GC: ".sprintf("%.2f",100*$gc/($total))."%  AT: ".sprintf("%.2f",100*$at/($total))."% N: ".sprintf("%.2f",100*$n/($total))."%)";
+    return commify($total)." bp"."&nbsp(GC: ".sprintf("%.2f",100*$gc/($total))."%  AT: ".sprintf("%.2f",100*$at/($total))."% N: ".sprintf("%.2f",100*$n/($total))."% X: ".sprintf("%.2f",100*$x/($total))."%)";
 
 
 
