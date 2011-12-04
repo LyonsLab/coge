@@ -568,9 +568,9 @@ sub get_gc_dsg
     my $gc_total=0;
     foreach my $chr ($dsg->chromosomes)
       {
-	my ($gc, $at, $n) = $dsg->percent_gc(count=>1, chr=>$chr);
+	my ($gc, $at, $n, $x) = $dsg->percent_gc(count=>1, chr=>$chr);
 	$gc_total+=$gc;
-	$length += ($gc+$at+$n);
+	$length += ($gc+$at+$n+$x);
       }
     my $percent_gc = sprintf("%.2f",100*$gc_total/$length);
     return $percent_gc, commify($length);
