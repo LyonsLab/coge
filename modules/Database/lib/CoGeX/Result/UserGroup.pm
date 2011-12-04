@@ -53,9 +53,72 @@ __PACKAGE__->add_columns(
 );
 __PACKAGE__->set_primary_key("user_group_id");
 __PACKAGE__->has_many('user_group_connectors'=>"CoGeX::Result::UserGroupConnector",'user_group_id');
-__PACKAGE__->has_many('group_data_connectors'=>"CoGeX::Result::UserGroupDataConnector",'user_group_id');
+__PACKAGE__->has_many('user_group_data_connectors'=>"CoGeX::Result::UserGroupDataConnector",'user_group_id');
 __PACKAGE__->belongs_to('role'=>"CoGeX::Result::Role",'role_id');
 1;
+
+
+
+################################################ subroutine header begin ##
+
+=head2 private_genomes
+
+ Usage     : 
+ Purpose   : Returns the set of genomes associated with a genome (dataset_group)
+ Returns   : wantArray of genomes
+ Argument  : None
+ Throws    : None
+ Comments  : 
+
+
+
+=cut
+
+################################################## subroutine header end ##
+
+
+sub private_genomes {
+
+    my $self = shift;
+    my @private_genomes=();
+
+    foreach my $group_dataset ($self->user_group_data_connectors())
+      {
+	push(@private_genomes,$group_dataset->genome()) if $group_dataset->genome;
+    }
+
+    return wantarray ? @private_genomes : \@private_genomes;
+}
+
+################################################ subroutine header begin ##
+
+=head2 private_datasets
+
+ Usage     : 
+ Purpose   : Returns the set of genomes associated with a genome (dataset_group)
+ Returns   : Array of Groups
+ Argument  : None
+ Throws    : None
+ Comments  : 
+
+
+
+=cut
+
+################################################## subroutine header end ##
+
+
+sub private_datasets {
+
+    my $self = shift;
+    my @private_genomes=();
+
+    foreach my $group_dataset ($self->user_group_data_connectors()){
+	push(@private_genomes,$group_dataset->dataset())if $group_dataset->dataset;
+    }
+
+    return wantarray ? @private_genomes : \@private_genomes;
+}
 
 
 
@@ -79,41 +142,9 @@ The full text of the license can be found in the
 LICENSE file included with this module.
 
 
+
+
 =head1 SEE ALSO
-
-################################################ subroutine header begin ##
-
-=head2 private genomes
-
- Usage     : 
- Purpose   : Returns the set of genomes associated with a group
- Returns   : Array of Groups
- Argument  : None
- Throws    : None
- Comments  : 
-
-
-
-=cut
-
-################################################## subroutine header end ##
-
-
-sub private_genomes(){
-
-    my $self = shift;
-    my @private_genomes=();
-
-    foreach my $group_dataset ($self->group_data_connectors()){
-	push(@private_genomes,$group_dataset->genome());
-    }
-
-    return @private_genomes;
-}
-
-
-
-
 
 
 =cut
