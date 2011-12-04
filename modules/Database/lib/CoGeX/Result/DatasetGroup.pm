@@ -643,7 +643,7 @@ sub percent_gc
     my $gc = 0;
     my $at = 0;
     my $n = 0;
-    my $c = 0;
+    my $x = 0;
     my $length = 0;
     unless ($sent_chr)
       {
