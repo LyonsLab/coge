@@ -272,8 +272,7 @@ sub private_genomes{
 
 sub has_access_to_genome{
   my $self = shift @_;
-  my %opts = @_;
-  my $dsg = $opts{genome};
+  my $dsg = shift;
   return 0 unless $dsg;
   my $dsgid = $dsg =~ /^\d+$/ ? $dsg : $dsg->id;
   foreach my $genome($self->private_genomes()){
@@ -335,8 +334,7 @@ sub private_datasets{
 
 sub has_access_to_dataset{
   my $self = shift @_;
-  my %opts = @_;
-  my $ds = $opts{dataset};
+  my $ds = shift;
   return 0 unless $ds;
   my $dsid = $ds =~ /^\d+$/ ? $ds : $ds->id;
   foreach my $ds($self->private_datasets()){
