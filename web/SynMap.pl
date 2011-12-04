@@ -617,7 +617,7 @@ sub get_dataset_group_info
     $html_dsg_info .= qq{<div><span class="link" onclick=window.open('OrganismView.pl?dsgid=$dsgid')>Genome Information: </span><br>};
     my $i =0;
 
-    my ($percent_gc, $chr_length, $chr_count, $plasmid, $contig, $scaffold) = get_gc_dsg($dsg);
+    my ($percent_gc, $percent_at, $percent_n, $percent_x, $chr_length, $chr_count, $plasmid, $contig, $scaffold) = get_gc_dsg($dsg);
     my ($ds) = $dsg->datasets;
     my $link = $ds->data_source->link;
     $link = $BASE_URL unless $link;
@@ -630,7 +630,7 @@ sub get_dataset_group_info
     $html_dsg_info .= "<tr><td>Dataset: <td>".$ds->name;
     $html_dsg_info .= ": ".$ds->description if $ds->description;
     $html_dsg_info .= "<tr><td>Chromosome count: <td>".commify($chr_count);
-    $html_dsg_info .= "<tr><td>Percent GC: <td>$percent_gc%" if defined $percent_gc;
+    $html_dsg_info .= "<tr><td>DNA content: <td>GC: $percent_gc%, AT: $percent_at%, N: $percent_n%, X: $percent_x%" if $percent_gc>0;
     $html_dsg_info .= "<tr><td>Total length: <td>".$chr_length;
     $html_dsg_info .= "<tr><td>Contains plasmid" if $plasmid;
     $html_dsg_info .= "<tr><td>Contains contigs" if $contig;
@@ -3123,13 +3123,17 @@ sub get_gc_dsg
     );
     $length = $rs->first->get_column('total_length');
     $chr_count = $dsg->genomic_sequences->count(); 
+    my ($gc, $at, $n, $x) = (0,0,0,0);
     if ($chr_count < 1000)
       {
 	my @gs = $dsg->genomic_sequences;
 	foreach my $chr (map {$_->chromosome} @gs)
 	  {
-	    my ($gc, $at, $n) = $dsg->percent_gc(count=>1, chr=>$chr) if $length < 100000000 && scalar @gs < 1000;
-	    $gc_total+=$gc if $gc;
+	    my @gc = $dsg->percent_gc(count=>1, chr=>$chr) if scalar @gs < 1000;
+	    $gc+= $gc[0] if $gc[0];
+            $at+= $gc[1] if $gc[1];
+            $n+= $gc[2] if $gc[2];
+            $x+= $gc[3] if $gc[3];
 	    $plasmid =1 if $chr =~ /plasmid/i;
 	    $contig =1 if $chr =~ /contig/i;
 	    $scaffold =1 if $chr =~ /scaffold/i;
@@ -3138,8 +3142,11 @@ sub get_gc_dsg
     else {
       $contig=1;
     }
-    my $percent_gc = sprintf("%.2f",100*$gc_total/$length) if $gc_total;
-    return $percent_gc, commify($length), commify($chr_count), $plasmid, $contig, $scaffold;
+    my $percent_gc = sprintf("%.2f",100*$gc/$length) if $length;
+    my $percent_at = sprintf("%.2f",100*$at/$length) if $length;
+    my $percent_n = sprintf("%.2f",100*$n/$length) if $length;
+    my $percent_x = sprintf("%.2f",100*$x/$length) if $length;
+    return $percent_gc,$percent_at,$percent_n,$percent_x, commify($length), commify($chr_count), $plasmid, $contig, $scaffold;
   }
 
 
