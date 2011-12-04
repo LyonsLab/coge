@@ -34,7 +34,7 @@ sub gen_cookie
     my $self = shift;
     my %opts = @_;
     my $session = $opts{session} || 0;
-    my $exp = $opts{exp} || "+12M";
+    my $exp = $opts{exp} || "+1D";
     my $cookie_name = $opts{cookie_name};
     my %params = (-name=>$cookie_name,
 		 -path=>"/");
