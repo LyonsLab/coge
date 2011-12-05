@@ -745,7 +745,7 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
     $feat_string .= qq{<table class=small>};
     $feat_string .= "<tr valign=top>". join ("\n<tr valign=top>",map {
       "<td valign=top><div id=$_  >".$feats->{$_}{name}." (ftid".$feats->{$_}{id}.")</div>".
-	    "<td valign=top>".$feats->{$_}{count}.
+	    "<td valign=top align=right>".commify($feats->{$_}{count}).
 	      "<td><div id=".$_."_type class=\"link small\" 
   onclick=\"
   \$('#gc_histogram').dialog('option','title', 'Histogram of GC content for ".$feats->{$_}{name}."s');
