@@ -50,16 +50,16 @@ __PACKAGE__->table("quantitation");
 __PACKAGE__->add_columns(
   "quantitation_id",
   { data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
-  "quantitation",
+  "value",
   { data_type => "FLOAT", default_value => "", is_nullable => 0 },
   "feature_id",
   { data_type => "INT", default_value => 0, is_nullable => 0, size => 11 },
-  "quantitation_type_id",
+  "quantitation_experiment_id",
   { data_type => "INT", default_value => 0, is_nullable => 0, size => 11 },
 );
 __PACKAGE__->set_primary_key("quantitation_id");
 
-__PACKAGE__->belongs_to( quantitation_type => 'CoGeX::Result::QuantitationType', 'quantitation_type_id');
+__PACKAGE__->belongs_to( quantitation_experiment => 'CoGeX::Result::QuantitationExperiment', 'quantitation_experiment_id');
 __PACKAGE__->belongs_to( feature => 'CoGeX::Result::Feature', 'feature_id');
 
 
@@ -82,9 +82,9 @@ See Also   :
 
 ################################################## subroutine header end ##
 
-sub type
+sub experiment
   {
-    shift->quantitation_type(@_);
+    shift->quantitation_experiment(@_);
   }
 
 1;
