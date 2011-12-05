@@ -79,6 +79,9 @@ __PACKAGE__->has_many( 'feature_names' => "CoGeX::Result::FeatureName", 'feature
 # feature has many annotations
 __PACKAGE__->has_many( 'annotations' => "CoGeX::Result::Annotation", 'feature_id');
 
+# feature has many quantitations
+__PACKAGE__->has_many( 'quantitations' => "CoGeX::Result::Quantitation", 'feature_id');
+
 # feature has many locations
 __PACKAGE__->has_many( 'locations' => "CoGeX::Result::Location", 'feature_id');
 
