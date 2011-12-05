@@ -47,6 +47,7 @@ $COOKIE_NAME = $P->{COOKIE_NAME};
 my ($cas_ticket) =$FORM->param('ticket');
 CoGe::Accessory::Web->login_cas(ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
 ($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge);
+
 #logout is only called through this program!  All logouts from other pages are redirected to this page
 CoGe::Accessory::Web->logout_cas(cookie_name=>$COOKIE_NAME, coge=>$coge, user=>$USER, form=>$FORM) if $FORM->param('logout');
 
