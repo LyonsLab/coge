@@ -125,8 +125,10 @@ $(document).ready( function() {
 </SCRIPT>
 <div id=main_alert style="color: red; font-size: 1em; text-align: center"></div>
 <div id=signin_popup class="image_window" style="display:none"></div>
+
 <TMPL_UNLESS NAME=MENU>
   <div style="float:right"><!-- open A -->
+ 
     <div style="float:right;margin-right: 73px;">
 	<ul class="sf-menu" >
 	 <li><a id=home href="index.pl" target="_self">Home</a></li>
@@ -173,6 +175,14 @@ $(document).ready( function() {
 	</ul>
 	</li>
 	</ul>
+<div style="float: right">
+ <TMPL_IF NAME=LOGON>
+	<span class=small>Currently logged in as, <TMPL_VAR NAME=USER>  <a href="index.pl?logout=1" class="small">Sign-out</a></span>
+	<TMPL_ELSE>
+	 <a href="javascript:void(0)" onClick="login_cas();return true;" class="small">Sign-in</a>
+	</TMPL_IF>
+</div>
+
     </div>
 </div><!-- CLOSE A -->
 </TMPL_UNLESS>
