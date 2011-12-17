@@ -7,6 +7,13 @@ $(document).ready(function(){
 		dataType: "html",
 		cache: false,
 	});
+        $('#group_table').tablesorter({		
+		cssAsc: 'headerSortUp',		// Class name for ascending sorting action to header
+		cssDesc: 'headerSortDown',	// Class name for descending sorting action to header
+		cssHeader: 'header',			// Class name for headers (th's)
+		widgets: ['zebra'],
+		headers: {0: {sorter: false},},	//don't allow sort on the first column				
+		});
 });
 
 function run_ajax(opts){
@@ -40,3 +47,43 @@ This is a blank page.  Use it to create a new page for CoGe!
 <div id=stuff>LALA</div>
 <DIV class = link id=output onclick="run_ajax({stuff: $('#stuff').html(), divid: 'stuff'});">Click here!</DIV>
 
+Here is a sortable table (the first column is not able to be sorted upon):<br>
+<TABLE id=group_table class="small ui-widget-content ui-corner-all">
+ <THEAD align=left> 
+  <TR>
+   <TH>Name</TH>
+   <TH>Description</TH>
+   <TH>Members</TH>
+   <TH>Role</TH>
+   <TH>Permissions</TH>
+   <TH>Genomes</TH>
+  </TR>
+ </THEAD>
+ <tbody align=left valign="top" id="genome_table_body" class=small>
+  <TR>
+   <TD>1</TD>
+   <TD>2</TD>
+   <TD>1</TD>
+   <TD>2</TD>
+   <TD>1</TD>
+   <TD>2</TD>
+  <TR>
+  <TR>
+   <TD>2</TD>
+   <TD>1</TD>
+   <TD>2</TD>
+   <TD>1</TD>
+   <TD>2</TD>
+   <TD>1</TD>
+  <TR>
+  <TR>
+   <TD>3</TD>
+   <TD>3</TD>
+   <TD>3</TD>
+   <TD>4</TD>
+   <TD>4</TD>
+   <TD>4</TD>
+  <TR>
+
+ </tbody>
+</TABLE>
