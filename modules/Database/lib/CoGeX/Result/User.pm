@@ -36,9 +36,6 @@ Type: VARCHAR, Default: undef, Nullable: yes, Size: 50
 C<description>
 Type: VARCHAR, Default: undef, Nullable: yes, Size: 255
 
-C<passwd>
-Type: VARCHAR, Default: "", Nullable: no, Size: 255
-
 
 Has many CCoGeX::Result::UserSession> via C<user_id>
 
@@ -74,8 +71,6 @@ __PACKAGE__->add_columns(
     is_nullable => 1,
     size => 255,
   },
-  "passwd",
-  { data_type => "VARCHAR", default_value => "", is_nullable => 0, size => 255 },
 );
 __PACKAGE__->set_primary_key("user_id");
 __PACKAGE__->has_many('sessions'=>"CoGeX::Result::UserSession",'user_id');
@@ -174,10 +169,30 @@ sub user_groups{
 	    push (@user_groups,$user_group_connector->user_group());
 	}
 	
-	return (@user_groups);
+	return wantarray ? @user_groups : \@user_groups;
 }
 
+################################################ subroutine header begin ##
 
+=head2 groups
+
+ Usage     : alias for $self->user_groups
+ Purpose   : 
+ Returns   : array or arrayref of user_group objects
+ Argument  : 
+ Throws    : None
+ Comments  : 
+
+
+
+=cut
+
+################################################## subroutine header end ##
+
+sub groups
+ {
+   return shift->user_groups(@_);
+ }
 
 
 ################################################ subroutine header begin ##
@@ -274,6 +289,10 @@ sub has_access_to_genome{
   my $self = shift @_;
   my $dsg = shift;
   return 0 unless $dsg;
+  foreach my $group ($self->groups)
+    {
+      return 1 if $group->role->name eq "Admin";
+    }
   my $dsgid = $dsg =~ /^\d+$/ ? $dsg : $dsg->id;
   foreach my $genome($self->private_genomes()){
     if($dsgid==$genome->id){
@@ -336,6 +355,10 @@ sub has_access_to_dataset{
   my $self = shift @_;
   my $ds = shift;
   return 0 unless $ds;
+  foreach my $group ($self->groups)
+    {
+      return 1 if $group->role->name eq "Admin";
+    }
   my $dsid = $ds =~ /^\d+$/ ? $ds : $ds->id;
   foreach my $ds($self->private_datasets()){
     if($dsid==$ds->id){
