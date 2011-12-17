@@ -58,4 +58,63 @@ __PACKAGE__->has_many('user_groups'=>'CoGeX::Result::UserGroup', 'role_id');
 
 
 # You can replace this text with custom content, and it will be preserved on regeneration
+
+
+
+################################################ subroutine header begin ##
+
+=head2 groups
+
+ Usage     : $self->groups
+ Purpose   : alias for $self->user_groups
+ Returns   : DBIX::Class for user_group objects
+ Argument  : None
+ Throws    : None
+ Comments  : 
+
+
+
+=cut
+
+################################################## subroutine header end ##
+
+
+sub groups
+ {
+   return shift->user_groups(@_);
+ }
+
+################################################ subroutine header begin ##
+
+=head2 permissions
+
+ Usage     : 
+ Purpose   : Returns permission objects
+ Returns   : wantArray of permission objects
+ Argument  : None
+ Throws    : None
+ Comments  : 
+
+
+
+=cut
+
+################################################## subroutine header end ##
+
+
+sub permissions {
+
+    my $self = shift;
+    my @permissions=();
+
+    foreach my $pc ($self->role_permission_connectors())
+      {
+        push@permissions, $pc->permission;
+    }
+
+    return wantarray ? @permissions : \@permissions;
+}
+
+
+
 1;
