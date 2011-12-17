@@ -1,3 +1,4 @@
+<script src="./js/sswap.js"></script>
 <SCRIPT language="JavaScript">
 
 function update_seqs(prot, text)
@@ -41,6 +42,41 @@ function update_seqs(prot, text)
     $('.prot_option').hide();
    }
  }
+
+
+function post_to_SSWAP() {
+ var myseq = $('#seq_text').val();
+ var jsonRRG= {
+    "prefix": {
+        "data": "http://sswapmeet.sswap.info/data/",
+        "mime": "http://sswapmeet.sswap.info/mime/",
+        "seq": "http://sswapmeet.sswap.info/sequence/"
+    },
+    "http://sswap.info/examples/resources/canonical/canonicalResource": {},
+    "mapping": {"_:subject" : "_:object"},
+    "definitions" : {
+    		      "_:subject" : {},
+		      "_:object" : {
+		      		     "rdf:type" : "seq:FASTA",
+				     "data:literalData" : myseq
+				   }
+		    },
+ };
+//jsonRRG.definitions."_:object"."_data:literalData" = myseq;
+var jsonString = JSON.stringify(jsonRRG);
+var url = "http://sswap.iplantcollaborative.org/ipc/create-pipeline-with-rrg";
+ var myForm = document.createElement("FORM");
+ myForm.method="post" ;
+ myForm.action=url;
+ myForm.setAttribute("target", "_blank");
+ var myInput = document.createElement("textarea");
+ myInput.name="rrg";
+ myInput.value=jsonString;
+ myForm.appendChild(myInput);
+ document.body.appendChild(myForm);
+ myForm.submit();
+ document.body.removeChild(myForm);
+}
 
 function post_to_target () {
  seq = $('#seq_text').val().replace(/\n/g,":::");
@@ -98,7 +134,7 @@ function post_to_phylogeny_fr () {
 
 $(document).ready(function()
   {
-    prot = <TMPL_VAR NAME=PROT>;
+   prot = <TMPL_VAR NAME=PROT>;
     pageObj.prot=prot; 
     if (prot)
      {
@@ -149,6 +185,16 @@ $(document).ready(function()
   Off site tools:<br>
 <!-- ALL SEQUENCES -->
     <table class="ui-widget-content ui-corner-all">
+    <tr align=top>
+    <td><span onClick="post_to_SSWAP();" class='ui-button ui-corner-all'>iPlant Symantic Web</span>
+
+<div id="pipelineButton"></div>
+
+
+
+
+
+    <td> Some description of what happens
     <tr align=top>
     <td><span onClick="post_to_target();" class='ui-button ui-corner-all'>TARGeT</span>
     <td><span class="link" onclick ="window.open('http://target.iplantcollaborative.org/');"> Tree Analysis of Related Genes and Transposons</span><br>
