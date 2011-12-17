@@ -42,8 +42,7 @@ lib/CoGeX/Result/RolePermissionConnector.pm
 lib/CoGeX/Result/UserGroupDataConnector.pm
 lib/CoGeX/Result/Role.pm
 lib/CoGeX/Result/Quantitation.pm
-lib/CoGeX/Result/QuantitationType.pm
-lib/CoGeX/Result/QuantitationTypeGroup.pm
+lib/CoGeX/Result/QuantitationExperiment.pm
 
 lib/CoGeX/ResultSet/Annotation.pm
 lib/CoGeX/ResultSet/DatasetGroup.pm
