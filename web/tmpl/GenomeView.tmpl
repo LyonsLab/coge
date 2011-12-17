@@ -130,6 +130,10 @@
                  ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"transposable",}
                  ,{isBaseLayer:false}
              );
+            quant = new OpenLayers.Layer.Genomic( "<span id='gc'>Quantitative Measurements</span>" , server
+                 ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"quant",}
+                 ,{isBaseLayer:false}
+             );
             genes = new OpenLayers.Layer.Genomic( "<span id='gc'>Genes</span>" , server
                  ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"pseudogene,gene,mRNA,CDS,rna,CNS",}
                  ,{isBaseLayer:false}
@@ -182,13 +186,19 @@
             gbox.setVisibility(<TMPL_VAR NAME="GBOX">);
             map.addLayer(gbox);
 
- 	    <TMPL_IF NAME="TE_LAYER">
-            local_dup.setVisibility(<TMPL_VAR NAME="TE">);
-            map.addLayer(transposable);
+ 	    <TMPL_IF NAME="QUANT_LAYER">
+            quant.setVisibility(<TMPL_VAR NAME="QUANT">);
+            map.addLayer(quant);
             </TMPL_IF>
 
             genes.setVisibility(<TMPL_VAR NAME="GENES">);
             map.addLayer(genes);
+
+ 	    <TMPL_IF NAME="TE_LAYER">
+            quant.setVisibility(<TMPL_VAR NAME="TE">);
+            map.addLayer(transposable);
+            </TMPL_IF>
+
 
  	    <TMPL_IF NAME="GEVO_LINK_LAYER">
             local_dup.setVisibility(<TMPL_VAR NAME="GEVO_LINK">);
