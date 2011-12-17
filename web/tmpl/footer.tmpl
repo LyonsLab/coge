@@ -2,12 +2,6 @@
 <HR>
 <div style="float:right"><image src="./picts/iplant_power.png"></div>
 <DIV>
-<TMPL_IF NAME=LOGON>
-	<span class=small>Currently logged in as, <TMPL_VAR NAME=USER>  <a href="index.pl?logout=1" class="small">Sign-out</a></span>
-	<TMPL_ELSE>
-	 <a href="javascript:void(0)" onClick="login_cas();return true;" class="small">Sign-in</a>
-	</TMPL_IF>
-    </span>
 <br><span class="xsmall">Date: <TMPL_VAR NAME=DATE> </span>
 
 </DIV>
