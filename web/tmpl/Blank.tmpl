@@ -10,7 +10,7 @@ $(document).ready(function(){
         $('#group_table').tablesorter({		
 		cssAsc: 'headerSortUp',		// Class name for ascending sorting action to header
 		cssDesc: 'headerSortDown',	// Class name for descending sorting action to header
-		cssHeader: 'header',			// Class name for headers (th's)
+//		cssHeader: 'header',			// Class name for headers (th's)
 		widgets: ['zebra'],
 		headers: {0: {sorter: false},},	//don't allow sort on the first column				
 		});
@@ -59,7 +59,7 @@ Here is a sortable table (the first column is not able to be sorted upon):<br>
    <TH>Genomes</TH>
   </TR>
  </THEAD>
- <tbody align=left valign="top" id="genome_table_body" class=small>
+ <tbody align=left valign="top" id="group_table_body" class=small>
   <TR>
    <TD>1</TD>
    <TD>2</TD>
@@ -67,7 +67,7 @@ Here is a sortable table (the first column is not able to be sorted upon):<br>
    <TD>2</TD>
    <TD>1</TD>
    <TD>2</TD>
-  <TR>
+  </TR>
   <TR>
    <TD>2</TD>
    <TD>1</TD>
@@ -75,7 +75,7 @@ Here is a sortable table (the first column is not able to be sorted upon):<br>
    <TD>1</TD>
    <TD>2</TD>
    <TD>1</TD>
-  <TR>
+  </TR>
   <TR>
    <TD>3</TD>
    <TD>3</TD>
@@ -83,7 +83,6 @@ Here is a sortable table (the first column is not able to be sorted upon):<br>
    <TD>4</TD>
    <TD>4</TD>
    <TD>4</TD>
-  <TR>
-
+  </TR>
  </tbody>
 </TABLE>
