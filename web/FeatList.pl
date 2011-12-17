@@ -110,7 +110,7 @@ sub gen_body
     $BASEFILE = $form->param('basename');
     my $sort_by_type = $form->param('sort_type');
     my $sort_by_location = $form->param('sort_loc');
-    my $prefs =CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME);
+    my $prefs =CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME, coge=>$coge);
     $prefs = {} unless $prefs;
     $prefs->{display}={
 		       FeatNameD=>1,
@@ -694,7 +694,7 @@ sub save_FeatList_settings
 	    $save{display}{$settings{$index}}=1
 	  }
       }
-   CoGe::Accessory::Web::save_settings(opts=>\%save, user=>$USER, page=>$PAGE_NAME);
+   CoGe::Accessory::Web::save_settings(opts=>\%save, user=>$USER, page=>$PAGE_NAME, coge=>$coge);
   }
 
 sub commify 
