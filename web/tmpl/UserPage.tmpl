@@ -21,7 +21,8 @@ function get_profile() {
 		success: function(data) { $('#content').html(data);	 
 			 $("#profile tr:even").addClass('even');
 	 		 $("#profile tr:odd").addClass('odd');
-//			 $("#profile td:odd").add('');
+//			 $("#groups tr:even").addClass('even');
+//	 		 $("#groups tr:odd").addClass('odd');
 			 }
 	});
 }
@@ -368,26 +369,31 @@ function filter_rows (search_text){
 </TMPL_IF>
 
 <TMPL_IF NAME=PROFILE>
-<span style="color: black;font-weight: bold;"><TMPL_VAR NAME=REAL_NAME>'s Profile</span>
+<span style="color: black;font-weight: bold;">Profile:</span>
 <dl style="clear:both;font-size:13px; margin-top: 2;">
-<table id="profile" class="expt" border=0 class=small>
+<table id="profile" border=0 class=small>
 	<tr><td>User Name</td>
 	<td><TMPL_VAR NAME=USER_NAME></td>
 	<tr><td>Real Name</td>
 	<td><TMPL_VAR NAME=REAL_NAME></td>
 	<tr><td>E-mail Address</td>
 	<td><TMPL_VAR NAME=EMAIL></td>
-	<tr><td>Title</td>
+	<tr><td>My Groups</td>
+	<td><TABLE class=small id="groups">
+	    <TR class=bold><TD>Name<TD>Description<TD>Role<TD>Permissions</TR>
+	    <TMPL_LOOP NAME=GROUPS_LOOP>
+	    <TR><TD><TMPL_VAR NAME=GROUP_NAME><TD><TMPL_VAR NAME=GROUP_DESC><TD><TMPL_VAR NAME=ROLE><TD><TMPL_VAR NAME=GROUP_PERMISSION></TR>
+            </TMPL_LOOP>
+	    </TABLE>
+	<tr><td>Description</td>
 	<td><TMPL_VAR NAME=DESC></td>
-	<tr><td>Institute</td>
+
+<!--	<tr><td>Institute</td>
 	<td><TMPL_VAR NAME=INSTITUTE></td>
 	<tr><td>Website</td>
 	<td><TMPL_VAR NAME=WEBSITE></td>
-	<tr><td>My CoGe Groups</td>
-	<td><TMPL_VAR NAME=GROUPS></td>
-		<!-- Should probably have a loop here for all groups -->
 	<tr><td>My Research Interests</td>
-	<td><TMPL_VAR NAME=RESEARCH></td>
+	<td><TMPL_VAR NAME=RESEARCH></td> -->
 </table>
 </dl>
 </TMPL_IF>
