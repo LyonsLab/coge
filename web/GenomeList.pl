@@ -21,6 +21,7 @@ no warnings 'redefine';
 
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME $TEMPDIR $USER $DATE $BASEFILE $COGEDIR $coge $cogeweb $FORM $URL $HISTOGRAM $TEMPURL $COOKIE_NAME);
 $P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
+print STDERR $ENV{HOME},"\n";
 $ENV{PATH} = $P->{COGEDIR};
 $COGEDIR = $P->{COGEDIR};
 $URL = $P->{URL};
@@ -428,7 +429,7 @@ sub gen_body
     $BASEFILE = $form->param('basename');
     my $sort_by_type = $form->param('sort_type');
     my $sort_by_location = $form->param('sort_loc');
-    my $prefs =CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME);
+    my $prefs =CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME, coge=>$coge);
     $prefs = {} unless $prefs;
     $prefs->{display}={
 		       NameD=>1,
@@ -1039,7 +1040,7 @@ sub save_FeatList_settings
 	    $save{display}{$settings{$index}}=1
 	  }
       }
-   CoGe::Accessory::Web::save_settings(opts=>\%save, user=>$USER, page=>$PAGE_NAME);
+   CoGe::Accessory::Web::save_settings(opts=>\%save, user=>$USER, page=>$PAGE_NAME, coge=>$coge);
   }
 
 sub commify 
