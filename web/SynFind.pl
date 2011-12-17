@@ -146,7 +146,7 @@ sub gen_body
     $template->param(ORG_LIST_FEAT=>get_orgs_feat(type=>"none"));
     my $doc_ready;
     $doc_ready .= qq{search_chain(1);\n} if $accn;
-    my $prefs = CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME);
+    my $prefs = CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME, coge=>$coge);
     if ($form->param('dsgid'))
       {
 	foreach my $item ($form->param('dsgid'))
@@ -1456,9 +1456,9 @@ sub save_orglist_synfind
    {
      my %opts = @_;
      my $dsgids = $opts{dsgids};
-     my $prefs = CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME);
+     my $prefs = CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME, coge=>$coge);
      $prefs->{dsgids} = $dsgids;
-     my $item =CoGe::Accessory::Web::save_settings(opts=>$prefs, user=>$USER, page=>$PAGE_NAME);
+     my $item =CoGe::Accessory::Web::save_settings(opts=>$prefs, user=>$USER, page=>$PAGE_NAME, coge=>$coge);
    }
 
 sub get_neighboring_region
