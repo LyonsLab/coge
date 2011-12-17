@@ -159,7 +159,7 @@ sub gen_body
     my $rc = $form->param('rc') || 0;
     my $seq = $form->param('seq');
     my $gstid = $form->param('gstid') || 1;
-    my $prefs = CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME);
+    my $prefs = CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME, coge=>$coge);
     $prefs = {} unless $prefs;
     $template->param(JAVASCRIPT=>1);
     $template->param(BLAST_FRONT_PAGE=>1);
@@ -2234,7 +2234,7 @@ sub export_alignment_file
 sub save_settings_cogeblast
   {
     my %opts = @_;
-    my $prefs = CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME);
+    my $prefs = CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME, coge=>$coge);
     delete $prefs->{display} unless ref($prefs->{display}) eq "HASH";
     foreach my $key (keys %opts)
       {
@@ -2267,7 +2267,7 @@ sub save_settings_cogeblast
 	  }
 	delete $prefs->{$key} unless $opts{$key};
       }
-    my $item =CoGe::Accessory::Web::save_settings(opts=>$prefs, user=>$USER, page=>$PAGE_NAME);
+    my $item =CoGe::Accessory::Web::save_settings(opts=>$prefs, user=>$USER, page=>$PAGE_NAME, coge=>$coge);
   }
 
 sub color_pallet
