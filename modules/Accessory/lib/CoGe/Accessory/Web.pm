@@ -30,7 +30,7 @@ BEGIN {
 
     #Give a hoot don't pollute, do not export more than needed by default
     @EXPORT      = qw ();#qw (login write_log read_log check_taint check_filename_taint save_settings load_settings reset_settings initialize_basefile);
-    $cogex = CoGeX->dbconnect();
+#    $cogex = CoGeX->dbconnect();
 #    $cogex->storage->debugobj(new DBIxProfiler());
 #    $cogex->storage->debug(1);
     __PACKAGE__->mk_accessors qw(restricted_orgs basefilename basefile logfile sqlitefile); 
@@ -63,13 +63,13 @@ A valid parameter file must be specified or very little will work!};
 
 sub dataset_search_for_feat_name
   {
-    my ($self, $accn, $num, $dsid, $featid) = self_or_default(@_);
+    my ($self, $accn, $num, $dsid, $featid, $coge) = self_or_default(@_);
     $num = 1 unless $num;
     return ( qq{<input type="hidden" id="dsid$num">\n<input type="hidden" id="featid$num">}, $num )unless $accn;
     my $html;
     my %sources;
     my %restricted_orgs = %{$self->restricted_orgs} if $self->restricted_orgs;
-    my $rs = $cogex->resultset('Dataset')->search(
+    my $rs = $coge->resultset('Dataset')->search(
 						  {
 						   'feature_names.name'=> $accn,
 						  },
@@ -121,10 +121,10 @@ sub dataset_search_for_feat_name
 
 sub feat_search_for_feat_name
   {
-    my ($self, $accn, $dsid, $num) = self_or_default(@_);
+    my ($self, $accn, $dsid, $num, $coge) = self_or_default(@_);
     return qq{<input type="hidden" id="featid$num">\n} unless $dsid;
     my @feats;
-    my $rs = $cogex->resultset('Feature')->search(
+    my $rs = $coge->resultset('Feature')->search(
 						  {
 						   'feature_names.name'=> $accn,
 						   'dataset.dataset_id' => "$dsid",
@@ -368,20 +368,21 @@ sub save_settings
     my $user_id = $opts{user_id};
     my $page = $opts{page};
     my $opts = $opts{opts};
+    my $coge = $opts{coge};
     $opts = Dumper $opts unless $opts =~ /VAR1/;
     $user_id = $user->id if (ref ($user) =~ /User/i) && !$user_id;
     unless ($user_id)
       {
-	my ($user_obj) = $cogex->resultset('User')->search({user_name=>$user});
+	my ($user_obj) = $coge->resultset('User')->search({user_name=>$user});
 	$user_id = $user_obj->id if $user_obj;
       }
     return unless $user_id;
     #delete previous settings
-    foreach my $item ($cogex->resultset('WebPreferences')->search({user_id=>$user_id, page=>$page}))
+    foreach my $item ($coge->resultset('WebPreferences')->search({user_id=>$user_id, page=>$page}))
       {
 	$item->delete;
       }
-    my $item = $cogex->resultset('WebPreferences')->new({user_id=>$user_id, page=>$page, options=>$opts});
+    my $item = $coge->resultset('WebPreferences')->new({user_id=>$user_id, page=>$page, options=>$opts});
     $item->insert;
     return $item;
   }
@@ -392,14 +393,15 @@ sub load_settings
     my $user = $opts{user};
     my $user_id = $opts{user_id};
     my $page = $opts{page};
+    my $coge = $opts{coge};
     $user_id = $user->id if (ref ($user) =~ /User/i) && !$user_id;
     unless ($user_id)
       {
-	my ($user_obj) = $cogex->resultset('User')->search({user_name=>$user});
+	my ($user_obj) = $coge->resultset('User')->search({user_name=>$user});
 	$user_id = $user_obj->id if $user_obj;
       }
     return {} unless $user_id;
-    my ($item) = $cogex->resultset('WebPreferences')->search({user_id=>$user_id, page=>$page});
+    my ($item) = $coge->resultset('WebPreferences')->search({user_id=>$user_id, page=>$page});
     return {} unless $item;
     my $prefs;
     my $opts = $item->options if $item;
@@ -415,14 +417,15 @@ sub reset_settings
     my $user = $opts{user};
     my $user_id = $opts{user_id};
     my $page = $opts{page};
+    my $coge = $opts{coge};
     $user_id = $user->id if (ref ($user) =~ /User/i) && !$user_id;
     unless ($user_id)
       {
-	my ($user_obj) = $cogex->resultset('User')->search({user_name=>$user});
+	my ($user_obj) = $coge->resultset('User')->search({user_name=>$user});
 	$user_id = $user_obj->id if $user_obj;
       }
     return unless $user_id;
-    my ($item) = $cogex->resultset('WebPreferences')->search({user_id=>$user_id, page=>$page});
+    my ($item) = $coge->resultset('WebPreferences')->search({user_id=>$user_id, page=>$page});
     $item->delete;
   }
 
