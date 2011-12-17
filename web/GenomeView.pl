@@ -163,6 +163,10 @@ sub gen_body
 	  {
 	    $template->param(TE_LAYER=>1);
 	  }
+	elsif ($ft->name =~ /quantitation/i)
+	  {
+	    $template->param(QUANT_LAYER=>1);
+	  }
       }
     my ($gevo_group) = $coge->resultset('AnnotationTypeGroup')->search({name=>"gevo link"});
     if ($gevo_group)
