@@ -198,7 +198,7 @@ sub gen_html
 sub gen_body
   {
     my $form = $FORM;
-    my $prefs = CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME);
+    my $prefs = CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME, coge=>$coge);
     my $num_seqs;
     $num_seqs = $form->param('num_seqs');#= get_opt(params=>$prefs, form=>$form, param=>'num_seqs');
     $num_seqs = $NUM_SEQS unless defined $num_seqs;
@@ -3051,7 +3051,7 @@ sub gen_hsp_colors
   {
     my %opts = @_;
     my $num_seqs = $opts{num_seqs} || $NUM_SEQS;
-    my $prefs = $opts{prefs} || CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME);
+    my $prefs = $opts{prefs} || CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME, coge=>$coge);
     my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'GEvo.tmpl');
     my $hsp_colors;
     my @colors = color_pallet(num_seqs=>$num_seqs, prefs=>$prefs);
@@ -3080,7 +3080,7 @@ sub color_pallet
     my $start = $opts{start} || [255,100,100];
     my $offset = $opts{offset} || 50;
     my $num_seqs = $opts{num_seqs} || $NUM_SEQS;
-    my $prefs = $opts{prefs} || CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME);
+    my $prefs = $opts{prefs} || CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME, coge=>$coge);
     $prefs = {} unless $prefs;
     $start = [$prefs->{r1}, $prefs->{g1}, $prefs->{b1}] if defined $prefs->{r1} && defined $prefs->{g1} && defined $prefs->{b1};
 
@@ -3251,7 +3251,7 @@ sub add_url_seq
     
     my $total_num=$new_num+$old_num;
     
-    my $prefs = CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME);
+    my $prefs = CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME, coge=>$coge);
     
     my $message;
     my @seq_nums;
@@ -3705,13 +3705,13 @@ sub save_settings_gevo
   {
     my %opts = @_;
     my $opts = Dumper \%opts;
-    my $item =CoGe::Accessory::Web::save_settings(opts=>$opts, user=>$USER, page=>$PAGE_NAME);
+    my $item =CoGe::Accessory::Web::save_settings(opts=>$opts, user=>$USER, page=>$PAGE_NAME, coge=>$coge);
   }
 
 sub reset_settings_gevo
   {
     my %opts = @_;
-    my $item = reset_settings(user=>$USER, page=>$PAGE_NAME);
+    my $item = reset_settings(user=>$USER, page=>$PAGE_NAME, coge=>$coge);
   }
 
 
