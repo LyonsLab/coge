@@ -73,14 +73,14 @@ sub gen_html
   {
     my $html;    
     my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
-    $template->param(HELP=>'Blank');
+    $template->param(HELP=>'/wiki/index.php?title=BLANK');
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
     $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
     $template->param(USER=>$name);
     $template->param(TITLE=>qq{Blank Page});
     $template->param(PAGE_TITLE=>qq{Blank Page});
-    # $template->param(LOGO_PNG=>"FeatList-logo.png");
+    $template->param(LOGO_PNG=>"Blank-logo.png");
     $template->param(LOGON=>1) unless $USER->user_name eq "public";
     $template->param(DATE=>$DATE);
     $template->param(BODY=>gen_body());
