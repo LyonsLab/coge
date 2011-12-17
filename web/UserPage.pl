@@ -67,13 +67,13 @@ sub gen_html
     $name = $USER->first_name if $USER->first_name;
     $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
     $template->param(USER=>$name);
-    $template->param(TITLE=>$name.qq{'s User Settings (BETA)});
-    $template->param(PAGE_TITLE=>$name.qq{'s User Settings (BETA)});
+    $name .= $name =~ /s$/ ? "'" : "'s";
+    $template->param(TITLE=>$name.qq{ User Settings (BETA)});
+    $template->param(PAGE_TITLE=>qq{User Settings (BETA)});
     # $template->param(LOGO_PNG=>"FeatList-logo.png");
     $template->param(LOGON=>1) unless $USER->user_name eq "public";
     $template->param(DATE=>$DATE);
     $template->param(BODY=>gen_body());
-    $template->param(BOX_NAME=>$name.qq{'s User Settings (BETA)});
     $template->param(ADJUST_BOX=>1);
     $html .= $template->output;
   }
@@ -118,6 +118,20 @@ sub profile
     $template->param(USER_NAME=>$USER->user_name);
     $template->param(REAL_NAME=>$name);
     $template->param(DESC=>$USER->description);
+    my @groups;
+    foreach my $group ($USER->groups)
+      {
+	my %groups;
+	$groups{GROUP_NAME}=$group->name;
+	$groups{GROUP_DESC}=$group->description if $group->description;
+	my $role = $group->role->name;
+	$role .= ": ".$group->role->description if $group->role->description;
+	$groups{ROLE}=$role;
+	my $perm = join (", ", map {$_->name} $group->role->permissions);
+	$groups{GROUP_PERMISSION}=$perm;
+	push @groups, \%groups;
+      }
+    $template->param(GROUPS_LOOP=>\@groups);
     #print STDERR $template->output;
     return $template->output;
 }
