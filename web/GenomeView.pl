@@ -82,7 +82,7 @@ sub gen_body
     $fid = $form->param('fid') if $form->param('fid');
     $dsgid = $form->param('dsgid') if $form->param('dsgid');
     $show_legend = $form->param('sl') if $form->param('sl');
-    $prefs =CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME);
+    $prefs =CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME, coge=>$coge);
     my ($ds, $dsg, $gst);
     if ($fid)
       {
@@ -235,7 +235,7 @@ sub save_options
   {
     my %opts = @_;
     my $opts = Dumper \%opts;
-    my $item =CoGe::Accessory::Web::save_settings(opts=>$opts, user=>$USER, page=>$PAGE_NAME);
+    my $item =CoGe::Accessory::Web::save_settings(opts=>$opts, user=>$USER, page=>$PAGE_NAME, coge=>$coge);
   }
 
 sub get_genome_info
