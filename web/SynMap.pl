@@ -305,6 +305,9 @@ sub gen_body
     $codeml_max = $FORM->param('cmax') if defined $FORM->param('cmax');
     $template->param('CODEML_MIN'=>$codeml_min) if defined $codeml_min;
     $template->param('CODEML_MAX'=>$codeml_max) if defined $codeml_max;
+    my $logks;
+    $logks = $FORM->param('logks') if defined $FORM->param('logks');
+    $template->param('LOGKS'=>"checked") if defined $logks;
     #show non syntenic dots:  on by default
     my $snsd = 0;
     $snsd = $FORM->param('snsd') if (defined $FORM->param('snsd'));
@@ -1689,12 +1692,12 @@ DNA_align_2
 	  {
 	    $max_res = {};
 	  }
-	my ($dS, $dN, $dNS) =( "","","");
+	my ($dS, $dN, $dNS) =( "NA","NA","NA");
 	if (keys %$max_res)
 	  {
-	    $dS = $max_res->{dS};
-	    $dN = $max_res->{dN};
-	    $dNS = $max_res->{'dN/dS'};
+	    $dS = $max_res->{dS} if defined $max_res->{dS};
+	    $dN = $max_res->{dN} if defined $max_res->{dN};
+	    $dNS = $max_res->{'dN/dS'} if defined $max_res->{'dN/dS'};
 	  }
 	#alignments
 	my $dalign1 = $ks->dalign1; #DNA sequence 1
@@ -2003,12 +2006,12 @@ sub process_block
 	 my @seq1 = split/\|\|/,$line[1];
 	 my @seq2 = split/\|\|/,$line[5];
 	 my $ks = $ksdata->{$seq1[6]}{$seq2[6]};
-	 if ($ks->{dS})
+	 if (defined $ks->{dS})
 	   {
 	     unshift @line, $ks->{dN};
 	     unshift @line, $ks->{dS};
-	     push @ks, $ks->{dS};
-	     push @kn, $ks->{dN};
+	     push @ks, $ks->{dS} unless $ks->{dS} ne "NA";
+	     push @kn, $ks->{dN} unless $ks->{dN} ne "NA";
 	   }
 	 else
 	   {
@@ -2124,7 +2127,7 @@ sub generate_dotplot
     my $chr_sort_order = $opts{chr_sort_order}; #sort order of chromosomes in dotplot
     my $codeml_min = $opts{codeml_min};
     my $codeml_max = $opts{codeml_max};
-
+    my $log = $opts{log};
 
     my $cmd = $DOTPLOT;
     #add ks_db to dotplot command if requested
@@ -2137,7 +2140,7 @@ sub generate_dotplot
     $outfile.= ".$fid2" if $fid2;
     if ($ks_db && -r $ks_db)
       {
-	$cmd .= qq{ -ksdb $ks_db -kst $ks_type -log 1};
+	$cmd .= qq{ -ksdb $ks_db -kst $ks_type -log $log};
 	$outfile .= ".$ks_type";
       }
     $outfile .= ".box" if $box_diags;
@@ -2148,6 +2151,7 @@ sub generate_dotplot
     $outfile.= ".cso$chr_sort_order" if defined $chr_sort_order;
     $outfile.= ".min$codeml_min" if defined $codeml_min;
     $outfile.= ".max$codeml_max" if defined $codeml_max;
+    $outfile.= ".log" if $log;
     #are non-syntenic dots being displayed
     if ($snsd)
       {
@@ -2273,6 +2277,8 @@ sub go
     $codeml_min = undef unless $codeml_min=~/\d/ && $codeml_min=~/^-?\d*.?\d*$/;
     my $codeml_max = $opts{codeml_max};
     $codeml_max = undef unless $codeml_max=~/\d/ && $codeml_max=~/^-?\d*.?\d*$/;
+    my $logks = $opts{logks};
+    $logks =  $logks eq "true" ? 1 : 0;
     #draw a box around identified diagonals?
     my $box_diags = $opts{box_diags};
     $box_diags = $box_diags eq "true" ? 1 : 0;
@@ -2312,6 +2318,7 @@ sub go
     $synmap_link .= ";cs=$color_scheme";
     $synmap_link .= ";cmin=$codeml_min" if defined $codeml_min;#$codeml_min=~/\d/ && $codeml_min=~/^\d*.?\d*$/;
     $synmap_link .= ";cmax=$codeml_max" if defined $codeml_max;#$codeml_max=~/\d/ && $codeml_max=~/^\d*.?\d*$/;
+    $synmap_link .= ";logks=1" if $logks;
     $synmap_link .= ";cl=0" if $clabel eq "0";
     $synmap_link .= ";sr=$skip_rand" if defined $skip_rand;
     $synmap_link .= ";cso=$chr_sort_order" if $chr_sort_order;
@@ -2651,7 +2658,7 @@ sub go
 	$gen_ks_db_time = timestr(timediff($t6,$t5));
 	CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
 	CoGe::Accessory::Web::write_log("Generating dotplot",$cogeweb->logfile);
- 	$out = generate_dotplot(dag=>$dag_file12_all, coords=>$final_dagchainer_file, outfile=>"$out", regen_images=>$regen_images, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, dagtype=>$dagchainer_type, ks_db=>$ks_db, ks_type=>$ks_type, assemble=>$assemble, metric=>$axis_metric, , relationship=>$axis_relationship, min_chr_size=>$min_chr_size, color_type=>$color_type, box_diags=>$box_diags, fid1=>$fid1, fid2=>$fid2, snsd=>$snsd, flip=>$flip, clabel=>$clabel, skip_rand=>$skip_rand, color_scheme=>$color_scheme, chr_sort_order=>$chr_sort_order, codeml_min=>$codeml_min, codeml_max=>$codeml_max);
+ 	$out = generate_dotplot(dag=>$dag_file12_all, coords=>$final_dagchainer_file, outfile=>"$out", regen_images=>$regen_images, dsgid1=>$dsgid1, dsgid2=>$dsgid2, width=>$width, dagtype=>$dagchainer_type, ks_db=>$ks_db, ks_type=>$ks_type, assemble=>$assemble, metric=>$axis_metric, , relationship=>$axis_relationship, min_chr_size=>$min_chr_size, color_type=>$color_type, box_diags=>$box_diags, fid1=>$fid1, fid2=>$fid2, snsd=>$snsd, flip=>$flip, clabel=>$clabel, skip_rand=>$skip_rand, color_scheme=>$color_scheme, chr_sort_order=>$chr_sort_order, codeml_min=>$codeml_min, codeml_max=>$codeml_max, log=>$logks);
 	CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
 	CoGe::Accessory::Web::write_log("",$cogeweb->logfile);
 
