@@ -76,8 +76,10 @@ CoGe::Accessory::Web->login_cas(ticket=>$cas_ticket, coge=>$coge, this_url=>$FOR
 	     get_total_length_for_ds=>\&get_total_length_for_ds,
 	     update_genomelist=>\&update_genomelist,
 	     parse_for_GenoList=>\&parse_for_GenoList,
-		 get_genome_list_for_org=>\&get_genome_list_for_org,
-		add_to_irods=>\&add_to_irods,
+	     get_genome_list_for_org=>\&get_genome_list_for_org,
+	     add_to_irods=>\&add_to_irods,
+	     make_genome_public=>\&make_genome_public,
+	     make_genome_private=>\&make_genome_private,
 	    );
 my $pj = new CGI::Ajax(%FUNCTION);
 $pj->JSDEBUG(0);
@@ -179,6 +181,40 @@ sub gen_body
     $dsginfo .= $dsgid ? "<input type=hidden id=dsg_id value=$dsgid>" : "<input type=hidden id=dsg_id>";
     $template->param(DSG_INFO=>$dsginfo);
     return $template->output;
+  }
+
+sub make_genome_public
+  {
+    my %opts = @_;
+    my $dsgid = $opts{dsgid};
+    return "No DSGID specified" unless $dsgid;
+    return "Permission denied." unless $USER->is_admin || $USER->is_owner(dsg=>$dsgid);
+    my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+    $dsg->restricted(0);
+    $dsg->update;
+    foreach my $ds ($dsg->datasets)
+      {
+	$ds->restricted(0);
+	$ds->update;
+      }
+    return 1;
+  }
+
+sub make_genome_private
+  {
+    my %opts = @_;
+    my $dsgid = $opts{dsgid};
+    return "No DSGID specified" unless $dsgid;
+    return "Permission denied." unless $USER->is_admin || $USER->is_owner(dsg=>$dsgid);
+    my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+    $dsg->restricted(1);
+    $dsg->update;
+    foreach my $ds ($dsg->datasets)
+      {
+	$ds->restricted(1);
+	$ds->update;
+      }
+    return 1;
   }
 
 sub get_recent_orgs
@@ -306,7 +342,7 @@ sub get_org_info
     my $org = $coge->resultset("Organism")->find($oid);
     return "Unable to find an organism for id: $oid\n" unless $org;
     my $html;# = qq{<div class="backbox small">};
-    $html.= "<span class=alert>Restricted Organism!  Authorized Use Only!</span><br>" if $org->restricted;
+    $html.= "<span class=alert>Private Organism!  Authorized Use Only!</span><br>" if $org->restricted;
     $html .= qq{<table class='small annotation_table'>};
     $html .= qq{<tr><td>Name:};
     $html .= qq{<td>}.$org->name;
@@ -426,12 +462,9 @@ sub get_dataset_group_info
     my $dsg = $coge->resultset("DatasetGroup")->find($dsgid);
     return "Unable to get dataset_group object for id: $dsgid" unless $dsg;
     my $html;# = qq{<div style="overflow:auto; max-height:78px">};
-    if ($dsg->restricted)
-      {
-	$html.= "<span class=alert>Restricted Genome!  Authorized Use Only!</span><br>";
-	$html .= "<span class=alert>You are a CoGe Admin.  Use your power wisely</span><br>" if $USER->is_admin;
-	$html .= "<span class=alert>You are the owner of this genome.</span><br>" if $USER->is_owner($dsg);
-      }
+    $html.= "<span class='alert large'>Private Genome!  Authorized Use Only!</span><br>" if $dsg->restricted;
+    $html .= "&nbsp&nbsp&nbsp<span class=alert>You are a CoGe Admin.  Use your power wisely</span><br>" if $USER->is_admin;
+    $html .= "&nbsp&nbsp&nbsp<span class=alert>You are the owner of this genome.</span><br>" if $USER->is_owner(dsg=>$dsg);
     my $total_length = $dsg->length;
 #    my $chr_num = $dsg->genomic_sequences->count(); 
     my $chr_num = $dsg->chromosome_count();
@@ -478,7 +511,13 @@ sub get_dataset_group_info
     my $feat_string = qq{
 <tr><td><div id=dsg_feature_count class="small link" onclick="gen_data(['args__loading...'],['dsg_features']); get_feature_counts(['args__dsgid','dsg_id', 'args__gstid','gstid'],['dsg_features']);" >Click for Features</div>};
     $html .= $feat_string;
-    $html .= qq{<tr><td><div><span class="ui-button ui-corner-all" onClick="update_genomelist(['args__genomeid','args__$dsgid'],[add_to_genomelist]);\$('#geno_list').dialog('option', 'width', 500).dialog('open');">Add to list</span></div></td></tr>} ;
+    $html .= qq{<tr><td><div><span class="ui-button ui-corner-all" onClick="update_genomelist(['args__genomeid','args__$dsgid'],[add_to_genomelist]);\$('#geno_list').dialog('option', 'width', 500).dialog('open');">Add to list</span>};
+    if ($USER->is_owner || $USER->is_admin)
+      {
+	$html .= qq{<span class="ui-button ui-corner-all ui-button-go" onClick="make_dsg_public('$dsgid')">Make Genome Public</span>} if $dsg->restricted;
+	$html .= qq{<span class="ui-button ui-corner-all ui-button-go" onClick="make_dsg_private('$dsgid')">Make Genome Private</span>} if !$dsg->restricted;
+      }
+    $html .= qq{</div></td></tr>} ;
     $html .= "</table></td>";
     $html .= qq{<td id=dsg_features></td>};
     $html .= "</table>";
@@ -545,7 +584,7 @@ sub get_dataset_info
     my $ds = $coge->resultset("Dataset")->find($dsd);
     my $html = "";
     return "unable to find dataset object for id: $dsd"  unless $ds;
-    $html .= "<span class=alert>Restricted Dataset!  Authorized Use Only!</span><br>" if $ds->restricted;
+    $html .= "<span class='alert large'>Private Dataset!  Authorized Use Only!</span><br>" if $ds->restricted;
     $html .= "<table>";
     $html .= "<tr valign=top><td><table class=\"small annotation_table\">";
     my $dataset = $ds->name;
