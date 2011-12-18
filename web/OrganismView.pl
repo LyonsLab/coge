@@ -424,9 +424,14 @@ sub get_dataset_group_info
     my $dsgid = $opts{dsgid};
     return " " unless $dsgid;
     my $dsg = $coge->resultset("DatasetGroup")->find($dsgid);
-    return "Unable to create dataset_group object for id: $dsgid" unless $dsg;
+    return "Unable to get dataset_group object for id: $dsgid" unless $dsg;
     my $html;# = qq{<div style="overflow:auto; max-height:78px">};
-    $html.= "<span class=alert>Restricted Genome!  Authorized Use Only!</span><br>" if $dsg->restricted;
+    if ($dsg->restricted)
+      {
+	$html.= "<span class=alert>Restricted Genome!  Authorized Use Only!</span><br>";
+	$html .= "<span class=alert>You are a CoGe Admin.  Use your power wisely</span><br>" if $USER->is_admin;
+	$html .= "<span class=alert>You are the owner of this genome.</span><br>" if $USER->is_owner($dsg);
+      }
     my $total_length = $dsg->length;
 #    my $chr_num = $dsg->genomic_sequences->count(); 
     my $chr_num = $dsg->chromosome_count();
