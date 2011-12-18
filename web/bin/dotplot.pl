@@ -142,6 +142,7 @@ if ($ks_db)
     $cmd .= " -max $MAX" if defined $MAX;
     $cmd .= " -color_scheme $color_scheme" if defined $color_scheme;
     $cmd .= " -o $basename";
+#    $cmd .= ".log" if $log;
 #    $cmd .= ".$MIN" if defined $MIN;
 #    $cmd .= ".$MAX" if defined $MAX;
     $cmd .= ".hist.png";
