@@ -367,6 +367,35 @@ $(function() {
  //substaniate dialog boxes	     
         $(".dialog_box").dialog({ autoOpen: false, width: 500 });
 });
+
+function make_dsg_public (dsgid) {
+ $.ajax({
+        data: {
+     	   jquery_ajax: 1,
+	   fname: 'make_genome_public',
+	   dsgid: dsgid,
+           },
+        success : function(val) {
+	      if (val != 1) {alert(val);}
+	      get_dataset_group_info(['args__dsgid','dsg_id'],[dataset_chain]);
+	},
+      });
+}
+
+function make_dsg_private (dsgid) {
+ $.ajax({
+        data: {
+     	   jquery_ajax: 1,
+	   fname: 'make_genome_private',
+	   dsgid: dsgid,
+           },
+        success : function(val) {
+	      if (val != 1) {alert(val);}
+	      get_dataset_group_info(['args__dsgid','dsg_id'],[dataset_chain]);
+	},
+      });
+}
+
 </script>
 <TABLE>
    <TR><TD valign=top>
