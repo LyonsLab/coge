@@ -123,6 +123,27 @@ sub private_genomes {
 
 ################################################ subroutine header begin ##
 
+=head2 genomes
+
+ Usage     : $self->genomes
+ Purpose   : alias for sub private_genomes
+ Returns   : wantArray of genomes
+ Argument  : None
+ Throws    : None
+ Comments  : 
+
+
+
+=cut
+
+################################################## subroutine header end ##
+
+
+sub genomes { return shift->private_genomes(@_);}
+
+
+################################################ subroutine header begin ##
+
 =head2 private_datasets
 
  Usage     : 
@@ -152,6 +173,25 @@ sub private_datasets {
 }
 
 
+################################################ subroutine header begin ##
+
+=head2 datasets
+
+ Usage     : $self->datasets
+ Purpose   : alias for sub private_datasets
+ Returns   : wantArray of datasets
+ Argument  : None
+ Throws    : None
+ Comments  : 
+
+
+
+=cut
+
+################################################## subroutine header end ##
+
+
+sub datasets { return shift->private_datasets(@_);}
 
 =head1 BUGS
 
