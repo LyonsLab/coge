@@ -197,6 +197,33 @@ sub groups
 
 ################################################ subroutine header begin ##
 
+=head2 is_admin
+
+ Usage     : $self->is_admin
+ Purpose   : determine if a user is an admin
+ Returns   : 1 if an admin, 0 if not
+ Argument  : 
+ Throws    : None
+ Comments  : 
+
+
+
+=cut
+
+################################################## subroutine header end ##
+
+sub is_admin
+   {
+     my $self = shift;
+     foreach my $group ($self->groups)
+       {
+	 return 1 if $group->role->name =~ /admin/i;
+       }
+     return 0;
+   }
+
+################################################ subroutine header begin ##
+
 =head2 add_to_group
 
  Usage     : 
