@@ -2053,8 +2053,8 @@ sub get_genome_info
     my $dsg = $coge->resultset("DatasetGroup")->find($dsgid);
     return "Unable to create dataset_group object for id: $dsgid" unless $dsg;
     my $html = qq{<table class=small>};# = qq{<div style="overflow:auto; max-height:78px">};
-    $html .= "Name: ".$dsg->organism->name."<br>";
-    $html .= "Description: ". join ("; ", map { qq{<span class=link onclick="\$('#org_desc').val('$_').focus();">$_</span>}} split /;\s+/, $dsg->organism->description)."<br>" if $dsg->organism->description;
+    $html .= qq{<tr><td>Name:<td><span class='link' onclick=window.open('OrganismView.pl?dsgid=$dsgid')>}.$dsg->organism->name."</span>";
+    $html .= "<tr><td>Description:<td>". join ("; ", map { qq{<span class=link onclick="\$('#org_desc').val('$_').focus();">$_</span>}} split /;\s+/, $dsg->organism->description) if $dsg->organism->description;
 
     my @gs = sort {$a->chromosome cmp $b->chromosome} $dsg->genomic_sequences;
     my $chr_num = scalar @gs;
@@ -2063,20 +2063,19 @@ sub get_genome_info
     my ($ds) = $dsg->datasets;
     my $link = $ds->data_source->link;
     $link = "http://".$link unless $link =~ /^http/;    
-    $html .= "Source:  <a class = 'link' href=".$link." target=_new>".$ds->data_source->name."</a><br>".
-      qq{Chromosome count: $chr_num<br>}. 
-	qq{<div style="float:left;">Total length: }. commify($total_length)." bp".
-	  "<br>".
-	  qq{Sequence Type: }.$dsg->genomic_sequence_type->name.qq{<input type=hidden id=gstid value=}.$dsg->genomic_sequence_type->id.qq{>}."<br>----------<br>";
+    $html .= "<tr><td>Source:<td><a class = 'link' href=".$link." target=_new>".$ds->data_source->name."</a>".
+      qq{<tr><td>Chromosome count:<td>$chr_num}. 
+	qq{<tr><td>Total length:<td>}. commify($total_length)." bp".
+	  qq{<tr><td>Sequence Type:<td>}.$dsg->genomic_sequence_type->name.qq{<input type=hidden id=gstid value=}.$dsg->genomic_sequence_type->id;
 
-    foreach my $gs (@gs)
-      {
-	my $chr = $gs->chromosome;
-	my $length = $gs->sequence_length;
-	$length = commify($length);
-	$html .= qq{$chr:  $length bp<br>};
-      }
-    $html .= "</table>";
+#    foreach my $gs (@gs)
+#      {
+#	my $chr = $gs->chromosome;
+#	my $length = $gs->sequence_length;
+#	$length = commify($length);
+#	$html .= qq{$chr:  $length bp<br>};
+#     }
+#    $html .= "</table>";
     return $html;
   }
 
