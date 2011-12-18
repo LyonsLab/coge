@@ -1,0 +1,365 @@
+<TMPL_IF NAME=MAIN>
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></SCRIPT>
+
+<SCRIPT language="JavaScript">
+$(document).ready(function(){
+	$.ajaxSetup({
+		type: "POST",
+		url: "<TMPL_VAR NAME=PAGE_NAME>",
+		dataType: "html",
+		cache: false,
+	});
+	set_table();
+	$(".dialog_box").dialog({autoOpen:false, width: 600});
+});
+
+function set_table () {$('#group_table').tablesorter({widgets: ['zebra']});}
+
+function run_get_groups_for_user(opts){
+      if (!opts){opts={};}
+      divid = opts.divid; //were results will be displayed in page
+
+      // create a new closure who's scope does *not*
+      // include the `divid` value so that callback will 
+      // not clobber the `divid` variable 
+      var create_callback = function(divid) {
+              var local_divid = divid;
+              return function (data) {
+                  $('#'+local_divid).html(data);
+		  set_table();
+              };
+          }; 
+
+      $.ajax({
+        data: {
+     	   jquery_ajax: 1,
+	   fname: 'get_groups_for_user',
+           },
+        success : create_callback(divid)
+      });
+}
+
+
+function create_group (opts){
+  name = $('#name').val();
+  desc = $('#desc').val();
+  if (name)
+   {
+      $.ajax({
+        data: {
+     	   jquery_ajax: 1,
+	   fname: 'create_group',
+	   name: name,
+	   desc: desc
+           },
+        success : function(val) {
+	      if (val != 1) {alert(val);}
+	      run_get_groups_for_user({divid: 'groups'});
+	},
+      });
+   }
+ else { alert ('Error!  Must have a name!');}
+}
+function update_group_info (opts){
+  name = $('#edit_name').val();
+  desc = $('#edit_desc').val();
+  ugid = opts.ugid;
+  if (name)
+   {
+      $.ajax({
+        data: {
+     	   jquery_ajax: 1,
+	   fname: 'update_group',
+	   ugid: ugid,
+	   name: name,
+	   desc: desc
+           },
+        success : function(val) {
+	      $("#group_edit_box").dialog('close');	
+	      run_get_groups_for_user({divid: 'groups'});
+	},
+      });
+   }
+ else { alert ('Error!  Must have a name!');}
+}
+
+function delete_group (opts){
+   ugid = opts.ugid;
+   if (ugid) {
+    $.ajax({
+        data: {
+     	   jquery_ajax: 1,
+	   fname: 'delete_group',
+	   ugid: ugid,
+           },
+        success : function() {
+	      run_get_groups_for_user({divid: 'groups'});
+	    },
+      });
+   }
+}
+
+function edit_group (opts) {
+   ugid = opts.ugid;
+    $.ajax({
+        data: {
+     	   jquery_ajax: 1,
+	   fname: 'get_group_info',
+	   ugid: ugid,
+           },
+        success : function(data) {
+	 data = eval('('+data+')');
+	 title = data.title;
+         $("#group_edit_box").dialog("option", "title", title);
+   	 $("#group_edit_box").html(format_edit_group_info(data));
+   	 $("#group_edit_box").dialog('open');
+	 setup_button_states();
+	},
+    });
+}
+
+function format_edit_group_info (data) {
+ output = data.output;
+// output += "<br><br>"+JSON.stringify(data);
+ return output;
+}
+
+function show_add(val) {
+  if(val==1) {
+    $('#remove_user').hide(0);
+    $('#add_user').show(0);
+  }
+  else {
+    $('#remove_user').show(0);
+    $('#add_user').hide(0);
+  }
+}
+
+function add_user(opts) {
+     ugid = opts.ugid;
+     $('#new_ugid > option:selected').each(function(){
+        var uid = $(this).attr("value");
+	var html = '<option value='+uid+ ' >'+$(this).text()+'</option>';
+	$('#ugid').append(html);
+	$(this).remove();
+        $.ajax({
+         data: {
+     	   jquery_ajax: 1,
+	   fname: 'add_user_to_group',
+	   ugid: ugid,
+	   uid: uid
+          },
+         success : function(data) {
+          if (data != 1) {alert(data);}
+	 },
+       });
+     });
+     run_get_groups_for_user({divid: 'groups'});
+};
+
+function remove_user (opts) {
+     ugid = opts.ugid;
+     items=[];
+     $('#ugid > option:selected').each(function(){
+        var uid = $(this).attr("value");
+	items.push($(this));
+	var html = '<option value='+uid+ ' >'+$(this).text()+'</option>';
+	$.ajax({
+         data: {
+     	   jquery_ajax: 1,
+	   fname: 'remove_user_from_group',
+	   ugid: ugid,
+	   uid: uid
+          },
+         success : function(data) {
+          if (data != 1) {alert(data);}
+	  else {
+	   $('#new_ugid').append(html);
+	   for (item in items) {items[item].remove();}
+	  }
+
+	 },
+       });
+     });
+     run_get_groups_for_user({divid: 'groups'});
+}
+function show_gadd(val) {
+  if(val==1) {
+    $('#remove_genome').hide(0);
+    $('#add_genome').show(0);
+  }
+  else {
+    $('#remove_genome').show(0);
+    $('#add_genome').hide(0);
+  }
+}
+
+function add_genome(opts) {
+     ugid = opts.ugid;
+     $('#new_dsgid > option:selected').each(function(){
+        var dsgid = $(this).attr("value");
+	var html = '<option value='+dsgid+ ' >'+$(this).text()+'</option>';
+	$('#dsgid').append(html);
+	$(this).remove();
+        $.ajax({
+         data: {
+     	   jquery_ajax: 1,
+	   fname: 'add_genome_to_group',
+	   ugid: ugid,
+	   dsgid: dsgid
+          },
+         success : function(data) {
+          if (data != 1) {alert(data);}
+	 },
+       });
+     });
+     run_get_groups_for_user({divid: 'groups'});
+
+};
+
+function remove_genome (opts) {
+     ugid = opts.ugid;
+     items =[];
+     $('#dsgid > option:selected').each(function(){
+        var dsgid = $(this).attr("value");
+	items.push($(this));
+	var html = '<option value='+dsgid+ ' >'+$(this).text()+'</option>';
+	$.ajax({
+         data: {
+     	   jquery_ajax: 1,
+	   fname: 'remove_genome_from_group',
+	   ugid: ugid,
+	   dsgid: dsgid
+          },
+         success : function(data) {
+          if (data != 1) {alert(data);}
+	  else {
+	   $('#new_dsgid').append(html);
+	   for (item in items) {items[item].remove();}
+	  }
+
+	 },
+       });
+     });
+     run_get_groups_for_user({divid: 'groups'});
+
+}
+
+</SCRIPT>
+
+<div id=groups><TMPL_VAR NAME=MAIN_TABLE></div>
+
+<div>
+<TABLE class="small">
+<tr>
+ <td>Name:</td>
+ <td><input type="textbox" size=8 name="name" id="name"></td>
+ <td>Description:</td>
+ <td><input type="textbox" size=16 name="desc" id="desc"></td>
+ <td><span id=create_group style="font-size: .75em" class='ui-button ui-button-go ui-corner-all go_run' onClick="create_group();">Create new group</span>
+</tr>
+</table>
+</div>
+<div id=group_edit_box class="dialog_box">testing</div>
+
+</TMPL_IF>
+
+
+
+<TMPL_IF NAME=GROUP_TABLE>
+<TABLE id=group_table class="small ui-widget-content ui-corner-all">
+ <THEAD align=left> 
+  <TR>
+   <TH>Name</TH>
+   <TH>Description</TH>
+   <TH>Role</TH>
+   <TH>Permissions</TH>
+   <TH>Genomes</TH>
+   <TH>Members</TH>
+  </TR>
+ </THEAD>
+ <tbody align=left valign="top" id="genome_table_body" class=small>
+  <TMPL_LOOP NAME=GROUPS_LOOP>
+  <TR valign=middle">
+   <TD><TMPL_VAR NAME=NAME></TD>
+   <TD><TMPL_VAR NAME=DESC></TD>
+   <TD><TMPL_VAR NAME=ROLE></TD>
+   <TD><TMPL_VAR NAME=PERM></TD>
+   <TD><div style="max-height: 50px; overflow: auto;"><TMPL_VAR NAME=GENOMES></div></TD>
+   <TD><TMPL_VAR NAME=MEM></TD>
+   <TD><span class='ui-button ui-corner-all ui-button-icon-left'><span class="ui-icon ui-icon-gear" onclick="edit_group({ugid: <TMPL_VAR NAME=UGID>});"></span></span></TD>
+   <TD><span class='ui-button ui-corner-all ui-button-icon-left'><span class="ui-icon ui-icon-trash" onclick="delete_group({ugid: <TMPL_VAR NAME=UGID>});"></span></span></TD>
+  </TR>
+  </TMPL_LOOP>
+ </tbody>
+</TABLE>
+</TMPL_IF>
+
+
+<TMPL_IF NAME=EDIT_GROUP>
+
+<TABLE class=small>
+ <TR>
+  <TD>Name:</TD>
+  <TD><input type="textbox" size=8 id="edit_name" value="<TMPL_VAR NAME=NAME>"></TD>
+ </TR>
+ <TR>
+  <TD>Description:</TD>
+  <TD><input type="textbox" size=20 id="edit_desc" value="<TMPL_VAR NAME=DESC>"></TD>
+ </TR>
+</TABLE>
+<span onClick="update_group_info({ugid: '<TMPL_VAR NAME=UGID>'});" class='ui-button ui-corner-all'>Update Group Info</span>
+<hr>
+<TABLE class=small>
+ <TR>
+  <TD>Current Members:<br>
+  <select multiple id=ugid onclick="show_add()" ondblclick="remove_user({ugid: '<TMPL_VAR NAME=UGID>'})" size=5 >
+       <TMPL_LOOP NAME=UGID_LOOP>
+        <OPTION value=<TMPL_VAR NAME=UID>><TMPL_VAR NAME=UID_NAME></OPTION>
+       </TMPL_LOOP>
+      </select>
+  </TD> 
+  <TD>
+    <span href="javascript:void(0)" onClick="remove_user({ugid: '<TMPL_VAR NAME=UGID>'});" style="display:none" id="remove_user" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-minus"></span>Remove</span>
+    <span href="javascript:void(0)" onClick="add_user({ugid: '<TMPL_VAR NAME=UGID>'});" id="add_user" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Add</span>
+  </TD>
+  <TD>
+    CoGe Users:<br>
+    <select multiple id="new_ugid" onclick="show_add(1)" ondblclick="add_user({ugid: '<TMPL_VAR NAME=UGID>'})" size=5>
+     <TMPL_LOOP NAME=ALL_UGID_LOOP>
+      <OPTION value=<TMPL_VAR NAME=UID>><TMPL_VAR NAME=UID_NAME></OPTION>
+     </TMPL_LOOP>
+    </select>
+  </TD>
+ </TR>
+</table>
+<table class=small>
+ <TR>
+  <TD>Genomes in Group:<br>
+  <select multiple id=dsgid onclick="show_gadd()" ondblclick="remove_genome({ugid: '<TMPL_VAR NAME=UGID>'})"  size=5>
+       <TMPL_LOOP NAME=DSGID_LOOP>
+        <OPTION value=<TMPL_VAR NAME=DSGID>><TMPL_VAR NAME=DSGID_NAME></OPTION>
+       </TMPL_LOOP>
+      </select>
+  </TD> 
+  <TD>
+    <span href="javascript:void(0)" onClick="remove_genome({ugid: '<TMPL_VAR NAME=UGID>'});" style="display:none" id="remove_genome" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-minus"></span>Remove</span>
+    <span href="javascript:void(0)" onClick="add_genome({ugid: '<TMPL_VAR NAME=UGID>'});" id="add_genome" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Add</span>
+  </TD>
+  <TD>
+    Private Genomes:<TMPL_VAR NAME=ADMIN><br>
+    <select multiple id=new_dsgid onclick="show_gadd(1)" ondblclick="add_genome({ugid: '<TMPL_VAR NAME=UGID>'})"  size=5>
+     <TMPL_LOOP NAME=ALL_DSGID_LOOP>
+      <OPTION value=<TMPL_VAR NAME=DSGID>><TMPL_VAR NAME=DSGID_NAME></OPTION>
+     </TMPL_LOOP>
+    </select>
+  </TD>
+ </TR>
+
+ <TR>
+  <TD></TD>
+ </TR>
+</TABLE>
+
+</TMPL_IF>
