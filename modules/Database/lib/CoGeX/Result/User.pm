@@ -395,6 +395,57 @@ sub has_access_to_dataset{
   return 0;
 }
 
+################################################ subroutine header begin ##
+
+=head2 is_owner
+
+ Usage     : $self->(dsg=>$dsg)
+ Purpose   : checks to see if a user is the owner of a genome or dataset
+ Returns   : 1/0
+ Argument  : dsg=>genome object
+             ds=>dataset object
+ Throws    : None
+ Comments  : 
+
+
+
+=cut
+
+################################################## subroutine header end ##
+
+sub is_owner{
+  my $self = shift;
+  my %opts = @_;
+  my $dsg = $opts{dsg};
+  my $ds = $opts{ds};
+  return 0 unless $dsg || $ds;
+  if ($dsg)
+    {
+      my $dsgid = $dsg =~ /^\d+$/ ? $dsg : $dsg->id;
+      foreach my $group ($self->groups)
+	{
+	  next unless $group->role->name =~ /owner/i;
+	  foreach my $genome ($group->genomes)
+	    {
+	      return 1 if $genome->id == $dsgid;
+	    }
+	}
+    }
+  if ($ds)
+    {
+      my $dsid = $ds =~ /^\d+$/ ? $ds : $ds->id;
+      foreach my $group ($self->groups)
+	{
+	  next unless $group->role->name =~ /owner/i;
+	  foreach my $ds ($group->datasets)
+	    {
+	      return 1 if $ds->id == $dsid;
+	    }
+	}
+    }
+  return 0;
+}
+
 =head1 BUGS
 
 
