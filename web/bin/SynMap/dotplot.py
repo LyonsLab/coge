@@ -140,6 +140,7 @@ def define_colors(ksvalue,max_ks=1.5,iterations=1):
         color_points.extend(color_base)
     color_points.reverse()
     if ksvalue == 'undef': return 'gray'
+    if ksvalue == 'NA': return 'gray'
     if float(ksvalue) >= max_ks: return 'gray'
     scale = float(ksvalue)/max_ks
     step = 1/(len(color_points)-1)
@@ -170,6 +171,7 @@ def draw_dots(fname,xgenes,ygenes,xchrs,ychrs):
         columns = line.split()
         myks = columns[0]
         if myks == 'undef': myks = '200'
+        if myks == 'NA': myks = '200'
         file_dict[line] = float(myks)
     def sort_key(a_val):
         return file_dict[a_val]
