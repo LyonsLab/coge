@@ -107,7 +107,22 @@ sub gen_body
       $template->param(MAIN=>1);
       my $groups = get_groups_for_user();
       $template->param(MAIN_TABLE=>$groups);
+      my $roles = get_roles();
+      $template->param(ROLE_LOOP=>$roles);
       return $template->output;
+  }
+
+sub get_roles
+  {
+    my @roles;
+    foreach my $role ($coge->resultset('Role')->all())
+      {
+	next if $role->name =~ /admin/i && !$USER->is_admin;
+	my $name = $role->name;
+	$name .= ": ".$role->description if $role->description;
+	push @roles, {RID=>$role->id, NAME=>$name};
+      }
+    return \@roles;
   }
 
 sub add_user_to_group
@@ -115,7 +130,7 @@ sub add_user_to_group
     my %opts = @_;
     my $ugid = $opts{ugid};
     my $uid = $opts{uid};
-    return 1 if $uid == $USER->id;
+#    return 1 if $uid == $USER->id;
     return "UGID and/or UID not specified"  unless $ugid && $uid;
     my ($ugc) = $coge->resultset('UserGroupConnector')->create({user_id=>$uid, user_group_id=>$ugid});
     return 1;
@@ -126,7 +141,7 @@ sub remove_user_from_group
     my %opts = @_;
     my $ugid = $opts{ugid};
     my $uid = $opts{uid};
-    if ($uid == $USER->id)
+    if ($uid == $USER->id && !$USER->is_admin) #only allow this for admins
       { return "Can't remove yourself from this group!"; }
     my ($ugc) = $coge->resultset('UserGroupConnector')->search({user_id=>$uid, user_group_id=>$ugid});
     $ugc->delete;
@@ -247,8 +262,10 @@ sub create_group
     my $name = $opts{name};
     return "No specified name!" unless $name;
     my $desc = $opts{desc};
+    my $rid = $opts{rid};
     my ($role) = $coge->resultset('Role')->find({name=>"Reader"});
-    my $group = $coge->resultset('UserGroup')->create({name=>$name, description=>$desc, role_id=>$role->id});
+    $rid = $role->id unless $rid;
+    my $group = $coge->resultset('UserGroup')->create({name=>$name, description=>$desc, role_id=>$rid});
     my $ugc = $coge->resultset('UserGroupConnector')->create({user_id=>$USER->id, user_group_id=>$group->id});
     return 1;
   }
@@ -279,8 +296,17 @@ sub delete_group
 sub get_groups_for_user
   {
     my %opts = @_;
+    my @group_list;
+    if ($USER->is_admin)
+      {
+	@group_list = $coge->resultset('UserGroup')->all();
+      }
+    else
+      {
+	@group_list = $USER->groups;
+      }
     my @groups;
-    foreach my $group ($USER->groups)
+    foreach my $group (@group_list)
       {
         my %groups;
         $groups{NAME}=$group->name;
