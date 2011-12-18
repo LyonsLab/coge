@@ -55,7 +55,38 @@ __PACKAGE__->set_primary_key("user_group_id");
 __PACKAGE__->has_many('user_group_connectors'=>"CoGeX::Result::UserGroupConnector",'user_group_id');
 __PACKAGE__->has_many('user_group_data_connectors'=>"CoGeX::Result::UserGroupDataConnector",'user_group_id');
 __PACKAGE__->belongs_to('role'=>"CoGeX::Result::Role",'role_id');
-1;
+
+
+################################################ subroutine header begin ##
+
+=head2 users
+
+ Usage     : 
+ Purpose   : Returns users objects
+ Returns   : wantArray of users objects
+ Argument  : None
+ Throws    : None
+ Comments  : 
+
+
+
+=cut
+
+################################################## subroutine header end ##
+
+
+sub users {
+
+    my $self = shift;
+    my @users=();
+
+    foreach my $ugc ($self->user_group_connectors())
+      {
+        push @users, $ugc->user;
+    }
+
+    return wantarray ? @users : \@users;
+}
 
 
 
@@ -148,3 +179,5 @@ LICENSE file included with this module.
 
 
 =cut
+
+1;
