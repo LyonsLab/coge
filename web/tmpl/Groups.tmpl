@@ -44,6 +44,7 @@ function run_get_groups_for_user(opts){
 function create_group (opts){
   name = $('#name').val();
   desc = $('#desc').val();
+  rid = $('#role option:selected').attr('value');
   if (name)
    {
       $.ajax({
@@ -51,7 +52,8 @@ function create_group (opts){
      	   jquery_ajax: 1,
 	   fname: 'create_group',
 	   name: name,
-	   desc: desc
+	   desc: desc,
+	   rid: rid,
            },
         success : function(val) {
 	      if (val != 1) {alert(val);}
@@ -257,6 +259,14 @@ function remove_genome (opts) {
  <td><input type="textbox" size=8 name="name" id="name"></td>
  <td>Description:</td>
  <td><input type="textbox" size=16 name="desc" id="desc"></td>
+ <td>Role:</td>
+ <td><select id="role">
+  <TMPL_LOOP NAME=ROLE_LOOP>
+   <OPTION value=<TMPL_VAR NAME=RID>><TMPL_VAR NAME=NAME></OPTION>
+  </TMPL_LOOP>
+  </select>
+</td>
+
  <td><span id=create_group style="font-size: .75em" class='ui-button ui-button-go ui-corner-all go_run' onClick="create_group();">Create new group</span>
 </tr>
 </table>
