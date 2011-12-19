@@ -11,7 +11,8 @@ $(document).ready(function(){
 		cache: false,
 	});
 	set_table();
-	$(".dialog_box").dialog({autoOpen:false, width: 600});
+	$(".dialog_box").dialog({autoOpen: <TMPL_VAR NAME=EDIT_BOX_OPEN>, width: 600});
+	<TMPL_VAR ADDITIONAL_STUFF>
 });
 
 function set_table () {$('#group_table').tablesorter({widgets: ['zebra']});}
@@ -268,9 +269,9 @@ function get_orphan_genomes () {
 <div>
 <TABLE class="small">
 <tr>
- <td>Name:</td>
+ <td>Group Name:</td>
  <td><input type="textbox" size=8 name="name" id="name"></td>
- <td>Description:</td>
+ <td>Group Description:</td>
  <td><input type="textbox" size=16 name="desc" id="desc"></td>
  <td>Role:</td>
  <td><select id="role">
@@ -284,6 +285,8 @@ function get_orphan_genomes () {
 </tr>
 </table>
 </div>
+<div id=group_edit_box class= "dialog_box"></div>
+
 <div id=admin_stuff></div>
 </TMPL_IF>
 
@@ -294,11 +297,13 @@ function get_orphan_genomes () {
  <THEAD align=left> 
   <TR>
    <TH>Name</TH>
-   <TH>Description</TH>
+   <TH>Group Description</TH>
    <TH>Role</TH>
    <TH>Permissions</TH>
    <TH>Genomes</TH>
-   <TH>Members</TH>
+   <TH>CurrentMembers</TH>
+   <TH>Edit Group</TH>
+   <TH>Delete Group</TH>
   </TR>
  </THEAD>
  <tbody align=left valign="top" id="genome_table_body" class=small>
@@ -323,15 +328,15 @@ function get_orphan_genomes () {
 
 <TABLE class=small>
  <TR>
-  <TD>Name:</TD>
+  <TD>Group Name:</TD>
   <TD><input type="textbox" size=8 id="edit_name" value="<TMPL_VAR NAME=NAME>"></TD>
  </TR>
  <TR>
-  <TD>Description:</TD>
+  <TD>Group Description:</TD>
   <TD><input type="textbox" size=20 id="edit_desc" value="<TMPL_VAR NAME=DESC>"></TD>
  </TR>
 </TABLE>
-<span onClick="update_group_info({ugid: '<TMPL_VAR NAME=UGID>'});" class='ui-button ui-corner-all'>Update Group Info</span>
+<span onClick="update_group_info({ugid: '<TMPL_VAR NAME=UGID>'});" class='ui-button ui-corner-all ui-button-go'>Update Group Info</span>
 <hr>
 <TABLE class=small>
  <TR>
@@ -386,9 +391,9 @@ function get_orphan_genomes () {
 
 </TMPL_IF>
 
-<TMPL_IF NAME=ADMIN>
+<TMPL_IF NAME=ADMIN_AREA>
 <hr>
 Admin Functions:<br>
-<span id=orphan_button style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="get_orphan_genomes();">Get Orphaned Genomes</span>
+<span id=orphan_button style="font-size: .75em" class='ui-button ui-corner-all' onClick="get_orphan_genomes();">Get Orphaned Genomes</span>
 <div class="small ui-widget-content ui-corner-all" id=orphan_genome_list></div>
 </TMPL_IF>
