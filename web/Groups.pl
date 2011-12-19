@@ -53,6 +53,7 @@ CoGe::Accessory::Web->login_cas(ticket=>$cas_ticket, coge=>$coge, this_url=>$FOR
 	     remove_user_from_group=>\&remove_user_from_group,
 	     add_genome_to_group=>\&add_genome_to_group,
 	     remove_genome_from_group=>\&remove_genome_from_group,
+	     get_orphan_genomes=>\&get_orphan_genomes,
     );
 
 dispatch();
@@ -109,7 +110,29 @@ sub gen_body
       $template->param(MAIN_TABLE=>$groups);
       my $roles = get_roles();
       $template->param(ROLE_LOOP=>$roles);
+      $template->param(ADMIN=>1) if $USER->is_admin;
       return $template->output;
+  }
+
+sub get_orphan_genomes
+  {
+    my %opts = @_;
+    return "Naughty monkey!" unless $USER->is_admin;
+    my @genomes;
+    #time to deal with admin privileges
+    foreach my $genome (sort {$a->organism->name cmp $b->organism->name} $coge->resultset('DatasetGroup')->search({restricted=>1}))
+      {
+	my $name = $genome->organism->name;
+	$name .= " ".join (", ", map{$_->name} $genome->source) .": ";
+	$name .= $genome->name.", " if $genome->name;
+	$name .=  "v".$genome->version." ".$genome->type->name;#." ".commify($genome->length)."nt";
+	#my $name = $genome->organism->name;
+	#$name .= " (v".$genome->version.")";
+	$name = qq{<span class="link" onclick="window.open('OrganismView.pl?dsgid=}.$genome->id.qq{');">}.$name."</span>";
+	push @genomes, $name;
+      }
+    my $output = join ("<br>",@genomes);
+    return $output;
   }
 
 sub get_roles
@@ -153,6 +176,9 @@ sub add_genome_to_group
     my $ugid = $opts{ugid};
     my $dsgid = $opts{dsgid};
     return "DSGID and/or UGID not specified"  unless $dsgid && $ugid;
+    my $is_owner = $USER->is_owner(dsg=>$dsgid);
+    $is_owner=1 if $USER->is_admin;
+    return "You are not the owner of this genome" unless $is_owner;
     my ($ugdc) = $coge->resultset('UserGroupDataConnector')->create({dataset_group_id=>$dsgid, user_group_id=>$ugid});
     return 1;
   }
