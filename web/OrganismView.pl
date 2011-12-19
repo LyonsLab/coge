@@ -421,7 +421,7 @@ sub get_dataset_groups
 #	$html = qq{<FONT CLASS ="small">Dataset group count: }.scalar (@opts).qq{</FONT>\n<BR>\n};
 	$html .= qq{<SELECT class="ui-widget-content ui-corner-all" id="dsg_id" SIZE="5" MULTIPLE onChange="get_dataset_group_info(['args__dsgid','dsg_id'],[dataset_chain]);" >\n};
 	$html .= join ("\n", @opts);
-	$html .= qq{\n</SELECT><br/><br/>	<span class="ui-button ui-corner-all" id=all onClick="add_all_genomes(); ">Add all</span><br/>\n};
+	$html .= qq{\n</SELECT><br/><br/>	<span class="ui-button ui-corner-all" id=all onClick="add_all_genomes(); ">Add all to Genome List</span><br/>\n};
 	$html =~ s/OPTION/OPTION SELECTED/ unless $html =~ /SELECTED/i;
       }
     else
@@ -511,7 +511,7 @@ sub get_dataset_group_info
     my $feat_string = qq{
 <tr><td><div id=dsg_feature_count class="small link" onclick="gen_data(['args__loading...'],['dsg_features']); get_feature_counts(['args__dsgid','dsg_id', 'args__gstid','gstid'],['dsg_features']);" >Click for Features</div>};
     $html .= $feat_string;
-    $html .= qq{<tr><td colspan=2><div><span class="ui-button ui-corner-all" onClick="update_genomelist(['args__genomeid','args__$dsgid'],[add_to_genomelist]);\$('#geno_list').dialog('option', 'width', 500).dialog('open');">Add to list</span>};
+    $html .= qq{<tr><td colspan=2><div><span class="ui-button ui-corner-all" onClick="update_genomelist(['args__genomeid','args__$dsgid'],[add_to_genomelist]);\$('#geno_list').dialog('option', 'width', 500).dialog('open');">Add to Genome List</span>};
     if ($USER->is_owner(dsg=>$dsgid) || $USER->is_admin)
       {
 	$html .= qq{<span class="ui-button ui-corner-all ui-button-go" onClick="make_dsg_public('$dsgid')">Make Genome Public</span>} if $dsg->restricted;
