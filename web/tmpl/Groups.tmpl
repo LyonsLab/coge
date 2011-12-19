@@ -165,7 +165,7 @@ function remove_user (opts) {
      items=[];
      $('#ugid > option:selected').each(function(){
         var uid = $(this).attr("value");
-	items.push($(this));
+	var item = $(this);
 	var html = '<option value='+uid+ ' >'+$(this).text()+'</option>';
 	$.ajax({
          data: {
@@ -178,7 +178,7 @@ function remove_user (opts) {
           if (data != 1) {alert(data);}
 	  else {
 	   $('#new_ugid').append(html);
-	   for (item in items) {items[item].remove();}
+	   item.remove();
 	  }
 
 	 },
@@ -202,8 +202,7 @@ function add_genome(opts) {
      $('#new_dsgid > option:selected').each(function(){
         var dsgid = $(this).attr("value");
 	var html = '<option value='+dsgid+ ' >'+$(this).text()+'</option>';
-	$('#dsgid').append(html);
-	$(this).remove();
+	var item = $(this);
         $.ajax({
          data: {
      	   jquery_ajax: 1,
@@ -213,6 +212,10 @@ function add_genome(opts) {
           },
          success : function(data) {
           if (data != 1) {alert(data);}
+	  else {
+  	   $('#dsgid').append(html);
+	   item.remove();
+	  }
 	 },
        });
      });
@@ -222,10 +225,9 @@ function add_genome(opts) {
 
 function remove_genome (opts) {
      ugid = opts.ugid;
-     items =[];
      $('#dsgid > option:selected').each(function(){
         var dsgid = $(this).attr("value");
-	items.push($(this));
+	var item = $(this);
 	var html = '<option value='+dsgid+ ' >'+$(this).text()+'</option>';
 	$.ajax({
          data: {
@@ -238,14 +240,25 @@ function remove_genome (opts) {
           if (data != 1) {alert(data);}
 	  else {
 	   $('#new_dsgid').append(html);
-	   for (item in items) {items[item].remove();}
+	   item.remove();
 	  }
 
 	 },
        });
      });
      run_get_groups_for_user({divid: 'groups'});
+}
 
+function get_orphan_genomes () {
+  $.ajax({
+         data: {
+     	   jquery_ajax: 1,
+	   fname: 'get_orphan_genomes',
+          },
+         success : function(data) {
+	   $('#orphan_genome_list').append(data);
+	 },
+       });
 }
 
 </SCRIPT>
@@ -271,8 +284,7 @@ function remove_genome (opts) {
 </tr>
 </table>
 </div>
-<div id=group_edit_box class="dialog_box">testing</div>
-
+<div id=admin_stuff></div>
 </TMPL_IF>
 
 
@@ -372,4 +384,11 @@ function remove_genome (opts) {
  </TR>
 </TABLE>
 
+</TMPL_IF>
+
+<TMPL_IF NAME=ADMIN>
+<hr>
+Admin Functions:<br>
+<span id=orphan_button style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="get_orphan_genomes();">Get Orphaned Genomes</span>
+<div class="small ui-widget-content ui-corner-all" id=orphan_genome_list></div>
 </TMPL_IF>
