@@ -511,13 +511,13 @@ sub get_dataset_group_info
     my $feat_string = qq{
 <tr><td><div id=dsg_feature_count class="small link" onclick="gen_data(['args__loading...'],['dsg_features']); get_feature_counts(['args__dsgid','dsg_id', 'args__gstid','gstid'],['dsg_features']);" >Click for Features</div>};
     $html .= $feat_string;
-    $html .= qq{<tr><td><div><span class="ui-button ui-corner-all" onClick="update_genomelist(['args__genomeid','args__$dsgid'],[add_to_genomelist]);\$('#geno_list').dialog('option', 'width', 500).dialog('open');">Add to list</span>};
+    $html .= qq{<tr><td colspan=2><div><span class="ui-button ui-corner-all" onClick="update_genomelist(['args__genomeid','args__$dsgid'],[add_to_genomelist]);\$('#geno_list').dialog('option', 'width', 500).dialog('open');">Add to list</span>};
     if ($USER->is_owner(dsg=>$dsgid) || $USER->is_admin)
       {
 	$html .= qq{<span class="ui-button ui-corner-all ui-button-go" onClick="make_dsg_public('$dsgid')">Make Genome Public</span>} if $dsg->restricted;
-	$html .= qq{<br> <span class="ui-button ui-corner-all ui-button-go" onClick="make_dsg_private('$dsgid')">Make Genome Private</span>} if !$dsg->restricted;
-	$html .= "<td>User Groups with Access: ";
-	$html .= join (", ", map {"<span class=link onclick=window.open('Groups.pl?ugid=".$_->id."')>".$_->name."</span>"} $dsg->user_groups);
+	$html .= qq{<span class="ui-button ui-corner-all ui-button-go" onClick="make_dsg_private('$dsgid')">Make Genome Private</span>} if !$dsg->restricted;
+	my $users_with_access = join (", ", map {"<span class=link onclick=window.open('Groups.pl?ugid=".$_->id."')>".$_->name."</span>"} $dsg->user_groups);
+	$html .= "User Groups with Access: $users_with_access" if $users_with_access;
       }
     $html .= qq{</div></td></tr>} ;
     $html .= "</table></td>";
