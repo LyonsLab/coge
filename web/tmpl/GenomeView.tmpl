@@ -130,10 +130,7 @@
                  ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"transposable",}
                  ,{isBaseLayer:false}
              );
-            quant = new OpenLayers.Layer.Genomic( "<span id='gc'>Quantitative Measurements</span>" , server
-                 ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"quant",}
-                 ,{isBaseLayer:false}
-             );
+	     <TMPL_VAR NAME=DYNAMIC_LAYERS>
             genes = new OpenLayers.Layer.Genomic( "<span id='gc'>Genes</span>" , server
                  ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"pseudogene,gene,mRNA,CDS,rna,CNS",}
                  ,{isBaseLayer:false}
@@ -186,16 +183,17 @@
             gbox.setVisibility(<TMPL_VAR NAME="GBOX">);
             map.addLayer(gbox);
 
+	    <TMPL_VAR NAME="DYNAMIC_LAYERS_ADD">
  	    <TMPL_IF NAME="QUANT_LAYER">
-            quant.setVisibility(<TMPL_VAR NAME="QUANT">);
-            map.addLayer(quant);
+//            quant.setVisibility(<TMPL_VAR NAME="QUANT">);
+//            map.addLayer(quant);
             </TMPL_IF>
 
             genes.setVisibility(<TMPL_VAR NAME="GENES">);
             map.addLayer(genes);
 
  	    <TMPL_IF NAME="TE_LAYER">
-            quant.setVisibility(<TMPL_VAR NAME="TE">);
+            transposable.setVisibility(<TMPL_VAR NAME="TE">);
             map.addLayer(transposable);
             </TMPL_IF>
 
