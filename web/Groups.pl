@@ -113,7 +113,7 @@ sub gen_body
       $template->param(ADMIN_AREA=>1) if $USER->is_admin;
       my $ugid;
       $ugid = $FORM->param('ugid') if defined $FORM->param('ugid');
-      my $box_open = $ugid ? 'true' : 'faluse';
+      my $box_open = $ugid ? 'true' : 'false';
       $template->param(EDIT_BOX_OPEN=>$box_open);
       $template->param(ADDITIONAL_STUFF=>qq{edit_group({ugid: $ugid});}) if $ugid;
       return $template->output;
