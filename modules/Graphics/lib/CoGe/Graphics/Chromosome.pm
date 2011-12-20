@@ -453,6 +453,7 @@ sub set_region
  Comment   : A few defaults will be set in the feature if they haven't been set:
            : strand         => 1
            : fill           => 0
+           : fill_height    => 1
            : stop           => start
            : merge_perecent => 100
            : magnification  => 1
@@ -502,6 +503,8 @@ sub add_feature
 	  }
 	$feat->strand(1) unless defined $feat->strand;
 	$feat->fill(0) unless $feat->fill;
+	$feat->fill_height(1) unless defined $feat->fill_height && $feat->fill_height =~ /\d/ && $feat->fill_height <=1 && $feat->fill_height >= 0;
+
 	$feat->merge_percent(100) unless defined $feat->merge_percent;
 	$feat->stop($feat->start) unless defined $feat->stop;
 	$feat->ih(0) unless defined $feat->ih;
@@ -904,7 +907,7 @@ sub generate_imagemap
 	my $feat_h = $feat_height/$feat->_overlap;
 	my $offset = ($feat->order-1)*($feat_height+$self->padding/1.5)+$self->padding/2;
 	$offset = 0 if $feat->fill;
-	$feat_h = ($self->_chr_height)/2 if $feat->fill;
+	$feat_h = ($self->_chr_height)/2 * $feat->fill_height if $feat->fill;
 	my $y = $feat->strand =~ /-/ ? $c+ $offset+1+($feat_h)*($feat->_overlap_pos-1): $c - $offset-$feat_h*$feat->_overlap_pos;
 	my $rb = $self->region_start;
 	my $re = $self->region_stop;
@@ -1498,7 +1501,7 @@ sub _draw_features
 	$feat_h = 1 if $feat_h < 1;
 	my $offset = ($feat->order-1)*($feature_height+$self->padding/1.5)+$self->padding/2;
 	$offset = 0 if $feat->fill;
-	$feat_h = ($self->_chr_height)/2 if $feat->fill;
+	$feat_h = ($self->_chr_height)/2 * $feat->fill_height if $feat->fill;
 	my $feat_mag_offset = ($feat_h*$feat->mag - $feat_h)/2;
 	my $y = $feat->strand =~ /-/ ? 
 	  $c + $offset + $feat_h  * ($feat->_overlap_pos-1) - $feat_mag_offset+ 1  :
