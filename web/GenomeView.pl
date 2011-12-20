@@ -141,6 +141,17 @@ sub gen_body
     #set tiler program
     $template->param(TILE_SERVER=>$P->{SERVER}."tiler.pl?");
     #set layers
+    my $count =0;
+    my $base1;
+    my $base2;
+    my @colors = (
+		  [200,50,200],
+		  [0,0,200],
+		  [0,200,0],
+		  [200,200,50],
+		  [200,50,0],
+		  );
+    my $color = 0;
     foreach my $ft (@feat_types)
       {
 	if ($ft->name eq "gene_space")
@@ -165,9 +176,29 @@ sub gen_body
 	  }
 	elsif ($ft->name =~ /quantitation/i)
 	  {
-	    $template->param(QUANT_LAYER=>1);
+	    print STDERR $ft->name,"\n";
+#	    $template->param(QUANT_LAYER=>1);
+	    my $ftid = $ft->id;
+	    my $layer_name = "layer$count";
+	    my $name = $ft->name;
+	    my ($r,$g,$b) = @{$colors[$color]};
+	    $color++;
+	    $color= 0 if $color == @colors;
+	    $base1 .= qq{
+$layer_name = new OpenLayers.Layer.Genomic( "<span id='gene_space'>$name</span>" , server
+                 ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"quant",'ftid': '$ftid', 'r':'$r', 'g':'$g', 'b':'$b'}
+                 ,{isBaseLayer:false}
+             );
+};
+
+	    $base2 .= qq{
+map.addLayer($layer_name);\n
+};
 	  }
+	$count++;
       }
+    $template->param(DYNAMIC_LAYERS=>$base1);
+    $template->param(DYNAMIC_LAYERS_ADD=>$base2);
     my ($gevo_group) = $coge->resultset('AnnotationTypeGroup')->search({name=>"gevo link"});
     if ($gevo_group)
       {
