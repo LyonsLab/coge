@@ -32,7 +32,12 @@ my $feat_height = $form->param('fh') || 50;
 my $request = $form->param('request') || "get_image";
 my $gstid = $form->param('gstid');
 my $dsgid = $form->param('dsg');
-
+my $ftid = $form->param('ftid');
+my $red = $form->param('r');
+my $green = $form->param('g');
+my $blue = $form->param('b');
+my $color;
+$color = [$red, $green, $blue] if defined $red && defined $green && defined $blue;
 $DBNAME = $P->{DBNAME};
 $DBHOST = $P->{DBHOST};
 $DBPORT = $P->{DBPORT};
@@ -75,6 +80,8 @@ else
 				 ds=>$ds,
 				 gstid=>$gstid,
 				 dsgid=>$dsgid,
+				 ftid=>$ftid,
+				 color=>$color,
 				 version=>$version,
 				 org=>$org,
 				 chr=>$chr,
