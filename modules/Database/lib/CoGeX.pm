@@ -131,7 +131,8 @@ sub dbconnect
  Usage     : $object->get_features_in_region(start   => $start, 
                                              stop    => $stop, 
                                              chr     => $chr,
-                                             dataset_id => $dataset->id());
+                                             ftid    => $ftid,
+                                             dataset_id => $dataset->id(),);
 
  Purpose   : gets all the features in a specified genomic region
  Returns   : an array or an array_ref of feature objects (wantarray)
@@ -143,6 +144,7 @@ sub dbconnect
                         of the dna seq will be returned
              OPTIONAL
              count   => flag to return only the number of features in a region
+             ftid    => limit features to those with this feature type id
  Throws    : none
  Comments  : 
 
@@ -163,6 +165,7 @@ sub get_features_in_region
     my $chr = $opts{chr} || $opts{CHR} || $opts{chromosome} || $opts{CHROMOSOME};
     my $dataset_id = $opts{dataset} || $opts{dataset_id} || $opts{info_id} || $opts{INFO_ID} || $opts{data_info_id} || $opts{DATA_INFO_ID} ;
     my $count_flag = $opts{count} || $opts{COUNT};
+    my $ftid = $opts{ftid};
     if ($count_flag)
       {
 	return $self->resultset('Feature')->count(
@@ -191,10 +194,9 @@ sub get_features_in_region
 						  }
 						 );
       }
-    my @feats = $self->resultset('Feature')->search({
-                 "me.chromosome" => $chr,
+    my %search = ("me.chromosome" => $chr,
                  "me.dataset_id" => $dataset_id,
-		 -and=>[
+		  -and=>[
 			-or=>[
 			      -and=>[
 				     "me.stop"=>  {"<=" => $stop},
@@ -209,8 +211,9 @@ sub get_features_in_region
 				     "me.stop"=> {">=" => $stop},
 				    ],
 			     ],
-		       ],
-						    },
+		       ]);
+    $search{"me.feature_type_id"}=$ftid if $ftid;
+    my @feats = $self->resultset('Feature')->search(\%search,
 						    {
 						     prefetch=>["locations", "feature_type"],
 						     order_by=>"me.start",
