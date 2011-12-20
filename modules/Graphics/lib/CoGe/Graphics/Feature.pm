@@ -191,6 +191,7 @@ BEGIN
 "strand", #top strand ("1") or bottom strand ("-1")
 #"placement", #will feature be inside or outside the chromosome picture (may default to another place depending on options used and magnification of chromosome) ("in" or "out")
 "fill", #should feature fill area (if possible?)
+"fill_height", #is there a limit to the fill area?
 "type", #type of feature (e.g. gene)
 "color", #color of feature e.g. [200,255,200]
 "bgcolor", #background color of feature e.g.[255,255,255]
@@ -303,6 +304,7 @@ See Also   : Class::Accessor
                  the background of the chomosome picture at the specified region 
 		 instead of drawn on top of the image at a particular distance from
 		 the center of the chomosome as determined by the value of $self->order
+ fill_height  => Percent height of a filled feature.  Valid values 0-1.  Nefault 1;
 
  skip_overlap_search => When set to true, no overlap search is performed by CoGe::Graphics::Chromosome->
                  add_feature.  This is often useful if there are so many features being searched
