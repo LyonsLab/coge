@@ -14,6 +14,7 @@ use CoGe::Graphics::Feature::Domain;
 use CoGe::Graphics::Feature::Block;
 use CoGe::Graphics::Feature::Outline;
 use CoGe::Graphics::Feature::Link;
+use CoGe::Graphics::Feature::Quant;
 use CoGeX;
 use DBIxProfiler;
 use Data::Dumper;
@@ -174,6 +175,8 @@ sub genomic_view
     my $gstid=$opts{gstid}; #genomic_sequence_type_id for finding the right genomic sequence
     my $dsgid=$opts{dsgid}; #dataset_group for finding the right genomic sequence
     my $coge = $opts{coge}; #database connector object
+    my $ftid = $opts{ftid};
+    my $color = $opts{color};
     unless ($coge)
       {
 	print STDERR "Need to pass in a coge database object!\n";
@@ -276,7 +279,7 @@ sub genomic_view
 #    my $item = $ds;
       {
 #x	print STDERR $item->name,"\n";
-	$self->process_features(start=>$start, stop=>$c->stop, chr=>$chr, ds=>$item, coge=>$coge, c=>$c, fids=>$fids, fnames=>$fnames, layers=>$layers, gstid=>$gstid) unless $simple;
+	$self->process_features(start=>$start, stop=>$c->stop, chr=>$chr, ds=>$item, coge=>$coge, c=>$c, fids=>$fids, fnames=>$fnames, layers=>$layers, gstid=>$gstid, ftid=>$ftid, color=>$color) unless $simple;
 	my $tab = new Benchmark if $BENCHMARK;
 	my $feat_time = timestr(timediff($tab, $taa)) if $BENCHMARK;
 	print STDERR " processing features for dsid ".$item->name, " ", Dumper ($layers)," (",$item->id,"):   $feat_time\n" if $BENCHMARK;
@@ -532,6 +535,8 @@ sub process_features
     my $fnames = $opts{fnames};
     my $layers = $opts{layers};
     my $gstid= $opts{gstid};
+    my $ftid = $opts{ftid}; #used in quant only
+    my $color = $opts{color}; #used in quant only
     return unless $layers->{all} || $layers->{features}; #no need to get features if no layers requiring them are requested
     $start = $c->region_start unless $start;
     $stop = $c->region_stop unless $stop;
@@ -541,7 +546,7 @@ sub process_features
     my $tf3 = new Benchmark if $BENCHMARK;
     my @cds_feats;
 
-    my @feats = $coge->get_features_in_region(start=>$start, end=>$stop, dataset=>$ds->id, chr=>$chr);
+    my @feats = $coge->get_features_in_region(start=>$start, end=>$stop, dataset=>$ds->id, chr=>$chr, ftid=>$ftid);
     my @tmp1;
     my @tmp2;
     shift @feats while (scalar @feats && !$feats[0]);
@@ -562,7 +567,7 @@ sub process_features
 	$stop = $tmpfeat->stop;
 	$research=1;
       }
-    @feats = $coge->get_features_in_region(start=>$start, end=>$stop, dataset=>$ds->id, chr=>$chr) if $research;
+    @feats = $coge->get_features_in_region(start=>$start, end=>$stop, dataset=>$ds->id, chr=>$chr, ftid=>$ftid) if $research;
 #    print STDERR "$start - $stop\n";
     my %feats = map {$_->id, $_} @feats;
     my $tf4 = new Benchmark if $BENCHMARK;
@@ -619,6 +624,21 @@ sub process_features
 	    $f->overlay(1);
 	    $f->mag(0.75);
 	    $f->no_3D(1) if $layers->{features}{flat};
+	    push @f, $f;
+          }
+        elsif (($layers->{features}{quant} || $layers->{all}) && $feat->type->name =~ /quantitation/i)
+          {
+	    my $f = CoGe::Graphics::Feature::Quant->new();
+	    $color = [200,0,200] unless defined $color;
+	    $f->color($color);
+	    foreach my $loc ($feat->locs)
+	      {
+		$f->strand($loc->strand);
+	      }
+	    foreach my $quant ($feat->quantitations) #this is seriously flawed.  Only the last quant value will be shown.  Need to write in a whole support structure for selecting sets of quant data, and having a special way to visualize them.  Perhaps a combo of selecting the right features and sending an array of values to the Quant.pm object.  But for a future time.
+	      {
+		$f->fill_height($quant->value);
+	      }
 	    push @f, $f;
           }
 	elsif (($layers->{features}{gevo_link} || $layers->{all}))
@@ -936,6 +956,7 @@ sub process_layers
        "gevo_link"=>"gevo_link",
        "TE"=>"transposable",
        "transposable"=>"transposable",
+       "quant"=>"quant", #quantitation
       );
     my %features = 
       (
@@ -957,6 +978,7 @@ sub process_layers
        "repeat"=>1,
        "gevo_link"=>1,
        "transposable"=>1,
+       "quant"=>1,
       );
     #determine of nt sequence is needed
     my %nt = 
