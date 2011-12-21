@@ -469,7 +469,7 @@ sub gen_dsg_menu
       {
 	my $name;
 	my $has_cds;
-	if ( $dsg->restricted && !$USER->has_access_to_genome(genome=>$dsg))
+	if ( $dsg->restricted && !$USER->has_access_to_genome($dsg))
 	  {
 	    next unless $dsgid && $dsg->id == $dsgid;
 	    $name = "Restricted";
@@ -639,7 +639,7 @@ sub get_dataset_group_info
     $html_dsg_info .= "<tr><td>Contains contigs" if $contig;
     $html_dsg_info .= "<tr><td>Contains scaffolds" if $scaffold;
     $html_dsg_info .= "</table>";
-    if ($dsg->restricted && !$USER->has_access_to_genomes(genome=>$dsg))
+    if ($dsg->restricted && !$USER->has_access_to_genome($dsg))
       {
 	$html_dsg_info = "Restricted";
       }
@@ -3040,11 +3040,11 @@ sub get_previous_analyses
 	    my $geneorder = $file =~ /\.go/;
 	    my $dsg1 = $coge->resultset('DatasetGroup')->find($dsgid1);
 	    next unless $dsg1;
-	    next if ($dsg1->restricted && !$USER->has_access_to_genome(genome=>$dsg1));
+	    next if ($dsg1->restricted && !$USER->has_access_to_genome($dsg1));
 	    my ($ds1) = $dsg1->datasets;
 	    my $dsg2 = $coge->resultset('DatasetGroup')->find($dsgid2);
 	    next unless $dsg2;
-	    next if ($dsg2->restricted && !$USER->has_access_to_genome(genome=>$dsg2));
+	    next if ($dsg2->restricted && !$USER->has_access_to_genome($dsg2));
 	    my ($ds2) = $dsg2->datasets;
 	    $data{dsg1}=$dsg1;
 	    $data{dsg2}=$dsg2;
