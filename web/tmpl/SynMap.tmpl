@@ -357,7 +357,8 @@ function reset_basename(){
  function monitor_log(log)
 {
 //  console.log(log);
-  if (pageObj.waitime < 60000) pageObj.waittime=pageObj.waittime*1.25;
+  var waittime = pageObj.waittime;
+  if (waittime < 60000) {pageObj.waittime=pageObj.waittime*1.25;}
   var fasta = 0;
   var blast = 0;
   var blastdb = 0;
