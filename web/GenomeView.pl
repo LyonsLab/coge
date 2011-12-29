@@ -139,7 +139,17 @@ sub gen_body
     $z = 0 if $z < 0;
     my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'GenomeView.tmpl');
     #set tiler program
-    $template->param(TILE_SERVER=>$P->{SERVER}."tiler.pl?");
+    #$template->param(TILE_SERVER=>$P->{SERVER}."tiler.pl?");
+    my $tiler_servers = qq{
+'http://coge.iplantcollaborative.org/coge/tiler.pl?',
+};
+#'http://b.coge.iplantcollaborative.org/coge/tiler.pl?',
+#'http://c.coge.iplantcollaborative.org/coge/tiler.pl?',
+#'http://d.coge.iplantcollaborative.org/coge/tiler.pl?',
+#'http://e.coge.iplantcollaborative.org/coge/tiler.pl?',
+#'http://f.coge.iplantcollaborative.org/coge/tiler.pl?',
+#};
+    $template->param(TILE_SERVER=>$tiler_servers);
     #set layers
     my $count =0;
     my $base1;
@@ -176,7 +186,6 @@ sub gen_body
 	  }
 	elsif ($ft->name =~ /quantitation/i)
 	  {
-	    print STDERR $ft->name,"\n";
 #	    $template->param(QUANT_LAYER=>1);
 	    my $ftid = $ft->id;
 	    my $layer_name = "layer$count";
