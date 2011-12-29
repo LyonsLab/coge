@@ -2010,8 +2010,8 @@ sub process_block
 	   {
 	     unshift @line, $ks->{dN};
 	     unshift @line, $ks->{dS};
-	     push @ks, $ks->{dS} unless $ks->{dS} ne "NA";
-	     push @kn, $ks->{dN} unless $ks->{dN} ne "NA";
+	     push @ks, $ks->{dS} unless $ks->{dS} eq "NA";
+	     push @kn, $ks->{dN} unless $ks->{dN} eq "NA";
 	   }
 	 else
 	   {
