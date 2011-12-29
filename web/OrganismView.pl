@@ -15,9 +15,8 @@ use Benchmark qw(:all);
 use Statistics::Basic::Mean;
 no warnings 'redefine';
 
-
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $coge $HISTOGRAM %FUNCTION $P $COOKIE_NAME);
-$P = CoGe::Accessory::Web::get_defaults("./coge.conf");
+$P = CoGe::Accessory::Web::get_defaults("$ENV{HOME}/coge.conf");
 $ENV{PATH} = $P->{COGEDIR};
 $ENV{irodsEnvFile} = "/var/www/.irods/.irodsEnv";
 
