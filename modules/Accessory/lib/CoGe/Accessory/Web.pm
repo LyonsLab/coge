@@ -225,7 +225,7 @@ sub login_cas{
   ($coge_user) = $coge->resultset('User')->search({user_name=>$uname});
   unless ($coge_user)
     {
-      $coge_user =  $coge->resultset('User')->create({user_name=>$uname,first_name=>$fname,last_name=>$lname,email=>$email, description=>"validated by iPlant"}); #do we have a valid user in the database, if not create
+      $coge_user =  $coge->resultset('User')->create({user_name=>$uname,first_name=>$fname,last_name=>$lname,email=>$email, description=>"Validated by iPlant"}); #do we have a valid user in the database, if not create
       $coge_user->insert;
     }
   #create a session ID for the user and log
@@ -234,7 +234,8 @@ sub login_cas{
   my $sid = $coge->log_user(user=>$coge_user,session=>$session);
   #gen and set the web cookie, yum!
   my $c = CoGe::Accessory::LogUser->gen_cookie(session=>$session,cookie_name=>'cogec');
-  print "Set-Cookie: $c\n";
+#  print "Set-Cookie: $c\n";
+  print CGI::header(-cookie=>[$c]);
   return $coge_user;
 }
 
