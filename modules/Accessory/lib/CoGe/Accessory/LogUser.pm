@@ -16,7 +16,6 @@ sub get_user
     if ($cookie_name && ref $cookies{$cookie_name})
       {
 	my %session = $cookies{$cookie_name}->value;
-
 	$session = $session{session};
 	my ($user_session) = $coge->resultset("UserSession")->find({session=>$session});
 	$user = $user_session->user if $user_session;
