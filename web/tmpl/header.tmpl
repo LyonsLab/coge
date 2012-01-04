@@ -48,9 +48,6 @@ jQuery(document).ready(function(){
   pageObj = new Object();
   if (jQuery.browser.msie) {browserAlert()};
   setup_button_states();
-  <TMPL_IF NAME=DELETE_COOKIE>
-  $.cookie('<TMPL_VAR NAME=COOKIE_NAME>','',-1);	
-  </TMPL_IF>
 });
 
 /*
