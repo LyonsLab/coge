@@ -11,7 +11,7 @@ use File::Path;
 use vars qw($DEBUG $coge $GENOMIC_SEQ_LEN $GO $ERASE);
 
 
-my ($nt_file, $nt_dir, $org_name, $org_desc, $org_id, $org_restricted, $source_name, $source_desc, $source_link, $source_id, $ds_name, $ds_desc, $ds_link, $ds_version, $ds_id, $chr, $seq_type_name, $seq_type_desc, $seq_type_id, $chr_basename, $add_chr_name, $use_fasta_header, $dsg_name, $dsg_desc, $dsg_version, $dsg_id, $restricted, $db, $user, $pass);
+my ($nt_file, $nt_dir, $org_name, $org_desc, $org_id, $org_restricted, $source_name, $source_desc, $source_link, $source_id, $ds_name, $ds_desc, $ds_link, $ds_version, $ds_id, $chr, $seq_type_name, $seq_type_desc, $seq_type_id, $chr_basename, $add_chr_name, $use_fasta_header, $dsg_name, $dsg_desc, $dsg_version, $dsg_id, $restricted, $db, $user, $pass, $seq_dir);
 
 ##Example usage:
 #./fasta_genome_loader.pl -org_name "Allenigales" -source_id 24 -ds_name oldsuper2.fasta -ds_version 2 -use_fasta_header -nt ~/projects/genome/data/Selaginella_moellendorffii/pre-v2/oldsuper2.fasta
@@ -51,6 +51,7 @@ GetOptions ( "debug=s" => \$DEBUG,
 	     "database|db=s"=>\$db,
 	    "user|u=s"=>\$user,
 	    "password|pw=s"=>\$pass,
+	     "seq_dir|sd=s"=>\$seq_dir,
 	   );
 
 $DEBUG = 1 unless defined $DEBUG; # set to '1' to get updates on what's going on
@@ -65,7 +66,7 @@ my $formatdb =  "/usr/bin/formatdb -p F -o T"; #path to blast's formatdb program
 
 
 
-my $connstr = 'dbi:mysql:dbname=$db;host=localhost;port=3306';
+my $connstr = "dbi:mysql:dbname=$db;host=localhost;port=3307";
 $coge = CoGeX->connect($connstr, $user, $pass );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
@@ -290,6 +291,11 @@ sub load_genomic_sequence
     $seq =~ s/\s//g;
     $seq =~ s/\n//g;
     my $seqlen = length $seq;
+    unless ($seqlen)
+      {
+	print "Chromosome $chr has no sequencing.  Skipping. . .\n";
+	return;
+      }
     print "Loading genomic sequence for chromosome: $chr ($seqlen nt)\n" if $DEBUG;
 
     $dsg->add_to_genomic_sequences({sequence_length=>$seqlen,
@@ -363,7 +369,7 @@ sub generate_dsg
     return unless $dsg;
     unless ($dsg->file_path)
       {
-	my $path = "/opt/apache/CoGe/data/genomic_sequence/".$dsg->get_path."/".$dsg->id.".faa";
+	my $path = "$seq_dir/".$dsg->get_path."/".$dsg->id.".faa";
 	print $path,"\n";
 	$dsg->file_path($path);
 	$dsg->update;
