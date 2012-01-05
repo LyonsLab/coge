@@ -474,7 +474,9 @@ sub get_dataset_group_info
     $html .= qq{<tr><td>Description:</td><td>}.$dsg->description.qq{</td></tr>} if $dsg->description;
     $html .= qq{<tr><td>Chromosome count: <td>}.commify($chr_num).qq{</td></tr>};
     my $gstid = $dsg->genomic_sequence_type->id;
-    $html .= qq{<tr><td>Sequence type: <td>}.$dsg->genomic_sequence_type->name.qq{ (gstid$gstid)<input type=hidden id=gstid value=}.$gstid.qq{></td></tr>};
+    my $gst_name = $dsg->genomic_sequence_type->name;
+    $gst_name .= ": ".$dsg->type->description if $dsg->type->description;
+    $html .= qq{<tr><td>Sequence type: <td>}.$gst_name.qq{ (gstid$gstid)<input type=hidden id=gstid value=}.$gstid.qq{></td></tr>};
     $html .= qq{<tr><td>Length: </td>};
     $html .= qq{<td><div style="float: left;"> }.commify($total_length)." bp </div>";
     my $gc = $total_length < 10000000 && $chr_num < 500 ? get_gc_for_chromosome(dsgid=>$dsgid): 0;
