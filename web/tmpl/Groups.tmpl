@@ -313,7 +313,7 @@ function get_orphan_genomes () {
    <TD><TMPL_VAR NAME=DESC></TD>
    <TD><TMPL_VAR NAME=ROLE></TD>
    <TD><TMPL_VAR NAME=PERM></TD>
-   <TD><div style="max-height: 50px; overflow: auto;"><TMPL_VAR NAME=GENOMES></div></TD>
+   <TD><TMPL_VAR NAME=GENOMES></TD>
    <TD><TMPL_VAR NAME=MEM></TD>
    <TD><span class='ui-button ui-corner-all ui-button-icon-left'><span class="ui-icon ui-icon-gear" onclick="edit_group({ugid: <TMPL_VAR NAME=UGID>});"></span></span></TD>
    <TD><span class='ui-button ui-corner-all ui-button-icon-left'><span class="ui-icon ui-icon-trash" onclick="delete_group({ugid: <TMPL_VAR NAME=UGID>});"></span></span></TD>
@@ -341,7 +341,7 @@ function get_orphan_genomes () {
 <TABLE class=small>
  <TR>
   <TD>Current Members:<br>
-  <select multiple id=ugid onclick="show_add()" ondblclick="remove_user({ugid: '<TMPL_VAR NAME=UGID>'})" size=5 >
+  <select multiple id=ugid onclick="show_add()" ondblclick="remove_user({ugid: '<TMPL_VAR NAME=UGID>'})" size=10 >
        <TMPL_LOOP NAME=UGID_LOOP>
         <OPTION value=<TMPL_VAR NAME=UID>><TMPL_VAR NAME=UID_NAME></OPTION>
        </TMPL_LOOP>
@@ -353,7 +353,7 @@ function get_orphan_genomes () {
   </TD>
   <TD>
     CoGe Users:<br>
-    <select multiple id="new_ugid" onclick="show_add(1)" ondblclick="add_user({ugid: '<TMPL_VAR NAME=UGID>'})" size=5>
+    <select multiple id="new_ugid" onclick="show_add(1)" ondblclick="add_user({ugid: '<TMPL_VAR NAME=UGID>'})" size=10>
      <TMPL_LOOP NAME=ALL_UGID_LOOP>
       <OPTION value=<TMPL_VAR NAME=UID>><TMPL_VAR NAME=UID_NAME></OPTION>
      </TMPL_LOOP>
@@ -364,7 +364,7 @@ function get_orphan_genomes () {
 <table class=small>
  <TR>
   <TD>Genomes in Group:<br>
-  <select multiple id=dsgid onclick="show_gadd()" ondblclick="remove_genome({ugid: '<TMPL_VAR NAME=UGID>'})"  size=5>
+  <select multiple id=dsgid onclick="show_gadd()" ondblclick="remove_genome({ugid: '<TMPL_VAR NAME=UGID>'})"  size=10>
        <TMPL_LOOP NAME=DSGID_LOOP>
         <OPTION value=<TMPL_VAR NAME=DSGID>><TMPL_VAR NAME=DSGID_NAME></OPTION>
        </TMPL_LOOP>
@@ -376,7 +376,7 @@ function get_orphan_genomes () {
   </TD>
   <TD>
     Private Genomes:<TMPL_VAR NAME=ADMIN><br>
-    <select multiple id=new_dsgid onclick="show_gadd(1)" ondblclick="add_genome({ugid: '<TMPL_VAR NAME=UGID>'})"  size=5>
+    <select multiple id=new_dsgid onclick="show_gadd(1)" ondblclick="add_genome({ugid: '<TMPL_VAR NAME=UGID>'})"  size=10>
      <TMPL_LOOP NAME=ALL_DSGID_LOOP>
       <OPTION value=<TMPL_VAR NAME=DSGID>><TMPL_VAR NAME=DSGID_NAME></OPTION>
      </TMPL_LOOP>
