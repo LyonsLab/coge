@@ -77,7 +77,7 @@ __PACKAGE__->set_primary_key("list_id");
 __PACKAGE__->has_many("list_connectors" => "CoGeX::Result::ListConnector", 'list_id');
 
 # dataset has many features
-__PACKAGE__->belongs_to("list_group" => "CoGe::Result::ListGroup", 'list_group_id');
+__PACKAGE__->belongs_to("list_group" => "CoGeX::Result::ListGroup", 'list_group_id');
 
 
 sub features

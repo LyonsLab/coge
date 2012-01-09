@@ -39,9 +39,9 @@ Type: VARCHAR, Default: undef, Nullable: yes, Size: 1024
 
 =cut
 
-__PACKAGE__->table("feature_list_group");
+__PACKAGE__->table("list_group");
 __PACKAGE__->add_columns(
-  "feature_list_group_id",
+  "list_group_id",
   { data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
   "name",
   { data_type => "VARCHAR", default_value => "", is_nullable => 0, size => 255 },
@@ -62,7 +62,7 @@ __PACKAGE__->add_columns(
   },
 );
 __PACKAGE__->set_primary_key("list_group_id");
-__PACKAGE__->has_many("lists" => "CoGe::Result::List", 'list_group_id');
+__PACKAGE__->has_many("lists" => "CoGeX::Result::List", 'list_group_id');
 
 1;
 

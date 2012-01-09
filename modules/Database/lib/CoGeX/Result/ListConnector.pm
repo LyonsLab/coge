@@ -41,33 +41,21 @@ Type: VARCHAR, Default: undef, Nullable: yes, Size: 1024
 
 =cut
 
-__PACKAGE__->table("feature_list_connector");
+__PACKAGE__->table("list_connector");
 __PACKAGE__->add_columns(
-  "feature_list_connector_id",
-  { data_type => "INT", default_value => undef, is_nullable => 0, size => 10 },
-  "feature_list_id",
-  { data_type => "INT", default_value => "", is_nullable => 0, size => 10 },
+  "list_connector_id",
+  { data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
+  "list_id",
+  { data_type => "INT", default_value => "", is_nullable => 0, size => 11 },
   "feature_id",
-  { data_type => "INT", default_value => "", is_nullable => 0, size => 10 },
-  "preferred_name",
-  {
-    data_type => "VARCHAR",
-    default_value => undef,
-    is_nullable => 1,
-    size => 50,
-  },
-  "description",
-  {
-    data_type => "VARCHAR",
-    default_value => undef,
-    is_nullable => 1,
-    size => 1024,
-  },
+  { data_type => "INT", default_value => "", is_nullable => 0, size => 11 },
+  "dataset_group_id",
+  { data_type => "INT", default_value => "", is_nullable => 0, size => 11 },
 );
-__PACKAGE__->set_primary_key("feature_list_connector_id");
-__PACKAGE__->belongs_to("list" => "CoGe::Result::List", 'list_id');
-__PACKAGE__->belongs_to("feature" => "CoGe::Result::Feature", 'feature_id');
-__PACKAGE__->belongs_to("dataset_group" => "CoGe::Result::DatasetGroup", 'dataset_group_id');
+__PACKAGE__->set_primary_key("list_connector_id");
+__PACKAGE__->belongs_to("list" => "CoGeX::Result::List", 'list_id');
+__PACKAGE__->belongs_to("feature" => "CoGeX::Result::Feature", 'feature_id');
+__PACKAGE__->belongs_to("dataset_group" => "CoGeX::Result::DatasetGroup", 'dataset_group_id');
 
 sub genome
   {

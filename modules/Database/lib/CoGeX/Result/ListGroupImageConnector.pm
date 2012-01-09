@@ -38,16 +38,16 @@ Type: INT, Default: "", Nullable: no, Size: 10
 
 __PACKAGE__->table("list_group_image_connector");
 __PACKAGE__->add_columns(
-  "feature_list_group_image_connector_id",
+  "list_group_image_connector_id",
   { data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
-  "feature_list_group_id",
+  "list_group_id",
   { data_type => "INT", default_value => "", is_nullable => 0, size => 11 },
   "image_id",
   { data_type => "INT", default_value => "", is_nullable => 0, size => 11 },
 );
 __PACKAGE__->set_primary_key("list_group_image_connector_id");
-__PACKAGE__->belongs_to("list_group" => "CoGe::Result::ListGroup", 'list_group_id');
-__PACKAGE__->belongs_to("image" => "CoGe::Result::Image", 'image_id');
+__PACKAGE__->belongs_to("list_group" => "CoGeX::Result::ListGroup", 'list_group_id');
+__PACKAGE__->belongs_to("image" => "CoGeX::Result::Image", 'image_id');
 1;
 
 
