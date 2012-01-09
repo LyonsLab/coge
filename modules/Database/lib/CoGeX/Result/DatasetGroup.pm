@@ -89,6 +89,18 @@ __PACKAGE__->add_columns(
   },
   "restricted",  { data_type => "int", default_value => "0", is_nullable => 0, size => 1 },
   "access_count",  { data_type => "int", default_value => "0", is_nullable => 1, size => 10 },
+  "message",
+  {
+    data_type => "text",
+    default_value => undef,
+    is_nullable => 1,
+  },
+  "link",
+  {
+    data_type => "text",
+    default_value => undef,
+    is_nullable => 1,
+  },
 );
 
 __PACKAGE__->set_primary_key("dataset_group_id");
