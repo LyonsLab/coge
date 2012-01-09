@@ -29,9 +29,9 @@ Options:
     exit;
   }
 
-my $connstr = 'dbi:mysql:coge:synteny.cnr.berkeley.edu:3306';
+my $connstr = 'dbi:mysql:coge:localhost:3306';
 
-$coge = CoGeX->connect($connstr, 'cnssys', 'Cns');
+$coge = CoGeX->connect($connstr, 'coge', '123coge321');
 my $DSG = $coge->resultset('DatasetGroup')->resolve($dataset_group);
 print STDERR $DSG . "\n";
 @datasets = map { $_->dataset_id } $DSG->datasets;
