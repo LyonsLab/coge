@@ -214,7 +214,7 @@ sub get_group_info
     $data{desc} = $group->description if $group->description;
     my %users;
     my @users;
-    foreach my $user ($group->users)
+    foreach my $user (sort{$a->last_name cmp $b->last_name || $a->user_name cmp $b->user_name} $group->users)
       {
 	#          next if $user->user_name eq $USER->user_name; #skip self;
 	my $name = $user->user_name;
@@ -225,7 +225,7 @@ sub get_group_info
       }
     $data{users}=\@users;
     my @all_users;
-    foreach my $user ($coge->resultset('User')->all)
+    foreach my $user (sort{$a->last_name cmp $b->last_name || $a->user_name cmp $b->user_name} $coge->resultset('User')->all)
       {
 	next if $users{$user->id}; #skip users we already have
 	my $name = $user->user_name;
@@ -349,7 +349,7 @@ sub get_groups_for_user
         my $perm = join (", ", map {$_->name} $group->role->permissions);
         $groups{PERM}=$perm;
 	my @users;
-	foreach my $user ($group->users)
+	foreach my $user (sort {$a->last_name cmp $b->last_name} $group->users)
 	  {
 #	    next if $user->user_name eq $USER->user_name; #skip self;
 	    my $name = $user->user_name;
