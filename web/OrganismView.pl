@@ -257,15 +257,15 @@ sub edit_genome_info
 <table class=small>
  <tr>
   <td>Name:</td>
-  <td><input type=text id=dsg_name size=50 value=$name></td>
+  <td><input type=text id=dsg_name size=50 value="$name"></td>
  </tr>
  <tr>
   <td>Description:</td>
-  <td><input type=text id=dsg_desc size=50 value=$desc></td>
+  <td><input type=text id=dsg_desc size=50 value="$desc"></td>
  </tr>
  <tr>
   <td>Version:</td>
-  <td><input type=text id=dsg_ver size=5 value=$ver></td>
+  <td><input type=text id=dsg_ver size=5 value="$ver"></td>
  </tr>
  <tr>
   <td>Message:</td>
@@ -273,7 +273,7 @@ sub edit_genome_info
  </tr>
  <tr>
   <td>Link:</td>
-  <td><input type=text id=dsg_link size=50 value=$link></td>
+  <td><input type=text id=dsg_link size=50 value="$link"></td>
  </tr>
 </table>
 <span class="ui-button ui-corner-all ui-button-go" onClick="update_genome_info('$dsgid')">Update</span>
