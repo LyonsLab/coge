@@ -80,6 +80,8 @@ $USER = undef;
 	     add_to_irods=>\&add_to_irods,
 	     make_genome_public=>\&make_genome_public,
 	     make_genome_private=>\&make_genome_private,
+	     edit_genome_info=>\&edit_genome_info,
+	     update_genome_info=>\&update_genome_info,
 	    );
 my $pj = new CGI::Ajax(%FUNCTION);
 $pj->JSDEBUG(0);
@@ -216,6 +218,68 @@ sub make_genome_private
       }
     return 1;
   }
+sub update_genome_info
+  {
+    my %opts = @_;
+    my $dsgid = $opts{dsgid};
+    return "No DSGID specified" unless $dsgid;
+    return "Permission denied." unless $USER->is_admin || $USER->is_owner(dsg=>$dsgid);
+    my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+    my $name = $opts{name};
+    my $desc = $opts{desc};
+    my $ver = $opts{ver};
+    my $message = $opts{message};
+    my $link = $opts{link};
+    $dsg->name($name);
+    $dsg->description($desc);
+    $dsg->version($ver);
+    $dsg->message($message);
+    $dsg->link($link);
+    $dsg->update;
+    return 1;
+
+  }
+
+sub edit_genome_info
+  {
+    my %opts = @_;
+   my $dsgid = $opts{dsgid};
+    return "No DSGID specified" unless $dsgid;
+    return "Permission denied." unless $USER->is_admin || $USER->is_owner(dsg=>$dsgid);
+    my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+    my $name = $dsg->name;
+    my $desc = $dsg->description;
+    my $ver = $dsg->version;
+    my $message = $dsg->message;
+    my $link = $dsg->link;
+
+    my $html = qq{
+<table class=small>
+ <tr>
+  <td>Name:</td>
+  <td><input type=text id=dsg_name size=50 value=$name></td>
+ </tr>
+ <tr>
+  <td>Description:</td>
+  <td><input type=text id=dsg_desc size=50 value=$desc></td>
+ </tr>
+ <tr>
+  <td>Version:</td>
+  <td><input type=text id=dsg_ver size=5 value=$ver></td>
+ </tr>
+ <tr>
+  <td>Message:</td>
+  <td><textarea id=dsg_message cols=50 rows=5>$message</textarea></td>
+ </tr>
+ <tr>
+  <td>Link:</td>
+  <td><input type=text id=dsg_link size=50 value=$link></td>
+ </tr>
+</table>
+<span class="ui-button ui-corner-all ui-button-go" onClick="update_genome_info('$dsgid')">Update</span>
+};
+    return $html;
+   }
 
 sub get_recent_orgs
   {
@@ -461,8 +525,13 @@ sub get_dataset_group_info
     return " " unless $dsgid;
     my $dsg = $coge->resultset("DatasetGroup")->find($dsgid);
     return "Unable to get dataset_group object for id: $dsgid" unless $dsg;
-    my $html;# = qq{<div style="overflow:auto; max-height:78px">};
-    $html.= "<span class='alert large'>Private Genome!  Authorized Use Only!</span><br>" if $dsg->restricted;
+    my $html;
+    my $genome_message;
+    $genome_message = $dsg->message if $dsg->message;
+    $genome_message .= " Private Genome!  Authorized Use Only!" if $dsg->restricted;
+    $html.= "<span class='alert large'>$genome_message</span><br>" if $genome_message;
+
+    $html .= qq{<span class='link' onclick='window.open("}.$dsg->link.qq{")'> More information</span><br>} if $dsg->link;
     $html .= "&nbsp&nbsp&nbsp<span class=alert>You are a CoGe Admin.  Use your power wisely</span><br>" if $USER->is_admin;
     $html .= "&nbsp&nbsp&nbsp<span class=alert>You are the owner of this genome.</span><br>" if $USER->is_owner(dsg=>$dsg);
     my $total_length = $dsg->length;
@@ -520,11 +589,13 @@ sub get_dataset_group_info
 	$html .= qq{<span class="ui-button ui-corner-all ui-button-go" onClick="make_dsg_private('$dsgid')">Make Genome Private</span>} if !$dsg->restricted;
 	my $users_with_access = join (", ", map {"<span class=link onclick=window.open('Groups.pl?ugid=".$_->id."')>".$_->name."</span>"} $dsg->user_groups);
 	$html .= "User Groups with Access: $users_with_access" if $users_with_access;
+	$html .= qq{<span class="ui-button ui-corner-all ui-button-go" onClick="edit_genome_info('$dsgid')">Edit Genome Info</span>};
       }
     $html .= qq{</div></td></tr>} ;
     $html .= "</table></td>";
     $html .= qq{<td id=dsg_features></td>};
     $html .= "</table>";
+    
     return $html;
   }
   
