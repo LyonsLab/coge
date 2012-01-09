@@ -396,6 +396,47 @@ function make_dsg_private (dsgid) {
       });
 }
 
+function edit_genome_info (dsgid) {
+ $.ajax({
+        data: {
+     	   jquery_ajax: 1,
+	   fname: 'edit_genome_info',
+	   dsgid: dsgid,
+           },
+        success : function(val) {
+	      $('#edit_genome_info').html(val);
+	      $('#edit_genome_info').dialog('open');
+	      get_dataset_group_info(['args__dsgid','dsg_id'],[dataset_chain]);
+	},
+      });
+}
+
+function update_genome_info (dsgid) {
+ dsg_name = $('#dsg_name').val();
+ dsg_desc = $('#dsg_desc').val();
+ dsg_ver = $('#dsg_ver').val();
+ dsg_message = $('#dsg_message').val();
+ dsg_link = $('#dsg_link').val();
+ $.ajax({
+        data: {
+     	   jquery_ajax: 1,
+	   fname: 'update_genome_info',
+	   dsgid: dsgid,
+	   name: dsg_name,
+	   desc: dsg_desc,
+	   ver: dsg_ver,
+	   message: dsg_message,
+	   link: dsg_link
+           },
+        success : function(val) {
+	      if (val != 1) {alert(val);}
+	      $('#edit_genome_info').html('');
+	      $('#edit_genome_info').dialog('close');
+	      get_dataset_group_info(['args__dsgid','dsg_id'],[dataset_chain]);
+	},
+      });
+}
+
 </script>
 <TABLE>
    <TR><TD valign=top>
@@ -459,6 +500,7 @@ function make_dsg_private (dsgid) {
 <div class="dialog_box" id="wobble_gc_diff_histogram" title="(CDS GC - wobble GC) Content Histogram"></div>
 <div class="dialog_box" id="codon_usage_table" title="Codon Usage Table"></div>
 <div class="dialog_box" id="aa_usage_table" title="Amino Acid Usage Table"></div>
+<div class="dialog_box" id="edit_genome_info" title="Edit Genome Information"></div>
 
 
 
