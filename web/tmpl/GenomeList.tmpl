@@ -29,6 +29,7 @@
 	});
 
 
+
 	//set up the jquery ui
 	$(function() {
 	     //substaniate dialog box	     
@@ -365,6 +366,10 @@
 	  });
 	}
 
+        function delete_row (val)
+         {
+           $('#gl'+val).remove();
+	 }
 	function get_all_feat_counts(num) {
 	for (var i=1; i<=num; i++)
 	 {
@@ -629,7 +634,7 @@
 	</THEAD>
 	<tbody align=left valign="top" id="genome_table_body" class=small>
 	 <TMPL_LOOP NAME=INFO>
-	   <TR>
+	   <TR id='gl<TMPL_VAR NAME=DSGID>'>
 	     <TD><input type=checkbox checked id='<TMPL_VAR NAME=DSGID>'><input type=hidden id='dsgid_<TMPL_VAR NAME=COUNT>' value='<TMPL_VAR NAME=DSGID>'></TD>
 	     <TD><span class=link onclick=window.open('OrganismView.pl?dsgid=<TMPL_VAR NAME=DSGID>')> <TMPL_VAR NAME=NAME></span></TD>
 	     <TD><TMPL_VAR NAME=DESC></TD>
@@ -648,7 +653,7 @@
 	     <TD align=left id="codon_usage_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#codon_usage_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#codon_usage_<TMPL_VAR NAME=COUNT>').removeClass('link'); run_get_codon_usage({dsgid:<TMPL_VAR NAME=DSGID>, divid: 'codon_usage_<TMPL_VAR NAME=COUNT>'})">Codon Usage</TD>
 	     <TD align=right id="cds_gc_hist_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#cds_gc_hist_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#cds_gc_hist_<TMPL_VAR NAME=COUNT>').removeClass('link'); get_cds_gc_hist({dsgid: '<TMPL_VAR NAME=DSGID>',divid: 'cds_gc_hist_<TMPL_VAR NAME=COUNT>'})">View Histogram</TD>
 	     <TD align=right id="cds_wgc_hist_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#cds_wgc_hist_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#cds_wgc_hist_<TMPL_VAR NAME=COUNT>').removeClass('link'); get_cds_wgc_hist({dsgid: '<TMPL_VAR NAME=DSGID>' ,divid: 'cds_wgc_hist_<TMPL_VAR NAME=COUNT>'})">View Histogram</TD>
-
+             <TD><span class='ui-button ui-corner-all ui-button-icon-left'><span class="ui-icon ui-icon-trash" onclick="delete_row(<TMPL_VAR NAME=DSGID>)"></span></span></TD>
 	   </TR>
 	  </TMPL_LOOP>
 	 </tbody>
