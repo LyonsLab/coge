@@ -70,6 +70,20 @@ __PACKAGE__->add_columns(
     is_nullable => 1,
     size => 1024,
   },
+  "user_id",
+  {
+   data_type => "INT",
+   default_value => undef,
+   is_nullable => 0,
+   size => 11
+  },
+  "public",
+  {
+   data_type => "BOOLEAN",
+   default_value => 0,
+   is_nullable => 0,
+   size => 1
+  },
 );
 __PACKAGE__->set_primary_key("list_id");
 
