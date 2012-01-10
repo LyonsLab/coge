@@ -4,6 +4,42 @@
 $(function() {
  $(".dialog").dialog({ autoOpen: false} );
  });
+$.fn.sortSelect = function(){
+  this.each(
+          function()
+          {
+                if(this.nodeName.toLowerCase() != "select"){
+                  return;}
+                var opts = this.options;
+                var sortArray = [];
+                for(var i=0;i<opts.length;i++)
+                {
+                        sortArray[i] = {
+                                        v: opts[i].value,
+                                        t: opts[i].text,
+                                        d: opts[i].id,
+                                        }
+                }
+                sortArray.sort(
+                                function(obj1,obj2)
+                                {
+                                        obj1t = obj1.t.toLowerCase(),
+                                        obj2t = obj2.t.toLowerCase();
+                                        if(obj1t == obj2t){
+                                          return 0;}
+                                        return obj1t < obj2t ? -1 : 1;
+                                }
+                );
+                for(var i=0;i<opts.length;i++)
+                {
+                        opts[i].id = sortArray[i].d;
+                        opts[i].text = sortArray[i].t;
+                        opts[i].value = sortArray[i].v;
+                }
+          }
+        );
+        return this;
+};
 
 function ajax_wait (val){
 if (ajax.length)
