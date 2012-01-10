@@ -22,12 +22,12 @@ lib/CoGeX/Result/Sequence.pm
 lib/CoGeX/Result/SequenceType.pm
 lib/CoGeX/Result/Feature.pm
 lib/CoGeX/Result/User.pm
-lib/CoGeX/Result/FeatureList.pm
+lib/CoGeX/Result/List.pm
 lib/CoGeX/Result/UserGroup.pm
-lib/CoGeX/Result/FeatureListConnector.pm
+lib/CoGeX/Result/ListConnector.pm
 lib/CoGeX/Result/UserGroupConnector.pm
-lib/CoGeX/Result/FeatureListGroup.pm
-lib/CoGeX/Result/FeatureListGroupImageConnector.pm
+lib/CoGeX/Result/ListGroup.pm
+lib/CoGeX/Result/ListGroupImageConnector.pm
 lib/CoGeX/Result/UserSession.pm
 lib/CoGeX/Result/FeatureName.pm
 lib/CoGeX/Result/WebPreferences.pm
