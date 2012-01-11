@@ -105,11 +105,10 @@ my ($cas_ticket) =$FORM->param('ticket');
 $USER = undef;
 ($USER) = CoGe::Accessory::Web->login_cas(ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
 ($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
-
-my %ajax = CoGe::Accessory::Web::ajax_func();
-$ajax{dataset_search} = \&dataset_search; #override this method from Accessory::Web for restricted organisms
-$ajax{feat_search} = \&feat_search; 
-
+#my %ajax = CoGe::Accessory::Web::ajax_func();
+#$ajax{dataset_search} = \&dataset_search; #override this method from Accessory::Web for restricted organisms
+#$ajax{feat_search} = \&feat_search; 
+#print STDERR join ("\n", keys %ajax),"\n";
 
 %FUNCTION=(
 	      run=>\&run,
@@ -126,7 +125,9 @@ $ajax{feat_search} = \&feat_search;
 	      get_tiny_url=>\&get_tiny_url,
 	      add_to_user_history=>\&add_to_user_history,
 	      get_image_info => \&get_image_info,
-	      %ajax,
+	   dataset_search=> \&dataset_search,
+	   feat_search=>\&feat_search,
+#	      %ajax,
     );
 my $pj = new CGI::Ajax(%FUNCTION);
 $pj->JSDEBUG(0);
@@ -3593,7 +3594,6 @@ sub dataset_search
     $dsid = $feat->dataset->id if $feat;
     my $html;
     my %sources;
-    ($USER) = CoGe::Accessory::LogUser->get_user();
     if ($accn)
       {
 	my $rs = $coge->resultset('Dataset')->search(
@@ -3610,7 +3610,13 @@ sub dataset_search
 						    );
 	while (my $ds = $rs->next())
 	  {
-	    next if $ds->restricted && !$USER->has_access_to_dataset($ds);
+	    my $skip =0;
+	    foreach my $item ($ds->genomes)
+	      {
+		next if $USER->is_admin;
+		$skip = 1 if $item->restricted && !$USER->has_access_to_genome($item);
+	      }
+	    next if $skip;
 	    my $ver = $ds->version;
 	    my $desc = $ds->description;
 	    my $sname = $ds->data_source->name;
