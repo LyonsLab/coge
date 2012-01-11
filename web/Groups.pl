@@ -362,10 +362,10 @@ sub get_groups_for_user
 	
 	my @genome;
 	push @genome, "Apotheosis" if $group->role->name =~ /admin/i;
-	foreach my $genome ($group->private_genomes)
+	foreach my $genome (sort {$a->organism->name cmp $b->organism->name || $a->version cmp $b->version || $a->genomic_sequence_type_id  <=> $b->genomic_sequence_type_id} $group->private_genomes)
 	  {
 	    my $name = $genome->organism->name;
-	    $name .= " (v".$genome->version.")";
+	    $name .= " (v".$genome->version.", ".$genome->type->name.")";
 	    $name = qq{<span class="link" onclick="window.open('OrganismView.pl?dsgid=}.$genome->id.qq{');">}.$name."</span>";
 	    push @genome, $name;
 	  }
