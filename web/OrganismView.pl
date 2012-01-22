@@ -528,7 +528,7 @@ sub get_dataset_group_info
     my $html;
     my $genome_message;
     $genome_message = $dsg->message if $dsg->message;
-    $genome_message .= " Private Genome!  Authorized Use Only!" if $dsg->restricted;
+    $genome_message .= " Private Genome!  Authorized Use Only!" if $dsg->restricted && !$dsg->message;
     $html.= "<span class='alert large'>$genome_message</span><br>" if $genome_message;
 
     $html .= qq{<span class='link' onclick='window.open("}.$dsg->link.qq{")'> More information</span><br>} if $dsg->link;
@@ -587,9 +587,9 @@ sub get_dataset_group_info
       {
 	$html .= qq{<span class="ui-button ui-corner-all ui-button-go" onClick="make_dsg_public('$dsgid')">Make Genome Public</span>} if $dsg->restricted;
 	$html .= qq{<span class="ui-button ui-corner-all ui-button-go" onClick="make_dsg_private('$dsgid')">Make Genome Private</span>} if !$dsg->restricted;
+	$html .= qq{<span class="ui-button ui-corner-all ui-button-go" onClick="edit_genome_info('$dsgid')">Edit Genome Info</span>};
 	my $users_with_access = join (", ", map {"<span class=link onclick=window.open('Groups.pl?ugid=".$_->id."')>".$_->name."</span>"} $dsg->user_groups);
 	$html .= "User Groups with Access: $users_with_access" if $users_with_access;
-	$html .= qq{<span class="ui-button ui-corner-all ui-button-go" onClick="edit_genome_info('$dsgid')">Edit Genome Info</span>};
       }
     $html .= qq{</div></td></tr>} ;
     $html .= "</table></td>";
