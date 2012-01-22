@@ -161,7 +161,6 @@ sub cogesearch
       {
 	return $weak_query.$blank unless $org_id && $type;
       }
-    ($USER) = CoGe::Accessory::LogUser->get_user();
     my $html;
     my %seen;
     my $search ={};
