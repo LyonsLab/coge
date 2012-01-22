@@ -798,7 +798,7 @@ sub generate_fasta
 		my $seq = $feat->genomic_sequence(dsgid=>$dsg->id);
 		next unless $seq;
 		#skip sequences that are only 'x' | 'n';
-		next unless $seq =~ /^[^x|n]+$/i;
+		next unless $seq =~ /[^x|n]/i;
 		print OUT ">".$title."\n";
 		print OUT $seq,"\n";
 		$count++;
@@ -809,7 +809,7 @@ sub generate_fasta
 		my (@seqs) = $feat->protein_sequence(dsgid=>$dsg->id);
 		next unless scalar @seqs;
 		next if scalar @seqs > 1; #didn't find the correct reading frame;
-		next unless $seqs[0] =~ /^[^x]+$/i;
+		next unless $seqs[0] =~ /[^x]/i;
 		$title = ">".$title."\n";
 #		print OUT $title, join ($title, @seqs),"\n";
 		print OUT $title, $seqs[0],"\n";
@@ -944,7 +944,7 @@ sub run_blast
     system "touch $outfile.running"; #track that a blast anlaysis is running for this
     ($x, $pre_command) =CoGe::Accessory::Web::check_taint($pre_command);
    CoGe::Accessory::Web::write_log("running:\n\t$pre_command" ,$cogeweb->logfile);
-    `/usr/bin/nice --adjustment=39 $pre_command`;
+    `/usr/bin/nice --adjustment=30 $pre_command`;
     system "/bin/rm $outfile.running" if -r "$outfile.running"; #remove track file
     unless (-s $outfile)
       {
