@@ -34,7 +34,6 @@ $ARAGORN = $P->{ARAGORN};
 
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
-($USER) = CoGe::Accessory::LogUser->get_user();
 $FORM = new CGI;
 my %ajax = CoGe::Accessory::Web::ajax_func();
 
@@ -169,7 +168,6 @@ sub get_orgs
     if ($name)
       {
 	my @db = $coge->resultset('Organism')->search({name=>{like=>"%".$name."%"}});
-	($USER) = CoGe::Accessory::LogUser->get_user();
 	my @opts;
 	foreach my $item (sort {uc($a->name) cmp uc($b->name)} @db)
 	  {
