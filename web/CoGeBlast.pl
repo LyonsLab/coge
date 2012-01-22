@@ -415,7 +415,6 @@ $html .= qq{<SELECT id="org_id" SIZE="8" MULTIPLE"><option id=null_org>Please se
 	return $html;
       }
    
-    ($USER) = CoGe::Accessory::LogUser->get_user();
     my @opts;
     foreach my $item (sort {uc($a->name) cmp uc($b->name)} @db)
       {
