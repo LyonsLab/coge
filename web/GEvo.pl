@@ -1276,6 +1276,7 @@ sub generate_image_db
     my $set = $args{set};
     next unless $gfx;
     my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
+    $dbh->do("begin exclusive transaction") or die $dbh->errstr;
     my $image = $set->{image};
     my $accn = $set->{accn};
     my $title;
@@ -1298,7 +1299,16 @@ sub generate_image_db
     my $statement = qq{
 INSERT INTO image_info (id, display_id, iname, title, px_width, px_height, dsid, chromosome, bpmin, bpmax, reverse_complement) values ($image_id, $image_id, "$image", "$title", $width, $height, "$dsid", "$chr", $image_start, $image_stop, $rc)
 };
-    print STDERR $cogeweb->sqlitefile, "\n", $statement unless $dbh->do($statement);
+    my $try =1;
+    my $run_statement =  $dbh->do($statement);
+    print STDERR $cogeweb->sqlitefile,"\n",$statement,"\n" unless $run_statement;
+    unless ($run_statement || $try > 100)
+      {
+	sleep(1);
+	$run_statement = $dbh->do($statement);
+	$try++;
+      }
+#    print STDERR $cogeweb->sqlitefile, "\n", $statement unless $dbh->do($statement);
     foreach my $feat ($gfx->get_feats)
       {
 	print STDERR Dumper $feat unless $feat->color;
@@ -1357,13 +1367,14 @@ INSERT INTO image_data (name, type, xmin, xmax, ymin, ymax, bpmin,bpmax,image_id
 	my $try =1;
 	my $run_statement =  $dbh->do($statement);
 	print STDERR $cogeweb->sqlitefile,"\n",$statement,"\n" unless $run_statement;
-	unless ($run_statement || $try > 20)
+	unless ($run_statement || $try > 100)
 	  {
 	    sleep(1);
 	    $run_statement = $dbh->do($statement);
 	    $try++;
 	  }
       }
+    $dbh->do("commit transaction") or die $dbh->errstr;
     $dbh->disconnect();
     undef $dbh;
   }
@@ -1371,6 +1382,7 @@ INSERT INTO image_data (name, type, xmin, xmax, ymin, ymax, bpmin,bpmax,image_id
 sub image_db_create_hsp_pairs
   {
     my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
+    $dbh->do("begin exclusive transaction") or die $dbh->errstr;
     my $query = qq{select id,name from image_data where type = "HSP"};
     my %ids;
     foreach my $item (@{$dbh->selectall_arrayref($query)})
@@ -1386,10 +1398,30 @@ sub image_db_create_hsp_pairs
 	  }
 	my ($id1, $id2) = @{$ids{$name}};
 	my $statement = "update image_data set pair_id = $id1 where id = $id2";
-	$dbh->do($statement);
+
+	my $try =1;
+	my $run_statement =  $dbh->do($statement);
+	print STDERR $cogeweb->sqlitefile,"\n",$statement,"\n" unless $run_statement;
+	unless ($run_statement || $try > 100)
+	  {
+	    sleep(1);
+	    $run_statement = $dbh->do($statement);
+	    $try++;
+	  }
+#	$dbh->do($statement);
 	$statement = "update image_data set pair_id = $id2 where id = $id1";
-	$dbh->do($statement);
+	$try =1;
+	$run_statement =  $dbh->do($statement);
+	print STDERR $cogeweb->sqlitefile,"\n",$statement,"\n" unless $run_statement;
+	unless ($run_statement || $try > 100)
+	  {
+	    sleep(1);
+	    $run_statement = $dbh->do($statement);
+	    $try++;
+	  }
+#	$dbh->do($statement);
       }
+    $dbh->do("commit transaction") or die $dbh->errstr;
     $dbh->disconnect();
     undef $dbh;
   }
