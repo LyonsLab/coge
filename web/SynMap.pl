@@ -944,7 +944,7 @@ sub run_blast
     system "touch $outfile.running"; #track that a blast anlaysis is running for this
     ($x, $pre_command) =CoGe::Accessory::Web::check_taint($pre_command);
    CoGe::Accessory::Web::write_log("running:\n\t$pre_command" ,$cogeweb->logfile);
-    `/usr/bin/nice --adjustment=30 $pre_command`;
+    `/usr/bin/nice --adjustment=10 $pre_command`;
     system "/bin/rm $outfile.running" if -r "$outfile.running"; #remove track file
     unless (-s $outfile)
       {
