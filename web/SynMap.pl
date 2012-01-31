@@ -2717,7 +2717,7 @@ sub go
 
 	      }
 	      
- 	    $html .= "<span class='species small'>y-axis organism: $org_name2</span><br>";
+ 	    $html .= $flip ? "<span class='species small'>y-axis organism: $org_name1</span><br>": "<span class='species small'>y-axis organism: $org_name2</span><br>";;
  	    $/ = "\n";
 	    my $tmp;
  	    while (<IN>)
@@ -2739,9 +2739,7 @@ sub go
 };
 	      }
 
- 	    $html .= qq{
- <br><span class="species small">x-axis: $org_name1</span></table>
-};
+ 	    $html .= $flip ? qq{<br><span class="species small">x-axis: $org_name2</span></table>}: qq{<br><span class="species small">x-axis: $org_name1</span></table>};
 	    $html .= "<span class='small'>Axis metrics are in $axis_metric</span><br>";
 	    $html .="<span class='small'>Algorithm:  ".$algo_name."</span><br>";
 
