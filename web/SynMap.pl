@@ -158,6 +158,7 @@ my $pj = new CGI::Ajax(
 		       generate_basefile=>\&generate_basefile,
 		       get_dotplot=>\&get_dotplot,
 		       gen_dsg_menu=>\&gen_dsg_menu,
+		       get_dsg_gc=>\&get_dsg_gc,
 		       %ajax,
 		      );
 print $pj->build_html($FORM, \&gen_html);
@@ -637,7 +638,14 @@ sub get_dataset_group_info
     $html_dsg_info .= "<tr><td>Dataset: <td>".$ds->name;
     $html_dsg_info .= ": ".$ds->description if $ds->description;
     $html_dsg_info .= "<tr><td>Chromosome count: <td>".commify($chr_count);
-    $html_dsg_info .= "<tr><td>DNA content: <td>GC: $percent_gc%, AT: $percent_at%, N: $percent_n%, X: $percent_x%" if $percent_gc>0;
+    if ($percent_gc>0)
+      {
+	$html_dsg_info .= "<tr><td>DNA content: <td>GC: $percent_gc%, AT: $percent_at%, N: $percent_n%, X: $percent_x%";
+      }
+    else
+      {
+	$html_dsg_info .= qq{<tr><td>DNA content: <td id=gc_content$org_num class='link' onclick="get_gc($dsgid, 'gc_content$org_num')">Click to retrieve};
+      }
     $html_dsg_info .= "<tr><td>Total length: <td>".$chr_length;
     $html_dsg_info .= "<tr><td>Contains plasmid" if $plasmid;
     $html_dsg_info .= "<tr><td>Contains contigs" if $contig;
@@ -3126,10 +3134,6 @@ sub get_dsg_info
     if ($chr_count < 100 && $length < 50000000)
       {
 	($gc, $at, $n, $x) = get_dsg_gc(dsg=>$dsg);
-	$gc*=100;
-	$at*=100;
-	$n*=100;
-	$x*=100;
       }
     my ($plasmid, $contig, $scaffold) = get_chr_types(dsg=>$dsg);
     return $gc,$at,$n,$x, commify($length), commify($chr_count), $plasmid, $contig, $scaffold;
@@ -3140,8 +3144,21 @@ sub get_dsg_gc
     my %opts = @_;
     my $dsg = $opts{dsg};
     my $dsgid = $opts{dsgid};
+    my $text = $opts{text};
     $dsg = $coge->resultset('DatasetGroup')->find($dsgid) if $dsgid;
     my ($gc, $at, $n, $x) = $dsg->percent_gc;
+    $gc*=100;
+    $at*=100;
+    $n*=100;
+    $x*=100;
+    if ($text)
+      {
+	return "GC: $gc%, AT: $at%, N: $n%, X: $x%"
+      }
+    else
+      {
+	return ($gc, $at, $n, $x);
+      }
   }
 
 sub get_chr_types
