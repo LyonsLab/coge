@@ -552,6 +552,8 @@ sub get_orgs
     $desc =~ s/\s+$//g if $desc;
 
     $name = "" if $name && $name =~ /Search/; #need to clear to get full org count
+    $desc = "" if $desc && $desc =~ /Search/; #need to clear to get full org count
+    my $org_count;
     if ($oid)
       {
 	my $org = $coge->resultset("Organism")->find($oid);
@@ -568,7 +570,7 @@ sub get_orgs
       }
     else
       {
-	@db = $coge->resultset("Organism")->all;
+	$org_count = $coge->resultset("Organism")->count;
       }
 
     my @opts;
@@ -580,8 +582,9 @@ sub get_orgs
 	push @opts, $option;
 
       }
+    $org_count = scalar @opts unless $org_count;
     my $html;
-    $html .= qq{<FONT CLASS ="small">Organism count: }.scalar @opts.qq{</FONT>\n<BR>\n};
+    $html .= qq{<FONT CLASS ="small">Organism count: }.$org_count.qq{</FONT>\n<BR>\n};
     unless (@opts && ($name || $desc)) 
       {
 	$html .=  qq{<input type = hidden name="org_id$i" id="org_id$i">};
