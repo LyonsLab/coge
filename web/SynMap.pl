@@ -624,7 +624,7 @@ sub get_dataset_group_info
     $html_dsg_info .= qq{<div><span class="link" onclick=window.open('OrganismView.pl?dsgid=$dsgid')>Genome Information: </span><br>};
     my $i =0;
 
-    my ($percent_gc, $percent_at, $percent_n, $percent_x, $chr_length, $chr_count, $plasmid, $contig, $scaffold) = get_gc_dsg($dsg);
+    my ($percent_gc, $percent_at, $percent_n, $percent_x, $chr_length, $chr_count, $plasmid, $contig, $scaffold) = get_dsg_info($dsg);
     my ($ds) = $dsg->datasets;
     my $link = $ds->data_source->link;
     $link = $BASE_URL unless $link;
@@ -3114,48 +3114,57 @@ sub get_previous_analyses
     return "$html";
   }
 
-sub get_gc_dsg
+sub get_dsg_info
   {
     my $dsg = shift;
     my $length =0;
     my $chr_count = 0;
-    my $gc_total=0;
+
+    $length = $dsg->length;#$rs->first->get_column('total_length');
+    $chr_count = $dsg->genomic_sequences->count(); 
+    my ($gc, $at, $n, $x) = (0,0,0,0);
+    if ($chr_count < 100 && $length < 50000000)
+      {
+	($gc, $at, $n, $x) = get_dsg_gc(dsg=>$dsg);
+	$gc*=100;
+	$at*=100;
+	$n*=100;
+	$x*=100;
+      }
+    my ($plasmid, $contig, $scaffold) = get_chr_types(dsg=>$dsg);
+    return $gc,$at,$n,$x, commify($length), commify($chr_count), $plasmid, $contig, $scaffold;
+  }
+
+sub get_dsg_gc
+  {
+    my %opts = @_;
+    my $dsg = $opts{dsg};
+    my $dsgid = $opts{dsgid};
+    $dsg = $coge->resultset('DatasetGroup')->find($dsgid) if $dsgid;
+    my ($gc, $at, $n, $x) = $dsg->percent_gc;
+  }
+
+sub get_chr_types
+  {
+    my %opts = @_;
+    my $dsg = $opts{dsg};
+    my $dsgid = $opts{dsgid};
+    $dsg = $coge->resultset('DatasetGroup')->find($dsgid) if $dsgid;
     my $plasmid =0;
     my $contig = 0;
     my $scaffold = 0;
-    my $rs = $coge->resultset('GenomicSequence')->search(
-      {dataset_group_id=>$dsg->id},
+    my @gs = $dsg->genomic_sequences;
+    if (@gs > 100)
       {
-       select => [ { sum => 'sequence_length' } ],
-       as     => [ 'total_length' ], # remember this 'as' is for DBIx::Class::ResultSet not SQL
+	return (0,1,0);
       }
-    );
-    $length = $rs->first->get_column('total_length');
-    $chr_count = $dsg->genomic_sequences->count(); 
-    my ($gc, $at, $n, $x) = (0,0,0,0);
-    if ($chr_count < 1000)
+    foreach my $chr (map {$_->chromosome} @gs)
       {
-	my @gs = $dsg->genomic_sequences;
-	foreach my $chr (map {$_->chromosome} @gs)
-	  {
-	    my @gc = $dsg->percent_gc(count=>1, chr=>$chr) if scalar @gs < 1000;
-	    $gc+= $gc[0] if $gc[0];
-            $at+= $gc[1] if $gc[1];
-            $n+= $gc[2] if $gc[2];
-            $x+= $gc[3] if $gc[3];
-	    $plasmid =1 if $chr =~ /plasmid/i;
-	    $contig =1 if $chr =~ /contig/i;
-	    $scaffold =1 if $chr =~ /scaffold/i;
-	  }
+	$plasmid =1 if !$plasmid && $chr =~ /plasmid/i;
+	$contig =1 if !$contig && $chr =~ /contig/i;
+	$scaffold =1 if !$scaffold && $chr =~ /scaffold/i;
       }
-    else {
-      $contig=1;
-    }
-    my $percent_gc = sprintf("%.2f",100*$gc/$length) if $length;
-    my $percent_at = sprintf("%.2f",100*$at/$length) if $length;
-    my $percent_n = sprintf("%.2f",100*$n/$length) if $length;
-    my $percent_x = sprintf("%.2f",100*$x/$length) if $length;
-    return $percent_gc,$percent_at,$percent_n,$percent_x, commify($length), commify($chr_count), $plasmid, $contig, $scaffold;
+    return ($plasmid, $contig, $scaffold);
   }
 
 
