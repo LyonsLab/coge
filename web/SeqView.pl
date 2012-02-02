@@ -286,6 +286,7 @@ sub get_seq
     elsif ($dsgid)
       {
 	my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	return "Unable to find genome for $dsgid" unless $dsg;
         return "Restricted Access" if $dsg->restricted && !$USER->has_access_to_genome($dsg);
 	$fasta = ref ($dsg) =~ /datasetgroup/i ? 
 	  $dsg->fasta
