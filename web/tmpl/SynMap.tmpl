@@ -18,6 +18,12 @@ $(function() {$("#tabs").tabs({selected:0});});
 $(function() {$(".resizable").resizable();});
 
 
+function get_gc (dsgid, divid)
+{
+  $('#'+divid).removeClass('link').html('loading...');
+  get_dsg_gc(['args__dsgid','args__'+dsgid,'args__text','args__1'],[divid]);
+}
+
 function get_organism_chain(type,val,i)
 {
  $('#org_list').html('<input type=hidden id = "org_id"+i><font class="loading"></font>');
