@@ -96,6 +96,7 @@ sub gen_body
     if ($dsgid)
       {
 	$dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	return "unable to find genome for $dsgid";
 	$gst = $dsg->type;
 	($ds) = $dsg->datasets(chr=>$chr);
 	my @ds = $dsg->datasets();
