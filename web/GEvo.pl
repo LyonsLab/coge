@@ -2120,6 +2120,8 @@ sub get_obj_from_genome_db
     if ($dsgid)
       {
 	$dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	return "", "Can't find entry for $dsgid" unless $dsg;
+	return "", "Permission denied" if $dsg->restricted && !$USER->has_access_to_genome($dsg);
 	($ds) = $dsg->datasets(chr=>$chr);
 	return ("","Chromosome '$chr' not found for this genome") unless $ds;
 	$dsid = $ds->id;
@@ -3807,6 +3809,11 @@ sub get_org_info
     my $dsg_menu = qq{<span class="small">Genome: </span><SELECT name="dsgid$num" id="dsgid$num">};
     foreach my $item (sort {$b->version <=> $a->version || $a->type->id <=> $b->type->id} $dsg->organism->dataset_groups)
       {
+	if ($dsg->restricted && !$USER->has_access_to_genome($dsg))
+	  {
+	    $dsg_menu .= "<option>Restricted</option>";
+	    next;
+	  }
 	my $dsgid_tmp = $item->id;
 	my $title;
 	$title = $item->name." " if $item->name;
