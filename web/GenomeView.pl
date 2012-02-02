@@ -118,6 +118,12 @@ sub gen_body
 	    $dsg = $dsgt;
 	  }
       }
+    if ($dsg->restricted && !$USER->has_access_to_genome($dsg))
+      {
+	return "Permission denied";
+      }
+
+
     $gst = $dsg->type;
     $dsid = $ds->id;
     $dsgid = $dsg->id;
