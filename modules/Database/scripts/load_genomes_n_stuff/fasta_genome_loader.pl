@@ -56,7 +56,9 @@ GetOptions ( "debug=s" => \$DEBUG,
 
 $DEBUG = 1 unless defined $DEBUG; # set to '1' to get updates on what's going on
 $GO = 1 unless defined $GO; #set to 1 to actually make db calls.
-$ds_name = $nt_file unless $ds_name;
+($ds_name) = $nt_file=~ /([^\/]*)$/ unless ($ds_name);
+
+
 $restricted = 0 unless defined $restricted;
 print STDERR "Running $0\n";
 
@@ -145,6 +147,8 @@ if ($ERASE)
     print "finished!\n";
     exit;
   }
+print "dataset_id: ".$ds->id,"\n";
+print "dataset_group_id: ".$dsg->id,"\n\n\n";
 
 process_nt (file=>$nt_file, ds=>$ds, dsg=>$dsg, dir=>$nt_dir, chr=>$chr) if $nt_file || $nt_dir;
 print "dataset_id: ".$ds->id,"\n";
