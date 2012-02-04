@@ -134,6 +134,25 @@ sub gen_body
   {
     my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'SynFind.tmpl');
     my $form = $FORM;
+
+    #synteny_score parameters
+    #synteny_score window size
+    my $ws;
+    $ws = $FORM->param('ws') if $FORM->param('ws');
+    $ws = 40 unless defined $ws;
+    $template->param(WS=>$ws);
+    #synteny_score cutoff
+    my $co;
+    $co = $FORM->param('co') if $FORM->param('co');
+    $co = 0.1 unless defined $co;
+    $template->param(CO=>$co);
+    #synteny_score scoring function
+    my $sf;
+    $sf = $FORM->param('sf') if $FORM->param('sf');
+    $sf = 1 unless defined $sf;
+    $template->param(SF_COLLINEAR=>"selected") if $sf == 1;
+    $template->param(SF_DENSITY=>"selected") if $sf == 2;
+
     $template->param(JAVASCRIPT=>1);
     $template->param(FRONT_PAGE=>1);
     #set up org search
@@ -682,9 +701,21 @@ sub go_synfind
 
     $window_size = 40 unless defined $window_size;
     $cutoff= 0.1 unless defined $cutoff;
-    $scoring_function = "collinear" unless defined $scoring_function;
-
+    $scoring_function = 1 unless defined $scoring_function;
+    #need to set this link before the scoring function changes to a different name type
     my $synfind_link = $SERVER."SynFind.pl?fid=$fid;qdsgid=$source_dsgid;dsgid=$dsgids;ws=$window_size;co=$cutoff;sf=$scoring_function";
+
+    #convert numerical codes for different scoring functions to appropriate types
+    if ($scoring_function ==2)
+      {
+	$scoring_function = "density";
+      }
+    else
+      {
+	$scoring_function = "collinear";
+      }
+
+
     $cogeweb = CoGe::Accessory::Web::initialize_basefile(tempdir=>$TEMPDIR);
     #need to blast source_dsg against each dsgids
     my @blast_results;
