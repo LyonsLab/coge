@@ -90,7 +90,7 @@ function launch(){
   setTimeout("monitor_log()", 1000);
   var selected_genomes = $('#genome_choice').getLength(1);
 
-  go(['args__dsgids','args__'+selected_genomes,'args__fid','fid','args__qdsgid','feat_dsgid', 'args__basename','args__'+pageObj.basename,],[handle_results],'POST');
+  go(['args__dsgids','args__'+selected_genomes,'args__fid','fid','args__qdsgid','feat_dsgid', 'args__basename','args__'+pageObj.basename,'args__window_size','ws', 'args__cuttoff','co', 'args__scoring_function','sf'],[handle_results],'POST');
   
  
 }
@@ -709,7 +709,25 @@ $(function(){
 
  </div> <!--close tab 1-->
  <div id="tab2">
-  Parameter stub
+   <TABLE class=small>
+    <TR>
+     <TD>Window Size (genes):</TD>
+     <TD><input id=ws type=text size=3 value=<TMPL_VAR NAME=WS>></TD>
+    </TR>
+    <TR>
+     <TD>Cutoff:</TD>
+     <TD><input id=co type=text size=3 value=<TMPL_VAR NAME=CO>></TD>
+    </TR>
+    <TR>
+     <TD>Scoring Funciton:</TD>
+     <TD>
+      <select id=sf>
+        <option value=1 <TMPL_VAR NAME=SF_COLLINEAR> >Collinear</option>
+        <option value=2 <TMPL_VAR NAME=SF_DENSITY> >Density</option>
+      </select>
+     </TD>
+    </TR>
+   </TABLE>
  </div> <!--close tab 2-->
 </div> <!--close all tabs-->
 
