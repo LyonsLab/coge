@@ -209,7 +209,7 @@ sub get_latest_genomes
 						       join=>"organism",
 						       prefetch=>"organism",
 						       order_by=>"dataset_group_id desc",
-						       rows=>$limit,
+						       rows=>$limit*10,
 						      }
 						);
   #  ($USER) = CoGe::Accessory::LogUser->get_user();
@@ -217,10 +217,12 @@ sub get_latest_genomes
     $html .= "<tr><th>".join("<th>",qw(Organism  &nbsp Length&nbsp(nt) &nbsp Related Link ));
     my @opts;
     my %org_names;
+    my $genome_count =0;
     foreach my $dsg (@db)
       {
 	next if $dsg->restricted && !$USER->has_access_to_genome($dsg);
 	next if $org_names{$dsg->organism->name};
+        last if $genome_count >= $limit;
 	$org_names{$dsg->organism->name}=1;
 	my $orgview_link = "OrganismView.pl?oid=".$dsg->organism->id;
 	my $entry = qq{<tr>};
@@ -251,6 +253,7 @@ sub get_latest_genomes
 	$entry .= qq{<img onclick="window.open('http://www.google.com/search?q=$search_term')" src="picts/other/google-icon.png" title="Google" class=link>};
 	$entry .= qq{</tr>};
 	push @opts, $entry;#, "<OPTION value=\"".$item->organism->id."\">".$date." ".$item->organism->name." (id".$item->organism->id.") "."</OPTION>";
+        $genome_count++;
       }
     $html .= join "\n", @opts;
     $html .= "</table>";
