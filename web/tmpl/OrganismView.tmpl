@@ -89,6 +89,13 @@ function add_all_genomes(){
 	$('#geno_list').dialog('option', 'width', 500).dialog('open');
 }
 
+function remove_selected_genomes(){
+  $('#genomelist_choice option:selected').each(function() {
+          //$('#'+$(this).val()).remove();
+	  $(this).remove();
+  });
+  counting();
+}
 
 function send_to_url(url){
   window.open(url);
@@ -185,7 +192,11 @@ function get_organism_desc_chain(val)
 function get_org_info_chain(val, val2)
  {
   if (val) {$('#org_list').html(val);}
-  if (val2) {$('#org_count').html(val2);}
+  if (val2*1) {
+    $('#org_count').html(val2);
+    $('#allorg').show();
+    }
+  else {$('#allorg').hide();}
   get_org_info(['args__oid','org_id'],[dataset_group_chain]);
  }
 
@@ -328,6 +339,7 @@ function timing(val){
 }
 
 $(document).ready(function(){
+  $('#allorg').hide();
   if($('#org_name').val() && $('#org_name').val() != "Search") {
     $('#org_name').css({fontStyle: "normal"});
     if($('#org_list').html()) {get_org_info(['args__oid','org_id'],[dataset_group_chain]);} else {timing('org_name')};
@@ -548,7 +560,7 @@ function update_genome_info (dsgid) {
  <br>
     <span class="ui-button ui-corner-all" id=send onClick="$('#genomelist_choice').sortSelect()">Sort List Alphabetically</span><br><br>
     <span class="ui-button ui-corner-all" id=send onClick="send_to_GenoList()">Create Genome List</span><br><br>
-      <span class="ui-button ui-corner-all" id=remove onClick="$('#'+$('#genomelist_choice').val()).remove();counting();">Remove</span><br><br>
+      <span class="ui-button ui-corner-all" id=remove onClick="remove_selected_genomes();">Remove</span><br><br>
     <span class="ui-button ui-corner-all" id=clear onClick="clear_genome_list()">Clear</span><br>
 
     <div id=add_all_search></div>
