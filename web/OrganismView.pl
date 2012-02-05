@@ -337,6 +337,7 @@ sub get_orgs
 	}
     }
     my @db;
+    my $count =0;
     if ($name)
       {
 	@db = $coge->resultset("Organism")->search({name=>{like=>"%".$name."%"}});
@@ -347,7 +348,8 @@ sub get_orgs
       }
     else
       {
-	@db = $coge->resultset("Organism")->all;
+	$count = $coge->resultset("Organism")->count();
+	return (qq{<input type = hidden name="org_id" id="org_id"><span class="small alert">Please search</span>}, $count);
       }
 
     my @opts;
@@ -365,12 +367,12 @@ sub get_orgs
 	push @opts, $option;
       }
     my $html;
-    unless (@opts) 
+    if (($name || $desc) && !@opts) 
       {
-	$html .=  qq{<input type = hidden name="org_id" id="org_id">No organisms found};
+	$html .=  qq{<input type = hidden name="org_id" id="org_id"><span class="small alert">No organisms found</span>};
 	return $html,0;
       }
-
+    $count = scalar @db unless $count;
     $html .= qq{<SELECT class="ui-widget-content ui-corner-all" id="org_id" SIZE="5" MULTIPLE onChange="get_org_info_chain()" >\n};
     $html .= join ("\n", @opts);
     $html .= "\n</SELECT>\n";
@@ -381,7 +383,7 @@ sub get_orgs
     $opts .= "oid=$oid;" if $oid;
     $opts .= "dsgid=$dsgid;" if $dsgid;
     $html .= qq{<br><span class='link small' onclick="window.open('get_org_list.pl$opts');">Download Organism List</span>};
-    return $html, scalar @opts;
+    return $html, $count;
   }
 
 
@@ -862,19 +864,27 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
     my $feat_string;# .= qq{<div>Features for $name</div>};
     $feat_string .= qq{<div class = " ui-corner-all ui-widget-content small">};
     $feat_string .= qq{<table class=small>};
-    $feat_string .= "<tr valign=top>". join ("\n<tr valign=top>",map {
-      "<td valign=top><div id=$_  >".$feats->{$_}{name}." (ftid".$feats->{$_}{id}.")</div>".
-	    "<td valign=top align=right>".commify($feats->{$_}{count}).
-	      "<td><div id=".$_."_type class=\"link small\" 
+    foreach my $type (sort {$a cmp $b} keys %$feats)
+      {
+	$feat_string .= "<tr valign=top>";
+	$feat_string .= "<td valign=top><div id=$type  >".$feats->{$type}{name}." (ftid".$feats->{$type}{id}.")</div>";
+	$feat_string .= "<td valign=top align=right>".commify($feats->{$type}{count});
+	$feat_string .=  "<td><div id=".$type."_type class=\"link small\"
   onclick=\"
-  \$('#gc_histogram').dialog('option','title', 'Histogram of GC content for ".$feats->{$_}{name}."s');
+  \$('#gc_histogram').dialog('option','title', 'Histogram of GC content for ".$feats->{$type}{name}."s');
   \$('#gc_histogram').dialog('open');".
-  "get_feat_gc({$gc_args".$feats->{$_}{id}."})\">"
-    .'show %GC?</div>'.
-
-
-    "<td class='small link' onclick=\"window.open('FeatList.pl?$feat_list_string"."&ftid=".$feats->{$_}{id}.";gstid=$gstid')\">Feature List?"
-  } sort {$a cmp $b} keys %$feats);
+  "get_feat_gc({$gc_args".$feats->{$type}{id}."})\">"
+    .'%GC Hist</div>';
+	$feat_string .=  "<td>|</td>";
+	$feat_string .=  "<td class='small link' onclick=\"window.open('FeatList.pl?$feat_list_string"."&ftid=".$feats->{$type}{id}.";gstid=$gstid')\">FeatList";
+	$feat_string .=  "<td>|</td>";
+	$feat_string .=  "<td class='small link' onclick=\"window.open('bin/get_seqs_for_feattype_for_genome.pl?dsgid=$dsgid;ftid=".$feats->{$type}{id}."')\">DNA Seqs";
+	if ($feats->{$type}{name} eq "CDS")
+	  {
+	    $feat_string .=  "<td>|</td>";
+	    $feat_string .=  "<td class='small link' onclick=\"window.open('bin/get_seqs_for_feattype_for_genome.pl?dsgid=$dsgid;p=1;ftid=".$feats->{$type}{id}."')\">Prot Seqs";
+	  }
+} 
 	$feat_string .= "</table>";
     
     if ($feats->{CDS})
@@ -883,20 +893,20 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
 	$args .= "'args__dsid','ds_id'," if $dsid;
 	$args .= "'args__dsgid','dsg_id'," if $dsgid;
 	$args .= "'args__chr','chr'," if defined $chr;
-	$feat_string .= "<div class=\"small link\" id=wobble_gc onclick=\"\$('#wobble_gc_histogram').html('loading...');\$('#wobble_gc_histogram').dialog('open');get_wobble_gc([$args],['wobble_gc_histogram'])\">"."Click for codon wobble GC content"."</div>";
-	$feat_string .= "<div class=\"small link\" id=wobble_gc_diff onclick=\"\$('#wobble_gc_diff_histogram').html('loading...');\$('#wobble_gc_diff_histogram').dialog('open');get_wobble_gc_diff([$args],['wobble_gc_diff_histogram'])\">"."Click for diff(CDS GC vs. codon wobble GC) content"."</div>";
+	$feat_string .= "<div class=\"small link\" id=wobble_gc onclick=\"\$('#wobble_gc_histogram').html('loading...');\$('#wobble_gc_histogram').dialog('open');get_wobble_gc([$args],['wobble_gc_histogram'])\">"."Histogram of wobble codon GC content"."</div>";
+	$feat_string .= "<div class=\"small link\" id=wobble_gc_diff onclick=\"\$('#wobble_gc_diff_histogram').html('loading...');\$('#wobble_gc_diff_histogram').dialog('open');get_wobble_gc_diff([$args],['wobble_gc_diff_histogram'])\">"."Histogram of diff(CDS GC vs. wobble codon GC) content"."</div>";
 	$feat_string .= "<div class=\"small link\" id=codon_usage onclick=\"
         \$('#codon_usage_table').html('loading...');
         \$('#codon_usage_table').dialog('open');
         get_codon_usage([$args],['codon_usage_table']); 
         \">".
-        "Click for codon usage table"."</div>";
+        "Codon usage table"."</div>";
 	$feat_string .= "<div class=\"small link\" id=aa_usage onclick=\"
         \$('#aa_usage_table').html('loading...');
         \$('#aa_usage_table').dialog('open');
         get_aa_usage([$args],[open_aa_usage_table]); 
         \">".
-        "Click for amino acid usage table"."</div>";
+        "Amino acid usage table"."</div>";
 
       }
     $feat_string .="</div>";
