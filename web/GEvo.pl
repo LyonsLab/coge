@@ -341,6 +341,8 @@ sub gen_body
     $skip_hsp_overlap_adjust = 1 unless defined $skip_hsp_overlap_adjust;
     my $hiqual = get_opt(params=>$prefs, form=>$form, param=>'hiqual');
     $hiqual = 0 unless $hiqual;
+    my $hsp_top = get_opt(params=>$prefs, form=>$form, param=>'hsp_top');
+    $hsp_top = 0 unless $hsp_top;
     my $color_hsp = get_opt(params=>$prefs, form=>$form, param=>'color_hsp');
     $color_hsp = 0 unless $color_hsp;
     my $color_feat = get_opt(params=>$prefs, form=>$form, param=>'colorfeat');
@@ -386,6 +388,8 @@ sub gen_body
     else {$template->param(HSP_OVERLAP_YES=>"checked");}
     if ($hiqual) {$template->param(HIQUAL_YES=>"checked");}
     else {$template->param(HIQUAL_NO=>"checked");}
+    if ($hsp_top) {$template->param(HSP_TOP_YES=>"checked");}
+    else {$template->param(HSP_TOP_NO=>"checked");}
     if ($color_hsp) {$template->param(COLOR_HSP_YES=>"checked");}
     else {$template->param(COLOR_HSP_NO=>"checked");}
     if ($color_feat) {$template->param(COLOR_FEAT_YES=>"checked");}
@@ -525,6 +529,7 @@ sub run
     my $show_nt = $opts{nt};
     my $show_cbc = $opts{cbc};
     my $color_hsp = $opts{color_hsp};
+    my $hsp = $opts{hsp_top};
     my $hsp_labels = $opts{hsp_labels};
     my $feat_labels = $opts{feat_labels};
     my $draw_model = $opts{draw_model};
@@ -538,6 +543,7 @@ sub run
     my ($analysis_program, $param_string, $parser_opts, $add_gevo_link) = get_algorithm_options(%opts);
     my $pad_gs = $opts{pad_gs} || 0;
     my $color_overlapped_features = $opts{color_overlapped_features};
+    my $hsp_top = $opts{hsp_top};
     my $hsp_overlap_length = $opts{hsp_overlap_length};
     my $email_address = $opts{email};
     my $show_cns = $opts{show_cns};
@@ -587,6 +593,7 @@ sub run
     $gevo_link .= ";padding=$padding";
     $gevo_link .= ";gc=$show_gc" if $show_gc;
     $gevo_link .= ";color_hsp=1" if $color_hsp;
+    $gevo_link .= ";hsp_top=1" if $hsp_top;
     $gevo_link .= ";colorfeat=1" if $color_overlapped_features;
     $gevo_link .= ";nt=$show_nt";
     $gevo_link .= ";cbc=$show_cbc";
@@ -925,6 +932,7 @@ sub run
 #			     hsp_limit=>$hsp_limit,
 #			     hsp_limit_num=>$hsp_limit_num,
 			     color_hsp=>$color_hsp,
+			     hsp_top=>$hsp_top,
 			     hsp_colors=>\@hsp_colors,
 			     show_hsps_with_stop_codon => $show_hsps_with_stop_codon,
 			     hiqual=>$hiqual,
@@ -1125,6 +1133,7 @@ sub generate_image
     my $feat_labels = $opts{feat_labels};
 #    my $hsp_limit = $opts{hsp_limit};
 #    my $hsp_limit_num = $opts{hsp_limit_num};
+    my $hsp_top = $opts{hsp_top};
     my $color_hsp = $opts{color_hsp};
     my $bitscore_cutoff = $opts{bitscore_cutoff};
     my $hsp_colors = $opts{hsp_colors};
@@ -1179,6 +1188,7 @@ sub generate_image
 		 #			     hsp_limit_num=>$hsp_limit_num, #number of hsps for which to draw labels
 		 gbobj=>$gbobj,
 		 color_hsp=>$color_hsp,
+		 hsp_top=>$hsp_top,
 		 colors=>$hsp_colors,
 		 show_hsps_with_stop_codon=>$show_hsps_with_stop_codon, #tblastx option
 		 hsp_overlap_limit=>$hsp_overlap_limit, #if an hsp overlaps with other hsps this many times, don't draw (delete from graphics object)
@@ -1762,6 +1772,7 @@ sub process_hsps
     my $gbobj = $opts{gbobj};
     my $eval_cutoff = $opts{eval_cutoff};
     my $bitscore_cutoff = $opts{bitscore_cutoff};
+    my $hsp_top = $opts{hsp_top};
     my $color_hsp = $opts{color_hsp};
     my $colors = $opts{colors};
     my $hsp_overlap_limit = $opts{hsp_overlap_limit};
@@ -1893,6 +1904,7 @@ sub process_hsps
 	    $f->color($color);
 	    $f->order($track);
 	    $f->strand($strand);
+	    $f->strand(1) if $hsp_top;
 	    $f->color_matches($color_hsp) if ref($f) =~/HSP/;
 #	    if ($hsp_limit)
 #	      {
@@ -3037,6 +3049,7 @@ sub gen_params
         'args__draw_model', 'draw_model',
         'args__hsp_overlap_limit', 'hsp_overlap_limit',
         'args__hsp_size_limit', 'hsp_size_limit',
+        'args__hsp_top','hsp_top',
         'args__color_overlapped_features','color_overlapped_features',
         'args__hsp_overlap_length','hsp_overlap_length',
         'args__basefile','args__'+pageObj.basefile,
