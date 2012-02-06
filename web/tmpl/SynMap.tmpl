@@ -264,11 +264,6 @@ $(document).ready(function(){
   }
   ajax_wait("check_previous_analyses();"); 
     <TMPL_VAR NAME=DISPLAY_DAGCHAINER_SETTINGS>
- var autogo = <TMPL_VAR NAME=AUTOGO>;
- if (autogo) {
-//    generate_basefile([],[update_basename]);
-    run_synmap();
-    }
  if ($('#assemble')[0].checked)
   {
    $('#assemble_info').toggle();
@@ -281,6 +276,12 @@ $(document).ready(function(){
  pageObj.fid1=<TMPL_VAR NAME=FID1>;
  pageObj.fid2=<TMPL_VAR NAME=FID2>;
  pageObj.tempdir="<TMPL_VAR NAME=TEMPDIR>";
+
+ var autogo = <TMPL_VAR NAME=AUTOGO>;
+ if (autogo) {
+    run_synmap();
+    }
+
  });
 
 
