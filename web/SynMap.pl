@@ -309,7 +309,8 @@ sub gen_body
     $template->param('CODEML_MAX'=>$codeml_max) if defined $codeml_max;
     my $logks;
     $logks = $FORM->param('logks') if defined $FORM->param('logks');
-    $template->param('LOGKS'=>"checked") if defined $logks;
+    $logks = 1 unless defined $logks; #turn on by default if not specified
+    $template->param('LOGKS'=>"checked") if defined $logks && $logks;
     #show non syntenic dots:  on by default
     my $snsd = 0;
     $snsd = $FORM->param('snsd') if (defined $FORM->param('snsd'));
@@ -2330,7 +2331,7 @@ sub go
     $synmap_link .= ";cs=$color_scheme";
     $synmap_link .= ";cmin=$codeml_min" if defined $codeml_min;#$codeml_min=~/\d/ && $codeml_min=~/^\d*.?\d*$/;
     $synmap_link .= ";cmax=$codeml_max" if defined $codeml_max;#$codeml_max=~/\d/ && $codeml_max=~/^\d*.?\d*$/;
-    $synmap_link .= ";logks=1" if $logks;
+    $synmap_link .= ";logks=$logks" if defined $logks;
     $synmap_link .= ";cl=0" if $clabel eq "0";
     $synmap_link .= ";sr=$skip_rand" if defined $skip_rand;
     $synmap_link .= ";cso=$chr_sort_order" if $chr_sort_order;
