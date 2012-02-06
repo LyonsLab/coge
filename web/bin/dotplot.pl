@@ -166,8 +166,14 @@ my $y_labels_gd = draw_y_labels(coords=>$coords, axis=>'y') if $labels;
 #get syntenic gene pairs for ks_data (if needed)
 my $ksdata = get_ksdata(ks_db=>$ks_db, ks_type=>$ks_type, chr1=>$CHR1, chr2=> $CHR2, pairs=>$pairs) if $ks_db && -r $ks_db;
 
+
+my $size = 1;
+$size = int($x_pix_per_bp) if $x_pix_per_bp >1;
+$size = int($y_pix_per_bp) if $y_pix_per_bp >1;
+$size = 4 if $x_pix_per_bp >4;
+$size = 4 if $y_pix_per_bp >4;
 #draw dots for all matches
-draw_dots(gd=>$graphics_context, file=>$dagfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, link_type => $link_type, dsgid1=>$dsgid1, dsgid2=>$dsgid2, flip=>$flip, metric=>$axis_metric, fid1=>$fid1, fid2=>$fid2) if defined $dagfile && -r $dagfile;
+draw_dots(gd=>$graphics_context, file=>$dagfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, link_type => $link_type, dsgid1=>$dsgid1, dsgid2=>$dsgid2, flip=>$flip, metric=>$axis_metric, fid1=>$fid1, fid2=>$fid2, size=>$size) if defined $dagfile && -r $dagfile;
 
 
 
@@ -195,10 +201,13 @@ else
 
 #add syntenic gene pairs
 my $add = 1 if $dsgid1 eq $dsgid2;
-my $size = 2;
+$size = 2;
+$size = int($x_pix_per_bp)+2 if $x_pix_per_bp >1;
+$size = int($y_pix_per_bp)+2 if $y_pix_per_bp >1;
 $size = 5 if $x_pix_per_bp >5;
 $size = 5 if $y_pix_per_bp >5;
-my $box_coords = draw_dots(gd=>$graphics_context, file=>$alignfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, size=>$size, add_inverse=>$add, flip=>$flip, ksdata=>$ksdata, ks_type=>$ks_type, log=>$log, metric=>$axis_metric, colors=>\@colors, color_type=>$color_type, color_scheme=>$color_scheme);
+
+my $box_coords = draw_dots(gd=>$graphics_context, file=>$alignfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, size=>$size, add_inverse=>$add, flip=>$flip, ksdata=>$ksdata, ks_type=>$ks_type, log=>$log, metric=>$axis_metric, colors=>\@colors, color_type=>$color_type, color_scheme=>$color_scheme, fid1=>$fid1, fid2=>$fid2);
 
 draw_boxes(gd=>$graphics_context, boxes=>$box_coords) if $box_diags && $box_coords && @$box_coords;
 #draw self-self line?
@@ -696,7 +705,7 @@ Coords will be in [x,y,radius] for cricles and [x1,y1,x2,y2] (diagonal points) f
 		foreach my $xchr (sort keys %{$data{x}})
 		{
 			my ($x1, $x2) = @{$data{x}{$xchr}};
-			next if abs($x1-$x2)<5;
+			next if abs($x1-$x2)<3;
 			foreach my $ychr (sort keys %{$data{y}})
 			{
 				my $tmp = $link;
