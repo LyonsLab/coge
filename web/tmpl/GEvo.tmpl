@@ -806,7 +806,7 @@ function rand ()
 <ul>
   <li class=small><a href="#tabs-1">Sequence Submission</a></li>
   <li class=small><a href="#tabs-2">Algorithm</a></li>
-  <li class=small><a href="#tabs-3">Results Parameters</a></li>
+  <li class=small><a href="#tabs-3">Results Visualization Options</a></li>
 </ul>
 
 <div id="tabs-1">
@@ -1222,6 +1222,12 @@ function rand ()
 </div>
 <div style="float: left; border-right-style: dotted; border-right-width: 1px">
  <table class="small">
+ <table class="small">
+ <TR>
+  <td>Draw all HSPs on top?
+  <td>
+ <label class=small><input  type="radio" id="hsp_top" tabindex="1" value="1" <TMPL_VAR NAME="HSP_TOP_YES">/>Yes</label>
+ <label class=small><input  type="radio" id="hsp_top" tabindex="1" value="0" <TMPL_VAR NAME="HSP_TOP_NO"> />No</label>
  <TR>
   <td>Color features overlapped by HSPs?
  <td>
