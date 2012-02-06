@@ -373,7 +373,7 @@ sub get_orgs
 	return $html,0;
       }
     $count = scalar @db unless $count;
-    $html .= qq{<SELECT class="ui-widget-content ui-corner-all" id="org_id" SIZE="5" MULTIPLE onChange="get_org_info_chain()" >\n};
+    $html .= qq{<SELECT class="ui-widget-content ui-corner-all" id="org_id" SIZE="5" MULTIPLE onChange="get_org_info(['args__oid','org_id'],[dataset_group_chain])" >\n};
     $html .= join ("\n", @opts);
     $html .= "\n</SELECT>\n";
     $html =~ s/OPTION/OPTION SELECTED/ unless $html =~ /SELECTED/;
