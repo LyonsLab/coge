@@ -158,7 +158,8 @@ my $pairs = get_pairs(file=>$alignfile, chr1=>$CHR1, chr2=>$CHR2) if $alignfile 
 #Magic happens here.
 #Link type seems to indicate the type of tile; i.e. a 'master' (a large, all chromosome) or a blow up of a two chromosome intersection
 #draw_chromosome_grid draws either the black chomosome lines, or the light green tile lines, so its always called in addition to the draw_dots function.
-my $coords = draw_chromosome_grid(gd=>$graphics_context, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, link=>$link, link_type=>$link_type, flip=>$flip, grid=>$grid, color=>$grey);#, dsgid1=>$dsgid1, dsgid2=>$dsgid2, selfself=>$selfself);
+my $coords = draw_chromosome_grid(gd=>$graphics_context, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, link=>$link, link_type=>$link_type, flip=>$flip, grid=>$grid, color=>$grey);
+
 my $x_labels_gd = draw_x_labels(coords=>$coords, axis=>'x') if $labels;
 my $y_labels_gd = draw_y_labels(coords=>$coords, axis=>'y') if $labels;
 
@@ -200,7 +201,9 @@ else
   }
 
 #add syntenic gene pairs
-my $add = 1 if $dsgid1 eq $dsgid2;
+my $add;# = 1 if $dsgid1 eq $dsgid2;
+
+
 $size = 2;
 $size = int($x_pix_per_bp)+2 if $x_pix_per_bp >1;
 $size = int($y_pix_per_bp)+2 if $y_pix_per_bp >1;
@@ -211,10 +214,20 @@ my $box_coords = draw_dots(gd=>$graphics_context, file=>$alignfile, org1=>$org1i
 
 draw_boxes(gd=>$graphics_context, boxes=>$box_coords) if $box_diags && $box_coords && @$box_coords;
 #draw self-self line?
-if ($selfself && ($dsgid1 == $dsgid2))
+my $draw_selfself =0 ;
+
+if ($selfself && ($dsgid1 == $dsgid2) )
   {
-    $graphics_context->line(0,$height,$width, 0, $green);
+    if ($CHR1 && $CHR2)
+      {
+	$draw_selfself=1 if $CHR1 eq $CHR2;
+      }
+    elsif (!$assemble)
+      {
+	$draw_selfself=1;
+      }
   }
+$graphics_context->line(0,$height,$width, 0, $green) if $draw_selfself;
 
 
 #Write out graphics context - the generated dot plot - to a .png file
