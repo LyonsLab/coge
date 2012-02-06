@@ -82,6 +82,7 @@ def find_synteny_region(query, sbed, data, window, cutoff, colinear=False):
         (qflanker, syntelog), (far_flanker, far_syntelog), flanked = get_flanker(group, query)
 
         # run a mini-dagchainer here, take the direction that gives us most anchors 
+        orientation = "+"
         if colinear:
             y_indexed_group = [(y, i) for i, (x, y) in enumerate(group)]
             lis = longest_increasing_subsequence(y_indexed_group)
@@ -89,7 +90,6 @@ def find_synteny_region(query, sbed, data, window, cutoff, colinear=False):
             
             if len(lis) >= len(lds): 
                 track = lis
-                orientation = "+"
             else:
                 track = lds
                 orientation = "-"
