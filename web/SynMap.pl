@@ -411,6 +411,7 @@ sub gen_body
     #place to store fids that are passed into SynMap to highlight that pair in the dotplot (if present)
     my $fid1 = 0;
     $fid1 = $FORM->param('fid1') if $FORM->param('fid1');
+
     $template->param('FID1'=>$fid1);
     my $fid2 = 0;
     $fid2 = $FORM->param('fid2') if $FORM->param('fid2');
@@ -2140,7 +2141,6 @@ sub generate_dotplot
     my $codeml_min = $opts{codeml_min};
     my $codeml_max = $opts{codeml_max};
     my $log = $opts{log};
-
     my $cmd = $DOTPLOT;
     #add ks_db to dotplot command if requested
     $outfile.= ".ass" if $assemble;
@@ -2621,14 +2621,13 @@ sub go
 	    $org2_length+=$gs->sequence_length;
 	  }
 
- 	my $test = $org1_length > $org2_length ? $org1_length : $org2_length;
  	unless ($width)
  	  {
- 	    $width = int($test/100000);
- 	    $width = 1200 if $width > 1200;
+	    my $max_chr = $chr1_count;
+	    $max_chr = $chr2_count if $chr2_count > $chr1_count;
+ 	    $width = int($max_chr * 100);
+ 	    $width = 1000 if $width > 1000;
  	    $width = 500 if $width < 500;
- 	    $width = 1200 if $chr1_count > 9 || $chr2_count > 9;
- 	    $width = 2000 if ($chr1_count > 100 || $chr2_count > 100);
  	  }
  	my $qlead = "a";
  	my $slead = "b";
@@ -2693,8 +2692,8 @@ sub go
  <table class=small>
  <tr>
  <td>Image Width
- <td><input class="backbox" type=text name=zoom_width id=zoom_width size=6 value="800">
- <tr>
+ <td><input class="backbox" type=text name=zoom_width id=zoom_width size=6 value="400">
+<tr>
  <td>Ks, Kn, Kn/Ks cutoffs: 
  <td>Min: <input class="backbox" type=text name=zoom_min id=zoom_min size=6 value="};
 	    $html .= $codeml_min if defined $codeml_min;
