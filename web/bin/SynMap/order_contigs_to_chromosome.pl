@@ -47,7 +47,20 @@ my ($chr1, $chr2, $dsgid1, $dsgid2) = $synmap_report->parse_syn_blocks(file=>$sy
 gzip($synfile);
 ($chr1, $chr2, $dsgid1, $dsgid2) = ($chr2, $chr1, $dsgid2, $dsgid1) if scalar keys %{$chr1->[0]} < scalar keys %{$chr2->[0]};
 my $dsg1 = $coge->resultset('DatasetGroup')->find($dsgid1);
+unless ($dsg1)
+  {
+    print $FORM->header;
+    print "Unable to get genome object for $dsgid1.\n";
+    exit;
+  }
+
 my $dsg2 = $coge->resultset('DatasetGroup')->find($dsgid2);
+unless ($dsg2)
+  {
+    print $FORM->header;
+    print "Unable to get genome object for $dsgid2.\n";
+    exit;
+  }
 
 my $TEMPDIR = $P->{TEMPDIR}."order_contigs";
 $TEMPDIR = $TEMPDIR."/$dsgid1-$dsgid2/";
