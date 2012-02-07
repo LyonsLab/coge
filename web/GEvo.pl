@@ -3272,10 +3272,10 @@ sub makeurlarray #shabari:for parsing GEvo and tiny urls
 	$rec->{'gstid'}=$1  if ($longurl=~/gstid$i\=(.*?)\;/);
 	
 	$rec->{'chr'}=$1  if ($longurl=~/chr$i\=(.*?)\;/);
-	
-	$rec->{'drup'}=$1  if ($longurl=~/dr$i.*?\=(.*?)\;/);
-	
-	$rec->{'drdown'}=$1  if ($longurl=~/dr$i.*?\=(.*?)\;/);
+	my $up = "dr".$i."up";
+	$rec->{'drup'}=$1  if ($longurl=~/$up\=(.*?)\;/);
+	my $down = "dr".$i."down";
+	$rec->{'drdown'}=$1  if ($longurl=~/$down\=(.*?)\;/);
 
 	$rec->{'gbstart'}=$1  if ($longurl=~/gbstart$i\=(.*?)\;/);
 	$rec->{'display_order'} = $1 if ($longurl=~/do$i\=(.*?)\;/);
