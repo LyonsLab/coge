@@ -1665,6 +1665,7 @@ sub populate_sqlite
      my $hsp_num = $hsp->number;
     
      my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
+     $dbh->do("begin exclusive transaction") or die $dbh->errstr;
      my $query_length = $hsp->query_stop > $hsp->query_start ? (($hsp->query_stop) - ($hsp->query_start) + 1) : (($hsp->query_start) - ($hsp->query_stop) + 1);
      my ($qstart, $qstop) = $hsp->query_stop > $hsp->query_start ? ($hsp->query_start, $hsp->query_stop) : ($hsp->query_stop, $hsp->query_start);
      my $qmismatch = $query_length - $hsp->match;
@@ -1700,6 +1701,9 @@ INSERT INTO sequence_info (name, type, length) values ("$sname","subject","$slen
 };
 	 print STDERR $statement unless $dbh->do($statement);
        }
+     $dbh->do("commit transaction") or die $dbh->errstr;
+    $dbh->disconnect();
+
    }
   
 sub get_nearby_feats
