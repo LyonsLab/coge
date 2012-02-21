@@ -3,7 +3,7 @@ package CoGeX;
 no warnings qw(redefine);
 use strict;
 use warnings;
-
+use Data::Dumper;
 
 use vars qw( $VERSION );
 
@@ -166,6 +166,10 @@ sub get_features_in_region
     my $dataset_id = $opts{dataset} || $opts{dataset_id} || $opts{info_id} || $opts{INFO_ID} || $opts{data_info_id} || $opts{DATA_INFO_ID} ;
     my $count_flag = $opts{count} || $opts{COUNT};
     my $ftid = $opts{ftid};
+    if (ref ($ftid) =~ /array/i)
+      {
+	$ftid = undef unless @$ftid;
+      }
     if ($count_flag)
       {
 	return $self->resultset('Feature')->count(
