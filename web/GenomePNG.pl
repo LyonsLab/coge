@@ -56,6 +56,7 @@ foreach my $layer ($form->param('layers'))
 	push @layers, $item;
       }
   }
+$simple = 1 if @layers == 2 && $layers[0] =~ /background/i;
 my @fids = $form->param('fid'); #used to highlight special features by their database id
 my @fnames = $form->param('fn'); #used to highlight special features by their name
 
