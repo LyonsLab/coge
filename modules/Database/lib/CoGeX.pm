@@ -173,21 +173,25 @@ sub get_features_in_region
 						   "me.chromosome" => $chr,
 						   "me.dataset_id" => $dataset_id,
 						   -and=>[
-							  -or=>[
-								-and=>[
-								       "me.stop"=>  {"<=" => $stop},
-								       "me.stop"=> {">=" => $start},
-								      ],
-								-and=>[
-								       "me.start"=>  {"<=" => $stop},
-								       "me.start"=> {">=" => $start},
-								      ],
-								-and=>[
-								       "me.start"=>  {"<=" => $start},
-								       "me.stop"=> {">=" => $stop},
-								      ],
-							       ],
+							  "me.start" =>  {"<="=> $stop},
+							  "me.stop" =>   {">=" =>$start},
 							 ],
+						   #  -and=>[
+						  # 	  -or=>[
+						  # 		-and=>[
+						  # 		       "me.stop"=>  {"<=" => $stop},
+						  # 		       "me.stop"=> {">=" => $start},
+						  # 		      ],
+						  # 		-and=>[
+						  # 		       "me.start"=>  {"<=" => $stop},
+						  # 		       "me.start"=> {">=" => $start},
+						  # 		      ],
+						  # 		-and=>[
+						  # 		       "me.start"=>  {"<=" => $start},
+						  # 		       "me.stop"=> {">=" => $stop},
+						  # 		      ],
+						  # 	       ],
+						  # 	 ],
 						  },
 						  {
 #						   prefetch=>["locations", "feature_type"],
@@ -197,26 +201,31 @@ sub get_features_in_region
     my %search = ("me.chromosome" => $chr,
                  "me.dataset_id" => $dataset_id,
 		  -and=>[
-			-or=>[
-			      -and=>[
-				     "me.stop"=>  {"<=" => $stop},
-				     "me.stop"=> {">=" => $start},
-				    ],
-			      -and=>[
-				     "me.start"=>  {"<=" => $stop},
-				     "me.start"=> {">=" => $start},
-				    ],
-			      -and=>[
-				     "me.start"=>  {"<=" => $start},
-				     "me.stop"=> {">=" => $stop},
-				    ],
-			     ],
-		       ]);
-    $search{"me.feature_type_id"}=$ftid if $ftid;
+			 "me.start" =>  {"<="=> $stop},
+			 "me.stop" =>   {">=" =>$start},
+			],
+		  # -and=>[
+		  # 	-or=>[
+		  # 	      -and=>[
+		  # 		     "me.stop"=>  {"<=" => $stop},
+		  # 		     "me.stop"=> {">=" => $start},
+		  # 		    ],
+		  # 	      -and=>[
+		  # 		     "me.start"=>  {"<=" => $stop},
+		  # 		     "me.start"=> {">=" => $start},
+		  # 		    ],
+		  # 	      -and=>[
+		  # 		     "me.start"=>  {"<=" => $start},
+		  # 		     "me.stop"=> {">=" => $stop},
+		  # 		    ],
+		  # 	     ],
+		  #      ]
+		 );
+    $search{"me.feature_type_id"}={"IN"=>$ftid} if $ftid;
     my @feats = $self->resultset('Feature')->search(\%search,
 						    {
-						     prefetch=>["locations", "feature_type"],
-						     order_by=>"me.start",
+	#					     prefetch=>["locations", "feature_type"],
+#						     order_by=>"me.start",
 						    }
 						   );
     return wantarray ? @feats : \@feats;
