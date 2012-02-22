@@ -1345,6 +1345,15 @@ sub get_master_syn_sets
     my $window_size=$form->param('ws');
     my $cutoff=$form->param('co');
     my $scoring_function=$form->param('sf');
+    if ($scoring_function ==2)
+      {
+        $scoring_function = "density";
+      }
+    else
+      {
+        $scoring_function = "collinear";
+      }
+
     my $qdsgid = $form->param('qdsgid');
     my $limit = $form->param('limit'); #limit the number of syntelogs returned per organism searched
     my $qdsg = $coge->resultset('DatasetGroup')->find($qdsgid);
