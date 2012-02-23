@@ -1817,7 +1817,7 @@ sub process_hsps
 	foreach my $hsp (@{$blast->hsps})
 	  {
 	    next if defined $eval_cutoff && $hsp->eval > $eval_cutoff;
-	    next if defined $bitscore_cutoff && $hsp->score < $bitscore_cutoff;
+	    next if defined $bitscore_cutoff && defined $hsp->score && $hsp->score < $bitscore_cutoff;
 	    my $color = $colors->[$i];
 	    my $skip = 0;
 	    next if $hsp_size_limit && $hsp->length < $hsp_size_limit;
