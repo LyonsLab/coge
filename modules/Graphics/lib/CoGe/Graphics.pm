@@ -527,6 +527,7 @@ sub process_features
     my $stop = $opts{stop};
     my $chr = $opts{chr};
     my $ds = $opts{ds};
+    my $dsid = $opts{dsid};
     my $coge=$opts{coge};
     my $c = $opts{c};
     my $accn = $opts{accn};
@@ -545,8 +546,8 @@ sub process_features
     my $tf2 = new Benchmark if $BENCHMARK;
     my $tf3 = new Benchmark if $BENCHMARK;
     my @cds_feats;
-
-    my @feats = $coge->get_features_in_region(start=>$start, end=>$stop, dataset=>$ds->id, chr=>$chr, ftid=>$ftid);
+    $dsid = $ds->id if $ds;
+    my @feats = $coge->get_features_in_region(start=>$start, end=>$stop, dataset=>$dsid, chr=>$chr, ftid=>$ftid);
     my @tmp1;
     my @tmp2;
     shift @feats while (scalar @feats && !$feats[0]);
@@ -567,7 +568,7 @@ sub process_features
 	$stop = $tmpfeat->stop;
 	$research=1;
       }
-    @feats = $coge->get_features_in_region(start=>$start, end=>$stop, dataset=>$ds->id, chr=>$chr, ftid=>$ftid) if $research;
+    @feats = $coge->get_features_in_region(start=>$start, end=>$stop, dataset=>$dsid, chr=>$chr, ftid=>$ftid) if $research;
 #    print STDERR "$start - $stop\n";
     my %feats = map {$_->id, $_} @feats;
     my $tf4 = new Benchmark if $BENCHMARK;
