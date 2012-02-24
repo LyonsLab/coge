@@ -167,7 +167,9 @@ sub process_syn_block
 	  {
 	    ($dsgid1) = split /_/, $item[0];
 	    $dsgid1 =~ s/^a//;
+	    $dsgid1 =~ s/^b//;
 	    ($dsgid2) = split /_/, $item[4];
+	    $dsgid2 =~ s/^a//;
 	    $dsgid2 =~ s/^b//;
 	  }
       }
