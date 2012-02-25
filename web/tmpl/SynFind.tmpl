@@ -10,6 +10,8 @@ $(document).ready(function(){
 });
 
 //jQuery UI opts
+
+
 $(function() {
  //substaniate dialog boxes	     
         $(".dialog_box").dialog({ autoOpen: false, width: 500 });
@@ -607,7 +609,16 @@ $(function(){
  });
 }
 
-
+function get_master(link)
+ {
+   pad =  $('#pad').val();
+   pad=pad*1;
+   if (pad)
+    {
+     link += ";pad="+pad;
+    }
+   window.open(link);
+ }
 </SCRIPT>
 </TMPL_IF>
 
