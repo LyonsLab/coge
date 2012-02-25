@@ -751,7 +751,7 @@ sub go_synfind
 	my ($dsgid, $feat_type) = @$item;
 
 	my ($fasta,$org_name) = gen_fasta(dsgid=>$dsgid, feat_type=>$feat_type, write_log=>1);
-	my $blastdb = gen_blastdb(dbname=>"$dsgid-$feat_type-new",fasta=>$fasta,org_name=>$org_name);
+#	my $blastdb = gen_blastdb(dbname=>"$dsgid-$feat_type-new",fasta=>$fasta,org_name=>$org_name);
 	make_bed(dsgid=>$dsgid, outfile=>$BEDDIR.$dsgid.".bed");
 	$pm->finish;
       }
@@ -762,13 +762,13 @@ sub go_synfind
       {
 	my ($dsgid, $feat_type) = @$item;
 	my ($fasta,$org_name) = gen_fasta(dsgid=>$dsgid, feat_type=>$feat_type, write_log=>0);
-	my $blastdb = gen_blastdb(dbname=>"$dsgid-$feat_type-new",fasta=>$fasta,org_name=>$org_name, write_log=>0);
+#	my $blastdb = gen_blastdb(dbname=>"$dsgid-$feat_type-new",fasta=>$fasta,org_name=>$org_name, write_log=>0);
 	push @target_info, {
 			    dsgid=>$dsgid,
 			    feat_type=>$feat_type,
 			    fasta=>$fasta,
 			    org_name=>$org_name,
-			    blastdb=>$blastdb,
+#			    blastdb=>$blastdb,
 			   };
       }
     my $query_info = shift @target_info if $source_dsgid; #query is the first item on this list.
@@ -779,9 +779,9 @@ sub go_synfind
 	my ($dsgid1, $dsgid2) = ($query_info->{dsgid}, $target->{dsgid});
 	my ($feat_type1, $feat_type2) = ($query_info->{feat_type}, $target->{feat_type});
 	my ($fasta1, $fasta2) = ($query_info->{fasta}, $target->{fasta});
-	my ($db1, $db2) = ($query_info->{blastdb},$target->{blastdb});
+#	my ($db1, $db2) = ($query_info->{blastdb},$target->{blastdb});
 
-	($org1, $org2, $dsgid1, $dsgid2, $feat_type1, $feat_type2, $db1, $db2, $fasta1, $fasta2) = ($org2, $org1, $dsgid2, $dsgid1, $feat_type2, $feat_type1, $db2, $db1, $fasta2, $fasta1) if ($org2 lt $org1);
+	($org1, $org2, $dsgid1, $dsgid2, $feat_type1, $feat_type2, $fasta1, $fasta2) = ($org2, $org1, $dsgid2, $dsgid1, $feat_type2, $feat_type1, $fasta2, $fasta1) if ($org2 lt $org1);
 	#prep names for file system
 	foreach my $tmp ($org1, $org2)
 	  {
@@ -810,7 +810,7 @@ sub go_synfind
 	$target->{dsgid1}=$dsgid1;
 	$target->{dsgid2}=$dsgid2;
 	$target->{query_fasta}=$fasta1; #need to determine the correct query/target order so output is compatibable with SynMap
-	$target->{target_db} = $db2;#need to determine the correct query/target order so output is compatibable with SynMap
+#	$target->{target_db} = $db2;#need to determine the correct query/target order so output is compatibable with SynMap
 	$target->{target_fasta}=$fasta2;
       }
     
@@ -906,16 +906,19 @@ sub go_synfind
     my $tiny_synfind_link = CoGe::Accessory::Web::get_tiny_link(url=>$synfind_link);
     $html .= "<a href='$tiny_synfind_link' class='ui-button ui-corner-all' target=_new_synfind>Regenerate this analysis: $tiny_synfind_link</a>";
     my $open_all_synmap = join ("\n", keys %open_all_synmap);
-    $html .= qq{<a onclick='$open_all_synmap' class='ui-button ui-corner-all'>Generate all dotplots</a>};
+    $html .= qq{<a onclick='$open_all_synmap' class='ui-button ui-corner-all'>Generate all dotplots</a><br><br>};
     my $master_list_link = $synfind_link .";get_master=1";
-    $html .= "<a onclick=window.open('$master_list_link') class='ui-button ui-corner-all' target=_new_synfind>Generate master gene set table</a>";
+#    $html .= "<a onclick=window.open('$master_list_link') class='ui-button ui-corner-all' target=_new_synfind>Generate master gene set table</a>";
+    $html .= "<span onclick=get_master('$master_list_link') class='link ui-button ui-corner-all' target=_new_synfind>Generate master gene set table</span>";
     $master_list_link.=";limit=1";
-    $html .= "<a onclick=window.open('$master_list_link') class='ui-button ui-corner-all' target=_new_synfind>Generate master gene set table (top one syntenlog per organism)</a>";
+#    $html .= "<a onclick=window.open('$master_list_link') class='ui-button ui-corner-all' target=_new_synfind>Generate master gene set table (top one syntenlog per organism)</a>";
+    $html .= "<a onclick=get_master('$master_list_link') class='ui-button ui-corner-all' target=_new_synfind>Generate master gene set table (top one syntenlog per organism)</a>";
+    $html .= qq{<span class="small">Pad Sequence in GEvo <input type="text" size=11 id=pad size=11 value=0></span>};
     CoGe::Accessory::Web::write_log("#SYNFIND LINK $synfind_link", $cogeweb->logfile);
     CoGe::Accessory::Web::write_log("#TINY SYNFIND LINK $tiny_synfind_link", $cogeweb->logfile);
     my $log_file = $cogeweb->logfile;
     $log_file =~ s/$TEMPDIR/$TEMPURL/;
-    $html .= qq{<Br><a href=$log_file target=_new class="small">Log File</a>};
+    $html .= qq{<Br><br><a href=$log_file target=_new class="small">Log File</a>};
 
     return $html;
   }
@@ -1345,6 +1348,7 @@ sub get_master_syn_sets
     my $window_size=$form->param('ws');
     my $cutoff=$form->param('co');
     my $scoring_function=$form->param('sf');
+    my $pad = $form->param('pad');
     if ($scoring_function ==2)
       {
         $scoring_function = "density";
@@ -1407,23 +1411,29 @@ my $dbh = DBI->connect("dbi:SQLite:dbname=$db","","");
 	    my $id = $data[0];
 	    my $sdsgid = $data[7];
 	    
-	    push @{$data{$id}{$sdsgid}},\@data;
+	    push @{$data{$id}{$sdsgid}},\@data; #data{query_feature_id}{subject_genome_id}
 	  }
       }
 
-    print "#",join ("\t", map{$_->organism->name} $qdsg, sort {$a->organism->name cmp $b->organism->name} @dsgs). "\tGEvo link","\n";
+    print "#",join ("\t", "COUNTS", map{$_->organism->name} $qdsg, sort {$a->organism->name cmp $b->organism->name} @dsgs). "\tGEvo link","\n";
+    my $total;
     foreach my $id (sort keys %data)
       {
 	my $link = $SERVER."/GEvo.pl?";
+	#@data contains:
+	# element 1:  array_ref of hard coded stuff to fake data from query genome
+	# elements 2 -- N+1: data from synteny database for each of the subject genomes of which there is N
 	my @data = ([[0,$id, "S",100000]], map{$data{$id}{$_->id}} sort {$a->organism->name cmp $b->organism->name} @dsgs);
 	my @names;
 	my $count =1;
 	my $max;
-	foreach my $set (@data)
+	my @syntelog_count;
+	foreach my $set (@data) #iterate through each genome -- first is query genome
 	  {
 	    unless ($set)
 	      {
 		push @names, "-";
+		push @syntelog_count,0;
 		next;
 	      }
 	    my $name;
@@ -1463,9 +1473,9 @@ my $dbh = DBI->connect("dbi:SQLite:dbname=$db","","");
 		  {
 		    my $rs = $coge->resultset('FeatureName');
 		    $rs->result_class('DBIx::Class::ResultClass::HashRefInflator');
-		    my ($name_hash) = sort {$b->{primary_name} <=> $a->{primary_name} || $a->{name} cmp $b->{name}} $rs->search({feature_id=>$fid});
-		
-		    $name .= $name_hash->{name}.",";
+		    #		    my ($name_hash) = sort {$b->{primary_name} <=> $a->{primary_name} || $a->{name} cmp $b->{name}} $rs->search({feature_id=>$fid});
+		    my ($name_hash) = sort {$b->primary_name <=> $a->primary_name || $a->name cmp $b->name} $coge->resultset('FeatureName')->search({feature_id=>$fid});
+		    $name .= $name_hash->name.",";
 		    $link .= ";fid$count=$fid";
 		  }
 		else
@@ -1479,7 +1489,8 @@ my $dbh = DBI->connect("dbi:SQLite:dbname=$db","","");
 		$limit_count++;
 		$count++;
 	      }
-	    $name =~ s/,$//; #trim training ','
+	    push @syntelog_count, $limit_count;
+	    $name =~ s/,$//; #trim trailing ','
 	    push @names, $name;
 	  }
 	#this is a short cut for specifying the dr up/down of query sequence.  Much faster than looking it up in the database
@@ -1487,7 +1498,9 @@ my $dbh = DBI->connect("dbi:SQLite:dbname=$db","","");
 	$link .= ";dr1down=".$max;
 	$count--;
 	$link .=";num_seqs=$count;autogo=1";
-	print join ("\t", @names, $link),"\n";
+	$link .= ";apply_all=$pad" if $pad;
+	print join ("\t", join (",",@syntelog_count),@names, $link),"\n";
+	$total++;
       }
     exit;
   }
