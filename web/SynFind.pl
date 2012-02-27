@@ -835,7 +835,7 @@ sub go_synfind
     my $tiny_gevo_link = CoGe::Accessory::Web::get_tiny_link(url=>$gevo_link);
     CoGe::Accessory::Web::write_log("#TINY GEVO LINK: $tiny_gevo_link", $cogeweb->logfile);
     CoGe::Accessory::Web::write_log("Finished!", $cogeweb->logfile);
-    $html .= "<br><a style='font-size: 1em' href='$tiny_gevo_link' class='ui-button ui-corner-all' target=_new_gevo>Compare and visualize region in GEvo: $tiny_gevo_link</a>";
+    $html .= "<br><a style='font-size: 1em' href='$tiny_gevo_link' onclick=window.open('$tiny_gevo_link') class='ui-button ui-corner-all' target=_new_gevo>Compare and visualize region in GEvo: $tiny_gevo_link</a>";
 
     #make table of results
     my %dsgids = map {$_->[0],=>1} @dsgids; #table to look them up later;
