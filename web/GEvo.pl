@@ -111,20 +111,20 @@ $USER = undef;
 #print STDERR join ("\n", keys %ajax),"\n";
 
 %FUNCTION=(
-	      run=>\&run,
-	      loading=>\&loading,
-	      merge_previous=>\&merge_previous,
-	      add_seq=>\&add_seq,
-	      get_file=>\&get_file,
-	      gen_go_run=>\&gen_go_run,
-	      gen_hsp_colors =>\&gen_hsp_colors,
+	   run=>\&run,
+	   loading=>\&loading,
+	   merge_previous=>\&merge_previous,
+	   add_seq=>\&add_seq,
+	   get_file=>\&get_file,
+	   gen_go_run=>\&gen_go_run,
+	   gen_hsp_colors =>\&gen_hsp_colors,
 	   save_settings_gevo=>\&save_settings_gevo,
-	      reset_settings_gevo=>\&reset_settings_gevo,
-	      check_address_validity=>\&check_address_validity,
-	      dataset_group_search=>\&dataset_group_search,
-	      get_tiny_url=>\&get_tiny_url,
-	      add_to_user_history=>\&add_to_user_history,
-	      get_image_info => \&get_image_info,
+	   reset_settings_gevo=>\&reset_settings_gevo,
+	   check_address_validity=>\&check_address_validity,
+	   dataset_group_search=>\&dataset_group_search,
+	   get_tiny_url=>\&get_tiny_url,
+	   add_to_user_history=>\&add_to_user_history,
+	   get_image_info => \&get_image_info,
 	   dataset_search=> \&dataset_search,
 	   feat_search=>\&feat_search,
 #	      %ajax,
@@ -341,6 +341,10 @@ sub gen_body
     $skip_hsp_overlap_adjust = 1 unless defined $skip_hsp_overlap_adjust;
     my $hiqual = get_opt(params=>$prefs, form=>$form, param=>'hiqual');
     $hiqual = 0 unless $hiqual;
+    my $comp_adj = get_opt(params=>$prefs, form=>$form, param=>'comp_adj');
+    $comp_adj = 0 unless $comp_adj;
+    my $hsp_track = get_opt(params=>$prefs, form=>$form, param=>'hsp_track');
+    $hsp_track = 0 unless $hsp_track;
     my $hsp_top = get_opt(params=>$prefs, form=>$form, param=>'hsp_top');
     $hsp_top = 0 unless $hsp_top;
     my $color_hsp = get_opt(params=>$prefs, form=>$form, param=>'color_hsp');
@@ -388,8 +392,12 @@ sub gen_body
     else {$template->param(HSP_OVERLAP_YES=>"checked");}
     if ($hiqual) {$template->param(HIQUAL_YES=>"checked");}
     else {$template->param(HIQUAL_NO=>"checked");}
+    if ($comp_adj) {$template->param(COMP_ADJ_YES=>"checked");}
+    else {$template->param(COMP_ADJ_NO=>"checked");}
     if ($hsp_top) {$template->param(HSP_TOP_YES=>"checked");}
     else {$template->param(HSP_TOP_NO=>"checked");}
+    if ($hsp_track) {$template->param(HSP_TRACK_YES=>"checked");}
+    else {$template->param(HSP_TRACK_NO=>"checked");}
     if ($color_hsp) {$template->param(COLOR_HSP_YES=>"checked");}
     else {$template->param(COLOR_HSP_NO=>"checked");}
     if ($color_feat) {$template->param(COLOR_FEAT_YES=>"checked");}
@@ -529,7 +537,9 @@ sub run
     my $show_nt = $opts{nt};
     my $show_cbc = $opts{cbc};
     my $color_hsp = $opts{color_hsp};
-    my $hsp = $opts{hsp_top};
+    my $comp_adj = $opts{comp_adj};
+    my $hsp_top = $opts{hsp_top};
+    my $hsp_track = $opts{hsp_track};
     my $hsp_labels = $opts{hsp_labels};
     my $feat_labels = $opts{feat_labels};
     my $draw_model = $opts{draw_model};
@@ -543,7 +553,6 @@ sub run
     my ($analysis_program, $param_string, $parser_opts, $add_gevo_link) = get_algorithm_options(%opts);
     my $pad_gs = $opts{pad_gs} || 0;
     my $color_overlapped_features = $opts{color_overlapped_features};
-    my $hsp_top = $opts{hsp_top};
     my $hsp_overlap_length = $opts{hsp_overlap_length};
     my $email_address = $opts{email};
     my $show_cns = $opts{show_cns};
@@ -594,6 +603,8 @@ sub run
     $gevo_link .= ";gc=$show_gc" if $show_gc;
     $gevo_link .= ";color_hsp=1" if $color_hsp;
     $gevo_link .= ";hsp_top=1" if $hsp_top;
+    $gevo_link .= ";hsp_track=1" if $hsp_track;
+    $gevo_link .= ";comp_adj=1" if $comp_adj;
     $gevo_link .= ";colorfeat=1" if $color_overlapped_features;
     $gevo_link .= ";nt=$show_nt";
     $gevo_link .= ";cbc=$show_cbc";
@@ -865,27 +876,27 @@ sub run
 
     if ($analysis_program eq "blastz")
       {
-	$analysis_reports = run_blastz(sets=>\@sets, params=>$param_string, parser_opts=>$parser_opts);
+	$analysis_reports = run_blastz(sets=>\@sets, params=>$param_string, parser_opts=>$parser_opts, comp_adj=>$comp_adj);
       }
     elsif ($analysis_program eq "LAGAN")
       {
-	$analysis_reports = run_lagan (sets=>\@sets, params=>$param_string, parser_opts=>$parser_opts);
+	$analysis_reports = run_lagan (sets=>\@sets, params=>$param_string, parser_opts=>$parser_opts, comp_adj=>$comp_adj);
       }
     elsif ($analysis_program eq "CHAOS")
       {
-	$analysis_reports = run_chaos (sets=>\@sets, params=>$param_string, parser_opts=>$parser_opts);
+	$analysis_reports = run_chaos (sets=>\@sets, params=>$param_string, parser_opts=>$parser_opts, comp_adj=>$comp_adj);
       }
     elsif ($analysis_program eq "DiAlign_2")
       {
-	($analysis_reports, $analysis_program,$message) = run_dialign (sets=>\@sets, params=>$param_string, parser_opts=>$parser_opts);
+	($analysis_reports, $analysis_program,$message) = run_dialign (sets=>\@sets, params=>$param_string, parser_opts=>$parser_opts, comp_adj=>$comp_adj);
       }
     elsif ($analysis_program eq "GenomeThreader")
       {
-	($analysis_reports) = run_genomethreader (sets=>\@sets, params=>$param_string, parser_opts=>$parser_opts);
+	($analysis_reports) = run_genomethreader (sets=>\@sets, params=>$param_string, parser_opts=>$parser_opts, comp_adj=>$comp_adj);
       }
     elsif($analysis_program eq "blastn" || $analysis_program eq "tblastx")
       {
-	$analysis_reports = run_bl2seq(sets=>\@sets, params=>$param_string, parser_opts=>$parser_opts, blast_program=>$analysis_program);
+	$analysis_reports = run_bl2seq(sets=>\@sets, params=>$param_string, parser_opts=>$parser_opts, blast_program=>$analysis_program, comp_adj=>$comp_adj);
       }
     
     $analysis_reports = [] unless ref($analysis_reports) =~ /ARRAY/i;
@@ -933,6 +944,7 @@ sub run
 #			     hsp_limit_num=>$hsp_limit_num,
 			     color_hsp=>$color_hsp,
 			     hsp_top=>$hsp_top,
+			     hsp_track=>$hsp_track,
 			     hsp_colors=>\@hsp_colors,
 			     show_hsps_with_stop_codon => $show_hsps_with_stop_codon,
 			     hiqual=>$hiqual,
@@ -1134,6 +1146,7 @@ sub generate_image
 #    my $hsp_limit = $opts{hsp_limit};
 #    my $hsp_limit_num = $opts{hsp_limit_num};
     my $hsp_top = $opts{hsp_top};
+    my $hsp_track = $opts{hsp_track};
     my $color_hsp = $opts{color_hsp};
     my $bitscore_cutoff = $opts{bitscore_cutoff};
     my $hsp_colors = $opts{hsp_colors};
@@ -1189,6 +1202,7 @@ sub generate_image
 		 gbobj=>$gbobj,
 		 color_hsp=>$color_hsp,
 		 hsp_top=>$hsp_top,
+		 hsp_track=>$hsp_track,
 		 colors=>$hsp_colors,
 		 show_hsps_with_stop_codon=>$show_hsps_with_stop_codon, #tblastx option
 		 hsp_overlap_limit=>$hsp_overlap_limit, #if an hsp overlaps with other hsps this many times, don't draw (delete from graphics object)
@@ -1773,6 +1787,7 @@ sub process_hsps
     my $eval_cutoff = $opts{eval_cutoff};
     my $bitscore_cutoff = $opts{bitscore_cutoff};
     my $hsp_top = $opts{hsp_top};
+    my $hsp_track = $opts{hsp_track};
     my $color_hsp = $opts{color_hsp};
     my $colors = $opts{colors};
     my $hsp_overlap_limit = $opts{hsp_overlap_limit};
@@ -1788,6 +1803,7 @@ sub process_hsps
     #to reverse hsps when using genomic sequences from CoGe, they need to be drawn on the opposite strand than where blast reports them.  This is because CoGe::Graphics has the option of reverse drawing a region.  However, the sequence fed into blast has already been reverse complemented so that the HSPs are in the correct orientation for the image.  Thus, if the image is reverse, they are drawn on the wrong strand.  This corrects for that problem.   Sorry for the convoluted logic, but it was the simplest way to substantiate this option
     my $i = 0;
     my $track = scalar @$data+1;
+    $track = 2 if $hsp_track; #all HSPs to be drawn in same track
     foreach my $item (@$data)
       {
 	my $report = $item->[0];
@@ -1796,7 +1812,7 @@ sub process_hsps
 	my $blast = $item->[3];
 	unless ($accn eq $accn1 || $accn eq $accn2)
 	  {
-	    $track--;
+	    $track-- unless $hsp_track;
 	  }
       }
     my @feats;
@@ -1958,7 +1974,7 @@ sub process_hsps
 
 	  }
 	$i++;
-	$track--;
+	$track-- unless $hsp_track;
       }
     
     my $label_location = "top";
@@ -2360,6 +2376,7 @@ sub run_bl2seq {
   my $blast_params = $opts{params};
   my $program = $opts{blast_program};
   my $parser_opts = $opts{parser_opts};
+  my $comp_adj = $opts{comp_adj};
   my $eval_cutoff = $opts{eval_cutoff};
   
   $program = "blastn" unless $program;
@@ -2371,6 +2388,7 @@ sub run_bl2seq {
     {
       for (my $j=0; $j<scalar @$sets; $j++)
 	{
+	  next if $comp_adj && !($i+1==$j);
 	  next unless $j > $i;
 	  #
 	  my $seqfile1 = $sets->[$i]->{file};
@@ -2433,6 +2451,7 @@ sub run_blastz
     my $sets = $opts{sets};
     my $params= $opts{params};
     my $parser_opts = $opts{parser_opts};
+    my $comp_adj = $opts{comp_adj};
     my @files;
     my @reports;
     my $total_runs = number_of_runs($sets);
@@ -2442,6 +2461,7 @@ sub run_blastz
       {
 	for (my $j=0; $j<scalar @$sets; $j++)
 	  {
+	    next if $comp_adj && !($i+1==$j);
 	    next unless $j > $i;
 	    my $seqfile1 = $sets->[$i]->{file};
 	    my $seqfile2 = $sets->[$j]->{file};
@@ -2496,6 +2516,7 @@ sub run_lagan
     my $sets = $opts{sets};
     my $params= $opts{params};
     my $parser_opts = $opts{parser_opts};
+    my $comp_adj = $opts{comp_adj};
     my @files;
     my @reports;
     my $total_runs = number_of_runs($sets);
@@ -2504,6 +2525,7 @@ sub run_lagan
       {
 	for (my $j=0; $j<scalar @$sets; $j++)
 	  {
+	    next if $comp_adj && !($i+1==$j);
 	    next unless $j > $i;
 	    my $seqfile1 = $sets->[$i]->{file};
 	    my $seqfile2 = $sets->[$j]->{file};
@@ -2553,6 +2575,7 @@ sub run_chaos
     my $sets = $opts{sets};
     my $params= $opts{params};
     my $parser_opts = $opts{parser_opts};
+    my $comp_adj = $opts{comp_adj};
     my @files;
     my @reports;
     my $total_runs = number_of_runs($sets);
@@ -2561,6 +2584,7 @@ sub run_chaos
       {
 	for (my $j=0; $j<scalar @$sets; $j++)
 	  {
+	    next if $comp_adj && !($i+1==$j);
 	    next unless $j > $i;
 	    my $seqfile1 = $sets->[$i]->{file};
 	    my $seqfile2 = $sets->[$j]->{file};
@@ -2609,6 +2633,7 @@ sub run_dialign
     my $sets = $opts{sets};
     my $params= $opts{params};
     my $parser_opts = $opts{parser_opts};
+    my $comp_adj = $opts{comp_adj};
     my $max_length = $opts{max_length} || 10000;
     my $kill_length = 2 * $max_length;
     my $program_ran = "DIALIGN";
@@ -2622,6 +2647,7 @@ sub run_dialign
       {
 	for (my $j=0; $j<scalar @$sets; $j++)
 	  {
+	    next if $comp_adj && !($i+1==$j);
 	    next unless $j > $i;
 	    my $obj1 = $sets->[$i]->{obj};
 	    my $obj2 = $sets->[$j]->{obj};
@@ -2751,6 +2777,7 @@ sub run_genomethreader
     my $sets = $opts{sets};
     my $params = $opts{params};
     my $parser_opts = $opts{parser_opts};
+    my $comp_adj = $opts{comp_adj};
     my $matrix = $opts{parser_opts}{matrix} || $P->{BLASTMATRIX}."aa/BLOSUM62";
     my @reports;
     my $total_runs = number_of_runs($sets)*2; #need to run this in both directions for each genomic and protein sequence
@@ -2760,6 +2787,7 @@ sub run_genomethreader
       {
 	for (my $j=0; $j<scalar @$sets; $j++)
 	  {#need to run this in both directions using each as the genome and protein sequence
+	    next if $comp_adj && !($i+1==$j);
 	    next unless $j > $i;
 	    my $seqfile1 = $sets->[$i]->{file};
 	    my $protfile1 = $sets->[$i]->{obj}->other_stuff;
@@ -3050,6 +3078,8 @@ sub gen_params
         'args__hsp_overlap_limit', 'hsp_overlap_limit',
         'args__hsp_size_limit', 'hsp_size_limit',
         'args__hsp_top','hsp_top',
+        'args__hsp_track','hsp_track',
+        'args__comp_adj','comp_adj',
         'args__color_overlapped_features','color_overlapped_features',
         'args__hsp_overlap_length','hsp_overlap_length',
         'args__basefile','args__'+pageObj.basefile,
@@ -4007,7 +4037,7 @@ sub get_tiny_url
     my %opts = @_;
     my $url = $opts{url};
     my $tiny = CoGe::Accessory::Web::get_tiny_link(url=>$url);
-    my $html .= qq{<a href=$tiny target=_new>$tiny<br>(See log file for full link)</a>};
+    my $html .= qq{<a href=$tiny onclick=window.open('$tiny') target =_new>$tiny<br>(See log file for full link)</a>};
     return $html;
   }
 
