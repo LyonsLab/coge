@@ -116,7 +116,7 @@ function set_display_order () {
 $(function() {
 	     //initialize dialog box	     
 	     $("#color_dialog").dialog({autoOpen: false,
-	     				height: 233,
+	     				height: 260,
 					width: 502,
 	});
 	     //button effects on events
@@ -136,14 +136,19 @@ function color_dialog_setter(me) {
          $("#green").slider("value", myArray[1]);
          $("#blue").slider("value", myArray[2]);
 	 var color_id = $(me).attr("id");
-	 var html = "<button class='ui-button ui-corner-all' onClick=update_color_picker('"+color_id+"');$('#color_dialog').dialog('close');>OK</button> <button class='ui-button ui-corner-all' onClick=$('#color_dialog').dialog('close');>Cancel</button>";
+	 var html = "<button class='ui-button ui-corner-all' onClick=update_color_picker('"+color_id+"');$('#color_dialog').dialog('close');>OK</button> <button class='ui-button ui-corner-all' onClick=$('#color_dialog').dialog('close');>Cancel</button><br><button class='ui-button ui-corner-all' onClick=update_color_picker('"+color_id+"',1);>Update All</button> ";
 	 $('#hsp_buttons').html(html);
 	 $('#color_dialog').dialog('open');
 }
 
-function update_color_picker(color_id) {
+function update_color_picker(color_id, all) {
 	 var setcolor = $("#swatch").css("backgroundColor");
 	 $('#'+color_id).css("background-color", ""+setcolor);
+	 if (all) {
+	  $('.color_chooser').each(function(){
+	   $(this).css("background-color", ""+setcolor);
+	   });	   
+	 }
 }
 
 if(window.console == undefined){ console = {}; console.debug = function(){}}
@@ -779,7 +784,7 @@ function rand ()
 <div id="swatch" class="ui-widget-content ui-corner-all"></div>
 </tr>
 <tr>
-<td align="right">
+<td align="center">
 <div id="hsp_buttons"></div>
 </tr>
 </table>
@@ -1130,27 +1135,27 @@ function rand ()
 <table>
 <tr><td>
 <div style="float: left; border-right-style: dotted; border-right-width: 1px">
-<TABLE>
+<TABLE class=small>
  <TR valign=top>
   <TD>
-    <DIV class="small">
+    <DIV>
       Image Width (Pixels):
     </DIV>
   </TD>
   <TD>
-    <DIV class="small">
+    <DIV>
 	<input  type="text" name="iw" id="iw" tabindex="1"  size="10" value="<TMPL_VAR NAME="IMAGE_WIDTH">" />
     </DIV>
   </TD>
  </TR>
  <TR>
   <Td>
-    <DIV class="small">
+    <DIV>
       Feature Height (Pixels):
     </DIV>
   </Td>
   <TD>
-    <DIV class="small">
+    <DIV>
 	<input  type="text" name="feat_h" id="feat_h" tabindex="1"  size="10" value="<TMPL_VAR NAME="FEAT_HEIGHT">" />
     </DIV>
   </TD>
@@ -1158,12 +1163,12 @@ function rand ()
  </TR>
  <TR>
   <Td>
-    <DIV class="small">
+    <DIV>
       Padding between tracks (Pixels):
     </DIV>
   </Td>
   <TD>
-    <DIV class="small">
+    <DIV>
 	<input  type="text" name="padding" id="padding" tabindex="1"  size="10" value="<TMPL_VAR NAME="PADDING">" />
     </DIV>
   </TD>
@@ -1171,78 +1176,89 @@ function rand ()
  </TR>
  <TR>
   <Td>
-<font class="small">Color <span style="color:#009900;">GC</span> content green? (SLOW)</font>
+Color <span style="color:#009900;">GC</span> content green? (SLOW)
   <td>
-<label class="small"><input  type="radio" name="show_gc" id="show_gc" tabindex="1" value="1" <TMPL_VAR NAME="GC_COLOR_YES"> />Yes</label>
-<label class=small><input  type="radio" name="show_gc" id="show_gc" tabindex="1" value="0" <TMPL_VAR NAME="GC_COLOR_NO"> />No</label>
+<label><input  type="radio" name="show_gc" id="show_gc" tabindex="1" value="1" <TMPL_VAR NAME="GC_COLOR_YES"> />Yes</label>
+<label><input  type="radio" name="show_gc" id="show_gc" tabindex="1" value="0" <TMPL_VAR NAME="GC_COLOR_NO"> />No</label>
   </TD>
  <TR>
   <Td>
-<font class="small">Color <span style="color:#FF66FF;">masked</span> and <span style="color:#FF9900;">unsequenced</span> NTs?</font>
+Color <span style="color:#FF66FF;">masked</span> and <span style="color:#FF9900;">unsequenced</span> NTs?
   <td>
-<label class="small"><input  type="radio" name="show_nt" id="show_nt" tabindex="1" value="1" <TMPL_VAR NAME="NT_COLOR_YES">/>Yes</label>
-<label class=small><input  type="radio" name="show_nt" id="show_nt" tabindex="1" value="0" <TMPL_VAR NAME="NT_COLOR_NO">/>No</label>
+<label><input  type="radio" name="show_nt" id="show_nt" tabindex="1" value="1" <TMPL_VAR NAME="NT_COLOR_YES">/>Yes</label>
+<label><input  type="radio" name="show_nt" id="show_nt" tabindex="1" value="0" <TMPL_VAR NAME="NT_COLOR_NO">/>No</label>
   </TD>
  <TR>
   <Td>
-<font class="small">Color wobble codon GC content:</font>
+<font>Color wobble codon GC content:</font>
   <td>
-<label class="small"><input  type="radio" name="show_cbc" id="show_cbc" tabindex="1" value="1" <TMPL_VAR NAME="CBC_YES"> />Yes</label>
-<label class=small><input  type="radio" name="show_cbc" id="show_cbc" tabindex="1" value="0" <TMPL_VAR NAME="CBC_NO"> />No</label>
+<label><input  type="radio" name="show_cbc" id="show_cbc" tabindex="1" value="1" <TMPL_VAR NAME="CBC_YES"> />Yes</label>
+<label><input  type="radio" name="show_cbc" id="show_cbc" tabindex="1" value="0" <TMPL_VAR NAME="CBC_NO"> />No</label>
   </TD>
  <TR>
   <Td>
-<font class="small">Color contigs <span style="color:#FF0000">red</span>:</font>
+<font>Color contigs <span style="color:#FF0000">red</span>:</font>
   <td>
-<label class="small"><input  type="radio" name="show_contigs" id="show_contigs" tabindex="1" value="1" <TMPL_VAR NAME="SHOW_CONTIGS_YES"> />Yes</label>
-<label class=small><input  type="radio" name="show_contigs" id="show_contigs" tabindex="1" value="0" <TMPL_VAR NAME="SHOW_CONTIGS_NO"> />No</label>
+<label><input  type="radio" name="show_contigs" id="show_contigs" tabindex="1" value="1" <TMPL_VAR NAME="SHOW_CONTIGS_YES"> />Yes</label>
+<label><input  type="radio" name="show_contigs" id="show_contigs" tabindex="1" value="0" <TMPL_VAR NAME="SHOW_CONTIGS_NO"> />No</label>
   </TD>
  <TR>
   <Td>
-<font class="small">Auto adjust overlapping features? </font>
+<font>Auto adjust overlapping features? </font>
   <td>
-  <label class="small"><input  type="radio" name="skip_feat_overlap" id="skip_feat_overlap" tabindex="1" value="0" <TMPL_VAR NAME="FEAT_OVERLAP_YES">/>Yes</label>
-  <label class="small"><input  type="radio" name="skip_feat_overlap" id="skip_feat_overlap" tabindex="1" value="1" <TMPL_VAR NAME="FEAT_OVERLAP_NO"> />No</label>
+  <label><input  type="radio" name="skip_feat_overlap" id="skip_feat_overlap" tabindex="1" value="0" <TMPL_VAR NAME="FEAT_OVERLAP_YES">/>Yes</label>
+  <label><input  type="radio" name="skip_feat_overlap" id="skip_feat_overlap" tabindex="1" value="1" <TMPL_VAR NAME="FEAT_OVERLAP_NO"> />No</label>
   </TD>
  <TR>
   <Td>
-<font class="small">Auto adjust overlapping HSPs (SLOW)? </font>
+<font>Auto adjust overlapping HSPs (SLOW)? </font>
   <td>
-  <label class="small"><input  type="radio" name="skip_hsp_overlap" id="skip_hsp_overlap" tabindex="1" value="0" <TMPL_VAR NAME="HSP_OVERLAP_YES">/>Yes</label>
-  <label class="small"><input  type="radio" name="skip_hsp_overlap" id="skip_hsp_overlap" tabindex="1" value="1" <TMPL_VAR NAME="HSP_OVERLAP_NO"> />No</label>
+  <label><input  type="radio" name="skip_hsp_overlap" id="skip_hsp_overlap" tabindex="1" value="0" <TMPL_VAR NAME="HSP_OVERLAP_YES">/>Yes</label>
+  <label><input  type="radio" name="skip_hsp_overlap" id="skip_hsp_overlap" tabindex="1" value="1" <TMPL_VAR NAME="HSP_OVERLAP_NO"> />No</label>
   </TD>
+ <TR>
+  <td>Only draw HSPs between adjacent regions?
+  <td>
+ <label><input  type="radio" name="comp_adj" id="comp_adj" tabindex="1" value="1" <TMPL_VAR NAME="COMP_ADJ_YES">/>Yes</label>
+ <label><input  type="radio" name="comp_adj" id="comp_adj" tabindex="1" value="0" <TMPL_VAR NAME="COMP_ADJ_NO"> />No</label>
+ </TR>
  <TR>
   <TD>
-  <font class="small">Draw high-quality images? (SLOW) </font>
+  <font>Draw high-quality images? (SLOW) </font>
   <td>
-  <label class="small"><input  type="radio" name="hiqual" id="hiqual" tabindex="1" value="1" <TMPL_VAR NAME="HIQUAL_YES">/>Yes</label>
-  <label class="small"><input  type="radio" name="hiqual" id="hiqual" tabindex="1" value="0" <TMPL_VAR NAME="HIQUAL_NO"> />No</label>
+  <label><input  type="radio" name="hiqual" id="hiqual" tabindex="1" value="1" <TMPL_VAR NAME="HIQUAL_YES">/>Yes</label>
+  <label><input  type="radio" name="hiqual" id="hiqual" tabindex="1" value="0" <TMPL_VAR NAME="HIQUAL_NO"> />No</label>
  </TR>
 </TABLE>
 </div>
 <div style="float: left; border-right-style: dotted; border-right-width: 1px">
- <table class="small">
+ <table>
  <table class="small">
  <TR>
   <td>Draw all HSPs on top?
   <td>
- <label class=small><input  type="radio" id="hsp_top" tabindex="1" value="1" <TMPL_VAR NAME="HSP_TOP_YES">/>Yes</label>
- <label class=small><input  type="radio" id="hsp_top" tabindex="1" value="0" <TMPL_VAR NAME="HSP_TOP_NO"> />No</label>
+ <label><input  type="radio" name="hsp_top" id="hsp_top" tabindex="1" value="1" <TMPL_VAR NAME="HSP_TOP_YES">/>Yes</label>
+ <label><input  type="radio" name="hsp_top" id="hsp_top" tabindex="1" value="0" <TMPL_VAR NAME="HSP_TOP_NO"> />No</label>
+ <TR>
+  <td>Draw all HSPs on same track?
+  <td>
+ <label><input  type="radio" name="hsp_track" id="hsp_track" tabindex="1" value="1" <TMPL_VAR NAME="HSP_TRACK_YES">/>Yes</label>
+ <label><input  type="radio" name="hsp_track" id="hsp_track" tabindex="1" value="0" <TMPL_VAR NAME="HSP_TRACK_NO"> />No</label>
  <TR>
   <td>Color features overlapped by HSPs?
  <td>
- <label class=small><input  type="radio" name="color_overlapped_features" id="color_overlapped_features" tabindex="1" value="1" <TMPL_VAR NAME="COLOR_FEAT_YES">/>Yes</label>
- <label class=small><input  type="radio" name="color_overlapped_features" id="color_overlapped_features" tabindex="1" value="0" <TMPL_VAR NAME="COLOR_FEAT_NO"> />No</label>
+ <label><input  type="radio" name="color_overlapped_features" id="color_overlapped_features" tabindex="1" value="1" <TMPL_VAR NAME="COLOR_FEAT_YES">/>Yes</label>
+ <label><input  type="radio" name="color_overlapped_features" id="color_overlapped_features" tabindex="1" value="0" <TMPL_VAR NAME="COLOR_FEAT_NO"> />No</label>
  <TR>
   <Td>
-<font class="small">Color matches in HSPs?</font>
+<font>Color matches in HSPs?</font>
  <td>
- <label class=small><input  type="radio" name="color_hsp" id="color_hsp" tabindex="1" value="1" <TMPL_VAR NAME="COLOR_HSP_YES">/>Yes</label>
- <label class=small><input  type="radio" name="color_hsp" id="color_hsp" tabindex="1" value="0" <TMPL_VAR NAME="COLOR_HSP_NO"> />No</label>
+ <label><input  type="radio" name="color_hsp" id="color_hsp" tabindex="1" value="1" <TMPL_VAR NAME="COLOR_HSP_YES">/>Yes</label>
+ <label><input  type="radio" name="color_hsp" id="color_hsp" tabindex="1" value="0" <TMPL_VAR NAME="COLOR_HSP_NO"> />No</label>
 
  <TR>
   <Td>
-<font class="small">Label HSPs? </font>
+<font>Label HSPs? </font>
  <td>
 <select id="hsp_labels">
 <option value="0" <TMPL_VAR NAME="HSP_LABELS_NO">>No</option>
@@ -1252,7 +1268,7 @@ function rand ()
   </TD>
  <TR>
   <Td>
-<font class="small">Label Genomic Features?</font>
+<font>Label Genomic Features?</font>
  <td>
 <select id="feat_labels">
 <option value="0" <TMPL_VAR NAME="FEAT_LABELS_NO">>No</option>
@@ -1266,7 +1282,7 @@ function rand ()
  <tr>
   <td>Don't show HSPs with <input type=textbox size=3 id="hsp_overlap_limit" value="<TMPL_VAR NAME="HSP_OVERLAP_LIMIT">"/> overlaps
  <tr>
-  <td colspan=2>Don't show HSPs that are shorter than <input type=textbox size=3 id="hsp_size_limit" value="<TMPL_VAR NAME="HSP_SIZE_LIMIT">"/> nt. <span class="small">(0 means no limit)</span>
+  <td colspan=2>Don't show HSPs that are shorter than <input type=textbox size=3 id="hsp_size_limit" value="<TMPL_VAR NAME="HSP_SIZE_LIMIT">"/> nt. <span>(0 means no limit)</span>
  <Tr>
   <td>Draw:
   <select id="draw_model">
@@ -1279,24 +1295,24 @@ function rand ()
   </select> Models
  <TR>
   <TD>
-  <font class="small">Show pre-annotated CNSs?</font>
+  <font>Show pre-annotated CNSs?</font>
   <td>
-  <label class="small"><input  type="radio" name="show_cns" id="show_cns" tabindex="1" value="1" <TMPL_VAR NAME="SHOW_CNS_YES">/>Yes</label>
-  <label class="small"><input  type="radio" name="show_cns" id="show_cns" tabindex="1" value="0" <TMPL_VAR NAME="SHOW_CNS_NO"> />No</label>
+  <label><input  type="radio" name="show_cns" id="show_cns" tabindex="1" value="1" <TMPL_VAR NAME="SHOW_CNS_YES">/>Yes</label>
+  <label><input  type="radio" name="show_cns" id="show_cns" tabindex="1" value="0" <TMPL_VAR NAME="SHOW_CNS_NO"> />No</label>
 
  <TR>
   <TD>
-  <font class="small">Show pre-annotated Gene spaces?</font>
+  <font>Show pre-annotated Gene spaces?</font>
   <td>
-  <label class="small"><input  type="radio" name="show_gene_space" id="show_gene_space" tabindex="1" value="1" <TMPL_VAR NAME="SHOW_GENESPACE_YES">/>Yes</label>
-  <label class="small"><input  type="radio" name="show_gene_space" id="show_gene_space" tabindex="1" value="0" <TMPL_VAR NAME="SHOW_GENESPACE_NO"> />No</label>
+  <label><input  type="radio" name="show_gene_space" id="show_gene_space" tabindex="1" value="1" <TMPL_VAR NAME="SHOW_GENESPACE_YES">/>Yes</label>
+  <label><input  type="radio" name="show_gene_space" id="show_gene_space" tabindex="1" value="0" <TMPL_VAR NAME="SHOW_GENESPACE_NO"> />No</label>
 
 
 
   </table>
 </div>
-<div style="float: left; ">
-   Change HSP colors <span class=small>(Click Color to Adjust)</span>
+<div style="float: left;">
+   Change HSP colors <span class="small">(Click Color to Adjust)</span>
  <DIV id="hsp_colors"><TMPL_VAR NAME="HSP_COLOR"></DIV>
  </div>
 </div>
