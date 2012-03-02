@@ -13,6 +13,7 @@ use Digest::MD5 qw(md5_base64);
 use POSIX;
 use DBIxProfiler;
 use Benchmark;
+use Storable qw(dclone);
 no warnings 'redefine';
 
 
@@ -169,12 +170,18 @@ sub cogesearch
     $search->{'organism.description'}={like=>"%".$org_desc."%"} if $org_desc;
     my $join = {join=>[{'feature'=>{'dataset'=>{'dataset_connectors'=>{'dataset_group'=>'organism'}}}}]};
     push @{$join->{join}}, 'annotation' if $anno;#=>['annotation',]};
-
+	
     #trying to get fulltext to work (and be fast!)    
     my @names;
     if($accn)
       {
-	push @names , $coge->resultset('FeatureName')->search($search,$join)->search_literal('MATCH(me.name) AGAINST (?)',$accn);
+        my $search1 = dclone($search);
+	$search1->{"me.name"}=$accn;
+	push @names, $coge->resultset('FeatureName')->search($search1,$join);
+	unless (@names)
+	  {
+	    push @names, $coge->resultset('FeatureName')->search($search,$join)->search_literal('MATCH(me.name) AGAINST (?)',$accn);
+	  }
       }
     if ($anno)
       {
@@ -362,7 +369,9 @@ sub get_anno
     my $i = 0;
     foreach my $feat (@feats)
       {	
-	next if ($feat->dataset->restricted && !$USER->has_access_to_dataset($feat->dataset));	
+        my ($dsg) = $feat->dataset->dataset_groups;
+        return "Restricted Access" if $dsg->restricted && !$USER->has_access_to_genome($dsg);
+	#next if ($feat->dataset->restricted && !$USER->has_access_to_dataset($feat->dataset));	
 	$i++;
 	my $featid = $feat->id;
 	my $chr = $feat->chr;
@@ -507,7 +516,9 @@ sub get_data_source_info_for_accn
     foreach my $feat (@feats)
       {
 	my $val = $feat->dataset;
-	next if $val->restricted && !$USER->has_access_to_dataset($val);
+#	next if $val->restricted && !$USER->has_access_to_dataset($val);
+        my ($dsg) = $feat->dataset->dataset_groups;
+        return "<hidden id=dsid value=0></hidden>Restricted Access" if $dsg->restricted && !$USER->has_access_to_genome($dsg);
 	unless ($val)
 	  {
 	    warn "error with feature: ".$feat->id ." for name $accn\n";
