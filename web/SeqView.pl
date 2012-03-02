@@ -248,7 +248,9 @@ sub get_seq
     if ($featid)
       {
 	my $feat = $coge->resultset('Feature')->find($featid);
-	return "Restricted Access" if $feat->dataset->restricted && !$USER->has_access_to_dataset($feat->dataset);
+        my ($dsg) = $feat->dataset->dataset_groups;
+	return "Restricted Access" if $dsg->restricted && !$USER->has_access_to_genome($dsg);
+#	return "Restricted Access" if $feat->dataset->restricted && !$USER->has_access_to_dataset($feat->dataset);
 	($fasta,$seq) = ref($feat) =~ /Feature/i ?
 	  $feat->fasta(
 		       prot=>$pro,
@@ -268,7 +270,8 @@ sub get_seq
     elsif ($dsid)
       {
 	my $ds = $coge->resultset('Dataset')->find($dsid);
-	return "Restricted Access" if $ds->restricted && !$USER->has_access_to_dataset($ds);
+        my ($dsg) = $ds->dataset_groups;
+	return "Restricted Access" if $dsg->restricted && !$USER->has_access_to_genome($dsg);
 	$fasta = ref ($ds) =~ /dataset/i ? 
 	  $ds->fasta
 	    (
