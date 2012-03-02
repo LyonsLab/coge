@@ -100,10 +100,11 @@ function post_to_target () {
 function post_to_prosite () {
  var seq = $('#seq_text').val();
  seq = seq.replace(/\*/g,"");
- var url = "http://ca.expasy.org/cgi-bin/prosite/PSScan.cgi";
+ var url = "http://prosite.expasy.org/cgi-bin/prosite/PSScan.cgi";
  var myForm = document.createElement("FORM");
  myForm.method="post" ;
  myForm.action=url;
+ myForm.setAttribute("name", "theForm");
  myForm.setAttribute("target", "_blank");
  var myInput = document.createElement("textarea");
  myInput.name="seq";
