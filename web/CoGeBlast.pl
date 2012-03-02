@@ -489,6 +489,7 @@ sub get_dsg_for_blast_menu
 	my @orgids = split/,/,$orgids;
 	foreach my $dsg ($coge->resultset('DatasetGroup')->search({organism_id=>[@orgids]}))
 	  {
+	    next if $dsg->restricted && !$USER->has_access_to_genome($dsg);
 	    $dsgs{$dsg->id}=$dsg;
 	  }
       }
@@ -499,6 +500,7 @@ sub get_dsg_for_blast_menu
 	  {
 	    my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
 	    next unless $dsg;
+	    next if $dsg->restricted && !$USER->has_access_to_genome($dsg);
 	    $dsgs{$dsg->id}=$dsg;
 	  }
       }
@@ -1143,6 +1145,7 @@ sub create_fasta_file
   {
     my $seq = shift;
     my %seqs; #names and lengths
+    $seq =~ s/>\n//;
     $seq = ">seq\n".$seq unless $seq =~/>/;
     if ($seq =~ />/)
       {
@@ -1153,6 +1156,7 @@ sub create_fasta_file
 	    $name =~ s/^>//;
 	    next unless $tmp;
 	    $tmp =~ s/\n//g;
+	    $tmp =~ s/\s//g;
 	    $name =~ s/\s//g; #need to remove spaces due to how blast breaks query names at spaces or commas
 	    $seqs{$name}=length($tmp);
 	  }
