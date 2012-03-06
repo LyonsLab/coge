@@ -109,21 +109,29 @@ sub get_seqs
       {
         foreach my $featid (split /,/, $item)
           {
-		my ($fid, $gstidt);
-	if ($featid =~ /_/)
-	  {
-	    ($fid, $gstidt) = split /_/, $featid;
+	    my ($fid, $gstidt);
+	    if ($featid =~ /_/)
+	      {
+		($fid, $gstidt) = split /_/, $featid;
+	      }
+	    else
+	      {
+		($fid, $gstidt) = ($featid, $gstid);
+	      }
+	    my ($feat) = $coge->resultset('Feature')->find($fid);
+	    unless ($feat)
+	      {
+		$seqs .= ">Not found: $featid\n";
+		next;
+	      }
+	    my ($dsg) = $feat->dataset->dataset_groups;
+	    if ($dsg->restricted && !$USER->has_access_to_genome($dsg))
+	      {
+		$seqs .= ">Restricted: $featid\n";
+		next;
+	      }
+	    $seqs .= $feat->fasta(col=>80, prot=>$prot, name_only=>$name_only, gstid=>$gstidt, upstream=>$upstream, downstream=>$downstream);
 	  }
-	else
-	  {
-	    ($fid, $gstidt) = ($featid, $gstid);
-	  }
-	my ($feat) = $coge->resultset('Feature')->find($fid);
-	next unless $feat;
-	my ($dsg) = $feat->dataset->dataset_groups;
-	next if $dsg->restricted && !$USER->has_access_to_genome($dsg);
-	$seqs .= $feat->fasta(col=>80, prot=>$prot, name_only=>$name_only, gstid=>$gstidt, upstream=>$upstream, downstream=>$downstream);
-         }
       }
     $seqs = qq{<textarea id=seq_text name=seq_text class="ui-widget-content ui-corner-all backbox" ondblclick="this.select();" style="height: 400px; width: 750px; overflow: auto;">$seqs</textarea>} if $textbox;
     return $seqs;
