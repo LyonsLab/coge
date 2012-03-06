@@ -7,24 +7,34 @@ use Getopt::Long;
 use File::Path;
 
 
-my ($dsgid, $new_seq_dir);
+my ($dsgid, $new_seq_dir, $db1, $db2, $u1, $u2, $p1, $p2);
 
 
 #./replicate_genome_between_coge_installations.pl -dsgid 1149 -sd /opt/apache/Oryza_CoGe/data/genomic_sequence/
 GetOptions(
 	   "dsgid=i"=>\$dsgid,
 	   "sequence_dir|sd=s"=>\$new_seq_dir,
+	   "u1=s"=>\$u1,
+	   "u2=s"=>\$u2,
+	   "p1=s"=>\$p1,
+	   "p2=s"=>\$p2,
+	   "db1=s"=>\$db1,
+	   "db2=s"=>\$db2,
 	   );
 
-unless ($dsgid)
+$u2 = $u1 unless $u2;
+$p2 = $p1 unless $p2;
+$db2 = $db1 unless $db2;
+
+unless ($dsgid && $u1 && $u2 && $db1 && $db2 && $p1 && $p2 && $new_seq_dir)
   {
     help();
   }
 
-my $connstr1 = 'dbi:mysql:dbname=coge;host=localhost;port=3306';
-my $connstr2 = 'dbi:mysql:dbname=oryza_coge;host=localhost;port=3306';
-my $coge1 = CoGeX->connect($connstr1, 'coge', '123coge321' );
-my $coge2 = CoGeX->connect($connstr2, 'oryza_coge', '123oryza321' );
+my $connstr1 = "dbi:mysql:dbname=$db1;host=localhost;port=3306";
+my $connstr2 = "dbi:mysql:dbname=$db2;host=localhost;port=3306";
+my $coge1 = CoGeX->connect($connstr1, $u1, $p1 );
+my $coge2 = CoGeX->connect($connstr2, $u2, $p2 );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 
@@ -214,6 +224,16 @@ Options:
  -dsgid              coge database dataset_group
 
  -sequence_dir | sd  directory to which sequence directory is replicated
+
+ -db1               source coge database name
+ -u1                source coge database user name
+ -p1                source coge database user password
+
+ -db2               sink coge database name
+ -u2                sink coge database user name
+ -p2                sink coge database user password
+
+If not specified, db1, u1, and p1 will be used for the sink.
 
 Example:
 
