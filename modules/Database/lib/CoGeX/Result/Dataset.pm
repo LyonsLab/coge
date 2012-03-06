@@ -859,6 +859,213 @@ sub gff
     my $print = $opts{print};
     my $annos = $opts{annos}; 
     my $no_gff_head = $opts{no_gff_head};
+    my $ds = $opts{ds};
+    $ds = $self unless $ds;
+    my $output; #store the goodies
+    my %chrs;
+    foreach my $chr ($ds->get_chromosomes){
+      $chrs{$chr} = $ds->last_chromosome_position($chr);
+    }
+    my @chrs = sort { $a cmp $b } keys %chrs;
+    my $tmp;
+    $tmp = "##gff-version\t3\n" unless $no_gff_head;
+    $output.=  $tmp if $tmp;
+    print $tmp if $print && !$no_gff_head;
+    foreach my $chr (@chrs){
+      $tmp = "##sequence-region $chr 1 " . $chrs{$chr} . "\n";
+      $output .= $tmp;
+      print $tmp if $print;
+    }
+    my %fids = (); #skip fids that we have processed
+    my $count=0;
+    my %types;
+    my $prefetch = [ 'feature_type', 'feature_names'];
+    push @$prefetch, {'annotations' => 'annotation_type'} if $annos;
+    foreach my $chr (@chrs){
+        my %seen = ();
+        my $feat_rs = $ds->features( {
+				      'me.chromosome' => $chr,
+				     } , 
+				     { 
+				      'prefetch'           => $prefetch,
+
+				      'order_by'           => [ 'me.start', 'me.feature_type_id'] #go by order in genome, then make sure that genes (feature_type_id == 1) is first
+				     }
+				   );
+
+        #gff: chr  organization feature_type  start stop strand . name
+        print STDERR "dataset_id: " . $ds->id . ";  chr: $chr\n" if $debug;
+        main: while(my $feat = $feat_rs->next()){
+	  if ($fids{$feat->feature_id}){ next; }
+	  my $ft = $feat->feature_type;
+	  $types{$ft->name}++;
+	  $fids{$feat->feature_id} = 1; #feat_id has been used
+	  $count++;
+	  my ($gff_line, $feat_names) = $self->_format_gff_line(f=>$feat, start=>$feat->start, stop=>$feat->stop, name_re=>$name_re, seen=>\%seen, id=>$count, parent=>0, print=>$print, type=>$ft->name, annos=>$annos);
+	  $output .= $gff_line;
+	  next unless $ft->id == 1 && @$feat_names; #if not a gene, don't do the next set of searches.
+
+	  #does this gene have an mRNA?
+	  my $mrna_rs = $ds->features( {
+					'me.chromosome' => $chr,
+					'feature_names.name' =>  {'IN'=>[@$feat_names]},
+					'me.feature_type_id'  =>  2
+				       } ,
+				       {
+					'join' => 'feature_names',
+					'prefetch'           => [ 'feature_type', 'locations'],
+					'order_by'           => [ 'me.start', 'locations.start']
+				       });
+	  	  #assemble mRNA info
+	  while(my $f = $mrna_rs->next()){
+	    if($fids{$f->feature_id}){ next; }
+	    next unless join (",", @$feat_names) eq join (",", $f->names);
+	    $fids{$f->feature_id} = 1; #feat_id has been used;
+	    $types{$f->feature_type->name}++;
+	    #have mRNA.  mRNA in CoGe translates to what most people have settled on calling exons.  the output mRNA therefore needs to be a replicate of the gene
+	    my $parent = $count;
+	    $count++;
+	    my ($gff_line, $feat_names) = $self->_format_gff_line(f=>$feat, start=>$feat->start, stop=>$feat->stop, name_re=>$name_re, seen=>\%seen, id=>$count, parent=>$parent, print=>$print, type=>"mRNA", annos=>$annos); #uses the gene feature ($feat) not the mRNA feature ($f)
+	    $output .= $gff_line;
+	    #end replicating gene entry to mRNA
+	    
+	    #begin dumping exons for mRNA
+	    $parent = $count;
+	    foreach my $loc ($f->locations({},{'order_by'=>'start'})){
+	      next if $loc->start > $feat->stop || $loc->stop < $feat->start; #outside of genes boundaries;  Have to count it as something else
+	      $count++;
+	      my ($gff_line, $feat_names) = $self->_format_gff_line(f=>$f, start=>$loc->start, stop=>$loc->stop, name_re=>$name_re, seen=>\%seen, id=>$count, parent=>$parent, print=>$print, type=>"exon", annos=>$annos);
+	      $output .= $gff_line;
+
+	    }
+	    #end dumping exons
+	    #get other features for mRNA -- mostly CDSs
+	    my $sub_rs = $ds->features( {
+					 'me.chromosome' => $chr,
+					 'feature_names.name' =>  {'IN'=>[@$feat_names]},
+					 , 'me.feature_type_id'  =>  { 'NOT IN' => [1,2] }
+					},
+					{
+					 'join'               => [ 'feature_names'],
+					 'prefetch'           => [ 'feature_type', 'locations'] 
+					 ,'order_by'           => [ 'me.chromosome', 'me.start']
+					});
+	    while(my $f = $sub_rs->next()){
+	      if($fids{$f->feature_id}){ next; }
+	      next unless join (",", @$feat_names) eq join (",", $f->names);
+	      $fids{$f->feature_id} = 1; #feat_id has been used;
+	      $types{$f->feature_type->name}++;
+	      foreach my $loc ($f->locations({},{'order_by'=>'start'})){
+		next if $loc->start > $feat->stop || $loc->stop < $feat->start; #outside of genes boundaries;  Have to count it as something else
+		$count++;
+		my ($gff_line, $feat_names) = $self->_format_gff_line(f=>$f, start=>$loc->start, stop=>$loc->stop, name_re=>$name_re, seen=>\%seen, id=>$count, parent=>$parent, print=>$print, type=>$f->feature_type->name, annos=>$annos);
+		$output .= $gff_line;
+	      }
+	      last; #only process one
+	    }
+	    next main;
+	    #end dumping of other features
+	  }
+	  #dump other stuff for gene that does not have mRNAs (e.g. tRNAs)
+	  my $sub_rs = $ds->features( {
+				       'me.chromosome' => $chr,
+				       'feature_names.name' =>  {'IN'=>[@$feat_names]},
+				       , 'me.feature_type_id'  =>  { 'NOT IN' => [1,2] }
+				      },
+				      {
+				       'join'               => [ 'feature_names'],
+				       'prefetch'           => [ 'feature_type', 'locations'] 
+					 ,'order_by'           => [ 'me.chromosome', 'me.start']
+				      });
+	  while(my $f = $sub_rs->next()){
+	    if($fids{$f->feature_id}){ next; }
+	    foreach my $loc ($f->locations({},{'order_by'=>'start'})){
+	      next if $loc->start > $feat->stop || $loc->stop < $feat->start; #outside of genes boundaries;  Have to count it as something else
+	      my $parent = $count;
+	      $count++;
+	      my ($gff_line, $feat_names) = $self->_format_gff_line(f=>$f, start=>$loc->start, stop=>$loc->stop, name_re=>$name_re, seen=>\%seen, id=>$count, parent=>$parent, print=>$print, type=>$f->feature_type->name, annos=>$annos);
+	      $output .= $gff_line;
+	      $fids{$f->feature_id} = 1; #feat_id has been used;
+	      $types{$f->feature_type->name}++;
+	    }
+	    last;
+	  }
+	}
+      }
+    return $output;
+  }
+
+
+sub _format_gff_line
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $f = $opts{f}; #feature object
+    my $type = $opts{type}; #feature type.  may be retrieved from feature object, but these may differ
+    my $name_re = $opts{name_re}; #regex for searching for a specific name
+    my $seen = $opts{seen}; #general var for checking if a simlar feature has been seen before (looked up by type and name string)
+    my $id = $opts{id}; #unique id for the gff feature;
+    my $parent = $opts{parent}; #unique id for the parent of the gff feature
+    my $start = $opts{start}; #start of entry.  May be the feat start, may be a loc start.  Need to declare in logic outside of this routine
+    my $stop = $opts{stop};#stop of entry.  May be the feat stop, may be a loc stop.  Need to declare in logic outside of this routine
+    my $print = $opts{print}; #are lines printed here?
+    my $annos = $opts{annos}; #are annotations retrieved?
+
+    my @feat_names;
+    if($name_re){
+      @feat_names = grep { $_ =~ /$name_re/i } $f->names(); 
+      next unless @feat_names;
+    }
+    else {
+      @feat_names = $f->names(); 
+    }
+    my $strand = $f->strand == 1 ? '+' : '-';
+    my ($alias) = join (",", @feat_names);
+    my ($name) = @feat_names;
+    $seen->{$type}{$alias}++;
+    $name .= ".".$type.$seen->{$type}{$alias};
+    #need to add a unique number
+    my $attrs;
+    $attrs .= "Parent=$parent;" if $parent;
+    $attrs .= "ID=$id";
+    $attrs .= ";Name=$name" if $name;
+    $attrs .= ";Alias=$alias" if $alias;
+    $attrs .= ";CoGe_fid=".$f->id;
+    my $anno_stuff;
+    if ($annos)
+      {
+	my @annos;
+	foreach my $anno ($f->annotations)
+	  {
+	    next unless defined $anno->annotation;
+	    my $anno_type = $anno->annotation_type;
+	    my $tmp;
+	    $tmp .= $anno_type->name.": " if $anno_type && $anno_type->name;
+	    $tmp .= $anno->annotation;
+	    $tmp =~ s/;//g;
+	    push @annos, $tmp;
+	  }
+	$anno_stuff = join (",", @annos);
+      }
+    #assemble gene info for printing
+    my $str = join("\t", ($f->chromosome, 'CoGe', $type, $start, $stop, ".", $strand, ".", $attrs));
+    $str .= ";Note=$anno_stuff" if $anno_stuff;
+    my $tmp = $str . ";\n";
+    print $tmp if $print;
+    return $tmp, \@feat_names;
+  }
+
+
+
+sub gff_old
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $name_re = $opts{name_re};
+    my $debug = $opts{debug};
+    my $print = $opts{print};
+    my $annos = $opts{annos}; 
+    my $no_gff_head = $opts{no_gff_head};
     my $output; #store the goodies
     my %chrs;
     foreach my $chr ($self->get_chromosomes){
