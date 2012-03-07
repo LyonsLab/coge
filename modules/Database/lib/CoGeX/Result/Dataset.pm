@@ -854,12 +854,14 @@ sub gff
   {
     my $self = shift;
     my %opts = @_;
-    my $name_re = $opts{name_re};
-    my $debug = $opts{debug};
-    my $print = $opts{print};
-    my $annos = $opts{annos}; 
-    my $no_gff_head = $opts{no_gff_head};
-    my $ds = $opts{ds};
+    my $name_re = $opts{name_re}; #regular expression to search for a specific name
+    my $debug = $opts{debug}; #debug flag
+    my $print = $opts{print}; #flag to print gff as it is being retrieved
+    my $annos = $opts{annos}; #flag to retrieve and add annotations
+    my $no_gff_head = $opts{no_gff_head}; #flag to NOT print gff headers (used in conjunction with dataset_group->gff which generates its own headers
+    my $ds = $opts{ds}; #ds object, uses self if one is not passed in
+    my $count = $opts{id}; #number to be used for unique identification of each id.  starts at 0 unless one is passed in
+    $count = 0 unless $count && $count =~ /^\d+$/;
     $ds = $self unless $ds;
     my $output; #store the goodies
     my %chrs;
@@ -877,7 +879,6 @@ sub gff
       print $tmp if $print;
     }
     my %fids = (); #skip fids that we have processed
-    my $count=0;
     my %types;
     my $prefetch = [ 'feature_type', 'feature_names'];
     push @$prefetch, {'annotations' => 'annotation_type'} if $annos;
@@ -992,7 +993,7 @@ sub gff
 	  }
 	}
       }
-    return $output;
+    return $output, $count;
   }
 
 
