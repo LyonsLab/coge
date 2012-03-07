@@ -801,9 +801,12 @@ sub gff
     $output .= "##\n";
     $output .= "##\n";
     print $output if $print;
+    my $id = 0;
     foreach my $ds ($self->datasets)
       {
-	$output .= $ds->gff(name_re=>$name_re, debug=>$debug, print=>$print, annos=>$annos, no_gff_head=>1);
+	my $tmp;
+	($tmp, $id) = $ds->gff(name_re=>$name_re, debug=>$debug, print=>$print, annos=>$annos, no_gff_head=>1, id=>$id);
+	$output .= $tmp;
       }
     return $output;
   }
