@@ -1021,17 +1021,17 @@ sub _format_gff_line
       @feat_names = $f->names(); 
     }
     my $strand = $f->strand == 1 ? '+' : '-';
-    my ($alias) = join (",", @feat_names);
+    my ($alias) = "\"".join ("\",\"", @feat_names)."\"";
     my ($name) = @feat_names;
     $seen->{$type}{$alias}++;
     $name .= ".".$type.$seen->{$type}{$alias};
     #need to add a unique number
     my $attrs;
-    $attrs .= "Parent=$parent;" if $parent;
-    $attrs .= "ID=$id";
-    $attrs .= ";Name=$name" if $name;
+    $attrs .= "Parent=\"$parent\";" if $parent;
+    $attrs .= "ID=\"$id\"";
+    $attrs .= ";Name=\"$name\"" if $name;
     $attrs .= ";Alias=$alias" if $alias;
-    $attrs .= ";CoGe_fid=".$f->id;
+    $attrs .= ";CoGe_fid=\"".$f->id."\"";
     my $anno_stuff;
     if ($annos)
       {
@@ -1050,7 +1050,7 @@ sub _format_gff_line
       }
     #assemble gene info for printing
     my $str = join("\t", ($f->chromosome, 'CoGe', $type, $start, $stop, ".", $strand, ".", $attrs));
-    $str .= ";Note=$anno_stuff" if $anno_stuff;
+    $str .= ";Note=\"$anno_stuff\"" if $anno_stuff;
     my $tmp = $str . ";\n";
     print $tmp if $print;
     return $tmp, \@feat_names;
