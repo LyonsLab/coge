@@ -5,20 +5,24 @@ use CoGeX;
 use Data::Dumper;
 use Getopt::Long;
 
-my ($dsid1, $dsid2, $ftid, @skip_ftids);
+my ($dsid1, $dsid2, $ftid, @skip_ftids, $db, $user, $pass);
 
 GetOptions(
 	   "dsid1=i"=>\$dsid1,
 	   "dsid2=i"=>\$dsid2,
 	   "ftid=i"=>\$ftid,
 	   "skip_ftid=i"=>\@skip_ftids,
+             "database|db=s"=>\$db,
+            "user|u=s"=>\$user,
+            "password|pw=s"=>\$pass,
+
 	   );
 
 unless ($dsid1 && $dsid2)
   {
     print qq{
 Usage:
-$0 -dsid1 <dataset id 1> -ds1d2 <dataset id 2> 
+$0 -dsid1 <dataset id 1> -dsid2 <dataset id 2> 
 
 This program will copy the features from dataset 1 to dataset 2.
 
@@ -29,16 +33,23 @@ Options:
  -dsid2              database dataset id for the dataset to which features are copied
 
  -ftid               OPTIONAL:  feature type id for the features to be copied. This is useful if, for example,
-                                only "chromosome" (ftid 301) features are to be copied.  If left undefined, all
+                                only "chromosome" (ftid 4) features are to be copied.  If left undefined, all
                                 features will be copied.
 
 -skip_ftid          OPTION:  skip features of a particular type.  E.g. chromosomes
+
+ -db                coge database name
+
+ -user              database user
+
+ -pw                database password
+
 };
     exit;
   }
 
-my $connstr = 'dbi:mysql:dbname=coge;host=genomevolution.org;port=3306';
-my $coge = CoGeX->connect($connstr, 'elyons', 'eagle7' );
+my $connstr = "dbi:mysql:dbname=$db;host=localhost;port=3306";
+my $coge = CoGeX->connect($connstr, $user, $pass );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 
@@ -59,9 +70,15 @@ my $search = {feature_type_id=>$ftid} if $ftid;
 my %skip_ids = map{$_=>1} @skip_ftids;
 
 
+my $count =0;
+my %types;
+print "Starting replication from ",$ds1->dataset_groups->[0]->organism->name,": ",$ds1->name, " to ", $ds1->dataset_groups->[0]->organism->name, ": ",$ds2->name, "\n";
 foreach my $feat1 ($ds1->features($search))
   {
     next if $skip_ids{$feat1->type->id};
+    print ".";
+    print "\n" unless $count % 100;
+    $types{$feat1->type->id}++;
 #    sleep (.3);
     my $chr = $feat1->chromosome;
     my $feat2 = $ds2->add_to_features(
@@ -117,5 +134,8 @@ foreach my $feat1 ($ds1->features($search))
 				  });
 	  
       }
+    $count++;
   }
+print $count, "Features Processed\n";
+print Dumper \%types;
 
