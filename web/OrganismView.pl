@@ -15,7 +15,7 @@ use Benchmark qw(:all);
 use Statistics::Basic::Mean;
 no warnings 'redefine';
 
-use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $coge $HISTOGRAM %FUNCTION $P $COOKIE_NAME);
+use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $coge $HISTOGRAM %FUNCTION $P $COOKIE_NAME $SERVER);
 $P = CoGe::Accessory::Web::get_defaults("$ENV{HOME}/coge.conf");
 $ENV{PATH} = $P->{COGEDIR};
 $ENV{irodsEnvFile} = "/var/www/.irods/.irodsEnv";
@@ -24,6 +24,7 @@ $ENV{irodsEnvFile} = "/var/www/.irods/.irodsEnv";
 $DEBUG = 0;
 $TEMPDIR = $P->{TEMPDIR}."OrgView";
 $TEMPURL = $P->{TEMPURL}."OrgView";
+$SERVER = $P->{SERVER};
 
 mkpath ($TEMPDIR, 0,0777) unless -d $TEMPDIR;
 
@@ -159,8 +160,10 @@ sub gen_body
     my $dsid = $form->param('dsid');
     my $dsgid = $form->param('dsgid');
     my ($dsg) = $coge->resultset('DatasetGroup')->find($dsgid) if $dsgid;
-    $org = $dsg->organism if $dsg;
 
+    $template->param(SERVER=>$SERVER);
+
+    $org = $dsg->organism if $dsg;
     $org_name = $org->name if $org;
     $org_name = "Search" unless $org_name;
     $template->param(ORG_NAME=>$org_name) if $org_name;
@@ -563,9 +566,14 @@ sub get_dataset_group_info
     $html .= qq{<td>};
     $html .= qq{<a class=link href='$seq_file' target="_new">Fasta Sequences</a>};
     $html .= qq{&nbsp|&nbsp};
-    $html .= qq{<a href='coge_gff.pl?dsgid=$dsgid' target=_new>GFF Names Only</a>};
-    $html .= qq{&nbsp|&nbsp};
-    $html .= qq{<a href='coge_gff.pl?dsgid=$dsgid;annos=1' target=_new>GFF Names and Annotations</a>};
+    $html .= qq{<span class=link onclick="\$('#gff_export').dialog('option', 'width', 400).dialog('open')">Export GFF</span>};
+#    $html .= qq{<a href='coge_gff.pl?dsgid=$dsgid;cds=1' target=_new>GFF CDS; Names Only</a>};
+#    $html .= qq{&nbsp|&nbsp};
+#    $html .= qq{<a href='coge_gff.pl?dsgid=$dsgid;cds=1;annos=1' target=_new>GFF CDS; with Annotations</a>};
+#    $html .= qq{&nbsp|&nbsp};
+#    $html .= qq{<a href='coge_gff.pl?dsgid=$dsgid' target=_new>GFF All; Names Only</a>};
+#    $html .= qq{&nbsp|&nbsp};
+#    $html .= qq{<a href='coge_gff.pl?dsgid=$dsgid;annos=1' target=_new>GFF All; with Annotations</a>};
     $html .= qq{</td></tr>};
 
     $html .= "<tr><td>Links:</td>";
