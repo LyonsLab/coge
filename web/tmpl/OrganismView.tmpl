@@ -485,6 +485,18 @@ function update_genome_info (dsgid) {
       });
 }
 
+function export_gff () {
+ var server = '<TMPL_VAR NAME="SERVER">';
+ var link = server+"coge_gff.pl?dsgid=";
+ link += $('#dsg_id').val();
+ if ($('#cds_only')[0].checked) {link += ";cds=1";}
+ if ($('#annos')[0].checked) {link += ";annos=1";}
+ if ($('#name_unique')[0].checked) {link += ";nu=1";}
+ $('#export_gff_link').html("<a href="+link+" target=_new>Link: "+ link+"<\a>");
+ window.open(link);
+
+}
+
 </script>
 <TABLE>
    <TR><TD valign=top>
@@ -564,4 +576,23 @@ function update_genome_info (dsgid) {
     <span class="ui-button ui-corner-all" id=clear onClick="clear_genome_list()">Clear</span><br>
 
     <div id=add_all_search></div>
+</div>
+
+<DIV class="dialog" title="GFF Exporter" id="gff_export">
+<table class=small>
+ <tr>
+   <td><input type=checkbox name="cds_only" id="cds_only"></td>
+   <td>Only generate features for gene, mRNA, and CDS features</td>
+ </tr>
+ <tr>
+   <td><input type=checkbox name="annos" id="annos" checked></td>
+   <td>Include feature annotations (descriptive text; Geneontology; etc)</td>
+ </tr>
+ <tr>
+   <td><input type=checkbox name="name_unique" id="name_unique" checked></td>
+   <td>Ensure that GFF Name tag is unique for each feature</td>
+ </tr>
+</table>
+<span class="ui-button ui-corner-all ui-button-go" onClick="export_gff('$dsgid')">Export GFF File</span>
+<br><br><span class="small" id=export_gff_link></span>
 </div>
