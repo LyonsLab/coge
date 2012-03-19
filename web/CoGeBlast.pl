@@ -559,7 +559,7 @@ sub blast_search
     my $pre_command;
     if ($program eq "lastz")
       {
-	$pre_command = $BLAST_PROGS->{$program};
+	$pre_command = "/usr/bin/nice --adjustment=10 ".$BLAST_PROGS->{$program};
 	$pre_command .= " $fasta_file";
 
 	$opts .= " W=" .$zwordsize if defined $zwordsize;
@@ -577,7 +577,7 @@ sub blast_search
 	if ($gapcost =~/^(\d+)\s+(\d+)/) {($exist,$extent) = ($1,$2);}
 	
 	if ($match_score=~/^(\d+)\,(-\d+)/) {($nuc_penalty,$nuc_reward) = ($2,$1);}
-	$pre_command = $BLAST_PROGS->{$program};
+	$pre_command = "/usr/bin/nice --adjustment=10 ".$BLAST_PROGS->{$program};
 	
 	$pre_command .= " -comp_based_stats 1" if $program eq "tblastn";
 	$pre_command .= $program =~ /tblast/i ? " -matrix $matrix" : " -penalty $nuc_penalty -reward $nuc_reward  -gapopen $exist -gapextend $extent -dust no";
