@@ -105,12 +105,13 @@ my ($cas_ticket) =$FORM->param('ticket');
 $USER = undef;
 ($USER) = CoGe::Accessory::Web->login_cas(ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
 ($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
-#my %ajax = CoGe::Accessory::Web::ajax_func();
+my %ajax = CoGe::Accessory::Web::ajax_func();
 #$ajax{dataset_search} = \&dataset_search; #override this method from Accessory::Web for restricted organisms
 #$ajax{feat_search} = \&feat_search; 
 #print STDERR join ("\n", keys %ajax),"\n";
 
 %FUNCTION=(
+	   %ajax,
 	   run=>\&run,
 	   loading=>\&loading,
 	   merge_previous=>\&merge_previous,
@@ -127,7 +128,6 @@ $USER = undef;
 	   get_image_info => \&get_image_info,
 	   dataset_search=> \&dataset_search,
 	   feat_search=>\&feat_search,
-#	      %ajax,
     );
 my $pj = new CGI::Ajax(%FUNCTION);
 $pj->JSDEBUG(0);
@@ -609,8 +609,8 @@ sub run
     $gevo_link .= ";nt=$show_nt";
     $gevo_link .= ";cbc=$show_cbc";
     $gevo_link .= ";spike_len=$spike_len";
-    $gevo_link .= ";skip_feat_overlap=$skip_feat_overlap_search";
-    $gevo_link .= ";skip_hsp_overlap=$skip_hsp_overlap_search";
+    $gevo_link .= ";skip_feat_overlap=$skip_feat_overlap_search" if defined $skip_feat_overlap_search;
+    $gevo_link .= ";skip_hsp_overlap=$skip_hsp_overlap_search" if defined $skip_hsp_overlap_search;
     $gevo_link .= $add_gevo_link;
     my @gevo_link_seqs;
     my @coge_seqs; #place to store stuff for parallel creation of sequence file from genome database
