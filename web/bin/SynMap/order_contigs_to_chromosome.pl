@@ -11,8 +11,7 @@ use CoGe::Accessory::SynMap_report;
 use IO::Compress::Gzip;
 use File::Path;
 
-use vars qw($synfile $coge $DEBUG $join $FORM $P $GZIP $GUNZIP $TAR $conffile $link);
-
+use vars qw($synfile $coge $DEBUG $join $FORM $P $GZIP $GUNZIP $TAR $conffile $link $TEMPDIR);
 
 GetOptions (
 	    "debug"=>\$DEBUG,
@@ -32,6 +31,7 @@ $P = CoGe::Accessory::Web::get_defaults($conffile);
 $GZIP = $P->{GZIP};
 $GUNZIP = $P->{GUNZIP};
 $TAR = $P->{TAR};
+$TEMPDIR = $P->{TEMPDIR}."order_contigs";
 
 my $DBNAME = $P->{DBNAME};
 my $DBHOST = $P->{DBHOST};
@@ -46,7 +46,22 @@ $synfile = gunzip($synfile);
 my ($chr1, $chr2, $dsgid1, $dsgid2) = $synmap_report->parse_syn_blocks(file=>$synfile);
 gzip($synfile);
 ($chr1, $chr2, $dsgid1, $dsgid2) = ($chr2, $chr1, $dsgid2, $dsgid1) if scalar keys %{$chr1->[0]} < scalar keys %{$chr2->[0]};
-my $dsg1 = $coge->resultset('DatasetGroup')->find($dsgid1);
+my $tarfile .= "$dsgid1-$dsgid2.tar.gz";
+if (-r "$TEMPDIR/$tarfile")
+  {
+   print qq{Content-Type: application/force-download
+Content-Disposition: attachment; filename="$tarfile"
+
+};
+   open (IN, "$TEMPDIR/$tarfile");
+   while (<IN>)
+     {
+       print $_;
+     }
+   close IN;
+  }
+
+my ($dsg1) = $coge->resultset('DatasetGroup')->search({'me.dataset_group_id'=>$dsgid1},{join=>'genomic_sequences',prefetch=>'genomic_sequences'});
 unless ($dsg1)
   {
     print $FORM->header;
@@ -54,7 +69,7 @@ unless ($dsg1)
     exit;
   }
 
-my $dsg2 = $coge->resultset('DatasetGroup')->find($dsgid2);
+my ($dsg2) = $coge->resultset('DatasetGroup')->search({'me.dataset_group_id'=>$dsgid2},{join=>'genomic_sequences',prefetch=>'genomic_sequences'});#find($ds);
 unless ($dsg2)
   {
     print $FORM->header;
@@ -62,21 +77,19 @@ unless ($dsg2)
     exit;
   }
 
-my $TEMPDIR = $P->{TEMPDIR}."order_contigs";
 $TEMPDIR = $TEMPDIR."/$dsgid1-$dsgid2/";
 mkpath($TEMPDIR, 0, 0777);
 my $logfile = $TEMPDIR."log.txt";
 open (LOG, ">".$logfile);
-my $org1 = "Pseudoassembled genome: ". $dsg1->organism->name. "v".$dsg1->version." ".$dsg1->source->[0]->name." ";
+my $org1 = "Reference genome: ". $dsg1->organism->name. "v".$dsg1->version." ".$dsg1->source->[0]->name." ";
 $org1 .= $dsg1->name if $dsg1->name;
 $org1 .= " (dsgid".$dsg1->id. "): ". $dsg1->genomic_sequence_type->name;
-my $org2 .= "Reference genome: ". $dsg2->organism->name. "v".$dsg2->version." ".$dsg2->source->[0]->name." ";
+my $org2 .= "Pseudoassembly genome: ". $dsg2->organism->name. "v".$dsg2->version." ".$dsg2->source->[0]->name." ";
 $org2 .= $dsg2->name if $dsg2->name;
 $org2 .= " (dsgid".$dsg2->id. "): ". $dsg2->genomic_sequence_type->name;
 print LOG $org1,"\n";
 print LOG $org2,"\n";
 print LOG "Syntenic file: $synfile\n";
-print LOG "CoGe configuration file: $conffile\n";
 print LOG "Regenerate results: $link\n" if $link;
 
 my $fafile = $TEMPDIR."pseudoassembly.faa";
@@ -106,7 +119,6 @@ close AGP;
 
 chdir $TEMPDIR;
 chdir "..";
-my $tarfile .= "$dsgid1-$dsgid2.tar.gz";
 my $cmd = $TAR ." -czf " . $tarfile ." ". "$dsgid1-$dsgid2";
 print LOG "Compressing directory: $cmd\n";
 close LOG;
@@ -157,6 +169,7 @@ sub process_sequence
 	    $count=0;
 	    $seq=undef;
 	    $part_num=1;
+	    $pos=1;
 	  }
 	if ($join)
 	  {
@@ -205,15 +218,14 @@ sub process_sequence
 	    if ($count)
 	      {
 		$seq .= "N"x$join;
-		print AGP join ("\t", $header, $pos, $pos+$join-1, $part_num, "N", $join, "contig", "no", ""),"\n";
+		print AGP  join ("\t", $header, $pos, $pos+$join-1, $part_num, "N", $join, "contig", "no", ""),"\n";
 		$pos += $join;
 		$part_num++;
 	      }
 	    my $tmp_seq = $dsg->genomic_sequence(chr=>$chr);
 	    $seq .= $tmp_seq;
 	    my $seq_len = length($tmp_seq);
-	    $seq .= $dsg->genomic_sequence(chr=>$chr);
-	    print AGP join ("\t", $header, $pos, $pos+$seq_len-1, $part_num, "W", $chr, 1, $seq_len, "+"),"\n";
+	    print  AGP join ("\t", $header, $pos, $pos+$seq_len-1, $part_num, "W", $chr, 1, $seq_len, "+"),"\n";
 	    $part_num++;
 	    $pos += $seq_len;
 	    $count++;
@@ -228,9 +240,10 @@ sub print_sequence
       my %opts = @_;
       my $header = $opts{header};
       my $seq = $opts{seq};
-      $Text::Wrap::columns=80;
+#      $Text::Wrap::columns=80;
       print FAA ">".$header,"\n";
-      print FAA wrap('','',$seq),"\n";
+#      print FAA wrap('','',$seq),"\n";
+      print FAA $seq,"\n";
     }
 
 sub gzip
@@ -249,8 +262,9 @@ sub gunzip
       my $file = shift;
       return $file unless $file;
       return $file unless $file =~ /\.gz$/;
-      `$GUNZIP $file` if -r $file;
       my $tmp = $file;
       $tmp =~ s/\.gz$//;
+      return $tmp if -r $tmp;
+      `$GUNZIP $file` if -r $file;
       return -r $tmp ? $tmp : $file;
     }
