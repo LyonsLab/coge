@@ -1086,6 +1086,7 @@ sub protein_sequence {
   my %opts = @_;
   my $gstid = $opts{gstid};
   my $dsgid = $opts{dsgid};
+  my $seq = $opts{seq};
   my $siter = $self->sequences();
   my @sequence_objects;
   while ( my $seq = $siter->next() ) {
@@ -1102,7 +1103,7 @@ sub protein_sequence {
     } 
   else 
     {
-      my ($seqs,$type) = $self->frame6_trans(gstid=>$gstid, dsgid=>$dsgid);
+      my ($seqs,$type) = $self->frame6_trans(gstid=>$gstid, dsgid=>$dsgid, seq=>$seq);
       #check to see if we can find the best translation
       my $found=0;
       my @seqs;
@@ -1177,7 +1178,8 @@ sub frame6_trans
     my $dsgid = $opts{dsgid};
     my $code;
     ($code, $trans_type) = $opts{code} || $self->genetic_code(trans_type=>$trans_type);
-    my $seq = $opts{seq} || $self->genomic_sequence(gstid=>$gstid, dsgid=>$dsgid);
+    my $seq = $opts{seq};
+    $seq = $self->genomic_sequence(gstid=>$gstid, dsgid=>$dsgid) unless $seq;
 
     my %seqs;
     $seqs{"1"} = $self->_process_seq(seq=>$seq, start=>0, code1=>$code, codonl=>3);
@@ -1672,7 +1674,8 @@ sub fasta
     my $fasta;
     if ($prot)
       {
-	foreach my $seq ($self->protein_sequence(gstid=>$gstid))
+	my $seq = $self->genomic_sequence(upstream=>$upstream, downstream=>$downstream, gstid=>$gstid) if $upstream || $downstream;
+	foreach my $seq ($self->protein_sequence(gstid=>$gstid, seq=>$seq))
 	  {
 	    $seq = join ("\n", wrap("","",$seq)) if $col;
 	    $fasta .= $head."\n".$seq."\n";
