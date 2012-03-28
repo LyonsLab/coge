@@ -80,6 +80,7 @@ if ($FORM->param('get_master'))
       get_master_syn_sets();
     }
 my $pj = new CGI::Ajax(
+		       %ajax,
 		       gen_html=>\&gen_html,
 		       get_orgs=>\&get_orgs,
 		       gen_dsg_menu=>\&gen_dsg_menu,
@@ -96,7 +97,6 @@ my $pj = new CGI::Ajax(
 		       get_anno=>\&get_anno,
 		       get_orgs_feat=>\&get_orgs_feat,
 		       source_search=>\&get_data_source_info_for_accn,		       
-		       %ajax,
 		       
 		       generate_feat_info=>\&generate_feat_info,
 
@@ -111,7 +111,7 @@ sub gen_html
     my $html;
     my ($body) = gen_body();
     my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
-    $template->param(TITLE=>'Identify all syntenic regions across any set of genomes');
+    $template->param(TITLE=>'Find Syntenic Region');
     $template->param(PAGE_TITLE=>'SynFind');
     $template->param(HELP=>'/wiki/index.php?title=SynFind');
     my $name = $USER->user_name;
@@ -698,7 +698,6 @@ sub go_synfind
     my $window_size=$opts{window_size};
     my $cutoff = $opts{cutoff};
     my $scoring_function=$opts{scoring_function};
-
     $window_size = 40 unless defined $window_size;
     $cutoff= 0.1 unless defined $cutoff;
     $scoring_function = 1 unless defined $scoring_function;
@@ -919,7 +918,7 @@ sub go_synfind
     my $log_file = $cogeweb->logfile;
     $log_file =~ s/$TEMPDIR/$TEMPURL/;
     $html .= qq{<Br><br><a href=$log_file target=_new class="small">Log File</a>};
-
+    $html .= "<br>".get_master_histograms(target_dbs=>\@target_info, query_dsgid=>$source_dsgid);
     return $html;
   }
 
@@ -1396,7 +1395,7 @@ sub get_master_syn_sets
 	my $basedir = $DIAGSDIR."/".$org1."/".$org2;
 	my $basename = $dsgid1."_".$dsgid2."."."CDS-CDS";
 	my $db = $basedir."/".$basename."_".$window_size."_".$cutoff."_".$scoring_function.".db";
-my $dbh = DBI->connect("dbi:SQLite:dbname=$db","","");
+	my $dbh = DBI->connect("dbi:SQLite:dbname=$db","","");
 	my $query = "SELECT * FROM synteny";
 	my $sth = $dbh->prepare($query);
 	unless ($sth)
@@ -1503,6 +1502,60 @@ my $dbh = DBI->connect("dbi:SQLite:dbname=$db","","");
 	$total++;
       }
     exit;
+  }
+
+sub get_master_histograms
+  {
+    my %opts = @_;
+    my $target_dbs =$opts{target_dbs};
+    my $query_dsgid = $opts{query_dsgid};
+    my $html;
+    foreach my $item (@$target_dbs)
+      {
+	my $db = $item->{synteny_score_db};
+	my $dbh = DBI->connect("dbi:SQLite:dbname=$db","","");
+	my $query = "SELECT * FROM synteny";
+	my $sth = $dbh->prepare($query);
+	unless ($sth)
+	  {
+	    print STDERR qq{Problem connecting to $db\n};
+	    next;
+	  }
+	$sth->execute();
+	my %data;
+	while (my @data = $sth->fetchrow_array) #data base contains reciprocal entries for each item (a=>b; b=>a)
+	  {
+	    next unless $data[6] == $query_dsgid;
+	    my $id = $data[0]; #query feature ID
+	    my $sdsgid = $data[7]; #target genome ID
+	    $data{$id}++; #data{query_feature_id}{subject_genome_id}
+	  }
+	$html .= $item->{org_name};
+	$html .= depth_table(\%data);
+      }
+    return $html;
+  }
+
+sub depth_table
+  {
+    my $data = shift;
+    my %depths;
+    map {$depths{$_}++} values %$data;
+    my $total = 0;
+    map {$total += $_} values %depths;
+    my $html = "<table class=small>";
+    foreach my $depth (sort {$a <=> $b} keys %depths)
+      {
+	$html .= "<tr>";
+	$html .= "<td>Depth $depth";
+	$html .= "<td>".$depths{$depth};
+	$html .= "<td>of";
+	$html .= "<td>$total";
+	$html .= "<td>".sprintf("%.2f", $depths{$depth}/$total*100)."%";
+	$html .= "</tr>";
+      }
+    $html .= "</table>";
+    return $html;
   }
 
 sub save_orglist_synfind
