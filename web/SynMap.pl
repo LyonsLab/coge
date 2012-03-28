@@ -23,7 +23,7 @@ no warnings 'redefine';
 
 
 umask(0);
-use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $DIR $URL $SERVER $USER $FORM $coge $cogeweb $FORMATDB $BLAST $TBLASTX $BLASTN $BLASTP $LASTZ $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $PYTHON26 $TANDEM_FINDER $RUN_DAGCHAINER $EVAL_ADJUST $FIND_NEARBY $DOTPLOT $SVG_DOTPLOT $NWALIGN $QUOTA_ALIGN $CLUSTER_UTILS $BLAST2RAW $BASE_URL $BLAST2BED $SYNTENY_SCORE $TEMPDIR $TEMPURL $ALGO_LOOKUP $GZIP $GUNZIP $COOKIE_NAME);
+use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $DIR $URL $SERVER $USER $FORM $coge $cogeweb $FORMATDB $BLAST $TBLASTX $BLASTN $BLASTP $LASTZ $LAST $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $PYTHON26 $TANDEM_FINDER $RUN_DAGCHAINER $EVAL_ADJUST $FIND_NEARBY $DOTPLOT $SVG_DOTPLOT $NWALIGN $QUOTA_ALIGN $CLUSTER_UTILS $BLAST2RAW $BASE_URL $BLAST2BED $SYNTENY_SCORE $TEMPDIR $TEMPURL $ALGO_LOOKUP $GZIP $GUNZIP $COOKIE_NAME);
 
 $P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = join ":", ($P->{COGEDIR}, $P->{BINDIR}, $P->{BINDIR}."SynMap", "/usr/bin","/usr/local/bin");
@@ -46,6 +46,7 @@ $TBLASTX = $P->{TBLASTX}. $blast_options;
 $BLASTN = $P->{BLASTN}. $blast_options;
 $BLASTP = $P->{BLASTP}. $blast_options;
 $LASTZ = $P->{PYTHON} ." ". $P->{MULTI_LASTZ} ." -A $MAX_PROC --path=".$P->{LASTZ};
+$LAST = $P->{PYTHON} ." ". $P->{MULTI_LAST}." -a $MAX_PROC --path=".$P->{LAST_PATH}." --dbpath=".$P->{LASTDB};
 $GZIP = $P->{GZIP};
 $GUNZIP = $P->{GUNZIP};
 
@@ -57,6 +58,7 @@ $ALGO_LOOKUP = {
 		     filename=>"megablast",
 		     displayname=>"MegaBlast",
 		     html_select_val=>0,
+		     formatdb=>1,
 		    },
 		1=> {
 		     algo=>$BLASTN." -task dc-megablast", #discontinuous megablast,
@@ -64,6 +66,7 @@ $ALGO_LOOKUP = {
 		     filename=>"dcmegablast",
 		     displayname=>"Discontinuous MegaBlast",
 		     html_select_val=>1,
+		     formatdb=>1,
 		    },
 		2=> {
 		     algo=>$BLASTN." -task blastn", #blastn
@@ -71,6 +74,7 @@ $ALGO_LOOKUP = {
 		     filename=>"blastn",
 		     displayname=>"BlastN",
 		     html_select_val=>2,
+		     formatdb=>1,
 		    },
 		3=> {
 		     algo=>$TBLASTX, #tblastx
@@ -78,6 +82,7 @@ $ALGO_LOOKUP = {
 		     filename=>"tblastx",
 		     displayname=>"TBlastX",
 		     html_select_val=>3,
+		     formatdb=>1,
 		    },
 		4=> {
 		     algo=>$LASTZ, #lastz
@@ -92,6 +97,14 @@ $ALGO_LOOKUP = {
 		     filename=>"blastp",
 		     displayname=>"BlastP",
 		     html_select_val=>5,
+		     formatdb=>1,
+		    },
+		6=> {
+		     algo=>$LAST, #last
+		     opt=>"LAST_SELECT",
+		     filename=>"last",
+		     displayname=>"Last",
+		     html_select_val=>6,
 		    },
 };
 
@@ -948,6 +961,10 @@ sub run_blast
     if ($pre_command =~ /lastz/i)
       {
 	$pre_command .= " -i $fasta -d $blastdb -o $outfile";
+      }
+    elsif ($pre_command =~ /last/i)
+      {
+	$pre_command .= " $blastdb $fasta -o $outfile";
       }
     else
       {
@@ -2395,13 +2412,13 @@ sub go
       }
     
     my ($blastdb);
-    if ($ALGO_LOOKUP->{$blast}{filename}=~/lastz/)
+    if ($ALGO_LOOKUP->{$blast}{formatdb})
       {
-	$blastdb = $fasta2;
+	$blastdb = gen_blastdb(dbname=>"$dsgid2-$feat_type2", fasta=>$fasta2,org_name=>$org_name2, type=>$feat_type2);
       }
     else
       {
-	$blastdb = gen_blastdb(dbname=>"$dsgid2-$feat_type2", fasta=>$fasta2,org_name=>$org_name2, type=>$feat_type2);
+	$blastdb = $fasta2;
       }
     #need to convert the blastdb to a fasta file if the algo used is blastz
 
