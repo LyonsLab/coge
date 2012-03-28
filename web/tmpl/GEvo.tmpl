@@ -725,7 +725,7 @@ function get_seq(seq_num)
   var chr = $('#chr'+seq_num).val();
   var dsgid = $('#dsgid'+seq_num).val();
   //alert (fid+"::"+rc+"::"+left+"::"+right);
- window.open("SeqView.pl?featid="+fid+"&dsid="+dsid+"&chr="+chr+"&start="+pos+"&upstream="+left+"&downstream="+right+"&rc="+rc+"&dsgid="+dsgid);
+ window.open("SeqView.pl?rel=1;featid="+fid+"&dsid="+dsid+"&chr="+chr+"&start="+pos+"&upstream="+left+"&downstream="+right+"&rc="+rc+"&dsgid="+dsgid);
  }
 
 function genome_view(seq_num)
@@ -1396,13 +1396,11 @@ Color <span style="color:#FF66FF;">masked</span> and <span style="color:#FF9900;
        <td colspan=2>     
         <DIV id="dataset<TMPL_VAR NAME="SEQ_NUM">" nowrap><input type="hidden" id="dsid<TMPL_VAR NAME="SEQ_NUM">" value ="<TMPL_VAR NAME="DSID">"></DIV>
 
-<!--        <DIV id="dataset_group<TMPL_VAR NAME="SEQ_NUM">" nowrap><input type="hidden" id="dsgid<TMPL_VAR NAME="SEQ_NUM">" value ="<TMPL_VAR NAME="DSGID">"></DIV> -->
         <DIV id="dataset_group<TMPL_VAR NAME="SEQ_NUM">" nowrap><TMPL_VAR NAME="DSG_STUFF"></DIV>
 
         <DIV id="genomic_sequence_type<TMPL_VAR NAME="SEQ_NUM">" nowrap><input type="hidden" id="gstid<TMPL_VAR NAME="SEQ_NUM">" value ="<TMPL_VAR NAME="GSTID">"></DIV>
         <DIV id="feat<TMPL_VAR NAME="SEQ_NUM">"><input type="hidden" id="featid<TMPL_VAR NAME="SEQ_NUM">" value ="<TMPL_VAR NAME="FEATID">"></DIV>
 
-<!--        <DIV id="chromosome<TMPL_VAR NAME="SEQ_NUM">"><input type="hidden" id="chr<TMPL_VAR NAME="SEQ_NUM">" value ="<TMPL_VAR NAME="CHR">"></DIV>-->
         <DIV id="chromosome<TMPL_VAR NAME="SEQ_NUM">"><TMPL_VAR NAME="CHR_STUFF"></DIV>
 
       <TR>
