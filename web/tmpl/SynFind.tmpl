@@ -92,7 +92,7 @@ function launch(){
   setTimeout("monitor_log()", 1000);
   var selected_genomes = $('#genome_choice').getLength(1);
 
-  go(['args__dsgids','args__'+selected_genomes,'args__fid','fid','args__qdsgid','feat_dsgid', 'args__basename','args__'+pageObj.basename,'args__window_size','ws', 'args__cuttoff','co', 'args__scoring_function','sf'],[handle_results],'POST');
+  go(['args__dsgids','args__'+selected_genomes,'args__fid','fid','args__qdsgid','feat_dsgid', 'args__basename','args__'+pageObj.basename,'args__window_size','ws', 'args__cutoff','co', 'args__scoring_function','sf'],[handle_results],'POST');
   
  
 }
@@ -145,6 +145,7 @@ function seq_type_search() {
 
  function monitor_log(log)
 {
+//  console.log(log);
   var fasta = "";
   var blast = 0;
   var results = 0;
