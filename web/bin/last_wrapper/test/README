@@ -1,0 +1,1 @@
+/usr/bin/python /opt/apache/CoGe/bin/last_wrapper/last.py -a 32 --path=/opt/apache/CoGe/bin/last_wrapper/ 4241-CDS.fasta 4242-CDS.fasta -o test.out
