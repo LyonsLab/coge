@@ -862,6 +862,9 @@ sub gff
     my $count = $opts{id}; #number to be used for unique identification of each id.  starts at 0 unless one is passed in
     my $cds = $opts{cds}; #flag to only print protein coding genes
     my $name_unique = $opts{name_unique}; #flag for making Name tag of output unique by appending type and occurrence to feature name
+    my $id_type = $opts{id_type}; #type of ID (name, num):  unique number; unique name
+    $id_type = "name" unless defined $id_type;
+
     $count = 0 unless $count && $count =~ /^\d+$/;
     $ds = $self unless $ds;
     my $output; #store the goodies
@@ -880,7 +883,10 @@ sub gff
       print $tmp if $print;
     }
     my %fids = (); #skip fids that we have processed
-    my %types;
+    my %types; #track the number of different feature types encountered
+    my %ids2names; #lookup table for unique id numbers to unique id names (determined by $id_type)
+    my %unique_ids; #place to make sure that each ID used is unique;
+
     my $prefetch = [ 'feature_type', 'feature_names'];
 #    push @$prefetch, {'annotations' => 'annotation_type'} if $annos;
     foreach my $chr (@chrs){
@@ -917,7 +923,7 @@ sub gff
 #	  $output .= $gff_line;
 	  unless ($ft->id == 1 && @feat_names) #if not a gene, don't do the next set of searches.
 	    {
-	      my $tmp = $self->_format_gff_line(out=>\@out, notes=>\%notes, cds=>$cds, seen=>\%seen, print=>$print, annos=>$annos, name_unique=>$name_unique);
+	      my $tmp = $self->_format_gff_line(out=>\@out, notes=>\%notes, cds=>$cds, seen=>\%seen, print=>$print, annos=>$annos, name_unique=>$name_unique, ids2names=>\%ids2names, id_type=>$id_type, unique_ids=>\%unique_ids);
 	      $output .= $tmp if $tmp;
 	      next;
 	    }
@@ -982,7 +988,7 @@ sub gff
 	      }
 	      last; #only process one
 	    }
-	    my $tmp = $self->_format_gff_line(out=>\@out, notes=>\%notes, cds=>$cds, seen=>\%seen, print=>$print, annos=>$annos, name_unique=>$name_unique);
+	    my $tmp = $self->_format_gff_line(out=>\@out, notes=>\%notes, cds=>$cds, seen=>\%seen, print=>$print, annos=>$annos, name_unique=>$name_unique, ids2names=>\%ids2names, id_type=>$id_type, unique_ids=>\%unique_ids);
 	    $output .= $tmp if $tmp;
 	    next main;
 	    #end dumping of other features
@@ -1012,7 +1018,7 @@ sub gff
 	      $fids{$f->feature_id} = 1; #feat_id has been used;
 	      $types{$f->feature_type->name}++;
 	    }
-	    my $tmp = $self->_format_gff_line(out=>\@out, notes=>\%notes, cds=>$cds, seen=>\%seen, print=>$print, annos=>$annos, name_unique=>$name_unique);
+	    my $tmp = $self->_format_gff_line(out=>\@out, notes=>\%notes, cds=>$cds, seen=>\%seen, print=>$print, annos=>$annos, name_unique=>$name_unique, ids2names=>\%ids2names, id_type=>$id_type, unique_ids=>\%unique_ids);
 	    $output .= $tmp if $tmp;
 	    last;
 	  }
@@ -1032,7 +1038,10 @@ sub _format_gff_line
     my $print = $opts{print}; #are lines printed here?
     my $annos = $opts{annos}; #are annotations retrieved?
     my $seen = $opts{seen}; #general var for checking if a simlar feature has been seen before (looked up by type and name string)
+    my $ids2names = $opts{ids2names}; #hash to looking up names for a particular id.  May be a number (same as the id) or a unique name;
+    my $id_type = $opts{id_type}; #type of ID (name, num):  unique number; unique name
     my $name_unique = $opts{name_unique}; #flag for making Name tag of output unique by appending type and occurrence to feature name
+    my $unique_ids = $opts{unique_ids}; #hash for making sure that each used ID happens once for each ID
     #check to see if we are only printing cds
     
 
@@ -1064,12 +1073,26 @@ sub _format_gff_line
 	my ($name) = @feat_names;
 	$name = $parsed_type unless $name;
 	$seen->{$parsed_type}{$name}++;
-	if ($name_unique)
+	#create a unique name for the feature type given the name of the feature
+	my $unique_name = $name.".".$parsed_type.$seen->{$parsed_type}{$name};
+	#store the unqiue name and associate it with the unique ID number
+	if ($ids2names->{$id})
 	  {
-	    $name .= ".".$parsed_type.$seen->{$parsed_type}{$name};
+	    warn "ERROR!  $id is already in use in \$ids2names lookup table!\n";
 	  }
+	$ids2names->{$id} = $unique_name;
+	
+	#if unique names are requested for the Name tag, use it
+	$name = $unique_name if ($name_unique);
 
-	#need to add a unique number
+	#for the feature and parent ids, are we using names or numbers?
+	if ($id_type eq "name")
+	  {
+	    $id = $ids2names->{$id} if $ids2names->{$id};
+	    $parent = $ids2names->{$parent} if $ids2names->{$parent};
+	  }
+	warn "ERROR:  ID $id has been previously used!" if  ($unique_ids->{$id});
+	$unique_ids->{$id}++;
 	my $attrs;
 	$attrs .= "Parent=$parent;" if $parent;
 	$attrs .= "ID=$id";
