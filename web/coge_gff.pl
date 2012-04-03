@@ -18,6 +18,7 @@ my $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 my $FORM = new CGI;
 my $dsgid = $FORM->param('dsgid');
 my $dsid = $FORM->param('dsid');
+my $id_type = $FORM->param('id_type');
 my $annos = 0; #flag for printing annotations
 $annos = $FORM->param('annos') if $FORM->param('annos');
 my $cds = 0; #flag for printing only genes, mRNA, and CDSs
@@ -59,4 +60,4 @@ $header .= $org;
 $header .= $id;
 $header .=".gff\n\n";
 print $header;
-$item->gff(print=>1, annos=>$annos, cds=>$cds, name_unique=>$name_unique);
+$item->gff(print=>1, annos=>$annos, cds=>$cds, name_unique=>$name_unique, id_type=>$id_type);
