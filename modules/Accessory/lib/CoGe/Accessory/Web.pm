@@ -395,6 +395,11 @@ sub load_settings
     my $user_id = $opts{user_id};
     my $page = $opts{page};
     my $coge = $opts{coge};
+    unless ($coge)
+     {
+ 	print STDERR "need a valid coge object";
+	return;
+     }
     $user_id = $user->id if (ref ($user) =~ /User/i) && !$user_id;
     unless ($user_id)
       {
@@ -479,5 +484,37 @@ sub initialize_basefile
       }
     else {return $self;}
   }
+
+
+sub gzip
+    {
+      my ($self, $file, $conf_file) = self_or_default(@_);
+      $conf_file = $ENV{HOME}.'coge.conf' unless $conf_file;
+      my $P = $self->get_defaults($conf_file);
+      my $GZIP = $P->{GZIP};
+      return $file unless $file;
+      return $file.".gz" if -r "$file.gz";
+      return $file unless -r $file;
+      return $file if $file =~ /\.gz$/;
+      `$GZIP $file` if -r $file;
+      my $tmp = $file.".gz";
+      return -r $tmp ? $tmp : $file;
+    }
+
+sub gunzip
+    {
+      my ($self, $file, $conf_file) = self_or_default(@_);
+      $conf_file = $ENV{HOME}.'coge.conf' unless $conf_file;
+      my $P = $self->get_defaults($conf_file);
+      my $GUNZIP = $P->{GUNZIP};
+      return $file unless $file;
+      return $file unless -r $file;
+      return $file unless $file =~ /\.gz$/;
+      `$GUNZIP $file` if -r $file;
+      my $tmp = $file;
+      $tmp =~ s/\.gz$//;
+      return -r $tmp ? $tmp : $file;
+    }
+
 
 1;
