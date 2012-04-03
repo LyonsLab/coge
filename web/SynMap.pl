@@ -997,9 +997,9 @@ sub blast2bed
 CoGe::Accessory::Web::write_log(".bed files $outfile1 and $outfile2 already exist." ,$cogeweb->logfile);
 	return;
       }
-    gunzip("$infile.gz") if -r "$infile.gz";
+    CoGe::Accessory::Web::gunzip("$infile.gz") if -r "$infile.gz";
     my $cmd = $BLAST2BED ." -infile $infile -outfile1 $outfile1 -outfile2 $outfile2";
-   CoGe::Accessory::Web::write_log("Creating bed files: $cmd", $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("Creating bed files: $cmd", $cogeweb->logfile);
     `$cmd`;
   }
 
@@ -1015,9 +1015,9 @@ sub run_blast2raw
 CoGe::Accessory::Web::write_log("Filtered blast file found where tandem dups have been removed: $outfile", $cogeweb->logfile);
 	return $outfile;
       }
-    gunzip("$blastfile.gz") if -r "$blastfile.gz";
-    gunzip("$bedfile1.gz") if -r "$bedfile1.gz";
-    gunzip("$bedfile2.gz") if -r "$bedfile2.gz";
+    CoGe::Accessory::Web::gunzip("$blastfile.gz") if -r "$blastfile.gz";
+    CoGe::Accessory::Web::gunzip("$bedfile1.gz") if -r "$bedfile1.gz";
+    CoGe::Accessory::Web::gunzip("$bedfile2.gz") if -r "$bedfile2.gz";
 
     my $tandem_distance = $opts{tandem_distance};
     $tandem_distance = 10 unless defined $tandem_distance;
@@ -1061,9 +1061,9 @@ sub process_local_dups_file
 CoGe::Accessory::Web::write_log("Processed tandem duplicate file found: $outfile", $cogeweb->logfile);
 	return $outfile;
       }
-    gunzip($infile.".gz") if -r $infile.".gz";
+    CoGe::Accessory::Web::gunzip($infile.".gz") if -r $infile.".gz";
     return unless -r $infile;
-   CoGe::Accessory::Web::write_log("Adding coge links to tandem duplication file.  Infile $infile : Outfile $outfile", $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("Adding coge links to tandem duplication file.  Infile $infile : Outfile $outfile", $cogeweb->logfile);
     $/="\n";
     open (IN, $infile);
     open (OUT, ">$outfile");
@@ -1122,7 +1122,7 @@ sub run_dag_tools
 CoGe::Accessory::Web::write_log("run dag_tools: file $outfile already exists",$cogeweb->logfile);
 	return 1;
       }
-      gunzip("$blast.gz") if -r "$blast.gz";
+      CoGe::Accessory::Web::gunzip("$blast.gz") if -r "$blast.gz";
       unless (-r $blast && -s $blast)
 	{
 	 CoGe::Accessory::Web::write_log("WARNING:   Cannot create input file for DAGChainer! Blast output file ($blast) contains no data!" ,$cogeweb->logfile);
@@ -1192,7 +1192,7 @@ sub run_adjust_dagchainer_evals
 CoGe::Accessory::Web::write_log("run_adjust_dagchainer_evals: file $outfile already exists",$cogeweb->logfile);
 	return 1;
       }
-    gunzip ($infile.".gz") if -r $infile.".gz";
+    CoGe::Accessory::Web::gunzip ($infile.".gz") if -r $infile.".gz";
     unless (-r $infile && -s $infile)
 	{
 	 CoGe::Accessory::Web::write_log("WARNING:   Cannot adjust dagchainer evals! DAGChainer input file ($infile) contains no data!" ,$cogeweb->logfile);
@@ -1236,7 +1236,7 @@ sub run_convert_to_gene_order
 CoGe::Accessory::Web::write_log("run_convert_to_gene_order: file $outfile already exists",$cogeweb->logfile);
 	return $outfile;
       }
-    gunzip($infile.".gz") if -r $infile.".gz";
+    CoGe::Accessory::Web::gunzip($infile.".gz") if -r $infile.".gz";
     unless (-r $infile && -s $infile)
 	{
 	 CoGe::Accessory::Web::write_log("WARNING:   Cannot convert to gene order! DAGChainer input file ($infile) contains no data!" ,$cogeweb->logfile);
@@ -1356,7 +1356,7 @@ CoGe::Accessory::Web::write_log("  no conversion for $file back to genomic coord
    CoGe::Accessory::Web::write_log("  converting $file back to genomic coordinates, $outfile", $cogeweb->logfile);
 #    `mv $file $file.orig`;
     $/="\n"; #just in case
-    gunzip($file.".gz") if -r $file.".gz";
+    CoGe::Accessory::Web::gunzip($file.".gz") if -r $file.".gz";
     open (IN,  "$file");
     open (OUT, ">$outfile");
     while (<IN>)
@@ -1422,7 +1422,7 @@ sub run_dagchainer
 CoGe::Accessory::Web::write_log("run dagchainer: file $return_file already exists",$cogeweb->logfile);
 	return ($outfile, $merged_file);
       }
-    gunzip($infile.".gz") if -r $infile.".gz";
+    CoGe::Accessory::Web::gunzip($infile.".gz") if -r $infile.".gz";
 
     unless (-r $infile && -s $infile)
       {
@@ -1469,15 +1469,15 @@ sub run_quota_align_merge
     my $returnfile = $infile.".Dm".$max_dist.".ma1"; #ma stands for merge algo
     return $returnfile if -r $returnfile || -f $returnfile.".gz";
     #convert to quota-align format
-    gunzip($infile.".gz") if -r $infile.".gz";
+    CoGe::Accessory::Web::gunzip($infile.".gz") if -r $infile.".gz";
     my $cmd = $CLUSTER_UTILS." --format=dag --log_evalue $infile $infile.Dm$max_dist.qa";
     `$cmd`;
-   CoGe::Accessory::Web::write_log("Converting dag output to quota_align format: $cmd", $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log("Converting dag output to quota_align format: $cmd", $cogeweb->logfile);
     $cmd = $QUOTA_ALIGN ." --Dm=$max_dist --merge $infile.Dm$max_dist.qa";
-   CoGe::Accessory::Web::write_log("Running quota_align to merge diagonals:\n\t$cmd", $cogeweb->logfile);
-    gunzip ("$infile.Dm$max_dist.qa.gz") if -r "$infile.Dm$max_dist.qa.gz";
+    CoGe::Accessory::Web::write_log("Running quota_align to merge diagonals:\n\t$cmd", $cogeweb->logfile);
+    CoGe::Accessory::Web::gunzip ("$infile.Dm$max_dist.qa.gz") if -r "$infile.Dm$max_dist.qa.gz";
     `$cmd`;
-    gunzip ("$infile.Dm$max_dist.qa.merged.gz") if -r "$infile.Dm$max_dist.qa.merged.gz";
+    CoGe::Accessory::Web::gunzip ("$infile.Dm$max_dist.qa.merged.gz") if -r "$infile.Dm$max_dist.qa.merged.gz";
     if (-r "$infile.Dm$max_dist.qa.merged")
       {
 	my %data;
@@ -1520,8 +1520,8 @@ sub run_quota_align_coverage
     my $overlap_dist = $opts{overlap_dist};
     my $returnfile = $infile.".qac".$org1.".".$org2.".".$overlap_dist; #ma stands for merge algo
     return $returnfile if -r $returnfile || -r $returnfile.".gz";
-    gunzip($infile.".gz") if -r $infile.".gz";
-    gunzip($infile.".qa.gz") if -r $infile.".qa.gz";
+    CoGe::Accessory::Web::gunzip($infile.".gz") if -r $infile.".gz";
+    CoGe::Accessory::Web::gunzip($infile.".qa.gz") if -r $infile.".qa.gz";
     #convert to quota-align format
     my $cov_cmd = $CLUSTER_UTILS." --format=dag --log_evalue $infile $infile.qa";
     my $qa_cmd = $QUOTA_ALIGN ." --Nm=$overlap_dist --quota=$org1:$org2 $infile.qa > $returnfile.tmp";
@@ -1541,7 +1541,7 @@ sub run_quota_align_coverage
     if (-r "$returnfile.tmp" || -r "$returnfile.tmp.gz")
       {
 	CoGe::Accessory::Web::write_log("Quota_align syntenic coverage parameters already run: $returnfile.tmp");
-	gunzip("$returnfile.tmp.gz") if -r "$returnfile.tmp.gz";
+	CoGe::Accessory::Web::gunzip("$returnfile.tmp.gz") if -r "$returnfile.tmp.gz";
 
       }
     else
@@ -1587,8 +1587,8 @@ sub generate_grimm_input
   {
     my %opts = @_;
     my $infile = $opts{infile};
-    gunzip($infile.".gz") if -r $infile.".gz";
-    gunzip($infile.".qa.gz") if -r $infile.".qa.gz";
+    CoGe::Accessory::Web::gunzip($infile.".gz") if -r $infile.".gz";
+    CoGe::Accessory::Web::gunzip($infile.".qa.gz") if -r $infile.".qa.gz";
     my $cmd = $CLUSTER_UTILS." --format=dag --log_evalue $infile $infile.qa";
     CoGe::Accessory::Web::write_log("\nGenerating input data for GRIMM", $cogeweb->logfile);
     CoGe::Accessory::Web::write_log("Converting dag output to quota_align format: $cmd", $cogeweb->logfile);
@@ -1674,7 +1674,7 @@ DNA_align_2
       }
     my $ksdata = get_ks_data(db_file=>$outfile);
     $/="\n";
-    gunzip($infile.".gz") if -r $infile.".gz";
+    CoGe::Accessory::Web::gunzip($infile.".gz") if -r $infile.".gz";
     open (IN, $infile);
     my @data;
     while (<IN>)
@@ -1826,7 +1826,7 @@ sub add_GEvo_links
     my $dsgid2 = $opts{dsgid2};
     $/="\n";
     return if (-r "$infile.condensed" || -r "$infile.condensed.gz"); #check this
-    gunzip($infile.".gz") if -r $infile.".gz";
+    CoGe::Accessory::Web::gunzip($infile.".gz") if -r $infile.".gz";
     open (IN, $infile);
     open (OUT,">$infile.tmp");
     my %condensed;
@@ -1959,7 +1959,7 @@ sub gen_ks_blocks_file
     {
       my %opts = @_;
       my $infile = $opts{infile};
-      gunzip($infile.".gz") if -r $infile.".gz";
+      CoGe::Accessory::Web::gunzip($infile.".gz") if -r $infile.".gz";
       my ($dbfile) = $infile =~ /^(.*?CDS-CDS)/;
       return unless $dbfile;
       my $outfile = $infile.".ks";
@@ -1997,7 +1997,7 @@ sub gen_svg_file
   {
     my %opts =@_;
     my $infile = $opts{infile};
-    gunzip($infile);
+    CoGe::Accessory::Web::gunzip($infile);
     my $outfile = $opts{outfile};
     my $flip = $opts{flip};
     my $xname = $opts{xname};
@@ -2194,8 +2194,8 @@ sub generate_dotplot
 
     return $outfile if $just_check &&-r "$outfile.html";
 
-    gunzip($coords.".gz") if -r "$coords.gz";
-    gunzip($dag.".gz") if -r "$dag.gz";
+    CoGe::Accessory::Web::gunzip($coords.".gz") if -r "$coords.gz";
+    CoGe::Accessory::Web::gunzip($dag.".gz") if -r "$dag.gz";
     $cmd .= qq{ -a $coords};
     $cmd .= qq{ -b $outfile -l 'javascript:synteny_zoom("$dsgid1","$dsgid2","$basename",};
     $cmd .= $flip ? qq{"YCHR","XCHR"}:qq{"XCHR","YCHR"};
@@ -2807,14 +2807,14 @@ sub go
 	    foreach my $item (@$file_list)
 	      {
 		$pm->start and next;
-		$$item = gzip($$item);
+		$$item = CoGe::Accessory::Web::gzip($$item);
 		$pm->finish;
 	      }
 	    $pm->wait_all_children();
 
 	    foreach my $item (@$file_list)
 	      {
-		$$item = gzip($$item);
+		$$item = CoGe::Accessory::Web::gzip($$item);
 	      }
 	    $raw_blastfile =~ s/$DIR/$URL/;
 	    $html .= "<span class='link small' onclick=window.open('$raw_blastfile')>Unfiltered $algo_name results</span><br>";	
@@ -3335,26 +3335,3 @@ sub commify
     return scalar reverse $text;
   }
 
-sub gzip
-    {
-      my $file = shift;
-      return $file unless $file;
-      return $file.".gz" if -r "$file.gz";
-      return $file unless -r $file;
-      return $file if $file =~ /\.gz$/;
-      `$GZIP $file` if -r $file;
-      my $tmp = $file.".gz";
-      return -r $tmp ? $tmp : $file;
-    }
-
-sub gunzip
-    {
-      my $file = shift;
-      return $file unless $file;
-      return $file unless -r $file;
-      return $file unless $file =~ /\.gz$/;
-      `$GUNZIP $file` if -r $file;
-      my $tmp = $file;
-      $tmp =~ s/\.gz$//;
-      return -r $tmp ? $tmp : $file;
-    }
