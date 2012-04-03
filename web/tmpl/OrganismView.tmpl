@@ -492,6 +492,7 @@ function export_gff () {
  if ($('#cds_only')[0].checked) {link += ";cds=1";}
  if ($('#annos')[0].checked) {link += ";annos=1";}
  if ($('#name_unique')[0].checked) {link += ";nu=1";}
+ link += ";id_type="+$('#gff_id_type').val();
  $('#export_gff_link').html("<a href="+link+" target=_new>Link: "+ link+"<\a>");
  window.open(link);
 
@@ -581,16 +582,24 @@ function export_gff () {
 <DIV class="dialog" title="GFF Exporter" id="gff_export">
 <table class=small>
  <tr>
-   <td><input type=checkbox name="cds_only" id="cds_only"></td>
    <td>Only generate features for gene, mRNA, and CDS features</td>
+   <td><input type=checkbox name="cds_only" id="cds_only"></td>
  </tr>
  <tr>
-   <td><input type=checkbox name="annos" id="annos" checked></td>
    <td>Include feature annotations (descriptive text; Geneontology; etc)</td>
+   <td><input type=checkbox name="annos" id="annos" checked></td>
  </tr>
  <tr>
-   <td><input type=checkbox name="name_unique" id="name_unique" checked></td>
    <td>Ensure that GFF Name tag is unique for each feature</td>
+   <td><input type=checkbox name="name_unique" id="name_unique" checked></td>
+ </tr>
+ <tr>
+   <td>For GFF "ID" and "Parent" tags, use unique:
+   <td>
+     <select id=gff_id_type>
+      <option value="name" selected>Name</option>
+      <option value="num">Number</option>
+     </select>
  </tr>
 </table>
 <span class="ui-button ui-corner-all ui-button-go" onClick="export_gff('$dsgid')">Export GFF File</span>
