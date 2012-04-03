@@ -792,6 +792,10 @@ sub gff
     my $print = $opts{print};
     my $annos = $opts{annos};
     my $cds = $opts{cds};
+    my $id_type = $opts{id_type}; #type of ID (name, num):  unique number; unique name
+    $id_type = "name" unless defined $id_type;
+
+
     my $name_unique = $opts{name_unique}; #flag for making Name tag of output unique by appending type and occurrence to feature name
     my $output; #store the goodies
     $output .= "##gff-version\t3\n"; 
@@ -807,7 +811,7 @@ sub gff
     foreach my $ds ($self->datasets)
       {
 	my $tmp;
-	($tmp, $id) = $ds->gff(name_re=>$name_re, debug=>$debug, print=>$print, annos=>$annos, no_gff_head=>1, id=>$id, cds=>$cds, name_unique=>$name_unique);
+	($tmp, $id) = $ds->gff(name_re=>$name_re, debug=>$debug, print=>$print, annos=>$annos, no_gff_head=>1, id=>$id, cds=>$cds, name_unique=>$name_unique, id_type=>$id_type);
 	$output .= $tmp;
       }
     return $output;
