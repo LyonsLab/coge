@@ -836,6 +836,22 @@ sub go_synfind
     CoGe::Accessory::Web::write_log("Finished!", $cogeweb->logfile);
     $html .= "<br><a style='font-size: 1em' href='$tiny_gevo_link' onclick=window.open('$tiny_gevo_link') class='ui-button ui-corner-all' target=_new_gevo>Compare and visualize region in GEvo: $tiny_gevo_link</a>";
 
+    foreach my $item (@target_info)
+      {
+	foreach my $file (
+			 $item->{blastfile},
+			 $item->{converted_blastfile},
+			 $item->{filtered_blastfile},
+			 )
+	  {
+	    $pm->start and next;
+	    $file = CoGe::Accessory::Web::gzip($file);
+	    $pm->finish;
+	  }
+      }
+    $pm->wait_all_children();
+
+
     #make table of results
     my %dsgids = map {$_->[0],=>1} @dsgids; #table to look them up later;
     $dsgids{$source_dsgid}=1;
@@ -917,8 +933,19 @@ sub go_synfind
     CoGe::Accessory::Web::write_log("#TINY SYNFIND LINK $tiny_synfind_link", $cogeweb->logfile);
     my $log_file = $cogeweb->logfile;
     $log_file =~ s/$TEMPDIR/$TEMPURL/;
-    $html .= qq{<Br><br><a href=$log_file target=_new class="small">Log File</a>};
-    $html .= "<br>".get_master_histograms(target_dbs=>\@target_info, query_dsgid=>$source_dsgid);
+    
+    $html .= qq{<br><br><a href="/wiki/index.php/SynFind#Syntenic_Depth" target=_new>Syntenic Depth:</a><br>}.get_master_histograms(target_dbs=>\@target_info, query_dsgid=>$source_dsgid);
+    $html .= "<br>Downloads:";
+    $html .= qq{<table class="small ui-widget-content ui-corner-all">};
+    $html .= qq{<tr><td><a href=$log_file target=_new class="small">Log File</a>};
+    foreach my $item (@target_info)
+      {
+	$html .= qq{<tr>};
+	$html .= qq{<td>}.$item->{org_name};
+	$html .= qq{<td><a href=}.$item->{blastfile}.qq{ target=_new>Raw Blast File</a>};
+	$html .= qq{<td><a href=}.$item->{filtered_blastfile}.qq{ target=_new>Filtered Blast File</a>};
+      }
+    $html .= qq{</table>};
     return $html;
   }
 
@@ -1032,58 +1059,6 @@ sub generate_fasta
     return 0;
   }
 
-sub gen_blastdb
-  {
-    my %opts = @_;
-    my $dbname = $opts{dbname};
-    my $fasta = $opts{fasta};
-    my $org_name = $opts{org_name};
-    my $write_log = $opts{write_log} || 0;
-    my $blastdb = "$BLASTDBDIR/$dbname";
-    my $res = 0;
-    CoGe::Accessory::Web::write_log("#BLASTDB#", $cogeweb->logfile) if $write_log;
-    while (-e "$blastdb.running")
-      {
-	
-	print STDERR "detecting $blastdb.running.  Waiting. . .\n";
-	sleep 60;
-      }
-    if (-r $blastdb.".nsq")
-      {
-	CoGe::Accessory::Web::write_log("blastdb file for *".$org_name."* ($dbname) exists", $cogeweb->logfile) if $write_log;
-	$res = 1;
-      }
-    else
-      {
-	system "/usr/bin/touch $blastdb.running"; #track that a blast anlaysis is running for this
-	$res = generate_blast_db(fasta=>$fasta, blastdb=>$blastdb, org=>$org_name, write_log=>$write_log);
-	system "/bin/rm $blastdb.running" if -r "$blastdb.running"; #remove track file
-      }
-   CoGe::Accessory::Web::write_log("", $cogeweb->logfile) if $write_log;
-    return $blastdb if $res;
-    return 0;
-  }
-
-sub generate_blast_db
-  {
-    my %opts = @_;
-    my $fasta = $opts{fasta};
-    my $blastdb = $opts{blastdb};
-#    my $title= $opts{title};
-    my $org= $opts{org};
-    my $write_log = $opts{write_log};
-    my $command = $FORMATDB." -p F";
-    $command .= " -i '$fasta'";
-    $command .= " -t '$org'";
-    $command .= " -n '$blastdb'";
-    CoGe::Accessory::Web::write_log("creating blastdb for *".$org."* ($blastdb)",$cogeweb->logfile) if $write_log;
-    `$command`;
-    CoGe::Accessory::Web::write_log($command, $cogeweb->logfile) if $write_log;
-    return 1 if -r "$blastdb.nsq";
-    CoGe::Accessory::Web::write_log("error creating blastdb for $org ($blastdb)",$cogeweb->logfile) if $write_log;
-    return 0;
-  }
-  
 sub run_blast
   {
     my %opts = @_;
@@ -1098,9 +1073,9 @@ sub run_blast
 	print STDERR "detecting $outfile.running.  Waiting. . .\n";
 	sleep 60;
       }
-    if (-r $outfile)
+    if (-r $outfile || -r "$outfile.gz")
       {
-	unless (-s $outfile)
+	unless (-s $outfile || -s "$outfile.gz")
 	  {
 	    CoGe::Accessory::Web::write_log("WARNING: Blast output file ($outfile) contains no data!" ,$cogeweb->logfile);
 	    CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
@@ -1155,11 +1130,13 @@ sub blast2bed
     my $outfile1 = $opts{outfile1};
     my $outfile2 = $opts{outfile2};
     CoGe::Accessory::Web::write_log("#BLAST 2 BED#", $cogeweb->logfile);
-    if (-r $outfile1 && -s $outfile1 && -r $outfile2 && -s $outfile2)
+    if ( (-r $outfile1 && -s $outfile1 && -r $outfile2 && -s $outfile2 ) ||
+     (-r "$outfile1.gz" && -s "$outfile1.gz" && -r "$outfile2.gz" && -s "$outfile2.gz" ) )
       {
 	CoGe::Accessory::Web::write_log(".bed files $outfile1 and $outfile2 already exist." ,$cogeweb->logfile);
 	return;
       }
+    CoGe::Accessory::Web::gunzip("$infile.gz") if -r "$infile.gz";
     my $cmd = $PYTHON26." ".$BLAST2BED ." -infile $infile -outfile1 $outfile1 -outfile2 $outfile2";
     CoGe::Accessory::Web::write_log("Creating bed files: $cmd", $cogeweb->logfile);
     CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
@@ -1173,11 +1150,12 @@ sub run_convert_blast
     my $outfile = $opts{outfile};
     CoGe::Accessory::Web::write_log("#CONVERT BLAST#", $cogeweb->logfile);
     my $cmd = $CONVERT_BLAST." < $infile > $outfile";
-    if (-r $outfile && -s $outfile)
+    if ((-r $outfile && -s $outfile) || (-r "$outfile.gz" || -s "$outfile.gz"))
       {
 	CoGe::Accessory::Web::write_log ("converted blast file with short names exists: $outfile", $cogeweb->logfile);
 	return $outfile;
       }
+    CoGe::Accessory::Web::gunzip("infile.gz") if -r "$infile.gz";
     CoGe::Accessory::Web::write_log("convering blast file to short names: $cmd", $cogeweb->logfile);
     `$cmd`;
     CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
@@ -1192,11 +1170,15 @@ sub run_blast2raw
     my $bedfile2 = $opts{bedfile2};
     my $outfile = $opts{outfile};
     CoGe::Accessory::Web::write_log("#BLAST 2 RAW#", $cogeweb->logfile);
-    if (-r $outfile && -s $outfile)
+    if ((-r $outfile && -s $outfile) || (-r "$outfile.gz" && -s "$outfile.gz"))
       {
 	CoGe::Accessory::Web::write_log("Filtered blast file found where tandem dups have been removed: $outfile", $cogeweb->logfile);
 	return $outfile;
       }
+    CoGe::Accessory::Web::gunzip("$blastfile.gz") if -r "$blastfile.gz";
+    CoGe::Accessory::Web::gunzip("$bedfile1.gz") if -r "$bedfile1.gz";
+    CoGe::Accessory::Web::gunzip("$bedfile2.gz") if -r "$bedfile2.gz";
+    
     my $tandem_distance = $opts{tandem_distance};
     $tandem_distance = 10 unless defined $tandem_distance;
     my $cmd = $PYTHON26." ".$BLAST2RAW." $blastfile --qbed $bedfile1 --sbed $bedfile2 --tandem_Nmax $tandem_distance > $outfile";
@@ -1235,6 +1217,9 @@ sub run_synteny_score
        {
 	 system "/usr/bin/touch $outfile.running"; #track that a blast anlaysis is running for this
        }
+     CoGe::Accessory::Web::gunzip("$blastfile.gz") if -r "$blastfile.gz";
+     CoGe::Accessory::Web::gunzip("$bedfile1.gz") if -r "$bedfile1.gz";
+     CoGe::Accessory::Web::gunzip("$bedfile2.gz") if -r "$bedfile2.gz";
      my $cmd = $SYNTENY_SCORE ." $blastfile --qbed $bedfile1 --sbed $bedfile2 --window $window_size --cutoff $cutoff --scoring $scoring_function --qnote $dsgid1 --snote $dsgid2 --sqlite $outfile";
      
      CoGe::Accessory::Web::write_log("Synteny Score:  running $cmd", $cogeweb->logfile);
@@ -1543,7 +1528,7 @@ sub depth_table
     map {$depths{$_}++} values %$data;
     my $total = 0;
     map {$total += $_} values %depths;
-    my $html = "<table class=small>";
+    my $html = "<table class='small  ui-widget-content ui-corner-all'>";
     foreach my $depth (sort {$a <=> $b} keys %depths)
       {
 	$html .= "<tr>";
