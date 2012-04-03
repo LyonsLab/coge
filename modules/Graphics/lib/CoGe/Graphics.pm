@@ -686,7 +686,7 @@ sub process_features
 	    $f->no_3D(1) if $layers->{features}{flat};
 	    push @f, $f;
           }
-        elsif (($layers->{features}{rna} || $layers->{all}) && $feat->type->name =~ /[^m]rna/i)
+        elsif (($layers->{features}{rna} || $layers->{all}) && $feat->type->name =~ /[^m]rna/i && !$feat->type->name =~ /quantitation/i)
           {
 	    my $f = CoGe::Graphics::Feature::Gene->new();
 	    $f->color([200,200,200, 50]);
