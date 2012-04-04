@@ -25,7 +25,7 @@ my $cds = 0; #flag for printing only genes, mRNA, and CDSs
 $cds = $FORM->param('cds') if $FORM->param('cds');
 my $name_unique = 0;
 $name_unique = $FORM->param('nu') if $FORM->param('nu');
-
+my $upa = $FORM->param('upa') if $FORM->param('upa'); #unqiue_parent_annotations
 my ($USER) = CoGe::Accessory::LogUser->get_user();
 
 my $item;
@@ -60,4 +60,4 @@ $header .= $org;
 $header .= $id;
 $header .=".gff\n\n";
 print $header;
-$item->gff(print=>1, annos=>$annos, cds=>$cds, name_unique=>$name_unique, id_type=>$id_type);
+$item->gff(print=>1, annos=>$annos, cds=>$cds, name_unique=>$name_unique, id_type=>$id_type, unique_parent_annotations=>$upa);
