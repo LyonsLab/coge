@@ -774,6 +774,10 @@ sub fasta
  Argument  : name_re     =>    regular expression for only displaying features containing a name that matches
              print       =>    print the gff file as the lines are retrieved
              annos       =>    print annotations as well (takes longer)
+             cds         =>    Only print CDS gene features (skip all ncRNA and other features).  Will print genes, mRNA, and CDS entries
+             id_type     =>    Specify if the GFF entry IDs are going to be unique numbers or unique names.
+             unique_parent_annotations => Flag to NOT print redundant annotations in children entries.  E.g. if parent has an annotation, a child will not have that annotation
+             name_unique =>   Flag for specifying that the name tag of an entry will be unique
  Throws    : 
  Comments  : 
 
@@ -791,7 +795,8 @@ sub gff
     my $debug = $opts{debug};
     my $print = $opts{print};
     my $annos = $opts{annos};
-    my $cds = $opts{cds};
+    my $cds = $opts{cds}; #only print CDS gene features
+    my $unique_parent_annotations = $opts{unique_parent_annotations}; #parent annotations are NOT propogated to children
     my $id_type = $opts{id_type}; #type of ID (name, num):  unique number; unique name
     $id_type = "name" unless defined $id_type;
 
@@ -811,7 +816,7 @@ sub gff
     foreach my $ds ($self->datasets)
       {
 	my $tmp;
-	($tmp, $id) = $ds->gff(name_re=>$name_re, debug=>$debug, print=>$print, annos=>$annos, no_gff_head=>1, id=>$id, cds=>$cds, name_unique=>$name_unique, id_type=>$id_type);
+	($tmp, $id) = $ds->gff(name_re=>$name_re, debug=>$debug, print=>$print, annos=>$annos, no_gff_head=>1, id=>$id, cds=>$cds, name_unique=>$name_unique, id_type=>$id_type, unique_parent_annotations=>$unique_parent_annotations);
 	$output .= $tmp;
       }
     return $output;
