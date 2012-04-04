@@ -492,6 +492,7 @@ function export_gff () {
  if ($('#cds_only')[0].checked) {link += ";cds=1";}
  if ($('#annos')[0].checked) {link += ";annos=1";}
  if ($('#name_unique')[0].checked) {link += ";nu=1";}
+ if ($('#upa')[0].checked) {link += ";upa=1";}
  link += ";id_type="+$('#gff_id_type').val();
  $('#export_gff_link').html("<a href="+link+" target=_new>Link: "+ link+"<\a>");
  window.open(link);
@@ -582,7 +583,7 @@ function export_gff () {
 <DIV class="dialog" title="GFF Exporter" id="gff_export">
 <table class=small>
  <tr>
-   <td>Only generate features for gene, mRNA, and CDS features</td>
+   <td>Do not generate feature ncRNA genes (CDS genes only)</td>
    <td><input type=checkbox name="cds_only" id="cds_only"></td>
  </tr>
  <tr>
@@ -592,6 +593,10 @@ function export_gff () {
  <tr>
    <td>Ensure that GFF Name tag is unique for each feature</td>
    <td><input type=checkbox name="name_unique" id="name_unique" checked></td>
+ </tr>
+ <tr>
+   <td>Do not propagate duplicate annotations to children</td>
+   <td><input type=checkbox name="upa" id="upa"></td>
  </tr>
  <tr>
    <td>For GFF "ID" and "Parent" tags, use unique:
