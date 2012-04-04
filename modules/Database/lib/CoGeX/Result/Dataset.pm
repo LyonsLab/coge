@@ -839,6 +839,13 @@ sub fasta
              annos       =>    print annotations as well (takes longer)
              debug       =>    prints some debugging stuff
              no_gff_head =>    won't print "gff-version 3".  Used when this function is called by DatasetGroup->gff(); (default 0)
+             ds          =>    Dataset object.  Uses $self if none is specified
+             id          =>    Starting number to be used for ID tag.  This in incremented by one with each entry.
+             cds         =>    Only print CDS gene features (skip all ncRNA and other features).  Will print genes, mRNA, and CDS entries
+             id_type     =>    Specify if the GFF entry IDs are going to be unique numbers or unique names.
+             unique_parent_annotations => Flag to NOT print redundant annotations in children entries.  E.g. if parent has an annotation, a child will not have that annotation
+             name_unique =>   Flag for specifying that the name tag of an entry will be unique
+
  Throws    : 
  Comments  : 
 
@@ -862,6 +869,7 @@ sub gff
     my $count = $opts{id}; #number to be used for unique identification of each id.  starts at 0 unless one is passed in
     my $cds = $opts{cds}; #flag to only print protein coding genes
     my $name_unique = $opts{name_unique}; #flag for making Name tag of output unique by appending type and occurrence to feature name
+    my $unique_parent_annotations = $opts{unique_parent_annotations}; #flag so that annotations are not propogated to children if they are contained by their parent
     my $id_type = $opts{id_type}; #type of ID (name, num):  unique number; unique name
     $id_type = "name" unless defined $id_type;
 
@@ -886,7 +894,7 @@ sub gff
     my %types; #track the number of different feature types encountered
     my %ids2names; #lookup table for unique id numbers to unique id names (determined by $id_type)
     my %unique_ids; #place to make sure that each ID used is unique;
-
+    my %prev_annos; #hash to store previously used annotations by parents.  Used in conjunction with the $unique_parent_annotations flag
     my $prefetch = [ 'feature_type', 'feature_names'];
 #    push @$prefetch, {'annotations' => 'annotation_type'} if $annos;
     foreach my $chr (@chrs){
@@ -923,7 +931,7 @@ sub gff
 #	  $output .= $gff_line;
 	  unless ($ft->id == 1 && @feat_names) #if not a gene, don't do the next set of searches.
 	    {
-	      my $tmp = $self->_format_gff_line(out=>\@out, notes=>\%notes, cds=>$cds, seen=>\%seen, print=>$print, annos=>$annos, name_unique=>$name_unique, ids2names=>\%ids2names, id_type=>$id_type, unique_ids=>\%unique_ids);
+	      my $tmp = $self->_format_gff_line(out=>\@out, notes=>\%notes, cds=>$cds, seen=>\%seen, print=>$print, annos=>$annos, name_unique=>$name_unique, ids2names=>\%ids2names, id_type=>$id_type, unique_ids=>\%unique_ids, unique_parent_annotations=>$unique_parent_annotations, prev_annos=>\%prev_annos);
 	      $output .= $tmp if $tmp;
 	      next;
 	    }
@@ -936,7 +944,7 @@ sub gff
 				       {
 					'join' => 'feature_names',
 					'prefetch'           => [ 'feature_type', 'locations'],
-					'order_by'           => [ 'me.start', 'locations.start']
+					'order_by'           => [ 'me.start', 'locations.start', 'me.feature_type_id']
 				       });
 	  	  #assemble RNA info
 	  while(my $f = $mrna_rs->next()){
@@ -950,7 +958,7 @@ sub gff
 	    #have mRNA.  mRNA in CoGe translates to what most people have settled on calling exons.  the output mRNA therefore needs to be a replicate of the gene
 	    my $parent = $count;
 	    $count++;
-	    push @out, {f=>$feat, start=>$feat->start, stop=>$feat->stop, name_re=>$name_re, id=>$count, parent=>$parent, type=>$f->feature_type->name}; #uses the gene feature ($feat) not the mRNA feature ($f)
+	    push @out, {f=>$feat, start=>$feat->start, stop=>$feat->stop, name_re=>$name_re, id=>$count, parent=>$parent, type=>$f->feature_type->name()}; #uses the gene feature ($feat) not the mRNA feature ($f)
 	    #end replicating gene entry to mRNA
 	    
 	    #begin dumping exons for mRNA
@@ -988,7 +996,7 @@ sub gff
 	      }
 	      last; #only process one
 	    }
-	    my $tmp = $self->_format_gff_line(out=>\@out, notes=>\%notes, cds=>$cds, seen=>\%seen, print=>$print, annos=>$annos, name_unique=>$name_unique, ids2names=>\%ids2names, id_type=>$id_type, unique_ids=>\%unique_ids);
+	    my $tmp = $self->_format_gff_line(out=>\@out, notes=>\%notes, cds=>$cds, seen=>\%seen, print=>$print, annos=>$annos, name_unique=>$name_unique, ids2names=>\%ids2names, id_type=>$id_type, unique_ids=>\%unique_ids, unique_parent_annotations=>$unique_parent_annotations, prev_annos=>\%prev_annos);
 	    $output .= $tmp if $tmp;
 	    next main;
 	    #end dumping of other features
@@ -1012,13 +1020,22 @@ sub gff
 	    foreach my $loc ($f->locations({},{'order_by'=>'start'})){
 	      next if $loc->start > $feat->stop || $loc->stop < $feat->start; #outside of genes boundaries;  Have to count it as something else
 	      $count++;
+	    #sometimes mRNA features are missing. . . this is due to the original dataset not having them enumerated.  Need to do some special stuff for such cases where a CDS retrieved in the absense of an mRNA)
+	    if ($f->feature_type->name eq "CDS")
+	      {
+		#let's add the mRNA, change the parent and count (id)
+		push @out, {f=>$f, start=>$loc->start, stop=>$loc->stop, name_re=>$name_re, id=>$count, parent=>$parent, type=>"mRNA"};
+		$parent=$count;
+		$count++;
+	      }
+
 	      push @out, {f=>$f, start=>$loc->start, stop=>$loc->stop, name_re=>$name_re, id=>$count, parent=>$parent, type=>"exon"};
 	      $count++;
 	      push @out, {f=>$f, start=>$loc->start, stop=>$loc->stop, name_re=>$name_re, id=>$count, parent=>$parent, type=>$f->feature_type->name};
 	      $fids{$f->feature_id} = 1; #feat_id has been used;
 	      $types{$f->feature_type->name}++;
 	    }
-	    my $tmp = $self->_format_gff_line(out=>\@out, notes=>\%notes, cds=>$cds, seen=>\%seen, print=>$print, annos=>$annos, name_unique=>$name_unique, ids2names=>\%ids2names, id_type=>$id_type, unique_ids=>\%unique_ids);
+	    my $tmp = $self->_format_gff_line(out=>\@out, notes=>\%notes, cds=>$cds, seen=>\%seen, print=>$print, annos=>$annos, name_unique=>$name_unique, ids2names=>\%ids2names, id_type=>$id_type, unique_ids=>\%unique_ids, unique_parent_annotations=>$unique_parent_annotations, prev_annos=>\%prev_annos);
 	    $output .= $tmp if $tmp;
 	    last;
 	  }
@@ -1034,16 +1051,18 @@ sub _format_gff_line
     my %opts = @_;
     my $out = $opts{out}; #array of hashref of output items
     my $notes = $opts{notes}; #hashref of notes; keyed by feature type
-    my $cds = $opts{cds};
+    my $cds = $opts{cds}; #only print CDS genes
     my $print = $opts{print}; #are lines printed here?
     my $annos = $opts{annos}; #are annotations retrieved?
+    my $unique_parent_annos = $opts{unique_parent_annotations}; #parent annotations are NOT propogated to children
+    my $prev_annos = $opts{prev_annos}; #hash for storing previously seen annotations by parents and children -- used in conjuction with $unique_parent_annos flag
+
     my $seen = $opts{seen}; #general var for checking if a simlar feature has been seen before (looked up by type and name string)
     my $ids2names = $opts{ids2names}; #hash to looking up names for a particular id.  May be a number (same as the id) or a unique name;
     my $id_type = $opts{id_type}; #type of ID (name, num):  unique number; unique name
     my $name_unique = $opts{name_unique}; #flag for making Name tag of output unique by appending type and occurrence to feature name
     my $unique_ids = $opts{unique_ids}; #hash for making sure that each used ID happens once for each ID
     #check to see if we are only printing cds
-    
 
     my $output;
     foreach my $item (@$out)
@@ -1111,6 +1130,14 @@ sub _format_gff_line
 	    foreach my $anno ($f->annotations)
 	      {
 		next unless defined $anno->annotation;
+		if ($unique_parent_annos && $prev_annos->{$parent}{$anno->annotation})
+		  {
+		    #we have used this annotation in a parent annotation
+		    $prev_annos->{$id}{$anno->annotation} = 1;
+		    next;
+		  }
+		$prev_annos->{$id}{$anno->annotation} = 1 if $unique_parent_annos;
+		$prev_annos->{$parent}{$anno->annotation} = 1 if $unique_parent_annos;
 		my $atn; #attribute name
 		my $stuff; #annotation;
 		my $anno_type = $anno->annotation_type;
