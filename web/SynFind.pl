@@ -18,7 +18,7 @@ no warnings 'redefine';
 
 #example URL: http://toxic.berkeley.edu/CoGe/SynFind.pl?fid=34519245;qdsgid=3;dsgid=4241,6872,7084,7094,7111
 
-use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME $DIR $URL $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $BEDDIR $FORMATDB $BLAST $BLASTN $LASTZ $CONVERT_BLAST $BLAST2BED $BLAST2RAW $SYNTENY_SCORE $DATASETGROUP2BED $PYTHON26 $FORM $USER $DATE $coge $cogeweb $RESULTSLIMIT $MAX_PROC $SERVER $connstr $COOKIE_NAME);
+use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME $DIR $URL $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $BEDDIR $LASTZ $LAST $CONVERT_BLAST $BLAST2BED $BLAST2RAW $SYNTENY_SCORE $DATASETGROUP2BED $PYTHON26 $FORM $USER $DATE $coge $cogeweb $RESULTSLIMIT $MAX_PROC $SERVER $connstr $COOKIE_NAME);
 #refresh again?
 $P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
@@ -38,13 +38,10 @@ $BLASTDBDIR = $P->{BLASTDB};
 $BEDDIR = $P->{BEDDIR};
 
 
-$FORMATDB = $P->{FORMATDB};
 $MAX_PROC=$P->{MAX_PROC};
-$BLAST = "nice -20 ".$P->{BLAST}." -a $MAX_PROC -K 80 -m 8 -e 0.0001";
 $LASTZ = $P->{PYTHON} ." ". $P->{MULTI_LASTZ} ." -A $MAX_PROC --path=".$P->{LASTZ};
-my $blast_options = " -num_threads $MAX_PROC -evalue 0.0001 -outfmt 6 -task dc-megablast";
-#$TBLASTX = $P->{TBLASTX}. $blast_options;
-$BLASTN = $P->{BLASTN}. $blast_options;
+$LAST = $P->{PYTHON} ." ". $P->{MULTI_LAST}." -a $MAX_PROC --path=".$P->{LAST_PATH}." --dbpath=".$P->{LASTDB};
+
 
 
 $CONVERT_BLAST = $P->{CONVERT_BLAST};
@@ -134,6 +131,18 @@ sub gen_body
   {
     my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'SynFind.tmpl');
     my $form = $FORM;
+
+    #comparison algorithm
+    my $algo = $FORM->param('algo') if $FORM->param('algo');
+    $algo = "last" unless $algo;
+    if ($algo eq "last") 
+      {
+	$template->param('LAST'=>"selected");
+      }
+    elsif ($algo eq "lastz")
+      {
+	$template->param('LASTZ'=>"selected");
+      }
 
     #synteny_score parameters
     #synteny_score window size
@@ -694,6 +703,7 @@ sub go_synfind
     my $dsgids = $opts{dsgids};
     my $fid = $opts{fid};
     my $source_dsgid = $opts{qdsgid};
+    my $algo = $opts{algo};
     my $basename = $opts{basename};
     my $window_size=$opts{window_size};
     my $cutoff = $opts{cutoff};
@@ -702,7 +712,7 @@ sub go_synfind
     $cutoff= 0.1 unless defined $cutoff;
     $scoring_function = 1 unless defined $scoring_function;
     #need to set this link before the scoring function changes to a different name type
-    my $synfind_link = $SERVER."SynFind.pl?fid=$fid;qdsgid=$source_dsgid;dsgid=$dsgids;ws=$window_size;co=$cutoff;sf=$scoring_function";
+    my $synfind_link = $SERVER."SynFind.pl?fid=$fid;qdsgid=$source_dsgid;dsgid=$dsgids;ws=$window_size;co=$cutoff;sf=$scoring_function;algo=$algo";
 
     #convert numerical codes for different scoring functions to appropriate types
     if ($scoring_function ==2)
@@ -795,10 +805,10 @@ sub go_synfind
 	my $basedir = $DIAGSDIR."/".$org1."/".$org2;
  	mkpath ($basedir,0,0777) unless -d $basedir;
 	my $basename = $dsgid1."_".$dsgid2.".".$feat_type1."-".$feat_type2;
-	my $blastfile = $basedir."/".$basename.".lastz";
+	my $blastfile = $basedir."/".$basename.".$algo";
 	my $bedfile1 = $BEDDIR.$dsgid1.".bed";
 	my $bedfile2 = $BEDDIR.$dsgid2.".bed";
-	$target->{synteny_score_db} = $basedir."/".$basename."_".$window_size."_".$cutoff."_".$scoring_function.".db";
+	$target->{synteny_score_db} = $basedir."/".$basename."_".$window_size."_".$cutoff."_".$scoring_function.".$algo".".db";
 	$target->{basedir}=$basedir;
 	$target->{basename}=$basename;
 	$target->{blastfile}=$blastfile;
@@ -818,8 +828,7 @@ sub go_synfind
       {
 	$pm->start and next;
 	my $blastfile = $target->{blastfile};
-#	my $success = run_blast(fasta=> $target->{query_fasta}, blastdb=>$target->{target_db}, outfile=>$blastfile); #for blast with blastable databases
-	my $success = run_blast(fasta=> $target->{query_fasta}, blastdb=>$target->{target_fasta}, outfile=>$blastfile); #for lastz with sequence databases
+	my $success = run_blast(fasta1=> $target->{query_fasta}, fasta2=>$target->{target_fasta}, outfile=>$blastfile, prog=>$algo); #for last/lastz with sequence databases
 	CoGe::Accessory::Web::write_log("failed blast run for ".$blastfile, $cogeweb->logfile) unless $success;
 	
 	$blastfile = run_convert_blast(infile=>$blastfile, outfile=>$target->{converted_blastfile});
@@ -866,7 +875,16 @@ sub go_synfind
     $html .= qq{<th>Synteny Score};
     $html .= qq{<th>SynMap};
     $html .= qq{</tr></THEAD><TBODY>};
-    my $synmap_link = "SynMap.pl?autogo=1;dsgid1=$source_dsgid;dsgid2=";
+    my $synmap_algo_num; #from SynMap's lookup table on algorithms
+    if ($algo eq "lastz")
+      {
+	$synmap_algo_num = 4; #lastz
+      }
+    elsif ($algo eq "last")
+      {
+	$synmap_algo_num = 6; #last
+      }
+    my $synmap_link = "SynMap.pl?autogo=1;b=$synmap_algo_num;dsgid1=$source_dsgid;dsgid2=";
     my @res;
     my %open_all_synmap;
     foreach my $item ([$fid, "query"], @$matches)
@@ -1062,12 +1080,12 @@ sub generate_fasta
 sub run_blast
   {
     my %opts = @_;
-    my $fasta = $opts{fasta};
-    my $blastdb = $opts{blastdb};
+    my $fasta1 = $opts{fasta1};
+    my $fasta2 = $opts{fasta2};
     my $outfile = $opts{outfile};
     my $prog = $opts{prog};
-    $prog = "blastn" unless $prog;
-    CoGe::Accessory::Web::write_log("#RUN BLAST#", $cogeweb->logfile);
+    $prog = "last" unless $prog;
+    CoGe::Accessory::Web::write_log("#RUN BLAST: $prog#", $cogeweb->logfile);
     while (-e "$outfile.running")
       {
 	print STDERR "detecting $outfile.running.  Waiting. . .\n";
@@ -1085,8 +1103,15 @@ sub run_blast
 	CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
 	return 1;
       }
-#    my $pre_command = "$BLASTN -out $outfile -query $fasta -db $blastdb";
-    my $pre_command .= "$LASTZ -i $fasta -d $blastdb -o $outfile";
+    my $pre_command;
+    if ($prog eq "lastz")
+      {
+	$pre_command .= "$LASTZ -i $fasta1 -d $fasta2 -o $outfile";
+      }
+    else
+      {
+	$pre_command .= "$LAST $fasta2 $fasta1 -o $outfile";
+      }
     my $x;
     system "/usr/bin/touch $outfile.running"; #track that a blast anlaysis is running for this
     ($x, $pre_command) =CoGe::Accessory::Web::check_taint($pre_command);
@@ -1333,6 +1358,7 @@ sub get_master_syn_sets
     my $cutoff=$form->param('co');
     my $scoring_function=$form->param('sf');
     my $pad = $form->param('pad');
+    my $algo = $form->param('algo');
     if ($scoring_function ==2)
       {
         $scoring_function = "density";
@@ -1355,7 +1381,7 @@ sub get_master_syn_sets
 	  }
       }
     my $header = "Content-disposition: attachement; filename=";#test.gff\n\n";
-    $header .=join ("_", map {$_->id} ($qdsg, @dsgs));
+    $header .=join ("_", (map {$_->id} ($qdsg, @dsgs)), $algo);
     $header .= ".txt\n\n";
     print $header;
 
@@ -1379,7 +1405,7 @@ sub get_master_syn_sets
 	($org1, $org2, $dsgid1, $dsgid2) = ($org2, $org1, $dsgid2, $dsgid1) if ($org2 lt $org1);
 	my $basedir = $DIAGSDIR."/".$org1."/".$org2;
 	my $basename = $dsgid1."_".$dsgid2."."."CDS-CDS";
-	my $db = $basedir."/".$basename."_".$window_size."_".$cutoff."_".$scoring_function.".db";
+	my $db = $basedir."/".$basename."_".$window_size."_".$cutoff."_".$scoring_function.".$algo".".db";
 	my $dbh = DBI->connect("dbi:SQLite:dbname=$db","","");
 	my $query = "SELECT * FROM synteny";
 	my $sth = $dbh->prepare($query);
