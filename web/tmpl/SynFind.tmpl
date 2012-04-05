@@ -92,7 +92,7 @@ function launch(){
   setTimeout("monitor_log()", 1000);
   var selected_genomes = $('#genome_choice').getLength(1);
 
-  go(['args__dsgids','args__'+selected_genomes,'args__fid','fid','args__qdsgid','feat_dsgid', 'args__basename','args__'+pageObj.basename,'args__window_size','ws', 'args__cutoff','co', 'args__scoring_function','sf'],[handle_results],'POST');
+  go(['args__dsgids','args__'+selected_genomes,'args__fid','fid','args__qdsgid','feat_dsgid', 'args__basename','args__'+pageObj.basename,'args__window_size','ws', 'args__cutoff','co', 'args__scoring_function','sf', 'args__algo','algo'],[handle_results],'POST');
   
  
 }
@@ -722,6 +722,15 @@ function get_master(link)
  </div> <!--close tab 1-->
  <div id="tab2">
    <TABLE class=small>
+    <TR>
+     <TD>Comparison Algorithm:</TD>
+     <TD>
+      <select id=algo>
+        <option value=last <TMPL_VAR NAME=LAST> >Last</option>
+        <option value=lastz <TMPL_VAR NAME=LASTZ> >LastZ</option>
+      </select>
+     </TD>
+    </TR>
     <TR>
      <TD>Window Size (genes):</TD>
      <TD><input id=ws type=text size=3 value=<TMPL_VAR NAME=WS>></TD>
