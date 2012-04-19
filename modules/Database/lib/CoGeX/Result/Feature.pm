@@ -243,6 +243,12 @@ sub names
   }
 
 
+sub primary_name
+  {
+    my $self = shift;
+    return $self->feature_names({primary_name=>1});
+  }
+
 ################################################ subroutine header begin ##
 
 =head2 primary_name
@@ -261,12 +267,6 @@ See Also   :
 
 ################################################## subroutine header end ##
 
-sub primary_name
- {
-   my $self = shift;
-   my ($nameo) = $self->feature_names({primary_name=>1});
-   my ($name) = ref($nameo) =~ /name/i ? $nameo->name : $self->names;
- }
 
 
 ################################################ subroutine header begin ##
@@ -530,10 +530,11 @@ sub annotation_pretty_print_html
     my $anno_type = new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\">"."Name(s)"."</span>");
     $anno_type->Type_delimit(": <td>");
     $anno_type->Val_delimit(" , ");
-    my $outname;
+    my ($primary_name) = $self->primary_name;
+    $primary_name = $primary_name->name if $primary_name;
     foreach my $name ($self->names)
       {
-	$outname = $name unless $outname;
+	$name = "<b>".$name."</b>" if $primary_name && $primary_name eq $name;
 	$anno_type->add_Annot("<span class=\"data5 link\" onclick=\"window.open('FeatView.pl?accn=".$name."');\">".$name."</span>");
       }
     $anno_obj->add_Annot($anno_type);
@@ -763,6 +764,7 @@ sub genomic_sequence {
   my $seq = $opts{seq};
   my $dsgid = $opts{dsgid};
   my $server = $opts{server}; #used for passing in server name from which to retrieve sequence from web-script CoGe/GetSequence.pl  
+  my $rel = $opts{rel};
   #have a full sequence? -- pass it in and the locations will be parsed out of it!
   if (!$up && !$down && $self->_genomic_sequence)
     {
@@ -773,7 +775,7 @@ sub genomic_sequence {
   my @sequences;
   my %locs = map {($_->start,$_->stop)}$self->locations() ;#in case a mistake happened when loading locations and there are multiple ones with the same start
   my @locs = map {[$_, $locs{$_}]} sort {$a <=> $b} keys %locs;
-  ($up,$down) = ($down, $up) if ($self->strand =~/-/); #must switch these if we are on the - strand;
+  ($up,$down) = ($down, $up) if ($self->strand =~/-/) && !$rel; #must switch these if we are on the - strand unless we are using relative position;
   if ($up)
     {
       my $start = $locs[0][0]-$up;
