@@ -72,7 +72,10 @@ __PACKAGE__->belongs_to("feature" => "CoGeX::Result::Feature", "feature_id");
 __PACKAGE__->has_one("annotation" => "CoGeX::Result::Annotation", {'foreign.feature_id'=>'self.feature_id'});
 
 
-
+sub primary
+ {
+   shift->primary_name(@_);
+ }
 
 1;
 
