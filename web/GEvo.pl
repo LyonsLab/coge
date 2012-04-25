@@ -245,8 +245,9 @@ sub gen_body
 
 	if ($fid && !$draccn)
 	  {
-	    my $feat = $coge->resultset('Feature')->find($fid);
-	    ($draccn) = $feat->primary_name if $feat;
+	    my ($feat) = $coge->resultset('Feature')->find($fid);
+	    ($draccn) = $feat->names if $feat;
+	    
 	    unless ($draccn) #no name!  This is a problem
 	      {
 		$pos = $feat->start;
