@@ -62,12 +62,13 @@ $GUNZIP = $P->{GUNZIP};
 $URL = $P->{URL};
 
 $dagfile = CoGe::Accessory::Web::gunzip ($dagfile, $conffile) if defined $dagfile && (-r $dagfile.".gz" || -r $dagfile);
+
 $alignfile = CoGe::Accessory::Web::gunzip ($alignfile, $conffile) if defined $alignfile && ( -r $alignfile.".gz" || -r $alignfile);
 
 usage() if $help;
-usage() unless (defined $dagfile &&-r $dagfile) || -r $alignfile;
+usage() unless (defined $dagfile &&-r $dagfile) || -r $alignfile || -r "$alignfile.gz";
 
-if (defined $dagfile and ! -r $dagfile)
+if (defined $dagfile and ! (-r $dagfile || -r $dagfile.".gz"))
   {
     warn "dagfile specified but not present or readable: $!";
   }
