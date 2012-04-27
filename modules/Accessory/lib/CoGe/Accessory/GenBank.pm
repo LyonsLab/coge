@@ -370,11 +370,11 @@ sub process_line
 	    $anno .= "$qual: $val\n";
 	    $names{$val}=1 if $qual =~ /gene/;
 	    $names{$val}=1 if $qual =~ /synonym/;
-	    $names{$val}=1 if $qual =~ /locus/;
+	    $names{$val}=2 if $qual =~ /locus/;
 	    $names{$val}=1 if $qual =~ /transcript_id/;
 	    $names{$val}=1 if $qual =~ /protein_id/;
 	  }
-	$quals{names} = [sort keys %names];
+	$quals{names} = [sort {$names{$b}<=>$names{$a} || $a cmp $b} keys %names];
 	$feature{location} = $self->reverse_genbank_location(loc=>$feature{location}) if $rev;
 	my $strand = ($feature{location} && $feature{location} =~ /complement/i) ? -1 : 1;
 	$start = $self->seq_length -$start+1 if $rev;
@@ -919,11 +919,12 @@ sub process_wgs
     $self->entries_count(scalar(@ids));
     if ($self->max_entries && scalar(@ids) > $self->max_entries)
       {
-	print "Exceeded maximum entries for recursive processing.\n";
-	print "Max: ".$self->max_entries,"\n";
-	print "Have ".scalar(@ids),"\n";
-	return;
+        print "Exceeded maximum entries for recursive processing.\n";
+        print "Max: ".$self->max_entries,"\n";
+        print "Have ".scalar(@ids),"\n";
+        return;
       }
+
     foreach my $id(@ids)
       {
 	my $gb = $self->new;
