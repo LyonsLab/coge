@@ -507,8 +507,8 @@ sub gunzip
       $conf_file = $ENV{HOME}.'coge.conf' unless $conf_file;
       my $P = $self->get_defaults($conf_file);
       my $GUNZIP = $P->{GUNZIP};
-      `$GUNZIP $file` if -r $file;
-      `$GUNZIP $file.gz` if -r $file.".gz";
+      $file .= ".gz" if -r $file .".gz";
+      `$GUNZIP $file` if -r $file && $file =~ /\.gz/;
       my $tmp = $file;
       $tmp =~ s/\.gz$//;
       return -r $tmp ? $tmp : $file;
