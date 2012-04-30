@@ -75,6 +75,7 @@ $USER = undef;
 	     get_wobble_gc=>\&get_wobble_gc,
 	     get_wobble_gc_diff=>\&get_wobble_gc_diff,
 	     get_total_length_for_ds=>\&get_total_length_for_ds,
+	     get_chr_length_hist => \&get_chr_length_hist,
 	     update_genomelist=>\&update_genomelist,
 	     parse_for_GenoList=>\&parse_for_GenoList,
 	     get_genome_list_for_org=>\&get_genome_list_for_org,
@@ -546,7 +547,12 @@ sub get_dataset_group_info
     $html .= "<tr valign=top><td><table class='small annotation_table'>";
     $html .= qq{<tr><td>Name:</td><td>}.$dsg->name.qq{</td></tr>} if $dsg->name;
     $html .= qq{<tr><td>Description:</td><td>}.$dsg->description.qq{</td></tr>} if $dsg->description;
-    $html .= qq{<tr><td>Chromosome count: <td>}.commify($chr_num).qq{</td></tr>};
+    $html .= qq{<tr><td>Chromosome count: <td>}.commify($chr_num);
+    $html .= qq{ <span class="link" onclick="\$('#chromosome_hist').dialog('open');chr_hist($dsgid);">Histogram of sizes</span>};
+    $html .= qq{</td></tr>};
+
+
+
     my $gstid = $dsg->genomic_sequence_type->id;
     my $gst_name = $dsg->genomic_sequence_type->name;
     $gst_name .= ": ".$dsg->type->description if $dsg->type->description;
@@ -1581,6 +1587,46 @@ sub get_wobble_gc_diff
     my $hist_img = "<img src=\"$out\">";
     return $info."<br>". $hist_img;
   }
+
+sub get_chr_length_hist
+  {
+    my %opts = @_;
+    my $dsgid = $opts{dsgid};
+    return "error"," " unless $dsgid;
+    my @data;
+    my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+    unless ($dsg)
+      {
+	my $error =  "unable to create dsg object using id $dsgid\n";
+	return $error;
+      }
+    foreach my $gs ($dsg->genomic_sequences)
+      {
+	push @data, $gs->sequence_length;
+      }
+    return "error"," " unless @data;
+    my $file = $TEMPDIR."/".join ("_",$dsgid)."_chr_length.txt";
+    open(OUT, ">".$file);
+    print OUT "#chromosome/contig lenghts for $dsgid\n";
+    print OUT join ("\n", @data),"\n";
+    close OUT;
+    my $cmd = $HISTOGRAM;
+    $cmd .= " -f $file";
+    my $out = $file;
+    $out =~ s/txt$/png/;
+    $cmd .= " -o $out";
+    $cmd .= " -t \"Chromosome length for ".$dsg->organism->name." (v".$dsg->version.")\"";
+    `$cmd`;
+    my $sum=0;
+    map {$sum+=$_}@data;
+    my $mean = sprintf ("%.2f", $sum/scalar @data);
+    my $info = "Mean $mean"."nt";
+    $out =~ s/$TEMPDIR/$TEMPURL/;
+    my $hist_img = "<img src=\"$out\">";
+    return $info."<br>". $hist_img;
+  }
+
+
 
 sub get_total_length_for_ds
   {
