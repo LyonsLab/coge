@@ -9,7 +9,7 @@ use Parallel::ForkManager;
 
 my $bpids = get_NCBI_bioprj();
 
-my $pm = new Parallel::ForkManager(10);
+my $pm = new Parallel::ForkManager(20);
 my $out = "Load_all_NCBI.".sprintf( "%04d-%02d-%02d-%02d:%02d:%02d",
                  sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime)).".log";
 
