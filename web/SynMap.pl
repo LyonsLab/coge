@@ -1010,7 +1010,12 @@ sub run_blast2raw
     my $bedfile1 = $opts{bedfile1};
     my $bedfile2 = $opts{bedfile2};
     my $outfile = $opts{outfile};
-    if ((-r $outfile && -s $outfile) || (-r "$outfile.gz" && -s "$outfile.gz"))
+    while (-e "$outfile.running")
+      {
+	print STDERR "detecting $outfile.running.  Waiting. . .\n";
+	sleep 60;
+      }
+     if ((-r $outfile && -s $outfile) || (-r "$outfile.gz" && -s "$outfile.gz"))
       {
 CoGe::Accessory::Web::write_log("Filtered blast file found where tandem dups have been removed: $outfile", $cogeweb->logfile);
 	return $outfile;
@@ -1023,8 +1028,10 @@ CoGe::Accessory::Web::write_log("Filtered blast file found where tandem dups hav
     $tandem_distance = 10 unless defined $tandem_distance;
     my $cmd = $BLAST2RAW." $blastfile --localdups --qbed $bedfile1 --sbed $bedfile2 --tandem_Nmax $tandem_distance > $outfile";
    CoGe::Accessory::Web::write_log("finding and removing local duplications", $cogeweb->logfile);
+    system "/usr/bin/touch $outfile.running"; #track that this is running
    CoGe::Accessory::Web::write_log("running:\n\t$cmd" ,$cogeweb->logfile);
     `$cmd`;
+    system "/bin/rm $outfile.running" if -r "$outfile.running"; #remove track file
     return $outfile;
   }
 
@@ -1528,14 +1535,26 @@ sub run_quota_align_coverage
 
     CoGe::Accessory::Web::write_log("Convert command: $cov_cmd", $cogeweb->logfile);
     CoGe::Accessory::Web::write_log("Quota Align command: $qa_cmd", $cogeweb->logfile);
+    while (-e "$infile.qa.running")
+      {
+	print STDERR "detecting $infile.qa.running.  Waiting. . .\n";
+	sleep 60;
+      }
     if (-r "$infile.qa")
       {
 	CoGe::Accessory::Web::write_log("Dag output file already converted to quota_align input: $infile.qa", $cogeweb->logfile);
       }
     else
       {
+	system "/usr/bin/touch $infile.qa.running"; #track that this is running
 	CoGe::Accessory::Web::write_log("Converting dag output to quota_align format.", $cogeweb->logfile);
 	`$cov_cmd`;
+	system "/bin/rm $infile.qa.running" if -r "$infile.qa.running"; #remove track file
+      }
+    while (-e "$returnfile.running")
+      {
+	print STDERR "detecting $returnfile.running.  Waiting. . .\n";
+	sleep 60;
       }
 
     if (-r "$returnfile.tmp" || -r "$returnfile.tmp.gz")
@@ -1546,8 +1565,10 @@ sub run_quota_align_coverage
       }
     else
       {
+	system "/usr/bin/touch $returnfile.running"; #track that this is running
 	CoGe::Accessory::Web::write_log("Running quota_align to find syntenic coverage.", $cogeweb->logfile);
 	my $qa_output = `$qa_cmd`;
+	system "/bin/rm $returnfile.running" if -r "$returnfile.running"; #remove track file
       }
     if (-r "$returnfile.tmp")
       {
@@ -1647,9 +1668,16 @@ sub gen_ks_db
     return unless $outfile;
     $outfile .= ".sqlite";
     CoGe::Accessory::Web::write_log("Generating ks data.", $cogeweb->logfile);
+    while (-e "$outfile.running")
+      {
+	print STDERR "detecting $outfile.running.  Waiting. . .\n";
+	sleep 60;
+      }
+ 
     unless (-r $outfile)
       {
-CoGe::Accessory::Web::write_log("initializing ks database", $cogeweb->logfile);
+	system "/usr/bin/touch $outfile.running"; #track that this is running
+CoGe::Accessory::Web::write_log("initializing ks database $outfile", $cogeweb->logfile);
 	my $create = qq{
 CREATE TABLE ks_data
 (
