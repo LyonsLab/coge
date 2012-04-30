@@ -305,7 +305,7 @@ sub process_line
       {
 	if ($self->wgs_scafld && $self->wgs_scafld ne $1)
 	  {
-	    
+	    return;
 	    my $prev = $self->wgs_scafld;
 	    $prev.=",".$1;
 	    $self->wgs_scafld($prev);
