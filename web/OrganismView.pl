@@ -13,6 +13,7 @@ use File::Path;
 use Digest::MD5 qw(md5_base64);
 use Benchmark qw(:all);
 use Statistics::Basic::Mean;
+use POSIX;
 no warnings 'redefine';
 
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $coge $HISTOGRAM %FUNCTION $P $COOKIE_NAME $SERVER);
@@ -548,7 +549,7 @@ sub get_dataset_group_info
     $html .= qq{<tr><td>Name:</td><td>}.$dsg->name.qq{</td></tr>} if $dsg->name;
     $html .= qq{<tr><td>Description:</td><td>}.$dsg->description.qq{</td></tr>} if $dsg->description;
     $html .= qq{<tr><td>Chromosome count: <td>}.commify($chr_num);
-    $html .= qq{ <span class="link" onclick="\$('#chromosome_hist').dialog('open');chr_hist($dsgid);">Histogram of sizes</span>};
+    $html .= qq{ <span class="link" onclick="\$('#chromosome_hist').dialog('open');chr_hist($dsgid);">Histogram of sizes (Mean, Mode, N50)</span>};
     $html .= qq{</td></tr>};
 
 
@@ -1605,6 +1606,9 @@ sub get_chr_length_hist
 	push @data, $gs->sequence_length;
       }
     return "error"," " unless @data;
+    @data = sort {$a<=>$b} @data;
+    my $mid = floor(scalar(@data)/2);
+    my $mode = $data[$mid];
     my $file = $TEMPDIR."/".join ("_",$dsgid)."_chr_length.txt";
     open(OUT, ">".$file);
     print OUT "#chromosome/contig lenghts for $dsgid\n";
@@ -1619,8 +1623,16 @@ sub get_chr_length_hist
     `$cmd`;
     my $sum=0;
     map {$sum+=$_}@data;
-    my $mean = sprintf ("%.2f", $sum/scalar @data);
-    my $info = "Mean $mean"."nt";
+    my $n50;
+    foreach my $val(@data){
+      $n50+=$val;
+      if($n50 >= $sum/2){
+	$n50=$val;
+	last;
+      }
+    }    
+    my $mean = sprintf ("%.0f", $sum/scalar @data);
+    my $info = "<table class=small><tr><Td>Mean:<td>".commify($mean)." nt<tr><Td>Mode:<td>".commify($mode)." nt<tr><td>N50:<td>".commify($n50)."</table>" ;
     $out =~ s/$TEMPDIR/$TEMPURL/;
     my $hist_img = "<img src=\"$out\">";
     return $info."<br>". $hist_img;
