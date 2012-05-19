@@ -503,15 +503,20 @@ sub gzip
 
 sub gunzip
     {
-      my ($self, $file, $conf_file) = self_or_default(@_);
+      my ($self, $file, $conf_file, $debug) = self_or_default(@_);
       $conf_file = $ENV{HOME}.'coge.conf' unless $conf_file;
       my $P = $self->get_defaults($conf_file);
       my $GUNZIP = $P->{GUNZIP};
+      print STDERR "Debugging sub gunzip\n" if $debug;
+      print STDERR "\t",$file,"\n" if $debug;
       $file .= ".gz" if -r $file .".gz";
+      print STDERR "\t",$file,"!\n" if $debug;
       `$GUNZIP $file` if -r $file && $file =~ /\.gz/;
       my $tmp = $file;
       $tmp =~ s/\.gz$//;
-      return -r $tmp ? $tmp : $file;
+      my $return = -r $tmp ? $tmp : $file;
+      print STDERR "\t","returning $return\n" if $debug;
+      return $return;
     }
 
 
