@@ -617,12 +617,20 @@ sub annotation_pretty_print_html
 	$anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5 link\"><span onclick=\"window.open('GenomeView.pl?chr=$chr&ds=$dataset_id&x=$start&z=5&gstid=$gstid')\" >Location</span></span>", Values=>[$location], Type_delimit=>":<td>", Val_delimit=>" "));
 
 	my $ds=$self->dataset();
-	my $dataset = qq{<span class="data5 link" onclick="window.open('OrganismView.pl?dsid=}.$ds->id."')\">".$ds->name;
-#	$dataset .= ": ".$ds->description if $ds->description;
+	my $dataset = qq{<span class="data5 link" onclick="window.open('OrganismView.pl?dsid=}.$ds->id."')\">".$ds->name." (v".$ds->version.")";;
 	$dataset .= "</span>";
 	$anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\">Dataset</span>", Values=>[$dataset], Type_delimit=>":<td>", Val_delimit=>" "));
+
+	my @genomes;
+	foreach my $dsg ($ds->genomes)
+	  {
+	    my $name = $dsg->name ? $dsg->name : $dsg->organism->name;
+	    my $genome = qq{<span class="data5 link" onclick="window.open('OrganismView.pl?dsgid=}.$dsg->id."')\">".$name." (v".$dsg->version.")";
+	    push @genomes, $genome;
+	  }
+	$anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\">Genomes</span>", Values=>\@genomes, Type_delimit=>":<td>", Val_delimit=>" "));
+
 	my $org = qq{<span class="data5 link" onclick = "window.open('OrganismView.pl?oid=}.$ds->organism->id."')\">".$ds->organism->name;
-#	$org .= ": ".$ds->organism->description if $ds->organism->description;
 	$org .= "</span>";
 	
 	$anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\">Organism</span>", Values=>[$org], Type_delimit=>":<td>", Val_delimit=>" "));
