@@ -507,11 +507,19 @@ sub gunzip
       $conf_file = $ENV{HOME}.'coge.conf' unless $conf_file;
       my $P = $self->get_defaults($conf_file);
       my $GUNZIP = $P->{GUNZIP};
+      unless ($GUNZIP)
+	{
+	  "ERROR: in gunzip!  gunzip binary is not specified!\n";
+	}
       print STDERR "Debugging sub gunzip\n" if $debug;
       print STDERR "\t",$file,"\n" if $debug;
       $file .= ".gz" if -r $file .".gz";
       print STDERR "\t",$file,"!\n" if $debug;
-      `$GUNZIP $file` if -r $file && $file =~ /\.gz/;
+      if (-r $file && $file =~ /\.gz/)
+	{
+	  print STDERR "\t", "Running $GUNZIP $file\n";
+	  `$GUNZIP $file`;
+	}
       my $tmp = $file;
       $tmp =~ s/\.gz$//;
       my $return = -r $tmp ? $tmp : $file;
