@@ -518,7 +518,16 @@ sub get_data_source_info_for_accn
 	my $val = $feat->dataset;
 #	next if $val->restricted && !$USER->has_access_to_dataset($val);
         my ($dsg) = $feat->dataset->dataset_groups;
-        return "<hidden id=dsid value=0></hidden>Restricted Access" if $dsg->restricted && !$USER->has_access_to_genome($dsg);
+#        return "<hidden id=dsid value=0></hidden>Restricted Access" 
+	if ($dsg->restricted && !$USER->has_access_to_genome($dsg))
+	  {
+	    $sources{"Restricted Access"} = {
+					     v=>0,
+					     gstid=>0,
+					     id=>0,
+					    };
+	    next;
+	  }
 	unless ($val)
 	  {
 	    warn "error with feature: ".$feat->id ." for name $accn\n";
