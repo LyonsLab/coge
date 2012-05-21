@@ -1007,10 +1007,10 @@ sub run
     $gobe_buttons .= "</table>";
     $html .= $gobe_buttons;
     $html .= qq{<DIV id=flashcontent></DIV>};
-    $html .= qq{<br><a href="http://genomevolution.org/wiki/index.php/Gobe" class=small style="color: red" target=_new>Click here for help!</a>  <a href="http://get.adobe.com/flashplayer/" target=_new class="small">No results?  Rerun by pressing "Run GEvo Analysis!" again.  Still no results? Try installing the latest version of Flash</a>.};
+    $html .= qq{<br><a href="http://genomevolution.org/wiki/index.php/Gobe" class=small style="color: red" target=_new>Click here for help!</a>  <a href="http://get.adobe.com/flashplayer/" target=_new >No results?  Rerun by pressing "Run GEvo Analysis!" again.  Still no results? Try installing the latest version of Flash</a>.};
     $html .= $gobe_buttons;
-    $html .= qq{<table>};
-    $html .= qq{<tr valign=top><td class = small>Alignment reports};
+    $html .= qq{<table class=small>};
+    $html .= qq{<tr valign=top><td><span class=bold>Alignment reports</span>};
 #    my $stats_file = $cogeweb->basefile."_stats.txt";
 #    $stats_file = CoGe::Accessory::Web::check_filename_taint($stats_file);
 
@@ -1023,14 +1023,14 @@ sub run
 	    my $accn2 = $item->[2];
 	    my $basereportname = basename( $report );
 	    $basereportname = $TEMPURL . "/$basereportname\n";
-	    $html .= "<div><font class=small><A HREF=\"$basereportname\" target=_new>$accn1 versus $accn2</A></font></DIV>\n";
+	    $html .= "<div><A HREF=\"$basereportname\" target=_new>$accn1 versus $accn2</A></font></DIV>\n";
 	  }
       }
     else
       {
-	$html .= "<div class=small>No alignment reports were generated</DIV>\n";
+	$html .= "<divl>No alignment reports were generated</DIV>\n";
       }
-    $html .= qq{<td class = small>Fasta files};
+    $html .= qq{<td class=dropmenu><td><span class=bold>Fasta files</span>};
     my $all_file = $cogeweb->basefile().".all.fasta";
     foreach my $item (@sets)
       {
@@ -1038,7 +1038,7 @@ sub run
 	my $basename = $TEMPURL."/".basename ($item->{file});
 	print STDERR "basename is undefined: $basename\n" if $basename =~ /defined/i;
 	my $accn = $item->{accn};
-	$html .= "<div><font class=small><A HREF=\"$basename\" target=_new>$accn</A></font></DIV>\n";
+	$html .= "<div><A HREF=\"$basename\" target=_new>$accn</A></font></DIV>\n";
 	my $x;
 	($x, $all_file) = CoGe::Accessory::Web::check_taint($all_file);
 	my $seq_file = $item->{file};
@@ -1047,30 +1047,36 @@ sub run
 	`$cmd`;
       }
 
-    $html .= "<div><font class=small><A HREF=\"".$TEMPURL."/".basename ($all_file)."\" target=_new>all sequences</A></font></DIV>\n";
-    $html .= qq{<td class = small><a href = "http://baboon.math.berkeley.edu/mavid/gaf.html">GAF</a> annotation files};
+    $html .= "<div><A HREF=\"".$TEMPURL."/".basename ($all_file)."\" target=_new>all sequences</A></font></DIV>\n";
+    $html .= qq{<td class=dropmenu><td><span class=bold>Third part systemannotation files</span>};
     foreach my $item (@sets)
       {
 	my $anno_file = generate_annotation(%$item);
 	next unless $anno_file;
 	my $basename = $TEMPURL."/".basename ($anno_file);
 	my $accn = $item->{accn};
-	$html .= "<div><font class=small><A HREF=\"$basename\" target=_new>$accn</A></font></DIV>\n";
+	$html .= qq{<div><a href = "http://baboon.math.berkeley.edu/mavid/gaf.html">GAF</a> Annotation: <A HREF="$basename" target=_new>$accn</A></font></DIV>\n};
      }
-    $html .= qq{<td class = small>Image Files};
+    my ($synfile, $annofile) = generate_mGSV_files($cogeweb->sqlitefile);
+    $synfile =~ s/$TEMPDIR/$TEMPURL/;
+    $annofile =~ s/$TEMPDIR/$TEMPURL/;
+    $html .= qq{<div><a href="http://cas-bioinfo.cas.unt.edu/mgsv/index.php" target=_new>mGSV</a> <a href = "$annofile" target=_new>Annotation File</a></div>};
+    $html .= qq{<div><a href="http://cas-bioinfo.cas.unt.edu/mgsv/index.php" target=_new>mGSV</a> <a href = "$synfile" target=_new>Synteny File</a></div>};
+    
+    $html .= qq{<td class=dropmenu><td><span class=bold>Image Files</span>};
     foreach my $item (@sets)
       {
 	my $png = $TEMPURL."/".basename($item->{png_filename});
 	$html .= qq{<br><a href ="$png" target=_new>}.$item->{obj}->accn."</a>";
       }
-    $html .= qq{<td class = small>SQLite db};
+    $html .= qq{<td class=dropmenu><td><span class=bold>SQLite db</span>};
     my $dbname = $TEMPURL."/".basename($cogeweb->sqlitefile);
     
-    $html .= "<div class=small><A HREF=\"$dbname\" target=_new>SQLite DB file</A></DIV>\n";
-    $html .= qq{<td class = small>Log File};
+    $html .= "<div><A HREF=\"$dbname\" target=_new>SQLite DB file</A></DIV>\n";
+    $html .= qq{<td class=dropmenu><td><span class=bold>Log File</span>};
     my $logfile = $TEMPURL."/".basename($cogeweb->logfile);
-    $html .= "<div class=small><A HREF=\"$logfile\" target=_new>Log</A></DIV>\n";
-    $html .= qq{<td class=small>GEvo Links};
+    $html .= "<div><A HREF=\"$logfile\" target=_new>Log</A></DIV>\n";
+    $html .= qq{<td class=dropmenu><td><span class=bold>GEvo Links</span>};
     $html .= qq{<div id=tiny_link></div>};
     $html .=qq{<div><a href="GEvo_direct.pl?name=$basefilename" target=_new>Results only</a></div></td>};
 
@@ -1080,12 +1086,12 @@ sub run
 	if ($item->{'obj'}->ncbi_link)
 	  {
 	    my $ncbi_link = $item->{'obj'}->ncbi_link;
-	    push @ncbi_links, qq{<div class="link small" onclick="window.open('$ncbi_link')">}.$item->{'obj'}->accn."</div>";
+	    push @ncbi_links, qq{<div class="link" onclick="window.open('$ncbi_link')">}.$item->{'obj'}->accn."</div>";
 	  }
       }
     if (@ncbi_links)
       {
-	$html .= qq{<td class=small>NCBI links\n};
+	$html .= qq{<td>NCBI links\n};
 	$html .= join ("\n", @ncbi_links);
       }
 
@@ -1128,6 +1134,113 @@ Total time                                          : $total_time
 
 }
 
+
+sub generate_mGSV_files
+  {
+    my $db = shift;
+    $db = $TEMPDIR."/".$db unless $db =~ /^$TEMPDIR/;
+    my $basefile = $db;
+    $basefile =~ s/sqlite//;
+    return "error, unable to find db: $db" unless -r $db;
+    my $dbh = DBI->connect("dbi:SQLite:dbname=".$db,"","");
+
+    my $image_query = qq{select display_id, title from image_info};
+    my %genome_info;
+    my $count=1;
+    foreach my $item (@{$dbh->selectall_arrayref($image_query)})
+      {
+	#my ($name) = $item->[1];#=~ /^(\w{10})/;
+	#$name =~ s/\s|\(|\)/_/g;
+	my $name = "Org".$count;
+	$genome_info{$item->[0]} = $name;
+	$count++;
+      }
+    my $query = qq{select name, type, bpmin, bpmax, image_id, pair_id, link, annotation, strand from image_data};
+
+    my %annotations;
+    my %synpairs;
+    foreach my $item (@{$dbh->selectall_arrayref($query)})
+      {
+#	print join ("\t", @$item[0..6]),"\n";
+	if ($item->[5] == -99)
+	  {
+	    my ($fid) = $item->[6] =~ /fid=(\d+)/;
+	    push @{$annotations{$item->[4]}{$item->[1]}}, {
+							   start=>$item->[2],
+							   stop=>$item->[3],
+							   fid=>$fid,
+							   strand=>$item->[8],
+							   anno=>$item->[7],
+						 };
+	      
+	  }
+	else
+	  {
+	    push @{$synpairs{$item->[0]}},
+	      {
+	       genome_id=> $item->[4],
+	       start=>$item->[2],
+	       stop=>$item->[3],
+	       name=>[0],
+	       link=>$item->[6],
+	       strand=>$item->[8],
+	       anno=>$item->[7],
+	      }
+	  }
+      }
+    my $synfile = $basefile."syn_pairs.mGSV.txt";
+    open (OUT, ">".$synfile);
+    print OUT "#",join ("\t", qw (org1   org1_start      org1_end        org2    org2_start      org2_end        score   evalue)),"\n";
+
+    foreach my $key (sort keys %synpairs)
+      {
+	my ($item1, $item2) = @{$synpairs{$key}};
+	my $start = $item2->{start};
+	my $stop = $item2->{stop};
+	($start, $stop) = ($stop, $start) if $item1->{strand} == -1 || $item2->{strand} == -1;
+	print OUT join ("\t",
+			$genome_info{$item1->{genome_id}},
+			$item1->{start},
+			$item1->{stop},
+			$genome_info{$item2->{genome_id}},
+			$start,
+			$stop,
+			10,
+			0
+		       ),"\n";
+      }
+    close OUT;
+    my $annofile = $basefile."anno.mGSV.txt";
+    open (OUT, ">$annofile");
+    print OUT "#", join ("\t", qw(org_id start   end     strand  feature_name    feature_value   track_name      track_shape     track_color)),"\n";
+    foreach my $genome_id (sort keys %annotations)
+      {
+	foreach my $type (sort keys %{$annotations{$genome_id}})
+	  {
+	    foreach my $item (@{$annotations{$genome_id}{$type}})
+	      {
+		my $strand = $item->{strand} eq 1 ? "+" : "-";
+		my ($feat) = $coge->resultset('Feature')->find($item->{fid});
+		my ($name) = $feat->names if $feat;
+		$name = "$type" unless $name;
+#		$name = "<a href=".$P->{SERVER}."/FeatView.pl?fid=".$item->{fid}.">$name</a>";
+		print OUT join ("\t",
+				$genome_info{$genome_id},
+				$item->{start},
+				$item->{stop},
+				$strand,
+				$name,
+				"", #value
+				$type,
+				"arrow",
+				"green",
+			       ),"\n";
+	      }
+	  }
+      }
+    close OUT;
+    return ($synfile, $annofile);
+  }
 
 sub generate_image
   {
@@ -1258,7 +1371,8 @@ image_id integer,
 pair_id integer,
 link varchar,
 annotation text,
-color varchar
+color varchar,
+strand varchar
 )
 };
     $dbh->do($create);
@@ -1379,6 +1493,7 @@ INSERT INTO image_info (id, display_id, iname, title, px_width, px_height, dsid,
 #	$anno = " " unless $anno;
 	my $start = $feat->start;
 	my $stop = $feat->stop;
+	my $strand = $feat->strand;
 	my $length_nt = $stop-$start+1;
 	my $length_pix = $xmax-$xmin;
 	next if !$feat->{anchor} && ($length_nt == 0 );
@@ -1387,7 +1502,7 @@ INSERT INTO image_info (id, display_id, iname, title, px_width, px_height, dsid,
 	my $bpmax = $set->{obj}->start+$stop-1;
 	$anno =~ s/'//g; #need to remove these or the sql will get messed up
 	$statement = qq{
-INSERT INTO image_data (name, type, xmin, xmax, ymin, ymax, bpmin,bpmax,image_id, image_track,pair_id, link, annotation, color) values ("$name", "$type", $xmin, $xmax, $ymin, $ymax, $bpmin, $bpmax,$image_id, "$image_track",$pair_id, '$link', '$anno', '$color')
+INSERT INTO image_data (name, type, xmin, xmax, ymin, ymax, bpmin,bpmax,image_id, image_track,pair_id, link, annotation, color, strand) values ("$name", "$type", $xmin, $xmax, $ymin, $ymax, $bpmin, $bpmax,$image_id, "$image_track",$pair_id, '$link', '$anno', '$color', '$strand')
 };
 	my $try =1;
 	my $run_statement =  $dbh->do($statement);
@@ -3989,7 +4104,7 @@ sub email_results {
 	my $body = qq{Dear $name,
 
 Thank you for using the Genome Evolution Analysis Tool! The results from your latest analysis are ready, and can be viewed here:
-http://}.$server.qq{/GEvo_direct.pl?name=$basefilename
+}.$server.qq{/GEvo_direct.pl?name=$basefilename
 			
 To contact us or to cite CoGe please visit:
 http://genomevolution.org/wiki/index.php/Contact_Page
