@@ -1,0 +1,64 @@
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
+<SCRIPT language="JavaScript">
+$(document).ready(function(){
+	$.ajaxSetup({
+		type: "POST",
+		url: "<TMPL_VAR NAME=PAGE_NAME>",
+		dataType: "html",
+		cache: false,
+	});
+        $('#group_table').tablesorter({		
+		cssAsc: 'headerSortUp',		// Class name for ascending sorting action to header
+		cssDesc: 'headerSortDown',	// Class name for descending sorting action to header
+//		cssHeader: 'header',			// Class name for headers (th's)
+		widgets: ['zebra'],
+		headers: {},	
+		});
+});
+
+function run_ajax(opts){
+      if (!opts){opts={};}
+      divid = opts.divid; //were results will be displayed in page
+      stuff = opts.stuff; //example of passing in some stuff
+
+      // create a new closure who's scope does *not*
+      // include the `divid` value so that callback will 
+      // not clobber the `divid` variable 
+      var create_callback = function(divid) {
+              var local_divid = divid;
+              return function (data) {
+                  $('#'+local_divid).html(data);
+              };
+          }; 
+
+      $.ajax({
+        data: {
+     	   jquery_ajax: 1,
+	   fname: 'test_ajax',
+   	   stuff: stuff
+           },
+        success : create_callback(divid)
+      });
+}
+
+</SCRIPT>
+<TABLE id=group_table class="small ui-widget-content ui-corner-all">
+ <THEAD align=left> 
+  <TR>
+   <TH>CoGe ID</TH>
+   <TH>Name</TH>
+   <TH>Description</TH>
+   <TH>Number of Genomes</TH>
+  </TR>
+ </THEAD>
+ <tbody align=left valign="top" id="group_table_body" class=small>
+  <TMPL_LOOP NAME=SEQTYPE>
+  <TR>
+   <TD><TMPL_VAR NAME=ID></TD>
+   <TD><TMPL_VAR NAME=NAME></TD>
+   <TD><TMPL_VAR NAME=DESC></TD>
+   <TD><TMPL_VAR NAME=GCOUNT></TD>
+  </TR>
+  </TMPL_LOOP>
+ </tbody>
+</TABLE>
