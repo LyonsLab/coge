@@ -84,14 +84,14 @@ function launch(){
     alert('You have not selected any genomes to search. You must select at least one.');
     return;
   }
-
+  jQuery('html, body').animate({scrollTop: 0}, 500);
   $('#results').html('').hide(0);
   $('#log_text').html('').show(0);
 
   pageObj.nolog=1;
   setTimeout("monitor_log()", 1000);
   var selected_genomes = $('#genome_choice').getLength(1);
-
+  
   go(['args__dsgids','args__'+selected_genomes,'args__fid','fid','args__qdsgid','feat_dsgid', 'args__basename','args__'+pageObj.basename,'args__window_size','ws', 'args__cutoff','co', 'args__scoring_function','sf', 'args__algo','algo'],[handle_results],'POST');
   
  
@@ -505,19 +505,20 @@ function source_search_chain (val) {
  if (val) {
    $('#accn_list').html(val);
    $('#accn_list').show();
-   source_search(['args__accn','accn_select', 'args__org_id','org_id_feat','args__org_name','org_name_feat','args__org_desc','org_desc_feat'], [get_types_chain]);
   }
  else {
    $('#fid').html('');
   }
+  $('#Source').html('searching. . .');
+  $('#FeatType').html('searching. . .');
+  $('#anno').html('');
+  source_search(['args__accn','accn_select', 'args__org_id','org_id_feat','args__org_name','org_name_feat','args__org_desc','org_desc_feat'], [get_types_chain]);
+
 }
 
 function get_types_chain (val1) {
  if (val1) {$('#Source').html(val1);$('#Source').show();}
-// if ($('feat_dsgid').val()) {
-get_types(['args__accn','accn_select', 'args__dsgid','feat_dsgid'],[get_anno_chain]);
-//}
-// else {$('#anno').html('');  $('#data_table').hide(0);}
+ get_types(['args__accn','accn_select', 'args__dsgid','feat_dsgid'],[get_anno_chain]);
 }
 
 function get_anno_chain (val1,dsgid) {	
@@ -529,6 +530,7 @@ function get_anno_chain (val1,dsgid) {
    if ($('#clear').is(":hidden")) {$('#clear').show(0);}
    if ($('#send').is(":hidden")) {$('#send').show(0);}
  }
+ $('#anno').html('searching. . .');
  get_anno(['args__accn','accn_select', 'args__type','Type_name', 'args__dsgid','args__'+dsgid],[show_anno]);
 }
 
