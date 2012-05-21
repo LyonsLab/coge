@@ -710,6 +710,7 @@ sub go_synfind
     my $scoring_function=$opts{scoring_function};
     $window_size = 40 unless defined $window_size;
     $cutoff= 0.1 unless defined $cutoff;
+    $cutoff = "0".$cutoff if $cutoff =~ /^\./; #add the prepending 0 for filename consistence
     $scoring_function = 1 unless defined $scoring_function;
     #need to set this link before the scoring function changes to a different name type
     my $synfind_link = $SERVER."SynFind.pl?fid=$fid;qdsgid=$source_dsgid;dsgid=$dsgids;ws=$window_size;co=$cutoff;sf=$scoring_function;algo=$algo";
@@ -1161,7 +1162,7 @@ sub blast2bed
 	CoGe::Accessory::Web::write_log(".bed files $outfile1 and $outfile2 already exist." ,$cogeweb->logfile);
 	return;
       }
-    CoGe::Accessory::Web::gunzip("$infile.gz") if -r "$infile.gz";
+    CoGe::Accessory::Web::gunzip("$infile");
     my $cmd = $PYTHON26." ".$BLAST2BED ." -infile $infile -outfile1 $outfile1 -outfile2 $outfile2";
     CoGe::Accessory::Web::write_log("Creating bed files: $cmd", $cogeweb->logfile);
     CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
@@ -1180,7 +1181,7 @@ sub run_convert_blast
 	CoGe::Accessory::Web::write_log ("converted blast file with short names exists: $outfile", $cogeweb->logfile);
 	return $outfile;
       }
-    CoGe::Accessory::Web::gunzip("infile.gz") if -r "$infile.gz";
+    CoGe::Accessory::Web::gunzip("infile");
     CoGe::Accessory::Web::write_log("convering blast file to short names: $cmd", $cogeweb->logfile);
     `$cmd`;
     CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
@@ -1200,9 +1201,9 @@ sub run_blast2raw
 	CoGe::Accessory::Web::write_log("Filtered blast file found where tandem dups have been removed: $outfile", $cogeweb->logfile);
 	return $outfile;
       }
-    CoGe::Accessory::Web::gunzip("$blastfile.gz") if -r "$blastfile.gz";
-    CoGe::Accessory::Web::gunzip("$bedfile1.gz") if -r "$bedfile1.gz";
-    CoGe::Accessory::Web::gunzip("$bedfile2.gz") if -r "$bedfile2.gz";
+    CoGe::Accessory::Web::gunzip("$blastfile");
+    CoGe::Accessory::Web::gunzip("$bedfile1");
+    CoGe::Accessory::Web::gunzip("$bedfile2");
     
     my $tandem_distance = $opts{tandem_distance};
     $tandem_distance = 10 unless defined $tandem_distance;
@@ -1232,7 +1233,7 @@ sub run_synteny_score
 	 print STDERR "detected $outfile.running.  Waiting. . .\n";
 	 sleep 60;
        }
-     if (-r $outfile && -s $outfile)
+     if ( (-r $outfile && -s $outfile) || (-r "$outfile.gz" && -s "$outfile.gz"))
        {
 	 CoGe::Accessory::Web::write_log("synteny_score database ($outfile) exists", $cogeweb->logfile);
 	 CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
@@ -1242,12 +1243,13 @@ sub run_synteny_score
        {
 	 system "/usr/bin/touch $outfile.running"; #track that a blast anlaysis is running for this
        }
-     CoGe::Accessory::Web::gunzip("$blastfile.gz") if -r "$blastfile.gz";
-     CoGe::Accessory::Web::gunzip("$bedfile1.gz") if -r "$bedfile1.gz";
-     CoGe::Accessory::Web::gunzip("$bedfile2.gz") if -r "$bedfile2.gz";
+     CoGe::Accessory::Web::gunzip("$blastfile",$ENV{HOME}.'coge.conf',1); #turned on debugging
+     CoGe::Accessory::Web::gunzip("$bedfile1",$ENV{HOME}.'coge.conf',1);
+     CoGe::Accessory::Web::gunzip("$bedfile2",$ENV{HOME}.'coge.conf',1);
      my $cmd = $SYNTENY_SCORE ." $blastfile --qbed $bedfile1 --sbed $bedfile2 --window $window_size --cutoff $cutoff --scoring $scoring_function --qnote $dsgid1 --snote $dsgid2 --sqlite $outfile";
      
      CoGe::Accessory::Web::write_log("Synteny Score:  running $cmd", $cogeweb->logfile);
+     print STDERR $cmd,"\n";
      system("$PYTHON26 $cmd");
      system "/bin/rm $outfile.running" if -r "$outfile.running"; #remove track file
      CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
@@ -1435,6 +1437,7 @@ sub get_master_syn_sets
 	# elements 2 -- N+1: data from synteny database for each of the subject genomes of which there is N
 	my @data = ([[0,$id, "S",100000]], map{$data{$id}{$_->id}} sort {$a->organism->name cmp $b->organism->name} @dsgs);
 	my @names;
+	my @chr;
 	my $count =1;
 	my $max;
 	my @syntelog_count;
@@ -1443,10 +1446,12 @@ sub get_master_syn_sets
 	    unless ($set)
 	      {
 		push @names, "-";
+		push @chr, "-";
 		push @syntelog_count,0;
 		next;
 	      }
 	    my $name;
+	    my $chr;
 	    my $limit_count =0;
 	    foreach my $data (sort {$b->[3] <=> $a->[3]} @$set) #sort by synteny score
 	      {
@@ -1458,9 +1463,11 @@ sub get_master_syn_sets
 		unless ($fid)
 		  {
 		    $name .= "-,";
+		    $chr .= "-,";
 		    next;
 		  }
-
+		my ($feat) = $coge->resultset('Feature')->find($fid);
+		$chr .= $feat->chromosome.",";
 		if ($count == 1)
 		  {
 		    #		my ($up, $down) = get_neighboring_region(fid=>$fid, window_size=>$window_size);
@@ -1502,6 +1509,8 @@ sub get_master_syn_sets
 	    push @syntelog_count, $limit_count;
 	    $name =~ s/,$//; #trim trailing ','
 	    push @names, $name;
+	    $chr =~ s/,$//; #trim trailing ','
+	    push @chr, $chr;
 	  }
 	#this is a short cut for specifying the dr up/down of query sequence.  Much faster than looking it up in the database
 	$link .= ";dr1up=".$max;
@@ -1509,7 +1518,7 @@ sub get_master_syn_sets
 	$count--;
 	$link .=";num_seqs=$count;autogo=1";
 	$link .= ";apply_all=$pad" if $pad;
-	print join ("\t", join (",",@syntelog_count),@names, $link),"\n";
+	print join ("\t", join (",",@syntelog_count),@names, @chr, $link),"\n";
 	$total++;
       }
     exit;
