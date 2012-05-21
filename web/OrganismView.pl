@@ -557,7 +557,7 @@ sub get_dataset_group_info
     my $gstid = $dsg->genomic_sequence_type->id;
     my $gst_name = $dsg->genomic_sequence_type->name;
     $gst_name .= ": ".$dsg->type->description if $dsg->type->description;
-    $html .= qq{<tr><td>Sequence type: <td>}.$gst_name.qq{ (gstid$gstid)<input type=hidden id=gstid value=}.$gstid.qq{></td></tr>};
+    $html .= qq{<tr><td><span class="link" onclick="window.open('SeqType.pl')">Sequence type: </span><td>}.$gst_name.qq{ (gstid$gstid)<input type=hidden id=gstid value=}.$gstid.qq{></td></tr>};
     $html .= qq{<tr><td>Length: </td>};
     $html .= qq{<td><div style="float: left;"> }.commify($total_length)." bp </div>";
     my $gc = $total_length < 10000000 && $chr_num < 500 ? get_gc_for_chromosome(dsgid=>$dsgid): 0;
