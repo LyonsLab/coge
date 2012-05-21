@@ -18,6 +18,7 @@ use File::Path;
 use Mail::Mailer;
 use Benchmark;
 use DBI;
+use POSIX;
 no warnings 'redefine';
 
 
@@ -1393,6 +1394,7 @@ sub run_dagchainer
     my $infile = $opts{infile};
     my $D = $opts{D}; #maximum distance allowed between two matches
     my $g = $opts{g}; #length of a gap (average distance expected between two syntenic genes)
+    $g = floor($D/2) unless defined $g;
     my $A = $opts{A}; #Minium number of Aligned Pairs 
     my $Dm = $opts{Dm}; #maximum distance between sytnenic blocks for merging syntenic blocks
     my $gm = $opts{gm}; #average distance between sytnenic blocks for merging syntenic blocks
@@ -2271,7 +2273,7 @@ sub go
 	$opts{$k} =~ s/\s+$//;
       }
     my $dagchainer_D= $opts{D};
-    my $dagchainer_g = $opts{g};
+#    my $dagchainer_g = $opts{g}; #depreciated -- will be a factor of -D
     my $dagchainer_A = $opts{A};
     my $Dm=$opts{Dm};
     my $gm=$opts{gm};
@@ -2359,7 +2361,7 @@ sub go
 	return "<span class=alert>Problem generating dataset group objects for ids:  $dsgid1, $dsgid2.</span>";
       }
     $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$basename, tempdir=>$TEMPDIR);
-    my $synmap_link = $SERVER."SynMap.pl?dsgid1=$dsgid1;dsgid2=$dsgid2;c=$repeat_filter_cvalue;D=$dagchainer_D;g=$dagchainer_g;A=$dagchainer_A;w=$width;b=$blast;ft1=$feat_type1;ft2=$feat_type2;autogo=1";
+    my $synmap_link = $SERVER."SynMap.pl?dsgid1=$dsgid1;dsgid2=$dsgid2;c=$repeat_filter_cvalue;D=$dagchainer_D;A=$dagchainer_A;w=$width;b=$blast;ft1=$feat_type1;ft2=$feat_type2;autogo=1";
     $synmap_link .= ";Dm=$Dm" if defined $Dm;
     $synmap_link .= ";gm=$gm" if defined $gm;
     $synmap_link .= ";snsd=$snsd";
@@ -2594,7 +2596,7 @@ sub go
     my $dag_merge = 1 if $merge_algo == 2; #this is for using dagchainer's merge function;
     CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
     CoGe::Accessory::Web::write_log("Running DagChainer",$cogeweb->logfile);
-    my ($dagchainer_file, $merged_dagchainer_file) = run_dagchainer(infile=>$dag_file12, D=>$dagchainer_D, g=>$dagchainer_g,A=>$dagchainer_A, type=>$dagchainer_type, Dm=>$Dm, gm=>$gm, merge=>$dag_merge);
+    my ($dagchainer_file, $merged_dagchainer_file) = run_dagchainer(infile=>$dag_file12, D=>$dagchainer_D, A=>$dagchainer_A, type=>$dagchainer_type, Dm=>$Dm, gm=>$gm, merge=>$dag_merge);
     CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
     CoGe::Accessory::Web::write_log("",$cogeweb->logfile);
     
@@ -2929,7 +2931,7 @@ sub go
 	    my $conffile = $ENV{HOME}.'coge.conf';
 	    $dagchainer_file =~ s/^$URL/$DIR/;
 	    $tiny_link = CoGe::Accessory::Web::get_tiny_link(url=>$synmap_link);
-	    $html .= "<br>".qq{<span class="small link" id="" onClick="window.open('bin/SynMap/order_contigs_to_chromosome.pl?f=$dagchainer_file&cf=$conffile;l=$tiny_link');" >Generate Assembled Genomic Sequence</span>} if $assemble;
+	    $html .= "<br>".qq{<span class="small link" id="" onClick="window.open('bin/SynMap/order_contigs_to_chromosome.pl?f=$dagchainer_file&cf=$conffile;l=$tiny_link');" >Generate Pseudo-Assembled Genomic Sequence</span>} if $assemble;
 	    $html .= qq{</table>};
 
 	    CoGe::Accessory::Web::write_log("#"x(20),$cogeweb->logfile);
