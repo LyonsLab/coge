@@ -59,7 +59,7 @@ print $pj->build_html($FORM, \&gen_html);
 sub gen_html
   {
     my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
-    $template->param(TITLE=>'The Place to <span style="color: #119911">Co</span>mpare <span style="color: #119911">Ge</span>nomes');
+    $template->param(TITLE=>'Accelerating <span style="color: #119911">Co</span>mparative <span style="color: #119911">Ge</span>nomics');
     $template->param(PAGE_TITLE=>'ANKoCG');
     $template->param(HELP=>'/wiki/index.php');
     my $name = $USER->user_name;
