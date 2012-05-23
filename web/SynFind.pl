@@ -644,7 +644,7 @@ sub get_data_source_info_for_accn
 	    my $gstname =  $dsg->sequence_type->name;
 	    my $title = "$org: ";
 	    $title .= $name if $name;
-	    $title .="($sname, v$ver, $gstname, id$dsgid)";
+	    $title .="($sname, v$ver, $gstname, dsgid$dsgid)";
 	    $sources{$title}= {id => $dsgid,
 			       v=>$ver,
 			       gstid=>$dsg->sequence_type->id,
