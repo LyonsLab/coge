@@ -129,7 +129,7 @@ sub actions
   {
     my @actions = (
 		   {
-		    ID=>5,
+		    ID=>6,
 		    LOGO=>qq{<a href="./GEvo.pl"><img src="picts/carousel/GEvo-logo.png" width="227" height="75" border="0"></a>},
 		    ACTION=>qq{<a href="./GEvo.pl">GEvo</a>},
 		    LINK=>qq{./GEvo.pl},
@@ -194,7 +194,14 @@ sub actions
 		    SCREENSHOT=>qq{<a href="./SynMap.pl"><img src="picts/preview/SynMap.png" border="0" width="400" height="320"></a>},
 		    NAME=>qq{SynMap:  Whole genome syntenic dotplot anlayses},
 		   },
-
+		   {
+		    ID=>4,
+		    LOGO=>qq{<a href="./SynFind.pl"><img src="picts/SynFind-logo.png"  border="0"></a>},
+		    ACTION=>qq{<a href="./SynFind.pl">SynFind</a>},
+		    LINK=>qq{./SynFind.pl},
+		    SCREENSHOT=>qq{<a href="./SynFind.pl"><img src="picts/preview/SynMap.png" border="0" width="400" height="320"></a>},
+		    NAME=>qq{SynFind:  Identify syntenic regions across many genomes},
+		   },
 		  );
     return \@actions;
   }
