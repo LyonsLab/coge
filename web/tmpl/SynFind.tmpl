@@ -723,9 +723,10 @@ function get_master(link)
 
  </div> <!--close tab 1-->
  <div id="tab2">
+ General parameters:
    <TABLE class=small>
     <TR>
-     <TD>Comparison Algorithm:</TD>
+     <Td>Comparison Algorithm:</Td>
      <TD>
       <select id=algo>
         <option value=last <TMPL_VAR NAME=LAST> >Last</option>
@@ -733,13 +734,16 @@ function get_master(link)
       </select>
      </TD>
     </TR>
+    </table>
+  Syntney finding parameters:
+    <table class=small>
     <TR>
-     <TD>Window Size (genes):</TD>
+     <TD>Gene window size:</TD>
      <TD><input id=ws type=text size=3 value=<TMPL_VAR NAME=WS>></TD>
     </TR>
     <TR>
-     <TD>Cutoff: </TD>
-     <TD><input id=co type=text size=3 value=<TMPL_VAR NAME=CO>> Percent of genes in window making gene-pairs.  Valid range: (0,1]</TD>
+     <TD>Minimum number of genes: </TD>
+     <TD><input id=co type=text size=3 value=<TMPL_VAR NAME=CO>></TD>
     </TR>
     <TR>
      <TD>Scoring Funciton:</TD>
@@ -749,6 +753,7 @@ function get_master(link)
         <option value=2 <TMPL_VAR NAME=SF_DENSITY> >Density</option>
       </select>
      </TD>
+     </TR></TABLE>
     </TR>
    </TABLE>
  </div> <!--close tab 2-->
