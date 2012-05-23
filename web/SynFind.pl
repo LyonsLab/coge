@@ -153,7 +153,7 @@ sub gen_body
     #synteny_score cutoff
     my $co;
     $co = $FORM->param('co') if $FORM->param('co');
-    $co = 0.1 unless defined $co;
+    $co = 4 unless defined $co;
     $template->param(CO=>$co);
     #synteny_score scoring function
     my $sf;
@@ -644,7 +644,7 @@ sub get_data_source_info_for_accn
 	    my $gstname =  $dsg->sequence_type->name;
 	    my $title = "$org: ";
 	    $title .= $name if $name;
-	    $title .="($sname, v$ver, $gstname)";#, $dsgid)";
+	    $title .="($sname, v$ver, $gstname, id$dsgid)";
 	    $sources{$title}= {id => $dsgid,
 			       v=>$ver,
 			       gstid=>$dsg->sequence_type->id,
@@ -1223,6 +1223,10 @@ sub run_synteny_score
      my $bedfile2 = $opts{bedfile2};
      my $window_size = $opts{window_size};
      my $cutoff = $opts{cutoff};
+     if ($cutoff >= 1)
+       {
+	 $cutoff = sprintf("%.2f", $cutoff/$window_size);
+       }
      my $outfile = $opts{outfile};
      my $scoring_function = $opts{scoring_function};
      my $dsgid1 = $opts{dsgid1};
