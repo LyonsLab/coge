@@ -509,7 +509,9 @@ sub get_dsg_for_blast_menu
       {
 	my ($ds) = $dsg->datasets;
 	$opts .= ":::" if $opts;
-	$opts .= $dsg->id."::".$dsg->organism->name." (".$ds->data_source->name." ".$dsg->type->name." v".$dsg->version.")";
+	my $org_name = $dsg->organism->name;
+	$org_name =~ s/'//g;
+	$opts .= $dsg->id."::".$org_name." (".$ds->data_source->name." ".$dsg->type->name." v".$dsg->version.")";
 	
       }
     return $opts;
