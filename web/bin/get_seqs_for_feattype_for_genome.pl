@@ -35,12 +35,13 @@ $USER = undef;
 ($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
 
 my $dsgid = $FORM->param('dsgid');
+my $dsid = $FORM->param('dsid');
 my $ftid = $FORM->param('ftid');
 my $prot = $FORM->param('p');
-unless ($dsgid)
+unless ($dsgid || $dsid)
   {
     print $FORM->header;
-    print "No genome id specified.\n";
+    print "No genome or dataset id specified.\n";
     exit;
   }
 unless ($ftid)
@@ -50,7 +51,11 @@ unless ($ftid)
     exit;
   }
 
-my ($dsg) = $coge->resultset('DatasetGroup')->search({"me.dataset_group_id"=>$dsgid},{join=>'genomic_sequences',prefetch=>'genomic_sequences'});
+my ($dsg, $ds);
+($dsg) = $coge->resultset('DatasetGroup')->search({"me.dataset_group_id"=>$dsgid},{join=>'genomic_sequences',prefetch=>'genomic_sequences'}) if $dsgid;
+$ds = $coge->resultset('Dataset')->find($dsid) if $dsid;
+
+($dsg) = $ds->dataset_groups if $ds;
 
 if ($dsg->restricted && !$USER->has_access_to_genome($dsg))
     {
@@ -58,15 +63,11 @@ if ($dsg->restricted && !$USER->has_access_to_genome($dsg))
       print "Permission denied";
     }
 
-unless ($dsgid)
-  {
-    print $FORM->header;
-    print "Unable to find genome for $dsgid.\n";
-    exit;
-  }
-
 my $ft = $coge->resultset('FeatureType')->find($ftid);
-my $file_name = $dsgid."-".$ft->name;
+my $file_name;
+$file_name .= $dsgid if $dsgid;
+$file_name .= $dsid if $dsid;
+$file_name .= "-".$ft->name;
 $file_name .= "-prot" if $prot;
 $file_name .= ".fasta";
 
@@ -76,7 +77,16 @@ Content-Disposition: attachment; filename="$file_name"
 };
 
 my $count =1;
-foreach my $feat ($dsg->features({feature_type_id=>$ftid},{prefetch=>'feature_names'}))
+my @feats;
+if ($ds)
+  {
+    @feats = $ds->features({feature_type_id=>$ftid},{prefetch=>'feature_names'})
+  }
+else
+  {
+    @feats = $dsg->features({feature_type_id=>$ftid},{prefetch=>'feature_names'});
+  }
+foreach my $feat (@feats)
   {
     my ($chr) = $feat->chromosome;#=~/(\d+)/;
     my $org = $dsg->organism->name;
