@@ -238,7 +238,7 @@ sub gen_body
       }
     else
       {
-	$template->param($ALGO_LOOKUP->{4}{opt}=>"selected");
+	$template->param($ALGO_LOOKUP->{6}{opt}=>"selected");
       }
     my ($D, $g, $A, $Dm, $gm, $dt, $cvalue);
     $D = $FORM->param('D');
