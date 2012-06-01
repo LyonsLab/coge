@@ -924,9 +924,11 @@ sub go_synfind
 	$dsg_name .= " (v".$dsg->version." ". $dsg->type->name.")";
 	my $synmap_open_link = qq{window.open("}.$synmap_link.$dsg->id.";fid1=$fid;fid2=$tfid".qq{");};
 	$open_all_synmap{$synmap_open_link}=1;
+	my $oid = $feat->organism->id;
+	my $dsgid = $dsg->id;
 	$html .= join ("<td>",
-		       $feat->organism->name,
-		       $dsg_name,
+		       "<span class='link' onclick=window.open('OrganismView.pl?oid=$oid')>".$feat->organism->name."</span>",
+		       "<span class='link' onclick=window.open('OrganismView.pl?dsgid=$dsgid')>".$dsg_name."</span>",
 		       $match_type, 
 		       qq{<span class='link' onclick='update_info_box("$tfid}."_".$dsg->id.qq{")'>}.$name."</span>",
 		       $feat->chromosome,
@@ -1181,7 +1183,8 @@ sub run_convert_blast
 	CoGe::Accessory::Web::write_log ("converted blast file with short names exists: $outfile", $cogeweb->logfile);
 	return $outfile;
       }
-    CoGe::Accessory::Web::gunzip("infile");
+    print STDERR "In sub run_convert_blast\n";
+    CoGe::Accessory::Web::gunzip("$infile",$ENV{HOME}.'coge.conf',1);
     CoGe::Accessory::Web::write_log("convering blast file to short names: $cmd", $cogeweb->logfile);
     `$cmd`;
     CoGe::Accessory::Web::write_log("", $cogeweb->logfile);
@@ -1201,10 +1204,15 @@ sub run_blast2raw
 	CoGe::Accessory::Web::write_log("Filtered blast file found where tandem dups have been removed: $outfile", $cogeweb->logfile);
 	return $outfile;
       }
-    CoGe::Accessory::Web::gunzip("$blastfile");
-    CoGe::Accessory::Web::gunzip("$bedfile1");
-    CoGe::Accessory::Web::gunzip("$bedfile2");
-    
+    print STDERR "IN SUB run_blast2raw\n";
+    CoGe::Accessory::Web::gunzip("$blastfile",$ENV{HOME}.'coge.conf',1);
+    CoGe::Accessory::Web::gunzip("$bedfile1",$ENV{HOME}.'coge.conf',1);
+    CoGe::Accessory::Web::gunzip("$bedfile2",$ENV{HOME}.'coge.conf',1);
+     unless (-r $blastfile)
+       {
+	 warn "can't read $blastfile\n";
+	 return;
+       }
     my $tandem_distance = $opts{tandem_distance};
     $tandem_distance = 10 unless defined $tandem_distance;
     my $cmd = $PYTHON26." ".$BLAST2RAW." $blastfile --qbed $bedfile1 --sbed $bedfile2 --tandem_Nmax $tandem_distance > $outfile";
@@ -1247,9 +1255,15 @@ sub run_synteny_score
        {
 	 system "/usr/bin/touch $outfile.running"; #track that a blast anlaysis is running for this
        }
+     print STDERR "Path: ".$ENV{HOME},"\n";
      CoGe::Accessory::Web::gunzip("$blastfile",$ENV{HOME}.'coge.conf',1); #turned on debugging
      CoGe::Accessory::Web::gunzip("$bedfile1",$ENV{HOME}.'coge.conf',1);
      CoGe::Accessory::Web::gunzip("$bedfile2",$ENV{HOME}.'coge.conf',1);
+     unless (-r $blastfile)
+       {
+	 warn "can't read $blastfile\n";
+	 return;
+       }
      my $cmd = $SYNTENY_SCORE ." $blastfile --qbed $bedfile1 --sbed $bedfile2 --window $window_size --cutoff $cutoff --scoring $scoring_function --qnote $dsgid1 --snote $dsgid2 --sqlite $outfile";
      
      CoGe::Accessory::Web::write_log("Synteny Score:  running $cmd", $cogeweb->logfile);
@@ -1387,7 +1401,7 @@ sub get_master_syn_sets
 	  }
       }
     my $header = "Content-disposition: attachement; filename=";#test.gff\n\n";
-    $header .=join ("_", (map {$_->id} ($qdsg, @dsgs)), $algo);
+    $header .=join ("_", (map {$_->id} ($qdsg, @dsgs)), $window_size, $cutoff, $scoring_function,$algo);
     $header .= ".txt\n\n";
     print $header;
 
@@ -1554,7 +1568,7 @@ sub get_master_histograms
 	    my $sdsgid = $data[7]; #target genome ID
 	    $data{$id}++; #data{query_feature_id}{subject_genome_id}
 	  }
-	$html .= $item->{org_name};
+	$html .= qq{<span class=link onclick='window.open("OrganismView.pl?dsgid=}.$item->{dsgid2}."\")'>".$item->{org_name}."</span>";
 	$html .= depth_table(\%data);
       }
     return $html;
