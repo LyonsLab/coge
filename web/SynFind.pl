@@ -802,6 +802,8 @@ sub go_synfind
 	    $tmp =~ s/://g;
 	    $tmp =~ s/;//g;
 	    $tmp =~ s/#/_/g;
+	    $tmp =~ s/'//g;
+	    $tmp =~ s/"//g;
 	  }
 	my $basedir = $DIAGSDIR."/".$org1."/".$org2;
  	mkpath ($basedir,0,0777) unless -d $basedir;
