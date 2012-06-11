@@ -2478,6 +2478,8 @@ sub go
  	$tmp =~ s/://g;
  	$tmp =~ s/;//g;
  	$tmp =~ s/#/_/g;
+ 	$tmp =~ s/'//g;
+ 	$tmp =~ s/"//g;
        }
      my $orgkey1 = $title1;
      my $orgkey2 = $title2;
