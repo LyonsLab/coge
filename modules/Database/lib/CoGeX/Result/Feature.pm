@@ -1650,11 +1650,11 @@ sub fasta
 	($gst) = $self->sequence_type();
 	$gstid = $gst->id if $gst;
       }
-    my ($pri_name) = $self->primary_name;
+    my ($name) = $self->names;
     my $head = ">";
     if ($name_only)
       {
-	$head .= $pri_name;
+	$head .= $name;
 	$head .= " fid:".$self->id if $add_fid;
       }
     else
