@@ -1634,6 +1634,7 @@ sub fasta
     my $upstream = $opts{upstream} || 0;
     my $downstream = $opts{downstream} || 0;
     my $name_only = $opts{name_only};
+    my $fid_only = $opts{fid_only};
     my $add_fid = $opts{add_fid};
     my $sep = $opts{sep}; #returns the header and sequence as separate items.
     my $gstid = $opts{gstid};
@@ -1657,6 +1658,10 @@ sub fasta
 	$head .= $name;
 	$head .= " fid:".$self->id if $add_fid;
       }
+    elsif ($fid_only)
+      {
+	$head .= $self->id;
+      }
     else
       {
 	$head .= $self->dataset->organism->name."(v".$self->version;
@@ -1679,7 +1684,7 @@ sub fasta
 	$stop += $downstream;
       }
 
-    $head .= " Genomic Location: $start-$stop" unless $name_only;
+    $head .= " Genomic Location: $start-$stop" unless $name_only || $fid_only;
     $Text::Wrap::columns=$col;
     my $fasta;
     if ($prot)
