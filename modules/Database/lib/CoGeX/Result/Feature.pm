@@ -1653,14 +1653,11 @@ sub fasta
       }
     my ($name) = $self->names;
     my $head = ">";
-    if ($name_only)
+    if ($name_only || $fid_only)
       {
-	$head .= $name;
-	$head .= " fid:".$self->id if $add_fid;
-      }
-    elsif ($fid_only)
-      {
-	$head .= $self->id;
+	$head .= $name if $name_only;
+	$head .= "||fid:" if ($name_only && ($fid_only || $add_fid));
+	$head .= $self->id if $fid_only || $add_fid;
       }
     else
       {
