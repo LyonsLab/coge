@@ -6,6 +6,8 @@ function update_seqs(prot, text)
   $('#seq_text').val("loading . . .");
   var name_only = 0;
   if ($('#name_only')[0].checked) {name_only = 1};
+  var id_only = 0;
+  if ($('#id_only')[0].checked) {id_only = 1};
   var upstream = 0;
   var downstream =0;
   if ($('#upstream').val()) {upstream=$('#upstream').val()};
@@ -15,10 +17,10 @@ function update_seqs(prot, text)
    {
     if (text)
      {
-       var url=window.location+";prot=1;text=1;no="+name_only;
+       var url=window.location+";prot=1;text=1;no="+name_only+";io="+id_only;
        window.location =url;
      }
-    get_seqs(['args__fids','fids', 'args__textbox','args__1','args__prot','args__1','args__name_only','args__'+name_only, 'args__gstid','gstid'],['seq']);
+    get_seqs(['args__fids','fids', 'args__textbox','args__1','args__prot','args__1','args__name_only','args__'+name_only, 'args__id_only','args__'+id_only, 'args__gstid','gstid'],['seq']);
     $('#prot_button').hide();
     $('#prot_text_button').show();
     $('#dna_button').show();
@@ -30,10 +32,10 @@ function update_seqs(prot, text)
    {
     if (text)
      {
-       var url=window.location+";text=1;no="+name_only+";up="+upstream+";down="+downstream;
+       var url=window.location+";text=1;no="+name_only+";io="+id_only+";up="+upstream+";down="+downstream;
        window.location =url;
      }
- get_seqs(['args__fids','fids', 'args__textbox','args__1','args__prot','args__0','args__name_only','args__'+name_only, 'args__gstid','gstid', 'args__upstream','args__'+upstream, 'args__downstream','args__'+downstream],['seq']);
+ get_seqs(['args__fids','fids', 'args__textbox','args__1','args__prot','args__0','args__name_only','args__'+name_only, 'args__id_only','args__'+id_only, 'args__gstid','gstid', 'args__upstream','args__'+upstream, 'args__downstream','args__'+downstream],['seq']);
     $('#prot_button').show();
     $('#prot_text_button').hide();
     $('#dna_button').hide();
@@ -44,26 +46,31 @@ function update_seqs(prot, text)
  }
 
 
-function post_to_SSWAP() {
+function post_to_SSWAP(url) {
+ 
+
  var myseq = $('#seq_text').val();
  var jsonRRG= {
+    "api" : "/makeRRG",
     "prefix": {
-        "data": "http://sswapmeet.sswap.info/data/",
-        "mime": "http://sswapmeet.sswap.info/mime/",
-        "seq": "http://sswapmeet.sswap.info/sequence/"
+        "util" : "http://sswapmeet.sswap.info/util/",
+        "mime" : "http://sswapmeet.sswap.info/mime/",
+        "data" : "http://sswapmeet.sswap.info/data/",
+        "coge" : "http://genomevolution.org/CoGe/SSWAP/"
     },
-    "http://sswap.info/examples/resources/canonical/canonicalResource": {},
-    "mapping": {"_:subject" : "_:object"},
-    "definitions" : {
-    		      "_:subject" : {},
-		      "_:object" : {
-		      		     "rdf:type" : "seq:FASTA",
-				     "data:literalData" : myseq
-				   }
-		    },
+  "coge:resources/FastaView/FastaView" : { },
+  "mapping" : { "util:WebPage" : url },
+  "definitions" : {}
  };
-//jsonRRG.definitions."_:object"."_data:literalData" = myseq;
+var tmp = {};
+tmp[url] = {"rdf:type": "mime:text/X-multiFasta"};
+jsonRRG["definitions"] = tmp;
+
+
+//to modify to use a URL to fetch data, put the URL in where ever there is "_:object" -> "http://thingie"
+
 var jsonString = JSON.stringify(jsonRRG);
+
 var url = "http://sswap.iplantcollaborative.org/ipc/create-pipeline-with-rrg";
  var myForm = document.createElement("FORM");
  myForm.method="post" ;
@@ -165,7 +172,6 @@ $(document).ready(function()
 
 
 <TMPL_IF NAME=BOTTOM_BUTTONS>
-  <input type="checkbox" name="name_only" id="name_only" value=0 onclick="update_seqs(0);"/>&nbsp&nbsp Only use feature names in header.
   <DIV id="dynamic_button">
   <TABLE>
    <TR>
@@ -180,14 +186,19 @@ $(document).ready(function()
   Add Upstream (5'): <INPUT type="text" id="upstream" value= "<TMPL_VAR NAME="UP">" size=6>
   Add Downstream (3'): <INPUT type="text" id="downstream" value="<TMPL_VAR NAME="DOWN">" size=6>
   <span class='ui-button ui-corner-all'id="dna_text_button" onclick="update_seqs(0)">Add Seq</span>
-  </span>
-<br>
+  </span><br>
+<span class=small>
+  <input type="checkbox" name="name_only" id="name_only" value=0 onclick="update_seqs(0);"/>Only use feature names in header.&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp
+  <input type="checkbox" name="id_only" id="id_only" value=0 onclick="update_seqs(0);"/>Only use CoGe feature id in header.
+</span>
+
+<br><br>
 
   Off site tools:<br>
 <!-- ALL SEQUENCES -->
     <table class="ui-widget-content ui-corner-all">
     <tr align=top>
-    <td><span onClick="post_to_SSWAP();" class='ui-button ui-corner-all'>iPlant Symantic Web</span>
+    <td><span onClick="gen_file(['args__fids','fids', 'args__prot','args__1','args__name_only','args__'+name_only, 'args__id_only','args__'+id_only, 'args__gstid','gstid'],[post_to_SSWAP]);" class='ui-button ui-corner-all'>iPlant Semantic Web</span>
 
 <div id="pipelineButton"></div>
 
@@ -195,7 +206,7 @@ $(document).ready(function()
 
 
 
-    <td> Some description of what happens
+    <td> Send sequence(s) to the <a href = "http://sswap.info/wiki" target =_sswap>iPlant/SSWAP</a> semantic discovery service
     <tr align=top>
     <td><span onClick="post_to_target();" class='ui-button ui-corner-all'>TARGeT</span>
     <td><span class="link" onclick ="window.open('http://target.iplantcollaborative.org/');"> Tree Analysis of Related Genes and Transposons</span><br>
