@@ -1831,7 +1831,7 @@ sub export_fasta_file
     my $accn_list = shift;
     $accn_list =~ s/^,//;
     $accn_list =~ s/,$//;
-    my $url = "FastaView.pl?";
+    my $url = "FastaView.pl?fid=";
     my @list;
     foreach my $accn (split /,/,$accn_list)
       {
@@ -1843,11 +1843,7 @@ sub export_fasta_file
       }
     my %seen = ();
     @list = grep {!$seen{$_}++} @list;
-    foreach my $featid( @list)
-      {
-    	$url .= "featid=$featid&";
-      }
-    $url =~s/&$//;
+    $url .= join ",",@list;
     return $url;
   }
   
