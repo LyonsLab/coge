@@ -1,0 +1,25 @@
+{
+  "api" : "/makeRDG",
+  "cache" : false,
+
+  "prefix" : {
+    "util" : "http://sswapmeet.sswap.info/util/",
+    "mime" : "http://sswapmeet.sswap.info/mime/",
+    "data" : "http://sswapmeet.sswap.info/data/",
+    "coge" : "http://genomevolution.org/CoGe/SSWAP/",
+  },
+
+  "coge:resources/FastaView/FastaView" : {
+  
+    "sswap:name" : "CoGe FastaView",
+    "sswap:oneLineDescription" : "MultiFASTA sequences from CoGe's FastaView",
+    "sswap:icon" : "http://genomevolution.org/CoGe/picts/SSWAP/FastaView-SSWAP-logo.png",
+    "sswap:providedBy" : "coge:CoGe",
+  },
+
+  "mapping" : { "util:WebPage" : "mime:text/X-multiFasta" },
+
+  "definitions" : { }
+
+}
+

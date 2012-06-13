@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rdf:RDF xmlns:coge="http://genomevolution.org/CoGe/SSWAP/"
+  xmlns:owl="http://www.w3.org/2002/07/owl#"
+  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+  xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+  xmlns:sswap="http://sswapmeet.sswap.info/sswap/" xmlns:xsd="http://www.w3.org/2001/XMLSchema#">
+  <sswap:Provider rdf:about="http://genomevolution.org/CoGe/SSWAP/CoGe">
+    <!--
+    	Enter a one line description about this resource. Client viewers,
+        such as the search engine at http://sswap.info may use this one
+        line description to give users a quick description about the
+        resource. For more detailed information, direct users to the
+        sswap:aboutURI URL.  
+        -->
+    <sswap:oneLineDescription>CoGe Semantic Web Services</sswap:oneLineDescription>
+    <!-- 
+        Every resource must have a name. Use something short and
+        informative that can be displayed to users.  
+        -->
+    <sswap:name>CoGe</sswap:name>
+  </sswap:Provider>
+  <owl:Class rdf:about="http://sswapmeet.sswap.info/sswap/Provider"/>
+</rdf:RDF>

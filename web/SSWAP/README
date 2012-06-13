@@ -1,0 +1,2 @@
+Converting JSON to RDF/XML OWL
+	curl -d@CoGe.json http://sswap.info/api/ > CoGe

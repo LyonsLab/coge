@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rdf:RDF xmlns:coge="http://genomevolution.org/CoGe/SSWAP/"
+  xmlns:data="http://sswapmeet.sswap.info/data/"
+  xmlns:j.0="http://sswapmeet.sswap.info/mime/text/"
+  xmlns:mime="http://sswapmeet.sswap.info/mime/"
+  xmlns:owl="http://www.w3.org/2002/07/owl#"
+  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+  xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+  xmlns:sswap="http://sswapmeet.sswap.info/sswap/"
+  xmlns:util="http://sswapmeet.sswap.info/util/" xmlns:xsd="http://www.w3.org/2001/XMLSchema#">
+  <sswap:Resource rdf:about="http://genomevolution.org/CoGe/SSWAP/resources/FastaView/FastaView">
+    <sswap:icon rdf:datatype="http://www.w3.org/2001/XMLSchema#anyURI">http://genomevolution.org/CoGe/picts/SSWAP/FastaView-SSWAP-logo.png</sswap:icon>
+    <!--
+    	Here starts the protocol graph.
+
+        In this template, the sequence of predicates (properties: sswap:operatesOn,
+        sswap:hasMapping, and sswap:mapsTo) join nodes of types sswap:Resource,
+        sswap:Graph, sswap:Subject, and sswap:Object, respectively.  It is the
+        conceptual analogy of the fundamental RDF model of subject -> predicate
+        -> object, but here abstracted to express that "some resource" has
+        "some mapping" of a subject to an object.
+
+        To establish an actual mapping, add predicates and restrictions to
+        the sswap:Subject and sswap:Object nodes. These nodes anchor arbitrary
+        OWL sub-graphs with domain-specific ontologies. The sswap:Graph node is
+        for alternative mappings.
+
+        See the protocol at http://sswap.info/protocol
+        -->
+    <sswap:operatesOn>
+      <sswap:Graph>
+        <sswap:hasMapping>
+          <sswap:Subject>
+            <sswap:mapsTo>
+              <sswap:Object>
+                <rdf:type>
+                  <owl:Class rdf:about="http://sswapmeet.sswap.info/mime/text/X-multiFasta"/>
+                </rdf:type>
+              </sswap:Object>
+            </sswap:mapsTo>
+            <rdf:type>
+              <owl:Class rdf:about="http://sswapmeet.sswap.info/util/WebPage"/>
+            </rdf:type>
+          </sswap:Subject>
+        </sswap:hasMapping>
+      </sswap:Graph>
+    </sswap:operatesOn>
+    <!--
+    	Enter a one line description about this resource. Client viewers,
+        such as the search engine at http://sswap.info may use this one
+        line description to give users a quick description about the
+        resource. For more detailed information, direct users to the
+        sswap:aboutURI URL.  
+        -->
+    <sswap:oneLineDescription>MultiFASTA sequences from CoGe's FastaView</sswap:oneLineDescription>
+    <!--
+    	Use the sswap:providedBy predicate to identify the resource provider
+    	which claims ownership of this resource.
+
+        If a resource's URL does not parse to a sibling or sub-directory
+        of its provider's URL, then the provider's sswap:providesResource
+        predicate must reciprocate the assertion back to this resource.
+
+        Each resource must have exactly one provider. Providers are always
+        of type sswap:Provider and must have their own Provider Description Graph
+        (PDG) dereferenceable from their URL.
+        -->
+    <sswap:providedBy>
+      <sswap:Provider rdf:about="http://genomevolution.org/CoGe/SSWAP/CoGe"/>
+    </sswap:providedBy>
+    <!-- 
+        Every resource must have a name. Use something short and
+        informative that can be displayed to users.  
+        -->
+    <sswap:name>CoGe FastaView</sswap:name>
+  </sswap:Resource>
+  <owl:Class rdf:about="http://sswapmeet.sswap.info/sswap/Resource"/>
+  <owl:Class rdf:about="http://sswapmeet.sswap.info/sswap/Object"/>
+  <owl:Class rdf:about="http://sswapmeet.sswap.info/sswap/Subject"/>
+  <owl:Class rdf:about="http://sswapmeet.sswap.info/sswap/Provider"/>
+  <owl:Class rdf:about="http://sswapmeet.sswap.info/sswap/Graph"/>
+</rdf:RDF>

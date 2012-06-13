@@ -1,0 +1,3 @@
+Created json string of CoGE FastaView description
+Convert to RDF/XML OWL:
+	curl -d@FastaView.json http://sswap.info/api/ > FastaView
