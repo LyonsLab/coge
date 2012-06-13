@@ -91,12 +91,12 @@ sub gen_html
     push @fids, $form->param('fid') if $form->param('fid');
     my $gstid = $form->param('gstid') if $form->param('gstid');
     
-    my $seqs = get_seqs(prot=>$prot, fids=>\@fids, textbox=>$textbox, gstid=>$gstid, name_only=>$name_only, id_only=>$id_only, upstream=>$upstream, downstream=>$downstream);
+    my ($seqs, $seq_count, $feat_count, $warning) = get_seqs(prot=>$prot, fids=>\@fids, textbox=>$textbox, gstid=>$gstid, name_only=>$name_only, id_only=>$id_only, upstream=>$upstream, downstream=>$downstream);
     if ($text)
       {
 	return  $seqs;
       }
-    $template->param(BODY=>gen_body(fids=>\@fids, seqs=>$seqs, gstid=>$gstid, prot=>$prot, up=>$upstream, down=>$downstream));
+    $template->param(BODY=>gen_body(fids=>\@fids, seqs=>$seqs, seq_count=>$seq_count, feat_count=>$feat_count, gstid=>$gstid, prot=>$prot, up=>$upstream, down=>$downstream, message=>$warning));
     $html .= $template->output;
   return $html;
   }
@@ -113,11 +113,17 @@ sub get_seqs
     my $upstream = $opts{upstream};
     my $downstream = $opts{downstream};
     my @fids = ref($fids) =~ /array/i ? @$fids : split/,/, $fids;
+    my %seen = ();
+    @fids = grep {!$seen{$_}++} @fids;
+ 
     my $seqs;
+    my $seq_count = 0;
+    my $fid_count = 0;
     foreach my $item (@fids)
       {
         foreach my $featid (split /,/, $item)
           {
+	    $fid_count++;
 	    my ($fid, $gstidt);
 	    if ($featid =~ /_/)
 	      {
@@ -139,11 +145,20 @@ sub get_seqs
 		$seqs .= ">Restricted: $featid\n";
 		next;
 	      }
-	    $seqs .= $feat->fasta(col=>100, prot=>$prot, name_only=>$name_only, fid_only=>$id_only, gstid=>$gstidt, upstream=>$upstream, downstream=>$downstream);
+	    my $tmp = $feat->fasta(col=>100, prot=>$prot, name_only=>$name_only, fid_only=>$id_only, gstid=>$gstidt, upstream=>$upstream, downstream=>$downstream);
+	    $seq_count += $tmp =~ tr/>/>/;
+	    $seqs .= $tmp;
 	  }
       }
+    my $warning;
+    %seen = ();
+    while ($seqs =~ /(>.*\n)/g)
+      {
+	$warning = "Warning: Duplicate sequence names" if $seen{$1};
+	$seen{$1}=1;
+      }
     $seqs = qq{<textarea id=seq_text name=seq_text class="ui-widget-content ui-corner-all backbox" ondblclick="this.select();" style="height: 400px; width: 800px; overflow: auto;">$seqs</textarea>} if $textbox;
-    return $seqs;
+    return $seqs, $seq_count, $fid_count, $warning;
   }
 
 sub gen_file
@@ -165,11 +180,8 @@ sub gen_file
     close OUT;
     my $url = $file;
     $url =~ s/$TEMPDIR/$TEMPURL/;
-    print STDERR $url,"\n";
     $url =~ s/^\/[^\/]*//;
-    print STDERR $url,"\n";
     $url = $P->{SERVER}.$url;
-    print STDERR $url,"\n";
     return $url;
   }
 
@@ -177,6 +189,9 @@ sub gen_body
   {
     my %opts = @_;
     my $seqs = $opts{seqs};
+    my $seq_count = $opts{seq_count};
+    my $feat_count = $opts{feat_count};
+    my $message = $opts{message};
     my $fids = $opts{fids};
     my $gstid = $opts{gstid} || 1;
     my $prot = $opts{prot} || 0;
@@ -186,6 +201,9 @@ sub gen_body
     my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'FastaView.tmpl');
     $template->param(BOTTOM_BUTTONS=>1);
     $template->param(SEQ=>$seqs) if $seqs;
+    $template->param(SEQ_COUNT=>$seq_count) if defined $seq_count;
+    $template->param(FEAT_COUNT=>$feat_count) if defined $feat_count;
+    $template->param(WARNING=>$message) if defined $message;
     $template->param(FIDS=>qq{<input type=hidden id=fids value=$fids><input type=hidden id=gstid value=$gstid>});
     $template->param(PROT=>$prot);
     $template->param(UP=>$up);
