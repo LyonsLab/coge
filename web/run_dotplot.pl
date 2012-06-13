@@ -67,6 +67,8 @@ $name1 =~ s/\(//g;
 $name1 =~ s/\)//g;
 $name1 =~ s/://g;
 $name1 =~ s/;//g;
+$name1 =~ s/'//g;
+$name1 =~ s/"//g;
 my $name2 = $dsg2->organism->name;
 $name2  =~ s/\///g;
 $name2 =~ s/\s+/_/g;
@@ -74,6 +76,8 @@ $name2 =~ s/\(//g;
 $name2 =~ s/\)//g;
 $name2 =~ s/://g;
 $name2 =~ s/;//g;
+$name2 =~ s/'//g;
+$name2 =~ s/"//g;
 my $dir = "$DIAGSDIR/$name1"."/".$name2;
 my $dag_file = $dir."/".$basename;
 #if ($ksdb)
