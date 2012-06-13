@@ -20,7 +20,7 @@ function update_seqs(prot, text)
        var url=window.location+";prot=1;text=1;no="+name_only+";io="+id_only;
        window.location =url;
      }
-    get_seqs(['args__fids','fids', 'args__textbox','args__1','args__prot','args__1','args__name_only','args__'+name_only, 'args__id_only','args__'+id_only, 'args__gstid','gstid'],['seq']);
+    get_seqs(['args__fids','fids', 'args__textbox','args__1','args__prot','args__1','args__name_only','args__'+name_only, 'args__id_only','args__'+id_only, 'args__gstid','gstid'],['seq', 'seq_count', 'feat_count', 'warning']);
     $('#prot_button').hide();
     $('#prot_text_button').show();
     $('#dna_button').show();
@@ -35,7 +35,7 @@ function update_seqs(prot, text)
        var url=window.location+";text=1;no="+name_only+";io="+id_only+";up="+upstream+";down="+downstream;
        window.location =url;
      }
- get_seqs(['args__fids','fids', 'args__textbox','args__1','args__prot','args__0','args__name_only','args__'+name_only, 'args__id_only','args__'+id_only, 'args__gstid','gstid', 'args__upstream','args__'+upstream, 'args__downstream','args__'+downstream],['seq']);
+ get_seqs(['args__fids','fids', 'args__textbox','args__1','args__prot','args__0','args__name_only','args__'+name_only, 'args__id_only','args__'+id_only, 'args__gstid','gstid', 'args__upstream','args__'+upstream, 'args__downstream','args__'+downstream],['seq', 'seq_count', 'feat_count', 'warning']);
     $('#prot_button').show();
     $('#prot_text_button').hide();
     $('#dna_button').hide();
@@ -45,11 +45,19 @@ function update_seqs(prot, text)
    }
  }
 
+function gen_url() {
+  var name_only = 0;
+  if ($('#name_only')[0].checked) {name_only = 1};
+  var id_only = 0;
+  if ($('#id_only')[0].checked) {id_only = 1};
+
+gen_file(['args__fids','fids', 'args__prot','args__'+pageObj.prot,'args__name_only','args__'+name_only, 'args__id_only','args__'+id_only, 'args__gstid','gstid'],[post_to_SSWAP]);
+}
 
 function post_to_SSWAP(url) {
  
 
- var myseq = $('#seq_text').val();
+// var myseq = $('#seq_text').val();
  var jsonRRG= {
     "api" : "/makeRRG",
     "prefix": {
@@ -163,6 +171,11 @@ $(document).ready(function()
 
 
 <TABLE>
+ <tr class=small>
+  <td>Sequence Count: <span id=seq_count><TMPL_VAR NAME=SEQ_COUNT></span>&nbsp&nbsp 
+      Feature Count: <span id=feat_count><TMPL_VAR NAME=FEAT_COUNT></span>&nbsp&nbsp
+      <span class = alert id=warning><TMPL_VAR NAME=WARNING></span>
+   
  <TR>
   <TD><div id=seq>	
    <TMPL_VAR NAME="SEQ">
@@ -198,7 +211,7 @@ $(document).ready(function()
 <!-- ALL SEQUENCES -->
     <table class="ui-widget-content ui-corner-all">
     <tr align=top>
-    <td><span onClick="gen_file(['args__fids','fids', 'args__prot','args__1','args__name_only','args__'+name_only, 'args__id_only','args__'+id_only, 'args__gstid','gstid'],[post_to_SSWAP]);" class='ui-button ui-corner-all'>iPlant Semantic Web</span>
+    <td><span onClick="gen_url()" class='ui-button ui-corner-all'>iPlant Semantic Web</span>
 
 <div id="pipelineButton"></div>
 
