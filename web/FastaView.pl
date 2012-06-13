@@ -10,6 +10,8 @@ use Text::Wrap qw($columns &wrap);
 use Data::Dumper;
 use Digest::MD5 qw(md5_base64);
 use POSIX;
+use File::Path;
+
 no warnings 'redefine';
 
 
@@ -18,8 +20,10 @@ use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $TEMPDIR $TEMPUR
 $P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 
-$TEMPDIR = $P->{TEMPDIR};
-$TEMPURL = $P->{TEMPURL};
+$TEMPDIR = $P->{TEMPDIR}."FastaView/";
+$TEMPURL = $P->{TEMPURL}."FastaView/";
+mkpath ($TEMPDIR, 0,0777) unless -d $TEMPDIR;
+
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
 
@@ -42,12 +46,16 @@ $USER = undef;
 my $pj = new CGI::Ajax(
 		       gen_html=>\&gen_html,
 		       get_seqs=>\&get_seqs,
-		       export_to_file=>\&export_to_file,
+		       gen_file=>\&gen_file,
 			);
 $pj->js_encode_function('escape');
 if ($FORM->param('text'))
     {
-      print $FORM->header('text');
+      my $header = "Content-disposition: attachement; filename=CoGe_";#test.gff\n\n";
+      $header .= int(rand(100000));
+      $header .=".faa\n\n";
+
+      print $header;
       print gen_html();
     }
 else
@@ -61,6 +69,7 @@ sub gen_html
     my $prot = $form->param('prot');
     my $text = $form->param('text');
     my $name_only = $form->param('no');
+    my $id_only = $form->param('io');
     my $upstream = $form->param('up') || 0;
     my $downstream = $form->param('down') || 0;
     my $textbox = $text ? 0 : 1;
@@ -82,7 +91,7 @@ sub gen_html
     push @fids, $form->param('fid') if $form->param('fid');
     my $gstid = $form->param('gstid') if $form->param('gstid');
     
-    my $seqs = get_seqs(prot=>$prot, fids=>\@fids, textbox=>$textbox, gstid=>$gstid, name_only=>$name_only, upstream=>$upstream, downstream=>$downstream);
+    my $seqs = get_seqs(prot=>$prot, fids=>\@fids, textbox=>$textbox, gstid=>$gstid, name_only=>$name_only, id_only=>$id_only, upstream=>$upstream, downstream=>$downstream);
     if ($text)
       {
 	return  $seqs;
@@ -99,10 +108,10 @@ sub get_seqs
     my $prot = $opts{prot};
     my $textbox = $opts{textbox};
     my $name_only = $opts{name_only};
+    my $id_only = $opts{id_only};
     my $gstid = $opts{gstid};
     my $upstream = $opts{upstream};
     my $downstream = $opts{downstream};
-    #print STDERR Dumper \%opts;
     my @fids = ref($fids) =~ /array/i ? @$fids : split/,/, $fids;
     my $seqs;
     foreach my $item (@fids)
@@ -130,11 +139,38 @@ sub get_seqs
 		$seqs .= ">Restricted: $featid\n";
 		next;
 	      }
-	    $seqs .= $feat->fasta(col=>80, prot=>$prot, name_only=>$name_only, gstid=>$gstidt, upstream=>$upstream, downstream=>$downstream);
+	    $seqs .= $feat->fasta(col=>100, prot=>$prot, name_only=>$name_only, fid_only=>$id_only, gstid=>$gstidt, upstream=>$upstream, downstream=>$downstream);
 	  }
       }
-    $seqs = qq{<textarea id=seq_text name=seq_text class="ui-widget-content ui-corner-all backbox" ondblclick="this.select();" style="height: 400px; width: 750px; overflow: auto;">$seqs</textarea>} if $textbox;
+    $seqs = qq{<textarea id=seq_text name=seq_text class="ui-widget-content ui-corner-all backbox" ondblclick="this.select();" style="height: 400px; width: 800px; overflow: auto;">$seqs</textarea>} if $textbox;
     return $seqs;
+  }
+
+sub gen_file
+  {
+    my %opts = @_;
+    my $fids = $opts{fids};
+    my $prot = $opts{prot};
+    my $textbox = $opts{textbox};
+    my $name_only = $opts{name_only};
+    my $id_only = $opts{id_only};
+    my $gstid = $opts{gstid};
+    my $upstream = $opts{upstream};
+    my $downstream = $opts{downstream};
+    my @fids = ref($fids) =~ /array/i ? @$fids : split/,/, $fids;
+    my $seqs = get_seqs(prot=>$prot, fids=>\@fids, gstid=>$gstid, name_only=>$name_only, id_only=>$id_only, upstream=>$upstream, downstream=>$downstream);
+    my $file = $TEMPDIR."Seqs_".int(rand(100000000)).".faa";
+    open (OUT, ">".$file);
+    print OUT $seqs;
+    close OUT;
+    my $url = $file;
+    $url =~ s/$TEMPDIR/$TEMPURL/;
+    print STDERR $url,"\n";
+    $url =~ s/^\/[^\/]*//;
+    print STDERR $url,"\n";
+    $url = $P->{SERVER}.$url;
+    print STDERR $url,"\n";
+    return $url;
   }
 
 sub gen_body
