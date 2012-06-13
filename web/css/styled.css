@@ -26,6 +26,10 @@ a:hover {
   font-size:small;
 }
 
+.alert {
+  color:#ff0000;
+}
+
 .up {
   font-family: fixed, monospace;
   color: #660000;
