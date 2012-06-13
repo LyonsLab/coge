@@ -173,7 +173,7 @@ sub gen_file
     my $upstream = $opts{upstream};
     my $downstream = $opts{downstream};
     my @fids = ref($fids) =~ /array/i ? @$fids : split/,/, $fids;
-    my $seqs = get_seqs(prot=>$prot, fids=>\@fids, gstid=>$gstid, name_only=>$name_only, id_only=>$id_only, upstream=>$upstream, downstream=>$downstream);
+    my ($seqs) = get_seqs(prot=>$prot, fids=>\@fids, gstid=>$gstid, name_only=>$name_only, id_only=>$id_only, upstream=>$upstream, downstream=>$downstream);
     my $file = $TEMPDIR."Seqs_".int(rand(100000000)).".faa";
     open (OUT, ">".$file);
     print OUT $seqs;
