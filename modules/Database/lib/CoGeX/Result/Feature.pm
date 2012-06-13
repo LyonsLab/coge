@@ -1656,7 +1656,7 @@ sub fasta
     if ($name_only || $fid_only)
       {
 	$head .= $name if $name_only;
-	$head .= "||fid:" if ($name_only && ($fid_only || $add_fid));
+	$head .= "_fid_" if ($name_only && ($fid_only || $add_fid));
 	$head .= $self->id if $fid_only || $add_fid;
       }
     else
