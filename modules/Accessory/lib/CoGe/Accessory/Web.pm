@@ -246,19 +246,15 @@ sub parse_saml_response{
 	if($response =~ m/samlp:Success/){
 		
 		my $ref = XMLin($response);
-		
-		
-		my $user_id = $ref->{'SOAP-ENV:Body'}->{Response}->{Assertion}->{AttributeStatement}->{Subject}->{NameIdentifier};
-		my $user_lname = $ref->{'SOAP-ENV:Body'}->{Response}->{Assertion}->{AttributeStatement}->{Attribute}->[0]->{AttributeValue};
-		my $user_fname = $ref->{'SOAP-ENV:Body'}->{Response}->{Assertion}->{AttributeStatement}->{Attribute}->[2]->{AttributeValue};
-		my $user_email = $ref->{'SOAP-ENV:Body'}->{Response}->{Assertion}->{AttributeStatement}->{Attribute}->[1]->{AttributeValue};
+		my ($user_id) = $ref->{'SOAP-ENV:Body'}->{Response}->{Assertion}->{AttributeStatement}->{Subject}->{NameIdentifier};
+		my %attr = map {$_->{'AttributeName'}, $_->{'AttributeValue'}} @{$ref->{'SOAP-ENV:Body'}->{Response}->{Assertion}->{AttributeStatement}->{Attribute}};
+		my ($user_lname) = $attr{lastName};
+		my ($user_fname) = $attr{firstName};
+		my ($user_email) = $attr{email};
 #		print STDERR $user_id.'   '.$user_fname.'   '.$user_lname.'  '.$user_email;
 		
 		return ($user_id,$user_fname,$user_lname,$user_email);
 	}
-	#else{
-#		return ('public','none','none','none');
-#	}
 }
 
 sub login 
@@ -509,7 +505,7 @@ sub gunzip
       my $GUNZIP = $P->{GUNZIP};
       unless ($GUNZIP)
 	{
-	  "ERROR: in gunzip!  gunzip binary is not specified!\n";
+	  print STDERR "ERROR: in gunzip!  gunzip binary is not specified!\n" if $debug;
 	}
       print STDERR "Debugging sub gunzip\n" if $debug;
       print STDERR "\t",$file,"\n" if $debug;
