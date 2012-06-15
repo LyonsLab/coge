@@ -1,4 +1,5 @@
 package CoGe::Accessory::SynMap_report;
+
 use strict;
 use base qw(Class::Accessor) ;
 use Data::Dumper ;
@@ -49,19 +50,34 @@ sub parse_syn_blocks
     my $dsgid1;
     my $dsgid2;
     #need to assign a block to the highest scoring matching chromosomes
-
-    foreach my $item (sort {$a->{name} cmp $b->{name} || $a->{match} cmp $b->{match} || $a->{score} <=> $b->{score} || $a->{identity_sum} <=> $b->{identity_sum}} @$blocks1)
+#    print Dumper $blocks1, $blocks2;
+    foreach my $item (@$blocks1)
 #      foreach my $item (@$blocks1)
       {
 	$chrs1->{$item->{name}}{$item->{match}}{count}++;
 	$chrs1->{$item->{name}}{$item->{match}}{score}+=$item->{score};
+	$chrs1->{$item->{name}}{$item->{match}}{hi_score}=$item->{score} unless $chrs1->{$item->{name}}{$item->{match}}{hi_score};
+	$chrs1->{$item->{name}}{$item->{match}}{rev}+=$item->{score} if $item->{rev}; #needs to be a weighted metric based on this size of the block.  Bigger blocks in rev orientation get more weight
+	$chrs1->{$item->{name}}{$item->{match}}{start}=$item->{match_start} unless $chrs1->{$item->{name}}{$item->{match}}{start};
+	#update start position if new start is less than existing start AND the block higher scoring
+	$chrs1->{$item->{name}}{$item->{match}}{start}=$item->{match_start} if 
+	    $chrs1->{$item->{name}}{$item->{match}}{hi_score} < $item->{score} ;
+	$chrs1->{$item->{name}}{$item->{match}}{hi_score}=$item->{score} if $chrs1->{$item->{name}}{$item->{match}}{hi_score}<$item->{score};
 	$chrs1_scores->{$item->{name}}+=$item->{score};
 	$dsgid1 = $item->{dsgid};
       }
-    foreach my $item (@$blocks2)
+    foreach my $item (sort {$a->{name} cmp $b->{name} }@$blocks2)
       {
+	my $print =0;
 	$chrs2->{$item->{name}}{$item->{match}}{count}++;
 	$chrs2->{$item->{name}}{$item->{match}}{score}+=$item->{score};
+	$chrs2->{$item->{name}}{$item->{match}}{hi_score}=$item->{score} unless $chrs2->{$item->{name}}{$item->{match}}{hi_score};
+	$chrs2->{$item->{name}}{$item->{match}}{rev}+=$item->{score} if $item->{rev}; #needs to be a weighted metric based on this size of the block.  Bigger blocks in rev orientation get more weight
+	$chrs2->{$item->{name}}{$item->{match}}{start}=$item->{match_start} unless $chrs2->{$item->{name}}{$item->{match}}{start};
+	#update start position if new start is less than existing start AND the block higher scoring
+	$chrs2->{$item->{name}}{$item->{match}}{start}=$item->{match_start} if 
+	    $chrs2->{$item->{name}}{$item->{match}}{hi_score} < $item->{score} ;
+	$chrs2->{$item->{name}}{$item->{match}}{hi_score}=$item->{score} if $chrs2->{$item->{name}}{$item->{match}}{hi_score}<$item->{score};
 	$chrs2_scores->{$item->{name}}+=$item->{score};
 	$dsgid2 = $item->{dsgid};
       }
@@ -74,58 +90,31 @@ sub parse_syn_blocks
 	($chrs1_scores, $chrs2_scores) = ($chrs2_scores, $chrs1_scores);
 	($dsgid1,$dsgid2)= ($dsgid2, $dsgid1);
       }
-    #need to use only the highest scoring blocks in set2 to take into account duplications
-    my %best_blocks2;
-    foreach my $block (@$blocks2)
+
+    my %best_chr2contigs;
+    foreach my $contig (keys %$chrs2)
       {
-	# is this chromosome already assigned to another match?  If so, is the one we have better in terms of having a higher score or (same score and higher identity_sum)?  If so, let's use that one.
-	if ($best_blocks2{$block->{name}})
-	  { 
-	    if ( $block->{score} > $best_blocks2{$block->{name}}->{score} ||
-		( $block->{score} == $best_blocks2{$block->{name}}->{score} && $block->{identity_sum} > $best_blocks2{$block->{name}}->{identity_sum})
-	       )
-	      {
-		$best_blocks2{$block->{name}} = $block;
-	      }
-	  }
-	else
-	  {
-	    $best_blocks2{$block->{name}} = $block;
-	  }
+	my ($best_chr) = sort { $chrs2->{$contig}{$b}{score} <=> $chrs2->{$contig}{$a}{score} } keys %{$chrs2->{$contig}};
+	push @{$best_chr2contigs{$best_chr}}, {%{$chrs2->{$contig}{$best_chr}}, name=>$contig};
       }
-    $blocks2 = [values %best_blocks2];
-
-
     my $ordered1 =[]; #storage for ordered chromosomes
     my $ordered2 =[]; #storage for ordered chromosomes
     #sort blocks for chr1 so that the highest scoring ones are first
     foreach my $chr1 (sort{$chrs1_scores->{$b} <=> $chrs1_scores->{$a}} keys %$chrs1_scores)
       {
-	push @$ordered1, {chr=>$chr1};
-	my @blocks;
-	foreach my $block (@$blocks2)
-	  {
-	    push @blocks, $block if $block->{match} eq $chr1;
-	  }
-	#Need to check if a given chromosome in @blocks occurs more than once.  This will happen if there is a segmental duplication, or something along those lines.
-	my %block_check;
-	foreach my $block (@blocks)
-	  {
-	    if ($block_check{$block->{name}})
-	      {
-		$block_check{$block->{name}}=$block if $block->{num_pairs} > $block_check{$block->{name}}{num_pairs}; #more pairs
-	      }
-	    else
-	      {
-		$block_check{$block->{name}}=$block;
-	      }
-	  }
-	@blocks = values %block_check;#create the non-redundant set
+	next unless $best_chr2contigs{$chr1};
+	my %data;
+	$data{chr}=$chr1;
+	$data{matching_chr}=[map {$_->{name}} sort {$a->{start}<=>$b->{start}} @{$best_chr2contigs{$chr1}}];
+	$data{rev}=0;
+	$data{dsgid}=$dsgid1;	
 	#print out the blocks in order.  Note ones that are in reverse orientation
-	foreach my $block (sort {$a->{match_start} <=> $b->{match_start} }@blocks)
+	foreach my $block (@{$best_chr2contigs{$chr1}})
 	  {
-	    push @$ordered2, {chr=>$block->{name}, rev=>$block->{rev}, match=>$block->{match}, dsgid=>$block->{dsgid}};
+	    my $rev = 1 if $block->{rev} && $block->{rev}/$block->{score} >= 0.5;
+	    push @$ordered2, {chr=>$block->{name}, rev=>$rev, matching_chr=>[$chr1], dsgid=>$dsgid2};
 	  }
+	push @$ordered1,\%data;
       }
     ($ordered1, $ordered2) = ($ordered2, $ordered1) if $switched;
     $self->org1_ordered($ordered1);
@@ -139,8 +128,17 @@ sub process_syn_block
     my $self = shift;
     my $block = shift;
     my ($head, @block) = split/\n/, $block;
-    my ($block_num, $score, $seq1, $seq2, $strand) = 
-      split/\t/, $head;
+    my ($block_num, $score, $seq1, $seq2, $strand) = split/\t/, $head;
+    unless ($score)
+      {
+	$score = scalar @block;
+	my @line1 = split/\t/, $block[0];
+	my @line2 = split/\t/, $block[-1];
+
+	$seq1 = $line1[0];
+	$seq2 = $line1[4];
+	$strand = $line1[6] < $line2[6] ? 0 : "r"; #start position will be smaller for last entry than first entry if line is reversed
+      }
     my $rev = $strand =~/r/ ? 1 : 0;
 
     my ($seq1_start, $seq1_stop, $seq2_start, $seq2_stop);
