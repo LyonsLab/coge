@@ -11,8 +11,8 @@ use Data::Dumper;
 use DBI;
 use POSIX;
 
-use vars qw($P $dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ks_db $ks_type $log $MAX $MIN $assemble $axis_metric $color_type $box_diags $fid1 $fid2 $selfself $labels $color_scheme $chr_sort_order $font $GZIP $GUNZIP $URL $conffile $skip_random $force_box);
-
+use vars qw($P $dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ks_db $ks_type $log $MAX $MIN $assemble $axis_metric $color_type $box_diags $fid1 $fid2 $selfself $labels $color_scheme $chr_sort_order $font $GZIP $GUNZIP $URL $conffile $skip_random $force_box $chr_order);
+#17:1:14:5:7:18:3:4:11:9:13:6:8:12:10:19:2:15:16
 
 
 GetOptions(
@@ -37,7 +37,7 @@ GetOptions(
 	   "max=s"=>\$MAX,
 	   "min=s"=>\$MIN,
 	   "log=s"=>\$log,
-	   "assemble=s"=>\$assemble,
+	   "assemble=s"=>\$assemble, #syntenic path assembly option
 	   "axis_metrix|am=s"=>\$axis_metric,
 	   "box_diags|bd=i"=>\$box_diags,
 	   "fid1|f1=i"=>\$fid1,
@@ -50,6 +50,7 @@ GetOptions(
 	   "config_file|cf=s"=>\$conffile,
 	   "skip_random|sr=i"=>\$skip_random, #flag or skipping chromosome containing the wod 'random' in their name
 	   "force_box|fb" => \$force_box, #flag to make dotplot dimensions a box instead of relative on genomic content
+	   "chr_order|co=s" => \$chr_order, #string of ":" delimted chromosome name order to display for the genome with fewer chromosomes
 	   );
 $selfself = 1 unless defined $selfself;
 $labels = 1 unless defined $labels;
@@ -93,22 +94,65 @@ my $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
 $coge = CoGeX->dbconnect(db_connection_string=>$connstr, db_name=>$DBUSER, db_passwd=>$DBPASS );
 my $synmap_report = new CoGe::Accessory::SynMap_report;
 
+my ($dsg1) = $coge->resultset('DatasetGroup')->find($dsgid1);
+my ($dsg2) = $coge->resultset('DatasetGroup')->find($dsgid2);
+unless ($dsg1)
+  {
+    warn "No dataset group found with dbid $dsgid1\n";
+    return;
+  }
+unless ($dsg2)
+  {
+    warn "No dataset group found with dbid $dsgid2\n";
+    return;
+  }
 
-my ($org1_order, $org2_order) = $synmap_report->parse_syn_blocks(file=>$alignfile) if $assemble;
+#get display order of chromosomes, get genome information
+my ($org1_order, $org1info) = get_dsg_order(dsg=>$dsg1, chr=>$CHR1, minsize=>$min_chr_size, chr_sort_order=>$chr_sort_order, skip_random=>$skip_random);
+my ($org2_order, $org2info) = get_dsg_order(dsg=>$dsg2, chr=>$CHR2, minsize=>$min_chr_size, chr_sort_order=>$chr_sort_order, skip_random=>$skip_random);
 
-my $skip_non_ordered = $assemble && $assemble == 2 ? 1 : 0;
+add_user_order (order1=>$org1_order, order2=>$org2_order, user_order=>$chr_order) if $chr_order;
 
-my $org1info = get_dsg_info(dsgid=>$dsgid1, chr=>$CHR1, minsize=>$min_chr_size, order=>$org1_order, metric=>$axis_metric, skip_non_ordered=>$skip_non_ordered, chr_sort_order=>$chr_sort_order, skip_random=>$skip_random);
+if ($axis_metric && $axis_metric =~ /gene/) #add in gene information
+  {
+    get_gene_info(dsgid=>$dsgid1, info=>$org1info);
+    get_gene_info(dsgid=>$dsgid2, info=>$org2info);
+  }
+
+#will need to reorder whichever genome has more chromosomes/contigs
+
+my $spa_info_file = $basename.".spa_info.txt";
+if ($assemble) 
+  {
+    my $skip = $assemble && $assemble == 2 ? 1 : 0;
+    my ($org1_association, $org2_association) = $synmap_report->parse_syn_blocks(file=>$alignfile) if $assemble;
+    my $output = @$org1_association > @$org2_association ? reord(reorder=>$org1_order, order=>$org2_order, assoc=>$org2_association, skip=>$skip, info=>$org1_association) : reord (reorder=>$org2_order, order=>$org1_order, assoc=>$org1_association, skip=>$skip, info=>$org2_association);
+
+    open OUT, ">$spa_info_file";
+    print OUT $output;
+    close OUT;
+    add_rev_info(info=>$org1info, assoc=>$org1_association);
+    add_rev_info(info=>$org2info, assoc=>$org2_association);
+  }
+
+
+calc_abs_start_pos(order=>$org1_order, info=>$org1info);
+calc_abs_start_pos(order=>$org2_order, info=>$org2info);
+
+#print "IN DOTPLOT\n";
+#my $org1info = get_dsg_info(dsgid=>$dsgid1, chr=>$CHR1, minsize=>$min_chr_size, order=>$org1_order, metric=>$axis_metric, chr_sort_order=>$chr_sort_order, skip_random=>$skip_random);
 
 my $org1length =0;
-#print STDERR Dumper $org1info;
 map {$org1length+=$_->{length}} values %$org1info;
-my $org2info = get_dsg_info(dsgid=>$dsgid2, chr=>$CHR2, minsize=>$min_chr_size, order=>$org2_order, metric=>$axis_metric, skip_non_ordered=>$skip_non_ordered, chr_sort_order=>$chr_sort_order, skip_random=>$skip_random);
+#print Dumper $org2info;
+#my $org2info = get_dsg_info(dsgid=>$dsgid2, chr=>$CHR2, minsize=>$min_chr_size, order=>$org2_order, metric=>$axis_metric, chr_sort_order=>$chr_sort_order, skip_random=>$skip_random);
+#print Dumper $org2info;
 my $org2length =0;
 map {$org2length+=$_->{length}} values %$org2info;
 
 ($org1info, $org1length, $dsgid1, $org2info, $org2length, $dsgid2) = ($org2info, $org2length, $dsgid2, $org1info, $org1length, $dsgid1) if $flip;
 ($CHR1, $CHR2) = ($CHR2, $CHR1) if $flip && ($CHR1 || $CHR2);
+
 my $height = sprintf("%.0f", $width*$org2length/$org1length);
 $height = $width if ($height > 20*$width) || ($height <  $width/20) || $force_box;
 my $x_bp_per_pix = $org1length/$width; #sprintf("%.0f", $org1length/$width);
@@ -185,7 +229,7 @@ my @colors;
 if ($color_type && $color_type eq "inv")
   {
     push @colors, $graphics_context->colorResolve(0,150,0); #forward green
-    push @colors, $graphics_context->colorResolve(0,0,150); #reverse red
+    push @colors, $graphics_context->colorResolve(0,0,150); #reverse blue
   }
 elsif ($color_type && $color_type eq "diag")
   {
@@ -195,6 +239,37 @@ elsif ($color_type && $color_type eq "diag")
     push @colors, $graphics_context->colorResolve(150,150,0);
     push @colors, $graphics_context->colorResolve(150,0,150);
     push @colors, $graphics_context->colorResolve(0,150,150);
+  }
+elsif ($color_type && $color_type eq "chr")
+  {
+    my $color_num = scalar keys %$org1info > scalar keys %$org2info ? scalar keys %$org2info : scalar keys %$org1info;
+    push @colors, $graphics_context->colorResolve(200,0,0);
+    push @colors, $graphics_context->colorResolve(200,200,0);
+    push @colors, $graphics_context->colorResolve(0,200,0);
+    push @colors, $graphics_context->colorResolve(0,0,200);
+    push @colors, $graphics_context->colorResolve(0,200,200);
+    push @colors, $graphics_context->colorResolve(200,0,200);
+    push @colors, $graphics_context->colorResolve(100,0,0);
+    push @colors, $graphics_context->colorResolve(100,100,0);
+    push @colors, $graphics_context->colorResolve(0,100,0);
+    push @colors, $graphics_context->colorResolve(0,0,100);
+    push @colors, $graphics_context->colorResolve(0,100,100);
+    push @colors, $graphics_context->colorResolve(100,0,100);
+    push @colors, $graphics_context->colorResolve(200,100,0);
+    push @colors, $graphics_context->colorResolve(0,200,100);
+    push @colors, $graphics_context->colorResolve(200,0,100);
+    push @colors, $graphics_context->colorResolve(100,200,0);
+    push @colors, $graphics_context->colorResolve(0,100,200);
+    push @colors, $graphics_context->colorResolve(100,0,200);
+    my @tmp_colors;
+    my $index =0;
+    for (my $i=0; $i<$color_num; $i++)
+      {
+	push @tmp_colors, $colors[$index];
+	$index++;
+	$index=0 if $index > (scalar @colors -1);
+      }
+    @colors = @tmp_colors;
   }
 else
   {
@@ -277,6 +352,8 @@ sub draw_dots
     my $ks_type = $opts{ks_type};
     my $fid1 = $opts{fid1};
     my $fid2 = $opts{fid2};
+    my $order1 = $opts{order1}; #chromosome display order for genome 1
+    my $order2 = $opts{order2}; #chromosome display order for genome 2
     my $color_scheme = $opts{color_scheme}; #color pattern for Ks/Kn caluclations
 
     #easier lookup, can scale to more pairs in the future
@@ -849,6 +926,98 @@ sub draw_y_labels
     return $gd;
   }
 
+sub add_user_order
+  {
+    my %opts = @_;
+    my $order1 = $opts{order1};
+    my $order2 = $opts{order2};
+    my $user_order = $opts{user_order};
+    my $to_order = @$order1 > @$order2 ? $order2 : $order1; #get the smaller list
+    my %chrs = map {$_, 1} @$to_order;
+    my %seen;
+    my @new_order;
+    foreach my $item (split ":",$user_order)
+      {
+	if ($chrs{$item})
+	  {
+	    push @new_order, $item;
+	  }
+	else
+	  {
+	    warn "$item is not in chromosome list!";
+	  }
+	$seen{$item}=1;
+      }
+    foreach my $item (@$to_order)
+      {
+	next if $seen{$item};
+	push @new_order, $item;
+	$seen{$item}=1;
+      }
+    @$to_order = @new_order;
+  }
+
+sub reord
+  {
+    my %opts = @_;
+    my $order = $opts{order};
+    my $reorder = $opts{reorder};
+    my $association = $opts{assoc};
+    my $skip = $opts{skip};
+    my $info = $opts{info}; #for determining orientation
+
+    #create mapping hash of which contigs are in the reverse orientation
+    my %rev_info;
+    foreach my $item (@$info)
+      {
+	my $rev = $item->{rev} ? -1 : 1;
+	my $chr = $item->{chr};
+	$rev_info{$chr}=$rev;
+      }
+
+    my %mapped_association;
+    map{$mapped_association{$_->{chr}}=$_->{matching_chr}} @$association;
+    my @new_order;
+
+    my $output = join ("\t", ("#CHR1", "CHR2", "ORIENTATION"))."\n";
+    foreach my $chr (@$order)
+      {
+	push @new_order, @{$mapped_association{$chr}};
+	$output .= join ("\n", map {join ("\t", $chr, $_, $rev_info{$_})}  @{$mapped_association{$chr}})."\n";
+      }
+    unless ($skip)
+      {
+	my %seen = map{$_=>1} @new_order;
+	foreach my $item (@$reorder)
+	  {
+	    $output .= join ("\t", "unmapped", $item)."\n";
+	    push @new_order, $item unless $seen{$item};
+	  }
+      }
+    @$reorder = @new_order;
+    return $output
+  }
+
+sub calc_abs_start_pos
+  {
+    my %opts = @_;
+    my $order = $opts{order};
+    my $info = $opts{info};
+    my $pos = 1;
+    my %seen;
+    foreach my $chr (@$order)
+      {
+	$seen{$chr} =1;
+	$info->{$chr}{start} = $pos-1;
+	$pos += $info->{$chr}{length};
+      }
+    #delete items from info that are not in the ordered list
+    foreach my $chr (keys %$info)
+      {
+	delete $info->{$chr} unless $seen{$chr};
+      }
+  }
+
 sub get_dsg_info
   {
     my %opts = @_;
@@ -866,78 +1035,18 @@ sub get_dsg_info
 	warn "No dataset group found with dbid $dsgid\n";
 	return;
       }
-    my %data;
-
-    if ($metric && $metric =~ /gene/i)
-      {
-	my $dbh = DBI->connect($connstr,$DBUSER,$DBPASS);
-	foreach my $gs ($dsg->genomic_sequences)
-	  {
-	    next if ($gs->chromosome =~ /random/i || $gs->chromosome =~ /unknown/i) && $skip_random;
-	    next if $chr && $chr ne $gs->chromosome;
-	    my $tmp_chr = $gs->chromosome;
-	    my $query = qq{
-SELECT count(distinct(feature_id))
-  FROM feature
-  JOIN dataset_connector dc using (dataset_id)
- WHERE dataset_group_id = $dsgid
-   AND feature_type_id = 3
-   AND feature.chromosome = '$tmp_chr'
-
-};
-	    my ($res) = $dbh->selectrow_array($query);
-	    next unless $res || $res==1;
-	    if ($data{$gs->chromosome})
-	      {
-		warn "Duplicate chromosome:".$gs->chromosome."\n";
-	      }
-	    $data{$gs->chromosome}{length}=$res;
-	    #get gene order
-	    $query = qq{
-SELECT feature_id
-  FROM feature
-  JOIN dataset_connector dc using (dataset_id)
- WHERE dataset_group_id = $dsgid
-   AND feature_type_id = 3
-   AND feature.chromosome = '$tmp_chr'
- ORDER BY feature.start
-
-};
-	    my $sth = $dbh->prepare($query);
-	    $sth->execute();
-	    my $i = 1;
-	    while( my $row =$sth->fetchrow_arrayref)
-	      {
-		$data{$gs->chromosome}{gene}{$row->[0]}=$i;
-		$i++;
-	      }
-	  }
-	
-      }
-    foreach my $gs ($dsg->genomic_sequences)
-      {
-	next if ($gs->chromosome =~ /random/i || $gs->chromosome =~ /unknown/i) && $skip_random;
-	next if $chr && $chr ne $gs->chromosome;
-	my $last = $gs->sequence_length;
-	next if $minsize && $minsize > $last;
-	if ($data{$gs->chromosome})
-	  {
-	    warn "Duplicate chromosome:".$gs->chromosome."\n" unless $metric && $metric =~ /gene/i;
-	  }
-	$data{$gs->chromosome}{length}=$last unless $metric && $metric =~ /gene/i;
-	$data{$gs->chromosome}{chr_length} = $last if $data{$gs->chromosome};;
-      }
     my %rev;#store chromosomes to be reversed in display
     my @ordered;
+    my %data;
     if ($order) #chromsomes have a prespecified order
       {
 	my %seen;
-	foreach my $item (@$order)
+	foreach my $chr (@$order)
 	  {
-	    my $chr = $item->{chr};
+#	    my $chr = $item->{chr};
 	    next unless $data{$chr};
 	    push @ordered, $chr;
-	    $rev{$chr}=1 if $item->{rev};
+#	    $rev{$chr}=1 if $item->{rev};
 	    $seen{$chr}=1;
 	  }
 	my @chr; 
@@ -973,7 +1082,7 @@ SELECT feature_id
 	    my @lettered;
 	    foreach my $chr (keys %data)
 	      {
-		if ($chr =~ /^\d+/)
+		if ($chr =~ /\d+/)
 		  {
 		    push @numbered, $chr;
 		  }
@@ -1002,7 +1111,7 @@ SELECT feature_id
 sub chr_sort
     {
       my $item = shift;
-      if ($item =~ /^(\d+[\.,]?\d*)(.*)/)
+      if ($item =~ /(\d+)(.*)/)
 	{
 	  return $1.".".ord ($2);
 	}
@@ -1084,6 +1193,111 @@ sub get_pairs
     close IN;
     return \%data;
   }
+
+sub get_dsg_order
+    {
+    my %opts = @_;
+    my $dsg = $opts{dsg};
+    my $chr = $opts{chr};
+    my $minsize = $opts{minsize};
+    my $chr_sort_order = $opts{chr_sort_order};
+    my $skip_random = $opts{skip_random}; #skip "random" chromosome where sequences are added ad hoc
+
+    my %data;
+    foreach my $gs ($dsg->genomic_sequences)
+      {
+	next if ($gs->chromosome =~ /random/i || $gs->chromosome =~ /unknown/i || $gs->chromosome =~ /^un$/i) && $skip_random;
+	next if $chr && $chr ne $gs->chromosome;
+	my $len = $gs->sequence_length;
+	next if $minsize && $minsize > $len;
+	if ($data{$gs->chromosome})
+	  {
+	    warn "Duplicate chromosome:".$gs->chromosome."\n";
+	  }
+	$data{$gs->chromosome}{chr_length} = $len;
+	$data{$gs->chromosome}{length} = $len;
+      }
+    #how to sort chromosomes for diplay?
+    my @ordered;
+    if ($chr_sort_order =~ /^n/i) #sorting by name
+      {
+	my @numbered;
+	my @lettered;
+	foreach my $chr (keys %data)
+	  {
+	    if ($chr =~ /\d+/)
+	      {
+		push @numbered, $chr;
+	      }
+	    else
+	      {
+		push @lettered, $chr;
+	      }
+	  }
+	@ordered = ( (sort {chr_sort($a) <=> chr_sort($b) } @numbered), (sort { $a cmp $b } @lettered));
+      }
+    elsif ($chr_sort_order =~ /^s/i) #sorting by size
+      {
+	@ordered = sort {$data{$b}{chr_length} <=> $data{$a}{chr_length} } keys %data; 
+      }
+    return \@ordered, \%data;
+  }
+    
+
+sub get_gene_info
+  {
+    my %opts = @_;
+    my $dsgid = $opts{dsgid};
+    my $info = $opts{info};
+    my $dbh = DBI->connect($connstr,$DBUSER,$DBPASS);
+    foreach my $tmp_chr (keys %$info)
+      {
+	my $query = qq{
+SELECT count(distinct(feature_id))
+  FROM feature
+  JOIN dataset_connector dc using (dataset_id)
+ WHERE dataset_group_id = $dsgid
+   AND feature_type_id = 3
+   AND feature.chromosome = '$tmp_chr'
+
+};
+	my ($res) = $dbh->selectrow_array($query);
+	$info->{$tmp_chr}{gene_length}=$res;
+	$info->{$tmp_chr}{length}=$res;
+	next unless $res;
+	#get gene order
+	$query = qq{
+SELECT feature_id
+  FROM feature
+  JOIN dataset_connector dc using (dataset_id)
+ WHERE dataset_group_id = $dsgid
+   AND feature_type_id = 3
+   AND feature.chromosome = '$tmp_chr'
+ ORDER BY feature.start
+
+};
+	my $sth = $dbh->prepare($query);
+	$sth->execute();
+	my $i = 1;
+	while( my $row =$sth->fetchrow_arrayref)
+	  {
+	    $info->{$tmp_chr}{gene}{$row->[0]}=$i;
+	    $i++;
+	  }
+      }
+  }
+
+sub add_rev_info
+  {
+    my %opts = @_;
+    my $info = $opts{info};
+    my $assoc = $opts{assoc};
+    foreach my $item (@$assoc)
+      {
+	$info->{$item->{chr}}{rev}=$item->{rev};
+      }
+  }
+
 
 sub get_range
   {
@@ -1364,7 +1578,7 @@ max                    max ks val cutoff
 
 min                    min ks val cutoff
 
-assemble               if set to 1, output will try to be assembled based on syntenic thread
+assemble               if set to 1, output will try to be assembled based on syntenic path
                        General assumption is aligning a WGS genome sequence to a reference genome
                        
                        if set to 2, will not add any pieces that are not syntenic
