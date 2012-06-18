@@ -746,7 +746,7 @@ sub draw_chromosome_grid
 	  # 	$graphics_context->string(gdSmallFont, $x+2, $graphics_context->height-15, $chr, $str_color);
 	  #     }
 	  # }
-	$data{x}{$pchr}=[$pv,$x, $str_color] if $pchr;
+	$data{x}{$pchr}=[$pv,$x, $str_color] if defined $pchr;
 	$pchr=$chr;
 	$pv = $x+1;
       }
@@ -771,7 +771,7 @@ sub draw_chromosome_grid
 	$graphics_context->line(0, $y, $graphics_context->width, $y, $color);
 	$str_color = $org2->{$chr}{rev} ? $red : $black;
 #	$graphics_context->string(gdSmallFont, 2, $y-15, $chr, $str_color) if $labels;
-	$data{y}{$pchr}=[$y, $pv, $str_color] if $pchr;
+	$data{y}{$pchr}=[$y, $pv, $str_color] if defined $pchr;
 	$pchr = $chr;
 	$pv =$y+1;
       }
@@ -982,7 +982,7 @@ sub reord
     my $output = join ("\t", ("#CHR1", "CHR2", "ORIENTATION"))."\n";
     foreach my $chr (@$order)
       {
-	push @new_order, @{$mapped_association{$chr}};
+	push @new_order, @{$mapped_association{$chr}} if $mapped_association{$chr};
 	$output .= join ("\n", map {join ("\t", $chr, $_, $rev_info{$_})}  @{$mapped_association{$chr}})."\n";
       }
     unless ($skip)
@@ -1207,7 +1207,7 @@ sub get_dsg_order
     foreach my $gs ($dsg->genomic_sequences)
       {
 	next if ($gs->chromosome =~ /random/i || $gs->chromosome =~ /unknown/i || $gs->chromosome =~ /^un$/i) && $skip_random;
-	next if $chr && $chr ne $gs->chromosome;
+	next if defined $chr && $chr ne $gs->chromosome;
 	my $len = $gs->sequence_length;
 	next if $minsize && $minsize > $len;
 	if ($data{$gs->chromosome})
