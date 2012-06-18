@@ -52,7 +52,7 @@ my $color_scheme = $FORM->param('cs');
 $box_diags = 1 if $box_diags && $box_diags eq "true";
 $grid = 1 unless defined $grid;
 $DEBUG=1 if $FORM->param('debug');
-exit unless ($dsgid1 && $dsgid2 && $chr1 && $chr2 && $basename);
+exit unless ($dsgid1 && $dsgid2 && defined $chr1 && defined $chr2 && $basename);
 my ($md51, $md52, $mask1, $mask2, $type1, $type2, $blast,$params) = $basename =~/(.*?)_(.*?)\.(\d+)-(\d+)\.(\w+)-(\w+)\.(\w+)\.dag\.?a?l?l?_(.*)/ ;
 
 
