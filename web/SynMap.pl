@@ -2763,7 +2763,8 @@ sub go
 	    #add version of dataset_group to organism names
 	    $org_name1 .= " (v".$dsg1->version.")";
 	    $org_name2 .= " (v".$dsg2->version.")";
-	    $html .= qq{<table><tr><td>};
+ 	    $html .= $flip ? "<span class='species small'>y-axis organism: $org_name1</span><br>": "<span class='species small'>y-axis organism: $org_name2</span><br>";;
+	    $html .= qq{<table><tr><td valign=top>};
 	    my $y_lab = "$out.y.png";
 	    my $x_lab = "$out.x.png";
  	    $out =~ s/$DIR/$URL/;
@@ -2777,7 +2778,6 @@ sub go
 
 	      }
 	      
- 	    $html .= $flip ? "<span class='species small'>y-axis organism: $org_name1</span><br>": "<span class='species small'>y-axis organism: $org_name2</span><br>";;
  	    $/ = "\n";
 	    my $tmp;
  	    while (<IN>)
