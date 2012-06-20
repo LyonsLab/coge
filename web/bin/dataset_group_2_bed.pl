@@ -35,7 +35,7 @@ foreach my $ds ($dsg->datasets)
   {
     my $rs = $coge->resultset('Feature');
     $rs->result_class('DBIx::Class::ResultClass::HashRefInflator');
-    foreach my $ref ($rs->search({dataset_id => $ds->id, feature_type_id=>[3,4,7]}))
+    foreach my $ref ($rs->search({dataset_id => $ds->id, feature_type_id=>[3,5,8]}))
       {
 	print join ("\t", $ref->chromosome, $ref->start, $ref->stop, $ref->feature_id),"\n";
       }
