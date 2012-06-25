@@ -19,6 +19,8 @@ use Mail::Mailer;
 use Benchmark;
 use DBI;
 use POSIX;
+use Sort::Versions;
+
 no warnings 'redefine';
 
 
@@ -486,7 +488,7 @@ sub gen_dsg_menu
     foreach my $dsg ($coge->resultset('DatasetGroup')->search({organism_id=>$oid},{prefetch=>['genomic_sequence_type']}))
       {
 	my $name;
-	my $has_cds;
+	my $has_cds = 0;
 	if ( $dsg->restricted && !$USER->has_access_to_genome($dsg))
 	  {
 	    next unless $dsgid && $dsg->id == $dsgid;
@@ -518,7 +520,7 @@ sub gen_dsg_menu
     my $dsg_menu = qq{
    <select id=dsgid$num onChange="\$('#dsg_info$num').html('<div class=dna_small class=loading class=small>loading. . .</div>'); get_dataset_group_info(['args__dsgid','dsgid$num','args__org_num','args__$num'],['dsg_info$num', 'feattype_menu$num','genome_message$num'])">
 };
-    foreach (sort {$b->[2]->version <=> $a->[2]->version || $a->[2]->type->id <=> $b->[2]->type->id || $b->[3] <=> $a->[3]} @dsg_menu)
+    foreach (sort {versioncmp($b->[2]->version, $a->[2]->version) || $a->[2]->type->id <=> $b->[2]->type->id || $b->[3] cmp $a->[3]} @dsg_menu)
       {
 	my ($numt, $name) = @$_;
 	my $selected = " selected" if $dsgid && $numt == $dsgid;
