@@ -14,6 +14,8 @@ use Digest::MD5 qw(md5_base64);
 use Benchmark qw(:all);
 use Statistics::Basic::Mean;
 use POSIX;
+use Sort::Versions;
+
 no warnings 'redefine';
 
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $coge $HISTOGRAM %FUNCTION $P $COOKIE_NAME $SERVER);
@@ -456,11 +458,13 @@ sub get_genome_list_for_org
 	  $dsg->name($org->name) unless $dsg->name;
     	  push @dsg, $dsg;
 	}
-      @opts = map {$_->id."%%".$_->name." (v".$_->version.", dsgid".$_->id. "): ". $_->genomic_sequence_type->name} sort {$b->version cmp $a->version || $a->type->id <=> $b->type->id || $a->name cmp $b->name || $b->id cmp $a->id} @dsg;
+      @opts = map {$_->id."%%".$_->name." (v".$_->version.", dsgid".$_->id. "): ". $_->genomic_sequence_type->name} sort {versioncmp($b->version, $a->version) || $a->type->id <=> $b->type->id || $a->name cmp $b->name || $b->id cmp $a->id} @dsg;
     }
 
   my $res = join ("&&", @opts);
 }
+
+
 
 sub get_dataset_groups
     {
@@ -484,7 +488,7 @@ sub get_dataset_groups
 	      $dsg->name($org->name) unless $dsg->name;
 	      $selected{$dsg->id} = " " unless $selected{$dsg->id};
 	    }
-	  @opts = map {"<OPTION value=\"".$_->id."\" ".$selected{$_->id} .">".$_->name." (v".$_->version.", dsgid".$_->id. "): ". $_->genomic_sequence_type->name."</OPTION>"} sort {$b->version cmp $a->version || $a->type->id <=> $b->type->id || $b->id <=> $a->id} @dsg;
+	  @opts = map {"<OPTION value=\"".$_->id."\" ".$selected{$_->id} .">".$_->name." (v".$_->version.", dsgid".$_->id. "): ". $_->genomic_sequence_type->name."</OPTION>"} sort {versioncmp($b->version,$a->version) || $a->type->id <=> $b->type->id || $a->name cmp $b->name || $b->id cmp $a->id} @dsg;
 	}
       my $html;
       if (@opts) 
