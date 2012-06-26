@@ -1,7 +1,8 @@
 #!/usr/bin/perl -w
 
 use strict;
-use CoGe::Accessory::GenBank;
+use lib "/home/elyons/projects/CoGe/Accessory/lib";
+use CoGe::Accessory::GenBank2;
 use LWP::Simple;
 use Data::Dumper;
 use Getopt::Long;
@@ -11,8 +12,8 @@ use File::Path;
 
 # variables
 my ($DEBUG, $GO, $ERASE,$autoupdate, $autoskip, @accns, $tmpdir, $help, $user_chr, $ds_link, $delete_src_file, $test, $auto_increment_chr, $base_chr_name, $accn_file, $max_entries);
-my $connstr = 'dbi:mysql:dbname=coge;host=synteny.cnr.berkeley.edu;port=3306';
-my $coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
+my $connstr = 'dbi:mysql:dbname=coge;host=localhost;port=3306';
+my $coge = CoGeX->connect($connstr, 'coge', '123coge321' );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 
@@ -125,7 +126,7 @@ accn: foreach my $accn (@accns)
 	next;
       }
 
-    my $genbank = new CoGe::Accessory::GenBank();
+    my $genbank = new CoGe::Accessory::GenBank2();
     $genbank->debug(1);
     $genbank->max_entries($max_entries) if $max_entries;
     $genbank->get_genbank_from_ncbi(file=> "$tmpdir/$accn.gbk", accn=>$accn,);
@@ -386,13 +387,15 @@ accn: foreach my $accn (@accns)
 		       || $anno =~ /synonym/i # synonyms are embedded in the /note= tag! these are names
 		       || $anno eq "names")    
 		  {
+		    my $master =1; #make first one master
 		    foreach my $item (@{$stuff})
 		      {
 			foreach my $thing (split/;/,$item)
 			  {
 			    $thing =~ s/^\s+//;
 			    $thing =~ s/\s+$//;
-			    $names{$thing}=1;
+			    $names{$thing}=0 unless defined $names{$thing};
+			    $names{$thing}=1 if $anno =~ /locus_tag/i; #primary_name;
 			  }
 		      }
 		  }
@@ -479,10 +482,12 @@ accn: foreach my $accn (@accns)
 	      }
 	    foreach my $name (keys %names)
 	      {
+		my $master = $names{$name} ? 1 : 0;
 		$name =~ s/\s+$//g;
 		$name =~ s/^\s+//g;
 		my $feat_name = $db_feature->add_to_feature_names({
 								   name       => $name,
+								   primary_name => $master,
 								  }) if $GO;
 	      }
 	  }

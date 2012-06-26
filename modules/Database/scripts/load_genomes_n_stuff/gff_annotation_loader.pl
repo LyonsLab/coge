@@ -14,8 +14,8 @@ my $add_type_to_name =0;
 my @names;
 my @skip_types;
 my @anno_names;
-my $connstr = 'dbi:mysql:dbname=coge;host=biocon.berkeley.edu;port=3306';
-my$coge = CoGeX->connect($connstr, 'cnssys', 'CnS' );
+my $connstr = 'dbi:mysql:dbname=coge;host=localhost;port=3306';
+my$coge = CoGeX->connect($connstr, 'coge', '123coge321' );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 
