@@ -488,7 +488,13 @@ sub get_dataset_groups
 	      $dsg->name($org->name) unless $dsg->name;
 	      $selected{$dsg->id} = " " unless $selected{$dsg->id};
 	    }
-	  @opts = map {"<OPTION value=\"".$_->id."\" ".$selected{$_->id} .">".$_->name." (v".$_->version.", dsgid".$_->id. "): ". $_->genomic_sequence_type->name."</OPTION>"} sort {versioncmp($b->version,$a->version) || $a->type->id <=> $b->type->id || $a->name cmp $b->name || $b->id cmp $a->id} @dsg;
+	  foreach my $item (sort {versioncmp($b->version,$a->version) || $a->type->id <=> $b->type->id || $a->name cmp $b->name || $b->id cmp $a->id} @dsg)
+	    {
+	      my $string = "<OPTION value=\"".$item->id."\" ".$selected{$item->id} .">";
+	      $string .= "(P)" if $item->restricted;
+	      $string .= $item->name." (v".$item->version.", dsgid".$item->id. "): ". $item->genomic_sequence_type->name."</OPTION>";
+	      push @opts, $string;
+	    }
 	}
       my $html;
       if (@opts) 
