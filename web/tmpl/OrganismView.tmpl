@@ -510,6 +510,14 @@ function export_gff () {
 
 }
 
+function export_tbl () {
+ var server = '<TMPL_VAR NAME="SERVER">';
+ var link = server+"export_NCBI_TBL.pl?dsgid=";
+ link += $('#dsg_id').val();
+ window.open(link);
+
+}
+
 </script>
 <TABLE>
    <TR><TD valign=top>
@@ -608,7 +616,7 @@ function export_gff () {
  </tr>
  <tr>
    <td>Do not propagate duplicate annotations to children</td>
-   <td><input type=checkbox name="upa" id="upa"></td>
+   <td><input type=checkbox name="upa" id="upa" checked></td>
  </tr>
  <tr>
    <td>For GFF "ID" and "Parent" tags, use unique:
