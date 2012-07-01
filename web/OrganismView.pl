@@ -584,6 +584,8 @@ sub get_dataset_group_info
     $html .= qq{<a class=link href='$seq_file' target="_new">Fasta Sequences</a>};
     $html .= qq{&nbsp|&nbsp};
     $html .= qq{<span class=link onclick="\$('#gff_export').dialog('option', 'width', 400).dialog('open')">Export GFF</span>};
+    $html .= qq{&nbsp|&nbsp};
+    $html .= qq{<span class=link onclick="export_tbl()"">Export TBL</span>};
 #    $html .= qq{<a href='coge_gff.pl?dsgid=$dsgid;cds=1' target=_new>GFF CDS; Names Only</a>};
 #    $html .= qq{&nbsp|&nbsp};
 #    $html .= qq{<a href='coge_gff.pl?dsgid=$dsgid;cds=1;annos=1' target=_new>GFF CDS; with Annotations</a>};
