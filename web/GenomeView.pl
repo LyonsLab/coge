@@ -74,7 +74,7 @@ sub gen_body
   {
     my $form = shift || $FORM;
     my ($chr, $dsid, $z, $loc, $gstid, $fid, $dsgid, $show_legend, $prefs);
-    $chr = $form->param('chr') if $form->param('chr');
+    $chr = $form->param('chr') if defined $form->param('chr');
     $dsid = $form->param('ds') if $form->param('ds');
     $dsid = $form->param('dsid') if $form->param('dsid');
     $z = $form->param('z') if defined ($form->param('z'));
