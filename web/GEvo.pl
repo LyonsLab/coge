@@ -230,7 +230,7 @@ sub gen_body
 	$display_order = $i unless $display_order;
 	$draccn= $form->param("accn".$i) if $form->param("accn".$i);
 	$pos = $form->param("x".$i) if $form->param("x".$i);
-	$chr = $form->param("chr".$i) if $form->param("chr".$i);
+	$chr = $form->param("chr".$i) if defined $form->param("chr".$i);
 	$fid = $form->param("fid".$i) if $form->param("fid".$i);
 	$dsid = $form->param('dsid'.$i) if $form->param('dsid'.$i);
 	$dsgid = $form->param('dsgid'.$i) if $form->param('dsgid'.$i);
@@ -640,7 +640,7 @@ sub run
 	$dsid = $opts{"dsid$i"} unless $dsid;
 	my $chr;
 	$chr = $feat->chromosome if $feat;
-	$chr = $opts{"chr$i"} unless $chr;
+	$chr = $opts{"chr$i"} unless defined $chr;
 
 	my $drup = $opts{"drup$i"};
 	my $drdown = $opts{"drdown$i"};
@@ -672,7 +672,7 @@ sub run
 	$gevo_link_info{dsid}=CGI::escape($dsid) if $dsid;
 	$gevo_link_info{dsgid}=CGI::escape($dsgid) if $dsgid;
 	$gevo_link_info{gstid}=CGI::escape($gstid) if $gstid;
-	$gevo_link_info{chr}=CGI::escape($chr) if $chr;
+	$gevo_link_info{chr}=CGI::escape($chr) if defined $chr;
 	$gevo_link_info{drup}=$drup if defined $drup;
 	$gevo_link_info{drdown}=$drdown if defined $drdown;
 	$gevo_link_info{gbaccn}=CGI::escape($gbaccn) if $gbaccn;
@@ -1428,7 +1428,7 @@ sub generate_image_db
     my $height = $gfx->image_height;
     my $dsid = $set->{obj}->dataset;
     my ($chr) =  $set->{obj}->chromosome;# =~ /(\d+)/;
-    $chr = "NULL" unless $chr;
+    $chr = "NULL" unless defined $chr;
     $dsid = "NULL" unless $dsid;
     my $image_start = $set->{obj}->start;
     my $image_stop = $set->{obj}->stop;
@@ -1633,6 +1633,7 @@ sub process_features
 	    $f->overlay(1);
 	    $f->mag(0.5);
           }
+	
         if ($type =~ /gene prediction/i)
           {
 	    next unless $draw_model eq "full";
@@ -1655,6 +1656,19 @@ sub process_features
 	    $f->label(join ("\t", @{$feat->qualifiers->{names}})) if $feat_labels && !$f->label && $feat->qualifiers->{names};
 	    $f->label_location($label_location) if $feat_labels && $feat_labels eq "staggered";
           }
+#Hi Eric, I added this feature type to display exons which were identifed by
+#Co-annotation but aren't part of the official gene models -J
+	elsif ($type =~ /Freeling_predicted_CDS/i)
+	{
+	    $f = CoGe::Graphics::Feature::Gene->new();
+	    $f->color([150,0,150,50]);
+	    $f->order($track);
+	    $f->overlay(3);
+	    $f->mag(1);
+#	    $f->label("C");
+	    $f->label_location($label_location) if $feat_labels && $feat_labels eq "staggered";
+	}
+		
         elsif ($type =~ /CDS/i)
           {
 	    next unless $draw_model eq "full" || $draw_model eq "CDS";
@@ -2336,7 +2350,7 @@ sub get_obj_from_genome_db
       }
     unless ($seq )
       {
-	($chr) = $ds->get_chromosomes unless $chr;
+	($chr) = $ds->get_chromosomes unless defined $chr;
 	my $tmp;
 	($tmp, $seq_file) = CoGe::Accessory::Web::check_taint($seq_file);
 	unlink ($seq_file);
@@ -2382,7 +2396,7 @@ sub get_obj_from_genome_db
     $used_names{$accn} = 1;
     my $t4 = new Benchmark;
 
-    print STDERR "Region: $chr: $start-$stop\n" if $DEBUG;
+    #print STDERR "Region: $chr: $start-$stop\n" if $DEBUG;
     my %feats = map{$_->id,$_} $coge->get_features_in_region(start=>$start, stop=>$stop, chr=>$chr, dataset_id=>$dsid);
     $feats{$feat->id}=$feat if $feat;
 
@@ -3479,7 +3493,7 @@ sub add_url_seq
 	$gbstart = 1 unless defined $gbstart;
 	my $gblength = $element->{'gblength'} if $element->{gblength};
 	
-	my $chr =  $element->{'chr'} if $element->{'chr'};
+	my $chr =  $element->{'chr'} if defined $element->{'chr'};
 	
 
 	my $revn="checked";
@@ -3990,7 +4004,7 @@ sub get_org_info
     my $org = $dsg->organism->name;
     my $oid = $dsg->organism->id;
     my $type = $gst->name if $gst;
-    $chr = join (", ",$dsg->get_chromosomes) unless $chr;
+    $chr = join (", ",$dsg->get_chromosomes) unless defined $chr;
 #    my $title = qq{<span class="link"><a class="link" href="OrganismView.pl?oid=$oid;dsgid=$dsgid" target=_new>$org $type (v$ver):</a></span> chr. $chr};
     my $title = qq{<span class="link"><a class="link" href="OrganismView.pl?oid=$oid" target=_new>$org</a></span>};
     return ($title, $dsid, $gstid, $dsgid, $dsg_menu);
