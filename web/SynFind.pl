@@ -1447,7 +1447,10 @@ sub get_master_syn_sets
 	  }
       }
 
-    print "#",join ("\t", "COUNTS", map{$_->organism->name} $qdsg, sort {$a->organism->name cmp $b->organism->name} @dsgs). "\tGEvo link","\n";
+    print "#",join ("\t", "COUNTS", 
+		    (map {"ORG: ".$_->organism->name} ($qdsg, sort {$a->organism->name cmp $b->organism->name} @dsgs )), 
+		    (map {"CHR: ".$_->organism->name} ($qdsg, sort {$a->organism->name cmp $b->organism->name} @dsgs ))  
+		   ), "\tGEvo link","\n";
     my $total;
     foreach my $id (sort keys %data)
       {
@@ -1461,7 +1464,7 @@ sub get_master_syn_sets
 	my $count =1;
 	my $max;
 	my @syntelog_count;
-	foreach my $set (@data) #iterate through each genome -- first is query genome
+	SET: foreach my $set (@data) #iterate through each genome -- first is query genome
 	  {
 	    unless ($set)
 	      {
