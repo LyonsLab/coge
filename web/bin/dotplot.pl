@@ -62,10 +62,6 @@ $GZIP = $P->{GZIP};
 $GUNZIP = $P->{GUNZIP};
 $URL = $P->{URL};
 
-$dagfile = CoGe::Accessory::Web::gunzip ($dagfile, $conffile) if defined $dagfile && (-r $dagfile.".gz" || -r $dagfile);
-
-$alignfile = CoGe::Accessory::Web::gunzip ($alignfile, $conffile) if defined $alignfile && ( -r $alignfile.".gz" || -r $alignfile);
-
 usage() if $help;
 usage() unless (defined $dagfile &&-r $dagfile) || -r $alignfile || -r "$alignfile.gz";
 
@@ -74,8 +70,21 @@ if (defined $dagfile and ! (-r $dagfile || -r $dagfile.".gz"))
     warn "dagfile specified but not present or readable: $!";
   }
 
-$dagfile = CoGe::Accessory::Web::gunzip($dagfile, $conffile) if $dagfile && $dagfile =~ /\.gz$/;
-$alignfile = CoGe::Accessory::Web::gunzip($alignfile, $conffile) if $alignfile =~ /\.gz$/;
+$dagfile = CoGe::Accessory::Web::gunzip($dagfile, $conffile) if $dagfile;# && $dagfile =~ /\.gz$/;
+$alignfile = CoGe::Accessory::Web::gunzip($alignfile, $conffile) if $alignfile;# && $alignfile =~ /\.gz$/;
+
+if ($alignfile && -r $alignfile && $alignfile =~ /\.gz$/)
+  {
+    print "Problem decompressing $alignfile.\n";
+    exit;
+  }
+
+if ($dagfile && -r $dagfile && $dagfile =~ /\.gz$/)
+  {
+    print "Problem decompressing $dagfile.\n";
+    exit;
+  }
+
 
 #set a default for this, make sure it is uppercase
 $ks_type = "kS" unless $ks_type;
@@ -126,7 +135,9 @@ if ($assemble)
   {
     my $skip = $assemble && $assemble == 2 ? 1 : 0;
     my ($org1_association, $org2_association) = $synmap_report->parse_syn_blocks(file=>$alignfile) if $assemble;
-    my $output = @$org1_association > @$org2_association ? reord(reorder=>$org1_order, order=>$org2_order, assoc=>$org2_association, skip=>$skip, info=>$org1_association) : reord (reorder=>$org2_order, order=>$org1_order, assoc=>$org1_association, skip=>$skip, info=>$org2_association);
+#    print Dumper $org1_order, $org2_order;
+    my $output = @$org1_association > @$org2_association ? reord(reorder=>$org1_order, order=>$org2_order, assoc=>$org2_association, skip=>$skip, info=>$org1_association, skip_random=>$skip_random) : reord (reorder=>$org2_order, order=>$org1_order, assoc=>$org1_association, skip=>$skip, info=>$org2_association, skip_random=>$skip_random);
+#    print Dumper $org1_order, $org2_order;
 
     open OUT, ">$spa_info_file";
     print OUT $output;
@@ -964,6 +975,7 @@ sub reord
     my $reorder = $opts{reorder};
     my $association = $opts{assoc};
     my $skip = $opts{skip};
+    my $skip_random = $opts{skip_random};
     my $info = $opts{info}; #for determining orientation
 
     #create mapping hash of which contigs are in the reverse orientation
@@ -982,7 +994,15 @@ sub reord
     my $output = join ("\t", ("#CHR1", "CHR2", "ORIENTATION"))."\n";
     foreach my $chr (@$order)
       {
-	push @new_order, @{$mapped_association{$chr}} if $mapped_association{$chr};
+	next if check_random($chr) && $skip_random;
+	if ($mapped_association{$chr})
+	  {
+	    foreach my $item (@{$mapped_association{$chr}})
+	      {
+		next if check_random($item) && $skip_random;
+		push @new_order,  $item;
+	      }
+	  }
 	$output .= join ("\n", map {join ("\t", $chr, $_, $rev_info{$_})}  @{$mapped_association{$chr}})."\n";
       }
     unless ($skip)
@@ -1206,7 +1226,7 @@ sub get_dsg_order
     my %data;
     foreach my $gs ($dsg->genomic_sequences)
       {
-	next if ($gs->chromosome =~ /random/i || $gs->chromosome =~ /unknown/i || $gs->chromosome =~ /^un$/i) && $skip_random;
+	next if check_random($gs->chromosome) && $skip_random;
 	next if defined $chr && $chr ne $gs->chromosome;
 	my $len = $gs->sequence_length;
 	next if $minsize && $minsize > $len;
@@ -1243,7 +1263,12 @@ sub get_dsg_order
     return \@ordered, \%data;
   }
     
-
+sub check_random
+   {
+     my $chr = shift;
+     return 1 if ($chr =~ /random/i || $chr =~ /unknown/i || $chr =~ /^un$/i);
+     return 0;
+   }
 sub get_gene_info
   {
     my %opts = @_;
