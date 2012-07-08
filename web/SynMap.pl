@@ -416,9 +416,12 @@ sub gen_body
     $template->param(DEPTH_OVERLAP=>$depth_overlap);
 
 
-    $template->param('SYNTENIC_PATH'=>"checked") if $FORM->param('sp');
     $template->param('BOX_DIAGS'=>"checked") if $FORM->param('bd');
-    $template->param('SHOW_NON_SYN'=>"checked") if $FORM->param('sp') && $FORM->param('sp') eq "2";
+    my $spa = $FORM->param('sp') if $FORM->param('sp');
+    $template->param('SYNTENIC_PATH'=>"checked") if $spa;
+    $template->param('SHOW_NON_SYN'=>"checked") if $spa && $spa =~ /2/;
+    $template->param('SPA_FEW_SELECT'=>"selected") if $spa && $spa > 0;
+    $template->param('SPA_MORE_SELECT'=>"selected") if $spa && $spa < 0;
     my $file = $form->param('file');
     if($file)
     {
@@ -2193,8 +2196,7 @@ sub generate_dotplot
     my $log = $opts{log};
     my $cmd = $DOTPLOT;
     #add ks_db to dotplot command if requested
-    $outfile.= ".ass" if $assemble;
-    $outfile.= "2" if $assemble eq "2";
+    $outfile.= ".spa$assemble" if $assemble;
     $outfile.= ".gene" if $metric =~ /gene/i;
     $outfile.= ".s" if $relationship =~ /s/i;
     $outfile.= ".mcs$min_chr_size" if $min_chr_size;
@@ -2298,6 +2300,7 @@ sub go
     my $ks_type = $opts{ks_type};
     my $assemble =$opts{assemble}=~/true/i ? 1 : 0;
     $assemble = 2 if $assemble && $opts{show_non_syn}=~/true/i;
+    $assemble *= -1 if $assemble && $opts{spa_ref_genome} < 0;
     my $axis_metric = $opts{axis_metric};
     my $axis_relationship = $opts{axis_relationship};
     my $min_chr_size = $opts{min_chr_size};
@@ -2348,6 +2351,7 @@ sub go
     #how are the chromosomes to be sorted?
     my $chr_sort_order = $opts{chr_sort_order};
 
+
     $dagchainer_type = $dagchainer_type eq "true" ? "geneorder" : "distance";
 
     unless ($dsgid1 && $dsgid2)
@@ -2362,6 +2366,13 @@ sub go
       {
 	return "<span class=alert>Problem generating dataset group objects for ids:  $dsgid1, $dsgid2.</span>";
       }
+
+    unless ($dsg1 && $dsg2)
+      {
+	return "<span class=alert>Problem generating one of the genome objects for id1: $dsgid1 or id2: $dsgid2</span>"
+      }
+    
+
     $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$basename, tempdir=>$TEMPDIR);
     my $synmap_link = $SERVER."SynMap.pl?dsgid1=$dsgid1;dsgid2=$dsgid2;c=$repeat_filter_cvalue;D=$dagchainer_D;A=$dagchainer_A;w=$width;b=$blast;ft1=$feat_type1;ft2=$feat_type2;autogo=1";
     $synmap_link .= ";Dm=$Dm" if defined $Dm;
@@ -2837,7 +2848,7 @@ sub go
 	    my $qa_coverage_tmp = $quota_align_coverage.".tmp" if $quota_align_coverage;
 	    my $qa_coverage_qa = $quota_align_coverage.".qa" if $quota_align_coverage;
 
-	    my $file_list = [\$raw_blastfile, \$filtered_blastfile, \$bedfile1, \$bedfile2, \$org1_localdups, \$org2_localdups, \$dag_file12_all, \$dag_file12_all_geneorder, \$dag_file12, \$dagchainer_file, \$final_dagchainer_file, \$final_dagchainer_file_condensed, \$merged_dagchainer_file,\$qa_file, \$qa_merged_file, \$ks_blocks_file, \$quota_align_coverage, \$qa_coverage_qa, \$spa_file];
+	    my $file_list = [\$raw_blastfile, \$filtered_blastfile, \$bedfile1, \$bedfile2, \$org1_localdups, \$org2_localdups, \$dag_file12_all, \$dag_file12_all_geneorder, \$dag_file12, \$dagchainer_file, \$final_dagchainer_file, \$final_dagchainer_file_condensed, \$merged_dagchainer_file,\$qa_file, \$qa_merged_file, \$ks_blocks_file, \$quota_align_coverage, \$qa_coverage_qa];#, \$spa_file];
 	    foreach my $item (@$file_list)
 	      {
 		$pm->start and next;
