@@ -1152,6 +1152,8 @@ sub generate_mGSV_files
 	#my ($name) = $item->[1];#=~ /^(\w{10})/;
 	#$name =~ s/\s|\(|\)/_/g;
 	my $name = "Org".$count;
+	$name .= " $item->[1]";
+	$name =~ s/\s|\(|\)/_/g;
 	$genome_info{$item->[0]} = $name;
 	$count++;
       }
@@ -1222,8 +1224,7 @@ sub generate_mGSV_files
 		my $strand = $item->{strand} eq 1 ? "+" : "-";
 		my ($feat) = $coge->resultset('Feature')->find($item->{fid});
 		my ($name) = $feat->names if $feat;
-		$name = "$type" unless $name;
-#		$name = "<a href=".$P->{SERVER}."/FeatView.pl?fid=".$item->{fid}.">$name</a>";
+		$name = "<a href=\"".$P->{SERVER}."/FeatView.pl?fid=".$item->{fid}."\">$name</a>";
 		print OUT join ("\t",
 				$genome_info{$genome_id},
 				$item->{start},
