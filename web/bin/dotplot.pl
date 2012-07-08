@@ -133,11 +133,17 @@ if ($axis_metric && $axis_metric =~ /gene/) #add in gene information
 my $spa_info_file = $basename.".spa_info.txt";
 if ($assemble) 
   {
-    my $skip = $assemble && $assemble == 2 ? 1 : 0;
+    my $skip_non_aligned_contigs = $assemble && $assemble =~ /2/ ? 1 : 0;
     my ($org1_association, $org2_association) = $synmap_report->parse_syn_blocks(file=>$alignfile) if $assemble;
-#    print Dumper $org1_order, $org2_order;
-    my $output = @$org1_association > @$org2_association ? reord(reorder=>$org1_order, order=>$org2_order, assoc=>$org2_association, skip=>$skip, info=>$org1_association, skip_random=>$skip_random) : reord (reorder=>$org2_order, order=>$org1_order, assoc=>$org1_association, skip=>$skip, info=>$org2_association, skip_random=>$skip_random);
-#    print Dumper $org1_order, $org2_order;
+    my $output;
+    if (@$org1_association > @$org2_association && $assemble > 0 || @$org1_association < @$org2_association && $assemble < 0 ) 
+      {
+	$output = reord(reorder=>$org1_order, order=>$org2_order, assoc=>$org2_association, skip=>$skip_non_aligned_contigs, info=>$org1_association, skip_random=>$skip_random);
+      }
+    else 
+      {
+	$output = reord (reorder=>$org2_order, order=>$org1_order, assoc=>$org1_association, skip=>$skip_non_aligned_contigs, info=>$org2_association, skip_random=>$skip_random);
+      }
 
     open OUT, ">$spa_info_file";
     print OUT $output;
@@ -150,12 +156,12 @@ if ($assemble)
 calc_abs_start_pos(order=>$org1_order, info=>$org1info);
 calc_abs_start_pos(order=>$org2_order, info=>$org2info);
 
+
 #print "IN DOTPLOT\n";
 #my $org1info = get_dsg_info(dsgid=>$dsgid1, chr=>$CHR1, minsize=>$min_chr_size, order=>$org1_order, metric=>$axis_metric, chr_sort_order=>$chr_sort_order, skip_random=>$skip_random);
 
 my $org1length =0;
 map {$org1length+=$_->{length}} values %$org1info;
-#print Dumper $org2info;
 #my $org2info = get_dsg_info(dsgid=>$dsgid2, chr=>$CHR2, minsize=>$min_chr_size, order=>$org2_order, metric=>$axis_metric, chr_sort_order=>$chr_sort_order, skip_random=>$skip_random);
 #print Dumper $org2info;
 my $org2length =0;
@@ -1027,6 +1033,7 @@ sub calc_abs_start_pos
     my %seen;
     foreach my $chr (@$order)
       {
+	next if $seen{$chr};
 	$seen{$chr} =1;
 	$info->{$chr}{start} = $pos-1;
 	$pos += $info->{$chr}{length};
@@ -1603,10 +1610,14 @@ max                    max ks val cutoff
 
 min                    min ks val cutoff
 
-assemble               if set to 1, output will try to be assembled based on syntenic path
-                       General assumption is aligning a WGS genome sequence to a reference genome
-                       
-                       if set to 2, will not add any pieces that are not syntenic
+assemble               Syntenic Path Assembly (SPA)
+                       Will use the genome with FEWER pieces as the reference genome.
+                       If set to 1, output will try to be assembled based on syntenic path
+                       If set to 2, will not add any pieces that are not syntenic
+
+                       REVERSE SPA: (genome with MORE pieces is reference genome)
+                       If set to -1, output will try to be assembled based on syntenic path
+                       If set to -2, will not add any pieces that are not syntenic
 
 axis_metric  | am      metic (units) for dotplot axes:  nucleotides or genes.  Default: nucleotide distances
 
