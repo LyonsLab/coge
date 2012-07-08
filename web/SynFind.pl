@@ -837,6 +837,10 @@ sub go_synfind
 	$blastfile = run_convert_blast(infile=>$blastfile, outfile=>$target->{converted_blastfile});
 #	blast2bed(infile=>$blastfile, outfile1=>$target->{bedfile1}, outfile2=>$target->{bedfile2});
 	run_blast2raw(blastfile=>$blastfile, bedfile1=>$target->{bedfile1}, bedfile2=>$target->{bedfile2}, outfile=>$target->{filtered_blastfile});
+	unless (-r $target->{filtered_blastfile} || -r $target->{filtered_blastfile}.".gz")
+	  {
+	    return "error creating ".$target->{filtered_blastfile},"\n";
+	  }
 	run_synteny_score(blastfile=>$target->{filtered_blastfile}, bedfile1=>$target->{bedfile1}, bedfile2=>$target->{bedfile2}, outfile=>$target->{synteny_score_db}, window_size=>$window_size, cutoff=>$cutoff, scoring_function=>$scoring_function, dsgid1=>$target->{dsgid1}, dsgid2=>$target->{dsgid2});
 	$pm->finish;
       }
@@ -1210,7 +1214,7 @@ sub run_blast2raw
     CoGe::Accessory::Web::gunzip("$blastfile",$ENV{HOME}.'coge.conf',1);
     CoGe::Accessory::Web::gunzip("$bedfile1",$ENV{HOME}.'coge.conf',1);
     CoGe::Accessory::Web::gunzip("$bedfile2",$ENV{HOME}.'coge.conf',1);
-     unless (-r $blastfile)
+    unless (-r $blastfile)
        {
 	 warn "can't read $blastfile\n";
 	 return;
@@ -1408,6 +1412,7 @@ sub get_master_syn_sets
     print $header;
 
     my %data;
+    my %lookup;
     foreach my $dsg (@dsgs)
       {
 	my $org1 = $qdsg->organism->name;
@@ -1441,6 +1446,13 @@ sub get_master_syn_sets
 	  {
 	    next unless $data[6] == $qdsgid;
 	    my $id = $data[0];
+	    unless ($data{$id})
+	      {
+		my ($feat) = $coge->resultset('Feature')->find($id);
+		my $chr = $feat->chromosome;
+		my $start = $feat->start;
+		$lookup{$chr}{$start}{$id}=1;
+	      }
 	    my $sdsgid = $data[7];
 	    
 	    push @{$data{$id}{$sdsgid}},\@data; #data{query_feature_id}{subject_genome_id}
@@ -1452,97 +1464,103 @@ sub get_master_syn_sets
 		    (map {"CHR: ".$_->organism->name} ($qdsg, sort {$a->organism->name cmp $b->organism->name} @dsgs ))  
 		   ), "\tGEvo link","\n";
     my $total;
-    foreach my $id (sort keys %data)
+    foreach my $sort_chr ( sort keys %lookup)
       {
-	my $link = $SERVER."/GEvo.pl?";
-	#@data contains:
-	# element 1:  array_ref of hard coded stuff to fake data from query genome
-	# elements 2 -- N+1: data from synteny database for each of the subject genomes of which there is N
-	my @data = ([[0,$id, "S",100000]], map{$data{$id}{$_->id}} sort {$a->organism->name cmp $b->organism->name} @dsgs);
-	my @names;
-	my @chr;
-	my $count =1;
-	my $max;
-	my @syntelog_count;
-	SET: foreach my $set (@data) #iterate through each genome -- first is query genome
+	foreach my $sort_start (sort keys %{$lookup{$sort_chr}})
 	  {
-	    unless ($set)
+	    foreach my $id (keys %{$lookup{$sort_chr}{$sort_start}})
 	      {
-		push @names, "-";
-		push @chr, "-";
-		push @syntelog_count,0;
-		next;
-	      }
-	    my $name;
-	    my $chr;
-	    my $limit_count =0;
-	    foreach my $data (sort {$b->[3] <=> $a->[3]} @$set) #sort by synteny score
-	      {
-		if ($limit)
+		my $link = $SERVER."/GEvo.pl?";
+		#@data contains:
+		# element 1:  array_ref of hard coded stuff to fake data from query genome
+		# elements 2 -- N+1: data from synteny database for each of the subject genomes of which there is N
+		my @data = ([[0,$id, "S",100000]], map{$data{$id}{$_->id}} sort {$a->organism->name cmp $b->organism->name} @dsgs);
+		my @names;
+		my @chr;
+		my $count =1;
+		my $max;
+		my @syntelog_count;
+	      SET: foreach my $set (@data) #iterate through each genome -- first is query genome
 		  {
-		    last if $limit_count >= $limit;
-		  }
-		my $fid = $data->[1];
-		unless ($fid)
-		  {
-		    $name .= "-,";
-		    $chr .= "-,";
-		    next;
-		  }
-		my ($feat) = $coge->resultset('Feature')->find($fid);
-		$chr .= $feat->chromosome.",";
-		if ($count == 1)
-		  {
-		    #		my ($up, $down) = get_neighboring_region(fid=>$fid, window_size=>$window_size);
-		    #		$link .= ";dr$count"."up=".$up;
-		    #		$link .= ";dr$count"."down=".$down
-		  }
-		else
-		  {
-		    $link .= ";ref$count=0"; 
-		    $link .= ";dr$count"."up=".$data->[4];
-		    $link .= ";dr$count"."down=".$data->[4];
-		    $max = $data->[4] unless $max;
-		    $max = $data->[4] if $max < $data->[4];
-		    if ($data->[5] =~ /-/)
+		    unless ($set)
 		      {
-			$link .= ";rev$count"."=1";
+			push @names, "-";
+			push @chr, "-";
+			push @syntelog_count,0;
+			next;
 		      }
+		    my $name;
+		    my $chr;
+		    my $limit_count =0;
+		    foreach my $data (sort {$b->[3] <=> $a->[3]} @$set) #sort by synteny score
+		      {
+			if ($limit)
+			  {
+			    last if $limit_count >= $limit;
+			  }
+			my $fid = $data->[1];
+			unless ($fid)
+			  {
+			    $name .= "-,";
+			    $chr .= "-,";
+			    next;
+			  }
+			my ($feat) = $coge->resultset('Feature')->find($fid);
+			$chr .= $feat->chromosome.",";
+			if ($count == 1)
+			  {
+			    #		my ($up, $down) = get_neighboring_region(fid=>$fid, window_size=>$window_size);
+			    #		$link .= ";dr$count"."up=".$up;
+			    #		$link .= ";dr$count"."down=".$down
+			  }
+			else
+			  {
+			    $link .= ";ref$count=0"; 
+			    $link .= ";dr$count"."up=".$data->[4];
+			    $link .= ";dr$count"."down=".$data->[4];
+			    $max = $data->[4] unless $max;
+			    $max = $data->[4] if $max < $data->[4];
+			    if ($data->[5] =~ /-/)
+			      {
+				$link .= ";rev$count"."=1";
+			      }
+			  }
+			if ($data->[2] eq "S")
+			  {
+			    my $rs = $coge->resultset('FeatureName');
+			    $rs->result_class('DBIx::Class::ResultClass::HashRefInflator');
+			    #		    my ($name_hash) = sort {$b->{primary_name} <=> $a->{primary_name} || $a->{name} cmp $b->{name}} $rs->search({feature_id=>$fid});
+			    my ($name_hash) = sort {$b->primary_name <=> $a->primary_name || $a->name cmp $b->name} $coge->resultset('FeatureName')->search({feature_id=>$fid});
+			    $name .= $name_hash->name.",";
+			    $link .= ";fid$count=$fid";
+			  }
+			else
+			  {
+			    $name .= "proxy".",";
+			    my $rs = $coge->resultset('Feature');
+			    $rs->result_class('DBIx::Class::ResultClass::HashRefInflator');
+			    my ($feat_hash) = $rs->find($fid);
+			    $link .=";x$count=".$feat_hash->{start}.";chr$count=".$feat_hash->{chromosome}.";dsgid$count=".$data->[7];
+			  }
+			$limit_count++;
+			$count++;
+		      }
+		    push @syntelog_count, $limit_count;
+		    $name =~ s/,$//; #trim trailing ','
+		    push @names, $name;
+		    $chr =~ s/,$//; #trim trailing ','
+		    push @chr, $chr;
 		  }
-		if ($data->[2] eq "S")
-		  {
-		    my $rs = $coge->resultset('FeatureName');
-		    $rs->result_class('DBIx::Class::ResultClass::HashRefInflator');
-		    #		    my ($name_hash) = sort {$b->{primary_name} <=> $a->{primary_name} || $a->{name} cmp $b->{name}} $rs->search({feature_id=>$fid});
-		    my ($name_hash) = sort {$b->primary_name <=> $a->primary_name || $a->name cmp $b->name} $coge->resultset('FeatureName')->search({feature_id=>$fid});
-		    $name .= $name_hash->name.",";
-		    $link .= ";fid$count=$fid";
-		  }
-		else
-		  {
-		    $name .= "proxy".",";
-		    my $rs = $coge->resultset('Feature');
-		    $rs->result_class('DBIx::Class::ResultClass::HashRefInflator');
-		    my ($feat_hash) = $rs->find($fid);
-		    $link .=";x$count=".$feat_hash->{start}.";chr$count=".$feat_hash->{chromosome}.";dsgid$count=".$data->[7];
-		  }
-		$limit_count++;
-		$count++;
+		#this is a short cut for specifying the dr up/down of query sequence.  Much faster than looking it up in the database
+		$link .= ";dr1up=".$max;
+		$link .= ";dr1down=".$max;
+		$count--;
+		$link .=";num_seqs=$count;autogo=1";
+		$link .= ";apply_all=$pad" if $pad;
+		print join ("\t", join (",",@syntelog_count),@names, @chr, $link),"\n";
+		$total++;
 	      }
-	    push @syntelog_count, $limit_count;
-	    $name =~ s/,$//; #trim trailing ','
-	    push @names, $name;
-	    $chr =~ s/,$//; #trim trailing ','
-	    push @chr, $chr;
 	  }
-	#this is a short cut for specifying the dr up/down of query sequence.  Much faster than looking it up in the database
-	$link .= ";dr1up=".$max;
-	$link .= ";dr1down=".$max;
-	$count--;
-	$link .=";num_seqs=$count;autogo=1";
-	$link .= ";apply_all=$pad" if $pad;
-	print join ("\t", join (",",@syntelog_count),@names, @chr, $link),"\n";
-	$total++;
       }
     exit;
   }
