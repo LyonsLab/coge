@@ -116,6 +116,8 @@ $DATADIR = $P->{DATADIR};
 $DIAGSDIR = $P->{DIAGSDIR};
 $FASTADIR = $P->{FASTADIR};
 mkpath($FASTADIR,1,0777);
+mkpath($DIAGSDIR,1,0777); # mdb added 7/9/12
+mkpath($P->{LASTDB},1,0777); # mdb added 7/9/12
 $BLASTDBDIR = $P->{BLASTDB};
 
 $PYTHON = $P->{PYTHON}; #this was for python2.5
