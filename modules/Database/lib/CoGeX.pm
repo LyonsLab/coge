@@ -244,7 +244,8 @@ sub get_features_in_region_split
     $start = 0 unless $start;
     my $stop = $opts{'stop'} || $opts{STOP} || $opts{end} || $opts{END};
     $stop = $start unless defined $stop;
-    my $chr = $opts{chr} || $opts{CHR} || $opts{chromosome} || $opts{CHROMOSOME};
+    my $chr = $opts{chr};
+    $chr =  $opts{chromosome} unless defined $chr;
     my $dataset_id = $opts{dataset} || $opts{dataset_id} || $opts{info_id} || $opts{INFO_ID} || $opts{data_info_id} || $opts{DATA_INFO_ID} ;
 
     my @startfeats = $self->resultset('Feature')->search({
