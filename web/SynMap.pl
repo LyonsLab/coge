@@ -244,9 +244,8 @@ sub gen_body
       {
 	$template->param($ALGO_LOOKUP->{6}{opt}=>"selected");
       }
-    my ($D, $g, $A, $Dm, $gm, $dt, $cvalue);
+    my ($D, $A, $Dm, $gm, $dt, $cvalue);
     $D = $FORM->param('D');
-    $g = $FORM->param('g');
     $A = $FORM->param('A');
     $Dm = $FORM->param('Dm');
     $gm = $FORM->param('gm');
@@ -255,7 +254,7 @@ sub gen_body
     $cvalue = $FORM->param('c'); #different c value than the one for cytology.  But if you get that, you probably shouldn't be reading this code
 
     my $display_dagchainer_settings;
-    if ($D && $g && $A && $dt) 
+    if ($D && $A && $dt) 
       {
 	my $type;
 	if ($dt =~ /gene/i)
@@ -268,7 +267,7 @@ sub gen_body
 	    $type = " bp";
 	    $template->param('DAG_DISTANCE_SELECT'=>'checked');
 	  }
-	$display_dagchainer_settings = qq{display_dagchainer_settings([$g,$D,$A, '$gm', $Dm],'$type');};
+	$display_dagchainer_settings = qq{display_dagchainer_settings([$D,$A, '$gm', $Dm],'$type');};
       }
     else
       {
