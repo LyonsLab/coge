@@ -158,26 +158,25 @@ function set_dagchainer_defaults(params, type) {
    {
     if ($('#dagchainer_type')[0].checked)
      {
-       params = [10,20,5,0,0];
+       params = [20,5,0,0];
        type = " genes";  
      } 
     else
      { 
       if (settings == 1) // for plant genomes
-       { params = [24000, 120000, 3, 96000,480000];}
+       { params = [120000, 5, 96000,480000];}
       else if (settings == 2) // for microbe genomes
-       { params = [1000, 2000, 3, 4000, 8000];}
+       { params = [2000, 5, 4000, 8000];}
        type=" bp";
      }
   }
   if (!params) {return;}
-  $('#g').val(params[0]);
-  $('#D').val(params[1]);
-  $('#A').val(params[2]);
-  if (typeof(params[3]) == 'undefined') { params[3] = 4*params[0];}
-  if (typeof(params[4]) == 'undefined') { params[4] = 4*params[1];}
-  $('#gm').val(params[3]);
-  $('#Dm').val(params[4]);
+  $('#D').val(params[0]);
+  $('#A').val(params[1]);
+  if (typeof(params[2]) == 'undefined') { params[2] = 4*params[0];}
+  if (typeof(params[3]) == 'undefined') { params[3] = 4*params[1];}
+  $('#gm').val(params[2]);
+  $('#Dm').val(params[3]);
   $('.distance_type').html(type);
  }
 
