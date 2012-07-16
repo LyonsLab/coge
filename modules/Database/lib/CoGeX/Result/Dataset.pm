@@ -1,4 +1,4 @@
-package CoGeX::Result::Dataset2;
+package CoGeX::Result::Dataset;
 
 # Created by DBIx::Class::Schema::Loader v0.03009 @ 2006-12-01 18:13:38
 
