@@ -1,4 +1,4 @@
-package CoGeX::Result::Dataset;
+package CoGeX::Result::Dataset2;
 
 # Created by DBIx::Class::Schema::Loader v0.03009 @ 2006-12-01 18:13:38
 
@@ -895,8 +895,13 @@ sub gff
     my %ids2names; #lookup table for unique id numbers to unique id names (determined by $id_type)
     my %unique_ids; #place to make sure that each ID used is unique;
     my %prev_annos; #hash to store previously used annotations by parents.  Used in conjunction with the $unique_parent_annotations flag
-    my $prior_gene;  #place to store the prior gene, if needed.  Some alternatively spliced transcripts have one gene per transcript, some have one gene for all transcripts.
-    my $prior_gene_id; #place to store the prior gene's ID for use the GFF file.  Use of this is tied to having and using a prior_gene
+
+    my %prior_genes; #place to store previous gene models for alternatively spliced transcript lookup of parents.  keys is the primary name of the transcript.  value is coge feature object
+
+#    my $prior_gene;  #place to store the prior gene, if needed.  Some alternatively spliced transcripts have one gene per transcript, some have one gene for all transcripts.
+#    my $prior_gene_id; #place to store the prior gene's ID for use the GFF file.  Use of this is tied to having and using a prior_gene
+
+
     my $prefetch = [ 'feature_type', 'feature_names'];
 #    push @$prefetch, {'annotations' => 'annotation_type'} if $annos;
     foreach my $chr (@chrs){
@@ -917,8 +922,6 @@ sub gff
 	  my $ft = $feat->feature_type;
 	  $types{$ft->name}++;
 	  $count++;
-	  $prior_gene = $feat if $ft->name eq "gene";
-	  $prior_gene_id = $count if $ft->name eq "gene";
 	  my @out; #story hashref of items for output
 	  my %notes; #additional annotations to add to gff line
 	  my @feat_names;
@@ -929,19 +932,21 @@ sub gff
 	  else {
 	    @feat_names = $feat->names(); 
 	  }
-	  if ($ft->name =~ /RNA/ && $prior_gene) #probably an alternatively spliced trascript.
+	  $prior_genes{$feat_names[0]}=$feat if $ft->name eq "gene" && !$prior_genes{$feat_names[0]};
+	  if ($ft->name =~ /RNA/) #perhaps an alternatively spliced transcript
 	    {
 	      #check for name congruence
 	      my $match =0;
-	    name_search: foreach my $name1($feat->names)
+	      my $prior_gene;
+	      my $prior_gene_id;
+	    name_search: foreach my $name($feat->names)
 		{
-		  foreach my $name2($prior_gene->names)
+		  if ($prior_genes{$name})
 		    {
-		      if ($name1 eq $name2)
-			{
-			  $match=1;
-			  last name_search;
-			}
+		      $match=1;
+		      $prior_gene = $prior_genes{$name};
+		      $prior_gene_id = $name;
+		      last name_search;
 		    }
 		}
 	      if ($match)
