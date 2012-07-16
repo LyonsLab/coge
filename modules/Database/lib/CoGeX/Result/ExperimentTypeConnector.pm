@@ -55,6 +55,7 @@ __PACKAGE__->add_columns(
   { data_type => "INT", default_value => "", is_nullable => 0, size => 11 },
 );
 __PACKAGE__->set_primary_key("experiment_type_connector_id");
+
 __PACKAGE__->belongs_to("experiment" => "CoGeX::Result::Experiment", "experiment_id");
 __PACKAGE__->belongs_to("experiment_type" => "CoGeX::Result::ExperimentType", "experiment_type_id");
 
