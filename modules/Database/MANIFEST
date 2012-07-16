@@ -23,6 +23,7 @@ lib/CoGeX/Result/SequenceType.pm
 lib/CoGeX/Result/Feature.pm
 lib/CoGeX/Result/User.pm
 lib/CoGeX/Result/List.pm
+lib/CoGeX/Result/ListType.pm
 lib/CoGeX/Result/UserGroup.pm
 lib/CoGeX/Result/ListConnector.pm
 lib/CoGeX/Result/UserGroupConnector.pm
@@ -43,6 +44,7 @@ lib/CoGeX/Result/UserGroupDataConnector.pm
 lib/CoGeX/Result/Role.pm
 lib/CoGeX/Result/Quantitation.pm
 lib/CoGeX/Result/QuantitationExperiment.pm
+lib/CoGeX/Result/Experiment.pm
 
 lib/CoGeX/ResultSet/Annotation.pm
 lib/CoGeX/ResultSet/DatasetGroup.pm
@@ -50,3 +52,4 @@ lib/CoGeX/ResultSet/Dataset.pm
 lib/CoGeX/ResultSet/FeatureName.pm
 lib/CoGeX/ResultSet/GenomicSequenceType.pm
 lib/CoGeX/ResultSet/Organism.pm
+lib/CoGeX/ResultSet/List.pm
