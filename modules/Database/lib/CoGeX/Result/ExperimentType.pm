@@ -47,7 +47,8 @@ __PACKAGE__->add_columns(
 			 { data_type => "TEXT", is_nullable => 1 },
 			);
 __PACKAGE__->set_primary_key("experiment_type_id");
-__PACKAGE__->has_many('experiment_type_connector'=>"CoGeX::Result::ExperimentTypeConnector","experiment_type_id");
+
+__PACKAGE__->has_many('experiment_type_connectors'=>"CoGeX::Result::ExperimentTypeConnector","experiment_type_id");
 
 
 ################################################ subroutine header begin ##
