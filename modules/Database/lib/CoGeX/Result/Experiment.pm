@@ -111,7 +111,7 @@ __PACKAGE__->belongs_to("data_source" => "CoGeX::Result::DataSource", 'data_sour
 __PACKAGE__->belongs_to("dataset_group" => "CoGeX::Result::DatasetGroup", 'dataset_group_id');
 
 #Need something like UserGroups permission stuff in the future
-#__PACKAGE__->has_many("user_group_data_connectors"=>"CoGeX::Result::UserGroupDataConnector","dataset_group_id");
+__PACKAGE__->has_many("user_group_data_connectors"=>"CoGeX::Result::UserGroupDataConnector","dataset_group_id");
 
 ################################################ subroutine header begin ##
 
@@ -204,7 +204,7 @@ See Also   :
 
 
 
-sub annotation
+sub annotations
   {
     shift->experiment_annotations(@_);
   }
@@ -254,9 +254,47 @@ See Also   :
 
 
 
-sub type
+sub types
   {
-    shift->experiment_type(@_);
+    shift->experiment_types(@_);
+  }
+
+################################################ subroutine header begin ##
+
+=head2 get_path
+
+ Usage     : 
+ Purpose   : This method determines the correct directory structure for storing
+ 			the sequence files for an experiment.
+ Returns   : 
+ Argument  : 
+ Throws    : none
+ Comments  : The idea is to build a dir structure that holds large amounts of
+ 			files, and is easy to lookup based on experiment ID number.
+			The strucuture is three levels of directorys, and each dir holds
+			1000 files and/or directorys.
+			Thus:
+			./0/0/0/ will hold files 0-999
+			./0/0/1/ will hold files 1000-1999
+			./0/0/2/ will hold files 2000-2999
+			./0/1/0 will hold files 1000000-1000999
+			./level0/level1/level2/
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub get_path
+  {
+    my $self = shift;
+    my $experiment_id = $self->id;
+    my $level0 = floor($experiment_id / 1000000000) % 1000;
+    my $level1 = floor($experiment_id / 1000000) % 1000;
+    my $level2 = floor($experiment_id / 1000) % 1000;
+    my $path = catdir($level0,$level1,$level2, $experiment_id); #adding experiment_id for final directory.  
+    return $path;
   }
 
 
