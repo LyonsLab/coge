@@ -6,7 +6,6 @@ use strict;
 use warnings;
 
 use base 'DBIx::Class::Core';
-use CoGeX::ResultSet::ExperimentAnnotation;
 
 =head1 NAME
 
@@ -51,11 +50,11 @@ __PACKAGE__->add_columns(
   "experiment_annotation_id",
   { data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
   "annotation",
-  { data_type => "TEXT", default_value => "", is_nullable => 0 },
+  { data_type => "TEXT", default_value => undef, is_nullable => 0 },
   "experiment_id",
-  { data_type => "INT", default_value => 0, is_nullable => 0, size => 11 },
+  { data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
   "annotation_type_id",
-  { data_type => "INT", default_value => 0, is_nullable => 0, size => 11 },
+  { data_type => "INT", default_value => "1", is_nullable => 0, size => 11 },
 );
 __PACKAGE__->set_primary_key("experiment_annotation_id");
 
