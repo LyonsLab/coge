@@ -33,6 +33,7 @@ Type: INT, Default: undef, Nullable: yes, Size: 11
 
 Belongs to CCoGeX::Result::AnnotationTypeGroup> via C<annotation_type_group_id>
 Has many CCoGeX::Result::Annotation> via C<annotation_type_id>
+Has many CCoGeX::Result::ExperimentAnnotation> via C<annotation_type_id>
 
 =head1 USAGE
 
@@ -61,6 +62,7 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key("annotation_type_id");
 
 __PACKAGE__->has_many("annotations" => "CoGeX::Result::Annotation", 'annotation_type_id');
+__PACKAGE__->has_many("experiment_annotations" => "CoGeX::Result::ExperimentAnnotation", 'annotation_type_id');
 
 __PACKAGE__->belongs_to("annotation_type_group" => "CoGeX::Result::AnnotationTypeGroup", 'annotation_type_group_id');
 
