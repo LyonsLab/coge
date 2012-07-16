@@ -55,6 +55,8 @@ __PACKAGE__->add_columns(
     is_nullable => 1,
     size => 1024,
   },
+  "list_type_id",
+  { data_type => "INT", default_value => undef, is_nullable => 1, size => 11 },
   "list_group_id",
   { data_type => "INT", default_value => undef, is_nullable => 1, size => 11 },
   "notes",
@@ -92,6 +94,8 @@ __PACKAGE__->has_many("list_connectors" => "CoGeX::Result::ListConnector", 'list
 
 # dataset has many features
 __PACKAGE__->belongs_to("list_group" => "CoGeX::Result::ListGroup", 'list_group_id');
+__PACKAGE__->belongs_to("user" => "CoGeX::Result::User", 'user_id');
+__PACKAGE__->belongs_to("list_type" => "CoGeX::Result::ListType", 'list_type_id');
 
 
 sub features
