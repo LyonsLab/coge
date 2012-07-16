@@ -77,6 +77,7 @@ __PACKAGE__->has_many('sessions'=>"CoGeX::Result::UserSession",'user_id');
 __PACKAGE__->has_many('works'=>"CoGeX::Result::Work",'user_id');
 __PACKAGE__->has_many('workflows'=>"CoGeX::Result::Workflow",'user_id');
 __PACKAGE__->has_many('user_group_connectors'=>"CoGeX::Result::UserGroupConnector",'user_id');
+__PACKAGE__->has_many('lists'=>"CoGeX::Result::List",'user_id');
 
 
 ################################################ subroutine header begin ##
@@ -444,6 +445,29 @@ sub is_owner{
 	}
     }
   return 0;
+}
+
+################################################ subroutine header begin ##
+
+=head2 public_lists
+
+ Usage     : $self->public_lists
+ Purpose   : shows the lists that a user has that have been public
+ Returns   : wantarray of list objects
+ Argument  : 
+ Throws    : None
+ Comments  : 
+
+
+
+=cut
+
+################################################## subroutine header end ##
+
+sub public_lists{
+  my $self = shift;
+  my %opts = @_;
+  return $self->lists({public=>1});
 }
 
 =head1 BUGS
