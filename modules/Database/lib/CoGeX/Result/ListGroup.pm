@@ -78,7 +78,7 @@ __PACKAGE__->add_columns(
 );
 __PACKAGE__->set_primary_key("list_group_id");
 __PACKAGE__->has_many("lists" => "CoGeX::Result::List", 'list_group_id');
-
+__PACKAGE__->belongs_to("user" => "CoGeX::Result::User", 'user_id');
 1;
 
 
