@@ -50,6 +50,7 @@ Belongs to CCoGeX::Result::Organism> via C<organism_id>
 Belongs to CCoGeX::Result::GenomicSequenceType> via C<genomic_sequence_type_id>
 Has many CCoGeX::Result::DatasetConnector> via C<dataset_group_id>
 Has many CCoGeX::Result::GenomicSequence> via C<dataset_group_id>
+Has many CCoGeX::Result::Experiment> via C<dataset_group_id>
 
 
 =head1 USAGE
@@ -109,6 +110,7 @@ __PACKAGE__->has_many("genomic_sequences" => "CoGeX::Result::GenomicSequence", '
 __PACKAGE__->belongs_to("organism" => "CoGeX::Result::Organism", 'organism_id');
 __PACKAGE__->belongs_to("genomic_sequence_type" => "CoGeX::Result::GenomicSequenceType", 'genomic_sequence_type_id');
 __PACKAGE__->has_many("user_group_data_connectors"=>"CoGeX::Result::UserGroupDataConnector","dataset_group_id");
+__PACKAGE__->has_many("experiments"=>"CoGeX::Result::Experiment","dataset_group_id");
 
 sub desc
   {
