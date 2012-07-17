@@ -4,8 +4,8 @@ package CoGeX::Result::Organism;
 
 use strict;
 use warnings;
-use CoGeX::ResultSet::Organism;
 use base 'DBIx::Class::Core';
+use CoGeX::ResultSet::Organism;
 
 =head1 NAME
 
