@@ -268,12 +268,18 @@ sub is_a {
 =cut
 
 sub get_by_type{
-  my $self = shift ;
-  my $search = shift ;
+  my $self = shift;
+  my $search = shift;
+  #escape terms in search
+  my $esc_search = $search;
+  $esc_search =~ s/\(/\\\(/g;
+  $esc_search =~ s/\)/\\\)/g;
+  $esc_search =~ s/\[/\\\]/g;
+  $esc_search =~ s/\[/\\\]/g;
   my @arr ;
   foreach my $item(@{$self->Values()}){
     if(ref($item) =~ /Annotation/){
-      if($item->Type() =~ /$search/){
+      if($item->Type() =~ /$esc_search/){
         push(@arr,$item) ;
       } 
       if($item->has_a($search)){
