@@ -1,11 +1,7 @@
 #!/usr/bin/perl
 
-use warnings; # FIXME remove
-use strict; # FIXME remove
+use strict;
 
-use lib '/home/mbomhoff/CoGeX/lib'; # FIXME remove
-
-#use Roman;
 use Data::Dumper;
 use Getopt::Long;
 use DBI;
@@ -14,10 +10,9 @@ use CoGeX;
 use CoGe::Accessory::Web;
 use CGI;
 
-my $cmdPath = '/home/mbomhoff/fastbit-ibis1.3.0/install/bin'; # FIXME get from conf file
 my ($exp_id, $coge_pref, $chr, $start, $stop);
 
-GetOptions ( # FIXME remove
+GetOptions ( # FIXME for testing, remove someday
 	    "exp_id=i" 			=> \$exp_id,
 			"chr=s" 				=> \$chr,
 			"start=i" 			=> \$start,
@@ -26,13 +21,13 @@ GetOptions ( # FIXME remove
 	   );
 
 # Load config file
-my ($DBNAME, $DBHOST, $DBPORT, $DBUSER, $DBPASS);
 my $P = CoGe::Accessory::Web::get_defaults($coge_pref);
-$DBNAME = $P->{DBNAME};
-$DBHOST = $P->{DBHOST};
-$DBPORT = $P->{DBPORT};
-$DBUSER = $P->{DBUSER};
-$DBPASS = $P->{DBPASS};
+my $DBNAME = $P->{DBNAME};
+my $DBHOST = $P->{DBHOST};
+my $DBPORT = $P->{DBPORT};
+my $DBUSER = $P->{DBUSER};
+my $DBPASS = $P->{DBPASS};
+my $CMDPATH = $P->{FASTBIT_QUERY};
 
 # Parse URL
 my $FORM = CGI->new;
@@ -53,10 +48,10 @@ my ($exp) = $coge->resultset("Experiment")->find($exp_id);
 my $exp_storage_path = $exp->storage_path;
 
 # Call FastBit to do query
-my $cmd = "$cmdPath/ibis -d $exp_storage_path -q \"select chr,start,stop,strand,value1,value2 where chr=$chr and start > $start and stop < $stop\" 2>&1";
+my $cmd = "$CMDPATH -d $exp_storage_path -q \"select chr,start,stop,strand,value1,value2 where chr=$chr and start > $start and stop < $stop\" 2>&1";
 my $cmdOut = qx{$cmd};
 my $cmdStatus = $?;
-die "Error executing command $cmdStatus" if ($cmdStatus != 0);
+die "Error executing command $CMDPATH ($cmdStatus)" if ($cmdStatus != 0);
 
 # Convert FastBit output into JSON
 my ($numHits, $queryStr, $header, $results);
