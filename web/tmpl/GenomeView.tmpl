@@ -1,7 +1,7 @@
 	
     <style type="text/css">
         #map {
-            height: 330;
+            height: 400;
             border: 1px solid black;
         }
         #zoomLevel {
@@ -59,6 +59,7 @@
              color:orange;
         }
     </style>
+    
     <script src="js/OpenLayers.js"></script>
     <script src="js/Genomic.js"></script>
     <script src="js/opengenes.js"></script>
@@ -72,20 +73,7 @@
         var bp;
         var size= 285;
         var server =
-//     ##################################
-//     ##CACHING SYSTEM USING ALL SERVERS
-//     ##################################
-          [
-//	    'http://coge.iplantcollaborative.org/CoGe/tiler.pl?'
-	    <TMPL_VAR NAME=TILE_SERVER>
-	  ];
-
-//     ##################################
-//     ##NO_CACHING USING ALL SERVERS
-//     ##################################
-//        [
-//	    'http://coge.iplantcollaborative.org/CoGe/GenomePNG.pl?'
-//	   ];
+          [<TMPL_VAR NAME=TILE_SERVER>];
 
         var org = "<TMPL_VAR NAME=ORG>";
         var ds = '<TMPL_VAR NAME=DS>';
@@ -130,7 +118,9 @@
                  ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"transposable",}
                  ,{isBaseLayer:false}
              );
+
 	     <TMPL_VAR NAME=DYNAMIC_LAYERS>
+
             genes = new OpenLayers.Layer.Genomic( "<span id='gc'>Genes</span>" , server
                  ,{'ds':ds,'dsg':dsg,  'gstid':gstid,'chr':chr,layers:"pseudogene,gene,mRNA,CDS,rna,CNS",}
                  ,{isBaseLayer:false}
@@ -185,8 +175,6 @@
 
 	    <TMPL_VAR NAME="DYNAMIC_LAYERS_ADD">
  	    <TMPL_IF NAME="QUANT_LAYER">
-//            quant.setVisibility(<TMPL_VAR NAME="QUANT">);
-//            map.addLayer(quant);
             </TMPL_IF>
 
             genes.setVisibility(<TMPL_VAR NAME="GENES">);
