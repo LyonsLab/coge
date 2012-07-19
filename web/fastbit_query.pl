@@ -10,18 +10,18 @@ use CoGeX;
 use CoGe::Accessory::Web;
 use CGI;
 
-my ($exp_id, $coge_pref, $chr, $start, $stop);
+my ($exp_id, $coge_conf, $chr, $start, $stop);
 
 GetOptions ( # FIXME for testing, remove someday
 	    "exp_id=i" 			=> \$exp_id,
 			"chr=s" 				=> \$chr,
 			"start=i" 			=> \$start,
 			"stop=i" 				=> \$stop,
-			"coge_pref=s" 	=> \$coge_pref   
+			"coge_conf=s" 	=> \$coge_conf   
 	   );
 
 # Load config file
-my $P = CoGe::Accessory::Web::get_defaults($coge_pref);
+my $P = CoGe::Accessory::Web::get_defaults($coge_conf);
 my $DBNAME = $P->{DBNAME};
 my $DBHOST = $P->{DBHOST};
 my $DBPORT = $P->{DBPORT};
