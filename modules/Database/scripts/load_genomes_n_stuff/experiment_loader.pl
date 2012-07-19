@@ -3,9 +3,6 @@
 use warnings;
 use strict;
 
-use lib '/home/mbomhoff/CoGeX/lib';
-
-#use Roman;
 use Data::Dumper;
 use Getopt::Long;
 use File::Path;
@@ -15,7 +12,7 @@ use CoGeX;
 
 use vars qw($DEBUG $coge $GO $ERASE);
 
-my $cmdPath = '/home/mbomhoff/fastbit-ibis1.3.0/install/bin';
+my $cmdPath = '/usr/local/bin';
 
 my ($exp_file, $exp_dir, $exp_name, $exp_version, $exp_desc, $exp_storage_path, $exp_link,
 		$exp_type_name, $exp_type_desc, $exp_type_id,
@@ -52,7 +49,6 @@ GetOptions (
 	    "database|db=s" => \$db,
 	    "user|u=s" => \$user,
 			"password|pw=s" => \$pass,
-	    
 	   );
 
 $DEBUG = 1 unless defined $DEBUG; # set to '1' to get updates on what's going on
@@ -69,7 +65,6 @@ my $connstr = "dbi:mysql:dbname=$db;host=localhost;port=3307";
 $coge = CoGeX->connect($connstr, $user, $pass);
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
-
 
 my ($dsg) = $coge->resultset("DatasetGroup")->find($dsg_id);
 print help("Couldn't find dataset group") unless ($dsg);
@@ -131,7 +126,7 @@ sub help # FIXME
 {
 	my $msg = shift;
 	
-	print $msg;
+	print $msg if $msg;
 	
 	print qq
 	{
@@ -148,7 +143,5 @@ sub help # FIXME
 };
 	exit;
 }
-
-
 
 __END__
