@@ -55,6 +55,7 @@ print <IMG>; close(IMG);
 # we are and make an array of directory names  
 ##################################################
 sub get_dir_array {
+		#Wow, this is a mess.  Wouldn't it be nice to change so that dsg_id is the base, and the subdirs make sense.  Someday. . .
     my ($qstr) = $ENV{QUERY_STRING} =~ /(.*)/;
     #print STDERR $IMGURL.$ENV{QUERY_STRING},"\n";
     $qstr =~ s/[\s-]//;
