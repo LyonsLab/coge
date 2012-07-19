@@ -605,6 +605,11 @@ sub get_dataset_group_info
     $html .= qq{&nbsp|&nbsp};
     $html .= qq{<span id=irods class='link' onclick="gen_data(['args__loading...'],['irods']);add_to_irods(['args__dsgid','args__$dsgid'],['irods']);">Send To iPlant Data Store</span>};
     $html .= "</td></tr>";
+    if (my $exp_count = $dsg->experiments->count )
+    {
+    	$html .= "<tr><td>Experiment count:</td>";
+    	$html .= qq{<td>$exp_count</td></tr>};
+    }
 
 	
 	
