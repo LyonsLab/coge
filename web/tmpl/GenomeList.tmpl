@@ -1,3 +1,4 @@
+<TMPL_IF NAME=MAIN>
 	<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
 	<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></SCRIPT>
 	<SCRIPT language="JavaScript">
@@ -33,14 +34,14 @@
 	//set up the jquery ui
 	$(function() {
 	     //substaniate dialog box	     
-	     $("#table_opts_dialog").dialog({ height: 150,
+	     $("#table_opts_dialog").dialog({ height: 200,
 	       				     width: 627,
 					     autoOpen: false,
 	});
 	
-	     $("#save_form").dialog({ autoOpen: false,
-	     			      height: 331,
-				      width: 461,
+	     $("#edit_genome_info").dialog({ autoOpen: false,
+//	     			      height: 331,
+//				      width: 461,
 	     			      buttons: { "Cancel": function() { $(this).dialog("close"); },
 				      	        "Save": function() { 
 									
@@ -190,10 +191,6 @@
 	 }
 	 else {
 	   var regex = /xls$/;
-	   if ($('#gstid').val() && !regex.test(url))
-	    {
-	      url=url+';gstid='+$('#gstid').val();
-	    }
 	   window.open(url);
 	 }
 	 $('#retrieve_message').html(' ');
@@ -552,50 +549,58 @@
 	 }
 	 i++;
 	});
-	save_FeatList_settings(['args__display','args__'+index],[]);
+	$.ajax({
+	    data: {
+	 	    jquery_ajax: 1,
+	           fname: 'save_GenomeList_settings',
+	    display: index,
+	          },
+	    success: function(data) {
+	    	     $('#table_opts_dialog').dialog('close');	      
+	    }
+	  });
+//	save_GenomeList_settings(['args__display','args__'+index],[]);
 	}
 
-	</SCRIPT>
-	<span href='#' id="table_opts" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-newwin"></span>Change Viewable Columns</span>
-	<input type=hidden id=gstid value=<TMPL_VAR NAME="GSTID">>
-	<div id="table_opts_dialog" title="Table Information Options">
-	<form id=genome_list>
-	   <table  class="ui-widget-content ui-corner-all small" id="show_columns">
-	    <tr>
-	      <td><input class = "display" type = checkbox onclick="toggle_column(1);" <TMPL_VAR NAME="NameD">>Name
-	      <td><input class = "display"  type = checkbox onclick="toggle_column(2);" <TMPL_VAR NAME="DescD">>Description
-	      <td><input class = "display"  type = checkbox onclick="toggle_column(3);" <TMPL_VAR NAME="SourceD">>Source
-	      <td><input class = "display"  type = checkbox onclick="toggle_column(4);" <TMPL_VAR NAME="ProvenanceD">>Provenance
-	      <td><input class = "display"  type = checkbox onclick="toggle_column(5);" <TMPL_VAR NAME="TypeD">>Sequence Type
-	      <td><input class = "display"  type = checkbox onclick="toggle_column(6);" <TMPL_VAR NAME="VerD">>Version
-	      <td><input class = "display"  type = checkbox onclick="toggle_column(7);" <TMPL_VAR NAME="ChrCountD">>Chromosome Count
-	     <tr>
-	      <td><input class = "display"  type = checkbox onclick="toggle_column(8);" <TMPL_VAR NAME="LengthD">>Length
-	      <td><input class = "display"  type = checkbox onclick="toggle_column(9);" <TMPL_VAR NAME="GCD">>GC%
-	      <td><input class = "display"  type = checkbox onclick="toggle_column(10);" <TMPL_VAR NAME="ATD">>AT%
-	      <td><input class = "display"  type = checkbox onclick="toggle_column(11);" <TMPL_VAR NAME="ND">>N%
-	      <td><input class = "display"  type = checkbox onclick="toggle_column(12);" <TMPL_VAR NAME="ND">>X%
-	      <td><input class = "display"  type = checkbox onclick="toggle_column(13);" <TMPL_VAR NAME="FeatD">>Feature Counts
-	     <tr>
-	      <td><input class = "display"  type = checkbox onclick="toggle_column(14);" <TMPL_VAR NAME="AAD">>Amino Acid Usage
-	      <td><input class = "display"  type = checkbox onclick="toggle_column(15);" <TMPL_VAR NAME="CodonD">>Codon Usage
-	      <td><input class = "display"  type = checkbox onclick="toggle_column(16);" <TMPL_VAR NAME="CDSGCHistD">>CDS GC Histogram
-	      <td><input class = "display"  type = checkbox onclick="toggle_column(17);" <TMPL_VAR NAME="CDSWGCHistD">>CDS Wobble GC Histogram
+function edit_list_info (lid) {
+ $.ajax({
+        data: {
+     	   jquery_ajax: 1,
+	   fname: 'edit_list_info',
+	   lid: lid,
+           },
+        success : function(val) {
+	      $('#list_info').html(val);
+	      $('#list_info').dialog('open');
+//	      get_dataset_group_info(['args__dsgid','dsg_id'],[dataset_chain]);
+	},
+      });
+}
 
-	      <TMPL_IF NAME="SAVE_DISPLAY">
-	<TR><td>
-	<span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="save_display_settings()"><span class="ui-icon ui-icon-check"></span>Save Display Settings</span>
-	      </TMPL_IF>
-	   </table>
-	</div>
-	</br>
-	</br>
-	Filter Table Rows: 
-	<input type=text id=search_bar>
-	<select id=search_type>
-	<option value="1">Contains</option>
-	<option value="0">Does NOT contain</option>
-	</select>
+
+
+	</SCRIPT>
+
+	
+	Your Lists:
+	<span id=user_lists><TMPL_VAR NAME=USER_LISTS></span>
+	Public Lists:
+	<span id=pub_lists><TMPL_VAR NAME=PUBLIC_LISTS></span>
+
+	<table width=100%>
+	 <tr>
+	  <td>
+	   Filter Table Rows: 
+	   <input type=text id=search_bar>
+	   <select id=search_type>
+	   <option value="1">Contains</option>
+	   <option value="0">Does NOT contain</option>
+	   </select>
+	  </td>
+	  <td align=right> 	<span href='#' id="table_opts" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-newwin"></span>Change Viewable Columns</span></td>
+	 </tr>
+	</table>
+
 	<!-- <span class=small>Tip: Use "*" for wildcards, and "!" to search for not containing</span> -->
 	<div class ="small"> Genome Count: <TMPL_VAR NAME="GENOME_COUNT"></div>
 	<TABLE id='genome_table' class="ui-widget-content ui-corner-all">
@@ -636,7 +641,7 @@
 	 <TMPL_LOOP NAME=INFO>
 	   <TR id='gl<TMPL_VAR NAME=DSGID>'>
 	     <TD><input type=checkbox checked id='<TMPL_VAR NAME=DSGID>'><input type=hidden id='dsgid_<TMPL_VAR NAME=COUNT>' value='<TMPL_VAR NAME=DSGID>'></TD>
-	     <TD><span class=link onclick=window.open('OrganismView.pl?dsgid=<TMPL_VAR NAME=DSGID>')> <TMPL_VAR NAME=NAME></span></TD>
+	     <TD><span class=link onclick=window.open('OrganismView.pl?dsgid=<TMPL_VAR NAME=DSGID>')> <TMPL_VAR NAME=NAME></span> [id:&nbsp<TMPL_VAR NAME=DSGID>]</TD>
 	     <TD><TMPL_VAR NAME=DESC></TD>
 	     <TD><TMPL_VAR NAME=SOURCE></TD>
 	     <TD><TMPL_VAR NAME=PROVENANCE></TD>
@@ -658,18 +663,21 @@
 	  </TMPL_LOOP>
 	 </tbody>
 	</TABLE>
-	</form>
-	<!--<input type=button value="Check All" onclick="$('#genome_table :checkbox').attr('checked', true);">
-	<input type=button value="Uncheck All" onclick="$('#genome_table :checkbox').attr('checked', false);">-->
 
-	<!-- TODO - consider putting onClick declarations in javascript for simplicity -->
-	<span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#genome_table tr :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Check All</span>
-	<span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#genome_table tr :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minus"></span>Uncheck All</span>
-	<span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#genome_table tr :visible :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Check Visible</span>
-	<span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#genome_table tr :visible :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minus"></span>Uncheck Visible</span>
-	<TMPL_IF NAME=SAVE_DATA>
-	<span href="javascript:void(0);" id="history_dialog_button" class='ui-button ui-corner-all ui-button-icon-left'><span class="ui-icon ui-icon-newwin"></span>Save Table</span>
-	</TMPL_IF>
+	<table width=100%>
+	<tr>
+	 <td>
+  	  <!-- TODO - consider putting onClick declarations in javascript for simplicity -->
+	  <span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#genome_table tr :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Check All</span>
+	  <span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#genome_table tr :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minus"></span>Uncheck All</span>
+	  <span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#genome_table tr :visible :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Check Visible</span>
+	  <span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#genome_table tr :visible :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minus"></span>Uncheck Visible</span>
+	 </TD>
+	 <td align=right></span>
+	 </td>
+	</tr>
+	</table>
+
 	<div>
 	 Send Selected Genomes to:  
 	  <select name=checked_action id=checked_action>
@@ -684,18 +692,79 @@
 	<span class='ui-button ui-corner-all ui-button-icon-right  ui-button-go' onclick="feature_checkboxes();"><span class="ui-icon ui-icon-extlink"></span>Go</span><span id=retrieve_message class=alert></span>  
 	 </div>
 
-	<div id="save_form" title="Save Results">
-	<table class="ui-widget-content ui-corner-all">
-	<tr>
-	<td>Work Name:</td>
-	<td><input type=text id='work_name' value='GenomeList Data'></td>
-	</tr>
-	<tr>
-	<td>Description:</td>
-	<td><input type=text id='description'></td>
-	</tr>
-	<tr>
-	<td>Notes:</td>
-	<td><textarea style="height:150px;width:350px;" id=note></textarea></td>
-	</table>
+	<div id="table_opts_dialog" title="Table Information Options">
+	<form id=genome_list>
+	   <table  class="ui-widget-content ui-corner-all small" id="show_columns">
+	    <tr>
+	      <td><input class = "display" type = checkbox onclick="toggle_column(1);" <TMPL_VAR NAME="NameD">>Name
+	      <td><input class = "display"  type = checkbox onclick="toggle_column(2);" <TMPL_VAR NAME="DescD">>Description
+	      <td><input class = "display"  type = checkbox onclick="toggle_column(3);" <TMPL_VAR NAME="SourceD">>Source
+	      <td><input class = "display"  type = checkbox onclick="toggle_column(4);" <TMPL_VAR NAME="ProvenanceD">>Provenance
+	      <td><input class = "display"  type = checkbox onclick="toggle_column(5);" <TMPL_VAR NAME="TypeD">>Sequence Type
+	      <td><input class = "display"  type = checkbox onclick="toggle_column(6);" <TMPL_VAR NAME="VerD">>Version
+	      <td><input class = "display"  type = checkbox onclick="toggle_column(7);" <TMPL_VAR NAME="ChrCountD">>Chromosome Count
+	     <tr>
+	      <td><input class = "display"  type = checkbox onclick="toggle_column(8);" <TMPL_VAR NAME="LengthD">>Length
+	      <td><input class = "display"  type = checkbox onclick="toggle_column(9);" <TMPL_VAR NAME="GCD">>GC%
+	      <td><input class = "display"  type = checkbox onclick="toggle_column(10);" <TMPL_VAR NAME="ATD">>AT%
+	      <td><input class = "display"  type = checkbox onclick="toggle_column(11);" <TMPL_VAR NAME="ND">>N%
+	      <td><input class = "display"  type = checkbox onclick="toggle_column(12);" <TMPL_VAR NAME="XD">>X%
+	      <td><input class = "display"  type = checkbox onclick="toggle_column(13);" <TMPL_VAR NAME="FeatD">>Feature Counts
+	     <tr>
+	      <td><input class = "display"  type = checkbox onclick="toggle_column(14);" <TMPL_VAR NAME="AAD">>Amino Acid Usage
+	      <td><input class = "display"  type = checkbox onclick="toggle_column(15);" <TMPL_VAR NAME="CodonD">>Codon Usage
+	      <td><input class = "display"  type = checkbox onclick="toggle_column(16);" <TMPL_VAR NAME="CDSGCHistD">>CDS GC Histogram
+	      <td><input class = "display"  type = checkbox onclick="toggle_column(17);" <TMPL_VAR NAME="CDSWGCHistD">>CDS Wobble GC Histogram
+
+	      <TMPL_IF NAME="SAVE_DISPLAY">
+	<TR><td colspan =3>
+	<span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="save_display_settings()"><span class="ui-icon ui-icon-check"></span>Save Display Settings</span>
+	      </TMPL_IF>
+	   </table>
 	</div>
+	</form>
+
+
+<div class="dialog_box" id="edit_genome_info" title="Edit Genome Information"></div>
+
+
+
+</TMPL_IF>
+
+<TMPL_IF NAME=SAVE_DATA>
+<table class=small>
+ <tr>
+  <td>Name:</td>
+  <td><input type=text id=dsg_name size=50 value="$name"></td>
+ </tr>
+ <tr>
+  <td>Description:</td>
+  <td><input type=text id=dsg_desc size=50 value="$desc"></td>
+ </tr>
+ <tr>
+  <td>Version:</td>
+  <td><input type=text id=dsg_ver size=5 value="$ver"></td>
+ </tr>
+ <tr>
+  <td>Message:</td>
+  <td><textarea id=dsg_message cols=50 rows=5>$message</textarea></td>
+ </tr>
+ <tr>
+  <td>Link:</td>
+  <td><input type=text id=dsg_link size=50 value="$link"></td>
+ </tr>
+</table>
+<span href="javascript:void(0);" id="history_dialog_button" class='ui-button ui-corner-all ui-button-icon-left'><span class="ui-icon ui-icon-newwin"></span>Save Table</span>
+<span class="ui-button ui-corner-all ui-button-go" onClick="update_genome_info('$dsgid')">Update</span>
+</TMPL_IF>
+
+
+<TMPL_IF NAME=LIST_LIST>
+
+ <select id=<TMPL_VAR NAME=LIST_TYPE>_list_select
+  <TMPL_LOOP NAME=LIST_LOOP>
+   <OPTION value=<TMPL_VAR NAME=LID>><TMPL_VAR NAME=NAME></OPTION>
+  </TMPL_LOOP>
+ </select>
+
+</TMPL_IF>
