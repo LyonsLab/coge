@@ -54,7 +54,7 @@ A valid parameter file must be specified or very little will work!};
 	chomp;
 	next if /^#/;
 	next unless $_;
-	my ($name, $path) = split /\s+/,$_,2;
+	my ($name, $path) = split(/\s+/,$_,2);
 	$items{$name}=$path;
       }
     close IN;
@@ -200,6 +200,7 @@ sub logout_cas {
 sub login_cas{
   my $self = shift;
   my %opts = @_;
+  my $cookie_name = $opts{cookie_name};
   my $ticket = $opts{ticket}; #cas ticket from iPlant
   my $this_url = $opts{this_url}; #not sure what this does
   my $coge = $opts{coge}; #coge object
@@ -233,7 +234,7 @@ sub login_cas{
   $session =~ s/\+/1/g;
   my $sid = $coge->log_user(user=>$coge_user,session=>$session);
   #gen and set the web cookie, yum!
-  my $c = CoGe::Accessory::LogUser->gen_cookie(session=>$session,cookie_name=>'cogec');
+  my $c = CoGe::Accessory::LogUser->gen_cookie(session=>$session,cookie_name=>$cookie_name);
 #  print "Set-Cookie: $c\n";
   print CGI::header(-cookie=>[$c]);
   return $coge_user;
