@@ -1224,7 +1224,9 @@ sub generate_mGSV_files
 		my $strand = $item->{strand} eq 1 ? "+" : "-";
 		my ($feat) = $coge->resultset('Feature')->find($item->{fid});
 		my ($name) = $feat->names if $feat;
-		$name = "<a href=\"".$P->{SERVER}."/FeatView.pl?fid=".$item->{fid}."\">$name</a>";
+		$name = "<a href=\"".$P->{SERVER}."/FeatView.pl?fid=".$item->{fid}."\">";
+		$name .= $name ? $name : $item->{fid};
+		$name .= "</a>";
 		print OUT join ("\t",
 				$genome_info{$genome_id},
 				$item->{start},
