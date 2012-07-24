@@ -19,9 +19,8 @@ use File::Path;
 no warnings 'redefine';
 
 
-use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME $TEMPDIR $USER $DATE $BASEFILE $COGEDIR $coge $cogeweb $FORM $URL $HISTOGRAM $TEMPURL $COOKIE_NAME);
+use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME $TEMPDIR $USER $DATE $BASEFILE $COGEDIR $coge $cogeweb $FORM $URL $HISTOGRAM $TEMPURL $COOKIE_NAME %FUNCTION $LIST_TYPE);
 $P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
-print STDERR $ENV{HOME},"\n";
 $ENV{PATH} = $P->{COGEDIR};
 $COGEDIR = $P->{COGEDIR};
 $URL = $P->{URL};
@@ -42,6 +41,7 @@ $DBPASS = $P->{DBPASS};
 $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
 $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 $COOKIE_NAME = $P->{COOKIE_NAME};
+$LIST_TYPE = $coge->resultset('ListType')->find_or_create({name=>'genome'});
 
 my ($cas_ticket) =$FORM->param('ticket');
 $USER = undef;
@@ -50,7 +50,7 @@ $USER = undef;
 
 $SIG{'__WARN__'} = sub { }; #silence warnings
 
-my %FUNCTION = (
+%FUNCTION = (
 		gen_html=>\&gen_html,
 		get_feature_counts=>\&get_feature_counts,
 		get_gc=>\&get_gc,
@@ -67,7 +67,7 @@ my %FUNCTION = (
 	 	send_to_GenomeList=>\&send_to_GenomeList,
 	 	send_to_SynFind=>\&send_to_SynFind,
 	 	get_wobble_gc=>\&get_wobble_gc,
-	 	save_FeatList_settings=>\&save_FeatList_settings,
+	 	save_GenomeList_settings=>\&save_GenomeList_settings,
 	 	add_to_user_history=>\&add_to_user_history,
 		cds_wgc_hist=>\&cds_wgc_hist,
 		get_gc_for_feature_type=>\&get_gc_for_feature_type,
@@ -120,7 +120,7 @@ sub gen_html
     my $box_name = "Genome List: ";
     my $list_name = $FORM->param('list_name') || $FORM->param('ln');
     $box_name .= " $list_name" if $list_name;
-    $box_name .= "<span class=link onclick=window.open('$link');>$link</span>";
+    $box_name .= "<a class=link onclick=window.open('$link'); href='$link'>$link</a>";
     $template->param(BOX_NAME=>$box_name);
     $template->param(BODY=>$body);
     $template->param(ADJUST_BOX=>1);
@@ -426,6 +426,7 @@ sub gen_body
   {
     my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'GenomeList.tmpl');
     my $form = $FORM;
+    $template->param(MAIN=>1);
     my $no_values;
     $BASEFILE = $form->param('basename');
     my $sort_by_type = $form->param('sort_type');
@@ -445,6 +446,7 @@ sub gen_body
 		       ATD=>1,
 		       AAD=>1,
 		       ND=>1,
+		       XD=>1,
 		       FeatD=>1,
 		       CodonD=>1,
 		       CDSGCHistD=>1,
@@ -457,7 +459,7 @@ sub gen_body
 
     $template->param(SAVE_DISPLAY=>1) unless $USER->user_name eq "public";
     #Don't show button to save list data unless valid user
-    $template->param(SAVE_DATA=>1) unless $USER->user_name eq "public";
+#    $template->param(SAVE_DATA=>1) unless $USER->user_name eq "public";
 
     my $dsgids = [];
     $dsgids = read_file() if $BASEFILE;#: $opts{feature_list};
@@ -470,6 +472,8 @@ sub gen_body
       }
     my ($table, $count) = generate_table(dsgids=>$dsgids);
 
+    $template->param(USER_LISTS=>get_lists());
+    $template->param(PUBLIC_LISTS=>get_lists(public=>1));
     $template->param('GENOME_COUNT'=>$count);
 
     if ($table)
@@ -481,6 +485,49 @@ sub gen_body
       {
 	return "No dataset_group (genome) ids were specified.";
       }
+  }
+
+
+sub get_lists
+  {
+    my %opts = @_;
+    my $public = $opts{public};
+    my @lists;
+    if ($public)
+      {
+	foreach my $list (sort{$a->name <=> $b->name} $coge->resultset('List')->public_lists)
+	  {
+	    my $name = $list->name;
+	    $name .= ": ". $list->description if $list->description;
+	    $name .= " (".$list->user->user_name.")";
+	    push @lists, {LID=>$list->id, 
+			  "NAME"=>$name};
+	  }
+      }
+    elsif ($USER->user_id)
+      {
+	foreach my $list (sort{$a->name <=> $b->name} $USER->lists)
+	  {
+	    my $name = $list->name;
+	    $name .= ": ". $list->description if $list->description;
+	    $name .= " (public)" if $list->public;
+	    push @lists, {LID=>$list->id, 
+			  "NAME"=>$name};
+	  }
+      }
+    return 0 unless @lists;
+    my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'GenomeList.tmpl');
+    $template->param(LIST_LIST=>1);
+    if ($public)
+      {
+	$template->param(LIST_TYPE=>"pub");
+      }
+    else
+      {
+	$template->param(LIST_TYPE=>"user");
+      }
+    $template->param(LIST_LOOP=>\@lists);
+    return $template->output;
   }
 
 sub add_to_user_history
@@ -523,12 +570,13 @@ sub generate_table
     foreach my $dsgid (@$dsgids)
       {
 	my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	next if $dsg->restricted && !$USER->has_access_to_genome($dsg);
 	my $name = $dsg->name ? $dsg->name : $dsg->organism->name;
 	my $desc = join("; ", map { qq{<span class=link onclick=window.open('OrganismView.pl?org_desc=$_')>$_</span>} } split /;\s*/, $dsg->organism->description);
 	
 	my $chr_count = $dsg->chromosome_count;
 	my $length = $dsg->length;
-	my $type = $dsg->type->name;
+	my $type = $dsg->type->name." [id:&nbsp".$dsg->type->id."]";
 	my $file = $dsg->file_path;
 	$file =~ s/$COGEDIR/$URL/;
 	$type = $type."<br><a href=$file target=_seq>Fasta</a><br><a href=coge_gff.pl?dsgid=$dsgid;annos=1 target=_anno>GFF File</a>";
@@ -536,7 +584,8 @@ sub generate_table
 	my $source = $ds_source->name;
 	my $source_link = $ds_source->link;
 	$source_link = "http://".$source_link unless !$source_link || $source_link =~ /http/;
-	$source = qq{<span class=link onclick="window.open('}.$source_link.qq{')">$source</span>}if $source_link;
+	$source = qq{<span class=link onclick="window.open('}.$source_link.qq{')">$source</span>} if $source_link;
+	$source .= " [id:&nbsp".$ds_source->id."]";
 	my $provenance;
 	foreach my $ds ($dsg->datasets)
 	  {
@@ -1013,7 +1062,7 @@ sub get_wobble_gc
   }
 
 
-sub save_FeatList_settings
+sub save_GenomeList_settings
   {
     my %opts = @_;
     my $display = $opts{display};
@@ -1021,24 +1070,27 @@ sub save_FeatList_settings
     if ($display)
       {
 	my %settings = (
-			1=>'FeatNameD',
-			2=>'TypeD',
-			3=>'ChrD',
-			4=>'StartD',
-			5=>'StopD',
-			6=>'StrandD',
-			7=>'LengthD',
-			8=>'GCD',
-			9=>'ATD',
-			10=>'WGCD',
-			11=>'WATD',
-			12=>'OrgD',
-			13=>'AnnoD',
-			14=>'OtherD',
+			1=>'NameD',
+			2=>'DescD',
+			3=>'SourceD',
+			4=>'ProvenanceD',
+			5=>'TypeD',
+			6=>'VerD',
+			7=>'ChrCountD',
+			8=>'LengthD',
+			9=>'GCD',
+			10=>'ATD',
+			11=>'ND',
+			12=>'XD',
+			13=>'FeatD',
+			14=>'AAD',
+			15=>'CodonD',
+			16=>'CDSGCHistD',
+			17=>'CDSWGCHistD',
 		       );
 	foreach my $index (split/,/,$display)
 	  {
-	    $save{display}{$settings{$index}}=1
+	    $save{display}{$settings{$index}}=1 if $settings{$index};
 	  }
       }
    CoGe::Accessory::Web::save_settings(opts=>\%save, user=>$USER, page=>$PAGE_NAME, coge=>$coge);
