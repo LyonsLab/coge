@@ -30,12 +30,11 @@ my $DBPASS = $P->{DBPASS};
 my $CMDPATH = $P->{FASTBIT_QUERY};
 
 # Parse URL
-my $FORM = CGI->new;
+my $FORM = new CGI;
 $exp_id = $FORM->param('exp_id')	unless defined $exp_id;
 $chr 		= $FORM->param('chr') 		unless defined $chr;
 $start 	= $FORM->param('start') 	unless defined $start;
 $stop 	= $FORM->param('stop') 		unless defined $stop;
-
 # Connect to the database
 my $connstr = "dbi:mysql:dbname=$DBNAME;host=$DBHOST;port=$DBPORT";
 my $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS);
@@ -72,7 +71,7 @@ foreach (@lines)
 			$results .= '[' . join(',', map {"\"$_\""} @fields) . ']';
 		}
 	}
-
+print "Content-type: text/json\n\n";
 if (defined $numHits and defined $queryStr) 
 	{
 		$header = '' unless ($header);
