@@ -105,6 +105,7 @@ sub gen_body
     my $pro = $form->param('pro');   
     my $upstream = $form->param('upstream') || 0;
     my $downstream = $form->param('downstream') || 0;
+    my $rel = $form->param('rel') || 0; #relative position of the feature -- don't adjust based on which strand the feature is located.  important when linking to seqview from places such as GEvo's Get Sequence
     my $start = $form->param('start');
     $start =~ s/,//g if $start;
     $start =~ s/\.//g if $start;
@@ -115,6 +116,7 @@ sub gen_body
     ($start,$stop) = ($stop,$start) if $start && $stop && $start > $stop;
     my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'SeqView.tmpl');
     $template->param(RC=>$rc);
+    $template->param(REL=>$rel);
     $template->param(JS=>1);
     $template->param(SEQ_BOX=>1);
     $template->param(ADDITION=>1);
@@ -230,6 +232,7 @@ sub get_seq
     my $stop = $opts{'stop'};
     my $wrap = $opts{'wrap'} || 0;
     my $gstid = $opts{gstid};
+    my $rel = $opts{rel} || 0;
     $wrap = 0 if $wrap =~ /undefined/;
     if($add_to_seq){
       $start = $upstream if $upstream;
@@ -251,6 +254,7 @@ sub get_seq
         my ($dsg) = $feat->dataset->dataset_groups;
 	return "Restricted Access" if $dsg->restricted && !$USER->has_access_to_genome($dsg);
 #	return "Restricted Access" if $feat->dataset->restricted && !$USER->has_access_to_dataset($feat->dataset);
+	print STDERR "here!\n";
 	($fasta,$seq) = ref($feat) =~ /Feature/i ?
 	  $feat->fasta(
 		       prot=>$pro,
@@ -260,10 +264,11 @@ sub get_seq
 		       col=>$col,
 		       sep=>1,
 		       gstid=>$gstid,
+		       rel=>$rel,
 		      )
 	    :
 	      ">Unable to retrieve Feature object for id: $featid\n";
-	
+	print STDERR "!".$seq."!\n";
 #	$seq = $rc ? color(seq=>$seq, upstream=>$downstream, downstream=>$upstream) : color(seq=>$seq, upstream=>$upstream, downstream=>$downstream);
 	$fasta = $fasta."\n".$seq."\n";
       }
