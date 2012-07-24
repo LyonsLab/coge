@@ -7,7 +7,6 @@ use CGI::Cookie;
 use CGI::Ajax;
 use HTML::Template;
 use Data::Dumper;
-use Digest::MD5 qw(md5_base64);
 use File::Basename;
 use File::Temp;
 use File::Path;
@@ -55,14 +54,15 @@ use GD::Simple;
 
 # for security purposes
 
-#$ENV{PATH} = "/opt/apache/CoGe/";
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 
-use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME $DATE $DEBUG $BL2SEQ $BLASTZ $LAGAN $CHAOS $DIALIGN $GENOMETHREADER $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge $NUM_SEQS $MAX_SEQS $MAX_PROC %FUNCTION $COOKIE_NAME);
+use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME $DATE $DEBUG $BL2SEQ $BLASTZ $LAGAN $CHAOS $DIALIGN $GENOMETHREADER $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge $NUM_SEQS $MAX_SEQS $MAX_PROC %FUNCTION $COOKIE_NAME $DIR $MOTIFFILE $TMPLDIR);
 $P=CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH}=$P->{COGEDIR};
 
-$PAGE_NAME = "MotifView.pl";
+$ENV{PATH}=$P->{COGEDIR};
+$DIR = $P->{COGEDIR};
+$PAGE_NAME = "MotifView2.pl";
 $BL2SEQ = $P->{BL2SEQ};
 $BLASTZ = $P->{LASTZ};
 $BLASTZ.="--ambiguous=iupac";
@@ -70,18 +70,18 @@ $LAGAN = $P->{LAGAN};
 $CHAOS = $P->{CHAOS};
 $GENOMETHREADER = $P->{GENOMETHREADER};
 $DIALIGN = $P->{DIALIGN};
+$MOTIFFILE =$P->{MOTIF_FILE};
 
-$TEMPDIR = "/tmp/shabari/MotifView";
-$TEMPURL = "/CoGe/tmp/MotifView";
 $TEMPURL = $P->{TEMPURL}."MotifView";
 $TEMPDIR = $P->{TEMPDIR}."MotifView";
+$TMPLDIR = $P->{TMPLDIR};
 mkpath ($TEMPDIR, 0,0777) unless -d $TEMPDIR;
 
 $MAX_PROC=8;
 # set this to 1 to print verbose messages to logs
 $DEBUG = 0;
 $BENCHMARK = 1;
-$NUM_SEQS = 5; #SHABARI EDIT
+$NUM_SEQS = 2; #SHABARI EDIT
 $MAX_SEQS = 21;
 $| = 1; # turn off buffering 
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
@@ -91,7 +91,6 @@ $FORM = new CGI;
 $CGI::POST_MAX= 60 * 1024 * 1024; # 24MB
 $CGI::DISABLE_UPLOADS = 0; 
 
-
 $DBNAME = $P->{DBNAME};
 $DBHOST = $P->{DBHOST};
 $DBPORT = $P->{DBPORT};
@@ -99,13 +98,14 @@ $DBUSER = $P->{DBUSER};
 $DBPASS = $P->{DBPASS};
 $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
 $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
-
 $COOKIE_NAME = $P->{COOKIE_NAME};
 
 my ($cas_ticket) =$FORM->param('ticket');
 $USER = undef;
 ($USER) = CoGe::Accessory::Web->login_cas(ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
 ($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
+#$coge->storage->debugobj(new DBIxProfiler());
+#$coge->storage->debug(1);
 
 my %ajax = CoGe::Accessory::Web::ajax_func();
 $ajax{dataset_search} = \&dataset_search; #override this method from Accessory::Web for restricted organisms
@@ -113,21 +113,23 @@ $ajax{feat_search} = \&feat_search;
 
 
 %FUNCTION = (
-    run=>\&run,
-    loading=>\&loading,
-    merge_previous=>\&merge_previous,
-    add_seq=>\&add_seq,
-    get_file=>\&get_file,
-    gen_go_run=>\&gen_go_run,    
-    gen_hsp_colors =>\&gen_hsp_colors,
-    save_settings_gevo=>\&save_settings_gevo,
-    reset_settings_gevo=>\&reset_settings_gevo,
-    check_address_validity=>\&check_address_validity,
-    dataset_group_search=>\&dataset_group_search,
-    get_tiny_url=>\&get_tiny_url,
-    add_to_user_history=>\&add_to_user_history,
-    %ajax,
-    );
+	     run=>\&run,
+	     loading=>\&loading,
+	     merge_previous=>\&merge_previous,
+	     add_seq=>\&add_seq,
+	     get_file=>\&get_file,
+	     gen_go_run=>\&gen_go_run,    
+	     gen_hsp_colors =>\&gen_hsp_colors,
+	     save_settings_gevo=>\&save_settings_gevo,
+	     reset_settings_gevo=>\&reset_settings_gevo,
+	     check_address_validity=>\&check_address_validity,
+	     dataset_group_search=>\&dataset_group_search,
+	     get_tiny_url=>\&get_tiny_url,
+	     add_to_user_history=>\&add_to_user_history,
+	     get_motif_info=>\&get_motif_infos,	   
+	     get_motif_vals=>\&get_motif_val,	   
+	     %ajax,
+	    );
 
 my $pj=new CGI::Ajax(%FUNCTION);
 
@@ -135,18 +137,18 @@ $pj->JSDEBUG(0);
 $pj->DEBUG(0);
 #$pj->js_encode_function('escape');
 if ($FORM->param('jquery_ajax'))
-{
+  {
     dispatch();
-}
+  }
 else
-{
- #   print $pj->build_html($FORM, \&gen_html);    
-}
+  {
+    print $pj->build_html($FORM, \&gen_html);    
+  }
 
-print $FORM->header;gen_html();
+#print $FORM->header;gen_html();
 
 sub dispatch
-{
+  {
     my %args = $FORM->Vars;
     my $fname = $args{'fname'};
     if($fname)
@@ -156,16 +158,16 @@ sub dispatch
         if($args{args}){
             my @args_list = split( /,/, $args{args} );
             print $FORM->header, $FUNCTION{$fname}->(@args_list);
-        }
+	  }
         else{
-            print $FORM->header, $FUNCTION{$fname}->(%args);
+	  print $FORM->header, $FUNCTION{$fname}->(%args);
         }
-    }
-#    else{
-#       print $FORM->header, gen_html();
-#    }
-}
-
+      }
+    #    else{
+    #       print $FORM->header, gen_html();
+    #    }
+  }
+  
 sub loading
   {
     my $message = shift || "Generating results. . .";
@@ -175,54 +177,65 @@ sub loading
 sub gen_html
   {
     my $html;# =  "Content-Type: text/html\n\n";
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/generic_page.tmpl');
-    $template->param(LOGO_PNG=>"MotifView-logo.png");
-    $template->param(TITLE=>'TFBS Motif Finder');
-    $template->param(PAGE_TITLE=>'MotifView');
-    $template->param(HELP=>'/wiki/index.php?title=MotifView');
-    my $name = $USER->user_name;
-    $name = $USER->first_name if $USER->first_name;
-    $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
-    $template->param(USER=>$name);
-    
-    $template->param(LOGON=>1) unless $USER->user_name eq "public";
-    $template->param(DATE=>$DATE);
-    $template->param(NO_BOX=>1);
-    $template->param(BODY=>gen_body());
-    my $prebox = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/MotifView.tmpl');
-    $prebox->param(RESULTS_DIV=>1);
-    $template->param(PREBOX=>$prebox->output);
-    $template->param(ADJUST_BOX=>1);
-    $html .= $template->output;
+    unless ($USER)
+      {
+	$html = login();
+      }
+    else
+      {
+	my $template = HTML::Template->new(filename=>$TMPLDIR.'generic_page.tmpl');
+	$template->param(LOGO_PNG=>"MotifView-logo.png");
+	$template->param(TITLE=>'TFBS Motif Finder');
+	$template->param(PAGE_TITLE=>'MotifView');
+	$template->param(HELP=>'/wiki/index.php?title=MotifView');
+	my $name = $USER->user_name;
+        $name = $USER->first_name if $USER->first_name;
+        $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
+        $template->param(USER=>$name);
+
+	$template->param(LOGON=>1) unless $USER->user_name eq "public";
+	$template->param(DATE=>$DATE);
+	$template->param(NO_BOX=>1);
+	$template->param(BODY=>gen_body());
+	my $prebox = HTML::Template->new(filename=>$TMPLDIR.'MotifView2.tmpl');
+	$prebox->param(RESULTS_DIV=>1);
+	$template->param(PREBOX=>$prebox->output);
+	$template->param(ADJUST_BOX=>1);
+	$html .= $template->output;
+      }
     return $html;
   }
 
-sub gen_body
-{
-    my $form = $FORM;
-        
-    my $prefs = CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME);
-    my $num_seqs = get_opt(params=>$prefs, form=>$form, param=>'num_seqs');
-    $num_seqs = $NUM_SEQS unless defined $num_seqs;
-    $MAX_SEQS = 10 if $form->param('override');
-    my $message;
-    if (! ($num_seqs =~ /^\d+$/) )
-      {
-	$message .= "Problem with requested number of sequences: '$num_seqs'.  Defaulting to $NUM_SEQS input sequences.";
-	$num_seqs = $NUM_SEQS;
-      }
-    elsif ($num_seqs < 2)
-      {
-	$message .= "Minimum number of sequences to compare is two.";
-	$num_seqs = 2;
-      }
-    elsif ($num_seqs > $MAX_SEQS)
-      {
-	$message .= "Maximum number of sequence is $MAX_SEQS.";
+  sub gen_body
+    {
+      my $form = $FORM;
+      
+      my $prefs = CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME, coge=>$coge);
+      #my $num_seqs = get_opt(params=>$prefs, form=>$form, param=>'num_seqs');
+      my $num_seqs = $form->param('num_seqs');#= get_opt(params=>$prefs, form=>$form, param=>'num_seqs');
+
+      $num_seqs = $NUM_SEQS unless defined $num_seqs;
+      $MAX_SEQS = 10 if $form->param('override');
+      my $message;
+      if (! ($num_seqs =~ /^\d+$/) )
+	{
+	  $message .= "Problem with requested number of sequences: '$num_seqs'.  Defaulting to $NUM_SEQS input sequences.";
+	  $num_seqs = $NUM_SEQS;
+	}
+      elsif ($num_seqs < 2)
+	{
+	  $message .= "Minimum number of sequences to compare is two.";
+	  $num_seqs = 2;
+	}
+      elsif ($num_seqs > $MAX_SEQS)
+	{
+	  $message .= "Maximum number of sequence is $MAX_SEQS.";
 	$num_seqs = $MAX_SEQS;
       }
     my @seq_nums;
     my @seq_sub;
+
+
     for (my $i = 1; $i <= $num_seqs; $i++)
       {
 	my ($draccn, $pos, $chr, $fid, $dsid, $dsgid, $gstid, $mask, $display_order);
@@ -348,7 +361,9 @@ sub gen_body
     my $hsp_overlap_limit = get_opt(params=>$prefs, form=>$form, param=>'hsp_overlap_limit');
     $hsp_overlap_limit = 50 unless $hsp_overlap_limit;
     my $hsp_size_limit = get_opt(params=>$prefs, form=>$form, param=>'hsp_size_limit');
-    $hsp_size_limit = 0 unless $hsp_size_limit;
+      $hsp_size_limit = 0 unless $hsp_size_limit;
+      #my $motif_overlap_limit = get_opt(params=>$prefs, form=>$form, param=>'motif_overlap_limit');
+    #$motif_overlap_limit = 0 unless $motif_overlap_limit;
     my $show_cns = get_opt(params=>$prefs, form=>$form, param=>'show_cns');
     $show_cns=0 unless $show_cns;
     my $feat_labels = get_opt(params=>$prefs, form=>$form, param=>'feat_labels');
@@ -356,7 +371,11 @@ sub gen_body
     my $show_gene_space = get_opt(params=>$prefs, form=>$form, param=>'show_gene_space');
     my $show_contigs = get_opt(params=>$prefs, form=>$form, param=>'show_contigs');
     $show_gene_space=0 unless $show_gene_space;
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/MotifView.tmpl');
+
+     my $motif_overlap = get_opt(params=>$prefs, form=>$form, param=>'motif_overlap');
+    $motif_overlap=0 unless $motif_overlap;   
+
+      my $template = HTML::Template->new(filename=>$TMPLDIR.'MotifView.tmpl');
     $template->param(PAD_GS=>$pad_gs);
     $template->param(APPLY_ALL=>$apply_all);
     $template->param(IMAGE_WIDTH=>$image_width);
@@ -364,6 +383,7 @@ sub gen_body
     $template->param(PADDING=>$padding);
     $template->param(HSP_OVERLAP_LIMIT=>$hsp_overlap_limit);
     $template->param(HSP_SIZE_LIMIT=>$hsp_size_limit); 
+      #$template->param(MOTIF_OVERLAP_LIMIT=>$motif_overlap_limit); 
     if ($gc_color) {$template->param(GC_COLOR_YES=>"checked");}
     else {$template->param(GC_COLOR_NO=>"checked");}     
     if ($nt_color) {$template->param(NT_COLOR_YES=>"checked");}
@@ -382,11 +402,11 @@ sub gen_body
     else {$template->param(COLOR_HSP_NO=>"checked");}
     if ($color_feat) {$template->param(COLOR_FEAT_YES=>"checked");}
     else {$template->param(COLOR_FEAT_NO=>"checked");}
-    if ($show_cns) {$template->param(SHOW_CNS_YES=>"checked");}
-    else {$template->param(SHOW_CNS_NO=>"checked");}
-    if ($show_gene_space) {$template->param(SHOW_GENESPACE_YES=>"checked");}
-    else {$template->param(SHOW_GENESPACE_NO=>"checked");}
-    if ($hsp_label && $hsp_label eq "staggered") {$template->param(HSP_LABELS_STAG=>"selected");}
+    
+    if ($motif_overlap) {$template->param(GRAPHIC_TYPE_CNSONLY=>"checked");}
+    else {$template->param(GRAPHIC_TYPE_WHOLEWINDOW=>"checked");}
+  
+  if ($hsp_label && $hsp_label eq "staggered") {$template->param(HSP_LABELS_STAG=>"selected");}
     elsif ($hsp_label && $hsp_label eq "linear") {$template->param(HSP_LABELS_LIN=>"selected");}
     else {$template->param(HSP_LABELS_NO=>"selected");}
     if ($feat_labels && $feat_labels eq "staggered") {$template->param(FEAT_LABELS_STAG=>"selected");}
@@ -406,7 +426,7 @@ sub gen_body
     #elsif ($draw_model eq "Gene_space") {$template->param(DRAW_MODEL_GENE_SPACE=>"selected");}
     else {$template->param(DRAW_MODEL_NO=>"selected");}
 
-    my $box = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
+    my $box = HTML::Template->new(filename=>$TMPLDIR.'box.tmpl');
     #generate sequence submission selector
     $template->param(SEQ_SELECT=>1);
     $template->param(SEQ_SELECT_LOOP=>\@seq_sub);
@@ -430,10 +450,12 @@ sub gen_body
     
     $template->param(GOBE_VERSION=>$gobe_version);
     
-    $box->param(BOX_NAME=>"MotifView Configuration:");
+    
+  #    $box->param(BOX_NAME=>"<font color=black><span class=alert>PUT THIS STUFF IN THE WIKI:</span><br>For a list of all TFBS motifs used in Spangler <i>et al.,</i> New Phytologist (2011) Evidence for Conserved Noncoding Sequence Functions in Arabidopsis thaliana. , click <a href=http://synteny.cnr.berkeley.edu/CoGe/data/distrib/MotifsUsedInSpanglerPaper.txt target=new>here</a><br><br><font color=black>For a list of all TFBS motifs used in this site, click <a href=http://synteny.cnr.berkeley.edu/CoGe/data/distrib/Motiflist.txt target=new>here</a><br>");
+
     $template->param(OPTIONS=>1);
     $template->param(ALIGNMENT_PROGRAMS=>algorithm_list($prog));
-    $template->param(TFBS_MOTIFS=>motif_list());      
+    $template->param(MOTIF_SELECT=>motif_list());      
     $template->param(SAVE_SETTINGS=>gen_save_settings($num_seqs)) unless !$USER || $USER->user_name =~ /public/i;
     $box->param(BODY=>$template->output);
   
@@ -442,11 +464,11 @@ sub gen_body
     return $html;
 }
 
-
+ 
 sub run
 {
     my %opts = @_;
-    my $gtype=$opts{gtype};
+    #my $gtype=$opts{gtype};
     my $motifoverlap=$opts{motifoverlap};
     my $num_seqs = $opts{num_seqs} || $NUM_SEQS;
     my $spike_len = $opts{spike};
@@ -461,28 +483,41 @@ sub run
     my $draw_model = $opts{draw_model};
     my $hsp_overlap_limit = $opts{hsp_overlap_limit};
     my $hsp_size_limit = $opts{hsp_size_limit};
+    #my $motif_overlap_limit = $opts{motif_overlap_limit};
+    
     my $hiqual = $opts{hiqual};
     
+#    open(OUT,">>/opt/apache/CoGe/tmp/MotifView/motifs");
+#    print OUT $motif_choice,"\n";
+#    close OUT;
+
+
 
 #    my $hsp_limit = $opts{hsplim};
 #    my $hsp_limit_num = $opts{hsplimnum};
     my $show_hsps_with_stop_codon = $opts{showallhsps};
     my $padding = $opts{padding};
+
+    my $motifregex = $opts{motifregexp};
+    my $motif_choice = $opts{motif_choice};
+    my $motif_select = $opts{motif};
     my ($analysis_program, $param_string, $parser_opts) = get_algorithm_options(%opts);
     
     my $motifhash;
     my $motifresults2;
-
-    if ($opts{motifregexp}=~/[ACGT]/i)
+    
+    if ($motifregex=~/[ACGT]/i)
       {
-	$motifhash=&getmotifsfromregexp($opts{motifregexp});	
+	$motifhash=&getmotifsfromregexp($motifregex);	
+      }
+    elsif($motif_choice=~/[ACGT]/i)
+      {
+	$motifhash=&getmotifsfromcheckbox($motif_choice);     
       }
     else
       {
-	$motifhash=&getmotifsfromcheckbox($opts{motif});
+	$motifhash=&getmotifsfromcheckbox($motif_select);     
       }
-    
-  
     my $basefilename = $opts{basefile};
     my $pad_gs = $opts{pad_gs} || 0;
     my $color_overlapped_features = $opts{color_overlapped_features};
@@ -497,7 +532,9 @@ sub run
     my $message;
     my $gen_prot_sequence =0; #flag for generating fasta file of protein_sequence;
     $gen_prot_sequence = 1 if $analysis_program eq "GenomeThreader";
-    $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$basefilename, prog=>"GEvo");
+#    $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$basefilename, prog=>"MotifView");
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$basefilename, prog=>"GEvo"); #needs to be here in order for gobe to work
+    
     my @hsp_colors;
     for (my $i = 1; $i <= num_colors($num_seqs); $i++)
       {
@@ -550,6 +587,9 @@ sub run
 	my $display_order = $opts{"display_order$i"};
 	($display_order) = $display_order =~ /(\d+)/ if $display_order;
 	$display_order = $i unless $display_order;
+	
+	
+
 
 	my $skip_seq =$opts{"skip_seq$i"};
 	next if $skip_seq;
@@ -834,93 +874,135 @@ sub run
     my $bitscore_cutoff = get_bit_score_cutoff(seq_length=>$spike_len, match=>$opts{blast_match}, mismatch=>$opts{blast_mmatch}) if $spike_len;
     my @gfxs;
 
+    
     foreach my $item (@sets)
       {
 	my $obj = $item->{obj};
 	my $filename = $cogeweb->basefile."_".$item->{seq_num}.".png";
 	$filename = CoGe::Accessory::Web::check_filename_taint($filename);
+	
 	$item->{png_filename}=$filename;
 	my $image = basename($filename);
-	$item->{image}=$image;
+	
+	$item->{image}=$image;	
       }
     my $count = 1;
 
     foreach my $item (@sets)
       {
+	my $itemaccn=$item->{accn};
+	my @timeData = localtime(time);
+	my $time=join(' ', @timeData);
+	my $motifoutputfile = $TEMPDIR."/".md5_hex($time.$itemaccn)."_results";
+	my $motifoutputlink= $motifoutputfile;#"http://synteny.cnr.berkeley.edu/CoGe/tmp/MotifView/".md5_hex($time.$itemaccn)."_results";
+	$motifoutputlink =~ s/$TEMPDIR/$TEMPURL/;
+	$item->{results_print}=$motifoutputfile; #this is working partially, but does not take the info out of the loop
+	$item->{results_link}=$motifoutputlink; #this is working partially, but does not take the info out of the loop
+      }
+      
+    foreach my $item (@sets)
+      {
 	$pm->start and next;
+	my $itemaccn=$item->{accn};
 	my $obj = $item->{obj};
-	
 	next unless $obj->sequence;
-	
-
+       
 	#trying to get the motif painted on the right strand
 	my $seq=$obj->{sequence};
 	
-	#my $motifresults =tfbs_finder(name=>$motifname,seq=>$seq,motif=>$motif,motifcolor=>$rgbcolor,auth=>$auth,litref=>$litref,title=>$title,motifcolordesc=>$realcolor); # need to slurp in hash of motifs and send to tfbs_finder
-
+	my $motifoutputfile=$item->{results_print};
+	
 	my $motifresults;
 
-	if ($motifoverlap=~/cnsonly/)
+	if ($motifoverlap)
 	  {
 	    my $cnshash=&parseresultsforcnsonly($obj);
 	    $motifresults=&tfbs_finder_cnsonly(motifhash=>$motifhash, cnshash=>$cnshash);
-	    #$motifresults2{=$motifresults;
-	    
+	    #if ($motif_overlap_limit>0)
+	    #{
+	    #$motifresults=&clustermotifs($motifresults);
+	    #}
 	  }
 	
-	elsif($motifoverlap=~/wholewindow/)
-	{
-	    $motifresults =&tfbs_finder(motifhash=>$motifhash, seq=>$seq);
-	    #$motifresults2.=$motifresults;
-	}
+	else
+	  {	   
+	    $motifresults=&tfbs_finder(motifhash=>$motifhash, seq=>$seq);
+	    #open(OUTLOG,">>/opt/apache/CoGe/tmp/MotifView/cluster");	   
+	    #print OUTLOG Dumper $motifresults;
+	    #close OUTLOG;					      
+	    
+	    open(RESULTSOUT,">>$motifoutputfile");			
+	    print RESULTSOUT "Motif Name\tStart\tStop\tRGB color\tMotif sequence\tAuthor\tLiterature reference\tTitle\tColor\tStrand\n";
+	    foreach my $key (sort keys %$motifresults)
+	      {		
+		my $resultsp=$motifresults->{$key}{'plus'};
+		foreach my $arrayp(@$resultsp)
+		  {
+#		    print STDERR Dumper $arrayp;
+		    my ($motifname,$start,$stop,$rgbcolor,$motifseq,$author,$litref,$title,$color,$strand)=(@$arrayp[0],@$arrayp[1],@$arrayp[2],@$arrayp[3],@$arrayp[4],@$arrayp[5],@$arrayp[6],@$arrayp[7],@$arrayp[8],@$arrayp[9]);			
+		    
+		    print RESULTSOUT $motifname,"\t",$start,"\t",$stop,"\t",$rgbcolor,"\t",$motifseq,"\t",$author,"\t",$litref,"\t",$title,"\t",$color,"\t",$strand,"\n";
+		  }
+		
+		my $resultsm=$motifresults->{$key}{'minus'};
+		foreach my $arraym(@$resultsm)
+		  {
+		    my ($motifname,$start,$stop,$rgbcolor,$motifseq,$author,$litref,$title,$color,$strand)=(@$arraym[0],@$arraym[1],@$arraym[2],@$arraym[3],@$arraym[4],@$arraym[5],@$arraym[6],@$arraym[7],@$arraym[8],@$arraym[9]);				
+		    print RESULTSOUT $motifname,"\t",$start,"\t",$stop,"\t",$rgbcolor,"\t",$motifseq,"\t",$author,"\t",$litref,"\t",$title,"\t",$color,"\t",$strand,"\n";
+		  }
+	      }
+	    close RESULTSOUT;
+	  }
 	
 	if ($obj)
 	  {
 	    CoGe::Accessory::Web::write_log("generating image ($count/".scalar @sets.")for ".$obj->accn.": ".$item->{png_filename}, $cogeweb->logfile);
 	    $count++;
 	    my ($gfx) = 
-	      generate_image(
+	      generate_image(			     
 			     obj=>$item->{obj},
-		    start=>1,
-		    stop=>length($obj->sequence),
-		    data=>$analysis_reports,
-		    iw=>$iw,
-		    fh=>$feat_h,
-		    show_gc=>$show_gc,
-		    show_nt=>$show_nt,
-		    show_cbc=>$show_cbc,
-		    hsp_labels=>$hsp_labels,		  
-		    feat_labels=>$feat_labels,
-#			     hsp_limit=>$hsp_limit,
-#			     hsp_limit_num=>$hsp_limit_num,
-		    color_hsp=>$color_hsp,
-		    hsp_colors=>\@hsp_colors,
-		    show_hsps_with_stop_codon => $show_hsps_with_stop_codon,
-		    hiqual=>$hiqual,
-		    padding=>$padding,
-		    reverse_image=>$item->{rev},
-		    draw_model=>$draw_model,
-		    hsp_overlap_limit=>$hsp_overlap_limit,
-		    hsp_size_limit=>$hsp_size_limit,
-		    color_overlapped_features=>$color_overlapped_features,
-		    hsp_overlap_length=>$hsp_overlap_length,
-		    show_cns=>$show_cns,
-		    show_gene_space=>$show_gene_space,
-		    show_contigs=>$show_contigs,
-		    bitscore_cutoff=>$bitscore_cutoff,
-		    skip_feat_overlap_search=>$skip_feat_overlap_search,
-		    skip_hsp_overlap_search=>$skip_hsp_overlap_search,
-		    font_size=>$font_size,
-		    motif_results=>$motifresults,
-		    motif_overlap=>$motifoverlap,
-		    gtype=>$gtype,
-		);
-
+			     start=>1,
+			     stop=>length($obj->sequence),
+			     data=>$analysis_reports,
+			     iw=>$iw,
+			     fh=>$feat_h,
+			     show_gc=>$show_gc,
+			     show_nt=>$show_nt,
+			     show_cbc=>$show_cbc,
+			     hsp_labels=>$hsp_labels,		  
+			     feat_labels=>$feat_labels,
+			     #			     hsp_limit=>$hsp_limit,
+			     #			     hsp_limit_num=>$hsp_limit_num,
+			     color_hsp=>$color_hsp,
+			     hsp_colors=>\@hsp_colors,
+			     show_hsps_with_stop_codon => $show_hsps_with_stop_codon,
+			     hiqual=>$hiqual,
+			     padding=>$padding,
+			     reverse_image=>$item->{rev},
+			     draw_model=>$draw_model,
+			     hsp_overlap_limit=>$hsp_overlap_limit,
+			     hsp_size_limit=>$hsp_size_limit,
+			     color_overlapped_features=>$color_overlapped_features,
+			     hsp_overlap_length=>$hsp_overlap_length,
+			     show_cns=>$show_cns,
+			     show_gene_space=>$show_gene_space,
+			     show_contigs=>$show_contigs,
+			     bitscore_cutoff=>$bitscore_cutoff,
+			     skip_feat_overlap_search=>$skip_feat_overlap_search,
+			     skip_hsp_overlap_search=>$skip_hsp_overlap_search,
+			     font_size=>$font_size,
+			     motif_results=>$motifresults,
+			     motif_overlap=>$motifoverlap,
+			     #gtype=>$gtype,			    
+			    );
+	    
 	    $gfx->generate_png(file=>$item->{png_filename});
 	    generate_image_db(set=>$item, gfx=>$gfx);
 	  }
 	$pm->finish;
+
       }
+
     $pm->wait_all_children;
     #get combined height of all the images
     my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
@@ -938,6 +1020,7 @@ sub run
     my $t4 = new Benchmark;
     #set up buttons for gobe
     
+   
     my $gobe_buttons= qq{
 <table>
 <tr>
@@ -956,43 +1039,32 @@ sub run
 };
     $gobe_buttons .=qq{<td><a href="javascript:void(0);" id="history_dialog_button" class='ui-button ui-corner-all ui-button-icon-left' onClick="save_GEvo_results()"><span class="ui-icon ui-icon-newwin"></span>Save Results</a>} unless $USER->user_name eq 'public';
     $gobe_buttons .= "</table>";
-    $html .= $gobe_buttons;
-    
+    $html .= $gobe_buttons;    
     $html .= qq{<DIV id=flashcontent></DIV>};
     $html .= qq{<br><a href="http://genomevolution.org/wiki/index.php/Gobe" class=small style="color: red" target=_new>Click here for help!</a>  <a href="http://get.adobe.com/flashplayer/" target=_new class="small">No results?  Rerun by pressing "Run GEvo Analysis!" again.  Still no results? Try installing the latest version of Flash</a>.};
     $html .= $gobe_buttons;
-    
-    ###Motif Results Box
-    my $motifresultsbox="<table>";
-    $html.=$motifresultsbox;
-	   
-    for my $motif(keys %$motifhash)    
-      {
-	my @details;
-	
-	my $details= @{$motifhash->{$motif}};	
-	my $motifname=@{$motifhash->{$motif}}[0];
-	my $motifseq=@{$motifhash->{$motif}}[1];
-	my $colorname=@{$motifhash->{$motif}}[2];
-	my $colorcode=@{$motifhash->{$motif}}[3];
-	
-	$motifname=~s/_/ /g;
-	
-	my $motifdata="<tr><td>".$motifname.":".$motifseq.":".$colorname."</td>";
-	
-	#my $bgcolor="\"rgb"."(".$colorcode.")\"";
-	#$motifdata.="<td bgcolor=$bgcolor></td></tr>";
-	
-	$html.=$motifdata;      
-      }
-    $html.="</table>";
-    ###Motif Results Box ends
-
 
     $html .= qq{<table>};
-    $html .= qq{<tr valign=top><td class = small>Alignment reports};
-    #    my $stats_file = $cogeweb->basefile."_stats.txt";
-    #    $stats_file = CoGe::Accessory::Web::check_filename_taint($stats_file);
+
+    #print motif results
+  
+    $html .= "<tr valign=top><td class = small>Motif Results";
+    
+    foreach my $item (@sets)
+      {
+	#next unless $item->{file};
+	my $obj = $item->{obj};	
+	my $itemaccn=$item->{accn};			
+	my $resultsfilelink=$item->{results_link};	
+	$html .= qq{<div><font class=small><a href="$resultsfilelink" target=_new>}.$itemaccn."</a></font></DIV>\n";
+      }
+    
+    $html .=qq{<font class="small">Display Motifs seperated by </font> <input class=backbox type=textbox size=3 id="motif_overlap_limit"> nt or less.};
+    #my $resultsfilelink=$item->{results_link};
+
+    $html .= qq{<td class = small>Alignment reports};
+    my $stats_file = $cogeweb->basefile."_stats.txt";
+    $stats_file = CoGe::Accessory::Web::check_filename_taint($stats_file);
     
     if ($analysis_reports && @$analysis_reports)
       {
@@ -1002,14 +1074,19 @@ sub run
 	    my $accn1 = $item->[1];
 	    my $accn2 = $item->[2];
 	    my $basereportname = basename( $report );
+	    
+	    
 	    $basereportname = $TEMPURL . "/$basereportname\n";
-	    $html .= "<div><font class=small><A HREF=\"$basereportname\" target=_new>$accn1 versus $accn2</A></font></DIV>\n";
+	    $html .= "<div><font class=small><A HREF=\"$basereportname\" target=_new>$accn1 versus $accn2</A></font></DIV>\n";	   
 	  }
       }
     else
       {
 	$html .= "<div class=small>No alignment reports were generated</DIV>\n";
       }
+
+
+    
     $html .= qq{<td class = small>Fasta files};
     my $all_file = $cogeweb->basefile().".all.fasta";
     foreach my $item (@sets)
@@ -1045,7 +1122,8 @@ sub run
       }
     $html .= qq{<td class = small>SQLite db};
     my $dbname = $TEMPURL."/".basename($cogeweb->sqlitefile);
-    
+    my $bugemail="shabari\@berkeley.edu\,krdeleon\@gmail.com";
+
     $html .= "<div class=small><A HREF=\"$dbname\" target=_new>SQLite DB file</A></DIV>\n";
     $html .= qq{<td class = small>Log File};
     my $logfile = $TEMPURL."/".basename($cogeweb->logfile);
@@ -1053,10 +1131,11 @@ sub run
     $html .= qq{<td class=small>GEvo Links};
     $html .= qq{<div id=tiny_link></div>};
     $html .=qq{<div><a href="GEvo_direct.pl?name=$basefilename" target=_new>Results only</a></div></td>};
-
+    $html .= qq{<td class=small>Bug reporting};
+    $html .=qq{<div><a href="mailto:$bugemail">Report bugs</a></div></td></tr>};
     $html .= qq{</table>};
-
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/box.tmpl');
+        
+    my $template = HTML::Template->new(filename=>$TMPLDIR.'box.tmpl');
     my $results_name = "Results: $analysis_program";
     $results_name .= qq{ <span class="small">(spike sequence filter length: $spike_len)</span>} if $spike_len;
     $template->param(BOX_NAME=>$results_name);
@@ -1094,7 +1173,7 @@ Total time                                          : $total_time
 sub generate_image
   {
     my %opts = @_;
-    my $gtype=$opts{gtype};
+    #my $gtype=$opts{gtype};
     my $gbobj = $opts{obj};
     my $start = $opts{start};
     my $stop = $opts{stop};
@@ -1158,7 +1237,7 @@ sub generate_image
 		   c=>$gfx, 
 		   motif_results=>$motif_results,
 	           motif_overlap=>$motif_overlap,
-		   gtype=>$gtype,
+		   #gtype=>$gtype,
 		   data=>$data, 
 		   accn=>$gbobj->accn, 
 		   rev=>$reverse_image, 
@@ -1290,7 +1369,7 @@ sub process_motifs
     my $c = $opts{c};
     my $motif_results=$opts{motif_results};
     my $motif_overlap=$opts{motif_overlap};
-    my $gtype = $opts{gtype};
+    #my $gtype = $opts{gtype};
     
     my $data = $opts{data};
     my $accn = $opts{accn};
@@ -1317,7 +1396,7 @@ sub process_motifs
     my @feats;
     my %overlap_count;  #count number of features that overlap an HSP if features overlapped by HSPs are to be colored
    
-    if ($motif_overlap=~/cnsonly/)
+    if ($motif_overlap)
     {
 	foreach my $key(sort keys %$motif_results)
 	{
@@ -1329,12 +1408,12 @@ sub process_motifs
 		my $start = $element->[1];
 		my $stop =  $element->[2];
 		my $strand= $element->[9];
-		my $motifcolor= $element->[8];
+		my $motifcolor= $element->[3];
 		my $motifseq= $element->[4];
 		my $auth= $element->[5];
 		my $litref= $element->[6];
 		my $title= $element->[7];
-		my $colordesc=$element->[3];	
+		my $colordesc=$element->[8];	
 		
 		if ($strand=~/\+/)
 		{	    
@@ -1359,24 +1438,24 @@ sub process_motifs
 		#my $newstop=$stop+25;
 		#my $newstart=$start-25;    	    		
 		
-		unless($gtype=~/\w/)		
-		{
-		    $gtype="diamond";
-		}
+		#unless($gtype=~/\w/)		
+		#{
+		my $gtype="diamond";
+		#}
 		
 		if ($gtype=~/flag/)
 		{	
-		    $f = CoGe::Graphics::Feature::Flag->new({start=>$newstart, stop=>$newstop, bgcolor=>$motifcolor});
+		  $f = CoGe::Graphics::Feature::Flag->new({start=>$newstart, stop=>$newstop, bgcolor=>$motifcolor});
 		}
 		elsif ($gtype=~/diamond/)
-		{
+		  {
 		    $f = CoGe::Graphics::Feature::Diamond->new({start=>$newstart, stop=>$newstop, bgcolor=>$motifcolor});
-		}
+		  }
 		elsif ($gtype=~/circle/)
-		{
+		  {
 		    
 		    #$f = CoGe::Graphics::Feature::Circle->new({start=>$newstart, stop=>$newstop, bgcolor=>$motifcolor});
-		}
+		  }
 		my $order = 1;
 		$f->order($order);	
 		$f->color($motifcolor);
@@ -1405,9 +1484,14 @@ sub process_motifs
 	    }		
 	}
     }
-    if ($motif_overlap=~/wholewindow/)
+    else
     {
-	while (my ($motifnum,$strandhash)=each(%$motif_results))
+
+#      open (OUTLOG,">>/opt/apache/CoGe/tmp/MotifView/motifviewlog");
+#      print OUTLOG Dumper $motif_results;
+#      close OUTLOG;
+      
+      while (my ($motifnum,$strandhash)=each(%$motif_results))
 	{		
 	    foreach my $strandkey(keys %$strandhash)
 	    {	    
@@ -1429,12 +1513,12 @@ sub process_motifs
 		    my $motifname = $element->[0];	    
 		    my $start = $element->[1];
 		    my $stop =  $element->[2];
-		    my $motifcolor= $element->[8];
+		    my $motifcolor= $element->[3];
 		    my $motifseq= $element->[4];
 		    my $auth= $element->[5];
 		    my $litref= $element->[6];
 		    my $title= $element->[7];
-		    my $colordesc=$element->[3];	
+		    my $colordesc=$element->[8];	
 		    
 		    #print STDERR "$strand,$motifname,$start,$stop,$motifcolor,$motifseq,$colordesc\n";
 		    
@@ -1449,24 +1533,24 @@ sub process_motifs
 		    #my $newstop=$stop+25;
 		    #my $newstart=$start-25;    	    		
 		    
-		    unless($gtype=~/\w/)		
-		    {
-			$gtype="diamond";
-		    }
+		    #unless($gtype=~/\w/)		
+		    #{
+		    my $gtype="diamond";
+		    #}
 		    
-		    if ($gtype=~/flag/)
-		    {	
-			$f = CoGe::Graphics::Feature::Flag->new({start=>$newstart, stop=>$newstop, bgcolor=>$motifcolor});
-		    }
-		    elsif ($gtype=~/diamond/)
-		    {
+		    #if ($gtype=~/flag/)
+		    #{	
+		    #	$f = CoGe::Graphics::Feature::Flag->new({start=>$newstart, stop=>$newstop, bgcolor=>$motifcolor});
+		    #}
+		    #elsif ($gtype=~/diamond/)
+		    #{
 			$f = CoGe::Graphics::Feature::Diamond->new({start=>$newstart, stop=>$newstop, bgcolor=>$motifcolor});
-		    }
-		    elsif ($gtype=~/circle/)
-		    {
+		    #}
+		    #elsif ($gtype=~/circle/)
+		    #{
 			
 			#$f = CoGe::Graphics::Feature::Circle->new({start=>$newstart, stop=>$newstop, bgcolor=>$motifcolor});
-		    }
+		    #}
 		    my $order = 1;
 		    $f->order($order);	
 		    $f->color($motifcolor);
@@ -1544,7 +1628,33 @@ sub process_motifs
       return (\%hash);
     }
     
-    
+    sub clustermotifs
+      {
+	my ($motifresults,$motif_overlap_limit)=@_;	
+	foreach my $key(sort keys %$motifresults)
+	  {
+	    if (exists $motifresults->{$key}{'plus'})
+	      {
+		my @array=@{$motifresults->{$key}{'plus'}};
+		my @sortedarray=sort{$a->[1] > $b->[1]} @array;
+		
+		for my $i ( 0 .. $#sortedarray ) 
+		  {
+		    my @array1=@{$sortedarray[$i]};		    
+		    my @array2=@{$sortedarray[$i+1]};
+		    
+		    my ($start1,$stop1)=($array1[1],$array1[2]);
+		    my ($start2,$stop2)=($array2[1],$array2[2]);		
+		    #open(OUTLOG,">>/opt/apache/CoGe/tmp/MotifView/cluster");	   
+		    #print OUTLOG $start1,"\t",$start2,"\n";
+		    #close OUTLOG;
+		}
+	      }
+	  }
+	return $motifresults;
+      }
+	
+
   sub generate_image_db
       {
       my %args = @_;
@@ -1694,7 +1804,7 @@ sub image_db_create_hsp_pairs
   
   sub process_features
     {
-    #process features
+    
     my %opts = @_;
     my $c = $opts{c};
     my $obj=$opts{obj};
@@ -2213,11 +2323,11 @@ sub image_db_create_hsp_pairs
 	$i++;
 	$track--;
       }
-    
-    my $label_location = "top";
-    my $order;
-    @feats = sort{$a->strand cmp $b->strand || $a->track <=> $b->track || $a->start <=> $b->start} @feats;
-#    @feats = reverse @feats if $reverse;
+      
+      my $label_location = "top";
+      my $order;
+      @feats = sort{$a->strand cmp $b->strand || $a->track <=> $b->track || $a->start <=> $b->start} @feats;
+      #@feats = reverse @feats if $reverse;
     foreach my $f (@feats)
       {
 #	next unless $f->label; #this has been commented out so that if features are labeled, but HSP are not, HSPs will still get drawn.  Not sure why this check was put into place. . .
@@ -2617,7 +2727,7 @@ sub run_bl2seq {
       for (my $j=0; $j<scalar @$sets; $j++)
 	{
 	  next unless $j > $i;
-	  #
+	  
 	  my $seqfile1 = $sets->[$i]->{file};
 	  my $seqfile2 = $sets->[$j]->{file};
 	  next unless $seqfile1 && -r $seqfile1 && $seqfile2 && -r $seqfile2; #make sure these files exist
@@ -2629,9 +2739,6 @@ sub run_bl2seq {
 	  push @reports,[$tempfile, $accn1, $accn2];
 	  $pm->start and next;
 	  my $command = $BL2SEQ;
-	  
-	  
-	  
 	  # format the bl2seq command
 	  $command .= " -p $program -o $tempfile ";
 	  $command .= "-i $seqfile1 -j $seqfile2";
@@ -2660,7 +2767,7 @@ sub run_bl2seq {
       my $blastreport = new CoGe::Accessory::bl2seq_report({file=>$tempfile}) if -r $tempfile;
       if ($blastreport)
 	{
-	  push @$item, $blastreport
+	  push @$item, $blastreport;
 	}
       else
 	{
@@ -2724,11 +2831,13 @@ sub run_blastz
 	my $blastreport = new CoGe::Accessory::blastz_report({file=>$tempfile}) if -r $tempfile;
 	if ($blastreport)
 	  {
-	    push @$item, $blastreport
+	    push @$item, $blastreport;
 	  }
 	else
 	  {
+	    my $blastreport = new CoGe::Accessory::blastz_report();
 	    push @$item, "no results from blasting ".$item->[1]." and ".$item->[2];
+	    CoGe::Accessory::Web::write_log("WARNING:  no results from blasting ".$item->[1]." and ".$item->[2].".  Possible error\n", $cogeweb->logfile);
 	  }
       }
     return \@reports;
@@ -2936,7 +3045,7 @@ sub run_dialign
 									dialign_report_opts=>$parser_opts,
 									anchor_report_opts=>$parser_opts->{anchor_params}{parser_opts},
 									log_file=>$cogeweb->logfile,
-#									DEBUG=>1,
+									#DEBUG=>1,
 								       });
 		$tempfile = $obj->dialign_file;
 		$report = $obj->dialign_report;
@@ -3082,15 +3191,27 @@ sub tfbs_finder_cnsonly
 	  foreach my $k(sort keys %$motifhash)
 	    {
 	      my @motifarray=@{$motifhash->{$k}};
-	      
 	      my $name=$motifarray[0];
 	      my $motif=$motifarray[1];
-	      my $motifcolor=$motifarray[2];
-	      my $motifcolordesc=$motifarray[3];
-	      my $auth=$motifarray[4];
-	      my $litref=$motifarray[5];
-	      my $title=$motifarray[6];      
-	      my $motiflength=$motifarray[7];
+	      my $realcolor=$motifarray[2];
+	      my $rgbcolor=$motifarray[3];
+	      my $hexcolor=$motifarray[4];
+	      my $auth=$motifarray[5];
+	      my $litref=$motifarray[6];
+	      my $title=$motifarray[7];    
+	      
+	      #my $code=$motifarray[0];
+	      #my $na=$motifarray[1];
+	      #my $title=$motifarray[2];      
+	      #my $auth=$motifarray[3];
+	      #my $cat=$motifarray[4];
+	      #my $motifformula=$motifarray[5];
+	      #my $name=
+	      #my $motif=
+	      #my $motifcolor=$motifarray[2];
+	      #my $motifcolordesc=$motifarray[3];	      
+	      #my $litref=$motifarray[5];	      
+	      my $motiflength;
 	      
 	      if ($motif=~/\[.*?\]/)
 		{
@@ -3122,7 +3243,7 @@ sub tfbs_finder_cnsonly
 		      $strand="+";
 		    }
 		  
-		  my @array=($name,$cnsstartnew,$cnsstopnew,$motifcolor,$motif,$auth,$litref,$title,$motifcolordesc,$strand);
+		  my @array=($name,$cnsstartnew,$cnsstopnew,$rgbcolor,$motif,$auth,$litref,$title,$realcolor,$strand);
 		  
 		  push @{$hash{$k}},[@array];
 		}	      
@@ -3138,21 +3259,24 @@ sub tfbs_finder_cnsonly
 
       my $motifhash=$opts{motifhash};
       my $seq=$opts{seq};
-      
+      my $motif_overlap_limit=$opts{motif_overlap_limit};
+            
       my %hash;
 
       foreach my $k(sort keys %$motifhash)
 	{
 	  my @motifarray=@{$motifhash->{$k}};
-	  
+##	  print STDERR Dumper \@motifarray;
 	  my $name=$motifarray[0];
 	  my $motif=$motifarray[1];
-	  my $motifcolor=$motifarray[2];
-	  my $motifcolordesc=$motifarray[3];
-	  my $auth=$motifarray[4];
-	  my $litref=$motifarray[5];
-	  my $title=$motifarray[6];      
-	  my $motiflength=$motifarray[7];
+	  my $realcolor=$motifarray[2];
+	  my $rgbcolor=$motifarray[3];
+	  my $hexcolor=$motifarray[4];
+	  my $auth=$motifarray[5];
+	  my $litref=$motifarray[6];
+	  my $title=$motifarray[7];      
+	  
+	  my $motiflength;
 	  
 	  if ($motif=~/\[.*?\]/)
 	    {
@@ -3164,7 +3288,7 @@ sub tfbs_finder_cnsonly
 	  else
 	    {
 	      $motiflength=length($motif);
-		}
+	    }
 	  
 	  my @plusstrand;
 	  
@@ -3172,13 +3296,17 @@ sub tfbs_finder_cnsonly
 	    {
 	      my $stop=pos $seq;
 	      my $start=$stop-$motiflength+1;	
-	      my @array=($name,$start,$stop,$motifcolor,$motif,$auth,$litref,$title,$motifcolordesc,"+");
-	      
+	      my @array=($name,$start,$stop,$rgbcolor,$motif,$auth,$litref,$title,$realcolor,"+");
+	      my $link="http://www.ncbi.nlm.nih.gov/pubmed/?term=$title";
+	      my $ref="<a href=\"$link\"target=new>$title</a>";
+	      	      
 	      push @{$hash{$k}{"plus"}},[@array];
+	      
+	      #my $motifresultsrow="<tr><td>$name</td><td>$seq</td><td>$start</td><td>$stop</td><td>+</td><td>$ref</td><td>$realcolor</td><tdbgcolor=rgb($rgbcolor)> </td></tr>";
+	      #push @{$hash{$k}{"plusrow"}},[$motifresultsrow];
 	    }
 	  
-	  
-	  ## look for motifs in revcomp
+	  # look for motifs in revcomp
 	  my $revseq=$seq;
 	  $revseq=~ tr/acgt/tgca/;
 	  $revseq=~ tr/ACGT/TGCA/;    
@@ -3196,8 +3324,8 @@ sub tfbs_finder_cnsonly
 	      my $stop=$revseqlength-$revstart+1;
 	      my $start=$revseqlength-$revstop+1;
 	      
-	      
-	      my @array=($name,$start,$stop,$motifcolor,$motif,$auth,$litref,$title,$motifcolordesc,"-");
+	      my @array=($name,$start,$stop,$rgbcolor,$motif,$auth,$litref,$title,$realcolor,"-");
+
 	      push @{$hash{$k}{"minus"}},[@array];
 	      
 	    }
@@ -3426,7 +3554,6 @@ sub gen_params
 	'args__email', 'email',
 	'args__prog', 'alignment_program',
 	'args__motifregexp', 'motif_regexp',
-	'args__gtype', 'graphic_type',	
 	'args__motifoverlap', 'motif_overlap',	
         'args__showallhsps', 'show_hsps_with_stop_codon',
         'args__padding', 'padding',
@@ -3440,10 +3567,18 @@ sub gen_params
         'args__show_cns','show_cns',
         'args__font_size','font_size',
         'args__show_gene_space','show_gene_space',
-        'args__motif','tfbs_motif',
+        'args__motif_select','motif_select',
+        'args__motif','args__'+pageObj.tfbs_motif,
+        'args__motif_choice','args__'+pageObj.motif_choice,
+
 };
+#        'args__motif','tfbs_motif',
+#        'args__motif_choice','motif_choice',
+#};
             
 #deleted params:
+     #'args__motif_overlap_limit','motif_overlap_limit'
+#	'args__gtype', 'graphic_type',	
 #	'args__hsplim', 'hsp_limit',
 #	'args__hsplimnum', 'hsp_limit_num',
 #
@@ -3462,12 +3597,14 @@ sub add_on_params
     
     #my %opts=Dumper %params;
     #return %params;
-}
+  }
 
 
 sub gen_go_run
 {
     my $num_seqs = shift || $NUM_SEQS;
+    
+    
     my $params = gen_params($num_seqs);
     
     my $run = qq!
@@ -3501,8 +3638,8 @@ sub gen_hsp_colors
   {
     my %opts = @_;
     my $num_seqs = $opts{num_seqs} || $NUM_SEQS;
-    my $prefs = $opts{prefs} || CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME);
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GEvo.tmpl');
+    my $prefs = $opts{prefs} || CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME, coge=>$coge);
+    my $template = HTML::Template->new(filename=>$TMPLDIR.'MotifView.tmpl');
     my $hsp_colors;
     my @colors = color_pallet(num_seqs=>$num_seqs, prefs=>$prefs);
     $template->param(HSP_COLOR_FORM=>1);
@@ -3530,7 +3667,7 @@ sub color_pallet
     my $start = $opts{start} || [255,100,100];
     my $offset = $opts{offset} || 50;
     my $num_seqs = $opts{num_seqs} || $NUM_SEQS;
-    my $prefs = $opts{prefs} || CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME);
+    my $prefs = $opts{prefs} || CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME, coge=>$coge);
     $prefs = {} unless $prefs;
     $start = [$prefs->{r1}, $prefs->{g1}, $prefs->{b1}] if defined $prefs->{r1} && defined $prefs->{g1} && defined $prefs->{b1};
 
@@ -3595,12 +3732,12 @@ sub algorithm_list
     my %progs = (
 	"None"=>"-=None=-",
 	"blastn"=>"BlastN: Small Regions",
-	"blastz"=>"BlastZ: Large Regions",
-	"CHAOS"=>"Chaos: Fuzzy Matches",
-	"DiAlign_2"=>"DiAlign_2: Glocal Alignment",
+	#"blastz"=>"BlastZ: Large Regions",
+	#"CHAOS"=>"Chaos: Fuzzy Matches",
+	#"DiAlign_2"=>"DiAlign_2: Glocal Alignment",
 	"LAGAN"=>"Lagan: Global Alignment",
-	"tblastx"=>"TBlastX: Protein Translation",
-	"GenomeThreader"=>"GenomeThreader - Spliced Gene Alignments",
+	#"tblastx"=>"TBlastX: Protein Translation",
+	#"GenomeThreader"=>"GenomeThreader - Spliced Gene Alignments",
 		 );
     #my @programs = sort {lc $a cmp lc $b} keys %progs;
     my @programs = keys %progs;
@@ -3636,19 +3773,19 @@ sub motif_list3
     return $html;
 }
 
+
+
 sub motif_list
   {    
-    #my $motiffile="/tmp/shabari/MotifView/regexpdumptest";
-    my $motiffile="/home/shabari/tmp/TFBS_new-1_dump";
+    #my $motiffile="/home/shabari/tmp/TFBS_new-1_dump";    
+#    my $motiffile="/home/shabari/tmp/hashdump";    
+    my $motifhash=do $MOTIFFILE || print STDERR "Cannot open $MOTIFFILE";
+    my @opts;
 
-    #my $motifhash=&getMotifs($motiffile);
-    my $motifhash=do $motiffile || print STDERR "Cannot open $motiffile";
-    
     my $html;
-    #$html.="<select class=\"backbox\" id=\"tfbs_motif\" name=\"tfbs_motif\" multiple=\"multiple\"";	
-
-    foreach my $mot(sort keys %$motifhash)
-    {
+    #$html.="<select class=\"backbox\" id=\"tfbs_motif\" name=\"tfbs_motif\" multiple=\"multiple\"";
+    for my $mot (sort { $motifhash->{$a}{'motifname'} cmp $motifhash->{$b}{'motifname'}} keys %$motifhash) 
+      {			
 	my $seq=$motifhash->{$mot}{'seq'};	
 	my $motifrealcolor=$motifhash->{$mot}{'colorname'};	
 	my $motifrgbcolor=$motifhash->{$mot}{'rgb'};
@@ -3656,7 +3793,9 @@ sub motif_list
 	my $auth=$motifhash->{$mot}{'auth'};
 	my $litref=$motifhash->{$mot}{'x'};
 	my $title=$motifhash->{$mot}{'litRef'};
-
+	my $motifname=$motifhash->{$mot}{'motifname'};
+	
+	
 	$seq=~s/\"//g;
 	$motifrealcolor=~s/\"//g;
 	$motifrgbcolor=~s/\"//g;
@@ -3664,64 +3803,84 @@ sub motif_list
 	$auth=~s/\"//g;
 	$litref=~s/\"//g;
 	$title=~s/\"//g;
+	
+	
+	#$mot=~s/\"//g;
+	#$mot=~s/\,/_/g;
+	#$mot=~s/\-/_/g;
+	    $motifname=~s/\"//g;
+	    $motifname=~s/\,/_/g;
+	    $motifname=~s/\-/_/g;
+	    $motifname=~s/\s+/_/g;
+	    
+	    $motifrealcolor=~s/\s+//g;
+	    $motifrgbcolor=~s/\s+//g;
+	    $motifhexcolor=~s/\s+//g;
+	    $auth=~s/\"//g;
+	    $auth=~s/:/ /g;	
+	    $auth=~s/\s+/_/g;	
+	    $litref=~s/\"//g;
+	    $litref=~s/:/ /g;	
+	    $litref=~s/\s+/_/g;	
+	    $title=~s/\"//g;
+	    $title=~s/:/ /g;
+	    $title=~s/\s+/_/g;
+	    $seq=~s/\s+//g;
+	    $title=~s/\-//g;
+	    
+	    my $motifval="$mot\|$motifname\|$seq\|$motifrealcolor\|$motifrgbcolor\|$auth\|$litref\|$title";
+	    my $showmotifname=$motifname;
+	    my $motifnamelength=length($showmotifname);
+	    $showmotifname=substr $motifname, 0,10 if $motifnamelength>11; 
+	    
+	    if ($seq=~/\w+/)
+	      {
+		push @opts, "<OPTION value=\"$motifval\">".$showmotifname.":".$seq."</OPTION>"; #seq only
+	      }
+	    #$html.="<label class=\"small\"><input class=\"checkbox\" type=\"checkbox\" id=\"tfbs_motif\" name=\"tfbs_motif\"";	
+	    #$html.="<label class=\"small\"><input class=\"backbox\" type=\"radio\" id=\"tfbs_motif\" name=\"tfbs_motif\"";
+	    
+	#$html.= "option value=\"$motifval\">";		
+	    #$html.=$mot2." \(".$seq."\)"."<br></option>";
+	  } 	 
+      #}
+	$html .= qq{<FONT CLASS ="small" id="motif_count">Motif count: }.scalar @opts.qq{</FONT>\n<BR>\n};   
+    $html .= qq{<SELECT class="backbox" id="motif_select" SIZE="8" MULTIPLE onclick="show_add();" ondblclick="add_selected_motifs();">\n};
+   
 
+    $html .= join ("\n", @opts);
+    $html .= "\n</SELECT>\n";
+   
+  
+    $html =~ s/OPTION/OPTION SELECTED/;
 
-	$mot=~s/\"//g;
-	$mot=~s/\,/_/g;
-	$mot=~s/\-/_/g;
-	
-	
-	my $mot2=$mot;
-	$mot2=~s/\s+/_/g;
-	$motifrealcolor=~s/\s+//g;
-	$motifrgbcolor=~s/\s+//g;
-	$motifhexcolor=~s/\s+//g;
-	$auth=~s/\"//g;
-	$auth=~s/:/ /g;	
-	$auth=~s/\s+/_/g;	
-	$litref=~s/\"//g;
-	$litref=~s/:/ /g;	
-	$litref=~s/\s+/_/g;	
-	$title=~s/\"//g;
-	$title=~s/:/ /g;
-	$title=~s/\s+/_/g;
-	$seq=~s/\s+//g;
-	
-	my $motifval="$mot2:$seq:$motifrealcolor:$motifrgbcolor:$auth:$litref:$title";	
-	       
-	$html.="<label class=\"small\"><input class=\"checkbox\" type=\"checkbox\" id=\"tfbs_motif\" name=\"tfbs_motif\"";	
-	#$html.="<label class=\"small\"><input class=\"backbox\" type=\"radio\" id=\"tfbs_motif\" name=\"tfbs_motif\"";
-	
-	$html.= "option value=\"$motifval\">";		
-	$html.=$mot2." \(".$seq."\)"."<br></option>";
-    } 	 
-    
     return $html;
-}
-
-
-sub getMotifs #shabari
-{
-    my $file=shift;
-    my %hash1;
-        
+  }
+  
     
-    open(INFO, "$file");    
-    <INFO>;
-    while (<INFO>)
+  
+  sub getMotifs 
     {
-	chomp;
-	my $input=$_;
-    
-	my ($id,$tag, $seq, $auth, $litRef, $x, $hex, $rgb, $colorname) = split(/\t/,$input);     	
-	$colorname=~s/\s+//g;
-    
-	$hash1{ $tag }{ 'seq' } = $seq;
-	$hash1{ $tag }{ 'auth' } = $auth;
-	$hash1{ $tag }{ 'litRef' } = $litRef;
-	$hash1{ $tag }{ 'hex' } = $hex;
-    
-	$rgb=~s/\"//g;
+      my $file=shift;
+      my %hash1;
+      
+      
+      open(INFO, "$file");    
+      <INFO>;
+      while (<INFO>)
+	{
+	  chomp;
+	  my $input=$_;
+	  
+	  my ($id,$tag, $seq, $auth, $litRef, $x, $hex, $rgb, $colorname) = split(/\t/,$input);     	
+	  $colorname=~s/\s+//g;
+	  
+	  $hash1{ $tag }{ 'seq' } = $seq;
+	  $hash1{ $tag }{ 'auth' } = $auth;
+	  $hash1{ $tag }{ 'litRef' } = $litRef;
+	  $hash1{ $tag }{ 'hex' } = $hex;
+	  
+	  $rgb=~s/\"//g;
 	$rgb=~s/\s+//g;
     
 	$hash1{ $tag }{ 'rgb' } = $rgb;
@@ -3733,28 +3892,33 @@ sub getMotifs #shabari
     
 sub merge_previous #shabari:for parsing GEvo and tiny urls
 {
-    my ($url,$old_num)=@_;
-    my ($new_num,$array)=&parse_url($url);
-
-    my ($seq_submission,$total_num,$go_run,$ref_seqs)=&add_url_seq(new_num=>$new_num,old_num=>$old_num,data=>$array);
-   
+  
+  my ($url,$old_num)=@_;
+#  open(OUT,">>/opt/apache/CoGe/tmp/MotifView/url"); 
+  my ($new_num,$array)=&parse_url($url);
+#  print OUT $new_num,"\t",Dumper $array,"\n";  
+  
+  my ($seq_submission,$total_num,$go_run,$ref_seqs)=&add_url_seq(new_num=>$new_num,old_num=>$old_num,data=>$array);
+  
     return ($seq_submission,$total_num,$go_run,$ref_seqs, $old_num);
 }
 
 
 sub parse_url #shabari:for parsing GEvo and tiny urls
-{
+  {
     my $url=shift;
-    $url =getlongurl($url) if ($url=~/.*tinyurl.*/);
-    my ($numseqs) = $url=~/num_seqs\=(\d+)/;
-    my @array=&makeurlarray($numseqs,$url);
+    #$url =&getlongurl($url) if ($url=~/.*tinyurl.*/); #old code when tinyurl links used to have tinyurl
+    $url =&getlongurl($url) unless ($url=~/.*GEvo.*/);      
+    my ($numseqs) = $url=~/num_seqs\=(\d+)/;      
+    my @array=&makeurlarray($numseqs,$url);        
     return ($numseqs,\@array);
-}
-    
-
+  }
+  
+  
 sub getlongurl #shabari:for parsing GEvo and tiny urls
 {
     my $url=shift;
+        
     my $headHash=head($url);
     my $longurl=$headHash->{'_previous'}{'_headers'}{'location'};
     return $longurl;
@@ -3763,7 +3927,8 @@ sub getlongurl #shabari:for parsing GEvo and tiny urls
 sub makeurlarray #shabari:for parsing GEvo and tiny urls
 {   
     my ($numseqs,$longurl)=@_;
-    $numseqs = 2 unless $numseqs;
+    
+    $numseqs = 0 unless $numseqs;
     my %hash;
     
     my @array;
@@ -3773,7 +3938,7 @@ sub makeurlarray #shabari:for parsing GEvo and tiny urls
     {
 	my $rec={};
 	$rec->{'accn'}=$1  if ($longurl=~/accn$i\=(.*?)\;/);
-	$rec->{'accn'}=$1  if ($longurl=~/accn$i\=(.*?)\;/);
+	#$rec->{'accn'}=$1  if ($longurl=~/accn$i\=(.*?)\;/);
 
 	$rec->{'pos'}=$1  if ($longurl=~/x$i\=(.*?)\;/);
 	$rec->{'type'}="position" if (defined $rec->{'pos'});
@@ -3802,6 +3967,7 @@ sub makeurlarray #shabari:for parsing GEvo and tiny urls
 	$i++;
     }
     @array = sort {$a->{display_order} <=> $b->{display_order} } @array;
+   
     return (@array);
     
 }
@@ -3809,20 +3975,30 @@ sub makeurlarray #shabari:for parsing GEvo and tiny urls
 sub add_url_seq
   {
     my %opts = @_;
+  
     my $new_num = $opts{new_num};
     my $old_num = $opts{old_num};
     my $data = $opts{data};
+  
+    my $template = HTML::Template->new(filename=>$TMPLDIR.'MotifView.tmpl');
     
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GeVo.tmpl');
+    my $total_num;
     
-    my $total_num=$new_num+$old_num;
-    
-    my $prefs = load_settings(user=>$USER, page=>$PAGE_NAME);
+    #if ($old_num=0)
+    #{
+    #$total_num=$new_num;
+    #}
+    #else
+    #{
+	$total_num=$new_num+$old_num;
+  #}
+    #my $prefs = load_settings(user=>$USER, page=>$PAGE_NAME);
     
     my $message;
     my @seq_nums;
     my @seq_sub;
     my $i = $old_num;
+
     for my $element(@$data)
       {
 	$i++;
@@ -3864,7 +4040,7 @@ sub add_url_seq
 	$dsg_menu .= qq{value ="$dsgid"} if $dsgid;
 	$dsg_menu .= qq{>};
 
-	($org_title, $dsid, $gstid, $dsgid) =get_org_info(dsid=>$dsid, chr=>$chr, gstid=>$gstid, dsgid=> $dsgid, seq_num=>$i) if $pos;
+	($org_title, $dsid, $gstid, $dsgid) =&get_org_info(dsid=>$dsid, chr=>$chr, gstid=>$gstid, dsgid=> $dsgid, seq_num=>$i) if $pos;
 	my %opts = (
 		    SEQ_NUM=>$i,
 		    REV_YES=>$revy,
@@ -3884,6 +4060,7 @@ sub add_url_seq
 		    ORGINFO=>$org_title,
 		    CHR=>$chr,
 		   );
+	
 	if ($mask)
 	  {
 	    $opts{MASK_CDS}= "selected" if $mask eq "cds";
@@ -3906,18 +4083,90 @@ sub add_url_seq
     my $ref_seqs = $template->output;
     
     $template->param(GEN_REFERENCE_SEQUENCES=>0);
-    my $go_run=gen_go_run($total_num);    
+    my $go_run=&gen_go_run($total_num);    
     return ($seq_submission,$total_num,$go_run,$ref_seqs, $old_num);
     
-}
+  }
+ 
   
-  
-  sub add_seq
+  sub get_motif_val
+    {
+      my %opts=@_;
+      my $id=$opts{motifs};      
+      my %hash;
+        
+      my @motifs = split/\|\|\|/,$id;
+      
+      foreach my $motifinfo(@motifs)
+	{	  
+	  unless ($motifinfo=~/undefined/)
+	    {	  
+	      
+	      #$motifinfo=~s/\(//g;
+	      #$motifinfo=~s/\)//g;
+	      #my @array=split(/:/,$motifinfo);
+	      #my $seq=@array[1];
+	      #$seq=~s/\[//g;
+	      #$seq=~s/\///g;
+	      #$seq=~s/\}//g;
+	      #$seq=~s/\{//g;
+	      #$seq=~s/\)//g;
+	      #$seq=~s/\(//g;
+	      #$seq=~s/\.//g;
+	      #$seq=~s/\*//g;
+	      #$seq=~s/\]//g;
+	      #my $motifinfo2=$motifinfo.":".$seq;
+	      $hash{$motifinfo}=$motifinfo;
+	      #}
+	      #}
+	    }
+	}
+      my $motifinfostring;
+      
+      foreach my $key(sort keys %hash)
+	{
+	  $motifinfostring.=$key."\|\|\|";	  
+	}     
+      $motifinfostring=~s/\|\|\|$//;
+      
+      return $motifinfostring;
+      
+    }
+    
+    sub get_motif_infos
+    {
+      my %opts=@_;
+      my $id=$opts{motifs};
+      
+      my %hash;
+        
+      my @motifs = split/\|\|\|/,$id;
+      
+      foreach my $motifinfo(@motifs)
+      	{	  
+      	  unless ($motifinfo=~/undefined/i)
+	    {	     
+	      $hash{$motifinfo}=$motifinfo;
+	    }
+	}
+      
+      my $motifinfostring;
+      
+      
+      foreach my $key(sort keys %hash)
+	{
+	  $motifinfostring.=$key."\|\|\|";	  
+	}     
+      $motifinfostring=~s/\|\|\|$//;              
+      return $motifinfostring;      
+    }
+ 
+    sub add_seq
     {
     my $num_seq = shift;
-    $num_seq ++;
+    $num_seq++;
     
-    my $template = HTML::Template->new(filename=>'/opt/apache/CoGe/tmpl/GEvo.tmpl');
+    my $template = HTML::Template->new(filename=>$TMPLDIR.'MotifView.tmpl');
     my $hsp_colors;
     if ($num_seq > $MAX_SEQS)
     {
@@ -3977,14 +4226,17 @@ sub getmotifsfromregexp
     
     foreach my $splitmotifs(split(/\n/,$regexp))
     {
-	my @array=("User annotation", $splitmotifs,"Automatic","$r,$g,$b","User Annotation", "User Annotation", "User Annotation");
-	#push @motifarray,[@array];
-	#push @{$motifhash{$i}},[@array];
-	$motifhash{$i}=[@array];
-	++$i;
-	$r=$r-30;
-	$g=$g+30;
-	$b=$b+10;
+      $splitmotifs=~s/^\s+//;
+      $splitmotifs=~s/\s+$//;
+      
+      my @array=("User annotation", $splitmotifs,"Automatic","$r,$g,$b","User Annotation", "User Annotation", "User Annotation");
+      #push @motifarray,[@array];
+      #push @{$motifhash{$i}},[@array];
+      $motifhash{$i}=[@array];
+      ++$i;
+      $r=$r-30;
+      $g=$g+30;
+      $b=$b+10;
     }
     #return(\@motifarray);
     return(\%motifhash);
@@ -3992,20 +4244,58 @@ sub getmotifsfromregexp
 
 sub getmotifsfromcheckbox
 {  
+#  print STDERR "HERE\n!";
     my $joinedmotifs=shift;
+#  print STDERR $joinedmotifs;
     my %motifhash;
     my $i=1;
+    
+    
     foreach my $splitmotifs(split(/\|\|/,$joinedmotifs))
-    {	
-	my ($motifname,$motif,$realcolor,$rgbcolor,$auth,$litref,$title)=split(/\:/,$splitmotifs);
-	my @array=($motifname,$motif,$realcolor,$rgbcolor,$auth,$litref,$title); 
+      {	      
+	#my ($motifname,$motif,$realcolor,$rgbcolor,$auth,$litref,$title)=split(/\:/,$splitmotifs);
 	
+	my ($id,$tffamily,$motifname,$motif,$motifcode,$auth,$title,$litref,$na1,$category,$stress,$realcolor,$rgbcolor,$hexcolor,$db,$na2,$compiler)=split(/\:/,$splitmotifs);
+	
+	$title="\"".$title."\"";
+
+	my @array=($motifname,$motif,$realcolor,$rgbcolor,$hexcolor,$auth,$litref,$title); 
 	
 	#push @motifarray, [@array];
 	#push @{$motifhash{$i}},[@array];
 	$motifhash{$i}=[@array];
 	++$i;
     }
+    #return (\@motifarray);
+    return(\%motifhash);
+}
+
+sub getmotifsfromchosenlist
+{  
+    my $joinedmotifs=shift;
+#    open(OUTLOG,">>/opt/apache/CoGe/tmp/MotifView/motiflog");
+#    print OUTLOG $joinedmotifs,"\n";
+#    close OUTLOG;
+    
+    my %motifhash;
+    my $i=1;
+    
+    #$mot:$motifname:$seq:$motifrealcolor:$motifrgbcolor:$auth:$litref:$title
+    
+    foreach my $splitmotifs(split(/\|\|/,$joinedmotifs))
+      {	      
+	#my ($motifname,$motif,$realcolor,$rgbcolor,$auth,$litref,$title)=split(/\:/,$splitmotifs);
+	my ($id,$tffamily,$motifname,$motif,$motifcode,$auth,$title,$litref,$na1,$category,$stress,$realcolor,$rgbcolor,$hexcolor,$db,$na2,$compiler)=split(/\:/,$splitmotifs);
+	
+	$title="\"".$title."\"";
+	
+	my @array=($motifname,$motif,$realcolor,$rgbcolor,$hexcolor,$auth,$litref,$title); 
+	
+	#push @motifarray, [@array];
+	#push @{$motifhash{$i}},[@array];
+	$motifhash{$i}=[@array];
+	++$i;
+      }
     #return (\@motifarray);
     return(\%motifhash);
 }
@@ -4564,8 +4854,9 @@ sub get_image_info
     my %opts = @_;
     my $idx = $opts{id};
     my $basefilename = $opts{basename};
+    
     return ("no opts specified") unless ($idx && $basefilename);
-    $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$basefilename, prog=>"GEvo");
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$basefilename, prog=>"MotifView");
     my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
     my $query = qq{select * from image_info where id = $idx;};
     my ($id, $display_id, $name, $title, $px_witdth, $bpmin, $bpmax, $dsid, $chromosome, $rc, $px_height) = $dbh->selectrow_array($query);
