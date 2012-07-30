@@ -16,9 +16,18 @@ my $DBHOST = $P->{DBHOST};
 my $DBPORT = $P->{DBPORT};
 my $DBUSER = $P->{DBUSER};
 my $DBPASS = $P->{DBPASS};
+
 my $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
 my $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
-my ($USER) = CoGe::Accessory::LogUser->get_user();
+
+my $COOKIE_NAME = $P->{COOKIE_NAME};
+my $FORM = new CGI;
+my ($cas_ticket) =$FORM->param('ticket');
+my $USER = undef;
+($USER) = CoGe::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
+($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
+
+
 my $FORM = new CGI;
 my $dsgid = $FORM->param('dsgid');
 
