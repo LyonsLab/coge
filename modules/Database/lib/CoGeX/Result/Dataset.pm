@@ -847,6 +847,7 @@ sub gff
 	my $name_unique               = $opts{name_unique};                  #flag for making Name tag of output unique by appending type and occurrence to feature name
 	my $unique_parent_annotations = $opts{unique_parent_annotations};    #flag so that annotations are not propogated to children if they are contained by their parent
 	my $id_type                   = $opts{id_type};                      #type of ID (name, num):  unique number; unique name
+	my $cds_exon = $opts{cds_exon}; #option so that CDSs are used for determining an exon instead of the mRNA.  This keeps UTRs from being called an exon
 	$id_type = "name" unless defined $id_type;
 
 	$count = 0 unless $count && $count =~ /^\d+$/;
@@ -936,7 +937,7 @@ sub gff
 				}
 				if ($match)
 				{
-					if ( $self->_search_rna( name_search => [ $prior_gene->names ], notes => \%notes, fids => \%fids, types => \%types, count => \$count, out => \@out, name_re => $name_re, parent_feat => $prior_gene, parent_id => $prior_gene_id, chr => $chr, ds => $ds ) )
+					if ( $self->_search_rna( name_search => [ $prior_gene->names ], notes => \%notes, fids => \%fids, types => \%types, count => \$count, out => \@out, name_re => $name_re, parent_feat => $prior_gene, parent_id => $prior_gene_id, chr => $chr, ds => $ds, cds_exon=>$cds_exon ) )
 					{
 						my $tmp = $self->_format_gff_line( out => \@out, notes => \%notes, cds => $cds, seen => \%seen, print => $print, annos => $annos, name_unique => $name_unique, ids2names => \%ids2names, id_type => $id_type, unique_ids => \%unique_ids, unique_parent_annotations => $unique_parent_annotations, prev_annos => \%prev_annos );
 						$output .= $tmp if $tmp;
@@ -967,7 +968,7 @@ sub gff
 			}
 
 			#does this gene have an RNA?
-			if ( $self->_search_rna( name_search => \@feat_names, notes => \%notes, fids => \%fids, types => \%types, count => \$count, out => \@out, name_re => $name_re, parent_feat => $feat, chr => $chr, ds => $ds ) )
+			if ( $self->_search_rna( name_search => \@feat_names, notes => \%notes, fids => \%fids, types => \%types, count => \$count, out => \@out, name_re => $name_re, parent_feat => $feat, chr => $chr, ds => $ds, cds_exon=>$cds_exon  ) )
 			{
 				my $tmp = $self->_format_gff_line( out => \@out, notes => \%notes, cds => $cds, seen => \%seen, print => $print, annos => $annos, name_unique => $name_unique, ids2names => \%ids2names, id_type => $id_type, unique_ids => \%unique_ids, unique_parent_annotations => $unique_parent_annotations, prev_annos => \%prev_annos );
 				$output .= $tmp if $tmp;
@@ -1054,6 +1055,7 @@ sub _search_rna
 	my $name_re     = $opts{name_re};
 	my $chr         = $opts{chr};
 	my $ds          = $opts{ds};
+	my $cds_exon = $opts{cds_exon}; #option so that CDSs are used for determining an exon instead of the mRNA.  This keeps UTRs from being called an exon
 
 	my $rna_rs      = $self->_feat_search( name_search => $name_search, skip_ftids => [1], ds => $ds, chr => $chr );
 
@@ -1063,7 +1065,7 @@ sub _search_rna
 		if ( $fids->{ $f->feature_id } ) { next; }
 		next unless $f->feature_type->name =~ /RNA/i;    #searching for feat_types of RNA
 		                                                 #process the RNAs
-		$parent_id = $self->_process_rna( notes => $notes, fids => $fids, types => $types, count => $count, out => $out, f => $f, name_re => $name_re, parent_feat => $parent_feat, parent_id => $parent_id );
+		$parent_id = $self->_process_rna( notes => $notes, fids => $fids, types => $types, count => $count, out => $out, f => $f, name_re => $name_re, parent_feat => $parent_feat, parent_id => $parent_id , cds_exon=>$cds_exon);
 
 		#get CDSs (mostly)
 		my $sub_rs = $self->_feat_search( name_search => [ $f->names ], skip_ftids => [ 1, $f->feature_type_id ], ds => $ds, chr => $chr );
@@ -1083,6 +1085,9 @@ sub _search_rna
 			{
 				next if $loc->start > $parent_feat->stop || $loc->stop < $parent_feat->start;    #outside of parent feature boundaries;  Have to count it as something else
 				push @$out, { f => $f, start => $loc->start, stop => $loc->stop, name_re => $name_re, id => $$count, parent_id => $parent_id, type => $f->feature_type->name };
+				$$count++ if $cds_exon;
+				push @$out, { f => $f, start => $loc->start, stop => $loc->stop, name_re => $name_re, id => $$count, parent_id => $parent_id, type => "exon" } if $cds_exon;
+
 				$$count++;
 			}
 		}
@@ -1104,6 +1109,7 @@ sub _process_rna
 	my $parent_feat = $opts{parent_feat};
 	my $parent_id   = $opts{parent_id};
 	my $name_re     = $opts{name_re};
+	my $cds_exon = $opts{cds_exon}; #option so that CDSs are used for determining an exon instead of the mRNA.  This keeps UTRs from being called an exon
 	my $ftn         = $self->process_feature_type_name( $f->feature_type->name );
 	push @{ $notes->{gene}{"encoded_feature"} }, $self->escape_gff($ftn);
 	$fids->{ $f->feature_id } = 1;    #feat_id has been used;
@@ -1123,8 +1129,8 @@ sub _process_rna
 	foreach my $loc ( $f->locations( {}, { 'order_by' => 'start' } ) )
 	{
 		next if $loc->start > $parent_feat->stop || $loc->stop < $parent_feat->start;                                                                                  #outside of genes boundaries;  Have to skip it
-		push @$out, { f => $f, start => $loc->start, stop => $loc->stop, name_re => $name_re, id => $$count, parent_id => $parent_id, type => "exon" };
-		$$count++;
+		push @$out, { f => $f, start => $loc->start, stop => $loc->stop, name_re => $name_re, id => $$count, parent_id => $parent_id, type => "exon" } unless $cds_exon;
+		$$count++ unless $cds_exon;
 	}
 
 	#end dumping exons
