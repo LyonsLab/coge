@@ -639,7 +639,7 @@ feat: foreach my $feat ( values %feats )
 			$f->no_3D(1) if $layers->{features}{flat};
 			push @f, $f;
 		}
-		elsif ( ( $layers->{features}{quant} || $layers->{all} ) && $feat->type->name =~ /quantitation/i )
+		elsif ( ( $layers->{features}{quant} ) && $feat->type->name =~ /quantitation/i )
 		{
 			my $f = CoGe::Graphics::Feature::Quant->new();
 			$color = [ 200, 0, 200 ] unless defined $color;
