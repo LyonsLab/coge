@@ -31,9 +31,8 @@ function get_organism_chain(type,val,i)
  else if (type == 'desc') {get_orgs(['args__desc','args__'+val,'args__i','args__'+i], ['org_list'+i]);}
  $('#dsg_info'+i).html('<div class="loading dna_small small">loading. . .</div>');
  ajax_wait("gen_dsg_menu(['args__oid','org_id"+i+"', 'args__num','args__"+i+"'],['dsg_menu"+i+"', 'genome_message"+i+"']);");
-// gen_dsg_menu(['args__oid','org_id"+i+"', 'args__num','args__"+i+"'],['dsg_menu"+i+"', 'genome_message"+i+"']);
  ajax_wait("check_previous_analyses();");   
- ajax_wait("get_dataset_group_info(['args__dsgid','dsgid"+i+"','args__org_num','args__"+i+"'],['dsg_info"+i+"','feattype_menu"+i+"','genome_message"+i+"']);");
+ ajax_wait("get_dataset_group_info(['args__dsgid','dsgid"+i+"','args__org_num','args__"+i+"'],[handle_dsg_info]);");
 }
 
 function get_dataset_group_info_chain(i)
@@ -45,7 +44,8 @@ function get_dataset_group_info_chain(i)
  $('#depth_org_2').html($('#org_id2 option:selected').html());
 
  ajax_wait("check_previous_analyses();");   
- ajax_wait("get_dataset_group_info(['args__dsgid','dsgid"+i+"','args__org_num','args__"+i+"'],['dsg_info"+i+"','feattype_menu"+i+"','genome_message"+i+"']);");
+ ajax_wait("get_dataset_group_info(['args__dsgid','dsgid"+i+"','args__org_num','args__"+i+"'],[handle_dsg_info]);");
+
 }
 
 function rand ()
@@ -66,14 +66,37 @@ function populate_page_obj(basefile)
 
 function run_synmap(){
 //  generate_basefile([],[update_basename]);   
-populate_page_obj(); 
+ populate_page_obj(); 
+ var org_name1 = pageObj.org_name1;
+ var org_name2 = pageObj.org_name2;
+ //feat_type 1 == CDS, 2 == genomic
+ var feat_type1 = $('#feat_type1').val();
+ var feat_type2 = $('#feat_type2').val();
+ var org_length1 = pageObj.org_length1;
+ var org_length2 = pageObj.org_length2;
+//seq_type == 1 is unmasked
+ var seq_type1 = pageObj.seq_type1;
+ var seq_type2 = pageObj.seq_type2;
+ //check to see if we will allow this run
+ var max_size = 100000000;
+// console.log (org_name1, org_length1, seq_type1);
+// console.log (org_name2, org_length2, seq_type2);
+ if (( org_length1 > max_size && feat_type1 == 2 && seq_type1 == 1) &&
+     ( org_length2 > max_size && feat_type2 == 2 && seq_type2 == 1) )
+     {
+     var message = "You are trying to compare unmasked genomic sequences that are large!  This is a bad idea.  Chances are there will be many repeat sequences that will cause the entire pipeline to take a long time to complete.  This usually means that the analyses will use a lot of RAM and other resources.  As such, these jobs are usually killed before they can complete.  Please contact <a href=/wiki/index.php/Contact_Page target=_new>the CoGe team</a> for assistance with your analysis.";
+   		alert(message);
+   	 	$('#log_text').hide(0);
+	 		$('#results').show(0).html("<span class=alert>Analysis Blocked:</span>"+message);
+	 		return;
+     }
  if(!pageObj.basename) 
   {
   	setTimeout("run_synmap()", 100);
   	return;
   }
-
- if ($('#blast').val() == 5 && ($('#feat_type1').val() != 1 || $('#feat_type2').val() != 1) )
+ 
+ if ($('#blast').val() == 5 && (feat_type1 != 1 || feat_type2 != 1) )
   {
    alert('BlastP only works if both genomes have protein coding sequences (CDS) AND CDS is selected for both!');
   }
@@ -131,8 +154,8 @@ function update_params(val) {
     $('#dsgid2').attr('value',params[4]);
     $('#dsgid1').attr('value',params[7]);
   }
- get_dataset_group_info(['args__dsgid','dsgid1','args__org_num','args__1'],['dsg_info1', 'feattype_menu1','genome_message1']);
- get_dataset_group_info(['args__dsgid','dsgid2','args__org_num','args__2'],['dsg_info2', 'feattype_menu2','genome_message2']);
+ get_dataset_group_info(['args__dsgid','dsgid1','args__org_num','args__1'],[handle_dsg_info]);
+ get_dataset_group_info(['args__dsgid','dsgid2','args__org_num','args__2'],[handle_dsg_info]);
  ajax_wait(cmd);
  var type;
  $('#blast').attr('value',params[9]);
@@ -151,6 +174,25 @@ function update_params(val) {
  merge_select_check();
  depth_algo_check();
 }
+
+function handle_dsg_info(dsg_html, feat_menu, genome_message, length, org_num, org_name, seq_id) {
+	$('#dsg_info'+org_num).html(dsg_html);
+	$('#feattype_menu'+org_num).html(feat_menu);
+	$('#genome_message'+org_num).html(genome_message);
+  if (org_num == 1)
+   {
+		pageObj.org_length1 = length;
+		pageObj.org_name1 = org_name;	
+		pageObj.seq_type1 = seq_id;	
+   }
+	else
+   {
+		pageObj.org_length2 = length;
+		pageObj.org_name2 = org_name;	
+		pageObj.seq_type2 = seq_id;	
+   }
+}
+
 
 function set_dagchainer_defaults(params, type) {
   var settings = $('#dagchainer_default').val();
