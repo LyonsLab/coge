@@ -439,9 +439,20 @@ sub generate_gc_info
     return "No sequence" unless $length;
     my $gc = $seq =~ tr/GCgc/GCgc/;
     my $at = $seq =~ tr/ATat/ATat/;
+    my $n = $seq =~ tr/Nn/Nn/;
+    my $x = $seq =~ tr/Xx/Xx/;
     my $pgc = sprintf("%.2f",$gc/$length*100);
     my $pat = sprintf("%.2f",$at/$length*100);
-    my $total_content = "GC: ".commify($gc)." (".$pgc."%)  AT: ".commify($at)." (".$pat."%)  total length: ".commify($length);
+    my $pn = sprintf("%.2f",$n/$length*100);
+    my $px = sprintf("%.2f",$x/$length*100);
+    my $total_content = qq{<table class=small>\n};
+    $total_content .= "<tr align=right><th>NT<th>Count<th>Percent";
+    $total_content .= "<tr align=right><td>GC:<td align=right>".commify($gc)."<td>(".$pgc."%)";
+    $total_content .= "<tr align=right><td>AT:<td align=right>".commify($at)."<td>(".$pat."%)";
+    $total_content .= "<tr align=right><td>N:<td align=right>".commify($n)."<td>(".$pn."%)";
+    $total_content .= "<tr align=right><td>X:<td align=right>".commify($x)."<td>(".$px."%)";
+    $total_content .= "<tr align=right><td>Total:<td align=right>".commify($length);
+    $total_content .= qq{</table>\n};
     return $total_content;    
   }
 
