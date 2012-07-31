@@ -68,7 +68,9 @@ foreach my $chr (sort {versioncmp($a, $b)} $dsg->chromosomes)
 	next if $feat->type->name =~ /utr/i;
 	  
 	my $locs = get_locs($feat);;
-	my $item = pop @$locs;
+	
+
+	my $item = shift @$locs;
 	print join ("\t", @$item, $feat->type->name),"\n";
 	foreach my $loc (@$locs)
 	  {
