@@ -1,4 +1,4 @@
-  package CoGeX::ResultSet::DatasetGroup;
+  package CoGeX_dev::ResultSet::Genome;
 
   use strict;
   use warnings;
@@ -24,7 +24,7 @@ See Also   :
 sub resolve {
     my $self = shift;
     my $info = shift;
-    return $info if ref($info) =~ /DatasetGroup/i;
+    return $info if ref($info) =~ /Genome/i;
     return $self->find($info) if $info =~ /^\d+$/;
     return $self->search({ 'name' => { '-like' => '%' . $info . '%'}},
 			 ,{});

@@ -1,4 +1,4 @@
-  package CoGeX::ResultSet::Annotation;
+  package CoGeX_dev::ResultSet::FeatureAnnotation;
 
   use strict;
   use warnings;

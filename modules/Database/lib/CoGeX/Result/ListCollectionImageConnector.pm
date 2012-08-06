@@ -1,6 +1,4 @@
-package CoGeX::Result::ListGroupImageConnector;
-
-# Created by DBIx::Class::Schema::Loader v0.03009 @ 2006-12-01 18:13:38
+package CoGeX_dev::Result::ListCollectionImageConnector;
 
 use strict;
 use warnings;
@@ -9,19 +7,19 @@ use base 'DBIx::Class::Core';
 
 =head1 NAME
 
-CoGeX::FeatureListGroupImageConnector
+CoGeX_dev::Result::ListCollectionImageConnector
 
 =head1 SYNOPSIS
 
-This object uses the DBIx::Class to define an interface to the C<feature_list_group_image_connector> table in the CoGe database.
+This object uses the DBIx::Class to define an interface to the C<list_collection_image_connector> table in the CoGe database.
 
 =head1 DESCRIPTION
 
 Has columns:
-C<feature_list_group_image_connector_id> (Primary Key)
+C<list_collection_image_connector_id> (Primary Key)
 Type: INT, Default: undef, Nullable: no, Size: 10
 
-C<feature_list_group_id>
+C<list_collection_id>
 Type: INT, Default: "", Nullable: no, Size: 10
 
 C<image_id>
@@ -30,24 +28,24 @@ Type: INT, Default: "", Nullable: no, Size: 10
 
 =head1 USAGE
 
-  use CoGeX;
+  use CoGeX_dev;
 
 =head1 METHODS
 
 =cut
 
-__PACKAGE__->table("list_group_image_connector");
+__PACKAGE__->table("list_collection_image_connector");
 __PACKAGE__->add_columns(
-  "list_group_image_connector_id",
+  "list_collection_image_connector_id",
   { data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
-  "list_group_id",
+  "list_collection_id",
   { data_type => "INT", default_value => "", is_nullable => 0, size => 11 },
   "image_id",
   { data_type => "INT", default_value => "", is_nullable => 0, size => 11 },
 );
-__PACKAGE__->set_primary_key("list_group_image_connector_id");
-__PACKAGE__->belongs_to("list_group" => "CoGeX::Result::ListGroup", 'list_group_id');
-__PACKAGE__->belongs_to("image" => "CoGeX::Result::Image", 'image_id');
+__PACKAGE__->set_primary_key("list_collection_image_connector_id");
+__PACKAGE__->belongs_to("list_collection" => "CoGeX_dev::Result::ListCollection", 'list_collection_id');
+__PACKAGE__->belongs_to("image" => "CoGeX_dev::Result::Image", 'image_id');
 1;
 
 

@@ -1,6 +1,4 @@
-package CoGeX::Result::ListGroup;
-
-# Created by DBIx::Class::Schema::Loader v0.03009 @ 2006-12-01 18:13:38
+package CoGeX_dev::Result::ListCollection;
 
 use strict;
 use warnings;
@@ -9,7 +7,7 @@ use base 'DBIx::Class::Core';
 
 =head1 NAME
 
-CoGeX::FeatureListGroup
+CoGeX_dev::Result::ListCollection
 
 =head1 SYNOPSIS
 
@@ -30,29 +28,28 @@ Type: VARCHAR, Default: "", Nullable: no, Size: 255
 C<notes>
 Type: VARCHAR, Default: undef, Nullable: yes, Size: 1024
 
+C<link>
+Type: VARCHAR, Default: undef, Nullable: yes, Size: 1024
+
+C<restricted>
+Type: BOOLEAN, Default: 0, Nullable: no, Size: 1
 
 =head1 USAGE
 
-  use CoGeX;
+  use CoGeX_dev;
 
 =head1 METHODS
 
 =cut
 
-__PACKAGE__->table("list_group");
+__PACKAGE__->table("list_collection");
 __PACKAGE__->add_columns(
-  "list_group_id",
+  "list_collection_id",
   { data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
   "name",
   { data_type => "VARCHAR", default_value => "", is_nullable => 0, size => 255 },
   "description",
   { data_type => "VARCHAR", default_value => "", is_nullable => 0, size => 1024 },
-  "notes",
-  {
-    data_type => "TEXT",
-    default_value => undef,
-    is_nullable => 1,
-  },
   "link",
   {
     data_type => "VARCHAR",
@@ -60,14 +57,7 @@ __PACKAGE__->add_columns(
     is_nullable => 1,
     size => 1024,
   },
-  "user_id",
-  {
-   data_type => "INT",
-   default_value => undef,
-   is_nullable => 0,
-   size => 11
-  },
-  "public",
+  "restricted",
   {
    data_type => "BOOLEAN",
    default_value => 0,
@@ -76,9 +66,23 @@ __PACKAGE__->add_columns(
   },
 
 );
-__PACKAGE__->set_primary_key("list_group_id");
-__PACKAGE__->has_many("lists" => "CoGeX::Result::List", 'list_group_id');
-__PACKAGE__->belongs_to("user" => "CoGeX::Result::User", 'user_id');
+__PACKAGE__->set_primary_key("list_collection_id");
+__PACKAGE__->has_many("list_collection_connectors" => "CoGeX_dev::Result::ListCollectionConnector", 'list_collection_id');
+
+sub lists
+  {
+    my $self = shift;
+    my %opts = @_;
+    my @lists;
+    foreach my $conn ($self->list_collection_connectors)
+      {
+	push @lists, $conn->list;
+      }
+    return wantarray ? @lists : \@lists;
+
+  }
+
+
 1;
 
 

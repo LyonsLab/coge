@@ -1,16 +1,16 @@
-package CoGeX::Result::Annotation;
-
-# Created by DBIx::Class::Schema::Loader v0.03009 @ 2006-12-01 18:13:38
+package CoGeX_dev::Result::FeatureAnnotation;
 
 use strict;
 use warnings;
 
 use base 'DBIx::Class::Core';
-use CoGeX::ResultSet::Annotation;
+use lib '/home/mbomhoff/CoGe/Accessory/lib'; #FIXME 8/2/12 remove
+use lib '/home/mbomhoff/CoGeXv/lib'; #FIXME 8/2/12 remove
+use CoGeX_dev::ResultSet::FeatureAnnotation;
 
 =head1 NAME
 
-CoGeX::Annotation
+CoGeX_dev::Annotation
 
 =head1 SYNOPSIS
 
@@ -34,21 +34,21 @@ C<annotation_type_id>
 Type: INT, Default: 0, Nullable: no, Size: 11
 
 
-Belongs to CCoGeX::Result::AnnotationType> via C<annotation_type_id>
+Belongs to CCoGeX_dev::Result::AnnotationType> via C<annotation_type_id>
 
-Belongs to CCoGeX::Result::Feature> via C<feature_id>
+Belongs to CCoGeX_dev::Result::Feature> via C<feature_id>
 
 =head1 USAGE
 
- use CoGeX;
+ use CoGeX_dev;
 
 =head1 METHODS
 
 =cut
 
-__PACKAGE__->table("annotation");
+__PACKAGE__->table("feature_annotation");
 __PACKAGE__->add_columns(
-  "annotation_id",
+  "feature_annotation_id",
   { data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
   "annotation",
   { data_type => "TEXT", default_value => "", is_nullable => 0, size => 65535 },
@@ -59,11 +59,11 @@ __PACKAGE__->add_columns(
   "link",
   { data_type => "VARCHAR", default_value => "", is_nullable => 1, size => 1024 },
 );
-__PACKAGE__->set_primary_key("annotation_id");
+__PACKAGE__->set_primary_key("feature_annotation_id");
 
-__PACKAGE__->belongs_to( annotation_type => 'CoGeX::Result::AnnotationType', 'annotation_type_id');
-__PACKAGE__->belongs_to( feature => 'CoGeX::Result::Feature', 'feature_id');
-__PACKAGE__->has_one("feature_name" => "CoGeX::Result::FeatureName", {'foreign.feature_id'=>'self.feature_id'});
+__PACKAGE__->belongs_to( annotation_type => 'CoGeX_dev::Result::AnnotationType', 'annotation_type_id');
+__PACKAGE__->belongs_to( feature => 'CoGeX_dev::Result::Feature', 'feature_id');
+__PACKAGE__->has_one("feature_name" => "CoGeX_dev::Result::FeatureName", {'foreign.feature_id'=>'self.feature_id'});
 
 
 
