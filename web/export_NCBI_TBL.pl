@@ -1,16 +1,18 @@
 #!/usr/bin/perl -w
 
-use CoGeX;
+use strict;
+use lib '/home/mbomhoff/CoGe/Accessory/lib'; #FIXME 8/2/12 remove
+use lib '/home/mbomhoff/CoGeX/lib'; #FIXME 8/2/12 remove
+use CoGeX_dev;
+use CoGe_dev::Accessory::LogUser;
 use Data::Dumper;
 use Sort::Versions;
-use CoGe::Accessory::Web;
-use strict;
+use CoGe_dev::Accessory::Web;
 use CGI;
-use CoGe::Accessory::LogUser;
 
 no warnings 'redefine';
 
-my $P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
+my $P = CoGe_dev::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 my $DBNAME = $P->{DBNAME};
 my $DBHOST = $P->{DBHOST};
 my $DBPORT = $P->{DBPORT};
@@ -18,20 +20,19 @@ my $DBUSER = $P->{DBUSER};
 my $DBPASS = $P->{DBPASS};
 
 my $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
-my $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
+my $coge = CoGeX_dev->connect($connstr, $DBUSER, $DBPASS );
 
 my $COOKIE_NAME = $P->{COOKIE_NAME};
 my $FORM = new CGI;
 my ($cas_ticket) =$FORM->param('ticket');
 my $USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
+($USER) = CoGe_dev::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
+($USER) = CoGe_dev::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
 
 
-my $FORM = new CGI;
 my $dsgid = $FORM->param('dsgid');
 
-my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+my $dsg = $coge->resultset('Genome')->find($dsgid);
 unless ($dsg)
   {
     print $FORM->header('text');

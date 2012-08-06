@@ -9,18 +9,23 @@ use CGI::Carp 'fatalsToBrowser';
 use CGI::Ajax;
 use HTML::Template;
 use Data::Dumper;
-use CoGe::Accessory::LogUser;
-use CoGe::Accessory::Web;
 use Digest::MD5 qw(md5_base64);
-use CoGeX;
 use CGI::Log;
+
+use lib '/home/mbomhoff/CoGe/Accessory/lib'; #FIXME 8/2/12 remove
+use lib '/home/mbomhoff/CoGeX/lib'; #FIXME 8/2/12 remove
+#no lib '/usr/lib/perl5/ModPerl'; #FIXME 8/2/12 remove
+
+use CoGe_dev::Accessory::LogUser;
+use CoGe_dev::Accessory::Web;
+use CoGeX_dev;
 
 
 
 no warnings 'redefine';
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $USER $FORM $DATE $URL $update $coge $COOKIE_NAME);
 
-$P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
+$P = CoGe_dev::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 $URL = $P->{URL};
 $FORM = new CGI;
@@ -40,20 +45,20 @@ $DBPORT = $P->{DBPORT};
 $DBUSER = $P->{DBUSER};
 $DBPASS = $P->{DBPASS};
 $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
-$coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
+$coge = CoGeX_dev->connect($connstr, $DBUSER, $DBPASS );
 
 $COOKIE_NAME = $P->{COOKIE_NAME};
 
 my ($cas_ticket) =$FORM->param('ticket');
 $USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
+($USER) = CoGe_dev::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
+($USER) = CoGe_dev::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
 
 #logout is only called through this program!  All logouts from other pages are redirected to this page
-CoGe::Accessory::Web->logout_cas(cookie_name=>$COOKIE_NAME, coge=>$coge, user=>$USER, form=>$FORM) if $FORM->param('logout');
+CoGe_dev::Accessory::Web->logout_cas(cookie_name=>$COOKIE_NAME, coge=>$coge, user=>$USER, form=>$FORM) if $FORM->param('logout');
 
-#print $FORM->header, gen_html();
-print $pj->build_html($FORM, \&gen_html);
+print $FORM->header, gen_html();
+#print $pj->build_html($FORM, \&gen_html);
 
 
 sub gen_html
@@ -74,14 +79,14 @@ sub gen_html
       	$welcome .= "<span class='small'>Organisms: ";
 	$welcome .= commify($coge->resultset('Organism')->count());
 	$welcome .= "&nbsp&nbsp&nbsp&nbsp   Genomes: ";
-	$welcome .= commify($coge->resultset('DatasetGroup')->count());
+	$welcome .= commify($coge->resultset('Genome')->count());
 	$welcome .= "&nbsp&nbsp&nbsp&nbsp   Nucleotides: ";
 	my $seq_length = $coge->resultset('GenomicSequence')->get_column('sequence_length');
 	$welcome .= commify($seq_length->sum);
 	$welcome .= "&nbsp&nbsp&nbsp&nbsp   Genomic Features: ";
 	$welcome .= commify($coge->resultset('Feature')->count());
 	$welcome .= "&nbsp&nbsp&nbsp&nbsp   Annotations: ";
-	$welcome .= commify($coge->resultset('Annotation')->count());
+	$welcome .= commify($coge->resultset('FeatureAnnotation')->count());
 
 	$welcome .= "</span>";
       }
@@ -210,16 +215,16 @@ sub get_latest_genomes
   {
     my %opts = @_;
     my $limit = $opts{limit} || 20;
-    my @db = $coge->resultset("DatasetGroup")->search({},
+    my @db = $coge->resultset("Genome")->search({},
 						      {
 						       distinct=>"organism.name",
 						       join=>"organism",
 						       prefetch=>"organism",
-						       order_by=>"dataset_group_id desc",
+						       order_by=>"genome_id desc",
 						       rows=>$limit*10,
 						      }
 						);
-  #  ($USER) = CoGe::Accessory::LogUser->get_user();
+  #  ($USER) = CoGe_dev::Accessory::LogUser->get_user();
     my $html = "<table class=small>";
     $html .= "<tr><th>".join("<th>",qw(Organism  &nbsp Length&nbsp(nt) &nbsp Related Link ));
     my @opts;

@@ -1,12 +1,14 @@
 #! /usr/bin/perl -w
 
 use strict;
+use lib '/home/mbomhoff/CoGe/Accessory/lib'; #FIXME 8/2/12 remove
+use lib '/home/mbomhoff/CoGeX/lib'; #FIXME 8/2/12 remove
+use CoGe_dev::Accessory::LogUser;
+use CoGe_dev::Accessory::Web;
+use CoGeX_dev;
 use CGI;
 #use CGI::Ajax;
 use JSON::XS;
-use CoGe::Accessory::LogUser;
-use CoGe::Accessory::Web;
-use CoGeX;
 use HTML::Template;
 use Digest::MD5 qw(md5_base64);
 use URI::Escape;
@@ -14,7 +16,7 @@ use Data::Dumper;
 no warnings 'redefine';
 
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb %FUNCTION $COOKIE_NAME $FORM $URL $COGEDIR $TEMPDIR $TEMPURL);
-$P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
+$P = CoGe_dev::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
@@ -27,7 +29,7 @@ $DBPORT = $P->{DBPORT};
 $DBUSER = $P->{DBUSER};
 $DBPASS = $P->{DBPASS};
 $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
-$coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
+$coge = CoGeX_dev->connect($connstr, $DBUSER, $DBPASS );
 
 $COOKIE_NAME = $P->{COOKIE_NAME};
 $URL = $P->{URL};
@@ -39,8 +41,8 @@ $TEMPURL = $P->{TEMPURL}."GenomeList/";
 
 my ($cas_ticket) =$FORM->param('ticket');
 $USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
+($USER) = CoGe_dev::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
+($USER) = CoGe_dev::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
 
 %FUNCTION = (
 	     gen_html=>\&gen_html,
@@ -95,7 +97,7 @@ sub gen_body
       my @types;
       foreach my $st ($coge->resultset('GenomicSequenceType')->all())
 	{
-	  my $count = $st->dataset_groups->count();
+	  my $count = $st->genomes->count();
 	  push @types, {
 			ID=>$st->id,
 			NAME=>$st->name,

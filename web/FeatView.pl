@@ -1,14 +1,16 @@
 #! /usr/bin/perl -w
 use strict;
+use lib '/home/mbomhoff/CoGe/Accessory/lib'; #FIXME 8/2/12 remove
+use lib '/home/mbomhoff/CoGeX/lib'; #FIXME 8/2/12 remove
+use CoGe_dev::Accessory::LogUser;
+use CoGe_dev::Accessory::Web;
+use CoGe_dev::Accessory::genetic_code;
+use CoGeX_dev;
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
 use CGI::Ajax;
-use CoGe::Accessory::LogUser;
-use CoGe::Accessory::Web;
-use CoGe::Accessory::genetic_code;
 use HTML::Template;
 use Data::Dumper;
-use CoGeX;
 use Digest::MD5 qw(md5_base64);
 use POSIX;
 use DBIxProfiler;
@@ -18,7 +20,7 @@ no warnings 'redefine';
 
 
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $ACCN $FID $coge $COOKIE_NAME);
-$P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
+$P = CoGe_dev::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 
 # set this to 1 to print verbose messages to logs
@@ -39,15 +41,15 @@ $DBPORT = $P->{DBPORT};
 $DBUSER = $P->{DBUSER};
 $DBPASS = $P->{DBPASS};
 $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
-$coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
+$coge = CoGeX_dev->connect($connstr, $DBUSER, $DBPASS );
 
 
 $COOKIE_NAME = $P->{COOKIE_NAME};
 
 my ($cas_ticket) =$FORM->param('ticket');
 $USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
+($USER) = CoGe_dev::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
+($USER) = CoGe_dev::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
 
 my %FUNCTION = (
 		db_lookup=>\&db_lookup,
@@ -168,8 +170,8 @@ sub cogesearch
     $search->{feature_type_id}=$type if $type;
     $search->{'organism.name'}={like=>"%".$org_name."%"} if $org_name;
     $search->{'organism.description'}={like=>"%".$org_desc."%"} if $org_desc;
-    my $join = {join=>[{'feature'=>{'dataset'=>{'dataset_connectors'=>{'dataset_group'=>'organism'}}}}]};
-    push @{$join->{join}}, 'annotation' if $anno;#=>['annotation',]};
+    my $join = {join=>[{'feature'=>{'dataset'=>{'dataset_connectors'=>{'genome'=>'organism'}}}}]};
+    push @{$join->{join}}, 'feature_annotation' if $anno;#=>['annotation',]};
 	
     #trying to get fulltext to work (and be fast!)    
     my @names;
@@ -235,7 +237,7 @@ sub cogesearch_featids
     $search->{feature_type_id}=$type if $type;
     $search->{'organism.name'}={like=>"%".$org_name."%"} if $org_name;
     $search->{'organism.description'}={like=>"%".$org_desc."%"} if $org_desc;
-    my $join = {join=>[{'feature'=>{'dataset'=>{'dataset_connectors'=>{'dataset_group'=>'organism'}}}}]};
+    my $join = {join=>[{'feature'=>{'dataset'=>{'dataset_connectors'=>{'genome'=>'organism'}}}}]};
     push @{$join->{join}}, 'annotation' if $anno;#=>['annotation',]};
     #trying to get fulltext to work (and be fast!)    
     my @names;
@@ -319,13 +321,13 @@ sub cogesearch_featids_old
       }
     $search->{feature_type_id}=$type if $type;
     $search->{organism_id}{ -in}=[@org_ids] if @org_ids;
-    my $join = {'feature'=>{'dataset'=>{'dataset_connectors'=>'dataset_group'}}};
+    my $join = {'feature'=>{'dataset'=>{'dataset_connectors'=>'genome'}}};
     $join->{'feature'} = ['dataset','annotations'] if $anno;
     foreach my $name ($coge->resultset('FeatureName')->search(
 							      $search,
 							      {
 							       join=>$join,
-							       prefetch=>{'feature'=>{'dataset'=>{'dataset_connectors'=>{'dataset_group'=>'genomic_sequence_type'}}}}
+							       prefetch=>{'feature'=>{'dataset'=>{'dataset_connectors'=>{'genome'=>'genomic_sequence_type'}}}}
 							      }))
       {
 	my $key = $name->feature_id."_".$name->feature->dataset->sequence_type->id;
@@ -369,7 +371,7 @@ sub get_anno
     my $i = 0;
     foreach my $feat (@feats)
       {	
-        my ($dsg) = $feat->dataset->dataset_groups;
+        my ($dsg) = $feat->dataset->genomes;
         return "Restricted Access" if $dsg->restricted && !$USER->has_access_to_genome($dsg);
 	#next if ($feat->dataset->restricted && !$USER->has_access_to_dataset($feat->dataset));	
 	$i++;
@@ -510,14 +512,14 @@ sub get_data_source_info_for_accn
     my @feats = $coge->resultset('Feature')->search({'feature_names.name'=>$accn},
 						    {
 						     join=>'feature_names',
-						    'prefetch'=>{'dataset'=> ['data_source',{'dataset_connectors'=>{'dataset_group'=>['organism', 'genomic_sequence_type']}}]}
+						    'prefetch'=>{'dataset'=> ['data_source',{'dataset_connectors'=>{'genome'=>['organism', 'genomic_sequence_type']}}]}
 						    });
     my %sources;
     foreach my $feat (@feats)
       {
 	my $val = $feat->dataset;
 #	next if $val->restricted && !$USER->has_access_to_dataset($val);
-        my ($dsg) = $feat->dataset->dataset_groups;
+        my ($dsg) = $feat->dataset->genomes;
 #        return "<hidden id=dsid value=0></hidden>Restricted Access" 
 	if ($dsg->restricted && !$USER->has_access_to_genome($dsg))
 	  {
@@ -646,9 +648,9 @@ sub codon_table
 	$aa{$code->{$tri}}+=$codon->{$tri};
       }
     my $html = "Codon Usage: $code_type";
-    $html .= CoGe::Accessory::genetic_code->html_code_table(data=>$codon, code=>$code, counts=>1);
+    $html .= CoGe_dev::Accessory::genetic_code->html_code_table(data=>$codon, code=>$code, counts=>1);
 #    $html .= "Predicted amino acid usage for $code_type genetic code:";
-#    $html .= CoGe::Accessory::genetic_code->html_aa(data=>\%aa, counts=>1);
+#    $html .= CoGe_dev::Accessory::genetic_code->html_aa(data=>\%aa, counts=>1);
     return $html;
   }
 
@@ -660,7 +662,7 @@ sub protein_table
     my ($feat) = $coge->resultset('Feature')->find($featid);
     my $aa = $feat->aa_frequency(counts=>1, gstid=>$gstid);
     my $html = "Amino Acid Usage";
-    $html .= CoGe::Accessory::genetic_code->html_aa(data=>$aa, counts=>1);
+    $html .= CoGe_dev::Accessory::genetic_code->html_aa(data=>$aa, counts=>1);
     return $html;
   }
 

@@ -3,8 +3,10 @@
 use strict;
 use CGI;
 use CGI::Ajax;
-use CoGe::Accessory::LogUser;
-use CoGe::Accessory::Web;
+use lib '/home/mbomhoff/CoGe/Accessory/lib'; #FIXME 8/2/12 remove
+use lib '/home/mbomhoff/CoGeX/lib'; #FIXME 8/2/12 remove
+use CoGe_dev::Accessory::LogUser;
+use CoGe_dev::Accessory::Web;
 use HTML::Template;
 use Text::Wrap qw($columns &wrap);
 use Data::Dumper;
@@ -17,7 +19,7 @@ no warnings 'redefine';
 
 
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $TEMPDIR $TEMPURL $FORM $USER $DATE $coge $COOKIE_NAME);
-$P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
+$P = CoGe_dev::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 
 $TEMPDIR = $P->{TEMPDIR}."FastaView/";
@@ -34,14 +36,14 @@ $DBPORT = $P->{DBPORT};
 $DBUSER = $P->{DBUSER};
 $DBPASS = $P->{DBPASS};
 $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
-$coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
+$coge = CoGeX_dev->connect($connstr, $DBUSER, $DBPASS );
 
 $COOKIE_NAME = $P->{COOKIE_NAME};
 
 my ($cas_ticket) =$FORM->param('ticket');
 $USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
+($USER) = CoGe_dev::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
+($USER) = CoGe_dev::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
 
 my $pj = new CGI::Ajax(
 		       gen_html=>\&gen_html,
@@ -61,6 +63,7 @@ if ($FORM->param('text'))
 else
     {
       print $pj->build_html($FORM, \&gen_html);
+      #print $FORM->header,gen_html;
     }
 sub gen_html
   {
@@ -112,7 +115,7 @@ sub get_seqs
     my $gstid = $opts{gstid};
     my $upstream = $opts{upstream};
     my $downstream = $opts{downstream};
-    my @fids = ref($fids) =~ /array/i ? @$fids : split/,/, $fids;
+    my @fids = ref($fids) =~ /array/i ? @$fids : split(/,/, $fids);
     my %seen = ();
     @fids = grep {!$seen{$_}++} @fids;
  
@@ -121,7 +124,7 @@ sub get_seqs
     my $fid_count = 0;
     foreach my $item (@fids)
       {
-        foreach my $featid (split /,/, $item)
+        foreach my $featid (split(/,/, $item))
           {
 	    $fid_count++;
 	    my ($fid, $gstidt);
@@ -139,7 +142,7 @@ sub get_seqs
 		$seqs .= ">Not found: $featid\n";
 		next;
 	      }
-	    my ($dsg) = $feat->dataset->dataset_groups;
+	    my ($dsg) = $feat->dataset->genomes;
 	    if ($dsg->restricted && !$USER->has_access_to_genome($dsg))
 	      {
 		$seqs .= ">Restricted: $featid\n";

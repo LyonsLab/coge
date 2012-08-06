@@ -1,5 +1,5 @@
 BODY { 
-  font-family: Arial, Geneva, Times, fixed;
+  font-family: Arial, Helvetica, fixed;
   background: #FFFFFF;
 }
 
@@ -31,22 +31,18 @@ a:hover {
 }
 
 .up {
-  font-family: fixed, monospace;
   color: #660000;
 }
 
 .down {
-  font-family:fixed, monospace;
   color: #003300;
 }
 
 .main {
-  font-family:fixed, monospace;
   color: #000099;
 }
 
 .prep {
-  font-family:fixed, monospace;
   white-space:pre;
 }
 
@@ -134,12 +130,10 @@ a:hover {
 }
 
 .xsmall { 
-  font-family: fixed;
   font-size: x-small;
 }
 
 .small { 
-  font-family: fixed;
   font-size: small;
 }
 
@@ -429,7 +423,6 @@ table.basic {
 	border-color: #000000; /* black */
 	border-collapse: collapse;
 	background-color: #FFFFFF; /* darker gray */
-	font-family: verdana, arial, helvetica, sans-serif;
 	font-size: 16px
 }
 
@@ -440,7 +433,6 @@ table.columns {
 	border-left-width: 0px;
 	background-color: #FFFFFF; /* darker gray */
 	border-color: #000000; /* black */
-	font-family: verdana, arial, helvetica, sans-serif;
 	font-size: 16px
 }
 

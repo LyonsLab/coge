@@ -11,31 +11,34 @@ use Data::Dumper;
 use File::Basename;
 use File::Temp;
 use File::Path;
-use CoGe::Accessory::GenBank;
-use CoGe::Accessory::LogUser;
-use CoGe::Accessory::Web;
-use CoGe::Accessory::bl2seq_report;
-use CoGe::Accessory::blastz_report;
-use CoGe::Accessory::lagan_report;
-use CoGe::Accessory::chaos_report;
-use CoGe::Accessory::GenomeThreader_report;
-use CoGe::Accessory::dialign_report;
-use CoGe::Accessory::dialign_report::anchors;
-use CoGe::Graphics;
-use CoGe::Graphics::Chromosome;
-use CoGe::Graphics::Feature;
-use CoGe::Graphics::Feature::Gene;
-use CoGe::Graphics::Feature::NucTide;
-use CoGe::Graphics::Feature::GAGA;
-use CoGe::Graphics::Feature::Exon_motifs;
-use CoGe::Graphics::Feature::AminoAcid;
-use CoGe::Graphics::Feature::Domain;
-use CoGe::Graphics::Feature::HSP;
-use CoGe::Graphics::Feature::Block;
-use CoGe::Graphics::Feature::Outline;
-#use CoGe::Graphics::Feature::Line;
-use CoGeX;
-use CoGeX::Result::Feature;
+use lib "/home/mbomhoff/CoGeX/lib";
+use lib "/home/mbomhoff/CoGe/Accessory/lib";
+use lib "/home/mbomhoff/CoGe/Graphics/lib";
+use CoGe_dev::Accessory::GenBank;
+use CoGe_dev::Accessory::LogUser;
+use CoGe_dev::Accessory::Web;
+use CoGe_dev::Accessory::bl2seq_report;
+use CoGe_dev::Accessory::blastz_report;
+use CoGe_dev::Accessory::lagan_report;
+use CoGe_dev::Accessory::chaos_report;
+use CoGe_dev::Accessory::GenomeThreader_report;
+use CoGe_dev::Accessory::dialign_report;
+use CoGe_dev::Accessory::dialign_report::anchors;
+use CoGe_dev::Graphics;
+use CoGe_dev::Graphics::Chromosome;
+use CoGe_dev::Graphics::Feature;
+use CoGe_dev::Graphics::Feature::Gene;
+use CoGe_dev::Graphics::Feature::NucTide;
+use CoGe_dev::Graphics::Feature::GAGA;
+use CoGe_dev::Graphics::Feature::Exon_motifs;
+use CoGe_dev::Graphics::Feature::AminoAcid;
+use CoGe_dev::Graphics::Feature::Domain;
+use CoGe_dev::Graphics::Feature::HSP;
+use CoGe_dev::Graphics::Feature::Block;
+use CoGe_dev::Graphics::Feature::Outline;
+#use CoGe_dev::Graphics::Feature::Line;
+use CoGeX_dev;
+use CoGeX_dev::Result::Feature;
 use DBIxProfiler;
 use DBI;
 use Parallel::ForkManager;
@@ -53,7 +56,7 @@ no warnings 'redefine';
 
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME $DATE $DEBUG $BL2SEQ $BLASTZ $LAGAN $CHAOS $DIALIGN $GENOMETHREADER $TEMPDIR $TEMPURL $USER $FORM $cogeweb $BENCHMARK $coge $NUM_SEQS $MAX_SEQS $MAX_PROC %FUNCTION $COOKIE_NAME);
-$P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
+$P = CoGe_dev::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 
 #print Dumper $P;
@@ -98,14 +101,14 @@ $DBPORT = $P->{DBPORT};
 $DBUSER = $P->{DBUSER};
 $DBPASS = $P->{DBPASS};
 $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
-$coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
+$coge = CoGeX_dev->connect($connstr, $DBUSER, $DBPASS );
 $COOKIE_NAME = $P->{COOKIE_NAME};
 
 my ($cas_ticket) =$FORM->param('ticket');
 $USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
-my %ajax = CoGe::Accessory::Web::ajax_func();
+($USER) = CoGe_dev::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
+($USER) = CoGe_dev::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
+my %ajax = CoGe_dev::Accessory::Web::ajax_func();
 #$ajax{dataset_search} = \&dataset_search; #override this method from Accessory::Web for restricted organisms
 #$ajax{feat_search} = \&feat_search; 
 #print STDERR join ("\n", keys %ajax),"\n";
@@ -122,7 +125,7 @@ my %ajax = CoGe::Accessory::Web::ajax_func();
 	   save_settings_gevo=>\&save_settings_gevo,
 	   reset_settings_gevo=>\&reset_settings_gevo,
 	   check_address_validity=>\&check_address_validity,
-	   dataset_group_search=>\&dataset_group_search,
+	   genome_search=>\&genome_search,
 	   get_tiny_url=>\&get_tiny_url,
 	   add_to_user_history=>\&add_to_user_history,
 	   get_image_info => \&get_image_info,
@@ -200,7 +203,7 @@ sub gen_html
 sub gen_body
   {
     my $form = $FORM;
-    my $prefs = CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME, coge=>$coge);
+    my $prefs = CoGe_dev::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME, coge=>$coge);
     my $num_seqs;
     $num_seqs = $form->param('num_seqs');#= get_opt(params=>$prefs, form=>$form, param=>'num_seqs');
     $num_seqs = $NUM_SEQS unless defined $num_seqs;
@@ -566,16 +569,16 @@ sub run
     my $gen_prot_sequence =0; #flag for generating fasta file of protein_sequence;
     $gen_prot_sequence = 1 if $analysis_program eq "GenomeThreader";
     my $basefilename = $opts{basefile};
-    $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$basefilename, tempdir=>$TEMPDIR);
+    $cogeweb = CoGe_dev::Accessory::Web::initialize_basefile(basename=>$basefilename, tempdir=>$TEMPDIR);
 ###### working on basefile name initialization problems
     if (!$basefilename || $basefilename eq "undefined")
       {
-	$cogeweb = CoGe::Accessory::Web::initialize_basefile(tempdir=>$TEMPDIR);
+	$cogeweb = CoGe_dev::Accessory::Web::initialize_basefile(tempdir=>$TEMPDIR);
 	$basefilename = $cogeweb->basefilename;
       }
 ######
 #    print STDERR "Running GEvo:  basefile:  $basefilename\n";
-    CoGe::Accessory::Web::write_log("Beginning GEvo analysis.  Basefilename: $basefilename", $cogeweb->logfile);
+    CoGe_dev::Accessory::Web::write_log("Beginning GEvo analysis.  Basefilename: $basefilename", $cogeweb->logfile);
     my @hsp_colors;
     for (my $i = 1; $i <= num_colors($num_seqs); $i++)
       {
@@ -749,7 +752,7 @@ sub run
 	    $tmp =~ s/^\s+//;
 	    $tmp =~ s/\s+$//;
 	    my $gbfile = $TEMPDIR."/".uc($tmp).".gbk";
-	    $obj = new CoGe::Accessory::GenBank;
+	    $obj = new CoGe_dev::Accessory::GenBank;
 	    while (!$got && $try < 5)
 	      {
 		if ($try > 1 && -r $gbfile)
@@ -901,7 +904,7 @@ sub run
       }
     
     $analysis_reports = [] unless ref($analysis_reports) =~ /ARRAY/i;
-    CoGe::Accessory::Web::write_log($message, $cogeweb->logfile) if $message;
+    CoGe_dev::Accessory::Web::write_log($message, $cogeweb->logfile) if $message;
    #sets => array or data for blast
    #blast_reports => array of arrays (report, accn1, accn2, parsed data)
     my $t3 = new Benchmark;
@@ -913,7 +916,7 @@ sub run
       {
 	my $obj = $item->{obj};
 	my $filename = $cogeweb->basefile."_".$item->{seq_num}.".png";
-	$filename = CoGe::Accessory::Web::check_filename_taint($filename);
+	$filename = CoGe_dev::Accessory::Web::check_filename_taint($filename);
 	$item->{png_filename}=$filename;
 	my $image = basename($filename);
 	$item->{image}=$image;
@@ -926,7 +929,7 @@ sub run
 	next unless $obj->sequence;
 	if ($obj)
 	  {
-	    CoGe::Accessory::Web::write_log("generating image ($count/".scalar @sets.")for ".$obj->accn.": ".$item->{png_filename}, $cogeweb->logfile);
+	    CoGe_dev::Accessory::Web::write_log("generating image ($count/".scalar @sets.")for ".$obj->accn.": ".$item->{png_filename}, $cogeweb->logfile);
 	    $count++;
 	    my ($gfx) = 
 	      generate_image(
@@ -1012,7 +1015,7 @@ sub run
     $html .= qq{<table class=small>};
     $html .= qq{<tr valign=top><td><span class=bold>Alignment reports</span>};
 #    my $stats_file = $cogeweb->basefile."_stats.txt";
-#    $stats_file = CoGe::Accessory::Web::check_filename_taint($stats_file);
+#    $stats_file = CoGe_dev::Accessory::Web::check_filename_taint($stats_file);
 
     if ($analysis_reports && @$analysis_reports)
       {
@@ -1040,9 +1043,9 @@ sub run
 	my $accn = $item->{accn};
 	$html .= "<div><A HREF=\"$basename\" target=_new>$accn</A></font></DIV>\n";
 	my $x;
-	($x, $all_file) = CoGe::Accessory::Web::check_taint($all_file);
+	($x, $all_file) = CoGe_dev::Accessory::Web::check_taint($all_file);
 	my $seq_file = $item->{file};
-	($x, $seq_file) = CoGe::Accessory::Web::check_taint($seq_file);
+	($x, $seq_file) = CoGe_dev::Accessory::Web::check_taint($seq_file);
 	my $cmd = "/bin/cat ".$seq_file." >> $all_file";
 	`$cmd`;
       }
@@ -1124,10 +1127,10 @@ Total time                                          : $total_time
 #    print STDERR "\n",$gevo_link,"\n";
 #    print STDERR $bench if $BENCHMARK;
 #    print STDERR "GEvo run time: $total_time\n";
-    CoGe::Accessory::Web::write_log($bench, $cogeweb->logfile);
-    CoGe::Accessory::Web::write_log("Finished!", $cogeweb->logfile);
-    CoGe::Accessory::Web::write_log("GEvo link: $gevo_link", $cogeweb->logfile);
-#    CoGe::Accessory::Web::write_log("Tiny url: $tiny", $cogeweb->logfile);
+    CoGe_dev::Accessory::Web::write_log($bench, $cogeweb->logfile);
+    CoGe_dev::Accessory::Web::write_log("Finished!", $cogeweb->logfile);
+    CoGe_dev::Accessory::Web::write_log("GEvo link: $gevo_link", $cogeweb->logfile);
+#    CoGe_dev::Accessory::Web::write_log("Tiny url: $tiny", $cogeweb->logfile);
     email_results(email=>$email_address,basefile=>$basefilename, full_gevo_url=>$gevo_link) if $email_address;
     $iw +=10; #extra padding to make it easier to grab slider bars
     return $outhtml, $iw, $frame_height, $cogeweb->basefilename, scalar (@sets), $gevo_link, $basefilename, $message;
@@ -1278,8 +1281,8 @@ sub generate_image
     my $show_cns = $opts{show_cns};
     my $show_gene_space = $opts{show_gene_space};
     my $show_contigs = $opts{show_contigs};
-    my $graphic = new CoGe::Graphics;
-    my $gfx = new CoGe::Graphics::Chromosome;
+    my $graphic = new CoGe_dev::Graphics;
+    my $gfx = new CoGe_dev::Graphics::Chromosome;
     my $skip_feat_overlap_search = $opts{skip_feat_overlap_search};
     my $skip_hsp_overlap_search = $opts{skip_hsp_overlap_search};
     my $font_size = $opts{font_size};
@@ -1630,7 +1633,7 @@ sub process_features
         if ($type =~ /pseudogene/i)
           {
 	    next unless $draw_model eq "full";
-	    $f = CoGe::Graphics::Feature::Gene->new();
+	    $f = CoGe_dev::Graphics::Feature::Gene->new();
 	    $f->color([255,33,0,50]);
 	    $f->order($track);
 	    $f->overlay(1);
@@ -1640,7 +1643,7 @@ sub process_features
         if ($type =~ /gene prediction/i)
           {
 	    next unless $draw_model eq "full";
-	    $f = CoGe::Graphics::Feature::Gene->new();
+	    $f = CoGe_dev::Graphics::Feature::Gene->new();
 	    $f->color([50,50,255,100]);
 	    $f->order($track);
 	    $f->overlay(1);
@@ -1650,7 +1653,7 @@ sub process_features
         elsif ($type =~ /Gene$/i)
           {
 	    next unless $draw_model eq "full" || $draw_model eq "gene" || $anchor;
-	    $f = CoGe::Graphics::Feature::Gene->new();
+	    $f = CoGe_dev::Graphics::Feature::Gene->new();
 	    #$f->color([255,0,0,50]);
 	    $f->color([219,219,219,50]);
 	    $f->order($track);
@@ -1663,7 +1666,7 @@ sub process_features
 #Co-annotation but aren't part of the official gene models -J
 	elsif ($type =~ /Freeling_predicted_CDS/i)
 	{
-	    $f = CoGe::Graphics::Feature::Gene->new();
+	    $f = CoGe_dev::Graphics::Feature::Gene->new();
 	    $f->color([150,0,150,50]);
 	    $f->order($track);
 	    $f->overlay(3);
@@ -1675,7 +1678,7 @@ sub process_features
         elsif ($type =~ /CDS/i)
           {
 	    next unless $draw_model eq "full" || $draw_model eq "CDS";
-	    $f = CoGe::Graphics::Feature::Gene->new();
+	    $f = CoGe_dev::Graphics::Feature::Gene->new();
 	    $f->color([0,255,0, 50]);
 	    $f->order($track);
 	    $f->overlay(3);
@@ -1725,7 +1728,7 @@ sub process_features
         if ($type =~ /repeat/i)
           {
 	    next unless $draw_model eq "full";
-	    $f = CoGe::Graphics::Feature::Outline->new({start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1]});
+	    $f = CoGe_dev::Graphics::Feature::Outline->new({start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1]});
 	    $f->color([0,0,255]);
 	    $f->order($track);
 	    $f->overlay(4);
@@ -1734,7 +1737,7 @@ sub process_features
         elsif ($type =~ /mrna/i)
 	{
 	    next unless $draw_model eq "full" || $draw_model eq "mRNA";
-	    $f = CoGe::Graphics::Feature::Gene->new();
+	    $f = CoGe_dev::Graphics::Feature::Gene->new();
 	    $f->color([0,0,255, 50]);
 	    $f->order($track);
 	    $f->overlay(2);
@@ -1744,7 +1747,7 @@ sub process_features
         elsif ($type =~ /rna/i)
 	{
 	    next unless $draw_model eq "full" || $draw_model eq "RNA";
-	    $f = CoGe::Graphics::Feature::Gene->new();
+	    $f = CoGe_dev::Graphics::Feature::Gene->new();
 	    $f->color([200,200,200, 50]);
 	    $f->order($track);
 	    $f->overlay(2);
@@ -1763,13 +1766,13 @@ sub process_features
 	}
 	elsif ($type =~ /anchor/)
 	{
-	    $f = CoGe::Graphics::Feature::NucTide->new({type=>'anchor',start=>$feat->blocks->[0][0], strand=>1});
+	    $f = CoGe_dev::Graphics::Feature::NucTide->new({type=>'anchor',start=>$feat->blocks->[0][0], strand=>1});
 	    $f->color([0,0,255]);
 	    $f->type($type);
 	    $f->description($feat->annotation);
 	    $f->force_draw(1);
 	    $c->add_feature($f);
-	    $f = CoGe::Graphics::Feature::NucTide->new({type=>'anchor',start=>$feat->blocks->[0][0], strand=>-1});
+	    $f = CoGe_dev::Graphics::Feature::NucTide->new({type=>'anchor',start=>$feat->blocks->[0][0], strand=>-1});
 	    $f->color([0,0,255]);
 	    $f->type($type);
 	    $f->description($feat->annotation);
@@ -1782,7 +1785,7 @@ sub process_features
 	    my $strand = 1;
 	    $strand = -1 if $feat->location =~ /complement/;
 
-	    $f = CoGe::Graphics::Feature::HSP->new({start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1], strand=>$strand});
+	    $f = CoGe_dev::Graphics::Feature::HSP->new({start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1], strand=>$strand});
 	    if ($strand == 1)
 	      {
 		$f->color([99,0,99]);
@@ -1805,8 +1808,8 @@ sub process_features
 	  }
 	elsif ($show_gene_space && $type =~ /gene_space/i)
 	{
-	      $f = CoGe::Graphics::Feature::HSP->new({start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1]});
-	      #$f = CoGe::Graphics::Feature::Line->new({start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1]});
+	      $f = CoGe_dev::Graphics::Feature::HSP->new({start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1]});
+	      #$f = CoGe_dev::Graphics::Feature::Line->new({start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1]});
 	     
 	      $f->color([255,255,102]);
 
@@ -1824,7 +1827,7 @@ sub process_features
 	  }
 	elsif ($show_contigs && $type =~ /contig/i)
 	  {
-	    $f = CoGe::Graphics::Feature::Block->new({start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1]});
+	    $f = CoGe_dev::Graphics::Feature::Block->new({start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1]});
 	    $f->_initialize();
 	    $f->color([255,0,0]);
 	    #$f->bgcolor([255,255,255]);
@@ -1844,7 +1847,7 @@ sub process_features
 	#need to create an anchor if this feature is an anchor, but not to be drawn
 	if ($anchor && !$f)
 	  {
-	    $f = CoGe::Graphics::Feature->new({type=>'anchor',start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1], strand=>1});
+	    $f = CoGe_dev::Graphics::Feature->new({type=>'anchor',start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1], strand=>1});
 	    $f->{anchor}=1;
 	    $f->order(0);
 	    $f->skip_overlap_search(1);
@@ -1933,7 +1936,7 @@ sub process_hsps
     my $analysis_program = $opts{analysis_program};
 
     my $seq_type = $analysis_program =~ /tblastx/i ? " aa" : " nt";
-    #to reverse hsps when using genomic sequences from CoGe, they need to be drawn on the opposite strand than where blast reports them.  This is because CoGe::Graphics has the option of reverse drawing a region.  However, the sequence fed into blast has already been reverse complemented so that the HSPs are in the correct orientation for the image.  Thus, if the image is reverse, they are drawn on the wrong strand.  This corrects for that problem.   Sorry for the convoluted logic, but it was the simplest way to substantiate this option
+    #to reverse hsps when using genomic sequences from CoGe, they need to be drawn on the opposite strand than where blast reports them.  This is because CoGe_dev::Graphics has the option of reverse drawing a region.  However, the sequence fed into blast has already been reverse complemented so that the HSPs are in the correct orientation for the image.  Thus, if the image is reverse, they are drawn on the wrong strand.  This corrects for that problem.   Sorry for the convoluted logic, but it was the simplest way to substantiate this option
     my $i = 0;
     my $track = scalar @$data+1;
     $track = 2 if $hsp_track; #all HSPs to be drawn in same track
@@ -2022,7 +2025,7 @@ sub process_hsps
 	    my $f; 
 	    if ($hsp->link_as_gene)
 	      {
-		$f = $feats{$hsp->number} ? $feats{$hsp->number} : CoGe::Graphics::Feature::Gene->new({type=>'HSP', no_3D=>1, overlay=>2});
+		$f = $feats{$hsp->number} ? $feats{$hsp->number} : CoGe_dev::Graphics::Feature::Gene->new({type=>'HSP', no_3D=>1, overlay=>2});
 		$feats{$hsp->number} = $f;
 		$f->add_segment(start=>$start, stop=>$stop);
 		#add base arrow for looks
@@ -2034,7 +2037,7 @@ sub process_hsps
 		  }
 		else
 		  {
-		    my $base_arrow = CoGe::Graphics::Feature::Gene->new({no_3D=>1, overlay=>1, order=>$track, strand=>$hsp->strand});
+		    my $base_arrow = CoGe_dev::Graphics::Feature::Gene->new({no_3D=>1, overlay=>1, order=>$track, strand=>$hsp->strand});
 		    $base_arrow->add_segment(start=>$start, stop=>$stop);
 		    $base_arrow->mag(0.5);
 		    $base_arrow->description('this is just for looks');
@@ -2047,7 +2050,7 @@ sub process_hsps
 	      }
 	    else
 	      {
-		$f = CoGe::Graphics::Feature::HSP->new({start=>$start, stop=>$stop});
+		$f = CoGe_dev::Graphics::Feature::HSP->new({start=>$start, stop=>$stop});
 	      }
 
 	    $f->color($color);
@@ -2162,7 +2165,7 @@ sub process_hsps
 	    my $percent_overlap = 100*sprintf("%.4f", $overlap_count{$type}/$feat_count{$type});
 	    $message.= "\t".$overlap_count{$type}."/".$feat_count{$type} ." $type ($percent_overlap%) with overlapping HSPs.\n";
 	  }
-	CoGe::Accessory::Web::write_log($message, $cogeweb->logfile) if $message;
+	CoGe_dev::Accessory::Web::write_log($message, $cogeweb->logfile) if $message;
       }
   }
 
@@ -2203,7 +2206,7 @@ sub generate_obj_from_seq
     my $rc = $opts{rc};
     my $start = $opts{start}; #used in file name
     my $length = $opts{length}; #used in file name
-    my $obj = new CoGe::Accessory::GenBank;
+    my $obj = new CoGe_dev::Accessory::GenBank;
     my $filename = $TEMPDIR."/".md5_hex($sequence.$start.$length).".faa";
     $obj->srcfile($filename);
     if ($sequence =~ /^LOCUS/)
@@ -2255,7 +2258,7 @@ sub generate_obj_from_seq
       }
     if ($rc)
       {
-	$obj->sequence(CoGeX::Result::Feature->reverse_complement($obj->sequence));
+	$obj->sequence(CoGeX_dev::Result::Feature->reverse_complement($obj->sequence));
       }
     return $obj
   }
@@ -2280,7 +2283,7 @@ sub get_obj_from_genome_db
     my $ds;
     if ($dsgid)
       {
-	$dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	$dsg = $coge->resultset('Genome')->find($dsgid);
 	return "", "Can't find entry for $dsgid" unless $dsg;
 	return "", "Permission denied" if $dsg->restricted && !$USER->has_access_to_genome($dsg);
 	($ds) = $dsg->datasets(chr=>$chr);
@@ -2295,7 +2298,7 @@ sub get_obj_from_genome_db
     my $new_seq =0;  #flag for whether we got the seq from the database or a previously generated file;
     unless (ref ($feat)=~ /feature/i || ($pos && $dsid))
       {
-	CoGe::Accessory::Web::write_log("Can't find valid feature database entry for id=$featid", $cogeweb->logfile);
+	CoGe_dev::Accessory::Web::write_log("Can't find valid feature database entry for id=$featid", $cogeweb->logfile);
 	return("","Can;t find valid feature database entry for id $featid");
       }
     my $t2 = new Benchmark;
@@ -2355,7 +2358,7 @@ sub get_obj_from_genome_db
       {
 	($chr) = $ds->get_chromosomes unless defined $chr;
 	my $tmp;
-	($tmp, $seq_file) = CoGe::Accessory::Web::check_taint($seq_file);
+	($tmp, $seq_file) = CoGe_dev::Accessory::Web::check_taint($seq_file);
 	unlink ($seq_file);
 	$seq = $ds->get_genomic_sequence(
 					 start => $start,
@@ -2368,7 +2371,7 @@ sub get_obj_from_genome_db
 	  {
 	    print STDERR "Error retrieving sequence: ".join ("\t", $ds->name,$start, $stop, $chr, $gstid),"\n";
 	  }
-	$seq = CoGeX::Result::Feature->reverse_complement($seq) if $rev;
+	$seq = CoGeX_dev::Result::Feature->reverse_complement($seq) if $rev;
       }
     if ($stop-$start+1 > length($seq))
       {
@@ -2380,7 +2383,7 @@ sub get_obj_from_genome_db
     my $org_name = $ds->organism->name();
     $org_name .= ": ".$dsg->description if $dsg->description;
     $org_name .= " (".$ds->data_source->name." v".$ds->version.", ".$gst->name.")";
-    my $obj= new CoGe::Accessory::GenBank({
+    my $obj= new CoGe_dev::Accessory::GenBank({
 					   accn=>$accn,
 					   locus=>$accn,
 					   version=>$ds->version(),
@@ -2466,7 +2469,7 @@ sub get_obj_from_genome_db
       {
 	my $prot_file = $seq_file.".prot";
 	my $tmp;
-	($tmp, $prot_file) = CoGe::Accessory::Web::check_taint($prot_file);
+	($tmp, $prot_file) = CoGe_dev::Accessory::Web::check_taint($prot_file);
 	open (OUT, ">$prot_file");
 	print OUT $prot_sequence if $prot_sequence;
 	close OUT;
@@ -2543,7 +2546,7 @@ sub run_bl2seq {
 	  $command .= " -i $seqfile1 -j $seqfile2";
 	  $command .= " " . $blast_params;
 	  my $x = "";
-	  ($x,$command) = CoGe::Accessory::Web::check_taint( $command );
+	  ($x,$command) = CoGe_dev::Accessory::Web::check_taint( $command );
 	  if ( $DEBUG ) {
 	    print STDERR "About to execute...\n $command\n";
 	  }
@@ -2552,7 +2555,7 @@ sub run_bl2seq {
 	      next;
 	    }
 	  # execute the command
-	  CoGe::Accessory::Web::write_log("running ($count/$total_runs) ".$command, $cogeweb->logfile);
+	  CoGe_dev::Accessory::Web::write_log("running ($count/$total_runs) ".$command, $cogeweb->logfile);
 	  `$command`;
 	  system "/bin/chmod +rw $tempfile";
 	  $pm->finish;
@@ -2563,16 +2566,16 @@ sub run_bl2seq {
     {
       my $tempfile = $item->[0];
       my $parser_opts = $opts{parser_opts};
-      my $blastreport = new CoGe::Accessory::bl2seq_report({file=>$tempfile}) if -r $tempfile;
+      my $blastreport = new CoGe_dev::Accessory::bl2seq_report({file=>$tempfile}) if -r $tempfile;
       if ($blastreport)
 	{
 	  push @$item, $blastreport
 	}
       else
 	{
-	  my $blastreport = new CoGe::Accessory::bl2seq_report();
+	  my $blastreport = new CoGe_dev::Accessory::bl2seq_report();
 	  push @$item, $blastreport;
-	  CoGe::Accessory::Web::write_log("WARNING:  no results from blasting ".$item->[1]." and ".$item->[2].".  Possible error\n", $cogeweb->logfile);
+	  CoGe_dev::Accessory::Web::write_log("WARNING:  no results from blasting ".$item->[1]." and ".$item->[2].".  Possible error\n", $cogeweb->logfile);
 	}
     }
   return( \@reports );
@@ -2609,7 +2612,7 @@ sub run_blastz
 	    $command .= " $seqfile1"."[unmask] $seqfile2"."[unmask]";
 	    $command .= " ".$params if $params;
 	    my $x = "";
-	    ($x,$command) = CoGe::Accessory::Web::check_taint( $command );
+	    ($x,$command) = CoGe_dev::Accessory::Web::check_taint( $command );
 	    if ( $DEBUG ) {
 	      print STDERR "About to execute...\n $command\n";
 	    }
@@ -2619,7 +2622,7 @@ sub run_blastz
 	      }
 	    $command .= " > ".$tempfile;
 	    	  # execute the command
-	    CoGe::Accessory::Web::write_log("running ($count/$total_runs) ".$command, $cogeweb->logfile);
+	    CoGe_dev::Accessory::Web::write_log("running ($count/$total_runs) ".$command, $cogeweb->logfile);
 	    `$command`;
 	    system "/bin/chmod +rw $tempfile";
 	    $pm->finish;
@@ -2629,7 +2632,7 @@ sub run_blastz
     foreach my $item (@reports)
       {
 	my $tempfile = $item->[0];
-	my $blastreport = new CoGe::Accessory::blastz_report({file=>$tempfile}) if -r $tempfile;
+	my $blastreport = new CoGe_dev::Accessory::blastz_report({file=>$tempfile}) if -r $tempfile;
 	if ($blastreport)
 	  {
 	    push @$item, $blastreport
@@ -2671,7 +2674,7 @@ sub run_lagan
 	    $command .= " -mfa";
 	    $command .= " ".$params if $params;
 	    my $x = "";
-	    ($x,$command) = CoGe::Accessory::Web::check_taint( $command );
+	    ($x,$command) = CoGe_dev::Accessory::Web::check_taint( $command );
 	    if ( $DEBUG ) {
 	      print STDERR "About to execute...\n $command\n";
 	    }
@@ -2680,12 +2683,12 @@ sub run_lagan
 		next;
 	      }
 	    $command .= " > ".$tempfile;
-	    CoGe::Accessory::Web::write_log("running ($count/$total_runs) ".$command, $cogeweb->logfile);
+	    CoGe_dev::Accessory::Web::write_log("running ($count/$total_runs) ".$command, $cogeweb->logfile);
 	    #time for execution
 #	    print STDERR "running $command\n";
 	    `$command`;
 	    system "/bin/chmod +rw $tempfile";
-	    my $report = new CoGe::Accessory::lagan_report({file=>$tempfile, %$parser_opts}) if -r $tempfile;
+	    my $report = new CoGe_dev::Accessory::lagan_report({file=>$tempfile, %$parser_opts}) if -r $tempfile;
 	    my @tmp = ($tempfile, $accn1, $accn2);
 	    if ($report)
 	    {
@@ -2730,7 +2733,7 @@ sub run_chaos
 	    
 	    $command .= " ".$params if $params;
 	    my $x = "";
-	    ($x,$command) = CoGe::Accessory::Web::check_taint( $command );
+	    ($x,$command) = CoGe_dev::Accessory::Web::check_taint( $command );
 	    if ( $DEBUG ) {
 	      print STDERR "About to execute...\n $command\n";
 	    }
@@ -2739,11 +2742,11 @@ sub run_chaos
 		next;
 	      }
 	    $command .= " > ".$tempfile;
-	    CoGe::Accessory::Web::write_log("running ($count/$total_runs) ".$command, $cogeweb->logfile);
+	    CoGe_dev::Accessory::Web::write_log("running ($count/$total_runs) ".$command, $cogeweb->logfile);
 	    #time for execution
 	    `$command`;
 	    system "/bin/chmod +rw $tempfile";
-	    my $report = new CoGe::Accessory::chaos_report({file=>$tempfile, %$parser_opts}) if -r $tempfile;
+	    my $report = new CoGe_dev::Accessory::chaos_report({file=>$tempfile, %$parser_opts}) if -r $tempfile;
 	    my @tmp = ($tempfile, $accn1, $accn2);
 	    if ($report)
 	    {
@@ -2829,18 +2832,18 @@ sub run_dialign
 		{
 		   $anchor_prog = $BLASTZ;
 		}
-		my ($x,$dialign_opts) = CoGe::Accessory::Web::check_taint( $params);
+		my ($x,$dialign_opts) = CoGe_dev::Accessory::Web::check_taint( $params);
 		$program_ran .= " using anchors from ".$parser_opts->{anchor_params}{prog};
 		unless ($x)
 		  {
 		    next;
 		  }
-		my ($y,$anchor_opts) = CoGe::Accessory::Web::check_taint($parser_opts->{anchor_params}{param_string});
+		my ($y,$anchor_opts) = CoGe_dev::Accessory::Web::check_taint($parser_opts->{anchor_params}{param_string});
 		unless ($y)
 		  {
 		    next;
 		  }
-		my $obj = new CoGe::Accessory::dialign_report::anchors({
+		my $obj = new CoGe_dev::Accessory::dialign_report::anchors({
 									file1=>$seqfile1,
 									file2=>$seqfile2,
 									base_name=>$cogeweb->basefilename,
@@ -2862,8 +2865,8 @@ sub run_dialign
 		next unless -r $seqfile1 && -r $seqfile2; #make sure these files exist
 		#put two fasta files into one for dialign
 		my $tmp;
-		($tmp, $seqfile1) = CoGe::Accessory::Web::check_taint($seqfile1);
-		($tmp, $seqfile2) = CoGe::Accessory::Web::check_taint($seqfile2);
+		($tmp, $seqfile1) = CoGe_dev::Accessory::Web::check_taint($seqfile1);
+		($tmp, $seqfile2) = CoGe_dev::Accessory::Web::check_taint($seqfile2);
 		`cat $seqfile1 > $seqfile`;
 		`cat $seqfile2 >> $seqfile`;
 		next unless $sets->[$i]{reference_seq} || $sets->[$j]{reference_seq};
@@ -2873,7 +2876,7 @@ sub run_dialign
 		$command .= " -fn ".$tempfile;
 		$command .= " $seqfile";
 		my $x = "";
-		($x,$command) = CoGe::Accessory::Web::check_taint( $command );
+		($x,$command) = CoGe_dev::Accessory::Web::check_taint( $command );
 		if ( $DEBUG ) {
 		  print STDERR "About to execute...\n $command\n";
 		}
@@ -2882,10 +2885,10 @@ sub run_dialign
 		    next;
 		  }
 		#time for execution
-		CoGe::Accessory::Web::write_log("running ($count/$total_runs) ".$command, $cogeweb->logfile);
+		CoGe_dev::Accessory::Web::write_log("running ($count/$total_runs) ".$command, $cogeweb->logfile);
 		`$command`;
 		system "/bin/chmod +rw $tempfile";
-		$report = new CoGe::Accessory::dialign_report({file=>$tempfile, %$parser_opts}) if -r $tempfile;
+		$report = new CoGe_dev::Accessory::dialign_report({file=>$tempfile, %$parser_opts}) if -r $tempfile;
 	      }
 	    my @tmp = ($tempfile, $accn1, $accn2);
 	    if ($report)
@@ -2939,7 +2942,7 @@ sub run_genomethreader
 		$command .= " -scorematrix $matrix";
 		$command .= " ".$params if $params;
 		my $x = "";
-		($x,$command) = CoGe::Accessory::Web::check_taint( $command );
+		($x,$command) = CoGe_dev::Accessory::Web::check_taint( $command );
 		if ( $DEBUG ) {
 		  print STDERR "About to execute...\n $command\n";
 		}
@@ -2948,11 +2951,11 @@ sub run_genomethreader
 		    next;
 		  }
 		$command .= " > ".$tempfile;
-		CoGe::Accessory::Web::write_log("running ($count/$total_runs) ".$command, $cogeweb->logfile);
+		CoGe_dev::Accessory::Web::write_log("running ($count/$total_runs) ".$command, $cogeweb->logfile);
 		#time for execution
 		`$command`;
 		system "/bin/chmod +rw $tempfile";
-		my $report = new CoGe::Accessory::GenomeThreader_report({file=>$tempfile, %$parser_opts}) if -r $tempfile;
+		my $report = new CoGe_dev::Accessory::GenomeThreader_report({file=>$tempfile, %$parser_opts}) if -r $tempfile;
 		#queries are protein sequences. need to convert their positions to relative genomic coordinates
 		#is the query a protein sequence?  if so, the query name should contain the fid tag
 		foreach my $hsp (@{$report->hsps})
@@ -3014,7 +3017,7 @@ sub write_fasta
     my ($seq) = uc($gbobj->sequence());
     if (-r $fullname && !$force)
       {
-	CoGe::Accessory::Web::write_log("sequence file $fullname already exists.", $cogeweb->logfile);
+	CoGe_dev::Accessory::Web::write_log("sequence file $fullname already exists.", $cogeweb->logfile);
 	return $fullname;
       }
     my $hdr = $gbobj->get_headerfasta( );
@@ -3030,13 +3033,13 @@ sub write_fasta
     $seq = $gbobj->mask_ngene( $seq ) if ( $mask &&  $mask eq "non-genic" );
     $seq = substr($seq, $start-1, $stop-$start+1);
     $gbobj->sequence($seq); #replace objects sequence with modified sequence
-    ($fullname) = CoGe::Accessory::Web::check_filename_taint( $fullname );
+    ($fullname) = CoGe_dev::Accessory::Web::check_filename_taint( $fullname );
     open(OUT, ">$fullname") or die "Couldn't open $fullname!: $!\n";
     print OUT "$hdr\n";
     print OUT $seq,"\n";
     close(OUT);
     system "/bin/chmod +rw $fullname";
-    CoGe::Accessory::Web::write_log("Created sequence file $fullname", $cogeweb->logfile);
+    CoGe_dev::Accessory::Web::write_log("Created sequence file $fullname", $cogeweb->logfile);
     return($fullname);
   }
 
@@ -3046,7 +3049,7 @@ sub get_bit_score_cutoff
     my $seq_length = $opts{seq_length};
     my $match = $opts{match};
     my $mismatch = $opts{mismatch};
-    my $feat = new CoGeX::Result::Feature;
+    my $feat = new CoGeX_dev::Result::Feature;
     my $bs = $feat->blast_bit_score(match=>$match, mismatch=>$mismatch, seq_length=>$seq_length);
     return $bs;
   }
@@ -3263,7 +3266,7 @@ sub gen_hsp_colors
   {
     my %opts = @_;
     my $num_seqs = $opts{num_seqs} || $NUM_SEQS;
-    my $prefs = $opts{prefs} || CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME, coge=>$coge);
+    my $prefs = $opts{prefs} || CoGe_dev::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME, coge=>$coge);
     my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'GEvo.tmpl');
     my $hsp_colors;
     my @colors = color_pallet(num_seqs=>$num_seqs, prefs=>$prefs);
@@ -3292,7 +3295,7 @@ sub color_pallet
     my $start = $opts{start} || [255,100,100];
     my $offset = $opts{offset} || 50;
     my $num_seqs = $opts{num_seqs} || $NUM_SEQS;
-    my $prefs = $opts{prefs} || CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME, coge=>$coge);
+    my $prefs = $opts{prefs} || CoGe_dev::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME, coge=>$coge);
     $prefs = {} unless $prefs;
     $start = [$prefs->{r1}, $prefs->{g1}, $prefs->{b1}] if defined $prefs->{r1} && defined $prefs->{g1} && defined $prefs->{b1};
 
@@ -3463,7 +3466,7 @@ sub add_url_seq
     
     my $total_num=$new_num+$old_num;
     
-    my $prefs = CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME, coge=>$coge);
+    my $prefs = CoGe_dev::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME, coge=>$coge);
     
     my $message;
     my @seq_nums;
@@ -3759,7 +3762,7 @@ sub get_algorithm_options
       {
 	$param_string = $chaos_string;
       }
-    my ($x, $clean_param_string) = CoGe::Accessory::Web::check_taint($param_string);
+    my ($x, $clean_param_string) = CoGe_dev::Accessory::Web::check_taint($param_string);
     unless ($x)
       {
 	print STDERR "user ".$USER->user_name."'s param_string: $param_string was tainted!\n";
@@ -3844,7 +3847,7 @@ sub dataset_search
 		next if $sources{$ds->id} && $sources{$ds->id}{typeid} < $typeid;
 		if ($dsgid && ! $dsid)
 		  {
-		    foreach my $item ($ds->dataset_groups)
+		    foreach my $item ($ds->genomes)
 		      {
 			$dsid = $ds->id if $dsgid == $item->id;
 		      }
@@ -3864,7 +3867,7 @@ sub dataset_search
 # <SELECT name = "dsid$num" id= "dsid$num" onChange="feat_search(['args__accn','accn$num','args__dsid', 'dsid$num', 'args__num','args__$num', 'args__featid'],['feat$num']);">
 # };
  	$html .= qq{
- <SELECT name = "dsid$num" id= "dsid$num" onChange="dataset_group_search(['args__dsid', 'dsid$num', 'args__dsgid', 'dsgid$num', 'args__gstid', 'gstid$num', 'args__num','args__$num', 'args__featid', 'featid$num'],[feat_search_chain]);">
+ <SELECT name = "dsid$num" id= "dsid$num" onChange="genome_search(['args__dsid', 'dsid$num', 'args__dsgid', 'dsgid$num', 'args__gstid', 'gstid$num', 'args__num','args__$num', 'args__featid', 'featid$num'],[feat_search_chain]);">
  };
  	foreach my $id (sort {$sources{$b}{version} <=> $sources{$a}{version} || $sources{$a}{typeid} <=> $sources{$b}{typeid}} keys %sources)
  	  {
@@ -3884,7 +3887,7 @@ sub dataset_search
     return ($html,$num, $featid);
   }
 
-sub dataset_group_search
+sub genome_search
   {
     my %opts = @_;
     my $dsid = $opts{dsid}; #dataset database id
@@ -3901,7 +3904,7 @@ sub dataset_group_search
       }
     my $html = qq{<SELECT name="dsgid$num" id="dsgid$num" onChange="feat_search(['args__accn','accn$num','args__dsid', 'dsid$num','args__dsgid', 'dsgid$num', 'args__num','args__$num', 'args__featid', 'args__$featid'],['feat$num']);">};
     my $count =0;
-    foreach my $dsg (sort {$b->version <=> $a->version || $a->type->id <=> $b->type->id} $ds->dataset_groups)
+    foreach my $dsg (sort {$b->version <=> $a->version || $a->type->id <=> $b->type->id} $ds->genomes)
       {
 	my $dsgid_tmp = $dsg->id;
 	my $title = $dsg->name;
@@ -3922,7 +3925,7 @@ sub save_settings_gevo
   {
     my %opts = @_;
     my $opts = Dumper \%opts;
-    my $item =CoGe::Accessory::Web::save_settings(opts=>$opts, user=>$USER, page=>$PAGE_NAME, coge=>$coge);
+    my $item =CoGe_dev::Accessory::Web::save_settings(opts=>$opts, user=>$USER, page=>$PAGE_NAME, coge=>$coge);
   }
 
 sub reset_settings_gevo
@@ -3957,7 +3960,7 @@ sub get_org_info
     my ($ds, $dsg, $gst);
     if ($dsgid)
       {
-	$dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	$dsg = $coge->resultset('Genome')->find($dsgid);
 	$gst = $dsg->type if $dsg;
       }
     elsif ($dsid)
@@ -3965,7 +3968,7 @@ sub get_org_info
 	my $ds = $coge->resultset('Dataset')->find($dsid);
         if ($ds)
           {
-	    foreach my $item ($ds->dataset_groups(chr=>$chr))
+	    foreach my $item ($ds->genomes(chr=>$chr))
 	      {
 	        if ($gstid)
 	          {
@@ -3983,7 +3986,7 @@ sub get_org_info
      }
     return "<span class=\"small alert\">Dataset group was not found</span>".qq{<input type="hidden" id="dsgid$num">} unless $dsg;
     my $dsg_menu = qq{<span class="small">Genome: </span><SELECT name="dsgid$num" id="dsgid$num">};
-    foreach my $item (sort {$b->version <=> $a->version || $a->type->id <=> $b->type->id} $dsg->organism->dataset_groups)
+    foreach my $item (sort {$b->version <=> $a->version || $a->type->id <=> $b->type->id} $dsg->organism->genomes)
       {
 	if ($dsg->restricted && !$USER->has_access_to_genome($dsg))
 	  {
@@ -4032,7 +4035,7 @@ sub feat_search
 	  }
 	if ($dsgid)
 	  {
-	    my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	    my $dsg = $coge->resultset('Genome')->find($dsgid);
 	    $gstid = $dsg->type->id if $dsg;
 	  }
       }
@@ -4169,7 +4172,7 @@ sub get_tiny_url
   {
     my %opts = @_;
     my $url = $opts{url};
-    my $tiny = CoGe::Accessory::Web::get_tiny_link(url=>$url);
+    my $tiny = CoGe_dev::Accessory::Web::get_tiny_link(url=>$url);
     my $html .= qq{<a href=$tiny onclick=window.open('$tiny') target =_new>$tiny<br>(See log file for full link)</a>};
     return $html;
   }
@@ -4193,7 +4196,7 @@ sub get_image_info
     my $idx = $opts{id};
     my $basefilename = $opts{basename};
     return ("no opts specified") unless ($idx && $basefilename);
-    $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$basefilename, tempdir=>$TEMPDIR); 
+    $cogeweb = CoGe_dev::Accessory::Web::initialize_basefile(basename=>$basefilename, tempdir=>$TEMPDIR); 
     my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
     my $query = qq{select * from image_info where id = $idx;};
     my ($id, $display_id, $name, $title, $px_witdth, $bpmin, $bpmax, $dsid, $chromosome, $rc, $px_height) = $dbh->selectrow_array($query);

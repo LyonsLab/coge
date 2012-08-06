@@ -5,16 +5,19 @@ use CGI::Ajax;
 use CGI::Carp 'fatalsToBrowser';
 use HTML::Template;
 use Data::Dumper;
-use CoGe::Accessory::LogUser;
-use CoGe::Accessory::Web;
-use CoGeX;
+use lib '/home/mbomhoff/CoGe/Accessory/lib'; #FIXME 8/2/12 remove
+use lib '/home/mbomhoff/CoGeX/lib'; #FIXME 8/2/12 remove
+
+use CoGe_dev::Accessory::LogUser;
+use CoGe_dev::Accessory::Web;
+use CoGeX_dev;
 use DBI;
 use Data::Dumper;
 no warnings 'redefine';
 
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME $DATE $DEBUG $USER $FORM $coge $COOKIE_NAME);
-$P         = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
+$P         = CoGe_dev::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
 $ENV{PATH} = $P->{COGEDIR};
 $PAGE_NAME = "GenomeView.pl";
 $DEBUG     = 0;
@@ -31,14 +34,14 @@ $DBPORT  = $P->{DBPORT};
 $DBUSER  = $P->{DBUSER};
 $DBPASS  = $P->{DBPASS};
 $connstr = "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
-$coge    = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
+$coge    = CoGeX_dev->connect( $connstr, $DBUSER, $DBPASS );
 
 $COOKIE_NAME = $P->{COOKIE_NAME};
 
 my ($cas_ticket) = $FORM->param('ticket');
 $USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas( ticket => $cas_ticket, coge => $coge, this_url => $FORM->url() ) if ($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user( cookie_name => $COOKIE_NAME, coge => $coge ) unless $USER;
+($USER) = CoGe_dev::Accessory::Web->login_cas( ticket => $cas_ticket, coge => $coge, this_url => $FORM->url() ) if ($cas_ticket);
+($USER) = CoGe_dev::Accessory::LogUser->get_user( cookie_name => $COOKIE_NAME, coge => $coge ) unless $USER;
 
 my $pj = new CGI::Ajax(
 												gen_html        => \&gen_html,
@@ -90,7 +93,7 @@ sub gen_body
 	$fid         = $form->param('fid')   if $form->param('fid');
 	$dsgid       = $form->param('dsgid') if $form->param('dsgid');
 	$show_legend = $form->param('sl')    if $form->param('sl');
-	$prefs = CoGe::Accessory::Web::load_settings( user => $USER, page => $PAGE_NAME, coge => $coge );
+	$prefs = CoGe_dev::Accessory::Web::load_settings( user => $USER, page => $PAGE_NAME, coge => $coge );
 	my ( $ds, $dsg, $gst );
 
 	if ($fid)
@@ -102,7 +105,7 @@ sub gen_body
 	}
 	if ($dsgid)
 	{
-		$dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+		$dsg = $coge->resultset('Genome')->find($dsgid);
 		return "unable to find genome for $dsgid" unless $dsg;
 		$gst = $dsg->type;
 		($ds) = $dsg->datasets( chr => $chr );
@@ -115,7 +118,7 @@ sub gen_body
 	}
 	unless ($dsg)
 	{
-		foreach my $dsgt ( sort { $a->genomic_sequence_type_id <=> $b->genomic_sequence_type_id } $ds->dataset_groups )
+		foreach my $dsgt ( sort { $a->genomic_sequence_type_id <=> $b->genomic_sequence_type_id } $ds->genomes )
 		{
 			last if $dsgid;
 			if ( $gstid && $dsgt->genomic_sequence_type_id == $gstid )
@@ -248,14 +251,14 @@ $layer_name.setVisibility(0);
 	my ($gevo_group) = $coge->resultset('AnnotationTypeGroup')->search( { name => "gevo link" } );
 	if ($gevo_group)
 	{
-		my ($anno) = $coge->resultset('Annotation')->count( { 'feature.dataset_id' => $dsid, 'annotation_type.annotation_type_group_id' => $gevo_group->id }, { join => [ 'feature', 'annotation_type' ], limit => 1 } );
+		my ($anno) = $coge->resultset('FeatureAnnotation')->count( { 'feature.dataset_id' => $dsid, 'annotation_type.annotation_type_group_id' => $gevo_group->id }, { join => [ 'feature', 'annotation_type' ], limit => 1 } );
 		$template->param( GEVO_LINK_LAYER => 1 ) if ($anno);
 	}
 
 	my ($tandem_group) = $coge->resultset('AnnotationTypeGroup')->search( { name => "Tandem duplicates" } );
 	if ($tandem_group)
 	{
-		my ($anno) = $coge->resultset('Annotation')->count( { 'feature.dataset_id' => $dsid, 'annotation_type.annotation_type_group_id' => $tandem_group->id }, { join => [ 'feature', 'annotation_type' ], limit => 1 } );
+		my ($anno) = $coge->resultset('FeatureAnnotation')->count( { 'feature.dataset_id' => $dsid, 'annotation_type.annotation_type_group_id' => $tandem_group->id }, { join => [ 'feature', 'annotation_type' ], limit => 1 } );
 		$template->param( LOCAL_DUP_LAYER => 1 ) if $anno;
 	}
 
@@ -312,7 +315,7 @@ sub save_options
 {
 	my %opts = @_;
 	my $opts = Dumper \%opts;
-	my $item = CoGe::Accessory::Web::save_settings( opts => $opts, user => $USER, page => $PAGE_NAME, coge => $coge );
+	my $item = CoGe_dev::Accessory::Web::save_settings( opts => $opts, user => $USER, page => $PAGE_NAME, coge => $coge );
 }
 
 sub get_genome_info
@@ -320,10 +323,10 @@ sub get_genome_info
 	my %opts  = @_;
 	my $dsgid = $opts{dsgid};
 	return " " unless $dsgid;
-	my $dsg = $coge->resultset("DatasetGroup")->find($dsgid);
-	return "Unable to create dataset_group object for id: $dsgid" unless $dsg;
-	my $html = "<span class=species>Datasets:</span><br><table>";
-	$html .= "<tr><th>ID<th>Name<th>Description";
+	my $dsg = $coge->resultset("Genome")->find($dsgid);
+	return "Unable to create genome object for id: $dsgid" unless $dsg;
+	my $html = "<span class=species>Datasets:</span><br><table class='small'>";
+	$html .= "<tr align='left'><th>ID<th>Name<th>Description";
 	foreach my $ds ( $dsg->datasets )
 	{
 		$html .= "<tr><td>" . $ds->id . "<td><a href=OrganismView.pl?dsid=" . $ds->id . " target=_new>" . $ds->name . "</a><td>" . $ds->description;

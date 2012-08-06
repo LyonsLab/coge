@@ -55,7 +55,7 @@ Can't retrieve a sequence without a chromosome!  Please specify a chromosome!
     print $usage;
     exit;
   }
-my ($dsg) = $coge->resultset('DatasetGroup')->find($dsgid);
+my ($dsg) = $coge->resultset('Genome')->find($dsgid);
 unless ($dsg)
   {
     print "Unable to retrieve a valid dataset group object for id $dsgid\n";

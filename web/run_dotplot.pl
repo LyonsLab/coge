@@ -2,14 +2,16 @@
 
 use strict;
 use CGI;
-use CoGeX;
 use Data::Dumper;
-use CoGe::Accessory::Web;
+use lib '/home/mbomhoff/CoGe/Accessory/lib'; #FIXME 8/2/12 remove
+use lib '/home/mbomhoff/CoGeX/lib'; #FIXME 8/2/12 remove
+use CoGeX_dev;
+use CoGe_dev::Accessory::Web;
 no warnings 'redefine';
 
 umask(0);
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $DATADIR $DIAGSDIR $DOTPLOT);
-$P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
+$P = CoGe_dev::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 $DEBUG = 0;
 $DIR = $P->{COGEDIR};
@@ -25,7 +27,7 @@ $DBPORT = $P->{DBPORT};
 $DBUSER = $P->{DBUSER};
 $DBPASS = $P->{DBPASS};
 $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
-$coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
+$coge = CoGeX_dev->connect($connstr, $DBUSER, $DBPASS );
 
 
 my $dsgid1 = $FORM->param('dsg1');
@@ -56,8 +58,8 @@ exit unless ($dsgid1 && $dsgid2 && defined $chr1 && defined $chr2 && $basename);
 my ($md51, $md52, $mask1, $mask2, $type1, $type2, $blast,$params) = $basename =~/(.*?)_(.*?)\.(\d+)-(\d+)\.(\w+)-(\w+)\.(\w+)\.dag\.?a?l?l?_(.*)/ ;
 
 
-my($dsg1) = $coge->resultset('DatasetGroup')->resolve($dsgid1);
-my($dsg2) = $coge->resultset('DatasetGroup')->resolve($dsgid2);
+my($dsg1) = $coge->resultset('Genome')->resolve($dsgid1);
+my($dsg2) = $coge->resultset('Genome')->resolve($dsgid2);
 exit unless $dsg1 && $dsg2;
 
 my $name1 = $dsg1->organism->name;
@@ -185,7 +187,7 @@ sub generate_dotplot
     $cmd .= qq{ -color_scheme $color_scheme} if defined $color_scheme;
     print STDERR "Running: ",$cmd,"\n" if $DEBUG;
     my $x;
-    ($x, $cmd) = CoGe::Accessory::Web::check_taint($cmd);
+    ($x, $cmd) = CoGe_dev::Accessory::Web::check_taint($cmd);
     #($cmd) = $cmd =~ /(.*)/;
     `$cmd` if $cmd;
     return $outfile if -r $outfile.".html";

@@ -197,7 +197,7 @@ function get_org_info_chain(val, val2)
     $('#allorg').show();
     }
   else {$('#allorg').hide();}
-  get_org_info(['args__oid','org_id'],[dataset_group_chain]);
+  get_org_info(['args__oid','org_id'],[genome_chain]);
  }
 
 
@@ -216,9 +216,9 @@ function get_dataset_name_chain(val)
 }
 
 
-function dataset_group_chain(val) {
+function genome_chain(val) {
    if (val) {$('#org_info').html(val);}
-   get_dataset_groups(['args__oid','org_id','args__dsgid','dsg_id'],[dataset_group_info_chain]);
+   get_genomes(['args__oid','org_id','args__dsgid','dsg_id'],[genome_info_chain]);
    $('#dsg_list').html('<hidden id=dsg_id>');;
    $('#dsg_count').empty();	
    $('#dsg_info').empty();	
@@ -232,11 +232,11 @@ function dataset_group_chain(val) {
    $('#get_seq').empty();
 }
 
-function dataset_group_info_chain(val, val2) {
+function genome_info_chain(val, val2) {
   if (val) {$('#dsg_list').html(val);}
   if (val2) {$('#dsg_count').html(val2);}
   $('#dsg_info').html('<span class="small alert">loading. . .</span>');
-  get_dataset_group_info(['args__dsgid','dsg_id'],[dataset_chain]);
+  get_genome_info(['args__dsgid','dsg_id'],[dataset_chain]);
 }
 
 function dataset_chain(val)
@@ -316,25 +316,21 @@ function timing(val){
     searchterm = "";
   }
 
-  if (pageObj.search && pageObj.search == searchterm)
-   {
-//    return;
-   }
   pageObj.search=searchterm;
   if (pageObj.time){
    clearTimeout(pageObj.time);
   }
   if (val == "org_name") 
    {
-     pageObj.time = setTimeout("get_organism_name_chain($('#org_name').val())",500);
+     pageObj.time = setTimeout("get_organism_name_chain($('#org_name').val())",1000);
    }
   else if (val == "org_desc")
    {
-     pageObj.time = setTimeout("get_organism_desc_chain($('#org_desc').val())",500);
+     pageObj.time = setTimeout("get_organism_desc_chain($('#org_desc').val())",1000);
    }
   else if (val == "ds_name")
    {
-     pageObj.time = setTimeout("get_dataset_name_chain($('#ds_name').val())",500);
+     pageObj.time = setTimeout("get_dataset_name_chain($('#ds_name').val())",1000);
    }
 }
 
@@ -342,7 +338,7 @@ $(document).ready(function(){
   $('#allorg').hide();
   if($('#org_name').val() && $('#org_name').val() != "Search") {
     $('#org_name').css({fontStyle: "normal"});
-    if($('#org_list').html()) {get_org_info(['args__oid','org_id'],[dataset_group_chain]);} else {timing('org_name')};
+    if($('#org_list').html()) {get_org_info(['args__oid','org_id'],[genome_chain]);} else {timing('org_name')};
   }  
   if($('#org_desc').val() && $('#org_desc').val() != "Search") {
     $('#org_desc').css({fontStyle: "normal"});
@@ -359,7 +355,7 @@ $(document).ready(function(){
   //set up jquery ajax
   $.ajaxSetup({
                 type: "GET",
-                url: "/CoGe/OrganismView.pl",
+                url: "/matt_coge/OrganismView.pl", //url: "/CoGe/OrganismView.pl", // FIXME mdb 8/2/12, hardcoded path
                 //dataType: "html",
                 cache: false,
         });
@@ -436,7 +432,7 @@ function make_dsg_public (dsgid) {
            },
         success : function(val) {
 	      if (val != 1) {alert(val);}
-	      get_dataset_group_info(['args__dsgid','dsg_id'],[dataset_chain]);
+	      get_genome_info(['args__dsgid','dsg_id'],[dataset_chain]);
 	},
       });
 }
@@ -450,7 +446,7 @@ function make_dsg_private (dsgid) {
            },
         success : function(val) {
 	      if (val != 1) {alert(val);}
-	      get_dataset_group_info(['args__dsgid','dsg_id'],[dataset_chain]);
+	      get_genome_info(['args__dsgid','dsg_id'],[dataset_chain]);
 	},
       });
 }
@@ -465,7 +461,7 @@ function edit_genome_info (dsgid) {
         success : function(val) {
 	      $('#edit_genome_info').html(val);
 	      $('#edit_genome_info').dialog('open');
-	      get_dataset_group_info(['args__dsgid','dsg_id'],[dataset_chain]);
+	      get_genome_info(['args__dsgid','dsg_id'],[dataset_chain]);
 	},
       });
 }
@@ -491,7 +487,7 @@ function update_genome_info (dsgid) {
 	      if (val != 1) {alert(val);}
 	      $('#edit_genome_info').html('');
 	      $('#edit_genome_info').dialog('close');
-	      get_dataset_group_info(['args__dsgid','dsg_id'],[dataset_chain]);
+	      get_genome_info(['args__dsgid','dsg_id'],[dataset_chain]);
 	},
       });
 }

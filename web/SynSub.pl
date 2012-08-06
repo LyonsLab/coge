@@ -2,23 +2,26 @@
 use strict;
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
-use CoGe::Accessory::LogUser;
 use HTML::Template;
 use Data::Dumper;
 use CGI::Ajax;
-#use CoGeX;
+
 use Benchmark;
-use CoGe::Accessory::Web;
-use CoGe::Accessory::genetic_code;
 use File::Path;
 use DBI;
 use POSIX;
 use Digest::MD5 qw(md5_base64);
 no warnings 'redefine';
 
+use lib '/home/mbomhoff/CoGe/Accessory/lib'; #FIXME 8/2/12 remove
+use lib '/home/mbomhoff/CoGeX/lib'; #FIXME 8/2/12 remove
+use CoGe_dev::Accessory::Web;
+use CoGe_dev::Accessory::genetic_code;
+use CoGe_dev::Accessory::LogUser;
+use CoGeX_dev;
 
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $DIAGSDIR $coge $COOKIE_NAME);
-$P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
+$P = CoGe_dev::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 $DIAGSDIR = $P->{DIAGSDIR};
 
@@ -38,14 +41,14 @@ $DBPORT = $P->{DBPORT};
 $DBUSER = $P->{DBUSER};
 $DBPASS = $P->{DBPASS};
 $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
-$coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
+$coge = CoGeX_dev->connect($connstr, $DBUSER, $DBPASS );
 
 $COOKIE_NAME = $P->{COOKIE_NAME};
 
 my ($cas_ticket) =$FORM->param('ticket');
 $USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
+($USER) = CoGe_dev::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
+($USER) = CoGe_dev::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
 
 my $pj = new CGI::Ajax(
 		       gen_data=>\&gen_data,
@@ -85,8 +88,8 @@ sub gen_body
     my $dsgid1 = $form->param('dsgid1');
     my $dsgid2 = $form->param('dsgid2');
     return "Need two dsgids to run." unless $dsgid1 && $dsgid2;
-    my ($dsg1) = $coge->resultset('DatasetGroup')->find($dsgid1);
-    my ($dsg2) = $coge->resultset('DatasetGroup')->find($dsgid2);
+    my ($dsg1) = $coge->resultset('Genome')->find($dsgid1);
+    my ($dsg2) = $coge->resultset('Genome')->find($dsgid2);
 
     my $color_type = $form->param('ct'); #color type for matrices output
     $color_type = "RYB" unless $color_type;
@@ -191,7 +194,6 @@ sub get_counts
     my $org2_wobble_total=0;
 
     my $dbh = DBI->connect("dbi:SQLite:dbname=$sqlite","","");
-    print STDERR $sqlite,"\n";
     my $select = qq{SELECT protein_align_1, protein_align_2, DNA_align_1, DNA_align_2 FROM ks_data};
     my $sth = $dbh->prepare($select);
     $sth->execute;
@@ -347,7 +349,7 @@ sub gen_matrix_output_html
     my $org1_counts = $opts{org1_counts};
     my $org2_counts = $opts{org2_counts};
     my $color_type = $opts{color_type};
-    my $code = CoGe::Accessory::genetic_code->code;
+    my $code = CoGe_dev::Accessory::genetic_code->code;
     $code = $code->{code};
     my $html;
     my @order;
@@ -369,7 +371,7 @@ sub gen_matrix_output_html
       }
     else
       {
-	my $aa_sort = CoGe::Accessory::genetic_code->sort_aa_by_gc();
+	my $aa_sort = CoGe_dev::Accessory::genetic_code->sort_aa_by_gc();
 	@order = sort {$aa_sort->{$b} <=> $aa_sort->{$a} || $a cmp $b}keys %$aa_sort;
       }
 

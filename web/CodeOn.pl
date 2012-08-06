@@ -1,27 +1,29 @@
 #! /usr/bin/perl -w
 
 use strict;
+use lib '/home/mbomhoff/CoGe/Accessory/lib'; #FIXME 8/2/12 remove
+use lib '/home/mbomhoff/CoGeX/lib'; #FIXME 8/2/12 remove
+use CoGe_dev::Accessory::LogUser;
+use CoGe_dev::Accessory::Web;
+use CoGeX_dev;
+use CoGeX_dev::Result::Feature;
 use CGI;
 use CGI::Ajax;
-use CoGeX;
-use CoGeX::Result::Feature;
 use Data::Dumper;
-use CoGe::Accessory::LogUser;
-use CoGe::Accessory::Web;
 use HTML::Template;
 use URI::Escape;
 use Spreadsheet::WriteExcel;
 use Digest::MD5 qw(md5_base64);
 use Benchmark;
 use DBIxProfiler;
-use CoGe::Accessory::genetic_code;
+use CoGe_dev::Accessory::genetic_code;
 use Statistics::Basic::Mean;
 use POSIX;
 no warnings 'redefine';
 
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb $FORM $COOKIE_NAME);
 
-$P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
+$P = CoGe_dev::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
@@ -35,14 +37,14 @@ $DBPORT = $P->{DBPORT};
 $DBUSER = $P->{DBUSER};
 $DBPASS = $P->{DBPASS};
 $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
-$coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
+$coge = CoGeX_dev->connect($connstr, $DBUSER, $DBPASS );
 
 $COOKIE_NAME = $P->{COOKIE_NAME};
 
 my ($cas_ticket) =$FORM->param('ticket');
 $USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
+($USER) = CoGe_dev::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
+($USER) = CoGe_dev::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
 
 
 #$coge->storage->debugobj(new DBIxProfiler());
@@ -134,7 +136,7 @@ sub get_orgs
     return map {$_->id} @db if $id_only;
     #my @db = $name ? $coge->resultset('Organism')->search({name=>{like=>"%".$name."%"}})
     #  : $coge->resultset('Organism')->all();
-#    ($USER) = CoGe::Accessory::LogUser->get_user();
+#    ($USER) = CoGe_dev::Accessory::LogUser->get_user();
     my @opts;
     foreach my $item (sort {uc($a->name) cmp uc($b->name)} @db)
       {
@@ -181,7 +183,7 @@ sub go{
 
   my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'CodeOn.tmpl');
   $template->param(RESULTS=>1);
-  my $aa_sort = CoGe::Accessory::genetic_code->sort_aa_by_gc();
+  my $aa_sort = CoGe_dev::Accessory::genetic_code->sort_aa_by_gc();
   my $table_head = "<th>".join ("<th>", "GC% (feat count)", map {$_."% (".$data->{$_}{bin_count}.")" } sort {$a<=>$b}keys %$data);
   $template->param(GC_HEAD=>$table_head);
   my $max_aa = 0;
@@ -248,17 +250,17 @@ sub get_features
       {
         return $weak_query;
       }
-#    ($USER) = CoGe::Accessory::LogUser->get_user();
+#    ($USER) = CoGe_dev::Accessory::LogUser->get_user();
 
     my $search ={};
     $search->{feature_type_id}=3;
-    $search->{'dataset_group.organism_id'}={IN=>$oids} if $oids && @$oids;
+    $search->{'genome.organism_id'}={IN=>$oids} if $oids && @$oids;
 #    unless ($org_id)
 #      {
 	$search->{'organism.name'}={like=>"%".$org_name."%"} if $org_name;
 	$search->{'organism.description'}={like=>"%".$org_desc."%"} if $org_desc;
 #      }
-    my $join = {join=>[{feature=>{'dataset'=>{'dataset_connectors'=>{'dataset_group'=>'organism'}}}}]};
+    my $join = {join=>[{feature=>{'dataset'=>{'dataset_connectors'=>{'genome'=>'organism'}}}}]};
 #    push @{$join->{join}}, 'annotations' if $anno;#=>['annotation',]};
 #    push @{$join->{join}}, 'feature_names' if $accn;#=>['annotation',]};
 
@@ -303,7 +305,7 @@ sub get_features
       }
     if ($anno)
       {
-	map {$feats{$_->feature->id}= $_->feature} $coge->resultset('Annotation')->search($search,$join)->search_literal('MATCH(annotation) AGAINST (?)',$anno);
+	map {$feats{$_->feature->id}= $_->feature} $coge->resultset('FeatureAnnotation')->search($search,$join)->search_literal('MATCH(annotation) AGAINST (?)',$anno);
       }
 
     if ($oids && @$oids && $oids->[0] eq "all")
@@ -318,7 +320,7 @@ sub get_features
       {
 	my $org = $coge->resultset('Organism')->find($oid);
 	next unless $org;
-	foreach my $dsg ($org->dataset_groups)
+	foreach my $dsg ($org->genomes)
 	  {
             next if $dsg->restricted && !$USER->has_access_to_genome($dsg);
 	    $dsgs{$dsg->id}=$dsg;
@@ -327,7 +329,7 @@ sub get_features
     
     foreach my $dsgid (keys %dsgs)
       {
-	my $dsg = $dsgs{$dsgid} eq "1" ? $coge->resultset('DatasetGroup')->find($dsgid) : $dsgs{$dsgid};
+	my $dsg = $dsgs{$dsgid} eq "1" ? $coge->resultset('Genome')->find($dsgid) : $dsgs{$dsgid};
 	next unless $dsg;
 	$dsgs{$dsgid}=$dsg;
 	foreach my $ds($dsg->datasets)

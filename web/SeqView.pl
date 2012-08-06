@@ -3,23 +3,25 @@
 use strict;
 use CGI;
 use CGI::Ajax;
-use CoGe::Accessory::LogUser;
-use CoGe::Accessory::Web;
-use CoGeX;
-use CoGeX::Result::Feature;
-use Digest::MD5 qw(md5_base64);
-use CoGeX::Result::Dataset;
 use HTML::Template;
 use Text::Wrap qw($columns &wrap);
 use Data::Dumper;
 use POSIX;
 use DBIxProfiler;
+use Digest::MD5 qw(md5_base64);
+
 no warnings 'redefine';
+
+use lib '/home/mbomhoff/CoGe/Accessory/lib'; #FIXME 8/2/12 remove
+use lib '/home/mbomhoff/CoGeX/lib'; #FIXME 8/2/12 remove
+use CoGe_dev::Accessory::LogUser;
+use CoGe_dev::Accessory::Web;
+use CoGeX_dev;
 
 
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $TEMPDIR $TEMPURL $FORM $USER $DATE $coge $COOKIE_NAME);
 
-$P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
+$P = CoGe_dev::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 
 $TEMPDIR = $P->{TEMPDIR};
@@ -35,14 +37,14 @@ $DBPORT = $P->{DBPORT};
 $DBUSER = $P->{DBUSER};
 $DBPASS = $P->{DBPASS};
 $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
-$coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
+$coge = CoGeX_dev->connect($connstr, $DBUSER, $DBPASS );
 
 $COOKIE_NAME = $P->{COOKIE_NAME};
 
 my ($cas_ticket) =$FORM->param('ticket');
 $USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
+($USER) = CoGe_dev::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
+($USER) = CoGe_dev::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
 
 my $pj = new CGI::Ajax(
 		       gen_html=>\&gen_html,
@@ -251,10 +253,9 @@ sub get_seq
     if ($featid)
       {
 	my $feat = $coge->resultset('Feature')->find($featid);
-        my ($dsg) = $feat->dataset->dataset_groups;
+        my ($dsg) = $feat->dataset->genomes;
 	return "Restricted Access" if $dsg->restricted && !$USER->has_access_to_genome($dsg);
 #	return "Restricted Access" if $feat->dataset->restricted && !$USER->has_access_to_dataset($feat->dataset);
-	print STDERR "here!\n";
 	($fasta,$seq) = ref($feat) =~ /Feature/i ?
 	  $feat->fasta(
 		       prot=>$pro,
@@ -268,14 +269,13 @@ sub get_seq
 		      )
 	    :
 	      ">Unable to retrieve Feature object for id: $featid\n";
-	print STDERR "!".$seq."!\n";
 #	$seq = $rc ? color(seq=>$seq, upstream=>$downstream, downstream=>$upstream) : color(seq=>$seq, upstream=>$upstream, downstream=>$downstream);
 	$fasta = $fasta."\n".$seq."\n";
       }
     elsif ($dsid)
       {
 	my $ds = $coge->resultset('Dataset')->find($dsid);
-        my ($dsg) = $ds->dataset_groups;
+        my ($dsg) = $ds->genomes;
 	return "Restricted Access" if $dsg->restricted && !$USER->has_access_to_genome($dsg);
 	$fasta = ref ($ds) =~ /dataset/i ? 
 	  $ds->fasta
@@ -293,10 +293,10 @@ sub get_seq
       }
     elsif ($dsgid)
       {
-	my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	my $dsg = $coge->resultset('Genome')->find($dsgid);
 	return "Unable to find genome for $dsgid" unless $dsg;
         return "Restricted Access" if $dsg->restricted && !$USER->has_access_to_genome($dsg);
-	$fasta = ref ($dsg) =~ /datasetgroup/i ? 
+	$fasta = ref ($dsg) =~ /genome/i ? 
 	  $dsg->fasta
 	    (
 	     start=>$start,
@@ -388,7 +388,7 @@ sub find_feats
 	my $dsgid = $opts{dsgid};
 	if ($dsgid)
 	  {
-	    my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	    my $dsg = $coge->resultset('Genome')->find($dsgid);
 	    return unless $dsg;
 	    $dsid = $dsg->datasets(chr=>$chr)->id;
 	    $gstid = $dsg->type->id;

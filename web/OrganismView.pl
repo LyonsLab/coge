@@ -2,12 +2,14 @@
 use strict;
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
-use CoGe::Accessory::LogUser;
-use CoGe::Accessory::Web;
+use lib '/home/mbomhoff/CoGe/Accessory/lib'; #FIXME 8/2/12 remove
+use lib '/home/mbomhoff/CoGeX/lib'; #FIXME 8/2/12 remove
+use CoGe_dev::Accessory::LogUser;
+use CoGe_dev::Accessory::Web;
+use CoGeX_dev;
 use HTML::Template;
 use Data::Dumper;
 use CGI::Ajax;
-use CoGeX;
 use Benchmark;
 use File::Path;
 use Digest::MD5 qw(md5_base64);
@@ -19,7 +21,7 @@ use Sort::Versions;
 no warnings 'redefine';
 
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $coge $HISTOGRAM %FUNCTION $P $COOKIE_NAME $SERVER);
-$P = CoGe::Accessory::Web::get_defaults("$ENV{HOME}/coge.conf");
+$P = CoGe_dev::Accessory::Web::get_defaults("$ENV{HOME}/coge.conf");
 $ENV{PATH} = $P->{COGEDIR};
 $ENV{irodsEnvFile} = "/var/www/.irods/.irodsEnv";
 
@@ -46,7 +48,7 @@ $DBPORT = $P->{DBPORT};
 $DBUSER = $P->{DBUSER};
 $DBPASS = $P->{DBPASS};
 $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
-$coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
+$coge = CoGeX_dev->connect($connstr, $DBUSER, $DBPASS );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 
@@ -54,13 +56,13 @@ $COOKIE_NAME = $P->{COOKIE_NAME};
 
 my ($cas_ticket) =$FORM->param('ticket');
 $USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
+($USER) = CoGe_dev::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
+($USER) = CoGe_dev::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
 
 #my $pj = new CGI::Ajax(
 %FUNCTION = (
-	     get_dataset_groups=>\&get_dataset_groups,
-	     get_dataset_group_info=>\&get_dataset_group_info,
+	     get_genomes=>\&get_genomes,
+	     get_genome_info=>\&get_genome_info,
 	     get_dataset => \&get_dataset,
 	     get_dataset_info => \&get_dataset_info,
 	     get_dataset_chr_info => \&get_dataset_chr_info,
@@ -163,10 +165,9 @@ sub gen_body
     my $dsname = $form->param('dsname');
     my $dsid = $form->param('dsid');
     my $dsgid = $form->param('dsgid');
-    my ($dsg) = $coge->resultset('DatasetGroup')->find($dsgid) if $dsgid;
+    my ($dsg) = $coge->resultset('Genome')->find($dsgid) if $dsgid;
 
     $template->param(SERVER=>$SERVER);
-
     $org = $dsg->organism if $dsg;
     $org_name = $org->name if $org;
     $org_name = "Search" unless $org_name;
@@ -174,6 +175,7 @@ sub gen_body
     $desc = "Search" unless $desc;
     $template->param(ORG_DESC=>$desc) if $desc;
     $org_name = "" if $org_name =~ /Search/;
+
     my ($org_list, $org_count) = get_orgs(name=>$org_name, oid=>$oid, dsgid=>$dsgid);
     $template->param(ORG_LIST=>$org_list);
     $template->param(ORG_COUNT=>$org_count);
@@ -198,7 +200,7 @@ sub make_genome_public
     my $dsgid = $opts{dsgid};
     return "No DSGID specified" unless $dsgid;
     return "Permission denied." unless $USER->is_admin || $USER->is_owner(dsg=>$dsgid);
-    my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+    my $dsg = $coge->resultset('Genome')->find($dsgid);
     $dsg->restricted(0);
     $dsg->update;
     foreach my $ds ($dsg->datasets)
@@ -215,7 +217,7 @@ sub make_genome_private
     my $dsgid = $opts{dsgid};
     return "No DSGID specified" unless $dsgid;
     return "Permission denied." unless $USER->is_admin || $USER->is_owner(dsg=>$dsgid);
-    my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+    my $dsg = $coge->resultset('Genome')->find($dsgid);
     $dsg->restricted(1);
     $dsg->update;
     foreach my $ds ($dsg->datasets)
@@ -231,7 +233,7 @@ sub update_genome_info
     my $dsgid = $opts{dsgid};
     return "No DSGID specified" unless $dsgid;
     return "Permission denied." unless $USER->is_admin || $USER->is_owner(dsg=>$dsgid);
-    my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+    my $dsg = $coge->resultset('Genome')->find($dsgid);
     my $name = $opts{name};
     my $desc = $opts{desc};
     my $ver = $opts{ver};
@@ -253,7 +255,7 @@ sub edit_genome_info
    my $dsgid = $opts{dsgid};
     return "No DSGID specified" unless $dsgid;
     return "Permission denied." unless $USER->is_admin || $USER->is_owner(dsg=>$dsgid);
-    my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+    my $dsg = $coge->resultset('Genome')->find($dsgid);
     my $name = $dsg->name;
     my $desc = $dsg->description;
     my $ver = $dsg->version;
@@ -337,7 +339,7 @@ sub get_orgs
     my $desc = $opts{desc};
     my $oid = $opts{oid};
     my $dsgid = $opts{dsgid};
-    my $dsg = $coge->resultset('DatasetGroup')->find($dsgid) if $dsgid;
+    my $dsg = $coge->resultset('Genome')->find($dsgid) if $dsgid;
     if($dsg && $dsg->restricted){
 	if(!$USER->has_access_to_genome($dsg)){
 	    $dsg=undef;
@@ -380,7 +382,7 @@ sub get_orgs
 	return $html,0;
       }
     $count = scalar @db unless $count;
-    $html .= qq{<SELECT class="ui-widget-content ui-corner-all" id="org_id" SIZE="5" MULTIPLE onChange="get_org_info(['args__oid','org_id'],[dataset_group_chain])" >\n};
+    $html .= qq{<SELECT class="ui-widget-content ui-corner-all" id="org_id" SIZE="5" MULTIPLE onChange="get_org_info(['args__oid','org_id'],[genome_chain])" >\n};
     $html .= join ("\n", @opts);
     $html .= "\n</SELECT>\n";
     $html =~ s/OPTION/OPTION SELECTED/ unless $html =~ /SELECTED/;
@@ -399,7 +401,7 @@ sub update_genomelist
 	my %opts = @_;
 	my $genome_id   = $opts{genomeid};
 	return unless $genome_id;
-	my $dsg = $coge->resultset("DatasetGroup")->find($genome_id);
+	my $dsg = $coge->resultset("Genome")->find($genome_id);
 	my $genome_name;
 	$genome_name = $dsg->name;
 	$genome_name = $dsg->organism->name unless $genome_name;
@@ -410,6 +412,7 @@ sub update_genomelist
 sub get_org_info
   {
     my %opts = @_;
+
     my $oid = $opts{oid};
     return " " unless $oid;
     my $org = $coge->resultset("Organism")->find($oid);
@@ -452,7 +455,7 @@ sub get_genome_list_for_org
   if ($org)
     {
       my @dsg;
-      foreach my $dsg ($org->dataset_groups)
+      foreach my $dsg ($org->genomes)
 	{
 	  next if $dsg->restricted && !$USER->has_access_to_genome($dsg);
 	  $dsg->name($org->name) unless $dsg->name;
@@ -466,7 +469,7 @@ sub get_genome_list_for_org
 
 
 
-sub get_dataset_groups
+sub get_genomes
     {
       my %opts = @_;
       my $oid = $opts{oid};
@@ -478,21 +481,18 @@ sub get_dataset_groups
       if ($org)
 	{
 	  my @dsg;
-	  foreach my $dsg ($org->dataset_groups)
+	  foreach my $dsg ($org->genomes)
 	    {
 	      next if $dsg->restricted && !$USER->has_access_to_genome($dsg);
 	      push @dsg, $dsg
 	    }
 	  foreach my $dsg (@dsg)
 	    {
-	      $dsg->name($org->name) unless $dsg->name;
 	      $selected{$dsg->id} = " " unless $selected{$dsg->id};
 	    }
 	  foreach my $item (sort {versioncmp($b->version,$a->version) || $a->type->id <=> $b->type->id || $a->name cmp $b->name || $b->id cmp $a->id} @dsg)
 	    {
-	      my $string = "<OPTION value=\"".$item->id."\" ".$selected{$item->id} .">";
-	      $string .= "(P)" if $item->restricted;
-	      $string .= $item->name." (v".$item->version.", dsgid".$item->id. "): ". $item->genomic_sequence_type->name."</OPTION>";
+	      my $string = "<OPTION value=\"".$item->id."\" ".$selected{$item->id} .">".$item->info."</OPTION>";
 	      push @opts, $string;
 	    }
 	}
@@ -500,7 +500,7 @@ sub get_dataset_groups
       if (@opts) 
       {
 #	$html = qq{<FONT CLASS ="small">Dataset group count: }.scalar (@opts).qq{</FONT>\n<BR>\n};
-	$html .= qq{<SELECT class="ui-widget-content ui-corner-all" id="dsg_id" SIZE="5" MULTIPLE onChange="get_dataset_group_info(['args__dsgid','dsg_id'],[dataset_chain]);" >\n};
+	$html .= qq{<SELECT class="ui-widget-content ui-corner-all" id="dsg_id" SIZE="5" MULTIPLE onChange="get_genome_info(['args__dsgid','dsg_id'],[dataset_chain]);" >\n};
 	$html .= join ("\n", @opts);
 	$html .= qq{\n</SELECT><br/><br/>	<span class="ui-button ui-corner-all" id=all onClick="add_all_genomes(); ">Add all to Genome List</span><br/>\n};
 	$html =~ s/OPTION/OPTION SELECTED/ unless $html =~ /SELECTED/i;
@@ -516,7 +516,7 @@ sub add_to_irods
   {
     my %opts = @_;
     my $dsgid = $opts{dsgid};
-    my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+    my $dsg = $coge->resultset('Genome')->find($dsgid);
     my $add_to_irods_bin = $P->{BINDIR}."/irods/add_to_irods.pl";
     my $cmd = $add_to_irods_bin." -file ".$dsg->file_path;
     my $new_name = $dsg->organism->name." ".$dsg->id.".faa";
@@ -535,13 +535,13 @@ sub add_to_irods
     return "Complete!"
   }
 
-sub get_dataset_group_info
+sub get_genome_info
   {
     my %opts = @_;
     my $dsgid = $opts{dsgid};
     return " " unless $dsgid;
-    my $dsg = $coge->resultset("DatasetGroup")->find($dsgid);
-    return "Unable to get dataset_group object for id: $dsgid" unless $dsg;
+    my $dsg = $coge->resultset("Genome")->find($dsgid);
+    return "Unable to get genome object for id: $dsgid" unless $dsg;
     my $html;
     my $genome_message;
     $genome_message = $dsg->message if $dsg->message;
@@ -608,10 +608,8 @@ sub get_dataset_group_info
     if (my $exp_count = $dsg->experiments->count )
     {
     	$html .= "<tr><td>Experiment count:</td>";
-    	$html .= qq{<td>$exp_count</td></tr>};
+		$html .= "<td><span class=link onclick=window.open('ExperimentList.pl?dsgid=".$dsg->id."')>".$exp_count."</span></td></tr>";
     }
-
-	
 	
     my $feat_string = qq{
 <tr><td><div id=dsg_feature_count class="small link" onclick="gen_data(['args__loading...'],['dsg_features']); get_feature_counts(['args__dsgid','dsg_id', 'args__gstid','gstid'],['dsg_features']);" >Click for Features</div>};
@@ -622,7 +620,7 @@ sub get_dataset_group_info
 	$html .= qq{<span class="ui-button ui-corner-all ui-button-go" onClick="make_dsg_public('$dsgid')">Make Genome Public</span>} if $dsg->restricted;
 	$html .= qq{<span class="ui-button ui-corner-all ui-button-go" onClick="make_dsg_private('$dsgid')">Make Genome Private</span>} if !$dsg->restricted;
 	$html .= qq{<span class="ui-button ui-corner-all ui-button-go" onClick="edit_genome_info('$dsgid')">Edit Genome Info</span>};
-	my $users_with_access = join (", ", map {"<span class=link onclick=window.open('Groups.pl?ugid=".$_->id."')>".$_->name."</span>"} $dsg->user_groups);
+	my $users_with_access = join (", ", map {"<span class=link onclick=window.open('Groups.pl?ugid=".$_->id."')>".$_->name."</span>"} $dsg->lists);
 	$html .= "User Groups with Access: $users_with_access" if $users_with_access;
       }
     $html .= qq{</div></td></tr>} ;
@@ -649,7 +647,7 @@ sub get_dataset
     my @opts;
     if ($dsgid)
       {
-	my $dsg = $coge->resultset("DatasetGroup")->find($dsgid);
+	my $dsg = $coge->resultset("Genome")->find($dsgid);
 	@opts = map {"<OPTION value=\"".$_->id."\">".$_->name. " (v".$_->version.", dsid".$_->id.")</OPTION>"} sort {$b->version <=> $a->version || $a->name cmp $b->name} $dsg->datasets if $dsg;
 
 	}
@@ -860,7 +858,7 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
       }
     elsif ($dsgid)
       {
-	my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	my $dsg = $coge->resultset('Genome')->find($dsgid);
 	$name = "dataset group ";
 	$name .= $dsg->name ? $dsg->name : $dsg->organism->name;
 	$query = qq{
@@ -868,7 +866,7 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
   FROM feature
   JOIN feature_type ft using (feature_type_id)
   JOIN dataset_connector dc using (dataset_id)
- WHERE dataset_group_id = $dsgid
+ WHERE genome_id = $dsgid
   GROUP BY ft.name
 
 };
@@ -889,7 +887,7 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
       }
     my $gc_args;
     $gc_args = "chr: '$chr'," if defined $chr;
-    $gc_args .= "dsid: $dsid," if $dsid; #set a var so that histograms are only calculated for the dataset and not hte dataset_group
+    $gc_args .= "dsid: $dsid," if $dsid; #set a var so that histograms are only calculated for the dataset and not hte genome
     $gc_args .= "typeid: ";
     my $feat_list_string = $dsid ? "dsid=$dsid" : "dsgid=$dsgid";
     $feat_list_string .= ";chr=$chr" if defined $chr;
@@ -984,7 +982,7 @@ sub get_gc_for_feature_type
     push @dsids, $1 if $dsid && $dsid =~ /(\d+)/;
     if ($dsgid)
       {
-	my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	my $dsg = $coge->resultset('Genome')->find($dsgid);
 	unless ($dsg)
 	  {
 	    my $error =  "unable to create dsg object using id $dsgid\n";
@@ -1021,8 +1019,8 @@ sub get_gc_for_feature_type
 	    %seqs= map {$_, $ds->genomic_sequence(chr=>$_, seq_type=>$gstid)} $ds->chromosomes;
 	  }
 	my $t2 = new Benchmark;
-	my @feats = $ds->features($search,{join=>['locations', {'dataset'=>{'dataset_connectors'=>'dataset_group'}}],
-					   prefetch=>['locations',{'dataset'=>{'dataset_connectors'=>'dataset_group'}}],
+	my @feats = $ds->features($search,{join=>['locations', {'dataset'=>{'dataset_connectors'=>'genome'}}],
+					   prefetch=>['locations',{'dataset'=>{'dataset_connectors'=>'genome'}}],
 					  });
  	foreach my $feat (@feats)
  	  {
@@ -1092,7 +1090,7 @@ Type: <select id=feat_hist_type>
     $info =~ s/>Per/ selected>Per/ if $hist_type =~/per/;
     my $gc_args;
     $gc_args = "chr: '$chr'," if defined $chr;
-    $gc_args .= "dsid: $dsid," if $dsid; #set a var so that histograms are only calculated for the dataset and not hte dataset_group
+    $gc_args .= "dsid: $dsid," if $dsid; #set a var so that histograms are only calculated for the dataset and not hte genome
     $gc_args .= "typeid: '$typeid'";
     $info .= qq{<span class="link" onclick="get_feat_gc({$gc_args})">Regenerate histogram</span>};
     $info .= "</div>";
@@ -1129,7 +1127,7 @@ sub get_gc_for_chromosome
       }
     if ($dsgid)
       {
-	my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	my $dsg = $coge->resultset('Genome')->find($dsgid);
 	$gstid = $dsg->type->id;
 	map {push @ds,$_} $dsg->datasets;
       }
@@ -1181,7 +1179,7 @@ sub get_gc_for_noncoding
     push @dsids, $dsid if $dsid;
     if ($dsgid)
       {
-	my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	my $dsg = $coge->resultset('Genome')->find($dsgid);
 	unless ($dsg)
 	  {
 	    my $error =  "unable to create dsg object using id $dsgid\n";
@@ -1211,8 +1209,8 @@ sub get_gc_for_noncoding
 	  {
 	    map {$seqs{$_}= $ds->genomic_sequence(chr=>$_, seq_type=>$gstid)} $ds->chromosomes;
 	  }
-	foreach my $feat ($ds->features($search,{join=>['locations', {'dataset'=>{'dataset_connectors'=>'dataset_group'}}],
-						 prefetch=>['locations',{'dataset'=>{'dataset_connectors'=>'dataset_group'}}]}))
+	foreach my $feat ($ds->features($search,{join=>['locations', {'dataset'=>{'dataset_connectors'=>'genome'}}],
+						 prefetch=>['locations',{'dataset'=>{'dataset_connectors'=>'genome'}}]}))
 	  {
 	    foreach my $loc ($feat->locations)
 	      {
@@ -1278,7 +1276,7 @@ sub get_codon_usage
     push @dsids, $dsid if $dsid;
     if ($dsgid)
       {
-	my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	my $dsg = $coge->resultset('Genome')->find($dsgid);
 	unless ($dsg)
 	  {
 	    my $error =  "unable to create dsg object using id $dsgid\n";
@@ -1307,8 +1305,8 @@ sub get_codon_usage
 	  {
 	    %seqs= map {$_, $ds->genomic_sequence(chr=>$_, seq_type=>$gstid)} $ds->chromosomes;
 	  }
-	foreach my $feat ($ds->features($search,{join=>["feature_type",'locations', {'dataset'=>{'dataset_connectors'=>'dataset_group'}}],
-						 prefetch=>['locations',{'dataset'=>{'dataset_connectors'=>'dataset_group'}}]}))
+	foreach my $feat ($ds->features($search,{join=>["feature_type",'locations', {'dataset'=>{'dataset_connectors'=>'genome'}}],
+						 prefetch=>['locations',{'dataset'=>{'dataset_connectors'=>'genome'}}]}))
 	  {
 	    my $seq = substr($seqs{$feat->chromosome}, $feat->start-1, $feat->stop-$feat->start+1);
 	    $feat->genomic_sequence(seq=>$seq);
@@ -1324,7 +1322,7 @@ sub get_codon_usage
 
     #Josh put some stuff in here so he could get raw numbers instead of percentages for aa usage. He should either make this an option or delete this code when he is done. REMIND HIM ABOUT THIS IF YOU ARE EDITING ORGVIEW!
     my $html = "Codon Usage: $code_type";
-    $html .= CoGe::Accessory::genetic_code->html_code_table(data=>\%codons, code=>$code);
+    $html .= CoGe_dev::Accessory::genetic_code->html_code_table(data=>\%codons, code=>$code);
     return $html
   }
 
@@ -1345,7 +1343,7 @@ sub get_aa_usage
     push @dsids, $dsid if $dsid;
     if ($dsgid)
       {
-	my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	my $dsg = $coge->resultset('Genome')->find($dsgid);
 	unless ($dsg)
 	  {
 	    my $error =  "unable to create dsg object using id $dsgid\n";
@@ -1376,8 +1374,8 @@ sub get_aa_usage
 	  {
 	    %seqs= map {$_, $ds->genomic_sequence(chr=>$_, seq_type=>$gstid)} $ds->chromosomes;
 	  }
-	foreach my $feat ($ds->features($search,{join=>["feature_type",'locations', {'dataset'=>{'dataset_connectors'=>'dataset_group'}}],
-						 prefetch=>['locations',{'dataset'=>{'dataset_connectors'=>'dataset_group'}}]}))
+	foreach my $feat ($ds->features($search,{join=>["feature_type",'locations', {'dataset'=>{'dataset_connectors'=>'genome'}}],
+						 prefetch=>['locations',{'dataset'=>{'dataset_connectors'=>'genome'}}]}))
 	  {
 	    my $seq = substr($seqs{$feat->chromosome}, $feat->start-1, $feat->stop-$feat->start+1);
 	    $feat->genomic_sequence(seq=>$seq);
@@ -1400,11 +1398,11 @@ sub get_aa_usage
     %aa = $USER->user_name =~ /jkane/i ? map {$_,$aa{$_}} keys %aa : map {$_,$aa{$_}/$aa_total} keys %aa;
     
 #    my $html1 = "Codon Usage: $code_type";
-#    $html1 .= CoGe::Accessory::genetic_code->html_code_table(data=>\%codons, code=>$code);
+#    $html1 .= CoGe_dev::Accessory::genetic_code->html_code_table(data=>\%codons, code=>$code);
     
     my $html2 .= "Predicted amino acid usage using $code_type";
     $html2 .= "<br/>Total Amino Acids: $aa_total" if $USER->user_name =~ /jkane/i;
-    $html2 .= CoGe::Accessory::genetic_code->html_aa_new(data=>\%aa);
+    $html2 .= CoGe_dev::Accessory::genetic_code->html_aa_new(data=>\%aa);
     $html2 =~ s/00.00%//g if $USER->user_name =~ /jkane/i;
     return $html2;
 #    return $html1, $html2;
@@ -1433,7 +1431,7 @@ sub get_wobble_gc
     push @dsids, $dsid if $dsid;
     if ($dsgid)
       {
-	my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	my $dsg = $coge->resultset('Genome')->find($dsgid);
 	unless ($dsg)
 	  {
 	    my $error =  "unable to create dsg object using id $dsgid\n";
@@ -1453,8 +1451,8 @@ sub get_wobble_gc
 	    warn "no dataset object found for id $dsidt\n";
 	    next;
 	  }
-	foreach my $feat ($ds->features($search,{join=>['locations', {'dataset'=>{'dataset_connectors'=>'dataset_group'}}],
-						 prefetch=>['locations',{'dataset'=>{'dataset_connectors'=>'dataset_group'}}],
+	foreach my $feat ($ds->features($search,{join=>['locations', {'dataset'=>{'dataset_connectors'=>'genome'}}],
+						 prefetch=>['locations',{'dataset'=>{'dataset_connectors'=>'genome'}}],
 						}))
 	  {
 	    my @gc = $feat->wobble_content(counts=>1);
@@ -1554,7 +1552,7 @@ sub get_wobble_gc_diff
     push @dsids, $dsid if $dsid;
     if ($dsgid)
       {
-	my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	my $dsg = $coge->resultset('Genome')->find($dsgid);
 	unless ($dsg)
 	  {
 	    my $error =  "unable to create dsg object using id $dsgid\n";
@@ -1574,8 +1572,8 @@ sub get_wobble_gc_diff
 	    warn "no dataset object found for id $dsidt\n";
 	    next;
 	  }
-	foreach my $feat ($ds->features($search,{join=>['locations', {'dataset'=>{'dataset_connectors'=>'dataset_group'}}],
-						 prefetch=>['locations',{'dataset'=>{'dataset_connectors'=>'dataset_group'}}]}
+	foreach my $feat ($ds->features($search,{join=>['locations', {'dataset'=>{'dataset_connectors'=>'genome'}}],
+						 prefetch=>['locations',{'dataset'=>{'dataset_connectors'=>'genome'}}]}
 				       ))
 	  {
 	    my @wgc = $feat->wobble_content();
@@ -1615,7 +1613,7 @@ sub get_chr_length_hist
     my $dsgid = $opts{dsgid};
     return "error"," " unless $dsgid;
     my @data;
-    my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+    my $dsg = $coge->resultset('Genome')->find($dsgid);
     unless ($dsg)
       {
 	my $error =  "unable to create dsg object using id $dsgid\n";

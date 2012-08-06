@@ -2,13 +2,16 @@
 
 
 use strict;
-use CGI;
-use CoGeX;
-use DBI;
 
+use lib '/home/mbomhoff/CoGe/Accessory/lib'; #FIXME 8/2/12 remove
+use lib '/home/mbomhoff/CoGeX/lib'; #FIXME 8/2/12 remove
+use CoGe_dev::Accessory::LogUser;
+use CoGe_dev::Accessory::Web;
+use CoGeX_dev;
+
+use CGI;
+use DBI;
 use Data::Dumper;
-use CoGe::Accessory::LogUser;
-use CoGe::Accessory::Web;
 use HTML::Template;
 use URI::Escape;
 use Spreadsheet::WriteExcel;
@@ -20,7 +23,7 @@ no warnings 'redefine';
 
 
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME $TEMPDIR $USER $DATE $BASEFILE $COGEDIR $coge $cogeweb $FORM $URL $HISTOGRAM $TEMPURL $COOKIE_NAME %FUNCTION $LIST_TYPE);
-$P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
+$P = CoGe_dev::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 $COGEDIR = $P->{COGEDIR};
 $URL = $P->{URL};
@@ -39,14 +42,14 @@ $DBPORT = $P->{DBPORT};
 $DBUSER = $P->{DBUSER};
 $DBPASS = $P->{DBPASS};
 $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
-$coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
+$coge = CoGeX_dev->connect($connstr, $DBUSER, $DBPASS );
 $COOKIE_NAME = $P->{COOKIE_NAME};
 $LIST_TYPE = $coge->resultset('ListType')->find_or_create({name=>'genome'});
 
 my ($cas_ticket) =$FORM->param('ticket');
 $USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
+($USER) = CoGe_dev::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
+($USER) = CoGe_dev::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
 
 $SIG{'__WARN__'} = sub { }; #silence warnings
 
@@ -116,7 +119,7 @@ sub gen_html
     $template->param(LOGON=>1) unless $USER->user_name eq "public";
     $template->param(DATE=>$DATE);
     my $link = "http://".$ENV{SERVER_NAME}.$ENV{REQUEST_URI};
-    $link = CoGe::Accessory::Web::get_tiny_link(url=>$link);
+    $link = CoGe_dev::Accessory::Web::get_tiny_link(url=>$link);
     my $box_name = "Genome List: ";
     my $list_name = $FORM->param('list_name') || $FORM->param('ln');
     $box_name .= " $list_name" if $list_name;
@@ -154,7 +157,7 @@ sub cds_wgc_hist
     push @dsids, $dsid if $dsid;
     if ($dsgid)
       {
-	my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	my $dsg = $coge->resultset('Genome')->find($dsgid);
 	unless ($dsg)
 	  {
 	    my $error =  "unable to create dsg object using id $dsgid\n";
@@ -174,8 +177,8 @@ sub cds_wgc_hist
 	    warn "no dataset object found for id $dsidt\n";
 	    next;
 	  }
-	foreach my $feat ($ds->features($search,{join=>['locations', {'dataset'=>{'dataset_connectors'=>'dataset_group'}}],
-						 prefetch=>['locations',{'dataset'=>{'dataset_connectors'=>'dataset_group'}}],
+	foreach my $feat ($ds->features($search,{join=>['locations', {'dataset'=>{'dataset_connectors'=>'genome'}}],
+						 prefetch=>['locations',{'dataset'=>{'dataset_connectors'=>'genome'}}],
 						}))
 	  {
 	    my @gc = $feat->wobble_content(counts=>1);
@@ -291,7 +294,7 @@ sub get_gc_for_feature_type
     push @dsids, $1 if $dsid && $dsid =~ /(\d+)/;
     if ($dsgid)
       {
-	my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	my $dsg = $coge->resultset('Genome')->find($dsgid);
 	unless ($dsg)
 	  {
 	    my $error =  "unable to create dsg object using id $dsgid\n";
@@ -328,8 +331,8 @@ sub get_gc_for_feature_type
 	    %seqs= map {$_, $ds->genomic_sequence(chr=>$_, seq_type=>$gstid)} $ds->chromosomes;
 	  }
 	my $t2 = new Benchmark;
-	my @feats = $ds->features($search,{join=>['locations', {'dataset'=>{'dataset_connectors'=>'dataset_group'}}],
-					   prefetch=>['locations',{'dataset'=>{'dataset_connectors'=>'dataset_group'}}],
+	my @feats = $ds->features($search,{join=>['locations', {'dataset'=>{'dataset_connectors'=>'genome'}}],
+					   prefetch=>['locations',{'dataset'=>{'dataset_connectors'=>'genome'}}],
 					  });
  	foreach my $feat (@feats)
  	  {
@@ -401,7 +404,7 @@ Type: <select id=feat_hist_type>
     $info =~ s/>Per/ selected>Per/ if $hist_type =~/per/;
     my $gc_args;
     $gc_args = "chr: '$chr'," if defined $chr;
-    $gc_args .= "dsid: $dsid," if $dsid; #set a var so that histograms are only calculated for the dataset and not hte dataset_group
+    $gc_args .= "dsid: $dsid," if $dsid; #set a var so that histograms are only calculated for the dataset and not hte genome
     $gc_args .= "typeid: '$typeid'";
     $info .= qq{<span class="link" onclick="get_feat_gc({$gc_args})">Regenerate histogram</span>};
     $info .= "</div>";
@@ -431,7 +434,7 @@ sub gen_body
     $BASEFILE = $form->param('basename');
     my $sort_by_type = $form->param('sort_type');
     my $sort_by_location = $form->param('sort_loc');
-    my $prefs =CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME, coge=>$coge);
+    my $prefs =CoGe_dev::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME, coge=>$coge);
     $prefs = {} unless $prefs;
     $prefs->{display}={
 		       NameD=>1,
@@ -510,7 +513,7 @@ sub get_lists
 	  {
 	    my $name = $list->name;
 	    $name .= ": ". $list->description if $list->description;
-	    $name .= " (public)" if $list->public;
+	    $name .= " (public)" if !$list->restricted;
 	    push @lists, {LID=>$list->id, 
 			  "NAME"=>$name};
 	  }
@@ -569,7 +572,7 @@ sub generate_table
     my $count = 1;
     foreach my $dsgid (@$dsgids)
       {
-	my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	my $dsg = $coge->resultset('Genome')->find($dsgid);
 	next if $dsg->restricted && !$USER->has_access_to_genome($dsg);
 	my $name = $dsg->name ? $dsg->name : $dsg->organism->name;
 	my $desc = join("; ", map { qq{<span class=link onclick=window.open('OrganismView.pl?org_desc=$_')>$_</span>} } split /;\s*/, $dsg->organism->description);
@@ -620,13 +623,13 @@ sub get_feature_counts
     my %opts = @_;
     my $dsgid = $opts{dsgid};
     return "No specified dataset group id" unless $dsgid;
-    my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+    my $dsg = $coge->resultset('Genome')->find($dsgid);
     my $query = qq{
 SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
   FROM feature
   JOIN feature_type ft using (feature_type_id)
   JOIN dataset_connector dc using (dataset_id)
- WHERE dataset_group_id = $dsgid
+ WHERE genome_id = $dsgid
   GROUP BY ft.name
 
 };
@@ -759,14 +762,14 @@ sub send_to_SynFind #send to SynFind
     
     $accn_list =~ s/^,//;
     $accn_list =~ s/,$//;
-    $cogeweb = CoGe::Accessory::Web::initialize_basefile(tempdir=>$TEMPDIR);
+    $cogeweb = CoGe_dev::Accessory::Web::initialize_basefile(tempdir=>$TEMPDIR);
     my $basename = $cogeweb->basefilename;
     my $file = $TEMPDIR."$basename.faa";
     open (OUT, ">$file");
     foreach my $dsgid (split /,/,$accn_list)
       {
 	next unless $dsgid;
-	my ($dsg) = $coge->resultset('DatasetGroup')->find($dsgid);
+	my ($dsg) = $coge->resultset('Genome')->find($dsgid);
 	next unless $dsg;
 	print OUT $dsg->fasta;
       }
@@ -781,7 +784,7 @@ sub generate_excel_file
     my $accn_list = $args{accn};
     $accn_list =~ s/^,//;
     $accn_list =~ s/,$//;
-    $cogeweb = CoGe::Accessory::Web::initialize_basefile(tempdir=>$TEMPDIR);
+    $cogeweb = CoGe_dev::Accessory::Web::initialize_basefile(tempdir=>$TEMPDIR);
     my $basename = $cogeweb->basefilename;
     my $file = "$TEMPDIR/Excel_$basename.xls";
     my $workbook = Spreadsheet::WriteExcel->new($file);
@@ -806,7 +809,7 @@ sub generate_excel_file
     foreach my $dsgid (split /,/,$accn_list)
       {
 	
-	my ($dsg) = $coge->resultset("DatasetGroup")->find($dsgid);
+	my ($dsg) = $coge->resultset("Genome")->find($dsgid);
 	
 	next unless $dsg;
 	my $name = $dsg->name ? $dsg->name : $dsg->organism->name;
@@ -848,7 +851,7 @@ sub generate_excel_file
     my $accn_list = $args{accn};
     $accn_list =~ s/^,//;
     $accn_list =~ s/,$//;
-    $cogeweb = CoGe::Accessory::Web::initialize_basefile(tempdir=>$TEMPDIR);
+    $cogeweb = CoGe_dev::Accessory::Web::initialize_basefile(tempdir=>$TEMPDIR);
     my $basename = $cogeweb->basefilename;
     my $file = "$TEMPDIR/$basename.csv";
     open (OUT, ">$file");
@@ -856,7 +859,7 @@ sub generate_excel_file
     foreach my $dsgid (split /,/,$accn_list)
       {
 	next unless $dsgid;
-	my ($dsg) = $coge->resultset("DatasetGroup")->find($dsgid);	
+	my ($dsg) = $coge->resultset("Genome")->find($dsgid);	
 	next unless $dsg;
 	my $name = $dsg->name ? $dsg->name : $dsg->organism->name;
 	my $desc = $dsg->description ? $dsg->description :  $dsg->organism->description;
@@ -904,7 +907,7 @@ sub get_codon_usage
     push @dsids, $dsid if $dsid;
     if ($dsgid)
       {
-	my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	my $dsg = $coge->resultset('Genome')->find($dsgid);
 	unless ($dsg)
 	  {
 	    my $error =  "unable to create dsg object using id $dsgid\n";
@@ -933,8 +936,8 @@ sub get_codon_usage
 	  {
 	    %seqs= map {$_, $ds->genomic_sequence(chr=>$_, seq_type=>$gstid)} $ds->chromosomes;
 	  }
-	foreach my $feat ($ds->features($search,{join=>["feature_type",'locations', {'dataset'=>{'dataset_connectors'=>'dataset_group'}}],
-						 prefetch=>['locations',{'dataset'=>{'dataset_connectors'=>'dataset_group'}}]}))
+	foreach my $feat ($ds->features($search,{join=>["feature_type",'locations', {'dataset'=>{'dataset_connectors'=>'genome'}}],
+						 prefetch=>['locations',{'dataset'=>{'dataset_connectors'=>'genome'}}]}))
 	  {
 	    my $seq = substr($seqs{$feat->chromosome}, $feat->start-1, $feat->stop-$feat->start+1);
 	    $feat->genomic_sequence(seq=>$seq);
@@ -950,7 +953,7 @@ sub get_codon_usage
 
     #Josh put some stuff in here so he could get raw numbers instead of percentages for aa usage. He should either make this an option or delete this code when he is done. REMIND HIM ABOUT THIS IF YOU ARE EDITING ORGVIEW!
     my $html = "Codon Usage: $code_type";
-    $html .= CoGe::Accessory::genetic_code->html_code_table(data=>\%codons, code=>$code);
+    $html .= CoGe_dev::Accessory::genetic_code->html_code_table(data=>\%codons, code=>$code);
     return $html
   }
 
@@ -960,7 +963,7 @@ sub get_aa_usage
     my $dsgid = $opts{dsgid};
     my $table_name = $opts{table_name};
     return "no dsgid specified" unless $dsgid;
-    my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+    my $dsg = $coge->resultset('Genome')->find($dsgid);
     return "Unable able to create DB object for $dsgid" unless $dsg;
     my %codons;
     my $codon_total = 0;
@@ -983,7 +986,7 @@ sub get_aa_usage
 	$trans_type = $feat->trans_type;
       }
     my $html .= $dsg->organism->name."<br>Predicted amino acid usage using $code_type";
-    $html .= CoGe::Accessory::genetic_code->html_aa_new(data=>\%aa, counts=>1, table_name=>$table_name);
+    $html .= CoGe_dev::Accessory::genetic_code->html_aa_new(data=>\%aa, counts=>1, table_name=>$table_name);
     return ($html);
   }
 
@@ -1019,11 +1022,11 @@ sub codon_table
     $html .="<td>";
     $html .= "Predicted amino acid usage";
     $html .= "<tr valign=top><td>";
-    $html .= CoGe::Accessory::genetic_code->html_code_table(data=>$codon, code=>$code, counts=>1);
+    $html .= CoGe_dev::Accessory::genetic_code->html_code_table(data=>$codon, code=>$code, counts=>1);
 #    $html .= "</div>";
 #    $html .= "Predicted amino acid usage for $code_type genetic code:";
     $html .= "<td>";
-    $html .= CoGe::Accessory::genetic_code->html_aa(data=>\%aa, counts=>1, split=>1);
+    $html .= CoGe_dev::Accessory::genetic_code->html_aa(data=>\%aa, counts=>1, split=>1);
     $html .= "</table>";
     return $html;
   }
@@ -1035,7 +1038,7 @@ sub get_gc
     my %opts = @_;
     my $dsgid = $opts{dsgid};
     return "No dataset group id" unless $dsgid;
-    my ($dsg) = $coge->resultset('DatasetGroup')->find($dsgid);
+    my ($dsg) = $coge->resultset('Genome')->find($dsgid);
     return "No dsg object for id $dsgid" unless $dsg;
     my ($gc, $at, $n, $x) = $dsg->percent_gc();
     $at*=100;
@@ -1093,7 +1096,7 @@ sub save_GenomeList_settings
 	    $save{display}{$settings{$index}}=1 if $settings{$index};
 	  }
       }
-   CoGe::Accessory::Web::save_settings(opts=>\%save, user=>$USER, page=>$PAGE_NAME, coge=>$coge);
+   CoGe_dev::Accessory::Web::save_settings(opts=>\%save, user=>$USER, page=>$PAGE_NAME, coge=>$coge);
   }
 
 sub commify 

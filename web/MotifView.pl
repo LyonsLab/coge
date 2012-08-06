@@ -2493,7 +2493,7 @@ sub get_obj_from_genome_db
     my $gen_prot_sequence = $opts{gen_prot_sequence} || 0; #are we generating a protein sequence file too?
     if ($dsgid)
       {
-	my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	my $dsg = $coge->resultset('Genome')->find($dsgid);
 	$dsid = $dsg->datasets(chr=>$chr)->id;
 	$gstid = $dsg->type->id;
       }
@@ -4565,7 +4565,7 @@ sub dataset_group_search
       }
     my $html = qq{<SELECT name="dsgid$num" id="dsgid$num" onChange="feat_search(['args__accn','accn$num','args__dsid', 'dsid$num','args__dsgid', 'dsgid$num', 'args__num','args__$num', 'args__featid', 'args__$featid'],['feat$num']);">};
     my $count =0;
-    foreach my $dsg (sort {$b->version <=> $a->version || $a->type->id <=> $b->type->id} $ds->dataset_groups)
+    foreach my $dsg (sort {$b->version <=> $a->version || $a->type->id <=> $b->type->id} $ds->genomes)
       {
 	my $dsgid_tmp = $dsg->id;
 	my $title = $dsg->name;
@@ -4620,13 +4620,13 @@ sub get_org_info
     my ($ds, $dsg, $gst);
     if ($dsgid)
       {
-	$dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	$dsg = $coge->resultset('Genome')->find($dsgid);
 	$gst = $dsg->type;
       }
     elsif ($dsid)
       {
 	my $ds = $coge->resultset('Dataset')->find($dsid);
-	foreach my $item ($ds->dataset_groups(chr=>$chr))
+	foreach my $item ($ds->genomes(chr=>$chr))
 	  {
 	    if ($gstid)
 	      {
@@ -4643,7 +4643,7 @@ sub get_org_info
       }
     return "<span class=\"small alert\">Dataset group was not found</span>"unless $dsg;
     my $dsg_menu = qq{<span class="small">Genome: </span><SELECT name="dsgid$num" id="dsgid$num">};
-    foreach my $item (sort {$b->version <=> $a->version || $a->type->id <=> $b->type->id} $dsg->organism->dataset_groups)
+    foreach my $item (sort {$b->version <=> $a->version || $a->type->id <=> $b->type->id} $dsg->organism->genomes)
       {
 	my $dsgid_tmp = $item->id;
 	my $title;
@@ -4687,7 +4687,7 @@ sub feat_search
 	  }
 	if ($dsgid)
 	  {
-	    my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	    my $dsg = $coge->resultset('Genome')->find($dsgid);
 	    $gstid = $dsg->type->id if $dsg;
 	  }
       }

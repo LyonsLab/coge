@@ -1,14 +1,16 @@
 #! /usr/bin/perl -w
 use strict;
+use lib '/home/mbomhoff/CoGe/Accessory/lib'; #FIXME 8/2/12 remove
+use lib '/home/mbomhoff/CoGeX/lib'; #FIXME 8/2/12 remove
+use CoGe_dev::Accessory::LogUser;
+use CoGe_dev::Accessory::Web;
+use CoGeX_dev;
 use CGI;
 use CGI::Ajax;
-use CoGe::Accessory::LogUser;
-use CoGe::Accessory::Web;
 use HTML::Template;
 use Text::Wrap qw($columns &wrap);
 use Data::Dumper;
 use URI::Escape;
-use CoGeX;
 use POSIX;
 use Digest::MD5 qw(md5_hex);
 use DBIxProfiler;
@@ -21,7 +23,7 @@ no warnings 'redefine';
 
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $ARAGORN $FASTADIR $DATADIR $TEMPDIR $TEMPURL $DATE $USER $FORM $coge $cogeweb $COOKIE_NAME);
 
-$P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
+$P = CoGe_dev::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 
 $TEMPDIR = $P->{TEMPDIR}."tRNA";
@@ -35,7 +37,7 @@ $ARAGORN = $P->{ARAGORN};
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
 $FORM = new CGI;
-my %ajax = CoGe::Accessory::Web::ajax_func();
+my %ajax = CoGe_dev::Accessory::Web::ajax_func();
 
 $DBNAME = $P->{DBNAME};
 $DBHOST = $P->{DBHOST};
@@ -43,14 +45,14 @@ $DBPORT = $P->{DBPORT};
 $DBUSER = $P->{DBUSER};
 $DBPASS = $P->{DBPASS};
 $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
-$coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
+$coge = CoGeX_dev->connect($connstr, $DBUSER, $DBPASS );
 
 $COOKIE_NAME = $P->{COOKIE_NAME};
 
 my ($cas_ticket) =$FORM->param('ticket');
 $USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
+($USER) = CoGe_dev::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
+($USER) = CoGe_dev::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
 
 my $pj = new CGI::Ajax(
 		       gen_html=>\&gen_html,
@@ -209,7 +211,7 @@ sub run_aragorn
 	my $email = $opts{email};
 	my $seq = $opts{seq};
 	
-	$cogeweb = CoGe::Accessory::Web::initialize_basefile(tempdir=>$TEMPDIR);
+	$cogeweb = CoGe_dev::Accessory::Web::initialize_basefile(tempdir=>$TEMPDIR);
     my $outfile = $cogeweb->basefile."_aragorn.output";
     
 	my $fasta_file = $seq !~ /undefined/ ? make_fasta_file($seq) : get_genome_fasta($orgid);
@@ -223,7 +225,7 @@ sub run_aragorn
 	
 	$precommand .= "-o $outfile $fasta_file";
 	 my $x;
-    ($x, $precommand) =CoGe::Accessory::Web::check_taint($precommand);
+    ($x, $precommand) =CoGe_dev::Accessory::Web::check_taint($precommand);
 	
 	my $command = "$ARAGORN $precommand";
 	
@@ -451,7 +453,7 @@ sub get_genome_fasta
     my $res;
     if (-r $file)
       {
-	CoGe::Accessory::Web::write_log("*$org_name* fasta file ($md5) exists", $cogeweb->logfile);
+	CoGe_dev::Accessory::Web::write_log("*$org_name* fasta file ($md5) exists", $cogeweb->logfile);
 	$res = 1;
       }
     else
@@ -469,7 +471,7 @@ sub get_genome_fasta
     my $dslist = $opts{dslist};
     my $file = $opts{file};
     $file = $FASTADIR."/$file" unless $file =~ /$FASTADIR/;
-    CoGe::Accessory::Web::write_log("creating fasta file.", $cogeweb->logfile);
+    CoGe_dev::Accessory::Web::write_log("creating fasta file.", $cogeweb->logfile);
     open (OUT, ">$file") || die "Can't open $file for writing: $!";;
     foreach my $ds (@$dslist)
       {
@@ -478,15 +480,15 @@ sub get_genome_fasta
 	  {
 	    my $title =  $ds->organism->name." (v". $ds->version.") "."chromosome: $chr".", CoGe database id: ".$ds->id;
 	    $title =~ s/^>+/>/;
-	    CoGe::Accessory::Web::write_log("adding sequence $title", $cogeweb->logfile);
+	    CoGe_dev::Accessory::Web::write_log("adding sequence $title", $cogeweb->logfile);
 	    print OUT ">".$title."\n";
 	    print OUT $ds->get_genomic_sequence(chr=>$chr),"\n";
 	  }
       }
     close OUT;
-    CoGe::Accessory::Web::write_log("Completed fasta creation", $cogeweb->logfile);
+    CoGe_dev::Accessory::Web::write_log("Completed fasta creation", $cogeweb->logfile);
     return 1 if -r $file;
-    CoGe::Accessory::Web::write_log("Error with fasta file creation", $cogeweb->logfile);
+    CoGe_dev::Accessory::Web::write_log("Error with fasta file creation", $cogeweb->logfile);
     return 0;
   }
   

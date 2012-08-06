@@ -32,10 +32,10 @@ function get_organism_chain(type,val,i)
  $('#dsg_info'+i).html('<div class="loading dna_small small">loading. . .</div>');
  ajax_wait("gen_dsg_menu(['args__oid','org_id"+i+"', 'args__num','args__"+i+"'],['dsg_menu"+i+"', 'genome_message"+i+"']);");
  ajax_wait("check_previous_analyses();");   
- ajax_wait("get_dataset_group_info(['args__dsgid','dsgid"+i+"','args__org_num','args__"+i+"'],[handle_dsg_info]);");
+ ajax_wait("get_genome_info(['args__dsgid','dsgid"+i+"','args__org_num','args__"+i+"'],[handle_dsg_info]);");
 }
 
-function get_dataset_group_info_chain(i)
+function get_genome_info_chain(i)
 {
  $('#dsg_info'+i).html('<div class=dna_small class=loading class=small>loading. . .</div>'); 
  // ajax_wait("gen_dsg_menu(['args__oid','org_id"+i+"', 'args__num','args__"+i+"'],['dsg_menu"+i+"','genome_message"+i+"']);");
@@ -44,7 +44,7 @@ function get_dataset_group_info_chain(i)
  $('#depth_org_2').html($('#org_id2 option:selected').html());
 
  ajax_wait("check_previous_analyses();");   
- ajax_wait("get_dataset_group_info(['args__dsgid','dsgid"+i+"','args__org_num','args__"+i+"'],[handle_dsg_info]);");
+ ajax_wait("get_genome_info(['args__dsgid','dsgid"+i+"','args__org_num','args__"+i+"'],[handle_dsg_info]);");
 
 }
 
@@ -154,8 +154,8 @@ function update_params(val) {
     $('#dsgid2').attr('value',params[4]);
     $('#dsgid1').attr('value',params[7]);
   }
- get_dataset_group_info(['args__dsgid','dsgid1','args__org_num','args__1'],[handle_dsg_info]);
- get_dataset_group_info(['args__dsgid','dsgid2','args__org_num','args__2'],[handle_dsg_info]);
+ get_genome_info(['args__dsgid','dsgid1','args__org_num','args__1'],[handle_dsg_info]);
+ get_genome_info(['args__dsgid','dsgid2','args__org_num','args__2'],[handle_dsg_info]);
  ajax_wait(cmd);
  var type;
  $('#blast').attr('value',params[9]);

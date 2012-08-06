@@ -39,7 +39,7 @@ elsif ($oid)
   }
 elsif ($dsgid)
   {
-    my $dsg = $coge->resultset("DatasetGroup")->find($dsgid);
+    my $dsg = $coge->resultset("Genome")->find($dsgid);
     @orgs = $dsg->organism;
   }
 my $header = "Content-disposition: attachement; filename=CoGe_Organism_List.txt\n\n";

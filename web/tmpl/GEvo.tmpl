@@ -284,7 +284,7 @@ function autosearch_coge_names (seqs){
  if (!seqs) {seqs = 1;}
  for (var i =seqs; i <= num_seqs; i++)
   {
-    dataset_search(['args__accn','accn'+i,'args__num', 'args__'+i, 'args__dsid', 'dsid'+i, 'args__dsgid', 'dsgid'+i, 'args__gstid', 'gstid'+i, 'args__featid', 'featid'+i],[dataset_group_search_chain]);
+    dataset_search(['args__accn','accn'+i,'args__num', 'args__'+i, 'args__dsid', 'dsid'+i, 'args__dsgid', 'dsgid'+i, 'args__gstid', 'gstid'+i, 'args__featid', 'featid'+i],[genome_search_chain]);
   }
 }
 
@@ -350,7 +350,7 @@ function rset () {
     $('#accn'+i).val("");
     $('#drup'+i).val("10000");
     $('#drdown'+i).val("10000");
-    dataset_search(['args__accn','accn'+i,'args__num', 'args__'+i],[dataset_group_search_chain]);
+    dataset_search(['args__accn','accn'+i,'args__num', 'args__'+i],[genome_search_chain]);
     $('#gbaccn'+i).val("");
     $('#gbstart'+i).val("1");
     $('#gblength'+i).val("");
@@ -374,22 +374,22 @@ function check_spike(tblastx) {
   }
 }
 
-function dataset_group_search_chain(stuff, num, featid) {
+function genome_search_chain(stuff, num, featid) {
   if (stuff) {
   $("#dataset"+num).html(stuff);
-  dataset_group_search(['args__dsid', 'dsid'+num, 'args__dsgid', 'dsgid'+num,'args__gstid', 'gstid'+num,'args__num', 'args__'+num, 'args__featid','args__'+featid],[feat_search_chain]);
+  genome_search(['args__dsid', 'dsid'+num, 'args__dsgid', 'dsgid'+num,'args__gstid', 'gstid'+num,'args__num', 'args__'+num, 'args__featid','args__'+featid],[feat_search_chain]);
  }
  else if (!($("#pos"+num).val()))
   {
     $("#dataset"+num).html("<hidden id=dsid"+num+">");
-    $("#dataset_group"+num).html("<hidden id=dsgid"+num+">");
+    $("#genome"+num).html("<hidden id=dsgid"+num+">");
     $("#feat"+num).html("<hidden id=featid"+num+">");
   }
 }
 
 function feat_search_chain(stuff, num, featid) {
  if (stuff) {
-  $("#dataset_group"+num).html(stuff);
+  $("#genome"+num).html(stuff);
    feat_search(['args__accn', 'accn'+num,'args__dsid', 'dsid'+num, 'args__dsgid', 'dsgid'+num, 'args__num', 'args__'+num, 'args__featid','args__'+featid],['feat'+num]);
  }
 }
@@ -1375,7 +1375,7 @@ Color <span style="color:#FF66FF;">masked</span> and <span style="color:#FF9900;
 <TABLE class="small">
        <TR valign="top">
         <TD>Name:
-        <TD align=left><input  type="text" name="accn<TMPL_VAR NAME="SEQ_NUM">" id="accn<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="20" onBlur="dataset_search(['args__accn','accn<TMPL_VAR NAME="SEQ_NUM">','args__num', 'args__<TMPL_VAR NAME="SEQ_NUM">', 'args__dsid', 'args__<TMPL_VAR NAME="DSID">', 'args__dsgid', 'args__<TMPL_VAR NAME="DSGID">', 'args__gstid', 'args__<TMPL_VAR NAME="GSTID">'],[dataset_group_search_chain])" value="<TMPL_VAR NAME=DRACCN>" />
+        <TD align=left><input  type="text" name="accn<TMPL_VAR NAME="SEQ_NUM">" id="accn<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="20" onBlur="dataset_search(['args__accn','accn<TMPL_VAR NAME="SEQ_NUM">','args__num', 'args__<TMPL_VAR NAME="SEQ_NUM">', 'args__dsid', 'args__<TMPL_VAR NAME="DSID">', 'args__dsgid', 'args__<TMPL_VAR NAME="DSGID">', 'args__gstid', 'args__<TMPL_VAR NAME="GSTID">'],[genome_search_chain])" value="<TMPL_VAR NAME=DRACCN>" />
 </table>
 </DIV>      
 
@@ -1396,7 +1396,7 @@ Color <span style="color:#FF66FF;">masked</span> and <span style="color:#FF9900;
        <td colspan=2>     
         <DIV id="dataset<TMPL_VAR NAME="SEQ_NUM">" nowrap><input type="hidden" id="dsid<TMPL_VAR NAME="SEQ_NUM">" value ="<TMPL_VAR NAME="DSID">"></DIV>
 
-        <DIV id="dataset_group<TMPL_VAR NAME="SEQ_NUM">" nowrap><TMPL_VAR NAME="DSG_STUFF"></DIV>
+        <DIV id="genome<TMPL_VAR NAME="SEQ_NUM">" nowrap><TMPL_VAR NAME="DSG_STUFF"></DIV>
 
         <DIV id="genomic_sequence_type<TMPL_VAR NAME="SEQ_NUM">" nowrap><input type="hidden" id="gstid<TMPL_VAR NAME="SEQ_NUM">" value ="<TMPL_VAR NAME="GSTID">"></DIV>
         <DIV id="feat<TMPL_VAR NAME="SEQ_NUM">"><input type="hidden" id="featid<TMPL_VAR NAME="SEQ_NUM">" value ="<TMPL_VAR NAME="FEATID">"></DIV>

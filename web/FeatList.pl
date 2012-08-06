@@ -5,11 +5,7 @@
 use strict;
 use CGI;
 use CGI::Ajax;
-use CoGeX;
-use CoGeX::Result::Feature;
 use Data::Dumper;
-use CoGe::Accessory::LogUser;
-use CoGe::Accessory::Web;
 use Digest::MD5 qw(md5_base64);
 use HTML::Template;
 use URI::Escape;
@@ -18,9 +14,16 @@ use Benchmark;
 use DBIxProfiler;
 no warnings 'redefine';
 
+use lib '/home/mbomhoff/CoGe/Accessory/lib'; #FIXME 8/2/12 remove
+use lib '/home/mbomhoff/CoGeX/lib'; #FIXME 8/2/12 remove
+use CoGeX_dev;
+use CoGeX_dev::Result::Feature;
+use CoGe_dev::Accessory::LogUser;
+use CoGe_dev::Accessory::Web;
+
 
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb $FORM $URL $COOKIE_NAME);
-$P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
+$P = CoGe_dev::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 $URL = $P->{URL};
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
@@ -35,14 +38,14 @@ $DBPORT = $P->{DBPORT};
 $DBUSER = $P->{DBUSER};
 $DBPASS = $P->{DBPASS};
 $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
-$coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
+$coge = CoGeX_dev->connect($connstr, $DBUSER, $DBPASS );
 
 $COOKIE_NAME = $P->{COOKIE_NAME};
 
 my ($cas_ticket) = $FORM->param('ticket');
 $USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
+($USER) = CoGe_dev::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
+($USER) = CoGe_dev::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
 
 $SIG{'__WARN__'} = sub { }; #silence warnings
 
@@ -111,7 +114,7 @@ sub gen_body
     $BASEFILE = $form->param('basename');
     my $sort_by_type = $form->param('sort_type');
     my $sort_by_location = $form->param('sort_loc');
-    my $prefs =CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME, coge=>$coge);
+    my $prefs =CoGe_dev::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME, coge=>$coge);
     $prefs = {} unless $prefs;
     $prefs->{display}={
 		       FeatNameD=>1,
@@ -222,7 +225,7 @@ sub get_fids
     push @dsids, $dsid if $dsid;
     if ($dsgid)
       {
-	my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+	my $dsg = $coge->resultset('Genome')->find($dsgid);
 	if ($dsg)
 	  {
 	    foreach my $ds ($dsg->datasets)
@@ -283,8 +286,8 @@ sub generate_table
 	my ($feat) = $coge->resultset("Feature")->find(
 							 {'me.feature_id'=>$fid},
 							 {
-							  join =>['feature_names', 'locations', 'feature_type',{'dataset'=>{'dataset_connectors'=>{dataset_group=>'organism'}}}],
-							  prefetch=>['feature_names', 'locations', 'feature_type', {'dataset'=>{'dataset_connectors'=>{dataset_group=>'organism'}}}],
+							  join =>['feature_names', 'locations', 'feature_type',{'dataset'=>{'dataset_connectors'=>{genome=>'organism'}}}],
+							  prefetch=>['feature_names', 'locations', 'feature_type', {'dataset'=>{'dataset_connectors'=>{genome=>'organism'}}}],
 							  }
 							);
 	next unless $feat;
@@ -491,7 +494,7 @@ sub generate_excel_file
     my $accn_list = shift;
     $accn_list =~ s/^,//;
     $accn_list =~ s/,$//;
-    $cogeweb = CoGe::Accessory::Web::initialize_basefile(tempdir=>$TEMPDIR);
+    $cogeweb = CoGe_dev::Accessory::Web::initialize_basefile(tempdir=>$TEMPDIR);
     my $basename = $cogeweb->basefile;
     my ($filename) = $basename =~ /FeatList\/(FeatList_.+)/;
     my $workbook = Spreadsheet::WriteExcel->new("$TEMPDIR/Excel_$filename.xls");
@@ -603,11 +606,11 @@ sub codon_table
     $html .="<td>";
     $html .= "Predicted amino acid usage";
     $html .= "<tr valign=top><td>";
-    $html .= CoGe::Accessory::genetic_code->html_code_table(data=>$codon, code=>$code, counts=>1);
+    $html .= CoGe_dev::Accessory::genetic_code->html_code_table(data=>$codon, code=>$code, counts=>1);
 #    $html .= "</div>";
 #    $html .= "Predicted amino acid usage for $code_type genetic code:";
     $html .= "<td>";
-    $html .= CoGe::Accessory::genetic_code->html_aa(data=>\%aa, counts=>1, split=>1);
+    $html .= CoGe_dev::Accessory::genetic_code->html_aa(data=>\%aa, counts=>1, split=>1);
     $html .= "</table>";
     return $html;
   }
@@ -619,7 +622,7 @@ sub protein_table
     my ($feat) = $coge->resultset('Feature')->find($featid);
     my $aa = $feat->aa_frequency(counts=>1);
     my $html = "Amino Acid Usage";
-    $html .= CoGe::Accessory::genetic_code->html_aa(data=>$aa, counts=>1);
+    $html .= CoGe_dev::Accessory::genetic_code->html_aa(data=>$aa, counts=>1);
     return $html;
   }
 
@@ -695,7 +698,7 @@ sub save_FeatList_settings
 	    $save{display}{$settings{$index}}=1
 	  }
       }
-   CoGe::Accessory::Web::save_settings(opts=>\%save, user=>$USER, page=>$PAGE_NAME, coge=>$coge);
+   CoGe_dev::Accessory::Web::save_settings(opts=>\%save, user=>$USER, page=>$PAGE_NAME, coge=>$coge);
   }
 
 sub commify 

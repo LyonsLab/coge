@@ -5,12 +5,12 @@ import pyamf.amf3 # for some reason, have to import this...
 import sys, os
 import sqlite3
 
-sys.path.extend(['/opt/apache/CoGe/gobe/'])
+sys.path.extend(['/opt/apache2/matt_coge/gobe/'])
 import predict_cns
 
-tmpdbs = ['/opt/apache/CoGe/gobe/tmp/', '/opt/apache/CoGe/tmp/GEvo/']
+tmpdbs = ['/opt/apache2/matt_coge/gobe/tmp/', '/opt/apache2/matt_coge/tmp/GEvo/']
 
-dbpath = "/opt/apache/CoGe/data/sqlite/pair_tracking.db"
+dbpath = "/opt/apache2/matt_coge/data/sqlite/pair_tracking.db"
 tracking_db = sqlite3.connect(dbpath)
 tracking_db.row_factory = sqlite3.Row
 tcur = tracking_db.cursor()

@@ -3,9 +3,13 @@
 use strict;
 use GD;
 use Getopt::Long;
-use CoGeX;
-use CoGe::Accessory::Web;
-use CoGe::Accessory::SynMap_report;
+
+use lib '/home/mbomhoff/CoGe/Accessory/lib'; #FIXME 8/2/12 remove
+use lib '/home/mbomhoff/CoGeX/lib'; #FIXME 8/2/12 remove
+
+use CoGeX_dev;
+use CoGe_dev::Accessory::Web;
+use CoGe_dev::Accessory::SynMap_report;
 use DBI;
 use Data::Dumper;
 use DBI;
@@ -56,7 +60,7 @@ $selfself = 1 unless defined $selfself;
 $labels = 1 unless defined $labels;
 $chr_sort_order = "size" unless defined $chr_sort_order;
 
-$P = CoGe::Accessory::Web::get_defaults($conffile);
+$P = CoGe_dev::Accessory::Web::get_defaults($conffile);
 $font = $P->{FONT} unless $font && -r $font;
 $GZIP = $P->{GZIP};
 $GUNZIP = $P->{GUNZIP};
@@ -70,8 +74,8 @@ if (defined $dagfile and ! (-r $dagfile || -r $dagfile.".gz"))
     warn "dagfile specified but not present or readable: $!";
   }
 
-$dagfile = CoGe::Accessory::Web::gunzip($dagfile, $conffile) if $dagfile;# && $dagfile =~ /\.gz$/;
-$alignfile = CoGe::Accessory::Web::gunzip($alignfile, $conffile) if $alignfile;# && $alignfile =~ /\.gz$/;
+$dagfile = CoGe_dev::Accessory::Web::gunzip($dagfile, $conffile) if $dagfile;# && $dagfile =~ /\.gz$/;
+$alignfile = CoGe_dev::Accessory::Web::gunzip($alignfile, $conffile) if $alignfile;# && $alignfile =~ /\.gz$/;
 
 if ($alignfile && -r $alignfile && $alignfile =~ /\.gz$/)
   {
@@ -100,19 +104,19 @@ my $DBPORT = $P->{DBPORT};
 my $DBUSER = $P->{DBUSER};
 my $DBPASS = $P->{DBPASS};
 my $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
-$coge = CoGeX->dbconnect(db_connection_string=>$connstr, db_name=>$DBUSER, db_passwd=>$DBPASS );
-my $synmap_report = new CoGe::Accessory::SynMap_report;
+$coge = CoGeX_dev->dbconnect(db_connection_string=>$connstr, db_name=>$DBUSER, db_passwd=>$DBPASS );
+my $synmap_report = new CoGe_dev::Accessory::SynMap_report;
 
-my ($dsg1) = $coge->resultset('DatasetGroup')->find($dsgid1);
-my ($dsg2) = $coge->resultset('DatasetGroup')->find($dsgid2);
+my ($dsg1) = $coge->resultset('Genome')->find($dsgid1);
+my ($dsg2) = $coge->resultset('Genome')->find($dsgid2);
 unless ($dsg1)
   {
-    warn "No dataset group found with dbid $dsgid1\n";
+    warn "No genome found with dbid $dsgid1\n";
     return;
   }
 unless ($dsg2)
   {
-    warn "No dataset group found with dbid $dsgid2\n";
+    warn "No genome found with dbid $dsgid2\n";
     return;
   }
 
@@ -341,8 +345,8 @@ binmode OUT;
 print OUT $y_labels_gd->png;
 close OUT;
 
-CoGe::Accessory::Web::gzip($dagfile, $conffile) if $dagfile && -r $dagfile;
-CoGe::Accessory::Web::gzip($alignfile, $conffile) if $alignfile && -r $alignfile;
+CoGe_dev::Accessory::Web::gzip($dagfile, $conffile) if $dagfile && -r $dagfile;
+CoGe_dev::Accessory::Web::gzip($alignfile, $conffile) if $alignfile && -r $alignfile;
 #generate_historgram of ks values if necessary
 
 #This function appears to parse dagchainer output, generated in SynMap.pl, and draw the results to the GD graphics context.
@@ -605,18 +609,16 @@ sub draw_dots
 	my ($org1name, $org2name);
 	if ($dsgid1)
 	  {
-	    my $dsg = $coge->resultset('DatasetGroup')->find($dsgid1);
+	    my $dsg = $coge->resultset('Genome')->find($dsgid1);
 	    $org1name = $dsg->organism->name." (v".$dsg->version.")";
 	  }
 	if ($dsgid2)
 	  {
-	    my $dsg = $coge->resultset('DatasetGroup')->find($dsgid2);
+	    my $dsg = $coge->resultset('Genome')->find($dsgid2);
 	    $org2name = $dsg->organism->name." (v".$dsg->version.")";
 	  }
 	
-#	my $org1name = $coge->resultset('DatasetGroup')->find($dsgid1)->organism->name if $dsgid1;
 	my $org1length = commify($org1->{$CHR1}->{length})." bp";
-#	my $org2name = $coge->resultset('DatasetGroup')->find($dsgid2)->organism->name if $dsgid2;
 	my $org2length = commify($org2->{$CHR2}->{length})." bp";
 	
 	my ($img) = $basename =~ /([^\/]*$)/;
@@ -1056,10 +1058,10 @@ sub get_dsg_info
     my $metric=$opts{metric};
     my $chr_sort_order = $opts{chr_sort_order};
     my $skip_random = $opts{skip_random}; #skip "random" chromosome where sequences are added ad hoc
-    my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+    my $dsg = $coge->resultset('Genome')->find($dsgid);
     unless ($dsg)
       {
-	warn "No dataset group found with dbid $dsgid\n";
+	warn "No genome found with dbid $dsgid\n";
 	return;
       }
     my %rev;#store chromosomes to be reversed in display
@@ -1288,7 +1290,7 @@ sub get_gene_info
 SELECT count(distinct(feature_id))
   FROM feature
   JOIN dataset_connector dc using (dataset_id)
- WHERE dataset_group_id = $dsgid
+ WHERE genome_id = $dsgid
    AND feature_type_id = 3
    AND feature.chromosome = '$tmp_chr'
 
@@ -1302,7 +1304,7 @@ SELECT count(distinct(feature_id))
 SELECT feature_id
   FROM feature
   JOIN dataset_connector dc using (dataset_id)
- WHERE dataset_group_id = $dsgid
+ WHERE genome_id = $dsgid
    AND feature_type_id = 3
    AND feature.chromosome = '$tmp_chr'
  ORDER BY feature.start
@@ -1573,9 +1575,9 @@ width        | w       width of image in pixels (1024)
 
 min_chr_size | mcs     minimim size of chromosome to be drawn (0)
 
-dsgid1       | dsg1    database id of dataset group (genome) on x-axis
+dsgid1       | dsg1 | gid1    database id of genome on x-axis
 
-dsgid2       | dsg2    database id of dataset group (genome) on y-axis
+dsgid2       | dsg2 | gid1    database id of genome on y-axis
 
 chr1         | c1      only show data for this chromosome on the x axis
 
