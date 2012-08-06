@@ -1,0 +1,156 @@
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></SCRIPT>
+<SCRIPT language="JavaScript">
+
+$(document).ready(function(){
+	$('#experiment_table').tablesorter({		
+		cssAsc: 'headerSortUp',		// Class name for ascending sorting action to header
+		cssDesc: 'headerSortDown',	// Class name for descending sorting action to header
+		//cssHeader: 'header',		// Class name for headers (th's)
+		widgets: ['zebra'],
+		headers: {0: {sorter: false},},					
+	});
+
+	$("#search_bar").keyup( function() { filter_rows( $(this).val() ); });
+	$('#search_type').mouseup( function() { filter_rows( $('#search_bar').val() ); });
+
+	$.ajaxSetup({
+	               type: "GET",
+	               url: "ExperimentView.pl",
+	               dataType: "html",
+	               cache: false,
+	});
+});
+
+//set up the jquery ui
+$(function() {
+	//substantiate dialog box	     
+	$("#table_opts_dialog").dialog({ 
+		height: 150,
+		width: 627,
+		autoOpen: false,
+	});
+		
+	$("#save_form").dialog({
+		autoOpen: false,
+		height: 331,
+		width: 461,
+		buttons: {	
+			"Cancel": function() { $(this).dialog("close"); },
+			"Save": function() { 
+				$.ajax({
+					data: {
+						jquery_ajax: 1,
+						fname: 'add_to_user_history',
+						work_name: $('#work_name').val(),
+						description: $('#description').val(),
+						url: document.location.href,
+						note: $('#note').val(),
+						archive: 1,
+						tool: 'Experiment list'
+					},
+					success: function(val){}
+				});
+									
+				$(this).dialog("close"); 
+			}
+		}
+	});
+	
+	//button effects on events
+	$('#table_opts').click(function() {
+		$('#table_opts_dialog').dialog('open');
+	});
+	$('#history_dialog_button').click(function() {
+		$('#save_form').dialog('open');
+	});
+});
+
+function run_get_groups(opts){
+	if (!opts) { opts={}; }
+	divid = opts.divid; //were results will be displayed in page
+	expid = opts.expid;
+
+	// create a new closure who's scope does *not*
+	// include the `divid` value so that callback will 
+	// not clobber the `divid` variable 
+	var create_callback = function(divid) {
+		var local_divid = divid;
+		return function (data) {
+			$('#'+local_divid).html(data);
+		};
+	}; 
+
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'get_groups',
+			expid: expid
+		},
+		success : create_callback(divid)
+	});
+}
+
+function remove_group (opts){
+	ugid = opts.ugid;
+	expid = opts.expid;
+	if (ugid && expid) {
+		$.ajax({
+			data: {
+				jquery_ajax: 1,
+				fname: 'remove_group',
+				ugid: ugid,
+				expid: expid
+			},
+			success : function() {
+				run_get_groups({divid: 'groups', expid: expid});
+			},
+		});
+	}
+}
+
+</SCRIPT>
+
+<div>Experiment information</div>
+<table class="small annotation_table ui-corner-all ui-widget-content">
+ <tr><td><b>Name:</b></td><td><TMPL_VAR NAME="EXP_NAME"></td></tr>
+ <tr><td><b>Description:</b></td><td><TMPL_VAR NAME="EXP_DESC"></td></tr>
+ <tr><td><b>Type:</b></td><td><TMPL_VAR NAME="EXP_TYPE"></td></tr>
+ <tr><td><b>Source:</b></td><td><TMPL_VAR NAME="EXP_SOURCE"></td></tr>
+ <tr><td><b>Version:</b></td><td><TMPL_VAR NAME="EXP_VER"></td></tr>
+ <tr><td colspan="2"><TMPL_VAR NAME=ACCESS_BUTTON><TMPL_VAR NAME=EDIT_BUTTON></td></tr>
+</table>
+
+<br>
+
+<div>Experiment annotation</div>
+<table class="small annotation_table ui-corner-all ui-widget-content">
+ <thead align="left">
+  <tr>
+   <th>Group/Type</th>
+   <th></th>
+   <th>Annotation</th>
+  </tr>  
+ </thead>
+ <tbody>
+  <TMPL_VAR NAME="EXP_ANNOT">
+ </tbody>
+</table>
+
+<br>
+
+<div>Experiment access</div>
+<table class="small ui-widget-content ui-corner-all">
+ <thead align="left"> 
+  <tr>
+   <th>Group Name:Description</th>
+   <th>Role</th>
+   <th>Permissions</th>
+   <th>Members</th>
+   <th>Remove Access</th>
+  </tr>
+ </thead>
+ <tbody id="groups" align="left" valign="top" class="small">
+  <TMPL_VAR NAME=GROUPS>
+ </tbody>
+</table>

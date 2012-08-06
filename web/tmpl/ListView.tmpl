@@ -1,0 +1,61 @@
+<TMPL_IF NAME=MAIN>
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></SCRIPT>
+
+<SCRIPT language="JavaScript">
+$(document).ready(function(){
+	$.ajaxSetup({
+		type: "POST",
+		url: "<TMPL_VAR NAME=PAGE_NAME>",
+		dataType: "html",
+		cache: false,
+	});
+	set_table();
+	$(".dialog_box").dialog({autoOpen: <TMPL_VAR NAME=EDIT_BOX_OPEN>, width: 600});
+	<TMPL_VAR ADDITIONAL_STUFF>
+});
+
+function set_table () {	 $('#group_table').tablesorter({widgets: ['zebra']});	 }
+
+</SCRIPT>
+
+<div id=groups><TMPL_VAR NAME=LIST_INFO></div>
+
+<div>
+<span id=edit_list_info style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="edit_list_info();">Edit List Info</span>
+</div>
+<div id=edit_box class= "dialog_box"></div>
+
+<div id=admin_stuff></div>
+</TMPL_IF>
+
+<TMPL_IF NAME=EDIT_LIST>
+
+<TABLE class=small>
+ <TR>
+  <TD>Name:</TD>
+  <TD><input type="textbox" size=8 id="edit_name" value="<TMPL_VAR NAME=NAME>"></TD>
+ </TR>
+ <TR>
+  <TD>Description:</TD>
+  <TD><input type="textbox" size=20 id="edit_desc" value="<TMPL_VAR NAME=DESC>"></TD>
+ </TR>
+</TABLE>
+<span onClick="update_list_info({ugid: '<TMPL_VAR NAME=LID>'});" class='ui-button ui-corner-all ui-button-go'>Update List Info</span>
+<hr>
+<TABLE class=small>
+ <TR>
+  <TD>Current Data:<br>
+  <select multiple id=ugid onclick="show_add()" ondblclick="remove_data({lid: '<TMPL_VAR NAME=LID>'})" size=10 >
+       <TMPL_LOOP NAME=LID_LOOP>
+        <OPTION value=<TMPL_VAR NAME=ID>><TMPL_VAR NAME=NAME></OPTION>
+       </TMPL_LOOP>
+      </select>
+  </TD> 
+</table>
+</TMPL_IF>
+
+<TMPL_IF NAME=ADMIN_AREA>
+<hr>
+Admin Functions:<br>
+</TMPL_IF>
