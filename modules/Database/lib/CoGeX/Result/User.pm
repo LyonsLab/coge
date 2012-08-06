@@ -1,4 +1,4 @@
-package CoGeX::Result::User;
+package CoGeX_dev::Result::User;
 
 # Created by DBIx::Class::Schema::Loader v0.03009 @ 2006-12-01 18:13:38
 
@@ -9,7 +9,7 @@ use base 'DBIx::Class::Core';
 use Data::Dumper;
 =head1 NAME
 
-CoGeX::User
+CoGeX_dev::User
 
 =head1 SYNOPSIS
 
@@ -37,11 +37,11 @@ C<description>
 Type: VARCHAR, Default: undef, Nullable: yes, Size: 255
 
 
-Has many CCoGeX::Result::UserSession> via C<user_id>
+Has many CCoGeX_dev::Result::UserSession> via C<user_id>
 
 =head1 USAGE
 
-  use CoGeX;
+  use CoGeX_dev;
 
 =head1 METHODS
 
@@ -73,11 +73,11 @@ __PACKAGE__->add_columns(
   },
 );
 __PACKAGE__->set_primary_key("user_id");
-__PACKAGE__->has_many('sessions'=>"CoGeX::Result::UserSession",'user_id');
-__PACKAGE__->has_many('works'=>"CoGeX::Result::Work",'user_id');
-__PACKAGE__->has_many('workflows'=>"CoGeX::Result::Workflow",'user_id');
-__PACKAGE__->has_many('user_group_connectors'=>"CoGeX::Result::UserGroupConnector",'user_id');
-__PACKAGE__->has_many('lists'=>"CoGeX::Result::List",'user_id');
+__PACKAGE__->has_many('sessions'=>"CoGeX_dev::Result::UserSession",'user_id');
+__PACKAGE__->has_many('works'=>"CoGeX_dev::Result::Work",'user_id');
+__PACKAGE__->has_many('workflows'=>"CoGeX_dev::Result::Workflow",'user_id');
+__PACKAGE__->has_many('user_group_connectors'=>"CoGeX_dev::Result::UserGroupConnector",'user_id');
+#__PACKAGE__->has_many('lists'=>"CoGeX_dev::Result::List",'user_id');
 
 
 ################################################ subroutine header begin ##
@@ -167,7 +167,7 @@ sub user_groups{
 	my @user_groups = ();
 	
 	foreach my $user_group_connector ($self->user_group_connectors()){
-	    push (@user_groups,$user_group_connector->user_group());
+	   push (@user_groups,$user_group_connector->user_group()) if $user_group_connector->user_group();
 	}
 	
 	return wantarray ? @user_groups : \@user_groups;
@@ -449,10 +449,10 @@ sub is_owner{
 
 ################################################ subroutine header begin ##
 
-=head2 public_lists
+=head2 lists
 
- Usage     : $self->public_lists
- Purpose   : shows the lists that a user has that have been public
+ Usage     : $self->lists
+ Purpose   : shows the lists to which user has access
  Returns   : wantarray of list objects
  Argument  : 
  Throws    : None
@@ -464,10 +464,15 @@ sub is_owner{
 
 ################################################## subroutine header end ##
 
-sub public_lists{
+sub lists{
   my $self = shift;
   my %opts = @_;
-  return $self->lists({public=>1});
+  my %lists;
+  foreach my $ug ($self->groups)
+   {
+     map {$lists{$_->id}=$_} $ug->lists;
+   }  
+  return wantarray ? values %lists : [values %lists];
 }
 
 =head1 BUGS

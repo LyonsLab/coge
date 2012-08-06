@@ -1,4 +1,4 @@
-package CoGeX::Result::GenomicSequence;
+package CoGeX_dev::Result::GenomicSequence;
 
 # Created by DBIx::Class::Schema::Loader v0.03009 @ 2006-12-01 18:13:38
 
@@ -9,13 +9,13 @@ use base 'DBIx::Class::Core';
 
 =head1 NAME
 
-CoGeX::GenomicSequence
+CoGeX_dev::GenomicSequence
 
 =head1 SYNOPSIS
 
 This object uses the DBIx::Class to define an interface to the C<genomic_sequence_id> table in the CoGe database.
 The C<genomic_sequence_id> table defines a genomic sequence (that is, a simple sequence of DNA). The actual sequence is stored in flat text file on disk in FASTA format.
-Note that this table is used by the C<dataset_group> table, and is unrelated to the C<sequence> table or the C<feature> table.
+Note that this table is used by the C<genome> table, and is unrelated to the C<sequence> table or the C<feature> table.
 
 =head1 DESCRIPTION
 
@@ -32,15 +32,15 @@ C<chromosome>
 Type: VARCHAR, Default: "", Nullable: no, Size: 255
 Name of chromosome described by this record.
 
-C<dataset_group_id>
+C<genome_id>
 Type: INT, Default: "", Nullable: no, Size: 11
-Reference to a record in the C<dataset_group> table.
+Reference to a record in the C<genome> table.
 
-Relates to a record in the CCoGeX::Result::DatasetGroup> object via C<dataset_group_id> in a one-to-one relationship.
+Relates to a record in the CCoGeX_dev::Result::Genome> object via C<genome_id> in a one-to-one relationship.
 
 =head1 USAGE
 
-  use CoGeX;
+  use CoGeX_dev;
 
 =head1 METHODS
 
@@ -55,11 +55,11 @@ __PACKAGE__->add_columns(
   { data_type => "INT", default_value => "", is_nullable => 0, size => 11 },
   "chromosome",
   { data_type => "VARCHAR", default_value => "", is_nullable => 0, size => 255 },
-  "dataset_group_id",
+  "genome_id",
   { data_type => "INT", default_value => "", is_nullable => 0, size => 11 },
 );
 __PACKAGE__->set_primary_key("genomic_sequence_id");
-__PACKAGE__->belongs_to("dataset_group" => "CoGeX::Result::DatasetGroup", "dataset_group_id");
+__PACKAGE__->belongs_to("genome" => "CoGeX_dev::Result::Genome", "genome_id");
 
 1;
 

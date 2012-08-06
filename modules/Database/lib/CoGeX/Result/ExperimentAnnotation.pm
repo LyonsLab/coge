@@ -1,4 +1,4 @@
-package CoGeX::Result::ExperimentAnnotation;
+package CoGeX_dev::Result::ExperimentAnnotation;
 
 # Created by DBIx::Class::Schema::Loader v0.03009 @ 2006-12-01 18:13:38
 
@@ -9,7 +9,7 @@ use base 'DBIx::Class::Core';
 
 =head1 NAME
 
-CoGeX::ExperimentAnnotation
+CoGeX_dev::ExperimentAnnotation
 
 =head1 SYNOPSIS
 
@@ -33,13 +33,13 @@ C<annotation_type_id>
 Type: INT, Default: 0, Nullable: no, Size: 11
 
 
-Belongs to CCoGeX::Result::AnnotationType> via C<annotation_type_id>
+Belongs to CCoGeX_dev::Result::AnnotationType> via C<annotation_type_id>
 
-Belongs to CCoGeX::Result::Experiment> via C<experiment_id>
+Belongs to CCoGeX_dev::Result::Experiment> via C<experiment_id>
 
 =head1 USAGE
 
- use CoGeX;
+ use CoGeX_dev;
 
 =head1 METHODS
 
@@ -55,11 +55,13 @@ __PACKAGE__->add_columns(
   { data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
   "annotation_type_id",
   { data_type => "INT", default_value => "1", is_nullable => 0, size => 11 },
+  "link",
+  { data_type => "VARCHAR", default_value => "", is_nullable => 1, size => 1024 },
 );
 __PACKAGE__->set_primary_key("experiment_annotation_id");
 
-__PACKAGE__->belongs_to( annotation_type => 'CoGeX::Result::AnnotationType', 'annotation_type_id');
-__PACKAGE__->belongs_to( experiment => 'CoGeX::Result::Experiment', 'experiment_id');
+__PACKAGE__->belongs_to( annotation_type => 'CoGeX_dev::Result::AnnotationType', 'annotation_type_id');
+__PACKAGE__->belongs_to( experiment => 'CoGeX_dev::Result::Experiment', 'experiment_id');
 
 
 

@@ -1,4 +1,4 @@
-  package CoGeX::ResultSet::FeatureName;
+  package CoGeX_dev::ResultSet::FeatureName;
 
   use strict;
   use warnings;

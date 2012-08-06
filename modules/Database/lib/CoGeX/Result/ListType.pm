@@ -1,7 +1,4 @@
-package CoGeX::Result::ListType;
-
-# Created by DBIx::Class::Schema::Loader
-# DO NOT MODIFY THE FIRST PART OF THIS FILE
+package CoGeX_dev::Result::ListType;
 
 use strict;
 use warnings;
@@ -11,7 +8,7 @@ use base 'DBIx::Class::Core';
 
 =head1 NAME
 
-My::Schema::Result::Role
+CoGeX_dev::Result::ListType
 
 =cut
 
@@ -48,40 +45,10 @@ __PACKAGE__->add_columns(
   { data_type => "varchar", is_nullable => 1, size => 1024 },
 );
 __PACKAGE__->set_primary_key("list_type_id");
-# Role has many permissions
-__PACKAGE__->has_many('lists'=>"CoGeX::Result::List",'list_type_id');
+
+__PACKAGE__->has_many('lists'=>"CoGeX_dev::Result::List",'list_type_id');
 
 
-# Created by DBIx::Class::Schema::Loader v0.07002 @ 2011-08-29 09:28:12
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:xlyHeSUJRzYisE2OZEwHTQ
-
-
-# You can replace this text with custom content, and it will be preserved on regeneration
-
-
-
-################################################ subroutine header begin ##
-
-=head2 groups
-
- Usage     : $self->groups
- Purpose   : alias for $self->user_groups
- Returns   : DBIX::Class for user_group objects
- Argument  : None
- Throws    : None
- Comments  : 
-
-
-
-=cut
-
-################################################## subroutine header end ##
-
-
-sub groups
- {
-   return shift->user_groups(@_);
- }
 
 ################################################ subroutine header begin ##
 
@@ -99,8 +66,6 @@ sub groups
 =cut
 
 ################################################## subroutine header end ##
-
-
 
 
 1;

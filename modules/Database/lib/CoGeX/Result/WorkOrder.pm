@@ -1,4 +1,4 @@
-package CoGeX::Result::WorkOrder;
+package CoGeX_dev::Result::WorkOrder;
 
 # Created by DBIx::Class::Schema::Loader v0.03009 @ 2006-12-01 18:13:38
 
@@ -9,7 +9,7 @@ use base 'DBIx::Class';
 
 =head1 NAME
 
-CoGeX::WorkOrder
+CoGeX_dev::WorkOrder
 
 =head1 SYNOPSIS
 
@@ -36,7 +36,7 @@ Type: TIMESTAMP, Default: "time created", Nullable: no,
 
 =head1 USAGE
 
-  use CoGeX;
+  use CoGeX_dev;
 
 =head1 METHODS
 
@@ -52,8 +52,8 @@ __PACKAGE__->add_columns(
   "date", { data_type => "TIMESTAMP", default_value => "", is_nullable => 0 },
 );
 __PACKAGE__->set_primary_key("work_order_id");
-__PACKAGE__->belongs_to('work'=>"CoGeX::Result::Work","work_id");
-__PACKAGE__->belongs_to('workflow'=>"CoGeX::Result::Workflow","workflow_id");
+__PACKAGE__->belongs_to('work'=>"CoGeX_dev::Result::Work","work_id");
+__PACKAGE__->belongs_to('workflow'=>"CoGeX_dev::Result::Workflow","workflow_id");
 
 
 

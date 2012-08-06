@@ -1,4 +1,4 @@
-package CoGeX::Result::Location;
+package CoGeX_dev::Result::Location;
 
 # Created by DBIx::Class::Schema::Loader v0.03009 @ 2006-12-01 18:13:38
 
@@ -9,7 +9,7 @@ use base 'DBIx::Class::Core';
 
 =head1 NAME
 
-CoGeX::Location
+CoGeX_dev::Location
 
 =head1 SYNOPSIS
 
@@ -44,12 +44,12 @@ Type: TINYINT, Default: "", Nullable: no, Size: 4
 Which strand the feature exists on, the options being Top (+) and Bottom (-).
 [Editors note: Why is this a TINYINT?]
 
-Belongs to CCoGeX::Result::Feature> via C<feature_id>
+Belongs to CCoGeX_dev::Result::Feature> via C<feature_id>
 
 
 =head1 USAGE
 
-  use CoGeX;
+  use CoGeX_dev;
 
 =head1 METHODS
 
@@ -73,7 +73,7 @@ __PACKAGE__->add_columns(
 );
 __PACKAGE__->set_primary_key("location_id");
 
-__PACKAGE__->belongs_to("feature" => "CoGeX::Result::Feature", 'feature_id');
+__PACKAGE__->belongs_to("feature" => "CoGeX_dev::Result::Feature", 'feature_id');
 1;
 
 

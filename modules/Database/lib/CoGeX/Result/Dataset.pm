@@ -1,4 +1,4 @@
-package CoGeX::Result::Dataset;
+package CoGeX_dev::Result::Dataset;
 
 # Created by DBIx::Class::Schema::Loader v0.03009 @ 2006-12-01 18:13:38
 
@@ -6,15 +6,17 @@ use strict;
 use warnings;
 use Data::Dumper;
 use POSIX;
+use Carp qw (cluck);
 use base 'DBIx::Class::Core';
 
-#use CoGeX::Result::Feature; #need to figure this out and uncomment.  Going to case a lot of problems.
+
+#use CoGeX_dev::Result::Feature; #need to figure this out and uncomment.  Going to case a lot of problems.
 use Text::Wrap;
 use Carp;
 
 =head1 NAME
 
-CoGeX::Dataset
+CoGeX_dev::Dataset
 
 =head1 SYNOPSIS
 
@@ -44,20 +46,20 @@ Type: TEXT, Default: undef, Nullable: yes, Size: 65535
 C<date>
 Type: DATETIME, Default: "", Nullable: no, Size: 19
 
-Belongs to CCoGeX::Result::CoGeX::DataSource> via C<data_source_id>
-Has many CCoGeX::Result::Feature> via C<dataset_id>
-Has many CCoGeX::Result::DatasetConnector> via C<dataset_id>
+Belongs to CCoGeX_dev::Result::CoGeX_dev::DataSource> via C<data_source_id>
+Has many CCoGeX_dev::Result::Feature> via C<dataset_id>
+Has many CCoGeX_dev::Result::DatasetConnector> via C<dataset_id>
 
 =head1 USAGE
 
- use CoGeX;
+ use CoGeX_dev;
 
 =head1 METHODS
 
 =cut
 
 __PACKAGE__->table("dataset");
-__PACKAGE__->resultset_class("CoGeX::ResultSet::Dataset");
+__PACKAGE__->resultset_class("CoGeX_dev::ResultSet::Dataset");
 __PACKAGE__->add_columns(
 													"dataset_id",
 													{ data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
@@ -93,14 +95,14 @@ __PACKAGE__->add_columns(
 );
 
 __PACKAGE__->set_primary_key("dataset_id");
-__PACKAGE__->has_many( "features"                   => "CoGeX::Result::Feature",                'dataset_id' );
-__PACKAGE__->has_many( "dataset_connectors"         => "CoGeX::Result::DatasetConnector",       'dataset_id' );
-__PACKAGE__->has_many( "user_group_data_connectors" => "CoGeX::Result::UserGroupDataConnector", 'dataset_id' );
-__PACKAGE__->belongs_to( "data_source" => "CoGeX::Result::DataSource", 'data_source_id' );
+__PACKAGE__->has_many( "features"                   => "CoGeX_dev::Result::Feature",                'dataset_id' );
+__PACKAGE__->has_many( "dataset_connectors"         => "CoGeX_dev::Result::DatasetConnector",       'dataset_id' );
+#__PACKAGE__->has_many( "user_group_data_connectors" => "CoGeX_dev::Result::UserGroupDataConnector", 'dataset_id' );
+__PACKAGE__->belongs_to( "data_source" => "CoGeX_dev::Result::DataSource", 'data_source_id' );
 
 ################################################ subroutine header begin ##
 
-=head2 dataset_groups
+=head2 genomes
 
  Usage     : 
  Purpose   : 
@@ -115,23 +117,30 @@ See Also   :
 
 ################################################## subroutine header end ##
 
-sub dataset_groups
+sub genomes
 {
 	my $self = shift;
 	my %opts = @_;
 	my $chr  = $opts{chr};
-	my @dsgs;
+	my @genomes;
 	foreach my $dsc ( $self->dataset_connectors() )
 	{
 		if ( defined $chr )
 		{
-			my %chrs = map { $_, 1 } $dsc->dataset_group->chromosomes;
+			my %chrs = map { $_, 1 } $dsc->genome->chromosomes;
 			next unless $chrs{$chr};
 		}
-		push @dsgs, $dsc->dataset_group;
+		push @genomes, $dsc->genome;
 	}
-	return wantarray ? @dsgs : \@dsgs;
+	return wantarray ? @genomes : \@genomes;
 }
+
+sub dataset_groups
+  {
+    cluck "Dataset::dataset_groups is obselete, please use ->genomes\n";
+    shift->genomes(@_);
+  }
+
 
 ################################################ subroutine header begin ##
 
@@ -152,29 +161,7 @@ See Also   :
 
 sub groups
 {
-	shift->dataset_groups(@_);
-}
-
-################################################ subroutine header begin ##
-
-=head2 genomes
-
- Usage     : 
- Purpose   : alias for dataset_groups
- Returns   : 
- Argument  : 
- Throws    :
- Comments  : 
-
-See Also   : 
-
-=cut
-
-################################################## subroutine header end ##
-
-sub genomes
-{
-	shift->dataset_groups(@_);
+	shift->genomes(@_);
 }
 
 ################################################ subroutine header begin ##
@@ -198,7 +185,7 @@ sub organism
 {
 	my $self = shift;
 	my %opts = @_;
-	my %orgs = map { $_->id, $_ } map { $_->organism } $self->dataset_groups;
+	my %orgs = map { $_->id, $_ } map { $_->organism } $self->genomes;
 	if ( keys %orgs > 1 )
 	{
 		warn "sub organism in Dataset.pm fetched more than one organism!  Very odd:\n";
@@ -275,7 +262,7 @@ sub get_genomic_sequence
 	my $dsgid    = $opts{dsgid};
 	my $server   = $opts{server};                     #server from which to retrieve genomic sequence if not stored on local machine.  Web retrieval from CoGe/GetSequence.pl
 	my $dsg;
-	$dsg = $dsgid if $dsgid && ref($dsgid) =~ /DatasetGroup/;
+	$dsg = $dsgid if $dsgid && ref($dsgid) =~ /Genome/;
 	return $dsg->genomic_sequence( start => $start, stop => $stop, chr => $chr, strand => $strand, debug => $debug, server => $server ) if $dsg;
 	my $seq_type_id = ref($seq_type) =~ /GenomicSequenceType/i ? $seq_type->id : $seq_type;
 	$seq_type_id = 1 unless $seq_type_id && $seq_type_id =~ /^\d+$/;
@@ -289,7 +276,7 @@ sub get_genomic_sequence
 	}
 
 	#hmm didn't return -- perhaps the seq_type_id was off.  Go ahead and see if anything can be returned
-	#    carp "In Dataset.pm, sub get_genomic_sequence.  Did not return sequence from a dataset_group with a matching sequence_type_id.  Going to try to return some sequence from any dataset_group.\n";
+	#    carp "In Dataset.pm, sub get_genomic_sequence.  Did not return sequence from a genome with a matching sequence_type_id.  Going to try to return some sequence from any genome.\n";
 	($dsg) = $self->groups;
 	return $dsg->genomic_sequence( start => $start, stop => $stop, chr => $chr, strand => $strand, debug => $debug, server => $server );
 }
@@ -394,11 +381,11 @@ sub last_chromosome_position
 	my $self = shift;
 	my $chr  = shift;
 	return unless defined $chr;
-	my ($dsg) = $self->dataset_groups;
+	my ($dsg) = $self->genomes;
 	my ($item) = $dsg->genomic_sequences( { chromosome => "$chr", }, );
 	unless ($item)
 	{
-		warn "Unable to find genomic_sequence object for $chr.";
+		warn "Dataset::last_chromosome_position: unable to find genomic_sequence object for '$chr'";
 		return;
 	}
 	my $stop = $item->sequence_length();
@@ -786,7 +773,7 @@ sub fasta
 	if ($prot)
 	{
 		my $trans_type = $self->trans_type;
-		my $feat       = new CoGeX::Result::Feature;
+		my $feat       = new CoGeX_dev::Result::Feature;
 		my ( $seqs, $type ) = $feat->frame6_trans( seq => $seq, trans_type => $trans_type, gstid => $gstid );
 		foreach my $frame ( sort { length($a) <=> length($b) || $a cmp $b } keys %$seqs )
 		{
@@ -815,7 +802,7 @@ sub fasta
              print       =>    print the gff file as the lines are retrieved
              annos       =>    print annotations as well (takes longer)
              debug       =>    prints some debugging stuff
-             no_gff_head =>    won't print "gff-version 3".  Used when this function is called by DatasetGroup->gff(); (default 0)
+             no_gff_head =>    won't print "gff-version 3".  Used when this function is called by Genome->gff(); (default 0)
              ds          =>    Dataset object.  Uses $self if none is specified
              id          =>    Starting number to be used for ID tag.  This in incremented by one with each entry.
              cds         =>    Only print CDS gene features (skip all ncRNA and other features).  Will print genes, mRNA, and CDS entries
@@ -826,7 +813,7 @@ sub fasta
  Throws    : 
  Comments  : 
 
-See Also   : dataset_group->gff
+See Also   : genome->gff
 
 =cut
 
@@ -840,7 +827,7 @@ sub gff
 	my $debug                     = $opts{debug};                        #debug flag
 	my $print                     = $opts{print};                        #flag to print gff as it is being retrieved
 	my $annos                     = $opts{annos};                        #flag to retrieve and add annotations
-	my $no_gff_head               = $opts{no_gff_head};                  #flag to NOT print gff headers (used in conjunction with dataset_group->gff which generates its own headers
+	my $no_gff_head               = $opts{no_gff_head};                  #flag to NOT print gff headers (used in conjunction with genome->gff which generates its own headers
 	my $ds                        = $opts{ds};                           #ds object, uses self if one is not passed in
 	my $count                     = $opts{id};                           #number to be used for unique identification of each id.  starts at 0 unless one is passed in
 	my $cds                       = $opts{cds};                          #flag to only print protein coding genes

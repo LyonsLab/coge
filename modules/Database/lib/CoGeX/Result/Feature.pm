@@ -1,17 +1,19 @@
-package CoGeX::Result::Feature;
+package CoGeX_dev::Result::Feature;
 
 use strict;
 use warnings;
 use base 'DBIx::Class::Core';
-use CoGe::Accessory::genetic_code;
+use lib '/home/mbomhoff/CoGe/Accessory/lib'; #FIXME 8/2/12 remove
+use lib '/home/mbomhoff/CoGeX/lib'; #FIXME 8/2/12 remove
+use CoGe_dev::Accessory::genetic_code;
+use CoGe_dev::Accessory::Annotation;
 use Text::Wrap;
 use Data::Dumper;
-use CoGe::Accessory::Annotation;
 use base 'Class::Accessor';
 
 =head1 NAME
 
-CoGeX::Feature
+CoGeX_dev::Feature
 
 =head1 SYNOPSIS
 
@@ -43,17 +45,16 @@ C<chromosome>
 Type: VARCHAR, Default: 0, Nullable: yes, Size: 255
 
 
-Belongs to CCoGeX::Result::FeatureType> via C<feature_type_id>
-Belongs to CCoGeX::Result::Dataset> via C<dataset_id>
+Belongs to CCoGeX_dev::Result::FeatureType> via C<feature_type_id>
+Belongs to CCoGeX_dev::Result::Dataset> via C<dataset_id>
 
-Has many CCoGeX::Result::FeatureName> via C<feature_id>
-Has many CCoGeX::Result::Annotation> via C<feature_id>
-Has many CCoGeX::Result::Location> via C<feature_id>
-Has many CCoGeX::Result::Sequence> via C<feature_id>
+Has many CCoGeX_dev::Result::FeatureName> via C<feature_id>
+Has many CCoGeX_dev::Result::FeatureAnnotation> via C<feature_id>
+Has many CCoGeX_dev::Result::Location> via C<feature_id>
 
 =head1 USAGE
 
-  use CoGeX;
+  use CoGeX_dev;
 
 =head1 METHODS
 
@@ -74,26 +75,19 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key("feature_id");
 
 # feature has many feature_names
-__PACKAGE__->has_many( 'feature_names' => "CoGeX::Result::FeatureName", 'feature_id');
+__PACKAGE__->has_many( 'feature_names' => "CoGeX_dev::Result::FeatureName", 'feature_id');
 
 # feature has many annotations
-__PACKAGE__->has_many( 'annotations' => "CoGeX::Result::Annotation", 'feature_id');
-
-# feature has many quantitations
-__PACKAGE__->has_many( 'quantitations' => "CoGeX::Result::Quantitation", 'feature_id');
+__PACKAGE__->has_many( 'feature_annotations' => "CoGeX_dev::Result::FeatureAnnotation", 'feature_id');
 
 # feature has many locations
-__PACKAGE__->has_many( 'locations' => "CoGeX::Result::Location", 'feature_id');
-
-# feature has many sequences - note this is non-genomic sequence (see
-# genomic_sequence() and sequence
-__PACKAGE__->has_many( 'sequences' => "CoGeX::Result::Sequence", 'feature_id');
+__PACKAGE__->has_many( 'locations' => "CoGeX_dev::Result::Location", 'feature_id');
 
 # feature_type has many features
-__PACKAGE__->belongs_to("feature_type" => "CoGeX::Result::FeatureType", 'feature_type_id');
+__PACKAGE__->belongs_to("feature_type" => "CoGeX_dev::Result::FeatureType", 'feature_type_id');
 
 # dataset has many features
-__PACKAGE__->belongs_to("dataset" => "CoGeX::Result::Dataset", 'dataset_id');
+__PACKAGE__->belongs_to("dataset" => "CoGeX_dev::Result::Dataset", 'dataset_id');
 
 
 __PACKAGE__->mk_accessors('_genomic_sequence', 'gst', 'dsg', 'trans_type'); #_genomic_sequence =>place to store the feature's genomic sequence with no up and down stream stuff
@@ -126,11 +120,11 @@ sub type
 
 ################################################ subroutine header begin ##
 
-=head2 dataset_groups
+=head2 genomes
 
- Usage     : $returned_dataset_group_objecst = $FeatureObject->dataset_groups();
+ Usage     : $returned_genome_objecst = $FeatureObject->genomes();
  Purpose   : Shortcut to return dataset group objects from a Feature object.
- Returns   : An DatasetGroup objects. (array or array ref depending on wantarray
+ Returns   : A Genome object. (array or array ref depending on wantarray
  Argument  : None
  Throws    : 
  Comments  : 
@@ -142,10 +136,10 @@ See Also   : org()
 
 ################################################## subroutine header end ##
 
-sub dataset_groups
+sub genomes
   {
     my $self = shift;
-    my @dsgs =  $self->dataset->dataset_groups();
+    my @dsgs =  $self->dataset->genomes();
     return wantarray ? @dsgs : \@dsgs;
   }
 
@@ -170,7 +164,7 @@ See Also   : org()
 sub organism
   {
     my $self = shift;
-    my ($dsg) =  $self->dataset->dataset_groups();
+    my ($dsg) =  $self->dataset->genomes();
     return $dsg->organism;
   }
 
@@ -197,6 +191,30 @@ sub org
   {
     my $self = shift;
     return $self->organism();
+  }
+  
+
+################################################ subroutine header begin ##
+
+=head2 annotations
+
+ Usage     : 
+ Purpose   : Alias to the feature_annotations() method.
+ Returns   : See feature_annotations()
+ Argument  : None
+ Throws    : 
+ Comments  : 
+           : 
+
+See Also   : feature_annotations()
+
+=cut
+
+################################################## subroutine header end ##
+
+sub annotations
+  {
+    return shift->feature_annotations();
   }
 
 
@@ -291,31 +309,6 @@ sub locs
   {
     my $self = shift;
     return $self->locations();
-  }
-
-
-################################################ subroutine header begin ##
-
-=head2 seqs
-
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : 
- Throws    : 
- Comments  : 
-           : 
-
-See Also   : 
-
-=cut
-
-################################################## subroutine header end ##
-
-sub seqs
-  {
-    my $self = shift;
-    return $self->sequences();
   }
 
 
@@ -419,7 +412,7 @@ sub annotation_pretty_print
     my $self = shift;
     my %opts = @_;
     my $gstid = $opts{gstid};
-    my $anno_obj = new CoGe::Accessory::Annotation(Type=>"anno");
+    my $anno_obj = new CoGe_dev::Accessory::Annotation(Type=>"anno");
     $anno_obj->Val_delimit("\n");
     $anno_obj->Val_delimit("\n");
     $anno_obj->Add_type(0);
@@ -434,8 +427,8 @@ sub annotation_pretty_print
     $location .= join (", ", map {$_->start."-".$_->stop} sort {$a->start <=> $b->start} $self->locs);
     $location .="(".$strand.")";
     #my $location = "Chr ".$chr. "".$start."-".$stop.""."(".$strand.")";
-    $anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"Location", Values=>[$location], Type_delimit=>": ", Val_delimit=>" "));
-    my $anno_type = new CoGe::Accessory::Annotation(Type=>"Name(s)");
+    $anno_obj->add_Annot(new CoGe_dev::Accessory::Annotation(Type=>"Location", Values=>[$location], Type_delimit=>": ", Val_delimit=>" "));
+    my $anno_type = new CoGe_dev::Accessory::Annotation(Type=>"Name(s)");
     $anno_type->Type_delimit(": ");
     $anno_type->Val_delimit(" , ");
     foreach my $name ($self->names)
@@ -448,13 +441,13 @@ sub annotation_pretty_print
       {
 	my $type = $anno->type();
 	my $group = $type->group();
-	my $anno_type = new CoGe::Accessory::Annotation(Type=>$type->name);
+	my $anno_type = new CoGe_dev::Accessory::Annotation(Type=>$type->name);
 	$anno_type->Val_delimit("\n");
 
 	$anno_type->add_Annot($anno->annotation);
 	if (ref ($group) =~ /group/i)
 	  {
-	    my $anno_g = new CoGe::Accessory::Annotation(Type=>$group->name);
+	    my $anno_g = new CoGe_dev::Accessory::Annotation(Type=>$group->name);
 	    $anno_g->add_Annot($anno_type);
 	    $anno_g->Type_delimit(": ");
 	    $anno_g->Val_delimit(", ");
@@ -466,22 +459,22 @@ sub annotation_pretty_print
 	    $anno_obj->add_Annot($anno_type);
 	  }
       }
-    $anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<span class=\"title4\">Length</span>", Values=>[$self->length],Type_delimit=>": ", Val_delimit=>" "));
+    $anno_obj->add_Annot(new CoGe_dev::Accessory::Annotation(Type=>"<span class=\"title4\">Length</span>", Values=>[$self->length],Type_delimit=>": ", Val_delimit=>" "));
     my $ds = $self->dataset;
     my $org = $ds->organism->name;
     $org .= ": ".$ds->organism->description if $ds->organism->description;
     
-    $anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"Organism", Values=>[$org], Type_delimit=>": ", Val_delimit=>" "));
+    $anno_obj->add_Annot(new CoGe_dev::Accessory::Annotation(Type=>"Organism", Values=>[$org], Type_delimit=>": ", Val_delimit=>" "));
     my ($gc, $at) = $self->gc_content(gstid=>$gstid);
     $gc*=100;
     $at*=100;
-    $anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"DNA content", Values=>["GC: $gc%","AT: $at%"], Type_delimit=>": ", Val_delimit=>" "));
+    $anno_obj->add_Annot(new CoGe_dev::Accessory::Annotation(Type=>"DNA content", Values=>["GC: $gc%","AT: $at%"], Type_delimit=>": ", Val_delimit=>" "));
     my ($wgc, $wat) = $self->wobble_content(gstid=>$gstid);
     if ($wgc || $wat)
       {
 	$wgc*=100;
 	$wat*=100;
-	$anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"Wobble content", Values=>["GC: $wgc%","AT: $wat%"], Type_delimit=>": ", Val_delimit=>" "));
+	$anno_obj->add_Annot(new CoGe_dev::Accessory::Annotation(Type=>"Wobble content", Values=>["GC: $wgc%","AT: $wat%"], Type_delimit=>": ", Val_delimit=>" "));
       }
     return $anno_obj->to_String;
   }
@@ -517,7 +510,7 @@ sub annotation_pretty_print_html
     $gstid = 1 unless defined $gstid;
     my $skip_GC = $opts{skip_GC};
     $loc_link = "FastaView.pl" unless defined $loc_link;
-    my $anno_obj = new CoGe::Accessory::Annotation(Type=>"anno");
+    my $anno_obj = new CoGe_dev::Accessory::Annotation(Type=>"anno");
     $anno_obj->Val_delimit("<BR/>");
     $anno_obj->Add_type(0);
     $anno_obj->String_end("<BR/>");
@@ -527,7 +520,7 @@ sub annotation_pretty_print_html
     my $strand = $self->strand;
     my $dataset_id = $self->dataset->id;
     my $fid = $self->id;
-    my $anno_type = new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\">"."Name(s)"."</span>");
+    my $anno_type = new CoGe_dev::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\">"."Name(s)"."</span>");
     $anno_type->Type_delimit(": <td>");
     $anno_type->Val_delimit(" , ");
     my ($primary_name) = $self->primary_name;
@@ -541,7 +534,7 @@ sub annotation_pretty_print_html
     unless ($minimal)
       {
 	#add links to CoGe
-	my $anno_type = new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\">"."CoGe Links"."</span>");
+	my $anno_type = new CoGe_dev::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\">"."CoGe Links"."</span>");
 	$anno_type->Type_delimit(": <td> ");
 	$anno_type->Val_delimit(" , ");
 
@@ -580,7 +573,7 @@ sub annotation_pretty_print_html
 		    $anno_name = "<tr><td nowrap='true'><span class=\"title5\">". $anno_name."</span>";
 		  }
 	      }
-	    my $anno_type = new CoGe::Accessory::Annotation(Type=>$anno_name);
+	    my $anno_type = new CoGe_dev::Accessory::Annotation(Type=>$anno_name);
 	    $anno_type->Val_delimit("<br>");
 	    $anno_type->Type_delimit(" ");
 #	    my $annotation = $anno->annotation;
@@ -591,7 +584,7 @@ sub annotation_pretty_print_html
 	    if (ref ($group) =~ /group/i && !($type->name eq $group->name) )
 	      {
 		my $class = $anno->link ? "coge_link" : "title5";
-		my $anno_g = new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"$class\">".$group->name."</span>");
+		my $anno_g = new CoGe_dev::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"$class\">".$group->name."</span>");
 		$anno_g->add_Annot($anno_type);
 		$anno_g->Type_delimit(":<td>");
 		$anno_g->Val_delimit(", ");
@@ -610,16 +603,16 @@ sub annotation_pretty_print_html
 	$location .= $self->commify($self->start)."-".$self->commify($self->stop);
 	$location .=" (".$strand.")";
 	my $featid = $self->id;
-	$anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\">Length</span>", Values=>["<span class='data5'>".$self->length." nt</span>"],Type_delimit=>":<td>", Val_delimit=>" ")) unless $minimal;
+	$anno_obj->add_Annot(new CoGe_dev::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\">Length</span>", Values=>["<span class='data5'>".$self->length." nt</span>"],Type_delimit=>":<td>", Val_delimit=>" ")) unless $minimal;
 #	$location = qq{<span class="data5 link" onclick="window.open('$loc_link?featid=$featid&start=$start&stop=$stop&chr=$chr&dsid=$dataset_id&strand=$strand&gstid=$gstid')" >}.$location."</span>" if $loc_link;
 	$location = qq{<span class="data5 link" onclick="window.open('$loc_link?featid=$featid&gstid=$gstid')" >}.$location."</span>" if $loc_link;
 	$location = qq{<span class="data">$location</span>};
-	$anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5 link\"><span onclick=\"window.open('GenomeView.pl?chr=$chr&ds=$dataset_id&x=$start&z=5&gstid=$gstid')\" >Location</span></span>", Values=>[$location], Type_delimit=>":<td>", Val_delimit=>" "));
+	$anno_obj->add_Annot(new CoGe_dev::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5 link\"><span onclick=\"window.open('GenomeView.pl?chr=$chr&ds=$dataset_id&x=$start&z=5&gstid=$gstid')\" >Location</span></span>", Values=>[$location], Type_delimit=>":<td>", Val_delimit=>" "));
 
 	my $ds=$self->dataset();
 	my $dataset = qq{<span class="data5 link" onclick="window.open('OrganismView.pl?dsid=}.$ds->id."')\">".$ds->name." (v".$ds->version.")";;
 	$dataset .= "</span>";
-	$anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\">Dataset</span>", Values=>[$dataset], Type_delimit=>":<td>", Val_delimit=>" "));
+	$anno_obj->add_Annot(new CoGe_dev::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\">Dataset</span>", Values=>[$dataset], Type_delimit=>":<td>", Val_delimit=>" "));
 
 	my @genomes;
 	foreach my $dsg ($ds->genomes)
@@ -628,33 +621,33 @@ sub annotation_pretty_print_html
 	    my $genome = qq{<span class="data5 link" onclick="window.open('OrganismView.pl?dsgid=}.$dsg->id."')\">".$name." (v".$dsg->version.")";
 	    push @genomes, $genome;
 	  }
-	$anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\">Genomes</span>", Values=>\@genomes, Type_delimit=>":<td>", Val_delimit=>" "));
+	$anno_obj->add_Annot(new CoGe_dev::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\">Genomes</span>", Values=>\@genomes, Type_delimit=>":<td>", Val_delimit=>" "));
 
 	my $org = qq{<span class="data5 link" onclick = "window.open('OrganismView.pl?oid=}.$ds->organism->id."')\">".$ds->organism->name;
 	$org .= "</span>";
 	
-	$anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\">Organism</span>", Values=>[$org], Type_delimit=>":<td>", Val_delimit=>" "));
+	$anno_obj->add_Annot(new CoGe_dev::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\">Organism</span>", Values=>[$org], Type_delimit=>":<td>", Val_delimit=>" "));
 	my $gst;
-	foreach my $dsg ($ds->dataset_groups)
+	foreach my $dsg ($ds->genomes)
 	  {
 	    $gst = $dsg->type if $dsg->type->id == $gstid;
 	  }
 	if ($gst)
 	  {
-	    $anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\">Genomic Sequnce</span>", Values=>["<span class=data5>".$gst->name."</span>"], Type_delimit=>":<td>", Val_delimit=>" "));
+	    $anno_obj->add_Annot(new CoGe_dev::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\">Genomic Sequnce</span>", Values=>["<span class=data5>".$gst->name."</span>"], Type_delimit=>":<td>", Val_delimit=>" "));
 	  }
 	unless ($skip_GC)
 	  {
 	    my ($gc, $at) = $self->gc_content(gstid=>$gstid);
 	    $gc*=100;
 	    $at*=100;
-	    $anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\">DNA content</span>", Values=>["<span class='data5'>GC: $gc%","AT: $at%</span>"], Type_delimit=>":<td>", Val_delimit=>" "));
+	    $anno_obj->add_Annot(new CoGe_dev::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\">DNA content</span>", Values=>["<span class='data5'>GC: $gc%","AT: $at%</span>"], Type_delimit=>":<td>", Val_delimit=>" "));
 	    my ($wgc, $wat) = $self->wobble_content(gstid=>$gstid);
 	    if ($wgc || $wat)
 	      {
 		$wgc*=100;
 		$wat*=100;
-		$anno_obj->add_Annot(new CoGe::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\">Wobble content</span>", Values=>["<span class='data5'>GC: $wgc%","AT: $wat%</span>"], Type_delimit=>":<td>", Val_delimit=>" "));
+		$anno_obj->add_Annot(new CoGe_dev::Accessory::Annotation(Type=>"<tr><td nowrap='true'><span class=\"title5\">Wobble content</span>", Values=>["<span class='data5'>GC: $wgc%","AT: $wat%</span>"], Type_delimit=>":<td>", Val_delimit=>" "));
 	      }
 	  }
       }
@@ -1097,22 +1090,8 @@ sub protein_sequence {
   my $gstid = $opts{gstid};
   my $dsgid = $opts{dsgid};
   my $seq = $opts{seq};
-  my $siter = $self->sequences();
   my @sequence_objects;
-  while ( my $seq = $siter->next() ) {
-    push @sequence_objects, $seq;
-  }
 
-  if (@sequence_objects == 1) 
-    {
-      return $sequence_objects[0]->sequence_data();
-    } 
-  elsif ( @sequence_objects > 1 )  
-    {
-      return wantarray ? @sequence_objects : \@sequence_objects;
-    } 
-  else 
-    {
       my ($seqs,$type) = $self->frame6_trans(gstid=>$gstid, dsgid=>$dsgid, seq=>$seq);
       #check to see if we can find the best translation
       my $found=0;
@@ -1157,7 +1136,6 @@ sub protein_sequence {
 	{
 	  return wantarray ? @seqs : \@seqs;
 	}
-    }
 }
 
 
@@ -1641,7 +1619,7 @@ sub fasta
     my $gst;
     if ($gstid)
       {
-	foreach my $dsg ($self->dataset->dataset_groups)
+	foreach my $dsg ($self->dataset->genomes)
 	  {
 	    ($gst) = $dsg->type if $dsg->type->id == $gstid;
 	  }
@@ -1712,7 +1690,7 @@ sub fasta
  Usage     : 
  Purpose   : returns the genomic_sequence_type object for the sequence
  Returns   : wantarray -- may be more than one genomic_sequence_type sequences associated with this feature
-             looked up through dataset->dataset_group_connector->dataset_group->genomic_sequence_type
+             looked up through dataset->genome_connector->genome->genomic_sequence_type
  Argument  : 
  Throws    : 
  Comments  : 
@@ -1728,13 +1706,39 @@ sub sequence_type
   {
     my $self = shift;
     my %gst;
-    foreach my $dsg ($self->dataset->dataset_groups)
+    foreach my $dsg ($self->dataset->genomes)
       {
 	$gst{$dsg->genomic_sequence_type->id} = $dsg->genomic_sequence_type;
       }
     my @gst = values %gst;
     return shift @gst if scalar @gst == 1; #only one result
     return wantarray ? @gst : \@gst;
+  }
+
+################################################ subroutine header begin ##
+
+=head2 info
+
+ Usage     : $self->info
+ Purpose   : returns a string of information about the feature.  
+
+ Returns   : returns a string
+ Argument  : none
+ Throws    : 
+ Comments  : To be used to quickly generate a string about the feature
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub info
+  {
+    my $self = shift;
+    my ($info) = $self->name;
+    $info .= ": ". $self->organism->name;
+    return $info;
   }
 
 

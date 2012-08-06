@@ -1,4 +1,4 @@
-  package CoGeX::ResultSet::Organism;
+  package CoGeX_dev::ResultSet::Organism;
 
   use strict;
   use warnings;

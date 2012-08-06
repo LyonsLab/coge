@@ -1,4 +1,4 @@
-package CoGeX::Result::AnnotationTypeGroup;
+package CoGeX_dev::Result::AnnotationTypeGroup;
 
 # Created by DBIx::Class::Schema::Loader v0.03009 @ 2006-12-01 18:13:38
 
@@ -9,7 +9,7 @@ use base 'DBIx::Class::Core';
 
 =head1 NAME
 
-CoGeX::AnnotationTypeGroup
+CoGeX_dev::AnnotationTypeGroup
 
 =head1 SYNOPSIS
 
@@ -32,11 +32,11 @@ C<description>
 Type: VARCHAR, Default: undef, Nullable: yes, Size: 255
 Description of Annotation Type Group.
 
-Relates to CCoGeX::Result::AnnotationType> via C<annotation_type_group_id>; has a one-to-many relationship.
+Relates to CCoGeX_dev::Result::AnnotationType> via C<annotation_type_group_id>; has a one-to-many relationship.
 
 =head1 USAGE
 
- use CoGeX;
+ use CoGeX_dev;
 
 =head1 METHODS
 
@@ -58,7 +58,7 @@ __PACKAGE__->add_columns(
 );
 __PACKAGE__->set_primary_key("annotation_type_group_id");
 
-__PACKAGE__->has_many("annotation_types" => "CoGeX::Result::AnnotationType", 'annotation_type_group_id');
+__PACKAGE__->has_many("annotation_types" => "CoGeX_dev::Result::AnnotationType", 'annotation_type_group_id');
 
 sub desc
   {

@@ -1,4 +1,4 @@
-package CoGeX::Result::GenomicSequenceType;
+package CoGeX_dev::Result::GenomicSequenceType;
 
 # Created by DBIx::Class::Schema::Loader v0.03009 @ 2006-12-01 18:13:38
 
@@ -6,11 +6,13 @@ use strict;
 use warnings;
 
 use base 'DBIx::Class::Core';
-use CoGeX::ResultSet::GenomicSequenceType;
+use lib '/home/mbomhoff/CoGe/Accessory/lib'; #FIXME 8/2/12 remove
+use lib '/home/mbomhoff/CoGeX/lib'; #FIXME 8/2/12 remove
+use CoGeX_dev::ResultSet::GenomicSequenceType;
 
 =head1 NAME
 
-CoGeX::GenomicSequenceType
+CoGeX_dev::GenomicSequenceType
 
 =head1 SYNOPSIS
 
@@ -33,11 +35,11 @@ C<description>
 Type: VARCHAR, Default: undef, Nullable: yes, Size: 255
 Description of the genomic sequence type.
 
-Relates to CCoGeX::Result::DatasetGroup> via C<genomic_sequence_type_id> in a one-to-many relationship.
+Relates to CCoGeX_dev::Result::Genome> via C<genomic_sequence_type_id> in a one-to-many relationship.
 
 =head1 USAGE
 
-  use CoGeX;
+  use CoGeX_dev;
 
 =head1 METHODS
 
@@ -59,7 +61,7 @@ __PACKAGE__->add_columns(
   },
 );
 __PACKAGE__->set_primary_key("genomic_sequence_type_id");
-__PACKAGE__->has_many("dataset_groups"=>"CoGeX::Result::DatasetGroup","genomic_sequence_type_id");
+__PACKAGE__->has_many("genomes"=>"CoGeX_dev::Result::Genome","genomic_sequence_type_id");
 
 1;
 

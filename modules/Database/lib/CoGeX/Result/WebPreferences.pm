@@ -1,4 +1,4 @@
-package CoGeX::Result::WebPreferences;
+package CoGeX_dev::Result::WebPreferences;
 
 # Created by DBIx::Class::Schema::Loader v0.03009 @ 2006-12-01 18:13:38
 
@@ -9,7 +9,7 @@ use base 'DBIx::Class::Core';
 
 =head1 NAME
 
-CoGeX::WebPreferences
+CoGeX_dev::WebPreferences
 
 =head1 SYNOPSIS
 
@@ -33,7 +33,7 @@ Type: TEXT, Default: "", Nullable: no, Size: N/A
 
 =head1 USAGE
 
-  use CoGeX;
+  use CoGeX_dev;
 
 =head1 METHODS
 

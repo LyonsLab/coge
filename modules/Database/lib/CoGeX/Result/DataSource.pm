@@ -1,4 +1,4 @@
-package CoGeX::Result::DataSource;
+package CoGeX_dev::Result::DataSource;
 
 # Created by DBIx::Class::Schema::Loader v0.03009 @ 2006-12-01 18:13:38
 
@@ -9,7 +9,7 @@ use base 'DBIx::Class::Core';
 
 =head1 NAME
 
-CoGeX::DataSource
+CoGeX_dev::DataSource
 
 =head1 SYNOPSIS
 
@@ -37,11 +37,11 @@ C<link>
 Type: TEXT, Default: undef, Nullable: yes, Size: 65535
 URL to origonal source.
 
-Relates to CCoGeX::Result::Dataset> via C<data_source_id>, one-to-many relationship.
+Relates to CCoGeX_dev::Result::Dataset> via C<data_source_id>, one-to-many relationship.
 
 =head1 USAGE
 
- use CoGeX;
+ use CoGeX_dev;
 
 =head1 METHODS
 
@@ -71,7 +71,7 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key("data_source_id");
 
 
-__PACKAGE__->has_many('datasets'=>"CoGeX::Result::Dataset", "data_source_id");
+__PACKAGE__->has_many('datasets'=>"CoGeX_dev::Result::Dataset", "data_source_id");
 
 sub desc
   {

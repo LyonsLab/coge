@@ -1,15 +1,16 @@
-package CoGeX::Result::Organism;
+package CoGeX_dev::Result::Organism;
 
 # Created by DBIx::Class::Schema::Loader v0.03009 @ 2006-12-01 18:13:38
 
 use strict;
 use warnings;
 use base 'DBIx::Class::Core';
-use CoGeX::ResultSet::Organism;
+#use lib '/home/mbomhoff/CoGeX/lib'; #FIXME 8/2/12 remove
+#use CoGeX_dev::ResultSet::Organism;
 
 =head1 NAME
 
-CoGeX::Organism
+CoGeX_dev::Organism
 
 =head1 SYNOPSIS
 
@@ -36,11 +37,11 @@ Type:VARCHAR, Default: "", Nullable: no, Size: 200
 File-system 'safe' (only alphanumeric characters and underscores) version of 'name' field above.
 
 
-Relates to CCoGeX::Result::DatasetGroup> via C<organism_id>, in a one-to-many relationship.
+Relates to CCoGeX_dev::Result::Genome> via C<organism_id>, in a one-to-many relationship.
 
 =head1 USAGE
 
-  use CoGeX;
+  use CoGeX_dev;
 
 =head1 METHODS
 
@@ -64,7 +65,7 @@ __PACKAGE__->add_columns(
 );
 __PACKAGE__->set_primary_key("organism_id");
 
-__PACKAGE__->has_many("dataset_groups" => "CoGeX::Result::DatasetGroup", 'organism_id');
+__PACKAGE__->has_many("genomes" => "CoGeX_dev::Result::Genome", 'organism_id');
 
 ################################################ subroutine header begin ##
 
@@ -85,9 +86,10 @@ See Also   :
 ################################################## subroutine header end ##
 
 
-sub genomes
+sub dataset_groups
   {
-    return shift->dataset_groups;
+  	print STDERR "Organism::dataset_groups is deprecated, use genomes\n";
+    return shift->genomes;
   }
 
 
@@ -113,7 +115,7 @@ See Also   :
 sub public_genomes
 {
 	
-	return shift->dataset_groups({restricted=>0});
+	return shift->genomes({restricted=>0});
 	
 }
 
@@ -145,7 +147,7 @@ sub current_genome
     my $gstid = $opts{type} || $opts{genomic_sequence_type} || $opts{sequence_type} || $opts{gstid};
     $gstid = 1 unless $gstid;
     $gstid = ref($gstid) =~/Type/ ? $gstid->id : $gstid;
-    my ($dsg) = $self->dataset_groups({genomic_sequence_type_id=>$gstid},
+    my ($dsg) = $self->genomes({genomic_sequence_type_id=>$gstid},
 				      {'order_by' => 'me.version desc',
 				       join=>[{'dataset_connectors'=>'dataset'}, 'organism'],
 				      prefetch=>[{'dataset_connectors'=>'dataset'}, 'organism']
@@ -312,7 +314,7 @@ sub datasets
     my $self = shift;
     my %opts = @_;
     my %ds;
-    map {$ds{$_->id}=$_} map{$_->datasets} $self->dataset_groups;
+    map {$ds{$_->id}=$_} map{$_->datasets} $self->genomes;
     return wantarray ? values %ds : [values %ds];
   }
 

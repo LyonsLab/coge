@@ -1,4 +1,4 @@
-package CoGeX::Result::UserGroup;
+package CoGeX_dev::Result::UserGroup;
 
 # Created by DBIx::Class::Schema::Loader v0.03009 @ 2006-12-01 18:13:38
 
@@ -10,7 +10,7 @@ use base 'DBIx::Class::Core';
 
 =head1 NAME
 
-CoGeX::UserGroup
+CoGeX_dev::UserGroup
 
 =head1 SYNOPSIS
 
@@ -31,7 +31,7 @@ Type: VARCHAR, Default: undef, Nullable: yes, Size: 255
 
 =head1 USAGE
 
-  use CoGeX;
+  use CoGeX_dev;
 
 =head1 METHODS
 
@@ -50,11 +50,12 @@ __PACKAGE__->add_columns(
 			  size => 255,
 			 },
 			 "role_id",  { data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
+			 "locked",  { data_type => "INT", default_value => "0", is_nullable => 0, size => 1 }
 );
 __PACKAGE__->set_primary_key("user_group_id");
-__PACKAGE__->has_many('user_group_connectors'=>"CoGeX::Result::UserGroupConnector",'user_group_id');
-__PACKAGE__->has_many('user_group_data_connectors'=>"CoGeX::Result::UserGroupDataConnector",'user_group_id');
-__PACKAGE__->belongs_to('role'=>"CoGeX::Result::Role",'role_id');
+__PACKAGE__->has_many('user_group_connectors'=>"CoGeX_dev::Result::UserGroupConnector",'user_group_id');
+__PACKAGE__->has_many('lists'=>"CoGeX_dev::Result::List",'user_group_id');
+__PACKAGE__->belongs_to('role'=>"CoGeX_dev::Result::Role",'role_id');
 
 
 ################################################ subroutine header begin ##
@@ -88,14 +89,78 @@ sub users {
     return wantarray ? @users : \@users;
 }
 
+################################################ subroutine header begin ##
+
+=head2 experiments
+
+ Usage     : 
+ Purpose   : Returns the set of experiments associated with the user group
+ Returns   : wantArray of experiments
+ Argument  : None
+ Throws    : None
+ Comments  : 
+
+
+
+=cut
+
+################################################## subroutine header end ##
+
+
+sub experiments {
+
+    my $self = shift;
+    my @experiments=();
+    foreach my $list ($self->lists)
+      {
+	foreach my $experiment ($list->experiments)
+	  {
+	    push @experiments, $experiment;
+	  }
+      }
+    return wantarray ? @experiments : \@experiments;
+}
+
+################################################ subroutine header begin ##
+
+=head2 features
+
+ Usage     : 
+ Purpose   : Returns the set of features associate with the user group
+ Returns   : wantArray of features
+ Argument  : None
+ Throws    : None
+ Comments  : 
+
+
+
+=cut
+
+################################################## subroutine header end ##
+
+
+sub features {
+
+    my $self = shift;
+    my @features=();
+    foreach my $list ($self->lists)
+      {
+	foreach my $feature ($list->features)
+	  {
+	    push @features, $feature;
+	  }
+      }
+    return wantarray ? @features : \@features;
+}
+
 
 
 ################################################ subroutine header begin ##
 
-=head2 private_genomes
+=head2 genomes
 
  Usage     : 
- Purpose   : Returns the set of genomes associated with a genome (dataset_group)
+ Purpose   : Returns the set of genomes associated with the user group
  Returns   : wantArray of genomes
  Argument  : None
  Throws    : None
@@ -108,22 +173,23 @@ sub users {
 ################################################## subroutine header end ##
 
 
-sub private_genomes {
+sub genomes {
 
     my $self = shift;
-    my @private_genomes=();
-
-    foreach my $group_dataset ($self->user_group_data_connectors())
+    my @genomes=();
+    foreach my $list ($self->lists)
       {
-	push(@private_genomes,$group_dataset->genome()) if $group_dataset->genome;
-    }
-
-    return wantarray ? @private_genomes : \@private_genomes;
+	foreach my $genome ($list->genomes)
+	  {
+	    push @genomes, $genome;
+	  }
+      }
+    return wantarray ? @genomes : \@genomes;
 }
 
 ################################################ subroutine header begin ##
 
-=head2 genomes
+=head2 private_genomes
 
  Usage     : $self->genomes
  Purpose   : alias for sub private_genomes
@@ -139,59 +205,9 @@ sub private_genomes {
 ################################################## subroutine header end ##
 
 
-sub genomes { return shift->private_genomes(@_);}
+sub private_genomes { return shift->genomes(@_);}
 
 
-################################################ subroutine header begin ##
-
-=head2 private_datasets
-
- Usage     : 
- Purpose   : Returns the set of genomes associated with a genome (dataset_group)
- Returns   : Array of Groups
- Argument  : None
- Throws    : None
- Comments  : 
-
-
-
-=cut
-
-################################################## subroutine header end ##
-
-
-sub private_datasets {
-
-    my $self = shift;
-    my @private_genomes=();
-
-    foreach my $group_dataset ($self->user_group_data_connectors()){
-	push(@private_genomes,$group_dataset->dataset())if $group_dataset->dataset;
-    }
-
-    return wantarray ? @private_genomes : \@private_genomes;
-}
-
-
-################################################ subroutine header begin ##
-
-=head2 datasets
-
- Usage     : $self->datasets
- Purpose   : alias for sub private_datasets
- Returns   : wantArray of datasets
- Argument  : None
- Throws    : None
- Comments  : 
-
-
-
-=cut
-
-################################################## subroutine header end ##
-
-
-sub datasets { return shift->private_datasets(@_);}
 
 =head1 BUGS
 
