@@ -271,9 +271,12 @@ sub generate_table {
 		# Build source link
 		my $src = $exp->source;
 		my $link = $src->link;
-		$link = 'http://' . $link if (not $link =~ /^http:\/\//);
-		my $source = "<span class=link onclick=window.open('$link');>" . $src->name . ': ' . $src->desc . "</span>";
-		
+		$link = 'http://' . $link if ($link and not $link =~ /^http:\/\// );
+		my $source;
+		$source .= "<span class='link' onclick=window.open('$link');>" if ($link);
+		$source .= $src->name . ($src->desc ? ': ' . $src->desc : '');
+		$source .= "</span>" if ($link);
+				
 		push @table, 
 		{
 			COUNT		=> $count,
