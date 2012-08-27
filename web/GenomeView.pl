@@ -5,19 +5,17 @@ use CGI::Ajax;
 use CGI::Carp 'fatalsToBrowser';
 use HTML::Template;
 use Data::Dumper;
-use lib '/home/mbomhoff/CoGe/Accessory/lib'; #FIXME 8/2/12 remove
-use lib '/home/mbomhoff/CoGeX/lib'; #FIXME 8/2/12 remove
 
-use CoGe_dev::Accessory::LogUser;
-use CoGe_dev::Accessory::Web;
-use CoGeX_dev;
+use CoGe::Accessory::LogUser;
+use CoGe::Accessory::Web;
+use CoGeX;
 use DBI;
 use Data::Dumper;
 no warnings 'redefine';
 
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME $DATE $DEBUG $USER $FORM $coge $COOKIE_NAME);
-$P         = CoGe_dev::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
+$P         = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
 $ENV{PATH} = $P->{COGEDIR};
 $PAGE_NAME = "GenomeView.pl";
 $DEBUG     = 0;
@@ -34,14 +32,14 @@ $DBPORT  = $P->{DBPORT};
 $DBUSER  = $P->{DBUSER};
 $DBPASS  = $P->{DBPASS};
 $connstr = "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
-$coge    = CoGeX_dev->connect( $connstr, $DBUSER, $DBPASS );
+$coge    = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
 
 $COOKIE_NAME = $P->{COOKIE_NAME};
 
 my ($cas_ticket) = $FORM->param('ticket');
 $USER = undef;
-($USER) = CoGe_dev::Accessory::Web->login_cas( ticket => $cas_ticket, coge => $coge, this_url => $FORM->url() ) if ($cas_ticket);
-($USER) = CoGe_dev::Accessory::LogUser->get_user( cookie_name => $COOKIE_NAME, coge => $coge ) unless $USER;
+($USER) = CoGe::Accessory::Web->login_cas( ticket => $cas_ticket, coge => $coge, this_url => $FORM->url() ) if ($cas_ticket);
+($USER) = CoGe::Accessory::LogUser->get_user( cookie_name => $COOKIE_NAME, coge => $coge ) unless $USER;
 
 my $pj = new CGI::Ajax(
 												gen_html        => \&gen_html,
@@ -93,7 +91,7 @@ sub gen_body
 	$fid         = $form->param('fid')   if $form->param('fid');
 	$dsgid       = $form->param('dsgid') if $form->param('dsgid');
 	$show_legend = $form->param('sl')    if $form->param('sl');
-	$prefs = CoGe_dev::Accessory::Web::load_settings( user => $USER, page => $PAGE_NAME, coge => $coge );
+	$prefs = CoGe::Accessory::Web::load_settings( user => $USER, page => $PAGE_NAME, coge => $coge );
 	my ( $ds, $dsg, $gst );
 
 	if ($fid)
@@ -315,7 +313,7 @@ sub save_options
 {
 	my %opts = @_;
 	my $opts = Dumper \%opts;
-	my $item = CoGe_dev::Accessory::Web::save_settings( opts => $opts, user => $USER, page => $PAGE_NAME, coge => $coge );
+	my $item = CoGe::Accessory::Web::save_settings( opts => $opts, user => $USER, page => $PAGE_NAME, coge => $coge );
 }
 
 sub get_genome_info
