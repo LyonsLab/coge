@@ -1,22 +1,20 @@
 #!/usr/bin/perl -w
 
 use strict;
-use lib '/home/mbomhoff/CoGe/Accessory/lib'; #FIXME 8/2/12 remove
-use lib '/home/mbomhoff/CoGeX/lib'; #FIXME 8/2/12 remove
-use CoGeX_dev;
-use CoGe_dev::Accessory::Web;
-use CoGe_dev::Accessory::LogUser;
+use CoGeX;
+use CoGe::Accessory::Web;
+use CoGe::Accessory::LogUser;
 use CGI;
 
 no warnings 'redefine';
-my $P = CoGe_dev::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
+my $P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 my $DBNAME = $P->{DBNAME};
 my $DBHOST = $P->{DBHOST};
 my $DBPORT = $P->{DBPORT};
 my $DBUSER = $P->{DBUSER};
 my $DBPASS = $P->{DBPASS};
 my $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
-my $coge = CoGeX_dev->connect($connstr, $DBUSER, $DBPASS );
+my $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 my $FORM = new CGI;
 my $dsgid = $FORM->param('dsgid');
 my $dsid = $FORM->param('dsid');
@@ -28,7 +26,7 @@ $cds = $FORM->param('cds') if $FORM->param('cds');
 my $name_unique = 0;
 $name_unique = $FORM->param('nu') if $FORM->param('nu');
 my $upa = $FORM->param('upa') if $FORM->param('upa'); #unqiue_parent_annotations
-my ($USER) = CoGe_dev::Accessory::LogUser->get_user();
+my ($USER) = CoGe::Accessory::LogUser->get_user();
 
 my $item;
 my $id;
