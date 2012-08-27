@@ -1,0 +1,168 @@
+<TMPL_IF NAME=MAIN>
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></SCRIPT>
+
+<SCRIPT language="JavaScript">
+$(document).ready(function(){
+	$.ajaxSetup({
+		type: "POST",
+		url: "<TMPL_VAR NAME=PAGE_NAME>",
+		dataType: "html",
+		cache: false,
+	});
+	set_table();
+//	$(".dialog_box").dialog({autoOpen: <TMPL_VAR NAME=EDIT_BOX_OPEN>, width: 600});
+	<TMPL_VAR ADDITIONAL_STUFF>
+});
+
+function set_table () {	 $('#list_table').tablesorter({widgets: ['zebra']});	 }
+
+function run_get_lists_for_user(opts){
+	if (!opts) { opts={}; }
+	divid = opts.divid; // ID for DIV where results will be displayed in page
+	
+	// create a new closure who's scope does *not*
+	// include the `divid` value so that callback will 
+	// not clobber the `divid` variable 
+	var create_callback = function(divid) {
+		var local_divid = divid;
+		return function (data) {
+			$('#'+local_divid).html(data);
+			set_table();
+		};
+	};
+
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'get_lists_for_user',
+		},
+		success : create_callback(divid)
+	});
+	$('#ugid').val('');
+	$('#new_ugid').val('');
+}
+
+function create_list (opts){
+	name = $('#name').val();
+	desc = $('#desc').val();
+	typeid = $('#type option:selected').attr('value');
+	if (name) {
+		$.ajax({
+			data: {
+				jquery_ajax: 1,
+				fname: 'create_list',
+				name: name,
+				desc: desc,
+				typeid: typeid,
+			},
+			success : function(val) {
+				if (val != 1) {alert(val);}
+				run_get_lists_for_user({divid: 'lists'});
+			},
+		});
+	}
+	else { alert ('Error!  Must have a name!');}
+}
+
+function update_list_info (opts){
+	name = $('#edit_name').val();
+	desc = $('#edit_desc').val();
+	ugid = opts.ugid;
+	if (name) {
+		$.ajax({
+			data: {
+				jquery_ajax: 1,
+				fname: 'update_list',
+				ugid: ugid,
+				name: name,
+				desc: desc
+			},
+			success : function(val) {
+				run_get_lists_for_user({divid: 'lists'});
+			},
+		});
+	}
+	else { alert ('Error!  Must have a name!');}
+}
+
+function delete_list (opts){
+	lid = opts.lid;
+	if (lid) {
+		$.ajax({
+			data: {
+				jquery_ajax: 1,
+				fname: 'delete_list',
+				lid: lid,
+			},
+			success : function() {
+				$("#list_edit_box").dialog('close');	
+				run_get_lists_for_user({divid: 'lists'});
+			},
+		});
+	}
+}
+</SCRIPT>
+
+<div id=lists><TMPL_VAR NAME=LIST_INFO></div>
+<div>
+<TABLE>
+<tr>
+ <td>List Name:</td>
+ <td><input type="textbox" size=8 name="name" id="name"></td>
+ <td>Description:</td>
+ <td><input type="textbox" size=16 name="desc" id="desc"></td>
+ <td>Type:</td>
+ <td><select id="type">
+  <TMPL_LOOP NAME=TYPE_LOOP>
+   <OPTION value=<TMPL_VAR NAME=TID>><TMPL_VAR NAME=NAME></OPTION>
+  </TMPL_LOOP>
+  </select>
+ </td>
+ <td><span id=create_list style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="create_list()">Create new list</span></td>
+</table>
+</div>
+
+<div id=edit_box class= "dialog_box"></div>
+
+<div id=admin_stuff></div>
+</TMPL_IF>
+
+<TMPL_IF LIST_STUFF>
+<table id="list_table" class="small ui-widget-content ui-corner-all">
+ <thead align="left"> 
+  <tr>
+   <th>Name</th>
+   <th>Description</th>
+   <th>Type</th>
+   <th>Contents</th>
+   <th>Annotations</th>
+   <th>User Group</th>
+   <th>Edit</th>
+   <th>Delete</th>
+  </tr>
+ </thead>
+ <tbody align="left" valign="top" id="list_table_body" class="small">
+  <TMPL_LOOP NAME=LIST_LOOP>
+  <tr valign="middle">
+   <td><TMPL_VAR NAME=NAME></td>
+   <td><TMPL_VAR NAME=DESC></td>
+   <td><TMPL_VAR NAME=TYPE></td>
+   <td><TMPL_VAR NAME=DATA></td>
+   <td><TMPL_VAR NAME=ANNO></td>
+   <td><TMPL_VAR NAME=GROUP></td>
+   <td align='center'><TMPL_VAR NAME=EDIT_BUTTON></td>
+   <td align='center'><TMPL_VAR NAME=DELETE_BUTTON></td>
+  </TMPL_LOOP>
+ </tbody>
+</TABLE>
+</TMPL_IF>
+
+<TMPL_IF NAME=ADMIN_AREA>
+<hr>
+Admin Functions:<br>
+<pre>
+To do:
+   - add confirmation dialog to delete list function.
+</pre>
+</TMPL_IF>

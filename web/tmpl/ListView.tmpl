@@ -1,6 +1,7 @@
 <TMPL_IF NAME=MAIN>
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></SCRIPT>
+<SCRIPT TYPE="text/javascript" SRC="./js/filterlist.js"></SCRIPT>
 
 <SCRIPT language="JavaScript">
 $(document).ready(function(){
@@ -17,45 +18,626 @@ $(document).ready(function(){
 
 function set_table () {	 $('#group_table').tablesorter({widgets: ['zebra']});	 }
 
+function format_box_info (data) {
+	output = data.output;
+	return output;
+}
+
+function edit_list_info (opts) {
+	lid = opts.lid;
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'edit_list_info',
+			lid: lid,
+		},
+		success : function(data) {
+			data = eval('('+data+')');
+			title = data.title;
+			$("#list_info_edit_box").dialog("option", "title", title);
+			$("#list_info_edit_box").html(format_box_info(data));
+			$("#list_info_edit_box").dialog('open');
+			//setup_button_states();
+		},
+	});
+}
+
+function update_list_info (opts){
+	name = $('#edit_name').val();
+	desc = $('#edit_desc').val();
+	type = $('#edit_type').val();
+	lid = opts.lid;
+	if (name) 
+	{
+		$.ajax({
+			data: {
+				jquery_ajax: 1,
+				fname: 'update_list_info',
+				lid: lid,
+				name: name,
+				desc: desc,
+				type: type
+			},
+			success : function(val) {
+				$("#list_info_edit_box").dialog('close');
+				run_get_list_info({divid: 'list_info', lid: lid});
+			},
+		});
+	}
+	else { alert ('Error!  Must have a name!');}
+}
+
+function run_get_list_info(opts){
+	if (!opts){opts={};}
+	divid = opts.divid; //were results will be displayed in page
+	// create a new closure who's scope does *not*
+	// include the `divid` value so that callback will 
+	// not clobber the `divid` variable 
+	var create_callback = function(divid) {
+		var local_divid = divid;
+		return function (data) {
+			$('#'+local_divid).html(data);
+			set_table();
+		};
+	}; 
+
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'get_list_info',
+			lid: lid
+		},
+		success : create_callback(divid)
+	});
+}
+
+function make_list_public (opts) {
+	lid = opts.lid;
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'make_list_public',
+			lid: lid,
+		},
+		success : function(val) {
+			run_get_list_info({divid: 'list_info', lid: lid});
+		}
+	});
+}
+
+function make_list_private (opts) {
+	lid = opts.lid;
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'make_list_private',
+			lid: lid,
+		},
+		success : function(val) {
+			run_get_list_info({divid: 'list_info', lid: lid});
+		},
+	});
+}
+
+function add_list_items (opts) {
+	lid = opts.lid;
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'add_list_items',
+			lid: lid,
+		},
+		success : function(data) {
+			data = eval('('+data+')');
+			title = data.title;
+			$("#list_contents_edit_box").dialog("option", "title", title);
+			$("#list_contents_edit_box").html(format_box_info(data));
+			$("#list_contents_edit_box").dialog('open');
+			//setup_button_states();
+		},
+	});
+}
+
+function add_selected_items (opts){
+	select_id = opts.select_id;
+	lid = opts.lid;
+	$('#' + select_id + ' > option:selected').each(
+		function() {
+			var item_spec = $(this).attr("value");
+			//var html = '<option value='+uid+ ' >'+$(this).text()+'</option>';
+			//$('#ugid').append(html);
+			$(this).remove();
+			$.ajax({
+				data: {
+					jquery_ajax: 1,
+					fname: 'add_item_to_list',
+					lid: lid,
+					item_spec : item_spec,
+				},
+				success : 
+					function(data) {
+						if (data != 1) {alert(data);}
+						else {
+							run_get_list_contents({divid: 'list_contents', lid: lid});
+						}
+					},
+			});
+		}
+	);
+	$("#list_contents_edit_box").dialog('close');
+}
+
+function remove_list_item (opts) {
+	lid = opts.lid;
+	item_id = opts.item_id;
+	item_type = opts.item_type;
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'remove_list_item',
+			lid: lid,
+			item_id: item_id,
+			item_type: item_type,
+		},
+		success : function(val) {
+			run_get_list_contents({divid: 'list_contents', lid: lid});
+		},
+	});
+}
+
+function run_get_list_contents(opts) {
+	if (!opts){opts={};}
+	divid = opts.divid; //were results will be displayed in page
+	// create a new closure who's scope does *not*
+	// include the `divid` value so that callback will 
+	// not clobber the `divid` variable 
+	var create_callback = function(divid) {
+		var local_divid = divid;
+		return function (data) {
+			$('#'+local_divid).html(data);
+			set_table();
+		};
+	}; 
+
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'get_list_contents',
+			lid: lid
+		},
+		success : create_callback(divid)
+	});
+}
+
+function add_list_annotation (opts) {
+	lid = opts.lid;
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'add_list_annotation',
+			lid: lid,
+		},
+		success : function(data) {
+			data = eval('('+data+')');
+			title = data.title;
+			$("#list_annotation_edit_box").dialog({
+				title: title,
+				beforeClose: 
+					function() {
+						$("#edit_annotation_type").autocomplete('close');
+						$("#edit_annotation_type_group").autocomplete('close');
+					}
+			});	
+			$("#list_annotation_edit_box").html(format_box_info(data));
+			$("#list_annotation_edit_box").dialog('open');
+			//setup_button_states();
+		},
+	});
+}
+
+function add_annotation_to_list (opts) {
+	annotation = $('#edit_annotation').val();
+	type = $('#edit_annotation_type').val();
+	
+	if (annotation && type)
+	{
+		lid = opts.lid;
+		type_group = $('#edit_annotation_type_group').val();
+		link = 	$('#edit_link').val();
+	
+		$.ajax({
+			data: {
+				jquery_ajax: 1,
+				fname: 'add_annotation_to_list',
+				lid: lid,
+				type_group: type_group,
+				type: type,
+				annotation: annotation,
+				link: link
+			},
+			success : function(val) {
+				$("#list_annotation_edit_box").dialog('close');
+				run_get_list_annotations({divid: 'list_annotations', lid: lid});
+			},
+		});
+	}
+	else { alert ('Error: Must have type and annotation specified!');}
+}
+
+function run_get_list_annotations(opts) {
+	if (!opts){opts={};}
+	divid = opts.divid; //were results will be displayed in page
+	// create a new closure who's scope does *not*
+	// include the `divid` value so that callback will 
+	// not clobber the `divid` variable 
+	var create_callback = function(divid) {
+		var local_divid = divid;
+		return function (data) {
+			$('#'+local_divid).html(data);
+			set_table();
+		};
+	}; 
+
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'get_list_annotations',
+			lid: lid
+		},
+		success : create_callback(divid)
+	});
+}
+
+function remove_list_annotation (opts) {
+	lid = opts.lid;
+	laid = opts.laid;
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'remove_list_annotation',
+			lid: lid,
+			laid: laid,
+		},
+		success : function(val) {
+			run_get_list_annotations({divid: 'list_annotations', lid: lid});
+		},
+	});
+}
+
+function wait_to_search (search_func, lid, search_term) {
+	if (search_term.length > 2) {
+		pageObj.search_term = search_term;
+		pageObj.lid = lid;
+		
+		if (pageObj.time) {
+			clearTimeout(pageObj.time);
+		}
+	
+		// FIXME: could generalize by passing select id instead of separate search_* functions
+		pageObj.time = setTimeout(function() { search_func(pageObj.lid, pageObj.search_term); }, 500);
+	}
+}
+
+function search_genomes (lid, search_term) {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'search_genomes',
+			lid: lid,
+			search_term: search_term,
+		},
+		success : function(val) {
+			$("#select_genome_items").html(val);
+		},
+	});
+}
+
+function search_experiments (lid, search_term) {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'search_experiments',
+			lid: lid,
+			search_term: search_term,
+		},
+		success : function(val) {
+			$("#select_experiment_items").html(val);
+		},
+	});
+}
+
+function search_features (lid, search_term) {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'search_features',
+			lid: lid,
+			search_term: search_term,
+		},
+		success : function(val) {
+			$("#select_feature_items").html(val);
+		},
+	});
+}
+
+function search_lists (lid, search_term) {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'search_lists',
+			lid: lid,
+			search_term: search_term,
+		},
+		success : function(val) {
+			$("#select_list_items").html(val);
+		},
+	});
+}
+
 </SCRIPT>
 
-<div id=groups><TMPL_VAR NAME=LIST_INFO></div>
+<div>
+ List Info:<br>
+ <div id="list_info">
+  <TMPL_VAR NAME=LIST_INFO>
+ </div>
+</div>
+
+<br>
 
 <div>
-<span id=edit_list_info style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="edit_list_info();">Edit List Info</span>
+ List Annotations:<br>
+ <div id="list_annotations">
+  <TMPL_VAR NAME=LIST_ANNOTATIONS>
+ </div>
 </div>
-<div id=edit_box class= "dialog_box"></div>
 
-<div id=admin_stuff></div>
-</TMPL_IF>
+<br>
 
-<TMPL_IF NAME=EDIT_LIST>
+<div>
+ List Contents:<br>
+ <div id="list_contents">
+  <TMPL_VAR NAME=LIST_CONTENTS>
+ </div>
+</div>
 
-<TABLE class=small>
- <TR>
-  <TD>Name:</TD>
-  <TD><input type="textbox" size=8 id="edit_name" value="<TMPL_VAR NAME=NAME>"></TD>
- </TR>
- <TR>
-  <TD>Description:</TD>
-  <TD><input type="textbox" size=20 id="edit_desc" value="<TMPL_VAR NAME=DESC>"></TD>
- </TR>
-</TABLE>
-<span onClick="update_list_info({ugid: '<TMPL_VAR NAME=LID>'});" class='ui-button ui-corner-all ui-button-go'>Update List Info</span>
-<hr>
-<TABLE class=small>
- <TR>
-  <TD>Current Data:<br>
-  <select multiple id=ugid onclick="show_add()" ondblclick="remove_data({lid: '<TMPL_VAR NAME=LID>'})" size=10 >
-       <TMPL_LOOP NAME=LID_LOOP>
-        <OPTION value=<TMPL_VAR NAME=ID>><TMPL_VAR NAME=NAME></OPTION>
-       </TMPL_LOOP>
-      </select>
-  </TD> 
+<div id="list_info_edit_box" class="dialog_box"></div>
+<div id="list_annotation_edit_box" class="dialog_box"></div>
+<div id="list_contents_edit_box" class="dialog_box"></div>
+
+</TMPL_IF> <!-- MAIN -->
+
+
+
+<TMPL_IF NAME=EDIT_LIST_INFO>
+<table class="small">
+ <tr>
+  <td>Name:</td>
+  <td><input id="edit_name" type="textbox" size="53" value="<TMPL_VAR NAME=NAME>"></td>
+ </tr>
+ <tr>
+  <td>Description:</td>
+  <td><textarea id="edit_desc" rows=5 cols=50 ><TMPL_VAR NAME=DESC></textarea></td>
+ </tr>
+ <tr>
+  <td>Type:</td>
+  <td><select id="edit_type">
+   <TMPL_LOOP NAME=TYPE_LOOP>
+    <OPTION <TMPL_VAR NAME=TYPE_SELECTED> value=<TMPL_VAR NAME=TID>><TMPL_VAR NAME=NAME></OPTION>
+   </TMPL_LOOP>
+   </select>
+  </td>
+ <tr> 
 </table>
+<span onClick="update_list_info({lid: '<TMPL_VAR NAME=LID>'});" class='ui-button ui-corner-all ui-button-go'>Update List Info</span>
 </TMPL_IF>
+
+
+
+<TMPL_IF NAME=ADD_LIST_ANNOTATION> <!-- FIXME: this is redundant with ExperimentView.tmpl, move into own sub-template? -->
+<SCRIPT>
+	function search_annotation_types () {
+		type_group  = $("#edit_annotation_type_group").val();
+		search_term = $("#edit_annotation_type").val();
+		if (search_term.length > 2) {
+			$.ajax({
+				data: {
+					jquery_ajax: 1,
+					fname: 'search_annotation_types',
+					type_group: type_group,
+					search_term: search_term,
+				},
+				success : function(val) {
+					var items = jQuery.parseJSON(val);
+					$("#edit_annotation_type").autocomplete("option", "source", items);
+					$("#edit_annotation_type").autocomplete("search");
+				},
+			});
+		}
+	}
+	
+	function get_annotation_type_groups () {
+		$.ajax({
+			data: {
+				jquery_ajax: 1,
+				fname: 'get_annotation_type_groups'
+			},
+			success : function(val) {
+				var items = jQuery.parseJSON(val);
+				$("#edit_annotation_type_group").autocomplete("option", "source", items);
+				$("#edit_annotation_type_group").autocomplete("search");
+			},
+		});
+	}	
+
+	$("#edit_annotation_type_group").autocomplete({
+	    source: function() {
+	    			get_annotation_type_groups();
+	    		}
+	});
+	
+	$("#edit_annotation_type").autocomplete({
+	    source: []
+	});		
+</SCRIPT>
+<table class="small">
+ <tr valign='top'>
+  <td>Annotation:</td>
+  <td><textarea id="edit_annotation" rows=5 cols=50 ><TMPL_VAR NAME=ANNOTATION></textarea></td>
+ </tr>
+ <tr>
+  <td>Link:</td>
+  <td><input id="edit_link" type="textbox" size="53" value="<TMPL_VAR NAME=LINK>"></td>
+ </tr>
+ <tr>
+  <td>Type:</td>
+  <td><input id="edit_annotation_type" onkeypress="wait_to_search(search_annotation_types);" size="53"></td>
+ </tr> 
+ <tr>
+  <td>Type Group:</td>
+  <td><input id="edit_annotation_type_group" size="53"> (optional)</td>
+ </tr>
+</table>
+<span onClick="add_annotation_to_list({lid: '<TMPL_VAR NAME=LID>'});" class='ui-button ui-corner-all ui-button-go'>Add</span>
+</TMPL_IF>
+
+
+
+<TMPL_IF NAME=ADD_LIST_ITEMS>
+<SCRIPT language="JavaScript">
+$(function() { $("#tabs").tabs({selected:0}); });
+</SCRIPT>
+
+<div id='tabs' style='margin-top: 0.5em'>
+<ul>
+ <li class=small><a href="#tab-1">My Stuff</a></li>
+ <li class=small><a href="#tab-2">Genomes</a></li>
+ <li class=small><a href="#tab-3">Experiments</a></li>
+ <li class=small><a href="#tab-4">Features</a></li>
+ <li class=small><a href="#tab-5">Lists</a></li>
+</ul>
+
+<div id="tab-1">
+ <table class="small">
+  <tr>
+   <td><b>Available items:</b>&nbsp;&nbsp;&nbsp;&nbsp;<i>Hold down SHIFT or CTRL key to select multiple items</i><br>
+    <form name="available_my_list_items">
+     <select multiple id="select_my_items" size="10" style="max-width: 500px;">
+      <TMPL_LOOP NAME=AVAILABLE_MY_LIST_LOOP>
+      <option value="<TMPL_VAR NAME=ITEM_SPEC>"><TMPL_VAR NAME=ITEM_NAME></option>
+      </TMPL_LOOP>
+     </select>
+    </form>
+    <SCRIPT TYPE="text/javascript"> 
+     var available_my_list_items_filter = new filterlist(document.available_my_list_items.select_my_items);
+    </SCRIPT>
+    Filter: <INPUT NAME="regexp" onKeyUp="available_my_list_items_filter.set(this.value)">
+   </td> 
+  </tr>
+ </table>
+ <span href="javascript:void(0)" onClick="add_selected_items({select_id: 'select_my_items', lid: '<TMPL_VAR NAME=LID>'});" class='ui-button ui-button-go ui-corner-all'>Add Selected Items</span>
+</div> <!-- tab-1 -->
+
+<div id="tab-2">
+ <table class="small">
+  <tr>
+   <td>Search:</td>
+   <td><input type="textbox" size="53" id="edit_genome_search" onkeyup="wait_to_search(search_genomes, <TMPL_VAR NAME=LID>, this.value);"><span class='ui-button ui-corner-all' onclick="search_genomes(<TMPL_VAR NAME=LID>, $('#edit_genome_search').attr('value'));"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span></td>
+  </tr>
+  <tr>
+   <td colspan='2'>
+    <form name="available_genome_list_items">
+     <select multiple id="select_genome_items" size="10" style="max-width: 500px;">
+     </select>
+    </form>
+   </td>
+  </tr>
+  <tr>
+   <td colspan='2'><i>Hold down SHIFT or CTRL key to select multiple items</i></td>
+  </tr>
+ </table>
+ <span href="javascript:void(0)" onClick="add_selected_items({select_id: 'select_genome_items', lid: '<TMPL_VAR NAME=LID>'});" class='ui-button ui-button-go ui-corner-all'>Add Selected Items</span>
+</div> <!-- tab-2 -->
+
+<div id="tab-3">
+ <table class="small">
+  <tr>
+   <td>Search:</td>
+   <td><input type="textbox" size="53" id="edit_experiment_search" onkeyup="wait_to_search(search_experiments, <TMPL_VAR NAME=LID>, this.value);"><span class='ui-button ui-corner-all' onclick="search_experiments(<TMPL_VAR NAME=LID>, $('#edit_experiment_search').attr('value'));"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span></td>
+  </tr>
+  <tr>
+   <td colspan='2'>
+    <form name="available_experiment_list_items">
+     <select multiple id="select_experiment_items" size="10" style="max-width: 500px;">
+     </select>
+    </form>
+   </td>
+  </tr>
+  <tr>
+   <td colspan='2'><i>Hold down SHIFT or CTRL key to select multiple items</i></td>
+  </tr>
+ </table>
+ <span href="javascript:void(0)" onClick="add_selected_items({select_id: 'select_experiment_items', lid: '<TMPL_VAR NAME=LID>'});" class='ui-button ui-button-go ui-corner-all'>Add Selected Items</span>
+</div> <!-- tab-3 -->
+
+<div id="tab-4">
+ <table class="small">
+  <tr>
+   <td>Search:</td>
+   <td><input type="textbox" size="53" id="edit_feature_search" onkeyup="wait_to_search(search_features, <TMPL_VAR NAME=LID>, this.value);"><span class='ui-button ui-corner-all' onclick="search_features(<TMPL_VAR NAME=LID>, $('#edit_feature_search').attr('value'));"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span></td>
+  </tr>
+  <tr>
+   <td colspan='2'>
+    <form name="available_feature_list_items">
+     <select multiple id="select_feature_items" size="10" style="max-width: 500px;">
+     </select>
+    </form>
+   </td>
+  </tr>
+  <tr>
+   <td colspan='2'><i>Hold down SHIFT or CTRL key to select multiple items</i></td>
+  </tr>
+ </table>
+ <span href="javascript:void(0)" onClick="add_selected_items({select_id: 'select_feature_items', lid: '<TMPL_VAR NAME=LID>'});" class='ui-button ui-button-go ui-corner-all'>Add Selected Items</span>
+</div> <!-- tab-4 -->
+
+<div id="tab-5">
+ <table class="small">
+  <tr>
+   <td>Search:</td>
+   <td><input type="textbox" size="53" id="edit_list_search" onkeyup="wait_to_search(search_lists, <TMPL_VAR NAME=LID>, this.value);"><span class='ui-button ui-corner-all' onclick="search_lists(<TMPL_VAR NAME=LID>, $('#edit_list_search').attr('value'));"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span></td>
+  </tr>
+  <tr>
+   <td colspan='2'>
+    <form name="available_list_items">
+     <select multiple id="select_list_items" size="10" style="max-width: 500px;">
+     </select>
+    </form>
+   </td>
+  </tr>
+  <tr>
+   <td colspan='2'><i>Hold down SHIFT or CTRL key to select multiple items</i></td>
+  </tr>
+ </table>
+ <span href="javascript:void(0)" onClick="add_selected_items({select_id: 'select_list_items', lid: '<TMPL_VAR NAME=LID>'});" class='ui-button ui-button-go ui-corner-all'>Add Selected Items</span>
+
+</div> <!-- tab-5 -->
+
+</div> <!-- tabs -->
+</TMPL_IF> <!-- ADD_LIST_ITEMS -->
+
+
 
 <TMPL_IF NAME=ADMIN_AREA>
+<br>
 <hr>
 Admin Functions:<br>
+<div id="admin_stuff">
+<pre>
+To do:
+   - If only one item in add item list, auto-select it
+   - Disable add button if no items left to add
+   - add confirmation dialog to delete list function   
+</div>
 </TMPL_IF>
+

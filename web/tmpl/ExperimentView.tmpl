@@ -1,18 +1,19 @@
+<TMPL_IF NAME=MAIN>
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></SCRIPT>
 <SCRIPT language="JavaScript">
 
 $(document).ready(function(){
-	$('#experiment_table').tablesorter({		
-		cssAsc: 'headerSortUp',		// Class name for ascending sorting action to header
-		cssDesc: 'headerSortDown',	// Class name for descending sorting action to header
-		//cssHeader: 'header',		// Class name for headers (th's)
-		widgets: ['zebra'],
-		headers: {0: {sorter: false},},					
-	});
+	//$('#experiment_table').tablesorter({		
+	//	cssAsc: 'headerSortUp',		// Class name for ascending sorting action to header
+	//	cssDesc: 'headerSortDown',	// Class name for descending sorting action to header
+	//	//cssHeader: 'header',		// Class name for headers (th's)
+	//	widgets: ['zebra'],
+	//	headers: {0: {sorter: false},},					
+	//});
 
-	$("#search_bar").keyup( function() { filter_rows( $(this).val() ); });
-	$('#search_type').mouseup( function() { filter_rows( $('#search_bar').val() ); });
+	//$("#search_bar").keyup( function() { filter_rows( $(this).val() ); });
+	//$('#search_type').mouseup( function() { filter_rows( $('#search_bar').val() ); });
 
 	$.ajaxSetup({
 	               type: "GET",
@@ -20,6 +21,9 @@ $(document).ready(function(){
 	               dataType: "html",
 	               cache: false,
 	});
+	
+	//$(".dialog_box").dialog({autoOpen: <TMPL_VAR NAME=EDIT_BOX_OPEN>, width: 600});
+	$(".dialog_box").dialog({autoOpen: 0, width: 600});
 });
 
 //set up the jquery ui
@@ -66,7 +70,7 @@ $(function() {
 	});
 });
 
-function run_get_groups(opts){
+function run_get_groups(opts){ //FIXME mdb 8/23/12 - is this still being used? if not remove
 	if (!opts) { opts={}; }
 	divid = opts.divid; //were results will be displayed in page
 	expid = opts.expid;
@@ -91,6 +95,30 @@ function run_get_groups(opts){
 	});
 }
 
+function run_get_experiment_info(opts){
+	if (!opts){opts={};}
+	divid = opts.divid; //were results will be displayed in page
+	// create a new closure who's scope does *not*
+	// include the `divid` value so that callback will 
+	// not clobber the `divid` variable 
+	var create_callback = function(divid) {
+		var local_divid = divid;
+		return function (data) {
+			$('#'+local_divid).html(data);
+			//set_table();
+		};
+	}; 
+
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'get_experiment_info',
+			eid: eid
+		},
+		success : create_callback(divid)
+	});
+}
+
 function remove_group (opts){
 	ugid = opts.ugid;
 	expid = opts.expid;
@@ -109,48 +137,485 @@ function remove_group (opts){
 	}
 }
 
+function format_box_info (data) {
+	output = data.output;
+	return output;
+}
+
+function edit_experiment_info (opts) {
+	eid = opts.eid;
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'edit_experiment_info',
+			eid: eid,
+		},
+		success : function(data) {
+			data = eval('('+data+')');
+			title = data.title;
+			$("#experiment_info_edit_box").dialog("option", "title", title);
+			$("#experiment_info_edit_box").html(format_box_info(data));
+			$("#experiment_info_edit_box").dialog('open');
+			//setup_button_states();
+		},
+	});
+}
+
+function update_experiment_info (opts){
+	name = $('#edit_name').val();
+	if (!name) {
+		alert('Error: Must have a name');
+		return;
+	}
+	
+	genome_id = parseInt( $('#edit_genome_id').val() );
+	if (!genome_id) {
+		alert('Error: Must be assigned to a genome');
+		return;	
+	}
+	
+	version = $('#edit_version').val();
+	if (!version) {
+		alert('Error: Must have a version');
+		return;	
+	}	
+	
+	source_id = parseInt( $('#edit_source').val() );
+	if (!source_id) {
+		alert('Error: Must have a source');
+		return;	
+	}	
+	
+	desc = $('#edit_desc').val();
+	eid = opts.eid;
+	
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'update_experiment_info',
+			eid: eid,
+			name: name,
+			desc: desc,
+			genome_id: genome_id,
+			source_id: source_id,
+			version: version
+		},
+		success : function(val) {
+			$("#experiment_info_edit_box").dialog('close');
+			run_get_experiment_info({divid: 'experiment_info', eid: eid});
+		},
+	});
+}
+
+function make_experiment_public (opts) {
+	eid = opts.eid;
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'make_experiment_public',
+			eid: eid,
+		},
+		success : function(val) {
+			run_get_experiment_info({divid: 'experiment_info', eid: eid});
+		}
+	});
+}
+
+function make_experiment_private (opts) {
+	eid = opts.eid;
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'make_experiment_private',
+			eid: eid,
+		},
+		success : function(val) {
+			run_get_experiment_info({divid: 'experiment_info', eid: eid});
+		},
+	});
+}
+
+function add_experiment_type (opts) {
+	eid = opts.eid;
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'add_experiment_type',
+			eid: eid,
+		},
+		success : function(data) {
+			data = eval('('+data+')');
+			title = data.title;
+			$("#experiment_type_edit_box").dialog({
+				title: title,
+				beforeClose: 
+					function() {
+						$("#edit_type_name").autocomplete('close');
+					}				
+			});
+			$("#experiment_type_edit_box").html(format_box_info(data));
+			$("#experiment_type_edit_box").dialog('open');
+			//setup_button_states();
+		},
+	});
+}
+
+function add_type_to_experiment (opts) {
+	name = $('#edit_type_name').val();
+	description = $('#edit_type_description').val();
+	
+	if (name) {
+		eid = opts.eid;
+		$.ajax({
+			data: {
+				jquery_ajax: 1,
+				fname: 'add_type_to_experiment',
+				eid: eid,
+				name: name,
+				description: description
+			},
+			success : function(val) {
+				$("#experiment_type_edit_box").dialog('close');
+				run_get_experiment_info({divid: 'experiment_info', eid: eid});
+			},
+		});
+	}
+	else { alert ('Error: Must have type name specified!');}
+}
+
+function remove_experiment_type (opts) {
+	eid = opts.eid;
+	etid = opts.etid;
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'remove_experiment_type',
+			eid: eid,
+			etid: etid,
+		},
+		success : function(val) {
+			run_get_experiment_info({divid: 'experiment_info', eid: eid});
+		},
+	});
+}
+
+function add_experiment_annotation (opts) {
+	eid = opts.eid;
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'add_experiment_annotation',
+			eid: eid,
+		},
+		success : function(data) {
+			data = eval('('+data+')');
+			title = data.title;
+			$("#experiment_annotation_edit_box").dialog({
+				title: title,
+				beforeClose: 
+					function() {
+						$("#edit_annotation_type").autocomplete('close');
+						$("#edit_annotation_type_group").autocomplete('close');
+					}
+			});	
+			$("#experiment_annotation_edit_box").html(format_box_info(data));
+			$("#experiment_annotation_edit_box").dialog('open');
+			//setup_button_states();
+		},
+	});
+}
+
+function add_annotation_to_experiment (opts) {
+	annotation = $('#edit_annotation').val();
+	type = $('#edit_annotation_type').val();
+	
+	if (annotation && type)
+	{
+		eid = opts.eid;
+		type_group = $('#edit_annotation_type_group').val();
+		link = 	$('#edit_link').val();
+	
+		$.ajax({
+			data: {
+				jquery_ajax: 1,
+				fname: 'add_annotation_to_experiment',
+				eid: eid,
+				type_group: type_group,
+				type: type,
+				annotation: annotation,
+				link: link
+			},
+			success : function(val) {
+				$("#experiment_annotation_edit_box").dialog('close');
+				run_get_experiment_annotations({divid: 'experiment_annotations', eid: eid});
+			},
+		});
+	}
+	else { alert ('Error: Must have type and annotation specified!');}
+}
+
+function run_get_experiment_annotations(opts) {
+	if (!opts){opts={};}
+	divid = opts.divid; //were results will be displayed in page
+	// create a new closure who's scope does *not*
+	// include the `divid` value so that callback will 
+	// not clobber the `divid` variable 
+	var create_callback = function(divid) {
+		var local_divid = divid;
+		return function (data) {
+			$('#'+local_divid).html(data);
+			//set_table();
+		};
+	}; 
+
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'get_experiment_annotations',
+			eid: eid
+		},
+		success : create_callback(divid)
+	});
+}
+
+function remove_experiment_annotation (opts) {
+	eid = opts.eid;
+	eaid = opts.eaid;
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'remove_experiment_annotation',
+			eid: eid,
+			eaid: eaid,
+		},
+		success : function(val) {
+			run_get_experiment_annotations({divid: 'experiment_annotations', eid: eid});
+		},
+	});
+}
+
+function wait_to_search (search_func) {
+	if (pageObj.time) {
+		clearTimeout(pageObj.time);
+	}
+
+	pageObj.time = setTimeout(function() { search_func(); }, 500);
+}
 </SCRIPT>
 
-<div>Experiment information</div>
-<table class="small annotation_table ui-corner-all ui-widget-content">
- <tr><td><b>Name:</b></td><td><TMPL_VAR NAME="EXP_NAME"></td></tr>
- <tr><td><b>Description:</b></td><td><TMPL_VAR NAME="EXP_DESC"></td></tr>
- <tr><td><b>Type:</b></td><td><TMPL_VAR NAME="EXP_TYPE"></td></tr>
- <tr><td><b>Source:</b></td><td><TMPL_VAR NAME="EXP_SOURCE"></td></tr>
- <tr><td><b>Version:</b></td><td><TMPL_VAR NAME="EXP_VER"></td></tr>
- <tr><td colspan="2"><TMPL_VAR NAME=ACCESS_BUTTON><TMPL_VAR NAME=EDIT_BUTTON></td></tr>
-</table>
+<div>
+ Experiment Info:<br>
+ <div id='experiment_info'>
+  <TMPL_VAR NAME=EXPERIMENT_INFO>
+ </div>
+</div>
 
 <br>
 
-<div>Experiment annotation</div>
-<table class="small annotation_table ui-corner-all ui-widget-content">
- <thead align="left">
-  <tr>
-   <th>Group/Type</th>
-   <th></th>
-   <th>Annotation</th>
-  </tr>  
- </thead>
- <tbody>
-  <TMPL_VAR NAME="EXP_ANNOT">
- </tbody>
-</table>
+<div>
+ Experiment Annotations:<br>
+ <div id="experiment_annotations">
+  <TMPL_VAR NAME=EXPERIMENT_ANNOTATIONS>
+ </div>
+</div>
 
+<div id="experiment_info_edit_box" class="dialog_box"></div>
+<div id="experiment_type_edit_box" class="dialog_box"></div>
+<div id="experiment_annotation_edit_box" class="dialog_box"></div>
+
+</TMPL_IF> <!-- MAIN -->
+
+
+
+<TMPL_IF NAME=EDIT_EXPERIMENT_INFO>
+<SCRIPT>
+	function search_genomes () {
+		search_term = $("#edit_genome").val();
+		if (search_term.length > 2) {
+			$.ajax({
+				data: {
+					jquery_ajax: 1,
+					fname: 'search_genomes',
+					search_term: search_term,
+				},
+				success : function(val) {
+					var items = jQuery.parseJSON(val);
+					$("#edit_genome").autocomplete("option", "source", items);
+					$("#edit_genome").autocomplete("search");
+				},
+			});
+		}
+	}
+	
+	$("#edit_genome").autocomplete({
+	    source: [],
+	    select: 
+	    	function(event, ui) {
+	    		$("#edit_genome").val( ui.item.label );
+	    		$("#edit_genome_id").val( ui.item.value );
+	    		return false;
+	    	}
+	});
+	
+	function clear_edit_genome() {
+		$("#edit_genome").val('');
+		$("#edit_genome_id").val(0);		
+	}
+</SCRIPT>
+<table class="small">
+ <tr>
+  <td>Name:</td>
+  <td><input id="edit_name" type="textbox" size="53" value="<TMPL_VAR NAME=NAME>"></td>
+ </tr>
+ <tr>
+  <td>Description:</td>
+  <td><textarea id="edit_desc" rows=5 cols=50 ><TMPL_VAR NAME=DESC></textarea></td>
+ </tr>
+ <tr>
+  <td>Genome:</td>
+  <td>
+   <input id="edit_genome" onkeypress="wait_to_search(search_genomes);" size="50" value="<TMPL_VAR NAME=GENOME>">
+   <span onClick="clear_edit_genome()" class="link ui-icon ui-icon-circle-close"></span>
+   <input id="edit_genome_id" type="hidden" value="<TMPL_VAR NAME=GENOME_ID>">
+  </td>
+ </tr>
+ <tr>
+  <td>Source:</td>
+  <td><select id="edit_source" style="max-width: 265px;">
+   <TMPL_LOOP NAME=SOURCE_LOOP>
+    <OPTION <TMPL_VAR NAME=SOURCE_SELECTED> value=<TMPL_VAR NAME=SID>><TMPL_VAR NAME=NAME></OPTION>
+   </TMPL_LOOP>
+   </select>
+  </td>
+ </tr>
+ <tr>
+  <td>Version:</td>
+  <td><input id="edit_version" type="textbox" size="53" value="<TMPL_VAR NAME=VERSION>"></td>
+ </tr>  
+</table>
 <br>
+<span onClick="update_experiment_info({eid: '<TMPL_VAR NAME=EID>'});" class='ui-button ui-corner-all ui-button-go'>Update Experiment Info</span>
+</TMPL_IF>
 
-<div>Experiment access</div>
-<table class="small ui-widget-content ui-corner-all">
- <thead align="left"> 
-  <tr>
-   <th>Group Name:Description</th>
-   <th>Role</th>
-   <th>Permissions</th>
-   <th>Members</th>
-   <th>Remove Access</th>
-  </tr>
- </thead>
- <tbody id="groups" align="left" valign="top" class="small">
-  <TMPL_VAR NAME=GROUPS>
- </tbody>
+
+
+<TMPL_IF NAME=ADD_EXPERIMENT_TYPE>
+<SCRIPT>
+	function get_experiment_types () {
+		$.ajax({
+			data: {
+				jquery_ajax: 1,
+				fname: 'get_experiment_types'
+			},
+			success : function(val) {
+				var items = jQuery.parseJSON(val);
+				$("#edit_type_name").autocomplete("option", "source", items);
+				$("#edit_type_name").autocomplete("search");
+			},
+		});
+	}
+	
+	function get_type_description (name) {
+		$.ajax({
+			data: {
+				jquery_ajax: 1,
+				fname: 'get_type_description',
+				name: name
+			},
+			success : function(data) {
+				$("#edit_type_description").html(data);
+			},
+		});
+	}	
+
+	$("#edit_type_name").autocomplete({
+	    source: function() {
+	    			get_experiment_types();
+	    		},
+	    select: function(event, ui) {
+	    			get_type_description( ui.item.label );
+	    		}
+	});
+</SCRIPT>
+<table class="small">
+ <tr>
+  <td>Name:</td>
+  <td><input id="edit_type_name" size="53" value="<TMPL_VAR NAME=NAME>"></td>
+ </tr>
+ <tr valign='top'>
+  <td>Description:</td>
+  <td><textarea id="edit_type_description" rows=5 cols=50 ><TMPL_VAR NAME=DESC></textarea></td>
+ </tr>
 </table>
+<span onClick="add_type_to_experiment({eid: '<TMPL_VAR NAME=EID>'});" class='ui-button ui-corner-all ui-button-go'>Add</span>
+</TMPL_IF>
+
+
+
+<TMPL_IF NAME=ADD_EXPERIMENT_ANNOTATION> <!-- FIXME: this is redundant with ListView.tmpl, move into own sub-template? -->
+<SCRIPT>
+	function search_annotation_types () {
+		type_group  = $("#edit_annotation_type_group").val();
+		search_term = $("#edit_annotation_type").val();
+		if (search_term.length > 2) {
+			$.ajax({
+				data: {
+					jquery_ajax: 1,
+					fname: 'search_annotation_types',
+					type_group: type_group,
+					search_term: search_term,
+				},
+				success : function(val) {
+					var items = jQuery.parseJSON(val);
+					$("#edit_annotation_type").autocomplete("option", "source", items);
+					$("#edit_annotation_type").autocomplete("search");
+				},
+			});
+		}
+	}
+	
+	function get_annotation_type_groups () {
+		$.ajax({
+			data: {
+				jquery_ajax: 1,
+				fname: 'get_annotation_type_groups'
+			},
+			success : function(val) {
+				var items = jQuery.parseJSON(val);
+				$("#edit_annotation_type_group").autocomplete("option", "source", items);
+				$("#edit_annotation_type_group").autocomplete("search");
+			},
+		});
+	}
+
+	$("#edit_annotation_type_group").autocomplete({
+	    source: function() {
+	    			get_annotation_type_groups();
+	    		}
+	});
+	
+	$("#edit_annotation_type").autocomplete({
+	    source: []
+	});
+</SCRIPT>
+<table class="small">
+ <tr valign='top'>
+  <td>Annotation:</td>
+  <td><textarea id="edit_annotation" rows=5 cols=50 ><TMPL_VAR NAME=ANNOTATION></textarea></td>
+ </tr>
+ <tr>
+  <td>Link:</td>
+  <td><input id="edit_link" type="textbox" size="53" value="<TMPL_VAR NAME=LINK>"></td>
+ </tr>
+ <tr>
+  <td>Type:</td>
+  <td><input id="edit_annotation_type" onkeypress="wait_to_search(search_annotation_types);" size="53"></td>
+ </tr>
+ <tr>
+  <td>Type Group:</td>
+  <td><input id="edit_annotation_type_group" size="53"> (optional)</td>
+ </tr>
+</table>
+<span onClick="add_annotation_to_experiment({eid: '<TMPL_VAR NAME=EID>'});" class='ui-button ui-corner-all ui-button-go'>Add</span>
+</TMPL_IF>
+

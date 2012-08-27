@@ -67,6 +67,7 @@ function create_group (opts){
    }
  else { alert ('Error!  Must have a name!');}
 }
+
 function update_group_info (opts){
   name = $('#edit_name').val();
   desc = $('#edit_desc').val();
@@ -104,6 +105,11 @@ function delete_group (opts){
 	    },
       });
    }
+}
+
+function format_edit_box_info (data) {
+ output = data.output;
+ return output;
 }
 
 function modify_users (opts) {
@@ -144,10 +150,6 @@ function edit_group_info (opts) {
     });
 }
 
-function format_box_group_info (data) {
- output = data.output;
- return output;
-}
 
 function show_add(val) {
   if(val==1) {
@@ -350,7 +352,7 @@ function remove_genome (opts) {
    <OPTION value=<TMPL_VAR NAME=RID>><TMPL_VAR NAME=NAME></OPTION>
   </TMPL_LOOP>
   </select>
-</td>
+ </td>
 
  <td><span id=create_group style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="create_group();">Create new group</span>
 </tr>
@@ -370,7 +372,7 @@ function remove_genome (opts) {
    <TH>Name</TH>
    <TH>Group Description</TH>
    <TH>Role</TH>
-   <TH>CurrentMembers</TH>
+   <TH>Current Members</TH>
    <TH>Lists</TH>
   </TR>
  </THEAD>
@@ -392,8 +394,8 @@ function remove_genome (opts) {
 </TMPL_IF>
 
 
-<TMPL_IF NAME=EDIT_GROUP_INFO>
 
+<TMPL_IF NAME=EDIT_GROUP_INFO>
 <TABLE class=small>
  <TR>
   <TD>Group Name:</TD>
@@ -407,6 +409,8 @@ function remove_genome (opts) {
 <span onClick="update_group_info({ugid: '<TMPL_VAR NAME=UGID>'});" class='ui-button ui-corner-all ui-button-go'>Update Group Info</span>
    <TD><span class='ui-button ui-button-go ui-corner-all ui-button-icon-left'  onclick="delete_group({ugid: <TMPL_VAR NAME=UGID>});"><span class="ui-icon ui-icon-trash"></span>Delete (Permanent)</span></TD>
 </TMPL_IF>
+
+
 
 <TMPL_IF NAME=MODIFY_USERS>
 <TABLE class=small>
@@ -446,6 +450,8 @@ function remove_genome (opts) {
 </table>
 <span href="javascript:void(0)" onClick="modify_users({ugid: '<TMPL_VAR NAME=UGID>'});" id="refresh_modify_users" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Refresh</span> <span class=small>(Displayed lists can get out of sync when filtering for names.)</small>
 </TMPL_IF>
+
+
 
 <TMPL_IF NAME=ADMIN_AREA>
 <hr>
