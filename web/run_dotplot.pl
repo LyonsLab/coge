@@ -3,15 +3,13 @@
 use strict;
 use CGI;
 use Data::Dumper;
-use lib '/home/mbomhoff/CoGe/Accessory/lib'; #FIXME 8/2/12 remove
-use lib '/home/mbomhoff/CoGeX/lib'; #FIXME 8/2/12 remove
-use CoGeX_dev;
-use CoGe_dev::Accessory::Web;
+use CoGeX;
+use CoGe::Accessory::Web;
 no warnings 'redefine';
 
 umask(0);
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $DIR $URL $USER $FORM $coge $cogeweb $DATADIR $DIAGSDIR $DOTPLOT);
-$P = CoGe_dev::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
+$P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 $DEBUG = 0;
 $DIR = $P->{COGEDIR};
@@ -27,7 +25,7 @@ $DBPORT = $P->{DBPORT};
 $DBUSER = $P->{DBUSER};
 $DBPASS = $P->{DBPASS};
 $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
-$coge = CoGeX_dev->connect($connstr, $DBUSER, $DBPASS );
+$coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 
 
 my $dsgid1 = $FORM->param('dsg1');
@@ -187,7 +185,7 @@ sub generate_dotplot
     $cmd .= qq{ -color_scheme $color_scheme} if defined $color_scheme;
     print STDERR "Running: ",$cmd,"\n" if $DEBUG;
     my $x;
-    ($x, $cmd) = CoGe_dev::Accessory::Web::check_taint($cmd);
+    ($x, $cmd) = CoGe::Accessory::Web::check_taint($cmd);
     #($cmd) = $cmd =~ /(.*)/;
     `$cmd` if $cmd;
     return $outfile if -r $outfile.".html";

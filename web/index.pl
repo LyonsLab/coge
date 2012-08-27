@@ -12,20 +12,18 @@ use Data::Dumper;
 use Digest::MD5 qw(md5_base64);
 use CGI::Log;
 
-use lib '/home/mbomhoff/CoGe/Accessory/lib'; #FIXME 8/2/12 remove
-use lib '/home/mbomhoff/CoGeX/lib'; #FIXME 8/2/12 remove
 #no lib '/usr/lib/perl5/ModPerl'; #FIXME 8/2/12 remove
 
-use CoGe_dev::Accessory::LogUser;
-use CoGe_dev::Accessory::Web;
-use CoGeX_dev;
+use CoGe::Accessory::LogUser;
+use CoGe::Accessory::Web;
+use CoGeX;
 
 
 
 no warnings 'redefine';
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $USER $FORM $DATE $URL $update $coge $COOKIE_NAME);
 
-$P = CoGe_dev::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
+$P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 $URL = $P->{URL};
 $FORM = new CGI;
@@ -45,17 +43,17 @@ $DBPORT = $P->{DBPORT};
 $DBUSER = $P->{DBUSER};
 $DBPASS = $P->{DBPASS};
 $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
-$coge = CoGeX_dev->connect($connstr, $DBUSER, $DBPASS );
+$coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 
 $COOKIE_NAME = $P->{COOKIE_NAME};
 
 my ($cas_ticket) =$FORM->param('ticket');
 $USER = undef;
-($USER) = CoGe_dev::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
-($USER) = CoGe_dev::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
+($USER) = CoGe::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
+($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
 
 #logout is only called through this program!  All logouts from other pages are redirected to this page
-CoGe_dev::Accessory::Web->logout_cas(cookie_name=>$COOKIE_NAME, coge=>$coge, user=>$USER, form=>$FORM) if $FORM->param('logout');
+CoGe::Accessory::Web->logout_cas(cookie_name=>$COOKIE_NAME, coge=>$coge, user=>$USER, form=>$FORM) if $FORM->param('logout');
 
 print $FORM->header, gen_html();
 #print $pj->build_html($FORM, \&gen_html);
@@ -224,7 +222,7 @@ sub get_latest_genomes
 						       rows=>$limit*10,
 						      }
 						);
-  #  ($USER) = CoGe_dev::Accessory::LogUser->get_user();
+  #  ($USER) = CoGe::Accessory::LogUser->get_user();
     my $html = "<table class=small>";
     $html .= "<tr><th>".join("<th>",qw(Organism  &nbsp Length&nbsp(nt) &nbsp Related Link ));
     my @opts;

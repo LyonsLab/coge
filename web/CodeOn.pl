@@ -1,12 +1,10 @@
 #! /usr/bin/perl -w
 
 use strict;
-use lib '/home/mbomhoff/CoGe/Accessory/lib'; #FIXME 8/2/12 remove
-use lib '/home/mbomhoff/CoGeX/lib'; #FIXME 8/2/12 remove
-use CoGe_dev::Accessory::LogUser;
-use CoGe_dev::Accessory::Web;
-use CoGeX_dev;
-use CoGeX_dev::Result::Feature;
+use CoGe::Accessory::LogUser;
+use CoGe::Accessory::Web;
+use CoGeX;
+use CoGeX::Result::Feature;
 use CGI;
 use CGI::Ajax;
 use Data::Dumper;
@@ -16,14 +14,14 @@ use Spreadsheet::WriteExcel;
 use Digest::MD5 qw(md5_base64);
 use Benchmark;
 use DBIxProfiler;
-use CoGe_dev::Accessory::genetic_code;
+use CoGe::Accessory::genetic_code;
 use Statistics::Basic::Mean;
 use POSIX;
 no warnings 'redefine';
 
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb $FORM $COOKIE_NAME);
 
-$P = CoGe_dev::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
+$P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
@@ -37,14 +35,14 @@ $DBPORT = $P->{DBPORT};
 $DBUSER = $P->{DBUSER};
 $DBPASS = $P->{DBPASS};
 $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
-$coge = CoGeX_dev->connect($connstr, $DBUSER, $DBPASS );
+$coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 
 $COOKIE_NAME = $P->{COOKIE_NAME};
 
 my ($cas_ticket) =$FORM->param('ticket');
 $USER = undef;
-($USER) = CoGe_dev::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
-($USER) = CoGe_dev::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
+($USER) = CoGe::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
+($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
 
 
 #$coge->storage->debugobj(new DBIxProfiler());
@@ -136,7 +134,7 @@ sub get_orgs
     return map {$_->id} @db if $id_only;
     #my @db = $name ? $coge->resultset('Organism')->search({name=>{like=>"%".$name."%"}})
     #  : $coge->resultset('Organism')->all();
-#    ($USER) = CoGe_dev::Accessory::LogUser->get_user();
+#    ($USER) = CoGe::Accessory::LogUser->get_user();
     my @opts;
     foreach my $item (sort {uc($a->name) cmp uc($b->name)} @db)
       {
@@ -183,7 +181,7 @@ sub go{
 
   my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'CodeOn.tmpl');
   $template->param(RESULTS=>1);
-  my $aa_sort = CoGe_dev::Accessory::genetic_code->sort_aa_by_gc();
+  my $aa_sort = CoGe::Accessory::genetic_code->sort_aa_by_gc();
   my $table_head = "<th>".join ("<th>", "GC% (feat count)", map {$_."% (".$data->{$_}{bin_count}.")" } sort {$a<=>$b}keys %$data);
   $template->param(GC_HEAD=>$table_head);
   my $max_aa = 0;
@@ -250,7 +248,7 @@ sub get_features
       {
         return $weak_query;
       }
-#    ($USER) = CoGe_dev::Accessory::LogUser->get_user();
+#    ($USER) = CoGe::Accessory::LogUser->get_user();
 
     my $search ={};
     $search->{feature_type_id}=3;

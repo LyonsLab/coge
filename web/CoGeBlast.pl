@@ -3,18 +3,15 @@
 no warnings ('redefine');
 
 use strict;
-use lib "/home/mbomhoff/CoGeX/lib";
-use lib "/home/mbomhoff/CoGe/Accessory/lib";
-use lib "/home/mbomhoff/CoGe/Graphics/lib";
-use CoGe_dev::Accessory::LogUser;
-use CoGe_dev::Accessory::Web;
-use CoGe_dev::Accessory::blast_report;
-use CoGe_dev::Accessory::blastz_report;
-use CoGe_dev::Graphics::GenomeView;
-use CoGe_dev::Graphics;
-use CoGe_dev::Graphics::Chromosome;
-use CoGe_dev::Graphics::Feature::HSP;
-use CoGeX_dev;
+use CoGe::Accessory::LogUser;
+use CoGe::Accessory::Web;
+use CoGe::Accessory::blast_report;
+use CoGe::Accessory::blastz_report;
+use CoGe::Graphics::GenomeView;
+use CoGe::Graphics;
+use CoGe::Graphics::Chromosome;
+use CoGe::Graphics::Feature::HSP;
+use CoGeX;
 use CGI;
 use CGI::Ajax;
 use HTML::Template;
@@ -37,7 +34,7 @@ use Parallel::ForkManager;
 
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME $TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $FORMATDB $BLAST_PROGS $FORM $USER $DATE $coge $cogeweb $RESULTSLIMIT $MAX_PROC $connstr $COOKIE_NAME);
 
-$P = CoGe_dev::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
+$P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 $ENV{BLASTDB}=$P->{BLASTDB};
 $ENV{BLASTMAT}=$P->{BLASTMATRIX};
@@ -69,14 +66,14 @@ $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
 
 $FORM = new CGI;
-my %ajax = CoGe_dev::Accessory::Web::ajax_func();
+my %ajax = CoGe::Accessory::Web::ajax_func();
 $DBNAME = $P->{DBNAME};
 $DBHOST = $P->{DBHOST};
 $DBPORT = $P->{DBPORT};
 $DBUSER = $P->{DBUSER};
 $DBPASS = $P->{DBPASS};
 $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
-$coge = CoGeX_dev->connect($connstr, $DBUSER, $DBPASS );
+$coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 
@@ -84,8 +81,8 @@ $COOKIE_NAME = $P->{COOKIE_NAME};
 
 my ($cas_ticket) =$FORM->param('ticket');
 $USER = undef;
-($USER) = CoGe_dev::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
-($USER) = CoGe_dev::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
+($USER) = CoGe::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
+($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
 
 my $pj = new CGI::Ajax(
 		       gen_html=>\&gen_html,
@@ -164,7 +161,7 @@ sub gen_body
     my $rc = $form->param('rc') || 0;
     my $seq = $form->param('seq');
     my $gstid = $form->param('gstid') || 1;
-    my $prefs = CoGe_dev::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME, coge=>$coge);
+    my $prefs = CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME, coge=>$coge);
     $prefs = {} unless $prefs;
     $template->param(JAVASCRIPT=>1);
     $template->param(BLAST_FRONT_PAGE=>1);
@@ -220,7 +217,7 @@ sub gen_body
 }
       }
     #set up which columns of results will be displayed by default
-#       my $prefs = CoGe_dev::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME);
+#       my $prefs = CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME);
        unless ($prefs->{display} && ref ($prefs->{display}) eq "HASH")
 	 {
 	   $prefs->{display} = {
@@ -522,7 +519,7 @@ sub get_dsg_for_blast_menu
 
   sub generate_basefile
     {
-      $cogeweb = CoGe_dev::Accessory::Web::initialize_basefile(tempdir=>$TEMPDIR);
+      $cogeweb = CoGe::Accessory::Web::initialize_basefile(tempdir=>$TEMPDIR);
       return $cogeweb->basefilename;
     }
 
@@ -542,7 +539,7 @@ sub blast_search
     my $filter_query = $opts{filter_query};
     my $resultslimit = $opts{resultslimit} || $RESULTSLIMIT;
     my $basename = $opts{basename};
-    $cogeweb = CoGe_dev::Accessory::Web::initialize_basefile(basename=>$basename, tempdir=>$TEMPDIR);
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$basename, tempdir=>$TEMPDIR);
 	
     #blastz params
     my $zwordsize = $opts{zwordsize};
@@ -574,7 +571,7 @@ sub blast_search
 	$opts .= " O=" .$zgap_start if defined $zgap_start;
 	$opts .= " E=" .$zgap_extension if defined $zgap_extension;
 	my $tmp;
-	($tmp, $opts) =CoGe_dev::Accessory::Web::check_taint($opts);
+	($tmp, $opts) =CoGe::Accessory::Web::check_taint($opts);
       }
     else
       {
@@ -617,7 +614,7 @@ sub blast_search
 #	  }
       }
     my $x;
-    ($x, $pre_command) =CoGe_dev::Accessory::Web::check_taint($pre_command);
+    ($x, $pre_command) =CoGe::Accessory::Web::check_taint($pre_command);
     my @results;
     my $count =1;
     my $t2 = new Benchmark;
@@ -655,9 +652,9 @@ sub blast_search
 	my $command = $item->{command};
 	my $organism_name = $item->{organism};
 	my $outfile = $item->{file};
-	CoGe_dev::Accessory::Web::write_log("*$organism_name* running $command" ,$cogeweb->logfile);
+	CoGe::Accessory::Web::write_log("*$organism_name* running $command" ,$cogeweb->logfile);
 	`$command > $outfile`;
-	CoGe_dev::Accessory::Web::write_log("*$organism_name* blast analysis complete",$cogeweb->logfile);
+	CoGe::Accessory::Web::write_log("*$organism_name* blast analysis complete",$cogeweb->logfile);
 	$pm->finish;
       }
     $pm->wait_all_children;
@@ -666,7 +663,7 @@ sub blast_search
 	my $command = $item->{command};
 	my $outfile = $item->{file};
 	my $ta = new Benchmark;
-	my $report = $outfile =~ /lastz/ ? new CoGe_dev::Accessory::blastz_report({file=>$outfile}) : new CoGe_dev::Accessory::blast_report({file=>$outfile});
+	my $report = $outfile =~ /lastz/ ? new CoGe::Accessory::blastz_report({file=>$outfile}) : new CoGe::Accessory::blast_report({file=>$outfile});
 	my $tb = new Benchmark;
 	my $itime = timestr(timediff($tb,$ta));
 	$item->{report}= $report;
@@ -676,10 +673,10 @@ sub blast_search
 	$item->{link}=$file;
       }
     my $t3 = new Benchmark;
-   CoGe_dev::Accessory::Web::write_log("Initializing sqlite database",$cogeweb->logfile);
+   CoGe::Accessory::Web::write_log("Initializing sqlite database",$cogeweb->logfile);
     initialize_sqlite();
     my $t4 = new Benchmark;
-   CoGe_dev::Accessory::Web::write_log("Generating Results",$cogeweb->logfile);
+   CoGe::Accessory::Web::write_log("Generating Results",$cogeweb->logfile);
     my ($html,$click_all_links) = gen_results_page(results=>\@results,width=>$width,resultslimit=>$resultslimit,prog=>$program, color_hsps => $color_hsps,  query_seqs_info=>$query_seqs_info,);
     my $t5 = new Benchmark;
     my $init_time = timestr(timediff($t2,$t1));
@@ -692,9 +689,9 @@ Time to blast:                   $blast_time
 Time to initialize sqlite:       $dbinit_time
 Time to generate results page:   $resultpage_time
 };
-     CoGe_dev::Accessory::Web::write_log("$benchmark" ,$cogeweb->logfile);
+     CoGe::Accessory::Web::write_log("$benchmark" ,$cogeweb->logfile);
 
-   CoGe_dev::Accessory::Web::write_log("Finished!", $cogeweb->logfile);
+   CoGe::Accessory::Web::write_log("Finished!", $cogeweb->logfile);
     return $html, $click_all_links;
   }
  
@@ -872,7 +869,7 @@ Time to gen tables:              $table_time
 Time to gen images:              $figure_time
 Time to gen results:             $render_time
 };
-    CoGe_dev::Accessory::Web::write_log($benchmark, $cogeweb->logfile);
+    CoGe::Accessory::Web::write_log($benchmark, $cogeweb->logfile);
      return $outhtml, $click_all_links;
    }
    
@@ -1009,8 +1006,8 @@ sub generate_chromosome_images
 		my ($chr) = $hsp->subject_name =~ /\|(\S*)/;
 		$chr = $hsp->subject_name unless $chr;
 		$chr =~ s/\s+$//;
-		$data{$org}{image} =new CoGe_dev::Graphics::GenomeView({color_band_flag=>1, image_width=>$width, chromosome_height=>$height}) unless $data{$org}{image};
-		$data{$org}{large_image} =new CoGe_dev::Graphics::GenomeView({color_band_flag=>1, image_width=>$large_width, chromosome_height=>$large_height}) unless $data{$org}{large_image};
+		$data{$org}{image} =new CoGe::Graphics::GenomeView({color_band_flag=>1, image_width=>$width, chromosome_height=>$height}) unless $data{$org}{image};
+		$data{$org}{large_image} =new CoGe::Graphics::GenomeView({color_band_flag=>1, image_width=>$large_width, chromosome_height=>$large_height}) unless $data{$org}{large_image};
 		my $dsg = $set->{dsg};
 		$data{$org}{dsg}=$dsg;
 		#add chromosome to graphic
@@ -1078,13 +1075,13 @@ sub generate_chromosome_images
 	      {
 		my $x;
 		$large_image_file = $cogeweb->basefile."_".$hsp_type."_$count"."_large.png";
-		($x, $large_image_file) =CoGe_dev::Accessory::Web::check_taint($large_image_file);
+		($x, $large_image_file) =CoGe::Accessory::Web::check_taint($large_image_file);
 		$image_file = $cogeweb->basefile."_".$hsp_type."_$count.png";
-		($x, $image_file) =CoGe_dev::Accessory::Web::check_taint($image_file);
+		($x, $image_file) =CoGe::Accessory::Web::check_taint($image_file);
 		$data{$org}{image}->generate_png(filename=>$image_file);
 		$image_map = $data{$org}{image}->generate_imagemap(mapname=>$cogeweb->basefilename."_".$count);
 		my $map_file = $cogeweb->basefile."_$count.$hsp_type.map";
-		($x, $map_file) =CoGe_dev::Accessory::Web::check_taint($map_file);
+		($x, $map_file) =CoGe::Accessory::Web::check_taint($map_file);
 		open (MAP, ">$map_file");
 		print MAP $image_map;
 		close MAP;
@@ -1093,7 +1090,7 @@ sub generate_chromosome_images
 		$data{$org}{image}->generate_png(filename=>$large_image_file);
 		$image_map_large = $data{$org}{image}->generate_imagemap(mapname=>$cogeweb->basefilename."_".$count."_large");
 		$map_file = $cogeweb->basefile."_$count.$hsp_type.large.map";
-		($x, $map_file) =CoGe_dev::Accessory::Web::check_taint($map_file);
+		($x, $map_file) =CoGe::Accessory::Web::check_taint($map_file);
 		open (MAP, ">$map_file");
 		print MAP $image_map_large;
 		close MAP;
@@ -1106,8 +1103,8 @@ sub generate_chromosome_images
 		$image_map = get_map($cogeweb->basefile."_$count.$hsp_type.map");
 		$large_image_file = $data{$org}{image}."_$count"."_large.png";
 		$image_map_large = get_map($cogeweb->basefile."_$count.$hsp_type.large.map");
-		($x, $image_file) =CoGe_dev::Accessory::Web::check_taint($image_file);
-		($x, $large_image_file) =CoGe_dev::Accessory::Web::check_taint($large_image_file);
+		($x, $image_file) =CoGe::Accessory::Web::check_taint($image_file);
+		($x, $large_image_file) =CoGe::Accessory::Web::check_taint($large_image_file);
 	      }
 	    
 	    $image_file =~ s/$TEMPDIR/$TEMPURL/;
@@ -1166,7 +1163,7 @@ sub create_fasta_file
 	    $seqs{$name}=length($tmp);
 	  }
       }
-   CoGe_dev::Accessory::Web::write_log("creating user's fasta file",$cogeweb->logfile);
+   CoGe::Accessory::Web::write_log("creating user's fasta file",$cogeweb->logfile);
     open(NEW,"> ".$cogeweb->basefile.".fasta");
     print NEW $seq;
     close NEW;
@@ -1203,7 +1200,7 @@ sub generate_fasta
     my $dslist = $opts{dslist};
     my $file = $opts{file};
     $file = $FASTADIR."/$file" unless $file =~ /$FASTADIR/;
-   CoGe_dev::Accessory::Web::write_log("creating fasta file.", $cogeweb->logfile);
+   CoGe::Accessory::Web::write_log("creating fasta file.", $cogeweb->logfile);
     open (OUT, ">$file") || die "Can't open $file for writing: $!";;
     foreach my $ds (@$dslist)
       {
@@ -1211,15 +1208,15 @@ sub generate_fasta
 	  {
 	    my $title =  $ds->organism->name." (v". $ds->version.") "."chromosome: $chr".", CoGe database id: ".$ds->id;
 	    $title =~ s/^>+/>/;
-	   CoGe_dev::Accessory::Web::write_log("adding sequence $title", $cogeweb->logfile);
+	   CoGe::Accessory::Web::write_log("adding sequence $title", $cogeweb->logfile);
 	    print OUT ">".$title."\n";
 	    print OUT $ds->get_genomic_sequence(chr=>$chr),"\n";
 	  }
       }
     close OUT;
-   CoGe_dev::Accessory::Web::write_log("Completed fasta creation", $cogeweb->logfile);
+   CoGe::Accessory::Web::write_log("Completed fasta creation", $cogeweb->logfile);
     return 1 if -r $file;
-   CoGe_dev::Accessory::Web::write_log("Error with fasta file creation", $cogeweb->logfile);
+   CoGe::Accessory::Web::write_log("Error with fasta file creation", $cogeweb->logfile);
     return 0;
   }
 
@@ -1233,10 +1230,10 @@ sub generate_blast_db
     $command .= " -i '$fasta'";
     $command .= " -t '$org'";
     $command .= " -n '$blastdb'";
-   CoGe_dev::Accessory::Web::write_log("creating blastdb for $org ($blastdb)",$cogeweb->logfile);
+   CoGe::Accessory::Web::write_log("creating blastdb for $org ($blastdb)",$cogeweb->logfile);
     `$command`;
     return 1 if -r "$blastdb.nsq";
-   CoGe_dev::Accessory::Web::write_log("error creating blastdb for $org ($blastdb)",$cogeweb->logfile);
+   CoGe::Accessory::Web::write_log("error creating blastdb for $org ($blastdb)",$cogeweb->logfile);
     return 0;
   }
 
@@ -1263,7 +1260,7 @@ sub get_hsp_info
     my $hsp_id = $opts{num};
     my $filename = $opts{blastfile};
     $filename =~ s/$TEMPDIR//;
-    $cogeweb = CoGe_dev::Accessory::Web::initialize_basefile(basename=>$filename, tempdir=>$TEMPDIR);
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$filename, tempdir=>$TEMPDIR);
     my $dbfile = $cogeweb->sqlitefile;
     my $dbh = DBI->connect("dbi:SQLite:dbname=$dbfile","","");
     
@@ -1409,9 +1406,9 @@ sub generate_overview_image
      my @set = split/\n/, `ls $TEMPDIR/$basename*.blast`;
      my @reports;
      my $count = 1;
-     $cogeweb = CoGe_dev::Accessory::Web::initialize_basefile(basename=>$basename, tempdir=>$TEMPDIR);
+     $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$basename, tempdir=>$TEMPDIR);
      foreach my $blast (@set){
-       my $report = new CoGe_dev::Accessory::blast_report({file=>$blast});
+       my $report = new CoGe::Accessory::blast_report({file=>$blast});
        my ($org_name) = $report->hsps->[$count-1]->subject_name =~ /^\s*(.*?)\s*\(/;
        push @reports,{report=>$report,organism=>$org_name,link=>$TEMPURL."/".$basename."-".$count.".blast",};
        $count++;
@@ -1451,7 +1448,7 @@ sub generate_hit_image
     my $subject = $dbh->selectall_arrayref(qq{SELECT * FROM sequence_info WHERE type = "subject" AND name = "}.$hsp->{sname}.qq{"});
     my ($hsp_num) = $hsp_name =~ /^(\d+)_\d+$/;
     #generate_query_image
-    my $cq = new CoGe_dev::Graphics::Chromosome ();
+    my $cq = new CoGe::Graphics::Chromosome ();
     $cq->iw($width);
     $cq->draw_chromosome(1);
     $cq->draw_ruler(1);
@@ -1466,7 +1463,7 @@ sub generate_hit_image
     my $strand = $hsp->{strand} =~ /-/ ? "-1" : 1;
     my ($qstart, $qstop) = ($hsp->{qstart}, $hsp->{qstop});
     ($qstart,$qstop) = ($qstop,$qstart) if $qstart > $qstop;
-    my $feat = CoGe_dev::Graphics::Feature::HSP->new({start=>$qstart, stop=>$qstop, strand=>$strand, label=>$hsp_num, type=>"HSP"});
+    my $feat = CoGe::Graphics::Feature::HSP->new({start=>$qstart, stop=>$qstop, strand=>$strand, label=>$hsp_num, type=>"HSP"});
     $feat->color([255,200,0]);
     $cq->add_feature($feat);
     my ($chr) = $hsp->{schr};
@@ -1477,7 +1474,7 @@ sub generate_hit_image
     my $start = $hsp->{sstart}-5000;
     $start = 1 if $start < 1;
     my $stop = $hsp->{sstop}+5000;    
-    my $cs = new CoGe_dev::Graphics::Chromosome ();
+    my $cs = new CoGe::Graphics::Chromosome ();
     $cs->iw($width);
     $cs->draw_chromosome(1);
     $cs->draw_ruler(1);
@@ -1492,11 +1489,11 @@ sub generate_hit_image
     $cs->feature_labels(1);
     my ($sstart, $sstop) = ($hsp->{sstart}, $hsp->{sstop});
     ($sstart,$sstop) = ($sstop,$sstart) if $sstart > $sstop;
-    $feat = CoGe_dev::Graphics::Feature::HSP->new({start=>$sstart, stop=>$sstop, strand=>$strand, order=>2, label=>$hsp_num, type=>"HSP"});
+    $feat = CoGe::Graphics::Feature::HSP->new({start=>$sstart, stop=>$sstop, strand=>$strand, order=>2, label=>$hsp_num, type=>"HSP"});
     $feat->color([255,200,0]);
     $cs->add_feature($feat);
     
-    my $graphics = new CoGe_dev::Graphics;
+    my $graphics = new CoGe::Graphics;
     $graphics->process_features(c=>$cs, layers=>{features=>{gene=>1, cds=>1, mrna=>1, rna=>1, cns=>1}}, ds=>$ds, chr=>$chr, coge=>$coge);
     $cs->overlap_adjustment(1);
     $cq->overlap_adjustment(1);
@@ -1523,10 +1520,10 @@ schr = "$schr"
       {
 	next if $data->{name} eq $hsp_name;
 	my ($label) = $data->{name} =~ /^(\d+)_\d+$/;
-	$feat = CoGe_dev::Graphics::Feature::HSP->new({start=>$data->{sstart}, stop=>$data->{sstop}, strand=>$data->{strand}, order=>2, label=>$label, type=>"HSP"});
+	$feat = CoGe::Graphics::Feature::HSP->new({start=>$data->{sstart}, stop=>$data->{sstop}, strand=>$data->{strand}, order=>2, label=>$label, type=>"HSP"});
 	$feat->color([255,0,0]);
 	$cs->add_feature($feat);
-	$feat = CoGe_dev::Graphics::Feature::HSP->new({start=>$data->{qstart}, stop=>$data->{qstop}, strand=>$data->{strand}, order=>1, label=>$label, type=>"HSP"});
+	$feat = CoGe::Graphics::Feature::HSP->new({start=>$data->{qstart}, stop=>$data->{qstop}, strand=>$data->{strand}, order=>1, label=>$label, type=>"HSP"});
 	$feat->color([255,0,0]);
 	$cq->add_feature($feat);
       }
@@ -1720,7 +1717,7 @@ sub get_nearby_feats
     my %opts = @_;
     my $hsp_id = $opts{num};
     my $filename = $opts{basefile};
-    $cogeweb = CoGe_dev::Accessory::Web::initialize_basefile(basename=>$filename, tempdir=>$TEMPDIR);
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$filename, tempdir=>$TEMPDIR);
     my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
     $hsp_id =~ s/^table_row// if $hsp_id =~ /table_row/;
     $hsp_id =~ s/^\d+_// if $hsp_id =~ tr/_/_/ > 1;
@@ -1854,7 +1851,7 @@ sub export_to_excel
   {
     my $accn_list = shift;
     my $filename = shift;
-    $cogeweb = CoGe_dev::Accessory::Web::initialize_basefile(basename=>$filename, tempdir=>$TEMPDIR);
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$filename, tempdir=>$TEMPDIR);
     my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
     my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data WHERE name = ?});
 
@@ -1962,7 +1959,7 @@ sub generate_tab_deliminated
   {
     my $accn_list = shift;
     my $filename = shift;
-    my $cogeweb = CoGe_dev::Accessory::Web::initialize_basefile(basename=>$filename, tempdir=>$TEMPDIR);
+    my $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$filename, tempdir=>$TEMPDIR);
     my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
     
     my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data WHERE name = ?});
@@ -2100,7 +2097,7 @@ sub export_hsp_info
 {
     my $accn = shift;
     my $filename = shift;
-    my $cogeweb = CoGe_dev::Accessory::Web::initialize_basefile(basename=>$filename, tempdir=>$TEMPDIR);
+    my $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$filename, tempdir=>$TEMPDIR);
     my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
     
     my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data ORDER BY org,hsp_num});
@@ -2151,7 +2148,7 @@ sub export_hsp_info
 sub export_hsp_query_fasta
 {
     my $filename = shift;
-    my $cogeweb = CoGe_dev::Accessory::Web::initialize_basefile(basename=>$filename, tempdir=>$TEMPDIR);
+    my $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$filename, tempdir=>$TEMPDIR);
     my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
 
     my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data});
@@ -2179,7 +2176,7 @@ sub export_hsp_subject_fasta
   {
     my $filename = shift;
     my $dna = 1 if shift;
-    my $cogeweb = CoGe_dev::Accessory::Web::initialize_basefile(basename=>$filename, tempdir=>$TEMPDIR);
+    my $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$filename, tempdir=>$TEMPDIR);
     my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
 
     my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data});
@@ -2207,7 +2204,7 @@ sub export_hsp_subject_fasta
 sub export_alignment_file
 {
     my $filename = shift;
-    my $cogeweb = CoGe_dev::Accessory::Web::initialize_basefile(basename=>$filename, tempdir=>$TEMPDIR);
+    my $cogeweb = CoGe::Accessory::Web::initialize_basefile(basename=>$filename, tempdir=>$TEMPDIR);
     my $dbh = DBI->connect("dbi:SQLite:dbname=".$cogeweb->sqlitefile,"","");
     
     my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data ORDER BY org,hsp_num});
@@ -2243,7 +2240,7 @@ sub export_alignment_file
 sub save_settings_cogeblast
   {
     my %opts = @_;
-    my $prefs = CoGe_dev::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME, coge=>$coge);
+    my $prefs = CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME, coge=>$coge);
     delete $prefs->{display} unless ref($prefs->{display}) eq "HASH";
     foreach my $key (keys %opts)
       {
@@ -2276,7 +2273,7 @@ sub save_settings_cogeblast
 	  }
 	delete $prefs->{$key} unless $opts{$key};
       }
-    my $item =CoGe_dev::Accessory::Web::save_settings(opts=>$prefs, user=>$USER, page=>$PAGE_NAME, coge=>$coge);
+    my $item =CoGe::Accessory::Web::save_settings(opts=>$prefs, user=>$USER, page=>$PAGE_NAME, coge=>$coge);
   }
 
 sub color_pallet
