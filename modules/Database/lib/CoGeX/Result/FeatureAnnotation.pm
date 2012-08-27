@@ -1,16 +1,14 @@
-package CoGeX_dev::Result::FeatureAnnotation;
+package CoGeX::Result::FeatureAnnotation;
 
 use strict;
 use warnings;
 
 use base 'DBIx::Class::Core';
-use lib '/home/mbomhoff/CoGe/Accessory/lib'; #FIXME 8/2/12 remove
-use lib '/home/mbomhoff/CoGeXv/lib'; #FIXME 8/2/12 remove
-use CoGeX_dev::ResultSet::FeatureAnnotation;
+use CoGeX::ResultSet::FeatureAnnotation;
 
 =head1 NAME
 
-CoGeX_dev::Annotation
+CoGeX::Annotation
 
 =head1 SYNOPSIS
 
@@ -34,13 +32,13 @@ C<annotation_type_id>
 Type: INT, Default: 0, Nullable: no, Size: 11
 
 
-Belongs to CCoGeX_dev::Result::AnnotationType> via C<annotation_type_id>
+Belongs to CCoGeX::Result::AnnotationType> via C<annotation_type_id>
 
-Belongs to CCoGeX_dev::Result::Feature> via C<feature_id>
+Belongs to CCoGeX::Result::Feature> via C<feature_id>
 
 =head1 USAGE
 
- use CoGeX_dev;
+ use CoGeX;
 
 =head1 METHODS
 
@@ -61,9 +59,9 @@ __PACKAGE__->add_columns(
 );
 __PACKAGE__->set_primary_key("feature_annotation_id");
 
-__PACKAGE__->belongs_to( annotation_type => 'CoGeX_dev::Result::AnnotationType', 'annotation_type_id');
-__PACKAGE__->belongs_to( feature => 'CoGeX_dev::Result::Feature', 'feature_id');
-__PACKAGE__->has_one("feature_name" => "CoGeX_dev::Result::FeatureName", {'foreign.feature_id'=>'self.feature_id'});
+__PACKAGE__->belongs_to( annotation_type => 'CoGeX::Result::AnnotationType', 'annotation_type_id');
+__PACKAGE__->belongs_to( feature => 'CoGeX::Result::Feature', 'feature_id');
+__PACKAGE__->has_one("feature_name" => "CoGeX::Result::FeatureName", {'foreign.feature_id'=>'self.feature_id'});
 
 
 

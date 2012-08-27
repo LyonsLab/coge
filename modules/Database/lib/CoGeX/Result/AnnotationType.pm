@@ -1,4 +1,4 @@
-package CoGeX_dev::Result::AnnotationType;
+package CoGeX::Result::AnnotationType;
 
 use strict;
 use warnings;
@@ -7,7 +7,7 @@ use base 'DBIx::Class::Core';
 
 =head1 NAME
 
-CoGeX_dev::Result::AnnotationType
+CoGeX::Result::AnnotationType
 
 =head1 SYNOPSIS
 
@@ -29,13 +29,13 @@ C<annotation_type_group_id>
 Type: INT, Default: undef, Nullable: yes, Size: 11
 
 
-Belongs to CCoGeX_dev::Result::AnnotationTypeGroup> via C<annotation_type_group_id>
-Has many CCoGeX_dev::Result::Annotation> via C<annotation_type_id>
-Has many CCoGeX_dev::Result::ExperimentAnnotation> via C<annotation_type_id>
+Belongs to CCoGeX::Result::AnnotationTypeGroup> via C<annotation_type_group_id>
+Has many CCoGeX::Result::Annotation> via C<annotation_type_id>
+Has many CCoGeX::Result::ExperimentAnnotation> via C<annotation_type_id>
 
 =head1 USAGE
 
- use CoGeX_dev;
+ use CoGeX;
  
 =head1 METHODS
 
@@ -59,11 +59,11 @@ __PACKAGE__->add_columns(
 );
 __PACKAGE__->set_primary_key("annotation_type_id");
 
-__PACKAGE__->has_many("feature_annotations" => "CoGeX_dev::Result::FeatureAnnotation", 'annotation_type_id');
-__PACKAGE__->has_many("experiment_annotations" => "CoGeX_dev::Result::ExperimentAnnotation", 'annotation_type_id');
-__PACKAGE__->has_many("list_annotations" => "CoGeX_dev::Result::ListAnnotation", 'annotation_type_id');
+__PACKAGE__->has_many("feature_annotations" => "CoGeX::Result::FeatureAnnotation", 'annotation_type_id');
+__PACKAGE__->has_many("experiment_annotations" => "CoGeX::Result::ExperimentAnnotation", 'annotation_type_id');
+__PACKAGE__->has_many("list_annotations" => "CoGeX::Result::ListAnnotation", 'annotation_type_id');
 
-__PACKAGE__->belongs_to("annotation_type_group" => "CoGeX_dev::Result::AnnotationTypeGroup", 'annotation_type_group_id');
+__PACKAGE__->belongs_to("annotation_type_group" => "CoGeX::Result::AnnotationTypeGroup", 'annotation_type_group_id');
 
 
 

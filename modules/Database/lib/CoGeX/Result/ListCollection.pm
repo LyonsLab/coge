@@ -1,4 +1,4 @@
-package CoGeX_dev::Result::ListCollection;
+package CoGeX::Result::ListCollection;
 
 use strict;
 use warnings;
@@ -7,7 +7,7 @@ use base 'DBIx::Class::Core';
 
 =head1 NAME
 
-CoGeX_dev::Result::ListCollection
+CoGeX::Result::ListCollection
 
 =head1 SYNOPSIS
 
@@ -36,7 +36,7 @@ Type: BOOLEAN, Default: 0, Nullable: no, Size: 1
 
 =head1 USAGE
 
-  use CoGeX_dev;
+  use CoGeX;
 
 =head1 METHODS
 
@@ -67,7 +67,7 @@ __PACKAGE__->add_columns(
 
 );
 __PACKAGE__->set_primary_key("list_collection_id");
-__PACKAGE__->has_many("list_collection_connectors" => "CoGeX_dev::Result::ListCollectionConnector", 'list_collection_id');
+__PACKAGE__->has_many("list_collection_connectors" => "CoGeX::Result::ListCollectionConnector", 'list_collection_id');
 
 sub lists
   {

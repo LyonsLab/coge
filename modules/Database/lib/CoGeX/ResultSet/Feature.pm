@@ -1,4 +1,4 @@
-package CoGeX::ResultSet::Genome;
+package CoGeX::ResultSet::Feature;
 
 use strict;
 use warnings;
@@ -24,7 +24,7 @@ See Also   :
 sub resolve {
 	my $self = shift;
 	my $info = shift;
-	return $info if ref($info) =~ /genome/i;
+	return $info if ref($info) =~ /feature/i;
 	return $self->find($info) if $info =~ /^\d+$/;
 	return $self->search( { 'name' => { '-like' => '%' . $info . '%' } },, {} );
 }
@@ -49,8 +49,7 @@ See Also   :
 sub public {
 	my $self  = shift;
 	my %opts  = @_;
-#	my $limit = $opts{limit};
-	
+	my $limit = $opts{limit};
 	return $self->search( { 'restricted' => 0 } );
 }
 

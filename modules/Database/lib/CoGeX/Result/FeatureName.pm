@@ -1,4 +1,4 @@
-package CoGeX_dev::Result::FeatureName;
+package CoGeX::Result::FeatureName;
 
 # Created by DBIx::Class::Schema::Loader v0.03009 @ 2006-12-01 18:13:38
 
@@ -6,12 +6,10 @@ use strict;
 use warnings;
 
 use base 'DBIx::Class::Core';
-use lib '/home/mbomhoff/CoGe/Accessory/lib'; #FIXME 8/2/12 remove
-use lib '/home/mbomhoff/CoGeX/lib'; #FIXME 8/2/12 remove
-use CoGeX_dev::ResultSet::FeatureName;
+use CoGeX::ResultSet::FeatureName;
 =head1 NAME
 
-CoGeX_dev::FeatureName
+CoGeX::FeatureName
 
 =head1 SYNOPSIS
 
@@ -41,11 +39,11 @@ C<primary_name>
 Type: TINYINT, Default: 0, Nullable: no, Size: 1
 ????
 
-Relates to CCoGeX_dev::Result::Feature> via C<feature_id>; one-to-one relationship.
+Relates to CCoGeX::Result::Feature> via C<feature_id>; one-to-one relationship.
 
 =head1 USAGE
 
-  use CoGeX_dev;
+  use CoGeX;
 
 =head1 METHODS
 
@@ -70,8 +68,8 @@ __PACKAGE__->add_columns(
   { data_type => "TINYINT", default_value => 0, is_nullable => 0, size => 1 },
 );
 __PACKAGE__->set_primary_key("feature_name_id");
-__PACKAGE__->belongs_to("feature" => "CoGeX_dev::Result::Feature", "feature_id");
-__PACKAGE__->has_one("feature_annotation" => "CoGeX_dev::Result::FeatureAnnotation", {'foreign.feature_id'=>'self.feature_id'});
+__PACKAGE__->belongs_to("feature" => "CoGeX::Result::Feature", "feature_id");
+__PACKAGE__->has_one("feature_annotation" => "CoGeX::Result::FeatureAnnotation", {'foreign.feature_id'=>'self.feature_id'});
 
 
 sub primary

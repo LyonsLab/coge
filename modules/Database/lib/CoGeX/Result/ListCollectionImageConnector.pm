@@ -1,4 +1,4 @@
-package CoGeX_dev::Result::ListCollectionImageConnector;
+package CoGeX::Result::ListCollectionImageConnector;
 
 use strict;
 use warnings;
@@ -7,7 +7,7 @@ use base 'DBIx::Class::Core';
 
 =head1 NAME
 
-CoGeX_dev::Result::ListCollectionImageConnector
+CoGeX::Result::ListCollectionImageConnector
 
 =head1 SYNOPSIS
 
@@ -28,7 +28,7 @@ Type: INT, Default: "", Nullable: no, Size: 10
 
 =head1 USAGE
 
-  use CoGeX_dev;
+  use CoGeX;
 
 =head1 METHODS
 
@@ -44,8 +44,8 @@ __PACKAGE__->add_columns(
   { data_type => "INT", default_value => "", is_nullable => 0, size => 11 },
 );
 __PACKAGE__->set_primary_key("list_collection_image_connector_id");
-__PACKAGE__->belongs_to("list_collection" => "CoGeX_dev::Result::ListCollection", 'list_collection_id');
-__PACKAGE__->belongs_to("image" => "CoGeX_dev::Result::Image", 'image_id');
+__PACKAGE__->belongs_to("list_collection" => "CoGeX::Result::ListCollection", 'list_collection_id');
+__PACKAGE__->belongs_to("image" => "CoGeX::Result::Image", 'image_id');
 1;
 
 

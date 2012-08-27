@@ -1,4 +1,4 @@
-package CoGeX_dev::Result::ListAnnotation;
+package CoGeX::Result::ListAnnotation;
 
 use strict;
 use warnings;
@@ -7,7 +7,7 @@ use base 'DBIx::Class::Core';
 
 =head1 NAME
 
-CoGeX_dev::Result::ListAnnotation
+CoGeX::Result::ListAnnotation
 
 =head1 SYNOPSIS
 
@@ -35,13 +35,13 @@ Type: VARCHAR, Default: "", Nullable: yes, size: 1024
 
 
 
-Belongs to CCoGeX_dev::Result::AnnotationType> via C<annotation_type_id>
+Belongs to CCoGeX::Result::AnnotationType> via C<annotation_type_id>
 
-Belongs to CCoGeX_dev::Result::List> via C<list_id>
+Belongs to CCoGeX::Result::List> via C<list_id>
 
 =head1 USAGE
 
- use CoGeX_dev;
+ use CoGeX;
 
 =head1 METHODS
 
@@ -62,8 +62,8 @@ __PACKAGE__->add_columns(
 );
 __PACKAGE__->set_primary_key("list_annotation_id");
 
-__PACKAGE__->belongs_to( annotation_type => 'CoGeX_dev::Result::AnnotationType', 'annotation_type_id');
-__PACKAGE__->belongs_to( list => 'CoGeX_dev::Result::List', 'list_id');
+__PACKAGE__->belongs_to( annotation_type => 'CoGeX::Result::AnnotationType', 'annotation_type_id');
+__PACKAGE__->belongs_to( list => 'CoGeX::Result::List', 'list_id');
 
 
 
@@ -90,6 +90,34 @@ sub type
   }
 
 1;
+
+
+################################################ subroutine header begin ##
+
+=head2 info
+
+ Usage     : $self->info
+ Purpose   : returns a string of information about the annotation.  
+
+ Returns   : returns a string
+ Argument  : none
+ Throws    : 
+ Comments  : To be used to quickly generate a string about the annotation
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub info
+{
+	my $self = shift;
+	my $info;
+	$info .= $self->annotation;
+	return $info;
+
+}
 
 
 =head1 BUGS

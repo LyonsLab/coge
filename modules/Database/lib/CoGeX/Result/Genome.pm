@@ -1,13 +1,11 @@
-package CoGeX_dev::Result::Genome;
+package CoGeX::Result::Genome;
 
 # Created by DBIx::Class::Schema::Loader v0.03009 @ 2006-12-01 18:13:38
 
 use strict;
 use warnings;
 use base 'DBIx::Class::Core';
-use lib '/home/mbomhoff/CoGe/Accessory/lib';    #FIXME 8/2/12 remove
-use lib '/home/mbomhoff/CoGeX/lib';            #FIXME 8/2/12 remove
-use CoGeX_dev::ResultSet::Genome;
+use CoGeX::ResultSet::Genome;
 use File::Spec::Functions;
 use Data::Dumper;
 use Text::Wrap;
@@ -17,7 +15,7 @@ use LWP::Simple;
 
 =head1 NAME
 
-CoGeX_dev::Genome
+CoGeX::Genome
 
 =head1 SYNOPSIS
 
@@ -48,15 +46,15 @@ C<file_path>
 Type: VARCHAR, Default: undef, Nullable: 0, Size: 255
 
 
-Belongs to CCoGeX_dev::Result::Organism> via C<organism_id>
-Belongs to CCoGeX_dev::Result::GenomicSequenceType> via C<genomic_sequence_type_id>
-Has many CCoGeX_dev::Result::DatasetConnector> via C<genome_id>
-Has many CCoGeX_dev::Result::GenomicSequence> via C<genome_id>
+Belongs to CCoGeX::Result::Organism> via C<organism_id>
+Belongs to CCoGeX::Result::GenomicSequenceType> via C<genomic_sequence_type_id>
+Has many CCoGeX::Result::DatasetConnector> via C<genome_id>
+Has many CCoGeX::Result::GenomicSequence> via C<genome_id>
 
 
 =head1 USAGE
 
- use CoGeX_dev;
+ use CoGeX;
 
 =head1 METHODS
 
@@ -122,12 +120,12 @@ __PACKAGE__->add_columns(
 );
 
 __PACKAGE__->set_primary_key("genome_id");
-__PACKAGE__->has_many("dataset_connectors" => "CoGeX_dev::Result::DatasetConnector", 'genome_id');
-__PACKAGE__->has_many("genomic_sequences" => "CoGeX_dev::Result::GenomicSequence", 'genome_id');
-__PACKAGE__->belongs_to("organism" => "CoGeX_dev::Result::Organism", 'organism_id');
-__PACKAGE__->belongs_to("genomic_sequence_type" => "CoGeX_dev::Result::GenomicSequenceType", 'genomic_sequence_type_id');
-__PACKAGE__->has_many("genome_list_connectors" => "CoGeX_dev::Result::GenomeListConnector", "genome_id");
-__PACKAGE__->has_many("experiments" => "CoGeX_dev::Result::Experiment", "genome_id");
+__PACKAGE__->has_many("dataset_connectors" => "CoGeX::Result::DatasetConnector", 'genome_id');
+__PACKAGE__->has_many("genomic_sequences" => "CoGeX::Result::GenomicSequence", 'genome_id');
+__PACKAGE__->belongs_to("organism" => "CoGeX::Result::Organism", 'organism_id');
+__PACKAGE__->belongs_to("genomic_sequence_type" => "CoGeX::Result::GenomicSequenceType", 'genomic_sequence_type_id');
+__PACKAGE__->has_many( "list_connectors" => "CoGeX::Result::ListConnector", {'foreign.child_id' => 'self.genome_id'} );
+__PACKAGE__->has_many("experiments" => "CoGeX::Result::Experiment", "genome_id");
 
 sub desc {
 	return shift->description(@_);
@@ -724,7 +722,7 @@ sub fasta {
 	$seq = $self->reverse_complement($seq) if $rc;
 	if ($prot) {
 		my $trans_type = $self->trans_type;
-		my $feat       = new CoGeX_dev::Feature;
+		my $feat       = new CoGeX::Feature;
 		my ( $seqs, $type ) =
 		  $feat->frame6_trans( seq => $seq, trans_type => $trans_type );
 		foreach my $frame ( sort { length($a) <=> length($b) || $a cmp $b }
@@ -1073,10 +1071,36 @@ sub info {
 	my $info;
 	$info .= "(R)" if $self->restricted;
 	$info .= $self->name if $self->name;
-	$info .= $self->organism->name unless $self->name;
+	$info .= $self->organism->name if $self->organism and not $self->name;
 	$info .= ": ".$self->description if $self->description;
-	$info .= " (v".$self->version.", dsgid".$self->id. "): ". $self->genomic_sequence_type->name;	
+	$info .= " (v".$self->version.", dsgid".$self->id. ")";
+	$info .= ': ' . $self->genomic_sequence_type->name if $self->genomic_sequence_type;	
 	return $info;
+}
+
+############################################### subroutine header begin ##
+
+=head2 info_html
+
+ Usage     : 
+ Purpose   : provides quick information about the genome wrapped with a link to LIstView
+ Returns   : a string
+ Argument  : 
+ Throws    : 
+ Comments  : name, description, restricted, type
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub info_html
+{
+	my $self = shift;
+	my $info = $self->info;
+	return qq{<span class=link onclick='window.open("GenomeView.pl?eid=} .$self->id. qq{")'>} . $info . "</span>";
 }
 
 =head1 BUGS

@@ -1,4 +1,4 @@
-package CoGeX_dev::Result::ExperimentAnnotation;
+package CoGeX::Result::ExperimentAnnotation;
 
 # Created by DBIx::Class::Schema::Loader v0.03009 @ 2006-12-01 18:13:38
 
@@ -9,7 +9,7 @@ use base 'DBIx::Class::Core';
 
 =head1 NAME
 
-CoGeX_dev::ExperimentAnnotation
+CoGeX::ExperimentAnnotation
 
 =head1 SYNOPSIS
 
@@ -33,13 +33,13 @@ C<annotation_type_id>
 Type: INT, Default: 0, Nullable: no, Size: 11
 
 
-Belongs to CCoGeX_dev::Result::AnnotationType> via C<annotation_type_id>
+Belongs to CCoGeX::Result::AnnotationType> via C<annotation_type_id>
 
-Belongs to CCoGeX_dev::Result::Experiment> via C<experiment_id>
+Belongs to CCoGeX::Result::Experiment> via C<experiment_id>
 
 =head1 USAGE
 
- use CoGeX_dev;
+ use CoGeX;
 
 =head1 METHODS
 
@@ -60,8 +60,8 @@ __PACKAGE__->add_columns(
 );
 __PACKAGE__->set_primary_key("experiment_annotation_id");
 
-__PACKAGE__->belongs_to( annotation_type => 'CoGeX_dev::Result::AnnotationType', 'annotation_type_id');
-__PACKAGE__->belongs_to( experiment => 'CoGeX_dev::Result::Experiment', 'experiment_id');
+__PACKAGE__->belongs_to( annotation_type => 'CoGeX::Result::AnnotationType', 'annotation_type_id');
+__PACKAGE__->belongs_to( experiment => 'CoGeX::Result::Experiment', 'experiment_id');
 
 
 
@@ -88,6 +88,33 @@ sub type
   }
 
 1;
+
+
+################################################ subroutine header begin ##
+
+=head2 info
+
+ Usage     : $self->info
+ Purpose   : returns a string of information about the annotation.  
+
+ Returns   : returns a string
+ Argument  : none
+ Throws    : 
+ Comments  : To be used to quickly generate a string about the annotation
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub info
+{
+	my $self = shift;
+	my $info;
+	$info .= $self->annotation;
+	return $info;
+}
 
 
 =head1 BUGS

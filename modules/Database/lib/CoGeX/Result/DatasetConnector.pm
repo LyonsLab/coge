@@ -1,4 +1,4 @@
-package CoGeX_dev::Result::DatasetConnector;
+package CoGeX::Result::DatasetConnector;
 
 use strict;
 use warnings;
@@ -8,7 +8,7 @@ use base 'DBIx::Class::Core';
 
 =head1 NAME
 
-CoGeX_dev::
+CoGeX::
 
 =head1 SYNOPSIS
 
@@ -31,13 +31,13 @@ C<genome_id>
 Type: INT, Default: "", Nullable: no, Size: 11
 Key for identifying the record in the C<genome> table.
 
-Belongs to CCoGeX_dev::Result::Genome> via C<genome_id>
-Belongs to CCoGeX_dev::Result::Dataset> via C<dataset_id>
+Belongs to CCoGeX::Result::Genome> via C<genome_id>
+Belongs to CCoGeX::Result::Dataset> via C<dataset_id>
 
 
 =head1 USAGE
 
- use CoGeX_dev;
+ use CoGeX;
 
 =head1 METHODS
 
@@ -53,8 +53,8 @@ __PACKAGE__->add_columns(
   { data_type => "INT", default_value => "", is_nullable => 0, size => 11 },
 );
 __PACKAGE__->set_primary_key("dataset_connector_id");
-__PACKAGE__->belongs_to("genome" => "CoGeX_dev::Result::Genome", "genome_id");
-__PACKAGE__->belongs_to("dataset" => "CoGeX_dev::Result::Dataset", "dataset_id");
+__PACKAGE__->belongs_to("genome" => "CoGeX::Result::Genome", "genome_id");
+__PACKAGE__->belongs_to("dataset" => "CoGeX::Result::Dataset", "dataset_id");
 
 1;
 

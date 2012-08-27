@@ -1,4 +1,4 @@
-package CoGeX_dev::Result::UserSession;
+package CoGeX::Result::UserSession;
 
 # Created by DBIx::Class::Schema::Loader v0.03009 @ 2006-12-01 18:13:38
 
@@ -9,7 +9,7 @@ use base 'DBIx::Class::Core';
 
 =head1 NAME
 
-CoGeX_dev::UserSession
+CoGeX::UserSession
 
 =head1 SYNOPSIS
 
@@ -30,11 +30,11 @@ Type: DATETIME, Default: "", Nullable: no, Size: 19
 C<session>
 Type: VARCHAR, Default: "", Nullable: no, Size: 22
 
-Belongs to CCoGeX_dev::Result::User> via C<user_id>
+Belongs to CCoGeX::Result::User> via C<user_id>
 
 =head1 USAGE
 
-  use CoGeX_dev;
+  use CoGeX;
 
 =head1 METHODS
 
@@ -48,7 +48,7 @@ __PACKAGE__->add_columns(
   "session",#  { data_type => "VARCHAR", default_value => "", is_nullable => 0, size => 22 },
 );
 __PACKAGE__->set_primary_key("user_session_id");
-__PACKAGE__->belongs_to("user"=>"CoGeX_dev::Result::User", 'user_id');
+__PACKAGE__->belongs_to("user"=>"CoGeX::Result::User", 'user_id');
 
 1;
 

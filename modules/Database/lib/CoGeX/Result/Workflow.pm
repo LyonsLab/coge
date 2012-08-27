@@ -1,4 +1,4 @@
-package CoGeX_dev::Result::Workflow;
+package CoGeX::Result::Workflow;
 
 # Created by DBIx::Class::Schema::Loader v0.03009 @ 2006-12-01 18:13:38
 
@@ -9,7 +9,7 @@ use base 'DBIx::Class::Core';
 
 =head1 NAME
 
-CoGeX_dev::Workflow
+CoGeX::Workflow
 
 =head1 SYNOPSIS
 
@@ -36,7 +36,7 @@ Type: TIMESTAMP, Default: "time created", Nullable: no,
 
 =head1 USAGE
 
-  use CoGeX_dev;
+  use CoGeX;
 
 =head1 METHODS
 
@@ -55,8 +55,8 @@ __PACKAGE__->add_columns(
   "note", { data_type => "TEXT", default_value => "", is_nullable => 1},
 );
 __PACKAGE__->set_primary_key("workflow_id");
-__PACKAGE__->has_many('work_orders'=>"CoGeX_dev::Result::WorkOrder","workflow_id");
-__PACKAGE__->belongs_to('user'=>"CoGeX_dev::Result::User","user_id");
+__PACKAGE__->has_many('work_orders'=>"CoGeX::Result::WorkOrder","workflow_id");
+__PACKAGE__->belongs_to('user'=>"CoGeX::Result::User","user_id");
 
 
 

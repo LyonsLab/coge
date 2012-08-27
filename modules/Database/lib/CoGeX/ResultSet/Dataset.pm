@@ -1,4 +1,4 @@
-  package CoGeX_dev::ResultSet::Dataset;
+  package CoGeX::ResultSet::Dataset;
 
   use strict;
   use warnings;

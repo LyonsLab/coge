@@ -1,4 +1,4 @@
-package CoGeX_dev::Result::FeatureType;
+package CoGeX::Result::FeatureType;
 
 # Created by DBIx::Class::Schema::Loader v0.03009 @ 2006-12-01 18:13:38
 
@@ -9,7 +9,7 @@ use base 'DBIx::Class::Core';
 
 =head1 NAME
 
-CoGeX_dev::FeatureType
+CoGeX::FeatureType
 
 =head1 SYNOPSIS
 
@@ -31,11 +31,11 @@ C<description>
 Type: VARCHAR, Default: undef, Nullable: yes, Size: 255
 Description of the feature type.
 
-Relates to CCoGeX_dev::Result::Feature> via C<feature_type_id> in a one-to-many relationship.
+Relates to CCoGeX::Result::Feature> via C<feature_type_id> in a one-to-many relationship.
 
 =head1 USAGE
 
-  use CoGeX_dev;
+  use CoGeX;
 
 =head1 METHODS
 
@@ -58,7 +58,7 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key("feature_type_id");
 
 
-__PACKAGE__->has_many("features"=>"CoGeX_dev::Result::Feature","feature_type_id");
+__PACKAGE__->has_many("features"=>"CoGeX::Result::Feature","feature_type_id");
 
 1;
 

@@ -1,4 +1,4 @@
-package CoGeX_dev::Result::Role;
+package CoGeX::Result::Role;
 
 # Created by DBIx::Class::Schema::Loader
 # DO NOT MODIFY THE FIRST PART OF THIS FILE
@@ -49,8 +49,8 @@ __PACKAGE__->add_columns(
 );
 __PACKAGE__->set_primary_key("role_id");
 # Role has many permissions
-__PACKAGE__->has_many('role_permission_connectors'=>"CoGeX_dev::Result::RolePermissionConnector",'role_id');
-__PACKAGE__->has_many('user_groups'=>'CoGeX_dev::Result::UserGroup', 'role_id');
+__PACKAGE__->has_many('role_permission_connectors'=>"CoGeX::Result::RolePermissionConnector",'role_id');
+__PACKAGE__->has_many('user_groups'=>'CoGeX::Result::UserGroup', 'role_id');
 
 
 # Created by DBIx::Class::Schema::Loader v0.07002 @ 2011-08-29 09:28:12

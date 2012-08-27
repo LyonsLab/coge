@@ -1,16 +1,15 @@
-package CoGeX_dev::Result::Organism;
+package CoGeX::Result::Organism;
 
 # Created by DBIx::Class::Schema::Loader v0.03009 @ 2006-12-01 18:13:38
 
 use strict;
 use warnings;
 use base 'DBIx::Class::Core';
-#use lib '/home/mbomhoff/CoGeX/lib'; #FIXME 8/2/12 remove
-#use CoGeX_dev::ResultSet::Organism;
+##use CoGeX::ResultSet::Organism;
 
 =head1 NAME
 
-CoGeX_dev::Organism
+CoGeX::Organism
 
 =head1 SYNOPSIS
 
@@ -37,11 +36,11 @@ Type:VARCHAR, Default: "", Nullable: no, Size: 200
 File-system 'safe' (only alphanumeric characters and underscores) version of 'name' field above.
 
 
-Relates to CCoGeX_dev::Result::Genome> via C<organism_id>, in a one-to-many relationship.
+Relates to CCoGeX::Result::Genome> via C<organism_id>, in a one-to-many relationship.
 
 =head1 USAGE
 
-  use CoGeX_dev;
+  use CoGeX;
 
 =head1 METHODS
 
@@ -65,7 +64,7 @@ __PACKAGE__->add_columns(
 );
 __PACKAGE__->set_primary_key("organism_id");
 
-__PACKAGE__->has_many("genomes" => "CoGeX_dev::Result::Genome", 'organism_id');
+__PACKAGE__->has_many("genomes" => "CoGeX::Result::Genome", 'organism_id');
 
 ################################################ subroutine header begin ##
 

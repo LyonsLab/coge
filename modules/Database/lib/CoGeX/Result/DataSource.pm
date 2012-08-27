@@ -1,4 +1,4 @@
-package CoGeX_dev::Result::DataSource;
+package CoGeX::Result::DataSource;
 
 # Created by DBIx::Class::Schema::Loader v0.03009 @ 2006-12-01 18:13:38
 
@@ -9,7 +9,7 @@ use base 'DBIx::Class::Core';
 
 =head1 NAME
 
-CoGeX_dev::DataSource
+CoGeX::DataSource
 
 =head1 SYNOPSIS
 
@@ -37,11 +37,11 @@ C<link>
 Type: TEXT, Default: undef, Nullable: yes, Size: 65535
 URL to origonal source.
 
-Relates to CCoGeX_dev::Result::Dataset> via C<data_source_id>, one-to-many relationship.
+Relates to CCoGeX::Result::Dataset> via C<data_source_id>, one-to-many relationship.
 
 =head1 USAGE
 
- use CoGeX_dev;
+ use CoGeX;
 
 =head1 METHODS
 
@@ -49,37 +49,90 @@ Relates to CCoGeX_dev::Result::Dataset> via C<data_source_id>, one-to-many relat
 
 __PACKAGE__->table("data_source");
 __PACKAGE__->add_columns(
-  "data_source_id",
-  { data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
-  "name",
-  { data_type => "VARCHAR", default_value => "", is_nullable => 0, size => 256 },
-  "description",
-  {
-    data_type => "VARCHAR",
-    default_value => undef,
-    is_nullable => 1,
-    size => 1024,
-  },
-  "link",
-  {
-    data_type => "TEXT",
-    default_value => undef,
-    is_nullable => 1,
-    size => 65535,
-  },
+	"data_source_id",
+	{ data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
+	"name",
+	{ data_type => "VARCHAR", default_value => "", is_nullable => 0, size => 256 },
+	"description",
+	{
+		data_type     => "VARCHAR",
+		default_value => undef,
+		is_nullable   => 1,
+		size          => 1024,
+	},
+	"link",
+	{
+		data_type     => "TEXT",
+		default_value => undef,
+		is_nullable   => 1,
+		size          => 65535,
+	},
 );
 __PACKAGE__->set_primary_key("data_source_id");
 
-
-__PACKAGE__->has_many('datasets'=>"CoGeX_dev::Result::Dataset", "data_source_id");
+__PACKAGE__->has_many( 'datasets' => "CoGeX::Result::Dataset", "data_source_id" );
 
 sub desc
-  {
-    shift->description(@_);
-  }
+{
+	shift->description(@_);
+}
+
+################################################ subroutine header begin ##
+
+=head2 info
+
+ Usage     : 
+ Purpose   : provides quick information about the source
+ Returns   : a string
+ Argument  : 
+ Throws    : 
+ Comments  : name, description, restricted, type
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub info
+{
+	my $self        = shift;
+	my $info = $self->name;
+	$info .= ": " . $self->description if $self->description;
+	return $info;
+}
+
+################################################ subroutine header begin ##
+
+=head2 info_html
+
+ Usage     : 
+ Purpose   : provides quick information about the source wrapped with a link
+ Returns   : a string
+ Argument  : 
+ Throws    : 
+ Comments  : name, description, restricted, type
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub info_html
+{
+	my $self = shift;
+	my $info = $self->info;
+	if ($self->link)
+	{
+		$info = qq{<span class=link onclick='window.open("} . $self->link . qq{")'>} . $info . "</span>";
+	}
+	return $info;
+}
 
 1;
-
 
 =head1 BUGS
 
@@ -104,3 +157,4 @@ LICENSE file included with this module.
 =head1 SEE ALSO
 
 =cut
+

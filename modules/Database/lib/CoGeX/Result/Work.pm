@@ -1,4 +1,4 @@
-package CoGeX_dev::Result::Work;
+package CoGeX::Result::Work;
 
 # Created by DBIx::Class::Schema::Loader v0.03009 @ 2006-12-01 18:13:38
 
@@ -8,7 +8,7 @@ use base 'DBIx::Class';
 
 =head1 NAME
 
-CoGeX_dev::Work
+CoGeX::Work
 
 =head1 SYNOPSIS
 
@@ -34,7 +34,7 @@ Type: TEXT, Default: "", Nullable: yes, Size: N/A
 
 =head1 USAGE
 
-  use CoGeX_dev;
+  use CoGeX;
 
 =head1 METHODS
 
@@ -56,9 +56,9 @@ __PACKAGE__->add_columns(
   "link", { data_type => "VARCHAR", default_value => "", is_nullable => 1, size=>1024 },
 );
 __PACKAGE__->set_primary_key("work_id");
-__PACKAGE__->belongs_to('user'=>"CoGeX_dev::Result::User","user_id");
-__PACKAGE__->belongs_to('image'=>"CoGeX_dev::Result::Image","image_id");
-__PACKAGE__->has_many('work_orders'=>"CoGeX_dev::Result::WorkOrder","work_id");
+__PACKAGE__->belongs_to('user'=>"CoGeX::Result::User","user_id");
+__PACKAGE__->belongs_to('image'=>"CoGeX::Result::Image","image_id");
+__PACKAGE__->has_many('work_orders'=>"CoGeX::Result::WorkOrder","work_id");
 1;
 
 

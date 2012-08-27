@@ -1,4 +1,4 @@
-package CoGeX_dev::Result::ListType;
+package CoGeX::Result::ListType;
 
 use strict;
 use warnings;
@@ -8,7 +8,7 @@ use base 'DBIx::Class::Core';
 
 =head1 NAME
 
-CoGeX_dev::Result::ListType
+CoGeX::Result::ListType
 
 =cut
 
@@ -46,7 +46,7 @@ __PACKAGE__->add_columns(
 );
 __PACKAGE__->set_primary_key("list_type_id");
 
-__PACKAGE__->has_many('lists'=>"CoGeX_dev::Result::List",'list_type_id');
+__PACKAGE__->has_many('lists'=>"CoGeX::Result::List",'list_type_id');
 
 
 

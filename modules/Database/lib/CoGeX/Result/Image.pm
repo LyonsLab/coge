@@ -1,4 +1,4 @@
-package CoGeX_dev::Result::Image;
+package CoGeX::Result::Image;
 
 # Created by DBIx::Class::Schema::Loader v0.03009 @ 2006-12-01 18:13:38
 
@@ -9,7 +9,7 @@ use base 'DBIx::Class::Core';
 
 =head1 NAME
 
-CoGeX_dev::Image
+CoGeX::Image
 
 =head1 SYNOPSIS
 
@@ -37,7 +37,7 @@ Blob containing image data.
 
 =head1 USAGE
 
-  use CoGeX_dev;
+  use CoGeX;
 
 =head1 METHODS
 

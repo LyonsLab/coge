@@ -1,4 +1,4 @@
-package CoGeX_dev::Result::ListCollectionConnector;
+package CoGeX::Result::ListCollectionConnector;
 
 use strict;
 use warnings;
@@ -7,7 +7,7 @@ use base 'DBIx::Class::Core';
 
 =head1 NAME
 
-CoGeX_dev::Result::ListCollectionConnector
+CoGeX::Result::ListCollectionConnector
 
 =head1 SYNOPSIS
 
@@ -28,7 +28,7 @@ Type: INT, Default: "", Nullable: no, Size: 11
 
 =head1 USAGE
 
-  use CoGeX_dev;
+  use CoGeX;
 
 =head1 METHODS
 
@@ -43,9 +43,9 @@ __PACKAGE__->add_columns(
   "list_id",
   { data_type => "INT", default_value => "", is_nullable => 0, size => 11 },
 );
-__PACKAGE__->set_primary_key("list_collection_image_connector_id");
-__PACKAGE__->belongs_to("list_collection" => "CoGeX_dev::Result::ListCollection", 'list_collection_id');
-__PACKAGE__->belongs_to("image" => "CoGeX_dev::Result::List", 'list_id');
+__PACKAGE__->set_primary_key("list_collection_connector_id");
+__PACKAGE__->belongs_to("list_collection" => "CoGeX::Result::ListCollection", 'list_collection_id');
+__PACKAGE__->belongs_to("List" => "CoGeX::Result::List", 'list_id');
 1;
 
 

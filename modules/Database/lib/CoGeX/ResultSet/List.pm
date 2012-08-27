@@ -1,4 +1,4 @@
-package CoGeX_dev::ResultSet::List;
+package CoGeX::ResultSet::List;
 
 use strict;
 use warnings;

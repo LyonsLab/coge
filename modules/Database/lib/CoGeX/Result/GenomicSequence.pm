@@ -1,4 +1,4 @@
-package CoGeX_dev::Result::GenomicSequence;
+package CoGeX::Result::GenomicSequence;
 
 # Created by DBIx::Class::Schema::Loader v0.03009 @ 2006-12-01 18:13:38
 
@@ -9,7 +9,7 @@ use base 'DBIx::Class::Core';
 
 =head1 NAME
 
-CoGeX_dev::GenomicSequence
+CoGeX::GenomicSequence
 
 =head1 SYNOPSIS
 
@@ -36,11 +36,11 @@ C<genome_id>
 Type: INT, Default: "", Nullable: no, Size: 11
 Reference to a record in the C<genome> table.
 
-Relates to a record in the CCoGeX_dev::Result::Genome> object via C<genome_id> in a one-to-one relationship.
+Relates to a record in the CCoGeX::Result::Genome> object via C<genome_id> in a one-to-one relationship.
 
 =head1 USAGE
 
-  use CoGeX_dev;
+  use CoGeX;
 
 =head1 METHODS
 
@@ -59,7 +59,7 @@ __PACKAGE__->add_columns(
   { data_type => "INT", default_value => "", is_nullable => 0, size => 11 },
 );
 __PACKAGE__->set_primary_key("genomic_sequence_id");
-__PACKAGE__->belongs_to("genome" => "CoGeX_dev::Result::Genome", "genome_id");
+__PACKAGE__->belongs_to("genome" => "CoGeX::Result::Genome", "genome_id");
 
 1;
 

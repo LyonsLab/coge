@@ -1,4 +1,4 @@
-package CoGeX_dev::Result::Dataset;
+package CoGeX::Result::Dataset;
 
 # Created by DBIx::Class::Schema::Loader v0.03009 @ 2006-12-01 18:13:38
 
@@ -10,13 +10,13 @@ use Carp qw (cluck);
 use base 'DBIx::Class::Core';
 
 
-#use CoGeX_dev::Result::Feature; #need to figure this out and uncomment.  Going to case a lot of problems.
+#use CoGeX::Result::Feature; #need to figure this out and uncomment.  Going to case a lot of problems.
 use Text::Wrap;
 use Carp;
 
 =head1 NAME
 
-CoGeX_dev::Dataset
+CoGeX::Dataset
 
 =head1 SYNOPSIS
 
@@ -46,20 +46,20 @@ Type: TEXT, Default: undef, Nullable: yes, Size: 65535
 C<date>
 Type: DATETIME, Default: "", Nullable: no, Size: 19
 
-Belongs to CCoGeX_dev::Result::CoGeX_dev::DataSource> via C<data_source_id>
-Has many CCoGeX_dev::Result::Feature> via C<dataset_id>
-Has many CCoGeX_dev::Result::DatasetConnector> via C<dataset_id>
+Belongs to CCoGeX::Result::CoGeX::DataSource> via C<data_source_id>
+Has many CCoGeX::Result::Feature> via C<dataset_id>
+Has many CCoGeX::Result::DatasetConnector> via C<dataset_id>
 
 =head1 USAGE
 
- use CoGeX_dev;
+ use CoGeX;
 
 =head1 METHODS
 
 =cut
 
 __PACKAGE__->table("dataset");
-__PACKAGE__->resultset_class("CoGeX_dev::ResultSet::Dataset");
+__PACKAGE__->resultset_class("CoGeX::ResultSet::Dataset");
 __PACKAGE__->add_columns(
 													"dataset_id",
 													{ data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
@@ -95,10 +95,10 @@ __PACKAGE__->add_columns(
 );
 
 __PACKAGE__->set_primary_key("dataset_id");
-__PACKAGE__->has_many( "features"                   => "CoGeX_dev::Result::Feature",                'dataset_id' );
-__PACKAGE__->has_many( "dataset_connectors"         => "CoGeX_dev::Result::DatasetConnector",       'dataset_id' );
-#__PACKAGE__->has_many( "user_group_data_connectors" => "CoGeX_dev::Result::UserGroupDataConnector", 'dataset_id' );
-__PACKAGE__->belongs_to( "data_source" => "CoGeX_dev::Result::DataSource", 'data_source_id' );
+__PACKAGE__->has_many( "features"                   => "CoGeX::Result::Feature",                'dataset_id' );
+__PACKAGE__->has_many( "dataset_connectors"         => "CoGeX::Result::DatasetConnector",       'dataset_id' );
+#__PACKAGE__->has_many( "user_group_data_connectors" => "CoGeX::Result::UserGroupDataConnector", 'dataset_id' );
+__PACKAGE__->belongs_to( "data_source" => "CoGeX::Result::DataSource", 'data_source_id' );
 
 ################################################ subroutine header begin ##
 
@@ -773,7 +773,7 @@ sub fasta
 	if ($prot)
 	{
 		my $trans_type = $self->trans_type;
-		my $feat       = new CoGeX_dev::Result::Feature;
+		my $feat       = new CoGeX::Result::Feature;
 		my ( $seqs, $type ) = $feat->frame6_trans( seq => $seq, trans_type => $trans_type, gstid => $gstid );
 		foreach my $frame ( sort { length($a) <=> length($b) || $a cmp $b } keys %$seqs )
 		{

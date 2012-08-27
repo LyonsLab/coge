@@ -1,4 +1,4 @@
-package CoGeX_dev::Result::FeatureListConnector;
+package CoGeX::Result::FeatureListConnector;
 
 use strict;
 use warnings;
@@ -7,7 +7,7 @@ use base 'DBIx::Class::Core';
 
 =head1 NAME
 
-CoGeX_dev::Result::FeatureListConnector
+CoGeX::Result::FeatureListConnector
 
 =head1 SYNOPSIS
 
@@ -29,12 +29,12 @@ C<list_id>
 Type: INT, Default: "", Nullable: no, Size: 11
 Key for identifying the record in the C<list> table.
 
-Belongs to CCoGeX_dev::Result::Feature> via C<feature_id>
-Belongs to CCoGeX_dev::Result::List> via C<list_id>
+Belongs to CCoGeX::Result::Feature> via C<feature_id>
+Belongs to CCoGeX::Result::List> via C<list_id>
 
 =head1 USAGE
 
- use CoGeX_dev;
+ use CoGeX;
 
 =head1 METHODS
 
@@ -51,8 +51,8 @@ __PACKAGE__->add_columns(
 );
 __PACKAGE__->set_primary_key("feature_list_connector_id");
 
-__PACKAGE__->belongs_to("feature" => "CoGeX_dev::Result::Feature", "feature_id");
-__PACKAGE__->belongs_to("list" => "CoGeX_dev::Result::List", "list_id");
+__PACKAGE__->belongs_to("feature" => "CoGeX::Result::Feature", "feature_id");
+__PACKAGE__->belongs_to("list" => "CoGeX::Result::List", "list_id");
 
 1;
 

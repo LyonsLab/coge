@@ -1,4 +1,4 @@
-  package CoGeX_dev::ResultSet::GenomicSequenceType;
+  package CoGeX::ResultSet::GenomicSequenceType;
 
   use strict;
   use warnings;

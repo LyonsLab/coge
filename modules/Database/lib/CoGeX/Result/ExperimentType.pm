@@ -1,4 +1,4 @@
-package CoGeX_dev::Result::ExperimentType;
+package CoGeX::Result::ExperimentType;
 
 # Created by DBIx::Class::Schema::Loader
 
@@ -48,7 +48,7 @@ __PACKAGE__->add_columns(
 			);
 __PACKAGE__->set_primary_key("experiment_type_id");
 
-__PACKAGE__->has_many('experiment_type_connectors'=>"CoGeX_dev::Result::ExperimentTypeConnector","experiment_type_id");
+__PACKAGE__->has_many('experiment_type_connectors'=>"CoGeX::Result::ExperimentTypeConnector","experiment_type_id");
 
 
 ################################################ subroutine header begin ##

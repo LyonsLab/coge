@@ -1,4 +1,4 @@
-package CoGeX_dev::Result::RolePermissionConnector;
+package CoGeX::Result::RolePermissionConnector;
 
 # Created by DBIx::Class::Schema::Loader
 # DO NOT MODIFY THE FIRST PART OF THIS FILE
@@ -46,8 +46,8 @@ __PACKAGE__->add_columns(
 			 { data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
 			);
 __PACKAGE__->set_primary_key("role_permission_connector_id");
-__PACKAGE__->belongs_to("role"=>"CoGeX_dev::Result::Role","role_id");
-__PACKAGE__->belongs_to("permission"=>"CoGeX_dev::Result::Permission","permission_id");
+__PACKAGE__->belongs_to("role"=>"CoGeX::Result::Role","role_id");
+__PACKAGE__->belongs_to("permission"=>"CoGeX::Result::Permission","permission_id");
 
 # Created by DBIx::Class::Schema::Loader v0.07002 @ 2011-08-29 09:28:12
 # DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:1Wzqk5xNmf/0MiICncYHEw
