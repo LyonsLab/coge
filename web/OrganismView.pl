@@ -2,11 +2,9 @@
 use strict;
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
-use lib '/home/mbomhoff/CoGe/Accessory/lib'; #FIXME 8/2/12 remove
-use lib '/home/mbomhoff/CoGeX/lib'; #FIXME 8/2/12 remove
-use CoGe_dev::Accessory::LogUser;
-use CoGe_dev::Accessory::Web;
-use CoGeX_dev;
+use CoGe::Accessory::LogUser;
+use CoGe::Accessory::Web;
+use CoGeX;
 use HTML::Template;
 use Data::Dumper;
 use CGI::Ajax;
@@ -21,7 +19,7 @@ use Sort::Versions;
 no warnings 'redefine';
 
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $coge $HISTOGRAM %FUNCTION $P $COOKIE_NAME $SERVER);
-$P = CoGe_dev::Accessory::Web::get_defaults("$ENV{HOME}/coge.conf");
+$P = CoGe::Accessory::Web::get_defaults("$ENV{HOME}/coge.conf");
 $ENV{PATH} = $P->{COGEDIR};
 $ENV{irodsEnvFile} = "/var/www/.irods/.irodsEnv";
 
@@ -48,7 +46,7 @@ $DBPORT = $P->{DBPORT};
 $DBUSER = $P->{DBUSER};
 $DBPASS = $P->{DBPASS};
 $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
-$coge = CoGeX_dev->connect($connstr, $DBUSER, $DBPASS );
+$coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 
@@ -56,8 +54,8 @@ $COOKIE_NAME = $P->{COOKIE_NAME};
 
 my ($cas_ticket) =$FORM->param('ticket');
 $USER = undef;
-($USER) = CoGe_dev::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
-($USER) = CoGe_dev::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
+($USER) = CoGe::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
+($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
 
 #my $pj = new CGI::Ajax(
 %FUNCTION = (
@@ -227,6 +225,7 @@ sub make_genome_private
       }
     return 1;
   }
+  
 sub update_genome_info
   {
     my %opts = @_;
@@ -246,7 +245,6 @@ sub update_genome_info
     $dsg->link($link);
     $dsg->update;
     return 1;
-
   }
 
 sub edit_genome_info
@@ -1322,7 +1320,7 @@ sub get_codon_usage
 
     #Josh put some stuff in here so he could get raw numbers instead of percentages for aa usage. He should either make this an option or delete this code when he is done. REMIND HIM ABOUT THIS IF YOU ARE EDITING ORGVIEW!
     my $html = "Codon Usage: $code_type";
-    $html .= CoGe_dev::Accessory::genetic_code->html_code_table(data=>\%codons, code=>$code);
+    $html .= CoGe::Accessory::genetic_code->html_code_table(data=>\%codons, code=>$code);
     return $html
   }
 
@@ -1398,11 +1396,11 @@ sub get_aa_usage
     %aa = $USER->user_name =~ /jkane/i ? map {$_,$aa{$_}} keys %aa : map {$_,$aa{$_}/$aa_total} keys %aa;
     
 #    my $html1 = "Codon Usage: $code_type";
-#    $html1 .= CoGe_dev::Accessory::genetic_code->html_code_table(data=>\%codons, code=>$code);
+#    $html1 .= CoGe::Accessory::genetic_code->html_code_table(data=>\%codons, code=>$code);
     
     my $html2 .= "Predicted amino acid usage using $code_type";
     $html2 .= "<br/>Total Amino Acids: $aa_total" if $USER->user_name =~ /jkane/i;
-    $html2 .= CoGe_dev::Accessory::genetic_code->html_aa_new(data=>\%aa);
+    $html2 .= CoGe::Accessory::genetic_code->html_aa_new(data=>\%aa);
     $html2 =~ s/00.00%//g if $USER->user_name =~ /jkane/i;
     return $html2;
 #    return $html1, $html2;

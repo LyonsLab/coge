@@ -3,16 +3,14 @@
 #this script shamelessly gets the submission page from http://rna.tbi.univie.ac.at/cgi-bin/RNAfold.cgi 
 
 use strict;
-use lib '/home/mbomhoff/CoGe/Accessory/lib'; #FIXME 8/2/12 remove
-use lib '/home/mbomhoff/CoGeX/lib'; #FIXME 8/2/12 remove
-use CoGe_dev::Accessory::Web;
-use CoGeX_dev;
+use CoGe::Accessory::Web;
+use CoGeX;
 use CGI;
 use LWP::Simple;
 use Digest::MD5 qw(md5_base64);
 no warnings 'redefine';
 
-my $P = CoGe_dev::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
+my $P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 my $DBNAME = $P->{DBNAME};
 my $DBHOST = $P->{DBHOST};
@@ -20,7 +18,7 @@ my $DBPORT = $P->{DBPORT};
 my $DBUSER = $P->{DBUSER};
 my $DBPASS = $P->{DBPASS};
 my $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
-my $coge = CoGeX_dev->connect($connstr, $DBUSER, $DBPASS );
+my $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 
