@@ -7,16 +7,14 @@ use Data::Dumper;
 use DBIxProfiler;
 use Digest::MD5 qw(md5_base64);
 
-use lib "/home/mbomhoff/CoGeX/lib";
-use lib "/home/mbomhoff/CoGe/Accessory/lib";
-use CoGeX_dev;
-use CoGe_dev::Accessory::Web;
-use CoGe_dev::Accessory::LogUser;
+use CoGeX;
+use CoGe::Accessory::Web;
+use CoGe::Accessory::LogUser;
 no warnings 'redefine';
 
 
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $FID $DS $CHR $LOC $ORG $VERSION $START $STOP $NAME_ONLY $coge $GSTID $COOKIE_NAME);
-$P = CoGe_dev::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
+$P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 $TEMPDIR = $P->{TEMPDIR};
 $TEMPURL = $P->{TEMPURL};
@@ -45,7 +43,7 @@ $DBPORT = $P->{DBPORT};
 $DBUSER = $P->{DBUSER};
 $DBPASS = $P->{DBPASS};
 $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
-$coge = CoGeX_dev->connect($connstr, $DBUSER, $DBPASS );
+$coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 
 print "Content-Type: text/html\n\n";
 my $rhtml = gen_html(featid=>$FID, start=>$START, stop=>$STOP, chr=>$CHR, ds=>$DS, org=>$ORG, version=>$VERSION, name_only=>$NAME_ONLY, gstid=>$GSTID) if $START > 0 || $FID;

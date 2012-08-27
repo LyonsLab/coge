@@ -4,23 +4,20 @@ use strict;
 use CGI;
 use Data::Dumper;
 
-use lib '/home/mbomhoff/CoGe/Accessory/lib'; #FIXME 8/2/12 remove
-use lib '/home/mbomhoff/CoGe/Graphics/lib'; #FIXME 8/2/12 remove
-use lib '/home/mbomhoff/CoGeX/lib'; #FIXME 8/2/12 remove
-use CoGe_dev::Graphics;
-use CoGe_dev::Accessory::Web;
-use CoGeX_dev;
+use CoGe::Graphics;
+use CoGe::Accessory::Web;
+use CoGeX;
 no warnings 'redefine';
 
 
 $ENV{PATH} = "";
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr);
 
-$P = CoGe_dev::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
+$P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 
 my $form = new CGI;
 #print STDERR $form->self_url(-full=>1),"\n";
-my $gfx = new CoGe_dev::Graphics;
+my $gfx = new CoGe::Graphics;
 my $start = $form->param('start') || $form->param('x') || $form->param('xmin') || 0;#28520458;
 my $stop = $form->param('stop') || $form->param('xmax');# || 6948000;#6949600;#190000;
 my $ds = $form->param('ds') || $form->param('di');
@@ -49,7 +46,7 @@ $DBPORT = $P->{DBPORT};
 $DBUSER = $P->{DBUSER};
 $DBPASS = $P->{DBPASS};
 $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
-my $coge = CoGeX_dev->connect($connstr, $DBUSER, $DBPASS );
+my $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 
 
 
@@ -80,7 +77,7 @@ if ($request eq "get_annotation")
   }
 else
   {
-    CoGe_dev::Graphics->genomic_view(
+    CoGe::Graphics->genomic_view(
 				 start=>$start,
 				 stop=>$stop-1,
 				 ds=>$ds,

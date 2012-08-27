@@ -3,11 +3,9 @@
 
 use strict;
 
-use lib '/home/mbomhoff/CoGe/Accessory/lib'; #FIXME 8/2/12 remove
-use lib '/home/mbomhoff/CoGeX/lib'; #FIXME 8/2/12 remove
-use CoGe_dev::Accessory::LogUser;
-use CoGe_dev::Accessory::Web;
-use CoGeX_dev;
+use CoGe::Accessory::LogUser;
+use CoGe::Accessory::Web;
+use CoGeX;
 
 use CGI;
 use DBI;
@@ -23,7 +21,7 @@ no warnings 'redefine';
 
 
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME $TEMPDIR $USER $DATE $BASEFILE $COGEDIR $coge $cogeweb $FORM $URL $HISTOGRAM $TEMPURL $COOKIE_NAME %FUNCTION $LIST_TYPE);
-$P = CoGe_dev::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
+$P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 $COGEDIR = $P->{COGEDIR};
 $URL = $P->{URL};
@@ -42,14 +40,14 @@ $DBPORT = $P->{DBPORT};
 $DBUSER = $P->{DBUSER};
 $DBPASS = $P->{DBPASS};
 $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
-$coge = CoGeX_dev->connect($connstr, $DBUSER, $DBPASS );
+$coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 $COOKIE_NAME = $P->{COOKIE_NAME};
 $LIST_TYPE = $coge->resultset('ListType')->find_or_create({name=>'genome'});
 
 my ($cas_ticket) =$FORM->param('ticket');
 $USER = undef;
-($USER) = CoGe_dev::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
-($USER) = CoGe_dev::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
+($USER) = CoGe::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
+($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
 
 $SIG{'__WARN__'} = sub { }; #silence warnings
 
@@ -119,7 +117,7 @@ sub gen_html
     $template->param(LOGON=>1) unless $USER->user_name eq "public";
     $template->param(DATE=>$DATE);
     my $link = "http://".$ENV{SERVER_NAME}.$ENV{REQUEST_URI};
-    $link = CoGe_dev::Accessory::Web::get_tiny_link(url=>$link);
+    $link = CoGe::Accessory::Web::get_tiny_link(url=>$link);
     my $box_name = "Genome List: ";
     my $list_name = $FORM->param('list_name') || $FORM->param('ln');
     $box_name .= " $list_name" if $list_name;
@@ -434,7 +432,7 @@ sub gen_body
     $BASEFILE = $form->param('basename');
     my $sort_by_type = $form->param('sort_type');
     my $sort_by_location = $form->param('sort_loc');
-    my $prefs =CoGe_dev::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME, coge=>$coge);
+    my $prefs =CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME, coge=>$coge);
     $prefs = {} unless $prefs;
     $prefs->{display}={
 		       NameD=>1,
@@ -762,7 +760,7 @@ sub send_to_SynFind #send to SynFind
     
     $accn_list =~ s/^,//;
     $accn_list =~ s/,$//;
-    $cogeweb = CoGe_dev::Accessory::Web::initialize_basefile(tempdir=>$TEMPDIR);
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(tempdir=>$TEMPDIR);
     my $basename = $cogeweb->basefilename;
     my $file = $TEMPDIR."$basename.faa";
     open (OUT, ">$file");
@@ -784,7 +782,7 @@ sub generate_excel_file
     my $accn_list = $args{accn};
     $accn_list =~ s/^,//;
     $accn_list =~ s/,$//;
-    $cogeweb = CoGe_dev::Accessory::Web::initialize_basefile(tempdir=>$TEMPDIR);
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(tempdir=>$TEMPDIR);
     my $basename = $cogeweb->basefilename;
     my $file = "$TEMPDIR/Excel_$basename.xls";
     my $workbook = Spreadsheet::WriteExcel->new($file);
@@ -851,7 +849,7 @@ sub generate_excel_file
     my $accn_list = $args{accn};
     $accn_list =~ s/^,//;
     $accn_list =~ s/,$//;
-    $cogeweb = CoGe_dev::Accessory::Web::initialize_basefile(tempdir=>$TEMPDIR);
+    $cogeweb = CoGe::Accessory::Web::initialize_basefile(tempdir=>$TEMPDIR);
     my $basename = $cogeweb->basefilename;
     my $file = "$TEMPDIR/$basename.csv";
     open (OUT, ">$file");
@@ -953,7 +951,7 @@ sub get_codon_usage
 
     #Josh put some stuff in here so he could get raw numbers instead of percentages for aa usage. He should either make this an option or delete this code when he is done. REMIND HIM ABOUT THIS IF YOU ARE EDITING ORGVIEW!
     my $html = "Codon Usage: $code_type";
-    $html .= CoGe_dev::Accessory::genetic_code->html_code_table(data=>\%codons, code=>$code);
+    $html .= CoGe::Accessory::genetic_code->html_code_table(data=>\%codons, code=>$code);
     return $html
   }
 
@@ -986,7 +984,7 @@ sub get_aa_usage
 	$trans_type = $feat->trans_type;
       }
     my $html .= $dsg->organism->name."<br>Predicted amino acid usage using $code_type";
-    $html .= CoGe_dev::Accessory::genetic_code->html_aa_new(data=>\%aa, counts=>1, table_name=>$table_name);
+    $html .= CoGe::Accessory::genetic_code->html_aa_new(data=>\%aa, counts=>1, table_name=>$table_name);
     return ($html);
   }
 
@@ -1022,11 +1020,11 @@ sub codon_table
     $html .="<td>";
     $html .= "Predicted amino acid usage";
     $html .= "<tr valign=top><td>";
-    $html .= CoGe_dev::Accessory::genetic_code->html_code_table(data=>$codon, code=>$code, counts=>1);
+    $html .= CoGe::Accessory::genetic_code->html_code_table(data=>$codon, code=>$code, counts=>1);
 #    $html .= "</div>";
 #    $html .= "Predicted amino acid usage for $code_type genetic code:";
     $html .= "<td>";
-    $html .= CoGe_dev::Accessory::genetic_code->html_aa(data=>\%aa, counts=>1, split=>1);
+    $html .= CoGe::Accessory::genetic_code->html_aa(data=>\%aa, counts=>1, split=>1);
     $html .= "</table>";
     return $html;
   }
@@ -1096,7 +1094,7 @@ sub save_GenomeList_settings
 	    $save{display}{$settings{$index}}=1 if $settings{$index};
 	  }
       }
-   CoGe_dev::Accessory::Web::save_settings(opts=>\%save, user=>$USER, page=>$PAGE_NAME, coge=>$coge);
+   CoGe::Accessory::Web::save_settings(opts=>\%save, user=>$USER, page=>$PAGE_NAME, coge=>$coge);
   }
 
 sub commify 

@@ -1,11 +1,9 @@
 #! /usr/bin/perl -w
 use strict;
-use lib '/home/mbomhoff/CoGe/Accessory/lib'; #FIXME 8/2/12 remove
-use lib '/home/mbomhoff/CoGeX/lib'; #FIXME 8/2/12 remove
-use CoGe_dev::Accessory::LogUser;
-use CoGe_dev::Accessory::Web;
-use CoGe_dev::Accessory::genetic_code;
-use CoGeX_dev;
+use CoGe::Accessory::LogUser;
+use CoGe::Accessory::Web;
+use CoGe::Accessory::genetic_code;
+use CoGeX;
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
 use CGI::Ajax;
@@ -20,7 +18,7 @@ no warnings 'redefine';
 
 
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $ACCN $FID $coge $COOKIE_NAME);
-$P = CoGe_dev::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
+$P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
 
 # set this to 1 to print verbose messages to logs
@@ -41,15 +39,15 @@ $DBPORT = $P->{DBPORT};
 $DBUSER = $P->{DBUSER};
 $DBPASS = $P->{DBPASS};
 $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
-$coge = CoGeX_dev->connect($connstr, $DBUSER, $DBPASS );
+$coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 
 
 $COOKIE_NAME = $P->{COOKIE_NAME};
 
 my ($cas_ticket) =$FORM->param('ticket');
 $USER = undef;
-($USER) = CoGe_dev::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
-($USER) = CoGe_dev::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
+($USER) = CoGe::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
+($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
 
 my %FUNCTION = (
 		db_lookup=>\&db_lookup,
@@ -648,9 +646,9 @@ sub codon_table
 	$aa{$code->{$tri}}+=$codon->{$tri};
       }
     my $html = "Codon Usage: $code_type";
-    $html .= CoGe_dev::Accessory::genetic_code->html_code_table(data=>$codon, code=>$code, counts=>1);
+    $html .= CoGe::Accessory::genetic_code->html_code_table(data=>$codon, code=>$code, counts=>1);
 #    $html .= "Predicted amino acid usage for $code_type genetic code:";
-#    $html .= CoGe_dev::Accessory::genetic_code->html_aa(data=>\%aa, counts=>1);
+#    $html .= CoGe::Accessory::genetic_code->html_aa(data=>\%aa, counts=>1);
     return $html;
   }
 
@@ -662,7 +660,7 @@ sub protein_table
     my ($feat) = $coge->resultset('Feature')->find($featid);
     my $aa = $feat->aa_frequency(counts=>1, gstid=>$gstid);
     my $html = "Amino Acid Usage";
-    $html .= CoGe_dev::Accessory::genetic_code->html_aa(data=>$aa, counts=>1);
+    $html .= CoGe::Accessory::genetic_code->html_aa(data=>$aa, counts=>1);
     return $html;
   }
 
