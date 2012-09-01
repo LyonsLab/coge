@@ -1,0 +1,345 @@
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
+<SCRIPT language="JavaScript">
+$(document).ready(function(){
+	$.ajaxSetup({
+		type: "POST",
+		url: "<TMPL_VAR NAME=PAGE_NAME>",
+		dataType: "html",
+		cache: false,
+	});
+        $('#group_table').tablesorter({		
+		cssAsc: 'headerSortUp',		// Class name for ascending sorting action to header
+		cssDesc: 'headerSortDown',	// Class name for descending sorting action to header
+//		cssHeader: 'header',			// Class name for headers (th's)
+		widgets: ['zebra'],
+		headers: {0: {sorter: false},},	//don't allow sort on the first column				
+		});
+});
+
+function run_ajax(opts){
+      if (!opts){opts={};}
+      divid = opts.divid; //were results will be displayed in page
+      stuff = opts.stuff; //example of passing in some stuff
+
+      // create a new closure who's scope does *not*
+      // include the `divid` value so that callback will 
+      // not clobber the `divid` variable 
+      var create_callback = function(divid) {
+              var local_divid = divid;
+              return function (data) {
+                  $('#'+local_divid).html(data);
+              };
+          }; 
+
+      $.ajax({
+        data: {
+     	   jquery_ajax: 1,
+	   fname: 'run',
+   	   stuff: stuff
+           },
+        success : create_callback(divid)
+      });
+}
+
+function remove_selected_motifs() {
+
+ $('#motif_choice option:selected').each(function(){
+
+var value=$(this).val();
+//console.log('removing',value);
+    
+$('#'+$(this).val()).remove();
+    });
+ counting();
+ }
+$(function() {
+ //substaniate dialog boxes	     
+        $(".dialog_box").dialog({ autoOpen: false, width: 500 });
+	
+/**Button initializations**/
+	//Add all Listed
+	$('#add_all_listed_button').click(function() {
+				 add_all_motifs();
+			});
+	//Remove
+	$('#remove').click(function() {
+		$('#motif_choice option:selected').each(function(){
+    			      $('#'+$(this).val()).remove();
+    		});
+ 		counting();
+	});
+
+	//Add
+	$('#add').click(function() {
+			add_selected_motifs();
+	});	
+				  	
+	//Get motif info
+	$("#motif_info_button").click(function() {	
+	get_motifs_selected();
+	$('#motif_info_popup').dialog('open');
+			});
+});
+
+function get_motifs_selected() {
+ var ids;
+ var count =0;
+ $('#motif_select option:selected').each(function(){
+ids +="\|\|\|"+$(this).val();
+count++;
+});
+get_motif_info(['args__motifs','args__'+ids],[add_to_info_list]);
+}
+
+
+function show_add() {
+  if($('#add').is(":hidden")) {
+    $('#remove').hide(0);
+    $('#add').show(0);
+  }
+}
+
+function add_selected_motifs() {
+ var ids;
+ $('#motif_select option:selected').each(function(){
+ //ids+="\|\|\|"+$(this).val();
+ ids=$(this).val();
+});
+
+  get_motif_vals(['args__motifs','args__'+ids],[add_to_list]);	
+  sort_motif_choice();
+}
+$.fn.getLength = function(val){
+  var opt_length;
+  var blastable;
+  var blanked=0; //otherwise get math problems later...boo javascript
+  this.each(
+  	function()
+  	{
+  		var opts = this.options;
+  		opt_length = opts.length;
+  		if (opt_length == 0) {return opt_length;}
+  		blastable = opts[0].id;
+		if (blastable == 'blank') {blanked++;} //Counts the number of instances of blank
+  		if (val){
+  		  for(var i=1;i<opts.length;i++)
+	  	  {
+	  		blastable += ","+opts[i].id;
+	  		//need to chopoff last comma
+	  	  }
+  		}
+  	}
+  );
+  if(val) return blastable;
+  if (blanked) {opt_length-=blanked;} //subtract elements that are classified as blank above
+  return opt_length;
+};
+
+$.fn.sortSelect = function(){
+  this.each(
+	  function()
+	  {
+	  	if(this.nodeName.toLowerCase() != "select"){
+	  	  return;}
+	  	var opts = this.options;
+	  	var sortArray = [];
+	  	for(var i=0;i<opts.length;i++)
+	  	{
+	  		sortArray[i] = {
+	  				v: opts[i].value,
+	  				t: opts[i].text,
+	  				d: opts[i].id,
+	  				}
+	  	}
+	  	sortArray.sort(
+	  			function(obj1,obj2)
+	  			{
+	  				obj1t = obj1.t.toLowerCase(),
+	  				obj2t = obj2.t.toLowerCase();
+	  				if(obj1t == obj2t){
+	  				  return 0;}
+	  				return obj1t < obj2t ? -1 : 1;
+	  			}
+	  	);
+	  	for(var i=0;i<opts.length;i++)
+	  	{
+	  		opts[i].id = sortArray[i].d;
+	  		opts[i].text = sortArray[i].t;
+	  		opts[i].value = sortArray[i].v;
+	  	}
+	  }
+	);
+	return this;
+};
+
+function add_to_info_list(stuff){
+var motif = stuff.split('\|\|\|');
+//var html='<table><tr><td>';
+
+var html;
+
+//console.log('motiflength',motif.length);
+for (var i=0; i<motif.length; i++)
+{
+//console.log("i",i);
+     var motifs = motif[i];
+//console.log('motifs',motifs);
+
+     var item = motifs.split(':');
+
+     name = item[0];
+//     console.log('name',name);
+     seq = item[1];
+//     console.log('seq',seq);
+     color=item[2];	
+     title=item[6];
+     litref=item[5];    
+     link='http://www.ncbi.nlm.nih.gov/pubmed/?term='+title;
+//     console.log('link',link);
+     html=html+name+':'+seq+':<a href='+link+' target=new>'+title+'</a><br>';          
+}
+//html+='</table>';
+$('#motif_info_popup').append(html);
+}
+
+function add_all_motifs() {
+ var ids;
+ var count =0;
+ $('#motif_select option').each(function(){
+     ids = ids+"\|\|\|"+$(this).val();     
+   });
+ get_motif_vals(['args__motifs','args__'+ids],[add_to_list]);
+ sort_motif_choice();
+}
+
+function clear_motif_list() 
+{ $('#motif_choice').empty(); 
+counting(); 
+}
+
+function sort_motif_choice() {
+    if (ajax.length)
+     {
+       setTimeout("sort_motif_choice()",100);	
+       return;
+     }
+   $('#motif_choice').append().sortSelect();
+}
+
+function counting(){
+  var count = $('#motif_choice').getLength();
+
+  if (count == 0) {$('#motif_choice').html('<option id=blank value=null>No Motif Selected</option>');}
+  $('#selected_motif_count').html(count);
+}
+
+function clear_selected_motifs(){
+$('input:checkbox[name=tfbs_motif]').each(function(){
+this.value=""
+//this.checked=false
+});	
+}
+
+function clear_motif_list() 
+{ $('#motif_choice').empty(); 
+counting(); 
+}
+function get_selected_motifs() {
+var ids2=[];
+$('#motif_choice option').each(function(){
+ids2.push(this.value)
+});
+var joinvals2=ids2.join("||"); //to join the elements of the array
+pageObj.motif_choice = joinvals2;
+console.log('joinvals2',joinvals2);
+}
+</SCRIPT>
+
+<div id="go_run"><TMPL_VAR NAME="GO_RUN"></div>
+<br>
+
+<span id=go style="font-size: 1em" class='ui-button-go ui-corner-all' onClick="get_selected_motifs();go_run();">Find Motifs!</span>
+
+<span id=go style="font-size: 1em" class='ui-button ui-corner-all' value="Clear" onClick="location.reload(); $('#tabs-4 :checkbox').attr('checked', false); gene_names.value=' ';search_seqs.value=' ';motif_names.value=' ';">Clear all previous analysis</span>
+<br>
+<br>
+
+<form method="post" enctype="multipart/form-data" name="main_form" onSubmit="">
+   <Table>
+       <TR valign=top align=left>
+        <TH>Enter Query Sequence<br>
+        
+	<table class ="ui-corner-all ui-widget-content">
+	
+	<TR>
+	<TD>
+   	<DIV id="blah">Enter Gene Names (No Sequence)</DIV></td>
+	<TD><textarea class="backbox" rows="10" cols="20" tabindex="1" name=gene_names id=gene_names value="<TMPL_VAR NAME="GENE_NAMES">" /></textarea></TD>	
+
+	<td>
+<table>
+<tr>
+	<TD>
+	   Upstream:
+	</TD>
+	<TD>
+	 <input type=text id=up_stream value="0" size="0">
+	 </td>
+</tr>
+<tr>
+	<TD>
+	   Downstream:
+	</TD>
+	<TD>
+	 <input type=text id=down_stream value="0" size="0">
+	 </TD>
+</tr>
+</table>
+</td>
+	<tr>
+	<Td>
+   	<DIV id="blah">Enter Sequences (Fasta Format):</DIV></td>
+	<TD><textarea class="backbox" rows="10" cols="20" tabindex="1" name=search_seqs id=search_seqs value="<TMPL_VAR NAME="SEARCH_SEQS">" /></textarea></TD>
+
+
+     </table>
+
+<br>
+<Table>
+       <TR valign=top align=left>
+        <TH>Enter Motifs to Search<br>
+        
+	<table class ="ui-corner-all ui-widget-content">
+	
+	<TR>
+	<TD>
+   	<DIV id="blah">Enter Motifs (Consensus Sequence Only)</DIV></td>
+	<TD><textarea class="backbox" rows="10" cols="20" tabindex="1" name=motif_names id=motif_names value="<TMPL_VAR NAME="MOTIF_NAMES">" /></textarea></TD>	
+</TR>
+</table>
+<br>	
+<TABLE>
+<TR valign=top align=left>
+        <TH>Select Motifs to Search<br>
+<table class ="ui-corner-all ui-widget-content">
+-=<tr>
+<td>
+<DIV id="motif_select"><TMPL_VAR NAME="MOTIF_SELECT"></div>
+<br><br>
+<font color=black>For a list of all TFBS motifs used in this site, click </font><a href=http://genomevolution.org/CoGe/data/distrib/Motiflist.txt target=new>here</a>
+</TD>
+
+<TD valign="middle" align=middle>	
+<span href="javascript:void(0)" id="remove" onClick="remove_selected_motifs();" style="display:none" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-minus"></span>Remove</span><span href="javascript:void(0)" onClick="
+();" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Add</span>   	  </TD>
+          
+<TD>
+<div style="float:left" id=db_title class=small>Selected Motifs: </DIV>
+<div style="float:left;text-indent:1em;vertical-align: bottom" id=selected_motif_count class=small></div>  <DIV><SELECT class="backbox" id="motif_choice" name="motif_choice" SIZE="15" MULTIPLE onClick="$('#add').hide(0);$('#remove').show(0);"> <option id=blank value=null>No Motifs Selected</option>              </SELECT></DIV>
+<div><span  href="javascript:void(0)" onClick="clear_motif_list();" id="clearlist" name=clearlist class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-minusthick"></span>Clear Motif List</span>
+</div>
+</td>
+</table>
+</tr>
+
+</table>

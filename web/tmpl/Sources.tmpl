@@ -1,0 +1,220 @@
+<TMPL_IF NAME=MAIN>
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></SCRIPT>
+
+<SCRIPT language="JavaScript">
+$(document).ready(function(){
+	$.ajaxSetup({
+		type: "POST",
+		url: "<TMPL_VAR NAME=PAGE_NAME>",
+		dataType: "html",
+		cache: false,
+	});
+	
+	set_table();
+	
+	$(".dialog_box").dialog({autoOpen: 0, width: 600});
+});
+
+function set_table () {	 $('#source_table').tablesorter({widgets: ['zebra']});	 }
+
+function run_get_sources(opts){
+	if (!opts) { opts={}; }
+	divid = opts.divid; // ID for DIV where results will be displayed in page
+	
+	// create a new closure who's scope does *not*
+	// include the `divid` value so that callback will 
+	// not clobber the `divid` variable 
+	var create_callback = function(divid) {
+		var local_divid = divid;
+		return function (data) {
+			$('#'+local_divid).html(data);
+			set_table();
+		};
+	};
+
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'get_sources',
+		},
+		success : create_callback(divid)
+	});
+}
+
+function create_source (opts){
+	name = $('#name').val();
+	desc = $('#desc').val();
+	link = $('#link').val();
+	if (name) {
+		$.ajax({
+			data: {
+				jquery_ajax: 1,
+				fname: 'create_source',
+				name: name,
+				desc: desc,
+				link: link
+			},
+			success : function(val) {
+				if (val != 1) { alert(val); }
+				run_get_sources({divid: 'sources'});
+			},
+		});
+	}
+	else { alert ('Error: must have a name');}
+}
+
+function delete_source (opts){
+	dsid = opts.dsid;
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'delete_source',
+			dsid: dsid,
+		},
+		success : function() {
+			run_get_sources({divid: 'sources'});
+		},
+	});
+}
+
+function format_box_info (data) {
+	output = data.output;
+	return output;
+}
+
+function edit_source_info (opts) {
+	dsid = opts.dsid;
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'edit_source_info',
+			dsid: dsid,
+		},
+		success : function(data) {
+			data = eval('('+data+')');
+			title = data.title;
+			$("#source_info_edit_box").dialog("option", "title", title);
+			$("#source_info_edit_box").html(format_box_info(data));
+			$("#source_info_edit_box").dialog('open');
+			//setup_button_states();
+		},
+	});
+}
+
+function update_source_info (opts){
+	name = $('#edit_name').val();
+	if (!name) {
+		alert('Error: Must have a name');
+		return;
+	}
+	
+	desc = $('#edit_desc').val();
+	link = $('#edit_link').val();
+	dsid = opts.dsid;
+
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'update_source_info',
+			dsid: dsid,
+			name: name,
+			desc: desc,
+			link: link
+		},
+		success : function(val) {
+			$("#source_info_edit_box").dialog('close');
+			run_get_sources({divid: 'sources'});
+		},
+	});
+}
+</SCRIPT>
+
+<div id='sources'>
+ <TMPL_VAR NAME=SOURCE_INFO>
+</div>
+
+<TMPL_IF BUTTONS>
+<div>
+ <table>
+ <tr>
+  <td>Source Name:</td>
+  <td><input type="textbox" size=8 name="name" id="name"></td>
+  <td>Description:</td>
+  <td><input type="textbox" size=16 name="desc" id="desc"></td>
+  <td>Link:</td>
+  <td><input type="textbox" size=16 name="link" id="link"></td>
+  <td><span id="create_source" style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="create_source()">Create new source</span></td>
+ </table>
+</div>
+</TMPL_IF>
+
+<div id='admin_stuff'></div>
+
+<div id="source_info_edit_box" class="dialog_box"></div>
+
+</TMPL_IF> <!-- MAIN -->
+
+
+
+<TMPL_IF SOURCE_TABLE>
+<table id="source_table" class="small ui-widget-content ui-corner-all">
+ <thead align="left"> 
+  <tr>
+   <th>ID</th>
+   <th>Name</th>
+   <th>Description</th>
+   <th>Link</th>
+   <TMPL_IF BUTTONS>
+   <th>Edit</th>
+   <th>Delete</th>
+   </TMPL_IF>
+  </tr>
+ </thead>
+ <tbody align="left" valign="top" id="source_table_body" class="small">
+  <TMPL_LOOP NAME=SOURCE_LOOP>
+  <tr valign="middle">
+   <td><TMPL_VAR NAME=ID></td>
+   <td><TMPL_VAR NAME=NAME></td>
+   <td><TMPL_VAR NAME=DESC></td>
+   <td><TMPL_VAR NAME=LINK></td>
+   <TMPL_IF BUTTONS>
+   <td align='center'><TMPL_VAR NAME=EDIT_BUTTON></td>
+   <td align='center'><TMPL_VAR NAME=DELETE_BUTTON></td>
+   </TMPL_IF>
+  </TMPL_LOOP>
+ </tbody>
+</TABLE>
+</TMPL_IF> <!-- SOURCE_TABLE -->
+
+
+
+<TMPL_IF NAME=EDIT_SOURCE_INFO>
+<table class="small">
+ <tr>
+  <td>Name:</td>
+  <td><input id="edit_name" type="textbox" size="53" value="<TMPL_VAR NAME=NAME>"></td>
+ </tr>
+ <tr>
+  <td>Description:</td>
+  <td><textarea id="edit_desc" rows=5 cols=50 ><TMPL_VAR NAME=DESC></textarea></td>
+ </tr>
+ <tr>
+  <td>Link:</td>
+  <td><input id="edit_version" type="textbox" size="53" value="<TMPL_VAR NAME=LINK>"></td>
+ </tr>  
+</table>
+<br>
+<span onClick="update_source_info({dsid: '<TMPL_VAR NAME=DSID>'});" class='ui-button ui-corner-all ui-button-go'>Update Source Info</span>
+</TMPL_IF> <!-- EDIT_SOURCE -->
+
+
+
+<TMPL_IF NAME=ADMIN_AREA>
+<hr>
+Admin Functions:<br>
+<pre>
+To do:
+   - add confirmation dialog to delete function.
+</pre>
+</TMPL_IF>

@@ -180,7 +180,7 @@ function update_experiment_info (opts){
 		return;	
 	}	
 	
-	source_id = parseInt( $('#edit_source').val() );
+	source_id = parseInt( $('#edit_source_id').val() );
 	if (!source_id) {
 		alert('Error: Must have a source');
 		return;	
@@ -203,6 +203,20 @@ function update_experiment_info (opts){
 		success : function(val) {
 			$("#experiment_info_edit_box").dialog('close');
 			run_get_experiment_info({divid: 'experiment_info', eid: eid});
+		},
+	});
+}
+
+function get_sources () {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'get_sources'
+		},
+		success : function(val) {
+			var items = jQuery.parseJSON(val);
+			$("#edit_source").autocomplete("option", "source", items);
+			$("#edit_source").autocomplete("search");
 		},
 	});
 }
@@ -401,6 +415,90 @@ function wait_to_search (search_func) {
 
 	pageObj.time = setTimeout(function() { search_func(); }, 500);
 }
+
+function search_genomes () {
+	search_term = $("#edit_genome").val();
+	if (search_term.length > 2) {
+		$.ajax({
+			data: {
+				jquery_ajax: 1,
+				fname: 'search_genomes',
+				search_term: search_term,
+			},
+			success : function(val) {
+				var items = jQuery.parseJSON(val);
+				$("#edit_genome").autocomplete("option", "source", items);
+				$("#edit_genome").autocomplete("search");
+			},
+		});
+	}
+}
+
+function clear_edit_genome() {
+	$("#edit_genome").val('');
+	$("#edit_genome_id").val(0);		
+}
+
+function get_experiment_types () {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'get_experiment_types'
+		},
+		success : function(val) {
+			var items = jQuery.parseJSON(val);
+			$("#edit_type_name").autocomplete("option", "source", items);
+			$("#edit_type_name").autocomplete("search");
+		},
+	});
+}
+
+function get_type_description (name) {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'get_type_description',
+			name: name
+		},
+		success : function(data) {
+			$("#edit_type_description").html(data);
+		},
+	});
+}
+
+function search_annotation_types () {
+	type_group  = $("#edit_annotation_type_group").val();
+	search_term = $("#edit_annotation_type").val();
+	if (search_term.length > 2) {
+		$.ajax({
+			data: {
+				jquery_ajax: 1,
+				fname: 'search_annotation_types',
+				type_group: type_group,
+				search_term: search_term,
+			},
+			success : function(val) {
+				var items = jQuery.parseJSON(val);
+				$("#edit_annotation_type").autocomplete("option", "source", items);
+				$("#edit_annotation_type").autocomplete("search");
+			},
+		});
+	}
+}
+
+function get_annotation_type_groups () {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'get_annotation_type_groups'
+		},
+		success : function(val) {
+			var items = jQuery.parseJSON(val);
+			$("#edit_annotation_type_group").autocomplete("option", "source", items);
+			$("#edit_annotation_type_group").autocomplete("search");
+		},
+	});
+}
 </SCRIPT>
 
 <div>
@@ -429,24 +527,19 @@ function wait_to_search (search_func) {
 
 <TMPL_IF NAME=EDIT_EXPERIMENT_INFO>
 <SCRIPT>
-	function search_genomes () {
-		search_term = $("#edit_genome").val();
-		if (search_term.length > 2) {
-			$.ajax({
-				data: {
-					jquery_ajax: 1,
-					fname: 'search_genomes',
-					search_term: search_term,
-				},
-				success : function(val) {
-					var items = jQuery.parseJSON(val);
-					$("#edit_genome").autocomplete("option", "source", items);
-					$("#edit_genome").autocomplete("search");
-				},
-			});
-		}
-	}
-	
+	$("#edit_source").autocomplete({
+	    source: 
+	    	function() {
+	    		get_sources();
+	    	},
+	    select:	
+	    	function(event, ui) {
+	    		$("#edit_source").val( ui.item.label );
+	    		$("#edit_source_id").val( ui.item.value );
+	    		return false;
+	    	}
+	});
+
 	$("#edit_genome").autocomplete({
 	    source: [],
 	    select: 
@@ -456,11 +549,6 @@ function wait_to_search (search_func) {
 	    		return false;
 	    	}
 	});
-	
-	function clear_edit_genome() {
-		$("#edit_genome").val('');
-		$("#edit_genome_id").val(0);		
-	}
 </SCRIPT>
 <table class="small">
  <tr>
@@ -475,17 +563,15 @@ function wait_to_search (search_func) {
   <td>Genome:</td>
   <td>
    <input id="edit_genome" onkeypress="wait_to_search(search_genomes);" size="50" value="<TMPL_VAR NAME=GENOME>">
-   <span onClick="clear_edit_genome()" class="link ui-icon ui-icon-circle-close"></span>
+   <span onClick="clear_edit_genome()" class="link ui-icon ui-icon-circlesmall-close"></span>
    <input id="edit_genome_id" type="hidden" value="<TMPL_VAR NAME=GENOME_ID>">
   </td>
  </tr>
  <tr>
   <td>Source:</td>
-  <td><select id="edit_source" style="max-width: 265px;">
-   <TMPL_LOOP NAME=SOURCE_LOOP>
-    <OPTION <TMPL_VAR NAME=SOURCE_SELECTED> value=<TMPL_VAR NAME=SID>><TMPL_VAR NAME=NAME></OPTION>
-   </TMPL_LOOP>
-   </select>
+  <td>
+   <input id="edit_source" size="53" value="<TMPL_VAR NAME=SOURCE>">
+   <input id="edit_source_id" type="hidden" value="<TMPL_VAR NAME=SOURCE_ID>">
   </td>
  </tr>
  <tr>
@@ -501,33 +587,6 @@ function wait_to_search (search_func) {
 
 <TMPL_IF NAME=ADD_EXPERIMENT_TYPE>
 <SCRIPT>
-	function get_experiment_types () {
-		$.ajax({
-			data: {
-				jquery_ajax: 1,
-				fname: 'get_experiment_types'
-			},
-			success : function(val) {
-				var items = jQuery.parseJSON(val);
-				$("#edit_type_name").autocomplete("option", "source", items);
-				$("#edit_type_name").autocomplete("search");
-			},
-		});
-	}
-	
-	function get_type_description (name) {
-		$.ajax({
-			data: {
-				jquery_ajax: 1,
-				fname: 'get_type_description',
-				name: name
-			},
-			success : function(data) {
-				$("#edit_type_description").html(data);
-			},
-		});
-	}	
-
 	$("#edit_type_name").autocomplete({
 	    source: function() {
 	    			get_experiment_types();
@@ -554,40 +613,6 @@ function wait_to_search (search_func) {
 
 <TMPL_IF NAME=ADD_EXPERIMENT_ANNOTATION> <!-- FIXME: this is redundant with ListView.tmpl, move into own sub-template? -->
 <SCRIPT>
-	function search_annotation_types () {
-		type_group  = $("#edit_annotation_type_group").val();
-		search_term = $("#edit_annotation_type").val();
-		if (search_term.length > 2) {
-			$.ajax({
-				data: {
-					jquery_ajax: 1,
-					fname: 'search_annotation_types',
-					type_group: type_group,
-					search_term: search_term,
-				},
-				success : function(val) {
-					var items = jQuery.parseJSON(val);
-					$("#edit_annotation_type").autocomplete("option", "source", items);
-					$("#edit_annotation_type").autocomplete("search");
-				},
-			});
-		}
-	}
-	
-	function get_annotation_type_groups () {
-		$.ajax({
-			data: {
-				jquery_ajax: 1,
-				fname: 'get_annotation_type_groups'
-			},
-			success : function(val) {
-				var items = jQuery.parseJSON(val);
-				$("#edit_annotation_type_group").autocomplete("option", "source", items);
-				$("#edit_annotation_type_group").autocomplete("search");
-			},
-		});
-	}
-
 	$("#edit_annotation_type_group").autocomplete({
 	    source: function() {
 	    			get_annotation_type_groups();
@@ -609,7 +634,7 @@ function wait_to_search (search_func) {
  </tr>
  <tr>
   <td>Type:</td>
-  <td><input id="edit_annotation_type" onkeypress="wait_to_search(search_annotation_types);" size="53"></td>
+  <td><input id="edit_annotation_type" onkeypress="wait_to_search(search_annotation_types);" size="53" value="<TMPL_VAR NAME=DEFAULT_TYPE>"></td>
  </tr>
  <tr>
   <td>Type Group:</td>
@@ -618,4 +643,3 @@ function wait_to_search (search_func) {
 </table>
 <span onClick="add_annotation_to_experiment({eid: '<TMPL_VAR NAME=EID>'});" class='ui-button ui-corner-all ui-button-go'>Add</span>
 </TMPL_IF>
-

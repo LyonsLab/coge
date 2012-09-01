@@ -188,20 +188,22 @@ function add_to_list(stuff){
 
 //var motif = stuff.split('\|\|\|');
 var motif = stuff.split('\|');
+id=motif[0];
+seq=motif[3];
+
+var joinedvals=motif.join(":");
 
 var html='<option';
-
-for (var i=0; i < motif.length; i++)
-{
-     var motifs = motif[i];
-     var item = motifs.split('|');
-     
-     id=item[0];
-     name = item[1];
-     seq = item[2];
-
-    html +=' id='+id+' value='+id+' ondblclick="remove_selected_motifs();">'+seq+'</option>\n';     
-}
+//for (var i=0; i < motif.length; i++)
+//{
+  //   var motifs = motif[i];
+     //var item = motifs.split('\|');
+    // id=item[0];
+     //name = item[1];
+     //seq = item[2];
+//console.log('id',id);
+    html +=' id='+id+' value='+joinedvals+' ondblclick="remove_selected_motifs();">'+seq+'</option>\n';    
+//}
 $('#blank').remove();
 $('#motif_choice').append(html);
 counting();
@@ -242,8 +244,8 @@ function add_selected_motifs() {
  $('#motif_select option:selected').each(function(){
  //ids+="\|\|\|"+$(this).val();
  ids=$(this).val();
- 
 });
+
 
   get_motif_vals(['args__motifs','args__'+ids],[add_to_list]);	
   sort_motif_choice();
@@ -281,7 +283,7 @@ $('#motif_choice option').each(function(){
 ids2.push(this.value)
 });
 var joinvals2=ids2.join("||"); //to join the elements of the array
-//console.log('joinvals2',joinvals2);
+
 //$('#motif_choice option').val(joinvals2); // to assign the joined array back to motif_choice
 
 var ids=[];
@@ -290,14 +292,10 @@ ids.push(this.value)
 });
 //console.log('this is the value for',$('input:checkbox[name=tfbs_motif]:checked'));
 var joinvals1=ids.join("||"); //to join the elements of the array
-
 //$('input:checkbox[name=tfbs_motif]').val(joinvals1); // to assign the joined array back to tfbs_motif
+console.log('joinvals1',joinvals1);
 pageObj.motif_choice = joinvals2;
 pageObj.tfbs_motif = joinvals1;
-
-
-
-
 
 //console.log('this is joined ids array:', joinvals);
 //console.log('this is the value for',$('input:checkbox[name=tfbs_motif]'));// this works beautifully and gets all the selected points. now i need to join them
@@ -452,7 +450,7 @@ Gobe.set_genespace= function (updown, idx, value, length, anchorlength){
 };
 
 Gobe.handle_html= function (html) {
-  html = "<span class='ui-button ui-corner-all' id='clear_lines' onclick='Gobe.clear()'>Clear Connectors</span><br>"+html;
+  html = "<span class='ui-button ui-corner-all' id='clear_lines' onclick='Gobe.clear()'>Clear Connectors</span><br>"+html;  
   $('#results_info').html(html);
   
   if (html && !html.match(/multiple hits/)) {
@@ -1065,8 +1063,9 @@ function update_line_width(val)
 <table>
 <tr>
 <td>
-<div id="list_table" class=portlet style='padding: 0.6em'>
 <div class=partlet-content>
+<div id="list_table" class=portlet style='padding: 1em'>
+
 
 <span id="2. Select from Comprehensive List of Motifs" class="small ui-button ui-corner-all ui-button-toggle" onClick='$(".list_table").slideToggle();'>2. Select from Comprehensive List of Motifs</span>
 
@@ -1075,7 +1074,7 @@ function update_line_width(val)
 <td>
 <DIV id="motif_select"><TMPL_VAR NAME="MOTIF_SELECT"></div>
 <br><br>
-<font color=black>For a list of all TFBS motifs used in this site, click </font><a href=http://genomevolution.orgCoGe/data/distrib/Motiflist.txt target=new>here</a>
+<font color=black>For a list of all TFBS motifs used in this site, click </font><a href=http://genomevolution.org/CoGe/data/distrib/Motiflist.txt target=new>here</a>
 </TD>
 
 <TD valign="middle" align=middle>	
@@ -5332,15 +5331,13 @@ function update_line_width(val)
  <TR>
   <TD>
   <font class="small">Show preloaded annotations?</font>
-  <tr>
 <td>
   <label class="small"><input class="backbox" type="checkbox" name="show_cns" id="show_cns" tabindex="1" value="1" <TMPL_VAR NAME="SHOW_CNS_YES">/>CNS</label>
-  <label class="small"><input class="backbox" type="checkbox" name="show_gene_space" id="show_gene_space" tabindex="1" value="1" <TMPL_VAR NAME="SHOW_GENESPACE_YES">/>Gene Spaces</label>
-<label class="small"><input class="backbox" type="checkbox" name="show_pil5" id="show_pil5" tabindex="1" value="1" <TMPL_VAR NAME="SHOW_PIL5_YES">/>PIL5 sites</label> 
+<label class="small"><input class="backbox" type="checkbox" name="show_cns" id="show_gene_space" tabindex="1" value="1" <TMPL_VAR NAME="SHOW_GENE_SPACE_YES">/>Gene Space</label>
  
  <TR>
   <TD>
-  <font class="small">Restrict motif finding to checked annotations?</font>
+  <font class="small">Restrict motif finding to annotations above?</font>
   <td>
   <label class="small"><input class="backbox" type="radio" name="motif_overlap" id="motif_overlap" tabindex="1" value="1" <TMPL_VAR NAME="GRAPHIC_TYPE_CNSONLY">/>Yes</label>
   <label class="small"><input class="backbox" type="radio" name="motif_overlap" id="motif_overlap" tabindex="1" value="0" <TMPL_VAR NAME="GRAPHIC_TYPE_WHOLEWINDOW"> />No</label>
@@ -5366,14 +5363,14 @@ function update_line_width(val)
 <TMPL_IF NAME="RESULTS_DIV">
 <table><tr><td>
 <DIV id="results" name="results"></DIV><br>
-<DIV id="results_info" class="dialog_box" title="GEvo Results Info"></DIV>
+<DIV id="results_info" class="dialog_box" title="MotifView Results Info"></DIV>
 </table>
 
-<div id="save_form" title="Save GEvo Results" style="display:none">
+<div id="save_form" title="Save MotifView Results" style="display:none">
 <table>
 <tr>
 <td>Work Name:</td>
-<td><input type=text id='work_name' value='GEvo Data'></td>
+<td><input type=text id='work_name' value='MotifView Data'></td>
 </tr>
 <tr>
 <td>Description:</td>

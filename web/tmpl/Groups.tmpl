@@ -2,7 +2,6 @@
 <TMPL_IF NAME=MAIN>
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></SCRIPT>
-<SCRIPT TYPE="text/javascript" SRC="./js/filterlist.js"></SCRIPT>
 
 <SCRIPT language="JavaScript">
 $(document).ready(function(){
@@ -20,74 +19,51 @@ $(document).ready(function(){
 function set_table () {	 $('#group_table').tablesorter({widgets: ['zebra']});	 }
 
 function run_get_groups_for_user(opts){
-      if (!opts){opts={};}
-      divid = opts.divid; //were results will be displayed in page
-      // create a new closure who's scope does *not*
-      // include the `divid` value so that callback will 
-      // not clobber the `divid` variable 
-      var create_callback = function(divid) {
-              var local_divid = divid;
-              return function (data) {
-                  $('#'+local_divid).html(data);
-		  set_table();
-              };
-          }; 
+	if (!opts) { opts={}; }
+	divid = opts.divid; //were results will be displayed in page
+	// create a new closure who's scope does *not*
+	// include the `divid` value so that callback will 
+	// not clobber the `divid` variable 
+	var create_callback = function(divid) {
+		var local_divid = divid;
+		return function (data) {
+			$('#'+local_divid).html(data);
+			set_table();
+		};
+	}; 
 
-      $.ajax({
-        data: {
-     	   jquery_ajax: 1,
-	   fname: 'get_groups_for_user',
-           },
-        success : create_callback(divid)
-      });
-      $('#ugid').val('');
-      $('#new_ugid').val('');
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'get_groups_for_user',
+		},
+		success : create_callback(divid)
+	});
+	$('#ugid').val('');
+	$('#new_ugid').val('');
 }
-
 
 function create_group (opts){
-  name = $('#name').val();
-  desc = $('#desc').val();
-  rid = $('#role option:selected').attr('value');
-  if (name)
-   {
-      $.ajax({
-        data: {
-     	   jquery_ajax: 1,
-	   fname: 'create_group',
-	   name: name,
-	   desc: desc,
-	   rid: rid,
-           },
-        success : function(val) {
-	      if (val != 1) {alert(val);}
-	      run_get_groups_for_user({divid: 'groups'});
-	},
-      });
-   }
- else { alert ('Error!  Must have a name!');}
-}
-
-function update_group_info (opts){
-  name = $('#edit_name').val();
-  desc = $('#edit_desc').val();
-  ugid = opts.ugid;
-  if (name)
-   {
-      $.ajax({
-        data: {
-     	   jquery_ajax: 1,
-	   fname: 'update_group',
-	   ugid: ugid,
-	   name: name,
-	   desc: desc
-           },
-        success : function(val) {
-	      run_get_groups_for_user({divid: 'groups'});
-	},
-      });
-   }
- else { alert ('Error!  Must have a name!');}
+	name = $('#name').val();
+	desc = $('#desc').val();
+	rid = $('#role option:selected').attr('value');
+	if (name)
+ 	{
+		$.ajax({
+			data: {
+				jquery_ajax: 1,
+				fname: 'create_group',
+				name: name,
+				desc: desc,
+				rid: rid,
+			},
+			success : function(val) {
+				if (val != 1) {alert(val);}
+				run_get_groups_for_user({divid: 'groups'});
+			},
+		});
+	}
+	else { alert ('Error!  Must have a name!');}
 }
 
 function delete_group (opts){
@@ -107,349 +83,130 @@ function delete_group (opts){
    }
 }
 
-function format_edit_box_info (data) {
- output = data.output;
- return output;
-}
-
-function modify_users (opts) {
-   ugid = opts.ugid;
-    $.ajax({
-        data: {
-     	   jquery_ajax: 1,
-	   fname: 'modify_users',
-	   ugid: ugid,
-           },
-        success : function(data) {
-	 data = eval('('+data+')');
-	 title = data.title;
-         $("#group_edit_box").dialog("option", "title", title);
-   	 $("#group_edit_box").html(format_edit_box_info(data));
-   	 $("#group_edit_box").dialog('open');
-	 setup_button_states();
-	},
-    });
-}
-
-function edit_group_info (opts) {
-   ugid = opts.ugid;
-    $.ajax({
-        data: {
-     	   jquery_ajax: 1,
-	   fname: 'edit_group_info',
-	   ugid: ugid,
-           },
-        success : function(data) {
-	 data = eval('('+data+')');
-	 title = data.title;
-         $("#group_edit_box").dialog("option", "title", title);
-   	 $("#group_edit_box").html(format_edit_box_info(data));
-   	 $("#group_edit_box").dialog('open');
-	 setup_button_states();
-	},
-    });
-}
-
-
-function show_add(val) {
-  if(val==1) {
-    $('#remove_user').hide(0);
-    $('#add_user').show(0);
-  }
-  else {
-    $('#remove_user').show(0);
-    $('#add_user').hide(0);
-  }
-}
-
-function add_user(opts) {
-     ugid = opts.ugid;
-     $('#new_ugid > option:selected').each(function(){
-        var uid = $(this).attr("value");
-	var html = '<option value='+uid+ ' >'+$(this).text()+'</option>';
-	$('#ugid').append(html);
-	$(this).remove();
-        $.ajax({
-         data: {
-     	   jquery_ajax: 1,
-	   fname: 'add_user_to_group',
-	   ugid: ugid,
-	   uid: uid
-          },
-         success : function(data) {
-          if (data != 1) {alert(data);}
-	 },
-       });
-     });
-     run_get_groups_for_user({divid: 'groups'});
-};
-
-function remove_user (opts) {
-     ugid = opts.ugid;
-     items=[];
-     $('#ugid > option:selected').each(function(){
-        var uid = $(this).attr("value");
-	var item = $(this);
-	var html = '<option value='+uid+ ' >'+$(this).text()+'</option>';
-	$.ajax({
-         data: {
-     	   jquery_ajax: 1,
-	   fname: 'remove_user_from_group',
-	   ugid: ugid,
-	   uid: uid
-          },
-         success : function(data) {
-          if (data != 1) {alert(data);}
-	  else {
-	   $('#new_ugid').append(html);
-	   item.remove();
-	  }
-
-	 },
-       });
-     });
-     run_get_groups_for_user({divid: 'groups'});
-}
-
-function add_list(opts) {
-     ugid = opts.ugid;
-     $('#new_lid > option:selected').each(function(){
-        var lid = $(this).attr("value");
-	var html = '<option value='+lid+ ' >'+$(this).text()+'</option>';
-	$('#lid').append(html);
-	$(this).remove();
-        $.ajax({
-         data: {
-     	   jquery_ajax: 1,
-	   fname: 'add_list_to_group',
-	   ugid: ugid,
-	   lid: lid
-          },
-         success : function(data) {
-          if (data != 1) {alert(data);}
-	 },
-       });
-     });
-     run_get_groups_for_user({divid: 'groups'});
-};
-
-function remove_list (opts) {
-     ugid = opts.ugid;
-     items=[];
-     $('#lid > option:selected').each(function(){
-        var lid = $(this).attr("value");
-	var item = $(this);
-	var html = '<option value='+lid+ ' >'+$(this).text()+'</option>';
-	$.ajax({
-         data: {
-     	   jquery_ajax: 1,
-	   fname: 'remove_list_from_group',
-	   ugid: ugid,
-	   lid: lid
-          },
-         success : function(data) {
-          if (data != 1) {alert(data);}
-	  else {
-	   $('#new_ugid').append(html);
-	   item.remove();
-	  }
-
-	 },
-       });
-     });
-     run_get_groups_for_user({divid: 'groups'});
-}
-
-function show_gadd(val) {
-  if(val==1) {
-    $('#remove_genome').hide(0);
-    $('#add_genome').show(0);
-  }
-  else {
-    $('#remove_genome').show(0);
-    $('#add_genome').hide(0);
-  }
-}
-
-function show_ladd(val) {
-  if(val==1) {
-    $('#remove_list').hide(0);
-    $('#add_list').show(0);
-  }
-  else {
-    $('#remove_list').show(0);
-    $('#add_list').hide(0);
-  }
-}
-
-function add_genome(opts) {
-     ugid = opts.ugid;
-     $('#new_dsgid > option:selected').each(function(){
-        var dsgid = $(this).attr("value");
-	var html = '<option value='+dsgid+ ' >'+$(this).text()+'</option>';
-	var item = $(this);
-        $.ajax({
-         data: {
-     	   jquery_ajax: 1,
-	   fname: 'add_genome_to_group',
-	   ugid: ugid,
-	   dsgid: dsgid
-          },
-         success : function(data) {
-          if (data != 1) {alert(data);}
-	  else {
-  	   $('#dsgid').append(html);
-	   item.remove();
-	  }
-	 },
-       });
-     });
-     run_get_groups_for_user({divid: 'groups'});
-
-};
-
-function remove_genome (opts) {
-     ugid = opts.ugid;
-     $('#dsgid > option:selected').each(function(){
-        var dsgid = $(this).attr("value");
-	var item = $(this);
-	var html = '<option value='+dsgid+ ' >'+$(this).text()+'</option>';
-	$.ajax({
-         data: {
-     	   jquery_ajax: 1,
-	   fname: 'remove_genome_from_group',
-	   ugid: ugid,
-	   dsgid: dsgid
-          },
-         success : function(data) {
-          if (data != 1) {alert(data);}
-	  else {
-	   $('#new_dsgid').append(html);
-	   item.remove();
-	  }
-
-	 },
-       });
-     });
-     run_get_groups_for_user({divid: 'groups'});
-}
-
-
+//function show_gadd(val) {
+//  if(val==1) {
+//    $('#remove_genome').hide(0);
+//    $('#add_genome').show(0);
+//  }
+//  else {
+//    $('#remove_genome').show(0);
+//    $('#add_genome').hide(0);
+//  }
+//}
+//
+//function add_genome(opts) {
+//     ugid = opts.ugid;
+//     $('#new_dsgid > option:selected').each(function(){
+//        var dsgid = $(this).attr("value");
+//	var html = '<option value='+dsgid+ ' >'+$(this).text()+'</option>';
+//	var item = $(this);
+//        $.ajax({
+//         data: {
+//     	   jquery_ajax: 1,
+//	   fname: 'add_genome_to_group',
+//	   ugid: ugid,
+//	   dsgid: dsgid
+//          },
+//         success : function(data) {
+//          if (data != 1) {alert(data);}
+//	  else {
+//  	   $('#dsgid').append(html);
+//	   item.remove();
+//	  }
+//	 },
+//       });
+//     });
+//    run_get_groups_for_user({divid: 'groups'});
+//};
+//
+//function remove_genome (opts) {
+//     ugid = opts.ugid;
+//     $('#dsgid > option:selected').each(function(){
+//        var dsgid = $(this).attr("value");
+//	var item = $(this);
+//	var html = '<option value='+dsgid+ ' >'+$(this).text()+'</option>';
+//	$.ajax({
+//         data: {
+//     	   jquery_ajax: 1,
+//	   fname: 'remove_genome_from_group',
+//	   ugid: ugid,
+//	   dsgid: dsgid
+//          },
+//         success : function(data) {
+//          if (data != 1) {alert(data);}
+//	  else {
+//	   $('#new_dsgid').append(html);
+//	   item.remove();
+//	  }
+//	 },
+//       });
+//     });
+//     run_get_groups_for_user({divid: 'groups'});
+//}
 </SCRIPT>
 
-<div id=groups><TMPL_VAR NAME=MAIN_TABLE></div>
+<div id="groups">
+ <TMPL_VAR NAME=MAIN_TABLE>
+</div>
 
 <div>
-<TABLE class="small">
-<tr>
- <td>Group Name:</td>
- <td><input type="textbox" size=8 name="name" id="name"></td>
- <td>Group Description:</td>
- <td><input type="textbox" size=16 name="desc" id="desc"></td>
- <td>Role:</td>
- <td><select id="role">
-  <TMPL_LOOP NAME=ROLE_LOOP>
-   <OPTION value=<TMPL_VAR NAME=RID>><TMPL_VAR NAME=NAME></OPTION>
-  </TMPL_LOOP>
-  </select>
- </td>
-
- <td><span id=create_group style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="create_group();">Create new group</span>
-</tr>
-</table>
+ <table class="small">
+  <tr>
+   <td>Group Name:</td>
+   <td><input type="textbox" size=8 name="name" id="name"></td>
+   <td>Group Description:</td>
+   <td><input type="textbox" size=16 name="desc" id="desc"></td>
+   <td>Role:</td>
+   <td><select id="role">
+    <TMPL_LOOP NAME=ROLE_LOOP>
+     <OPTION value=<TMPL_VAR NAME=RID>><TMPL_VAR NAME=NAME></OPTION>
+    </TMPL_LOOP>
+    </select>
+   </td>
+   <td>
+    <span id="create_group" style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="create_group();">Create new group</span>
+   </td>
+  </tr>
+ </table>
 </div>
-<div id=group_edit_box class= "dialog_box"></div>
 
-<div id=admin_stuff></div>
-</TMPL_IF>
+<div id="admin_stuff"></div>
+</TMPL_IF> <!-- MAIN -->
 
 
 
 <TMPL_IF NAME=GROUP_TABLE>
-<TABLE id=group_table class="small ui-widget-content ui-corner-all">
- <THEAD align=left> 
-  <TR>
-   <TH>Name</TH>
-   <TH>Group Description</TH>
-   <TH>Role</TH>
-   <TH>Current Members</TH>
-   <TH>Lists</TH>
-  </TR>
- </THEAD>
- <tbody align=left valign="top" id="genome_table_body" class=small>
+<table id="group_table" class="small ui-widget-content ui-corner-all">
+ <thead align="left"> 
+  <tr>
+   <th>Name</th>
+   <th>Group Description</th>
+   <th>Role</th>
+   <th>Current Members</th>
+   <th>Lists</th>
+   <TMPL_IF BUTTONS>
+   <th>Edit</th>
+   <th>Delete</th>
+   </TMPL_IF>
+  </tr>
+ </thead>
+ <tbody align="left" valign="top" id="genome_table_body" class="small">
   <TMPL_LOOP NAME=GROUPS_LOOP>
-  <TR valign=middle">
-   <TD><span style="float: right" class="ui-icon ui-icon-gear" onclick="edit_group_info({ugid: <TMPL_VAR NAME=UGID>});"></span><TMPL_VAR NAME=NAME></TD>
-   <TD><TMPL_VAR NAME=DESC></TD>
-   <TD><TMPL_VAR NAME=ROLE></TD>
-   <TD>
-     <span style="float: right" class="ui-icon ui-icon-gear" onclick="modify_users({ugid: <TMPL_VAR NAME=UGID>});"></span>
-     <TMPL_VAR NAME=MEM></TD>
-   <TD>
-     <TMPL_VAR NAME=LISTS></TD>
-  </TR>
+  <tr valign="middle">
+   <td><TMPL_VAR NAME=NAME></td>
+   <td><TMPL_VAR NAME=DESC></td>
+   <td><TMPL_VAR NAME=ROLE></td>
+   <td><TMPL_VAR NAME=MEMBERS></td>
+   <td><TMPL_VAR NAME=LISTS></td>
+   <TMPL_IF BUTTONS>
+   <td align='center'><TMPL_VAR NAME=EDIT_BUTTON></td>
+   <td align='center'><TMPL_VAR NAME=DELETE_BUTTON></td>
+   </TMPL_IF>   
+  </tr>
   </TMPL_LOOP>
  </tbody>
-</TABLE>
-</TMPL_IF>
-
-
-
-<TMPL_IF NAME=EDIT_GROUP_INFO>
-<TABLE class=small>
- <TR>
-  <TD>Group Name:</TD>
-  <TD><input text size=50 id="edit_name" value="<TMPL_VAR NAME=NAME>"></TD>
- </TR>
- <TR>
-  <TD>Group Description:</TD>
-  <TD><textarea rows=5 cols=50 id="edit_desc"><TMPL_VAR NAME=DESC></textarea></TD>
- </TR>
-</TABLE>
-<span onClick="update_group_info({ugid: '<TMPL_VAR NAME=UGID>'});" class='ui-button ui-corner-all ui-button-go'>Update Group Info</span>
-   <TD><span class='ui-button ui-button-go ui-corner-all ui-button-icon-left'  onclick="delete_group({ugid: <TMPL_VAR NAME=UGID>});"><span class="ui-icon ui-icon-trash"></span>Delete (Permanent)</span></TD>
-</TMPL_IF>
-
-
-
-<TMPL_IF NAME=MODIFY_USERS>
-<TABLE class=small>
- <TR>
-  <TD>Current Members:<br>
-  <form name=current_users>
-  <select multiple id=ugid name="current_ugid" onclick="show_add()" ondblclick="remove_user({ugid: '<TMPL_VAR NAME=UGID>'})" size=10 >
-       <TMPL_LOOP NAME=UGID_LOOP>
-        <OPTION value=<TMPL_VAR NAME=UID>><TMPL_VAR NAME=UID_NAME></OPTION>
-       </TMPL_LOOP>
-      </select>
-    </form>
-    <SCRIPT TYPE="text/javascript"> 
-     var current_user_filter = new filterlist(document.current_users.current_ugid);
-    </SCRIPT>
-    Filter: <INPUT NAME=regexp onKeyUp="current_user_filter.set(this.value)">
- 
-  </TD> 
-  <TD>
-    <span href="javascript:void(0)" onClick="remove_user({ugid: '<TMPL_VAR NAME=UGID>'});" style="display:none" id="remove_user" class='ui-button ui-button-go ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-minus"></span>Remove</span>
-    <span href="javascript:void(0)" onClick="add_user({ugid: '<TMPL_VAR NAME=UGID>'});" id="add_user" class='ui-button ui-button-go ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Add</span>
-  </TD>
-  <TD>
-    CoGe Users:<br>
-    <form name=new_users>
-    <select multiple id="new_ugid" name="new_ugid" onclick="show_add(1)" ondblclick="add_user({ugid: '<TMPL_VAR NAME=UGID>'})" size=10>
-     <TMPL_LOOP NAME=ALL_UGID_LOOP>
-      <OPTION value=<TMPL_VAR NAME=UID>><TMPL_VAR NAME=UID_NAME></OPTION>
-     </TMPL_LOOP>
-    </select><br>
-    </form>    <SCRIPT TYPE="text/javascript"> 
-     var new_user_filter = new filterlist(document.new_users.new_ugid);
-    </SCRIPT>
-    Filter: <INPUT NAME=regexp onKeyUp="new_user_filter.set(this.value)">
-  </TD>
- </TR>
 </table>
-<span href="javascript:void(0)" onClick="modify_users({ugid: '<TMPL_VAR NAME=UGID>'});" id="refresh_modify_users" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Refresh</span> <span class=small>(Displayed lists can get out of sync when filtering for names.)</small>
-</TMPL_IF>
+</TMPL_IF> <!-- GROUP_TABLE -->
 
 
 

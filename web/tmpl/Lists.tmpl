@@ -39,8 +39,6 @@ function run_get_lists_for_user(opts){
 		},
 		success : create_callback(divid)
 	});
-	$('#ugid').val('');
-	$('#new_ugid').val('');
 }
 
 function create_list (opts){
@@ -65,42 +63,18 @@ function create_list (opts){
 	else { alert ('Error!  Must have a name!');}
 }
 
-function update_list_info (opts){
-	name = $('#edit_name').val();
-	desc = $('#edit_desc').val();
-	ugid = opts.ugid;
-	if (name) {
-		$.ajax({
-			data: {
-				jquery_ajax: 1,
-				fname: 'update_list',
-				ugid: ugid,
-				name: name,
-				desc: desc
-			},
-			success : function(val) {
-				run_get_lists_for_user({divid: 'lists'});
-			},
-		});
-	}
-	else { alert ('Error!  Must have a name!');}
-}
-
 function delete_list (opts){
 	lid = opts.lid;
-	if (lid) {
-		$.ajax({
-			data: {
-				jquery_ajax: 1,
-				fname: 'delete_list',
-				lid: lid,
-			},
-			success : function() {
-				$("#list_edit_box").dialog('close');	
-				run_get_lists_for_user({divid: 'lists'});
-			},
-		});
-	}
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'delete_list',
+			lid: lid,
+		},
+		success : function() {
+			run_get_lists_for_user({divid: 'lists'});
+		},
+	});
 }
 </SCRIPT>
 
