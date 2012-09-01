@@ -129,13 +129,30 @@ sub experiments
 {
 	my $self = shift;
 	my %opts = @_;
+	my $restricted = $opts{restricted}; # limit result to restricted experiments
 
 	my @experiments;
 	foreach my $conn ( $self->list_connectors_as_parent )
 	{
-		push @experiments, $conn->child if ($conn->is_experiment);
+		if ($conn->is_experiment) {
+			next if ($restricted and not $conn->child->restricted);
+			push @experiments, $conn->child;
+		}
 	}
 	return wantarray ? @experiments : \@experiments;
+}
+
+sub children
+{
+	my $self = shift;
+	#my %opts = @_;
+
+	my @children;
+	foreach my $conn ( $self->list_connectors_as_parent )
+	{
+		push @children, $conn->child;
+	}
+	return wantarray ? @children : \@children;	
 }
 
 ################################################ subroutine header begin ##
@@ -234,7 +251,7 @@ sub info_html
 {
 	my $self = shift;
 	my $info = $self->info;
-	return qq{<span class=link onclick='window.open("ListView.pl?lid=} .$self->id. qq{")'>} . $info . "</span>";
+	return qq{<span class=link onclick='window.open("ListView.pl?lid=} . $self->id. qq{")'>} . $info . "</span>";
 }
 
 ################################################ subroutine header begin ##
@@ -290,6 +307,7 @@ sub annotation_pretty_print_html
 	my $self     = shift;
 	my %opts     = @_;
 	my $minimal  = $opts{minimal};
+	
 	my $anno_obj = new CoGe::Accessory::Annotation( Type => "anno" );
 	$anno_obj->Val_delimit("\n");
 	$anno_obj->Add_type(0);
@@ -410,6 +428,19 @@ sub annotation_pretty_print_html
 #	}
 
 	return "<table cellpadding=0 class='ui-widget-content ui-corner-all small'>" . $anno_obj->to_String . "</table>";
+}
+
+sub contents_summary_html 
+{
+	my $self = shift;
+
+	my $html;	
+	$html .= 'Genomes: ' . @{$self->genomes} . '<br>' if (@{$self->genomes});
+	$html .= 'Experiments: ' . @{$self->experiments} . '<br>' if (@{$self->experiments});
+	$html .= 'Features: ' . @{$self->features} . '<br>' if (@{$self->features});
+	$html .= 'Lists: ' . @{$self->lists} . '<br>' if (@{$self->lists});
+
+	return $html;	
 }
 
 1;

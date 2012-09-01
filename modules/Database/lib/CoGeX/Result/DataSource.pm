@@ -125,9 +125,11 @@ sub info_html
 {
 	my $self = shift;
 	my $info = $self->info;
-	if ($self->link)
+	if (my $link = $self->link)
 	{
-		$info = qq{<span class=link onclick='window.open("} . $self->link . qq{")'>} . $info . "</span>";
+		$link =~ s/^\s+//;
+		$link = 'http://' . $link if (not $link =~ /^(\w+)\:\/\//);
+		$info = qq{<span class=link onclick='window.open("} . $link . qq{")'>} . $info . "</span>";
 	}
 	return $info;
 }

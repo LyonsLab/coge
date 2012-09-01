@@ -135,6 +135,16 @@ sub genomes
 	return wantarray ? @genomes : \@genomes;
 }
 
+sub first_genome
+{
+	my $self = shift;
+	#my %opts = @_;
+	foreach my $dsc ( $self->dataset_connectors() )
+	{
+		return $dsc->genome;
+	}
+}
+
 sub dataset_groups
   {
     cluck "Dataset::dataset_groups is obselete, please use ->genomes\n";

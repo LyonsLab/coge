@@ -329,6 +329,8 @@ sub annotation_pretty_print_html
 	my $self     = shift;
 	my %opts     = @_;
 	my $minimal  = $opts{minimal};
+	my $allow_delete = $opts{allow_delete};
+	
 	my $anno_obj = new CoGe::Accessory::Annotation( Type => "anno" );
 	$anno_obj->Val_delimit("\n");
 	$anno_obj->Add_type(0);
@@ -365,7 +367,10 @@ sub annotation_pretty_print_html
 		{
 			my $info = $type->name;
 			$info .= ": ".$type->description if $type->description;
-			$info .= "<span onClick=\"remove_experiment_type({eid: '" . $self->id . "', etid: '" . $type->id . "'});\" class=\"link ui-icon ui-icon-trash\"></span>";
+			if ($allow_delete) {
+				# NOTE: it is somewhat undesirable to have a javascript call in a DB object, but it works
+				$info .= "<span onClick=\"remove_experiment_type({eid: '" . $self->id . "', etid: '" . $type->id . "'});\" class=\"link ui-icon ui-icon-trash\"></span>";
+			}
 			$anno_type->add_Annot( $info);
 		}
 	$anno_obj->add_Annot($anno_type);
@@ -466,7 +471,6 @@ sub info
 	$info .= ": " . $self->description if $self->description;
 	$info .= " (v" . $self->version . ", eid" . $self->id . "): " . $self->source->name;
 	return $info;
-
 }
 
 ############################################### subroutine header begin ##

@@ -156,7 +156,14 @@ sub name {
 	my $self = shift;
 	return $self->user_name(@_);
 }
-1;
+
+sub display_name {
+	my $self = shift;
+	my $name = $self->user_name;
+	$name = $self->first_name if $self->first_name;
+	$name .= ' ' . $self->last_name if $self->first_name && $self->last_name;
+	return $name;	
+}
 
 ################################################ subroutine header begin ##
 
@@ -683,10 +690,12 @@ sub lists {
 sub experiments {
 	my $self = shift;
 	my %opts = @_;
+	my $restricted = $opts{restricted};
+	
 	my %experiments;
 	foreach my $ug ( $self->groups ) {
 		foreach my $list ( $ug->lists) {
-			map { $experiments{ $_->id } = $_ } $list->experiments;
+			map { $experiments{ $_->id } = $_ } $list->experiments(restricted => $restricted);
 		}
 	}
 	return wantarray ? values %experiments : [ values %experiments ];
@@ -770,6 +779,8 @@ sub info {
 	$info .= " " . $self->last_name;
 	return $info;
 }
+
+1;
 
 =head1 BUGS
 

@@ -36,26 +36,24 @@ Type: VARCHAR, Default: undef, Nullable: yes, Size: 255
 
 __PACKAGE__->table("user_group");
 __PACKAGE__->add_columns(
-				"user_group_id",
-				{ data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
-				"name",
-				{ data_type => "VARCHAR", default_value => "", is_nullable => 0, size => 250 },
-				"description",
-				{
-					data_type     => "TEXT",
-					default_value => undef,
-					is_nullable   => 1,
-					size          => 255,
-				},
-				"role_id",
-				{ data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
-				"locked",
-				{ data_type => "INT", default_value => "0", is_nullable => 0, size => 1 }
+	"user_group_id",
+	{ data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
+	"creator_user_id",
+	{ data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },	
+	"name",
+	{ data_type => "VARCHAR", default_value => "", is_nullable => 0, size => 250 },
+	"description",
+	{ data_type => "TEXT", default_value => undef, is_nullable => 1, size => 255 },
+	"role_id",
+	{ data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
+	"locked",
+	{ data_type => "INT", default_value => "0", is_nullable => 0, size => 1 }
 );
 __PACKAGE__->set_primary_key("user_group_id");
 __PACKAGE__->has_many( 'user_group_connectors' => "CoGeX::Result::UserGroupConnector", 'user_group_id' );
 __PACKAGE__->has_many( 'lists' => "CoGeX::Result::List", 'user_group_id' );
 __PACKAGE__->belongs_to( 'role' => "CoGeX::Result::Role", 'role_id' );
+__PACKAGE__->belongs_to( 'creator' => "CoGeX::Result::User", 'creator_user_id' );
 
 ################################################ subroutine header begin ##
 
@@ -73,6 +71,34 @@ __PACKAGE__->belongs_to( 'role' => "CoGeX::Result::Role", 'role_id' );
 ################################################## subroutine header end ##
 
 sub users
+{
+	my $self  = shift;
+	my @users = ();
+
+	foreach my $ugc ( $self->user_group_connectors() )
+	{
+		push @users, $ugc->user;
+	}
+
+	return wantarray ? @users : \@users;
+}
+
+################################################ subroutine header begin ##
+
+=head2 creator
+
+ Usage     : 
+ Purpose   : Returns user object for creator
+ Returns   : user object
+ Argument  : None
+ Throws    : None
+ Comments  : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub creator
 {
 	my $self  = shift;
 	my @users = ();
@@ -263,6 +289,8 @@ sub annotation_pretty_print_html
 	my $self     = shift;
 	my %opts     = @_;
 	my $minimal  = $opts{minimal};
+	my $allow_delete = $opts{allow_delete};
+	
 	my $anno_obj = new CoGe::Accessory::Annotation( Type => "anno" );
 	$anno_obj->Val_delimit("\n");
 	$anno_obj->Add_type(0);
@@ -280,25 +308,24 @@ sub annotation_pretty_print_html
 
 	$anno_type = new CoGe::Accessory::Annotation( Type => "<tr><td nowrap='true'><span class=\"title5\">" . "Role" . "</span>" );
 	$anno_type->Type_delimit(": <td class=\"data5\">");
-	$anno_type->add_Annot( $self->role->name . "</td>" );
+	$anno_type->add_Annot( $self->role->name . ($self->role->description ? ' (' . $self->role->description . ')' : '') . "</td>" );
 	$anno_obj->add_Annot($anno_type);
 
 	$anno_type = new CoGe::Accessory::Annotation( Type => "<tr><td nowrap='true'><span class=\"title5\">" . "Users" . "</span>" );
-	$anno_type->Type_delimit(": <td class=\"data5\">");
+	$anno_type->Type_delimit(": <td valign='top' class=\"data5\">");
 	$anno_type->Val_delimit("<br>");
-	foreach my $user ($self->users)
-		{
-			$anno_type->add_Annot( $user->info);
-		}
+	foreach my $user ($self->users) {
+		$anno_type->add_Annot($user->info . ($user->id == $self->creator_user_id ? ' (creator)' : ''));
+	}
 	$anno_obj->add_Annot($anno_type);
 
 	$anno_type = new CoGe::Accessory::Annotation( Type => "<tr valign='top'><td nowrap='true'><span class=\"title5\">" . "Lists" . "</span>" );
 	$anno_type->Type_delimit(": <td class=\"data5\">");
 	$anno_type->Val_delimit("<br>");
-	foreach my $list ($self->lists)
-		{
-			$anno_type->add_Annot( $list->info_html);
-		}
+	foreach my $list ($self->lists) {
+		my $a = $list->info_html . ($allow_delete ? "<span class='link ui-icon ui-icon-trash' onclick=\"remove_list_from_group({ugid: '" . $self->id . "', lid: '" . $list->id . "'});\"></span>" : '');
+		$anno_type->add_Annot($a);
+	}
 	$anno_obj->add_Annot($anno_type);
 
   return "<table cellpadding=0 class='ui-widget-content ui-corner-all small'>".$anno_obj->to_String."</table>";

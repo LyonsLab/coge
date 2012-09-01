@@ -76,6 +76,33 @@ sub primary
  {
    shift->primary_name(@_);
  }
+ 
+################################################ subroutine header begin ##
+
+=head2 info
+
+ Usage     : $self->info
+ Purpose   : returns a string of information about the feature name.  
+
+ Returns   : returns a string
+ Argument  : none
+ Throws    : 
+ Comments  : To be used to quickly generate a string about the feature name
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub info
+{
+	my $self = shift;
+	my $info;
+	$info .= $self->name;
+	$info .= ": " . $self->description if $self->description;
+	return $info;
+}
 
 1;
 
