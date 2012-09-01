@@ -64,13 +64,6 @@ $USER = undef;
 	get_groups_for_user      => \&get_groups_for_user,
 	create_group             => \&create_group,
 	delete_group             => \&delete_group,
-	update_group             => \&update_group,
-	modify_users             => \&modify_users,
-	edit_group_info          => \&edit_group_info,
-	add_user_to_group        => \&add_user_to_group,
-	remove_user_from_group   => \&remove_user_from_group,
-	add_list_to_group        => \&add_list_to_group,
-	remove_list_from_group   => \&remove_list_from_group,
 	add_genome_to_group      => \&add_genome_to_group,
 	remove_genome_from_group => \&remove_genome_from_group,
 );
@@ -81,7 +74,6 @@ sub dispatch {
 	my %args  = $FORM->Vars;
 	my $fname = $args{'fname'};
 	if ($fname) {
-
 		#my %args = $FORM->Vars;
 		#print STDERR Dumper \%args;
 		if ( $args{args} ) {
@@ -128,12 +120,11 @@ sub gen_body {
 	my $roles = get_roles();
 	$template->param( ROLE_LOOP => $roles );
 	$template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
-	my $ugid;
-	$ugid = $FORM->param('ugid') if defined $FORM->param('ugid');
+	my $ugid = $FORM->param('ugid') if defined $FORM->param('ugid');
 	my $box_open = $ugid ? 'true' : 'false';
 	$template->param( EDIT_BOX_OPEN    => $box_open );
-	$template->param( ADDITIONAL_STUFF => qq{edit_group({ugid: $ugid});} )
-	  if $ugid;
+	$template->param( ADDITIONAL_STUFF => qq{edit_group({ugid: $ugid});} ) if $ugid;
+	
 	return $template->output;
 }
 
@@ -141,6 +132,7 @@ sub get_roles {
 	my @roles;
 	foreach my $role ( $coge->resultset('Role')->all() ) {
 		next if $role->name =~ /admin/i && !$USER->is_admin;
+		next if $role->name =~ /owner/i && !$USER->is_admin;
 		my $name = $role->name;
 		$name .= ": " . $role->description if $role->description;
 		push @roles, { RID => $role->id, NAME => $name };
@@ -148,225 +140,53 @@ sub get_roles {
 	return \@roles;
 }
 
-sub add_user_to_group {
-	my %opts = @_;
-	my $ugid = $opts{ugid};
-	my $uid  = $opts{uid};
-
-	#    return 1 if $uid == $USER->id;
-	return "UGID and/or UID not specified" unless $ugid && $uid;
-	my $group = $coge->resultset('UserGroup')->find($ugid);
-	if ( $group->locked && !$USER->is_admin ) {
-		return "This is a locked group.  Admin permission is needed to modify.";
-	}
-	my @res =
-	  $coge->resultset('UserGroupConnector')
-	  ->search( { user_id => $uid, user_group_id => $ugid } );
-	return 1 if @res;    #previously added;
-	my ($ugc) =
-	  $coge->resultset('UserGroupConnector')
-	  ->create( { user_id => $uid, user_group_id => $ugid } );
-	return 1;
-}
-
-sub remove_user_from_group {
-	my %opts = @_;
-	my $ugid = $opts{ugid};
-	my $uid  = $opts{uid};
-	if ( $uid == $USER->id && !$USER->is_admin )    #only allow this for admins
-	{
-		return "Can't remove yourself from this group!";
-	}
-	my $group = $coge->resultset('UserGroup')->find($ugid);
-	if ( $group->locked && !$USER->is_admin ) {
-		return "This is a locked group.  Admin permission is needed to modify.";
-	}
-
-	foreach my $ugc ( $coge->resultset('UserGroupConnector')
-		->search( { user_id => $uid, user_group_id => $ugid } ) )
-	{
-		$ugc->delete;
-	}
-	return 1;
-}
-
-sub add_genome_to_group {
-	my %opts  = @_;
-	my $ugid  = $opts{ugid};
-	my $dsgid = $opts{dsgid};
-	return "DSGID and/or UGID not specified" unless $dsgid && $ugid;
-	my $is_owner = $USER->is_owner( dsg => $dsgid );
-	$is_owner = 1 if $USER->is_admin;
-	return "You are not the owner of this genome" unless $is_owner;
-	my ($ugdc) =
-	  $coge->resultset('UserGroupDataConnector')
-	  ->create( { genome_id => $dsgid, user_group_id => $ugid } );
-	return 1;
-}
-
-sub remove_genome_from_group {
-	my %opts  = @_;
-	my $ugid  = $opts{ugid};
-	my $dsgid = $opts{dsgid};
-	return "DSGID and/or UGID not specified" unless $dsgid && $ugid;
-	my ($ugdc) =
-	  $coge->resultset('UserGroupDataConnector')
-	  ->search( { genome_id => $dsgid, user_group_id => $ugid } );
-	$ugdc->delete;
-	return 1;
-}
-
-sub modify_users {
-	my %opts = @_;
-	my $ugid = $opts{ugid};
-	return 0 unless $ugid;
-	my %data;
-	my $group = $coge->resultset('UserGroup')->find($ugid);
-	$data{title} = $group->name . "(id" . $group->id . ")";
-	$data{title} .= ": " . $group->description if $group->description;
-	my %users;
-	my @users;
-
-	foreach my $user (
-		sort {
-			     $a->last_name cmp $b->last_name
-			  || $a->user_name cmp $b->user_name
-		} $group->users
-	  )
-	{
-
-		#          next if $user->user_name eq $USER->user_name; #skip self;
-		my $name = $user->user_name;
-		$name .= " : " . $user->first_name if $user->first_name;
-		$name .= " " . $user->last_name
-		  if $user->first_name && $user->last_name;
-		push @users, { uid_name => $name, uid => $user->id };
-		$users{ $user->id } = 1;
-	}
-	$data{users} = \@users;
-	my @all_users;
-	foreach my $user (
-		sort {
-			     $a->last_name cmp $b->last_name
-			  || $a->user_name cmp $b->user_name
-		} $coge->resultset('User')->all
-	  )
-	{
-		next if $users{ $user->id };    #skip users we already have
-		my $name = $user->user_name;
-		$name .= " : " . $user->first_name if $user->first_name;
-		$name .= " " . $user->last_name
-		  if $user->first_name && $user->last_name;
-		push @all_users, { uid_name => $name, uid => $user->id };
-	}
-	$data{all_users} = \@all_users;
-
-#   my @genomes;
-#   my %genomes;
-#   foreach my $genome ($group->private_genomes)
-#     {
-#	my $name = $genome->organism->name;
-#	$name .= " ".join (", ", map{$_->name} $genome->source) .": ";
-#       $name .= $genome->name.", " if $genome->name;
-#        $name .=  "v".$genome->version." ".$genome->type->name;#." ".commify($genome->length)."nt";
-#	push @genomes, {dsgid_name=>$name, dsgid=>$genome->id};
-#	$genomes{$genome->id}=1;
-#     }
-#   $data{genomes}=\@genomes;
-
-#   my @genome_list;
-#time to deal with admin privileges
-#   if ($USER->is_admin)
-#     {
-#	@genome_list = $coge->resultset('Genome')->search({restricted=>1});
-#     }
-#   else
-#     {
-#	@genome_list = $USER->private_genomes;
-#      }
-#    my @all_genomes;
-#    foreach my $genome (sort {$a->organism->name cmp $b->organism->name} @genome_list)
-#      {
-#	next if $genomes{$genome->id}; #skip users we already have
-#	my $name = $genome->organism->name;
-#	$name .= " ".join (", ", map{$_->name} $genome->source) .": ";
-#	$name .= $genome->name.", " if $genome->name;
-#	$name .=  "v".$genome->version." ".$genome->type->name;#." ".commify($genome->length)."nt";
-#	push @all_genomes, {dsgid_name=>$name, dsgid=>$genome->id};
-#      }
-#    $data{all_genomes}=\@all_genomes;
-	my $template =
-	  HTML::Template->new( filename => $P->{TMPLDIR} . 'Groups.tmpl' );
-	$template->param( MODIFY_USERS => 1 );
-	$template->param( UGID         => $ugid );
-
-	#    $template->param(NAME=>$data{name});
-	#    $template->param(DESC=>$data{desc});
-	$template->param( UGID_LOOP     => $data{users} );
-	$template->param( ALL_UGID_LOOP => $data{all_users} );
-
-	#    $template->param(DSGID_LOOP=>$data{genomes});
-	#    $template->param(ALL_DSGID_LOOP=>$data{all_genomes});
-	#add message if user is an admin
-	#    if ($USER->is_admin)
-	#      {
-	#	$template->param(ADMIN=>"<span class=alert>Admin Mojo Invoked!</span>");
-	#      }
-	$data{output} = $template->output;
-	return encode_json( \%data );
-}
-
-sub edit_group_info {
-	my %opts = @_;
-	my $ugid = $opts{ugid};
-	return 0 unless $ugid;
-	my %data;
-	my $group = $coge->resultset('UserGroup')->find($ugid);
-	$data{title} = $group->name . "(id" . $group->id . ")";
-	$data{title} .= ": " . $group->description if $group->description;
-	$data{name} = $group->name;
-	$data{desc} = "";
-	$data{desc} = $group->description if $group->description;
-	my $template =
-	  HTML::Template->new( filename => $P->{TMPLDIR} . 'Groups.tmpl' );
-	$template->param( EDIT_GROUP_INFO => 1 );
-	$template->param( UGID            => $ugid );
-	$template->param( NAME            => $data{name} );
-	$template->param( DESC            => $data{desc} );
-	$data{output} = $template->output;
-	return encode_json( \%data );
-}
+#sub add_genome_to_group {
+#	my %opts  = @_;
+#	my $ugid  = $opts{ugid};
+#	my $dsgid = $opts{dsgid};
+#	return "DSGID and/or UGID not specified" unless $dsgid && $ugid;
+#	my $is_owner = $USER->is_owner( dsg => $dsgid );
+#	$is_owner = 1 if $USER->is_admin;
+#	return "You are not the owner of this genome" unless $is_owner;
+#	my ($ugdc) =
+#	  $coge->resultset('UserGroupDataConnector')
+#	  ->create( { genome_id => $dsgid, user_group_id => $ugid } );
+#	return 1;
+#}
+#
+#sub remove_genome_from_group {
+#	my %opts  = @_;
+#	my $ugid  = $opts{ugid};
+#	my $dsgid = $opts{dsgid};
+#	return "DSGID and/or UGID not specified" unless $dsgid && $ugid;
+#	my ($ugdc) =
+#	  $coge->resultset('UserGroupDataConnector')
+#	  ->search( { genome_id => $dsgid, user_group_id => $ugid } );
+#	$ugdc->delete;
+#	return 1;
+#}
 
 sub create_group {
 	my %opts = @_;
-	return "You need to be a registered user to create a user group!"
-	  unless $USER->id;
+	return "You need to be a registered user to create a user group!" unless $USER->id;
 	my $name = $opts{name};
 	return "No specified name!" unless $name;
 	my $desc = $opts{desc};
 	my $rid  = $opts{rid};
+
 	my ($role) = $coge->resultset('Role')->find( { name => "Reader" } );
 	$rid = $role->id unless $rid;
-	my $group =
-	  $coge->resultset('UserGroup')
-	  ->create( { name => $name, description => $desc, role_id => $rid } );
-	my $ugc =
-	  $coge->resultset('UserGroupConnector')
-	  ->create( { user_id => $USER->id, user_group_id => $group->id } );
-	return 1;
-}
-
-sub update_group {
-	my %opts = @_;
-	my $ugid = $opts{ugid};
-	return 0 unless $ugid;
-	my $name = $opts{name};
-	return 0 unless $name;
-	my $desc  = $opts{desc};
-	my $group = $coge->resultset('UserGroup')->find($ugid);
-	$group->name($name);
-	$group->description($desc) if $desc;
-	$group->update;
+	my $group = $coge->resultset('UserGroup')->create( 
+	  { creator_user_id => $USER->id, 
+	  	name => $name, 
+	  	description => 
+	  	$desc, 
+	  	role_id => $rid 
+	  } );
+	my $ugc = $coge->resultset('UserGroupConnector')->create( { user_id => $USER->id, user_group_id => $group->id } );
+	
+	$coge->resultset('Log')->create( { user_id => $USER->id, description => 'create user group ' . $group->id } );
+	
 	return 1;
 }
 
@@ -379,6 +199,8 @@ sub delete_group {
 		return "This is a locked group.  Admin permission is needed to delete.";
 	}
 	$group->delete();
+
+	$coge->resultset('Log')->create( { user_id => $USER->id, description => 'delete user group ' . $group->id } );
 }
 
 sub get_groups_for_user
@@ -395,31 +217,34 @@ sub get_groups_for_user
 	
 	my @groups;
 	foreach my $group (@group_list) {
-		my %groups;
-		$groups{NAME} = $group->name . " (id" . $group->id . ")";
-		$groups{DESC} = $group->description if $group->description;
+		my $id = $group->id;
+		my $is_creator = ($USER->id == $group->creator_user_id);
+				
+		my %row;
+		$row{NAME} = qq{<span class=link onclick='window.open("GroupView.pl?ugid=$id")'>} . $group->name . "</span>" . " (id$id)" ;
+		$row{DESC} = $group->description if $group->description;
 		my $role = $group->role->name;
 
 #		$role .= ": ".$group->role->description if $group->role->description;
-		$groups{ROLE} = $role;
+		$row{ROLE} = $role;
 
 #		my $perm = join (", ", map {$_->name} $group->role->permissions);
-#		$groups{PERM}=$perm;
+#		$row{PERM}=$perm;
 		my @users;
 		foreach my $user ( sort { $a->last_name cmp $b->last_name } $group->users ) {
-#	    	next if $user->user_name eq $USER->user_name; #skip self;
-			my $name = $user->user_name;
-			$name = $user->first_name if $user->first_name;
-			$name .= " " . $user->last_name if $user->first_name && $user->last_name;
-			push @users, $name;
+			my $display_name = $user->display_name;
+			if ($user->id == $group->creator_user_id) { # is this user the creator?
+				$display_name = '<b>' . $display_name . '</b> <span style="color: gray;">(creator)</span>';
+			}
+			push @users, $display_name;
 		}
 
 #		push @users, "Self only" unless @users;
-		$groups{MEM} = join( ",<br>", @users );
+		$row{MEMBERS} = join( ",<br>", @users );
 		my %lists;
 		foreach my $list (sort { $a->type->name cmp $b->type->name || $a->name cmp $b->name } $group->lists ) {
 			my $name;
-			$name .= "(P)" if !$list->restricted;    #list is open to the public (P)
+			$name .= "(R)" if !$list->restricted;    #list is open to the public (P)
 			$name .= $list->name;
 			$name = qq{<span class="link" onclick="window.open('ListView.pl?lid=} . $list->id . qq{');">} . $name . "</span>";
 			push @{ $lists{ $list->type->name } }, $name;
@@ -429,7 +254,7 @@ sub get_groups_for_user
 			$lists .= qq{<tr><td>$type<td>} . join( "<br>", @{ $lists{$type} } );
 		}
 		$lists .= "</table>";
-		$groups{LISTS} = join( ",<br>", $lists );
+		$row{LISTS} = join( ",<br>", $lists );
 
 ###	my @genome;
 #	push @genome, "Apotheosis" if $group->role->name =~ /admin/i;
@@ -440,14 +265,20 @@ sub get_groups_for_user
 #	    $name = qq{<span class="link" onclick="window.open('OrganismView.pl?dsgid=}.$genome->id.qq{');">}.$name."</span>";
 #	    push @genome, $name;
 #	  }
-#	$groups{GENOMES}=join (",<br>", @genome);
+#	$row{GENOMES}=join (",<br>", @genome);
 
-		$groups{UGID} = $group->id;
-		push @groups, \%groups;
+		$row{BUTTONS} = 1;
+		if ($is_creator) {
+			$row{EDIT_BUTTON} = "<span class='link ui-icon ui-icon-gear' onclick='window.open(\"GroupView.pl?ugid=$id\")'></span>";
+			$row{DELETE_BUTTON} = "<span class='link ui-icon ui-icon-trash' onclick=\"delete_group({ugid: '$id'});\"></span>";
+		}
+
+		push @groups, \%row;
 	}
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'Groups.tmpl' );
 	$template->param( GROUP_TABLE => 1 );
 	$template->param( GROUPS_LOOP => \@groups );
+	$template->param( BUTTONS => 1 );
 	return $template->output;
 }
 

@@ -15,15 +15,14 @@ no warnings 'redefine';
 
 delete @ENV{ 'IFS', 'CDPATH', 'ENV', 'BASH_ENV' };
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME $DATE $DEBUG $USER $FORM $coge $COOKIE_NAME);
-$P         = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
+$P = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
 $ENV{PATH} = $P->{COGEDIR};
 $PAGE_NAME = "GenomeView.pl";
 $DEBUG     = 0;
 $FORM      = new CGI;
 $DATE = sprintf(
 	"%04d-%02d-%02d %02d:%02d:%02d",
-	sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
-		->(localtime)
+	sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }->(localtime)
 );
 
 $DBNAME  = $P->{DBNAME};
@@ -42,10 +41,10 @@ $USER = undef;
 ($USER) = CoGe::Accessory::LogUser->get_user( cookie_name => $COOKIE_NAME, coge => $coge ) unless $USER;
 
 my $pj = new CGI::Ajax(
-												gen_html        => \&gen_html,
-												grab_sequence   => \&grab_sequence,
-												save_options    => \&save_options,
-												get_genome_info => \&get_genome_info,
+	gen_html        => \&gen_html,
+	grab_sequence   => \&grab_sequence,
+	save_options    => \&save_options,
+	get_genome_info => \&get_genome_info,
 );
 
 #$pj->js_encode_function('escape');
@@ -59,7 +58,7 @@ sub gen_html
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
 	$template->param( LOGO_PNG => "GenomeView-logo.png" );
 
-	#    $template->param(TITLE=>'Genome Viewer');
+	#$template->param(TITLE=>'Genome Viewer');
 	$template->param( PAGE_TITLE => 'Genome Viewer' );
 	$template->param( HELP       => '/wiki/index.php?title=GenomeView' );
 	my $name = $USER->user_name;
@@ -67,7 +66,7 @@ sub gen_html
 	$name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
 	$template->param( USER => $name );
 
-	#    $template->param(BOX_WIDTH=>"100%");
+	#$template->param(BOX_WIDTH=>"100%");
 	$template->param( LOGON => 1 ) unless $USER->user_name eq "public";
 	$template->param( DATE => $DATE );
 	my ( $body, $org_name ) = gen_body();
@@ -281,11 +280,8 @@ $layer_name.setVisibility(0);
 		$template->param( MAIZEGDB => 1 );
 		$template->param( EXPAND   => "checked" );
 	}
-	my %default_true = (
-											 gc    => 'true',
-											 genes => 'true',
-	);
-	foreach my $item (qw (gc gaga gbox genes wobblegc wobble50gc localdup funcdomain prot repeats other gevo_link))
+	my %default_true = ( gc => 'true', genes => 'true' );
+	foreach my $item (qw(gc gaga gbox genes wobblegc wobble50gc localdup funcdomain prot repeats other gevo_link))
 	{
 		my $show = $prefs->{$item};
 		$show = $default_true{$item} unless $show;

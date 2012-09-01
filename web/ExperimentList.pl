@@ -16,13 +16,11 @@ use DBIxProfiler;
 use File::Path;
 no warnings 'redefine';
 
-use vars
-	qw( $P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME 
-		$TEMPDIR $USER $DATE $BASEFILE $COGEDIR $coge $cogeweb $FORM $URL 
-		$TEMPURL $COOKIE_NAME );
+use vars qw( $P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME 
+			$TEMPDIR $USER $DATE $BASEFILE $COGEDIR $coge $cogeweb $FORM $URL 
+			$TEMPURL $COOKIE_NAME %FUNCTION );
 		
 $P = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
-print STDERR $ENV{HOME}, "\n";
 $ENV{PATH} = $P->{COGEDIR};
 $COGEDIR   = $P->{COGEDIR};
 $URL       = $P->{URL};
@@ -41,28 +39,18 @@ $DBHOST  = $P->{DBHOST};
 $DBPORT  = $P->{DBPORT};
 $DBUSER  = $P->{DBUSER};
 $DBPASS  = $P->{DBPASS};
-$connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
+$connstr = "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
 $coge        = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
 $COOKIE_NAME = $P->{COOKIE_NAME};
 
 my ($cas_ticket) = $FORM->param('ticket');
 $USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(
-	ticket   => $cas_ticket,
-	coge     => $coge,
-	this_url => $FORM->url()
-  )
-  if ($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(
-	cookie_name => $COOKIE_NAME,
-	coge        => $coge
-  )
-  unless $USER;
+($USER) = CoGe::Accessory::Web->login_cas( ticket => $cas_ticket, coge => $coge, this_url => $FORM->url() ) if ($cas_ticket);
+($USER) = CoGe::Accessory::LogUser->get_user( cookie_name => $COOKIE_NAME, coge => $coge ) unless $USER;
 
 $SIG{'__WARN__'} = sub { };    #silence warnings
 
-my %FUNCTION = (
+%FUNCTION = (
 	gen_html                => \&gen_html,
 	get_feature_counts      => \&get_feature_counts,
 	generate_excel_file     => \&generate_excel_file,
@@ -84,7 +72,6 @@ sub dispatch {
 	my %args  = $FORM->Vars;
 	my $fname = $args{'fname'};
 	if ($fname) {
-
 		#my %args = $cgi->Vars;
 		#print STDERR Dumper \%args;
 		if ( $args{args} ) {
@@ -100,8 +87,7 @@ sub dispatch {
 sub gen_html {
 	my $html;
 	my ($body) = gen_body();
-	my $template =
-	  HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
+	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
 	$template->param( PAGE_TITLE => 'ExperimentList' );
 	$template->param( HELP       => '/wiki/index.php?title=ExperimentList' );
 	my $name = $USER->user_name;
@@ -124,8 +110,7 @@ sub gen_html {
 }
 
 sub gen_body {
-	my $template =
-	  HTML::Template->new( filename => $P->{TMPLDIR} . 'ExperimentList.tmpl' );
+	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'ExperimentList.tmpl' );
 	my $form = $FORM;
 	my $no_values;
 	$BASEFILE = $form->param('basename');
@@ -159,18 +144,28 @@ sub gen_body {
 	foreach ( $form->param('dsgid') ) {
 		foreach my $dsgid ( split /(::)|(,)/ ) {
 			#next if $dsgid =~ /^\d+_?\d*$/;
-			my $dsg  = $coge->resultset('Genome')->find($dsgid);
+			my $dsg = $coge->resultset('Genome')->find($dsgid);
 			next unless ($dsg);
-			foreach my $exp ( $dsg->experiments ) {
-				$expids{$exp->id}++;
+			foreach ( $dsg->experiments ) {
+				$expids{$_->id}++;
 			}
 		}
 	}
 	
 #	$expids = read_file() if $BASEFILE;    #: $opts{feature_list};
-	foreach ( $form->param('expid') ) {
+	foreach ( $form->param('eid') ) {
 		foreach my $expid ( split /(::)|(,)/ ) {
 			$expids{$expid}++;# if $expid =~ /^\d+_?\d*$/;
+		}
+	}
+	
+	foreach ( $form->param('lid') ) {
+		foreach my $lid ( split /(::)|(,)/ ) {
+			my $list = $coge->resultset('List')->find($lid);
+			next unless ($list);
+			foreach ( $list->experiments ) {
+				$expids{$_->id}++;
+			}
 		}
 	}
 
@@ -191,7 +186,7 @@ sub gen_body {
 sub add_to_user_history {
 	my %opts = @_;
 
-	#    my $url_params = $ENV{'QUERY_STRING'};
+	#my $url_params = $ENV{'QUERY_STRING'};
 	my $url = $opts{url};
 	if ( $opts{archive} ) {
 		$USER->add_to_works(
@@ -271,7 +266,6 @@ sub generate_table {
 		# Build source link
 		my $src = $exp->source;
 		my $link = $src->link;
-		$link = 'http://' . $link if ($link and not $link =~ /^http:\/\// );
 		my $source;
 		$source .= "<span class='link' onclick=window.open('$link');>" if ($link);
 		$source .= $src->name . ($src->desc ? ': ' . $src->desc : '');

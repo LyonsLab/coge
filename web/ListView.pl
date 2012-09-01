@@ -75,6 +75,7 @@ $USER = undef;
 	search_lists               => \&search_lists,
 	search_annotation_types    => \&search_annotation_types,
 	get_annotation_type_groups => \&get_annotation_type_groups,
+	delete_list                => \&delete_list,
 );
 
 dispatch();
@@ -149,9 +150,10 @@ sub get_list_info {
 	return "Access denied\n" unless ($USER->has_access(list=>$lid));
 	
 	my ($list) = $coge->resultset('List')->find($lid);
-	return "Unable to create list object for $lid\n" unless ($list);
+	return "List id$lid does not exist.<br>" .
+			"Click <a href='Lists.pl'>here</a> to view a table of all lists." unless ($list);	
 
-	my $html = $list->annotation_pretty_print_html();
+	my $html = "List Info:<br>" . $list->annotation_pretty_print_html();
 
 	if ($USER->is_admin || $USER->is_owner_editor(list => $lid)) {
 		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="edit_list_info({lid: '$lid'});">Edit List Info</span>};
@@ -164,6 +166,7 @@ sub get_list_info {
 		else {
 			$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="make_list_private({lid: '$lid'});">Make List Private</span>};
 		}
+		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="dialog_delete_list({lid: '$lid'});">Delete List</span>};
 	}
 
 	return $html;
@@ -278,7 +281,7 @@ sub get_list_annotations {
 	}
 	
 	foreach my $group (sort keys %groups) {
-		foreach my $a ( @{$groups{$group}} ) { #( $list->annotations ) {
+		foreach my $a ( sort {$a->id <=> $b->id} @{$groups{$group}} ) { #( $list->annotations ) {
 			my $anno_type = new CoGe::Accessory::Annotation( Type => "<tr valign='top'><td nowrap='true'><span class=\"title5\">" . $group . "</span>" );
 			$anno_type->Type_delimit(": <td class=\"data5\">");
 			$anno_type->Val_delimit("<br>");
@@ -294,7 +297,7 @@ sub get_list_annotations {
 		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-button-icon-left ui-corner-all' onClick="add_list_annotation({lid: $lid});"><span class="ui-icon ui-icon-plus"></span>Add Annotation</span>};
 	}
 
-	return $html;
+	return 'List Annotations:<br> ' . $html;
 }
 
 sub add_list_annotation {
@@ -313,7 +316,8 @@ sub add_list_annotation {
 
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'ListView.tmpl' );
 	$template->param( ADD_LIST_ANNOTATION => 1 );
-	$template->param( LID            => $lid );
+	$template->param( LID => $lid );
+	$template->param( DEFAULT_TYPE => 'note' );
 
 	my %data;
 	$data{title} = 'Add Annotation';
@@ -331,9 +335,11 @@ sub add_annotation_to_list {
 	return 0 unless $type;
 	my $annotation = $opts{annotation};
 	my $link = $opts{link};
-	
 #	print STDERR "add_annotation_to_list: $lid $type $annotation $link\n";	
 	
+	$link =~ s/^\s+//;
+	$link = 'http://' . $link if (not $link =~ /^(\w+)\:\/\//);
+
 	my $group_rs;
 	if ($type_group) {
 		$group_rs = $coge->resultset('AnnotationTypeGroup')->find( { name => $type_group } );
@@ -458,7 +464,7 @@ sub get_list_contents {
 		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-button-icon-left ui-corner-all' onClick="add_list_items({lid: $lid});"><span class="ui-icon ui-icon-plus"></span>Add Items</span>};
 	}
 
-	return $html;
+	return 'List Contents:<br>' . $html;
 }
 
 sub add_list_items {
@@ -474,39 +480,27 @@ sub add_list_items {
 	#
 
 	# Experiments
-	my %exists;
-	map { $exists{$_->id}++ } $list->experiments;
 	my @available_items;
-	foreach my $exp (sort experimentcmp $USER->experiments) {#, $coge->resultset('Experiment')->public) {
-		next if (defined $exists{$exp->id});
+	foreach my $exp (sort experimentcmp $USER->experiments) {
 		push @available_items, { item_name => 'experiment: ' . $exp->info, 
 								 item_spec => 3 . ':' . $exp->id }; #FIXME magic number for item_type
 	}
 	
 	# Genomes
-	%exists = ();
-	map { $exists{$_->id}++ } $list->genomes;
-	foreach my $g (sort genomecmp $USER->genomes) {#, $coge->resultset('Genome')->public) {
-		next if (defined $exists{$g->id});
+	foreach my $g (sort genomecmp $USER->genomes) {
 		push @available_items, { item_name => 'genome: ' . $g->info, 
 								 item_spec => 2 . ':' . $g->id }; #FIXME magic number for item_type
 	}
 	
 	# Features
-	%exists = ();
-	map { $exists{$_->id}++ } $list->features;
-	foreach my $f (sort featurecmp $USER->features) {#, $coge->resultset('Feature')->public) {
-		next if (defined $exists{$f->id});
+	foreach my $f (sort featurecmp $USER->features) {
 		push @available_items, { item_name => 'feature: ' . $f->info, 
 								 item_spec => 4 . ':' . $f->id }; #FIXME magic number for item_type
 	}
 	
 	# Lists
-	%exists = ();
-	map { $exists{$_->id}++ } $list->lists;
-	foreach my $l (sort listcmp $USER->lists) {#, $coge->resultset('List')->public) {
+	foreach my $l (sort listcmp $USER->lists) {
 		next if ($l->id == $lid); # can't add a list to itself!
-		next if (defined $exists{$l->id});
 		next if ($l->locked); # exclude user's master list
 		push @available_items, { item_name => 'list: ' . $l->info, 
 								 item_spec => 1 . ':' . $l->id }; #FIXME magic number for item_type
@@ -539,7 +533,7 @@ sub add_item_to_list {
 #	print STDERR "$lid $item_spec\n";	
 	
 	my ($item_type, $item_id) = split(/:/, $item_spec);
-	my $list = $coge->resultset('ListConnector')->create( { parent_id => $lid, child_id => $item_id, child_type => $item_type } );	
+	$coge->resultset('ListConnector')->create( { parent_id => $lid, child_id => $item_id, child_type => $item_type } );	
 	
 	return 1;
 }
@@ -556,7 +550,7 @@ sub remove_list_item {
 	my $item_type = $opts{item_type};
 	my $item_id = $opts{item_id};
 	
-	my $lc = $coge->resultset('ListConnector')->find({parent_id => $lid, child_id => $item_id, child_type =>$item_type});
+	my $lc = $coge->resultset('ListConnector')->find( { parent_id => $lid, child_id => $item_id, child_type =>$item_type } );
 	$lc->delete();
 	
 	return 1;
@@ -594,12 +588,13 @@ sub search_genomes {
 		}	
 	}
 	
-	my $html = '';
+	my $html;
 	foreach my $g (sort genomecmp @genomes) {
 		my $disable = $exists{$g->id} ? "disabled='disabled'" : '';
 		my $item_spec = 2 . ':' . $g->id; #FIXME magic number for item_type
 		$html .= "<option $disable value='$item_spec'>" . $g->info . "</option><br>\n";	
 	}
+	$html = "<option disabled='disabled'>No matching items</option>" unless $html;
 	
 	return $html;
 }
@@ -612,22 +607,29 @@ sub search_experiments {
 	return 0 unless $lid;
 	return '' unless $search_term;
 	
-	$search_term = '%'.$search_term.'%';
-	
 	my $list = $coge->resultset('List')->find($lid);
 	my %exists;
 	map { $exists{$_->id}++ } $list->experiments;
 	
-	my @experiments = $coge->resultset("Experiment")->search(
+	# Get user's private experiments
+	my @experiments;
+	foreach ($USER->experiments(restricted => 1)) {
+		push @experiments, $_ if ($_->name =~ /$search_term/i or $_->description =~ /$search_term/i);
+	}
+	
+	# Get all public experiments
+	$search_term = '%'.$search_term.'%';
+	push @experiments, $coge->resultset("Experiment")->search(
 		\[ 'restricted=? AND (name LIKE ? OR description LIKE ?)', 
 		['restricted', 0], ['name', $search_term ], ['description', $search_term] ]);
 	
-	my $html = '';
+	my $html;
 	foreach my $exp (sort experimentcmp @experiments) {
 		my $disable = $exists{$exp->id} ? "disabled='disabled'" : '';
 		my $item_spec = 3 . ':' . $exp->id; #FIXME magic number for item_type
 		$html .= "<option $disable value='$item_spec'>" . $exp->info . "</option><br>\n";	
 	}
+	$html = "<option disabled='disabled'>No matching items</option>" unless $html;
 	
 	return $html;
 }
@@ -640,22 +642,27 @@ sub search_features {
 	return 0 unless $lid;
 	return '' unless $search_term;
 	
-	$search_term = '%'.$search_term.'%';
-	
-#	my $list = $coge->resultset('List')->find($lid);
-#	my %exists;
-#	map { $exists{$_->id}++ } $list->features;
-#	
-#	my @features = $coge->resultset('Feature')->search(
-#		\[ 'restricted=? AND (name LIKE ? OR description LIKE ?)', 
-#		['restricted', 0], ['name', $search_term ], ['description', $search_term] ]);
-#	
-	my $html = '';
-#	foreach my $f (sort featurecmp @features) {
-#		next if ($exists{$f->id});
-#		my $item_spec = 4 . ':' . $f->id; #FIXME magic number for item_type
-#		$html .= "<option value='$item_spec'>" . $f->info . "</option><br>\n";	
-#	}
+	my $list = $coge->resultset('List')->find($lid);
+	my %exists;
+	map { $exists{$_->id}++ } $list->features;
+
+	# Fulltext search copied from FeatView.pl
+    my @fnames;
+    push @fnames, $coge->resultset('FeatureName')->search(name => $search_term);
+	unless (@fnames) {
+		push @fnames, $coge->resultset('FeatureName')->search_literal('MATCH(me.name) AGAINST (?)', $search_term);
+	}
+	return  "<option disabled='disabled'>" . @fnames . " results, please refine your search.</option>" if (@fnames > 1000);
+
+	my $html;
+	my %seen;
+	foreach my $f (sort featurecmp @fnames) {
+		next if ($seen{$f->feature_id}++);
+		my $disable = $exists{$f->feature_id} ? "disabled='disabled'" : '';
+		my $item_spec = 4 . ':' . $f->feature_id; #FIXME magic number for item_type
+		$html .= "<option $disable value='$item_spec'>" . $f->feature->info . "</option><br>\n";	
+	}
+	$html = "<option disabled='disabled'>No matching items</option>" unless $html;
 	
 	return $html;
 }
@@ -679,13 +686,14 @@ sub search_lists { # list of lists
 	my @lists = $coge->resultset("List")->search_literal(
 		"locked=0 AND (restricted=0 OR user_group_id IN ( $group_str )) AND (name LIKE '$search_term' OR description LIKE '$search_term')");
 	
-	my $html = '';
+	my $html;
 	foreach my $l (sort listcmp @lists) {
-		my $disable = $exists{$l->id} ? "disabled='disabled'" : '';
 		next if ($l->id == $lid); # can't add a list to itself!
+		my $disable = $exists{$l->id} ? "disabled='disabled'" : '';
 		my $item_spec = 1 . ':' . $l->id; #FIXME magic number for item_type
 		$html .= "<option $disable value='$item_spec'>" . $l->info . "</option><br>\n";	
 	}
+	$html = "<option disabled='disabled'>No matching items</option>" unless $html;
 	
 	return $html;
 }
@@ -753,4 +761,23 @@ sub featurecmp {
 sub listcmp {
 	no warnings 'uninitialized'; # disable warnings for undef values in sort
 	$a->name cmp $b->name
+}
+
+sub delete_list {
+	my %opts  = @_;
+	my $lid = $opts{lid};
+	return "No LID specified" unless $lid;
+	
+	my $list = $coge->resultset('List')->find($lid);
+	return "Cannot find list $lid\n" unless $list;
+	
+	return 0 unless ($USER->is_admin or $USER->is_owner(list => $lid));
+	
+	if ( $list->locked && !$USER->is_admin ) {
+		return "This is a locked list.  Admin permission is needed to modify.";
+	}
+	
+	$list->delete();
+	
+	return 1;
 }

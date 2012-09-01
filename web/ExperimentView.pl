@@ -61,6 +61,7 @@ $SIG{'__WARN__'} = sub { };    # silence warnings
 	get_experiment_info     => \&get_experiment_info,
 	edit_experiment_info    => \&edit_experiment_info,
 	update_experiment_info  => \&update_experiment_info,
+	get_sources             => \&get_sources,
 	make_experiment_public  => \&make_experiment_public,
 	make_experiment_private => \&make_experiment_private,
 	search_genomes          => \&search_genomes,
@@ -124,7 +125,8 @@ sub edit_experiment_info {
 	$template->param( DESC           => $desc );
 	$template->param( GENOME         => $exp->genome->info );
 	$template->param( GENOME_ID      => $exp->genome->id );
-	$template->param( SOURCE_LOOP    => get_sources($exp->source->id) );
+	$template->param( SOURCE         => $exp->source->name );
+	$template->param( SOURCE_ID      => $exp->source->id );
 	$template->param( VERSION        => $exp->version );
 
 	my %data;
@@ -156,6 +158,17 @@ sub update_experiment_info {
 	$exp->update;
 
 	return 1;
+}
+
+sub get_sources {
+	#my %opts = @_;
+	
+	my @sources;
+	foreach ($coge->resultset('DataSource')->all()) {
+		push @sources, { 'label' => $_->name, 'value' => $_->id };
+	}
+	
+	return encode_json(\@sources);
 }
 
 sub make_experiment_public {
@@ -222,19 +235,6 @@ sub search_genomes {
 	return encode_json( \@results );
 }
 
-sub get_sources {
-	my $current_source_id = shift;
-	
-	my @sources;
-	foreach my $source ( $coge->resultset('DataSource')->all() ) {
-		my $name = $source->name . ($source->description ? ": " . $source->description : '');
-		my $selected = '';
-		$selected = 'selected="selected"' if ($source->id == $current_source_id);
-		push @sources, { SID => $source->id, NAME => $name, SOURCE_SELECTED => $selected };
-	}
-	return \@sources;
-}
-
 sub add_experiment_type {
 	my %opts = @_;
 	my $eid  = $opts{eid};
@@ -247,7 +247,7 @@ sub add_experiment_type {
 	$template->param( EID => $eid );
 
 	my %data;
-	$data{title} = 'Add Type';
+	$data{title} = 'Add Experiment Type';
 	$data{output} = $template->output;
 
 	return encode_json( \%data );
@@ -261,18 +261,12 @@ sub add_type_to_experiment {
 	return 0 unless $name;
 	my $description = $opts{description};
 	
-	my $type = $coge->resultset('ExperimentType')->find( { name => $name } );
+	my $type = $coge->resultset('ExperimentType')->find( { name => $name, description => $description } );
 	
 	if ($type) {
 		# If type exists, check if already assigned to this experiment
 		foreach ($type->experiment_type_connectors) {
-			if ($_->experiment_id == $eid) {
-				if ($type->description ne $description) {
-					$type->description($description);
-					$type->update;
-				}
-				return 1;
-			}	
+			return 1 if ($_->experiment_id == $eid);
 		}
 	}
 	else {
@@ -388,7 +382,8 @@ sub add_experiment_annotation {
 
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'ExperimentView.tmpl' );
 	$template->param( ADD_EXPERIMENT_ANNOTATION => 1 );
-	$template->param( EID            => $eid );
+	$template->param( EID => $eid );
+	$template->param( DEFAULT_TYPE => 'note' );
 
 	my %data;
 	$data{title} = 'Add Annotation';
@@ -623,19 +618,20 @@ sub get_experiment_info {
 	my ($exp) = $coge->resultset('Experiment')->find($eid);
 	return "Unable to find an entry for $eid" unless $exp;
 
-	my $html = $exp->annotation_pretty_print_html;
+	my $allow_edit = $USER->is_admin || $USER->is_owner_editor(experiment => $eid);
+	my $html = $exp->annotation_pretty_print_html(allow_delete => $allow_edit);
 	
-	if ($USER->is_admin || $USER->is_owner_editor(experiment => $eid)) {
-		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="edit_experiment_info({eid: '$eid'});">Edit Experiment Info</span>};
-		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="add_experiment_type({eid: '$eid'});">Add Experiment Type</span>};
+	if ($allow_edit) {
+		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="edit_experiment_info({eid: '$eid'});">Edit Info</span>};
+		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="add_experiment_type({eid: '$eid'});">Add Type</span>};
 	}
 	
 	if ($USER->is_admin || $USER->is_owner(experiment => $eid)) {
 		if ( $exp->restricted ) {
-			$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="make_experiment_public({eid: '$eid'});">Make Experiment Public</span>};
+			$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="make_experiment_public({eid: '$eid'});">Make Public</span>};
 		}
 		else {
-			$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="make_experiment_private({eid: '$eid'});">Make Experiment Private</span>};
+			$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="make_experiment_private({eid: '$eid'});">Make Private</span>};
 		}
 	}	
 	

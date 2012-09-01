@@ -702,7 +702,7 @@ sub get_dataset_info
     $link = "http://".$link if ($link && $link !~ /http/);
     $source_name = "<a href =\"".$link."\" target=_new\>".$source_name."</a>" if $ds->data_source->link;
     $html .= qq{<tr><td>Name: <td>$dataset}."\n";
-    $html .= qq{<TR><TD>Data Source: <TD>$source_name (id}.$ds->data_source->id.qq{)}."\n";
+    $html .= qq{<TR><TD><span class=link onclick="window.open('Sources.pl')">Data Source:</span> <TD>$source_name (id}.$ds->data_source->id.qq{)}."\n";
     $html .= qq{<tr><td>Version: <td>}.$ds->version."\n";
     $html .= qq{<tr><td>Organism:<td class="link"><a href="OrganismView.pl?oid=}.$ds->organism->id.qq{" target=_new>}.$ds->organism->name."</a>\n";
     $html .= qq{<tr><td>Date deposited: <td>}.$ds->date."\n";

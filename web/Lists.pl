@@ -50,7 +50,6 @@ $USER = undef;
 
 %FUNCTION = (
 	gen_html           => \&gen_html,
-	get_list_info      => \&get_list_info,
 	create_list        => \&create_list,
 	delete_list        => \&delete_list,
 	get_lists_for_user => \&get_lists_for_user,
@@ -95,6 +94,8 @@ sub create_list {
 		user_group_id => $ug->id,
 		restricted => 1
 	  } );
+	  
+	$coge->resultset('Log')->create( { user_id => $USER->id, description => 'create list ' . $list->id } );
 
 	return 1;
 }
@@ -108,15 +109,12 @@ sub delete_list {
 	my $ug = $USER->owner_group; 
 	
 	# Delete the list and associated connectors
-	#FIXME mdb 8/9/12, add some error checking/logging here
+	#FIXME add some error checking/logging here
 	my $list = $coge->resultset('List')->find($lid);
-	
 	return 0 if ($list->locked);
-	
 	$list->delete;
-	foreach my $lc ($list->list_connectors) {
-		$lc->delete;
-	}
+	
+	$coge->resultset('Log')->create( { user_id => $USER->id, description => 'delete list ' . $list->id } );
 
 	return 1;
 }
