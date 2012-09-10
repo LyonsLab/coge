@@ -97,10 +97,7 @@ __PACKAGE__->set_primary_key("user_id");
 __PACKAGE__->has_many( 'sessions'  => "CoGeX::Result::UserSession", 'user_id' );
 __PACKAGE__->has_many( 'works'     => "CoGeX::Result::Work",        'user_id' );
 __PACKAGE__->has_many( 'workflows' => "CoGeX::Result::Workflow",    'user_id' );
-__PACKAGE__->has_many(
-	'user_group_connectors' => "CoGeX::Result::UserGroupConnector",
-	'user_id'
-);
+__PACKAGE__->has_many( 'user_group_connectors' => "CoGeX::Result::UserGroupConnector", 'user_id' );
 
 #__PACKAGE__->has_many('lists'=>"CoGeX::Result::List",'user_id');
 
@@ -217,7 +214,7 @@ sub groups {
 
 =head2 owner_group
 
- Usage     : return user's locked owner group
+ Usage     : return user's owner group
  Purpose   : 
  Returns   : user_group object
  Argument  : 
