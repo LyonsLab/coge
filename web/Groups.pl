@@ -16,15 +16,16 @@ use File::Path;
 
 no warnings 'redefine';
 
-use vars
-  qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb %FUNCTION $COOKIE_NAME $FORM $URL $COGEDIR $TEMPDIR $TEMPURL);
+use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME 
+			$TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb %FUNCTION $COOKIE_NAME 
+			$FORM $URL $COGEDIR $TEMPDIR $TEMPURL);
 $P = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
 
 $DATE = sprintf(
 	"%04d-%02d-%02d %02d:%02d:%02d",
-	sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }
-	  ->(localtime)
+	sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }->(localtime)
 );
+$PAGE_NAME = 'Groups.pl';
 
 $FORM = new CGI;
 
@@ -33,8 +34,7 @@ $DBHOST  = $P->{DBHOST};
 $DBPORT  = $P->{DBPORT};
 $DBUSER  = $P->{DBUSER};
 $DBPASS  = $P->{DBPASS};
-$connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
+$connstr = "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
 $coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
 
 $COOKIE_NAME = $P->{COOKIE_NAME};
@@ -46,18 +46,8 @@ $TEMPURL = $P->{TEMPURL} . "Groups/";
 
 my ($cas_ticket) = $FORM->param('ticket');
 $USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(
-	cookie_name => $COOKIE_NAME,
-	ticket      => $cas_ticket,
-	coge        => $coge,
-	this_url    => $FORM->url()
-  )
-  if ($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(
-	cookie_name => $COOKIE_NAME,
-	coge        => $coge
-  )
-  unless $USER;
+($USER) = CoGe::Accessory::Web->login_cas( cookie_name => $COOKIE_NAME, ticket => $cas_ticket, coge => $coge, this_url => $FORM->url() ) if ($cas_ticket);
+($USER) = CoGe::Accessory::LogUser->get_user( cookie_name => $COOKIE_NAME, coge => $coge ) unless $USER;
 
 %FUNCTION = (
 	gen_html                 => \&gen_html,
@@ -120,7 +110,7 @@ sub gen_body {
 	my $roles = get_roles();
 	$template->param( ROLE_LOOP => $roles );
 	$template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
-	my $ugid = $FORM->param('ugid') if defined $FORM->param('ugid');
+	my $ugid = $FORM->param('ugid');
 	my $box_open = $ugid ? 'true' : 'false';
 	$template->param( EDIT_BOX_OPEN    => $box_open );
 	$template->param( ADDITIONAL_STUFF => qq{edit_group({ugid: $ugid});} ) if $ugid;
@@ -185,7 +175,7 @@ sub create_group {
 	  } );
 	my $ugc = $coge->resultset('UserGroupConnector')->create( { user_id => $USER->id, user_group_id => $group->id } );
 	
-	$coge->resultset('Log')->create( { user_id => $USER->id, description => 'create user group ' . $group->id } );
+	$coge->resultset('Log')->create( { user_id => $USER->id, page => $PAGE_NAME, description => 'create user group id' . $group->id } );
 	
 	return 1;
 }
@@ -193,14 +183,24 @@ sub create_group {
 sub delete_group {
 	my %opts  = @_;
 	my $ugid  = $opts{ugid};
+
 	my $group = $coge->resultset('UserGroup')->find($ugid);
 	return unless $group;
 	if ( $group->locked && !$USER->is_admin ) {
 		return "This is a locked group.  Admin permission is needed to delete.";
 	}
+	
+	# Reassign this group's lists to user's owner group
+	my $owner_group = $USER->owner_group;
+	foreach my $list ($group->lists) {
+		$list->user_group_id( $owner_group->id );
+		$list->update;
+	}
+	
+	# OK, now delete the group
 	$group->delete();
 
-	$coge->resultset('Log')->create( { user_id => $USER->id, description => 'delete user group ' . $group->id } );
+	$coge->resultset('Log')->create( { user_id => $USER->id, page => $PAGE_NAME, description => 'delete user group id' . $group->id } );
 }
 
 sub get_groups_for_user
@@ -218,7 +218,7 @@ sub get_groups_for_user
 	my @groups;
 	foreach my $group (@group_list) {
 		my $id = $group->id;
-		my $is_creator = ($USER->id == $group->creator_user_id);
+		my $is_editable = ($USER->id == $group->creator_user_id and not $group->locked);
 				
 		my %row;
 		$row{NAME} = qq{<span class=link onclick='window.open("GroupView.pl?ugid=$id")'>} . $group->name . "</span>" . " (id$id)" ;
@@ -268,9 +268,13 @@ sub get_groups_for_user
 #	$row{GENOMES}=join (",<br>", @genome);
 
 		$row{BUTTONS} = 1;
-		if ($is_creator) {
-			$row{EDIT_BUTTON} = "<span class='link ui-icon ui-icon-gear' onclick='window.open(\"GroupView.pl?ugid=$id\")'></span>";
-			$row{DELETE_BUTTON} = "<span class='link ui-icon ui-icon-trash' onclick=\"delete_group({ugid: '$id'});\"></span>";
+		if ($is_editable) {
+			$row{EDIT_BUTTON}   = "<span class='link ui-icon ui-icon-gear' onclick='window.open(\"GroupView.pl?ugid=$id\")'></span>";
+			$row{DELETE_BUTTON} = "<span class='link ui-icon ui-icon-trash' onclick=\"dialog_delete_group({ugid: " . $id . "});\"></span>";
+		}
+		else {
+			$row{EDIT_BUTTON}   = "<span class='ui-icon ui-icon-locked'></span>";
+			$row{DELETE_BUTTON} = "<span class='ui-icon ui-icon-locked'></span>";
 		}
 
 		push @groups, \%row;

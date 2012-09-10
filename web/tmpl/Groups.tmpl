@@ -66,21 +66,26 @@ function create_group (opts){
 	else { alert ('Error!  Must have a name!');}
 }
 
-function delete_group (opts){
-   ugid = opts.ugid;
-   if (ugid) {
-    $.ajax({
+function delete_group () {
+	ugid = $('#group_delete_ugid').val();
+	$.ajax({
         data: {
      	   jquery_ajax: 1,
-	   fname: 'delete_group',
-	   ugid: ugid,
-           },
+			fname: 'delete_group',
+			ugid: ugid,
+        },
         success : function() {
-	      $("#group_edit_box").dialog('close');	
-	      run_get_groups_for_user({divid: 'groups'});
-	    },
-      });
-   }
+			run_get_groups_for_user({divid: 'groups'});
+		}
+	});
+	$("#group_delete_box").dialog('close');
+}
+
+function dialog_delete_group (opts) {
+	$("#group_delete_box").dialog("option", "title", "Delete Group?");
+	$("#group_delete_box").dialog("option", "width", "450");
+	$("#group_delete_box").dialog('open');
+	$('#group_delete_ugid').val(opts.ugid);
 }
 
 //function show_gadd(val) {
@@ -168,6 +173,15 @@ function delete_group (opts){
    </td>
   </tr>
  </table>
+</div>
+
+<div id="group_delete_box" class="dialog_box" style='display:none;' align='center'>
+Are you sure you want to permanently delete this group?<p>
+ <div>
+  <input type='hidden' id='group_delete_ugid'>
+  <span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="delete_group();">Yes</span>
+  <span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="$('#group_delete_box').dialog('close');">No</span>
+ </div>
 </div>
 
 <div id="admin_stuff"></div>
