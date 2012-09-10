@@ -330,7 +330,7 @@ Filter Table Rows:
  <tbody align=left valign="top" id="feat_table_body">
   <TMPL_LOOP NAME=INFO>
     <TR>
-      <TD><input type=checkbox id='<TMPL_VAR NAME=FEATID>'><input type=hidden id='fid_<TMPL_VAR NAME=COUNT>' value='<TMPL_VAR NAME=FEATID>'></TD>
+      <TD><input type=checkbox id='<TMPL_VAR NAME=FEATID>'><input type='hidden' id='fid_<TMPL_VAR NAME=COUNT>' value='<TMPL_VAR NAME=FEATID>'></TD>
       <TD><TMPL_VAR NAME=NAME></TD>
       <TD><TMPL_VAR NAME=TYPE></TD>
       <TD><TMPL_VAR NAME=CHR></TD>
@@ -377,7 +377,7 @@ Filter Table Rows:
   <option value="send_to_featlist">FeatList</option>
   <option value="send_to_CodeOn">Coding Evolution</option>
   <option value="send_to_SynFind">SynFind</option>
-  <option value="send_to_list">List</option>
+  <option value="send_to_list">Create List</option>
  </select>
  <span class='ui-button ui-corner-all ui-button-icon-right' onclick="feature_checkboxes();"><span class="ui-icon ui-icon-extlink"></span>Go</span><span id="retrieve_message" class="alert"></span>  
 </div>

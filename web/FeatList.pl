@@ -563,7 +563,7 @@ sub send_to_list    #send to list
 		$coge->resultset('ListConnector')->create( { parent_id => $list->id, child_id => $fid, child_type => 4 } ); #FIXME hardcoded type!
 	}
 	
-	$coge->resultset('Log')->create( { user_id => $USER->id, description => 'create list from features' . $list->id } );	
+	$coge->resultset('Log')->create( { user_id => $USER->id, page => $PAGE_NAME, description => 'create list from features id' . $list->id } );	
 	
 	my $url = "ListView.pl?lid=" .  $list->id;
 	return $url;
