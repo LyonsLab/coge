@@ -12,6 +12,7 @@ use Sort::Versions;
 #use URI::Escape;
 use Data::Dumper;
 use File::Path;
+use File::stat;
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use CoGeX;
@@ -23,8 +24,7 @@ no warnings 'redefine';
 
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME
   $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb %FUNCTION
-  $COOKIE_NAME $FORM $URL $COGEDIR $TEMPDIR $TEMPURL
-  );
+  $COOKIE_NAME $FORM $URL $COGEDIR $TEMPDIR $TEMPURL);
 $P = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
 
 $DATE = sprintf(
@@ -78,6 +78,10 @@ $USER = undef;
 	delete_list                => \&delete_list,
 );
 
+# debug for fileupload:
+#print STDERR $ENV{'REQUEST_METHOD'} . "\n" . $FORM->url . "\n" . Dumper($FORM->Vars) . "\n";	# debug
+#print "data begin\n" . $FORM->param('POSTDATA') . "\ndata end\n" if ($FORM->param('POSTDATA'));
+
 dispatch();
 
 sub dispatch {
@@ -100,9 +104,7 @@ sub dispatch {
 }
 
 sub gen_html {
-	my $html;
-	my $template =
-	  HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
+	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
 	$template->param( HELP       => '/wiki/index.php?title=ListView' );
 	my $name = $USER->user_name;
 	$name = $USER->first_name if $USER->first_name;
@@ -115,15 +117,14 @@ sub gen_html {
 	$template->param( DATE       => $DATE );
 	$template->param( BODY       => gen_body() );
 	$template->param( ADJUST_BOX => 1 );
+	#$template->param( BOX_NAME	 => $name . " list" );
 
-	#	$template->param( BOX_NAME	 => $name . " list" );
-	$html .= $template->output;
+	return $template->output;
 }
 
 sub gen_body {
 	my $lid = $FORM->param('lid');
 	return "Must have valid list id\n" unless ($lid);
-	return "Access denied\n" unless ($USER->has_access(list=>$lid));
 
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'ListView.tmpl' );
 	$template->param( PAGE_NAME        => $FORM->url );
@@ -146,8 +147,8 @@ sub gen_body {
 sub get_list_info {
 	my %opts = @_;
 	my $lid  = $opts{lid};
-	return "Must have valid list id\n" unless ($lid);
-	return "Access denied\n" unless ($USER->has_access(list=>$lid));
+	return unless ($lid);
+	return unless ($USER->has_access(list=>$lid));
 	
 	my ($list) = $coge->resultset('List')->find($lid);
 	return "List id$lid does not exist.<br>" .
@@ -155,11 +156,11 @@ sub get_list_info {
 
 	my $html = "List Info:<br>" . $list->annotation_pretty_print_html();
 
-	if ($USER->is_admin || $USER->is_owner_editor(list => $lid)) {
+	if (not $list->locked && ($USER->is_admin || $USER->is_owner_editor(list => $lid))) {
 		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="edit_list_info({lid: '$lid'});">Edit List Info</span>};
 	}
 	
-	if ($USER->is_admin || $USER->is_owner(list => $lid)) {
+	if (not $list->locked && ($USER->is_admin || $USER->is_owner(list => $lid))) {
 		if ( $list->restricted ) {
 			$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="make_list_public({lid: '$lid'});">Make List Public</span>};
 		}
@@ -231,8 +232,8 @@ sub update_list_info {
 sub make_list_public {
 	my %opts  = @_;
 	my $lid = $opts{lid};
-	return "No LID specified" unless $lid;
-	#return "Permission denied." unless $USER->is_admin || $USER->is_owner( dsg => $dsgid );
+	return unless $lid;
+	#return unless $USER->is_admin || $USER->is_owner( dsg => $dsgid );
 	
 	my $list = $coge->resultset('List')->find($lid);
 	$list->restricted(0);
@@ -244,8 +245,8 @@ sub make_list_public {
 sub make_list_private {
 	my %opts  = @_;
 	my $lid = $opts{lid};
-	return "No LID specified" unless $lid;
-	#return "Permission denied." unless $USER->is_admin || $USER->is_owner( dsg => $dsgid );
+	return unless $lid;
+	#return unless $USER->is_admin || $USER->is_owner( dsg => $dsgid );
 	my $list = $coge->resultset('List')->find($lid);
 	$list->restricted(1);
 	$list->update;
@@ -261,8 +262,8 @@ sub linkify {
 sub get_list_annotations {
 	my %opts = @_;
 	my $lid  = $opts{lid};
-	return "Must have valid list id\n" unless ($lid);
-	return "Access denied\n" unless ($USER->has_access(list=>$lid));
+	return unless ($lid);
+	return unless ($USER->has_access(list=>$lid));
 	
 	my ($list) = $coge->resultset('List')->find($lid);
 	return unless $list;
@@ -285,7 +286,12 @@ sub get_list_annotations {
 			my $anno_type = new CoGe::Accessory::Annotation( Type => "<tr valign='top'><td nowrap='true'><span class=\"title5\">" . $group . "</span>" );
 			$anno_type->Type_delimit(": <td class=\"data5\">");
 			$anno_type->Val_delimit("<br>");
-			my $a_info = ($a->link ? linkify($a->link, $a->info) : $a->info);
+			
+			my $image_link = ($a->image ? 'image.pl?id=' . $a->image->id : '');
+			my $a_info = ($a->image ? "<a href='$image_link' target='_blank'><img height=20 width=20 src='$image_link' style='vertical-align:text-top;'></a>" : '');
+			$a_info .= ' ';
+			$a_info .= ($a->link ? linkify($a->link, $a->info) : $a->info);
+			$a_info .= ' ';
 			$a_info .= ($user_can_edit ? "<span onClick=\"remove_list_annotation({lid: '$lid', laid: '" . $a->id . "'});\" class=\"link ui-icon ui-icon-trash\"></span>" : '');
 			$anno_type->add_Annot($a_info);
 			$anno_obj->add_Annot($anno_type);
@@ -335,10 +341,14 @@ sub add_annotation_to_list {
 	return 0 unless $type;
 	my $annotation = $opts{annotation};
 	my $link = $opts{link};
-#	print STDERR "add_annotation_to_list: $lid $type $annotation $link\n";	
+	my $image_filename = $opts{edit_annotation_image};
+	my $fh = $FORM->upload('edit_annotation_image');
+	#return "Image file is too large (>10MB)" if (-s $fh > 10*1024*1024); # FIXME
 	
-	$link =~ s/^\s+//;
-	$link = 'http://' . $link if (not $link =~ /^(\w+)\:\/\//);
+	if ($link) {
+		$link =~ s/^\s+//;
+		$link = 'http://' . $link if (not $link =~ /^(\w+)\:\/\//);
+	}
 
 	my $group_rs;
 	if ($type_group) {
@@ -347,7 +357,6 @@ sub add_annotation_to_list {
 		# Create type group if it doesn't already exist
 		if (not $group_rs) {
 			$group_rs = $coge->resultset('AnnotationTypeGroup')->create( { name => $type_group } );
-#			print STDERR "created annotation_type_group " . $group_rs->id . "\n";
 		}
 	}
 	
@@ -363,18 +372,26 @@ sub add_annotation_to_list {
 			{ name => $type, 
 			  annotation_type_group_id => ($group_rs ? $group_rs->id : undef)
 			} );
-#		print STDERR "created annotation_type " . $type_rs->id . "\n";
 	}
 	
-#	print STDERR "type_rs.id=" . ($type_rs ? $type_rs->id : 'undef') . "\n";
-	
 	# Create the annotation
-	$coge->resultset('ListAnnotation')->create( 
+	my $la = $coge->resultset('ListAnnotation')->create( 
 		{ list_id => $lid, 
 		  annotation => $annotation, 
 		  link => $link,
 		  annotation_type_id => $type_rs->id
-		} );	
+		} );
+
+	# Create the image
+	if ($fh) {
+		read($fh, my $image, -s $fh);
+		$coge->resultset('Image')->create(
+			{	list_annotation_id => $la->id,
+				filename => $image_filename,
+				image => $image
+			}
+		);
+	}
 	
 	return 1;
 }
@@ -400,11 +417,13 @@ sub get_list_contents {
 	my %opts = @_;
 	my $lid  = $opts{lid};
 	return "Must have valid list id\n" unless ($lid);
+	
+	my $list = $coge->resultset('List')->find($lid);
+	return "List id$lid does not exist.<br>" .
+			"Click <a href='Lists.pl'>here</a> to view all lists." unless $list;
+			
 	return "Access denied\n" unless ($USER->has_access(list=>$lid));
-	
-	my ($list) = $coge->resultset('List')->find($lid);
-	return unless $list;
-	
+		
 	my $user_can_edit = !$list->locked && ($USER->is_admin || $USER->is_owner_editor(list => $lid));
 	
 	my $anno_obj = new CoGe::Accessory::Annotation( Type => 'anno' );

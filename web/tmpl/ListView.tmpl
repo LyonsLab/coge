@@ -1,7 +1,9 @@
 <TMPL_IF NAME=MAIN>
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></SCRIPT>
-<SCRIPT TYPE="text/javascript" SRC="./js/filterlist.js"></SCRIPT>
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/filterlist.js"></SCRIPT>
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.fileupload.js"></SCRIPT>
+
 
 <SCRIPT language="JavaScript">
 $(document).ready(function(){
@@ -13,6 +15,7 @@ $(document).ready(function(){
 	});
 	set_table();
 	$(".dialog_box").dialog({autoOpen: <TMPL_VAR NAME=EDIT_BOX_OPEN>, width: 600});
+	
 	<TMPL_VAR ADDITIONAL_STUFF>
 });
 
@@ -47,8 +50,7 @@ function update_list_info (opts){
 	desc = $('#edit_desc').val();
 	type = $('#edit_type').val();
 	lid = opts.lid;
-	if (name) 
-	{
+	if (name) {
 		$.ajax({
 			data: {
 				jquery_ajax: 1,
@@ -156,7 +158,7 @@ function add_selected_items (opts){
 				},
 				success : 
 					function(data) {
-						if (data != 1) {alert(data);}
+						if (data != 1) { alert(data); }
 						else {
 							run_get_list_contents({divid: 'list_contents', lid: lid}); // FIXME move outside loop
 						}
@@ -239,26 +241,50 @@ function add_annotation_to_list (opts) {
 	annotation = $('#edit_annotation').val();
 	type = $('#edit_annotation_type').val();
 	
-	if (annotation && type)
-	{
+	if (annotation && type) {
 		lid = opts.lid;
 		type_group = $('#edit_annotation_type_group').val();
 		link = 	$('#edit_link').val();
+
+		annotation_image_file = $('#edit_annotation_image')[0].files[0];
+
+		if (annotation_image_file) {		
+			ext = annotation_image_file.name.split('.').pop();
+			if (ext != 'jpg' && ext != 'gif' && ext != 'png') {
+				alert('Error: specified file is not an image');
+				return;		
+			}
 	
-		$.ajax({
-			data: {
-				jquery_ajax: 1,
+			if (annotation_image_file.size > 10*1024*1024) {
+				alert('Error: image file is too large (>10MB)');
+				return;
+			}
+			
+			$("#wait_annotation").animate({opacity:1});
+		}
+		else {
+			annotation_image_file = '';
+		}
+
+		$('#edit_annotation_image').fileupload({
+        	dataType: 'json',
+			done: 
+				function(e, data) {
+					$("#list_annotation_edit_box").dialog('close');
+					run_get_list_annotations({divid: 'list_annotations', lid: lid});					
+				}
+		});
+
+		$('#edit_annotation_image').fileupload('send', {
+			files: annotation_image_file,
+			formData: {
 				fname: 'add_annotation_to_list',
 				lid: lid,
 				type_group: type_group,
 				type: type,
 				annotation: annotation,
 				link: link
-			},
-			success : function(val) {
-				$("#list_annotation_edit_box").dialog('close');
-				run_get_list_annotations({divid: 'list_annotations', lid: lid});
-			},
+			}
 		});
 	}
 	else { alert ('Error: Must have type and annotation specified!');}
@@ -428,7 +454,7 @@ function get_annotation_type_groups () {
 }
 
 function dialog_delete_list (opts) {
-	$("#list_delete_box").dialog("option", "title", "Delete List");
+	$("#list_delete_box").dialog("option", "title", "Delete List?");
 	$("#list_delete_box").dialog("option", "width", "450");
 	$("#list_delete_box").dialog('open');
 }
@@ -467,7 +493,7 @@ function delete_list (opts) {
 <div id="list_annotation_edit_box" class="dialog_box"></div>
 <div id="list_contents_edit_box" class="dialog_box"></div>
 
-<div id="list_delete_box" class="dialog_box" align='center'>
+<div id="list_delete_box" class="dialog_box" style='display:none;' align='center'>
 Are you sure you want to permanently delete this list?<p>
  <div>
   <span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="delete_list({lid: '<TMPL_VAR NAME=LID>'});">Yes</span>
@@ -506,15 +532,30 @@ Are you sure you want to permanently delete this list?<p>
 
 <TMPL_IF NAME=ADD_LIST_ANNOTATION> <!-- FIXME: this is redundant with ExperimentView.tmpl, move into own sub-template? -->
 <SCRIPT>
+/*
+	var annotation_image_file;
+	
 	$("#edit_annotation_type_group").autocomplete({
-	    source: function() {
-	    			get_annotation_type_groups();
-	    		}
+	    source: function() { get_annotation_type_groups(); }
 	});
 	
-	$("#edit_annotation_type").autocomplete({
-	    source: []
-	});	
+	$("#edit_annotation_type").autocomplete( { source: [] } );
+
+	$('#edit_annotation_image').fileupload({
+        dataType: 'json',
+        add: function(e, data) {
+        	annotation_image_file = data.files[0];
+        },
+        
+		progressall: function (e, data) {
+        	var progress = parseInt(data.loaded / data.total * 100, 10);
+        	$('#progress .bar').css(
+            	'width',
+            	progress + '%'
+        	);
+        }
+    });
+*/
 </SCRIPT>
 <table class="small">
  <tr valign='top'>
@@ -533,8 +574,19 @@ Are you sure you want to permanently delete this list?<p>
   <td>Type Group:</td>
   <td><input id="edit_annotation_type_group" size="53"> (optional)</td>
  </tr>
+ <tr>
+  <td valign='top'>Image:</td>
+  <td>
+   <input id="edit_annotation_image" name="edit_annotation_image" type="file" data-url='ListView.pl'>
+   <!--<div id="progress">
+	Progress:
+    <div class="bar" style="width: 0%;height: 18px;background: green;"></div>
+   </div>-->
+  </td>
+ </tr>
 </table>
 <span onClick="add_annotation_to_list({lid: '<TMPL_VAR NAME=LID>'});" class='ui-button ui-corner-all ui-button-go'>Add</span>
+<img id="wait_annotation" src="picts/ajax-loader.gif" style="opacity: 0;" />
 </TMPL_IF>
 
 

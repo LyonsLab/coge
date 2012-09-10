@@ -25,6 +25,7 @@ $DATE = sprintf(
 	"%04d-%02d-%02d %02d:%02d:%02d",
 	sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }->(localtime)
 );
+$PAGE_NAME = 'Lists.pl';
 
 $FORM = new CGI;
 
@@ -95,7 +96,7 @@ sub create_list {
 		restricted => 1
 	  } );
 	  
-	$coge->resultset('Log')->create( { user_id => $USER->id, description => 'create list ' . $list->id } );
+	$coge->resultset('Log')->create( { user_id => $USER->id, page => $PAGE_NAME, description => 'create list id' . $list->id } );
 
 	return 1;
 }
@@ -114,7 +115,7 @@ sub delete_list {
 	return 0 if ($list->locked);
 	$list->delete;
 	
-	$coge->resultset('Log')->create( { user_id => $USER->id, description => 'delete list ' . $list->id } );
+	$coge->resultset('Log')->create( { user_id => $USER->id, page => $PAGE_NAME, description => 'delete list id' . $list->id } );
 
 	return 1;
 }
@@ -128,7 +129,7 @@ sub get_lists_for_user {
 		  { NAME  => qq{<span class=link onclick='window.open("ListView.pl?lid=} . $list->id . qq{")'>} . $list->name . "</span>",
 			DESC  => $list->description,
 			TYPE  => ( $list->type ? $list->type->name : '' ),
-			ANNO  => join( "<br>", map { $_->type->name . ": " . $_->annotation } sort {$a->type->name cmp $b->type->name || $a->annotation cmp $b->annotation} $list->annotations ),
+			ANNO  => join( "<br>", map { $_->type->name . ": " . $_->annotation . ($_->image ? ' (image)' : '') } sort sortAnno $list->annotations ),
 			DATA  => $list->data_summary(),
 			GROUP => $list->group->info_html,
 			EDIT_BUTTON => $list->locked ?
@@ -136,7 +137,7 @@ sub get_lists_for_user {
 				"<span class='link ui-icon ui-icon-gear' onclick=\"window.open('ListView.pl?lid=" . $list->id . "')\"></span>",
 			DELETE_BUTTON => $list->locked ?
 				"<span class='link ui-icon ui-icon-locked' onclick=\"alert('This list is locked and cannot be deleted.')\"></span>" :
-				"<span class='link ui-icon ui-icon-trash' onclick=\"delete_list({lid: '" . $list->id . "'});\"></span>"
+				"<span class='link ui-icon ui-icon-trash' onclick=\"dialog_delete_list({lid: '" . $list->id . "'});\"></span>"
 		  };
 	}
 
@@ -145,6 +146,10 @@ sub get_lists_for_user {
 	$template->param( LIST_LOOP  => \@lists );
 
 	return $template->output;
+}
+
+sub sortAnno {
+	$a->type->name cmp $b->type->name || $a->annotation cmp $b->annotation
 }
 
 sub get_list_types {
