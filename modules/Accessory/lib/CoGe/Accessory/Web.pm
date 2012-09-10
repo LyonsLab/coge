@@ -235,46 +235,42 @@ sub login_cas {
 	my $coge_user;
 	($coge_user) = $coge->resultset('User')->search( { user_name => $uname } );
 	unless ($coge_user) {
-
 		# Create new user
 		$coge_user = $coge->resultset('User')->create(
-			{
-				user_name   => $uname,
+			{	user_name   => $uname,
 				first_name  => $fname,
 				last_name   => $lname,
 				email       => $email,
 				description => "Validated by iPlant"
 			}
-		);    #do we have a valid user in the database, if not create
+		); #do we have a valid user in the database, if not create
 		$coge_user->insert;
 
 		# Create new user's owner group and owner list -- mdb added 8/22/12
 		my $coge_user_group = $coge->resultset('UserGroup')->create(
-			{
-				name        => $uname,
-				description => 'Owner group',
-				role_id     =>
-				  2, # FIXME hard coded, use config file instead $P->ROLE_OWNER,
-				locked => 1
+			{	creator_user_id => $coge_user->id,
+				name        	=> $uname,
+				description 	=> 'Owner group',
+				role_id     	=> 2, # FIXME hard coded, use config file instead $P->ROLE_OWNER,
+				locked 			=> 1
 			}
 		);
 		$coge->resultset('UserGroupConnector')->create(
-			{
-				user_id       => $coge_user->id,
+			{	user_id       => $coge_user->id,
 				user_group_id => $coge_user_group->id
 			}
 		);
 		$coge->resultset('List')->create(
-			{
-				name         => $uname,
-				description  => 'Owner list',
-				list_type_id =>
-				  3, # FIXME hard coded, use config file instead $P->LIST_OWNER,
+			{	name          => $uname,
+				description   => 'Owner list',
+				list_type_id  => 3, # FIXME hard coded, use config file instead $P->LIST_OWNER,
 				user_group_id => $coge_user_group->id,
 				restricted    => 1,
 				locked        => 1
 			}
 		);
+		
+		$coge->resultset('Log')->create( { user_id => $coge_user->id, page => 'Web.pm', description => 'create user' } );
 	}
 
 	#create a session ID for the user and log
@@ -453,14 +449,11 @@ sub load_settings {
 	}
 	$user_id = $user->id if ( ref($user) =~ /User/i ) && !$user_id;
 	unless ($user_id) {
-		my ($user_obj) =
-		  $coge->resultset('User')->search( { user_name => $user } );
+		my ($user_obj) = $coge->resultset('User')->search( { user_name => $user } );
 		$user_id = $user_obj->id if $user_obj;
 	}
 	return {} unless $user_id;
-	my ($item) =
-	  $coge->resultset('WebPreferences')
-	  ->search( { user_id => $user_id, page => $page } );
+	my ($item) = $coge->resultset('WebPreferences')->search( { user_id => $user_id, page => $page } );
 	return {} unless $item;
 	my $prefs;
 	my $opts = $item->options if $item;
@@ -478,14 +471,11 @@ sub reset_settings {
 	my $coge    = $opts{coge};
 	$user_id = $user->id if ( ref($user) =~ /User/i ) && !$user_id;
 	unless ($user_id) {
-		my ($user_obj) =
-		  $coge->resultset('User')->search( { user_name => $user } );
+		my ($user_obj) = $coge->resultset('User')->search( { user_name => $user } );
 		$user_id = $user_obj->id if $user_obj;
 	}
 	return unless $user_id;
-	my ($item) =
-	  $coge->resultset('WebPreferences')
-	  ->search( { user_id => $user_id, page => $page } );
+	my ($item) = $coge->resultset('WebPreferences')->search( { user_id => $user_id, page => $page } );
 	$item->delete;
 }
 
@@ -498,7 +488,6 @@ sub initialize_basefile {
 	my $tempdir     = $opts{tempdir} || $TEMPDIR;
 	$tempdir .= "/" . $prog if $prog;
 	if ($basename) {
-
 		#	print STDERR "Have basename: $basename\n";
 		($basename) = $basename =~ /([^\/].*$)/;
 		my ( $x, $cleanname ) = check_taint($basename);
@@ -515,7 +504,6 @@ sub initialize_basefile {
 		my $file = new File::Temp(
 			TEMPLATE => $prog . '_XXXXXXXX',
 			DIR      => "$tempdir/",
-
 			#SUFFIX=>'.png',
 			UNLINK => 1
 		);
