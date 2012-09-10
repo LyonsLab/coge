@@ -39,7 +39,7 @@ __PACKAGE__->add_columns(
 	"user_group_id",
 	{ data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
 	"creator_user_id",
-	{ data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },	
+	{ data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
 	"name",
 	{ data_type => "VARCHAR", default_value => "", is_nullable => 0, size => 250 },
 	"description",
@@ -306,13 +306,15 @@ sub annotation_pretty_print_html
 	$anno_type->add_Annot( $self->description . "</td>" );
 	$anno_obj->add_Annot($anno_type);
 
-	$anno_type = new CoGe::Accessory::Annotation( Type => "<tr><td nowrap='true'><span class=\"title5\">" . "Role" . "</span>" );
+	$anno_type = new CoGe::Accessory::Annotation( Type => "<tr><td valign='top' nowrap='true'><span class=\"title5\">" . "Role" . "</span>" );
 	$anno_type->Type_delimit(": <td class=\"data5\">");
-	$anno_type->add_Annot( $self->role->name . ($self->role->description ? ' (' . $self->role->description . ')' : '') . "</td>" );
+	$anno_type->Val_delimit("<br>");
+	$anno_type->add_Annot( $self->role->name . ($self->role->description ? ' (' . $self->role->description . ')' : '') );
+	$anno_type->add_Annot( "<span style='color:red;font-style:italic;'>Note: this group was created automatically and cannot be edited.</span>" ) if ($self->locked);
 	$anno_obj->add_Annot($anno_type);
 
-	$anno_type = new CoGe::Accessory::Annotation( Type => "<tr><td nowrap='true'><span class=\"title5\">" . "Users" . "</span>" );
-	$anno_type->Type_delimit(": <td valign='top' class=\"data5\">");
+	$anno_type = new CoGe::Accessory::Annotation( Type => "<tr><td valign='top' nowrap='true'><span class=\"title5\">" . "Users" . "</span>" );
+	$anno_type->Type_delimit(": <td class=\"data5\">");
 	$anno_type->Val_delimit("<br>");
 	foreach my $user ($self->users) {
 		$anno_type->add_Annot($user->info . ($user->id == $self->creator_user_id ? ' (creator)' : ''));
