@@ -24,6 +24,7 @@ $DATE = sprintf(
 	"%04d-%02d-%02d %02d:%02d:%02d",
 	sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }->(localtime)
 );
+$PAGE_NAME = 'GroupView.pl';
 
 $FORM = new CGI;
 
@@ -142,9 +143,9 @@ sub get_group_info {
 	
 	my ($group) = $coge->resultset('UserGroup')->find($ugid);
 	return "User group id$ugid does not exist.<br>" .
-			"Click <a href='Groups.pl'>here</a> to view a list of all groups." unless ($group);
-	
-	my $user_can_edit = ($USER->is_admin or $USER->id == $group->creator->id);
+			"Click <a href='Groups.pl'>here</a> to view all groups." unless ($group);
+
+	my $user_can_edit = (($USER->is_admin or $USER->id == $group->creator->id) and not $group->locked);
 	
 	my $html = $group->annotation_pretty_print_html(allow_delete => $user_can_edit);
 	if ($user_can_edit) {
@@ -423,9 +424,19 @@ sub delete_group {
 	
 	if ( $group->locked && !$USER->is_admin ) {
 		return "This is a locked group.  Admin permission is needed to modify.";
-	}	
+	}
 	
+	# Reassign this group's lists to user's owner group
+	my $owner_group = $USER->owner_group;
+	foreach my $list ($group->lists) {
+		$list->user_group_id( $owner_group->id );
+		$list->update;
+	}
+	
+	# OK, now delete the group
 	$group->delete();
+	
+	$coge->resultset('Log')->create( { user_id => $USER->id, page => $PAGE_NAME, description => 'delete user group id' . $group->id } );
 	
 	return 1;
 }

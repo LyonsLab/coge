@@ -143,18 +143,16 @@ function add_user(opts) {
 };
 
 function remove_user (opts) {
-	ugid = opts.ugid;
-	items=[];
 	$('#ugid > option:selected').each(function(){
 		var uid = $(this).attr("value");
 		var item = $(this);
 		var html = '<option value='+uid+ ' >'+$(this).text()+'</option>';
 		$.ajax({
 			data: {
-			jquery_ajax: 1,
-			fname: 'remove_user_from_group',
-			ugid: ugid,
-			uid: uid
+				jquery_ajax: 1,
+				fname: 'remove_user_from_group',
+				ugid: ugid,
+				uid: uid
 			},
 			success : function(data) {
 				if (data != 1) { alert(data); }
@@ -320,8 +318,8 @@ function delete_group (opts) {
 <div id="group_users_edit_box" class="dialog_box"></div>
 <div id="group_lists_edit_box" class="dialog_box"></div>
 
-<div id="group_delete_box" class="dialog_box" align='center'>
-Are you sure you want to permanently delete this group AND its associated lists?<p>
+<div id="group_delete_box" class="dialog_box" style='display:none;' align='center'>
+Are you sure you want to permanently delete this group?<p>
  <div>
   <span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="delete_group({ugid: '<TMPL_VAR NAME=UGID>'});">Yes</span>
   <span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="$('#group_delete_box').dialog('close');">No</span>
