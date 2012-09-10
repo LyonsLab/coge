@@ -47,16 +47,11 @@ Blob containing image data.
 __PACKAGE__->table("image");
 __PACKAGE__->add_columns(
   "image_id",
-  { data_type => "INT", default_value => undef, is_nullable => 0, size => 10 },
-  "name",
+  { data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
+   "list_annotation_id",
+  { data_type => "INT", default_value => undef, is_nullable => 0, size => 11 }, 
+  "filename",
   { data_type => "VARCHAR", default_value => "", is_nullable => 0, size =>256 },
-  "description",
-  {
-    data_type => "VARCHAR",
-    default_value => undef,
-    is_nullable => 1,
-    size => 2048,
-  },
   "image",
   {
     data_type => "LONGBLOB",
@@ -66,6 +61,7 @@ __PACKAGE__->add_columns(
   },
 );
 __PACKAGE__->set_primary_key("image_id");
+__PACKAGE__->belongs_to( list_annotation => 'CoGeX::Result::ListAnnotation', 'list_annotation_id');
 
 1;
 

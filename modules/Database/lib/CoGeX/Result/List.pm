@@ -391,10 +391,13 @@ sub annotation_pretty_print_html
 	}
 	$anno_obj->add_Annot($anno_type);
   
-	$anno_type = new CoGe::Accessory::Annotation( Type => "<tr><td nowrap='true'><span class=\"title5\">" . "User Group" . "</span>" );
+	$anno_type = new CoGe::Accessory::Annotation( Type => "<tr><td valign='top' nowrap='true'><span class=\"title5\">" . "User Group" . "</span>" );
 	$anno_type->Type_delimit(": <td class=\"data5\">");
+	$anno_type->Val_delimit("<br>");
 	my $group = $self->group->info_html;
-	$anno_type->add_Annot( $group . "</td>" );
+	$anno_type->add_Annot( $group );
+	$anno_type->add_Annot( "<span style='color:red;font-style:italic;'>Note: this list was created automatically and cannot be edited.</span>" ) if ($self->locked);
+	$anno_type->add_Annot( "</td>" );
 	$anno_obj->add_Annot($anno_type);
 
 	$anno_type = new CoGe::Accessory::Annotation( Type => "<tr><td nowrap='true'><span class=\"title5\">" . "Restricted" . "</span>" );
@@ -402,15 +405,6 @@ sub annotation_pretty_print_html
 	my $restricted = $self->restricted ? "Yes" : "No";
 	$anno_type->add_Annot( $restricted . "</td>" );
 	$anno_obj->add_Annot($anno_type);
-	
-	if ( $self->locked )
-	{
-		$anno_type = new CoGe::Accessory::Annotation( Type => "<tr><td nowrap='true'><span class=\"title5\">" . "Locked" . "</span>" );
-		$anno_type->Type_delimit(": <td class=\"data5\">");
-		$anno_type->Val_delimit("<br>");
-		$anno_type->add_Annot("Yes</td>");
-		$anno_obj->add_Annot($anno_type);
-	}
 	
 #	if ( my @cols = $self->lists )
 #	{

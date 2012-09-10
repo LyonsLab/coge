@@ -64,6 +64,7 @@ __PACKAGE__->set_primary_key("list_annotation_id");
 
 __PACKAGE__->belongs_to( annotation_type => 'CoGeX::Result::AnnotationType', 'annotation_type_id');
 __PACKAGE__->belongs_to( list => 'CoGeX::Result::List', 'list_id');
+__PACKAGE__->has_one('image'=>'CoGeX::Result::Image', 'list_annotation_id');
 
 
 
