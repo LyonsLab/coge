@@ -333,6 +333,29 @@ sub annotation_pretty_print_html
   return "<table cellpadding=0 class='ui-widget-content ui-corner-all small'>".$anno_obj->to_String."</table>";
 }
 
+################################################ subroutine header begin ##
+
+=head2 owner_list
+
+ Usage     : return group's owner list
+ Purpose   : 
+ Returns   : list object
+ Argument  : 
+ Throws    : None
+ Comments  : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub owner_list {
+	my $self = shift;
+	foreach my $list ( $self->lists ) {
+		return $list if ($list->locked && $list->list_type_id == 3); # FIXME list type hardcoded
+	}
+	return;
+}
+
 =head1 BUGS
 
 

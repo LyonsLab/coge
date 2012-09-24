@@ -236,6 +236,7 @@ create table log
     user_id int(11) NOT NULL,
     page varchar(255) NOT NULL,
     description varchar(255) DEFAULT NULL,
+    link varchar(255) DEFAULT NULL,
     INDEX (user_id)
 );
 SQL
@@ -321,6 +322,26 @@ sql('alter table workflow change workflow_id workflow_id INT(11) NOT NULL AUTO_I
 sql('alter table workflow change name name VARCHAR(255) NOT NULL'); # change from VARCHAR(256) to VARCHAR(255)
 sql('alter table workflow change user_id user_id INT(11) NOT NULL'); # change from INT(10) to INT(11)
 sql('alter table workflow change link link TEXT'); # change from VARCHAR(1024) to TEXT
+
+#-------------------------------------------------------------------------------
+# Assign orphaned genomes to admin owner list
+#-------------------------------------------------------------------------------
+my $admin_group = $coge->resultset('UserGroup')->search({name => 'admin'});
+die unless ($admin_group);
+
+my $admin_owner_list = $admin_group->owner_list;
+die unless ($admin_owner_list);
+
+foreach my $genome ($coge->resultset('Genome')->all) {
+	unless ($genome->list_connectors) {
+		my $conn = $coge->resultset('ListConnector')->create( 
+		  { parent_id => $admin_owner_list->id,
+			child_id => $genome->id,
+			child_type => 2, # genome type
+		  } );
+		die unless $conn;	
+	}
+}
 
 #-------------------------------------------------------------------------------
 # All done!

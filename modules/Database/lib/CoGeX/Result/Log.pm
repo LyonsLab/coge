@@ -29,6 +29,8 @@ __PACKAGE__->add_columns(
 	{ data_type => "VARCHAR", default_value => undef, is_nullable => 0, size => 255 },
 	"description",
 	{ data_type => "VARCHAR", default_value => undef, is_nullable => 1, size => 255 },
+	"link",
+	{ data_type => "VARCHAR", default_value => undef, is_nullable => 1, size => 255 },
 );
 __PACKAGE__->belongs_to('user' => "CoGeX::Result::User", 'user_id');
 

@@ -61,37 +61,37 @@ Has many CCoGeX::Result::DatasetConnector> via C<dataset_id>
 __PACKAGE__->table("dataset");
 __PACKAGE__->resultset_class("CoGeX::ResultSet::Dataset");
 __PACKAGE__->add_columns(
-													"dataset_id",
-													{ data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
-													"data_source_id",
-													{ data_type => "INT", default_value => 0, is_nullable => 0, size => 11 },
-													"name",
-													{ data_type => "VARCHAR", default_value => "", is_nullable => 0, size => 100 },
-													"description",
-													{
-														data_type     => "VARCHAR",
-														default_value => undef,
-														is_nullable   => 1,
-														size          => 255,
-													},
-													"version",
-													{
-														data_type     => "VARCHAR",
-														default_value => undef,
-														is_nullable   => 1,
-														size          => 50,
-													},
-													"link",
-													{
-														data_type     => "TEXT",
-														default_value => undef,
-														is_nullable   => 1,
-														size          => 65535,
-													},
-													"date",
-													{ data_type => "DATETIME", default_value => "", is_nullable => 0, size => 19 },
-													"restricted",
-													{ data_type => "int", default_value => "0", is_nullable => 0, size => 1 },
+	"dataset_id",
+	{ data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
+	"data_source_id",
+	{ data_type => "INT", default_value => 0, is_nullable => 0, size => 11 },
+	"name",
+	{ data_type => "VARCHAR", default_value => "", is_nullable => 0, size => 100 },
+	"description",
+	{
+		data_type     => "VARCHAR",
+		default_value => undef,
+		is_nullable   => 1,
+		size          => 255,
+	},
+	"version",
+	{
+		data_type     => "VARCHAR",
+		default_value => undef,
+		is_nullable   => 1,
+		size          => 50,
+	},
+	"link",
+	{
+		data_type     => "TEXT",
+		default_value => undef,
+		is_nullable   => 1,
+		size          => 65535,
+	},
+	"date",
+	{ data_type => "DATETIME", default_value => "", is_nullable => 0, size => 19 },
+	"restricted",
+	{ data_type => "int", default_value => "0", is_nullable => 0, size => 1 },
 );
 
 __PACKAGE__->set_primary_key("dataset_id");

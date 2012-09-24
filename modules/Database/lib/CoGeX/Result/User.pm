@@ -235,6 +235,29 @@ sub owner_group {
 
 ################################################ subroutine header begin ##
 
+=head2 owner_list
+
+ Usage     : return user's owner list
+ Purpose   : 
+ Returns   : list object
+ Argument  : 
+ Throws    : None
+ Comments  : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub owner_list {
+	my $self = shift;
+	foreach my $list ( $self->lists ) {
+		return $list if ($list->locked && $list->list_type_id == 3); # FIXME list type hardcoded
+	}
+	return;
+}
+
+################################################ subroutine header begin ##
+
 =head2 is_admin
 
  Usage     : $self->is_admin
@@ -594,11 +617,16 @@ sub is_role {
 	my $self = shift;
 	my %opts = @_;
 	my $role = $opts{role};
+	my $group = $opts{group};
 	my $dsg  = $opts{dsg}; #FIXME rename to 'genome'
 	my $ds   = $opts{ds};
 	my $list = $opts{list};
 	my $experiment = $opts{experiment};
-	return 0 unless $dsg || $ds || $list || $experiment;
+	return 0 unless $dsg || $ds || $list || $experiment || $group;
+
+	if ($group) {
+		return $group->role->name =~ /$role/i;
+	}
 
 	if ($dsg) {
 		my $dsgid = $dsg =~ /^\d+$/ ? $dsg : $dsg->id;
