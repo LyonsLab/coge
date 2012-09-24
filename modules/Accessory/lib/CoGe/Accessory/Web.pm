@@ -332,6 +332,7 @@ sub log_history {
 	my $description 	= $opts{description};
 	my $link			= $opts{link};
 	
+	$user_id = 0 unless (defined $user_id);
 	$db->resultset('Log')->create( { user_id => $user_id, page => $page, description => $description, link => $link } );
 }
 
