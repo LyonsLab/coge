@@ -894,6 +894,7 @@ sub go_synfind
     my $synmap_link = "SynMap.pl?autogo=1;b=$synmap_algo_num;dsgid1=$source_dsgid;dsgid2=";
     my @res;
     my %open_all_synmap;
+    my @homologs;
     foreach my $item ([$fid, "query"], @$matches)
       {
 	my ($tfid, $match_type, $synteny_score) = @$item;
@@ -914,10 +915,12 @@ sub go_synfind
 	  {
 	    $match_type = "syntelog";
 	    ($name) = $feat->names;
+	    push @homologs, $feat;
 	  }
 	elsif ($match_type eq "query")
 	  {
 	    ($name) = $feat->names;
+	    push @homologs, $feat;
 	  }
 	else
 	  {
@@ -949,6 +952,11 @@ sub go_synfind
     $html .= "<a href='$tiny_synfind_link' class='ui-button ui-corner-all' target=_new_synfind>Regenerate this analysis: $tiny_synfind_link</a>";
     my $open_all_synmap = join ("\n", keys %open_all_synmap);
     $html .= qq{<a onclick='$open_all_synmap' class='ui-button ui-corner-all'>Generate all dotplots</a><br><br>};
+    my $feat_list_link = qq{FeatList.pl?fid=}.join (",", map {$_->id} @homologs);
+    $html .= qq{<a onclick='window.open("$feat_list_link")' class='ui-button ui-corner-all'>Generate Feature List</a>};
+    my $fasta_link = qq{FastaView.pl?fid=}.join (",", map {$_->id} @homologs);
+    $html .= qq{<a onclick='window.open("$fasta_link")' class='ui-button ui-corner-all'>Generate Fasta Sequences</a><br><br>};
+
     my $master_list_link = $synfind_link .";get_master=1";
 #    $html .= "<a onclick=window.open('$master_list_link') class='ui-button ui-corner-all' target=_new_synfind>Generate master gene set table</a>";
     $html .= "<span onclick=get_master('$master_list_link') class='link ui-button ui-corner-all' target=_new_synfind>Generate master gene set table</span>";
