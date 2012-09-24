@@ -158,7 +158,7 @@ $DATE = sprintf(
 );
 $FORM = new CGI;
 
-$PAGE_NAME = "ExperimentList.pl";
+$PAGE_NAME = "SynMap.pl";
 
 my %ajax = CoGe::Accessory::Web::ajax_func();
 
