@@ -30,9 +30,9 @@ BEGIN {
 	@EXPORT = qw ()
 	  ; #qw (login write_log read_log check_taint check_filename_taint save_settings load_settings reset_settings initialize_basefile);
 
-	#    $cogex = CoGeX->dbconnect();
-	#    $cogex->storage->debugobj(new DBIxProfiler());
-	#    $cogex->storage->debug(1);
+#    $cogex = CoGeX->dbconnect();
+#    $cogex->storage->debugobj(new DBIxProfiler());
+#    $cogex->storage->debug(1);
 	__PACKAGE__->mk_accessors qw(restricted_orgs basefilename basefile logfile sqlitefile);
 }
 
@@ -210,15 +210,10 @@ sub login_cas {
 	#  print STDERR Dumper \%opts;
 	my $ua = new LWP::UserAgent;
 
-	my $request =
-'<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"><SOAP-ENV:Header/><SOAP-ENV:Body><samlp:Request xmlns:samlp="urn:oasis:names:tc:SAML:1.0:protocol"  MajorVersion="1" MinorVersion="1" RequestID="_192.168.167.84.1024506224022"  IssueInstant="2010-05-13T16:43:48.099Z"><samlp:AssertionArtifact>'
-	  . $ticket
-	  . '</samlp:AssertionArtifact></samlp:Request></SOAP-ENV:Body></SOAP-ENV:Envelope>';
+	my $request = '<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"><SOAP-ENV:Header/><SOAP-ENV:Body><samlp:Request xmlns:samlp="urn:oasis:names:tc:SAML:1.0:protocol"  MajorVersion="1" MinorVersion="1" RequestID="_192.168.167.84.1024506224022"  IssueInstant="2010-05-13T16:43:48.099Z"><samlp:AssertionArtifact>'
+	  . $ticket . '</samlp:AssertionArtifact></samlp:Request></SOAP-ENV:Body></SOAP-ENV:Envelope>';
 
-	my $request_ua =
-	  HTTP::Request->new(
-		POST => 'https://auth.iplantcollaborative.org/cas/samlValidate?TARGET='
-		  . $this_url );
+	my $request_ua = HTTP::Request->new( POST => 'https://auth.iplantcollaborative.org/cas/samlValidate?TARGET=' . $this_url );
 	$request_ua->content($request);
 	$request_ua->content_type("text/xml; charset=utf-8");
 	my $response = $ua->request($request_ua);
@@ -311,7 +306,7 @@ sub parse_saml_response {
 	}
 }
 
-sub login {
+sub login { # FIXME mdb 9/21/12 - what is this?
 	my %opts  = @_;
 	my $coge  = $opts{coge};
 	my $uname = $opts{uname};
@@ -329,18 +324,36 @@ sub ajax_func {
 	);
 }
 
+sub log_history {
+	my %opts = @_;
+	my $db				= $opts{db};
+	my $user_id 		= $opts{user_id};
+	my $page 			= $opts{page};
+	my $description 	= $opts{description};
+	my $link			= $opts{link};
+	
+	$db->resultset('Log')->create( { user_id => $user_id, page => $page, description => $description, link => $link } );
+}
+
 sub get_tiny_link {
 	my %opts = @_;
-	my $url  = $opts{url};
+	my $url 			= $opts{url};
+	my $db				= $opts{db};
+	my $user_id 		= $opts{user_id};
+	my $page 			= $opts{page};
+	my $disable_logging	= $opts{disable_logging}; # flag
+
 	$url =~ s/:::/__/g;
-	my $html;
-	my $tiny =
-	  LWP::Simple::get(
-"http://genomevolution.org/r/yourls-api.php?signature=d57f67d3d9&action=shorturl&format=simple&url=$url"
-	  );
+	my $tiny = LWP::Simple::get("http://genomevolution.org/r/yourls-api.php?signature=d57f67d3d9&action=shorturl&format=simple&url=$url");
 	unless ($tiny) {
 		return "Unable to produce tiny url from server";
 	}
+
+	# Log the page - NOTE: should move this into each page hit in the future
+	if ($db and not $disable_logging) {
+		log_history( db => $db, user_id => $user_id, page => $page, description => 'page access', link => $tiny );
+	}
+
 	return $tiny;
 }
 
@@ -418,21 +431,17 @@ sub save_settings {
 	$user_id = $user->id if ( ref($user) =~ /User/i ) && !$user_id;
 
 	unless ($user_id) {
-		my ($user_obj) =
-		  $coge->resultset('User')->search( { user_name => $user } );
+		my ($user_obj) = $coge->resultset('User')->search( { user_name => $user } );
 		$user_id = $user_obj->id if $user_obj;
 	}
 	return unless $user_id;
 
 	#delete previous settings
-	foreach my $item ( $coge->resultset('WebPreferences')
-		->search( { user_id => $user_id, page => $page } ) )
+	foreach my $item ( $coge->resultset('WebPreferences')->search( { user_id => $user_id, page => $page } ) )
 	{
 		$item->delete;
 	}
-	my $item =
-	  $coge->resultset('WebPreferences')
-	  ->new( { user_id => $user_id, page => $page, options => $opts } );
+	my $item = $coge->resultset('WebPreferences')->new( { user_id => $user_id, page => $page, options => $opts } );
 	$item->insert;
 	return $item;
 }
@@ -488,7 +497,7 @@ sub initialize_basefile {
 	my $tempdir     = $opts{tempdir} || $TEMPDIR;
 	$tempdir .= "/" . $prog if $prog;
 	if ($basename) {
-		#	print STDERR "Have basename: $basename\n";
+		#print STDERR "Have basename: $basename\n";
 		($basename) = $basename =~ /([^\/].*$)/;
 		my ( $x, $cleanname ) = check_taint($basename);
 		$self->basefilename($cleanname);
@@ -513,14 +522,12 @@ sub initialize_basefile {
 		$self->basefilename( $file->filename =~ /([^\/]*$)/ );
 	}
 
-	#    print STDERR "Basename: ",$self->basefilename,"\n";
-	#    print STDERR "sqlitefile: ",$self->sqlitefile,"\n";
-	#    print STDERR "Basefile: ",$self->basefile,"\n";
+#    print STDERR "Basename: ",$self->basefilename,"\n";
+#    print STDERR "sqlitefile: ",$self->sqlitefile,"\n";
+#    print STDERR "Basefile: ",$self->basefile,"\n";
 
 	if ( -r $self->logfile && !$basename ) {
-		print STDERR "in Web.pm sub initialize_basefile.  Logfile "
-		  . $self->logfile
-		  . " already exist.  Possible problem.  Regenerating basefile.\n";
+		print STDERR "in Web.pm sub initialize_basefile.  Logfile " . $self->logfile . " already exist.  Possible problem.  Regenerating basefile.\n";
 		return $self->initialize_basefile(%opts);
 	}
 	elsif ($return_name) {
