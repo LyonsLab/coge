@@ -1,278 +1,255 @@
-	<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
-	<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></SCRIPT>
-	<SCRIPT language="JavaScript">
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></SCRIPT>
+<SCRIPT language="JavaScript">
 
-	$(document).ready(function(){
-		$('#experiment_table').tablesorter({		
+$(document).ready(function(){
+	$('#experiment_table').tablesorter({		
 		cssAsc: 'headerSortUp',		// Class name for ascending sorting action to header
 		cssDesc: 'headerSortDown',	// Class name for descending sorting action to header
 		//cssHeader: 'header',		// Class name for headers (th's)
 		widgets: ['zebra'],
 		headers: {0: {sorter: false},},					
-		});
-		check_display();
-/*		$('#experiment_table').columnFilters({
-			alternateRowClassNames['even','odd'],
-			excludeColumns: [0,],
-			});
+	});
+	check_display();
+/*	$('#experiment_table').columnFilters({
+		alternateRowClassNames['even','odd'],
+		excludeColumns: [0,],
+	});
 */
-		$("#search_bar").keyup( function() { filter_rows( $(this).val() ); });
-		$('#search_type').mouseup( function() { filter_rows( $('#search_bar').val() ); });
+	$("#search_bar").keyup( function() { filter_rows( $(this).val() ); });
+	$('#search_type').mouseup( function() { filter_rows( $('#search_bar').val() ); });
+	filter_rows();
 
-		$.ajaxSetup({
-		               type: "GET",
-		               url: "ExperimentList.pl",
-		               dataType: "html",
-		               cache: false,
-		       });
+	$.ajaxSetup({
+		type: "GET",
+		url: "ExperimentList.pl",
+		dataType: "html",
+		cache: false,
+	});
+});
+
+//set up the jquery ui
+$(function() {
+     //substantiate dialog box	     
+     $("#table_opts_dialog").dialog({ height: 150,
+       				     			  width: 627,
+				     				  autoOpen: false,
+});
 	
-		});
-
-		//set up the jquery ui
-		$(function() {
-		     //substantiate dialog box	     
-		     $("#table_opts_dialog").dialog({ height: 150,
-		       				     			  width: 627,
-						     				  autoOpen: false,
-		});
-		
-		$("#save_form").dialog({ autoOpen: false,
-								height: 331,
-								width: 461,
-								buttons: { "Cancel": function() { $(this).dialog("close"); },
-									"Save": function() { 
-										$.ajax({
-											data: {
-												jquery_ajax: 1,
-												fname: 'add_to_user_history',
-												work_name: $('#work_name').val(),
-												description: $('#description').val(),
-												url: document.location.href,
-												note: $('#note').val(),
-												archive: 1,
-												tool: 'Experiment list'
-											},
-											success: function(val){
-										}
+$("#save_form").dialog(
+	{ autoOpen: false,
+	  height: 331,
+	  width: 461,
+	  buttons: { "Cancel": function() { $(this).dialog("close"); },
+				 "Save": function() { 
+								$.ajax({
+									data: {
+										jquery_ajax: 1,
+										fname: 'add_to_user_history',
+										work_name: $('#work_name').val(),
+										description: $('#description').val(),
+										url: document.location.href,
+										note: $('#note').val(),
+										archive: 1,
+										tool: 'Experiment list'
+									},
+									success: function(val){}
 								});
-										
-								$(this).dialog("close"); 
-							}
-						}
-					});
-		//button effects on events
-		$('#table_opts').click(function() {
-			$('#table_opts_dialog').dialog('open');
-		});
-		$('#history_dialog_button').click(function() {
-			$('#save_form').dialog('open');
-		});
-	}); 
-
-	//Filters Rows for search_text - Case sensitive as of now, and searches hidden columns...
-	function filter_rows (search_text){
-	  if(! search_text) { $("#experiment_table tr:hidden").show(0);}
-	  else if (search_text.length >= 3) {
-	    $("#experiment_table_body tr:hidden").show(0);
-	    if( $('#search_type').val() == 1 ) { $("#experiment_table_body tr:not(:contains('"+search_text+"'))").hide(); }
-	    else { $("#experiment_table_body tr:contains('"+search_text+"')").hide(); }
-	  }
-	  else return;
-	}
-
-	function feature_checkboxes(){
-	 var action = $('#checked_action').val();
-	 var accn=",";
-	 $('#experiment_table :checkbox').each(function(){
-	    if (this.checked == true) accn = accn + this.id+",";
-	  });
-	 if (accn == ",") {
-	   alert("Danger Will Robinson!\n1D-10T error!  You have not checked any experiments.");
-	   return;
-	 }
-	 if (action == "xls"){
-	   $('#retrieve_message').html('Retrieving data');
-	   
-	   $.ajax({
-	    data: {
-	 	    jquery_ajax: 1,
-	           fname: 'generate_excel_file',
-	    	   accn: accn
-	          },
-	    success : export_url
-	  });
-	 }
-	 else if (action == "csv"){
-	   $('#retrieve_message').html('Retrieving data');
-	   
-	   $.ajax({
-	    data: {
-	 	    jquery_ajax: 1,
-	           fname: 'generate_csv_file',
-	    	   accn: accn
-	          },
-	    success : export_url
-	  });
-	 }
-	 else if (action == "list"){
-	   $('#retrieve_message').html('Loading ExperimentList');
-	   $.ajax({
-	    data: {
-	 	   jquery_ajax: 1,
-	           fname: 'send_to_ExperimentList',
-	    	   accn: accn
-	          },
-	    success : export_url
-	  });
-	 }
-	 else {
-	   alert("We will get this working ... soon.");
-	 }
-	}
-
-	function export_url(url,num_accns) {
-	 if (url == "alert") {
-	   var remove = num_accns - 20;
-	   alert("You have exceeded the number of features you can send to GEvo ( 20 Max ). You currently have "+num_accns+" selected. Please uncheck "+remove+" of your checked item(s).");
-	 }
-	 else {
-	   var regex = /xls$/;
-	   if ($('#gstid').val() && !regex.test(url))
-	    {
-	      url=url+';gstid='+$('#gstid').val();
-	    }
-	   window.open(url);
-	 }
-	 $('#retrieve_message').html(' ');
-	}
-
-	function update_table() {
-		if ($.active) 
-		{
-			setTimeout("update_table()",100);
-			return;
+								
+						$(this).dialog("close"); 
+			}
 		}
-		$('#experiment_table').trigger("update");	
-	}
+	});
+	
+	//button effects on events
+	$('#table_opts').click(function() {
+		$('#table_opts_dialog').dialog('open');
+	});
+	$('#history_dialog_button').click(function() {
+		$('#save_form').dialog('open');
+	});
+});
 
-	function delete_row(val)
+//Filters Rows for search_text - Case sensitive as of now, and searches hidden columns...
+function filter_rows (search_text){
+	if(!search_text) { 
+		$("#experiment_table tr:hidden").show(0); 
+	}
+	else if (search_text.length >= 3) {
+		$("#experiment_table_body tr:hidden").show(0);
+		if( $('#search_type').val() == 1 ) { 
+			$("#experiment_table_body tr:not(:contains('"+search_text+"'))").hide(); 
+		}
+		else { 
+			$("#experiment_table_body tr:contains('"+search_text+"')").hide(); 
+		}
+	}
+	$('#filter_count').html('Showing ' + $("#experiment_table_body tr:visible").length + ' of ' + $("#experiment_table_body tr").length + ' genomes');
+}
+	
+function experiment_checkboxes() {
+	var action = $('#checked_action').val();
+	var accn = ",";
+	$('#experiment_table :checkbox').each(function(){
+		if (this.checked == true) accn = accn + this.id + ",";
+	});
+	if (accn == ",") {
+		alert("Danger Will Robinson!\n1D-10T error!  You have not selected any features.");
+		return;
+	}
+		
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: action,
+			accn_list: accn
+		},
+		success : function(url) {
+			window.open(url,'_blank');
+		}
+	});
+}
+
+function update_table() {
+	if ($.active) 
 	{
-		$('#gl'+val).remove();
+		setTimeout("update_table()",100);
+		return;
 	}
+	$('#experiment_table').trigger("update");	
+}
 
-	function get_all_feat_counts(num) {
-		for (var i=1; i<=num; i++)
-		{
-			$('#feat_counts_'+i).removeClass('link');
-			$('#feat_counts_'+i).html('<span class=alert>loading...</span>');
-			var dsgid = $('#dsgid_'+i).val();
-			run_get_feat_counts({dsgid: dsgid, divid: 'feat_counts_'+i});
+function delete_row(val)
+{
+	$('#gl'+val).remove();
+}
+
+function get_all_feat_counts(num) {
+	for (var i=1; i<=num; i++)
+	{
+		$('#feat_counts_'+i).removeClass('link');
+		$('#feat_counts_'+i).html('<span class=alert>loading...</span>');
+		var dsgid = $('#dsgid_'+i).val();
+		run_get_feat_counts({dsgid: dsgid, divid: 'feat_counts_'+i});
+	}
+	$('#get_all_feat_counts').remove();
+	update_table();	
+}
+
+function run_get_feat_counts(opts){
+	if (!opts) { opts={}; }
+	dsgid = opts.dsgid;
+	divid = opts.divid;
+
+	// create a new closure who's scope does *not*
+	// include the `divid` value so that callback will 
+	// not clobber the `divid` variable 
+	var create_callback = function(divid) {
+		var local_divid = divid;
+		return function (data) {
+			$('#'+local_divid).html(data);
+		};
+	};
+
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'get_feature_counts',
+			dsgid: dsgid,
+		},
+		success : create_callback(divid)
+	});
+}
+
+function toggle_column(index) {
+	show = 0;
+
+	if ($('#experiment_list td:eq('+(1*index-1)+')').children()[0].checked) { show=1;}
+	if (show)
+	{
+		$('#experiment_table td:nth-child('+(1*index+1)+')').show();
+		$('#experiment_table th:nth-child('+(1*index+1)+')').show();
+	}
+	else
+	{
+		$('#experiment_table td:nth-child('+(1*index+1)+')').hide();
+		$('#experiment_table th:nth-child('+(1*index+1)+')').hide();
+	}
+}
+
+function check_display() {
+	var i = 1;
+	$('#show_columns td').each(function() {
+		if (!$(this).children()[0].checked){ toggle_column(i);}
+		i++;
+	});
+}
+
+function check_type (type) {
+	if (!type) {type = $('#feature_type').val();}
+	$('#experiment_table tr').each(function() {
+		if (type == $('td:eq(2)',this).html()) {
+			$('td:eq(0) input:checkbox', this).attr('checked', true);
 		}
-		$('#get_all_feat_counts').remove();
-		update_table();	
-	}
+	});
+}
 
-	function run_get_feat_counts(opts){
-	  if (!opts){opts={};}
-	  dsgid = opts.dsgid;
-	  divid = opts.divid;
-
-	  // create a new closure who's scope does *not*
-	  // include the `divid` value so that callback will 
-	  // not clobber the `divid` variable 
-	  var create_callback = function(divid) {
-	      var local_divid = divid;
-	      return function (data) {
-	          $('#'+local_divid).html(data);
-	      };
-	  };
-
-	  $.ajax({
-	    data: {
-	 	    jquery_ajax: 1,
-	           fname: 'get_feature_counts',
-	    dsgid: dsgid,
-	          },
-	    success : create_callback(divid)
-	  });
-	}
-
-	function toggle_column(index) {
-		show = 0;
-
-		if ($('#experiment_list td:eq('+(1*index-1)+')').children()[0].checked) { show=1;}
-		if (show)
-		{
-			$('#experiment_table td:nth-child('+(1*index+1)+')').show();
-			$('#experiment_table th:nth-child('+(1*index+1)+')').show();
+function save_display_settings() {
+	var i=1;
+	var index;
+	$("input.display[@type=checkbox]").each(function(){
+		if($(this)[0].checked) {
+			if (index) {index= index +","+i;}
+			else {index = i;}
 		}
-		else
-		{
-			$('#experiment_table td:nth-child('+(1*index+1)+')').hide();
-			$('#experiment_table th:nth-child('+(1*index+1)+')').hide();
-		}
-	}
+		i++;
+	});
+	save_FeatList_settings(['args__display','args__'+index],[]);
+}
+</SCRIPT>
 
-	function check_display() {
-		var i = 1;
-		$('#show_columns td').each(function() {
-			if (!$(this).children()[0].checked){ toggle_column(i);}
-			i++;
-		});
-	}
-
-	function check_type (type) {
-		if (!type) {type = $('#feature_type').val();}
-		$('#experiment_table tr').each(function() {
-			if (type == $('td:eq(2)',this).html()) {
-				$('td:eq(0) input:checkbox', this).attr('checked', true);
-			}
-		});
-	}
-
-	function save_display_settings() {
-		var i=1;
-		var index;
-		$("input.display[@type=checkbox]").each(function(){
-			if($(this)[0].checked) {
-				if (index) {index= index +","+i;}
-				else {index = i;}
-			}
-			i++;
-		});
-		save_FeatList_settings(['args__display','args__'+index],[]);
-	}
-
-	</SCRIPT>
-	<span href='#' id="table_opts" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-newwin"></span>Change Viewable Columns</span>
-	<input type=hidden id=gstid value=<TMPL_VAR NAME="GSTID">>
-	<div id="table_opts_dialog" title="Table Information Options">
-	<form id=experiment_list>
-	   <table  class="ui-widget-content ui-corner-all small" id="show_columns">
-	    <tr>
-	      <td><input class = "display" type = checkbox onclick="toggle_column(1);" <TMPL_VAR NAME="NameDescD">>Name:Description</TD>
-	      <td><input class = "display" type = checkbox onclick="toggle_column(2);" <TMPL_VAR NAME="TypeD">>Type</TD>
-	      <td><input class = "display" type = checkbox onclick="toggle_column(3);" <TMPL_VAR NAME="AnnotationD">>Annotation</TD>
-	      <td><input class = "display" type = checkbox onclick="toggle_column(4);" <TMPL_VAR NAME="SourceD">>Source</TD>
-	      <td><input class = "display" type = checkbox onclick="toggle_column(5);" <TMPL_VAR NAME="VerD">>Version</TD>
-	      <TMPL_IF NAME="SAVE_DISPLAY">
-	    <tr><td>
-	<span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="save_display_settings()"><span class="ui-icon ui-icon-check"></span>Save Display Settings</span>
-	      </TMPL_IF>
-	   </table>
-	</div>
-	</br>
-	</br>
-	Filter Table Rows: 
-	<input type=text id=search_bar>
-	<select id=search_type>
+<div style='padding-top:10px;'>
+ <span id='link_hidden' class='ui-button ui-corner-all ui-button-icon-right' onclick="$('#link_hidden').hide(); $('#link_shown').fadeIn();"><span class="ui-icon ui-icon-arrowreturnthick-1-w"></span>Link to this</span>
+ <span id='link_shown' style='display:none;' class='small infobox'>
+ Use this link to return to this page at any time: <span class='link' onclick=window.open('<TMPL_VAR NAME="LINK">');><b><TMPL_VAR NAME="LINK"></b></span>
+ </span>
+</div>
+	
+<input type='hidden' id='gstid' value=<TMPL_VAR NAME="GSTID">>
+<div id="table_opts_dialog" title="Table Information Options">
+<form id='experiment_list'>
+ <table class="ui-widget-content ui-corner-all small" id="show_columns">
+  <tr>
+   <td><input class = "display" type = checkbox onclick="toggle_column(1);" <TMPL_VAR NAME="NameDescD">>Name:Description</TD>
+   <td><input class = "display" type = checkbox onclick="toggle_column(2);" <TMPL_VAR NAME="TypeD">>Type</TD>
+   <td><input class = "display" type = checkbox onclick="toggle_column(3);" <TMPL_VAR NAME="AnnotationD">>Annotation</TD>
+   <td><input class = "display" type = checkbox onclick="toggle_column(4);" <TMPL_VAR NAME="SourceD">>Source</TD>
+   <td><input class = "display" type = checkbox onclick="toggle_column(5);" <TMPL_VAR NAME="VerD">>Version</TD>
+  </tr>
+  <TMPL_IF NAME="SAVE_DISPLAY">
+  <tr>
+   <td>
+    <span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="save_display_settings()"><span class="ui-icon ui-icon-check"></span>Save Display Settings</span>
+   </td>
+  </tr>
+  </TMPL_IF>
+ </table>
+</div>
+	
+	<div class='small' style="padding-top:15px;padding-bottom:5px;">
+	Filter: 
+	<input type="text" id="search_bar">
+	<select id="search_type">
 	<option value="1">Contains</option>
 	<option value="0">Does NOT contain</option>
 	</select>
 	<!-- <span class=small>Tip: Use "*" for wildcards, and "!" to search for not containing</span> -->
-	<div class ="small"> Experiment Count: <TMPL_VAR NAME="EXPERIMENT_COUNT"></div>
+	<span id='filter_count' style="margin-left:20px;margin-right:100px;"></span>
+	<span href='#' id="table_opts" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-newwin"></span>Change Viewable Columns</span>
+	</div>
+	
 	<TABLE id='experiment_table' class="ui-widget-content ui-corner-all">
-	<THEAD align=left>
+	<THEAD align="left">
 	 <tr>
 	  <TH> </TH>
 	  <TH>Experiment Name:Description</TH>
@@ -282,17 +259,17 @@
 	  <TH>Version</TH>
 	  </tr>
 	</THEAD>
-	<tbody align=left valign="top" id="experiment_table_body" class=small>
+	<tbody align="left" valign="top" id="experiment_table_body" class="small">
 	 <TMPL_LOOP NAME=INFO>
 	   <TR id='gl<TMPL_VAR NAME=DSGID>'>
-	     <TD><input type=checkbox checked id='<TMPL_VAR NAME=DSGID>'></TD>
-	     <TD><input type=hidden id='dsgid_<TMPL_VAR NAME=COUNT>' value='<TMPL_VAR NAME=DSGID>'>
-	         <span class=link onclick=window.open('ExperimentView.pl?expid=<TMPL_VAR NAME=EXPID>')><TMPL_VAR NAME=NAME></span>: <TMPL_VAR NAME=DESC>
+	     <TD><input type="checkbox" checked id='<TMPL_VAR NAME=EXPID>'></TD>
+	     <TD><input type="hidden" id='expid_<TMPL_VAR NAME=COUNT>' value='<TMPL_VAR NAME=EXPID>'>
+	         <span class="link" onclick="window.open('ExperimentView.pl?eid=<TMPL_VAR NAME=EXPID>')"><TMPL_VAR NAME=NAME></span>: <TMPL_VAR NAME=DESC>
 	     </TD>
          <TD><TMPL_VAR NAME=TYPE></TD>
 	     <TD><TMPL_VAR NAME=ANNOTATION></TD>
 	     <TD><TMPL_VAR NAME=SOURCE></TD>
-	     <TD align=center><TMPL_VAR NAME=VER></TD>
+	     <TD align="center"><TMPL_VAR NAME=VER></TD>
          <TD><span class='ui-button ui-corner-all ui-button-icon-left'><span class="ui-icon ui-icon-trash" onclick="delete_row(<TMPL_VAR NAME=DSGID>)"></span></span></TD>
 	   </TR>
 	  </TMPL_LOOP>
@@ -308,16 +285,20 @@
 	<span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#experiment_table tr :visible :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Check Visible</span>
 	<span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#experiment_table tr :visible :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minus"></span>Uncheck Visible</span>
 	<TMPL_IF NAME=SAVE_DATA>
-	<span href="javascript:void(0);" id="history_dialog_button" class='ui-button ui-corner-all ui-button-icon-left'><span class="ui-icon ui-icon-newwin"></span>Save Table</span>
+	<!--<span href="javascript:void(0);" id="history_dialog_button" class='ui-button ui-corner-all ui-button-icon-left'><span class="ui-icon ui-icon-newwin"></span>Save Table</span>-->
 	</TMPL_IF>
-	<div>
-	 Send Selected Experiments to:  
-	  <select name=checked_action id=checked_action>
-	   <option value = "csv">Export CSV</option>
-	   <option value = "xls">Export XLS</option>
-	  </select>
-	<span class='ui-button ui-corner-all ui-button-icon-right  ui-button-go' onclick="feature_checkboxes();"><span class="ui-icon ui-icon-extlink"></span>Go</span><span id=retrieve_message class=alert></span>  
-	 </div>
+	<div class='small'>
+	 Send selected experiments to:
+	 <select name="checked_action" id="checked_action">
+      <option value="send_to_csv">Export CSV</option>
+      <option value="send_to_xls">Export XLS</option>
+      <option value="send_to_ExperimentList">ExperimentList</option>
+      <option value="send_to_list">New List</option>
+     </select>
+     <span class='ui-button ui-corner-all ui-button-icon-right ui-button-go' onclick="experiment_checkboxes();"><span class="ui-icon ui-icon-extlink"></span>Go</span><span id=retrieve_message class=alert></span>  
+    </div>
+
+	<br>
 
 	<div id="save_form" title="Save Results">
 	<table class="ui-widget-content ui-corner-all">

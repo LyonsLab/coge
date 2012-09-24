@@ -494,35 +494,39 @@ sub add_list_items {
 	my $list = $coge->resultset('List')->find($lid);
 	my $desc = ( $list->description ? $list->description : '' );
 
-	#
-	# Build list of "My Stuff"
-	#
-
 	# Experiments
 	my @available_items;
-	foreach my $exp (sort experimentcmp $USER->experiments) {
-		push @available_items, { item_name => 'experiment: ' . $exp->info, 
-								 item_spec => 3 . ':' . $exp->id }; #FIXME magic number for item_type
+	my %exists = map { $_->id => 1 } $list->experiments;
+	foreach my $e (sort experimentcmp $USER->experiments) {
+		push @available_items, { item_name => 'experiment: ' . $e->info, 
+								 item_spec => 3 . ':' . $e->id, #FIXME magic number for item_type
+								 item_disable => ($exists{$e->id} ? "disabled='disabled'" : '') };
 	}
 	
 	# Genomes
+	%exists = map { $_->id => 1 } $list->genomes;
 	foreach my $g (sort genomecmp $USER->genomes) {
 		push @available_items, { item_name => 'genome: ' . $g->info, 
-								 item_spec => 2 . ':' . $g->id }; #FIXME magic number for item_type
+								 item_spec => 2 . ':' . $g->id, #FIXME magic number for item_type
+								 item_disable => ($exists{$g->id} ? "disabled='disabled'" : '') };
 	}
 	
 	# Features
+	%exists = map { $_->id => 1 } $list->features;
 	foreach my $f (sort featurecmp $USER->features) {
 		push @available_items, { item_name => 'feature: ' . $f->info, 
-								 item_spec => 4 . ':' . $f->id }; #FIXME magic number for item_type
+								 item_spec => 4 . ':' . $f->id, #FIXME magic number for item_type
+								 item_disable => ($exists{$f->id} ? "disabled='disabled'" : '') };
 	}
 	
 	# Lists
+	%exists = map { $_->id => 1 } $list->lists;
 	foreach my $l (sort listcmp $USER->lists) {
 		next if ($l->id == $lid); # can't add a list to itself!
 		next if ($l->locked); # exclude user's master list
 		push @available_items, { item_name => 'list: ' . $l->info, 
-								 item_spec => 1 . ':' . $l->id }; #FIXME magic number for item_type
+								 item_spec => 1 . ':' . $l->id, #FIXME magic number for item_type
+								 item_disable => ($exists{$l->id} ? "disabled='disabled'" : '') };
 	}	
 	
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'ListView.tmpl' );

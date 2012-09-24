@@ -122,16 +122,25 @@ sub delete_list {
 
 sub get_lists_for_user {
 	#my %opts = @_;
+	
 	my @lists;
-
-	foreach my $list ( sort {$a->name cmp $b->name } $USER->lists ) {
-		push @lists, 
+	if ( $USER->is_admin ) {
+		@lists = $coge->resultset('List')->all();
+	}
+	else {
+		@lists = $USER->lists;
+	}	
+	
+	my @list_info;
+	foreach my $list ( sort {$a->name cmp $b->name } @lists ) {
+		push @list_info, 
 		  { NAME  => qq{<span class=link onclick='window.open("ListView.pl?lid=} . $list->id . qq{")'>} . $list->name . "</span>",
 			DESC  => $list->description,
 			TYPE  => ( $list->type ? $list->type->name : '' ),
 			ANNO  => join( "<br>", map { $_->type->name . ": " . $_->annotation . ($_->image ? ' (image)' : '') } sort sortAnno $list->annotations ),
 			DATA  => $list->data_summary(),
 			GROUP => $list->group->info_html,
+			RESTRICTED => ($list->restricted ? 'yes' : 'no'),
 			EDIT_BUTTON => $list->locked ?
 				"<span class='link ui-icon ui-icon-locked' onclick=\"alert('This list is locked and cannot be edited.')\"></span>" :
 				"<span class='link ui-icon ui-icon-gear' onclick=\"window.open('ListView.pl?lid=" . $list->id . "')\"></span>",
@@ -143,7 +152,8 @@ sub get_lists_for_user {
 
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'Lists.tmpl' );
 	$template->param( LIST_STUFF => 1 );
-	$template->param( LIST_LOOP  => \@lists );
+	$template->param( LIST_LOOP  => \@list_info );
+	$template->param( TYPE_LOOP => get_list_types() );
 
 	return $template->output;
 }
@@ -176,19 +186,17 @@ sub gen_html {
 	$template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
 	$template->param( DATE       => $DATE );
 	$template->param( BODY       => gen_body() );
-	$name .= $name =~ /s$/ ? "'" : "'s";
-	$template->param( BOX_NAME   => $name . " Data Lists:" );
+#	$name .= $name =~ /s$/ ? "'" : "'s";
+#	$template->param( BOX_NAME   => $name . " Data Lists:" );
 	$template->param( ADJUST_BOX => 1 );
 	$html .= $template->output;
 }
 
 sub gen_body {
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'Lists.tmpl' );
-	$template->param( PAGE_NAME => $FORM->url );
-	$template->param( MAIN      => 1 );
-	my ($list_info) = get_lists_for_user();
-	$template->param( LIST_INFO => $list_info );
-	$template->param( TYPE_LOOP => get_list_types() );
+	$template->param( PAGE_NAME  => $FORM->url );
+	$template->param( MAIN       => 1 );
+	$template->param( LIST_INFO  => get_lists_for_user() );
 	$template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
 	return $template->output;
 }

@@ -49,19 +49,21 @@ $USER = undef;
 ($USER) = CoGe::Accessory::LogUser->get_user( cookie_name => $COOKIE_NAME, coge => $coge ) unless $USER;
 
 %FUNCTION = (
-	gen_html               => \&gen_html,
-	get_group_info         => \&get_group_info,
-	edit_group_info        => \&edit_group_info,
-	update_group_info      => \&update_group_info,
-	modify_users           => \&modify_users,
-	add_user_to_group      => \&add_user_to_group,
-	remove_user_from_group => \&remove_user_from_group,
-	add_lists              => \&add_lists,
-	add_list_to_group      => \&add_list_to_group,
-	remove_list_from_group => \&remove_list_from_group,	
-	search_lists           => \&search_lists,
-	get_list_preview       => \&get_list_preview,
-	delete_group           => \&delete_group,
+	gen_html                 => \&gen_html,
+	get_group_info           => \&get_group_info,
+	edit_group_info          => \&edit_group_info,
+	update_group_info        => \&update_group_info,
+	modify_users             => \&modify_users,
+	add_user_to_group        => \&add_user_to_group,
+	remove_user_from_group   => \&remove_user_from_group,
+	add_lists                => \&add_lists,
+	add_list_to_group        => \&add_list_to_group,
+	remove_list_from_group   => \&remove_list_from_group,	
+	search_lists             => \&search_lists,
+	get_list_preview         => \&get_list_preview,
+	delete_group             => \&delete_group,
+	dialog_set_group_creator => \&dialog_set_group_creator,
+	set_group_creator      	 => \&set_group_creator,
 );
 
 dispatch();
@@ -111,7 +113,9 @@ sub gen_body {
 	my ($group_info) = get_group_info( ugid => $ugid );
 	$template->param( GROUP_INFO => $group_info );
 	$template->param( UGID       => $ugid );
+	
 	$template->param( ADMIN_AREA => $USER->is_admin );
+	$template->param( ADMIN_BUTTONS => get_admin_functions() );
 
 	my $open;
 	$open = $FORM->param('open') if defined $FORM->param('open');
@@ -119,6 +123,12 @@ sub gen_body {
 	$template->param( EDIT_BOX_OPEN => $box_open );
 	
 	return $template->output;
+}
+
+sub get_admin_functions {
+	my $ugid = $FORM->param('ugid');
+	my $html = qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="dialog_set_group_creator({ugid: '$ugid'});">Set Group Creator</span>};
+	return $html;
 }
 
 sub get_roles {
@@ -145,14 +155,14 @@ sub get_group_info {
 	return "User group id$ugid does not exist.<br>" .
 			"Click <a href='Groups.pl'>here</a> to view all groups." unless ($group);
 
-	my $user_can_edit = (($USER->is_admin or $USER->id == $group->creator->id) and not $group->locked);
+	my $user_can_edit = (user_can_edit($group) and not $group->locked);
 	
 	my $html = $group->annotation_pretty_print_html(allow_delete => $user_can_edit);
 	if ($user_can_edit) {
-		$html .= qq{<span id="edit_group_info" style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="edit_group_info({ugid: '$ugid'});">Edit Group Info</span>};
-		$html .= qq{<span id="edit_group_info" style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="modify_users({ugid: '$ugid'});">Modify Users</span>};
-		$html .= qq{<span id="edit_group_info" style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="add_lists({ugid: '$ugid'});">Add Lists</span>};
-		$html .= qq{<span id="edit_group_info" style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="dialog_delete_group();">Delete Group</span>};
+		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="edit_group_info({ugid: '$ugid'});">Edit Group Info</span>};
+		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="modify_users({ugid: '$ugid'});">Modify Users</span>};
+		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="add_lists({ugid: '$ugid'});">Add Lists</span>};
+		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="dialog_delete_group();">Delete Group</span>};
 	}
 	
 	return $html;
@@ -164,7 +174,7 @@ sub edit_group_info {
 	return 0 unless $ugid;
 
 	my $group = $coge->resultset('UserGroup')->find($ugid);
-	return 0 unless ($USER->is_admin or $USER->id == $group->creator->id);
+	return 0 unless user_can_edit($group);
 	
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'GroupView.tmpl' );
 	$template->param( EDIT_GROUP_INFO => 1 );
@@ -191,7 +201,7 @@ sub update_group_info {
 
 	my $desc = $opts{desc};
 	my $group = $coge->resultset('UserGroup')->find($ugid);
-	return 0 unless ($USER->is_admin or $USER->id == $group->creator->id);
+	return 0 unless user_can_edit($group);
 	
 	$group->name($name);
 	$group->description($desc) if $desc;
@@ -206,11 +216,10 @@ sub modify_users {
 	return 0 unless $ugid;
 	
 	my $group = $coge->resultset('UserGroup')->find($ugid);
-	return 0 unless ($USER->is_admin or $USER->id == $group->creator->id);
+	return 0 unless user_can_edit($group);
 	
 	my %data;
-	$data{title} = $group->name . "(id" . $group->id . ")";
-	$data{title} .= ": " . $group->description if $group->description;
+	$data{title} = 'Modify Users';
 	my %users;
 	my @users;
 
@@ -254,7 +263,7 @@ sub add_user_to_group {
 	#return 1 if $uid == $USER->id;
 	return "UGID and/or UID not specified" unless $ugid && $uid;
 	my $group = $coge->resultset('UserGroup')->find($ugid);
-	return 0 unless ($USER->is_admin or $USER->id == $group->creator->id);
+	return 0 unless user_can_edit($group);
 	
 	if ( $group->locked && !$USER->is_admin ) {
 		return "This is a locked group.  Admin permission is needed to modify.";
@@ -278,7 +287,7 @@ sub remove_user_from_group {
 	}
 	
 	my $group = $coge->resultset('UserGroup')->find($ugid);
-	return 0 unless ($USER->is_admin or $USER->id == $group->creator->id);
+	return 0 unless user_can_edit($group);
 	
 	if ( $group->locked && !$USER->is_admin ) {
 		return "This is a locked group.  Admin permission is needed to modify.";
@@ -297,7 +306,7 @@ sub add_lists {
 	return 0 unless $ugid;
 
 	my $group = $coge->resultset('UserGroup')->find($ugid);
-	return 0 unless ($USER->is_admin or $USER->id == $group->creator->id);
+	return 0 unless user_can_edit($group);
 	
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'GroupView.tmpl' );
 	$template->param( ADD_LISTS => 1 );
@@ -420,7 +429,7 @@ sub delete_group {
 	
 	my $group = $coge->resultset('UserGroup')->find($ugid);
 	
-	return 0 unless ($USER->is_admin or $USER->id == $group->creator->id);
+	return 0 unless user_can_edit();
 	
 	if ( $group->locked && !$USER->is_admin ) {
 		return "This is a locked group.  Admin permission is needed to modify.";
@@ -439,4 +448,61 @@ sub delete_group {
 	$coge->resultset('Log')->create( { user_id => $USER->id, page => $PAGE_NAME, description => 'delete user group id' . $group->id } );
 	
 	return 1;
+}
+
+sub dialog_set_group_creator {
+	my %opts = @_;
+	my $ugid = $opts{ugid};
+	return 0 unless $ugid;
+	return 0 unless $USER->is_admin;
+	
+	my $group = $coge->resultset('UserGroup')->find($ugid);
+	
+	my %data;
+	$data{title} = 'Set Creator';
+	my %users;
+	my @users;
+
+	my @all_users;
+	foreach my $user ( sort { $a->last_name cmp $b->last_name || $a->user_name cmp $b->user_name } $coge->resultset('User')->all )
+	{
+		next if $users{ $user->id };    #skip users we already have
+		my $name = $user->user_name;
+		$name .= " : " . $user->first_name if $user->first_name;
+		$name .= " " . $user->last_name if $user->first_name && $user->last_name;
+		push @all_users, { uid_name => $name, uid => $user->id };
+	}
+	$data{all_users} = \@all_users;
+
+	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'GroupView.tmpl' );
+	$template->param( SET_GROUP_CREATOR => 1 );
+	$template->param( UGID         => $ugid );
+	$template->param( ALL_UGID_LOOP => $data{all_users} );
+
+	$data{output} = $template->output;
+	return encode_json( \%data );
+}
+
+sub set_group_creator {
+	my %opts = @_;
+	my $ugid = $opts{ugid};
+	my $uid  = $opts{uid};
+	return "UGID and/or UID not specified" unless $ugid && $uid;
+	
+	my $group = $coge->resultset('UserGroup')->find($ugid);
+	return 0 unless user_can_edit($group);
+	
+	if ( $group->locked && !$USER->is_admin ) {
+		return "This is a locked group.  Admin permission is needed to modify.";
+	}
+
+	$group->creator_user_id($uid);
+	$group->update();	
+	
+	return 1;
+}
+
+sub user_can_edit {
+	my $group = shift;
+	return ($USER->is_admin or $USER->is_owner_editor(group => $group) or $USER->id == $group->creator->id);
 }

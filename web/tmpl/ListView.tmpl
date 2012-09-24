@@ -255,8 +255,8 @@ function add_annotation_to_list (opts) {
 				return;		
 			}
 	
-			if (annotation_image_file.size > 10*1024*1024) {
-				alert('Error: image file is too large (>10MB)');
+			if (annotation_image_file.size > 1*1024*1024) {
+				alert('Error: image file is too large (>1MB)');
 				return;
 			}
 			
@@ -526,37 +526,11 @@ Are you sure you want to permanently delete this list?<p>
  <tr> 
 </table>
 <span onClick="update_list_info({lid: '<TMPL_VAR NAME=LID>'});" class='ui-button ui-corner-all ui-button-go'>Update List Info</span>
-</TMPL_IF>
+</TMPL_IF> <!-- EDIT_LIST_INFO -->
 
 
 
 <TMPL_IF NAME=ADD_LIST_ANNOTATION> <!-- FIXME: this is redundant with ExperimentView.tmpl, move into own sub-template? -->
-<SCRIPT>
-/*
-	var annotation_image_file;
-	
-	$("#edit_annotation_type_group").autocomplete({
-	    source: function() { get_annotation_type_groups(); }
-	});
-	
-	$("#edit_annotation_type").autocomplete( { source: [] } );
-
-	$('#edit_annotation_image').fileupload({
-        dataType: 'json',
-        add: function(e, data) {
-        	annotation_image_file = data.files[0];
-        },
-        
-		progressall: function (e, data) {
-        	var progress = parseInt(data.loaded / data.total * 100, 10);
-        	$('#progress .bar').css(
-            	'width',
-            	progress + '%'
-        	);
-        }
-    });
-*/
-</SCRIPT>
 <table class="small">
  <tr valign='top'>
   <td>Annotation:</td>
@@ -578,16 +552,12 @@ Are you sure you want to permanently delete this list?<p>
   <td valign='top'>Image:</td>
   <td>
    <input id="edit_annotation_image" name="edit_annotation_image" type="file" data-url='ListView.pl'>
-   <!--<div id="progress">
-	Progress:
-    <div class="bar" style="width: 0%;height: 18px;background: green;"></div>
-   </div>-->
   </td>
  </tr>
 </table>
 <span onClick="add_annotation_to_list({lid: '<TMPL_VAR NAME=LID>'});" class='ui-button ui-corner-all ui-button-go'>Add</span>
 <img id="wait_annotation" src="picts/ajax-loader.gif" style="opacity: 0;" />
-</TMPL_IF>
+</TMPL_IF> <!-- ADD_LIST_ANNOTATION -->
 
 
 
@@ -612,7 +582,7 @@ $(function() { $("#tabs").tabs({selected:0}); });
     <form name="available_my_list_items">
      <select multiple id="select_my_items" size="10" style="max-width: 500px;">
       <TMPL_LOOP NAME=AVAILABLE_MY_LIST_LOOP>
-      <option value="<TMPL_VAR NAME=ITEM_SPEC>"><TMPL_VAR NAME=ITEM_NAME></option>
+      <option <TMPL_VAR NAME=ITEM_DISABLE> value="<TMPL_VAR NAME=ITEM_SPEC>"><TMPL_VAR NAME=ITEM_NAME></option>
       </TMPL_LOOP>
      </select>
     </form>
@@ -722,7 +692,6 @@ $(function() { $("#tabs").tabs({selected:0}); });
  <span href="javascript:void(0)" onClick="add_selected_items({select_id: 'select_list_items', lid: '<TMPL_VAR NAME=LID>'});" class='ui-button ui-button-go ui-corner-all'>Add Selected Items</span>
 
 </div> <!-- tab-5 -->
-
 </div> <!-- tabs -->
 </TMPL_IF> <!-- ADD_LIST_ITEMS -->
 
@@ -739,5 +708,5 @@ To do:
    - Disable add button if no items left to add
    - show count in search results (x of y)
 </div>
-</TMPL_IF>
+</TMPL_IF> <!-- ADMIN_AREA -->
 

@@ -145,10 +145,13 @@ sub gen_html {
 	$template->param( LOGO_PNG => "FeatList-logo.png" );
 	$template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
 	$template->param( DATE     => $DATE );
-	my $list_name = $FORM->param('list_name') || $FORM->param('ln');
-	my $box_name = "Feature List:";
-	$box_name .= " $list_name" if $list_name;
-	$template->param( BOX_NAME   => $box_name );
+#	my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
+#	$link = CoGe::Accessory::Web::get_tiny_link( url => $link );
+#	my $box_name = "Feature List: ";
+#	my $list_name = $FORM->param('list_name') || $FORM->param('ln');
+#	$box_name .= " $list_name" if $list_name;
+#	$box_name .= "<a class='link' onclick=window.open('$link'); href='$link'>$link</a>";
+#	$template->param( BOX_NAME   => $box_name );	
 	$template->param( BODY       => $body );
 	$template->param( ADJUST_BOX => 1 );
 	$html .= $template->output;
@@ -156,6 +159,11 @@ sub gen_html {
 
 sub gen_body {
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'FeatList.tmpl' );
+	
+	my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
+	$link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, page => $PAGE_NAME, url => $link );
+	$template->param( LINK	 => $link );
+	
 	my $form = $FORM;
 	my $no_values;
 	$BASEFILE = $form->param('basename');

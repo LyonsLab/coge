@@ -4,12 +4,10 @@ use strict;
 use GD;
 use Getopt::Long;
 
-use lib '/home/mbomhoff/CoGe/Accessory/lib'; #FIXME 8/2/12 remove
-use lib '/home/mbomhoff/CoGeX/lib'; #FIXME 8/2/12 remove
 
-use CoGeX_dev;
-use CoGe_dev::Accessory::Web;
-use CoGe_dev::Accessory::SynMap_report;
+use CoGeX;
+use CoGe::Accessory::Web;
+use CoGe::Accessory::SynMap_report;
 use DBI;
 use Data::Dumper;
 use DBI;
@@ -60,7 +58,7 @@ $selfself = 1 unless defined $selfself;
 $labels = 1 unless defined $labels;
 $chr_sort_order = "size" unless defined $chr_sort_order;
 
-$P = CoGe_dev::Accessory::Web::get_defaults($conffile);
+$P = CoGe::Accessory::Web::get_defaults($conffile);
 $font = $P->{FONT} unless $font && -r $font;
 $GZIP = $P->{GZIP};
 $GUNZIP = $P->{GUNZIP};
@@ -74,8 +72,8 @@ if (defined $dagfile and ! (-r $dagfile || -r $dagfile.".gz"))
     warn "dagfile specified but not present or readable: $!";
   }
 
-$dagfile = CoGe_dev::Accessory::Web::gunzip($dagfile, $conffile) if $dagfile;# && $dagfile =~ /\.gz$/;
-$alignfile = CoGe_dev::Accessory::Web::gunzip($alignfile, $conffile) if $alignfile;# && $alignfile =~ /\.gz$/;
+$dagfile = CoGe::Accessory::Web::gunzip($dagfile, $conffile) if $dagfile;# && $dagfile =~ /\.gz$/;
+$alignfile = CoGe::Accessory::Web::gunzip($alignfile, $conffile) if $alignfile;# && $alignfile =~ /\.gz$/;
 
 if ($alignfile && -r $alignfile && $alignfile =~ /\.gz$/)
   {
@@ -104,8 +102,8 @@ my $DBPORT = $P->{DBPORT};
 my $DBUSER = $P->{DBUSER};
 my $DBPASS = $P->{DBPASS};
 my $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
-$coge = CoGeX_dev->dbconnect(db_connection_string=>$connstr, db_name=>$DBUSER, db_passwd=>$DBPASS );
-my $synmap_report = new CoGe_dev::Accessory::SynMap_report;
+$coge = CoGeX->dbconnect(db_connection_string=>$connstr, db_name=>$DBUSER, db_passwd=>$DBPASS );
+my $synmap_report = new CoGe::Accessory::SynMap_report;
 
 my ($dsg1) = $coge->resultset('Genome')->find($dsgid1);
 my ($dsg2) = $coge->resultset('Genome')->find($dsgid2);
@@ -345,8 +343,8 @@ binmode OUT;
 print OUT $y_labels_gd->png;
 close OUT;
 
-CoGe_dev::Accessory::Web::gzip($dagfile, $conffile) if $dagfile && -r $dagfile;
-CoGe_dev::Accessory::Web::gzip($alignfile, $conffile) if $alignfile && -r $alignfile;
+CoGe::Accessory::Web::gzip($dagfile, $conffile) if $dagfile && -r $dagfile;
+CoGe::Accessory::Web::gzip($alignfile, $conffile) if $alignfile && -r $alignfile;
 #generate_historgram of ks values if necessary
 
 #This function appears to parse dagchainer output, generated in SynMap.pl, and draw the results to the GD graphics context.

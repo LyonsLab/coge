@@ -1,188 +1,115 @@
 <TMPL_IF NAME=MAIN>
-	<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
-	<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></SCRIPT>
-	<SCRIPT language="JavaScript">
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></SCRIPT>
+<SCRIPT language="JavaScript">
 
-	$(document).ready(function(){
-		$('#genome_table').tablesorter({		
+$(document).ready(function(){
+	$('#genome_table').tablesorter({		
 		cssAsc: 'headerSortUp',		// Class name for ascending sorting action to header
 		cssDesc: 'headerSortDown',	// Class name for descending sorting action to header
-	//	cssHeader: 'header',			// Class name for headers (th's)
+		//cssHeader: 'header',		// Class name for headers (th's)
 		widgets: ['zebra'],
 		headers: {0: {sorter: false},},					
-		});
-		check_display();
-/*		$('#genome_table').columnFilters({
-			alternateRowClassNames['even','odd'],
-			excludeColumns: [0,],
-			});
+	});
+	check_display();
+/*	$('#genome_table').columnFilters({
+		alternateRowClassNames['even','odd'],
+		excludeColumns: [0,],
+	});
 */
-		$("#search_bar").keyup( function() { filter_rows( $(this).val() ); });
-		$('#search_type').mouseup( function() { filter_rows( $('#search_bar').val() ); });
+
+	$("#search_bar").keyup( function() { filter_rows( $(this).val() ); });
+	$('#search_type').mouseup( function() { filter_rows( $('#search_bar').val() ); });
+	filter_rows();
 
 	$.ajaxSetup({
-	               type: "GET",
-	               url: "GenomeList.pl",
-	               dataType: "html",
-	               cache: false,
-	       });
-
+               type: "GET",
+               url: "GenomeList.pl",
+               dataType: "html",
+               cache: false,
 	});
+});
 
 
 
-	//set up the jquery ui
-	$(function() {
-	     //substaniate dialog box	     
-	     $("#table_opts_dialog").dialog({ height: 200,
-	       				     width: 627,
-					     autoOpen: false,
+//set up the jquery ui
+$(function() {
+	//substaniate dialog box	     
+	$("#table_opts_dialog").dialog({ 
+		height: 200,
+		width: 627,
+		autoOpen: false,
 	});
 	
-	     $("#edit_genome_info").dialog({ autoOpen: false,
-//	     			      height: 331,
-//				      width: 461,
-	     			      buttons: { "Cancel": function() { $(this).dialog("close"); },
-				      	        "Save": function() { 
+	$("#edit_genome_info").dialog({ 
+		autoOpen: false,
+		//height: 331,
+		//width: 461,
+		buttons: { 
+			"Cancel": function() { $(this).dialog("close"); },
+			"Save": function() { 
+				$.ajax({
+					data: {
+						jquery_ajax: 1,
+						fname: 'add_to_user_history',
+						work_name: $('#work_name').val(),
+						description: $('#description').val(),
+						url: document.location.href,
+						note: $('#note').val(),
+						archive: 1,
+						tool: 'Genome list'
+					},
+					success: function(val){}
+				});
 									
-									
-									$.ajax({
-									    data: {
-									 	    jquery_ajax: 1,
-											fname: 'add_to_user_history',
-									           work_name: $('#work_name').val(),
-									   		   description: $('#description').val(),
-											   url: document.location.href,
-											   note: $('#note').val(),
-											   archive: 1,
-											   tool: 'Genome list'
-									          },
-									    success: function(val){
-										 
-										}
-									  });
-									
-									$(this).dialog("close"); 
-						}
-						}
+				$(this).dialog("close"); 
+			}
+		}
 	});
-	     //button effects on events
-	     $('#table_opts').click(function() {
-					$('#table_opts_dialog').dialog('open');
-			});
-	     $('#history_dialog_button').click(function() {
-				
-					$('#save_form').dialog('open');
-			});
-
-	}); 
+	
+	//button effects on events
+	$('#table_opts').click(function() {
+		$('#table_opts_dialog').dialog('open');
+	});
+	$('#history_dialog_button').click(function() {
+		$('#save_form').dialog('open');
+	});
+}); 
 
 	//Filters Rows for search_text - Case sensitive as of now, and searches hidden columns...
 	function filter_rows (search_text){
-	  if(! search_text) { $("#genome_table tr:hidden").show(0);}
+	  if(!search_text) { $("#genome_table_body tr:hidden").show(0);}
 	  else if (search_text.length >= 3) {
 	    $("#genome_table_body tr:hidden").show(0);
 	    if( $('#search_type').val() == 1 ) { $("#genome_table_body tr:not(:contains('"+search_text+"'))").hide(); }
 	    else { $("#genome_table_body tr:contains('"+search_text+"')").hide(); }
 	  }
-	  else return;
+	  
+	  $('#filter_count').html('Showing ' + $("#genome_table_body tr:visible").length + ' of ' + $("#genome_table_body tr").length + ' genomes');
 	}
 
 	function feature_checkboxes(){
-	 var action = $('#checked_action').val();
-	 var accn=",";
-	 $('#genome_table :checkbox').each(function(){
-	    if (this.checked == true) accn = accn + this.id+",";
-	  });
-	 if (accn == ",") {
-	   alert("Danger Will Robinson!\n1D-10T error!  You have not checked any genomes.");
-	   return;
-	 }
-	 if (action == "fasta"){
-	   $('#retrieve_message').html('Retrieving data');
-	   $.ajax({
-	    data: {
-	 	   jquery_ajax: 1,
-	           fname: 'get_fasta_seqs',
-	    	   accn: accn
-	          },
-	    success : export_url
-	   });
-	 }
-	 else if (action == "xls"){
-	   $('#retrieve_message').html('Retrieving data');
-	   
-	   $.ajax({
-	    data: {
-	 	    jquery_ajax: 1,
-	           fname: 'generate_excel_file',
-	    	   accn: accn
-	          },
-	    success : export_url
-	  });
-	 }
-	 else if (action == "csv"){
-	   $('#retrieve_message').html('Retrieving data');
-	   
-	   $.ajax({
-	    data: {
-	 	    jquery_ajax: 1,
-	           fname: 'generate_csv_file',
-	    	   accn: accn
-	          },
-	    success : export_url
-	  });
-	 }
-	 else if (action == "blast"){
-	   $('#retrieve_message').html('Loading CoGeBlast');
-	   $.ajax({
-	    data: {
-	 	   jquery_ajax: 1,
-	           fname: 'send_to_CoGeBlast',
-	    	   accn: accn
-	          },
-	    success : export_url
-	  });
-	 }
-	 else if (action == "list"){
-	   $('#retrieve_message').html('Loading GenomeList');
-	   $.ajax({
-	    data: {
-	 	   jquery_ajax: 1,
-	           fname: 'send_to_GenomeList',
-	    	   accn: accn
-	          },
-	    success : export_url
-	  });
-	 }
-	 else if (action == "synfind"){
-	   $('#retrieve_message').html('Loading SynFind');
-	   $.ajax({
-	    data: {
-	 	   jquery_ajax: 1,
-	           fname: 'send_to_SynFind',
-	    	   accn: accn
-	          },
-	    success : export_url
-	  });
-	 }
-	 else if (action == "align"){
-	   $('#retrieve_message').html('Loading GenomeAlign');
-	   $.ajax({
-	    data: {
-	 	   jquery_ajax: 1,
-	           fname: 'send_to_msa',
-	    	   accn: accn
-	          },
-	    success : export_url
-	  });
-	 }
-	 else {
-	   alert("We will get this working ... soon.");
-	 }
+		var action = $('#checked_action').val();
+		var accn = ",";
+		$('#genome_table :checkbox').each(function(){
+			if (this.checked == true) accn = accn + this.id + ",";
+		});
+		if (accn == ",") {
+			alert("Danger Will Robinson!\n1D-10T error!  You have not selected any genomes.");
+			return;
+		}
+		
+		$.ajax({
+			data: {
+				jquery_ajax: 1,
+				fname: action,
+				accn_list: accn
+			},
+			success : function(url) {
+				window.open(url,'_blank');
+			}
+		});		
 	}
-
-
 
 	function export_url(url,num_accns) {
 	 if (url == "alert") {
@@ -196,7 +123,6 @@
 	 $('#retrieve_message').html(' ');
 
 	}
-
 
 	function show_all_codon_tables(num) {
 	for (var i=1; i<=num; i++)
@@ -230,7 +156,6 @@
 		 }
 		 $('#get_all_cg').remove();
 	}
-	
 
 	function update_table() {
 	if ($.active)
@@ -240,9 +165,6 @@
 	 }
 	 $('#genome_table').trigger("update");	
 	}
-
-
-
 
 	function get_codon_table (num) {
 	if ($.active)
@@ -309,7 +231,6 @@
 	});
 	}
 
-
 	function get_all_gc(num) {
 	for (var i=1; i<=num; i++)
 	 {
@@ -367,6 +288,7 @@
          {
            $('#gl'+val).remove();
 	 }
+	 
 	function get_all_feat_counts(num) {
 	for (var i=1; i<=num; i++)
 	 {
@@ -581,41 +503,50 @@ function edit_list_info (lid) {
 
 	</SCRIPT>
 
-	
-	Your Lists:
-	<span id=user_lists><TMPL_VAR NAME=USER_LISTS></span>
-	Public Lists:
-	<span id=pub_lists><TMPL_VAR NAME=PUBLIC_LISTS></span>
+<div style='padding-top:10px;'>
+ <span id='link_hidden' class='ui-button ui-corner-all ui-button-icon-right' onclick="$('#link_hidden').hide(); $('#link_shown').fadeIn();"><span class="ui-icon ui-icon-arrowreturnthick-1-w"></span>Link to this</span>
+ <span id='link_shown' style='display:none;' class='small infobox'>
+ Use this link to return to this page at any time: <span class='link' onclick=window.open('<TMPL_VAR NAME="LINK">');><b><TMPL_VAR NAME="LINK"></b></span>
+ </span>
+</div>
 
-	<table width=100%>
+<!--
+	<div class="small">
+     Your Lists: 
+     <span id=user_lists><TMPL_VAR NAME=USER_LISTS></span>
+     Public Lists:
+	 <span id=pub_lists><TMPL_VAR NAME=PUBLIC_LISTS></span>
+    </div>
+-->
+	<table class="small" width="100%" style="padding-top:10px">
 	 <tr>
 	  <td>
-	   Filter Table Rows: 
-	   <input type=text id=search_bar>
-	   <select id=search_type>
+	   Filter: 
+	   <input type="text" id="search_bar">
+	   <select id="search_type">
 	   <option value="1">Contains</option>
 	   <option value="0">Does NOT contain</option>
 	   </select>
+	   <span id='filter_count' style="margin-left:20px;"></span>
 	  </td>
-	  <td align=right> 	<span href='#' id="table_opts" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-newwin"></span>Change Viewable Columns</span></td>
-	 </tr>
+      <td align="right"><span href='#' id="table_opts" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-newwin"></span>Change Viewable Columns</span></td>
+      </tr>
 	</table>
 
 	<!-- <span class=small>Tip: Use "*" for wildcards, and "!" to search for not containing</span> -->
-	<div class ="small"> Genome Count: <TMPL_VAR NAME="GENOME_COUNT"></div>
 	<TABLE id='genome_table' class="ui-widget-content ui-corner-all">
-	<THEAD align=left>
+	<THEAD align="left">
 	 <tr>
 	  <TH> </TH>
-	  <TH >Genome Name</TH>
-	  <TH >Description</TH>
-	  <TH >Source</TH>
-	  <TH >Provenance</TH>
-	  <TH >Sequence Type</TH>
-	  <TH >Version</TH>
-	  <TH >Chr Count</TH>
-	  <TH >Length (bp)</TH>
-	  <TH >GC%
+	  <TH>Genome Name</TH>
+	  <TH>Description</TH>
+	  <TH>Source</TH>
+	  <TH>Provenance</TH>
+	  <TH>Sequence Type</TH>
+	  <TH>Version</TH>
+	  <TH>Chr Count</TH>
+	  <TH>Length (bp)</TH>
+	  <TH>GC%
 	<br><span id="get_all_gc" class="link small" onclick="get_all_gc(<TMPL_VAR NAME="GENOME_COUNT">)">Get all</span>
 	  </TH>
 	  <TH >AT%</TH>
@@ -637,7 +568,7 @@ function edit_list_info (lid) {
 	</th>
 	  </tr>
 	</THEAD>
-	<tbody align=left valign="top" id="genome_table_body" class=small>
+	<tbody align="left" valign="top" id="genome_table_body" class="small">
 	 <TMPL_LOOP NAME=INFO>
 	   <TR id='gl<TMPL_VAR NAME=DSGID>'>
 	     <TD><input type=checkbox checked id='<TMPL_VAR NAME=DSGID>'><input type=hidden id='dsgid_<TMPL_VAR NAME=COUNT>' value='<TMPL_VAR NAME=DSGID>'></TD>
@@ -664,7 +595,7 @@ function edit_list_info (lid) {
 	 </tbody>
 	</TABLE>
 
-	<table width=100%>
+	<table width='100%'>
 	<tr>
 	 <td>
   	  <!-- TODO - consider putting onClick declarations in javascript for simplicity -->
@@ -673,24 +604,27 @@ function edit_list_info (lid) {
 	  <span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#genome_table tr :visible :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Check Visible</span>
 	  <span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="$('#genome_table tr :visible :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minus"></span>Uncheck Visible</span>
 	 </TD>
-	 <td align=right></span>
+	 <td align='right'></span>
 	 </td>
 	</tr>
 	</table>
 
-	<div>
-	 Send Selected Genomes to:  
-	  <select name=checked_action id=checked_action>
-	   <option value = "fasta">FASTA Sequences</option>
-	   <option value = "csv">Export CSV</option>
-	   <option value = "xls">Export XLS</option>
-	   <option value = "align">GenomeAlign</option>
-	   <option value = "blast">CoGeBlast</option>
-	   <option value = "synfind">SynFind</option>
-	   <option value = "list">GenomeList</option>
+	<div class='small'>
+	 Send selected genomes to:  
+	  <select name="checked_action" id="checked_action">
+	   <option value="send_to_fasta">FASTA Sequences</option>
+	   <option value="send_to_csv">Export CSV</option>
+	   <option value="send_to_xls">Export XLS</option>
+	   <option value="send_to_align">GenomeAlign</option>
+	   <option value="send_to_blast">CoGeBlast</option>
+	   <option value="send_to_SynFind">SynFind</option>
+	   <option value="send_to_GenomeList">GenomeList</option>
+	   <option value="send_to_list">New List</option>
 	  </select>
 	<span class='ui-button ui-corner-all ui-button-icon-right  ui-button-go' onclick="feature_checkboxes();"><span class="ui-icon ui-icon-extlink"></span>Go</span><span id=retrieve_message class=alert></span>  
 	 </div>
+	 
+	 <br>
 
 	<div id="table_opts_dialog" title="Table Information Options">
 	<form id=genome_list>

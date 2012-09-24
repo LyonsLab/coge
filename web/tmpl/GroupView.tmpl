@@ -139,7 +139,6 @@ function add_user(opts) {
 			},
 		});
 	});
-	
 };
 
 function remove_user (opts) {
@@ -374,7 +373,7 @@ Are you sure you want to permanently delete this group?<p>
   </td> 
   <td>
    <span href="javascript:void(0)" onClick="remove_user({ugid: '<TMPL_VAR NAME=UGID>'});" style="display:none" id="remove_user" class='ui-button ui-button-go ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-minus"></span>Remove</span>
-   <span href="javascript:void(0)" onClick="add_user({ugid: '<TMPL_VAR NAME=UGID>'});" id="add_user" class='ui-button ui-button-go ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Add</span>
+   <span href="javascript:void(0)" onClick="add_user({ugid: '<TMPL_VAR NAME=UGID>'});" class='ui-button ui-button-go ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Add</span>
   </td>
   <td>
    CoGe Users:<br>
@@ -420,7 +419,80 @@ Are you sure you want to permanently delete this group?<p>
 
 
 
+<TMPL_IF NAME=SET_GROUP_CREATOR>
+<table class="small">
+ <tr>
+  <td>
+   CoGe Users:<br>
+   <form name="new_creator">
+    <select id="new_creator_uid" name="new_creator_uid" ondblclick="add_user({ugid: '<TMPL_VAR NAME=UGID>'})" size=10>
+     <TMPL_LOOP NAME=ALL_UGID_LOOP>
+      <OPTION value=<TMPL_VAR NAME=UID>><TMPL_VAR NAME=UID_NAME></OPTION>
+     </TMPL_LOOP>
+    </select><br>
+   </form>
+   <SCRIPT TYPE="text/javascript"> 
+    var new_user_filter = new filterlist(document.new_creator.new_creator_uid);
+   </SCRIPT>
+   Filter: <INPUT name="regexp" onKeyUp="new_user_filter.set(this.value)">
+  </td>
+ </tr>
+</table>
+<span href="javascript:void(0)" onClick="set_group_creator({ugid: '<TMPL_VAR NAME=UGID>'});" class='ui-button ui-button-go ui-corner-all'>Set Creator</span>
+</TMPL_IF> <!-- SET_GROUP_CREATOR -->
+
+
+
 <TMPL_IF NAME=ADMIN_AREA>
+<SCRIPT language="JavaScript">
+function dialog_set_group_creator (opts) {
+	ugid = opts.ugid;
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'dialog_set_group_creator',
+			ugid: ugid,
+		},
+		success : function(data) {
+			data = eval('('+data+')');
+			title = data.title;
+			$("#group_creator_edit_box").dialog("option", "title", title);
+			$("#group_creator_edit_box").html(format_box_info(data));
+			$("#group_creator_edit_box").dialog('open');
+			//setup_button_states();
+		},
+	});
+}
+
+function set_group_creator(opts) {
+	ugid = opts.ugid;
+	$('#new_creator_uid > option:selected').each( function(){
+		var uid = $(this).attr("value");
+		$.ajax({
+			data: {
+				jquery_ajax: 1,
+				fname: 'set_group_creator',
+				ugid: ugid,
+				uid: uid
+			},
+			success : function(data) {
+				if (data != 1) { alert(data); }
+				else {
+					$("#group_creator_edit_box").dialog('close');
+					run_get_group_info({divid: 'group_info', ugid: ugid});
+				}
+			},
+		});
+	});
+};
+</SCRIPT>
 <hr>
 Admin Functions:<br>
-</TMPL_IF>
+
+<div>
+ <TMPL_VAR NAME=ADMIN_BUTTONS>
+</div>
+
+<div id="group_creator_edit_box" class="dialog_box"></div>
+
+</TMPL_IF> <!-- ADMIN_AREA -->

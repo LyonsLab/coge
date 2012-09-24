@@ -1,0 +1,128 @@
+<TMPL_IF NAME=MAIN>
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></SCRIPT>
+
+<SCRIPT language="JavaScript">
+$(document).ready(function(){
+	$.ajaxSetup({
+		type: "POST",
+		url: "<TMPL_VAR NAME=PAGE_NAME>",
+		dataType: "html",
+		cache: false,
+	});
+	
+	set_table();
+	
+	$(".dialog_box").dialog({autoOpen: false, width: 600});
+
+	$("#search_bar").keyup( function() { filter_rows( $(this).val() ); });
+	$('#search_type').mouseup( function() { filter_rows( $('#search_bar').val() ); });
+	filter_rows();
+});
+
+function set_table () {
+	$('#history_table').tablesorter({widgets: ['zebra']});
+}
+
+//Filters Rows for search_text - Case sensitive as of now, and searches hidden columns...
+function filter_rows (search_text){
+	if(! search_text) { $("#history_table tr:hidden").show(0);}
+	else if (search_text.length >= 3) {
+		$("#history_table_body tr:hidden").show(0);
+		if( $('#search_type').val() == 1 ) { $("#history_table_body tr:not(:contains('"+search_text+"'))").hide(); }
+		else { $("#history_table_body tr:contains('"+search_text+"')").hide(); }
+	}
+	$('#filter_count').html('<span style="color:darkgray"><i>Showing ' + $("#history_table_body tr:visible").length + ' of ' + $("#history_table_body tr").length + ' entries</i></span>');
+}
+
+function run_get_history() {
+	div_id = 'history'; // div to put result into
+	time_range = $('#time_range').val();
+	search_term = $('#search_bar').val();
+	
+	// create a new closure who's scope does *not*
+	// include the `divid` value so that callback will 
+	// not clobber the `divid` variable 
+	var create_callback = function(divid) {
+		var local_divid = divid;
+		return function (data) {
+			$('#'+local_divid).html(data);
+			set_table();
+			filter_rows(search_term);
+		};
+	};
+
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'get_history_for_user',
+			time_range: time_range,
+		},
+		success : create_callback(div_id)
+	});
+}
+</SCRIPT>
+
+
+
+<div class="small" style="padding-top:15px;padding-bottom:5px;">
+ <span style="padding-right:10px">
+  Time Range: 
+  <select id="time_range" onchange="run_get_history();">
+   <option value="0">All</option>
+   <option selected='selected' value="1">Last 24 hrs</option>
+   <option value="7">Last week</option>
+   <option value="30">Last month</option>
+  </select>
+ </span>
+ <span>
+  Filter: 
+  <input type="text" id="search_bar">
+  <select id="search_type">
+   <option value="1">Contains</option>
+   <option value="0">Does NOT contain</option>
+  </select>
+  <!-- <span class=small>Tip: Use "*" for wildcards, and "!" to search for not containing</span> -->
+  <span id='filter_count' style="margin-left:20px;margin-right:100px;"></span>
+ </span>
+</div>
+
+<div id='history'>
+ <TMPL_VAR NAME=HISTORY_CONTENTS>
+</div>
+
+</TMPL_IF> <!-- MAIN -->
+
+<TMPL_IF NAME=HISTORY>
+<div id='history'>
+<table id='history_table' class="small ui-widget-content ui-corner-all">
+ <thead align="left"> 
+  <tr>
+   <th>Date/Time</th>
+   <th>User</th>
+   <th>Page</th>
+   <th>Description</th>
+   <th>Link</th>
+  </tr>
+ </thead>
+ <tbody id='history_table_body' align="left" valign="top" class="small">
+  <TMPL_LOOP NAME=HISTORY_LOOP>
+  <tr valign="top">
+   <td><TMPL_VAR NAME=TIME></td>
+   <td><TMPL_VAR NAME=USER></td>
+   <td><TMPL_VAR NAME=PAGE></td>
+   <td><TMPL_VAR NAME=DESCRIPTION></td>
+   <td><TMPL_VAR NAME=LINK></td>
+  </tr>
+  </TMPL_LOOP>
+ </tbody>
+</table>
+</div>
+</TMPL_IF> <!-- HISTORY -->
+
+
+
+<TMPL_IF NAME=ADMIN_AREA>
+<hr>
+Admin Functions:<br>
+</TMPL_IF> <!-- ADMIN_AREA -->

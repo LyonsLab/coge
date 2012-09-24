@@ -945,7 +945,7 @@ sub go_synfind
     $html .= "</tbody></table>";
 
     my $featlist_link = gen_featlist_link(fids=>[$fid, map {$_->[0]} @$matches]);
-    my $tiny_synfind_link = CoGe::Accessory::Web::get_tiny_link(url=>$synfind_link);
+    my $tiny_synfind_link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, page => $PAGE_NAME, url => $synfind_link );
     $html .= "<a href='$tiny_synfind_link' class='ui-button ui-corner-all' target=_new_synfind>Regenerate this analysis: $tiny_synfind_link</a>";
     my $open_all_synmap = join ("\n", keys %open_all_synmap);
     $html .= qq{<a onclick='$open_all_synmap' class='ui-button ui-corner-all'>Generate all dotplots</a><br><br>};

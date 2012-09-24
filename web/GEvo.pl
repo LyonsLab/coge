@@ -4169,7 +4169,7 @@ sub get_tiny_url
   {
     my %opts = @_;
     my $url = $opts{url};
-    my $tiny = CoGe::Accessory::Web::get_tiny_link(url=>$url);
+    my $tiny = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, page => $PAGE_NAME, url=>$url );
     my $html .= qq{<a href=$tiny onclick=window.open('$tiny') target =_new>$tiny<br>(See log file for full link)</a>};
     return $html;
   }

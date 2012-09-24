@@ -53,10 +53,11 @@ $SIG{'__WARN__'} = sub { };    #silence warnings
 %FUNCTION = (
 	gen_html                => \&gen_html,
 	get_feature_counts      => \&get_feature_counts,
-	generate_excel_file     => \&generate_excel_file,
-	generate_csv_file       => \&generate_csv_file,
+	send_to_xls     		=> \&send_to_xls,
+	send_to_csv       		=> \&send_to_csv,
+	send_to_ExperimentList	=> \&send_to_ExperimentList,
+	send_to_list			=> \&send_to_list,
 	gen_data                => \&gen_data,
-	send_to_ExperimentList  => \&send_to_ExperimentList,
 	save_FeatList_settings  => \&save_FeatList_settings,
 	add_to_user_history     => \&add_to_user_history,
 );
@@ -97,13 +98,13 @@ sub gen_html {
 	$template->param( LOGO_PNG => "ExperimentList-logo.png" );
 	$template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
 	$template->param( DATE     => $DATE );
-	my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
-	$link = CoGe::Accessory::Web::get_tiny_link( url => $link );
-	my $box_name = "Experiment List: ";
-	my $list_name = $FORM->param('list_name') || $FORM->param('ln');
-	$box_name .= " $list_name" if $list_name;
-	$box_name .= "<span class=link onclick=window.open('$link');>$link</span>";
-	$template->param( BOX_NAME   => $box_name );
+#	my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
+#	$link = CoGe::Accessory::Web::get_tiny_link( url => $link );
+#	my $box_name = "Experiment List: ";
+#	my $list_name = $FORM->param('list_name') || $FORM->param('ln');
+#	$box_name .= " $list_name" if $list_name;
+#	$box_name .= "<span class=link onclick=window.open('$link');>$link</span>";
+#	$template->param( BOX_NAME   => $box_name );
 	$template->param( BODY       => $body );
 	$template->param( ADJUST_BOX => 1 );
 	$html .= $template->output;
@@ -111,6 +112,11 @@ sub gen_html {
 
 sub gen_body {
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'ExperimentList.tmpl' );
+	
+	my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
+	$link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, page => $PAGE_NAME, url => $link );
+	$template->param( LINK	 => $link );
+	
 	my $form = $FORM;
 	my $no_values;
 	$BASEFILE = $form->param('basename');
@@ -169,10 +175,9 @@ sub gen_body {
 		}
 	}
 
-	my ( $table, $count ) =
-	  generate_table( expids => [sort {$a<=>$b} keys %expids] );
+	my ( $table, $count ) = generate_table( expids => [sort {$a<=>$b} keys %expids] );
 
-	$template->param( 'EXPERIMENT_COUNT' => $count );
+#	$template->param( 'EXPERIMENT_COUNT' => $count );
 
 	if ($table) {
 		$template->param( INFO => $table );
@@ -231,11 +236,7 @@ sub generate_table {
 			my $key = $_->name . ($_->desc ? ': ' . $_->desc : '');
 			$types{$key}++;
 		}
-		my $type_tbl = '<table class="small"><tbody>';
-		foreach (sort keys %types) {
-			$type_tbl .= "<tr><td>$_</td></tr>";	
-		}
-		$type_tbl .= '</tbody></table>';
+		my $type_tbl = join('<br>', sort keys %types);
 		
 		# Build sub-table of annotations
 		%types = ();
@@ -246,22 +247,19 @@ sub generate_table {
 			my $typename = $type->name;
 			push @{$types{$groupname}{$typename}}, $_->annotation;
 		}
-		my $annot_tbl .= '<table class="small"><tbody>';
+		my $annot_tbl;
 		foreach my $groupname (sort keys %types) {
 			my $first1 = 1;
 			foreach my $typename (sort keys %{$types{$groupname}}) {
 				my $first2 = 1;
 				foreach my $annot (sort @{$types{$groupname}{$typename}}) {
-					$annot_tbl .= '<tr>';
-					$annot_tbl .= '<td>' . ($first1 ? $groupname : '') . '</td>' if ($groupname);
-					$annot_tbl .= '<td>' . ($first2 ? $typename  : '') . '</td>';
-					$annot_tbl .= '<td></td>' if (not $groupname);
-					$annot_tbl .= '<td>' . $annot . '</td></tr>';
+					$annot_tbl .= ($first1 ? "$groupname: " : '') if ($groupname);
+					$annot_tbl .= ($first2 ? "$typename: "  : '');
+					$annot_tbl .= $annot . '<br>';
 					$first1 = $first2 = 0;
 				}
 			}
 		}
-		$annot_tbl .= '</tbody></table>';
 		
 		# Build source link
 		my $src = $exp->source;
@@ -272,8 +270,7 @@ sub generate_table {
 		$source .= "</span>" if ($link);
 				
 		push @table, 
-		{
-			COUNT		=> $count,
+		{	COUNT		=> $count,
 			EXPID		=> $expid,
 			NAME		=> $exp->name,
 			DESC		=> $exp->desc,
@@ -358,16 +355,46 @@ sub read_file {
 sub send_to_ExperimentList    #send to ExperimentList
 {
 	my %opts      = @_;
-	my $accn_list = $opts{accn};
+	my $accn_list = $opts{accn_list};
+print STDERR "matt: $accn_list\n";
 	$accn_list =~ s/^,//;
 	$accn_list =~ s/,$//;
-	my $url = $URL . "ExperimentList.pl?dsgid=$accn_list";
+	#my $url = $URL . "ExperimentList.pl?eid=$accn_list";
+	my $url = "ExperimentList.pl?eid=$accn_list";
 	return $url;
 }
 
-sub generate_excel_file { # FIXME mdb
+sub send_to_list    #send to list
+{
+	my %opts = @_;
+	my $accn_list = $opts{accn_list};
+	$accn_list =~ s/^,//;
+	$accn_list =~ s/,$//;
+	
+	# Create the new list
+	my $list = $coge->resultset('List')->create( 
+	  { name => 'experimentlist',
+		description => 'Created by ExperimentList',
+		list_type_id => 2, # FIXME hardcoded type!
+		user_group_id => $USER->owner_group->id,
+		restricted => 1
+	  } );
+	  
+	foreach my $accn (split(/,/, $accn_list)) {
+		next if $accn =~ /no$/;
+		my ($eid) = split('_', $accn);
+		$coge->resultset('ListConnector')->create( { parent_id => $list->id, child_id => $eid, child_type => 3 } ); #FIXME hardcoded type!
+	}
+	
+	$coge->resultset('Log')->create( { user_id => $USER->id, page => $PAGE_NAME, description => 'create list from experiments id' . $list->id } );	
+	
+	my $url = "ListView.pl?lid=" .  $list->id;
+	return $url;
+}
+
+sub send_to_xls { # FIXME mdb
 	my %args      = @_;
-	my $accn_list = $args{accn};
+	my $accn_list = $args{accn_list};
 	$accn_list =~ s/^,//;
 	$accn_list =~ s/,$//;
 	$cogeweb = CoGe::Accessory::Web::initialize_basefile( tempdir => $TEMPDIR );
@@ -390,14 +417,12 @@ sub generate_excel_file { # FIXME mdb
 	$worksheet->write( 0, 9,  "Percent N|X" );
 	$worksheet->write( 0, 10, "OrganismView Link" );
 
-	foreach my $dsgid ( split /,/, $accn_list ) {
-
+	foreach my $dsgid ( split(/,/, $accn_list) ) {
 		my ($dsg) = $coge->resultset("Genome")->find($dsgid);
-
 		next unless $dsg;
+		
 		my $name = $dsg->name ? $dsg->name : $dsg->organism->name;
-		my $desc =
-		  $dsg->description ? $dsg->description : $dsg->organism->description;
+		my $desc = $dsg->description ? $dsg->description : $dsg->organism->description;
 		my ($ds_source) = $dsg->source;
 		my $source = $ds_source->name;
 		my $provenance = join( " ", map { $_->name } $dsg->datasets );
@@ -422,8 +447,7 @@ sub generate_excel_file { # FIXME mdb
 		$worksheet->write( $i, 7, $gc . '%' );
 		$worksheet->write( $i, 8, $at . '%' );
 		$worksheet->write( $i, 9, $n . '%' );
-		$worksheet->write( $i, 10,
-			$P->{SERVER} . 'OrganismView.pl?dsgid=' . $dsgid );
+		$worksheet->write( $i, 10, $P->{SERVER} . 'OrganismView.pl?dsgid=' . $dsgid );
 
 		$i++;
 	}
@@ -432,37 +456,23 @@ sub generate_excel_file { # FIXME mdb
 	return $file;
 }
 
-sub generate_csv_file { # FIXME mdb 
+sub send_to_csv { # FIXME mdb 
 	my %args      = @_;
-	my $accn_list = $args{accn};
+	my $accn_list = $args{accn_list};
 	$accn_list =~ s/^,//;
 	$accn_list =~ s/,$//;
 	$cogeweb = CoGe::Accessory::Web::initialize_basefile( tempdir => $TEMPDIR );
 	my $basename = $cogeweb->basefilename;
 	my $file     = "$TEMPDIR/$basename.csv";
 	open( OUT, ">$file" );
-	print OUT join( "\t",
-		"CoGe Genome ID",
-		"Name",
-		"Description",
-		"Source",
-		"Provenance",
-		"Sequence Type",
-		"Chr Count",
-		"Length (bp)",
-		"Percent GC",
-		"Percent AT",
-		"Percent N|X",
-		"OrganismView Link" ),
-	  "\n";
+	print OUT join( "\t", "CoGe Genome ID", "Name", "Description", "Source", "Provenance", "Sequence Type", "Chr Count", "Length (bp)", "Percent GC", "Percent AT", "Percent N|X", "OrganismView Link" ), "\n";
 
-	foreach my $dsgid ( split /,/, $accn_list ) {
+	foreach my $dsgid ( split(/,/, $accn_list) ) {
 		next unless $dsgid;
 		my ($dsg) = $coge->resultset("Genome")->find($dsgid);
 		next unless $dsg;
 		my $name = $dsg->name ? $dsg->name : $dsg->organism->name;
-		my $desc =
-		  $dsg->description ? $dsg->description : $dsg->organism->description;
+		my $desc = $dsg->description ? $dsg->description : $dsg->organism->description;
 		my ($ds_source) = $dsg->source;
 		my $source = $ds_source->name;
 		my $provenance = join( "||", map { $_->name } $dsg->datasets );
@@ -472,14 +482,7 @@ sub generate_csv_file { # FIXME mdb
 		my ( $gc, $at, $n ) = $dsg->percent_gc();
 		$at *= 100;
 		$gc *= 100;
-		print OUT join( "\t",
-			$dsgid,      $name,
-			$desc,       $source,
-			$provenance, $type,
-			$chr_count,  $length,
-			$gc,         $at,
-			$n,          $P->{SERVER} . 'OrganismView.pl?dsgid=' . $dsgid ),
-		  "\n";
+		print OUT join( "\t", $dsgid, $name, $desc, $source, $provenance, $type, $chr_count,  $length, $gc, $at, $n, $P->{SERVER} . 'OrganismView.pl?dsgid=' . $dsgid ), "\n";
 	}
 	close OUT;
 	$file =~ s/$TEMPDIR/$TEMPURL/;
@@ -507,7 +510,7 @@ sub save_FeatList_settings {
 			13 => 'AnnoD',
 			14 => 'OtherD',
 		);
-		foreach my $index ( split /,/, $display ) {
+		foreach my $index ( split(/,/, $display) ) {
 			$save{display}{ $settings{$index} } = 1;
 		}
 	}

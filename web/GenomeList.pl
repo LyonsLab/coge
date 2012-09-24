@@ -62,16 +62,16 @@ $SIG{'__WARN__'} = sub { };    #silence warnings
 	get_gc                   => \&get_gc,
 	get_aa_usage             => \&get_aa_usage,
 	get_codon_usage          => \&get_codon_usage,
-	get_fasta_seqs           => \&get_fasta_seqs,
 	generate_excel_file      => \&generate_excel_file,
 	generate_csv_file        => \&generate_csv_file,
 	gc_content               => \&gc_content,
 	gen_data                 => \&gen_data,
+	send_to_fasta            => \&send_to_fasta,
 	send_to_msa              => \&send_to_msa,
 	send_to_SynFind          => \&send_to_SynFind,
-	send_to_CoGeBlast        => \&send_to_CoGeBlast,
+	send_to_blast            => \&send_to_blast,
 	send_to_GenomeList       => \&send_to_GenomeList,
-	send_to_SynFind          => \&send_to_SynFind,
+	send_to_list			 => \&send_to_list,
 	get_wobble_gc            => \&get_wobble_gc,
 	save_GenomeList_settings => \&save_GenomeList_settings,
 	add_to_user_history      => \&add_to_user_history,
@@ -118,14 +118,13 @@ sub gen_html {
 	$template->param( LOGO_PNG => "GenomeList-logo.png" );
 	$template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
 	$template->param( DATE     => $DATE );
-	my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
-	$link = CoGe::Accessory::Web::get_tiny_link( url => $link );
-	my $box_name = "Genome List: ";
-	my $list_name = $FORM->param('list_name') || $FORM->param('ln');
-	$box_name .= " $list_name" if $list_name;
-	$box_name .=
-	  "<a class=link onclick=window.open('$link'); href='$link'>$link</a>";
-	$template->param( BOX_NAME   => $box_name );
+#	my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
+#	$link = CoGe::Accessory::Web::get_tiny_link( url => $link );
+#	my $box_name = "Genome List: ";
+#	my $list_name = $FORM->param('list_name') || $FORM->param('ln');
+#	$box_name .= " $list_name" if $list_name;
+#	$box_name .= "<a class='link' onclick=window.open('$link'); href='$link'>$link</a>";
+#	$template->param( BOX_NAME   => $box_name );
 	$template->param( BODY       => $body );
 	$template->param( ADJUST_BOX => 1 );
 	$html .= $template->output;
@@ -478,8 +477,12 @@ qq{<div class="link small" onclick="window.open('FeatList.pl?fid=$stuff')">Open 
 }
 
 sub gen_body {
-	my $template =
-	  HTML::Template->new( filename => $P->{TMPLDIR} . 'GenomeList.tmpl' );
+	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'GenomeList.tmpl' );
+	
+	my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
+	$link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, page => $PAGE_NAME, url => $link );
+	$template->param( LINK => $link );
+	
 	my $form = $FORM;
 	$template->param( MAIN => 1 );
 	my $no_values;
@@ -552,7 +555,7 @@ sub gen_body {
 		return $template->output;
 	}
 	else {
-		return "No dataset_group (genome) ids were specified.";
+		return "No genome IDs were specified.";
 	}
 }
 
@@ -766,7 +769,7 @@ sub gevo    #Send to GEvo
 	my $count = 1;
 
 	#print STDERR $url,"\n";
-	foreach my $featid ( split /,/, $accn_list ) {
+	foreach my $featid ( split(/,/, $accn_list) ) {
 		$url .= "fid$count=$featid&";
 		$count++;
 	}
@@ -776,56 +779,79 @@ sub gevo    #Send to GEvo
 	return $url;
 }
 
-sub send_to_SynFind {
-	my $accn_list = shift;
+sub send_to_SynFind       #send to SynFind
+{
+	my %opts      = @_;
+	my $accn_list = $opts{accn_list};
 	$accn_list =~ s/^,//;
 	$accn_list =~ s/,$//;
-	my ($fid) = split /,/, $accn_list;
-	my $url = $URL . "SynFind.pl?fid=$fid";
+	#my $url = $URL . "SynFind.pl?dsgid=$accn_list";
+	my $url = "SynFind.pl?dsgid=$accn_list";
 	return $url;
 }
 
 sub send_to_msa {
 	my %opts      = @_;
-	my $accn_list = $opts{accn};
+	my $accn_list = $opts{accn_list};
 	$accn_list =~ s/^,//;
 	$accn_list =~ s/,$//;
-	my $url = $URL . "GenomeAlign.pl?dsgid=$accn_list";
+	#my $url = $URL . "GenomeAlign.pl?dsgid=$accn_list";
+	my $url = "GenomeAlign.pl?dsgid=$accn_list";
 	$url =~ s/&$//;
 	return $url;
 }
 
-sub send_to_CoGeBlast    #send to cogeblast
+sub send_to_blast    #send to cogeblast
 {
 	my %opts      = @_;
-	my $accn_list = $opts{accn};
+	my $accn_list = $opts{accn_list};
 	$accn_list =~ s/^,//;
 	$accn_list =~ s/,$//;
-	my $url = $URL . "CoGeBlast.pl?dsgid=$accn_list";
+	#my $url = $URL . "CoGeBlast.pl?dsgid=$accn_list";
+	my $url = "CoGeBlast.pl?dsgid=$accn_list";
 	return $url;
 }
 
 sub send_to_GenomeList    #send to GenomeList
 {
 	my %opts      = @_;
-	my $accn_list = $opts{accn};
+	my $accn_list = $opts{accn_list};
 	$accn_list =~ s/^,//;
 	$accn_list =~ s/,$//;
-	my $url = $URL . "GenomeList.pl?dsgid=$accn_list";
+	#my $url = $URL . "GenomeList.pl?dsgid=$accn_list";
+	my $url = "GenomeList.pl?dsgid=$accn_list";
 	return $url;
 }
 
-sub send_to_SynFind       #send to SynFind
+sub send_to_list    #send to list
 {
-	my %opts      = @_;
-	my $accn_list = $opts{accn};
+	my %opts = @_;
+	my $accn_list = $opts{accn_list};
 	$accn_list =~ s/^,//;
 	$accn_list =~ s/,$//;
-	my $url = $URL . "SynFind.pl?dsgid=$accn_list";
+	
+	# Create the new list
+	my $list = $coge->resultset('List')->create( 
+	  { name => 'genomelist',
+		description => 'Created by GenomeList',
+		list_type_id => 1, # FIXME hardcoded type!
+		user_group_id => $USER->owner_group->id,
+		restricted => 1
+	  } );
+	  
+	foreach my $accn (split(/,/, $accn_list)) {
+		next if $accn =~ /no$/;
+		my ($gid) = split('_', $accn);
+		$coge->resultset('ListConnector')->create( { parent_id => $list->id, child_id => $gid, child_type => 2 } ); #FIXME hardcoded type!
+	}
+	
+	$coge->resultset('Log')->create( { user_id => $USER->id, page => $PAGE_NAME, description => 'create list from genomes id' . $list->id } );	
+	
+	my $url = "ListView.pl?lid=" .  $list->id;
 	return $url;
 }
 
-sub get_fasta_seqs {
+sub send_to_fasta {
 	my %opts      = @_;
 	my $accn_list = $opts{accn};
 
@@ -835,7 +861,7 @@ sub get_fasta_seqs {
 	my $basename = $cogeweb->basefilename;
 	my $file     = $TEMPDIR . "$basename.faa";
 	open( OUT, ">$file" );
-	foreach my $dsgid ( split /,/, $accn_list ) {
+	foreach my $dsgid ( split(/,/, $accn_list) ) {
 		next unless $dsgid;
 		my ($dsg) = $coge->resultset('Genome')->find($dsgid);
 		next unless $dsg;
@@ -871,14 +897,12 @@ sub generate_excel_file {
 	$worksheet->write( 0, 9,  "Percent N|X" );
 	$worksheet->write( 0, 10, "OrganismView Link" );
 
-	foreach my $dsgid ( split /,/, $accn_list ) {
-
+	foreach my $dsgid ( split(/,/, $accn_list) ) {
 		my ($dsg) = $coge->resultset("Genome")->find($dsgid);
-
 		next unless $dsg;
+		
 		my $name = $dsg->name ? $dsg->name : $dsg->organism->name;
-		my $desc =
-		  $dsg->description ? $dsg->description : $dsg->organism->description;
+		my $desc = $dsg->description ? $dsg->description : $dsg->organism->description;
 		my ($ds_source) = $dsg->source;
 		my $source = $ds_source->name;
 		my $provenance = join( " ", map { $_->name } $dsg->datasets );
@@ -903,8 +927,7 @@ sub generate_excel_file {
 		$worksheet->write( $i, 7, $gc . '%' );
 		$worksheet->write( $i, 8, $at . '%' );
 		$worksheet->write( $i, 9, $n . '%' );
-		$worksheet->write( $i, 10,
-			$P->{SERVER} . 'OrganismView.pl?dsgid=' . $dsgid );
+		$worksheet->write( $i, 10, $P->{SERVER} . 'OrganismView.pl?dsgid=' . $dsgid );
 
 		$i++;
 	}
@@ -922,28 +945,15 @@ sub generate_csv_file {
 	my $basename = $cogeweb->basefilename;
 	my $file     = "$TEMPDIR/$basename.csv";
 	open( OUT, ">$file" );
-	print OUT join( "\t",
-		"CoGe Genome ID",
-		"Name",
-		"Description",
-		"Source",
-		"Provenance",
-		"Sequence Type",
-		"Chr Count",
-		"Length (bp)",
-		"Percent GC",
-		"Percent AT",
-		"Percent N|X",
-		"OrganismView Link" ),
-	  "\n";
+	print OUT join( "\t", "CoGe Genome ID", "Name", "Description", "Source", "Provenance", "Sequence Type", "Chr Count", "Length (bp)", "Percent GC", "Percent AT", "Percent N|X", "OrganismView Link" ), "\n";
 
-	foreach my $dsgid ( split /,/, $accn_list ) {
+	foreach my $dsgid ( split(/,/, $accn_list) ) {
 		next unless $dsgid;
 		my ($dsg) = $coge->resultset("Genome")->find($dsgid);
 		next unless $dsg;
+		
 		my $name = $dsg->name ? $dsg->name : $dsg->organism->name;
-		my $desc =
-		  $dsg->description ? $dsg->description : $dsg->organism->description;
+		my $desc = $dsg->description ? $dsg->description : $dsg->organism->description;
 		my ($ds_source) = $dsg->source;
 		my $source = $ds_source->name;
 		my $provenance = join( "||", map { $_->name } $dsg->datasets );
@@ -953,14 +963,7 @@ sub generate_csv_file {
 		my ( $gc, $at, $n ) = $dsg->percent_gc();
 		$at *= 100;
 		$gc *= 100;
-		print OUT join( "\t",
-			$dsgid,      $name,
-			$desc,       $source,
-			$provenance, $type,
-			$chr_count,  $length,
-			$gc,         $at,
-			$n,          $P->{SERVER} . 'OrganismView.pl?dsgid=' . $dsgid ),
-		  "\n";
+		print OUT join( "\t", $dsgid, $name, $desc, $source, $provenance, $type, $chr_count, $length, $gc, $at, $n, $P->{SERVER} . 'OrganismView.pl?dsgid=' . $dsgid ), "\n";
 	}
 	close OUT;
 	$file =~ s/$TEMPDIR/$TEMPURL/;

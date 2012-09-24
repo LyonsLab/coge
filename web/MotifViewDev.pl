@@ -155,7 +155,7 @@ sub dispatch
     if($fname)
     {
         #my %args = $cgi->Vars;
-        print STDERR Dumper \%args;
+        
         if($args{args}){
             my @args_list = split( /,/, $args{args} );
             print $FORM->header, $FUNCTION{$fname}->(@args_list);

@@ -18,6 +18,21 @@ $(document).ready(function(){
 
 function set_table () {	 $('#group_table').tablesorter({widgets: ['zebra']});	 }
 
+function input_focus(div_id){
+	$('#'+div_id).val("").css({fontStyle: "normal"});
+}
+
+//Filters Rows for search_text - Case sensitive as of now, and searches hidden columns...
+function filter_rows (search_text){
+	if(!search_text) { $("#group_table_body tr:hidden").show(0);}
+	else if (search_text.length >= 3) {
+		$("#group_table_body tr:hidden").show(0);
+		if( $('#search_type').val() == 1 ) { $("#group_table_body tr:not(:contains('"+search_text+"'))").hide(); }
+		else { $("#group_table_body tr:contains('"+search_text+"')").hide(); }
+	}
+	$('#filter_count').html('Showing ' + $("#group_table_body tr:visible").length + ' of ' + $("#group_table_body tr").length + ' lists');
+}
+
 function run_get_groups_for_user(opts){
 	if (!opts) { opts={}; }
 	divid = opts.divid; //were results will be displayed in page
@@ -87,92 +102,10 @@ function dialog_delete_group (opts) {
 	$("#group_delete_box").dialog('open');
 	$('#group_delete_ugid').val(opts.ugid);
 }
-
-//function show_gadd(val) {
-//  if(val==1) {
-//    $('#remove_genome').hide(0);
-//    $('#add_genome').show(0);
-//  }
-//  else {
-//    $('#remove_genome').show(0);
-//    $('#add_genome').hide(0);
-//  }
-//}
-//
-//function add_genome(opts) {
-//     ugid = opts.ugid;
-//     $('#new_dsgid > option:selected').each(function(){
-//        var dsgid = $(this).attr("value");
-//	var html = '<option value='+dsgid+ ' >'+$(this).text()+'</option>';
-//	var item = $(this);
-//        $.ajax({
-//         data: {
-//     	   jquery_ajax: 1,
-//	   fname: 'add_genome_to_group',
-//	   ugid: ugid,
-//	   dsgid: dsgid
-//          },
-//         success : function(data) {
-//          if (data != 1) {alert(data);}
-//	  else {
-//  	   $('#dsgid').append(html);
-//	   item.remove();
-//	  }
-//	 },
-//       });
-//     });
-//    run_get_groups_for_user({divid: 'groups'});
-//};
-//
-//function remove_genome (opts) {
-//     ugid = opts.ugid;
-//     $('#dsgid > option:selected').each(function(){
-//        var dsgid = $(this).attr("value");
-//	var item = $(this);
-//	var html = '<option value='+dsgid+ ' >'+$(this).text()+'</option>';
-//	$.ajax({
-//         data: {
-//     	   jquery_ajax: 1,
-//	   fname: 'remove_genome_from_group',
-//	   ugid: ugid,
-//	   dsgid: dsgid
-//          },
-//         success : function(data) {
-//          if (data != 1) {alert(data);}
-//	  else {
-//	   $('#new_dsgid').append(html);
-//	   item.remove();
-//	  }
-//	 },
-//       });
-//     });
-//     run_get_groups_for_user({divid: 'groups'});
-//}
 </SCRIPT>
 
-<div id="groups">
+<div id='groups'>
  <TMPL_VAR NAME=MAIN_TABLE>
-</div>
-
-<div>
- <table class="small">
-  <tr>
-   <td>Group Name:</td>
-   <td><input type="textbox" size=8 name="name" id="name"></td>
-   <td>Group Description:</td>
-   <td><input type="textbox" size=16 name="desc" id="desc"></td>
-   <td>Role:</td>
-   <td><select id="role">
-    <TMPL_LOOP NAME=ROLE_LOOP>
-     <OPTION value=<TMPL_VAR NAME=RID>><TMPL_VAR NAME=NAME></OPTION>
-    </TMPL_LOOP>
-    </select>
-   </td>
-   <td>
-    <span id="create_group" style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="create_group();">Create new group</span>
-   </td>
-  </tr>
- </table>
 </div>
 
 <div id="group_delete_box" class="dialog_box" style='display:none;' align='center'>
@@ -190,6 +123,24 @@ Are you sure you want to permanently delete this group?<p>
 
 
 <TMPL_IF NAME=GROUP_TABLE>
+<SCRIPT language="JavaScript">
+$(document).ready(function(){
+	$("#search_bar").keyup( function() { filter_rows( $(this).val() ); });
+	$('#search_type').mouseup( function() { filter_rows( $('#search_bar').val() ); });
+	filter_rows();
+});
+</SCRIPT>
+
+<div class='small' style="padding-top:5px;padding-bottom:5px;">
+ Filter: 
+ <input type="text" id="search_bar">
+ <select id="search_type">
+  <option value="1">Contains</option>
+  <option value="0">Does NOT contain</option>
+ </select>
+ <span id='filter_count' style="margin-left:20px;"></span>
+</div>
+
 <table id="group_table" class="small ui-widget-content ui-corner-all">
  <thead align="left"> 
   <tr>
@@ -204,9 +155,28 @@ Are you sure you want to permanently delete this group?<p>
    </TMPL_IF>
   </tr>
  </thead>
- <tbody align="left" valign="top" id="genome_table_body" class="small">
+ <tfoot>
+  <tr>
+   <td id='create_group_hidden' colspan='9' height='26'>
+    <span style="font-size: 1em" class='ui-button ui-button-go ui-corner-all' onClick="$('#create_group_hidden').hide(); $('#create_group_shown').fadeIn('fast');">Create new group</span>
+   </td>
+  </tr>
+  <tr id='create_group_shown' style="display:none;">
+   <td><input type="textbox" size="8" name="name" id="name" value='Name' style="font-style:italic;color:gray;" onFocus="input_focus('name')"></td>
+   <td><input type="textbox" size="32" name="desc" id="desc" value='Description' style="font-style:italic;color:gray;" onFocus="input_focus('desc')"></td>
+   <td><select id="role">
+    <TMPL_LOOP NAME=ROLE_LOOP>
+     <OPTION value=<TMPL_VAR NAME=RID>><TMPL_VAR NAME=NAME></OPTION>
+    </TMPL_LOOP>
+    </select>
+   </td>
+   <td colspan='10'><span style="font-size: 1em" class='ui-button ui-button-go ui-corner-all' onClick="create_group()">Add</span></td>
+  </tr>
+ </tfoot>
+
+ <tbody align="left" valign="top" id="group_table_body" class="small">
   <TMPL_LOOP NAME=GROUPS_LOOP>
-  <tr valign="middle">
+  <tr valign="top">
    <td><TMPL_VAR NAME=NAME></td>
    <td><TMPL_VAR NAME=DESC></td>
    <td><TMPL_VAR NAME=ROLE></td>

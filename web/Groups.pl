@@ -81,22 +81,21 @@ sub dispatch {
 
 sub gen_html {
 	my $html;
-	my $template =
-	  HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
+	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'generic_page.tmpl' );
 	$template->param( HELP => '/wiki/index.php?title=Groups' );
 	my $name = $USER->user_name;
 	$name = $USER->first_name if $USER->first_name;
 	$name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
 	$template->param( USER       => $name );
 	$template->param( TITLE      => qq{Manage User Groups} );
-	$template->param( PAGE_TITLE => qq{Manage Groups} );
+	$template->param( PAGE_TITLE => qq{Groups} );
 	$template->param( LOGO_PNG   => "Groups-logo.png" );
 	$template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
 	$template->param( DATE       => $DATE );
 	$template->param( BODY       => gen_body() );
 	$template->param( ADJUST_BOX => 1 );
-	$name .= $name =~ /s$/ ? "'" : "'s";
-	$template->param( BOX_NAME => $name . " groups" );
+#	$name .= $name =~ /s$/ ? "'" : "'s";
+#	$template->param( BOX_NAME => $name . " groups" );
 	$html .= $template->output;
 }
 
@@ -107,8 +106,6 @@ sub gen_body {
 	$template->param( MAIN      => 1 );
 	my $groups = get_groups_for_user();
 	$template->param( MAIN_TABLE => $groups );
-	my $roles = get_roles();
-	$template->param( ROLE_LOOP => $roles );
 	$template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
 	my $ugid = $FORM->param('ugid');
 	my $box_open = $ugid ? 'true' : 'false';
@@ -218,7 +215,7 @@ sub get_groups_for_user
 	my @groups;
 	foreach my $group (@group_list) {
 		my $id = $group->id;
-		my $is_editable = ($USER->id == $group->creator_user_id and not $group->locked);
+		my $is_editable = (($USER->is_admin or $USER->is_owner_editor(group => $group) or $USER->id == $group->creator_user_id) and not $group->locked);
 				
 		my %row;
 		$row{NAME} = qq{<span class=link onclick='window.open("GroupView.pl?ugid=$id")'>} . $group->name . "</span>" . " (id$id)" ;
@@ -240,7 +237,7 @@ sub get_groups_for_user
 		}
 
 #		push @users, "Self only" unless @users;
-		$row{MEMBERS} = join( ",<br>", @users );
+		$row{MEMBERS} = join( ",<br>", sort @users );
 		my %lists;
 		foreach my $list (sort { $a->type->name cmp $b->type->name || $a->name cmp $b->name } $group->lists ) {
 			my $name;
@@ -249,12 +246,11 @@ sub get_groups_for_user
 			$name = qq{<span class="link" onclick="window.open('ListView.pl?lid=} . $list->id . qq{');">} . $name . "</span>";
 			push @{ $lists{ $list->type->name } }, $name;
 		}
-		my $lists = "<table class='small'>";
+		my $lists;
 		foreach my $type ( sort keys %lists ) {
-			$lists .= qq{<tr><td>$type<td>} . join( "<br>", @{ $lists{$type} } );
+			$lists .= $type . ': ' . join(', ', @{ $lists{$type} }) . '<br>';
 		}
-		$lists .= "</table>";
-		$row{LISTS} = join( ",<br>", $lists );
+		$row{LISTS} = $lists;
 
 ###	my @genome;
 #	push @genome, "Apotheosis" if $group->role->name =~ /admin/i;
@@ -283,6 +279,7 @@ sub get_groups_for_user
 	$template->param( GROUP_TABLE => 1 );
 	$template->param( GROUPS_LOOP => \@groups );
 	$template->param( BUTTONS => 1 );
+	$template->param( ROLE_LOOP => get_roles() );
 	return $template->output;
 }
 

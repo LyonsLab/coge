@@ -18,6 +18,7 @@ $(document).ready(function(){
 */
 	$("#search_bar").keyup( function() { filter_rows( $(this).val() ); });
 	$('#search_type').mouseup( function() { filter_rows( $('#search_bar').val() ); });
+	filter_rows();
 });
 
 
@@ -63,7 +64,7 @@ function filter_rows (search_text){
 		if( $('#search_type').val() == 1 ) { $("#feat_table_body tr:not(:contains('"+search_text+"'))").hide(); }
 		else { $("#feat_table_body tr:contains('"+search_text+"')").hide(); }
 	}
-	else return;
+	$('#filter_count').html('Showing ' + $("#feat_table_body tr:visible").length + ' of ' + $("#feat_table_body tr").length + ' lists');
 }
 
 function feature_checkboxes(){
@@ -73,7 +74,7 @@ function feature_checkboxes(){
 		if (this.checked == true) accn = accn + this.id + ",";
 	});
 	if (accn == ",") {
-		alert("Danger Will Robinson!\n1D-10T error!  You have not checked any features.");
+		alert("Danger Will Robinson!\n1D-10T error!  You have not selected any features.");
 		return;
 	}
 	
@@ -81,50 +82,12 @@ function feature_checkboxes(){
 		data: {
 			jquery_ajax: 1,
 			fname: action,
-			name: name,
 			accn_list: accn
 		},
 		success : function(url) {
 			window.open(url,'_blank');
 		}
 	});		
-	
-/*	
-	if(action == "gevo") {
-		gevo(['args__'+accn],[export_url]);
-	}
-	else if (action == "fasta"){
-		get_fasta_seqs(['args__'+accn],[export_url]);
-	}
-	else if (action == "CodeOn"){
-		export_CodeOn(['args__'+accn],[export_url]);
-	}
-	else if (action == "xls"){
-		$('#retrieve_message').html('Retrieving data');
-		generate_excel_file(['args__'+accn],[export_url]);
-	}
-	else if (action == "blast"){
-		blast(['args__'+accn],[export_url]);
-	}
-	else if (action == "featmap"){
-		send_to_featmap(['args__'+accn],[export_url]);
-	}
-	else if (action == "msa"){
-		send_to_msa(['args__'+accn],[export_url]);
-	}
-	else if (action == "featlist"){
-		send_to_featlist(['args__'+accn],[export_url]);
-	}
-	else if (action == "SynFind"){
-		send_to_SynFind(['args__'+accn],[export_url]);
-	}
-	else if (action == 'list') {
-		send_to_list(['args__'+accn],[export_url]);
-	}
-	else {
-		alert("We will get this working ... soon.");
-	}
-*/
 }
 
 function export_url(url,num_accns) {
@@ -258,10 +221,17 @@ save_FeatList_settings(['args__display','args__'+index],[]);
 }
 
 </SCRIPT>
-<span href='#' id="table_opts" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-newwin"></span>Change Viewable Columns</span>
-<input type=hidden id=gstid value=<TMPL_VAR NAME="GSTID">>
+
+<div style='padding-top:10px;'>
+ <span id='link_hidden' class='ui-button ui-corner-all ui-button-icon-right' onclick="$('#link_hidden').hide(); $('#link_shown').fadeIn();"><span class="ui-icon ui-icon-arrowreturnthick-1-w"></span>Link to this</span>
+ <span id='link_shown' style='display:none;' class='small infobox'>
+ Use this link to return to this page at any time: <span class='link' onclick=window.open('<TMPL_VAR NAME="LINK">');><b><TMPL_VAR NAME="LINK"></b></span>
+ </span>
+</div>
+
+<input type='hidden' id='gstid' value=<TMPL_VAR NAME="GSTID">>
 <div id="table_opts_dialog" title="Table Information Options">
-<form id=feature_list>
+<form id='feature_list'>
     <table  class="ui-widget-content ui-corner-all small" id="show_columns">
      <tr>
        <td><input class = "display" type = checkbox onclick="toggle_column(1);" <TMPL_VAR NAME="FeatNameD">>Feature Name
@@ -287,28 +257,31 @@ save_FeatList_settings(['args__display','args__'+index],[]);
        </TMPL_IF>
     </table>
 </div>
-</br>
-</br>
-Filter Table Rows: 
-<input type=text id=search_bar>
-<select id=search_type>
+
+<div class="small" style="padding-top:15px;padding-bottom:5px;">
+Filter: 
+<input type="text" id="search_bar">
+<select id="search_type">
 <option value="1">Contains</option>
 <option value="0">Does NOT contain</option>
 </select>
 <!-- <span class=small>Tip: Use "*" for wildcards, and "!" to search for not containing</span> -->
-<div class ="small"> Feature Count: <TMPL_VAR NAME="FEAT_COUNT"></div>
+<span id='filter_count' style="margin-left:20px;margin-right:100px;"></span>
+<span href='#' id="table_opts" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-newwin"></span>Change Viewable Columns</span>
+</div>
+
 <TABLE id='feat_table' class="small ui-widget-content ui-corner-all">
- <THEAD align=left>
+ <THEAD align='left'>
   <tr>
    <TH> </TH>
-   <TH >Feature Name</TH>
-   <TH >Type</TH>
-   <TH >Chr</TH>
-   <TH >Start</TH>
-   <TH >Stop</TH>
-   <TH >Strand</TH>
-   <TH >Length</TH>
-   <TH >GC%
+   <TH>Feature Name</TH>
+   <TH>Type</TH>
+   <TH>Chr</TH>
+   <TH>Start</TH>
+   <TH>Stop</TH>
+   <TH>Strand</TH>
+   <TH>Length</TH>
+   <TH>GC%
 <br><span id="get_all_gc" class="link small" onclick="get_all_gc(<TMPL_VAR NAME="FEAT_COUNT">)">Get all</span>
    </TH>
    <TH >AT%</TH>
@@ -327,10 +300,10 @@ Filter Table Rows:
    </th>
    </tr>
  </THEAD>
- <tbody align=left valign="top" id="feat_table_body">
+ <tbody align="left" valign="top" id="feat_table_body">
   <TMPL_LOOP NAME=INFO>
     <TR>
-      <TD><input type=checkbox id='<TMPL_VAR NAME=FEATID>'><input type='hidden' id='fid_<TMPL_VAR NAME=COUNT>' value='<TMPL_VAR NAME=FEATID>'></TD>
+      <TD><input type="checkbox" id='<TMPL_VAR NAME=FEATID>'><input type='hidden' id='fid_<TMPL_VAR NAME=COUNT>' value='<TMPL_VAR NAME=FEATID>'></TD>
       <TD><TMPL_VAR NAME=NAME></TD>
       <TD><TMPL_VAR NAME=TYPE></TD>
       <TD><TMPL_VAR NAME=CHR></TD>
@@ -365,8 +338,8 @@ Filter Table Rows:
  </TMPL_IF>
 -->
 
-<div>
- Send Checked Features to:  
+<div class='small'>
+ Send selected features to:  
  <select name='checked_action' id='checked_action'>
   <option value="send_to_blast">CoGeBlast</option>
   <option value="send_to_gevo">GEvo</option>
@@ -377,11 +350,12 @@ Filter Table Rows:
   <option value="send_to_featlist">FeatList</option>
   <option value="send_to_CodeOn">Coding Evolution</option>
   <option value="send_to_SynFind">SynFind</option>
-  <option value="send_to_list">Create List</option>
+  <option value="send_to_list">New List</option>
  </select>
  <span class='ui-button ui-corner-all ui-button-icon-right' onclick="feature_checkboxes();"><span class="ui-icon ui-icon-extlink"></span>Go</span><span id="retrieve_message" class="alert"></span>  
 </div>
 
+<br>
 <!--
 <div id="save_form" title="Save Results">
  <table class="ui-widget-content ui-corner-all">

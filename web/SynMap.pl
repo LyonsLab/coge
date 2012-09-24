@@ -24,8 +24,14 @@ use Sort::Versions;
 no warnings 'redefine';
 
 umask(0);
-use vars
-	qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $DIR $URL $SERVER $USER $FORM $coge $cogeweb $FORMATDB $BLAST $TBLASTX $BLASTN $BLASTP $LASTZ $LAST $DATADIR $FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $PYTHON26 $TANDEM_FINDER $RUN_DAGCHAINER $EVAL_ADJUST $FIND_NEARBY $DOTPLOT $SVG_DOTPLOT $NWALIGN $QUOTA_ALIGN $CLUSTER_UTILS $BLAST2RAW $BASE_URL $BLAST2BED $SYNTENY_SCORE $TEMPDIR $TEMPURL $ALGO_LOOKUP $GZIP $GUNZIP $COOKIE_NAME);
+use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG 
+			$DIR $URL $SERVER $USER $FORM $coge $cogeweb $PAGE_NAME 
+			$FORMATDB $BLAST $TBLASTX $BLASTN $BLASTP $LASTZ $LAST $DATADIR 
+			$FASTADIR $BLASTDBDIR $DIAGSDIR $MAX_PROC $DAG_TOOL $PYTHON $PYTHON26 
+			$TANDEM_FINDER $RUN_DAGCHAINER $EVAL_ADJUST $FIND_NEARBY $DOTPLOT 
+			$SVG_DOTPLOT $NWALIGN $QUOTA_ALIGN $CLUSTER_UTILS $BLAST2RAW 
+			$BASE_URL $BLAST2BED $SYNTENY_SCORE $TEMPDIR $TEMPURL $ALGO_LOOKUP 
+			$GZIP $GUNZIP $COOKIE_NAME);
 
 $P = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
 $ENV{PATH}       = join ":", ( $P->{COGEDIR}, $P->{BINDIR}, $P->{BINDIR} . "SynMap", "/usr/bin", "/usr/local/bin" );
@@ -151,6 +157,8 @@ $DATE = sprintf(
 		->(localtime)
 );
 $FORM = new CGI;
+
+$PAGE_NAME = "ExperimentList.pl";
 
 my %ajax = CoGe::Accessory::Web::ajax_func();
 
@@ -3056,7 +3064,7 @@ sub go
 			$html .= "<tr><td>";
 			my $conffile = $ENV{HOME} . 'coge.conf';
 			$dagchainer_file =~ s/^$URL/$DIR/;
-			$tiny_link = CoGe::Accessory::Web::get_tiny_link( url => $synmap_link );
+			$tiny_link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, page => $PAGE_NAME, url => $synmap_link );
 			$html .= "<br>" . qq{<span class="small link" id="" onClick="window.open('bin/SynMap/order_contigs_to_chromosome.pl?f=$dagchainer_file&cf=$conffile;l=$tiny_link');" >Generate Pseudo-Assembled Genomic Sequence</span>} if $assemble;
 			$html .= qq{</table>};
 

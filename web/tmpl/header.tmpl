@@ -1,9 +1,9 @@
 <HTML>
 <HEAD>
 <meta http-equiv="Pragma" content="no-cache">
- <TITLE>CoGe: <TMPL_VAR NAME=PAGE_TITLE></TITLE>
- <meta name="description" content="The CoGe Comparative Genomics Platform.  A software suite of interlinked and interconnected web-based tools for easily visualizing, comparing, and understanding the evolution, struture and dynamics of genomes." />
- <meta name="keywords" content="Genetics, Genome, Genomics, Human Genome, Genome Project, Genomics, Homolog, Homologue, Homologous, Homology, Molecular Genetics, Genomes, bioinformatics, mirna, microrna, dna sequencing, computational biology, gene sequencing, shotgun sequencing, Genome Browser, Genetic Information, Biology Genetics, Genome Sequence, Genome Sequencing, Homologous Chromosomes, DNA Genetics, DNA, Genetics Research, Genome Research, Functional Genomics, Genetics Genes, Genetics Map, Genome Analysis, Comparative Genomics, Genome Biology, Genomics Genetics, Homologous Chromosome, Mouse Genome, Human Genome, Yeast Genome, Complete Genomics, Bioinformatics, Bioinformatics genomics, gene genome, homologs, structural genomics, genetic genome, yeast genetics, bioinformatics genome, genes, genome, syntenic, whole genome sequencing, comparative genome, genetic variations, genome sequences, genome genetics, homologous gene, snp genome" />
+<TITLE>CoGe: <TMPL_VAR NAME=PAGE_TITLE></TITLE>
+<meta name="description" content="The CoGe Comparative Genomics Platform.  A software suite of interlinked and interconnected web-based tools for easily visualizing, comparing, and understanding the evolution, struture and dynamics of genomes." />
+<meta name="keywords" content="Genetics, Genome, Genomics, Human Genome, Genome Project, Genomics, Homolog, Homologue, Homologous, Homology, Molecular Genetics, Genomes, bioinformatics, mirna, microrna, dna sequencing, computational biology, gene sequencing, shotgun sequencing, Genome Browser, Genetic Information, Biology Genetics, Genome Sequence, Genome Sequencing, Homologous Chromosomes, DNA Genetics, DNA, Genetics Research, Genome Research, Functional Genomics, Genetics Genes, Genetics Map, Genome Analysis, Comparative Genomics, Genome Biology, Genomics Genetics, Homologous Chromosome, Mouse Genome, Human Genome, Yeast Genome, Complete Genomics, Bioinformatics, Bioinformatics genomics, gene genome, homologs, structural genomics, genetic genome, yeast genetics, bioinformatics genome, genes, genome, syntenic, whole genome sequencing, comparative genome, genetic variations, genome sequences, genome genetics, homologous gene, snp genome" />
 <meta name="google-site-verification" content="Pp2O8PKsZWc6dO67lYe2ONCofCYgMwQcoy6bWhkvbXs" />
 <meta name="google-site-verification" content="voXZn_uzuPQj7YtCxw5ogRAW5PgalKg-8rA_VT7TooA" />
 <meta name="google-site-verification"
@@ -53,9 +53,6 @@ jQuery(document).ready(function(){
   setup_button_states();
 });
 
-/*
-jQuery(function(){
-});*/
 
 function browserAlert()
 {
@@ -129,6 +126,14 @@ $(document).ready( function() {
 <TMPL_UNLESS NAME=MENU>
   <div style="float:right"><!-- open A -->
  
+    <span style="color: gray; margin-right: 50px;">
+     <TMPL_IF NAME=LOGON>
+      <span class="small">You are logged-in as <b><TMPL_VAR NAME=USER></b> - <a href="index.pl?logout=1" class="small"><b>Sign-out</b></a></span>
+	 <TMPL_ELSE>
+	  <span class="small">Welcome! You are not logged-in ... <a href="javascript:void(0)" onClick="login_cas();return true;" class="small"><b>Sign-in</b></a></span>
+     </TMPL_IF>
+	</span>
+ 
     <div style="float:right;margin-right: 73px;">
 	<ul class="sf-menu" >
 	 <li><a id=home href="index.pl" target="_self">Home</a></li>
@@ -160,6 +165,7 @@ $(document).ready( function() {
 	   <li><a href="UserPage.pl" target="_self">User Profile</a></li>
 	   <li><a href="Groups.pl" target="_self">User Groups</a></li>
 	   <li><a href="Lists.pl" target="_self">Data Lists</a></li>
+	   <li><a href="History.pl" target="_self">History</a></li>
 <!--	  <li><a href="javascript:void(0)" target="_self">Animation</a>
 	    <ul class="animations">
 	      <li><a href="javascript:void(0)" target="_self" onClick="define_animation_speed(0)">Off</a></li>
@@ -183,13 +189,6 @@ $(document).ready( function() {
 	</ul>
 	</li>
 	</ul>
-<div style="float: right">
- <TMPL_IF NAME=LOGON>
-	<span class=small>Currently logged in as, <TMPL_VAR NAME=USER>  <a href="index.pl?logout=1" class="small">Sign-out</a></span>
-	<TMPL_ELSE>
-	 <a href="javascript:void(0)" onClick="login_cas();return true;" class="small">Sign-in</a>
-	</TMPL_IF>
-</div>
 
     </div>
 </div><!-- CLOSE A -->
