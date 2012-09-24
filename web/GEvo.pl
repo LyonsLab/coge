@@ -2378,7 +2378,7 @@ sub get_obj_from_genome_db
     my $t3 = new Benchmark;
     my $gst = $coge->resultset('GenomicSequenceType')->find($gstid);
     my $org_name = $ds->organism->name();
-    $org_name .= ": ".$dsg->description if $dsg->description;
+    $org_name .= ": ".$dsg->description if $dsg && $dsg->description;
     $org_name .= " (".$ds->data_source->name." v".$ds->version.", ".$gst->name.")";
     my $obj= new CoGe::Accessory::GenBank({
 					   accn=>$accn,
