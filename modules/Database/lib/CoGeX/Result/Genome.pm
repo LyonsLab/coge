@@ -1070,8 +1070,8 @@ sub info {
 	my $self = shift;
 	my $info;
 	$info .= "(R)" if $self->restricted;
-	$info .= $self->name if $self->name;
-	$info .= $self->organism->name if $self->organism and not $self->name;
+	$info .= $self->organism->name if $self->organism;
+	$info .= " (".$self->name.")" if $self->name;
 	$info .= ": ".$self->description if $self->description;
 	$info .= " (v".$self->version.", dsgid".$self->id. ")";
 	$info .= ': ' . $self->genomic_sequence_type->name if $self->genomic_sequence_type;	
