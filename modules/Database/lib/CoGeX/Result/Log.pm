@@ -22,7 +22,7 @@ __PACKAGE__->add_columns(
 	"time",
 	{ data_type => "TIMESTAMP", default_value => undef, is_nullable => 0 },
 	"user_id",
-	{ data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },
+	{ data_type => "INT", default_value => 0, is_nullable => 0, size => 11 },
 #   "target", # table name
 #	{ data_type => "VARCHAR", default_value => undef, is_nullable => 1, size => 30 },
 	"page",

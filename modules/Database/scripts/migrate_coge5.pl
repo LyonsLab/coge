@@ -324,22 +324,37 @@ sql('alter table workflow change user_id user_id INT(11) NOT NULL'); # change fr
 sql('alter table workflow change link link TEXT'); # change from VARCHAR(1024) to TEXT
 
 #-------------------------------------------------------------------------------
-# Assign orphaned genomes to admin owner list
+# Assign orphaned restricted genomes to admin owner list
 #-------------------------------------------------------------------------------
-my $admin_group = $coge->resultset('UserGroup')->search({name => 'admin'});
-die unless ($admin_group);
-
-my $admin_owner_list = $admin_group->owner_list;
+my $admin_owner_list = $coge->resultset('List')->find({name => 'admin'});
 die unless ($admin_owner_list);
 
+# Fix owner list fields
+$admin_owner_list->locked(1);
+$admin_owner_list->list_type_id(3); # FIXME hardcoded owner list type
+$admin_owner_list->update();
+
+# Assign orphan restricted genomes
 foreach my $genome ($coge->resultset('Genome')->all) {
-	unless ($genome->list_connectors) {
+	next if (not $genome->restricted);
+	
+	my $genome_owner_list;
+	foreach my $lc ($genome->list_connectors) {
+		if ($lc->parent_list->list_type_id == 3) {
+			$genome_owner_list = $lc->parent_list;
+			#print STDERR "skipping genome id" . $genome->id . "\n";
+			last;	
+		}
+	}
+	
+	unless ($genome_owner_list) {
+		print STDERR "assigning genome id" . $genome->id . "\n";
 		my $conn = $coge->resultset('ListConnector')->create( 
 		  { parent_id => $admin_owner_list->id,
 			child_id => $genome->id,
 			child_type => 2, # genome type
 		  } );
-		die unless $conn;	
+		die unless $conn;
 	}
 }
 
@@ -348,6 +363,7 @@ foreach my $genome ($coge->resultset('Genome')->all) {
 #-------------------------------------------------------------------------------
 
 $coge->resultset('Log')->create( { user_id => 0, page => $0, description => 'database migrated to coge5' } );
+print STDERR "All done!\n";
 exit;
 
 

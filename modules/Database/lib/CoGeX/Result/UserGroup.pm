@@ -351,7 +351,7 @@ sub annotation_pretty_print_html
 sub owner_list {
 	my $self = shift;
 	foreach my $list ( $self->lists ) {
-		return $list if ($list->locked && $list->list_type_id == 3); # FIXME list type hardcoded
+		return $list if ($list->list_type_id == 3); # FIXME list type hardcoded
 	}
 	return;
 }
