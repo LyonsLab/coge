@@ -3471,7 +3471,11 @@ sub get_dotplot
 	$url .= ";ct=$color_type"   if $color_type;
 	$url .= ";bd=$box_diags"    if $box_diags;
 	$url .= ";cs=$color_scheme" if defined $color_scheme;
-	my $content = get($url);
+	my $content = LWP::Simple::get($url);
+	unless ($content)
+	  {
+	    return "Unable to get image for dotplot: $url";
+	  }
 	($url) = $content =~ /url=(.*?)"/is;
 	my $png = $url;
 	$png =~ s/html$/png/;
