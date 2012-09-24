@@ -768,7 +768,7 @@ sub get_annotation_type_groups {
 
 sub genomecmp {
 	no warnings 'uninitialized'; # disable warnings for undef values in sort
-	versioncmp($b->version, $a->version) || $a->type->id <=> $b->type->id || $a->name cmp $b->name || $b->id cmp $a->id
+	$a->organism->name cmp $b->organism->name || versioncmp($b->version, $a->version) || $a->type->id <=> $b->type->id || $a->name cmp $b->name || $b->id cmp $a->id
 }
 
 sub experimentcmp {
