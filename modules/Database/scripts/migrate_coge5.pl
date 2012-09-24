@@ -233,7 +233,7 @@ sql(<<SQL);
 create table log
 (
 	time timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    user_id int(11) NOT NULL,
+    user_id int(11) NOT NULL DEFAULT 0,
     page varchar(255) NOT NULL,
     description varchar(255) DEFAULT NULL,
     link varchar(255) DEFAULT NULL,
