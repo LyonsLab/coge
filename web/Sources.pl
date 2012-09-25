@@ -122,8 +122,8 @@ sub get_sources {
 		push @sources, 
 		  { NAME  => $source->name,
 			ID  => $source->id,
-			DESC  => $source->description,
-			LINK  => '<a href="' . $source->link . '" target=_blank>' . $source->link . '</a>',
+			DESC  => ($source->description ? $source->description : undef),
+			LINK  => ($source->link ? '<a href="' . $source->link . '" target=_blank>' . $source->link . '</a>' : undef),
 			BUTTONS => $USER->is_admin,
 			EDIT_BUTTON => "<span class='link ui-icon ui-icon-gear' onclick=\"edit_source_info({dsid: '" . $source->id . "'});\"></span>",
 			DELETE_BUTTON => "<span class='link ui-icon ui-icon-trash' onclick=\"delete_source({dsid: '" . $source->id . "'});\"></span>"
