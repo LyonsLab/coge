@@ -808,7 +808,7 @@ function post_to_grimm(seq1, seq2)
   <TR>
    <td>E-mail results? 
    <td><input type=checkbox id=check_email onclick="toggle_email_field()">
-		<div class="email_box small" style="display:none;"><table class="backbox"><tr><td>Your E-mail Address: <td><input type=text id=email onBlur='address_validity_check()'>
+		<div class="email_box small" style="display:none;"><table class="backbox"><tr><td>Your E-mail Address: <td><input type=text id=email onBlur='address_validity_check()' value='<TMPL_VAR NAME="EMAIL">'>
 		
 		<font id=email_error class="small" style="display: none; color: red;">You have supplied an invalid e-mail address.</font></div>
 		<tr><td><div class=email_box style="display:none;">Job Title:
