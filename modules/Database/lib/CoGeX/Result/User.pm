@@ -791,30 +791,21 @@ sub features {
  Throws    : None
  Comments  : uses name, description and role
 
-
-
 =cut
 
 ################################################## subroutine header end ##
 
 sub info {
 	my $self = shift;
-	my $info = $self->user_name;
-	$info .= ": " . $self->first_name;
-	$info .= " " . $self->last_name;
-	return $info;
+	return $self->user_name if (not $self->first_name and not $self->last_name); 
+	return $self->first_name . ' ' . $self->last_name . ' (' . $self->user_name . ')';
 }
 
 1;
 
 =head1 BUGS
 
-
 =head1 SUPPORT
-
-
-
-
 
 =head1 AUTHORS
 

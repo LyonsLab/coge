@@ -136,9 +136,9 @@ sub desc {
 
 =head2 lists
 
- Usage     : 
- Purpose   : 
- Returns   : 
+ Usage     : $self->lists
+ Purpose   : Get lists that contain this genome
+ Returns   : array or array ref of parent lists
  Argument  : 
  Throws    : 
  Comments  : 

@@ -316,7 +316,7 @@ sub annotation_pretty_print_html
 	$anno_type = new CoGe::Accessory::Annotation( Type => "<tr><td valign='top' nowrap='true'><span class=\"title5\">" . "Users" . "</span>" );
 	$anno_type->Type_delimit(": <td class=\"data5\">");
 	$anno_type->Val_delimit("<br>");
-	foreach my $user ($self->users) {
+	foreach my $user (sort { $a->info cmp $b->info } $self->users) {
 		$anno_type->add_Annot($user->info . ($user->id == $self->creator_user_id ? ' (creator)' : ''));
 	}
 	$anno_obj->add_Annot($anno_type);
