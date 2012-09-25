@@ -618,7 +618,7 @@ sub get_genome_info
 	$html .= qq{<span class="ui-button ui-corner-all ui-button-go" onClick="make_dsg_public('$dsgid')">Make Genome Public</span>} if $dsg->restricted;
 	$html .= qq{<span class="ui-button ui-corner-all ui-button-go" onClick="make_dsg_private('$dsgid')">Make Genome Private</span>} if !$dsg->restricted;
 	$html .= qq{<span class="ui-button ui-corner-all ui-button-go" onClick="edit_genome_info('$dsgid')">Edit Genome Info</span>};
-	my $users_with_access = join (", ", map {"<span class=link onclick=window.open('Groups.pl?ugid=".$_->id."')>".$_->name."</span>"} $dsg->lists);
+	my $users_with_access = join (", ", map {"<span class=link onclick=window.open('GroupView.pl?ugid=".$_->group->id."')>".$_->group->name."</span>"} $dsg->lists);
 	$html .= "User Groups with Access: $users_with_access" if $users_with_access;
       }
     $html .= qq{</div></td></tr>} ;
