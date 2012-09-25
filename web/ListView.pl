@@ -439,7 +439,7 @@ sub get_list_contents {
 		my $gid = $genome->id;
 		my $genome_info = $genome->info;
 		#FIXME hardcoded value for item_type below
-		$genome_info = qq{<span class=link onclick="window.open('OrganismView.pl?dsgid=$gid')">} . $genome_info . ($user_can_edit ? "</span><span onClick=\"remove_list_item({lid: '$lid', item_type: '2', item_id: '$gid'});\" class=\"link ui-icon ui-icon-trash\">" : '') . "</span>";
+		$genome_info = qq{<span id='genome$gid' class='link' onclick="window.open('OrganismView.pl?dsgid=$gid')">} . $genome_info . ($user_can_edit ? "</span><span onClick=\"\$('#genome'+$gid).css('text-decoration', 'line-through'); remove_list_item({lid: '$lid', item_type: '2', item_id: '$gid'});\" class=\"link ui-icon ui-icon-trash\">" : '') . "</span>";
 		$anno_type->add_Annot($genome_info);
 		$anno_obj->add_Annot($anno_type);
 	}
@@ -450,7 +450,7 @@ sub get_list_contents {
 		my $expid = $experiment->id;
 		my $experiment_info = $experiment->info;
 		#FIXME hardcoded value for item_type below
-		$experiment_info = qq{<span class=link onclick="window.open('ExperimentView.pl?eid=$expid')">} . $experiment_info . ($user_can_edit ? "</span><span onClick=\"remove_list_item({lid: '$lid', item_type: '3', item_id: '$expid'});\" class=\"link ui-icon ui-icon-trash\">" : '') . "</span>";
+		$experiment_info = qq{<span id='experiment$expid' class='link' onclick="window.open('ExperimentView.pl?eid=$expid')">} . $experiment_info . ($user_can_edit ? "</span><span onClick=\"\$('#experiment'+$expid).css('text-decoration', 'line-through'); remove_list_item({lid: '$lid', item_type: '3', item_id: '$expid'});\" class=\"link ui-icon ui-icon-trash\">" : '') . "</span>";
 		$anno_type->add_Annot($experiment_info);
 		$anno_obj->add_Annot($anno_type);
 	}
@@ -461,7 +461,7 @@ sub get_list_contents {
 		my $fid = $feat->id;
 		my ($feat_info) = $feat->info;
 		#FIXME hardcoded value for item_type below
-		$feat_info = qq{<span class=link onclick="window.open('FeatView.pl?fid=$fid')">} . $feat_info . ($user_can_edit ? "</span><span onClick=\"remove_list_item({lid: '$lid', item_type: '4', item_id: '$fid'});\" class=\"link ui-icon ui-icon-trash\">" : '') . "</span>";
+		$feat_info = qq{<span id='feature$fid' class='link' onclick="window.open('FeatView.pl?fid=$fid')">} . $feat_info . ($user_can_edit ? "</span><span onClick=\"\$('#feature'+$fid).css('text-decoration', 'line-through'); remove_list_item({lid: '$lid', item_type: '4', item_id: '$fid'});\" class=\"link ui-icon ui-icon-trash\">" : '') . "</span>";
 		$anno_type->add_Annot($feat_info);
 		$anno_obj->add_Annot($anno_type);
 	}
@@ -472,7 +472,7 @@ sub get_list_contents {
 		my $child_lid = $list->id;
 		my ($list_info) = $list->info;
 		#FIXME hardcoded value for item_type below
-		$list_info = qq{<span class=link onclick="window.open('ListView.pl?lid=$child_lid')">} . $list_info . ($user_can_edit ? "</span><span onClick=\"remove_list_item({lid: '$lid', item_type: '1', item_id: '$child_lid'});\" class=\"link ui-icon ui-icon-trash\">" : '') . "</span>";
+		$list_info = qq{<span id='list$child_lid' class='link' onclick="window.open('ListView.pl?lid=$child_lid')">} . $list_info . ($user_can_edit ? "</span><span onClick=\"\$('#list'+$child_lid).css('text-decoration', 'line-through'); remove_list_item({lid: '$lid', item_type: '1', item_id: '$child_lid'});\" class=\"link ui-icon ui-icon-trash\">" : '') . "</span>";
 		$anno_type->add_Annot($list_info);
 		$anno_obj->add_Annot($anno_type);
 	}	
