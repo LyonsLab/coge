@@ -516,7 +516,7 @@ function export_tbl () {
 
 </script>
 <TABLE>
-   <TR><TD valign=top>
+   <TR><TD valign='top'>
     <table class="ui-widget-content ui-corner-all">
      <tr>
        <td>Organism Name:<td><input type="text" size=15 value="<TMPL_VAR NAME="ORG_NAME">" name="org_name" id="org_name" style="font-style:italic" onFocus="search_bar('org_name')" onKeyUp='timing("org_name");'><span class='ui-button ui-corner-all' onClick="timing('org_name');"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
@@ -526,17 +526,17 @@ function export_tbl () {
        <td>Dataset Name:<td><input type="text" size=15 value="<TMPL_VAR NAME="DS_NAME">" name="ds_name" style="font-style:italic" id="ds_name" onFocus="search_bar('ds_name')" onKeyUp='timing("ds_name");' ><span class='ui-button ui-corner-all' onClick="timing('ds_name');"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
    </table>
   <tr><td>
-   <span>Organisms: </span><span class=small id=org_count><TMPL_VAR NAME="ORG_COUNT"></span> 
+   <span>Organisms: </span><span class='small' id='org_count'><TMPL_VAR NAME="ORG_COUNT"></span> 
    <DIV id="org_list"><TMPL_VAR NAME="ORG_LIST"></DIV>
-   <span class="ui-button ui-corner-all" id=allorg onClick="add_all_org();$('#geno_list').dialog('option', 'width', 500).dialog('open');">Add all to Genome List</span><br>
-   <td valign=top>
+   <span class="ui-button ui-corner-all" id='allorg' onClick="add_all_org();$('#geno_list').dialog('option', 'width', 500).dialog('open');">Add all to Genome List</span><br>
+   <td valign='top'>
    <DIV>Organism information</DIV>
-   <div id=org_info class = "small ui-corner-all ui-widget-content" ></div>
-  <tr valign=top>
+   <div id='org_info' class="small ui-corner-all ui-widget-content" ></div>
+  <tr valign='top'>
   <td>
-  <span>Genomes: </span><span class=small id=dsg_count><TMPL_VAR NAME="DSG_COUNT"></span> 
-  <DIV style="vertical-align: top;" id ="dsg_list"><TMPL_VAR NAME="DSG_LIST"></DIV>
-  <TD valign=top>
+  <span>Genomes: </span><span class='small' id='dsg_count'><TMPL_VAR NAME="DSG_COUNT"></span> 
+  <DIV style="vertical-align: top;" id="dsg_list"><TMPL_VAR NAME="DSG_LIST"></DIV>
+  <TD valign='top'>
    <DIV>Genome information</DIV>
    <DIV id="dsg_info" class = "small ui-corner-all ui-widget-content"><TMPL_VAR NAME="DSG_INFO"></DIV>
 	
@@ -549,7 +549,7 @@ function export_tbl () {
    <DIV id="ds_info" class = "small ui-corner-all ui-widget-content" ><TMPL_VAR NAME="DS_INFO"></DIV>
   <tr  valign=top>
   <td>
-   <span>Chromosomes: </span><span class=small id=chr_count><TMPL_VAR NAME="CHR_COUNT"></span> 
+   <span>Chromosomes: </span><span class='small' id='chr_count'><TMPL_VAR NAME="CHR_COUNT"></span> 
    <DIV style="vertical-align: top;" id="chr_list"><TMPL_VAR NAME="CHR_LIST"></DIV>
   <TD valign=top>
    <DIV>Chromosome information</DIV>

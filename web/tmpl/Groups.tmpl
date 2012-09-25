@@ -12,13 +12,15 @@ $(document).ready(function(){
 		cache: false,
 	});
 	set_table();
-	$(".dialog_box").dialog({autoOpen: <TMPL_VAR NAME=EDIT_BOX_OPEN>, width: 600});
+	$(".dialog_box").dialog({autoOpen: false, width: 600});
 	<TMPL_VAR ADDITIONAL_STUFF>
 });
 
-function set_table () {	 $('#group_table').tablesorter({widgets: ['zebra']});	 }
+function set_table () {	 
+	$('#group_table').tablesorter({widgets: ['zebra']});
+}
 
-function input_focus(div_id){
+function input_focus(div_id) {
 	$('#'+div_id).val("").css({fontStyle: "normal"});
 }
 
@@ -197,4 +199,4 @@ $(document).ready(function(){
 <TMPL_IF NAME=ADMIN_AREA>
 <hr>
 Admin Functions:<br>
-</TMPL_IF>
+</TMPL_IF> <!-- ADMIN_AREA -->
