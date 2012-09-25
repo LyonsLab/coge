@@ -179,7 +179,7 @@ sub gen_body
       {
 	foreach my $item ($form->param('dsgid'))
 	  {
-	    foreach my $dsgid(split/,/, $item)
+	    foreach my $dsgid(split(/,/, $item))
 	      {
 		my $id = get_dsg_for_search_menu(dsgid=>$dsgid);
 		$doc_ready .= qq{
@@ -190,7 +190,7 @@ sub gen_body
       }
     elsif ($prefs->{dsgids})
       {
-	foreach my $dsgid(split/,/, $prefs->{dsgids})
+	foreach my $dsgid(split(/,/, $prefs->{dsgids}))
 	  {
 	    my $id = get_dsg_for_search_menu(dsgid=>$dsgid);
 	    $doc_ready .= qq{
@@ -200,7 +200,7 @@ sub gen_body
       }
     if (my $fid = $form->param('fid'))
       {
-	my ($fid, $seq_type_id) = split/_/, $fid;
+	my ($fid, $seq_type_id) = split(/_/, $fid);
 	$seq_type_id = 1 unless $seq_type_id;
 	my $qdsgid = $form->param('qdsgid');
 	unless ($qdsgid)
@@ -365,7 +365,7 @@ sub get_dsg_for_search_menu
     my %dsgs;
     if ($orgids)
       {
-	my @orgids = split/,/,$orgids;
+	my @orgids = split(/,/,$orgids);
 	foreach my $dsg ($coge->resultset('Genome')->search({organism_id=>[@orgids]}))
 	  {
 	    $dsgs{$dsg->id}=$dsg;
@@ -374,7 +374,7 @@ sub get_dsg_for_search_menu
     if ($dsgids)
       {
 	%dsgs = () if ($dsgs{$dsgids});
-	foreach my $dsgid (split/,/,$dsgids)
+	foreach my $dsgid (split(/,/,$dsgids))
 	  {
 	    my $dsg = $coge->resultset('Genome')->find($dsgid);
 	    next unless $dsg;
@@ -396,7 +396,7 @@ sub get_dsg_for_search_menu
 sub get_types
   {
     my %opts = @_;
-#    my ($dsid, $gstid) = split /_/, $opts{dsid};
+#    my ($dsid, $gstid) = split(/_/, $opts{dsid});
     my $dsgid = $opts{dsgid};
     my $accn = $opts{accn};
     my $ftid = $opts{ftid};
@@ -541,7 +541,7 @@ sub get_anno
 #	$anno .= qq{<span class="ui-button ui-corner-all" onClick="window.open('FastaView.pl?featid=$featid&gstid=$gstid');">Get Sequence</span>};
 #	$anno .= qq{<span class="ui-button ui-corner-all" onClick="window.open('CoGeBlast.pl?featid=$featid;gstid=$gstid');">CoGeBlast</span>};
 #	$anno .= qq{<span class="ui-button ui-corner-all" onClick="window.open('GenomeView.pl?chr=$chr&ds=$ds&x=$x&z=$z;gstid=$gstid');">Genome Browser</span>};
-	foreach my $item (split/;/, $feat->organism->description)
+	foreach my $item (split(/;/, $feat->organism->description))
 	  {
 	    $anno .= qq{<span class=link onclick="\$('#org_desc').val('$item').focus()">$item</span>;};
 	  }
@@ -736,7 +736,7 @@ sub go_synfind
     my $source_type = has_cds($source_dsgid);
     $source_type = $source_type ? "CDS" : "genomic";
     my @dsgids;
-    foreach my $dsgid (split/,/,$dsgids)
+    foreach my $dsgid (split(/,/,$dsgids))
       {
 	($dsgid) = $dsgid =~ /(\d+)/;
 	my $has_cds = has_cds($dsgid);
@@ -1342,7 +1342,7 @@ sub generate_feat_info
   {
     my $featid = shift;
     my ($dsgid);
-    ($featid, $dsgid) = split/_/,$featid;
+    ($featid, $dsgid) = split(/_/,$featid);
     my ($dsg) = $coge->resultset('Genome')->find($dsgid);
     my ($feat) = $coge->resultset("Feature")->find($featid);
     unless (ref($feat) =~ /Feature/i)
@@ -1409,7 +1409,7 @@ sub get_master_syn_sets
     my @dsgs;
     foreach my $item ($form->param('dsgid'))
       {
-	foreach my $dsgid(split/,/, $item)
+	foreach my $dsgid(split(/,/, $item))
 	  {
 	    push @dsgs, $coge->resultset('Genome')->find($dsgid);
 	  }
