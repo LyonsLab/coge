@@ -226,10 +226,7 @@ sub modify_users {
 	foreach my $user (sort { $a->last_name cmp $b->last_name || $a->user_name cmp $b->user_name } $group->users)
 	{
 #		next if $user->user_name eq $USER->user_name; #skip self;
-		my $name = $user->user_name;
-		$name .= " : " . $user->first_name if $user->first_name;
-		$name .= " " . $user->last_name if $user->first_name && $user->last_name;
-		push @users, { uid_name => $name, uid => $user->id };
+		push @users, { uid_name => $user->info, uid => $user->id };
 		$users{ $user->id } = 1;
 	}
 	$data{users} = \@users;
@@ -238,10 +235,7 @@ sub modify_users {
 	foreach my $user ( sort { $a->last_name cmp $b->last_name || $a->user_name cmp $b->user_name } $coge->resultset('User')->all )
 	{
 		next if $users{ $user->id };    #skip users we already have
-		my $name = $user->user_name;
-		$name .= " : " . $user->first_name if $user->first_name;
-		$name .= " " . $user->last_name if $user->first_name && $user->last_name;
-		push @all_users, { uid_name => $name, uid => $user->id };
+		push @all_users, { uid_name => $user->info, uid => $user->id };
 	}
 	$data{all_users} = \@all_users;
 
