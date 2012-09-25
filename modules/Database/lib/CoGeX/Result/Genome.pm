@@ -154,9 +154,9 @@ sub lists() {
 	my $self = shift;
 	my @lists = ();
 
-	foreach	my $conn ( $self->genome_list_connectors )
+	foreach	my $conn ( $self->list_connectors )
 	{
-		push( @lists, $conn->list() );
+		push( @lists, $conn->parent_list() );
 	}
 
 	return wantarray ? @lists : \@lists;

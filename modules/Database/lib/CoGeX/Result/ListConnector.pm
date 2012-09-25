@@ -71,8 +71,8 @@ __PACKAGE__->belongs_to("experiment" => "CoGeX::Result::Experiment", "child_id")
 __PACKAGE__->belongs_to("genome"     => "CoGeX::Result::Genome",     "child_id");
 __PACKAGE__->belongs_to("feature"    => "CoGeX::Result::Feature",    "child_id");
 
-__PACKAGE__->belongs_to("child_list"   => "CoGeX::Result::List",  {'foreign.list_id' => 'self.child_id'});
-__PACKAGE__->belongs_to("parent_list"  => "CoGeX::Result::List",  {'foreign.list_id' => 'self.parent_id' } );
+__PACKAGE__->belongs_to("child_list"   => "CoGeX::Result::List",  {'foreign.list_id' => 'self.child_id'}); # a list of lists
+__PACKAGE__->belongs_to("parent_list"  => "CoGeX::Result::List",  {'foreign.list_id' => 'self.parent_id' } ); # parent list of a genome/experiment/feature/list
 
 
 ################################################ subroutine header begin ##
