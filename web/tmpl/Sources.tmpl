@@ -134,7 +134,7 @@ function update_source_info (opts){
  <TMPL_VAR NAME=SOURCE_INFO>
 </div>
 
-<TMPL_IF BUTTONS>
+<TMPL_IF NAME=BUTTONS>
 <div>
  <table>
  <tr>
@@ -147,7 +147,7 @@ function update_source_info (opts){
   <td><span id="create_source" style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="create_source()">Create new source</span></td>
  </table>
 </div>
-</TMPL_IF>
+</TMPL_IF> <!-- BUTTONS -->
 
 <div id='admin_stuff'></div>
 
@@ -157,7 +157,7 @@ function update_source_info (opts){
 
 
 
-<TMPL_IF SOURCE_TABLE>
+<TMPL_IF NAME=SOURCE_TABLE>
 <table id="source_table" class="small ui-widget-content ui-corner-all">
  <thead align="left"> 
   <tr>
@@ -206,10 +206,10 @@ function update_source_info (opts){
 </table>
 <br>
 <span onClick="update_source_info({dsid: '<TMPL_VAR NAME=DSID>'});" class='ui-button ui-corner-all ui-button-go'>Update Source Info</span>
-
+</TMPL_IF> <!-- EDIT_SOURCE_INFO -->
 
 
 <TMPL_IF NAME=ADMIN_AREA>
 <hr>
 Admin Functions:<br>
-</TMPL_IF>
+</TMPL_IF> <!-- ADMIN_AREA -->
