@@ -423,17 +423,23 @@ sub get_org_info
 
     if ($org->description)
       {
-	$html .= qq{<tr><td>Description:<td>};
+	$html .= qq{<tr><td valign='top'>Description:<td>};
 
-	foreach my $item (split/;/, $org->description)
+	my $desc_len;
+	foreach my $item (split(/;/, $org->description))
 	  {
 	    $item =~ s/^\s+//;
 	    $item =~ s/\s+$//;
-	    $html .= "<a href=OrganismView.pl?org_desc=$item>$item</a>;"
+	    $html .= "<a href=OrganismView.pl?org_desc=$item>$item</a>;";
+	    $desc_len += length($item);
+	    if ($desc_len > 100) {
+	    	$html .= '<br>';
+	    	$desc_len = 0;	
+	    }
 	  }
       }
     $html .= "<tr><td>Links:<td><a href='OrganismView.pl?oid=$oid' target=_new>OrganismView</a>&nbsp|&nbsp<a href='CodeOn.pl?oid=$oid' target=_new>CodeOn</a>";
-    $html .= "<tr><Td>Search:<td>";
+    $html .= "<tr><td>Search:<td>";
     my $search_term = $org->name;
     $html .= qq{<img onclick="window.open('http://www.ncbi.nlm.nih.gov/taxonomy?term=$search_term')" src = "picts/other/NCBI-icon.png" title="NCBI" class=link>&nbsp};
     $html .= qq{<img onclick="window.open('http://en.wikipedia.org/w/index.php?title=Special%3ASearch&search=$search_term')" src = "picts/other/wikipedia-icon.png" title="Wikipedia" class=link>&nbsp};
