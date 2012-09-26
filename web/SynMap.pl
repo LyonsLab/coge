@@ -245,7 +245,7 @@ sub gen_body
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'SynMap.tmpl' );
 
 	$template->param( MAIN => 1 );
-	$template->param( EMAIL       => $USER->email )  if $USER->email;
+	#$template->param( EMAIL       => $USER->email )  if $USER->email;
 
 	my $master_width = $FORM->param('w') || 0;
 	$template->param( MWIDTH => $master_width );
