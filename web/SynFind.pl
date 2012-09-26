@@ -474,7 +474,7 @@ sub cogefeatsearch
 	my $item = $name->name;
 	next if $seen{uc($item)};
 	$seen{uc($item)}++;
-	push @opts, "<OPTION>$item</OPTION>"
+	push @opts, "<OPTION>$item</OPTION>" if $name->feature->dataset;
       }
     if (@opts > 10000)
       {
@@ -514,6 +514,7 @@ sub get_anno
       {
 	push @feats,$coge->resultset('Feature')->find($fid);
       }
+    return unless @feats;
     my $anno;
     $anno .= "<font class=small>Annotation count: ".scalar @feats."</font>\n<BR><hr>\n" if scalar @feats;
     my $i = 0;
