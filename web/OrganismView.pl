@@ -606,8 +606,9 @@ sub get_genome_info
     $html .= qq{<span class='link' onclick="window.open('SynMap.pl?dsgid1=$dsgid;dsgid2=$dsgid');">SynMap</span>};
     $html .= qq{&nbsp|&nbsp};
     $html .= qq{<span class='link' onclick="window.open('CoGeBlast.pl?dsgid=$dsgid');">CoGeBlast</span>};
-    $html .= qq{&nbsp|&nbsp};
-    $html .= qq{<span id=irods class='link' onclick="gen_data(['args__loading...'],['irods']);add_to_irods(['args__dsgid','args__$dsgid'],['irods']);">Send To iPlant Data Store</span>};
+#temporarily removed until this is connected correctly for individual users
+#    $html .= qq{&nbsp|&nbsp};
+#    $html .= qq{<span id=irods class='link' onclick="gen_data(['args__loading...'],['irods']);add_to_irods(['args__dsgid','args__$dsgid'],['irods']);">Send To iPlant Data Store</span>};  
     $html .= "</td></tr>";
     if (my $exp_count = $dsg->experiments->count )
     {
@@ -986,10 +987,10 @@ sub get_gc_for_feature_type
     push @dsids, $1 if $dsid && $dsid =~ /(\d+)/;
     if ($dsgid)
       {
-	my $dsg = $coge->resultset('Genome')->find($dsgid);
+	my ($dsg) = $coge->resultset('Genome')->find($dsgid);
 	unless ($dsg)
 	  {
-	    my $error =  "unable to create dsg object using id $dsgid\n";
+	    my $error =  "unable to create genome object using id $dsgid\n";
 	    return $error;
 	  }
 	$gstid = $dsg->type->id;
@@ -1186,7 +1187,7 @@ sub get_gc_for_noncoding
 	my $dsg = $coge->resultset('Genome')->find($dsgid);
 	unless ($dsg)
 	  {
-	    my $error =  "unable to create dsg object using id $dsgid\n";
+	    my $error =  "unable to create genome object using id $dsgid\n";
 	    return $error;
 	  }
 	$gstid = $dsg->type->id;
@@ -1283,7 +1284,7 @@ sub get_codon_usage
 	my $dsg = $coge->resultset('Genome')->find($dsgid);
 	unless ($dsg)
 	  {
-	    my $error =  "unable to create dsg object using id $dsgid\n";
+	    my $error =  "unable to create genome object using id $dsgid\n";
 	    return $error;
 	  }
 	$gstid = $dsg->type->id;
@@ -1350,7 +1351,7 @@ sub get_aa_usage
 	my $dsg = $coge->resultset('Genome')->find($dsgid);
 	unless ($dsg)
 	  {
-	    my $error =  "unable to create dsg object using id $dsgid\n";
+	    my $error =  "unable to create genome object using id $dsgid\n";
 	    return $error;
 	  }
 	$gstid = $dsg->type->id;
@@ -1438,7 +1439,7 @@ sub get_wobble_gc
 	my $dsg = $coge->resultset('Genome')->find($dsgid);
 	unless ($dsg)
 	  {
-	    my $error =  "unable to create dsg object using id $dsgid\n";
+	    my $error =  "unable to create genome object using id $dsgid\n";
 	    return $error;
 	  }
 	$gstid = $dsg->type->id;
@@ -1559,7 +1560,7 @@ sub get_wobble_gc_diff
 	my $dsg = $coge->resultset('Genome')->find($dsgid);
 	unless ($dsg)
 	  {
-	    my $error =  "unable to create dsg object using id $dsgid\n";
+	    my $error =  "unable to create genome object using id $dsgid\n";
 	    return $error;
 	  }
 	$gstid = $dsg->type->id;
@@ -1617,10 +1618,10 @@ sub get_chr_length_hist
     my $dsgid = $opts{dsgid};
     return "error"," " unless $dsgid;
     my @data;
-    my $dsg = $coge->resultset('Genome')->find($dsgid);
+    my ($dsg) = $coge->resultset('Genome')->find($dsgid);
     unless ($dsg)
       {
-	my $error =  "unable to create dsg object using id $dsgid\n";
+	my $error =  "unable to create genome object using id $dsgid\n";
 	return $error;
       }
     foreach my $gs ($dsg->genomic_sequences)
@@ -1654,7 +1655,7 @@ sub get_chr_length_hist
       }
     }    
     my $mean = sprintf ("%.0f", $sum/scalar @data);
-    my $info = "<table class=small><tr><Td>Mean:<td>".commify($mean)." nt<tr><Td>Mode:<td>".commify($mode)." nt<tr><td>N50:<td>".commify($n50)."</table>" ;
+    my $info = "<table class=small><TR><td>Count:<TD>".commify($dsg->genomic_sequences->count)." chromosomes (contigs, scaffolds, etc.)<tr><Td>Mean:<td>".commify($mean)." nt<tr><Td>Mode:<td>".commify($mode)." nt<tr><td>N50:<td>".commify($n50)." nt</table>" ;
     $out =~ s/$TEMPDIR/$TEMPURL/;
     my $hist_img = "<img src=\"$out\">";
     return $info."<br>". $hist_img;
