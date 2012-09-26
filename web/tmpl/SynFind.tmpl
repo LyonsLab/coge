@@ -72,6 +72,11 @@ function reset_basename(){
 }
 
 function launch(){
+  if (!$('#feat_dsgid').html())
+  {
+    alert('You need to search and select a feature for this analysis.')
+    return;
+  }
   if(!pageObj.basename) 
   {
   	setTimeout("launch()", 100);
