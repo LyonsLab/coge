@@ -218,6 +218,17 @@ sub genomes
 
 sub private_genomes { return shift->genomes(@_); }
 
+sub private_datasets # added by Eric 9/26/2012 
+{ 
+	my $self = shift;
+	my @ds;
+	foreach my $genome ($self->genomes)
+	{
+		push @ds, $genome->datasets;
+	}
+	return wantarray ? @ds : \@ds; 
+}
+
 ################################################ subroutine header begin ##
 
 =head2 info
