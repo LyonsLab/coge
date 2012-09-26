@@ -13,7 +13,7 @@ use Data::Dumper;
 use DBI;
 use POSIX;
 
-use vars qw($P $dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ks_db $ks_type $log $MAX $MIN $assemble $axis_metric $color_type $box_diags $fid1 $fid2 $selfself $labels $color_scheme $chr_sort_order $font $GZIP $GUNZIP $URL $conffile $skip_random $force_box $chr_order);
+use vars qw($P $dagfile $alignfile $width $link $min_chr_size $dsgid1 $dsgid2 $help $coge $graphics_context $CHR1 $CHR2 $basename $link_type $flip $grid $ks_db $ks_type $log $MAX $MIN $assemble $axis_metric $color_type $box_diags $fid1 $fid2 $selfself $labels $color_scheme $chr_sort_order $font $GZIP $GUNZIP $URL $conffile $skip_random $force_box $chr_order $dotsize);
 #17:1:14:5:7:18:3:4:11:9:13:6:8:12:10:19:2:15:16
 
 
@@ -53,6 +53,7 @@ GetOptions(
 	   "skip_random|sr=i"=>\$skip_random, #flag or skipping chromosome containing the wod 'random' in their name
 	   "force_box|fb" => \$force_box, #flag to make dotplot dimensions a box instead of relative on genomic content
 	   "chr_order|co=s" => \$chr_order, #string of ":" delimted chromosome name order to display for the genome with fewer chromosomes
+	   "dotsize|ds=i"=>\$dotsize, #size of dots in dotplot
 	   );
 $selfself = 1 unless defined $selfself;
 $labels = 1 unless defined $labels;
@@ -237,6 +238,7 @@ $size = int($x_pix_per_bp) if $x_pix_per_bp >1;
 $size = int($y_pix_per_bp) if $y_pix_per_bp >1;
 $size = 4 if $x_pix_per_bp >4;
 $size = 4 if $y_pix_per_bp >4;
+$size = $dotsize if $dotsize;
 #draw dots for all matches
 draw_dots(gd=>$graphics_context, file=>$dagfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, link_type => $link_type, dsgid1=>$dsgid1, dsgid2=>$dsgid2, flip=>$flip, metric=>$axis_metric, fid1=>$fid1, fid2=>$fid2, size=>$size) if defined $dagfile && -r $dagfile;
 
@@ -304,6 +306,7 @@ $size = int($x_pix_per_bp)+2 if $x_pix_per_bp >1;
 $size = int($y_pix_per_bp)+2 if $y_pix_per_bp >1;
 $size = 5 if $x_pix_per_bp >5;
 $size = 5 if $y_pix_per_bp >5;
+$size = $dotsize if $dotsize;
 
 my $box_coords = draw_dots(gd=>$graphics_context, file=>$alignfile, org1=>$org1info, org2=>$org2info, x_pix_per_bp=>$x_pix_per_bp, y_pix_per_bp=>$y_pix_per_bp, size=>$size, add_inverse=>$add, flip=>$flip, ksdata=>$ksdata, ks_type=>$ks_type, log=>$log, metric=>$axis_metric, colors=>\@colors, color_type=>$color_type, color_scheme=>$color_scheme, fid1=>$fid1, fid2=>$fid2);
 
