@@ -530,7 +530,7 @@ sub blast_search {
 	my $seq       = $opts{seq};
 	my $blastable = $opts{blastable};
 	my $width     = $opts{width};
-
+	$width = 400 unless $width =~ /^\d+$/; #something wrong with how width is calculated in tmpl file
 	# exit;
 	my $t1 = new Benchmark;
 	my @dsg_ids = split( /,/, $blastable );
@@ -695,7 +695,7 @@ sub gen_results_page {
 
 	my $t1 = new Benchmark;
 	my ( $chromosome_data, $chromosome_data_large, $genomelist_link ) =
-	  generate_chromosome_images( results => $results, large_width => $width, resultslimit => $resultslimit, color_hsps => $color_hsps );
+	  generate_chromosome_images( results => $results, resultslimit => $resultslimit, color_hsps => $color_hsps );
 	my $t2 = new Benchmark;
 
 	my $t0 = new Benchmark;
@@ -973,7 +973,6 @@ sub generate_chromosome_images {
 				$data{$org}{large_image} = new CoGe::Graphics::GenomeView( { color_band_flag => 1, image_width => $large_width, chromosome_height => $large_height } ) unless $data{$org}{large_image};
 				my $dsg = $set->{dsg};
 				$data{$org}{dsg} = $dsg;
-
 				#add chromosome to graphic
 				unless ( $data{$org}{chr}{$chr} ) {
 					my $last_pos = $dsg->sequence_length($chr);
@@ -1014,7 +1013,6 @@ sub generate_chromosome_images {
 				$hsp->{color} = $color if $color_hsps eq "query";
 			}
 		}
-
 #let's reverse the order of the image features so that the first one is drawn on top of the latters;
 		if ( $data{$org}{image} ) {
 			while ( my ( $k, $v ) = each %{ $data{$org}{image}->features } ) {
@@ -1393,7 +1391,7 @@ sub generate_overview_image {
 	  generate_chromosome_images(
 		results     => \@reports,
 		hsp_type    => $type,
-		large_width => $image_width,
+	#	large_width => $image_width,
 		filename    => $image_filename
 	  );
 	my $template =
