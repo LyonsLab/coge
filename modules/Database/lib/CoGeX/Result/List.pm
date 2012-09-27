@@ -90,11 +90,15 @@ sub lists
 {
 	my $self = shift;
 	my %opts = @_;
+	my $restricted = $opts{restricted}; # limit result to restricted lists
 	
 	my @lists;
 	foreach my $conn ( $self->list_connectors_as_parent )
 	{
-		push @lists, $conn->child if ($conn->is_list);
+		if ($conn->is_list) {
+			next if ($restricted and not $conn->child->restricted);
+			push @lists, $conn->child;
+		}
 	}
 	return wantarray ? @lists : \@lists;		
 }
@@ -103,11 +107,15 @@ sub features
 {
 	my $self = shift;
 	my %opts = @_;
+	my $restricted = $opts{restricted}; # limit result to restricted features
 	
 	my @features;
 	foreach my $conn ( $self->list_connectors_as_parent )
 	{
-		push @features, $conn->child if ($conn->is_feature);
+		if ($conn->is_feature) {
+			next if ($restricted and not $conn->child->restricted);
+			push @features, $conn->child;
+		}
 	}
 	return wantarray ? @features : \@features;	
 }
@@ -116,11 +124,15 @@ sub genomes
 {
 	my $self = shift;
 	my %opts = @_;
+	my $restricted = $opts{restricted}; # limit result to restricted genomes
 	
 	my @genomes;
 	foreach my $conn ( $self->list_connectors_as_parent )
 	{
-		push @genomes, $conn->child if ($conn->is_genome);
+		if ($conn->is_genome) {
+			next if ($restricted and not $conn->child->restricted);
+			push @genomes, $conn->child;
+		}
 	}
 	return wantarray ? @genomes : \@genomes;	
 }
@@ -145,11 +157,13 @@ sub experiments
 sub children
 {
 	my $self = shift;
-	#my %opts = @_;
+	my %opts = @_;
+	my $restricted = $opts{restricted}; # limit result to restricted children
 
 	my @children;
 	foreach my $conn ( $self->list_connectors_as_parent )
 	{
+		next if ($restricted and not $conn->child->restricted);
 		push @children, $conn->child;
 	}
 	return wantarray ? @children : \@children;	

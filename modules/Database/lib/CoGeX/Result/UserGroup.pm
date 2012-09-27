@@ -128,17 +128,39 @@ sub creator
 
 sub experiments
 {
-
 	my $self = shift;
-	my @experiments = ();
-	foreach my $list ( $self->lists )
-	{
-		foreach my $experiment ( $list->experiments )
-		{
-			push @experiments, $experiment;
-		}
+	
+	my %experiments;
+	foreach my $list ( $self->lists) {
+		map { $experiments{ $_->id } = $_ } $list->experiments;
 	}
-	return wantarray ? @experiments : \@experiments;
+	return wantarray ? values %experiments : [ values %experiments ];		
+}
+
+################################################ subroutine header begin ##
+
+=head2 restricted_experiments
+
+ Usage     : 
+ Purpose   : Returns the set of restricted experiments associated with the user group
+ Returns   : wantArray of experiments
+ Argument  : None
+ Throws    : None
+ Comments  : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub restricted_experiments
+{
+	my $self = shift;
+	
+	my %experiments;
+	foreach my $list ( $self->lists) {
+		map { $experiments{ $_->id } = $_ } $list->experiments( restricted => 1 );
+	}
+	return wantarray ? values %experiments : [ values %experiments ];		
 }
 
 ################################################ subroutine header begin ##
@@ -158,17 +180,13 @@ sub experiments
 
 sub features
 {
-
-	my $self     = shift;
-	my @features = ();
-	foreach my $list ( $self->lists )
-	{
-		foreach my $feature ( $list->features )
-		{
-			push @features, $feature;
-		}
+	my $self = shift;
+	
+	my %features;
+	foreach my $list ( $self->lists) {
+		map { $features{ $_->id } = $_ } $list->features;
 	}
-	return wantarray ? @features : \@features;
+	return wantarray ? values %features : [ values %features ];	
 }
 
 ################################################ subroutine header begin ##
@@ -186,27 +204,22 @@ sub features
 
 ################################################## subroutine header end ##
 
-sub genomes
-{
+sub genomes {
+	my $self = shift;
 
-	my $self    = shift;
-	my @genomes = ();
-	foreach my $list ( $self->lists )
-	{
-		foreach my $genome ( $list->genomes )
-		{
-			push @genomes, $genome;
-		}
+	my %genomes;
+	foreach my $list ( $self->lists) {
+		map { $genomes{ $_->id } = $_ } $list->genomes;
 	}
-	return wantarray ? @genomes : \@genomes;
+	return wantarray ? values %genomes : [ values %genomes ];
 }
 
 ################################################ subroutine header begin ##
 
-=head2 private_genomes
+=head2 restricted_genomes
 
- Usage     : $self->genomes
- Purpose   : alias for sub private_genomes
+ Usage     : $self->restricted_genomes
+ Purpose   : Returns the set of restricted genomes associated with the user group
  Returns   : wantArray of genomes
  Argument  : None
  Throws    : None
@@ -216,9 +229,32 @@ sub genomes
 
 ################################################## subroutine header end ##
 
-sub private_genomes { return shift->genomes(@_); }
+sub restricted_genomes { 
+	my $self = shift;
+	
+	my %genomes;
+	foreach my $list ( $self->lists) {
+		map { $genomes{ $_->id } = $_ } $list->genomes(restricted => 1);
+	}
+	return wantarray ? values %genomes : [ values %genomes ];
+}
 
-sub private_datasets # added by Eric 9/26/2012 
+################################################ subroutine header begin ##
+
+=head2 datasets
+
+ Usage     : 
+ Purpose   : Returns the set of datasets associated with the user group
+ Returns   : wantArray of datasets
+ Argument  : None
+ Throws    : None
+ Comments  : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub datasets
 { 
 	my $self = shift;
 	my @ds;
@@ -226,7 +262,33 @@ sub private_datasets # added by Eric 9/26/2012
 	{
 		push @ds, $genome->datasets;
 	}
-	return wantarray ? @ds : \@ds; 
+	return wantarray ? @ds : \@ds;
+}
+
+################################################ subroutine header begin ##
+
+=head2 restricted_datasets
+
+ Usage     : $self->restricted_datasets
+ Purpose   : Returns the set of restricted datasets associated with the user group
+ Returns   : wantArray of datasets
+ Argument  : None
+ Throws    : None
+ Comments  : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub restricted_datasets
+{ 
+	my $self = shift;
+	my @ds;
+	foreach my $genome ($self->genomes)
+	{
+		push @ds, $genome->datasets( restricted => 1 );
+	}
+	return wantarray ? @ds : \@ds;
 }
 
 ################################################ subroutine header begin ##

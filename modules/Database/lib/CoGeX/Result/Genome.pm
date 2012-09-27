@@ -184,24 +184,25 @@ sub datasets {
 	my %opts = @_;
 	my $chr  = $opts{chr};
 	$chr = $opts{chromosome} unless defined $chr;
-	my @ds;
+	my $restricted = $opts{restricted};
+	
+	my @datasets;
 	foreach my $dsc ( $self->dataset_connectors() ) {
+		my $ds = $dsc->dataset;
+		next if ($restricted and not $ds->restricted);
+		
 		if ( defined $chr ) {
-
-			#	    foreach my $ds_chr ($dsc->dataset->chromosomes)
-			#	      {
-			#		print STDERR $ds_chr,"\n";
-			#		return $dsc->dataset if $ds_chr eq $chr;
-			return $dsc->dataset
-			  if $dsc->dataset->has_chromosome( chr => $chr );
-
-			#	      }
+			#foreach my $ds_chr ($dsc->dataset->chromosomes) {
+			#	print STDERR $ds_chr,"\n";
+			#	return $dsc->dataset if $ds_chr eq $chr;
+			return $ds if $ds->has_chromosome( chr => $chr );
+			#}
 		}
 		else {
-			push @ds, $dsc->dataset;
+			push @datasets, $ds;
 		}
 	}
-	return wantarray ? @ds : \@ds;
+	return wantarray ? @datasets : \@datasets;
 }
 
 ################################################ subroutine header begin ##

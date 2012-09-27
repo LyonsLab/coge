@@ -55,7 +55,7 @@ my $dbh = $coge->storage->dbh;
 # Update user_group table
 drop_column('user_group', 'creator_user_id');
 add_column('user_group', 'creator_user_id INT(11) NOT NULL AFTER user_group_id'); # add creator_user_id
-sql('update user_group set creator_user_id=0'); # FIXME ?
+sql('update user_group set creator_user_id=0');
 drop_column('user_group', 'locked');
 add_column('user_group', 'locked INT(1) NOT NULL DEFAULT 0'); # add locked
 sql('alter table user_group change name name VARCHAR(255) NOT NULL'); # change from VARCHAR(50) to VARCHAR(255)

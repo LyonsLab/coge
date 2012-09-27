@@ -99,7 +99,6 @@ __PACKAGE__->has_many( 'works'     => "CoGeX::Result::Work",        'user_id' );
 __PACKAGE__->has_many( 'workflows' => "CoGeX::Result::Workflow",    'user_id' );
 __PACKAGE__->has_many( 'user_group_connectors' => "CoGeX::Result::UserGroupConnector", 'user_id' );
 
-#__PACKAGE__->has_many('lists'=>"CoGeX::Result::List",'user_id');
 
 ################################################ subroutine header begin ##
 
@@ -149,6 +148,21 @@ sub check_passwd {
 	return crypt( $pwd, $self->passwd ) eq $self->passwd;
 }
 
+################################################ subroutine header begin ##
+
+=head2 name
+
+ Usage     : 
+ Purpose   : alias for $self->user_name
+ Returns   : string
+ Argument  : 
+ Throws    : None
+ Comments  : 
+
+=cut
+
+################################################## subroutine header end ##
+
 sub name {
 	my $self = shift;
 	return $self->user_name(@_);
@@ -195,8 +209,8 @@ sub user_groups {
 
 =head2 groups
 
- Usage     : alias for $self->user_groups
- Purpose   : 
+ Usage     : 
+ Purpose   : alias for $self->user_groups
  Returns   : array or arrayref of user_group objects
  Argument  : 
  Throws    : None
@@ -214,8 +228,8 @@ sub groups {
 
 =head2 owner_group
 
- Usage     : return user's owner group
- Purpose   : 
+ Usage     : 
+ Purpose   : return user's owner group
  Returns   : user_group object
  Argument  : 
  Throws    : None
@@ -281,65 +295,6 @@ sub is_admin {
 
 ################################################ subroutine header begin ##
 
-=head2 add_to_group
-
- Usage     : 
- Purpose   : 
- Returns   : 
- Argument  : Group Name
- Throws    : None
- Comments  : 
-
-
-
-=cut
-
-################################################## subroutine header end ##
-
-sub add_to_group() {
-	my $self = shift;
-
-	my %opts       = @_;
-	my $coge       = $opts{coge};
-	my $group_name = $opts{group_name};
-
-	my $group = $coge->ResultSet('UserGroup')->find( { name => $group_name } );
-
-	if ($group) {
-
-		# FIXME
-	}
-}
-
-################################################ subroutine header begin ##
-
-=head2 private_genomes
-
- Usage     : 
- Purpose   : Returns the set of private genomes a user has access to
- Returns   : Array of dataset_groups
- Argument  : None
- Throws    : None
- Comments  : 
-
-=cut
-
-################################################## subroutine header end ##
-
-sub private_genomes {
-
-	my $self = shift;
-	return unless $self->id;
-	my @private_genomes = ();
-	foreach my $group ( $self->user_groups() ) {
-		push( @private_genomes, $group->private_genomes() );
-	}
-
-	return wantarray ? @private_genomes : \@private_genomes;
-}
-
-################################################ subroutine header begin ##
-
 =head2 has_access_to_genome
 
  Usage     : 
@@ -353,29 +308,19 @@ sub private_genomes {
 
 ################################################## subroutine header end ##
 
-sub has_access_to_genome { # FIXME mdb 8/10/12 possibly obsolete
+sub has_access_to_genome {
 	my $self = shift @_;
 	my $dsg  = shift;
-	return 0 unless $dsg;
-	foreach my $group ( $self->groups ) {
-		return 1 if $group->role->name eq "Admin";
-	}
-	my $dsgid = $dsg =~ /^\d+$/ ? $dsg : $dsg->id;
-	foreach my $genome ( $self->private_genomes() ) {
-		if ( $dsgid == $genome->id ) {
-			return 1;
-		}
-	}
-	return 0;
+	return $self->has_access(dsg => $dsg);
 }
 
 ################################################ subroutine header begin ##
 
-=head2 private_datasets
+=head2 has_access_to_experiment
 
  Usage     : 
- Purpose   : Returns the set of private datasets a user has access to
- Returns   : Array of datasets
+ Purpose   : checks to see if a user has access to an experiment
+ Returns   : 1/0
  Argument  : None
  Throws    : None
  Comments  : 
@@ -384,16 +329,10 @@ sub has_access_to_genome { # FIXME mdb 8/10/12 possibly obsolete
 
 ################################################## subroutine header end ##
 
-sub private_datasets {
-
-	my $self = shift;
-	return unless $self->id;
-	my @private_datasets = ();
-	foreach my $group ( $self->user_groups() ) {
-		push( @private_datasets, $group->private_datasets() );
-	}
-
-	return wantarray ? @private_datasets : \@private_datasets;
+sub has_access_to_experiment {
+	my $self = shift @_;
+	my $experiment = shift;
+	return $self->has_access(experiment => $experiment);
 }
 
 ################################################ subroutine header begin ##
@@ -411,20 +350,10 @@ sub private_datasets {
 
 ################################################## subroutine header end ##
 
-sub has_access_to_dataset { # FIXME mdb 8/10/12 possibly obsolete
+sub has_access_to_dataset {
 	my $self = shift @_;
 	my $ds   = shift;
-	return 0 unless $ds;
-	foreach my $group ( $self->groups ) {
-		return 1 if $group->role->name eq "Admin";
-	}
-	my $dsid = $ds =~ /^\d+$/ ? $ds : $ds->id;
-	foreach my $ds ( $self->private_datasets() ) {
-		if ( $dsid == $ds->id ) {
-			return 1;
-		}
-	}
-	return 0;
+	return $self->has_access(ds => $ds);
 }
 
 ################################################ subroutine header begin ##
@@ -442,7 +371,7 @@ sub has_access_to_dataset { # FIXME mdb 8/10/12 possibly obsolete
 
 ################################################## subroutine header end ##
 
-sub has_access { # FIXME mdb 8/10/12 possibly obsolete
+sub has_access {
 	my $self = shift;
 	my %opts = @_;
 	my $dsg  = $opts{dsg};
@@ -457,7 +386,7 @@ sub has_access { # FIXME mdb 8/10/12 possibly obsolete
 	
 	if ($ds) {
 		my $dsid = $ds =~ /^\d+$/ ? $ds : $ds->id;
-		foreach my $ds ( $self->private_datasets() ) {
+		foreach my $ds ( $self->datasets() ) {
 			if ( $dsid == $ds->id ) {
 				return 1;
 			}
@@ -466,7 +395,7 @@ sub has_access { # FIXME mdb 8/10/12 possibly obsolete
 	
 	if ($dsg) {
 		my $dsgid = $dsg =~ /^\d+$/ ? $dsg : $dsg->id;
-		foreach my $genome ( $self->private_genomes() ) {
+		foreach my $genome ( $self->genomes() ) {
 			if ( $dsgid == $genome->id ) {
 				return 1;
 			}
@@ -671,6 +600,57 @@ sub is_role {
 	return 0;
 }
 
+################################################ subroutine header begin ##
+
+=head2 datasets
+
+ Usage     : 
+ Purpose   : Returns the set of datasets a user has access to
+ Returns   : Array of datasets
+ Argument  : None
+ Throws    : None
+ Comments  : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub datasets {
+	my $self = shift;
+	return unless $self->id;
+	
+	my %datasets;
+	foreach my $ug ( $self->groups ) {
+		map { $datasets{ $_->id } = $_ } $ug->datasets;
+	}
+	return wantarray ? values %datasets : [ values %datasets ];		
+}
+
+################################################ subroutine header begin ##
+
+=head2 restricted_datasets
+
+ Usage     : 
+ Purpose   : Returns the set of restricted datasets a user has access to
+ Returns   : Array of datasets
+ Argument  : None
+ Throws    : None
+ Comments  : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub restricted_datasets {
+	my $self = shift;
+	return unless $self->id;
+	
+	my %datasets;
+	foreach my $ug ( $self->groups ) {
+		map { $datasets{ $_->id } = $_ } $ug->restricted_datasets;
+	}
+	return wantarray ? values %datasets : [ values %datasets ];		
+}
 
 ################################################ subroutine header begin ##
 
@@ -690,6 +670,7 @@ sub is_role {
 sub lists {
 	my $self = shift;
 	my %opts = @_;
+	
 	my %lists;
 	foreach my $ug ( $self->groups ) {
 		map { $lists{ $_->id } = $_ } $ug->lists;
@@ -702,7 +683,7 @@ sub lists {
 =head2 experiments
 
  Usage     : $self->experiments
- Purpose   : shows the experiments to which user has access
+ Purpose   : Return set of experiments to which user has access
  Returns   : wantarray of experiment objects
  Argument  : 
  Throws    : None
@@ -714,16 +695,39 @@ sub lists {
 
 sub experiments {
 	my $self = shift;
-	my %opts = @_;
-	my $restricted = $opts{restricted};
+#	my %opts = @_;
 	
 	my %experiments;
 	foreach my $ug ( $self->groups ) {
-		foreach my $list ( $ug->lists) {
-			map { $experiments{ $_->id } = $_ } $list->experiments(restricted => $restricted);
-		}
+		map { $experiments{ $_->id } = $_ } $ug->experiments;
 	}
-	return wantarray ? values %experiments : [ values %experiments ];
+	return wantarray ? values %experiments : [ values %experiments ];	
+}
+
+################################################ subroutine header begin ##
+
+=head2 restricted_experiments
+
+ Usage     : $self->restricted_experiments
+ Purpose   : Return set of restricted experiments to which user has access
+ Returns   : wantarray of experiment objects
+ Argument  : 
+ Throws    : None
+ Comments  : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub restricted_experiments {
+	my $self = shift;
+#	my %opts = @_;
+	
+	my %experiments;
+	foreach my $ug ( $self->groups ) {
+		map { $experiments{ $_->id } = $_ } $ug->restricted_experiments;
+	}
+	return wantarray ? values %experiments : [ values %experiments ];	
 }
 
 ################################################ subroutine header begin ##
@@ -731,7 +735,7 @@ sub experiments {
 =head2 genomes
 
  Usage     : $self->genomes
- Purpose   : shows the genomes to which user has access
+ Purpose   : Get list of genomes to which user has access
  Returns   : wantarray of genome objects
  Argument  : 
  Throws    : None
@@ -743,14 +747,39 @@ sub experiments {
 
 sub genomes {
 	my $self = shift;
-	my %opts = @_;
+#	my %opts = @_;
+
 	my %genomes;
 	foreach my $ug ( $self->groups ) {
-		foreach my $list ( $ug->lists) {
-			map { $genomes{ $_->id } = $_ } $list->genomes;
-		}
+		map { $genomes{ $_->id } = $_ } $ug->genomes;
 	}
 	return wantarray ? values %genomes : [ values %genomes ];
+}
+
+################################################ subroutine header begin ##
+
+=head2 restricted_genomes
+
+ Usage     : 
+ Purpose   : Returns the set of restricted genomes a user has access to
+ Returns   : Array of genomes
+ Argument  : None
+ Throws    : None
+ Comments  : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub restricted_genomes {
+	my $self = shift;
+	return unless $self->id;
+	
+	my %genomes;
+	foreach my $ug ( $self->groups ) {
+		map { $genomes{ $_->id } = $_ } $ug->restricted_genomes;
+	}
+	return wantarray ? values %genomes : [ values %genomes ];	
 }
 
 ################################################ subroutine header begin ##
@@ -770,12 +799,11 @@ sub genomes {
 
 sub features {
 	my $self = shift;
-	my %opts = @_;
+#	my %opts = @_;
+	
 	my %features;
 	foreach my $ug ( $self->groups ) {
-		foreach my $list ( $ug->lists) {
-			map { $features{ $_->id } = $_ } $list->features;
-		}
+		map { $features{ $_->id } = $_ } $ug->features;
 	}
 	return wantarray ? values %features : [ values %features ];
 }
