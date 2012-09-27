@@ -12,12 +12,9 @@ use Data::Dumper;
 use Digest::MD5 qw(md5_base64);
 use CGI::Log;
 
-#no lib '/usr/lib/perl5/ModPerl'; #FIXME 8/2/12 remove
-
 use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use CoGeX;
-
 
 
 no warnings 'redefine';
