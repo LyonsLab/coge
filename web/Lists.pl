@@ -130,7 +130,7 @@ sub get_lists_for_user {
 	else {
 		@lists = $USER->lists;
 	}	
-	
+
 	my @list_info;
 	foreach my $list ( sort {$a->name cmp $b->name } @lists ) {
 		push @list_info, 
