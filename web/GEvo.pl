@@ -3839,7 +3839,7 @@ sub dataset_search
 		    print STDERR "Error retrieving sequence_type object for ", $ds->name,": id ",$ds->id,"\n";
 		    next;
 		  }
-		my $title = "$ds_name ($sname, " . ($ver ? "v$ver," : '') . " dsid".$ds->id.")";
+		my $title = "$ds_name ($sname, " . ($ver ? "v$ver, " : '') . "dsid".$ds->id.")";
 		
 		next if $sources{$ds->id} && $sources{$ds->id}{typeid} < $typeid;
 		if ($dsgid && ! $dsid)
