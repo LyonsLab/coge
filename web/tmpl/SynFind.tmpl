@@ -72,7 +72,7 @@ function reset_basename(){
 }
 
 function launch(){
-  if (!$('#feat_dsgid').html())
+  if (!$('#fid').html())
   {
     alert('You need to search and select a feature for this analysis.')
     return;
@@ -503,6 +503,7 @@ function search_chain(val) {
 }
 
 function go_cogefeatsearch () {
+ $('#fid').html('');
  cogefeatsearch(['args__accn','accn', 'args__anno','annosearch','args__org_id','org_id_feat', 'args__org_name','org_name_feat','args__org_desc','org_desc_feat'],[source_search_chain]);
 }
 
