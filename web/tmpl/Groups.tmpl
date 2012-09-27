@@ -32,7 +32,7 @@ function filter_rows (search_text){
 		if( $('#search_type').val() == 1 ) { $("#group_table_body tr:not(:contains('"+search_text+"'))").hide(); }
 		else { $("#group_table_body tr:contains('"+search_text+"')").hide(); }
 	}
-	$('#filter_count').html('Showing ' + $("#group_table_body tr:visible").length + ' of ' + $("#group_table_body tr").length + ' lists');
+	$('#filter_count').html('Showing ' + $("#group_table_body tr:visible").length + ' of ' + $("#group_table_body tr").length + ' groups');
 }
 
 function run_get_groups_for_user(opts){
@@ -99,9 +99,15 @@ function delete_group () {
 }
 
 function dialog_delete_group (opts) {
+	var width = 450;
+	var xpos = ($(document).width/2) - width/2;
+	var ypos = ($(window).height/2) - 100/2; // mdb 9/26/12 FIXME: this isn't working as expected!
+	
 	$("#group_delete_box").dialog("option", "title", "Delete Group?");
-	$("#group_delete_box").dialog("option", "width", "450");
+	$("#group_delete_box").dialog("option", "width", width);
+	$("#group_delete_box").dialog("option", "position", [xpos, 200]);
 	$("#group_delete_box").dialog('open');
+	
 	$('#group_delete_ugid').val(opts.ugid);
 }
 </SCRIPT>

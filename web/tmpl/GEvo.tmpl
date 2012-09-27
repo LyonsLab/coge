@@ -212,15 +212,14 @@ function return_image_info (id) {
  }
 
 Gobe.handle_html= function (html) {
-  html = "<span class='ui-button ui-corner-all' id='clear_lines' onclick='Gobe.clear()'>Clear Connectors</span><br>"+html;
-  $('#results_info').html(html);
+	html = "<span class='ui-button ui-corner-all' id='clear_lines' onclick='Gobe.clear()'>Clear Connectors</span><br>"+html;
+	$('#results_info').html(html);
   
-  if ( !$('#results_info').dialog('isOpen') && html && !html.match(/multiple hits/) ) {
-   //$('#results_info').dialog('option', 'position', 'right');
-   var xpos = $(document).width - 500;
-   $('#results_info').dialog('option', 'position', ['right', 100]);
-   $('#results_info').dialog('open');
-  }
+	if ( !$('#results_info').dialog('isOpen') && html && !html.match(/multiple hits/) ) {
+		var xpos = $(document).width - 500;
+		$('#results_info').dialog('option', 'position', ['right', 100]);
+		$('#results_info').dialog('open');
+	}
 };
 
 function open_all_sequence_option_menus(open) {

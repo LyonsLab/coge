@@ -13,13 +13,10 @@ $(document).ready(function(){
 		dataType: "html",
 		cache: false,
 	});
-	set_table();
-	$(".dialog_box").dialog({autoOpen: <TMPL_VAR NAME=EDIT_BOX_OPEN>, width: 600});
+	$(".dialog_box").dialog({autoOpen: false, width: 600});
 	
 	<TMPL_VAR ADDITIONAL_STUFF>
 });
-
-function set_table () {	 $('#group_table').tablesorter({widgets: ['zebra']});	 }
 
 function format_box_info (data) {
 	output = data.output;
@@ -79,7 +76,7 @@ function run_get_list_info(opts){
 		var local_divid = divid;
 		return function (data) {
 			$('#'+local_divid).html(data);
-			set_table();
+			//set_table();
 		};
 	}; 
 
@@ -197,7 +194,7 @@ function run_get_list_contents(opts) {
 		var local_divid = divid;
 		return function (data) {
 			$('#'+local_divid).html(data);
-			set_table();
+			//set_table();
 		};
 	}; 
 
@@ -300,7 +297,7 @@ function run_get_list_annotations(opts) {
 		var local_divid = divid;
 		return function (data) {
 			$('#'+local_divid).html(data);
-			set_table();
+			//set_table();
 		};
 	}; 
 
@@ -542,7 +539,7 @@ Are you sure you want to permanently delete this list?<p>
  </tr>
  <tr>
   <td>Type:</td>
-  <td><input id="edit_annotation_type" onkeypress="wait_to_search(search_annotation_types);" size="53" value="<TMPL_VAR NAME=DEFAULT_TYPE>"></td>
+  <td><input id="edit_annotation_type" onkeypress="wait_to_search(search_annotation_types, 0, this.value);" size="53" value="<TMPL_VAR NAME=DEFAULT_TYPE>"></td>
  </tr> 
  <tr>
   <td>Type Group:</td>
