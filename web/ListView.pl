@@ -136,11 +136,6 @@ sub gen_body {
 	$template->param( ADMIN_AREA       => 1 ) if $USER->is_admin;
 	#$template->param( BOX_NAME        => ... ); #FIXME
 
-	my $open;
-	$open = $FORM->param('open') if defined $FORM->param('open');
-	my $box_open = $open ? 'true' : 'false';
-	$template->param( EDIT_BOX_OPEN => $box_open );
-
 	return $template->output;
 }
 
@@ -589,30 +584,30 @@ sub search_genomes {
 	
 	$search_term = '%'.$search_term.'%';
 	
+	# Get genomes already in list
 	my $list = $coge->resultset('List')->find($lid);
 	my %exists;
 	map { $exists{$_->id}++ } $list->genomes;
 
+	# Get all matching organisms
 	my @organisms = $coge->resultset("Organism")->search(
 		\[ 'name LIKE ? OR description LIKE ?', 
 		['name', $search_term ], ['description', $search_term] ]);
 
+	# Get all matching genomes
 	my @genomes = $coge->resultset("Genome")->search(
-		\[ 'restricted=? AND (name LIKE ? OR description LIKE ?)', 
-		['restricted', 0], ['name', $search_term ], ['description', $search_term] ]);
+		\[ 'name LIKE ? OR description LIKE ?', 
+		['name', $search_term], ['description', $search_term] ]);
 
-	# Combine genomes with organism search but prevent duplicates
-	# FIXME mdb 8/21/12 - could be done more elegantly
-	my %gid;
-	map { $gid{$_->id}++ } @genomes;
-	foreach (@organisms) {
-		foreach ($_->genomes) {
-			push @genomes, $_ if (not defined $gid{$_->id});
-		}	
+	# Combine matching genomes with matching organism genomes, preventing duplicates
+	my %unique;
+	map { $unique{$_->id} = $_ if (not $_->restricted or $USER->has_access_to_genome($_)) } @genomes;
+	foreach my $organism (@organisms) {
+		map { $unique{$_->id} = $_ if (not $_->restricted or $USER->has_access_to_genome($_)) } $organism->genomes;
 	}
 	
 	my $html;
-	foreach my $g (sort genomecmp @genomes) {
+	foreach my $g (sort genomecmp values %unique) {
 		my $disable = $exists{$g->id} ? "disabled='disabled'" : '';
 		my $item_spec = 2 . ':' . $g->id; #FIXME magic number for item_type
 		$html .= "<option $disable value='$item_spec'>" . $g->info . "</option><br>\n";	
@@ -630,6 +625,7 @@ sub search_experiments {
 	return 0 unless $lid;
 	return '' unless $search_term;
 	
+	# Get experiments already in list
 	my $list = $coge->resultset('List')->find($lid);
 	my %exists;
 	map { $exists{$_->id}++ } $list->experiments;
@@ -700,12 +696,13 @@ sub search_lists { # list of lists
 	
 	$search_term = '%'.$search_term.'%';
 	
+	# Get lists already in this list
 	my $list = $coge->resultset('List')->find($lid);
 	my %exists;
 	map { $exists{$_->id}++ } $list->lists;
-	
+
+	# Get public lists and user's private lists	
 	my $group_str = join(',', map { $_->id } $USER->groups);
-	
 	my @lists = $coge->resultset("List")->search_literal(
 		"locked=0 AND (restricted=0 OR user_group_id IN ( $group_str )) AND (name LIKE '$search_term' OR description LIKE '$search_term')");
 	
@@ -725,7 +722,7 @@ sub search_annotation_types {
 	my %opts = @_;
 	my $type_group = $opts{type_group};
 	my $search_term = $opts{search_term};
-#	print STDERR "search_annotation_types: $search_term $type_group\n";
+	print STDERR "search_annotation_types: $search_term $type_group\n";
 	return '' unless $search_term;
 	
 	$search_term = '%'.$search_term.'%';
@@ -755,7 +752,6 @@ sub search_annotation_types {
 
 sub get_annotation_type_groups {
 	#my %opts = @_;
-	
 	my %unique;
 	
 	my $rs = $coge->resultset('AnnotationTypeGroup');
