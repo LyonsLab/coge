@@ -193,7 +193,7 @@ sub genomic_view
 
 	($org) = $coge->resultset('Organism')->resolve($org) if $org;
 	($ds)  = $coge->resultset('Dataset')->resolve($ds)   if $ds;
-	my $dsg = $coge->resultset('DatasetGroup')->find($dsgid) if $dsgid;
+	my $dsg = $coge->resultset('Genome')->find($dsgid) if $dsgid;
 
 	#    print STDERR"!", $dsgid, "\n";#, $dsg->id,"\n";
 	if ( $ds && !$dsg )
