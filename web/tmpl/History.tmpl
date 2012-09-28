@@ -70,9 +70,11 @@ function run_get_history() {
   Time Range: 
   <select id="time_range" onchange="run_get_history();">
    <option value="0">All</option>
-   <option selected='selected' value="1">Last 24 hrs</option>
-   <option value="7">Last week</option>
-   <option value="30">Last month</option>
+   <option value="1">Last hour</option>
+   <option value="12">Last 12 hrs</option>
+   <option selected='selected' value="24">Last 24 hrs</option>
+   <option value="168">Last week</option>
+   <option value="720">Last month</option>
   </select>
  </span>
  <span>

@@ -24,7 +24,7 @@ no warnings 'redefine';
 
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME
   $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb %FUNCTION
-  $COOKIE_NAME $FORM $URL $COGEDIR $TEMPDIR $TEMPURL);
+  $COOKIE_NAME $FORM $URL $COGEDIR $TEMPDIR $TEMPURL $MAX_SEARCH_RESULTS);
 $P = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
 
 $DATE = sprintf(
@@ -48,6 +48,8 @@ $COGEDIR     = $P->{COGEDIR};
 $TEMPDIR     = $P->{TEMPDIR} . "ListView/";
 mkpath( $TEMPDIR, 0, 0777 ) unless -d $TEMPDIR;
 $TEMPURL = $P->{TEMPURL} . "ListView/";
+
+$MAX_SEARCH_RESULTS = 1000;
 
 my ($cas_ticket) = $FORM->param('ticket');
 $USER = undef;
@@ -580,31 +582,46 @@ sub search_genomes {
 	my $search_term = $opts{search_term};
 #	print STDERR "$lid $search_term\n";
 	return 0 unless $lid;	
-	return '' unless $search_term and length $search_term > 0;
-	
-	$search_term = '%'.$search_term.'%';
-	
+
 	# Get genomes already in list
 	my $list = $coge->resultset('List')->find($lid);
 	my %exists;
 	map { $exists{$_->id}++ } $list->genomes;
 
-	# Get all matching organisms
-	my @organisms = $coge->resultset("Organism")->search(
-		\[ 'name LIKE ? OR description LIKE ?', 
-		['name', $search_term ], ['description', $search_term] ]);
-
-	# Get all matching genomes
-	my @genomes = $coge->resultset("Genome")->search(
-		\[ 'name LIKE ? OR description LIKE ?', 
-		['name', $search_term], ['description', $search_term] ]);
-
-	# Combine matching genomes with matching organism genomes, preventing duplicates
 	my %unique;
-	map { $unique{$_->id} = $_ if (not $_->restricted or $USER->has_access_to_genome($_)) } @genomes;
-	foreach my $organism (@organisms) {
-		map { $unique{$_->id} = $_ if (not $_->restricted or $USER->has_access_to_genome($_)) } $organism->genomes;
+	my $num_results = 0;
+	
+	if (not $search_term) {
+		# Get all genomes
+		$num_results = $coge->resultset("Genome")->count;
+		if ($num_results < $MAX_SEARCH_RESULTS) {
+			my @genomes = $coge->resultset("Genome")->all;
+			map { $unique{$_->id} = $_ if (not $_->restricted or $USER->has_access_to_genome($_)) } @genomes;
+		}
 	}
+	else {
+		$search_term = '%'.$search_term.'%';
+	
+		# Get all matching organisms
+		my @organisms = $coge->resultset("Organism")->search(
+			\[ 'name LIKE ? OR description LIKE ?', 
+			['name', $search_term ], ['description', $search_term] ]);
+	
+		# Get all matching genomes
+		my @genomes = $coge->resultset("Genome")->search(
+			\[ 'name LIKE ? OR description LIKE ?', 
+			['name', $search_term], ['description', $search_term] ]);
+	
+		# Combine matching genomes with matching organism genomes, preventing duplicates
+		map { $unique{$_->id} = $_ if (not $_->restricted or $USER->has_access_to_genome($_)) } @genomes;
+		foreach my $organism (@organisms) {
+			map { $unique{$_->id} = $_ if (not $_->restricted or $USER->has_access_to_genome($_)) } $organism->genomes;
+		}
+		
+		$num_results = keys %unique;
+	}
+	
+	return  "<option disabled='disabled'>$num_results results, please refine your search.</option>" if ($num_results > $MAX_SEARCH_RESULTS);
 	
 	my $html;
 	foreach my $g (sort genomecmp values %unique) {
@@ -623,24 +640,38 @@ sub search_experiments {
 	my $search_term = $opts{search_term};
 #	print STDERR "$lid $search_term\n";
 	return 0 unless $lid;
-	return '' unless $search_term;
 	
 	# Get experiments already in list
 	my $list = $coge->resultset('List')->find($lid);
 	my %exists;
 	map { $exists{$_->id}++ } $list->experiments;
 	
-	# Get user's private experiments
 	my @experiments;
-	foreach ($USER->experiments(restricted => 1)) {
-		push @experiments, $_ if ($_->name =~ /$search_term/i or $_->description =~ /$search_term/i);
+	my $num_results = 0;
+	
+	if (not $search_term) {
+		# Get all experiments
+		$num_results = $coge->resultset("Experiment")->count;
+		if ($num_results < $MAX_SEARCH_RESULTS) {
+			@experiments = $coge->resultset("Experiment")->all;
+		}
+	}	
+	else {
+		# Get user's private experiments
+		foreach ($USER->experiments(restricted => 1)) {
+			push @experiments, $_ if ($_->name =~ /$search_term/i or $_->description =~ /$search_term/i);
+		}
+		
+		# Get all public experiments
+		$search_term = '%'.$search_term.'%';
+		push @experiments, $coge->resultset("Experiment")->search(
+			\[ 'restricted=? AND (name LIKE ? OR description LIKE ?)', 
+			['restricted', 0], ['name', $search_term ], ['description', $search_term] ]);
+			
+		$num_results = @experiments;
 	}
 	
-	# Get all public experiments
-	$search_term = '%'.$search_term.'%';
-	push @experiments, $coge->resultset("Experiment")->search(
-		\[ 'restricted=? AND (name LIKE ? OR description LIKE ?)', 
-		['restricted', 0], ['name', $search_term ], ['description', $search_term] ]);
+	return  "<option disabled='disabled'>$num_results results, please refine your search.</option>" if ($num_results > $MAX_SEARCH_RESULTS);
 	
 	my $html;
 	foreach my $exp (sort experimentcmp @experiments) {
@@ -659,19 +690,32 @@ sub search_features {
 	my $search_term = $opts{search_term};
 #	print STDERR "$lid $search_term\n";
 	return 0 unless $lid;
-	return '' unless $search_term;
 	
+	# Get lists already in list
 	my $list = $coge->resultset('List')->find($lid);
 	my %exists;
 	map { $exists{$_->id}++ } $list->features;
 
-	# Fulltext search copied from FeatView.pl
-    my @fnames;
-    push @fnames, $coge->resultset('FeatureName')->search(name => $search_term);
-	unless (@fnames) {
-		push @fnames, $coge->resultset('FeatureName')->search_literal('MATCH(me.name) AGAINST (?)', $search_term);
+	my @fnames;
+	my $num_results = 0;
+	
+	if (not $search_term) {
+		# Get all features
+		$num_results = $coge->resultset("FeatureName")->count;
+		if ($num_results < $MAX_SEARCH_RESULTS) {
+			@fnames = $coge->resultset("FeatureName")->all;
+		}
 	}
-	return  "<option disabled='disabled'>" . @fnames . " results, please refine your search.</option>" if (@fnames > 1000);
+	else {
+		# Fulltext search copied from FeatView.pl
+	    push @fnames, $coge->resultset('FeatureName')->search(name => $search_term);
+		unless (@fnames) {
+			push @fnames, $coge->resultset('FeatureName')->search_literal('MATCH(me.name) AGAINST (?)', $search_term);
+		}
+		$num_results = @fnames;
+	}
+	
+	return  "<option disabled='disabled'>$num_results results, please refine your search.</option>" if ($num_results > $MAX_SEARCH_RESULTS);
 
 	my $html;
 	my %seen;
@@ -692,19 +736,34 @@ sub search_lists { # list of lists
 	my $search_term = $opts{search_term};
 #	print STDERR "$lid $search_term\n";
 	return 0 unless $lid;
-	return '' unless $search_term;
-	
-	$search_term = '%'.$search_term.'%';
 	
 	# Get lists already in this list
 	my $list = $coge->resultset('List')->find($lid);
 	my %exists;
 	map { $exists{$_->id}++ } $list->lists;
 
-	# Get public lists and user's private lists	
+	my @lists;
+	my $num_results = 0;
 	my $group_str = join(',', map { $_->id } $USER->groups);
-	my @lists = $coge->resultset("List")->search_literal(
-		"locked=0 AND (restricted=0 OR user_group_id IN ( $group_str )) AND (name LIKE '$search_term' OR description LIKE '$search_term')");
+	
+	if (not $search_term) {
+		# Get all lists
+		$num_results = $coge->resultset("List")->count;
+		if ($num_results < $MAX_SEARCH_RESULTS) {
+			@lists = $coge->resultset("List")->search_literal(
+				"locked=0 AND (restricted=0 OR user_group_id IN ( $group_str ))") 
+		}
+	}
+	else {
+		# Get public lists and user's private lists	
+		$search_term = '%'.$search_term.'%';
+		@lists = $coge->resultset("List")->search_literal(
+			"locked=0 AND (restricted=0 OR user_group_id IN ( $group_str )) \
+			 AND (name LIKE '$search_term' OR description LIKE '$search_term')");
+		$num_results = @lists;
+	}
+	
+	return  "<option disabled='disabled'>$num_results results, please refine your search.</option>" if ($num_results > $MAX_SEARCH_RESULTS);
 	
 	my $html;
 	foreach my $l (sort listcmp @lists) {

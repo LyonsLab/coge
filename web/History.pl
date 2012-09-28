@@ -115,7 +115,7 @@ sub get_history_for_user
 			@entries = $coge->resultset('Log')->all;
 		}
 		else {
-			@entries = $coge->resultset('Log')->search_literal( 'time >= DATE_SUB(NOW(), INTERVAL ? DAY)', ($time_range) );
+			@entries = $coge->resultset('Log')->search_literal( 'time >= DATE_SUB(NOW(), INTERVAL ? HOUR)', ($time_range) );
 		}
 	}
 	else {
@@ -123,12 +123,12 @@ sub get_history_for_user
 			@entries = $coge->resultset('Log')->search( { user_id => $USER->id } );
 		}
 		else {
-			@entries = $coge->resultset('Log')->search_literal( 'user_id = ? AND time >= DATE_SUB(NOW(), INTERVAL ? DAY)', ($USER->id, $time_range) );
+			@entries = $coge->resultset('Log')->search_literal( 'user_id = ? AND time >= DATE_SUB(NOW(), INTERVAL ? HOUR)', ($USER->id, $time_range) );
 		}
 	}
 
 	my @rows;	
-	foreach my $entry (@entries) {
+	foreach my $entry (reverse @entries) {
 		my %row;
 		$row{TIME} = $entry->time;
 		$row{USER} = ($entry->user ? $entry->user->name : '');
