@@ -528,8 +528,13 @@ sub blast_search {
 	my $zmask          = $opts{zmask};
 
 	my $seq       = $opts{seq};
-	my $blastable = $opts{blastable};
+	my $blastable = $opts{blastable}; #this is where the dsgids are stored -- stupid name
 	my $width     = $opts{width};
+	my $fid = $opts{fid};
+
+	my $link = $P->{SERVER}.$PAGE_NAME."?dsgids=$blastable;fid=$fid";
+	
+
 	$width = 400 unless $width =~ /^\d+$/; #something wrong with how width is calculated in tmpl file
 	# exit;
 	my $t1 = new Benchmark;
