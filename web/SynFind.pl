@@ -862,7 +862,7 @@ sub go_synfind
 			 )
 	  {
 	    $pm->start and next;
-	    $file = CoGe::Accessory::Web::gzip($file);
+#	    $file = CoGe::Accessory::Web::gzip($file);
 	    $pm->finish;
 	  }
       }
