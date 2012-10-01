@@ -152,8 +152,7 @@ sub gen_html {
 }
 
 sub gen_body {
-	my $template =
-	  HTML::Template->new( filename => $P->{TMPLDIR} . 'CoGeBlast.tmpl' );
+	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'CoGeBlast.tmpl' );
 	my $form   = $FORM;
 	my $featid = join( ",", $form->param('featid'), $form->param('fid') ) || 0;
 	my $chr    = $form->param('chr') || 0;
@@ -207,7 +206,6 @@ sub gen_body {
 	if ( $prefs->{dsgids} ) {
 		my $id = get_dsg_for_blast_menu( dsgid => $prefs->{dsgids} );
 		$db_list .= qq{add_to_list('$id');}
-
 	}
 	
 	if ($dsgid) {
@@ -227,16 +225,7 @@ sub gen_body {
 #set up which columns of results will be displayed by default
 #	my $prefs = CoGe::Accessory::Web::load_settings(user=>$USER, page=>$PAGE_NAME);
 	unless ( $prefs->{display} && ref( $prefs->{display} ) eq "HASH" ) {
-		$prefs->{display} = {
-			NumD  => 1,
-			EvalD => 1,
-			QualD => 1,
-			FeatD => 1,
-			ChrD  => 1,
-			OrgD  => 1,
-			QND   => 1,
-			PosD  => 1,
-		};
+		$prefs->{display} = { NumD  => 1, EvalD => 1, QualD => 1, FeatD => 1, ChrD => 1, OrgD => 1, QND => 1, PosD => 1 };
 
 		#my %orgs;
 		#map {$orgs{$_->{HSP_ORG}}++} @hsp;
@@ -432,9 +421,9 @@ sub gen_dsg_menu {
 		$dsgid = $dsg->id unless $dsgid;
 		my $name = join( ", ", map { $_->name } $dsg->source ) . ": ";
 
-#	$name .= $dsg->name ? $dsg->name : $dsg->datasets->[0]->name;
-#	$name .= ", ";
-#	$name .= $dsg->type->name." (v".$dsg->version.") ".commify($dsg->length)."nt";
+		#$name .= $dsg->name ? $dsg->name : $dsg->datasets->[0]->name;
+		#$name .= ", ";
+		#$name .= $dsg->type->name." (v".$dsg->version.") ".commify($dsg->length)."nt";
 		$name .= $dsg->name . ", " if $dsg->name; # : $dsg->datasets->[0]->name;
 		$name .= "v" . $dsg->version . " " . $dsg->type->name . " " . commify( $dsg->length ) . "nt";
 
@@ -443,9 +432,7 @@ sub gen_dsg_menu {
 	my $size = scalar @dsg_menu;
 	$size = 5 if $size > 5;
 
-	my $dsg_menu = qq{
-   <select id=dsgid multiple size=$size onclick="show_add();" ondblclick="get_dsg_for_blast_menu(['args__dsgid','dsgid'],[add_to_list]);">>
-};
+	my $dsg_menu = qq{<select id=dsgid multiple size=$size onclick="show_add();" ondblclick="get_dsg_for_blast_menu(['args__dsgid','dsgid'],[add_to_list]);">>};
 	foreach (@dsg_menu) {
 		my ( $numt, $name ) = @$_;
 		my $selected = " selected" if $dsgid && $numt == $dsgid;
@@ -527,16 +514,17 @@ sub blast_search {
 	my $zthreshold     = $opts{zthreshold};
 	my $zmask          = $opts{zmask};
 
-	my $seq       = $opts{seq};
-	my $blastable = $opts{blastable}; #this is where the dsgids are stored -- stupid name
-	my $width     = $opts{width};
-	my $fid = $opts{fid};
+	my $seq       	= $opts{seq};
+	my $blastable 	= $opts{blastable}; #this is where the dsgids are stored -- stupid name
+	my $width     	= $opts{width};
+	my $fid 		= $opts{fid};
 
 	my $link = $P->{SERVER}.$PAGE_NAME."?dsgids=$blastable;fid=$fid";
+	print STDERR "matt: $link\n";
 	
 
 	$width = 400 unless $width =~ /^\d+$/; #something wrong with how width is calculated in tmpl file
-	# exit;
+	
 	my $t1 = new Benchmark;
 	my @dsg_ids = split( /,/, $blastable );
 	my ( $fasta_file, $query_seqs_info ) = create_fasta_file($seq);
@@ -653,8 +641,7 @@ sub blast_search {
 		$item->{link} = $file;
 	}
 	my $t3 = new Benchmark;
-	CoGe::Accessory::Web::write_log( "Initializing sqlite database",
-		$cogeweb->logfile );
+	CoGe::Accessory::Web::write_log( "Initializing sqlite database", $cogeweb->logfile );
 	initialize_sqlite();
 	my $t4 = new Benchmark;
 	CoGe::Accessory::Web::write_log( "Generating Results", $cogeweb->logfile );
@@ -1591,8 +1578,7 @@ sub overlap_feats_parse    #Send to GEvo
 		$count++;
 	}
 	foreach my $no_feat (@no_feats) {
-		$url .=
-"dsgid$count=$no_feat->{dsgid}&chr$count=$no_feat->{chr}&x$count=$no_feat->{loc}&";
+		$url .= "dsgid$count=$no_feat->{dsgid}&chr$count=$no_feat->{chr}&x$count=$no_feat->{loc}&";
 		$count++;
 	}
 	$count--;

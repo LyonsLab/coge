@@ -404,6 +404,7 @@ function blastOff(){
 
   'args__seq','args__'+seq,
   'args__blastable','args__'+blastable_db,
+  'args__fid','args__'+<TMPL_VAR NAME='FEATID'>,
   'args__width','args__'+page_width,
   'args__color_hsps', 'color_by',
   ],[blastresults],'POST');
@@ -1111,7 +1112,7 @@ $(function() {
 	<tr><Td>
    	<DIV id="blah">Organism Name: <input type="text" size=11 style="font-style:italic" class="org_search_name" value="Search" name="org_name" id="org_name"></DIV>
    	<DIV id="blah">Organism Description: <input type="text" class="org_search_desc" size=11 style="font-style:italic" value="Search" name="org_desc" id="org_desc"></DIV>
-<tr valign=top><td>
+<tr valign='top'><td>
    	<DIV id="org_list"><TMPL_VAR NAME="ORG_LIST"></DIV>
    	<DIV id="org_seq_types"><TMPL_VAR NAME="ORG_SEQ_TYPES"></DIV>
    	<span href="javascript:void(0)" id="genome_info_button" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-info"></span>Get Genome Info</span>
@@ -1123,8 +1124,8 @@ $(function() {
    	  </TD>
            <TD>
               <div style="float:left" id=db_title class=small>Genomes to BLAST: </DIV><div style="float:left;text-indent:1em;vertical-align: bottom" id=selected_genome_count class=small></div>
-              <DIV id=db_select><SELECT id="genome_choice" SIZE="8" MULTIPLE onClick="$('#add').hide(0);$('#remove').show(0);">
-              <option id=blank value=null>No Database Selected</option>
+              <DIV id='db_select'><SELECT id="genome_choice" SIZE="8" MULTIPLE onClick="$('#add').hide(0);$('#remove').show(0);">
+              <option id='blank' value=null>No Database Selected</option>
               </SELECT></DIV>
 	       <span onClick="clear_org_list();" id="clearlist" name=clearlist class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-minusthick"></span>Clear Org List</span>
               <TMPL_IF NAME="SAVE_ORG_LIST">
@@ -1133,27 +1134,27 @@ $(function() {
            </TD>
      </table>
 
-      <TH align=left valign="top">Blast Parameters<br>
-      <DIV id=blast_parameters>
+      <TH align="left" valign="top">Blast Parameters<br>
+      <DIV id="blast_parameters">
       <TABLE class ="ui-corner-all ui-widget-content">
        <TR>
 	<TD>
 	  E-Value:
 	</TD>
 	<TD>
-	    <select name=e_value id=e_value>
-             <option value = "1e-30"> 1e-30
-             <option value = "1e-20"> 1e-20
-             <option value = "1e-10"> 1e-10
-             <option value = ".000001"> 1e-6
-	     <option value = ".00001"> 1e-5
-	     <option value = ".0001"> 0.0001
-             <option value = ".001" selected> 0.001
-             <option value = ".01"> 0.01
-             <option value = ".1"> 0.1
-	     <option value = "1"> 1
-	     <option value = "10"> 10
-             <option value = "100"> 100
+	    <select name="e_value" id="e_value">
+             <option value="1e-30"> 1e-30
+             <option value="1e-20"> 1e-20
+             <option value="1e-10"> 1e-10
+             <option value=".000001"> 1e-6
+	     <option value=".00001"> 1e-5
+	     <option value=".0001"> 0.0001
+             <option value=".001" selected> 0.001
+             <option value=".01"> 0.01
+             <option value=".1"> 0.1
+	     <option value="1"> 1
+	     <option value="10"> 10
+             <option value="100"> 100
             </select>
        </TR>
        <TR>

@@ -13,13 +13,18 @@ use URI::Escape;
 use Data::Dumper;
 no warnings 'redefine';
 
-use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME $TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb %FUNCTION $COOKIE_NAME $FORM $URL $COGEDIR $TEMPDIR $TEMPURL);
+use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME 
+			$TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb %FUNCTION 
+			$COOKIE_NAME $FORM $URL $COGEDIR $TEMPDIR $TEMPURL);
+			
 $P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 
 $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 		sub { ($_[5]+1900, $_[4]+1, $_[3]),$_[2],$_[1],$_[0] }->(localtime));
 
 $FORM = new CGI;
+
+$PAGE_NAME = 'SeqType.pl';
 
 $DBNAME = $P->{DBNAME};
 $DBHOST = $P->{DBHOST};
@@ -41,6 +46,10 @@ my ($cas_ticket) =$FORM->param('ticket');
 $USER = undef;
 ($USER) = CoGe::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
 ($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
+
+my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
+$link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, page => $PAGE_NAME, url => $link );
+
 
 %FUNCTION = (
 	     gen_html=>\&gen_html,

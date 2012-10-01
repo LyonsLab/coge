@@ -4,7 +4,6 @@
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/filterlist.js"></SCRIPT>
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.fileupload.js"></SCRIPT>
 
-
 <SCRIPT language="JavaScript">
 $(document).ready(function(){
 	$.ajaxSetup({
@@ -13,14 +12,21 @@ $(document).ready(function(){
 		dataType: "html",
 		cache: false,
 	});
-	$(".dialog_box").dialog({autoOpen: false, width: 600});
-	
-	<TMPL_VAR ADDITIONAL_STUFF>
+	$(".dialog_box").dialog({autoOpen: false});
 });
 
-function format_box_info (data) {
-	output = data.output;
-	return output;
+function show_dialog(id, title, html, width, height) {
+	var d = $('#'+id);
+	d.dialog("option", "title", title);
+	if (html) { d.html(html); }
+	if (width) { d.dialog('option', 'width', width); }
+	else { width = d.dialog('option', 'width') };
+	if (height) { d.dialog('option', 'height', height); }
+	else { height = d.dialog('option', 'height') };
+	var xpos = $(window).width()/2 - width/2;
+	var ypos = 100;//$(window).height()/2 - height/2; // hardcode height because jquery not correctly reporting $(window).height()
+	d.dialog('option', 'position', [xpos, 100]);
+	d.dialog('open');
 }
 
 function edit_list_info (opts) {
@@ -34,10 +40,7 @@ function edit_list_info (opts) {
 		success : function(data) {
 			data = eval('('+data+')');
 			title = data.title;
-			$("#list_info_edit_box").dialog("option", "title", title);
-			$("#list_info_edit_box").html(format_box_info(data));
-			$("#list_info_edit_box").dialog('open');
-			//setup_button_states();
+			show_dialog('list_info_edit_box', title, data.output, 450);
 		},
 	});
 }
@@ -129,10 +132,7 @@ function add_list_items (opts) {
 		success : function(data) {
 			data = eval('('+data+')');
 			title = data.title;
-			$("#list_contents_edit_box").dialog("option", "title", title);
-			$("#list_contents_edit_box").html(format_box_info(data));
-			$("#list_contents_edit_box").dialog('open');
-			//setup_button_states();
+			show_dialog('list_contents_edit_box', title, data.output, 600);
 		},
 	});
 }
@@ -140,6 +140,8 @@ function add_list_items (opts) {
 function add_selected_items (opts){
 	select_id = opts.select_id;
 	lid = opts.lid;
+	num_items = $('#' + select_id + ' > option:selected').length;
+	
 	$('#' + select_id + ' > option:selected').each(
 		function() {
 			var item_spec = $(this).attr("value");
@@ -157,7 +159,9 @@ function add_selected_items (opts){
 					function(data) {
 						if (data != 1) { alert(data); }
 						else {
-							run_get_list_contents({divid: 'list_contents', lid: lid}); // FIXME move outside loop
+							if (--num_items == 0) { // only do update on last item
+								run_get_list_contents({divid: 'list_contents', lid: lid});
+							}
 						}
 					},
 			});
@@ -226,8 +230,13 @@ function add_list_annotation (opts) {
 						$("#edit_annotation_type").autocomplete('close');
 						$("#edit_annotation_type_group").autocomplete('close');
 					}
-			});	
-			$("#list_annotation_edit_box").html(format_box_info(data));
+			});
+			$("#list_annotation_edit_box").html(data.output);
+			var width = 500;
+			var xpos = $(window).width()/2 - width/2;
+			var ypos = 100;//$(window).height()/2 - height/2; // hardcode height because jquery not correctly reporting $(window).height()
+			$("#list_annotation_edit_box").dialog('option', 'width', width);
+			$("#list_annotation_edit_box").dialog('option', 'position', [xpos, 100]);
 			$("#list_annotation_edit_box").dialog('open');
 			//setup_button_states();
 		},
@@ -346,7 +355,7 @@ function wait_to_search (search_func, lid, search_term) {
 	}
 }
 
-// FIXME: the search functions below are all the same, consolidate
+// FIXME: the search functions below are all the same, consolidate?
 
 function search_genomes (lid, search_term) {
 	$("#wait_genome").animate({opacity:1});
@@ -357,10 +366,15 @@ function search_genomes (lid, search_term) {
 			fname: 'search_genomes',
 			lid: lid,
 			search_term: search_term,
+			timestamp: new Date().getTime()
 		},
 		success : function(val) {
-			$("#select_genome_items").html(val);
-			$("#wait_genome").animate({opacity:0});
+			var items = jQuery.parseJSON(val);
+			if (!pageObj.timestamp_genomes || items.timestamp > pageObj.timestamp_genomes) {
+				pageObj.timestamp_genomes = items.timestamp;
+				$("#select_genome_items").html(items.html);
+				$("#wait_genome").animate({opacity:0});
+			}
 		},
 	});
 }
@@ -374,10 +388,15 @@ function search_experiments (lid, search_term) {
 			fname: 'search_experiments',
 			lid: lid,
 			search_term: search_term,
+			timestamp: new Date().getTime()
 		},
 		success : function(val) {
-			$("#select_experiment_items").html(val);
-			$("#wait_experiment").animate({opacity:0});
+			var items = jQuery.parseJSON(val);
+			if (!pageObj.timestamp_experiments || items.timestamp > pageObj.timestamp_experiments) {
+				pageObj.timestamp_experiments = items.timestamp;
+				$("#select_experiment_items").html(items.html);
+				$("#wait_experiment").animate({opacity:0});
+			}
 		},
 	});
 }
@@ -391,10 +410,15 @@ function search_features (lid, search_term) {
 			fname: 'search_features',
 			lid: lid,
 			search_term: search_term,
+			timestamp: new Date().getTime()
 		},
 		success : function(val) {
-			$("#select_feature_items").html(val);
-			$("#wait_feature").animate({opacity:0});
+			var items = jQuery.parseJSON(val);
+			if (!pageObj.timestamp_features || items.timestamp > pageObj.timestamp_features) {
+				pageObj.timestamp_features = items.timestamp;
+				$("#select_feature_items").html(items.html);
+				$("#wait_feature").animate({opacity:0});
+			}
 		},
 	});
 }
@@ -408,10 +432,15 @@ function search_lists (lid, search_term) {
 			fname: 'search_lists',
 			lid: lid,
 			search_term: search_term,
+			timestamp: new Date().getTime()
 		},
 		success : function(val) {
-			$("#select_list_items").html(val);
-			$("#wait_list").animate({opacity:0});
+			var items = jQuery.parseJSON(val);
+			if (!pageObj.timestamp_lists || items.timestamp > pageObj.timestamp_lists) {
+				pageObj.timestamp_lists = items.timestamp;
+				$("#select_list_items").html(items.html);
+				$("#wait_list").animate({opacity:0});
+			}
 		},
 	});
 }
@@ -451,9 +480,10 @@ function get_annotation_type_groups () {
 }
 
 function dialog_delete_list (opts) {
-	$("#list_delete_box").dialog("option", "title", "Delete List?");
-	$("#list_delete_box").dialog("option", "width", "450");
-	$("#list_delete_box").dialog('open');
+	//$("#list_delete_box").dialog("option", "title", "Delete List?");
+	//$("#list_delete_box").dialog("option", "width", "450");
+	//$("#list_delete_box").dialog('open');
+	show_dialog('list_delete_box', 'Delete List?', '', 450);
 }
 
 function delete_list (opts) {

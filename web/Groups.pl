@@ -49,6 +49,9 @@ $USER = undef;
 ($USER) = CoGe::Accessory::Web->login_cas( cookie_name => $COOKIE_NAME, ticket => $cas_ticket, coge => $coge, this_url => $FORM->url() ) if ($cas_ticket);
 ($USER) = CoGe::Accessory::LogUser->get_user( cookie_name => $COOKIE_NAME, coge => $coge ) unless $USER;
 
+my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
+$link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, page => $PAGE_NAME, url => $link );
+
 %FUNCTION = (
 	gen_html                 => \&gen_html,
 	get_groups_for_user      => \&get_groups_for_user,

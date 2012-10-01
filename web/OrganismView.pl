@@ -18,7 +18,9 @@ use Sort::Versions;
 
 no warnings 'redefine';
 
-use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $coge $HISTOGRAM %FUNCTION $P $COOKIE_NAME $SERVER);
+use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME
+			$DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $coge $HISTOGRAM 
+			%FUNCTION $P $COOKIE_NAME $SERVER);
 $P = CoGe::Accessory::Web::get_defaults("$ENV{HOME}/coge.conf");
 $ENV{PATH} = $P->{COGEDIR};
 $ENV{irodsEnvFile} = "/var/www/.irods/.irodsEnv";
@@ -39,6 +41,7 @@ $DATE = sprintf( "%04d-%02d-%02d %02d:%02d:%02d",
 
 $FORM = new CGI;
 
+$PAGE_NAME = 'OrganismView.pl';
 
 $DBNAME = $P->{DBNAME};
 $DBHOST = $P->{DBHOST};
@@ -56,6 +59,10 @@ my ($cas_ticket) =$FORM->param('ticket');
 $USER = undef;
 ($USER) = CoGe::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
 ($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
+
+my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
+$link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, page => $PAGE_NAME, url => $link );
+
 
 #my $pj = new CGI::Ajax(
 %FUNCTION = (

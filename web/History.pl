@@ -106,8 +106,8 @@ sub gen_body {
 sub get_history_for_user
 {
 	my %opts = @_;
-	my $time_range = $opts{time_range};
-	$time_range = 1 if (not defined $time_range);
+	my $time_range = $opts{time_range}; # in hours
+	$time_range = 24 if (not defined $time_range or $time_range =~ /\D/);
 	
 	my @entries;
 	if ( $USER->is_admin ) {

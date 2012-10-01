@@ -48,7 +48,7 @@ $USER = undef;
 ($USER) = CoGe::Accessory::Web->login_cas( ticket => $cas_ticket, coge => $coge, this_url => $FORM->url() ) if ($cas_ticket);
 ($USER) = CoGe::Accessory::LogUser->get_user( cookie_name => $COOKIE_NAME, coge => $coge ) unless $USER;
 
-$SIG{'__WARN__'} = sub { };    #silence warnings
+#$SIG{'__WARN__'} = sub { };    #silence warnings
 
 %FUNCTION = (
 	gen_html                => \&gen_html,

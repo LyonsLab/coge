@@ -48,6 +48,9 @@ $USER = undef;
 ($USER) = CoGe::Accessory::Web->login_cas( cookie_name => $COOKIE_NAME, ticket => $cas_ticket, coge => $coge, this_url => $FORM->url() ) if ($cas_ticket);
 ($USER) = CoGe::Accessory::LogUser->get_user( cookie_name => $COOKIE_NAME, coge => $coge ) unless $USER;
 
+my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
+$link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, page => $PAGE_NAME, url => $link );
+
 %FUNCTION = (
 	gen_html                 => \&gen_html,
 	get_group_info           => \&get_group_info,
@@ -117,10 +120,10 @@ sub gen_body {
 	$template->param( ADMIN_AREA => $USER->is_admin );
 	$template->param( ADMIN_BUTTONS => get_admin_functions() );
 
-	my $open;
-	$open = $FORM->param('open') if defined $FORM->param('open');
-	my $box_open = $open ? 'true' : 'false';
-	$template->param( EDIT_BOX_OPEN => $box_open );
+#	my $open;
+#	$open = $FORM->param('open') if defined $FORM->param('open');
+#	my $box_open = $open ? 'true' : 'false';
+#	$template->param( EDIT_BOX_OPEN => $box_open );
 	
 	return $template->output;
 }
@@ -155,7 +158,7 @@ sub get_group_info {
 	return "User group id$ugid does not exist.<br>" .
 			"Click <a href='Groups.pl'>here</a> to view all groups." unless ($group);
 
-	my $user_can_edit = (user_can_edit($group) and not $group->locked);
+	my $user_can_edit = (user_can_edit($group) and (not $group->locked or $USER->is_admin));
 	
 	my $html = $group->annotation_pretty_print_html(allow_delete => $user_can_edit);
 	if ($user_can_edit) {
@@ -342,8 +345,9 @@ sub remove_list_from_group {
 #	print STDERR "ugid=$ugid lid=$lid\n";
 	
 	my $group = $coge->resultset('UserGroup')->find($ugid);
-	return 0 if ($group->locked);
-
+	return 0 if ($group->locked and !$USER->is_admin);
+	
+	# FIXME: upon review, is this really what we want? what about reassignin the list to owner list instead?
 	my $list = $coge->resultset('List')->find($lid);
 	$list->delete();
 	
@@ -498,5 +502,7 @@ sub set_group_creator {
 
 sub user_can_edit {
 	my $group = shift;
-	return ($USER->is_admin or $USER->is_owner_editor(group => $group) or $USER->id == $group->creator->id);
+	return ($USER->is_admin or 
+			$USER->is_owner_editor(group => $group) or 
+			$USER->id == $group->creator->id);
 }

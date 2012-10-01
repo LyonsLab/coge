@@ -32,6 +32,8 @@ $DATE = sprintf(
 	sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }->(localtime)
 );
 
+$PAGE_NAME = 'ListView.pl';
+
 $FORM = new CGI;
 
 $DBNAME  = $P->{DBNAME};
@@ -55,6 +57,10 @@ my ($cas_ticket) = $FORM->param('ticket');
 $USER = undef;
 ($USER) = CoGe::Accessory::Web->login_cas( cookie_name => $COOKIE_NAME, ticket => $cas_ticket, coge => $coge, this_url => $FORM->url() ) if ($cas_ticket);
 ($USER) = CoGe::Accessory::LogUser->get_user( cookie_name => $COOKIE_NAME, coge => $coge ) unless $USER;
+
+my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
+$link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, page => $PAGE_NAME, url => $link );
+
 
 %FUNCTION = (
 	gen_html          	       => \&gen_html,
@@ -153,11 +159,11 @@ sub get_list_info {
 
 	my $html = "List Info:<br>" . $list->annotation_pretty_print_html();
 
-	if (not $list->locked && ($USER->is_admin || $USER->is_owner_editor(list => $lid))) {
+	if ($USER->is_admin || (not $list->locked && $USER->is_owner_editor(list => $lid))) {
 		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="edit_list_info({lid: '$lid'});">Edit List Info</span>};
 	}
 	
-	if (not $list->locked && ($USER->is_admin || $USER->is_owner(list => $lid))) {
+	if ($USER->is_admin || (not $list->locked && $USER->is_owner(list => $lid))) {
 		if ( $list->restricted ) {
 			$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="make_list_public({lid: '$lid'});">Make List Public</span>};
 		}
@@ -265,7 +271,7 @@ sub get_list_annotations {
 	my ($list) = $coge->resultset('List')->find($lid);
 	return unless $list;
 	
-	my $user_can_edit = !$list->locked && ($USER->is_admin || $USER->is_owner_editor(list => $lid));
+	my $user_can_edit = $USER->is_admin || (!$list->locked && $USER->is_owner_editor(list => $lid));
 	
 	my $anno_obj = new CoGe::Accessory::Annotation( Type => 'anno' );
 	$anno_obj->Val_delimit("\n");
@@ -402,7 +408,7 @@ sub remove_list_annotation {
 	#return "Permission denied" unless $USER->is_admin || $USER->is_owner( dsg => $dsgid );
 	
 	my $list = $coge->resultset('List')->find($lid);
-	return 0 if ($list->locked);
+	return 0 if ($list->locked and not $USER->is_admin);
 	
 	my $la = $coge->resultset('ListAnnotation')->find( { list_annotation_id => $laid } );
 	$la->delete();
@@ -421,7 +427,7 @@ sub get_list_contents {
 			
 	return "Access denied\n" unless ($USER->has_access(list=>$lid));
 		
-	my $user_can_edit = !$list->locked && ($USER->is_admin || $USER->is_owner_editor(list => $lid));
+	my $user_can_edit = $USER->is_admin || (!$list->locked && $USER->is_owner_editor(list => $lid));
 	
 	my $anno_obj = new CoGe::Accessory::Annotation( Type => 'anno' );
 	$anno_obj->Val_delimit("\n");
@@ -565,7 +571,7 @@ sub remove_list_item {
 	#return "Permission denied" unless $USER->is_admin || $USER->is_owner( dsg => $dsgid );
 	
 	my $list = $coge->resultset('List')->find($lid);
-	return 0 if ($list->locked);
+	return 0 if ($list->locked and not $USER->is_admin);
 	
 	my $item_type = $opts{item_type};
 	my $item_id = $opts{item_id};
@@ -580,7 +586,8 @@ sub search_genomes {
 	my %opts = @_;
 	my $lid = $opts{lid};
 	my $search_term = $opts{search_term};
-#	print STDERR "$lid $search_term\n";
+	my $timestamp = $opts{timestamp};
+#	print STDERR "$lid $search_term $timestamp\n";
 	return 0 unless $lid;	
 
 	# Get genomes already in list
@@ -589,8 +596,9 @@ sub search_genomes {
 	map { $exists{$_->id}++ } $list->genomes;
 
 	my %unique;
-	my $num_results = 0;
+	my $num_results;
 	
+	# Try to get all items if blank search term
 	if (not $search_term) {
 		# Get all genomes
 		$num_results = $coge->resultset("Genome")->count;
@@ -599,19 +607,20 @@ sub search_genomes {
 			map { $unique{$_->id} = $_ if (not $_->restricted or $USER->has_access_to_genome($_)) } @genomes;
 		}
 	}
+	# Perform search
 	else {
 		$search_term = '%'.$search_term.'%';
-	
+
 		# Get all matching organisms
 		my @organisms = $coge->resultset("Organism")->search(
 			\[ 'name LIKE ? OR description LIKE ?', 
 			['name', $search_term ], ['description', $search_term] ]);
-	
+
 		# Get all matching genomes
 		my @genomes = $coge->resultset("Genome")->search(
 			\[ 'name LIKE ? OR description LIKE ?', 
 			['name', $search_term], ['description', $search_term] ]);
-	
+
 		# Combine matching genomes with matching organism genomes, preventing duplicates
 		map { $unique{$_->id} = $_ if (not $_->restricted or $USER->has_access_to_genome($_)) } @genomes;
 		foreach my $organism (@organisms) {
@@ -621,8 +630,15 @@ sub search_genomes {
 		$num_results = keys %unique;
 	}
 	
-	return  "<option disabled='disabled'>$num_results results, please refine your search.</option>" if ($num_results > $MAX_SEARCH_RESULTS);
+	# Limit number of results displayed
+	if ($num_results > $MAX_SEARCH_RESULTS) {
+		return encode_json({
+					timestamp => $timestamp, 
+					html => "<option disabled='disabled'>$num_results results, please refine your search.</option>"
+		});
+	}
 	
+	# Build select options out of results
 	my $html;
 	foreach my $g (sort genomecmp values %unique) {
 		my $disable = $exists{$g->id} ? "disabled='disabled'" : '';
@@ -631,13 +647,14 @@ sub search_genomes {
 	}
 	$html = "<option disabled='disabled'>No matching items</option>" unless $html;
 	
-	return $html;
+	return encode_json({timestamp => $timestamp, html => $html});
 }
 
 sub search_experiments {
 	my %opts = @_;
 	my $lid = $opts{lid};
 	my $search_term = $opts{search_term};
+	my $timestamp = $opts{timestamp};
 #	print STDERR "$lid $search_term\n";
 	return 0 unless $lid;
 	
@@ -647,15 +664,17 @@ sub search_experiments {
 	map { $exists{$_->id}++ } $list->experiments;
 	
 	my @experiments;
-	my $num_results = 0;
+	my $num_results;
 	
+	# Try to get all items if blank search term
 	if (not $search_term) {
 		# Get all experiments
 		$num_results = $coge->resultset("Experiment")->count;
 		if ($num_results < $MAX_SEARCH_RESULTS) {
 			@experiments = $coge->resultset("Experiment")->all;
 		}
-	}	
+	}
+	# Perform search
 	else {
 		# Get user's private experiments
 		foreach ($USER->experiments(restricted => 1)) {
@@ -671,8 +690,15 @@ sub search_experiments {
 		$num_results = @experiments;
 	}
 	
-	return  "<option disabled='disabled'>$num_results results, please refine your search.</option>" if ($num_results > $MAX_SEARCH_RESULTS);
+	# Limit number of results displayed
+	if ($num_results > $MAX_SEARCH_RESULTS) {
+		return encode_json({
+					timestamp => $timestamp, 
+					html => "<option disabled='disabled'>$num_results results, please refine your search.</option>"
+		}); 
+	}
 	
+	# Build select items out of results
 	my $html;
 	foreach my $exp (sort experimentcmp @experiments) {
 		my $disable = $exists{$exp->id} ? "disabled='disabled'" : '';
@@ -681,13 +707,14 @@ sub search_experiments {
 	}
 	$html = "<option disabled='disabled'>No matching items</option>" unless $html;
 	
-	return $html;
+	return encode_json({timestamp => $timestamp, html => $html});
 }
 
 sub search_features {
 	my %opts = @_;
 	my $lid = $opts{lid};
 	my $search_term = $opts{search_term};
+	my $timestamp = $opts{timestamp};
 #	print STDERR "$lid $search_term\n";
 	return 0 unless $lid;
 	
@@ -697,8 +724,9 @@ sub search_features {
 	map { $exists{$_->id}++ } $list->features;
 
 	my @fnames;
-	my $num_results = 0;
+	my $num_results;
 	
+	# Try to display all items if blank search term
 	if (not $search_term) {
 		# Get all features
 		$num_results = $coge->resultset("FeatureName")->count;
@@ -706,6 +734,7 @@ sub search_features {
 			@fnames = $coge->resultset("FeatureName")->all;
 		}
 	}
+	# Perform search
 	else {
 		# Fulltext search copied from FeatView.pl
 	    push @fnames, $coge->resultset('FeatureName')->search(name => $search_term);
@@ -715,8 +744,15 @@ sub search_features {
 		$num_results = @fnames;
 	}
 	
-	return  "<option disabled='disabled'>$num_results results, please refine your search.</option>" if ($num_results > $MAX_SEARCH_RESULTS);
+	# Limit the number of results displayed
+	if ($num_results > $MAX_SEARCH_RESULTS) {
+		return encode_json({
+					timestamp => $timestamp, 
+					html => "<option disabled='disabled'>$num_results results, please refine your search.</option>"
+		});
+	}
 
+	# Build select items out of results
 	my $html;
 	my %seen;
 	foreach my $f (sort featurecmp @fnames) {
@@ -727,14 +763,15 @@ sub search_features {
 	}
 	$html = "<option disabled='disabled'>No matching items</option>" unless $html;
 	
-	return $html;
+	return encode_json({timestamp => $timestamp, html => $html});
 }
 
 sub search_lists { # list of lists
 	my %opts = @_;
 	my $lid = $opts{lid};
 	my $search_term = $opts{search_term};
-#	print STDERR "$lid $search_term\n";
+	my $timestamp = $opts{timestamp};
+#	print STDERR "$lid $search_term $timestamp\n";
 	return 0 unless $lid;
 	
 	# Get lists already in this list
@@ -743,17 +780,19 @@ sub search_lists { # list of lists
 	map { $exists{$_->id}++ } $list->lists;
 
 	my @lists;
-	my $num_results = 0;
+	my $num_results;
 	my $group_str = join(',', map { $_->id } $USER->groups);
 	
+	# Try to get all items if blank search term
 	if (not $search_term) {
 		# Get all lists
-		$num_results = $coge->resultset("List")->count;
+		my $sql = "locked=0 AND (restricted=0 OR user_group_id IN ( $group_str ))";
+		$num_results = $coge->resultset("List")->count_literal($sql);
 		if ($num_results < $MAX_SEARCH_RESULTS) {
-			@lists = $coge->resultset("List")->search_literal(
-				"locked=0 AND (restricted=0 OR user_group_id IN ( $group_str ))") 
+			@lists = $coge->resultset("List")->search_literal($sql);
 		}
 	}
+	# Perform search
 	else {
 		# Get public lists and user's private lists	
 		$search_term = '%'.$search_term.'%';
@@ -763,8 +802,15 @@ sub search_lists { # list of lists
 		$num_results = @lists;
 	}
 	
-	return  "<option disabled='disabled'>$num_results results, please refine your search.</option>" if ($num_results > $MAX_SEARCH_RESULTS);
+	# Limit number of results display
+	if ($num_results > $MAX_SEARCH_RESULTS) {
+		return encode_json({
+					timestamp => $timestamp,
+					html => "<option disabled='disabled'>$num_results results, please refine your search.</option>"
+		});
+	}
 	
+	# Build select items out of results
 	my $html;
 	foreach my $l (sort listcmp @lists) {
 		next if ($l->id == $lid); # can't add a list to itself!
@@ -774,7 +820,7 @@ sub search_lists { # list of lists
 	}
 	$html = "<option disabled='disabled'>No matching items</option>" unless $html;
 	
-	return $html;
+	return encode_json({timestamp => $timestamp, html => $html});
 }
 
 sub search_annotation_types {

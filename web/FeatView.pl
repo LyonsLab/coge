@@ -17,9 +17,14 @@ use Storable qw(dclone);
 no warnings 'redefine';
 
 
-use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $ACCN $FID $coge $COOKIE_NAME);
+use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr 
+			$DATE $DEBUG $TEMPDIR $TEMPURL $USER $FORM $ACCN $FID $coge 
+			$COOKIE_NAME $PAGE_NAME);
+			
 $P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
+
+$PAGE_NAME = 'FeatView.pl';
 
 # set this to 1 to print verbose messages to logs
 $DEBUG = 0;
@@ -48,6 +53,10 @@ my ($cas_ticket) =$FORM->param('ticket');
 $USER = undef;
 ($USER) = CoGe::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
 ($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
+
+my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
+$link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, page => $PAGE_NAME, url => $link );
+
 
 my %FUNCTION = (
 		db_lookup=>\&db_lookup,

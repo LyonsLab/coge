@@ -216,7 +216,6 @@ Gobe.handle_html= function (html) {
 	$('#results_info').html(html);
   
 	if ( !$('#results_info').dialog('isOpen') && html && !html.match(/multiple hits/) ) {
-		var xpos = $(document).width - 500;
 		$('#results_info').dialog('option', 'position', ['right', 100]);
 		$('#results_info').dialog('open');
 	}

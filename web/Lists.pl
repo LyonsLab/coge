@@ -49,6 +49,10 @@ $USER = undef;
 ($USER) = CoGe::Accessory::Web->login_cas(cookie_name => $COOKIE_NAME, ticket => $cas_ticket, coge => $coge, this_url => $FORM->url()) if ($cas_ticket);
 ($USER) = CoGe::Accessory::LogUser->get_user(cookie_name => $COOKIE_NAME, coge => $coge) unless $USER;
 
+my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
+$link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, page => $PAGE_NAME, url => $link );
+
+
 %FUNCTION = (
 	gen_html           => \&gen_html,
 	create_list        => \&create_list,
@@ -95,8 +99,8 @@ sub create_list {
 		user_group_id => $ug->id,
 		restricted => 1
 	  } );
-	  
-	$coge->resultset('Log')->create( { user_id => $USER->id, page => $PAGE_NAME, description => 'create list id' . $list->id } );
+	
+	CoGe::Accessory::Web::log_history( db => $coge, user_id => $USER->id, page => $PAGE_NAME, description => 'create list id' . $list->id );
 
 	return 1;
 }
@@ -115,7 +119,7 @@ sub delete_list {
 	return 0 if ($list->locked);
 	$list->delete;
 	
-	$coge->resultset('Log')->create( { user_id => $USER->id, page => $PAGE_NAME, description => 'delete list id' . $list->id } );
+	CoGe::Accessory::Web::log_history( db => $coge, user_id => $USER->id, page => $PAGE_NAME, description => 'delete list id' . $list->id );
 
 	return 1;
 }

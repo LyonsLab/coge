@@ -16,9 +16,13 @@ no warnings 'redefine';
 
 
 
-use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $TEMPDIR $TEMPURL $FORM $USER $DATE $coge $COOKIE_NAME);
+use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr 
+			$TEMPDIR $TEMPURL $FORM $USER $DATE $coge $COOKIE_NAME $PAGE_NAME);
+			
 $P = CoGe::Accessory::Web::get_defaults($ENV{HOME}.'coge.conf');
 $ENV{PATH} = $P->{COGEDIR};
+
+$PAGE_NAME = 'FastaView.pl';
 
 $TEMPDIR = $P->{TEMPDIR}."FastaView/";
 $TEMPURL = $P->{TEMPURL}."FastaView/";
@@ -42,6 +46,9 @@ my ($cas_ticket) =$FORM->param('ticket');
 $USER = undef;
 ($USER) = CoGe::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
 ($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
+
+my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
+$link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, page => $PAGE_NAME, url => $link );
 
 my $pj = new CGI::Ajax(
 		       gen_html=>\&gen_html,
