@@ -2965,14 +2965,14 @@ sub go
 			foreach my $item (@$file_list)
 			{
 				$pm->start and next;
-				$$item = CoGe::Accessory::Web::gzip($$item);
+#				$$item = CoGe::Accessory::Web::gzip($$item);
 				$pm->finish;
 			}
 			$pm->wait_all_children();
 
 			foreach my $item (@$file_list)
 			{
-				$$item = CoGe::Accessory::Web::gzip($$item);
+#				$$item = CoGe::Accessory::Web::gzip($$item);
 			}
 			$raw_blastfile =~ s/$DIR/$URL/;
 			$html .= "<span class='link small' onclick=window.open('$raw_blastfile')>Unfiltered $algo_name results</span><br>";
