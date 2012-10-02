@@ -43,8 +43,12 @@ $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
 
 my $synmap_report = new CoGe::Accessory::SynMap_report;
 $synfile = gunzip($synfile);
+$synfile = gunzip($synfile.".gz");
+
 my ($chr1, $chr2, $dsgid1, $dsgid2) = $synmap_report->parse_syn_blocks(file=>$synfile);
-gzip($synfile);
+#print STDERR Dumper $chr1, $chr2;
+#exit;
+#gzip($synfile);
 ($chr1, $chr2, $dsgid1, $dsgid2) = ($chr2, $chr1, $dsgid2, $dsgid1) if scalar keys %{$chr1->[0]} < scalar keys %{$chr2->[0]};
 my $tarfile .= "$dsgid1-$dsgid2.tar.gz";
 if (-r "$TEMPDIR/$tarfile")
@@ -61,7 +65,7 @@ Content-Disposition: attachment; filename="$tarfile"
    close IN;
   }
 
-my ($dsg1) = $coge->resultset('DatasetGroup')->search({'me.dataset_group_id'=>$dsgid1},{join=>'genomic_sequences',prefetch=>'genomic_sequences'});
+my ($dsg1) = $coge->resultset('Genome')->search({'me.genome_id'=>$dsgid1},{join=>'genomic_sequences',prefetch=>'genomic_sequences'});
 unless ($dsg1)
   {
     print $FORM->header;
@@ -69,7 +73,7 @@ unless ($dsg1)
     exit;
   }
 
-my ($dsg2) = $coge->resultset('DatasetGroup')->search({'me.dataset_group_id'=>$dsgid2},{join=>'genomic_sequences',prefetch=>'genomic_sequences'});#find($ds);
+my ($dsg2) = $coge->resultset('Genome')->search({'me.genome_id'=>$dsgid2},{join=>'genomic_sequences',prefetch=>'genomic_sequences'});#find($ds);
 unless ($dsg2)
   {
     print $FORM->header;
@@ -151,7 +155,7 @@ sub process_sequence
     foreach my $item (@$chrs)
       {
 	my $chr = $item->{chr};
-	my $out_chr = $item->{match};
+	my $out_chr = $item->{matching_chr}->[0];
 	my $dsgid = $item->{dsgid};
 	unless ($dsgid)
 	 {
@@ -159,7 +163,7 @@ sub process_sequence
           return;
          }
 	my $dsg = $dsg{$dsgid};
-	$dsg = $coge->resultset('DatasetGroup')->find($dsgid) unless $dsg;
+	$dsg = $coge->resultset('Genome')->find($dsgid) unless $dsg;
 	$dsg{$dsg->id} = $dsg;
 	my $strand = $item->{rev} ? -1 : 1;
 	if ($seq && !$out_chrs{$out_chr})
