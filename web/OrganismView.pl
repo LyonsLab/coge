@@ -132,9 +132,6 @@ sub parse_for_GenoList
 
 sub gen_html
   {
-	my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
-	CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, page => $PAGE_NAME, url => $link );  	
-  	
     my $html;
     my ($body, $seq_names, $seqs) = gen_body();
     my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
@@ -168,6 +165,17 @@ sub gen_body
     my $dsid = $form->param('dsid');
     my $dsgid = $form->param('dsgid');
     my ($dsg) = $coge->resultset('Genome')->find($dsgid) if $dsgid;
+
+    my $link = "http://" . $P->{SERVER} .$PAGE_NAME."?";
+    my @params;
+    push @params, "org_name=".$org_name if $org_name;
+    push @params, "org_desc=".$desc if $desc;
+    push @params, "oid=".$oid if $oid;
+    push @params, "dsname=".$dsname if $dsname;
+    push @params, "dsid=".$dsid if $dsid;
+    push @params, "dsgid=".$dsgid if $dsgid;
+    $link .= join ";",@params;
+    $link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, page => $PAGE_NAME, url => $link ) if @params;
 
     $template->param(SERVER=>$SERVER);
     $org = $dsg->organism if $dsg;
