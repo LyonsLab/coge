@@ -203,8 +203,6 @@ function init_works_table() {
 	$('table.sort-table tr').mouseover( function() {$(this).addClass('highlight');})
 			        .mouseout( function() {$(this).removeClass('highlight');});
 	setup_button_states();
-	//$("#search_bar").keyup( function() { filter_rows( $(this).val() ); });
-	//$('#search_type').mouseup( function() { filter_rows( $('#search_bar').val() ); });
 }
 
 function update_worklist(type) {
@@ -321,17 +319,6 @@ function see_work_entry(wid,opt,wf_id) {
 				success: function(data) {view_work_dialog(data);},
 			});
 	}
-}
-
-//Filters Rows for search_text - Case sensitive as of now, and searches hidden columns...
-function filter_rows (search_text){
-	 if(! search_text) { $("#sort-table tr:hidden").show(0);}
-	 else if (search_text.length >= 3) {
-	 $("#sort-table-body tr:hidden").show(0);
-	 if( $('#search-type').val() == 1 ) { $("#sort-table-body tr:not(:contains('"+search_text+"'))").hide(); }
-	 else { $("#sort-table-body tr:contains('"+search_text+"')").hide(); }
-}
-         else return;
 }
 
 </SCRIPT>

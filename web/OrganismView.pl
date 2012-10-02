@@ -60,11 +60,7 @@ $USER = undef;
 ($USER) = CoGe::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
 ($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
 
-my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
-$link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, page => $PAGE_NAME, url => $link );
 
-
-#my $pj = new CGI::Ajax(
 %FUNCTION = (
 	     get_genomes=>\&get_genomes,
 	     get_genome_info=>\&get_genome_info,
@@ -98,14 +94,12 @@ $link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, 
 my $pj = new CGI::Ajax(%FUNCTION);
 $pj->JSDEBUG(0);
 $pj->DEBUG(0);
-if ($FORM->param('jquery_ajax'))
-  {
-    dispatch();
-  }
-else
-  {
-    print $pj->build_html($FORM, \&gen_html);
-  }
+if ($FORM->param('jquery_ajax')) {
+	dispatch();
+}
+else {
+	print $pj->build_html($FORM, \&gen_html);
+}
 #print "Content-Type: text/html\n\n";print gen_html($FORM);
 
 sub dispatch
@@ -124,9 +118,9 @@ sub dispatch
 	    print $FORM->header, $FUNCTION{$fname}->(%args);
 	}
     }
-#    else{
-#	print $FORM->header, gen_html();
-#    }
+#	else{
+#		print $FORM->header, gen_html();
+#	}
 }
 
 sub parse_for_GenoList
@@ -138,10 +132,13 @@ sub parse_for_GenoList
 
 sub gen_html
   {
+	my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
+	CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, page => $PAGE_NAME, url => $link );  	
+  	
     my $html;
     my ($body, $seq_names, $seqs) = gen_body();
     my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
-    #	$template->param(TITLE=>'Organism Overview');
+    #$template->param(TITLE=>'Organism Overview');
     $template->param(PAGE_TITLE=>'OrgView');
     $template->param(HEAD=>qq{});
     $template->param(HELP=>"/wiki/index.php?title=OrganismView");
@@ -154,7 +151,7 @@ sub gen_html
     $template->param(DATE=>$DATE);
     $template->param(LOGO_PNG=>"OrganismView-logo.png");
     $template->param(BODY=>$body);
-    #	$template->param(ADJUST_BOX=>1);
+    #$template->param(ADJUST_BOX=>1);
     $html .= $template->output;
     return $html;
   }

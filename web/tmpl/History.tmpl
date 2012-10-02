@@ -3,7 +3,7 @@
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></SCRIPT>
 
 <SCRIPT language="JavaScript">
-$(document).ready(function(){
+$(document).ready(function() {
 	$.ajaxSetup({
 		type: "POST",
 		url: "<TMPL_VAR NAME=PAGE_NAME>",
@@ -15,6 +15,14 @@ $(document).ready(function(){
 	
 	$(".dialog_box").dialog({autoOpen: false, width: 600});
 
+	// Create new case-insensitive "contains" selector function in jQuery
+	jQuery.expr[":"].icontains = jQuery.expr.createPseudo(function(arg) {
+	    return function( elem ) {
+	        return jQuery(elem).text().toUpperCase().indexOf(arg.toUpperCase()) >= 0;
+	    };
+	});
+	
+	// Setup filter input
 	$("#search_bar").keyup( function() { filter_rows( $(this).val() ); });
 	$('#search_type').mouseup( function() { filter_rows( $('#search_bar').val() ); });
 	filter_rows();
@@ -29,8 +37,8 @@ function filter_rows (search_text){
 	if(! search_text) { $("#history_table tr:hidden").show(0);}
 	else if (search_text.length >= 3) {
 		$("#history_table_body tr:hidden").show(0);
-		if( $('#search_type').val() == 1 ) { $("#history_table_body tr:not(:contains('"+search_text+"'))").hide(); }
-		else { $("#history_table_body tr:contains('"+search_text+"')").hide(); }
+		if( $('#search_type').val() == 1 ) { $("#history_table_body tr:not(:icontains('"+search_text+"'))").hide(); }
+		else { $("#history_table_body tr:icontains('"+search_text+"')").hide(); }
 	}
 	$('#filter_count').html('<span style="color:darkgray"><i>Showing ' + $("#history_table_body tr:visible").length + ' of ' + $("#history_table_body tr").length + ' entries</i></span>');
 }
@@ -61,6 +69,19 @@ function run_get_history() {
 		success : create_callback(div_id)
 	});
 }
+
+function toggle_star(td_id, log_id) {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'toggle_star',
+			log_id: log_id,
+		},
+		success :  function(val) {
+			$('#'+td_id).html(val);
+		}
+	});
+}
 </SCRIPT>
 
 
@@ -70,6 +91,7 @@ function run_get_history() {
   Time Range: 
   <select id="time_range" onchange="run_get_history();">
    <option value="0">All</option>
+   <option value="-1">Starred</option>
    <option value="1">Last hour</option>
    <option value="12">Last 12 hrs</option>
    <option selected='selected' value="24">Last 24 hrs</option>
@@ -95,26 +117,32 @@ function run_get_history() {
 
 </TMPL_IF> <!-- MAIN -->
 
+
+
 <TMPL_IF NAME=HISTORY>
 <div id='history'>
 <table id='history_table' class="small ui-widget-content ui-corner-all">
  <thead align="left"> 
   <tr>
+   <th></th>
    <th>Date/Time</th>
    <th>User</th>
    <th>Page</th>
    <th>Description</th>
    <th>Link</th>
+   <th>Comments</th>
   </tr>
  </thead>
  <tbody id='history_table_body' align="left" valign="top" class="small">
   <TMPL_LOOP NAME=HISTORY_LOOP>
   <tr valign="top">
+   <td id='star_<TMPL_VAR NAME=STAR_ID>' onclick='toggle_star(this.id, <TMPL_VAR NAME=STAR_ID>);' align='center'><TMPL_VAR NAME=STAR></td>
    <td><TMPL_VAR NAME=TIME></td>
    <td><TMPL_VAR NAME=USER></td>
    <td><TMPL_VAR NAME=PAGE></td>
    <td><TMPL_VAR NAME=DESCRIPTION></td>
    <td><TMPL_VAR NAME=LINK></td>
+   <td onclick='alert("hi");'><TMPL_VAR NAME=COMMENT></td>
   </tr>
   </TMPL_LOOP>
  </tbody>

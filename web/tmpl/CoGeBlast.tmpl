@@ -1502,22 +1502,22 @@ $(function() {
 		<option value = "9 1"   >Existence: 9 Extension: 1</option>		
 	</select>
 	<select id="ncbi_gapcosts_BLOSUM45" class="ncbi_gapcosts" style="display: none">
-		<option value = "13 3"   >Existence: 13 Extension: 3</option>	
-		<option value = "12 3"   >Existence: 12 Extension: 3</option>	
-		<option value = "11 3"   >Existence: 11 Extension: 3</option>	
-		<option value = "10 3"   >Existence: 10 Extension: 3</option>	
-		<option value = "15 2"  selected >Existence: 15 Extension: 2</option>	
-		<option value = "14 2"   >Existence: 14 Extension: 2</option>	
-		<option value = "13 2"   >Existence: 13 Extension: 2</option>	
-		<option value = "12 2"   >Existence: 12 Extension: 2</option>	
-		<option value = "19 1"   >Existence: 19 Extension: 1</option>	
-		<option value = "18 1"   >Existence: 18 Extension: 1</option>	
-		<option value = "17 1"   >Existence: 17 Extension: 1</option>	
-		<option value = "16 1"   >Existence: 16 Extension: 1</option>		
+		<option value="13 3"   >Existence: 13 Extension: 3</option>	
+		<option value="12 3"   >Existence: 12 Extension: 3</option>	
+		<option value="11 3"   >Existence: 11 Extension: 3</option>	
+		<option value="10 3"   >Existence: 10 Extension: 3</option>	
+		<option value="15 2"  selected >Existence: 15 Extension: 2</option>	
+		<option value="14 2"   >Existence: 14 Extension: 2</option>	
+		<option value="13 2"   >Existence: 13 Extension: 2</option>	
+		<option value="12 2"   >Existence: 12 Extension: 2</option>	
+		<option value="19 1"   >Existence: 19 Extension: 1</option>	
+		<option value="18 1"   >Existence: 18 Extension: 1</option>	
+		<option value="17 1"   >Existence: 17 Extension: 1</option>	
+		<option value="16 1"   >Existence: 16 Extension: 1</option>		
 	</select>
       </TR>
       </TABLE>
-      <DIV id=ncbi_pro_or_nu_param></DIV>
+      <DIV id="ncbi_pro_or_nu_param"></DIV>
      </TD>
    </TMPL_IF>
     <TMPL_IF NAME="REST">
@@ -1530,40 +1530,40 @@ $(function() {
    </DIV> <!-- close tab-2 -->
 
    Query Sequence(s):
-   <TABLE class ="ui-corner-all ui-widget-content"> 
+   <TABLE class="ui-corner-all ui-widget-content"> 
    <THEAD align="left">
    <TH>Sequences (fasta format):</TH>
    <TH>Select a BLAST to run:</TH>
    </THEAD>
    <TBODY>
-    <TR align=left valign=top>
+    <TR align="left" valign="top">
     <TD>
-      <textarea class ="ui-corner-all ui-widget-content" type="textarea" onFocus="clear_if_no_seq()" name="seq_box" id ="seq_box" wrap=off cols=80 rows=15><TMPL_VAR NAME="SEQUENCE"></textarea>
+      <textarea class="ui-corner-all ui-widget-content" type="textarea" onFocus="clear_if_no_seq()" name="seq_box" id ="seq_box" wrap=off cols=80 rows=15><TMPL_VAR NAME="SEQUENCE"></textarea>
      </TD>
       <TD valign="top">
        <div id="coge_blast_type">
-       <TABLE class ="ui-widget-content ui-corner-all">
+       <TABLE class="ui-widget-content ui-corner-all">
        <TR>
         <TD valign="top">
-         <label><input id=coge_radio type=radio name=cogeblast value="coge_blast_type_n" checked onClick="display_correct_radio($('#coge_radio')[0].checked,'coge');get_seq('coge_radio');blast_param_on_select('coge_radio','coge');">Nucleotide Sequence</label>
+         <label><input id="coge_radio" type="radio" name="cogeblast" value="coge_blast_type_n" checked onClick="display_correct_radio($('#coge_radio')[0].checked,'coge');get_seq('coge_radio');blast_param_on_select('coge_radio','coge');">Nucleotide Sequence</label>
          <br>
-          <div id=coge_select_n>
-           <select name=coge_blasttype id=coge_blast_type_n onChange="blast_param_on_select('coge_radio','coge')">
+          <div id="coge_select_n">
+           <select name="coge_blasttype" id="coge_blast_type_n" onChange="blast_param_on_select('coge_radio','coge')">
             <optgroup label="--- Select BLAST Type ---">
-            <option value = "blastn"> blastn
-            <option value = "tblastx"> tblastx
-            <option value = "lastz"> (b)lastz
-            <option value = "mega"> megablast
-            <option value = "dcmega"> discontinuous megablast
+            <option value="blastn"> blastn
+            <option value="tblastx"> tblastx
+            <option value="lastz"> (b)lastz
+            <option value="mega"> megablast
+            <option value="dcmega"> discontinuous megablast
            </optgroup>
            </select>
            <br>
           </div>
          <br>
-         <label><input id=coge_radio type=radio name=cogeblast value="coge_blast_type_p" onClick="display_correct_radio($('#coge_radio')[0].checked,'coge');get_seq('coge_radio');blast_param_on_select('coge_radio','coge')">Protein Sequence</label>
+         <label><input id="coge_radio" type="radio" name="cogeblast" value="coge_blast_type_p" onClick="display_correct_radio($('#coge_radio')[0].checked,'coge');get_seq('coge_radio');blast_param_on_select('coge_radio','coge')">Protein Sequence</label>
          <br>
-          <div id=coge_select_p style="display:none;">
-           <select name=coge_blasttype id=coge_blast_type_p onChange="blast_param_on_select('coge_radio','coge')">
+          <div id="coge_select_p" style="display:none;">
+           <select name="coge_blasttype" id="coge_blast_type_p" onChange="blast_param_on_select('coge_radio','coge')">
             <optgroup label="--- Select BLAST Type ---">
             <option value = "tblastn"> tblastn
             </optgroup>
@@ -1575,36 +1575,36 @@ $(function() {
          </TABLE>
 <b>Color Blast Hits According to:<br></b>
   <div class="ui-widget-content ui-corner-all">
-    &nbsp&nbsp<input type="radio" name = "color_by" id = "color_by" value="0" checked> None<br>
-    &nbsp&nbsp<input type="radio" name = "color_by" id = "color_by" value="query"> Query Sequence<br>
-    &nbsp&nbsp<input type="radio" name = "color_by" id = "color_by" value="quality"> Log Quality<bR>
-    &nbsp&nbsp<input type="radio" name = "color_by" id = "color_by" value="identity"> Percent Identity<bR>
+    &nbsp&nbsp<input type="radio" name="color_by" id="color_by" value="0" checked> None<br>
+    &nbsp&nbsp<input type="radio" name="color_by" id="color_by" value="query"> Query Sequence<br>
+    &nbsp&nbsp<input type="radio" name="color_by" id="color_by" value="quality"> Log Quality<bR>
+    &nbsp&nbsp<input type="radio" name="color_by" id="color_by" value="identity"> Percent Identity<bR>
    </div>
          </div>
       <div id="ncbi_blast_type" style="display:none;">
-       <TABLE class ="ui-widget-content ui-corner-all ">
+       <TABLE class="ui-widget-content ui-corner-all ">
        <TR>
         <TD valign="top">
-         <label><input id=ncbi_radio type=radio name=ncbiblast value="ncbi_blast_type_n" checked="" onClick="display_correct_radio($('#ncbi_radio')[0].checked,'ncbi');get_seq('ncbi_radio');blast_param_on_select('ncbi_radio','ncbi');">Nucleotide Sequence</label>
+         <label><input id="ncbi_radio" type="radio" name="ncbiblast" value="ncbi_blast_type_n" checked="" onClick="display_correct_radio($('#ncbi_radio')[0].checked,'ncbi');get_seq('ncbi_radio');blast_param_on_select('ncbi_radio','ncbi');">Nucleotide Sequence</label>
          <br>
-          <div id=ncbi_select_n>
-           <select name=ncbi_blasttype id=ncbi_blast_type_n onChange="blast_param_on_select('ncbi_radio','ncbi')">
+          <div id="ncbi_select_n">
+           <select name="ncbi_blasttype" id="ncbi_blast_type_n" onChange="blast_param_on_select('ncbi_radio','ncbi')">
             <optgroup label="--- Select BLAST Type ---">
-            <option value = "blastn"> blastn
-            <option value = "blastx"> blastx
-            <option value = "tblastx"> tblastx
+            <option value="blastn"> blastn
+            <option value="blastx"> blastx
+            <option value="tblastx"> tblastx
            </optgroup>
            </select>
            <br>
           </div>
          <br>
-         <label><input id=ncbi_radio type=radio name=ncbiblast value="ncbi_blast_type_p" onClick="display_correct_radio($('#ncbi_radio')[0].checked,'ncbi');get_seq('ncbi_radio');blast_param_on_select('ncbi_radio','ncbi')">Protein Sequence</label>
+         <label><input id="ncbi_radio" type="radio" name="ncbiblast" value="ncbi_blast_type_p" onClick="display_correct_radio($('#ncbi_radio')[0].checked,'ncbi');get_seq('ncbi_radio');blast_param_on_select('ncbi_radio','ncbi')">Protein Sequence</label>
          <br>
-          <div id=ncbi_select_p style="display:none;">
-           <select name=ncbi_blasttype id=ncbi_blast_type_p onChange="blast_param_on_select('ncbi_radio','ncbi')">
+          <div id="ncbi_select_p" style="display:none;">
+           <select name="ncbi_blasttype" id="ncbi_blast_type_p" onChange="blast_param_on_select('ncbi_radio','ncbi')">
             <optgroup label="--- Select BLAST Type ---">
-            <option value = "blastp"> blastp
-            <option value = "tblastn"> tblastn
+            <option value="blastp"> blastp
+            <option value="tblastn"> tblastn
             </optgroup>
            </select>
            <br>
@@ -1624,14 +1624,14 @@ $(function() {
 
 
     <TMPL_IF NAME="BLAST_NU">
-     <TH align=left valign="top">Nucleotide Specific Parameters<br>
-      <TABLE class ="ui-corner-all ui-widget-content">
+     <TH align="left" valign="top">Nucleotide Specific Parameters<br>
+      <TABLE class="ui-corner-all ui-widget-content">
        <TR>
 	<TD valign="top">
 	 Match/Mismatch Scores:
          </TD>
          <TD>
-	    <select id=match_score name=match_score onchange="update_gapcost()">
+	    <select id="match_score" name="match_score" onchange="update_gapcost()">
 	     <option selected="selected" value="1,-2">1,-2</option>
 	     <option value="1,-3">1,-3</option>
 	     <option value="1,-4">1,-4</option>
@@ -1643,19 +1643,19 @@ $(function() {
       </TABLE>
     </TMPL_IF>
     <TMPL_IF NAME="BLAST_PRO">
-     <TH align=left valign="top">Protein Specific Parameters<br>
-      <TABLE class ="ui-corner-all ui-widget-content">
+     <TH align="left" valign="top">Protein Specific Parameters<br>
+      <TABLE class="ui-corner-all ui-widget-content">
        <TR>
         <TD valign="top">
 	 Matrix
         </TD>
         <TD>
-	     <select name=matrix id=matrix onChange="update_gapcost(1)">
-              <option value = "PAM30"> PAM30
-	      <option value = "PAM70"> PAM70
-              <option value = "BLOSUM80"> BLOSUM80
-              <option value = "BLOSUM62" selected> BLOSUM62
-              <option value = "BLOSUM45"> BLOSUM45
+	     <select name="matrix" id="matrix" onChange="update_gapcost(1)">
+              <option value="PAM30"> PAM30
+	      <option value="PAM70"> PAM70
+              <option value="BLOSUM80"> BLOSUM80
+              <option value="BLOSUM62" selected> BLOSUM62
+              <option value="BLOSUM45"> BLOSUM45
              </select>
 	     <div onclick="matrix_view();" class="link small">View Matrix</div>
        </TR>
@@ -1665,11 +1665,11 @@ $(function() {
 	 Compositional adjustments
 	</TD>
 	<TD>
-	     <select name=comp_adj id=comp_adj>
-              <option value = "0"> No adjustment
-	      <option value = "1" selected> Composition-based statistics
-              <option value = "2"> Conditional compositional score matrix adjustment
-              <option value = "3"> Universal compositional score matrix adjustment
+	     <select name="comp_adj" id="comp_adj">
+              <option value="0"> No adjustment
+	      <option value="1" selected> Composition-based statistics
+              <option value="2"> Conditional compositional score matrix adjustment
+              <option value="3"> Universal compositional score matrix adjustment
              </select>
        </TR>
        </TMPL_IF>
@@ -1677,14 +1677,14 @@ $(function() {
     </TMPL_IF>
     
      <TMPL_IF NAME="NCBI_BLAST_NU">
-     <TH align=left valign="top">Nucleotide Specific Parameters<br>
+     <TH align="left" valign="top">Nucleotide Specific Parameters<br>
    <TABLE class='ui-widget-content ui-corner-all'>
        <TR>
 	<TD valign="top">
 	 Match/Mismatch Scores:
          </TD>
          <TD>
-	    <select id=ncbi_match_score name=ncbi_match_score onchange="update_gapcost_ncbi()">
+	    <select id="ncbi_match_score" name="ncbi_match_score" onchange="update_gapcost_ncbi()">
 	     <option selected="selected" value="1,-2">1,-2</option>
 	     <option value="1,-3">1,-3</option>
 	     <option value="1,-4">1,-4</option>
@@ -1696,19 +1696,19 @@ $(function() {
       </TABLE>
     </TMPL_IF>
     <TMPL_IF NAME="NCBI_BLAST_PRO">
-     <TH align=left valign="top">Protein Specific Parameters<br>
+     <TH align="left" valign="top">Protein Specific Parameters<br>
       <TABLE class='ui-widget-content ui-corner-all'>
        <TR>
         <TD valign="top">
 	 Matrix
         </TD>
         <TD>
-	     <select name=ncbi_matrix id=ncbi_matrix onChange="update_gapcost_ncbi(1)">
-              <option value = "PAM30"> PAM30
-	      <option value = "PAM70"> PAM70
-              <option value = "BLOSUM80"> BLOSUM80
-              <option value = "BLOSUM62" selected> BLOSUM62
-              <option value = "BLOSUM45"> BLOSUM45
+	     <select name="ncbi_matrix" id="ncbi_matrix" onChange="update_gapcost_ncbi(1)">
+              <option value="PAM30"> PAM30
+	      <option value="PAM70"> PAM70
+              <option value="BLOSUM80"> BLOSUM80
+              <option value="BLOSUM62" selected> BLOSUM62
+              <option value="BLOSUM45"> BLOSUM45
              </select>
        </TR>
        <TMPL_IF NAME=NCBI_BLAST_PRO_COMP>
@@ -1717,11 +1717,11 @@ $(function() {
 	 Compositional adjustments
 	</TD>
 	<TD>
-	     <select name=ncbi_comp_adj id=ncbi_comp_adj>
-              <option value = "0"> No adjustment
-	      <option value = "1" selected> Composition-based statistics
-              <option value = "2"> Conditional compositional score matrix adjustment
-              <option value = "3"> Universal compositional score matrix adjustment
+	     <select name="ncbi_comp_adj" id="ncbi_comp_adj">
+              <option value="0"> No adjustment
+	      <option value="1" selected> Composition-based statistics
+              <option value="2"> Conditional compositional score matrix adjustment
+              <option value="3"> Universal compositional score matrix adjustment
              </select>
        </TR>
        </TMPL_IF>
@@ -1729,31 +1729,31 @@ $(function() {
     </TMPL_IF>
     
     <TMPL_IF NAME=NU_DB>
-    <select name=ncbi_db id=ncbi_db>
+    <select name="ncbi_db" id="ncbi_db">
 	  <optgroup label="Genomic plus Transcript">
-           <option value = "Test/gpipe/9606/allcontig_and_rna"> Human genomic plus transcript
-           <option value = "Test/gpipe/10090/allcontig_and_rna"> Mouse genomic plus transcript
+           <option value="Test/gpipe/9606/allcontig_and_rna"> Human genomic plus transcript
+           <option value="Test/gpipe/10090/allcontig_and_rna"> Mouse genomic plus transcript
 	  </optgroup>
 	  <optgroup label="Other Databases">
-           <option value = "nr" selected> Nucleotide collection (nr/nt)
-           <option value = "refseq_rna"> Reference mRNA sequences (refseq_rna)
-           <option value = "refseq_genomic"> Reference genomic sequences (refseq_genomic)
-           <option value = "est"> Expressed sequence tags (est)
-           <option value = "est_others"> Non-human, non-mouse ESTs (est_others)
-           <option value = "gss"> Genomic survey sequences (gss)
-           <option value = "htgs"> High throughput genomic sequences (HTGS)
-           <option value = "pat"> Patent sequences (pat)
-           <option value = "pdb"> Protein Data Bank (pdb)
-           <option value = "alu"> Human ALU repeat elements (alu_repeat)
-           <option value = "dbsts"> Sequence tagged sites (dbsts)
-           <option value = "wgs"> Whole-genome shotgun reads (wgs)
-           <option value = "env_nt"> Environmental samples (env_nt)
+           <option value="nr" selected> Nucleotide collection (nr/nt)
+           <option value="refseq_rna"> Reference mRNA sequences (refseq_rna)
+           <option value="refseq_genomic"> Reference genomic sequences (refseq_genomic)
+           <option value="est"> Expressed sequence tags (est)
+           <option value="est_others"> Non-human, non-mouse ESTs (est_others)
+           <option value="gss"> Genomic survey sequences (gss)
+           <option value="htgs"> High throughput genomic sequences (HTGS)
+           <option value="pat"> Patent sequences (pat)
+           <option value="pdb"> Protein Data Bank (pdb)
+           <option value="alu"> Human ALU repeat elements (alu_repeat)
+           <option value="dbsts"> Sequence tagged sites (dbsts)
+           <option value="wgs"> Whole-genome shotgun reads (wgs)
+           <option value="env_nt"> Environmental samples (env_nt)
 	  </optgroup>
           </select>
     </TMPL_IF>
    
     <TMPL_IF NAME=PRO_DB>
-    <select name=blast_db id=blast_db>
+    <select name="blast_db" id="blast_db">
 	<option value="nr" selected>Non-redundant protein sequences (nr)</option>
 	<option value="refseq_protein">Reference proteins (refseq_protein)</option>	
 	<option value="swissprot">Swissprot protein sequences(swissprot)</option>
@@ -1763,8 +1763,8 @@ $(function() {
     </TMPL_IF>
 
     <TMPL_IF NAME=T_DB>
-    <select name=blast_db id=blast_db>
-        <option value="nr" selected>Nucleotide collection (nr/nt)</option>
+    <select name="blast_db" id="blast_db">
+    <option value="nr" selected>Nucleotide collection (nr/nt)</option>
 	<option value="refseq_rna">Reference mRNA sequences (refseq_rna)</option>
 	<option value="refseq_genomic">Reference genomic sequences (refseq_genomic)</option>
 	<option value="est">Expressed sequence tags (est)</option>
@@ -1785,36 +1785,33 @@ $(function() {
 <span>HSP Table:</span>
 <br/>
 <span href="javascript:void(0)" id="table_opts" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-newwin"></span>Change Viewable Columns</span>
- 
-
-
-   <div id=table_size>
+   <div id="table_size">
    <div id="null"><TMPL_VAR NAME=NULLIFY></div>
    <TMPL_IF NAME="HSP_TABLE">
    <TABLE id="hsp_result_table" cellspacing="2" class="ui-widget-content ui-corner-all">
      <!--<caption>HSPs w/o overlapping features:</caption>-->
      <THEAD>
-      <TR nowrap align=middle>
-        <TH nowrap class=small>click to sort &rarr;</TH>
-        <TH nowrap class=header>Query Seq</TH>
-        <TH nowrap class=header>Org</TH>
-        <TH nowrap class=header>Chr</TH>
+      <TR nowrap align="middle">
+        <TH nowrap class="small">click to sort &rarr;</TH>
+        <TH nowrap class="header">Query Seq</TH>
+        <TH nowrap class="header">Org</TH>
+        <TH nowrap class="header">Chr</TH>
  	<TH nowrap class="header" >Position</TH>	
-        <TH nowrap class=header>HSP#</TH>
-        <TH nowrap class=header>Length</TH>
-        <TH class=header>Coverage</TH>
-        <TH nowrap class=header>E-value</TH>
-        <TH nowrap class=header>Perc ID</TH>
-        <TH nowrap class=header>Score</TH>
-        <TH nowrap class=header>Quality</TH>
-        <TH class=header>Closest Genomic Feature<br><span class="small link" onclick="click_all_feat_links();$('#click_links').hide(0)">Find All</span> </TH>
-        <TH nowrap class=header>Distance(bp)</TH>
+        <TH nowrap class="header">HSP#</TH>
+        <TH nowrap class="header">Length</TH>
+        <TH class="header">Coverage</TH>
+        <TH nowrap class="header">E-value</TH>
+        <TH nowrap class="header">Perc ID</TH>
+        <TH nowrap class="header">Score</TH>
+        <TH nowrap class="header">Quality</TH>
+        <TH class="header">Closest Genomic Feature<br><span class="small link" onclick="click_all_feat_links();$('#click_links').hide(0)">Find All</span> </TH>
+        <TH nowrap class="header">Distance(bp)</TH>
        </TR>
      </THEAD>
-     <TBODY id=hsp_result_table_body style="overflow-y: auto;overflow-x: hidden;">
+     <TBODY id="hsp_result_table_body" style="overflow-y: auto;overflow-x: hidden;">
      <TMPL_LOOP NAME=HSPS>
        <tr class="feat" id="<TMPL_VAR NAME=ID>" >
-         <td align=right id="checkbox<TMPL_VAR NAME=CHECKBOX>"><input type=checkbox id="<TMPL_VAR NAME=CHECKBOX>" value="<TMPL_VAR NAME=CHECKBOX>"></td>
+         <td align="right" id="checkbox<TMPL_VAR NAME=CHECKBOX>"><input type="checkbox" id="<TMPL_VAR NAME=CHECKBOX>" value="<TMPL_VAR NAME=CHECKBOX>"></td>
          <td><TMPL_VAR NAME=QUERY_SEQ></td>
          <td style="white-space:nowrap;"><TMPL_VAR NAME=HSP_ORG></td>
          <td><TMPL_VAR NAME=HSP_CHR></td>
@@ -1826,18 +1823,17 @@ $(function() {
          <td><TMPL_VAR NAME=HSP_PID></td>
          <td><TMPL_VAR NAME=HSP_SCORE></td>
          <td><TMPL_VAR NAME=HSP_QUALITY></td>
-         <td style="white-space:nowrap;"><div id ="feat<TMPL_VAR NAME=ID>"><TMPL_VAR NAME=HSP_LINK></div>
+         <td style="white-space:nowrap;"><div id="feat<TMPL_VAR NAME=ID>"><TMPL_VAR NAME=HSP_LINK></div>
          <td><div id="dist<TMPL_VAR NAME=ID>">-</div></td>
        </tr>
       </TMPL_LOOP>
      </tbody>
     </table>
    <br>
-   </TMPL_IF>
-   </div>      
+   </TMPL_IF> <!-- HSP_TABLE -->
+   </div>
+</TMPL_IF> <!-- RESULT_TABLE -->
 
-</TMPL_IF>
-   
    <TMPL_IF NAME=CHROMOSOMES_IF>
    <table>
        <TMPL_LOOP NAME=CHROMOSOME_LOOP>
@@ -1849,14 +1845,14 @@ $(function() {
         <TMPL_VAR NAME=CHR_IMAGE>
        </TMPL_LOOP>
     </table>
-    </TMPL_IF>
+    </TMPL_IF> <!-- CHROMOSOMES_IF -->
    
    <TMPL_IF NAME=CHROMOSOMES_LARGE_IF>
         <TMPL_LOOP NAME=CHROMOSOME_LOOP_LARGE>
           <div id=large_db<TMPL_VAR NAME=IMAGE_ID_LARGE> style="display:none"><TMPL_VAR NAME=DB_NAME_LARGE></div>
           <div id=large_pic<TMPL_VAR NAME=IMAGE_ID_LARGE> style="display:none"><TMPL_VAR NAME=CHR_IMAGE_LARGE></div>
         </TMPL_LOOP>
-   </TMPL_IF>
+   </TMPL_IF> <!-- CHROMOSOMES_LARGE_IF -->
    
    <TMPL_IF NAME=HSP_IF>
      <span class=species>HSP Number <TMPL_VAR NAME=HSP_NUM> Information:</span><br>
@@ -1952,30 +1948,30 @@ $(function() {
           </tr>
          </table>
          <TMPL VAR NAME="HSP_EXCEL_LINK">
-  </TMPL_IF>
+  </TMPL_IF> <!-- HSP_IF -->
    
 <TMPL_IF NAME=BLAST_RESULTS>
- <TABLE class ="ui-widget-content ui-corner-all " >
+ <TABLE class="ui-widget-content ui-corner-all " >
     <thead>
      <th>
-      <span id=left_column_button_hide class='ui-button ui-corner-all' onClick="$('#left_column').hide(0);$('#left_column_button_hide').hide(0);$('#left_column_button_show').show(0);">Hide Genome Data</span>
-      <span id=left_column_button_show class='ui-button ui-corner-all' onClick="$('#left_column').show(0);$('#left_column_button_show').hide(0);$('#left_column_button_hide').show(0);" style="display:none">Show Genome Data</span>
+      <span id='left_column_button_hide' class='ui-button ui-corner-all' onClick="$('#left_column').hide(0);$('#left_column_button_hide').hide(0);$('#left_column_button_show').show(0);">Hide Genome Data</span>
+      <span id='left_column_button_show' class='ui-button ui-corner-all' onClick="$('#left_column').show(0);$('#left_column_button_show').hide(0);$('#left_column_button_hide').show(0);" style="display:none">Show Genome Data</span>
 
      </th>
     <th>
-      <span id=right_column_button_hide class='ui-button ui-corner-all' onClick="$('#result_features').hide(0);$('#right_column_button_hide').hide(0);$('#right_column_button_show').show(0);">Hide HSP Table</span>
-      <span id=right_column_button_show class='ui-button ui-corner-all' onClick="$('#result_features').show(0);$('#right_column_button_show').hide(0);$('#right_column_button_hide').show(0);" style="display:none">Show HSP Table</span>
+      <span id='right_column_button_hide' class='ui-button ui-corner-all' onClick="$('#result_features').hide(0);$('#right_column_button_hide').hide(0);$('#right_column_button_show').show(0);">Hide HSP Table</span>
+      <span id='right_column_button_show' class='ui-button ui-corner-all' onClick="$('#result_features').show(0);$('#right_column_button_show').hide(0);$('#right_column_button_hide').show(0);" style="display:none">Show HSP Table</span>
 
 
     </th>
     </thead>
  	<tbody>
     <TR>
-     <TD align=left  valign="top" >
-     <div id=left_column>
+     <TD align="left" valign="top" >
+     <div id="left_column">
      <span>Genomic HSP Visualization:</span>
-     <DIV class=small><span class=link onclick="window.open('<TMPL_VAR NAME=GENOMELIST_LINK>')">Generate List of Matching Genomes</DIV>
-     <DIV id=chromosomes class="ui-widget-content ui-corner-all" style="width: 405px;overflow: auto;max-height: 700px;">
+     <DIV class="small"><span class="link" onclick="window.open('<TMPL_VAR NAME=GENOMELIST_LINK>')">Generate List of Matching Genomes</DIV>
+     <DIV id="chromosomes" class="ui-widget-content ui-corner-all" style="width: 405px;overflow: auto;max-height: 700px;">
 
      <TMPL_VAR NAME=CHROMOSOMES>
      <TMPL_VAR NAME=CHR_LARGE>
@@ -1985,8 +1981,8 @@ $(function() {
      </div>
       </TD>
       <TD valign="top" align=left >
-       	 <DIV id=result_features align=left valign="top">
-          <form id=feature_list>
+       	 <DIV id="result_features" align="left" valign="top">
+          <form id="feature_list">
           <TMPL_VAR NAME="HSP_RESULTS">
           </form>
 <!--	  <div id="pager" class="pager">
@@ -2008,37 +2004,37 @@ $(function() {
 </div>
 
           <table>
-            <tr valign=top>
-		<td align=left>
+            <tr valign="top">
+		<td align="left">
        		    
 		    <span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#hsp_result_table :checkbox').attr('checked', true);"><span class="ui-icon ui-icon-check"></span>Select All</span>
 		    <span class='ui-button ui-button-icon-left ui-corner-all' onClick="$('#hsp_result_table :checkbox').attr('checked', false);"><span class="ui-icon ui-icon-minusthick"></span>Select None</span>
          		Send Checked Features to: 
-          		<select name=overlap_action id=overlap_action>
-           		 <option value = "gevo">GEvo</option>
-           		 <option value = "fasta">Fasta View</option>
-          		  <option value = "xls">Excel File </option>
-           		 <option value = "tab">Tab Delimited FIle</option>
-           		 <option value = "list">Feature List</option>
-           		 <option value = "blast">CoGeBlast</option>
-           		 <option value = "phylo">Phylogenetics</option>
-           		 <option value = "CodeOn">Coding Evolution</option>
+          		<select name="overlap_action" id="overlap_action">
+           		 <option value="gevo">GEvo</option>
+           		 <option value="fasta">Fasta View</option>
+          		  <option value="xls">Excel File </option>
+           		 <option value="tab">Tab Delimited FIle</option>
+           		 <option value="list">Feature List</option>
+           		 <option value="blast">CoGeBlast</option>
+           		 <option value="phylo">Phylogenetics</option>
+           		 <option value="CodeOn">Coding Evolution</option>
 			</select>  
                      <span class='ui-button ui-corner-all' onClick="overlap_checkboxes();">Go</span>
-            <tr valign=top>
-		<td align=left>HSP count:
-		<input type = checkbox onclick="$('#hsp_count_data').slideToggle();"><span class = "small" >Show Table?</span>
+            <tr valign="top">
+		<td align="left">HSP count:
+		<input type="checkbox" onclick="$('#hsp_count_data').slideToggle();"><span class="small" >Show Table?</span>
 	        <div id="hsp_count_data" style="display:none;"><TMPL_VAR NAME=HSP_COUNT></div>
  	</table>
  </div>
      </TD>
    </TABLE>
 
-   </TMPL_IF>
+   </TMPL_IF> <!-- BLAST_RESULTS -->
    
 <TMPL_IF NAME="RESULTS_DIV">
-<table align=center><tr><td>
-<DIV id=log_text class='dna' style="display:none"></DIV>
-<DIV id=blast_results ></DIV>
+<table align="center"><tr><td>
+<DIV id="log_text" class='dna' style="display:none"></DIV>
+<DIV id="blast_results"></DIV>
 </table>
-</TMPL_IF>
+</TMPL_IF> <!-- RESULTS_DIV -->

@@ -16,6 +16,15 @@ $(document).ready(function(){
 		excludeColumns: [0,],
 	});
 */
+
+	// Create new case-insensitive "contains" selector function in jQuery
+	jQuery.expr[":"].icontains = jQuery.expr.createPseudo(function(arg) {
+	    return function( elem ) {
+	        return jQuery(elem).text().toUpperCase().indexOf(arg.toUpperCase()) >= 0;
+	    };
+	});
+
+	// Setup filter input
 	$("#search_bar").keyup( function() { filter_rows( $(this).val() ); });
 	$('#search_type').mouseup( function() { filter_rows( $('#search_bar').val() ); });
 	filter_rows();
@@ -78,10 +87,10 @@ function filter_rows (search_text){
 	else if (search_text.length >= 3) {
 		$("#experiment_table_body tr:hidden").show(0);
 		if( $('#search_type').val() == 1 ) { 
-			$("#experiment_table_body tr:not(:contains('"+search_text+"'))").hide(); 
+			$("#experiment_table_body tr:not(:icontains('"+search_text+"'))").hide(); 
 		}
 		else { 
-			$("#experiment_table_body tr:contains('"+search_text+"')").hide(); 
+			$("#experiment_table_body tr:icontains('"+search_text+"')").hide(); 
 		}
 	}
 	$('#filter_count').html('Showing ' + $("#experiment_table_body tr:visible").length + ' of ' + $("#experiment_table_body tr").length + ' genomes');

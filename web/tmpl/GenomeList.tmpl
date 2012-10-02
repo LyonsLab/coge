@@ -18,6 +18,14 @@ $(document).ready(function(){
 	});
 */
 
+	// Create new case-insensitive "contains" selector function in jQuery
+	jQuery.expr[":"].icontains = jQuery.expr.createPseudo(function(arg) {
+	    return function( elem ) {
+	        return jQuery(elem).text().toUpperCase().indexOf(arg.toUpperCase()) >= 0;
+	    };
+	});
+
+	// Setup filter input
 	$("#search_bar").keyup( function() { filter_rows( $(this).val() ); });
 	$('#search_type').mouseup( function() { filter_rows( $('#search_bar').val() ); });
 	filter_rows();
@@ -81,8 +89,8 @@ $(function() {
 	  if(!search_text) { $("#genome_table_body tr:hidden").show(0);}
 	  else if (search_text.length >= 3) {
 	    $("#genome_table_body tr:hidden").show(0);
-	    if( $('#search_type').val() == 1 ) { $("#genome_table_body tr:not(:contains('"+search_text+"'))").hide(); }
-	    else { $("#genome_table_body tr:contains('"+search_text+"')").hide(); }
+	    if( $('#search_type').val() == 1 ) { $("#genome_table_body tr:not(:icontains('"+search_text+"'))").hide(); }
+	    else { $("#genome_table_body tr:icontains('"+search_text+"')").hide(); }
 	  }
 	  
 	  $('#filter_count').html('Showing ' + $("#genome_table_body tr:visible").length + ' of ' + $("#genome_table_body tr").length + ' genomes');

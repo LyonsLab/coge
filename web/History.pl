@@ -51,6 +51,7 @@ $USER = undef;
 %FUNCTION = (
 	gen_html => \&gen_html,
 	get_history_for_user => \&get_history_for_user,
+	toggle_star => \&toggle_star,
 );
 
 dispatch();
@@ -107,12 +108,15 @@ sub get_history_for_user
 {
 	my %opts = @_;
 	my $time_range = $opts{time_range}; # in hours
-	$time_range = 24 if (not defined $time_range or $time_range =~ /\D/);
+	$time_range = 24 if (not defined $time_range or $time_range !~ /[-\d]/);
 	
 	my @entries;
 	if ( $USER->is_admin ) {
-		if (not $time_range) {
+		if ($time_range == 0) {
 			@entries = $coge->resultset('Log')->all;
+		}
+		elsif ($time_range == -1) {
+			@entries = $coge->resultset('Log')->search({status => 1});
 		}
 		else {
 			@entries = $coge->resultset('Log')->search_literal( 'time >= DATE_SUB(NOW(), INTERVAL ? HOUR)', ($time_range) );
@@ -122,6 +126,9 @@ sub get_history_for_user
 		if (not $time_range) {
 			@entries = $coge->resultset('Log')->search( { user_id => $USER->id } );
 		}
+		elsif ($time_range == -1) {
+			@entries = $coge->resultset('Log')->search({ user_id => $USER->id, status => 1});
+		}
 		else {
 			@entries = $coge->resultset('Log')->search_literal( 'user_id = ? AND time >= DATE_SUB(NOW(), INTERVAL ? HOUR)', ($USER->id, $time_range) );
 		}
@@ -130,6 +137,10 @@ sub get_history_for_user
 	my @rows;	
 	foreach my $entry (reverse @entries) {
 		my %row;
+		$row{STAR_ID} = $entry->id;
+		$row{STAR} = $entry->status == 0 ? 
+						'<img class="link" src="picts/star-hollow.png">' :
+						'<img class="link" src="picts/star-full.png">';
 		$row{TIME} = $entry->time;
 		$row{USER} = ($entry->user ? $entry->user->name : '');
 		$row{PAGE} = $entry->page;
@@ -143,4 +154,23 @@ sub get_history_for_user
 	$template->param( HISTORY_LOOP => \@rows );
 
 	return $template->output;
+}
+
+sub toggle_star 
+{
+	my %opts = @_;
+	my $log_id = $opts{log_id};
+	my $entry = $coge->resultset('Log')->find($log_id);
+	return '' unless $entry;
+	
+	my $status = $entry->status;
+	$entry->status(not $status);
+	$entry->update();
+	
+	if ($status == 1) {
+		return '<img class="link" src="picts/star-hollow.png">';
+	}
+	else {
+		return '<img class="link" src="picts/star-full.png">';
+	}
 }
