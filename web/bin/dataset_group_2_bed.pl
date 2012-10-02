@@ -30,7 +30,7 @@ my $DBUSER = $P->{DBUSER};
 my $DBPASS = $P->{DBPASS};
 my $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
 my $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
-my $dsg = $coge->resultset('DatasetGroup')->find($dsgid);
+my $dsg = $coge->resultset('Genome')->find($dsgid);
 foreach my $ds ($dsg->datasets)
   {
     my $rs = $coge->resultset('Feature');
