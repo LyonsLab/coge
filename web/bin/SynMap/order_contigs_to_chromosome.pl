@@ -11,7 +11,7 @@ use CoGe::Accessory::SynMap_report;
 use IO::Compress::Gzip;
 use File::Path;
 
-use vars qw($synfile $coge $DEBUG $join $FORM $P $GZIP $GUNZIP $TAR $conffile $link $TEMPDIR);
+use vars qw($synfile $coge $DEBUG $join $FORM $P $GZIP $GUNZIP $TAR $conffile $link $TEMPDIR $PAGE_NAME $COOKIE_NAME $USER);
 
 GetOptions (
 	    "debug"=>\$DEBUG,
@@ -21,6 +21,10 @@ GetOptions (
 	    "link|l=s"=>\$link,
 	   );
 $FORM = new CGI;
+
+$PAGE_NAME = "order_contigs_to_chromosome.pl";
+
+
 $synfile = $FORM->param('f') if $FORM->param('f');
 $conffile = $FORM->param('cf') if $FORM->param('cf');
 $link = $FORM->param('l') if $FORM->param('l');
@@ -33,6 +37,7 @@ $GUNZIP = $P->{GUNZIP};
 $TAR = $P->{TAR};
 $TEMPDIR = $P->{TEMPDIR}."order_contigs";
 
+
 my $DBNAME = $P->{DBNAME};
 my $DBHOST = $P->{DBHOST};
 my $DBPORT = $P->{DBPORT};
@@ -40,6 +45,23 @@ my $DBUSER = $P->{DBUSER};
 my $DBPASS = $P->{DBPASS};
 my $connstr = "dbi:mysql:dbname=".$DBNAME.";host=".$DBHOST.";port=".$DBPORT;
 $coge = CoGeX->connect($connstr, $DBUSER, $DBPASS );
+
+$COOKIE_NAME = $P->{COOKIE_NAME};
+
+my ($cas_ticket) =$FORM->param('ticket');
+$USER = undef;
+($USER) = CoGe::Accessory::Web->login_cas(cookie_name=>$COOKIE_NAME, ticket=>$cas_ticket, coge=>$coge, this_url=>$FORM->url()) if($cas_ticket);
+($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
+
+
+my $link = $P->{SERVER}."bin/SynMap/".$PAGE_NAME."?";
+if ($synfile)
+  {
+    $link .= "f=".$synfile;
+    $link .= ";cf=".$conffile;
+  }
+ $link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, page => $PAGE_NAME, url => $link );
+
 
 my $synmap_report = new CoGe::Accessory::SynMap_report;
 $synfile = gunzip($synfile);
