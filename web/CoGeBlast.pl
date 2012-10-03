@@ -521,7 +521,6 @@ sub blast_search {
 
 	my $link = $P->{SERVER}.$PAGE_NAME."?dsgid=$blastable";
 	$link .= ";fid=$fid" if ($fid);
-	print STDERR "matt: $link\n";
 	$link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, page => $PAGE_NAME, url => $link );
 
 	$width = 400 unless $width =~ /^\d+$/; #something wrong with how width is calculated in tmpl file

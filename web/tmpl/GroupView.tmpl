@@ -250,6 +250,9 @@ function get_list_preview (opts) {
 				},
 				success : 
 					function(data) {
+						var width = $("#group_delete_box").dialog("option", "width");
+						$("#select_list_items").width(width/2-30);
+						$('#list_preview').width(width/2-30);
 						$('#list_preview').html(data);
 						$('#list_preview').fadeIn('fast');
 					}
@@ -259,7 +262,7 @@ function get_list_preview (opts) {
 }
 
 function wait_to_search (search_func, ugid, search_term) {
-	if (search_term && search_term.length > 2) {
+	if (!search_term || search_term.length > 2) {
 		pageObj.search_term = search_term;
 		pageObj.ugid = ugid;
 			
@@ -268,20 +271,36 @@ function wait_to_search (search_func, ugid, search_term) {
 		}
 		
 		// FIXME: could generalize by passing select id instead of separate search_* functions
-		pageObj.time = setTimeout(function() { search_func(pageObj.ugid, pageObj.search_term); }, 500);
+		pageObj.time = setTimeout(
+			function() { 
+				search_func(pageObj.ugid, pageObj.search_term); 
+			}, 
+			500
+		);
 	}
 }
 
 function search_lists (ugid, search_term) {
+	$("#wait_list").animate({opacity:1});
+	$("#select_list_items").html("<option disabled='disabled'>Searching...</option>");
 	$.ajax({
 		data: {
 			jquery_ajax: 1,
 			fname: 'search_lists',
 			ugid: ugid,
 			search_term: search_term,
+			timestamp: new Date().getTime()
 		},
 		success : function(val) {
-			$("#select_list_items").html(val);
+			var items = jQuery.parseJSON(val);
+			if (!pageObj.timestamp_lists || items.timestamp > pageObj.timestamp_lists) {
+				pageObj.timestamp_lists = items.timestamp;
+				$('#list_preview').hide();
+				$("#select_list_items").html(items.html);
+				var width = $("#group_delete_box").dialog("option", "width");
+				$("#select_list_items").width(width-40);
+				$("#wait_list").animate({opacity:0});
+			}
 		},
 	});
 }
@@ -397,21 +416,24 @@ Are you sure you want to permanently delete this group?<p>
 
 
 <TMPL_IF NAME=ADD_LISTS>
+<SCRIPT language="JavaScript">
+search_lists(<TMPL_VAR NAME=UGID>, '');
+</SCRIPT>
 <table class="small">
  <tr>
   <td colspan='2'>Search: <input type="textbox" size="53" id="edit_list_search" onkeyup="wait_to_search(search_lists, <TMPL_VAR NAME=UGID>, this.value);"><span class='ui-button ui-corner-all' onclick="search_lists(<TMPL_VAR NAME=LID>, $('#edit_list_search').attr('value'));"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span></td>
  </tr>
  <tr>
   <td valign='top'>
-   <select multiple id="select_list_items" size="10" style="max-width: 220px;" onClick="get_list_preview();">
+   <select multiple id="select_list_items" size="10" style='width:460px;height:138px;' onClick="get_list_preview();">
    </select>
   </td>
   <td valign='top'>
-   <div id="list_preview" style="display: none; width: 230px; height: 131; color: Gray; border: 1px solid LightGray; padding: 1px 4px 4px 4px; font-family: Arial, Helvetica, sans-serif; font-size: 0.8em;"></div>
+   <div id="list_preview" style="display:none;color:Gray;height:131px;border:1px solid LightGray;padding: 1px 4px 4px 4px;font-family:Arial, Helvetica, sans-serif;font-size:0.8em;"></div>
   </td>
  </tr>
  <tr>
-  <td colspan='2'><i>Hold down SHIFT or CTRL key to select multiple items</i></td>
+  <td colspan='2' style='color:gray;'><i>Hold down SHIFT or CTRL key to select multiple items</i></td>
  </tr>
 </table>
 <span href="javascript:void(0)" onClick="add_lists_to_group({ugid: '<TMPL_VAR NAME=UGID>'});" class='ui-button ui-button-go ui-corner-all'>Add Selected Items</span>

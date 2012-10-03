@@ -52,6 +52,7 @@ $USER = undef;
 	gen_html => \&gen_html,
 	get_history_for_user => \&get_history_for_user,
 	toggle_star => \&toggle_star,
+	update_comment => \&update_comment,
 );
 
 dispatch();
@@ -116,7 +117,10 @@ sub get_history_for_user
 			@entries = $coge->resultset('Log')->all;
 		}
 		elsif ($time_range == -1) {
-			@entries = $coge->resultset('Log')->search({status => 1});
+			@entries = $coge->resultset('Log')->search( { status => 1 } );
+		}
+		elsif ($time_range == -2) {
+			@entries = $coge->resultset('Log')->search( { comment => { '!=', '' }} );
 		}
 		else {
 			@entries = $coge->resultset('Log')->search_literal( 'time >= DATE_SUB(NOW(), INTERVAL ? HOUR)', ($time_range) );
@@ -129,6 +133,9 @@ sub get_history_for_user
 		elsif ($time_range == -1) {
 			@entries = $coge->resultset('Log')->search({ user_id => $USER->id, status => 1});
 		}
+		elsif ($time_range == -2) {
+			@entries = $coge->resultset('Log')->search( { user_id => $USER->id, comment => { '!=', '' }} );
+		}
 		else {
 			@entries = $coge->resultset('Log')->search_literal( 'user_id = ? AND time >= DATE_SUB(NOW(), INTERVAL ? HOUR)', ($USER->id, $time_range) );
 		}
@@ -137,15 +144,14 @@ sub get_history_for_user
 	my @rows;	
 	foreach my $entry (reverse @entries) {
 		my %row;
-		$row{STAR_ID} = $entry->id;
-		$row{STAR} = $entry->status == 0 ? 
-						'<img class="link" src="picts/star-hollow.png">' :
-						'<img class="link" src="picts/star-full.png">';
+		$row{LOG_ID} = $entry->id;
+		$row{STAR_ICON} = $entry->status == 0 ? 'picts/star-hollow.png' : 'picts/star-full.png';
 		$row{TIME} = $entry->time;
 		$row{USER} = ($entry->user ? $entry->user->name : '');
 		$row{PAGE} = $entry->page;
 		$row{DESCRIPTION} = $entry->description;
 		$row{LINK} = '<a href="' . $entry->link . '" target="_blank">' . $entry->link . '</a>' if ($entry->link);
+		$row{COMMENT} = $entry->comment;
 		push @rows, \%row;
 	}
 	
@@ -160,6 +166,7 @@ sub toggle_star
 {
 	my %opts = @_;
 	my $log_id = $opts{log_id};
+	
 	my $entry = $coge->resultset('Log')->find($log_id);
 	return '' unless $entry;
 	
@@ -167,10 +174,19 @@ sub toggle_star
 	$entry->status(not $status);
 	$entry->update();
 	
-	if ($status == 1) {
-		return '<img class="link" src="picts/star-hollow.png">';
-	}
-	else {
-		return '<img class="link" src="picts/star-full.png">';
-	}
+	return not $status;
+}
+
+sub update_comment
+{
+	my %opts = @_;
+	my $log_id = $opts{log_id};
+	my $comment = $opts{comment};
+#	print STDERR "$log_id $comment\n";
+
+	my $entry = $coge->resultset('Log')->find($log_id);
+	return unless $entry;
+	
+	$entry->comment($comment);
+	$entry->update();
 }

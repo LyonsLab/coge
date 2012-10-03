@@ -429,63 +429,55 @@ sub get_list_contents {
 		
 	my $user_can_edit = $USER->is_admin || (!$list->locked && $USER->is_owner_editor(list => $lid));
 	
-	my $anno_obj = new CoGe::Accessory::Annotation( Type => 'anno' );
-	$anno_obj->Val_delimit("\n");
-	$anno_obj->Add_type(0);
-	$anno_obj->String_end("\n");
-	
-	# FIXME: if objects had a common superclass these three loops could be combined into one
+	my $html;
+	my $first = 1;
+	$html = '<table id="list_contents_table" class="small ui-widget-content ui-corner-all"><thead style="display:none"></thead><tbody>';
 	foreach my $genome ( sort genomecmp $list->genomes ) {
-		my $anno_type = new CoGe::Accessory::Annotation( Type => "<tr valign='top'><td nowrap='true'><span class=\"title5\">" . "Genomes" . "</span>" );
-		$anno_type->Type_delimit(": <td class=\"data5\">");
-		$anno_type->Val_delimit("<br>");
+		$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' nowrap='true' rowspan=" . @{$list->genomes} . " style='font-weight:normal;background-color:white'>Genomes:</th>" : '');
 		my $gid = $genome->id;
-		my $genome_info = $genome->info;
-		#FIXME hardcoded value for item_type below
-		$genome_info = qq{<span id='genome$gid' class='link' onclick="window.open('OrganismView.pl?dsgid=$gid')">} . $genome_info . ($user_can_edit ? "</span><span onClick=\"\$('#genome'+$gid).css('text-decoration', 'line-through'); remove_list_item({lid: '$lid', item_type: '2', item_id: '$gid'});\" class=\"link ui-icon ui-icon-trash\">" : '') . "</span>";
-		$anno_type->add_Annot($genome_info);
-		$anno_obj->add_Annot($anno_type);
+		$html .= qq{<td class='data5'><span id='genome$gid' class='link' onclick="window.open('OrganismView.pl?dsgid=$gid')">} . $genome->info . "</span></td>";
+		if ($user_can_edit) {
+			#FIXME hardcoded value for item_type
+			$html .= "<td><span onClick=\"\$('#genome'+$gid).css('text-decoration', 'line-through'); remove_list_item({lid: '$lid', item_type: '2', item_id: '$gid'});\" class='link ui-icon ui-icon-trash'></span></td>";
+		}
 	}
+	$first = 1;
 	foreach my $experiment (sort experimentcmp $list->experiments ) {
-		my $anno_type = new CoGe::Accessory::Annotation( Type => "<tr valign='top'><td nowrap='true'><span class=\"title5\">" . "Experiments" . "</span>" );
-		$anno_type->Type_delimit(": <td class=\"data5\">");
-		$anno_type->Val_delimit("<br>");
-		my $expid = $experiment->id;
-		my $experiment_info = $experiment->info;
-		#FIXME hardcoded value for item_type below
-		$experiment_info = qq{<span id='experiment$expid' class='link' onclick="window.open('ExperimentView.pl?eid=$expid')">} . $experiment_info . ($user_can_edit ? "</span><span onClick=\"\$('#experiment'+$expid).css('text-decoration', 'line-through'); remove_list_item({lid: '$lid', item_type: '3', item_id: '$expid'});\" class=\"link ui-icon ui-icon-trash\">" : '') . "</span>";
-		$anno_type->add_Annot($experiment_info);
-		$anno_obj->add_Annot($anno_type);
+		$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' nowrap='true' rowspan=" . @{$list->experiments} . " style='font-weight:normal;background-color:white'>Experiments:</th>" : '');
+		my $eid = $experiment->id;
+		$html .= qq{<td class='data5'><span id='experiment$eid' class='link' onclick="window.open('ExperimentView.pl?eid=$eid')">} . $experiment->info . "</span></td>";
+		if ($user_can_edit) {
+			#FIXME hardcoded value for item_type
+			$html .= "<td><span onClick=\"\$('#experiment'+$eid).css('text-decoration', 'line-through'); remove_list_item({lid: '$lid', item_type: '3', item_id: '$eid'});\" class='link ui-icon ui-icon-trash'></span></td>";
+		}		
 	}
-	foreach my $feat ( sort featurecmp $list->features ) {
-		my $anno_type = new CoGe::Accessory::Annotation( Type => "<tr valign='top'><td nowrap='true'><span class=\"title5\">" . "Features" . "</span>" );
-		$anno_type->Type_delimit(": <td class=\"data5\">");
-		$anno_type->Val_delimit("<br>");
-		my $fid = $feat->id;
-		my ($feat_info) = $feat->info;
-		#FIXME hardcoded value for item_type below
-		$feat_info = qq{<span id='feature$fid' class='link' onclick="window.open('FeatView.pl?fid=$fid')">} . $feat_info . ($user_can_edit ? "</span><span onClick=\"\$('#feature'+$fid).css('text-decoration', 'line-through'); remove_list_item({lid: '$lid', item_type: '4', item_id: '$fid'});\" class=\"link ui-icon ui-icon-trash\">" : '') . "</span>";
-		$anno_type->add_Annot($feat_info);
-		$anno_obj->add_Annot($anno_type);
+	$first = 1;
+	foreach my $feature (sort featurecmp $list->features ) {
+		$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' nowrap='true' rowspan=" . @{$list->features} . " style='font-weight:normal;background-color:white'>Features:</th>" : '');
+		my $fid = $feature->id;
+		$html .= qq{<td class='data5'><span id='feature$fid' class='link' onclick="window.open('FeatView.pl?fid=$fid')">} . $feature->info . "</span></td>";
+		if ($user_can_edit) {
+			#FIXME hardcoded value for item_type
+			$html .= "<td><span onClick=\"\$('#feature'+$fid).css('text-decoration', 'line-through'); remove_list_item({lid: '$lid', item_type: '4', item_id: '$fid'});\" class='link ui-icon ui-icon-trash'></span></td>";
+		}		
 	}
-	foreach my $list ( sort listcmp $list->lists ) {
-		my $anno_type = new CoGe::Accessory::Annotation( Type => "<tr valign='top'><td nowrap='true'><span class=\"title5\">" . "Lists" . "</span>" );
-		$anno_type->Type_delimit(": <td class=\"data5\">");
-		$anno_type->Val_delimit("<br>");
-		my $child_lid = $list->id;
-		my ($list_info) = $list->info;
-		#FIXME hardcoded value for item_type below
-		$list_info = qq{<span id='list$child_lid' class='link' onclick="window.open('ListView.pl?lid=$child_lid')">} . $list_info . ($user_can_edit ? "</span><span onClick=\"\$('#list'+$child_lid).css('text-decoration', 'line-through'); remove_list_item({lid: '$lid', item_type: '1', item_id: '$child_lid'});\" class=\"link ui-icon ui-icon-trash\">" : '') . "</span>";
-		$anno_type->add_Annot($list_info);
-		$anno_obj->add_Annot($anno_type);
-	}	
-	
-	my $html = "<table cellpadding=0 class='ui-widget-content ui-corner-all small'>" . $anno_obj->to_String . "</table>";
+	$first = 1;
+	foreach my $list (sort listcmp $list->lists ) {
+		$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' nowrap='true' rowspan=" . @{$list->lists} . " style='font-weight:normal;background-color:white'>Lists:</th>" : '');
+		my $child_id = $list->id;
+		$html .= qq{<td class='data5'><span id='list$child_id' class='link' onclick="window.open('ListView.pl?lid=$child_id')">} . $list->info . "</span></td>";
+		if ($user_can_edit) {
+			#FIXME hardcoded value for item_type
+			$html .= "<td><span onClick=\"\$('#list'+$child_id).css('text-decoration', 'line-through'); remove_list_item({lid: '$lid', item_type: '1', item_id: '$child_id'});\" class='link ui-icon ui-icon-trash'></span></td>";
+		}		
+	}		
 
+	$html .= '</tbody></table>';
+	
 	if ($user_can_edit) {
 		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-button-icon-left ui-corner-all' onClick="add_list_items({lid: $lid});"><span class="ui-icon ui-icon-plus"></span>Add Items</span>};
 	}
-
+	
 	return 'List Contents:<br>' . $html;
 }
 
@@ -768,9 +760,9 @@ sub search_features {
 
 sub search_lists { # list of lists
 	my %opts = @_;
-	my $lid = $opts{lid};
-	my $search_term = $opts{search_term};
-	my $timestamp = $opts{timestamp};
+	my $lid 		= $opts{lid};
+	my $search_term	= $opts{search_term};
+	my $timestamp	= $opts{timestamp};
 #	print STDERR "$lid $search_term $timestamp\n";
 	return 0 unless $lid;
 	

@@ -17,7 +17,8 @@ no warnings 'redefine';
 
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME 
 			$TEMPDIR $USER $DATE $BASEFILE $coge $cogeweb %FUNCTION 
-			$COOKIE_NAME $FORM $URL $COGEDIR $TEMPDIR $TEMPURL);
+			$COOKIE_NAME $FORM $URL $COGEDIR $TEMPDIR $TEMPURL 
+			$MAX_SEARCH_RESULTS);
 $P = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
 
 $DATE = sprintf(
@@ -27,6 +28,8 @@ $DATE = sprintf(
 $PAGE_NAME = 'GroupView.pl';
 
 $FORM = new CGI;
+
+$MAX_SEARCH_RESULTS = 1000;
 
 $DBNAME  = $P->{DBNAME};
 $DBHOST  = $P->{DBHOST};
@@ -356,31 +359,53 @@ sub remove_list_from_group {
 
 sub search_lists { 
 	my %opts = @_;
-	my $ugid = $opts{ugid};
-	my $search_term = $opts{search_term};
-#	print STDERR "$ugid $search_term\n";
+	my $ugid 		= $opts{ugid};
+	my $search_term	= $opts{search_term};
+	my $timestamp 	= $opts{timestamp};
+#	print STDERR "$ugid $search_term $timestamp\n";
 	return 0 unless $ugid;
-	return '' unless $search_term;
 	
 	$search_term = '%'.$search_term.'%';
 	
+	# Get lists already in this group
 	my $group = $coge->resultset('UserGroup')->find($ugid);
 	my %exists;
 	map { $exists{$_->id}++ } $group->lists;
 	
+	my @lists;
+	my $num_results;
 	my $group_str = join(',', map { $_->id } $USER->groups);
 	
-	my @lists;
-	
-	if ($USER->is_admin) {
-		@lists = $coge->resultset("List")->search(
-			\[ 'name LIKE ? OR description LIKE ?', 
-			['name', $search_term ], ['description', $search_term] ]);		
+	# Try to get all items if blank search term
+	if (not $search_term) {
+		# Get all lists
+		my $sql = "locked=0 AND (restricted=0 OR user_group_id IN ( $group_str ))";
+		$num_results = $coge->resultset("List")->count_literal($sql);
+		if ($num_results < $MAX_SEARCH_RESULTS) {
+			@lists = $coge->resultset("List")->search_literal($sql);
+		}
 	}
-	else {
-		@lists = $coge->resultset("List")->search_literal("locked=0 AND (restricted=0 OR user_group_id IN ( $group_str )) AND (name LIKE '$search_term' OR description LIKE '$search_term')");
+	# Perform search
+	else {	
+		if ($USER->is_admin) {
+			@lists = $coge->resultset("List")->search(
+				\[ 'name LIKE ? OR description LIKE ?', 
+				['name', $search_term ], ['description', $search_term] ]);		
+		}
+		else {
+			@lists = $coge->resultset("List")->search_literal("locked=0 AND (restricted=0 OR user_group_id IN ( $group_str )) AND (name LIKE '$search_term' OR description LIKE '$search_term')");
+		}
+	}
+
+	# Limit number of results display
+	if ($num_results > $MAX_SEARCH_RESULTS) {
+		return encode_json({
+					timestamp => $timestamp,
+					html => "<option disabled='disabled'>$num_results results, please refine your search.</option>"
+		});
 	}
 	
+	# Build select items out of results	
 	my $html = '';
 	foreach my $l (sort listcmp @lists) {
 		my $disable = $exists{$l->id} ? "disabled='disabled'" : '';
@@ -389,7 +414,7 @@ sub search_lists {
 		$html .= "<option $disable value='$item_spec'>" . $l->info . "</option><br>\n";	
 	}
 	
-	return $html;
+	return encode_json({timestamp => $timestamp, html => $html});
 }
 
 # FIXME mdb 8/29/12 - this routine is redundantly declared (e.g. ListView.pl)

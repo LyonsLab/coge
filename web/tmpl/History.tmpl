@@ -26,7 +26,52 @@ $(document).ready(function() {
 	$("#search_bar").keyup( function() { filter_rows( $(this).val() ); });
 	$('#search_type').mouseup( function() { filter_rows( $('#search_bar').val() ); });
 	filter_rows();
+	
+	// Reset dropdown default value
+	$('#time_range option:contains(24)').attr('selected', 'selected');
 });
+
+function toggle_star(img) {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'toggle_star',
+			log_id: img.id,
+		},
+		success :  function(val) {
+			if (val == 0) { $(img).attr({src:"picts/star-hollow.png"}); }
+			else { $(img).attr({src:"picts/star-full.png"}); }
+		}
+	});
+}
+
+function edit_comment(td) {
+	var width = $(td).width();
+	$(td).find('span').hide();
+	$(td).find('input').width(width);
+	$(td).find('input').show();
+	$(td).find('input').focus();
+}
+
+function update_comment(td) {
+	var old_comment = $(td).find('span').html();
+	var new_comment = $(td).find('input').val();
+	
+	if (new_comment != old_comment) {
+		$.ajax({
+			data: {
+				jquery_ajax: 1,
+				fname: 'update_comment',
+				log_id: td.id,
+				comment: new_comment
+			},
+		});
+	}
+	
+	$(td).find('input').hide();
+	$(td).find('span').html(new_comment);
+	$(td).find('span').show();
+}
 
 function set_table () {
 	$('#history_table').tablesorter({widgets: ['zebra']});
@@ -70,28 +115,17 @@ function run_get_history() {
 	});
 }
 
-function toggle_star(td_id, log_id) {
-	$.ajax({
-		data: {
-			jquery_ajax: 1,
-			fname: 'toggle_star',
-			log_id: log_id,
-		},
-		success :  function(val) {
-			$('#'+td_id).html(val);
-		}
-	});
-}
 </SCRIPT>
 
 
 
 <div class="small" style="padding-top:15px;padding-bottom:5px;">
  <span style="padding-right:10px">
-  Time Range: 
+  Show: 
   <select id="time_range" onchange="run_get_history();">
    <option value="0">All</option>
    <option value="-1">Starred</option>
+   <option value="-2">Comments</option>
    <option value="1">Last hour</option>
    <option value="12">Last 12 hrs</option>
    <option selected='selected' value="24">Last 24 hrs</option>
@@ -120,6 +154,31 @@ function toggle_star(td_id, log_id) {
 
 
 <TMPL_IF NAME=HISTORY>
+<SCRIPT language="JavaScript">
+$(document).ready(function() {
+	$('img.star').click(
+		function() {
+			toggle_star(this);
+		}
+	);
+	$('td.comment').click(
+		function() {
+			edit_comment(this);
+		}
+	);
+	$('td.comment').focusout(
+		function() {
+			update_comment(this);
+		}
+	);
+	$('td input').bind('keypress', function(e) {
+		if (e.keyCode==13) {
+			update_comment(this);
+			$(this).blur();
+		}
+	});
+});
+</SCRIPT>
 <div id='history'>
 <table id='history_table' class="small ui-widget-content ui-corner-all">
  <thead align="left"> 
@@ -130,19 +189,22 @@ function toggle_star(td_id, log_id) {
    <th>Page</th>
    <th>Description</th>
    <th>Link</th>
-   <th>Comments</th>
+   <th>Comments <span style='color:gray;'>(click to edit)</span></th>
   </tr>
  </thead>
  <tbody id='history_table_body' align="left" valign="top" class="small">
   <TMPL_LOOP NAME=HISTORY_LOOP>
   <tr valign="top">
-   <td id='star_<TMPL_VAR NAME=STAR_ID>' onclick='toggle_star(this.id, <TMPL_VAR NAME=STAR_ID>);' align='center'><TMPL_VAR NAME=STAR></td>
+   <td align='center'><img id='<TMPL_VAR NAME=LOG_ID>' class='link star' src='<TMPL_VAR NAME=STAR_ICON>'></td>
    <td><TMPL_VAR NAME=TIME></td>
    <td><TMPL_VAR NAME=USER></td>
    <td><TMPL_VAR NAME=PAGE></td>
    <td><TMPL_VAR NAME=DESCRIPTION></td>
    <td><TMPL_VAR NAME=LINK></td>
-   <td onclick='alert("hi");'><TMPL_VAR NAME=COMMENT></td>
+   <td id='<TMPL_VAR NAME=LOG_ID>' style='cursor:text' class='comment'>
+    <input type='text' style='display:none;font-size:0.9em;font-style:italic;' maxlength='255' value='<TMPL_VAR NAME=COMMENT>'>
+    <span style='font-style:italic;color:gray;'><TMPL_VAR NAME=COMMENT></span>
+   </td>
   </tr>
   </TMPL_LOOP>
  </tbody>
