@@ -125,9 +125,9 @@ Are you sure you want to permanently delete this list?<p>
 $(document).ready(function(){
 	// Create new case-insensitive "contains" selector function in jQuery
 	jQuery.expr[":"].icontains = jQuery.expr.createPseudo(function(arg) {
-	    return function( elem ) {
-	        return jQuery(elem).text().toUpperCase().indexOf(arg.toUpperCase()) >= 0;
-	    };
+		return function( elem ) {
+			return jQuery(elem).text().toUpperCase().indexOf(arg.toUpperCase()) >= 0;
+		};
 	});
 
 	// Setup filter input
