@@ -232,11 +232,15 @@ sql('drop table if exists log');
 sql(<<SQL);
 create table log
 (
-	time timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	log_id int(11) NOT NULL AUTO_INCREMENT,
+	time timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     user_id int(11) NOT NULL DEFAULT 0,
     page varchar(255) NOT NULL,
     description varchar(255) DEFAULT NULL,
     link varchar(255) DEFAULT NULL,
+    status int(1) DEFAULT 0,
+    comment varchar(255) DEFAULT NULL,
+    PRIMARY (log_id),
     INDEX (user_id)
 );
 SQL

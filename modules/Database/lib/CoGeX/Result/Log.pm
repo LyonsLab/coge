@@ -19,6 +19,8 @@ __PACKAGE__->table("log");
 =cut
 
 __PACKAGE__->add_columns(
+	"log_id",
+	{ data_type => "INT", default_value => undef, is_nullable => 0, size => 11 },	
 	"time",
 	{ data_type => "TIMESTAMP", default_value => undef, is_nullable => 0 },
 	"user_id",
@@ -31,7 +33,13 @@ __PACKAGE__->add_columns(
 	{ data_type => "VARCHAR", default_value => undef, is_nullable => 1, size => 255 },
 	"link",
 	{ data_type => "VARCHAR", default_value => undef, is_nullable => 1, size => 255 },
+	"status",
+	{ data_type => "INT", default_value => 0, is_nullable => 0, size => 1 },	
+	"comment",
+	{ data_type => "VARCHAR", default_value => undef, is_nullable => 1, size => 255 },	
 );
+__PACKAGE__->set_primary_key("log_id");
+
 __PACKAGE__->belongs_to('user' => "CoGeX::Result::User", 'user_id');
 
 
