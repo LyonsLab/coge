@@ -16,7 +16,13 @@ $(document).ready(function(){
 	$(".dialog_box").dialog({autoOpen: 0, width: 600});
 });
 
-function set_table () {	 $('#source_table').tablesorter({widgets: ['zebra']});	 }
+function set_table () {	 
+	$('#source_table').tablesorter({widgets: ['zebra']});
+}
+
+function input_focus(div_id) {
+	$('#'+div_id).val("").css({fontStyle: "normal"});
+}
 
 function run_get_sources(opts){
 	if (!opts) { opts={}; }
@@ -134,21 +140,6 @@ function update_source_info (opts){
  <TMPL_VAR NAME=SOURCE_INFO>
 </div>
 
-<TMPL_IF NAME=BUTTONS>
-<div>
- <table>
- <tr>
-  <td>Source Name:</td>
-  <td><input type="textbox" size=8 name="name" id="name"></td>
-  <td>Description:</td>
-  <td><input type="textbox" size=16 name="desc" id="desc"></td>
-  <td>Link:</td>
-  <td><input type="textbox" size=16 name="link" id="link"></td>
-  <td><span id="create_source" style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="create_source()">Create new source</span></td>
- </table>
-</div>
-</TMPL_IF> <!-- BUTTONS -->
-
 <div id='admin_stuff'></div>
 
 <div id="source_info_edit_box" class="dialog_box"></div>
@@ -184,6 +175,22 @@ function update_source_info (opts){
    </TMPL_IF>
   </TMPL_LOOP>
  </tbody>
+ <TMPL_IF BUTTONS>
+ <tfoot>
+  <tr>
+   <td id='create_source_hidden' colspan='9' height='26'>
+    <span style="font-size: 1em" class='ui-button ui-button-go ui-corner-all' onClick="$('#create_source_hidden').hide(); $('#create_source_shown').fadeIn('fast');">Create new source</span>
+   </td>
+  </tr>
+  <tr id='create_source_shown' style="display:none;">
+   <td></td>
+   <td><input type="textbox" size="16" name="name" id="name" value='Name' style="font-style:italic;color:gray;" onFocus="input_focus('name')"></td>
+   <td><input type="textbox" size="40" name="desc" id="desc" value='Description' style="font-style:italic;color:gray;" onFocus="input_focus('desc')"></td>
+   <td><input type="textbox" size="40" name="link" id="link" value='Link' style="font-style:italic;color:gray;" onFocus="input_focus('link')"></td>
+   <td colspan='10'><span style="font-size: 1em" class='ui-button ui-button-go ui-corner-all' onClick="create_source()">Add</span></td>
+  </tr>
+ </tfoot>
+ </TMPL_IF> <!-- BUTTONS -->
 </TABLE>
 </TMPL_IF> <!-- SOURCE_TABLE -->
 
