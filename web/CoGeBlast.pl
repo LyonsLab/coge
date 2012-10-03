@@ -521,7 +521,7 @@ sub blast_search {
 
 	my $link = $P->{SERVER}.$PAGE_NAME."?dsgid=$blastable";
 	$link .= ";fid=$fid" if ($fid);
-	$link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, page => $PAGE_NAME, url => $link );
+	$link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, page => $PAGE_NAME, url => $link );	
 
 	$width = 400 unless $width =~ /^\d+$/; #something wrong with how width is calculated in tmpl file
 	
@@ -540,7 +540,8 @@ sub blast_search {
 		$opts .= " M=" . $zmask          if defined $zmask;
 		$opts .= " O=" . $zgap_start     if defined $zgap_start;
 		$opts .= " E=" . $zgap_extension if defined $zgap_extension;
-		( my $tmp, $opts ) = CoGe::Accessory::Web::check_taint($opts);
+		my $tmp;
+		( $tmp, $opts ) = CoGe::Accessory::Web::check_taint($opts);
 	}
 	else {
 		my ( $nuc_penalty, $nuc_reward, $exist, $extent );
@@ -651,7 +652,7 @@ sub blast_search {
 		prog            => $program,
 		color_hsps      => $color_hsps,
 		query_seqs_info => $query_seqs_info,
-		link			=> $link
+		link		=> $link
 	);
 	my $t5              = new Benchmark;
 	my $init_time       = timestr( timediff( $t2, $t1 ) );
@@ -678,8 +679,7 @@ sub gen_results_page {
 	my $color_hsps      = $opts{color_hsps};
 	my $prog            = $opts{prog};
 	my $query_seqs_info = $opts{query_seqs_info};
-	my $link			= $opts{link};
-	
+	my $link            = $opts{link};
 	my $click_all_links;
 	my $null;
 	my %hsp_count;
@@ -695,9 +695,11 @@ sub gen_results_page {
 	my $t0 = new Benchmark;
 	my %query_hit_count;
 	foreach my $set (@$results) {
-		$hsp_count{ $set->{organism} } = 0 unless $hsp_count{ $set->{organism} };
+		$hsp_count{ $set->{organism} } = 0
+		  unless $hsp_count{ $set->{organism} };
 		if ( @{ $set->{report}->hsps() } ) {
-			foreach my $hsp ( sort { $a->number <=> $b->number } @{ $set->{report}->hsps() } )
+			foreach my $hsp ( sort { $a->number <=> $b->number }
+				@{ $set->{report}->hsps() } )
 			{
 				my $dsg = $set->{dsg};
 				my ($chr) = $hsp->subject_name =~ /\|(\S*)/;
@@ -725,7 +727,8 @@ sub gen_results_page {
 				}
 				$query_hit_count{$qname}{org}{$org}++;
 				$query_hit_count{$qname}{orig_name} = $hsp->query_name;
-				$query_hit_count{$qname}{color}     = $hsp->{color} if $hsp->{color};
+				$query_hit_count{$qname}{color}     = $hsp->{color}
+				  if $hsp->{color};
 				push @hsp,
 				  {
 					CHECKBOX => $id . "_" . $chr . "_" . $hsp->subject_start . "no",
@@ -797,7 +800,8 @@ sub gen_results_page {
 	my $total = 0;
 	map { $total += $_ } values %hsp_count;
 	$hsp_count .= "<span class=\"small\">Total Number of Hits: $total</span>";
-	$hsp_count .= "<span class=\"small alert\">All results are in the blast report.</span>" if $hsp_limit_flag;
+	$hsp_count .= "<span class=\"small alert\">All results are in the blast report.</span>"
+	  if $hsp_limit_flag;
 
 	$template->param( HSP_COUNT => $hsp_count );
 
@@ -833,10 +837,11 @@ sub gen_results_page {
 <span id='link_hidden' class='ui-button ui-corner-all ui-button-icon-right' onclick="\$('#link_hidden').hide(); \$('#link_shown').fadeIn();"><span class="ui-icon ui-icon-arrowreturnthick-1-w"></span>Link to this</span>
 <span id='link_shown' style='display:none;' class='small infobox'>Use this link to return to this page at any time: <span class='link' onclick=window.open('$link');><b>$link</b></span></span>
 </span>};
-	
+
 	my $box_template = HTML::Template->new( filename => $P->{TMPLDIR} . 'box.tmpl' );
 	$box_template->param( BOX_NAME => "CoGeBlast Results " . $temp );
 	$box_template->param( BODY     => $html );
+	my $outhtml     = $box_template->output;
 	my $t3          = new Benchmark;
 	my $table_time  = timestr( timediff( $t1, $t0 ) );
 	my $figure_time = timestr( timediff( $t2, $t1 ) );
@@ -847,7 +852,7 @@ Time to gen images:              $figure_time
 Time to gen results:             $render_time
 };
 	CoGe::Accessory::Web::write_log( $benchmark, $cogeweb->logfile );
-	return $box_template->output, $click_all_links;
+	return $outhtml, $click_all_links;
 }
 
 sub gen_data_file_summary {
@@ -856,27 +861,27 @@ sub gen_data_file_summary {
 	my $results = $opts{results};
 	my $html    = "<table><tr>";
 	$html .= qq{<td class = small valign="top">Data Download};
-	$html .= "<div class='xsmall'><span class='link' onClick=\"get_all_hsp_data();\">HSP Data</span></DIV>\n";
-	$html .= "<div class='xsmall'><span class='link' onClick=\"get_query_fasta();\">Query HSP FASTA File</span></DIV>\n";
+	$html .= "<div class=xsmall><span class='link' onClick=\"get_all_hsp_data();\">HSP Data</span></DIV>\n";
+	$html .= "<div class=xsmall><span class='link' onClick=\"get_query_fasta();\">Query HSP FASTA File</span></DIV>\n";
 	if ( $prog eq "tblastn" ) {
-		$html .= "<div class='xsmall'><span class='link' onClick=\"get_subject_fasta();\">Subject HSP Protein FASTA File</span></DIV>\n";
-		$html .= "<div class='xsmall'><span class='link' onClick=\"get_subject_fasta('dna');\">Subject HSP DNA FASTA File</span></DIV>\n";
+		$html .= "<div class=xsmall><span class='link' onClick=\"get_subject_fasta();\">Subject HSP Protein FASTA File</span></DIV>\n";
+		$html .= "<div class=xsmall><span class='link' onClick=\"get_subject_fasta('dna');\">Subject HSP DNA FASTA File</span></DIV>\n";
 	}
 	else {
-		$html .= "<div class='xsmall'><span class='link' onClick=\"get_subject_fasta();\">Subject HSP FASTA File</span></DIV>\n";
+		$html .= "<div class=xsmall><span class='link' onClick=\"get_subject_fasta();\">Subject HSP FASTA File</span></DIV>\n";
 	}
-	$html .= "<div class='xsmall'><span class='link' onClick=\"get_alignment_file();\">Alignment File</span></DIV>\n";
-	$html .= qq{<td class='small' valign="top">Analysis Files};
+	$html .= "<div class=xsmall><span class='link' onClick=\"get_alignment_file();\">Alignment File</span></DIV>\n";
+	$html .= qq{<td class = small valign="top">Analysis Files};
 	my $dbname = $TEMPURL . "/" . $cogeweb->basefilename . ".sqlite";
-	$html .= "<div class='xsmall'><A HREF=\"$dbname\" target=_new>SQLite DB file</A></DIV>\n";
+	$html .= "<div class=xsmall><A HREF=\"$dbname\" target=_new>SQLite DB file</A></DIV>\n";
 	foreach my $item (@$results) {
 		my $blast_file = $item->{link};
 		my $org        = $item->{organism};
-		$html .= qq{<div class='xsmall'><a href="$blast_file" target=_new>Blast file for $org</div>\n};
+		$html .= qq{<div class=xsmall><a href = "$blast_file" target=_new>Blast file for $org</div>\n};
 	}
-	$html .= qq{<td class='small' valign="top">Log File};
+	$html .= qq{<td class = small valign="top">Log File};
 	my $logfile = $TEMPURL . "/" . $cogeweb->basefilename . ".log";
-	$html .= "<div class='xsmall'><A HREF=\"$logfile\" target=_new>Log</A></DIV>\n";
+	$html .= "<div class=xsmall><A HREF=\"$logfile\" target=_new>Log</A></DIV>\n";
 	$html .= qq{</table>};
 }
 
