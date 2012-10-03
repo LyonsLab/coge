@@ -342,6 +342,7 @@ sub get_tiny_link {
 	my $db				= $opts{db};
 	my $user_id 		= $opts{user_id};
 	my $page 			= $opts{page};
+	my $log_msg			= $opts{log_msg};
 	my $disable_logging	= $opts{disable_logging}; # flag
 
 	$url =~ s/:::/__/g;
@@ -350,9 +351,9 @@ sub get_tiny_link {
 		return "Unable to produce tiny url from server";
 	}
 
-	# Log the page - NOTE: should move this into each page hit in the future
+	# Log the page
 	if ($db and not $disable_logging) {
-		log_history( db => $db, user_id => $user_id, page => $page, description => 'page access', link => $tiny );
+		log_history( db => $db, user_id => $user_id, page => $page, description => ($log_msg ? $log_msg : 'page access'), link => $tiny );
 	}
 
 	return $tiny;
