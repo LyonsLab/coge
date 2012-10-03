@@ -3,7 +3,7 @@
 <SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></SCRIPT>
 
 <SCRIPT language="JavaScript">
-$(document).ready(function() {
+$(document).ready(function(){
 	$.ajaxSetup({
 		type: "POST",
 		url: "<TMPL_VAR NAME=PAGE_NAME>",
@@ -114,7 +114,6 @@ function run_get_history() {
 		success : create_callback(div_id)
 	});
 }
-
 </SCRIPT>
 
 
@@ -150,8 +149,6 @@ function run_get_history() {
 </div>
 
 </TMPL_IF> <!-- MAIN -->
-
-
 
 <TMPL_IF NAME=HISTORY>
 <SCRIPT language="JavaScript">
