@@ -127,12 +127,12 @@ sub get_history_for_user
 		}
 	}
 	else {
-		if (not $time_range) {
+		if ($time_range == 0) {
 			@entries = $coge->resultset('Log')->search( { user_id => $USER->id } );
 		}
-		elsif ($time_range == -1) {
-			@entries = $coge->resultset('Log')->search({ user_id => $USER->id, status => 1});
-		}
+                elsif ($time_range == -1) {
+                        @entries = $coge->resultset('Log')->search( { user_id => $USER->id, status => 1 } );
+                }
 		elsif ($time_range == -2) {
 			@entries = $coge->resultset('Log')->search( { user_id => $USER->id, comment => { '!=', '' }} );
 		}
