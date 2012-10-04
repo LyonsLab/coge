@@ -42,12 +42,10 @@ $DBHOST  = $P->{DBHOST};
 $DBPORT  = $P->{DBPORT};
 $DBUSER  = $P->{DBUSER};
 $DBPASS  = $P->{DBPASS};
-$connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
-$coge        = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
+$connstr = "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
+$coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
 $COOKIE_NAME = $P->{COOKIE_NAME};
-$LIST_TYPE   =
-  $coge->resultset('ListType')->find_or_create( { name => 'genome' } );
+$LIST_TYPE = $coge->resultset('ListType')->find_or_create( { name => 'genome' } );
 
 my ($cas_ticket) = $FORM->param('ticket');
 $USER = undef;
@@ -79,9 +77,6 @@ $SIG{'__WARN__'} = sub { };    #silence warnings
 	get_gc_for_feature_type  => \&get_gc_for_feature_type,
 );
 
-#my $pj = new CGI::Ajax(%FUNCTION);
-#$pj->js_encode_function('escape');
-#my $t1 = new Benchmark;
 if ( $FORM->param('jquery_ajax') ) {
 	dispatch();
 }
@@ -118,13 +113,6 @@ sub gen_html {
 	$template->param( LOGO_PNG => "GenomeList-logo.png" );
 	$template->param( LOGON    => 1 ) unless $USER->user_name eq "public";
 	$template->param( DATE     => $DATE );
-#	my $link = "http://" . $ENV{SERVER_NAME} . $ENV{REQUEST_URI};
-#	$link = CoGe::Accessory::Web::get_tiny_link( url => $link );
-#	my $box_name = "Genome List: ";
-#	my $list_name = $FORM->param('list_name') || $FORM->param('ln');
-#	$box_name .= " $list_name" if $list_name;
-#	$box_name .= "<a class='link' onclick=window.open('$link'); href='$link'>$link</a>";
-#	$template->param( BOX_NAME   => $box_name );
 	$template->param( BODY       => $body );
 	$template->param( ADJUST_BOX => 1 );
 	$html .= $template->output;
@@ -172,14 +160,8 @@ sub cds_wgc_hist {
 			$ds->features(
 				$search,
 				{
-					join => [
-						'locations',
-						{ 'dataset' => { 'dataset_connectors' => 'genome' } }
-					],
-					prefetch => [
-						'locations',
-						{ 'dataset' => { 'dataset_connectors' => 'genome' } }
-					],
+					join => ['locations', { 'dataset' => { 'dataset_connectors' => 'genome' } } ],
+					prefetch => ['locations', { 'dataset' => { 'dataset_connectors' => 'genome' } } ],
 				}
 			)
 		  )
@@ -194,14 +176,8 @@ sub cds_wgc_hist {
 			$total += $gc[2] if $gc[2];
 			my $perc_gc = 100 * $gc[0] / $total if $total;
 			next unless $perc_gc;    #skip if no values
-			next
-			  if defined $min
-			  && $min =~ /\d+/
-			  && $perc_gc < $min;    #check for limits
-			next
-			  if defined $max
-			  && $max =~ /\d+/
-			  && $perc_gc > $max;    #check for limits
+			next if defined $min && $min =~ /\d+/ && $perc_gc < $min;    #check for limits
+			next if defined $max && $max =~ /\d+/ && $perc_gc > $max;    #check for limits
 			push @data, sprintf( "%.2f", $perc_gc );
 			push @fids, $feat->id . "_" . $gstid;
 
@@ -257,8 +233,7 @@ Type: <select id=wobble_hist_type>
 	$args .= "'args__max','wobble_gc_max',";
 	$args .= "'args__max','wobble_gc_max',";
 	$args .= "'args__hist_type', 'wobble_hist_type',";
-	$info .=
-qq{<span class="link" onclick="get_wobble_gc([$args],['wobble_gc_histogram']);\$('#wobble_gc_histogram').html('loading...');">Regenerate histogram</span>};
+	$info .= qq{<span class="link" onclick="get_wobble_gc([$args],['wobble_gc_histogram']);\$('#wobble_gc_histogram').html('loading...');">Regenerate histogram</span>};
 	$info .= "</div>";
 
 	$info .=
@@ -275,13 +250,10 @@ qq{<span class="link" onclick="get_wobble_gc([$args],['wobble_gc_histogram']);\$
 	if ( $min || $max ) {
 		$min = 0   unless defined $min;
 		$max = 100 unless defined $max;
-		$info .=
-qq{<div class=small style="color: red;">Limits set:  MIN: $min  MAX: $max</div>
-};
+		$info .= qq{<div class=small style="color: red;">Limits set:  MIN: $min  MAX: $max</div>};
 	}
 	my $stuff = join "::", @fids;
-	$info .=
-qq{<div class="link small" onclick="window.open('FeatList.pl?fid=$stuff')">Open FeatList of Features</div>};
+	$info .= qq{<div class="link small" onclick="window.open('FeatList.pl?fid=$stuff')">Open FeatList of Features</div>};
 	$out =~ s/$TEMPDIR/$TEMPURL/;
 	my $hist_img = "<img src=\"$out\">";
 	return $info . "<br>" . $hist_img;

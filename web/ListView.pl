@@ -63,27 +63,36 @@ $link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, 
 
 
 %FUNCTION = (
-	gen_html          	       => \&gen_html,
-	get_list_info     	       => \&get_list_info,
-	get_list_contents	       => \&get_list_contents,
-	edit_list_info    	       => \&edit_list_info,
-	update_list_info  	       => \&update_list_info,
-	make_list_public  	       => \&make_list_public,
-	make_list_private	       => \&make_list_private,
-	add_list_items		       => \&add_list_items,
-	add_item_to_list           => \&add_item_to_list,
-	remove_list_item	       => \&remove_list_item,
-	get_list_annotations       => \&get_list_annotations,
-	add_list_annotation        => \&add_list_annotation,
-	add_annotation_to_list     => \&add_annotation_to_list,
-	remove_list_annotation     => \&remove_list_annotation,
-	search_genomes             => \&search_genomes,
-	search_experiments         => \&search_experiments,
-	search_features            => \&search_features,
-	search_lists               => \&search_lists,
-	search_annotation_types    => \&search_annotation_types,
-	get_annotation_type_groups => \&get_annotation_type_groups,
-	delete_list                => \&delete_list,
+	gen_html          	       	=> \&gen_html,
+	get_list_info     	       	=> \&get_list_info,
+	get_list_contents	       	=> \&get_list_contents,
+	edit_list_info    	       	=> \&edit_list_info,
+	update_list_info  	       	=> \&update_list_info,
+	make_list_public  	       	=> \&make_list_public,
+	make_list_private	       	=> \&make_list_private,
+	add_list_items		       	=> \&add_list_items,
+	add_item_to_list           	=> \&add_item_to_list,
+	remove_list_item	       	=> \&remove_list_item,
+	get_list_annotations       	=> \&get_list_annotations,
+	add_list_annotation        	=> \&add_list_annotation,
+	add_annotation_to_list     	=> \&add_annotation_to_list,
+	remove_list_annotation     	=> \&remove_list_annotation,
+	search_genomes             	=> \&search_genomes,
+	search_experiments         	=> \&search_experiments,
+	search_features            	=> \&search_features,
+	search_lists               	=> \&search_lists,
+	search_annotation_types    	=> \&search_annotation_types,
+	get_annotation_type_groups 	=> \&get_annotation_type_groups,
+	delete_list                	=> \&delete_list,
+	send_to_blast		   		=> \&send_to_blast,
+	send_to_msa					=> \&send_to_msa,
+	send_to_gevo				=> \&send_to_gevo,
+	send_to_synfind				=> \&send_to_synfind,
+	send_to_featmap				=> \&send_to_featmap,
+	send_to_codeon				=> \&send_to_codeon,
+	send_to_fasta				=> \&send_to_fasta,
+	send_to_csv			   		=> \&send_to_csv,
+	send_to_xls					=> \&send_to_xls,
 );
 
 # debug for fileupload:
@@ -295,7 +304,7 @@ sub get_list_annotations {
 			$a_info .= ' ';
 			$a_info .= ($a->link ? linkify($a->link, $a->info) : $a->info);
 			$a_info .= ' ';
-			$a_info .= ($user_can_edit ? "<span onClick=\"remove_list_annotation({lid: '$lid', laid: '" . $a->id . "'});\" class=\"link ui-icon ui-icon-trash\"></span>" : '');
+			$a_info .= ($user_can_edit ? "<span onClick=\"remove_list_annotation({lid: '$lid', laid: '" . $a->id . "'});\" class='link ui-icon ui-icon-trash'></span>" : '');
 			$anno_type->add_Annot($a_info);
 			$anno_obj->add_Annot($anno_type);
 		}
@@ -438,7 +447,7 @@ sub get_list_contents {
 		$html .= qq{<td class='data5'><span id='genome$gid' class='link' onclick="window.open('OrganismView.pl?dsgid=$gid')">} . $genome->info . "</span></td>";
 		if ($user_can_edit) {
 			#FIXME hardcoded value for item_type
-			$html .= "<td><span onClick=\"\$('#genome'+$gid).css('text-decoration', 'line-through'); remove_list_item({lid: '$lid', item_type: '2', item_id: '$gid'});\" class='link ui-icon ui-icon-trash'></span></td>";
+			$html .= "<td><span onClick=\"remove_list_item(this, {lid: '$lid', item_type: '2', item_id: '$gid'});\" class='link ui-icon ui-icon-circle-minus'></span></td>";
 		}
 	}
 	$first = 1;
@@ -448,7 +457,7 @@ sub get_list_contents {
 		$html .= qq{<td class='data5'><span id='experiment$eid' class='link' onclick="window.open('ExperimentView.pl?eid=$eid')">} . $experiment->info . "</span></td>";
 		if ($user_can_edit) {
 			#FIXME hardcoded value for item_type
-			$html .= "<td><span onClick=\"\$('#experiment'+$eid).css('text-decoration', 'line-through'); remove_list_item({lid: '$lid', item_type: '3', item_id: '$eid'});\" class='link ui-icon ui-icon-trash'></span></td>";
+			$html .= "<td><span onClick=\"remove_list_item(this, {lid: '$lid', item_type: '3', item_id: '$eid'});\" class='link ui-icon ui-icon-circle-minus'></span></td>";
 		}		
 	}
 	$first = 1;
@@ -458,7 +467,7 @@ sub get_list_contents {
 		$html .= qq{<td class='data5'><span id='feature$fid' class='link' onclick="window.open('FeatView.pl?fid=$fid')">} . $feature->info . "</span></td>";
 		if ($user_can_edit) {
 			#FIXME hardcoded value for item_type
-			$html .= "<td><span onClick=\"\$('#feature'+$fid).css('text-decoration', 'line-through'); remove_list_item({lid: '$lid', item_type: '4', item_id: '$fid'});\" class='link ui-icon ui-icon-trash'></span></td>";
+			$html .= "<td><span onClick=\"remove_list_item(this, {lid: '$lid', item_type: '4', item_id: '$fid'});\" class='link ui-icon ui-icon-circle-minus'></span></td>";
 		}		
 	}
 	$first = 1;
@@ -468,7 +477,7 @@ sub get_list_contents {
 		$html .= qq{<td class='data5'><span id='list$child_id' class='link' onclick="window.open('ListView.pl?lid=$child_id')">} . $list->info . "</span></td>";
 		if ($user_can_edit) {
 			#FIXME hardcoded value for item_type
-			$html .= "<td><span onClick=\"\$('#list'+$child_id).css('text-decoration', 'line-through'); remove_list_item({lid: '$lid', item_type: '1', item_id: '$child_id'});\" class='link ui-icon ui-icon-trash'></span></td>";
+			$html .= "<td><span onClick=\"remove_list_item(this, {lid: '$lid', item_type: '1', item_id: '$child_id'});\" class='link ui-icon ui-icon-circle-minus'></span></td>";
 		}		
 	}		
 
@@ -476,6 +485,7 @@ sub get_list_contents {
 	
 	if ($user_can_edit) {
 		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-button-icon-left ui-corner-all' onClick="add_list_items({lid: $lid});"><span class="ui-icon ui-icon-plus"></span>Add Items</span>};
+		
 	}
 	
 	return 'List Contents:<br>' . $html;
@@ -896,4 +906,211 @@ sub delete_list {
 	$list->delete();
 	
 	return 1;
+}
+
+sub send_to_blast
+{
+	my %opts = @_;
+	my $lid = $opts{lid};
+	return unless $lid;
+	
+	my $list = $coge->resultset('List')->find($lid);
+	return unless $list;		
+	
+	my $accn_list = join(',', map { $_->id } $list->genomes);
+	my $url = "CoGeBlast.pl?dsgid=$accn_list";
+	return encode_json({url => $url});
+}
+
+sub send_to_msa {
+	my %opts = @_;
+	my $lid = $opts{lid};
+	return unless $lid;
+	
+	my $list = $coge->resultset('List')->find($lid);
+	return unless $list;		
+	
+	my $accn_list = join('&', map { 'fid=' . $_->id } $list->features);
+	my $url = "CoGeAlign.pl?$accn_list";
+	return encode_json({url => $url});
+}
+
+sub send_to_gevo
+{
+	my %opts = @_;
+	my $lid = $opts{lid};
+	return unless $lid;
+	
+	my $list = $coge->resultset('List')->find($lid);
+	return unless $list;	
+	
+	my $count = 1;
+	my $accn_list = join('&', map { 'fid' . $count++ . '=' . $_->id } $list->features);
+		
+	my $url = "GEvo.pl?$accn_list";
+	$count--;
+	return encode_json({alert => "You have exceeded the number of features you can send to GEvo (20 max)."}) if $count > 20;
+	$url .= "&num_seqs=$count";
+	return encode_json({url => $url});
+}
+
+sub send_to_synfind
+{
+	my %opts = @_;
+	my $lid = $opts{lid};
+	return unless $lid;
+	
+	my $list = $coge->resultset('List')->find($lid);
+	return unless $list;	
+	
+	my $accn_list = join(',', map { $_->id } $list->genomes);
+	my $url = "SynFind.pl?dsgid=$accn_list";
+	return encode_json({url => $url});
+}
+
+sub send_to_featmap {
+	my %opts = @_;
+	my $lid = $opts{lid};
+	return unless $lid;
+	
+	my $list = $coge->resultset('List')->find($lid);
+	return unless $list;	
+	
+	my $accn_list = join('&', map { 'fid=' . $_->id } $list->features);
+	my $url = "FeatMap.pl?$accn_list";
+	return encode_json({url => $url});
+}
+
+sub send_to_codeon {
+	my %opts = @_;
+	my $lid = $opts{lid};
+	return unless $lid;
+	
+	my $list = $coge->resultset('List')->find($lid);
+	return unless $list;	
+	
+	my $accn_list = join('::', map { $_->id } $list->features);
+	my $url = "CodeOn.pl?fid=$accn_list";
+	return encode_json({url => $url});	
+}
+
+sub send_to_fasta {
+	my %opts = @_;
+	my $lid = $opts{lid};
+	return unless $lid;
+	
+	my $list = $coge->resultset('List')->find($lid);
+	return unless $list;
+
+	$cogeweb = CoGe::Accessory::Web::initialize_basefile( tempdir => $TEMPDIR );
+	my $basename = $cogeweb->basefilename;
+	my $file     = $TEMPDIR . "$basename.faa";
+	open( OUT, ">$file" );
+	foreach my $g ( sort genomecmp $list->genomes ) {
+		print OUT $g->fasta;
+	}
+	close OUT;
+	$file =~ s/$TEMPDIR/$TEMPURL/;
+	return $file;
+}
+
+sub send_to_csv 
+{
+	my %opts = @_;
+	my $lid = $opts{lid};
+	return unless $lid;
+	
+	my $list = $coge->resultset('List')->find($lid);
+	return unless $list;	
+
+	$cogeweb = CoGe::Accessory::Web::initialize_basefile( tempdir => $TEMPDIR );
+	my $basename = $cogeweb->basefilename;
+	my $file = "$TEMPDIR/$basename.csv";
+#	print STDERR $P->{SERVER} . " $TEMPURL $file\n";
+	open( OUT, ">$file" );
+
+	print OUT join( "\t", "CoGe Genome ID", "Name", "Description", "Source", "Provenance", "Sequence Type", "Chr Count", "Length (bp)", "Percent GC", "Percent AT", "Percent N|X", "OrganismView Link" ), "\n";
+	foreach my $g ( sort genomecmp $list->genomes ) {
+		my $name = $g->name ? $g->name : $g->organism->name;
+		my $desc = $g->description ? $g->description : $g->organism->description;
+		my ($ds_source) = $g->source;
+		my $source = $ds_source->name;
+		my $provenance = join( "||", map { $_->name } $g->datasets );
+		my $chr_count  = $g->chromosome_count;
+		my $length     = $g->length;
+		my $type       = $g->type->name;
+		my ( $gc, $at, $n ) = $g->percent_gc();
+		$at *= 100;
+		$gc *= 100;
+		print OUT join( "\t", $g->id, $name, $desc, $source, $provenance, $type, $chr_count, $length, $gc, $at, $n, $P->{SERVER} . 'OrganismView.pl?dsgid=' . $g->id ), "\n";
+	}
+	
+	
+	close OUT;
+	$file =~ s/$TEMPDIR/$TEMPURL/;
+	return encode_json({url => $file});	
+}
+
+sub send_to_xls {
+	my %args      = @_;
+	my $accn_list = $args{accn};
+	$accn_list =~ s/^,//;
+	$accn_list =~ s/,$//;
+	$cogeweb = CoGe::Accessory::Web::initialize_basefile( tempdir => $TEMPDIR );
+	my $basename = $cogeweb->basefilename;
+	my $file     = "$TEMPDIR/Excel_$basename.xls";
+	my $workbook = Spreadsheet::WriteExcel->new($file);
+	$workbook->set_tempdir("$TEMPDIR");
+	my $worksheet = $workbook->add_worksheet();
+	my $i         = 1;
+
+	$worksheet->write( 0, 0,  "Name" );
+	$worksheet->write( 0, 1,  "Description" );
+	$worksheet->write( 0, 2,  "Source" );
+	$worksheet->write( 0, 3,  "Provenance" );
+	$worksheet->write( 0, 4,  "Sequence Type" );
+	$worksheet->write( 0, 5,  "Chr Count" );
+	$worksheet->write( 0, 6,  "Length (bp)" );
+	$worksheet->write( 0, 7,  "Percent GC" );
+	$worksheet->write( 0, 8,  "Percent AT" );
+	$worksheet->write( 0, 9,  "Percent N|X" );
+	$worksheet->write( 0, 10, "OrganismView Link" );
+
+	foreach my $dsgid ( split(/,/, $accn_list) ) {
+		my ($dsg) = $coge->resultset("Genome")->find($dsgid);
+		next unless $dsg;
+		
+		my $name = $dsg->name ? $dsg->name : $dsg->organism->name;
+		my $desc = $dsg->description ? $dsg->description : $dsg->organism->description;
+		my ($ds_source) = $dsg->source;
+		my $source = $ds_source->name;
+		my $provenance = join( " ", map { $_->name } $dsg->datasets );
+		my $length     = $dsg->length;
+		my $chr_count  = $dsg->chromosome_count;
+		my $type       = $dsg->type->name;
+		my ( $gc, $at, $n ) = $dsg->percent_gc();
+		$at *= 100;
+		$gc *= 100;
+
+		#my ($wgc, $wat) = $dsg->wobble_content;
+		#$wat*=100;
+		#$wgc*=100;
+
+		$worksheet->write( $i, 0, $name );
+		$worksheet->write( $i, 1, $desc );
+		$worksheet->write( $i, 2, $source );
+		$worksheet->write( $i, 3, $provenance );
+		$worksheet->write( $i, 4, $type );
+		$worksheet->write( $i, 5, $chr_count );
+		$worksheet->write( $i, 6, $length );
+		$worksheet->write( $i, 7, $gc . '%' );
+		$worksheet->write( $i, 8, $at . '%' );
+		$worksheet->write( $i, 9, $n . '%' );
+		$worksheet->write( $i, 10, $P->{SERVER} . 'OrganismView.pl?dsgid=' . $dsgid );
+
+		$i++;
+	}
+	$workbook->close() or die "Error closing file: $!";
+	$file =~ s/$TEMPDIR/$TEMPURL/;
+	return $file;
 }

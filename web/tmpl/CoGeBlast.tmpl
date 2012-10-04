@@ -3,15 +3,15 @@
 <SCRIPT language="JavaScript">
 
 $(document).ready(function(){
-  display_correct_radio($('#coge_radio')[0].checked,'coge');
-  blast_param_on_select('coge_radio','coge');
-  blast_param([],[animate_params]);
-  database_param([],['database']);
+	display_correct_radio($('#coge_radio')[0].checked,'coge');
+	blast_param_on_select('coge_radio','coge');
+	blast_param([],[animate_params]);
+	database_param([],['database']);
   
-  //Object Generation
-  var seqview = <TMPL_VAR NAME=SEQVIEW> || 0;
-  if(seqview !=0){
-    var featid = "<TMPL_VAR NAME=FEATID>";
+	//Object Generation
+	var seqview = <TMPL_VAR NAME=SEQVIEW> || 0;
+	if(seqview !=0){
+		var featid = "<TMPL_VAR NAME=FEATID>";
     if ((featid) && (featid!=0)){
       seqObj = new generate_seq_obj(<TMPL_VAR NAME=DSID>,<TMPL_VAR NAME=DSGID>,<TMPL_VAR NAME=UPSTREAM>,<TMPL_VAR NAME=DOWNSTREAM>,seqview,'<TMPL_VAR NAME=CHR>',<TMPL_VAR NAME=RC>,featid);
     }
@@ -1095,20 +1095,20 @@ $(function() {
 </DIV>
 
 
-<div id=tabs style='margin-top: 0.5em'>
+<div id='tabs' style='margin-top: 0.5em'>
 
 <ul>
- <li class=small><a href="#tab-1"  onclick="adjust_blast_types()">CoGe Blast</a></li>
- <li class=small><a href="#tab-2"  onclick="adjust_blast_types(1)">NCBI Blast</a></li>
+ <li class='small'><a href="#tab-1"  onclick="adjust_blast_types()">CoGe Blast</a></li>
+ <li class='small'><a href="#tab-2"  onclick="adjust_blast_types(1)">NCBI Blast</a></li>
 </ul>
 
 
   <div id="tab-1">
   <span id="run_cogeblast_button" style="font-size: 1em" class='ui-button ui-button-go ui-corner-all'>Run CoGe Blast</span><BR><br>
-   <Table class ="ui-widget-content ui-corner-all ">
-       <TR valign=top>
-          <TH>Specify Organisms:<br>
-        <table class ="ui-corner-all ui-widget-content">
+   <Table class="ui-widget-content ui-corner-all ">
+       <TR valign='top'>
+          <TH align='left'>Specify Organisms:<br>
+        <table class="ui-corner-all ui-widget-content">
 	<tr><Td>
    	<DIV id="blah">Organism Name: <input type="text" size=11 style="font-style:italic" class="org_search_name" value="Search" name="org_name" id="org_name"></DIV>
    	<DIV id="blah">Organism Description: <input type="text" class="org_search_desc" size=11 style="font-style:italic" value="Search" name="org_desc" id="org_desc"></DIV>
@@ -1136,7 +1136,7 @@ $(function() {
 
       <TH align="left" valign="top">Blast Parameters<br>
       <DIV id="blast_parameters">
-      <TABLE class ="ui-corner-all ui-widget-content">
+      <TABLE class="ui-corner-all ui-widget-content">
        <TR>
 	<TD>
 	  E-Value:
@@ -1162,7 +1162,7 @@ $(function() {
 	   Word size:
 	</TD>
 	<TD>
-	 <input type=text id=word_size value="7" size="7">
+	 <input type='text' id='word_size' value="7" size="7">
        </TR>
        <TR>
 	<TD>
@@ -1171,13 +1171,13 @@ $(function() {
 	<TD>
 	  <select id="gapcosts_1-2" class="gapcosts" style="display: block">
 <!--	  	<option value = "0 0"  >Linear</option>   -->
-		<option value = "5 2"  selected>Existence:  5 Extension: 2</option>				
-		<option value = "2 2"  >Existence:  2 Extension: 2</option>				
-		<option value = "1 2"  >Existence:  1 Extension: 2</option>
-		<option value = "0 2"  >Existence:  0 Extension: 2</option>
-		<option value = "3 1"  >Existence:  3 Extension: 1</option>		
-		<option value = "2 1"  >Existence:  2 Extension: 1</option>		
-		<option value = "1 1"  >Existence: 1 Extension: 1</option>				
+		<option value="5 2" selected>Existence:  5 Extension: 2</option>				
+		<option value="2 2">Existence:  2 Extension: 2</option>				
+		<option value="1 2">Existence:  1 Extension: 2</option>
+		<option value="0 2">Existence:  0 Extension: 2</option>
+		<option value="3 1">Existence:  3 Extension: 1</option>		
+		<option value="2 1">Existence:  2 Extension: 1</option>		
+		<option value="1 1">Existence:  1 Extension: 1</option>				
 	</select>
 	<select id="gapcosts_1-3" class="gapcosts" style="display: none">
 <!--		<option value = "0 0" >Linear</option>    -->

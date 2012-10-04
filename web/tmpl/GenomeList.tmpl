@@ -623,7 +623,7 @@ function edit_list_info (lid) {
 	   <option value="send_to_fasta">FASTA Sequences</option>
 	   <option value="send_to_csv">Export CSV</option>
 	   <option value="send_to_xls">Export XLS</option>
-	   <option value="send_to_align">GenomeAlign</option>
+	   <!--<option value="send_to_align">GenomeAlign</option> --> <!-- mdb removed 10/3/12 what is this? -->
 	   <option value="send_to_blast">CoGeBlast</option>
 	   <option value="send_to_SynFind">SynFind</option>
 	   <option value="send_to_GenomeList">GenomeList</option>
@@ -635,31 +635,31 @@ function edit_list_info (lid) {
 	 <br>
 
 	<div id="table_opts_dialog" title="Table Information Options">
-	<form id=genome_list>
-	   <table  class="ui-widget-content ui-corner-all small" id="show_columns">
+	<form id='genome_list'>
+	   <table class="ui-widget-content ui-corner-all small" id="show_columns">
 	    <tr>
-	      <td><input class = "display" type = checkbox onclick="toggle_column(1);" <TMPL_VAR NAME="NameD">>Name
-	      <td><input class = "display"  type = checkbox onclick="toggle_column(2);" <TMPL_VAR NAME="DescD">>Description
-	      <td><input class = "display"  type = checkbox onclick="toggle_column(3);" <TMPL_VAR NAME="SourceD">>Source
-	      <td><input class = "display"  type = checkbox onclick="toggle_column(4);" <TMPL_VAR NAME="ProvenanceD">>Provenance
-	      <td><input class = "display"  type = checkbox onclick="toggle_column(5);" <TMPL_VAR NAME="TypeD">>Sequence Type
-	      <td><input class = "display"  type = checkbox onclick="toggle_column(6);" <TMPL_VAR NAME="VerD">>Version
-	      <td><input class = "display"  type = checkbox onclick="toggle_column(7);" <TMPL_VAR NAME="ChrCountD">>Chromosome Count
+	      <td><input class="display" type='checkbox' onclick="toggle_column(1);" <TMPL_VAR NAME="NameD">>Name
+	      <td><input class="display" type='checkbox' onclick="toggle_column(2);" <TMPL_VAR NAME="DescD">>Description
+	      <td><input class="display" type='checkbox' onclick="toggle_column(3);" <TMPL_VAR NAME="SourceD">>Source
+	      <td><input class="display" type='checkbox' onclick="toggle_column(4);" <TMPL_VAR NAME="ProvenanceD">>Provenance
+	      <td><input class="display" type='checkbox' onclick="toggle_column(5);" <TMPL_VAR NAME="TypeD">>Sequence Type
+	      <td><input class="display" type='checkbox' onclick="toggle_column(6);" <TMPL_VAR NAME="VerD">>Version
+	      <td><input class="display" type='checkbox' onclick="toggle_column(7);" <TMPL_VAR NAME="ChrCountD">>Chromosome Count
 	     <tr>
-	      <td><input class = "display"  type = checkbox onclick="toggle_column(8);" <TMPL_VAR NAME="LengthD">>Length
-	      <td><input class = "display"  type = checkbox onclick="toggle_column(9);" <TMPL_VAR NAME="GCD">>GC%
-	      <td><input class = "display"  type = checkbox onclick="toggle_column(10);" <TMPL_VAR NAME="ATD">>AT%
-	      <td><input class = "display"  type = checkbox onclick="toggle_column(11);" <TMPL_VAR NAME="ND">>N%
-	      <td><input class = "display"  type = checkbox onclick="toggle_column(12);" <TMPL_VAR NAME="XD">>X%
-	      <td><input class = "display"  type = checkbox onclick="toggle_column(13);" <TMPL_VAR NAME="FeatD">>Feature Counts
+	      <td><input class="display" type='checkbox' onclick="toggle_column(8);" <TMPL_VAR NAME="LengthD">>Length
+	      <td><input class="display" type='checkbox' onclick="toggle_column(9);" <TMPL_VAR NAME="GCD">>GC%
+	      <td><input class="display" type='checkbox' onclick="toggle_column(10);" <TMPL_VAR NAME="ATD">>AT%
+	      <td><input class="display" type='checkbox' onclick="toggle_column(11);" <TMPL_VAR NAME="ND">>N%
+	      <td><input class="display" type='checkbox' onclick="toggle_column(12);" <TMPL_VAR NAME="XD">>X%
+	      <td><input class="display" type='checkbox' onclick="toggle_column(13);" <TMPL_VAR NAME="FeatD">>Feature Counts
 	     <tr>
-	      <td><input class = "display"  type = checkbox onclick="toggle_column(14);" <TMPL_VAR NAME="AAD">>Amino Acid Usage
-	      <td><input class = "display"  type = checkbox onclick="toggle_column(15);" <TMPL_VAR NAME="CodonD">>Codon Usage
-	      <td><input class = "display"  type = checkbox onclick="toggle_column(16);" <TMPL_VAR NAME="CDSGCHistD">>CDS GC Histogram
-	      <td><input class = "display"  type = checkbox onclick="toggle_column(17);" <TMPL_VAR NAME="CDSWGCHistD">>CDS Wobble GC Histogram
+	      <td><input class="display" type='checkbox' onclick="toggle_column(14);" <TMPL_VAR NAME="AAD">>Amino Acid Usage
+	      <td><input class="display" type='checkbox' onclick="toggle_column(15);" <TMPL_VAR NAME="CodonD">>Codon Usage
+	      <td><input class="display" type='checkbox' onclick="toggle_column(16);" <TMPL_VAR NAME="CDSGCHistD">>CDS GC Histogram
+	      <td><input class="display" type='checkbox' onclick="toggle_column(17);" <TMPL_VAR NAME="CDSWGCHistD">>CDS Wobble GC Histogram
 
 	      <TMPL_IF NAME="SAVE_DISPLAY">
-	<TR><td colspan =3>
+	<TR><td colspan=3>
 	<span href="javascript:void(0);" class='ui-button ui-corner-all ui-button-icon-left' onclick="save_display_settings()"><span class="ui-icon ui-icon-check"></span>Save Display Settings</span>
 	      </TMPL_IF>
 	   </table>

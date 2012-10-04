@@ -177,10 +177,13 @@ function add_selected_items (opts){
 	$("#list_contents_edit_box").dialog('close');
 }
 
-function remove_list_item (opts) {
+function remove_list_item (obj, opts) {
 	lid = opts.lid;
 	item_id = opts.item_id;
 	item_type = opts.item_type;
+	
+	$(obj).closest('tr').children().animate({opacity:0});
+	
 	$.ajax({
 		data: {
 			jquery_ajax: 1,
@@ -505,6 +508,27 @@ function delete_list (opts) {
 		},
 	});
 }
+
+function send_list_to() {
+	var action = $('#checked_action').val();
+	
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: action,
+			lid: <TMPL_VAR NAME=LID>
+		},
+		success : function(val) {
+			var items = jQuery.parseJSON(val);
+			if (items.alert) {
+				alert(items.alert);
+			}
+			if (items.url) {
+				window.open(items.url, '_blank');
+			}
+		}
+	});
+}
 </SCRIPT>
 
 <div id="list_info">
@@ -523,6 +547,23 @@ function delete_list (opts) {
  <TMPL_VAR NAME=LIST_CONTENTS>
 </div>
 
+<br>
+<div class='small'>
+Send list to:  
+ <select name="checked_action" id="checked_action">
+  <option value="send_to_blast">CoGeBlast</option>
+  <option value="send_to_msa">CoGeAlign</option>
+  <option value="send_to_gevo">GEvo</option>
+  <option value="send_to_synfind">SynFind</option>
+  <option value="send_to_featmap">Genome Map</option>
+  <option value="send_to_codeon">Coding Evolution</option>
+  <option value="send_to_fasta">FASTA Sequences</option>
+  <option value="send_to_csv">Export CSV</option>
+  <option value="send_to_xls">Export XLS</option>
+ </select>
+ <span class='ui-button ui-corner-all ui-button-icon-right ui-button-go' onclick="send_list_to();"><span class="ui-icon ui-icon-extlink"></span>Go</span>
+</div>
+
 <div id="list_info_edit_box" class="dialog_box"></div>
 <div id="list_annotation_edit_box" class="dialog_box"></div>
 <div id="list_contents_edit_box" class="dialog_box"></div>
@@ -530,8 +571,8 @@ function delete_list (opts) {
 <div id="list_delete_box" class="dialog_box" style='display:none;' align='center'>
 Are you sure you want to permanently delete this list?<p>
  <div>
-  <span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="delete_list({lid: '<TMPL_VAR NAME=LID>'});">Yes</span>
-  <span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="$('#list_delete_box').dialog('close');">No</span>
+  <span style="font-size:.75em" class='ui-button ui-button-go ui-corner-all' onClick="delete_list({lid: '<TMPL_VAR NAME=LID>'});">Yes</span>
+  <span style="font-size:.75em" class='ui-button ui-button-go ui-corner-all' onClick="$('#list_delete_box').dialog('close');">No</span>
  </div>
 </div>
 

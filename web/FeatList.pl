@@ -623,7 +623,7 @@ sub send_to_xls {
 	my $workbook = Spreadsheet::WriteExcel->new("$TEMPDIR/Excel_$filename.xls");
 	$workbook->set_tempdir("$TEMPDIR");
 	my $worksheet = $workbook->add_worksheet();
-	my $i         = 1;
+	my $i = 1;
 
 	$worksheet->write( 0, 0,  "Feature Name" );
 	$worksheet->write( 0, 1,  "Type" );
@@ -650,9 +650,9 @@ sub send_to_xls {
 		my $app = $feat->annotation_pretty_print();
 		$app =~ s/(<\/?span(\s*class=\"\w+\")?\s*>)?//ig;
 
-		#   	   my ($anno) = $app =~ /annotation:<td>(.+)?/i;
-		#   	   ($anno) = split (/<BR/, $anno);
-		#   	   $anno =~ s/;/;\n/g;
+		#my ($anno) = $app =~ /annotation:<td>(.+)?/i;
+		#($anno) = split (/<BR/, $anno);
+		#$anno =~ s/;/;\n/g;
 		my ( $at, $gc ) = $feat->gc_content;
 		$at *= 100;
 		$gc *= 100;
@@ -669,14 +669,11 @@ sub send_to_xls {
 		$worksheet->write( $i, 7, $at );
 		$worksheet->write( $i, 8, $wgc );
 		$worksheet->write( $i, 9, $wat );
-		$worksheet->write( $i, 10,
-			$feat->organism->name . "(v " . $feat->version . ")" );
+		$worksheet->write( $i, 10, $feat->organism->name . "(v " . $feat->version . ")" );
 		$worksheet->write( $i, 11, $app );
 
 		if ( my ($geneid) = $app =~ /geneid.*?(\d+)/i ) {
-			my $link =
-"http://www.ncbi.nlm.nih.gov/sites/entrez?db=gene&cmd=Retrieve&dopt=full_report&list_uids="
-			  . $geneid;
+			my $link = "http://www.ncbi.nlm.nih.gov/sites/entrez?db=gene&cmd=Retrieve&dopt=full_report&list_uids=" . $geneid;
 			$worksheet->write( $i, 12, $link );
 		}
 		my $seq = $feat->genomic_sequence( gstid => $gstid );
@@ -707,8 +704,7 @@ sub codon_table {
 	( $featid, $gstid ) = split /_/, $featid if $featid =~ /_/;
 	return unless $featid;
 	my ($feat) = $coge->resultset('Feature')->find($featid);
-	my ( $codon, $code_type ) =
-	  $feat->codon_frequency( counts => 1, gstid => $gstid );
+	my ( $codon, $code_type ) = $feat->codon_frequency( counts => 1, gstid => $gstid );
 	my %aa;
 	my ($code) = $feat->genetic_code;
 	my $count = 0;
@@ -726,25 +722,16 @@ sub codon_table {
 	my ( $wat, $wgc ) = $feat->wobble_content( gstid => $gstid );
 	$wat *= 100;
 	$wgc *= 100;
-	$html .=
-	  "Codon Count: $count" . ", GC: $at% $gc%" . ", Wobble GC: $wat% $wgc%";
+	$html .= "Codon Count: $count" . ", GC: $at% $gc%" . ", Wobble GC: $wat% $wgc%";
 	$html .= "<td>";
 	$html .= "Predicted amino acid usage";
 	$html .= "<tr valign=top><td>";
-	$html .= CoGe::Accessory::genetic_code->html_code_table(
-		data   => $codon,
-		code   => $code,
-		counts => 1
-	);
+	$html .= CoGe::Accessory::genetic_code->html_code_table(data => $codon, code => $code, counts => 1);
 
-	#    $html .= "</div>";
-	#    $html .= "Predicted amino acid usage for $code_type genetic code:";
+	#$html .= "</div>";
+	#$html .= "Predicted amino acid usage for $code_type genetic code:";
 	$html .= "<td>";
-	$html .= CoGe::Accessory::genetic_code->html_aa(
-		data   => \%aa,
-		counts => 1,
-		split  => 1
-	);
+	$html .= CoGe::Accessory::genetic_code->html_aa(data => \%aa, counts => 1, split => 1);
 	$html .= "</table>";
 	return $html;
 }
