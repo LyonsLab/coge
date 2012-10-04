@@ -491,7 +491,6 @@ sub reset_settings {
 }
 
 sub initialize_basefile {
-
 	my ( $self, %opts ) = self_or_default(@_);
 	my $basename    = $opts{basename};
 	my $prog        = $opts{prog};
