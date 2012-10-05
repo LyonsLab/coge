@@ -138,6 +138,7 @@ if ($assemble)
   {
     my $skip_non_aligned_contigs = $assemble && $assemble =~ /2/ ? 1 : 0;
     my ($org1_association, $org2_association) = $synmap_report->parse_syn_blocks(file=>$alignfile) if $assemble;
+    #print STDERR Dumper $synmap_report;
     my $output;
     if (@$org1_association > @$org2_association && $assemble > 0 || @$org1_association < @$org2_association && $assemble < 0 ) 
       {
@@ -346,8 +347,8 @@ binmode OUT;
 print OUT $y_labels_gd->png;
 close OUT;
 
-CoGe::Accessory::Web::gzip($dagfile, $conffile) if $dagfile && -r $dagfile;
-CoGe::Accessory::Web::gzip($alignfile, $conffile) if $alignfile && -r $alignfile;
+#CoGe::Accessory::Web::gzip($dagfile, $conffile) if $dagfile && -r $dagfile;
+#CoGe::Accessory::Web::gzip($alignfile, $conffile) if $alignfile && -r $alignfile;
 #generate_historgram of ks values if necessary
 
 #This function appears to parse dagchainer output, generated in SynMap.pl, and draw the results to the GD graphics context.
@@ -983,6 +984,7 @@ sub reord
     my $order = $opts{order};
     my $reorder = $opts{reorder};
     my $association = $opts{assoc};
+#    print STDERR Dumper $reorder, $association;
     my $skip = $opts{skip};
     my $skip_random = $opts{skip_random};
     my $info = $opts{info}; #for determining orientation
@@ -1019,7 +1021,7 @@ sub reord
 	my %seen = map{$_=>1} @new_order;
 	foreach my $item (@$reorder)
 	  {
-	    $output .= join ("\t", "unmapped", $item)."\n";
+	    $output .= join ("\t", "unmapped", $item)."\n" unless $seen{$item};
 	    push @new_order, $item unless $seen{$item};
 	  }
       }
