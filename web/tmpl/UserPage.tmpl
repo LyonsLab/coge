@@ -325,12 +325,15 @@ function see_work_entry(wid,opt,wf_id) {
 </TMPL_IF>
 
 <TMPL_IF NAME=MAIN>
-<table><tr valign=top><td>
+<table><tr valign=top>
+
+<!--
+<td>
 <div style="float:left; width:160px" class="ui-widget-content ui-corner-all">
 
 <ul class="sf-menu sf-vertical">
   <li><a href="javascript:void(0)" onClick="get_profile()">Profile</a></li>
-<!--
+
   <li><a href="javascript:void(0)">Application Settings</a>
     <ul>
 	<li><a href="javascript:void(0)">OrganismView</a></li>
@@ -340,7 +343,7 @@ function see_work_entry(wid,opt,wf_id) {
 	<li><a href="javascript:void(0)">GEvo</a></li>
     </ul>
   </li>
--->
+
   <li><a href="javascript:void(0)">My Notebooks</a>
   <ul>
 	<li><a href="javascript:void(0)" onClick="get_workflow_header()">View Notebooks</a></li>
@@ -350,6 +353,7 @@ function see_work_entry(wid,opt,wf_id) {
   <li><a href="javascript:void(0)" onClick="init_works()">Work History</a></li>
 </ul>
 </div>
+-->
 <td>
 <div id=content class="ui-widget-content ui-corner-all" style="float:right"></div>
 </table>
@@ -365,15 +369,16 @@ function see_work_entry(wid,opt,wf_id) {
 	<td><TMPL_VAR NAME=REAL_NAME></td>
 	<tr><td>E-mail Address</td>
 	<td><TMPL_VAR NAME=EMAIL></td>
-	<tr><td>My Groups</td>
+	<tr><td>Description</td>
+	<td><TMPL_VAR NAME=DESC></td>
+
+	<tr><td valign=top>My Groups</td>
 	<td><TABLE class=small id="groups">
 	    <TR class=bold><TD>Name<TD>Description<TD>Role<TD>Permissions</TR>
 	    <TMPL_LOOP NAME=GROUPS_LOOP>
 	    <TR><TD><TMPL_VAR NAME=GROUP_NAME><TD><TMPL_VAR NAME=GROUP_DESC><TD><TMPL_VAR NAME=ROLE><TD><TMPL_VAR NAME=GROUP_PERMISSION></TR>
             </TMPL_LOOP>
 	    </TABLE>
-	<tr><td>Description</td>
-	<td><TMPL_VAR NAME=DESC></td>
 
 <!--	<tr><td>Institute</td>
 	<td><TMPL_VAR NAME=INSTITUTE></td>
