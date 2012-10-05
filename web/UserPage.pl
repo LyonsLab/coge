@@ -68,8 +68,8 @@ sub gen_html
     $name .= " ".$USER->last_name if $USER->first_name && $USER->last_name;
     $template->param(USER=>$name);
     $name .= $name =~ /s$/ ? "'" : "'s";
-    $template->param(TITLE=>$name.qq{ User Settings (BETA)});
-    $template->param(PAGE_TITLE=>qq{User Settings (BETA)});
+    $template->param(TITLE=>$name.qq{ User Settings});
+    $template->param(PAGE_TITLE=>qq{User Settings});
     # $template->param(LOGO_PNG=>"FeatList-logo.png");
     $template->param(LOGON=>1) unless $USER->user_name eq "public";
     $template->param(DATE=>$DATE);
@@ -116,13 +116,14 @@ sub profile
     my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'UserPage.tmpl');
     $template->param(PROFILE=>1);
     $template->param(USER_NAME=>$USER->user_name);
+    $template->param(EMAIL=>$USER->email);
     $template->param(REAL_NAME=>$name);
     $template->param(DESC=>$USER->description);
     my @groups;
     foreach my $group ($USER->groups)
       {
 	my %groups;
-	$groups{GROUP_NAME}=$group->name;
+	$groups{GROUP_NAME}="<span class=link onclick=windown.open('GroupView.pl?ugid=".$group->id."');>".$group->name."</span>";
 	$groups{GROUP_DESC}=$group->description if $group->description;
 	my $role = $group->role->name;
 	$role .= ": ".$group->role->description if $group->role->description;
