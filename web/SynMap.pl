@@ -2181,7 +2181,7 @@ sub process_block
 	}
 	chomp $header;
 	$header .= "  Mean Ks:  $mean_ks\tMean Kn: $mean_kn\n";
-	$header .= join( "\t", "#Ks", qw(Kn a<db_genome_id>_<chr> chr1||start1||stop1||name1||strand1||type1||db_feature_id1||percent_id1 start1 stop1 b<db_genome_id>_<chr> chr2||start2||stop2||name2||strand2||type2||db_feature_id2||percent_id2 start2 stop2 eval ??? GEVO_link) ) . "\n";
+	$header .= join( "\t", "#Ks", qw(Kn a<db_genome_id>_<chr> chr1||start1||stop1||name1||strand1||type1||db_feature_id1||percent_id1 start1 stop1 b<db_genome_id>_<chr> chr2||start2||stop2||name2||strand2||type2||db_feature_id2||percent_id2 start2 stop2 eval block_score GEVO_link) ) . "\n";
 	return $header . $output;
 }
 
@@ -2735,9 +2735,9 @@ sub go
 			CoGe::Accessory::Web::write_log( "#" x (20), $cogeweb->logfile );
 			CoGe::Accessory::Web::write_log( "", $cogeweb->logfile );
 		}
-
+#		print STDERR $quota_align_coverage,"\n";
 		my $final_dagchainer_file = $quota_align_coverage && ( -r $quota_align_coverage || -r $quota_align_coverage . ".gz" ) ? $quota_align_coverage : $post_dagchainer_file_w_nearby;
-
+#		print STDERR $final_dagchainer_file,"\n";
 		#convert to genomic coordinates if gene order was used
 		if ( $dagchainer_type eq "geneorder" )
 		{
