@@ -212,13 +212,15 @@ function return_image_info (id) {
  }
 
 Gobe.handle_html= function (html) {
-	html = "<span class='ui-button ui-corner-all' id='clear_lines' onclick='Gobe.clear()'>Clear Connectors</span><br>"+html;
-	$('#results_info').html(html);
+  html = "<span class='ui-button ui-corner-all' id='clear_lines' onclick='Gobe.clear()'>Clear Connectors</span><br>"+html;
+  $('#results_info').html(html);
   
-	if ( !$('#results_info').dialog('isOpen') && html && !html.match(/multiple hits/) ) {
-		$('#results_info').dialog('option', 'position', ['right', 100]);
-		$('#results_info').dialog('open');
-	}
+  if ( !$('#results_info').dialog('isOpen') && html && !html.match(/multiple hits/) ) {
+   //$('#results_info').dialog('option', 'position', 'right');
+   var xpos = $(document).width - 500;
+   $('#results_info').dialog('option', 'position', ['right', 100]);
+   $('#results_info').dialog('open');
+  }
 };
 
 function open_all_sequence_option_menus(open) {
@@ -279,47 +281,14 @@ function autodistance_setup(){
 }
 
 function autosearch_coge_names (seqs){
-	var num_seqs = $('#num_seqs').val();
-	if (!seqs) { seqs = 1; }
-	for (var i = seqs; i <= num_seqs; i++) {
-    	//dataset_search(['args__accn','accn'+i,'args__num', 'args__'+i, 'args__dsid', 'dsid'+i, 'args__dsgid', 'dsgid'+i, 'args__gstid', 'gstid'+i, 'args__featid', 'featid'+i],[genome_search_chain]);
-		$.ajax({
-			data: {
-				jquery_ajax: 1,
-				fname: 'dataset_search',
-				accn: $('accn'+i).val(),
-				num: i,
-				dsid: $('dsid'+i).val(),
-				dsgid: $('dsgid'+i).val(),
-				gstid: $('gstid'+i).val(),
-				featid: $('featid'+i).val(),
-			},
-			success : function(data) {
-				var obj = jQuery.parseJSON(data);
-				genome_search_chain(obj.html, obj.num, obj.featid);
-			}
-		});
-	}
-}
-
-function do_dataset_search(accn, num, dsid, dsgid, gstid) {
-	//dataset_search(['args__accn','accn<TMPL_VAR NAME="SEQ_NUM">','args__num', 'args__<TMPL_VAR NAME="SEQ_NUM">', 'args__dsid', 'args__<TMPL_VAR NAME="DSID">', 'args__dsgid', 'args__<TMPL_VAR NAME="DSGID">', 'args__gstid', 'args__<TMPL_VAR NAME="GSTID">'],[genome_search_chain])
-	$.ajax({
-		data: {
-			jquery_ajax: 1,
-			fname: 'dataset_search',
-			accn: $('accn'+i).val(),
-			num: i,
-			dsid: $('dsid'+i).val(),
-			dsgid: $('dsgid'+i).val(),
-			gstid: $('gstid'+i).val(),
-			featid: $('featid'+i).val(),
-		},
-		success : function(data) {
-			var obj = jQuery.parseJSON(data);
-			genome_search_chain(obj.html, obj.num, obj.featid);
-		}
-	});
+ var num_seqs = $('#num_seqs').val();
+ if (!seqs) {seqs = 1;}
+ for (var i =seqs; i <= num_seqs; i++)
+  {
+    //dataset_search(['args__accn','accn'+i,'args__num', 'args__'+i, 'args__dsid', 'dsid'+i, 'args__dsgid', 'dsgid'+i, 'args__gstid', 'gstid'+i, 'args__featid', 'featid'+i],[genome_search_chain]);
+	accn = encodeURIComponent(document.getElementById('accn'+i).value);
+	dataset_search(['args__accn','args__'+accn,'args__num', 'args__'+i, 'args__dsid', 'dsid'+i, 'args__dsgid', 'dsgid'+i, 'args__gstid', 'gstid'+i, 'args__featid', 'featid'+i],[genome_search_chain]);
+  }
 }
 
 function walk (direction) {
@@ -375,64 +344,63 @@ function address_validity_check(validity){
 }
 
 function rset () {
-	var num_seqs = $("#num_seqs").val();
-	$("#results").html(" ");
-	
-	for (var i =1; i<= num_seqs; i++) {
-		$('#accn'+i).val("");
-		$('#drup'+i).val("10000");
-		$('#drdown'+i).val("10000");
+ var num_seqs = $("#num_seqs").val();
+ $("#results").html(" ");
+
+ for (var i =1; i<= num_seqs; i++)
+  {
     
-    	//dataset_search(['args__accn','accn'+i,'args__num', 'args__'+i],[genome_search_chain]);
-		$.ajax({
-			data: {
-				jquery_ajax: 1,
-				fname: 'dataset_search',
-				accn: $('accn'+i).val(),
-				num: i,
-			},
-			success : function(data) {
-				var obj = jQuery.parseJSON(data);
-				genome_search_chain(obj.html, obj.num, obj.featid);
-			}
-		});
+    $('#accn'+i).val("");
+    $('#drup'+i).val("10000");
+    $('#drdown'+i).val("10000");
     
-		$('#gbaccn'+i).val("");
-		$('#gbstart'+i).val("1");
-		$('#gblength'+i).val("");
-		$('#dirseq'+i).val("");
-		$('#dirstart'+i).val("1");
-		$('#dirlength'+i).val("");
-	}
+    //dataset_search(['args__accn','accn'+i,'args__num', 'args__'+i],[genome_search_chain]);
+    accn = encodeURIComponent(document.getElementById('accn'+i).value);
+    dataset_search(['args__accn','args__'+accn,'args__num', 'args__'+i],[genome_search_chain]);
+    
+    $('#gbaccn'+i).val("");
+    $('#gbstart'+i).val("1");
+    $('#gblength'+i).val("");
+    $('#dirseq'+i).val("");
+    $('#dirstart'+i).val("1");
+    $('#dirlength'+i).val("");
+    
+  }
+
 }
 
 function check_spike(tblastx) {
-	var spike_val = $('#spike').val();
-	if (spike_val == 0 || tblastx == 1) {
-		$('#blast_eval').css({ background: "#F7FFF7", color: "#000099" }).removeAttr("readonly");
-	}
-	else {
-		$('#blast_eval').css({ background: "#F5F5F5", color: "#808080" }).attr("readonly","readonly").val(30);
-	}
+  var spike_val = $('#spike').val();
+  if (spike_val == 0 || tblastx == 1)
+  {
+    $('#blast_eval').css({ background: "#F7FFF7", color: "#000099" }).removeAttr("readonly");
+  }
+  else
+  {
+    $('#blast_eval').css({ background: "#F5F5F5", color: "#808080" }).attr("readonly","readonly").val(30);
+  }
 }
 
 function genome_search_chain(stuff, num, featid) {
-	if (stuff) {
-		$("#dataset"+num).html(stuff);
-		genome_search(['args__dsid', 'dsid'+num, 'args__dsgid', 'dsgid'+num,'args__gstid', 'gstid'+num,'args__num', 'args__'+num, 'args__featid','args__'+featid],[feat_search_chain]);
-	}
-	else if (!($("#pos"+num).val())) {
-		$("#dataset"+num).html("<hidden id=dsid"+num+">");
-		$("#genome"+num).html("<hidden id=dsgid"+num+">");
-		$("#feat"+num).html("<hidden id=featid"+num+">");
-	}
+  if (stuff) {
+  $("#dataset"+num).html(stuff);
+  genome_search(['args__dsid', 'dsid'+num, 'args__dsgid', 'dsgid'+num,'args__gstid', 'gstid'+num,'args__num', 'args__'+num, 'args__featid','args__'+featid],[feat_search_chain]);
+ }
+ else if (!($("#pos"+num).val()))
+  {
+    $("#dataset"+num).html("<hidden id=dsid"+num+">");
+    $("#genome"+num).html("<hidden id=dsgid"+num+">");
+    $("#feat"+num).html("<hidden id=featid"+num+">");
+  }
 }
 
 function feat_search_chain(stuff, num, featid) {
-	if (stuff) {
-		$("#genome"+num).html(stuff);
-		feat_search(['args__accn', 'accn'+num,'args__dsid', 'dsid'+num, 'args__dsgid', 'dsgid'+num, 'args__num', 'args__'+num, 'args__featid','args__'+featid],['feat'+num]);
-	}
+ if (stuff) {
+  $("#genome"+num).html(stuff);
+   //feat_search(['args__accn', 'accn'+num,'args__dsid', 'dsid'+num, 'args__dsgid', 'dsgid'+num, 'args__num', 'args__'+num, 'args__featid','args__'+featid],['feat'+num]);
+   accn = encodeURIComponent(document.getElementById('accn'+num).value);
+   feat_search(['args__accn', 'args__'+accn,'args__dsid', 'dsid'+num, 'args__dsgid', 'dsgid'+num, 'args__num', 'args__'+num, 'args__featid','args__'+featid],['feat'+num]);
+ }
 }
 
 //this func switching the "left" and "right" sequence values when reverse region display is selected
@@ -1416,7 +1384,7 @@ Color <span style="color:#FF66FF;">masked</span> and <span style="color:#FF9900;
 <TABLE class="small">
        <TR valign="top">
         <TD>Name:
-        <TD align="left"><input  type="text" name="accn<TMPL_VAR NAME="SEQ_NUM">" id="accn<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="20" onBlur="do_dataset_search(<TMPL_VAR NAME="SEQ_NUM">, <TMPL_VAR NAME="SEQ_NUM">, <TMPL_VAR NAME="DSID">, <TMPL_VAR NAME="DSGID">, <TMPL_VAR NAME="GSTID">);" value="<TMPL_VAR NAME=DRACCN>" />
+        <TD align=left><input  type="text" name="accn<TMPL_VAR NAME="SEQ_NUM">" id="accn<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="20" onBlur="dataset_search(['args__accn','args__'+encodeURIComponent(document.getElementById('accn<TMPL_VAR NAME="SEQ_NUM">').value),'args__num', 'args__<TMPL_VAR NAME="SEQ_NUM">', 'args__dsid', 'args__<TMPL_VAR NAME="DSID">', 'args__dsgid', 'args__<TMPL_VAR NAME="DSGID">', 'args__gstid', 'args__<TMPL_VAR NAME="GSTID">'],[genome_search_chain])" value="<TMPL_VAR NAME=DRACCN>" />
 </table>
 </DIV>      
 
