@@ -61,7 +61,7 @@ sub gen_html
   {
     my $html;    
     my $template = HTML::Template->new(filename=>$P->{TMPLDIR}.'generic_page.tmpl');
-    $template->param(HELP=>'USER');
+    $template->param(HELP=>'/wiki/index.php?title=UserProfile');
     # print STDERR "user is: ",$USER,"\n";
     my $name = $USER->user_name;
     $name = $USER->first_name if $USER->first_name;
