@@ -69,17 +69,11 @@ __PACKAGE__->add_columns(
 	{ data_type => "INT", default_value => "0", is_nullable => 0, size => 1 }
 );
 __PACKAGE__->set_primary_key("list_id");
-
-#__PACKAGE__->has_many( "experiment_list_connectors" => "CoGeX::Result::ExperimentListConnector", 'list_id' );
-#__PACKAGE__->has_many( "genome_list_connectors"     => "CoGeX::Result::GenomeListConnector",     'list_id' );
-#__PACKAGE__->has_many( "feature_list_connectors"    => "CoGeX::Result::FeatureListConnector",    'list_id' );
-#__PACKAGE__->has_many( "list_collection_connectors" => "CoGeX::Result::ListCollectionConnector", 'list_id' );
-__PACKAGE__->has_many( "list_annotations"           => "CoGeX::Result::ListAnnotation",          'list_id' );
 __PACKAGE__->belongs_to( "user_group" => "CoGeX::Result::UserGroup", 'user_group_id' );
 __PACKAGE__->belongs_to( "list_type"  => "CoGeX::Result::ListType",  'list_type_id' );
-
-__PACKAGE__->has_many( "list_connectors_as_child"    => "CoGeX::Result::ListConnector",  {'foreign.child_id' => 'self.list_id' } );
-__PACKAGE__->has_many( "list_connectors_as_parent"    => "CoGeX::Result::ListConnector",  {'foreign.parent_id' => 'self.list_id' } );
+__PACKAGE__->has_many( "list_annotations"          => "CoGeX::Result::ListAnnotation", 'list_id' );
+__PACKAGE__->has_many( "list_connectors_as_child"  => "CoGeX::Result::ListConnector",  {'foreign.child_id' => 'self.list_id' } );
+__PACKAGE__->has_many( "list_connectors_as_parent" => "CoGeX::Result::ListConnector",  {'foreign.parent_id' => 'self.list_id' } );
 
 sub group
 {
@@ -326,12 +320,12 @@ sub annotation_pretty_print_html
 	$anno_obj->Val_delimit("\n");
 	$anno_obj->Add_type(0);
 	$anno_obj->String_end("\n");
-	my $anno_type = new CoGe::Accessory::Annotation( Type => "<tr><td nowrap='true'><span class=\"title5\">" . "Name" . "</span>" );
-	$anno_type->Type_delimit(": <td class=\"data5\">");
+	my $anno_type = new CoGe::Accessory::Annotation( Type => "<tr><td nowrap='true'><span class='title5'>" . "Name" . "</span>" );
+	$anno_type->Type_delimit(": <td class='data5'>");
 	$anno_type->add_Annot( $self->name . "</td>" );
 	$anno_obj->add_Annot($anno_type);
-	$anno_type = new CoGe::Accessory::Annotation( Type => "<tr><td nowrap='true'><span class=\"title5\">" . "Description" . "</span>" );
-	$anno_type->Type_delimit(": <td class=\"data5\">");
+	$anno_type = new CoGe::Accessory::Annotation( Type => "<tr valign='top'><td nowrap='true'><span class='title5'>" . "Description" . "</span>" );
+	$anno_type->Type_delimit(": <td class='data5' style='max-width:400px;overflow:hidden;word-wrap:break-word;'>");
 	$anno_type->add_Annot( $self->description . "</td>" );
 	$anno_obj->add_Annot($anno_type);
 
@@ -395,8 +389,8 @@ sub annotation_pretty_print_html
 #		}
 #	}
 	
-	$anno_type = new CoGe::Accessory::Annotation( Type => "<tr><td nowrap='true'><span class=\"title5\">" . "Type" . "</span>" );
-	$anno_type->Type_delimit(": <td class=\"data5\">");
+	$anno_type = new CoGe::Accessory::Annotation( Type => "<tr><td nowrap='true'><span class='title5'>" . "Type" . "</span>" );
+	$anno_type->Type_delimit(": <td class='data5'>");
 	if ($self->type)
 	{
 		my $type = $self->type->name;
@@ -405,8 +399,8 @@ sub annotation_pretty_print_html
 	}
 	$anno_obj->add_Annot($anno_type);
   
-	$anno_type = new CoGe::Accessory::Annotation( Type => "<tr><td valign='top' nowrap='true'><span class=\"title5\">" . "User Group" . "</span>" );
-	$anno_type->Type_delimit(": <td class=\"data5\">");
+	$anno_type = new CoGe::Accessory::Annotation( Type => "<tr><td valign='top' nowrap='true'><span class='title5'>" . "User Group" . "</span>" );
+	$anno_type->Type_delimit(": <td class='data5'>");
 	$anno_type->Val_delimit("<br>");
 	my $group = $self->group->info_html;
 	$anno_type->add_Annot( $group );
@@ -414,8 +408,8 @@ sub annotation_pretty_print_html
 	$anno_type->add_Annot( "</td>" );
 	$anno_obj->add_Annot($anno_type);
 
-	$anno_type = new CoGe::Accessory::Annotation( Type => "<tr><td nowrap='true'><span class=\"title5\">" . "Restricted" . "</span>" );
-	$anno_type->Type_delimit(": <td class=\"data5\">");
+	$anno_type = new CoGe::Accessory::Annotation( Type => "<tr><td nowrap='true'><span class='title5'>" . "Restricted" . "</span>" );
+	$anno_type->Type_delimit(": <td class='data5'>");
 	my $restricted = $self->restricted ? "Yes" : "No";
 	$anno_type->add_Annot( $restricted . "</td>" );
 	$anno_obj->add_Annot($anno_type);
