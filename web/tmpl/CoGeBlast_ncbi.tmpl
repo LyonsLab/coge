@@ -1,0 +1,213 @@
+<span class='ui-button ui-corner-all' style="font-size: 1em" onClick="select_blast()">NCBI Blast</span>
+<br>
+<br>
+<table class="ui-widget-content ui-corner-all">
+  <tr valign="top">
+    <td align="left">
+      <b>BLAST Parameters</b><br>
+      
+<table class="small">
+  <tr>
+    <td align="left" valign="top">
+      <b>Type<b><br>
+      <div id="ncbi_blast_type" style="display:none;">
+        <table class="ui-widget-content ui-corner-all small">
+          <tr>
+            <td valign="top">
+              <label><input id="ncbi_radio" type="radio" name="ncbiblast" value="ncbi_blast_type_n" checked="" onClick="get_seq('ncbi_radio');blast_param_on_select('ncbi_radio','ncbi');">Nucleotide Sequence</label>
+              <select name='ncbi_blasttype' id='ncbi_blast_type_n' onChange="blast_param_on_select('ncbi_radio','ncbi')">
+                <option value="blastn">blastn</option>
+                <option value="blastx">blastx</option>
+                <option value="tblastx">tblastx</option>
+              </select>
+              <br>
+              <label><input id="ncbi_radio" type="radio" name="ncbiblast" value="ncbi_blast_type_p" onClick="get_seq('ncbi_radio');blast_param_on_select('ncbi_radio','ncbi')">Protein Sequence</label>
+              <select name="ncbi_blasttype" id="ncbi_blast_type_p" onChange="blast_param_on_select('ncbi_radio','ncbi')">
+                <option value="blastp">blastp</option>
+                <option value="tblastn">tblastn</option>
+              </select>
+            </td>
+          </tr>
+        </table>
+      </div> <!-- ncbi_blast_type -->
+      <br><b>Scoring</b><br>
+      <table class="ui-corner-all ui-widget-content small">
+        <TR>
+          <TD>E-Value</TD>
+          <TD>
+            <select name="ncbi_e_value" id="ncbi_e_value">
+              <option value="1e-30">1e-30</option>
+              <option value="1e-20">1e-20</option>
+              <option value="1e-10">1e-10</option>
+              <option value=".000001">1e-6</option>
+              <option value=".00001">1e-5</option>
+              <option value=".0001" selected>0.0001</option>
+              <option value=".001">0.001</option>
+              <option value=".01">0.01</option>
+              <option value=".1">0.1</option>
+              <option value="1">1</option>
+              <option value="10">10</option>
+              <option value="100">100</option>
+            </select>
+          </td>
+        </TR>
+        <TR>
+          <TD>Word size</TD>
+          <TD>
+            <select name="ncbi_word_size" id="ncbi_word_size">
+              <option value="16">16</option>
+              <option value="20">20</option>
+              <option value="24">24</option>
+              <option value="28" selected>28</option>
+              <option value="32">32</option>
+              <option value="48">48</option>
+              <option value="64">64</option>
+            </select>
+          </td>
+        </TR>
+        <TR>
+          <TD>Gap Costs:</TD>
+          <TD>
+            <select id="ncbi_gapcosts_1-2" class="ncbi_gapcosts" style="display: block">
+              <option value="0 0">Linear</option>
+              <option value="5 2">Existence: 5 Extension: 2</option>
+              <option value="2 2">Existence: 2 Extension: 2</option>
+              <option value="1 2">Existence: 1 Extension: 2</option>
+              <option value="0 2">Existence: 0 Extension: 2</option>
+              <option value="3 1">Existence: 3 Extension: 1</option>
+              <option value="2 1">Existence: 2 Extension: 1</option>
+              <option value="1 1">Existence: 1 Extension: 1</option>
+            </select>
+            <select id="ncbi_gapcosts_1-3" class="ncbi_gapcosts" style="display: none">
+              <option value="0 0">Linear</option>
+              <option value="5 2">Existence: 5 Extension: 2</option>
+              <option value="2 2">Existence: 2 Extension: 2</option>
+              <option value="1 2">Existence: 1 Extension: 2</option>
+              <option value="0 2">Existence: 0 Extension: 2</option>
+              <option value="2 1">Existence: 2 Extension: 1</option>
+              <option value="1 1">Existence: 1 Extension: 1</option>
+            </select>
+            <select id="ncbi_gapcosts_1-4" class="ncbi_gapcosts" style="display: none">
+              <option value="0 0">Linear</option>
+              <option value="5 2">Existence: 5 Extension: 2</option>
+              <option value="1 2">Existence: 1 Extension: 2</option>
+              <option value="0 2">Existence: 0 Extension: 2</option>
+              <option value="2 1">Existence: 2 Extension: 1</option>
+              <option value="1 1">Existence: 1 Extension: 1</option>
+            </select>
+            <select id="ncbi_gapcosts_2-3" class="ncbi_gapcosts" style="display: none">
+              <option value="0 0">Linear</option>
+              <option value="4 4">Existence: 4 Extension: 4</option>
+              <option value="2 4">Existence: 2 Extension: 4</option>
+              <option value="0 4">Existence: 0 Extension: 4</option>
+              <option value="3 3">Existence: 3 Extension: 3</option>
+              <option value="6 2">Existence: 6 Extension: 2</option>
+              <option value="5 2">Existence: 5 Extension: 2</option>
+              <option value="4 2">Existence: 4 Extension: 2</option>
+              <option value="2 2">Existence: 2 Extension: 2</option>
+            </select>
+            <select id="ncbi_gapcosts_4-5" class="ncbi_gapcosts" style="display: none">
+              <option value="0 0">Linear</option>
+              <option value="12 8">Existence: 12 Extension: 8</option>
+              <option value="6 5">Existence: 6 Extension: 5</option>
+              <option value="5 5">Existence: 5 Extension: 5</option>
+              <option value="4 5">Existence: 4 Extension: 5</option>
+              <option value="3 5">Existence: 3 Extension: 5</option>
+            </select>
+            <select id="ncbi_gapcosts_1-1" class="ncbi_gapcosts" style="display: none">
+              <option value="5 2">Existence: 5 Extension: 2</option>
+              <option value="3 2">Existence: 3 Extension: 2</option>
+              <option value="2 2">Existence: 2 Extension: 2</option>
+              <option value="1 2">Existence: 1 Extension: 2</option>
+              <option value="0 2">Existence: 0 Extension: 2</option>
+              <option value="4 1">Existence: 4 Extension: 1</option>
+              <option value="3 1">Existence: 3 Extension: 1</option>
+              <option value="2 1">Existence: 2 Extension: 1</option>
+            </select>
+            <select id="ncbi_gapcosts_BLOSUM62" class="ncbi_gapcosts" style="display: none">
+              <option value="9 2">Existence: 9 Extension: 2</option>
+              <option value="8 2">Existence: 8 Extension: 2</option>
+              <option value="7 2">Existence: 7 Extension: 2</option>
+              <option value="12 1">Existence: 12 Extension: 1</option>
+              <option value="11 1" selected>Existence: 11 Extension: 1</option>
+              <option value="10 1">Existence: 10 Extension: 1</option>
+            </select>
+            <select id="ncbi_gapcosts_PAM30" class="ncbi_gapcosts" style="display: none">
+              <option value="7 2">Existence: 7 Extension: 2</option>
+              <option value="6 2">Existence: 6 Extension: 2</option>
+              <option value="5 2">Existence: 5 Extension: 2</option>
+              <option value="10 1">Existence: 10 Extension: 1</option>
+              <option value="9 1" selected>Existence: 9 Extension: 1</option>
+              <option value="8 1">Existence: 8 Extension: 1</option>
+            </select>
+            <select id="ncbi_gapcosts_PAM70" class="ncbi_gapcosts" style="display: none">
+              <option value="8 2">Existence: 8 Extension: 2</option>
+              <option value="7 2">Existence: 7 Extension: 2</option>
+              <option value="6 2">Existence: 6 Extension: 2</option>
+              <option value="11 1">Existence: 11 Extension: 1</option>
+              <option value="10 1" selected>Existence: 10 Extension: 1</option>
+              <option value="9 1">Existence: 9 Extension: 1</option>
+            </select>
+            <select id="ncbi_gapcosts_BLOSUM80" class="ncbi_gapcosts" style="display: none">
+              <option value="8 2">Existence: 8 Extension: 2</option>
+              <option value="7 2">Existence: 7 Extension: 2</option>
+              <option value="6 2">Existence: 6 Extension: 2</option>
+              <option value="11 1">Existence: 11 Extension: 1</option>
+              <option value="10 1" selected>Existence: 10 Extension: 1</option>
+              <option value="9 1">Existence: 9 Extension: 1</option>
+            </select>
+            <select id="ncbi_gapcosts_BLOSUM45" class="ncbi_gapcosts" style="display: none">
+              <option value="13 3">Existence: 13 Extension: 3</option>
+              <option value="12 3">Existence: 12 Extension: 3</option>
+              <option value="11 3">Existence: 11 Extension: 3</option>
+              <option value="10 3">Existence: 10 Extension: 3</option>
+              <option value="15 2" selected>Existence: 15 Extension: 2</option>
+              <option value="14 2">Existence: 14 Extension: 2</option>
+              <option value="13 2">Existence: 13 Extension: 2</option>
+              <option value="12 2">Existence: 12 Extension: 2</option>
+              <option value="19 1">Existence: 19 Extension: 1</option>
+              <option value="18 1">Existence: 18 Extension: 1</option>
+              <option value="17 1">Existence: 17 Extension: 1</option>
+              <option value="16 1">Existence: 16 Extension: 1</option>
+            </select>
+          </td>
+        </TR>
+      </table>
+    </td>          
+    </td>
+    <td align="left" valign="top"><b>Parameters</b>
+      <br>
+      <table class="ui-corner-all ui-widget-content small">
+        <TR>
+          <TD>Job Title</TD>
+          <TD>
+            <input id="job_title" type="text" value="<TMPL_VAR NAME=USER_NAME>'s BLAST">
+          </TD>
+        </TR>
+        <TR>
+          <TD>Database</TD>
+          <TD>
+            <div id='database'></div>
+          </td>
+        </TR>
+        <TR>
+          <TD>Filter</TD>
+          <TD>
+            <select name="complexity" id="complexity">
+              <option value="0">Off</option>
+              <option value="L">Low Complexity</option>
+              <option value="R">Human Repeats</option>
+              <option value="m">Mask for Lookup</option>
+            </select>
+          </td>
+        </TR>
+      </table>
+      <br>
+      <div id='ncbi_pro_or_nu_param'></div>
+    </TD>
+  </tr>
+</table>
+
+    </td>
+  </tr>
+</table>

@@ -14,6 +14,7 @@ use CoGe::Graphics::Feature::HSP;
 use CoGeX;
 use CGI;
 use CGI::Ajax;
+use JSON::XS;
 use HTML::Template;
 use Text::Wrap qw($columns &wrap);
 use Data::Dumper;
@@ -34,14 +35,13 @@ use Parallel::ForkManager;
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME 
 			$TEMPDIR $TEMPURL $DATADIR $FASTADIR $BLASTDBDIR $FORMATDB 
 			$BLAST_PROGS $FORM $USER $DATE $coge $cogeweb $RESULTSLIMIT 
-			$MAX_PROC $connstr $COOKIE_NAME);
+			$MAX_PROC $connstr $COOKIE_NAME $MAX_SEARCH_RESULTS %FUNCTION);
 
 $P             = CoGe::Accessory::Web::get_defaults( $ENV{HOME} . 'coge.conf' );
 $ENV{PATH}     = $P->{COGEDIR};
 $ENV{BLASTDB}  = $P->{BLASTDB};
 $ENV{BLASTMAT} = $P->{BLASTMATRIX};
 
-#refresh again?
 $PAGE_NAME = "CoGeBlast.pl";
 $TEMPDIR   = $P->{TEMPDIR} . "CoGeBlast";
 mkpath( $TEMPDIR, 0, 0777 ) unless -d $TEMPDIR;
@@ -61,6 +61,7 @@ $BLAST_PROGS = {
 	lastz        => $P->{LASTZ}
 };
 $RESULTSLIMIT = 100;
+$MAX_SEARCH_RESULTS = 1000;
 
 $DATE = sprintf(
 	"%04d-%02d-%02d %02d:%02d:%02d",
@@ -87,7 +88,7 @@ $USER = undef;
 ($USER) = CoGe::Accessory::Web->login_cas( cookie_name => $COOKIE_NAME, ticket => $cas_ticket, coge => $coge, this_url => $FORM->url() ) if ($cas_ticket);
 ($USER) = CoGe::Accessory::LogUser->get_user( cookie_name => $COOKIE_NAME, coge => $coge ) unless $USER;
 
-my $pj = new CGI::Ajax(
+%FUNCTION = (
 	gen_html                 => \&gen_html,
 	source_search            => \&get_data_source_info_for_accn,
 	get_types                => \&get_types,
@@ -97,7 +98,6 @@ my $pj = new CGI::Ajax(
 	set_seq                  => \&set_seq,
 	blast_param              => \&blast_param,
 	database_param           => \&database_param,
-	get_orgs                 => \&get_orgs,
 	gen_dsg_menu             => \&gen_dsg_menu,
 	blast_search             => \&blast_search,
 	generate_feat_info       => \&generate_feat_info,
@@ -117,14 +117,37 @@ my $pj = new CGI::Ajax(
 	export_alignment_file    => \&export_alignment_file,
 	save_settings_cogeblast  => \&save_settings_cogeblast,
 	generate_basefile        => \&generate_basefile,
-	get_genome_info          => \&get_genome_info,
 	get_dsg_for_blast_menu   => \&get_dsg_for_blast_menu,
+	get_genome_info          => \&get_genome_info,
+	search_lists			 => \&search_lists,
+	get_list_preview		 => \&get_list_preview,
+	get_genomes_for_list	 => \&get_genomes_for_list,
+	get_orgs                 => \&get_orgs,
 	%ajax,
 );
-$pj->js_encode_function('escape');
-print $pj->build_html( $FORM, \&gen_html );
 
-#print $FORM->header; print gen_html();
+my $pj = new CGI::Ajax(%FUNCTION);
+
+# mdb 10/5/12 - using both CGI and jQuery ajax
+if ( $FORM->param('jquery_ajax') ) {
+	my %args  = $FORM->Vars;
+	my $fname = $args{'fname'};
+	print STDERR Dumper \%args;
+	if ($fname and defined $FUNCTION{$fname}) {
+		if ( $args{args} ) {
+			my @args_list = split( /,/, $args{args} );
+			print $FORM->header, $FUNCTION{$fname}->(@args_list);
+		}
+		else {
+			print $FORM->header, $FUNCTION{$fname}->(%args);
+		}
+	}
+}
+else {
+	$pj->js_encode_function('escape');
+	print $pj->build_html( $FORM, \&gen_html );
+	#print $FORM->header; print gen_html();
+}
 
 sub gen_html {
 	my $html;
@@ -136,14 +159,14 @@ sub gen_html {
 	$template->param( HELP       => '/wiki/index.php?title=CoGeBlast' );
 	my $name = $USER->user_name;
 	$name = $USER->first_name if $USER->first_name;
-	$name .= " " . $USER->last_name if $USER->first_name && $USER->last_name;
+	$name .= ' ' . $USER->last_name if $USER->first_name && $USER->last_name;
 	$template->param( USER => $name );
 
 	$template->param( LOGON => 1 ) unless $USER->user_name eq "public";
 	$template->param( DATE       => $DATE );
 	$template->param( LOGO_PNG   => "CoGeBlast-logo.png" );
-	$template->param( BOX_NAME   => 'CoGeBlast Settings' );
-	$template->param( ADJUST_BOX => 1 );
+#	$template->param( BOX_NAME   => 'CoGeBlast Settings' );
+#	$template->param( ADJUST_BOX => 1 );
 	$template->param( BODY       => $body );
 	my $prebox = HTML::Template->new( filename => $P->{TMPLDIR} . 'CoGeBlast.tmpl' );
 	$prebox->param( RESULTS_DIV => 1 );
@@ -167,17 +190,17 @@ sub gen_body {
 	my $prefs      = CoGe::Accessory::Web::load_settings( user => $USER, page => $PAGE_NAME, coge => $coge );
 	$prefs = {} unless $prefs;
 	
-	$template->param( JAVASCRIPT       => 1 );
-	$template->param( BLAST_FRONT_PAGE => 1 );
-	$template->param( UPSTREAM         => $upstream );
-	$template->param( DOWNSTREAM       => $downstream );
-	$template->param( DSID             => $dsid );
-	$template->param( DSGID            => $dsgid );
-	$template->param( ORG_LIST         => get_orgs() );
-	$template->param( RC               => $rc );
-	$template->param( FEATID           => $featid );
-	$template->param( CHR              => $chr );
-	$template->param( GSTID            => $gstid );
+#	$template->param( PAGE_NAME  	=> $PAGE_NAME );
+	$template->param( MAIN			=> 1 );
+	$template->param( UPSTREAM		=> $upstream );
+	$template->param( DOWNSTREAM	=> $downstream );
+	$template->param( DSID			=> $dsid );
+	$template->param( DSGID			=> $dsgid );
+	$template->param( ORG_LIST		=> get_orgs(html_only => 1) );
+	$template->param( RC			=> $rc );
+	$template->param( FEATID		=> $featid );
+	$template->param( CHR			=> $chr );
+	$template->param( GSTID			=> $gstid );
 
 	if ($featid) {
 		$template->param( SEQVIEW => 1 );
@@ -196,21 +219,21 @@ sub gen_body {
 	}
 	else {
 		$template->param( SEQVIEW  => 0 );
-		$template->param( SEQUENCE => 'Enter a fasta sequence here' );
+		$template->param( SEQUENCE => 'Enter FASTA sequence(s) here' );
 	}
 	$template->param( USER_NAME => $USER->user_name );
-	$template->param( REST      => 1 );
+#	$template->param( REST      => 1 );
 
 	#populate user specified default values
 	my $db_list;
 	if ( $prefs->{dsgids} ) {
 		my $id = get_dsg_for_blast_menu( dsgid => $prefs->{dsgids} );
-		$db_list .= qq{add_to_list('$id');}
+		$db_list .= qq{add_to_list('$id');} if ($id);
 	}
 	
 	if ($dsgid) {
 		my $id = get_dsg_for_blast_menu( dsgid => $dsgid );
-		$db_list .= qq{add_to_list('$id');}
+		$db_list .= qq{add_to_list('$id');} if ($id)
 	}
 	
 	if ($lid) {
@@ -271,7 +294,7 @@ sub get_sequence {
 		foreach my $fid ( split(/,/, $fids) ) {
 			my $gstidt;
 			if ( $fid =~ /_/ ) {
-				( $fid, $gstidt ) = split /_/, $fid;
+				( $fid, $gstidt ) = split(/_/, $fid);
 			}
 			else {
 				$gstidt = $gstid;
@@ -368,51 +391,60 @@ sub database_param {
 
 sub get_orgs {
 	my %opts = @_;
-	my $name = $opts{name};
-	my $desc = $opts{desc};
-	$name = "" if $name && $name =~ /^Search$/i;
-	$desc = "" if $desc && $desc =~ /^Search$/i;
+	my $name_desc = $opts{name_desc};
+	my $html_only = $opts{html_only}; # optional flag to return html instead of JSON
+	my $timestamp = $opts{timestamp};
+#	print STDERR "get_orgs: " . ($name_desc ? $name_desc : '') . "\n";
+	
 	my $html;
-	my @db;
-	if ($name) {
-		@db = $coge->resultset('Organism')->search( { name => { like => "%" . $name . "%" } } );
-	}
-	elsif ($desc) {
-		@db = $coge->resultset("Organism")->search( { description => { like => "%" . $desc . "%" } } );
+	my @organisms;
+	if ($name_desc) {
+		$name_desc = '%' . $name_desc . '%';
+		my @organisms = $coge->resultset("Organism")->search(
+			\[ 'name LIKE ? OR description LIKE ?', 
+			['name', $name_desc ], ['description', $name_desc] ]);		
+		
+		my @opts;
+		foreach my $item ( sort { uc( $a->name ) cmp uc( $b->name ) } @organisms ) {
+			push @opts, "<OPTION value=\"" . $item->id . "\" id=\"o" . $item->id . "\">" . $item->name . "</OPTION>";
+		}
+
+		#$html .= qq{<FONT class="small" id="org_count">Matching Organisms (} . scalar @opts . qq{)</FONT><BR>};
+		if (@opts) {
+			if (@opts <= $MAX_SEARCH_RESULTS) {
+				#$html .= qq{<SELECT MULTIPLE id="org_id" SIZE="8" style="min-width:200px;" onchange="gen_dsg_menu(['args__oid','org_id'],['dsgid']);" ondblclick="add_selected_orgs();">\n};
+				$html .= join( "\n", @opts );
+				#$html .= "\n</SELECT>\n";
+				#$html =~ s/OPTION/OPTION SELECTED/;
+			}
+			else {
+				$html .= "<option id='null_org' style='color:gray;' disabled='disabled'>Too many results to display, please refine your search.</option>";
+				#$html .= qq{<SELECT MULTIPLE id="org_id" SIZE="8" style="min-width:200px;"><option id='null_org' style='color:gray;'>Too many results to display, please refine your search.</option></SELECT><input type='hidden' id='gstid'>\n};			
+			}
+		}
+		else {
+			$html .= "<option id='null_org' style='color:gray;' disabled='disabled'>No results</option>";
+			#$html .= qq{<SELECT MULTIPLE id="org_id" SIZE="8" style="min-width:200px;"><option id='null_org' style='color:gray;'>No results</option></SELECT><input type='hidden' id='gstid'>\n};
+		}														
 	}
 	else {
-		$html .=
-		    qq{<FONT CLASS ="small" id="org_count">Organism count: }
-		  . $coge->resultset('Organism')->count()
-		  . qq{</FONT>\n<BR>\n};
-		$html .= qq{<SELECT id="org_id" SIZE="8" MULTIPLE"><option id=null_org>Please search</option></SELECT><input type=hidden id=gstid>\n};
-		return $html;
+#		$html .= qq{<FONT class="small" id="org_count">Matching Organisms } . '(' . $coge->resultset('Organism')->count() . ')' . qq{</FONT>\n<br>\n};
+#		$html .= qq{<SELECT MULTIPLE id="org_id" SIZE="8" style="min-width:200px;"><option id='null_org' style='color:gray;'>Please enter a search term</option></SELECT><input type='hidden' id='gstid'>\n};
+		$html .= "<option id='null_org' style='color:gray;' disabled='disabled'>Please enter a search term</option>";
 	}
-
-	my @opts;
-	foreach my $item ( sort { uc( $a->name ) cmp uc( $b->name ) } @db ) {
-		push @opts, "<OPTION value=\"" . $item->id . "\" id=\"o" . $item->id . "\">" . $item->name . "</OPTION>";
-	}
-
-	$html .= qq{<FONT CLASS ="small" id="org_count">Organism count: } . scalar @opts . qq{</FONT>\n<BR>\n};
-	unless (@opts) {
-		$html .= qq{<input type = hidden name="org_id" id="org_id"><br>};
-		$html .= "No results";
-		return $html;
-	}
-	$html .= qq{<SELECT id="org_id" SIZE="8" MULTIPLE onclick="show_add()" onchange="gen_dsg_menu(['args__oid','org_id'],['org_seq_types']);" ondblclick="add_selected_orgs();">\n};
-	$html .= join( "\n", @opts );
-	$html .= "\n</SELECT>\n";
-	$html =~ s/OPTION/OPTION SELECTED/;
-	return $html;
+	
+	return $html if ($html_only);
+	return encode_json({timestamp => $timestamp, html => $html});
 }
 
 sub gen_dsg_menu {
-	my $t1    = new Benchmark;
+	#my $t1    = new Benchmark;
 	my %opts  = @_;
 	my $oid   = $opts{oid};
 	my $dsgid = $opts{dsgid};
-	my @dsg_menu;
+	print STDERR "gen_dsg_menu: $oid " . (defined $dsgid ? $dsgid : '') . "\n";
+	
+	my @genomes;
 	foreach my $dsg (
 		sort { $b->version <=> $a->version || $a->type->id <=> $b->type->id }
 		$coge->resultset('Genome')->search( { organism_id => $oid }, { prefetch    => ['genomic_sequence_type'] } ) )
@@ -427,22 +459,27 @@ sub gen_dsg_menu {
 		$name .= $dsg->name . ", " if $dsg->name; # : $dsg->datasets->[0]->name;
 		$name .= "v" . $dsg->version . " " . $dsg->type->name . " " . commify( $dsg->length ) . "nt";
 
-		push @dsg_menu, [ $dsg->id, $name ];
+		push @genomes, [ $dsg->id, $name ];
 	}
-	my $size = scalar @dsg_menu;
+	my $size = scalar @genomes;
 	$size = 5 if $size > 5;
 
-	my $dsg_menu = qq{<select id=dsgid multiple size=$size onclick="show_add();" ondblclick="get_dsg_for_blast_menu(['args__dsgid','dsgid'],[add_to_list]);">>};
-	foreach (@dsg_menu) {
-		my ( $numt, $name ) = @$_;
-		my $selected = " selected" if $dsgid && $numt == $dsgid;
-		$selected = " " unless $selected;
-		$dsg_menu .= qq{<OPTION VALUE=$numt $selected>$name</option>};
+	my $dsg_menu = '';
+	if (@genomes) {
+		#$dsg_menu .= 'Genomes for Organism<br>';
+		#$dsg_menu .= qq{<select multiple id='dsgid' size='$size' onclick="show_add();" ondblclick="get_dsg_for_blast_menu(['args__dsgid','dsgid'],[add_to_list]);">};
+		foreach (@genomes) {
+			my ( $numt, $name ) = @$_;
+			my $selected = ($dsgid && $numt == $dsgid ? 'selected' : '');
+			$dsg_menu .= qq{<option value='$numt' $selected>$name</option>};
+		}
+		#$dsg_menu .= '</select>';
 	}
-	$dsg_menu .= "</select>";
-	my $t2 = new Benchmark;
-	my $time = timestr( timediff( $t2, $t1 ) );
-	return ($dsg_menu);
+	
+	#my $t2 = new Benchmark;
+	#my $time = timestr( timediff( $t2, $t1 ) );
+print STDERR "gen_dsg_menu result: $dsg_menu\n";
+	return $dsg_menu;
 }
 
 sub get_dsg_for_blast_menu {
@@ -695,11 +732,9 @@ sub gen_results_page {
 	my $t0 = new Benchmark;
 	my %query_hit_count;
 	foreach my $set (@$results) {
-		$hsp_count{ $set->{organism} } = 0
-		  unless $hsp_count{ $set->{organism} };
+		$hsp_count{ $set->{organism} } = 0 unless $hsp_count{ $set->{organism} };
 		if ( @{ $set->{report}->hsps() } ) {
-			foreach my $hsp ( sort { $a->number <=> $b->number }
-				@{ $set->{report}->hsps() } )
+			foreach my $hsp ( sort { $a->number <=> $b->number } @{ $set->{report}->hsps() } )
 			{
 				my $dsg = $set->{dsg};
 				my ($chr) = $hsp->subject_name =~ /\|(\S*)/;
@@ -711,8 +746,8 @@ sub gen_results_page {
 				last if ( $hsp_count{$org} > $resultslimit );
 
 				populate_sqlite( $hsp, $dsg->id, $org, $chr );
-				my $id = $hsp->number . "_" . $dsg->id;
-				$click_all_links .= $id . ",";
+				my $id = $hsp->number . '_' . $dsg->id;
+				$click_all_links .= $id . ',';
 				my $feat_link = qq{<span class="link" onclick="fill_nearby_feats('$id','true')">Click for Closest Feature</span>};
 
 				my $qname = $hsp->query_name;
@@ -753,6 +788,7 @@ sub gen_results_page {
 	unless (@hsp) {
 		$null = "null";
 	}
+	
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'CoGeBlast.tmpl' );
 	$template->param( RESULT_TABLE => 1 );
 
@@ -830,7 +866,7 @@ sub gen_results_page {
 	$template->param( CHROMOSOMES   => $chromosome_element );
 	$template->param( BLAST_RESULTS => 1 );
 	$template->param( DATA_FILES => gen_data_file_summary( prog => $prog, results => $results ) );
-	my $html         = $template->output;
+	my $html = $template->output;
 
 	my $temp = qq{
 <span style='padding-left:10px;'>
@@ -839,7 +875,7 @@ sub gen_results_page {
 </span>};
 
 	my $box_template = HTML::Template->new( filename => $P->{TMPLDIR} . 'box.tmpl' );
-	$box_template->param( BOX_NAME => "CoGeBlast Results " . $temp );
+	$box_template->param( BOX_NAME => 'CoGeBlast Results ' . $temp );
 	$box_template->param( BODY     => $html );
 	my $outhtml     = $box_template->output;
 	my $t3          = new Benchmark;
@@ -1117,9 +1153,9 @@ sub create_fasta_file {
 	$seq =~ s/>\n//;
 	$seq = ">seq\n" . $seq unless $seq =~ />/;
 	if ( $seq =~ />/ ) {
-		foreach ( split /\n>/, $seq ) {
+		foreach ( split(/\n>/, $seq) ) {
 			next unless $_;
-			my ( $name, $tmp ) = split /\n/, $_, 2;
+			my ( $name, $tmp ) = split(/\n/, $_, 2);
 			$name =~ s/^>//;
 			next unless $tmp;
 			$tmp  =~ s/\n//g;
@@ -1203,7 +1239,7 @@ sub generate_feat_info {
 	my $checkbox = shift;
 	$featid =~ s/^table_row//;
 	my ( $hsp_num, $dsgid );
-	( $featid, $hsp_num, $dsgid ) = split /_/, $featid;
+	( $featid, $hsp_num, $dsgid ) = split(/_/, $featid);
 	my ($dsg)  = $coge->resultset('Genome')->find($dsgid);
 	my ($feat) = $coge->resultset("Feature")->find($featid);
 	unless ( ref($feat) =~ /Feature/i ) {
@@ -1235,7 +1271,7 @@ sub get_hsp_info {
 
 	my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data WHERE name = ?});
 
-	( $hsp_num, $dsgid ) = split /_/, $hsp_id;
+	( $hsp_num, $dsgid ) = split(/_/, $hsp_id);
 	my $dsg   = $coge->resultset('Genome')->find($dsgid);
 	my $gstid = $dsg->type->id;
 	$sth->execute($hsp_id) || die "unable to execute";
@@ -1371,7 +1407,7 @@ sub generate_overview_image {
 	my $basename    = $opts{basename};
 	my $type        = $opts{type};
 	my $image_width = $opts{width};
-	my @set         = split /\n/, `ls $TEMPDIR/$basename*.blast`;
+	my @set         = split(/\n/, `ls $TEMPDIR/$basename*.blast`);
 	my @reports;
 	my $count = 1;
 	$cogeweb = CoGe::Accessory::Web::initialize_basefile( basename => $basename, tempdir => $TEMPDIR );
@@ -1455,7 +1491,7 @@ sub generate_hit_image {
 	$feat->color( [ 255, 200, 0 ] );
 	$cq->add_feature($feat);
 	my ($chr) = $hsp->{schr};
-	my ( $hspid, $dsgid ) = split /_/, $hsp_name;
+	my ( $hspid, $dsgid ) = split(/_/, $hsp_name);
 	my $dsg = $coge->resultset('Genome')->find($dsgid);
 	my ($ds) = $dsg->datasets( chr => $chr );
 	my $len   = $hsp->{sstop} - $hsp->{sstart} + 1;
@@ -1834,7 +1870,7 @@ sub export_CodeOn {
 	$accn_list =~ s/,$//;
 	my $url = "CodeOn.pl?fid=";
 	my @list;
-	foreach my $accn ( split /,/, $accn_list ) {
+	foreach my $accn ( split(/,/, $accn_list) ) {
 		next if $accn =~ /no$/;
 		my ( $featid, $hspnum, $dsgid ) = $accn =~ m/^(\d+)_(\d+)_(\d+)$/;
 
@@ -1855,7 +1891,7 @@ sub export_fasta_file {
 	$accn_list =~ s/,$//;
 	my $url = "FastaView.pl?fid=";
 	my @list;
-	foreach my $accn ( split /,/, $accn_list ) {
+	foreach my $accn ( split(/,/, $accn_list) ) {
 		next if $accn =~ /no$/;
 		my ( $featid, $hspnum, $dsgid ) = $accn =~ m/^(\d+)_(\d+)_(\d+)$/;
 		my $dsg = $coge->resultset('Genome')->find($dsgid);
@@ -2013,7 +2049,7 @@ sub generate_feat_list {
 
 	my $url = "FeatList.pl?";
 	my @list;
-	foreach my $accn ( split /,/, $accn_list ) {
+	foreach my $accn ( split(/,/, $accn_list) ) {
 		next if $accn =~ /no$/;
 		my ( $featid, $hspnum, $dsgid ) = $accn =~ m/^(\d+)_(\d+)_(\d+)$/;
 		my $dsg = $coge->resultset('Genome')->find($dsgid);
@@ -2057,13 +2093,17 @@ sub generate_blast {
 sub get_genome_info {
 	my %opts  = @_;
 	my $dsgid = $opts{dsgid};
+	print STDERR "get_genome_info: $dsgid\n";
 	return " " unless $dsgid;
+	
 	my $dsg = $coge->resultset("Genome")->find($dsgid);
 	return "Unable to create genome object for id: $dsgid" unless $dsg;
-	my $html = qq{<table class=small>}; # = qq{<div style="overflow:auto; max-height:78px">};
-	$html .= qq{<tr><td>Name:<td><span class='link' onclick=window.open('OrganismView.pl?dsgid=$dsgid')>} . $dsg->organism->name . "</span>";
-	$html .= "<tr><td>Description:<td>" . join("; ", map { qq{<span class=link onclick="\$('#org_desc').val('$_').focus();">$_</span>} } split /;\s+/, $dsg->organism->description)
-	  if $dsg->organism->description;
+	
+	my $html = qq{<table class='small'>}; # = qq{<div style="overflow:auto; max-height:78px">};
+	$html .= qq{<tr valign='top'><td style='white-space:nowrap'>Name:<td><span class='link' onclick=window.open('OrganismView.pl?dsgid=$dsgid')>} . $dsg->organism->name . "</span>";
+	$html .= "<tr valign='top'><td style='white-space:nowrap'>Description:<td>" . 
+		join("; ", map { qq{<span class=link onclick="\$('#org_desc').val('$_').focus();">$_</span>} } split(/;\s+/, $dsg->organism->description))
+	  	if $dsg->organism->description;
 
 	my @gs = sort { $a->chromosome cmp $b->chromosome } $dsg->genomic_sequences;
 	my $chr_num = scalar @gs;
@@ -2073,15 +2113,15 @@ sub get_genome_info {
 	my $link = $ds->data_source->link;
 	$link = "http://" . $link unless $link =~ /^http/;
 	$html .=
-	    "<tr><td>Source:<td><a class = 'link' href=" . $link
+	    "<tr valign='top'><td>Source:<td><a class = 'link' href=" . $link
 	  . " target=_new>"
 	  . $ds->data_source->name . "</a>"
-	  . qq{<tr><td>Chromosome count:<td>$chr_num}
-	  . qq{<tr><td>Total length:<td>}
+	  . qq{<tr valign='top'><td style='white-space:nowrap'>Chromosomes:<td>$chr_num}
+	  . qq{<tr valign='top'><td style='white-space:nowrap'>Total length:<td>}
 	  . commify($total_length) . " bp"
-	  . qq{<tr><td>Sequence Type:<td>}
+	  . qq{<tr valign='top'><td style='white-space:nowrap'>Sequence Type:<td>}
 	  . $dsg->genomic_sequence_type->name
-	  . qq{<input type=hidden id=gstid value=}
+	  . qq{<input type='hidden' id='gstid' value=}
 	  . $dsg->genomic_sequence_type->id;
 
 	#    foreach my $gs (@gs)
@@ -2331,3 +2371,99 @@ sub color_pallet {
 	return wantarray ? @colors : \@colors;
 }
 
+sub search_lists { 
+	my %opts = @_;
+	my $search_term	= $opts{search_term};
+	my $timestamp 	= $opts{timestamp};
+#	print STDERR "$search_term $timestamp\n";
+	
+	return if $USER->name eq 'public';
+	
+	# Get lists already in this group
+#	my $group = $coge->resultset('UserGroup')->find($ugid);
+#	my %exists;
+#	map { $exists{$_->id}++ } $group->lists;
+	
+	my @lists;
+	my $num_results;
+	my $group_str = join(',', map { $_->id } $USER->groups);
+	
+	# Try to get all items if blank search term
+	if (not $search_term) {
+		# Get all lists
+		my $sql = "locked=0 AND (restricted=0 OR user_group_id IN ( $group_str ))";
+		$num_results = $coge->resultset("List")->count_literal($sql);
+		if ($num_results < $RESULTSLIMIT) {
+			@lists = $coge->resultset("List")->search_literal($sql);
+		}
+	}
+	# Perform search
+	else {
+		$search_term = '%'.$search_term.'%';
+		if ($USER->is_admin) {
+			@lists = $coge->resultset("List")->search(
+				\[ 'name LIKE ? OR description LIKE ?', 
+				['name', $search_term ], ['description', $search_term] ]);		
+		}
+		else {
+			@lists = $coge->resultset("List")->search_literal("locked=0 AND (restricted=0 OR user_group_id IN ( $group_str )) AND (name LIKE '$search_term' OR description LIKE '$search_term')");
+		}
+	}
+
+	# Limit number of results display
+	if ($num_results > $RESULTSLIMIT) {
+		return encode_json({
+					timestamp => $timestamp,
+					html => "<option disabled='disabled'>$num_results results, please refine your search.</option>"
+		});
+	}
+	
+	# Build select items out of results	
+	my $html = '';
+	foreach my $l (sort listcmp @lists) {
+		my $disable = '';#$exists{$l->id} ? "disabled='disabled'" : '';
+		#next if ($l->id == $lid); # can't add a list to itself!
+		my $item_spec = 1 . ':' . $l->id; #FIXME magic number for item_type
+		$html .= "<option $disable value='$item_spec'>" . $l->info . "</option><br>\n";	
+	}
+	
+	return encode_json({timestamp => $timestamp, html => $html});
+}
+
+# FIXME mdb 8/29/12 - this routine is redundantly declared (e.g. ListView.pl, GroupView.pl)
+sub listcmp {
+	no warnings 'uninitialized'; # disable warnings for undef values in sort
+	$a->name cmp $b->name
+}
+
+sub get_list_preview {
+	my %opts = @_;
+	my $item_spec = $opts{item_spec};
+
+	my (undef, $lid) = split(':', $item_spec);
+
+	my $list = $coge->resultset('List')->find($lid);
+	my $html = '';
+	if ($list) {
+		$html .= "List <b>'" . $list->name . "'</b> (id" . $list->id . ') contains ';
+		$html .= @{$list->genomes} . ' genomes <ul>' . join('', map {'<li>' . $_->info . '</li>'} $list->genomes) . '</ul>';
+	}
+
+	return $html;	
+}
+
+sub get_genomes_for_list {
+	my %opts = @_;
+	my $item_spec = $opts{item_spec};
+
+	my (undef, $lid) = split(':', $item_spec);
+
+	my $list = $coge->resultset('List')->find($lid);
+	my $genomes = '';
+	if ($list) {
+		my $dsgids = join(',', map { $_->id } $list->genomes);
+		$genomes = get_dsg_for_blast_menu(dsgid => $dsgids);
+	}
+
+	return $genomes;	
+}
