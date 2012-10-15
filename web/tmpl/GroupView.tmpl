@@ -377,7 +377,8 @@ Are you sure you want to permanently delete this group?<p>
 <TMPL_IF NAME=MODIFY_USERS>
 <table class="small">
  <tr>
-  <td>Current Members:<br>
+  <td>
+   <b>Current Members</b><br>
    <form name="current_users">
     <select multiple id="ugid" name="current_ugid" onclick="show_add()" ondblclick="remove_user({ugid: '<TMPL_VAR NAME=UGID>'})" size=10 >
      <TMPL_LOOP NAME=UGID_LOOP>
@@ -391,17 +392,18 @@ Are you sure you want to permanently delete this group?<p>
    Filter: <INPUT NAME=regexp onKeyUp="current_user_filter.set(this.value)">
   </td> 
   <td>
-   <span href="javascript:void(0)" onClick="remove_user({ugid: '<TMPL_VAR NAME=UGID>'});" style="display:none" id="remove_user" class='ui-button ui-button-go ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-minus"></span>Remove</span>
-   <span href="javascript:void(0)" onClick="add_user({ugid: '<TMPL_VAR NAME=UGID>'});" class='ui-button ui-button-go ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Add</span>
+   <span id="remove_user" href="javascript:void(0)" onClick="remove_user({ugid: '<TMPL_VAR NAME=UGID>'});" style="display:none" class='ui-button ui-button-go ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-minus"></span>Remove</span>
+   <span id="add_user" href="javascript:void(0)" onClick="add_user({ugid: '<TMPL_VAR NAME=UGID>'});" class='ui-button ui-button-go ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Add</span>
   </td>
   <td>
-   CoGe Users:<br>
+   <b>Available Users</b><br>
    <form name="new_users">
     <select multiple id="new_ugid" name="new_ugid" onclick="show_add(1)" ondblclick="add_user({ugid: '<TMPL_VAR NAME=UGID>'})" size=10>
      <TMPL_LOOP NAME=ALL_UGID_LOOP>
-      <OPTION value=<TMPL_VAR NAME=UID>><TMPL_VAR NAME=UID_NAME></OPTION>
+      <OPTION <TMPL_VAR NAME=SELECTED> value=<TMPL_VAR NAME=UID>><TMPL_VAR NAME=UID_NAME></OPTION>
      </TMPL_LOOP>
-    </select><br>
+    </select>
+    <br>
    </form>
    <SCRIPT TYPE="text/javascript"> 
     var new_user_filter = new filterlist(document.new_users.new_ugid);
@@ -410,7 +412,7 @@ Are you sure you want to permanently delete this group?<p>
   </td>
  </tr>
 </table>
-<span href="javascript:void(0)" onClick="modify_users({ugid: '<TMPL_VAR NAME=UGID>'});" id="refresh_modify_users" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Refresh</span> <span class=small>(Displayed lists can get out of sync when filtering for names.)</small>
+<span id="refresh_modify_users" href="javascript:void(0)" onClick="modify_users({ugid: '<TMPL_VAR NAME=UGID>'});" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plus"></span>Refresh</span> <span class="small" style="font-style:italic;color:gray;">(Displayed lists can get out of sync when filtering for names)</small>
 </TMPL_IF>
 
 

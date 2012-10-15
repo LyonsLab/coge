@@ -238,10 +238,11 @@ sub modify_users {
 	$data{users} = \@users;
 	
 	my @all_users;
+	my $first = 1;
 	foreach my $user ( sort { $a->last_name cmp $b->last_name || $a->user_name cmp $b->user_name } $coge->resultset('User')->all )
 	{
 		next if $users{ $user->id };    #skip users we already have
-		push @all_users, { uid_name => $user->info, uid => $user->id };
+		push @all_users, { uid_name => $user->info, uid => $user->id, selected => ($first-- > 0 ? 'selected' : '') };
 	}
 	$data{all_users} = \@all_users;
 
