@@ -365,8 +365,6 @@ sub search_lists {
 #	print STDERR "$ugid $search_term $timestamp\n";
 	return 0 unless $ugid;
 	
-	$search_term = '%'.$search_term.'%';
-	
 	# Get lists already in this group
 	my $group = $coge->resultset('UserGroup')->find($ugid);
 	my %exists;
@@ -387,6 +385,7 @@ sub search_lists {
 	}
 	# Perform search
 	else {	
+		$search_term = '%'.$search_term.'%';
 		if ($USER->is_admin) {
 			@lists = $coge->resultset("List")->search(
 				\[ 'name LIKE ? OR description LIKE ?', 

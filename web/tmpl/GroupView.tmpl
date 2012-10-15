@@ -200,7 +200,7 @@ function add_lists_to_group (opts) {
 	$('#select_list_items > option:selected').each(
 		function() {
 			var item_spec = $(this).attr("value");
-			$(this).remove();
+			//$(this).remove();
 			$.ajax({
 				data: {
 					jquery_ajax: 1,
