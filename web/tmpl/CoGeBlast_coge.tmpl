@@ -50,10 +50,10 @@
                     </select>
                   </div>
                   <span id="import" name="import" onClick="search_lists();" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-arrowreturnthick-1-w"></span>Import List</span>
-                  <span id="clear" name="clear" onClick="clear_org_list();" class='ui-state-disabled ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-minusthick"></span>Clear</span>
                   <TMPL_IF NAME="SAVE_ORG_LIST">
                   <span id="save" name="save" class='ui-button ui-button-icon-left ui-corner-all' onclick="save_org_list();"><span class="ui-icon ui-icon-disk"></span>Save</span>
-                  </TMPL_IF>
+                  </TMPL_IF>                  
+                  <span id="clear" name="clear" onClick="clear_org_list();" class='ui-state-disabled ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-minusthick"></span>Clear</span>
                 </td>
               </tr>
             </table>
@@ -69,7 +69,7 @@
     <td align="left">
       <b>BLAST Parameters</b>
       <div class='small' style='color:gray;padding:5px;'>
-        <span id='blast_summary'><b>Type: Nucleotide Sequence (blastn) ... </b></span>
+        <span id='blast_summary'><b>Type:</b> Nucleotide Sequence (blastn) ...</span>
         <span onclick='$(this).parent().hide(); $("#blast_params").slideDown();' class='link small'>more</span>
       </div>
       <div id='blast_params' style='display:none;'>
