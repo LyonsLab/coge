@@ -8,6 +8,7 @@ use JSON::XS;
 use HTML::Template;
 use Digest::MD5 qw(md5_base64);
 use Sort::Versions;
+use List::Util qw(first);
 
 #use URI::Escape;
 use Data::Dumper;
@@ -166,7 +167,7 @@ sub get_list_info {
 	return "List id$lid does not exist.<br>" .
 			"Click <a href='Lists.pl'>here</a> to view a table of all lists." unless ($list);	
 
-	my $html = "List Info:<br>" . $list->annotation_pretty_print_html();
+	my $html = $list->annotation_pretty_print_html();
 
 	if ($USER->is_admin || (not $list->locked && $USER->is_owner_editor(list => $lid))) {
 		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-corner-all' onClick="edit_list_info({lid: '$lid'});">Edit List Info</span>};
@@ -293,29 +294,30 @@ sub get_list_annotations {
 		push @{$groups{$group}}, $a;
 	}
 	
+	my $html = '<table id="list_annotation_table" cellpadding=0 class="ui-widget-content ui-corner-all small" style="max-width:400px;overflow:hidden;word-wrap:break-word;"><thead style="display:none"></thead><tbody>';
 	foreach my $group (sort keys %groups) {
-		foreach my $a ( sort {$a->id <=> $b->id} @{$groups{$group}} ) { #( $list->annotations ) {
-			my $anno_type = new CoGe::Accessory::Annotation( Type => "<tr valign='top'><td nowrap='true'><span class=\"title5\">" . $group . "</span>" );
-			$anno_type->Type_delimit(": <td class=\"data5\">");
-			$anno_type->Val_delimit("<br>");
+		my $first = 1;
+		foreach my $a ( sort {$a->id <=> $b->id} @{$groups{$group}} ) {
+			$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' class='title5' nowrap='true' rowspan=" . @{$groups{$group}} . " style='font-weight:normal;background-color:white'>$group:</th>" : '');
 			
 			my $image_link = ($a->image ? 'image.pl?id=' . $a->image->id : '');
 			my $a_info = ($a->image ? "<a href='$image_link' target='_blank'><img height=20 width=20 src='$image_link' style='vertical-align:text-top;'></a>" : '');
-			$a_info .= ' ';
-			$a_info .= ($a->link ? linkify($a->link, $a->info) : $a->info);
-			$a_info .= ' ';
-			$a_info .= ($user_can_edit ? "<span onClick=\"remove_list_annotation({lid: '$lid', laid: '" . $a->id . "'});\" class='link ui-icon ui-icon-trash'></span>" : '');
-			$anno_type->add_Annot($a_info);
-			$anno_obj->add_Annot($anno_type);
+			$a_info .= ' ' . ($a->link ? linkify($a->link, $a->info) : $a->info);
+			$html .= "<td class='data5'>$a_info</td>";
+			
+			if ($user_can_edit) {
+				$html .= "<td><span onClick=\"\$(this).fadeOut(); remove_list_annotation({lid: '$lid', laid: '" . $a->id . "'});\" class='link ui-icon ui-icon-trash'></span></td>";
+			}
+			$html .= '</tr>';
 		}
 	}
-	my $html = "<table cellpadding=0 class='ui-widget-content ui-corner-all small'>" . $anno_obj->to_String . "</table>";
-
+	$html .= '</tbody></table>';
+	
 	if ($user_can_edit) {
 		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-button-icon-left ui-corner-all' onClick="add_list_annotation({lid: $lid});"><span class="ui-icon ui-icon-plus"></span>Add Annotation</span>};
-	}
+	}	
 
-	return 'List Annotations:<br> ' . $html;
+	return $html;
 }
 
 sub add_list_annotation {
@@ -442,43 +444,51 @@ sub get_list_contents {
 	my $first = 1;
 	$html = '<table id="list_contents_table" class="small ui-widget-content ui-corner-all"><thead style="display:none"></thead><tbody>';
 	foreach my $genome ( sort genomecmp $list->genomes ) {
-		$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' nowrap='true' rowspan=" . @{$list->genomes} . " style='font-weight:normal;background-color:white'>Genomes:</th>" : '');
+		my $count = @{$list->genomes};
+		$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' class='title5' nowrap='true' rowspan=$count style='font-weight:normal;background-color:white'>Genomes ($count):</th>" : '');
 		my $gid = $genome->id;
 		$html .= qq{<td class='data5'><span id='genome$gid' class='link' onclick="window.open('OrganismView.pl?dsgid=$gid')">} . $genome->info . "</span></td>";
 		if ($user_can_edit) {
 			#FIXME hardcoded value for item_type
 			$html .= "<td><span onClick=\"remove_list_item(this, {lid: '$lid', item_type: '2', item_id: '$gid'});\" class='link ui-icon ui-icon-circle-minus'></span></td>";
 		}
+		$html .= '</tr>';
 	}
 	$first = 1;
 	foreach my $experiment (sort experimentcmp $list->experiments ) {
-		$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' nowrap='true' rowspan=" . @{$list->experiments} . " style='font-weight:normal;background-color:white'>Experiments:</th>" : '');
+		my $count = @{$list->experiments};
+		$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' class='title5' nowrap='true' rowspan=$count style='font-weight:normal;background-color:white'>Experiments ($count):</th>" : '');
 		my $eid = $experiment->id;
 		$html .= qq{<td class='data5'><span id='experiment$eid' class='link' onclick="window.open('ExperimentView.pl?eid=$eid')">} . $experiment->info . "</span></td>";
 		if ($user_can_edit) {
 			#FIXME hardcoded value for item_type
 			$html .= "<td><span onClick=\"remove_list_item(this, {lid: '$lid', item_type: '3', item_id: '$eid'});\" class='link ui-icon ui-icon-circle-minus'></span></td>";
-		}		
+		}
+		$html .= '</tr>';
 	}
 	$first = 1;
 	foreach my $feature (sort featurecmp $list->features ) {
-		$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' nowrap='true' rowspan=" . @{$list->features} . " style='font-weight:normal;background-color:white'>Features:</th>" : '');
+		my $count = @{$list->features};
+		$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' class='title5' nowrap='true' rowspan=$count style='font-weight:normal;background-color:white'>Features ($count):</th>" : '');
 		my $fid = $feature->id;
 		$html .= qq{<td class='data5'><span id='feature$fid' class='link' onclick="window.open('FeatView.pl?fid=$fid')">} . $feature->info . "</span></td>";
 		if ($user_can_edit) {
 			#FIXME hardcoded value for item_type
 			$html .= "<td><span onClick=\"remove_list_item(this, {lid: '$lid', item_type: '4', item_id: '$fid'});\" class='link ui-icon ui-icon-circle-minus'></span></td>";
-		}		
+		}
+		$html .= '</tr>';
 	}
 	$first = 1;
 	foreach my $list (sort listcmp $list->lists ) {
-		$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' nowrap='true' rowspan=" . @{$list->lists} . " style='font-weight:normal;background-color:white'>Lists:</th>" : '');
+		my $count = @{$list->lists};
+		$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' class='title5' nowrap='true' rowspan=$count style='font-weight:normal;background-color:white'>Lists ($count):</th>" : '');
 		my $child_id = $list->id;
 		$html .= qq{<td class='data5'><span id='list$child_id' class='link' onclick="window.open('ListView.pl?lid=$child_id')">} . $list->info . "</span></td>";
 		if ($user_can_edit) {
 			#FIXME hardcoded value for item_type
 			$html .= "<td><span onClick=\"remove_list_item(this, {lid: '$lid', item_type: '1', item_id: '$child_id'});\" class='link ui-icon ui-icon-circle-minus'></span></td>";
-		}		
+		}
+		$html .= '</tr>';
 	}		
 
 	$html .= '</tbody></table>';
@@ -488,7 +498,7 @@ sub get_list_contents {
 		
 	}
 	
-	return 'List Contents:<br>' . $html;
+	return $html;
 }
 
 sub add_list_items {
@@ -829,7 +839,7 @@ sub search_annotation_types {
 	my %opts = @_;
 	my $type_group = $opts{type_group};
 	my $search_term = $opts{search_term};
-	print STDERR "search_annotation_types: $search_term $type_group\n";
+#	print STDERR "search_annotation_types: $search_term $type_group\n";
 	return '' unless $search_term;
 	
 	$search_term = '%'.$search_term.'%';
@@ -869,6 +879,7 @@ sub get_annotation_type_groups {
 	return encode_json( [ sort keys %unique ] );
 }
 
+# FIXME these comparison routines are duplicated elsewhere
 sub genomecmp {
 	no warnings 'uninitialized'; # disable warnings for undef values in sort
 	$a->organism->name cmp $b->organism->name || versioncmp($b->version, $a->version) || $a->type->id <=> $b->type->id || $a->name cmp $b->name || $b->id cmp $a->id
@@ -965,6 +976,8 @@ sub send_to_synfind
 	
 	my $accn_list = join(',', map { $_->id } $list->genomes);
 	my $url = "SynFind.pl?dsgid=$accn_list";
+	my $first = first { $_->id } $list->features;
+	$url .= ";fid=" . $first->id if ($first);
 	return encode_json({url => $url});
 }
 

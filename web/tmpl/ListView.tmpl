@@ -13,13 +13,18 @@ $(document).ready(function(){
 		cache: false,
 	});
 	
-	set_table();
+	set_contents_table();
+	set_annotation_table();
 	
 	$(".dialog_box").dialog({autoOpen: false});
 });
 
-function set_table () {
+function set_contents_table() {
 	$('#list_contents_table').tablesorter({widgets: ['zebra']});
+}
+
+function set_annotation_table() {
+	$('#list_annotation_table').tablesorter({widgets: ['zebra']});
 }
 
 function show_dialog(id, title, html, width, height) {
@@ -86,7 +91,6 @@ function run_get_list_info(opts){
 		var local_divid = divid;
 		return function (data) {
 			$('#'+local_divid).html(data);
-			//set_table();
 		};
 	}; 
 
@@ -208,7 +212,7 @@ function run_get_list_contents(opts) {
 		var local_divid = divid;
 		return function (data) {
 			$('#'+local_divid).html(data);
-			set_table();
+			set_contents_table();
 		};
 	}; 
 
@@ -316,7 +320,7 @@ function run_get_list_annotations(opts) {
 		var local_divid = divid;
 		return function (data) {
 			$('#'+local_divid).html(data);
-			//set_table();
+			set_annotation_table();
 		};
 	}; 
 
@@ -490,9 +494,6 @@ function get_annotation_type_groups () {
 }
 
 function dialog_delete_list (opts) {
-	//$("#list_delete_box").dialog("option", "title", "Delete List?");
-	//$("#list_delete_box").dialog("option", "width", "450");
-	//$("#list_delete_box").dialog('open');
 	show_dialog('list_delete_box', 'Delete List?', '', 450);
 }
 
@@ -531,35 +532,45 @@ function send_list_to() {
 }
 </SCRIPT>
 
-<div id="list_info">
- <TMPL_VAR NAME=LIST_INFO>
-</div>
+<table>
+ <tr valign='top'>
+  <td>
+   <div id="list_info">
+    <span style="color:dimgray;font-weight:bold;">List Info</span><br>
+    <TMPL_VAR NAME=LIST_INFO>
+   </div>
+  </td>
+  <td style='padding-left:20px'>
+   <span style="color:dimgray;font-weight:bold;">List Annotations</span><br>
+   <div id='list_annotations'>
+    <TMPL_VAR NAME=LIST_ANNOTATIONS>
+   </div>
+  </td>
+  </tr>
+</table>
 
 <br>
 
-<div id="list_annotations">
- <TMPL_VAR NAME=LIST_ANNOTATIONS>
-</div>
-
-<br>
-
-<div id="list_contents">
- <TMPL_VAR NAME=LIST_CONTENTS>
+<div>
+ <span style="color:dimgray;font-weight:bold;">List Contents</span><br>
+ <div id="list_contents">
+  <TMPL_VAR NAME=LIST_CONTENTS>
+ </div>
 </div>
 
 <br>
 <div class='small'>
 Send list to:  
  <select name="checked_action" id="checked_action">
-  <option value="send_to_blast">CoGeBlast</option>
-  <option value="send_to_msa">CoGeAlign</option>
-  <option value="send_to_gevo">GEvo</option>
-  <option value="send_to_synfind">SynFind</option>
-  <option value="send_to_featmap">Genome Map</option>
-  <option value="send_to_codeon">Coding Evolution</option>
-  <option value="send_to_fasta">FASTA Sequences</option>
-  <option value="send_to_csv">Export CSV</option>
-  <option value="send_to_xls">Export XLS</option>
+  <option value="send_to_blast">CoGeBlast (genomes only)</option>
+  <option value="send_to_msa">CoGeAlign (features only)</option>
+  <option value="send_to_gevo">GEvo (features only)</option>
+  <option value="send_to_synfind">SynFind (genomes & first feature)</option>
+  <option value="send_to_featmap">Genome Map (features only)</option>
+  <option value="send_to_codeon">Coding Evolution (features only)</option>
+  <option value="send_to_fasta">FASTA Sequences (genomes only)</option>
+  <option value="send_to_csv">Export CSV (genomes only)</option>
+  <option value="send_to_xls">Export XLS (genomes only)</option>
  </select>
  <span class='ui-button ui-corner-all ui-button-icon-right ui-button-go' onclick="send_list_to();"><span class="ui-icon ui-icon-extlink"></span>Go</span>
 </div>
@@ -580,7 +591,7 @@ Are you sure you want to permanently delete this list?<p>
 
 
 
-<TMPL_IF NAME=EDIT_LIST_INFO>
+<TMPL_IF NAME='EDIT_LIST_INFO'>
 <table class="small">
  <tr>
   <td>Name:</td>
@@ -605,7 +616,7 @@ Are you sure you want to permanently delete this list?<p>
 
 
 
-<TMPL_IF NAME=ADD_LIST_ANNOTATION> <!-- FIXME: this is redundant with ExperimentView.tmpl, move into own sub-template? -->
+<TMPL_IF NAME='ADD_LIST_ANNOTATION'> <!-- FIXME: this is redundant with ExperimentView.tmpl, move into own sub-template? -->
 <table class="small">
  <tr valign='top'>
   <td>Annotation:</td>
@@ -636,15 +647,15 @@ Are you sure you want to permanently delete this list?<p>
 
 
 
-<TMPL_IF NAME=ADD_LIST_ITEMS>
+<TMPL_IF NAME='ADD_LIST_ITEMS'>
 <SCRIPT language="JavaScript">
 $(document).ready(function(){
 	$(function() { $("#tabs").tabs({selected:0}); });
 	
-	search_genomes(<TMPL_VAR NAME=LID>, '');
-	setTimeout(function() { search_experiments(<TMPL_VAR NAME=LID>, ''); }, 250);
-	setTimeout(function() { search_features(<TMPL_VAR NAME=LID>, ''); },    500);
-	setTimeout(function() { search_lists(<TMPL_VAR NAME=LID>, ''); },       750);
+	search_genomes(<TMPL_VAR NAME='LID'>, '');
+	setTimeout(function() { search_experiments(<TMPL_VAR NAME='LID'>, ''); }, 250);
+	setTimeout(function() { search_features(<TMPL_VAR NAME='LID'>, ''); },    500);
+	setTimeout(function() { search_lists(<TMPL_VAR NAME='LID'>, ''); },       750);
 });
 </SCRIPT>
 
@@ -775,7 +786,7 @@ $(document).ready(function(){
 
 
 
-<TMPL_IF NAME=ADMIN_AREA>
+<TMPL_IF NAME='ADMIN_AREA'>
 <br>
 <hr>
 Admin Functions:<br>
