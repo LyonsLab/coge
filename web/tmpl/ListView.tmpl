@@ -241,8 +241,8 @@ function add_list_annotation (opts) {
 				title: title,
 				beforeClose: 
 					function() {
-						$("#edit_annotation_type").autocomplete('close');
-						$("#edit_annotation_type_group").autocomplete('close');
+						//$("#edit_annotation_type").autocomplete('close');
+						//$("#edit_annotation_type_group").autocomplete('close');
 					}
 			});
 			$("#list_annotation_edit_box").html(data.output);
@@ -472,7 +472,7 @@ function search_annotation_types () {
 			},
 			success : function(val) {
 				var items = jQuery.parseJSON(val);
-				$("#edit_annotation_type").autocomplete("option", "source", items);
+				$("#edit_annotation_type").autocomplete({source: items});
 				$("#edit_annotation_type").autocomplete("search");
 			},
 		});
@@ -483,12 +483,11 @@ function get_annotation_type_groups () {
 	$.ajax({
 		data: {
 			jquery_ajax: 1,
-			fname: 'get_annotation_type_groups'
+			fname: 'get_annotation_type_groups',
 		},
 		success : function(val) {
 			var items = jQuery.parseJSON(val);
-			$("#edit_annotation_type_group").autocomplete("option", "source", items);
-			$("#edit_annotation_type_group").autocomplete("search");
+			$("#edit_annotation_type_group").autocomplete({source: items});
 		},
 	});
 }
@@ -617,6 +616,11 @@ Are you sure you want to permanently delete this list?<p>
 
 
 <TMPL_IF NAME='ADD_LIST_ANNOTATION'> <!-- FIXME: this is redundant with ExperimentView.tmpl, move into own sub-template? -->
+<script>
+	$("#edit_annotation_type").autocomplete({source:[]});
+	$("#edit_annotation_type_group").autocomplete({source:[]});
+	get_annotation_type_groups();
+</script>
 <table class="small">
  <tr valign='top'>
   <td>Annotation:</td>

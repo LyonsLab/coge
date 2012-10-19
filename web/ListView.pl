@@ -874,7 +874,7 @@ sub get_annotation_type_groups {
 	my $rs = $coge->resultset('AnnotationTypeGroup');
 	while (my $atg = $rs->next) {
 		$unique{$atg->name}++;
-	}	
+	}
 	
 	return encode_json( [ sort keys %unique ] );
 }
