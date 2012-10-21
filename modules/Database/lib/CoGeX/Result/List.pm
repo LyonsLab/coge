@@ -114,6 +114,7 @@ sub features
 	return wantarray ? @features : \@features;	
 }
 
+
 sub genomes
 {
 	my $self = shift;
@@ -285,7 +286,7 @@ sub data_summary
 	my $self = shift;
 	my @stuff;
 	push @stuff, "Experiments: " . @{ $self->experiments } if @{ $self->experiments };
-	push @stuff, "Features: "    . @{ $self->features }    if @{ $self->features };
+	push @stuff, "Features: "     . @{ $self->features }     if @{ $self->features };
 	push @stuff, "Genomes: "     . @{ $self->genomes }     if @{ $self->genomes };
 	push @stuff, "Lists: "       . @{ $self->lists }       if @{ $self->lists };
 	return join( "; ", @stuff );
