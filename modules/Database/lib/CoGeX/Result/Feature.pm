@@ -285,10 +285,8 @@ sub primary_name {
 
 sub name {
 	my $self = shift;
-	foreach ( sort { $a->name cmp $b->name } $self->primary_name )
-	{    # FIXME is ok?
-		return $_->name;
-	}
+	my ($name) = $self->names;
+	return $name;
 }
 
 ################################################ subroutine header begin ##
