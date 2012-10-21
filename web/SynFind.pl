@@ -73,9 +73,13 @@ $USER = undef;
 ($USER) = CoGe::Accessory::LogUser->get_user(cookie_name=>$COOKIE_NAME,coge=>$coge) unless $USER;
 
 if ($FORM->param('get_master'))
-    {
-      get_master_syn_sets();
-    }
+  {
+    get_master_syn_sets();
+  }
+if ($FORM->param('ug')) #generating unique gene lists
+  {
+    get_unique_genes();
+  }
 my $pj = new CGI::Ajax(
 		       %ajax,
 		       gen_html=>\&gen_html,
@@ -721,7 +725,9 @@ sub go_synfind
     $cutoff = "0".$cutoff if $cutoff =~ /^\./; #add the prepending 0 for filename consistence
     $scoring_function = 1 unless defined $scoring_function;
     #need to set this link before the scoring function changes to a different name type
-    my $synfind_link = $SERVER."SynFind.pl?fid=$fid;qdsgid=$source_dsgid;dsgid=$dsgids;ws=$window_size;co=$cutoff;sf=$scoring_function;algo=$algo";
+    my $synfind_link = $SERVER."SynFind.pl?fid=$fid;ws=$window_size;co=$cutoff;sf=$scoring_function;algo=$algo";
+    my $unique_gene_link = $synfind_link;
+    $synfind_link .= ";dsgid=$dsgids;qdsgid=$source_dsgid";
     $synfind_link .= ";sd=$depth" if $depth;
 
     #convert numerical codes for different scoring functions to appropriate types
@@ -985,7 +991,7 @@ sub go_synfind
     my $log_file = $cogeweb->logfile;
     $log_file =~ s/$TEMPDIR/$TEMPURL/;
     
-    $html .= qq{<br><br><a href="/wiki/index.php/SynFind#Syntenic_Depth" target=_new>Syntenic Depth:</a> <span class=small>(Query genome depth coverage)</span><br>}.get_master_histograms(target_dbs=>\@target_info, query_dsgid=>$source_dsgid);
+    $html .= qq{<br><br><a href="/wiki/index.php/SynFind#Syntenic_Depth" target=_new>Syntenic Depth:</a> <span class=small>(Query genome depth coverage)</span><br>}.get_master_histograms(target_dbs=>\@target_info, query_dsgid=>$source_dsgid, unique_gene_link => $unique_gene_link);
     $html .= "<br>Downloads:";
     $html .= qq{<table class="small ui-widget-content ui-corner-all">};
     $html .= qq{<tr><td><a href=$log_file target=_new class="small">Log File</a>};
@@ -1608,11 +1614,151 @@ sub get_master_syn_sets
     exit;
   }
 
+sub get_unique_genes
+  {
+    my $form = $FORM;
+    my $window_size=$form->param('ws');
+    my $cutoff=$form->param('co');
+    my $scoring_function=$form->param('sf');
+    my $pad = $form->param('pad');
+    my $algo = $form->param('algo');
+    my $fid = $form->param('fid');
+    my $qdsgid = $form->param('qdsgid');
+    my $sdsgid = $form->param('sdsgid');
+    my $synfind_link = $SERVER."SynFind.pl?fid=$fid;qdsgid=$qdsgid;ws=$window_size;co=$cutoff;sf=$scoring_function;algo=$algo;dsgid=$sdsgid";
+    if ($scoring_function ==2)
+      {
+        $scoring_function = "density";
+      }
+    else
+      {
+        $scoring_function = "collinear";
+      }
+
+    my ($qdsg) = $coge->resultset('Genome')->find($qdsgid);
+    my ($sdsg) = $coge->resultset('Genome')->find($sdsgid);
+    print "Error" unless $qdsg && $sdsg;
+    my $org1 = $qdsg->organism->name;
+    my $org2 = $sdsg->organism->name;
+    foreach my $tmp ($org1, $org2)
+      {
+	$tmp =~ s/\///g;
+	$tmp =~ s/\s+/_/g;
+	$tmp =~ s/\(//g;
+	$tmp =~ s/\)//g;
+	$tmp =~ s/://g;
+	$tmp =~ s/;//g;
+	$tmp =~ s/#/_/g;
+      }
+    my $dsgid1 = $qdsg->id;
+    my $dsgid2 = $sdsg->id;
+    ($org1, $org2, $dsgid1, $dsgid2) = ($org2, $org1, $dsgid2, $dsgid1) if ($org2 lt $org1);
+    my $basedir = $DIAGSDIR."/".$org1."/".$org2;
+    my $basename = $dsgid1."_".$dsgid2."."."CDS-CDS";
+    my $db = $basedir."/".$basename."_".$window_size."_".$cutoff."_".$scoring_function.".$algo".".db";
+    my $dbh = DBI->connect("dbi:SQLite:dbname=$db","","");
+    my $query = "SELECT * FROM synteny";
+    my $sth = $dbh->prepare($query);
+    unless ($sth)
+      {
+	print STDERR qq{Problem connecting to $db\n};
+	next;
+      }
+    $sth->execute();
+    my %qdata;
+    my %sdata;
+    while (my @data = $sth->fetchrow_array)
+      {
+	next unless $data[6] == $qdsgid;
+	my $idq = $data[0];
+	my $ids = $data[1];
+	$qdata{$idq}{$ids}=1;
+	$sdata{$ids}{$idq}=1;
+      }
+    $dbh->disconnect();
+
+    my @qunique;
+    my @sunique;
+
+    my $rs = $coge->resultset('Feature')->search({
+						 feature_type_id=>3,
+						 genome_id=>$qdsgid
+						},
+						{
+						 join=>[{dataset=>'dataset_connectors'}],
+						});
+    foreach my $item ($rs->get_column('feature_id')->all)
+      {
+	push @qunique, $item unless $qdata{$item};
+      }
+
+    $rs = $coge->resultset('Feature')->search({
+						 feature_type_id=>3,
+						 genome_id=>$sdsgid
+						},
+						{
+						 join=>[{dataset=>'dataset_connectors'}],
+						});
+    foreach my $item ($rs->get_column('feature_id')->all)
+      {
+	push @sunique, $item unless $sdata{$item};
+      }
+
+    #let's create a list of these items and add them to the user's lists
+    my $owner_group = $USER->owner_group();
+    unless ($owner_group)
+      {
+	print "Error:  can't find owner group for user";
+	return;
+      }
+    my $list_type = $coge->resultset('ListType')->find_or_create({name=>'SynFind Unique Genes', description=>'Auto-generated by SynFind'});
+    my $list = $owner_group->add_to_lists({
+					   name=>"Unique genes in ".$qdsg->organism->name,
+					   description=>"Compared to ".$sdsg->organism->name,,
+					   list_type_id=>$list_type->id,
+					   restricted=>1,
+					  });
+    my $annotation_type = $coge->resultset('AnnotationType')->find_or_create({name=>"CoGe Note"});
+    $list->add_to_list_annotations({
+			      annotation_type_id=>$annotation_type->id,
+			      annotation=>"Auto created by SynFind",
+			     });
+    $list->add_to_list_annotations({
+			      annotation_type_id=>$annotation_type->id,
+			      annotation=>"Regenerate Analysis in SynFind",
+			      link=>CoGe::Accessory::Web::get_tiny_link(url=>$synfind_link),
+			     });
+    $list->add_to_list_annotations({
+			      annotation_type_id=>$annotation_type->id,
+			      annotation=>"Query Genome: ". $qdsg->info,
+			      link=>$SERVER."OrganismView.pl?dsgid=".$qdsg->id,
+			     });
+    $list->add_to_list_annotations({
+			      annotation_type_id=>$annotation_type->id,
+			      annotation=>"Target Genome: ". $sdsg->info,
+			      link=>$SERVER."OrganismView.pl?dsgid=".$sdsg->id,
+			     });
+    #add feature_ids
+    #FIXME:  hardcoded value for item_type:  id == 4 for features
+    my $count =0;
+    foreach my $fid (@qunique)
+      {
+	$count++;
+	$list->add_to_list_connectors_as_parent({child_id=>$fid, child_type=>4});
+      }
+    print $form->header;
+    my $listview = $SERVER."ListView.pl?lid=".$list->id;
+    print qq{<meta HTTP-EQUIV="REFRESH" content="0; url=$listview">};
+    exit;
+  }
+
 sub get_master_histograms
   {
     my %opts = @_;
     my $target_dbs =$opts{target_dbs};
     my $query_dsgid = $opts{query_dsgid};
+    my $unique_gene_link = $opts{unique_gene_link};
+
     my $total_feature_count = get_feature_count(dsgid=>$query_dsgid);
 
     my $html;
@@ -1641,6 +1787,10 @@ sub get_master_histograms
 	  {
 	    $html .= "<br><span class=small>(self-self comparison: self-self syntenic regions ignored)</span>";
 	  }
+	my $link = $unique_gene_link.";ug=1;sdsgid=".$item->{dsgid2}.";qdsgid=$query_dsgid";
+	$html .= qq{<br><span class="small link" onclick=window.open('$link')>Query genome unique genes</span>};
+	$link = $unique_gene_link.";ug=1;qdsgid=".$item->{dsgid2}.";sdsgid=$query_dsgid";
+	$html .= qq{<br><span class="small link" onclick=window.open('$link')>Target genome unique genes</span>};
 	$html .= depth_table(depth_data=>\%data, total=>$total_feature_count);
       }
     return $html;
