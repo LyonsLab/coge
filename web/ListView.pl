@@ -444,9 +444,10 @@ sub get_list_contents {
 	my $html;
 	my $first = 1;
 	$html = '<table id="list_contents_table" class="small ui-widget-content ui-corner-all"><thead style="display:none"></thead><tbody>';
+	my $genome_count = @{$list->genomes}; #EL: moved outside of loop; massive speed improvement due to cost of this call
 	foreach my $genome ( sort genomecmp $list->genomes ) {
-		my $count = @{$list->genomes};
-		$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' class='title5' nowrap='true' rowspan=$count style='font-weight:normal;background-color:white'>Genomes ($count):</th>" : '');
+		
+		$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' class='title5' nowrap='true' rowspan=$genome_count style='font-weight:normal;background-color:white'>Genomes ($genome_count):</th>" : '');
 		my $gid = $genome->id;
 		$html .= qq{<td class='data5'><span id='genome$gid' class='link' onclick="window.open('OrganismView.pl?dsgid=$gid')">} . $genome->info . "</span></td>";
 		if ($user_can_edit) {
@@ -456,9 +457,10 @@ sub get_list_contents {
 		$html .= '</tr>';
 	}
 	$first = 1;
+	my $exp_count = @{$list->experiments}; #EL: moved outside of loop; massive speed improvement
 	foreach my $experiment (sort experimentcmp $list->experiments ) {
-		my $count = @{$list->experiments};
-		$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' class='title5' nowrap='true' rowspan=$count style='font-weight:normal;background-color:white'>Experiments ($count):</th>" : '');
+
+		$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' class='title5' nowrap='true' rowspan=$exp_count style='font-weight:normal;background-color:white'>Experiments ($exp_count):</th>" : '');
 		my $eid = $experiment->id;
 		$html .= qq{<td class='data5'><span id='experiment$eid' class='link' onclick="window.open('ExperimentView.pl?eid=$eid')">} . $experiment->info . "</span></td>";
 		if ($user_can_edit) {
@@ -468,9 +470,10 @@ sub get_list_contents {
 		$html .= '</tr>';
 	}
 	$first = 1;
+	my $feat_count = @{$list->features}; #EL: moved outside of loop; massive speed improvement
 	foreach my $feature (sort featurecmp $list->features ) {
-		my $count = @{$list->features};
-		$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' class='title5' nowrap='true' rowspan=$count style='font-weight:normal;background-color:white'>Features ($count):</th>" : '');
+
+		$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' class='title5' nowrap='true' rowspan=$feat_count style='font-weight:normal;background-color:white'>Features ($feat_count):</th>" : '');
 		my $fid = $feature->id;
 		$html .= qq{<td class='data5'><span id='feature$fid' class='link' onclick="window.open('FeatView.pl?fid=$fid')">} . $feature->info . "</span></td>";
 		if ($user_can_edit) {
