@@ -161,6 +161,11 @@ sub gen_body
     $sf = 1 unless defined $sf;
     $template->param(SF_COLLINEAR=>"selected") if $sf == 1;
     $template->param(SF_DENSITY=>"selected") if $sf == 2;
+    
+    #syntenic depth reporting maximum
+    my $sd;
+    $sd = $FORM->param('sd') if $FORM->param('sd');
+    $template->param('SD'=>$sd) if $sd;
 
     $template->param(JAVASCRIPT=>1);
     $template->param(FRONT_PAGE=>1);
@@ -709,12 +714,15 @@ sub go_synfind
     my $window_size=$opts{window_size};
     my $cutoff = $opts{cutoff};
     my $scoring_function=$opts{scoring_function};
+    my $depth = $opts{depth}; #max syntenic depth to report
+
     $window_size = 40 unless defined $window_size;
     $cutoff= 0.1 unless defined $cutoff;
     $cutoff = "0".$cutoff if $cutoff =~ /^\./; #add the prepending 0 for filename consistence
     $scoring_function = 1 unless defined $scoring_function;
     #need to set this link before the scoring function changes to a different name type
     my $synfind_link = $SERVER."SynFind.pl?fid=$fid;qdsgid=$source_dsgid;dsgid=$dsgids;ws=$window_size;co=$cutoff;sf=$scoring_function;algo=$algo";
+    $synfind_link .= ";sd=$depth" if $depth;
 
     #convert numerical codes for different scoring functions to appropriate types
     if ($scoring_function ==2)
@@ -846,12 +854,11 @@ sub go_synfind
 	$pm->finish;
       }
     $pm->wait_all_children;
-    my ($gevo_link, $matches) = gen_gevo_link (fid=>$fid, dbs=>[ map {$_->{synteny_score_db}} @target_info], window_size=>$window_size);
+    my ($gevo_link, $matches) = gen_gevo_link (fid=>$fid, dbs=>[ map {$_->{synteny_score_db}} @target_info], window_size=>$window_size, depth=>$depth);
 
     my $tiny_gevo_link = CoGe::Accessory::Web::get_tiny_link(url=>$gevo_link);
     CoGe::Accessory::Web::write_log("#TINY GEVO LINK: $tiny_gevo_link", $cogeweb->logfile);
     CoGe::Accessory::Web::write_log("Finished!", $cogeweb->logfile);
-    $html .= "<br><a style='font-size: 1em' href='$tiny_gevo_link' onclick=window.open('$tiny_gevo_link') class='ui-button ui-corner-all' target=_new_gevo>Compare and visualize region in GEvo: $tiny_gevo_link</a>";
 
     foreach my $item (@target_info)
       {
@@ -873,7 +880,7 @@ sub go_synfind
     my %dsgids = map {$_->[0],=>1} @dsgids; #table to look them up later;
     $dsgids{$source_dsgid}=1;
 
-    $html .= qq{<table id=syntelog_table>};
+    $html .= qq{<table id=syntelog_table class="ui-widget-content ui-corner-all">};
     $html .= qq{<THEAD><tr>};
     $html .= qq{<th>Organism};
     $html .= qq{<th>Genome};
@@ -896,6 +903,8 @@ sub go_synfind
     my @res;
     my %open_all_synmap;
     my @homologs;
+    my $count = 0;
+    my $last_tdsgid;
     foreach my $item ([$fid, "query"], @$matches)
       {
 	my ($tfid, $match_type, $synteny_score) = @$item;
@@ -910,6 +919,10 @@ sub go_synfind
 		last;
 	      }
 	  }
+	$last_tdsgid = $dsg->id unless $last_tdsgid;
+	$count = 0 unless $dsg->id eq $last_tdsgid;
+	$last_tdsgid = $dsg->id;
+	next if $depth && $count > $depth;
 	$html .= qq{<tr><td>};
 	my $name;
 	if ($match_type eq "S")
@@ -945,8 +958,10 @@ sub go_synfind
 		       $synteny_score,
 		       qq{<span class="link" onclick='$synmap_open_link'>Dotplot</span>},
 		       );
+	$count++;
       }
     $html .= "</tbody></table>";
+    $html .= "<br><a style='font-size: 1em' href='$tiny_gevo_link' onclick=window.open('$tiny_gevo_link') class='ui-button ui-corner-all' target=_new_gevo>Compare and visualize region in GEvo: $tiny_gevo_link</a><br><br>";
 
     my $featlist_link = gen_featlist_link(fids=>[$fid, map {$_->[0]} @$matches]);
     my $tiny_synfind_link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, page => $PAGE_NAME, url => $synfind_link );
@@ -970,7 +985,7 @@ sub go_synfind
     my $log_file = $cogeweb->logfile;
     $log_file =~ s/$TEMPDIR/$TEMPURL/;
     
-    $html .= qq{<br><br><a href="/wiki/index.php/SynFind#Syntenic_Depth" target=_new>Syntenic Depth:</a><br>}.get_master_histograms(target_dbs=>\@target_info, query_dsgid=>$source_dsgid);
+    $html .= qq{<br><br><a href="/wiki/index.php/SynFind#Syntenic_Depth" target=_new>Syntenic Depth:</a> <span class=small>(Query genome depth coverage)</span><br>}.get_master_histograms(target_dbs=>\@target_info, query_dsgid=>$source_dsgid);
     $html .= "<br>Downloads:";
     $html .= qq{<table class="small ui-widget-content ui-corner-all">};
     $html .= qq{<tr><td><a href=$log_file target=_new class="small">Log File</a>};
@@ -1093,6 +1108,21 @@ sub generate_fasta
     return 1 if -r $file;
     CoGe::Accessory::Web::write_log("Error with fasta file creation", $cogeweb->logfile);
     return 0;
+  }
+
+sub get_feature_count
+  {
+    my %opts = @_;
+    my $dsgid = $opts{dsgid};
+    my $count = $coge->resultset('Feature')->count(
+						   {
+						    feature_type_id=>[3, 5, 8],
+						    genome_id=>$dsgid
+						   },{
+						      join=>[{dataset=>'dataset_connectors'}], 
+						     }
+						  );
+    return $count;
   }
 
 sub run_blast
@@ -1294,6 +1324,7 @@ sub gen_gevo_link
     my %opts = @_;
     my $fid = $opts{fid};
     my $dbs = $opts{dbs};
+    my $depth = $opts{depth}; #syntenic depth is the maximum number of syntenic regions per organism requested
     my $window_size = $opts{window_size}; #this is the the number of genes searched around the feature, half up and half down
 
     return "no feature id specified" unless $fid;
@@ -1309,8 +1340,10 @@ sub gen_gevo_link
 	my $query = "SELECT * FROM  synteny where query = $fid";
 	my $sth = $dbh->prepare($query);
 	$sth->execute();
+	my $depth_count = 0;
 	while (my $data = $sth->fetchrow_arrayref)
 	  {
+	    last if $depth && $depth_count >= $depth;
 	    next if $seen_fids{$data->[1]};
 	    push @matched_fids, [$data->[1], $data->[2], $data->[3] ]; #fid, match_type, synteny_score
 	    $link .= ";fid$count"."=".$data->[1];
@@ -1323,6 +1356,7 @@ sub gen_gevo_link
 		$link .= ";rev$count"."=1";
 	      }
 	    $count++;
+	    $depth_count++;
 	  }
       }
     $count--;
@@ -1579,6 +1613,8 @@ sub get_master_histograms
     my %opts = @_;
     my $target_dbs =$opts{target_dbs};
     my $query_dsgid = $opts{query_dsgid};
+    my $total_feature_count = get_feature_count(dsgid=>$query_dsgid);
+
     my $html;
     foreach my $item (@$target_dbs)
       {
@@ -1601,18 +1637,25 @@ sub get_master_histograms
 	    $data{$id}++; #data{query_feature_id}{subject_genome_id}
 	  }
 	$html .= qq{<span class=link onclick='window.open("OrganismView.pl?dsgid=}.$item->{dsgid2}."\")'>".$item->{org_name}."</span>";
-	$html .= depth_table(\%data);
+	if ($query_dsgid eq $item->{dsgid2})
+	  {
+	    $html .= "<br><span class=small>(self-self comparison: self-self syntenic regions ignored)</span>";
+	  }
+	$html .= depth_table(depth_data=>\%data, total=>$total_feature_count);
       }
     return $html;
   }
 
 sub depth_table
   {
-    my $data = shift;
+    my %opts = @_;
+    my $data = $opts{depth_data};
+    my $total = $opts{total}; #total number of features;
     my %depths;
     map {$depths{$_}++} values %$data;
-    my $total = 0;
-    map {$total += $_} values %depths;
+    my $total_w_depth = 0;
+    map {$total_w_depth += $_} values %depths;
+    $depths{0}=($total-$total_w_depth);
     my $html = "<table class='small  ui-widget-content ui-corner-all'>";
     foreach my $depth (sort {$a <=> $b} keys %depths)
       {
