@@ -86,6 +86,7 @@ $link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, 
 	get_annotation_type_groups 	=> \&get_annotation_type_groups,
 	delete_list                	=> \&delete_list,
 	send_to_blast		   		=> \&send_to_blast,
+	send_to_featlist		   		=> \&send_to_featlist,
 	send_to_msa					=> \&send_to_msa,
 	send_to_gevo				=> \&send_to_gevo,
 	send_to_synfind				=> \&send_to_synfind,
@@ -930,6 +931,15 @@ sub send_to_blast
 	
 	my $accn_list = join(',', map { $_->id } $list->genomes);
 	my $url = "CoGeBlast.pl?dsgid=$accn_list";
+	return encode_json({url => $url});
+}
+
+sub send_to_featlist
+{
+	my %opts = @_;
+	my $lid = $opts{lid};
+	return unless $lid;
+	my $url = "FeatList.pl?lid=$lid";
 	return encode_json({url => $url});
 }
 
