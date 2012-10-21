@@ -97,7 +97,7 @@ function launch(){
   setTimeout("monitor_log()", 1000);
   var selected_genomes = $('#genome_choice').getLength(1);
   
-  go(['args__dsgids','args__'+selected_genomes,'args__fid','fid','args__qdsgid','feat_dsgid', 'args__basename','args__'+pageObj.basename,'args__window_size','ws', 'args__cutoff','co', 'args__scoring_function','sf', 'args__algo','algo'],[handle_results],'POST');
+  go(['args__dsgids','args__'+selected_genomes,'args__fid','fid','args__qdsgid','feat_dsgid', 'args__basename','args__'+pageObj.basename,'args__window_size','ws', 'args__cutoff','co', 'args__scoring_function','sf', 'args__algo','algo', 'args__depth','sd'],[handle_results],'POST');
   
  
 }
@@ -758,6 +758,10 @@ function get_master(link)
         <option value=1 <TMPL_VAR NAME=SF_COLLINEAR> >Collinear</option>
         <option value=2 <TMPL_VAR NAME=SF_DENSITY> >Density</option>
       </select>
+    <TR>
+     <TD>Max Syntenic Depth:<br>
+     	 (leave blank for unlimited)</TD>
+     <TD><input id=sd type=text size=3 value=<TMPL_VAR NAME=SD>></TD>
      </TD>
      </TR></TABLE>
     </TR>
