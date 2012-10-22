@@ -203,7 +203,7 @@ sub gen_body {
 	$num_seqs = $form->param('num_seqs'); #= get_opt(params=>$prefs, form=>$form, param=>'num_seqs');
 	$num_seqs = $NUM_SEQS unless defined $num_seqs;
 
-	#    $MAX_SEQS = 20 if $form->param('override');
+	#$MAX_SEQS = 20 if $form->param('override');
 	my $message;
 	if ( !( $num_seqs =~ /^\d+$/ ) ) {
 		$message .= "Problem with requested number of sequences: '$num_seqs'.  Defaulting to $NUM_SEQS input sequences.";
@@ -236,7 +236,7 @@ sub gen_body {
 		$mask = "non-cds" if $form->param( 'maskncs' . $i );    #backwards compatibility
 
 		if ( $fid && $fid =~ /_/ ) {
-			( $fid, $gstid ) = split /_/, $fid;
+			( $fid, $gstid ) = split(/_/, $fid);
 		}
 
 		if ( $fid && !$draccn ) {
@@ -257,8 +257,8 @@ sub gen_body {
 		$drup   = 10000 unless defined $drup;
 		$drdown = 10000 unless defined $drdown;
 
-		#	$drup += $pad_gs if $pad_gs;
-		#	$drdown += $pad_gs if $pad_gs;
+		#$drup += $pad_gs if $pad_gs;
+		#$drdown += $pad_gs if $pad_gs;
 		my $gbaccn = $form->param( "gbaccn" . $i ) if $form->param( "gbaccn" . $i );
 		my $gbstart = $form->param( "gbstart" . $i ) if $form->param( "gbstart" . $i );
 		$gbstart = 1 unless defined $gbstart;
@@ -592,12 +592,11 @@ sub run {
 	my $hsp_size_limit    = $opts{hsp_size_limit};
 	my $hiqual            = $opts{hiqual};
 
-	#    my $hsp_limit = $opts{hsplim};
-	#    my $hsp_limit_num = $opts{hsplimnum};
+	#my $hsp_limit = $opts{hsplim};
+	#my $hsp_limit_num = $opts{hsplimnum};
 	my $show_hsps_with_stop_codon = $opts{showallhsps};
 	my $padding                   = $opts{padding};
-	my ( $analysis_program, $param_string, $parser_opts, $add_gevo_link ) =
-	  get_algorithm_options(%opts);
+	my ( $analysis_program, $param_string, $parser_opts, $add_gevo_link ) = get_algorithm_options(%opts);
 	my $pad_gs                    = $opts{pad_gs} || 0;
 	my $color_overlapped_features = $opts{color_overlapped_features};
 	my $hsp_overlap_length        = $opts{hsp_overlap_length};
@@ -609,31 +608,23 @@ sub run {
 	my $skip_hsp_overlap_search   = $opts{skip_hsp_overlap};
 	my $font_size                 = $opts{font_size};
 	my $message;
-	my $gen_prot_sequence =
-	  0;    #flag for generating fasta file of protein_sequence;
+	my $gen_prot_sequence = 0;    #flag for generating fasta file of protein_sequence;
 	$gen_prot_sequence = 1 if $analysis_program eq "GenomeThreader";
 	my $basefilename = $opts{basefile};
-	$cogeweb = CoGe::Accessory::Web::initialize_basefile(
-		basename => $basefilename,
-		tempdir  => $TEMPDIR
-	);
+	$cogeweb = CoGe::Accessory::Web::initialize_basefile( basename => $basefilename, tempdir => $TEMPDIR );
 ###### working on basefile name initialization problems
 	if ( !$basefilename || $basefilename eq "undefined" ) {
-		$cogeweb =
-		  CoGe::Accessory::Web::initialize_basefile( tempdir => $TEMPDIR );
+		$cogeweb = CoGe::Accessory::Web::initialize_basefile( tempdir => $TEMPDIR );
 		$basefilename = $cogeweb->basefilename;
 	}
 ######
-	#    print STDERR "Running GEvo:  basefile:  $basefilename\n";
-	CoGe::Accessory::Web::write_log(
-		"Beginning GEvo analysis.  Basefilename: $basefilename",
-		$cogeweb->logfile );
+	#print STDERR "Running GEvo:  basefile:  $basefilename\n";
+	CoGe::Accessory::Web::write_log( "Beginning GEvo analysis.  Basefilename: $basefilename", $cogeweb->logfile );
 	my @hsp_colors;
 	for ( my $i = 1 ; $i <= num_colors($num_seqs) ; $i++ ) {
 		my $rgb = $opts{"rgb$i"};
 		my @tmp;
-		my ( $r, $g, $b ) =
-		  $rgb =~ /^rgb\(\s*(\d{1,3}),\s*(\d{1,3}),\s*(\d{1,3})\)$/;
+		my ( $r, $g, $b ) = $rgb =~ /^rgb\(\s*(\d{1,3}),\s*(\d{1,3}),\s*(\d{1,3})\)$/;
 		foreach my $color ( $r, $g, $b ) {
 			$color = 0 unless $color && $color =~ /^\d+$/;
 			$color = 0   if $color < 0;
@@ -643,8 +634,8 @@ sub run {
 		push @hsp_colors, \@tmp;
 	}
 
-	#    my $stagger_label = $hsp_label && $hsp_label =~ /staggered/i ? 1 : 0;
-	#    my $feature_labels = !$hsp_label ? 0 : 1;
+	#my $stagger_label = $hsp_label && $hsp_label =~ /staggered/i ? 1 : 0;
+	#my $feature_labels = !$hsp_label ? 0 : 1;
 	my $form      = $FORM;
 	my $gevo_link = $form->url . "?prog=$analysis_program";
 	$gevo_link .= ";show_cns=1"        if $show_cns;
@@ -662,14 +653,11 @@ sub run {
 	$gevo_link .= ";nt=$show_nt";
 	$gevo_link .= ";cbc=$show_cbc";
 	$gevo_link .= ";spike_len=$spike_len";
-	$gevo_link .= ";skip_feat_overlap=$skip_feat_overlap_search"
-	  if defined $skip_feat_overlap_search;
-	$gevo_link .= ";skip_hsp_overlap=$skip_hsp_overlap_search"
-	  if defined $skip_hsp_overlap_search;
+	$gevo_link .= ";skip_feat_overlap=$skip_feat_overlap_search" if defined $skip_feat_overlap_search;
+	$gevo_link .= ";skip_hsp_overlap=$skip_hsp_overlap_search" if defined $skip_hsp_overlap_search;
 	$gevo_link .= $add_gevo_link;
 	my @gevo_link_seqs;
-	my @coge_seqs
-	  ; #place to store stuff for parallel creation of sequence file from genome database
+	my @coge_seqs; #place to store stuff for parallel creation of sequence file from genome database
 	my @sets;
 	my $html;
 	my $t1 = new Benchmark;
@@ -684,13 +672,12 @@ sub run {
 		my $accn = $opts{"draccn$i"};
 		$accn = uri_unescape($accn);    # mdb added 10/9/12 issue #11
 
-		#	print STDERR "run: accn=$accn\n";
+		#print STDERR "run: accn=$accn\n";
 		#trim whitespace at ends of accn
 		$accn =~ s/^\s+// if $accn;
 		$accn =~ s/\s+$// if $accn;
 		my $featid = $opts{"featid$i"};
-		my $gstid  =
-		  $opts{"gstid$i"}; #currently not used, value passed attached to featid
+		my $gstid  = $opts{"gstid$i"}; #currently not used, value passed attached to featid
 		( $featid, $gstid ) = split( /_/, $featid ) if ( $featid =~ /_/ );
 		my $feat = $coge->resultset('Feature')->find($featid) if $featid;
 		my $dsgid = $opts{"dsgid$i"};
@@ -759,9 +746,7 @@ sub run {
 				dsgid             => $dsgid,
 				gen_prot_sequence => $gen_prot_sequence
 			);
-			if ($obj) {
-
-#going to generalize this in parallel after all sequences to be retrieved from coge's db are specified.
+			if ($obj) { #going to generalize this in parallel after all sequences to be retrieved from coge's db are specified.
 				push @coge_seqs, { obj => $obj, mask => $mask };
 				$up   = $drup;
 				$down = $drdown;
@@ -779,10 +764,8 @@ sub run {
 				my $anchor_stop = $dirlength ? $dirlength : length( $obj->sequence ) - $dirstart + 1;
 				$obj->add_feature(
 					type => "direct sequence submission",
-
-					#				  location=>(1-$dirstart*2+1)."..".(1-$dirstart*2+1),
+					#location=>(1-$dirstart*2+1)."..".(1-$dirstart*2+1),
 					location => ( 1 - $dirstart + 1 ) . ".." . $anchor_stop,
-
 					strand     => 1,
 					qualifiers => {
 						type  => "anchor",
@@ -840,9 +823,7 @@ sub run {
 			if ( $obj->accn ) {
 
 				#add an anchor
-				my $anchor_stop = $gblength
-				  ? $gblength
-				  : length( $obj->sequence ) - $gbstart + 1;
+				my $anchor_stop = $gblength ? $gblength : length( $obj->sequence ) - $gbstart + 1;
 				$obj->add_feature(
 					type       => "genbank entry",
 					location   => ( 1 - $gbstart + 1 ) . ".." . $anchor_stop,
@@ -873,9 +854,7 @@ sub run {
 			}
 		}
 		next unless $obj;
-		if ( $obj && $obj->sequence && $obj->start ne $obj->stop ) {
-
-#need to check for duplicate accession names -- sometimes happens and major pain in the ass for other parts of the code
+		if ( $obj && $obj->sequence && $obj->start ne $obj->stop ) { #need to check for duplicate accession names -- sometimes happens and major pain in the ass for other parts of the code
 			my $accn  = $obj->accn;
 			my $count = 0;
 			foreach my $accn2 ( map { $_->{obj}->accn() } @sets ) {
@@ -898,8 +877,7 @@ sub run {
 			  };
 		}
 		else {
-
-			#	    push @sets, {seq_num=>$i};
+			#push @sets, {seq_num=>$i};
 		}
 	}
 	@sets = sort { $a->{seq_num} <=> $b->{seq_num} } @sets;
@@ -918,33 +896,25 @@ sub run {
 		$gevo_link .= ";fid$i=" . $item->{fid}     if $item->{fid};
 		$gevo_link .= ";dsid$i=" . $item->{dsid}   if $item->{dsid};
 		$gevo_link .= ";dsgid$i=" . $item->{dsgid} if $item->{dsgid};
-		$gevo_link .= ";gstid$i=" . $item->{gstid}
-		  if $item->{gstid} && !$item->{dsgid};
+		$gevo_link .= ";gstid$i=" . $item->{gstid} if $item->{gstid} && !$item->{dsgid};
 		$gevo_link .= ";chr$i=" . $item->{chr}        if $item->{chr};
 		$gevo_link .= ";dr$i" . "up=" . $item->{drup} if defined $item->{drup};
-		$gevo_link .= ";dr$i" . "down=" . $item->{drdown}
-		  if defined $item->{drdown};
+		$gevo_link .= ";dr$i" . "down=" . $item->{drdown} if defined $item->{drdown};
 		$gevo_link .= ";gbaccn$i=" . $item->{gbaccn} if $item->{gbaccn};
-		$gevo_link .= ";gbstart$i=" . $item->{gbstart}
-		  if $item->{gbaccn} && $item->{gbstart};
-		$gevo_link .= ";gblength$i=" . $item->{gblength}
-		  if $item->{gbaccn} && $item->{gblength};
+		$gevo_link .= ";gbstart$i=" . $item->{gbstart} if $item->{gbaccn} && $item->{gbstart};
+		$gevo_link .= ";gblength$i=" . $item->{gblength} if $item->{gbaccn} && $item->{gblength};
 		$gevo_link .= ";rev$i=1" if $item->{rev};
 		$gevo_link .= ";ref$i=" . $item->{ref};
 		$gevo_link .= ";mask$i=" . $item->{mask} if $item->{mask};
-
-		# 	$gevo_link .= ";do$i=".$item->{d} if $item->{do};
+		#$gevo_link .= ";do$i=".$item->{d} if $item->{do};
 		$i++;
 	}
 	$i--;
 	$gevo_link .= ";num_seqs=$i";
-	$gevo_link .= ";hsp_overlap_limit=" . $hsp_overlap_limit
-	  if defined $hsp_overlap_limit;
-	$gevo_link .= ";hsp_size_limit=" . $hsp_size_limit
-	  if defined $hsp_size_limit;
+	$gevo_link .= ";hsp_overlap_limit=" . $hsp_overlap_limit if defined $hsp_overlap_limit;
+	$gevo_link .= ";hsp_size_limit=" . $hsp_size_limit if defined $hsp_size_limit;
 	unless ( @sets > 1 ) {
-		$message .=
-		  "Problem retrieving information.  Please check submissions.\n";
+		$message .= "Problem retrieving information.  Please check submissions.\n";
 		return '', '', '', '', 0, '', '', $message;
 	}
 	my $t2 = new Benchmark;
@@ -1087,8 +1057,7 @@ sub run {
 	$pm->wait_all_children;
 
 	#get combined height of all the images
-	my $dbh =
-	  DBI->connect( "dbi:SQLite:dbname=" . $cogeweb->sqlitefile, "", "" );
+	my $dbh = DBI->connect( "dbi:SQLite:dbname=" . $cogeweb->sqlitefile, "", "" );
 	my $query = qq{select sum(px_height) from image_info;};
 	my $sth   = $dbh->prepare($query);
 	$sth->execute;
@@ -1154,11 +1123,9 @@ qq{<br><a href="http://genomevolution.org/wiki/index.php/Gobe" class=small style
 	foreach my $item (@sets) {
 		next unless $item->{file};
 		my $basename = $TEMPURL . "/" . basename( $item->{file} );
-		print STDERR "basename is undefined: $basename\n"
-		  if $basename =~ /defined/i;
+		print STDERR "basename is undefined: $basename\n" if $basename =~ /defined/i;
 		my $accn = $item->{accn};
-		$html .=
-		  "<div><A HREF=\"$basename\" target=_new>$accn</A></font></DIV>\n";
+		$html .= "<div><A HREF=\"$basename\" target=_new>$accn</A></font></DIV>\n";
 		my $x;
 		( $x, $all_file ) = CoGe::Accessory::Web::check_taint($all_file);
 		my $seq_file = $item->{file};
@@ -1167,33 +1134,25 @@ qq{<br><a href="http://genomevolution.org/wiki/index.php/Gobe" class=small style
 		`$cmd`;
 	}
 
-	$html .=
-	    "<div><A HREF=\"" . $TEMPURL . "/"
-	  . basename($all_file)
-	  . "\" target=_new>all sequences</A></font></DIV>\n";
-	$html .=
-qq{<td class=dropmenu><td><span class=bold>Third part systemannotation files</span>};
+	$html .= "<div><A HREF=\"" . $TEMPURL . "/" . basename($all_file) . "\" target=_new>all sequences</A></font></DIV>\n";
+	$html .= qq{<td class=dropmenu><td><span class=bold>Third part systemannotation files</span>};
 	foreach my $item (@sets) {
 		my $anno_file = generate_annotation(%$item);
 		next unless $anno_file;
 		my $basename = $TEMPURL . "/" . basename($anno_file);
 		my $accn     = $item->{accn};
-		$html .=
-qq{<div><a href = "http://baboon.math.berkeley.edu/mavid/gaf.html">GAF</a> Annotation: <A HREF="$basename" target=_new>$accn</A></font></DIV>\n};
+		$html .= qq{<div><a href = "http://baboon.math.berkeley.edu/mavid/gaf.html">GAF</a> Annotation: <A HREF="$basename" target=_new>$accn</A></font></DIV>\n};
 	}
 	my ( $synfile, $annofile ) = generate_mGSV_files( $cogeweb->sqlitefile );
 	$synfile  =~ s/$TEMPDIR/$TEMPURL/;
 	$annofile =~ s/$TEMPDIR/$TEMPURL/;
-	$html .=
-qq{<div><a href="http://cas-bioinfo.cas.unt.edu/mgsv/index.php" target=_new>mGSV</a> <a href = "$annofile" target=_new>Annotation File</a></div>};
-	$html .=
-qq{<div><a href="http://cas-bioinfo.cas.unt.edu/mgsv/index.php" target=_new>mGSV</a> <a href = "$synfile" target=_new>Synteny File</a></div>};
+	$html .= qq{<div><a href="http://cas-bioinfo.cas.unt.edu/mgsv/index.php" target=_new>mGSV</a> <a href = "$annofile" target=_new>Annotation File</a></div>};
+	$html .= qq{<div><a href="http://cas-bioinfo.cas.unt.edu/mgsv/index.php" target=_new>mGSV</a> <a href = "$synfile" target=_new>Synteny File</a></div>};
 
 	$html .= qq{<td class=dropmenu><td><span class=bold>Image Files</span>};
 	foreach my $item (@sets) {
 		my $png = $TEMPURL . "/" . basename( $item->{png_filename} );
-		$html .=
-		  qq{<br><a href ="$png" target=_new>} . $item->{obj}->accn . "</a>";
+		$html .= qq{<br><a href ="$png" target=_new>} . $item->{obj}->accn . "</a>";
 	}
 	$html .= qq{<td class=dropmenu><td><span class=bold>SQLite db</span>};
 	my $dbname = $TEMPURL . "/" . basename( $cogeweb->sqlitefile );
@@ -1204,17 +1163,13 @@ qq{<div><a href="http://cas-bioinfo.cas.unt.edu/mgsv/index.php" target=_new>mGSV
 	$html .= "<div><A HREF=\"$logfile\" target=_new>Log</A></DIV>\n";
 	$html .= qq{<td class=dropmenu><td><span class=bold>GEvo Links</span>};
 	$html .= qq{<div id=tiny_link></div>};
-	$html .=
-qq{<div><a href="GEvo_direct.pl?name=$basefilename" target=_new>Results only</a></div></td>};
+	$html .= qq{<div><a href="GEvo_direct.pl?name=$basefilename" target=_new>Results only</a></div></td>};
 
 	my (@ncbi_links);
 	foreach my $item (@sets) {
 		if ( $item->{'obj'}->ncbi_link ) {
 			my $ncbi_link = $item->{'obj'}->ncbi_link;
-			push @ncbi_links,
-			  qq{<div class="link" onclick="window.open('$ncbi_link')">}
-			  . $item->{'obj'}->accn
-			  . "</div>";
+			push @ncbi_links, qq{<div class="link" onclick="window.open('$ncbi_link')">} . $item->{'obj'}->accn . "</div>";
 		}
 	}
 	if (@ncbi_links) {
@@ -1224,12 +1179,9 @@ qq{<div><a href="GEvo_direct.pl?name=$basefilename" target=_new>Results only</a>
 
 	$html .= qq{</table>};
 
-	my $template =
-	  HTML::Template->new( filename => $P->{TMPLDIR} . 'box.tmpl' );
+	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'box.tmpl' );
 	my $results_name = "Results: $analysis_program";
-	$results_name .=
-	  qq{ <span class="small">(spike sequence filter length: $spike_len)</span>}
-	  if $spike_len;
+	$results_name .= qq{ <span class="small">(spike sequence filter length: $spike_len)</span>} if $spike_len;
 	$template->param( BOX_NAME => $results_name );
 	$template->param( BODY     => $html );
 	my $outhtml     = $template->output;
@@ -1294,8 +1246,7 @@ sub generate_mGSV_files {
 		$genome_info{ $item->[0] } = $name;
 		$count++;
 	}
-	my $query =
-qq{select name, type, bpmin, bpmax, image_id, pair_id, link, annotation, strand from image_data};
+	my $query = qq{select name, type, bpmin, bpmax, image_id, pair_id, link, annotation, strand from image_data};
 
 	my %annotations;
 	my %synpairs;
@@ -1643,7 +1594,7 @@ INSERT INTO image_info (id, display_id, iname, title, px_width, px_height, dsid,
 		my $image_track = $feat->track;
 		$image_track = "-" . $image_track if $feat->strand =~ /-/;
 		my ( $xmin, $ymin, $xmax, $ymax ) = ( -1, -1, -1, -1 );
-		( $xmin, $ymin, $xmax, $ymax ) = split /,/, $coords if $coords;
+		( $xmin, $ymin, $xmax, $ymax ) = split(/,/, $coords) if $coords;
 		$xmin++;
 		$xmax++;
 		my $anno = $feat->description;
@@ -2485,7 +2436,7 @@ sub generate_obj_from_seq {
 		if ( $sequence =~ /^>/ ) {
 
 			#fasta sequence
-			my ( $header, $seq ) = split /\n/, $sequence, 2;
+			my ( $header, $seq ) = split(/\n/, $sequence, 2);
 
 			unless ($seq) {
 				$seq = $header unless $seq;
@@ -3639,7 +3590,7 @@ sub gen_hsp_colors {
 	$template->param( HSP_COLOR_LOOP => \@colors );
 	my $count = -2;
 
-	foreach my $line ( split /\n/, $template->output ) {
+	foreach my $line ( split(/\n/, $template->output) ) {
 		next unless $line;
 		$count++ if $line =~ /<table>/i;
 
@@ -4435,7 +4386,7 @@ sub feat_search {
 	$accn =~ s/\s+$// if $accn;
 	unless ($gstid) {
 		if ( $featid =~ /_/ ) {
-			( $featid, $gstid ) = split /_/, $featid;
+			( $featid, $gstid ) = split(/_/, $featid);
 		}
 		if ($dsgid) {
 			my $dsg = $coge->resultset('Genome')->find($dsgid);
