@@ -349,7 +349,6 @@ sub send_to_ExperimentList    #send to ExperimentList
 {
 	my %opts      = @_;
 	my $accn_list = $opts{accn_list};
-print STDERR "matt: $accn_list\n";
 	$accn_list =~ s/^,//;
 	$accn_list =~ s/,$//;
 	#my $url = $URL . "ExperimentList.pl?eid=$accn_list";
