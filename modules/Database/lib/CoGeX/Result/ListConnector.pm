@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use base 'DBIx::Class::Core';
+#use CoGeX;
 
 =head1 NAME
 
@@ -47,12 +48,8 @@ Belongs to CCoGeX::Result::List> via C<list_id>    -- parent list
 
 =cut
 
-use constant {
-	CHILD_TYPE_LIST 		=> 1,
-	CHILD_TYPE_GENOME 		=> 2,
-	CHILD_TYPE_EXPERIMENT 	=> 3,
-	CHILD_TYPE_FEATURE 		=> 4
-};
+my $child_types = CoGeX::list_child_types();
+
 
 __PACKAGE__->table("list_connector");
 __PACKAGE__->add_columns(
@@ -73,6 +70,8 @@ __PACKAGE__->belongs_to("feature"    => "CoGeX::Result::Feature",    "child_id")
 
 __PACKAGE__->belongs_to("child_list"   => "CoGeX::Result::List",  {'foreign.list_id' => 'self.child_id'}); # a list of lists
 __PACKAGE__->belongs_to("parent_list"  => "CoGeX::Result::List",  {'foreign.list_id' => 'self.parent_id' } ); # parent list of a genome/experiment/feature/list
+
+
 
 
 ################################################ subroutine header begin ##
@@ -116,7 +115,7 @@ See Also   :
 
 sub is_list
 {
-	return shift->child_type() == CHILD_TYPE_LIST;
+	return shift->child_type() == $child_types->{list};
 }
 
 ################################################ subroutine header begin ##
@@ -138,7 +137,7 @@ See Also   :
 
 sub is_genome
 {
-	return shift->child_type() == CHILD_TYPE_GENOME;
+	return shift->child_type() == $child_types->{genome};
 }
 
 ################################################ subroutine header begin ##
@@ -160,7 +159,7 @@ See Also   :
 
 sub is_feature
 {
-	return shift->child_type() == CHILD_TYPE_FEATURE;
+	return shift->child_type() == $child_types->{feature};
 }
 
 
@@ -183,7 +182,7 @@ See Also   :
 
 sub is_experiment
 {
-	return shift->child_type() == CHILD_TYPE_EXPERIMENT;
+	return shift->child_type() == $child_types->{experiment};
 }
 
 
