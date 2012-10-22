@@ -20,7 +20,7 @@ use CoGeX;
 use CoGeX::ResultSet::Experiment;
 use CoGeX::ResultSet::Genome;
 use CoGeX::ResultSet::Feature;
-
+use Benchmark;
 no warnings 'redefine';
 
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME
@@ -52,7 +52,7 @@ $TEMPDIR     = $P->{TEMPDIR} . "ListView/";
 mkpath( $TEMPDIR, 0, 0777 ) unless -d $TEMPDIR;
 $TEMPURL = $P->{TEMPURL} . "ListView/";
 
-$MAX_SEARCH_RESULTS = 1000;
+$MAX_SEARCH_RESULTS = 4000;
 
 my ($cas_ticket) = $FORM->param('ticket');
 $USER = undef;
@@ -444,53 +444,51 @@ sub get_list_contents {
 	my $html;
 	my $first = 1;
 	$html = '<table id="list_contents_table" class="small ui-widget-content ui-corner-all"><thead style="display:none"></thead><tbody>';
-	my $genome_count = @{$list->genomes}; #EL: moved outside of loop; massive speed improvement due to cost of this call
+
+	my $list_types = CoGeX::list_child_types();
+	my $genome_count = $list->genomes(count=>1); #EL: moved outside of loop; massive speed improvement due to cost of this call
 	foreach my $genome ( sort genomecmp $list->genomes ) {
 		
 		$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' class='title5' nowrap='true' rowspan=$genome_count style='font-weight:normal;background-color:white'>Genomes ($genome_count):</th>" : '');
 		my $gid = $genome->id;
 		$html .= qq{<td class='data5'><span id='genome$gid' class='link' onclick="window.open('OrganismView.pl?dsgid=$gid')">} . $genome->info . "</span></td>";
 		if ($user_can_edit) {
-			#FIXME hardcoded value for item_type
-			$html .= "<td><span onClick=\"remove_list_item(this, {lid: '$lid', item_type: '2', item_id: '$gid'});\" class='link ui-icon ui-icon-circle-minus'></span></td>";
+			$html .= "<td><span onClick=\"remove_list_item(this, {lid: '$lid', item_type: '".$list_types->{genome}."', item_id: '$gid'});\" class='link ui-icon ui-icon-circle-minus'></span></td>";
 		}
 		$html .= '</tr>';
 	}
 	$first = 1;
-	my $exp_count = @{$list->experiments}; #EL: moved outside of loop; massive speed improvement
+	my $exp_count = $list->experiments(count=>1); #EL: moved outside of loop; massive speed improvement
 	foreach my $experiment (sort experimentcmp $list->experiments ) {
 
 		$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' class='title5' nowrap='true' rowspan=$exp_count style='font-weight:normal;background-color:white'>Experiments ($exp_count):</th>" : '');
 		my $eid = $experiment->id;
 		$html .= qq{<td class='data5'><span id='experiment$eid' class='link' onclick="window.open('ExperimentView.pl?eid=$eid')">} . $experiment->info . "</span></td>";
 		if ($user_can_edit) {
-			#FIXME hardcoded value for item_type
-			$html .= "<td><span onClick=\"remove_list_item(this, {lid: '$lid', item_type: '3', item_id: '$eid'});\" class='link ui-icon ui-icon-circle-minus'></span></td>";
+			$html .= "<td><span onClick=\"remove_list_item(this, {lid: '$lid', item_type: '".$list_types->{experiment}."', item_id: '$eid'});\" class='link ui-icon ui-icon-circle-minus'></span></td>";
 		}
 		$html .= '</tr>';
 	}
 	$first = 1;
-	my $feat_count = @{$list->features}; #EL: moved outside of loop; massive speed improvement
+	my $feat_count = $list->features(count=>1); #EL: moved outside of loop; massive speed improvement
 	foreach my $feature (sort featurecmp $list->features ) {
 
 		$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' class='title5' nowrap='true' rowspan=$feat_count style='font-weight:normal;background-color:white'>Features ($feat_count):</th>" : '');
 		my $fid = $feature->id;
 		$html .= qq{<td class='data5'><span id='feature$fid' class='link' onclick="window.open('FeatView.pl?fid=$fid')">} . $feature->info . "</span></td>";
 		if ($user_can_edit) {
-			#FIXME hardcoded value for item_type
-			$html .= "<td><span onClick=\"remove_list_item(this, {lid: '$lid', item_type: '4', item_id: '$fid'});\" class='link ui-icon ui-icon-circle-minus'></span></td>";
+			$html .= "<td><span onClick=\"remove_list_item(this, {lid: '$lid', item_type: '".$list_types->{feature}."', item_id: '$fid'});\" class='link ui-icon ui-icon-circle-minus'></span></td>";
 		}
 		$html .= '</tr>';
 	}
 	$first = 1;
+	my $list_count = $list->lists(count=>1);
 	foreach my $list (sort listcmp $list->lists ) {
-		my $count = @{$list->lists};
-		$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' class='title5' nowrap='true' rowspan=$count style='font-weight:normal;background-color:white'>Lists ($count):</th>" : '');
+		$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' class='title5' nowrap='true' rowspan=$list_count style='font-weight:normal;background-color:white'>Lists ($list_count):</th>" : '');
 		my $child_id = $list->id;
 		$html .= qq{<td class='data5'><span id='list$child_id' class='link' onclick="window.open('ListView.pl?lid=$child_id')">} . $list->info . "</span></td>";
 		if ($user_can_edit) {
-			#FIXME hardcoded value for item_type
-			$html .= "<td><span onClick=\"remove_list_item(this, {lid: '$lid', item_type: '1', item_id: '$child_id'});\" class='link ui-icon ui-icon-circle-minus'></span></td>";
+			$html .= "<td><span onClick=\"remove_list_item(this, {lid: '$lid', item_type: '".$list_types->{list}."', item_id: '$child_id'});\" class='link ui-icon ui-icon-circle-minus'></span></td>";
 		}
 		$html .= '</tr>';
 	}		
@@ -513,41 +511,42 @@ sub add_list_items {
 	my $list = $coge->resultset('List')->find($lid);
 	my $desc = ( $list->description ? $list->description : '' );
 
+	my $child_types = CoGeX::list_child_types();
+
 	# Experiments
+
 	my @available_items;
 	my %exists = map { $_->id => 1 } $list->experiments;
 	foreach my $e (sort experimentcmp $USER->experiments) {
 		push @available_items, { item_name => 'experiment: ' . $e->info, 
-								 item_spec => 3 . ':' . $e->id, #FIXME magic number for item_type
+								 item_spec => $child_types->{experiment} . ':' . $e->id,
 								 item_disable => ($exists{$e->id} ? "disabled='disabled'" : '') };
 	}
-	
+
 	# Genomes
 	%exists = map { $_->id => 1 } $list->genomes;
 	foreach my $g (sort genomecmp $USER->genomes) {
 		push @available_items, { item_name => 'genome: ' . $g->info, 
-								 item_spec => 2 . ':' . $g->id, #FIXME magic number for item_type
+								 item_spec =>  $child_types->{genome} . ':' . $g->id,
 								 item_disable => ($exists{$g->id} ? "disabled='disabled'" : '') };
 	}
-	
 	# Features
 	%exists = map { $_->id => 1 } $list->features;
 	foreach my $f (sort featurecmp $USER->features) {
 		push @available_items, { item_name => 'feature: ' . $f->info, 
-								 item_spec => 4 . ':' . $f->id, #FIXME magic number for item_type
+								 item_spec =>  $child_types->{feature} . ':' . $f->id,
 								 item_disable => ($exists{$f->id} ? "disabled='disabled'" : '') };
 	}
-	
 	# Lists
 	%exists = map { $_->id => 1 } $list->lists;
 	foreach my $l (sort listcmp $USER->lists) {
 		next if ($l->id == $lid); # can't add a list to itself!
 		next if ($l->locked); # exclude user's master list
 		push @available_items, { item_name => 'list: ' . $l->info, 
-								 item_spec => 1 . ':' . $l->id, #FIXME magic number for item_type
+								 item_spec =>  $child_types->{list} . ':' . $l->id, 
 								 item_disable => ($exists{$l->id} ? "disabled='disabled'" : '') };
 	}	
-	
+
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'ListView.tmpl' );
 	$template->param( ADD_LIST_ITEMS 	  => 1 );
 	$template->param( LID            	  => $lid );
@@ -572,11 +571,11 @@ sub add_item_to_list {
 	return 0 unless $lid;
 	my $item_spec = $opts{item_spec};
 	return 0 unless $item_spec;
-#	print STDERR "$lid $item_spec\n";	
 	
 	my ($item_type, $item_id) = split(/:/, $item_spec);
-	$coge->resultset('ListConnector')->create( { parent_id => $lid, child_id => $item_id, child_type => $item_type } );	
 	
+	my $lc = $coge->resultset('ListConnector')->create( { parent_id => $lid, child_id => $item_id, child_type => $item_type } );	
+
 	return 1;
 }
 
@@ -655,10 +654,11 @@ sub search_genomes {
 	}
 	
 	# Build select options out of results
+	my $child_types = CoGeX::list_child_types;
 	my $html;
 	foreach my $g (sort genomecmp values %unique) {
 		my $disable = $exists{$g->id} ? "disabled='disabled'" : '';
-		my $item_spec = 2 . ':' . $g->id; #FIXME magic number for item_type
+		my $item_spec = $child_types->{genome} . ':' . $g->id; 
 		$html .= "<option $disable value='$item_spec'>" . $g->info . "</option><br>\n";	
 	}
 	$html = "<option disabled='disabled'>No matching items</option>" unless $html;
@@ -715,10 +715,11 @@ sub search_experiments {
 	}
 	
 	# Build select items out of results
+	my $child_types = CoGeX::list_child_types;
 	my $html;
 	foreach my $exp (sort experimentcmp @experiments) {
 		my $disable = $exists{$exp->id} ? "disabled='disabled'" : '';
-		my $item_spec = 3 . ':' . $exp->id; #FIXME magic number for item_type
+		my $item_spec = $child_types->{experiment} . ':' . $exp->id; 
 		$html .= "<option $disable value='$item_spec'>" . $exp->info . "</option><br>\n";	
 	}
 	$html = "<option disabled='disabled'>No matching items</option>" unless $html;
@@ -769,12 +770,13 @@ sub search_features {
 	}
 
 	# Build select items out of results
+	my $child_types = CoGeX::list_child_types;
 	my $html;
 	my %seen;
 	foreach my $f (sort featurecmp @fnames) {
 		next if ($seen{$f->feature_id}++);
 		my $disable = $exists{$f->feature_id} ? "disabled='disabled'" : '';
-		my $item_spec = 4 . ':' . $f->feature_id; #FIXME magic number for item_type
+		my $item_spec = $child_types->{feature} . ':' . $f->feature_id; 
 		$html .= "<option $disable value='$item_spec'>" . $f->feature->info . "</option><br>\n";	
 	}
 	$html = "<option disabled='disabled'>No matching items</option>" unless $html;
@@ -827,11 +829,12 @@ sub search_lists { # list of lists
 	}
 	
 	# Build select items out of results
+	my $child_types = CoGeX::list_child_types;
 	my $html;
 	foreach my $l (sort listcmp @lists) {
 		next if ($l->id == $lid); # can't add a list to itself!
 		my $disable = $exists{$l->id} ? "disabled='disabled'" : '';
-		my $item_spec = 1 . ':' . $l->id; #FIXME magic number for item_type
+		my $item_spec = $child_types->{list} . ':' . $l->id;
 		$html .= "<option $disable value='$item_spec'>" . $l->info . "</option><br>\n";	
 	}
 	$html = "<option disabled='disabled'>No matching items</option>" unless $html;
@@ -929,11 +932,12 @@ sub send_to_blast
 	my $lid = $opts{lid};
 	return unless $lid;
 	
-	my $list = $coge->resultset('List')->find($lid);
-	return unless $list;		
+	#my $list = $coge->resultset('List')->find($lid);
+	#return unless $list;		
 	
-	my $accn_list = join(',', map { $_->id } $list->genomes);
-	my $url = "CoGeBlast.pl?dsgid=$accn_list";
+	#my $accn_list = join(',', map { $_->id } $list->genomes);
+	#my $url = "CoGeBlast.pl?dsgid=$accn_list";
+	my $url = "CoGeBlast.pl?lid=$lid";
 	return encode_json({url => $url});
 }
 
