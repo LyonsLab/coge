@@ -3,6 +3,7 @@ package CoGeX::Result::List;
 use strict;
 use warnings;
 use base 'DBIx::Class::Core';
+#use CoGeX;
 
 use CoGe::Accessory::Annotation;
 
@@ -85,34 +86,44 @@ sub lists
 	my $self = shift;
 	my %opts = @_;
 	my $restricted = $opts{restricted}; # limit result to restricted lists
+	my $count = $opts{count}; #return count;
+	my $child_types = CoGeX::list_child_types();
+
+	if ($count)
+	  {
+	    return $self->list_connectors_as_parent->count({child_type=>$child_types->{list}});
+	  }
 	
 	my @lists;
-	foreach my $conn ( $self->list_connectors_as_parent )
-	{
-		if ($conn->is_list) {
-			next if ($restricted and not $conn->child->restricted);
-			push @lists, $conn->child;
-		}
-	}
+	foreach my $conn ( $self->list_connectors_as_parent->search({child_type=>$child_types->{list}}) )
+	  {
+	    next if ($restricted and not $conn->child->restricted);
+	    push @lists, $conn->child;
+	  }
 	return wantarray ? @lists : \@lists;		
-}
+      }
 
 sub features
-{
-	my $self = shift;
-	my %opts = @_;
-	my $restricted = $opts{restricted}; # limit result to restricted features
-	
-	my @features;
-	foreach my $conn ( $self->list_connectors_as_parent )
-	{
-		if ($conn->is_feature) {
-			next if ($restricted and not $conn->child->restricted);
-			push @features, $conn->child;
-		}
-	}
-	return wantarray ? @features : \@features;	
-}
+  {
+    my $self = shift;
+    my %opts = @_;
+    my $restricted = $opts{restricted}; # limit result to restricted features
+    my $count = $opts{count}; #return count;
+    my $child_types = CoGeX::list_child_types();
+    
+    if ($count)
+      {
+	return $self->list_connectors_as_parent->count({child_type=>$child_types->{feature}});
+      }
+    
+    my @features;
+    foreach my $conn ( $self->list_connectors_as_parent->search({child_type=>$child_types->{feature}})  )
+      {
+	next if ($restricted and not $conn->child->restricted);
+	push @features, $conn->child;
+      }
+    return wantarray ? @features : \@features;	
+  }
 
 
 sub genomes
@@ -120,15 +131,20 @@ sub genomes
 	my $self = shift;
 	my %opts = @_;
 	my $restricted = $opts{restricted}; # limit result to restricted genomes
+	my $count = $opts{count}; #return count;
+	my $child_types = CoGeX::list_child_types();
+	
+	if ($count)
+	  {
+	    return $self->list_connectors_as_parent->count({child_type=>$child_types->{genome}});
+	  }
 	
 	my @genomes;
-	foreach my $conn ( $self->list_connectors_as_parent )
-	{
-		if ($conn->is_genome) {
-			next if ($restricted and not $conn->child->restricted);
-			push @genomes, $conn->child;
-		}
-	}
+	foreach my $conn ( $self->list_connectors_as_parent->search({child_type=>$child_types->{genome}}) )
+	  {
+	    next if ($restricted and not $conn->child->restricted);
+	    push @genomes, $conn->child;
+	  }
 	return wantarray ? @genomes : \@genomes;	
 }
 
@@ -137,14 +153,19 @@ sub experiments
 	my $self = shift;
 	my %opts = @_;
 	my $restricted = $opts{restricted}; # limit result to restricted experiments
+	my $count = $opts{count}; #return count;
+	my $child_types = CoGeX::list_child_types();
+
+	if ($count)
+	  {
+	    return $self->list_connectors_as_parent->count({child_type=>$child_types->{experiment}});
+	  }
 
 	my @experiments;
-	foreach my $conn ( $self->list_connectors_as_parent )
+	foreach my $conn ( $self->list_connectors_as_parent->search({child_type=>$child_types->{experiment}}) )
 	{
-		if ($conn->is_experiment) {
-			next if ($restricted and not $conn->child->restricted);
-			push @experiments, $conn->child;
-		}
+	  next if ($restricted and not $conn->child->restricted);
+	  push @experiments, $conn->child;
 	}
 	return wantarray ? @experiments : \@experiments;
 }
@@ -285,10 +306,14 @@ sub data_summary
 {
 	my $self = shift;
 	my @stuff;
-	push @stuff, "Experiments: " . @{ $self->experiments } if @{ $self->experiments };
-	push @stuff, "Features: "     . @{ $self->features }     if @{ $self->features };
-	push @stuff, "Genomes: "     . @{ $self->genomes }     if @{ $self->genomes };
-	push @stuff, "Lists: "       . @{ $self->lists }       if @{ $self->lists };
+	my $exps = $self->experiments(count=>1);
+	push @stuff, "Experiments: " . $exps if $exps;
+	my $feats = $self->features(count=>1);
+	push @stuff, "Features: "     . $feats if $feats;
+	my $genomes = $self->genomes(count=>1);
+	push @stuff, "Genomes: "     . $genomes if $genomes;
+	my $lists = $self->lists(count=>1);
+	push @stuff, "Lists: "       . $lists if $lists;
 	return join( "; ", @stuff );
 }
 
