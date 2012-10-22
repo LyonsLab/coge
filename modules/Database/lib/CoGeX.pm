@@ -22,7 +22,7 @@ use vars qw($DEFAULT_CONNECTION_STRING $DEFAULT_NAME $DEFAULT_PASSWD);
 $DEFAULT_CONNECTION_STRING = 'dbi:mysql:dbname=coge;host=coge.iplantcollaborative.org;port=3307';
 
 $DEFAULT_NAME = "coge";
-$DEFAULT_PASSWD = "123coge321";
+$DEFAULT_PASSWD = "XXXXXXXX";
 
 =head1 NAME
 
