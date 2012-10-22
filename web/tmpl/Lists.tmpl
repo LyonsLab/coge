@@ -133,7 +133,7 @@ $(document).ready(function(){
 	// Setup filter input
 	$("#search_bar").keyup( function() { filter_rows( $(this).val() ); });
 	$('#search_type').mouseup( function() { filter_rows( $('#search_bar').val() ); });
-	filter_rows();
+	filter_rows( $('#search_bar').val() );
 });
 </SCRIPT>
 
