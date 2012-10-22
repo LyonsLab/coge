@@ -378,4 +378,19 @@ sub self_or_default
     }
 
 
+sub list_child_types
+    {
+      my $self = shift;
+      my %opts = @_;
+      my %types = 
+	(
+	 list=>1,
+	 genome=>2,
+	 experiment=>3,
+	 feature=>4
+	);
+      return wantarray ? %types : \%types;
+    }
+
+
 1;
