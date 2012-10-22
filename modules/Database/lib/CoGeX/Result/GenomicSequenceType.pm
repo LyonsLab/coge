@@ -61,6 +61,34 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key("genomic_sequence_type_id");
 __PACKAGE__->has_many("genomes"=>"CoGeX::Result::Genome","genomic_sequence_type_id");
 
+
+################################################ subroutine header begin ##
+
+=head2 info
+
+ Usage     : 
+ Purpose   : provides quick information about the type
+ Returns   : a string
+ Argument  : 
+ Throws    : 
+ Comments  : name, description
+           : 
+
+See Also   : 
+
+=cut
+
+################################################## subroutine header end ##
+
+sub info
+{
+	my $self = shift;
+	my $info = $self->name;
+	$info .= ": " . $self->description      if $self->description;
+	return $info;
+}
+
+
 1;
 
 
