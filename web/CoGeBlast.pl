@@ -132,7 +132,7 @@ my $pj = new CGI::Ajax(%FUNCTION);
 if ( $FORM->param('jquery_ajax') ) {
 	my %args  = $FORM->Vars;
 	my $fname = $args{'fname'};
-	print STDERR Dumper \%args;
+	#print STDERR Dumper \%args;
 	if ($fname and defined $FUNCTION{$fname}) {
 		if ( $args{args} ) {
 			my @args_list = split( /,/, $args{args} );
