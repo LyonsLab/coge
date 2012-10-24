@@ -185,6 +185,22 @@ sub children
 	return wantarray ? @children : \@children;	
 }
 
+sub children_by_type
+{
+	my $self = shift;
+	my %opts = @_;
+	my $restricted = $opts{restricted}; # limit result to restricted children
+
+	my %children;
+	foreach my $conn ( $self->list_connectors_as_parent )
+	{
+		next if ($restricted and not $conn->child->restricted);
+		my $type = $conn->child_type;
+		push @{$children{$type}}, $conn->child;
+	}
+	return \%children;	
+}
+
 ################################################ subroutine header begin ##
 
 =head2 annotations
