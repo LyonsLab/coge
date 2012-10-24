@@ -17,6 +17,8 @@ $(document).ready(function(){
 	set_annotation_table();
 	
 	$(".dialog_box").dialog({autoOpen: false});
+	
+	pageObj.timestamp = new Array();
 });
 
 function set_contents_table() {
@@ -151,14 +153,11 @@ function add_list_items (opts) {
 function add_selected_items (opts){
 	select_id = opts.select_id;
 	lid = opts.lid;
-	num_items = $('#' + select_id + ' > option:selected').length;
-	
-	$('#' + select_id + ' > option:selected').each(
+	num_items = $('#' + select_id).find('option:selected').length;
+	$('#' + select_id).find('option:selected').each(
 		function() {
 			var item_spec = $(this).attr("value");
-			//var html = '<option value='+uid+ ' >'+$(this).text()+'</option>';
-			//$('#ugid').append(html);
-			$(this).remove();
+			//$(this).remove();
 			$.ajax({
 				data: {
 					jquery_ajax: 1,
@@ -371,21 +370,43 @@ function wait_to_search (search_func, lid, search_term) {
 
 // FIXME: the search functions below are all the same, consolidate?
 
+function search_mystuff (lid, search_term) {
+	$("#wait_mystuff").animate({opacity:1});
+	$("#select_mystuff_items").html("<option disabled='disabled'>Searching...</option>");
+	pageObj.timestamp['mystuff'] = new Date().getTime();
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'search_mystuff',
+			lid: lid,
+			search_term: search_term,
+			timestamp: pageObj.timestamp['mystuff']
+		},
+		success : function(val) {
+			var items = jQuery.parseJSON(val);
+			if (items.timestamp == pageObj.timestamp['mystuff']) {
+				$("#select_mystuff_items").html(items.html);
+				$("#wait_mystuff").animate({opacity:0});
+			}
+		},
+	});
+}
+
 function search_genomes (lid, search_term) {
 	$("#wait_genome").animate({opacity:1});
 	$("#select_genome_items").html("<option disabled='disabled'>Searching...</option>");
+	pageObj.timestamp['genomes'] = new Date().getTime();
 	$.ajax({
 		data: {
 			jquery_ajax: 1,
 			fname: 'search_genomes',
 			lid: lid,
 			search_term: search_term,
-			timestamp: new Date().getTime()
+			timestamp: pageObj.timestamp['genomes']
 		},
 		success : function(val) {
 			var items = jQuery.parseJSON(val);
-			if (!pageObj.timestamp_genomes || items.timestamp > pageObj.timestamp_genomes) {
-				pageObj.timestamp_genomes = items.timestamp;
+			if (items.timestamp == pageObj.timestamp['genomes']) {
 				$("#select_genome_items").html(items.html);
 				$("#wait_genome").animate({opacity:0});
 			}
@@ -396,18 +417,18 @@ function search_genomes (lid, search_term) {
 function search_experiments (lid, search_term) {
 	$("#wait_experiment").animate({opacity:1});
 	$("#select_experiments_items").html("<option disabled='disabled'>Searching...</option>");
+	pageObj.timestamp['experiments'] = new Date().getTime();
 	$.ajax({
 		data: {
 			jquery_ajax: 1,
 			fname: 'search_experiments',
 			lid: lid,
 			search_term: search_term,
-			timestamp: new Date().getTime()
+			timestamp: pageObj.timestamp['experiments']
 		},
 		success : function(val) {
 			var items = jQuery.parseJSON(val);
-			if (!pageObj.timestamp_experiments || items.timestamp > pageObj.timestamp_experiments) {
-				pageObj.timestamp_experiments = items.timestamp;
+			if (items.timestamp == pageObj.timestamp['experiments']) {
 				$("#select_experiment_items").html(items.html);
 				$("#wait_experiment").animate({opacity:0});
 			}
@@ -418,18 +439,18 @@ function search_experiments (lid, search_term) {
 function search_features (lid, search_term) {
 	$("#wait_feature").animate({opacity:1});
 	$("#select_feature_items").html("<option disabled='disabled'>Searching...</option>");
+	pageObj.timestamp['features'] = new Date().getTime();
 	$.ajax({
 		data: {
 			jquery_ajax: 1,
 			fname: 'search_features',
 			lid: lid,
 			search_term: search_term,
-			timestamp: new Date().getTime()
+			timestamp: pageObj.timestamp['features']
 		},
 		success : function(val) {
 			var items = jQuery.parseJSON(val);
-			if (!pageObj.timestamp_features || items.timestamp > pageObj.timestamp_features) {
-				pageObj.timestamp_features = items.timestamp;
+			if (items.timestamp == pageObj.timestamp['features']) {
 				$("#select_feature_items").html(items.html);
 				$("#wait_feature").animate({opacity:0});
 			}
@@ -440,18 +461,18 @@ function search_features (lid, search_term) {
 function search_lists (lid, search_term) {
 	$("#wait_list").animate({opacity:1});
 	$("#select_list_items").html("<option disabled='disabled'>Searching...</option>");
+	pageObj.timestamp['lists'] = new Date().getTime();
 	$.ajax({
 		data: {
 			jquery_ajax: 1,
 			fname: 'search_lists',
 			lid: lid,
 			search_term: search_term,
-			timestamp: new Date().getTime()
+			timestamp: pageObj.timestamp['lists']
 		},
 		success : function(val) {
 			var items = jQuery.parseJSON(val);
-			if (!pageObj.timestamp_lists || items.timestamp > pageObj.timestamp_lists) {
-				pageObj.timestamp_lists = items.timestamp;
+			if (items.timestamp == pageObj.timestamp['lists']) {
 				$("#select_list_items").html(items.html);
 				$("#wait_list").animate({opacity:0});
 			}
@@ -657,10 +678,11 @@ Are you sure you want to permanently delete this list?<p>
 $(document).ready(function(){
 	$(function() { $("#tabs").tabs({selected:0}); });
 	
-	search_genomes(<TMPL_VAR NAME='LID'>, '');
-	setTimeout(function() { search_experiments(<TMPL_VAR NAME='LID'>, ''); }, 250);
-	setTimeout(function() { search_features(<TMPL_VAR NAME='LID'>, ''); },    500);
-	setTimeout(function() { search_lists(<TMPL_VAR NAME='LID'>, ''); },       750);
+	search_mystuff(<TMPL_VAR NAME='LID'>, '');
+	setTimeout(function() { search_genomes(<TMPL_VAR NAME='LID'>, ''); },     500);
+	setTimeout(function() { search_experiments(<TMPL_VAR NAME='LID'>, ''); }, 1000);
+	setTimeout(function() { search_features(<TMPL_VAR NAME='LID'>, ''); },    1500);
+	setTimeout(function() { search_lists(<TMPL_VAR NAME='LID'>, ''); },       2000);
 });
 </SCRIPT>
 
@@ -675,23 +697,25 @@ $(document).ready(function(){
 
 <div id="tab-1">
  <table class="small">
+  <tr align='left'>
+   <td>
+    Search:
+    <input type="textbox" size="53" id="edit_mystuff_search" onkeyup="wait_to_search(search_mystuff, <TMPL_VAR NAME=LID>, this.value);">
+    <span class='ui-button ui-corner-all' onclick="search_mystuff(<TMPL_VAR NAME=LID>, $('#edit_mystuff_search').attr('value'));"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
+    <img id="wait_mystuff" src="picts/ajax-loader.gif" style="opacity: 0;" />
+   </td>
+  </tr>
   <tr>
-   <td><b>Available items:</b>&nbsp;&nbsp;&nbsp;&nbsp;<i>Hold down SHIFT or CTRL key to select multiple items</i><br>
-    <form name="available_my_list_items">
-     <select multiple id="select_my_items" size="10" style="max-width: 500px;">
-      <TMPL_LOOP NAME=AVAILABLE_MY_LIST_LOOP>
-      <option <TMPL_VAR NAME=ITEM_DISABLE> value="<TMPL_VAR NAME=ITEM_SPEC>"><TMPL_VAR NAME=ITEM_NAME></option>
-      </TMPL_LOOP>
-     </select>
-    </form>
-    <SCRIPT TYPE="text/javascript"> 
-     var available_my_list_items_filter = new filterlist(document.available_my_list_items.select_my_items);
-    </SCRIPT>
-    Filter: <INPUT NAME="regexp" onKeyUp="available_my_list_items_filter.set(this.value)">
-   </td> 
+   <td>
+    <select multiple id="select_mystuff_items" size="10" style="min-width:500; max-width: 500px;">
+    </select>
+   </td>
+  </tr>
+  <tr>
+   <td><i>Hold down SHIFT or CTRL key to select multiple items</i></td>
   </tr>
  </table>
- <span href="javascript:void(0)" onClick="add_selected_items({select_id: 'select_my_items', lid: '<TMPL_VAR NAME=LID>'});" class='ui-button ui-button-go ui-corner-all'>Add Selected Items</span>
+ <span href="javascript:void(0)" onClick="add_selected_items({select_id: 'select_mystuff_items', lid: '<TMPL_VAR NAME=LID>'});" class='ui-button ui-button-go ui-corner-all'>Add Selected Items</span>
 </div> <!-- tab-1 -->
 
 <div id="tab-2">

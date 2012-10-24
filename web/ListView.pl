@@ -9,7 +9,7 @@ use HTML::Template;
 use Digest::MD5 qw(md5_base64);
 use Sort::Versions;
 use List::Util qw(first);
-
+use DBIxProfiler;
 #use URI::Escape;
 use Data::Dumper;
 use File::Path;
@@ -44,6 +44,8 @@ $DBUSER  = $P->{DBUSER};
 $DBPASS  = $P->{DBPASS};
 $connstr = "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
 $coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
+#$coge->storage->debugobj(new DBIxProfiler());
+#$coge->storage->debug(1);
 
 $COOKIE_NAME = $P->{COOKIE_NAME};
 $URL         = $P->{URL};
@@ -52,7 +54,7 @@ $TEMPDIR     = $P->{TEMPDIR} . "ListView/";
 mkpath( $TEMPDIR, 0, 0777 ) unless -d $TEMPDIR;
 $TEMPURL = $P->{TEMPURL} . "ListView/";
 
-$MAX_SEARCH_RESULTS = 4000;
+$MAX_SEARCH_RESULTS = 1000;
 
 my ($cas_ticket) = $FORM->param('ticket');
 $USER = undef;
@@ -78,6 +80,7 @@ $link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, 
 	add_list_annotation        	=> \&add_list_annotation,
 	add_annotation_to_list     	=> \&add_annotation_to_list,
 	remove_list_annotation     	=> \&remove_list_annotation,
+	search_mystuff				=> \&search_mystuff,
 	search_genomes             	=> \&search_genomes,
 	search_experiments         	=> \&search_experiments,
 	search_features            	=> \&search_features,
@@ -86,7 +89,7 @@ $link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, 
 	get_annotation_type_groups 	=> \&get_annotation_type_groups,
 	delete_list                	=> \&delete_list,
 	send_to_blast		   		=> \&send_to_blast,
-	send_to_featlist		   		=> \&send_to_featlist,
+	send_to_featlist		   	=> \&send_to_featlist,
 	send_to_msa					=> \&send_to_msa,
 	send_to_gevo				=> \&send_to_gevo,
 	send_to_synfind				=> \&send_to_synfind,
@@ -511,55 +514,17 @@ sub add_list_items {
 	my $list = $coge->resultset('List')->find($lid);
 	my $desc = ( $list->description ? $list->description : '' );
 
-	my $child_types = CoGeX::list_child_types();
-
-	# Experiments
-
-	my @available_items;
-	my %exists = map { $_->id => 1 } $list->experiments;
-	foreach my $e (sort experimentcmp $USER->experiments) {
-		push @available_items, { item_name => 'experiment: ' . $e->info, 
-								 item_spec => $child_types->{experiment} . ':' . $e->id,
-								 item_disable => ($exists{$e->id} ? "disabled='disabled'" : '') };
-	}
-
-	# Genomes
-	%exists = map { $_->id => 1 } $list->genomes;
-	foreach my $g (sort genomecmp $USER->genomes) {
-		push @available_items, { item_name => 'genome: ' . $g->info, 
-								 item_spec =>  $child_types->{genome} . ':' . $g->id,
-								 item_disable => ($exists{$g->id} ? "disabled='disabled'" : '') };
-	}
-	# Features
-	%exists = map { $_->id => 1 } $list->features;
-	foreach my $f (sort featurecmp $USER->features) {
-		push @available_items, { item_name => 'feature: ' . $f->info, 
-								 item_spec =>  $child_types->{feature} . ':' . $f->id,
-								 item_disable => ($exists{$f->id} ? "disabled='disabled'" : '') };
-	}
-	# Lists
-	%exists = map { $_->id => 1 } $list->lists;
-	foreach my $l (sort listcmp $USER->lists) {
-		next if ($l->id == $lid); # can't add a list to itself!
-		next if ($l->locked); # exclude user's master list
-		push @available_items, { item_name => 'list: ' . $l->info, 
-								 item_spec =>  $child_types->{list} . ':' . $l->id, 
-								 item_disable => ($exists{$l->id} ? "disabled='disabled'" : '') };
-	}	
-
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'ListView.tmpl' );
-	$template->param( ADD_LIST_ITEMS 	  => 1 );
-	$template->param( LID            	  => $lid );
-	$template->param( NAME           	  => $list->name );
-	$template->param( DESC           	  => $desc );
-	$template->param( AVAILABLE_MY_LIST_LOOP => \@available_items );
+	$template->param( ADD_LIST_ITEMS => 1 );
+	$template->param( LID            => $lid );
+	$template->param( NAME           => $list->name );
+	$template->param( DESC           => $desc );
 
 	# Setup dialog title and data fields
 	my %data;
 	$data{title}  = 'Add Items to List';
 	$data{name}   = $list->name;
 	$data{desc}   = $desc;
-	$data{items}  = \@available_items;
 	$data{output} = $template->output;
 	
 	return encode_json( \%data );
@@ -573,6 +538,7 @@ sub add_item_to_list {
 	return 0 unless $item_spec;
 	
 	my ($item_type, $item_id) = split(/:/, $item_spec);
+#	print STDERR "add_item_to_list: $item_type $item_id\n";
 	
 	my $lc = $coge->resultset('ListConnector')->create( { parent_id => $lid, child_id => $item_id, child_type => $item_type } );	
 
@@ -595,6 +561,90 @@ sub remove_list_item {
 	$lc->delete();
 	
 	return 1;
+}
+
+sub search_mystuff {
+	my %opts = @_;
+	my $lid = $opts{lid};
+	my $search_term = $opts{search_term};
+	my $timestamp = $opts{timestamp};
+#	print STDERR "$lid $search_term\n";
+	return 0 unless $lid;
+	
+	# Get items already in list
+	my $list = $coge->resultset('List')->find($lid);
+	
+	my %exists;
+	my $children = $list->children_by_type;
+	foreach my $type (keys %$children) {
+		foreach (@{$children->{$type}}) {
+			$exists{$type}{$_->id}++;
+		}
+	}
+	
+	# Get my stuff
+	my %mystuff;
+	my $child_types = CoGeX::list_child_types();
+	my $num_results = 0;
+	
+	my $type = $child_types->{experiment};
+	foreach my $e ($USER->experiments) {#(sort experimentcmp $USER->experiments) {
+		if (not $search_term or $e->info =~ /$search_term/i) {
+			push @{$mystuff{$type}}, $e;
+			last if $num_results++ > $MAX_SEARCH_RESULTS;
+		}
+	}
+	
+	$type = $child_types->{genome};
+	foreach my $g ($USER->genomes) {#(sort genomecmp $USER->genomes) {
+		if (not $search_term or $g->info =~ /$search_term/i) {
+			push @{$mystuff{$type}}, $g;
+			last if $num_results++ > $MAX_SEARCH_RESULTS;
+		}
+	}
+	
+	$type = $child_types->{feature};
+	foreach my $f ($USER->features) {#(sort featurecmp $USER->features) {
+		if (not $search_term or $f->info =~ /$search_term/i) {
+			push @{$mystuff{$type}}, $f;
+			last if $num_results++ > $MAX_SEARCH_RESULTS;
+		}
+	}
+	
+	$type = $child_types->{list};
+	foreach my $l ($USER->lists) {#(sort listcmp $USER->lists) {
+		next if ($l->id == $list->id); # can't add a list to itself!
+		next if ($l->locked); # exclude user's master list
+		if (not $search_term or $l->info =~ /$search_term/i) {
+			push @{$mystuff{$type}}, $l;
+			last if $num_results++ > $MAX_SEARCH_RESULTS;
+		}
+	}
+
+	# Limit number of results displayed
+	if ($num_results > $MAX_SEARCH_RESULTS) {
+		return encode_json({
+					timestamp => $timestamp, 
+					html => "<option disabled='disabled'>>$MAX_SEARCH_RESULTS results, please refine your search.</option>"
+		});
+	}
+	
+	# Build select items out of results
+	my $html;
+	foreach my $type (sort keys %mystuff) {
+		my ($type_name) = grep { $child_types->{$_} eq $type } keys %$child_types;
+		my $type_count = @{$mystuff{$type}};
+		$html .= "<optgroup label='" . ucfirst($type_name) . "s ($type_count)'>";
+		foreach my $item (@{$mystuff{$type}}) {
+			my $disable = $exists{$type}{$item->id} ? "disabled='disabled'" : '';
+			my $item_spec = $type . ':' . $item->id;
+			$html .= "<option $disable value='$item_spec'>" . $item->info . "</option>\n";
+		}
+		$html .= '</optgroup>';
+	}
+	$html = "<option disabled='disabled'>No matching items</option>" unless $html;
+	
+	return encode_json({timestamp => $timestamp, html => $html});
 }
 
 sub search_genomes {
