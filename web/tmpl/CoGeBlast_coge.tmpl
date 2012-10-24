@@ -1,68 +1,9 @@
 <span id="run_cogeblast_button" style="font-size: 1em" class='ui-button ui-button-go ui-corner-all'>Run CoGe Blast</span>
 <br>
 <br>
-<table class="ui-widget-content ui-corner-all">
-  <tr valign='top'>
-    <td align='left'><b>Specify Target Genomes</b>
-      <br>
-      <table class="small">
-        <tr>
-          <td>
-            <table class="small">
-              <tr>
-                <td>Organism:</td>
-                <td>
-                  <input id="org_name_desc" name="org_name_desc" type="text" size="27" style="font-style:italic;color:gray;" value="Search" />
-                  <img id="wait_indicator" src="picts/ajax-loader.gif" style="opacity:0;" />
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-        <tr valign='top'>
-          <td>
-            <table class="small">
-              <tr valign='top'>
-                <td>
-                  <div id="org_list">
-                    Matching Organisms <span id="org_count"></span><br>
-                    <select MULTIPLE id="org_id" SIZE="8" style="min-width:200px;" ondblclick="add_selected_orgs();">
-                      <TMPL_VAR NAME="ORG_LIST">
-                    </select>
-                  </div>
-                  <div id="org_seq_types" style='display:none;'>
-                    Genomes for Organism <span id="genome_count"></span><br>
-                  	<select multiple id='dsgid' ondblclick="get_dsg_for_blast_menu(['args__dsgid','dsgid'],[add_to_list]);">
-                  	</select>
-                  </div> 
-                  <span id="genome_info_button" href="javascript:void(0)" class='ui-state-disabled ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-info"></span>Genome Info</span>
-                  <span id="add_all_listed_button" href="javascript:void(0)" class='ui-state-disabled ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plusthick"></span>Add all</span>
-                </td>
-                <td valign="middle" align="middle">
-                  <span id="remove" href="javascript:void(0)" onClick="remove_selected_orgs();" style="display:none;width:35px;" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-minus"></span>Remove</span>
-                  <span id="add" href="javascript:void(0)" onClick="add_selected_orgs();" class='ui-state-disabled ui-button ui-button-icon-left ui-corner-all' style="width:35px;"><span class="ui-icon ui-icon-plus"></span>Add</span>
-                </td>
-                <td>
-                  Selected Genomes <span id='selected_genome_count' class='small'></span><br>
-                  <div id='db_select'>
-                    <select MULTIPLE id="genome_choice" size="8" style="min-width:200px;">
-                      <option id='blank' value=null style='color:gray;' disabled='disabled'>None</option>
-                    </select>
-                  </div>
-                  <span id="import" name="import" onClick="search_lists();" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-arrowreturnthick-1-w"></span>Import List</span>
-                  <TMPL_IF NAME="SAVE_ORG_LIST">
-                  <span id="save" name="save" class='ui-button ui-button-icon-left ui-corner-all' onclick="save_org_list();"><span class="ui-icon ui-icon-disk"></span>Save</span>
-                  </TMPL_IF>                  
-                  <span id="clear" name="clear" onClick="clear_org_list();" class='ui-state-disabled ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-minusthick"></span>Clear</span>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-      </table>
-    </td>
-  </tr>
-</table>
+
+<TMPL_INCLUDE NAME='widgets/GenomeSelect.tmpl'><!--<TMPL_VAR NAME=GENOME_SEARCH_STUFF>-->
+
 <br>
 <table class="ui-widget-content ui-corner-all">
   <tr valign="top">

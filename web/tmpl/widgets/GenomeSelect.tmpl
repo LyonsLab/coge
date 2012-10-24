@@ -1,0 +1,430 @@
+<SCRIPT LANGUAGE="JavaScript">
+
+$(document).ready(function(){
+
+	$("#org_name_desc").focus(
+		function() {
+			if( $(this).val() == 'Search'){ 
+				$(this).val('');
+			}
+			$(this).css({fontStyle: "normal", color: "black"});
+		}
+	).keyup(
+		function() {
+			org_search();
+		}
+	);
+
+	$('#add_all_listed_button').click(
+		function() {
+			if ($('#org_id option:not(:disabled)').length) {
+				add_all_orgs();
+			}
+		}
+	);
+	
+	$('#remove').click(
+		function() {
+			$('#genome_choice option:selected').each(function(){
+				$('#'+$(this).val()).remove();
+			});
+			count_genomes();
+			update_buttons();
+		}
+	);
+
+	$("#genome_info_button").click(
+		function() {
+			if ($('#dsgid').val()) {
+				var dsgid = $('#dsgid').val();
+				$.ajax({
+					data: {
+						jquery_ajax: 1,
+						fname: 'get_genome_info',
+						dsgid: dsgid[0],
+					},
+					success : function(html) {
+						$('#genome_info_popup').html(html);
+						$('#genome_info_popup').dialog('open');
+					}
+				});
+			}
+		}
+	);
+
+	$('#org_id').
+		click( function() { seq_type_search(); } ).
+		change( function() { seq_type_search(); } );
+
+	$('#dsgid').click( function() { update_buttons(); } );
+	$('#db_select').click( function() { update_buttons(1); } );
+
+});
+
+function org_search(desc_search){
+	if (pageObj.time) {
+		clearTimeout(pageObj.time);
+	}
+	
+	name_desc = $('#org_name_desc').val();
+	if (name_desc.length < 3) { return; } //>
+	
+	pageObj.time = setTimeout(
+		function() {
+			$("#wait_indicator").css({opacity:1});
+			$.ajax({
+				data: {
+					jquery_ajax: 1,
+					fname: 'get_orgs',
+					name_desc: name_desc,
+					timestamp: new Date().getTime()
+				},
+				success : function(data) {
+					var items = jQuery.parseJSON(data);
+					if (!pageObj.timestamp_get_orgs || items.timestamp > pageObj.timestamp_get_orgs) {
+						pageObj.timestamp_get_orgs = items.timestamp;
+						$("#wait_indicator").animate({opacity:0});
+						$('#org_id').html(items.html);
+						seq_type_search();
+						update_buttons();
+						count_organisms();
+					}
+				}
+			});
+		}, 
+		500
+	);
+}
+
+function update_buttons(remove) {
+	if (remove && $('#genome_choice').val()) {
+		$('#remove').show();
+		$('#add').hide();
+		return;
+	}
+	else {
+		$('#remove').hide();
+		$('#add').show();
+	}
+
+	if ($('#org_id').val() && $('#dsgid').val()) {
+		$('#genome_info_button').removeClass('ui-state-disabled');
+		$('#org_seq_types').show();
+		$('#add').removeClass('ui-state-disabled');
+		$('#add').removeClass('ui-state-disabled');
+		$('#add').show();
+	}
+	else {
+		$('#genome_info_button').addClass('ui-state-disabled');
+		$('#add').addClass('ui-state-disabled');
+		$('#org_seq_types').hide();
+		$('#add').addClass('ui-state-disabled');
+	}
+}
+
+function get_dsg_for_menu(opts) {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'get_dsg_for_menu',
+			dsgid: opts.dsgid,
+			orgid: opts.orgid,
+		},
+		success : function(data) {
+			add_to_list(data);
+			sort_genome_choice();
+		}
+	});			
+}
+
+function seq_type_search() {
+	var oid = $('#org_id').val();
+
+	if (oid && oid.length) {
+		$.ajax({
+			data: {
+				jquery_ajax: 1,
+				fname: 'gen_dsg_menu',
+				oid: oid[0] //join(',', oid)
+			},
+			success : function(html) {
+				$('#dsgid').html(html);
+				var count = $('#dsgid option').length;
+				$('#dsgid').attr('size', Math.min(count, 3));
+				$('#genome_count').html('('+count+')');
+				update_buttons();
+			}
+		});
+	}
+	else {
+		$('#dsgid').html('');
+		update_buttons();
+	}
+}
+
+function remove_selected_orgs() {
+	$('#genome_choice option:selected').each(function(){
+		$('#'+$(this).val()).remove();
+	});
+	count_genomes();
+}
+
+function add_all_orgs() {
+	var ids;
+	$('#org_id option').each(function(){
+		ids = ids+","+$(this).val();
+	});
+	get_dsg_for_menu({orgid: ids});	
+}
+
+function add_selected_orgs() {
+	var ids;
+	var count = 0;
+	$('#org_id option:selected').each(function() {
+		ids = ids + "," + $(this).val();
+		count++;
+	});
+	
+	if (count == 1) {
+		var dsgid = $('#dsgid').val();
+		get_dsg_for_menu({dsgid: dsgid[0]});
+	}
+	else {
+		get_dsg_for_menu({orgid: ids});
+	}
+}
+
+function add_to_list(stuff) {
+	var orgs = stuff.split(':::');
+	for (var i=0; i < orgs.length; i++) { //>
+		var item = orgs[i].split('::');
+		id = item[0];
+		org = item[1];
+		if (!id && !org) { continue; }
+		var check = $('#'+id).val();
+		if (check){ continue; }
+		var html = '<option id='+id+' value='+id+' ondblclick="remove_selected_orgs();">'+org+'</option>';
+		$('#blank').remove();
+		$('#genome_choice').append(html);
+	}	
+	count_genomes();
+}
+
+function sort_genome_choice() {
+	$('#genome_choice').append().sortSelect();
+}
+
+function count_organisms() {
+	var count = $('#org_id option:not(:disabled)').length;
+	if (count) {
+		$('#add_all_listed_button').removeClass('ui-state-disabled');
+	}
+	else {
+		$('#add_all_listed_button').addClass('ui-state-disabled');
+	}	
+	$('#org_count').html('('+count+')');
+}
+
+function count_genomes() {
+	var count = $('#genome_choice').getLength();
+	
+	if (count) {
+		$('#clear').removeClass('ui-state-disabled');
+	}
+	else {
+		$('#clear').addClass('ui-state-disabled');
+		$('#genome_choice').html('<option id="blank" value=null style="color:gray;" disabled="disabled">None</option>');
+	}
+		
+	$('#selected_genome_count').html('('+count+')');
+}
+
+function clear_org_list() {
+	$('#genome_choice').empty();
+	count_genomes();
+}
+
+function save_org_list() {
+	//save_settings(['args__dsgids','args__'+$('#genome_choice').getLength(1), 'args__resultslimit','resultslimit'],[]);
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'save_settings',
+			dsgids: $('#genome_choice').getLength(1),
+			resultslimit: $('#resultslimit').val(),
+		},
+		success : function() {
+			alert('Selected genomes haved been saved and will be loaded by default.');
+		},
+	});	
+}
+
+function search_lists (search_term) {
+	if ($('#import_list_box').dialog('isOpen')) {
+		$("#wait_list").animate({opacity:1});
+		$("#select_list_items").html("<option disabled='disabled'>Searching...</option>");
+	}
+	
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'search_lists',
+			search_term: search_term,
+			timestamp: new Date().getTime()
+		},
+		success : function(val) {
+			var items = jQuery.parseJSON(val);
+			if (!pageObj.timestamp_lists || items.timestamp > pageObj.timestamp_lists) {
+				pageObj.timestamp_lists = items.timestamp;
+				$('#list_preview').hide();
+				$("#select_list_items").html(items.html);
+				var width = $("#group_delete_box").dialog("option", "width");
+				$("#select_list_items").width(width-40);
+				$("#wait_list").animate({opacity:0});
+				$('#import_list_box').dialog('open');
+			}
+		},
+	});
+}
+
+function get_list_preview () {
+	$('#list_preview').hide();
+	$('#select_list_items > option:selected:last').each(
+		function() {
+			var item_spec = $(this).attr("value");
+			$.ajax({
+				data: {
+					jquery_ajax: 1,
+					fname: 'get_list_preview',
+					item_spec: item_spec,
+				},
+				success : 
+					function(data) {
+						var width = $("#import_list_box").dialog("option", "width");
+						$("#select_list_items").width(width/2-30);
+						$('#list_preview').width(width/2-30);
+						$('#list_preview').html(data);
+						$('#list_preview').fadeIn('fast');
+					}
+			});
+		}
+	);
+}
+
+function import_lists() {
+	$('#select_list_items > option:selected').each(
+		function() {
+			var item_spec = $(this).attr("value");
+			$.ajax({
+				data: {
+					jquery_ajax: 1,
+					fname: 'get_genomes_for_list',
+					item_spec: item_spec,
+				},
+				success : 
+					function(data) {
+						add_to_list(data);
+					}
+			});			
+		}
+	);
+	$("#import_list_box").dialog('close');
+}
+
+</SCRIPT>
+
+<!--MAIN STUFF-->
+<table class="ui-widget-content ui-corner-all">
+  <tr valign='top'>
+    <td align='left'><b>Specify Target Genomes</b>
+      <br>
+      <table class="small">
+        <tr>
+          <td>
+            <table class="small">
+              <tr>
+                <td>Organism:</td>
+                <td>
+                  <input id="org_name_desc" name="org_name_desc" type="text" size="27" style="font-style:italic;color:gray;" value="Search" />
+                  <img id="wait_indicator" src="picts/ajax-loader.gif" style="opacity:0;" />
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr valign='top'>
+          <td>
+            <table class="small">
+              <tr valign='top'>
+                <td>
+                  <div id="org_list">
+                    Matching Organisms <span id="org_count"></span><br>
+                    <select MULTIPLE id="org_id" SIZE="8" style="min-width:200px;" ondblclick="add_selected_orgs();">
+                      <TMPL_VAR NAME="ORG_LIST">
+                    </select>
+                  </div>
+                  <div id="org_seq_types" style='display:none;'>
+                    Genomes for Organism <span id="genome_count"></span><br>
+                  	<select multiple id='dsgid' ondblclick="get_dsg_for_menu({dsgid: $('#dsgid').val()});">
+                  	</select>
+                  </div> 
+                  <span id="genome_info_button" href="javascript:void(0)" class='ui-state-disabled ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-info"></span>Genome Info</span>
+                  <span id="add_all_listed_button" href="javascript:void(0)" class='ui-state-disabled ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-plusthick"></span>Add all</span>
+                </td>
+                <td valign="middle" align="middle">
+                  <span id="remove" href="javascript:void(0)" onClick="remove_selected_orgs();" style="display:none;width:35px;" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-minus"></span>Remove</span>
+                  <span id="add" href="javascript:void(0)" onClick="add_selected_orgs();" class='ui-state-disabled ui-button ui-button-icon-left ui-corner-all' style="width:35px;"><span class="ui-icon ui-icon-plus"></span>Add</span>
+                </td>
+                <td>
+                  Selected Genomes <span id='selected_genome_count' class='small'></span><br>
+                  <div id='db_select'>
+                    <select MULTIPLE id="genome_choice" size="8" style="min-width:200px;">
+                      <option id='blank' value=null style='color:gray;' disabled='disabled'>None</option>
+                    </select>
+                  </div>
+                  <span id="import" name="import" onClick="search_lists();" class='ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-arrowreturnthick-1-w"></span>Import List</span>
+                  <TMPL_IF NAME="SAVE_ORG_LIST">
+                  <span id="save" name="save" class='ui-button ui-button-icon-left ui-corner-all' onclick="save_org_list();"><span class="ui-icon ui-icon-disk"></span>Save</span>
+                  </TMPL_IF>                  
+                  <span id="clear" name="clear" onClick="clear_org_list();" class='ui-state-disabled ui-button ui-button-icon-left ui-corner-all'><span class="ui-icon ui-icon-minusthick"></span>Clear</span>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+
+<!--POPUP-->
+  <div id="import_list_box" class="dialog_box" title="Import List">
+    <table class="small">
+      <tr>
+        <td colspan='2'>
+          Search: <input type="textbox" size="53" id="edit_list_search" onkeyup="wait_to_search(search_lists, this.value);">
+          <span class='ui-button ui-corner-all' onclick="search_lists(<TMPL_VAR NAME=LID>, $('#edit_list_search').attr('value'));"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
+          <img id="wait_list" src="picts/ajax-loader.gif" style="opacity: 0;" />
+        </td>
+      </tr>
+      <tr>
+        <td valign='top'>
+          <select multiple id="select_list_items" size="10" style='width:460px;height:138px;' onClick="get_list_preview();">
+          </select>
+        </td>
+        <td valign='top'>
+          <div id="list_preview" style="display:none;color:Gray;height:131px;overflow:auto;border:1px solid LightGray;padding: 1px 4px 4px 4px;font-family:Arial, Helvetica, sans-serif;font-size:0.8em;"></div>
+        </td>
+      </tr>
+      <tr>
+        <td colspan='2' style='color:gray;'><i>Hold down SHIFT or CTRL key to select multiple items</i></td>
+      </tr>
+    </table>
+    <span href="javascript:void(0)" onClick="import_lists();" class='ui-button ui-button-go ui-corner-all'>Add Selected Items</span>
+  </div>
+
+
+
+<!--POPUP-->
+  <div id="genome_info_popup" class="dialog_box" title="Genome Information">
+  </div>

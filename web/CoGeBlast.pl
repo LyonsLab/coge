@@ -13,7 +13,7 @@ use CoGe::Graphics::Chromosome;
 use CoGe::Graphics::Feature::HSP;
 use CoGeX;
 use CGI;
-use CGI::Ajax;
+#use CGI::Ajax;
 use JSON::XS;
 use HTML::Template;
 use Text::Wrap qw($columns &wrap);
@@ -77,7 +77,6 @@ $DBUSER  = $P->{DBUSER};
 $DBPASS  = $P->{DBPASS};
 $connstr = "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
 $coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
-
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
 
@@ -117,23 +116,25 @@ $USER = undef;
 	export_alignment_file    => \&export_alignment_file,
 	save_settings_cogeblast  => \&save_settings_cogeblast,
 	generate_basefile        => \&generate_basefile,
-	get_dsg_for_blast_menu   => \&get_dsg_for_blast_menu,
+	get_dsg_for_menu         => \&get_dsg_for_menu,
 	get_genome_info          => \&get_genome_info,
 	search_lists			 => \&search_lists,
 	get_list_preview		 => \&get_list_preview,
 	get_genomes_for_list	 => \&get_genomes_for_list,
 	get_orgs                 => \&get_orgs,
-	%ajax,
+	read_log				 => \&CoGe::Accessory::Web::read_log,
+	save_settings		 	 => \&CoGe::Accessory::Web::save_settings,
+	#%ajax,
 );
 
-my $pj = new CGI::Ajax(%FUNCTION);
+dispatch();
 
-# mdb 10/5/12 - using both CGI and jQuery ajax
-if ( $FORM->param('jquery_ajax') ) {
+sub dispatch {
 	my %args  = $FORM->Vars;
 	my $fname = $args{'fname'};
-	#print STDERR Dumper \%args;
-	if ($fname and defined $FUNCTION{$fname}) {
+	if ($fname) {
+		die if not defined $FUNCTION{$fname};
+#		print STDERR Dumper \%args;
 		if ( $args{args} ) {
 			my @args_list = split( /,/, $args{args} );
 			print $FORM->header, $FUNCTION{$fname}->(@args_list);
@@ -142,12 +143,32 @@ if ( $FORM->param('jquery_ajax') ) {
 			print $FORM->header, $FUNCTION{$fname}->(%args);
 		}
 	}
+	else {
+		print $FORM->header, gen_html();
+	}
 }
-else {
-	$pj->js_encode_function('escape');
-	print $pj->build_html( $FORM, \&gen_html );
-	#print $FORM->header; print gen_html();
-}
+
+## Old CGI::Ajax code
+#my $pj = new CGI::Ajax(%FUNCTION);
+#if ( $FORM->param('jquery_ajax') ) {
+#	my %args  = $FORM->Vars;
+#	my $fname = $args{'fname'};
+#	#print STDERR Dumper \%args;
+#	if ($fname and defined $FUNCTION{$fname}) {
+#		if ( $args{args} ) {
+#			my @args_list = split( /,/, $args{args} );
+#			print $FORM->header, $FUNCTION{$fname}->(@args_list);
+#		}
+#		else {
+#			print $FORM->header, $FUNCTION{$fname}->(%args);
+#		}
+#	}
+#}
+#else {
+#	$pj->js_encode_function('escape');
+#	print $pj->build_html( $FORM, \&gen_html );
+##	print $FORM->header; print gen_html();
+#}
 
 sub gen_html {
 	my $html;
@@ -196,7 +217,7 @@ sub gen_body {
 	$template->param( DOWNSTREAM	=> $downstream );
 	$template->param( DSID			=> $dsid );
 	$template->param( DSGID			=> $dsgid );
-	$template->param( ORG_LIST		=> get_orgs(html_only => 1) );
+	#$template->param( ORG_LIST		=> get_orgs(html_only => 1) );
 	$template->param( RC			=> $rc );
 	$template->param( FEATID		=> $featid );
 	$template->param( CHR			=> $chr );
@@ -215,7 +236,6 @@ sub gen_body {
 		}
 		$template->param( SEQVIEW  => 0 );
 		$template->param( SEQUENCE => $seq );
-
 	}
 	else {
 		$template->param( SEQVIEW  => 0 );
@@ -227,12 +247,12 @@ sub gen_body {
 	#populate user specified default values
 	my $db_list;
 	if ( $prefs->{dsgids} ) {
-		my $id = get_dsg_for_blast_menu( dsgid => $prefs->{dsgids} );
+		my $id = get_dsg_for_menu( dsgid => $prefs->{dsgids} );
 		$db_list .= qq{add_to_list('$id');} if ($id);
 	}
 	
 	if ($dsgid) {
-		my $id = get_dsg_for_blast_menu( dsgid => $dsgid );
+		my $id = get_dsg_for_menu( dsgid => $dsgid );
 		$db_list .= qq{add_to_list('$id');} if ($id)
 	}
 	
@@ -240,7 +260,7 @@ sub gen_body {
 		my $list = $coge->resultset('List')->find($lid);
 		if ($list) {
 			my $dsgids = join(',', map {$_->id} $list->genomes);
-			my $id = get_dsg_for_blast_menu( dsgid => $dsgids );
+			my $id = get_dsg_for_menu( dsgid => $dsgids );
 			$db_list .= qq{add_to_list('$id');} if $id;
 		}
 	}
@@ -270,7 +290,7 @@ sub gen_body {
 	my $resultslimit = $RESULTSLIMIT;
 	$resultslimit = $prefs->{'resultslimit'} if $prefs->{'resultslimit'};
 	$template->param( RESULTSLIMIT => $resultslimit );
-	$template->param( SAVE_ORG_LIST => 1 ) unless $USER->user_name eq "public";
+	#$template->param( SAVE_ORG_LIST => 1 ) unless $USER->user_name eq "public";
 	return $template->output;
 }
 
@@ -323,26 +343,27 @@ sub get_sequence {
 }
 
 sub get_url {
-	my $url = shift;
-	if ( $url eq "blastn" ) {
-		$url = "http://www.ncbi.nlm.nih.gov/blast/Blast.cgi?PAGE=Nucleotides&PROGRAM=blastn&MEGABLAST=on&BLAST_PROGRAMS=megaBlast&PAGE_TYPE=BlastSearch&SHOW_DEFAULTS=on";
+	my %opts = @_;
+	my $program = $opts{program};
+	
+	if ( $program eq "blastn" ) {
+		return "http://www.ncbi.nlm.nih.gov/blast/Blast.cgi?PAGE=Nucleotides&PROGRAM=blastn&MEGABLAST=on&BLAST_PROGRAMS=megaBlast&PAGE_TYPE=BlastSearch&SHOW_DEFAULTS=on";
 	}
-	elsif ( $url eq "blastp" ) {
-		$url = "http://www.ncbi.nlm.nih.gov/BLAST/Blast.cgi?PAGE=Proteins&PROGRAM=blastp&BLAST_PROGRAMS=blastp&PAGE_TYPE=BlastSearch&SHOW_DEFAULTS=on";
+	elsif ( $program eq "blastp" ) {
+		return "http://www.ncbi.nlm.nih.gov/BLAST/Blast.cgi?PAGE=Proteins&PROGRAM=blastp&BLAST_PROGRAMS=blastp&PAGE_TYPE=BlastSearch&SHOW_DEFAULTS=on";
 	}
-	elsif ( $url eq "blastx" ) {
-		$url = "http://www.ncbi.nlm.nih.gov/BLAST/Blast.cgi?PAGE=Translations&PROGRAM=blastx&BLAST_PROGRAMS=blastx&PAGE_TYPE=BlastSearch&SHOW_DEFAULTS=on";
+	elsif ( $program eq "blastx" ) {
+		return "http://www.ncbi.nlm.nih.gov/BLAST/Blast.cgi?PAGE=Translations&PROGRAM=blastx&BLAST_PROGRAMS=blastx&PAGE_TYPE=BlastSearch&SHOW_DEFAULTS=on";
 	}
-	elsif ( $url eq "tblastn" ) {
-		$url = "http://www.ncbi.nlm.nih.gov/BLAST/Blast.cgi?PAGE=Translations&PROGRAM=tblastn&BLAST_PROGRAMS=tblastn&PAGE_TYPE=BlastSearch&SHOW_DEFAULTS=on";
+	elsif ( $program eq "tblastn" ) {
+		return "http://www.ncbi.nlm.nih.gov/BLAST/Blast.cgi?PAGE=Translations&PROGRAM=tblastn&BLAST_PROGRAMS=tblastn&PAGE_TYPE=BlastSearch&SHOW_DEFAULTS=on";
 	}
-	elsif ( $url eq "tblastx" ) {
-		$url = "http://www.ncbi.nlm.nih.gov/BLAST/Blast.cgi?PAGE=Translations&PROGRAM=tblastx&BLAST_PROGRAMS=tblastx&PAGE_TYPE=BlastSearch&SHOW_DEFAULTS=on";
+	elsif ( $program eq "tblastx" ) {
+		return "http://www.ncbi.nlm.nih.gov/BLAST/Blast.cgi?PAGE=Translations&PROGRAM=tblastx&BLAST_PROGRAMS=tblastx&PAGE_TYPE=BlastSearch&SHOW_DEFAULTS=on";
 	}
 	else {
-		$url = 1;
+		return 1;
 	}
-	return $url;
 }
 
 sub blast_param {
@@ -351,8 +372,9 @@ sub blast_param {
 	my $translate = $opts{translate};
 	my $version   = $opts{version};
 	my $pro;
-	my $template =
-	  HTML::Template->new( filename => $P->{TMPLDIR} . 'CoGeBlast.tmpl' );
+	
+	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'CoGeBlast.tmpl' );
+	
 	if ( $seq_type =~ "blast_type_n" ) {
 		if ( $version && $version =~ /coge_radio/ ) {
 			$template->param( BLAST_NU => 1 );
@@ -373,12 +395,15 @@ sub blast_param {
 			else { $template->param( NCBI_BLAST_PRO_COMP => 1 ); }
 		}
 	}
+	
 	my $html = $template->output;
-	return $html, $version, $pro;
+	return encode_json({ html => $html, version => $version, pro => $pro });
 }
 
 sub database_param {
-	my $program = shift || "blastn";
+	my %opts = @_;
+	my $program = $opts{program} || "blastn";
+	
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'CoGeBlast.tmpl' );
 	if ( $program eq "blastn" ) { $template->param( NU_DB => 1 ); }
 	elsif ( ( $program eq "blastp" ) || ( $program eq "blastx" ) ) {
@@ -442,7 +467,7 @@ sub gen_dsg_menu {
 	my %opts  = @_;
 	my $oid   = $opts{oid};
 	my $dsgid = $opts{dsgid};
-	print STDERR "gen_dsg_menu: $oid " . (defined $dsgid ? $dsgid : '') . "\n";
+#	print STDERR "gen_dsg_menu: $oid " . (defined $dsgid ? $dsgid : '') . "\n";
 	
 	my @genomes;
 	foreach my $dsg (
@@ -467,7 +492,7 @@ sub gen_dsg_menu {
 	my $dsg_menu = '';
 	if (@genomes) {
 		#$dsg_menu .= 'Genomes for Organism<br>';
-		#$dsg_menu .= qq{<select multiple id='dsgid' size='$size' onclick="show_add();" ondblclick="get_dsg_for_blast_menu(['args__dsgid','dsgid'],[add_to_list]);">};
+		#$dsg_menu .= qq{<select multiple id='dsgid' size='$size' onclick="show_add();" ondblclick="get_dsg_for_menu(['args__dsgid','dsgid'],[add_to_list]);">};
 		foreach (@genomes) {
 			my ( $numt, $name ) = @$_;
 			my $selected = ($dsgid && $numt == $dsgid ? 'selected' : '');
@@ -478,15 +503,15 @@ sub gen_dsg_menu {
 	
 	#my $t2 = new Benchmark;
 	#my $time = timestr( timediff( $t2, $t1 ) );
-print STDERR "gen_dsg_menu result: $dsg_menu\n";
 	return $dsg_menu;
 }
 
-sub get_dsg_for_blast_menu {
+sub get_dsg_for_menu {
 	my %opts   = @_;
 	my $dsgids = $opts{dsgid};
 	my $orgids = $opts{orgid};
 	my %dsgs;
+#	print STDERR "get_dsg_for_menu: dsgids=" . ($dsgids ? $dsgids : '') . " orgids=" . ($orgids ? $orgids : '') . "\n";
 	
 	if ($orgids) {
 		my @orgids = split(/,/, $orgids);
@@ -508,16 +533,16 @@ sub get_dsg_for_blast_menu {
 		}
 	}
 	
-	my $opts;
+	my $html;
 	foreach my $dsg ( values %dsgs ) {
 		my ($ds) = $dsg->datasets;
-		$opts .= ":::" if $opts;
+		$html .= ":::" if $html;
 		my $org_name = $dsg->organism->name;
 		$org_name =~ s/'//g;
-		$opts .= $dsg->id . "::" . $org_name . " (" . $ds->data_source->name . " " . $dsg->type->name . " v" . $dsg->version . ")";
+		$html .= $dsg->id . "::" . $org_name . " (" . $ds->data_source->name . " " . $dsg->type->name . " v" . $dsg->version . ")";
 	}
 	
-	return $opts;
+	return $html;
 }
 
 sub generate_basefile {
@@ -527,6 +552,8 @@ sub generate_basefile {
 
 sub blast_search {
 	my %opts       = @_;
+#	print STDERR Dumper \%opts;
+	
 	my $color_hsps = $opts{color_hsps};
 	my $program    = $opts{program};
 	my $expect     = $opts{expect};
@@ -703,9 +730,9 @@ Time to initialize sqlite:       $dbinit_time
 Time to generate results page:   $resultpage_time
 };
 	CoGe::Accessory::Web::write_log( "$benchmark", $cogeweb->logfile );
-
 	CoGe::Accessory::Web::write_log( "Finished!", $cogeweb->logfile );
-	return $html, $click_all_links;
+	
+	return encode_json({html => $html, click_all_links => $click_all_links});
 }
 
 sub gen_results_page {
@@ -1187,8 +1214,7 @@ sub get_blast_db {
 	}
 	my ($ds) = $dsg->datasets;
 	my $org_name = $dsg->organism->name . " (" . $ds->data_source->name . " " . $dsg->type->name . " v" . $dsg->version . ")";
-
-	#    $org_name .= " (".$gst->name.")" if $gst;
+	#$org_name .= " (".$gst->name.")" if $gst;
 
 	my $db = $dsg->file_path;
 	return unless -r $db;
@@ -1235,25 +1261,29 @@ sub generate_blast_db {
 }
 
 sub generate_feat_info {
-	my $featid   = shift;
-	my $checkbox = shift;
+	my %opts = @_;
+	my $featid = $opts{featid};
 	$featid =~ s/^table_row//;
+
 	my ( $hsp_num, $dsgid );
 	( $featid, $hsp_num, $dsgid ) = split(/_/, $featid);
+
 	my ($dsg)  = $coge->resultset('Genome')->find($dsgid);
 	my ($feat) = $coge->resultset("Feature")->find($featid);
 	unless ( ref($feat) =~ /Feature/i ) {
 		return "Unable to retrieve Feature object for id: $featid";
 	}
+
 	my $html = $feat->annotation_pretty_print_html( gstid => $dsg->type->id );
 	return $html;
 }
 
 sub get_hsp_info {
 	my %opts     = @_;
-	my $hsp_id   = $opts{num};
+	my $hsp_id   = $opts{hsp_id};
 	my $filename = $opts{blastfile};
 	$filename =~ s/$TEMPDIR//;
+	
 	$cogeweb = CoGe::Accessory::Web::initialize_basefile( basename => $filename, tempdir => $TEMPDIR );
 	my $dbfile = $cogeweb->sqlitefile;
 	my $dbh    = DBI->connect( "dbi:SQLite:dbname=$dbfile", "", "" );
@@ -1383,23 +1413,15 @@ sub get_hsp_info {
 	$template->param( HSP_IF => 0 );
 
 	#get query sequence total length
-	my $query =
-	  $dbh->selectall_arrayref( qq{SELECT * FROM sequence_info WHERE type = "query" AND name = "$qname"} );
-	my $subject =
-	  $dbh->selectall_arrayref( qq{SELECT * FROM sequence_info WHERE type = "subject" AND name = "$sname"} );
+	my $query = $dbh->selectall_arrayref( qq{SELECT * FROM sequence_info WHERE type = "query" AND name = "$qname"} );
+	my $subject = $dbh->selectall_arrayref( qq{SELECT * FROM sequence_info WHERE type = "subject" AND name = "$sname"} );
 	my ( $query_image, $subject_image ) = generate_hit_image( hsp_num => $hsp_num, hspdb => $dbh, hsp_name => $hsp_id );
-	my $query_link = qq{
-<div class=small>Query: $qname</div>
-<img src=$query_image border=0>
-};
+	my $query_link = qq{<div class=small>Query: $qname</div><img src=$query_image border=0>};
 	$query_link =~ s/$TEMPDIR/$TEMPURL/;
 
-	my $subject_link = qq{
-<div class=small>Subject: $org, Chromosome: $chr</div>
-<a href = 'GenomeView.pl?chr=$chr&ds=$dsid&x=$sstart&z=5;gstid=$gstid' target=_new border=0><img src=$subject_image border=0></a>
-};
+	my $subject_link = qq{<div class=small>Subject: $org, Chromosome: $chr</div><a href = 'GenomeView.pl?chr=$chr&ds=$dsid&x=$sstart&z=5;gstid=$gstid' target=_new border=0><img src=$subject_image border=0></a>};
 	$subject_link =~ s/$TEMPDIR/$TEMPURL/;
-	return $html, $query_link, $subject_link;
+	return encode_json({html => $html, query_link => $query_link, subject_link => $subject_link});
 }
 
 sub generate_overview_image {
@@ -1428,11 +1450,10 @@ sub generate_overview_image {
 	  generate_chromosome_images(
 		results     => \@reports,
 		hsp_type    => $type,
-	#	large_width => $image_width,
+		#large_width => $image_width,
 		filename    => $image_filename
 	  );
-	my $template =
-	  HTML::Template->new( filename => $P->{TMPLDIR} . 'CoGeBlast.tmpl' );
+	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'CoGeBlast.tmpl' );
 	$template->param( CHROMOSOMES_IF  => 1 );
 	$template->param( CHROMOSOME_LOOP => $chromosome_data );
 	my $chromosome_element = $template->output;
@@ -1594,7 +1615,8 @@ schr = "$schr"
 
 sub overlap_feats_parse    #Send to GEvo
 {
-	my $accn_list = shift;
+	my %opts = @_;
+	my $accn_list = $opts{accn};
 	$accn_list =~ s/^,//;
 	$accn_list =~ s/,$//;
 	my @list;
@@ -1742,29 +1764,22 @@ sub populate_sqlite {
 	my ( $sstart, $sstop ) = ( $hsp->subject_start, $hsp->subject_stop );
 	my $smismatch = $subject_length - $hsp->match;
 
-	my $statement = qq{
-       INSERT INTO hsp_data (name, eval, pid, psim, score, qgap, sgap,match,qmismatch,smismatch, strand, length, qstart,qstop, sstart, sstop,qalign,salign,align,qname,sname,hsp_num,org,schr) values ("$name", "$pval", "$pid","$psim", "$score", $qgap, $sgap, $match,$qmismatch, $smismatch, "$strand",$length,$qstart, $qstop, $sstart, $sstop,"$qalign","$salign","$align","$qname","$sname",$hsp_num,"$org","$chr") 
-     };
+	my $statement = qq{INSERT INTO hsp_data (name, eval, pid, psim, score, qgap, sgap,match,qmismatch,smismatch, strand, length, qstart,qstop, sstart, sstop,qalign,salign,align,qname,sname,hsp_num,org,schr) values ("$name", "$pval", "$pid","$psim", "$score", $qgap, $sgap, $match,$qmismatch, $smismatch, "$strand",$length,$qstart, $qstop, $sstart, $sstop,"$qalign","$salign","$align","$qname","$sname",$hsp_num,"$org","$chr")};
 	print STDERR $statement unless $dbh->do($statement);
 
-	#populate sequence_info table
-
+	# Populate sequence_info table
 	$statement = "SELECT name FROM sequence_info where name = '$qname'";
 	my $val = $dbh->selectall_arrayref($statement);
 	unless ( $val->[0][0] ) {
 		my $qlength = $hsp->query_length;
-		$statement = qq{
-INSERT INTO sequence_info (name, type, length) values ("$qname","query","$qlength")
-};
+		$statement = qq{INSERT INTO sequence_info (name, type, length) values ("$qname","query","$qlength")};
 		print STDERR $statement unless $dbh->do($statement);
 	}
 	$statement = "SELECT name FROM sequence_info where name = '$sname'";
-	$val       = $dbh->selectall_arrayref($statement);
+	$val = $dbh->selectall_arrayref($statement);
 	unless ( $val->[0][0] ) {
 		my $slength = $hsp->subject_length;
-		$statement = qq{
-INSERT INTO sequence_info (name, type, length) values ("$sname","subject","$slength")
-};
+		$statement = qq{INSERT INTO sequence_info (name, type, length) values ("$sname","subject","$slength")};
 		print STDERR $statement unless $dbh->do($statement);
 	}
 	$dbh->do("commit transaction") or die $dbh->errstr;
@@ -1776,6 +1791,7 @@ sub get_nearby_feats {
 	my %opts     = @_;
 	my $hsp_id   = $opts{num};
 	my $filename = $opts{basefile};
+	
 	$cogeweb = CoGe::Accessory::Web::initialize_basefile( basename => $filename, tempdir => $TEMPDIR );
 	my $dbh = DBI->connect( "dbi:SQLite:dbname=" . $cogeweb->sqlitefile, "", "" );
 	$hsp_id =~ s/^table_row// if $hsp_id =~ /table_row/;
@@ -1860,12 +1876,12 @@ order by abs((start + stop)/2 - $mid) LIMIT 10
 		$distance = "No neighboring features found";
 	}
 
-	return $name, $distance, $hsp_id, $new_checkbox_info;
-
+	return encode_json({name => $name, distance => $distance, hsp_id => $hsp_id, new_checkbox_info => $new_checkbox_info});
 }
 
 sub export_CodeOn {
-	my $accn_list = shift;
+	my %opts = @_;
+	my $accn_list = $opts{accn};
 	$accn_list =~ s/^,//;
 	$accn_list =~ s/,$//;
 	my $url = "CodeOn.pl?fid=";
@@ -1886,7 +1902,8 @@ sub export_CodeOn {
 }
 
 sub export_fasta_file {
-	my $accn_list = shift;
+	my %opts = @_;
+	my $accn_list = $opts{accn};
 	$accn_list =~ s/^,//;
 	$accn_list =~ s/,$//;
 	my $url = "FastaView.pl?fid=";
@@ -1905,8 +1922,10 @@ sub export_fasta_file {
 }
 
 sub export_to_excel {
-	my $accn_list = shift;
-	my $filename  = shift;
+	my %opts = @_;
+	my $accn_list = $opts{accn};
+	my $filename  = $opts{filename};
+	
 	$cogeweb = CoGe::Accessory::Web::initialize_basefile( basename => $filename, tempdir => $TEMPDIR );
 	my $dbh = DBI->connect( "dbi:SQLite:dbname=" . $cogeweb->sqlitefile, "", "" );
 	my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data WHERE name = ?});
@@ -2003,8 +2022,10 @@ sub export_to_excel {
 }
 
 sub generate_tab_deliminated {
-	my $accn_list = shift;
-	my $filename  = shift;
+	my %opts = @_;
+	my $accn_list = $opts{accn};
+	my $filename  = $opts{filename};	
+
 	my $cogeweb   = CoGe::Accessory::Web::initialize_basefile( basename => $filename, tempdir => $TEMPDIR );
 	my $dbh = DBI->connect( "dbi:SQLite:dbname=" . $cogeweb->sqlitefile, "", "" );
 
@@ -2041,8 +2062,9 @@ sub generate_tab_deliminated {
 }
 
 sub generate_feat_list {
-	my $accn_list = shift;
-	my $filename  = shift;
+	my %opts = @_;
+	my $accn_list = $opts{accn};
+	my $filename  = $opts{filename};	
 
 	$accn_list =~ s/^,//;
 	$accn_list =~ s/,$//;
@@ -2066,8 +2088,9 @@ sub generate_feat_list {
 }
 
 sub generate_blast {
-	my $accn_list = shift;
-	my $filename  = shift;
+	my %opts = @_;
+	my $accn_list = $opts{accn};
+	my $filename  = $opts{filename};
 
 	$accn_list =~ s/^,//;
 	$accn_list =~ s/,$//;
@@ -2093,7 +2116,7 @@ sub generate_blast {
 sub get_genome_info {
 	my %opts  = @_;
 	my $dsgid = $opts{dsgid};
-	print STDERR "get_genome_info: $dsgid\n";
+#	print STDERR "get_genome_info: $dsgid\n";
 	return " " unless $dsgid;
 	
 	my $dsg = $coge->resultset("Genome")->find($dsgid);
@@ -2143,25 +2166,25 @@ sub commify {
 }
 
 sub export_hsp_info {
-	my $accn     = shift;
-	my $filename = shift;
+	my %opts = @_;
+#	my $accn = $opts{accn};
+	my $filename = $opts{filename};
+	
 	my $cogeweb  = CoGe::Accessory::Web::initialize_basefile( basename => $filename, tempdir => $TEMPDIR );
 	my $dbh = DBI->connect( "dbi:SQLite:dbname=" . $cogeweb->sqlitefile, "", "" );
 	my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data ORDER BY org,hsp_num});
 	$sth->execute();
 
-	my $str = qq{Org\tChr\tPosition\tStrand\tHSP No.\tPercent ID\tAligment length\tE-value\tScore\tMatch\tQuery Mismatch\tQuery Gap\tQuery Length\tSubject Mismatch\tSubject Gap\tSubject Length\tQuery HSP Sequence\tSubject HSP Sequence\n};
+	my $str = qq{Org\tChr\tPosition\tStrand\tHSP No.\tPercent ID\tAlignment length\tE-value\tScore\tMatch\tQuery Mismatch\tQuery Gap\tQuery Length\tSubject Mismatch\tSubject Gap\tSubject Length\tQuery HSP Sequence\tSubject HSP Sequence\n};
 
-	my (
-		$org,            $chr,              $pos,
+	my ($org,            $chr,              $pos,
 		$hsp_num,        $pid,              $align_length,
 		$eval,           $score,            $match,
 		$strand,         $query_mismatch,   $query_gap,
 		$query_length,   $subject_mismatch, $subject_gap,
 		$subject_length, $query_seq,        $subject_seq,
 		$align_seq,      $sstart,           $sstop,
-		$sname,          $align
-	);
+		$sname,          $align);
 
 	while ( my $row = $sth->fetchrow_hashref() ) {
 		($hsp_num) = $row->{name} =~ /(\d+)_\d+/;
@@ -2184,7 +2207,7 @@ sub export_hsp_info {
 		$sname            = $row->{sname};
 
 		($chr) = $row->{schr};
-		$pos       = $sstart . " - " . $sstop;
+		$pos = $sstart . " - " . $sstop;
 		$align_seq = $query_seq . "<br>" . $align . "<br>" . $subject_seq;
 
 		$query_seq =~ s/-//g;
@@ -2195,18 +2218,19 @@ sub export_hsp_info {
 
 		$str .= "$org\t$chr\t$pos\t$strand\t$hsp_num\t$pid\t$align_length\t$eval\t$score\t$match\t$query_mismatch\t$query_gap\t$query_length\t$subject_mismatch\t$subject_gap\t$subject_length\t$query_seq\t$subject_seq\n";
 	}
+	
 	open( NEW, "> $TEMPDIR/tab_delim_$filename.txt" );
 	print NEW $str;
 	close NEW;
+	
 	return "$TEMPURL/tab_delim_$filename.txt";
 }
 
 sub export_hsp_query_fasta {
-	my $filename = shift;
-	my $cogeweb  = CoGe::Accessory::Web::initialize_basefile(
-		basename => $filename,
-		tempdir  => $TEMPDIR
-	);
+	my %opts = @_;
+	my $filename = $opts{filename};
+	
+	my $cogeweb  = CoGe::Accessory::Web::initialize_basefile( basename => $filename, tempdir => $TEMPDIR );
 	my $dbh = DBI->connect( "dbi:SQLite:dbname=" . $cogeweb->sqlitefile, "", "" );
 	my $sth = $dbh->prepare(qq{SELECT * FROM hsp_data});
 	$sth->execute();
@@ -2230,8 +2254,10 @@ sub export_hsp_query_fasta {
 }
 
 sub export_hsp_subject_fasta {
-	my $filename = shift;
-	my $dna      = 1 if shift;
+	my %opts = @_;
+	my $filename = $opts{filename};
+	my $dna      = $opts{dna}; #1 if shift;
+	
 	my $cogeweb  = CoGe::Accessory::Web::initialize_basefile( basename => $filename, tempdir => $TEMPDIR );
 	my $dbh = DBI->connect( "dbi:SQLite:dbname=" . $cogeweb->sqlitefile, "", "" );
 
@@ -2257,7 +2283,9 @@ sub export_hsp_subject_fasta {
 }
 
 sub export_alignment_file {
-	my $filename = shift;
+	my %opts = @_;
+	my $filename = $opts{filename};
+	
 	my $cogeweb  = CoGe::Accessory::Web::initialize_basefile(
 		basename => $filename,
 		tempdir  => $TEMPDIR
@@ -2295,6 +2323,7 @@ sub export_alignment_file {
 
 sub save_settings_cogeblast {
 	my %opts  = @_;
+	
 	my $prefs = CoGe::Accessory::Web::load_settings( user => $USER, page => $PAGE_NAME, coge => $coge );
 	delete $prefs->{display} unless ref( $prefs->{display} ) eq "HASH";
 	foreach my $key ( keys %opts ) {
@@ -2462,8 +2491,9 @@ sub get_genomes_for_list {
 	my $genomes = '';
 	if ($list) {
 		my $dsgids = join(',', map { $_->id } $list->genomes);
-		$genomes = get_dsg_for_blast_menu(dsgid => $dsgids);
+		$genomes = get_dsg_for_menu(dsgid => $dsgids);
 	}
 
 	return $genomes;	
 }
+

@@ -28,131 +28,58 @@ $(document).ready(function(){
 
 	$("#tabs").tabs({selected:0});
 
-	$("#org_name_desc").focus(
-		function() {
-			if( $(this).val() == 'Search'){ 
-				$(this).val('');
-			}
-			$(this).css({fontStyle: "normal", color: "black"});
-		}
-	).keyup(
-		function() {
-			org_search();
-		}
-	);
-
 	$('#run_cogeblast_button').click(
 		function() {
 			reset_basename();
-			generate_basefile([],[update_basename]);
+			generate_basefile(); //generate_basefile([],[update_basename]);
 			blastOff();
 		}
 	);
 	
-	$('#add_all_listed_button').click(
-		function() {
-			if ($('#org_id option:not(:disabled)').length) {
-				add_all_orgs();
-			}
-		}
-	);
-	
-	$('#remove').click(
-		function() {
-			$('#genome_choice option:selected').each(function(){
-				$('#'+$(this).val()).remove();
-			});
-			count_genomes();
-			update_buttons();
-		}
-	);
-	
-	$('#add').click(
-		function() {
-			add_selected_orgs();
-		}
-	);
-				  	
-	$("#genome_info_button").click(
-		function() {
-			if ($('#dsgid').val()) {
-				var dsgid = $('#dsgid').val();
-				$.ajax({
-					data: {
-						jquery_ajax: 1,
-						fname: 'get_genome_info',
-						dsgid: dsgid[0],
-					},
-					success : function(html) {
-						$('#genome_info_popup').html(html);
-						$('#genome_info_popup').dialog('open');
-					}
-				});
-			}
-		}
-	);
-	
-	$('#org_id').
-		click( function() { seq_type_search(); } ).
-		change( function() { seq_type_search(); } );
-	$('#db_select').click( function() { update_buttons(1); } );
-	$('#dsgid').click( function() { update_buttons(); } );
-	
 	blast_param_on_select('coge_radio','coge');
-	blast_param([],[animate_params]);
-	database_param([],['database']);
+	blast_param(); //blast_param([],[animate_params]);
+	database_param(); //database_param([],['database']);
 });
 
-function update_buttons(remove) {
-	if (remove && $('#genome_choice').val()) {
-		$('#remove').show();
-		$('#add').hide();
-		return;
-	}
-	else {
-		$('#remove').hide();
-		$('#add').show();
-	}
-
-	if ($('#org_id').val() && $('#dsgid').val()) {
-		$('#genome_info_button').removeClass('ui-state-disabled');
-		$('#org_seq_types').show();
-		$('#add').removeClass('ui-state-disabled');
-		$('#add').removeClass('ui-state-disabled');
-		$('#add').show();
-	}
-	else {
-		$('#genome_info_button').addClass('ui-state-disabled');
-		$('#add').addClass('ui-state-disabled');
-		$('#org_seq_types').hide();
-		$('#add').addClass('ui-state-disabled');
-	}
+function generate_basefile() {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'generate_basefile',
+		},
+		success : function(data) {
+			update_basename(data);
+		},
+	});
 }
 
-function seq_type_search() {
-	var oid = $('#org_id').val();
-	
-	if (oid && oid.length) {
-		//gen_dsg_menu(['args__oid', 'org_id'],['org_seq_types']);
-		$.ajax({
-			data: {
-				jquery_ajax: 1,
-				fname: 'gen_dsg_menu',
-				oid: oid[0] //join(',', oid)
-			},
-			success : function(html) {
-				$('#dsgid').html(html);
-				var count = $('#dsgid option').length;
-				$('#dsgid').attr('size', Math.min(count, 3));
-				$('#genome_count').html('('+count+')');
-				update_buttons();
-			}
-		});			
-	}
-	else {
-		$('#dsgid').html('');
-		update_buttons();
-	}
+function blast_param(blast_type, translate, version) {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'blast_param',
+			blast_type: blast_type,
+			translate: translate,
+			version: version
+		},
+		success : function(data) {
+			var obj = jQuery.parseJSON(data);
+			animate_params(obj.html, obj.version, obj.pro);
+		},
+	});
+}
+
+function database_param(program) {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'database_param',
+			program: program,
+		},
+		success : function(data) {
+			$('#database').html(data);
+		},
+	});
 }
 
 function generate_seq_obj(dsid,dsgid, upstream,downstream,seqview,chr,rc,featid) {
@@ -168,16 +95,40 @@ function generate_seq_obj(dsid,dsgid, upstream,downstream,seqview,chr,rc,featid)
 }
 
 function update_info_box(featid) {
-	generate_feat_info(['args__'+featid],['feature_info_popup']);
-	$('#feature_info_popup').dialog('open');
+	//generate_feat_info(['args__'+featid],['feature_info_popup']);
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'database_param',
+			featid: featid,
+		},
+		success : function(data) {
+			$('#feature_info_popup').html(data);
+			$('#feature_info_popup').dialog('open');
+		},
+	});	
 }
 
 function update_hsp_info (featid) {
 	loading('image_info','Information');
 	loading('query_image','Image');
 	loading('subject_image','Image');
-	get_hsp_info(['args__blastfile','args__'+pageObj.basename,'args__num','args__'+featid],['image_info','query_image','subject_image']);
-	$('#result_visual_popup').dialog('open');
+	//get_hsp_info(['args__blastfile','args__'+pageObj.basename,'args__num','args__'+featid],['image_info','query_image','subject_image']);
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'get_hsp_info',
+			hsp_id: featid,
+			blastfile: pageObj.basename
+		},
+		success : function(data) {
+			var obj = jQuery.parseJSON(data);
+			$('#image_info').html(obj.html);
+			$('#query_image').html(obj.query_link);
+			$('#subject_image').html(obj.subject_link);
+			$('#result_visual_popup').dialog('open');
+		},
+	});
 }
 
 function loading(id,msg) {
@@ -185,51 +136,28 @@ function loading(id,msg) {
 	$('#'+id).html(message);
 }
 
-function count_organisms() {
-	var count = $('#org_id option:not(:disabled)').length;
-	if (count) {
-		$('#add_all_listed_button').removeClass('ui-state-disabled');
-	}
-	else {
-		$('#add_all_listed_button').addClass('ui-state-disabled');
-	}	
-	$('#org_count').html('('+count+')');
-}
-
-function count_genomes() {
-	var count = $('#genome_choice').getLength();
-	
-	if (count) {
-		$('#clear').removeClass('ui-state-disabled');
-	}
-	else {
-		$('#clear').addClass('ui-state-disabled');
-		$('#genome_choice').html('<option id="blank" value=null style="color:gray;" disabled="disabled">None</option>');
-	}
-		
-	$('#selected_genome_count').html('('+count+')');
-}
-
-function clear_org_list() {
-	$('#genome_choice').empty();
-	count_genomes();
-}
-
-function save_org_list() {
-	save_settings_cogeblast(['args__dsgids','args__'+$('#genome_choice').getLength(1), 'args__resultslimit','resultslimit'],[]);
-	alert('Selected genomes haved been saved and will be loaded by default.');
-}
-
 function fill_nearby_feats(id,update) {
-	get_nearby_feats(['args__basefile','args__'+pageObj.basename,'args__num','args__'+id],[update_checkbox]);
-	if(update == "true") {update_sorting_table();}
+	//get_nearby_feats(['args__basefile','args__'+pageObj.basename,'args__num','args__'+id],[update_checkbox]);
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'get_nearby_feats',
+			basefile: pageObj.basename,
+			num: id,
+		},
+		success : function(data) {
+			var obj = jQuery.parseJSON(data);
+			update_checkbox(obj.name, obj.distance, obj.hsp_id, obj.new_checkbox_info);
+		},
+	});		
+	if (update == "true") { update_sorting_table(); }
 } 
 
 function click_all_feat_links(){
 	var link_str = pageObj.featlinks;
 	var link_array = new Array();
 	link_array = link_str.split(',');
-	for (var i = 0;i < link_array.length;i++) {
+	for (var i = 0;i < link_array.length;i++) { //>
 		var val = link_array[i];
 		if (!val) {continue;}
 		fill_nearby_feats(link_array[i]);
@@ -254,72 +182,220 @@ function update_checkbox(name, dist, hspid, id){
 		$('#checkbox'+id_array[0]).attr("id","checkbox"+id_array[1]);
 		$('#'+id_array[0]).attr("value",id_array[1]).attr("id",id_array[1]);
 	}
-}  
+}
 
 function overlap_checkboxes() {
-  var action = $('#overlap_action').val();
-  var accn="";
-  $('#hsp_result_table :checkbox').each(function(){
-     if (this.checked == true) {
-//        fill_nearby_feats($(this).parent().parent()[0].id); // this works!
-        accn = accn + this.id+",";
-     }
-   });
-  if (accn == ",") {
-    alert("You have not checked any features.");
-    return;
-  }
-  if(action == "gevo") {
-    overlap_feats_parse(['args__'+accn],[send_to_gevo]);
-  }
-  else if (action == "fasta"){
-    export_fasta_file(['args__'+accn,'args__'+pageObj.basename],[export_file]);
-  }
-  else if (action == "phylo"){
-    export_fasta_file(['args__'+accn,'args__'+pageObj.basename],[export_file]);
-  }
-  else if (action == "xls"){
-    export_to_excel(['args__'+accn,'args__'+pageObj.basename],[export_file]);
-  }
-  else if(action == "tab"){
-    generate_tab_deliminated(['args__'+accn,'args__'+pageObj.basename],[export_file]);
-  }
-  else if(action == "list"){
-    generate_feat_list(['args__'+accn,'args__'+pageObj.basename],[export_file]);
-  }
-  else if(action == "blast"){
-    generate_blast(['args__'+accn,'args__'+pageObj.basename],[export_file]);
-  }
-   else if(action == "hsp"){
-    export_hsp_info(['args__'+accn,'args__'+pageObj.basename],[export_file]);
-  }
-  else if (action == "CodeOn") {
-    export_CodeOn(['args__'+accn,'args__'+pageObj.basename],[export_file]);
-   }
-  else {
-    alert("We will get this working ... soon.");
-  }
+	var action = $('#overlap_action').val();
+	var accn="";
+	$('#hsp_result_table :checkbox').each(function(){
+		if (this.checked == true) {
+			//fill_nearby_feats($(this).parent().parent()[0].id); // this works!
+			accn = accn + this.id+",";
+		}
+	});
+	if (accn == ",") {
+		alert("You have not checked any features.");
+		return;
+	}
+	if (action == "gevo") {
+		overlap_feats_parse(accn); //overlap_feats_parse(['args__'+accn],[send_to_gevo]);
+	}
+	else if (action == "fasta"){
+		export_fasta_file(accn); //export_fasta_file(['args__'+accn,'args__'+pageObj.basename],[export_file]);
+	}
+	else if (action == "phylo"){
+		export_fasta_file(accn); //export_fasta_file(['args__'+accn,'args__'+pageObj.basename],[export_file]);
+	}
+	else if (action == "xls"){
+		export_to_excel(accn, pageObj.basename); //export_to_excel(['args__'+accn,'args__'+pageObj.basename],[export_file]);
+	}
+	else if(action == "tab"){
+		generate_tab_deliminated(accn, pageObj.basename); //generate_tab_deliminated(['args__'+accn,'args__'+pageObj.basename],[export_file]);
+	}
+	else if(action == "list"){
+		generate_feat_list(accn, pageObj.basename); //generate_feat_list(['args__'+accn,'args__'+pageObj.basename],[export_file]);
+	}
+	else if(action == "blast"){
+		generate_blast(accn, pageObj.basename); //generate_blast(['args__'+accn,'args__'+pageObj.basename],[export_file]);
+	}
+	else if(action == "hsp"){
+		export_hsp_info(); //export_hsp_info(['args__'+accn,'args__'+pageObj.basename],[export_file]);
+	}
+	else if (action == "CodeOn") {
+		export_CodeOn(accn); //export_CodeOn(['args__'+accn,'args__'+pageObj.basename],[export_file]);
+	}
+	else {
+		alert("We will get this working ... soon.");
+	}
+}
+
+function generate_feat_list(accn, filename) {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'generate_blast',
+			accn: accn,
+			filename: filename,
+		},
+		success : function(data) {
+			export_file(data);
+		},
+	});
+}
+
+function generate_feat_list(accn, filename) {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'generate_feat_list',
+			accn: accn,
+			filename: filename,
+		},
+		success : function(data) {
+			export_file(data);
+		},
+	});
+}
+
+function generate_tab_deliminated(accn, filename) {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'generate_tab_deliminated',
+			accn: accn,
+			filename: filename,
+		},
+		success : function(data) {
+			export_file(data);
+		},
+	});
+}
+
+function export_to_excel(accn, filename) {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'export_to_excel',
+			accn: accn,
+			filename: filename,
+		},
+		success : function(data) {
+			export_file(data);
+		},
+	});
+}
+
+function export_fasta_file(accn) {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'export_fasta_file',
+			accn: accn
+		},
+		success : function(data) {
+			export_file(data);
+		},
+	});
+}
+
+function export_CodeOn(accn) {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'export_CodeOn',
+			accn: accn
+		},
+		success : function(data) {
+			export_file(data);
+		},
+	});
+}
+
+function overlap_feats_parse(accn) {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'overlap_feats_parse',
+			accn: accn
+		},
+		success : function(data) {
+			send_to_gevo(data);
+		},
+	});
+}
+
+function export_hsp_info() {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'export_hsp_info',
+			filename: pageObj.basename
+		},
+		success : function(data) {
+			export_file(data);
+		},
+	});
+}
+
+function export_hsp_query_fasta() {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'export_hsp_query_fasta',
+			filename: pageObj.basename
+		},
+		success : function(data) {
+			export_file(data);
+		},
+	});
+}
+
+function export_hsp_subject_fasta(dna) {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'export_hsp_subject_fasta',
+			filename: pageObj.basename,
+			dna: dna,
+		},
+		success : function(data) {
+			export_file(data);
+		},
+	});
+}
+
+function export_alignment_file() {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'export_alignment_file',
+			filename: pageObj.basename,
+		},
+		success : function(data) {
+			export_file(data);
+		},
+	});
 }
 
 function get_all_hsp_data() {
-	export_hsp_info(['args__all','args__'+pageObj.basename],[export_file]);
+	export_hsp_info(); //export_hsp_info(['args__all','args__'+pageObj.basename],[export_file]);
 }
 
 function get_query_fasta() {
-	export_hsp_query_fasta(['args__'+pageObj.basename],[export_file]);
+	export_hsp_query_fasta(); //export_hsp_query_fasta(['args__'+pageObj.basename],[export_file]);
 }
 
 function get_subject_fasta(val) {
 	if (val) {
-		export_hsp_subject_fasta(['args__'+pageObj.basename,'args__'+val],[export_file]);
+		export_hsp_subject_fasta(val); //export_hsp_subject_fasta(['args__'+pageObj.basename,'args__'+val],[export_file]);
 	}
 	else {
-		export_hsp_subject_fasta(['args__'+pageObj.basename],[export_file]);
+		export_hsp_subject_fasta(); //export_hsp_subject_fasta(['args__'+pageObj.basename],[export_file]);
 	}
 }
 
 function get_alignment_file() {
-	export_alignment_file(['args__'+pageObj.basename],[export_file]);
+	export_alignment_file(); //export_alignment_file(['args__'+pageObj.basename],[export_file]);
 }
 
 //This function might be redundant, considering the send_to_gevo function. Consider eliminating / consolidating the functions
@@ -485,6 +561,7 @@ function blastOff() {
 	pageObj.image_width = page_width;
 	var blastable_db = $('#genome_choice').getLength(1);
 
+/*
 	blast_search(
 		[	'args__program','args__'+program,
 			'args__expect','args__'+expect,
@@ -512,6 +589,40 @@ function blastOff() {
 		[blastresults],
 		'POST'
 	);
+*/
+	$.ajax({
+		data: {
+			jquery_ajax: 	1,
+			type:			'POST',
+			fname:			'blast_search',
+			program:		program,
+			expect:			expect,
+			job_title:		job_title,
+			wordsize:		word_size,
+			comp:			comp,
+			matrix:			matrix,
+			matchscore:		match_score,
+			gapcost:		gapcost,
+			filter_query:	filter_query,
+			resultslimit:	resultslimit,
+			zwordsize:		zwordsize,
+			zgap_start:		zgap_start,
+			zgap_extension:	zgap_extension,
+			zchaining:		zchaining,
+			zthreshold:		zthreshold,
+			zmask:			zmask,
+			basename:		pageObj.basename,
+			seq:			seq,
+			blastable:		blastable_db,
+			fid:			<TMPL_VAR NAME='FEATID'>,
+			width:			page_width,
+			color_hsps:		$('#color_by').val(),			
+		},
+		success : function(data) {
+			var obj = jQuery.parseJSON(data);
+			blastresults(obj.html, obj.click_all_links);
+		},
+	});
 }
  
 function blastresults(html, click_all_links){
@@ -576,31 +687,31 @@ function init_table_opts() {
 }
 
 function ncbi_blast(url) {
- if (url == 1)
-  {alert('You have not selected a BLAST program! Please select a program to run.');}
- else {
-   var params = get_ncbi_params();
-   seq = params.s;
-   seq = seq.replace(/\n/,'%0D');
-   db = params.db;
-   expect = params.e;
-   job_title = params.j;
-   word_size = params.w;
-   comp = params.c;
-   matrix = params.m
-   match_score = params.mm;
- 
-   url = url+'&DATABASE='+db+'&EXPECT='+expect+'&QUERY='+seq+'&JOB_TITLE='+job_title+'&WORD_SIZE='+word_size;
- 
-   if (program == 'blastn') {
-     window.open(url+'&MATCH_SCORES='+match_score);
-   }
+	if (url == 1) {
+		alert('You have not selected a BLAST program! Please select a program to run.');
+	}
+	else {
+		var params = get_ncbi_params();
+		seq = params.s;
+		seq = seq.replace(/\n/,'%0D');
+		db = params.db;
+		expect = params.e;
+		job_title = params.j;
+		word_size = params.w;
+		comp = params.c;
+		matrix = params.m
+		match_score = params.mm;
+		 
+		url = url+'&DATABASE='+db+'&EXPECT='+expect+'&QUERY='+seq+'&JOB_TITLE='+job_title+'&WORD_SIZE='+word_size;
 
-   else {
-     if ($('#comp_adj').is(':hidden')) {window.open(url+'&MATRIX_NAME='+matrix);}
-     else {window.open(url+'&MATRIX_NAME='+matrix+'&COMPOSITION_BASED_STATISTICS='+comp);}
-   }
- }
+		if (program == 'blastn') {
+			window.open(url+'&MATCH_SCORES='+match_score);
+		}
+		else {
+			if ($('#comp_adj').is(':hidden')) {window.open(url+'&MATRIX_NAME='+matrix);}
+			else {window.open(url+'&MATRIX_NAME='+matrix+'&COMPOSITION_BASED_STATISTICS='+comp);}
+		}
+	}
 }
 
 function update_gapcost(pro) {
@@ -648,7 +759,7 @@ $.fn.getLength = function(val){
   		blastable = opts[0].id;
 		if (blastable == 'blank') {blanked++;} //Counts the number of instances of blank
   		if (val){
-  		  for(var i=1;i<opts.length;i++)
+  		  for(var i=1;i<opts.length;i++) //>
 	  	  {
 	  		blastable += ","+opts[i].id;
 	  		//need to chopoff last comma
@@ -669,7 +780,7 @@ $.fn.sortSelect = function(){
 	  	  return;}
 	  	var opts = this.options;
 	  	var sortArray = [];
-	  	for(var i=0;i<opts.length;i++)
+	  	for(var i=0;i<opts.length;i++) //>
 	  	{
 	  		sortArray[i] = {
 	  				v: opts[i].value,
@@ -684,10 +795,10 @@ $.fn.sortSelect = function(){
 	  				obj2t = obj2.t.toLowerCase();
 	  				if(obj1t == obj2t){
 	  				  return 0;}
-	  				return obj1t < obj2t ? -1 : 1;
+	  				return obj1t < obj2t ? -1 : 1; //>
 	  			}
 	  	);
-	  	for(var i=0;i<opts.length;i++)
+	  	for(var i=0;i<opts.length;i++) //>
 	  	{
 	  		opts[i].id = sortArray[i].d;
 	  		opts[i].text = sortArray[i].t;
@@ -700,14 +811,22 @@ $.fn.sortSelect = function(){
 
 function select_blast() {
 	var radio = get_radio('ncbi_radio','ncbi');
-	get_url([radio],[ncbi_blast]);
+	//get_url([radio],[ncbi_blast]);
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'get_url',
+			program: $('#'+radio).val()
+		},
+		success : function(data) {
+			ncbi_blast(data);
+		},
+	});	
 }
 
 function get_radio(which_type,val){
-	var radio = $('#'+which_type)[0].checked;
-	if (radio == true) { radio = val+"_blast_type_n"; }
-	else { radio = val+"_blast_type_p"; }
-	return radio;
+	if ($('#'+which_type)[0].checked) { return val+"_blast_type_n"; }
+	else { return val+"_blast_type_p"; }
 }
 
 function get_seq(which_type) {
@@ -751,7 +870,7 @@ function get_seq(which_type) {
 function blast_param_on_select(which_type, val) {
 	radio = get_radio(which_type, val);
 	program = $('#'+radio).val();
-	database_param([radio], ['database']);
+	database_param(program); //database_param([radio], ['database']);
 	 
 	$('#blast_parameters').hide();
 	$('#blastz_parameters').hide();
@@ -762,15 +881,15 @@ function blast_param_on_select(which_type, val) {
 	else {
 		$('#blast_parameters').toggle();
 		if ((program == 'blastx') || (program == 'tblastx')) {
-			blast_param(['args__blast_type','args__'+"blast_type_p",'args__translate','args__1','args__version','args__'+which_type],[animate_params]);
+			blast_param("blast_type_p", 1, which_type); //blast_param(['args__blast_type','args__'+"blast_type_p",'args__translate','args__1','args__version','args__'+which_type],[animate_params]);
 			$('#word_size').val(3);
 		}
 		else if ((program == 'blastp') || (program == 'tblastn')) {
-			blast_param(['args__blast_type','args__'+"blast_type_p",'args__version','args__'+which_type],[animate_params]);
+			blast_param("blast_type_p", 0, which_type); //blast_param(['args__blast_type','args__'+"blast_type_p",'args__version','args__'+which_type],[animate_params]);
 			$('#word_size').val(3);
 		}
 		else {
-			blast_param(['args__version','args__'+which_type],[animate_params]);
+			blast_param('', 0, which_type); //blast_param(['args__version','args__'+which_type],[animate_params]);
 			if (program == "dcmega") {
 				$('#word_size').val(11);
 			}
@@ -804,7 +923,7 @@ function org_search(desc_search){
 	}
 	
 	name_desc = $('#org_name_desc').val();
-	if (name_desc.length < 3) { return; }
+	if (name_desc.length < 3) { return; } //>
 	
 	pageObj.time = setTimeout(
 		function() {
@@ -911,7 +1030,7 @@ function monitor_log(log)
   	if(match)
   	{
   		var crappy_workaround;
-  		for (i=0;i<match.length;i++)
+  		for (i=0;i<match.length;i++) //>
   		{
   			crappy_workaround = match[i].match(/\*(.+)\*/);
   			fasta += "&nbsp;&nbsp;&nbsp;"+crappy_workaround[1]+" database built!<br/>";
@@ -933,7 +1052,7 @@ function monitor_log(log)
   	if(match)
   	{
   		var crappy_workaround;
-  		for (i=0;i<match.length;i++)
+  		for (i=0;i<match.length;i++) //>
   		{
   			crappy_workaround = match[i].match(/\*(.+)\*/);
   			blast += "&nbsp;&nbsp;&nbsp;"+crappy_workaround[1]+" complete!<br/>";
@@ -964,12 +1083,12 @@ function monitor_log(log)
   if (results) message = results;
   if (done) message += done;
   
-  if (!pageObj.finished && pageObj.nolog<8)
+  if (!pageObj.finished && pageObj.nolog<8) //>
   {
     var waittime = pageObj.waittime;
     pageObj.waittime = pageObj.waittime*2;
     message+="<br/>Next progress check in "+waittime/1000+" seconds.";
-    setTimeout("read_log(['args__logfile', 'args__'+pageObj.basename, 'args__tempdir', 'args__'+pageObj.tempdir], [monitor_log])",waittime);
+    setTimeout(read_log, waittime); //setTimeout("read_log(['args__logfile', 'args__'+pageObj.basename, 'args__tempdir', 'args__'+pageObj.tempdir], [monitor_log])",waittime);
   }
   if (message) {
   	$('#log_text').html(message);
@@ -978,87 +1097,32 @@ function monitor_log(log)
   }
 }
 
-function remove_selected_orgs() {
-	$('#genome_choice option:selected').each(function(){
-		$('#'+$(this).val()).remove();
+function read_log() {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'read_log',
+			logfile: pageObj.basename,
+			tempdir: pageObj.tempdir,
+		},
+		success : function(data) {
+			monitor_log(data);
+		},
 	});
-	count_genomes();
-}
- 
-function add_all_orgs() {
-	var ids;
-	var count =0;
-	$('#org_id option').each(function(){
-		ids = ids+","+$(this).val();
-		if (count == 100) {
-			get_dsg_for_blast_menu(['args__orgid','args__'+ids],[add_to_list])
-			ids = "";
-			count =0;
-		}
-		
-		count++;
-	});
-	get_dsg_for_blast_menu(['args__orgid','args__'+ids],[add_to_list])	
-	sort_genome_choice();
-}
-
-function add_selected_orgs() {
-	var ids;
-	var count =0;
-	$('#org_id option:selected').each(function(){
-		ids = ids+","+$(this).val();
-		if (count == 100) {
-			get_dsg_for_blast_menu(['args__orgid','args__'+ids],[add_to_list]);
-			ids = "";
-			count =0;
-		}
-		count++;
-	});
-	if (count == 1) { get_dsg_for_blast_menu(['args__dsgid','dsgid'],[add_to_list]); }
-	else { get_dsg_for_blast_menu(['args__orgid','args__'+ids],[add_to_list]); }
-	sort_genome_choice();
-}
-
-function add_to_list(stuff) {
-	var orgs = stuff.split(':::');
-	for (var i=0; i < orgs.length; i++) {
-		var item = orgs[i].split('::');
-		id = item[0];
-		org = item[1];
-		if (!id && !org) { continue; }
-		var check = $('#'+id).val();
-		if (check){ continue; }
-		var html = '<option id='+id+' value='+id+' ondblclick="remove_selected_orgs();">'+org+'</option>';
-		$('#blank').remove();
-		$('#genome_choice').append(html);
-	}	
-	count_genomes();
-}
-
-function sort_genome_choice() {
-	if (ajax.length)
-	{
-		setTimeout("sort_genome_choice()",100);	
-		return;
-	}
-	$('#genome_choice').append().sortSelect();
 }
 
 function toggle_hsp_column(index) {
-  show = 0;
-//  console.log ($('#show_columns td:eq('+(1*index-1)+')').html());
-  if ($('#show_columns td:eq('+(1*index-1)+')').children()[0] && $('#show_columns td:eq('+(1*index-1)+')').children()[0].checked) { show=1;}
-  if (show)
-   {
-    $('#hsp_result_table td:nth-child('+(1*index+1)+')').show();
-    $('#hsp_result_table th:nth-child('+(1*index+1)+')').show();
-   }
-  else
-   {
-    $('#hsp_result_table td:nth-child('+(1*index+1)+')').hide();
-    $('#hsp_result_table th:nth-child('+(1*index+1)+')').hide();
-   }
-    
+	show = 0;
+	//console.log ($('#show_columns td:eq('+(1*index-1)+')').html());
+	if ($('#show_columns td:eq('+(1*index-1)+')').children()[0] && $('#show_columns td:eq('+(1*index-1)+')').children()[0].checked) { show=1; }
+	if (show) {
+		$('#hsp_result_table td:nth-child('+(1*index+1)+')').show();
+		$('#hsp_result_table th:nth-child('+(1*index+1)+')').show();
+	}
+	else {
+		$('#hsp_result_table td:nth-child('+(1*index+1)+')').hide();
+		$('#hsp_result_table th:nth-child('+(1*index+1)+')').hide();
+	}
 }
 
 function check_display() {
@@ -1079,7 +1143,14 @@ function save_display_settings() {
 		}
 		i++;
 	});
-	save_settings_cogeblast(['args__display','args__'+index],[]);
+	//save_settings_cogeblast(['args__display','args__'+index],[]);
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'save_settings_cogeblast',
+			display: index,
+		},
+	});	
 }
 
 function wait_to_search (search_func, search_term) {
@@ -1099,78 +1170,6 @@ function wait_to_search (search_func, search_term) {
 	}
 }
 
-function search_lists (search_term) {
-	if ($('#import_list_box').dialog('isOpen')) {
-		$("#wait_list").animate({opacity:1});
-		$("#select_list_items").html("<option disabled='disabled'>Searching...</option>");
-	}
-	
-	$.ajax({
-		data: {
-			jquery_ajax: 1,
-			fname: 'search_lists',
-			search_term: search_term,
-			timestamp: new Date().getTime()
-		},
-		success : function(val) {
-			var items = jQuery.parseJSON(val);
-			if (!pageObj.timestamp_lists || items.timestamp > pageObj.timestamp_lists) {
-				pageObj.timestamp_lists = items.timestamp;
-				$('#list_preview').hide();
-				$("#select_list_items").html(items.html);
-				var width = $("#group_delete_box").dialog("option", "width");
-				$("#select_list_items").width(width-40);
-				$("#wait_list").animate({opacity:0});
-				$('#import_list_box').dialog('open');
-			}
-		},
-	});
-}
-
-function get_list_preview (opts) {
-	$('#list_preview').hide();
-	$('#select_list_items > option:selected:last').each(
-		function() {
-			var item_spec = $(this).attr("value");
-			$.ajax({
-				data: {
-					jquery_ajax: 1,
-					fname: 'get_list_preview',
-					item_spec: item_spec,
-				},
-				success : 
-					function(data) {
-						var width = $("#import_list_box").dialog("option", "width");
-						$("#select_list_items").width(width/2-30);
-						$('#list_preview').width(width/2-30);
-						$('#list_preview').html(data);
-						$('#list_preview').fadeIn('fast');
-					}
-			});
-		}
-	);
-}
-
-function import_lists() {
-	$('#select_list_items > option:selected').each(
-		function() {
-			var item_spec = $(this).attr("value");
-			$.ajax({
-				data: {
-					jquery_ajax: 1,
-					fname: 'get_genomes_for_list',
-					item_spec: item_spec,
-				},
-				success : 
-					function(data) {
-						add_to_list(data);
-					}
-			});			
-		}
-	);
-	$("#import_list_box").dialog('close');
-}
-
 function toggle_display(button_obj, target_id) {
 	var label = $(button_obj).html();
 	
@@ -1183,6 +1182,7 @@ function toggle_display(button_obj, target_id) {
 		$('#'+target_id).slideDown('fast');
 	}
 }
+
 function toggle_title(id, full, partial) {
 	var obj = $('#'+id);
 	var label = $(obj).html();
@@ -1197,30 +1197,6 @@ function toggle_title(id, full, partial) {
 
 </SCRIPT>
 
-  <div id="import_list_box" class="dialog_box" title="Import List">
-    <table class="small">
-      <tr>
-        <td colspan='2'>
-          Search: <input type="textbox" size="53" id="edit_list_search" onkeyup="wait_to_search(search_lists, this.value);">
-          <span class='ui-button ui-corner-all' onclick="search_lists(<TMPL_VAR NAME=LID>, $('#edit_list_search').attr('value'));"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
-          <img id="wait_list" src="picts/ajax-loader.gif" style="opacity: 0;" />
-        </td>
-      </tr>
-      <tr>
-        <td valign='top'>
-          <select multiple id="select_list_items" size="10" style='width:460px;height:138px;' onClick="get_list_preview();">
-          </select>
-        </td>
-        <td valign='top'>
-          <div id="list_preview" style="display:none;color:Gray;height:131px;overflow:auto;border:1px solid LightGray;padding: 1px 4px 4px 4px;font-family:Arial, Helvetica, sans-serif;font-size:0.8em;"></div>
-        </td>
-      </tr>
-      <tr>
-        <td colspan='2' style='color:gray;'><i>Hold down SHIFT or CTRL key to select multiple items</i></td>
-      </tr>
-    </table>
-    <span href="javascript:void(0)" onClick="import_lists();" class='ui-button ui-button-go ui-corner-all'>Add Selected Items</span>
-  </div>
 
   <div id="table_opts_dialog" class="dialog_box" title="Table Information Options">
     <table id="show_columns" class="small ui-widget-content ui-corner-all">
@@ -1257,8 +1233,6 @@ function toggle_title(id, full, partial) {
   
   <div id="sequence_popup" class="dialog_box" title="Sequence Information"></div>
   
-  <div id="genome_info_popup" class="dialog_box" title="Genome Information">
-  </div>
   
   <div id="feature_info_popup" class="dialog_box" title="Feature Information">
     <span class="loading">Loading...</span>
