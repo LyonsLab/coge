@@ -344,7 +344,6 @@ sub get_tiny_link {
 	my $page 			= $opts{page};
 	my $log_msg			= $opts{log_msg};
 	my $disable_logging	= $opts{disable_logging}; # flag
-
 	$url =~ s/:::/__/g;
 	my $tiny = LWP::Simple::get("http://genomevolution.org/r/yourls-api.php?signature=d57f67d3d9&action=shorturl&format=simple&url=$url");
 	unless ($tiny) {
