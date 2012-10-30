@@ -116,24 +116,27 @@ sub get_history_for_user
 		if ($time_range == 0) {
 			@entries = $coge->resultset('Log')->all;
 		}
-		elsif ($time_range == -1) {
+		elsif ($time_range == -1) { # Starred entries
 			@entries = $coge->resultset('Log')->search( { status => 1 } );
 		}
-		elsif ($time_range == -2) {
+		elsif ($time_range == -2) { # Entries with comments
 			@entries = $coge->resultset('Log')->search( { comment => { '!=', '' }} );
+		}
+		elsif ($time_range == -3) { # My entries (default for non-admins)
+			@entries = $coge->resultset('Log')->search( { user_id => $USER->id } );
 		}
 		else {
 			@entries = $coge->resultset('Log')->search_literal( 'time >= DATE_SUB(NOW(), INTERVAL ? HOUR)', ($time_range) );
 		}
 	}
 	else {
-		if ($time_range == 0) {
+		if ($time_range == 0 or $time_range == -3) {
 			@entries = $coge->resultset('Log')->search( { user_id => $USER->id } );
 		}
-                elsif ($time_range == -1) {
-                        @entries = $coge->resultset('Log')->search( { user_id => $USER->id, status => 1 } );
-                }
-		elsif ($time_range == -2) {
+		elsif ($time_range == -1) { # Starred entries
+			@entries = $coge->resultset('Log')->search( { user_id => $USER->id, status => 1 } );
+		}
+		elsif ($time_range == -2) { # Entries with comments
 			@entries = $coge->resultset('Log')->search( { user_id => $USER->id, comment => { '!=', '' }} );
 		}
 		else {
