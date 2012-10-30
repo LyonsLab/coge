@@ -19,6 +19,7 @@ $(document).ready(function(){
 	$(".dialog_box").dialog({autoOpen: false});
 	
 	pageObj.timestamp = new Array();
+	pageObj.timers = new Array();
 });
 
 function set_contents_table() {
@@ -549,6 +550,33 @@ function send_list_to() {
 			}
 		}
 	});
+}
+
+function image_preview(obj, preview) {
+	var id = obj.src; // need a unique identifier for the obj
+	if (pageObj.timers[id]) {
+		clearInterval(pageObj.timers[id]);
+		pageObj.timers[id] = null;
+	}
+	
+	if (preview) {
+		pageObj.timers[id] = setTimeout( 
+			function() { 
+				$(obj).animate({width:200, height:200});
+				pageObj.timers[id] = null; 
+			}, 
+			500 
+		);
+	}
+	else {
+		pageObj.timers[id] = setTimeout( 
+			function() { 
+				$(obj).animate({width:40, height:40});
+				pageObj.timers[id] = null;  
+			}, 
+			500 
+		);
+	}
 }
 </SCRIPT>
 
