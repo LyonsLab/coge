@@ -2513,7 +2513,7 @@ sub go
 	my ( $fasta2, $org_name2, $title2 );
 	( $fasta1, $org_name1, $title1 ) = gen_fasta( dsgid => $dsgid1, feat_type => $feat_type1 );
 	( $fasta2, $org_name2, $title2 ) = gen_fasta( dsgid => $dsgid2, feat_type => $feat_type2 );
-	( $dsgid1, $org_name1, $fasta1, $feat_type1, $depth_org_1_ratio, $dsgid2, $org_name2, $fasta2, $feat_type2, $depth_org_2_ratio ) = ( $dsgid2, $org_name2, $fasta2, $feat_type2, $depth_org_2_ratio, $dsgid1, $org_name1, $fasta1, $feat_type1, $depth_org_1_ratio ) if ( $org_name2 lt $org_name1 );
+	( $dsgid1, $dsg1, $org_name1, $fasta1, $feat_type1, $depth_org_1_ratio, $dsgid2, $dsg2, $org_name2, $fasta2, $feat_type2, $depth_org_2_ratio ) = ( $dsgid2, $dsg2, $org_name2, $fasta2, $feat_type2, $depth_org_2_ratio, $dsgid1, $dsg1, $org_name1, $fasta1, $feat_type1, $depth_org_1_ratio ) if ( $org_name2 lt $org_name1 );
 	unless ( $fasta1 && $fasta2 )
 	{
 		my $log = $cogeweb->logfile;
@@ -3065,7 +3065,9 @@ sub go
 			$html .= "<tr><td>";
 			my $conffile = $ENV{HOME} . 'coge.conf';
 			$dagchainer_file =~ s/^$URL/$DIR/;
-			$tiny_link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, page => $PAGE_NAME, url => $synmap_link );
+			my $log_msg = "<span class=link onclick=window.open('OrganismView.pl?dsgid=$dsgid1')>$org_name1</span> v. <span class=link  onclick=window.open('OrganismView.pl?dsgid=$dsgid2')>$org_name2</span>";
+			$log_msg .= " Ks" if $ks_type;
+			$tiny_link = CoGe::Accessory::Web::get_tiny_link( db => $coge, user_id => $USER->id, page => $PAGE_NAME, url => $synmap_link, log_msg=>$log_msg);
 			$html .= "<br>" . qq{<span class="small link" id="" onClick="window.open('bin/SynMap/order_contigs_to_chromosome.pl?f=$dagchainer_file&cf=$conffile;l=$tiny_link');" >Generate Pseudo-Assembled Genomic Sequence</span>} if $assemble;
 			$html .= qq{</table>};
 
