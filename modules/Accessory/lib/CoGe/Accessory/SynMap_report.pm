@@ -13,7 +13,7 @@ BEGIN {
     @EXPORT      = qw ();
     @EXPORT_OK   = qw ();
     %EXPORT_TAGS = ();
-    __PACKAGE__->mk_accessors(qw(file org1_ordered org2_ordered)) ;
+    __PACKAGE__->mk_accessors(qw(file org1_ordered org2_ordered chrs1_scores chrs2_scores blocks1 blocks2 chrs1 chrs2 dsgid1 dsgid2)) ;
 }
 
 
@@ -119,6 +119,14 @@ sub parse_syn_blocks
     ($ordered1, $ordered2) = ($ordered2, $ordered1) if $switched;
     $self->org1_ordered($ordered1);
     $self->org2_ordered($ordered2);
+    $self->chrs1($chrs1);
+    $self->chrs2($chrs2);
+    $self->chrs1_scores($chrs1_scores);
+    $self->chrs2_scores($chrs2_scores);
+    $self->blocks1($blocks1);
+    $self->blocks1($blocks2);
+    $self->dsgid1($dsgid1);
+    $self->dsgid2($dsgid2);
     return $ordered1, $ordered2, $dsgid1, $dsgid2;
   }
 
@@ -177,6 +185,10 @@ sub process_syn_block
     @stop1 = sort {$a<=>$b} @stop1;
     @start2 = sort {$a<=>$b} @start2;
     @stop2 = sort {$a<=>$b} @stop2;
+    my $absolute_start1 = $start1[0];
+    my $absolute_stop1 = $stop1[-1];
+    my $absolute_start2 = $start2[0];
+    my $absolute_stop2 = $stop2[-1];
     shift @start1 if scalar(@start1) >3;
     pop @start1 if scalar(@start1) >2;
     shift @stop1 if scalar(@stop1) >3;
@@ -199,9 +211,13 @@ sub process_syn_block
     my %seq1 = (
 		name=>$seq1,
 		start=>$seq1_start,
+		absolute_start=>$absolute_start1,
 		stop=>$seq1_stop,
+		absolute_stop=>$absolute_stop1,
 		match_start=>$seq2_start,
 		match_stop=>$seq2_stop,
+		match_absolute_start=>$absolute_start2,
+		match_absolute_stop=>$absolute_stop2,
 		score=>$score,
 		rev=>$rev,
 		match=>$seq2,
@@ -213,8 +229,12 @@ sub process_syn_block
 		name=>$seq2,
 		start=>$seq2_start,
 		stop=>$seq2_stop,
+		absolute_start=>$absolute_start2,
+		absolute_stop=>$absolute_stop2,
 		match_start=>$seq1_start,
 		match_stop=>$seq1_stop,
+		match_absolute_start=>$absolute_start2,
+		match_absolute_stop=>$absolute_stop1,
 		score=>$score,
 		rev=>$rev,
 		match=>$seq1,
