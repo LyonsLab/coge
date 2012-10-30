@@ -305,7 +305,7 @@ sub get_list_annotations {
 			$html .= "<tr valign='top'>" . ($first-- > 0 ? "<th align='right' class='title5' nowrap='true' rowspan=" . @{$groups{$group}} . " style='font-weight:normal;background-color:white'>$group:</th>" : '');
 			
 			my $image_link = ($a->image ? 'image.pl?id=' . $a->image->id : '');
-			my $a_info = ($a->image ? "<a href='$image_link' target='_blank'><img height=20 width=20 src='$image_link' style='vertical-align:text-top;'></a>" : '');
+			my $a_info = ($a->image ? "<a href='$image_link' target='_blank'><img height='40' width='40' src='$image_link' style='padding:1px;border:1px solid lightgray;vertical-align:text-top;'></a>" : '');
 			$a_info .= ' ' . ($a->link ? linkify($a->link, $a->info) : $a->info);
 			$html .= "<td class='data5'>$a_info</td>";
 			
@@ -319,7 +319,7 @@ sub get_list_annotations {
 	
 	if ($user_can_edit) {
 		$html .= qq{<span style="font-size: .75em" class='ui-button ui-button-go ui-button-icon-left ui-corner-all' onClick="add_list_annotation({lid: $lid});"><span class="ui-icon ui-icon-plus"></span>Add Annotation</span>};
-	}	
+	}
 
 	return $html;
 }
