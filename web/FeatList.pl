@@ -4,7 +4,7 @@
 
 use strict;
 use CGI;
-use CGI::Ajax;
+#use CGI::Ajax;
 use Data::Dumper;
 use Digest::MD5 qw(md5_base64);
 use HTML::Template;
@@ -93,39 +93,6 @@ sub dispatch {
 		print $FORM->header, gen_html();
 	}
 }
-
-my $pj = new CGI::Ajax(
-	gen_html               => \&gen_html,
-	gevo                   => \&gevo,
-	blast                  => \&blast,
-	get_fasta_seqs         => \&get_fasta_seqs,
-	generate_excel_file    => \&generate_excel_file,
-	codon_table            => \&codon_table,
-	protein_table          => \&protein_table,
-	gc_content             => \&gc_content,
-	gen_data               => \&gen_data,
-	send_to_featmap        => \&send_to_featmap,
-	send_to_msa            => \&send_to_msa,
-	send_to_featlist       => \&send_to_featlist,
-	send_to_SynFind        => \&send_to_SynFind,
-	get_anno               => \&get_anno,
-	get_gc                 => \&get_gc,
-	get_wobble_gc          => \&get_wobble_gc,
-	save_FeatList_settings => \&save_FeatList_settings,
-	add_to_user_history    => \&add_to_user_history,
-	export_CodeOn          => \&export_CodeOn,
-);
-#$pj->js_encode_function('escape');
-
-#my $t1 = new Benchmark;
-print $pj->build_html( $FORM, \&gen_html );
-
-#print $FORM->header;print gen_html();
-#my $t2 = new Benchmark;
-#my $run_time = timestr(timediff($t2,$t1));
-#print STDERR qq{
-#Runtime:  $run_time
-#};
 
 sub gen_html {
 	my $html;
