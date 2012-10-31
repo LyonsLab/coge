@@ -614,7 +614,7 @@ function blastOff() {
 			basename:		pageObj.basename,
 			seq:			seq,
 			blastable:		blastable_db,
-			fid:			<TMPL_VAR NAME='FEATID'>,
+			fid:			'<TMPL_VAR NAME='FEATID'>',
 			width:			page_width,
 			color_hsps:		$('#color_by').val(),			
 		},
@@ -835,7 +835,23 @@ function get_seq(which_type) {
 	featid = seqObj.featid;
 	chr = seqObj.chr;
 	if (featid) {
-		$('#seq_box').val('loading. . .');
+		$('#seq_box').val('Loading ...');
+		$.ajax({
+			data: {
+				jquery_ajax: 1,
+				fname: 'get_sequence',
+				fid: featid,
+				blast_type: which_type,
+				upstream: seqObj.upstream,
+				downstream: seqObj.downstream,
+				rc: seqObj.rc,
+				gstid: seqObj.gstid
+			},
+			success : function(html) {
+				$('#seq_box').html(html);
+			},
+		});
+		/*
 		get_sequence(
 			[	'args__fid','args__'+featid,
 				'args__blast_type', which_type, 
@@ -846,10 +862,27 @@ function get_seq(which_type) {
 			],
 			['seq_box']
 		);
+		*/
 	}
 	else if (chr) {
-		$('#seq_box').val('loading. . .');
-		get_sequence(
+		$('#seq_box').val('Loading ...');
+		$.ajax({
+			data: {
+				jquery_ajax: 1,
+				fname: 'get_sequence',
+				dsid: dsid,
+				dsgid: dsgid,
+				blast_type: which_type,
+				start: seqObj.upstream,
+				stop: seqObj.downstream,
+				gstid: seqObj.gstid
+			},
+			success : function(html) {
+				$('#seq_box').html(html);
+			},
+		});
+		/*
+		get_sequence(		
 			[	'args__chr','args__'+chr,
 				'args__dsid','args__'+dsid,
 				'args__dsgid','args__'+dsgid,
@@ -860,6 +893,7 @@ function get_seq(which_type) {
 			],
 			['seq_box']
 		);
+		*/
 	}
 	else {
 		//$('#seq_box').val('');
