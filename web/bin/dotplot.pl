@@ -130,6 +130,7 @@ if ($axis_metric && $axis_metric =~ /gene/) #add in gene information
     get_gene_info(dsgid=>$dsgid1, info=>$org1info);
     get_gene_info(dsgid=>$dsgid2, info=>$org2info);
   }
+#print STDERR Dumper $org1info, $org2info;
 
 #will need to reorder whichever genome has more chromosomes/contigs
 
@@ -1299,9 +1300,10 @@ SELECT count(distinct(feature_id))
 
 };
 	my ($res) = $dbh->selectrow_array($query);
+	
 	$info->{$tmp_chr}{gene_length}=$res;
-	$info->{$tmp_chr}{length}=$res;
 	next unless $res;
+	$info->{$tmp_chr}{length}=$res;
 	#get gene order
 	$query = qq{
 SELECT feature_id
