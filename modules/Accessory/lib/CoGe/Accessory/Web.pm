@@ -133,18 +133,11 @@ sub feat_search_for_feat_name {
 	}
 	my $html;
 	if (@feats) {
-		$html .= qq{
-<SELECT name = "featid$num" id = "featid$num" >
-  };
+		$html .= qq{<SELECT name = "featid$num" id = "featid$num" >};
 		foreach my $feat ( sort { $a->type->name cmp $b->type->name } @feats ) {
-			my $loc = "("
-			  . $feat->type->name
-			  . ") Chr:"
-			  . $feat->locations->next->chromosome . " "
-			  . $feat->start . "-"
-			  . $feat->stop;
+			my $loc = "(" . $feat->type->name . ") Chr:" . $feat->locations->next->chromosome . " " . $feat->start . "-" . $feat->stop;
 
-#working here, need to implement genbank_location_string before I can progress.  Need
+			#working here, need to implement genbank_location_string before I can progress.  Need
 			$loc =~ s/(complement)|(join)//g;
 			my $fid = $feat->id;
 			$html .= qq {  <option value="$fid">$loc \n};
@@ -190,13 +183,9 @@ sub logout_cas {
 	$url = $form->url() unless $url;
 	my $session = md5_base64( $user->user_name . $ENV{REMOTE_ADDR} );
 	$session =~ s/\+/1/g;
-	($session) =
-	  $coge->resultset('UserSession')->find( { session => $session } );
+	($session) = $coge->resultset('UserSession')->find( { session => $session } );
 	$session->delete if $session;
-	print "Location: "
-	  . $form->redirect(
-		    "https://auth.iplantcollaborative.org/cas/logout?service=" . $url
-		  . "&gateway=1" );
+	print "Location: " . $form->redirect("https://auth.iplantcollaborative.org/cas/logout?service=" . $url . "&gateway=1" );
 }
 
 sub login_cas {
@@ -272,6 +261,24 @@ sub login_cas {
 	my $session = md5_base64( $uname . $ENV{REMOTE_ADDR} );
 	$session =~ s/\+/1/g;
 	my $sid = $coge->log_user( user => $coge_user, session => $session );
+
+	# mdb added 10/19/12
+	#$ENV{PERL_LWP_SSL_VERIFY_HOSTNAME}=0; # this doesn't work for bypassing cert check, need line in apache cfg
+	$request_ua = HTTP::Request->new( POST => 'https://elliot.iplantcollaborative.org/api/v1/service/coge/add/' . $uname );
+	$request_ua->authorization_basic('', 'e34ae90f5366e3afde196a96438e0558b9bad2f6');
+	print STDERR "matt: request uri: " . $request_ua->uri . "\n";
+	$request_ua->content($request);
+	$request_ua->content_type("text/xml; charset=utf-8");
+	my $response = $ua->request($request_ua);
+	#if ($response->is_success()) {
+		print STDERR "matt: status_line: " . $response->status_line() . "\n";
+		#my $header = $response->header;
+		my $result = $response->content;
+		print STDERR "matt: content: <begin>$result<end>\n";
+	#}
+	#else {
+	#	print STDERR "matt: bad response\n";	
+	#}
 
 	#gen and set the web cookie, yum!
 	my $c = CoGe::Accessory::LogUser->gen_cookie(
@@ -572,6 +579,95 @@ sub gunzip {
 	my $return = -r $tmp ? $tmp : $file;
 	print STDERR "\t", "returning $return\n" if $debug;
 	return $return;
+}
+
+sub irods_ils {
+	my $path = shift;
+	$path = '' unless $path;
+
+	my $P = get_defaults( $ENV{HOME} . 'coge.conf' );
+	my $env_file = $P->{IRODSENV};
+	if (not defined $env_file or not -e $env_file) {
+		print STDERR "fatal error: iRODS env file missing!\n";
+		return;	
+	}
+
+	my $cmd = "export irodsEnvFile='$env_file'; ils -l $path";
+#	print STDERR "cmd: $cmd\n";
+	my @ils = `$cmd`;
+	
+	$path = shift @ils;
+	chomp($path);
+	chop($path);
+#	print STDERR "irods_ils: path=$path\n";
+	
+	my @result;
+	foreach my $line (@ils) {
+		my ($type, $size, $timestamp, $name);
+
+		chomp $line;
+		if ($line =~ /^\s*C\-/) { # directory
+			$type = 'directory';
+			($name) = $line =~ /(\w+)\s*$/;
+			if ($name) { $name .= '/'; }
+			else { $name = 'error' };
+			($size, $timestamp) = ('', '');
+		}
+		else { # file
+			$type = 'file';
+			(undef, undef, undef, undef, $size, $timestamp, undef, $name) = split(/\s+/, $line);
+		}
+		
+#		print STDERR "$type: $name\n";
+		push @result, 
+			{ type => $type, 
+			  size => $size, 
+			  timestamp => $timestamp, 
+			  name => $name,
+			  path => $path . '/' . $name
+			};
+	}
+	
+	return wantarray ? @result : \@result;
+}
+
+sub irods_chksum {
+	my $path = shift;
+	return 0 unless ($path);
+
+	my $P = get_defaults( $ENV{HOME} . 'coge.conf' );
+	my $env_file = $P->{IRODSENV};
+	if (not defined $env_file or not -e $env_file) {
+		print STDERR "fatal error: iRODS env file missing!\n";
+		return;	
+	}
+
+	my $cmd = "export irodsEnvFile='$env_file'; ichksum $path";
+#	print STDERR "cmd: $cmd\n";
+	my @output = `$cmd`;
+	my ($chksum) = $output[0] =~ /\s*\S+\s+(\S+)/;
+#	print STDERR "chksum: $chksum\n";
+
+	return $chksum;
+}
+
+sub irods_iget {
+	my ($src, $dest) = @_;
+#	print STDERR "irods_iget $src $dest\n";
+
+	my $P = get_defaults( $ENV{HOME} . 'coge.conf' );
+	my $env_file = $P->{IRODSENV};
+	if (not defined $env_file or not -e $env_file) {
+		print STDERR "fatal error: iRODS env file missing!\n";
+		return;	
+	}
+
+	my $cmd = "export irodsEnvFile='$env_file'; iget -fT $src $dest";
+#	print STDERR "cmd: $cmd\n";
+	my @ils = `$cmd`;
+#	print STDERR "@ils";
+	
+	return;
 }
 
 1;
