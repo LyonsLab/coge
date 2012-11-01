@@ -1,0 +1,295 @@
+<TMPL_IF NAME='MAIN'>
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.2.0.3.js"></SCRIPT>
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.tablesorter.pager.js"></SCRIPT>
+<SCRIPT language="JavaScript" type="text/javascript" src="./js/jquery.fileupload.js"></SCRIPT>
+
+<SCRIPT language="JavaScript">
+$(document).ready(function(){
+	$.ajaxSetup({
+		type: "GET",
+		url: '<TMPL_VAR NAME='PAGE_NAME'>',
+		dataType: "html",
+		cache: false,
+	});
+	
+	$(".dialog_box").dialog({autoOpen: false, width: 500});
+	
+	get_sequence_types();
+	
+	$("#edit_organism").autocomplete({source:[]});
+});
+
+function file_selected(filename, url) {
+	$('#files_clear').removeClass('ui-state-disabled');
+}
+
+function clear_list() {
+	pageObj.timestamp = new Date().getTime(); // Cancel ftp transfers
+	$('#file_table').html('');
+	$('#ftp_get_button').removeClass('ui-state-disabled');
+	$('#files_clear').addClass('ui-state-disabled');
+}
+
+function get_sequence_types(id) {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'get_sequence_types'
+		},
+		success : function(html) {
+			$('#select_type').html(html);
+			if (id) {
+				$('#select_type').val(id);
+			}
+		},
+	});
+}
+
+function create_sequence_type() {
+	var name = $('#edit_type_name').val();
+	var desc = $('#edit_type_desc').val();
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'create_sequence_type',
+			name: name,
+			desc: desc,
+		},
+		success : function(id) {
+			$('#create_new_type_dialog').dialog('close');
+			if (id) {
+				get_sequence_types(id);
+			}
+		},
+	});
+}
+
+function create_organism() {
+	var name = $('#edit_organism_name').val();
+	var desc = $('#edit_organism_desc').val();
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'create_organism',
+			name: name,
+			desc: desc,
+		},
+		success : function() {
+			$('#create_new_organism_dialog').dialog('close');
+			$('#edit_organism').val(name);
+		},
+	});
+}
+
+function load_genome() {
+	var items = get_selected_files();
+	if (items == null) {
+		alert('Files are still being transferred, please wait.');
+		return;
+	}	
+	else if (items.length == 0) {
+		alert('Please select some sequence files or an FTP site.');
+		return;
+	}
+	
+	var name = $('#edit_name').val();
+	var description = $('#edit_description').val();
+	var version = $('#edit_version').val();
+	var type_id = $('#select_type').val();
+	var restricted = $('#restricted').is(':checked');
+	var org_name = $('#edit_organism').val();
+	var json = JSON.stringify(items);
+	
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'load_genome',
+			name: name,
+			description: description,
+			version: version,
+			type_id: type_id,
+			restricted: restricted,
+			org_name: org_name,
+			items: json,
+			timestamp: new Date().getTime()
+		},
+		success : function(load_id) {
+			$('#load_genome_dialog').dialog('open'); 
+			setTimeout(function() { get_load_genome_log(load_id); }, 1000);
+		}
+	});
+}
+
+function get_load_genome_log(load_id) {
+	$.ajax({
+		data: {
+			jquery_ajax: 1,
+			fname: 'get_load_genome_log',
+			load_id: load_id,
+			timestamp: new Date().getTime()
+		},
+		success : function(data) {
+			var obj = jQuery.parseJSON(data);
+			
+			$('#load_genome_log').html(obj.log);
+			var height = $('#load_genome_log')[0].scrollHeight;
+    		$("#load_genome_log").animate({ scrollTop: height}, 500);
+    						
+			if (obj.status == 1) {
+				$('#genome_id').val( obj.genome_id );
+				$('#loading_msg').hide();
+				$('#finished_msg').fadeIn();
+				$('#finish_load_genome_button').fadeIn();
+			}
+			else {
+				setTimeout(function() { get_load_genome_log(load_id); }, 1000);
+			}
+		}
+	});	
+}
+
+function continue_to_view() {
+	var gid = $('#genome_id').val();
+	window.location.href = "OrganismView.pl?dsgid=" + gid;
+}
+
+function wait_to_search (search_func, search_term) {
+	if (!search_term || search_term.length > 2) {
+		pageObj.search_term = search_term;
+			
+		if (pageObj.time) {
+			clearTimeout(pageObj.time);
+		}
+		
+		// FIXME: could generalize by passing select id instead of separate search_* functions
+		pageObj.time = setTimeout(
+			function() { 
+				search_func(pageObj.search_term); 
+			},
+			500
+		);
+	}
+}
+
+function search_organisms (search_term) {
+	if (search_term.length > 2) {
+		$.ajax({
+			data: {
+				jquery_ajax: 1,
+				fname: 'search_organisms',
+				search_term: search_term,
+				timestamp: new Date().getTime()
+			},
+			success : function(data) {
+				var obj = jQuery.parseJSON(data);
+				if (obj.items) {
+					$("#edit_organism").autocomplete({source: obj.items});
+					$("#edit_organism").autocomplete("search");
+				}
+			},
+		});
+	}
+}
+
+</SCRIPT>
+
+
+<br>
+<span style="color:dimgray;font-weight:bold;">Genome Info</span><br>
+<table class="small ui-widget-content ui-corner-all">
+  <tr>
+    <td>Name:</td>
+    <td><input id="edit_name" type="textbox" size="58" value="<TMPL_VAR NAME=NAME>" /></td>
+  </tr>
+  <tr>
+    <td>Description:</td>
+    <td><textarea id="edit_description" rows=5 cols=50 ><TMPL_VAR NAME=DESC></textarea></td>
+  </tr>
+  <tr>
+    <td>Version:</td>
+    <td><input id="edit_version" type="textbox" size="10" value="<TMPL_VAR NAME=NAME>" /></td>
+  </tr>
+  <tr>
+    <td>Type:</td>
+    <td>
+      <select id="select_type" style="width:230px;"></select>
+      <span id="new_type_button" onClick="$('#create_new_type_dialog').dialog('open'); activate_on_input('edit_type_name', 'create_type_button');" class='ui-button ui-corner-all ui-button-go'>New</span>
+    </td>
+  </tr>
+  <tr>
+    <td>Restricted?</td>
+    <td><input id="restricted" type="checkbox" checked></td>
+  </tr>
+  <tr>
+    <td>Organism:</td>
+    <td>
+      <input id="edit_organism" onkeypress="wait_to_search(search_organisms, this.value);" size="45" />
+      <span id="new_organism_button" onClick="$('#create_new_organism_dialog').dialog('open'); activate_on_input('edit_organism_name', 'create_organism_button');" class='ui-button ui-corner-all ui-button-go'>New</span>
+    </td>
+  </tr>
+</table>
+
+<br>
+<span style="color:dimgray;font-weight:bold;">Genome Data</span><br>
+<table id='file_table' class="small ui-widget-content ui-corner-all"></table>
+<span onClick="$('#file_select_dialog').dialog('open')" class='ui-button ui-corner-all ui-button-go'>Add Sequences Files</span>
+<span id="files_clear" onClick="clear_list();" class='ui-state-disabled ui-button ui-corner-all ui-button-go'>Clear List</span>
+<br>
+<br>
+<span onClick="load_genome();" class='ui-button ui-corner-all ui-button-go'>Load Genome</span>
+
+
+
+<div id="create_new_type_dialog" class="dialog_box" title="Create New Sequence Type">
+  <table class="small">
+    <tr>
+      <td>Name:</td>
+      <td><input id="edit_type_name" type="textbox" size="53" onkeyup="activate_on_input('edit_type_name', 'create_type_button');" /></td>
+    </tr>
+    <tr>
+      <td>Description:</td>
+      <td><textarea id="edit_type_desc" rows="5" cols="50" ></textarea></td>
+    </tr>
+  </table>
+  <br>
+  <span id="create_type_button" onClick="create_sequence_type();" class="ui-state-disabled ui-button ui-corner-all ui-button-go">Create new type</span>
+</div>
+
+
+
+<div id="create_new_organism_dialog" class="dialog_box" title="Create New Organism">
+  <table class="small">
+    <tr>
+      <td>Name:</td>
+      <td><input id="edit_organism_name" type="textbox" size="53" onkeyup="activate_on_input('edit_organism_name', 'create_organism_button');" /></td>
+    </tr>
+    <tr>
+      <td>Description:</td>
+      <td><textarea id="edit_organism_desc" rows="5" cols="50" ></textarea></td>
+    </tr>
+  </table>
+  <br>
+  <span id="create_organism_button" onClick="create_organism();" class="ui-state-disabled ui-button ui-corner-all ui-button-go">Create new organism</span>
+</div>
+
+
+
+<div id="load_genome_dialog" class="dialog_box" title="Loading Genome ...">
+  <div id="load_genome_log" class="small ui-widget-content ui-corner-all" style="overflow-y:auto;width:450px;height:200px;color:dimgray;">
+  </div>
+  <br>
+  <span id="loading_msg">Please wait ... <img src="picts/ajax-loader.gif"/></span>
+  <span id="finished_msg" style="display:none;">Finished! <img src="picts/thumbs_up.png"></span>
+  <input id="genome_id" type="hidden" /> 
+  <span id="finish_load_genome_button" onClick="continue_to_view();" style="display:none;float:right;" class="ui-button ui-corner-all ui-button-go">Continue to OrganismView</span>
+</div>
+
+
+
+<div id="file_select_dialog" class="dialog_box" title="Select Data File ...">
+  <TMPL_INCLUDE NAME='widgets/FileSelect.tmpl'>
+</div> <!-- file_select_dialog -->
+
+
+
+</TMPL_IF> <!-- MAIN -->
