@@ -16,15 +16,17 @@ $(document).ready(function(){
 	$(".dialog_box").dialog({autoOpen: false, width: 600});
 
 	// Create new case-insensitive "contains" selector function in jQuery
+/*
 	jQuery.expr[":"].icontains = jQuery.expr.createPseudo(function(arg) {
 	    return function( elem ) {
 	        return jQuery(elem).text().toUpperCase().indexOf(arg.toUpperCase()) >= 0;
 	    };
 	});
+*/
 	
 	// Setup filter input
-	$("#search_bar").keyup( function() { filter_rows( $(this).val() ); });
-	$('#search_type').mouseup( function() { filter_rows( $('#search_bar').val() ); });
+	$("#search_bar").keyup( function() { wait_to_filter( $(this).val() ); });
+	$('#search_type').mouseup( function() { wait_to_filter( $('#search_bar').val() ); });
 	filter_rows();
 	
 	// Reset dropdown default value
@@ -77,48 +79,130 @@ function set_table () {
 	$('#history_table').tablesorter({widgets: ['zebra']});
 }
 
+function filter_busy(busy) {
+	if (busy) {
+		$('#filter_busy').fadeIn();
+	}
+	else {
+		$('#filter_busy').fadeOut();
+	}	
+}
+
 //Filters Rows for search_text - Case sensitive as of now, and searches hidden columns...
-function filter_rows (search_text){
-	if(! search_text) { $("#history_table tr:hidden").show(0);}
+/*
+function filter_rows (search_text) {
+	filter_busy(1);
+	
+	if (!search_text) { 
+		$("#history_table tr:hidden").show(0); 
+	}
 	else if (search_text.length >= 3) {
 		$("#history_table_body tr:hidden").show(0);
-		if( $('#search_type').val() == 1 ) { $("#history_table_body tr:not(:icontains('"+search_text+"'))").hide(); }
-		else { $("#history_table_body tr:icontains('"+search_text+"')").hide(); }
+		if( $('#search_type').val() == 1 ) { 
+			$("#history_table_body tr:not(:icontains('"+search_text+"'))").hide(); 
+		}
+		else { 
+			$("#history_table_body tr:icontains('"+search_text+"')").hide(); 
+		}
 	}
-	$('#filter_count').html('<span style="color:darkgray"><i>Showing ' + $("#history_table_body tr:visible").length + ' of ' + $("#history_table_body tr").length + ' entries</i></span>');
+	
+	filter_busy(0);
+	$('#filter_count').html('Showing ' + $("#history_table_body tr:visible").length + ' of ' + $("#history_table_body tr").length + ' entries');
+}
+*/
+function filter_rows (search_text) { // more code but much faster than old version
+	var visible = 0;
+	var total = 0;
+	
+	if (search_text && search_text.length < 3) { //>
+		return;
+	}
+	
+	filter_busy(1);
+	
+	if (!search_text) { 
+		$("#history_table_body tr").each(
+			function(index, element) {
+				total++;
+				visible++;
+				$(element).show();
+			}
+		);
+	}
+	else {
+		search_text = search_text.toLowerCase();
+		
+		$("#history_table_body tr").each(
+			function(index, element) {
+				total++;
+				
+				if (element.innerHTML.toLowerCase().indexOf(search_text) != -1) { // match
+					if ( $('#search_type').val() == 1 ) { 
+						$(element).show();
+						visible++;
+					}
+					else {
+						$(element).hide();
+					}
+				}
+				else { // mismatch
+					if ( $('#search_type').val() == 1 ) { 
+						$(element).hide();
+					}
+					else {
+						$(element).show();
+						visible++;				
+					}
+				}
+			}
+		);
+	}
+	
+	filter_busy(0);
+	$('#filter_count').html('Showing ' + visible + ' of ' + total + ' entries');
+}
+
+function wait_to_filter (search_term) {
+	if (!search_term || search_term.length > 2) {
+		pageObj.search_term = search_term;
+			
+		if (pageObj.time) {
+			clearTimeout(pageObj.time);
+		}
+		
+		pageObj.time = setTimeout(
+			function() { 
+				filter_rows(pageObj.search_term); 
+			},
+			500
+		);
+	}
 }
 
 function run_get_history() {
-	div_id = 'history'; // div to put result into
 	time_range = $('#time_range').val();
 	search_term = $('#search_bar').val();
 	
-	// create a new closure who's scope does *not*
-	// include the `divid` value so that callback will 
-	// not clobber the `divid` variable 
-	var create_callback = function(divid) {
-		var local_divid = divid;
-		return function (data) {
-			$('#'+local_divid).html(data);
-			set_table();
-			filter_rows(search_term);
-		};
-	};
-
+	filter_busy(1);
+	
 	$.ajax({
 		data: {
 			jquery_ajax: 1,
 			fname: 'get_history_for_user',
 			time_range: time_range,
 		},
-		success : create_callback(div_id)
+		success : function (data) {
+			$('#history').html(data);
+			set_table();
+			filter_rows(search_term);
+		}
 	});
 }
 </SCRIPT>
 
 
 
-<div class="small" style="padding-top:15px;padding-bottom:5px;">
+<div class="small" style="padding-top:15px;padding-bottom:5px;height:27px;">
  <span style="padding-right:10px">
   Show: 
   <select id="time_range" onchange="run_get_history();">
@@ -141,7 +225,8 @@ function run_get_history() {
    <option value="0">Does NOT contain</option>
   </select>
   <!-- <span class=small>Tip: Use "*" for wildcards, and "!" to search for not containing</span> -->
-  <span id='filter_count' style="margin-left:20px;margin-right:100px;"></span>
+  <span id='filter_count' style="margin-left:20px;color:darkgray;font-style:italic;"></span>
+  <img id='filter_busy' src="picts/ajax-loader.gif" style="display:none;vertical-align:middle;" />
  </span>
 </div>
 

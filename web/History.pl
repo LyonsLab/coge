@@ -144,8 +144,16 @@ sub get_history_for_user
 		}
 	}
 
+	my $dup = 1;
 	my @rows;	
-	foreach my $entry (reverse @entries) {
+	for (my $i = 0;  $i < @entries;  $i++) {
+		my $entry = $entries[$i]; 
+		my $next_entry = $entries[$i+1]; 
+		if ($next_entry and $entry->link and $next_entry->link and $entry->link eq $next_entry->link) {
+			$dup++;
+			next;
+		}
+		
 		my %row;
 		$row{LOG_ID} = $entry->id;
 		$row{STAR_ICON} = $entry->status == 0 ? 'picts/star-hollow.png' : 'picts/star-full.png';
@@ -154,13 +162,19 @@ sub get_history_for_user
 		$row{PAGE} = $entry->page;
 		$row{DESCRIPTION} = $entry->description;
 		$row{LINK} = '<a href="' . $entry->link . '" target="_blank">' . $entry->link . '</a>' if ($entry->link);
+		
+		if ($dup > 1) {
+			$row{LINK} = '(' . $dup . ') ' . $row{LINK};
+			$dup = 1;
+		}
+		
 		$row{COMMENT} = $entry->comment;
 		push @rows, \%row;
 	}
 	
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'History.tmpl' );
 	$template->param( HISTORY => 1 );
-	$template->param( HISTORY_LOOP => \@rows );
+	$template->param( HISTORY_LOOP => [ reverse @rows ] );
 
 	return $template->output;
 }
