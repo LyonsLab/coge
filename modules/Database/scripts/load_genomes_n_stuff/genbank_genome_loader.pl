@@ -372,7 +372,7 @@ accn: foreach my $accn (@accns)
 											   }) if $GO;
 			
 			# now create the row for the data value of the xref
-			my $sub_anno = $db_feature->add_to_annotations(
+			my $sub_anno = $db_feature->add_to_feature_annotations(
 								       {
 									annotation         => $inner[1],
 									annotation_type_id => $anno_type->id()
@@ -440,7 +440,7 @@ accn: foreach my $accn (@accns)
 													annotation_type_group_id => $anno_type_group->id(),
 												       }
 												      ) if $GO;
-				    my $sub_anno = $db_feature->add_to_annotations(
+				    my $sub_anno = $db_feature->add_to_feature_annotations(
 										   {
 										    annotation => $2,    #this should be "nucleic acid binding"
 										    annotation_type_id => $anno_type->id
@@ -456,7 +456,7 @@ accn: foreach my $accn (@accns)
 			    if ($leftover)
 			      {
 				my $anno_type = $coge->resultset('AnnotationType')->find_or_create( { name => $anno } ) if $GO;
-				my $sub_anno = $db_feature->add_to_annotations(
+				my $sub_anno = $db_feature->add_to_feature_annotations(
 									       {
 										annotation         => $leftover,
 										annotation_type_id => $anno_type->id(),
@@ -471,7 +471,7 @@ accn: foreach my $accn (@accns)
 		    foreach my $item (@{$stuff})
 		      {
 			my $anno_type = $coge->resultset('AnnotationType')->find_or_create( { name => $anno } ) if $GO;
-			my $sub_anno = $db_feature->add_to_annotations(
+			my $sub_anno = $db_feature->add_to_feature_annotations(
 								       {
 									annotation         => $item,
 									annotation_type_id => $anno_type->id(),
