@@ -287,7 +287,7 @@ sub load_experiment {
 			  "-gid $gid " . 
 			  "-source_name " . $USER->display_name . ' ' .
 			  "-staging_dir $stagepath " .
-			  "-install_dir " . $P->{DATADIR} . ' ' .
+			  "-install_dir " . $P->{DATADIR} . '/experiments ' .
 			  '-data_file "' . escape( join(',', @files) ) . '" ' .
 			  "-host $DBHOST -port $DBPORT -database $DBNAME -user $DBUSER -password $DBPASS";
 	print $log "$cmd\n";	
