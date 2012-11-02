@@ -404,7 +404,7 @@ sub generate_body {
 	$template->param( DISABLE_IRODS_GET_ALL => 1 );
 	$template->param( MAX_IRODS_LIST_FILES => 100 );
 	$template->param( MAX_IRODS_TRANSFER_FILES => 30 );
-	$template->param( MAX_FTP_FILES => 30 );
+	$template->param( MAX_FTP_FILES => 1 );
 	
 	return $template->output;
 }
