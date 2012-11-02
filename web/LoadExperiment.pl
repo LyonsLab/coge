@@ -398,7 +398,7 @@ sub generate_html {
 sub generate_body {
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
 	$template->param( MAIN => 1 );
-	$template->param( PAGE_NAME => $PAGE_TITLE . 'pl' );
+	$template->param( PAGE_NAME => $PAGE_TITLE . '.pl' );
 	
 	$template->param( FILE_SELECT_SINGLE => 1 );
 	$template->param( DISABLE_IRODS_GET_ALL => 1 );
