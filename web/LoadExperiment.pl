@@ -23,8 +23,8 @@ use XML::Simple;
 no warnings 'redefine';
 
 use vars qw(
-	$P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_TITLE 
-	$TEMPDIR $USER $DATE $COGEDIR $coge $FORM $URL $TEMPURL $COOKIE_NAME 
+	$P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_TITLE
+	$TEMPDIR $BINDIR $USER $DATE $COGEDIR $coge $FORM $URL $TEMPURL $COOKIE_NAME
 	%FUNCTION $MAX_SEARCH_RESULTS
 );
 
@@ -57,6 +57,8 @@ $USER = undef;
 
 $TEMPDIR = $P->{TEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/';
 mkpath( $TEMPDIR, 0, 0777 ) unless -d $TEMPDIR;
+
+$BINDIR = $P->{BINDIR};
 
 $MAX_SEARCH_RESULTS = 100;
 
@@ -179,6 +181,7 @@ sub ftp_get_file {
 #	print STDERR "getstore: $url\n";
 	my $res_code = getstore($url, $fullfilepath . '/' . $filename);
 #	print STDERR "response: $res_code\n";
+	# TODO check response code here
 
 	# Alternate method
 #	my $ua = new LWP::UserAgent;
@@ -275,7 +278,7 @@ sub load_experiment {
 	}
 
 	print $log "Calling bin/load_experiment.pl ...\n";
-	my $cmd = '/opt/apache/CoGe-Dev/bin/load_experiment.pl ' . 
+	my $cmd = "$BINDIR/load_experiment.pl " .
 			  "-user_name " . $USER->user_name . ' ' .
 			  '-name "' . escape($name) . '" ' .
 			  '-desc "' . escape($description) . '" ' . 
@@ -395,7 +398,7 @@ sub generate_html {
 sub generate_body {
 	my $template = HTML::Template->new( filename => $P->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
 	$template->param( MAIN => 1 );
-	$template->param( PAGE_NAME => $PAGE_TITLE );
+	$template->param( PAGE_NAME => $PAGE_TITLE . 'pl' );
 	
 	$template->param( FILE_SELECT_SINGLE => 1 );
 	$template->param( DISABLE_IRODS_GET_ALL => 1 );

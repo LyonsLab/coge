@@ -7,14 +7,14 @@
 $(document).ready(function(){
 	$.ajaxSetup({
 		type: "GET",
-		url: '<TMPL_VAR NAME='PAGE_NAME'>'+'.pl',
+		url: '<TMPL_VAR NAME="PAGE_NAME">',
 		dataType: "html",
 		cache: false,
 	});
 	
 	$(".dialog_box").dialog({autoOpen: false, width: 500});
 	
-	$("#edit_genome").autocomplete({	
+	$("#edit_genome").autocomplete({
 		source:[],
 		select: function(event, ui) {
 			$('#edit_genome').val(ui.item.label);
