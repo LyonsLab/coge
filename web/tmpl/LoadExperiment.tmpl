@@ -13,6 +13,8 @@ $(document).ready(function(){
 	});
 	
 	$(".dialog_box").dialog({autoOpen: false, width: 500});
+	$('#load_experiment_dialog').dialog("widget").find('.ui-dialog-titlebar-close').hide();
+	$('#load_experiment_dialog').dialog({modal: true, closeOnEscape: false})
 	
 	$("#edit_genome").autocomplete({
 		source:[],
@@ -30,6 +32,14 @@ $(document).ready(function(){
 
 function file_selected(filename, url) {
 	$('#file_select_dialog').dialog('close');
+	$('#select_file_button').hide();
+}
+
+function file_finished(size, url) {
+}
+
+function file_canceled() {
+	$('#select_file_button').fadeIn();
 }
 
 function reset_log() {
@@ -74,7 +84,7 @@ function load_experiment() {
 			timestamp: new Date().getTime()
 		},
 		success : function(load_id) {
-			$('#load_experiment_dialog').dialog('open'); 
+			$('#load_experiment_dialog').dialog('open');
 			setTimeout(function() { get_load_experiment_log(load_id); }, 1000);
 		}
 	});
@@ -185,15 +195,17 @@ function search_genomes (search_term) {
       <input id="gid" type="hidden" />
     </td>
   </tr>
+  <tr>
+    <td>Data file:</td>
+    <td>
+      <table id='file_table' class="small"></table>
+      <span id="select_file_button" onClick="$('#file_select_dialog').dialog('open');" class='ui-button ui-corner-all ui-button-go'> Select Data File</span>
+    </td>
+  </tr>
 </table>
 
 <br>
-<span style="color:dimgray;font-weight:bold;">Experiment Data</span><br>
-<table id='file_table' class="small ui-widget-content ui-corner-all"></table>
-<span onClick="$('#file_select_dialog').dialog('open');" class='ui-button ui-corner-all ui-button-go'> Select Data File</span>
-<br>
-<br>
-<span onClick="load_experiment();" class='ui-button ui-corner-all ui-button-go'>Load Experiment</span>
+<span onClick="load_experiment();" style="font-size:1em;" class='ui-button ui-corner-all ui-button-go'>Load Experiment</span>
 
 
 

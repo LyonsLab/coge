@@ -1,5 +1,8 @@
 <SCRIPT language="JavaScript">
 // Begin Widget API -----------------------------------------------------------
+// callback file_selected
+// callback file_finished
+// callback file_canceled
 function get_selected_files() {
 	var items = new Array();
 	var transferring = 0;
@@ -101,9 +104,21 @@ function finish_file_in_list(url, path, size) {
 	);
 	$(tr).data('path', path);
 	$(tr).children().last().remove();
-	$(tr).append( $('<td align="right">'+units(size)+' <span onClick="$(this).closest(\'tr\').fadeOut(function() { $(this).remove(); });" class="link ui-icon ui-icon-closethick"></span></td>').fadeIn() );
+	$(tr).append( $('<td align="right">'+units(size)+' <span onClick="$(this).closest(\'tr\').fadeOut(function() { $(this).remove(); cancel_callback(); });" class="link ui-icon ui-icon-closethick"></span></td>').fadeIn() );
 	$(tr).css('font-style', 'normal');
 	$(tr).css('color', 'black');
+	
+	// Call template user's generic hander if defined
+	if (typeof file_finished == 'function') {
+		file_finished(size, url);
+	}	
+}
+
+function cancel_callback() {
+	// Call template user's generic hander if defined
+	if (typeof file_canceled == 'function') {
+		file_canceled();
+	}
 }
 
 function activate_on_input(input_id, button_id) {
@@ -333,7 +348,7 @@ function load_from_ncbi() {
 }
 </SCRIPT>
 
-<div id='tabs' style='margin-top: 0.5em'>
+<div id='tabs' style='margin-top:0.5em;margin-bottom:1em;'>
   <ul>
     <li class="small"><a href="#tab-1">iPlant Data Store</a></li>
     <li class="small"><a href="#tab-2">FTP</a></li>
