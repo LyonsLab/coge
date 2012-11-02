@@ -108,7 +108,7 @@ function run_synmap(){
    $('#log_text').show(0);
    pageObj.nolog=1;
    setTimeout("read_log(['args__logfile', 'args__'+pageObj.basename, 'args__tempdir', 'args__'+pageObj.tempdir], [monitor_log])",pageObj.waittime);
-   go(['args__c','c','args__D','D', 'args__A','A','args__gm','gm','args__Dm','Dm','args__blast','blast', 'args__feat_type1','feat_type1', 'args__feat_type2','feat_type2','args__dsgid1','dsgid1', 'args__dsgid2','dsgid2','args__jobtitle','jobtitle','args__basename','args__'+pageObj.basename,'args__email','email','args__regen_images','args__'+$('#regen_images')[0].checked, 'args__width', 'args__'+$('#master_width').val(), 'args__dagchainer_type','args__'+$('#dagchainer_type')[0].checked, 'args__ks_type','ks_type', 'args__assemble','args__'+$('#assemble')[0].checked, 'args__axis_metric','axis_metric', 'args__axis_relationship','axis_relationship', 'args__min_chr_size', 'min_chr_size', 'args__spa_ref_genome','spa_ref_genome', 'args__show_non_syn','args__'+$('#show_non_syn')[0].checked, 'args__color_type','color_type', 'args__box_diags', 'args__'+$('#box_diags')[0].checked, 'args__merge_algo','merge_algo', 'args__depth_algo', 'depth_algo', 'args__depth_org_1_ratio', 'depth_org_1_ratio', 'args__depth_org_2_ratio', 'depth_org_2_ratio', 'args__depth_overlap', 'depth_overlap', 'args__fid1','args__'+pageObj.fid1, 'args__fid2','args__'+pageObj.fid2, 'args__show_non_syn_dots','args__'+$('#show_non_syn_dots')[0].checked,'args__flip','args__'+$('#flip')[0].checked,'args__clabel','args__'+$('#clabel')[0].checked,'args__skip_rand','args__'+$('#skiprand')[0].checked,'args__color_scheme','color_scheme', 'args__chr_sort_order','chr_sort_order', 'args__codeml_min', 'codeml_min', 'args__codeml_max', 'codeml_max', 'args__logks','args__'+$('#logks')[0].checked],[handle_results] );
+   go(['args__tdd','tdd','args__D','D', 'args__A','A','args__gm','gm','args__Dm','Dm','args__blast','blast', 'args__feat_type1','feat_type1', 'args__feat_type2','feat_type2','args__dsgid1','dsgid1', 'args__dsgid2','dsgid2','args__jobtitle','jobtitle','args__basename','args__'+pageObj.basename,'args__email','email','args__regen_images','args__'+$('#regen_images')[0].checked, 'args__width', 'args__'+$('#master_width').val(), 'args__dagchainer_type','args__'+$('#dagchainer_type')[0].checked, 'args__ks_type','ks_type', 'args__assemble','args__'+$('#assemble')[0].checked, 'args__axis_metric','axis_metric', 'args__axis_relationship','axis_relationship', 'args__min_chr_size', 'min_chr_size', 'args__spa_ref_genome','spa_ref_genome', 'args__show_non_syn','args__'+$('#show_non_syn')[0].checked, 'args__color_type','color_type', 'args__box_diags', 'args__'+$('#box_diags')[0].checked, 'args__merge_algo','merge_algo', 'args__depth_algo', 'depth_algo', 'args__depth_org_1_ratio', 'depth_org_1_ratio', 'args__depth_org_2_ratio', 'depth_org_2_ratio', 'args__depth_overlap', 'depth_overlap', 'args__fid1','args__'+pageObj.fid1, 'args__fid2','args__'+pageObj.fid2, 'args__show_non_syn_dots','args__'+$('#show_non_syn_dots')[0].checked,'args__flip','args__'+$('#flip')[0].checked,'args__clabel','args__'+$('#clabel')[0].checked,'args__skip_rand','args__'+$('#skiprand')[0].checked,'args__color_scheme','color_scheme', 'args__chr_sort_order','chr_sort_order', 'args__codeml_min', 'codeml_min', 'args__codeml_max', 'codeml_max', 'args__logks','args__'+$('#logks')[0].checked, 'args__csco','csco'],[handle_results] );
  }
 }
 
@@ -632,9 +632,6 @@ function post_to_grimm(seq1, seq2)
         <OPTION VALUE="3" <TMPL_VAR NAME="TBLASTX_SELECT">>TBlastX (very slow)
 	<OPTION VALUE="5" <TMPL_VAR NAME="BLASTP_SELECT">>BlastP (slow)
        </select>
- <tr>
-   <td style="color:#009900">Filter Repetitive Matches:
-   <td>Expected number of hits per sequence <input type=text size=2 id="c" name="c" value="<TMPL_VAR NAME="CVALUE">">
   <tr valign=top class="odd">
   <td style="color:#009900">DAGChainer Options:
   <td>
@@ -733,6 +730,14 @@ function post_to_grimm(seq1, seq2)
 
    <br>
    <span class=small style="color:red">&nbsp;&nbsp;&nbsp;&nbsp; Only applicable to protein coding sequences (CDS vs. CDS)</span> 
+
+ <tr>
+   <td style="color:#009900">Advanced Options (see docs):
+   <td>
+     Tandem duplication distance <input type=text size=2 id="tdd" name="tdd" value="<TMPL_VAR NAME="DUPDIST">"><br>
+     C-score (filters low quality hits: value [0-1])<input type=text size=2 id="csco" name="csco" value="<TMPL_VAR NAME="CSCORE">"><br>
+   
+
 </table>
 </div> <!-- close tab-2 -->
 
